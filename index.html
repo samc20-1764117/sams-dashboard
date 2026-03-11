@@ -1020,7 +1020,8 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify({cfg,blocks:st.block
 async function sbReq(method,table,body,qs=''){
   if(!cfg.url||!cfg.key)return null;
   try{
-    const r=await fetch(`${cfg.url}/rest/v1/${table}${qs}`,{method,headers:{'apikey':cfg.key,'Authorization':`Bearer ${cfg.key}`,'Content-Type':'application/json','Prefer':'return=representation'},body:body?JSON.stringify(body):null});
+    const prefer=method==='DELETE'?'return=minimal':'return=representation';
+    const r=await fetch(`${cfg.url}/rest/v1/${table}${qs}`,{method,headers:{'apikey':cfg.key,'Authorization':`Bearer ${cfg.key}`,'Content-Type':'application/json','Prefer':prefer},body:body?JSON.stringify(body):null});
     if(!r.ok){
       const errText=await r.text();
       console.error('Supabase error',method,table,r.status,errText);
@@ -1071,6 +1072,17 @@ async function sbReqSilent(method,table,body,qs=''){
     if(!r.ok){const t=await r.text();console.warn('Supabase silent fail',method,table,r.status,t);return null;}
     const t=await r.text();return t?JSON.parse(t):[];
   }catch(e){console.warn('sbReqSilent error',method,table,e);return null;}
+}
+
+// ── Recurring task DB filter helper ─────────────────────────────────────────
+// Some recurring tasks have numeric DB ids; others have local text fallback ids.
+// Returns the correct query string to target the right row.
+function recQs(id){
+  const sid=String(id);
+  if(/^\d+$/.test(sid)) return `?id=eq.${sid}`;
+  // Text id like "rec-Wipe%20surfaces" - decode and filter by name
+  const name=decodeURIComponent(sid.replace(/^rec-/,''));
+  return `?name=eq.${encodeURIComponent(name)}`;
 }
 
 // ── Time block DB helpers ────────────────────────────────────────────────────
@@ -1680,12 +1692,12 @@ function renderWkCal(){
           r._dateOverrides[wkKey]=ds;
           removeTBBlocksForDate(ds,{recId:r.id});
           save();dragId=null;renderAll();
-          sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},`?id=eq.${r.id}`);
+          sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},recQs(r.id));
           pushUndo(()=>{
             if(prevOverride)r._dateOverrides[wkKey]=prevOverride;
             else delete r._dateOverrides[wkKey];
             save();renderAll();
-            sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},`?id=eq.${r.id}`);
+            sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},recQs(r.id));
           },'Moved recurring task');
         }
         dragId=null;return;
@@ -1701,12 +1713,12 @@ function renderWkCal(){
           r._dateOverrides[wkKey]=ds;
           removeTBBlocksForDate(ds,{recId:r.id});
           save();dragId=null;renderAll();renderWkCal();
-          sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},`?id=eq.${r.id}`);
+          sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},recQs(r.id));
           pushUndo(()=>{
             if(prev)r._dateOverrides[wkKey]=prev;
             else delete r._dateOverrides[wkKey];
             save();renderAll();renderWkCal();
-            sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},`?id=eq.${r.id}`);
+            sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},recQs(r.id));
           },'Pinned weekly task to '+ds);
         }
         dragId=null;return;
@@ -1827,8 +1839,8 @@ function renderWkCal(){
           const r=st.recurring.find(x=>String(x.id)===String(t._recId));
           if(r&&r._dateOverrides){const wkKey=getWkKey(wkOff);const prev=r._dateOverrides[wkKey];
             delete r._dateOverrides[wkKey];save();renderAll();renderWkCal();
-            sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},`?id=eq.${r.id}`);
-            pushUndo(()=>{if(!r._dateOverrides)r._dateOverrides={};r._dateOverrides[wkKey]=prev;save();renderAll();renderWkCal();sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},`?id=eq.${r.id}`);},'Removed from calendar');}
+            sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},recQs(r.id));
+            pushUndo(()=>{if(!r._dateOverrides)r._dateOverrides={};r._dateOverrides[wkKey]=prev;save();renderAll();renderWkCal();sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},recQs(r.id));},'Removed from calendar');}
         } else if(t._virtual){delRec(t._recId);}
         else{delTask(t.id,e2);}
       });
@@ -1984,12 +1996,12 @@ function togRecVirt(recId,done,wkKey){
   else delete r._doneByWk[wkKey];
   r._done=false;
   save();renderToday();renderWkSummary();renderRecOv();renderWkCal();
-  sbReq('PATCH','recurring_tasks',{done_by_week:r._doneByWk},`?id=eq.${recId}`);
+  sbReq('PATCH','recurring_tasks',{done_by_week:r._doneByWk},recQs(recId));
   pushUndo(()=>{
     if(!r._doneByWk)r._doneByWk={};
     if(prev)r._doneByWk[wkKey]=true;else delete r._doneByWk[wkKey];
     save();renderToday();renderWkSummary();renderRecOv();renderWkCal();
-    sbReq('PATCH','recurring_tasks',{done_by_week:r._doneByWk},`?id=eq.${recId}`);
+    sbReq('PATCH','recurring_tasks',{done_by_week:r._doneByWk},recQs(recId));
   },(done?'Checked':'Unchecked')+' recurring');
 }
 
@@ -2659,14 +2671,14 @@ function togRec(id,done){
   st.blocks.filter(b=>String(b.recId)===String(id)).forEach(b=>b._done=done);
   save();renderRecOv();renderWeeklyPage();renderToday();renderWkSummary();renderWkCal();
   if(document.getElementById('tbGrid'))renderDayTB();
-  sbReq('PATCH','recurring_tasks',{done_by_week:r._doneByWk,done_this_week:done},`?id=eq.${id}`);
+  sbReq('PATCH','recurring_tasks',{done_by_week:r._doneByWk,done_this_week:done},recQs(id));
   pushUndo(()=>{
     r._done=prev;
     r._doneByWk=prevByWk;
     st.blocks.filter(b=>String(b.recId)===String(id)).forEach(b=>b._done=prev);
     save();renderRecOv();renderWeeklyPage();renderToday();renderWkSummary();renderWkCal();
     if(document.getElementById('tbGrid'))renderDayTB();
-    sbReq('PATCH','recurring_tasks',{done_by_week:prevByWk,done_this_week:prev},`?id=eq.${id}`);
+    sbReq('PATCH','recurring_tasks',{done_by_week:prevByWk,done_this_week:prev},recQs(id));
   },(done?'Checked':'Unchecked')+' weekly reset task');
 }
 async function delRec(id){
@@ -2677,7 +2689,7 @@ async function delRec(id){
   save();renderRecOv();renderWeeklyPage();renderToday();renderWkSummary();renderWkCal();
   if(document.getElementById('tbGrid'))renderDayTB();
   // DELETE from DB first, then undo is safe
-  await sbReq('DELETE','recurring_tasks',null,`?id=eq.${sid}`);
+  await sbReq('DELETE','recurring_tasks',null,recQs(sid));
   // Keep sid in deletedRecIds until undo window expires, so sync can't resurrect it
   pushUndo(async()=>{
     deletedRecIds.delete(sid);save();
@@ -2865,7 +2877,7 @@ function mkMCell(date,om,today){
       }
       applySelHighlight();
     });
-    chip.addEventListener('dblclick',e=>{e.stopPropagation();if(!t._virtual&&!t._type)openEditTask(t.id);});
+    chip.addEventListener('dblclick',e=>{e.stopPropagation();if(!t._virtual&&!t._type)openEditTask(t.id);else if(t._virtual&&t._recId)tiDblRec(e,t._recId);});
     chip.addEventListener('contextmenu',e=>{if(!t._virtual&&!t._type)showCtx(e,t.id);});
     cell.appendChild(chip);
   });
@@ -2879,7 +2891,7 @@ function mkMCell(date,om,today){
     if(dragId&&dragId.startsWith('wrec::')){
       const recId=dragId.split('::')[1];
       const r=st.recurring.find(x=>String(x.id)===String(recId));
-      if(r){if(!r._dateOverrides)r._dateOverrides={};const wkKey=getWkKey(0);const prev=r._dateOverrides[wkKey];r._dateOverrides[wkKey]=ds;save();sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},`?id=eq.${r.id}`);pushUndo(()=>{if(prev)r._dateOverrides[wkKey]=prev;else delete r._dateOverrides[wkKey];save();renderAll();renderMoCal();sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},`?id=eq.${r.id}`);},'Pinned weekly task');}
+      if(r){if(!r._dateOverrides)r._dateOverrides={};const wkKey=getWkKey(0);const prev=r._dateOverrides[wkKey];r._dateOverrides[wkKey]=ds;save();sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},recQs(r.id));pushUndo(()=>{if(prev)r._dateOverrides[wkKey]=prev;else delete r._dateOverrides[wkKey];save();renderAll();renderMoCal();sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},recQs(r.id));},'Pinned weekly task');}
       dragId=null;renderAll();renderMoCal();return;
     }
     if(dragId&&dragId.startsWith('shop::')){
@@ -3190,7 +3202,7 @@ document.addEventListener('keydown',async e=>{
     // DB deletes
     await Promise.all([
       ...taskCopies.map(t=>sbReq('DELETE','tasks',null,`?id=eq.${t.id}`)),
-      ...recIds.map(rid=>sbReq('DELETE','recurring_tasks',null,`?id=eq.${rid}`))
+      ...recIds.map(rid=>sbReq('DELETE','recurring_tasks',null,recQs(rid)))
     ]);
     recIds.forEach(rid=>{deletedRecIds.delete(rid);save();});
     // ONE undo for everything
@@ -3354,7 +3366,7 @@ function saveRecEdit(){
   closeMod('recEditModal');
   const prev=r.name;r.name=name;
   renderRecOv();renderWeeklyPage();renderWkSummary();renderWkCal();
-  sbReq('PATCH','recurring_tasks',{name:r.name},`?id=eq.${rid}`);
+  sbReq('PATCH','recurring_tasks',{name:r.name},recQs(rid));
   pushUndo(()=>{r.name=prev;renderRecOv();renderWeeklyPage();},'Edited recurring');
 }
 
@@ -3418,7 +3430,7 @@ async function ctxDoDuplicate(){
     pushUndo(()=>{
       st.recurring=st.recurring.filter(x=>String(x.id)!==(sv&&sv[0]?String(sv[0].id):tempId));
       save();renderRecOv();renderWeeklyPage();renderToday();renderWkSummary();renderWkCal();
-      if(sv&&sv[0])sbReq('DELETE','recurring_tasks',null,`?id=eq.${sv[0].id}`);
+      if(sv&&sv[0])sbReq('DELETE','recurring_tasks',null,recQs(sv[0].id));
     },'Duplicated recurring');
     return;
   }
