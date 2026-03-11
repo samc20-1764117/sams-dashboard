@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <!-- saved from url=(0051)file:///Users/samanthacohn/Downloads/index_190.html -->
 <html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
@@ -1059,26 +1058,55 @@ async function sbReqNullable(method,table,body,qs=''){
 // Track task ids that have pending local edits (cleared after confirmed DB write)
 const pendingLocal=new Set();
 let deletedRecIds=new Set();
+// ── Time block DB helpers ────────────────────────────────────────────────────
+async function sbSaveBlock(b){
+  if(!cfg.url||!cfg.key)return;
+  const payload={
+    id:b.id,title:b.title||'',day_date:b.ds,start_minutes:b.sm,
+    duration_minutes:b.dur,category:b.cat||'Home',
+    task_id:b.taskId||null,rec_id:b.recId||null,shop_id:b.shopId||null,
+    done:b._done||false
+  };
+  try{
+    const r=await fetch(`${cfg.url}/rest/v1/time_blocks`,{
+      method:'POST',
+      headers:{
+        'apikey':cfg.key,'Authorization':`Bearer ${cfg.key}`,
+        'Content-Type':'application/json',
+        'Prefer':'resolution=merge-duplicates,return=minimal'
+      },
+      body:JSON.stringify(payload)
+    });
+    if(!r.ok){const t=await r.text();console.error('sbSaveBlock error',r.status,t);}
+  }catch(e){console.error('sbSaveBlock fetch error',e);}
+}
+async function sbDeleteBlock(id){
+  if(!cfg.url||!cfg.key)return;
+  await sbReq('DELETE','time_blocks',null,`?id=eq.${id}`);
+}
+async function sbUpdateBlock(id,fields){
+  if(!cfg.url||!cfg.key)return;
+  await sbReqNullable('PATCH','time_blocks',fields,`?id=eq.${id}`);
+}
 
 async function syncAll(silent=false){
   if(!cfg.url||!cfg.key){setBadge('err','Not connected');return;}
   if(!silent)setBadge('loading','Syncing…');
   try{
-    const[tasks,rec,shop,trav,bdays]=await Promise.all([
+    const[tasks,rec,shop,trav,bdays,blocks]=await Promise.all([
       sbReq('GET','tasks',null,'?order=due_date.asc.nullslast&select=*'),
       sbReq('GET','recurring_tasks',null,'?order=name.asc&select=*'),
       sbReq('GET','shopping_list',null,'?order=store.asc,name.asc&select=*'),
       sbReq('GET','travel',null,'?order=start_date.asc&select=*'),
-      sbReq('GET','birthdays',null,'?order=birthday.asc&select=*')
+      sbReq('GET','birthdays',null,'?order=birthday.asc&select=*'),
+      sbReq('GET','time_blocks',null,'?order=day_date.asc,start_minutes.asc&select=*')
     ]);
     if(tasks){
       const merged=tasks.map(dbT=>{
         const sid=String(dbT.id);
         const override=localOverrides[sid];
         if(override){
-          // Check if DB has caught up — if every overridden field now matches DB, drop the override
           const allMatch=Object.entries(override).every(([k,v])=>{
-            // null == null, and treat empty string as null too
             const dbVal=dbT[k]===undefined?null:dbT[k];
             const ov=v===''?null:v;
             return dbVal===ov;
@@ -1092,17 +1120,11 @@ async function syncAll(silent=false){
         }
         return dbT;
       });
-      const dbIds=new Set(tasks.map(t=>String(t.id)));const localOnly=st.tasks.filter(lt=>{const sid=String(lt.id);return(sid.startsWith('l-')||sid.startsWith('t-'))&&!dbIds.has(sid);});
+      const dbIds=new Set(tasks.map(t=>String(t.id)));
+      const localOnly=st.tasks.filter(lt=>{const sid=String(lt.id);return(sid.startsWith('l-')||sid.startsWith('t-'))&&!dbIds.has(sid);});
       st.tasks=[...merged,...localOnly];
     }
     if(rec){
-      const doneMap={};const overrideMap={};
-      st.recurring.forEach(r=>{
-        if(r._doneByWk)doneMap[String(r.id)]=r._doneByWk;
-        if(r._dateOverrides)overrideMap[String(r.id)]=r._dateOverrides;
-      });
-      // Preserve pending local entries (temp ids not yet in DB)
-      // But drop any temp whose _realId already appears in DB results
       const dbIds=new Set(rec.map(r=>String(r.id)));
       const localPending=st.recurring.filter(r=>{
         const sid=String(r.id);
@@ -1114,25 +1136,28 @@ async function syncAll(silent=false){
           .filter(r=>!deletedRecIds.has(String(r.id)))
           .map((r,i)=>{
             const stableId=r.id!==undefined&&r.id!==null?r.id:('rec-'+encodeURIComponent(r.name||i));
-            const dbwk=doneMap[String(stableId)]||{};
-            const isDone=!!dbwk['weekly-reset'];
-            const dateOvs=overrideMap[String(stableId)]||{};
+            const dbwk=r.done_by_week||{};
+            const isDone=!!(dbwk['weekly-reset']);
+            const dateOvs=r.date_overrides||{};
             return{...r,id:stableId,_doneByWk:dbwk,_done:isDone,_dateOverrides:dateOvs};
           }),
         ...localPending
       ];
     }
-    if(shop){
-      // Preserve local due_date overrides (not a DB field) during sync
-      const shopDueDates={};
-      st.shopping.forEach(s=>{if(s.due_date)shopDueDates[String(s.id)]=s.due_date;});
-      st.shopping=shop.map(s=>{const dd=shopDueDates[String(s.id)];return dd?{...s,due_date:dd}:s;});
-    }
+    if(shop){st.shopping=shop;}
     if(trav)st.travel=trav;
     if(bdays)st.birthdays=bdays;
-    save();const n=new Date();setBadge('',`Synced ${n.getHours()}:${String(n.getMinutes()).padStart(2,'0')}`);
+    if(blocks){
+      st.blocks=blocks.map(b=>({
+        id:b.id,title:b.title||'',ds:b.day_date,sm:b.start_minutes,
+        dur:b.duration_minutes||30,cat:b.category||'Home',
+        taskId:b.task_id||null,recId:b.rec_id||null,shopId:b.shop_id||null,_done:b.done||false
+      }));
+    }
+    save();
+    const n=new Date();setBadge('',`Synced ${n.getHours()}:${String(n.getMinutes()).padStart(2,'0')}`);
     renderAll();
-  }catch(e){setBadge('err','Error');}
+  }catch(e){console.error('syncAll error',e);setBadge('err','Error');}
 }
 function setBadge(t,x){
   ['','2','3','4','5','6'].forEach(s=>{
@@ -1639,10 +1664,12 @@ function renderWkCal(){
           r._dateOverrides[wkKey]=ds;
           removeTBBlocksForDate(ds,{recId:r.id});
           save();dragId=null;renderAll();
+          sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},`?id=eq.${r.id}`);
           pushUndo(()=>{
             if(prevOverride)r._dateOverrides[wkKey]=prevOverride;
             else delete r._dateOverrides[wkKey];
             save();renderAll();
+            sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},`?id=eq.${r.id}`);
           },'Moved recurring task');
         }
         dragId=null;return;
@@ -1658,10 +1685,12 @@ function renderWkCal(){
           r._dateOverrides[wkKey]=ds;
           removeTBBlocksForDate(ds,{recId:r.id});
           save();dragId=null;renderAll();renderWkCal();
+          sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},`?id=eq.${r.id}`);
           pushUndo(()=>{
             if(prev)r._dateOverrides[wkKey]=prev;
             else delete r._dateOverrides[wkKey];
             save();renderAll();renderWkCal();
+            sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},`?id=eq.${r.id}`);
           },'Pinned weekly task to '+ds);
         }
         dragId=null;return;
@@ -1675,7 +1704,11 @@ function renderWkCal(){
           s.due_date=ds;
           removeTBBlocksForDate(ds,{shopId:s.id});
           save();dragId=null;renderAll();renderWkCal();
-          pushUndo(()=>{s.due_date=prev;save();renderAll();renderWkCal();},'Assigned shopping item to '+ds);
+          sbReqNullable('PATCH','shopping_list',{due_date:ds},`?id=eq.${s.id}`);
+          pushUndo(()=>{
+            s.due_date=prev;save();renderAll();renderWkCal();
+            sbReqNullable('PATCH','shopping_list',{due_date:prev||null},`?id=eq.${s.id}`);
+          },'Assigned shopping item to '+ds);
         }
         dragId=null;return;
       }
@@ -1772,12 +1805,14 @@ function renderWkCal(){
         if(t._type==='shop'){
           const s=st.shopping.find(x=>String(x.id)===String(t._shopId));
           if(s){const prev=s.due_date;s.due_date=null;save();renderAll();renderWkCal();
-            pushUndo(()=>{s.due_date=prev;save();renderAll();renderWkCal();},'Removed from calendar');}
+            sbReqNullable('PATCH','shopping_list',{due_date:null},`?id=eq.${s.id}`);
+            pushUndo(()=>{s.due_date=prev;save();renderAll();renderWkCal();sbReqNullable('PATCH','shopping_list',{due_date:prev||null},`?id=eq.${s.id}`);},'Removed from calendar');}
         } else if(t._isWrec){
           const r=st.recurring.find(x=>String(x.id)===String(t._recId));
           if(r&&r._dateOverrides){const wkKey=getWkKey(wkOff);const prev=r._dateOverrides[wkKey];
             delete r._dateOverrides[wkKey];save();renderAll();renderWkCal();
-            pushUndo(()=>{if(!r._dateOverrides)r._dateOverrides={};r._dateOverrides[wkKey]=prev;save();renderAll();renderWkCal();},'Removed from calendar');}
+            sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},`?id=eq.${r.id}`);
+            pushUndo(()=>{if(!r._dateOverrides)r._dateOverrides={};r._dateOverrides[wkKey]=prev;save();renderAll();renderWkCal();sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},`?id=eq.${r.id}`);},'Removed from calendar');}
         } else if(t._virtual){delRec(t._recId);}
         else{delTask(t.id,e2);}
       });
@@ -1933,10 +1968,12 @@ function togRecVirt(recId,done,wkKey){
   else delete r._doneByWk[wkKey];
   r._done=false;
   save();renderToday();renderWkSummary();renderRecOv();renderWkCal();
+  sbReq('PATCH','recurring_tasks',{done_by_week:r._doneByWk},`?id=eq.${recId}`);
   pushUndo(()=>{
     if(!r._doneByWk)r._doneByWk={};
     if(prev)r._doneByWk[wkKey]=true;else delete r._doneByWk[wkKey];
     save();renderToday();renderWkSummary();renderRecOv();renderWkCal();
+    sbReq('PATCH','recurring_tasks',{done_by_week:r._doneByWk},`?id=eq.${recId}`);
   },(done?'Checked':'Unchecked')+' recurring');
 }
 
@@ -2094,6 +2131,7 @@ function renderDayTB(){
       const sm=h*60+Math.max(0,Math.min(45,minsInRow2));
       const blk={id:'b-'+Date.now(),title:'',ds,sm,dur:30,cat:'Home'};
       st.blocks.push(blk);save();
+      // DB save happens after inline edit commits (in startTBInlineEdit)
       // Compute layout (handles overlap) then redraw all blocks in col
       computeTBLayout(ds);
       // Remove existing blocks from col and redraw all with correct positions
@@ -2165,6 +2203,7 @@ function drawTBBlock(col,b){
     const checked=this.checked;
     b._done=checked;
     el.classList.toggle('done-block',b._done);
+    sbUpdateBlock(b.id,{done:checked});
     if(b.taskId){
       toggleTask(b.taskId,checked,'tb');
     } else if(b.recId){
@@ -2172,7 +2211,6 @@ function drawTBBlock(col,b){
     } else if(b.shopId){
       togShop(String(b.shopId),checked);
     } else {
-      // Standalone block — match by title fallback
       const mT=st.tasks.find(x=>x.name===b.title);
       const mR=st.recurring.find(x=>x.name===b.title);
       const mS=st.shopping.find(x=>x.name===b.title);
@@ -2216,7 +2254,7 @@ function drawTBBlock(col,b){
       document.removeEventListener('mousemove',tbOnMove);
       document.removeEventListener('mouseup',tbOnUp);
       el.classList.remove('dragging-block');
-      if(tbDragging){tbDragging=false;save();renderDayTB();}
+      if(tbDragging){tbDragging=false;save();renderDayTB();sbUpdateBlock(b.id,{start_minutes:b.sm});}
     };
     document.addEventListener('mousemove',tbOnMove);
     document.addEventListener('mouseup',tbOnUp);
@@ -2242,7 +2280,8 @@ function dropOnTB(e,ds,h,row){
     if(!s){dragId=null;return;}
     const blk={id:'b-'+Date.now(),title:s.name,ds,sm,dur:30,cat:'Shopping',shopId:String(s.id)};
     st.blocks.push(blk);dragId=null;save();renderDayTB();
-    pushUndo(()=>{st.blocks=st.blocks.filter(b=>b.id!==blk.id);save();renderDayTB();},'Added block');
+    sbSaveBlock(blk);
+    pushUndo(()=>{st.blocks=st.blocks.filter(b=>b.id!==blk.id);save();renderDayTB();sbDeleteBlock(blk.id);},'Added block');
     return;
   } else if(dragId.startsWith('rec::')){
     // recurring virtual task: rec::recId::date
@@ -2251,7 +2290,8 @@ function dropOnTB(e,ds,h,row){
     if(r){title=r.name;cat=r.is_weekly_reset?'Recurring':('Recurring');}
     const blk={id:'b-'+Date.now(),title,ds,sm,dur:30,cat:'Recurring',recId:recId||null};
     st.blocks.push(blk);dragId=null;save();renderDayTB();
-    pushUndo(()=>{st.blocks=st.blocks.filter(b=>b.id!==blk.id);save();renderDayTB();},'Added block');
+    sbSaveBlock(blk);
+    pushUndo(()=>{st.blocks=st.blocks.filter(b=>b.id!==blk.id);save();renderDayTB();sbDeleteBlock(blk.id);},'Added block');
     return;
   } else {
     const t=st.tasks.find(x=>String(x.id)===String(dragId));
@@ -2265,10 +2305,12 @@ function dropOnTB(e,ds,h,row){
       sbReq('PATCH','tasks',{due_date:ds},`?id=eq.${t.id}`);
     }
     st.blocks.push(blk);dragId=null;save();renderAll();
+    sbSaveBlock(blk);
     pushUndo(()=>{
       st.blocks=st.blocks.filter(b=>b.id!==blk.id);
       t.due_date=prevDate||null;
       sbReq('PATCH','tasks',{due_date:prevDate||null},`?id=eq.${t.id}`);
+      sbDeleteBlock(blk.id);
       save();renderAll();
     },'Added to time block');
     return;
@@ -2316,15 +2358,16 @@ function startTBInlineEdit(blockId,col,onCommit){
       b.taskId=String(newTask.id);
       if(onCommit)onCommit();
       save();renderAll();
-      // Persist to DB
-      const sv=await sbReq('POST','tasks',{name:val,category:'Home',due_date:b.ds,done:false});
+      // Persist task to DB
+      const sv=await sbReq('POST','tasks',{name:val,category:'Home',due_date:b.ds,done:false,important:false});
       if(sv&&sv[0]){
-        // Swap temp id for real DB id
         const ti=st.tasks.findIndex(x=>x.id===newTask.id);
         if(ti>-1)st.tasks[ti]={...sv[0]};
         b.taskId=String(sv[0].id);
         save();
       }
+      // Now save the block itself to DB
+      sbSaveBlock(b);
     } else {
       if(onCommit)onCommit();
       save();renderDayTB();
@@ -2348,8 +2391,8 @@ function updateNowLine(){
 }
 if(!window._nowLineInterval)window._nowLineInterval=setInterval(updateNowLine,60000);
 function onRM(e){if(!resizing)return;const b=st.blocks.find(x=>x.id===resizing.id);if(!b)return;b.dur=Math.max(15,Math.round((resizing.sd+(e.clientY-resizing.sy)/PX)/15)*15);renderDayTB();}
-function onRU(){if(!resizing)return;resizing=null;save();renderDayTB();document.removeEventListener('mousemove',onRM);document.removeEventListener('mouseup',onRU);}
-function delBlock(id,e){e&&e.stopPropagation();const b=st.blocks.find(x=>x.id===id);if(b){const copy={...b};pushUndo(()=>{st.blocks.push(copy);save();renderDayTB();},'Deleted block');}st.blocks=st.blocks.filter(b=>b.id!==id);save();renderDayTB();}
+function onRU(){if(!resizing)return;const bid=resizing.id;resizing=null;save();renderDayTB();document.removeEventListener('mousemove',onRM);document.removeEventListener('mouseup',onRU);const b=st.blocks.find(x=>x.id===bid);if(b)sbUpdateBlock(bid,{duration_minutes:b.dur});}
+function delBlock(id,e){e&&e.stopPropagation();const b=st.blocks.find(x=>x.id===id);if(b){const copy={...b};pushUndo(()=>{st.blocks.push(copy);save();renderDayTB();sbSaveBlock(copy);},'Deleted block');}st.blocks=st.blocks.filter(b=>b.id!==id);save();renderDayTB();sbDeleteBlock(id);}
 function onTBWheel(e){
   const sc=document.getElementById('tbScroll');const atTop=sc.scrollTop<=0,atBot=sc.scrollTop+sc.clientHeight>=sc.scrollHeight-2;
   if(e.deltaY<0&&atTop){e.preventDefault();tbWD+=e.deltaY;if(tbWT)clearTimeout(tbWT);tbWT=setTimeout(()=>{if(tbWD<-40)shiftDay(-1);tbWD=0;tbWT=null;},100);}
@@ -2365,7 +2408,8 @@ function saveBlock(){
   const[hh,mm]=document.getElementById('bStart').value.split(':').map(Number);
   const blk={id:'b-'+Date.now(),title,ds:d2s(getDayDate(dayOff)),sm:hh*60+(mm||0),dur:parseInt(document.getElementById('bDur').value),cat:document.getElementById('bCat').value};
   st.blocks.push(blk);document.getElementById('bTitle').value='';closeMod('bModal');save();renderDayTB();
-  pushUndo(()=>{st.blocks=st.blocks.filter(b=>b.id!==blk.id);save();renderDayTB();},'Added block');
+  sbSaveBlock(blk);
+  pushUndo(()=>{st.blocks=st.blocks.filter(b=>b.id!==blk.id);save();renderDayTB();sbDeleteBlock(blk.id);},'Added block');
 }
 
 // ── Quick-add popup ────────────────────────────────────────────────────────────
@@ -2523,16 +2567,16 @@ async function saveTModal(){
     pushUndo(()=>{
       t.name=prev.name;t.category=prev.category;t.due_date=prev.due_date;t.important=prev.important;
       localOverrides[stid]={...prev};pendingLocal.add(stid);renderAll();
-      sbReqNullable('PATCH','tasks',prev,`?id=eq.${stid}`)
+      sbReqNullable('PATCH','tasks',{name:prev.name,category:prev.category,due_date:prev.due_date,important:prev.important},`?id=eq.${stid}`)
         .then(()=>{ delete localOverrides[stid]; pendingLocal.delete(stid); });
     },'Edited task');
-    await sbReqNullable('PATCH','tasks',{name:n,category:c,due_date:d},`?id=eq.${stid}`);
+    await sbReqNullable('PATCH','tasks',{name:n,category:c,due_date:d,important:imp},`?id=eq.${stid}`);
     pendingLocal.delete(stid);
     // localOverrides[stid] stays until syncAll confirms DB matches
   } else {
     const t={id:'l-'+Date.now(),name:n,category:c,due_date:d,done:false,important:imp};st.tasks.push(t);renderAll();
     pushUndo(()=>{st.tasks=st.tasks.filter(x=>x.id!==t.id);renderAll();sbReq('DELETE','tasks',null,`?id=eq.${t.id}`);},'Added task');
-    const sv=await sbReq('POST','tasks',{name:n,category:c,due_date:d,done:false});if(sv&&sv[0]){const i=st.tasks.findIndex(x=>x.id===t.id);if(i>-1)st.tasks[i]=sv[0];}
+    const sv=await sbReq('POST','tasks',{name:n,category:c,due_date:d,done:false,important:imp});if(sv&&sv[0]){const i=st.tasks.findIndex(x=>x.id===t.id);if(i>-1)st.tasks[i]=sv[0];}
   }
 }
 async function addTask(){
@@ -2596,16 +2640,17 @@ function togRec(id,done){
   if(!r._doneByWk)r._doneByWk={};
   if(done)r._doneByWk['weekly-reset']=true;
   else delete r._doneByWk['weekly-reset'];
-  // Sync TB blocks linked to this rec task
   st.blocks.filter(b=>String(b.recId)===String(id)).forEach(b=>b._done=done);
   save();renderRecOv();renderWeeklyPage();renderToday();renderWkSummary();renderWkCal();
   if(document.getElementById('tbGrid'))renderDayTB();
+  sbReq('PATCH','recurring_tasks',{done_by_week:r._doneByWk,done_this_week:done},`?id=eq.${id}`);
   pushUndo(()=>{
     r._done=prev;
     r._doneByWk=prevByWk;
     st.blocks.filter(b=>String(b.recId)===String(id)).forEach(b=>b._done=prev);
     save();renderRecOv();renderWeeklyPage();renderToday();renderWkSummary();renderWkCal();
     if(document.getElementById('tbGrid'))renderDayTB();
+    sbReq('PATCH','recurring_tasks',{done_by_week:prevByWk,done_this_week:prev},`?id=eq.${id}`);
   },(done?'Checked':'Unchecked')+' weekly reset task');
 }
 async function delRec(id){
@@ -2818,13 +2863,13 @@ function mkMCell(date,om,today){
     if(dragId&&dragId.startsWith('wrec::')){
       const recId=dragId.split('::')[1];
       const r=st.recurring.find(x=>String(x.id)===String(recId));
-      if(r){if(!r._dateOverrides)r._dateOverrides={};const wkKey=getWkKey(0);const prev=r._dateOverrides[wkKey];r._dateOverrides[wkKey]=ds;save();pushUndo(()=>{if(prev)r._dateOverrides[wkKey]=prev;else delete r._dateOverrides[wkKey];save();renderAll();renderMoCal();},'Pinned weekly task');}
+      if(r){if(!r._dateOverrides)r._dateOverrides={};const wkKey=getWkKey(0);const prev=r._dateOverrides[wkKey];r._dateOverrides[wkKey]=ds;save();sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},`?id=eq.${r.id}`);pushUndo(()=>{if(prev)r._dateOverrides[wkKey]=prev;else delete r._dateOverrides[wkKey];save();renderAll();renderMoCal();sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},`?id=eq.${r.id}`);},'Pinned weekly task');}
       dragId=null;renderAll();renderMoCal();return;
     }
     if(dragId&&dragId.startsWith('shop::')){
       const shopId=dragId.split('::')[1];
       const s=st.shopping.find(x=>String(x.id)===String(shopId));
-      if(s){const prev=s.due_date;s.due_date=ds;save();pushUndo(()=>{s.due_date=prev;save();renderAll();renderMoCal();},'Assigned shopping item');}
+      if(s){const prev=s.due_date;s.due_date=ds;save();sbReqNullable('PATCH','shopping_list',{due_date:ds},`?id=eq.${s.id}`);pushUndo(()=>{s.due_date=prev;save();renderAll();renderMoCal();sbReqNullable('PATCH','shopping_list',{due_date:prev||null},`?id=eq.${s.id}`);},'Assigned shopping item');}
       dragId=null;renderAll();renderMoCal();return;
     }
     if(t){const prev=t.due_date;t.due_date=ds;pushUndo(()=>{t.due_date=prev;renderAll();renderMoCal();sbReq('PATCH','tasks',{due_date:prev},`?id=eq.${t.id}`);},'Moved task');await sbReq('PATCH','tasks',{due_date:ds},`?id=eq.${t.id}`);}
@@ -3388,7 +3433,7 @@ function toggleDark(){
   const isDark=document.body.classList.toggle('dark');
   document.getElementById('darkToggle').textContent=isDark?'☀️':'🌙';
   cfg.dark=isDark;save();
-
+  // Persist dark mode preference to Supabase via recurring_tasks metadata (use a special sentinel row) -- actually just save to localStorage cfg which is fine for per-device preference
   const ic=document.getElementById('darkToggleIcon');if(ic)ic.textContent=document.body.classList.contains('dark')?'☀️':'🌙';
 }
 // Apply on load
