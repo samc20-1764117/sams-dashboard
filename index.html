@@ -120,7 +120,7 @@ body{font-family:'DM Sans',sans-serif;background:#f0ecfb;background-attachment:f
 @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
 
 /* Main */
-.main{flex:1;overflow-y:auto;overflow-x:hidden;padding:0 56px 36px 56px;margin-left:186px;transition:margin-left .25s cubic-bezier(.4,0,.2,1)}.body-dragging .main{overflow:visible!important}
+.main{flex:1;overflow-y:auto;overflow-x:hidden;padding:0 56px 36px 56px;margin-left:186px;transition:margin-left .25s cubic-bezier(.4,0,.2,1)}
 .main.full{margin-left:0}
 .page{display:none}.page.active{display:block}#page-weekly.active{display:block;padding-top:10px}
 
@@ -141,7 +141,7 @@ body{font-family:'DM Sans',sans-serif;background:#f0ecfb;background-attachment:f
 .btn-plus:hover{background:#fff;color:var(--accent);border-color:var(--accent)}
 
 /* Cards */
-.card{background:var(--glass);backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column;transition:box-shadow .2s}.body-dragging .card{overflow:visible!important}
+.card{background:var(--glass);backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column;transition:box-shadow .2s}
 .card-hero{background:rgba(255,255,255,.88)!important;border-color:rgba(255,255,255,.95)!important;box-shadow:0 8px 32px rgba(100,80,180,.13),0 2px 8px rgba(100,80,180,.07),inset 0 1px 0 rgba(255,255,255,1)!important}
 .ch{padding:9px 13px;display:flex;align-items:center;gap:6px;border-bottom:1px solid rgba(210,205,228,.22);flex-shrink:0;min-height:38px;box-sizing:border-box}
 .ch-prog{display:flex;align-items:center;gap:8px;padding:9px 13px;border-bottom:1px solid rgba(210,205,228,.22);flex-shrink:0;min-height:38px;box-sizing:border-box}
@@ -1562,6 +1562,7 @@ function tRowShopVirt(t){
     <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="togShop('${t._shopId}',this.checked)"></label>
     <span class="tn">${t.name}</span>
     <span class="cpill" style="background:${s.bg};color:${s.t};border-color:${s.b}">Shopping</span>
+    <span class="dlbl">${fmtD(t.due_date)}</span>
     <button class="delbtn" onclick="event.stopPropagation()">✕</button>
   </div>`;
 }
@@ -3627,4 +3628,7 @@ function copyShopList(){
 </div>
 
 
-</div></body></html>
+</div>
+<div id="devBadge" style="display:none;position:fixed;bottom:16px;left:16px;background:#1e293b;color:#f8fafc;font-size:11px;font-weight:700;letter-spacing:.08em;padding:4px 9px;border-radius:6px;border:1px solid rgba(255,255,255,.15);z-index:9999;pointer-events:none">DEV</div>
+<script>if(location.hostname.includes('dev.'))document.getElementById('devBadge').style.display='block';</script>
+</body></html>

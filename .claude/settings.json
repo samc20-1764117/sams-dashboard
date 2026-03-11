@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd /Users/samanthacohn/Documents/sams-dashboard && git add -A && git diff --cached --quiet || (git commit -m \"Auto-commit [$(date '+%b %d %H:%M')]\" && git push origin HEAD:dev)"
+          }
+        ]
+      }
+    ]
+  }
+}
