@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <!-- saved from url=(0051)file:///Users/samanthacohn/Downloads/index_190.html -->
 <html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
@@ -1058,6 +1059,20 @@ async function sbReqNullable(method,table,body,qs=''){
 // Track task ids that have pending local edits (cleared after confirmed DB write)
 const pendingLocal=new Set();
 let deletedRecIds=new Set();
+// ── Supabase silent request (no toast on failure) ────────────────────────────
+async function sbReqSilent(method,table,body,qs=''){
+  if(!cfg.url||!cfg.key)return null;
+  try{
+    const r=await fetch(`${cfg.url}/rest/v1/${table}${qs}`,{
+      method,
+      headers:{'apikey':cfg.key,'Authorization':`Bearer ${cfg.key}`,'Content-Type':'application/json','Prefer':'return=representation'},
+      body:body?JSON.stringify(body):null
+    });
+    if(!r.ok){const t=await r.text();console.warn('Supabase silent fail',method,table,r.status,t);return null;}
+    const t=await r.text();return t?JSON.parse(t):[];
+  }catch(e){console.warn('sbReqSilent error',method,table,e);return null;}
+}
+
 // ── Time block DB helpers ────────────────────────────────────────────────────
 async function sbSaveBlock(b){
   if(!cfg.url||!cfg.key)return;
@@ -1082,25 +1097,26 @@ async function sbSaveBlock(b){
 }
 async function sbDeleteBlock(id){
   if(!cfg.url||!cfg.key)return;
-  await sbReq('DELETE','time_blocks',null,`?id=eq.${id}`);
+  try{await fetch(`${cfg.url}/rest/v1/time_blocks?id=eq.${id}`,{method:'DELETE',headers:{'apikey':cfg.key,'Authorization':`Bearer ${cfg.key}`,'Prefer':'return=minimal'}});}catch(e){}
 }
 async function sbUpdateBlock(id,fields){
   if(!cfg.url||!cfg.key)return;
-  await sbReqNullable('PATCH','time_blocks',fields,`?id=eq.${id}`);
+  try{await fetch(`${cfg.url}/rest/v1/time_blocks?id=eq.${id}`,{method:'PATCH',headers:{'apikey':cfg.key,'Authorization':`Bearer ${cfg.key}`,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify(fields)});}catch(e){}
 }
 
 async function syncAll(silent=false){
   if(!cfg.url||!cfg.key){setBadge('err','Not connected');return;}
   if(!silent)setBadge('loading','Syncing…');
   try{
-    const[tasks,rec,shop,trav,bdays,blocks]=await Promise.all([
+    const[tasks,rec,shop,trav,bdays]=await Promise.all([
       sbReq('GET','tasks',null,'?order=due_date.asc.nullslast&select=*'),
       sbReq('GET','recurring_tasks',null,'?order=name.asc&select=*'),
       sbReq('GET','shopping_list',null,'?order=store.asc,name.asc&select=*'),
       sbReq('GET','travel',null,'?order=start_date.asc&select=*'),
-      sbReq('GET','birthdays',null,'?order=birthday.asc&select=*'),
-      sbReq('GET','time_blocks',null,'?order=day_date.asc,start_minutes.asc&select=*')
+      sbReq('GET','birthdays',null,'?order=birthday.asc&select=*')
     ]);
+    // Fetch time_blocks separately so a failure doesn't break the whole sync
+    const blocks=await sbReqSilent('GET','time_blocks',null,'?order=day_date.asc,start_minutes.asc&select=*');
     if(tasks){
       const merged=tasks.map(dbT=>{
         const sid=String(dbT.id);
