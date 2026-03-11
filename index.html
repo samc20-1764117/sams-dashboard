@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <!-- saved from url=(0051)file:///Users/samanthacohn/Downloads/index_190.html -->
 <html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
@@ -988,7 +989,7 @@ const CATS={
   'buy':      {bg:'#fef9c3',t:'#713f12',d:'#eab308',b:'rgba(234,179,8,.22)'},
   'travel':   {bg:'#ccfbf1',t:'#0f766e',d:'#14b8a6',b:'rgba(20,184,166,.25)'},
   'birthday': {bg:'#ffedd5',t:'#c2410c',d:'#f97316',b:'rgba(249,115,22,.25)'},
-  'shopping': {bg:'#dcfce7',t:'#166534',d:'#22c55e',b:'rgba(34,197,94,.22)'},
+  'shopping': {bg:'#fff3e0',t:'#b45309',d:'#f97316',b:'rgba(249,115,22,.25)'},
 };
 const IMP={bg:'#fefce8',t:'#854d0e',d:'#eab308',b:'rgba(234,179,8,.35)'};
 const OV={bg:'#fff0f0',t:'#b91c1c',d:'#ef4444',b:'rgba(239,68,68,.28)'};
@@ -1507,7 +1508,7 @@ function tRowShopVirt(t){
     onclick="selTask(event,'${t.id}')">
     <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="togShop('${t._shopId}',this.checked)"></label>
     <span class="tn">${t.name}</span>
-    <span class="cpill" style="background:${s.bg};color:${s.t};border-color:${s.b}">Shopping${t.store?' · '+t.store:''}</span>
+    <span class="cpill" style="background:${s.bg};color:${s.t};border-color:${s.b}">Shopping</span>
     <button class="delbtn" onclick="event.stopPropagation()">✕</button>
   </div>`;
 }
@@ -3553,4 +3554,4 @@ function copyShopList(){
 </div>
 
 
-<script>if(location.hostname!=="sams-dashboard.pages.dev"){const b=document.createElement("div");b.textContent="DEV";b.style.cssText="position:fixed;bottom:12px;right:12px;z-index:9999;background:#6d5fe6;color:white;font-family:DM Sans,sans-serif;font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;letter-spacing:.5px;box-shadow:0 2px 8px rgba(109,95,230,.4);";document.body.appendChild(b);}</script></div></body></html>
+</div></body></html>
