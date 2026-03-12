@@ -1560,7 +1560,7 @@ function tRowShopVirt(t){
   return`<div class="ti ${t.done?'done':''}" id="ti-${t.id}" draggable="true"
     ondragstart="dragId='shop::${t._shopId}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);"
     ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false);"
-    onclick="selTask(event,'${t.id}')">
+    onclick="selTask(event,'${t.id}')" ondblclick="tiDblShop(event,'${t._shopId}')">
     <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="togShop('${t._shopId}',this.checked)"></label>
     <span class="tn">${t.name}</span>
     <span class="cpill" style="background:${s.bg};color:${s.t};border-color:${s.b}">Shopping</span>
