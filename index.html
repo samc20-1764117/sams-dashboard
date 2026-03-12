@@ -227,7 +227,14 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 .qa-close:hover{color:var(--text);background:rgba(0,0,0,.05)}
 
 /* Layout — consistent 14px gaps everywhere */
-.row1{display:grid;grid-template-columns:2.2fr 1fr 0.85fr 0.6fr;gap:14px;margin-bottom:14px}
+.row1{display:grid;grid-template-columns:2.2fr 2.45fr;gap:14px;margin-bottom:14px;align-items:stretch}
+.row1-right{display:flex;flex-direction:column;gap:14px;min-height:0}
+.row1-right-cards{display:grid;grid-template-columns:1fr 0.85fr 0.6fr;gap:14px;flex:1;min-height:0;align-items:stretch}
+.sum-metrics{display:flex;align-items:center;gap:14px;padding:9px 14px;flex-shrink:0}
+.sum-metric{display:flex;flex-direction:column;gap:3px}
+.sum-metric-val{font-size:17px;font-weight:700;color:var(--text);letter-spacing:-.4px;line-height:1;font-family:'DM Sans',sans-serif}
+.sum-metric-lbl{font-size:8px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.sum-divider{width:1px;height:24px;background:rgba(210,205,228,.3);flex-shrink:0;align-self:center}
 .tod-tb-header{display:flex;align-items:center;gap:4px;padding:5px 8px 5px 6px;border-bottom:1px solid rgba(210,205,228,.22);flex-shrink:0;background:rgba(255,255,255,.06)}
 .tod-tb-center{flex:1;text-align:center}
 .tod-tb-right{display:flex;align-items:center;gap:3px;flex-shrink:0}
@@ -443,9 +450,7 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
     <div class="topbar-left"></div>
     <div class="topbar-center">
       <div style="display:flex;align-items:center;gap:5px;justify-content:center;font-size:13px;font-weight:700;letter-spacing:-.2px">
-        <span style="color:var(--muted)">Overview</span>
-        <span style="color:var(--subtle);font-weight:300">·</span>
-        <span style="color:var(--text)" id="ovTitle">Wednesday, March 11</span>
+        <span style="color:var(--text)" id="ovTitle">Thursday, March 12</span>
         <span style="color:var(--subtle);font-weight:300">·</span>
         <span style="color:var(--muted);font-weight:500;font-size:12px" id="liveClock"></span>
       </div>
@@ -460,7 +465,7 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
   </div>
   <div class="row1">
     <!-- Today + Time Block -->
-    <div class="card card-hero" style="height:320px;position:relative;display:flex;flex-direction:column;overflow:hidden">
+    <div class="card card-hero" style="min-height:320px;position:relative;display:flex;flex-direction:column;overflow:hidden">
       <div id="dayFlash" class="day-flash"></div>
       <div class="tod-tb-header">
         <button class="btn btn-ghost btn-xs" onclick="shiftDay(-1)" style="flex-shrink:0">←</button>
@@ -518,8 +523,21 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
       </div><!-- tb-section -->
       </div><!-- tod-tb-body -->
     </div><!-- combined card -->
+    <!-- Right side: metrics + 3 cards -->
+    <div class="row1-right">
+      <!-- Summary metrics -->
+      <div class="card sum-metrics">
+        <div class="sum-metric"><div class="sum-metric-val" id="smTodayPct">0%</div><div class="sum-metric-lbl">Today</div></div>
+        <div class="sum-divider"></div>
+        <div class="sum-metric"><div class="sum-metric-val" id="smWkPct">0%</div><div class="sum-metric-lbl">This Week</div></div>
+        <div class="sum-divider"></div>
+        <div class="sum-metric"><div class="sum-metric-val" id="smBlocked">-</div><div class="sum-metric-lbl">Blocked</div></div>
+        <div class="sum-divider"></div>
+        <div class="sum-metric"><div class="sum-metric-val" id="smOverdue">0</div><div class="sum-metric-lbl">Overdue</div></div>
+      </div>
+      <div class="row1-right-cards">
     <!-- Recurring -->
-    <div class="card" style="height:320px">
+    <div class="card">
       <div class="ch-prog">
         <div class="ct">Weekly Reset</div>
         <div class="ch-prog-bar"><div class="ch-prog-fill" id="recPB" style="width:0%"></div></div>
@@ -529,12 +547,12 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
       <div class="tlist" id="recList" style="flex:1"><div id="ti-rec-virt-rec-Closet%20blanket" class="ti" draggable="true" style="cursor: pointer;"><label class="chk-wrap"><input type="checkbox" class="chk"></label><span class="tn">Closet blanket</span><button class="delbtn">✕</button></div><div id="ti-rec-virt-rec-Laundry" class="ti" draggable="true" style="cursor: pointer;"><label class="chk-wrap"><input type="checkbox" class="chk"></label><span class="tn">Laundry</span><button class="delbtn">✕</button></div><div id="ti-rec-virt-rec-Pup%20bowls" class="ti" draggable="true" style="cursor: pointer;"><label class="chk-wrap"><input type="checkbox" class="chk"></label><span class="tn">Pup bowls</span><button class="delbtn">✕</button></div><div id="ti-rec-virt-rec-Pups%20teeth" class="ti" draggable="true" style="cursor: pointer;"><label class="chk-wrap"><input type="checkbox" class="chk"></label><span class="tn">Pups teeth</span><button class="delbtn">✕</button></div><div id="ti-rec-virt-rec-Vacuum" class="ti" draggable="true" style="cursor: pointer;"><label class="chk-wrap"><input type="checkbox" class="chk"></label><span class="tn">Vacuum</span><button class="delbtn">✕</button></div><div id="ti-rec-virt-rec-Wipe%20surfaces" class="ti" draggable="true" style="cursor: pointer;"><label class="chk-wrap"><input type="checkbox" class="chk"></label><span class="tn">Wipe surfaces</span><button class="delbtn">✕</button></div></div>
     </div>
     <!-- Shopping -->
-    <div class="card" style="height:320px">
+    <div class="card">
       <div class="ch"><div class="ct">Shopping</div><button class="btn-plus" onclick="openQA(&#39;shop&#39;,this)">+</button></div>
       <div id="shopOv" class="tlist" style="flex:1"><div class="ti" draggable="true" ondragstart="dragId=&#39;shop::3b61412c-d2d0-476c-8255-da9366d2ccb1&#39;;event.dataTransfer.effectAllowed=&#39;move&#39;;event.currentTarget.classList.add(&#39;dragging&#39;);document.body.classList.add(&#39;body-dragging&#39;);showWkcEdges(true);" ondragend="event.currentTarget.classList.remove(&#39;dragging&#39;);document.body.classList.remove(&#39;body-dragging&#39;);showWkcEdges(false);" onclick="tiClickShop(event,&#39;3b61412c-d2d0-476c-8255-da9366d2ccb1&#39;)" ondblclick="tiDblShop(event,&#39;3b61412c-d2d0-476c-8255-da9366d2ccb1&#39;)"><input type="checkbox" class="chk" onchange="togShop(&#39;3b61412c-d2d0-476c-8255-da9366d2ccb1&#39;,this.checked)"><span class="tn">Croutons</span><span class="cpill" style="background:rgba(241,245,249,.9);color:#64748b;border-color:rgba(148,163,184,.25);flex-shrink:0">HEB</span><button class="delbtn" onclick="delShop(&#39;3b61412c-d2d0-476c-8255-da9366d2ccb1&#39;)">✕</button></div><div class="ti" draggable="true" ondragstart="dragId=&#39;shop::5c13e30b-6ca3-47c7-ac4d-5cf1bc4618aa&#39;;event.dataTransfer.effectAllowed=&#39;move&#39;;event.currentTarget.classList.add(&#39;dragging&#39;);document.body.classList.add(&#39;body-dragging&#39;);showWkcEdges(true);" ondragend="event.currentTarget.classList.remove(&#39;dragging&#39;);document.body.classList.remove(&#39;body-dragging&#39;);showWkcEdges(false);" onclick="tiClickShop(event,&#39;5c13e30b-6ca3-47c7-ac4d-5cf1bc4618aa&#39;)" ondblclick="tiDblShop(event,&#39;5c13e30b-6ca3-47c7-ac4d-5cf1bc4618aa&#39;)"><input type="checkbox" class="chk" onchange="togShop(&#39;5c13e30b-6ca3-47c7-ac4d-5cf1bc4618aa&#39;,this.checked)"><span class="tn">Goldfish</span><span class="cpill" style="background:rgba(241,245,249,.9);color:#64748b;border-color:rgba(148,163,184,.25);flex-shrink:0">HEB</span><button class="delbtn" onclick="delShop(&#39;5c13e30b-6ca3-47c7-ac4d-5cf1bc4618aa&#39;)">✕</button></div><div class="ti" draggable="true" ondragstart="dragId=&#39;shop::197cc815-5e6b-4a65-804c-c503778c6f63&#39;;event.dataTransfer.effectAllowed=&#39;move&#39;;event.currentTarget.classList.add(&#39;dragging&#39;);document.body.classList.add(&#39;body-dragging&#39;);showWkcEdges(true);" ondragend="event.currentTarget.classList.remove(&#39;dragging&#39;);document.body.classList.remove(&#39;body-dragging&#39;);showWkcEdges(false);" onclick="tiClickShop(event,&#39;197cc815-5e6b-4a65-804c-c503778c6f63&#39;)" ondblclick="tiDblShop(event,&#39;197cc815-5e6b-4a65-804c-c503778c6f63&#39;)"><input type="checkbox" class="chk" onchange="togShop(&#39;197cc815-5e6b-4a65-804c-c503778c6f63&#39;,this.checked)"><span class="tn">Bowls</span><span class="cpill" style="background:rgba(241,245,249,.9);color:#64748b;border-color:rgba(148,163,184,.25);flex-shrink:0">Ikea</span><button class="delbtn" onclick="delShop(&#39;197cc815-5e6b-4a65-804c-c503778c6f63&#39;)">✕</button></div><div class="ti" draggable="true" ondragstart="dragId=&#39;shop::8d195c44-9915-4513-812e-e30725a386b2&#39;;event.dataTransfer.effectAllowed=&#39;move&#39;;event.currentTarget.classList.add(&#39;dragging&#39;);document.body.classList.add(&#39;body-dragging&#39;);showWkcEdges(true);" ondragend="event.currentTarget.classList.remove(&#39;dragging&#39;);document.body.classList.remove(&#39;body-dragging&#39;);showWkcEdges(false);" onclick="tiClickShop(event,&#39;8d195c44-9915-4513-812e-e30725a386b2&#39;)" ondblclick="tiDblShop(event,&#39;8d195c44-9915-4513-812e-e30725a386b2&#39;)"><input type="checkbox" class="chk" onchange="togShop(&#39;8d195c44-9915-4513-812e-e30725a386b2&#39;,this.checked)"><span class="tn">Donut lamp</span><span class="cpill" style="background:rgba(241,245,249,.9);color:#64748b;border-color:rgba(148,163,184,.25);flex-shrink:0">Ikea</span><button class="delbtn" onclick="delShop(&#39;8d195c44-9915-4513-812e-e30725a386b2&#39;)">✕</button></div><div class="ti" draggable="true" ondragstart="dragId=&#39;shop::54e31205-2d10-4a78-9057-5800c1587948&#39;;event.dataTransfer.effectAllowed=&#39;move&#39;;event.currentTarget.classList.add(&#39;dragging&#39;);document.body.classList.add(&#39;body-dragging&#39;);showWkcEdges(true);" ondragend="event.currentTarget.classList.remove(&#39;dragging&#39;);document.body.classList.remove(&#39;body-dragging&#39;);showWkcEdges(false);" onclick="tiClickShop(event,&#39;54e31205-2d10-4a78-9057-5800c1587948&#39;)" ondblclick="tiDblShop(event,&#39;54e31205-2d10-4a78-9057-5800c1587948&#39;)"><input type="checkbox" class="chk" onchange="togShop(&#39;54e31205-2d10-4a78-9057-5800c1587948&#39;,this.checked)"><span class="tn">Hanging planter</span><span class="cpill" style="background:rgba(241,245,249,.9);color:#64748b;border-color:rgba(148,163,184,.25);flex-shrink:0">Ikea</span><button class="delbtn" onclick="delShop(&#39;54e31205-2d10-4a78-9057-5800c1587948&#39;)">✕</button></div><div class="ti" draggable="true" ondragstart="dragId=&#39;shop::9eeb0d0c-283a-4e0d-9f29-b1bc965db522&#39;;event.dataTransfer.effectAllowed=&#39;move&#39;;event.currentTarget.classList.add(&#39;dragging&#39;);document.body.classList.add(&#39;body-dragging&#39;);showWkcEdges(true);" ondragend="event.currentTarget.classList.remove(&#39;dragging&#39;);document.body.classList.remove(&#39;body-dragging&#39;);showWkcEdges(false);" onclick="tiClickShop(event,&#39;9eeb0d0c-283a-4e0d-9f29-b1bc965db522&#39;)" ondblclick="tiDblShop(event,&#39;9eeb0d0c-283a-4e0d-9f29-b1bc965db522&#39;)"><input type="checkbox" class="chk" onchange="togShop(&#39;9eeb0d0c-283a-4e0d-9f29-b1bc965db522&#39;,this.checked)"><span class="tn">Electronic toothbrush for pups</span><span class="cpill" style="background:rgba(241,245,249,.9);color:#64748b;border-color:rgba(148,163,184,.25);flex-shrink:0">Online</span><button class="delbtn" onclick="delShop(&#39;9eeb0d0c-283a-4e0d-9f29-b1bc965db522&#39;)">✕</button></div><div class="ti" draggable="true" ondragstart="dragId=&#39;shop::72d1e8a4-b9b1-4beb-97d5-8a7e993d2ba2&#39;;event.dataTransfer.effectAllowed=&#39;move&#39;;event.currentTarget.classList.add(&#39;dragging&#39;);document.body.classList.add(&#39;body-dragging&#39;);showWkcEdges(true);" ondragend="event.currentTarget.classList.remove(&#39;dragging&#39;);document.body.classList.remove(&#39;body-dragging&#39;);showWkcEdges(false);" onclick="tiClickShop(event,&#39;72d1e8a4-b9b1-4beb-97d5-8a7e993d2ba2&#39;)" ondblclick="tiDblShop(event,&#39;72d1e8a4-b9b1-4beb-97d5-8a7e993d2ba2&#39;)"><input type="checkbox" class="chk" onchange="togShop(&#39;72d1e8a4-b9b1-4beb-97d5-8a7e993d2ba2&#39;,this.checked)"><span class="tn">Patio furniture</span><span class="cpill" style="background:rgba(241,245,249,.9);color:#64748b;border-color:rgba(148,163,184,.25);flex-shrink:0">Online</span><button class="delbtn" onclick="delShop(&#39;72d1e8a4-b9b1-4beb-97d5-8a7e993d2ba2&#39;)">✕</button></div></div>
     </div>
     <!-- Quick Links -->
-    <div class="card" style="height:320px;display:flex;flex-direction:column">
+    <div class="card" style="display:flex;flex-direction:column">
       <div class="ql-grid" style="flex:1;align-content:stretch;padding:8px;gap:6px">
         <button class="ql-btn" onclick="showPage(&#39;weekly&#39;)"><span class="ql-icon">🔄</span>Weekly Reset</button>
         <button class="ql-btn" onclick="showPage(&#39;weekly&#39;)"><span class="ql-icon">🛒</span>Shopping</button>
@@ -546,6 +564,8 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
         <button class="ql-btn" onclick="showPage(&#39;notes&#39;)"><span class="ql-icon">📝</span>Notes</button>
       </div>
     </div>
+      </div><!-- row1-right-cards -->
+    </div><!-- row1-right -->
   </div>
   <div class="row2">
     <div style="display:flex;flex-direction:column;gap:12px">
@@ -1520,13 +1540,25 @@ function renderOv(){
   // ovSub removed
   document.getElementById('sDate').textContent=n.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
   renderToday();if(document.getElementById("tbGrid"))renderDayTB();renderWkSummary();renderWkCal();renderUnassigned();renderShopOv();renderRecOv();renderKanban();
+  renderSummaryMetrics();
+}
+function renderSummaryMetrics(){
+  const ds=d2s(getDayDate(dayOff));
+  const blocked=st.blocks.filter(b=>b.ds===ds).reduce((s,b)=>s+b.dur,0);
+  const ovCount=st.tasks.filter(t=>!t.done&&isOv(t.due_date)).length+st.shopping.filter(s=>!s.done&&s.due_date&&isOv(s.due_date)).length;
+  const tpEl=document.getElementById('todPct'),wpEl=document.getElementById('wkPct');
+  const el_tp=document.getElementById('smTodayPct'),el_wp=document.getElementById('smWkPct'),el_bl=document.getElementById('smBlocked'),el_ov=document.getElementById('smOverdue');
+  if(el_tp&&tpEl)el_tp.textContent=tpEl.textContent||'0%';
+  if(el_wp&&wpEl)el_wp.textContent=wpEl.textContent||'0%';
+  if(el_bl)el_bl.textContent=blocked?`${Math.floor(blocked/60)}h${blocked%60?' '+blocked%60+'m':''}`:'-';
+  if(el_ov){el_ov.textContent=ovCount;el_ov.style.color=ovCount>0?'#ef4444':'var(--text)';}
 }
 
 // ── Today tasks: real tasks for today + overdue + virtual recurring for today's DOW ──
 function renderToday(){
   const dayDate=getDayDate(dayOff),ds=d2s(dayDate);
-  const _dateStr=dayDate.toLocaleDateString('en-US',{month:'short',day:'numeric'});
-  document.getElementById('todTitle').textContent=isDateToday(dayDate)?`Today · ${_dateStr}`:dayDate.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+  const _fullDateStr=dayDate.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+  document.getElementById('todTitle').textContent=isDateToday(dayDate)?`Today • ${_fullDateStr}`:_fullDateStr;
   let ts=st.tasks.filter(t=>{
     if(!t.due_date)return false;
     const tds=t.due_date.split('T')[0];
@@ -2883,9 +2915,11 @@ async function saveRecModal(){
   closeMod('recModal');
   const localId='l-'+Date.now();
   const r={id:localId,name:n,is_weekly_reset:isWeekly,appears_on_date:appearsOn,day_added:dayAdded,starting_date:startDate,cadence,repeat_day:repeatDay,repeat_date:repeatDate};
-  st.recurring.push(r);renderRecOv();renderWeeklyPage();renderWkSummary();renderWkCal();
-  pushUndo(()=>{st.recurring=st.recurring.filter(x=>x.id!==localId);renderRecOv();renderWeeklyPage();renderWkSummary();renderWkCal();},'Added recurring task');
-  const payload={name:n,is_weekly_reset:isWeekly,day_of_week:1,appears_on_date:appearsOn};
+  st.recurring.push(r);save();renderRecOv();renderWeeklyPage();renderWkSummary();renderWkCal();
+  pushUndo(()=>{st.recurring=st.recurring.filter(x=>x.id!==localId);save();renderRecOv();renderWeeklyPage();renderWkSummary();renderWkCal();},'Added recurring task');
+  const payload={name:n,is_weekly_reset:isWeekly,day_of_week:1,appears_on_date:appearsOn,cadence};
+  if(repeatDay)payload.repeat_day=repeatDay;
+  if(repeatDate)payload.repeat_date=repeatDate;
   if(dayAdded)payload.day_added=dayAdded;
   if(startDate)payload.starting_date=startDate;
   const sv=await sbReq('POST','recurring_tasks',payload);
@@ -3780,6 +3814,6 @@ function copyShopList(){
 function tickClock(){const el=document.getElementById('liveClock');if(el)el.textContent=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});}
 tickClock();setInterval(tickClock,1000);
 </script>
-<div id="devBadge" style="display:none;position:fixed;bottom:16px;left:16px;background:#1e293b;color:#f8fafc;font-size:11px;font-weight:700;letter-spacing:.08em;padding:4px 9px;border-radius:6px;border:1px solid rgba(255,255,255,.15);z-index:9999;pointer-events:none">DEV-8</div>
+<div id="devBadge" style="display:none;position:fixed;bottom:16px;left:16px;background:#1e293b;color:#f8fafc;font-size:11px;font-weight:700;letter-spacing:.08em;padding:4px 9px;border-radius:6px;border:1px solid rgba(255,255,255,.15);z-index:9999;pointer-events:none">DEV-9</div>
 <script>if(location.hostname.includes('dev.'))document.getElementById('devBadge').style.display='block';</script>
 </body></html>
