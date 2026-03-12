@@ -284,6 +284,10 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 .wkc-edge.left{left:0;background:linear-gradient(to right,rgba(109,95,230,.12),transparent)}
 .wkc-edge.right{right:0;background:linear-gradient(to left,rgba(109,95,230,.12),transparent)}
 .wkc-cols-wrap{flex:1;position:relative;overflow:hidden;display:flex;flex-direction:column;padding-top:22px}
+.wk-list-edge{position:absolute;top:0;bottom:0;width:36px;z-index:10;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:0;transition:opacity .15s;font-size:15px;font-weight:700;color:var(--accent);cursor:pointer}
+.wk-list-edge.active{opacity:1;pointer-events:all}
+.wk-list-edge-l{left:0;background:linear-gradient(to right,rgba(109,95,230,.15),transparent)}
+.wk-list-edge-r{right:0;background:linear-gradient(to left,rgba(109,95,230,.15),transparent)}
 .wkc-col{flex:1;min-width:0;border-left:1px solid rgba(210,205,228,.15);padding:2px 2px;overflow:hidden;transition:background .1s}
 .wkc-col:first-child{border-left:none}
 .wkc-col.drop-here{background:rgba(109,95,230,.05)}
@@ -537,7 +541,9 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
   </div>
   <div class="row2">
     <div style="display:flex;flex-direction:column;gap:12px">
-      <div class="card" style="height:265px">
+      <div class="card" style="height:265px;position:relative">
+        <div id="wkListEdgeL" class="wk-list-edge wk-list-edge-l">‹</div>
+        <div id="wkListEdgeR" class="wk-list-edge wk-list-edge-r">›</div>
         <div class="ch-prog">
           <div class="ct">This Week</div>
           <div class="ch-prog-bar"><div class="ch-prog-fill" id="wkPB" style="width: 56.25%;"></div></div>
@@ -1909,11 +1915,16 @@ function clearTvHighlight(){
 function showWkcEdges(show){
   document.getElementById('wkcEdgeL').classList.toggle('active',show);
   document.getElementById('wkcEdgeR').classList.toggle('active',show);
+  const el=document.getElementById('wkListEdgeL'),er=document.getElementById('wkListEdgeR');
+  if(el)el.classList.toggle('active',show);
+  if(er)er.classList.toggle('active',show);
 }
 // Edge drop zones
 document.addEventListener('DOMContentLoaded',()=>{
   setupEdge('wkcEdgeL',-1);
   setupEdge('wkcEdgeR',1);
+  setupEdge('wkListEdgeL',-1);
+  setupEdge('wkListEdgeR',1);
 });
 function setupEdge(id,dir){
   const el=document.getElementById(id);
@@ -2064,7 +2075,7 @@ function tRow(t,o={}){
   const imp=t.important&&!ov&&!t.done;
   const s=ov?OV:imp?IMP:gc(t.category);
   const sl=ov?'ov':imp?'imp':slug(t.category);
-  return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''} ${imp&&!ov?'imp-row':''}" id="ti-${t.id}" ${o.drag?`draggable="true" ondragstart="dStart(event,'${t.id}')" ondragend="this.classList.remove('dragging')"`:''} onclick="selTask(event,'${t.id}')" ondblclick="tiDbl(event,'${t.id}')" oncontextmenu="showCtx(event,'${t.id}')">
+  return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''} ${imp&&!ov?'imp-row':''}" id="ti-${t.id}" ${o.drag?`draggable="true" ondragstart="dStart(event,'${t.id}')" ondragend="this.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false)"`:''} onclick="selTask(event,'${t.id}')" ondblclick="tiDbl(event,'${t.id}')" oncontextmenu="showCtx(event,'${t.id}')">
     <label class="chk-wrap" onclick="event.stopPropagation()" onmousedown="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="toggleTask('${t.id}',this.checked,'${o.drag?'wk':''}')"></label>
     <span class="tn">${t.name}</span>
     ${o.cat?`<span class="cpill" style="background:${s.bg};color:${s.t};border-color:${s.b}">${t.category||'?'}</span>`:''}
@@ -2074,7 +2085,7 @@ function tRow(t,o={}){
   </div>`;
 }
 
-function dStart(e,id){dragId=String(id);e.currentTarget.classList.add('dragging');}
+function dStart(e,id){dragId=String(id);e.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);}
 
 // ── Kanban ─────────────────────────────────────────────────────────────────────
 function renderKanban(){
@@ -2760,7 +2771,7 @@ function openRecModal(type='weekly_reset'){
   document.getElementById('recCadence').value='weekly';
   document.getElementById('recRepeatDay').value='Friday';
   document.getElementById('recDayAdded').value='Sunday';
-  document.getElementById('recStartDate').value=new Date().toISOString().split('T')[0];
+  document.getElementById('recStartDate').value=d2s(new Date());
   updateRecTypeUI();
   document.getElementById('recModal').classList.add('open');
   setTimeout(()=>document.getElementById('recName').focus(),60);
@@ -3113,7 +3124,7 @@ function init(){
     syncAll(false); // fetch fresh data — syncAll calls renderAll internally when done
   } else{renderAll();setBadge('err','Not connected');}
   // Set up edge zones after DOM ready
-  setupEdge('wkcEdgeL',-1);setupEdge('wkcEdgeR',1);
+  setupEdge('wkcEdgeL',-1);setupEdge('wkcEdgeR',1);setupEdge('wkListEdgeL',-1);setupEdge('wkListEdgeR',1);
   setInterval(()=>{if(cfg.url&&cfg.key)syncAll(true);},30000);
 }
 init();
