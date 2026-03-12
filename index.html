@@ -2208,7 +2208,7 @@ function renderDayTB(){
       const frac2=(e.clientY-rowRect2.top)/rowRect2.height;
       const minsInRow2=Math.round(frac2*60/15)*15;
       const sm=h*60+Math.max(0,Math.min(45,minsInRow2));
-      const blk={id:'b-'+Date.now(),title:'',ds,sm,dur:30,cat:'Home'};
+      const blk={id:crypto.randomUUID(),title:'',ds,sm,dur:30,cat:'Home'};
       st.blocks.push(blk);save();
       // DB save happens after inline edit commits (in startTBInlineEdit)
       // Compute layout (handles overlap) then redraw all blocks in col
@@ -2359,7 +2359,7 @@ function dropOnTB(e,ds,h,row){
     const shopId=dragId.split('::')[1];
     const s=st.shopping.find(x=>String(x.id)===String(shopId));
     if(!s){dragId=null;return;}
-    const blk={id:'b-'+Date.now(),title:s.name,ds,sm,dur:30,cat:'Shopping',shopId:String(s.id)};
+    const blk={id:crypto.randomUUID(),title:s.name,ds,sm,dur:30,cat:'Shopping',shopId:String(s.id)};
     st.blocks.push(blk);dragId=null;save();renderDayTB();
     sbSaveBlock(blk);
     pushUndo(()=>{st.blocks=st.blocks.filter(b=>b.id!==blk.id);save();renderDayTB();sbDeleteBlock(blk.id);},'Added block');
@@ -2369,7 +2369,7 @@ function dropOnTB(e,ds,h,row){
     const recId=dragId.split('::')[1];
     const r=st.recurring.find(x=>String(x.id)===String(recId));
     if(r){title=r.name;cat=r.is_weekly_reset?'Recurring':('Recurring');}
-    const blk={id:'b-'+Date.now(),title,ds,sm,dur:30,cat:'Recurring',recId:recId||null};
+    const blk={id:crypto.randomUUID(),title,ds,sm,dur:30,cat:'Recurring',recId:recId||null};
     st.blocks.push(blk);dragId=null;save();renderDayTB();
     sbSaveBlock(blk);
     pushUndo(()=>{st.blocks=st.blocks.filter(b=>b.id!==blk.id);save();renderDayTB();sbDeleteBlock(blk.id);},'Added block');
@@ -2380,7 +2380,7 @@ function dropOnTB(e,ds,h,row){
     title=t.name;cat=t.category||'Home';taskId=String(t.id);
     // Set task due_date to this day so it appears in Today/This Week/Calendar
     const prevDate=t.due_date;
-    const blk={id:'b-'+Date.now(),title,ds,sm,dur:30,cat,taskId};
+    const blk={id:crypto.randomUUID(),title,ds,sm,dur:30,cat,taskId};
     if((t.due_date||'').split('T')[0]!==ds){
       t.due_date=ds;
       sbReq('PATCH','tasks',{due_date:ds},`?id=eq.${t.id}`);
@@ -2396,7 +2396,7 @@ function dropOnTB(e,ds,h,row){
     },'Added to time block');
     return;
   }
-  const blk={id:'b-'+Date.now(),title,ds,sm,dur:30,cat,taskId};
+  const blk={id:crypto.randomUUID(),title,ds,sm,dur:30,cat,taskId};
   st.blocks.push(blk);dragId=null;save();renderAll();
   pushUndo(()=>{st.blocks=st.blocks.filter(b=>b.id!==blk.id);save();renderDayTB();},'Added block');
 }
@@ -2488,7 +2488,7 @@ function openBModal(){document.getElementById('bModal').classList.add('open');}
 function saveBlock(){
   const title=document.getElementById('bTitle').value.trim();if(!title)return;
   const[hh,mm]=document.getElementById('bStart').value.split(':').map(Number);
-  const blk={id:'b-'+Date.now(),title,ds:d2s(getDayDate(dayOff)),sm:hh*60+(mm||0),dur:parseInt(document.getElementById('bDur').value),cat:document.getElementById('bCat').value};
+  const blk={id:crypto.randomUUID(),title,ds:d2s(getDayDate(dayOff)),sm:hh*60+(mm||0),dur:parseInt(document.getElementById('bDur').value),cat:document.getElementById('bCat').value};
   st.blocks.push(blk);document.getElementById('bTitle').value='';closeMod('bModal');save();renderDayTB();
   sbSaveBlock(blk);
   pushUndo(()=>{st.blocks=st.blocks.filter(b=>b.id!==blk.id);save();renderDayTB();sbDeleteBlock(blk.id);},'Added block');
