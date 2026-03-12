@@ -228,6 +228,10 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 
 /* Layout — consistent 14px gaps everywhere */
 .row1{display:grid;grid-template-columns:2.2fr 1fr 0.85fr 0.6fr;gap:14px;margin-bottom:14px}
+.tod-tb-header{display:flex;align-items:center;gap:4px;padding:5px 8px 5px 6px;border-bottom:1px solid rgba(210,205,228,.22);flex-shrink:0;background:rgba(255,255,255,.06)}
+.tod-tb-center{flex:1;text-align:center}
+.tod-tb-right{display:flex;align-items:center;gap:3px;flex-shrink:0}
+.tod-tb-body{flex:1;min-height:0;display:flex;flex-direction:row;overflow:hidden}
 .tod-section{flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden}
 .tb-section{flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden}
 .tod-tb-divider{flex-shrink:0;border-left:1px solid rgba(210,205,228,.3);margin:0}
@@ -452,15 +456,15 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
   </div>
   <div class="row1">
     <!-- Today + Time Block -->
-    <div class="card card-hero" style="height:380px;position:relative;display:flex;flex-direction:row;overflow:hidden">
+    <div class="card card-hero" style="height:320px;position:relative;display:flex;flex-direction:column;overflow:hidden">
       <div id="dayFlash" class="day-flash"></div>
-      <div class="tod-section">
-      <div class="ch-prog">
-        <div class="ct" id="todTitle" style="font-size:13px;font-weight:700;letter-spacing:-.1px">Today</div>
-        <div class="ch-prog-bar"><div class="ch-prog-fill" id="todPB" style="width:0%"></div></div>
-        <div class="ch-prog-stat"><span class="pct" id="todPct">0%</span><span style="opacity:.3">·</span><span id="todPL">0/6</span></div>
-        <button class="btn-plus" onclick="openQA(&#39;today&#39;,this)">+</button>
+      <div class="tod-tb-header">
+        <button class="btn btn-ghost btn-xs" onclick="shiftDay(-1)" style="flex-shrink:0">←</button>
+        <div class="tod-tb-center"><span id="todTitle" style="font-size:13px;font-weight:700;letter-spacing:-.1px">Today</span></div>
+        <div class="tod-tb-right"><div class="ch-prog-bar" style="width:48px"><div class="ch-prog-fill" id="todPB" style="width:0%"></div></div><span class="pct" id="todPct" style="font-size:9px">0%</span><span style="opacity:.3;font-size:8px;margin:0 1px">·</span><span id="todPL" style="font-size:9px">0/0</span><button class="btn-plus" onclick="openQA(&#39;today&#39;,this)">+</button><button class="btn btn-ghost btn-xs" onclick="goToday()">Today</button><button class="btn btn-ghost btn-xs" onclick="shiftDay(1)" style="flex-shrink:0">→</button></div>
       </div>
+      <div class="tod-tb-body">
+      <div class="tod-section">
       <div id="ovBanner" class="ov-banner show"><span id="ovBannerTxt">1 overdue task — move to today?</span><button class="ov-banner-btn" onclick="rolloverOverdue()">Move all to today</button></div><div class="tlist" id="todList" style="flex:1"><div class="ti  ov-row " id="ti-t-1773193938936" draggable="true" ondragstart="dStart(event,&#39;t-1773193938936&#39;)" ondragend="this.classList.remove(&#39;dragging&#39;)" onclick="selTask(event,&#39;t-1773193938936&#39;)" ondblclick="tiDbl(event,&#39;t-1773193938936&#39;)" oncontextmenu="showCtx(event,&#39;t-1773193938936&#39;)">
     <label class="chk-wrap" onclick="event.stopPropagation()" onmousedown="event.stopPropagation()"><input type="checkbox" class="chk" onchange="toggleTask(&#39;t-1773193938936&#39;,this.checked,&#39;wk&#39;)"></label>
     <span class="tn">tbd</span>
@@ -503,17 +507,12 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
       </div><!-- tod-section -->
       <div class="tod-tb-divider"></div>
       <div class="tb-section">
-        <div class="tb-nav">
-          <button class="btn btn-ghost btn-xs" onclick="shiftDay(-1)">←</button>
-          <div class="tb-lbl" id="dayLbl">Today</div>
-          <button class="btn btn-ghost btn-xs" onclick="goToday()">Today</button>
-          <button class="btn btn-ghost btn-xs" onclick="shiftDay(1)">→</button>
-        </div>
         <div class="tb-scroll" id="tbScroll" onwheel="onTBWheel(event)">
         <div class="tb-grid" id="tbGrid"><div class="tb-gutter"><div class="tb-tlbl">6a</div><div class="tb-tlbl">7a</div><div class="tb-tlbl">8a</div><div class="tb-tlbl">9a</div><div class="tb-tlbl">10a</div><div class="tb-tlbl">11a</div><div class="tb-tlbl">12p</div><div class="tb-tlbl">1p</div><div class="tb-tlbl">2p</div><div class="tb-tlbl">3p</div><div class="tb-tlbl">4p</div><div class="tb-tlbl">5p</div><div class="tb-tlbl">6p</div></div><div class="tb-col"><div class="tb-hour"></div><div class="tb-hour"></div><div class="tb-hour"></div><div class="tb-hour"></div><div class="tb-hour"></div><div class="tb-hour"></div><div class="tb-hour"></div><div class="tb-hour"></div><div class="tb-hour"></div><div class="tb-hour"></div><div class="tb-hour"></div><div class="tb-hour"></div><div class="tb-hour"></div><div class="tb-block" data-bid="b-1773252557098" style="top: 91px; height: 16px; background: rgb(219, 234, 254); color: rgb(30, 64, 175); border-color: rgba(59, 130, 246, 0.22); left: calc(0% + 2px); right: calc(0% + 2px); width: auto;"><div class="tb-row"><input type="checkbox" class="tb-chk"><span class="tb-bt">Wipe surfaces</span><span class="tb-btime">9:30am-10:00am</span><button class="tb-bdel" onclick="delBlock(&#39;b-1773252557098&#39;,event)">✕</button></div><div class="tb-resize" data-id="b-1773252557098"></div></div><div class="tb-block" data-bid="b-1773252645171" style="top: 169px; height: 16px; background: rgb(220, 252, 231); color: rgb(22, 101, 52); border-color: rgba(34, 197, 94, 0.22); left: calc(0% + 2px); right: calc(0% + 2px); width: auto;"><div class="tb-row"><input type="checkbox" class="tb-chk"><span class="tb-bt">Mochi collar</span><span class="tb-btime">12:30pm-1:00pm</span><button class="tb-bdel" onclick="delBlock(&#39;b-1773252645171&#39;,event)">✕</button></div><div class="tb-resize" data-id="b-1773252645171"></div></div><div class="nowline" id="tbNowLine" style="top: 191.967px;"><div class="nowdot"></div></div></div></div>
       </div>
       <div class="tb-sum" id="tbSum"><div class="si"><span>Blocked:</span><span class="sv">1h 0m</span></div><div class="si"><div class="sdotc" style="background:#3b82f6"></div><span>Recurring</span><span class="sv">0h 30m</span></div><div class="si"><div class="sdotc" style="background:#22c55e"></div><span>Shopping</span><span class="sv">0h 30m</span></div></div>
       </div><!-- tb-section -->
+      </div><!-- tod-tb-body -->
     </div><!-- combined card -->
     <!-- Recurring -->
     <div class="card" style="height:320px">
@@ -1523,7 +1522,8 @@ function renderOv(){
 // ── Today tasks: real tasks for today + overdue + virtual recurring for today's DOW ──
 function renderToday(){
   const dayDate=getDayDate(dayOff),ds=d2s(dayDate);
-  document.getElementById('todTitle').textContent=isDateToday(dayDate)?'Today':dayDate.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+  const _dateStr=dayDate.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  document.getElementById('todTitle').textContent=isDateToday(dayDate)?`Today · ${_dateStr}`:dayDate.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
   let ts=st.tasks.filter(t=>{
     if(!t.due_date)return false;
     const tds=t.due_date.split('T')[0];
