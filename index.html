@@ -1540,8 +1540,45 @@ function renderToday(){
   document.getElementById('todList').innerHTML=sorted.map(t=>t._type==='travel'||t._type==='birthday'?tRowExtra(t):t._type==='shop'?tRowShopVirt(t):t._virtual?tRowTodayVirt(t):tRow(t,{cat:true,drag:true,noDate:true})).join('');
   updateOvBanner();
 }
-// Sort for today: overdue→important→rest, done last (same as sortTasks but done float to bottom always)
-function sortTasksToday(tasks){return sortTasks(tasks);}
+// Type priority for sorting: regular=1, recurring=2, shopping=3, travel/birthday=4
+function taskTypePri(t){
+  if(t._type==='travel'||t._type==='birthday')return 4;
+  if(t._type==='shop')return 3;
+  if(t._virtual)return 2;
+  return 1;
+}
+function sortByTypeOrder(tasks){
+  return[...tasks].sort((a,b)=>{
+    if(a.done&&!b.done)return 1;if(!a.done&&b.done)return -1;
+    const aO=isOv(a.due_date)&&!a.done,bO=isOv(b.due_date)&&!b.done;
+    if(aO&&!bO)return -1;if(!aO&&bO)return 1;
+    const aI=a.important&&!a.done,bI=b.important&&!b.done;
+    if(aI&&!bI)return -1;if(!aI&&bI)return 1;
+    return taskTypePri(a)-taskTypePri(b)||(a.name||'').localeCompare(b.name||'');
+  });
+}
+// Sort for today: if time blocks exist for today, tasks with blocks sorted by start time first, then by type
+let _tiClickTimer;
+function sortTasksToday(tasks){
+  const ds=d2s(getDayDate(dayOff));
+  const blocksToday=st.blocks.filter(b=>b.ds===ds);
+  if(!blocksToday.length)return sortByTypeOrder(tasks);
+  function tbSm(t){
+    let b=null;
+    if(t._shopId)b=blocksToday.find(x=>String(x.shopId)===String(t._shopId));
+    else if(t._recId)b=blocksToday.find(x=>String(x.recId)===String(t._recId));
+    else if(!t._virtual)b=blocksToday.find(x=>String(x.taskId)===String(t.id));
+    return b?b.sm:Infinity;
+  }
+  return[...tasks].sort((a,b)=>{
+    if(a.done&&!b.done)return 1;if(!a.done&&b.done)return -1;
+    const aO=isOv(a.due_date)&&!a.done,bO=isOv(b.due_date)&&!b.done;
+    if(aO&&!bO)return -1;if(!aO&&bO)return 1;
+    const aSm=tbSm(a),bSm=tbSm(b);
+    if(aSm!==bSm)return aSm-bSm;
+    return taskTypePri(a)-taskTypePri(b)||(a.name||'').localeCompare(b.name||'');
+  });
+}
 // Virtual task row for today's list - done ones sink to bottom, greyed, uncheckable if done
 function tRowTodayVirt(t){
   const s=gc('recurring');
@@ -1579,7 +1616,7 @@ function renderWkSummary(){
   const shopThisWk=st.shopping
     .filter(s=>s.due_date&&isInWk(s.due_date,wkOff)&&!s.done)
     .map(s=>({id:'shop-cal-'+s.id,name:s.name,category:'Shopping',due_date:s.due_date,done:false,_shopId:s.id,_virtual:true,_type:'shop',store:s.store}));
-  let ts=sortTasks([
+  let ts=sortByTypeOrder([
     ...st.tasks.filter(t=>isInWk(t.due_date,wkOff)&&!t.done),
     ...virtRec.filter(v=>!v.done),
     ...wrecThisWk,
