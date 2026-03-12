@@ -304,7 +304,8 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 .chip .wchk{width:10px;height:10px;border-radius:50%;border:1.5px solid rgba(180,170,210,.5);appearance:none;cursor:pointer;flex-shrink:0;background:rgba(255,255,255,.8);transition:all .2s}
 .chip .wchk:checked{background:#a3c41a;border-color:#a3c41a;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M3.5 8l3 3 6-6' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")}
 .chip.done-chip{opacity:.25}
-.tb-arrow{font-size:8px;opacity:.45;flex-shrink:0;color:var(--accent);margin-left:1px;pointer-events:none}
+.tb-arrow{position:absolute;right:4px;top:50%;transform:translateY(-50%);font-size:9px;font-weight:600;opacity:.5;color:var(--accent);pointer-events:none;transition:opacity .1s}
+.ti:hover .tb-arrow{opacity:0}
 .chip-name{flex:1;overflow:hidden;text-overflow:ellipsis;font-size:10px}
 /* Travel/birthday banner row spanning multiple days */
 .wkc-banners{height:22px;position:absolute;top:0;left:0;right:0;z-index:6;pointer-events:none}
@@ -1542,9 +1543,12 @@ function renderToday(){
     });
   }
   // Weekly reset tasks pinned to today via _dateOverrides
+  const _wkKeyNow=getWkKey(wkOff);
   const wrecToday=st.recurring
-    .filter(r=>(r.is_weekly_reset===true||r.is_weekly_reset==='true')&&r._dateOverrides&&r._dateOverrides[getWkKey(wkOff)]===ds)
-    .map(r=>({id:'rec-virt-'+r.id,name:r.name,category:'Recurring',due_date:ds,done:!!r._done,_recId:r.id,_virtual:true,_wkKey:getWkKey(wkOff),_isWrec:true}));
+    .filter(r=>(r.is_weekly_reset===true||r.is_weekly_reset==='true')&&!r._done&&r._dateOverrides&&(
+      r._dateOverrides[_wkKeyNow]===ds||(dayOff===0&&r._dateOverrides[_wkKeyNow]&&r._dateOverrides[_wkKeyNow]<ds)
+    ))
+    .map(r=>({id:'rec-virt-'+r.id,name:r.name,category:'Recurring',due_date:r._dateOverrides[_wkKeyNow],done:!!r._done,_recId:r.id,_virtual:true,_wkKey:_wkKeyNow,_isWrec:true}));
   // Shopping items due today (or overdue when viewing today)
   const shopToday=st.shopping
     .filter(s=>!s.done&&s.due_date&&(s.due_date===ds||(dayOff===0&&isOv(s.due_date))))
@@ -3776,6 +3780,6 @@ function copyShopList(){
 function tickClock(){const el=document.getElementById('liveClock');if(el)el.textContent=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});}
 tickClock();setInterval(tickClock,1000);
 </script>
-<div id="devBadge" style="display:none;position:fixed;bottom:16px;left:16px;background:#1e293b;color:#f8fafc;font-size:11px;font-weight:700;letter-spacing:.08em;padding:4px 9px;border-radius:6px;border:1px solid rgba(255,255,255,.15);z-index:9999;pointer-events:none">DEV-7</div>
+<div id="devBadge" style="display:none;position:fixed;bottom:16px;left:16px;background:#1e293b;color:#f8fafc;font-size:11px;font-weight:700;letter-spacing:.08em;padding:4px 9px;border-radius:6px;border:1px solid rgba(255,255,255,.15);z-index:9999;pointer-events:none">DEV-8</div>
 <script>if(location.hostname.includes('dev.'))document.getElementById('devBadge').style.display='block';</script>
 </body></html>
