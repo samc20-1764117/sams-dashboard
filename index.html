@@ -120,7 +120,7 @@ body{font-family:'DM Sans',sans-serif;background:#f0ecfb;background-attachment:f
 @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
 
 /* Main */
-.main{flex:1;overflow-y:auto;overflow-x:hidden;padding:0 56px 36px 56px;margin-left:186px;transition:margin-left .25s cubic-bezier(.4,0,.2,1)}
+.main{flex:1;overflow-y:auto;overflow-x:hidden;padding:10px 56px 36px 56px;margin-left:186px;transition:margin-left .25s cubic-bezier(.4,0,.2,1)}
 .main.full{margin-left:0}
 .page{display:none}.page.active{display:block}#page-weekly.active{display:block;padding-top:10px}
 
@@ -251,9 +251,9 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 .tb-scroll{flex:1;overflow-y:scroll;position:relative;scrollbar-width:none;-ms-overflow-style:none}.tb-scroll::-webkit-scrollbar{display:none}
 .tb-grid{display:flex}
 .tb-gutter{width:30px;flex-shrink:0}
-.tb-tlbl{height:20px;display:flex;align-items:flex-start;justify-content:flex-end;padding-right:4px;padding-top:2px;font-family:'DM Sans',sans-serif;font-size:8px;color:var(--muted);border-right:1px solid rgba(210,205,228,.25)}
+.tb-tlbl{height:40px;display:flex;align-items:flex-start;justify-content:flex-end;padding-right:4px;padding-top:2px;font-family:'DM Sans',sans-serif;font-size:8px;color:var(--muted);border-right:1px solid rgba(210,205,228,.25)}
 .tb-col{flex:1;position:relative;border-left:1px solid rgba(210,205,228,.15)}
-.tb-hour{height:20px;border-bottom:1px solid rgba(210,205,228,.12);position:relative;cursor:crosshair;transition:background .1s}
+.tb-hour{height:40px;border-bottom:1px solid rgba(210,205,228,.12);position:relative;cursor:crosshair;transition:background .1s}
 .tb-hour::after{content:'';position:absolute;top:50%;left:0;right:0;border-top:1px dashed rgba(210,205,228,.15);pointer-events:none}
 .tb-hour.don{background:rgba(109,95,230,.05)}
 .tb-block{position:absolute;left:2px;right:2px;border-radius:6px;padding:2px 5px;z-index:2;min-height:16px;border:1px solid transparent;cursor:grab;overflow:hidden;transition:box-shadow .1s,transform .1s;user-select:none}
@@ -446,23 +446,6 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 
 <!-- OVERVIEW -->
 <div class="page active" id="page-overview">
-  <div class="topbar" id="ovTopbar">
-    <div class="topbar-left"></div>
-    <div class="topbar-center">
-      <div style="display:flex;align-items:center;gap:5px;justify-content:center;font-size:13px;font-weight:700;letter-spacing:-.2px">
-        <span style="color:var(--text)" id="ovTitle">Thursday, March 12</span>
-        <span style="color:var(--subtle);font-weight:300">·</span>
-        <span style="color:var(--muted);font-weight:500;font-size:12px" id="liveClock"></span>
-      </div>
-    </div>
-    <div class="topbar-right">
-      <button class="dark-toggle" id="darkToggle" onclick="toggleDark()" title="Toggle dark mode"><span id="darkToggleIcon">🌙</span></button>
-      <div class="sync-bar" id="syncBar" onclick="syncAll()">
-        <svg id="syncIcon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style=""><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path></svg>
-        <span id="syncTxt" style="font-size:9px">Synced 13:23</span>
-      </div>
-    </div>
-  </div>
   <div class="row1">
     <!-- Today + Time Block -->
     <div class="card card-hero" style="min-height:270px;position:relative;display:flex;flex-direction:column;overflow:hidden">
@@ -470,13 +453,22 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
       <!-- hidden elements so JS refs don't error -->
       <span id="todTitle" style="display:none">Today</span>
       <div style="display:none"><div class="ch-prog-bar"><div class="ch-prog-fill" id="todPB" style="width:0%"></div></div><span id="todPct">0%</span><span id="todPL">0/0</span></div>
-      <div class="tod-tb-header" style="padding:4px 8px;min-height:28px">
+      <div class="tod-tb-header" style="padding:5px 10px;min-height:36px">
         <button class="btn btn-ghost btn-xs" onclick="shiftDay(-1)" style="flex-shrink:0">←</button>
-        <span id="liveClock2" style="font-size:12px;font-weight:600;color:var(--text);letter-spacing:.02em"></span>
-        <div style="display:flex;align-items:center;gap:4px">
+        <div style="flex:1;display:flex;align-items:center;gap:5px;padding:0 4px">
+          <span style="font-size:12px;font-weight:700;color:var(--text);letter-spacing:-.1px" id="ovTitle">Thursday, March 12</span>
+          <span style="color:var(--subtle);font-weight:300;font-size:11px">·</span>
+          <span style="font-size:11px;font-weight:500;color:var(--muted)" id="liveClock"></span>
+        </div>
+        <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
           <button class="btn-plus" onclick="openQA(&#39;today&#39;,this)">+</button>
           <button class="btn btn-ghost btn-xs" onclick="goToday()">Today</button>
           <button class="btn btn-ghost btn-xs" onclick="shiftDay(1)" style="flex-shrink:0">→</button>
+          <button class="dark-toggle" id="darkToggle" onclick="toggleDark()" title="Toggle dark mode"><span id="darkToggleIcon">🌙</span></button>
+          <div class="sync-bar" id="syncBar" onclick="syncAll()">
+            <svg id="syncIcon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path></svg>
+            <span id="syncTxt" style="font-size:9px">Synced</span>
+          </div>
         </div>
       </div>
       <div class="tod-tb-body">
@@ -1030,7 +1022,7 @@ const OV={bg:'#fff0f0',t:'#b91c1c',d:'#ef4444',b:'rgba(239,68,68,.28)'};
 const KCATS=['Home','My work','Work','Social+Travel','Long term'];
 const HOURS=[...Array(13)].map((_,i)=>i+7);
 const DNAMES=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-const PX=20/60, KEY='samdash_v7';
+const PX=40/60, KEY='samdash_v7';
 
 function gc(c){return CATS[(c||'').toLowerCase()]||{bg:'#f1f5f9',t:'#334155',d:'#94a3b8',b:'rgba(148,163,184,.2)'};}
 function slug(c){return(c||'other').toLowerCase().replace(/\s+/g,'-');}
@@ -3819,9 +3811,9 @@ function copyShopList(){
 
 </div>
 <script>
-function tickClock(){const t=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});const el=document.getElementById('liveClock');if(el)el.textContent=t;const el2=document.getElementById('liveClock2');if(el2)el2.textContent=t;}
+function tickClock(){const t=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});const el=document.getElementById('liveClock');if(el)el.textContent=t;}
 tickClock();setInterval(tickClock,1000);
 </script>
-<div id="devBadge" style="display:none;position:fixed;bottom:16px;left:16px;background:#1e293b;color:#f8fafc;font-size:11px;font-weight:700;letter-spacing:.08em;padding:4px 9px;border-radius:6px;border:1px solid rgba(255,255,255,.15);z-index:9999;pointer-events:none">DEV-11</div>
+<div id="devBadge" style="display:none;position:fixed;bottom:16px;left:16px;background:#1e293b;color:#f8fafc;font-size:11px;font-weight:700;letter-spacing:.08em;padding:4px 9px;border-radius:6px;border:1px solid rgba(255,255,255,.15);z-index:9999;pointer-events:none">DEV-12</div>
 <script>if(location.hostname.includes('dev.'))document.getElementById('devBadge').style.display='block';</script>
 </body></html>
