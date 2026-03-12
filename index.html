@@ -498,7 +498,7 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
   </div></div>
     </div>
     <!-- Time Blocker -->
-    <div class="card" style="height:320px">
+    <div class="card" style="height:380px">
       <div class="tb-nav">
         <button class="btn btn-ghost btn-xs" onclick="shiftDay(-1)">←</button>
         <div class="tb-lbl" id="dayLbl">Today Mar 11</div>
@@ -1002,7 +1002,7 @@ const CATS={
 const IMP={bg:'#fefce8',t:'#854d0e',d:'#eab308',b:'rgba(234,179,8,.35)'};
 const OV={bg:'#fff0f0',t:'#b91c1c',d:'#ef4444',b:'rgba(239,68,68,.28)'};
 const KCATS=['Home','My work','Work','Social+Travel','Long term'];
-const HOURS=[...Array(13)].map((_,i)=>i+6);
+const HOURS=[...Array(24)].map((_,i)=>i);
 const DNAMES=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 const PX=26/60, KEY='samdash_v7';
 
@@ -2227,7 +2227,9 @@ function renderDayTB(){
   getVisibleBlocks(ds).forEach(b=>drawTBBlock(col,b));
   if(isDateToday(date)){const nl=document.createElement('div');nl.className='nowline';nl.id='tbNowLine';const nm=new Date(),nmins=(nm.getHours()-HOURS[0])*60+nm.getMinutes();if(nmins>=0){nl.style.top=nmins*PX+'px';nl.innerHTML='<div class="nowdot"></div>';}col.appendChild(nl);}
   grid.appendChild(col);renderTBSum(ds);
-
+  // Default scroll to 7am; reset when day changes but preserve position mid-session
+  const tbSc2=document.getElementById('tbScroll');
+  if(tbSc2&&tbSc2._scrollDay!==ds){tbSc2._scrollDay=ds;tbSc2.scrollTop=7*60*PX;}
 }
 function getVisibleBlocks(ds){
   const isViewingToday=(ds===d2s(getDayDate(0)));
@@ -2450,6 +2452,7 @@ function startTBInlineEdit(blockId,col,onCommit){
     } else {
       if(onCommit)onCommit();
       save();renderDayTB();
+      sbUpdateBlock(b.id,{title:b.title});
     }
   }
   inp.addEventListener('keydown',e=>{
