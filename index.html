@@ -465,12 +465,19 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
   </div>
   <div class="row1">
     <!-- Today + Time Block -->
-    <div class="card card-hero" style="min-height:320px;position:relative;display:flex;flex-direction:column;overflow:hidden">
+    <div class="card card-hero" style="min-height:270px;position:relative;display:flex;flex-direction:column;overflow:hidden">
       <div id="dayFlash" class="day-flash"></div>
-      <div class="tod-tb-header">
+      <!-- hidden elements so JS refs don't error -->
+      <span id="todTitle" style="display:none">Today</span>
+      <div style="display:none"><div class="ch-prog-bar"><div class="ch-prog-fill" id="todPB" style="width:0%"></div></div><span id="todPct">0%</span><span id="todPL">0/0</span></div>
+      <div class="tod-tb-header" style="padding:4px 8px;min-height:28px">
         <button class="btn btn-ghost btn-xs" onclick="shiftDay(-1)" style="flex-shrink:0">←</button>
-        <div class="tod-tb-center"><span id="todTitle" style="font-size:13px;font-weight:700;letter-spacing:-.1px">Today</span></div>
-        <div class="tod-tb-right"><div class="ch-prog-bar" style="width:48px"><div class="ch-prog-fill" id="todPB" style="width:0%"></div></div><span class="pct" id="todPct" style="font-size:9px">0%</span><span style="opacity:.3;font-size:8px;margin:0 1px">·</span><span id="todPL" style="font-size:9px">0/0</span><button class="btn-plus" onclick="openQA(&#39;today&#39;,this)">+</button><button class="btn btn-ghost btn-xs" onclick="goToday()">Today</button><button class="btn btn-ghost btn-xs" onclick="shiftDay(1)" style="flex-shrink:0">→</button></div>
+        <span id="liveClock2" style="font-size:12px;font-weight:600;color:var(--text);letter-spacing:.02em"></span>
+        <div style="display:flex;align-items:center;gap:4px">
+          <button class="btn-plus" onclick="openQA(&#39;today&#39;,this)">+</button>
+          <button class="btn btn-ghost btn-xs" onclick="goToday()">Today</button>
+          <button class="btn btn-ghost btn-xs" onclick="shiftDay(1)" style="flex-shrink:0">→</button>
+        </div>
       </div>
       <div class="tod-tb-body">
       <div class="tod-section">
@@ -1021,7 +1028,7 @@ const CATS={
 const IMP={bg:'#fefce8',t:'#854d0e',d:'#eab308',b:'rgba(234,179,8,.35)'};
 const OV={bg:'#fff0f0',t:'#b91c1c',d:'#ef4444',b:'rgba(239,68,68,.28)'};
 const KCATS=['Home','My work','Work','Social+Travel','Long term'];
-const HOURS=[...Array(24)].map((_,i)=>i);
+const HOURS=[...Array(13)].map((_,i)=>i+7);
 const DNAMES=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 const PX=20/60, KEY='samdash_v7';
 
@@ -2333,7 +2340,7 @@ function renderDayTB(){
   grid.appendChild(col);renderTBSum(ds);
   // Default scroll to 7am; reset when day changes but preserve position mid-session
   const tbSc2=document.getElementById('tbScroll');
-  if(tbSc2&&tbSc2._scrollDay!==ds){tbSc2._scrollDay=ds;tbSc2.scrollTop=7*60*PX;}
+  if(tbSc2&&tbSc2._scrollDay!==ds){tbSc2._scrollDay=ds;tbSc2.scrollTop=0;}
 }
 function getVisibleBlocks(ds){
   const isViewingToday=(ds===d2s(getDayDate(0)));
@@ -3647,6 +3654,12 @@ function getOvRecurring(){
         seen.add(v._recId);out.push(v);
       }
     });
+    // Also include weekly reset tasks with past date_overrides for this week
+    const wkKey=getWkKey(w);
+    st.recurring.filter(r=>(r.is_weekly_reset===true||r.is_weekly_reset==='true')&&!r._done&&r._dateOverrides&&r._dateOverrides[wkKey]&&r._dateOverrides[wkKey]<today&&!seen.has('wrec-'+r.id+'-'+wkKey)).forEach(r=>{
+      seen.add('wrec-'+r.id+'-'+wkKey);
+      out.push({id:'rec-virt-'+r.id,name:r.name,category:'Recurring',due_date:r._dateOverrides[wkKey],done:false,_recId:r.id,_virtual:true,_wkKey:wkKey,_isWrec:true});
+    });
   }
   return out;
 }
@@ -3697,9 +3710,12 @@ async function rolloverOverdue(){
     prevDates.forEach(({id,date})=>sbReq('PATCH','tasks',{due_date:date},`?id=eq.${id}`));
     prevShopDates.forEach(({id,date})=>sbReqNullable('PATCH','shopping_list',{due_date:date||null},`?id=eq.${id}`));
   },'Rolled over '+total+' item'+(total>1?'s':''));
+  save();
+  const recsToPatch=[...new Set(ovRec.map(v=>v._recId))];
   await Promise.all([
     ...ovTasks.map(t=>sbReq('PATCH','tasks',{due_date:today},`?id=eq.${t.id}`)),
-    ...ovShop.map(s=>sbReqNullable('PATCH','shopping_list',{due_date:today},`?id=eq.${s.id}`))
+    ...ovShop.map(s=>sbReqNullable('PATCH','shopping_list',{due_date:today},`?id=eq.${s.id}`)),
+    ...recsToPatch.map(rid=>{const r=st.recurring.find(x=>String(x.id)===String(rid));return r?sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},recQs(r.id)):Promise.resolve();})
   ]);
 }
 
@@ -3803,9 +3819,9 @@ function copyShopList(){
 
 </div>
 <script>
-function tickClock(){const el=document.getElementById('liveClock');if(el)el.textContent=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});}
+function tickClock(){const t=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});const el=document.getElementById('liveClock');if(el)el.textContent=t;const el2=document.getElementById('liveClock2');if(el2)el2.textContent=t;}
 tickClock();setInterval(tickClock,1000);
 </script>
-<div id="devBadge" style="display:none;position:fixed;bottom:16px;left:16px;background:#1e293b;color:#f8fafc;font-size:11px;font-weight:700;letter-spacing:.08em;padding:4px 9px;border-radius:6px;border:1px solid rgba(255,255,255,.15);z-index:9999;pointer-events:none">DEV-10</div>
+<div id="devBadge" style="display:none;position:fixed;bottom:16px;left:16px;background:#1e293b;color:#f8fafc;font-size:11px;font-weight:700;letter-spacing:.08em;padding:4px 9px;border-radius:6px;border:1px solid rgba(255,255,255,.15);z-index:9999;pointer-events:none">DEV-11</div>
 <script>if(location.hostname.includes('dev.'))document.getElementById('devBadge').style.display='block';</script>
 </body></html>
