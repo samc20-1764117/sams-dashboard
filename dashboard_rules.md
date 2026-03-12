@@ -2,12 +2,15 @@
 
 ## Layout Structure
 
-- **Root layout**: sidebar (fixed, 186px) + `.main` (flex:1, overflow-y:auto, padding:10px 56px 36px 56px)
-- **`.row1`**: 2-column grid (`2.2fr 2.45fr`, gap 14px). Left = Today+TB card. Right = `.row1-right` flex column.
-- **`.row1-right`**: flex column, gap 14px. Top = `.sum-metrics` thin banner (~32px). Bottom = `.row1-right-cards` 3-column grid (`1fr 0.85fr 0.6fr`): Weekly Reset | Shopping | Quick Links.
-- All `row1` columns stretch to equal height (`align-items:stretch`).
-- **Today+TB card**: `card card-hero`, `min-height:270px`, flex column, `overflow:hidden`. No topbar above it — date, time, dark toggle, and sync live inside the card header.
-- **Overview topbar is removed**. The `.dark-toggle` (`#darkToggle`) and `.sync-bar` (`#syncBar`) live in the Today+TB card header.
+- **Root layout**: sidebar (fixed, 186px) + `.main` (flex:1, overflow-y:auto, padding:22px 56px 36px 56px)
+- **`.row1`**: 5-column grid (`0.65fr 2.2fr 1fr 0.9fr 0.65fr`, gap 14px, height 400px, `align-items:stretch`).
+  - Col 1: `.row1-left` — flex column. Top = `.row1-left-btns` (☰ menu toggle, dark toggle, sync bar). Bottom = empty card (flex:1).
+  - Col 2: Today+TB card (`card card-hero`, min-height:0, flex column, overflow:hidden).
+  - Col 3: Weekly Reset card.
+  - Col 4: Shopping card.
+  - Col 5: Quick Links card.
+- **`.row1-left-btns`**: flex row, `align-items:center`, gap 6px. Contains menu toggle (☰ calls `openSB()`), `#darkToggle`, `#syncBar`.
+- **Summary metrics container removed**. `.row1-controls` removed. Buttons moved to `.row1-left-btns`.
 - **`.row2`**: 2-column grid (`1.18fr 3.82fr`). **`.row3`**: full width.
 
 ## Today+TB Card Header
