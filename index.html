@@ -230,7 +230,7 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 .row1{display:grid;grid-template-columns:2.2fr 2.45fr;gap:14px;margin-bottom:14px;align-items:stretch}
 .row1-right{display:flex;flex-direction:column;gap:14px;min-height:0}
 .row1-right-cards{display:grid;grid-template-columns:1fr 0.85fr 0.6fr;gap:14px;flex:1;min-height:0;align-items:stretch}
-.sum-metrics{display:flex;align-items:center;gap:14px;padding:9px 14px;flex-shrink:0}
+.sum-metrics{display:flex;align-items:center;gap:14px;padding:5px 14px;flex-shrink:0;min-height:32px}
 .sum-metric{display:flex;flex-direction:column;gap:3px}
 .sum-metric-val{font-size:17px;font-weight:700;color:var(--text);letter-spacing:-.4px;line-height:1;font-family:'DM Sans',sans-serif}
 .sum-metric-lbl{font-size:8px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
@@ -526,15 +526,7 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
     <!-- Right side: metrics + 3 cards -->
     <div class="row1-right">
       <!-- Summary metrics -->
-      <div class="card sum-metrics">
-        <div class="sum-metric"><div class="sum-metric-val" id="smTodayPct">0%</div><div class="sum-metric-lbl">Today</div></div>
-        <div class="sum-divider"></div>
-        <div class="sum-metric"><div class="sum-metric-val" id="smWkPct">0%</div><div class="sum-metric-lbl">This Week</div></div>
-        <div class="sum-divider"></div>
-        <div class="sum-metric"><div class="sum-metric-val" id="smBlocked">-</div><div class="sum-metric-lbl">Blocked</div></div>
-        <div class="sum-divider"></div>
-        <div class="sum-metric"><div class="sum-metric-val" id="smOverdue">0</div><div class="sum-metric-lbl">Overdue</div></div>
-      </div>
+      <div class="card sum-metrics" id="summaryMetrics"></div>
       <div class="row1-right-cards">
     <!-- Recurring -->
     <div class="card">
@@ -3814,6 +3806,6 @@ function copyShopList(){
 function tickClock(){const el=document.getElementById('liveClock');if(el)el.textContent=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});}
 tickClock();setInterval(tickClock,1000);
 </script>
-<div id="devBadge" style="display:none;position:fixed;bottom:16px;left:16px;background:#1e293b;color:#f8fafc;font-size:11px;font-weight:700;letter-spacing:.08em;padding:4px 9px;border-radius:6px;border:1px solid rgba(255,255,255,.15);z-index:9999;pointer-events:none">DEV-9</div>
+<div id="devBadge" style="display:none;position:fixed;bottom:16px;left:16px;background:#1e293b;color:#f8fafc;font-size:11px;font-weight:700;letter-spacing:.08em;padding:4px 9px;border-radius:6px;border:1px solid rgba(255,255,255,.15);z-index:9999;pointer-events:none">DEV-10</div>
 <script>if(location.hostname.includes('dev.'))document.getElementById('devBadge').style.display='block';</script>
 </body></html>
