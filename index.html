@@ -120,7 +120,7 @@ body{font-family:'DM Sans',sans-serif;background:#f0ecfb;background-attachment:f
 @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
 
 /* Main */
-.main{flex:1;overflow-y:auto;overflow-x:hidden;padding:10px 56px 36px 56px;margin-left:186px;transition:margin-left .25s cubic-bezier(.4,0,.2,1)}
+.main{flex:1;overflow-y:auto;overflow-x:hidden;padding:22px 56px 36px 56px;margin-left:186px;transition:margin-left .25s cubic-bezier(.4,0,.2,1)}
 .main.full{margin-left:0}
 .page{display:none}.page.active{display:block}#page-weekly.active{display:block;padding-top:10px}
 
@@ -1024,7 +1024,7 @@ const CATS={
 const IMP={bg:'#fefce8',t:'#854d0e',d:'#eab308',b:'rgba(234,179,8,.35)'};
 const OV={bg:'#fff0f0',t:'#b91c1c',d:'#ef4444',b:'rgba(239,68,68,.28)'};
 const KCATS=['Home','My work','Work','Social+Travel','Long term'];
-let HOURS=(()=>{const h=new Date().getHours();return[...Array(13)].map((_,i)=>i+Math.max(0,h-1));})();
+let HOURS=[...Array(24)].map((_,i)=>i);
 const DNAMES=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 const PX=40/60, KEY='samdash_v7';
 
@@ -2155,12 +2155,16 @@ function togRecVirt(recId,done,wkKey){
   if(done) r._doneByWk[wkKey]=true;
   else delete r._doneByWk[wkKey];
   r._done=false;
+  st.blocks.filter(b=>String(b.recId)===String(recId)).forEach(b=>b._done=done);
   save();renderToday();renderWkSummary();renderRecOv();renderWkCal();
+  if(document.getElementById('tbGrid'))renderDayTB();
   sbReq('PATCH','recurring_tasks',{done_by_week:r._doneByWk},recQs(recId));
   pushUndo(()=>{
     if(!r._doneByWk)r._doneByWk={};
     if(prev)r._doneByWk[wkKey]=true;else delete r._doneByWk[wkKey];
+    st.blocks.filter(b=>String(b.recId)===String(recId)).forEach(b=>b._done=prev);
     save();renderToday();renderWkSummary();renderRecOv();renderWkCal();
+    if(document.getElementById('tbGrid'))renderDayTB();
     sbReq('PATCH','recurring_tasks',{done_by_week:r._doneByWk},recQs(recId));
   },(done?'Checked':'Unchecked')+' recurring');
 }
@@ -2296,7 +2300,6 @@ async function reassignCat(id,cat){if(!id)return;const t=st.tasks.find(x=>String
 
 // ── Time blocker ───────────────────────────────────────────────────────────────
 function renderDayTB(){
-  const _nowH=new Date().getHours();HOURS=[...Array(13)].map((_,i)=>i+Math.max(0,_nowH-1));
   const date=getDayDate(dayOff),ds=d2s(date);
   const lbl=document.getElementById('dayLbl');if(lbl)lbl.textContent=isDateToday(date)?`Today ${date.toLocaleDateString('en-US',{month:'short',day:'numeric'})}`:date.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
   const grid=document.getElementById('tbGrid');if(!grid)return;grid.innerHTML='';
@@ -2338,9 +2341,9 @@ function renderDayTB(){
   getVisibleBlocks(ds).forEach(b=>drawTBBlock(col,b));
   if(isDateToday(date)){const nl=document.createElement('div');nl.className='nowline';nl.id='tbNowLine';const nm=new Date(),nmins=(nm.getHours()-HOURS[0])*60+nm.getMinutes();if(nmins>=0){nl.style.top=nmins*PX+'px';nl.innerHTML='<div class="nowdot"></div>';}col.appendChild(nl);}
   grid.appendChild(col);renderTBSum(ds);
-  // Default scroll to top of HOURS (= current time minus 1 hour); reset when day changes but preserve position mid-session
+  // Default scroll to current time minus 1 hour; reset when day changes but preserve position mid-session
   const tbSc2=document.getElementById('tbScroll');
-  if(tbSc2&&tbSc2._scrollDay!==ds){tbSc2._scrollDay=ds;tbSc2.scrollTop=0;}
+  if(tbSc2&&tbSc2._scrollDay!==ds){tbSc2._scrollDay=ds;const _h=new Date().getHours();tbSc2.scrollTop=Math.max(0,_h-1)*60*PX;}
 }
 function getVisibleBlocks(ds){
   const isViewingToday=(ds===d2s(getDayDate(0)));
@@ -2388,7 +2391,8 @@ function drawTBBlock(col,b){
   const colW=100/ncols;
   const left=col_i*colW;
   el.style.cssText=`top:${top}px;height:${ht}px;background:${s.bg};color:${s.t};border-color:${s.b};left:calc(${left}% + 2px);right:calc(${100-left-colW}% + 2px);width:auto`;
-  el.innerHTML=`<div class="tb-row"><input type="checkbox" class="tb-chk" ${b._done?'checked':''}><span class="tb-bt">${b.title}</span><span class="tb-btime">${tStr(b.sm)}-${tStr(b.sm+b.dur)}</span><button class="tb-bdel" onclick="delBlock('${b.id}',event)">✕</button></div><div class="tb-resize" data-id="${b.id}"></div>`;
+  const _showTime=(b._ncols||1)<=1;
+  el.innerHTML=`<div class="tb-row"><input type="checkbox" class="tb-chk" ${b._done?'checked':''}><span class="tb-bt">${b.title}</span>${_showTime?`<span class="tb-btime">${tStr(b.sm)}-${tStr(b.sm+b.dur)}</span>`:''}<button class="tb-bdel" onclick="delBlock('${b.id}',event)">✕</button></div><div class="tb-resize" data-id="${b.id}"></div>`;
   const tbChk=el.querySelector('.tb-chk');
   if(tbChk)tbChk.addEventListener('change',function(e){
     e.stopPropagation();
