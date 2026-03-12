@@ -449,22 +449,22 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 <div class="page active" id="page-overview">
   <div class="row1">
     <!-- Today + Time Block -->
-    <div class="card card-hero" style="min-height:220px;position:relative;display:flex;flex-direction:column;overflow:hidden">
+    <div class="card card-hero" style="min-height:160px;position:relative;display:flex;flex-direction:column;overflow:hidden">
       <div id="dayFlash" class="day-flash"></div>
       <!-- hidden elements so JS refs don't error -->
       <span id="todTitle" style="display:none">Today</span>
       <div style="display:none"><div class="ch-prog-bar"><div class="ch-prog-fill" id="todPB" style="width:0%"></div></div><span id="todPct">0%</span><span id="todPL">0/0</span></div>
-      <div class="tod-tb-header" style="padding:5px 10px;min-height:36px">
+      <div class="tod-tb-header" style="padding:5px 10px;min-height:36px;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:4px">
         <button class="btn btn-ghost btn-xs" onclick="shiftDay(-1)" style="flex-shrink:0">←</button>
-        <div style="flex:1;display:flex;align-items:center;gap:5px;padding:0 4px">
+        <div style="display:flex;align-items:center;justify-content:center;gap:5px">
           <span style="font-size:12px;font-weight:700;color:var(--text);letter-spacing:-.1px" id="ovTitle">Thursday, March 12</span>
-          <span style="color:var(--subtle);font-weight:300;font-size:11px">·</span>
+          <span id="headerDot" style="color:var(--subtle);font-weight:300;font-size:11px">·</span>
           <span style="font-size:11px;font-weight:500;color:var(--muted)" id="liveClock"></span>
         </div>
         <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
-          <button class="btn-plus" onclick="openQA(&#39;today&#39;,this)">+</button>
           <button class="btn btn-ghost btn-xs" onclick="goToday()">Today</button>
           <button class="btn btn-ghost btn-xs" onclick="shiftDay(1)" style="flex-shrink:0">→</button>
+          <button class="btn-plus" onclick="openQA(&#39;today&#39;,this)">+</button>
         </div>
       </div>
       <div class="tod-tb-body">
@@ -1531,8 +1531,7 @@ function renderAll(){renderOv();renderWeeklyPage();renderShopFull();renderTravel
 
 function renderOv(){
   const n=new Date();
-  document.getElementById('ovTitle').textContent=n.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
-  // ovSub removed
+  // ovTitle is updated by renderToday() to reflect the selected day
   document.getElementById('sDate').textContent=n.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
   renderToday();if(document.getElementById("tbGrid"))renderDayTB();renderWkSummary();renderWkCal();renderUnassigned();renderShopOv();renderRecOv();renderKanban();
   renderSummaryMetrics();
@@ -1554,6 +1553,10 @@ function renderToday(){
   const dayDate=getDayDate(dayOff),ds=d2s(dayDate);
   const _fullDateStr=dayDate.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
   document.getElementById('todTitle').textContent=isDateToday(dayDate)?`Today • ${_fullDateStr}`:_fullDateStr;
+  const _ovEl=document.getElementById('ovTitle');if(_ovEl)_ovEl.textContent=_fullDateStr;
+  const _isToday=dayOff===0;
+  const _hdot=document.getElementById('headerDot');if(_hdot)_hdot.style.display=_isToday?'':'none';
+  const _hclk=document.getElementById('liveClock');if(_hclk)_hclk.style.display=_isToday?'':'none';
   let ts=st.tasks.filter(t=>{
     if(!t.due_date)return false;
     const tds=t.due_date.split('T')[0];
