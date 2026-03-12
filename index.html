@@ -87,7 +87,7 @@ body{font-family:'DM Sans',sans-serif;background:#f0ecfb;background-attachment:f
 .orb4{width:380px;height:380px;background:radial-gradient(circle,#fde68a,#fbbf24);top:35%;left:38%;animation-duration:28s;animation-delay:-12s}
 .orb5{width:420px;height:420px;background:radial-gradient(circle,#fed7aa,#fb923c);bottom:5%;right:5%;animation-duration:24s;animation-delay:-6s}
 @keyframes drift{0%{transform:translate(0,0) scale(1)}33%{transform:translate(30px,-20px) scale(1.04)}66%{transform:translate(-20px,30px) scale(.97)}100%{transform:translate(15px,10px) scale(1.02)}}
-.shell{display:flex;height:100vh;overflow:hidden;position:relative;z-index:1}
+.shell{display:flex;height:100vh;overflow:hidden;position:relative;z-index:1;backdrop-filter:blur(1.5px);-webkit-backdrop-filter:blur(1.5px)}
 
 /* Sidebar */
 .sidebar{position:fixed;left:0;top:0;bottom:0;z-index:100;width:186px;background:rgba(255,255,255,.55);backdrop-filter:blur(32px);-webkit-backdrop-filter:blur(32px);border-right:1px solid rgba(255,255,255,.65);display:flex;flex-direction:column;padding:11px 8px 11px;box-shadow:4px 0 32px rgba(100,80,180,.10);transition:transform .25s cubic-bezier(.4,0,.2,1),opacity .22s}
@@ -166,7 +166,7 @@ body{font-family:'DM Sans',sans-serif;background:#f0ecfb;background-attachment:f
 .ql-icon{font-size:16px;line-height:1}
 /* Task items — tighter */
 .tlist{overflow-y:auto;padding:2px 0}
-.ti{display:flex;align-items:center;gap:8px;padding:3px 10px;margin:1px 6px;border-radius:7px;transition:background .1s;position:relative;min-width:0;cursor:pointer}
+.ti{display:flex;align-items:center;gap:8px;padding:3px 22px 3px 10px;margin:1px 6px;border-radius:7px;transition:background .1s;position:relative;min-width:0;cursor:pointer}
 .ti:hover{background:rgba(255,255,255,.6);}
 .ti.done{opacity:.38}.ti.done .tn{text-decoration:line-through;color:var(--muted)}
 .ti[draggable="true"]{cursor:grab}.ti[draggable="true"]:active{cursor:grabbing;opacity:.4}
@@ -198,7 +198,7 @@ body.dark .inline-date-picker input[type="date"]{background:rgba(255,255,255,.08
 .dlbl.ov{color:#ef4444!important}
 .flag-u{font-size:8px;font-weight:600;padding:0px 4px;border-radius:4px;background:rgba(148,163,184,.12);color:var(--muted);border:1px solid rgba(148,163,184,.2);flex-shrink:0}
 .imp-star{font-size:11px;flex-shrink:0;line-height:1}
-.delbtn{opacity:0;background:none;border:none;cursor:pointer;color:var(--subtle);font-size:10px;padding:1px 2px;border-radius:3px;flex-shrink:0;transition:opacity .1s;position:absolute;right:6px;top:50%;transform:translateY(-50%)}
+.delbtn{opacity:0;background:none;border:none;cursor:pointer;color:var(--subtle);font-size:10px;padding:1px 2px;border-radius:3px;flex-shrink:0;transition:opacity .1s;position:absolute;right:3px;top:50%;transform:translateY(-50%)}
 .ti:hover .delbtn{opacity:1;color:var(--subtle)}.delbtn:hover{color:#ef4444!important}
 .arow{padding:4px 8px;border-top:1px solid rgba(210,205,228,.22);display:flex;gap:3px;background:rgba(255,255,255,.18);flex-shrink:0}
 .ov-banner{display:none;align-items:center;gap:8px;padding:6px 16px;background:rgba(254,242,242,.9);border-bottom:1px solid rgba(239,68,68,.15);font-size:11px;font-weight:500;color:#b91c1c;flex-shrink:0}
@@ -227,7 +227,10 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 .qa-close:hover{color:var(--text);background:rgba(0,0,0,.05)}
 
 /* Layout — consistent 14px gaps everywhere */
-.row1{display:grid;grid-template-columns:1.35fr 1fr 1fr 0.85fr 0.6fr;gap:14px;margin-bottom:14px}
+.row1{display:grid;grid-template-columns:2.2fr 1fr 0.85fr 0.6fr;gap:14px;margin-bottom:14px}
+.tod-section{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+.tb-section{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+.tod-tb-divider{flex-shrink:0;border-top:1px solid rgba(210,205,228,.3);margin:0}
 .row2{display:grid;grid-template-columns:1.18fr 3.82fr;gap:14px;margin-bottom:14px}
 .row3{margin-bottom:14px;padding-bottom:2px}
 
@@ -237,9 +240,9 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 .tb-scroll{flex:1;overflow-y:scroll;position:relative;scrollbar-width:none;-ms-overflow-style:none}.tb-scroll::-webkit-scrollbar{display:none}
 .tb-grid{display:flex}
 .tb-gutter{width:30px;flex-shrink:0}
-.tb-tlbl{height:26px;display:flex;align-items:flex-start;justify-content:flex-end;padding-right:4px;padding-top:2px;font-family:'DM Sans',sans-serif;font-size:8px;color:var(--muted);border-right:1px solid rgba(210,205,228,.25)}
+.tb-tlbl{height:20px;display:flex;align-items:flex-start;justify-content:flex-end;padding-right:4px;padding-top:2px;font-family:'DM Sans',sans-serif;font-size:8px;color:var(--muted);border-right:1px solid rgba(210,205,228,.25)}
 .tb-col{flex:1;position:relative;border-left:1px solid rgba(210,205,228,.15)}
-.tb-hour{height:26px;border-bottom:1px solid rgba(210,205,228,.12);position:relative;cursor:crosshair;transition:background .1s}
+.tb-hour{height:20px;border-bottom:1px solid rgba(210,205,228,.12);position:relative;cursor:crosshair;transition:background .1s}
 .tb-hour::after{content:'';position:absolute;top:50%;left:0;right:0;border-top:1px dashed rgba(210,205,228,.15);pointer-events:none}
 .tb-hour.don{background:rgba(109,95,230,.05)}
 .tb-block{position:absolute;left:2px;right:2px;border-radius:6px;padding:2px 5px;z-index:2;min-height:16px;border:1px solid transparent;cursor:grab;overflow:hidden;transition:box-shadow .1s,transform .1s;user-select:none}
@@ -448,9 +451,10 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
     </div>
   </div>
   <div class="row1">
-    <!-- Today -->
-    <div class="card card-hero" style="height:320px;position:relative">
+    <!-- Today + Time Block -->
+    <div class="card card-hero" style="height:500px;position:relative;display:flex;flex-direction:column;overflow:hidden">
       <div id="dayFlash" class="day-flash"></div>
+      <div class="tod-section">
       <div class="ch-prog">
         <div class="ct" id="todTitle" style="font-size:13px;font-weight:700;letter-spacing:-.1px">Today</div>
         <div class="ch-prog-bar"><div class="ch-prog-fill" id="todPB" style="width:0%"></div></div>
@@ -496,20 +500,21 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
     <span class="cpill" style="background:#dbeafe;color:#1e40af;border-color:rgba(59,130,246,.22)">Recurring</span>
     <button class="delbtn" onclick="event.stopPropagation();delRec(&#39;rec-Wipe%20surfaces&#39;)">✕</button>
   </div></div>
-    </div>
-    <!-- Time Blocker -->
-    <div class="card" style="height:380px">
-      <div class="tb-nav">
-        <button class="btn btn-ghost btn-xs" onclick="shiftDay(-1)">←</button>
-        <div class="tb-lbl" id="dayLbl">Today Mar 11</div>
-        <button class="btn btn-ghost btn-xs" onclick="goToday()">Today</button>
-        <button class="btn btn-ghost btn-xs" onclick="shiftDay(1)">→</button>
-      </div>
-      <div class="tb-scroll" id="tbScroll" onwheel="onTBWheel(event)">
+      </div><!-- tod-section -->
+      <div class="tod-tb-divider"></div>
+      <div class="tb-section">
+        <div class="tb-nav">
+          <button class="btn btn-ghost btn-xs" onclick="shiftDay(-1)">←</button>
+          <div class="tb-lbl" id="dayLbl">Today</div>
+          <button class="btn btn-ghost btn-xs" onclick="goToday()">Today</button>
+          <button class="btn btn-ghost btn-xs" onclick="shiftDay(1)">→</button>
+        </div>
+        <div class="tb-scroll" id="tbScroll" onwheel="onTBWheel(event)">
         <div class="tb-grid" id="tbGrid"><div class="tb-gutter"><div class="tb-tlbl">6a</div><div class="tb-tlbl">7a</div><div class="tb-tlbl">8a</div><div class="tb-tlbl">9a</div><div class="tb-tlbl">10a</div><div class="tb-tlbl">11a</div><div class="tb-tlbl">12p</div><div class="tb-tlbl">1p</div><div class="tb-tlbl">2p</div><div class="tb-tlbl">3p</div><div class="tb-tlbl">4p</div><div class="tb-tlbl">5p</div><div class="tb-tlbl">6p</div></div><div class="tb-col"><div class="tb-hour"></div><div class="tb-hour"></div><div class="tb-hour"></div><div class="tb-hour"></div><div class="tb-hour"></div><div class="tb-hour"></div><div class="tb-hour"></div><div class="tb-hour"></div><div class="tb-hour"></div><div class="tb-hour"></div><div class="tb-hour"></div><div class="tb-hour"></div><div class="tb-hour"></div><div class="tb-block" data-bid="b-1773252557098" style="top: 91px; height: 16px; background: rgb(219, 234, 254); color: rgb(30, 64, 175); border-color: rgba(59, 130, 246, 0.22); left: calc(0% + 2px); right: calc(0% + 2px); width: auto;"><div class="tb-row"><input type="checkbox" class="tb-chk"><span class="tb-bt">Wipe surfaces</span><span class="tb-btime">9:30am-10:00am</span><button class="tb-bdel" onclick="delBlock(&#39;b-1773252557098&#39;,event)">✕</button></div><div class="tb-resize" data-id="b-1773252557098"></div></div><div class="tb-block" data-bid="b-1773252645171" style="top: 169px; height: 16px; background: rgb(220, 252, 231); color: rgb(22, 101, 52); border-color: rgba(34, 197, 94, 0.22); left: calc(0% + 2px); right: calc(0% + 2px); width: auto;"><div class="tb-row"><input type="checkbox" class="tb-chk"><span class="tb-bt">Mochi collar</span><span class="tb-btime">12:30pm-1:00pm</span><button class="tb-bdel" onclick="delBlock(&#39;b-1773252645171&#39;,event)">✕</button></div><div class="tb-resize" data-id="b-1773252645171"></div></div><div class="nowline" id="tbNowLine" style="top: 191.967px;"><div class="nowdot"></div></div></div></div>
       </div>
       <div class="tb-sum" id="tbSum"><div class="si"><span>Blocked:</span><span class="sv">1h 0m</span></div><div class="si"><div class="sdotc" style="background:#3b82f6"></div><span>Recurring</span><span class="sv">0h 30m</span></div><div class="si"><div class="sdotc" style="background:#22c55e"></div><span>Shopping</span><span class="sv">0h 30m</span></div></div>
-    </div>
+      </div><!-- tb-section -->
+    </div><!-- combined card -->
     <!-- Recurring -->
     <div class="card" style="height:320px">
       <div class="ch-prog">
@@ -1004,7 +1009,7 @@ const OV={bg:'#fff0f0',t:'#b91c1c',d:'#ef4444',b:'rgba(239,68,68,.28)'};
 const KCATS=['Home','My work','Work','Social+Travel','Long term'];
 const HOURS=[...Array(24)].map((_,i)=>i);
 const DNAMES=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-const PX=26/60, KEY='samdash_v7';
+const PX=20/60, KEY='samdash_v7';
 
 function gc(c){return CATS[(c||'').toLowerCase()]||{bg:'#f1f5f9',t:'#334155',d:'#94a3b8',b:'rgba(148,163,184,.2)'};}
 function slug(c){return(c||'other').toLowerCase().replace(/\s+/g,'-');}
@@ -1574,25 +1579,47 @@ function sortByTypeOrder(tasks){
     return taskTypePri(a)-taskTypePri(b)||(a.name||'').localeCompare(b.name||'');
   });
 }
-// Sort for today: if time blocks exist for today, tasks with blocks sorted by start time first, then by type
+// Sort for a specific day: blocked tasks first by start time, unblocked by type; fallback to type-only if no blocks
 let _tiClickTimer;
-function sortTasksToday(tasks){
-  const ds=d2s(getDayDate(dayOff));
-  const blocksToday=st.blocks.filter(b=>b.ds===ds);
-  if(!blocksToday.length)return sortByTypeOrder(tasks);
+function sortTasksForDay(tasks,ds){
+  const blks=st.blocks.filter(b=>b.ds===ds);
+  if(!blks.length)return sortByTypeOrder(tasks);
   function tbSm(t){
     let b=null;
-    if(t._shopId)b=blocksToday.find(x=>String(x.shopId)===String(t._shopId));
-    else if(t._recId)b=blocksToday.find(x=>String(x.recId)===String(t._recId));
-    else if(!t._virtual)b=blocksToday.find(x=>String(x.taskId)===String(t.id));
-    return b?b.sm:Infinity;
+    if(t._shopId)b=blks.find(x=>String(x.shopId)===String(t._shopId));
+    else if(t._recId)b=blks.find(x=>String(x.recId)===String(t._recId));
+    else if(!t._virtual)b=blks.find(x=>String(x.taskId)===String(t.id));
+    return b?b.sm:null;
   }
   return[...tasks].sort((a,b)=>{
     if(a.done&&!b.done)return 1;if(!a.done&&b.done)return -1;
     const aO=isOv(a.due_date)&&!a.done,bO=isOv(b.due_date)&&!b.done;
     if(aO&&!bO)return -1;if(!aO&&bO)return 1;
     const aSm=tbSm(a),bSm=tbSm(b);
-    if(aSm!==bSm)return aSm-bSm;
+    if(aSm!==null&&bSm===null)return -1;
+    if(aSm===null&&bSm!==null)return 1;
+    if(aSm!==null&&bSm!==null)return aSm-bSm;
+    return taskTypePri(a)-taskTypePri(b)||(a.name||'').localeCompare(b.name||'');
+  });
+}
+function sortTasksToday(tasks){return sortTasksForDay(tasks,d2s(getDayDate(dayOff)));}
+function sortByTBWeek(tasks){
+  function tbSmAny(t){
+    let b=null;
+    if(t._shopId)b=st.blocks.find(x=>String(x.shopId)===String(t._shopId));
+    else if(t._recId)b=st.blocks.find(x=>String(x.recId)===String(t._recId));
+    else if(!t._virtual)b=st.blocks.find(x=>String(x.taskId)===String(t.id));
+    return b?b.sm:null;
+  }
+  if(!tasks.some(t=>tbSmAny(t)!==null))return sortByTypeOrder(tasks);
+  return[...tasks].sort((a,b)=>{
+    if(a.done&&!b.done)return 1;if(!a.done&&b.done)return -1;
+    const aO=isOv(a.due_date)&&!a.done,bO=isOv(b.due_date)&&!b.done;
+    if(aO&&!bO)return -1;if(!aO&&bO)return 1;
+    const aSm=tbSmAny(a),bSm=tbSmAny(b);
+    if(aSm!==null&&bSm===null)return -1;
+    if(aSm===null&&bSm!==null)return 1;
+    if(aSm!==null&&bSm!==null)return aSm-bSm;
     return taskTypePri(a)-taskTypePri(b)||(a.name||'').localeCompare(b.name||'');
   });
 }
@@ -1611,15 +1638,16 @@ function tRowTodayVirt(t){
 
 function tRowShopVirt(t){
   const s=gc('shopping');
-  return`<div class="ti ${t.done?'done':''}" id="ti-${t.id}" draggable="true"
+  const ov=isOv(t.due_date)&&!t.done;
+  const ps=ov?OV:s;
+  return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''}" id="ti-${t.id}" draggable="true"
     ondragstart="dragId='shop::${t._shopId}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);"
     ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false);"
     onclick="selTask(event,'${t.id}')" ondblclick="tiDblShop(event,'${t._shopId}')">
     <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="togShop('${t._shopId}',this.checked)"></label>
     <span class="tn">${t.name}</span>
-    <span class="cpill" style="background:${s.bg};color:${s.t};border-color:${s.b}">Shopping</span>
-    <span class="dlbl">${fmtD(t.due_date)}</span>
-    <button class="delbtn" onclick="event.stopPropagation()">✕</button>
+    <span class="cpill" style="background:${ps.bg};color:${ps.t};border-color:${ps.b}">Shopping</span>
+    <button class="delbtn" onclick="event.stopPropagation();delShop('${t._shopId}')">✕</button>
   </div>`;
 }
 // ── Week summary (important→rest, NO overdue; + recurring tasks for this week) ─
@@ -1633,7 +1661,7 @@ function renderWkSummary(){
   const shopThisWk=st.shopping
     .filter(s=>s.due_date&&isInWk(s.due_date,wkOff)&&!s.done)
     .map(s=>({id:'shop-cal-'+s.id,name:s.name,category:'Shopping',due_date:s.due_date,done:false,_shopId:s.id,_virtual:true,_type:'shop',store:s.store}));
-  let ts=sortByTypeOrder([
+  let ts=sortByTBWeek([
     ...st.tasks.filter(t=>isInWk(t.due_date,wkOff)&&!t.done),
     ...virtRec.filter(v=>!v.done),
     ...wrecThisWk,
@@ -1823,12 +1851,12 @@ function renderWkCal(){
     const wrecForDay=st.recurring.filter(r=>(r.is_weekly_reset===true||r.is_weekly_reset==='true')&&!r._done&&r._dateOverrides&&r._dateOverrides[getWkKey(wkOff)]===ds).map(r=>({id:'rec-virt-'+r.id,name:r.name,category:'Recurring',due_date:ds,done:false,_recId:r.id,_virtual:true,_wkKey:getWkKey(wkOff),_isWrec:true}));
     // Add shopping items assigned to this date
     const shopForDay=st.shopping.filter(s=>s.due_date===ds&&!s.done).map(s=>({id:'shop-cal-'+s.id,name:s.name+(s.store?' ('+s.store+')':''),category:'Shopping',due_date:ds,done:!!s.done,_shopId:s.id,_virtual:true,_type:'shop'}));
-    let dayTasks=sortTasks([
+    let dayTasks=sortTasksForDay([
       ...st.tasks.filter(t=>t.due_date&&t.due_date.split('T')[0]===ds&&!t.done),
       ...virtForDay,
       ...wrecForDay,
       ...shopForDay
-    ]);
+    ],ds);
     dayTasks.forEach(t=>{
       const ov=isOv(t.due_date)&&!t.done,imp=t.important&&!ov&&!t.done;
       const s=ov?OV:imp?IMP:gc(t.category);
@@ -3555,12 +3583,17 @@ function getOvRecurring(){
   }
   return out;
 }
+function getOvShopping(){
+  const today=tod();
+  return st.shopping.filter(s=>!s.done&&s.due_date&&s.due_date.split('T')[0]<today);
+}
 function updateOvBanner(){
   if(dayOff!==0){document.getElementById('ovBanner').classList.remove('show');return;}
   const today=tod();
   const ovTasks=st.tasks.filter(t=>!t.done&&t.due_date&&t.due_date.split('T')[0]<today);
   const ovRec=getOvRecurring();
-  const total=ovTasks.length+ovRec.length;
+  const ovShop=getOvShopping();
+  const total=ovTasks.length+ovRec.length+ovShop.length;
   const banner=document.getElementById('ovBanner');
   if(total>0){
     document.getElementById('ovBannerTxt').textContent=
@@ -3574,30 +3607,33 @@ async function rolloverOverdue(){
   const today=tod();
   const ovTasks=st.tasks.filter(t=>!t.done&&t.due_date&&t.due_date.split('T')[0]<today);
   const ovRec=getOvRecurring();
-  if(!ovTasks.length&&!ovRec.length)return;
-  // Save prev state for undo
+  const ovShop=getOvShopping();
+  if(!ovTasks.length&&!ovRec.length&&!ovShop.length)return;
   const prevDates=ovTasks.map(t=>({id:String(t.id),date:t.due_date}));
-  const prevRecWkKeys=ovRec.map(v=>({recId:v._recId,wkKey:v._wkKey,oldDone:v.done}));
-  // Move regular tasks to today
+  const prevRecWkKeys=ovRec.map(v=>({recId:v._recId,wkKey:v._wkKey}));
+  const prevShopDates=ovShop.map(s=>({id:String(s.id),date:s.due_date}));
   ovTasks.forEach(t=>{t.due_date=today;});
-  // Move recurring tasks: set a date override to today in their current wkKey
   ovRec.forEach(v=>{
     const r=st.recurring.find(x=>String(x.id)===String(v._recId));
     if(!r)return;
     if(!r._dateOverrides)r._dateOverrides={};
     r._dateOverrides[v._wkKey]=today;
   });
+  ovShop.forEach(s=>{s.due_date=today;});
   renderAll();
+  const total=ovTasks.length+ovRec.length+ovShop.length;
   pushUndo(()=>{
     prevDates.forEach(({id,date})=>{const t=st.tasks.find(x=>String(x.id)===id);if(t)t.due_date=date;});
-    prevRecWkKeys.forEach(({recId,wkKey})=>{
-      const r=st.recurring.find(x=>String(x.id)===String(recId));
-      if(r&&r._dateOverrides)delete r._dateOverrides[wkKey];
-    });
+    prevRecWkKeys.forEach(({recId,wkKey})=>{const r=st.recurring.find(x=>String(x.id)===String(recId));if(r&&r._dateOverrides)delete r._dateOverrides[wkKey];});
+    prevShopDates.forEach(({id,date})=>{const s=st.shopping.find(x=>String(x.id)===id);if(s)s.due_date=date;});
     renderAll();
     prevDates.forEach(({id,date})=>sbReq('PATCH','tasks',{due_date:date},`?id=eq.${id}`));
-  },'Rolled over '+(ovTasks.length+ovRec.length)+' task'+((ovTasks.length+ovRec.length)>1?'s':''));
-  await Promise.all(ovTasks.map(t=>sbReq('PATCH','tasks',{due_date:today},`?id=eq.${t.id}`)));
+    prevShopDates.forEach(({id,date})=>sbReqNullable('PATCH','shopping_list',{due_date:date||null},`?id=eq.${id}`));
+  },'Rolled over '+total+' item'+(total>1?'s':''));
+  await Promise.all([
+    ...ovTasks.map(t=>sbReq('PATCH','tasks',{due_date:today},`?id=eq.${t.id}`)),
+    ...ovShop.map(s=>sbReqNullable('PATCH','shopping_list',{due_date:today},`?id=eq.${s.id}`))
+  ]);
 }
 
 // ══════════════════════════════════════════════════════════
