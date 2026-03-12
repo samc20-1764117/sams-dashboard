@@ -1202,7 +1202,7 @@ function setBadge(t,x){
 }
 
 // ── Date utils ─────────────────────────────────────────────────────────────────
-const tod=()=>new Date().toISOString().split('T')[0];
+const tod=()=>d2s(new Date());
 const isOv=(d)=>d&&d.split('T')[0]<tod();
 function getWkBounds(off=0){
   const n=new Date(),dow=(n.getDay()+6)%7;
@@ -1224,7 +1224,7 @@ function getWkDates(off=0){
   mon.setDate(n.getDate()-dow+off*7);
   return DNAMES.map((_,i)=>{const d=new Date(mon);d.setDate(mon.getDate()+i);return d;});
 }
-function d2s(d){return d.toISOString().split('T')[0];}
+function d2s(d){return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
 
 // ── Day name → 0-indexed Mon=0..Sun=6 ─────────────────────────────────────
 const DAYIDX={'monday':0,'tuesday':1,'wednesday':2,'thursday':3,'friday':4,'saturday':5,'sunday':6};
@@ -3295,12 +3295,15 @@ document.addEventListener('keydown',async e=>{
         const localCopy={...t,id:tempId,_doneByWk:{},_done:false,_dateOverrides:{},_isRec:undefined};
         st.recurring.push(localCopy);
         save();renderRecOv();renderWeeklyPage();renderToday();renderWkSummary();renderWkCal();
-        const payload={name:t.name};
+        const payload={name:t.name,day_of_week:t.day_of_week||1};
         if(t.is_weekly_reset!==undefined)payload.is_weekly_reset=t.is_weekly_reset;
         if(t.cadence)payload.cadence=t.cadence;
         if(t.task_due_day)payload.task_due_day=t.task_due_day;
+        if(t.day_added)payload.day_added=t.day_added;
         if(t.starting_date)payload.starting_date=t.starting_date;
         if(t.appears_on_date)payload.appears_on_date=t.appears_on_date;
+        if(t.repeat_day)payload.repeat_day=t.repeat_day;
+        if(t.repeat_date)payload.repeat_date=t.repeat_date;
         const sv=await sbReq('POST','recurring_tasks',payload);
         if(sv&&sv[0]){const idx=st.recurring.findIndex(x=>x.id===tempId);if(idx>-1)st.recurring[idx]={...sv[0],_doneByWk:{},_done:false,_dateOverrides:{}};}
         save();renderRecOv();renderWeeklyPage();renderToday();renderWkSummary();renderWkCal();
@@ -3449,12 +3452,15 @@ async function ctxDoDuplicate(){
     st.recurring.push(localCopy);
     save();renderRecOv();renderWeeklyPage();renderToday();renderWkSummary();renderWkCal();
     // Push to DB
-    const payload={name:r.name};
+    const payload={name:r.name,day_of_week:r.day_of_week||1};
     if(r.is_weekly_reset!==undefined)payload.is_weekly_reset=r.is_weekly_reset;
     if(r.cadence)payload.cadence=r.cadence;
     if(r.task_due_day)payload.task_due_day=r.task_due_day;
+    if(r.day_added)payload.day_added=r.day_added;
     if(r.starting_date)payload.starting_date=r.starting_date;
     if(r.appears_on_date)payload.appears_on_date=r.appears_on_date;
+    if(r.repeat_day)payload.repeat_day=r.repeat_day;
+    if(r.repeat_date)payload.repeat_date=r.repeat_date;
     const sv=await sbReq('POST','recurring_tasks',payload);
     if(sv&&sv[0]){
       // Replace temp with real DB entry
