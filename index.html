@@ -431,6 +431,8 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
         <span style="color:var(--muted)">Overview</span>
         <span style="color:var(--subtle);font-weight:300">·</span>
         <span style="color:var(--text)" id="ovTitle">Wednesday, March 11</span>
+        <span style="color:var(--subtle);font-weight:300">·</span>
+        <span style="color:var(--muted);font-weight:500;font-size:12px" id="liveClock"></span>
       </div>
     </div>
     <div class="topbar-right">
@@ -3629,6 +3631,10 @@ function copyShopList(){
 
 
 </div>
+<script>
+function tickClock(){const el=document.getElementById('liveClock');if(el)el.textContent=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});}
+tickClock();setInterval(tickClock,1000);
+</script>
 <div id="devBadge" style="display:none;position:fixed;bottom:16px;left:16px;background:#1e293b;color:#f8fafc;font-size:11px;font-weight:700;letter-spacing:.08em;padding:4px 9px;border-radius:6px;border:1px solid rgba(255,255,255,.15);z-index:9999;pointer-events:none">DEV</div>
 <script>if(location.hostname.includes('dev.'))document.getElementById('devBadge').style.display='block';</script>
 </body></html>
