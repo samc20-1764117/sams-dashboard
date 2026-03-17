@@ -3,15 +3,11 @@
 ## Layout Structure
 
 - **Root layout**: sidebar (fixed, 186px) + `.main` (flex:1, overflow-y:auto, padding:22px 56px 36px 56px)
-- **`.row1`**: 5-column grid (`0.65fr 2.2fr 1fr 0.9fr 0.65fr`, gap 14px, height 400px, `align-items:stretch`).
-  - Col 1: `.row1-left` — flex column. Top = `.row1-left-btns` (☰ menu toggle, dark toggle, sync bar). Bottom = empty card (flex:1).
-  - Col 2: Today+TB card (`card card-hero`, min-height:0, flex column, overflow:hidden).
-  - Col 3: Weekly Reset card.
-  - Col 4: Shopping card.
-  - Col 5: Quick Links card.
-- **`.row1-left-btns`**: flex row, `align-items:center`, gap 6px. Contains menu toggle (☰ calls `openSB()`), `#darkToggle`, `#syncBar`.
-- **Summary metrics container removed**. `.row1-controls` removed. Buttons moved to `.row1-left-btns`.
-- **`.row2`**: 2-column grid (`1.18fr 3.82fr`). **`.row3`**: full width.
+- **`.overview-cols`**: 2-column grid (`2.2fr 2.55fr`, gap 14px, `height:664px`, margin-bottom:14px).
+  - Col 1: `.overview-left` — flex column, gap 14px. Contains Today+TB card (`flex:1`) + Need to Assign card (`flex-shrink:0`, height:110px).
+  - Col 2: `.row1-right-panel` — flex column, gap 14px, min-height:0. Contains `.row1-right-top` (fixed height 160px, 3-column grid: Weekly Reset, Shopping, Quick Links) + calendar card (`flex:1`).
+- **Top-right fixed controls**: `.top-right-controls` (position:fixed, top:14px, right:20px) — dark toggle + sync bar.
+- **`.row3`**: full width (kanban).
 
 ## Today+TB Card Header
 

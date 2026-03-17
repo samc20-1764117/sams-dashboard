@@ -227,7 +227,8 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 .qa-close:hover{color:var(--text);background:rgba(0,0,0,.05)}
 
 /* Layout — consistent 14px gaps everywhere */
-.row1-main{display:grid;grid-template-columns:2.2fr 2.55fr;gap:14px;margin-bottom:14px;align-items:stretch;height:540px}
+.overview-cols{display:grid;grid-template-columns:2.2fr 2.55fr;gap:14px;margin-bottom:14px;height:664px}
+.overview-left{display:flex;flex-direction:column;gap:14px}
 .row1-right-panel{display:flex;flex-direction:column;gap:14px;min-height:0}
 .row1-right-top{display:grid;grid-template-columns:1fr 0.9fr 0.65fr;gap:14px;flex-shrink:0;height:160px}
 .top-right-controls{position:fixed;top:14px;right:20px;z-index:90;display:flex;align-items:center;gap:8px}
@@ -461,9 +462,10 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 
 <!-- OVERVIEW -->
 <div class="page active" id="page-overview">
-  <div class="row1-main">
+  <div class="overview-cols">
+    <div class="overview-left">
     <!-- Today + Time Block -->
-    <div class="card card-hero" style="min-height:0;position:relative;display:flex;flex-direction:column;overflow:hidden">
+    <div class="card card-hero" style="flex:1;min-height:0;position:relative;display:flex;flex-direction:column;overflow:hidden">
       <div id="dayFlash" class="day-flash"></div>
       <!-- hidden elements so JS refs don't error -->
       <span id="todTitle" style="display:none">Today</span>
@@ -532,6 +534,12 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
       </div><!-- tb-section -->
       </div><!-- tod-tb-body -->
     </div><!-- combined card -->
+    <!-- Need to Assign -->
+    <div class="card" style="flex-shrink:0;height:110px">
+      <div class="ch"><div class="ct">Need to Assign</div><button class="btn-plus" onclick="openQA('unassigned',this)">+</button></div>
+      <div class="tlist" id="unList" style="flex:1"></div>
+    </div>
+    </div><!-- overview-left -->
     <div class="row1-right-panel">
     <div class="row1-right-top">
     <!-- Weekly Reset -->
@@ -589,8 +597,9 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
       </div>
     </div><!-- week cal -->
     </div><!-- row1-right-panel -->
-  </div><!-- row1-main -->
-  <div class="row2">
+  </div><!-- overview-cols -->
+  <!-- row2 removed (This Week deleted per DEV-14) -->
+  <div class="row2-removed" style="display:none">
     <div class="card" style="height:200px;position:relative">
         <div id="wkListEdgeR" class="wk-list-edge wk-list-edge-r">›</div>
         <div class="ch-prog">
@@ -656,8 +665,8 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
   </div></div>
       </div>
       <div class="card" style="height:110px">
-        <div class="ch"><div class="ct">Need to Assign</div><button class="btn-plus" onclick="openQA(&#39;unassigned&#39;,this)">+</button></div>
-        <div class="tlist" id="unList" style="flex:1"></div>
+        <div class="ch"><div class="ct">Need to Assign</div><button class="btn-plus" onclick="openQA('unassigned',this)">+</button></div>
+        <div class="tlist" id="unList-old" style="flex:1"></div>
       </div>
   </div>
   <div class="row3" id="row3wrap">
@@ -3827,6 +3836,6 @@ function copyShopList(){
 function tickClock(){const t=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});const el=document.getElementById('liveClock');if(el)el.textContent=t;}
 tickClock();setInterval(tickClock,1000);
 </script>
-<div id="devBadge" style="display:none;position:fixed;bottom:16px;left:16px;background:#1e293b;color:#f8fafc;font-size:11px;font-weight:700;letter-spacing:.08em;padding:4px 9px;border-radius:6px;border:1px solid rgba(255,255,255,.15);z-index:9999;pointer-events:none">DEV-13</div>
+<div id="devBadge" style="display:none;position:fixed;bottom:16px;left:16px;background:#1e293b;color:#f8fafc;font-size:11px;font-weight:700;letter-spacing:.08em;padding:4px 9px;border-radius:6px;border:1px solid rgba(255,255,255,.15);z-index:9999;pointer-events:none">DEV-14</div>
 <script>if(location.hostname.includes('dev.'))document.getElementById('devBadge').style.display='block';</script>
 </body></html>
