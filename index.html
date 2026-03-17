@@ -676,9 +676,6 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
   <div class="topbar"><div class="topbar-left"></div><div class="topbar-center"><div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:1px">All Tasks</div></div><div class="topbar-right">
     <div class="sync-bar" onclick="syncAll()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path></svg><span id="syncTxt2" style="font-size:9px">Synced 13:23</span></div></div></div>
     <button class="btn btn-dark btn-xs" onclick="openTModal()">+ Add Task</button></div>
-  <div class="card"><div class="tlist" id="allList" style="max-height:calc(100vh - 200px)"></div>
-    <div class="arow"><input class="ainput" id="ntN" placeholder="New task…" onkeydown="if(event.key===&#39;Enter&#39;)addTask()"><select class="asel" id="ntC"><option value="Home">Home</option><option value="My work">My work</option><option value="Work">Work</option><option value="Social">Social</option><option value="Long term">Long term</option></select><input class="ainput" id="ntD" type="date" style="flex:0;width:112px"><button class="btn btn-dark btn-xs" onclick="addTask()">+ Add</button></div>
-  </div>
 </div>
 
 <!-- RECURRING TASKS -->
@@ -4030,6 +4027,6 @@ function copyShopList(){
 function tickClock(){const t=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});const el=document.getElementById('liveClock');if(el)el.textContent=t;}
 tickClock();setInterval(tickClock,1000);
 </script>
-<div id="devBadge" style="display:none;position:fixed;bottom:16px;left:16px;background:#1e293b;color:#f8fafc;font-size:11px;font-weight:700;letter-spacing:.08em;padding:4px 9px;border-radius:6px;border:1px solid rgba(255,255,255,.15);z-index:9999;pointer-events:none">DEV-19</div>
+<div id="devBadge" style="display:none;position:fixed;bottom:16px;left:16px;background:#1e293b;color:#f8fafc;font-size:11px;font-weight:700;letter-spacing:.08em;padding:4px 9px;border-radius:6px;border:1px solid rgba(255,255,255,.15);z-index:9999;pointer-events:none">DEV-56</div>
 <script>if(location.hostname.includes('dev.'))document.getElementById('devBadge').style.display='block';</script>
 </body></html>
