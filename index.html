@@ -436,7 +436,7 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
   </div>
   <nav style="flex:1">
     <button class="nav-item active" onclick="showPage(&#39;overview&#39;)"><div class="ndot" style="background:#6d5fe6"></div>Overview</button>
-    <button class="nav-item" onclick="showPage(&#39;weekly&#39;)"><div class="ndot" style="background:#10b981"></div>Weekly Reset</button>
+    <button class="nav-item" onclick="showPage(&#39;weekly&#39;)"><div class="ndot" style="background:#10b981"></div>Recurring Tasks</button>
     <button class="nav-item" onclick="showPage(&#39;weekly&#39;)"><div class="ndot" style="background:#eab308"></div>Shopping</button>
     <button class="nav-item" onclick="showPage(&#39;travel&#39;)"><div class="ndot" style="background:#14b8a6"></div>Travel</button>
     <button class="nav-item" onclick="showPage(&#39;birthdays&#39;)"><div class="ndot" style="background:#f97316"></div>Birthdays</button>
@@ -560,7 +560,7 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
     <!-- Quick Links -->
     <div class="card" style="display:flex;flex-direction:column">
       <div class="ql-grid" style="flex:1;align-content:stretch;padding:8px;gap:6px">
-        <button class="ql-btn" onclick="showPage(&#39;weekly&#39;)"><span class="ql-icon">🔄</span>Weekly Reset</button>
+        <button class="ql-btn" onclick="showPage(&#39;weekly&#39;)"><span class="ql-icon">🔄</span>Recurring Tasks</button>
         <button class="ql-btn" onclick="showPage(&#39;weekly&#39;)"><span class="ql-icon">🛒</span>Shopping</button>
         <button class="ql-btn" onclick="showPage(&#39;travel&#39;)"><span class="ql-icon">✈️</span>Travel</button>
         <button class="ql-btn" onclick="showPage(&#39;birthdays&#39;)"><span class="ql-icon">🎂</span>Birthdays</button>
@@ -691,31 +691,39 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
   </div>
 </div>
 
-<!-- WEEKLY RESET + SHOPPING (combined two-column page) -->
+<!-- RECURRING TASKS -->
 <div class="page" id="page-weekly">
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;padding-top:8px">
-    <!-- Weekly Reset -->
-    <div class="card">
-      <div class="ch"><div class="ct">Weekly Reset</div></div>
-      <div class="ch-prog" style="border-bottom:none;padding:6px 13px 8px">
-        <div class="ch-prog-bar"><div class="ch-prog-fill" id="wrBar" style="width:0%"></div></div>
-        <div class="ch-prog-stat"><span class="pct" id="wrPct2">0%</span><span style="opacity:.3">·</span><span id="wrPL">0/6</span></div>
+  <!-- hidden backward-compat elements used by renderWeeklyPage() -->
+  <span id="wrPL" style="display:none">0/0</span>
+  <span id="wrPct2" style="display:none">0%</span>
+  <div style="display:none"><div id="wrBar" style="width:0%"></div></div>
+  <div id="wrList" style="display:none"></div>
+  <!-- Shopping elements preserved for renderShopFull() compatibility -->
+  <div id="shopFull" style="display:none"></div>
+  <span id="shopCountLbl" style="display:none"></span>
+  <button id="shopSortBtn" style="display:none"></button>
+  <input id="nsN" style="display:none"><input id="nsS" style="display:none">
+  <datalist id="storeListFull"><option value="HEB"></option><option value="Ikea"></option><option value="Online"></option><option value="Other"></option></datalist>
+
+  <div style="padding-top:8px">
+    <div style="font-size:13px;font-weight:700;color:var(--text);letter-spacing:-.2px;margin-bottom:16px">Recurring Tasks</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start">
+      <!-- Weekly Reset Recurring -->
+      <div>
+        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px;padding:0 2px">Weekly Reset Recurring</div>
+        <div id="rt-wr-weekly"></div>
+        <div id="rt-wr-biweekly"></div>
+        <div id="rt-wr-monthly"></div>
+        <div id="rt-wr-other"></div>
       </div>
-      <div id="wrList"><div id="ti-rec-virt-rec-Closet%20blanket" class="ti" style="cursor: pointer;"><label class="chk-wrap"><input type="checkbox" class="chk"></label><span class="tn">Closet blanket</span><button class="delbtn">✕</button></div><div id="ti-rec-virt-rec-Laundry" class="ti" style="cursor: pointer;"><label class="chk-wrap"><input type="checkbox" class="chk"></label><span class="tn">Laundry</span><button class="delbtn">✕</button></div><div id="ti-rec-virt-rec-Pup%20bowls" class="ti" style="cursor: pointer;"><label class="chk-wrap"><input type="checkbox" class="chk"></label><span class="tn">Pup bowls</span><button class="delbtn">✕</button></div><div id="ti-rec-virt-rec-Pups%20teeth" class="ti" style="cursor: pointer;"><label class="chk-wrap"><input type="checkbox" class="chk"></label><span class="tn">Pups teeth</span><button class="delbtn">✕</button></div><div id="ti-rec-virt-rec-Vacuum" class="ti" style="cursor: pointer;"><label class="chk-wrap"><input type="checkbox" class="chk"></label><span class="tn">Vacuum</span><button class="delbtn">✕</button></div><div id="ti-rec-virt-rec-Wipe%20surfaces" class="ti" style="cursor: pointer;"><label class="chk-wrap"><input type="checkbox" class="chk"></label><span class="tn">Wipe surfaces</span><button class="delbtn">✕</button></div></div>
-      <div style="padding:6px 10px 8px;border-top:1px solid rgba(210,205,228,.22);display:flex;gap:5px;background:rgba(255,255,255,.18)">
-        <button class="btn btn-dark btn-xs" onclick="openRecModal(&#39;weekly_reset&#39;)" style="flex:1">+ Add Weekly Reset</button>
-        <button class="btn btn-ghost btn-xs" onclick="openRecModal(&#39;scheduled&#39;)" style="flex:1">+ Add Scheduled</button>
+      <!-- Non-Weekly Reset Recurring -->
+      <div>
+        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px;padding:0 2px">Non-Weekly Reset Recurring</div>
+        <div id="rt-sch-weekly"></div>
+        <div id="rt-sch-biweekly"></div>
+        <div id="rt-sch-monthly"></div>
+        <div id="rt-sch-other"></div>
       </div>
-    </div>
-    <!-- Shopping -->
-    <div class="card">
-      <div class="ch">
-        <div class="ct" id="shopCountLbl">Shopping (7 left)</div>
-        <button class="btn btn-ghost btn-xs" id="shopSortBtn" onclick="toggleShopSort()" title="Toggle sort">By store</button>
-        <button class="btn btn-ghost btn-xs" onclick="copyShopList()" title="Copy list to clipboard">📋</button>
-      </div>
-      <div id="shopFull"><div style="padding:5px 10px 2px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-top:2px">HEB</div><div class="ti " draggable="true" ondragstart="dragId=&#39;shop::3b61412c-d2d0-476c-8255-da9366d2ccb1&#39;;event.dataTransfer.effectAllowed=&#39;move&#39;;event.currentTarget.classList.add(&#39;dragging&#39;);document.body.classList.add(&#39;body-dragging&#39;);showWkcEdges(true);" ondragend="event.currentTarget.classList.remove(&#39;dragging&#39;);document.body.classList.remove(&#39;body-dragging&#39;);showWkcEdges(false);" onclick="tiClickShop(event,&#39;3b61412c-d2d0-476c-8255-da9366d2ccb1&#39;)" ondblclick="tiDblShop(event,&#39;3b61412c-d2d0-476c-8255-da9366d2ccb1&#39;)"><input type="checkbox" class="chk" onchange="togShop(&#39;3b61412c-d2d0-476c-8255-da9366d2ccb1&#39;,this.checked)"><span class="tn">Croutons</span><span class="cpill" style="background:rgba(241,245,249,.9);color:#64748b;border-color:rgba(148,163,184,.25);flex-shrink:0;margin-left:auto;margin-right:2px">HEB</span><button class="delbtn" onclick="delShop(&#39;3b61412c-d2d0-476c-8255-da9366d2ccb1&#39;)">✕</button></div><div class="ti " draggable="true" ondragstart="dragId=&#39;shop::5c13e30b-6ca3-47c7-ac4d-5cf1bc4618aa&#39;;event.dataTransfer.effectAllowed=&#39;move&#39;;event.currentTarget.classList.add(&#39;dragging&#39;);document.body.classList.add(&#39;body-dragging&#39;);showWkcEdges(true);" ondragend="event.currentTarget.classList.remove(&#39;dragging&#39;);document.body.classList.remove(&#39;body-dragging&#39;);showWkcEdges(false);" onclick="tiClickShop(event,&#39;5c13e30b-6ca3-47c7-ac4d-5cf1bc4618aa&#39;)" ondblclick="tiDblShop(event,&#39;5c13e30b-6ca3-47c7-ac4d-5cf1bc4618aa&#39;)"><input type="checkbox" class="chk" onchange="togShop(&#39;5c13e30b-6ca3-47c7-ac4d-5cf1bc4618aa&#39;,this.checked)"><span class="tn">Goldfish</span><span class="cpill" style="background:rgba(241,245,249,.9);color:#64748b;border-color:rgba(148,163,184,.25);flex-shrink:0;margin-left:auto;margin-right:2px">HEB</span><button class="delbtn" onclick="delShop(&#39;5c13e30b-6ca3-47c7-ac4d-5cf1bc4618aa&#39;)">✕</button></div><div style="padding:5px 10px 2px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-top:2px">Ikea</div><div class="ti " draggable="true" ondragstart="dragId=&#39;shop::197cc815-5e6b-4a65-804c-c503778c6f63&#39;;event.dataTransfer.effectAllowed=&#39;move&#39;;event.currentTarget.classList.add(&#39;dragging&#39;);document.body.classList.add(&#39;body-dragging&#39;);showWkcEdges(true);" ondragend="event.currentTarget.classList.remove(&#39;dragging&#39;);document.body.classList.remove(&#39;body-dragging&#39;);showWkcEdges(false);" onclick="tiClickShop(event,&#39;197cc815-5e6b-4a65-804c-c503778c6f63&#39;)" ondblclick="tiDblShop(event,&#39;197cc815-5e6b-4a65-804c-c503778c6f63&#39;)"><input type="checkbox" class="chk" onchange="togShop(&#39;197cc815-5e6b-4a65-804c-c503778c6f63&#39;,this.checked)"><span class="tn">Bowls</span><span class="cpill" style="background:rgba(241,245,249,.9);color:#64748b;border-color:rgba(148,163,184,.25);flex-shrink:0;margin-left:auto;margin-right:2px">Ikea</span><button class="delbtn" onclick="delShop(&#39;197cc815-5e6b-4a65-804c-c503778c6f63&#39;)">✕</button></div><div class="ti " draggable="true" ondragstart="dragId=&#39;shop::8d195c44-9915-4513-812e-e30725a386b2&#39;;event.dataTransfer.effectAllowed=&#39;move&#39;;event.currentTarget.classList.add(&#39;dragging&#39;);document.body.classList.add(&#39;body-dragging&#39;);showWkcEdges(true);" ondragend="event.currentTarget.classList.remove(&#39;dragging&#39;);document.body.classList.remove(&#39;body-dragging&#39;);showWkcEdges(false);" onclick="tiClickShop(event,&#39;8d195c44-9915-4513-812e-e30725a386b2&#39;)" ondblclick="tiDblShop(event,&#39;8d195c44-9915-4513-812e-e30725a386b2&#39;)"><input type="checkbox" class="chk" onchange="togShop(&#39;8d195c44-9915-4513-812e-e30725a386b2&#39;,this.checked)"><span class="tn">Donut lamp</span><span class="cpill" style="background:rgba(241,245,249,.9);color:#64748b;border-color:rgba(148,163,184,.25);flex-shrink:0;margin-left:auto;margin-right:2px">Ikea</span><button class="delbtn" onclick="delShop(&#39;8d195c44-9915-4513-812e-e30725a386b2&#39;)">✕</button></div><div class="ti " draggable="true" ondragstart="dragId=&#39;shop::54e31205-2d10-4a78-9057-5800c1587948&#39;;event.dataTransfer.effectAllowed=&#39;move&#39;;event.currentTarget.classList.add(&#39;dragging&#39;);document.body.classList.add(&#39;body-dragging&#39;);showWkcEdges(true);" ondragend="event.currentTarget.classList.remove(&#39;dragging&#39;);document.body.classList.remove(&#39;body-dragging&#39;);showWkcEdges(false);" onclick="tiClickShop(event,&#39;54e31205-2d10-4a78-9057-5800c1587948&#39;)" ondblclick="tiDblShop(event,&#39;54e31205-2d10-4a78-9057-5800c1587948&#39;)"><input type="checkbox" class="chk" onchange="togShop(&#39;54e31205-2d10-4a78-9057-5800c1587948&#39;,this.checked)"><span class="tn">Hanging planter</span><span class="cpill" style="background:rgba(241,245,249,.9);color:#64748b;border-color:rgba(148,163,184,.25);flex-shrink:0;margin-left:auto;margin-right:2px">Ikea</span><button class="delbtn" onclick="delShop(&#39;54e31205-2d10-4a78-9057-5800c1587948&#39;)">✕</button></div><div style="padding:5px 10px 2px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-top:2px">Online</div><div class="ti " draggable="true" ondragstart="dragId=&#39;shop::9eeb0d0c-283a-4e0d-9f29-b1bc965db522&#39;;event.dataTransfer.effectAllowed=&#39;move&#39;;event.currentTarget.classList.add(&#39;dragging&#39;);document.body.classList.add(&#39;body-dragging&#39;);showWkcEdges(true);" ondragend="event.currentTarget.classList.remove(&#39;dragging&#39;);document.body.classList.remove(&#39;body-dragging&#39;);showWkcEdges(false);" onclick="tiClickShop(event,&#39;9eeb0d0c-283a-4e0d-9f29-b1bc965db522&#39;)" ondblclick="tiDblShop(event,&#39;9eeb0d0c-283a-4e0d-9f29-b1bc965db522&#39;)"><input type="checkbox" class="chk" onchange="togShop(&#39;9eeb0d0c-283a-4e0d-9f29-b1bc965db522&#39;,this.checked)"><span class="tn">Electronic toothbrush for pups</span><span class="cpill" style="background:rgba(241,245,249,.9);color:#64748b;border-color:rgba(148,163,184,.25);flex-shrink:0;margin-left:auto;margin-right:2px">Online</span><button class="delbtn" onclick="delShop(&#39;9eeb0d0c-283a-4e0d-9f29-b1bc965db522&#39;)">✕</button></div><div class="ti " draggable="true" ondragstart="dragId=&#39;shop::72d1e8a4-b9b1-4beb-97d5-8a7e993d2ba2&#39;;event.dataTransfer.effectAllowed=&#39;move&#39;;event.currentTarget.classList.add(&#39;dragging&#39;);document.body.classList.add(&#39;body-dragging&#39;);showWkcEdges(true);" ondragend="event.currentTarget.classList.remove(&#39;dragging&#39;);document.body.classList.remove(&#39;body-dragging&#39;);showWkcEdges(false);" onclick="tiClickShop(event,&#39;72d1e8a4-b9b1-4beb-97d5-8a7e993d2ba2&#39;)" ondblclick="tiDblShop(event,&#39;72d1e8a4-b9b1-4beb-97d5-8a7e993d2ba2&#39;)"><input type="checkbox" class="chk" onchange="togShop(&#39;72d1e8a4-b9b1-4beb-97d5-8a7e993d2ba2&#39;,this.checked)"><span class="tn">Patio furniture</span><span class="cpill" style="background:rgba(241,245,249,.9);color:#64748b;border-color:rgba(148,163,184,.25);flex-shrink:0;margin-left:auto;margin-right:2px">Online</span><button class="delbtn" onclick="delShop(&#39;72d1e8a4-b9b1-4beb-97d5-8a7e993d2ba2&#39;)">✕</button></div><div class="ti done" draggable="true" ondragstart="dragId=&#39;shop::63d4a10b-e42d-43dd-9771-728f5e6cabfb&#39;;event.dataTransfer.effectAllowed=&#39;move&#39;;event.currentTarget.classList.add(&#39;dragging&#39;);document.body.classList.add(&#39;body-dragging&#39;);showWkcEdges(true);" ondragend="event.currentTarget.classList.remove(&#39;dragging&#39;);document.body.classList.remove(&#39;body-dragging&#39;);showWkcEdges(false);" onclick="tiClickShop(event,&#39;63d4a10b-e42d-43dd-9771-728f5e6cabfb&#39;)" ondblclick="tiDblShop(event,&#39;63d4a10b-e42d-43dd-9771-728f5e6cabfb&#39;)"><input type="checkbox" class="chk" checked="" onchange="togShop(&#39;63d4a10b-e42d-43dd-9771-728f5e6cabfb&#39;,this.checked)"><span class="tn">Mochi collar</span><span class="cpill" style="background:rgba(241,245,249,.9);color:#64748b;border-color:rgba(148,163,184,.25);flex-shrink:0;margin-left:auto;margin-right:2px">Online</span><button class="delbtn" onclick="delShop(&#39;63d4a10b-e42d-43dd-9771-728f5e6cabfb&#39;)">✕</button></div></div>
-      <div class="arow"><input class="ainput" id="nsN" placeholder="Add item…" onkeydown="if(event.key===&#39;Enter&#39;)addShopFull()"><input class="ainput" id="nsS" list="storeListFull" placeholder="Store…" style="flex:0;width:90px"><datalist id="storeListFull"><option value="HEB"></option><option value="Ikea"></option><option value="Online"></option><option value="Other"></option></datalist><button class="btn btn-dark btn-xs" onclick="addShopFull()">+</button></div>
     </div>
   </div>
 </div>
@@ -2981,42 +2989,129 @@ function renderTasksPage(){
   document.getElementById('allList').innerHTML=ts.map(t=>tRow(t,{cat:true,due:true,...(!t.due_date&&{flag:true})})).join('');
 }
 
-// ── Weekly reset page ──────────────────────────────────────────────────────────
+// ── Recurring Tasks page ────────────────────────────────────────────────────────
 function renderWeeklyPage(){
+  renderRecurringPage();
+  // Keep hidden compat elements in sync
   const wkKey=getWkKey(wkOff);
   const items=st.recurring.filter(r=>r.is_weekly_reset===true||r.is_weekly_reset==='true');
   const done=items.filter(r=>!!(r._doneByWk&&r._doneByWk[wkKey])).length;
   const pct=items.length?Math.round(done/items.length*100):0;
-  if(document.getElementById('wrPL'))document.getElementById('wrPL').textContent=done+'/'+items.length;const _wrP=document.getElementById('wrPct2');if(_wrP)_wrP.textContent=pct+'%';document.getElementById('wrBar').style.width=pct+'%';
-  const sorted=[...items.filter(r=>!(r._doneByWk&&r._doneByWk[wkKey])),...items.filter(r=>!!(r._doneByWk&&r._doneByWk[wkKey]))];
-  const el=document.getElementById('wrList');el.innerHTML='';
-  sorted.forEach(function(r){
-    const rid=String(r.id);
-    const isDone=!!(r._doneByWk&&r._doneByWk[wkKey]);
-    const row=document.createElement('div');
-    const virtId='rec-virt-'+rid;
-    row.id='ti-'+virtId;
-    row.className='ti'+(isDone?' done':'');
-    row.style.cursor='pointer';
-    const chkWrap1=document.createElement('label');chkWrap1.className='chk-wrap';chkWrap1.addEventListener('click',e=>e.stopPropagation());
-    const chk=document.createElement('input');
-    chk.type='checkbox';chk.className='chk';chk.checked=isDone;
-    chk.addEventListener('change',function(){togRec(rid,this.checked);});
-    chkWrap1.appendChild(chk);
-    const nm=document.createElement('span');nm.className='tn';
-    if(isDone)nm.style.cssText='text-decoration:line-through;color:var(--muted)';
-    nm.textContent=r.name;
-    const del=document.createElement('button');del.className='delbtn';del.textContent='✕';
-    del.addEventListener('mousedown',e=>e.stopPropagation());
-    del.addEventListener('click',function(e){e.stopPropagation();delRec(rid);});
-    row.addEventListener('click',e=>selTask(e,virtId));
-    row.addEventListener('dblclick',function(e){
-      if(e.target===chk||e.target===del)return;
-      e.stopPropagation();clearSelection();openRecEditModal(rid);
-    });
-    row.addEventListener('contextmenu',e=>showCtx(e,virtId,true,rid));
-    row.appendChild(chkWrap1);row.appendChild(nm);row.appendChild(del);el.appendChild(row);
+  const elPL=document.getElementById('wrPL');if(elPL)elPL.textContent=done+'/'+items.length;
+  const elPct=document.getElementById('wrPct2');if(elPct)elPct.textContent=pct+'%';
+  const elBar=document.getElementById('wrBar');if(elBar)elBar.style.width=pct+'%';
+}
+
+function renderRecurringPage(){
+  const KNOWN=['weekly','biweekly','monthly'];
+  const wrTasks=st.recurring.filter(r=>r.is_weekly_reset===true||r.is_weekly_reset==='true');
+  const schTasks=st.recurring.filter(r=>!(r.is_weekly_reset===true||r.is_weekly_reset==='true'));
+  ['weekly','biweekly','monthly','other'].forEach(cad=>{
+    const isOther=cad==='other';
+    renderRtGroup('rt-wr-'+cad, isOther?wrTasks.filter(r=>!KNOWN.includes(r.cadence)):wrTasks.filter(r=>r.cadence===cad), true, cad);
+    renderRtGroup('rt-sch-'+cad, isOther?schTasks.filter(r=>!KNOWN.includes(r.cadence)):schTasks.filter(r=>r.cadence===cad), false, cad);
   });
+}
+
+function renderRtGroup(containerId, tasks, isWr, cadence){
+  const el=document.getElementById(containerId);if(!el)return;
+  const wkKey=getWkKey(wkOff);
+  const cadLabel={weekly:'Weekly',biweekly:'Biweekly',monthly:'Monthly',other:'Other'}[cadence]||cadence;
+  let rowsHtml='';
+  tasks.forEach(r=>{
+    const rid=String(r.id);
+    const isDone=isWr&&!!(r._doneByWk&&r._doneByWk[wkKey]);
+    const virtId='rec-virt-'+rid;
+    const safeName=r.name.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    let fields='';
+    if(!isWr){
+      if(cadence==='monthly'&&r.repeat_date)
+        fields+=`<span class="cpill" style="background:var(--lt-bg);color:var(--lt-t);border-color:var(--lt-b)">Day ${r.repeat_date}</span>`;
+      else if(r.appears_on_date)
+        fields+=`<span class="cpill" style="background:var(--lt-bg);color:var(--lt-t);border-color:var(--lt-b)">${r.appears_on_date}</span>`;
+      if(r.day_added)
+        fields+=`<span style="font-size:9px;color:var(--muted);flex-shrink:0;white-space:nowrap">adds ${r.day_added}</span>`;
+    }
+    if(r.starting_date)
+      fields+=`<span style="font-size:9px;color:var(--subtle);flex-shrink:0;white-space:nowrap">from ${fmtD(r.starting_date)}</span>`;
+    const chkOrSpacer=isWr
+      ?`<label class="chk-wrap" onclick="event.stopPropagation()" onmousedown="event.stopPropagation()"><input type="checkbox" class="chk"${isDone?' checked':''} onchange="togRec('${rid}',this.checked)"></label>`
+      :`<span style="width:14px;flex-shrink:0"></span>`;
+    rowsHtml+=`<div class="ti${isDone?' done':''}" id="ti-rt-${rid}" style="cursor:pointer" onclick="selTask(event,'${virtId}')" ondblclick="if(!event.target.closest('.chk-wrap')&&!event.target.closest('.delbtn')){event.stopPropagation();clearSelection();openRecEditModal('${rid}')}" oncontextmenu="showCtx(event,'${virtId}',true,'${rid}')">${chkOrSpacer}<span class="tn"${isDone?' style="text-decoration:line-through;color:var(--muted)"':''}>${safeName}</span>${fields}<button class="btn btn-xs btn-ghost" style="flex-shrink:0;padding:1px 5px;font-size:10px;opacity:.65" onclick="event.stopPropagation();duplicateRecDirect('${rid}')" title="Duplicate">⧉</button><button class="delbtn" onclick="event.stopPropagation();delRec('${rid}')">✕</button></div>`;
+  });
+  if(!rowsHtml) rowsHtml=`<div style="padding:8px 12px;font-size:11px;color:var(--subtle);font-style:italic">None yet</div>`;
+  let qaExtras='';
+  if(!isWr){
+    if(cadence==='monthly')
+      qaExtras=`<select class="asel" id="qa-day-${containerId}" style="flex:0;width:68px">${Array.from({length:28},(_,i)=>`<option value="${i+1}">${i+1}</option>`).join('')}</select>`;
+    else if(cadence==='weekly'||cadence==='biweekly')
+      qaExtras=`<select class="asel" id="qa-day-${containerId}" style="flex:0;width:90px"><option>Sunday</option><option>Monday</option><option>Tuesday</option><option>Wednesday</option><option>Thursday</option><option selected>Friday</option><option>Saturday</option></select>`;
+  }
+  el.innerHTML=`<div class="card" style="margin-bottom:10px"><div class="ch"><div class="ct">${cadLabel}${tasks.length?' ('+tasks.length+')':''}</div><button class="btn-plus" onclick="openRecModalForSection('${isWr?'weekly_reset':'scheduled'}','${cadence}')" title="Add via form">+</button></div><div class="tlist">${rowsHtml}</div><div class="arow"><input class="ainput" id="qa-${containerId}" placeholder="Add ${cadLabel.toLowerCase()} task…" onkeydown="if(event.key==='Enter')addRecDirect(this,${isWr},'${cadence}')">${qaExtras}<button class="btn btn-ghost btn-xs" onclick="addRecDirect(document.getElementById('qa-${containerId}'),${isWr},'${cadence}')">+</button></div></div>`;
+}
+
+function openRecModalForSection(type, cadence){
+  openRecModal(type);
+  if(cadence&&cadence!=='other'){
+    document.getElementById('recCadence').value=cadence;
+    updateRecCadenceUI();
+  }
+}
+
+async function addRecDirect(inputEl, isWr, cadence){
+  const n=inputEl.value.trim();if(!n)return;
+  inputEl.value='';
+  const containerId=inputEl.id.replace(/^qa-/,'');
+  const dayEl=document.getElementById('qa-day-'+containerId);
+  const appearsOn=(cadence==='monthly'||cadence==='other')?'Friday':(dayEl?dayEl.value:'Friday');
+  const repeatDate=cadence==='monthly'?(dayEl?dayEl.value:'1'):null;
+  const useCadence=cadence==='other'?'weekly':cadence;
+  const localId='rec-tmp-'+Date.now();
+  const r={id:localId,name:n,is_weekly_reset:isWr,appears_on_date:appearsOn,day_added:'Previous Sunday',starting_date:d2s(new Date()),cadence:useCadence,_doneByWk:{},_done:false,_dateOverrides:{}};
+  st.recurring.push(r);save();renderRecOv();renderWeeklyPage();renderWkSummary();renderWkCal();
+  let serverId=null;
+  pushUndo(()=>{const rid=serverId||localId;st.recurring=st.recurring.filter(x=>String(x.id)!==String(rid));save();renderRecOv();renderWeeklyPage();renderWkSummary();renderWkCal();if(serverId)sbReq('DELETE','recurring_tasks',null,recQs(serverId));},'Added recurring task');
+  const payload={name:n,is_weekly_reset:isWr,cadence:useCadence,appears_on_date:appearsOn,starting_date:r.starting_date};
+  if(repeatDate)payload.repeat_date=repeatDate;
+  const sv=await sbReq('POST','recurring_tasks',payload);
+  if(sv&&sv[0]){
+    const i=st.recurring.findIndex(x=>x.id===localId);
+    const entry={...sv[0],_doneByWk:{},_done:false,_dateOverrides:{}};
+    if(i>-1)st.recurring[i]=entry;
+    else if(!st.recurring.some(x=>String(x.id)===String(sv[0].id)))st.recurring.push(entry);
+    serverId=String(sv[0].id);
+    save();renderRecOv();renderWeeklyPage();renderWkSummary();renderWkCal();
+  }
+}
+
+async function duplicateRecDirect(rid){
+  const r=st.recurring.find(x=>String(x.id)===String(rid));if(!r)return;
+  const dupName=uniqueRecName(r.name);
+  const todayDs=d2s(new Date());
+  const tempId='rec-tmp-'+Date.now();
+  const localCopy={...r,id:tempId,name:dupName,starting_date:todayDs,_doneByWk:{},_done:false,_dateOverrides:{}};
+  st.recurring.push(localCopy);
+  save();renderRecOv();renderWeeklyPage();renderToday();renderWkSummary();renderWkCal();
+  const payload={name:dupName,is_weekly_reset:r.is_weekly_reset||false,cadence:r.cadence||'weekly',starting_date:todayDs};
+  if(r.appears_on_date)payload.appears_on_date=r.appears_on_date;
+  if(r.repeat_date)payload.repeat_date=r.repeat_date;
+  if(r.day_added)payload.day_added=r.day_added;
+  if(r.task_due_day)payload.task_due_day=r.task_due_day;
+  const sv=await sbReq('POST','recurring_tasks',payload);
+  if(sv&&sv[0]){
+    const idx=st.recurring.findIndex(x=>x.id===tempId);
+    if(idx>-1)st.recurring[idx]={...sv[0],_doneByWk:{},_done:false,_dateOverrides:{}};
+    else if(!st.recurring.some(x=>String(x.id)===String(sv[0].id)))st.recurring.push({...sv[0],_doneByWk:{},_done:false,_dateOverrides:{}});
+  } else {
+    const idx=st.recurring.findIndex(x=>x.id===tempId);
+    if(idx>-1)st.recurring[idx].id='rec-local-'+Date.now();
+  }
+  save();renderRecOv();renderWeeklyPage();renderToday();renderWkSummary();renderWkCal();
+  pushUndo(()=>{
+    st.recurring=st.recurring.filter(x=>String(x.id)!==(sv&&sv[0]?String(sv[0].id):tempId));
+    save();renderRecOv();renderWeeklyPage();renderToday();renderWkSummary();renderWkCal();
+    if(sv&&sv[0])sbReq('DELETE','recurring_tasks',null,recQs(sv[0].id));
+  },'Duplicated recurring');
 }
 function togRec(id,done){
   const r=st.recurring.find(x=>String(x.id)===String(id));
@@ -4027,6 +4122,6 @@ function copyShopList(){
 function tickClock(){const t=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});const el=document.getElementById('liveClock');if(el)el.textContent=t;}
 tickClock();setInterval(tickClock,1000);
 </script>
-<div id="devBadge" style="display:none;position:fixed;bottom:16px;left:16px;background:#1e293b;color:#f8fafc;font-size:11px;font-weight:700;letter-spacing:.08em;padding:4px 9px;border-radius:6px;border:1px solid rgba(255,255,255,.15);z-index:9999;pointer-events:none">DEV-23</div>
+<div id="devBadge" style="display:none;position:fixed;bottom:16px;left:16px;background:#1e293b;color:#f8fafc;font-size:11px;font-weight:700;letter-spacing:.08em;padding:4px 9px;border-radius:6px;border:1px solid rgba(255,255,255,.15);z-index:9999;pointer-events:none">DEV-47</div>
 <script>if(location.hostname.includes('dev.'))document.getElementById('devBadge').style.display='block';</script>
 </body></html>

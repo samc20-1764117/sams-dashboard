@@ -163,6 +163,20 @@ All three checkbox types share identical visual style:
 
 - Fixed-position badge `id="devBadge"` at bottom-left. Tracks current batch (e.g. `DEV-11`). `display:none` by default (enabled in dev).
 
+## Recurring Tasks Page
+
+- Page ID: `page-weekly` (unchanged). Accessible via sidebar "Recurring Tasks" and Quick Link "🔄 Recurring Tasks" (`showPage('weekly')`).
+- Layout: two-column grid (`1fr 1fr`). Left = "Weekly Reset Recurring", Right = "Non-Weekly Reset Recurring".
+- Each column contains 4 cadence groups rendered into: `#rt-wr-weekly`, `#rt-wr-biweekly`, `#rt-wr-monthly`, `#rt-wr-other` (left) and `#rt-sch-weekly`, `#rt-sch-biweekly`, `#rt-sch-monthly`, `#rt-sch-other` (right).
+- `renderRecurringPage()` renders all 8 groups. Called by `renderWeeklyPage()` (which also keeps hidden compat elements `#wrBar`, `#wrPct2`, `#wrPL` in sync).
+- Each group rendered by `renderRtGroup(containerId, tasks, isWr, cadence)` as a `.card` with: header (cadence label + count + modal-open `+`), task list, quick-add row.
+- Task rows: `onclick=selTask`, `ondblclick=openRecEditModal`, `oncontextmenu=showCtx`. For weekly reset rows: checkbox via `togRec`. For non-weekly rows: spacer in place of checkbox. Visible duplicate button `⧉` calls `duplicateRecDirect(rid)`.
+- Quick-add row: text input + optional day select (weekly/biweekly: day-of-week; monthly: day-of-month). `addRecDirect(inputEl, isWr, cadence)` saves locally and POSTs to Supabase.
+- `openRecModalForSection(type, cadence)` opens the existing recModal pre-filled with the right type and cadence.
+- `duplicateRecDirect(rid)` is equivalent to `ctxDoDuplicate` for recurring tasks — generates unique name via `uniqueRecName`, POSTs to DB, supports undo.
+- Hidden backward-compat elements on the page: `#wrBar`, `#wrPct2`, `#wrPL`, `#wrList`, `#shopFull`, `#shopCountLbl`, `#shopSortBtn`, `#nsN`, `#nsS` — all `display:none`. These prevent errors in `renderWeeklyPage()` and `renderShopFull()` which are still called on page show.
+- "Other" cadence group catches any task where cadence is not weekly/biweekly/monthly. `addRecDirect` for "other" bucket saves with cadence `weekly`.
+
 ## Git Workflow
 
 - Stop hook: auto-commits and pushes to `origin/dev` branch after every Claude turn.
