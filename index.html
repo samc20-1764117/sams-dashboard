@@ -691,115 +691,48 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 
 <!-- RECURRING TASKS -->
 <div class="page" id="page-weekly">
-  <!-- hidden backward-compat elements used by renderWeeklyPage() -->
+  <!-- hidden compat elements -->
   <span id="wrPL" style="display:none">0/0</span>
   <span id="wrPct2" style="display:none">0%</span>
   <div style="display:none"><div id="wrBar" style="width:0%"></div></div>
   <div id="wrList" style="display:none"></div>
-  <!-- Shopping elements preserved for renderShopFull() compatibility -->
   <div id="shopFull" style="display:none"></div>
   <span id="shopCountLbl" style="display:none"></span>
   <button id="shopSortBtn" style="display:none"></button>
   <input id="nsN" style="display:none"><input id="nsS" style="display:none">
   <datalist id="storeListFull"><option value="HEB"></option><option value="Ikea"></option><option value="Online"></option><option value="Other"></option></datalist>
 
-  <div style="padding-top:4px">
+  <!-- Section 1: Weekly Reset Recurring -->
+  <div style="margin-bottom:24px">
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px;padding:0 2px">Weekly Reset Recurring</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start">
       <div id="rt-wr-weekly"></div>
-      <div id="rt-sch-weekly"></div>
       <div id="rt-wr-biweekly"></div>
-      <div id="rt-sch-biweekly"></div>
       <div id="rt-wr-monthly"></div>
-      <div id="rt-sch-monthly"></div>
       <div id="rt-wr-other"></div>
+    </div>
+  </div>
+
+  <!-- Section 2: Non Weekly Reset Recurring -->
+  <div>
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px;padding:0 2px">Non Weekly Reset Recurring</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start">
+      <div id="rt-sch-weekly"></div>
+      <div id="rt-sch-biweekly"></div>
+      <div id="rt-sch-monthly"></div>
       <div id="rt-sch-other"></div>
     </div>
   </div>
 </div>
 
-<!-- TRAVEL -->
-<div class="page" id="page-travel" style="display:none!important">
-  <div class="topbar"><div class="topbar-left"></div><div class="topbar-center"><div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:1px">✈️ Travel</div></div><div class="topbar-right">
-    <div class="sync-bar" onclick="syncAll()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path></svg><span id="syncTxt5" style="font-size:9px">Synced 13:23</span></div>
-    <button class="btn btn-dark btn-xs" onclick="openTravelModal()">+ Add Trip</button></div>
-  <div class="card" style="max-width:540px"><div id="travelList"><div class="ti ti-travel">
-        <span style="font-size:12px;flex-shrink:0">✈️</span>
-        <span class="tn" onclick="openTravelModal(&#39;8e07712c-2222-47cd-8733-a20f8a5a701a&#39;)" style="color:#0f766e">Tableau Conference → San Diego, CA</span>
-        <span class="cpill" style="background:#ccfbf1;color:#0f766e;border-color:rgba(20,184,166,.25)">Travel</span>
-        <span class="dlbl">May 4 – May 8</span>
-        <button class="delbtn" onclick="delTravel(&#39;8e07712c-2222-47cd-8733-a20f8a5a701a&#39;)">✕</button>
-      </div><div class="ti ti-travel">
-        <span style="font-size:12px;flex-shrink:0">✈️</span>
-        <span class="tn" onclick="openTravelModal(&#39;e927f683-271b-4dcb-bbd9-bf7caf88b877&#39;)" style="color:#0f766e">Iceland Trip → Iceland</span>
-        <span class="cpill" style="background:#ccfbf1;color:#0f766e;border-color:rgba(20,184,166,.25)">Travel</span>
-        <span class="dlbl">Aug 1 – Aug 8</span>
-        <button class="delbtn" onclick="delTravel(&#39;e927f683-271b-4dcb-bbd9-bf7caf88b877&#39;)">✕</button>
-      </div></div></div>
-</div>
-
-<!-- BIRTHDAYS -->
-<div class="page" id="page-birthdays">
-  <div class="card" style="max-width:540px"><div id="bdayList"><div class="ti ti-birthday">
-        <span style="font-size:12px;flex-shrink:0">🎂</span>
-        <span class="tn" onclick="openBdayModal(&#39;c35d115f-ac02-40e0-8c3e-c0c6a37c7fbf&#39;)" style="color:#c2410c">Josh</span>
-        
-        <span class="dlbl">Nov 8</span>
-        <button class="delbtn" onclick="delBday(&#39;c35d115f-ac02-40e0-8c3e-c0c6a37c7fbf&#39;)">✕</button>
-      </div><div class="ti ti-birthday">
-        <span style="font-size:12px;flex-shrink:0">🎂</span>
-        <span class="tn" onclick="openBdayModal(&#39;b508929c-c333-4973-bc67-888859337e9b&#39;)" style="color:#c2410c">Sunny</span>
-        
-        <span class="dlbl">Jan 14</span>
-        <button class="delbtn" onclick="delBday(&#39;b508929c-c333-4973-bc67-888859337e9b&#39;)">✕</button>
-      </div></div></div>
-</div>
-
-<!-- PUPS -->
-<div class="page" id="page-pups">
-  <div class="card" style="padding:32px;text-align:center;color:var(--muted)">
-    <div style="font-size:48px;margin-bottom:12px">🐾</div>
-    <div style="font-size:14px;font-weight:600;margin-bottom:6px">Pups page coming soon</div>
-    <div style="font-size:12px">Add your pups' info, vet dates, and more here.</div>
-  </div>
-</div>
-
-<!-- FINANCE -->
-<div class="page" id="page-finance">
-  <div class="card" style="padding:32px;text-align:center;color:var(--muted)">
-    <div style="font-size:48px;margin-bottom:12px">💰</div>
-    <div style="font-size:14px;font-weight:600;margin-bottom:6px">Finance coming soon</div>
-    <div style="font-size:12px">Track bills, budget, and recurring expenses.</div>
-  </div>
-</div>
-
-<!-- RECIPES -->
-<div class="page" id="page-recipes">
-  <div class="card" style="padding:32px;text-align:center;color:var(--muted)">
-    <div style="font-size:48px;margin-bottom:12px">🍳</div>
-    <div style="font-size:14px;font-weight:600;margin-bottom:6px">Recipes coming soon</div>
-    <div style="font-size:12px">Save recipes and link ingredients to your shopping list.</div>
-  </div>
-</div>
-
-<!-- NOTES -->
-<div class="page" id="page-notes">
-  <div class="card" style="padding:32px;text-align:center;color:var(--muted)">
-    <div style="font-size:48px;margin-bottom:12px">📝</div>
-    <div style="font-size:14px;font-weight:600;margin-bottom:6px">Notes coming soon</div>
-    <div style="font-size:12px">Quick capture, brain dumps, and freeform notes.</div>
-  </div>
-</div>
-
-<!-- SETTINGS -->
-<div class="page" id="page-settings" style="display:none!important">
-  <div class="topbar"><div class="topbar-left"></div><div class="topbar-center"><div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:1px">Settings</div></div><div class="topbar-right"></div></div>
-  <div class="card" style="max-width:400px"><div style="padding:14px">
-    <div class="sf"><label>Supabase Project URL</label><input class="si2" id="cfgUrl" placeholder="https://xxxx.supabase.co"></div>
-    <div class="sf"><label>Supabase Anon Key</label><input class="si2" id="cfgKey" placeholder="eyJ..."></div>
-    <div class="cst idle" id="cst">Not connected</div>
-    <div style="display:flex;gap:6px"><button class="btn btn-ghost" onclick="testConn()">Test</button><button class="btn btn-dark" onclick="saveSettings()">Save &amp; Connect</button></div>
-  </div></div>
-</div>
+<!-- OTHER PAGES (empty) -->
+<div class="page" id="page-travel" style="display:none!important"><div id="travelList" style="display:none"></div></div>
+<div class="page" id="page-birthdays"><div id="bdayList" style="display:none"></div></div>
+<div class="page" id="page-pups"></div>
+<div class="page" id="page-finance"></div>
+<div class="page" id="page-recipes"></div>
+<div class="page" id="page-notes"></div>
+<div class="page" id="page-settings" style="display:none!important"><input class="si2" id="cfgUrl" style="display:none"><input class="si2" id="cfgKey" style="display:none"><div class="cst idle" id="cst" style="display:none"></div></div>
 
 </div><!-- /main -->
 </div><!-- /shell -->
@@ -4105,6 +4038,6 @@ function copyShopList(){
 function tickClock(){const t=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});const el=document.getElementById('liveClock');if(el)el.textContent=t;}
 tickClock();setInterval(tickClock,1000);
 </script>
-<div id="devBadge" style="display:none;position:fixed;bottom:16px;left:16px;background:#1e293b;color:#f8fafc;font-size:11px;font-weight:700;letter-spacing:.08em;padding:4px 9px;border-radius:6px;border:1px solid rgba(255,255,255,.15);z-index:9999;pointer-events:none">DEV-14</div>
+<div id="devBadge" style="display:none;position:fixed;bottom:16px;left:16px;background:#1e293b;color:#f8fafc;font-size:11px;font-weight:700;letter-spacing:.08em;padding:4px 9px;border-radius:6px;border:1px solid rgba(255,255,255,.15);z-index:9999;pointer-events:none">DEV-88</div>
 <script>if(location.hostname.includes('dev.'))document.getElementById('devBadge').style.display='block';</script>
 </body></html>
