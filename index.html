@@ -227,7 +227,8 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 .qa-close:hover{color:var(--text);background:rgba(0,0,0,.05)}
 
 /* Layout — consistent 14px gaps everywhere */
-.row1{display:grid;grid-template-columns:0.65fr 2.2fr 1fr 0.9fr 0.65fr;gap:14px;margin-bottom:14px;align-items:stretch;height:400px}
+.row1{display:grid;grid-template-columns:2.2fr 1fr 0.9fr 0.65fr;gap:14px;margin-bottom:14px;align-items:stretch;height:540px}
+.top-right-controls{position:fixed;top:14px;right:20px;z-index:90;display:flex;align-items:center;gap:8px}
 .row1-right{display:grid;grid-template-columns:1fr 0.85fr 0.6fr;grid-template-rows:auto 1fr;gap:14px;min-height:0}
 .row1-left{display:flex;flex-direction:column;gap:8px;min-height:0}
 .row1-left-btns{display:flex;align-items:center;gap:6px;flex-shrink:0;flex-wrap:wrap}
@@ -447,21 +448,18 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 <!-- Main -->
 <div class="main" id="main" style="margin-left: 0px;">
 
+<!-- Top-right controls: Night Mode + Sync -->
+<div class="top-right-controls">
+  <button class="dark-toggle" id="darkToggle" onclick="toggleDark()" title="Toggle dark mode"><span id="darkToggleIcon">🌙</span></button>
+  <div class="sync-bar" id="syncBar" onclick="syncAll()">
+    <svg id="syncIcon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path></svg>
+    <span id="syncTxt" style="font-size:9px">Synced</span>
+  </div>
+</div>
+
 <!-- OVERVIEW -->
 <div class="page active" id="page-overview">
   <div class="row1">
-    <!-- Left panel: buttons above + empty card -->
-    <div class="row1-left">
-      <div class="row1-left-btns">
-        <button class="btn btn-ghost btn-xs" onclick="openSB()" title="Menu" style="font-size:13px;padding:4px 8px">☰</button>
-        <button class="dark-toggle" id="darkToggle" onclick="toggleDark()" title="Toggle dark mode"><span id="darkToggleIcon">🌙</span></button>
-        <div class="sync-bar" id="syncBar" onclick="syncAll()">
-          <svg id="syncIcon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path></svg>
-          <span id="syncTxt" style="font-size:9px">Synced</span>
-        </div>
-      </div>
-      <div class="card" style="flex:1;min-height:0"></div>
-    </div>
     <!-- Today + Time Block -->
     <div class="card card-hero" style="min-height:0;position:relative;display:flex;flex-direction:column;overflow:hidden">
       <div id="dayFlash" class="day-flash"></div>
@@ -563,7 +561,7 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
   </div>
   <div class="row2">
     <div style="display:flex;flex-direction:column;gap:12px">
-      <div class="card" style="height:265px;position:relative">
+      <div class="card" style="height:200px;position:relative">
         <div id="wkListEdgeR" class="wk-list-edge wk-list-edge-r">›</div>
         <div class="ch-prog">
           <div class="ct">This Week</div>
@@ -627,7 +625,7 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
     <button class="delbtn" onclick="delTask(&#39;l-17732526288830.4300519999936374&#39;,event)">✕</button>
   </div></div>
       </div>
-      <div class="card" style="height:150px">
+      <div class="card" style="height:110px">
         <div class="ch"><div class="ct">Need to Assign</div><button class="btn-plus" onclick="openQA(&#39;unassigned&#39;,this)">+</button></div>
         <div class="tlist" id="unList" style="flex:1"></div>
       </div>
