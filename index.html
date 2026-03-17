@@ -87,7 +87,7 @@ body{font-family:'DM Sans',sans-serif;background:#f0ecfb;background-attachment:f
 .orb4{width:380px;height:380px;background:radial-gradient(circle,#fde68a,#fbbf24);top:35%;left:38%;animation-duration:28s;animation-delay:-12s}
 .orb5{width:420px;height:420px;background:radial-gradient(circle,#fed7aa,#fb923c);bottom:5%;right:5%;animation-duration:24s;animation-delay:-6s}
 @keyframes drift{0%{transform:translate(0,0) scale(1)}33%{transform:translate(30px,-20px) scale(1.04)}66%{transform:translate(-20px,30px) scale(.97)}100%{transform:translate(15px,10px) scale(1.02)}}
-.shell{display:flex;height:100vh;overflow:hidden;position:relative;z-index:1;backdrop-filter:blur(1.5px);-webkit-backdrop-filter:blur(1.5px)}
+.shell{display:flex;height:100vh;overflow:hidden;position:relative;z-index:1}
 
 /* Sidebar */
 .sidebar{position:fixed;left:0;top:0;bottom:0;z-index:100;width:186px;background:rgba(255,255,255,.55);backdrop-filter:blur(32px);-webkit-backdrop-filter:blur(32px);border-right:1px solid rgba(255,255,255,.65);display:flex;flex-direction:column;padding:11px 8px 11px;box-shadow:4px 0 32px rgba(100,80,180,.10);transition:transform .25s cubic-bezier(.4,0,.2,1),opacity .22s}
@@ -4027,6 +4027,6 @@ function copyShopList(){
 function tickClock(){const t=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});const el=document.getElementById('liveClock');if(el)el.textContent=t;}
 tickClock();setInterval(tickClock,1000);
 </script>
-<div id="devBadge" style="display:none;position:fixed;bottom:16px;left:16px;background:#1e293b;color:#f8fafc;font-size:11px;font-weight:700;letter-spacing:.08em;padding:4px 9px;border-radius:6px;border:1px solid rgba(255,255,255,.15);z-index:9999;pointer-events:none">DEV-56</div>
+<div id="devBadge" style="display:none;position:fixed;bottom:16px;left:16px;background:#1e293b;color:#f8fafc;font-size:11px;font-weight:700;letter-spacing:.08em;padding:4px 9px;border-radius:6px;border:1px solid rgba(255,255,255,.15);z-index:9999;pointer-events:none">DEV-27</div>
 <script>if(location.hostname.includes('dev.'))document.getElementById('devBadge').style.display='block';</script>
 </body></html>
