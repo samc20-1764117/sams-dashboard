@@ -3616,11 +3616,12 @@ document.addEventListener('keydown',async e=>{
     e.preventDefault();
     _copiedTasks.forEach(async t=>{
       if(t._isRec){
+        const dupName=uniqueRecName(t.name);
         const tempId='rec-tmp-'+Date.now();
-        const localCopy={...t,id:tempId,_doneByWk:{},_done:false,_dateOverrides:{},_isRec:undefined};
+        const localCopy={...t,id:tempId,name:dupName,_doneByWk:{},_done:false,_dateOverrides:{},_isRec:undefined};
         st.recurring.push(localCopy);
         save();renderRecOv();renderWeeklyPage();renderToday();renderWkSummary();renderWkCal();
-        const payload={name:t.name,is_weekly_reset:t.is_weekly_reset||false,cadence:t.cadence||'weekly'};
+        const payload={name:dupName,is_weekly_reset:t.is_weekly_reset||false,cadence:t.cadence||'weekly'};
         if(t.appears_on_date)payload.appears_on_date=t.appears_on_date;
         if(t.starting_date)payload.starting_date=t.starting_date;
         if(t.repeat_date)payload.repeat_date=t.repeat_date;
@@ -3760,6 +3761,12 @@ document.addEventListener('mousedown',e=>{
 },{capture:true,passive:true});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')hideCtx();});
 
+function uniqueRecName(base){
+  const existing=new Set(st.recurring.map(r=>r.name));
+  if(!existing.has(base))return base;
+  let n=2;while(existing.has(base+' ('+n+')'))n++;
+  return base+' ('+n+')';
+}
 async function ctxDoDuplicate(){
   const m=document.getElementById('ctxMenu');
   const id=m._tid,isRec=m._isRec,rId=m._recId;
@@ -3768,12 +3775,13 @@ async function ctxDoDuplicate(){
     const r=st.recurring.find(x=>String(x.id)===rId);
     if(!r){console.warn('Recurring not found:',rId,st.recurring.map(x=>x.id));return;}
     // Add locally first with a temp id so it appears immediately
+    const dupName=uniqueRecName(r.name);
     const tempId='rec-tmp-'+Date.now();
-    const localCopy={...r,id:tempId,_doneByWk:{},_done:false,_dateOverrides:{}};
+    const localCopy={...r,id:tempId,name:dupName,_doneByWk:{},_done:false,_dateOverrides:{}};
     st.recurring.push(localCopy);
     save();renderRecOv();renderWeeklyPage();renderToday();renderWkSummary();renderWkCal();
     // Push to DB
-    const payload={name:r.name,is_weekly_reset:r.is_weekly_reset||false,cadence:r.cadence||'weekly'};
+    const payload={name:dupName,is_weekly_reset:r.is_weekly_reset||false,cadence:r.cadence||'weekly'};
     if(r.appears_on_date)payload.appears_on_date=r.appears_on_date;
     if(r.starting_date)payload.starting_date=r.starting_date;
     if(r.repeat_date)payload.repeat_date=r.repeat_date;
