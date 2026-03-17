@@ -1284,17 +1284,39 @@ function getDateForDow(dow,wkOff2=0){
 }
 // Build virtual task objects from recurring items that have appears_on_date
 // is_weekly_reset=false items → appear in This Week on their appears_on_date day
-// Respects starting_date: don't show before that date
+// Respects cadence (weekly/biweekly/monthly) and starting_date
 function getRecurringWeekTasks(off=0){
   const out=[];
+  const wkDates=getWkDates(off);
   st.recurring.filter(r=>!r.is_weekly_reset&&r.appears_on_date).forEach(r=>{
-    const dow=dayNameToIdx(r.appears_on_date);if(dow<0)return;
-    const date=getDateForDow(dow,off);if(!date)return;
-    if(r.starting_date){
-      const sd=new Date(r.starting_date+'T00:00:00');
-      if(date<sd)return;
-    }
+    const cadence=r.cadence||'weekly';
     const wkKey=getWkKey(off);
+    let date=null;
+
+    if(cadence==='monthly'){
+      // Show on the week that contains repeat_date day of month
+      const repDate=parseInt(r.repeat_date,10);
+      if(!repDate||repDate<1||repDate>31)return;
+      const match=wkDates.find(d=>d.getDate()===repDate);
+      if(!match)return;
+      if(r.starting_date){const sd=new Date(r.starting_date+'T00:00:00');if(match<sd)return;}
+      date=match;
+    } else {
+      // weekly or biweekly — use appears_on_date day of week
+      const dow=dayNameToIdx(r.appears_on_date);if(dow<0)return;
+      date=getDateForDow(dow,off);if(!date)return;
+      if(r.starting_date){const sd=new Date(r.starting_date+'T00:00:00');if(date<sd)return;}
+      if(cadence==='biweekly'){
+        if(!r.starting_date)return; // biweekly requires anchor
+        const sd=new Date(r.starting_date+'T00:00:00');
+        const sdDow=(sd.getDay()+6)%7;
+        const sdMon=new Date(sd);sdMon.setDate(sd.getDate()-sdDow);sdMon.setHours(0,0,0,0);
+        const tgtMon=new Date(wkDates[0]);tgtMon.setHours(0,0,0,0);
+        const weekDiff=Math.round((tgtMon-sdMon)/(7*86400000));
+        if(weekDiff<0||weekDiff%2!==0)return; // not on a valid cycle week
+      }
+    }
+
     // Check for a per-week date override (from dragging)
     const overrideDate=r._dateOverrides&&r._dateOverrides[wkKey];
     const ds=overrideDate||d2s(date);
@@ -3554,9 +3576,8 @@ document.addEventListener('keydown',async e=>{
         const localCopy={...t,id:tempId,_doneByWk:{},_done:false,_dateOverrides:{},_isRec:undefined};
         st.recurring.push(localCopy);
         save();renderRecOv();renderWeeklyPage();renderToday();renderWkSummary();renderWkCal();
-        const payload={name:t.name,day_of_week:t.day_of_week||1};
+        const payload={name:t.name,day_of_week:t.day_of_week||1,cadence:t.cadence||'weekly'};
         if(t.is_weekly_reset!==undefined)payload.is_weekly_reset=t.is_weekly_reset;
-        if(t.cadence)payload.cadence=t.cadence;
         if(t.task_due_day)payload.task_due_day=t.task_due_day;
         if(t.day_added)payload.day_added=t.day_added;
         if(t.starting_date)payload.starting_date=t.starting_date;
@@ -3711,9 +3732,8 @@ async function ctxDoDuplicate(){
     st.recurring.push(localCopy);
     save();renderRecOv();renderWeeklyPage();renderToday();renderWkSummary();renderWkCal();
     // Push to DB
-    const payload={name:r.name,day_of_week:r.day_of_week||1};
+    const payload={name:r.name,day_of_week:r.day_of_week||1,cadence:r.cadence||'weekly'};
     if(r.is_weekly_reset!==undefined)payload.is_weekly_reset=r.is_weekly_reset;
-    if(r.cadence)payload.cadence=r.cadence;
     if(r.task_due_day)payload.task_due_day=r.task_due_day;
     if(r.day_added)payload.day_added=r.day_added;
     if(r.starting_date)payload.starting_date=r.starting_date;
@@ -3954,6 +3974,6 @@ function copyShopList(){
 function tickClock(){const t=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});const el=document.getElementById('liveClock');if(el)el.textContent=t;}
 tickClock();setInterval(tickClock,1000);
 </script>
-<div id="devBadge" style="display:none;position:fixed;bottom:16px;left:16px;background:#1e293b;color:#f8fafc;font-size:11px;font-weight:700;letter-spacing:.08em;padding:4px 9px;border-radius:6px;border:1px solid rgba(255,255,255,.15);z-index:9999;pointer-events:none">DEV-19</div>
+<div id="devBadge" style="display:none;position:fixed;bottom:16px;left:16px;background:#1e293b;color:#f8fafc;font-size:11px;font-weight:700;letter-spacing:.08em;padding:4px 9px;border-radius:6px;border:1px solid rgba(255,255,255,.15);z-index:9999;pointer-events:none">DEV-20</div>
 <script>if(location.hostname.includes('dev.'))document.getElementById('devBadge').style.display='block';</script>
 </body></html>
