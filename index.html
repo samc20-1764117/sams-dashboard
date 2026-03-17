@@ -1821,6 +1821,9 @@ function renderWkCal(){
 
     // Drag-over for task drop
     col.addEventListener('dragover',e=>{
+      // Skip if cursor is in edge zone — let wkcWrap handle it
+      const wr=document.getElementById('wkcWrap');
+      if(wr){const rr=wr.getBoundingClientRect();if(e.clientX-rr.left<44||rr.right-e.clientX<44){col.classList.remove('drop-here');return;}}
       e.preventDefault();
       if(tvDragStart!==null){
         // Travel drag-select mode
@@ -2041,10 +2044,80 @@ function showWkcEdges(show){
 }
 // Edge drop zones
 document.addEventListener('DOMContentLoaded',()=>{
-  setupEdge('wkcEdgeL',-1);
-  setupEdge('wkcEdgeR',1);
+  setupWkcEdgeDrop();
   setupEdge('wkListEdgeR',1);
 });
+function setupWkcEdgeDrop(){
+  const wrap=document.getElementById('wkcWrap');if(!wrap)return;
+  const EDGE=44;
+  const edgeL=document.getElementById('wkcEdgeL');
+  const edgeR=document.getElementById('wkcEdgeR');
+  wrap.addEventListener('dragover',e=>{
+    if(!dragId)return;
+    const r=wrap.getBoundingClientRect();
+    const fl=e.clientX-r.left<EDGE,fr=r.right-e.clientX<EDGE;
+    if(fl||fr){
+      e.preventDefault();
+      if(edgeL)edgeL.style.opacity=fl?'1':'';
+      if(edgeR)edgeR.style.opacity=fr?'1':'';
+    }
+  });
+  wrap.addEventListener('dragleave',e=>{
+    if(!e.relatedTarget||!wrap.contains(e.relatedTarget)){
+      if(edgeL)edgeL.style.opacity='';
+      if(edgeR)edgeR.style.opacity='';
+    }
+  });
+  wrap.addEventListener('drop',async e=>{
+    if(!dragId)return;
+    const r=wrap.getBoundingClientRect();
+    const fl=e.clientX-r.left<EDGE,fr=r.right-e.clientX<EDGE;
+    if(!fl&&!fr)return;
+    e.preventDefault();
+    if(edgeL)edgeL.style.opacity='';
+    if(edgeR)edgeR.style.opacity='';
+    showWkcEdges(false);
+    const dir=fl?-1:1;
+    dragId=String(dragId);
+    const targetWkOff=wkOff+dir;
+    const targetDates=getWkDates(targetWkOff);
+    const newDs=dir===1?d2s(targetDates[0]):d2s(targetDates[6]);
+    if(dragId.startsWith('wrec::')){
+      const recId=dragId.split('::')[1];
+      const rec=st.recurring.find(x=>String(x.id)===String(recId));
+      if(rec){
+        if(!rec._dateOverrides)rec._dateOverrides={};
+        const wkKey=getWkKey(targetWkOff);
+        const prev=rec._dateOverrides[wkKey];
+        rec._dateOverrides[wkKey]=newDs;
+        dragId=null;shiftWk(dir);save();renderAll();
+        sbReq('PATCH','recurring_tasks',{date_overrides:rec._dateOverrides},recQs(rec.id));
+        pushUndo(()=>{if(prev)rec._dateOverrides[wkKey]=prev;else delete rec._dateOverrides[wkKey];save();renderAll();sbReq('PATCH','recurring_tasks',{date_overrides:rec._dateOverrides},recQs(rec.id));},'Moved to other week');
+      }
+      dragId=null;return;
+    }
+    if(dragId.startsWith('rec::')){
+      const recId=dragId.split('::')[1];
+      const rec=st.recurring.find(x=>String(x.id)===String(recId));
+      if(rec){
+        if(!rec._dateOverrides)rec._dateOverrides={};
+        const wkKey=getWkKey(targetWkOff);
+        const prev=rec._dateOverrides[wkKey];
+        rec._dateOverrides[wkKey]=newDs;
+        dragId=null;shiftWk(dir);save();renderAll();
+        sbReq('PATCH','recurring_tasks',{date_overrides:rec._dateOverrides},recQs(rec.id));
+        pushUndo(()=>{if(prev)rec._dateOverrides[wkKey]=prev;else delete rec._dateOverrides[wkKey];save();renderAll();sbReq('PATCH','recurring_tasks',{date_overrides:rec._dateOverrides},recQs(rec.id));},'Moved to other week');
+      }
+      dragId=null;return;
+    }
+    const t=st.tasks.find(x=>String(x.id)===String(dragId));if(!t){dragId=null;return;}
+    const prev={due_date:t.due_date};
+    t.due_date=newDs;dragId=null;
+    shiftWk(dir);renderAll();
+    pushUndo(()=>{t.due_date=prev.due_date;renderAll();sbReq('PATCH','tasks',{due_date:prev.due_date},`?id=eq.${t.id}`);},'Moved to other week');
+    await sbReq('PATCH','tasks',{due_date:newDs},`?id=eq.${t.id}`);
+  });
+}
 function setupEdge(id,dir){
   const el=document.getElementById(id);
   if(!el)return;
@@ -3293,7 +3366,7 @@ function init(){
     syncAll(false); // fetch fresh data — syncAll calls renderAll internally when done
   } else{renderAll();setBadge('err','Not connected');}
   // Set up edge zones after DOM ready
-  setupEdge('wkcEdgeL',-1);setupEdge('wkcEdgeR',1);setupEdge('wkListEdgeR',1);
+  setupWkcEdgeDrop();setupEdge('wkListEdgeR',1);
   setInterval(()=>{if(cfg.url&&cfg.key)syncAll(true);},30000);
 }
 init();
@@ -3875,6 +3948,6 @@ function copyShopList(){
 function tickClock(){const t=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});const el=document.getElementById('liveClock');if(el)el.textContent=t;}
 tickClock();setInterval(tickClock,1000);
 </script>
-<div id="devBadge" style="display:none;position:fixed;bottom:16px;left:16px;background:#1e293b;color:#f8fafc;font-size:11px;font-weight:700;letter-spacing:.08em;padding:4px 9px;border-radius:6px;border:1px solid rgba(255,255,255,.15);z-index:9999;pointer-events:none">DEV-16</div>
+<div id="devBadge" style="display:none;position:fixed;bottom:16px;left:16px;background:#1e293b;color:#f8fafc;font-size:11px;font-weight:700;letter-spacing:.08em;padding:4px 9px;border-radius:6px;border:1px solid rgba(255,255,255,.15);z-index:9999;pointer-events:none">DEV-17</div>
 <script>if(location.hostname.includes('dev.'))document.getElementById('devBadge').style.display='block';</script>
 </body></html>
