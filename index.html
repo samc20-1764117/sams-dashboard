@@ -438,13 +438,11 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
     <button class="nav-item active" onclick="showPage(&#39;overview&#39;)"><div class="ndot" style="background:#6d5fe6"></div>Overview</button>
     <button class="nav-item" onclick="showPage(&#39;weekly&#39;)"><div class="ndot" style="background:#10b981"></div>Recurring Tasks</button>
     <button class="nav-item" onclick="showPage(&#39;weekly&#39;)"><div class="ndot" style="background:#eab308"></div>Shopping</button>
-    <button class="nav-item" onclick="showPage(&#39;travel&#39;)"><div class="ndot" style="background:#14b8a6"></div>Travel</button>
     <button class="nav-item" onclick="showPage(&#39;birthdays&#39;)"><div class="ndot" style="background:#f97316"></div>Birthdays</button>
     <button class="nav-item" onclick="showPage(&#39;pups&#39;)"><div class="ndot" style="background:#f43f5e"></div>🐾 Pups</button>
     <button class="nav-item" onclick="showPage(&#39;finance&#39;)"><div class="ndot" style="background:#22c55e"></div>💰 Finance</button>
     <button class="nav-item" onclick="showPage(&#39;recipes&#39;)"><div class="ndot" style="background:#f59e0b"></div>🍳 Recipes</button>
     <button class="nav-item" onclick="showPage(&#39;notes&#39;)"><div class="ndot" style="background:#8b5cf6"></div>📝 Notes</button>
-    <button class="nav-item" onclick="showPage(&#39;settings&#39;)"><div class="ndot" style="background:#9590a8"></div>Settings</button>
   </nav>
 </div>
 
@@ -562,7 +560,6 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
       <div class="ql-grid" style="flex:1;align-content:stretch;padding:8px;gap:6px">
         <button class="ql-btn" onclick="showPage(&#39;weekly&#39;)"><span class="ql-icon">🔄</span>Recurring Tasks</button>
         <button class="ql-btn" onclick="showPage(&#39;weekly&#39;)"><span class="ql-icon">🛒</span>Shopping</button>
-        <button class="ql-btn" onclick="showPage(&#39;travel&#39;)"><span class="ql-icon">✈️</span>Travel</button>
         <button class="ql-btn" onclick="showPage(&#39;birthdays&#39;)"><span class="ql-icon">🎂</span>Birthdays</button>
         <button class="ql-btn" onclick="showPage(&#39;pups&#39;)"><span class="ql-icon">🐾</span>Pups</button>
         <button class="ql-btn" onclick="showPage(&#39;finance&#39;)"><span class="ql-icon">💰</span>Finance</button>
@@ -705,9 +702,9 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
   <input id="nsN" style="display:none"><input id="nsS" style="display:none">
   <datalist id="storeListFull"><option value="HEB"></option><option value="Ikea"></option><option value="Online"></option><option value="Other"></option></datalist>
 
-  <div style="padding-top:8px">
-    <div style="font-size:13px;font-weight:700;color:var(--text);letter-spacing:-.2px;margin-bottom:16px">Recurring Tasks</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start">
+  <div style="padding-top:4px">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><button class="btn btn-ghost btn-xs" onclick="showPage('overview')">← Overview</button></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start">
       <!-- Weekly Reset Recurring -->
       <div>
         <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px;padding:0 2px">Weekly Reset Recurring</div>
@@ -729,7 +726,7 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 </div>
 
 <!-- TRAVEL -->
-<div class="page" id="page-travel">
+<div class="page" id="page-travel" style="display:none!important">
   <div class="topbar"><div class="topbar-left"></div><div class="topbar-center"><div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:1px">✈️ Travel</div></div><div class="topbar-right">
     <div class="sync-bar" onclick="syncAll()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path></svg><span id="syncTxt5" style="font-size:9px">Synced 13:23</span></div>
     <button class="btn btn-dark btn-xs" onclick="openTravelModal()">+ Add Trip</button></div>
@@ -750,7 +747,7 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 
 <!-- BIRTHDAYS -->
 <div class="page" id="page-birthdays">
-  <div class="topbar"><div class="topbar-left"></div><div class="topbar-center"><div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:1px">🎂 Birthdays</div></div><div class="topbar-right">
+  <div class="topbar"><div class="topbar-left"><button class="btn btn-ghost btn-xs" onclick="showPage('overview')">← Overview</button></div><div class="topbar-center"><div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:1px">🎂 Birthdays</div></div><div class="topbar-right">
     <div class="sync-bar" onclick="syncAll()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path></svg><span id="syncTxt6" style="font-size:9px">Synced 13:23</span></div>
     <button class="btn btn-dark btn-xs" onclick="openBdayModal()">+ Add Birthday</button></div>
   <div class="card" style="max-width:540px"><div id="bdayList"><div class="ti ti-birthday">
@@ -770,7 +767,7 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 
 <!-- PUPS -->
 <div class="page" id="page-pups">
-  <div class="topbar"><div class="topbar-left"></div><div class="topbar-center"><div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:1px">🐾 Pups</div></div><div class="topbar-right"><div class="sync-bar" onclick="syncAll()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path></svg><span style="font-size:9px">Sync</span></div></div></div>
+  <div class="topbar"><div class="topbar-left"><button class="btn btn-ghost btn-xs" onclick="showPage('overview')">← Overview</button></div><div class="topbar-center"><div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:1px">🐾 Pups</div></div><div class="topbar-right"><div class="sync-bar" onclick="syncAll()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path></svg><span style="font-size:9px">Sync</span></div></div></div>
   <div class="card" style="padding:32px;text-align:center;color:var(--muted)">
     <div style="font-size:48px;margin-bottom:12px">🐾</div>
     <div style="font-size:14px;font-weight:600;margin-bottom:6px">Pups page coming soon</div>
@@ -780,7 +777,7 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 
 <!-- FINANCE -->
 <div class="page" id="page-finance">
-  <div class="topbar"><div class="topbar-left"></div><div class="topbar-center"><div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:1px">💰 Finance</div></div><div class="topbar-right"><div class="sync-bar" onclick="syncAll()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path></svg><span style="font-size:9px">Sync</span></div></div></div>
+  <div class="topbar"><div class="topbar-left"><button class="btn btn-ghost btn-xs" onclick="showPage('overview')">← Overview</button></div><div class="topbar-center"><div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:1px">💰 Finance</div></div><div class="topbar-right"><div class="sync-bar" onclick="syncAll()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path></svg><span style="font-size:9px">Sync</span></div></div></div>
   <div class="card" style="padding:32px;text-align:center;color:var(--muted)">
     <div style="font-size:48px;margin-bottom:12px">💰</div>
     <div style="font-size:14px;font-weight:600;margin-bottom:6px">Finance coming soon</div>
@@ -790,7 +787,7 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 
 <!-- RECIPES -->
 <div class="page" id="page-recipes">
-  <div class="topbar"><div class="topbar-left"></div><div class="topbar-center"><div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:1px">🍳 Recipes</div></div><div class="topbar-right"><div class="sync-bar" onclick="syncAll()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path></svg><span style="font-size:9px">Sync</span></div></div></div>
+  <div class="topbar"><div class="topbar-left"><button class="btn btn-ghost btn-xs" onclick="showPage('overview')">← Overview</button></div><div class="topbar-center"><div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:1px">🍳 Recipes</div></div><div class="topbar-right"><div class="sync-bar" onclick="syncAll()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path></svg><span style="font-size:9px">Sync</span></div></div></div>
   <div class="card" style="padding:32px;text-align:center;color:var(--muted)">
     <div style="font-size:48px;margin-bottom:12px">🍳</div>
     <div style="font-size:14px;font-weight:600;margin-bottom:6px">Recipes coming soon</div>
@@ -800,7 +797,7 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 
 <!-- NOTES -->
 <div class="page" id="page-notes">
-  <div class="topbar"><div class="topbar-left"></div><div class="topbar-center"><div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:1px">📝 Notes</div></div><div class="topbar-right"><div class="sync-bar" onclick="syncAll()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path></svg><span style="font-size:9px">Sync</span></div></div></div>
+  <div class="topbar"><div class="topbar-left"><button class="btn btn-ghost btn-xs" onclick="showPage('overview')">← Overview</button></div><div class="topbar-center"><div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:1px">📝 Notes</div></div><div class="topbar-right"><div class="sync-bar" onclick="syncAll()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path></svg><span style="font-size:9px">Sync</span></div></div></div>
   <div class="card" style="padding:32px;text-align:center;color:var(--muted)">
     <div style="font-size:48px;margin-bottom:12px">📝</div>
     <div style="font-size:14px;font-weight:600;margin-bottom:6px">Notes coming soon</div>
@@ -809,7 +806,7 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 </div>
 
 <!-- SETTINGS -->
-<div class="page" id="page-settings">
+<div class="page" id="page-settings" style="display:none!important">
   <div class="topbar"><div class="topbar-left"></div><div class="topbar-center"><div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:1px">Settings</div></div><div class="topbar-right"></div></div>
   <div class="card" style="max-width:400px"><div style="padding:14px">
     <div class="sf"><label>Supabase Project URL</label><input class="si2" id="cfgUrl" placeholder="https://xxxx.supabase.co"></div>
@@ -4122,6 +4119,6 @@ function copyShopList(){
 function tickClock(){const t=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});const el=document.getElementById('liveClock');if(el)el.textContent=t;}
 tickClock();setInterval(tickClock,1000);
 </script>
-<div id="devBadge" style="display:none;position:fixed;bottom:16px;left:16px;background:#1e293b;color:#f8fafc;font-size:11px;font-weight:700;letter-spacing:.08em;padding:4px 9px;border-radius:6px;border:1px solid rgba(255,255,255,.15);z-index:9999;pointer-events:none">DEV-47</div>
+<div id="devBadge" style="display:none;position:fixed;bottom:16px;left:16px;background:#1e293b;color:#f8fafc;font-size:11px;font-weight:700;letter-spacing:.08em;padding:4px 9px;border-radius:6px;border:1px solid rgba(255,255,255,.15);z-index:9999;pointer-events:none">DEV-83</div>
 <script>if(location.hostname.includes('dev.'))document.getElementById('devBadge').style.display='block';</script>
 </body></html>
