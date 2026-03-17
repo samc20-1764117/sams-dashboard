@@ -1202,7 +1202,7 @@ async function syncAll(silent=false){
       const localOnly=st.tasks.filter(lt=>{const sid=String(lt.id);return(sid.startsWith('l-')||sid.startsWith('t-'))&&!dbIds.has(sid);});
       st.tasks=[...merged,...localOnly];
     }
-    if(rec){
+    if(rec&&(rec.length>0||!st.recurring.some(r=>!String(r.id).startsWith('rec-tmp-')&&!String(r.id).startsWith('rec-local-')))){
       const dbIds=new Set(rec.map(r=>String(r.id)));
       const localPending=st.recurring.filter(r=>{
         const sid=String(r.id);
