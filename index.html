@@ -3037,14 +3037,7 @@ function renderRtGroup(containerId, tasks, isWr, cadence){
     rowsHtml+=`<div class="ti${isDone?' done':''}" id="ti-rt-${rid}" style="cursor:pointer" onclick="selTask(event,'${virtId}')" ondblclick="if(!event.target.closest('.chk-wrap')&&!event.target.closest('.delbtn')){event.stopPropagation();clearSelection();openRecEditModal('${rid}')}" oncontextmenu="showCtx(event,'${virtId}',true,'${rid}')">${chkOrSpacer}<span class="tn"${isDone?' style="text-decoration:line-through;color:var(--muted)"':''}>${safeName}</span>${fields}<button class="btn btn-xs btn-ghost" style="flex-shrink:0;padding:1px 5px;font-size:10px;opacity:.65" onclick="event.stopPropagation();duplicateRecDirect('${rid}')" title="Duplicate">⧉</button><button class="delbtn" onclick="event.stopPropagation();delRec('${rid}')">✕</button></div>`;
   });
   if(!rowsHtml) rowsHtml=`<div style="padding:8px 12px;font-size:11px;color:var(--subtle);font-style:italic">None yet</div>`;
-  let qaExtras='';
-  if(!isWr){
-    if(cadence==='monthly')
-      qaExtras=`<select class="asel" id="qa-day-${containerId}" style="flex:0;width:68px">${Array.from({length:28},(_,i)=>`<option value="${i+1}">${i+1}</option>`).join('')}</select>`;
-    else if(cadence==='weekly'||cadence==='biweekly')
-      qaExtras=`<select class="asel" id="qa-day-${containerId}" style="flex:0;width:90px"><option>Sunday</option><option>Monday</option><option>Tuesday</option><option>Wednesday</option><option>Thursday</option><option selected>Friday</option><option>Saturday</option></select>`;
-  }
-  el.innerHTML=`<div class="card" style="margin-bottom:10px"><div class="ch"><div class="ct">${cadLabel}${tasks.length?' ('+tasks.length+')':''}</div><button class="btn-plus" onclick="openRecModalForSection('${isWr?'weekly_reset':'scheduled'}','${cadence}')" title="Add via form">+</button></div><div class="tlist">${rowsHtml}</div><div class="arow"><input class="ainput" id="qa-${containerId}" placeholder="Add ${cadLabel.toLowerCase()} task…" onkeydown="if(event.key==='Enter')addRecDirect(this,${isWr},'${cadence}')">${qaExtras}<button class="btn btn-ghost btn-xs" onclick="addRecDirect(document.getElementById('qa-${containerId}'),${isWr},'${cadence}')">+</button></div></div>`;
+  el.innerHTML=`<div class="card" style="margin-bottom:10px"><div class="ch"><div class="ct">${cadLabel}${tasks.length?' ('+tasks.length+')':''}</div><button class="btn-plus" onclick="openRecModalForSection('${isWr?'weekly_reset':'scheduled'}','${cadence}')" title="Add via form">+</button></div><div class="tlist">${rowsHtml}</div></div>`;
 }
 
 function openRecModalForSection(type, cadence){
@@ -4119,6 +4112,6 @@ function copyShopList(){
 function tickClock(){const t=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});const el=document.getElementById('liveClock');if(el)el.textContent=t;}
 tickClock();setInterval(tickClock,1000);
 </script>
-<div id="devBadge" style="display:none;position:fixed;bottom:16px;left:16px;background:#1e293b;color:#f8fafc;font-size:11px;font-weight:700;letter-spacing:.08em;padding:4px 9px;border-radius:6px;border:1px solid rgba(255,255,255,.15);z-index:9999;pointer-events:none">DEV-83</div>
+<div id="devBadge" style="display:none;position:fixed;bottom:16px;left:16px;background:#1e293b;color:#f8fafc;font-size:11px;font-weight:700;letter-spacing:.08em;padding:4px 9px;border-radius:6px;border:1px solid rgba(255,255,255,.15);z-index:9999;pointer-events:none">DEV-29</div>
 <script>if(location.hostname.includes('dev.'))document.getElementById('devBadge').style.display='block';</script>
 </body></html>
