@@ -2612,33 +2612,63 @@ function dropOnTB(e,ds,h,row){
   const minsInRow=Math.round(fracInRow*60/15)*15;
   const sm=h*60+Math.max(0,Math.min(45,minsInRow));
   let title='New block',cat='Home',taskId=null;
+  // helper: compute wkKey (Monday of the week) from a date string
+  const wkKeyFromDs=d=>{const dt=new Date(d+'T00:00:00');const dow=(dt.getDay()+6)%7;const mon=new Date(dt);mon.setDate(dt.getDate()-dow);return d2s(mon);};
   if(dragId.startsWith('wrec::')){
     const recId=dragId.split('::')[1];
     const r=st.recurring.find(x=>String(x.id)===String(recId));
     if(!r){dragId=null;return;}
+    const wkKey=wkKeyFromDs(ds);
+    const prevDateOv=r._dateOverrides?{...r._dateOverrides}:{};
+    if(!r._dateOverrides)r._dateOverrides={};
+    r._dateOverrides[wkKey]=ds;
     const blk={id:crypto.randomUUID(),title:r.name,ds,sm,dur:30,cat:'Recurring',recId:String(r.id)};
-    st.blocks.push(blk);dragId=null;save();renderDayTB();
+    st.blocks.push(blk);dragId=null;save();renderAll();renderRecOv();renderWeeklyPage();
     sbSaveBlock(blk);
-    pushUndo(()=>{st.blocks=st.blocks.filter(b=>b.id!==blk.id);save();renderDayTB();sbDeleteBlock(blk.id);},'Added block');
+    sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},recQs(r.id));
+    pushUndo(()=>{
+      st.blocks=st.blocks.filter(b=>b.id!==blk.id);
+      r._dateOverrides=prevDateOv;
+      sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},recQs(r.id));
+      sbDeleteBlock(blk.id);save();renderAll();renderRecOv();renderWeeklyPage();
+    },'Added to time block');
     return;
   } else if(dragId.startsWith('shop::')){
     const shopId=dragId.split('::')[1];
     const s=st.shopping.find(x=>String(x.id)===String(shopId));
     if(!s){dragId=null;return;}
+    const prevDue=s.due_date;
+    s.due_date=ds;
     const blk={id:crypto.randomUUID(),title:s.name,ds,sm,dur:30,cat:'Shopping',shopId:String(s.id)};
-    st.blocks.push(blk);dragId=null;save();renderDayTB();
+    st.blocks.push(blk);dragId=null;save();renderAll();
     sbSaveBlock(blk);
-    pushUndo(()=>{st.blocks=st.blocks.filter(b=>b.id!==blk.id);save();renderDayTB();sbDeleteBlock(blk.id);},'Added block');
+    sbReq('PATCH','shopping_list',{due_date:ds},`?id=eq.${s.id}`);
+    pushUndo(()=>{
+      st.blocks=st.blocks.filter(b=>b.id!==blk.id);
+      s.due_date=prevDue;
+      sbReq('PATCH','shopping_list',{due_date:prevDue||null},`?id=eq.${s.id}`);
+      sbDeleteBlock(blk.id);save();renderAll();
+    },'Added to time block');
     return;
   } else if(dragId.startsWith('rec::')){
     // recurring virtual task: rec::recId::date
     const recId=dragId.split('::')[1];
     const r=st.recurring.find(x=>String(x.id)===String(recId));
-    if(r){title=r.name;cat=r.is_weekly_reset?'Recurring':('Recurring');}
-    const blk={id:crypto.randomUUID(),title,ds,sm,dur:30,cat:'Recurring',recId:recId||null};
-    st.blocks.push(blk);dragId=null;save();renderDayTB();
+    if(!r){dragId=null;return;}
+    const wkKey=wkKeyFromDs(ds);
+    const prevDateOv=r._dateOverrides?{...r._dateOverrides}:{};
+    if(!r._dateOverrides)r._dateOverrides={};
+    r._dateOverrides[wkKey]=ds;
+    const blk={id:crypto.randomUUID(),title:r.name,ds,sm,dur:30,cat:'Recurring',recId:String(r.id)};
+    st.blocks.push(blk);dragId=null;save();renderAll();
     sbSaveBlock(blk);
-    pushUndo(()=>{st.blocks=st.blocks.filter(b=>b.id!==blk.id);save();renderDayTB();sbDeleteBlock(blk.id);},'Added block');
+    sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},recQs(r.id));
+    pushUndo(()=>{
+      st.blocks=st.blocks.filter(b=>b.id!==blk.id);
+      r._dateOverrides=prevDateOv;
+      sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},recQs(r.id));
+      sbDeleteBlock(blk.id);save();renderAll();
+    },'Added to time block');
     return;
   } else {
     const t=st.tasks.find(x=>String(x.id)===String(dragId));
