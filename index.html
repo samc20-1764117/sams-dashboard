@@ -107,11 +107,7 @@ body{font-family:'DM Sans',sans-serif;background:#f0ecfb;background-attachment:f
 .menu-open:hover{background:#fff;box-shadow:var(--shadow-lg)}
 .menu-open.visible{display:flex}
 
-/* Top bar */
-.topbar{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:12px 0 10px;margin-bottom:10px;background:none}
-.topbar-left{display:flex;align-items:center;gap:6px;min-width:40px}
-.topbar-center{text-align:center}
-.topbar-right{display:flex;align-items:center;justify-content:flex-end;gap:6px}
+
 .sync-bar{display:flex;align-items:center;gap:4px;font-family:'DM Sans',sans-serif;font-size:9px;color:var(--muted);background:rgba(255,255,255,.65);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.7);border-radius:20px;padding:4px 10px;cursor:pointer;transition:all .15s;box-shadow:0 2px 8px rgba(0,0,0,.06)}
 .sync-bar:hover{background:#fff;color:var(--text)}
 .sdot{width:5px;height:5px;border-radius:50%;background:#22c55e;flex-shrink:0}
@@ -4038,6 +4034,6 @@ function copyShopList(){
 function tickClock(){const t=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});const el=document.getElementById('liveClock');if(el)el.textContent=t;}
 tickClock();setInterval(tickClock,1000);
 </script>
-<div id="devBadge" style="display:none;position:fixed;bottom:16px;left:16px;background:#1e293b;color:#f8fafc;font-size:11px;font-weight:700;letter-spacing:.08em;padding:4px 9px;border-radius:6px;border:1px solid rgba(255,255,255,.15);z-index:9999;pointer-events:none">DEV-88</div>
+<div id="devBadge" style="display:none;position:fixed;bottom:16px;left:16px;background:#1e293b;color:#f8fafc;font-size:11px;font-weight:700;letter-spacing:.08em;padding:4px 9px;border-radius:6px;border:1px solid rgba(255,255,255,.15);z-index:9999;pointer-events:none">DEV-73</div>
 <script>if(location.hostname.includes('dev.'))document.getElementById('devBadge').style.display='block';</script>
 </body></html>
