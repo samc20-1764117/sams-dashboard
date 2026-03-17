@@ -1065,7 +1065,8 @@ async function sbReq(method,table,body,qs=''){
     if(!r.ok){
       const errText=await r.text();
       console.error('Supabase error',method,table,r.status,errText);
-      showToast('⚠️ Save failed: '+r.status+' — '+table,'#ef4444',4000);
+      let errMsg='';try{const ej=JSON.parse(errText);errMsg=ej.message||ej.details||'';}catch(x){errMsg=errText.slice(0,120);}
+      showToast('⚠️ Save failed ('+r.status+'): '+errMsg,'#ef4444',8000);
       return null;
     }
     const t=await r.text();return t?JSON.parse(t):[];
@@ -3080,9 +3081,7 @@ async function saveRecModal(){
   let recServerId=null;
   pushUndo(()=>{const rid=recServerId||localId;st.recurring=st.recurring.filter(x=>String(x.id)!==String(rid));save();renderRecOv();renderWeeklyPage();renderWkSummary();renderWkCal();if(recServerId)sbReq('DELETE','recurring_tasks',null,recQs(recServerId));},'Added recurring task');
   const payload={name:n,is_weekly_reset:isWeekly,day_of_week:1,appears_on_date:appearsOn,cadence};
-  if(repeatDay)payload.repeat_day=repeatDay;
   if(repeatDate)payload.repeat_date=repeatDate;
-  if(dayAdded)payload.day_added=dayAdded;
   if(startDate)payload.starting_date=startDate;
   const sv=await sbReq('POST','recurring_tasks',payload);
   if(sv&&sv[0]){
