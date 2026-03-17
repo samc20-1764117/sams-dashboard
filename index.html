@@ -227,7 +227,7 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 .qa-close:hover{color:var(--text);background:rgba(0,0,0,.05)}
 
 /* Layout — consistent 14px gaps everywhere */
-.overview-cols{display:grid;grid-template-columns:2.2fr 2.55fr;gap:14px;margin-bottom:36px;height:640px;overflow:hidden}
+.overview-cols{display:grid;grid-template-columns:2.2fr 2.55fr;gap:14px;margin-bottom:36px;height:740px;overflow:hidden}
 .overview-left{display:flex;flex-direction:column;gap:14px;min-height:0;overflow:hidden}
 .row1-right-panel{display:flex;flex-direction:column;gap:14px;min-height:0;overflow:hidden}
 .row1-right-top{display:grid;grid-template-columns:1fr 0.9fr 0.65fr;gap:14px;flex-shrink:0;height:225px}
@@ -2053,6 +2053,7 @@ function setupEdge(id,dir){
   el.addEventListener('drop',async e=>{
     e.preventDefault();el.style.opacity='';showWkcEdges(false);
     if(!dragId)return;
+    dragId=String(dragId);
     // Target: first day of next week (Monday, dow=0) or last day of prev week (Sunday, dow=6)
     const targetWkOff=wkOff+dir;
     const targetDates=getWkDates(targetWkOff);
@@ -2706,7 +2707,7 @@ async function submitQA(){
   const t={id:'l-'+Date.now(),name:n,category:cat,due_date:ds,done:false,important:imp};
   st.tasks.push(t);renderAll();
   pushUndo(()=>{st.tasks=st.tasks.filter(x=>x.id!==t.id);renderAll();sbReq('DELETE','tasks',null,`?id=eq.${t.id}`);},'Added task');
-  const sv=await sbReq('POST','tasks',{name:n,category:cat,due_date:ds,done:false});if(sv&&sv[0]){const i=st.tasks.findIndex(x=>x.id===t.id);if(i>-1)st.tasks[i]=sv[0];}
+  const sv=await sbReq('POST','tasks',{name:n,category:cat,due_date:ds,done:false});if(sv&&sv[0]){const i=st.tasks.findIndex(x=>x.id===t.id);if(i>-1){st.tasks[i]=sv[0];renderAll();}}
 }
 document.addEventListener('click',e=>{
   const p=document.getElementById('qaPopup');if(!p.classList.contains('open'))return;
@@ -3874,6 +3875,6 @@ function copyShopList(){
 function tickClock(){const t=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});const el=document.getElementById('liveClock');if(el)el.textContent=t;}
 tickClock();setInterval(tickClock,1000);
 </script>
-<div id="devBadge" style="display:none;position:fixed;bottom:16px;left:16px;background:#1e293b;color:#f8fafc;font-size:11px;font-weight:700;letter-spacing:.08em;padding:4px 9px;border-radius:6px;border:1px solid rgba(255,255,255,.15);z-index:9999;pointer-events:none">DEV-15</div>
+<div id="devBadge" style="display:none;position:fixed;bottom:16px;left:16px;background:#1e293b;color:#f8fafc;font-size:11px;font-weight:700;letter-spacing:.08em;padding:4px 9px;border-radius:6px;border:1px solid rgba(255,255,255,.15);z-index:9999;pointer-events:none">DEV-16</div>
 <script>if(location.hostname.includes('dev.'))document.getElementById('devBadge').style.display='block';</script>
 </body></html>
