@@ -227,10 +227,10 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 .qa-close:hover{color:var(--text);background:rgba(0,0,0,.05)}
 
 /* Layout — consistent 14px gaps everywhere */
-.overview-cols{display:grid;grid-template-columns:2.2fr 2.55fr;gap:14px;margin-bottom:24px;height:560px;overflow:hidden}
+.overview-cols{display:grid;grid-template-columns:2.2fr 2.55fr;gap:14px;margin-bottom:36px;height:640px;overflow:hidden}
 .overview-left{display:flex;flex-direction:column;gap:14px;min-height:0;overflow:hidden}
 .row1-right-panel{display:flex;flex-direction:column;gap:14px;min-height:0;overflow:hidden}
-.row1-right-top{display:grid;grid-template-columns:1fr 0.9fr 0.65fr;gap:14px;flex-shrink:0;height:196px}
+.row1-right-top{display:grid;grid-template-columns:1fr 0.9fr 0.65fr;gap:14px;flex-shrink:0;height:225px}
 .top-right-controls{position:fixed;top:14px;right:20px;z-index:90;display:flex;align-items:center;gap:8px}
 .row1-right{display:grid;grid-template-columns:1fr 0.85fr 0.6fr;grid-template-rows:auto 1fr;gap:14px;min-height:0}
 .row1-left{display:flex;flex-direction:column;gap:8px;min-height:0}
@@ -250,7 +250,7 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 .tb-section{flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden}
 .tod-tb-divider{flex-shrink:0;border-left:1px solid rgba(210,205,228,.3);margin:0}
 .row2{display:flex;flex-direction:column;gap:12px;margin-bottom:14px}
-.row3{margin-top:8px;margin-bottom:14px;padding-bottom:2px}
+.row3{margin-top:20px;margin-bottom:14px;padding-bottom:2px}
 
 /* Time Blocker */
 .tb-nav{display:flex;align-items:center;gap:3px;padding:9px 10px;border-bottom:1px solid rgba(210,205,228,.25);background:rgba(255,255,255,.1);flex-shrink:0;min-height:38px;box-sizing:border-box}
@@ -301,8 +301,8 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 .wkc-dd.tn2{background:var(--accent);color:#fff}
 .wkc-cols{flex:1;display:flex;overflow-y:auto}
 /* drag zone at edges for week navigation */
-.wkc-edge{position:absolute;top:0;bottom:0;width:32px;z-index:10;display:flex;align-items:center;justify-content:center;pointer-events:all;transition:background .15s;opacity:0}
-.wkc-edge.active{opacity:1}
+.wkc-edge{position:absolute;top:0;bottom:0;width:32px;z-index:10;display:flex;align-items:center;justify-content:center;pointer-events:none;transition:background .15s;opacity:0}
+.wkc-edge.active{opacity:1;pointer-events:all}
 .wkc-edge.left{left:0;background:linear-gradient(to right,rgba(109,95,230,.12),transparent)}
 .wkc-edge.right{right:0;background:linear-gradient(to left,rgba(109,95,230,.12),transparent)}
 .wkc-cols-wrap{flex:1;position:relative;overflow:hidden;display:flex;flex-direction:column;padding-top:22px}
@@ -485,7 +485,7 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
       </div>
       <div class="tod-tb-body">
       <div class="tod-section">
-      <div id="ovBanner" class="ov-banner show"><span id="ovBannerTxt">1 overdue task — move to today?</span><button class="ov-banner-btn" onclick="rolloverOverdue()">Move all to today</button></div><div class="tlist" id="todList" style="flex:1"><div class="ti  ov-row " id="ti-t-1773193938936" draggable="true" ondragstart="dStart(event,&#39;t-1773193938936&#39;)" ondragend="this.classList.remove(&#39;dragging&#39;)" onclick="selTask(event,&#39;t-1773193938936&#39;)" ondblclick="tiDbl(event,&#39;t-1773193938936&#39;)" oncontextmenu="showCtx(event,&#39;t-1773193938936&#39;)">
+      <div id="ovBanner" class="ov-banner show"><span id="ovBannerTxt">1 overdue task — move to today?</span><button class="ov-banner-btn" onclick="rolloverOverdue()">Move all to today</button></div><div class="tlist" id="todList" style="flex:1" ondblclick="if(!event.target.closest('.ti'))openQA('today',null)"><div class="ti  ov-row " id="ti-t-1773193938936" draggable="true" ondragstart="dStart(event,&#39;t-1773193938936&#39;)" ondragend="this.classList.remove(&#39;dragging&#39;)" onclick="selTask(event,&#39;t-1773193938936&#39;)" ondblclick="tiDbl(event,&#39;t-1773193938936&#39;)" oncontextmenu="showCtx(event,&#39;t-1773193938936&#39;)">
     <label class="chk-wrap" onclick="event.stopPropagation()" onmousedown="event.stopPropagation()"><input type="checkbox" class="chk" onchange="toggleTask(&#39;t-1773193938936&#39;,this.checked,&#39;wk&#39;)"></label>
     <span class="tn">tbd</span>
     <span class="cpill" style="background:#fff0f0;color:#b91c1c;border-color:rgba(239,68,68,.28)">Home</span>
@@ -535,9 +535,9 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
       </div><!-- tod-tb-body -->
     </div><!-- combined card -->
     <!-- Need to Assign -->
-    <div class="card" style="flex-shrink:0;height:110px">
+    <div class="card" style="flex-shrink:0;height:150px;margin-top:4px">
       <div class="ch"><div class="ct">Need to Assign</div><button class="btn-plus" onclick="openQA('unassigned',this)">+</button></div>
-      <div class="tlist" id="unList" style="flex:1"></div>
+      <div class="tlist" id="unList" style="flex:1" ondblclick="if(!event.target.closest('.ti'))openQA('unassigned',null)"></div>
     </div>
     </div><!-- overview-left -->
     <div class="row1-right-panel">
@@ -572,7 +572,7 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
     </div>
     </div><!-- row1-right-top -->
     <!-- Week Cal -->
-    <div class="card" style="flex:1;min-height:0;overflow:hidden">
+    <div class="card" style="flex:1;min-height:0;overflow:hidden;margin-top:4px">
       <div class="wkc-outer">
         <div class="wkc-nav">
           <button class="btn btn-ghost btn-xs" onclick="shiftWk(-1)">←</button>
@@ -1034,7 +1034,7 @@ const CATS={
 const IMP={bg:'#fefce8',t:'#854d0e',d:'#eab308',b:'rgba(234,179,8,.35)'};
 const OV={bg:'#fff0f0',t:'#b91c1c',d:'#ef4444',b:'rgba(239,68,68,.28)'};
 const KCATS=['Home','My work','Work','Social+Travel','Long term'];
-let HOURS=[...Array(24)].map((_,i)=>i);
+let HOURS=[...Array(13)].map((_,i)=>i+7);
 const DNAMES=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 const PX=40/60, KEY='samdash_v7';
 
@@ -2053,16 +2053,45 @@ function setupEdge(id,dir){
   el.addEventListener('drop',async e=>{
     e.preventDefault();el.style.opacity='';showWkcEdges(false);
     if(!dragId)return;
-    const t=st.tasks.find(x=>String(x.id)===String(dragId));if(!t)return;
+    // Target: first day of next week (Monday, dow=0) or last day of prev week (Sunday, dow=6)
+    const targetWkOff=wkOff+dir;
+    const targetDates=getWkDates(targetWkOff);
+    const newDs=dir===1?d2s(targetDates[0]):d2s(targetDates[6]);
+    // Handle wrec:: (weekly reset)
+    if(dragId.startsWith('wrec::')){
+      const recId=dragId.split('::')[1];
+      const r=st.recurring.find(x=>String(x.id)===String(recId));
+      if(r){
+        if(!r._dateOverrides)r._dateOverrides={};
+        const wkKey=getWkKey(targetWkOff);
+        const prev=r._dateOverrides[wkKey];
+        r._dateOverrides[wkKey]=newDs;
+        dragId=null;shiftWk(dir);save();renderAll();
+        sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},recQs(r.id));
+        pushUndo(()=>{if(prev)r._dateOverrides[wkKey]=prev;else delete r._dateOverrides[wkKey];save();renderAll();sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},recQs(r.id));},'Moved to other week');
+      }
+      dragId=null;return;
+    }
+    // Handle rec:: (non-weekly recurring virtual)
+    if(dragId.startsWith('rec::')){
+      const recId=dragId.split('::')[1];
+      const r=st.recurring.find(x=>String(x.id)===String(recId));
+      if(r){
+        if(!r._dateOverrides)r._dateOverrides={};
+        const wkKey=getWkKey(targetWkOff);
+        const prev=r._dateOverrides[wkKey];
+        r._dateOverrides[wkKey]=newDs;
+        dragId=null;shiftWk(dir);save();renderAll();
+        sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},recQs(r.id));
+        pushUndo(()=>{if(prev)r._dateOverrides[wkKey]=prev;else delete r._dateOverrides[wkKey];save();renderAll();sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},recQs(r.id));},'Moved to other week');
+      }
+      dragId=null;return;
+    }
+    // Regular task
+    const t=st.tasks.find(x=>String(x.id)===String(dragId));if(!t){dragId=null;return;}
     const prev={due_date:t.due_date};
-    // find the same day-of-week in next/prev week
-    const curDs=t.due_date||d2s(new Date());
-    const curDate=new Date(curDs+'T12:00');
-    curDate.setDate(curDate.getDate()+dir*7);
-    const newDs=d2s(curDate);
     t.due_date=newDs;dragId=null;
-    if(dir===1)shiftWk(1); else shiftWk(-1);
-    renderAll();
+    shiftWk(dir);renderAll();
     pushUndo(()=>{t.due_date=prev.due_date;renderAll();sbReq('PATCH','tasks',{due_date:prev.due_date},`?id=eq.${t.id}`);},'Moved to other week');
     await sbReq('PATCH','tasks',{due_date:newDs},`?id=eq.${t.id}`);
   });
@@ -2353,7 +2382,7 @@ function renderDayTB(){
   grid.appendChild(col);renderTBSum(ds);
   // Default scroll to current time minus 1 hour; reset when day changes but preserve position mid-session
   const tbSc2=document.getElementById('tbScroll');
-  if(tbSc2&&tbSc2._scrollDay!==ds){tbSc2._scrollDay=ds;const _h=new Date().getHours();tbSc2.scrollTop=Math.max(0,_h-1)*60*PX;}
+  if(tbSc2&&tbSc2._scrollDay!==ds){tbSc2._scrollDay=ds;tbSc2.scrollTop=0;}
 }
 function getVisibleBlocks(ds){
   const isViewingToday=(ds===d2s(getDayDate(0)));
@@ -2480,7 +2509,16 @@ function dropOnTB(e,ds,h,row){
   const minsInRow=Math.round(fracInRow*60/15)*15;
   const sm=h*60+Math.max(0,Math.min(45,minsInRow));
   let title='New block',cat='Home',taskId=null;
-  if(dragId.startsWith('shop::')){
+  if(dragId.startsWith('wrec::')){
+    const recId=dragId.split('::')[1];
+    const r=st.recurring.find(x=>String(x.id)===String(recId));
+    if(!r){dragId=null;return;}
+    const blk={id:crypto.randomUUID(),title:r.name,ds,sm,dur:30,cat:'Recurring',recId:String(r.id)};
+    st.blocks.push(blk);dragId=null;save();renderDayTB();
+    sbSaveBlock(blk);
+    pushUndo(()=>{st.blocks=st.blocks.filter(b=>b.id!==blk.id);save();renderDayTB();sbDeleteBlock(blk.id);},'Added block');
+    return;
+  } else if(dragId.startsWith('shop::')){
     const shopId=dragId.split('::')[1];
     const s=st.shopping.find(x=>String(x.id)===String(shopId));
     if(!s){dragId=null;return;}
@@ -3836,6 +3874,6 @@ function copyShopList(){
 function tickClock(){const t=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});const el=document.getElementById('liveClock');if(el)el.textContent=t;}
 tickClock();setInterval(tickClock,1000);
 </script>
-<div id="devBadge" style="display:none;position:fixed;bottom:16px;left:16px;background:#1e293b;color:#f8fafc;font-size:11px;font-weight:700;letter-spacing:.08em;padding:4px 9px;border-radius:6px;border:1px solid rgba(255,255,255,.15);z-index:9999;pointer-events:none">DEV-14</div>
+<div id="devBadge" style="display:none;position:fixed;bottom:16px;left:16px;background:#1e293b;color:#f8fafc;font-size:11px;font-weight:700;letter-spacing:.08em;padding:4px 9px;border-radius:6px;border:1px solid rgba(255,255,255,.15);z-index:9999;pointer-events:none">DEV-15</div>
 <script>if(location.hostname.includes('dev.'))document.getElementById('devBadge').style.display='block';</script>
 </body></html>

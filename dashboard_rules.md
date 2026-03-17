@@ -25,11 +25,10 @@
 ## Time Block
 
 - **`const PX = 40/60`** px per minute (1 hour = 40px).
-- **`const HOURS = [...Array(13)].map((_,i)=>i+7)`** — 7am through 7pm (13 hours).
+- **`let HOURS = [...Array(13)].map((_,i)=>i+7)`** — 7am through 7pm (13 hours). Default view shows full 7am–7pm range.
 - **`.tb-hour { height: 40px }`**, **`.tb-tlbl { height: 40px }`**.
-- On day change, `tbScroll.scrollTop = 0` (defaults to 7am, the top of HOURS).
-- Timeline is fully scrollable to see times before 7am or after 7pm.
-- Scroll past top (at 7am) → `shiftDay(-1)`. Scroll past bottom → `shiftDay(1)`.
+- On day change, `tbScroll.scrollTop = 0` (defaults to 7am, top of HOURS).
+- Scroll past top (at 7am) → `shiftDay(-1)`. Scroll past bottom (7pm) → `shiftDay(1)`.
 - Now line uses `nmins = (now.getHours() - HOURS[0]) * 60 + now.getMinutes()`.
 - Block positions: `top = (b.sm - HOURS[0]*60) * PX`, `height = Math.max(b.dur * PX, 16)`.
 
