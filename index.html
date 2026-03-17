@@ -1215,7 +1215,7 @@ async function syncAll(silent=false){
           .map((r,i)=>{
             const stableId=r.id!==undefined&&r.id!==null?r.id:('rec-'+encodeURIComponent(r.name||i));
             const dbwk=r.done_by_week||{};
-            const isDone=!!(dbwk['weekly-reset']);
+            const isDone=!!(dbwk[getWkKey(0)]);
             const dateOvs=r.date_overrides||{};
             return{...r,id:stableId,_doneByWk:dbwk,_done:isDone,_dateOverrides:dateOvs};
           }),
@@ -2210,17 +2210,18 @@ function onWkcWheel(e){
 
 // ── Weekly Reset card (only is_weekly_reset=true items) ───────────────────────
 function renderRecOv(){
+  const wkKey=getWkKey(wkOff);
   const items=st.recurring.filter(r=>r.is_weekly_reset===true||r.is_weekly_reset==='true');
-  const done=items.filter(r=>r._done).length;
+  const done=items.filter(r=>!!(r._doneByWk&&r._doneByWk[wkKey])).length;
   const pct=items.length?Math.round(done/items.length*100):0;
   const _rb=document.getElementById('recBadge');if(_rb)_rb.textContent=items.length-done;
   if(document.getElementById('recPL'))document.getElementById('recPL').textContent=done+'/'+items.length;const _recP=document.getElementById('recPct2');if(_recP)_recP.textContent=pct+'%';
   document.getElementById('recPB').style.width=pct+'%';
   const el=document.getElementById('recList');el.innerHTML='';
-  const sorted=[...items.filter(r=>!r._done),...items.filter(r=>r._done)];
+  const sorted=[...items.filter(r=>!(r._doneByWk&&r._doneByWk[wkKey])),...items.filter(r=>!!(r._doneByWk&&r._doneByWk[wkKey]))];
   sorted.forEach(function(r){
     const rid=String(r.id);
-    const isDone=!!r._done;
+    const isDone=!!(r._doneByWk&&r._doneByWk[wkKey]);
     const row=document.createElement('div');
     const virtId='rec-virt-'+rid;
     row.id='ti-'+virtId;
@@ -2982,15 +2983,16 @@ function renderTasksPage(){
 
 // ── Weekly reset page ──────────────────────────────────────────────────────────
 function renderWeeklyPage(){
+  const wkKey=getWkKey(wkOff);
   const items=st.recurring.filter(r=>r.is_weekly_reset===true||r.is_weekly_reset==='true');
-  const done=items.filter(r=>r._done).length;
+  const done=items.filter(r=>!!(r._doneByWk&&r._doneByWk[wkKey])).length;
   const pct=items.length?Math.round(done/items.length*100):0;
   if(document.getElementById('wrPL'))document.getElementById('wrPL').textContent=done+'/'+items.length;const _wrP=document.getElementById('wrPct2');if(_wrP)_wrP.textContent=pct+'%';document.getElementById('wrBar').style.width=pct+'%';
-  const sorted=[...items.filter(r=>!r._done),...items.filter(r=>r._done)];
+  const sorted=[...items.filter(r=>!(r._doneByWk&&r._doneByWk[wkKey])),...items.filter(r=>!!(r._doneByWk&&r._doneByWk[wkKey]))];
   const el=document.getElementById('wrList');el.innerHTML='';
   sorted.forEach(function(r){
     const rid=String(r.id);
-    const isDone=!!r._done;
+    const isDone=!!(r._doneByWk&&r._doneByWk[wkKey]);
     const row=document.createElement('div');
     const virtId='rec-virt-'+rid;
     row.id='ti-'+virtId;
@@ -3023,8 +3025,9 @@ function togRec(id,done){
   const prevByWk=r._doneByWk?{...r._doneByWk}:{};
   r._done=done;
   if(!r._doneByWk)r._doneByWk={};
-  if(done)r._doneByWk['weekly-reset']=true;
-  else delete r._doneByWk['weekly-reset'];
+  const wkKeyNow=getWkKey(wkOff);
+  if(done)r._doneByWk[wkKeyNow]=true;
+  else delete r._doneByWk[wkKeyNow];
   st.blocks.filter(b=>String(b.recId)===String(id)).forEach(b=>b._done=done);
   save();renderRecOv();renderWeeklyPage();renderToday();renderWkSummary();renderWkCal();
   if(document.getElementById('tbGrid'))renderDayTB();
@@ -3626,6 +3629,7 @@ document.addEventListener('keydown',async e=>{
         if(t.appears_on_date)payload.appears_on_date=t.appears_on_date;
         if(t.repeat_date)payload.repeat_date=t.repeat_date;
         if(t.day_added)payload.day_added=t.day_added;
+        if(t.task_due_day)payload.task_due_day=t.task_due_day;
         const sv=await sbReq('POST','recurring_tasks',payload);
         if(sv&&sv[0]){const idx=st.recurring.findIndex(x=>x.id===tempId);if(idx>-1)st.recurring[idx]={...sv[0],_doneByWk:{},_done:false,_dateOverrides:{}};}
         save();renderRecOv();renderWeeklyPage();renderToday();renderWkSummary();renderWkCal();
@@ -3670,7 +3674,7 @@ function tiClickRecWR(e,rid){
   clearTimeout(_tiClickTimer);
   _tiClickTimer=setTimeout(()=>{
     const r=st.recurring.find(x=>String(x.id)===String(rid));
-    if(r){const isDone=!!(r._doneByWk&&r._doneByWk['weekly-reset']);togRec(rid,!isDone);}
+    if(r){const isDone=!!(r._doneByWk&&r._doneByWk[getWkKey(wkOff)]);togRec(rid,!isDone);}
   },200);
 }
 function tiDblRecWR(e,rid){
@@ -3787,6 +3791,7 @@ async function ctxDoDuplicate(){
     if(r.appears_on_date)payload.appears_on_date=r.appears_on_date;
     if(r.repeat_date)payload.repeat_date=r.repeat_date;
     if(r.day_added)payload.day_added=r.day_added;
+    if(r.task_due_day)payload.task_due_day=r.task_due_day;
     const sv=await sbReq('POST','recurring_tasks',payload);
     if(sv&&sv[0]){
       // Replace temp with real DB entry
