@@ -101,8 +101,32 @@ All three checkbox types share identical visual style:
 - Overdue wrec tasks: detected via `_dateOverrides[wkKey] < today` and `!r._done`.
 - DB save for recurring: `PATCH recurring_tasks { date_overrides: r._dateOverrides }` using `recQs(id)`.
 - New recurring task payload must include: `name`, `is_weekly_reset`, `appears_on_date`, `cadence` (always, never omit — NOT NULL in DB). Do NOT send `day_of_week` — column does not exist in `recurring_tasks` schema.
+- Optional columns to include when present: `appears_on_date`, `starting_date`, `repeat_date`, `day_added`, `task_due_day`. Do NOT send `day_of_week`, `repeat_day` — these do not exist in the schema.
 - **Local temp ID must use `rec-tmp-` prefix** (not `l-`). The sync `localPending` filter only preserves `rec-tmp-` and `rec-local-` prefixes. Using `l-` causes the entry to be discarded on next sync if the POST hasn't resolved.
 - After POST succeeds: replace temp entry with `{...sv[0], _doneByWk:{}, _done:false, _dateOverrides:{}}` and call `save()`.
+
+## Weekly Reset Done State
+
+- Done state is **per-week**, keyed by `getWkKey(wkOff)` in `_doneByWk`. Never use the hardcoded `'weekly-reset'` key.
+- `togRec(id, done)`: writes `r._doneByWk[getWkKey(wkOff)] = true` (or deletes the key on uncheck). PATCHes `done_by_week` to Supabase.
+- `renderRecOv()` and `renderWeeklyPage()`: compute `isDone` as `!!(r._doneByWk && r._doneByWk[getWkKey(wkOff)])` — not from `r._done`.
+- Sync init: `isDone = !!(dbwk[getWkKey(0)])` — reads current week key from DB `done_by_week`.
+- Result: tasks are unchecked at the start of each new week automatically.
+
+## Duplicating Recurring Tasks
+
+- Use `uniqueRecName(base)` to generate a unique name: appends ` (2)`, ` (3)`, etc. if `base` already exists in `st.recurring`.
+- Local copy: `{...r, id:tempId, name:dupName, starting_date:todayDs, _doneByWk:{}, _done:false, _dateOverrides:{}}`.
+- DB payload: `{name:dupName, is_weekly_reset, cadence, starting_date:todayDs}` + optional `appears_on_date`, `repeat_date`, `day_added`, `task_due_day`.
+- `starting_date` is always set to today's date (`d2s(new Date())`), not copied from the original.
+- All other attributes are copied from the original.
+
+## Dropping Tasks onto Time Blocks (dropOnTB)
+
+- **Regular tasks**: `due_date` updated to block's `ds`, PATCHed to Supabase `tasks`.
+- **`wrec::` and `rec::` (recurring)**: `_dateOverrides[wkKeyFromDs(ds)] = ds` set and PATCHed to Supabase `recurring_tasks { date_overrides }`. This updates the task's date in all views (today, weekly calendar, overdue banner).
+- **`shop::` (shopping)**: `due_date` updated to `ds`, PATCHed to Supabase `shopping_list`. Shows on correct day in all views.
+- All three call `renderAll()` so every view updates immediately. Undo restores previous date.
 
 ## Shopping List (Today View)
 
@@ -124,9 +148,16 @@ All three checkbox types share identical visual style:
 
 - **All create/duplicate actions must POST to Supabase immediately** and include ALL required fields. Missing fields cause silent 400 failures.
 - `tasks` POST must include: `name`, `category`, `due_date`, `done`, `important` (NOT NULL — omitting it causes insert failure).
-- `recurring_tasks` POST must include: `name`, `is_weekly_reset`, `cadence` (all required/NOT NULL). `day_of_week` does NOT exist as a column — never send it.
+- `recurring_tasks` POST must include: `name`, `is_weekly_reset`, `cadence` (all required/NOT NULL). `day_of_week` and `repeat_day` do NOT exist as columns — never send them. Valid optional columns: `appears_on_date`, `starting_date`, `repeat_date`, `day_added`, `task_due_day`.
+- `sbReq` error toast shows actual Supabase error message text (parsed from JSON `message` field) for 8 seconds — use this to diagnose column/schema errors.
 - **Undo ID pattern**: use a mutable `let serverId=null` captured by the undo closure. Set `serverId=String(sv[0].id)` after POST resolves. Undo reads `serverId||localId` at call-time so it always uses the correct DB id. This allows undo to be registered immediately (good UX) and still correctly DELETE from Supabase.
 - Do NOT use `l-` prefix for recurring task temp IDs. Use `rec-tmp-` so sync preserves them as localPending.
+
+## Sync Safety
+
+- On `init()`, when Supabase config is present, `deletedRecIds` is cleared before sync (`deletedRecIds=new Set();save()`). DB is authoritative — stale deleted IDs from localStorage would otherwise filter out valid tasks.
+- `syncAll` `if(rec)` guard: only replaces `st.recurring` when `rec` is non-null (error returns null, preserving local state).
+- Race condition guard in `saveRecModal`/`ctxDoDuplicate`: after POST resolves, `findIndex` by localId; if not found (sync ran and replaced it), push only if DB id not already present.
 
 ## Dev Badge
 
