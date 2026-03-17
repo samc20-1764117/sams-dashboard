@@ -227,9 +227,9 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 .qa-close:hover{color:var(--text);background:rgba(0,0,0,.05)}
 
 /* Layout — consistent 14px gaps everywhere */
-.overview-cols{display:grid;grid-template-columns:2.2fr 2.55fr;gap:14px;margin-bottom:14px;height:560px}
-.overview-left{display:flex;flex-direction:column;gap:14px}
-.row1-right-panel{display:flex;flex-direction:column;gap:14px;min-height:0}
+.overview-cols{display:grid;grid-template-columns:2.2fr 2.55fr;gap:14px;margin-bottom:24px;height:560px;overflow:hidden}
+.overview-left{display:flex;flex-direction:column;gap:14px;min-height:0;overflow:hidden}
+.row1-right-panel{display:flex;flex-direction:column;gap:14px;min-height:0;overflow:hidden}
 .row1-right-top{display:grid;grid-template-columns:1fr 0.9fr 0.65fr;gap:14px;flex-shrink:0;height:196px}
 .top-right-controls{position:fixed;top:14px;right:20px;z-index:90;display:flex;align-items:center;gap:8px}
 .row1-right{display:grid;grid-template-columns:1fr 0.85fr 0.6fr;grid-template-rows:auto 1fr;gap:14px;min-height:0}
@@ -250,7 +250,7 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 .tb-section{flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden}
 .tod-tb-divider{flex-shrink:0;border-left:1px solid rgba(210,205,228,.3);margin:0}
 .row2{display:flex;flex-direction:column;gap:12px;margin-bottom:14px}
-.row3{margin-bottom:14px;padding-bottom:2px}
+.row3{margin-top:8px;margin-bottom:14px;padding-bottom:2px}
 
 /* Time Blocker */
 .tb-nav{display:flex;align-items:center;gap:3px;padding:9px 10px;border-bottom:1px solid rgba(210,205,228,.25);background:rgba(255,255,255,.1);flex-shrink:0;min-height:38px;box-sizing:border-box}
