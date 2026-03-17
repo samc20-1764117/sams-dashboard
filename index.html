@@ -3050,12 +3050,10 @@ async function delRec(id){
   // Keep sid in deletedRecIds until undo window expires, so sync can't resurrect it
   pushUndo(async()=>{
     deletedRecIds.delete(sid);save();
-    const payload={name:copy.name};
-    if(copy.is_weekly_reset!==undefined)payload.is_weekly_reset=copy.is_weekly_reset;
-    if(copy.cadence)payload.cadence=copy.cadence;
-    if(copy.task_due_day)payload.task_due_day=copy.task_due_day;
-    if(copy.starting_date)payload.starting_date=copy.starting_date;
+    const payload={name:copy.name,is_weekly_reset:copy.is_weekly_reset||false,cadence:copy.cadence||'weekly'};
     if(copy.appears_on_date)payload.appears_on_date=copy.appears_on_date;
+    if(copy.starting_date)payload.starting_date=copy.starting_date;
+    if(copy.repeat_date)payload.repeat_date=copy.repeat_date;
     const sv=await sbReq('POST','recurring_tasks',payload);
     st.recurring.push(sv&&sv[0]?{...sv[0],_doneByWk:copy._doneByWk||{},_done:copy._done||false}:copy);
     save();renderRecOv();renderWeeklyPage();renderToday();renderWkSummary();renderWkCal();
@@ -3622,13 +3620,9 @@ document.addEventListener('keydown',async e=>{
         const localCopy={...t,id:tempId,_doneByWk:{},_done:false,_dateOverrides:{},_isRec:undefined};
         st.recurring.push(localCopy);
         save();renderRecOv();renderWeeklyPage();renderToday();renderWkSummary();renderWkCal();
-        const payload={name:t.name,cadence:t.cadence||'weekly'};
-        if(t.is_weekly_reset!==undefined)payload.is_weekly_reset=t.is_weekly_reset;
-        if(t.task_due_day)payload.task_due_day=t.task_due_day;
-        if(t.day_added)payload.day_added=t.day_added;
-        if(t.starting_date)payload.starting_date=t.starting_date;
+        const payload={name:t.name,is_weekly_reset:t.is_weekly_reset||false,cadence:t.cadence||'weekly'};
         if(t.appears_on_date)payload.appears_on_date=t.appears_on_date;
-        if(t.repeat_day)payload.repeat_day=t.repeat_day;
+        if(t.starting_date)payload.starting_date=t.starting_date;
         if(t.repeat_date)payload.repeat_date=t.repeat_date;
         const sv=await sbReq('POST','recurring_tasks',payload);
         if(sv&&sv[0]){const idx=st.recurring.findIndex(x=>x.id===tempId);if(idx>-1)st.recurring[idx]={...sv[0],_doneByWk:{},_done:false,_dateOverrides:{}};}
@@ -3779,13 +3773,9 @@ async function ctxDoDuplicate(){
     st.recurring.push(localCopy);
     save();renderRecOv();renderWeeklyPage();renderToday();renderWkSummary();renderWkCal();
     // Push to DB
-    const payload={name:r.name,cadence:r.cadence||'weekly'};
-    if(r.is_weekly_reset!==undefined)payload.is_weekly_reset=r.is_weekly_reset;
-    if(r.task_due_day)payload.task_due_day=r.task_due_day;
-    if(r.day_added)payload.day_added=r.day_added;
-    if(r.starting_date)payload.starting_date=r.starting_date;
+    const payload={name:r.name,is_weekly_reset:r.is_weekly_reset||false,cadence:r.cadence||'weekly'};
     if(r.appears_on_date)payload.appears_on_date=r.appears_on_date;
-    if(r.repeat_day)payload.repeat_day=r.repeat_day;
+    if(r.starting_date)payload.starting_date=r.starting_date;
     if(r.repeat_date)payload.repeat_date=r.repeat_date;
     const sv=await sbReq('POST','recurring_tasks',payload);
     if(sv&&sv[0]){
