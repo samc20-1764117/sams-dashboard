@@ -302,7 +302,7 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 .wkc-cols{flex:1;display:flex;overflow-y:auto}
 /* drag zone at edges for week navigation */
 .wkc-edge{position:absolute;top:0;bottom:0;width:32px;z-index:10;display:flex;align-items:center;justify-content:center;pointer-events:none;transition:background .15s;opacity:0}
-.wkc-edge.active{opacity:1;pointer-events:all}
+.wkc-edge.active{opacity:1}
 .wkc-edge.left{left:0;background:linear-gradient(to right,rgba(109,95,230,.12),transparent)}
 .wkc-edge.right{right:0;background:linear-gradient(to left,rgba(109,95,230,.12),transparent)}
 .wkc-cols-wrap{flex:1;position:relative;overflow:hidden;display:flex;flex-direction:column;padding-top:22px}
@@ -2058,8 +2058,11 @@ function setupWkcEdgeDrop(){
     const fl=e.clientX-r.left<EDGE,fr=r.right-e.clientX<EDGE;
     if(fl||fr){
       e.preventDefault();
-      if(edgeL)edgeL.style.opacity=fl?'1':'';
-      if(edgeR)edgeR.style.opacity=fr?'1':'';
+      if(edgeL)edgeL.style.opacity=fl?'1':'0';
+      if(edgeR)edgeR.style.opacity=fr?'1':'0';
+    } else {
+      if(edgeL)edgeL.style.opacity='0';
+      if(edgeR)edgeR.style.opacity='0';
     }
   });
   wrap.addEventListener('dragleave',e=>{
@@ -3948,6 +3951,6 @@ function copyShopList(){
 function tickClock(){const t=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});const el=document.getElementById('liveClock');if(el)el.textContent=t;}
 tickClock();setInterval(tickClock,1000);
 </script>
-<div id="devBadge" style="display:none;position:fixed;bottom:16px;left:16px;background:#1e293b;color:#f8fafc;font-size:11px;font-weight:700;letter-spacing:.08em;padding:4px 9px;border-radius:6px;border:1px solid rgba(255,255,255,.15);z-index:9999;pointer-events:none">DEV-17</div>
+<div id="devBadge" style="display:none;position:fixed;bottom:16px;left:16px;background:#1e293b;color:#f8fafc;font-size:11px;font-weight:700;letter-spacing:.08em;padding:4px 9px;border-radius:6px;border:1px solid rgba(255,255,255,.15);z-index:9999;pointer-events:none">DEV-18</div>
 <script>if(location.hostname.includes('dev.'))document.getElementById('devBadge').style.display='block';</script>
 </body></html>
