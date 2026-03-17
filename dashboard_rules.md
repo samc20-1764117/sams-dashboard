@@ -100,7 +100,7 @@ All three checkbox types share identical visual style:
   - `monthly`: show on the week containing `repeat_date` day-of-month. `appears_on_date` is ignored for monthly.
 - Overdue wrec tasks: detected via `_dateOverrides[wkKey] < today` and `!r._done`.
 - DB save for recurring: `PATCH recurring_tasks { date_overrides: r._dateOverrides }` using `recQs(id)`.
-- New recurring task payload must include: `name`, `is_weekly_reset`, `day_of_week`, `appears_on_date`, `cadence` (always, never omit — NOT NULL in DB).
+- New recurring task payload must include: `name`, `is_weekly_reset`, `appears_on_date`, `cadence` (always, never omit — NOT NULL in DB). Do NOT send `day_of_week` — column does not exist in `recurring_tasks` schema.
 - **Local temp ID must use `rec-tmp-` prefix** (not `l-`). The sync `localPending` filter only preserves `rec-tmp-` and `rec-local-` prefixes. Using `l-` causes the entry to be discarded on next sync if the POST hasn't resolved.
 - After POST succeeds: replace temp entry with `{...sv[0], _doneByWk:{}, _done:false, _dateOverrides:{}}` and call `save()`.
 
@@ -124,7 +124,7 @@ All three checkbox types share identical visual style:
 
 - **All create/duplicate actions must POST to Supabase immediately** and include ALL required fields. Missing fields cause silent 400 failures.
 - `tasks` POST must include: `name`, `category`, `due_date`, `done`, `important` (NOT NULL — omitting it causes insert failure).
-- `recurring_tasks` POST must include: `name`, `is_weekly_reset`, `day_of_week`, `cadence` (all required/NOT NULL).
+- `recurring_tasks` POST must include: `name`, `is_weekly_reset`, `cadence` (all required/NOT NULL). `day_of_week` does NOT exist as a column — never send it.
 - **Undo ID pattern**: use a mutable `let serverId=null` captured by the undo closure. Set `serverId=String(sv[0].id)` after POST resolves. Undo reads `serverId||localId` at call-time so it always uses the correct DB id. This allows undo to be registered immediately (good UX) and still correctly DELETE from Supabase.
 - Do NOT use `l-` prefix for recurring task temp IDs. Use `rec-tmp-` so sync preserves them as localPending.
 

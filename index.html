@@ -2802,7 +2802,7 @@ async function submitQA(){
     const localRecId='rec-tmp-'+Date.now();
     const r={id:localRecId,name:n,is_weekly_reset:true,cadence:'weekly',_doneByWk:{},_done:false,_dateOverrides:{}};
     st.recurring.push(r);save();renderRecOv();
-    const sv=await sbReq('POST','recurring_tasks',{name:n,is_weekly_reset:true,day_of_week:1,cadence:'weekly'});
+    const sv=await sbReq('POST','recurring_tasks',{name:n,is_weekly_reset:true,cadence:'weekly'});
     if(sv&&sv[0]){const i=st.recurring.findIndex(x=>x.id===localRecId);if(i>-1)st.recurring[i]={...sv[0],_doneByWk:{},_done:false,_dateOverrides:{}};save();renderRecOv();}
     return;
   }
@@ -3080,7 +3080,7 @@ async function saveRecModal(){
   st.recurring.push(r);save();renderRecOv();renderWeeklyPage();renderWkSummary();renderWkCal();
   let recServerId=null;
   pushUndo(()=>{const rid=recServerId||localId;st.recurring=st.recurring.filter(x=>String(x.id)!==String(rid));save();renderRecOv();renderWeeklyPage();renderWkSummary();renderWkCal();if(recServerId)sbReq('DELETE','recurring_tasks',null,recQs(recServerId));},'Added recurring task');
-  const payload={name:n,is_weekly_reset:isWeekly,day_of_week:1,appears_on_date:appearsOn,cadence};
+  const payload={name:n,is_weekly_reset:isWeekly,appears_on_date:appearsOn,cadence};
   if(repeatDate)payload.repeat_date=repeatDate;
   if(startDate)payload.starting_date=startDate;
   const sv=await sbReq('POST','recurring_tasks',payload);
@@ -3589,7 +3589,7 @@ document.addEventListener('keydown',async e=>{
         const localCopy={...t,id:tempId,_doneByWk:{},_done:false,_dateOverrides:{},_isRec:undefined};
         st.recurring.push(localCopy);
         save();renderRecOv();renderWeeklyPage();renderToday();renderWkSummary();renderWkCal();
-        const payload={name:t.name,day_of_week:t.day_of_week||1,cadence:t.cadence||'weekly'};
+        const payload={name:t.name,cadence:t.cadence||'weekly'};
         if(t.is_weekly_reset!==undefined)payload.is_weekly_reset=t.is_weekly_reset;
         if(t.task_due_day)payload.task_due_day=t.task_due_day;
         if(t.day_added)payload.day_added=t.day_added;
@@ -3746,7 +3746,7 @@ async function ctxDoDuplicate(){
     st.recurring.push(localCopy);
     save();renderRecOv();renderWeeklyPage();renderToday();renderWkSummary();renderWkCal();
     // Push to DB
-    const payload={name:r.name,day_of_week:r.day_of_week||1,cadence:r.cadence||'weekly'};
+    const payload={name:r.name,cadence:r.cadence||'weekly'};
     if(r.is_weekly_reset!==undefined)payload.is_weekly_reset=r.is_weekly_reset;
     if(r.task_due_day)payload.task_due_day=r.task_due_day;
     if(r.day_added)payload.day_added=r.day_added;
