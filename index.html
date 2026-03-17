@@ -3617,14 +3617,15 @@ document.addEventListener('keydown',async e=>{
     _copiedTasks.forEach(async t=>{
       if(t._isRec){
         const dupName=uniqueRecName(t.name);
+        const todayDs=d2s(new Date());
         const tempId='rec-tmp-'+Date.now();
-        const localCopy={...t,id:tempId,name:dupName,_doneByWk:{},_done:false,_dateOverrides:{},_isRec:undefined};
+        const localCopy={...t,id:tempId,name:dupName,starting_date:todayDs,_doneByWk:{},_done:false,_dateOverrides:{},_isRec:undefined};
         st.recurring.push(localCopy);
         save();renderRecOv();renderWeeklyPage();renderToday();renderWkSummary();renderWkCal();
-        const payload={name:dupName,is_weekly_reset:t.is_weekly_reset||false,cadence:t.cadence||'weekly'};
+        const payload={name:dupName,is_weekly_reset:t.is_weekly_reset||false,cadence:t.cadence||'weekly',starting_date:todayDs};
         if(t.appears_on_date)payload.appears_on_date=t.appears_on_date;
-        if(t.starting_date)payload.starting_date=t.starting_date;
         if(t.repeat_date)payload.repeat_date=t.repeat_date;
+        if(t.day_added)payload.day_added=t.day_added;
         const sv=await sbReq('POST','recurring_tasks',payload);
         if(sv&&sv[0]){const idx=st.recurring.findIndex(x=>x.id===tempId);if(idx>-1)st.recurring[idx]={...sv[0],_doneByWk:{},_done:false,_dateOverrides:{}};}
         save();renderRecOv();renderWeeklyPage();renderToday();renderWkSummary();renderWkCal();
@@ -3776,15 +3777,16 @@ async function ctxDoDuplicate(){
     if(!r){console.warn('Recurring not found:',rId,st.recurring.map(x=>x.id));return;}
     // Add locally first with a temp id so it appears immediately
     const dupName=uniqueRecName(r.name);
+    const todayDs=d2s(new Date());
     const tempId='rec-tmp-'+Date.now();
-    const localCopy={...r,id:tempId,name:dupName,_doneByWk:{},_done:false,_dateOverrides:{}};
+    const localCopy={...r,id:tempId,name:dupName,starting_date:todayDs,_doneByWk:{},_done:false,_dateOverrides:{}};
     st.recurring.push(localCopy);
     save();renderRecOv();renderWeeklyPage();renderToday();renderWkSummary();renderWkCal();
     // Push to DB
-    const payload={name:dupName,is_weekly_reset:r.is_weekly_reset||false,cadence:r.cadence||'weekly'};
+    const payload={name:dupName,is_weekly_reset:r.is_weekly_reset||false,cadence:r.cadence||'weekly',starting_date:todayDs};
     if(r.appears_on_date)payload.appears_on_date=r.appears_on_date;
-    if(r.starting_date)payload.starting_date=r.starting_date;
     if(r.repeat_date)payload.repeat_date=r.repeat_date;
+    if(r.day_added)payload.day_added=r.day_added;
     const sv=await sbReq('POST','recurring_tasks',payload);
     if(sv&&sv[0]){
       // Replace temp with real DB entry
