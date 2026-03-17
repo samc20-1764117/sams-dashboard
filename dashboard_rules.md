@@ -93,12 +93,16 @@ All three checkbox types share identical visual style:
 ## Recurring Tasks
 
 - **Weekly reset** (`is_weekly_reset: true`): appear in Weekly Reset card, wrecToday list, weekly calendar per their `_dateOverrides[wkKey]` date.
-- **Non-weekly-reset**: appear in This Week calendar based on `appears_on_date` day of week.
-- `getRecurringWeekTasks(off)` filters `!r.is_weekly_reset` — excludes weekly reset tasks.
+- **Non-weekly-reset**: appear in This Week calendar based on `appears_on_date` day of week and `cadence`.
+- `getRecurringWeekTasks(off)` filters `!r.is_weekly_reset` and applies cadence logic:
+  - `weekly`: show every week.
+  - `biweekly`: show every 2 weeks. Anchor = Monday of week containing `starting_date`. Show when `weekDiff % 2 === 0` and `weekDiff >= 0`.
+  - `monthly`: show on the week containing `repeat_date` day-of-month. `appears_on_date` is ignored for monthly.
 - Overdue wrec tasks: detected via `_dateOverrides[wkKey] < today` and `!r._done`.
 - DB save for recurring: `PATCH recurring_tasks { date_overrides: r._dateOverrides }` using `recQs(id)`.
-- New recurring task payload must include: `name`, `is_weekly_reset`, `day_of_week`, `appears_on_date`, `cadence`, and optionally `repeat_day`, `repeat_date`, `day_added`, `starting_date`.
-- After push to `st.recurring`, always call `save()`.
+- New recurring task payload must include: `name`, `is_weekly_reset`, `day_of_week`, `appears_on_date`, `cadence` (always, never omit — NOT NULL in DB).
+- **Local temp ID must use `rec-tmp-` prefix** (not `l-`). The sync `localPending` filter only preserves `rec-tmp-` and `rec-local-` prefixes. Using `l-` causes the entry to be discarded on next sync if the POST hasn't resolved.
+- After POST succeeds: replace temp entry with `{...sv[0], _doneByWk:{}, _done:false, _dateOverrides:{}}` and call `save()`.
 
 ## Shopping List (Today View)
 
@@ -115,6 +119,14 @@ All three checkbox types share identical visual style:
 
 - `tickClock()`: runs every minute via `setInterval`. Sets `id="liveClock"` (in card header) and any secondary clock element if present.
 - `id="ovTitle"` updated by `renderToday()` on every day shift.
+
+## Persistence (Supabase Saves)
+
+- **All create/duplicate actions must POST to Supabase immediately** and include ALL required fields. Missing fields cause silent 400 failures.
+- `tasks` POST must include: `name`, `category`, `due_date`, `done`, `important` (NOT NULL — omitting it causes insert failure).
+- `recurring_tasks` POST must include: `name`, `is_weekly_reset`, `day_of_week`, `cadence` (all required/NOT NULL).
+- **Undo ID pattern**: use a mutable `let serverId=null` captured by the undo closure. Set `serverId=String(sv[0].id)` after POST resolves. Undo reads `serverId||localId` at call-time so it always uses the correct DB id. This allows undo to be registered immediately (good UX) and still correctly DELETE from Supabase.
+- Do NOT use `l-` prefix for recurring task temp IDs. Use `rec-tmp-` so sync preserves them as localPending.
 
 ## Dev Badge
 
