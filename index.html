@@ -120,7 +120,8 @@ body{font-family:'DM Sans',sans-serif;background:#f0ecfb;background-attachment:f
 @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
 
 /* Main */
-.main{flex:1;overflow-y:auto;overflow-x:hidden;padding:22px 56px 36px 56px;margin-left:186px;transition:margin-left .25s cubic-bezier(.4,0,.2,1)}
+.main{flex:1;overflow-y:auto;overflow-x:hidden;padding:22px 0 36px 0;margin-left:186px;transition:margin-left .25s cubic-bezier(.4,0,.2,1)}
+#page-overview{padding:0 56px}
 .main.full{margin-left:0}
 .page{display:none}.page.active{display:block}#page-weekly.active{display:block;padding-top:10px}
 
@@ -4112,6 +4113,6 @@ function copyShopList(){
 function tickClock(){const t=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});const el=document.getElementById('liveClock');if(el)el.textContent=t;}
 tickClock();setInterval(tickClock,1000);
 </script>
-<div id="devBadge" style="display:none;position:fixed;bottom:16px;left:16px;background:#1e293b;color:#f8fafc;font-size:11px;font-weight:700;letter-spacing:.08em;padding:4px 9px;border-radius:6px;border:1px solid rgba(255,255,255,.15);z-index:9999;pointer-events:none">DEV-37</div>
+<div id="devBadge" style="display:none;position:fixed;bottom:16px;left:16px;background:#1e293b;color:#f8fafc;font-size:11px;font-weight:700;letter-spacing:.08em;padding:4px 9px;border-radius:6px;border:1px solid rgba(255,255,255,.15);z-index:9999;pointer-events:none">DEV-52</div>
 <script>if(location.hostname.includes('dev.'))document.getElementById('devBadge').style.display='block';</script>
 </body></html>
