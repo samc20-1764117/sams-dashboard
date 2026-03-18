@@ -121,6 +121,7 @@ body{font-family:'DM Sans',sans-serif;background:#f0ecfb;background-attachment:f
 .ov-topbar{position:fixed;top:14px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:10px;z-index:89}
 .ov-topbar-label{font-size:13px;font-weight:600;color:var(--muted);letter-spacing:.02em}
 .ov-topbar-date{font-size:12px;font-weight:700;color:var(--text)}
+.ov-topbar-dot{width:4px;height:4px;border-radius:50%;background:var(--text);opacity:0.35;flex-shrink:0}
 .ov-topbar-time{display:inline-flex;align-items:center;justify-content:center;padding:3px 11px;border-radius:20px;font-size:12px;font-weight:600;background:rgba(120,110,180,.10);border:1px solid rgba(120,110,180,.15);color:var(--muted)}
 .overview-cols{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,2.55fr);gap:14px;margin-bottom:36px;height:min(740px,calc(100vh - 80px))}
 @media(max-width:1280px){.row1-right-top{grid-template-columns:1fr 1fr;height:auto}}
@@ -465,7 +466,9 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 <div class="page active" id="page-overview">
   <div class="ov-topbar">
     <span class="ov-topbar-label">Overview</span>
+    <span class="ov-topbar-dot"></span>
     <span class="ov-topbar-date" id="ovTopDate"></span>
+    <span class="ov-topbar-dot"></span>
     <span class="ov-topbar-time" id="ovTopTime"></span>
   </div>
   <div class="overview-cols">
