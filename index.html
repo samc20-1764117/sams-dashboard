@@ -147,7 +147,7 @@ body{font-family:'DM Sans',sans-serif;background:#fef6f0;background-attachment:f
 .btn-plus:hover{background:#fff;color:var(--accent);border-color:var(--accent)}
 
 /* Cards */
-.card{background:rgba(255,255,255,0.45);backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);border:1px solid rgba(255,255,255,0.55);border-radius:var(--r);box-shadow:0 10px 30px rgba(0,0,0,0.08),inset 0 1.5px 0 rgba(255,255,255,1),inset 1px 0 0 rgba(255,255,255,0.6),inset -1px 0 0 rgba(255,255,255,0.6);overflow:hidden;display:flex;flex-direction:column;transition:box-shadow .2s}
+.card{background:rgba(255,255,255,0.62);backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);border:1px solid rgba(255,255,255,0.55);border-radius:var(--r);box-shadow:0 10px 30px rgba(0,0,0,0.08),inset 0 1.5px 0 rgba(255,255,255,1),inset 1px 0 0 rgba(255,255,255,0.6),inset -1px 0 0 rgba(255,255,255,0.6);overflow:hidden;display:flex;flex-direction:column;transition:box-shadow .2s}
 .card-hero{background:rgba(255,255,255,0.88)!important;border-color:rgba(255,255,255,0.6)!important;box-shadow:0 10px 30px rgba(0,0,0,0.1),inset 0 1px 0 rgba(255,255,255,0.8)!important}
 .ch{padding:9px 13px;display:flex;align-items:center;gap:6px;border-bottom:1px solid rgba(210,205,228,.22);flex-shrink:0;min-height:38px;box-sizing:border-box}
 .ch-prog{display:flex;align-items:center;gap:8px;padding:9px 13px;border-bottom:1px solid rgba(210,205,228,.22);flex-shrink:0;min-height:38px;box-sizing:border-box}
@@ -285,7 +285,7 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 .tb-resize::after{content:'';display:block;width:12px;height:1.5px;border-radius:1px;background:currentColor;opacity:.2;margin:0 auto}
 .nowline{position:absolute;left:0;right:0;z-index:20;pointer-events:none}
 .nowline::before{content:'';display:block;height:2px;background:#888;opacity:1}
-.nowdot{width:8px;height:8px;border-radius:50%;background:#888;position:absolute;left:-4px;top:-3px}
+.nowdot{width:8px;height:8px;border-radius:50%;background:#888;position:absolute;left:2px;top:-4px}
 .tb-sum{display:none}
 .si{display:flex;align-items:center;gap:2px;font-size:8px;color:var(--muted)}
 .sdotc{width:4px;height:4px;border-radius:50%;flex-shrink:0}
@@ -496,8 +496,8 @@ body.dark .rt-row:hover td{background:rgba(255,220,200,.06)}
         <button class="btn btn-ghost btn-xs" onclick="shiftDay(-1)" style="flex-shrink:0">←</button>
         <div style="display:flex;align-items:center;justify-content:center;gap:5px">
           <span style="font-size:12px;font-weight:700;color:var(--text);letter-spacing:-.1px" id="ovTitle">Thursday, March 12</span>
-          <span id="headerDot" style="color:var(--subtle);font-weight:300;font-size:11px">·</span>
-          <span style="font-size:11px;font-weight:500;color:var(--muted)" id="liveClock"></span>
+          <span id="headerDot" style="display:none">·</span>
+          <span style="display:none" id="liveClock"></span>
         </div>
         <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
           <button class="btn btn-ghost btn-xs" onclick="goToday()">Today</button>
@@ -1537,8 +1537,8 @@ function renderToday(){
   document.getElementById('todTitle').textContent=isDateToday(dayDate)?`Today • ${_fullDateStr}`:_fullDateStr;
   const _ovEl=document.getElementById('ovTitle');if(_ovEl)_ovEl.textContent=_fullDateStr;
   const _isToday=dayOff===0;
-  const _hdot=document.getElementById('headerDot');if(_hdot)_hdot.style.display=_isToday?'':'none';
-  const _hclk=document.getElementById('liveClock');if(_hclk)_hclk.style.display=_isToday?'':'none';
+  const _hdot=document.getElementById('headerDot');if(_hdot)_hdot.style.display='none';
+  const _hclk=document.getElementById('liveClock');if(_hclk)_hclk.style.display='none';
   let ts=st.tasks.filter(t=>{
     if(!t.due_date)return false;
     const tds=t.due_date.split('T')[0];
