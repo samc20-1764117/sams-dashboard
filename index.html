@@ -990,6 +990,17 @@ body.dark .rt-row:hover td{background:rgba(255,220,200,.06)}
       <select id="recEditRepeatDate"></select>
     </div>
     <div class="mfield">
+      <label>Adds on</label>
+      <select id="recEditDayAdded">
+        <option value="">— none —</option>
+        <option>Sunday</option><option>Monday</option><option>Tuesday</option><option>Wednesday</option><option>Thursday</option><option>Friday</option><option>Saturday</option><option>Previous Sunday</option><option>Previous Monday</option><option>Previous Saturday</option><option>Same day</option>
+      </select>
+    </div>
+    <div class="mfield">
+      <label>Due day</label>
+      <input id="recEditTaskDueDay" type="text" placeholder="e.g. Friday">
+    </div>
+    <div class="mfield">
       <label>Starting date</label>
       <div style="display:flex;gap:4px;align-items:center">
         <input id="recEditStartDate" type="date" style="flex:1">
@@ -3042,8 +3053,8 @@ function renderRtGroup(containerId, tasks, isWr, cadence){
   const wkKey=getWkKey(wkOff);
   const cadLabel={weekly:'Weekly',biweekly:'Biweekly',monthly:'Monthly',other:'Other'}[cadence]||cadence;
   const thead=isWr
-    ?`<tr><th style="width:22px"></th><th>Name</th><th style="width:28px" title="Pup">🐾</th><th style="width:76px">Appears On</th><th style="width:76px">Adds On</th><th style="width:64px">Due Day</th><th style="width:72px">Starting</th><th style="width:52px"></th></tr>`
-    :`<tr><th>Name</th><th style="width:80px">${cadence==='monthly'?'Day of Month':'Day of Week'}</th><th style="width:76px">Adds On</th><th style="width:64px">Due Day</th><th style="width:72px">Starting</th><th style="width:52px"></th></tr>`;
+    ?`<tr><th style="width:22px"></th><th style="width:120px">Name</th><th style="width:28px" title="Pup">🐾</th><th style="width:88px">Appears On</th><th style="width:88px">Adds On</th><th style="width:76px">Due Day</th><th style="width:84px">Starting</th><th style="width:52px"></th></tr>`
+    :`<tr><th style="width:120px">Name</th><th style="width:92px">${cadence==='monthly'?'Day of Month':'Day of Week'}</th><th style="width:88px">Adds On</th><th style="width:76px">Due Day</th><th style="width:84px">Starting</th><th style="width:52px"></th></tr>`;
   let tbody='';
   tasks.forEach(r=>{
     const rid=String(r.id);
@@ -3077,7 +3088,7 @@ function renderRtGroup(containerId, tasks, isWr, cadence){
   const tableHtml=tasks.length
     ?`<table class="rt-tbl"><thead>${thead}</thead><tbody>${tbody}</tbody></table>`
     :`<div style="padding:6px 4px;font-size:11px;color:var(--subtle);font-style:italic">None</div>`;
-  el.innerHTML=`<div class="card" style="padding:10px 12px">
+  el.innerHTML=`<div class="card" style="padding:10px 12px;box-shadow:none">
     <div class="ch" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
       <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)">${cadLabel}${tasks.length?' <span style="opacity:.5;font-weight:400">· '+tasks.length+'</span>':''}</span>
       <button class="btn-plus" style="padding:1px 7px;font-size:12px" onclick="openRecModalForSection('${isWr?'weekly_reset':'scheduled'}','${cadence}')">+</button>
@@ -3978,6 +3989,8 @@ function openRecEditModal(rid){
   if(!rdSel.options.length)for(let i=1;i<=28;i++){const o=document.createElement('option');o.value=i;o.textContent=i;rdSel.appendChild(o);}
   rdSel.value=r.repeat_date||'1';
   document.getElementById('recEditStartDate').value=r.starting_date||'';
+  document.getElementById('recEditDayAdded').value=r.day_added||'';
+  document.getElementById('recEditTaskDueDay').value=r.task_due_day||'';
   const pr=document.getElementById('recEditPupRelated');if(pr)pr.checked=!!(r.pup_related===true||r.pup_related==='true');
   updateRecEditUI();
   document.getElementById('recEditModal').classList.add('open');
@@ -3994,15 +4007,19 @@ function saveRecEdit(){
   const appearsOn=isMonthly?null:document.getElementById('recEditRepeatDay').value;
   const repeatDate=isMonthly?document.getElementById('recEditRepeatDate').value:null;
   const startDate=document.getElementById('recEditStartDate').value||null;
+  const dayAdded=document.getElementById('recEditDayAdded').value||null;
+  const taskDueDay=document.getElementById('recEditTaskDueDay').value.trim()||null;
   const pupRelated=isWr&&!!(document.getElementById('recEditPupRelated')?.checked);
   closeMod('recEditModal');
-  const prev={name:r.name,is_weekly_reset:r.is_weekly_reset,cadence:r.cadence,appears_on_date:r.appears_on_date,repeat_date:r.repeat_date,starting_date:r.starting_date,pup_related:r.pup_related};
-  r.name=name;r.is_weekly_reset=isWr;r.cadence=cadence;if(appearsOn)r.appears_on_date=appearsOn;r.repeat_date=repeatDate;r.starting_date=startDate;r.pup_related=pupRelated;
+  const prev={name:r.name,is_weekly_reset:r.is_weekly_reset,cadence:r.cadence,appears_on_date:r.appears_on_date,repeat_date:r.repeat_date,starting_date:r.starting_date,day_added:r.day_added,task_due_day:r.task_due_day,pup_related:r.pup_related};
+  r.name=name;r.is_weekly_reset=isWr;r.cadence=cadence;if(appearsOn)r.appears_on_date=appearsOn;r.repeat_date=repeatDate;r.starting_date=startDate;r.day_added=dayAdded;r.task_due_day=taskDueDay;r.pup_related=pupRelated;
   renderRecOv();renderWeeklyPage();renderWkSummary();renderWkCal();
   const patch={name,is_weekly_reset:isWr,cadence,pup_related:pupRelated};
   if(appearsOn)patch.appears_on_date=appearsOn;
   if(repeatDate)patch.repeat_date=repeatDate;
   if(startDate)patch.starting_date=startDate;
+  if(dayAdded)patch.day_added=dayAdded;
+  if(taskDueDay)patch.task_due_day=taskDueDay;
   sbReq('PATCH','recurring_tasks',patch,recQs(rid));
   pushUndo(()=>{Object.assign(r,prev);renderRecOv();renderWeeklyPage();},'Edited recurring');
 }
