@@ -1751,7 +1751,7 @@ function tRowShopVirt(t,noDate=false,tbArrow=false,noColor=false){
     <span class="cpill" style="background:${ps.bg};color:${ps.t};border-color:${ps.b}">Shopping</span>
     ${!noDate&&t.due_date?`<span class="dlbl ${ov?'ov':''}">${fmtD(t.due_date)}</span>`:''}
     ${tbArrow?'<span class="tb-arrow">›</span>':''}
-    <button class="delbtn" onclick="event.stopPropagation();delShop('${t._shopId}')">✕</button>
+    <button class="delbtn" onclick="event.stopPropagation();unscheduleShop('${t._shopId}')">✕</button>
   </div>`;
 }
 // ── Week summary (important→rest, NO overdue; + recurring tasks for this week) ─
@@ -2907,15 +2907,8 @@ function delBlock(id,e){
   e&&e.stopPropagation();
   const b=st.blocks.find(x=>x.id===id);if(!b)return;
   const copy={...b};
-  const linkedShop=b.shopId?st.shopping.find(x=>String(x.id)===String(b.shopId)):null;
-  const prevShopDue=linkedShop?linkedShop.due_date:null;
-  // Clear shopping item due_date so it goes back to unassigned
-  if(linkedShop){linkedShop.due_date=null;sbReqNullable('PATCH','shopping_list',{due_date:null},`?id=eq.${b.shopId}`);}
-  pushUndo(()=>{
-    st.blocks.push(copy);
-    if(linkedShop){linkedShop.due_date=prevShopDue;sbReqNullable('PATCH','shopping_list',{due_date:prevShopDue||null},`?id=eq.${b.shopId}`);}
-    save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();sbSaveBlock(copy);
-  },'Deleted block');
+  // Removing from timeblock only — item stays in all other views (today list, shopping, etc.)
+  pushUndo(()=>{st.blocks.push(copy);save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();sbSaveBlock(copy);},'Removed from time block');
   st.blocks=st.blocks.filter(x=>x.id!==id);
   save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();sbDeleteBlock(id);
 }
@@ -3464,6 +3457,18 @@ function renderShopFull(){save();
   }
   const sf=document.getElementById('shopFull');if(sf)sf.innerHTML=html;
   renderShopOv();
+}
+// Remove shopping item from a specific view (clear due_date) but keep in shopping list
+function unscheduleShop(id){
+  const s=st.shopping.find(x=>String(x.id)===String(id));if(!s)return;
+  const prev=s.due_date;s.due_date=null;
+  // Also remove any linked timeblocks
+  const blksToKill=st.blocks.filter(b=>String(b.shopId)===String(id));
+  blksToKill.forEach(b=>sbDeleteBlock(b.id));
+  st.blocks=st.blocks.filter(b=>String(b.shopId)!==String(id));
+  save();renderAll();
+  pushUndo(()=>{s.due_date=prev;save();renderAll();sbReqNullable('PATCH','shopping_list',{due_date:prev||null},`?id=eq.${id}`);},'Removed shopping item from view');
+  sbReqNullable('PATCH','shopping_list',{due_date:null},`?id=eq.${id}`);
 }
 async function togShop(id,done){
   const s=st.shopping.find(x=>String(x.id)===String(id));if(!s)return;const prev=s.done;s.done=done;
@@ -4271,7 +4276,7 @@ function ctxDoDelete(){
   hideCtx();
   // If triggered from a timeblock, remove from day only (never delete the underlying item)
   if(blkId){delBlock(blkId);return;}
-  if(sId){delShop(sId);}else if(isRec&&rId){delRec(rId);}else{delTask(id,null);}
+  if(sId){unscheduleShop(sId);}else if(isRec&&rId){delRec(rId);}else{delTask(id,null);}
 }
 
 // ══════════════════════════════════════════════════════════
