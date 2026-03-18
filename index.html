@@ -423,13 +423,13 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 .ctx-danger:hover{background:rgba(239,68,68,.08)!important}
 .ctx-divider{height:1px;background:rgba(210,205,228,.3);margin:3px 4px}
 /* Recurring tasks table */
-.rt-tbl{width:100%;border-collapse:collapse;font-size:11.5px}
+.rt-tbl{width:100%;border-collapse:collapse;font-size:11.5px;table-layout:fixed}
 .rt-tbl thead tr{border-bottom:1px solid rgba(210,205,228,.18)}
 .rt-tbl th{text-align:left;padding:4px 8px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
-.rt-tbl td{padding:4px 8px;vertical-align:middle;border-bottom:1px solid rgba(210,205,228,.06)}
-.rt-tbl .rt-meta{font-size:10.5px;color:var(--muted);white-space:nowrap}
+.rt-tbl td{padding:4px 8px;vertical-align:middle;border-bottom:1px solid rgba(210,205,228,.06);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rt-tbl .rt-meta{font-size:10.5px;color:var(--muted)}
 .rt-editable{cursor:text}.rt-editable:hover{background:rgba(255,255,255,.45);border-radius:4px}
-.rt-edit-input{width:100%;min-width:70px;font-size:11px;background:rgba(255,255,255,.95);border:1px solid var(--accent);border-radius:4px;padding:1px 5px;font-family:inherit;color:var(--text);outline:none}
+.rt-edit-input{width:100%;max-width:100%;box-sizing:border-box;font-size:11px;background:rgba(255,255,255,.95);border:1px solid var(--accent);border-radius:4px;padding:1px 5px;font-family:inherit;color:var(--text);outline:none}
 .rt-row{cursor:pointer;transition:background .1s}
 .rt-row:hover td{background:rgba(255,237,213,.3)}
 body.dark .rt-row:hover td{background:rgba(255,220,200,.06)}
@@ -712,7 +712,7 @@ body.dark .rt-row:hover td{background:rgba(255,220,200,.06)}
 </div>
 
 <!-- RECURRING TASKS -->
-<div class="page" id="page-weekly" style="padding:14px 20px 20px 20px;padding-top:48px">
+<div class="page" id="page-weekly" style="padding:22px 56px 36px 56px;padding-top:48px">
   <div class="ov-topbar">
     <span class="ov-topbar-label">Recurring Tasks</span>
     <span class="ov-topbar-dot"></span>
@@ -732,7 +732,7 @@ body.dark .rt-row:hover td{background:rgba(255,220,200,.06)}
   <input id="nsN" style="display:none"><input id="nsS" style="display:none">
   <datalist id="storeListFull"><option value="HEB"></option><option value="Ikea"></option><option value="Online"></option><option value="Other"></option></datalist>
 
-  <div id="rt-outer" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;height:calc(100vh - 112px);min-height:0;width:100%">
+  <div id="rt-outer" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;height:calc(100vh - 130px);min-height:0;width:100%">
     <!-- Col 1: Weekly Reset Recurring -->
     <div id="rt-col-wr" style="min-height:0;display:flex;flex-direction:column">
       <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px;padding:0 2px;flex-shrink:0">Weekly Reset Recurring</div>
@@ -3035,14 +3035,6 @@ function renderRecurringPage(){
     renderRtGroup('rt-wr-'+cad, isOther?wrTasks.filter(r=>!KNOWN.includes(r.cadence)):wrTasks.filter(r=>r.cadence===cad), true, cad);
     renderRtGroup('rt-sch-'+cad, isOther?schTasks.filter(r=>!KNOWN.includes(r.cadence)):schTasks.filter(r=>r.cadence===cad), false, cad);
   });
-  const wrEmpty=wrTasks.length===0;
-  const schEmpty=schTasks.length===0;
-  const colWr=document.getElementById('rt-col-wr');
-  const colSch=document.getElementById('rt-col-sch');
-  const outer=document.getElementById('rt-outer');
-  if(colWr)colWr.style.display=wrEmpty?'none':'flex';
-  if(colSch)colSch.style.display=schEmpty?'none':'flex';
-  if(outer)outer.style.gridTemplateColumns=(wrEmpty||schEmpty)?'1fr':'1fr 1fr';
 }
 
 function renderRtGroup(containerId, tasks, isWr, cadence){
@@ -3050,8 +3042,8 @@ function renderRtGroup(containerId, tasks, isWr, cadence){
   const wkKey=getWkKey(wkOff);
   const cadLabel={weekly:'Weekly',biweekly:'Biweekly',monthly:'Monthly',other:'Other'}[cadence]||cadence;
   const thead=isWr
-    ?`<tr><th style="width:22px"></th><th>Name</th><th style="width:28px" title="Pup">🐾</th><th>Appears On</th><th>Adds On</th><th>Due Day</th><th>Starting</th><th style="width:52px"></th></tr>`
-    :`<tr><th>Name</th><th>${cadence==='monthly'?'Day of Month':'Day of Week'}</th><th>Adds On</th><th>Due Day</th><th>Starting</th><th style="width:52px"></th></tr>`;
+    ?`<tr><th style="width:22px"></th><th>Name</th><th style="width:28px" title="Pup">🐾</th><th style="width:76px">Appears On</th><th style="width:76px">Adds On</th><th style="width:64px">Due Day</th><th style="width:72px">Starting</th><th style="width:52px"></th></tr>`
+    :`<tr><th>Name</th><th style="width:80px">${cadence==='monthly'?'Day of Month':'Day of Week'}</th><th style="width:76px">Adds On</th><th style="width:64px">Due Day</th><th style="width:72px">Starting</th><th style="width:52px"></th></tr>`;
   let tbody='';
   tasks.forEach(r=>{
     const rid=String(r.id);
