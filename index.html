@@ -426,15 +426,15 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 .rt-tbl{width:100%;border-collapse:collapse;font-size:11.5px;table-layout:fixed}
 .rt-tbl thead tr{border-bottom:1px solid rgba(210,205,228,.18)}
 .rt-tbl th{text-align:center;padding:4px 8px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
-.rt-tbl td{padding:4px 8px;vertical-align:middle;border-bottom:1px solid rgba(210,205,228,.06);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;position:relative}
-.rt-tbl td:last-child{text-align:right}
+.rt-tbl td{padding:3px 8px;vertical-align:middle;border-bottom:1px solid rgba(210,205,228,.06);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rt-tbl td:last-child{text-align:right;display:flex;align-items:center;justify-content:flex-end;gap:2px;padding:3px 6px}
 .rt-tbl .rt-meta{font-size:10.5px;color:var(--muted)}
 .rt-editable{cursor:text}.rt-editable:hover{background:rgba(255,255,255,.45);border-radius:4px}
 .rt-edit-input{width:100%;max-width:100%;box-sizing:border-box;font-size:11px;background:rgba(255,255,255,.95);border:1px solid var(--accent);border-radius:4px;padding:1px 5px;font-family:inherit;color:var(--text);outline:none}
 .rt-row{cursor:pointer;transition:background .1s}
 .rt-row:hover td{background:rgba(255,237,213,.3)}
 body.dark .rt-row:hover td{background:rgba(255,220,200,.06)}
-.rt-tbl .delbtn{position:absolute;right:4px;top:50%;transform:translateY(-50%)}
+.rt-tbl .delbtn{position:static;transform:none;flex-shrink:0}
 .rt-row:hover .delbtn{opacity:1}
 .rt-row.sel-row td{background:var(--sel-bg,rgba(130,115,100,.1))!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.7)}
 .rt-row.done .tn{text-decoration:line-through;color:var(--muted)}
@@ -3079,8 +3079,8 @@ function renderRtGroup(containerId, tasks, isWr, cadence){
     const isPup=r.pup_related===true||r.pup_related==='true';
     let tds='';
     if(isWr){
-      tds=`<td class="rt-editable" ondblclick="event.stopPropagation();openRecEditModal(${rid})" onclick="selTask(event,'${virtId}')">${esc(r.name)}</td>
-        <td style="text-align:center;cursor:pointer;font-size:13px" onclick="event.stopPropagation();rtTogglePup('${rid}')" title="Toggle pup related">${isPup?'🐾':''}</td>
+      tds=`<td class="rt-editable">${esc(r.name)}</td>
+        <td data-pup="1" style="text-align:center;cursor:pointer;font-size:13px" onclick="event.stopPropagation();rtTogglePup('${rid}')" ondblclick="event.stopPropagation()" title="Toggle pup related">${isPup?'🐾':''}</td>
         <td class="rt-editable rt-meta" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','appears_on_date')">${r.appears_on_date||'—'}</td>
         <td class="rt-editable rt-meta" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','day_added')">${r.day_added||'—'}</td>
         <td class="rt-editable rt-meta" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','task_due_day')">${r.task_due_day||'—'}</td>
@@ -3088,24 +3088,24 @@ function renderRtGroup(containerId, tasks, isWr, cadence){
     } else {
       const dayField='appears_on_date';
       const dayDisp=r.appears_on_date||'—';
-      tds=`<td class="rt-editable" ondblclick="event.stopPropagation();openRecEditModal(${rid})" onclick="selTask(event,'${virtId}')">${esc(r.name)}</td>
+      tds=`<td class="rt-editable">${esc(r.name)}</td>
         <td class="rt-editable rt-meta" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','${dayField}')">${dayDisp}</td>
         <td class="rt-editable rt-meta" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','day_added')">${r.day_added||'—'}</td>
         <td class="rt-editable rt-meta" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','task_due_day')">${r.task_due_day||'—'}</td>
         <td class="rt-editable rt-meta" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','starting_date')">${r.starting_date?fmtD(r.starting_date):'—'}</td>`;
     }
-    tbody+=`<tr class="rt-row${isDone?' done':''}" id="ti-rt-${rid}" onclick="selTask(event,'${virtId}')" oncontextmenu="showCtx(event,'${virtId}',true,'${rid}')">
+    tbody+=`<tr class="rt-row${isDone?' done':''}" id="ti-rt-${rid}" onclick="selTask(event,'${virtId}')" ondblclick="if(!event.target.closest('[data-pup]')&&!event.target.closest('.delbtn')&&!event.target.closest('.btn-xs')){event.stopPropagation();openRecEditModal('${rid}');}" oncontextmenu="showCtx(event,'${virtId}',true,'${rid}')">
       ${tds}
-      <td onclick="event.stopPropagation()"><button class="btn btn-xs btn-ghost" style="padding:1px 5px;font-size:10px;opacity:.55" onclick="duplicateRecDirect('${rid}')" title="Duplicate">⧉</button><button class="delbtn" onclick="delRec('${rid}')">✕</button></td>
+      <td onclick="event.stopPropagation()" ondblclick="event.stopPropagation()"><button class="btn btn-xs btn-ghost" style="padding:1px 5px;font-size:10px;opacity:.55" onclick="duplicateRecDirect('${rid}')" title="Duplicate">⧉</button><button class="delbtn" onclick="delRec('${rid}')">✕</button></td>
     </tr>`;
   });
   const tableHtml=tasks.length
     ?`<table class="rt-tbl"><thead>${thead}</thead><tbody>${tbody}</tbody></table>`
     :`<div style="padding:6px 4px;font-size:11px;color:var(--subtle);font-style:italic">None</div>`;
-  el.innerHTML=`<div class="card" style="padding:10px 12px;box-shadow:none">
-    <div class="ch" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-      <span style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--subtle)">${cadLabel}${tasks.length?' <span style="opacity:.5;font-weight:400">· '+tasks.length+'</span>':''}</span>
-      <button class="btn-plus" style="padding:0px 6px;font-size:11px;line-height:1.4" onclick="openRecModalForSection('${isWr?'weekly_reset':'scheduled'}','${cadence}')">+</button>
+  el.innerHTML=`<div class="card" style="padding:8px 12px;box-shadow:none">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;padding:0 2px">
+      <span style="font-size:7px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--subtle)">${cadLabel}${tasks.length?' <span style="opacity:.5;font-weight:400">· '+tasks.length+'</span>':''}</span>
+      <button class="btn-plus" style="padding:0px 5px;font-size:10px;line-height:1.4" onclick="openRecModalForSection('${isWr?'weekly_reset':'scheduled'}','${cadence}')">+</button>
     </div>
     ${tableHtml}
   </div>`;
