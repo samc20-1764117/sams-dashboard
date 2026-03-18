@@ -117,7 +117,7 @@ body{font-family:'DM Sans',sans-serif;background:#f0ecfb;background-attachment:f
 
 /* Main */
 .main{flex:1;overflow-y:auto;overflow-x:hidden;padding:22px 0 36px 0;margin-left:186px;transition:margin-left .25s cubic-bezier(.4,0,.2,1)}
-#page-overview{padding:0 clamp(12px,3vw,56px)}
+#page-overview{padding:clamp(12px,3vw,56px)}
 .overview-cols{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,2.55fr);gap:14px;margin-bottom:36px;height:min(740px,calc(100vh - 80px))}
 @media(max-width:1280px){.row1-right-top{grid-template-columns:1fr 1fr;height:auto}}
 @media(max-width:900px){.main{margin-left:0;padding:12px 0 24px 0}#page-overview{padding:0 12px}.overview-cols{grid-template-columns:1fr;height:auto}}
