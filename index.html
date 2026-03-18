@@ -850,6 +850,23 @@ body.dark .rt-row:hover td{background:rgba(255,220,200,.06)}
       </select>
     </div>
 
+    <div class="mfield">
+      <label>Adds on</label>
+      <select id="recDayAdded">
+        <option value="Sunday">Sunday</option>
+        <option value="Monday">Monday</option>
+        <option value="Tuesday">Tuesday</option>
+        <option value="Wednesday">Wednesday</option>
+        <option value="Thursday">Thursday</option>
+        <option value="Friday">Friday</option>
+        <option value="Saturday">Saturday</option>
+        <option value="Previous Sunday">Previous Sunday</option>
+        <option value="Previous Monday">Previous Monday</option>
+        <option value="Previous Saturday">Previous Saturday</option>
+        <option value="Same day">Same day as repeat</option>
+      </select>
+    </div>
+
     <div class="mfield" id="recRepeatDayField">
       <label id="recRepeatDayLabel">Due on</label>
       <select id="recRepeatDay">
@@ -877,23 +894,6 @@ body.dark .rt-row:hover td{background:rgba(255,220,200,.06)}
       <div id="recMonthlyNwdField" style="display:none">
         <select id="recNthWd"><option>1st Sunday</option><option>1st Monday</option><option>1st Tuesday</option><option>1st Wednesday</option><option>1st Thursday</option><option>1st Friday</option><option>1st Saturday</option><option>2nd Sunday</option><option>2nd Monday</option><option>2nd Tuesday</option><option>2nd Wednesday</option><option>2nd Thursday</option><option>2nd Friday</option><option>2nd Saturday</option><option>3rd Sunday</option><option>3rd Monday</option><option>3rd Tuesday</option><option>3rd Wednesday</option><option>3rd Thursday</option><option>3rd Friday</option><option>3rd Saturday</option><option>4th Sunday</option><option>4th Monday</option><option>4th Tuesday</option><option>4th Wednesday</option><option>4th Thursday</option><option>4th Friday</option><option>4th Saturday</option></select>
       </div>
-    </div>
-
-    <div class="mfield">
-      <label>Adds on</label>
-      <select id="recDayAdded">
-        <option value="Sunday">Sunday</option>
-        <option value="Monday">Monday</option>
-        <option value="Tuesday">Tuesday</option>
-        <option value="Wednesday">Wednesday</option>
-        <option value="Thursday">Thursday</option>
-        <option value="Friday">Friday</option>
-        <option value="Saturday">Saturday</option>
-        <option value="Previous Sunday">Previous Sunday</option>
-        <option value="Previous Monday">Previous Monday</option>
-        <option value="Previous Saturday">Previous Saturday</option>
-        <option value="Same day">Same day as repeat</option>
-      </select>
     </div>
 
     <div class="mfield">
@@ -964,6 +964,13 @@ body.dark .rt-row:hover td{background:rgba(255,220,200,.06)}
         <option value="monthly">Monthly</option>
       </select>
     </div>
+    <div class="mfield">
+      <label>Adds on</label>
+      <select id="recEditDayAdded">
+        <option value="">— none —</option>
+        <option>Sunday</option><option>Monday</option><option>Tuesday</option><option>Wednesday</option><option>Thursday</option><option>Friday</option><option>Saturday</option><option>Previous Sunday</option><option>Previous Monday</option><option>Previous Saturday</option><option>Same day</option>
+      </select>
+    </div>
     <div class="mfield" id="recEditDayField">
       <label id="recEditDayLabel">Due on</label>
       <select id="recEditRepeatDay">
@@ -971,7 +978,7 @@ body.dark .rt-row:hover td{background:rgba(255,220,200,.06)}
       </select>
     </div>
     <div class="mfield" id="recEditDateField" style="display:none">
-      <label>Monthly schedule</label>
+      <label>Due on</label>
       <div style="display:flex;gap:12px;margin-bottom:6px">
         <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-weight:400;font-size:12px"><input type="radio" name="recEditMonthlyMode" id="recEditMonthlyModeDom" value="dom" checked onchange="updateRecEditUI()"> Day of month</label>
         <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-weight:400;font-size:12px"><input type="radio" name="recEditMonthlyMode" id="recEditMonthlyModeNwd" value="nwd" onchange="updateRecEditUI()"> Day of week</label>
@@ -982,13 +989,6 @@ body.dark .rt-row:hover td{background:rgba(255,220,200,.06)}
       <div id="recEditMonthlyNwdField" style="display:none">
         <select id="recEditNthWd"><option>1st Sunday</option><option>1st Monday</option><option>1st Tuesday</option><option>1st Wednesday</option><option>1st Thursday</option><option>1st Friday</option><option>1st Saturday</option><option>2nd Sunday</option><option>2nd Monday</option><option>2nd Tuesday</option><option>2nd Wednesday</option><option>2nd Thursday</option><option>2nd Friday</option><option>2nd Saturday</option><option>3rd Sunday</option><option>3rd Monday</option><option>3rd Tuesday</option><option>3rd Wednesday</option><option>3rd Thursday</option><option>3rd Friday</option><option>3rd Saturday</option><option>4th Sunday</option><option>4th Monday</option><option>4th Tuesday</option><option>4th Wednesday</option><option>4th Thursday</option><option>4th Friday</option><option>4th Saturday</option></select>
       </div>
-    </div>
-    <div class="mfield">
-      <label>Adds on</label>
-      <select id="recEditDayAdded">
-        <option value="">— none —</option>
-        <option>Sunday</option><option>Monday</option><option>Tuesday</option><option>Wednesday</option><option>Thursday</option><option>Friday</option><option>Saturday</option><option>Previous Sunday</option><option>Previous Monday</option><option>Previous Saturday</option><option>Same day</option>
-      </select>
     </div>
     <div class="mfield">
       <label>Starting date</label>
@@ -3062,8 +3062,8 @@ function renderRtGroup(containerId, tasks, isWr, cadence){
   const wkKey=getWkKey(wkOff);
   const cadLabel={weekly:'Weekly',biweekly:'Biweekly',monthly:'Monthly',other:'Other'}[cadence]||cadence;
   const thead=isWr
-    ?`<tr><th style="width:120px;text-align:left">Name</th><th style="width:36px">Pup</th><th style="width:96px">Due On</th><th style="width:96px">Adds On</th><th style="width:84px">Starting</th><th style="width:40px"></th></tr>`
-    :`<tr><th style="width:120px;text-align:left">Name</th><th style="width:96px">${cadence==='monthly'?'Due On':'Due On'}</th><th style="width:96px">Adds On</th><th style="width:84px">Starting</th><th style="width:40px"></th></tr>`;
+    ?`<tr><th style="width:120px;text-align:left">Name</th><th style="width:36px">Pup</th><th style="width:96px">Adds On</th><th style="width:96px">Due On</th><th style="width:84px">Starting</th><th style="width:40px"></th></tr>`
+    :`<tr><th style="width:120px;text-align:left">Name</th><th style="width:96px">Adds On</th><th style="width:96px">Due On</th><th style="width:84px">Starting</th><th style="width:40px"></th></tr>`;
   let tbody='';
   tasks.forEach(r=>{
     const rid=String(r.id);
@@ -3075,15 +3075,15 @@ function renderRtGroup(containerId, tasks, isWr, cadence){
     if(isWr){
       tds=`<td class="rt-editable">${esc(r.name)}</td>
         <td data-pup="1" style="text-align:center;cursor:pointer;font-size:13px" onclick="event.stopPropagation();rtTogglePup('${rid}')" ondblclick="event.stopPropagation()" title="Toggle pup related">${isPup?'🐾':''}</td>
-        <td class="rt-editable rt-meta" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','appears_on_date')">${r.appears_on_date||'—'}</td>
         <td class="rt-editable rt-meta" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','day_added')">${r.day_added||'—'}</td>
+        <td class="rt-editable rt-meta" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','appears_on_date')">${r.appears_on_date||'—'}</td>
         <td class="rt-editable rt-meta" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','starting_date')">${r.starting_date?fmtD(r.starting_date):'—'}</td>`;
     } else {
       const dayField='appears_on_date';
       const dayDisp=r.appears_on_date||'—';
       tds=`<td class="rt-editable">${esc(r.name)}</td>
-        <td class="rt-editable rt-meta" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','${dayField}')">${dayDisp}</td>
         <td class="rt-editable rt-meta" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','day_added')">${r.day_added||'—'}</td>
+        <td class="rt-editable rt-meta" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','${dayField}')">${dayDisp}</td>
         <td class="rt-editable rt-meta" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','starting_date')">${r.starting_date?fmtD(r.starting_date):'—'}</td>`;
     }
     tbody+=`<tr class="rt-row${isDone?' done':''}" id="ti-rt-${rid}" onclick="selTask(event,'${virtId}')" ondblclick="if(!event.target.closest('[data-pup]')&&!event.target.closest('.delbtn')&&!event.target.closest('.btn-xs')){event.stopPropagation();openRecEditModal('${rid}');}" oncontextmenu="showCtx(event,'${virtId}',true,'${rid}')">
@@ -3327,6 +3327,7 @@ async function saveRecModal(){
   let recServerId=null;
   pushUndo(()=>{const rid=recServerId||localId;st.recurring=st.recurring.filter(x=>String(x.id)!==String(rid));save();renderRecOv();renderWeeklyPage();renderWkSummary();renderWkCal();if(recServerId)sbReq('DELETE','recurring_tasks',null,recQs(recServerId));},'Added recurring task');
   const payload={name:n,is_weekly_reset:isWeekly,appears_on_date:appearsOn,cadence};
+  if(dayAdded)payload.day_added=dayAdded;
   if(startDate)payload.starting_date=startDate;
   if(pupRelated)payload.pup_related=true;
   const sv=await sbReq('POST','recurring_tasks',payload);
