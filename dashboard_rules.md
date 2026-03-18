@@ -237,6 +237,18 @@ All three checkbox types share identical visual style:
 - Outside-click listener closes panel when clicking outside `#qnPanel` and `#qnBtn`.
 - Do NOT hard delete rows — always soft-delete via `is_visible=false`.
 
+## Pup Skills Page
+
+- Page ID: `page-pups`. Sidebar nav: `showPage('pups')`. Rendered by `renderPupsPage()`.
+- Supabase table: `pup_skills(id, pup_name, skill_name, stage, level, success_rate, next_step, focus)`.
+  - `pup_name`: 'Mochi' or 'Sunny'. `stage`: 'In Progress' | 'Mastered' | 'Not Started'. `focus`: boolean. `success_rate`: 0–1 float.
+- Fetched in `syncAll` via `sbReqSilent` alongside other tables. Stored in `st.pup_skills`, persisted in localStorage.
+- Layout: 3-column grid (`1fr 1fr 0.7fr`). Col 1 = Mochi, Col 2 = Sunny, Col 3 = Completed.
+- Each pup column: progress donut (mastered%), mastered/in-progress counts, Train This Week (focus=true, top 3), Current Skills (stage=In Progress with next_step).
+- Completed column: Sunny Mastered then Mochi Mastered, sorted by level then skill_name. Dense + scrollable.
+- Colors: Mochi = `#8b5cf6` (purple), Sunny = `#f97316` (orange).
+- CSS classes: `.pup-col`, `.pup-skill-row`, `.pup-skill-emphasis` (Current Skills), `.pup-focus-row` (Train This Week), `.pup-done-row` (Completed), `.pup-pill`, `.pup-pill-sr`, `.pup-pill-dim`, `.pup-stat`, `.pup-section-label`, `.pup-check`, `.pup-next-step`.
+
 ## Git Workflow
 
 - Stop hook: auto-commits and pushes to `origin/dev` branch after every Claude turn.
