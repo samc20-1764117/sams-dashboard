@@ -425,7 +425,7 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 /* Recurring tasks table */
 .rt-tbl{width:100%;border-collapse:collapse;font-size:11.5px;table-layout:fixed}
 .rt-tbl thead tr{border-bottom:1px solid rgba(210,205,228,.18)}
-.rt-tbl th{text-align:left;padding:4px 8px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.rt-tbl th{text-align:center;padding:4px 8px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
 .rt-tbl td{padding:4px 8px;vertical-align:middle;border-bottom:1px solid rgba(210,205,228,.06);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rt-tbl .rt-meta{font-size:10.5px;color:var(--muted)}
 .rt-editable{cursor:text}.rt-editable:hover{background:rgba(255,255,255,.45);border-radius:4px}
@@ -734,11 +734,11 @@ body.dark .rt-row:hover td{background:rgba(255,220,200,.06)}
   <input id="nsN" style="display:none"><input id="nsS" style="display:none">
   <datalist id="storeListFull"><option value="HEB"></option><option value="Ikea"></option><option value="Online"></option><option value="Other"></option></datalist>
 
-  <div id="rt-outer" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;height:calc(100vh - 130px);min-height:0;width:100%">
+  <div id="rt-outer" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;min-height:0;width:100%">
     <!-- Col 1: Weekly Reset Recurring -->
     <div id="rt-col-wr" style="min-height:0;display:flex;flex-direction:column">
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px;padding:0 2px;flex-shrink:0">Weekly Reset Recurring</div>
-      <div style="flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:14px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px;padding:0 2px;flex-shrink:0;text-align:center">Weekly Reset</div>
+      <div style="display:flex;flex-direction:column;gap:14px">
         <div id="rt-wr-weekly"></div>
         <div id="rt-wr-biweekly"></div>
         <div id="rt-wr-monthly"></div>
@@ -746,10 +746,10 @@ body.dark .rt-row:hover td{background:rgba(255,220,200,.06)}
       </div>
     </div>
 
-    <!-- Col 2: Non Weekly Reset Recurring -->
+    <!-- Col 2: Other Recurring -->
     <div id="rt-col-sch" style="min-height:0;display:flex;flex-direction:column">
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px;padding:0 2px;flex-shrink:0">Non Weekly Reset Recurring</div>
-      <div style="flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:14px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px;padding:0 2px;flex-shrink:0;text-align:center">Other Recurring</div>
+      <div style="display:flex;flex-direction:column;gap:14px">
         <div id="rt-sch-weekly"></div>
         <div id="rt-sch-biweekly"></div>
         <div id="rt-sch-monthly"></div>
@@ -3067,8 +3067,8 @@ function renderRtGroup(containerId, tasks, isWr, cadence){
   const wkKey=getWkKey(wkOff);
   const cadLabel={weekly:'Weekly',biweekly:'Biweekly',monthly:'Monthly',other:'Other'}[cadence]||cadence;
   const thead=isWr
-    ?`<tr><th style="width:22px"></th><th style="width:120px">Name</th><th style="width:28px" title="Pup">🐾</th><th style="width:88px">Appears On</th><th style="width:88px">Adds On</th><th style="width:76px">Due Day</th><th style="width:84px">Starting</th><th style="width:52px"></th></tr>`
-    :`<tr><th style="width:120px">Name</th><th style="width:92px">${cadence==='monthly'?'Schedule':'Day of Week'}</th><th style="width:88px">Adds On</th><th style="width:76px">Due Day</th><th style="width:84px">Starting</th><th style="width:52px"></th></tr>`;
+    ?`<tr><th style="width:120px;text-align:left">Name</th><th style="width:28px" title="Pup">🐾</th><th style="width:88px">Appears On</th><th style="width:88px">Adds On</th><th style="width:76px">Due Day</th><th style="width:84px">Starting</th><th style="width:52px"></th></tr>`
+    :`<tr><th style="width:120px;text-align:left">Name</th><th style="width:92px">${cadence==='monthly'?'Schedule':'Day of Week'}</th><th style="width:88px">Adds On</th><th style="width:76px">Due Day</th><th style="width:84px">Starting</th><th style="width:52px"></th></tr>`;
   let tbody='';
   tasks.forEach(r=>{
     const rid=String(r.id);
@@ -3078,8 +3078,7 @@ function renderRtGroup(containerId, tasks, isWr, cadence){
     const isPup=r.pup_related===true||r.pup_related==='true';
     let tds='';
     if(isWr){
-      tds=`<td onclick="event.stopPropagation()"><label class="chk-wrap" onmousedown="event.stopPropagation()"><input type="checkbox" class="chk"${isDone?' checked':''} onchange="togRec('${rid}',this.checked)"></label></td>
-        <td class="rt-editable" ondblclick="event.stopPropagation();openRecEditModal(${rid})" onclick="selTask(event,'${virtId}')">${esc(r.name)}</td>
+      tds=`<td class="rt-editable" ondblclick="event.stopPropagation();openRecEditModal(${rid})" onclick="selTask(event,'${virtId}')">${esc(r.name)}</td>
         <td style="text-align:center;cursor:pointer;font-size:13px" onclick="event.stopPropagation();rtTogglePup('${rid}')" title="Toggle pup related">${isPup?'🐾':''}</td>
         <td class="rt-editable rt-meta" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','appears_on_date')">${r.appears_on_date||'—'}</td>
         <td class="rt-editable rt-meta" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','day_added')">${r.day_added||'—'}</td>
@@ -3104,7 +3103,7 @@ function renderRtGroup(containerId, tasks, isWr, cadence){
     :`<div style="padding:6px 4px;font-size:11px;color:var(--subtle);font-style:italic">None</div>`;
   el.innerHTML=`<div class="card" style="padding:10px 12px;box-shadow:none">
     <div class="ch" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-      <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)">${cadLabel}${tasks.length?' <span style="opacity:.5;font-weight:400">· '+tasks.length+'</span>':''}</span>
+      <span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)">${cadLabel}${tasks.length?' <span style="opacity:.5;font-weight:400">· '+tasks.length+'</span>':''}</span>
       <button class="btn-plus" style="padding:1px 7px;font-size:12px" onclick="openRecModalForSection('${isWr?'weekly_reset':'scheduled'}','${cadence}')">+</button>
     </div>
     ${tableHtml}
