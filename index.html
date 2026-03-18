@@ -712,25 +712,27 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
   <input id="nsN" style="display:none"><input id="nsS" style="display:none">
   <datalist id="storeListFull"><option value="HEB"></option><option value="Ikea"></option><option value="Online"></option><option value="Other"></option></datalist>
 
-  <!-- Section 1: Weekly Reset Recurring -->
-  <div style="margin-bottom:24px">
-    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px;padding:0 2px">Weekly Reset Recurring</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start">
-      <div id="rt-wr-weekly"></div>
-      <div id="rt-wr-biweekly"></div>
-      <div id="rt-wr-monthly"></div>
-      <div id="rt-wr-other"></div>
+  <div style="display:flex;flex-direction:column;gap:14px;height:calc(100vh - 112px);min-height:0">
+    <!-- Section 1: Weekly Reset Recurring -->
+    <div style="flex:1;min-height:0;display:flex;flex-direction:column">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px;padding:0 2px;flex-shrink:0">Weekly Reset Recurring</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start;flex:1;min-height:0;overflow-y:auto">
+        <div id="rt-wr-weekly"></div>
+        <div id="rt-wr-biweekly"></div>
+        <div id="rt-wr-monthly"></div>
+        <div id="rt-wr-other"></div>
+      </div>
     </div>
-  </div>
 
-  <!-- Section 2: Non Weekly Reset Recurring -->
-  <div>
-    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px;padding:0 2px">Non Weekly Reset Recurring</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start">
-      <div id="rt-sch-weekly"></div>
-      <div id="rt-sch-biweekly"></div>
-      <div id="rt-sch-monthly"></div>
-      <div id="rt-sch-other"></div>
+    <!-- Section 2: Non Weekly Reset Recurring -->
+    <div style="flex:1;min-height:0;display:flex;flex-direction:column">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px;padding:0 2px;flex-shrink:0">Non Weekly Reset Recurring</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start;flex:1;min-height:0;overflow-y:auto">
+        <div id="rt-sch-weekly"></div>
+        <div id="rt-sch-biweekly"></div>
+        <div id="rt-sch-monthly"></div>
+        <div id="rt-sch-other"></div>
+      </div>
     </div>
   </div>
 </div>
