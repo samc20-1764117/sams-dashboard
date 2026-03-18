@@ -3914,7 +3914,7 @@ function getOvRecurring(){
     });
     // Also include weekly reset tasks with past date_overrides for this week
     const wkKey=getWkKey(w);
-    st.recurring.filter(r=>(r.is_weekly_reset===true||r.is_weekly_reset==='true')&&!r._done&&r._dateOverrides&&r._dateOverrides[wkKey]&&r._dateOverrides[wkKey]<today&&!seen.has('wrec-'+r.id+'-'+wkKey)).forEach(r=>{
+    st.recurring.filter(r=>(r.is_weekly_reset===true||r.is_weekly_reset==='true')&&!(r._doneByWk&&r._doneByWk[wkKey])&&r._dateOverrides&&r._dateOverrides[wkKey]&&r._dateOverrides[wkKey]<today&&!seen.has('wrec-'+r.id+'-'+wkKey)).forEach(r=>{
       seen.add('wrec-'+r.id+'-'+wkKey);
       out.push({id:'rec-virt-'+r.id,name:r.name,category:'Recurring',due_date:r._dateOverrides[wkKey],done:false,_recId:r.id,_virtual:true,_wkKey:wkKey,_isWrec:true});
     });
