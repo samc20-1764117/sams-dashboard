@@ -285,6 +285,7 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 .tb-btime{font-size:7.5px;opacity:.7;white-space:nowrap;flex-shrink:0;line-height:1.1}
 .tb-bdel{font-size:9px;opacity:0;background:none;border:none;cursor:pointer;color:inherit;padding:0 2px;flex-shrink:0;line-height:1}
 .tb-block:hover .tb-bdel{opacity:1;color:var(--subtle)}
+.tb-notes{font-size:7px;opacity:.75;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 2px 1px 20px;line-height:1.2}
 .tb-resize{position:absolute;bottom:0;left:0;right:0;height:4px;cursor:ns-resize}
 .tb-resize::after{content:'';display:block;width:12px;height:1.5px;border-radius:1px;background:currentColor;opacity:.2;margin:0 auto}
 .nowline{position:absolute;left:0;right:0;z-index:20;pointer-events:none;height:2px;background:rgba(120,120,120,0.7)}
@@ -2587,7 +2588,11 @@ function drawTBBlock(col,b){
   const left=col_i*colW;
   el.style.cssText=`top:${top}px;height:${ht}px;background:${s.bg};color:${s.t};border-color:${s.b};left:calc(${left}% + 2px);right:calc(${100-left-colW}% + 2px);width:auto`;
   const _showTime=(b._ncols||1)<=1;
-  el.innerHTML=`<div class="tb-row"><input type="checkbox" class="tb-chk" ${b._done?'checked':''}><span class="tb-bt">${b.title}</span>${_showTime?`<span class="tb-btime">${tStr(b.sm)}-${tStr(b.sm+b.dur)}</span>`:''}<button class="tb-bdel" onclick="delBlock('${b.id}',event)">✕</button></div><div class="tb-resize" data-id="${b.id}"></div>`;
+  const _linkedTask=b.taskId?st.tasks.find(t=>String(t.id)===String(b.taskId)):null;
+  const _linkedRec=b.recId?st.recurring.find(r=>String(r.id)===String(b.recId)):null;
+  const _notes=(_linkedTask&&_linkedTask.notes)||(_linkedRec&&_linkedRec.notes)||'';
+  const _notesHtml=_notes?`<div class="tb-notes">${_notes.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>`:'';
+  el.innerHTML=`<div class="tb-row"><input type="checkbox" class="tb-chk" ${b._done?'checked':''}><span class="tb-bt">${b.title}</span>${_showTime?`<span class="tb-btime">${tStr(b.sm)}-${tStr(b.sm+b.dur)}</span>`:''}<button class="tb-bdel" onclick="delBlock('${b.id}',event)">✕</button></div>${_notesHtml}<div class="tb-resize" data-id="${b.id}"></div>`;
   const tbChk=el.querySelector('.tb-chk');
   if(tbChk)tbChk.addEventListener('change',function(e){
     e.stopPropagation();
