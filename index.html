@@ -130,6 +130,7 @@ body{font-family:'DM Sans',sans-serif;background:#f0ecfb;background-attachment:f
 .page{display:none}.page.active{display:block}#page-weekly.active{display:block;padding:clamp(12px,3vw,56px);padding-top:48px}
 
 /* Undo toast */
+.back-btn{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--muted);background:none;border:none;cursor:pointer;padding:0;margin-bottom:12px;opacity:.7;transition:opacity .15s}.back-btn:hover{opacity:1}
 .undo-toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%) translateY(60px);background:rgba(37,32,64,.92);color:#fff;font-size:11px;font-weight:600;padding:7px 14px;border-radius:20px;box-shadow:var(--shadow-lg);transition:transform .22s ease,opacity .22s ease;opacity:0;z-index:900;display:flex;align-items:center;gap:8px;white-space:nowrap}
 .undo-toast.show{transform:translateX(-50%) translateY(0);opacity:1}
 .undo-btn{background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);border-radius:6px;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;cursor:pointer;transition:background .12s}
@@ -701,6 +702,7 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
     <span class="ov-topbar-dot"></span>
     <span class="ov-topbar-time" id="wkTopTime"></span>
   </div>
+  <button class="back-btn" onclick="showPage('overview')">← Overview</button>
   <!-- hidden compat elements -->
   <span id="wrPL" style="display:none">0/0</span>
   <span id="wrPct2" style="display:none">0%</span>
@@ -712,11 +714,11 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
   <input id="nsN" style="display:none"><input id="nsS" style="display:none">
   <datalist id="storeListFull"><option value="HEB"></option><option value="Ikea"></option><option value="Online"></option><option value="Other"></option></datalist>
 
-  <div style="display:flex;flex-direction:column;gap:14px;height:calc(100vh - 112px);min-height:0">
-    <!-- Section 1: Weekly Reset Recurring -->
-    <div style="flex:1;min-height:0;display:flex;flex-direction:column">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;height:calc(100vh - 112px);min-height:0">
+    <!-- Col 1: Weekly Reset Recurring -->
+    <div style="min-height:0;display:flex;flex-direction:column">
       <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px;padding:0 2px;flex-shrink:0">Weekly Reset Recurring</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start;flex:1;min-height:0;overflow-y:auto">
+      <div style="flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:14px">
         <div id="rt-wr-weekly"></div>
         <div id="rt-wr-biweekly"></div>
         <div id="rt-wr-monthly"></div>
@@ -724,10 +726,10 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
       </div>
     </div>
 
-    <!-- Section 2: Non Weekly Reset Recurring -->
-    <div style="flex:1;min-height:0;display:flex;flex-direction:column">
+    <!-- Col 2: Non Weekly Reset Recurring -->
+    <div style="min-height:0;display:flex;flex-direction:column">
       <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px;padding:0 2px;flex-shrink:0">Non Weekly Reset Recurring</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start;flex:1;min-height:0;overflow-y:auto">
+      <div style="flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:14px">
         <div id="rt-sch-weekly"></div>
         <div id="rt-sch-biweekly"></div>
         <div id="rt-sch-monthly"></div>
@@ -739,10 +741,10 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 
 <!-- OTHER PAGES (empty) -->
 <div class="page" id="page-travel" style="display:none!important"><div id="travelList" style="display:none"></div></div>
-<div class="page" id="page-birthdays"><div id="bdayList" style="display:none"></div></div>
-<div class="page" id="page-pups"></div>
-<div class="page" id="page-finance"></div>
-<div class="page" id="page-recipes"></div>
+<div class="page" id="page-birthdays" style="padding:clamp(12px,3vw,56px);padding-top:48px"><button class="back-btn" onclick="showPage('overview')">← Overview</button><div id="bdayList" style="display:none"></div></div>
+<div class="page" id="page-pups" style="padding:clamp(12px,3vw,56px);padding-top:48px"><button class="back-btn" onclick="showPage('overview')">← Overview</button></div>
+<div class="page" id="page-finance" style="padding:clamp(12px,3vw,56px);padding-top:48px"><button class="back-btn" onclick="showPage('overview')">← Overview</button></div>
+<div class="page" id="page-recipes" style="padding:clamp(12px,3vw,56px);padding-top:48px"><button class="back-btn" onclick="showPage('overview')">← Overview</button></div>
 <div class="page" id="page-notes"></div>
 <div class="page" id="page-settings" style="display:none!important"><input class="si2" id="cfgUrl" style="display:none"><input class="si2" id="cfgKey" style="display:none"><div class="cst idle" id="cst" style="display:none"></div></div>
 
