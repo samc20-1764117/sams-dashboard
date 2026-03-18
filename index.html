@@ -2652,7 +2652,11 @@ function drawTBBlock(col,b){
   const s=isImp?IMP:gc(effectiveCat);
   const el=document.createElement('div');
   el.className='tb-block'+(b._done?' done-block':'');el.dataset.bid=b.id;
-  el.addEventListener('contextmenu',e=>{if(b.taskId)showCtx(e,b.taskId,false,null);else if(b.recId)showCtx(e,'rec-virt-'+b.recId,true,b.recId);else if(b.shopId)showCtxShop(e,b.shopId);});
+  el.addEventListener('contextmenu',e=>{
+    if(b.taskId)showCtx(e,b.taskId,false,null,null,b.id);
+    else if(b.recId)showCtx(e,'rec-virt-'+b.recId,true,b.recId,null,b.id);
+    else if(b.shopId){showCtxShop(e,b.shopId);document.getElementById('ctxMenu')._blockId=b.id;}
+  });
   const ncols=b._ncols||1,col_i=b._col||0;
   const colW=100/ncols;
   const left=col_i*colW;
@@ -2899,7 +2903,22 @@ function updateNowLine(){
 if(!window._nowLineInterval)window._nowLineInterval=setInterval(updateNowLine,60000);
 function onRM(e){if(!resizing)return;const b=st.blocks.find(x=>x.id===resizing.id);if(!b)return;b.dur=Math.max(15,Math.round((resizing.sd+(e.clientY-resizing.sy)/PX)/15)*15);renderDayTB();}
 function onRU(){if(!resizing)return;const bid=resizing.id;resizing=null;save();renderDayTB();document.removeEventListener('mousemove',onRM);document.removeEventListener('mouseup',onRU);const b=st.blocks.find(x=>x.id===bid);if(b)sbUpdateBlock(bid,{duration_minutes:b.dur});}
-function delBlock(id,e){e&&e.stopPropagation();const b=st.blocks.find(x=>x.id===id);if(b){const copy={...b};pushUndo(()=>{st.blocks.push(copy);save();renderDayTB();renderToday();sbSaveBlock(copy);},'Deleted block');}st.blocks=st.blocks.filter(b=>b.id!==id);save();renderDayTB();renderToday();sbDeleteBlock(id);}
+function delBlock(id,e){
+  e&&e.stopPropagation();
+  const b=st.blocks.find(x=>x.id===id);if(!b)return;
+  const copy={...b};
+  const linkedShop=b.shopId?st.shopping.find(x=>String(x.id)===String(b.shopId)):null;
+  const prevShopDue=linkedShop?linkedShop.due_date:null;
+  // Clear shopping item due_date so it goes back to unassigned
+  if(linkedShop){linkedShop.due_date=null;sbReqNullable('PATCH','shopping_list',{due_date:null},`?id=eq.${b.shopId}`);}
+  pushUndo(()=>{
+    st.blocks.push(copy);
+    if(linkedShop){linkedShop.due_date=prevShopDue;sbReqNullable('PATCH','shopping_list',{due_date:prevShopDue||null},`?id=eq.${b.shopId}`);}
+    save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();sbSaveBlock(copy);
+  },'Deleted block');
+  st.blocks=st.blocks.filter(x=>x.id!==id);
+  save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();sbDeleteBlock(id);
+}
 function onTBWheel(e){
   const sc=document.getElementById('tbScroll');const atTop=sc.scrollTop<=0,atBot=sc.scrollTop+sc.clientHeight>=sc.scrollHeight-2;
   if(e.deltaY<0&&atTop){e.preventDefault();tbWD+=e.deltaY;if(tbWT)clearTimeout(tbWT);tbWT=setTimeout(()=>{if(tbWD<-40)shiftDay(-1);tbWD=0;tbWT=null;},100);}
@@ -3078,7 +3097,13 @@ async function saveTModal(){
     const stid=String(tId);
     localOverrides[stid]={name:n,category:c,due_date:d};
     pendingLocal.add(stid);save();
-    t.name=n;t.category=c;t.due_date=d;t.important=imp;t.notes=notes;renderAll();
+    t.name=n;t.category=c;t.important=imp;t.notes=notes;
+    if(t.due_date!==d){
+      // Remove blocks on the old date since task is moving to a new date
+      const oldDs=(t.due_date||'').split('T')[0];
+      if(oldDs){const blksToKill=st.blocks.filter(b=>String(b.taskId)===stid&&b.ds===oldDs);blksToKill.forEach(b=>sbDeleteBlock(b.id));st.blocks=st.blocks.filter(b=>!(String(b.taskId)===stid&&b.ds===oldDs));}
+    }
+    t.due_date=d;renderAll();
     pushUndo(()=>{
       t.name=prev.name;t.category=prev.category;t.due_date=prev.due_date;t.important=prev.important;t.notes=prev.notes;
       localOverrides[stid]={...prev};pendingLocal.add(stid);renderAll();
@@ -4147,17 +4172,18 @@ function saveRecEdit(){
 // ── Context Menu ─────────────────────────────────────────────────────────────
 // ── Context Menu ─────────────────────────────────────────────────────────────
 // Store ctx state on the menu element itself so onclick handlers can always read it
-function showCtx(e,taskId,isRec,recId,shopId){
+function showCtx(e,taskId,isRec,recId,shopId,blockId){
   e.preventDefault();e.stopPropagation();
   const m=document.getElementById('ctxMenu');
   m._tid=taskId?String(taskId):null;
   m._isRec=(isRec===true);
   m._recId=(recId!=null)?String(recId):null;
   m._shopId=(shopId!=null)?String(shopId):null;
-  const isR=m._isRec,isSh=!!m._shopId;
-  m.querySelector('#ctxDuplicate').textContent=isSh?'⧉  Duplicate item':isR?'⧉  Duplicate recurring':'⧉  Duplicate task';
-  m.querySelector('#ctxEdit').textContent=isSh?'✏️  Edit item':isR?'✏️  Edit recurring':'✏️  Edit task';
-  m.querySelector('#ctxDelete').textContent=isSh?'✕  Delete item':isR?'✕  Delete recurring':'✕  Delete task';
+  m._blockId=(blockId!=null)?String(blockId):null;
+  const isR=m._isRec,isSh=!!m._shopId,isBlk=!!m._blockId;
+  m.querySelector('#ctxDuplicate').textContent=isSh&&!isBlk?'⧉  Duplicate item':isR?'⧉  Duplicate recurring':'⧉  Duplicate task';
+  m.querySelector('#ctxEdit').textContent=isSh&&!isBlk?'✏️  Edit item':isR?'✏️  Edit recurring':'✏️  Edit task';
+  m.querySelector('#ctxDelete').textContent=isBlk?'✕  Remove from day':isSh?'✕  Delete item':isR?'✕  Delete recurring':'✕  Delete task';
   m.style.display='block';
   const x=Math.min(e.clientX,window.innerWidth-165),y=Math.min(e.clientY,window.innerHeight-120);
   m.style.left=x+'px';m.style.top=y+'px';
@@ -4233,14 +4259,18 @@ async function ctxDoDuplicate(){
 }
 function ctxDoEdit(){
   const m=document.getElementById('ctxMenu');
-  const id=m._tid,isRec=m._isRec,rId=m._recId,sId=m._shopId;
+  const id=m._tid,isRec=m._isRec,rId=m._recId,sId=m._shopId,blkId=m._blockId;
   hideCtx();
-  if(sId){tiDblShop(null,sId);}else if(isRec&&rId){openRecEditModal(rId);}else{openEditTask(id);}
+  if(blkId){
+    if(sId)tiDblShop(null,sId);else if(isRec&&rId)openRecEditModal(rId);else if(id)openEditTask(id);
+  } else if(sId){tiDblShop(null,sId);}else if(isRec&&rId){openRecEditModal(rId);}else{openEditTask(id);}
 }
 function ctxDoDelete(){
   const m=document.getElementById('ctxMenu');
-  const id=m._tid,isRec=m._isRec,rId=m._recId,sId=m._shopId;
+  const id=m._tid,isRec=m._isRec,rId=m._recId,sId=m._shopId,blkId=m._blockId;
   hideCtx();
+  // If triggered from a timeblock, remove from day only (never delete the underlying item)
+  if(blkId){delBlock(blkId);return;}
   if(sId){delShop(sId);}else if(isRec&&rId){delRec(rId);}else{delTask(id,null);}
 }
 
