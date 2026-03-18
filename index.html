@@ -1991,7 +1991,8 @@ function renderWkCal(){
     let dayTasks=[...undoneDay,...doneDay];
     dayTasks.forEach(t=>{
       const ov=isOv(t.due_date)&&!t.done,imp=t.important&&!ov&&!t.done;
-      const s=ov?OV:imp?IMP:gc(t.category);
+      const _chipCat=t._isWrec?'weekly_reset':(t._virtual&&t._recId?'recurring':t.category);
+      const s=ov?OV:imp?IMP:gc(_chipCat);
       const chip=document.createElement('div');chip.className='chip'+(t.done?' done-chip':'');
       chip.style.cssText=`background:${s.bg};color:${s.t};border-color:${s.b}`;
       if(!t._virtual)chip.dataset.tid=String(t.id);
@@ -2291,15 +2292,16 @@ function renderRecOv(){
     return recOvOrder(a)-recOvOrder(b);
   });
   function makePawEl(rid,isDone){
-    const col=isDone?'#a3c41a':'none';
-    const str=isDone?'#a3c41a':'rgba(150,140,200,.55)';
-    const btn=document.createElement('button');
-    btn.style.cssText='background:none;border:none;cursor:pointer;padding:0;display:flex;align-items:center;flex-shrink:0;width:18px;height:18px;margin-right:2px';
-    btn.title='Toggle';
-    btn.innerHTML=`<svg viewBox="0 0 100 100" width="13" height="13" xmlns="http://www.w3.org/2000/svg"><ellipse cx="22" cy="18" rx="10" ry="12" fill="${col}" stroke="${str}" stroke-width="7"/><ellipse cx="46" cy="11" rx="10" ry="12" fill="${col}" stroke="${str}" stroke-width="7"/><ellipse cx="70" cy="14" rx="10" ry="12" fill="${col}" stroke="${str}" stroke-width="7"/><ellipse cx="85" cy="36" rx="9" ry="11" fill="${col}" stroke="${str}" stroke-width="7"/><path d="M18 58 Q14 42 28 36 Q46 28 68 34 Q82 40 82 56 Q80 76 50 82 Q20 76 18 58Z" fill="${col}" stroke="${str}" stroke-width="7"/></svg>`;
-    btn.addEventListener('click',e=>{e.stopPropagation();togRec(rid,!isDone);});
-    btn.addEventListener('mousedown',e=>e.stopPropagation());
-    return btn;
+    const col=isDone?'#a3c41a':'rgba(255,255,255,.8)';
+    const str=isDone?'#a3c41a':'rgba(180,170,210,.5)';
+    const wrap=document.createElement('label');
+    wrap.className='chk-wrap';
+    wrap.style.cssText='cursor:pointer;flex-shrink:0';
+    wrap.title='Toggle';
+    wrap.innerHTML=`<svg viewBox="0 0 100 100" width="10" height="10" xmlns="http://www.w3.org/2000/svg" style="display:block"><ellipse cx="22" cy="18" rx="10" ry="12" fill="${col}" stroke="${str}" stroke-width="8"/><ellipse cx="46" cy="11" rx="10" ry="12" fill="${col}" stroke="${str}" stroke-width="8"/><ellipse cx="70" cy="14" rx="10" ry="12" fill="${col}" stroke="${str}" stroke-width="8"/><ellipse cx="85" cy="36" rx="9" ry="11" fill="${col}" stroke="${str}" stroke-width="8"/><path d="M18 58 Q14 42 28 36 Q46 28 68 34 Q82 40 82 56 Q80 76 50 82 Q20 76 18 58Z" fill="${col}" stroke="${str}" stroke-width="8"/></svg>`;
+    wrap.addEventListener('click',e=>{e.stopPropagation();togRec(rid,!isDone);});
+    wrap.addEventListener('mousedown',e=>e.stopPropagation());
+    return wrap;
   }
   sorted.forEach(r=>{
     const rid=String(r.id);
@@ -2643,8 +2645,10 @@ function computeTBLayout(ds){
 function drawTBBlock(col,b){
   const top=(b.sm-HOURS[0]*60)*PX,ht=Math.max(b.dur*PX,16);
   const linkedTask=b.taskId?st.tasks.find(x=>String(x.id)===String(b.taskId)):null;
+  const linkedRec=b.recId?st.recurring.find(x=>String(x.id)===String(b.recId)):null;
   const isImp=linkedTask&&linkedTask.important&&!linkedTask.done;
-  const effectiveCat=linkedTask?linkedTask.category:(b.cat||'Home');
+  const recCat=linkedRec?(linkedRec.is_weekly_reset===true||linkedRec.is_weekly_reset==='true'?'weekly_reset':'recurring'):null;
+  const effectiveCat=linkedTask?linkedTask.category:recCat||(b.cat||'Home');
   const s=isImp?IMP:gc(effectiveCat);
   const el=document.createElement('div');
   el.className='tb-block'+(b._done?' done-block':'');el.dataset.bid=b.id;
