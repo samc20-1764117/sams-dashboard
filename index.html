@@ -118,6 +118,7 @@ body{font-family:'DM Sans',sans-serif;background:#f0ecfb;background-attachment:f
 /* Main */
 .main{flex:1;overflow-y:auto;overflow-x:hidden;padding:22px 0 36px 0;margin-left:186px;transition:margin-left .25s cubic-bezier(.4,0,.2,1)}
 #page-overview{padding:0 clamp(12px,3vw,56px)}
+.overview-cols{display:grid;grid-template-columns:4.5fr 2.55fr;gap:14px;margin-bottom:36px;height:min(740px,calc(100vh - 80px))}
 @media(max-width:1280px){.row1-right-top{grid-template-columns:1fr 1fr;height:auto}}
 @media(max-width:900px){.main{margin-left:0;padding:12px 0 24px 0}#page-overview{padding:0 12px}.overview-cols{grid-template-columns:1fr;height:auto}}
 .main.full{margin-left:0}
@@ -226,7 +227,6 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 .qa-close:hover{color:var(--text);background:rgba(0,0,0,.05)}
 
 /* Layout — consistent 14px gaps everywhere */
-.overview-cols{display:grid;grid-template-columns:4.5fr 2.55fr;gap:14px;margin-bottom:36px;height:min(740px,calc(100vh - 80px))}
 .overview-left{display:flex;flex-direction:column;gap:14px;min-height:0}
 .row1-right-panel{display:flex;flex-direction:column;gap:14px;min-height:0}
 .row1-right-top{display:grid;grid-template-columns:1fr 0.9fr 0.65fr;gap:14px;flex-shrink:0;height:min(225px,28vh)}
@@ -4029,6 +4029,6 @@ function copyShopList(){
 function tickClock(){const t=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});const el=document.getElementById('liveClock');if(el)el.textContent=t;}
 tickClock();setInterval(tickClock,1000);
 </script>
-<div id="devBadge" style="display:none;position:fixed;bottom:16px;left:16px;background:#1e293b;color:#f8fafc;font-size:11px;font-weight:700;letter-spacing:.08em;padding:4px 9px;border-radius:6px;border:1px solid rgba(255,255,255,.15);z-index:9999;pointer-events:none">DEV-66</div>
+<div id="devBadge" style="display:none;position:fixed;bottom:16px;left:16px;background:#1e293b;color:#f8fafc;font-size:11px;font-weight:700;letter-spacing:.08em;padding:4px 9px;border-radius:6px;border:1px solid rgba(255,255,255,.15);z-index:9999;pointer-events:none">DEV-83</div>
 <script>if(location.hostname.includes('dev.'))document.getElementById('devBadge').style.display='block';</script>
 </body></html>
