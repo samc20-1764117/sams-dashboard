@@ -118,6 +118,11 @@ body{font-family:'DM Sans',sans-serif;background:#f0ecfb;background-attachment:f
 /* Main */
 .main{flex:1;overflow-y:auto;overflow-x:hidden;padding:0 0 36px 0;margin-left:186px;transition:margin-left .25s cubic-bezier(.4,0,.2,1)}
 #page-overview{padding:clamp(12px,3vw,56px)}
+.ov-topbar{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:16px}
+.ov-topbar-label{font-size:13px;font-weight:600;color:var(--muted);letter-spacing:.02em}
+.ov-topbar-pill{display:inline-flex;align-items:center;justify-content:center;padding:3px 11px;border-radius:20px;font-size:12px;font-weight:600;background:rgba(120,110,180,.10);border:1px solid rgba(120,110,180,.15)}
+.ov-topbar-date{color:var(--text);font-weight:700}
+.ov-topbar-time{color:var(--muted)}
 .overview-cols{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,2.55fr);gap:14px;margin-bottom:36px;height:min(740px,calc(100vh - 80px))}
 @media(max-width:1280px){.row1-right-top{grid-template-columns:1fr 1fr;height:auto}}
 @media(max-width:900px){.main{margin-left:0;padding:12px 0 24px 0}#page-overview{padding:0 12px}.overview-cols{grid-template-columns:1fr;height:auto}}
@@ -459,6 +464,11 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 
 <!-- OVERVIEW -->
 <div class="page active" id="page-overview">
+  <div class="ov-topbar">
+    <span class="ov-topbar-label">Overview</span>
+    <span class="ov-topbar-pill ov-topbar-date" id="ovTopDate"></span>
+    <span class="ov-topbar-pill ov-topbar-time" id="ovTopTime"></span>
+  </div>
   <div class="overview-cols">
     <div class="overview-left">
     <!-- Today + Time Block -->
@@ -4026,8 +4036,9 @@ function copyShopList(){
 
 </div>
 <script>
-function tickClock(){const t=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});const el=document.getElementById('liveClock');if(el)el.textContent=t;}
-tickClock();setInterval(tickClock,1000);
+function tickClock(){const t=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});const el=document.getElementById('liveClock');if(el)el.textContent=t;const ott=document.getElementById('ovTopTime');if(ott)ott.textContent=t;}
+function _updateOvTopDate(){const now=new Date();const el=document.getElementById('ovTopDate');if(el)el.textContent=now.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});}
+tickClock();_updateOvTopDate();setInterval(tickClock,1000);
 </script>
 <div id="devBadge" style="display:none;position:fixed;bottom:16px;left:16px;background:#1e293b;color:#f8fafc;font-size:11px;font-weight:700;letter-spacing:.08em;padding:4px 9px;border-radius:6px;border:1px solid rgba(255,255,255,.15);z-index:9999;pointer-events:none">DEV-91</div>
 <script>if(location.hostname.includes('dev.'))document.getElementById('devBadge').style.display='block';</script>
