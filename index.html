@@ -127,7 +127,7 @@ body{font-family:'DM Sans',sans-serif;background:#f0ecfb;background-attachment:f
 @media(max-width:1280px){.row1-right-top{grid-template-columns:1fr 1fr;height:auto}}
 @media(max-width:900px){.main{margin-left:0;padding:12px 0 24px 0}#page-overview{padding:0 12px}.overview-cols{grid-template-columns:1fr;height:auto}}
 .main.full{margin-left:0}
-.page{display:none}.page.active{display:block}#page-weekly.active{display:block;padding-top:10px}
+.page{display:none}.page.active{display:block}#page-weekly.active{display:block;padding:clamp(12px,3vw,56px);padding-top:48px}
 
 /* Undo toast */
 .undo-toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%) translateY(60px);background:rgba(37,32,64,.92);color:#fff;font-size:11px;font-weight:600;padding:7px 14px;border-radius:20px;box-shadow:var(--shadow-lg);transition:transform .22s ease,opacity .22s ease;opacity:0;z-index:900;display:flex;align-items:center;gap:8px;white-space:nowrap}
@@ -694,6 +694,13 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 
 <!-- RECURRING TASKS -->
 <div class="page" id="page-weekly">
+  <div class="ov-topbar">
+    <span class="ov-topbar-label">Recurring Tasks</span>
+    <span class="ov-topbar-dot"></span>
+    <span class="ov-topbar-date" id="wkTopDate"></span>
+    <span class="ov-topbar-dot"></span>
+    <span class="ov-topbar-time" id="wkTopTime"></span>
+  </div>
   <!-- hidden compat elements -->
   <span id="wrPL" style="display:none">0/0</span>
   <span id="wrPct2" style="display:none">0%</span>
@@ -4038,8 +4045,8 @@ function copyShopList(){
 
 </div>
 <script>
-function tickClock(){const t=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});const el=document.getElementById('liveClock');if(el)el.textContent=t;const ott=document.getElementById('ovTopTime');if(ott)ott.textContent=t;}
-function _updateOvTopDate(){const now=new Date();const el=document.getElementById('ovTopDate');if(el)el.textContent=now.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});}
+function tickClock(){const t=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});const el=document.getElementById('liveClock');if(el)el.textContent=t;['ovTopTime','wkTopTime'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent=t;});}
+function _updateOvTopDate(){const now=new Date();const ds=now.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});['ovTopDate','wkTopDate'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent=ds;});}
 tickClock();_updateOvTopDate();setInterval(tickClock,1000);
 </script>
 <div id="devBadge" style="display:none;position:fixed;bottom:16px;left:16px;background:#1e293b;color:#f8fafc;font-size:11px;font-weight:700;letter-spacing:.08em;padding:4px 9px;border-radius:6px;border:1px solid rgba(255,255,255,.15);z-index:9999;pointer-events:none">DEV-91</div>
