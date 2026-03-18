@@ -192,6 +192,38 @@ All three checkbox types share identical visual style:
 - `#todList .ti` has extra left margin (`margin-left:10px`) to shift slightly right.
 - Shopping overview (`#shopOv`) items use `.chk-wrap` label for consistent spacing with weekly reset.
 
+## Notes Field
+
+- `notes` is a text column on both `tasks` and `recurring_tasks`.
+- Task modal (`tModal`) and recurring modals (`recModal`, `recEditModal`) all have a notes textarea.
+- Notes display in time blocks via `.tb-notes` div when non-empty (already rendered by `drawTBBlock`).
+- `saveRecModal` / `saveRecEdit` include `notes` in POST/PATCH payloads.
+- `openRecEditModal` populates `recEditNotes` textarea from `r.notes`.
+
+## Recurring Color System
+
+- `'weekly_reset'` in CATS: `bg:'#eff6ff'` (lighter blue, same as Home) — used for weekly reset recurring tasks.
+- `'recurring'` in CATS: `bg:'#dbeafe'` (slightly darker blue) — used for non-weekly-reset recurring tasks.
+- `tRowTodayVirt` and `tRowWk` use `gc(t._isWrec?'weekly_reset':'recurring')` to apply the correct color.
+
+## TB Arrow (Not on Timeblock)
+
+- `_hasTBToday(t)` mirrors `getVisibleBlocks` overdue logic: if `dayOff===0 && isOv(t.due_date) && !t.done`, any block linked to the task counts as "on timeblock" (regardless of `b.ds`), since overdue blocks show on today's view.
+
+## Move to Today Persistence
+
+- `rolloverOverdue()` writes `localOverrides[sid]={due_date:today}` and `pendingLocal.add(sid)` for each task before the async PATCH, preventing sync from overwriting the new date. After PATCH resolves, the override is cleared.
+
+## Weekly Reset Overview Filter
+
+- `renderRecOv()` only shows weekly reset tasks where `r._dateOverrides[wkKey]` exists (i.e., assigned to the current week). Tasks not assigned this week are hidden.
+
+## Recurring Tasks Page UI
+
+- Section labels (Weekly, Biweekly, Monthly): `font-size:12px;font-weight:800` (not uppercase/small-caps).
+- "Adds On" and "Due On" `<th>` and `<td>`: `text-align:center`.
+- "Starting" `<th>` and `<td>`: `text-align:right`.
+
 ## Git Workflow
 
 - Stop hook: auto-commits and pushes to `origin/dev` branch after every Claude turn.

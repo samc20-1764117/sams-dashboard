@@ -906,6 +906,7 @@ body.dark .rt-row:hover td{background:rgba(255,220,200,.06)}
       </div>
     </div>
 
+    <div class="mfield"><label>Notes <span style="opacity:.45;font-weight:400">(optional)</span></label><textarea id="recNotes" placeholder="Add notes…" style="resize:vertical;min-height:52px;width:100%;font-family:inherit;font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,.6);color:var(--text);outline:none"></textarea></div>
     <div class="mact">
       <button class="btn btn-ghost" onclick="closeMod(&#39;recModal&#39;)">Cancel</button>
       <button class="btn btn-dark" onclick="saveRecModal()">Add</button>
@@ -999,6 +1000,7 @@ body.dark .rt-row:hover td{background:rgba(255,220,200,.06)}
         <button type="button" class="btn btn-ghost btn-xs" onclick="document.getElementById(&#39;recEditStartDate&#39;).value=&#39;&#39;" style="flex-shrink:0;padding:4px 7px;font-size:11px">✕</button>
       </div>
     </div>
+    <div class="mfield"><label>Notes <span style="opacity:.45;font-weight:400">(optional)</span></label><textarea id="recEditNotes" placeholder="Add notes…" style="resize:vertical;min-height:52px;width:100%;font-family:inherit;font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,.6);color:var(--text);outline:none"></textarea></div>
     <div class="mact"><button class="btn btn-ghost" onclick="closeMod(&#39;recEditModal&#39;)">Cancel</button><button class="btn btn-dark" onclick="saveRecEdit()">Save</button></div>
   </div>
 </div>
@@ -1022,7 +1024,8 @@ const CATS={
   'work':     {bg:'#fdf2f8',t:'#9d174d',d:'#ec4899',b:'rgba(236,72,153,.2)'},
   'social':   {bg:'#faf5ff',t:'#6b21a8',d:'#9333ea',b:'rgba(147,51,234,.2)'},
   'long term':{bg:'#f8fafc',t:'#475569',d:'#94a3b8',b:'rgba(148,163,184,.25)'},
-  'recurring':{bg:'#eff6ff',t:'#1e40af',d:'#3b82f6',b:'rgba(59,130,246,.2)'},
+  'recurring':{bg:'#dbeafe',t:'#1d4ed8',d:'#2563eb',b:'rgba(37,99,235,.25)'},
+  'weekly_reset':{bg:'#eff6ff',t:'#1e40af',d:'#3b82f6',b:'rgba(59,130,246,.2)'},
   'buy':      {bg:'#fef9c3',t:'#713f12',d:'#eab308',b:'rgba(234,179,8,.25)'},
   'travel':   {bg:'#ccfbf1',t:'#0f766e',d:'#14b8a6',b:'rgba(20,184,166,.3)'},
   'birthday': {bg:'#ffedd5',t:'#c2410c',d:'#f97316',b:'rgba(249,115,22,.3)'},
@@ -1647,9 +1650,10 @@ function renderToday(){
   const _todDs=ds;
   function _hasTBToday(t){
     if(t._type==='travel'||t._type==='birthday')return true;
-    if(t._shopId)return st.blocks.some(b=>b.ds===_todDs&&String(b.shopId)===String(t._shopId));
-    if(t._recId)return st.blocks.some(b=>b.ds===_todDs&&String(b.recId)===String(t._recId));
-    if(!t._virtual)return st.blocks.some(b=>b.ds===_todDs&&String(b.taskId)===String(t.id));
+    const isOvToday=dayOff===0&&isOv(t.due_date)&&!t.done;
+    if(t._shopId)return st.blocks.some(b=>(b.ds===_todDs||isOvToday)&&String(b.shopId)===String(t._shopId));
+    if(t._recId)return st.blocks.some(b=>(b.ds===_todDs||isOvToday)&&String(b.recId)===String(t._recId));
+    if(!t._virtual)return st.blocks.some(b=>(b.ds===_todDs||isOvToday)&&String(b.taskId)===String(t.id));
     return true;
   }
   document.getElementById('todList').innerHTML=sorted.map(t=>{
@@ -1721,7 +1725,7 @@ function sortByTBWeek(tasks){
 }
 // Virtual task row for today's list - done ones sink to bottom, greyed, uncheckable if done
 function tRowTodayVirt(t,tbArrow=false,noColor=false){
-  const s=gc('recurring');
+  const s=gc(t._isWrec?'weekly_reset':'recurring');
   const ov=isOv(t.due_date)&&!t.done;
   const ps=ov?OV:s;
   return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''}" style="${!ov&&!noColor?`background:${s.bg}`:''}" id="ti-${t.id}" draggable="true" ondragstart="dragId='rec::${t._recId}::${t.due_date||''}';event.currentTarget.classList.add('dragging')" ondragend="event.currentTarget.classList.remove('dragging')" onclick="selTask(event,'${t.id}')" ondblclick="tiDblRec(event,'${t._recId}')" oncontextmenu="showCtx(event,'${t.id}',true,'${t._recId}')">
@@ -2224,10 +2228,10 @@ function onWkcWheel(e){
   wkcWT=setTimeout(()=>{if(Math.abs(wkcWD)>40)shiftWk(wkcWD>0?1:-1);wkcWD=0;wkcWT=null;},100);
 }
 
-// ── Weekly Reset card (only is_weekly_reset=true items) ───────────────────────
+// ── Weekly Reset card (only is_weekly_reset=true items due this week) ─────────
 function renderRecOv(){
   const wkKey=getWkKey(wkOff);
-  const items=st.recurring.filter(r=>r.is_weekly_reset===true||r.is_weekly_reset==='true');
+  const items=st.recurring.filter(r=>(r.is_weekly_reset===true||r.is_weekly_reset==='true')&&r._dateOverrides&&r._dateOverrides[wkKey]);
   const done=items.filter(r=>!!(r._doneByWk&&r._doneByWk[wkKey])).length;
   const pct=items.length?Math.round(done/items.length*100):0;
   const _rb=document.getElementById('recBadge');if(_rb)_rb.textContent=items.length-done;
@@ -2334,7 +2338,7 @@ function renderShopOv(){
 // ── Virtual recurring task row for This Week ─────────────────────────────────
 function tRowWk(t){
   if(t._virtual){
-    const s=gc('recurring');
+    const s=gc(t._isWrec?'weekly_reset':'recurring');
     return`<div class="ti ${t.done?'done':''}" style="background:${s.bg}" id="ti-${t.id}" onclick="selTask(event,'${t.id}')" ondblclick="tiDblRec(event,'${t._recId}')" oncontextmenu="showCtx(event,'${t.id}',true,'${t._recId}')">
       <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="${t._isWrec?`togRec('${t._recId}',this.checked)`:`togRecVirt('${t._recId}',this.checked,'${t._wkKey||getWkKey(wkOff)}')`}"></label>
       <span class="tn">${t.name}</span>
@@ -3068,8 +3072,8 @@ function renderRtGroup(containerId, tasks, isWr, cadence){
   const wkKey=getWkKey(wkOff);
   const cadLabel={weekly:'Weekly',biweekly:'Biweekly',monthly:'Monthly',other:'Other'}[cadence]||cadence;
   const thead=isWr
-    ?`<tr><th style="width:120px;text-align:left">Name</th><th style="width:36px">Pup</th><th style="width:96px">Adds On</th><th style="width:96px">Due On</th><th style="width:84px">Starting</th><th style="width:40px"></th></tr>`
-    :`<tr><th style="width:120px;text-align:left">Name</th><th style="width:96px">Adds On</th><th style="width:96px">Due On</th><th style="width:84px">Starting</th><th style="width:40px"></th></tr>`;
+    ?`<tr><th style="width:120px;text-align:left">Name</th><th style="width:36px">Pup</th><th style="width:96px;text-align:center">Adds On</th><th style="width:96px;text-align:center">Due On</th><th style="width:84px;text-align:right">Starting</th><th style="width:40px"></th></tr>`
+    :`<tr><th style="width:120px;text-align:left">Name</th><th style="width:96px;text-align:center">Adds On</th><th style="width:96px;text-align:center">Due On</th><th style="width:84px;text-align:right">Starting</th><th style="width:40px"></th></tr>`;
   let tbody='';
   tasks.forEach(r=>{
     const rid=String(r.id);
@@ -3081,16 +3085,16 @@ function renderRtGroup(containerId, tasks, isWr, cadence){
     if(isWr){
       tds=`<td class="rt-editable">${esc(r.name)}</td>
         <td data-pup="1" style="text-align:center;cursor:pointer;font-size:13px" onclick="event.stopPropagation();rtTogglePup('${rid}')" ondblclick="event.stopPropagation()" title="Toggle pup related">${isPup?'🐾':''}</td>
-        <td class="rt-editable rt-meta" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','day_added')">${r.day_added||'—'}</td>
-        <td class="rt-editable rt-meta" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','appears_on_date')">${r.appears_on_date||'—'}</td>
-        <td class="rt-editable rt-meta" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','starting_date')">${r.starting_date?fmtD(r.starting_date):'—'}</td>`;
+        <td class="rt-editable rt-meta" style="text-align:center" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','day_added')">${r.day_added||'—'}</td>
+        <td class="rt-editable rt-meta" style="text-align:center" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','appears_on_date')">${r.appears_on_date||'—'}</td>
+        <td class="rt-editable rt-meta" style="text-align:right" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','starting_date')">${r.starting_date?fmtD(r.starting_date):'—'}</td>`;
     } else {
       const dayField='appears_on_date';
       const dayDisp=r.appears_on_date||'—';
       tds=`<td class="rt-editable">${esc(r.name)}</td>
-        <td class="rt-editable rt-meta" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','day_added')">${r.day_added||'—'}</td>
-        <td class="rt-editable rt-meta" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','${dayField}')">${dayDisp}</td>
-        <td class="rt-editable rt-meta" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','starting_date')">${r.starting_date?fmtD(r.starting_date):'—'}</td>`;
+        <td class="rt-editable rt-meta" style="text-align:center" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','day_added')">${r.day_added||'—'}</td>
+        <td class="rt-editable rt-meta" style="text-align:center" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','${dayField}')">${dayDisp}</td>
+        <td class="rt-editable rt-meta" style="text-align:right" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','starting_date')">${r.starting_date?fmtD(r.starting_date):'—'}</td>`;
     }
     tbody+=`<tr class="rt-row${isDone?' done':''}" id="ti-rt-${rid}" onclick="selTask(event,'${virtId}')" ondblclick="if(!event.target.closest('[data-pup]')&&!event.target.closest('.delbtn')&&!event.target.closest('.btn-xs')){event.stopPropagation();openRecEditModal('${rid}');}" oncontextmenu="showCtx(event,'${virtId}',true,'${rid}')">
       ${tds}
@@ -3102,7 +3106,7 @@ function renderRtGroup(containerId, tasks, isWr, cadence){
     :`<div style="padding:6px 4px;font-size:11px;color:var(--subtle);font-style:italic">None</div>`;
   el.innerHTML=`<div class="card" style="padding:8px 12px;box-shadow:none">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;padding:0 2px">
-      <span style="font-size:7px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--subtle)">${cadLabel}${tasks.length?' <span style="opacity:.5;font-weight:400">· '+tasks.length+'</span>':''}</span>
+      <span style="font-size:12px;font-weight:800;color:var(--text)">${cadLabel}${tasks.length?' <span style="opacity:.45;font-weight:400;font-size:11px">· '+tasks.length+'</span>':''}</span>
       <button class="btn-plus" style="padding:0px 5px;font-size:10px;line-height:1.4" onclick="openRecModalForSection('${isWr?'weekly_reset':'scheduled'}','${cadence}')">+</button>
     </div>
     ${tableHtml}
@@ -3325,10 +3329,11 @@ async function saveRecModal(){
   const dayAdded=document.getElementById('recDayAdded').value||'Previous Sunday';
   const startDate=document.getElementById('recStartDate').value||null;
   const pupRelated=isWeekly&&!!(document.getElementById('recPupRelated')?.checked);
+  const notes=document.getElementById('recNotes')?.value.trim()||null;
   closeMod('recModal');
   // Use rec-tmp- prefix so sync localPending keeps it if POST hasn't resolved yet
   const localId='rec-tmp-'+Date.now();
-  const r={id:localId,name:n,is_weekly_reset:isWeekly,appears_on_date:appearsOn,day_added:dayAdded,starting_date:startDate,cadence,pup_related:pupRelated,_doneByWk:{},_done:false,_dateOverrides:{}};
+  const r={id:localId,name:n,is_weekly_reset:isWeekly,appears_on_date:appearsOn,day_added:dayAdded,starting_date:startDate,cadence,pup_related:pupRelated,notes,_doneByWk:{},_done:false,_dateOverrides:{}};
   st.recurring.push(r);save();renderRecOv();renderWeeklyPage();renderWkSummary();renderWkCal();
   let recServerId=null;
   pushUndo(()=>{const rid=recServerId||localId;st.recurring=st.recurring.filter(x=>String(x.id)!==String(rid));save();renderRecOv();renderWeeklyPage();renderWkSummary();renderWkCal();if(recServerId)sbReq('DELETE','recurring_tasks',null,recQs(recServerId));},'Added recurring task');
@@ -3336,6 +3341,7 @@ async function saveRecModal(){
   if(dayAdded)payload.day_added=dayAdded;
   if(startDate)payload.starting_date=startDate;
   if(pupRelated)payload.pup_related=true;
+  if(notes)payload.notes=notes;
   const sv=await sbReq('POST','recurring_tasks',payload);
   if(sv&&sv[0]){
     const i=st.recurring.findIndex(x=>x.id===localId);
@@ -4029,6 +4035,7 @@ function openRecEditModal(rid){
   document.getElementById('recEditStartDate').value=r.starting_date||'';
   document.getElementById('recEditDayAdded').value=r.day_added||'';
   const pr=document.getElementById('recEditPupRelated');if(pr)pr.checked=!!(r.pup_related===true||r.pup_related==='true');
+  const recEditNotesEl=document.getElementById('recEditNotes');if(recEditNotesEl)recEditNotesEl.value=r.notes||'';
   updateRecEditUI();
   document.getElementById('recEditModal').classList.add('open');
   setTimeout(()=>document.getElementById('recEditName').focus(),80);
@@ -4052,11 +4059,12 @@ function saveRecEdit(){
   const startDate=document.getElementById('recEditStartDate').value||null;
   const dayAdded=document.getElementById('recEditDayAdded').value||null;
   const pupRelated=isWr&&!!(document.getElementById('recEditPupRelated')?.checked);
+  const notes=document.getElementById('recEditNotes')?.value.trim()||null;
   closeMod('recEditModal');
-  const prev={name:r.name,is_weekly_reset:r.is_weekly_reset,cadence:r.cadence,appears_on_date:r.appears_on_date,starting_date:r.starting_date,day_added:r.day_added,pup_related:r.pup_related};
-  r.name=name;r.is_weekly_reset=isWr;r.cadence=cadence;r.appears_on_date=appearsOn;r.starting_date=startDate;r.day_added=dayAdded;r.pup_related=pupRelated;
+  const prev={name:r.name,is_weekly_reset:r.is_weekly_reset,cadence:r.cadence,appears_on_date:r.appears_on_date,starting_date:r.starting_date,day_added:r.day_added,pup_related:r.pup_related,notes:r.notes};
+  r.name=name;r.is_weekly_reset=isWr;r.cadence=cadence;r.appears_on_date=appearsOn;r.starting_date=startDate;r.day_added=dayAdded;r.pup_related=pupRelated;r.notes=notes;
   renderRecOv();renderWeeklyPage();renderWkSummary();renderWkCal();
-  const patch={name,is_weekly_reset:isWr,cadence,appears_on_date:appearsOn,pup_related:pupRelated};
+  const patch={name,is_weekly_reset:isWr,cadence,appears_on_date:appearsOn,pup_related:pupRelated,notes:notes||null};
   if(startDate)patch.starting_date=startDate;
   if(dayAdded)patch.day_added=dayAdded;
   sbReq('PATCH','recurring_tasks',patch,recQs(rid));
@@ -4219,7 +4227,7 @@ async function rolloverOverdue(){
   const prevDates=ovTasks.map(t=>({id:String(t.id),date:t.due_date}));
   const prevRecWkKeys=ovRec.map(v=>({recId:v._recId,wkKey:v._wkKey}));
   const prevShopDates=ovShop.map(s=>({id:String(s.id),date:s.due_date}));
-  ovTasks.forEach(t=>{t.due_date=today;});
+  ovTasks.forEach(t=>{t.due_date=today;const sid=String(t.id);localOverrides[sid]={due_date:today};pendingLocal.add(sid);});
   ovRec.forEach(v=>{
     const r=st.recurring.find(x=>String(x.id)===String(v._recId));
     if(!r)return;
@@ -4240,7 +4248,7 @@ async function rolloverOverdue(){
   save();
   const recsToPatch=[...new Set(ovRec.map(v=>v._recId))];
   await Promise.all([
-    ...ovTasks.map(t=>sbReq('PATCH','tasks',{due_date:today},`?id=eq.${t.id}`)),
+    ...ovTasks.map(t=>sbReq('PATCH','tasks',{due_date:today},`?id=eq.${t.id}`).then(()=>{const sid=String(t.id);delete localOverrides[sid];pendingLocal.delete(sid);})),
     ...ovShop.map(s=>sbReqNullable('PATCH','shopping_list',{due_date:today},`?id=eq.${s.id}`)),
     ...recsToPatch.map(rid=>{const r=st.recurring.find(x=>String(x.id)===String(rid));return r?sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},recQs(r.id)):Promise.resolve();})
   ]);
