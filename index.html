@@ -452,7 +452,7 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 </div>
 
 <!-- Main -->
-<div id="main" class="main" style="margin-left:0;min-width:0;">
+<div id="main" style="position:fixed;left:0;top:0;right:0;bottom:0;overflow-y:auto;overflow-x:hidden;transition:left .25s cubic-bezier(.4,0,.2,1);">
 
 <!-- Top-right controls: Night Mode + Sync -->
 <div class="top-right-controls">
@@ -3445,8 +3445,8 @@ async function testConn(){
 function saveSettings(){cfg.url=document.getElementById('cfgUrl').value.trim();cfg.key=document.getElementById('cfgKey').value.trim();save();syncAll();}
 
 // ── Sidebar ────────────────────────────────────────────────────────────────────
-function closeSB(){sbOpen=false;document.getElementById('sidebar').classList.add('closed');document.getElementById('main').style.marginLeft='0';document.getElementById('menuOpen').classList.add('visible');save();}
-function openSB(){sbOpen=true;document.getElementById('sidebar').classList.remove('closed');document.getElementById('main').style.marginLeft='186px';document.getElementById('menuOpen').classList.remove('visible');save();}
+function closeSB(){sbOpen=false;document.getElementById('sidebar').classList.add('closed');document.getElementById('main').style.left='0';document.getElementById('menuOpen').classList.add('visible');save();}
+function openSB(){sbOpen=true;document.getElementById('sidebar').classList.remove('closed');document.getElementById('main').style.left='186px';document.getElementById('menuOpen').classList.remove('visible');save();}
 
 // ── Pages ──────────────────────────────────────────────────────────────────────
 const PAGES=['overview','weekly','shopping','travel','birthdays','settings','pups','finance','recipes','notes'];
@@ -3467,7 +3467,7 @@ function closeMod(id,e){if(e&&e.target!==document.getElementById(id))return;docu
 function init(){
   load();
   if(cfg.dark){document.body.classList.add('dark');const ic=document.getElementById('darkToggleIcon');if(ic)ic.textContent='☀️';const dt=document.getElementById('darkToggle');if(dt)dt.textContent='☀️';}
-  if(!sbOpen){document.getElementById('sidebar').classList.add('closed');document.getElementById('main').style.marginLeft='0';document.getElementById('menuOpen').classList.add('visible');}
+  if(!sbOpen){document.getElementById('sidebar').classList.add('closed');document.getElementById('main').style.left='0';document.getElementById('menuOpen').classList.add('visible');}
   if(cfg.url&&cfg.key){
     document.getElementById('cfgUrl').value=cfg.url;document.getElementById('cfgKey').value=cfg.key;
     deletedRecIds=new Set();save(); // clear stale deletedRecIds — DB is authoritative after sync
