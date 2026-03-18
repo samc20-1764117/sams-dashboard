@@ -1590,7 +1590,7 @@ function renderToday(){
   }
   document.getElementById('todList').innerHTML=sorted.map(t=>{
     const arr=!t.done&&!_hasTBToday(t);
-    return t._type==='travel'||t._type==='birthday'?tRowExtra(t):t._type==='shop'?tRowShopVirt(t,true,arr):t._virtual?tRowTodayVirt(t,arr):tRow(t,{cat:true,drag:true,noDate:true,tbArrow:arr});
+    return t._type==='travel'||t._type==='birthday'?tRowExtra(t):t._type==='shop'?tRowShopVirt(t,true,arr,true):t._virtual?tRowTodayVirt(t,arr,true):tRow(t,{cat:true,drag:true,noDate:true,tbArrow:arr,noColor:true});
   }).join('');
   updateOvBanner();
 }
@@ -1656,11 +1656,11 @@ function sortByTBWeek(tasks){
   });
 }
 // Virtual task row for today's list - done ones sink to bottom, greyed, uncheckable if done
-function tRowTodayVirt(t,tbArrow=false){
+function tRowTodayVirt(t,tbArrow=false,noColor=false){
   const s=gc('recurring');
   const ov=isOv(t.due_date)&&!t.done;
   const ps=ov?OV:s;
-  return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''}" style="${!ov?`background:${s.bg}`:''}" id="ti-${t.id}" draggable="true" ondragstart="dragId='rec::${t._recId}::${t.due_date||''}';event.currentTarget.classList.add('dragging')" ondragend="event.currentTarget.classList.remove('dragging')" onclick="selTask(event,'${t.id}')" ondblclick="tiDblRec(event,'${t._recId}')" oncontextmenu="showCtx(event,'${t.id}',true,'${t._recId}')">
+  return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''}" style="${!ov&&!noColor?`background:${s.bg}`:''}" id="ti-${t.id}" draggable="true" ondragstart="dragId='rec::${t._recId}::${t.due_date||''}';event.currentTarget.classList.add('dragging')" ondragend="event.currentTarget.classList.remove('dragging')" onclick="selTask(event,'${t.id}')" ondblclick="tiDblRec(event,'${t._recId}')" oncontextmenu="showCtx(event,'${t.id}',true,'${t._recId}')">
     <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="${t._isWrec?`togRec('${t._recId}',this.checked)`:`togRecVirt('${t._recId}',this.checked,'${t._wkKey||getWkKey(wkOff)}')`}"></label>
     <span class="tn">${t.name}</span>
     <span class="cpill" style="background:${ps.bg};color:${ps.t};border-color:${ps.b}">Recurring</span>
@@ -1669,11 +1669,11 @@ function tRowTodayVirt(t,tbArrow=false){
   </div>`;
 }
 
-function tRowShopVirt(t,noDate=false,tbArrow=false){
+function tRowShopVirt(t,noDate=false,tbArrow=false,noColor=false){
   const s=gc('shopping');
   const ov=isOv(t.due_date)&&!t.done;
   const ps=ov?OV:s;
-  return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''}" style="${!ov?`background:${s.bg}`:''}" id="ti-${t.id}" draggable="true"
+  return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''}" style="${!ov&&!noColor?`background:${s.bg}`:''}" id="ti-${t.id}" draggable="true"
     ondragstart="dragId='shop::${t._shopId}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);"
     ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false);"
     onclick="selTask(event,'${t.id}')" ondblclick="tiDblShop(event,'${t._shopId}')">
@@ -2320,7 +2320,7 @@ function tRow(t,o={}){
   const imp=t.important&&!ov&&!t.done;
   const s=ov?OV:imp?IMP:gc(t.category);
   const sl=ov?'ov':imp?'imp':slug(t.category);
-  return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''} ${imp&&!ov?'imp-row':''}" style="${!ov&&!imp?`background:${s.bg}`:''}" id="ti-${t.id}" ${o.drag?`draggable="true" ondragstart="dStart(event,'${t.id}')" ondragend="this.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false)"`:''} onclick="selTask(event,'${t.id}')" ondblclick="tiDbl(event,'${t.id}')" oncontextmenu="showCtx(event,'${t.id}')">
+  return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''} ${imp&&!ov?'imp-row':''}" style="${!ov&&!imp&&!o.noColor?`background:${s.bg}`:''}" id="ti-${t.id}" ${o.drag?`draggable="true" ondragstart="dStart(event,'${t.id}')" ondragend="this.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false)"`:''} onclick="selTask(event,'${t.id}')" ondblclick="tiDbl(event,'${t.id}')" oncontextmenu="showCtx(event,'${t.id}')">
     <label class="chk-wrap" onclick="event.stopPropagation()" onmousedown="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="toggleTask('${t.id}',this.checked,'${o.drag?'wk':''}')"></label>
     <span class="tn">${t.name}</span>
     ${o.cat?`<span class="cpill" style="background:${s.bg};color:${s.t};border-color:${s.b}">${t.category||'?'}</span>`:''}
