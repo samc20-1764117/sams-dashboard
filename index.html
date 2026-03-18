@@ -2279,7 +2279,28 @@ function renderRecOv(){
   if(document.getElementById('recPL'))document.getElementById('recPL').textContent=done+'/'+items.length;const _recP=document.getElementById('recPct2');if(_recP)_recP.textContent=pct+'%';
   document.getElementById('recPB').style.width=pct+'%';
   const elReg=document.getElementById('recList');if(elReg)elReg.innerHTML='';
-  const sorted=[...items.filter(r=>!(r._doneByWk&&r._doneByWk[wkKey])),...items.filter(r=>!!(r._doneByWk&&r._doneByWk[wkKey]))];
+  function recOvOrder(r){
+    const isPup=r.pup_related===true||r.pup_related==='true';
+    if(isPup)return 10;
+    const c=r.cadence||'weekly';
+    return c==='weekly'?0:c==='biweekly'?1:c==='monthly'?2:3;
+  }
+  const sorted=[...items].sort((a,b)=>{
+    const aDone=!!(a._doneByWk&&a._doneByWk[wkKey]),bDone=!!(b._doneByWk&&b._doneByWk[wkKey]);
+    if(aDone&&!bDone)return 1;if(!aDone&&bDone)return -1;
+    return recOvOrder(a)-recOvOrder(b);
+  });
+  function makePawEl(rid,isDone){
+    const col=isDone?'#a3c41a':'none';
+    const str=isDone?'#a3c41a':'rgba(150,140,200,.55)';
+    const btn=document.createElement('button');
+    btn.style.cssText='background:none;border:none;cursor:pointer;padding:0;display:flex;align-items:center;flex-shrink:0;width:18px;height:18px;margin-right:2px';
+    btn.title='Toggle';
+    btn.innerHTML=`<svg viewBox="0 0 100 100" width="13" height="13" xmlns="http://www.w3.org/2000/svg"><ellipse cx="22" cy="18" rx="10" ry="12" fill="${col}" stroke="${str}" stroke-width="7"/><ellipse cx="46" cy="11" rx="10" ry="12" fill="${col}" stroke="${str}" stroke-width="7"/><ellipse cx="70" cy="14" rx="10" ry="12" fill="${col}" stroke="${str}" stroke-width="7"/><ellipse cx="85" cy="36" rx="9" ry="11" fill="${col}" stroke="${str}" stroke-width="7"/><path d="M18 58 Q14 42 28 36 Q46 28 68 34 Q82 40 82 56 Q80 76 50 82 Q20 76 18 58Z" fill="${col}" stroke="${str}" stroke-width="7"/></svg>`;
+    btn.addEventListener('click',e=>{e.stopPropagation();togRec(rid,!isDone);});
+    btn.addEventListener('mousedown',e=>e.stopPropagation());
+    return btn;
+  }
   sorted.forEach(r=>{
     const rid=String(r.id);
     const isDone=!!(r._doneByWk&&r._doneByWk[wkKey]);
@@ -2289,20 +2310,23 @@ function renderRecOv(){
     row.id='ti-'+virtId;
     row.className='ti'+(isDone?' done':'');
     row.style.cssText='cursor:pointer;break-inside:avoid';
-    const chkWrap1=document.createElement('label');chkWrap1.className='chk-wrap';chkWrap1.addEventListener('click',e=>e.stopPropagation());
-    const chk=document.createElement('input');
-    chk.type='checkbox';chk.className='chk';chk.checked=isDone;
-    chk.addEventListener('change',function(){togRec(rid,this.checked);});
-    chkWrap1.appendChild(chk);
+    if(isPup){
+      row.appendChild(makePawEl(rid,isDone));
+    } else {
+      const chkWrap1=document.createElement('label');chkWrap1.className='chk-wrap';chkWrap1.addEventListener('click',e=>e.stopPropagation());
+      const chk=document.createElement('input');chk.type='checkbox';chk.className='chk';chk.checked=isDone;
+      chk.addEventListener('change',function(){togRec(rid,this.checked);});
+      chkWrap1.appendChild(chk);row.appendChild(chkWrap1);
+    }
     const nm=document.createElement('span');nm.className='tn';
     if(isDone)nm.style.cssText='text-decoration:line-through;color:var(--muted)';
-    nm.textContent=(isPup?'🐾 ':'')+r.name;
+    nm.textContent=r.name;
     const del=document.createElement('button');del.className='delbtn';del.textContent='✕';
     del.addEventListener('mousedown',e=>e.stopPropagation());
     del.addEventListener('click',function(e){e.stopPropagation();delRec(rid);});
     row.addEventListener('click',e=>selTask(e,virtId));
     row.addEventListener('dblclick',function(e){
-      if(e.target===chk||e.target===del)return;
+      if(e.target.closest('button'))return;
       e.stopPropagation();clearSelection();openRecEditModal(rid);
     });
     row.addEventListener('contextmenu',e=>showCtx(e,virtId,true,rid));
@@ -2314,7 +2338,7 @@ function renderRecOv(){
     row.addEventListener('dragend',e=>{
       row.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false);
     });
-    row.appendChild(chkWrap1);row.appendChild(nm);row.appendChild(del);if(elReg)elReg.appendChild(row);
+    row.appendChild(nm);row.appendChild(del);if(elReg)elReg.appendChild(row);
   });
   requestAnimationFrame(applySelHighlight);
 }
