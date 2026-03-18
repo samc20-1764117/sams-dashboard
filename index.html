@@ -127,7 +127,7 @@ body{font-family:'DM Sans',sans-serif;background:#f0ecfb;background-attachment:f
 @media(max-width:1280px){.row1-right-top{grid-template-columns:1fr 1fr;height:auto}}
 @media(max-width:900px){.main{margin-left:0;padding:12px 0 24px 0}#page-overview{padding:0 12px}.overview-cols{grid-template-columns:1fr;height:auto}}
 .main.full{margin-left:0}
-.page{display:none}.page.active{display:block}#page-weekly.active{display:block;padding:clamp(12px,3vw,56px);padding-top:48px}
+.page{display:none}.page.active{display:block}
 
 /* Undo toast */
 .back-btn{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--muted);background:none;border:none;cursor:pointer;padding:0;margin-bottom:12px;opacity:.7;transition:opacity .15s}.back-btn:hover{opacity:1}
@@ -694,7 +694,7 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 </div>
 
 <!-- RECURRING TASKS -->
-<div class="page" id="page-weekly">
+<div class="page" id="page-weekly" style="padding:clamp(12px,3vw,56px);padding-top:48px">
   <div class="ov-topbar">
     <span class="ov-topbar-label">Recurring Tasks</span>
     <span class="ov-topbar-dot"></span>
@@ -714,7 +714,7 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
   <input id="nsN" style="display:none"><input id="nsS" style="display:none">
   <datalist id="storeListFull"><option value="HEB"></option><option value="Ikea"></option><option value="Online"></option><option value="Other"></option></datalist>
 
-  <div id="rt-outer" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;height:calc(100vh - 112px);min-height:0">
+  <div id="rt-outer" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;height:calc(100vh - 112px);min-height:0;width:100%">
     <!-- Col 1: Weekly Reset Recurring -->
     <div id="rt-col-wr" style="min-height:0;display:flex;flex-direction:column">
       <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px;padding:0 2px;flex-shrink:0">Weekly Reset Recurring</div>
