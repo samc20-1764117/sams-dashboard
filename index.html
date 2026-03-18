@@ -167,7 +167,7 @@ body{font-family:'DM Sans',sans-serif;background:#fef6f0;background-attachment:f
 
 
 .ql-grid{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(4,1fr);gap:6px;padding:8px}
-.ql-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:7px 4px;border-radius:10px;border:1px solid rgba(255,220,200,.4);background:rgba(255,252,248,.6);font-size:9.5px;font-weight:600;color:var(--text);cursor:pointer;transition:all .15s;font-family:inherit;text-align:center;line-height:1.2;height:100%}
+.ql-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:7px 4px;border-radius:10px;border:1px solid rgba(255,220,200,.4);background:rgba(255,252,248,.6);font-size:9.5px;font-weight:600;color:var(--text);cursor:pointer;transition:all .15s;font-family:inherit;text-align:center;line-height:1.2;height:100%;text-decoration:none}
 .ql-btn:hover{background:rgba(255,252,248,.92);border-color:rgba(194,107,79,.3);transform:translateY(-1px);box-shadow:0 4px 12px rgba(194,107,79,.12)}
 .ql-icon{font-size:16px;line-height:1}
 /* Task items — tighter */
@@ -592,13 +592,13 @@ body.dark .rt-row:hover td{background:rgba(255,220,200,.06)}
     <!-- Quick Links -->
     <div class="card" style="display:flex;flex-direction:column">
       <div class="ql-grid" style="flex:1;align-content:stretch;padding:8px;gap:6px">
-        <button class="ql-btn" onclick="showPage(&#39;weekly&#39;)"><span class="ql-icon">🔄</span>Recurring Tasks</button>
-        <button class="ql-btn" onclick="showPage(&#39;weekly&#39;)"><span class="ql-icon">🛒</span>Shopping</button>
-        <button class="ql-btn" onclick="showPage(&#39;birthdays&#39;)"><span class="ql-icon">🎂</span>Birthdays</button>
-        <button class="ql-btn" onclick="showPage(&#39;pups&#39;)"><span class="ql-icon">🐾</span>Pups</button>
-        <button class="ql-btn" onclick="showPage(&#39;finance&#39;)"><span class="ql-icon">💰</span>Finance</button>
-        <button class="ql-btn" onclick="showPage(&#39;recipes&#39;)"><span class="ql-icon">🍳</span>Recipes</button>
-        <button class="ql-btn" onclick="showPage(&#39;notes&#39;)"><span class="ql-icon">📝</span>Notes</button>
+        <a class="ql-btn" href="#weekly" onclick="event.preventDefault();showPage('weekly')"><span class="ql-icon">🔄</span>Recurring Tasks</a>
+        <a class="ql-btn" href="#weekly" onclick="event.preventDefault();showPage('weekly')"><span class="ql-icon">🛒</span>Shopping</a>
+        <a class="ql-btn" href="#birthdays" onclick="event.preventDefault();showPage('birthdays')"><span class="ql-icon">🎂</span>Birthdays</a>
+        <a class="ql-btn" href="#pups" onclick="event.preventDefault();showPage('pups')"><span class="ql-icon">🐾</span>Pups</a>
+        <a class="ql-btn" href="#finance" onclick="event.preventDefault();showPage('finance')"><span class="ql-icon">💰</span>Finance</a>
+        <a class="ql-btn" href="#recipes" onclick="event.preventDefault();showPage('recipes')"><span class="ql-icon">🍳</span>Recipes</a>
+        <a class="ql-btn" href="#notes" onclick="event.preventDefault();showPage('notes')"><span class="ql-icon">📝</span>Notes</a>
       </div>
     </div>
     </div><!-- row1-right-top -->
@@ -1744,7 +1744,7 @@ function tRowShopVirt(t,noDate=false,tbArrow=false,noColor=false){
   return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''}" style="${!ov&&!noColor?`background:${s.bg}`:''}" id="ti-${t.id}" draggable="true"
     ondragstart="dragId='shop::${t._shopId}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);"
     ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false);"
-    onclick="selTask(event,'${t.id}')" ondblclick="tiDblShop(event,'${t._shopId}')">
+    onclick="selTask(event,'${t.id}')" ondblclick="tiDblShop(event,'${t._shopId}')" oncontextmenu="showCtxShop(event,'${t._shopId}')">
     <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="togShop('${t._shopId}',this.checked)"></label>
     <span class="tn">${t.name}</span>
     <span class="cpill" style="background:${ps.bg};color:${ps.t};border-color:${ps.b}">Shopping</span>
@@ -2332,7 +2332,7 @@ function renderShopOv(){
   const todo=st.shopping.filter(s=>!s.done);
   // shopBadge removed
   const shopSorted=[...st.shopping.filter(s=>!s.done)].sort((a,b)=>(a.store||'').localeCompare(b.store||'')||(a.name||'').localeCompare(b.name||''));
-  document.getElementById('shopOv').innerHTML=shopSorted.map(s=>`<div class="ti" id="ti-shop-cal-${s.id}" draggable="true" ondragstart="dragId='shop::${s.id}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);" ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false);" onclick="tiClickShop(event,'${s.id}')" ondblclick="tiDblShop(event,'${s.id}')"><label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" onchange="togShop('${s.id}',this.checked)"></label><span class="tn">${s.name}</span><span class="cpill" style="background:rgba(241,245,249,.9);color:#64748b;border-color:rgba(148,163,184,.25);flex-shrink:0">${s.store}</span><button class="delbtn" onclick="delShop('${s.id}')">✕</button></div>`).join('');
+  document.getElementById('shopOv').innerHTML=shopSorted.map(s=>`<div class="ti" id="ti-shop-cal-${s.id}" draggable="true" ondragstart="dragId='shop::${s.id}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);" ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false);" onclick="tiClickShop(event,'${s.id}')" ondblclick="tiDblShop(event,'${s.id}')" oncontextmenu="showCtxShop(event,'${s.id}')"><label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" onchange="togShop('${s.id}',this.checked)"></label><span class="tn">${s.name}</span><span class="cpill" style="background:rgba(241,245,249,.9);color:#64748b;border-color:rgba(148,163,184,.25);flex-shrink:0">${s.store}</span><button class="delbtn" onclick="delShop('${s.id}')">✕</button></div>`).join('');
 }
 
 // ── Virtual recurring task row for This Week ─────────────────────────────────
@@ -2588,6 +2588,7 @@ function drawTBBlock(col,b){
   const s=isImp?IMP:gc(effectiveCat);
   const el=document.createElement('div');
   el.className='tb-block'+(b._done?' done-block':'');el.dataset.bid=b.id;
+  el.addEventListener('contextmenu',e=>{if(b.taskId)showCtx(e,b.taskId,false,null);else if(b.recId)showCtx(e,'rec-virt-'+b.recId,true,b.recId);else if(b.shopId)showCtxShop(e,b.shopId);});
   const ncols=b._ncols||1,col_i=b._col||0;
   const colW=100/ncols;
   const left=col_i*colW;
@@ -4082,20 +4083,22 @@ function saveRecEdit(){
 // ── Context Menu ─────────────────────────────────────────────────────────────
 // ── Context Menu ─────────────────────────────────────────────────────────────
 // Store ctx state on the menu element itself so onclick handlers can always read it
-function showCtx(e,taskId,isRec,recId){
+function showCtx(e,taskId,isRec,recId,shopId){
   e.preventDefault();e.stopPropagation();
   const m=document.getElementById('ctxMenu');
-  m._tid=String(taskId);
+  m._tid=taskId?String(taskId):null;
   m._isRec=(isRec===true);
   m._recId=(recId!=null)?String(recId):null;
-  const isR=m._isRec;
-  m.querySelector('#ctxDuplicate').textContent=isR?'⧉  Duplicate recurring':'⧉  Duplicate task';
-  m.querySelector('#ctxEdit').textContent=isR?'✏️  Edit recurring':'✏️  Edit task';
-  m.querySelector('#ctxDelete').textContent=isR?'✕  Delete recurring':'✕  Delete task';
+  m._shopId=(shopId!=null)?String(shopId):null;
+  const isR=m._isRec,isSh=!!m._shopId;
+  m.querySelector('#ctxDuplicate').textContent=isSh?'⧉  Duplicate item':isR?'⧉  Duplicate recurring':'⧉  Duplicate task';
+  m.querySelector('#ctxEdit').textContent=isSh?'✏️  Edit item':isR?'✏️  Edit recurring':'✏️  Edit task';
+  m.querySelector('#ctxDelete').textContent=isSh?'✕  Delete item':isR?'✕  Delete recurring':'✕  Delete task';
   m.style.display='block';
   const x=Math.min(e.clientX,window.innerWidth-165),y=Math.min(e.clientY,window.innerHeight-120);
   m.style.left=x+'px';m.style.top=y+'px';
 }
+function showCtxShop(e,shopId){showCtx(e,null,false,null,shopId);}
 function hideCtx(){document.getElementById('ctxMenu').style.display='none';}
 // Close on outside click or Escape
 document.addEventListener('mousedown',e=>{
@@ -4111,8 +4114,17 @@ function uniqueRecName(base){
 }
 async function ctxDoDuplicate(){
   const m=document.getElementById('ctxMenu');
-  const id=m._tid,isRec=m._isRec,rId=m._recId;
+  const id=m._tid,isRec=m._isRec,rId=m._recId,sId=m._shopId;
   hideCtx();
+  if(sId){
+    const s=st.shopping.find(x=>String(x.id)===sId);if(!s)return;
+    const dup={id:'l-'+Date.now(),name:s.name,store:s.store,done:false};
+    st.shopping.push(dup);renderShopFull();renderShopOv();
+    pushUndo(()=>{st.shopping=st.shopping.filter(x=>x.id!==dup.id);renderShopFull();renderShopOv();},'Duplicated item');
+    const sv=await sbReq('POST','shopping_list',{name:s.name,store:s.store,done:false});
+    if(sv&&sv[0]){const i=st.shopping.findIndex(x=>x.id===dup.id);if(i>-1)st.shopping[i]=sv[0];}
+    return;
+  }
   if(isRec&&rId){
     const r=st.recurring.find(x=>String(x.id)===rId);
     if(!r){console.warn('Recurring not found:',rId,st.recurring.map(x=>x.id));return;}
@@ -4157,15 +4169,15 @@ async function ctxDoDuplicate(){
 }
 function ctxDoEdit(){
   const m=document.getElementById('ctxMenu');
-  const id=m._tid,isRec=m._isRec,rId=m._recId;
+  const id=m._tid,isRec=m._isRec,rId=m._recId,sId=m._shopId;
   hideCtx();
-  if(isRec&&rId){openRecEditModal(rId);}else{openEditTask(id);}
+  if(sId){tiDblShop(null,sId);}else if(isRec&&rId){openRecEditModal(rId);}else{openEditTask(id);}
 }
 function ctxDoDelete(){
   const m=document.getElementById('ctxMenu');
-  const id=m._tid,isRec=m._isRec,rId=m._recId;
+  const id=m._tid,isRec=m._isRec,rId=m._recId,sId=m._shopId;
   hideCtx();
-  if(isRec&&rId){delRec(rId);}else{delTask(id,null);}
+  if(sId){delShop(sId);}else if(isRec&&rId){delRec(rId);}else{delTask(id,null);}
 }
 
 // ══════════════════════════════════════════════════════════
