@@ -226,6 +226,17 @@ All three checkbox types share identical visual style:
 - "Adds On" and "Due On" `<th>` and `<td>`: `text-align:center`.
 - "Starting" `<th>` and `<td>`: `text-align:right`.
 
+## Quick Notes
+
+- `#qnBtn`: fixed bottom-right (bottom:20px, right:20px), z-index:950, toggles panel.
+- `#qnPanel`: fixed bottom-right slide-up panel (bottom:70px, right:20px), z-index:949. Opens with `.open` class via `transform/opacity` transition.
+- Supabase table: `quick_notes(id, note_text, is_visible, created_at, hidden_at)`.
+- `loadQN()`: GET `?is_visible=eq.true&order=created_at.asc`. Called on panel open.
+- `addQN()`: POST `{note_text, is_visible:true}`. Pushes returned row to `_qnNotes`, re-renders.
+- `deleteQN(id)`: PATCH `{is_visible:false, hidden_at:now()}`. Removes from local array immediately before PATCH (optimistic).
+- Outside-click listener closes panel when clicking outside `#qnPanel` and `#qnBtn`.
+- Do NOT hard delete rows — always soft-delete via `is_visible=false`.
+
 ## Git Workflow
 
 - Stop hook: auto-commits and pushes to `origin/dev` branch after every Claude turn.

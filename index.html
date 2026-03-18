@@ -440,6 +440,39 @@ body.dark .rt-row:hover td{background:rgba(255,220,200,.06)}
 .rt-row.sel-row td{background:var(--sel-bg,rgba(130,115,100,.1))!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.7)}
 .rt-row.done .tn{text-decoration:line-through;color:var(--muted)}
 .rt-row td:last-child{width:52px;text-align:right;white-space:nowrap}
+
+/* Quick Notes */
+#qnBtn{position:fixed;bottom:20px;right:20px;z-index:950;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.88);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.7);box-shadow:0 4px 16px rgba(0,0,0,.12),inset 0 1px 0 rgba(255,255,255,.9);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:17px;transition:all .18s;color:var(--text)}
+#qnBtn:hover{background:#fff;box-shadow:0 6px 20px rgba(0,0,0,.16);transform:translateY(-2px)}
+body.dark #qnBtn{background:rgba(255,240,230,.08);border-color:rgba(255,220,200,.15);color:var(--text)}
+#qnPanel{position:fixed;bottom:70px;right:20px;z-index:949;width:290px;max-height:440px;display:flex;flex-direction:column;border-radius:14px;overflow:hidden;box-shadow:0 20px 50px rgba(0,0,0,.18),0 4px 12px rgba(0,0,0,.1),inset 0 1.5px 0 rgba(255,255,255,1);border:1px solid rgba(255,255,255,.55);background:rgba(255,252,245,.97);backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);transform:translateY(16px) scale(.97);opacity:0;pointer-events:none;transition:transform .22s cubic-bezier(.34,1.56,.64,1),opacity .18s ease}
+#qnPanel.open{transform:translateY(0) scale(1);opacity:1;pointer-events:all}
+body.dark #qnPanel{background:rgba(28,16,10,.97);border-color:rgba(255,220,200,.12)}
+.qn-bindings{display:flex;align-items:center;gap:10px;padding:9px 14px 7px;background:linear-gradient(180deg,rgba(194,107,79,.12) 0%,rgba(194,107,79,.04) 100%);border-bottom:2px solid rgba(194,107,79,.18);flex-shrink:0}
+.qn-rings{display:flex;gap:7px;align-items:center}
+.qn-ring{width:13px;height:13px;border-radius:50%;border:2px solid rgba(140,100,80,.35);background:rgba(255,255,255,.6);box-shadow:inset 0 1px 2px rgba(0,0,0,.1)}
+body.dark .qn-ring{background:rgba(255,255,255,.06);border-color:rgba(255,200,160,.2)}
+.qn-title{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);flex:1}
+.qn-close{background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:2px 4px;border-radius:5px;transition:all .12s;line-height:1}
+.qn-close:hover{background:rgba(0,0,0,.06);color:var(--text)}
+.qn-list{flex:1;overflow-y:auto;padding:6px 4px;scrollbar-width:thin;scrollbar-color:rgba(180,160,140,.25) transparent}
+.qn-list::-webkit-scrollbar{width:4px}.qn-list::-webkit-scrollbar-thumb{background:rgba(180,160,140,.25);border-radius:2px}
+.qn-item{display:flex;align-items:flex-start;gap:7px;padding:5px 10px 5px 12px;border-radius:7px;transition:background .1s;group:true}
+.qn-item:hover{background:rgba(255,237,213,.5)}
+body.dark .qn-item:hover{background:rgba(255,220,200,.06)}
+.qn-bullet{width:5px;height:5px;border-radius:50%;background:rgba(194,107,79,.55);flex-shrink:0;margin-top:5px}
+.qn-text{flex:1;font-size:12px;font-weight:500;color:var(--text);line-height:1.4;word-break:break-word}
+.qn-del{background:none;border:none;cursor:pointer;color:var(--subtle);font-size:12px;padding:1px 3px;border-radius:4px;opacity:0;transition:all .12s;flex-shrink:0;line-height:1}
+.qn-item:hover .qn-del{opacity:1}
+.qn-del:hover{background:rgba(239,68,68,.1);color:#ef4444}
+.qn-empty{padding:18px 14px;text-align:center;font-size:11px;color:var(--subtle);font-style:italic}
+.qn-input-row{display:flex;gap:6px;padding:8px 10px;border-top:1px solid rgba(210,205,228,.2);flex-shrink:0;background:rgba(255,255,255,.5)}
+body.dark .qn-input-row{background:rgba(255,255,255,.03)}
+.qn-input{flex:1;font-family:inherit;font-size:12px;font-weight:500;color:var(--text);background:rgba(255,255,255,.8);border:1px solid rgba(210,205,228,.35);border-radius:8px;padding:5px 9px;outline:none;transition:border-color .15s}
+.qn-input:focus{border-color:rgba(194,107,79,.45);box-shadow:0 0 0 2px rgba(194,107,79,.1)}
+body.dark .qn-input{background:rgba(255,255,255,.06);border-color:rgba(255,220,200,.12)}
+.qn-add-btn{background:rgba(194,107,79,.15);border:1px solid rgba(194,107,79,.25);border-radius:8px;color:var(--accent);font-size:14px;font-weight:700;width:28px;flex-shrink:0;cursor:pointer;transition:all .14s;display:flex;align-items:center;justify-content:center;padding:0}
+.qn-add-btn:hover{background:rgba(194,107,79,.28);border-color:rgba(194,107,79,.45)}
 </style>
 </head>
 <body>
@@ -4457,6 +4490,50 @@ function copyShopList(){
   });
 }
 
+// ── Quick Notes ──
+let _qnOpen=false,_qnNotes=[];
+function toggleQN(){_qnOpen=!_qnOpen;document.getElementById('qnPanel').classList.toggle('open',_qnOpen);if(_qnOpen)loadQN();}
+async function loadQN(){
+  try{
+    const data=await sbReq('GET','quick_notes',null,'?is_visible=eq.true&order=created_at.asc&select=*');
+    _qnNotes=data||[];renderQN();
+  }catch(e){console.warn('loadQN error',e);}
+}
+function renderQN(){
+  const el=document.getElementById('qnList');
+  if(!el)return;
+  if(!_qnNotes.length){el.innerHTML='<div class="qn-empty">No notes yet</div>';return;}
+  el.innerHTML=_qnNotes.map(n=>`
+    <div class="qn-item">
+      <div class="qn-bullet"></div>
+      <span class="qn-text">${escHtml(n.note_text)}</span>
+      <button class="qn-del" onclick="deleteQN(${n.id})" title="Remove">✕</button>
+    </div>`).join('');
+}
+function escHtml(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+async function addQN(){
+  const inp=document.getElementById('qnInput');
+  const txt=(inp?.value||'').trim();
+  if(!txt)return;
+  inp.value='';
+  try{
+    const sv=await sbReq('POST','quick_notes',{note_text:txt,is_visible:true});
+    if(sv&&sv[0])_qnNotes.push(sv[0]);
+    renderQN();
+    document.getElementById('qnList').scrollTop=9999;
+  }catch(e){console.warn('addQN error',e);}
+}
+async function deleteQN(id){
+  _qnNotes=_qnNotes.filter(n=>n.id!==id);renderQN();
+  try{
+    await sbReq('PATCH','quick_notes',{is_visible:false,hidden_at:new Date().toISOString()},`?id=eq.${id}`);
+  }catch(e){console.warn('deleteQN error',e);}
+}
+// Close panel on outside click
+document.addEventListener('click',function(e){
+  if(_qnOpen&&!e.target.closest('#qnPanel')&&!e.target.closest('#qnBtn')){_qnOpen=false;document.getElementById('qnPanel').classList.remove('open');}
+});
+
 </script>
 
 <div id="ctxMenu" style="display:none;position:fixed;z-index:9999;background:rgba(255,255,255,.98);border:1px solid rgba(210,205,228,.4);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);padding:4px;min-width:155px;backdrop-filter:blur(12px)">
@@ -4480,6 +4557,23 @@ function tickClock(){const t=new Date().toLocaleTimeString('en-US',{hour:'numeri
 function _updateOvTopDate(){const now=new Date();const ds=now.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});['ovTopDate','wkTopDate'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent=ds;});}
 tickClock();_updateOvTopDate();setInterval(tickClock,1000);
 </script>
+<!-- Quick Notes -->
+<button id="qnBtn" onclick="toggleQN()" title="Quick Notes">📝</button>
+<div id="qnPanel">
+  <div class="qn-bindings">
+    <div class="qn-rings">
+      <div class="qn-ring"></div><div class="qn-ring"></div><div class="qn-ring"></div><div class="qn-ring"></div><div class="qn-ring"></div>
+    </div>
+    <span class="qn-title">Quick Notes</span>
+    <button class="qn-close" onclick="toggleQN()">✕</button>
+  </div>
+  <div class="qn-list" id="qnList"></div>
+  <div class="qn-input-row">
+    <input class="qn-input" id="qnInput" type="text" placeholder="Add a note…" onkeydown="if(event.key==='Enter')addQN()">
+    <button class="qn-add-btn" onclick="addQN()">+</button>
+  </div>
+</div>
+
 <div id="devBadge" style="display:none;position:fixed;bottom:16px;left:16px;background:#1e293b;color:#f8fafc;font-size:11px;font-weight:700;letter-spacing:.08em;padding:4px 9px;border-radius:6px;border:1px solid rgba(255,255,255,.15);z-index:9999;pointer-events:none">DEV-91</div>
 <script>if(location.hostname.includes('dev.'))document.getElementById('devBadge').style.display='block';</script>
 </body></html>
