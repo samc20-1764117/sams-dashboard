@@ -117,7 +117,9 @@ body{font-family:'DM Sans',sans-serif;background:#f0ecfb;background-attachment:f
 
 /* Main */
 .main{flex:1;overflow-y:auto;overflow-x:hidden;padding:22px 0 36px 0;margin-left:186px;transition:margin-left .25s cubic-bezier(.4,0,.2,1)}
-#page-overview{padding:0 56px}
+#page-overview{padding:0 clamp(12px,3vw,56px)}
+@media(max-width:1280px){.overview-cols{grid-template-columns:1fr 1fr}.row1-right-top{grid-template-columns:1fr 1fr;height:auto}}
+@media(max-width:900px){.main{margin-left:0;padding:12px 0 24px 0}#page-overview{padding:0 12px}.overview-cols{grid-template-columns:1fr;height:auto}}
 .main.full{margin-left:0}
 .page{display:none}.page.active{display:block}#page-weekly.active{display:block;padding-top:10px}
 
@@ -224,10 +226,10 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 .qa-close:hover{color:var(--text);background:rgba(0,0,0,.05)}
 
 /* Layout — consistent 14px gaps everywhere */
-.overview-cols{display:grid;grid-template-columns:2.2fr 2.55fr;gap:14px;margin-bottom:36px;height:740px}
+.overview-cols{display:grid;grid-template-columns:3.3fr 2.55fr;gap:14px;margin-bottom:36px;height:min(740px,calc(100vh - 80px))}
 .overview-left{display:flex;flex-direction:column;gap:14px;min-height:0}
 .row1-right-panel{display:flex;flex-direction:column;gap:14px;min-height:0}
-.row1-right-top{display:grid;grid-template-columns:1fr 0.9fr 0.65fr;gap:14px;flex-shrink:0;height:225px}
+.row1-right-top{display:grid;grid-template-columns:1fr 0.9fr 0.65fr;gap:14px;flex-shrink:0;height:min(225px,28vh)}
 .top-right-controls{position:fixed;top:14px;right:20px;z-index:90;display:flex;align-items:center;gap:8px}
 .row1-right{display:grid;grid-template-columns:1fr 0.85fr 0.6fr;grid-template-rows:auto 1fr;gap:14px;min-height:0}
 .row1-left{display:flex;flex-direction:column;gap:8px;min-height:0}
@@ -4027,6 +4029,6 @@ function copyShopList(){
 function tickClock(){const t=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});const el=document.getElementById('liveClock');if(el)el.textContent=t;}
 tickClock();setInterval(tickClock,1000);
 </script>
-<div id="devBadge" style="display:none;position:fixed;bottom:16px;left:16px;background:#1e293b;color:#f8fafc;font-size:11px;font-weight:700;letter-spacing:.08em;padding:4px 9px;border-radius:6px;border:1px solid rgba(255,255,255,.15);z-index:9999;pointer-events:none">DEV-43</div>
+<div id="devBadge" style="display:none;position:fixed;bottom:16px;left:16px;background:#1e293b;color:#f8fafc;font-size:11px;font-weight:700;letter-spacing:.08em;padding:4px 9px;border-radius:6px;border:1px solid rgba(255,255,255,.15);z-index:9999;pointer-events:none">DEV-91</div>
 <script>if(location.hostname.includes('dev.'))document.getElementById('devBadge').style.display='block';</script>
 </body></html>
