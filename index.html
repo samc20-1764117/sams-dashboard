@@ -2218,7 +2218,7 @@ function renderRecOv(){
 function renderUnassigned(){
   const ts=st.tasks.filter(t=>!t.due_date&&!t.done&&t.category!=='Long term');
   // unBadge removed
-  document.getElementById('unList').innerHTML=sortTasks(ts).map(t=>tRow(t,{cat:true,drag:true,flag:true})).join('');
+  document.getElementById('unList').innerHTML=sortTasks(ts).map(t=>tRow(t,{cat:true,drag:true,flag:true,noColor:true})).join('');
 }
 
 // ── Drop on Today List ─────────────────────────────────────────────────────────
