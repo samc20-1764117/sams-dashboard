@@ -97,7 +97,7 @@ body{font-family:'DM Sans',sans-serif;background:#fef6f0;background-attachment:f
 .brand-date{font-family:'DM Sans',sans-serif;font-size:9px;color:var(--muted);margin-top:2px}
 .sb-close{background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:2px 3px;border-radius:5px;transition:all .15s;line-height:1}
 .sb-close:hover{background:rgba(0,0,0,.06);color:var(--text)}
-.nav-item{display:flex;align-items:center;gap:7px;padding:6px 8px;border-radius:var(--rs);cursor:pointer;font-size:12px;font-weight:500;color:var(--muted);transition:all .15s;border:none;background:none;width:100%;font-family:inherit;margin-bottom:1px}
+.nav-item{display:flex;align-items:center;gap:7px;padding:6px 8px;border-radius:var(--rs);cursor:pointer;font-size:12px;font-weight:500;color:var(--muted);transition:all .15s;border:none;background:none;width:100%;font-family:inherit;margin-bottom:1px;text-decoration:none}
 .nav-item:hover{background:rgba(255,237,213,.55);color:var(--text)}
 .nav-item.active{background:rgba(255,255,255,0.88);color:var(--accent);font-weight:700;box-shadow:0 10px 30px rgba(0,0,0,0.08),inset 0 1px 0 rgba(255,255,255,0.6)}
 .ndot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
@@ -462,14 +462,14 @@ body.dark .rt-row:hover td{background:rgba(255,220,200,.06)}
     <button class="sb-close" onclick="closeSB()" title="Close">✕</button>
   </div>
   <nav style="flex:1">
-    <button class="nav-item active" onclick="showPage(&#39;overview&#39;)"><div class="ndot" style="background:#6d5fe6"></div>Overview</button>
-    <button class="nav-item" onclick="showPage(&#39;weekly&#39;)"><div class="ndot" style="background:#10b981"></div>Recurring Tasks</button>
-    <button class="nav-item" onclick="showPage(&#39;weekly&#39;)"><div class="ndot" style="background:#eab308"></div>Shopping</button>
-    <button class="nav-item" onclick="showPage(&#39;birthdays&#39;)"><div class="ndot" style="background:#f97316"></div>Birthdays</button>
-    <button class="nav-item" onclick="showPage(&#39;pups&#39;)"><div class="ndot" style="background:#f43f5e"></div>🐾 Pups</button>
-    <button class="nav-item" onclick="showPage(&#39;finance&#39;)"><div class="ndot" style="background:#22c55e"></div>💰 Finance</button>
-    <button class="nav-item" onclick="showPage(&#39;recipes&#39;)"><div class="ndot" style="background:#f59e0b"></div>🍳 Recipes</button>
-    <button class="nav-item" onclick="showPage(&#39;notes&#39;)"><div class="ndot" style="background:#8b5cf6"></div>📝 Notes</button>
+    <a class="nav-item active" href="#overview" onclick="event.preventDefault();showPage('overview')"><div class="ndot" style="background:#6d5fe6"></div>Overview</a>
+    <a class="nav-item" href="#weekly" onclick="event.preventDefault();showPage('weekly')"><div class="ndot" style="background:#10b981"></div>Recurring Tasks</a>
+    <a class="nav-item" href="#weekly" onclick="event.preventDefault();showPage('weekly')"><div class="ndot" style="background:#eab308"></div>Shopping</a>
+    <a class="nav-item" href="#birthdays" onclick="event.preventDefault();showPage('birthdays')"><div class="ndot" style="background:#f97316"></div>Birthdays</a>
+    <a class="nav-item" href="#pups" onclick="event.preventDefault();showPage('pups')"><div class="ndot" style="background:#f43f5e"></div>🐾 Pups</a>
+    <a class="nav-item" href="#finance" onclick="event.preventDefault();showPage('finance')"><div class="ndot" style="background:#22c55e"></div>💰 Finance</a>
+    <a class="nav-item" href="#recipes" onclick="event.preventDefault();showPage('recipes')"><div class="ndot" style="background:#f59e0b"></div>🍳 Recipes</a>
+    <a class="nav-item" href="#notes" onclick="event.preventDefault();showPage('notes')"><div class="ndot" style="background:#8b5cf6"></div>📝 Notes</a>
   </nav>
 </div>
 
@@ -3654,6 +3654,7 @@ function showPage(id){
   const pageEl=document.getElementById('page-'+id);if(pageEl)pageEl.classList.add('active');
   const idx=PAGES.indexOf(id);if(idx>-1&&document.querySelectorAll('.nav-item')[idx])document.querySelectorAll('.nav-item')[idx].classList.add('active');
   if(id==='weekly'){renderWeeklyPage();}if(id==='travel')renderTravelPage();if(id==='birthdays')renderBdayPage();
+  history.replaceState(null,'','#'+id);
 }
 
 // ── Modals ─────────────────────────────────────────────────────────────────────
@@ -3664,6 +3665,9 @@ function init(){
   load();
   if(cfg.dark){document.body.classList.add('dark');const ic=document.getElementById('darkToggleIcon');if(ic)ic.textContent='☀️';const dt=document.getElementById('darkToggle');if(dt)dt.textContent='☀️';}
   if(!sbOpen){document.getElementById('sidebar').classList.add('closed');document.getElementById('main').style.left='0';document.getElementById('menuOpen').classList.add('visible');}
+  // Restore page from URL hash
+  const initHash=location.hash.replace('#','');
+  if(initHash&&PAGES.includes(initHash))showPage(initHash);
   if(cfg.url&&cfg.key){
     document.getElementById('cfgUrl').value=cfg.url;document.getElementById('cfgKey').value=cfg.key;
     deletedRecIds=new Set();save(); // clear stale deletedRecIds — DB is authoritative after sync
