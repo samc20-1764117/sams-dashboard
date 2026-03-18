@@ -442,44 +442,43 @@ body.dark .rt-row:hover td{background:rgba(255,220,200,.06)}
 .rt-row td:last-child{width:52px;text-align:right;white-space:nowrap}
 
 /* Quick Notes */
-#qnBtn{position:fixed;bottom:20px;right:20px;z-index:950;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.88);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.7);box-shadow:0 4px 16px rgba(0,0,0,.12),inset 0 1px 0 rgba(255,255,255,.9);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:17px;transition:all .18s;color:var(--text)}
+#qnBtn{position:fixed;bottom:20px;right:20px;z-index:950;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.88);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.7);box-shadow:0 4px 16px rgba(0,0,0,.12),inset 0 1px 0 rgba(255,255,255,.9);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:17px;transition:all .18s}
 #qnBtn:hover{background:#fff;box-shadow:0 6px 20px rgba(0,0,0,.16);transform:translateY(-2px)}
-body.dark #qnBtn{background:rgba(255,240,230,.08);border-color:rgba(255,220,200,.15);color:var(--text)}
-#qnPanel{position:fixed;bottom:70px;right:20px;z-index:949;width:360px;height:520px;display:flex;flex-direction:column;border-radius:4px 16px 16px 4px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.22),0 6px 18px rgba(0,0,0,.12),inset 0 1.5px 0 rgba(255,255,255,1);border:1px solid rgba(255,255,255,.55);background:#fffef5;backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);transform:translateY(20px) scale(.97);opacity:0;pointer-events:none;transition:transform .24s cubic-bezier(.34,1.56,.64,1),opacity .18s ease}
+body.dark #qnBtn{background:rgba(255,240,230,.08);border-color:rgba(255,220,200,.15)}
+/* Panel — glass card like .card but notepad shaped */
+#qnPanel{position:fixed;bottom:70px;right:20px;z-index:949;width:340px;height:480px;display:flex;flex-direction:column;border-radius:var(--r);overflow:visible;box-shadow:var(--shadow-lg),inset 0 1.5px 0 rgba(255,255,255,1),inset 1px 0 0 rgba(255,255,255,.6),inset -1px 0 0 rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.55);background:rgba(255,255,255,.72);backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);transform:translateY(16px) scale(.97);opacity:0;pointer-events:none;transition:transform .22s cubic-bezier(.34,1.56,.64,1),opacity .18s ease}
 #qnPanel.open{transform:translateY(0) scale(1);opacity:1;pointer-events:all}
-body.dark #qnPanel{background:#1c120a;border-color:rgba(255,220,200,.12)}
-/* Spiral binding strip on left */
-#qnPanel::before{content:'';position:absolute;left:0;top:0;bottom:0;width:36px;background:linear-gradient(180deg,#e8c9b0 0%,#d4a882 100%);border-right:1px solid rgba(140,90,60,.25);z-index:1;pointer-events:none}
-body.dark #qnPanel::before{background:linear-gradient(180deg,rgba(100,60,30,.6) 0%,rgba(80,45,20,.5) 100%)}
-.qn-spiral{position:absolute;left:0;top:0;bottom:0;width:36px;z-index:2;pointer-events:none;display:flex;flex-direction:column;align-items:center;justify-content:space-evenly;padding:18px 0}
-.qn-coil{width:22px;height:14px;border:2px solid rgba(80,50,25,.45);border-radius:50%;background:rgba(255,255,255,.22);box-shadow:inset 0 1px 2px rgba(0,0,0,.15),0 1px 0 rgba(255,255,255,.4)}
-body.dark .qn-coil{border-color:rgba(255,180,100,.25);background:rgba(255,255,255,.04)}
-.qn-header{display:flex;align-items:center;gap:8px;padding:11px 14px 9px 46px;background:linear-gradient(180deg,rgba(255,240,210,.6) 0%,rgba(255,248,230,.2) 100%);border-bottom:2px solid rgba(200,160,100,.22);flex-shrink:0;position:relative;z-index:3}
-body.dark .qn-header{background:linear-gradient(180deg,rgba(80,45,15,.5) 0%,rgba(40,22,8,.2) 100%);border-bottom-color:rgba(255,180,80,.12)}
-.qn-title{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);flex:1;font-family:'DM Sans',sans-serif}
-.qn-close-btn{background:none;border:none;cursor:pointer;color:var(--muted);font-size:15px;padding:2px 5px;border-radius:5px;transition:all .12s;line-height:1;z-index:3}
-.qn-close-btn:hover{background:rgba(0,0,0,.07);color:var(--text)}
-/* Lined paper body */
-.qn-body{flex:1;min-height:0;display:flex;flex-direction:column;position:relative;z-index:3}
-.qn-list{flex:1;overflow-y:auto;padding:4px 10px 4px 46px;scrollbar-width:thin;scrollbar-color:rgba(180,160,140,.2) transparent;background-image:repeating-linear-gradient(transparent,transparent 27px,rgba(180,150,100,.13) 27px,rgba(180,150,100,.13) 28px);background-size:100% 28px;background-position:0 8px}
-body.dark .qn-list{background-image:repeating-linear-gradient(transparent,transparent 27px,rgba(255,180,80,.07) 27px,rgba(255,180,80,.07) 28px)}
-.qn-list::-webkit-scrollbar{width:4px}.qn-list::-webkit-scrollbar-thumb{background:rgba(180,160,140,.2);border-radius:2px}
-.qn-item{display:flex;align-items:flex-start;gap:7px;padding:6px 4px 6px 2px;min-height:28px;border-bottom:none;transition:background .1s;border-radius:4px}
-.qn-item:hover{background:rgba(255,237,200,.4)}
-body.dark .qn-item:hover{background:rgba(255,200,100,.05)}
-.qn-bullet{width:6px;height:6px;border-radius:50%;background:rgba(194,107,79,.6);flex-shrink:0;margin-top:4px}
-.qn-text{flex:1;font-size:13px;font-weight:500;color:var(--text);line-height:1.45;word-break:break-word;font-family:'DM Sans',sans-serif}
-.qn-del{background:none;border:none;cursor:pointer;color:var(--subtle);font-size:11px;padding:1px 4px;border-radius:4px;opacity:0;transition:all .12s;flex-shrink:0;line-height:1;margin-top:2px}
+body.dark #qnPanel{background:rgba(40,22,14,.75);border-color:rgba(255,220,200,.12);box-shadow:0 20px 50px rgba(0,0,0,.5),0 4px 12px rgba(0,0,0,.35)}
+/* Spiral binding — left strip */
+.qn-binding{position:absolute;left:-14px;top:12px;bottom:12px;width:14px;display:flex;flex-direction:column;justify-content:space-evenly;align-items:center;pointer-events:none;z-index:5}
+.qn-coil{width:14px;height:10px;border:2px solid rgba(194,107,79,.45);border-radius:50%;background:rgba(255,255,255,.7);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+body.dark .qn-coil{border-color:rgba(194,107,79,.3);background:rgba(40,22,14,.8)}
+/* Header — matches .ch style */
+.qn-header{display:flex;align-items:center;gap:6px;padding:9px 13px;border-bottom:1px solid rgba(210,205,228,.22);flex-shrink:0;min-height:38px}
+.qn-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);flex:1}
+.qn-close-btn{background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:2px 4px;border-radius:5px;transition:all .12s;line-height:1}
+.qn-close-btn:hover{background:rgba(0,0,0,.06);color:var(--text)}
+/* Lined paper area */
+.qn-list{flex:1;overflow-y:auto;padding:6px 12px;scrollbar-width:thin;scrollbar-color:rgba(180,160,140,.2) transparent;background-image:repeating-linear-gradient(transparent,transparent 27px,rgba(180,150,100,.1) 27px,rgba(180,150,100,.1) 28px);background-size:100% 28px;background-position:0 6px}
+body.dark .qn-list{background-image:repeating-linear-gradient(transparent,transparent 27px,rgba(255,180,80,.06) 27px,rgba(255,180,80,.06) 28px)}
+.qn-list::-webkit-scrollbar{width:3px}.qn-list::-webkit-scrollbar-thumb{background:rgba(180,160,140,.2);border-radius:2px}
+.qn-item{display:flex;align-items:flex-start;gap:7px;padding:5px 4px;min-height:28px;border-radius:6px;transition:background .1s}
+.qn-item:hover{background:rgba(255,237,213,.55)}
+body.dark .qn-item:hover{background:rgba(255,255,255,.07)}
+.qn-bullet{width:5px;height:5px;border-radius:50%;background:var(--accent);opacity:.6;flex-shrink:0;margin-top:5px}
+.qn-text{flex:1;font-size:12px;font-weight:500;color:var(--text);line-height:1.5;word-break:break-word}
+.qn-del{background:none;border:none;cursor:pointer;color:var(--subtle);font-size:11px;padding:1px 3px;border-radius:4px;opacity:0;transition:opacity .12s,background .12s,color .12s;flex-shrink:0;line-height:1;margin-top:3px}
 .qn-item:hover .qn-del{opacity:1}
-.qn-del:hover{background:rgba(239,68,68,.12);color:#ef4444}
-.qn-empty{padding:28px 14px;text-align:center;font-size:12px;color:var(--subtle);font-style:italic}
-.qn-input-row{display:flex;gap:6px;padding:10px 12px 10px 46px;border-top:2px solid rgba(200,160,100,.18);flex-shrink:0;background:linear-gradient(180deg,rgba(255,248,230,.5) 0%,rgba(255,250,240,.8) 100%);position:relative;z-index:3}
-body.dark .qn-input-row{background:rgba(255,255,255,.03);border-top-color:rgba(255,180,80,.1)}
-.qn-input{flex:1;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;color:var(--text);background:rgba(255,255,255,.75);border:1px solid rgba(200,160,100,.3);border-radius:8px;padding:6px 10px;outline:none;transition:border-color .15s}
-.qn-input:focus{border-color:rgba(194,107,79,.5);box-shadow:0 0 0 2px rgba(194,107,79,.1)}
-body.dark .qn-input{background:rgba(255,255,255,.06);border-color:rgba(255,220,200,.14)}
-.qn-add-btn{background:rgba(194,107,79,.18);border:1px solid rgba(194,107,79,.3);border-radius:8px;color:var(--accent);font-size:16px;font-weight:700;width:32px;flex-shrink:0;cursor:pointer;transition:all .14s;display:flex;align-items:center;justify-content:center;padding:0}
-.qn-add-btn:hover{background:rgba(194,107,79,.32);border-color:rgba(194,107,79,.5)}
+.qn-del:hover{background:rgba(239,68,68,.1);color:#ef4444}
+.qn-empty{padding:24px 12px;text-align:center;font-size:11px;color:var(--subtle);font-style:italic}
+/* Input footer — matches card footer style */
+.qn-input-row{display:flex;gap:6px;padding:8px 10px;border-top:1px solid rgba(210,205,228,.22);flex-shrink:0;background:rgba(255,255,255,.4)}
+body.dark .qn-input-row{background:rgba(255,255,255,.03)}
+.qn-input{flex:1;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;color:var(--text);background:rgba(255,255,255,.8);border:1px solid rgba(210,205,228,.35);border-radius:var(--rxs);padding:5px 9px;outline:none;transition:border-color .15s}
+.qn-input:focus{border-color:rgba(194,107,79,.45);box-shadow:0 0 0 2px rgba(194,107,79,.1)}
+body.dark .qn-input{background:rgba(255,255,255,.06);border-color:rgba(255,220,200,.12)}
+.qn-add-btn{background:rgba(194,107,79,.15);border:1px solid rgba(194,107,79,.25);border-radius:var(--rxs);color:var(--accent);font-size:16px;font-weight:600;width:30px;flex-shrink:0;cursor:pointer;transition:all .14s;display:flex;align-items:center;justify-content:center;padding:0}
+.qn-add-btn:hover{background:rgba(194,107,79,.28);border-color:rgba(194,107,79,.4)}
 </style>
 </head>
 <body>
@@ -4514,7 +4513,7 @@ function renderQN(){
     <div class="qn-item">
       <div class="qn-bullet"></div>
       <span class="qn-text">${escHtml(n.note_text)}</span>
-      <button class="qn-del" onclick="deleteQN(${n.id})" title="Remove">✕</button>
+      <button class="qn-del" onclick="event.stopPropagation();deleteQN(${n.id})" title="Remove">✕</button>
     </div>`).join('');
 }
 function escHtml(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
@@ -4567,23 +4566,20 @@ tickClock();_updateOvTopDate();setInterval(tickClock,1000);
 <!-- Quick Notes -->
 <button id="qnBtn" onclick="toggleQN()" title="Quick Notes">📝</button>
 <div id="qnPanel">
-  <!-- Spiral coils overlay -->
-  <div class="qn-spiral">
-    <div class="qn-coil"></div><div class="qn-coil"></div><div class="qn-coil"></div>
+  <div class="qn-binding">
     <div class="qn-coil"></div><div class="qn-coil"></div><div class="qn-coil"></div>
     <div class="qn-coil"></div><div class="qn-coil"></div><div class="qn-coil"></div>
     <div class="qn-coil"></div><div class="qn-coil"></div><div class="qn-coil"></div>
   </div>
   <div class="qn-header">
+    <span style="font-size:13px;margin-right:2px">📝</span>
     <span class="qn-title">Quick Notes</span>
     <button class="qn-close-btn" onclick="toggleQN()" title="Close">✕</button>
   </div>
-  <div class="qn-body">
-    <div class="qn-list" id="qnList"></div>
-    <div class="qn-input-row">
-      <input class="qn-input" id="qnInput" type="text" placeholder="Jot something down…" onkeydown="if(event.key==='Enter')addQN()">
-      <button class="qn-add-btn" onclick="addQN()">+</button>
-    </div>
+  <div class="qn-list" id="qnList"></div>
+  <div class="qn-input-row">
+    <input class="qn-input" id="qnInput" type="text" placeholder="Jot something down…" onkeydown="if(event.key==='Enter')addQN()">
+    <button class="qn-add-btn" onclick="addQN()">+</button>
   </div>
 </div>
 
