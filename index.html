@@ -418,6 +418,18 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 .ctx-danger{color:#ef4444}
 .ctx-danger:hover{background:rgba(239,68,68,.08)!important}
 .ctx-divider{height:1px;background:rgba(210,205,228,.3);margin:3px 4px}
+/* Recurring tasks table */
+.rt-tbl{width:100%;border-collapse:collapse;font-size:11px}
+.rt-tbl thead tr{border-bottom:1px solid var(--border)}
+.rt-tbl th{text-align:left;padding:5px 8px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.rt-tbl td{padding:5px 8px;vertical-align:middle;border-bottom:1px solid rgba(210,205,228,.08)}
+.rt-tbl .rt-meta{font-size:10px;color:var(--subtle);white-space:nowrap}
+.rt-row{cursor:pointer;transition:background .1s}
+.rt-row:hover td{background:rgba(109,95,230,.04)}
+body.dark .rt-row:hover td{background:rgba(255,255,255,.04)}
+.rt-row.sel-row td{background:rgba(109,95,230,.1)!important}
+.rt-row.done .tn{text-decoration:line-through;color:var(--muted)}
+.rt-row td:last-child{width:50px;text-align:right;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -2954,31 +2966,38 @@ function renderRtGroup(containerId, tasks, isWr, cadence){
   const el=document.getElementById(containerId);if(!el)return;
   const wkKey=getWkKey(wkOff);
   const cadLabel={weekly:'Weekly',biweekly:'Biweekly',monthly:'Monthly',other:'Other'}[cadence]||cadence;
-  let rowsHtml='';
+
+  // Table header columns
+  const hdrCols=isWr
+    ?`<th style="width:18px"></th><th>Name</th><th>Starting</th><th></th>`
+    :`<th>Name</th><th>${cadence==='monthly'?'Day of Month':'Day of Week'}</th><th>Adds On</th><th>Due Day</th><th>Starting</th><th></th>`;
+
+  let tbody='';
   tasks.forEach(r=>{
     const rid=String(r.id);
     const isDone=isWr&&!!(r._doneByWk&&r._doneByWk[wkKey]);
     const virtId='rec-virt-'+rid;
     const safeName=r.name.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-    let fields='';
-    if(!isWr){
-      if(cadence==='monthly'&&r.repeat_date)
-        fields+=`<span class="cpill" style="background:var(--lt-bg);color:var(--lt-t);border-color:var(--lt-b)">Day ${r.repeat_date}</span>`;
-      else if(r.appears_on_date)
-        fields+=`<span class="cpill" style="background:var(--lt-bg);color:var(--lt-t);border-color:var(--lt-b)">${r.appears_on_date}</span>`;
-      if(r.day_added)
-        fields+=`<span style="font-size:9px;color:var(--muted);flex-shrink:0;white-space:nowrap">adds ${r.day_added}</span>`;
+    const chkTd=isWr
+      ?`<td><label class="chk-wrap" onclick="event.stopPropagation()" onmousedown="event.stopPropagation()"><input type="checkbox" class="chk"${isDone?' checked':''} onchange="togRec('${rid}',this.checked)"></label></td>`
+      :'';
+    let fieldTds;
+    if(isWr){
+      fieldTds=`<td class="rt-meta">${r.starting_date?fmtD(r.starting_date):'—'}</td>`;
+    } else {
+      const dayVal=cadence==='monthly'?(r.repeat_date?'Day '+r.repeat_date:'—'):(r.appears_on_date||'—');
+      fieldTds=`<td class="rt-meta">${dayVal}</td><td class="rt-meta">${r.day_added||'—'}</td><td class="rt-meta">${r.task_due_day||'—'}</td><td class="rt-meta">${r.starting_date?fmtD(r.starting_date):'—'}</td>`;
     }
-    if(r.starting_date)
-      fields+=`<span style="font-size:9px;color:var(--subtle);flex-shrink:0;white-space:nowrap">from ${fmtD(r.starting_date)}</span>`;
-    const chkOrSpacer=isWr
-      ?`<label class="chk-wrap" onclick="event.stopPropagation()" onmousedown="event.stopPropagation()"><input type="checkbox" class="chk"${isDone?' checked':''} onchange="togRec('${rid}',this.checked)"></label>`
-      :`<span style="width:14px;flex-shrink:0"></span>`;
-    rowsHtml+=`<div class="ti${isDone?' done':''}" id="ti-rt-${rid}" style="cursor:pointer" onclick="selTask(event,'${virtId}')" ondblclick="if(!event.target.closest('.chk-wrap')&&!event.target.closest('.delbtn')){event.stopPropagation();clearSelection();openRecEditModal('${rid}')}" oncontextmenu="showCtx(event,'${virtId}',true,'${rid}')">${chkOrSpacer}<span class="tn"${isDone?' style="text-decoration:line-through;color:var(--muted)"':''}>${safeName}</span>${fields}<button class="btn btn-xs btn-ghost" style="flex-shrink:0;padding:1px 5px;font-size:10px;opacity:.65" onclick="event.stopPropagation();duplicateRecDirect('${rid}')" title="Duplicate">⧉</button><button class="delbtn" onclick="event.stopPropagation();delRec('${rid}')">✕</button></div>`;
+    tbody+=`<tr class="rt-row${isDone?' done':''}" id="ti-rt-${rid}" onclick="selTask(event,'${virtId}')" ondblclick="if(!event.target.closest('.chk-wrap')&&!event.target.closest('.delbtn')){event.stopPropagation();clearSelection();openRecEditModal('${rid}')}" oncontextmenu="showCtx(event,'${virtId}',true,'${rid}')">
+      ${chkTd}<td><span class="tn">${safeName}</span></td>${fieldTds}
+      <td><button class="btn btn-xs btn-ghost" style="padding:1px 5px;font-size:10px;opacity:.65" onclick="event.stopPropagation();duplicateRecDirect('${rid}')" title="Duplicate">⧉</button><button class="delbtn" onclick="event.stopPropagation();delRec('${rid}')">✕</button></td>
+    </tr>`;
   });
-  if(!tasks.length){el.innerHTML='';return;}
-  if(!rowsHtml) rowsHtml=`<div style="padding:8px 12px;font-size:11px;color:var(--subtle);font-style:italic">None yet</div>`;
-  const sectionLbl=isWr?'Weekly Reset':'Scheduled';
+
+  const tableHtml=tasks.length
+    ?`<table class="rt-tbl"><thead><tr>${hdrCols}</tr></thead><tbody>${tbody}</tbody></table>`
+    :`<div style="padding:8px 12px;font-size:11px;color:var(--subtle);font-style:italic">None yet</div>`;
+
   let qaExtras='';
   if(!isWr){
     if(cadence==='monthly')
@@ -2986,7 +3005,8 @@ function renderRtGroup(containerId, tasks, isWr, cadence){
     else if(cadence==='weekly'||cadence==='biweekly')
       qaExtras=`<select class="asel" id="qa-day-${containerId}" style="flex:0;width:90px"><option>Sunday</option><option>Monday</option><option>Tuesday</option><option>Wednesday</option><option>Thursday</option><option selected>Friday</option><option>Saturday</option></select>`;
   }
-  el.innerHTML=`<div class="card" style="margin-bottom:10px"><div class="ch"><div class="ct">${cadLabel} <span style="font-weight:500;opacity:.6;text-transform:none;letter-spacing:0;font-size:9px">· ${sectionLbl}</span>${tasks.length?' <span class="cbadge">'+tasks.length+'</span>':''}</div><button class="btn-plus" onclick="openRecModalForSection('${isWr?'weekly_reset':'scheduled'}','${cadence}')" title="Add via form">+</button></div><div class="tlist">${rowsHtml}</div><div class="arow"><input class="ainput" id="qa-${containerId}" placeholder="Add task…" onkeydown="if(event.key==='Enter')addRecDirect(this,${isWr},'${cadence}')">${qaExtras}<button class="btn btn-ghost btn-xs" onclick="addRecDirect(document.getElementById('qa-${containerId}'),${isWr},'${cadence}')">+</button></div></div>`;
+
+  el.innerHTML=`<div class="card" style="margin-bottom:10px"><div class="ch"><div class="ct">${cadLabel}${tasks.length?' <span class="cbadge">'+tasks.length+'</span>':''}</div><button class="btn-plus" onclick="openRecModalForSection('${isWr?'weekly_reset':'scheduled'}','${cadence}')" title="Add via form">+</button></div><div class="tlist" style="padding:0">${tableHtml}</div><div class="arow"><input class="ainput" id="qa-${containerId}" placeholder="Quick add…" onkeydown="if(event.key==='Enter')addRecDirect(this,${isWr},'${cadence}')">${qaExtras}<button class="btn btn-ghost btn-xs" onclick="addRecDirect(document.getElementById('qa-${containerId}'),${isWr},'${cadence}')">+</button></div></div>`;
 }
 
 function openRecModalForSection(type, cadence){
