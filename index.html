@@ -582,7 +582,8 @@ body.dark .rt-row:hover td{background:rgba(255,220,200,.06)}
         <div class="ch-prog-stat"><span class="pct" id="recPct2">0%</span><span style="opacity:.3">·</span><span id="recPL">0/6</span></div>
         <button class="btn-plus" onclick="openRecModal(&#39;weekly_reset&#39;)">+</button>
       </div>
-      <div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:4px;overflow:hidden;min-height:0"><div style="display:flex;flex-direction:column;min-height:0"><div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:3px 8px 1px">Regular</div><div class="tlist" id="recList" style="flex:1"></div></div><div style="display:flex;flex-direction:column;min-height:0"><div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:3px 8px 1px">🐾 Pup</div><div class="tlist" id="recListPup" style="flex:1"></div></div></div>
+      <div class="tlist" id="recList" style="flex:1;columns:2;column-gap:2px;overflow-y:auto"></div>
+      <div style="display:none" id="recListPup"></div>
     </div>
     <!-- Shopping -->
     <div class="card">
@@ -2278,16 +2279,16 @@ function renderRecOv(){
   if(document.getElementById('recPL'))document.getElementById('recPL').textContent=done+'/'+items.length;const _recP=document.getElementById('recPct2');if(_recP)_recP.textContent=pct+'%';
   document.getElementById('recPB').style.width=pct+'%';
   const elReg=document.getElementById('recList');if(elReg)elReg.innerHTML='';
-  const elPup=document.getElementById('recListPup');if(elPup)elPup.innerHTML='';
   const sorted=[...items.filter(r=>!(r._doneByWk&&r._doneByWk[wkKey])),...items.filter(r=>!!(r._doneByWk&&r._doneByWk[wkKey]))];
-  function makeRecRow(r,targetEl){
+  sorted.forEach(r=>{
     const rid=String(r.id);
     const isDone=!!(r._doneByWk&&r._doneByWk[wkKey]);
+    const isPup=r.pup_related===true||r.pup_related==='true';
     const row=document.createElement('div');
     const virtId='rec-virt-'+rid;
     row.id='ti-'+virtId;
     row.className='ti'+(isDone?' done':'');
-    row.style.cursor='pointer';
+    row.style.cssText='cursor:pointer;break-inside:avoid';
     const chkWrap1=document.createElement('label');chkWrap1.className='chk-wrap';chkWrap1.addEventListener('click',e=>e.stopPropagation());
     const chk=document.createElement('input');
     chk.type='checkbox';chk.className='chk';chk.checked=isDone;
@@ -2295,7 +2296,7 @@ function renderRecOv(){
     chkWrap1.appendChild(chk);
     const nm=document.createElement('span');nm.className='tn';
     if(isDone)nm.style.cssText='text-decoration:line-through;color:var(--muted)';
-    nm.textContent=r.name;
+    nm.textContent=(isPup?'🐾 ':'')+r.name;
     const del=document.createElement('button');del.className='delbtn';del.textContent='✕';
     del.addEventListener('mousedown',e=>e.stopPropagation());
     del.addEventListener('click',function(e){e.stopPropagation();delRec(rid);});
@@ -2313,12 +2314,7 @@ function renderRecOv(){
     row.addEventListener('dragend',e=>{
       row.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false);
     });
-    row.appendChild(chkWrap1);row.appendChild(nm);row.appendChild(del);targetEl.appendChild(row);
-  }
-  sorted.forEach(r=>{
-    const isPup=r.pup_related===true||r.pup_related==='true';
-    const target=isPup?elPup:elReg;
-    if(target)makeRecRow(r,target);
+    row.appendChild(chkWrap1);row.appendChild(nm);row.appendChild(del);if(elReg)elReg.appendChild(row);
   });
   requestAnimationFrame(applySelHighlight);
 }
@@ -2875,7 +2871,7 @@ function updateNowLine(){
 if(!window._nowLineInterval)window._nowLineInterval=setInterval(updateNowLine,60000);
 function onRM(e){if(!resizing)return;const b=st.blocks.find(x=>x.id===resizing.id);if(!b)return;b.dur=Math.max(15,Math.round((resizing.sd+(e.clientY-resizing.sy)/PX)/15)*15);renderDayTB();}
 function onRU(){if(!resizing)return;const bid=resizing.id;resizing=null;save();renderDayTB();document.removeEventListener('mousemove',onRM);document.removeEventListener('mouseup',onRU);const b=st.blocks.find(x=>x.id===bid);if(b)sbUpdateBlock(bid,{duration_minutes:b.dur});}
-function delBlock(id,e){e&&e.stopPropagation();const b=st.blocks.find(x=>x.id===id);if(b){const copy={...b};pushUndo(()=>{st.blocks.push(copy);save();renderDayTB();sbSaveBlock(copy);},'Deleted block');}st.blocks=st.blocks.filter(b=>b.id!==id);save();renderDayTB();sbDeleteBlock(id);}
+function delBlock(id,e){e&&e.stopPropagation();const b=st.blocks.find(x=>x.id===id);if(b){const copy={...b};pushUndo(()=>{st.blocks.push(copy);save();renderDayTB();renderToday();sbSaveBlock(copy);},'Deleted block');}st.blocks=st.blocks.filter(b=>b.id!==id);save();renderDayTB();renderToday();sbDeleteBlock(id);}
 function onTBWheel(e){
   const sc=document.getElementById('tbScroll');const atTop=sc.scrollTop<=0,atBot=sc.scrollTop+sc.clientHeight>=sc.scrollHeight-2;
   if(e.deltaY<0&&atTop){e.preventDefault();tbWD+=e.deltaY;if(tbWT)clearTimeout(tbWT);tbWT=setTimeout(()=>{if(tbWD<-40)shiftDay(-1);tbWD=0;tbWT=null;},100);}
