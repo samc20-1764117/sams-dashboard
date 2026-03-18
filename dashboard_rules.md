@@ -203,7 +203,7 @@ All three checkbox types share identical visual style:
 ## Recurring Color System
 
 - `'weekly_reset'` in CATS: `bg:'#eff6ff'` (lighter blue, same as Home) — used for weekly reset recurring tasks.
-- `'recurring'` in CATS: `bg:'#dbeafe'` (slightly darker blue) — used for non-weekly-reset recurring tasks.
+- `'recurring'` in CATS: `bg:'#e6fffa'` (light teal) — used for non-weekly-reset recurring tasks.
 - `tRowTodayVirt` and `tRowWk` use `gc(t._isWrec?'weekly_reset':'recurring')` to apply the correct color.
 
 ## TB Arrow (Not on Timeblock)
@@ -216,7 +216,7 @@ All three checkbox types share identical visual style:
 
 ## Weekly Reset Overview Filter
 
-- `renderRecOv()` only shows weekly reset tasks where `r._dateOverrides[wkKey]` exists (i.e., assigned to the current week). Tasks not assigned this week are hidden.
+- `renderRecOv()` shows all `is_weekly_reset===true` tasks (not filtered by week date).
 
 ## Recurring Tasks Page UI
 
