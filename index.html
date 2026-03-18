@@ -955,10 +955,45 @@ body.dark .rt-row:hover td{background:rgba(255,220,200,.06)}
 </div>
 
 <!-- Recurring Edit Modal -->
-<div class="overlay" id="recEditModal" onclick="closeMod(&#39;recEditModal&#39;,event)" onkeydown="if(event.key===&#39;Enter&#39;)saveRecEdit();if(event.key===&#39;Escape&#39;)closeMod(&#39;recEditModal&#39;)">
-  <div class="modal task-modal">
-    <div class="mt">Edit Task</div>
-    <div class="mfield"><label>Task name *</label><input id="recEditName" placeholder="Task name" onkeydown="if(event.key===&#39;Enter&#39;)saveRecEdit()"></div>
+<div class="overlay" id="recEditModal" onclick="closeMod(&#39;recEditModal&#39;,event)" onkeydown="if(event.key===&#39;Escape&#39;)closeMod(&#39;recEditModal&#39;)">
+  <div class="modal task-modal" style="width:350px">
+    <div class="mt">Edit Recurring Task</div>
+    <div class="mfield"><label>Task name *</label><input id="recEditName" placeholder="Task name"></div>
+    <div class="mfield">
+      <label>Type</label>
+      <select id="recEditType" onchange="updateRecEditUI()">
+        <option value="weekly_reset">Weekly Reset (checklist)</option>
+        <option value="scheduled">Scheduled (appears on calendar)</option>
+      </select>
+    </div>
+    <div class="mfield" id="recEditPupField">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:400"><input type="checkbox" id="recEditPupRelated" style="width:13px;height:13px;accent-color:var(--accent)"> 🐾 Pup related</label>
+    </div>
+    <div class="mfield">
+      <label>Cadence</label>
+      <select id="recEditCadence" onchange="updateRecEditUI()">
+        <option value="weekly">Every week</option>
+        <option value="biweekly">Every 2 weeks</option>
+        <option value="monthly">Monthly</option>
+      </select>
+    </div>
+    <div class="mfield" id="recEditDayField">
+      <label id="recEditDayLabel">Task due every</label>
+      <select id="recEditRepeatDay">
+        <option>Sunday</option><option>Monday</option><option>Tuesday</option><option>Wednesday</option><option>Thursday</option><option>Friday</option><option>Saturday</option>
+      </select>
+    </div>
+    <div class="mfield" id="recEditDateField" style="display:none">
+      <label>Day of month</label>
+      <select id="recEditRepeatDate"></select>
+    </div>
+    <div class="mfield">
+      <label>Starting date</label>
+      <div style="display:flex;gap:4px;align-items:center">
+        <input id="recEditStartDate" type="date" style="flex:1">
+        <button type="button" class="btn btn-ghost btn-xs" onclick="document.getElementById(&#39;recEditStartDate&#39;).value=&#39;&#39;" style="flex-shrink:0;padding:4px 7px;font-size:11px">✕</button>
+      </div>
+    </div>
     <div class="mact"><button class="btn btn-ghost" onclick="closeMod(&#39;recEditModal&#39;)">Cancel</button><button class="btn btn-dark" onclick="saveRecEdit()">Save</button></div>
   </div>
 </div>
@@ -3876,10 +3911,29 @@ function saveShopEdit(){
   pushUndo(()=>{s.name=prev.name;s.store=prev.store;renderShopFull();sbReq('PATCH','shopping_list',{name:prev.name,store:prev.store},`?id=eq.${id}`);},'Edited item');
 }
 let _recEditId=null;
+function updateRecEditUI(){
+  const isWr=document.getElementById('recEditType').value==='weekly_reset';
+  const cad=document.getElementById('recEditCadence').value;
+  const isMonthly=cad==='monthly';
+  const pf=document.getElementById('recEditPupField');if(pf)pf.style.display=isWr?'block':'none';
+  document.getElementById('recEditDayField').style.display=isMonthly?'none':'block';
+  document.getElementById('recEditDateField').style.display=isMonthly?'block':'none';
+  document.getElementById('recEditDayLabel').textContent=cad==='biweekly'?'Task due every (every 2nd)':'Task due every';
+}
 function openRecEditModal(rid){
   const r=st.recurring.find(x=>String(x.id)===String(rid));if(!r)return;
   _recEditId=rid;
+  const isWr=r.is_weekly_reset===true||r.is_weekly_reset==='true';
   document.getElementById('recEditName').value=r.name;
+  document.getElementById('recEditType').value=isWr?'weekly_reset':'scheduled';
+  document.getElementById('recEditCadence').value=r.cadence||'weekly';
+  document.getElementById('recEditRepeatDay').value=r.appears_on_date||'Friday';
+  const rdSel=document.getElementById('recEditRepeatDate');
+  if(!rdSel.options.length)for(let i=1;i<=28;i++){const o=document.createElement('option');o.value=i;o.textContent=i;rdSel.appendChild(o);}
+  rdSel.value=r.repeat_date||'1';
+  document.getElementById('recEditStartDate').value=r.starting_date||'';
+  const pr=document.getElementById('recEditPupRelated');if(pr)pr.checked=!!(r.pup_related===true||r.pup_related==='true');
+  updateRecEditUI();
   document.getElementById('recEditModal').classList.add('open');
   setTimeout(()=>document.getElementById('recEditName').focus(),80);
 }
@@ -3888,11 +3942,23 @@ function saveRecEdit(){
   const r=st.recurring.find(x=>String(x.id)===String(rid));if(!r)return;
   const name=document.getElementById('recEditName').value.trim();
   if(!name){closeMod('recEditModal');return;}
+  const isWr=document.getElementById('recEditType').value==='weekly_reset';
+  const cadence=document.getElementById('recEditCadence').value;
+  const isMonthly=cadence==='monthly';
+  const appearsOn=isMonthly?null:document.getElementById('recEditRepeatDay').value;
+  const repeatDate=isMonthly?document.getElementById('recEditRepeatDate').value:null;
+  const startDate=document.getElementById('recEditStartDate').value||null;
+  const pupRelated=isWr&&!!(document.getElementById('recEditPupRelated')?.checked);
   closeMod('recEditModal');
-  const prev=r.name;r.name=name;
+  const prev={name:r.name,is_weekly_reset:r.is_weekly_reset,cadence:r.cadence,appears_on_date:r.appears_on_date,repeat_date:r.repeat_date,starting_date:r.starting_date,pup_related:r.pup_related};
+  r.name=name;r.is_weekly_reset=isWr;r.cadence=cadence;if(appearsOn)r.appears_on_date=appearsOn;r.repeat_date=repeatDate;r.starting_date=startDate;r.pup_related=pupRelated;
   renderRecOv();renderWeeklyPage();renderWkSummary();renderWkCal();
-  sbReq('PATCH','recurring_tasks',{name:r.name},recQs(rid));
-  pushUndo(()=>{r.name=prev;renderRecOv();renderWeeklyPage();},'Edited recurring');
+  const patch={name,is_weekly_reset:isWr,cadence,pup_related:pupRelated};
+  if(appearsOn)patch.appears_on_date=appearsOn;
+  if(repeatDate)patch.repeat_date=repeatDate;
+  if(startDate)patch.starting_date=startDate;
+  sbReq('PATCH','recurring_tasks',patch,recQs(rid));
+  pushUndo(()=>{Object.assign(r,prev);renderRecOv();renderWeeklyPage();},'Edited recurring');
 }
 
 
