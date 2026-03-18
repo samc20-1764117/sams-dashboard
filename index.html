@@ -2228,10 +2228,50 @@ function onWkcWheel(e){
   wkcWT=setTimeout(()=>{if(Math.abs(wkcWD)>40)shiftWk(wkcWD>0?1:-1);wkcWD=0;wkcWT=null;},100);
 }
 
+// Returns true if a weekly-reset recurring task is scheduled during week `off`
+function isWRecDueThisWeek(r,off=0){
+  const cadence=r.cadence||'weekly';
+  const wkDates=getWkDates(off);
+  if(cadence==='monthly'){
+    const sched=r.appears_on_date||'';
+    const domNum=parseInt(sched,10);
+    const isDomOnly=!isNaN(domNum)&&String(domNum)===String(sched).trim();
+    if(isDomOnly){
+      if(domNum<1||domNum>31)return false;
+      const match=wkDates.find(d=>d.getDate()===domNum);if(!match)return false;
+      if(r.starting_date){const sd=new Date(r.starting_date+'T00:00:00');if(match<sd)return false;}
+      return true;
+    } else {
+      const nwdMatch=sched.match(/^(\d+)(?:st|nd|rd|th)?\s+(\w+)$/i);if(!nwdMatch)return false;
+      const n=parseInt(nwdMatch[1],10);
+      const DAYS2=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+      const dow=DAYS2.findIndex(d=>d.toLowerCase()===nwdMatch[2].toLowerCase());if(dow<0)return false;
+      const refDate=wkDates[0];const year=refDate.getFullYear(),month=refDate.getMonth();
+      let count=0,targetDate=null;
+      for(let day=1;day<=31;day++){const d=new Date(year,month,day);if(d.getMonth()!==month)break;if(d.getDay()===dow){count++;if(count===n){targetDate=d;break;}}}
+      if(!targetDate)return false;
+      if(!wkDates.some(d=>d2s(d)===d2s(targetDate)))return false;
+      if(r.starting_date){const sd=new Date(r.starting_date+'T00:00:00');if(targetDate<sd)return false;}
+      return true;
+    }
+  } else if(cadence==='biweekly'){
+    if(!r.starting_date)return false;
+    const dow=dayNameToIdx(r.appears_on_date);if(dow<0)return false;
+    const sd=new Date(r.starting_date+'T00:00:00');
+    const sdDow=(sd.getDay()+6)%7;
+    const sdMon=new Date(sd);sdMon.setDate(sd.getDate()-sdDow);sdMon.setHours(0,0,0,0);
+    const tgtMon=new Date(wkDates[0]);tgtMon.setHours(0,0,0,0);
+    const weekDiff=Math.round((tgtMon-sdMon)/(7*86400000));
+    return weekDiff>=0&&weekDiff%2===0;
+  }
+  // weekly — always due
+  return true;
+}
+
 // ── Weekly Reset card (only is_weekly_reset=true items due this week) ─────────
 function renderRecOv(){
   const wkKey=getWkKey(wkOff);
-  const items=st.recurring.filter(r=>r.is_weekly_reset===true||r.is_weekly_reset==='true');
+  const items=st.recurring.filter(r=>(r.is_weekly_reset===true||r.is_weekly_reset==='true')&&isWRecDueThisWeek(r,wkOff));
   const done=items.filter(r=>!!(r._doneByWk&&r._doneByWk[wkKey])).length;
   const pct=items.length?Math.round(done/items.length*100):0;
   const _rb=document.getElementById('recBadge');if(_rb)_rb.textContent=items.length-done;

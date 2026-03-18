@@ -216,7 +216,9 @@ All three checkbox types share identical visual style:
 
 ## Weekly Reset Overview Filter
 
-- `renderRecOv()` shows all `is_weekly_reset===true` tasks (not filtered by week date).
+- `renderRecOv()` filters weekly reset tasks using `isWRecDueThisWeek(r, wkOff)` — same cadence logic as `getRecurringWeekTasks` but for `is_weekly_reset===true` tasks.
+- Weekly cadence → always shows. Biweekly → alternating weeks based on `starting_date`. Monthly → only during the week containing the target date (day-of-month or Nth weekday).
+- Tasks not scheduled this week (e.g., "Mirrors" on 1st Friday when it's not that week) are hidden from the overview card.
 
 ## Recurring Tasks Page UI
 
