@@ -2060,12 +2060,7 @@ function renderWkCal(){
             sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},recQs(r.id));
             pushUndo(()=>{if(!r._dateOverrides)r._dateOverrides={};r._dateOverrides[wkKey]=prev;save();renderAll();renderWkCal();sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},recQs(r.id));},'Removed from calendar');}
         } else if(t._virtual){togRecVirt(t._recId,true,t._wkKey||getWkKey(wkOff));}
-        else{
-          // Unschedule task (clear due_date) — do not delete it
-          const prev=t.due_date;t.due_date=null;save();renderAll();renderWkCal();
-          sbReqNullable('PATCH','tasks',{due_date:null},`?id=eq.${t.id}`);
-          pushUndo(()=>{t.due_date=prev;save();renderAll();renderWkCal();sbReqNullable('PATCH','tasks',{due_date:prev||null},`?id=eq.${t.id}`);},'Removed from calendar');
-        }
+        else{delTask(t.id,e2);}
       });
       chip.appendChild(dx);
       col.appendChild(chip);
@@ -3463,14 +3458,10 @@ function renderShopFull(){save();
   const sf=document.getElementById('shopFull');if(sf)sf.innerHTML=html;
   renderShopOv();
 }
-// Remove shopping item from a specific view (clear due_date) but keep in shopping list
+// Remove shopping item from a specific view (clear due_date) but keep in shopping list and timeblocks
 function unscheduleShop(id){
   const s=st.shopping.find(x=>String(x.id)===String(id));if(!s)return;
   const prev=s.due_date;s.due_date=null;
-  // Also remove any linked timeblocks
-  const blksToKill=st.blocks.filter(b=>String(b.shopId)===String(id));
-  blksToKill.forEach(b=>sbDeleteBlock(b.id));
-  st.blocks=st.blocks.filter(b=>String(b.shopId)!==String(id));
   save();renderAll();
   pushUndo(()=>{s.due_date=prev;save();renderAll();sbReqNullable('PATCH','shopping_list',{due_date:prev||null},`?id=eq.${id}`);},'Removed shopping item from view');
   sbReqNullable('PATCH','shopping_list',{due_date:null},`?id=eq.${id}`);
