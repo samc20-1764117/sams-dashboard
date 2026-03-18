@@ -851,7 +851,7 @@ body.dark .rt-row:hover td{background:rgba(255,220,200,.06)}
     </div>
 
     <div class="mfield" id="recRepeatDayField">
-      <label id="recRepeatDayLabel">Task due every</label>
+      <label id="recRepeatDayLabel">Due on</label>
       <select id="recRepeatDay">
         <option value="Sunday">Sunday</option>
         <option value="Monday">Monday</option>
@@ -864,24 +864,23 @@ body.dark .rt-row:hover td{background:rgba(255,220,200,.06)}
     </div>
 
     <div class="mfield" id="recRepeatDateField" style="display:none">
-      <label>Monthly schedule</label>
+      <label>Due on</label>
       <div style="display:flex;gap:12px;margin-bottom:6px">
         <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-weight:400;font-size:12px"><input type="radio" name="recMonthlyMode" id="recMonthlyModeDom" value="dom" checked onchange="updateRecCadenceUI()"> Day of month</label>
-        <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-weight:400;font-size:12px"><input type="radio" name="recMonthlyMode" id="recMonthlyModeNwd" value="nwd" onchange="updateRecCadenceUI()"> Nth weekday</label>
+        <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-weight:400;font-size:12px"><input type="radio" name="recMonthlyMode" id="recMonthlyModeNwd" value="nwd" onchange="updateRecCadenceUI()"> Day of week</label>
       </div>
       <div id="recMonthlyDomField">
         <select id="recRepeatDate">
           <option value="1">1st</option><option value="2">2nd</option><option value="3">3rd</option><option value="4">4th</option><option value="5">5th</option><option value="6">6th</option><option value="7">7th</option><option value="8">8th</option><option value="9">9th</option><option value="10">10th</option><option value="11">11th</option><option value="12">12th</option><option value="13">13th</option><option value="14">14th</option><option value="15">15th</option><option value="16">16th</option><option value="17">17th</option><option value="18">18th</option><option value="19">19th</option><option value="20">20th</option><option value="21">21st</option><option value="22">22nd</option><option value="23">23rd</option><option value="24">24th</option><option value="25">25th</option><option value="26">26th</option><option value="27">27th</option><option value="28">28th</option>
         </select>
       </div>
-      <div id="recMonthlyNwdField" style="display:none;gap:6px">
-        <select id="recNthWeek"><option value="1">1st</option><option value="2">2nd</option><option value="3">3rd</option><option value="4">4th</option></select>
-        <select id="recNthDay"><option>Sunday</option><option>Monday</option><option>Tuesday</option><option>Wednesday</option><option>Thursday</option><option>Friday</option><option>Saturday</option></select>
+      <div id="recMonthlyNwdField" style="display:none">
+        <select id="recNthWd"><option>1st Sunday</option><option>1st Monday</option><option>1st Tuesday</option><option>1st Wednesday</option><option>1st Thursday</option><option>1st Friday</option><option>1st Saturday</option><option>2nd Sunday</option><option>2nd Monday</option><option>2nd Tuesday</option><option>2nd Wednesday</option><option>2nd Thursday</option><option>2nd Friday</option><option>2nd Saturday</option><option>3rd Sunday</option><option>3rd Monday</option><option>3rd Tuesday</option><option>3rd Wednesday</option><option>3rd Thursday</option><option>3rd Friday</option><option>3rd Saturday</option><option>4th Sunday</option><option>4th Monday</option><option>4th Tuesday</option><option>4th Wednesday</option><option>4th Thursday</option><option>4th Friday</option><option>4th Saturday</option></select>
       </div>
     </div>
 
     <div class="mfield">
-      <label>Scheduled to appear every</label>
+      <label>Adds on</label>
       <select id="recDayAdded">
         <option value="Sunday">Sunday</option>
         <option value="Monday">Monday</option>
@@ -966,7 +965,7 @@ body.dark .rt-row:hover td{background:rgba(255,220,200,.06)}
       </select>
     </div>
     <div class="mfield" id="recEditDayField">
-      <label id="recEditDayLabel">Task due every</label>
+      <label id="recEditDayLabel">Due on</label>
       <select id="recEditRepeatDay">
         <option>Sunday</option><option>Monday</option><option>Tuesday</option><option>Wednesday</option><option>Thursday</option><option>Friday</option><option>Saturday</option>
       </select>
@@ -975,14 +974,13 @@ body.dark .rt-row:hover td{background:rgba(255,220,200,.06)}
       <label>Monthly schedule</label>
       <div style="display:flex;gap:12px;margin-bottom:6px">
         <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-weight:400;font-size:12px"><input type="radio" name="recEditMonthlyMode" id="recEditMonthlyModeDom" value="dom" checked onchange="updateRecEditUI()"> Day of month</label>
-        <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-weight:400;font-size:12px"><input type="radio" name="recEditMonthlyMode" id="recEditMonthlyModeNwd" value="nwd" onchange="updateRecEditUI()"> Nth weekday</label>
+        <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-weight:400;font-size:12px"><input type="radio" name="recEditMonthlyMode" id="recEditMonthlyModeNwd" value="nwd" onchange="updateRecEditUI()"> Day of week</label>
       </div>
       <div id="recEditMonthlyDomField">
         <select id="recEditRepeatDate"></select>
       </div>
-      <div id="recEditMonthlyNwdField" style="display:none;gap:6px">
-        <select id="recEditNthWeek"><option value="1">1st</option><option value="2">2nd</option><option value="3">3rd</option><option value="4">4th</option></select>
-        <select id="recEditNthDay"><option>Sunday</option><option>Monday</option><option>Tuesday</option><option>Wednesday</option><option>Thursday</option><option>Friday</option><option>Saturday</option></select>
+      <div id="recEditMonthlyNwdField" style="display:none">
+        <select id="recEditNthWd"><option>1st Sunday</option><option>1st Monday</option><option>1st Tuesday</option><option>1st Wednesday</option><option>1st Thursday</option><option>1st Friday</option><option>1st Saturday</option><option>2nd Sunday</option><option>2nd Monday</option><option>2nd Tuesday</option><option>2nd Wednesday</option><option>2nd Thursday</option><option>2nd Friday</option><option>2nd Saturday</option><option>3rd Sunday</option><option>3rd Monday</option><option>3rd Tuesday</option><option>3rd Wednesday</option><option>3rd Thursday</option><option>3rd Friday</option><option>3rd Saturday</option><option>4th Sunday</option><option>4th Monday</option><option>4th Tuesday</option><option>4th Wednesday</option><option>4th Thursday</option><option>4th Friday</option><option>4th Saturday</option></select>
       </div>
     </div>
     <div class="mfield">
@@ -991,10 +989,6 @@ body.dark .rt-row:hover td{background:rgba(255,220,200,.06)}
         <option value="">— none —</option>
         <option>Sunday</option><option>Monday</option><option>Tuesday</option><option>Wednesday</option><option>Thursday</option><option>Friday</option><option>Saturday</option><option>Previous Sunday</option><option>Previous Monday</option><option>Previous Saturday</option><option>Same day</option>
       </select>
-    </div>
-    <div class="mfield">
-      <label>Due day</label>
-      <input id="recEditTaskDueDay" type="text" placeholder="e.g. Friday">
     </div>
     <div class="mfield">
       <label>Starting date</label>
@@ -3068,8 +3062,8 @@ function renderRtGroup(containerId, tasks, isWr, cadence){
   const wkKey=getWkKey(wkOff);
   const cadLabel={weekly:'Weekly',biweekly:'Biweekly',monthly:'Monthly',other:'Other'}[cadence]||cadence;
   const thead=isWr
-    ?`<tr><th style="width:120px;text-align:left">Name</th><th style="width:36px">Pup</th><th style="width:88px">Appears On</th><th style="width:88px">Adds On</th><th style="width:76px">Due Day</th><th style="width:84px">Starting</th><th style="width:40px"></th></tr>`
-    :`<tr><th style="width:120px;text-align:left">Name</th><th style="width:92px">${cadence==='monthly'?'Schedule':'Day of Week'}</th><th style="width:88px">Adds On</th><th style="width:76px">Due Day</th><th style="width:84px">Starting</th><th style="width:40px"></th></tr>`;
+    ?`<tr><th style="width:120px;text-align:left">Name</th><th style="width:36px">Pup</th><th style="width:96px">Due On</th><th style="width:96px">Adds On</th><th style="width:84px">Starting</th><th style="width:40px"></th></tr>`
+    :`<tr><th style="width:120px;text-align:left">Name</th><th style="width:96px">${cadence==='monthly'?'Due On':'Due On'}</th><th style="width:96px">Adds On</th><th style="width:84px">Starting</th><th style="width:40px"></th></tr>`;
   let tbody='';
   tasks.forEach(r=>{
     const rid=String(r.id);
@@ -3083,7 +3077,6 @@ function renderRtGroup(containerId, tasks, isWr, cadence){
         <td data-pup="1" style="text-align:center;cursor:pointer;font-size:13px" onclick="event.stopPropagation();rtTogglePup('${rid}')" ondblclick="event.stopPropagation()" title="Toggle pup related">${isPup?'🐾':''}</td>
         <td class="rt-editable rt-meta" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','appears_on_date')">${r.appears_on_date||'—'}</td>
         <td class="rt-editable rt-meta" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','day_added')">${r.day_added||'—'}</td>
-        <td class="rt-editable rt-meta" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','task_due_day')">${r.task_due_day||'—'}</td>
         <td class="rt-editable rt-meta" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','starting_date')">${r.starting_date?fmtD(r.starting_date):'—'}</td>`;
     } else {
       const dayField='appears_on_date';
@@ -3091,7 +3084,6 @@ function renderRtGroup(containerId, tasks, isWr, cadence){
       tds=`<td class="rt-editable">${esc(r.name)}</td>
         <td class="rt-editable rt-meta" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','${dayField}')">${dayDisp}</td>
         <td class="rt-editable rt-meta" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','day_added')">${r.day_added||'—'}</td>
-        <td class="rt-editable rt-meta" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','task_due_day')">${r.task_due_day||'—'}</td>
         <td class="rt-editable rt-meta" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','starting_date')">${r.starting_date?fmtD(r.starting_date):'—'}</td>`;
     }
     tbody+=`<tr class="rt-row${isDone?' done':''}" id="ti-rt-${rid}" onclick="selTask(event,'${virtId}')" ondblclick="if(!event.target.closest('[data-pup]')&&!event.target.closest('.delbtn')&&!event.target.closest('.btn-xs')){event.stopPropagation();openRecEditModal('${rid}');}" oncontextmenu="showCtx(event,'${virtId}',true,'${rid}')">
@@ -3118,7 +3110,7 @@ function rtDblEdit(td, rid, field){
   const DAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
   const DAY_ADDED=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Previous Sunday','Previous Monday','Previous Saturday','Same day'];
   let widget;
-  if(field==='name'||field==='task_due_day'){
+  if(field==='name'){
     widget=document.createElement('input');widget.type='text';widget.value=val;
   } else if(field==='appears_on_date'){
     if(r.cadence==='monthly'){
@@ -3211,7 +3203,6 @@ async function duplicateRecDirect(rid){
   const payload={name:dupName,is_weekly_reset:r.is_weekly_reset||false,cadence:r.cadence||'weekly',starting_date:todayDs};
   if(r.appears_on_date)payload.appears_on_date=r.appears_on_date;
   if(r.day_added)payload.day_added=r.day_added;
-  if(r.task_due_day)payload.task_due_day=r.task_due_day;
   const sv=await sbReq('POST','recurring_tasks',payload);
   if(sv&&sv[0]){
     const idx=st.recurring.findIndex(x=>x.id===tempId);
@@ -3304,7 +3295,7 @@ function updateRecCadenceUI(){
   const isMonthly=cad==='monthly';
   document.getElementById('recRepeatDayField').style.display=isMonthly?'none':'block';
   document.getElementById('recRepeatDateField').style.display=isMonthly?'block':'none';
-  document.getElementById('recRepeatDayLabel').textContent=cad==='biweekly'?'Task due every (every 2nd)':'Task due every';
+  document.getElementById('recRepeatDayLabel').textContent=cad==='biweekly'?'Due on (every 2nd)':'Due on';
   if(isMonthly){
     const mode=document.querySelector('input[name="recMonthlyMode"]:checked')?.value||'dom';
     document.getElementById('recMonthlyDomField').style.display=mode==='dom'?'block':'none';
@@ -3320,7 +3311,7 @@ async function saveRecModal(){
   let appearsOn;
   if(isMonthly){
     const mode=document.querySelector('input[name="recMonthlyMode"]:checked')?.value||'dom';
-    if(mode==='nwd'){const nth=document.getElementById('recNthWeek').value;const day=document.getElementById('recNthDay').value;const ord={1:'1st',2:'2nd',3:'3rd',4:'4th'};appearsOn=`${ord[nth]||nth+'th'} ${day}`;}
+    if(mode==='nwd'){appearsOn=document.getElementById('recNthWd').value;}
     else{appearsOn=document.getElementById('recRepeatDate').value||'1';}
   } else {
     appearsOn=document.getElementById('recRepeatDay').value||'Friday';
@@ -3860,8 +3851,7 @@ document.addEventListener('keydown',async e=>{
         const payload={name:r.name};
         if(r.is_weekly_reset!==undefined)payload.is_weekly_reset=r.is_weekly_reset;
         if(r.cadence)payload.cadence=r.cadence;
-        if(r.task_due_day)payload.task_due_day=r.task_due_day;
-        if(r.starting_date)payload.starting_date=r.starting_date;
+              if(r.starting_date)payload.starting_date=r.starting_date;
         if(r.appears_on_date)payload.appears_on_date=r.appears_on_date;
         const sv=await sbReq('POST','recurring_tasks',payload);
         st.recurring.push(sv&&sv[0]?{...sv[0],_doneByWk:{},_done:false}:r);
@@ -3902,8 +3892,7 @@ document.addEventListener('keydown',async e=>{
         if(t.appears_on_date)payload.appears_on_date=t.appears_on_date;
         if(t.repeat_date)payload.repeat_date=t.repeat_date;
         if(t.day_added)payload.day_added=t.day_added;
-        if(t.task_due_day)payload.task_due_day=t.task_due_day;
-        const sv=await sbReq('POST','recurring_tasks',payload);
+              const sv=await sbReq('POST','recurring_tasks',payload);
         if(sv&&sv[0]){const idx=st.recurring.findIndex(x=>x.id===tempId);if(idx>-1)st.recurring[idx]={...sv[0],_doneByWk:{},_done:false,_dateOverrides:{}};}
         save();renderRecOv();renderWeeklyPage();renderToday();renderWkSummary();renderWkCal();
         pushUndo(()=>{st.recurring=st.recurring.filter(x=>x.id!==tempId&&!(sv&&sv[0]&&x.id===sv[0].id));save();renderRecOv();renderWeeklyPage();renderToday();renderWkSummary();renderWkCal();},'Duplicated recurring');
@@ -3996,7 +3985,7 @@ function updateRecEditUI(){
   const pf=document.getElementById('recEditPupField');if(pf)pf.style.display=isWr?'block':'none';
   document.getElementById('recEditDayField').style.display=isMonthly?'none':'block';
   document.getElementById('recEditDateField').style.display=isMonthly?'block':'none';
-  document.getElementById('recEditDayLabel').textContent=cad==='biweekly'?'Task due every (every 2nd)':'Task due every';
+  document.getElementById('recEditDayLabel').textContent=cad==='biweekly'?'Due on (every 2nd)':'Due on';
   if(isMonthly){
     const mode=document.querySelector('input[name="recEditMonthlyMode"]:checked')?.value||'dom';
     document.getElementById('recEditMonthlyDomField').style.display=mode==='dom'?'block':'none';
@@ -4023,8 +4012,7 @@ function openRecEditModal(rid){
       rdSel.value=String(domNum);
     } else if(nwdMatch){
       document.getElementById('recEditMonthlyModeNwd').checked=true;
-      document.getElementById('recEditNthWeek').value=nwdMatch[1];
-      document.getElementById('recEditNthDay').value=nwdMatch[2].charAt(0).toUpperCase()+nwdMatch[2].slice(1).toLowerCase();
+      document.getElementById('recEditNthWd').value=sched;
     } else {
       document.getElementById('recEditMonthlyModeDom').checked=true;rdSel.value='1';
     }
@@ -4033,7 +4021,6 @@ function openRecEditModal(rid){
   }
   document.getElementById('recEditStartDate').value=r.starting_date||'';
   document.getElementById('recEditDayAdded').value=r.day_added||'';
-  document.getElementById('recEditTaskDueDay').value=r.task_due_day||'';
   const pr=document.getElementById('recEditPupRelated');if(pr)pr.checked=!!(r.pup_related===true||r.pup_related==='true');
   updateRecEditUI();
   document.getElementById('recEditModal').classList.add('open');
@@ -4050,23 +4037,21 @@ function saveRecEdit(){
   let appearsOn;
   if(isMonthly){
     const mode=document.querySelector('input[name="recEditMonthlyMode"]:checked')?.value||'dom';
-    if(mode==='nwd'){const nth=document.getElementById('recEditNthWeek').value;const day=document.getElementById('recEditNthDay').value;const ord={1:'1st',2:'2nd',3:'3rd',4:'4th'};appearsOn=`${ord[nth]||nth+'th'} ${day}`;}
+    if(mode==='nwd'){appearsOn=document.getElementById('recEditNthWd').value;}
     else{appearsOn=document.getElementById('recEditRepeatDate').value||'1';}
   } else {
     appearsOn=document.getElementById('recEditRepeatDay').value;
   }
   const startDate=document.getElementById('recEditStartDate').value||null;
   const dayAdded=document.getElementById('recEditDayAdded').value||null;
-  const taskDueDay=document.getElementById('recEditTaskDueDay').value.trim()||null;
   const pupRelated=isWr&&!!(document.getElementById('recEditPupRelated')?.checked);
   closeMod('recEditModal');
-  const prev={name:r.name,is_weekly_reset:r.is_weekly_reset,cadence:r.cadence,appears_on_date:r.appears_on_date,starting_date:r.starting_date,day_added:r.day_added,task_due_day:r.task_due_day,pup_related:r.pup_related};
-  r.name=name;r.is_weekly_reset=isWr;r.cadence=cadence;r.appears_on_date=appearsOn;r.starting_date=startDate;r.day_added=dayAdded;r.task_due_day=taskDueDay;r.pup_related=pupRelated;
+  const prev={name:r.name,is_weekly_reset:r.is_weekly_reset,cadence:r.cadence,appears_on_date:r.appears_on_date,starting_date:r.starting_date,day_added:r.day_added,pup_related:r.pup_related};
+  r.name=name;r.is_weekly_reset=isWr;r.cadence=cadence;r.appears_on_date=appearsOn;r.starting_date=startDate;r.day_added=dayAdded;r.pup_related=pupRelated;
   renderRecOv();renderWeeklyPage();renderWkSummary();renderWkCal();
   const patch={name,is_weekly_reset:isWr,cadence,appears_on_date:appearsOn,pup_related:pupRelated};
   if(startDate)patch.starting_date=startDate;
   if(dayAdded)patch.day_added=dayAdded;
-  if(taskDueDay)patch.task_due_day=taskDueDay;
   sbReq('PATCH','recurring_tasks',patch,recQs(rid));
   pushUndo(()=>{Object.assign(r,prev);renderRecOv();renderWeeklyPage();},'Edited recurring');
 }
@@ -4122,8 +4107,7 @@ async function ctxDoDuplicate(){
     if(r.appears_on_date)payload.appears_on_date=r.appears_on_date;
     if(r.repeat_date)payload.repeat_date=r.repeat_date;
     if(r.day_added)payload.day_added=r.day_added;
-    if(r.task_due_day)payload.task_due_day=r.task_due_day;
-    const sv=await sbReq('POST','recurring_tasks',payload);
+      const sv=await sbReq('POST','recurring_tasks',payload);
     if(sv&&sv[0]){
       // Replace temp with real DB entry
       const idx=st.recurring.findIndex(x=>x.id===tempId);
