@@ -712,7 +712,7 @@ body.dark .rt-row:hover td{background:rgba(255,220,200,.06)}
 </div>
 
 <!-- RECURRING TASKS -->
-<div class="page" id="page-weekly" style="padding:clamp(12px,3vw,56px);padding-top:48px">
+<div class="page" id="page-weekly" style="padding:14px 20px 20px 20px;padding-top:48px">
   <div class="ov-topbar">
     <span class="ov-topbar-label">Recurring Tasks</span>
     <span class="ov-topbar-dot"></span>
@@ -3050,7 +3050,7 @@ function renderRtGroup(containerId, tasks, isWr, cadence){
   const wkKey=getWkKey(wkOff);
   const cadLabel={weekly:'Weekly',biweekly:'Biweekly',monthly:'Monthly',other:'Other'}[cadence]||cadence;
   const thead=isWr
-    ?`<tr><th style="width:22px"></th><th>Name</th><th style="width:28px" title="Pup related">🐾</th><th>Starting</th><th style="width:52px"></th></tr>`
+    ?`<tr><th style="width:22px"></th><th>Name</th><th style="width:28px" title="Pup">🐾</th><th>Appears On</th><th>Adds On</th><th>Due Day</th><th>Starting</th><th style="width:52px"></th></tr>`
     :`<tr><th>Name</th><th>${cadence==='monthly'?'Day of Month':'Day of Week'}</th><th>Adds On</th><th>Due Day</th><th>Starting</th><th style="width:52px"></th></tr>`;
   let tbody='';
   tasks.forEach(r=>{
@@ -3062,13 +3062,16 @@ function renderRtGroup(containerId, tasks, isWr, cadence){
     let tds='';
     if(isWr){
       tds=`<td onclick="event.stopPropagation()"><label class="chk-wrap" onmousedown="event.stopPropagation()"><input type="checkbox" class="chk"${isDone?' checked':''} onchange="togRec('${rid}',this.checked)"></label></td>
-        <td class="rt-editable" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','name')" onclick="selTask(event,'${virtId}')">${esc(r.name)}</td>
+        <td class="rt-editable" ondblclick="event.stopPropagation();openRecEditModal(${rid})" onclick="selTask(event,'${virtId}')">${esc(r.name)}</td>
         <td style="text-align:center;cursor:pointer;font-size:13px" onclick="event.stopPropagation();rtTogglePup('${rid}')" title="Toggle pup related">${isPup?'🐾':''}</td>
+        <td class="rt-editable rt-meta" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','appears_on_date')">${r.appears_on_date||'—'}</td>
+        <td class="rt-editable rt-meta" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','day_added')">${r.day_added||'—'}</td>
+        <td class="rt-editable rt-meta" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','task_due_day')">${r.task_due_day||'—'}</td>
         <td class="rt-editable rt-meta" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','starting_date')">${r.starting_date?fmtD(r.starting_date):'—'}</td>`;
     } else {
       const dayField=cadence==='monthly'?'repeat_date':'appears_on_date';
       const dayDisp=cadence==='monthly'?(r.repeat_date||'—'):(r.appears_on_date||'—');
-      tds=`<td class="rt-editable" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','name')" onclick="selTask(event,'${virtId}')">${esc(r.name)}</td>
+      tds=`<td class="rt-editable" ondblclick="event.stopPropagation();openRecEditModal(${rid})" onclick="selTask(event,'${virtId}')">${esc(r.name)}</td>
         <td class="rt-editable rt-meta" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','${dayField}')">${dayDisp}</td>
         <td class="rt-editable rt-meta" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','day_added')">${r.day_added||'—'}</td>
         <td class="rt-editable rt-meta" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','task_due_day')">${r.task_due_day||'—'}</td>
@@ -3081,23 +3084,13 @@ function renderRtGroup(containerId, tasks, isWr, cadence){
   });
   const tableHtml=tasks.length
     ?`<table class="rt-tbl"><thead>${thead}</thead><tbody>${tbody}</tbody></table>`
-    :`<div style="padding:5px 4px;font-size:11px;color:var(--subtle);font-style:italic">None</div>`;
-  let qaExtras='';
-  if(isWr){
-    qaExtras=`<label title="Pup related" style="display:flex;align-items:center;gap:2px;font-size:11px;cursor:pointer;flex-shrink:0;opacity:.7"><input type="checkbox" id="qa-pup-${containerId}" style="width:12px;height:12px;accent-color:var(--accent)">🐾</label>`;
-  } else {
-    if(cadence==='monthly')
-      qaExtras=`<select class="asel" id="qa-day-${containerId}" style="flex:0;width:68px">${Array.from({length:28},(_,i)=>`<option value="${i+1}">${i+1}</option>`).join('')}</select>`;
-    else if(cadence==='weekly'||cadence==='biweekly')
-      qaExtras=`<select class="asel" id="qa-day-${containerId}" style="flex:0;width:90px"><option>Sunday</option><option>Monday</option><option>Tuesday</option><option>Wednesday</option><option>Thursday</option><option selected>Friday</option><option>Saturday</option></select>`;
-  }
-  el.innerHTML=`<div style="margin-bottom:18px">
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:0 2px;margin-bottom:5px">
-      <span style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)">${cadLabel}${tasks.length?' <span style="opacity:.55;font-weight:400">· '+tasks.length+'</span>':''}</span>
+    :`<div style="padding:6px 4px;font-size:11px;color:var(--subtle);font-style:italic">None</div>`;
+  el.innerHTML=`<div class="card" style="padding:10px 12px">
+    <div class="ch" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)">${cadLabel}${tasks.length?' <span style="opacity:.5;font-weight:400">· '+tasks.length+'</span>':''}</span>
       <button class="btn-plus" style="padding:1px 7px;font-size:12px" onclick="openRecModalForSection('${isWr?'weekly_reset':'scheduled'}','${cadence}')">+</button>
     </div>
     ${tableHtml}
-    <div class="arow" style="margin-top:3px;padding:3px 4px"><input class="ainput" id="qa-${containerId}" placeholder="Quick add…" onkeydown="if(event.key==='Enter')addRecDirect(this,${isWr},'${cadence}')">${qaExtras}<button class="btn btn-ghost btn-xs" onclick="addRecDirect(document.getElementById('qa-${containerId}'),${isWr},'${cadence}')">+</button></div>
   </div>`;
 }
 
