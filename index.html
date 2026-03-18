@@ -714,9 +714,9 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
   <input id="nsN" style="display:none"><input id="nsS" style="display:none">
   <datalist id="storeListFull"><option value="HEB"></option><option value="Ikea"></option><option value="Online"></option><option value="Other"></option></datalist>
 
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;height:calc(100vh - 112px);min-height:0">
+  <div id="rt-outer" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;height:calc(100vh - 112px);min-height:0">
     <!-- Col 1: Weekly Reset Recurring -->
-    <div style="min-height:0;display:flex;flex-direction:column">
+    <div id="rt-col-wr" style="min-height:0;display:flex;flex-direction:column">
       <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px;padding:0 2px;flex-shrink:0">Weekly Reset Recurring</div>
       <div style="flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:14px">
         <div id="rt-wr-weekly"></div>
@@ -727,7 +727,7 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
     </div>
 
     <!-- Col 2: Non Weekly Reset Recurring -->
-    <div style="min-height:0;display:flex;flex-direction:column">
+    <div id="rt-col-sch" style="min-height:0;display:flex;flex-direction:column">
       <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px;padding:0 2px;flex-shrink:0">Non Weekly Reset Recurring</div>
       <div style="flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:14px">
         <div id="rt-sch-weekly"></div>
@@ -2940,6 +2940,14 @@ function renderRecurringPage(){
     renderRtGroup('rt-wr-'+cad, isOther?wrTasks.filter(r=>!KNOWN.includes(r.cadence)):wrTasks.filter(r=>r.cadence===cad), true, cad);
     renderRtGroup('rt-sch-'+cad, isOther?schTasks.filter(r=>!KNOWN.includes(r.cadence)):schTasks.filter(r=>r.cadence===cad), false, cad);
   });
+  const wrEmpty=wrTasks.length===0;
+  const schEmpty=schTasks.length===0;
+  const colWr=document.getElementById('rt-col-wr');
+  const colSch=document.getElementById('rt-col-sch');
+  const outer=document.getElementById('rt-outer');
+  if(colWr)colWr.style.display=wrEmpty?'none':'flex';
+  if(colSch)colSch.style.display=schEmpty?'none':'flex';
+  if(outer)outer.style.gridTemplateColumns=(wrEmpty||schEmpty)?'1fr':'1fr 1fr';
 }
 
 function renderRtGroup(containerId, tasks, isWr, cadence){
@@ -2968,6 +2976,7 @@ function renderRtGroup(containerId, tasks, isWr, cadence){
       :`<span style="width:14px;flex-shrink:0"></span>`;
     rowsHtml+=`<div class="ti${isDone?' done':''}" id="ti-rt-${rid}" style="cursor:pointer" onclick="selTask(event,'${virtId}')" ondblclick="if(!event.target.closest('.chk-wrap')&&!event.target.closest('.delbtn')){event.stopPropagation();clearSelection();openRecEditModal('${rid}')}" oncontextmenu="showCtx(event,'${virtId}',true,'${rid}')">${chkOrSpacer}<span class="tn"${isDone?' style="text-decoration:line-through;color:var(--muted)"':''}>${safeName}</span>${fields}<button class="btn btn-xs btn-ghost" style="flex-shrink:0;padding:1px 5px;font-size:10px;opacity:.65" onclick="event.stopPropagation();duplicateRecDirect('${rid}')" title="Duplicate">⧉</button><button class="delbtn" onclick="event.stopPropagation();delRec('${rid}')">✕</button></div>`;
   });
+  if(!tasks.length){el.innerHTML='';return;}
   if(!rowsHtml) rowsHtml=`<div style="padding:8px 12px;font-size:11px;color:var(--subtle);font-style:italic">None yet</div>`;
   const sectionLbl=isWr?'Weekly Reset':'Scheduled';
   let qaExtras='';
