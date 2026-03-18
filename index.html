@@ -426,14 +426,15 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 .rt-tbl{width:100%;border-collapse:collapse;font-size:11.5px;table-layout:fixed}
 .rt-tbl thead tr{border-bottom:1px solid rgba(210,205,228,.18)}
 .rt-tbl th{text-align:center;padding:4px 8px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
-.rt-tbl td{padding:4px 8px;vertical-align:middle;border-bottom:1px solid rgba(210,205,228,.06);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rt-tbl td{padding:4px 8px;vertical-align:middle;border-bottom:1px solid rgba(210,205,228,.06);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;position:relative}
+.rt-tbl td:last-child{text-align:right}
 .rt-tbl .rt-meta{font-size:10.5px;color:var(--muted)}
 .rt-editable{cursor:text}.rt-editable:hover{background:rgba(255,255,255,.45);border-radius:4px}
 .rt-edit-input{width:100%;max-width:100%;box-sizing:border-box;font-size:11px;background:rgba(255,255,255,.95);border:1px solid var(--accent);border-radius:4px;padding:1px 5px;font-family:inherit;color:var(--text);outline:none}
 .rt-row{cursor:pointer;transition:background .1s}
 .rt-row:hover td{background:rgba(255,237,213,.3)}
 body.dark .rt-row:hover td{background:rgba(255,220,200,.06)}
-.rt-tbl .delbtn{position:static}
+.rt-tbl .delbtn{position:absolute;right:4px;top:50%;transform:translateY(-50%)}
 .rt-row:hover .delbtn{opacity:1}
 .rt-row.sel-row td{background:var(--sel-bg,rgba(130,115,100,.1))!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.7)}
 .rt-row.done .tn{text-decoration:line-through;color:var(--muted)}
@@ -3067,8 +3068,8 @@ function renderRtGroup(containerId, tasks, isWr, cadence){
   const wkKey=getWkKey(wkOff);
   const cadLabel={weekly:'Weekly',biweekly:'Biweekly',monthly:'Monthly',other:'Other'}[cadence]||cadence;
   const thead=isWr
-    ?`<tr><th style="width:120px;text-align:left">Name</th><th style="width:28px" title="Pup">🐾</th><th style="width:88px">Appears On</th><th style="width:88px">Adds On</th><th style="width:76px">Due Day</th><th style="width:84px">Starting</th><th style="width:52px"></th></tr>`
-    :`<tr><th style="width:120px;text-align:left">Name</th><th style="width:92px">${cadence==='monthly'?'Schedule':'Day of Week'}</th><th style="width:88px">Adds On</th><th style="width:76px">Due Day</th><th style="width:84px">Starting</th><th style="width:52px"></th></tr>`;
+    ?`<tr><th style="width:120px;text-align:left">Name</th><th style="width:36px">Pup</th><th style="width:88px">Appears On</th><th style="width:88px">Adds On</th><th style="width:76px">Due Day</th><th style="width:84px">Starting</th><th style="width:40px"></th></tr>`
+    :`<tr><th style="width:120px;text-align:left">Name</th><th style="width:92px">${cadence==='monthly'?'Schedule':'Day of Week'}</th><th style="width:88px">Adds On</th><th style="width:76px">Due Day</th><th style="width:84px">Starting</th><th style="width:40px"></th></tr>`;
   let tbody='';
   tasks.forEach(r=>{
     const rid=String(r.id);
@@ -3103,8 +3104,8 @@ function renderRtGroup(containerId, tasks, isWr, cadence){
     :`<div style="padding:6px 4px;font-size:11px;color:var(--subtle);font-style:italic">None</div>`;
   el.innerHTML=`<div class="card" style="padding:10px 12px;box-shadow:none">
     <div class="ch" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-      <span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)">${cadLabel}${tasks.length?' <span style="opacity:.5;font-weight:400">· '+tasks.length+'</span>':''}</span>
-      <button class="btn-plus" style="padding:1px 7px;font-size:12px" onclick="openRecModalForSection('${isWr?'weekly_reset':'scheduled'}','${cadence}')">+</button>
+      <span style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--subtle)">${cadLabel}${tasks.length?' <span style="opacity:.5;font-weight:400">· '+tasks.length+'</span>':''}</span>
+      <button class="btn-plus" style="padding:0px 6px;font-size:11px;line-height:1.4" onclick="openRecModalForSection('${isWr?'weekly_reset':'scheduled'}','${cadence}')">+</button>
     </div>
     ${tableHtml}
   </div>`;
