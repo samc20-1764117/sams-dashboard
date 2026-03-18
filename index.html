@@ -1734,7 +1734,7 @@ function tRowTodayVirt(t,tbArrow=false,noColor=false){
     <span class="tn">${t.name}</span>
     <span class="cpill" style="background:${ps.bg};color:${ps.t};border-color:${ps.b}">Recurring</span>
     ${tbArrow?'<span class="tb-arrow">›</span>':''}
-    <button class="delbtn" onclick="event.stopPropagation();togRecVirt('${t._recId}',true,'${t._wkKey||getWkKey(wkOff)}')">✕</button>
+    <button class="delbtn" onclick="event.stopPropagation();${t._isWrec?`unscheduleWRec('${t._recId}','${t._wkKey||getWkKey(wkOff)}')`:`togRecVirt('${t._recId}',true,'${t._wkKey||getWkKey(wkOff)}')`}">✕</button>
   </div>`;
 }
 
@@ -2325,7 +2325,7 @@ function renderRecOv(){
     nm.textContent=r.name;
     const del=document.createElement('button');del.className='delbtn';del.textContent='✕';
     del.addEventListener('mousedown',e=>e.stopPropagation());
-    del.addEventListener('click',function(e){e.stopPropagation();togRecVirt(rid,true,getWkKey(wkOff));});
+    del.addEventListener('click',function(e){e.stopPropagation();unscheduleWRec(rid,getWkKey(wkOff));});
     row.addEventListener('click',e=>selTask(e,virtId));
     row.addEventListener('dblclick',function(e){
       if(e.target.closest('button'))return;
@@ -2406,7 +2406,7 @@ function tRowWk(t){
       <span class="tn">${t.name}</span>
       <span class="cpill" style="background:${s.bg};color:${s.t};border-color:${s.b}">Recurring</span>
       <span class="dlbl">${fmtD(t.due_date)}</span>
-      <button class="delbtn" onclick="event.stopPropagation();togRecVirt('${t._recId}',true,'${t._wkKey||getWkKey(wkOff)}')">✕</button>
+      <button class="delbtn" onclick="event.stopPropagation();${t._isWrec?`unscheduleWRec('${t._recId}','${t._wkKey||getWkKey(wkOff)}')`:`togRecVirt('${t._recId}',true,'${t._wkKey||getWkKey(wkOff)}')`}">✕</button>
     </div>`;
   }
   return tRow(t,{cat:true,due:true,drag:true});
@@ -3466,6 +3466,15 @@ function unscheduleShop(id){
   pushUndo(()=>{s.due_date=prev;save();renderAll();sbReqNullable('PATCH','shopping_list',{due_date:prev||null},`?id=eq.${id}`);},'Removed shopping item from view');
   sbReqNullable('PATCH','shopping_list',{due_date:null},`?id=eq.${id}`);
 }
+// Remove weekly reset task from a view by clearing its date override — keeps task active in weekly reset overview
+function unscheduleWRec(rid,wkKey){
+  const r=st.recurring.find(x=>String(x.id)===String(rid));if(!r||!r._dateOverrides)return;
+  const prev=r._dateOverrides[wkKey];
+  delete r._dateOverrides[wkKey];
+  save();renderAll();
+  pushUndo(()=>{if(!r._dateOverrides)r._dateOverrides={};r._dateOverrides[wkKey]=prev;save();renderAll();sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},recQs(rid));},'Removed from view');
+  sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},recQs(rid));
+}
 async function togShop(id,done){
   const s=st.shopping.find(x=>String(x.id)===String(id));if(!s)return;const prev=s.done;s.done=done;
   st.blocks.filter(b=>String(b.shopId)===String(id)).forEach(b=>b._done=done);
@@ -4272,7 +4281,7 @@ function ctxDoDelete(){
   hideCtx();
   // If triggered from a timeblock, remove from day only (never delete the underlying item)
   if(blkId){delBlock(blkId);return;}
-  if(sId){unscheduleShop(sId);}else if(isRec&&rId){togRecVirt(rId,true,getWkKey(wkOff));}else{delTask(id,null);}
+  if(sId){unscheduleShop(sId);}else if(isRec&&rId){const _cr=st.recurring.find(x=>String(x.id)===String(rId));const _isWr=_cr&&(_cr.is_weekly_reset===true||_cr.is_weekly_reset==='true');if(_isWr){unscheduleWRec(rId,getWkKey(wkOff));}else{togRecVirt(rId,true,getWkKey(wkOff));}}else{delTask(id,null);}
 }
 
 // ══════════════════════════════════════════════════════════
