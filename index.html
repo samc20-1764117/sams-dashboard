@@ -781,6 +781,7 @@ body.dark .rt-row:hover td{background:rgba(255,220,200,.06)}
     <div class="mfield"><label>Category</label><select id="tCat"><option value="Home">Home</option><option value="My work">My work</option><option value="Work">Work</option><option value="Social">Social</option><option value="Long term">Long term</option></select></div>
     <div class="mfield"><label>Due date <span style="opacity:.45;font-weight:400">(optional)</span></label><div style="display:flex;gap:4px;align-items:center"><input id="tDue" type="date" style="flex:1" onkeydown="if(event.key===&#39;Enter&#39;)saveTModal()"><button type="button" class="btn btn-ghost btn-xs" onclick="document.getElementById(&#39;tDue&#39;).value=&#39;&#39;" title="Clear date" style="flex-shrink:0;padding:4px 7px;font-size:11px">✕ Clear</button></div></div>
     <div class="mimp-row"><input type="checkbox" id="tImp" style="width:14px;height:14px;cursor:pointer;accent-color:#eab308"><label for="tImp">⭐ Mark as important</label></div>
+    <div class="mfield"><label>Notes <span style="opacity:.45;font-weight:400">(optional)</span></label><textarea id="tNotes" placeholder="Add notes…" style="resize:vertical;min-height:52px;width:100%;font-family:inherit;font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,.6);color:var(--text);outline:none"></textarea></div>
     <div class="mact"><button class="btn btn-ghost" onclick="closeMod(&#39;tModal&#39;)">Cancel</button><button class="btn btn-dark" id="tSaveBtn" onclick="saveTModal()">Add</button></div>
   </div>
 </div>
@@ -2985,7 +2986,7 @@ function openTModal(cat=''){
   tMode='add';tId=null;
   document.getElementById('tMTitle').textContent='Add Task';document.getElementById('tSaveBtn').textContent='Add';
   document.getElementById('tName').value='';document.getElementById('tCat').value=cat||'Home';
-  document.getElementById('tDue').value=tPreDate||'';document.getElementById('tImp').checked=false;tPreDate=null;
+  document.getElementById('tDue').value=tPreDate||'';document.getElementById('tImp').checked=false;document.getElementById('tNotes').value='';tPreDate=null;
   document.getElementById('tModal').classList.add('open');setTimeout(()=>document.getElementById('tName').focus(),80);
 }
 function openEditTask(id){
@@ -2993,7 +2994,7 @@ function openEditTask(id){
   tMode='edit';tId=id;
   document.getElementById('tMTitle').textContent='Edit Task';document.getElementById('tSaveBtn').textContent='Save';
   document.getElementById('tName').value=t.name;document.getElementById('tCat').value=t.category||'Home';
-  document.getElementById('tDue').value=t.due_date||'';document.getElementById('tImp').checked=!!t.important;
+  document.getElementById('tDue').value=t.due_date||'';document.getElementById('tImp').checked=!!t.important;document.getElementById('tNotes').value=t.notes||'';
   document.getElementById('tModal').classList.add('open');
 }
 async function saveTModal(){
