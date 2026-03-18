@@ -2224,6 +2224,23 @@ function dropOnTodayList(e){
   e.preventDefault();
   document.getElementById('todList').classList.remove('drop-here');
   const ds=d2s(getDayDate(dayOff));
+  if(dragId.startsWith('wrec::')||dragId.startsWith('rec::')){
+    const recId=dragId.startsWith('wrec::')?dragId.split('::')[1]:dragId.split('::')[1];
+    const r=st.recurring.find(x=>String(x.id)===String(recId));
+    if(r){
+      const wkKey=getWkKey(wkOff);
+      if(!r._dateOverrides)r._dateOverrides={};
+      const prev=r._dateOverrides[wkKey];
+      r._dateOverrides[wkKey]=ds;
+      dragId=null;save();renderAll();
+      sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},recQs(r.id));
+      pushUndo(()=>{
+        if(prev)r._dateOverrides[wkKey]=prev;else delete r._dateOverrides[wkKey];
+        save();renderAll();sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},recQs(r.id));
+      },'Assigned recurring to today');
+    }
+    dragId=null;return;
+  }
   if(dragId.startsWith('shop::')){
     const shopId=dragId.split('::')[1];
     const s=st.shopping.find(x=>String(x.id)===String(shopId));
