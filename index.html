@@ -423,17 +423,19 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 .ctx-danger:hover{background:rgba(239,68,68,.08)!important}
 .ctx-divider{height:1px;background:rgba(210,205,228,.3);margin:3px 4px}
 /* Recurring tasks table */
-.rt-tbl{width:100%;border-collapse:collapse;font-size:11px}
-.rt-tbl thead tr{border-bottom:1px solid var(--border)}
-.rt-tbl th{text-align:left;padding:5px 8px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
-.rt-tbl td{padding:5px 8px;vertical-align:middle;border-bottom:1px solid rgba(210,205,228,.08)}
-.rt-tbl .rt-meta{font-size:10px;color:var(--subtle);white-space:nowrap}
+.rt-tbl{width:100%;border-collapse:collapse;font-size:11.5px}
+.rt-tbl thead tr{border-bottom:1px solid rgba(210,205,228,.18)}
+.rt-tbl th{text-align:left;padding:4px 8px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.rt-tbl td{padding:4px 8px;vertical-align:middle;border-bottom:1px solid rgba(210,205,228,.06)}
+.rt-tbl .rt-meta{font-size:10.5px;color:var(--muted);white-space:nowrap}
+.rt-editable{cursor:text}.rt-editable:hover{background:rgba(255,255,255,.45);border-radius:4px}
+.rt-edit-input{width:100%;min-width:70px;font-size:11px;background:rgba(255,255,255,.95);border:1px solid var(--accent);border-radius:4px;padding:1px 5px;font-family:inherit;color:var(--text);outline:none}
 .rt-row{cursor:pointer;transition:background .1s}
-.rt-row:hover td{background:rgba(255,237,213,.35)}
+.rt-row:hover td{background:rgba(255,237,213,.3)}
 body.dark .rt-row:hover td{background:rgba(255,220,200,.06)}
 .rt-row.sel-row td{background:var(--sel-bg,rgba(130,115,100,.1))!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.7)}
 .rt-row.done .tn{text-decoration:line-through;color:var(--muted)}
-.rt-row td:last-child{width:50px;text-align:right;white-space:nowrap}
+.rt-row td:last-child{width:52px;text-align:right;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -3047,38 +3049,39 @@ function renderRtGroup(containerId, tasks, isWr, cadence){
   const el=document.getElementById(containerId);if(!el)return;
   const wkKey=getWkKey(wkOff);
   const cadLabel={weekly:'Weekly',biweekly:'Biweekly',monthly:'Monthly',other:'Other'}[cadence]||cadence;
-
-  // Table header columns
-  const hdrCols=isWr
-    ?`<th style="width:18px"></th><th>Name</th><th>Starting</th><th></th>`
-    :`<th>Name</th><th>${cadence==='monthly'?'Day of Month':'Day of Week'}</th><th>Adds On</th><th>Due Day</th><th>Starting</th><th></th>`;
-
+  const thead=isWr
+    ?`<tr><th style="width:22px"></th><th>Name</th><th style="width:28px" title="Pup related">🐾</th><th>Starting</th><th style="width:52px"></th></tr>`
+    :`<tr><th>Name</th><th>${cadence==='monthly'?'Day of Month':'Day of Week'}</th><th>Adds On</th><th>Due Day</th><th>Starting</th><th style="width:52px"></th></tr>`;
   let tbody='';
   tasks.forEach(r=>{
     const rid=String(r.id);
     const isDone=isWr&&!!(r._doneByWk&&r._doneByWk[wkKey]);
     const virtId='rec-virt-'+rid;
-    const safeName=r.name.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-    const chkTd=isWr
-      ?`<td><label class="chk-wrap" onclick="event.stopPropagation()" onmousedown="event.stopPropagation()"><input type="checkbox" class="chk"${isDone?' checked':''} onchange="togRec('${rid}',this.checked)"></label></td>`
-      :'';
-    let fieldTds;
+    const esc=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    const isPup=r.pup_related===true||r.pup_related==='true';
+    let tds='';
     if(isWr){
-      fieldTds=`<td class="rt-meta">${r.starting_date?fmtD(r.starting_date):'—'}</td>`;
+      tds=`<td onclick="event.stopPropagation()"><label class="chk-wrap" onmousedown="event.stopPropagation()"><input type="checkbox" class="chk"${isDone?' checked':''} onchange="togRec('${rid}',this.checked)"></label></td>
+        <td class="rt-editable" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','name')" onclick="selTask(event,'${virtId}')">${esc(r.name)}</td>
+        <td style="text-align:center;cursor:pointer;font-size:13px" onclick="event.stopPropagation();rtTogglePup('${rid}')" title="Toggle pup related">${isPup?'🐾':''}</td>
+        <td class="rt-editable rt-meta" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','starting_date')">${r.starting_date?fmtD(r.starting_date):'—'}</td>`;
     } else {
-      const dayVal=cadence==='monthly'?(r.repeat_date?'Day '+r.repeat_date:'—'):(r.appears_on_date||'—');
-      fieldTds=`<td class="rt-meta">${dayVal}</td><td class="rt-meta">${r.day_added||'—'}</td><td class="rt-meta">${r.task_due_day||'—'}</td><td class="rt-meta">${r.starting_date?fmtD(r.starting_date):'—'}</td>`;
+      const dayField=cadence==='monthly'?'repeat_date':'appears_on_date';
+      const dayDisp=cadence==='monthly'?(r.repeat_date||'—'):(r.appears_on_date||'—');
+      tds=`<td class="rt-editable" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','name')" onclick="selTask(event,'${virtId}')">${esc(r.name)}</td>
+        <td class="rt-editable rt-meta" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','${dayField}')">${dayDisp}</td>
+        <td class="rt-editable rt-meta" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','day_added')">${r.day_added||'—'}</td>
+        <td class="rt-editable rt-meta" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','task_due_day')">${r.task_due_day||'—'}</td>
+        <td class="rt-editable rt-meta" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','starting_date')">${r.starting_date?fmtD(r.starting_date):'—'}</td>`;
     }
-    tbody+=`<tr class="rt-row${isDone?' done':''}" id="ti-rt-${rid}" onclick="selTask(event,'${virtId}')" ondblclick="if(!event.target.closest('.chk-wrap')&&!event.target.closest('.delbtn')){event.stopPropagation();clearSelection();openRecEditModal('${rid}')}" oncontextmenu="showCtx(event,'${virtId}',true,'${rid}')">
-      ${chkTd}<td><span class="tn">${safeName}</span></td>${fieldTds}
-      <td><button class="btn btn-xs btn-ghost" style="padding:1px 5px;font-size:10px;opacity:.65" onclick="event.stopPropagation();duplicateRecDirect('${rid}')" title="Duplicate">⧉</button><button class="delbtn" onclick="event.stopPropagation();delRec('${rid}')">✕</button></td>
+    tbody+=`<tr class="rt-row${isDone?' done':''}" id="ti-rt-${rid}" onclick="selTask(event,'${virtId}')" oncontextmenu="showCtx(event,'${virtId}',true,'${rid}')">
+      ${tds}
+      <td onclick="event.stopPropagation()"><button class="btn btn-xs btn-ghost" style="padding:1px 5px;font-size:10px;opacity:.55" onclick="duplicateRecDirect('${rid}')" title="Duplicate">⧉</button><button class="delbtn" onclick="delRec('${rid}')">✕</button></td>
     </tr>`;
   });
-
   const tableHtml=tasks.length
-    ?`<table class="rt-tbl"><thead><tr>${hdrCols}</tr></thead><tbody>${tbody}</tbody></table>`
-    :`<div style="padding:8px 12px;font-size:11px;color:var(--subtle);font-style:italic">None yet</div>`;
-
+    ?`<table class="rt-tbl"><thead>${thead}</thead><tbody>${tbody}</tbody></table>`
+    :`<div style="padding:5px 4px;font-size:11px;color:var(--subtle);font-style:italic">None</div>`;
   let qaExtras='';
   if(isWr){
     qaExtras=`<label title="Pup related" style="display:flex;align-items:center;gap:2px;font-size:11px;cursor:pointer;flex-shrink:0;opacity:.7"><input type="checkbox" id="qa-pup-${containerId}" style="width:12px;height:12px;accent-color:var(--accent)">🐾</label>`;
@@ -3088,8 +3091,66 @@ function renderRtGroup(containerId, tasks, isWr, cadence){
     else if(cadence==='weekly'||cadence==='biweekly')
       qaExtras=`<select class="asel" id="qa-day-${containerId}" style="flex:0;width:90px"><option>Sunday</option><option>Monday</option><option>Tuesday</option><option>Wednesday</option><option>Thursday</option><option selected>Friday</option><option>Saturday</option></select>`;
   }
+  el.innerHTML=`<div style="margin-bottom:18px">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:0 2px;margin-bottom:5px">
+      <span style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)">${cadLabel}${tasks.length?' <span style="opacity:.55;font-weight:400">· '+tasks.length+'</span>':''}</span>
+      <button class="btn-plus" style="padding:1px 7px;font-size:12px" onclick="openRecModalForSection('${isWr?'weekly_reset':'scheduled'}','${cadence}')">+</button>
+    </div>
+    ${tableHtml}
+    <div class="arow" style="margin-top:3px;padding:3px 4px"><input class="ainput" id="qa-${containerId}" placeholder="Quick add…" onkeydown="if(event.key==='Enter')addRecDirect(this,${isWr},'${cadence}')">${qaExtras}<button class="btn btn-ghost btn-xs" onclick="addRecDirect(document.getElementById('qa-${containerId}'),${isWr},'${cadence}')">+</button></div>
+  </div>`;
+}
 
-  el.innerHTML=`<div class="card" style="margin-bottom:10px"><div class="ch"><div class="ct">${cadLabel}${tasks.length?' <span class="cbadge">'+tasks.length+'</span>':''}</div><button class="btn-plus" onclick="openRecModalForSection('${isWr?'weekly_reset':'scheduled'}','${cadence}')" title="Add via form">+</button></div><div class="tlist" style="padding:0">${tableHtml}</div><div class="arow"><input class="ainput" id="qa-${containerId}" placeholder="Quick add…" onkeydown="if(event.key==='Enter')addRecDirect(this,${isWr},'${cadence}')">${qaExtras}<button class="btn btn-ghost btn-xs" onclick="addRecDirect(document.getElementById('qa-${containerId}'),${isWr},'${cadence}')">+</button></div></div>`;
+function rtDblEdit(td, rid, field){
+  if(td.querySelector('input,select'))return;
+  const r=st.recurring.find(x=>String(x.id)===String(rid));if(!r)return;
+  const val=r[field]||'';
+  const DAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const DAY_ADDED=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Previous Sunday','Previous Monday','Previous Saturday','Same day'];
+  let widget;
+  if(field==='name'||field==='task_due_day'){
+    widget=document.createElement('input');widget.type='text';widget.value=val;
+  } else if(field==='appears_on_date'){
+    widget=document.createElement('select');
+    DAYS.forEach(d=>{const o=document.createElement('option');o.value=d;o.textContent=d;if(d===val)o.selected=true;widget.appendChild(o);});
+  } else if(field==='repeat_date'){
+    widget=document.createElement('select');
+    for(let i=1;i<=28;i++){const o=document.createElement('option');o.value=i;o.textContent=i;if(String(i)===String(val))o.selected=true;widget.appendChild(o);}
+  } else if(field==='day_added'){
+    widget=document.createElement('select');
+    DAY_ADDED.forEach(d=>{const o=document.createElement('option');o.value=d;o.textContent=d;if(d===val)o.selected=true;widget.appendChild(o);});
+  } else if(field==='starting_date'){
+    widget=document.createElement('input');widget.type='date';widget.value=val;
+  } else return;
+  widget.className='rt-edit-input';
+  const origHTML=td.innerHTML;
+  td.innerHTML='';td.appendChild(widget);
+  widget.focus();if(widget.tagName==='INPUT'&&widget.type==='text'&&widget.select)widget.select();
+  function commit(){
+    const newVal=widget.tagName==='SELECT'?widget.value:widget.value.trim();
+    if(newVal!==String(val)){
+      const prev=r[field];
+      r[field]=newVal||null;
+      renderRecOv();renderWeeklyPage();renderWkSummary();renderWkCal();
+      sbReq('PATCH','recurring_tasks',{[field]:r[field]},recQs(rid));
+      pushUndo(()=>{r[field]=prev;renderRecOv();renderWeeklyPage();},'Edited '+field);
+    } else {td.innerHTML=origHTML;}
+  }
+  widget.addEventListener('blur',commit);
+  widget.addEventListener('keydown',e=>{
+    if(e.key==='Enter'){e.preventDefault();widget.blur();}
+    if(e.key==='Escape'){widget.removeEventListener('blur',commit);td.innerHTML=origHTML;}
+  });
+  if(widget.tagName==='SELECT')widget.addEventListener('change',()=>setTimeout(()=>widget.blur(),0));
+}
+
+function rtTogglePup(rid){
+  const r=st.recurring.find(x=>String(x.id)===String(rid));if(!r)return;
+  const prev=r.pup_related;
+  r.pup_related=!(r.pup_related===true||r.pup_related==='true');
+  renderRecOv();renderWeeklyPage();
+  sbReq('PATCH','recurring_tasks',{pup_related:r.pup_related},recQs(rid));
+  pushUndo(()=>{r.pup_related=prev;renderRecOv();renderWeeklyPage();},'Toggled pup');
 }
 
 function openRecModalForSection(type, cadence){
