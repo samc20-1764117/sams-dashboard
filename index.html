@@ -3004,27 +3004,28 @@ function openEditTask(id){
 async function saveTModal(){
   const n=document.getElementById('tName').value.trim();if(!n){closeMod('tModal');return;}
   const c=document.getElementById('tCat').value,d=document.getElementById('tDue').value.trim()||null,imp=document.getElementById('tImp').checked;
+  const notes=document.getElementById('tNotes').value.trim()||null;
   closeMod('tModal');
   if(tMode==='edit'&&tId){
     const t=st.tasks.find(x=>String(x.id)===String(tId));if(!t)return;
-    const prev={name:t.name,category:t.category,due_date:t.due_date,important:t.important};
+    const prev={name:t.name,category:t.category,due_date:t.due_date,important:t.important,notes:t.notes};
     const stid=String(tId);
     localOverrides[stid]={name:n,category:c,due_date:d};
     pendingLocal.add(stid);save();
-    t.name=n;t.category=c;t.due_date=d;t.important=imp;renderAll();
+    t.name=n;t.category=c;t.due_date=d;t.important=imp;t.notes=notes;renderAll();
     pushUndo(()=>{
-      t.name=prev.name;t.category=prev.category;t.due_date=prev.due_date;t.important=prev.important;
+      t.name=prev.name;t.category=prev.category;t.due_date=prev.due_date;t.important=prev.important;t.notes=prev.notes;
       localOverrides[stid]={...prev};pendingLocal.add(stid);renderAll();
-      sbReqNullable('PATCH','tasks',{name:prev.name,category:prev.category,due_date:prev.due_date,important:prev.important},`?id=eq.${stid}`)
+      sbReqNullable('PATCH','tasks',{name:prev.name,category:prev.category,due_date:prev.due_date,important:prev.important,notes:prev.notes||null},`?id=eq.${stid}`)
         .then(()=>{ delete localOverrides[stid]; pendingLocal.delete(stid); });
     },'Edited task');
-    await sbReqNullable('PATCH','tasks',{name:n,category:c,due_date:d,important:imp},`?id=eq.${stid}`);
+    await sbReqNullable('PATCH','tasks',{name:n,category:c,due_date:d,important:imp,notes:notes||null},`?id=eq.${stid}`);
     pendingLocal.delete(stid);
     // localOverrides[stid] stays until syncAll confirms DB matches
   } else {
-    const t={id:'l-'+Date.now(),name:n,category:c,due_date:d,done:false,important:imp};st.tasks.push(t);renderAll();
+    const t={id:'l-'+Date.now(),name:n,category:c,due_date:d,done:false,important:imp,notes};st.tasks.push(t);renderAll();
     pushUndo(()=>{st.tasks=st.tasks.filter(x=>x.id!==t.id);renderAll();sbReq('DELETE','tasks',null,`?id=eq.${t.id}`);},'Added task');
-    const sv=await sbReq('POST','tasks',{name:n,category:c,due_date:d,done:false,important:imp});if(sv&&sv[0]){const i=st.tasks.findIndex(x=>x.id===t.id);if(i>-1)st.tasks[i]=sv[0];}
+    const sv=await sbReq('POST','tasks',{name:n,category:c,due_date:d,done:false,important:imp,notes:notes||null});if(sv&&sv[0]){const i=st.tasks.findIndex(x=>x.id===t.id);if(i>-1)st.tasks[i]=sv[0];}
   }
 }
 async function addTask(){
