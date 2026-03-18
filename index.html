@@ -2059,8 +2059,13 @@ function renderWkCal(){
             delete r._dateOverrides[wkKey];save();renderAll();renderWkCal();
             sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},recQs(r.id));
             pushUndo(()=>{if(!r._dateOverrides)r._dateOverrides={};r._dateOverrides[wkKey]=prev;save();renderAll();renderWkCal();sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},recQs(r.id));},'Removed from calendar');}
-        } else if(t._virtual){delRec(t._recId);}
-        else{delTask(t.id,e2);}
+        } else if(t._virtual){togRecVirt(t._recId,true,t._wkKey||getWkKey(wkOff));}
+        else{
+          // Unschedule task (clear due_date) — do not delete it
+          const prev=t.due_date;t.due_date=null;save();renderAll();renderWkCal();
+          sbReqNullable('PATCH','tasks',{due_date:null},`?id=eq.${t.id}`);
+          pushUndo(()=>{t.due_date=prev;save();renderAll();renderWkCal();sbReqNullable('PATCH','tasks',{due_date:prev||null},`?id=eq.${t.id}`);},'Removed from calendar');
+        }
       });
       chip.appendChild(dx);
       col.appendChild(chip);
@@ -2725,7 +2730,7 @@ function drawTBBlock(col,b){
       document.removeEventListener('mousemove',tbOnMove);
       document.removeEventListener('mouseup',tbOnUp);
       el.classList.remove('dragging-block');
-      if(tbDragging){tbDragging=false;save();renderDayTB();sbUpdateBlock(b.id,{start_minutes:b.sm});}
+      if(tbDragging){tbDragging=false;save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();sbUpdateBlock(b.id,{start_minutes:b.sm});}
     };
     document.addEventListener('mousemove',tbOnMove);
     document.addEventListener('mouseup',tbOnUp);
@@ -2902,7 +2907,7 @@ function updateNowLine(){
 }
 if(!window._nowLineInterval)window._nowLineInterval=setInterval(updateNowLine,60000);
 function onRM(e){if(!resizing)return;const b=st.blocks.find(x=>x.id===resizing.id);if(!b)return;b.dur=Math.max(15,Math.round((resizing.sd+(e.clientY-resizing.sy)/PX)/15)*15);renderDayTB();}
-function onRU(){if(!resizing)return;const bid=resizing.id;resizing=null;save();renderDayTB();document.removeEventListener('mousemove',onRM);document.removeEventListener('mouseup',onRU);const b=st.blocks.find(x=>x.id===bid);if(b)sbUpdateBlock(bid,{duration_minutes:b.dur});}
+function onRU(){if(!resizing)return;const bid=resizing.id;resizing=null;save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();document.removeEventListener('mousemove',onRM);document.removeEventListener('mouseup',onRU);const b=st.blocks.find(x=>x.id===bid);if(b)sbUpdateBlock(bid,{duration_minutes:b.dur});}
 function delBlock(id,e){
   e&&e.stopPropagation();
   const b=st.blocks.find(x=>x.id===id);if(!b)return;
