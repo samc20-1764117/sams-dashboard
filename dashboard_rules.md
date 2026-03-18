@@ -177,6 +177,21 @@ All three checkbox types share identical visual style:
 - Hidden backward-compat elements on the page: `#wrBar`, `#wrPct2`, `#wrPL`, `#wrList`, `#shopFull`, `#shopCountLbl`, `#shopSortBtn`, `#nsN`, `#nsS` — all `display:none`. These prevent errors in `renderWeeklyPage()` and `renderShopFull()` which are still called on page show.
 - "Other" cadence group catches any task where cadence is not weekly/biweekly/monthly. `addRecDirect` for "other" bucket saves with cadence `weekly`.
 
+## pup_related Field
+
+- `pup_related` is a boolean column on `recurring_tasks` (NOT NULL default false).
+- Weekly reset card (`#recList` / `#recListPup`) splits into 2 columns: Regular (left) and 🐾 Pup (right).
+- `renderRecOv()` routes each item to `#recList` or `#recListPup` based on `r.pup_related`.
+- Quick-add in `renderRtGroup` for weekly reset includes a 🐾 checkbox (`id="qa-pup-{containerId}"`). Read via `pupEl.checked` in `addRecDirect`.
+- `recModal` shows a 🐾 Pup related checkbox (`id="recPupRelated"`) only when type is `weekly_reset`. Hidden via `updateRecTypeUI()`.
+- POST/PATCH payloads include `pup_related` when true.
+
+## Today List & Need to Assign
+
+- Tasks in `#todList` and `#unList` render without category background color (`noColor:true`). Overdue (red) and important (yellow) backgrounds still show.
+- `#todList .ti` has extra left margin (`margin-left:10px`) to shift slightly right.
+- Shopping overview (`#shopOv`) items use `.chk-wrap` label for consistent spacing with weekly reset.
+
 ## Git Workflow
 
 - Stop hook: auto-commits and pushes to `origin/dev` branch after every Claude turn.

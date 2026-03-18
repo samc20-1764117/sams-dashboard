@@ -172,6 +172,7 @@ body{font-family:'DM Sans',sans-serif;background:#fef6f0;background-attachment:f
 .ql-icon{font-size:16px;line-height:1}
 /* Task items — tighter */
 .tlist{overflow-y:auto;padding:2px 0}
+#todList .ti{margin-left:10px}
 .ti{display:flex;align-items:center;gap:8px;padding:3px 22px 3px 10px;margin:1px 6px;border-radius:7px;transition:background .12s,box-shadow .12s,transform .12s,border-color .12s;position:relative;min-width:0;cursor:pointer}
 .ti:hover{background:rgba(255,255,255,.72)!important;box-shadow:0 2px 10px rgba(0,0,0,.08),inset 0 1px 0 rgba(255,255,255,.95);transform:translateY(-1px);}
 .ti.done{opacity:.38}.ti.done .tn{text-decoration:line-through;color:var(--muted)}
@@ -575,7 +576,7 @@ body.dark .rt-row:hover td{background:rgba(255,220,200,.06)}
         <div class="ch-prog-stat"><span class="pct" id="recPct2">0%</span><span style="opacity:.3">·</span><span id="recPL">0/6</span></div>
         <button class="btn-plus" onclick="openRecModal(&#39;weekly_reset&#39;)">+</button>
       </div>
-      <div class="tlist" id="recList" style="flex:1"><div id="ti-rec-virt-rec-Closet%20blanket" class="ti" draggable="true" style="cursor: pointer;"><label class="chk-wrap"><input type="checkbox" class="chk"></label><span class="tn">Closet blanket</span><button class="delbtn">✕</button></div><div id="ti-rec-virt-rec-Laundry" class="ti" draggable="true" style="cursor: pointer;"><label class="chk-wrap"><input type="checkbox" class="chk"></label><span class="tn">Laundry</span><button class="delbtn">✕</button></div><div id="ti-rec-virt-rec-Pup%20bowls" class="ti" draggable="true" style="cursor: pointer;"><label class="chk-wrap"><input type="checkbox" class="chk"></label><span class="tn">Pup bowls</span><button class="delbtn">✕</button></div><div id="ti-rec-virt-rec-Pups%20teeth" class="ti" draggable="true" style="cursor: pointer;"><label class="chk-wrap"><input type="checkbox" class="chk"></label><span class="tn">Pups teeth</span><button class="delbtn">✕</button></div><div id="ti-rec-virt-rec-Vacuum" class="ti" draggable="true" style="cursor: pointer;"><label class="chk-wrap"><input type="checkbox" class="chk"></label><span class="tn">Vacuum</span><button class="delbtn">✕</button></div><div id="ti-rec-virt-rec-Wipe%20surfaces" class="ti" draggable="true" style="cursor: pointer;"><label class="chk-wrap"><input type="checkbox" class="chk"></label><span class="tn">Wipe surfaces</span><button class="delbtn">✕</button></div></div>
+      <div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:4px;overflow:hidden;min-height:0"><div style="display:flex;flex-direction:column;min-height:0"><div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:3px 8px 1px">Regular</div><div class="tlist" id="recList" style="flex:1"></div></div><div style="display:flex;flex-direction:column;min-height:0"><div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:3px 8px 1px">🐾 Pup</div><div class="tlist" id="recListPup" style="flex:1"></div></div></div>
     </div>
     <!-- Shopping -->
     <div class="card">
@@ -829,6 +830,10 @@ body.dark .rt-row:hover td{background:rgba(255,220,200,.06)}
         <option value="weekly_reset">Weekly Reset (checklist)</option>
         <option value="scheduled">Scheduled (appears on calendar)</option>
       </select>
+    </div>
+
+    <div class="mfield" id="recPupField">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:400"><input type="checkbox" id="recPupRelated" style="width:13px;height:13px;accent-color:var(--accent)"> 🐾 Pup related</label>
     </div>
 
     <div class="mfield">
@@ -2169,9 +2174,10 @@ function renderRecOv(){
   const _rb=document.getElementById('recBadge');if(_rb)_rb.textContent=items.length-done;
   if(document.getElementById('recPL'))document.getElementById('recPL').textContent=done+'/'+items.length;const _recP=document.getElementById('recPct2');if(_recP)_recP.textContent=pct+'%';
   document.getElementById('recPB').style.width=pct+'%';
-  const el=document.getElementById('recList');el.innerHTML='';
+  const elReg=document.getElementById('recList');if(elReg)elReg.innerHTML='';
+  const elPup=document.getElementById('recListPup');if(elPup)elPup.innerHTML='';
   const sorted=[...items.filter(r=>!(r._doneByWk&&r._doneByWk[wkKey])),...items.filter(r=>!!(r._doneByWk&&r._doneByWk[wkKey]))];
-  sorted.forEach(function(r){
+  function makeRecRow(r,targetEl){
     const rid=String(r.id);
     const isDone=!!(r._doneByWk&&r._doneByWk[wkKey]);
     const row=document.createElement('div');
@@ -2198,18 +2204,18 @@ function renderRecOv(){
     row.addEventListener('contextmenu',e=>showCtx(e,virtId,true,rid));
     row.draggable=true;
     row.addEventListener('dragstart',e=>{
-      dragId='wrec::'+rid;
-      e.dataTransfer.effectAllowed='move';
-      row.classList.add('dragging');
-      document.body.classList.add('body-dragging');
-      showWkcEdges(true);
+      dragId='wrec::'+rid;e.dataTransfer.effectAllowed='move';
+      row.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);
     });
     row.addEventListener('dragend',e=>{
-      row.classList.remove('dragging');
-      document.body.classList.remove('body-dragging');
-      showWkcEdges(false);
+      row.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false);
     });
-    row.appendChild(chkWrap1);row.appendChild(nm);row.appendChild(del);el.appendChild(row);
+    row.appendChild(chkWrap1);row.appendChild(nm);row.appendChild(del);targetEl.appendChild(row);
+  }
+  sorted.forEach(r=>{
+    const isPup=r.pup_related===true||r.pup_related==='true';
+    const target=isPup?elPup:elReg;
+    if(target)makeRecRow(r,target);
   });
   requestAnimationFrame(applySelHighlight);
 }
@@ -2263,7 +2269,7 @@ function renderShopOv(){
   const todo=st.shopping.filter(s=>!s.done);
   // shopBadge removed
   const shopSorted=[...st.shopping.filter(s=>!s.done)].sort((a,b)=>(a.store||'').localeCompare(b.store||'')||(a.name||'').localeCompare(b.name||''));
-  document.getElementById('shopOv').innerHTML=shopSorted.map(s=>`<div class="ti" id="ti-shop-cal-${s.id}" draggable="true" ondragstart="dragId='shop::${s.id}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);" ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false);" onclick="tiClickShop(event,'${s.id}')" ondblclick="tiDblShop(event,'${s.id}')"><input type="checkbox" class="chk" onchange="togShop('${s.id}',this.checked)"><span class="tn">${s.name}</span><span class="cpill" style="background:rgba(241,245,249,.9);color:#64748b;border-color:rgba(148,163,184,.25);flex-shrink:0">${s.store}</span><button class="delbtn" onclick="delShop('${s.id}')">✕</button></div>`).join('');
+  document.getElementById('shopOv').innerHTML=shopSorted.map(s=>`<div class="ti" id="ti-shop-cal-${s.id}" draggable="true" ondragstart="dragId='shop::${s.id}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);" ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false);" onclick="tiClickShop(event,'${s.id}')" ondblclick="tiDblShop(event,'${s.id}')"><label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" onchange="togShop('${s.id}',this.checked)"></label><span class="tn">${s.name}</span><span class="cpill" style="background:rgba(241,245,249,.9);color:#64748b;border-color:rgba(148,163,184,.25);flex-shrink:0">${s.store}</span><button class="delbtn" onclick="delShop('${s.id}')">✕</button></div>`).join('');
 }
 
 // ── Virtual recurring task row for This Week ─────────────────────────────────
@@ -3039,7 +3045,9 @@ function renderRtGroup(containerId, tasks, isWr, cadence){
     :`<div style="padding:8px 12px;font-size:11px;color:var(--subtle);font-style:italic">None yet</div>`;
 
   let qaExtras='';
-  if(!isWr){
+  if(isWr){
+    qaExtras=`<label title="Pup related" style="display:flex;align-items:center;gap:2px;font-size:11px;cursor:pointer;flex-shrink:0;opacity:.7"><input type="checkbox" id="qa-pup-${containerId}" style="width:12px;height:12px;accent-color:var(--accent)">🐾</label>`;
+  } else {
     if(cadence==='monthly')
       qaExtras=`<select class="asel" id="qa-day-${containerId}" style="flex:0;width:68px">${Array.from({length:28},(_,i)=>`<option value="${i+1}">${i+1}</option>`).join('')}</select>`;
     else if(cadence==='weekly'||cadence==='biweekly')
@@ -3062,16 +3070,20 @@ async function addRecDirect(inputEl, isWr, cadence){
   inputEl.value='';
   const containerId=inputEl.id.replace(/^qa-/,'');
   const dayEl=document.getElementById('qa-day-'+containerId);
+  const pupEl=document.getElementById('qa-pup-'+containerId);
+  const pupRelated=isWr&&!!(pupEl&&pupEl.checked);
+  if(pupEl)pupEl.checked=false;
   const appearsOn=(cadence==='monthly'||cadence==='other')?'Friday':(dayEl?dayEl.value:'Friday');
   const repeatDate=cadence==='monthly'?(dayEl?dayEl.value:'1'):null;
   const useCadence=cadence==='other'?'weekly':cadence;
   const localId='rec-tmp-'+Date.now();
-  const r={id:localId,name:n,is_weekly_reset:isWr,appears_on_date:appearsOn,day_added:'Previous Sunday',starting_date:d2s(new Date()),cadence:useCadence,_doneByWk:{},_done:false,_dateOverrides:{}};
+  const r={id:localId,name:n,is_weekly_reset:isWr,appears_on_date:appearsOn,day_added:'Previous Sunday',starting_date:d2s(new Date()),cadence:useCadence,pup_related:pupRelated,_doneByWk:{},_done:false,_dateOverrides:{}};
   st.recurring.push(r);save();renderRecOv();renderWeeklyPage();renderWkSummary();renderWkCal();
   let serverId=null;
   pushUndo(()=>{const rid=serverId||localId;st.recurring=st.recurring.filter(x=>String(x.id)!==String(rid));save();renderRecOv();renderWeeklyPage();renderWkSummary();renderWkCal();if(serverId)sbReq('DELETE','recurring_tasks',null,recQs(serverId));},'Added recurring task');
   const payload={name:n,is_weekly_reset:isWr,cadence:useCadence,appears_on_date:appearsOn,starting_date:r.starting_date};
   if(repeatDate)payload.repeat_date=repeatDate;
+  if(pupRelated)payload.pup_related=true;
   const sv=await sbReq('POST','recurring_tasks',payload);
   if(sv&&sv[0]){
     const i=st.recurring.findIndex(x=>x.id===localId);
@@ -3173,12 +3185,15 @@ function openRecModal(type='weekly_reset'){
   document.getElementById('recRepeatDay').value='Friday';
   document.getElementById('recDayAdded').value='Sunday';
   document.getElementById('recStartDate').value=d2s(new Date());
+  const _pr=document.getElementById('recPupRelated');if(_pr)_pr.checked=false;
   updateRecTypeUI();
   document.getElementById('recModal').classList.add('open');
   setTimeout(()=>document.getElementById('recName').focus(),60);
 }
 function updateRecTypeUI(){
   updateRecCadenceUI();
+  const isWr=document.getElementById('recType').value==='weekly_reset';
+  const pf=document.getElementById('recPupField');if(pf)pf.style.display=isWr?'block':'none';
 }
 function updateRecCadenceUI(){
   const cad=document.getElementById('recCadence').value;
@@ -3198,16 +3213,18 @@ async function saveRecModal(){
   const appearsOn=repeatDay||'Friday';
   const dayAdded=document.getElementById('recDayAdded').value||'Previous Sunday';
   const startDate=document.getElementById('recStartDate').value||null;
+  const pupRelated=isWeekly&&!!(document.getElementById('recPupRelated')?.checked);
   closeMod('recModal');
   // Use rec-tmp- prefix so sync localPending keeps it if POST hasn't resolved yet
   const localId='rec-tmp-'+Date.now();
-  const r={id:localId,name:n,is_weekly_reset:isWeekly,appears_on_date:appearsOn,day_added:dayAdded,starting_date:startDate,cadence,repeat_day:repeatDay,repeat_date:repeatDate,_doneByWk:{},_done:false,_dateOverrides:{}};
+  const r={id:localId,name:n,is_weekly_reset:isWeekly,appears_on_date:appearsOn,day_added:dayAdded,starting_date:startDate,cadence,repeat_day:repeatDay,repeat_date:repeatDate,pup_related:pupRelated,_doneByWk:{},_done:false,_dateOverrides:{}};
   st.recurring.push(r);save();renderRecOv();renderWeeklyPage();renderWkSummary();renderWkCal();
   let recServerId=null;
   pushUndo(()=>{const rid=recServerId||localId;st.recurring=st.recurring.filter(x=>String(x.id)!==String(rid));save();renderRecOv();renderWeeklyPage();renderWkSummary();renderWkCal();if(recServerId)sbReq('DELETE','recurring_tasks',null,recQs(recServerId));},'Added recurring task');
   const payload={name:n,is_weekly_reset:isWeekly,appears_on_date:appearsOn,cadence};
   if(repeatDate)payload.repeat_date=repeatDate;
   if(startDate)payload.starting_date=startDate;
+  if(pupRelated)payload.pup_related=true;
   const sv=await sbReq('POST','recurring_tasks',payload);
   if(sv&&sv[0]){
     const i=st.recurring.findIndex(x=>x.id===localId);
