@@ -317,6 +317,7 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 .wkc-col{flex:1;min-width:0;border-left:1px solid rgba(210,205,228,.15);padding:2px 2px;overflow:hidden;transition:background .1s}
 .wkc-col:first-child{border-left:none}
 .wkc-col.drop-here{background:rgba(109,95,230,.05)}
+#todList.drop-here{background:rgba(109,95,230,.04);border-radius:8px;outline:1.5px dashed rgba(109,95,230,.25)}
 .chip{margin-bottom:2px;padding:2px 5px;border-radius:6px;font-size:10px;font-weight:500;display:flex;align-items:center;gap:3px;cursor:pointer;border:1px solid rgba(255,255,255,0.6);white-space:nowrap;overflow:hidden;transition:filter .1s;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:inset 0 1px 0 rgba(255,255,255,0.75)}
 .chip:hover{filter:brightness(.96)}
 .chip .wchk{width:10px;height:10px;border-radius:50%;border:1.5px solid rgba(180,170,210,.5);appearance:none;cursor:pointer;flex-shrink:0;background:rgba(255,255,255,.8);transition:all .2s}
@@ -506,7 +507,7 @@ body.dark .rt-row:hover td{background:rgba(255,220,200,.06)}
       </div>
       <div class="tod-tb-body">
       <div class="tod-section">
-      <div id="ovBanner" class="ov-banner show"><span id="ovBannerTxt">1 overdue task — move to today?</span><button class="ov-banner-btn" onclick="rolloverOverdue()">Move all to today</button></div><div class="tlist" id="todList" style="flex:1" ondblclick="if(!event.target.closest('.ti'))openQA('today',null)"><div class="ti  ov-row " id="ti-t-1773193938936" draggable="true" ondragstart="dStart(event,&#39;t-1773193938936&#39;)" ondragend="this.classList.remove(&#39;dragging&#39;)" onclick="selTask(event,&#39;t-1773193938936&#39;)" ondblclick="tiDbl(event,&#39;t-1773193938936&#39;)" oncontextmenu="showCtx(event,&#39;t-1773193938936&#39;)">
+      <div id="ovBanner" class="ov-banner show"><span id="ovBannerTxt">1 overdue task — move to today?</span><button class="ov-banner-btn" onclick="rolloverOverdue()">Move all to today</button></div><div class="tlist" id="todList" style="flex:1" ondblclick="if(!event.target.closest('.ti'))openQA('today',null)" ondragover="event.preventDefault();this.classList.add('drop-here')" ondragleave="this.classList.remove('drop-here')" ondrop="dropOnTodayList(event)"><div class="ti  ov-row " id="ti-t-1773193938936" draggable="true" ondragstart="dStart(event,&#39;t-1773193938936&#39;)" ondragend="this.classList.remove(&#39;dragging&#39;)" onclick="selTask(event,&#39;t-1773193938936&#39;)" ondblclick="tiDbl(event,&#39;t-1773193938936&#39;)" oncontextmenu="showCtx(event,&#39;t-1773193938936&#39;)">
     <label class="chk-wrap" onclick="event.stopPropagation()" onmousedown="event.stopPropagation()"><input type="checkbox" class="chk" onchange="toggleTask(&#39;t-1773193938936&#39;,this.checked,&#39;wk&#39;)"></label>
     <span class="tn">tbd</span>
     <span class="cpill" style="background:#fff0f0;color:#b91c1c;border-color:rgba(239,68,68,.28)">Home</span>
@@ -2215,6 +2216,26 @@ function renderUnassigned(){
   const ts=st.tasks.filter(t=>!t.due_date&&!t.done&&t.category!=='Long term');
   // unBadge removed
   document.getElementById('unList').innerHTML=sortTasks(ts).map(t=>tRow(t,{cat:true,drag:true,flag:true})).join('');
+}
+
+// ── Drop on Today List ─────────────────────────────────────────────────────────
+function dropOnTodayList(e){
+  if(!dragId)return;
+  e.preventDefault();
+  document.getElementById('todList').classList.remove('drop-here');
+  const ds=d2s(getDayDate(dayOff));
+  if(dragId.startsWith('shop::')){
+    const shopId=dragId.split('::')[1];
+    const s=st.shopping.find(x=>String(x.id)===String(shopId));
+    if(s){
+      const prev=s.due_date;
+      s.due_date=ds;
+      dragId=null;save();renderAll();
+      sbReq('PATCH','shopping_list',{due_date:ds},`?id=eq.${s.id}`);
+      pushUndo(()=>{s.due_date=prev;save();renderAll();sbReq('PATCH','shopping_list',{due_date:prev||null},`?id=eq.${s.id}`);},'Assigned shopping to today');
+    }
+    dragId=null;return;
+  }
 }
 
 // ── Shop overview ──────────────────────────────────────────────────────────────
