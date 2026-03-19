@@ -2672,10 +2672,11 @@ function renderDayTB(){
     });
     col.appendChild(row);
   });
-  // Compute layout then draw
-  computeTBLayout(ds);
+  // Compute layout then draw (auto blocks participate in overlap calc)
+  const autoBlocks=getAutoTBForDate(ds);
+  computeTBLayout(ds,autoBlocks);
   getVisibleBlocks(ds).forEach(b=>drawTBBlock(col,b));
-  getAutoTBForDate(ds).forEach(a=>drawAutoTBBlock(col,a,ds));
+  autoBlocks.forEach(a=>drawAutoTBBlock(col,a,ds));
   const autoBtn=document.getElementById('autoTBToggle');if(autoBtn)autoBtn.style.opacity=cfg.showAutoTB?'1':'0.4';
   if(isDateToday(date)){const nl=document.createElement('div');nl.className='nowline';nl.id='tbNowLine';const nm=new Date(),nmins=(nm.getHours()-HOURS[0])*60+nm.getMinutes();if(nmins>=0){nl.style.top=nmins*PX+'px';nl.innerHTML='<div class="nowdot"></div>';}col.appendChild(nl);}
   grid.appendChild(col);renderTBSum(ds);requestAnimationFrame(applySelHighlight);
@@ -2700,8 +2701,8 @@ function getVisibleBlocks(ds){
     return true;
   });
 }
-function computeTBLayout(ds){
-  const blocks=getVisibleBlocks(ds);
+function computeTBLayout(ds,extraBlocks=[]){
+  const blocks=[...getVisibleBlocks(ds),...extraBlocks];
   const sorted=[...blocks].sort((a,b)=>a.sm-b.sm);
   const colEnds=[];
   sorted.forEach(b=>{
@@ -2873,8 +2874,10 @@ function drawAutoTBBlock(col,atb,ds){
   const el=document.createElement('div');
   el.className='atb-block';
   el.dataset.atbId=atb._atbId;
-  el.style.cssText=`top:${top}px;height:${ht}px`;
-  el.innerHTML=`<div class="tb-row"><span class="tb-bt">${atb.label}</span><span class="tb-btime">${tStr(atb.sm)}-${tStr(atb.sm+atb.dur)}</span><button class="tb-bdel atb-del" onclick="event.stopPropagation();delAutoTBForDay('${atb._atbId}','${ds}',${atb._ovId?`'${atb._ovId}'`:'null'})">✕</button></div>`;
+  const ncols=atb._ncols||1,col_i=atb._col||0,colW=100/ncols,left=col_i*colW;
+  const _showTime=ncols<=1;
+  el.style.cssText=`top:${top}px;height:${ht}px;left:calc(${left}% + 2px);right:calc(${100-left-colW}% + 2px);width:auto`;
+  el.innerHTML=`<div class="tb-row"><span class="tb-bt">${atb.label}</span>${_showTime?`<span class="tb-btime">${tStr(atb.sm)}-${tStr(atb.sm+atb.dur)}</span>`:''}<button class="tb-bdel atb-del" onclick="event.stopPropagation();delAutoTBForDay('${atb._atbId}','${ds}',${atb._ovId?`'${atb._ovId}'`:'null'})">✕</button></div>`;
   let atbDragging=false,atbOnMove=null,atbOnUp=null;
   el.addEventListener('mousedown',e=>{
     if(e.target.classList.contains('atb-del'))return;
