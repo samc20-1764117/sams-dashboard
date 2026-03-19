@@ -1094,7 +1094,7 @@ const CATS={
 const IMP={bg:'#fef9c3',t:'#854d0e',d:'#eab308',b:'rgba(234,179,8,.35)'};
 const OV={bg:'#fff0f0',t:'#b91c1c',d:'#ef4444',b:'rgba(239,68,68,.28)'};
 const KCATS=['Home','My work','Work','Social+Travel','Long term'];
-let HOURS=[...Array(13)].map((_,i)=>i+7);
+let HOURS=[...Array(20)].map((_,i)=>i+4);
 const DNAMES=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 const PX=40/60, KEY='samdash_v7';
 
@@ -2683,7 +2683,7 @@ function renderDayTB(){
   grid.appendChild(col);renderTBSum(ds);requestAnimationFrame(applySelHighlight);
   // Default scroll to current time minus 1 hour; reset when day changes but preserve position mid-session
   const tbSc2=document.getElementById('tbScroll');
-  if(tbSc2&&tbSc2._scrollDay!==ds){tbSc2._scrollDay=ds;tbSc2.scrollTop=0;}
+  if(tbSc2&&tbSc2._scrollDay!==ds){tbSc2._scrollDay=ds;tbSc2.scrollTop=Math.round((6.5-HOURS[0])*60*PX);}
 }
 function getVisibleBlocks(ds){
   const isViewingToday=(ds===d2s(getDayDate(0)));
