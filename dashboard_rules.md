@@ -249,6 +249,17 @@ All three checkbox types share identical visual style:
 - Colors: Mochi = `#8b5cf6` (purple), Sunny = `#f97316` (orange).
 - CSS classes: `.pup-col`, `.pup-skill-row`, `.pup-skill-emphasis` (Current Skills), `.pup-focus-row` (Train This Week), `.pup-done-row` (Completed), `.pup-pill`, `.pup-pill-sr`, `.pup-pill-dim`, `.pup-stat`, `.pup-section-label`, `.pup-check`, `.pup-next-step`.
 
+## Auto Timeblocks
+
+- Supabase tables: `auto_timeblocks(id, label, start_time, end_time, day_scope, is_enabled, sort_order, created_at)` and `auto_timeblock_overrides(id, base_id, date, start_time, end_time)`.
+- Stored in `st.autoTimeblocks` and `st.autoTBOverrides`. Fetched silently in `syncAll` after main block fetch.
+- `cfg.showAutoTB` (boolean, default `true`) toggles display. Toggle button `id="autoTBToggle"` in `tod-tb-header`.
+- `getAutoTBForDate(ds)`: returns resolved blocks for a date — uses override if `auto_timeblock_overrides` row exists for `base_id+date`, else uses base times. Returns `{_atbId, _ovId, label, sm, dur, ds}`.
+- `drawAutoTBBlock(col, atb, ds)`: renders with `.atb-block` class (light grey, `z-index:1`, no glow on hover/select). Draggable — on move creates/PATCHes `auto_timeblock_overrides` for that date only.
+- `toggleAutoTB()`: flips `cfg.showAutoTB`, saves, re-renders TB, updates button opacity.
+- Auto blocks never appear in Today list, overdue banner, metrics, recurring page, or weekly calendar — timeblock only.
+- All DB interaction uses `sbReqSilent` (no error toasts).
+
 ## Git Workflow
 
 - Stop hook: auto-commits and pushes to `origin/dev` branch after every Claude turn.

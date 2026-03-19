@@ -294,6 +294,9 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 .tb-chk:checked{background:#a3c41a;border-color:#a3c41a;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M3.5 8l3 3 6-6' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")}
 .tb-block:hover{box-shadow:inset 0 1px 0 rgba(255,255,255,0.85),0 8px 20px rgba(0,0,0,0.12);transform:translateY(-1px)}
 .tb-block.sel-row{box-shadow:0 0 0 0.75px color-mix(in srgb,var(--sel-d) 50%,transparent),0 4px 14px var(--sel-shadow),0 1px 4px var(--sel-shadow),inset 0 1px 1px rgba(255,255,255,.92)!important;transform:translateY(-1.5px)!important}
+.atb-block{position:absolute;left:2px;right:2px;border-radius:8px;padding:2px 5px;z-index:1;min-height:16px;border:1px solid rgba(180,175,200,.18);cursor:grab;overflow:hidden;user-select:none;background:rgba(235,233,242,.5);color:#b0aec0;pointer-events:auto}
+.atb-block .tb-btime{color:#c8c6d4;font-size:7px}
+.atb-block.dragging-block{opacity:.35;cursor:grabbing}
 .tb-row{display:flex;align-items:center;justify-content:space-between;gap:4px;padding:0 2px;min-width:0;flex:1}
 .tb-bt{font-size:8px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0;line-height:1.1}
 .tb-edit{font-size:8px;font-weight:600;flex:1;min-width:0;background:rgba(255,255,255,.7);border:none;border-radius:3px;padding:1px 3px;outline:none;font-family:inherit;color:var(--text);line-height:1.1}
@@ -566,6 +569,7 @@ body.dark .qn-input{background:rgba(255,255,255,.06);border-color:rgba(255,220,2
         <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
           <button class="btn btn-ghost btn-xs" onclick="goToday()">Today</button>
           <button class="btn btn-ghost btn-xs" onclick="shiftDay(1)" style="flex-shrink:0">→</button>
+          <button class="btn btn-ghost btn-xs" id="autoTBToggle" onclick="toggleAutoTB()" title="Toggle auto time blocks" style="opacity:1;font-size:8px">Auto</button>
           <button class="btn-plus" onclick="openQA(&#39;today&#39;,this)">+</button>
         </div>
       </div>
@@ -1097,8 +1101,8 @@ function gc(c){return CATS[(c||'').toLowerCase()]||{bg:'#f1f5f9',t:'#334155',d:'
 function slug(c){return(c||'other').toLowerCase().replace(/\s+/g,'-');}
 
 // ── State ──────────────────────────────────────────────────────────────────────
-let cfg={url:'https://gtirvyrqfuuuxkkqaeap.supabase.co',key:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0aXJ2eXJxZnV1dXhra3FhZWFwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwODY3NjAsImV4cCI6MjA4ODY2Mjc2MH0.6rtA0WeUUAcuV_sNVrxAbaaviPxPwNakh_bk7uylAOo'};
-let st={tasks:[],recurring:[],shopping:[],blocks:[],travel:[],birthdays:[],pup_skills:[]};
+let cfg={url:'https://gtirvyrqfuuuxkkqaeap.supabase.co',key:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0aXJ2eXJxZnV1dXhra3FhZWFwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwODY3NjAsImV4cCI6MjA4ODY2Mjc2MH0.6rtA0WeUUAcuV_sNVrxAbaaviPxPwNakh_bk7uylAOo',showAutoTB:true};
+let st={tasks:[],recurring:[],shopping:[],blocks:[],travel:[],birthdays:[],pup_skills:[],autoTimeblocks:[],autoTBOverrides:[]};
 let dayOff=0,wkOff=0,moOff=0,sbOpen=true;
 let dragId=null,resizing=null,tMode='add',tId=null,tPreDate=null;
 let qaCtx='today',qaDsTarget=null,qaKCat='';
@@ -1108,8 +1112,8 @@ let undoStack=[];let undoTimer=null;
 let shopSortMode='store'; // 'store' or 'alpha'
 
 // ── Storage ────────────────────────────────────────────────────────────────────
-function load(){try{const s=JSON.parse(localStorage.getItem(KEY)||'{}');if(s.cfg)cfg={...cfg,...s.cfg};if(s.blocks)st.blocks=s.blocks.map(b=>{const{_col,_ncols,...rest}=b;return rest;});if(s.sb!==undefined)sbOpen=s.sb;if(s.overrides)localOverrides=s.overrides;if(s.delRec)deletedRecIds=new Set(s.delRec);if(s.tasks)st.tasks=s.tasks;if(s.recurring)st.recurring=s.recurring.map(r=>({...r,_doneByWk:r._doneByWk||{}}));if(s.shopping)st.shopping=s.shopping;if(s.travel)st.travel=s.travel;if(s.birthdays)st.birthdays=s.birthdays;if(s.pup_skills)st.pup_skills=s.pup_skills;}catch(e){}}
-function save(){try{localStorage.setItem(KEY,JSON.stringify({cfg,blocks:st.blocks,sb:sbOpen,overrides:localOverrides,delRec:[...deletedRecIds],tasks:st.tasks,recurring:st.recurring,shopping:st.shopping,travel:st.travel,birthdays:st.birthdays,pup_skills:st.pup_skills}));}catch(e){}}
+function load(){try{const s=JSON.parse(localStorage.getItem(KEY)||'{}');if(s.cfg)cfg={...cfg,...s.cfg};if(s.blocks)st.blocks=s.blocks.map(b=>{const{_col,_ncols,...rest}=b;return rest;});if(s.sb!==undefined)sbOpen=s.sb;if(s.overrides)localOverrides=s.overrides;if(s.delRec)deletedRecIds=new Set(s.delRec);if(s.tasks)st.tasks=s.tasks;if(s.recurring)st.recurring=s.recurring.map(r=>({...r,_doneByWk:r._doneByWk||{}}));if(s.shopping)st.shopping=s.shopping;if(s.travel)st.travel=s.travel;if(s.birthdays)st.birthdays=s.birthdays;if(s.pup_skills)st.pup_skills=s.pup_skills;if(s.autoTimeblocks)st.autoTimeblocks=s.autoTimeblocks;if(s.autoTBOverrides)st.autoTBOverrides=s.autoTBOverrides;}catch(e){}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify({cfg,blocks:st.blocks,sb:sbOpen,overrides:localOverrides,delRec:[...deletedRecIds],tasks:st.tasks,recurring:st.recurring,shopping:st.shopping,travel:st.travel,birthdays:st.birthdays,pup_skills:st.pup_skills,autoTimeblocks:st.autoTimeblocks,autoTBOverrides:st.autoTBOverrides}));}catch(e){}}
 
 // ── Supabase ───────────────────────────────────────────────────────────────────
 async function sbReq(method,table,body,qs=''){
@@ -1235,6 +1239,13 @@ async function syncAll(silent=false){
     ]);
     // Fetch time_blocks separately so a failure doesn't break the whole sync
     const blocks=await sbReqSilent('GET','time_blocks',null,'?order=day_date.asc,start_minutes.asc&select=*');
+    // Fetch auto timeblocks
+    const[autoTBs,autoTBOvs]=await Promise.all([
+      sbReqSilent('GET','auto_timeblocks',null,'?is_enabled=eq.true&order=sort_order.asc&select=*'),
+      sbReqSilent('GET','auto_timeblock_overrides',null,'?order=date.asc&select=*')
+    ]);
+    if(autoTBs)st.autoTimeblocks=autoTBs;
+    if(autoTBOvs)st.autoTBOverrides=autoTBOvs;
     if(tasks){
       const merged=tasks.map(dbT=>{
         const sid=String(dbT.id);
@@ -2658,6 +2669,8 @@ function renderDayTB(){
   // Compute layout then draw
   computeTBLayout(ds);
   getVisibleBlocks(ds).forEach(b=>drawTBBlock(col,b));
+  getAutoTBForDate(ds).forEach(a=>drawAutoTBBlock(col,a,ds));
+  const autoBtn=document.getElementById('autoTBToggle');if(autoBtn)autoBtn.style.opacity=cfg.showAutoTB?'1':'0.4';
   if(isDateToday(date)){const nl=document.createElement('div');nl.className='nowline';nl.id='tbNowLine';const nm=new Date(),nmins=(nm.getHours()-HOURS[0])*60+nm.getMinutes();if(nmins>=0){nl.style.top=nmins*PX+'px';nl.innerHTML='<div class="nowdot"></div>';}col.appendChild(nl);}
   grid.appendChild(col);renderTBSum(ds);requestAnimationFrame(applySelHighlight);
   // Default scroll to current time minus 1 hour; reset when day changes but preserve position mid-session
@@ -2794,6 +2807,84 @@ function renderTBSum(ds){
   const c={};st.blocks.filter(b=>b.ds===ds).forEach(b=>c[b.cat]=(c[b.cat]||0)+b.dur);
   const tot=Object.values(c).reduce((a,v)=>a+v,0);
   document.getElementById('tbSum').innerHTML=`<div class="si"><span>Blocked:</span><span class="sv">${Math.floor(tot/60)}h ${tot%60}m</span></div>`+Object.entries(c).map(([cat,min])=>{const s=gc(cat);return`<div class="si"><div class="sdotc" style="background:${s.d}"></div><span>${cat}</span><span class="sv">${Math.floor(min/60)}h${min%60?` ${min%60}m`:''}</span></div>`;}).join('');
+}
+// ── Auto Timeblocks ────────────────────────────────────────────────────────────
+function getAutoTBForDate(ds){
+  if(!cfg.showAutoTB)return[];
+  return st.autoTimeblocks.filter(a=>a.is_enabled).map(a=>{
+    const ov=st.autoTBOverrides.find(o=>String(o.base_id)===String(a.id)&&o.date===ds);
+    const startTime=ov?ov.start_time:a.start_time;
+    const endTime=ov?ov.end_time:a.end_time;
+    const[sh,sm2]=((startTime||'00:00').split(':'));
+    const[eh,em]=((endTime||'00:30').split(':'));
+    const startMinutes=parseInt(sh)*60+parseInt(sm2||0);
+    const endMinutes=parseInt(eh)*60+parseInt(em||0);
+    const dur=Math.max(15,endMinutes-startMinutes);
+    return{_atbId:String(a.id),_ovId:ov?String(ov.id):null,label:a.label||'',sm:startMinutes,dur,ds};
+  });
+}
+function drawAutoTBBlock(col,atb,ds){
+  const top=(atb.sm-HOURS[0]*60)*PX,ht=Math.max(atb.dur*PX,16);
+  const el=document.createElement('div');
+  el.className='atb-block';
+  el.dataset.atbId=atb._atbId;
+  el.style.cssText=`top:${top}px;height:${ht}px`;
+  el.innerHTML=`<div class="tb-row"><span class="tb-bt">${atb.label}</span><span class="tb-btime">${tStr(atb.sm)}-${tStr(atb.sm+atb.dur)}</span></div>`;
+  let atbDragging=false,atbOnMove=null,atbOnUp=null;
+  el.addEventListener('mousedown',e=>{
+    if(e.detail>=2)return;
+    e.preventDefault();e.stopPropagation();
+    const startY=e.clientY,startSm=atb.sm;
+    atbDragging=false;
+    atbOnMove=ev=>{
+      const dy=ev.clientY-startY;
+      if(!atbDragging&&Math.abs(dy)<5)return;
+      atbDragging=true;
+      const dm=Math.round(dy/PX/15)*15;
+      const newSm=Math.max(HOURS[0]*60,Math.min(HOURS[HOURS.length-1]*60,startSm+dm));
+      atb.sm=newSm;
+      el.style.top=(atb.sm-HOURS[0]*60)*PX+'px';
+      const bt=el.querySelector('.tb-btime');if(bt)bt.textContent=tStr(atb.sm)+'-'+tStr(atb.sm+atb.dur);
+      el.classList.add('dragging-block');
+    };
+    atbOnUp=()=>{
+      document.removeEventListener('mousemove',atbOnMove);
+      document.removeEventListener('mouseup',atbOnUp);
+      el.classList.remove('dragging-block');
+      if(atbDragging){
+        atbDragging=false;
+        const endSm=atb.sm+atb.dur;
+        const newStart=`${String(Math.floor(atb.sm/60)).padStart(2,'0')}:${String(atb.sm%60).padStart(2,'0')}:00`;
+        const newEnd=`${String(Math.floor(endSm/60)).padStart(2,'0')}:${String(endSm%60).padStart(2,'0')}:00`;
+        if(atb._ovId){
+          const ov=st.autoTBOverrides.find(o=>String(o.id)===atb._ovId);
+          if(ov){ov.start_time=newStart;ov.end_time=newEnd;}
+          sbReqSilent('PATCH','auto_timeblock_overrides',{start_time:newStart,end_time:newEnd},`?id=eq.${atb._ovId}`);
+        } else {
+          const payload={base_id:atb._atbId,date:ds,start_time:newStart,end_time:newEnd};
+          const tmpId='atbov-tmp-'+Date.now();
+          st.autoTBOverrides.push({...payload,id:tmpId});
+          sbReqSilent('POST','auto_timeblock_overrides',payload,'').then(res=>{
+            if(res&&res[0]){
+              const idx=st.autoTBOverrides.findIndex(o=>String(o.id)===tmpId);
+              if(idx>-1){st.autoTBOverrides[idx]=res[0];atb._ovId=String(res[0].id);}
+              save();
+            }
+          });
+        }
+        save();
+      }
+    };
+    document.addEventListener('mousemove',atbOnMove);
+    document.addEventListener('mouseup',atbOnUp);
+  });
+  col.appendChild(el);
+}
+function toggleAutoTB(){
+  cfg.showAutoTB=!cfg.showAutoTB;save();
+  const btn=document.getElementById('autoTBToggle');
+  if(btn)btn.style.opacity=cfg.showAutoTB?'1':'0.4';
+  if(document.getElementById('tbGrid'))renderDayTB();
 }
 function dropOnTB(e,ds,h,row){
   if(!dragId)return;
