@@ -297,6 +297,7 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 .atb-block{position:absolute;left:2px;right:2px;border-radius:8px;padding:2px 5px;z-index:1;min-height:16px;border:1px solid rgba(180,175,200,.18);cursor:grab;overflow:hidden;user-select:none;background:rgba(235,233,242,.5);color:#b0aec0;pointer-events:auto}
 .atb-block .tb-btime{color:#c8c6d4;font-size:7px}
 .atb-block.dragging-block{opacity:.35;cursor:grabbing}
+.atb-block.sel-atb{outline:1px solid rgba(160,155,185,.35);outline-offset:-1px;box-shadow:0 0 0 2px rgba(160,155,185,.1)}
 .tb-row{display:flex;align-items:center;justify-content:space-between;gap:4px;padding:0 2px;min-width:0;flex:1}
 .tb-bt{font-size:8px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0;line-height:1.1}
 .tb-edit{font-size:8px;font-weight:600;flex:1;min-width:0;background:rgba(255,255,255,.7);border:none;border-radius:3px;padding:1px 3px;outline:none;font-family:inherit;color:var(--text);line-height:1.1}
@@ -2833,22 +2834,36 @@ function getAutoTBForDate(ds){
   });
 }
 function delAutoTBForDay(atbId,ds,ovId){
+  const prevOv=ovId?{...st.autoTBOverrides.find(o=>String(o.id)===ovId)}:null;
   if(ovId){
-    // Update existing override to null times (marks as deleted for this day)
     const ov=st.autoTBOverrides.find(o=>String(o.id)===ovId);
     if(ov){ov.start_time=null;ov.end_time=null;}
     sbReqSilent('PATCH','auto_timeblock_overrides',{start_time:null,end_time:null},`?id=eq.${ovId}`);
+    pushUndo(()=>{
+      const ov2=st.autoTBOverrides.find(o=>String(o.id)===ovId);
+      if(ov2&&prevOv){ov2.start_time=prevOv.start_time;ov2.end_time=prevOv.end_time;}
+      sbReqSilent('PATCH','auto_timeblock_overrides',{start_time:prevOv.start_time,end_time:prevOv.end_time},`?id=eq.${ovId}`);
+      save();if(document.getElementById('tbGrid'))renderDayTB();
+    },'Deleted auto block');
   } else {
-    // Create a deletion override
+    const tmpId='atbov-tmp-'+Date.now();
     const payload={base_id:atbId,date:ds,start_time:null,end_time:null};
-    st.autoTBOverrides.push({...payload,id:'atbov-tmp-'+Date.now()});
+    st.autoTBOverrides.push({...payload,id:tmpId});
+    let realId=null;
     sbReqSilent('POST','auto_timeblock_overrides',payload,'').then(res=>{
       if(res&&res[0]){
-        const idx=st.autoTBOverrides.findIndex(o=>String(o.base_id)===String(atbId)&&o.date===ds&&String(o.id).startsWith('atbov-tmp-'));
+        realId=String(res[0].id);
+        const idx=st.autoTBOverrides.findIndex(o=>String(o.id)===tmpId);
         if(idx>-1)st.autoTBOverrides[idx]=res[0];
         save();
       }
     });
+    pushUndo(()=>{
+      const id=realId||tmpId;
+      st.autoTBOverrides=st.autoTBOverrides.filter(o=>String(o.id)!==id);
+      if(realId)sbReqSilent('DELETE','auto_timeblock_overrides',null,`?id=eq.${realId}`);
+      save();if(document.getElementById('tbGrid'))renderDayTB();
+    },'Deleted auto block');
   }
   selAtbId=null;selAtbDs=null;
   save();if(document.getElementById('tbGrid'))renderDayTB();
@@ -2866,6 +2881,8 @@ function drawAutoTBBlock(col,atb,ds){
     if(e.detail>=2)return;
     e.preventDefault();e.stopPropagation();
     selAtbId=atb._atbId;selAtbDs=ds;
+    document.querySelectorAll('.atb-block.sel-atb').forEach(x=>x.classList.remove('sel-atb'));
+    el.classList.add('sel-atb');
     const startY=e.clientY,startSm=atb.sm;
     atbDragging=false;
     atbOnMove=ev=>{
