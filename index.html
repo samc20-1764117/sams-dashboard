@@ -2752,7 +2752,7 @@ function drawTBBlock(col,b){
     resizing={id:b.id,sy:e.clientY,sd:b.dur};
     document.addEventListener('mousemove',onRM);document.addEventListener('mouseup',onRU);
   });
-  let tbDragTimer=null,tbDragging=false,tbOnMove=null,tbOnUp=null;
+  let tbDragTimer=null,tbDragging=false,tbOnMove=null,tbOnUp=null,tbDownE=null;
   el.addEventListener('dblclick',e=>{
     if(e.target.classList.contains('tb-resize')||e.target.classList.contains('tb-bdel')||e.target.classList.contains('tb-chk'))return;
     e.preventDefault();e.stopPropagation();
@@ -2765,6 +2765,7 @@ function drawTBBlock(col,b){
     if(e.target.classList.contains('tb-resize')||e.target.classList.contains('tb-bdel')||e.target.classList.contains('tb-chk'))return;
     if(e.detail>=2)return;// let dblclick handle it
     e.preventDefault();
+    tbDownE=e;
     const startY=e.clientY,startSm=b.sm;
     tbDragging=false;
     tbOnMove=ev=>{
@@ -2782,6 +2783,7 @@ function drawTBBlock(col,b){
       document.removeEventListener('mouseup',tbOnUp);
       el.classList.remove('dragging-block');
       if(tbDragging){tbDragging=false;save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();sbUpdateBlock(b.id,{start_minutes:b.sm});}
+      else{const _r2=b.recId?st.recurring.find(x=>String(x.id)===String(b.recId)):null;const _isWr2=_r2&&(_r2.is_weekly_reset===true||_r2.is_weekly_reset==='true');const tbSelId=b.taskId?String(b.taskId):b.recId?(_isWr2?'wrec-':'rec-virt-')+b.recId:b.shopId?'shop-cal-'+b.shopId:null;if(tbSelId&&tbDownE){const fakeE={target:el,metaKey:tbDownE.metaKey,ctrlKey:tbDownE.ctrlKey,shiftKey:tbDownE.shiftKey,stopPropagation:()=>{}};selTask(fakeE,tbSelId);}}
     };
     document.addEventListener('mousemove',tbOnMove);
     document.addEventListener('mouseup',tbOnUp);
@@ -3926,7 +3928,8 @@ function applySelHighlight(){
   });
   function csForId(id){
     if(!id)return null;
-    if(id.startsWith('rec-virt-')||id.startsWith('wrec-'))return gc('recurring');
+    if(id.startsWith('wrec-')){const r=st.recurring.find(x=>String(x.id)===id.replace('wrec-',''));return gc(r&&(r.is_weekly_reset===true||r.is_weekly_reset==='true')?'weekly_reset':'recurring');}
+    if(id.startsWith('rec-virt-'))return gc('recurring');
     if(id.startsWith('shop-cal-'))return gc('shopping');
     const t=st.tasks.find(x=>String(x.id)===String(id));
     if(!t)return null;
@@ -3978,7 +3981,7 @@ function applySelHighlight(){
     if(!b){el.classList.remove('sel-row');clearSelVars(el);return;}
     let sel=false,csId=null;
     if(b.taskId){sel=selectedTasks.has(String(b.taskId));csId=String(b.taskId);}
-    else if(b.recId){const rid=String(b.recId);sel=selectedTasks.has('rec-virt-'+rid)||selRecIds.has(rid)||selectedTasks.has('wrec-'+rid);csId='rec-virt-'+rid;}
+    else if(b.recId){const rid=String(b.recId);const _r=st.recurring.find(x=>String(x.id)===rid);const _isWr=_r&&(_r.is_weekly_reset===true||_r.is_weekly_reset==='true');sel=selectedTasks.has('rec-virt-'+rid)||selRecIds.has(rid)||selectedTasks.has('wrec-'+rid);csId=(_isWr?'wrec-':'rec-virt-')+rid;}
     else if(b.shopId){const sid=String(b.shopId);sel=selectedTasks.has('shop-cal-'+sid)||selShopIds.has(sid);csId='shop-cal-'+sid;}
     el.classList.toggle('sel-row',sel);
     if(sel)applySelVars(el,csForId(csId));
