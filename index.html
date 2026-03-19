@@ -1701,10 +1701,10 @@ function renderToday(){
   // Weekly reset tasks pinned to today via _dateOverrides
   const _wkKeyNow=getWkKey(wkOff);
   const wrecToday=st.recurring
-    .filter(r=>(r.is_weekly_reset===true||r.is_weekly_reset==='true')&&!r._done&&r._dateOverrides&&(
+    .filter(r=>(r.is_weekly_reset===true||r.is_weekly_reset==='true')&&!(r._doneByWk&&r._doneByWk[_wkKeyNow])&&r._dateOverrides&&(
       r._dateOverrides[_wkKeyNow]===ds||(dayOff===0&&r._dateOverrides[_wkKeyNow]&&r._dateOverrides[_wkKeyNow]<ds)
     ))
-    .map(r=>({id:'rec-virt-'+r.id,name:r.name,category:'Recurring',due_date:r._dateOverrides[_wkKeyNow],done:!!r._done,_recId:r.id,_virtual:true,_wkKey:_wkKeyNow,_isWrec:true}));
+    .map(r=>({id:'rec-virt-'+r.id,name:r.name,category:'Recurring',due_date:r._dateOverrides[_wkKeyNow],done:!!(r._doneByWk&&r._doneByWk[_wkKeyNow]),_recId:r.id,_virtual:true,_wkKey:_wkKeyNow,_isWrec:true}));
   // Shopping items due today (or overdue when viewing today)
   const shopToday=st.shopping
     .filter(s=>!s.done&&s.due_date&&(s.due_date===ds||(dayOff===0&&isOv(s.due_date))))
