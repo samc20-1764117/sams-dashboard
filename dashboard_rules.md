@@ -104,7 +104,8 @@ All three checkbox types share identical visual style:
   - `weekly`: show every week.
   - `biweekly`: show every 2 weeks. Anchor = Monday of week containing `starting_date`. Show when `weekDiff % 2 === 0` and `weekDiff >= 0`.
   - `monthly`: show on the week containing `repeat_date` day-of-month. `appears_on_date` is ignored for monthly.
-- Overdue wrec tasks: detected via `_dateOverrides[wkKey] < today` and `!r._done`.
+- Overdue wrec tasks: detected via `_dateOverrides[wkKey] < today` and `!(r._doneByWk&&r._doneByWk[wkKey])` (use `_doneByWk`, not `_done`).
+- `wrecToday` in `renderToday()` checks BOTH current week key AND all past week keys for overdue entries. `getOvRecurring()` does the same — they must stay in sync or banner counts tasks not shown in the list.
 - DB save for recurring: `PATCH recurring_tasks { date_overrides: r._dateOverrides }` using `recQs(id)`.
 - New recurring task payload must include: `name`, `is_weekly_reset`, `appears_on_date`, `cadence` (always, never omit — NOT NULL in DB). Do NOT send `day_of_week` — column does not exist in `recurring_tasks` schema.
 - Optional columns to include when present: `appears_on_date`, `starting_date`, `repeat_date`, `day_added`, `task_due_day`. Do NOT send `day_of_week`, `repeat_day` — these do not exist in the schema.

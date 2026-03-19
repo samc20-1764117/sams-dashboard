@@ -1700,11 +1700,28 @@ function renderToday(){
   }
   // Weekly reset tasks pinned to today via _dateOverrides
   const _wkKeyNow=getWkKey(wkOff);
-  const wrecToday=st.recurring
-    .filter(r=>(r.is_weekly_reset===true||r.is_weekly_reset==='true')&&!(r._doneByWk&&r._doneByWk[_wkKeyNow])&&r._dateOverrides&&(
-      r._dateOverrides[_wkKeyNow]===ds||(dayOff===0&&r._dateOverrides[_wkKeyNow]&&r._dateOverrides[_wkKeyNow]<ds)
-    ))
-    .map(r=>({id:'rec-virt-'+r.id,name:r.name,category:'Recurring',due_date:r._dateOverrides[_wkKeyNow],done:!!(r._doneByWk&&r._doneByWk[_wkKeyNow]),_recId:r.id,_virtual:true,_wkKey:_wkKeyNow,_isWrec:true}));
+  const _wrecSeen=new Set();
+  const wrecToday=[];
+  st.recurring.filter(r=>(r.is_weekly_reset===true||r.is_weekly_reset==='true')&&r._dateOverrides).forEach(r=>{
+    // Current week key: show if date matches today or is overdue
+    const curDate=r._dateOverrides[_wkKeyNow];
+    const curDone=!!(r._doneByWk&&r._doneByWk[_wkKeyNow]);
+    if(!curDone&&curDate&&(curDate===ds||(dayOff===0&&curDate<ds))&&!_wrecSeen.has(r.id)){
+      _wrecSeen.add(r.id);
+      wrecToday.push({id:'rec-virt-'+r.id,name:r.name,category:'Recurring',due_date:curDate,done:false,_recId:r.id,_virtual:true,_wkKey:_wkKeyNow,_isWrec:true});
+    }
+    // Past week keys: show any overdue entries not already added
+    if(dayOff===0){
+      Object.entries(r._dateOverrides).forEach(([wk,d])=>{
+        if(wk===_wkKeyNow||!d||d>=ds)return;
+        const pastDone=!!(r._doneByWk&&r._doneByWk[wk]);
+        if(!pastDone&&!_wrecSeen.has(r.id)){
+          _wrecSeen.add(r.id);
+          wrecToday.push({id:'rec-virt-'+r.id,name:r.name,category:'Recurring',due_date:d,done:false,_recId:r.id,_virtual:true,_wkKey:wk,_isWrec:true});
+        }
+      });
+    }
+  });
   // Shopping items due today (or overdue when viewing today)
   const shopToday=st.shopping
     .filter(s=>!s.done&&s.due_date&&(s.due_date===ds||(dayOff===0&&isOv(s.due_date))))
