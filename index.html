@@ -796,11 +796,11 @@ body.dark .qn-input{background:rgba(255,255,255,.06);border-color:rgba(255,220,2
   <input id="nsN" style="display:none"><input id="nsS" style="display:none">
   <datalist id="storeListFull"><option value="HEB"></option><option value="Ikea"></option><option value="Online"></option><option value="Other"></option></datalist>
 
-  <div id="rt-outer" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;width:100%">
+  <div id="rt-outer" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;height:calc(100vh - 140px);width:100%">
     <!-- Col 1: Weekly Reset Recurring -->
     <div id="rt-col-wr" style="min-height:0;display:flex;flex-direction:column">
       <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px;padding:0 2px;flex-shrink:0;text-align:center">Weekly Reset</div>
-      <div style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;flex-direction:column;gap:14px;overflow-y:auto;flex:1;min-height:0;padding-right:4px">
         <div id="rt-wr-weekly"></div>
         <div id="rt-wr-biweekly"></div>
         <div id="rt-wr-monthly"></div>
@@ -811,7 +811,7 @@ body.dark .qn-input{background:rgba(255,255,255,.06);border-color:rgba(255,220,2
     <!-- Col 2: Other Recurring -->
     <div id="rt-col-sch" style="min-height:0;display:flex;flex-direction:column">
       <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px;padding:0 2px;flex-shrink:0;text-align:center">Other Recurring</div>
-      <div style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;flex-direction:column;gap:14px;overflow-y:auto;flex:1;min-height:0;padding-right:4px">
         <div id="rt-sch-weekly"></div>
         <div id="rt-sch-biweekly"></div>
         <div id="rt-sch-monthly"></div>
@@ -3208,9 +3208,11 @@ async function toggleTask(id,done,mode=''){
     if(document.getElementById('tbGrid'))renderDayTB();
   };
   rerender();
-  pushUndo(()=>{t.done=prev;pendingLocal.add(sid);if(st.blocks)st.blocks.filter(b=>String(b.taskId)===String(id)).forEach(b=>b._done=prev);rerender();sbReq('PATCH','tasks',{done:prev},`?id=eq.${id}`).then(()=>pendingLocal.delete(sid));},(done?'Checked':'Unchecked')+' task');
+  const linkedBlocks=st.blocks?st.blocks.filter(b=>String(b.taskId)===String(id)):[];
+  pushUndo(()=>{t.done=prev;pendingLocal.add(sid);if(st.blocks)st.blocks.filter(b=>String(b.taskId)===String(id)).forEach(b=>b._done=prev);rerender();sbReq('PATCH','tasks',{done:prev},`?id=eq.${id}`).then(()=>pendingLocal.delete(sid));linkedBlocks.forEach(b=>sbUpdateBlock(b.id,{done:prev}));},(done?'Checked':'Unchecked')+' task');
   await sbReq('PATCH','tasks',{done},`?id=eq.${id}`);
   pendingLocal.delete(sid);
+  linkedBlocks.forEach(b=>sbUpdateBlock(b.id,{done}));
 }
 async function clearTaskDate(id,e){
   e&&e.stopPropagation();
