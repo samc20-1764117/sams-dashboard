@@ -22,6 +22,12 @@
 - **`.tod-section`**: flex column, overflow hidden. Contains overdue banner + `#todList`.
 - **`.tb-section`**: flex column, overflow hidden. Contains `#tbScroll` (no nav header).
 
+## Time Block Scroll Range
+
+- **`HOURS`**: `[...Array(20)].map((_,i)=>i+4)` — 4am through 11pm (20 rows). Scrollable range covers 4am–midnight; day does not shift until scrolled past these bounds.
+- **Default scroll on day change**: `scrollTop = Math.round((6.5 - HOURS[0]) * 60 * PX)` — positions 6:30am at top of view.
+- Day shift triggers only when `atTop` (scrollTop ≤ 0, i.e., past 4am) or `atBot` (scrolled past 11pm/midnight).
+
 ## Time Block
 
 - **`const PX = 40/60`** px per minute (1 hour = 40px).
@@ -248,6 +254,12 @@ All three checkbox types share identical visual style:
 - Completed column: Sunny Mastered then Mochi Mastered, sorted by level then skill_name. Dense + scrollable.
 - Colors: Mochi = `#8b5cf6` (purple), Sunny = `#f97316` (orange).
 - CSS classes: `.pup-col`, `.pup-skill-row`, `.pup-skill-emphasis` (Current Skills), `.pup-focus-row` (Train This Week), `.pup-done-row` (Completed), `.pup-pill`, `.pup-pill-sr`, `.pup-pill-dim`, `.pup-stat`, `.pup-section-label`, `.pup-check`, `.pup-next-step`.
+
+## Auto Timeblocks Overlap Layout
+
+- Auto blocks participate in `computeTBLayout(ds, extraBlocks)` alongside normal blocks — they share columns when overlapping.
+- `drawAutoTBBlock` applies same `left/right/width:auto` column math as `drawTBBlock`. Time label hidden when `_ncols > 1`.
+- Weekday dot markers: faint grey dots (`rgba(180,175,200,.4)`, 3px) rendered at `left:8px` inside `.tb-tlbl` for h===8 and h===16 on weekday dates only.
 
 ## Auto Timeblocks
 
