@@ -254,9 +254,11 @@ All three checkbox types share identical visual style:
 - Supabase tables: `auto_timeblocks(id, label, start_time, end_time, day_scope, is_enabled, sort_order, created_at)` and `auto_timeblock_overrides(id, base_id, date, start_time, end_time)`.
 - Stored in `st.autoTimeblocks` and `st.autoTBOverrides`. Fetched silently in `syncAll` after main block fetch.
 - `cfg.showAutoTB` (boolean, default `true`) toggles display. Toggle button `id="autoTBToggle"` in `tod-tb-header`.
-- `getAutoTBForDate(ds)`: returns resolved blocks for a date — uses override if `auto_timeblock_overrides` row exists for `base_id+date`, else uses base times. Returns `{_atbId, _ovId, label, sm, dur, ds}`.
-- `drawAutoTBBlock(col, atb, ds)`: renders with `.atb-block` class (light grey, `z-index:1`, no glow on hover/select). Draggable — on move creates/PATCHes `auto_timeblock_overrides` for that date only.
+- `getAutoTBForDate(ds)`: returns resolved blocks for a date — uses override if `auto_timeblock_overrides` row exists for `base_id+date`, else uses base times. Returns `{_atbId, _ovId, label, sm, dur, ds}`. Skips if `day_scope='weekdays'` and `ds` is Sat/Sun. Skips if override has `start_time=null` (deleted for that day).
+- `drawAutoTBBlock(col, atb, ds)`: renders with `.atb-block` class (light grey, `z-index:1`, no glow on hover/select). Has X button (`.atb-del`) calling `delAutoTBForDay`. Draggable — on move creates/PATCHes `auto_timeblock_overrides` for that date only. Sets `selAtbId`/`selAtbDs` on mousedown for Delete key support.
+- `delAutoTBForDay(atbId, ds, ovId)`: deletes for one day only. If override exists, PATCHes `start_time=null, end_time=null`. If not, POSTs a new override with null times. `null` start_time = deleted sentinel.
 - `toggleAutoTB()`: flips `cfg.showAutoTB`, saves, re-renders TB, updates button opacity.
+- `selAtbId`/`selAtbDs`: track currently selected auto block. Delete/Backspace key triggers `delAutoTBForDay` when set and no input is focused.
 - Auto blocks never appear in Today list, overdue banner, metrics, recurring page, or weekly calendar — timeblock only.
 - All DB interaction uses `sbReqSilent` (no error toasts).
 

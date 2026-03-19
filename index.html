@@ -1107,6 +1107,7 @@ let dayOff=0,wkOff=0,moOff=0,sbOpen=true;
 let dragId=null,resizing=null,tMode='add',tId=null,tPreDate=null;
 let qaCtx='today',qaDsTarget=null,qaKCat='';
 let tbWD=0,tbWT=null,wkcWD=0,wkcWT=null;
+let selAtbId=null,selAtbDs=null;
 // Undo stack
 let undoStack=[];let undoTimer=null;
 let shopSortMode='store'; // 'store' or 'alpha'
@@ -1634,6 +1635,10 @@ document.addEventListener('keydown',e=>{
     return;
   }
   if(e.key==='Escape'){document.querySelectorAll('.overlay.open').forEach(o=>o.classList.remove('open'));closeQA();}
+  if((e.key==='Delete'||e.key==='Backspace')&&selAtbId&&selAtbDs&&!document.querySelector('input:focus,textarea:focus')){
+    const atb=getAutoTBForDate(selAtbDs).find(a=>a._atbId===selAtbId);
+    if(atb){e.preventDefault();delAutoTBForDay(selAtbId,selAtbDs,atb._ovId);}
+  }
   if(e.key===' '&&document.getElementById('mModal').classList.contains('open')){e.preventDefault();closeMod('mModal');}
   if(e.key==='Enter'&&!e.metaKey&&!e.ctrlKey){
     const qa=document.getElementById('qaPopup');
@@ -2811,8 +2816,12 @@ function renderTBSum(ds){
 // ── Auto Timeblocks ────────────────────────────────────────────────────────────
 function getAutoTBForDate(ds){
   if(!cfg.showAutoTB)return[];
-  return st.autoTimeblocks.filter(a=>a.is_enabled).map(a=>{
+  const dow=new Date(ds+'T00:00:00').getDay(); // 0=Sun,6=Sat
+  const isWeekday=dow>=1&&dow<=5;
+  return st.autoTimeblocks.filter(a=>a.is_enabled).flatMap(a=>{
+    if(a.day_scope==='weekdays'&&!isWeekday)return[];
     const ov=st.autoTBOverrides.find(o=>String(o.base_id)===String(a.id)&&o.date===ds);
+    if(ov&&(ov.start_time===null||ov.start_time===undefined))return[]; // deleted for this day
     const startTime=ov?ov.start_time:a.start_time;
     const endTime=ov?ov.end_time:a.end_time;
     const[sh,sm2]=((startTime||'00:00').split(':'));
@@ -2820,8 +2829,29 @@ function getAutoTBForDate(ds){
     const startMinutes=parseInt(sh)*60+parseInt(sm2||0);
     const endMinutes=parseInt(eh)*60+parseInt(em||0);
     const dur=Math.max(15,endMinutes-startMinutes);
-    return{_atbId:String(a.id),_ovId:ov?String(ov.id):null,label:a.label||'',sm:startMinutes,dur,ds};
+    return[{_atbId:String(a.id),_ovId:ov?String(ov.id):null,label:a.label||'',sm:startMinutes,dur,ds}];
   });
+}
+function delAutoTBForDay(atbId,ds,ovId){
+  if(ovId){
+    // Update existing override to null times (marks as deleted for this day)
+    const ov=st.autoTBOverrides.find(o=>String(o.id)===ovId);
+    if(ov){ov.start_time=null;ov.end_time=null;}
+    sbReqSilent('PATCH','auto_timeblock_overrides',{start_time:null,end_time:null},`?id=eq.${ovId}`);
+  } else {
+    // Create a deletion override
+    const payload={base_id:atbId,date:ds,start_time:null,end_time:null};
+    st.autoTBOverrides.push({...payload,id:'atbov-tmp-'+Date.now()});
+    sbReqSilent('POST','auto_timeblock_overrides',payload,'').then(res=>{
+      if(res&&res[0]){
+        const idx=st.autoTBOverrides.findIndex(o=>String(o.base_id)===String(atbId)&&o.date===ds&&String(o.id).startsWith('atbov-tmp-'));
+        if(idx>-1)st.autoTBOverrides[idx]=res[0];
+        save();
+      }
+    });
+  }
+  selAtbId=null;selAtbDs=null;
+  save();if(document.getElementById('tbGrid'))renderDayTB();
 }
 function drawAutoTBBlock(col,atb,ds){
   const top=(atb.sm-HOURS[0]*60)*PX,ht=Math.max(atb.dur*PX,16);
@@ -2829,11 +2859,13 @@ function drawAutoTBBlock(col,atb,ds){
   el.className='atb-block';
   el.dataset.atbId=atb._atbId;
   el.style.cssText=`top:${top}px;height:${ht}px`;
-  el.innerHTML=`<div class="tb-row"><span class="tb-bt">${atb.label}</span><span class="tb-btime">${tStr(atb.sm)}-${tStr(atb.sm+atb.dur)}</span></div>`;
+  el.innerHTML=`<div class="tb-row"><span class="tb-bt">${atb.label}</span><span class="tb-btime">${tStr(atb.sm)}-${tStr(atb.sm+atb.dur)}</span><button class="tb-bdel atb-del" onclick="event.stopPropagation();delAutoTBForDay('${atb._atbId}','${ds}',${atb._ovId?`'${atb._ovId}'`:'null'})">✕</button></div>`;
   let atbDragging=false,atbOnMove=null,atbOnUp=null;
   el.addEventListener('mousedown',e=>{
+    if(e.target.classList.contains('atb-del'))return;
     if(e.detail>=2)return;
     e.preventDefault();e.stopPropagation();
+    selAtbId=atb._atbId;selAtbDs=ds;
     const startY=e.clientY,startSm=atb.sm;
     atbDragging=false;
     atbOnMove=ev=>{
