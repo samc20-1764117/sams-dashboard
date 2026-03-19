@@ -2764,7 +2764,7 @@ function drawTBBlock(col,b){
   el.addEventListener('mousedown',e=>{
     if(e.target.classList.contains('tb-resize')||e.target.classList.contains('tb-bdel')||e.target.classList.contains('tb-chk'))return;
     if(e.detail>=2)return;// let dblclick handle it
-    e.preventDefault();
+    e.preventDefault();e.stopPropagation();
     tbDownE=e;
     const startY=e.clientY,startSm=b.sm;
     tbDragging=false;
@@ -4115,7 +4115,7 @@ document.addEventListener('keydown',async e=>{
 
 // Click outside any task clears selection (use mousedown to not conflict with selTask)
 document.addEventListener('mousedown',e=>{
-  if(!e.target.closest('.ti')&&!e.target.closest('.kol-item')&&!e.target.closest('.chip')&&!e.target.closest('.mcell-t')&&!e.target.closest('#ctxMenu')){
+  if(!e.target.closest('.ti')&&!e.target.closest('.kol-item')&&!e.target.closest('.chip')&&!e.target.closest('.mcell-t')&&!e.target.closest('.tb-block')&&!e.target.closest('#ctxMenu')){
     clearSelection();
   }
 });
