@@ -2529,7 +2529,7 @@ function tRow(t,o={}){
     <span class="tn">${t.name}</span>
     ${o.cat?`<span class="cpill" style="background:${s.bg};color:${s.t};border-color:${s.b}">${t.category||'?'}</span>`:''}
     ${o.flag?'<span class="flag-u">📅</span>':''}
-    ${!o.flag&&!o.noDate&&t.due_date?`<span class="dlbl ${ov?'ov':''}" style="cursor:pointer" onclick="openInlineDatePicker(event,'${t.id}','${t.due_date}')">${fmtD(t.due_date)} <span class="date-clr" title="Clear date" onclick="event.stopPropagation();clearTaskDate('${t.id}',event)">×</span></span>`:''}
+    ${!o.flag&&(!o.noDate||ov)&&t.due_date?`<span class="dlbl ${ov?'ov':''}" style="cursor:pointer" onclick="openInlineDatePicker(event,'${t.id}','${t.due_date}')">${fmtD(t.due_date)} <span class="date-clr" title="Clear date" onclick="event.stopPropagation();clearTaskDate('${t.id}',event)">×</span></span>`:''}
     ${o.tbArrow?'<span class="tb-arrow">›</span>':''}
     <button class="delbtn" onclick="delTask('${t.id}',event)">✕</button>
   </div>`;
