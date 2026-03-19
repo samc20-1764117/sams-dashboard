@@ -796,7 +796,7 @@ body.dark .qn-input{background:rgba(255,255,255,.06);border-color:rgba(255,220,2
   <input id="nsN" style="display:none"><input id="nsS" style="display:none">
   <datalist id="storeListFull"><option value="HEB"></option><option value="Ikea"></option><option value="Online"></option><option value="Other"></option></datalist>
 
-  <div id="rt-outer" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;min-height:0;width:100%">
+  <div id="rt-outer" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;width:100%">
     <!-- Col 1: Weekly Reset Recurring -->
     <div id="rt-col-wr" style="min-height:0;display:flex;flex-direction:column">
       <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px;padding:0 2px;flex-shrink:0;text-align:center">Weekly Reset</div>
@@ -1698,30 +1698,13 @@ function renderToday(){
       if(!allRecVirt.find(x=>x._recId===v._recId))allRecVirt.push(v);
     });
   }
-  // Weekly reset tasks pinned to today via _dateOverrides
+  // Weekly reset tasks pinned to today via _dateOverrides (current week only)
   const _wkKeyNow=getWkKey(wkOff);
-  const _wrecSeen=new Set();
-  const wrecToday=[];
-  st.recurring.filter(r=>(r.is_weekly_reset===true||r.is_weekly_reset==='true')&&r._dateOverrides).forEach(r=>{
-    // Current week key: show if date matches today or is overdue
-    const curDate=r._dateOverrides[_wkKeyNow];
-    const curDone=!!(r._doneByWk&&r._doneByWk[_wkKeyNow]);
-    if(!curDone&&curDate&&(curDate===ds||(dayOff===0&&curDate<ds))&&!_wrecSeen.has(r.id)){
-      _wrecSeen.add(r.id);
-      wrecToday.push({id:'rec-virt-'+r.id,name:r.name,category:'Recurring',due_date:curDate,done:false,_recId:r.id,_virtual:true,_wkKey:_wkKeyNow,_isWrec:true});
-    }
-    // Past week keys: show any overdue entries not already added
-    if(dayOff===0){
-      Object.entries(r._dateOverrides).forEach(([wk,d])=>{
-        if(wk===_wkKeyNow||!d||d>=ds)return;
-        const pastDone=!!(r._doneByWk&&r._doneByWk[wk]);
-        if(!pastDone&&!_wrecSeen.has(r.id)){
-          _wrecSeen.add(r.id);
-          wrecToday.push({id:'rec-virt-'+r.id,name:r.name,category:'Recurring',due_date:d,done:false,_recId:r.id,_virtual:true,_wkKey:wk,_isWrec:true});
-        }
-      });
-    }
-  });
+  const wrecToday=st.recurring
+    .filter(r=>(r.is_weekly_reset===true||r.is_weekly_reset==='true')&&!(r._doneByWk&&r._doneByWk[_wkKeyNow])&&r._dateOverrides&&(
+      r._dateOverrides[_wkKeyNow]===ds||(dayOff===0&&r._dateOverrides[_wkKeyNow]&&r._dateOverrides[_wkKeyNow]<ds)
+    ))
+    .map(r=>({id:'rec-virt-'+r.id,name:r.name,category:'Recurring',due_date:r._dateOverrides[_wkKeyNow],done:!!(r._doneByWk&&r._doneByWk[_wkKeyNow]),_recId:r.id,_virtual:true,_wkKey:_wkKeyNow,_isWrec:true}));
   // Shopping items due today (or overdue when viewing today)
   const shopToday=st.shopping
     .filter(s=>!s.done&&s.due_date&&(s.due_date===ds||(dayOff===0&&isOv(s.due_date))))
@@ -3216,6 +3199,7 @@ document.addEventListener('click',e=>{
 // ── Task CRUD ──────────────────────────────────────────────────────────────────
 async function toggleTask(id,done,mode=''){
   const t=st.tasks.find(x=>String(x.id)===String(id));if(!t)return;const prev=t.done;t.done=done;
+  const sid=String(id);pendingLocal.add(sid);
   // Sync linked TB blocks _done state
   if(st.blocks)st.blocks.filter(b=>String(b.taskId)===String(id)).forEach(b=>b._done=done);
   const rerender=()=>{
@@ -3224,8 +3208,9 @@ async function toggleTask(id,done,mode=''){
     if(document.getElementById('tbGrid'))renderDayTB();
   };
   rerender();
-  pushUndo(()=>{t.done=prev;if(st.blocks)st.blocks.filter(b=>String(b.taskId)===String(id)).forEach(b=>b._done=prev);rerender();sbReq('PATCH','tasks',{done:prev},`?id=eq.${id}`);},(done?'Checked':'Unchecked')+' task');
+  pushUndo(()=>{t.done=prev;pendingLocal.add(sid);if(st.blocks)st.blocks.filter(b=>String(b.taskId)===String(id)).forEach(b=>b._done=prev);rerender();sbReq('PATCH','tasks',{done:prev},`?id=eq.${id}`).then(()=>pendingLocal.delete(sid));},(done?'Checked':'Unchecked')+' task');
   await sbReq('PATCH','tasks',{done},`?id=eq.${id}`);
+  pendingLocal.delete(sid);
 }
 async function clearTaskDate(id,e){
   e&&e.stopPropagation();
@@ -3996,6 +3981,7 @@ function showPage(id){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   const pageEl=document.getElementById('page-'+id);if(pageEl)pageEl.classList.add('active');
   const idx=PAGES.indexOf(id);if(idx>-1&&document.querySelectorAll('.nav-item')[idx])document.querySelectorAll('.nav-item')[idx].classList.add('active');
+  const mainEl=document.getElementById('main');if(mainEl)mainEl.scrollTop=0;
   if(id==='weekly'){renderWeeklyPage();}if(id==='travel')renderTravelPage();if(id==='birthdays')renderBdayPage();if(id==='pups')renderPupsPage();
   history.replaceState(null,'','#'+id);
 }
@@ -4555,12 +4541,14 @@ function getOvRecurring(){
         seen.add(v._recId);out.push(v);
       }
     });
-    // Also include weekly reset tasks with past date_overrides for this week
-    const wkKey=getWkKey(w);
-    st.recurring.filter(r=>(r.is_weekly_reset===true||r.is_weekly_reset==='true')&&!(r._doneByWk&&r._doneByWk[wkKey])&&r._dateOverrides&&r._dateOverrides[wkKey]&&r._dateOverrides[wkKey]<today&&!seen.has('wrec-'+r.id+'-'+wkKey)).forEach(r=>{
-      seen.add('wrec-'+r.id+'-'+wkKey);
-      out.push({id:'rec-virt-'+r.id,name:r.name,category:'Recurring',due_date:r._dateOverrides[wkKey],done:false,_recId:r.id,_virtual:true,_wkKey:wkKey,_isWrec:true});
-    });
+    // Weekly reset tasks: only check current week key (past-week overrides are stale, not overdue)
+    if(w===0){
+      const wkKey=getWkKey(w);
+      st.recurring.filter(r=>(r.is_weekly_reset===true||r.is_weekly_reset==='true')&&!(r._doneByWk&&r._doneByWk[wkKey])&&r._dateOverrides&&r._dateOverrides[wkKey]&&r._dateOverrides[wkKey]<today&&!seen.has('wrec-'+r.id+'-'+wkKey)).forEach(r=>{
+        seen.add('wrec-'+r.id+'-'+wkKey);
+        out.push({id:'rec-virt-'+r.id,name:r.name,category:'Recurring',due_date:r._dateOverrides[wkKey],done:false,_recId:r.id,_virtual:true,_wkKey:wkKey,_isWrec:true});
+      });
+    }
   }
   return out;
 }
