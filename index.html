@@ -4150,7 +4150,8 @@ function selPupRow(e,sid){
     else _selPupIds.add(sid);
     _lastSelPupId=sid;
   } else {
-    _selPupIds.clear();_selPupIds.add(sid);_lastSelPupId=sid;
+    if(_selPupIds.size===1&&_selPupIds.has(sid)){_selPupIds.clear();_lastSelPupId=null;}
+    else{_selPupIds.clear();_selPupIds.add(sid);_lastSelPupId=sid;}
   }
   applyPupSelHighlight();
 }
@@ -4224,12 +4225,14 @@ function pupFilterBy(e,col){
       <button onclick="clearPupFilter()" style="flex:1;padding:4px;border-radius:6px;border:1px solid var(--border);background:transparent;cursor:pointer;font-size:12px;color:var(--muted)">Clear</button>
     </div>`;
   } else {
-    const vals=[...new Set(skills.map(s=>String(s[col]||'—')))].sort();
+    const rawVals=[...new Set(skills.map(s=>String(s[col]||'—')))].sort();
+    const vals=[...rawVals.filter(v=>v==='—'),...rawVals.filter(v=>v!=='—')];
     const curVals=curFilter?.vals||new Set(vals);
     const allChk=!curFilter||curVals.size===vals.length;
+    const displayVal=v=>col==='category'&&v!=='—'?(v.charAt(0).toUpperCase()+v.slice(1)):v;
     html=`<div id="pfList" style="max-height:200px;overflow-y:auto;margin-bottom:8px">
       <label class="pf-cb-row"><input type="checkbox" id="pfAll" ${allChk?'checked':''} onchange="togglePupFilterAll()" style="margin-right:6px;accent-color:#8b5cf6"><em style="font-size:11px">(Select All)</em></label>
-      ${vals.map(v=>`<label class="pf-cb-row"><input type="checkbox" class="pf-cb" data-val="${v.replace(/"/g,'&quot;')}" ${curVals.has(v)?'checked':''} onchange="syncPupFilterAll()" style="margin-right:6px;accent-color:#8b5cf6"> ${v}</label>`).join('')}
+      ${vals.map(v=>`<label class="pf-cb-row"><input type="checkbox" class="pf-cb" data-val="${v.replace(/"/g,'&quot;')}" ${curVals.has(v)?'checked':''} onchange="syncPupFilterAll()" style="margin-right:6px;accent-color:#8b5cf6"> ${displayVal(v)}</label>`).join('')}
     </div>
     <div style="display:flex;gap:6px">
       <button onclick="applyPupCheckFilter('${col}')" style="flex:1;padding:4px;border-radius:6px;border:1px solid var(--border);background:rgba(139,92,246,.12);cursor:pointer;font-size:12px;color:var(--text)">Apply</button>
@@ -4238,7 +4241,7 @@ function pupFilterBy(e,col){
   }
   document.getElementById('pfContent').innerHTML=html;
   // Always query the live th from DOM — e.currentTarget may be detached if sort re-rendered thead
-  const colIdx={focus:0,pup:1,category:2,skill:3,level:4,stage:5,next_step:6}[col]??0;
+  const colIdx={focus:0,pup:1,skill:2,level:3,stage:4,next_step:5,category:6}[col]??0;
   const liveTh=document.getElementById('pupTblHead')?.querySelectorAll('th')[colIdx];
   const rect=liveTh?liveTh.getBoundingClientRect():{left:200,bottom:200,right:200};
   let left=rect.left,pw=200;
@@ -4346,16 +4349,15 @@ function renderPupTable(){
   const fdot=col=>(_pupFilter&&_pupFilter.col===col)?'<span style="color:#f97316;font-size:9px;margin-left:2px">▼</span>':'';
   const ths='cursor:pointer;user-select:none;white-space:nowrap;padding:6px 8px';
   const tdE='user-select:none;cursor:default';
-  const CAT_COLORS={commands:{bg:'rgba(59,130,246,.12)',c:'#1d4ed8'},manners:{bg:'rgba(16,185,129,.12)',c:'#065f46'},fun:{bg:'rgba(236,72,153,.12)',c:'#9d174d'}};
-  function catChip(cat){if(!cat)return'<span style="color:var(--subtle);font-size:10px">—</span>';const cs=CAT_COLORS[cat]||{bg:'rgba(148,163,184,.12)',c:'#475569'};return`<span style="display:inline-block;padding:1px 6px;border-radius:10px;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;background:${cs.bg};color:${cs.c}">${cat}</span>`;}
+  function catText(cat){return cat?(cat.charAt(0).toUpperCase()+cat.slice(1)):'—';}
   thead.innerHTML=`<tr>
     <th onclick="pupHdrClick('focus')" ondblclick="pupHdrDbl(event,'focus')" style="${ths};width:32px;text-align:center">Focus${arrow('focus')}${fdot('focus')}</th>
     <th onclick="pupHdrClick('pup')" ondblclick="pupHdrDbl(event,'pup')" style="${ths};width:66px">Pup${arrow('pup')}${fdot('pup')}</th>
-    <th onclick="pupHdrClick('category')" ondblclick="pupHdrDbl(event,'category')" style="${ths};width:86px">Category${arrow('category')}${fdot('category')}</th>
     <th onclick="pupHdrClick('skill')" ondblclick="pupHdrDbl(event,'skill')" style="${ths}">Skill${arrow('skill')}${fdot('skill')}</th>
     <th onclick="pupHdrClick('level')" ondblclick="pupHdrDbl(event,'level')" style="${ths};width:66px">Level${arrow('level')}${fdot('level')}</th>
     <th onclick="pupHdrClick('stage')" ondblclick="pupHdrDbl(event,'stage')" style="${ths};width:90px">Stage${arrow('stage')}${fdot('stage')}</th>
     <th onclick="pupHdrClick('next_step')" ondblclick="pupHdrDbl(event,'next_step')" style="${ths}">Next Step${arrow('next_step')}${fdot('next_step')}</th>
+    <th onclick="pupHdrClick('category')" ondblclick="pupHdrDbl(event,'category')" style="${ths};width:86px">Category${arrow('category')}${fdot('category')}</th>
     <th style="width:28px"></th>
   </tr>`;
   const showCatDividers=!_pupSortCol;
@@ -4383,11 +4385,11 @@ function renderPupTable(){
     rowsHtml.push(`<tr data-sid="${sid}" style="background:${bg}" class="${isSel?'pup-sel':''}" onclick="selPupRow(event,'${sid}')" oncontextmenu="showPupCtx(event,'${sid}')">
       <td style="text-align:center;width:32px;padding:4px 0"><input type="checkbox"${foc?' checked':''} onchange="setPupField('${sid}','focus',this.checked)" style="width:13px;height:13px;cursor:pointer;accent-color:#eab308"></td>
       <td ondblclick="pupCellEdit(this,'${sid}','pup')" style="width:66px;padding:4px 8px;${tdE}">${esc(s.pup)}</td>
-      <td ondblclick="pupCellEdit(this,'${sid}','category')" style="width:86px;padding:4px 6px;${tdE}">${catChip(s.category)}</td>
       <td ondblclick="pupCellEdit(this,'${sid}','skill')" style="padding:4px 8px;${tdE}">${esc(s.skill)}</td>
       <td ondblclick="pupCellEdit(this,'${sid}','level')" style="width:66px;padding:4px 8px;${tdE}">${esc(s.level)||'—'}</td>
       <td ondblclick="pupCellEdit(this,'${sid}','stage')" style="width:90px;padding:4px 8px;${tdE}">${esc(s.stage||'')}</td>
       <td ondblclick="pupCellEdit(this,'${sid}','next_step')" onmouseenter="${comment?`showPupTip(event,'${comment}')`:''}" onmouseleave="${comment?'hidePupTip()':''}" style="padding:4px 8px;${tdE}${comment?';cursor:help':''}">${nextStep}</td>
+      <td ondblclick="pupCellEdit(this,'${sid}','category')" style="width:86px;padding:4px 8px;${tdE}">${catText(s.category)}</td>
       <td style="width:28px;padding:2px 4px;text-align:right"><button class="pup-dots" onclick="event.stopPropagation();openPupEditModal('${sid}')" title="Edit">···</button></td>
     </tr>`);
   });
@@ -4437,7 +4439,8 @@ function renderPupsPage(){
     const notStarted=ps.filter(s=>!s.stage||s.stage==='Not Started');
     const total=ps.length||1;
     const pMastered=mastered.length/total*100,pInProg=inProgress.length/total*100,pNot=notStarted.length/total*100;
-    const progressBar=`<div style="height:4px;border-radius:4px;overflow:hidden;background:rgba(210,205,228,.2);display:flex;gap:1px;flex-shrink:0"><div style="width:${pMastered}%;background:#22c55e;transition:width .3s"></div><div style="width:${pInProg}%;background:#eab308;transition:width .3s"></div><div style="width:${pNot}%;background:rgba(210,205,228,.4);transition:width .3s"></div></div>`;
+    const tipText=`Mastered: ${mastered.length} · In Progress: ${inProgress.length} · Not Started: ${notStarted.length}`;
+    const progressBar=`<div onmouseenter="showPupTip(event,'${tipText}')" onmouseleave="hidePupTip()" style="height:5px;border-radius:0 0 var(--r) var(--r);overflow:hidden;background:rgba(210,205,228,.2);display:flex;cursor:default;flex-shrink:0"><div style="width:${pMastered}%;background:#22c55e;transition:width .3s"></div><div style="width:${pInProg}%;background:#eab308;transition:width .3s"></div><div style="width:${pNot}%;background:rgba(210,205,228,.35);transition:width .3s"></div></div>`;
     const trainWeek=ps.filter(s=>s.focus===true||s.focus==='true');
     return`<div class="pup-col card" style="display:flex;flex-direction:column"><div class="ch"><span style="font-weight:700;font-size:13px;color:var(--text)">${pup}</span><span style="margin-left:auto;font-size:11px;color:var(--muted);font-weight:500">${inProgress.length} in progress</span></div><div style="padding:14px 16px;display:flex;flex-direction:column;gap:14px;overflow-y:auto;flex:1;min-height:0">${trainWeek.length?`<div><div class="pup-section-label">Train This Week</div>${trainWeek.map(s=>skillCardRow(s,'pup-focus-row')).join('')}</div>`:''} ${inProgress.length?`<div><div class="pup-section-label" style="color:var(--text);font-weight:800">Up Next</div>${groupedCardRows(inProgress,'pup-skill-emphasis')}</div>`:''} ${ps.length===0?'<div style="font-size:11px;color:var(--muted);text-align:center;padding:20px 0">No skills yet</div>':''}</div>${progressBar}</div>`;
   }
@@ -4450,6 +4453,11 @@ function renderPupsPage(){
       if(!row)return;
       e.preventDefault();
       openPupEditModal(row.dataset.pupid);
+    });
+    page.addEventListener('click',e=>{
+      if(!e.target.closest('#pupTblBody')&&!e.target.closest('.pup-cat-sep')){
+        _selPupIds.clear();_lastSelPupId=null;applyPupSelHighlight();
+      }
     });
   }
   renderPupTable();
