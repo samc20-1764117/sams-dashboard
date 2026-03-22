@@ -155,9 +155,10 @@ body{font-family:'DM Sans',sans-serif;background:#fef6f0;background-attachment:f
 .pup-tbl input,.pup-tbl select{font-size:11px;font-family:inherit;border:none;background:transparent;color:var(--text);width:100%;outline:none;cursor:pointer;padding:2px 3px;border-radius:3px;transition:background .12s}
 .pup-tbl input:focus,.pup-tbl select:focus{background:rgba(255,255,255,.85);cursor:text}
 .pup-tbl select{cursor:pointer;-webkit-appearance:auto}
-.pf-opt{padding:5px 8px;cursor:pointer;border-radius:6px;font-size:12px;color:var(--text)}
-.pf-opt:hover{background:rgba(255,255,255,.5)}
-.pf-opt.pf-sel{background:rgba(139,92,246,.12);font-weight:600}
+#pupFilterPop{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px;box-shadow:0 4px 24px rgba(0,0,0,.18);opacity:0;transform:translateY(-6px) scale(.97);transition:opacity .15s ease,transform .15s ease;pointer-events:none}
+#pupFilterPop.pfopen{opacity:1;transform:translateY(0) scale(1);pointer-events:auto}
+.pf-cb-row{display:flex;align-items:center;padding:4px 6px;border-radius:6px;cursor:pointer;font-size:12px;color:var(--text);user-select:none}
+.pf-cb-row:hover{background:rgba(255,255,255,.4)}
 .undo-toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%) translateY(60px);background:rgba(37,32,64,.92);color:#fff;font-size:11px;font-weight:600;padding:7px 14px;border-radius:20px;box-shadow:var(--shadow-lg);transition:transform .22s ease,opacity .22s ease;opacity:0;z-index:900;display:flex;align-items:center;gap:8px;white-space:nowrap}
 .undo-toast.show{transform:translateX(-50%) translateY(0);opacity:1}
 .undo-btn{background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);border-radius:6px;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;cursor:pointer;transition:background .12s}
@@ -1081,7 +1082,7 @@ body.dark .qn-input{background:rgba(255,255,255,.06);border-color:rgba(255,220,2
 
 <!-- Quick-add popup -->
 <!-- Pup Filter Popup -->
-<div id="pupFilterPop" style="display:none;position:fixed;z-index:9999;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px;box-shadow:0 4px 20px rgba(0,0,0,.18);width:190px" data-col="">
+<div id="pupFilterPop" data-col="" style="position:fixed;z-index:9999;width:200px">
   <div id="pfContent"></div>
 </div>
 
@@ -1672,7 +1673,7 @@ document.addEventListener('keydown',e=>{
     if(e.shiftKey){doRedo();}else{doUndo();}
     return;
   }
-  if(e.key==='Escape'){document.querySelectorAll('.overlay.open').forEach(o=>o.classList.remove('open'));closeQA();const pfp=document.getElementById('pupFilterPop');if(pfp)pfp.style.display='none';}
+  if(e.key==='Escape'){document.querySelectorAll('.overlay.open').forEach(o=>o.classList.remove('open'));closeQA();const pfp=document.getElementById('pupFilterPop');if(pfp)pfp.classList.remove('pfopen');}
   if((e.key==='Delete'||e.key==='Backspace')&&selAtbId&&selAtbDs&&!document.querySelector('input:focus,textarea:focus')){
     const atb=getAutoTBForDate(selAtbDs).find(a=>a._atbId===selAtbId);
     if(atb){e.preventDefault();delAutoTBForDay(selAtbId,selAtbDs,atb._ovId);}
@@ -3256,8 +3257,8 @@ document.addEventListener('click',e=>{
   if(!p.contains(e.target)&&!e.target.classList.contains('btn-plus')&&!e.target.classList.contains('wkc-add-btn'))closeQA();
 });
 document.addEventListener('click',e=>{
-  const pop=document.getElementById('pupFilterPop');if(!pop||pop.style.display==='none')return;
-  if(!pop.contains(e.target)&&!e.target.closest('th[ondblclick]'))pop.style.display='none';
+  const pop=document.getElementById('pupFilterPop');if(!pop||!pop.classList.contains('pfopen'))return;
+  if(!pop.contains(e.target)&&!e.target.closest('th[ondblclick]'))pop.classList.remove('pfopen');
 });
 
 // ── Task CRUD ──────────────────────────────────────────────────────────────────
@@ -4078,45 +4079,80 @@ function pupSortBy(col){
 function pupFilterBy(e,col){
   e.stopPropagation();
   const pop=document.getElementById('pupFilterPop');
-  if(pop.dataset.col===col&&pop.style.display!=='none'){pop.style.display='none';return;}
+  if(pop.dataset.col===col&&pop.classList.contains('pfopen')){pop.classList.remove('pfopen');return;}
   pop.dataset.col=col;
   const skills=st.pup_skills||[];
-  const curVal=_pupFilter&&_pupFilter.col===col?_pupFilter.val:'';
+  const curFilter=_pupFilter&&_pupFilter.col===col?_pupFilter:null;
   const inp_s='width:100%;padding:5px 8px;border-radius:8px;border:1px solid var(--border);font-family:inherit;font-size:12px;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box';
   let html='';
   if(col==='skill'||col==='next_step'){
-    html=`<input id="pfText" placeholder="Type to filter…" value="${curVal.replace(/"/g,'&quot;')}" style="${inp_s}"><div style="font-size:9px;color:var(--muted);margin-top:4px">↵ Enter to apply · Esc to close</div>`;
+    const curText=curFilter?.text||'';
+    html=`<input id="pfText" placeholder="Search…" value="${curText.replace(/"/g,'&quot;')}" style="${inp_s}">
+    <div style="display:flex;gap:6px;margin-top:8px">
+      <button onclick="applyPupTextFilter()" style="flex:1;padding:4px;border-radius:6px;border:1px solid var(--border);background:rgba(139,92,246,.12);cursor:pointer;font-size:12px;color:var(--text)">Apply</button>
+      <button onclick="clearPupFilter()" style="padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:transparent;cursor:pointer;font-size:12px;color:var(--muted)">Clear</button>
+    </div>`;
   } else {
-    const vals=['(All)',...new Set(skills.map(s=>String(s[col]||'—')).filter(Boolean))].filter((v,i,a)=>a.indexOf(v)===i);
-    html=`<div style="max-height:180px;overflow-y:auto">${vals.map(v=>`<div class="pf-opt${(curVal===v||(!curVal&&v==='(All)')?' pf-sel':'')}" onclick="selectPupFilter('${col}','${v}')">${v}</div>`).join('')}</div>`;
+    const vals=[...new Set(skills.map(s=>String(s[col]||'—')))].sort();
+    const curVals=curFilter?.vals||new Set(vals);
+    const allChk=!curFilter||curVals.size===vals.length;
+    html=`<div id="pfList" style="max-height:200px;overflow-y:auto;margin-bottom:8px">
+      <label class="pf-cb-row"><input type="checkbox" id="pfAll" ${allChk?'checked':''} onchange="togglePupFilterAll()" style="margin-right:6px;accent-color:#8b5cf6"><em style="font-size:11px">(Select All)</em></label>
+      ${vals.map(v=>`<label class="pf-cb-row"><input type="checkbox" class="pf-cb" data-val="${v.replace(/"/g,'&quot;')}" ${curVals.has(v)?'checked':''} onchange="syncPupFilterAll()" style="margin-right:6px;accent-color:#8b5cf6"> ${v}</label>`).join('')}
+    </div>
+    <div style="display:flex;gap:6px">
+      <button onclick="applyPupCheckFilter('${col}')" style="flex:1;padding:4px;border-radius:6px;border:1px solid var(--border);background:rgba(139,92,246,.12);cursor:pointer;font-size:12px;color:var(--text)">Apply</button>
+      <button onclick="clearPupFilter()" style="padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:transparent;cursor:pointer;font-size:12px;color:var(--muted)">Clear</button>
+    </div>`;
   }
   document.getElementById('pfContent').innerHTML=html;
-  const rect=e.currentTarget.getBoundingClientRect();
-  let left=rect.left,top=rect.bottom+4,pw=190;
+  const th=e.currentTarget;
+  const rect=th.getBoundingClientRect();
+  let left=rect.left,pw=200;
   if(left+pw>window.innerWidth-6)left=window.innerWidth-pw-6;
-  pop.style.cssText=`display:block;position:fixed;left:${left}px;top:${top}px;width:${pw}px;z-index:9999;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px;box-shadow:0 4px 20px rgba(0,0,0,.18)`;
+  pop.style.left=left+'px';pop.style.top=(rect.bottom+4)+'px';
+  pop.classList.add('pfopen');
   if(col==='skill'||col==='next_step'){
     setTimeout(()=>{
       const inp=document.getElementById('pfText');if(!inp)return;inp.focus();inp.select();
-      inp.onkeydown=ev=>{if(ev.key==='Enter'){ev.preventDefault();applyPupTextFilter();}if(ev.key==='Escape')pop.style.display='none';};
-    },30);
+      inp.onkeydown=ev=>{if(ev.key==='Enter'){ev.preventDefault();applyPupTextFilter();}if(ev.key==='Escape')pop.classList.remove('pfopen');};
+    },50);
   }
 }
-function selectPupFilter(col,val){
-  _pupFilter=val==='(All)'?null:{col,val};
-  document.getElementById('pupFilterPop').style.display='none';
+function togglePupFilterAll(){
+  const allCb=document.getElementById('pfAll');
+  const cbs=document.querySelectorAll('.pf-cb');
+  cbs.forEach(c=>c.checked=allCb.checked);
+}
+function syncPupFilterAll(){
+  const allCb=document.getElementById('pfAll');
+  const cbs=[...document.querySelectorAll('.pf-cb')];
+  allCb.checked=cbs.every(c=>c.checked);
+}
+function applyPupCheckFilter(col){
+  const cbs=[...document.querySelectorAll('.pf-cb')];
+  const checked=new Set(cbs.filter(c=>c.checked).map(c=>c.dataset.val));
+  const all=cbs.every(c=>c.checked);
+  _pupFilter=all?null:{col,vals:checked,type:'set'};
+  document.getElementById('pupFilterPop').classList.remove('pfopen');
+  renderPupTable();
+}
+function clearPupFilter(){
+  _pupFilter=null;
+  document.getElementById('pupFilterPop').classList.remove('pfopen');
   renderPupTable();
 }
 function applyPupTextFilter(){
   const col=document.getElementById('pupFilterPop').dataset.col;
   const val=(document.getElementById('pfText')?.value||'').trim();
-  _pupFilter=val?{col,val}:null;
-  document.getElementById('pupFilterPop').style.display='none';
+  _pupFilter=val?{col,text:val,type:'text'}:null;
+  document.getElementById('pupFilterPop').classList.remove('pfopen');
   renderPupTable();
 }
 function pupCellEdit(td,id,field){
-  if(td.querySelector('input,select'))return;
-  const s=st.pup_skills.find(x=>x.id==id);if(!s)return;
+  if(td._editing)return;
+  const s=st.pup_skills.find(x=>String(x.id)===String(id));if(!s)return;
+  td._editing=true;
   let el;
   const elStyle='width:100%;font-size:11px;border:1px solid var(--border);border-radius:4px;padding:2px 4px;background:var(--bg);color:var(--text);outline:none;font-family:inherit;box-sizing:border-box';
   if(field==='pup'){el=document.createElement('select');['Mochi','Sunny'].forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;if(s.pup===v)o.selected=true;el.appendChild(o);});}
@@ -4125,13 +4161,13 @@ function pupCellEdit(td,id,field){
   else{el=document.createElement('input');el.value=s[field]||'';}
   el.style.cssText=elStyle;
   const origTxt=td.textContent;
-  td.textContent='';td.appendChild(el);el.focus();
-  if(el.tagName==='INPUT')el.select();
+  td.textContent='';td.appendChild(el);
+  requestAnimationFrame(()=>{el.focus();if(el.tagName==='INPUT')el.select();});
   let saved=false;
-  const doSave=async()=>{if(saved)return;saved=true;const newVal=el.value;await setPupField(id,field,newVal,String(s[field]??''));renderPupTable();};
+  const doSave=async()=>{if(saved)return;saved=true;td._editing=false;await setPupField(id,field,el.value,String(s[field]??''));renderPupTable();};
   el.onblur=doSave;
-  el.onkeydown=ev=>{if(ev.key==='Enter'){ev.preventDefault();el.blur();}if(ev.key==='Escape'){saved=true;td.textContent=origTxt;}};
-  if(el.tagName==='SELECT')el.onchange=async()=>{saved=true;el.onblur=null;await setPupField(id,field,el.value,String(s[field]??''));renderPupTable();};
+  el.onkeydown=ev=>{if(ev.key==='Enter'){ev.preventDefault();el.blur();}if(ev.key==='Escape'){saved=true;td._editing=false;td.textContent=origTxt;}};
+  if(el.tagName==='SELECT')el.onchange=async()=>{saved=true;td._editing=false;el.onblur=null;await setPupField(id,field,el.value,String(s[field]??''));renderPupTable();};
 }
 function renderPupTable(){
   const thead=document.getElementById('pupTblHead');
@@ -4141,8 +4177,8 @@ function renderPupTable(){
   const LDEG={Easy:0,Medium:1,Hard:2},SDEG={'Not Started':0,'In Progress':1,'Mastered':2};
   let rows=[...skills];
   if(_pupFilter){
-    const fv=_pupFilter.val.toLowerCase();
-    rows=rows.filter(s=>String(s[_pupFilter.col]||'').toLowerCase().includes(fv));
+    if(_pupFilter.type==='text'){const fv=_pupFilter.text.toLowerCase();rows=rows.filter(s=>String(s[_pupFilter.col]||'').toLowerCase().includes(fv));}
+    else if(_pupFilter.type==='set'){rows=rows.filter(s=>_pupFilter.vals.has(String(s[_pupFilter.col]||'—')));}
   }
   if(_pupSortCol){
     rows.sort((a,b)=>{
@@ -4155,8 +4191,9 @@ function renderPupTable(){
     rows.sort((a,b)=>(a.pup||'').localeCompare(b.pup||'')||(a.skill||'').localeCompare(b.skill||''));
   }
   const arrow=col=>_pupSortCol===col?(_pupSortDir>0?' ↑':' ↓'):'';
-  const fdot=col=>(_pupFilter&&_pupFilter.col===col)?'<span style="color:#f97316;font-size:9px"> ●</span>':'';
+  const fdot=col=>(_pupFilter&&_pupFilter.col===col)?'<span style="color:#f97316;font-size:9px;margin-left:2px">▼</span>':'';
   const ths='cursor:pointer;user-select:none;white-space:nowrap;padding:6px 8px';
+  const tdE='user-select:none;cursor:default';
   thead.innerHTML=`<tr>
     <th onclick="pupSortBy('focus')" ondblclick="pupFilterBy(event,'focus')" style="${ths};width:32px;text-align:center">🎯${arrow('focus')}${fdot('focus')}</th>
     <th onclick="pupSortBy('pup')" ondblclick="pupFilterBy(event,'pup')" style="${ths};width:72px">Pup${arrow('pup')}${fdot('pup')}</th>
@@ -4170,21 +4207,16 @@ function renderPupTable(){
     const bg=s.pup==='Mochi'?'rgba(139,92,246,.07)':s.pup==='Sunny'?'rgba(234,179,8,.08)':'';
     const comment=s.comments&&s.comments!=='None'?esc(s.comments):'';
     const nextStep=s.next_step&&s.next_step!=='None'?esc(s.next_step):'';
-    return`<tr data-id="${s.id}" style="background:${bg}">
-      <td style="text-align:center;width:32px;padding:4px 0"><input type="checkbox"${foc?' checked':''} onchange="setPupField(${s.id},'focus',this.checked)" style="width:13px;height:13px;cursor:pointer;accent-color:#eab308"></td>
-      <td data-field="pup" style="width:72px;padding:4px 8px">${esc(s.pup)}</td>
-      <td data-field="skill" style="padding:4px 8px">${esc(s.skill)}</td>
-      <td data-field="level" style="width:72px;padding:4px 8px">${esc(s.level)||'—'}</td>
-      <td data-field="stage" style="width:96px;padding:4px 8px">${esc(s.stage||'')}</td>
-      <td data-field="next_step" style="padding:4px 8px${comment?';cursor:help':''}" title="${comment}">${nextStep}</td>
+    const sid=String(s.id);
+    return`<tr style="background:${bg}">
+      <td style="text-align:center;width:32px;padding:4px 0"><input type="checkbox"${foc?' checked':''} onchange="setPupField('${sid}','focus',this.checked)" style="width:13px;height:13px;cursor:pointer;accent-color:#eab308"></td>
+      <td ondblclick="pupCellEdit(this,'${sid}','pup')" style="width:72px;padding:4px 8px;${tdE}">${esc(s.pup)}</td>
+      <td ondblclick="pupCellEdit(this,'${sid}','skill')" style="padding:4px 8px;${tdE}">${esc(s.skill)}</td>
+      <td ondblclick="pupCellEdit(this,'${sid}','level')" style="width:72px;padding:4px 8px;${tdE}">${esc(s.level)||'—'}</td>
+      <td ondblclick="pupCellEdit(this,'${sid}','stage')" style="width:96px;padding:4px 8px;${tdE}">${esc(s.stage||'')}</td>
+      <td ondblclick="pupCellEdit(this,'${sid}','next_step')" style="padding:4px 8px;${tdE}${comment?';cursor:help':''}" title="${comment}">${nextStep}</td>
     </tr>`;
   }).join('');
-  tbody.ondblclick=e=>{
-    e.preventDefault();
-    const td=e.target.closest('td[data-field]');if(!td)return;
-    const row=td.closest('tr[data-id]');if(!row)return;
-    pupCellEdit(td,parseInt(row.dataset.id),td.dataset.field);
-  };
 }
 function renderPupsPage(){
   const page=document.getElementById('page-pups');if(!page)return;
