@@ -4248,7 +4248,7 @@ function pupFilterBy(e,col){
   }
   document.getElementById('pfContent').innerHTML=html;
   // Always query the live th from DOM — e.currentTarget may be detached if sort re-rendered thead
-  const colIdx={focus:0,pup:1,skill:2,level:3,stage:4,next_step:5,category:6}[col]??0;
+  const colIdx={pup:0,skill:1,level:2,stage:3,next_step:4,category:5}[col]??0;
   const liveTh=document.getElementById('pupTblHead')?.querySelectorAll('th')[colIdx];
   const rect=liveTh?liveTh.getBoundingClientRect():{left:200,bottom:200,right:200};
   let left=rect.left,pw=200;
@@ -4358,8 +4358,7 @@ function renderPupTable(){
   const tdE='user-select:none;cursor:default';
   function catText(cat){return cat?(cat.charAt(0).toUpperCase()+cat.slice(1)):'—';}
   thead.innerHTML=`<tr>
-    <th onclick="pupHdrClick('focus')" ondblclick="pupHdrDbl(event,'focus')" style="${ths};width:32px;text-align:center">Focus${arrow('focus')}${fdot('focus')}</th>
-    <th onclick="pupHdrClick('pup')" ondblclick="pupHdrDbl(event,'pup')" style="${ths};width:66px">Pup${arrow('pup')}${fdot('pup')}</th>
+    <th onclick="pupHdrClick('pup')" ondblclick="pupHdrDbl(event,'pup')" style="${ths};width:32px;text-align:center">·${arrow('pup')}${fdot('pup')}</th>
     <th onclick="pupHdrClick('skill')" ondblclick="pupHdrDbl(event,'skill')" style="${ths}">Skill${arrow('skill')}${fdot('skill')}</th>
     <th onclick="pupHdrClick('level')" ondblclick="pupHdrDbl(event,'level')" style="${ths};width:66px">Level${arrow('level')}${fdot('level')}</th>
     <th onclick="pupHdrClick('stage')" ondblclick="pupHdrDbl(event,'stage')" style="${ths};width:90px">Stage${arrow('stage')}${fdot('stage')}</th>
@@ -4372,26 +4371,26 @@ function renderPupTable(){
   const rowsHtml=[];
   rows.forEach(s=>{
     const foc=s.focus===true||s.focus==='true';
-    const bg=s.pup==='Mochi'?'rgba(139,92,246,.07)':s.pup==='Sunny'?'rgba(234,179,8,.08)':'';
+    const isMastered=s.stage==='Mastered';
+    const pupColor=s.pup==='Mochi'?'#8b5cf6':s.pup==='Sunny'?'#fbbf24':'#94a3b8';
+    const bg=isMastered?'':(s.pup==='Mochi'?'rgba(139,92,246,.07)':s.pup==='Sunny'?'rgba(234,179,8,.08)':'');
     const comment=s.comments&&s.comments!=='None'?esc(s.comments):'';
     const nextStep=s.next_step&&s.next_step!=='None'?esc(s.next_step):'';
     const sid=String(s.id);
     const isSel=_selPupIds.has(sid);
-    const isMastered=s.stage==='Mastered';
     const curCat=s.category||'';
     if(showCatDividers&&isMastered&&lastMastered===false){
-      rowsHtml.push(`<tr class="pup-cat-sep"><td colspan="8" style="padding:8px 8px 3px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#16a34a;border-top:2px solid rgba(34,197,94,.15);border-bottom:1px solid rgba(34,197,94,.1)">Mastered</td></tr>`);
+      rowsHtml.push(`<tr class="pup-cat-sep"><td colspan="7" style="padding:8px 8px 3px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#16a34a;border-top:2px solid rgba(34,197,94,.15);border-bottom:1px solid rgba(34,197,94,.1)">Mastered</td></tr>`);
       lastCat=null;
     }
     if(showCatDividers&&!isMastered&&curCat!==lastCat&&curCat){
       const label=curCat.charAt(0).toUpperCase()+curCat.slice(1);
-      rowsHtml.push(`<tr class="pup-cat-sep"><td colspan="8" style="padding:6px 8px 3px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);border-bottom:1px solid rgba(0,0,0,.04)">${label}</td></tr>`);
+      rowsHtml.push(`<tr class="pup-cat-sep"><td colspan="7" style="padding:6px 8px 3px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);border-bottom:1px solid rgba(0,0,0,.04)">${label}</td></tr>`);
       lastCat=curCat;
     }
     lastMastered=isMastered;
     rowsHtml.push(`<tr data-sid="${sid}" style="background:${bg}" class="${isSel?'pup-sel':''}" onclick="selPupRow(event,'${sid}')" oncontextmenu="showPupCtx(event,'${sid}')">
-      <td style="text-align:center;width:32px;padding:4px 0"><input type="checkbox"${foc?' checked':''} onchange="setPupField('${sid}','focus',this.checked)" style="width:13px;height:13px;cursor:pointer;accent-color:#eab308"></td>
-      <td ondblclick="pupCellEdit(this,'${sid}','pup')" style="width:66px;padding:4px 8px;${tdE}">${esc(s.pup)}</td>
+      <td style="text-align:center;width:32px;padding:4px 0"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${pupColor};opacity:${isMastered?.4:1};flex-shrink:0"></span></td>
       <td ondblclick="pupCellEdit(this,'${sid}','skill')" style="padding:4px 8px;${tdE}">${esc(s.skill)}</td>
       <td ondblclick="pupCellEdit(this,'${sid}','level')" style="width:66px;padding:4px 8px;${tdE}">${esc(s.level)||'—'}</td>
       <td ondblclick="pupCellEdit(this,'${sid}','stage')" style="width:90px;padding:4px 8px;${tdE}">${esc(s.stage||'')}</td>
