@@ -4390,7 +4390,7 @@ function renderPupTable(){
     }
     lastMastered=isMastered;
     rowsHtml.push(`<tr data-sid="${sid}" style="background:${bg}" class="${isSel?'pup-sel':''}" onclick="selPupRow(event,'${sid}')" oncontextmenu="showPupCtx(event,'${sid}')">
-      <td style="text-align:center;width:32px;padding:4px 0"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${pupColor};opacity:${isMastered?.4:1};flex-shrink:0"></span></td>
+      <td style="text-align:center;width:32px;padding:4px 0">${isMastered?`<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${pupColor};opacity:.5"></span>`:`<input type="checkbox"${foc?' checked':''} onchange="setPupField('${sid}','focus',this.checked)" style="width:13px;height:13px;cursor:pointer;accent-color:#eab308">`}</td>
       <td ondblclick="pupCellEdit(this,'${sid}','skill')" style="padding:4px 8px;${tdE}">${esc(s.skill)}</td>
       <td ondblclick="pupCellEdit(this,'${sid}','level')" style="width:66px;padding:4px 8px;${tdE}">${esc(s.level)||'—'}</td>
       <td ondblclick="pupCellEdit(this,'${sid}','stage')" style="width:90px;padding:4px 8px;${tdE}">${esc(s.stage||'')}</td>
