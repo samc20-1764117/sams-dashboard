@@ -246,15 +246,44 @@ All three checkbox types share identical visual style:
 
 ## Pup Skills Page
 
-- Page ID: `page-pups`. Sidebar nav: `showPage('pups')`. Rendered by `renderPupsPage()`.
-- Supabase table: `pup_skills(id, pup_name, skill_name, stage, level, success_rate, next_step, focus)`.
-  - `pup_name`: 'Mochi' or 'Sunny'. `stage`: 'In Progress' | 'Mastered' | 'Not Started'. `focus`: boolean. `success_rate`: 0–1 float.
-- Fetched in `syncAll` via `sbReqSilent` alongside other tables. Stored in `st.pup_skills`, persisted in localStorage.
-- Layout: 3-column grid (`1fr 1fr 0.7fr`). Col 1 = Mochi, Col 2 = Sunny, Col 3 = Completed.
-- Each pup column: progress donut (mastered%), mastered/in-progress counts, Train This Week (focus=true, top 3), Current Skills (stage=In Progress with next_step).
-- Completed column: Sunny Mastered then Mochi Mastered, sorted by level then skill_name. Dense + scrollable.
-- Colors: Mochi = `#8b5cf6` (purple), Sunny = `#f97316` (orange).
-- CSS classes: `.pup-col`, `.pup-skill-row`, `.pup-skill-emphasis` (Current Skills), `.pup-focus-row` (Train This Week), `.pup-done-row` (Completed), `.pup-pill`, `.pup-pill-sr`, `.pup-pill-dim`, `.pup-stat`, `.pup-section-label`, `.pup-check`, `.pup-next-step`.
+- Page ID: `page-pups`. Sidebar nav: `showPage('pups')`. Rendered by `renderPupsPage()` + `renderPupTable()`.
+- Supabase table: `pup_skills(id, pup, skill, stage, level, category, order, next_step, comments, focus)`.
+  - `pup`: 'Mochi' | 'Sunny'. `stage`: 'In Progress' | 'Mastered' | 'Not Started'. `focus`: boolean. `category`: 'commands' | 'manners' | 'fun' | null. `order`: integer sort hint.
+- Stored in `st.pup_skills`, persisted in localStorage. Fetched in `syncAll`.
+- Layout: 3-column grid (`1fr 1fr 2.2fr`). Col 1 = Mochi card, Col 2 = Sunny card, Col 3 = All Skills table.
+- Colors: Mochi = `#8b5cf6` (purple), Sunny = `#fbbf24` (yellow).
+
+### Dog Cards (Mochi / Sunny)
+- Header: circular headshot (72px, `mochi_headshot.png` / `sunny_headshot.png`) overlaps card top by 36px. `overflow:visible;position:relative` on card. Header row: pup name (left) + "N in progress" (right).
+- Progress bar (8px, bottom of card): green = mastered, yellow = in progress, grey = not started. Each segment has `onmouseenter` → `showPupStageTip(event, 'Stage: N', color)` colored tooltip.
+- **Train This Week**: skills where `focus===true`. White background (`.pup-focus-row`). Shows skill name, next step, comments (not for mastered). Has mastered checkbox.
+- **Up Next**: `stage==='In Progress'` AND `focus!==true` (excludes Train This Week to avoid duplication). Grouped by category (commands → manners → fun → other) with muted section labels. Has mastered checkbox per row.
+- Both sections use `skillCardRow(s, cls)`: mastered checkbox (purple accent), skill name (strikethrough if mastered), next step + comments hidden when mastered.
+- Checking the mastered checkbox calls `togglePupMastered(id, checked)` → sets stage to 'Mastered' (or 'In Progress' on uncheck), snapshots, syncs.
+
+### Table (All Skills)
+- Columns (left→right): dot (pup color), Skill, Level, Stage, Next Step, Category, ··· (edit button).
+- **Dot column**: mastered rows show a dimmed (50% opacity) colored dot (purple/yellow by pup). Non-mastered rows show a focus checkbox colored by pup (`accent-color`).
+- **Mastered rows**: no background color. Non-mastered rows: pup-colored tint (purple 7% / yellow 8%).
+- **Default sort** (no sort col active): mastered last → category order (commands=0, manners=1, fun=2, other=9) → focus first → pup → level (Easy/Medium/Hard) → `order` field.
+- **Section dividers** (default sort only): category headers (muted text) for non-mastered; "Mastered" header (green text, green border) separating mastered section. No category headers within mastered section.
+- Category column displays plain capitalized text (e.g. "Commands"), no chips or color.
+- `colIdx` for filter popup: `{pup:0, skill:1, level:2, stage:3, next_step:4, category:5}`.
+- Filter list: "—" always sorted to top; category values display capitalized.
+
+### Modal (Add / Edit)
+- No title text. Top row: Mochi/Sunny dog toggle pill (left) + focus checkbox (right, no label).
+- Row 1 (2-col): Skill | Stage. Row 2 (3-col): Category | Level | Order.
+- Next Step: dropdown — blank, "1. Duration", "2. Distance", "3. Distraction".
+- Comments: text input. Hidden `<select id="pmPup">` synced by `setPupModalDog(val)`.
+- `pmOrder`: number input for sort order.
+
+### Logic Rules
+- **Focus → In Progress**: checking focus (in modal save or `setPupField`) auto-sets `stage='In Progress'` unless already Mastered.
+- **Mastered checkbox in cards**: `togglePupMastered(id, true)` sets stage=Mastered; false sets stage=In Progress.
+- **Inline cell edit** (`pupCellEdit`): next_step uses a select (same 3 options as modal). Category uses select (commands/manners/fun).
+- **Undo/Redo**: `pupSnapshot()` before any destructive op. `_pupUndoDirty` flag blocks auto-sync overwrite. `_pupSyncToServer(prev, next)` diffs and fires minimal API calls.
+- **Outside-click deselect**: document-level handler stored at `window._pupOutsideClick`, re-registered each `renderPupsPage()`. Clears `_selPupIds` when click is outside `#pupTblBody` and page is active. Clicking same row again also deselects.
 
 ## Auto Timeblocks Overlap Layout
 
@@ -275,15 +304,18 @@ All three checkbox types share identical visual style:
 - Auto blocks never appear in Today list, overdue banner, metrics, recurring page, or weekly calendar — timeblock only.
 - All DB interaction uses `sbReqSilent` (no error toasts).
 
-## Pup Skills Editing
+## Pup Skills State Variables
 
-- **Double-click** on any skill row (focus, current, completed) opens `pupModal` via `openPupEditModal(id)`.
-- `pupModal` fields: Pup (select), Skill (text), Level (select), Stage (select), Success % (number 0–100), Focus (checkbox), Next Step (text), Comments (text). Save via `savePupModal()` → PATCHes `pup_skills`, calls `renderPupsPage()`.
-- `setPupField(id, field, val, origVal)` — inline-table cell save: skips PATCH if val===origVal. Converts success_rate from display % to 0–1 float. No re-render (avoids losing table focus).
-- `_pupEditId` tracks current edit target.
-- Pup page layout: 4-col grid `1fr 1fr 0.65fr 1.5fr` — Mochi, Sunny, Completed, Edit Table.
-- Edit table (`.pup-tbl`): shows all skills sorted by pup then skill. Columns: Pup, Skill, Level, Stage, %, 🎯, Next Step. Each cell is an inline `<input>` or `<select>` saving on blur/change.
-- Page padding matches weekly page: `22px 56px 36px 56px`, `padding-top:48px`. Height: `calc(100vh - 100px)` (no max-height cap).
+- `_pupEditId` — id of skill being edited in modal (null = add mode).
+- `_selPupIds` — Set of selected table row IDs (multi-select).
+- `_lastSelPupId` — last clicked row ID (for shift-range select).
+- `_copiedPups` — array of copied skill objects (Cmd+C).
+- `_pupCtxId` — row ID that triggered right-click context menu.
+- `_pupSortCol` / `_pupSortDir` — active sort column and direction (1=asc, -1=desc).
+- `_pupFilter` — `{col, type:'text'|'set', text|vals}` or null.
+- `_pupUndoStack` / `_pupRedoStack` — snapshot arrays (max 20).
+- `_pupUndoDirty` — blocks auto-sync overwrite after undo/redo.
+- `window._pupOutsideClick` — document-level deselect handler reference.
 
 ## Git Workflow
 
