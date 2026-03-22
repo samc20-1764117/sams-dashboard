@@ -1337,7 +1337,7 @@ async function syncAll(silent=false){
     if(trav)st.travel=trav;
     if(bdays)st.birthdays=bdays;
     if(pupSkills){
-      if(!silent){pupSnapshot();_pupUndoDirty=false;st.pup_skills=pupSkills;}
+      if(!silent){_pupUndoDirty=false;st.pup_skills=pupSkills;}
       else if(!_pupUndoDirty){st.pup_skills=pupSkills;}
     }
     if(blocks){
@@ -4037,8 +4037,8 @@ let _selPupIds=new Set(),_lastSelPupId=null,_copiedPups=[],_pupCtxId=null;
 let _pupSortCol=null,_pupSortDir=1,_pupFilter=null;
 let _pupUndoStack=[],_pupRedoStack=[],_pupHdrClickTimer=null,_pupUndoDirty=false;
 function pupSnapshot(){_pupUndoStack.push(JSON.parse(JSON.stringify(st.pup_skills)));if(_pupUndoStack.length>20)_pupUndoStack.shift();_pupRedoStack=[];}
-function pupUndo(){if(!_pupUndoStack.length)return;_pupUndoDirty=true;_pupRedoStack.push(JSON.parse(JSON.stringify(st.pup_skills)));st.pup_skills=_pupUndoStack.pop();save();renderPupsPage();}
-function pupRedo(){if(!_pupRedoStack.length)return;_pupUndoDirty=true;_pupUndoStack.push(JSON.parse(JSON.stringify(st.pup_skills)));st.pup_skills=_pupRedoStack.pop();save();renderPupsPage();}
+function pupUndo(){if(!_pupUndoStack.length){showToast('Nothing to undo','#888');return;}_pupUndoDirty=true;_pupRedoStack.push(JSON.parse(JSON.stringify(st.pup_skills)));st.pup_skills=_pupUndoStack.pop();save();renderPupsPage();showToast('Undone','#6d5fe6',1500);}
+function pupRedo(){if(!_pupRedoStack.length){showToast('Nothing to redo','#888');return;}_pupUndoDirty=true;_pupUndoStack.push(JSON.parse(JSON.stringify(st.pup_skills)));st.pup_skills=_pupRedoStack.pop();save();renderPupsPage();showToast('Redone','#6d5fe6',1500);}
 function pupHdrClick(col){clearTimeout(_pupHdrClickTimer);_pupHdrClickTimer=setTimeout(()=>{_pupHdrClickTimer=null;pupSortBy(col);},250);}
 function pupHdrDbl(e,col){clearTimeout(_pupHdrClickTimer);_pupHdrClickTimer=null;pupFilterBy(e,col);}
 function openPupAddModal(){
@@ -4096,6 +4096,7 @@ async function savePupModal(){
 async function setPupField(id,field,val,origVal){
   if(origVal!==undefined&&String(val)===String(origVal))return;
   const idx=st.pup_skills.findIndex(x=>x.id==id);if(idx<0)return;
+  pupSnapshot();
   let sv=val;
   if(field==='success_rate')sv=(val===''||val===null||val===undefined)?null:parseFloat(val)/100;
   if(field==='focus')sv=!!val;
