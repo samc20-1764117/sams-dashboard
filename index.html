@@ -4106,8 +4106,10 @@ function pupFilterBy(e,col){
     </div>`;
   }
   document.getElementById('pfContent').innerHTML=html;
-  const th=e.currentTarget;
-  const rect=th.getBoundingClientRect();
+  // Always query the live th from DOM — e.currentTarget may be detached if sort re-rendered thead
+  const colIdx={focus:0,pup:1,skill:2,level:3,stage:4,next_step:5}[col]??0;
+  const liveTh=document.getElementById('pupTblHead')?.querySelectorAll('th')[colIdx];
+  const rect=liveTh?liveTh.getBoundingClientRect():{left:200,bottom:200,right:200};
   let left=rect.left,pw=200;
   if(left+pw>window.innerWidth-6)left=window.innerWidth-pw-6;
   pop.style.left=left+'px';pop.style.top=(rect.bottom+4)+'px';
