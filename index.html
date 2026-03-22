@@ -386,6 +386,9 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 .wkc-col.drag-sel{background:rgba(20,184,166,.07)}
 
 .wkc-foot{display:none}
+#unAssignedBadge{position:fixed;bottom:24px;right:24px;z-index:200;background:var(--accent);color:#fff;font-size:11px;font-weight:700;padding:6px 12px;border-radius:20px;box-shadow:0 4px 14px rgba(0,0,0,.18);cursor:pointer;display:none;letter-spacing:-.01em;transition:opacity .15s,transform .15s}
+#unAssignedBadge:hover{opacity:.88;transform:scale(1.05)}
+body.dark #unAssignedBadge{background:#e08b6e}
 .month-btn{display:flex;align-items:center;gap:3px;font-size:11px;font-weight:600;color:var(--muted);cursor:pointer;padding:3px 5px;border-radius:var(--rxs);background:none;transition:all .15s}
 .month-btn:hover{background:rgba(109,95,230,.07);color:var(--accent)}
 
@@ -653,11 +656,6 @@ body.dark .qn-input{background:rgba(255,255,255,.06);border-color:rgba(255,220,2
         <button class="btn btn-dark btn-xs" onclick="openQA('today',this)" style="border-radius:50%;width:22px;height:22px;padding:0;justify-content:center;font-size:14px;font-weight:400">+</button>
       </div>
     </div><!-- combined card -->
-    <!-- Need to Assign -->
-    <div class="card" style="flex-shrink:0;height:90px;margin-top:4px">
-      <div class="ch"><div class="ct">Need to Assign</div><button class="btn-plus" onclick="openQA('unassigned',this)">+</button></div>
-      <div class="tlist" id="unList" style="flex:1" ondblclick="if(!event.target.closest('.ti'))openQA('unassigned',null)"></div>
-    </div>
     </div><!-- overview-left -->
     <div class="row1-right-panel">
     <div class="row1-right-top">
@@ -783,10 +781,6 @@ body.dark .qn-input{background:rgba(255,255,255,.06);border-color:rgba(255,220,2
     <button class="delbtn" onclick="delTask(&#39;l-17732526288830.4300519999936374&#39;,event)">✕</button>
   </div></div>
       </div>
-      <div class="card" style="height:110px">
-        <div class="ch"><div class="ct">Need to Assign</div><button class="btn-plus" onclick="openQA('unassigned',this)">+</button></div>
-        <div class="tlist" id="unList-old" style="flex:1"></div>
-      </div>
   </div>
   <div class="row3" id="row3wrap">
     <div id="kanbanWrap" style="margin-top:0">
@@ -804,6 +798,7 @@ body.dark .qn-input{background:rgba(255,255,255,.06);border-color:rgba(255,220,2
 </div>
 
 <!-- RECURRING TASKS -->
+<div id="unAssignedBadge" onclick="openQA('unassigned',this)"></div>
 <div class="page" id="page-weekly" style="padding:22px 56px 36px 56px;padding-top:60px">
   <div class="ov-topbar">
     <div class="ov-topbar-left"><span class="ov-topbar-label">Recurring Tasks</span><span class="ov-topbar-dot"></span></div>
@@ -2485,8 +2480,11 @@ function renderRecOv(){
 // ── Unassigned ─────────────────────────────────────────────────────────────────
 function renderUnassigned(){
   const ts=st.tasks.filter(t=>!t.due_date&&!t.done&&t.category!=='Long term');
-  // unBadge removed
-  document.getElementById('unList').innerHTML=sortTasks(ts).map(t=>tRow(t,{cat:true,drag:true,flag:true,noColor:true})).join('');
+  const badge=document.getElementById('unAssignedBadge');
+  if(!badge)return;
+  const weeklyActive=document.getElementById('page-weekly')&&document.getElementById('page-weekly').classList.contains('active');
+  if(weeklyActive&&ts.length>0){badge.textContent=ts.length+' unassigned';badge.style.display='';}
+  else{badge.style.display='none';}
 }
 
 // ── Drop on Today List ─────────────────────────────────────────────────────────
@@ -4535,6 +4533,7 @@ function showPage(id){
   const mainEl=document.getElementById('main');if(mainEl)mainEl.scrollTop=0;
   if(id==='weekly'){renderWeeklyPage();}if(id==='travel')renderTravelPage();if(id==='birthdays')renderBdayPage();if(id==='pups')renderPupsPage();
   const backBtn=document.getElementById('backToOv');if(backBtn)backBtn.style.display=id==='overview'?'none':'flex';
+  const uBadge=document.getElementById('unAssignedBadge');if(uBadge&&id!=='weekly')uBadge.style.display='none';else if(uBadge&&id==='weekly')renderUnassigned();
   history.replaceState(null,'','#'+id);
 }
 
