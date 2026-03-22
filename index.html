@@ -4301,7 +4301,7 @@ function renderPupTable(){
       return _pupSortDir*String(a[_pupSortCol]||'').toLowerCase().localeCompare(String(b[_pupSortCol]||'').toLowerCase());
     });
   } else {
-    rows.sort((a,b)=>(a.category||'zzz').localeCompare(b.category||'zzz')||(a.pup||'').localeCompare(b.pup||'')||(a.skill||'').localeCompare(b.skill||''));
+    rows.sort((a,b)=>((a.stage==='Mastered'?1:0)-(b.stage==='Mastered'?1:0))||(a.category||'zzz').localeCompare(b.category||'zzz')||(a.skill||'').localeCompare(b.skill||''));
   }
   const arrow=col=>_pupSortCol===col?(_pupSortDir>0?' ↑':' ↓'):'';
   const fdot=col=>(_pupFilter&&_pupFilter.col===col)?'<span style="color:#f97316;font-size:9px;margin-left:2px">▼</span>':'';
@@ -4332,8 +4332,7 @@ function renderPupTable(){
     const curCat=s.category||'';
     if(showCatDividers&&curCat!==lastCat){
       const label=curCat?curCat.charAt(0).toUpperCase()+curCat.slice(1):'Uncategorized';
-      const cs=CAT_COLORS[curCat]||{bg:'rgba(148,163,184,.08)',c:'var(--muted)'};
-      rowsHtml.push(`<tr class="pup-cat-sep"><td colspan="8" style="padding:6px 8px 3px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:${cs.c};background:${cs.bg};border-bottom:1px solid rgba(0,0,0,.04)">${label}</td></tr>`);
+      rowsHtml.push(`<tr class="pup-cat-sep"><td colspan="8" style="padding:6px 8px 3px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);border-bottom:1px solid rgba(0,0,0,.04)">${label}</td></tr>`);
       lastCat=curCat;
     }
     rowsHtml.push(`<tr data-sid="${sid}" style="background:${bg}" class="${isSel?'pup-sel':''}" onclick="selPupRow(event,'${sid}')" oncontextmenu="showPupCtx(event,'${sid}')">
@@ -4359,15 +4358,13 @@ function renderPupsPage(){
   function skillRow(s){const tip=s.comments&&s.comments!=='None'?s.comments:(s.next_step&&s.next_step!=='None'?s.next_step:'');return`<div class="pup-skill-row pup-skill-emphasis" data-pupid="${s.id}"><span class="pup-skill-name">${s.skill}</span><div class="pup-skill-meta">${lvlPill(s)}</div>${tip?`<div class="pup-next-step">↳ ${tip}</div>`:''}</div>`;}
   const PUP_CAT_ORDER=['commands','manners','fun'];
   const PUP_CAT_LABELS={commands:'Commands',manners:'Manners',fun:'Fun'};
-  const PUP_CAT_COLORS={commands:'#1d4ed8',manners:'#065f46',fun:'#9d174d'};
   function groupedSkillRows(list){
     const grouped={};
     list.forEach(s=>{const k=s.category||'other';(grouped[k]=grouped[k]||[]).push(s);});
     const order=[...PUP_CAT_ORDER,...Object.keys(grouped).filter(k=>!PUP_CAT_ORDER.includes(k))];
     return order.filter(k=>grouped[k]).map(k=>{
       const label=PUP_CAT_LABELS[k]||(k.charAt(0).toUpperCase()+k.slice(1));
-      const cc=PUP_CAT_COLORS[k]||'var(--muted)';
-      return`<div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:${cc};margin:6px 0 3px">${label}</div>${grouped[k].map(skillRow).join('')}`;
+      return`<div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin:6px 0 3px">${label}</div>${grouped[k].map(skillRow).join('')}`;
     }).join('');
   }
   function pupCol(pup,color){
