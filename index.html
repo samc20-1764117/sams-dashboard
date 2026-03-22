@@ -65,7 +65,7 @@ body.dark .kol{background:rgba(255,255,255,.03);}
 body.dark .kol-item{background:rgba(255,255,255,.04);}
 body.dark .kol-item:hover{background:rgba(255,255,255,.08);}
 body.dark .sync-bar{background:rgba(255,255,255,.08);}
-body.dark #ctxMenu{background:rgba(20,18,35,.98);}
+body.dark #ctxMenu,body.dark #pupCtxMenu{background:rgba(20,18,35,.98);}
 body.dark .ctx-item:hover{background:rgba(255,255,255,.08);}
 body.dark .wkc-chip{filter:brightness(.85);}
 body.dark .chk{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.2);}
@@ -1109,8 +1109,7 @@ body.dark .qn-input{background:rgba(255,255,255,.06);border-color:rgba(255,220,2
       <div class="mfield"><label>Skill *</label><input id="pmSkill" placeholder="Skill name"></div>
       <div class="mfield"><label>Level</label><select id="pmLevel"><option value="">—</option><option value="Easy">Easy</option><option value="Medium">Medium</option><option value="Hard">Hard</option></select></div>
       <div class="mfield"><label>Stage</label><select id="pmStage"><option value="Not Started">Not Started</option><option value="In Progress">In Progress</option><option value="Mastered">Mastered</option></select></div>
-      <div class="mfield"><label>Success %</label><input id="pmSR" type="number" min="0" max="100" placeholder="0–100"></div>
-      <div class="mfield" style="align-self:end"><div style="display:flex;align-items:center;gap:6px;padding-bottom:8px"><input type="checkbox" id="pmFocus" style="width:14px;height:14px;cursor:pointer;accent-color:#eab308"><label for="pmFocus" style="font-weight:400;font-size:12px;cursor:pointer">🎯 Focus this week</label></div></div>
+      <div class="mfield" style="grid-column:1/-1"><div style="display:flex;align-items:center;gap:6px;padding-bottom:8px"><input type="checkbox" id="pmFocus" style="width:14px;height:14px;cursor:pointer;accent-color:#eab308"><label for="pmFocus" style="font-weight:400;font-size:12px;cursor:pointer">Focus this week</label></div></div>
     </div>
     <div class="mfield"><label>Next Step</label><input id="pmNextStep" placeholder="Next training step…"></div>
     <div class="mfield"><label>Comments</label><input id="pmComments" placeholder="Notes or observations…"></div>
@@ -1677,7 +1676,7 @@ document.addEventListener('keydown',e=>{
     if(e.shiftKey){doRedo();}else{doUndo();}
     return;
   }
-  if(e.key==='Escape'){document.querySelectorAll('.overlay.open').forEach(o=>o.classList.remove('open'));closeQA();const pfp=document.getElementById('pupFilterPop');if(pfp)pfp.classList.remove('pfopen');}
+  if(e.key==='Escape'){document.querySelectorAll('.overlay.open').forEach(o=>o.classList.remove('open'));closeQA();const pfp=document.getElementById('pupFilterPop');if(pfp)pfp.classList.remove('pfopen');hidePupCtx();hidePupTip();}
   if((e.key==='Delete'||e.key==='Backspace')&&selAtbId&&selAtbDs&&!document.querySelector('input:focus,textarea:focus')){
     const atb=getAutoTBForDate(selAtbDs).find(a=>a._atbId===selAtbId);
     if(atb){e.preventDefault();delAutoTBForDay(selAtbId,selAtbDs,atb._ovId);}
@@ -4027,7 +4026,8 @@ async function delBday(id){
   st.birthdays=st.birthdays.filter(x=>String(x.id)!==String(id));renderAll();renderBdayPage();
   await sbReq('DELETE','birthdays',null,`?id=eq.${id}`);
 }
-let _pupEditId=null,_selPupId=null;
+let _pupEditId=null;
+let _selPupIds=new Set(),_lastSelPupId=null,_copiedPups=[],_pupCtxId=null;
 let _pupSortCol=null,_pupSortDir=1,_pupFilter=null;
 function openPupAddModal(){
   _pupEditId=null;
@@ -4036,7 +4036,6 @@ function openPupAddModal(){
   document.getElementById('pmSkill').value='';
   document.getElementById('pmLevel').value='';
   document.getElementById('pmStage').value='Not Started';
-  document.getElementById('pmSR').value='';
   document.getElementById('pmFocus').checked=false;
   document.getElementById('pmNextStep').value='';
   document.getElementById('pmComments').value='';
@@ -4051,8 +4050,6 @@ function openPupEditModal(id){
   document.getElementById('pmSkill').value=s.skill||'';
   document.getElementById('pmLevel').value=s.level||'';
   document.getElementById('pmStage').value=s.stage||'Not Started';
-  const srVal=s.success_rate!=null&&s.success_rate!==''?Math.round(parseFloat(s.success_rate)*(parseFloat(s.success_rate)<=1?100:1)):'';
-  document.getElementById('pmSR').value=srVal;
   document.getElementById('pmFocus').checked=(s.focus===true||s.focus==='true');
   document.getElementById('pmNextStep').value=s.next_step||'';
   document.getElementById('pmComments').value=s.comments||'';
@@ -4060,13 +4057,11 @@ function openPupEditModal(id){
   setTimeout(()=>document.getElementById('pmSkill').focus(),80);
 }
 async function savePupModal(){
-  const srRaw=document.getElementById('pmSR').value;
   const data={
     pup:document.getElementById('pmPup').value,
     skill:document.getElementById('pmSkill').value.trim(),
     level:document.getElementById('pmLevel').value||null,
     stage:document.getElementById('pmStage').value,
-    success_rate:srRaw===''?null:parseFloat(srRaw)/100,
     focus:document.getElementById('pmFocus').checked,
     next_step:document.getElementById('pmNextStep').value.trim()||null,
     comments:document.getElementById('pmComments').value.trim()||null,
@@ -4097,11 +4092,65 @@ async function setPupField(id,field,val,origVal){
 }
 function selPupRow(e,sid){
   if(e.target.closest('input,button'))return;
-  _selPupId=_selPupId===sid?null:sid;
-  document.querySelectorAll('#pupTblBody tr').forEach(tr=>{
-    tr.classList.toggle('pup-sel',tr.dataset.sid===_selPupId);
+  if(e.metaKey||e.ctrlKey){
+    if(_selPupIds.has(sid))_selPupIds.delete(sid);else _selPupIds.add(sid);
+    _lastSelPupId=sid;
+  } else if(e.shiftKey&&_lastSelPupId){
+    const rows=[...document.querySelectorAll('#pupTblBody tr[data-sid]')].map(r=>r.dataset.sid);
+    const a=rows.indexOf(_lastSelPupId),b=rows.indexOf(sid);
+    if(a>-1&&b>-1){const lo=Math.min(a,b),hi=Math.max(a,b);rows.slice(lo,hi+1).forEach(id=>_selPupIds.add(id));}
+    else _selPupIds.add(sid);
+    _lastSelPupId=sid;
+  } else {
+    _selPupIds.clear();_selPupIds.add(sid);_lastSelPupId=sid;
+  }
+  applyPupSelHighlight();
+}
+function applyPupSelHighlight(){
+  document.querySelectorAll('#pupTblBody tr[data-sid]').forEach(tr=>{
+    tr.classList.toggle('pup-sel',_selPupIds.has(tr.dataset.sid));
   });
 }
+function showPupCtx(e,sid){
+  e.preventDefault();e.stopPropagation();
+  _pupCtxId=sid;
+  if(!_selPupIds.has(sid)){_selPupIds.clear();_selPupIds.add(sid);_lastSelPupId=sid;applyPupSelHighlight();}
+  const m=document.getElementById('pupCtxMenu');
+  const multi=_selPupIds.size>1;
+  m.querySelector('.ctx-item:nth-child(1)').style.display=multi?'none':'';
+  m.style.display='block';
+  const x=Math.min(e.clientX,window.innerWidth-170),y=Math.min(e.clientY,window.innerHeight-130);
+  m.style.left=x+'px';m.style.top=y+'px';
+}
+function hidePupCtx(){document.getElementById('pupCtxMenu').style.display='none';}
+function pupCtxEdit(){hidePupCtx();if(_pupCtxId)openPupEditModal(_pupCtxId);}
+async function pupCtxDuplicate(){
+  hidePupCtx();
+  const ids=_selPupIds.size?[..._selPupIds]:[_pupCtxId].filter(Boolean);
+  for(const id of ids){
+    const s=st.pup_skills.find(x=>String(x.id)===String(id));if(!s)continue;
+    const copy={...s,id:'l-'+Date.now(),skill:s.skill+' (copy)'};
+    st.pup_skills.push(copy);
+    const sv=await sbReq('POST','pup_skills',{pup:copy.pup,skill:copy.skill,level:copy.level,stage:copy.stage,focus:copy.focus,next_step:copy.next_step,comments:copy.comments});
+    if(sv&&sv[0]){const i=st.pup_skills.findIndex(x=>x.id===copy.id);if(i>-1)st.pup_skills[i]=sv[0];}
+  }
+  save();renderPupsPage();
+}
+async function pupCtxDelete(){
+  hidePupCtx();
+  const ids=_selPupIds.size?[..._selPupIds]:[_pupCtxId].filter(Boolean);
+  st.pup_skills=st.pup_skills.filter(x=>!ids.includes(String(x.id)));
+  _selPupIds.clear();_pupCtxId=null;save();renderPupsPage();
+  for(const id of ids)sbReqSilent('DELETE','pup_skills',null,`?id=eq.${id}`);
+}
+// Tooltip for Next Step
+function showPupTip(e,text){
+  const t=document.getElementById('pupTooltip');
+  t.textContent=text;t.style.display='block';
+  const x=Math.min(e.clientX+12,window.innerWidth-230),y=e.clientY-28;
+  t.style.left=x+'px';t.style.top=y+'px';
+}
+function hidePupTip(){document.getElementById('pupTooltip').style.display='none';}
 function pupSortBy(col){
   if(_pupSortCol!==col){_pupSortCol=col;_pupSortDir=1;}
   else if(_pupSortDir===1){_pupSortDir=-1;}
@@ -4243,14 +4292,14 @@ function renderPupTable(){
     const comment=s.comments&&s.comments!=='None'?esc(s.comments):'';
     const nextStep=s.next_step&&s.next_step!=='None'?esc(s.next_step):'';
     const sid=String(s.id);
-    const isSel=_selPupId===sid;
-    return`<tr data-sid="${sid}" style="background:${bg}" class="${isSel?'pup-sel':''}" onclick="selPupRow(event,'${sid}')">
+    const isSel=_selPupIds.has(sid);
+    return`<tr data-sid="${sid}" style="background:${bg}" class="${isSel?'pup-sel':''}" onclick="selPupRow(event,'${sid}')" oncontextmenu="showPupCtx(event,'${sid}')">
       <td style="text-align:center;width:32px;padding:4px 0"><input type="checkbox"${foc?' checked':''} onchange="setPupField('${sid}','focus',this.checked)" style="width:13px;height:13px;cursor:pointer;accent-color:#eab308"></td>
       <td ondblclick="pupCellEdit(this,'${sid}','pup')" style="width:72px;padding:4px 8px;${tdE}">${esc(s.pup)}</td>
       <td ondblclick="pupCellEdit(this,'${sid}','skill')" style="padding:4px 8px;${tdE}">${esc(s.skill)}</td>
       <td ondblclick="pupCellEdit(this,'${sid}','level')" style="width:72px;padding:4px 8px;${tdE}">${esc(s.level)||'—'}</td>
       <td ondblclick="pupCellEdit(this,'${sid}','stage')" style="width:96px;padding:4px 8px;${tdE}">${esc(s.stage||'')}</td>
-      <td ondblclick="pupCellEdit(this,'${sid}','next_step')" style="padding:4px 8px;${tdE}${comment?';cursor:help':''}" title="${comment}">${nextStep}</td>
+      <td ondblclick="pupCellEdit(this,'${sid}','next_step')" onmouseenter="${comment?`showPupTip(event,'${comment}')`:''}" onmouseleave="${comment?'hidePupTip()':''}" style="padding:4px 8px;${tdE}${comment?';cursor:help':''}">${nextStep}</td>
       <td style="width:28px;padding:2px 4px;text-align:right"><button class="pup-dots" onclick="event.stopPropagation();openPupEditModal('${sid}')" title="Edit">···</button></td>
     </tr>`;
   }).join('');
@@ -4259,21 +4308,20 @@ function renderPupsPage(){
   const page=document.getElementById('page-pups');if(!page)return;
   const skills=st.pup_skills||[];
   function esc(v){return(v||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;');}
-  function sr(s){return s.success_rate!=null&&s.success_rate!==''?Math.round(parseFloat(s.success_rate)*(parseFloat(s.success_rate)<=1?100:1)):null;}
   function lvlPill(s){return s.level?`<span class="pup-pill">${s.level}</span>`:'';}
   function donut(pct,color){const r=28,cx=32,cy=32,circ=2*Math.PI*r,dash=circ*pct/100;return`<svg width="64" height="64" viewBox="0 0 64 64"><circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="rgba(0,0,0,0.07)" stroke-width="7"/><circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${color}" stroke-width="7" stroke-dasharray="${dash} ${circ}" stroke-linecap="round" transform="rotate(-90 ${cx} ${cy})"/><text x="${cx}" y="${cy+1}" text-anchor="middle" dominant-baseline="middle" style="font-size:13px;font-weight:700;fill:${color}">${pct}%</text></svg>`;}
-  function focusRow(s){const rate=sr(s);return`<div class="pup-skill-row pup-focus-row" data-pupid="${s.id}"><span class="pup-skill-name">${s.skill}</span><div class="pup-skill-meta">${lvlPill(s)}${rate!=null?`<span class="pup-pill pup-pill-sr">${rate}%</span>`:''}</div></div>`;}
-  function skillRow(s){const rate=sr(s);const tip=s.comments&&s.comments!=='None'?s.comments:(s.next_step&&s.next_step!=='None'?s.next_step:'');return`<div class="pup-skill-row pup-skill-emphasis" data-pupid="${s.id}"><span class="pup-skill-name">${s.skill}</span><div class="pup-skill-meta">${lvlPill(s)}${rate!=null?`<span class="pup-pill pup-pill-sr">${rate}%</span>`:''}</div>${tip?`<div class="pup-next-step">↳ ${tip}</div>`:''}</div>`;}
+  function focusRow(s){return`<div class="pup-skill-row pup-focus-row" data-pupid="${s.id}"><span class="pup-skill-name">${s.skill}</span><div class="pup-skill-meta">${lvlPill(s)}</div></div>`;}
+  function skillRow(s){const tip=s.comments&&s.comments!=='None'?s.comments:(s.next_step&&s.next_step!=='None'?s.next_step:'');return`<div class="pup-skill-row pup-skill-emphasis" data-pupid="${s.id}"><span class="pup-skill-name">${s.skill}</span><div class="pup-skill-meta">${lvlPill(s)}</div>${tip?`<div class="pup-next-step">↳ ${tip}</div>`:''}</div>`;}
   function pupCol(pup,color){
     const ps=skills.filter(s=>s.pup===pup);
     const mastered=ps.filter(s=>s.stage==='Mastered');
     const inProgress=ps.filter(s=>s.stage==='In Progress');
     const pct=ps.length?Math.round(mastered.length/ps.length*100):0;
     const trainWeek=ps.filter(s=>s.focus===true||s.focus==='true').slice(0,3);
-    return`<div class="pup-col card"><div class="ch"><span style="font-size:15px">🐾</span><span style="font-weight:700;font-size:13px;color:var(--text)">${pup}</span></div><div style="padding:14px 16px;display:flex;flex-direction:column;gap:16px;overflow-y:auto;flex:1;min-height:0"><div style="display:flex;align-items:center;gap:14px">${donut(pct,color)}<div style="display:flex;flex-direction:column;gap:5px"><div class="pup-stat"><span class="pup-stat-num" style="color:${color}">${mastered.length}</span><span class="pup-stat-lbl">mastered</span></div><div class="pup-stat"><span class="pup-stat-num">${inProgress.length}</span><span class="pup-stat-lbl">in progress</span></div></div></div>${trainWeek.length?`<div><div class="pup-section-label">🎯 Train This Week</div>${trainWeek.map(focusRow).join('')}</div>`:''} ${inProgress.length?`<div><div class="pup-section-label" style="color:var(--text);font-weight:800">Current Skills</div>${inProgress.map(skillRow).join('')}</div>`:''} ${ps.length===0?'<div style="font-size:11px;color:var(--muted);text-align:center;padding:20px 0">No skills yet</div>':''}</div></div>`;
+    return`<div class="pup-col card"><div class="ch"><span style="font-weight:700;font-size:13px;color:var(--text)">${pup}</span></div><div style="padding:14px 16px;display:flex;flex-direction:column;gap:16px;overflow-y:auto;flex:1;min-height:0"><div style="display:flex;align-items:center;gap:14px">${donut(pct,color)}<div style="display:flex;flex-direction:column;gap:5px"><div class="pup-stat"><span class="pup-stat-num" style="color:${color}">${mastered.length}</span><span class="pup-stat-lbl">mastered</span></div><div class="pup-stat"><span class="pup-stat-num">${inProgress.length}</span><span class="pup-stat-lbl">in progress</span></div></div></div>${trainWeek.length?`<div><div class="pup-section-label">🎯 Train This Week</div>${trainWeek.map(focusRow).join('')}</div>`:''} ${inProgress.length?`<div><div class="pup-section-label" style="color:var(--text);font-weight:800">Current Skills</div>${inProgress.map(skillRow).join('')}</div>`:''} ${ps.length===0?'<div style="font-size:11px;color:var(--muted);text-align:center;padding:20px 0">No skills yet</div>':''}</div></div>`;
   }
-  const tableCol=`<div class="pup-col card" style="overflow:hidden"><div class="ch"><span style="font-size:13px">✏️</span><span style="font-weight:700;font-size:13px;color:var(--text)">All Skills</span><button class="btn-plus" onclick="openPupAddModal()" style="margin-left:auto;padding:2px 8px;font-size:13px;border-radius:8px;border:1px solid var(--border);background:transparent;cursor:pointer;color:var(--text)">+</button></div><div style="overflow-y:auto;flex:1;min-height:0"><table class="pup-tbl"><thead id="pupTblHead"></thead><tbody id="pupTblBody"></tbody></table></div></div>`;
-  page.innerHTML=`<div class="ov-topbar"><span class="ov-topbar-label">🐾 Pups</span><span class="ov-topbar-dot"></span><span class="ov-topbar-date topbar-date"></span><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div><button class="back-btn" onclick="showPage('overview')">← Overview</button><div style="display:grid;grid-template-columns:1fr 1fr 2.2fr;gap:14px;height:calc(100vh - 100px)">${pupCol('Mochi','#8b5cf6')}${pupCol('Sunny','#f97316')}${tableCol}</div>`;
+  const tableCol=`<div class="pup-col card" style="overflow:hidden"><div class="ch"><span style="font-weight:700;font-size:13px;color:var(--text)">All Skills</span><button class="btn-plus" onclick="openPupAddModal()" style="margin-left:auto;padding:2px 8px;font-size:13px;border-radius:8px;border:1px solid var(--border);background:transparent;cursor:pointer;color:var(--text)">+</button></div><div style="overflow-y:auto;flex:1;min-height:0"><table class="pup-tbl"><thead id="pupTblHead"></thead><tbody id="pupTblBody"></tbody></table></div></div>`;
+  page.innerHTML=`<div class="ov-topbar"><span class="ov-topbar-label">🐾 Pups</span><span class="ov-topbar-dot"></span><span class="ov-topbar-date topbar-date"></span><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div><button class="back-btn" onclick="showPage('overview')">← Overview</button><div style="display:grid;grid-template-columns:1fr 1fr 2.2fr;gap:14px;height:calc(100vh - 100px)">${pupCol('Mochi','#8b5cf6')}${pupCol('Sunny','#eab308')}${tableCol}</div>`;
   if(!page._pupDblClick){
     page._pupDblClick=true;
     page.addEventListener('dblclick',e=>{
@@ -4508,6 +4556,26 @@ let _copiedTasks=[];
 document.addEventListener('keydown',async e=>{
   const tag=document.activeElement?.tagName;
   if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT')return;
+  // Pup skill shortcuts
+  const onPups=document.getElementById('page-pups')?.classList.contains('active');
+  if(onPups&&_selPupIds.size>0){
+    if(e.key==='Delete'||e.key==='Backspace'){e.preventDefault();pupCtxDelete();return;}
+    if((e.metaKey||e.ctrlKey)&&e.key==='c'){
+      e.preventDefault();
+      _copiedPups=([..._selPupIds]).map(id=>st.pup_skills.find(x=>String(x.id)===id)).filter(Boolean).map(s=>({...s}));
+      return;
+    }
+    if((e.metaKey||e.ctrlKey)&&e.key==='v'&&_copiedPups.length){
+      e.preventDefault();
+      for(const s of _copiedPups){
+        const copy={...s,id:'l-'+Date.now(),skill:s.skill+' (copy)'};
+        st.pup_skills.push(copy);
+        const sv=await sbReq('POST','pup_skills',{pup:copy.pup,skill:copy.skill,level:copy.level,stage:copy.stage,focus:copy.focus,next_step:copy.next_step,comments:copy.comments});
+        if(sv&&sv[0]){const i=st.pup_skills.findIndex(x=>x.id===copy.id);if(i>-1)st.pup_skills[i]=sv[0];}
+      }
+      save();renderPupsPage();return;
+    }
+  }
   // Delete selected tasks
   if((e.key==='Delete'||e.key==='Backspace')&&selectedTasks.size>0){
     e.preventDefault();
@@ -4791,6 +4859,7 @@ function showCtx(e,taskId,isRec,recId,shopId,blockId){
 }
 function showCtxShop(e,shopId){showCtx(e,null,false,null,shopId);}
 function hideCtx(){document.getElementById('ctxMenu').style.display='none';}
+document.addEventListener('click',e=>{if(!e.target.closest('#pupCtxMenu'))hidePupCtx();});
 // Close on outside click or Escape
 document.addEventListener('mousedown',e=>{
   if(!e.target.closest('#ctxMenu'))hideCtx();
@@ -5096,6 +5165,13 @@ document.addEventListener('click',function(e){
 
 </script>
 
+<div id="pupCtxMenu" style="display:none;position:fixed;z-index:9999;background:rgba(255,255,255,.98);border:1px solid rgba(210,205,228,.4);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);padding:4px;min-width:155px;backdrop-filter:blur(12px)">
+  <div class="ctx-item" onclick="pupCtxEdit()">✏️  Edit skill</div>
+  <div class="ctx-item" onclick="pupCtxDuplicate()">⧉  Duplicate skill</div>
+  <div class="ctx-divider"></div>
+  <div class="ctx-item ctx-danger" onclick="pupCtxDelete()">✕  Delete skill</div>
+</div>
+<div id="pupTooltip" style="position:fixed;z-index:9998;background:rgba(40,20,10,.88);color:#fff;border-radius:6px;padding:4px 9px;font-size:11px;pointer-events:none;display:none;max-width:220px;white-space:normal;line-height:1.4;box-shadow:0 2px 8px rgba(0,0,0,.2)"></div>
 <div id="ctxMenu" style="display:none;position:fixed;z-index:9999;background:rgba(255,255,255,.98);border:1px solid rgba(210,205,228,.4);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);padding:4px;min-width:155px;backdrop-filter:blur(12px)">
   <div id="ctxDuplicate" class="ctx-item" onclick="ctxDoDuplicate()">⧉  Duplicate task</div>
   <div id="ctxEdit" class="ctx-item" onclick="ctxDoEdit()">✏️  Edit task</div>
