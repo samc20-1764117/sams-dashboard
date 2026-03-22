@@ -1336,7 +1336,10 @@ async function syncAll(silent=false){
     if(shop){st.shopping=shop;}
     if(trav)st.travel=trav;
     if(bdays)st.birthdays=bdays;
-    if(pupSkills){if(!silent)pupSnapshot();st.pup_skills=pupSkills;}
+    if(pupSkills){
+      if(!silent){pupSnapshot();_pupUndoDirty=false;st.pup_skills=pupSkills;}
+      else if(!_pupUndoDirty){st.pup_skills=pupSkills;}
+    }
     if(blocks){
       st.blocks=blocks.map(b=>{
         let sm=b.start_minutes;
@@ -1674,6 +1677,8 @@ function doRedo(){
 document.addEventListener('keydown',e=>{
   if((e.metaKey||e.ctrlKey)&&e.key==='z'){
     e.preventDefault();
+    const _onPupsZ=document.getElementById('page-pups')?.classList.contains('active');
+    if(_onPupsZ){if(e.shiftKey){pupRedo();}else{pupUndo();}return;}
     if(e.shiftKey){doRedo();}else{doUndo();}
     return;
   }
@@ -4030,10 +4035,10 @@ async function delBday(id){
 let _pupEditId=null;
 let _selPupIds=new Set(),_lastSelPupId=null,_copiedPups=[],_pupCtxId=null;
 let _pupSortCol=null,_pupSortDir=1,_pupFilter=null;
-let _pupUndoStack=[],_pupRedoStack=[],_pupHdrClickTimer=null;
+let _pupUndoStack=[],_pupRedoStack=[],_pupHdrClickTimer=null,_pupUndoDirty=false;
 function pupSnapshot(){_pupUndoStack.push(JSON.parse(JSON.stringify(st.pup_skills)));if(_pupUndoStack.length>20)_pupUndoStack.shift();_pupRedoStack=[];}
-function pupUndo(){if(!_pupUndoStack.length)return;_pupRedoStack.push(JSON.parse(JSON.stringify(st.pup_skills)));st.pup_skills=_pupUndoStack.pop();save();renderPupsPage();}
-function pupRedo(){if(!_pupRedoStack.length)return;_pupUndoStack.push(JSON.parse(JSON.stringify(st.pup_skills)));st.pup_skills=_pupRedoStack.pop();save();renderPupsPage();}
+function pupUndo(){if(!_pupUndoStack.length)return;_pupUndoDirty=true;_pupRedoStack.push(JSON.parse(JSON.stringify(st.pup_skills)));st.pup_skills=_pupUndoStack.pop();save();renderPupsPage();}
+function pupRedo(){if(!_pupRedoStack.length)return;_pupUndoDirty=true;_pupUndoStack.push(JSON.parse(JSON.stringify(st.pup_skills)));st.pup_skills=_pupRedoStack.pop();save();renderPupsPage();}
 function pupHdrClick(col){clearTimeout(_pupHdrClickTimer);_pupHdrClickTimer=setTimeout(()=>{_pupHdrClickTimer=null;pupSortBy(col);},250);}
 function pupHdrDbl(e,col){clearTimeout(_pupHdrClickTimer);_pupHdrClickTimer=null;pupFilterBy(e,col);}
 function openPupAddModal(){
@@ -4568,8 +4573,6 @@ document.addEventListener('keydown',async e=>{
   if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT')return;
   // Pup skill shortcuts
   const onPups=document.getElementById('page-pups')?.classList.contains('active');
-  if(onPups&&(e.metaKey||e.ctrlKey)&&e.key==='z'&&e.shiftKey){e.preventDefault();pupRedo();return;}
-  if(onPups&&(e.metaKey||e.ctrlKey)&&e.key==='z'&&!e.shiftKey){e.preventDefault();pupUndo();return;}
   if(onPups&&_selPupIds.size>0){
     if(e.key==='Delete'||e.key==='Backspace'){e.preventDefault();pupCtxDelete();return;}
     if((e.metaKey||e.ctrlKey)&&e.key==='c'){
