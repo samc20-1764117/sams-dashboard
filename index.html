@@ -4091,7 +4091,7 @@ function pupFilterBy(e,col){
     html=`<input id="pfText" placeholder="Search…" value="${curText.replace(/"/g,'&quot;')}" style="${inp_s}">
     <div style="display:flex;gap:6px;margin-top:8px">
       <button onclick="applyPupTextFilter()" style="flex:1;padding:4px;border-radius:6px;border:1px solid var(--border);background:rgba(139,92,246,.12);cursor:pointer;font-size:12px;color:var(--text)">Apply</button>
-      <button onclick="clearPupFilter()" style="padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:transparent;cursor:pointer;font-size:12px;color:var(--muted)">Clear</button>
+      <button onclick="clearPupFilter()" style="flex:1;padding:4px;border-radius:6px;border:1px solid var(--border);background:transparent;cursor:pointer;font-size:12px;color:var(--muted)">Clear</button>
     </div>`;
   } else {
     const vals=[...new Set(skills.map(s=>String(s[col]||'—')))].sort();
@@ -4103,7 +4103,7 @@ function pupFilterBy(e,col){
     </div>
     <div style="display:flex;gap:6px">
       <button onclick="applyPupCheckFilter('${col}')" style="flex:1;padding:4px;border-radius:6px;border:1px solid var(--border);background:rgba(139,92,246,.12);cursor:pointer;font-size:12px;color:var(--text)">Apply</button>
-      <button onclick="clearPupFilter()" style="padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:transparent;cursor:pointer;font-size:12px;color:var(--muted)">Clear</button>
+      <button onclick="clearPupFilter()" style="flex:1;padding:4px;border-radius:6px;border:1px solid var(--border);background:transparent;cursor:pointer;font-size:12px;color:var(--muted)">Clear</button>
     </div>`;
   }
   document.getElementById('pfContent').innerHTML=html;
