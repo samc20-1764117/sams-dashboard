@@ -118,7 +118,7 @@ body{font-family:'DM Sans',sans-serif;background:#fef6f0;background-attachment:f
 /* Main */
 .main{flex:1;overflow-y:auto;overflow-x:hidden;padding:0 0 36px 0;margin-left:186px;transition:margin-left .25s cubic-bezier(.4,0,.2,1)}
 #page-overview{padding:clamp(12px,3vw,56px);padding-top:48px}
-.ov-topbar{position:fixed;top:14px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:10px;z-index:89}
+.ov-topbar{position:fixed;top:14px;left:calc(93px + 50%);transform:translateX(-50%);display:flex;align-items:center;gap:10px;z-index:89}
 .ov-topbar-label{font-size:13px;font-weight:600;color:var(--muted);letter-spacing:.02em}
 .ov-topbar-date{font-size:13px;font-weight:700;color:var(--text)}
 .ov-topbar-dot{width:2.5px;height:2.5px;border-radius:50%;background:var(--text);opacity:0.25;flex-shrink:0}
@@ -557,9 +557,9 @@ body.dark .qn-input{background:rgba(255,255,255,.06);border-color:rgba(255,220,2
   <div class="ov-topbar">
     <span class="ov-topbar-label">Overview</span>
     <span class="ov-topbar-dot"></span>
-    <span class="ov-topbar-date" id="ovTopDate"></span>
+    <span class="ov-topbar-date topbar-date" id="ovTopDate"></span>
     <span class="ov-topbar-dot"></span>
-    <span class="ov-topbar-time" id="ovTopTime"></span>
+    <span class="ov-topbar-time topbar-time" id="ovTopTime"></span>
   </div>
   <div class="overview-cols">
     <div class="overview-left">
@@ -789,9 +789,9 @@ body.dark .qn-input{background:rgba(255,255,255,.06);border-color:rgba(255,220,2
   <div class="ov-topbar">
     <span class="ov-topbar-label">Recurring Tasks</span>
     <span class="ov-topbar-dot"></span>
-    <span class="ov-topbar-date" id="wkTopDate"></span>
+    <span class="ov-topbar-date topbar-date" id="wkTopDate"></span>
     <span class="ov-topbar-dot"></span>
-    <span class="ov-topbar-time" id="wkTopTime"></span>
+    <span class="ov-topbar-time topbar-time" id="wkTopTime"></span>
   </div>
   <button class="back-btn" onclick="showPage('overview')">← Overview</button>
   <!-- hidden compat elements -->
@@ -832,11 +832,11 @@ body.dark .qn-input{background:rgba(255,255,255,.06);border-color:rgba(255,220,2
 
 <!-- OTHER PAGES (empty) -->
 <div class="page" id="page-travel" style="display:none!important"><div id="travelList" style="display:none"></div></div>
-<div class="page" id="page-birthdays" style="padding:clamp(12px,3vw,56px);padding-top:48px"><button class="back-btn" onclick="showPage('overview')">← Overview</button><div id="bdayList" style="display:none"></div></div>
+<div class="page" id="page-birthdays" style="padding:clamp(12px,3vw,56px);padding-top:48px"><div class="ov-topbar"><span class="ov-topbar-label">Birthdays</span><span class="ov-topbar-dot"></span><span class="ov-topbar-date topbar-date"></span><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div><button class="back-btn" onclick="showPage('overview')">← Overview</button><div id="bdayList" style="display:none"></div></div>
 <div class="page" id="page-pups" style="padding:22px 56px 36px 56px;padding-top:48px"></div>
-<div class="page" id="page-finance" style="padding:clamp(12px,3vw,56px);padding-top:48px"><button class="back-btn" onclick="showPage('overview')">← Overview</button></div>
-<div class="page" id="page-recipes" style="padding:clamp(12px,3vw,56px);padding-top:48px"><button class="back-btn" onclick="showPage('overview')">← Overview</button></div>
-<div class="page" id="page-notes"></div>
+<div class="page" id="page-finance" style="padding:clamp(12px,3vw,56px);padding-top:48px"><div class="ov-topbar"><span class="ov-topbar-label">💰 Finance</span><span class="ov-topbar-dot"></span><span class="ov-topbar-date topbar-date"></span><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div><button class="back-btn" onclick="showPage('overview')">← Overview</button></div>
+<div class="page" id="page-recipes" style="padding:clamp(12px,3vw,56px);padding-top:48px"><div class="ov-topbar"><span class="ov-topbar-label">🍳 Recipes</span><span class="ov-topbar-dot"></span><span class="ov-topbar-date topbar-date"></span><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div><button class="back-btn" onclick="showPage('overview')">← Overview</button></div>
+<div class="page" id="page-notes" style="padding:clamp(12px,3vw,56px);padding-top:48px"><div class="ov-topbar"><span class="ov-topbar-label">📝 Notes</span><span class="ov-topbar-dot"></span><span class="ov-topbar-date topbar-date"></span><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div></div>
 <div class="page" id="page-settings" style="display:none!important"><input class="si2" id="cfgUrl" style="display:none"><input class="si2" id="cfgKey" style="display:none"><div class="cst idle" id="cst" style="display:none"></div></div>
 
 </div><!-- /main -->
@@ -4015,7 +4015,8 @@ function renderPupsPage(){
   }
   const sorted=[...skills].sort((a,b)=>(a.pup||'').localeCompare(b.pup||'')||(a.skill||'').localeCompare(b.skill||''));
   const tableCol=`<div class="pup-col card" style="overflow:hidden"><div class="ch"><span style="font-size:13px">✏️</span><span style="font-weight:700;font-size:13px;color:var(--text)">All Skills</span></div><div style="overflow-y:auto;flex:1;min-height:0"><table class="pup-tbl"><thead><tr><th>Pup</th><th>Skill</th><th>Level</th><th>Stage</th><th>%</th><th>🎯</th><th>Next Step</th></tr></thead><tbody>${sorted.map(tableRow).join('')}</tbody></table></div></div>`;
-  page.innerHTML=`<button class="back-btn" onclick="showPage('overview')">← Overview</button><div style="display:grid;grid-template-columns:1fr 1fr 0.65fr 1.5fr;gap:14px;height:calc(100vh - 100px)">${pupCol('Mochi','#8b5cf6')}${pupCol('Sunny','#f97316')}${completedCol}${tableCol}</div>`;
+  page.innerHTML=`<div class="ov-topbar"><span class="ov-topbar-label">🐾 Pups</span><span class="ov-topbar-dot"></span><span class="ov-topbar-date topbar-date"></span><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div><button class="back-btn" onclick="showPage('overview')">← Overview</button><div style="display:grid;grid-template-columns:1fr 1fr 0.65fr 1.5fr;gap:14px;height:calc(100vh - 100px)">${pupCol('Mochi','#8b5cf6')}${pupCol('Sunny','#f97316')}${completedCol}${tableCol}</div>`;
+  const now=new Date();document.querySelectorAll('#page-pups .topbar-date').forEach(e=>e.textContent=now.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}));document.querySelectorAll('#page-pups .topbar-time').forEach(e=>e.textContent=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}));
 }
 
 function renderBdayPage(){save();
@@ -4844,8 +4845,8 @@ document.addEventListener('click',function(e){
 
 </div>
 <script>
-function tickClock(){const t=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});const el=document.getElementById('liveClock');if(el)el.textContent=t;['ovTopTime','wkTopTime'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent=t;});}
-function _updateOvTopDate(){const now=new Date();const ds=now.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});['ovTopDate','wkTopDate'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent=ds;});}
+function tickClock(){const t=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});const el=document.getElementById('liveClock');if(el)el.textContent=t;document.querySelectorAll('.topbar-time').forEach(e=>e.textContent=t);}
+function _updateOvTopDate(){const now=new Date();const ds=now.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});document.querySelectorAll('.topbar-date').forEach(e=>e.textContent=ds);}
 tickClock();_updateOvTopDate();setInterval(tickClock,1000);
 </script>
 <!-- Quick Notes -->
