@@ -798,7 +798,6 @@ body.dark .qn-input{background:rgba(255,255,255,.06);border-color:rgba(255,220,2
 </div>
 
 <!-- RECURRING TASKS -->
-<div id="unAssignedBadge" onclick="openQA('unassigned',this)"></div>
 <div class="page" id="page-weekly" style="padding:22px 56px 36px 56px;padding-top:60px">
   <div class="ov-topbar">
     <div class="ov-topbar-left"><span class="ov-topbar-label">Recurring Tasks</span><span class="ov-topbar-dot"></span></div>
@@ -839,6 +838,7 @@ body.dark .qn-input{background:rgba(255,255,255,.06);border-color:rgba(255,220,2
       </div>
     </div>
   </div>
+  <div id="unAssignedBadge" onclick="openQA('unassigned',this)"></div>
 </div>
 
 <!-- OTHER PAGES (empty) -->
@@ -2482,7 +2482,7 @@ function renderUnassigned(){
   const ts=st.tasks.filter(t=>!t.due_date&&!t.done&&t.category!=='Long term');
   const badge=document.getElementById('unAssignedBadge');
   if(!badge)return;
-  if(activePg==='weekly'&&ts.length>0){badge.textContent=ts.length+' unassigned';badge.style.display='inline-flex';}
+  if(ts.length>0){badge.textContent=ts.length+' unassigned';badge.style.display='inline-flex';}
   else{badge.style.display='none';}
 }
 
