@@ -2822,7 +2822,7 @@ function getAutoTBForDate(ds){
   const dow=new Date(ds+'T00:00:00').getDay(); // 0=Sun,6=Sat
   const isWeekday=dow>=1&&dow<=5;
   return st.autoTimeblocks.filter(a=>a.is_enabled).flatMap(a=>{
-    if(a.day_scope==='weekdays'&&!isWeekday)return[];
+    if(!isWeekday)return[];
     const ov=st.autoTBOverrides.find(o=>String(o.base_id)===String(a.id)&&o.date===ds);
     if(ov&&(ov.start_time===null||ov.start_time===undefined))return[]; // deleted for this day
     const startTime=ov?ov.start_time:a.start_time;
