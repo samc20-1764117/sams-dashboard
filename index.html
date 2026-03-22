@@ -994,12 +994,11 @@ body.dark .qn-input{background:rgba(255,255,255,.06);border-color:rgba(255,220,2
         <div style="flex:1;text-align:center;font-size:14px;font-weight:700;letter-spacing:-.3px" id="moTitle"></div>
         <button class="btn btn-ghost btn-xs" style="font-size:10px" onclick="moOff=0;renderMoCal()">Current Month</button>
         <button class="btn btn-ghost btn-xs" onclick="shiftMo(1)">→</button>
-        <button class="btn btn-ghost btn-xs" onclick="closeMod(&#39;mModal&#39;)">✕</button>
       </div>
       <div class="mgrid"><div class="mdow" id="mDow"></div><div class="mcells" id="mCells"></div></div>
     </div>
     <div class="mua-side">
-      <div class="muah">Unassigned Tasks</div>
+      <div class="muah" style="display:flex;align-items:center;justify-content:space-between"><span>Unassigned Tasks</span><button class="btn btn-ghost btn-xs" onclick="closeMod('mModal')" style="font-size:11px;opacity:.6;padding:2px 5px">✕</button></div>
       <div class="mual" id="mUAList"></div>
     </div>
   </div>
@@ -3743,6 +3742,40 @@ function openMModal(){
   }
 }
 function shiftMo(n){moOff+=n;renderMoCal();}
+function addMoTravelBanners(cells,yr,mo){
+  const monthStart=d2s(new Date(yr,mo,1)),monthEnd=d2s(new Date(yr,mo+1,0));
+  const trips=st.travel.filter(tv=>{const s=(tv.start_date||'').split('T')[0],e=(tv.end_date||'').split('T')[0]||s;return s&&s<=monthEnd&&e>=monthStart;});
+  cells.style.position='relative';
+  let layer=document.getElementById('moBanners');
+  if(!layer){layer=document.createElement('div');layer.id='moBanners';layer.style.cssText='position:absolute;top:0;left:0;right:0;height:100%;pointer-events:none;z-index:3';cells.appendChild(layer);}
+  layer.innerHTML='';
+  if(!trips.length)return;
+  setTimeout(()=>{
+    const cellEls=[...cells.querySelectorAll('.mcell')];if(!cellEls.length)return;
+    trips.forEach(tv=>{
+      const sd=(tv.start_date||'').split('T')[0],ed=(tv.end_date||'').split('T')[0]||sd;
+      const clampS=sd<monthStart?monthStart:sd,clampE=ed>monthEnd?monthEnd:ed;
+      const rangeCells=cellEls.filter(c=>c.dataset.ds&&c.dataset.ds>=clampS&&c.dataset.ds<=clampE);
+      if(!rangeCells.length)return;
+      const s=gc('travel');const label=tv.destination?`✈ ${tv.name} → ${tv.destination}`:`✈ ${tv.name}`;
+      // Split into row groups by offsetTop
+      let rows=[],cur=[rangeCells[0]];
+      for(let i=1;i<rangeCells.length;i++){
+        if(rangeCells[i].offsetTop!==rangeCells[i-1].offsetTop){rows.push(cur);cur=[rangeCells[i]];}else cur.push(rangeCells[i]);
+      }
+      rows.push(cur);
+      rows.forEach((rowCells,ri)=>{
+        const fc=rowCells[0],lc=rowCells[rowCells.length-1];
+        const left=fc.offsetLeft+2,top=fc.offsetTop+2,width=lc.offsetLeft+lc.offsetWidth-fc.offsetLeft-4;
+        const ban=document.createElement('div');ban.className='wkc-banner';
+        ban.style.cssText=`position:absolute;left:${left}px;top:${top}px;width:${width}px;background:${s.bg};color:${s.t};border-color:${s.b};pointer-events:all`;
+        ban.textContent=ri===0?label:`↳ ${label}`;
+        ban.addEventListener('click',()=>openTravelModal(tv.id));
+        layer.appendChild(ban);
+      });
+    });
+  },20);
+}
 function renderMoCal(){
   const n=new Date(),yr=n.getFullYear(),mo=n.getMonth()+moOff;
   const d=new Date(yr,mo,1);document.getElementById('moTitle').textContent=d.toLocaleDateString('en-US',{month:'long',year:'numeric'});
@@ -3752,6 +3785,7 @@ function renderMoCal(){
   for(let i=0;i<firstDay;i++)cells.appendChild(mkMCell(new Date(yr,mo,1-firstDay+i),true,today));
   for(let i=1;i<=dim;i++)cells.appendChild(mkMCell(new Date(yr,mo,i),false,today));
   const rem=(7-((firstDay+dim)%7))%7;for(let i=1;i<=rem;i++)cells.appendChild(mkMCell(new Date(yr,mo+1,i),true,today));
+  addMoTravelBanners(cells,yr,mo);
   // unassigned tasks only in sidebar
   const mual=document.getElementById('mUAList');mual.innerHTML='';
   const CAT_ORDER=['Home','My work','Work','Social','Recurring'];
@@ -3769,6 +3803,7 @@ function renderMoCal(){
 }
 function mkMCell(date,om,today){
   const ds=d2s(date);const cell=document.createElement('div');
+  cell.dataset.ds=ds;
   cell.className='mcell'+(om?' om':'')+(ds===today?' tc':'');
   // Header row with date + add btn
   const hdr=document.createElement('div');hdr.style.cssText='display:flex;align-items:center;justify-content:space-between;margin-bottom:2px';
@@ -3780,7 +3815,8 @@ function mkMCell(date,om,today){
   // Task chips — draggable
   const shopOnDay=st.shopping.filter(s=>s.due_date===ds&&!s.done).map(s=>({id:'shop-cal-'+s.id,name:s.name+(s.store?' ('+s.store+')':''),category:'Shopping',due_date:ds,done:false,_shopId:s.id,_virtual:true,_type:'shop'}));
   const wrecOnDay=st.recurring.filter(r=>(r.is_weekly_reset===true||r.is_weekly_reset==='true')&&!r._done&&r._dateOverrides&&r._dateOverrides[getWkKey(0)]===ds).map(r=>({id:'rec-virt-'+r.id,name:r.name,category:'Recurring',due_date:ds,done:false,_recId:r.id,_virtual:true,_isWrec:true}));
-  const tasks=[...st.tasks.filter(t=>t.due_date&&t.due_date.split('T')[0]===ds&&!t.done),...getExtrasForDate(ds),...shopOnDay,...wrecOnDay];
+  const extras=getExtrasForDate(ds);
+  const tasks=[...st.tasks.filter(t=>t.due_date&&t.due_date.split('T')[0]===ds&&!t.done),...extras.filter(t=>t._type!=='travel'),...shopOnDay,...wrecOnDay];
   tasks.slice(0,4).forEach(t=>{
     const s=t.important?IMP:gc(t.category);
     const chip=document.createElement('div');chip.className='mcell-t';chip.draggable=true;
