@@ -1152,7 +1152,7 @@ function slug(c){return(c||'other').toLowerCase().replace(/\s+/g,'-');}
 // ── State ──────────────────────────────────────────────────────────────────────
 let cfg={url:'https://gtirvyrqfuuuxkkqaeap.supabase.co',key:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0aXJ2eXJxZnV1dXhra3FhZWFwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwODY3NjAsImV4cCI6MjA4ODY2Mjc2MH0.6rtA0WeUUAcuV_sNVrxAbaaviPxPwNakh_bk7uylAOo',showAutoTB:true};
 let st={tasks:[],recurring:[],shopping:[],blocks:[],travel:[],birthdays:[],pup_skills:[],autoTimeblocks:[],autoTBOverrides:[]};
-let dayOff=0,wkOff=0,moOff=0,sbOpen=true;
+let dayOff=0,wkOff=0,moOff=0,sbOpen=true,activePg='overview';
 let dragId=null,resizing=null,tMode='add',tId=null,tPreDate=null;
 let qaCtx='today',qaDsTarget=null,qaKCat='';
 let tbWD=0,tbWT=null,wkcWD=0,wkcWT=null;
@@ -2482,8 +2482,7 @@ function renderUnassigned(){
   const ts=st.tasks.filter(t=>!t.due_date&&!t.done&&t.category!=='Long term');
   const badge=document.getElementById('unAssignedBadge');
   if(!badge)return;
-  const weeklyActive=document.getElementById('page-weekly')&&document.getElementById('page-weekly').classList.contains('active');
-  if(weeklyActive&&ts.length>0){badge.textContent=ts.length+' unassigned';badge.style.display='inline-flex';}
+  if(activePg==='weekly'&&ts.length>0){badge.textContent=ts.length+' unassigned';badge.style.display='inline-flex';}
   else{badge.style.display='none';}
 }
 
@@ -4526,6 +4525,7 @@ const PAGES=['overview','weekly','shopping','travel','birthdays','settings','pup
 function showPage(id){
   if(id==='tasks')return;
   if(id==='shopping')id='weekly';// shopping merged into weekly page
+  activePg=id;
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   const pageEl=document.getElementById('page-'+id);if(pageEl)pageEl.classList.add('active');
@@ -4533,7 +4533,7 @@ function showPage(id){
   const mainEl=document.getElementById('main');if(mainEl)mainEl.scrollTop=0;
   if(id==='weekly'){renderWeeklyPage();}if(id==='travel')renderTravelPage();if(id==='birthdays')renderBdayPage();if(id==='pups')renderPupsPage();
   const backBtn=document.getElementById('backToOv');if(backBtn)backBtn.style.display=id==='overview'?'none':'flex';
-  const uBadge=document.getElementById('unAssignedBadge');if(uBadge&&id!=='weekly')uBadge.style.display='none';else if(uBadge&&id==='weekly')renderUnassigned();
+  renderUnassigned();
   history.replaceState(null,'','#'+id);
 }
 
