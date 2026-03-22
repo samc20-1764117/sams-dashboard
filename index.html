@@ -4241,8 +4241,8 @@ function renderPupsPage(){
   function sr(s){return s.success_rate!=null&&s.success_rate!==''?Math.round(parseFloat(s.success_rate)*(parseFloat(s.success_rate)<=1?100:1)):null;}
   function lvlPill(s){return s.level?`<span class="pup-pill">${s.level}</span>`:'';}
   function donut(pct,color){const r=28,cx=32,cy=32,circ=2*Math.PI*r,dash=circ*pct/100;return`<svg width="64" height="64" viewBox="0 0 64 64"><circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="rgba(0,0,0,0.07)" stroke-width="7"/><circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${color}" stroke-width="7" stroke-dasharray="${dash} ${circ}" stroke-linecap="round" transform="rotate(-90 ${cx} ${cy})"/><text x="${cx}" y="${cy+1}" text-anchor="middle" dominant-baseline="middle" style="font-size:13px;font-weight:700;fill:${color}">${pct}%</text></svg>`;}
-  function focusRow(s){const rate=sr(s);return`<div class="pup-skill-row pup-focus-row" ondblclick="openPupEditModal(${s.id})"><span class="pup-skill-name">${s.skill}</span><div class="pup-skill-meta">${lvlPill(s)}${rate!=null?`<span class="pup-pill pup-pill-sr">${rate}%</span>`:''}</div></div>`;}
-  function skillRow(s){const rate=sr(s);const tip=s.comments&&s.comments!=='None'?s.comments:(s.next_step&&s.next_step!=='None'?s.next_step:'');return`<div class="pup-skill-row pup-skill-emphasis" ondblclick="openPupEditModal(${s.id})"><span class="pup-skill-name">${s.skill}</span><div class="pup-skill-meta">${lvlPill(s)}${rate!=null?`<span class="pup-pill pup-pill-sr">${rate}%</span>`:''}</div>${tip?`<div class="pup-next-step">↳ ${tip}</div>`:''}</div>`;}
+  function focusRow(s){const rate=sr(s);return`<div class="pup-skill-row pup-focus-row" data-pupid="${s.id}"><span class="pup-skill-name">${s.skill}</span><div class="pup-skill-meta">${lvlPill(s)}${rate!=null?`<span class="pup-pill pup-pill-sr">${rate}%</span>`:''}</div></div>`;}
+  function skillRow(s){const rate=sr(s);const tip=s.comments&&s.comments!=='None'?s.comments:(s.next_step&&s.next_step!=='None'?s.next_step:'');return`<div class="pup-skill-row pup-skill-emphasis" data-pupid="${s.id}"><span class="pup-skill-name">${s.skill}</span><div class="pup-skill-meta">${lvlPill(s)}${rate!=null?`<span class="pup-pill pup-pill-sr">${rate}%</span>`:''}</div>${tip?`<div class="pup-next-step">↳ ${tip}</div>`:''}</div>`;}
   function pupCol(pup,color){
     const ps=skills.filter(s=>s.pup===pup);
     const mastered=ps.filter(s=>s.stage==='Mastered');
@@ -4253,6 +4253,15 @@ function renderPupsPage(){
   }
   const tableCol=`<div class="pup-col card" style="overflow:hidden"><div class="ch"><span style="font-size:13px">✏️</span><span style="font-weight:700;font-size:13px;color:var(--text)">All Skills</span><button class="btn-plus" onclick="openQA('pup',this)" style="margin-left:auto;padding:2px 8px;font-size:13px;border-radius:8px;border:1px solid var(--border);background:transparent;cursor:pointer;color:var(--text)">+</button></div><div style="overflow-y:auto;flex:1;min-height:0"><table class="pup-tbl"><thead id="pupTblHead"></thead><tbody id="pupTblBody"></tbody></table></div></div>`;
   page.innerHTML=`<div class="ov-topbar"><span class="ov-topbar-label">🐾 Pups</span><span class="ov-topbar-dot"></span><span class="ov-topbar-date topbar-date"></span><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div><button class="back-btn" onclick="showPage('overview')">← Overview</button><div style="display:grid;grid-template-columns:1fr 1fr 2.2fr;gap:14px;height:calc(100vh - 100px)">${pupCol('Mochi','#8b5cf6')}${pupCol('Sunny','#f97316')}${tableCol}</div>`;
+  if(!page._pupDblClick){
+    page._pupDblClick=true;
+    page.addEventListener('dblclick',e=>{
+      const row=e.target.closest('[data-pupid]');
+      if(!row)return;
+      e.preventDefault();
+      openPupEditModal(row.dataset.pupid);
+    });
+  }
   renderPupTable();
   const now=new Date();document.querySelectorAll('#page-pups .topbar-date').forEach(e=>e.textContent=now.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}));document.querySelectorAll('#page-pups .topbar-time').forEach(e=>e.textContent=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}));
 }
