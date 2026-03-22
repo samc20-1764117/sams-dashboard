@@ -12,9 +12,18 @@
 ## Header Rules (All Pages)
 
 - **`.ov-topbar`**: `position:fixed; top:14px; left:0; right:0; display:grid; grid-template-columns:1fr auto 1fr`. The **date is always the exact viewport center** — label+dot go in `.ov-topbar-left` (flex, justify-content:flex-end), dot+time in `.ov-topbar-right` (flex, justify-content:flex-start). `pointer-events:none`.
-- **All pages use `padding-top:72px`** — identical regardless of whether Back to Overview is present.
+- **All pages use `padding-top:60px`** — identical regardless of whether Back to Overview is present. To change: search `padding-top:60px` (replace_all) and update height calcs below.
 - **Back to Overview** is never inside page HTML. It lives as `#backToOv` (fixed, top:52px right:20px) and is shown/hidden by `showPage()`.
 - **No `.back-btn`** elements in page content (`.back-btn { display:none }`).
+
+### Page height calculations (tied to padding-top)
+| Page | Element | Current value |
+|------|---------|---------------|
+| Overview | `.overview-cols` height | `min(740px, calc(100vh - 84px))` |
+| Recurring | `#rt-outer` height | `calc(100vh - 84px)` |
+| Pups | grid height | `calc(100vh - 80px)` |
+
+If `padding-top` changes by N px, subtract N from each calc value above.
 - **`.row3`**: full width (kanban).
 
 ## Today+TB Card Header
@@ -262,10 +271,13 @@ All three checkbox types share identical visual style:
 - Colors: Mochi = `#8b5cf6` (purple), Sunny = `#fbbf24` (yellow).
 
 ### Dog Cards (Mochi / Sunny)
-- Header: circular headshot (72px, `mochi_headshot.png` / `sunny_headshot.png`) overlaps card top by 36px. `overflow:visible;position:relative` on card. Header row: pup name (left) + "N in progress" (right).
+- Header: circular headshot **92px**, overlaps card top — `position:absolute; top:-36px; left:50%; transform:translateX(-50%)`. Card is `overflow:visible; position:relative`. Glow via `box-shadow`: Mochi = `rgba(139,92,246,0.32)`, Sunny = `rgba(251,191,36,0.38)`, spread `0 0 22px 8px`.
+- Header row is a **3-column grid** (`1fr 92px 1fr`, `min-height:52px`): pup name (left, `padding-left:13px`) | headshot spacer (center, empty) | "N in progress" (right, `padding-right:13px`).
+- Grid container (`padding-top:26px`) gives headshots clearance above card top. To change headshot size, update img `width/height`, `top` (= `-height/2`), and center column width.
+- **Themed skills container**: Train This Week + Up Next wrapped in one div with pup-colored background (Mochi `rgba(139,92,246,0.05)`, Sunny `rgba(251,191,36,0.07)`) and matching border. Only the container is tinted — inner skill cards are not.
 - Progress bar (8px, bottom of card): green = mastered, yellow = in progress, grey = not started. Each segment has `onmouseenter` → `showPupStageTip(event, 'Stage: N', color)` colored tooltip.
-- **Train This Week**: skills where `focus===true`. White background (`.pup-focus-row`). Shows skill name, next step, comments (not for mastered). Has mastered checkbox.
-- **Up Next**: `stage==='In Progress'` AND `focus!==true` (excludes Train This Week to avoid duplication). Grouped by category (commands → manners → fun → other) with muted section labels. Has mastered checkbox per row.
+- **Train This Week**: skills where `focus===true`. Shows skill name, next step, comments (not for mastered). Has mastered checkbox.
+- **Up Next**: `stage==='In Progress'` AND `focus!==true`. Grouped by category (commands → manners → fun → other). Has mastered checkbox per row.
 - Both sections use `skillCardRow(s, cls)`: mastered checkbox (purple accent), skill name (strikethrough if mastered), next step + comments hidden when mastered.
 - Checking the mastered checkbox calls `togglePupMastered(id, checked)` → sets stage to 'Mastered' (or 'In Progress' on uncheck), snapshots, syncs.
 
