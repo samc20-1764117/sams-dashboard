@@ -386,7 +386,7 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 .wkc-col.drag-sel{background:rgba(20,184,166,.07)}
 
 .wkc-foot{display:none}
-#unAssignedBadge{position:fixed;bottom:24px;right:24px;z-index:200;background:var(--accent);color:#fff;font-size:11px;font-weight:700;padding:6px 12px;border-radius:20px;box-shadow:0 4px 14px rgba(0,0,0,.18);cursor:pointer;display:none;letter-spacing:-.01em;transition:opacity .15s,transform .15s}
+#unAssignedBadge{position:absolute;bottom:24px;right:56px;z-index:200;background:var(--accent);color:#fff;font-size:11px;font-weight:700;padding:6px 12px;border-radius:20px;box-shadow:0 4px 14px rgba(0,0,0,.18);cursor:pointer;display:none;letter-spacing:-.01em;transition:opacity .15s,transform .15s}
 #unAssignedBadge:hover{opacity:.88;transform:scale(1.05)}
 body.dark #unAssignedBadge{background:#e08b6e}
 .month-btn{display:flex;align-items:center;gap:3px;font-size:11px;font-weight:600;color:var(--muted);cursor:pointer;padding:3px 5px;border-radius:var(--rxs);background:none;transition:all .15s}
@@ -798,7 +798,7 @@ body.dark .qn-input{background:rgba(255,255,255,.06);border-color:rgba(255,220,2
 </div>
 
 <!-- RECURRING TASKS -->
-<div class="page" id="page-weekly" style="padding:22px 56px 36px 56px;padding-top:60px">
+<div class="page" id="page-weekly" style="padding:22px 56px 36px 56px;padding-top:60px;position:relative">
   <div class="ov-topbar">
     <div class="ov-topbar-left"><span class="ov-topbar-label">Recurring Tasks</span><span class="ov-topbar-dot"></span></div>
     <span class="ov-topbar-date topbar-date" id="wkTopDate"></span>
