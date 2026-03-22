@@ -117,7 +117,7 @@ body{font-family:'DM Sans',sans-serif;background:#fef6f0;background-attachment:f
 
 /* Main */
 .main{flex:1;overflow-y:auto;overflow-x:hidden;padding:0 0 36px 0;margin-left:186px;transition:margin-left .25s cubic-bezier(.4,0,.2,1)}
-#page-overview{padding:clamp(12px,3vw,56px);padding-top:72px}
+#page-overview{padding:clamp(12px,3vw,56px);padding-top:52px}
 .ov-topbar{position:fixed;top:14px;left:0;right:0;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;z-index:89;pointer-events:none}
 .ov-topbar-left{display:flex;align-items:center;justify-content:flex-end;gap:10px;padding-right:10px;pointer-events:none}
 .ov-topbar-right{display:flex;align-items:center;justify-content:flex-start;gap:10px;padding-left:10px;pointer-events:none}
@@ -125,7 +125,7 @@ body{font-family:'DM Sans',sans-serif;background:#fef6f0;background-attachment:f
 .ov-topbar-date{font-size:13px;font-weight:700;color:var(--text)}
 .ov-topbar-dot{width:2.5px;height:2.5px;border-radius:50%;background:var(--text);opacity:0.25;flex-shrink:0}
 .ov-topbar-time{display:inline-flex;align-items:center;justify-content:center;padding:3px 11px;border-radius:20px;font-size:12px;font-weight:600;background:rgba(120,110,180,.03);border:1px solid rgba(120,110,180,.06);color:var(--muted)}
-.overview-cols{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,2.55fr);gap:14px;margin-bottom:36px;height:min(740px,calc(100vh - 104px))}
+.overview-cols{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,2.55fr);gap:14px;margin-bottom:36px;height:min(740px,calc(100vh - 84px))}
 @media(max-width:1280px){.row1-right-top{grid-template-columns:1fr 1fr;height:auto}}
 @media(max-width:900px){.main{margin-left:0;padding:12px 0 24px 0}#page-overview{padding:0 12px}.overview-cols{grid-template-columns:1fr;height:auto}}
 .main.full{margin-left:0}
@@ -804,7 +804,7 @@ body.dark .qn-input{background:rgba(255,255,255,.06);border-color:rgba(255,220,2
 </div>
 
 <!-- RECURRING TASKS -->
-<div class="page" id="page-weekly" style="padding:22px 56px 36px 56px;padding-top:72px">
+<div class="page" id="page-weekly" style="padding:22px 56px 36px 56px;padding-top:52px">
   <div class="ov-topbar">
     <div class="ov-topbar-left"><span class="ov-topbar-label">Recurring Tasks</span><span class="ov-topbar-dot"></span></div>
     <span class="ov-topbar-date topbar-date" id="wkTopDate"></span>
@@ -821,7 +821,7 @@ body.dark .qn-input{background:rgba(255,255,255,.06);border-color:rgba(255,220,2
   <input id="nsN" style="display:none"><input id="nsS" style="display:none">
   <datalist id="storeListFull"><option value="HEB"></option><option value="Ikea"></option><option value="Online"></option><option value="Other"></option></datalist>
 
-  <div id="rt-outer" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;height:calc(100vh - 104px);width:100%">
+  <div id="rt-outer" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;height:calc(100vh - 84px);width:100%">
     <!-- Col 1: Weekly Reset Recurring -->
     <div id="rt-col-wr" style="min-height:0;display:flex;flex-direction:column">
       <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px;padding:0 2px;flex-shrink:0;text-align:center">Weekly Reset</div>
@@ -848,11 +848,11 @@ body.dark .qn-input{background:rgba(255,255,255,.06);border-color:rgba(255,220,2
 
 <!-- OTHER PAGES (empty) -->
 <div class="page" id="page-travel" style="display:none!important"><div id="travelList" style="display:none"></div></div>
-<div class="page" id="page-birthdays" style="padding:clamp(12px,3vw,56px);padding-top:72px"><div class="ov-topbar"><div class="ov-topbar-left"><span class="ov-topbar-label">Birthdays</span><span class="ov-topbar-dot"></span></div><span class="ov-topbar-date topbar-date"></span><div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div></div><div id="bdayList" style="display:none"></div></div>
-<div class="page" id="page-pups" style="padding:22px 56px 36px 56px;padding-top:72px"></div>
-<div class="page" id="page-finance" style="padding:clamp(12px,3vw,56px);padding-top:72px"><div class="ov-topbar"><div class="ov-topbar-left"><span class="ov-topbar-label">💰 Finance</span><span class="ov-topbar-dot"></span></div><span class="ov-topbar-date topbar-date"></span><div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div></div></div>
-<div class="page" id="page-recipes" style="padding:clamp(12px,3vw,56px);padding-top:72px"><div class="ov-topbar"><div class="ov-topbar-left"><span class="ov-topbar-label">🍳 Recipes</span><span class="ov-topbar-dot"></span></div><span class="ov-topbar-date topbar-date"></span><div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div></div></div>
-<div class="page" id="page-notes" style="padding:clamp(12px,3vw,56px);padding-top:72px"><div class="ov-topbar"><div class="ov-topbar-left"><span class="ov-topbar-label">📝 Notes</span><span class="ov-topbar-dot"></span></div><span class="ov-topbar-date topbar-date"></span><div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div></div></div>
+<div class="page" id="page-birthdays" style="padding:clamp(12px,3vw,56px);padding-top:52px"><div class="ov-topbar"><div class="ov-topbar-left"><span class="ov-topbar-label">Birthdays</span><span class="ov-topbar-dot"></span></div><span class="ov-topbar-date topbar-date"></span><div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div></div><div id="bdayList" style="display:none"></div></div>
+<div class="page" id="page-pups" style="padding:22px 56px 36px 56px;padding-top:52px"></div>
+<div class="page" id="page-finance" style="padding:clamp(12px,3vw,56px);padding-top:52px"><div class="ov-topbar"><div class="ov-topbar-left"><span class="ov-topbar-label">💰 Finance</span><span class="ov-topbar-dot"></span></div><span class="ov-topbar-date topbar-date"></span><div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div></div></div>
+<div class="page" id="page-recipes" style="padding:clamp(12px,3vw,56px);padding-top:52px"><div class="ov-topbar"><div class="ov-topbar-left"><span class="ov-topbar-label">🍳 Recipes</span><span class="ov-topbar-dot"></span></div><span class="ov-topbar-date topbar-date"></span><div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div></div></div>
+<div class="page" id="page-notes" style="padding:clamp(12px,3vw,56px);padding-top:52px"><div class="ov-topbar"><div class="ov-topbar-left"><span class="ov-topbar-label">📝 Notes</span><span class="ov-topbar-dot"></span></div><span class="ov-topbar-date topbar-date"></span><div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div></div></div>
 <div class="page" id="page-settings" style="display:none!important"><input class="si2" id="cfgUrl" style="display:none"><input class="si2" id="cfgKey" style="display:none"><div class="cst idle" id="cst" style="display:none"></div></div>
 
 </div><!-- /main -->
@@ -4452,7 +4452,7 @@ function renderPupsPage(){
     return`<div class="pup-col card" style="display:flex;flex-direction:column;overflow:visible;position:relative"><img src="${img}" style="position:absolute;top:-36px;left:50%;transform:translateX(-50%);width:92px;height:92px;border-radius:50%;object-fit:cover;object-position:top;border:3px solid rgba(255,255,255,.9);box-shadow:0 4px 14px rgba(0,0,0,.13)"><div style="display:grid;grid-template-columns:1fr 92px 1fr;align-items:center;min-height:52px;border-bottom:1px solid rgba(210,205,228,.22);flex-shrink:0"><span style="font-weight:700;font-size:13px;color:var(--text);padding-left:13px">${pup}</span><span></span><span style="font-size:11px;color:var(--muted);font-weight:500;padding-right:13px;text-align:right">${inProgress.length} in progress</span></div><div style="padding:14px 16px;display:flex;flex-direction:column;gap:14px;overflow-y:auto;flex:1;min-height:0">${trainWeek.length?`<div><div class="pup-section-label">Train This Week</div>${trainWeek.map(s=>skillCardRow(s,'pup-focus-row')).join('')}</div>`:''} ${upNext.length?`<div><div class="pup-section-label" style="color:var(--text);font-weight:800">Up Next</div>${groupedCardRows(upNext,'pup-skill-emphasis')}</div>`:''} ${ps.length===0?'<div style="font-size:11px;color:var(--muted);text-align:center;padding:20px 0">No skills yet</div>':''}</div>${progressBar}</div>`;
   }
   const tableCol=`<div class="pup-col card" style="overflow:hidden"><div class="ch"><span style="font-weight:700;font-size:13px;color:var(--text)">All Skills</span><button class="btn-plus" onclick="openPupAddModal()" style="margin-left:auto;padding:2px 8px;font-size:13px;border-radius:8px;border:1px solid var(--border);background:transparent;cursor:pointer;color:var(--text)">+</button></div><div style="overflow-y:auto;flex:1;min-height:0"><table class="pup-tbl"><thead id="pupTblHead"></thead><tbody id="pupTblBody"></tbody></table></div></div>`;
-  page.innerHTML=`<div class="ov-topbar"><div class="ov-topbar-left"><span class="ov-topbar-label">🐾 Pups</span><span class="ov-topbar-dot"></span></div><span class="ov-topbar-date topbar-date"></span><div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div></div><div style="display:grid;grid-template-columns:1fr 1fr 2.2fr;gap:14px;height:calc(100vh - 100px);padding-top:26px">${pupCol('Mochi','#8b5cf6')}${pupCol('Sunny','#fbbf24')}${tableCol}</div>`;
+  page.innerHTML=`<div class="ov-topbar"><div class="ov-topbar-left"><span class="ov-topbar-label">🐾 Pups</span><span class="ov-topbar-dot"></span></div><span class="ov-topbar-date topbar-date"></span><div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div></div><div style="display:grid;grid-template-columns:1fr 1fr 2.2fr;gap:14px;height:calc(100vh - 80px);padding-top:26px">${pupCol('Mochi','#8b5cf6')}${pupCol('Sunny','#fbbf24')}${tableCol}</div>`;
   if(!page._pupDblClick){
     page._pupDblClick=true;
     page.addEventListener('dblclick',e=>{
