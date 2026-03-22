@@ -146,6 +146,15 @@ body{font-family:'DM Sans',sans-serif;background:#fef6f0;background-attachment:f
 .pup-pill-dim{opacity:.55}
 .pup-check{font-size:9px;color:#a3c41a;font-weight:800;flex-shrink:0}
 .pup-col{display:flex;flex-direction:column;min-height:0}
+.pup-skill-row{cursor:default}
+.pup-skill-emphasis,.pup-focus-row,.pup-done-row{cursor:pointer}
+.pup-tbl{width:100%;border-collapse:collapse;font-size:11px}
+.pup-tbl th{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:6px 8px;border-bottom:1.5px solid rgba(210,205,228,.25);text-align:left;white-space:nowrap;position:sticky;top:0;background:var(--card);z-index:1}
+.pup-tbl td{padding:3px 5px;border-bottom:1px solid rgba(210,205,228,.1);vertical-align:middle}
+.pup-tbl tr:hover td{background:rgba(255,255,255,.4)}
+.pup-tbl input,.pup-tbl select{font-size:11px;font-family:inherit;border:none;background:transparent;color:var(--text);width:100%;outline:none;cursor:pointer;padding:2px 3px;border-radius:3px;transition:background .12s}
+.pup-tbl input:focus,.pup-tbl select:focus{background:rgba(255,255,255,.85);cursor:text}
+.pup-tbl select{cursor:pointer;-webkit-appearance:auto}
 .undo-toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%) translateY(60px);background:rgba(37,32,64,.92);color:#fff;font-size:11px;font-weight:600;padding:7px 14px;border-radius:20px;box-shadow:var(--shadow-lg);transition:transform .22s ease,opacity .22s ease;opacity:0;z-index:900;display:flex;align-items:center;gap:8px;white-space:nowrap}
 .undo-toast.show{transform:translateX(-50%) translateY(0);opacity:1}
 .undo-btn{background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);border-radius:6px;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;cursor:pointer;transition:background .12s}
@@ -824,7 +833,7 @@ body.dark .qn-input{background:rgba(255,255,255,.06);border-color:rgba(255,220,2
 <!-- OTHER PAGES (empty) -->
 <div class="page" id="page-travel" style="display:none!important"><div id="travelList" style="display:none"></div></div>
 <div class="page" id="page-birthdays" style="padding:clamp(12px,3vw,56px);padding-top:48px"><button class="back-btn" onclick="showPage('overview')">← Overview</button><div id="bdayList" style="display:none"></div></div>
-<div class="page" id="page-pups" style="padding:clamp(12px,3vw,56px);padding-top:48px"><button class="back-btn" onclick="showPage('overview')">← Overview</button></div>
+<div class="page" id="page-pups" style="padding:22px 56px 36px 56px;padding-top:48px"></div>
 <div class="page" id="page-finance" style="padding:clamp(12px,3vw,56px);padding-top:48px"><button class="back-btn" onclick="showPage('overview')">← Overview</button></div>
 <div class="page" id="page-recipes" style="padding:clamp(12px,3vw,56px);padding-top:48px"><button class="back-btn" onclick="showPage('overview')">← Overview</button></div>
 <div class="page" id="page-notes"></div>
@@ -1074,6 +1083,24 @@ body.dark .qn-input{background:rgba(255,255,255,.06);border-color:rgba(255,220,2
     <div class="qa-field"><label>Due date <span style="opacity:.45">(optional)</span></label><input id="qaDue" type="date" value="2026-03-12" style="width:100%;padding:5px 7px;border-radius:8px;border:1px solid var(--border);font-family:inherit;font-size:12px;background:rgba(255,255,255,.8);color:var(--text);outline:none"></div>
     <div class="qa-imp-row"><input type="checkbox" id="qaImp" style="width:13px;height:13px;cursor:pointer;accent-color:#eab308"><label for="qaImp">⭐ Important</label></div></div>
   <div class="qa-hint">↵ Enter to add · Esc to close</div>
+</div>
+
+<!-- Pup Skill Edit Modal -->
+<div class="overlay" id="pupModal" onclick="closeMod('pupModal',event)" onkeydown="if(event.key==='Escape')closeMod('pupModal');if(event.key==='Enter'&&event.target.tagName!=='SELECT'){event.preventDefault();savePupModal();}">
+  <div class="modal task-modal" style="width:400px">
+    <div class="mt">Edit Skill</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div class="mfield"><label>Pup</label><select id="pmPup"><option value="Mochi">Mochi</option><option value="Sunny">Sunny</option></select></div>
+      <div class="mfield"><label>Skill *</label><input id="pmSkill" placeholder="Skill name"></div>
+      <div class="mfield"><label>Level</label><select id="pmLevel"><option value="">—</option><option value="Easy">Easy</option><option value="Medium">Medium</option><option value="Hard">Hard</option></select></div>
+      <div class="mfield"><label>Stage</label><select id="pmStage"><option value="Not Started">Not Started</option><option value="In Progress">In Progress</option><option value="Mastered">Mastered</option></select></div>
+      <div class="mfield"><label>Success %</label><input id="pmSR" type="number" min="0" max="100" placeholder="0–100"></div>
+      <div class="mfield" style="align-self:end"><div style="display:flex;align-items:center;gap:6px;padding-bottom:8px"><input type="checkbox" id="pmFocus" style="width:14px;height:14px;cursor:pointer;accent-color:#eab308"><label for="pmFocus" style="font-weight:400;font-size:12px;cursor:pointer">🎯 Focus this week</label></div></div>
+    </div>
+    <div class="mfield"><label>Next Step</label><input id="pmNextStep" placeholder="Next training step…"></div>
+    <div class="mfield"><label>Comments</label><input id="pmComments" placeholder="Notes or observations…"></div>
+    <div class="mact"><button class="btn btn-ghost" onclick="closeMod('pupModal')">Cancel</button><button class="btn btn-dark" onclick="savePupModal()">Save</button></div>
+  </div>
 </div>
 
 <script>
@@ -3904,15 +3931,61 @@ async function delBday(id){
   st.birthdays=st.birthdays.filter(x=>String(x.id)!==String(id));renderAll();renderBdayPage();
   await sbReq('DELETE','birthdays',null,`?id=eq.${id}`);
 }
+let _pupEditId=null;
+function openPupEditModal(id){
+  const s=st.pup_skills.find(x=>x.id==id);if(!s)return;
+  _pupEditId=id;
+  document.getElementById('pmPup').value=s.pup||'Mochi';
+  document.getElementById('pmSkill').value=s.skill||'';
+  document.getElementById('pmLevel').value=s.level||'';
+  document.getElementById('pmStage').value=s.stage||'Not Started';
+  const srVal=s.success_rate!=null&&s.success_rate!==''?Math.round(parseFloat(s.success_rate)*(parseFloat(s.success_rate)<=1?100:1)):'';
+  document.getElementById('pmSR').value=srVal;
+  document.getElementById('pmFocus').checked=(s.focus===true||s.focus==='true');
+  document.getElementById('pmNextStep').value=s.next_step||'';
+  document.getElementById('pmComments').value=s.comments||'';
+  document.getElementById('pupModal').classList.add('open');
+  setTimeout(()=>document.getElementById('pmSkill').focus(),80);
+}
+async function savePupModal(){
+  if(!_pupEditId)return;
+  const srRaw=document.getElementById('pmSR').value;
+  const data={
+    pup:document.getElementById('pmPup').value,
+    skill:document.getElementById('pmSkill').value.trim(),
+    level:document.getElementById('pmLevel').value||null,
+    stage:document.getElementById('pmStage').value,
+    success_rate:srRaw===''?null:parseFloat(srRaw)/100,
+    focus:document.getElementById('pmFocus').checked,
+    next_step:document.getElementById('pmNextStep').value.trim()||null,
+    comments:document.getElementById('pmComments').value.trim()||null,
+  };
+  if(!data.skill){showToast('Skill name required');return;}
+  const idx=st.pup_skills.findIndex(x=>x.id==_pupEditId);if(idx<0)return;
+  Object.assign(st.pup_skills[idx],data);
+  save();closeMod('pupModal');
+  await sbReqSilent('PATCH','pup_skills',data,`?id=eq.${_pupEditId}`);
+  renderPupsPage();
+}
+async function setPupField(id,field,val,origVal){
+  if(origVal!==undefined&&String(val)===String(origVal))return;
+  const idx=st.pup_skills.findIndex(x=>x.id==id);if(idx<0)return;
+  let sv=val;
+  if(field==='success_rate')sv=(val===''||val===null||val===undefined)?null:parseFloat(val)/100;
+  if(field==='focus')sv=!!val;
+  st.pup_skills[idx][field]=sv;
+  save();
+  sbReqSilent('PATCH','pup_skills',{[field]:sv},`?id=eq.${id}`);
+}
 function renderPupsPage(){
   const page=document.getElementById('page-pups');if(!page)return;
   const skills=st.pup_skills||[];
-  // Table columns: pup, skill, level (Easy/Medium/Hard), skill_order (numeric), stage, next_step, success_rate, focus, comments, word, signal
+  function esc(v){return(v||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;');}
   function sr(s){return s.success_rate!=null&&s.success_rate!==''?Math.round(parseFloat(s.success_rate)*(parseFloat(s.success_rate)<=1?100:1)):null;}
   function lvlPill(s){return s.level?`<span class="pup-pill">${s.level}</span>`:'';}
   function donut(pct,color){const r=28,cx=32,cy=32,circ=2*Math.PI*r,dash=circ*pct/100;return`<svg width="64" height="64" viewBox="0 0 64 64"><circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="rgba(0,0,0,0.07)" stroke-width="7"/><circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${color}" stroke-width="7" stroke-dasharray="${dash} ${circ}" stroke-linecap="round" transform="rotate(-90 ${cx} ${cy})"/><text x="${cx}" y="${cy+1}" text-anchor="middle" dominant-baseline="middle" style="font-size:13px;font-weight:700;fill:${color}">${pct}%</text></svg>`;}
-  function focusRow(s){const rate=sr(s);return`<div class="pup-skill-row pup-focus-row"><span class="pup-skill-name">${s.skill}</span><div class="pup-skill-meta">${lvlPill(s)}${rate!=null?`<span class="pup-pill pup-pill-sr">${rate}%</span>`:''}</div></div>`;}
-  function skillRow(s){const rate=sr(s);const tip=s.comments&&s.comments!=='None'?s.comments:(s.next_step&&s.next_step!=='None'?s.next_step:'');return`<div class="pup-skill-row pup-skill-emphasis"><span class="pup-skill-name">${s.skill}</span><div class="pup-skill-meta">${lvlPill(s)}${rate!=null?`<span class="pup-pill pup-pill-sr">${rate}%</span>`:''}</div>${tip?`<div class="pup-next-step">↳ ${tip}</div>`:''}</div>`;}
+  function focusRow(s){const rate=sr(s);return`<div class="pup-skill-row pup-focus-row" ondblclick="openPupEditModal(${s.id})"><span class="pup-skill-name">${s.skill}</span><div class="pup-skill-meta">${lvlPill(s)}${rate!=null?`<span class="pup-pill pup-pill-sr">${rate}%</span>`:''}</div></div>`;}
+  function skillRow(s){const rate=sr(s);const tip=s.comments&&s.comments!=='None'?s.comments:(s.next_step&&s.next_step!=='None'?s.next_step:'');return`<div class="pup-skill-row pup-skill-emphasis" ondblclick="openPupEditModal(${s.id})"><span class="pup-skill-name">${s.skill}</span><div class="pup-skill-meta">${lvlPill(s)}${rate!=null?`<span class="pup-pill pup-pill-sr">${rate}%</span>`:''}</div>${tip?`<div class="pup-next-step">↳ ${tip}</div>`:''}</div>`;}
   function pupCol(pup,color){
     const ps=skills.filter(s=>s.pup===pup);
     const mastered=ps.filter(s=>s.stage==='Mastered');
@@ -3922,10 +3995,27 @@ function renderPupsPage(){
     return`<div class="pup-col card"><div class="ch"><span style="font-size:15px">🐾</span><span style="font-weight:700;font-size:13px;color:var(--text)">${pup}</span></div><div style="padding:14px 16px;display:flex;flex-direction:column;gap:16px;overflow-y:auto;flex:1;min-height:0"><div style="display:flex;align-items:center;gap:14px">${donut(pct,color)}<div style="display:flex;flex-direction:column;gap:5px"><div class="pup-stat"><span class="pup-stat-num" style="color:${color}">${mastered.length}</span><span class="pup-stat-lbl">mastered</span></div><div class="pup-stat"><span class="pup-stat-num">${inProgress.length}</span><span class="pup-stat-lbl">in progress</span></div></div></div>${trainWeek.length?`<div><div class="pup-section-label">🎯 Train This Week</div>${trainWeek.map(focusRow).join('')}</div>`:''} ${inProgress.length?`<div><div class="pup-section-label" style="color:var(--text);font-weight:800">Current Skills</div>${inProgress.map(skillRow).join('')}</div>`:''} ${ps.length===0?'<div style="font-size:11px;color:var(--muted);text-align:center;padding:20px 0">No skills yet</div>':''}</div></div>`;
   }
   const LDEG={Easy:0,Medium:1,Hard:2};
-  function doneRow(s){const rate=sr(s);return`<div class="pup-skill-row pup-done-row"><span class="pup-check">✓</span><span class="pup-skill-name" style="opacity:.7">${s.skill}</span><div class="pup-skill-meta">${lvlPill(s)}${rate!=null?`<span class="pup-pill pup-pill-dim">${rate}%</span>`:''}</div></div>`;}
+  function doneRow(s){const rate=sr(s);return`<div class="pup-skill-row pup-done-row" ondblclick="openPupEditModal(${s.id})"><span class="pup-check">✓</span><span class="pup-skill-name" style="opacity:.7">${s.skill}</span><div class="pup-skill-meta">${lvlPill(s)}${rate!=null?`<span class="pup-pill pup-pill-dim">${rate}%</span>`:''}</div></div>`;}
   function completedSec(pup,color){const items=skills.filter(s=>s.pup===pup&&s.stage==='Mastered').sort((a,b)=>(LDEG[a.level]??9)-(LDEG[b.level]??9)||(a.skill||'').localeCompare(b.skill||''));return`<div><div class="pup-section-label" style="color:${color}">${pup}</div>${items.length?items.map(doneRow).join(''):'<div style="font-size:10px;color:var(--muted);padding:3px 0 8px">None yet</div>'}</div>`;}
   const completedCol=`<div class="pup-col card"><div class="ch"><span style="font-size:13px">✅</span><span style="font-weight:700;font-size:13px;color:var(--text)">Completed</span></div><div style="padding:14px 16px;display:flex;flex-direction:column;gap:14px;overflow-y:auto;flex:1;min-height:0">${completedSec('Sunny','#f97316')}${completedSec('Mochi','#8b5cf6')}</div></div>`;
-  page.innerHTML=`<button class="back-btn" onclick="showPage('overview')">← Overview</button><div style="display:grid;grid-template-columns:1fr 1fr 0.7fr;gap:14px;height:calc(100vh - 120px);max-height:820px">${pupCol('Mochi','#8b5cf6')}${pupCol('Sunny','#f97316')}${completedCol}</div>`;
+  function tableRow(s){
+    const rate=sr(s);const sr2=rate!=null?rate:'';const foc=s.focus===true||s.focus==='true';
+    const pOpt=v=>`<option value="${v}"${s.pup===v?' selected':''}>${v}</option>`;
+    const lOpt=v=>`<option value="${v}"${(s.level||'')===(v)?'selected':''}>${v}</option>`;
+    const stOpt=v=>`<option value="${v}"${s.stage===v?' selected':''}>${v}</option>`;
+    return`<tr ondblclick="openPupEditModal(${s.id})">
+      <td><select onchange="setPupField(${s.id},'pup',this.value)">${['Mochi','Sunny'].map(pOpt).join('')}</select></td>
+      <td><input value="${esc(s.skill)}" data-orig="${esc(s.skill)}" onblur="setPupField(${s.id},'skill',this.value,this.dataset.orig)" style="min-width:80px"></td>
+      <td><select onchange="setPupField(${s.id},'level',this.value)"><option value="">—</option>${['Easy','Medium','Hard'].map(lOpt).join('')}</select></td>
+      <td><select onchange="setPupField(${s.id},'stage',this.value)">${['Not Started','In Progress','Mastered'].map(stOpt).join('')}</select></td>
+      <td><input type="number" min="0" max="100" value="${sr2}" style="width:40px;text-align:center" onblur="setPupField(${s.id},'success_rate',this.value===''?null:parseFloat(this.value)/100)"></td>
+      <td style="text-align:center"><input type="checkbox"${foc?' checked':''} onchange="setPupField(${s.id},'focus',this.checked)" style="width:13px;height:13px;cursor:pointer;accent-color:#eab308"></td>
+      <td><input value="${esc(s.next_step)}" data-orig="${esc(s.next_step)}" onblur="setPupField(${s.id},'next_step',this.value,this.dataset.orig)" style="min-width:110px"></td>
+    </tr>`;
+  }
+  const sorted=[...skills].sort((a,b)=>(a.pup||'').localeCompare(b.pup||'')||(a.skill||'').localeCompare(b.skill||''));
+  const tableCol=`<div class="pup-col card" style="overflow:hidden"><div class="ch"><span style="font-size:13px">✏️</span><span style="font-weight:700;font-size:13px;color:var(--text)">All Skills</span></div><div style="overflow-y:auto;flex:1;min-height:0"><table class="pup-tbl"><thead><tr><th>Pup</th><th>Skill</th><th>Level</th><th>Stage</th><th>%</th><th>🎯</th><th>Next Step</th></tr></thead><tbody>${sorted.map(tableRow).join('')}</tbody></table></div></div>`;
+  page.innerHTML=`<button class="back-btn" onclick="showPage('overview')">← Overview</button><div style="display:grid;grid-template-columns:1fr 1fr 0.65fr 1.5fr;gap:14px;height:calc(100vh - 100px)">${pupCol('Mochi','#8b5cf6')}${pupCol('Sunny','#f97316')}${completedCol}${tableCol}</div>`;
 }
 
 function renderBdayPage(){save();

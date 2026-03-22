@@ -275,6 +275,16 @@ All three checkbox types share identical visual style:
 - Auto blocks never appear in Today list, overdue banner, metrics, recurring page, or weekly calendar — timeblock only.
 - All DB interaction uses `sbReqSilent` (no error toasts).
 
+## Pup Skills Editing
+
+- **Double-click** on any skill row (focus, current, completed) opens `pupModal` via `openPupEditModal(id)`.
+- `pupModal` fields: Pup (select), Skill (text), Level (select), Stage (select), Success % (number 0–100), Focus (checkbox), Next Step (text), Comments (text). Save via `savePupModal()` → PATCHes `pup_skills`, calls `renderPupsPage()`.
+- `setPupField(id, field, val, origVal)` — inline-table cell save: skips PATCH if val===origVal. Converts success_rate from display % to 0–1 float. No re-render (avoids losing table focus).
+- `_pupEditId` tracks current edit target.
+- Pup page layout: 4-col grid `1fr 1fr 0.65fr 1.5fr` — Mochi, Sunny, Completed, Edit Table.
+- Edit table (`.pup-tbl`): shows all skills sorted by pup then skill. Columns: Pup, Skill, Level, Stage, %, 🎯, Next Step. Each cell is an inline `<input>` or `<select>` saving on blur/change.
+- Page padding matches weekly page: `22px 56px 36px 56px`, `padding-top:48px`. Height: `calc(100vh - 100px)` (no max-height cap).
+
 ## Git Workflow
 
 - Stop hook: auto-commits and pushes to `origin/dev` branch after every Claude turn.
