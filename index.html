@@ -4349,7 +4349,7 @@ function renderPupTable(){
   const CAT_COLORS={commands:{bg:'rgba(59,130,246,.12)',c:'#1d4ed8'},manners:{bg:'rgba(16,185,129,.12)',c:'#065f46'},fun:{bg:'rgba(236,72,153,.12)',c:'#9d174d'}};
   function catChip(cat){if(!cat)return'<span style="color:var(--subtle);font-size:10px">—</span>';const cs=CAT_COLORS[cat]||{bg:'rgba(148,163,184,.12)',c:'#475569'};return`<span style="display:inline-block;padding:1px 6px;border-radius:10px;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;background:${cs.bg};color:${cs.c}">${cat}</span>`;}
   thead.innerHTML=`<tr>
-    <th onclick="pupHdrClick('focus')" ondblclick="pupHdrDbl(event,'focus')" style="${ths};width:32px;text-align:center">🎯${arrow('focus')}${fdot('focus')}</th>
+    <th onclick="pupHdrClick('focus')" ondblclick="pupHdrDbl(event,'focus')" style="${ths};width:32px;text-align:center">Focus${arrow('focus')}${fdot('focus')}</th>
     <th onclick="pupHdrClick('pup')" ondblclick="pupHdrDbl(event,'pup')" style="${ths};width:66px">Pup${arrow('pup')}${fdot('pup')}</th>
     <th onclick="pupHdrClick('category')" ondblclick="pupHdrDbl(event,'category')" style="${ths};width:86px">Category${arrow('category')}${fdot('category')}</th>
     <th onclick="pupHdrClick('skill')" ondblclick="pupHdrDbl(event,'skill')" style="${ths}">Skill${arrow('skill')}${fdot('skill')}</th>
@@ -4398,11 +4398,10 @@ function renderPupsPage(){
   const skills=st.pup_skills||[];
   function esc(v){return(v||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;');}
   function lvlPill(s){return s.level?`<span class="pup-pill">${s.level}</span>`:'';}
-  function donut(pct,color){const r=28,cx=32,cy=32,circ=2*Math.PI*r,dash=circ*pct/100;return`<svg width="64" height="64" viewBox="0 0 64 64"><circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="rgba(0,0,0,0.07)" stroke-width="7"/><circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${color}" stroke-width="7" stroke-dasharray="${dash} ${circ}" stroke-linecap="round" transform="rotate(-90 ${cx} ${cy})"/><text x="${cx}" y="${cy+1}" text-anchor="middle" dominant-baseline="middle" style="font-size:13px;font-weight:700;fill:${color}">${pct}%</text></svg>`;}
   function skillCardRow(s,cls){
-    const ns=s.next_step&&s.next_step!=='None'?s.next_step:'';
-    const cm=s.comments&&s.comments!=='None'?s.comments:'';
     const isMastered=s.stage==='Mastered';
+    const ns=!isMastered&&s.next_step&&s.next_step!=='None'?s.next_step:'';
+    const cm=!isMastered&&s.comments&&s.comments!=='None'?s.comments:'';
     const sid=String(s.id);
     return`<div class="pup-skill-row ${cls}" data-pupid="${sid}" style="align-items:flex-start">
       <input type="checkbox" ${isMastered?'checked':''} onclick="event.stopPropagation();togglePupMastered('${sid}',this.checked)" title="Mark mastered" style="width:13px;height:13px;cursor:pointer;accent-color:#8b5cf6;flex-shrink:0;margin-top:2px">
@@ -4435,9 +4434,12 @@ function renderPupsPage(){
     const ps=skills.filter(s=>s.pup===pup);
     const mastered=ps.filter(s=>s.stage==='Mastered');
     const inProgress=ps.filter(s=>s.stage==='In Progress');
-    const pct=ps.length?Math.round(mastered.length/ps.length*100):0;
+    const notStarted=ps.filter(s=>!s.stage||s.stage==='Not Started');
+    const total=ps.length||1;
+    const pMastered=mastered.length/total*100,pInProg=inProgress.length/total*100,pNot=notStarted.length/total*100;
+    const progressBar=`<div style="height:4px;border-radius:4px;overflow:hidden;background:rgba(210,205,228,.2);display:flex;gap:1px;flex-shrink:0"><div style="width:${pMastered}%;background:#22c55e;transition:width .3s"></div><div style="width:${pInProg}%;background:#eab308;transition:width .3s"></div><div style="width:${pNot}%;background:rgba(210,205,228,.4);transition:width .3s"></div></div>`;
     const trainWeek=ps.filter(s=>s.focus===true||s.focus==='true');
-    return`<div class="pup-col card"><div class="ch"><span style="font-weight:700;font-size:13px;color:var(--text)">${pup}</span></div><div style="padding:14px 16px;display:flex;flex-direction:column;gap:16px;overflow-y:auto;flex:1;min-height:0"><div style="display:flex;align-items:center;gap:14px">${donut(pct,color)}<div style="display:flex;flex-direction:column;gap:5px"><div class="pup-stat"><span class="pup-stat-num" style="color:${color}">${mastered.length}</span><span class="pup-stat-lbl">mastered</span></div><div class="pup-stat"><span class="pup-stat-num">${inProgress.length}</span><span class="pup-stat-lbl">in progress</span></div></div></div>${trainWeek.length?`<div><div class="pup-section-label">🎯 Train This Week</div>${trainWeek.map(s=>skillCardRow(s,'pup-focus-row')).join('')}</div>`:''} ${inProgress.length?`<div><div class="pup-section-label" style="color:var(--text);font-weight:800">Current Skills</div>${groupedCardRows(inProgress,'pup-skill-emphasis')}</div>`:''} ${ps.length===0?'<div style="font-size:11px;color:var(--muted);text-align:center;padding:20px 0">No skills yet</div>':''}</div></div>`;
+    return`<div class="pup-col card" style="display:flex;flex-direction:column"><div class="ch"><span style="font-weight:700;font-size:13px;color:var(--text)">${pup}</span><span style="margin-left:auto;font-size:11px;color:var(--muted);font-weight:500">${inProgress.length} in progress</span></div><div style="padding:14px 16px;display:flex;flex-direction:column;gap:14px;overflow-y:auto;flex:1;min-height:0">${trainWeek.length?`<div><div class="pup-section-label">Train This Week</div>${trainWeek.map(s=>skillCardRow(s,'pup-focus-row')).join('')}</div>`:''} ${inProgress.length?`<div><div class="pup-section-label" style="color:var(--text);font-weight:800">Up Next</div>${groupedCardRows(inProgress,'pup-skill-emphasis')}</div>`:''} ${ps.length===0?'<div style="font-size:11px;color:var(--muted);text-align:center;padding:20px 0">No skills yet</div>':''}</div>${progressBar}</div>`;
   }
   const tableCol=`<div class="pup-col card" style="overflow:hidden"><div class="ch"><span style="font-weight:700;font-size:13px;color:var(--text)">All Skills</span><button class="btn-plus" onclick="openPupAddModal()" style="margin-left:auto;padding:2px 8px;font-size:13px;border-radius:8px;border:1px solid var(--border);background:transparent;cursor:pointer;color:var(--text)">+</button></div><div style="overflow-y:auto;flex:1;min-height:0"><table class="pup-tbl"><thead id="pupTblHead"></thead><tbody id="pupTblBody"></tbody></table></div></div>`;
   page.innerHTML=`<div class="ov-topbar"><span class="ov-topbar-label">🐾 Pups</span><span class="ov-topbar-dot"></span><span class="ov-topbar-date topbar-date"></span><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div><button class="back-btn" onclick="showPage('overview')">← Overview</button><div style="display:grid;grid-template-columns:1fr 1fr 2.2fr;gap:14px;height:calc(100vh - 100px)">${pupCol('Mochi','#8b5cf6')}${pupCol('Sunny','#fbbf24')}${tableCol}</div>`;
