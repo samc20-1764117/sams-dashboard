@@ -4037,8 +4037,17 @@ let _selPupIds=new Set(),_lastSelPupId=null,_copiedPups=[],_pupCtxId=null;
 let _pupSortCol=null,_pupSortDir=1,_pupFilter=null;
 let _pupUndoStack=[],_pupRedoStack=[],_pupHdrClickTimer=null,_pupUndoDirty=false;
 function pupSnapshot(){_pupUndoStack.push(JSON.parse(JSON.stringify(st.pup_skills)));if(_pupUndoStack.length>20)_pupUndoStack.shift();_pupRedoStack=[];}
-function pupUndo(){if(!_pupUndoStack.length){showToast('Nothing to undo','#888');return;}_pupUndoDirty=true;_pupRedoStack.push(JSON.parse(JSON.stringify(st.pup_skills)));st.pup_skills=_pupUndoStack.pop();save();renderPupsPage();showToast('Undone','#6d5fe6',1500);}
-function pupRedo(){if(!_pupRedoStack.length){showToast('Nothing to redo','#888');return;}_pupUndoDirty=true;_pupUndoStack.push(JSON.parse(JSON.stringify(st.pup_skills)));st.pup_skills=_pupRedoStack.pop();save();renderPupsPage();showToast('Redone','#6d5fe6',1500);}
+function _pupSyncToServer(prev,next){
+  const pm=new Map(prev.map(s=>[String(s.id),s]));
+  const nm=new Map(next.map(s=>[String(s.id),s]));
+  for(const[id,s]of pm)if(!nm.has(id)&&!id.startsWith('l-'))sbReqSilent('DELETE','pup_skills',null,`?id=eq.${id}`);
+  for(const[id,s]of nm){
+    if(!pm.has(id)){const d={pup:s.pup,skill:s.skill,level:s.level,stage:s.stage,focus:s.focus,next_step:s.next_step,comments:s.comments};sbReqSilent('POST','pup_skills',d);}
+    else if(!id.startsWith('l-')){const p=pm.get(id);const flds=['pup','skill','level','stage','focus','next_step','comments'];if(flds.some(f=>String(p[f]??'')!==String(s[f]??''))){sbReqSilent('PATCH','pup_skills',{pup:s.pup,skill:s.skill,level:s.level,stage:s.stage,focus:s.focus,next_step:s.next_step,comments:s.comments},`?id=eq.${id}`);}}
+  }
+}
+function pupUndo(){if(!_pupUndoStack.length){showToast('Nothing to undo','#888');return;}const prev=JSON.parse(JSON.stringify(st.pup_skills));_pupUndoDirty=true;_pupRedoStack.push(prev);st.pup_skills=_pupUndoStack.pop();save();renderPupsPage();showToast('Undone','#6d5fe6',1500);_pupSyncToServer(prev,st.pup_skills);}
+function pupRedo(){if(!_pupRedoStack.length){showToast('Nothing to redo','#888');return;}const prev=JSON.parse(JSON.stringify(st.pup_skills));_pupUndoDirty=true;_pupUndoStack.push(prev);st.pup_skills=_pupRedoStack.pop();save();renderPupsPage();showToast('Redone','#6d5fe6',1500);_pupSyncToServer(prev,st.pup_skills);}
 function pupHdrClick(col){clearTimeout(_pupHdrClickTimer);_pupHdrClickTimer=setTimeout(()=>{_pupHdrClickTimer=null;pupSortBy(col);},250);}
 function pupHdrDbl(e,col){clearTimeout(_pupHdrClickTimer);_pupHdrClickTimer=null;pupFilterBy(e,col);}
 function openPupAddModal(){
