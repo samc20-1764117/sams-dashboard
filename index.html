@@ -4320,7 +4320,7 @@ function renderPupTable(){
     <th style="width:28px"></th>
   </tr>`;
   const showCatDividers=!_pupSortCol;
-  let lastCat=null;
+  let lastCat=null,lastMastered=null;
   const rowsHtml=[];
   rows.forEach(s=>{
     const foc=s.focus===true||s.focus==='true';
@@ -4329,12 +4329,18 @@ function renderPupTable(){
     const nextStep=s.next_step&&s.next_step!=='None'?esc(s.next_step):'';
     const sid=String(s.id);
     const isSel=_selPupIds.has(sid);
+    const isMastered=s.stage==='Mastered';
     const curCat=s.category||'';
+    if(showCatDividers&&isMastered&&lastMastered===false){
+      rowsHtml.push(`<tr class="pup-cat-sep"><td colspan="8" style="padding:8px 8px 3px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);border-top:2px solid rgba(0,0,0,.08);border-bottom:1px solid rgba(0,0,0,.04)">Mastered</td></tr>`);
+      lastCat=null;
+    }
     if(showCatDividers&&curCat!==lastCat){
       const label=curCat?curCat.charAt(0).toUpperCase()+curCat.slice(1):'Uncategorized';
       rowsHtml.push(`<tr class="pup-cat-sep"><td colspan="8" style="padding:6px 8px 3px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);border-bottom:1px solid rgba(0,0,0,.04)">${label}</td></tr>`);
       lastCat=curCat;
     }
+    lastMastered=isMastered;
     rowsHtml.push(`<tr data-sid="${sid}" style="background:${bg}" class="${isSel?'pup-sel':''}" onclick="selPupRow(event,'${sid}')" oncontextmenu="showPupCtx(event,'${sid}')">
       <td style="text-align:center;width:32px;padding:4px 0"><input type="checkbox"${foc?' checked':''} onchange="setPupField('${sid}','focus',this.checked)" style="width:13px;height:13px;cursor:pointer;accent-color:#eab308"></td>
       <td ondblclick="pupCellEdit(this,'${sid}','pup')" style="width:66px;padding:4px 8px;${tdE}">${esc(s.pup)}</td>
