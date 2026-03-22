@@ -992,9 +992,9 @@ body.dark .qn-input{background:rgba(255,255,255,.06);border-color:rgba(255,220,2
       <div class="mhead">
         <button class="btn btn-ghost btn-xs" onclick="shiftMo(-1)">←</button>
         <div style="flex:1;text-align:center;font-size:14px;font-weight:700;letter-spacing:-.3px" id="moTitle"></div>
+        <button class="btn btn-ghost btn-xs" style="font-size:10px" onclick="moOff=0;renderMoCal()">Current Month</button>
         <button class="btn btn-ghost btn-xs" onclick="shiftMo(1)">→</button>
-        <button class="btn btn-ghost btn-xs" style="margin-left:4px;font-size:10px" onclick="moOff=0;renderMoCal()">Current Month</button>
-        <button class="btn btn-ghost btn-xs" style="margin-left:4px" onclick="closeMod(&#39;mModal&#39;)">✕</button>
+        <button class="btn btn-ghost btn-xs" onclick="closeMod(&#39;mModal&#39;)">✕</button>
       </div>
       <div class="mgrid"><div class="mdow" id="mDow"></div><div class="mcells" id="mCells"></div></div>
     </div>
