@@ -2483,7 +2483,7 @@ function renderUnassigned(){
   const badge=document.getElementById('unAssignedBadge');
   if(!badge)return;
   const weeklyActive=document.getElementById('page-weekly')&&document.getElementById('page-weekly').classList.contains('active');
-  if(weeklyActive&&ts.length>0){badge.textContent=ts.length+' unassigned';badge.style.display='';}
+  if(weeklyActive&&ts.length>0){badge.textContent=ts.length+' unassigned';badge.style.display='inline-flex';}
   else{badge.style.display='none';}
 }
 
