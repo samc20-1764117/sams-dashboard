@@ -577,10 +577,8 @@ body.dark .qn-input{background:rgba(255,255,255,.06);border-color:rgba(255,220,2
           <span style="display:none" id="liveClock"></span>
         </div>
         <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
-          <button class="btn btn-ghost btn-xs" onclick="goToday()">Today</button>
           <button class="btn btn-ghost btn-xs" onclick="shiftDay(1)" style="flex-shrink:0">→</button>
-          <button class="btn btn-ghost btn-xs" id="autoTBToggle" onclick="toggleAutoTB()" title="Toggle auto time blocks" style="opacity:1;font-size:8px">Auto</button>
-          <button class="btn-plus" onclick="openQA(&#39;today&#39;,this)">+</button>
+          <button class="btn btn-ghost btn-xs" onclick="goToday()">Today</button>
         </div>
       </div>
       <div class="tod-tb-body">
@@ -633,6 +631,10 @@ body.dark .qn-input{background:rgba(255,255,255,.06);border-color:rgba(255,220,2
       <div class="tb-sum" id="tbSum"><div class="si"><span>Blocked:</span><span class="sv">1h 0m</span></div><div class="si"><div class="sdotc" style="background:#3b82f6"></div><span>Recurring</span><span class="sv">0h 30m</span></div><div class="si"><div class="sdotc" style="background:#22c55e"></div><span>Shopping</span><span class="sv">0h 30m</span></div></div>
       </div><!-- tb-section -->
       </div><!-- tod-tb-body -->
+      <div style="position:absolute;bottom:44px;right:10px;z-index:10;display:flex;flex-direction:column;gap:5px;align-items:flex-end">
+        <button class="btn btn-ghost btn-xs" id="autoTBToggle" onclick="toggleAutoTB()" title="Toggle auto time blocks" style="font-size:8px;opacity:.7">Auto</button>
+        <button class="btn btn-dark btn-xs" onclick="openQA('today',this)" style="border-radius:50%;width:22px;height:22px;padding:0;justify-content:center;font-size:14px;font-weight:400">+</button>
+      </div>
     </div><!-- combined card -->
     <!-- Need to Assign -->
     <div class="card" style="flex-shrink:0;height:90px;margin-top:4px">
@@ -991,7 +993,8 @@ body.dark .qn-input{background:rgba(255,255,255,.06);border-color:rgba(255,220,2
         <button class="btn btn-ghost btn-xs" onclick="shiftMo(-1)">←</button>
         <div style="flex:1;text-align:center;font-size:14px;font-weight:700;letter-spacing:-.3px" id="moTitle"></div>
         <button class="btn btn-ghost btn-xs" onclick="shiftMo(1)">→</button>
-        <button class="btn btn-ghost btn-xs" style="margin-left:6px" onclick="closeMod(&#39;mModal&#39;)">✕</button>
+        <button class="btn btn-ghost btn-xs" style="margin-left:4px;font-size:10px" onclick="moOff=0;renderMoCal()">Current Month</button>
+        <button class="btn btn-ghost btn-xs" style="margin-left:4px" onclick="closeMod(&#39;mModal&#39;)">✕</button>
       </div>
       <div class="mgrid"><div class="mdow" id="mDow"></div><div class="mcells" id="mCells"></div></div>
     </div>
