@@ -7,6 +7,14 @@
   - Col 1: `.overview-left` — flex column, gap 14px. Contains Today+TB card (`flex:1`) + Need to Assign card (`flex-shrink:0`, height:90px).
   - Col 2: `.row1-right-panel` — flex column, gap 14px, min-height:0. Contains `.row1-right-top` (fixed height 160px, 3-column grid: Weekly Reset, Shopping, Quick Links) + calendar card (`flex:1`).
 - **Top-right fixed controls**: `.top-right-controls` (position:fixed, top:14px, right:20px) — dark toggle + sync bar.
+- **`#backToOv`**: fixed button at top:52px, right:20px (below sync). Hidden on Overview; `display:flex` on all other pages. Controlled by `showPage()`. Never placed inside page content.
+
+## Header Rules (All Pages)
+
+- **`.ov-topbar`**: `position:fixed; top:14px; left:0; right:0; display:grid; grid-template-columns:1fr auto 1fr`. The **date is always the exact viewport center** — label+dot go in `.ov-topbar-left` (flex, justify-content:flex-end), dot+time in `.ov-topbar-right` (flex, justify-content:flex-start). `pointer-events:none`.
+- **All pages use `padding-top:72px`** — identical regardless of whether Back to Overview is present.
+- **Back to Overview** is never inside page HTML. It lives as `#backToOv` (fixed, top:52px right:20px) and is shown/hidden by `showPage()`.
+- **No `.back-btn`** elements in page content (`.back-btn { display:none }`).
 - **`.row3`**: full width (kanban).
 
 ## Today+TB Card Header
