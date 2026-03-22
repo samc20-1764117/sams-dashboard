@@ -168,6 +168,11 @@ body.dark #pupFilterPop{background:rgba(40,22,14,.97);border-color:rgba(255,220,
 .undo-toast.show{transform:translateX(-50%) translateY(0);opacity:1}
 .undo-btn{background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);border-radius:6px;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;cursor:pointer;transition:background .12s}
 .undo-btn:hover{background:rgba(255,255,255,.35)}
+.pup-dog-toggle{display:inline-flex;border-radius:20px;border:1px solid var(--border);overflow:hidden;background:rgba(255,255,255,.4)}
+.pup-dog-btn{padding:4px 12px;font-size:12px;font-weight:600;font-family:inherit;border:none;background:transparent;cursor:pointer;color:var(--muted);transition:all .15s;line-height:1.4}
+.pup-dog-btn.active{background:#2c1810;color:#fff}
+body.dark .pup-dog-toggle{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.12)}
+body.dark .pup-dog-btn.active{background:rgba(194,107,79,.5);color:#fff}
 
 /* Buttons */
 .btn{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:var(--rs);border:none;font-family:inherit;font-size:11px;font-weight:600;cursor:pointer;transition:all .15s}
@@ -1103,17 +1108,22 @@ body.dark .qn-input{background:rgba(255,255,255,.06);border-color:rgba(255,220,2
 
 <!-- Pup Skill Edit Modal -->
 <div class="overlay" id="pupModal" onclick="closeMod('pupModal',event)" onkeydown="if(event.key==='Escape')closeMod('pupModal');if(event.key==='Enter'&&event.target.tagName!=='SELECT'){event.preventDefault();savePupModal();}">
-  <div class="modal task-modal" style="width:400px">
-    <div class="mt" id="pupModalTitle">Edit Skill</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-      <div class="mfield"><label>Pup</label><select id="pmPup"><option value="Mochi">Mochi</option><option value="Sunny">Sunny</option></select></div>
+  <div class="modal task-modal" style="width:420px">
+    <select id="pmPup" style="display:none"><option value="Mochi">Mochi</option><option value="Sunny">Sunny</option></select>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div class="pup-dog-toggle"><button id="pmDogMochi" class="pup-dog-btn active" onclick="setPupModalDog('Mochi')">Mochi</button><button id="pmDogSunny" class="pup-dog-btn" onclick="setPupModalDog('Sunny')">Sunny</button></div>
+      <input type="checkbox" id="pmFocus" title="Focus this week" style="width:15px;height:15px;cursor:pointer;accent-color:#eab308">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
       <div class="mfield"><label>Skill *</label><input id="pmSkill" placeholder="Skill name"></div>
+      <div class="mfield"><label>Stage</label><select id="pmStage"><option value="Not Started">Not Started</option><option value="In Progress">In Progress</option><option value="Mastered">Mastered</option></select></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 80px;gap:8px;margin-bottom:8px">
       <div class="mfield"><label>Category</label><select id="pmCategory"><option value="">—</option><option value="commands">Commands</option><option value="manners">Manners</option><option value="fun">Fun</option></select></div>
       <div class="mfield"><label>Level</label><select id="pmLevel"><option value="">—</option><option value="Easy">Easy</option><option value="Medium">Medium</option><option value="Hard">Hard</option></select></div>
-      <div class="mfield"><label>Stage</label><select id="pmStage"><option value="Not Started">Not Started</option><option value="In Progress">In Progress</option><option value="Mastered">Mastered</option></select></div>
-      <div class="mfield" style="grid-column:1/-1"><div style="display:flex;align-items:center;gap:6px;padding-bottom:8px"><input type="checkbox" id="pmFocus" style="width:14px;height:14px;cursor:pointer;accent-color:#eab308"><label for="pmFocus" style="font-weight:400;font-size:12px;cursor:pointer">Focus this week</label></div></div>
+      <div class="mfield"><label>Order</label><input id="pmOrder" type="number" placeholder="—" min="1" style="width:100%"></div>
     </div>
-    <div class="mfield"><label>Next Step</label><input id="pmNextStep" placeholder="Next training step…"></div>
+    <div class="mfield"><label>Next Step</label><select id="pmNextStep"><option value="">—</option><option value="Duration">1. Duration</option><option value="Distance">2. Distance</option><option value="Distraction">3. Distraction</option></select></div>
     <div class="mfield"><label>Comments</label><input id="pmComments" placeholder="Notes or observations…"></div>
     <div class="mact"><button class="btn btn-ghost" onclick="closeMod('pupModal')">Cancel</button><button class="btn btn-dark" onclick="savePupModal()">Save</button></div>
   </div>
@@ -4051,14 +4061,19 @@ function pupUndo(){if(!_pupUndoStack.length){showToast('Nothing to undo','#888')
 function pupRedo(){if(!_pupRedoStack.length){showToast('Nothing to redo','#888');return;}const prev=JSON.parse(JSON.stringify(st.pup_skills));_pupUndoDirty=true;_pupUndoStack.push(prev);st.pup_skills=_pupRedoStack.pop();save();renderPupsPage();showToast('Redone','#6d5fe6',1500);_pupSyncToServer(prev,st.pup_skills);}
 function pupHdrClick(col){clearTimeout(_pupHdrClickTimer);_pupHdrClickTimer=setTimeout(()=>{_pupHdrClickTimer=null;pupSortBy(col);},250);}
 function pupHdrDbl(e,col){clearTimeout(_pupHdrClickTimer);_pupHdrClickTimer=null;pupFilterBy(e,col);}
+function setPupModalDog(val){
+  document.getElementById('pmPup').value=val;
+  document.getElementById('pmDogMochi').classList.toggle('active',val==='Mochi');
+  document.getElementById('pmDogSunny').classList.toggle('active',val==='Sunny');
+}
 function openPupAddModal(){
   _pupEditId=null;
-  document.getElementById('pupModalTitle').textContent='Add Skill';
-  document.getElementById('pmPup').value='Mochi';
+  setPupModalDog('Mochi');
   document.getElementById('pmSkill').value='';
   document.getElementById('pmCategory').value='';
   document.getElementById('pmLevel').value='';
   document.getElementById('pmStage').value='Not Started';
+  document.getElementById('pmOrder').value='';
   document.getElementById('pmFocus').checked=false;
   document.getElementById('pmNextStep').value='';
   document.getElementById('pmComments').value='';
@@ -4068,12 +4083,12 @@ function openPupAddModal(){
 function openPupEditModal(id){
   const s=st.pup_skills.find(x=>x.id==id);if(!s)return;
   _pupEditId=id;
-  document.getElementById('pupModalTitle').textContent='Edit Skill';
-  document.getElementById('pmPup').value=s.pup||'Mochi';
+  setPupModalDog(s.pup||'Mochi');
   document.getElementById('pmSkill').value=s.skill||'';
   document.getElementById('pmCategory').value=s.category||'';
   document.getElementById('pmLevel').value=s.level||'';
   document.getElementById('pmStage').value=s.stage||'Not Started';
+  document.getElementById('pmOrder').value=s.order||'';
   document.getElementById('pmFocus').checked=(s.focus===true||s.focus==='true');
   document.getElementById('pmNextStep').value=s.next_step||'';
   document.getElementById('pmComments').value=s.comments||'';
@@ -4087,8 +4102,9 @@ async function savePupModal(){
     category:document.getElementById('pmCategory').value||null,
     level:document.getElementById('pmLevel').value||null,
     stage:document.getElementById('pmStage').value,
+    order:document.getElementById('pmOrder').value?parseInt(document.getElementById('pmOrder').value):null,
     focus:document.getElementById('pmFocus').checked,
-    next_step:document.getElementById('pmNextStep').value.trim()||null,
+    next_step:document.getElementById('pmNextStep').value||null,
     comments:document.getElementById('pmComments').value.trim()||null,
   };
   if(!data.skill){showToast('Skill name required');return;}
@@ -4271,6 +4287,7 @@ function pupCellEdit(td,id,field){
   else if(field==='category'){el=document.createElement('select');[['','—'],['commands','Commands'],['manners','Manners'],['fun','Fun']].forEach(([v,t])=>{const o=document.createElement('option');o.value=v;o.textContent=t;if((s.category||'')===v)o.selected=true;el.appendChild(o);});}
   else if(field==='level'){el=document.createElement('select');['','Easy','Medium','Hard'].forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v||'—';if((s.level||'')===v)o.selected=true;el.appendChild(o);});}
   else if(field==='stage'){el=document.createElement('select');['Not Started','In Progress','Mastered'].forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;if(s.stage===v)o.selected=true;el.appendChild(o);});}
+  else if(field==='next_step'){el=document.createElement('select');[['','—'],['Duration','1. Duration'],['Distance','2. Distance'],['Distraction','3. Distraction']].forEach(([v,t])=>{const o=document.createElement('option');o.value=v;o.textContent=t;if((s.next_step||'')===v)o.selected=true;el.appendChild(o);});}
   else{el=document.createElement('input');el.value=s[field]||'';}
   el.style.cssText=elStyle;
   const origTxt=td.textContent;
@@ -4335,8 +4352,8 @@ function renderPupTable(){
       rowsHtml.push(`<tr class="pup-cat-sep"><td colspan="8" style="padding:8px 8px 3px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);border-top:2px solid rgba(0,0,0,.08);border-bottom:1px solid rgba(0,0,0,.04)">Mastered</td></tr>`);
       lastCat=null;
     }
-    if(showCatDividers&&curCat!==lastCat){
-      const label=curCat?curCat.charAt(0).toUpperCase()+curCat.slice(1):'Uncategorized';
+    if(showCatDividers&&curCat!==lastCat&&curCat){
+      const label=curCat.charAt(0).toUpperCase()+curCat.slice(1);
       rowsHtml.push(`<tr class="pup-cat-sep"><td colspan="8" style="padding:6px 8px 3px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);border-bottom:1px solid rgba(0,0,0,.04)">${label}</td></tr>`);
       lastCat=curCat;
     }
