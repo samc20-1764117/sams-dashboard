@@ -342,7 +342,7 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 .wkc-edge.active{opacity:1}
 .wkc-edge.left{left:0;background:linear-gradient(to right,rgba(109,95,230,.12),transparent)}
 .wkc-edge.right{right:0;background:linear-gradient(to left,rgba(109,95,230,.12),transparent)}
-.wkc-cols-wrap{flex:1;position:relative;overflow:hidden;display:flex;flex-direction:column;padding-top:22px}
+.wkc-cols-wrap{flex:1;position:relative;overflow:hidden;display:flex;flex-direction:column;padding-top:0}
 .wk-list-edge{position:absolute;top:0;bottom:0;width:36px;z-index:10;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:0;transition:opacity .15s;font-size:15px;font-weight:700;color:var(--accent);cursor:pointer}
 .wk-list-edge.active{opacity:1;pointer-events:all}
 .wk-list-edge-l{left:0;background:linear-gradient(to right,rgba(109,95,230,.15),transparent)}
@@ -1924,14 +1924,19 @@ function renderWkCal(){
   // Get birthdays this week
   const bdayThisWk=getBirthdayTasks(null).filter(b=>wkDss.includes(b.due_date));
 
+  const hasBanners=travelThisWk.length||bdayThisWk.length;
+  const wkcWrapEl=document.getElementById('wkcWrap');
+  if(wkcWrapEl)wkcWrapEl.style.paddingTop=hasBanners?'22px':'0';
+
   setTimeout(()=>{
     const wrap=document.getElementById('wkcWrap');
     if(!wrap)return;
     const colEls=[...document.querySelectorAll('#wkcCols .wkc-col')];
     if(colEls.length!==7)return;
     const wrapRect=wrap.getBoundingClientRect();
+    const today2=tod();
 
-    function addBanner(label,startDs,endDs,s,onClick){
+    function addBanner(label,startDs,endDs,s,onClick,isPast){
       const si=Math.max(0,wkDss.indexOf(wkDss.find(d=>d>=startDs)));
       const ei=Math.min(6,wkDss.findIndex(d=>d>=(endDs||startDs)));
       if(si<0||si>6)return;
@@ -1940,7 +1945,7 @@ function renderWkCal(){
       const sr=colStart.getBoundingClientRect(),er=colEnd.getBoundingClientRect();
       const left=sr.left-wrapRect.left,right=er.right-wrapRect.left;
       const ban=document.createElement('div');ban.className='wkc-banner';
-      ban.style.cssText=`left:${left+2}px;width:${right-left-4}px;background:${s.bg};color:${s.t};border-color:${s.b}`;
+      ban.style.cssText=`left:${left+2}px;width:${right-left-4}px;background:${s.bg};color:${s.t};border-color:${s.b}${isPast?';opacity:.35':''}`;
       ban.textContent=label;
       if(onClick)ban.addEventListener('click',onClick);
       bannerEl.appendChild(ban);
@@ -1950,12 +1955,13 @@ function renderWkCal(){
       const s=gc('travel');
       const sd=tv.start_date?tv.start_date.split('T')[0]:null;
       const ed=tv.end_date?tv.end_date.split('T')[0]:sd;
+      const isPast=!!(ed&&ed<today2);
       const label=(tv.destination?`✈ ${tv.name} → ${tv.destination}`:`✈ ${tv.name}`);
-      addBanner(label,sd,ed,s,()=>openTravelModal(tv.id));
+      addBanner(label,sd,ed,s,()=>openTravelModal(tv.id),isPast);
     });
     bdayThisWk.forEach(b=>{
       const s=gc('birthday');
-      addBanner(b.name,b.due_date,b.due_date,s,null);
+      addBanner(b.name,b.due_date,b.due_date,s,null,b.due_date<today2);
     });
   },10);
 
@@ -3748,21 +3754,27 @@ function openMModal(){
 function shiftMo(n){moOff+=n;renderMoCal();}
 function addMoTravelBanners(cells,yr,mo){
   const monthStart=d2s(new Date(yr,mo,1)),monthEnd=d2s(new Date(yr,mo+1,0));
+  const today2=tod();
   const trips=st.travel.filter(tv=>{const s=(tv.start_date||'').split('T')[0],e=(tv.end_date||'').split('T')[0]||s;return s&&s<=monthEnd&&e>=monthStart;});
-  cells.style.position='relative';
+  // Use mgrid (parent) as positioning context to avoid grid layout issues
+  const mgrid=cells.parentElement;
+  mgrid.style.position='relative';
+  cells.style.position=''; // reset so cells don't become a containing block
   let layer=document.getElementById('moBanners');
-  if(!layer){layer=document.createElement('div');layer.id='moBanners';layer.style.cssText='position:absolute;top:0;left:0;right:0;height:100%;pointer-events:none;z-index:3';cells.appendChild(layer);}
-  layer.innerHTML='';
+  if(layer)layer.remove();
+  layer=document.createElement('div');layer.id='moBanners';
+  layer.style.cssText='position:absolute;top:0;left:0;right:0;height:0;overflow:visible;pointer-events:none;z-index:3';
+  mgrid.appendChild(layer);
   if(!trips.length)return;
   setTimeout(()=>{
     const cellEls=[...cells.querySelectorAll('.mcell')];if(!cellEls.length)return;
     trips.forEach(tv=>{
       const sd=(tv.start_date||'').split('T')[0],ed=(tv.end_date||'').split('T')[0]||sd;
       const clampS=sd<monthStart?monthStart:sd,clampE=ed>monthEnd?monthEnd:ed;
+      const isPast=!!(ed&&ed<today2);
       const rangeCells=cellEls.filter(c=>c.dataset.ds&&c.dataset.ds>=clampS&&c.dataset.ds<=clampE);
       if(!rangeCells.length)return;
       const s=gc('travel');const label=tv.destination?`✈ ${tv.name} → ${tv.destination}`:`✈ ${tv.name}`;
-      // Split into row groups by offsetTop
       let rows=[],cur=[rangeCells[0]];
       for(let i=1;i<rangeCells.length;i++){
         if(rangeCells[i].offsetTop!==rangeCells[i-1].offsetTop){rows.push(cur);cur=[rangeCells[i]];}else cur.push(rangeCells[i]);
@@ -3772,7 +3784,7 @@ function addMoTravelBanners(cells,yr,mo){
         const fc=rowCells[0],lc=rowCells[rowCells.length-1];
         const left=fc.offsetLeft+2,top=fc.offsetTop+2,width=lc.offsetLeft+lc.offsetWidth-fc.offsetLeft-4;
         const ban=document.createElement('div');ban.className='wkc-banner';
-        ban.style.cssText=`position:absolute;left:${left}px;top:${top}px;width:${width}px;background:${s.bg};color:${s.t};border-color:${s.b};pointer-events:all`;
+        ban.style.cssText=`position:absolute;left:${left}px;top:${top}px;width:${width}px;background:${s.bg};color:${s.t};border-color:${s.b};pointer-events:all;${isPast?'opacity:.35;':''}`;
         ban.textContent=ri===0?label:`↳ ${label}`;
         ban.addEventListener('click',()=>openTravelModal(tv.id));
         layer.appendChild(ban);
@@ -3931,7 +3943,10 @@ async function delTravel(id){
 }
 function renderTravelPage(){save();
   const s=gc('travel');
-  const sorted=[...st.travel].sort((a,b)=>(a.start_date||'').localeCompare(b.start_date||''));
+  const today2=tod();
+  const sorted=[...st.travel]
+    .filter(tv=>{const e=(tv.end_date||'').split('T')[0]||(tv.start_date||'').split('T')[0];return!e||e>=today2;})
+    .sort((a,b)=>(a.start_date||'').localeCompare(b.start_date||''));
   document.getElementById('travelList').innerHTML=sorted.length
     ?sorted.map(tv=>`<div class="ti ti-travel">
         <span style="font-size:12px;flex-shrink:0">✈️</span>
