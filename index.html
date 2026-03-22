@@ -3173,7 +3173,13 @@ function openQA(ctx,btn,ds='',kcat=''){
   closeQA();qaCtx=ctx;qaDsTarget=ds;qaKCat=kcat;
   const p=document.getElementById('qaPopup');
   let title='Add Task',extra='';
-  if(ctx==='shop'){
+  if(ctx==='pup'){
+    title='Add Skill';
+    const selStyle='width:100%;padding:5px 7px;border-radius:8px;border:1px solid var(--border);font-family:inherit;font-size:12px;background:rgba(255,255,255,.8);color:var(--text);outline:none';
+    extra=`<div class="qa-field"><label>Pup</label><select id="qaPup" style="${selStyle}"><option value="Mochi">Mochi</option><option value="Sunny">Sunny</option></select></div>
+    <div class="qa-field"><label>Level</label><select id="qaLevel" style="${selStyle}"><option value="">—</option><option value="Easy">Easy</option><option value="Medium">Medium</option><option value="Hard">Hard</option></select></div>
+    <div class="qa-field"><label>Stage</label><select id="qaStage" style="${selStyle}"><option value="Not Started">Not Started</option><option value="In Progress">In Progress</option><option value="Mastered">Mastered</option></select></div>`;
+  } else if(ctx==='shop'){
     title='Add Item';
     extra=`<div class="qa-field"><label>Store</label><input id="qaStore" list="storeList" placeholder="HEB, Ikea, Online…" style="width:100%;padding:5px 7px;border-radius:8px;border:1px solid var(--border);font-family:inherit;font-size:12px;background:rgba(255,255,255,.8);color:var(--text);outline:none" ><datalist id="storeList">${[...new Set(st.shopping.map(x=>x.store).filter(Boolean))].sort().map(s=>`<option value="${s}">`).join('')}<option value="HEB"><option value="Ikea"><option value="Online"><option value="Other"></datalist></div>`;
   } else if(ctx==='rec'){
@@ -3187,6 +3193,7 @@ function openQA(ctx,btn,ds='',kcat=''){
   }
   document.getElementById('qaTitle').textContent=title;
   document.getElementById('qaExtra').innerHTML=extra;
+  document.getElementById('qaName').placeholder=ctx==='pup'?'Skill name…':ctx==='shop'?'Item name…':'Task name…';
   document.getElementById('qaName').value='';
   p.classList.add('open');
   if(btn){const r=btn.getBoundingClientRect();let top=r.bottom+5,left=r.left,pw=270;if(left+pw>window.innerWidth-6)left=window.innerWidth-pw-6;if(top+340>window.innerHeight)top=r.top-344;p.style.top=top+'px';p.style.left=left+'px';p.style.transform='';}
@@ -3197,6 +3204,16 @@ function closeQA(){const p=document.getElementById('qaPopup');p.classList.remove
 async function submitQA(){
   const n=document.getElementById('qaName').value.trim();if(!n){closeQA();return;}
   closeQA();
+  if(qaCtx==='pup'){
+    const pup=document.getElementById('qaPup')?.value||'Mochi';
+    const level=document.getElementById('qaLevel')?.value||null;
+    const stage=document.getElementById('qaStage')?.value||'Not Started';
+    const s={id:'l-'+Date.now(),pup,skill:n,level:level||null,stage,focus:false,success_rate:null,next_step:null,comments:null};
+    st.pup_skills.push(s);save();renderPupsPage();
+    const sv=await sbReq('POST','pup_skills',{pup,skill:n,level:level||null,stage,focus:false});
+    if(sv&&sv[0]){const i=st.pup_skills.findIndex(x=>x.id===s.id);if(i>-1)st.pup_skills[i]=sv[0];save();renderPupTable();}
+    return;
+  }
   if(qaCtx==='shop'){
     const store=(document.getElementById('qaStore')?.value||'').trim()||'Other';
     const s={id:'l-'+Date.now(),name:n,store,done:false};st.shopping.push(s);renderAll();
@@ -3994,6 +4011,7 @@ async function delBday(id){
   await sbReq('DELETE','birthdays',null,`?id=eq.${id}`);
 }
 let _pupEditId=null;
+let _pupSortCol='pup',_pupSortDir=1,_pupFilter=null;
 function openPupEditModal(id){
   const s=st.pup_skills.find(x=>x.id==id);if(!s)return;
   _pupEditId=id;
@@ -4039,6 +4057,71 @@ async function setPupField(id,field,val,origVal){
   save();
   sbReqSilent('PATCH','pup_skills',{[field]:sv},`?id=eq.${id}`);
 }
+function pupSortBy(col){if(_pupSortCol===col)_pupSortDir*=-1;else{_pupSortCol=col;_pupSortDir=1;}renderPupTable();}
+function pupFilterBy(e,col){
+  e.stopPropagation();
+  if(_pupFilter&&_pupFilter.col===col){_pupFilter=null;renderPupTable();return;}
+  const val=prompt('Filter '+col+' by (leave blank to clear):','');
+  if(val===null)return;
+  _pupFilter=val.trim()?{col,val:val.trim()}:null;
+  renderPupTable();
+}
+function pupCellEdit(td,id,field){
+  if(td.querySelector('input,select'))return;
+  const s=st.pup_skills.find(x=>x.id==id);if(!s)return;
+  let el;
+  if(field==='pup'){el=document.createElement('select');['Mochi','Sunny'].forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;if(s.pup===v)o.selected=true;el.appendChild(o);});}
+  else if(field==='level'){el=document.createElement('select');['','Easy','Medium','Hard'].forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v||'—';if((s.level||'')===v)o.selected=true;el.appendChild(o);});}
+  else if(field==='stage'){el=document.createElement('select');['Not Started','In Progress','Mastered'].forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;if(s.stage===v)o.selected=true;el.appendChild(o);});}
+  else{el=document.createElement('input');el.value=s[field]||'';}
+  el.style.cssText='width:100%;font-size:11px;border:1px solid var(--border);border-radius:4px;padding:2px 4px;background:var(--bg);color:var(--text);outline:none;font-family:inherit';
+  const origContent=td.innerHTML;
+  td.innerHTML='';td.appendChild(el);el.focus();
+  if(el.tagName==='INPUT')el.select();
+  const doSave=async()=>{await setPupField(id,field,el.value,String(s[field]??''));renderPupTable();};
+  el.onblur=doSave;
+  el.onkeydown=e=>{if(e.key==='Enter')el.blur();if(e.key==='Escape'){td.innerHTML=origContent;}};
+  if(el.tagName==='SELECT')el.onchange=async()=>{el.onblur=null;await setPupField(id,field,el.value,String(s[field]??''));renderPupTable();};
+}
+function renderPupTable(){
+  const tbody=document.getElementById('pupTblBody');if(!tbody)return;
+  const skills=st.pup_skills||[];
+  function esc(v){return(v||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+  const LDEG={Easy:0,Medium:1,Hard:2},SDEG={'Not Started':0,'In Progress':1,'Mastered':2};
+  let rows=[...skills];
+  if(_pupFilter)rows=rows.filter(s=>String(s[_pupFilter.col]||'').toLowerCase()===_pupFilter.val.toLowerCase());
+  rows.sort((a,b)=>{
+    if(_pupSortCol==='level'){return _pupSortDir*((LDEG[a.level]??9)-(LDEG[b.level]??9));}
+    if(_pupSortCol==='stage'){return _pupSortDir*((SDEG[a.stage]??9)-(SDEG[b.stage]??9));}
+    if(_pupSortCol==='focus'){return _pupSortDir*((a.focus?0:1)-(b.focus?0:1));}
+    return _pupSortDir*String(a[_pupSortCol]||'').toLowerCase().localeCompare(String(b[_pupSortCol]||'').toLowerCase());
+  });
+  const arrow=col=>_pupSortCol===col?(_pupSortDir>0?' ↑':' ↓'):'';
+  const thStyle='cursor:pointer;user-select:none;white-space:nowrap';
+  const filterDot=col=>(_pupFilter&&_pupFilter.col===col)?'<span style="color:#f97316;font-size:9px"> ●</span>':'';
+  document.getElementById('pupTblHead').innerHTML=`<tr>
+    <th onclick="pupSortBy('focus')" ondblclick="pupFilterBy(event,'focus')" style="${thStyle};width:28px;text-align:center" title="Click sort, dblclick filter">🎯${arrow('focus')}${filterDot('focus')}</th>
+    <th onclick="pupSortBy('pup')" ondblclick="pupFilterBy(event,'pup')" style="${thStyle}" title="Click sort, dblclick filter">Pup${arrow('pup')}${filterDot('pup')}</th>
+    <th onclick="pupSortBy('skill')" ondblclick="pupFilterBy(event,'skill')" style="${thStyle}" title="Click sort, dblclick filter">Skill${arrow('skill')}${filterDot('skill')}</th>
+    <th onclick="pupSortBy('level')" ondblclick="pupFilterBy(event,'level')" style="${thStyle}" title="Click sort, dblclick filter">Level${arrow('level')}${filterDot('level')}</th>
+    <th onclick="pupSortBy('stage')" ondblclick="pupFilterBy(event,'stage')" style="${thStyle}" title="Click sort, dblclick filter">Stage${arrow('stage')}${filterDot('stage')}</th>
+    <th onclick="pupSortBy('next_step')" ondblclick="pupFilterBy(event,'next_step')" style="${thStyle}" title="Click sort, dblclick filter">Next Step${arrow('next_step')}${filterDot('next_step')}</th>
+  </tr>`;
+  tbody.innerHTML=rows.map(s=>{
+    const foc=s.focus===true||s.focus==='true';
+    const bg=s.pup==='Mochi'?'rgba(139,92,246,.07)':s.pup==='Sunny'?'rgba(59,130,246,.07)':'';
+    const comment=s.comments&&s.comments!=='None'?esc(s.comments):'';
+    const nextStep=s.next_step&&s.next_step!=='None'?esc(s.next_step):'';
+    return`<tr style="background:${bg}">
+      <td style="text-align:center;width:28px"><input type="checkbox"${foc?' checked':''} onchange="setPupField(${s.id},'focus',this.checked)" style="width:13px;height:13px;cursor:pointer;accent-color:#eab308"></td>
+      <td ondblclick="pupCellEdit(this,${s.id},'pup')" style="cursor:text">${esc(s.pup)}</td>
+      <td ondblclick="pupCellEdit(this,${s.id},'skill')" style="cursor:text">${esc(s.skill)}</td>
+      <td ondblclick="pupCellEdit(this,${s.id},'level')" style="cursor:text">${esc(s.level)||'—'}</td>
+      <td ondblclick="pupCellEdit(this,${s.id},'stage')" style="cursor:text">${esc(s.stage||'')}</td>
+      <td ondblclick="pupCellEdit(this,${s.id},'next_step')" style="cursor:text${comment?';cursor:help':''}" title="${comment}">${nextStep}</td>
+    </tr>`;
+  }).join('');
+}
 function renderPupsPage(){
   const page=document.getElementById('page-pups');if(!page)return;
   const skills=st.pup_skills||[];
@@ -4060,24 +4143,9 @@ function renderPupsPage(){
   function doneRow(s){const rate=sr(s);return`<div class="pup-skill-row pup-done-row" ondblclick="openPupEditModal(${s.id})"><span class="pup-check">✓</span><span class="pup-skill-name" style="opacity:.7">${s.skill}</span><div class="pup-skill-meta">${lvlPill(s)}${rate!=null?`<span class="pup-pill pup-pill-dim">${rate}%</span>`:''}</div></div>`;}
   function completedSec(pup,color){const items=skills.filter(s=>s.pup===pup&&s.stage==='Mastered').sort((a,b)=>(LDEG[a.level]??9)-(LDEG[b.level]??9)||(a.skill||'').localeCompare(b.skill||''));return`<div><div class="pup-section-label" style="color:${color}">${pup}</div>${items.length?items.map(doneRow).join(''):'<div style="font-size:10px;color:var(--muted);padding:3px 0 8px">None yet</div>'}</div>`;}
   const completedCol=`<div class="pup-col card"><div class="ch"><span style="font-size:13px">✅</span><span style="font-weight:700;font-size:13px;color:var(--text)">Completed</span></div><div style="padding:14px 16px;display:flex;flex-direction:column;gap:14px;overflow-y:auto;flex:1;min-height:0">${completedSec('Sunny','#f97316')}${completedSec('Mochi','#8b5cf6')}</div></div>`;
-  function tableRow(s){
-    const rate=sr(s);const sr2=rate!=null?rate:'';const foc=s.focus===true||s.focus==='true';
-    const pOpt=v=>`<option value="${v}"${s.pup===v?' selected':''}>${v}</option>`;
-    const lOpt=v=>`<option value="${v}"${(s.level||'')===(v)?'selected':''}>${v}</option>`;
-    const stOpt=v=>`<option value="${v}"${s.stage===v?' selected':''}>${v}</option>`;
-    return`<tr ondblclick="openPupEditModal(${s.id})">
-      <td><select onchange="setPupField(${s.id},'pup',this.value)">${['Mochi','Sunny'].map(pOpt).join('')}</select></td>
-      <td><input value="${esc(s.skill)}" data-orig="${esc(s.skill)}" onblur="setPupField(${s.id},'skill',this.value,this.dataset.orig)" style="min-width:80px"></td>
-      <td><select onchange="setPupField(${s.id},'level',this.value)"><option value="">—</option>${['Easy','Medium','Hard'].map(lOpt).join('')}</select></td>
-      <td><select onchange="setPupField(${s.id},'stage',this.value)">${['Not Started','In Progress','Mastered'].map(stOpt).join('')}</select></td>
-      <td><input type="number" min="0" max="100" value="${sr2}" style="width:40px;text-align:center" onblur="setPupField(${s.id},'success_rate',this.value===''?null:parseFloat(this.value)/100)"></td>
-      <td style="text-align:center"><input type="checkbox"${foc?' checked':''} onchange="setPupField(${s.id},'focus',this.checked)" style="width:13px;height:13px;cursor:pointer;accent-color:#eab308"></td>
-      <td><input value="${esc(s.next_step)}" data-orig="${esc(s.next_step)}" onblur="setPupField(${s.id},'next_step',this.value,this.dataset.orig)" style="min-width:110px"></td>
-    </tr>`;
-  }
-  const sorted=[...skills].sort((a,b)=>(a.pup||'').localeCompare(b.pup||'')||(a.skill||'').localeCompare(b.skill||''));
-  const tableCol=`<div class="pup-col card" style="overflow:hidden"><div class="ch"><span style="font-size:13px">✏️</span><span style="font-weight:700;font-size:13px;color:var(--text)">All Skills</span></div><div style="overflow-y:auto;flex:1;min-height:0"><table class="pup-tbl"><thead><tr><th>Pup</th><th>Skill</th><th>Level</th><th>Stage</th><th>%</th><th>🎯</th><th>Next Step</th></tr></thead><tbody>${sorted.map(tableRow).join('')}</tbody></table></div></div>`;
+  const tableCol=`<div class="pup-col card" style="overflow:hidden"><div class="ch"><span style="font-size:13px">✏️</span><span style="font-weight:700;font-size:13px;color:var(--text)">All Skills</span><button class="btn-plus" onclick="openQA('pup',this)" style="margin-left:auto;padding:2px 8px;font-size:13px;border-radius:8px;border:1px solid var(--border);background:transparent;cursor:pointer;color:var(--text)">+</button></div><div style="overflow-y:auto;flex:1;min-height:0"><table class="pup-tbl"><thead id="pupTblHead"></thead><tbody id="pupTblBody"></tbody></table></div></div>`;
   page.innerHTML=`<div class="ov-topbar"><span class="ov-topbar-label">🐾 Pups</span><span class="ov-topbar-dot"></span><span class="ov-topbar-date topbar-date"></span><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div><button class="back-btn" onclick="showPage('overview')">← Overview</button><div style="display:grid;grid-template-columns:1fr 1fr 0.65fr 1.5fr;gap:14px;height:calc(100vh - 100px)">${pupCol('Mochi','#8b5cf6')}${pupCol('Sunny','#f97316')}${completedCol}${tableCol}</div>`;
+  renderPupTable();
   const now=new Date();document.querySelectorAll('#page-pups .topbar-date').forEach(e=>e.textContent=now.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}));document.querySelectorAll('#page-pups .topbar-time').forEach(e=>e.textContent=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}));
 }
 
