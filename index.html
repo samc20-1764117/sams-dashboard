@@ -155,8 +155,9 @@ body{font-family:'DM Sans',sans-serif;background:#fef6f0;background-attachment:f
 .pup-tbl input,.pup-tbl select{font-size:11px;font-family:inherit;border:none;background:transparent;color:var(--text);width:100%;outline:none;cursor:pointer;padding:2px 3px;border-radius:3px;transition:background .12s}
 .pup-tbl input:focus,.pup-tbl select:focus{background:rgba(255,255,255,.85);cursor:text}
 .pup-tbl select{cursor:pointer;-webkit-appearance:auto}
-#pupFilterPop{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px;box-shadow:0 4px 24px rgba(0,0,0,.18);opacity:0;transform:translateY(-6px) scale(.97);transition:opacity .15s ease,transform .15s ease;pointer-events:none}
+#pupFilterPop{background:rgba(255,248,244,0.97);backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);border:1px solid rgba(255,255,255,0.7);border-radius:10px;padding:10px;box-shadow:0 6px 28px rgba(0,0,0,.13),inset 0 1.5px 0 rgba(255,255,255,1);opacity:0;transform:translateY(-6px) scale(.97);transition:opacity .15s ease,transform .15s ease;pointer-events:none}
 #pupFilterPop.pfopen{opacity:1;transform:translateY(0) scale(1);pointer-events:auto}
+body.dark #pupFilterPop{background:rgba(40,22,14,.97);border-color:rgba(255,220,200,.15);box-shadow:0 6px 28px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.06)}
 .pf-cb-row{display:flex;align-items:center;padding:4px 6px;border-radius:6px;cursor:pointer;font-size:12px;color:var(--text);user-select:none}
 .pf-cb-row:hover{background:rgba(255,255,255,.4)}
 .undo-toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%) translateY(60px);background:rgba(37,32,64,.92);color:#fff;font-size:11px;font-weight:600;padding:7px 14px;border-radius:20px;box-shadow:var(--shadow-lg);transition:transform .22s ease,opacity .22s ease;opacity:0;z-index:900;display:flex;align-items:center;gap:8px;white-space:nowrap}
