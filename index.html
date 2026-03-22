@@ -149,7 +149,8 @@ body{font-family:'DM Sans',sans-serif;background:#fef6f0;background-attachment:f
 .pup-skill-row{cursor:default}
 .pup-skill-emphasis,.pup-focus-row,.pup-done-row{cursor:pointer;user-select:none;-webkit-user-select:none}
 .pup-tbl{width:100%;border-collapse:collapse;font-size:11px;table-layout:fixed}
-.pup-tbl th{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:6px 8px;border-bottom:1.5px solid rgba(210,205,228,.25);text-align:left;white-space:nowrap;position:sticky;top:0;background:var(--card);z-index:1}
+.pup-tbl th{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:6px 8px;border-bottom:1.5px solid rgba(210,205,228,.25);text-align:left;white-space:nowrap;position:sticky;top:0;background:rgba(255,248,244,0.97);z-index:1}
+body.dark .pup-tbl th{background:rgba(40,22,14,.97)}
 .pup-tbl td{padding:3px 5px;border-bottom:1px solid rgba(210,205,228,.1);vertical-align:middle}
 .pup-tbl tr:hover td{background:rgba(255,255,255,.4)}
 .pup-tbl tr.pup-sel td{background:var(--sel-bg,rgba(130,115,100,.1))!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.7)}
@@ -4029,6 +4030,12 @@ async function delBday(id){
 let _pupEditId=null;
 let _selPupIds=new Set(),_lastSelPupId=null,_copiedPups=[],_pupCtxId=null;
 let _pupSortCol=null,_pupSortDir=1,_pupFilter=null;
+let _pupUndoStack=[],_pupRedoStack=[],_pupHdrClickTimer=null;
+function pupSnapshot(){_pupUndoStack.push(JSON.parse(JSON.stringify(st.pup_skills)));if(_pupUndoStack.length>20)_pupUndoStack.shift();_pupRedoStack=[];}
+function pupUndo(){if(!_pupUndoStack.length)return;_pupRedoStack.push(JSON.parse(JSON.stringify(st.pup_skills)));st.pup_skills=_pupUndoStack.pop();save();renderPupsPage();}
+function pupRedo(){if(!_pupRedoStack.length)return;_pupUndoStack.push(JSON.parse(JSON.stringify(st.pup_skills)));st.pup_skills=_pupRedoStack.pop();save();renderPupsPage();}
+function pupHdrClick(col){clearTimeout(_pupHdrClickTimer);_pupHdrClickTimer=setTimeout(()=>{_pupHdrClickTimer=null;pupSortBy(col);},250);}
+function pupHdrDbl(e,col){clearTimeout(_pupHdrClickTimer);_pupHdrClickTimer=null;pupFilterBy(e,col);}
 function openPupAddModal(){
   _pupEditId=null;
   document.getElementById('pupModalTitle').textContent='Add Skill';
@@ -4067,6 +4074,7 @@ async function savePupModal(){
     comments:document.getElementById('pmComments').value.trim()||null,
   };
   if(!data.skill){showToast('Skill name required');return;}
+  pupSnapshot();
   closeMod('pupModal');
   if(!_pupEditId){
     const s={id:'l-'+Date.now(),...data};
@@ -4126,6 +4134,7 @@ function hidePupCtx(){document.getElementById('pupCtxMenu').style.display='none'
 function pupCtxEdit(){hidePupCtx();if(_pupCtxId)openPupEditModal(_pupCtxId);}
 async function pupCtxDuplicate(){
   hidePupCtx();
+  pupSnapshot();
   const ids=_selPupIds.size?[..._selPupIds]:[_pupCtxId].filter(Boolean);
   for(const id of ids){
     const s=st.pup_skills.find(x=>String(x.id)===String(id));if(!s)continue;
@@ -4138,6 +4147,7 @@ async function pupCtxDuplicate(){
 }
 async function pupCtxDelete(){
   hidePupCtx();
+  pupSnapshot();
   const ids=_selPupIds.size?[..._selPupIds]:[_pupCtxId].filter(Boolean);
   st.pup_skills=st.pup_skills.filter(x=>!ids.includes(String(x.id)));
   _selPupIds.clear();_pupCtxId=null;save();renderPupsPage();
@@ -4278,12 +4288,12 @@ function renderPupTable(){
   const ths='cursor:pointer;user-select:none;white-space:nowrap;padding:6px 8px';
   const tdE='user-select:none;cursor:default';
   thead.innerHTML=`<tr>
-    <th onclick="pupSortBy('focus')" ondblclick="pupFilterBy(event,'focus')" style="${ths};width:32px;text-align:center">🎯${arrow('focus')}${fdot('focus')}</th>
-    <th onclick="pupSortBy('pup')" ondblclick="pupFilterBy(event,'pup')" style="${ths};width:72px">Pup${arrow('pup')}${fdot('pup')}</th>
-    <th onclick="pupSortBy('skill')" ondblclick="pupFilterBy(event,'skill')" style="${ths}">Skill${arrow('skill')}${fdot('skill')}</th>
-    <th onclick="pupSortBy('level')" ondblclick="pupFilterBy(event,'level')" style="${ths};width:72px">Level${arrow('level')}${fdot('level')}</th>
-    <th onclick="pupSortBy('stage')" ondblclick="pupFilterBy(event,'stage')" style="${ths};width:96px">Stage${arrow('stage')}${fdot('stage')}</th>
-    <th onclick="pupSortBy('next_step')" ondblclick="pupFilterBy(event,'next_step')" style="${ths}">Next Step${arrow('next_step')}${fdot('next_step')}</th>
+    <th onclick="pupHdrClick('focus')" ondblclick="pupHdrDbl(event,'focus')" style="${ths};width:32px;text-align:center">🎯${arrow('focus')}${fdot('focus')}</th>
+    <th onclick="pupHdrClick('pup')" ondblclick="pupHdrDbl(event,'pup')" style="${ths};width:72px">Pup${arrow('pup')}${fdot('pup')}</th>
+    <th onclick="pupHdrClick('skill')" ondblclick="pupHdrDbl(event,'skill')" style="${ths}">Skill${arrow('skill')}${fdot('skill')}</th>
+    <th onclick="pupHdrClick('level')" ondblclick="pupHdrDbl(event,'level')" style="${ths};width:72px">Level${arrow('level')}${fdot('level')}</th>
+    <th onclick="pupHdrClick('stage')" ondblclick="pupHdrDbl(event,'stage')" style="${ths};width:96px">Stage${arrow('stage')}${fdot('stage')}</th>
+    <th onclick="pupHdrClick('next_step')" ondblclick="pupHdrDbl(event,'next_step')" style="${ths}">Next Step${arrow('next_step')}${fdot('next_step')}</th>
     <th style="width:28px"></th>
   </tr>`;
   tbody.innerHTML=rows.map(s=>{
@@ -4558,6 +4568,8 @@ document.addEventListener('keydown',async e=>{
   if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT')return;
   // Pup skill shortcuts
   const onPups=document.getElementById('page-pups')?.classList.contains('active');
+  if(onPups&&(e.metaKey||e.ctrlKey)&&e.key==='z'&&e.shiftKey){e.preventDefault();pupRedo();return;}
+  if(onPups&&(e.metaKey||e.ctrlKey)&&e.key==='z'&&!e.shiftKey){e.preventDefault();pupUndo();return;}
   if(onPups&&_selPupIds.size>0){
     if(e.key==='Delete'||e.key==='Backspace'){e.preventDefault();pupCtxDelete();return;}
     if((e.metaKey||e.ctrlKey)&&e.key==='c'){
@@ -4567,6 +4579,7 @@ document.addEventListener('keydown',async e=>{
     }
     if((e.metaKey||e.ctrlKey)&&e.key==='v'&&_copiedPups.length){
       e.preventDefault();
+      pupSnapshot();
       for(const s of _copiedPups){
         const copy={...s,id:'l-'+Date.now(),skill:s.skill+' (copy)'};
         st.pup_skills.push(copy);
