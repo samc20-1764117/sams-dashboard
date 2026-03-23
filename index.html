@@ -2762,7 +2762,7 @@ function renderDayTB(){
   getVisibleBlocks(ds).forEach(b=>drawTBBlock(col,b));
   autoBlocks.forEach(a=>drawAutoTBBlock(col,a,ds));
   const autoBtn=document.getElementById('autoTBToggle');if(autoBtn)autoBtn.style.opacity=cfg.showAutoTB?'1':'0.4';
-  if(isDateToday(date)){const nl=document.createElement('div');nl.className='nowline';nl.id='tbNowLine';const nm=new Date(),nmins=(nm.getHours()-HOURS[0])*60+nm.getMinutes();if(nmins>=0){nl.style.top=nmins*PX+'px';nl.innerHTML='<div class="nowdot"></div><button id="autoTBToggle" onclick="toggleAutoTB()" title="Toggle auto time blocks" style="pointer-events:auto;position:absolute;right:4px;top:-9px;font-size:8px;background:none;border:none;cursor:pointer;color:var(--muted);font-family:inherit;padding:1px 3px;line-height:1;opacity:.7">Auto</button>';}col.appendChild(nl);}
+  if(isDateToday(date)){const nl=document.createElement('div');nl.className='nowline';nl.id='tbNowLine';const nm=new Date(),nmins=(nm.getHours()-HOURS[0])*60+nm.getMinutes();if(nmins>=0){nl.style.top=nmins*PX+'px';nl.innerHTML='<div class="nowdot"></div>';}col.appendChild(nl);}
   grid.appendChild(col);renderTBSum(ds);requestAnimationFrame(applySelHighlight);
   // Default scroll to current time minus 1 hour; reset when day changes but preserve position mid-session
   const tbSc2=document.getElementById('tbScroll');
@@ -3183,7 +3183,7 @@ function updateNowLine(){
   const n=new Date(),m=(n.getHours()-HOURS[0])*60+n.getMinutes();
   if(m<0){l.style.display='none';return;}
   l.style.display='block';l.style.top=m*PX+'px';
-  l.innerHTML='<div class="nowdot"></div><button id="autoTBToggle" onclick="toggleAutoTB()" title="Toggle auto time blocks" style="pointer-events:auto;position:absolute;right:4px;top:-9px;font-size:8px;background:none;border:none;cursor:pointer;color:var(--muted);font-family:inherit;padding:1px 3px;line-height:1;opacity:.7">Auto</button>';
+  l.innerHTML='<div class="nowdot"></div>';
 }
 if(!window._nowLineInterval)window._nowLineInterval=setInterval(updateNowLine,60000);
 function onRM(e){if(!resizing)return;const b=st.blocks.find(x=>x.id===resizing.id);if(!b)return;b.dur=Math.max(15,Math.round((resizing.sd+(e.clientY-resizing.sy)/PX)/15)*15);renderDayTB();}
