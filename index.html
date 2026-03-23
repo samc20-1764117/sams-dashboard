@@ -526,6 +526,44 @@ body.dark .qn-input-row{background:rgba(255,255,255,.03)}
 body.dark .qn-input{background:rgba(255,255,255,.06);border-color:rgba(255,220,200,.12)}
 .qn-add-btn{background:rgba(194,107,79,.15);border:1px solid rgba(194,107,79,.25);border-radius:var(--rxs);color:var(--accent);font-size:16px;font-weight:600;width:30px;flex-shrink:0;cursor:pointer;transition:all .14s;display:flex;align-items:center;justify-content:center;padding:0}
 .qn-add-btn:hover{background:rgba(194,107,79,.28);border-color:rgba(194,107,79,.4)}
+
+/* Birthdays Page */
+.bday-section{padding:0 6px 8px}
+.bday-section-header{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);padding:10px 4px 5px;display:flex;align-items:center;gap:6px;border-bottom:1px solid rgba(210,205,228,.18);margin-bottom:3px}
+.bday-row{display:flex;flex-direction:column;margin:1px 0;border-radius:9px;transition:background .12s}
+.bday-main{display:flex;align-items:center;gap:8px;padding:7px 10px;position:relative;min-width:0;border-radius:9px;transition:background .12s}
+.bday-main:hover{background:rgba(255,255,255,.72);box-shadow:0 2px 10px rgba(0,0,0,.06)}
+.bday-today>.bday-main{background:rgba(255,237,213,.55)}
+.bday-today>.bday-main:hover{background:rgba(255,237,213,.8)}
+.bday-today .bday-name{color:var(--accent);font-weight:700}
+.bday-past{opacity:.45}
+.bday-name{flex:1;font-size:13px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.bday-emoji{font-size:15px;flex-shrink:0;line-height:1}
+.bday-countdown{font-size:9px;font-weight:700;padding:2px 7px;border-radius:5px;border:1px solid transparent;flex-shrink:0;white-space:nowrap}
+.bday-date-lbl{font-size:11px;color:var(--subtle);flex-shrink:0;white-space:nowrap}
+.bday-gift-btn{background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);padding:2px 6px;border-radius:6px;transition:all .12s;flex-shrink:0;display:flex;align-items:center;gap:3px;font-family:inherit;line-height:1}
+.bday-gift-btn:hover{background:rgba(255,237,213,.7);color:var(--accent)}
+.bday-gift-btn.has-gifts{color:var(--accent);font-weight:600}
+.bday-edit-btn{opacity:0;background:none;border:none;cursor:pointer;font-size:10px;color:var(--muted);padding:2px 6px;border-radius:5px;transition:all .12s;flex-shrink:0;font-family:inherit}
+.bday-main:hover .bday-edit-btn{opacity:1}
+.bday-edit-btn:hover{background:rgba(255,255,255,.7);color:var(--text)}
+.bday-del-btn{opacity:0;background:none;border:none;cursor:pointer;font-size:10px;color:var(--subtle);padding:2px 4px;border-radius:4px;transition:opacity .1s,color .1s;flex-shrink:0}
+.bday-main:hover .bday-del-btn{opacity:1}
+.bday-del-btn:hover{color:#ef4444}
+.bday-presents{padding:4px 12px 8px 40px;background:rgba(255,253,250,.5);border-radius:0 0 9px 9px;border-top:1px dashed rgba(210,205,228,.3)}
+body.dark .bday-presents{background:rgba(255,255,255,.03)}
+.bday-presents.open{display:block!important}
+.bday-present-item{display:flex;align-items:center;gap:6px;padding:3px 0;min-height:26px}
+.bday-present-dot{width:4px;height:4px;border-radius:50%;background:rgba(249,115,22,.45);flex-shrink:0}
+.bday-present-text{flex:1;font-size:12px;color:var(--text)}
+.bday-present-del{opacity:0;background:none;border:none;cursor:pointer;color:var(--subtle);font-size:10px;padding:1px 4px;border-radius:3px;transition:opacity .1s;line-height:1;flex-shrink:0}
+.bday-present-item:hover .bday-present-del{opacity:1}
+.bday-present-del:hover{color:#ef4444}
+.bday-add-row{display:flex;gap:5px;align-items:center;padding-top:5px;margin-top:3px;border-top:1px dashed rgba(210,205,228,.2)}
+.bday-add-input{flex:1;padding:4px 8px;border-radius:var(--rxs);border:1px solid var(--gb);font-family:inherit;font-size:11px;background:rgba(255,255,255,.7);color:var(--text);outline:none;min-width:0}
+.bday-add-input:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(194,107,79,.1)}
+.bday-add-input::placeholder{color:var(--subtle)}
+body.dark .bday-add-input{background:rgba(255,255,255,.06);border-color:rgba(255,220,200,.12)}
 </style>
 </head>
 <body>
@@ -838,7 +876,22 @@ body.dark .qn-input{background:rgba(255,255,255,.06);border-color:rgba(255,220,2
 
 <!-- OTHER PAGES (empty) -->
 <div class="page" id="page-travel" style="display:none!important"><div id="travelList" style="display:none"></div></div>
-<div class="page" id="page-birthdays" style="padding:clamp(12px,3vw,56px);padding-top:60px"><div class="ov-topbar"><div class="ov-topbar-left"><span class="ov-topbar-label">Birthdays</span><span class="ov-topbar-dot"></span></div><span class="ov-topbar-date topbar-date"></span><div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div></div><div id="bdayList" style="display:none"></div></div>
+<div class="page" id="page-birthdays" style="padding:clamp(12px,3vw,56px);padding-top:60px">
+  <div class="ov-topbar">
+    <div class="ov-topbar-left"><span class="ov-topbar-label">Birthdays</span><span class="ov-topbar-dot"></span></div>
+    <span class="ov-topbar-date topbar-date"></span>
+    <div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div>
+  </div>
+  <div class="card" style="max-width:700px">
+    <div class="ch">
+      <div class="ct">🎂 Birthdays</div>
+      <span class="cbadge" id="bdayCount" style="margin-right:4px">0</span>
+      <button class="btn-plus" onclick="openBdayModal()">+</button>
+    </div>
+    <div id="bdayPageContent" style="overflow-y:auto;max-height:calc(100vh - 180px);padding:4px 0"></div>
+  </div>
+  <div id="bdayList" style="display:none"></div>
+</div>
 <div class="page" id="page-pups" style="padding:22px 56px 36px 56px;padding-top:60px"></div>
 <div class="page" id="page-finance" style="padding:clamp(12px,3vw,56px);padding-top:60px"><div class="ov-topbar"><div class="ov-topbar-left"><span class="ov-topbar-label">💰 Finance</span><span class="ov-topbar-dot"></span></div><span class="ov-topbar-date topbar-date"></span><div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div></div></div>
 <div class="page" id="page-recipes" style="padding:clamp(12px,3vw,56px);padding-top:60px"><div class="ov-topbar"><div class="ov-topbar-left"><span class="ov-topbar-label">🍳 Recipes</span><span class="ov-topbar-dot"></span></div><span class="ov-topbar-date topbar-date"></span><div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div></div></div>
@@ -887,12 +940,12 @@ body.dark .qn-input{background:rgba(255,255,255,.06);border-color:rgba(255,220,2
 </div>
 
 <!-- Birthday Modal -->
-<div class="overlay" id="bdayModal" onclick="closeMod(&#39;bdayModal&#39;,event)">
-  <div class="modal task-modal" style="width:310px">
+<div class="overlay" id="bdayModal" onclick="closeMod('bdayModal',event)">
+  <div class="modal task-modal" style="width:320px;padding:16px">
     <div class="mt" id="bdayMTitle">Add Birthday</div>
-    <div class="mfield"><label>Name *</label><input id="bdName" placeholder="e.g. Mom" onkeydown="if(event.key===&#39;Enter&#39;)saveBdayModal()"></div>
-    <div class="mfield"><label>Birthday *</label><input id="bdDate" type="date"></div>
-    <div class="mact"><button class="btn btn-ghost" onclick="closeMod(&#39;bdayModal&#39;)">Cancel</button><button class="btn btn-dark" onclick="saveBdayModal()">Save</button></div>
+    <div class="mfield"><label>Name *</label><input id="bdName" placeholder="e.g. Mom" onkeydown="if(event.key==='Enter')document.getElementById('bdDate').focus()"></div>
+    <div class="mfield"><label>Birthday *</label><input id="bdDate" type="date" onkeydown="if(event.key==='Enter')saveBdayModal()"></div>
+    <div class="mact"><button class="btn btn-ghost" onclick="closeMod('bdayModal')">Cancel</button><button class="btn btn-dark" onclick="saveBdayModal()">Save</button></div>
   </div>
 </div>
 
@@ -4497,35 +4550,106 @@ function renderPupsPage(){
   const now=new Date();document.querySelectorAll('#page-pups .topbar-date').forEach(e=>e.textContent=now.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}));document.querySelectorAll('#page-pups .topbar-time').forEach(e=>e.textContent=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}));
 }
 
-function renderBdayPage(){save();
-  const s=gc('birthday');
+function _bdayPresentList(b){try{return JSON.parse(b.present_ideas||'[]');}catch{return[];}}
+function _bdayFmtDate(b){
+  if(!b.birthday)return'';
+  const d=new Date(b.birthday+'T12:00');
+  return d.toLocaleDateString('en-US',{month:'long',day:'numeric'});
+}
+function toggleBdayPresents(id){
+  const el=document.getElementById('bday-presents-'+id);if(!el)return;
+  el.classList.toggle('open');
+  if(el.classList.contains('open')){
+    const inp=document.getElementById('bday-add-input-'+id);if(inp)setTimeout(()=>inp.focus(),60);
+  }
+}
+async function addBdayPresent(id,inp){
+  const val=(inp.value||'').trim();if(!val)return;
+  const b=st.birthdays.find(x=>String(x.id)===String(id));if(!b)return;
+  const list=_bdayPresentList(b);list.push(val);
+  b.present_ideas=JSON.stringify(list);inp.value='';
+  renderBdayPage();
+  const el=document.getElementById('bday-presents-'+id);if(el){el.classList.add('open');}
+  await sbReqNullable('PATCH','birthdays',{present_ideas:b.present_ideas},`?id=eq.${id}`);
+}
+async function delBdayPresent(id,idx){
+  const b=st.birthdays.find(x=>String(x.id)===String(id));if(!b)return;
+  const list=_bdayPresentList(b);list.splice(idx,1);
+  b.present_ideas=JSON.stringify(list);
+  const wasOpen=document.getElementById('bday-presents-'+id)?.classList.contains('open');
+  renderBdayPage();
+  if(wasOpen){const el=document.getElementById('bday-presents-'+id);if(el)el.classList.add('open');}
+  await sbReqNullable('PATCH','birthdays',{present_ideas:b.present_ideas},`?id=eq.${id}`);
+}
+function renderBdayPage(){
+  save();
   const today=tod();const todayMD=today.slice(5);
-  // Sort by upcoming month-day, wrapping year
-  const sorted=[...st.birthdays].sort((a,b)=>{
-    const am=(a.birthday||'').slice(5),bm=(b.birthday||'').slice(5);
-    // Upcoming first: if past this year, treat as next year
-    const aw=am<todayMD?'1'+am:'0'+am;
-    const bw=bm<todayMD?'1'+bm:'0'+bm;
-    return aw.localeCompare(bw);
+  const curYear=new Date().getFullYear();
+  // Sort: today first, then upcoming by days away, then past (most recent last)
+  const todayArr=[],upcomingArr=[],pastArr=[];
+  [...st.birthdays].forEach(b=>{
+    const md=(b.birthday||'').slice(5);
+    if(!md)return;
+    if(md===todayMD)todayArr.push(b);
+    else if(md>todayMD)upcomingArr.push(b);
+    else pastArr.push(b);
   });
-  document.getElementById('bdayList').innerHTML=sorted.length
-    ?sorted.map(b=>{
-      const md=(b.birthday||'').slice(5);
-      const isPast=md<todayMD;
-      // How many days until next birthday
-      const curYear=new Date().getFullYear();
-      const nextDs=isPast?`${curYear+1}-${md}`:`${curYear}-${md}`;
-      const daysUntil=Math.round((new Date(nextDs+'T12:00')-new Date(today+'T12:00'))/(1000*60*60*24));
-      const countdown=daysUntil===0?'Today! 🎉':daysUntil===1?'Tomorrow!':daysUntil<=30?`${daysUntil}d away`:'';
-      return`<div class="ti ti-birthday">
-        <span style="font-size:12px;flex-shrink:0">🎂</span>
-        <span class="tn" onclick="openBdayModal('${b.id}')" style="color:${s.t}">${b.name}</span>
-        ${countdown?`<span class="cpill" style="background:${s.bg};color:${s.t};border-color:${s.b};font-size:8px">${countdown}</span>`:''}
-        <span class="dlbl">${b.birthday?new Date(b.birthday.slice(0,7)+'-'+b.birthday.slice(8,10)+'T12:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}):''}</span>
-        <button class="delbtn" onclick="delBday('${b.id}')">✕</button>
-      </div>`;
-    }).join('')
-    :'<div style="padding:14px;font-size:11px;color:var(--muted);text-align:center">No birthdays added yet 🎂</div>';
+  upcomingArr.sort((a,b)=>((a.birthday||'').slice(5)).localeCompare((b.birthday||'').slice(5)));
+  pastArr.sort((a,b)=>((b.birthday||'').slice(5)).localeCompare((a.birthday||'').slice(5)));
+
+  function daysUntil(b){
+    const md=(b.birthday||'').slice(5);
+    const isToday=md===todayMD;if(isToday)return 0;
+    const isPast=md<todayMD;
+    const nextDs=isPast?`${curYear+1}-${md}`:`${curYear}-${md}`;
+    return Math.round((new Date(nextDs+'T12:00')-new Date(today+'T12:00'))/(1000*60*60*24));
+  }
+  function countdownHtml(b,isPast){
+    if(isPast)return'';
+    const days=daysUntil(b);const md=(b.birthday||'').slice(5);
+    if(md===todayMD)return`<span class="bday-countdown" style="background:rgba(249,115,22,.15);color:#c2410c;border-color:rgba(249,115,22,.3)">🎉 Today!</span>`;
+    if(days===1)return`<span class="bday-countdown" style="background:rgba(249,115,22,.1);color:#ea580c;border-color:rgba(249,115,22,.2)">Tomorrow</span>`;
+    if(days<=7)return`<span class="bday-countdown" style="background:rgba(234,179,8,.12);color:#a16207;border-color:rgba(234,179,8,.25)">${days}d</span>`;
+    if(days<=30)return`<span class="bday-countdown" style="background:rgba(163,196,26,.1);color:#4a7c00;border-color:rgba(163,196,26,.2)">${days}d</span>`;
+    return`<span class="bday-countdown" style="background:rgba(180,175,200,.1);color:var(--muted);border-color:rgba(180,175,200,.2)">${days}d</span>`;
+  }
+  function bdayRow(b,isPast){
+    const md=(b.birthday||'').slice(5);
+    const isToday=md===todayMD;
+    const presents=_bdayPresentList(b);
+    const presentItems=presents.map((p,i)=>`<div class="bday-present-item"><span class="bday-present-dot"></span><span class="bday-present-text">${escHtml(p)}</span><button class="bday-present-del" onclick="delBdayPresent('${b.id}',${i})">✕</button></div>`).join('');
+    const giftCls=presents.length>0?' has-gifts':'';
+    const giftLbl=presents.length>0?`🎁 ${presents.length}`:'🎁';
+    return`<div class="bday-row${isToday?' bday-today':''}${isPast?' bday-past':''}" id="bday-row-${b.id}">
+      <div class="bday-main">
+        <span class="bday-emoji">${isToday?'🎉':'🎂'}</span>
+        <span class="bday-name">${escHtml(b.name)}</span>
+        ${countdownHtml(b,isPast)}
+        <span class="bday-date-lbl">${_bdayFmtDate(b)}</span>
+        <button class="bday-gift-btn${giftCls}" onclick="toggleBdayPresents('${b.id}')" title="Gift ideas">${giftLbl}</button>
+        <button class="bday-edit-btn" onclick="openBdayModal('${b.id}')">Edit</button>
+        <button class="bday-del-btn" onclick="delBday('${b.id}')">✕</button>
+      </div>
+      <div class="bday-presents" id="bday-presents-${b.id}" style="display:none">
+        <div id="bday-present-list-${b.id}">${presentItems}</div>
+        <div class="bday-add-row">
+          <input class="bday-add-input" id="bday-add-input-${b.id}" placeholder="Add gift idea…" onkeydown="if(event.key==='Enter'&&this.value.trim())addBdayPresent('${b.id}',this)">
+          <button class="btn btn-ghost btn-xs" onclick="addBdayPresent('${b.id}',document.getElementById('bday-add-input-${b.id}'))">Add</button>
+        </div>
+      </div>
+    </div>`;
+  }
+  function section(label,items,isPast){
+    if(!items.length)return'';
+    return`<div class="bday-section"><div class="bday-section-header">${label}<span class="cbadge">${items.length}</span></div>${items.map(b=>bdayRow(b,isPast)).join('')}</div>`;
+  }
+  const content=document.getElementById('bdayPageContent');
+  const countEl=document.getElementById('bdayCount');
+  if(countEl)countEl.textContent=st.birthdays.length;
+  if(!content)return;
+  const total=todayArr.length+upcomingArr.length+pastArr.length;
+  if(!total){content.innerHTML='<div style="padding:28px;text-align:center;font-size:12px;color:var(--muted)">No birthdays added yet 🎂<br><br><button class="btn btn-dark" onclick="openBdayModal()" style="margin-top:4px">+ Add Birthday</button></div>';return;}
+  content.innerHTML=section('Today 🎉',todayArr,false)+section('Upcoming',upcomingArr,false)+section('Past',pastArr,true);
 }
 
 // ── Settings ───────────────────────────────────────────────────────────────────
