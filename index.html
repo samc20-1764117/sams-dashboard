@@ -537,10 +537,10 @@ body.dark .qn-input{background:rgba(255,255,255,.06);border-color:rgba(255,220,2
 .bday-today>.bday-main:hover{background:rgba(255,237,213,.8)}
 .bday-today .bday-name{color:var(--accent);font-weight:700}
 .bday-past{opacity:.45}
-.bday-name{flex:1;font-size:13px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.bday-name{flex:1;font-size:13px;font-weight:600;color:#aaa;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .bday-emoji{font-size:15px;flex-shrink:0;line-height:1}
 .bday-countdown{font-size:9px;font-weight:700;padding:2px 7px;border-radius:5px;border:1px solid transparent;flex-shrink:0;white-space:nowrap}
-.bday-date-lbl{font-size:11px;color:var(--subtle);flex-shrink:0;white-space:nowrap}
+.bday-date-lbl{font-size:11px;color:#ccc;flex-shrink:0;white-space:nowrap}
 .bday-gift-btn{background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);padding:2px 6px;border-radius:6px;transition:all .12s;flex-shrink:0;display:flex;align-items:center;gap:3px;font-family:inherit;line-height:1}
 .bday-gift-btn:hover{background:rgba(255,237,213,.7);color:var(--accent)}
 .bday-gift-btn.has-gifts{color:var(--accent);font-weight:600}
@@ -569,14 +569,23 @@ body.dark .bday-month-card{background:rgba(255,255,255,.03);border-color:rgba(25
 .bday-month-current{box-shadow:0 0 0 1px rgba(194,107,79,.3),0 0 28px 6px rgba(194,107,79,.28),0 4px 20px rgba(194,107,79,.18);background:rgba(255,255,255,.92)!important;border-color:rgba(194,107,79,.18)!important}
 body.dark .bday-month-current{box-shadow:0 0 0 1px rgba(194,107,79,.4),0 0 28px 6px rgba(194,107,79,.35),0 4px 20px rgba(194,107,79,.22);background:rgba(60,30,18,.85)!important}
 .bday-month-name{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);padding:2px 4px 5px;margin-bottom:3px;border-bottom:1px solid rgba(210,205,228,.18)}
-.bday-age{font-size:11px;color:var(--muted);flex-shrink:0}
-.bday-month-current .bday-month-name{color:var(--accent)}
-.bday-month-current .bday-name{color:#1a0a00;font-weight:700}
-.bday-month-current .bday-date-lbl{color:rgba(0,0,0,.58)}
-.bday-month-current .bday-age{color:rgba(0,0,0,.52)}
-body.dark .bday-month-current .bday-name{color:#fff3ee;font-weight:700}
-body.dark .bday-month-current .bday-date-lbl{color:rgba(255,220,200,.75)}
-body.dark .bday-month-current .bday-age{color:rgba(255,200,170,.65)}
+.bday-age{font-size:11px;color:#ccc;flex-shrink:0}
+.bday-month-current .bday-month-name{color:#444;letter-spacing:.09em}
+.bday-month-current .bday-name{color:#333;font-weight:700}
+.bday-month-current .bday-date-lbl{color:#666}
+.bday-month-current .bday-age{color:#777}
+body.dark .bday-month-current .bday-month-name{color:#ddd}
+body.dark .bday-month-current .bday-name{color:#f0e8e0;font-weight:700}
+body.dark .bday-month-current .bday-date-lbl{color:rgba(255,220,200,.65)}
+body.dark .bday-month-current .bday-age{color:rgba(255,200,170,.55)}
+.bday-add-menu{position:fixed;z-index:9999;background:rgba(255,255,255,.98);border:1px solid rgba(210,205,228,.35);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.13);padding:6px;min-width:200px;backdrop-filter:blur(14px)}
+body.dark .bday-add-menu{background:rgba(38,20,10,.97);border-color:rgba(255,220,180,.15)}
+.bday-add-menu-item{padding:7px 12px;border-radius:7px;font-size:12px;font-weight:500;cursor:pointer;color:var(--text);transition:background .1s}
+.bday-add-menu-item:hover{background:rgba(194,107,79,.1)}
+.bday-add-menu-fmt{padding:8px 12px 6px;border-top:1px solid rgba(210,205,228,.2);margin-top:4px}
+.bday-add-menu-fmt-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:5px}
+.bday-add-menu-fmt-row{font-size:11px;color:var(--muted);padding:1px 0;display:flex;gap:8px}
+.bday-add-menu-fmt-eg{font-family:monospace;color:var(--subtle);font-size:10px}
 .bday-month-empty{height:8px}
 .bday-month-card .bday-main{padding:4px 6px}
 .bday-month-card .bday-name{font-size:12px}
@@ -899,9 +908,13 @@ body.dark .bday-month-current .bday-age{color:rgba(255,200,170,.65)}
     <span class="ov-topbar-date topbar-date"></span>
     <div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div>
   </div>
+  <div style="display:flex;justify-content:flex-end;margin-bottom:6px">
+    <button onclick="toggleBdayAddMenu(event)" style="background:rgba(255,255,255,.7);border:1px solid rgba(210,205,228,.35);border-radius:8px;padding:5px 14px;font-size:13px;font-weight:600;color:var(--text);cursor:pointer;backdrop-filter:blur(10px);transition:all .12s" onmouseenter="this.style.background='rgba(255,255,255,.95)'" onmouseleave="this.style.background='rgba(255,255,255,.7)'">+ Add</button>
+  </div>
   <div class="card" style="flex:1;width:100%;display:flex;flex-direction:column;min-height:0;overflow:hidden">
     <div id="bdayPageContent" style="flex:1;width:100%;min-height:0;overflow:hidden;padding:0"></div>
   </div>
+  <div id="bdayAddMenu" class="bday-add-menu" style="display:none"></div>
   <div id="bdayList" style="display:none"></div>
 </div>
 <div class="page" id="page-pups" style="padding:22px 56px 36px 56px;padding-top:60px"></div>
@@ -4122,6 +4135,27 @@ function renderTravelPage(){save();
 
 // ── Birthdays ──────────────────────────────────────────────────────────────────
 let bdayEditId=null;
+function toggleBdayAddMenu(e){
+  e.stopPropagation();
+  const menu=document.getElementById('bdayAddMenu');
+  if(!menu)return;
+  if(menu.style.display!=='none'){menu.style.display='none';return;}
+  menu.innerHTML=`<div class="bday-add-menu-item" onclick="closeBdayAddMenu();openBdayModal()">+ Add Birthday</div>
+    <div class="bday-add-menu-fmt">
+      <div class="bday-add-menu-fmt-title">Date Formats</div>
+      <div class="bday-add-menu-fmt-row"><span class="bday-add-menu-fmt-eg">1/23</span><span>Jan 23 (no year)</span></div>
+      <div class="bday-add-menu-fmt-row"><span class="bday-add-menu-fmt-eg">Jan 23</span><span>month name</span></div>
+      <div class="bday-add-menu-fmt-row"><span class="bday-add-menu-fmt-eg">1/23/1990</span><span>with year</span></div>
+      <div class="bday-add-menu-fmt-row"><span class="bday-add-menu-fmt-eg">Jan 23 1990</span><span>month + year</span></div>
+    </div>`;
+  const r=e.currentTarget.getBoundingClientRect();
+  menu.style.display='block';
+  menu.style.top=(r.bottom+6)+'px';
+  menu.style.right=(window.innerWidth-r.right)+'px';
+  menu.style.left='auto';
+  setTimeout(()=>document.addEventListener('click',closeBdayAddMenu,{once:true}),0);
+}
+function closeBdayAddMenu(){const m=document.getElementById('bdayAddMenu');if(m)m.style.display='none';}
 function openBdayModal(id){
   bdayEditId=id||null;
   const hint=document.getElementById('bdDateHint');if(hint)hint.textContent='';
