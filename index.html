@@ -944,7 +944,7 @@ body.dark .bday-add-input{background:rgba(255,255,255,.06);border-color:rgba(255
   <div class="modal task-modal" style="width:320px;padding:16px">
     <div class="mt" id="bdayMTitle">Add Birthday</div>
     <div class="mfield"><label>Name *</label><input id="bdName" placeholder="e.g. Mom" onkeydown="if(event.key==='Enter')document.getElementById('bdDate').focus()"></div>
-    <div class="mfield"><label>Birthday *</label><input id="bdDate" type="date" onkeydown="if(event.key==='Enter')saveBdayModal()"></div>
+    <div class="mfield"><label>Birthday *</label><input id="bdDate" type="text" placeholder="MM-DD or YYYY-MM-DD" autocomplete="off" onkeydown="if(event.key==='Enter')saveBdayModal()"><div id="bdDateHint" style="font-size:9px;color:var(--muted);margin-top:3px"></div></div>
     <div class="mact"><button class="btn btn-ghost" onclick="closeMod('bdayModal')">Cancel</button><button class="btn btn-dark" onclick="saveBdayModal()">Save</button></div>
   </div>
 </div>
@@ -1548,7 +1548,9 @@ function getBirthdayTasks(filterDate){
   st.birthdays.forEach(b=>{
     if(!b.birthday)return;
     const parts=b.birthday.split('-');
-    const mo=parts[1],day=parts[2];
+    // Support MM-DD (2 parts) and YYYY-MM-DD (3 parts)
+    const mo=parts.length===2?parts[0]:parts[1];
+    const day=parts.length===2?parts[1]:parts[2];
     [curYear,curYear+1].forEach(yr=>{
       const ds=`${yr}-${mo}-${day}`;
       // If filtering for a specific date, only return exact match
@@ -4085,6 +4087,7 @@ function renderTravelPage(){save();
 let bdayEditId=null;
 function openBdayModal(id){
   bdayEditId=id||null;
+  const hint=document.getElementById('bdDateHint');if(hint)hint.textContent='';
   if(id){
     const b=st.birthdays.find(x=>String(x.id)===String(id));if(!b)return;
     document.getElementById('bdayMTitle').textContent='Edit Birthday';
@@ -4099,7 +4102,11 @@ function openBdayModal(id){
 }
 async function saveBdayModal(){
   const name=document.getElementById('bdName').value.trim();if(!name)return;
-  const bday=document.getElementById('bdDate').value||null;if(!bday)return;
+  const raw=document.getElementById('bdDate').value;
+  const bday=_normBdayDate(raw);
+  const hint=document.getElementById('bdDateHint');
+  if(!bday){if(hint)hint.textContent='Invalid date. Try MM-DD or YYYY-MM-DD.';if(hint)hint.style.color='#ef4444';return;}
+  if(hint)hint.textContent='';
   closeMod('bdayModal');
   if(bdayEditId){
     const b=st.birthdays.find(x=>String(x.id)===String(bdayEditId));if(!b)return;
@@ -4551,10 +4558,43 @@ function renderPupsPage(){
 }
 
 function _bdayPresentList(b){try{return JSON.parse(b.present_ideas||'[]');}catch{return[];}}
+// Returns MM-DD regardless of whether birthday is stored as MM-DD or YYYY-MM-DD
+function _bdayMD(b){
+  const bd=b.birthday||'';
+  if(bd.length===5)return bd;       // already MM-DD
+  if(bd.length===10)return bd.slice(5); // YYYY-MM-DD → MM-DD
+  return '';
+}
+// Normalize user-typed date string to MM-DD or YYYY-MM-DD
+function _normBdayDate(val){
+  val=(val||'').trim();
+  if(!val)return null;
+  // YYYY-MM-DD
+  if(/^\d{4}-\d{2}-\d{2}$/.test(val))return val;
+  // MM-DD
+  if(/^\d{2}-\d{2}$/.test(val))return val;
+  // M-D or M/D → MM-DD
+  const m1=val.match(/^(\d{1,2})[\/\-](\d{1,2})$/);
+  if(m1)return String(m1[1]).padStart(2,'0')+'-'+String(m1[2]).padStart(2,'0');
+  // YYYY/M/D or YYYY-M-D → YYYY-MM-DD
+  const m2=val.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
+  if(m2)return`${m2[1]}-${String(m2[2]).padStart(2,'0')}-${String(m2[3]).padStart(2,'0')}`;
+  // M/D/YYYY → YYYY-MM-DD
+  const m3=val.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if(m3)return`${m3[3]}-${String(m3[1]).padStart(2,'0')}-${String(m3[2]).padStart(2,'0')}`;
+  return null;
+}
 function _bdayFmtDate(b){
   if(!b.birthday)return'';
-  const d=new Date(b.birthday+'T12:00');
-  return d.toLocaleDateString('en-US',{month:'long',day:'numeric'});
+  const bd=b.birthday;
+  if(bd.length===5){
+    // MM-DD only — no year
+    const[mo,dy]=bd.split('-').map(Number);
+    return new Date(2000,mo-1,dy).toLocaleDateString('en-US',{month:'long',day:'numeric'});
+  }
+  // YYYY-MM-DD — show with year
+  const d=new Date(bd+'T12:00');
+  return d.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
 }
 function toggleBdayPresents(id){
   const el=document.getElementById('bday-presents-'+id);if(!el)return;
@@ -4588,17 +4628,17 @@ function renderBdayPage(){
   // Sort: today first, then upcoming by days away, then past (most recent last)
   const todayArr=[],upcomingArr=[],pastArr=[];
   [...st.birthdays].forEach(b=>{
-    const md=(b.birthday||'').slice(5);
+    const md=_bdayMD(b);
     if(!md)return;
     if(md===todayMD)todayArr.push(b);
     else if(md>todayMD)upcomingArr.push(b);
     else pastArr.push(b);
   });
-  upcomingArr.sort((a,b)=>((a.birthday||'').slice(5)).localeCompare((b.birthday||'').slice(5)));
-  pastArr.sort((a,b)=>((b.birthday||'').slice(5)).localeCompare((a.birthday||'').slice(5)));
+  upcomingArr.sort((a,b)=>_bdayMD(a).localeCompare(_bdayMD(b)));
+  pastArr.sort((a,b)=>_bdayMD(b).localeCompare(_bdayMD(a)));
 
   function daysUntil(b){
-    const md=(b.birthday||'').slice(5);
+    const md=_bdayMD(b);
     const isToday=md===todayMD;if(isToday)return 0;
     const isPast=md<todayMD;
     const nextDs=isPast?`${curYear+1}-${md}`:`${curYear}-${md}`;
@@ -4606,7 +4646,7 @@ function renderBdayPage(){
   }
   function countdownHtml(b,isPast){
     if(isPast)return'';
-    const days=daysUntil(b);const md=(b.birthday||'').slice(5);
+    const days=daysUntil(b);const md=_bdayMD(b);
     if(md===todayMD)return`<span class="bday-countdown" style="background:rgba(249,115,22,.15);color:#c2410c;border-color:rgba(249,115,22,.3)">🎉 Today!</span>`;
     if(days===1)return`<span class="bday-countdown" style="background:rgba(249,115,22,.1);color:#ea580c;border-color:rgba(249,115,22,.2)">Tomorrow</span>`;
     if(days<=7)return`<span class="bday-countdown" style="background:rgba(234,179,8,.12);color:#a16207;border-color:rgba(234,179,8,.25)">${days}d</span>`;
@@ -4614,7 +4654,7 @@ function renderBdayPage(){
     return`<span class="bday-countdown" style="background:rgba(180,175,200,.1);color:var(--muted);border-color:rgba(180,175,200,.2)">${days}d</span>`;
   }
   function bdayRow(b,isPast){
-    const md=(b.birthday||'').slice(5);
+    const md=_bdayMD(b);
     const isToday=md===todayMD;
     const presents=_bdayPresentList(b);
     const presentItems=presents.map((p,i)=>`<div class="bday-present-item"><span class="bday-present-dot"></span><span class="bday-present-text">${escHtml(p)}</span><button class="bday-present-del" onclick="delBdayPresent('${b.id}',${i})">✕</button></div>`).join('');
