@@ -2479,15 +2479,9 @@ function renderRecOv(){
 function renderUnassigned(){
   const ts=st.tasks.filter(t=>!t.due_date&&!t.done&&t.category!=='Long term');
   const badge=document.getElementById('unAssignedBadge');
-  console.log('[unassigned] activePg='+activePg+' count='+ts.length+' badge='+!!badge);
   if(!badge)return;
-  if(activePg==='weekly'&&ts.length>0){
-    badge.textContent=ts.length;
-    badge.style.display='flex';
-  } else {
-    badge.style.display='none';
-    closeUnMenu();
-  }
+  badge.textContent=ts.length;
+  badge.style.display='flex';
 }
 function toggleUnMenu(){
   const menu=document.getElementById('unMenu');
