@@ -129,7 +129,7 @@ body{font-family:'DM Sans',sans-serif;background:#fef6f0;background-attachment:f
 @media(max-width:1280px){.row1-right-top{grid-template-columns:1fr 1fr;height:auto}}
 @media(max-width:900px){.main{margin-left:0;padding:12px 0 24px 0}#page-overview{padding:0 12px}.overview-cols{grid-template-columns:1fr;height:auto}}
 .main.full{margin-left:0}
-.page{display:none}.page.active{display:block}#page-birthdays.active{display:flex;flex-direction:column}
+.page{display:none}.page.active{display:block}#page-birthdays.active{display:flex!important;flex-direction:column;height:100vh;box-sizing:border-box}
 
 /* Undo toast */
 .back-btn{display:none}
@@ -902,7 +902,7 @@ body.dark .bday-add-menu{background:rgba(38,20,10,.97);border-color:rgba(255,220
 
 <!-- OTHER PAGES (empty) -->
 <div class="page" id="page-travel" style="display:none!important"><div id="travelList" style="display:none"></div></div>
-<div class="page" id="page-birthdays" style="padding:clamp(12px,3vw,56px);padding-top:60px;height:100vh;width:100%;box-sizing:border-box">
+<div class="page" id="page-birthdays" style="padding:clamp(12px,3vw,56px);padding-top:60px">
   <div class="ov-topbar">
     <div class="ov-topbar-left"><span class="ov-topbar-label">Birthdays</span><span class="ov-topbar-dot"></span></div>
     <span class="ov-topbar-date topbar-date"></span>
