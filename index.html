@@ -569,12 +569,14 @@ body.dark .bday-month-card{background:rgba(255,255,255,.03);border-color:rgba(25
 .bday-month-current{box-shadow:0 0 0 1px rgba(194,107,79,.3),0 0 28px 6px rgba(194,107,79,.28),0 4px 20px rgba(194,107,79,.18);background:rgba(255,255,255,.92)!important;border-color:rgba(194,107,79,.18)!important}
 body.dark .bday-month-current{box-shadow:0 0 0 1px rgba(194,107,79,.4),0 0 28px 6px rgba(194,107,79,.35),0 4px 20px rgba(194,107,79,.22);background:rgba(60,30,18,.85)!important}
 .bday-month-name{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);padding:2px 4px 5px;margin-bottom:3px;border-bottom:1px solid rgba(210,205,228,.18)}
+.bday-age{font-size:11px;color:var(--muted);flex-shrink:0}
 .bday-month-current .bday-month-name{color:var(--accent)}
 .bday-month-current .bday-name{color:#1a0a00;font-weight:700}
-.bday-month-current .bday-date-lbl{color:rgba(0,0,0,.6)}
-.bday-month-current .bday-main span[style*="color:var(--muted)"]{color:rgba(0,0,0,.55)!important}
+.bday-month-current .bday-date-lbl{color:rgba(0,0,0,.58)}
+.bday-month-current .bday-age{color:rgba(0,0,0,.52)}
 body.dark .bday-month-current .bday-name{color:#fff3ee;font-weight:700}
 body.dark .bday-month-current .bday-date-lbl{color:rgba(255,220,200,.75)}
+body.dark .bday-month-current .bday-age{color:rgba(255,200,170,.65)}
 .bday-month-empty{height:8px}
 .bday-month-card .bday-main{padding:4px 6px}
 .bday-month-card .bday-name{font-size:12px}
@@ -4704,57 +4706,55 @@ function _bdayPresentList(b){try{return JSON.parse(b.present_ideas||'[]');}catch
 // Returns MM-DD regardless of whether birthday is stored as MM-DD or YYYY-MM-DD
 function _bdayMD(b){
   const bd=b.birthday||'';
-  if(bd.length===5)return bd;       // already MM-DD
+  if(bd.length===5)return bd;        // legacy MM-DD
   if(bd.length===10)return bd.slice(5); // YYYY-MM-DD → MM-DD
   return '';
 }
-// Normalize user-typed date string to MM-DD or YYYY-MM-DD
+// True if birthday has a real birth year (not the 1900 sentinel and not legacy MM-DD)
+function _bdayHasYear(b){const bd=b.birthday||'';return bd.length===10&&!bd.startsWith('1900-');}
+// Normalize user-typed date string → always YYYY-MM-DD (1900 = no year sentinel)
 function _normBdayDate(val){
   val=(val||'').trim();
   if(!val)return null;
-  // YYYY-MM-DD
+  const noYr=(mm,dd)=>`1900-${String(mm).padStart(2,'0')}-${String(dd).padStart(2,'0')}`;
+  // YYYY-MM-DD passthrough
   if(/^\d{4}-\d{2}-\d{2}$/.test(val))return val;
-  // MM-DD
-  if(/^\d{2}-\d{2}$/.test(val))return val;
-  // M-D or M/D → MM-DD
+  // Legacy MM-DD (already stored) → upgrade to 1900-MM-DD
+  if(/^\d{2}-\d{2}$/.test(val))return`1900-${val}`;
+  // M/D or M-D (no year) e.g. 1/23, 3/5
   const m1=val.match(/^(\d{1,2})[\/\-](\d{1,2})$/);
-  if(m1)return String(m1[1]).padStart(2,'0')+'-'+String(m1[2]).padStart(2,'0');
-  // YYYY/M/D or YYYY-M-D → YYYY-MM-DD
+  if(m1)return noYr(m1[1],m1[2]);
+  // YYYY/M/D → YYYY-MM-DD
   const m2=val.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
   if(m2)return`${m2[1]}-${String(m2[2]).padStart(2,'0')}-${String(m2[3]).padStart(2,'0')}`;
   // M/D/YYYY → YYYY-MM-DD
   const m3=val.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
   if(m3)return`${m3[3]}-${String(m3[1]).padStart(2,'0')}-${String(m3[2]).padStart(2,'0')}`;
-  // M/D/YY → YYYY-MM-DD (2-digit year: ≤30 → 2000s, else 1900s)
+  // M/D/YY → YYYY-MM-DD
   const m4=val.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2})$/);
-  if(m4){const yr=parseInt(m4[3],10);const full=yr<=30?2000+yr:1900+yr;return`${full}-${String(m4[1]).padStart(2,'0')}-${String(m4[2]).padStart(2,'0')}`;}
+  if(m4){const yr=parseInt(m4[3],10);return`${yr<=30?2000+yr:1900+yr}-${String(m4[1]).padStart(2,'0')}-${String(m4[2]).padStart(2,'0')}`;}
   // "Jan 23" / "January 23" / "Jan 23 1990" / "January 23, 1990"
   const MNAMES=['january','february','march','april','may','june','july','august','september','october','november','december'];
-  const MSHORT=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
   const mn=val.toLowerCase().replace(/,/g,'');
   const mw=mn.match(/^([a-z]+)\s+(\d{1,2})(?:\s+(\d{2,4}))?$/);
   if(mw){
-    let mo=MNAMES.indexOf(mw[1]);if(mo===-1)mo=MSHORT.findIndex(s=>mw[1].startsWith(s));
+    let mo=MNAMES.findIndex(n=>n.startsWith(mw[1].slice(0,3)));
     if(mo>-1){const mm=String(mo+1).padStart(2,'0');const dd=String(mw[2]).padStart(2,'0');
       if(mw[3]){const yr=parseInt(mw[3],10);const full=yr<100?(yr<=30?2000+yr:1900+yr):yr;return`${full}-${mm}-${dd}`;}
-      return`${mm}-${dd}`;}
+      return noYr(mo+1,mw[2]);}
   }
   return null;
 }
 function _bdayFmtDate(b){
   if(!b.birthday)return'';
   const bd=b.birthday;
-  if(bd.length===5){
-    const[mo,dy]=bd.split('-').map(Number);
-    return`${mo}/${dy}`;
-  }
-  // YYYY-MM-DD — show M/D/YYYY
+  if(bd.length===5){const[mo,dy]=bd.split('-').map(Number);return`${mo}/${dy}`;}
   const[yr,mo,dy]=bd.split('-').map(Number);
+  if(yr===1900)return`${mo}/${dy}`;  // sentinel — no year
   return`${mo}/${dy}/${yr}`;
 }
 function _bdayAge(b,forDate){
-  // forDate = 'YYYY-MM-DD' of the birthday occurrence
-  if(!b.birthday||b.birthday.length!==10)return null;
+  if(!_bdayHasYear(b))return null;  // no real birth year
   const[yr]=b.birthday.split('-').map(Number);
   const occYear=parseInt((forDate||'').slice(0,4),10);
   if(!occYear||!yr)return null;
@@ -4827,7 +4827,7 @@ function renderBdayPage(){
     const presentItems=presents.map((p,i)=>`<div class="bday-present-item"><span class="bday-present-dot"></span><span class="bday-present-text">${escHtml(p)}</span><button class="bday-present-del" onclick="delBdayPresent('${b.id}',${i})">✕</button></div>`).join('');
     const occDs=`${curYear}-${md}`;
     const age=_bdayAge(b,occDs);
-    const ageHtml=age!==null?`<span style="font-size:11px;color:var(--muted);flex-shrink:0">${isPast?age:('turns '+age)}</span>`:'';
+    const ageHtml=age!==null?`<span class="bday-age">${isPast?age:('turns '+age)}</span>`:'';
     const giftBtn=presents.length>0?`<button class="bday-gift-btn has-gifts" onclick="toggleBdayPresents('${b.id}')" title="Gift ideas">🎁 ${presents.length}</button>`:'';
     return`<div class="bday-row${isToday?' bday-today':''}${isPast?' bday-past':''}" id="bday-row-${b.id}" data-bid="${b.id}">
       <div class="bday-main" onclick="selBdayRow(event,'${b.id}')" ondblclick="openBdayModal('${b.id}')" oncontextmenu="showBdayCtx(event,'${b.id}')">
