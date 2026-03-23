@@ -563,6 +563,17 @@ body.dark .bday-presents{background:rgba(255,255,255,.03)}
 body.dark .bday-add-input{background:rgba(255,255,255,.06);border-color:rgba(255,220,200,.12)}
 .bday-row.bday-sel>.bday-main{background:var(--sel-bg,rgba(130,115,100,.1))!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.7);border-radius:9px}
 body.dark .bday-row.bday-sel>.bday-main{background:var(--sel-bg-dark,rgba(194,107,79,.12))!important}
+.bday-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:8px 6px}
+.bday-month-card{border-radius:10px;background:rgba(0,0,0,.025);border:1px solid rgba(210,205,228,.2);padding:8px 6px;min-height:50px}
+body.dark .bday-month-card{background:rgba(255,255,255,.03);border-color:rgba(255,220,200,.1)}
+.bday-month-current{box-shadow:0 0 0 2px rgba(194,107,79,.5),0 4px 18px rgba(194,107,79,.2);background:rgba(194,107,79,.06)!important;border-color:rgba(194,107,79,.35)!important}
+body.dark .bday-month-current{box-shadow:0 0 0 2px rgba(194,107,79,.6),0 4px 18px rgba(194,107,79,.25);background:rgba(194,107,79,.1)!important}
+.bday-month-name{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);padding:2px 4px 5px;margin-bottom:3px;border-bottom:1px solid rgba(210,205,228,.18)}
+.bday-month-current .bday-month-name{color:var(--accent)}
+.bday-month-empty{height:8px}
+.bday-month-card .bday-main{padding:4px 6px}
+.bday-month-card .bday-name{font-size:12px}
+.bday-month-card .bday-date-lbl{font-size:10px}
 </style>
 </head>
 <body>
@@ -881,7 +892,7 @@ body.dark .bday-row.bday-sel>.bday-main{background:var(--sel-bg-dark,rgba(194,10
     <span class="ov-topbar-date topbar-date"></span>
     <div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div>
   </div>
-  <div class="card" style="max-width:700px">
+  <div class="card" style="max-width:960px">
     <div class="ch">
       <div class="ct">🎂 Birthdays</div>
       <span class="cbadge" id="bdayCount" style="margin-right:4px">0</span>
@@ -4769,17 +4780,17 @@ function renderBdayPage(){
   save();
   const today=tod();const todayMD=today.slice(5);
   const curYear=new Date().getFullYear();
-  // Sort: today first, then upcoming by days away, then past (most recent last)
-  const todayArr=[],upcomingArr=[],pastArr=[];
+  const curMonthIdx=new Date().getMonth();
+  const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  // Group by month
+  const byMonth=Array.from({length:12},()=>[]);
   [...st.birthdays].forEach(b=>{
     const md=_bdayMD(b);
     if(!md)return;
-    if(md===todayMD)todayArr.push(b);
-    else if(md>todayMD)upcomingArr.push(b);
-    else pastArr.push(b);
+    const mo=parseInt(md.slice(0,2),10)-1;
+    byMonth[mo].push(b);
   });
-  upcomingArr.sort((a,b)=>_bdayMD(a).localeCompare(_bdayMD(b)));
-  pastArr.sort((a,b)=>_bdayMD(b).localeCompare(_bdayMD(a)));
+  byMonth.forEach(arr=>arr.sort((a,b)=>_bdayMD(a).localeCompare(_bdayMD(b))));
 
   function daysUntil(b){
     const md=_bdayMD(b);
@@ -4788,31 +4799,30 @@ function renderBdayPage(){
     const nextDs=isPast?`${curYear+1}-${md}`:`${curYear}-${md}`;
     return Math.round((new Date(nextDs+'T12:00')-new Date(today+'T12:00'))/(1000*60*60*24));
   }
-  function countdownHtml(b,isPast){
-    if(isPast)return'';
-    const days=daysUntil(b);const md=_bdayMD(b);
-    if(md===todayMD)return`<span class="bday-countdown" style="background:rgba(249,115,22,.15);color:#c2410c;border-color:rgba(249,115,22,.3)">🎉 Today!</span>`;
-    if(days===1)return`<span class="bday-countdown" style="background:rgba(249,115,22,.1);color:#ea580c;border-color:rgba(249,115,22,.2)">Tomorrow</span>`;
+  function countdownHtml(b){
+    const md=_bdayMD(b);
+    if(md===todayMD)return`<span class="bday-countdown" style="background:rgba(249,115,22,.15);color:#c2410c;border-color:rgba(249,115,22,.3)">Today!</span>`;
+    const days=daysUntil(b);
+    if(days===1)return`<span class="bday-countdown" style="background:rgba(249,115,22,.1);color:#ea580c;border-color:rgba(249,115,22,.2)">Tmrw</span>`;
     if(days<=7)return`<span class="bday-countdown" style="background:rgba(234,179,8,.12);color:#a16207;border-color:rgba(234,179,8,.25)">${days}d</span>`;
     if(days<=30)return`<span class="bday-countdown" style="background:rgba(163,196,26,.1);color:#4a7c00;border-color:rgba(163,196,26,.2)">${days}d</span>`;
-    return`<span class="bday-countdown" style="background:rgba(180,175,200,.1);color:var(--muted);border-color:rgba(180,175,200,.2)">${days}d</span>`;
+    return'';
   }
-  function bdayRow(b,isPast){
+  function bdayRow(b){
     const md=_bdayMD(b);
     const isToday=md===todayMD;
+    const isPast=md<todayMD;
     const presents=_bdayPresentList(b);
     const presentItems=presents.map((p,i)=>`<div class="bday-present-item"><span class="bday-present-dot"></span><span class="bday-present-text">${escHtml(p)}</span><button class="bday-present-del" onclick="delBdayPresent('${b.id}',${i})">✕</button></div>`).join('');
-    // Age: upcoming/today = "turns X", past = current age (already turned)
     const occDs=`${curYear}-${md}`;
     const age=_bdayAge(b,occDs);
     const ageHtml=age!==null?`<span style="font-size:11px;color:var(--muted);flex-shrink:0">${isPast?age:('turns '+age)}</span>`:'';
     const giftBtn=presents.length>0?`<button class="bday-gift-btn has-gifts" onclick="toggleBdayPresents('${b.id}')" title="Gift ideas">🎁 ${presents.length}</button>`:'';
     return`<div class="bday-row${isToday?' bday-today':''}${isPast?' bday-past':''}" id="bday-row-${b.id}" data-bid="${b.id}">
       <div class="bday-main" onclick="selBdayRow(event,'${b.id}')" ondblclick="openBdayModal('${b.id}')" oncontextmenu="showBdayCtx(event,'${b.id}')">
-        <span class="bday-emoji">${isToday?'🎉':'🎂'}</span>
         <span class="bday-name">${escHtml(b.name)}</span>
         ${ageHtml}
-        ${countdownHtml(b,isPast)}
+        ${countdownHtml(b)}
         <span class="bday-date-lbl">${_bdayFmtDate(b)}</span>
         ${giftBtn}
         <button class="bday-del-btn" onclick="delBday('${b.id}')">✕</button>
@@ -4826,19 +4836,23 @@ function renderBdayPage(){
       </div>
     </div>`;
   }
-  function section(label,items,isPast){
-    if(!items.length)return'';
-    return`<div class="bday-section"><div class="bday-section-header">${label}<span class="cbadge">${items.length}</span></div>${items.map(b=>bdayRow(b,isPast)).join('')}</div>`;
-  }
   const content=document.getElementById('bdayPageContent');
   const countEl=document.getElementById('bdayCount');
   if(countEl)countEl.textContent=st.birthdays.length;
   if(!content)return;
-  const total=todayArr.length+upcomingArr.length+pastArr.length;
-  if(!total){content.innerHTML='<div style="padding:28px;text-align:center;font-size:12px;color:var(--muted)">No birthdays added yet 🎂<br><br><button class="btn btn-dark" onclick="openBdayModal()" style="margin-top:4px">+ Add Birthday</button></div>';return;}
-  content.innerHTML=section('Today 🎉',todayArr,false)+section('Upcoming',upcomingArr,false)+section('Past',pastArr,true);
+  if(!st.birthdays.length){
+    content.innerHTML='<div style="padding:28px;text-align:center;font-size:12px;color:var(--muted)">No birthdays added yet<br><br><button class="btn btn-dark" onclick="openBdayModal()" style="margin-top:4px">+ Add Birthday</button></div>';
+    return;
+  }
+  const gridHtml=byMonth.map((items,mi)=>{
+    const isCurrent=mi===curMonthIdx;
+    return`<div class="bday-month-card${isCurrent?' bday-month-current':''}">
+      <div class="bday-month-name">${MONTHS[mi]}</div>
+      ${items.length?items.map(b=>bdayRow(b)).join(''):'<div class="bday-month-empty"></div>'}
+    </div>`;
+  }).join('');
+  content.innerHTML=`<div class="bday-grid">${gridHtml}</div>`;
   requestAnimationFrame(applyBdaySelHighlight);
-  // Outside-click deselect
   if(window._bdayOutsideClick)document.removeEventListener('click',window._bdayOutsideClick);
   window._bdayOutsideClick=ev=>{
     const pg=document.getElementById('page-birthdays');
