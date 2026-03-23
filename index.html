@@ -913,6 +913,7 @@ body.dark .bday-add-menu{background:rgba(38,20,10,.97);border-color:rgba(255,220
     <div id="bdayPageContent" style="flex:1;width:100%;min-height:0;overflow:hidden;padding:0"></div>
   </div>
   <div id="bdayAddMenu" class="bday-add-menu" style="display:none"></div>
+  <div id="bdayPresentPopup" style="display:none;position:fixed;z-index:9998;background:rgba(255,255,255,.97);border:1px solid rgba(210,205,228,.35);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.13);padding:10px 12px 10px;min-width:200px;max-width:280px;backdrop-filter:blur(10px)"></div>
   <div id="bdayList" style="display:none"></div>
 </div>
 <div class="page" id="page-pups" style="padding:22px 56px 36px 56px;padding-top:60px"></div>
@@ -4203,6 +4204,7 @@ async function delBday(id){
 // ── Birthday interaction state ─────────────────────────────────────────────────
 let _bdaySelIds=new Set(),_lastBdaySelId=null,_copiedBdays=[],_bdayCtxId=null;
 let _bdayUndoStack=[],_bdayRedoStack=[];
+let _bdayPresentPopupId=null;
 
 function bdaySnapshot(){
   _bdayUndoStack.push(JSON.parse(JSON.stringify(st.birthdays)));
@@ -4808,6 +4810,53 @@ function toggleBdayPresents(id){
     const inp=document.getElementById('bday-add-input-'+id);if(inp)setTimeout(()=>inp.focus(),60);
   }
 }
+function showBdayPresentTip(e,id){
+  const b=st.birthdays.find(x=>String(x.id)===String(id));if(!b)return;
+  const list=_bdayPresentList(b);if(!list.length)return;
+  const t=document.getElementById('pupTooltip');
+  t.innerHTML=list.map(p=>`• ${escHtml(p)}`).join('<br>');
+  t.style.display='block';
+  const x=Math.min(e.clientX+12,window.innerWidth-230),y=e.clientY-28;
+  t.style.left=x+'px';t.style.top=y+'px';
+}
+function _renderBdayPresentPopup(pop,id){
+  const b=st.birthdays.find(x=>String(x.id)===String(id));
+  if(!b){pop.style.display='none';_bdayPresentPopupId=null;return;}
+  const list=_bdayPresentList(b);
+  pop.innerHTML=`<div style="font-size:10px;font-weight:700;color:#aaa;margin-bottom:7px;letter-spacing:.06em;text-transform:uppercase">Gift Ideas</div>`
+    +(list.length?list.map((p,i)=>`<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px"><span style="font-size:12px;flex:1;color:#444;line-height:1.3">${escHtml(p)}</span><button onclick="event.stopPropagation();delBdayPresent('${escHtml(id)}',${i})" style="background:none;border:none;cursor:pointer;font-size:10px;color:#ccc;padding:0 2px;flex-shrink:0" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#ccc'">✕</button></div>`).join('')
+    :'<div style="font-size:11px;color:#bbb;margin-bottom:5px">No gift ideas yet</div>')
+    +`<div style="display:flex;gap:4px;margin-top:7px;padding-top:7px;border-top:1px solid rgba(210,205,228,.3)"><input id="bdayPresPopInput" placeholder="Add gift idea…" style="flex:1;font-size:11px;padding:4px 7px;border:1px solid rgba(210,205,228,.5);border-radius:6px;outline:none;font-family:inherit;color:#444" onkeydown="if(event.key==='Enter'){event.stopPropagation();addBdayPresentFromPopup('${escHtml(id)}',this)}" onclick="event.stopPropagation()"><button onclick="event.stopPropagation();addBdayPresentFromPopup('${escHtml(id)}',document.getElementById('bdayPresPopInput'))" style="font-size:11px;padding:4px 9px;border-radius:6px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-family:inherit;flex-shrink:0">Add</button></div>`;
+}
+function openBdayPresentPopup(e,id){
+  hidePupTip();
+  _bdayPresentPopupId=String(id);
+  const pop=document.getElementById('bdayPresentPopup');if(!pop)return;
+  _renderBdayPresentPopup(pop,id);
+  pop.style.display='block';
+  const btn=e.currentTarget;
+  const rect=btn.getBoundingClientRect();
+  const left=Math.min(rect.left,window.innerWidth-290);
+  const top=Math.min(rect.bottom+4,window.innerHeight-200);
+  pop.style.left=left+'px';pop.style.top=top+'px';
+  setTimeout(()=>document.addEventListener('click',_closeBdayPresentPopupOutside,{once:true}),0);
+}
+function _closeBdayPresentPopupOutside(e){
+  const pop=document.getElementById('bdayPresentPopup');
+  if(pop&&pop.contains(e.target)){setTimeout(()=>document.addEventListener('click',_closeBdayPresentPopupOutside,{once:true}),0);return;}
+  pop&&(pop.style.display='none');_bdayPresentPopupId=null;
+}
+async function addBdayPresentFromPopup(id,inp){
+  const val=(inp.value||'').trim();if(!val)return;
+  const b=st.birthdays.find(x=>String(x.id)===String(id));if(!b)return;
+  bdaySnapshot();
+  const list=_bdayPresentList(b);list.push(val);
+  b.present_ideas=JSON.stringify(list);inp.value='';
+  renderBdayPage();
+  const pop=document.getElementById('bdayPresentPopup');
+  if(pop&&pop.style.display!=='none'){_renderBdayPresentPopup(pop,id);setTimeout(()=>{const i=document.getElementById('bdayPresPopInput');if(i)i.focus();},30);}
+  if(!String(id).startsWith('l-'))await sbReq('PATCH','birthdays',{present_ideas:b.present_ideas},`?id=eq.${id}`);
+}
 async function addBdayPresent(id,inp){
   const val=(inp.value||'').trim();if(!val)return;
   const b=st.birthdays.find(x=>String(x.id)===String(id));if(!b)return;
@@ -4823,9 +4872,9 @@ async function delBdayPresent(id,idx){
   bdaySnapshot();
   const list=_bdayPresentList(b);list.splice(idx,1);
   b.present_ideas=JSON.stringify(list);
-  const wasOpen=document.getElementById('bday-presents-'+id)?.classList.contains('open');
   renderBdayPage();
-  if(wasOpen){const el=document.getElementById('bday-presents-'+id);if(el)el.classList.add('open');}
+  const pop=document.getElementById('bdayPresentPopup');
+  if(pop&&pop.style.display!=='none'&&String(_bdayPresentPopupId)===String(id))_renderBdayPresentPopup(pop,id);
   if(!String(id).startsWith('l-'))await sbReq('PATCH','birthdays',{present_ideas:b.present_ideas},`?id=eq.${id}`);
 }
 function renderBdayPage(){
@@ -4869,7 +4918,7 @@ function renderBdayPage(){
     const occDs=`${curYear}-${md}`;
     const age=_bdayAge(b,occDs);
     const ageHtml=age!==null?`<span class="bday-age">${isPast?age:('turns '+age)}</span>`:'';
-    const giftBtn=presents.length>0?`<button class="bday-gift-btn has-gifts" onclick="toggleBdayPresents('${b.id}')" title="Gift ideas">🎁 ${presents.length}</button>`:'';
+    const giftBtn=presents.length>0?`<button class="bday-gift-btn has-gifts" onclick="event.stopPropagation();openBdayPresentPopup(event,'${b.id}')" onmouseenter="showBdayPresentTip(event,'${b.id}')" onmouseleave="hidePupTip()" title="Gift ideas">🎁 ${presents.length}</button>`:'';
     return`<div class="bday-row${isToday?' bday-today':''}${isPast?' bday-past':''}" id="bday-row-${b.id}" data-bid="${b.id}">
       <div class="bday-main" onclick="selBdayRow(event,'${b.id}')" ondblclick="openBdayModal('${b.id}')" oncontextmenu="showBdayCtx(event,'${b.id}')">
         <span class="bday-name">${escHtml(b.name)}</span>
