@@ -4159,7 +4159,7 @@ function openBdayModal(id,month){
     const b=st.birthdays.find(x=>String(x.id)===String(id));if(!b)return;
     document.getElementById('bdayMTitle').textContent='Edit Birthday';
     document.getElementById('bdName').value=b.name||'';
-    document.getElementById('bdDate').value=b.birthday||'';
+    document.getElementById('bdDate').value=_bdayEditFmt(b);
     document.getElementById('bdPresent').value='';
   } else {
     document.getElementById('bdayMTitle').textContent='Add Birthday';
@@ -4190,7 +4190,7 @@ async function saveBdayModal(){
     const b={id:'l-'+Date.now(),name,birthday:bday,...(present_ideas?{present_ideas}:{})};
     st.birthdays.push(b);renderAll();renderBdayPage();
     const sv=await sbReq('POST','birthdays',{name,birthday:bday,...(present_ideas?{present_ideas}:{})});
-    if(sv&&sv[0]){const i=st.birthdays.findIndex(x=>x.id===b.id);if(i>-1)st.birthdays[i]=sv[0];}
+    if(sv&&sv[0]){const i=st.birthdays.findIndex(x=>x.id===b.id);if(i>-1){const local=st.birthdays[i];st.birthdays[i]={...sv[0],present_ideas:local.present_ideas||sv[0].present_ideas||null};}}
   }
 }
 async function delBday(id){
@@ -4778,6 +4778,14 @@ function _normBdayDate(val){
   }
   return null;
 }
+function _bdayEditFmt(b){
+  if(!b.birthday)return'';
+  const bd=b.birthday;
+  if(bd.length===5){const[mo,dy]=bd.split('-').map(Number);return`${mo}/${dy}`;}
+  const[yr,mo,dy]=bd.split('-').map(Number);
+  if(yr===1900)return`${mo}/${dy}`;
+  return`${mo}/${dy}/${String(yr).slice(2)}`;
+}
 function _bdayFmtDate(b){
   if(!b.birthday)return'';
   const bd=b.birthday;
@@ -4808,7 +4816,7 @@ async function addBdayPresent(id,inp){
   b.present_ideas=JSON.stringify(list);inp.value='';
   renderBdayPage();
   const el=document.getElementById('bday-presents-'+id);if(el){el.classList.add('open');}
-  await sbReqNullable('PATCH','birthdays',{present_ideas:b.present_ideas},`?id=eq.${id}`);
+  if(!String(id).startsWith('l-'))await sbReqNullable('PATCH','birthdays',{present_ideas:b.present_ideas},`?id=eq.${id}`);
 }
 async function delBdayPresent(id,idx){
   const b=st.birthdays.find(x=>String(x.id)===String(id));if(!b)return;
@@ -4818,7 +4826,7 @@ async function delBdayPresent(id,idx){
   const wasOpen=document.getElementById('bday-presents-'+id)?.classList.contains('open');
   renderBdayPage();
   if(wasOpen){const el=document.getElementById('bday-presents-'+id);if(el)el.classList.add('open');}
-  await sbReqNullable('PATCH','birthdays',{present_ideas:b.present_ideas},`?id=eq.${id}`);
+  if(!String(id).startsWith('l-'))await sbReqNullable('PATCH','birthdays',{present_ideas:b.present_ideas},`?id=eq.${id}`);
 }
 function renderBdayPage(){
   save();
