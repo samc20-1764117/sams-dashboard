@@ -2491,7 +2491,10 @@ function toggleUnMenu(){
   const ts=sortTasks(st.tasks.filter(t=>!t.due_date&&!t.done&&t.category!=='Long term'));
   menu.innerHTML=ts.length?ts.map(t=>{
     const s=gc(t.category);
-    return `<div class="ctx-item" style="display:flex;align-items:center;gap:8px;padding:6px 12px" ondblclick="tiDbl(event,'${t.id}')">
+    return `<div class="ctx-item" draggable="true" style="display:flex;align-items:center;gap:8px;padding:6px 12px;cursor:grab"
+      ondragstart="dStart(event,'${t.id}');closeUnMenu()"
+      ondragend="document.body.classList.remove('body-dragging');showWkcEdges(false)"
+      ondblclick="tiDbl(event,'${t.id}')">
       <span style="width:7px;height:7px;border-radius:50%;background:${s.d};flex-shrink:0"></span>
       <span style="flex:1;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.name}</span>
       <span style="font-size:9px;color:var(--muted);flex-shrink:0">${t.category}</span>
