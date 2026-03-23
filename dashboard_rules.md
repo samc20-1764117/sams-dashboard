@@ -366,10 +366,66 @@ All three checkbox types share identical visual style:
 - `delBday(id)` — removes from `st.birthdays`, calls `renderAll()` + `renderBdayPage()`, DELETEs from Supabase.
 - `renderBdayPage()` — uses `#bdayPageContent` for content, `#bdayCount` for count badge. Registers `window._bdayOutsideClick` deselect handler each render.
 - **Selection**: `selBdayRow(e,id)` on `.bday-main` onclick. Single click selects, Cmd+click toggles, Shift+click range-selects. Clicking selected-only row deselects. `applyBdaySelHighlight()` syncs `.bday-sel` class on `.bday-row[data-bid]` elements.
+  - `selBdayRow` calls `e.stopPropagation()` immediately after the guard check — this prevents the same click from bubbling to `window._bdayOutsideClick` and clearing the selection.
+  - `.bday-main` has `user-select:none` — prevents text selection on Shift+click range select.
+- **dblclick**: `ondblclick="openBdayModal('${b.id}')"` on `.bday-main` — opens edit modal. No inline cell editing on the birthday page.
+- **No hover edit button**: no `.bday-edit-btn` element or CSS. Editing is via dblclick or right-click → Edit.
 - **Context menu**: `#bdayCtxMenu` — Edit (hidden for multi-select), Duplicate, Delete. `showBdayCtx(e,id)` right-click. Hides on outside click (shared click listener).
 - **Keyboard shortcuts** (birthdays page, first keydown listener): `Cmd+Z` → `bdayUndo()`, `Cmd+Shift+Z` → `bdayRedo()`, `Delete/Backspace` → `bdayCtxDelete()` when selection exists, `Cmd+C` → copy to `_copiedBdays`, `Cmd+V` → paste copies.
 - **Undo/Redo**: `bdaySnapshot()` before any destructive op (delete, edit-save, duplicate, paste, add/del present). `_bdaySyncToServer(prev,next)` diffs and fires minimal API calls. Max 20 snapshots.
 - **State**: `_bdaySelIds` (Set), `_lastBdaySelId`, `_copiedBdays` (array), `_bdayCtxId`, `_bdayUndoStack`, `_bdayRedoStack`.
+
+## Modal Enter / Escape Key Rules
+
+**Pattern**: the overlay `div` owns the Enter and Escape handlers. Individual inputs inside a modal must NOT have their own `onkeydown` calling the save function — that causes double-fires (task added twice, etc.).
+
+### Per-modal rules
+| Modal | Enter saves via | SELECT skipped | Escape closes |
+|---|---|---|---|
+| `tModal` | overlay `onkeydown` | no (no selects in path) | overlay `onkeydown` |
+| `recModal` | overlay `onkeydown` | yes (`tagName!=='SELECT'`) | overlay `onkeydown` |
+| `recEditModal` | overlay `onkeydown` | yes (`tagName!=='SELECT'`) | overlay `onkeydown` |
+| `bdayModal` | overlay `onkeydown` | no | overlay `onkeydown` |
+| `shopEditModal` | overlay `onkeydown` | no | overlay `onkeydown` |
+| `pupModal` | overlay `onkeydown` | yes | overlay `onkeydown` |
+| `bModal` | input `onkeydown` (title only) | — | — |
+| `travelModal` | input `onkeydown` (name only) | — | — |
+
+### Save-function empty-name behavior
+All save functions must **close the modal** (not silently `return`) when the required name/title field is empty:
+```js
+if(!name){closeMod('modalId');return;}
+```
+This gives Enter a consistent cancel-if-empty contract.
+
+### Textarea + Enter
+Pressing Enter inside a textarea saves the modal (the overlay's `event.preventDefault()` prevents the newline). This is intentional — Enter saves everywhere.
+
+### Document-level Enter fallback
+`document.addEventListener('keydown')` also fires `saveTModal()` / `saveShopEdit()` / `saveRecEdit()` / `saveRecModal()` when the respective modal `.classList.contains('open')`. This is a fallback; the overlay fires first. The document handler must NOT gate on field content (e.g. `&&tName.value.trim()`) — the save function itself handles the empty case.
+
+### Never add per-input Enter handlers
+The `tCat` select in `tModal` uses a JS `addEventListener` with `e.stopPropagation()` to prevent Enter from bubbling (selecting from a dropdown fires Enter) — that is the only legitimate per-element override.
+
+---
+
+## Birthday Date Format (`_normBdayDate`)
+
+Accepts and normalizes any of these input formats:
+
+| Input example | Stored as |
+|---|---|
+| `7/5` or `07/05` | `07-05` (no year) |
+| `7/5/2025` or `07/05/2025` | `2025-07-05` |
+| `7/5/25` or `7/05/25` | `2025-07-05` (2-digit year) |
+| `2025-07-05` | `2025-07-05` (passthrough) |
+| `07-05` | `07-05` (passthrough) |
+
+2-digit year rule: `YY ≤ 30` → `2000+YY`; `YY > 30` → `1900+YY`.
+
+Storage format is always `MM-DD` (no year) or `YYYY-MM-DD` (with year). `_bdayMD(b)` extracts the `MM-DD` portion from either.
+
+---
 
 ## Git Workflow
 
