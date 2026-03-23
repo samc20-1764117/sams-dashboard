@@ -650,7 +650,6 @@ body.dark .qn-input{background:rgba(255,255,255,.06);border-color:rgba(255,220,2
       </div><!-- tb-section -->
       </div><!-- tod-tb-body -->
       <button class="btn-plus" onclick="openQA('today',this)" style="position:absolute;bottom:10px;left:10px;z-index:10">+</button>
-      <button class="btn btn-ghost btn-xs" id="autoTBToggle" onclick="toggleAutoTB()" title="Toggle auto time blocks" style="position:absolute;bottom:44px;right:10px;z-index:10;font-size:8px;opacity:.7">Auto</button>
     </div><!-- combined card -->
     </div><!-- overview-left -->
     <div class="row1-right-panel">
@@ -706,6 +705,7 @@ body.dark .qn-input{background:rgba(255,255,255,.06);border-color:rgba(255,220,2
         <div class="wkc-foot">
           <div id="unAssignedBadge" onclick="toggleUnMenu()" style="display:none;width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;font-size:10px;font-weight:700;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.18);flex-shrink:0"></div>
           <div style="flex:1"></div>
+          <button class="btn btn-ghost btn-xs" id="autoTBToggle" onclick="toggleAutoTB()" title="Toggle auto time blocks" style="font-size:8px;opacity:.7">Auto</button>
         </div>
       </div>
     </div><!-- week cal -->
@@ -5379,8 +5379,6 @@ tickClock();_updateOvTopDate();setInterval(tickClock,1000);
   </div>
 </div>
 
-<div id="devBadge" style="display:none;position:fixed;bottom:16px;left:16px;background:#1e293b;color:#f8fafc;font-size:11px;font-weight:700;letter-spacing:.08em;padding:4px 9px;border-radius:6px;border:1px solid rgba(255,255,255,.15);z-index:9999;pointer-events:none">DEV-91</div>
-<script>if(location.hostname.includes('dev.'))document.getElementById('devBadge').style.display='block';</script>
 
 <!-- Unassigned menu (body-level) -->
 <div id="unMenu" class="tlist" style="display:none;position:fixed;z-index:9997;width:300px;max-height:360px;overflow-y:auto;background:var(--gb);backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow-lg);padding:4px 0"></div>
