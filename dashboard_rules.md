@@ -364,7 +364,12 @@ All three checkbox types share identical visual style:
 - `openBdayModal(id)` — edit mode pre-fills name/date. Add mode = no id arg.
 - `saveBdayModal()` — POST new (with temp `l-` id) or PATCH existing. Does NOT include `present_ideas` (managed inline).
 - `delBday(id)` — removes from `st.birthdays`, calls `renderAll()` + `renderBdayPage()`, DELETEs from Supabase.
-- `renderBdayPage()` — uses `#bdayPageContent` for content, `#bdayCount` for count badge.
+- `renderBdayPage()` — uses `#bdayPageContent` for content, `#bdayCount` for count badge. Registers `window._bdayOutsideClick` deselect handler each render.
+- **Selection**: `selBdayRow(e,id)` on `.bday-main` onclick. Single click selects, Cmd+click toggles, Shift+click range-selects. Clicking selected-only row deselects. `applyBdaySelHighlight()` syncs `.bday-sel` class on `.bday-row[data-bid]` elements.
+- **Context menu**: `#bdayCtxMenu` — Edit (hidden for multi-select), Duplicate, Delete. `showBdayCtx(e,id)` right-click. Hides on outside click (shared click listener).
+- **Keyboard shortcuts** (birthdays page, first keydown listener): `Cmd+Z` → `bdayUndo()`, `Cmd+Shift+Z` → `bdayRedo()`, `Delete/Backspace` → `bdayCtxDelete()` when selection exists, `Cmd+C` → copy to `_copiedBdays`, `Cmd+V` → paste copies.
+- **Undo/Redo**: `bdaySnapshot()` before any destructive op (delete, edit-save, duplicate, paste, add/del present). `_bdaySyncToServer(prev,next)` diffs and fires minimal API calls. Max 20 snapshots.
+- **State**: `_bdaySelIds` (Set), `_lastBdaySelId`, `_copiedBdays` (array), `_bdayCtxId`, `_bdayUndoStack`, `_bdayRedoStack`.
 
 ## Git Workflow
 

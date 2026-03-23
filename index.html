@@ -65,7 +65,7 @@ body.dark .kol{background:rgba(255,255,255,.03);}
 body.dark .kol-item{background:rgba(255,255,255,.04);}
 body.dark .kol-item:hover{background:rgba(255,255,255,.08);}
 body.dark .sync-bar{background:rgba(255,255,255,.08);}
-body.dark #ctxMenu,body.dark #pupCtxMenu{background:rgba(20,18,35,.98);}
+body.dark #ctxMenu,body.dark #pupCtxMenu,body.dark #bdayCtxMenu{background:rgba(20,18,35,.98);}
 body.dark .ctx-item:hover{background:rgba(255,255,255,.08);}
 body.dark .wkc-chip{filter:brightness(.85);}
 body.dark .chk{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.2);}
@@ -564,6 +564,8 @@ body.dark .bday-presents{background:rgba(255,255,255,.03)}
 .bday-add-input:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(194,107,79,.1)}
 .bday-add-input::placeholder{color:var(--subtle)}
 body.dark .bday-add-input{background:rgba(255,255,255,.06);border-color:rgba(255,220,200,.12)}
+.bday-row.bday-sel>.bday-main{background:var(--sel-bg,rgba(130,115,100,.1))!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.7);border-radius:9px}
+body.dark .bday-row.bday-sel>.bday-main{background:var(--sel-bg-dark,rgba(194,107,79,.12))!important}
 </style>
 </head>
 <body>
@@ -1736,10 +1738,34 @@ document.addEventListener('keydown',e=>{
     e.preventDefault();
     const _onPupsZ=document.getElementById('page-pups')?.classList.contains('active');
     if(_onPupsZ){if(e.shiftKey){pupRedo();}else{pupUndo();}return;}
+    const _onBdayZ=document.getElementById('page-birthdays')?.classList.contains('active');
+    if(_onBdayZ){if(e.shiftKey){bdayRedo();}else{bdayUndo();}return;}
     if(e.shiftKey){doRedo();}else{doUndo();}
     return;
   }
-  if(e.key==='Escape'){document.querySelectorAll('.overlay.open').forEach(o=>o.classList.remove('open'));closeQA();const pfp=document.getElementById('pupFilterPop');if(pfp)pfp.classList.remove('pfopen');hidePupCtx();hidePupTip();}
+  if(e.key==='Escape'){document.querySelectorAll('.overlay.open').forEach(o=>o.classList.remove('open'));closeQA();const pfp=document.getElementById('pupFilterPop');if(pfp)pfp.classList.remove('pfopen');hidePupCtx();hidePupTip();hideBdayCtx();}
+  // Birthdays page shortcuts
+  if(document.getElementById('page-birthdays')?.classList.contains('active')&&!document.querySelector('input:focus,textarea:focus,select:focus')){
+    if((e.key==='Delete'||e.key==='Backspace')&&_bdaySelIds.size){e.preventDefault();bdayCtxDelete();return;}
+    if((e.metaKey||e.ctrlKey)&&e.key==='c'&&_bdaySelIds.size){
+      _copiedBdays=st.birthdays.filter(b=>_bdaySelIds.has(String(b.id))).map(b=>({...b}));
+      showToast(`Copied ${_copiedBdays.length}`,'#f97316',1200);return;
+    }
+    if((e.metaKey||e.ctrlKey)&&e.key==='v'&&_copiedBdays.length){
+      e.preventDefault();
+      (async()=>{
+        bdaySnapshot();
+        for(const b of _copiedBdays){
+          const copy={...b,id:'l-'+Date.now(),name:b.name+' (copy)'};
+          st.birthdays.push(copy);
+          const sv=await sbReq('POST','birthdays',{name:copy.name,birthday:copy.birthday,...(copy.present_ideas?{present_ideas:copy.present_ideas}:{})});
+          if(sv&&sv[0]){const i=st.birthdays.findIndex(x=>x.id===copy.id);if(i>-1)st.birthdays[i]=sv[0];}
+        }
+        save();renderAll();renderBdayPage();
+      })();
+      return;
+    }
+  }
   if((e.key==='Delete'||e.key==='Backspace')&&selAtbId&&selAtbDs&&!document.querySelector('input:focus,textarea:focus')){
     const atb=getAutoTBForDate(selAtbDs).find(a=>a._atbId===selAtbId);
     if(atb){e.preventDefault();delAutoTBForDay(selAtbId,selAtbDs,atb._ovId);}
@@ -4112,6 +4138,7 @@ async function saveBdayModal(){
   const presentRaw=(document.getElementById('bdPresent').value||'').trim();
   closeMod('bdayModal');
   if(bdayEditId){
+    bdaySnapshot();
     const b=st.birthdays.find(x=>String(x.id)===String(bdayEditId));if(!b)return;
     if(presentRaw){const list=_bdayPresentList(b);list.push(presentRaw);b.present_ideas=JSON.stringify(list);}
     Object.assign(b,{name,birthday:bday});renderAll();renderBdayPage();
@@ -4125,9 +4152,111 @@ async function saveBdayModal(){
   }
 }
 async function delBday(id){
+  bdaySnapshot();
   st.birthdays=st.birthdays.filter(x=>String(x.id)!==String(id));renderAll();renderBdayPage();
   await sbReq('DELETE','birthdays',null,`?id=eq.${id}`);
 }
+
+// ── Birthday interaction state ─────────────────────────────────────────────────
+let _bdaySelIds=new Set(),_lastBdaySelId=null,_copiedBdays=[],_bdayCtxId=null;
+let _bdayUndoStack=[],_bdayRedoStack=[];
+
+function bdaySnapshot(){
+  _bdayUndoStack.push(JSON.parse(JSON.stringify(st.birthdays)));
+  if(_bdayUndoStack.length>20)_bdayUndoStack.shift();
+  _bdayRedoStack=[];
+}
+function _bdaySyncToServer(prev,next){
+  const pm=new Map(prev.map(b=>[String(b.id),b]));
+  const nm=new Map(next.map(b=>[String(b.id),b]));
+  for(const[id]of pm)if(!nm.has(id)&&!id.startsWith('l-'))sbReqSilent('DELETE','birthdays',null,`?id=eq.${id}`);
+  for(const[id,b]of nm){
+    if(!pm.has(id)){sbReqSilent('POST','birthdays',{name:b.name,birthday:b.birthday,...(b.present_ideas?{present_ideas:b.present_ideas}:{})});}
+    else if(!id.startsWith('l-')){
+      const p=pm.get(id);
+      if(['name','birthday','present_ideas'].some(f=>String(p[f]??'')!==String(b[f]??'')))
+        sbReqSilent('PATCH','birthdays',{name:b.name,birthday:b.birthday,present_ideas:b.present_ideas??null},`?id=eq.${id}`);
+    }
+  }
+}
+function bdayUndo(){
+  if(!_bdayUndoStack.length){showToast('Nothing to undo','#888');return;}
+  const prev=JSON.parse(JSON.stringify(st.birthdays));
+  _bdayRedoStack.push(prev);
+  st.birthdays=_bdayUndoStack.pop();
+  save();renderAll();renderBdayPage();
+  showToast('Undone','#f97316',1500);
+  _bdaySyncToServer(prev,st.birthdays);
+}
+function bdayRedo(){
+  if(!_bdayRedoStack.length){showToast('Nothing to redo','#888');return;}
+  const prev=JSON.parse(JSON.stringify(st.birthdays));
+  _bdayUndoStack.push(prev);
+  st.birthdays=_bdayRedoStack.pop();
+  save();renderAll();renderBdayPage();
+  showToast('Redone','#f97316',1500);
+  _bdaySyncToServer(prev,st.birthdays);
+}
+
+function selBdayRow(e,id){
+  if(e.target.closest('input,button,select'))return;
+  id=String(id);
+  if(e.metaKey||e.ctrlKey){
+    if(_bdaySelIds.has(id))_bdaySelIds.delete(id);else _bdaySelIds.add(id);
+    _lastBdaySelId=id;
+  } else if(e.shiftKey&&_lastBdaySelId){
+    const rows=[...document.querySelectorAll('.bday-row[data-bid]')].map(r=>r.dataset.bid);
+    const a=rows.indexOf(_lastBdaySelId),b=rows.indexOf(id);
+    if(a>-1&&b>-1){const lo=Math.min(a,b),hi=Math.max(a,b);rows.slice(lo,hi+1).forEach(rid=>_bdaySelIds.add(rid));}
+    else _bdaySelIds.add(id);
+    _lastBdaySelId=id;
+  } else {
+    if(_bdaySelIds.size===1&&_bdaySelIds.has(id)){_bdaySelIds.clear();_lastBdaySelId=null;}
+    else{_bdaySelIds.clear();_bdaySelIds.add(id);_lastBdaySelId=id;}
+  }
+  applyBdaySelHighlight();
+}
+function applyBdaySelHighlight(){
+  document.querySelectorAll('.bday-row[data-bid]').forEach(row=>{
+    row.classList.toggle('bday-sel',_bdaySelIds.has(row.dataset.bid));
+  });
+}
+function showBdayCtx(e,id){
+  e.preventDefault();e.stopPropagation();
+  _bdayCtxId=String(id);
+  if(!_bdaySelIds.has(_bdayCtxId)){_bdaySelIds.clear();_bdaySelIds.add(_bdayCtxId);_lastBdaySelId=_bdayCtxId;applyBdaySelHighlight();}
+  const m=document.getElementById('bdayCtxMenu');
+  const multi=_bdaySelIds.size>1;
+  document.getElementById('bdayCtxEditItem').style.display=multi?'none':'';
+  m.style.display='block';
+  const x=Math.min(e.clientX,window.innerWidth-170),y=Math.min(e.clientY,window.innerHeight-130);
+  m.style.left=x+'px';m.style.top=y+'px';
+}
+function hideBdayCtx(){document.getElementById('bdayCtxMenu').style.display='none';}
+function bdayCtxEdit(){hideBdayCtx();if(_bdayCtxId)openBdayModal(_bdayCtxId);}
+async function bdayCtxDuplicate(){
+  hideBdayCtx();
+  bdaySnapshot();
+  const ids=_bdaySelIds.size?[..._bdaySelIds]:[_bdayCtxId].filter(Boolean);
+  for(const id of ids){
+    const b=st.birthdays.find(x=>String(x.id)===id);if(!b)continue;
+    const copy={...b,id:'l-'+Date.now(),name:b.name+' (copy)'};
+    st.birthdays.push(copy);
+    const sv=await sbReq('POST','birthdays',{name:copy.name,birthday:copy.birthday,...(copy.present_ideas?{present_ideas:copy.present_ideas}:{})});
+    if(sv&&sv[0]){const i=st.birthdays.findIndex(x=>x.id===copy.id);if(i>-1)st.birthdays[i]=sv[0];}
+  }
+  save();renderAll();renderBdayPage();
+}
+async function bdayCtxDelete(){
+  hideBdayCtx();
+  bdaySnapshot();
+  const ids=_bdaySelIds.size?[..._bdaySelIds]:[_bdayCtxId].filter(Boolean);
+  st.birthdays=st.birthdays.filter(x=>!ids.includes(String(x.id)));
+  _bdaySelIds.clear();_bdayCtxId=null;
+  save();renderAll();renderBdayPage();
+  for(const id of ids)if(!id.startsWith('l-'))sbReqSilent('DELETE','birthdays',null,`?id=eq.${id}`);
+}
+
 let _pupEditId=null;
 let _selPupIds=new Set(),_lastSelPupId=null,_copiedPups=[],_pupCtxId=null;
 let _pupSortCol=null,_pupSortDir=1,_pupFilter=null;
@@ -4618,6 +4747,7 @@ function toggleBdayPresents(id){
 async function addBdayPresent(id,inp){
   const val=(inp.value||'').trim();if(!val)return;
   const b=st.birthdays.find(x=>String(x.id)===String(id));if(!b)return;
+  bdaySnapshot();
   const list=_bdayPresentList(b);list.push(val);
   b.present_ideas=JSON.stringify(list);inp.value='';
   renderBdayPage();
@@ -4626,6 +4756,7 @@ async function addBdayPresent(id,inp){
 }
 async function delBdayPresent(id,idx){
   const b=st.birthdays.find(x=>String(x.id)===String(id));if(!b)return;
+  bdaySnapshot();
   const list=_bdayPresentList(b);list.splice(idx,1);
   b.present_ideas=JSON.stringify(list);
   const wasOpen=document.getElementById('bday-presents-'+id)?.classList.contains('open');
@@ -4675,8 +4806,8 @@ function renderBdayPage(){
     const age=_bdayAge(b,occDs);
     const ageHtml=age!==null?`<span style="font-size:11px;color:var(--muted);flex-shrink:0">${isPast?age:('turns '+age)}</span>`:'';
     const giftBtn=presents.length>0?`<button class="bday-gift-btn has-gifts" onclick="toggleBdayPresents('${b.id}')" title="Gift ideas">🎁 ${presents.length}</button>`:'';
-    return`<div class="bday-row${isToday?' bday-today':''}${isPast?' bday-past':''}" id="bday-row-${b.id}">
-      <div class="bday-main">
+    return`<div class="bday-row${isToday?' bday-today':''}${isPast?' bday-past':''}" id="bday-row-${b.id}" data-bid="${b.id}">
+      <div class="bday-main" onclick="selBdayRow(event,'${b.id}')" ondblclick="if(!event.target.closest('button'))openBdayModal('${b.id}')" oncontextmenu="showBdayCtx(event,'${b.id}')">
         <span class="bday-emoji">${isToday?'🎉':'🎂'}</span>
         <span class="bday-name">${escHtml(b.name)}</span>
         ${ageHtml}
@@ -4706,6 +4837,15 @@ function renderBdayPage(){
   const total=todayArr.length+upcomingArr.length+pastArr.length;
   if(!total){content.innerHTML='<div style="padding:28px;text-align:center;font-size:12px;color:var(--muted)">No birthdays added yet 🎂<br><br><button class="btn btn-dark" onclick="openBdayModal()" style="margin-top:4px">+ Add Birthday</button></div>';return;}
   content.innerHTML=section('Today 🎉',todayArr,false)+section('Upcoming',upcomingArr,false)+section('Past',pastArr,true);
+  requestAnimationFrame(applyBdaySelHighlight);
+  // Outside-click deselect
+  if(window._bdayOutsideClick)document.removeEventListener('click',window._bdayOutsideClick);
+  window._bdayOutsideClick=ev=>{
+    const pg=document.getElementById('page-birthdays');
+    if(!pg||!pg.classList.contains('active'))return;
+    if(!ev.target.closest('.bday-row')&&!ev.target.closest('#bdayCtxMenu')){_bdaySelIds.clear();_lastBdaySelId=null;applyBdaySelHighlight();}
+  };
+  document.addEventListener('click',window._bdayOutsideClick);
 }
 
 // ── Settings ───────────────────────────────────────────────────────────────────
@@ -5205,7 +5345,7 @@ function showCtx(e,taskId,isRec,recId,shopId,blockId){
 }
 function showCtxShop(e,shopId){showCtx(e,null,false,null,shopId);}
 function hideCtx(){document.getElementById('ctxMenu').style.display='none';}
-document.addEventListener('click',e=>{if(!e.target.closest('#pupCtxMenu'))hidePupCtx();});
+document.addEventListener('click',e=>{if(!e.target.closest('#pupCtxMenu'))hidePupCtx();if(!e.target.closest('#bdayCtxMenu'))hideBdayCtx();});
 // Close on outside click or Escape
 document.addEventListener('mousedown',e=>{
   if(!e.target.closest('#ctxMenu'))hideCtx();
@@ -5516,6 +5656,12 @@ document.addEventListener('click',function(e){
   <div class="ctx-item" onclick="pupCtxDuplicate()">⧉  Duplicate skill</div>
   <div class="ctx-divider"></div>
   <div class="ctx-item ctx-danger" onclick="pupCtxDelete()">✕  Delete skill</div>
+</div>
+<div id="bdayCtxMenu" style="display:none;position:fixed;z-index:9999;background:rgba(255,255,255,.98);border:1px solid rgba(210,205,228,.4);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);padding:4px;min-width:155px;backdrop-filter:blur(12px)">
+  <div id="bdayCtxEditItem" class="ctx-item" onclick="bdayCtxEdit()">✏️  Edit birthday</div>
+  <div class="ctx-item" onclick="bdayCtxDuplicate()">⧉  Duplicate</div>
+  <div class="ctx-divider"></div>
+  <div class="ctx-item ctx-danger" onclick="bdayCtxDelete()">✕  Delete</div>
 </div>
 <div id="pupTooltip" style="position:fixed;z-index:9998;background:rgba(40,20,10,.88);color:#fff;border-radius:6px;padding:4px 9px;font-size:11px;pointer-events:none;display:none;max-width:220px;white-space:normal;line-height:1.4;box-shadow:0 2px 8px rgba(0,0,0,.2)"></div>
 <div id="ctxMenu" style="display:none;position:fixed;z-index:9999;background:rgba(255,255,255,.98);border:1px solid rgba(210,205,228,.4);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);padding:4px;min-width:155px;backdrop-filter:blur(12px)">
