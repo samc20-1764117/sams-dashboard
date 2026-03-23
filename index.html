@@ -4714,6 +4714,9 @@ function _normBdayDate(val){
   // M/D/YYYY → YYYY-MM-DD
   const m3=val.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
   if(m3)return`${m3[3]}-${String(m3[1]).padStart(2,'0')}-${String(m3[2]).padStart(2,'0')}`;
+  // M/D/YY → YYYY-MM-DD (2-digit year: ≤30 → 2000s, else 1900s)
+  const m4=val.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2})$/);
+  if(m4){const yr=parseInt(m4[3],10);const full=yr<=30?2000+yr:1900+yr;return`${full}-${String(m4[1]).padStart(2,'0')}-${String(m4[2]).padStart(2,'0')}`;}
   return null;
 }
 function _bdayFmtDate(b){
