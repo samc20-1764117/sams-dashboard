@@ -570,6 +570,11 @@ body.dark .bday-month-card{background:rgba(255,255,255,.03);border-color:rgba(25
 body.dark .bday-month-current{box-shadow:0 0 0 1px rgba(194,107,79,.4),0 0 28px 6px rgba(194,107,79,.35),0 4px 20px rgba(194,107,79,.22);background:rgba(60,30,18,.85)!important}
 .bday-month-name{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);padding:2px 4px 5px;margin-bottom:3px;border-bottom:1px solid rgba(210,205,228,.18)}
 .bday-month-current .bday-month-name{color:var(--accent)}
+.bday-month-current .bday-name{color:#1a0a00;font-weight:700}
+.bday-month-current .bday-date-lbl{color:rgba(0,0,0,.6)}
+.bday-month-current .bday-main span[style*="color:var(--muted)"]{color:rgba(0,0,0,.55)!important}
+body.dark .bday-month-current .bday-name{color:#fff3ee;font-weight:700}
+body.dark .bday-month-current .bday-date-lbl{color:rgba(255,220,200,.75)}
 .bday-month-empty{height:8px}
 .bday-month-card .bday-main{padding:4px 6px}
 .bday-month-card .bday-name{font-size:12px}
@@ -4136,7 +4141,7 @@ async function saveBdayModal(){
   const raw=document.getElementById('bdDate').value;
   const bday=_normBdayDate(raw);
   const hint=document.getElementById('bdDateHint');
-  if(!bday){if(hint)hint.textContent='Invalid. Try MM/DD or MM/DD/YYYY.';if(hint)hint.style.color='#ef4444';return;}
+  if(!bday){if(hint)hint.textContent='Try 1/23, Jan 23, January 23, or MM/DD/YYYY.';if(hint)hint.style.color='#ef4444';return;}
   if(hint)hint.textContent='';
   const presentRaw=(document.getElementById('bdPresent').value||'').trim();
   closeMod('bdayModal');
@@ -4723,6 +4728,17 @@ function _normBdayDate(val){
   // M/D/YY → YYYY-MM-DD (2-digit year: ≤30 → 2000s, else 1900s)
   const m4=val.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2})$/);
   if(m4){const yr=parseInt(m4[3],10);const full=yr<=30?2000+yr:1900+yr;return`${full}-${String(m4[1]).padStart(2,'0')}-${String(m4[2]).padStart(2,'0')}`;}
+  // "Jan 23" / "January 23" / "Jan 23 1990" / "January 23, 1990"
+  const MNAMES=['january','february','march','april','may','june','july','august','september','october','november','december'];
+  const MSHORT=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+  const mn=val.toLowerCase().replace(/,/g,'');
+  const mw=mn.match(/^([a-z]+)\s+(\d{1,2})(?:\s+(\d{2,4}))?$/);
+  if(mw){
+    let mo=MNAMES.indexOf(mw[1]);if(mo===-1)mo=MSHORT.findIndex(s=>mw[1].startsWith(s));
+    if(mo>-1){const mm=String(mo+1).padStart(2,'0');const dd=String(mw[2]).padStart(2,'0');
+      if(mw[3]){const yr=parseInt(mw[3],10);const full=yr<100?(yr<=30?2000+yr:1900+yr):yr;return`${full}-${mm}-${dd}`;}
+      return`${mm}-${dd}`;}
+  }
   return null;
 }
 function _bdayFmtDate(b){
