@@ -530,7 +530,8 @@ body.dark .qn-input{background:rgba(255,255,255,.06);border-color:rgba(255,220,2
 /* Birthdays Page */
 .bday-section{padding:0 6px 8px}
 .bday-section-header{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);padding:10px 4px 5px;display:flex;align-items:center;gap:6px;border-bottom:1px solid rgba(210,205,228,.18);margin-bottom:3px}
-.bday-tbl{display:grid;grid-template-columns:1fr auto auto auto auto auto}
+.bday-tbl{display:grid;grid-template-columns:1fr auto auto auto auto}
+.bday-name-cell{display:flex;align-items:center;gap:4px;min-width:0}
 .bday-row{display:grid;grid-column:1/-1;grid-template-columns:subgrid;align-items:center;gap:0 6px;padding:5px 8px;border-radius:8px;transition:background .12s;cursor:pointer;user-select:none}
 .bday-row:hover{background:rgba(255,255,255,.72);box-shadow:0 2px 10px rgba(0,0,0,.06)}
 .bday-today{background:rgba(255,237,213,.55)}
@@ -4921,10 +4922,9 @@ function renderBdayPage(){
     const occDs=`${curYear}-${md}`;
     const age=_bdayAge(b,occDs);
     const ageHtml=age!==null?`<span class="bday-age-pill">${isPast?age:('turns '+age)}</span>`:'';
-    const giftBtn=presents.length>0?`<button class="bday-gift-btn has-gifts" onclick="event.stopPropagation();openBdayPresentPopup(event,'${b.id}')" onmouseenter="showBdayPresentTip(event,'${b.id}')" onmouseleave="hidePupTip()">🎁 ${presents.length}</button>`:'<span></span>';
+    const giftBtn=presents.length>0?`<button class="bday-gift-btn has-gifts" onclick="event.stopPropagation();openBdayPresentPopup(event,'${b.id}')" onmouseenter="showBdayPresentTip(event,'${b.id}')" onmouseleave="hidePupTip()">🎁 ${presents.length}</button>`:'';
     return`<div class="bday-row${isToday?' bday-today':''}${isPast?' bday-past':''}" id="bday-row-${b.id}" data-bid="${b.id}" onclick="selBdayRow(event,'${b.id}')" ondblclick="openBdayModal('${b.id}')" oncontextmenu="showBdayCtx(event,'${b.id}')">
-      <span class="bday-name">${escHtml(b.name)}</span>
-      ${giftBtn}
+      <div class="bday-name-cell"><span class="bday-name">${escHtml(b.name)}</span>${giftBtn}</div>
       ${countdownHtml(b)||'<span></span>'}
       ${ageHtml||'<span></span>'}
       <span class="bday-date-lbl">${_bdayFmtDate(b)}</span>
