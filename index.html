@@ -939,12 +939,12 @@ body.dark .bday-row.bday-sel>.bday-main{background:var(--sel-bg-dark,rgba(194,10
 </div>
 
 <!-- Birthday Modal -->
-<div class="overlay" id="bdayModal" onclick="closeMod('bdayModal',event)">
+<div class="overlay" id="bdayModal" onclick="closeMod('bdayModal',event)" onkeydown="if(event.key==='Enter'){event.preventDefault();saveBdayModal();}if(event.key==='Escape')closeMod('bdayModal')">
   <div class="modal task-modal" style="width:320px;padding:16px">
     <div class="mt" id="bdayMTitle">Add Birthday</div>
-    <div class="mfield"><label>Name *</label><input id="bdName" placeholder="e.g. Mom" onkeydown="if(event.key==='Enter')document.getElementById('bdDate').focus()"></div>
-    <div class="mfield"><label>Birthday *</label><input id="bdDate" type="text" placeholder="MM/DD or MM/DD/YYYY" autocomplete="off" onkeydown="if(event.key==='Enter')document.getElementById('bdPresent').focus()"><div id="bdDateHint" style="font-size:9px;color:var(--muted);margin-top:3px"></div></div>
-    <div class="mfield"><label>Gift idea <span style="opacity:.45;font-weight:400">(optional)</span></label><input id="bdPresent" placeholder="e.g. Flowers, book…" onkeydown="if(event.key==='Enter')saveBdayModal()"></div>
+    <div class="mfield"><label>Name *</label><input id="bdName" placeholder="e.g. Mom"></div>
+    <div class="mfield"><label>Birthday *</label><input id="bdDate" type="text" placeholder="MM/DD or MM/DD/YYYY" autocomplete="off"><div id="bdDateHint" style="font-size:9px;color:var(--muted);margin-top:3px"></div></div>
+    <div class="mfield"><label>Gift idea <span style="opacity:.45;font-weight:400">(optional)</span></label><input id="bdPresent" placeholder="e.g. Flowers, book…"></div>
     <div class="mact"><button class="btn btn-ghost" onclick="closeMod('bdayModal')">Cancel</button><button class="btn btn-dark" onclick="saveBdayModal()">Save</button></div>
   </div>
 </div>
@@ -4126,7 +4126,7 @@ function openBdayModal(id){
   setTimeout(()=>document.getElementById('bdName').focus(),60);
 }
 async function saveBdayModal(){
-  const name=document.getElementById('bdName').value.trim();if(!name)return;
+  const name=document.getElementById('bdName').value.trim();if(!name){closeMod('bdayModal');return;}
   const raw=document.getElementById('bdDate').value;
   const bday=_normBdayDate(raw);
   const hint=document.getElementById('bdDateHint');
