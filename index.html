@@ -4869,7 +4869,7 @@ function renderBdayPage(){
         ${countdownHtml(b)}
         <span class="bday-date-lbl">${_bdayFmtDate(b)}</span>
         ${giftBtn}
-        <button class="bday-del-btn" onclick="delBday('${b.id}')">✕</button>
+        <button class="bday-del-btn" onclick="event.stopPropagation();delBday('${b.id}')">✕</button>
       </div>
       <div class="bday-presents" id="bday-presents-${b.id}" style="display:none">
         <div id="bday-present-list-${b.id}">${presentItems}</div>
