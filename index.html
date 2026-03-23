@@ -566,8 +566,8 @@ body.dark .bday-row.bday-sel>.bday-main{background:var(--sel-bg-dark,rgba(194,10
 .bday-grid{display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(3,1fr);gap:10px;padding:8px;height:100%;width:100%;box-sizing:border-box}
 .bday-month-card{border-radius:10px;background:rgba(0,0,0,.025);border:1px solid rgba(210,205,228,.2);padding:8px 6px;overflow-y:auto}
 body.dark .bday-month-card{background:rgba(255,255,255,.03);border-color:rgba(255,220,200,.1)}
-.bday-month-current{box-shadow:0 0 0 2px rgba(194,107,79,.5),0 4px 18px rgba(194,107,79,.2);background:rgba(194,107,79,.06)!important;border-color:rgba(194,107,79,.35)!important}
-body.dark .bday-month-current{box-shadow:0 0 0 2px rgba(194,107,79,.6),0 4px 18px rgba(194,107,79,.25);background:rgba(194,107,79,.1)!important}
+.bday-month-current{box-shadow:0 0 0 1px rgba(194,107,79,.3),0 0 28px 6px rgba(194,107,79,.28),0 4px 20px rgba(194,107,79,.18);background:rgba(255,255,255,.92)!important;border-color:rgba(194,107,79,.18)!important}
+body.dark .bday-month-current{box-shadow:0 0 0 1px rgba(194,107,79,.4),0 0 28px 6px rgba(194,107,79,.35),0 4px 20px rgba(194,107,79,.22);background:rgba(60,30,18,.85)!important}
 .bday-month-name{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);padding:2px 4px 5px;margin-bottom:3px;border-bottom:1px solid rgba(210,205,228,.18)}
 .bday-month-current .bday-month-name{color:var(--accent)}
 .bday-month-empty{height:8px}
@@ -893,11 +893,6 @@ body.dark .bday-month-current{box-shadow:0 0 0 2px rgba(194,107,79,.6),0 4px 18p
     <div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div>
   </div>
   <div class="card" style="flex:1;width:100%;display:flex;flex-direction:column;min-height:0;overflow:hidden">
-    <div class="ch">
-      <div class="ct">🎂 Birthdays</div>
-      <span class="cbadge" id="bdayCount" style="margin-right:4px">0</span>
-      <button class="btn-plus" onclick="openBdayModal()">+</button>
-    </div>
     <div id="bdayPageContent" style="flex:1;width:100%;min-height:0;overflow:hidden;padding:0"></div>
   </div>
   <div id="bdayList" style="display:none"></div>
@@ -4846,7 +4841,7 @@ function renderBdayPage(){
   }
   const gridHtml=byMonth.map((items,mi)=>{
     const isCurrent=mi===curMonthIdx;
-    return`<div class="bday-month-card${isCurrent?' bday-month-current':''}">
+    return`<div class="bday-month-card${isCurrent?' bday-month-current':''}" ondblclick="if(!event.target.closest('.bday-row'))openBdayModal()">
       <div class="bday-month-name">${MONTHS[mi]}</div>
       ${items.length?items.map(b=>bdayRow(b)).join(''):'<div class="bday-month-empty"></div>'}
     </div>`;

@@ -356,7 +356,11 @@ All three checkbox types share identical visual style:
 - Page ID: `page-birthdays`. Sidebar nav: `showPage('birthdays')`. Rendered by `renderBdayPage()`.
 - Supabase table: `birthdays(id, name, birthday, present_ideas)`. `present_ideas` is a TEXT column storing a JSON array of strings. Parse with `_bdayPresentList(b)`.
 - Stored in `st.birthdays`, persisted in localStorage. Fetched in `syncAll`.
-- Layout: single `.card` (max-width:700px) with `.ch` header (count badge + `+` button) and `#bdayPageContent` body.
+- Layout: full-screen `.card` (no header, no max-width) with `#bdayPageContent` filling the card. Page uses `height:100vh; display:flex; flex-direction:column; padding:clamp(12px,3vw,56px); padding-top:60px`.
+- **Grid layout**: 4×3 month grid (`.bday-grid`), `grid-template-columns:repeat(4,1fr); grid-template-rows:repeat(3,1fr)`. All 12 month cards are equal size. Birthdays listed under their month, sorted by day ascending.
+- **Current month card** (`.bday-month-current`): stronger outer glow via `box-shadow`, thin accent border (`0 0 0 1px`), whiter/more opaque inner background. Month name uses accent color.
+- **Double-click empty space** in a month card → `openBdayModal()` (add mode). Guard: `if(!event.target.closest('.bday-row'))` on `ondblclick` of `.bday-month-card`. Double-clicking a birthday row still opens edit modal via `.bday-main ondblclick`.
+- **No card header**: `.ch` removed. No count badge or `+` button in card header. Use double-click to add.
 - **Sections**: "Today 🎉" (md===todayMD), "Upcoming" (md>todayMD, sorted asc), "Past" (md<todayMD, sorted desc by month-day, opacity 0.45). Section headers use `.bday-section-header`.
 - **Countdown pills** (`.bday-countdown`): Today=orange, Tomorrow=light orange, ≤7d=yellow, ≤30d=green, >30d=grey. Not shown on past birthdays.
 - **Gift ideas**: Each row has a `.bday-gift-btn` (🎁 count, `.has-gifts` class if any). Click toggles `.bday-presents` panel via `toggleBdayPresents(id)`. Inside panel: list of `delBdayPresent(id,idx)` rows + add input (`addBdayPresent(id, inp)`). Both helpers PATCH `present_ideas` to Supabase.
