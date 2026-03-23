@@ -536,11 +536,12 @@ body.dark .qn-input{background:rgba(255,255,255,.06);border-color:rgba(255,220,2
 .bday-today>.bday-main{background:rgba(255,237,213,.55)}
 .bday-today>.bday-main:hover{background:rgba(255,237,213,.8)}
 .bday-today .bday-name{color:var(--accent);font-weight:700}
-.bday-past{opacity:.45}
-.bday-name{flex:1;font-size:13px;font-weight:600;color:#aaa;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.bday-name{font-size:13px;font-weight:600;color:#aaa;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex-shrink:1}
+.bday-spacer{flex:1}
 .bday-emoji{font-size:15px;flex-shrink:0;line-height:1}
 .bday-countdown{font-size:9px;font-weight:700;padding:2px 7px;border-radius:5px;border:1px solid transparent;flex-shrink:0;white-space:nowrap}
-.bday-date-lbl{font-size:11px;color:#ccc;flex-shrink:0;white-space:nowrap}
+.bday-date-lbl{font-size:11px;color:#aaa;flex-shrink:0;white-space:nowrap}
+.bday-age-pill{font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;background:rgba(0,0,0,.06);color:#999;border:1px solid rgba(0,0,0,.08);flex-shrink:0;white-space:nowrap}
 .bday-gift-btn{background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);padding:2px 6px;border-radius:6px;transition:all .12s;flex-shrink:0;display:flex;align-items:center;gap:3px;font-family:inherit;line-height:1}
 .bday-gift-btn:hover{background:rgba(255,237,213,.7);color:var(--accent)}
 .bday-gift-btn.has-gifts{color:var(--accent);font-weight:600}
@@ -569,15 +570,18 @@ body.dark .bday-month-card{background:rgba(255,255,255,.03);border-color:rgba(25
 .bday-month-current{box-shadow:0 0 0 1px rgba(194,107,79,.3),0 0 28px 6px rgba(194,107,79,.28),0 4px 20px rgba(194,107,79,.18);background:rgba(255,255,255,.92)!important;border-color:rgba(194,107,79,.18)!important}
 body.dark .bday-month-current{box-shadow:0 0 0 1px rgba(194,107,79,.4),0 0 28px 6px rgba(194,107,79,.35),0 4px 20px rgba(194,107,79,.22);background:rgba(60,30,18,.85)!important}
 .bday-month-name{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);padding:2px 4px 5px;margin-bottom:3px;border-bottom:1px solid rgba(210,205,228,.18)}
-.bday-age{font-size:11px;color:#ccc;flex-shrink:0}
 .bday-month-current .bday-month-name{color:#444;letter-spacing:.09em}
-.bday-month-current .bday-name{color:#333;font-weight:700}
-.bday-month-current .bday-date-lbl{color:#666}
-.bday-month-current .bday-age{color:#777}
+.bday-month-current .bday-name{color:#222;font-weight:700}
+.bday-month-current .bday-date-lbl{color:#555}
+.bday-month-current .bday-age-pill{background:rgba(194,107,79,.12);color:var(--accent);border-color:rgba(194,107,79,.25)}
+.bday-month-current .bday-past .bday-name{color:#aaa;font-weight:600}
+.bday-month-current .bday-past .bday-date-lbl{color:#bbb}
+.bday-month-current .bday-past .bday-age-pill{background:rgba(0,0,0,.04);color:#bbb;border-color:rgba(0,0,0,.07)}
 body.dark .bday-month-current .bday-month-name{color:#ddd}
 body.dark .bday-month-current .bday-name{color:#f0e8e0;font-weight:700}
 body.dark .bday-month-current .bday-date-lbl{color:rgba(255,220,200,.65)}
-body.dark .bday-month-current .bday-age{color:rgba(255,200,170,.55)}
+body.dark .bday-month-current .bday-past .bday-name{color:rgba(255,200,170,.45)}
+body.dark .bday-month-current .bday-past .bday-date-lbl{color:rgba(255,200,170,.35)}
 .bday-add-menu{position:fixed;z-index:9999;background:rgba(255,255,255,.98);border:1px solid rgba(210,205,228,.35);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.13);padding:6px;min-width:200px;backdrop-filter:blur(14px)}
 body.dark .bday-add-menu{background:rgba(38,20,10,.97);border-color:rgba(255,220,180,.15)}
 .bday-add-menu-item{padding:7px 12px;border-radius:7px;font-size:12px;font-weight:500;cursor:pointer;color:var(--text);transition:background .1s}
@@ -4917,15 +4921,16 @@ function renderBdayPage(){
     const presentItems=presents.map((p,i)=>`<div class="bday-present-item"><span class="bday-present-dot"></span><span class="bday-present-text">${escHtml(p)}</span><button class="bday-present-del" onclick="delBdayPresent('${b.id}',${i})">✕</button></div>`).join('');
     const occDs=`${curYear}-${md}`;
     const age=_bdayAge(b,occDs);
-    const ageHtml=age!==null?`<span class="bday-age">${isPast?age:('turns '+age)}</span>`:'';
+    const ageHtml=age!==null?`<span class="bday-age-pill">${isPast?age:('turns '+age)}</span>`:'';
     const giftBtn=presents.length>0?`<button class="bday-gift-btn has-gifts" onclick="event.stopPropagation();openBdayPresentPopup(event,'${b.id}')" onmouseenter="showBdayPresentTip(event,'${b.id}')" onmouseleave="hidePupTip()" title="Gift ideas">🎁 ${presents.length}</button>`:'';
     return`<div class="bday-row${isToday?' bday-today':''}${isPast?' bday-past':''}" id="bday-row-${b.id}" data-bid="${b.id}">
       <div class="bday-main" onclick="selBdayRow(event,'${b.id}')" ondblclick="openBdayModal('${b.id}')" oncontextmenu="showBdayCtx(event,'${b.id}')">
         <span class="bday-name">${escHtml(b.name)}</span>
-        ${ageHtml}
-        ${countdownHtml(b)}
-        <span class="bday-date-lbl">${_bdayFmtDate(b)}</span>
         ${giftBtn}
+        <span class="bday-spacer"></span>
+        ${countdownHtml(b)}
+        ${ageHtml}
+        <span class="bday-date-lbl">${_bdayFmtDate(b)}</span>
         <button class="bday-del-btn" onclick="event.stopPropagation();delBday('${b.id}')">✕</button>
       </div>
       <div class="bday-presents" id="bday-presents-${b.id}" style="display:none">
