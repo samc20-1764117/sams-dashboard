@@ -4152,7 +4152,7 @@ function toggleBdayAddMenu(e){
   setTimeout(()=>document.addEventListener('click',closeBdayAddMenu,{once:true}),0);
 }
 function closeBdayAddMenu(){const m=document.getElementById('bdayAddMenu');if(m)m.style.display='none';}
-function openBdayModal(id){
+function openBdayModal(id,month){
   bdayEditId=id||null;
   const hint=document.getElementById('bdDateHint');if(hint)hint.textContent='';
   if(id){
@@ -4163,7 +4163,9 @@ function openBdayModal(id){
     document.getElementById('bdPresent').value='';
   } else {
     document.getElementById('bdayMTitle').textContent='Add Birthday';
-    document.getElementById('bdName').value='';document.getElementById('bdDate').value='';document.getElementById('bdPresent').value='';
+    document.getElementById('bdName').value='';
+    document.getElementById('bdDate').value=month?`${month}/`:'';
+    document.getElementById('bdPresent').value='';
   }
   document.getElementById('bdayModal').classList.add('open');
   setTimeout(()=>document.getElementById('bdName').focus(),60);
@@ -4887,7 +4889,7 @@ function renderBdayPage(){
   }
   const gridHtml=byMonth.map((items,mi)=>{
     const isCurrent=mi===curMonthIdx;
-    return`<div class="bday-month-card${isCurrent?' bday-month-current':''}" ondblclick="if(!event.target.closest('.bday-row'))openBdayModal()">
+    return`<div class="bday-month-card${isCurrent?' bday-month-current':''}" ondblclick="if(!event.target.closest('.bday-row'))openBdayModal(null,${mi+1})">
       <div class="bday-month-name">${MONTHS[mi]}</div>
       ${items.length?items.map(b=>bdayRow(b)).join(''):'<div class="bday-month-empty"></div>'}
     </div>`;
