@@ -2492,8 +2492,8 @@ function toggleUnMenu(){
   menu.innerHTML=ts.length?ts.map(t=>{
     const s=gc(t.category);
     return `<div class="ctx-item" draggable="true" style="display:flex;align-items:center;gap:8px;padding:6px 12px;cursor:grab"
-      ondragstart="dStart(event,'${t.id}');closeUnMenu()"
-      ondragend="document.body.classList.remove('body-dragging');showWkcEdges(false)"
+      ondragstart="dStart(event,'${t.id}');const _b=document.getElementById('unMenuBack');if(_b)_b.style.pointerEvents='none'"
+      ondragend="document.body.classList.remove('body-dragging');showWkcEdges(false);closeUnMenu()"
       ondblclick="tiDbl(event,'${t.id}')">
       <span style="width:7px;height:7px;border-radius:50%;background:${s.d};flex-shrink:0"></span>
       <span style="flex:1;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.name}</span>
