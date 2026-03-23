@@ -2489,17 +2489,8 @@ function toggleUnMenu(){
   if(!menu||!badge)return;
   if(menu.style.display==='block'){closeUnMenu();return;}
   const ts=sortTasks(st.tasks.filter(t=>!t.due_date&&!t.done&&t.category!=='Long term'));
-  menu.innerHTML=ts.length?ts.map(t=>{
-    const s=gc(t.category);
-    return `<div class="ctx-item" draggable="true" style="display:flex;align-items:center;gap:8px;padding:6px 12px;cursor:grab"
-      ondragstart="dStart(event,'${t.id}');const _b=document.getElementById('unMenuBack');if(_b)_b.style.pointerEvents='none'"
-      ondragend="document.body.classList.remove('body-dragging');showWkcEdges(false);closeUnMenu()"
-      ondblclick="tiDbl(event,'${t.id}')">
-      <span style="width:7px;height:7px;border-radius:50%;background:${s.d};flex-shrink:0"></span>
-      <span style="flex:1;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.name}</span>
-      <span style="font-size:9px;color:var(--muted);flex-shrink:0">${t.category}</span>
-    </div>`;
-  }).join(''):`<div style="padding:12px;font-size:10px;color:var(--subtle);text-align:center">All assigned ✓</div>`;
+  menu.innerHTML=ts.length?ts.map(t=>tRow(t,{cat:true,drag:true,noColor:true})).join('')
+    :`<div style="padding:12px;font-size:10px;color:var(--subtle);text-align:center">All assigned ✓</div>`;
   const r=badge.getBoundingClientRect();
   menu.style.left=Math.max(8,r.left-230)+'px';
   menu.style.top='auto';
@@ -2613,7 +2604,7 @@ function tRow(t,o={}){
   const imp=t.important&&!ov&&!t.done;
   const s=ov?OV:imp?IMP:gc(t.category);
   const sl=ov?'ov':imp?'imp':slug(t.category);
-  return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''} ${imp&&!ov?'imp-row':''}" style="${!ov&&!imp&&!o.noColor?`background:${s.bg}`:''}" id="ti-${t.id}" ${o.drag?`draggable="true" ondragstart="dStart(event,'${t.id}')" ondragend="this.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false)"`:''} onclick="selTask(event,'${t.id}')" ondblclick="tiDbl(event,'${t.id}')" oncontextmenu="showCtx(event,'${t.id}')">
+  return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''} ${imp&&!ov?'imp-row':''}" style="${!ov&&!imp&&!o.noColor?`background:${s.bg}`:''}" id="ti-${t.id}" ${o.drag?`draggable="true" ondragstart="dStart(event,'${t.id}')" ondragend="dEnd(event)"`:''} onclick="selTask(event,'${t.id}')" ondblclick="tiDbl(event,'${t.id}')" oncontextmenu="showCtx(event,'${t.id}')">
     <label class="chk-wrap" onclick="event.stopPropagation()" onmousedown="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="toggleTask('${t.id}',this.checked,'${o.drag?'wk':''}')"></label>
     <span class="tn">${t.name}</span>
     ${o.cat?`<span class="cpill" style="background:${s.bg};color:${s.t};border-color:${s.b}">${t.category||'?'}</span>`:''}
@@ -2624,7 +2615,8 @@ function tRow(t,o={}){
   </div>`;
 }
 
-function dStart(e,id){dragId=String(id);e.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);}
+function dStart(e,id){dragId=String(id);e.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);const _b=document.getElementById('unMenuBack');if(_b)_b.style.pointerEvents='none';}
+function dEnd(e){e.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false);closeUnMenu();const _b=document.getElementById('unMenuBack');if(_b)_b.style.pointerEvents='';}
 
 // ── Kanban ─────────────────────────────────────────────────────────────────────
 function renderKanban(){
@@ -5388,6 +5380,6 @@ tickClock();_updateOvTopDate();setInterval(tickClock,1000);
 <script>if(location.hostname.includes('dev.'))document.getElementById('devBadge').style.display='block';</script>
 
 <!-- Unassigned menu (body-level) -->
-<div id="unMenu" style="display:none;position:fixed;z-index:9997;width:260px;max-height:320px;overflow-y:auto;background:var(--gb);backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow-lg);padding:8px 0"></div>
+<div id="unMenu" class="tlist" style="display:none;position:fixed;z-index:9997;width:300px;max-height:360px;overflow-y:auto;background:var(--gb);backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow-lg);padding:4px 0"></div>
 <div id="unMenuBack" onclick="closeUnMenu()" style="display:none;position:fixed;inset:0;z-index:9996"></div>
 </body></html>
