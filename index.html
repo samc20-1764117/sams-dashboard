@@ -1413,7 +1413,7 @@ async function syncAll(silent=false){
     }
     if(shop){st.shopping=shop;}
     if(trav)st.travel=trav;
-    if(bdays)st.birthdays=bdays;
+    if(bdays)st.birthdays=bdays.map(b=>{const loc=st.birthdays.find(x=>String(x.id)===String(b.id));return(loc&&loc.present_ideas&&!b.present_ideas)?{...b,present_ideas:loc.present_ideas}:b;});
     if(pupSkills){
       if(!silent){_pupUndoDirty=false;st.pup_skills=pupSkills;}
       else if(!_pupUndoDirty){st.pup_skills=pupSkills;}
@@ -4816,7 +4816,7 @@ async function addBdayPresent(id,inp){
   b.present_ideas=JSON.stringify(list);inp.value='';
   renderBdayPage();
   const el=document.getElementById('bday-presents-'+id);if(el){el.classList.add('open');}
-  if(!String(id).startsWith('l-'))await sbReqNullable('PATCH','birthdays',{present_ideas:b.present_ideas},`?id=eq.${id}`);
+  if(!String(id).startsWith('l-'))await sbReq('PATCH','birthdays',{present_ideas:b.present_ideas},`?id=eq.${id}`);
 }
 async function delBdayPresent(id,idx){
   const b=st.birthdays.find(x=>String(x.id)===String(id));if(!b)return;
@@ -4826,7 +4826,7 @@ async function delBdayPresent(id,idx){
   const wasOpen=document.getElementById('bday-presents-'+id)?.classList.contains('open');
   renderBdayPage();
   if(wasOpen){const el=document.getElementById('bday-presents-'+id);if(el)el.classList.add('open');}
-  if(!String(id).startsWith('l-'))await sbReqNullable('PATCH','birthdays',{present_ideas:b.present_ideas},`?id=eq.${id}`);
+  if(!String(id).startsWith('l-'))await sbReq('PATCH','birthdays',{present_ideas:b.present_ideas},`?id=eq.${id}`);
 }
 function renderBdayPage(){
   save();
