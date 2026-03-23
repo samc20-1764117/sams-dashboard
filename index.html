@@ -531,7 +531,7 @@ body.dark .qn-input{background:rgba(255,255,255,.06);border-color:rgba(255,220,2
 .bday-section{padding:0 6px 8px}
 .bday-section-header{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);padding:10px 4px 5px;display:flex;align-items:center;gap:6px;border-bottom:1px solid rgba(210,205,228,.18);margin-bottom:3px}
 .bday-row{display:flex;flex-direction:column;margin:1px 0;border-radius:9px;transition:background .12s}
-.bday-main{display:flex;align-items:center;gap:8px;padding:7px 10px;position:relative;min-width:0;border-radius:9px;transition:background .12s}
+.bday-main{display:flex;align-items:center;gap:8px;padding:7px 10px;position:relative;min-width:0;border-radius:9px;transition:background .12s;user-select:none}
 .bday-main:hover{background:rgba(255,255,255,.72);box-shadow:0 2px 10px rgba(0,0,0,.06)}
 .bday-today>.bday-main{background:rgba(255,237,213,.55)}
 .bday-today>.bday-main:hover{background:rgba(255,237,213,.8)}
@@ -544,9 +544,6 @@ body.dark .qn-input{background:rgba(255,255,255,.06);border-color:rgba(255,220,2
 .bday-gift-btn{background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);padding:2px 6px;border-radius:6px;transition:all .12s;flex-shrink:0;display:flex;align-items:center;gap:3px;font-family:inherit;line-height:1}
 .bday-gift-btn:hover{background:rgba(255,237,213,.7);color:var(--accent)}
 .bday-gift-btn.has-gifts{color:var(--accent);font-weight:600}
-.bday-edit-btn{opacity:0;background:none;border:none;cursor:pointer;font-size:10px;color:var(--muted);padding:2px 6px;border-radius:5px;transition:all .12s;flex-shrink:0;font-family:inherit}
-.bday-main:hover .bday-edit-btn{opacity:1}
-.bday-edit-btn:hover{background:rgba(255,255,255,.7);color:var(--text)}
 .bday-del-btn{opacity:0;background:none;border:none;cursor:pointer;font-size:10px;color:var(--subtle);padding:2px 4px;border-radius:4px;transition:opacity .1s,color .1s;flex-shrink:0}
 .bday-main:hover .bday-del-btn{opacity:1}
 .bday-del-btn:hover{color:#ef4444}
@@ -4200,6 +4197,7 @@ function bdayRedo(){
 
 function selBdayRow(e,id){
   if(e.target.closest('input,button,select'))return;
+  e.stopPropagation();
   id=String(id);
   if(e.metaKey||e.ctrlKey){
     if(_bdaySelIds.has(id))_bdaySelIds.delete(id);else _bdaySelIds.add(id);
@@ -4807,14 +4805,13 @@ function renderBdayPage(){
     const ageHtml=age!==null?`<span style="font-size:11px;color:var(--muted);flex-shrink:0">${isPast?age:('turns '+age)}</span>`:'';
     const giftBtn=presents.length>0?`<button class="bday-gift-btn has-gifts" onclick="toggleBdayPresents('${b.id}')" title="Gift ideas">🎁 ${presents.length}</button>`:'';
     return`<div class="bday-row${isToday?' bday-today':''}${isPast?' bday-past':''}" id="bday-row-${b.id}" data-bid="${b.id}">
-      <div class="bday-main" onclick="selBdayRow(event,'${b.id}')" ondblclick="if(!event.target.closest('button'))openBdayModal('${b.id}')" oncontextmenu="showBdayCtx(event,'${b.id}')">
+      <div class="bday-main" onclick="selBdayRow(event,'${b.id}')" ondblclick="openBdayModal('${b.id}')" oncontextmenu="showBdayCtx(event,'${b.id}')">
         <span class="bday-emoji">${isToday?'🎉':'🎂'}</span>
         <span class="bday-name">${escHtml(b.name)}</span>
         ${ageHtml}
         ${countdownHtml(b,isPast)}
         <span class="bday-date-lbl">${_bdayFmtDate(b)}</span>
         ${giftBtn}
-        <button class="bday-edit-btn" onclick="openBdayModal('${b.id}')">Edit</button>
         <button class="bday-del-btn" onclick="delBday('${b.id}')">✕</button>
       </div>
       <div class="bday-presents" id="bday-presents-${b.id}" style="display:none">
