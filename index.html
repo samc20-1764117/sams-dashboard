@@ -944,7 +944,8 @@ body.dark .bday-add-input{background:rgba(255,255,255,.06);border-color:rgba(255
   <div class="modal task-modal" style="width:320px;padding:16px">
     <div class="mt" id="bdayMTitle">Add Birthday</div>
     <div class="mfield"><label>Name *</label><input id="bdName" placeholder="e.g. Mom" onkeydown="if(event.key==='Enter')document.getElementById('bdDate').focus()"></div>
-    <div class="mfield"><label>Birthday *</label><input id="bdDate" type="text" placeholder="MM-DD or YYYY-MM-DD" autocomplete="off" onkeydown="if(event.key==='Enter')saveBdayModal()"><div id="bdDateHint" style="font-size:9px;color:var(--muted);margin-top:3px"></div></div>
+    <div class="mfield"><label>Birthday *</label><input id="bdDate" type="text" placeholder="MM/DD or MM/DD/YYYY" autocomplete="off" onkeydown="if(event.key==='Enter')document.getElementById('bdPresent').focus()"><div id="bdDateHint" style="font-size:9px;color:var(--muted);margin-top:3px"></div></div>
+    <div class="mfield"><label>Gift idea <span style="opacity:.45;font-weight:400">(optional)</span></label><input id="bdPresent" placeholder="e.g. Flowers, book…" onkeydown="if(event.key==='Enter')saveBdayModal()"></div>
     <div class="mact"><button class="btn btn-ghost" onclick="closeMod('bdayModal')">Cancel</button><button class="btn btn-dark" onclick="saveBdayModal()">Save</button></div>
   </div>
 </div>
@@ -4093,9 +4094,10 @@ function openBdayModal(id){
     document.getElementById('bdayMTitle').textContent='Edit Birthday';
     document.getElementById('bdName').value=b.name||'';
     document.getElementById('bdDate').value=b.birthday||'';
+    document.getElementById('bdPresent').value='';
   } else {
     document.getElementById('bdayMTitle').textContent='Add Birthday';
-    document.getElementById('bdName').value='';document.getElementById('bdDate').value='';
+    document.getElementById('bdName').value='';document.getElementById('bdDate').value='';document.getElementById('bdPresent').value='';
   }
   document.getElementById('bdayModal').classList.add('open');
   setTimeout(()=>document.getElementById('bdName').focus(),60);
@@ -4105,17 +4107,20 @@ async function saveBdayModal(){
   const raw=document.getElementById('bdDate').value;
   const bday=_normBdayDate(raw);
   const hint=document.getElementById('bdDateHint');
-  if(!bday){if(hint)hint.textContent='Invalid date. Try MM-DD or YYYY-MM-DD.';if(hint)hint.style.color='#ef4444';return;}
+  if(!bday){if(hint)hint.textContent='Invalid. Try MM/DD or MM/DD/YYYY.';if(hint)hint.style.color='#ef4444';return;}
   if(hint)hint.textContent='';
+  const presentRaw=(document.getElementById('bdPresent').value||'').trim();
   closeMod('bdayModal');
   if(bdayEditId){
     const b=st.birthdays.find(x=>String(x.id)===String(bdayEditId));if(!b)return;
+    if(presentRaw){const list=_bdayPresentList(b);list.push(presentRaw);b.present_ideas=JSON.stringify(list);}
     Object.assign(b,{name,birthday:bday});renderAll();renderBdayPage();
-    await sbReqNullable('PATCH','birthdays',{name,birthday:bday},`?id=eq.${bdayEditId}`);
+    await sbReqNullable('PATCH','birthdays',{name,birthday:bday,...(presentRaw?{present_ideas:b.present_ideas}:{})},`?id=eq.${bdayEditId}`);
   } else {
-    const b={id:'l-'+Date.now(),name,birthday:bday};
+    const present_ideas=presentRaw?JSON.stringify([presentRaw]):null;
+    const b={id:'l-'+Date.now(),name,birthday:bday,...(present_ideas?{present_ideas}:{})};
     st.birthdays.push(b);renderAll();renderBdayPage();
-    const sv=await sbReq('POST','birthdays',{name,birthday:bday});
+    const sv=await sbReq('POST','birthdays',{name,birthday:bday,...(present_ideas?{present_ideas}:{})});
     if(sv&&sv[0]){const i=st.birthdays.findIndex(x=>x.id===b.id);if(i>-1)st.birthdays[i]=sv[0];}
   }
 }
@@ -4588,13 +4593,20 @@ function _bdayFmtDate(b){
   if(!b.birthday)return'';
   const bd=b.birthday;
   if(bd.length===5){
-    // MM-DD only — no year
     const[mo,dy]=bd.split('-').map(Number);
-    return new Date(2000,mo-1,dy).toLocaleDateString('en-US',{month:'long',day:'numeric'});
+    return`${mo}/${dy}`;
   }
-  // YYYY-MM-DD — show with year
-  const d=new Date(bd+'T12:00');
-  return d.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+  // YYYY-MM-DD — show M/D/YYYY
+  const[yr,mo,dy]=bd.split('-').map(Number);
+  return`${mo}/${dy}/${yr}`;
+}
+function _bdayAge(b,forDate){
+  // forDate = 'YYYY-MM-DD' of the birthday occurrence
+  if(!b.birthday||b.birthday.length!==10)return null;
+  const[yr]=b.birthday.split('-').map(Number);
+  const occYear=parseInt((forDate||'').slice(0,4),10);
+  if(!occYear||!yr)return null;
+  return occYear-yr;
 }
 function toggleBdayPresents(id){
   const el=document.getElementById('bday-presents-'+id);if(!el)return;
@@ -4658,15 +4670,19 @@ function renderBdayPage(){
     const isToday=md===todayMD;
     const presents=_bdayPresentList(b);
     const presentItems=presents.map((p,i)=>`<div class="bday-present-item"><span class="bday-present-dot"></span><span class="bday-present-text">${escHtml(p)}</span><button class="bday-present-del" onclick="delBdayPresent('${b.id}',${i})">✕</button></div>`).join('');
-    const giftCls=presents.length>0?' has-gifts':'';
-    const giftLbl=presents.length>0?`🎁 ${presents.length}`:'🎁';
+    // Age: upcoming/today = "turns X", past = current age (already turned)
+    const occDs=`${curYear}-${md}`;
+    const age=_bdayAge(b,occDs);
+    const ageHtml=age!==null?`<span style="font-size:11px;color:var(--muted);flex-shrink:0">${isPast?age:('turns '+age)}</span>`:'';
+    const giftBtn=presents.length>0?`<button class="bday-gift-btn has-gifts" onclick="toggleBdayPresents('${b.id}')" title="Gift ideas">🎁 ${presents.length}</button>`:'';
     return`<div class="bday-row${isToday?' bday-today':''}${isPast?' bday-past':''}" id="bday-row-${b.id}">
       <div class="bday-main">
         <span class="bday-emoji">${isToday?'🎉':'🎂'}</span>
         <span class="bday-name">${escHtml(b.name)}</span>
+        ${ageHtml}
         ${countdownHtml(b,isPast)}
         <span class="bday-date-lbl">${_bdayFmtDate(b)}</span>
-        <button class="bday-gift-btn${giftCls}" onclick="toggleBdayPresents('${b.id}')" title="Gift ideas">${giftLbl}</button>
+        ${giftBtn}
         <button class="bday-edit-btn" onclick="openBdayModal('${b.id}')">Edit</button>
         <button class="bday-del-btn" onclick="delBday('${b.id}')">✕</button>
       </div>
