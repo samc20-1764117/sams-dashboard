@@ -385,9 +385,8 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 .wkc-drag-ghost{position:absolute;top:2px;height:18px;border-radius:4px;pointer-events:none;z-index:20;opacity:.55;transition:none}
 .wkc-col.drag-sel{background:rgba(20,184,166,.07)}
 
-.wkc-foot{display:none}
-#unAssignedBadge:hover{transform:scale(1.1)}
-body.dark #unAssignedBadge{background:#e08b6e}
+.wkc-foot{display:flex;align-items:center;padding:4px 8px;flex-shrink:0;gap:6px;min-height:30px}
+#unAssignedBadge:hover{opacity:.85}
 .month-btn{display:flex;align-items:center;gap:3px;font-size:11px;font-weight:600;color:var(--muted);cursor:pointer;padding:3px 5px;border-radius:var(--rxs);background:none;transition:all .15s}
 .month-btn:hover{background:rgba(109,95,230,.07);color:var(--accent)}
 
@@ -707,6 +706,7 @@ body.dark .qn-input{background:rgba(255,255,255,.06);border-color:rgba(255,220,2
           </div>
         </div>
         <div class="wkc-foot">
+          <div id="unAssignedBadge" onclick="toggleUnMenu()" style="display:none;width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;font-size:10px;font-weight:700;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.18);flex-shrink:0"></div>
           <div style="flex:1"></div>
           <button class="btn btn-dark btn-xs" onclick="openTModal()">+ Add</button>
         </div>
@@ -2480,13 +2480,14 @@ function renderUnassigned(){
   const ts=st.tasks.filter(t=>!t.due_date&&!t.done&&t.category!=='Long term');
   const badge=document.getElementById('unAssignedBadge');
   if(!badge)return;
-  badge.textContent=ts.length;
-  badge.style.display='flex';
+  if(ts.length>0){badge.textContent=ts.length;badge.style.display='flex';}
+  else{badge.style.display='none';closeUnMenu();}
 }
 function toggleUnMenu(){
   const menu=document.getElementById('unMenu');
   const back=document.getElementById('unMenuBack');
-  if(!menu)return;
+  const badge=document.getElementById('unAssignedBadge');
+  if(!menu||!badge)return;
   if(menu.style.display==='block'){closeUnMenu();return;}
   const ts=sortTasks(st.tasks.filter(t=>!t.due_date&&!t.done&&t.category!=='Long term'));
   menu.innerHTML=ts.length?ts.map(t=>{
@@ -2497,6 +2498,9 @@ function toggleUnMenu(){
       <span style="font-size:9px;color:var(--muted);flex-shrink:0">${t.category}</span>
     </div>`;
   }).join(''):`<div style="padding:12px;font-size:10px;color:var(--subtle);text-align:center">All assigned ✓</div>`;
+  const r=badge.getBoundingClientRect();
+  menu.style.left=r.left+'px';
+  menu.style.bottom=(window.innerHeight-r.top+6)+'px';
   menu.style.display='block';
   back.style.display='block';
 }
@@ -5380,8 +5384,7 @@ tickClock();_updateOvTopDate();setInterval(tickClock,1000);
 <div id="devBadge" style="display:none;position:fixed;bottom:16px;left:16px;background:#1e293b;color:#f8fafc;font-size:11px;font-weight:700;letter-spacing:.08em;padding:4px 9px;border-radius:6px;border:1px solid rgba(255,255,255,.15);z-index:9999;pointer-events:none">DEV-91</div>
 <script>if(location.hostname.includes('dev.'))document.getElementById('devBadge').style.display='block';</script>
 
-<!-- Unassigned badge + menu (body-level, outside #main) -->
-<div id="unAssignedBadge" onclick="toggleUnMenu()" style="display:none;position:fixed;bottom:24px;right:24px;z-index:9998;width:32px;height:32px;border-radius:50%;background:var(--accent);color:#fff;font-size:12px;font-weight:700;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.22);transition:transform .15s"></div>
-<div id="unMenu" style="display:none;position:fixed;bottom:64px;right:24px;z-index:9997;width:260px;max-height:320px;overflow-y:auto;background:var(--gb);backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow-lg);padding:8px 0"></div>
+<!-- Unassigned menu (body-level) -->
+<div id="unMenu" style="display:none;position:fixed;z-index:9997;width:260px;max-height:320px;overflow-y:auto;background:var(--gb);backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow-lg);padding:8px 0"></div>
 <div id="unMenuBack" onclick="closeUnMenu()" style="display:none;position:fixed;inset:0;z-index:9996"></div>
 </body></html>
