@@ -904,9 +904,9 @@ body.dark .bday-row.bday-sel>.bday-main{background:var(--sel-bg-dark,rgba(194,10
 <div class="overlay" id="tModal" onclick="closeMod(&#39;tModal&#39;,event)" onkeydown="if(event.key===&#39;Enter&#39;){event.preventDefault();saveTModal();}if(event.key===&#39;Escape&#39;)closeMod(&#39;tModal&#39;)">
   <div class="modal task-modal">
     <div class="mt" id="tMTitle">Add Task</div>
-    <div class="mfield"><label>Name *</label><input id="tName" placeholder="What needs doing?" onkeydown="if(event.key===&#39;Enter&#39;)saveTModal()"></div>
+    <div class="mfield"><label>Name *</label><input id="tName" placeholder="What needs doing?"></div>
     <div class="mfield"><label>Category</label><select id="tCat"><option value="Home">Home</option><option value="My work">My work</option><option value="Work">Work</option><option value="Social">Social</option><option value="Long term">Long term</option></select></div>
-    <div class="mfield"><label>Due date <span style="opacity:.45;font-weight:400">(optional)</span></label><div style="display:flex;gap:4px;align-items:center"><input id="tDue" type="date" style="flex:1" onkeydown="if(event.key===&#39;Enter&#39;)saveTModal()"><button type="button" class="btn btn-ghost btn-xs" onclick="document.getElementById(&#39;tDue&#39;).value=&#39;&#39;" title="Clear date" style="flex-shrink:0;padding:4px 7px;font-size:11px">✕ Clear</button></div></div>
+    <div class="mfield"><label>Due date <span style="opacity:.45;font-weight:400">(optional)</span></label><div style="display:flex;gap:4px;align-items:center"><input id="tDue" type="date" style="flex:1"><button type="button" class="btn btn-ghost btn-xs" onclick="document.getElementById(&#39;tDue&#39;).value=&#39;&#39;" title="Clear date" style="flex-shrink:0;padding:4px 7px;font-size:11px">✕ Clear</button></div></div>
     <div class="mimp-row"><input type="checkbox" id="tImp" style="width:14px;height:14px;cursor:pointer;accent-color:#eab308"><label for="tImp">⭐ Mark as important</label></div>
     <div class="mfield"><label>Notes <span style="opacity:.45;font-weight:400">(optional)</span></label><textarea id="tNotes" placeholder="Add notes…" style="resize:vertical;min-height:52px;width:100%;font-family:inherit;font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,.6);color:var(--text);outline:none"></textarea></div>
     <div class="mact"><button class="btn btn-ghost" onclick="closeMod(&#39;tModal&#39;)">Cancel</button><button class="btn btn-dark" id="tSaveBtn" onclick="saveTModal()">Add</button></div>
@@ -1073,7 +1073,7 @@ body.dark .bday-row.bday-sel>.bday-main{background:var(--sel-bg-dark,rgba(194,10
 </div>
 
 <!-- Recurring Edit Modal -->
-<div class="overlay" id="recEditModal" onclick="closeMod(&#39;recEditModal&#39;,event)" onkeydown="if(event.key===&#39;Escape&#39;)closeMod(&#39;recEditModal&#39;)">
+<div class="overlay" id="recEditModal" onclick="closeMod(&#39;recEditModal&#39;,event)" onkeydown="if(event.key===&#39;Enter&#39;&amp;&amp;event.target.tagName!==&#39;SELECT&#39;){event.preventDefault();saveRecEdit();}if(event.key===&#39;Escape&#39;)closeMod(&#39;recEditModal&#39;)">
   <div class="modal task-modal" style="width:350px">
     <div class="mt">Edit Recurring Task</div>
     <div class="mfield"><label>Task name *</label><input id="recEditName" placeholder="Task name"></div>
@@ -1771,7 +1771,7 @@ document.addEventListener('keydown',e=>{
   if(e.key==='Enter'&&!e.metaKey&&!e.ctrlKey){
     const qa=document.getElementById('qaPopup');
     if(qa.classList.contains('open')){e.preventDefault();submitQA();return;}
-    if(document.getElementById('tModal').classList.contains('open')&&document.getElementById('tName').value.trim()){e.preventDefault();saveTModal();}
+    if(document.getElementById('tModal').classList.contains('open')){e.preventDefault();saveTModal();}
     else if(document.getElementById('shopEditModal').classList.contains('open')){e.preventDefault();saveShopEdit();}
     else if(document.getElementById('recEditModal').classList.contains('open')){e.preventDefault();saveRecEdit();}
     else if(document.getElementById('recModal').classList.contains('open')){e.preventDefault();saveRecModal();}
