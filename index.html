@@ -708,7 +708,6 @@ body.dark .qn-input{background:rgba(255,255,255,.06);border-color:rgba(255,220,2
         <div class="wkc-foot">
           <div id="unAssignedBadge" onclick="toggleUnMenu()" style="display:none;width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;font-size:10px;font-weight:700;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.18);flex-shrink:0"></div>
           <div style="flex:1"></div>
-          <button class="btn btn-dark btn-xs" onclick="openTModal()">+ Add</button>
         </div>
       </div>
     </div><!-- week cal -->
@@ -2499,7 +2498,8 @@ function toggleUnMenu(){
     </div>`;
   }).join(''):`<div style="padding:12px;font-size:10px;color:var(--subtle);text-align:center">All assigned ✓</div>`;
   const r=badge.getBoundingClientRect();
-  menu.style.left=r.left+'px';
+  menu.style.left=Math.max(8,r.left-230)+'px';
+  menu.style.top='auto';
   menu.style.bottom=(window.innerHeight-r.top+6)+'px';
   menu.style.display='block';
   back.style.display='block';
