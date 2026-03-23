@@ -2481,6 +2481,11 @@ function renderUnassigned(){
   if(!badge)return;
   if(ts.length>0){badge.textContent=ts.length;badge.style.display='flex';}
   else{badge.style.display='none';closeUnMenu();}
+  const menu=document.getElementById('unMenu');
+  if(menu&&menu.style.display==='block'){
+    menu.innerHTML=ts.length?ts.map(t=>tRow(t,{cat:true,drag:true,noColor:true})).join('')
+      :`<div style="padding:12px;font-size:10px;color:var(--subtle);text-align:center">All assigned ✓</div>`;
+  }
 }
 function toggleUnMenu(){
   const menu=document.getElementById('unMenu');
