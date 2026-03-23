@@ -210,11 +210,25 @@ All three checkbox types share identical visual style:
 - `recModal` shows a 🐾 Pup related checkbox (`id="recPupRelated"`) only when type is `weekly_reset`. Hidden via `updateRecTypeUI()`.
 - POST/PATCH payloads include `pup_related` when true.
 
-## Today List & Need to Assign
+## Today List
 
-- Tasks in `#todList` and `#unList` render without category background color (`noColor:true`). Overdue (red) and important (yellow) backgrounds still show.
+- Tasks in `#todList` render without category background color (`noColor:true`). Overdue (red) and important (yellow) backgrounds still show.
 - `#todList .ti` has extra left margin (`margin-left:10px`) to shift slightly right.
 - Shopping overview (`#shopOv`) items use `.chk-wrap` label for consistent spacing with weekly reset.
+
+## Unassigned Tasks Badge & Popup
+
+- **"Need to Assign" container removed** from overview-left. No `#unList` element in the DOM.
+- **Badge**: `id="unAssignedBadge"` — 22px circle inside `.wkc-foot` (left side). Shows count of unassigned tasks. Hidden (`display:none`) when count is 0.
+- **Filter**: `st.tasks.filter(t => !t.due_date && !t.done && t.category !== 'Long term')`.
+- **`renderUnassigned()`**: updates badge count/visibility AND re-renders popup contents if `#unMenu` is currently open (for instant paste feedback).
+- **`.wkc-foot`**: changed from `display:none` to `display:flex; align-items:center; padding:4px 8px; flex-shrink:0; min-height:30px`. Contains badge (left) + spacer.
+- **`+ Add` button removed** from `.wkc-foot`.
+- **Popup** `#unMenu`: `position:fixed`, body-level. Width 300px, max-height 360px. Renders `tRow(t, {cat:true, drag:true, noColor:true})` for full task interaction (click select, dblclick edit, right-click menu, delete button, drag).
+- **Popup position**: `left = max(8, r.right - 300)` (right edge aligns with badge right edge), `bottom = window.innerHeight - r.top + 6` (opens upward above badge, overlapping weekly calendar area).
+- **Backdrop** `#unMenuBack`: `position:fixed; inset:0; z-index:9996` — closes menu on outside click. Pointer-events disabled during drag so drop targets receive events.
+- **Drag from popup**: uses `dStart(event, id)` / `dEnd(event)`. `dEnd` consolidates dragend cleanup: removes dragging class, clears body-dragging, hides wkc edges, closes popup, restores backdrop pointer-events.
+- **`activePg`**: module-level variable tracking current page (set in `showPage`). `renderUnassigned` uses it to hide badge on non-overview pages (badge only meaningful on overview where wkc is visible).
 
 ## Notes Field
 
