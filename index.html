@@ -563,8 +563,8 @@ body.dark .bday-presents{background:rgba(255,255,255,.03)}
 body.dark .bday-add-input{background:rgba(255,255,255,.06);border-color:rgba(255,220,200,.12)}
 .bday-row.bday-sel>.bday-main{background:var(--sel-bg,rgba(130,115,100,.1))!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.7);border-radius:9px}
 body.dark .bday-row.bday-sel>.bday-main{background:var(--sel-bg-dark,rgba(194,107,79,.12))!important}
-.bday-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:8px 6px}
-.bday-month-card{border-radius:10px;background:rgba(0,0,0,.025);border:1px solid rgba(210,205,228,.2);padding:8px 6px;min-height:50px}
+.bday-grid{display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(3,1fr);gap:10px;padding:8px;height:100%;box-sizing:border-box}
+.bday-month-card{border-radius:10px;background:rgba(0,0,0,.025);border:1px solid rgba(210,205,228,.2);padding:8px 6px;overflow-y:auto}
 body.dark .bday-month-card{background:rgba(255,255,255,.03);border-color:rgba(255,220,200,.1)}
 .bday-month-current{box-shadow:0 0 0 2px rgba(194,107,79,.5),0 4px 18px rgba(194,107,79,.2);background:rgba(194,107,79,.06)!important;border-color:rgba(194,107,79,.35)!important}
 body.dark .bday-month-current{box-shadow:0 0 0 2px rgba(194,107,79,.6),0 4px 18px rgba(194,107,79,.25);background:rgba(194,107,79,.1)!important}
@@ -886,19 +886,19 @@ body.dark .bday-month-current{box-shadow:0 0 0 2px rgba(194,107,79,.6),0 4px 18p
 
 <!-- OTHER PAGES (empty) -->
 <div class="page" id="page-travel" style="display:none!important"><div id="travelList" style="display:none"></div></div>
-<div class="page" id="page-birthdays" style="padding:clamp(12px,3vw,56px);padding-top:60px">
+<div class="page" id="page-birthdays" style="padding:12px 16px;padding-top:60px;display:flex;flex-direction:column;height:100vh;box-sizing:border-box">
   <div class="ov-topbar">
     <div class="ov-topbar-left"><span class="ov-topbar-label">Birthdays</span><span class="ov-topbar-dot"></span></div>
     <span class="ov-topbar-date topbar-date"></span>
     <div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div>
   </div>
-  <div class="card" style="max-width:960px">
+  <div class="card" style="flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden">
     <div class="ch">
       <div class="ct">🎂 Birthdays</div>
       <span class="cbadge" id="bdayCount" style="margin-right:4px">0</span>
       <button class="btn-plus" onclick="openBdayModal()">+</button>
     </div>
-    <div id="bdayPageContent" style="overflow-y:auto;max-height:calc(100vh - 180px);padding:4px 0"></div>
+    <div id="bdayPageContent" style="flex:1;min-height:0;overflow:hidden;padding:0"></div>
   </div>
   <div id="bdayList" style="display:none"></div>
 </div>
