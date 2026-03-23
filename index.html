@@ -1595,9 +1595,9 @@ function mkBdayTask(b,ds){
     _srcId:b.id,_srcTable:'birthdays',_virtual:true,_type:'birthday'
   };
 }
-// Get all virtual extras for a given date string
+// Get all virtual extras for a given date string (birthdays excluded from calendar)
 function getExtrasForDate(ds){
-  return[...getTravelTasks(ds),...getBirthdayTasks(ds)];
+  return getTravelTasks(ds);
 }
 // Get all virtual extras for a week (used in week summary list)
 // Travel shown ONCE (on start date), birthdays once on their day
@@ -1616,8 +1616,7 @@ function getExtrasForWeek(off=0){
     const label=tv.destination?`${tv.name} ✈ ${tv.destination}`:`✈ ${tv.name}`;
     return{id:'tv-'+tv.id,name:label,category:'Travel',due_date:sd,end_date:ed,done:false,_virtual:true,_type:'travel'};
   });
-  const bdayItems=dates.flatMap(d=>getBirthdayTasks(d2s(d)));
-  return[...travelItems,...bdayItems];
+  return travelItems;
 }
 
 // Stable key for a given week offset
@@ -1864,7 +1863,8 @@ function renderToday(){
     ...allRecVirt.filter(v=>v.due_date===ds||(dayOff===0&&isOv(v.due_date)&&!v.done)),
     ...wrecToday,
     ...shopToday,
-    ...getExtrasForDate(ds)
+    ...getExtrasForDate(ds),
+    ...getBirthdayTasks(ds)
   ];
   const allToday=[...ts,...virtToday];
   const sorted=sortTasksToday(allToday);
@@ -2043,10 +2043,7 @@ function renderWkCal(){
     if(!s)return false;
     return s<=wkDss[6]&&(e||s)>=wkDss[0];
   });
-  // Get birthdays this week
-  const bdayThisWk=getBirthdayTasks(null).filter(b=>wkDss.includes(b.due_date));
-
-  const hasBanners=travelThisWk.length||bdayThisWk.length;
+  const hasBanners=travelThisWk.length;
   const wkcWrapEl=document.getElementById('wkcWrap');
   if(wkcWrapEl)wkcWrapEl.style.paddingTop=hasBanners?'22px':'0';
 
@@ -2080,10 +2077,6 @@ function renderWkCal(){
       const isPast=!!(ed&&ed<today2);
       const label=(tv.destination?`✈ ${tv.name} → ${tv.destination}`:`✈ ${tv.name}`);
       addBanner(label,sd,ed,s,()=>openTravelModal(tv.id),isPast);
-    });
-    bdayThisWk.forEach(b=>{
-      const s=gc('birthday');
-      addBanner(b.name,b.due_date,b.due_date,s,null,b.due_date<today2);
     });
   },10);
 
