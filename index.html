@@ -366,7 +366,7 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 .wk-list-edge.active{opacity:1;pointer-events:all}
 .wk-list-edge-l{left:0;background:linear-gradient(to right,rgba(109,95,230,.15),transparent)}
 .wk-list-edge-r{right:0;background:linear-gradient(to left,rgba(109,95,230,.15),transparent)}
-.wkc-col{flex:1;min-width:0;border-left:1px solid rgba(210,205,228,.15);padding:2px 2px;overflow:hidden;transition:background .1s}
+.wkc-col{flex:1;min-width:0;border-left:1px solid rgba(210,205,228,.15);padding:2px 2px;overflow:hidden;transition:background .1s;user-select:none;-webkit-user-select:none}
 .wkc-col:first-child{border-left:none}
 .wkc-col.drop-here{background:rgba(109,95,230,.05)}
 #todList.drop-here{background:rgba(109,95,230,.04);border-radius:8px;outline:1.5px dashed rgba(109,95,230,.25)}
@@ -438,7 +438,8 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 .mdow{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:3px}
 .mdowl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);text-align:center;padding:2px 0}
 .mcells{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
-.mcell{min-height:100px;background:rgba(255,252,248,.55);border:1px solid rgba(255,220,200,.35);border-radius:var(--rs);padding:4px;cursor:pointer;transition:background .1s}
+.mcell{min-height:100px;background:rgba(255,252,248,.55);border:1px solid rgba(255,220,200,.35);border-radius:var(--rs);padding:4px;cursor:pointer;transition:background .1s;user-select:none;-webkit-user-select:none}
+.mcell.travel-sel{background:rgba(20,184,166,.09);border-color:rgba(20,184,166,.4)}
 .mcell:hover{background:rgba(255,252,248,.82)}
 .mcell.om{opacity:.3}.mcell.tc{border-color:var(--accent);border-width:1.5px}
 .mcell-n{font-size:10px;font-weight:700;font-family:'DM Sans',sans-serif;color:var(--text);width:18px;height:18px;display:flex;align-items:center;justify-content:center;border-radius:50%;margin-bottom:2px}
@@ -2159,6 +2160,7 @@ function renderWkSummary(){
 // ── Week calendar ──────────────────────────────────────────────────────────────
 // Track drag-to-add-travel state
 let tvDragStart=null,tvDragEnd=null;
+let calDrag={active:false,startDs:null,endDs:null,view:null,moved:false};
 
 function renderWkCal(){
   const dates=getWkDates(wkOff);
@@ -2228,6 +2230,24 @@ function renderWkCal(){
   dates.forEach((date,di)=>{
     const ds=d2s(date);
     const col=document.createElement('div');col.className='wkc-col';
+    col.dataset.ds=ds;
+
+    // Mouse-drag to create travel spanning days
+    col.addEventListener('mousedown',e=>{
+      if(e.button!==0)return;
+      if(e.target.closest('.chip,.wkc-banner,button'))return;
+      calDrag={active:true,startDs:ds,endDs:ds,view:'wkc',moved:false};
+      tvDragStart=di;tvDragEnd=di;
+      highlightTvDrag(dates);
+      e.preventDefault();
+    });
+    col.addEventListener('mouseenter',()=>{
+      if(!calDrag.active||calDrag.view!=='wkc')return;
+      if(ds!==calDrag.startDs)calDrag.moved=true;
+      calDrag.endDs=ds;
+      tvDragEnd=di;
+      highlightTvDrag(dates);
+    });
 
     // Drag-over for task drop
     col.addEventListener('dragover',e=>{
@@ -2448,6 +2468,21 @@ function highlightTvDrag(dates){
 function clearTvHighlight(){
   document.querySelectorAll('#wkcCols .wkc-col').forEach(c=>c.classList.remove('drag-sel'));
 }
+function clearCalDrag(){
+  calDrag={active:false,startDs:null,endDs:null,view:null,moved:false};
+  clearTvHighlight();
+  document.querySelectorAll('#mCells .mcell.travel-sel').forEach(c=>c.classList.remove('travel-sel'));
+}
+document.addEventListener('mouseup',()=>{
+  if(!calDrag.active)return;
+  const s=calDrag.startDs,e=calDrag.endDs,moved=calDrag.moved;
+  clearCalDrag();
+  if(moved&&s){
+    const start=s<=e?s:e,end=s<=e?e:s;
+    openTravelModal(null,start,end);
+  }
+});
+document.addEventListener('dragstart',()=>{if(calDrag.active)clearCalDrag();});
 
 // Edge zones for dragging to next/prev week
 function showWkcEdges(show){
@@ -4221,12 +4256,30 @@ function mkMCell(date,om,today){
   });
   // Double-click on cell (not chip) = add task
   cell.addEventListener('dblclick',e=>{if(e.target===cell||e.target===hdr||e.target===dn){tPreDate=ds;openTModal();}});
+  // Mouse-drag to create travel spanning days
+  cell.addEventListener('mousedown',e=>{
+    if(e.button!==0)return;
+    if(e.target.closest('.mcell-t,button'))return;
+    calDrag={active:true,startDs:ds,endDs:ds,view:'mo',moved:false};
+    cell.classList.add('travel-sel');
+    e.preventDefault();
+  });
+  cell.addEventListener('mouseenter',()=>{
+    if(!calDrag.active||calDrag.view!=='mo')return;
+    if(ds!==calDrag.startDs)calDrag.moved=true;
+    calDrag.endDs=ds;
+    const s2=calDrag.startDs<=ds?calDrag.startDs:ds;
+    const e2=calDrag.startDs<=ds?ds:calDrag.startDs;
+    document.querySelectorAll('#mCells .mcell').forEach(c=>{
+      c.classList.toggle('travel-sel',c.dataset.ds>=s2&&c.dataset.ds<=e2);
+    });
+  });
   return cell;
 }
 
 // ── Travel ────────────────────────────────────────────────────────────────────
 let travelEditId=null;
-function openTravelModal(id){
+function openTravelModal(id,preStart,preEnd){
   travelEditId=id||null;
   if(id){
     const tv=st.travel.find(x=>String(x.id)===String(id));if(!tv)return;
@@ -4239,7 +4292,7 @@ function openTravelModal(id){
   } else {
     document.getElementById('travelMTitle').textContent='Add Trip';
     document.getElementById('tvName').value='';document.getElementById('tvDest').value='';
-    document.getElementById('tvStart').value='';document.getElementById('tvEnd').value='';
+    document.getElementById('tvStart').value=preStart||'';document.getElementById('tvEnd').value=preEnd||'';
     document.getElementById('tvNotes').value='';
   }
   document.getElementById('travelModal').classList.add('open');
