@@ -509,3 +509,13 @@ Accepts and normalizes any of these input formats:
 - Stop hook: auto-commits and pushes to `origin/dev` branch after every Claude turn.
 - "Push to production": merge `origin/dev` into `main`, push `main`.
 - Auto-commit format: `Auto-commit [Mar 12 13:45]`.
+
+## Local Backup System
+
+- **`backup.js`**: Node.js script in `/sams-dashboard/`. Fetches all 9 Supabase tables and writes to disk. Runs independently of Claude — no dependency on AI tooling.
+- **`backup_auto.json`**: Written by cron job daily at 8am. Overwrites the same file every run (no accumulation). Located in `/sams-dashboard/`.
+- **`backup_manual.json`**: Downloaded via "Backup" button in dashboard top-right controls (next to Sync). Triggers a browser download to the Downloads folder.
+- **Cron job**: `0 8 * * * /usr/local/bin/node /Users/samanthacohn/Documents/sams-dashboard/backup.js auto`. Laptop must be on and awake at 8am. Logs to `backup_cron.log`.
+- **`restore.js`**: Restore script. Usage: `node restore.js backup_auto.json`. Deletes all existing rows then re-inserts from backup. To restore to a new Supabase project, update `SUPABASE_URL` and `SUPABASE_KEY` at the top of the file.
+- **Backup structure**: `{ exported_at, mode, tables: { tasks, recurring_tasks, shopping_list, travel, birthdays, pup_skills, time_blocks, auto_timeblocks, auto_timeblock_overrides } }`.
+- `backup_auto.json` date modified updates every time the cron overwrites it — use this to verify the cron ran.
