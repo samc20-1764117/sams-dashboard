@@ -1694,6 +1694,8 @@ function getRecurringWeekTasks(off=0){
       }
     }
 
+    // Skip tasks manually removed from this week via X button
+    if(r._dateOverrides&&r._dateOverrides[wkKey]==='__skip__')return;
     // Check for a per-week date override (from dragging)
     const overrideDate=r._dateOverrides&&r._dateOverrides[wkKey];
     const ds=overrideDate||d2s(date);
@@ -2150,7 +2152,7 @@ function tRowTodayVirt(t,tbArrow=false,noColor=false){
     <span class="tn">${t.name}</span>
     <span class="cpill" style="background:${ps.bg};color:${ps.t};border-color:${ps.b}">Recurring</span>
     ${tbArrow?'<span class="tb-arrow">›</span>':''}
-    <button class="delbtn" onclick="event.stopPropagation();delRec('${t._recId}')">✕</button>
+    <button class="delbtn" onclick="event.stopPropagation();${t._isWrec?`unscheduleWRec('${t._recId}','${t._wkKey||getWkKey(wkOff)}')`:`skipRecVirtThisWk('${t._recId}','${t._wkKey||getWkKey(wkOff)}')`}">✕</button>
   </div>`;
 }
 
@@ -2816,7 +2818,7 @@ function renderRecOv(){
     nm.textContent=r.name;
     const del=document.createElement('button');del.className='delbtn';del.textContent='✕';
     del.addEventListener('mousedown',e=>e.stopPropagation());
-    del.addEventListener('click',function(e){e.stopPropagation();delRec(rid);});
+    del.addEventListener('click',function(e){e.stopPropagation();unscheduleWRec(rid,getWkKey(wkOff));});
     row.addEventListener('click',e=>selTask(e,virtId));
     row.addEventListener('dblclick',function(e){
       if(e.target.closest('button'))return;
@@ -3008,7 +3010,7 @@ function tRowWk(t){
       <span class="tn">${t.name}</span>
       <span class="cpill" style="background:${s.bg};color:${s.t};border-color:${s.b}">Recurring</span>
       <span class="dlbl">${fmtD(t.due_date)}</span>
-      <button class="delbtn" onclick="event.stopPropagation();delRec('${t._recId}')">✕</button>
+      <button class="delbtn" onclick="event.stopPropagation();${t._isWrec?`unscheduleWRec('${t._recId}','${t._wkKey||getWkKey(wkOff)}')`:`skipRecVirtThisWk('${t._recId}','${t._wkKey||getWkKey(wkOff)}')`}">✕</button>
     </div>`;
   }
   return tRow(t,{cat:true,due:true,drag:true});
@@ -4259,9 +4261,37 @@ function unscheduleWRec(rid,wkKey){
   const r=st.recurring.find(x=>String(x.id)===String(rid));if(!r||!r._dateOverrides)return;
   const prev=r._dateOverrides[wkKey];
   delete r._dateOverrides[wkKey];
+  const linkedBlocks=st.blocks?st.blocks.filter(b=>String(b.recId)===String(rid)&&isInWk(b.ds,wkOff)):[];
+  if(st.blocks)st.blocks=st.blocks.filter(b=>!(String(b.recId)===String(rid)&&isInWk(b.ds,wkOff)));
   save();renderAll();
-  pushUndo(()=>{if(!r._dateOverrides)r._dateOverrides={};r._dateOverrides[wkKey]=prev;save();renderAll();sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},recQs(rid));},'Removed from view');
+  linkedBlocks.forEach(b=>sbDeleteBlock(b.id));
+  pushUndo(()=>{
+    if(!r._dateOverrides)r._dateOverrides={};
+    r._dateOverrides[wkKey]=prev;
+    linkedBlocks.forEach(b=>{if(st.blocks)st.blocks.push(b);sbSaveBlock(b);});
+    save();renderAll();
+    sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},recQs(rid));
+  },'Removed from view');
   sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},recQs(rid));
+}
+function skipRecVirtThisWk(rid,wkKey){
+  const r=st.recurring.find(x=>String(x.id)===String(rid));if(!r)return;
+  if(!r._dateOverrides)r._dateOverrides={};
+  const prev=r._dateOverrides[wkKey];
+  r._dateOverrides[wkKey]='__skip__';
+  const linkedBlocks=st.blocks?st.blocks.filter(b=>String(b.recId)===String(rid)&&isInWk(b.ds,wkOff)):[];
+  if(st.blocks)st.blocks=st.blocks.filter(b=>!(String(b.recId)===String(rid)&&isInWk(b.ds,wkOff)));
+  save();renderRecOv();renderWeeklyPage();renderToday();renderWkSummary();renderWkCal();
+  if(document.getElementById('tbGrid'))renderDayTB();
+  linkedBlocks.forEach(b=>sbDeleteBlock(b.id));
+  sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},recQs(rid));
+  pushUndo(()=>{
+    if(prev!==undefined)r._dateOverrides[wkKey]=prev;else delete r._dateOverrides[wkKey];
+    linkedBlocks.forEach(b=>{if(st.blocks)st.blocks.push(b);sbSaveBlock(b);});
+    save();renderRecOv();renderWeeklyPage();renderToday();renderWkSummary();renderWkCal();
+    if(document.getElementById('tbGrid'))renderDayTB();
+    sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},recQs(rid));
+  },'Removed from week');
 }
 async function togShop(id,done){
   const s=st.shopping.find(x=>String(x.id)===String(id));if(!s)return;const prev=s.done;s.done=done;
