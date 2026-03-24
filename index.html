@@ -5445,7 +5445,7 @@ function _parseIngredients(str){
   return str.split('\n').map(s=>s.trim()).filter(Boolean).map(s=>({name:s,amount:''}));
 }
 function _serializeIngredients(arr){
-  const clean=(arr||[]).filter(x=>(x.name||'').trim());
+  const clean=(arr||[]).filter(x=>(x.name||'').trim()||(x.amount||'').trim());
   if(!clean.length)return null;
   return JSON.stringify(clean.map(x=>({name:x.name.trim(),amount:(x.amount||'').trim()})));
 }
@@ -5577,7 +5577,7 @@ function selRecRow(e,sid){
     _lastSelRecId=sid;
   } else {
     if(_selRecIds.size===1&&_selRecIds.has(sid)){_selRecIds.clear();_lastSelRecId=null;closeRecSidePanel();}
-    else{_selRecIds.clear();_selRecIds.add(sid);_lastSelRecId=sid;openRecSidePanel(sid);}
+    else{_selRecIds.clear();_selRecIds.add(sid);_lastSelRecId=sid;}
   }
   applyRecSelHighlight();
 }
@@ -5890,7 +5890,7 @@ function renderRecipesPage(){
     page._recInit=true;
     const mealChips=['Breakfast','Lunch','Dinner','Snack','Dessert','Drink','Side'].map(m=>`<button class="rec-filter-chip" data-recmeal="${m}" onclick="recToggleMealFilter('${m}')">${m}</button>`).join('');
     page.innerHTML=`<div class="ov-topbar"><div class="ov-topbar-left"><span class="ov-topbar-label">🍳 Recipes</span><span class="ov-topbar-dot"></span></div><span class="ov-topbar-date topbar-date"></span><div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div></div>
-    <div style="padding-top:26px"><div class="rec-filter-bar"><input class="rec-search" id="recSearchInp" placeholder="🔍 Search recipes…">${mealChips}<button class="rec-filter-chip" data-recfav="1" onclick="recToggleFavFilter()">♥ Favs</button><button class="rec-filter-chip" data-rectime="30" onclick="recToggleTimeFilter('30')">≤30m</button><button class="rec-filter-chip" data-rectime="60" onclick="recToggleTimeFilter('60')">≤1h</button></div></div>
+    <div style="padding-top:26px"><div class="rec-filter-bar"><input class="rec-search" id="recSearchInp" placeholder="🔍 Search recipes…" oninput="recSearchChange(this.value)">${mealChips}<button class="rec-filter-chip" data-recfav="1" onclick="recToggleFavFilter()">♥ Favs</button><button class="rec-filter-chip" data-rectime="30" onclick="recToggleTimeFilter('30')">≤30m</button><button class="rec-filter-chip" data-rectime="60" onclick="recToggleTimeFilter('60')">≤1h</button></div></div>
     <div id="recTableWrap" style="transition:margin-right .22s cubic-bezier(.4,0,.2,1)">
       <div class="card" style="overflow:hidden">
         <div class="ch" style="gap:8px">
