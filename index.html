@@ -387,7 +387,7 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 .wkc-banner{position:absolute;top:2px;height:18px;border-radius:6px;font-size:9px;font-weight:700;display:flex;align-items:center;padding:0 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:all;cursor:pointer;z-index:5;border:1px solid rgba(255,255,255,0.6);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:inset 0 1px 0 rgba(255,255,255,0.75)}
 .wkc-banner:hover{filter:brightness(.96)}
 .wkc-banner .ban-del{opacity:0;background:none;border:none;cursor:pointer;color:currentColor;font-size:9px;padding:0 2px;margin-left:auto;flex-shrink:0;transition:opacity .1s;line-height:1}
-.wkc-banner:hover .ban-del{opacity:.65}.wkc-banner .ban-del:hover{opacity:1!important;color:#ef4444!important}
+.wkc-banner:hover .ban-del{opacity:.65}.wkc-banner.sel-row .ban-del{opacity:.65}.wkc-banner .ban-del:hover{opacity:1!important;color:#ef4444!important}
 /* Drag-to-add-travel ghost */
 .wkc-drag-ghost{position:absolute;top:2px;height:18px;border-radius:4px;pointer-events:none;z-index:20;opacity:.55;transition:none}
 .wkc-col.drag-sel{background:rgba(20,184,166,.07)}
@@ -2150,7 +2150,7 @@ function tRowTodayVirt(t,tbArrow=false,noColor=false){
     <span class="tn">${t.name}</span>
     <span class="cpill" style="background:${ps.bg};color:${ps.t};border-color:${ps.b}">Recurring</span>
     ${tbArrow?'<span class="tb-arrow">›</span>':''}
-    <button class="delbtn" onclick="event.stopPropagation();${t._isWrec?`unscheduleWRec('${t._recId}','${t._wkKey||getWkKey(wkOff)}')`:`togRecVirt('${t._recId}',true,'${t._wkKey||getWkKey(wkOff)}')`}">✕</button>
+    <button class="delbtn" onclick="event.stopPropagation();delRec('${t._recId}')">✕</button>
   </div>`;
 }
 
@@ -2816,7 +2816,7 @@ function renderRecOv(){
     nm.textContent=r.name;
     const del=document.createElement('button');del.className='delbtn';del.textContent='✕';
     del.addEventListener('mousedown',e=>e.stopPropagation());
-    del.addEventListener('click',function(e){e.stopPropagation();unscheduleWRec(rid,getWkKey(wkOff));});
+    del.addEventListener('click',function(e){e.stopPropagation();delRec(rid);});
     row.addEventListener('click',e=>selTask(e,virtId));
     row.addEventListener('dblclick',function(e){
       if(e.target.closest('button'))return;
@@ -3008,7 +3008,7 @@ function tRowWk(t){
       <span class="tn">${t.name}</span>
       <span class="cpill" style="background:${s.bg};color:${s.t};border-color:${s.b}">Recurring</span>
       <span class="dlbl">${fmtD(t.due_date)}</span>
-      <button class="delbtn" onclick="event.stopPropagation();${t._isWrec?`unscheduleWRec('${t._recId}','${t._wkKey||getWkKey(wkOff)}')`:`togRecVirt('${t._recId}',true,'${t._wkKey||getWkKey(wkOff)}')`}">✕</button>
+      <button class="delbtn" onclick="event.stopPropagation();delRec('${t._recId}')">✕</button>
     </div>`;
   }
   return tRow(t,{cat:true,due:true,drag:true});
@@ -3825,7 +3825,7 @@ async function delTask(id,e){
   await sbReq('DELETE','tasks',null,`?id=eq.${id}`);
   pushUndo(async()=>{
     // Re-insert into DB and get back the real id
-    const sv=await sbReq('POST','tasks',{name:copy.name,category:copy.category,due_date:copy.due_date,done:copy.done});
+    const sv=await sbReq('POST','tasks',{name:copy.name,category:copy.category,due_date:copy.due_date,done:copy.done,important:copy.important||false});
     if(sv&&sv[0]){
       st.tasks.push(sv[0]);
       // Restore linked blocks with new task id
@@ -3875,7 +3875,7 @@ async function saveTModal(){
     const t=st.tasks.find(x=>String(x.id)===String(tId));if(!t)return;
     const prev={name:t.name,category:t.category,due_date:t.due_date,important:t.important,notes:t.notes,travel_mode:t.travel_mode||null};
     const stid=String(tId);
-    localOverrides[stid]={name:n,category:c,due_date:d};
+    localOverrides[stid]={name:n,category:c,due_date:d,important:imp};
     pendingLocal.add(stid);save();
     t.name=n;t.category=c;t.important=imp;t.notes=notes;t.travel_mode=tm;
     if(t.due_date!==d){
