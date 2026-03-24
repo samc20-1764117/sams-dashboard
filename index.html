@@ -3694,6 +3694,12 @@ function openTModal(cat=''){
     tCatEl.addEventListener('change',()=>{tCatEl.blur();setTimeout(()=>document.getElementById('tName').focus(),0);});
     tCatEl.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();e.stopPropagation();saveTModal();}});
   }
+  const tTmEl=document.getElementById('tTravelMode');
+  if(tTmEl&&!tTmEl._patched){
+    tTmEl._patched=true;
+    tTmEl.addEventListener('change',()=>{tTmEl.blur();setTimeout(()=>document.getElementById('tName').focus(),0);});
+    tTmEl.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();e.stopPropagation();saveTModal();}});
+  }
   tMode='add';tId=null;
   document.getElementById('tMTitle').textContent='Add Task';document.getElementById('tSaveBtn').textContent='Add';
   document.getElementById('tName').value='';document.getElementById('tCat').value=cat||'Home';
@@ -4349,12 +4355,16 @@ async function saveTravelModal(){
 async function delTravel(id){
   const tv=st.travel.find(x=>String(x.id)===String(id));if(!tv)return;
   const copy={...tv};
+  const isLocal=String(id).startsWith('l-');
   st.travel=st.travel.filter(x=>String(x.id)!==String(id));renderAll();renderTravelPage();
-  pushUndo(async()=>{
-    const sv=await sbReq('POST','travel',{name:copy.name,destination:copy.destination||null,start_date:copy.start_date||null,end_date:copy.end_date||null,notes:copy.notes||null});
-    st.travel.push(sv&&sv[0]?sv[0]:copy);renderAll();renderTravelPage();
+  pushUndo(()=>{
+    st.travel.push(copy);renderAll();renderTravelPage();
+    if(!isLocal){
+      sbReq('POST','travel',{name:copy.name,destination:copy.destination||null,start_date:copy.start_date||null,end_date:copy.end_date||null,notes:copy.notes||null})
+        .then(sv=>{if(sv&&sv[0]){const i=st.travel.findIndex(x=>x.id===copy.id);if(i>-1)st.travel[i]=sv[0];}});
+    }
   },'Deleted trip');
-  await sbReq('DELETE','travel',null,`?id=eq.${id}`);
+  if(!isLocal)await sbReq('DELETE','travel',null,`?id=eq.${id}`);
 }
 function renderTravelPage(){save();
   const s=gc('travel');
@@ -5856,7 +5866,7 @@ document.addEventListener('keydown',async e=>{
     await Promise.all([
       ...taskCopies.map(t=>sbReq('DELETE','tasks',null,`?id=eq.${t.id}`)),
       ...recIds.map(rid=>sbReq('DELETE','recurring_tasks',null,recQs(rid))),
-      ...tvCopies.map(tv=>sbReq('DELETE','travel',null,`?id=eq.${tv.id}`))
+      ...tvCopies.filter(tv=>!String(tv.id).startsWith('l-')).map(tv=>sbReq('DELETE','travel',null,`?id=eq.${tv.id}`))
     ]);
     recIds.forEach(rid=>{deletedRecIds.delete(rid);save();});
     // ONE undo for everything
