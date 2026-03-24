@@ -2219,6 +2219,7 @@ function renderWkCal(){
       return ban;
     }
 
+    travelThisWk.sort((a,b)=>(a.start_date||'').localeCompare(b.start_date||''));
     travelThisWk.forEach(tv=>{
       const s=gc('travel');
       const sd=tv.start_date?tv.start_date.split('T')[0]:null;
@@ -4177,6 +4178,7 @@ function addMoTravelBanners(cells,yr,mo){
   layer.style.cssText='position:absolute;top:0;left:0;right:0;height:0;overflow:visible;pointer-events:none;z-index:3';
   mgrid.appendChild(layer);
   if(!trips.length)return;
+  trips.sort((a,b)=>(a.start_date||'').localeCompare(b.start_date||''));
   setTimeout(()=>{
     const cellEls=[...cells.querySelectorAll('.mcell')];if(!cellEls.length)return;
     // Lane tracking per calendar row (keyed by offsetTop)
