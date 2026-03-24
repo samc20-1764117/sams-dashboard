@@ -634,6 +634,10 @@ body.dark .bday-add-menu{background:rgba(38,20,10,.97);border-color:rgba(255,220
 <!-- Top-right controls: Night Mode + Sync -->
 <div class="top-right-controls">
   <button class="dark-toggle" id="darkToggle" onclick="toggleDark()" title="Toggle dark mode"><span id="darkToggleIcon">🌙</span></button>
+  <div class="sync-bar" id="backupBar" onclick="manualBackup()" title="Save manual backup (backup_manual.json)" style="cursor:pointer">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    <span id="backupTxt" style="font-size:9px">Backup</span>
+  </div>
   <div class="sync-bar" id="syncBar" onclick="syncAll()">
     <svg id="syncIcon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path></svg>
     <span id="syncTxt" style="font-size:9px">Synced</span>
@@ -1351,6 +1355,32 @@ async function sbUpdateBlock(id,fields){
     const r=await fetch(`${cfg.url}/rest/v1/time_blocks?id=eq.${id}`,{method:'PATCH',headers:{'apikey':cfg.key,'Authorization':`Bearer ${cfg.key}`,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify(fields)});
     if(!r.ok){const t=await r.text();console.error('sbUpdateBlock error',r.status,t);}
   }catch(e){console.error('sbUpdateBlock error',e);}
+}
+
+async function manualBackup(){
+  const btn=document.getElementById('backupTxt');
+  btn.textContent='Saving…';
+  try{
+    const tables=['tasks','recurring_tasks','shopping_list','travel','birthdays','pup_skills','time_blocks','auto_timeblocks','auto_timeblock_overrides'];
+    const backup={exported_at:new Date().toISOString(),mode:'manual',tables:{}};
+    await Promise.all(tables.map(async t=>{
+      try{
+        const r=await fetch(`${cfg.url}/rest/v1/${t}?select=*`,{headers:{'apikey':cfg.key,'Authorization':'Bearer '+cfg.key}});
+        backup.tables[t]=await r.json();
+      }catch(e){backup.tables[t]=null;}
+    }));
+    const blob=new Blob([JSON.stringify(backup,null,2)],{type:'application/json'});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download='backup_manual.json';
+    a.click();
+    URL.revokeObjectURL(a.href);
+    btn.textContent='Saved!';
+    setTimeout(()=>btn.textContent='Backup',2000);
+  }catch(e){
+    btn.textContent='Failed';
+    setTimeout(()=>btn.textContent='Backup',2000);
+  }
 }
 
 async function syncAll(silent=false){
