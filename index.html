@@ -222,6 +222,9 @@ body.dark .pup-dog-btn.active{background:rgba(194,107,79,.5);color:#fff}
 .ti.ov-row{background:rgba(252,213,206,0.55);border:1px solid rgba(255,255,255,0.55)}.ti.ov-row .tn{color:#9f3826;font-weight:600}
 .ti.imp-row{background:rgba(254,243,199,0.55);border:1px solid rgba(255,255,255,0.55)}
 .ti.imp-row .tn{font-weight:600}
+.shop-grip{cursor:grab;color:var(--muted);font-size:13px;padding:0 5px 0 0;opacity:.35;user-select:none;flex-shrink:0;line-height:1}
+.shop-grip:hover{opacity:.75}
+.ti.shop-dov{border-top:2px solid #22c55e!important;}
 .ti.sel-row{background:var(--sel-bg)!important;border:1px solid var(--sel-b)!important;box-shadow:0 4px 14px var(--sel-shadow),0 1px 4px var(--sel-shadow),inset 0 1px 1px rgba(255,255,255,.92)!important;transform:translateY(-1.5px)!important}
 .chip.sel-row{outline:1px solid color-mix(in srgb,var(--sel-d) 40%,transparent)!important;outline-offset:-1px;box-shadow:0 3px 10px var(--sel-shadow),0 1px 4px var(--sel-shadow)!important}.mcell-t.sel-row{outline:1px solid color-mix(in srgb,var(--sel-d) 40%,transparent)!important;outline-offset:-1px;box-shadow:0 3px 10px var(--sel-shadow)!important}.wkc-banner.sel-row{outline:1.5px solid color-mix(in srgb,var(--sel-d) 55%,transparent)!important;outline-offset:-1px;box-shadow:0 3px 10px var(--sel-shadow),0 1px 4px var(--sel-shadow)!important;transform:translateY(-1px)}
 .chk-wrap{display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:7px 6px;margin:-7px -6px;cursor:pointer;border-radius:6px}
@@ -1314,6 +1317,7 @@ let cfg={url:'https://gtirvyrqfuuuxkkqaeap.supabase.co',key:'eyJhbGciOiJIUzI1NiI
 let st={tasks:[],recurring:[],shopping:[],blocks:[],travel:[],birthdays:[],pup_skills:[],recipes:[],autoTimeblocks:[],autoTBOverrides:[]};
 let dayOff=0,wkOff=0,moOff=0,sbOpen=true,activePg='overview';
 let dragId=null,resizing=null,tMode='add',tId=null,tPreDate=null;
+let _shopReorderDrag=false,_shopOvDragId=null;
 let qaCtx='today',qaDsTarget=null,qaKCat='';
 let tbWD=0,tbWT=null,wkcWD=0,wkcWT=null;
 let selAtbId=null,selAtbDs=null;
@@ -1469,7 +1473,7 @@ async function syncAll(silent=false){
     const[tasks,rec,shop,trav,bdays,pupSkills,recipes]=await Promise.all([
       sbReq('GET','tasks',null,'?order=due_date.asc.nullslast&select=*'),
       sbReq('GET','recurring_tasks',null,'?order=name.asc&select=*'),
-      sbReq('GET','shopping_list',null,'?order=store.asc,name.asc&select=*'),
+      sbReq('GET','shopping_list',null,'?order=shop_order.asc.nullslast,store.asc,name.asc&select=*'),
       sbReq('GET','travel',null,'?order=start_date.asc&select=*'),
       sbReq('GET','birthdays',null,'?order=birthday.asc&select=*'),
       sbReqSilent('GET','pup_skills',null,'?order=pup.asc,skill_order.asc,skill.asc&select=*'),
@@ -2876,11 +2880,47 @@ function dropOnTodayList(e){
 }
 
 // ── Shop overview ──────────────────────────────────────────────────────────────
+function _shopOvSort(arr){
+  return [...arr].sort((a,b)=>{
+    if(a.shop_order!=null&&b.shop_order!=null)return a.shop_order-b.shop_order;
+    if(a.shop_order!=null)return -1;if(b.shop_order!=null)return 1;
+    return(a.store||'').localeCompare(b.store||'')||(a.name||'').localeCompare(b.name||'');
+  });
+}
 function renderShopOv(){
-  const todo=st.shopping.filter(s=>!s.done);
-  // shopBadge removed
-  const shopSorted=[...st.shopping.filter(s=>!s.done)].sort((a,b)=>(a.store||'').localeCompare(b.store||'')||(a.name||'').localeCompare(b.name||''));
-  document.getElementById('shopOv').innerHTML=shopSorted.map(s=>`<div class="ti" id="ti-shop-cal-${s.id}" draggable="true" ondragstart="dragId='shop::${s.id}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);" ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false);" onclick="tiClickShop(event,'${s.id}')" ondblclick="tiDblShop(event,'${s.id}')" oncontextmenu="showCtxShop(event,'${s.id}')"><label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" onchange="togShop('${s.id}',this.checked)"></label><span class="tn">${s.name}</span><span class="cpill" style="background:rgba(241,245,249,.9);color:#64748b;border-color:rgba(148,163,184,.25);flex-shrink:0">${s.store}</span><button class="delbtn" onclick="delShop('${s.id}')">✕</button></div>`).join('');
+  const shopSorted=_shopOvSort(st.shopping.filter(s=>!s.done));
+  document.getElementById('shopOv').innerHTML=shopSorted.map(s=>`<div class="ti" id="ti-shop-cal-${s.id}" draggable="true"
+    ondragstart="if(_shopReorderDrag){_shopOvDragId='${s.id}';dragId='shop-reorder::${s.id}';event.dataTransfer.effectAllowed='move';event.currentTarget.style.opacity='.4';}else{dragId='shop::${s.id}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);}"
+    ondragend="event.currentTarget.style.opacity='';event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false);_shopReorderDrag=false;document.querySelectorAll('#shopOv .shop-dov').forEach(r=>r.classList.remove('shop-dov'));"
+    ondragover="shopOvDragOver(event,'${s.id}')"
+    ondrop="shopOvDrop(event,'${s.id}')"
+    onclick="tiClickShop(event,'${s.id}')" ondblclick="tiDblShop(event,'${s.id}')" oncontextmenu="showCtxShop(event,'${s.id}')">
+    <span class="shop-grip" onmousedown="event.stopPropagation();_shopReorderDrag=true" title="Drag to reorder">⠿</span>
+    <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" onchange="togShop('${s.id}',this.checked)"></label>
+    <span class="tn">${s.name}</span>
+    <span class="cpill" style="background:rgba(241,245,249,.9);color:#64748b;border-color:rgba(148,163,184,.25);flex-shrink:0">${s.store}</span>
+    <button class="delbtn" onclick="delShop('${s.id}')">✕</button>
+  </div>`).join('');
+}
+function shopOvDragOver(e,id){
+  if(!dragId||!dragId.startsWith('shop-reorder::'))return;
+  if(_shopOvDragId===id)return;
+  e.preventDefault();e.dataTransfer.dropEffect='move';
+  document.querySelectorAll('#shopOv .shop-dov').forEach(r=>r.classList.remove('shop-dov'));
+  document.getElementById('ti-shop-cal-'+id)?.classList.add('shop-dov');
+}
+function shopOvDrop(e,targetId){
+  e.preventDefault();
+  if(!_shopOvDragId||_shopOvDragId===targetId){_shopOvDragId=null;return;}
+  const items=_shopOvSort(st.shopping.filter(s=>!s.done));
+  const fi=items.findIndex(s=>String(s.id)===String(_shopOvDragId));
+  const ti=items.findIndex(s=>String(s.id)===String(targetId));
+  if(fi<0||ti<0){_shopOvDragId=null;return;}
+  items.splice(ti,0,items.splice(fi,1)[0]);
+  items.forEach((s,i)=>{s.shop_order=i;});
+  _shopOvDragId=null;dragId=null;
+  renderShopOv();
+  items.forEach(s=>sbReqNullable('PATCH','shopping_list',{shop_order:s.shop_order},`?id=eq.${s.id}`));
 }
 
 // ── Virtual recurring task row for This Week ─────────────────────────────────
