@@ -4347,7 +4347,13 @@ async function saveTravelModal(){
   }
 }
 async function delTravel(id){
+  const tv=st.travel.find(x=>String(x.id)===String(id));if(!tv)return;
+  const copy={...tv};
   st.travel=st.travel.filter(x=>String(x.id)!==String(id));renderAll();renderTravelPage();
+  pushUndo(async()=>{
+    const sv=await sbReq('POST','travel',{name:copy.name,destination:copy.destination||null,start_date:copy.start_date||null,end_date:copy.end_date||null,notes:copy.notes||null});
+    st.travel.push(sv&&sv[0]?sv[0]:copy);renderAll();renderTravelPage();
+  },'Deleted trip');
   await sbReq('DELETE','travel',null,`?id=eq.${id}`);
 }
 function renderTravelPage(){save();
