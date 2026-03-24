@@ -2914,6 +2914,11 @@ function drawTBBlock(col,b){
   const top=(b.sm-HOURS[0]*60)*PX,ht=Math.max(b.dur*PX,16);
   const linkedTask=b.taskId?st.tasks.find(x=>String(x.id)===String(b.taskId)):null;
   const linkedRec=b.recId?st.recurring.find(x=>String(x.id)===String(b.recId)):null;
+  const linkedShop=b.shopId?st.shopping.find(x=>String(x.id)===String(b.shopId)):null;
+  // Derive done from linked item (authoritative) so stale block._done never causes mismatch
+  if(linkedTask)b._done=!!linkedTask.done;
+  else if(linkedRec)b._done=!!(linkedRec._doneByWk&&linkedRec._doneByWk[getWkKey(wkOff)]);
+  else if(linkedShop)b._done=!!linkedShop.done;
   const isImp=linkedTask&&linkedTask.important&&!linkedTask.done;
   const recCat=linkedRec?(linkedRec.is_weekly_reset===true||linkedRec.is_weekly_reset==='true'?'weekly_reset':'recurring'):null;
   const effectiveCat=linkedTask?linkedTask.category:recCat||(b.cat||'Home');
