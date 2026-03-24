@@ -223,7 +223,7 @@ body.dark .pup-dog-btn.active{background:rgba(194,107,79,.5);color:#fff}
 .ti.imp-row{background:rgba(254,243,199,0.55);border:1px solid rgba(255,255,255,0.55)}
 .ti.imp-row .tn{font-weight:600}
 .ti.sel-row{background:var(--sel-bg)!important;border:1px solid var(--sel-b)!important;box-shadow:0 4px 14px var(--sel-shadow),0 1px 4px var(--sel-shadow),inset 0 1px 1px rgba(255,255,255,.92)!important;transform:translateY(-1.5px)!important}
-.chip.sel-row{outline:1px solid color-mix(in srgb,var(--sel-d) 40%,transparent)!important;outline-offset:-1px;box-shadow:0 3px 10px var(--sel-shadow),0 1px 4px var(--sel-shadow)!important}.mcell-t.sel-row{outline:1px solid color-mix(in srgb,var(--sel-d) 40%,transparent)!important;outline-offset:-1px;box-shadow:0 3px 10px var(--sel-shadow)!important}
+.chip.sel-row{outline:1px solid color-mix(in srgb,var(--sel-d) 40%,transparent)!important;outline-offset:-1px;box-shadow:0 3px 10px var(--sel-shadow),0 1px 4px var(--sel-shadow)!important}.mcell-t.sel-row{outline:1px solid color-mix(in srgb,var(--sel-d) 40%,transparent)!important;outline-offset:-1px;box-shadow:0 3px 10px var(--sel-shadow)!important}.wkc-banner.sel-row{outline:1.5px solid color-mix(in srgb,var(--sel-d) 55%,transparent)!important;outline-offset:-1px;box-shadow:0 3px 10px var(--sel-shadow),0 1px 4px var(--sel-shadow)!important;transform:translateY(-1px)}
 .chk-wrap{display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:7px 6px;margin:-7px -6px;cursor:pointer;border-radius:6px}
 .chk{width:14px;height:14px;border-radius:50%;border:1.5px solid rgba(180,170,210,.5);cursor:pointer;appearance:none;flex-shrink:0;background:rgba(255,255,255,.8);transition:all .2s;box-shadow:inset 0 1px 2px rgba(0,0,0,.04);pointer-events:none}
 .chk:checked{background:#a3c41a;border-color:#a3c41a;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M3.5 8l3 3 6-6' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")}
@@ -2209,6 +2209,7 @@ function renderWkCal(){
       bannerEl.appendChild(ban);
       // Push down only the columns covered by this banner
       for(let i=si;i<=Math.min(ei,6);i++)colEls[i].style.paddingTop='22px';
+      return ban;
     }
 
     travelThisWk.forEach(tv=>{
@@ -2217,7 +2218,22 @@ function renderWkCal(){
       const ed=tv.end_date?tv.end_date.split('T')[0]:sd;
       const isPast=!!(ed&&ed<today2);
       const label=(tv.destination?`✈ ${tv.name} → ${tv.destination}`:`✈ ${tv.name}`);
-      addBanner(label,sd,ed,s,()=>openTravelModal(tv.id),isPast);
+      const ban=addBanner(label,sd,ed,s,null,isPast);
+      if(!ban)return;
+      const tvSid='tv-'+tv.id;
+      ban.dataset.tvid=String(tv.id);
+      ban.addEventListener('click',e=>{
+        e.stopPropagation();
+        selectedTasks.clear();selectedTasks.add(tvSid);lastSelectedId=tvSid;
+        applySelHighlight();
+      });
+      ban.addEventListener('dblclick',e=>{e.stopPropagation();openTravelModal(tv.id);});
+      ban.addEventListener('contextmenu',e=>{
+        e.preventDefault();e.stopPropagation();
+        selectedTasks.clear();selectedTasks.add(tvSid);lastSelectedId=tvSid;
+        applySelHighlight();
+        showCtx(e,null,false,null,null,null,tv.id);
+      });
     });
     bdayThisWk.forEach(b=>{
       const s=gc('birthday');
@@ -5676,6 +5692,7 @@ function applySelHighlight(){
   });
   function csForId(id){
     if(!id)return null;
+    if(id.startsWith('tv-'))return gc('travel');
     if(id.startsWith('wrec-')){const r=st.recurring.find(x=>String(x.id)===id.replace('wrec-',''));return gc(r&&(r.is_weekly_reset===true||r.is_weekly_reset==='true')?'weekly_reset':'recurring');}
     if(id.startsWith('rec-virt-'))return gc('recurring');
     if(id.startsWith('shop-cal-'))return gc('shopping');
@@ -5735,6 +5752,13 @@ function applySelHighlight(){
     if(sel)applySelVars(el,csForId(csId));
     else clearSelVars(el);
   });
+  document.querySelectorAll('.wkc-banner[data-tvid]').forEach(el=>{
+    const tvSid='tv-'+el.dataset.tvid;
+    const sel=selectedTasks.has(tvSid);
+    el.classList.toggle('sel-row',sel);
+    if(sel)applySelVars(el,gc('travel'));
+    else clearSelVars(el);
+  });
 }
 
 function clearSelection(){
@@ -5778,8 +5802,13 @@ document.addEventListener('keydown',async e=>{
     const wrecRestores=[];   // {r, wkKey, prev}
     const taskCopies=[];
     const recCopies=[];
+    const tvCopies=[];
     ids.forEach(id=>{
-      if(id.startsWith('shop-cal-')){
+      if(id.startsWith('tv-')){
+        const tvRealId=id.replace('tv-','');
+        const tv=st.travel.find(x=>String(x.id)===String(tvRealId));
+        if(tv)tvCopies.push({...tv});
+      } else if(id.startsWith('shop-cal-')){
         const shopId=id.replace('shop-cal-','');
         const s=st.shopping.find(x=>String(x.id)===String(shopId));
         if(s){shopRestores.push({s,prev:s.due_date});s.due_date=null;}
@@ -5799,13 +5828,16 @@ document.addEventListener('keydown',async e=>{
     // Apply all changes
     const taskIds=taskCopies.map(t=>String(t.id));
     const recIds=recCopies.map(r=>String(r.id));
+    const tvIds=tvCopies.map(tv=>String(tv.id));
     st.tasks=st.tasks.filter(t=>!taskIds.includes(String(t.id)));
     recIds.forEach(rid=>{deletedRecIds.add(rid);st.recurring=st.recurring.filter(r=>String(r.id)!==rid);});
+    st.travel=st.travel.filter(tv=>!tvIds.includes(String(tv.id)));
     renderAll();renderWkSummary();renderWkCal();renderRecOv();renderWeeklyPage();save();
     // DB deletes
     await Promise.all([
       ...taskCopies.map(t=>sbReq('DELETE','tasks',null,`?id=eq.${t.id}`)),
-      ...recIds.map(rid=>sbReq('DELETE','recurring_tasks',null,recQs(rid)))
+      ...recIds.map(rid=>sbReq('DELETE','recurring_tasks',null,recQs(rid))),
+      ...tvCopies.map(tv=>sbReq('DELETE','travel',null,`?id=eq.${tv.id}`))
     ]);
     recIds.forEach(rid=>{deletedRecIds.delete(rid);save();});
     // ONE undo for everything
@@ -5827,7 +5859,11 @@ document.addEventListener('keydown',async e=>{
         const sv=await sbReq('POST','recurring_tasks',payload);
         st.recurring.push(sv&&sv[0]?{...sv[0],_doneByWk:{},_done:false}:r);
       });
-      await Promise.all([...taskPromises,...recPromises]);
+      const tvPromises=tvCopies.map(async tv=>{
+        const sv=await sbReq('POST','travel',{name:tv.name,destination:tv.destination||null,start_date:tv.start_date||null,end_date:tv.end_date||null,notes:tv.notes||null});
+        st.travel.push(sv&&sv[0]?sv[0]:tv);
+      });
+      await Promise.all([...taskPromises,...recPromises,...tvPromises]);
       renderAll();renderWkSummary();renderWkCal();renderRecOv();renderWeeklyPage();save();
     },'Deleted '+(totalCount>1?totalCount+' items':'item'));
     clearSelection();
@@ -5884,7 +5920,7 @@ document.addEventListener('keydown',async e=>{
 
 // Click outside any task clears selection (use mousedown to not conflict with selTask)
 document.addEventListener('mousedown',e=>{
-  if(!e.target.closest('.ti')&&!e.target.closest('.kol-item')&&!e.target.closest('.chip')&&!e.target.closest('.mcell-t')&&!e.target.closest('.tb-block')&&!e.target.closest('#ctxMenu')){
+  if(!e.target.closest('.ti')&&!e.target.closest('.kol-item')&&!e.target.closest('.chip')&&!e.target.closest('.mcell-t')&&!e.target.closest('.tb-block')&&!e.target.closest('.wkc-banner')&&!e.target.closest('#ctxMenu')){
     clearSelection();
   }
 });
@@ -6034,7 +6070,7 @@ function saveRecEdit(){
 // ── Context Menu ─────────────────────────────────────────────────────────────
 // ── Context Menu ─────────────────────────────────────────────────────────────
 // Store ctx state on the menu element itself so onclick handlers can always read it
-function showCtx(e,taskId,isRec,recId,shopId,blockId){
+function showCtx(e,taskId,isRec,recId,shopId,blockId,tvId){
   e.preventDefault();e.stopPropagation();
   const m=document.getElementById('ctxMenu');
   m._tid=taskId?String(taskId):null;
@@ -6042,10 +6078,12 @@ function showCtx(e,taskId,isRec,recId,shopId,blockId){
   m._recId=(recId!=null)?String(recId):null;
   m._shopId=(shopId!=null)?String(shopId):null;
   m._blockId=(blockId!=null)?String(blockId):null;
-  const isR=m._isRec,isSh=!!m._shopId,isBlk=!!m._blockId;
+  m._tvId=(tvId!=null)?String(tvId):null;
+  const isR=m._isRec,isSh=!!m._shopId,isBlk=!!m._blockId,isTv=!!m._tvId;
+  m.querySelector('#ctxDuplicate').style.display=isTv?'none':'';
   m.querySelector('#ctxDuplicate').textContent=isSh&&!isBlk?'⧉  Duplicate item':isR?'⧉  Duplicate recurring':'⧉  Duplicate task';
-  m.querySelector('#ctxEdit').textContent=isSh&&!isBlk?'✏️  Edit item':isR?'✏️  Edit recurring':'✏️  Edit task';
-  m.querySelector('#ctxDelete').textContent=isBlk?'✕  Remove from day':isSh?'✕  Delete item':isR?'✕  Delete recurring':'✕  Delete task';
+  m.querySelector('#ctxEdit').textContent=isTv?'✏️  Edit trip':isSh&&!isBlk?'✏️  Edit item':isR?'✏️  Edit recurring':'✏️  Edit task';
+  m.querySelector('#ctxDelete').textContent=isTv?'✕  Delete trip':isBlk?'✕  Remove from day':isSh?'✕  Delete item':isR?'✕  Delete recurring':'✕  Delete task';
   m.style.display='block';
   const x=Math.min(e.clientX,window.innerWidth-165),y=Math.min(e.clientY,window.innerHeight-120);
   m.style.left=x+'px';m.style.top=y+'px';
@@ -6123,16 +6161,18 @@ async function ctxDoDuplicate(){
 }
 function ctxDoEdit(){
   const m=document.getElementById('ctxMenu');
-  const id=m._tid,isRec=m._isRec,rId=m._recId,sId=m._shopId,blkId=m._blockId;
+  const id=m._tid,isRec=m._isRec,rId=m._recId,sId=m._shopId,blkId=m._blockId,tvId=m._tvId;
   hideCtx();
+  if(tvId){openTravelModal(tvId);return;}
   if(blkId){
     if(sId)tiDblShop(null,sId);else if(isRec&&rId)openRecEditModal(rId);else if(id)openEditTask(id);
   } else if(sId){tiDblShop(null,sId);}else if(isRec&&rId){openRecEditModal(rId);}else{openEditTask(id);}
 }
 function ctxDoDelete(){
   const m=document.getElementById('ctxMenu');
-  const id=m._tid,isRec=m._isRec,rId=m._recId,sId=m._shopId,blkId=m._blockId;
+  const id=m._tid,isRec=m._isRec,rId=m._recId,sId=m._shopId,blkId=m._blockId,tvId=m._tvId;
   hideCtx();
+  if(tvId){delTravel(tvId);clearSelection();return;}
   // If triggered from a timeblock, remove from day only (never delete the underlying item)
   if(blkId){delBlock(blkId);return;}
   if(sId){unscheduleShop(sId);}else if(isRec&&rId){const _cr=st.recurring.find(x=>String(x.id)===String(rId));const _isWr=_cr&&(_cr.is_weekly_reset===true||_cr.is_weekly_reset==='true');if(_isWr){unscheduleWRec(rId,getWkKey(wkOff));}else{togRecVirt(rId,true,getWkKey(wkOff));}}else{delTask(id,null);}
