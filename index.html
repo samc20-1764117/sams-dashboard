@@ -6389,9 +6389,9 @@ function getOvRecurring(){
   const out=[];
   for(let w=0;w>=wkOff-4;w--){
     getRecurringWeekTasks(w).forEach(v=>{
-      if(!v.done&&v.due_date<today&&!seen.has(v._recId)){
-        seen.add(v._recId);out.push(v);
-      }
+      if(seen.has(v._recId))return;
+      seen.add(v._recId);
+      if(!v.done&&v.due_date<today){out.push(v);}
     });
     // Weekly reset tasks: only check current week key (past-week overrides are stale, not overdue)
     if(w===0){
