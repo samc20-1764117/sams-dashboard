@@ -1743,6 +1743,10 @@ function getExtrasForWeek(off=0){
 function getWkKey(off=0){
   const{mon}=getWkBounds(off);return d2s(mon);
 }
+function dsToWkKey(ds){
+  const d=new Date(ds+'T00:00:00'),day=d.getDay(),mon=new Date(d);
+  mon.setDate(d.getDate()-(day===0?6:day-1));return d2s(mon);
+}
 
 // Sort: overdue→important→rest, done last
 function sortTasks(tasks){
@@ -3127,7 +3131,7 @@ function drawTBBlock(col,b){
   const linkedShop=b.shopId?st.shopping.find(x=>String(x.id)===String(b.shopId)):null;
   // Derive done from linked item (authoritative) so stale block._done never causes mismatch
   if(linkedTask)b._done=!!linkedTask.done;
-  else if(linkedRec)b._done=!!(linkedRec._doneByWk&&linkedRec._doneByWk[getWkKey(wkOff)]);
+  else if(linkedRec)b._done=!!(linkedRec._doneByWk&&linkedRec._doneByWk[dsToWkKey(b.ds)]);
   else if(linkedShop)b._done=!!linkedShop.done;
   const isImp=linkedTask&&linkedTask.important&&!linkedTask.done;
   const recCat=linkedRec?(linkedRec.is_weekly_reset===true||linkedRec.is_weekly_reset==='true'?'weekly_reset':'recurring'):null;
@@ -3164,7 +3168,11 @@ function drawTBBlock(col,b){
     if(b.taskId){
       toggleTask(b.taskId,checked,'tb');
     } else if(b.recId){
-      togRec(String(b.recId),checked);
+      const _lr=st.recurring.find(x=>String(x.id)===String(b.recId));
+      const _isWr=_lr&&(_lr.is_weekly_reset===true||_lr.is_weekly_reset==='true');
+      const _bwk=dsToWkKey(b.ds);
+      if(_isWr)togRec(String(b.recId),checked,_bwk);
+      else togRecVirt(String(b.recId),checked,_bwk);
     } else if(b.shopId){
       togShop(String(b.shopId),checked);
     } else {
@@ -3965,14 +3973,14 @@ async function duplicateRecDirect(rid){
     if(sv&&sv[0])sbReq('DELETE','recurring_tasks',null,recQs(sv[0].id));
   },'Duplicated recurring');
 }
-function togRec(id,done){
+function togRec(id,done,wkKey){
   const r=st.recurring.find(x=>String(x.id)===String(id));
   if(!r)return;
   const prev=r._done;
   const prevByWk=r._doneByWk?{...r._doneByWk}:{};
   r._done=done;
   if(!r._doneByWk)r._doneByWk={};
-  const wkKeyNow=getWkKey(wkOff);
+  const wkKeyNow=wkKey||getWkKey(wkOff);
   if(done)r._doneByWk[wkKeyNow]=true;
   else delete r._doneByWk[wkKeyNow];
   const linkedRecBlocks=st.blocks.filter(b=>String(b.recId)===String(id));
