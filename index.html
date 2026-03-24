@@ -322,6 +322,7 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 .tb-block:hover{box-shadow:inset 0 1px 0 rgba(255,255,255,0.85),0 8px 20px rgba(0,0,0,0.12);transform:translateY(-1px)}
 .tb-block.sel-row{box-shadow:0 0 0 0.75px color-mix(in srgb,var(--sel-d) 50%,transparent),0 4px 14px var(--sel-shadow),0 1px 4px var(--sel-shadow),inset 0 1px 1px rgba(255,255,255,.92)!important;transform:translateY(-1.5px)!important}
 .atb-block{position:absolute;left:2px;right:2px;border-radius:8px;padding:2px 5px;z-index:1;min-height:16px;border:1px solid rgba(180,175,200,.18);cursor:grab;overflow:hidden;user-select:none;background:rgba(245,244,250,.28);color:#b0aec0;pointer-events:auto}
+.atb-block.tb-drop-over{outline:2px dashed rgba(109,95,230,.55);outline-offset:-2px;background:rgba(109,95,230,.07)!important}
 .atb-block .tb-btime{color:#c8c6d4;font-size:7px}
 .atb-block.dragging-block{opacity:.35;cursor:grabbing}
 .atb-block.sel-atb{outline:1px solid rgba(160,155,185,.35);outline-offset:-1px;box-shadow:0 0 0 2px rgba(160,155,185,.1)}
@@ -1989,7 +1990,7 @@ function renderWkSummary(){
   const virtExtras=getExtrasForWeek(wkOff);
   const wrecThisWk=st.recurring
     .filter(r=>(r.is_weekly_reset===true||r.is_weekly_reset==='true')&&r._dateOverrides&&Object.values(r._dateOverrides).some(d=>{const wkDss=[];for(let i=0;i<7;i++){const day=new Date();day.setDate(day.getDate()-((day.getDay()||7)-1)+wkOff*7+i);wkDss.push(d2s(day));}return wkDss.includes(d);}))
-    .map(r=>{const ds=r._dateOverrides&&Object.entries(r._dateOverrides).find(([k,v])=>isInWk(v,wkOff))?.[1];return{id:'rec-virt-'+r.id,name:r.name,category:'Recurring',due_date:ds,done:!!r._done,_recId:r.id,_virtual:true,_isWrec:true};})
+    .map(r=>{const ds=r._dateOverrides&&Object.entries(r._dateOverrides).find(([k,v])=>isInWk(v,wkOff))?.[1];const wkk=getWkKey(wkOff);return{id:'rec-virt-'+r.id,name:r.name,category:'Recurring',due_date:ds,done:!!(r._doneByWk&&r._doneByWk[wkk]),_recId:r.id,_virtual:true,_isWrec:true};})
     .filter(v=>v.due_date&&!v.done);
   const shopThisWk=st.shopping
     .filter(s=>s.due_date&&isInWk(s.due_date,wkOff)&&!s.done)
@@ -2204,8 +2205,8 @@ function renderWkCal(){
     const virtForDayDone=getRecurringWeekTasks(wkOff).filter(v=>v.due_date===ds&&v.done);
     const wkKey2=getWkKey(wkOff);
     // Add weekly reset tasks that have been pinned to this date via _dateOverrides
-    const wrecForDay=st.recurring.filter(r=>(r.is_weekly_reset===true||r.is_weekly_reset==='true')&&!r._done&&r._dateOverrides&&r._dateOverrides[wkKey2]===ds).map(r=>({id:'rec-virt-'+r.id,name:r.name,category:'Recurring',due_date:ds,done:false,_recId:r.id,_virtual:true,_wkKey:wkKey2,_isWrec:true}));
-    const wrecForDayDone=st.recurring.filter(r=>(r.is_weekly_reset===true||r.is_weekly_reset==='true')&&!!r._done&&r._dateOverrides&&r._dateOverrides[wkKey2]===ds).map(r=>({id:'rec-virt-'+r.id,name:r.name,category:'Recurring',due_date:ds,done:true,_recId:r.id,_virtual:true,_wkKey:wkKey2,_isWrec:true}));
+    const wrecForDay=st.recurring.filter(r=>(r.is_weekly_reset===true||r.is_weekly_reset==='true')&&!(r._doneByWk&&r._doneByWk[wkKey2])&&r._dateOverrides&&r._dateOverrides[wkKey2]===ds).map(r=>({id:'rec-virt-'+r.id,name:r.name,category:'Recurring',due_date:ds,done:false,_recId:r.id,_virtual:true,_wkKey:wkKey2,_isWrec:true}));
+    const wrecForDayDone=st.recurring.filter(r=>(r.is_weekly_reset===true||r.is_weekly_reset==='true')&&!!(r._doneByWk&&r._doneByWk[wkKey2])&&r._dateOverrides&&r._dateOverrides[wkKey2]===ds).map(r=>({id:'rec-virt-'+r.id,name:r.name,category:'Recurring',due_date:ds,done:true,_recId:r.id,_virtual:true,_wkKey:wkKey2,_isWrec:true}));
     // Add shopping items assigned to this date
     const shopForDay=st.shopping.filter(s=>s.due_date===ds&&!s.done).map(s=>({id:'shop-cal-'+s.id,name:s.name+(s.store?' ('+s.store+')':''),category:'Shopping',due_date:ds,done:false,_shopId:s.id,_virtual:true,_type:'shop'}));
     const shopForDayDone=st.shopping.filter(s=>s.due_date===ds&&s.done).map(s=>({id:'shop-cal-done-'+s.id,name:s.name+(s.store?' ('+s.store+')':''),category:'Shopping',due_date:ds,done:true,_shopId:s.id,_virtual:true,_type:'shop'}));
@@ -3069,6 +3070,9 @@ function drawAutoTBBlock(col,atb,ds){
   const el=document.createElement('div');
   el.className='atb-block';
   el.dataset.atbId=atb._atbId;
+  el.addEventListener('dragover',e=>{if(!dragId)return;e.preventDefault();e.stopPropagation();el.classList.add('tb-drop-over');});
+  el.addEventListener('dragleave',()=>el.classList.remove('tb-drop-over'));
+  el.addEventListener('drop',e=>{if(!dragId)return;e.preventDefault();e.stopPropagation();el.classList.remove('tb-drop-over');dropOnTB(e,ds,null,null,atb.sm);});
   const ncols=atb._ncols||1,col_i=atb._col||0,colW=100/ncols,left=col_i*colW;
   const _showTime=ncols<=1;
   el.style.cssText=`top:${top}px;height:${ht}px;left:calc(${left}% + 2px);right:calc(${100-left-colW}% + 2px);width:auto`;
