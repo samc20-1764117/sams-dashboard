@@ -1014,7 +1014,7 @@ body.dark .bday-add-menu{background:rgba(38,20,10,.97);border-color:rgba(255,220
 </div>
 
 <!-- Travel Modal -->
-<div class="overlay" id="travelModal" onclick="closeMod(&#39;travelModal&#39;,event)">
+<div class="overlay" id="travelModal" onclick="closeMod('travelModal',event)" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();saveTravelModal();}if(event.key==='Escape')closeMod('travelModal')">
   <div class="modal task-modal" style="width:330px">
     <div class="mt" id="travelMTitle">Add Trip</div>
     <div class="mfield"><label>Trip name *</label><input id="tvName" placeholder="e.g. NYC weekend" onkeydown="if(event.key===&#39;Enter&#39;)saveTravelModal()"></div>
@@ -2217,7 +2217,7 @@ function renderWkCal(){
       for(let i=si;i<=ei;i++)colLanes[i].add(lane);
       const ban=document.createElement('div');ban.className='wkc-banner';
       ban.style.cssText=`left:${left+2}px;top:${2+lane*22}px;width:${right-left-4}px;background:${s.bg};color:${s.t};border-color:${s.b}${isPast?';opacity:.35':''}`;
-      ban.textContent=label;
+      ban.innerHTML=label;
       if(onClick)ban.addEventListener('click',onClick);
       bannerEl.appendChild(ban);
       return ban;
@@ -2229,8 +2229,8 @@ function renderWkCal(){
       const sd=tv.start_date?tv.start_date.split('T')[0]:null;
       const ed=tv.end_date?tv.end_date.split('T')[0]:sd;
       const isPast=!!(ed&&ed<today2);
-      const modeIcon=tv.travel_mode==='plane'?'✈️ ':tv.travel_mode==='drive'?'🚗 ':'✈ ';
-      const label=(tv.destination?`${modeIcon}${tv.name} → ${tv.destination}`:`${modeIcon}${tv.name}`);
+      const modeIconHtml=tv.travel_mode==='plane'?'✈️ ':tv.travel_mode==='drive'?_CAR_SVG:'';
+      const label=tv.destination?`${modeIconHtml}${escHtml(tv.name)} → ${escHtml(tv.destination)}`:`${modeIconHtml}${escHtml(tv.name)}`;
       const tripsEndsThisWeek=!ed||ed<=wkDss[6];
       const ban=addBanner(label,sd,ed,s,null,isPast);
       if(!ban)return;
@@ -2448,7 +2448,7 @@ function renderWkCal(){
         else if(t._virtual){togRecVirt(t._recId,chk.checked,t._wkKey||getWkKey(wkOff));}
         else{toggleTask(t.id,chk.checked,'week');}
       });
-      const nm=document.createElement('span');nm.className='chip-name';nm.textContent=tmIcon(t)+t.name;
+      const nm=document.createElement('span');nm.className='chip-name';nm.innerHTML=tmIcon(t)+escHtml(t.name);
       // name click handled by chip click→selTask, dblclick→openEditTask
       chip.appendChild(chk);chip.appendChild(nm);
       chip.addEventListener('contextmenu',e=>{if(!t._virtual)showCtx(e,t.id);});
@@ -2920,7 +2920,8 @@ function tRowExtra(t){
   </div>`;
 }
 
-function tmIcon(t){if(!t||t._virtual)return '';if(t.travel_mode==='plane')return '✈️ ';if(t.travel_mode==='drive')return '🚗 ';return '';}
+const _CAR_SVG=`<svg width="14" height="10" viewBox="0 0 24 16" fill="currentColor" style="display:inline-block;vertical-align:middle;margin-right:3px;margin-top:-2px"><path d="M22 9h-.8L18.9 4.1A2 2 0 0017.1 3H6.9a2 2 0 00-1.8 1.1L2.8 9H2a1 1 0 00-1 1v2a1 1 0 001 1h.8a2.5 2.5 0 004.4 0h9.6a2.5 2.5 0 004.4 0H22a1 1 0 001-1v-2a1 1 0 00-1-1zM6 13.5a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm12 0a1.5 1.5 0 110-3 1.5 1.5 0 010 3zM4.4 9l2-4.5h11.2l2 4.5H4.4z"/></svg>`;
+function tmIcon(t){if(!t||t._virtual)return '';if(t.travel_mode==='plane')return '✈️ ';if(t.travel_mode==='drive')return _CAR_SVG;return '';}
 
 // ── Task row (overdue→imp→rest) ────────────────────────────────────────────────
 function tRow(t,o={}){
@@ -4217,8 +4218,8 @@ function addMoTravelBanners(cells,yr,mo){
       const rangeCells=cellEls.filter(c=>c.dataset.ds&&c.dataset.ds>=clampS&&c.dataset.ds<=clampE);
       if(!rangeCells.length)return;
       const s=gc('travel');
-      const modeIcon=tv.travel_mode==='plane'?'✈️ ':tv.travel_mode==='drive'?'🚗 ':'✈ ';
-      const label=tv.destination?`${modeIcon}${tv.name} → ${tv.destination}`:`${modeIcon}${tv.name}`;
+      const modeIconHtml=tv.travel_mode==='plane'?'✈️ ':tv.travel_mode==='drive'?_CAR_SVG:'';
+      const label=tv.destination?`${modeIconHtml}${escHtml(tv.name)} → ${escHtml(tv.destination)}`:`${modeIconHtml}${escHtml(tv.name)}`;
       let rows=[],cur=[rangeCells[0]];
       for(let i=1;i<rangeCells.length;i++){
         if(rangeCells[i].offsetTop!==rangeCells[i-1].offsetTop){rows.push(cur);cur=[rangeCells[i]];}else cur.push(rangeCells[i]);
@@ -4232,7 +4233,7 @@ function addMoTravelBanners(cells,yr,mo){
         const left=fc.offsetLeft+2,top=rowTop+2+lane*22,width=lc.offsetLeft+lc.offsetWidth-fc.offsetLeft-4;
         const ban=document.createElement('div');ban.className='wkc-banner';
         ban.style.cssText=`position:absolute;left:${left}px;top:${top}px;width:${width}px;background:${s.bg};color:${s.t};border-color:${s.b};pointer-events:all;${isPast?'opacity:.35;':''}`;
-        ban.textContent=ri===0?label:`↳ ${label}`;
+        ban.innerHTML=ri===0?label:`↳ ${label}`;
         ban.addEventListener('click',()=>openTravelModal(tv.id));
         layer.appendChild(ban);
       });
@@ -4298,7 +4299,7 @@ function mkMCell(date,om,today){
     else if(t._type==='shop')chip.dataset.tid='shop-cal-'+t._shopId;
     else if(t._isWrec)chip.dataset.tid='wrec-'+t._recId;
     else if(t._recId)chip.dataset.tid='rec-virt-'+t._recId;
-    chip.textContent=tmIcon(t)+t.name;
+    chip.innerHTML=tmIcon(t)+escHtml(t.name);
     chip.addEventListener('dragstart',e=>{e.stopPropagation();dStart(e,t.id);chip.style.opacity='.4';});
     chip.addEventListener('dragend',()=>{chip.style.opacity='1';});
     chip.addEventListener('click',e=>{
