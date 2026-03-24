@@ -1317,7 +1317,6 @@ let cfg={url:'https://gtirvyrqfuuuxkkqaeap.supabase.co',key:'eyJhbGciOiJIUzI1NiI
 let st={tasks:[],recurring:[],shopping:[],blocks:[],travel:[],birthdays:[],pup_skills:[],recipes:[],autoTimeblocks:[],autoTBOverrides:[]};
 let dayOff=0,wkOff=0,moOff=0,sbOpen=true,activePg='overview';
 let dragId=null,resizing=null,tMode='add',tId=null,tPreDate=null;
-let _shopReorderDrag=false,_shopOvDragId=null;
 let qaCtx='today',qaDsTarget=null,qaKCat='';
 let tbWD=0,tbWT=null,wkcWD=0,wkcWT=null;
 let selAtbId=null,selAtbDs=null;
@@ -2881,17 +2880,55 @@ function dropOnTodayList(e){
 
 // ── Shop overview ──────────────────────────────────────────────────────────────
 let shopOvSortMode='manual'; // 'manual'|'store'|'alpha'
+let _shopDrag={active:false,id:null,startY:0,moved:false};
 function _shopOvSort(arr){
   const a=[...arr];
-  if(shopOvSortMode==='store')return a.sort((a,b)=>(a.store||'').localeCompare(b.store||'')||(a.name||'').localeCompare(b.name||''));
-  if(shopOvSortMode==='alpha')return a.sort((a,b)=>(a.name||'').localeCompare(b.name||''));
-  return a.sort((a,b)=>(a.shop_order??9999)-(b.shop_order??9999));
+  if(shopOvSortMode==='store')return a.sort((x,y)=>(x.store||'').localeCompare(y.store||'')||(x.name||'').localeCompare(y.name||''));
+  if(shopOvSortMode==='alpha')return a.sort((x,y)=>(x.name||'').localeCompare(y.name||''));
+  return a.sort((x,y)=>(x.shop_order??9999)-(y.shop_order??9999));
 }
 function cycleShopOvSort(){
   shopOvSortMode=shopOvSortMode==='manual'?'store':shopOvSortMode==='store'?'alpha':'manual';
   const btn=document.getElementById('shopOvSortBtn');
   if(btn)btn.textContent=shopOvSortMode==='store'?'⇅ Store':shopOvSortMode==='alpha'?'⇅ A–Z':'⇅ Manual';
   renderShopOv();
+}
+function _shopDragMove(e){
+  if(!_shopDrag.active)return;
+  if(!_shopDrag.moved&&Math.abs(e.clientY-_shopDrag.startY)<5)return;
+  _shopDrag.moved=true;
+  const draggedEl=document.getElementById('ti-shop-cal-'+_shopDrag.id);
+  if(draggedEl)draggedEl.style.opacity='.4';
+  const rows=[...document.querySelectorAll('#shopOv .ti')];
+  rows.forEach(r=>r.classList.remove('shop-dov'));
+  const over=rows.find(r=>{
+    if(r.id==='ti-shop-cal-'+_shopDrag.id)return false;
+    const rc=r.getBoundingClientRect();
+    return e.clientY>=rc.top&&e.clientY<=rc.bottom;
+  });
+  if(over)over.classList.add('shop-dov');
+}
+function _shopDragUp(){
+  document.removeEventListener('mousemove',_shopDragMove);
+  document.removeEventListener('mouseup',_shopDragUp);
+  const rows=[...document.querySelectorAll('#shopOv .ti')];
+  const target=rows.find(r=>r.classList.contains('shop-dov'));
+  rows.forEach(r=>r.classList.remove('shop-dov'));
+  const draggedEl=document.getElementById('ti-shop-cal-'+_shopDrag.id);
+  if(draggedEl)draggedEl.style.opacity='';
+  if(_shopDrag.moved&&target){
+    const targetId=target.id.replace('ti-shop-cal-','');
+    const items=_shopOvSort(st.shopping.filter(s=>!s.done));
+    const fi=items.findIndex(s=>String(s.id)===String(_shopDrag.id));
+    const ti=items.findIndex(s=>String(s.id)===String(targetId));
+    if(fi>=0&&ti>=0){
+      items.splice(ti,0,items.splice(fi,1)[0]);
+      items.forEach((s,i)=>{s.shop_order=i;});
+      renderShopOv();
+      items.forEach(s=>sbReqNullable('PATCH','shopping_list',{shop_order:s.shop_order},`?id=eq.${s.id}`));
+    }
+  }
+  _shopDrag={active:false,id:null,startY:0,moved:false};
 }
 function renderShopOv(){
   const shopSorted=_shopOvSort(st.shopping.filter(s=>!s.done));
@@ -2900,38 +2937,13 @@ function renderShopOv(){
     draggable="true"
     ondragstart="dragId='shop::${s.id}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);"
     ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false);"
-    ondragover="shopOvDragOver(event,'${s.id}')"
-    ondrop="shopOvDrop(event,'${s.id}')"
     onclick="tiClickShop(event,'${s.id}')" ondblclick="tiDblShop(event,'${s.id}')" oncontextmenu="showCtxShop(event,'${s.id}')">
-    ${isManual?`<span class="shop-grip" draggable="true"
-      ondragstart="event.stopPropagation();_shopOvDragId='${s.id}';dragId='shop-reorder::${s.id}';event.dataTransfer.effectAllowed='move';event.currentTarget.closest('.ti').style.opacity='.45';"
-      ondragend="event.stopPropagation();event.currentTarget.closest('.ti').style.opacity='';dragId=null;_shopOvDragId=null;document.querySelectorAll('#shopOv .shop-dov').forEach(r=>r.classList.remove('shop-dov'));"
-      title="Drag to reorder">⠿</span>`:''}
+    ${isManual?`<span class="shop-grip" onmousedown="event.stopPropagation();event.preventDefault();_shopDrag={active:true,id:'${s.id}',startY:event.clientY,moved:false};document.addEventListener('mousemove',_shopDragMove);document.addEventListener('mouseup',_shopDragUp);" title="Drag to reorder">⠿</span>`:''}
     <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" onchange="togShop('${s.id}',this.checked)"></label>
     <span class="tn">${s.name}</span>
     <span class="cpill" style="background:rgba(241,245,249,.9);color:#64748b;border-color:rgba(148,163,184,.25);flex-shrink:0">${s.store}</span>
     <button class="delbtn" onclick="delShop('${s.id}')">✕</button>
   </div>`).join('');
-}
-function shopOvDragOver(e,id){
-  if(!dragId||!dragId.startsWith('shop-reorder::'))return;
-  if(_shopOvDragId===id)return;
-  e.preventDefault();e.dataTransfer.dropEffect='move';
-  document.querySelectorAll('#shopOv .shop-dov').forEach(r=>r.classList.remove('shop-dov'));
-  document.getElementById('ti-shop-cal-'+id)?.classList.add('shop-dov');
-}
-function shopOvDrop(e,targetId){
-  e.preventDefault();
-  if(!_shopOvDragId||_shopOvDragId===targetId){return;}
-  const items=_shopOvSort(st.shopping.filter(s=>!s.done));
-  const fi=items.findIndex(s=>String(s.id)===String(_shopOvDragId));
-  const ti=items.findIndex(s=>String(s.id)===String(targetId));
-  if(fi<0||ti<0)return;
-  items.splice(ti,0,items.splice(fi,1)[0]);
-  items.forEach((s,i)=>{s.shop_order=i;});
-  _shopOvDragId=null;dragId=null;
-  renderShopOv();
-  items.forEach(s=>sbReqNullable('PATCH','shopping_list',{shop_order:s.shop_order},`?id=eq.${s.id}`));
 }
 
 // ── Virtual recurring task row for This Week ─────────────────────────────────
