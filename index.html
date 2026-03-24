@@ -2184,10 +2184,6 @@ function renderWkCal(){
     return s<=wkDss[6]&&(e||s)>=wkDss[0];
   });
   const bdayThisWk=getBirthdayTasks(null).filter(b=>wkDss.includes(b.due_date));
-  const hasBanners=travelThisWk.length||bdayThisWk.length;
-  const wkcWrapEl=document.getElementById('wkcWrap');
-  if(wkcWrapEl)wkcWrapEl.style.paddingTop=hasBanners?'22px':'0';
-
   setTimeout(()=>{
     const wrap=document.getElementById('wkcWrap');
     if(!wrap)return;
@@ -2195,6 +2191,8 @@ function renderWkCal(){
     if(colEls.length!==7)return;
     const wrapRect=wrap.getBoundingClientRect();
     const today2=tod();
+    // Reset all column top padding first
+    colEls.forEach(c=>c.style.paddingTop='0');
 
     function addBanner(label,startDs,endDs,s,onClick,isPast){
       const si=Math.max(0,wkDss.indexOf(wkDss.find(d=>d>=startDs)));
@@ -2209,6 +2207,8 @@ function renderWkCal(){
       ban.textContent=label;
       if(onClick)ban.addEventListener('click',onClick);
       bannerEl.appendChild(ban);
+      // Push down only the columns covered by this banner
+      for(let i=si;i<=Math.min(ei,6);i++)colEls[i].style.paddingTop='22px';
     }
 
     travelThisWk.forEach(tv=>{
