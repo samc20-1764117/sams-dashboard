@@ -1369,6 +1369,7 @@ async function sbReqNullable(method,table,body,qs=''){
 }
 // Track task ids that have pending local edits (cleared after confirmed DB write)
 const pendingLocal=new Set();
+const pendingTravelIds=new Set();
 let deletedRecIds=new Set();
 // ── Supabase silent request (no toast on failure) ────────────────────────────
 async function sbReqSilent(method,table,body,qs=''){
@@ -1527,7 +1528,15 @@ async function syncAll(silent=false){
       ];
     }
     if(shop){st.shopping=shop;}
-    if(trav)st.travel=trav;
+    if(trav){
+      const localOnly=st.travel.filter(tv=>String(tv.id).startsWith('l-'));
+      st.travel=trav.map(sv=>{
+        const sid=String(sv.id);
+        if(pendingTravelIds.has(sid)){const local=st.travel.find(tv=>String(tv.id)===sid);if(local)return local;}
+        return sv;
+      });
+      localOnly.forEach(tv=>{if(!st.travel.find(x=>x.id===tv.id))st.travel.push(tv);});
+    }
     if(bdays)st.birthdays=bdays.map(b=>{const loc=st.birthdays.find(x=>String(x.id)===String(b.id));return(loc&&loc.present_ideas&&!b.present_ideas)?{...b,present_ideas:loc.present_ideas}:b;});
     if(pupSkills){
       if(!silent){_pupUndoDirty=false;st.pup_skills=pupSkills;}
@@ -4404,7 +4413,9 @@ async function saveTravelModal(){
     const tv=st.travel.find(x=>String(x.id)===String(travelEditId));if(!tv)return;
     Object.assign(tv,{name,destination:dest,start_date:start,end_date:end,travel_mode:tm,notes});
     renderAll();renderTravelPage();
-    await sbReqNullable('PATCH','travel',{name,destination:dest,start_date:start,end_date:end,travel_mode:tm,notes},`?id=eq.${travelEditId}`);
+    const _tid=String(travelEditId);pendingTravelIds.add(_tid);
+    await sbReq('PATCH','travel',{name,destination:dest,start_date:start,end_date:end,travel_mode:tm,notes},`?id=eq.${travelEditId}`);
+    pendingTravelIds.delete(_tid);
   } else {
     const t={id:'l-'+Date.now(),name,destination:dest,start_date:start,end_date:end,travel_mode:tm,notes};
     st.travel.push(t);renderAll();renderTravelPage();
