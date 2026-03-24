@@ -557,7 +557,9 @@ Single row of chips + search. Built by `_buildRecFilterBar()`, injected into `#r
 - `recSearchChange(v)` — updates `_recSearch`, calls `renderRecipeTable()` only (no full re-render, no focus loss).
 
 ### Selection & Side Panel
-- Single-click → `selRecRow(e,sid)` — selects row AND opens side panel. Deselecting (clicking same row alone) closes panel. Cmd/Ctrl+click toggles; Shift-click range. `applyRecSelHighlight()` adds `.rec-sel` class.
+- Single-click → `selRecRow(e,sid)` — selects row only (does NOT open panel). Clicking same selected row alone deselects and closes panel. Cmd/Ctrl+click toggles; Shift-click range. `applyRecSelHighlight()` adds `.rec-sel` class.
+- Double-click row → `openRecSidePanel(id)`. `···` dots button → `openRecSidePanel(id)`.
+- Outside click (anywhere not in table/panel/chips/search) → clears selection AND closes panel (`closeRecSidePanel()`). Outside click handler excludes `#recTblBody`, `#recSidePanel`, `[data-recmeal]`, `[data-recfav]`, `[data-rectime]`, `#recSearchInp`, `.rec-filter-bar`.
 - Side panel: `#recSidePanel`, class `rec-side-panel`. CSS transition width 0 → 400px. Table wrap (`#recTableWrap`) gets `marginRight:400px` when open.
 - `_recPanelId` persists across re-renders; `renderRecipesPage()` re-opens panel if set.
 - Panel shows: name, fav button, meal type + cuisine pills, time + servings detail row, notes, ingredients, instructions, source, Edit button.
@@ -697,7 +699,7 @@ Legacy recipes may store plain text (one ingredient per line). `_parseIngredient
 - If `str.startsWith('[')` → try `JSON.parse`, map to `{name, amount}` objects
 - Otherwise → split by newline, each line becomes `{name: line, amount: ''}`
 
-`_serializeIngredients(arr)` → filters blank names, returns JSON string or `null`.
+`_serializeIngredients(arr)` → filters entries where BOTH name AND amount are blank (keeps entries with either name or amount filled), returns JSON string or `null`.
 
 ### Modal (Add / Edit Recipe)
 - **No source/URL field** — removed from UI (kept in `_recFields` for data compat).
@@ -737,20 +739,22 @@ Filter bar uses both `oninput` and `onchange` on the search input.
 ### Key Rule: Static Filter Bar
 The filter bar HTML is built ONCE inside the `_recInit` block in `renderRecipesPage`. It is NOT rebuilt on every render call. Filter chips use `data-recmeal`, `data-recfav`, `data-rectime` attributes for state-based CSS toggling.
 
+The filter bar wrapper div has `position:relative;z-index:10` to ensure it sits above any `position:fixed` elements (`.ov-topbar` at z-index:89, `.rec-side-panel` at z-index:95) that could otherwise intercept pointer events.
+
 ### `_applyRecFilterUI()`
 Called after every filter/search change. Toggles `.active` class on chips using data attributes. Updates search input value only when input is NOT focused.
 
 ### Filter/Search Functions
 `recToggleMealFilter(m)`, `recToggleFavFilter()`, `recToggleTimeFilter(t)` → update state var → call `renderRecipeTable()` + `_applyRecFilterUI()`. Do NOT call `renderRecipesPage()`.
 
-Search listener is attached ONCE via `addEventListener('input', ...)` in `_recInit`, not via inline `oninput` attribute (which would be lost when DOM is rebuilt).
+Search input has BOTH an inline `oninput="recSearchChange(this.value)"` attribute AND an `addEventListener('input', ...)` attached in `_recInit`. The inline handler is the reliable fallback.
 
 ---
 
 ## Recipes Page — Side Panel as Primary Edit Interface
 
 ### Editing Flow
-- Single-click row → `selRecRow` → opens side panel with `openRecSidePanel(id)` (deselect behavior preserved)
+- Single-click row → `selRecRow` → selects only (does NOT open panel)
 - Double-click row → `openRecSidePanel(id)` (panel, NOT edit modal)
 - `···` dots button → `openRecSidePanel(id)`
 - Right-click context menu "Edit" → `openRecSidePanel(id)`
