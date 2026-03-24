@@ -354,30 +354,60 @@ All three checkbox types share identical visual style:
 ## Birthdays Page
 
 - Page ID: `page-birthdays`. Sidebar nav: `showPage('birthdays')`. Rendered by `renderBdayPage()`.
-- Supabase table: `birthdays(id, name, birthday, present_ideas)`. `present_ideas` is a TEXT column storing a JSON array of strings. Parse with `_bdayPresentList(b)`.
+- Supabase table: `birthdays(id, name, birthday, present_ideas)`. `present_ideas` is a TEXT column storing a JSON array of strings (must be added manually: `ALTER TABLE birthdays ADD COLUMN present_ideas TEXT;`). Parse with `_bdayPresentList(b)`.
 - Stored in `st.birthdays`, persisted in localStorage. Fetched in `syncAll`.
-- Layout: full-screen `.card` (no header, no max-width) with `#bdayPageContent` filling the card. Page uses `height:100vh; display:flex; flex-direction:column; padding:clamp(12px,3vw,56px); padding-top:60px`.
-- **Grid layout**: 4×3 month grid (`.bday-grid`), `grid-template-columns:repeat(4,1fr); grid-template-rows:repeat(3,1fr)`. All 12 month cards are equal size. Birthdays listed under their month, sorted by day ascending.
-- **Current month card** (`.bday-month-current`): stronger outer glow via `box-shadow`, thin accent border (`0 0 0 1px`), whiter/more opaque inner background. Month name uses accent color.
-- **Double-click empty space** in a month card → `openBdayModal()` (add mode). Guard: `if(!event.target.closest('.bday-row'))` on `ondblclick` of `.bday-month-card`. Double-clicking a birthday row still opens edit modal via `.bday-main ondblclick`.
-- **No card header**: `.ch` removed. No count badge or `+` button in card header. Use double-click to add.
-- **Sections**: "Today 🎉" (md===todayMD), "Upcoming" (md>todayMD, sorted asc), "Past" (md<todayMD, sorted desc by month-day, opacity 0.45). Section headers use `.bday-section-header`.
-- **Countdown pills** (`.bday-countdown`): Today=orange, Tomorrow=light orange, ≤7d=yellow, ≤30d=green, >30d=grey. Not shown on past birthdays.
-- **Gift ideas**: Each row has a `.bday-gift-btn` (🎁 count, `.has-gifts` class if any). Click toggles `.bday-presents` panel via `toggleBdayPresents(id)`. Inside panel: list of `delBdayPresent(id,idx)` rows + add input (`addBdayPresent(id, inp)`). Both helpers PATCH `present_ideas` to Supabase.
-- **Modal**: `#bdayModal` — name + date only. Present ideas are managed inline on the page, not in the modal.
-- `openBdayModal(id)` — edit mode pre-fills name/date. Add mode = no id arg.
-- `saveBdayModal()` — POST new (with temp `l-` id) or PATCH existing. Does NOT include `present_ideas` (managed inline).
-- `delBday(id)` — removes from `st.birthdays`, calls `renderAll()` + `renderBdayPage()`, DELETEs from Supabase.
-- `renderBdayPage()` — uses `#bdayPageContent` for content, `#bdayCount` for count badge. Registers `window._bdayOutsideClick` deselect handler each render.
-- **Selection**: `selBdayRow(e,id)` on `.bday-main` onclick. Single click selects, Cmd+click toggles, Shift+click range-selects. Clicking selected-only row deselects. `applyBdaySelHighlight()` syncs `.bday-sel` class on `.bday-row[data-bid]` elements.
-  - `selBdayRow` calls `e.stopPropagation()` immediately after the guard check — this prevents the same click from bubbling to `window._bdayOutsideClick` and clearing the selection.
-  - `.bday-main` has `user-select:none` — prevents text selection on Shift+click range select.
-- **dblclick**: `ondblclick="openBdayModal('${b.id}')"` on `.bday-main` — opens edit modal. No inline cell editing on the birthday page.
-- **No hover edit button**: no `.bday-edit-btn` element or CSS. Editing is via dblclick or right-click → Edit.
-- **Context menu**: `#bdayCtxMenu` — Edit (hidden for multi-select), Duplicate, Delete. `showBdayCtx(e,id)` right-click. Hides on outside click (shared click listener).
-- **Keyboard shortcuts** (birthdays page, first keydown listener): `Cmd+Z` → `bdayUndo()`, `Cmd+Shift+Z` → `bdayRedo()`, `Delete/Backspace` → `bdayCtxDelete()` when selection exists, `Cmd+C` → copy to `_copiedBdays`, `Cmd+V` → paste copies.
-- **Undo/Redo**: `bdaySnapshot()` before any destructive op (delete, edit-save, duplicate, paste, add/del present). `_bdaySyncToServer(prev,next)` diffs and fires minimal API calls. Max 20 snapshots.
-- **State**: `_bdaySelIds` (Set), `_lastBdaySelId`, `_copiedBdays` (array), `_bdayCtxId`, `_bdayUndoStack`, `_bdayRedoStack`.
+- Layout: full-screen `.card` (no header) with `#bdayPageContent` filling the card. Page uses `display:flex; flex-direction:column; height:100vh; padding:clamp(12px,3vw,56px); padding-top:60px`.
+- **Grid layout**: 4×3 month grid (`.bday-grid`), `grid-template-columns:repeat(4,1fr); grid-template-rows:repeat(3,1fr)`. All 12 month cards equal size. Birthdays listed under their month, sorted by day ascending. Rows wrapped in `.bday-tbl`.
+
+### Row Layout (`.bday-tbl` / `.bday-row`)
+- `.bday-tbl`: `display:grid; grid-template-columns:1fr auto auto auto` — 4 columns.
+- `.bday-row`: `display:grid; grid-column:1/-1; grid-template-columns:subgrid` — participates in parent grid so columns align across all rows in a card.
+- **Children (always 4)**: `.bday-name-cell` (1fr) | right-badge (auto) | `.bday-date-lbl` (auto) | `.bday-del-btn` (auto).
+- `.bday-name-cell`: `display:flex; align-items:center; gap:4px` — contains `.bday-name` + optional `.bday-gift-btn` inline.
+- **Right-badge** (`rightBadge`): countdown OR age pill, whichever is non-empty. Countdown takes priority (≤30d). If neither, `<span></span>` placeholder. This ensures countdown and age always occupy the same column — no misalignment.
+- Click/dblclick/contextmenu handlers are on `.bday-row` (not a `.bday-main` wrapper — that was removed).
+
+### Countdown / Age
+- **Countdown** (`.bday-countdown`): Today=orange, Tmrw=light orange, ≤7d=yellow, ≤30d=green. Returns `''` for >30d or past — triggers age pill fallback.
+- **Age pill** (`.bday-age-pill`): shows age (past) or `"turns N"` (upcoming). Only rendered when birth year is known (`_bdayHasYear`). Styled as a small badge.
+- Countdown and age share one column (merged as `rightBadge`) — never two separate columns.
+
+### Color scheme
+- **Non-current months**: all rows use `color:#777` (same for past and future — no dimming by past status).
+- **Current month upcoming**: dark text `#222`, accent-colored age pill.
+- **Current month past** (`.bday-month-current .bday-past`): lighter grey `#999` for name/date/pill.
+
+### Current Month Card
+- `.bday-month-current`: stronger glow (`box-shadow`), thin accent border, whiter background.
+- Month name: accent color (dark in light mode).
+- **+ button** (`.btn-plus`) inside card, `position:absolute; top:8px; right:8px` — opens `toggleBdayAddMenu(event)` dropdown showing "Add Birthday" + accepted date formats.
+- **Double-click empty space** → `openBdayModal(null, monthIndex)` — opens add modal pre-filled with that month. Guard: `if(!event.target.closest('.bday-row'))`.
+
+### Present Ideas (Gift Popup)
+- **No inline panel** — presents managed via floating popup only.
+- `.bday-gift-btn` (🎁 count): click → `openBdayPresentPopup(event, id)`. Hover → `showBdayPresentTip(event, id)` (reuses `#pupTooltip`). Rendered inside `.bday-name-cell` right of the name.
+- `#bdayPresentPopup`: `position:fixed` popup outside page content — survives `renderBdayPage()` re-renders.
+- `openBdayPresentPopup(e, id)`: sets `_bdayPresentPopupId`, calls `_renderBdayPresentPopup`, positions near button. Outside-click uses `_closeBdayPresentPopupOutside` (re-registers itself while popup contains click target).
+- `_renderBdayPresentPopup(pop, id)`: builds popup HTML — gift list with per-item ✕ (`delBdayPresent`), add input + button (`addBdayPresentFromPopup`).
+- `addBdayPresentFromPopup(id, inp)`: updates `b.present_ideas`, calls `renderBdayPage()`, refreshes popup in place, PATCHes `present_ideas` to Supabase.
+- `delBdayPresent(id, idx)`: splices list, calls `renderBdayPage()`, refreshes popup if open (`_bdayPresentPopupId === id`), PATCHes Supabase.
+- `showBdayPresentTip(e, id)`: shows bullet list of presents in `#pupTooltip`. Does nothing if list is empty.
+- Both PATCH functions guard against temp IDs: `if(!String(id).startsWith('l-'))`.
+
+### Modal
+- `#bdayModal` — name + date fields only. Present ideas managed via popup, not modal.
+- `openBdayModal(id, month)` — edit mode pre-fills name/date; add mode with `month` pre-fills `"${month}/"` in date field.
+- `saveBdayModal()` — POST new (temp `l-` id) or PATCH existing. Does NOT include `present_ideas`.
+- Date field display: `_bdayEditFmt(b)` → `"5/21"` (no year) or `"5/21/25"` (with year).
+
+### Other Interactions
+- `delBday(id)`: guards temp IDs (`l-` prefix → skip DELETE). Removes from `st.birthdays`, re-renders, DELETEs from Supabase.
+- **Selection**: `selBdayRow(e,id)` on `.bday-row` onclick. Single/Cmd/Shift click. `applyBdaySelHighlight()` syncs `.bday-sel` class.
+- **Context menu**: `#bdayCtxMenu` — Edit (hidden multi-select), Duplicate, Delete.
+- **Keyboard**: `Cmd+Z` → `bdayUndo()`, `Cmd+Shift+Z` → `bdayRedo()`, `Delete/Backspace` → `bdayCtxDelete()`, `Cmd+C/V` → copy/paste.
+- **Undo/Redo**: `bdaySnapshot()` before any destructive op. `_bdaySyncToServer(prev,next)` diffs + fires minimal API calls.
+- **State**: `_bdaySelIds` (Set), `_lastBdaySelId`, `_copiedBdays`, `_bdayCtxId`, `_bdayUndoStack`, `_bdayRedoStack`, `_bdayPresentPopupId`.
+- **syncAll merge**: when syncing, merges local `present_ideas` into server data if server returns null (prevents PATCH race from wiping local state).
 
 ## Modal Enter / Escape Key Rules
 
@@ -415,19 +445,26 @@ The `tCat` select in `tModal` uses a JS `addEventListener` with `e.stopPropagati
 
 ## Birthday Date Format (`_normBdayDate`)
 
+All dates sent to Supabase as `YYYY-MM-DD` (PostgreSQL `date` type requires this). Sentinel year `1900` means "no year stored."
+
 Accepts and normalizes any of these input formats:
 
 | Input example | Stored as |
 |---|---|
-| `7/5` or `07/05` | `07-05` (no year) |
-| `7/5/2025` or `07/05/2025` | `2025-07-05` |
-| `7/5/25` or `7/05/25` | `2025-07-05` (2-digit year) |
-| `2025-07-05` | `2025-07-05` (passthrough) |
-| `07-05` | `07-05` (passthrough) |
+| `7/5` or `1/23` | `1900-07-05` (sentinel no-year) |
+| `Jan 23` or `January 23` | `1900-01-23` (sentinel no-year) |
+| `7/5/2025` | `2025-07-05` |
+| `7/5/25` | `2025-07-05` (2-digit: ≤30 → 2000+YY, >30 → 1900+YY) |
+| `Jan 23 1990` | `1990-01-23` |
+| `1900-07-05` | passthrough (sentinel) |
+| `2025-07-05` | passthrough |
 
-2-digit year rule: `YY ≤ 30` → `2000+YY`; `YY > 30` → `1900+YY`.
-
-Storage format is always `MM-DD` (no year) or `YYYY-MM-DD` (with year). `_bdayMD(b)` extracts the `MM-DD` portion from either.
+**Helpers**:
+- `_bdayHasYear(b)`: true if `birthday` is `YYYY-MM-DD` and year ≠ 1900.
+- `_bdayMD(b)`: extracts `MM-DD` from either `YYYY-MM-DD` or legacy `MM-DD`.
+- `_bdayFmtDate(b)`: display format — `"7/5"` (no year) or `"7/5/2025"` (with year).
+- `_bdayEditFmt(b)`: modal field format — `"7/5"` or `"7/5/25"` (2-digit year).
+- `_bdayAge(b, forDate)`: returns numeric age or null if no year.
 
 ---
 
