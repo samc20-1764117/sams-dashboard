@@ -5890,7 +5890,7 @@ function renderRecipesPage(){
     page._recInit=true;
     const mealChips=['Breakfast','Lunch','Dinner','Snack','Dessert','Drink','Side'].map(m=>`<button class="rec-filter-chip" data-recmeal="${m}" onclick="recToggleMealFilter('${m}')">${m}</button>`).join('');
     page.innerHTML=`<div class="ov-topbar"><div class="ov-topbar-left"><span class="ov-topbar-label">🍳 Recipes</span><span class="ov-topbar-dot"></span></div><span class="ov-topbar-date topbar-date"></span><div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div></div>
-    <div style="padding-top:26px"><div class="rec-filter-bar"><input class="rec-search" id="recSearchInp" placeholder="🔍 Search recipes…" oninput="recSearchChange(this.value)">${mealChips}<button class="rec-filter-chip" data-recfav="1" onclick="recToggleFavFilter()">♥ Favs</button><button class="rec-filter-chip" data-rectime="30" onclick="recToggleTimeFilter('30')">≤30m</button><button class="rec-filter-chip" data-rectime="60" onclick="recToggleTimeFilter('60')">≤1h</button></div></div>
+    <div style="padding-top:26px;position:relative;z-index:10"><div class="rec-filter-bar"><input class="rec-search" id="recSearchInp" placeholder="🔍 Search recipes…" oninput="recSearchChange(this.value)">${mealChips}<button class="rec-filter-chip" data-recfav="1" onclick="recToggleFavFilter()">♥ Favs</button><button class="rec-filter-chip" data-rectime="30" onclick="recToggleTimeFilter('30')">≤30m</button><button class="rec-filter-chip" data-rectime="60" onclick="recToggleTimeFilter('60')">≤1h</button></div></div>
     <div id="recTableWrap" style="transition:margin-right .22s cubic-bezier(.4,0,.2,1)">
       <div class="card" style="overflow:hidden">
         <div class="ch" style="gap:8px">
@@ -5914,7 +5914,7 @@ function renderRecipesPage(){
     if(window._recOutsideClick)document.removeEventListener('click',window._recOutsideClick);
     window._recOutsideClick=e=>{
       if(!document.getElementById('page-recipes')?.classList.contains('active'))return;
-      if(!e.target.closest('#recTblBody,#recSidePanel,[data-recmeal],[data-recfav],[data-rectime],#recSearchInp')){_selRecIds.clear();_lastSelRecId=null;applyRecSelHighlight();}
+      if(!e.target.closest('#recTblBody,#recSidePanel,[data-recmeal],[data-recfav],[data-rectime],#recSearchInp,.rec-filter-bar')){_selRecIds.clear();_lastSelRecId=null;closeRecSidePanel();applyRecSelHighlight();}
     };
     document.addEventListener('click',window._recOutsideClick);
   }
