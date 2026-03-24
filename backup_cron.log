@@ -1,0 +1,11 @@
+✓ tasks (87 rows)
+✓ recurring_tasks (19 rows)
+✓ shopping_list (19 rows)
+✓ travel (4 rows)
+✓ birthdays (11 rows)
+✓ pup_skills (30 rows)
+✓ time_blocks (94 rows)
+✓ auto_timeblocks (6 rows)
+✓ auto_timeblock_overrides (10 rows)
+
+Saved to /Users/samanthacohn/Documents/sams-dashboard/backup_auto.json

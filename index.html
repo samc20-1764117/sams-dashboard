@@ -602,6 +602,17 @@ body.dark .rm-ing-amt:focus,body.dark .rm-ing-name:focus{background:rgba(255,255
 .rm-ing-del:hover{color:#ef4444}
 .rm-ing-add-btn{background:none;border:none;color:var(--muted);font-size:11px;cursor:pointer;padding:5px 10px;font-family:inherit;text-align:left;width:100%;transition:color .12s,background .12s;border-top:1px dashed rgba(210,205,228,.35)}
 .rm-ing-add-btn:hover{color:var(--accent);background:rgba(194,107,79,.05)}
+/* Recipe side panel — inline editable fields */
+.rec-sp-title-inp{font-size:15px;font-weight:700;border:none;border-bottom:1px solid transparent;background:transparent;font-family:inherit;color:var(--text);padding:1px 0;outline:none;width:100%;min-width:0;transition:border-color .12s}
+.rec-sp-title-inp:hover{border-bottom-color:rgba(210,205,228,.5)}.rec-sp-title-inp:focus{border-bottom-color:var(--accent)}
+.rec-sp-sel{border:none;border-bottom:1px solid transparent;background:transparent;font-family:inherit;font-size:11px;font-weight:600;color:var(--accent);padding:2px 2px 2px 0;outline:none;cursor:pointer;-webkit-appearance:none;appearance:none;transition:border-color .12s}
+.rec-sp-sel:hover,.rec-sp-sel:focus{border-bottom-color:var(--accent)}
+body.dark .rec-sp-sel{background:transparent}
+.rec-sp-inp{border:none;border-bottom:1px solid transparent;background:transparent;font-family:inherit;font-size:12px;color:var(--text);padding:2px 0;outline:none;min-width:0;transition:border-color .12s}
+.rec-sp-inp:hover{border-bottom-color:rgba(210,205,228,.4)}.rec-sp-inp:focus{border-bottom-color:var(--accent)}
+.rec-sp-ta{width:100%;border:1px solid transparent;background:transparent;font-family:inherit;font-size:12px;color:var(--text);padding:3px 0;outline:none;resize:none;line-height:1.6;overflow:hidden;display:block;border-radius:4px;transition:background .12s,border-color .12s}
+.rec-sp-ta:focus{border-color:rgba(194,107,79,.35);background:rgba(255,255,255,.6);padding:4px 6px}
+body.dark .rec-sp-ta:focus{background:rgba(255,255,255,.06);border-color:rgba(194,107,79,.3)}
 /* Birthdays Page */
 .bday-section{padding:0 6px 8px}
 .bday-section-header{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);padding:10px 4px 5px;display:flex;align-items:center;gap:6px;border-bottom:1px solid rgba(210,205,228,.18);margin-bottom:3px}
@@ -1283,7 +1294,7 @@ body.dark .bday-add-menu{background:rgba(38,20,10,.97);border-color:rgba(255,220
 </div>
 
 <!-- Recipe Edit Modal -->
-<div class="overlay" id="recipeModal" onclick="closeMod('recipeModal',event)" onkeydown="if(event.key==='Escape'){closeMod('recipeModal');return;}if(event.key==='Enter'&&event.target.tagName!=='TEXTAREA'&&event.target.tagName!=='SELECT'&&!event.target.closest('.rm-ing-row')){event.preventDefault();saveRecipeModal();}">
+<div class="overlay" id="recipeModal" onclick="closeMod('recipeModal',event)" onkeydown="if(event.key==='Escape'){closeMod('recipeModal');return;}if(event.key==='Enter'&&event.target.tagName!=='TEXTAREA'&&!event.target.closest('.rm-ing-row')){event.preventDefault();saveRecipeModal();}">
   <div class="modal" style="width:min(96vw,600px);padding:18px;max-height:90vh;overflow-y:auto">
     <div class="mt" id="recipeMTitle">Add Recipe</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
@@ -5404,7 +5415,7 @@ const PAGES=['overview','weekly','shopping','travel','birthdays','settings','pup
 // ══════════════════════════════════════════════════════════════════════════════
 // ── RECIPES PAGE ──────────────────────────────────────────────────────────────
 // ══════════════════════════════════════════════════════════════════════════════
-let _recipeEditId=null,_rmIngredients=[];
+let _recipeEditId=null,_rmIngredients=[],_panelIngredients=[];
 let _selRecIds=new Set(),_lastSelRecId=null,_copiedRecs=[],_recCtxId=null;
 let _recSortCol=null,_recSortDir=1,_recFilter=null;
 let _recUndoStack=[],_recRedoStack=[],_recHdrClickTimer=null,_recUndoDirty=false;
@@ -5531,14 +5542,14 @@ async function saveRecipeModal(){
   }
 }
 
-async function setRecField(id,field,val){
+async function setRecField(id,field,val,skipPanel=false){
   const idx=st.recipes.findIndex(x=>String(x.id)===String(id));if(idx<0)return;
   recSnapshot();
   st.recipes[idx][field]=val;
   save();
   sbReqSilent('PATCH','recipes',{[field]:val},`?id=eq.${id}`);
   renderRecipeTable();
-  if(_recPanelId===String(id))renderRecSidePanel(id);
+  if(!skipPanel&&_recPanelId===String(id))renderRecSidePanel(id);
 }
 
 async function toggleRecFavorite(id,e){
@@ -5591,7 +5602,7 @@ function showRecCtx(e,sid){
 }
 function hideRecCtx(){const m=document.getElementById('recCtxMenu');if(m)m.style.display='none';}
 function recCtxView(){hideRecCtx();if(_recCtxId)openRecSidePanel(_recCtxId);}
-function recCtxEdit(){hideRecCtx();if(_recCtxId)openRecipeEditModal(_recCtxId);}
+function recCtxEdit(){hideRecCtx();if(_recCtxId)openRecSidePanel(_recCtxId);}
 function recCtxToggleFav(){hideRecCtx();if(_recCtxId)toggleRecFavorite(_recCtxId,null);}
 async function recCtxDuplicate(){
   hideRecCtx();recSnapshot();
@@ -5668,6 +5679,54 @@ function recFilterClear(){
   renderRecipeTable();
 }
 
+// ── Side panel helpers ─────────────────────────────────────────────────────
+function _saveSpField(id,field,val){setRecField(id,field,val,true);}
+function _savePanelIngredients(){
+  if(!_recPanelId)return;
+  _flushPanelIngInputs();
+  const ser=_serializeIngredients(_panelIngredients);
+  setRecField(_recPanelId,'ingredients',ser,true);
+}
+function _flushPanelIngInputs(){
+  document.querySelectorAll('#panIngList .rm-ing-row').forEach((row,i)=>{
+    if(i<_panelIngredients.length){const a=row.querySelector('.rm-ing-amt'),n=row.querySelector('.rm-ing-name');if(a)_panelIngredients[i].amount=a.value;if(n)_panelIngredients[i].name=n.value;}
+  });
+}
+function renderPanelIngList(){
+  const el=document.getElementById('panIngList');if(!el)return;
+  const _e=v=>(v||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+  el.innerHTML=_panelIngredients.map((ing,i)=>`<div class="rm-ing-row" id="panIngRow${i}"><div class="rm-ing-dot"></div><input class="rm-ing-amt" placeholder="amount" value="${_e(ing.amount)}" oninput="_panelIngredients[${i}].amount=this.value" onkeydown="panIngKey(event,${i},'amt')" onblur="_savePanelIngredients()"><input class="rm-ing-name" placeholder="ingredient" value="${_e(ing.name)}" oninput="_panelIngredients[${i}].name=this.value" onkeydown="panIngKey(event,${i},'name')" onblur="_savePanelIngredients()"><button type="button" class="rm-ing-del" onclick="panIngDel(${i})" title="Remove">✕</button></div>`).join('');
+}
+function panIngAdd(){
+  _flushPanelIngInputs();_panelIngredients.push({name:'',amount:''});renderPanelIngList();
+  const i=_panelIngredients.length-1;
+  setTimeout(()=>{const inp=document.querySelector(`#panIngRow${i} .rm-ing-amt`);if(inp)inp.focus();},20);
+}
+function panIngDel(i){
+  _flushPanelIngInputs();_panelIngredients.splice(i,1);renderPanelIngList();_savePanelIngredients();
+  const prev=Math.max(0,i-1);setTimeout(()=>{const inp=_panelIngredients.length?document.querySelector(`#panIngRow${prev} .rm-ing-name`):null;if(inp)inp.focus();},20);
+}
+function panIngKey(e,i,field){
+  if(e.key==='Enter'){
+    e.preventDefault();e.stopPropagation();
+    if(field==='amt'){const n=document.querySelector(`#panIngRow${i} .rm-ing-name`);if(n)n.focus();}
+    else{_panelIngredients[i].name=e.target.value;panIngAdd();}
+  } else if(e.key==='Backspace'&&!e.target.value&&_panelIngredients.length>0){
+    panIngDel(i);
+  } else if(e.key==='ArrowUp'&&i>0){
+    e.preventDefault();const p=document.querySelector(`#panIngRow${i-1} .rm-ing-name`);if(p)p.focus();
+  } else if(e.key==='ArrowDown'){
+    e.preventDefault();if(i<_panelIngredients.length-1){const n=document.querySelector(`#panIngRow${i+1} .rm-ing-amt`);if(n)n.focus();}
+  }
+}
+function _applyRecFilterUI(){
+  if(!document.getElementById('page-recipes')?.classList.contains('active'))return;
+  document.querySelectorAll('[data-recmeal]').forEach(b=>b.classList.toggle('active',b.dataset.recmeal===_recMealFilter));
+  const fav=document.querySelector('[data-recfav]');if(fav)fav.classList.toggle('active',_recFavFilter);
+  document.querySelectorAll('[data-rectime]').forEach(b=>b.classList.toggle('active',b.dataset.rectime===_recTimeFilter));
+  const si=document.getElementById('recSearchInp');if(si&&document.activeElement!==si)si.value=_recSearch;
+}
+
 function openRecSidePanel(id){
   _recPanelId=String(id);
   renderRecSidePanel(id);
@@ -5684,37 +5743,73 @@ function closeRecSidePanel(){
 function renderRecSidePanel(id){
   const panel=document.getElementById('recSidePanel');if(!panel)return;
   const r=st.recipes.find(x=>String(x.id)===String(id));if(!r){closeRecSidePanel();return;}
-  function esc(v){return(v||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-  const fav=r.favorite?'♥':'♡';
-  const favStyle=r.favorite?'color:#ef4444;opacity:1':'color:var(--muted)';
   const sid=String(r.id);
-  function fmtMin(m){if(!m)return'—';return m>=60?`${Math.floor(m/60)}h${m%60?' '+m%60+'m':''}`:m+'m';}
+  function esc(v){return(v||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  function escV(v){return(v||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;');}
+  const favStyle=r.favorite?'color:#ef4444;opacity:1':'color:var(--muted)';
+  const fav=r.favorite?'♥':'♡';
+  const mealOpts=['','Breakfast','Lunch','Dinner','Snack','Dessert','Drink','Side'].map(m=>`<option value="${m}"${(r.meal_type||'')=== m?' selected':''}>${m||'— Meal type'}</option>`).join('');
+  _panelIngredients=_parseIngredients(r.ingredients);
   panel.innerHTML=`
     <div class="rec-sp-header">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
-        <div class="rec-sp-title">${esc(r.name)}</div>
-        <div style="display:flex;gap:4px;flex-shrink:0">
-          <button onclick="toggleRecFavorite('${sid}',event)" style="background:none;border:none;cursor:pointer;font-size:18px;${favStyle};padding:2px 4px;line-height:1;transition:transform .12s" title="Toggle favorite">${fav}</button>
+      <div style="display:flex;align-items:flex-start;gap:8px">
+        <input class="rec-sp-title-inp" value="${escV(r.name)}" placeholder="Recipe name"
+          onblur="_saveSpField('${sid}','name',this.value.trim()||'${escV(r.name)}')"
+          onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">
+        <div style="display:flex;gap:4px;flex-shrink:0;padding-top:2px">
+          <button onclick="toggleRecFavorite('${sid}',event)" style="background:none;border:none;cursor:pointer;font-size:16px;${favStyle};padding:2px 4px;line-height:1" title="Favorite">${fav}</button>
           <button class="sb-close" onclick="closeRecSidePanel()" title="Close">✕</button>
         </div>
       </div>
-      <div class="rec-sp-meta">
-        ${r.meal_type?`<span class="rec-meal-pill">${esc(r.meal_type)}</span>`:''}
-        ${r.cuisine?`<span class="cpill" style="background:rgba(99,102,241,.1);color:#4338ca;border-color:rgba(99,102,241,.2)">${esc(r.cuisine)}</span>`:''}
+      <div style="display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap">
+        <select class="rec-sp-sel" onchange="_saveSpField('${sid}','meal_type',this.value||null)">${mealOpts}</select>
+        <input class="rec-sp-inp" value="${escV(r.cuisine)}" placeholder="Cuisine"
+          onblur="_saveSpField('${sid}','cuisine',this.value.trim()||null)"
+          onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">
+      </div>
+      <div style="display:flex;gap:12px;margin-top:8px">
+        <div style="display:flex;align-items:center;gap:5px">
+          <span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)">Time</span>
+          <input class="rec-sp-inp" type="number" min="0" value="${r.time||''}" placeholder="min" style="width:48px"
+            onblur="_saveSpField('${sid}','time',parseInt(this.value)||null)"
+            onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">
+        </div>
+        <div style="display:flex;align-items:center;gap:5px">
+          <span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)">Serves</span>
+          <input class="rec-sp-inp" type="number" min="1" value="${r.servings||''}" placeholder="–" style="width:36px"
+            onblur="_saveSpField('${sid}','servings',parseInt(this.value)||null)"
+            onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">
+        </div>
       </div>
     </div>
     <div class="rec-sp-body">
-      <div class="rec-sp-detail-row">
-        <div class="rec-sp-detail"><div class="rec-sp-detail-lbl">Time</div><div class="rec-sp-detail-val">${fmtMin(r.time)}</div></div>
-        <div class="rec-sp-detail"><div class="rec-sp-detail-lbl">Serves</div><div class="rec-sp-detail-val">${r.servings||'—'}</div></div>
+      <div class="rec-sp-section">
+        <div class="rec-sp-section-title">Ingredients</div>
+        <div class="rm-ing-wrap"><div id="panIngList"></div><button type="button" class="rm-ing-add-btn" onclick="panIngAdd()">+ Add ingredient</button></div>
       </div>
-      ${r.notes?`<div class="rec-sp-section"><div class="rec-sp-section-title">Notes</div><div class="rec-sp-text" style="font-style:italic;color:var(--muted)">${esc(r.notes)}</div></div>`:''}
-      ${r.ingredients?(()=>{const ings=_parseIngredients(r.ingredients);return ings.length?`<div class="rec-sp-section"><div class="rec-sp-section-title">Ingredients</div>${ings.map(x=>`<div style="display:flex;align-items:baseline;gap:8px;padding:3px 0;border-bottom:1px solid rgba(210,205,228,.08)"><span style="width:5px;height:5px;border-radius:50%;background:rgba(194,107,79,.4);flex-shrink:0;display:inline-block;margin-top:5px"></span>${x.amount?`<span style="color:var(--muted);font-size:11px;min-width:52px;flex-shrink:0">${esc(x.amount)}</span>`:'<span style="min-width:52px;flex-shrink:0"></span>'}<span style="font-size:12px;color:var(--text)">${esc(x.name)}</span></div>`).join('')}</div>`:'';})():''}
-      ${r.instructions?`<div class="rec-sp-section"><div class="rec-sp-section-title">Instructions</div><div class="rec-sp-text">${esc(r.instructions)}</div></div>`:''}
+      <div class="rec-sp-section">
+        <div class="rec-sp-section-title">Instructions</div>
+        <textarea class="rec-sp-ta" placeholder="Step-by-step instructions…" rows="3"
+          onblur="_saveSpField('${sid}','instructions',this.value.trim()||null)"
+          oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'">${esc(r.instructions||'')}</textarea>
+      </div>
+      <div class="rec-sp-section">
+        <div class="rec-sp-section-title" style="color:var(--muted)">Notes</div>
+        <textarea class="rec-sp-ta" placeholder="Notes or tips…" rows="2"
+          onblur="_saveSpField('${sid}','notes',this.value.trim()||null)"
+          oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'">${esc(r.notes||'')}</textarea>
+      </div>
     </div>
     <div class="rec-sp-actions">
-      <button class="btn btn-ghost" onclick="openRecipeEditModal('${sid}')">✏️ Edit</button>
+      <button class="btn btn-ghost" style="color:#ef4444;border-color:rgba(239,68,68,.2)" onclick="_recCtxDeletePanel()">Delete</button>
     </div>`;
+  renderPanelIngList();
+  requestAnimationFrame(()=>{panel.querySelectorAll('.rec-sp-ta').forEach(ta=>{ta.style.height='auto';ta.style.height=ta.scrollHeight+'px';});});
+}
+function _recCtxDeletePanel(){
+  if(!_recPanelId)return;
+  _selRecIds.clear();_selRecIds.add(_recPanelId);_recCtxId=_recPanelId;
+  recCtxDelete();
 }
 
 function renderRecipeTable(){
@@ -5761,14 +5856,14 @@ function renderRecipeTable(){
     const sid=String(r.id);
     const isSel=_selRecIds.has(sid);
     const favStyle=r.favorite?'color:#ef4444;opacity:1':'';
-    return`<tr data-rid="${sid}" class="${isSel?'rec-sel':''}" onclick="selRecRow(event,'${sid}')" ondblclick="openRecipeEditModal('${sid}')" oncontextmenu="showRecCtx(event,'${sid}')">
+    return`<tr data-rid="${sid}" class="${isSel?'rec-sel':''}" onclick="selRecRow(event,'${sid}')" ondblclick="openRecSidePanel('${sid}')" oncontextmenu="showRecCtx(event,'${sid}')">
       <td style="text-align:center;width:28px;padding:4px 4px"><button class="rec-fav${r.favorite?' active':''}" style="${favStyle}" onclick="toggleRecFavorite('${sid}',event)" title="${r.favorite?'Remove from favorites':'Add to favorites'}">♥</button></td>
       <td style="padding:5px 8px;font-weight:600;font-size:12px">${esc(r.name)}</td>
       <td style="padding:5px 8px">${r.meal_type?`<span class="rec-meal-pill">${esc(r.meal_type)}</span>`:''}</td>
       <td class="rec-time-lbl" style="padding:5px 8px">${fmtMin(r.time)}</td>
       <td style="padding:5px 8px;color:var(--muted);font-size:11px">${r.servings||''}</td>
       <td style="padding:5px 8px;font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px">${esc(r.notes||'')}</td>
-      <td style="width:28px;padding:2px 4px;text-align:right"><button class="rec-dots" onclick="event.stopPropagation();openRecipeEditModal('${sid}')" title="Edit">···</button></td>
+      <td style="width:28px;padding:2px 4px;text-align:right"><button class="rec-dots" onclick="event.stopPropagation();openRecSidePanel('${sid}')" title="View">···</button></td>
     </tr>`;
   });
   tbody.innerHTML=rowsHtml.join('')||`<tr><td colspan="7" style="padding:28px;text-align:center;color:var(--subtle);font-size:12px">No recipes yet — double click or press + to add</td></tr>`;
@@ -5784,17 +5879,18 @@ function _buildRecFilterBar(){
   html+=`<button class="rec-filter-chip${_recTimeFilter==='60'?' active':''}" onclick="recToggleTimeFilter('60')">≤1h</button>`;
   return html;
 }
-function recSearchChange(v){_recSearch=v;renderRecipeTable();const cnt=document.getElementById('recCount');if(cnt){const n=document.querySelectorAll('#recTblBody tr[data-rid]').length;cnt.textContent=`${n} of ${st.recipes.length} recipe${st.recipes.length!==1?'s':''}${_recSearch?' matched':''}`;} }
-function recToggleMealFilter(m){_recMealFilter=_recMealFilter===m?'':m;renderRecipesPage();}
-function recToggleFavFilter(){_recFavFilter=!_recFavFilter;renderRecipesPage();}
-function recToggleTimeFilter(t){_recTimeFilter=_recTimeFilter===t?'':t;renderRecipesPage();}
+function recSearchChange(v){_recSearch=v;renderRecipeTable();_applyRecFilterUI();}
+function recToggleMealFilter(m){_recMealFilter=_recMealFilter===m?'':m;renderRecipeTable();_applyRecFilterUI();}
+function recToggleFavFilter(){_recFavFilter=!_recFavFilter;renderRecipeTable();_applyRecFilterUI();}
+function recToggleTimeFilter(t){_recTimeFilter=_recTimeFilter===t?'':t;renderRecipeTable();_applyRecFilterUI();}
 
 function renderRecipesPage(){
   const page=document.getElementById('page-recipes');if(!page)return;
   if(!page._recInit){
     page._recInit=true;
+    const mealChips=['Breakfast','Lunch','Dinner','Snack','Dessert','Drink','Side'].map(m=>`<button class="rec-filter-chip" data-recmeal="${m}" onclick="recToggleMealFilter('${m}')">${m}</button>`).join('');
     page.innerHTML=`<div class="ov-topbar"><div class="ov-topbar-left"><span class="ov-topbar-label">🍳 Recipes</span><span class="ov-topbar-dot"></span></div><span class="ov-topbar-date topbar-date"></span><div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div></div>
-    <div id="recFilterBarWrap" style="padding-top:26px"></div>
+    <div style="padding-top:26px"><div class="rec-filter-bar"><input class="rec-search" id="recSearchInp" placeholder="🔍 Search recipes…">${mealChips}<button class="rec-filter-chip" data-recfav="1" onclick="recToggleFavFilter()">♥ Favs</button><button class="rec-filter-chip" data-rectime="30" onclick="recToggleTimeFilter('30')">≤30m</button><button class="rec-filter-chip" data-rectime="60" onclick="recToggleTimeFilter('60')">≤1h</button></div></div>
     <div id="recTableWrap" style="transition:margin-right .22s cubic-bezier(.4,0,.2,1)">
       <div class="card" style="overflow:hidden">
         <div class="ch" style="gap:8px">
@@ -5808,6 +5904,8 @@ function renderRecipesPage(){
       </div>
     </div>
     <div id="recSidePanel" class="rec-side-panel"></div>`;
+    // Attach search listener once
+    document.getElementById('recSearchInp').addEventListener('input',e=>{_recSearch=e.target.value;renderRecipeTable();_applyRecFilterUI();});
     // double-click empty area to add
     page.addEventListener('dblclick',e=>{
       if(!e.target.closest('#recTblBody tr,button,input,textarea,select,.rec-side-panel'))openRecipeAddModal();
@@ -5816,27 +5914,18 @@ function renderRecipesPage(){
     if(window._recOutsideClick)document.removeEventListener('click',window._recOutsideClick);
     window._recOutsideClick=e=>{
       if(!document.getElementById('page-recipes')?.classList.contains('active'))return;
-      if(!e.target.closest('#recTblBody,#recSidePanel,.rec-filter-chip,#recSearchInp')){{_selRecIds.clear();_lastSelRecId=null;applyRecSelHighlight();}}
+      if(!e.target.closest('#recTblBody,#recSidePanel,[data-recmeal],[data-recfav],[data-rectime],#recSearchInp')){_selRecIds.clear();_lastSelRecId=null;applyRecSelHighlight();}
     };
     document.addEventListener('click',window._recOutsideClick);
   }
-  // Re-render filter bar (preserve search focus if active)
-  const fbWrap=document.getElementById('recFilterBarWrap');
-  if(fbWrap){
-    const searchFocused=document.activeElement?.id==='recSearchInp';
-    fbWrap.innerHTML=`<div class="rec-filter-bar">${_buildRecFilterBar()}</div>`;
-    if(searchFocused){const inp=document.getElementById('recSearchInp');if(inp){inp.focus();inp.setSelectionRange(inp.value.length,inp.value.length);}}
-  }
+  _applyRecFilterUI();
   renderRecipeTable();
   const cnt=document.getElementById('recCount');if(cnt)cnt.textContent=`${st.recipes.length} recipe${st.recipes.length!==1?'s':''}`;
-  // update topbar times
   const now=new Date();
   document.querySelectorAll('#page-recipes .topbar-date').forEach(e=>e.textContent=now.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}));
   document.querySelectorAll('#page-recipes .topbar-time').forEach(e=>e.textContent=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}));
-  // restore side panel if open
   if(_recPanelId){
-    const sp=document.getElementById('recSidePanel');
-    const tw=document.getElementById('recTableWrap');
+    const sp=document.getElementById('recSidePanel');const tw=document.getElementById('recTableWrap');
     if(sp&&!sp.classList.contains('open')){sp.classList.add('open');if(tw)tw.style.marginRight='400px';}
     renderRecSidePanel(_recPanelId);
   }

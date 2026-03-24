@@ -1,5 +1,5 @@
 {
-  "exported_at": "2026-03-24T01:19:30.195Z",
+  "exported_at": "2026-03-24T13:19:22.472Z",
   "mode": "auto",
   "tables": {
     "tasks": [
@@ -20,6 +20,16 @@
         "done": true,
         "importance": "Normal",
         "id": "570d8000-b2f3-4fe4-9b0b-736bd624be87",
+        "important": false,
+        "notes": null
+      },
+      {
+        "name": "Book london → iceland",
+        "category": "Home",
+        "due_date": "2026-03-28",
+        "done": false,
+        "importance": null,
+        "id": "3b7f34e0-2db9-4c24-a332-7314b9df9d79",
         "important": false,
         "notes": null
       },
@@ -280,16 +290,6 @@
         "done": false,
         "importance": "Normal",
         "id": "49f0bfbf-4593-4f76-9692-ff0cdfe70e8a",
-        "important": false,
-        "notes": null
-      },
-      {
-        "name": "Book london → iceland",
-        "category": "Home",
-        "due_date": "2026-03-23",
-        "done": false,
-        "importance": null,
-        "id": "3b7f34e0-2db9-4c24-a332-7314b9df9d79",
         "important": false,
         "notes": null
       },
@@ -876,26 +876,6 @@
     ],
     "recurring_tasks": [
       {
-        "name": "HEB",
-        "is_weekly_reset": false,
-        "day_added": "Previous Sunday",
-        "appears_on_date": "Sunday",
-        "starting_date": "2026-03-07",
-        "cadence": "weekly",
-        "done_this_week": false,
-        "done_by_week": {
-          "2026-03-02": true,
-          "2026-03-09": true,
-          "2026-03-16": true,
-          "2026-03-23": true
-        },
-        "date_overrides": {
-          "2026-03-23": "2026-03-23"
-        },
-        "pup_related": null,
-        "notes": null
-      },
-      {
         "name": "Vop",
         "is_weekly_reset": true,
         "day_added": null,
@@ -918,6 +898,26 @@
         "done_this_week": false,
         "done_by_week": {},
         "date_overrides": {},
+        "pup_related": null,
+        "notes": null
+      },
+      {
+        "name": "HEB",
+        "is_weekly_reset": false,
+        "day_added": "Previous Sunday",
+        "appears_on_date": "Sunday",
+        "starting_date": "2026-03-07",
+        "cadence": "weekly",
+        "done_this_week": false,
+        "done_by_week": {
+          "2026-03-02": true,
+          "2026-03-09": true,
+          "2026-03-16": true,
+          "2026-03-23": true
+        },
+        "date_overrides": {
+          "2026-03-23": "2026-03-23"
+        },
         "pup_related": null,
         "notes": null
       },
@@ -1164,127 +1164,8 @@
         "store": "Online",
         "done": true,
         "created_at": "2026-03-12T13:24:15.421274+00:00",
-        "due_date": null
-      },
-      {
-        "id": "8d195c44-9915-4513-812e-e30725a386b2",
-        "name": "Donut lamp",
-        "store": "Ikea",
-        "done": false,
-        "created_at": "2026-03-10T14:18:17.412058+00:00",
-        "due_date": null
-      },
-      {
-        "id": "c18fd7a4-8484-4636-a93d-b9e349595c5a",
-        "name": "Capri sun",
-        "store": "HEB",
-        "done": true,
-        "created_at": "2026-03-12T02:18:03.308348+00:00",
-        "due_date": null
-      },
-      {
-        "id": "3b61412c-d2d0-476c-8255-da9366d2ccb1",
-        "name": "Croutons",
-        "store": "HEB",
-        "done": true,
-        "created_at": "2026-03-10T14:18:17.412058+00:00",
-        "due_date": null
-      },
-      {
-        "id": "5c13e30b-6ca3-47c7-ac4d-5cf1bc4618aa",
-        "name": "Goldfish",
-        "store": "HEB",
-        "done": true,
-        "created_at": "2026-03-10T14:18:17.412058+00:00",
-        "due_date": null
-      },
-      {
-        "id": "b3112458-3b36-4116-9894-3923aef0f57a",
-        "name": "Paper towels",
-        "store": "Costco",
-        "done": true,
-        "created_at": "2026-03-12T02:13:41.972406+00:00",
-        "due_date": null
-      },
-      {
-        "id": "ceae083d-304e-4348-8868-a5a387eba13f",
-        "name": "Rice cooker",
-        "store": "Other",
-        "done": true,
-        "created_at": "2026-03-15T15:30:13.864587+00:00",
-        "due_date": null
-      },
-      {
-        "id": "0ee083d7-85d0-424b-82e3-2a7f84c3723f",
-        "name": "griup socks",
-        "store": "Other",
-        "done": false,
-        "created_at": "2026-03-18T17:56:48.651649+00:00",
-        "due_date": null
-      },
-      {
-        "id": "54e31205-2d10-4a78-9057-5800c1587948",
-        "name": "Hanging planter",
-        "store": "Ikea",
-        "done": false,
-        "created_at": "2026-03-10T14:18:17.412058+00:00",
-        "due_date": null
-      },
-      {
-        "id": "5060e587-8c21-4ce5-8bc3-ec6d43be311e",
-        "name": "Garlic squeeze",
-        "store": "HEB",
-        "done": false,
-        "created_at": "2026-03-18T03:06:00.699938+00:00",
-        "due_date": null
-      },
-      {
-        "id": "8e27aad9-b437-4066-81dd-fd449bf538d5",
-        "name": "Leashes - adjustable",
-        "store": "Other",
-        "done": false,
-        "created_at": "2026-03-19T14:30:01.109607+00:00",
-        "due_date": null
-      },
-      {
-        "id": "b7dae470-1ba1-4763-a66d-fece577fff49",
-        "name": "Pee pads",
-        "store": "Other",
-        "done": true,
-        "created_at": "2026-03-19T14:29:53.263039+00:00",
-        "due_date": null
-      },
-      {
-        "id": "6484cb41-e646-4af9-9151-2241c01f6e04",
-        "name": "Outdoor furniture",
-        "store": "Other",
-        "done": true,
-        "created_at": "2026-03-18T03:20:12.333254+00:00",
-        "due_date": null
-      },
-      {
-        "id": "b2d7416b-a71c-4eb9-bd8f-032ac05c9e55",
-        "name": "Pee stuff",
-        "store": "Online",
-        "done": true,
-        "created_at": "2026-03-18T03:06:13.380044+00:00",
-        "due_date": "2026-03-20"
-      },
-      {
-        "id": "cdaf318f-b96a-4c41-9fd8-b1da68c1dfd2",
-        "name": "Outdoor ext cord",
-        "store": "Other",
-        "done": true,
-        "created_at": "2026-03-18T03:22:32.016734+00:00",
-        "due_date": null
-      },
-      {
-        "id": "9eeb0d0c-283a-4e0d-9f29-b1bc965db522",
-        "name": "Electronic toothbrush for pups",
-        "store": "Online",
-        "done": false,
-        "created_at": "2026-03-10T14:18:17.412058+00:00",
-        "due_date": null
+        "due_date": null,
+        "shop_order": null
       },
       {
         "id": "2fc1a3c7-0cbc-4d49-a19a-48f20e289721",
@@ -1292,15 +1173,17 @@
         "store": "Ikea",
         "done": false,
         "created_at": "2026-03-18T17:50:33.110344+00:00",
-        "due_date": null
+        "due_date": null,
+        "shop_order": 1
       },
       {
-        "id": "010dd63b-57ff-457b-9ce4-d40bdb8bf1c2",
-        "name": "Mochi carrier",
-        "store": "Online",
+        "id": "0ee083d7-85d0-424b-82e3-2a7f84c3723f",
+        "name": "griup socks",
+        "store": "Other",
         "done": false,
-        "created_at": "2026-03-23T01:44:25.166696+00:00",
-        "due_date": null
+        "created_at": "2026-03-18T17:56:48.651649+00:00",
+        "due_date": null,
+        "shop_order": 7
       },
       {
         "id": "63d4a10b-e42d-43dd-9771-728f5e6cabfb",
@@ -1308,7 +1191,143 @@
         "store": "Online",
         "done": false,
         "created_at": "2026-03-10T14:18:17.412058+00:00",
-        "due_date": "2026-03-23"
+        "due_date": "2026-03-26",
+        "shop_order": 0
+      },
+      {
+        "id": "54e31205-2d10-4a78-9057-5800c1587948",
+        "name": "Hanging planter",
+        "store": "Ikea",
+        "done": false,
+        "created_at": "2026-03-10T14:18:17.412058+00:00",
+        "due_date": null,
+        "shop_order": 6
+      },
+      {
+        "id": "9eeb0d0c-283a-4e0d-9f29-b1bc965db522",
+        "name": "Electronic toothbrush for pups",
+        "store": "Online",
+        "done": false,
+        "created_at": "2026-03-10T14:18:17.412058+00:00",
+        "due_date": null,
+        "shop_order": 3
+      },
+      {
+        "id": "8d195c44-9915-4513-812e-e30725a386b2",
+        "name": "Donut lamp",
+        "store": "Ikea",
+        "done": false,
+        "created_at": "2026-03-10T14:18:17.412058+00:00",
+        "due_date": null,
+        "shop_order": 5
+      },
+      {
+        "id": "8e27aad9-b437-4066-81dd-fd449bf538d5",
+        "name": "Leashes - adjustable",
+        "store": "Other",
+        "done": false,
+        "created_at": "2026-03-19T14:30:01.109607+00:00",
+        "due_date": null,
+        "shop_order": 8
+      },
+      {
+        "id": "010dd63b-57ff-457b-9ce4-d40bdb8bf1c2",
+        "name": "Mochi carrier",
+        "store": "Online",
+        "done": false,
+        "created_at": "2026-03-23T01:44:25.166696+00:00",
+        "due_date": null,
+        "shop_order": 4
+      },
+      {
+        "id": "5060e587-8c21-4ce5-8bc3-ec6d43be311e",
+        "name": "Garlic squeeze",
+        "store": "HEB",
+        "done": false,
+        "created_at": "2026-03-18T03:06:00.699938+00:00",
+        "due_date": null,
+        "shop_order": 2
+      },
+      {
+        "id": "c18fd7a4-8484-4636-a93d-b9e349595c5a",
+        "name": "Capri sun",
+        "store": "HEB",
+        "done": true,
+        "created_at": "2026-03-12T02:18:03.308348+00:00",
+        "due_date": null,
+        "shop_order": null
+      },
+      {
+        "id": "3b61412c-d2d0-476c-8255-da9366d2ccb1",
+        "name": "Croutons",
+        "store": "HEB",
+        "done": true,
+        "created_at": "2026-03-10T14:18:17.412058+00:00",
+        "due_date": null,
+        "shop_order": null
+      },
+      {
+        "id": "5c13e30b-6ca3-47c7-ac4d-5cf1bc4618aa",
+        "name": "Goldfish",
+        "store": "HEB",
+        "done": true,
+        "created_at": "2026-03-10T14:18:17.412058+00:00",
+        "due_date": null,
+        "shop_order": null
+      },
+      {
+        "id": "b3112458-3b36-4116-9894-3923aef0f57a",
+        "name": "Paper towels",
+        "store": "Costco",
+        "done": true,
+        "created_at": "2026-03-12T02:13:41.972406+00:00",
+        "due_date": null,
+        "shop_order": null
+      },
+      {
+        "id": "ceae083d-304e-4348-8868-a5a387eba13f",
+        "name": "Rice cooker",
+        "store": "Other",
+        "done": true,
+        "created_at": "2026-03-15T15:30:13.864587+00:00",
+        "due_date": null,
+        "shop_order": null
+      },
+      {
+        "id": "b7dae470-1ba1-4763-a66d-fece577fff49",
+        "name": "Pee pads",
+        "store": "Other",
+        "done": true,
+        "created_at": "2026-03-19T14:29:53.263039+00:00",
+        "due_date": null,
+        "shop_order": null
+      },
+      {
+        "id": "6484cb41-e646-4af9-9151-2241c01f6e04",
+        "name": "Outdoor furniture",
+        "store": "Other",
+        "done": true,
+        "created_at": "2026-03-18T03:20:12.333254+00:00",
+        "due_date": null,
+        "shop_order": null
+      },
+      {
+        "id": "b2d7416b-a71c-4eb9-bd8f-032ac05c9e55",
+        "name": "Pee stuff",
+        "store": "Online",
+        "done": true,
+        "created_at": "2026-03-18T03:06:13.380044+00:00",
+        "due_date": "2026-03-20",
+        "shop_order": null
+      },
+      {
+        "id": "cdaf318f-b96a-4c41-9fd8-b1da68c1dfd2",
+        "name": "Outdoor ext cord",
+        "store": "Other",
+        "done": true,
+        "created_at": "2026-03-18T03:22:32.016734+00:00",
+        "due_date": null,
+        "shop_order": null
       }
     ],
     "travel": [
@@ -1319,7 +1338,8 @@
         "end_date": "2026-08-08",
         "destination": "Iceland",
         "notes": null,
-        "created_at": "2026-03-10T11:44:52.322534+00:00"
+        "created_at": "2026-03-10T11:44:52.322534+00:00",
+        "travel_mode": null
       },
       {
         "id": "8e07712c-2222-47cd-8733-a20f8a5a701a",
@@ -1328,7 +1348,28 @@
         "end_date": "2026-05-08",
         "destination": "San Diego, CA",
         "notes": null,
-        "created_at": "2026-03-10T11:46:05.737079+00:00"
+        "created_at": "2026-03-10T11:46:05.737079+00:00",
+        "travel_mode": null
+      },
+      {
+        "id": "132be040-decd-4ede-a47b-16d49654c699",
+        "name": "San Antonio",
+        "start_date": "2026-03-27",
+        "end_date": "2026-03-29",
+        "destination": null,
+        "notes": null,
+        "created_at": "2026-03-24T02:06:36.772427+00:00",
+        "travel_mode": "drive"
+      },
+      {
+        "id": "b494d972-ae60-4eea-b29e-09cc13184a97",
+        "name": "what",
+        "start_date": "2026-04-01",
+        "end_date": "2026-04-03",
+        "destination": null,
+        "notes": null,
+        "created_at": "2026-03-24T02:22:42.03834+00:00",
+        "travel_mode": "plane"
       }
     ],
     "birthdays": [

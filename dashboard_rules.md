@@ -729,3 +729,49 @@ Otherwise Enter in ingredient inputs would prematurely save the whole modal.
 `recSearchChange(v)` → updates `_recSearch`, calls `renderRecipeTable()`, updates `#recCount` with filtered match count.
 Search includes: name, meal_type, cuisine, notes, instructions, ingredient names+amounts.
 Filter bar uses both `oninput` and `onchange` on the search input.
+
+---
+
+## Recipes Page — Filter/Search Architecture
+
+### Key Rule: Static Filter Bar
+The filter bar HTML is built ONCE inside the `_recInit` block in `renderRecipesPage`. It is NOT rebuilt on every render call. Filter chips use `data-recmeal`, `data-recfav`, `data-rectime` attributes for state-based CSS toggling.
+
+### `_applyRecFilterUI()`
+Called after every filter/search change. Toggles `.active` class on chips using data attributes. Updates search input value only when input is NOT focused.
+
+### Filter/Search Functions
+`recToggleMealFilter(m)`, `recToggleFavFilter()`, `recToggleTimeFilter(t)` → update state var → call `renderRecipeTable()` + `_applyRecFilterUI()`. Do NOT call `renderRecipesPage()`.
+
+Search listener is attached ONCE via `addEventListener('input', ...)` in `_recInit`, not via inline `oninput` attribute (which would be lost when DOM is rebuilt).
+
+---
+
+## Recipes Page — Side Panel as Primary Edit Interface
+
+### Editing Flow
+- Single-click row → `selRecRow` → opens side panel with `openRecSidePanel(id)` (deselect behavior preserved)
+- Double-click row → `openRecSidePanel(id)` (panel, NOT edit modal)
+- `···` dots button → `openRecSidePanel(id)`
+- Right-click context menu "Edit" → `openRecSidePanel(id)`
+- `+` button → `openRecipeAddModal()` (modal only for ADD)
+
+### Side Panel Inline Editing
+`renderRecSidePanel(id)` renders all fields as editable inputs/selects/textareas:
+- Name: `<input class="rec-sp-title-inp">`, blur → `_saveSpField(id,'name',val)`
+- Meal type: `<select class="rec-sp-sel">`, onchange → `_saveSpField`
+- Cuisine, time, servings: `<input class="rec-sp-inp">`, blur/Enter → `_saveSpField`
+- Instructions, Notes: `<textarea class="rec-sp-ta">`, blur → `_saveSpField`; `oninput` auto-resizes height
+- Ingredients: `#panIngList` with `_panelIngredients` state, same `.rm-ing-*` classes
+
+### `_saveSpField(id, field, val)`
+Calls `setRecField(id, field, val, skipPanel=true)` — the `skipPanel=true` prevents the panel from re-rendering on each individual field save (which would lose focus).
+
+### Panel Ingredients
+`_panelIngredients` — separate from `_rmIngredients` (modal). Functions: `panIngAdd`, `panIngDel`, `panIngKey`, `renderPanelIngList`, `_flushPanelIngInputs`, `_savePanelIngredients`. Ingredient input `onblur` calls `_savePanelIngredients()` which persists to Supabase immediately.
+
+### `setRecField` — skipPanel parameter
+`setRecField(id, field, val, skipPanel=false)` — when `skipPanel=true`, does not call `renderRecSidePanel` after saving. Used by panel saves to avoid focus disruption.
+
+### Recipe Modal (Add only)
+The edit modal (`recipeModal`) is now ONLY used for adding new recipes. Enter key saves (any input except textarea and `.rm-ing-row` inputs). No SELECT exclusion.
