@@ -993,6 +993,7 @@ body.dark .bday-add-menu{background:rgba(38,20,10,.97);border-color:rgba(255,220
     <div class="mt" id="tMTitle">Add Task</div>
     <div class="mfield"><label>Name *</label><input id="tName" placeholder="What needs doing?"></div>
     <div class="mfield"><label>Category</label><select id="tCat"><option value="Home">Home</option><option value="My work">My work</option><option value="Work">Work</option><option value="Social">Social</option><option value="Long term">Long term</option></select></div>
+    <div class="mfield"><label>Travel mode</label><select id="tTravelMode"><option value="">None</option><option value="plane">✈️ Plane</option><option value="drive">🚗 Drive</option></select></div>
     <div class="mfield"><label>Due date <span style="opacity:.45;font-weight:400">(optional)</span></label><div style="display:flex;gap:4px;align-items:center"><input id="tDue" type="date" style="flex:1"><button type="button" class="btn btn-ghost btn-xs" onclick="document.getElementById(&#39;tDue&#39;).value=&#39;&#39;" title="Clear date" style="flex-shrink:0;padding:4px 7px;font-size:11px">✕ Clear</button></div></div>
     <div class="mimp-row"><input type="checkbox" id="tImp" style="width:14px;height:14px;cursor:pointer;accent-color:#eab308"><label for="tImp">⭐ Mark as important</label></div>
     <div class="mfield"><label>Notes <span style="opacity:.45;font-weight:400">(optional)</span></label><textarea id="tNotes" placeholder="Add notes…" style="resize:vertical;min-height:52px;width:100%;font-family:inherit;font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,.6);color:var(--text);outline:none"></textarea></div>
@@ -2428,7 +2429,7 @@ function renderWkCal(){
         else if(t._virtual){togRecVirt(t._recId,chk.checked,t._wkKey||getWkKey(wkOff));}
         else{toggleTask(t.id,chk.checked,'week');}
       });
-      const nm=document.createElement('span');nm.className='chip-name';nm.textContent=t.name;
+      const nm=document.createElement('span');nm.className='chip-name';nm.textContent=tmIcon(t)+t.name;
       // name click handled by chip click→selTask, dblclick→openEditTask
       chip.appendChild(chk);chip.appendChild(nm);
       chip.addEventListener('contextmenu',e=>{if(!t._virtual)showCtx(e,t.id);});
@@ -2900,6 +2901,8 @@ function tRowExtra(t){
   </div>`;
 }
 
+function tmIcon(t){if(!t||t._virtual)return '';if(t.travel_mode==='plane')return '✈️ ';if(t.travel_mode==='drive')return '🚗 ';return '';}
+
 // ── Task row (overdue→imp→rest) ────────────────────────────────────────────────
 function tRow(t,o={}){
   const ov=isOv(t.due_date)&&!t.done;
@@ -2908,7 +2911,7 @@ function tRow(t,o={}){
   const sl=ov?'ov':imp?'imp':slug(t.category);
   return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''} ${imp&&!ov?'imp-row':''}" style="${!ov&&!imp&&!o.noColor?`background:${s.bg}`:''}" id="ti-${t.id}" ${o.drag?`draggable="true" ondragstart="dStart(event,'${t.id}')" ondragend="dEnd(event)"`:''} onclick="selTask(event,'${t.id}')" ondblclick="tiDbl(event,'${t.id}')" oncontextmenu="showCtx(event,'${t.id}')">
     <label class="chk-wrap" onclick="event.stopPropagation()" onmousedown="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="toggleTask('${t.id}',this.checked,'${o.drag?'wk':''}')"></label>
-    <span class="tn">${t.name}</span>
+    <span class="tn">${tmIcon(t)}${t.name}</span>
     ${o.cat?`<span class="cpill" style="background:${s.bg};color:${s.t};border-color:${s.b}">${t.category||'?'}</span>`:''}
     ${o.flag?'<span class="flag-u">📅</span>':''}
     ${!o.flag&&(!o.noDate||ov)&&t.due_date?`<span class="dlbl ${ov?'ov':''}" style="cursor:pointer" onclick="openInlineDatePicker(event,'${t.id}','${t.due_date}')">${fmtD(t.due_date)} <span class="date-clr" title="Clear date" onclick="event.stopPropagation();clearTaskDate('${t.id}',event)">×</span></span>`:''}
@@ -3694,7 +3697,7 @@ function openTModal(cat=''){
   tMode='add';tId=null;
   document.getElementById('tMTitle').textContent='Add Task';document.getElementById('tSaveBtn').textContent='Add';
   document.getElementById('tName').value='';document.getElementById('tCat').value=cat||'Home';
-  document.getElementById('tDue').value=tPreDate||'';document.getElementById('tImp').checked=false;document.getElementById('tNotes').value='';tPreDate=null;
+  document.getElementById('tDue').value=tPreDate||'';document.getElementById('tImp').checked=false;document.getElementById('tNotes').value='';document.getElementById('tTravelMode').value='';tPreDate=null;
   document.getElementById('tModal').classList.add('open');setTimeout(()=>document.getElementById('tName').focus(),80);
 }
 function openEditTask(id){
@@ -3702,21 +3705,22 @@ function openEditTask(id){
   tMode='edit';tId=id;
   document.getElementById('tMTitle').textContent='Edit Task';document.getElementById('tSaveBtn').textContent='Save';
   document.getElementById('tName').value=t.name;document.getElementById('tCat').value=t.category||'Home';
-  document.getElementById('tDue').value=t.due_date||'';document.getElementById('tImp').checked=!!t.important;document.getElementById('tNotes').value=t.notes||'';
+  document.getElementById('tDue').value=t.due_date||'';document.getElementById('tImp').checked=!!t.important;document.getElementById('tNotes').value=t.notes||'';document.getElementById('tTravelMode').value=t.travel_mode||'';
   document.getElementById('tModal').classList.add('open');
 }
 async function saveTModal(){
   const n=document.getElementById('tName').value.trim();if(!n){closeMod('tModal');return;}
   const c=document.getElementById('tCat').value,d=document.getElementById('tDue').value.trim()||null,imp=document.getElementById('tImp').checked;
   const notes=document.getElementById('tNotes').value.trim()||null;
+  const tm=document.getElementById('tTravelMode').value||null;
   closeMod('tModal');
   if(tMode==='edit'&&tId){
     const t=st.tasks.find(x=>String(x.id)===String(tId));if(!t)return;
-    const prev={name:t.name,category:t.category,due_date:t.due_date,important:t.important,notes:t.notes};
+    const prev={name:t.name,category:t.category,due_date:t.due_date,important:t.important,notes:t.notes,travel_mode:t.travel_mode||null};
     const stid=String(tId);
     localOverrides[stid]={name:n,category:c,due_date:d};
     pendingLocal.add(stid);save();
-    t.name=n;t.category=c;t.important=imp;t.notes=notes;
+    t.name=n;t.category=c;t.important=imp;t.notes=notes;t.travel_mode=tm;
     if(t.due_date!==d){
       // Remove blocks on the old date since task is moving to a new date
       const oldDs=(t.due_date||'').split('T')[0];
@@ -3724,18 +3728,18 @@ async function saveTModal(){
     }
     t.due_date=d;renderAll();
     pushUndo(()=>{
-      t.name=prev.name;t.category=prev.category;t.due_date=prev.due_date;t.important=prev.important;t.notes=prev.notes;
+      t.name=prev.name;t.category=prev.category;t.due_date=prev.due_date;t.important=prev.important;t.notes=prev.notes;t.travel_mode=prev.travel_mode;
       localOverrides[stid]={...prev};pendingLocal.add(stid);renderAll();
-      sbReqNullable('PATCH','tasks',{name:prev.name,category:prev.category,due_date:prev.due_date,important:prev.important,notes:prev.notes||null},`?id=eq.${stid}`)
+      sbReqNullable('PATCH','tasks',{name:prev.name,category:prev.category,due_date:prev.due_date,important:prev.important,notes:prev.notes||null,travel_mode:prev.travel_mode},`?id=eq.${stid}`)
         .then(()=>{ delete localOverrides[stid]; pendingLocal.delete(stid); });
     },'Edited task');
-    await sbReqNullable('PATCH','tasks',{name:n,category:c,due_date:d,important:imp,notes:notes||null},`?id=eq.${stid}`);
+    await sbReqNullable('PATCH','tasks',{name:n,category:c,due_date:d,important:imp,notes:notes||null,travel_mode:tm},`?id=eq.${stid}`);
     pendingLocal.delete(stid);
     // localOverrides[stid] stays until syncAll confirms DB matches
   } else {
-    const t={id:'l-'+Date.now(),name:n,category:c,due_date:d,done:false,important:imp,notes};st.tasks.push(t);renderAll();
+    const t={id:'l-'+Date.now(),name:n,category:c,due_date:d,done:false,important:imp,notes,travel_mode:tm};st.tasks.push(t);renderAll();
     pushUndo(()=>{st.tasks=st.tasks.filter(x=>x.id!==t.id);renderAll();sbReq('DELETE','tasks',null,`?id=eq.${t.id}`);},'Added task');
-    const sv=await sbReq('POST','tasks',{name:n,category:c,due_date:d,done:false,important:imp,notes:notes||null});if(sv&&sv[0]){const i=st.tasks.findIndex(x=>x.id===t.id);if(i>-1)st.tasks[i]=sv[0];}
+    const sv=await sbReq('POST','tasks',{name:n,category:c,due_date:d,done:false,important:imp,notes:notes||null,travel_mode:tm});if(sv&&sv[0]){const i=st.tasks.findIndex(x=>x.id===t.id);if(i>-1)st.tasks[i]=sv[0];}
   }
 }
 async function addTask(){
@@ -4232,7 +4236,7 @@ function mkMCell(date,om,today){
     else if(t._type==='shop')chip.dataset.tid='shop-cal-'+t._shopId;
     else if(t._isWrec)chip.dataset.tid='wrec-'+t._recId;
     else if(t._recId)chip.dataset.tid='rec-virt-'+t._recId;
-    chip.textContent=t.name;
+    chip.textContent=tmIcon(t)+t.name;
     chip.addEventListener('dragstart',e=>{e.stopPropagation();dStart(e,t.id);chip.style.opacity='.4';});
     chip.addEventListener('dragend',()=>{chip.style.opacity='1';});
     chip.addEventListener('click',e=>{
