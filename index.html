@@ -1958,7 +1958,7 @@ function tRowTodayVirt(t,tbArrow=false,noColor=false){
   const s=gc(t._isWrec?'weekly_reset':'recurring');
   const ov=isOv(t.due_date)&&!t.done;
   const ps=ov?OV:s;
-  return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''}" style="${!ov&&!noColor?`background:${s.bg}`:''}" id="ti-${t.id}" draggable="true" ondragstart="dragId='rec::${t._recId}::${t.due_date||''}';event.currentTarget.classList.add('dragging')" ondragend="event.currentTarget.classList.remove('dragging')" onclick="selTask(event,'${t.id}')" ondblclick="tiDblRec(event,'${t._recId}')" oncontextmenu="showCtx(event,'${t.id}',true,'${t._recId}')">
+  return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''}" style="${!ov&&!noColor?`background:${s.bg}`:''}" id="ti-${t.id}" draggable="true" ondragstart="dragId='${t._isWrec?`wrec::${t._recId}`:`rec::${t._recId}::${t.due_date||''}`}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);" ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false);" onclick="selTask(event,'${t.id}')" ondblclick="tiDblRec(event,'${t._recId}')" oncontextmenu="showCtx(event,'${t.id}',true,'${t._recId}')">
     <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="${t._isWrec?`togRec('${t._recId}',this.checked)`:`togRecVirt('${t._recId}',this.checked,'${t._wkKey||getWkKey(wkOff)}')`}"></label>
     <span class="tn">${t.name}</span>
     <span class="cpill" style="background:${ps.bg};color:${ps.t};border-color:${ps.b}">Recurring</span>
