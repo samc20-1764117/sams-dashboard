@@ -382,6 +382,8 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 .wkc-banners{height:22px;position:absolute;top:0;left:0;right:0;z-index:6;pointer-events:none}
 .wkc-banner{position:absolute;top:2px;height:18px;border-radius:6px;font-size:9px;font-weight:700;display:flex;align-items:center;padding:0 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:all;cursor:pointer;z-index:5;border:1px solid rgba(255,255,255,0.6);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:inset 0 1px 0 rgba(255,255,255,0.75)}
 .wkc-banner:hover{filter:brightness(.96)}
+.wkc-banner .ban-del{opacity:0;background:none;border:none;cursor:pointer;color:currentColor;font-size:9px;padding:0 2px;margin-left:auto;flex-shrink:0;transition:opacity .1s;line-height:1}
+.wkc-banner:hover .ban-del{opacity:.65}.wkc-banner .ban-del:hover{opacity:1!important;color:#ef4444!important}
 /* Drag-to-add-travel ghost */
 .wkc-drag-ghost{position:absolute;top:2px;height:18px;border-radius:4px;pointer-events:none;z-index:20;opacity:.55;transition:none}
 .wkc-col.drag-sel{background:rgba(20,184,166,.07)}
@@ -2218,11 +2220,18 @@ function renderWkCal(){
       const ed=tv.end_date?tv.end_date.split('T')[0]:sd;
       const isPast=!!(ed&&ed<today2);
       const label=(tv.destination?`✈ ${tv.name} → ${tv.destination}`:`✈ ${tv.name}`);
+      const tripsEndsThisWeek=!ed||ed<=wkDss[6];
       const ban=addBanner(label,sd,ed,s,null,isPast);
       if(!ban)return;
       const tvSid='tv-'+tv.id;
       ban.dataset.tvid=String(tv.id);
+      if(tripsEndsThisWeek){
+        const del=document.createElement('button');del.className='ban-del';del.textContent='✕';
+        del.addEventListener('click',e=>{e.stopPropagation();delTravel(tv.id);});
+        ban.appendChild(del);
+      }
       ban.addEventListener('click',e=>{
+        if(e.target.classList.contains('ban-del'))return;
         e.stopPropagation();
         selectedTasks.clear();selectedTasks.add(tvSid);lastSelectedId=tvSid;
         applySelHighlight();
