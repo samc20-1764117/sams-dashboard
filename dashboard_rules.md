@@ -522,26 +522,61 @@ Accepts and normalizes any of these input formats:
 
 ## Recipes Page
 
-- **State**: `st.recipes` — array of recipe objects fetched from Supabase `recipes` table.
-- **Saved in localStorage** via `save()`/`load()` (key: `recipes`).
-- **Synced in `syncAll`**: fetched with `sbReqSilent('GET','recipes',null,'?order=name.asc&select=*')`. Uses `_recUndoDirty` flag same as pup_skills to prevent undo state from being overwritten.
-- **Page element**: `id="page-recipes"`, padding `22px 56px 36px 56px`, `padding-top:60px`. Populated by `renderRecipesPage()`.
-- **Initialization guard**: `page._recInit` — set once on first render to build the page skeleton (topbar, filter bar, card with table, side panel). Subsequent calls only update filter bar and re-render table.
-- **`_recipeEditId`**: tracks which recipe is being edited in the modal. Separate from `_recEditId` (used by recurring tasks).
-- **Table columns**: Favorite (♥) | Name | Meal Type | Time | Serves | Difficulty | Protein | Notes | ···
-- **Sort**: single-click header → `recHdrClick(col)` (250ms debounce). 3-state: asc → desc → none. `recSortBy(col)`.
-- **Filter popup**: double-click header → `recHdrDbl(e,col)`. Text filter for name/cuisine/protein; set filter for categorical columns. Element `#recFilterPop` / `#rfContent`. Class `.rfopen` for visibility.
-- **Filter chips**: meal type, difficulty, ≤30m/≤1h time, favorites. Stored in `_recMealFilter`, `_recDiffFilter`, `_recTimeFilter`, `_recFavFilter`. Rebuild via `renderRecipesPage()`.
-- **Search bar**: `#recSearchInp`, `_recSearch` state. Calls `renderRecipeTable()` only (not full page render). Focus is preserved on re-render.
-- **Selection**: single-click → `selRecRow(e,sid)` — selects AND opens side panel. Cmd/Ctrl+click toggle; Shift-click range. `applyRecSelHighlight()` adds `.rec-sel` class.
-- **Side panel**: `#recSidePanel` with class `rec-side-panel`. Slides in from right (width: 0 → 400px). Table wrap gets `marginRight:400px` when open. `_recPanelId` tracks which recipe is shown. `closeRecSidePanel()` collapses it.
-- **Undo/redo**: `recSnapshot()` / `recUndo()` / `recRedo()`. Same server-aware diff pattern as pups via `_recSyncToServer()`.
-- **Add modal**: `id="recipeModal"` overlay. Fields: name, meal_type, cuisine, protein, difficulty, prep_time, cook_time, total_time, servings, notes, ingredients, instructions, substitutions, storage_reheating, source. `saveRecipeModal()` handles add/edit.
-- **Context menu**: `id="recCtxMenu"`. Items: view, edit, toggle fav, mark made, duplicate, delete. Multi-select hides single-item actions.
-- **Favorite toggle**: `toggleRecFavorite(id,e)` — flips `favorite` boolean, patches Supabase, re-renders table and side panel.
-- **Mark as Made**: `markRecipeMade(id)` — sets `last_made_date` to today's ISO date, patches Supabase.
-- **Keyboard shortcuts** (recipes page only): Cmd+Z/Shift+Z for undo/redo; Delete/Backspace to delete selected; Cmd+C to copy; Cmd+V to paste.
-- **Double-click empty area**: opens add modal. Double-click row: opens edit modal.
-- **`_recFields(r)`**: helper that returns the DB field set for POST/PATCH (all 16 recipe fields excluding id, created_at).
-- **Difficulty pills**: `.rec-diff-easy` (green), `.rec-diff-medium` (amber), `.rec-diff-hard` (red).
-- **Time formatting**: `fmtMin(m)` → e.g. `45m`, `1h`, `1h 30m`.
+### Schema
+Supabase table `recipes`. Active columns: `id`, `name`, `meal_type`, `cuisine`, `time` (minutes, integer), `servings`, `notes`, `favorite`, `ingredients`, `instructions`, `source`, `created_at`. Removed columns (do not reference): `protein`, `prep_time`, `cook_time`, `difficulty`, `last_made_date`, `substitutions`, `storage_reheating`, `total_time`.
+
+### State & Persistence
+- `st.recipes` — array synced from Supabase, saved to localStorage under key `recipes`.
+- `syncAll`: fetched with `sbReqSilent('GET','recipes',null,'?order=name.asc&select=*')`. Uses `_recUndoDirty` flag (same pattern as `pup_skills`) to prevent sync from overwriting local undo state.
+- `_recFields(r)`: helper returning the DB field subset for POST/PATCH — `{name, meal_type, cuisine, time, servings, notes, favorite, ingredients, instructions, source}`.
+
+### Page Structure
+- `id="page-recipes"`, padding `22px 56px 36px 56px`, `padding-top:60px`. Populated by `renderRecipesPage()`.
+- `page._recInit` guard: DOM skeleton (topbar, filter bar, card+table, side panel) is built once on first call. Subsequent calls rebuild only the filter bar and re-render the table.
+- On `showPage('recipes')` and in `renderAll()`, `renderRecipesPage()` is called.
+
+### Variables
+- `_recipeEditId` — id of recipe being edited (null = add mode). **Not** `_recEditId` — that name is taken by recurring tasks.
+- `_selRecIds` (Set), `_lastSelRecId`, `_copiedRecs`, `_recCtxId`
+- `_recSortCol`, `_recSortDir` (1=asc, -1=desc)
+- `_recFilter` — `{col, type:'text'|'set', text|vals}` or null (column header filter)
+- `_recUndoStack`, `_recRedoStack`, `_recHdrClickTimer`, `_recUndoDirty`
+- `_recSearch` — search bar value
+- `_recMealFilter`, `_recTimeFilter`, `_recFavFilter` — active filter chip values
+- `_recPanelId` — id of recipe currently shown in the side panel (null = closed)
+
+### Table
+Columns: ♥ (fav toggle) | Name | Meal Type | Time | Serves | Notes | ···
+- Single-click header → `recHdrClick(col)` (250ms debounce) → `recSortBy(col)`. 3-state cycle: asc → desc → none.
+- Double-click header → `recHdrDbl(e,col)` → `recFilterBy(e,col)`. Text filter for `name`/`cuisine`; set filter for other columns. Popup: `#recFilterPop` / `#rfContent`, class `.rfopen`.
+- Empty table state: colspan 7.
+
+### Filter Bar
+Single row of chips + search. Built by `_buildRecFilterBar()`, injected into `#recFilterBarWrap` on every `renderRecipesPage()` call (focus preserved on `#recSearchInp` if active). Chips: meal type buttons (Breakfast/Lunch/Dinner/Snack/Dessert/Drink/Side), ♥ Favs, ≤30m, ≤1h.
+- `recToggleMealFilter(m)` / `recToggleFavFilter()` / `recToggleTimeFilter(t)` — toggle state then call `renderRecipesPage()`.
+- `recSearchChange(v)` — updates `_recSearch`, calls `renderRecipeTable()` only (no full re-render, no focus loss).
+
+### Selection & Side Panel
+- Single-click → `selRecRow(e,sid)` — selects row AND opens side panel. Deselecting (clicking same row alone) closes panel. Cmd/Ctrl+click toggles; Shift-click range. `applyRecSelHighlight()` adds `.rec-sel` class.
+- Side panel: `#recSidePanel`, class `rec-side-panel`. CSS transition width 0 → 400px. Table wrap (`#recTableWrap`) gets `marginRight:400px` when open.
+- `_recPanelId` persists across re-renders; `renderRecipesPage()` re-opens panel if set.
+- Panel shows: name, fav button, meal type + cuisine pills, time + servings detail row, notes, ingredients, instructions, source, Edit button.
+
+### Undo/Redo
+`recSnapshot()` / `recUndo()` / `recRedo()`. Server-aware diff via `_recSyncToServer(prev,next)` — same pattern as `_pupSyncToServer`. `_recUndoDirty` blocks auto-sync from overwriting state after undo.
+
+### Modal
+`id="recipeModal"`. Fields: name*, meal_type, cuisine, time (number), servings (number), notes, ingredients, instructions, source. `saveRecipeModal()` handles both add and edit. Enter key submits (blocked for textarea/select).
+
+### Context Menu
+`id="recCtxMenu"`. Items: view details, edit, toggle favorite, duplicate, delete. Single-item actions (view/edit/fav) hidden when multi-select is active.
+
+### Keyboard Shortcuts (recipes page only)
+Cmd+Z → `recUndo()`, Cmd+Shift+Z → `recRedo()`, Delete/Backspace → `recCtxDelete()` (if selection), Cmd+C → copy to `_copiedRecs`, Cmd+V → paste (snapshot first).
+
+### Interactions
+- Double-click empty page area → `openRecipeAddModal()`.
+- Double-click row → `openRecipeEditModal(sid)`.
+- + button in card header → `openRecipeAddModal()`.
+- Right-click row → `showRecCtx(e,sid)`.
+- Escape → closes filter popup, context menu, and side panel.
