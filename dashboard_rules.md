@@ -490,6 +490,20 @@ Accepts and normalizes any of these input formats:
 - `tRowTodayVirt` must set `effectAllowed='move'`, add `body-dragging` to document.body, and call `showWkcEdges(true)` on dragstart — matching `tRowShopVirt` and `dStart`. Without this, the browser does not reliably fire drop events on target elements.
 - `tRowTodayVirt` uses `t._isWrec` to set the correct `dragId` prefix: `wrec::recId` for weekly reset tasks, `rec::recId::date` for others. Previously all virtual tasks used `rec::` prefix regardless of type.
 
+## TB Block Done State — Render-Time Derivation
+
+- `drawTBBlock` derives `b._done` from the linked item at render time (not from the stale block field): `linkedTask.done`, `linkedRec._doneByWk[wkKey]`, or `linkedShop.done`. This prevents stale `time_blocks.done` values from causing visual mismatch after sync.
+
+## Auto Block Duration (`autoDur`)
+
+- `dropOnTB` uses `autoDur(name, category)` helper to set default block duration on drop. Rules:
+  - Name matches `/\bheb\b/i` → **60 min**
+  - Name matches `/pilates/i` → **60 min**
+  - Category is `'social'` or name matches `/social/i` → **120 min**
+  - Everything else → **30 min**
+- Applied to all four drop paths: wrec, rec, shop, regular task.
+- To add new rules, edit `autoDur` inside `dropOnTB`.
+
 ## Git Workflow
 
 - Stop hook: auto-commits and pushes to `origin/dev` branch after every Claude turn.
