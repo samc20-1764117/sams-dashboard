@@ -686,3 +686,46 @@ Once the browser fires `dragstart` on a `draggable` element, it suppresses subse
 - `travelModal` overlay: `onkeydown` saves if `event.target.tagName !== 'SELECT'` (prevents double-fire and browser select-commit issues).
 - `tvTravelMode` select: `onkeydown="if(event.key==='Enter')setTimeout(saveTravelModal,0)"` — the `setTimeout(0)` lets the browser commit the selected option before reading `.value`.
 - `tvName` input no longer has its own `onkeydown` — the overlay handles it.
+
+---
+
+## Recipes Page — Ingredient List
+
+### Storage Format
+`ingredients` field stores a JSON string: `[{"name":"...","amount":"..."},...]`.
+Legacy recipes may store plain text (one ingredient per line). `_parseIngredients(str)` handles both:
+- If `str.startsWith('[')` → try `JSON.parse`, map to `{name, amount}` objects
+- Otherwise → split by newline, each line becomes `{name: line, amount: ''}`
+
+`_serializeIngredients(arr)` → filters blank names, returns JSON string or `null`.
+
+### Modal (Add / Edit Recipe)
+- **No source/URL field** — removed from UI (kept in `_recFields` for data compat).
+- **Notes moved to bottom** — below Instructions, styled with muted label.
+- **Ingredients rendered as task list** — `#rmIngList` inside `.rm-ing-wrap`.
+  - Each row: `[●] [amount input] [ingredient name input] [×]`
+  - Inputs always editable (no double-click needed — modal context).
+  - Enter in amount → focuses name input of same row.
+  - Enter in name → `rmIngAdd()`: saves, appends new empty row, focuses new amount input.
+  - Backspace on empty input → `rmIngDel(i)` deletes that row.
+  - ArrowUp/ArrowDown → navigate between rows.
+  - `rmIngAdd()` button at bottom of container.
+- `_rmIngredients = []` — modal state array of `{name, amount}` objects.
+- `_flushIngInputs()` — reads live DOM input values into `_rmIngredients` before save.
+- `renderIngList()` — re-renders `#rmIngList` from `_rmIngredients`.
+
+### Modal Keydown Guard
+`recipeModal` onkeydown Enter handler excludes `.rm-ing-row` inputs:
+```
+!event.target.closest('.rm-ing-row')
+```
+Otherwise Enter in ingredient inputs would prematurely save the whole modal.
+
+### Side Panel — Ingredients
+`renderRecSidePanel` calls `_parseIngredients(r.ingredients)` and renders each as:
+`[●] [amount (muted, min-width 52px)] [name]` with a subtle bottom border per row.
+
+### Search
+`recSearchChange(v)` → updates `_recSearch`, calls `renderRecipeTable()`, updates `#recCount` with filtered match count.
+Search includes: name, meal_type, cuisine, notes, instructions, ingredient names+amounts.
+Filter bar uses both `oninput` and `onchange` on the search input.

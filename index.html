@@ -585,6 +585,23 @@ body.dark .rec-made-btn{background:rgba(34,197,94,.12);border-color:rgba(34,197,
 #recFilterPop.rfopen{opacity:1;transform:translateY(0) scale(1);pointer-events:auto}
 body.dark #recFilterPop{background:rgba(40,22,14,.97);border-color:rgba(255,220,200,.15);box-shadow:0 6px 28px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.06)}
 body.dark #recCtxMenu{background:rgba(20,18,35,.98);}
+/* Recipe ingredient list (modal) */
+.rm-ing-wrap{border:1px solid var(--border);border-radius:8px;overflow:hidden;background:rgba(255,255,255,.45);margin-bottom:4px}
+body.dark .rm-ing-wrap{background:rgba(255,255,255,.04)}
+.rm-ing-row{display:flex;align-items:center;gap:4px;padding:2px 8px;border-bottom:1px solid rgba(210,205,228,.1);transition:background .1s}
+.rm-ing-row:last-child{border-bottom:none}
+.rm-ing-row:hover{background:rgba(255,255,255,.7)}
+body.dark .rm-ing-row:hover{background:rgba(255,255,255,.06)}
+.rm-ing-dot{width:5px;height:5px;border-radius:50%;background:rgba(194,107,79,.35);flex-shrink:0}
+.rm-ing-amt{width:72px;font-size:11px;padding:3px 5px;border:1px solid transparent;border-radius:4px;background:transparent;color:var(--muted);font-family:inherit;outline:none;transition:border-color .12s,background .12s}
+.rm-ing-name{flex:1;font-size:12px;padding:3px 5px;border:1px solid transparent;border-radius:4px;background:transparent;color:var(--text);font-family:inherit;outline:none;transition:border-color .12s,background .12s}
+.rm-ing-amt:focus,.rm-ing-name:focus{border-color:rgba(194,107,79,.5);background:rgba(255,255,255,.85)}
+body.dark .rm-ing-amt:focus,body.dark .rm-ing-name:focus{background:rgba(255,255,255,.07);border-color:rgba(194,107,79,.4)}
+.rm-ing-del{opacity:0;background:none;border:none;cursor:pointer;color:var(--subtle);font-size:10px;padding:2px 5px;border-radius:4px;transition:opacity .1s,color .1s;line-height:1;flex-shrink:0}
+.rm-ing-row:hover .rm-ing-del{opacity:1}
+.rm-ing-del:hover{color:#ef4444}
+.rm-ing-add-btn{background:none;border:none;color:var(--muted);font-size:11px;cursor:pointer;padding:5px 10px;font-family:inherit;text-align:left;width:100%;transition:color .12s,background .12s;border-top:1px dashed rgba(210,205,228,.35)}
+.rm-ing-add-btn:hover{color:var(--accent);background:rgba(194,107,79,.05)}
 /* Birthdays Page */
 .bday-section{padding:0 6px 8px}
 .bday-section-header{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);padding:10px 4px 5px;display:flex;align-items:center;gap:6px;border-bottom:1px solid rgba(210,205,228,.18);margin-bottom:3px}
@@ -1266,7 +1283,7 @@ body.dark .bday-add-menu{background:rgba(38,20,10,.97);border-color:rgba(255,220
 </div>
 
 <!-- Recipe Edit Modal -->
-<div class="overlay" id="recipeModal" onclick="closeMod('recipeModal',event)" onkeydown="if(event.key==='Escape')closeMod('recipeModal');if(event.key==='Enter'&&event.target.tagName!=='TEXTAREA'&&event.target.tagName!=='SELECT'){event.preventDefault();saveRecipeModal();}">
+<div class="overlay" id="recipeModal" onclick="closeMod('recipeModal',event)" onkeydown="if(event.key==='Escape'){closeMod('recipeModal');return;}if(event.key==='Enter'&&event.target.tagName!=='TEXTAREA'&&event.target.tagName!=='SELECT'&&!event.target.closest('.rm-ing-row')){event.preventDefault();saveRecipeModal();}">
   <div class="modal" style="width:min(96vw,600px);padding:18px;max-height:90vh;overflow-y:auto">
     <div class="mt" id="recipeMTitle">Add Recipe</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
@@ -1276,10 +1293,12 @@ body.dark .bday-add-menu{background:rgba(38,20,10,.97);border-color:rgba(255,220
       <div class="mfield"><label>Time (min)</label><input id="rmTime" type="number" min="0" placeholder="45"></div>
       <div class="mfield"><label>Servings</label><input id="rmServings" type="number" min="1" placeholder="4"></div>
     </div>
-    <div class="mfield"><label>Notes / Summary</label><textarea id="rmNotes" placeholder="Brief description or tips…" style="resize:vertical;min-height:44px;width:100%;font-family:inherit;font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,.6);color:var(--text);outline:none"></textarea></div>
-    <div class="mfield"><label>Ingredients</label><textarea id="rmIngredients" placeholder="One per line or comma-separated…" style="resize:vertical;min-height:72px;width:100%;font-family:inherit;font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,.6);color:var(--text);outline:none"></textarea></div>
+    <div class="mfield" style="margin-top:4px">
+      <label>Ingredients</label>
+      <div class="rm-ing-wrap"><div id="rmIngList"></div><button type="button" class="rm-ing-add-btn" onclick="rmIngAdd()">+ Add ingredient</button></div>
+    </div>
     <div class="mfield"><label>Instructions</label><textarea id="rmInstructions" placeholder="Step-by-step instructions…" style="resize:vertical;min-height:88px;width:100%;font-family:inherit;font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,.6);color:var(--text);outline:none"></textarea></div>
-    <div class="mfield"><label>Source / URL</label><input id="rmSource" placeholder="e.g. smitten kitchen, mom's recipe…"></div>
+    <div class="mfield" style="margin-top:2px"><label style="color:var(--muted)">Notes</label><textarea id="rmNotes" placeholder="Brief description or tips…" style="resize:vertical;min-height:40px;width:100%;font-family:inherit;font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,.6);color:var(--text);outline:none"></textarea></div>
     <div class="mact"><button class="btn btn-ghost" onclick="closeMod('recipeModal')">Cancel</button><button class="btn btn-dark" onclick="saveRecipeModal()">Save</button></div>
   </div>
 </div>
@@ -5385,7 +5404,7 @@ const PAGES=['overview','weekly','shopping','travel','birthdays','settings','pup
 // ══════════════════════════════════════════════════════════════════════════════
 // ── RECIPES PAGE ──────────────────────────────────────────────────────────────
 // ══════════════════════════════════════════════════════════════════════════════
-let _recipeEditId=null;
+let _recipeEditId=null,_rmIngredients=[];
 let _selRecIds=new Set(),_lastSelRecId=null,_copiedRecs=[],_recCtxId=null;
 let _recSortCol=null,_recSortDir=1,_recFilter=null;
 let _recUndoStack=[],_recRedoStack=[],_recHdrClickTimer=null,_recUndoDirty=false;
@@ -5408,12 +5427,61 @@ function _recSyncToServer(prev,next){
 function recUndo(){if(!_recUndoStack.length){showToast('Nothing to undo','#888');return;}const prev=JSON.parse(JSON.stringify(st.recipes));_recUndoDirty=true;_recRedoStack.push(prev);st.recipes=_recUndoStack.pop();save();renderRecipeTable();showToast('Undone','#f59e0b',1500);_recSyncToServer(prev,st.recipes);}
 function recRedo(){if(!_recRedoStack.length){showToast('Nothing to redo','#888');return;}const prev=JSON.parse(JSON.stringify(st.recipes));_recUndoDirty=true;_recUndoStack.push(prev);st.recipes=_recRedoStack.pop();save();renderRecipeTable();showToast('Redone','#f59e0b',1500);_recSyncToServer(prev,st.recipes);}
 
+// ── Ingredient list helpers ────────────────────────────────────────────────
+function _parseIngredients(str){
+  if(!str||!str.trim())return[];
+  if(str.trim().startsWith('[')){try{const a=JSON.parse(str);if(Array.isArray(a))return a.map(x=>typeof x==='string'?{name:x,amount:''}:{name:x.name||'',amount:x.amount||''});}catch(e){}}
+  return str.split('\n').map(s=>s.trim()).filter(Boolean).map(s=>({name:s,amount:''}));
+}
+function _serializeIngredients(arr){
+  const clean=(arr||[]).filter(x=>(x.name||'').trim());
+  if(!clean.length)return null;
+  return JSON.stringify(clean.map(x=>({name:x.name.trim(),amount:(x.amount||'').trim()})));
+}
+function _flushIngInputs(){
+  document.querySelectorAll('#rmIngList .rm-ing-row').forEach((row,i)=>{
+    if(i<_rmIngredients.length){
+      const a=row.querySelector('.rm-ing-amt'),n=row.querySelector('.rm-ing-name');
+      if(a)_rmIngredients[i].amount=a.value;if(n)_rmIngredients[i].name=n.value;
+    }
+  });
+}
+function renderIngList(){
+  const el=document.getElementById('rmIngList');if(!el)return;
+  const _e=v=>(v||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+  el.innerHTML=_rmIngredients.map((ing,i)=>`<div class="rm-ing-row" id="rmIngRow${i}"><div class="rm-ing-dot"></div><input class="rm-ing-amt" placeholder="amount" value="${_e(ing.amount)}" oninput="_rmIngredients[${i}].amount=this.value" onkeydown="rmIngKey(event,${i},'amt')"><input class="rm-ing-name" placeholder="ingredient" value="${_e(ing.name)}" oninput="_rmIngredients[${i}].name=this.value" onkeydown="rmIngKey(event,${i},'name')"><button type="button" class="rm-ing-del" onclick="rmIngDel(${i})" title="Remove">✕</button></div>`).join('');
+}
+function rmIngAdd(focusName){
+  _flushIngInputs();_rmIngredients.push({name:'',amount:''});renderIngList();
+  const i=_rmIngredients.length-1;
+  setTimeout(()=>{const inp=document.querySelector(focusName?`#rmIngRow${i} .rm-ing-name`:`#rmIngRow${i} .rm-ing-amt`);if(inp)inp.focus();},20);
+}
+function rmIngDel(i){
+  _flushIngInputs();_rmIngredients.splice(i,1);renderIngList();
+  const prev=Math.max(0,i-1);
+  setTimeout(()=>{const inp=_rmIngredients.length?document.querySelector(`#rmIngRow${prev} .rm-ing-name`):document.querySelector('.rm-ing-add-btn');if(inp)inp.focus();},20);
+}
+function rmIngKey(e,i,field){
+  if(e.key==='Enter'){
+    e.preventDefault();e.stopPropagation();
+    if(field==='amt'){const n=document.querySelector(`#rmIngRow${i} .rm-ing-name`);if(n)n.focus();}
+    else{_rmIngredients[i].name=e.target.value;rmIngAdd(false);}
+  } else if(e.key==='Backspace'&&!e.target.value&&_rmIngredients.length>0){
+    rmIngDel(i);
+  } else if(e.key==='ArrowUp'&&i>0){
+    e.preventDefault();const p=document.querySelector(`#rmIngRow${i-1} .rm-ing-name`);if(p)p.focus();
+  } else if(e.key==='ArrowDown'){
+    e.preventDefault();
+    if(i<_rmIngredients.length-1){const n=document.querySelector(`#rmIngRow${i+1} .rm-ing-amt`);if(n)n.focus();}
+    else{const btn=document.querySelector('.rm-ing-add-btn');if(btn)btn.focus();}
+  }
+}
+
 function openRecipeAddModal(){
   _recipeEditId=null;
   document.getElementById('recipeMTitle').textContent='Add Recipe';
-  ['rmName','rmMealType','rmCuisine','rmTime','rmServings','rmNotes','rmIngredients','rmInstructions','rmSource'].forEach(id=>{
-    const el=document.getElementById(id);if(el)el.value='';
-  });
+  ['rmName','rmMealType','rmCuisine','rmTime','rmServings','rmNotes','rmInstructions'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  _rmIngredients=[];renderIngList();
   document.getElementById('recipeModal').classList.add('open');
   setTimeout(()=>document.getElementById('rmName').focus(),80);
 }
@@ -5427,15 +5495,15 @@ function openRecipeEditModal(id){
   document.getElementById('rmTime').value=r.time||'';
   document.getElementById('rmServings').value=r.servings||'';
   document.getElementById('rmNotes').value=r.notes||'';
-  document.getElementById('rmIngredients').value=r.ingredients||'';
   document.getElementById('rmInstructions').value=r.instructions||'';
-  document.getElementById('rmSource').value=r.source||'';
+  _rmIngredients=_parseIngredients(r.ingredients);renderIngList();
   document.getElementById('recipeModal').classList.add('open');
   setTimeout(()=>document.getElementById('rmName').focus(),80);
 }
 async function saveRecipeModal(){
   const name=document.getElementById('rmName').value.trim();
   if(!name){showToast('Recipe name required');return;}
+  _flushIngInputs();
   const data={
     name,
     meal_type:document.getElementById('rmMealType').value||null,
@@ -5443,9 +5511,9 @@ async function saveRecipeModal(){
     time:parseInt(document.getElementById('rmTime').value)||null,
     servings:parseInt(document.getElementById('rmServings').value)||null,
     notes:document.getElementById('rmNotes').value.trim()||null,
-    ingredients:document.getElementById('rmIngredients').value.trim()||null,
+    ingredients:_serializeIngredients(_rmIngredients),
     instructions:document.getElementById('rmInstructions').value.trim()||null,
-    source:document.getElementById('rmSource').value.trim()||null,
+    source:null,
   };
   recSnapshot();
   closeMod('recipeModal');
@@ -5641,9 +5709,8 @@ function renderRecSidePanel(id){
         <div class="rec-sp-detail"><div class="rec-sp-detail-lbl">Serves</div><div class="rec-sp-detail-val">${r.servings||'—'}</div></div>
       </div>
       ${r.notes?`<div class="rec-sp-section"><div class="rec-sp-section-title">Notes</div><div class="rec-sp-text" style="font-style:italic;color:var(--muted)">${esc(r.notes)}</div></div>`:''}
-      ${r.ingredients?`<div class="rec-sp-section"><div class="rec-sp-section-title">Ingredients</div><div class="rec-sp-text">${esc(r.ingredients)}</div></div>`:''}
+      ${r.ingredients?(()=>{const ings=_parseIngredients(r.ingredients);return ings.length?`<div class="rec-sp-section"><div class="rec-sp-section-title">Ingredients</div>${ings.map(x=>`<div style="display:flex;align-items:baseline;gap:8px;padding:3px 0;border-bottom:1px solid rgba(210,205,228,.08)"><span style="width:5px;height:5px;border-radius:50%;background:rgba(194,107,79,.4);flex-shrink:0;display:inline-block;margin-top:5px"></span>${x.amount?`<span style="color:var(--muted);font-size:11px;min-width:52px;flex-shrink:0">${esc(x.amount)}</span>`:'<span style="min-width:52px;flex-shrink:0"></span>'}<span style="font-size:12px;color:var(--text)">${esc(x.name)}</span></div>`).join('')}</div>`:'';})():''}
       ${r.instructions?`<div class="rec-sp-section"><div class="rec-sp-section-title">Instructions</div><div class="rec-sp-text">${esc(r.instructions)}</div></div>`:''}
-      ${r.source?`<div class="rec-sp-section"><div class="rec-sp-section-title">Source</div><div class="rec-sp-text">${esc(r.source)}</div></div>`:''}
     </div>
     <div class="rec-sp-actions">
       <button class="btn btn-ghost" onclick="openRecipeEditModal('${sid}')">✏️ Edit</button>
@@ -5656,7 +5723,7 @@ function renderRecipeTable(){
   function esc(v){return(v||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
   let rows=[...st.recipes||[]];
   // Apply search
-  if(_recSearch){const sv=_recSearch.toLowerCase();rows=rows.filter(r=>[r.name,r.meal_type,r.cuisine,r.notes].some(f=>f&&f.toLowerCase().includes(sv)));}
+  if(_recSearch){const sv=_recSearch.toLowerCase();rows=rows.filter(r=>{const ingText=_parseIngredients(r.ingredients).map(x=>x.name+' '+x.amount).join(' ');return[r.name,r.meal_type,r.cuisine,r.notes,r.instructions,ingText].some(f=>f&&f.toLowerCase().includes(sv));});}
   // Apply filter chips
   if(_recMealFilter)rows=rows.filter(r=>r.meal_type===_recMealFilter);
   if(_recCuisineFilter)rows=rows.filter(r=>(r.cuisine||'').toLowerCase().includes(_recCuisineFilter.toLowerCase()));
@@ -5710,14 +5777,14 @@ function renderRecipeTable(){
 
 function _buildRecFilterBar(){
   const meals=['Breakfast','Lunch','Dinner','Snack','Dessert','Drink','Side'];
-  let html=`<input class="rec-search" id="recSearchInp" placeholder="🔍 Search recipes…" value="${_recSearch.replace(/"/g,'&quot;')}" oninput="recSearchChange(this.value)">`;
+  let html=`<input class="rec-search" id="recSearchInp" placeholder="🔍 Search recipes…" value="${_recSearch.replace(/"/g,'&quot;')}" oninput="recSearchChange(this.value)" onchange="recSearchChange(this.value)">`;
   meals.forEach(m=>{html+=`<button class="rec-filter-chip${_recMealFilter===m?' active':''}" onclick="recToggleMealFilter('${m}')">${m}</button>`;});
   html+=`<button class="rec-filter-chip${_recFavFilter?' active':''}" onclick="recToggleFavFilter()">♥ Favs</button>`;
   html+=`<button class="rec-filter-chip${_recTimeFilter==='30'?' active':''}" onclick="recToggleTimeFilter('30')">≤30m</button>`;
   html+=`<button class="rec-filter-chip${_recTimeFilter==='60'?' active':''}" onclick="recToggleTimeFilter('60')">≤1h</button>`;
   return html;
 }
-function recSearchChange(v){_recSearch=v;renderRecipeTable();}
+function recSearchChange(v){_recSearch=v;renderRecipeTable();const cnt=document.getElementById('recCount');if(cnt){const n=document.querySelectorAll('#recTblBody tr[data-rid]').length;cnt.textContent=`${n} of ${st.recipes.length} recipe${st.recipes.length!==1?'s':''}${_recSearch?' matched':''}`;} }
 function recToggleMealFilter(m){_recMealFilter=_recMealFilter===m?'':m;renderRecipesPage();}
 function recToggleFavFilter(){_recFavFilter=!_recFavFilter;renderRecipesPage();}
 function recToggleTimeFilter(t){_recTimeFilter=_recTimeFilter===t?'':t;renderRecipesPage();}
