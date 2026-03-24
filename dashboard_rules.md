@@ -580,3 +580,109 @@ Cmd+Z → `recUndo()`, Cmd+Shift+Z → `recRedo()`, Delete/Backspace → `recCtx
 - + button in card header → `openRecipeAddModal()`.
 - Right-click row → `showRecCtx(e,sid)`.
 - Escape → closes filter popup, context menu, and side panel.
+
+---
+
+## Travel System
+
+### Table & Fields
+- Supabase table: `travel(id, name, destination, start_date, end_date, travel_mode, notes)`.
+- `travel_mode`: `'plane'` | `'drive'` | `null` (none). SQL to add: `ALTER TABLE travel ADD COLUMN travel_mode text;`
+- Stored in `st.travel`. Fetched in `syncAll` with `?order=start_date.asc&select=*`.
+- Local entries use `l-` prefix IDs before server confirmation.
+
+### Sync Protection
+- `pendingTravelIds` Set: add travel id before PATCH, remove after. `syncAll` skips overwriting entries in this set (same pattern as `pendingLocal` for tasks).
+- `syncAll` travel merge also preserves local `travel_mode` if server data doesn't have it (fallback for missing column).
+
+### Icons
+- `tmIcon(t)`: returns `'✈️ '` for plane, `_CAR_SVG` inline SVG for drive, `''` for none/null. Used in task rows and chips.
+- `_CAR_SVG`: inline SVG car silhouette constant defined near `tmIcon`.
+- Banner label uses `modeIconHtml` (same values) + `escHtml()` for name/destination since banners use `innerHTML`.
+- All banner `textContent` → `innerHTML` when mode icons are involved (SVG requires innerHTML).
+
+### Modal (`travelModal`)
+- Fields: name*, destination, start date*, end date, travel mode (select), notes.
+- `openTravelModal(id, preStart, preEnd)`: pre-fills dates from drag-to-create.
+- `saveTravelModal()`: reads `tvTravelMode`, includes `travel_mode` in POST and PATCH to Supabase.
+- Enter key: overlay `onkeydown` saves if `event.target.tagName !== 'SELECT'`. The `tvTravelMode` select has its own `onkeydown` using `setTimeout(saveTravelModal, 0)` so the browser commits the selection before reading `.value`.
+
+### Weekly Calendar Banners
+- Sorted by `start_date` before rendering so earlier trips always take the top lane.
+- Lane algorithm (`colLanes` array of Sets): `pickLane(si,ei)` finds first unoccupied lane across all columns the banner spans.
+- Banner `top = 2 + lane*22px`. Per-column `paddingTop` set after all banners placed.
+- `addBanner(labelHtml, startDs, endDs, s, onClick, isPast)`: uses `innerHTML` (not `textContent`) for the label.
+- × delete button only rendered when trip ends this week (`ed <= wkDss[6]`).
+
+### Monthly Calendar Banners
+- Same lane algorithm using `rowLanes` Map keyed by `rowTop`.
+- `getMoLane(rowTop, si, ei)` for per-row lane assignment.
+- Continuation rows show `↳ label`.
+
+### Travel Banner Interactions
+- `ban.dataset.tvid` set for selection system (`tv-` prefix in `selectedTasks`).
+- Click → select, dblclick → `openTravelModal(tv.id)`, contextmenu → `showCtx(..., tv.id)`.
+- `applySelHighlight` handles `.wkc-banner[data-tvid]` elements with `tv-` prefix.
+
+### Drag-to-Create
+- `calDrag` object: `{active, startDs, endDs, view, moved}`.
+- `mousedown` on week column day → starts drag; `mouseenter` extends range; `mouseup` opens travel modal with pre-filled dates.
+- `calDrag.moved` prevents modal from opening on a plain click.
+- `dsToWkKey(ds)`: helper returning Monday date string for any date string. Used for recurring task week-key lookups in timeblock.
+
+### Undo
+- `delTravel(id)`: restores state synchronously (pushes copy back immediately), then fires server POST async. Skips DELETE if id starts with `l-`.
+
+---
+
+## Shopping List — Manual Reorder
+
+### Schema
+- `shop_order integer` column on `shopping_list`. SQL: `ALTER TABLE shopping_list ADD COLUMN shop_order integer;`
+- Initialize existing rows: `WITH ranked AS (SELECT id, ROW_NUMBER() OVER (ORDER BY store, name) - 1 AS rn FROM shopping_list WHERE done = false) UPDATE shopping_list SET shop_order = ranked.rn FROM ranked WHERE shopping_list.id = ranked.id;`
+- Fetch query: `?order=shop_order.asc.nullslast,store.asc,name.asc&select=*`
+
+### Sort Modes (`shopOvSortMode`)
+- `'manual'` (default): sort by `shop_order` ascending (nulls last).
+- `'store'`: sort by store then name.
+- `'alpha'`: sort by name.
+- `cycleShopOvSort()`: cycles manual → store → alpha → manual. Updates `#shopOvSortBtn` label.
+- Sort button in shopping card header: `id="shopOvSortBtn"`.
+- Grip handles (`⠿`) only shown in manual mode.
+
+### Drag-to-Reorder Pattern (Critical)
+**Must use mousedown/mousemove/mouseup — NOT HTML5 drag API.** HTML5 drag suppresses mousemove events once dragstart fires, breaking custom reorder.
+
+- `renderShopOv()` uses `createElement` + `addEventListener` (NOT `innerHTML` with inline handlers). This is required for the closure-based drag pattern.
+- Each row has `draggable="true"` for calendar-assign drag. The `dragstart` listener checks `if(_shopDrag.active){e.preventDefault();return;}` to cancel HTML5 drag when reorder grip is active.
+- Grip handle (`.shop-grip` span) has a `mousedown` addEventListener that:
+  1. `e.preventDefault()` + `e.stopPropagation()`
+  2. Sets `_shopDrag.active=true`, `_shopDrag.id=s.id`
+  3. Defines local `onMove` and `onUp` closures (same pattern as timeblock `tbOnMove`/`tbOnUp`)
+  4. Adds them to document: `document.addEventListener('mousemove', onMove)` + `document.addEventListener('mouseup', onUp)`
+- `onMove`: 5px threshold before `dragging=true`. Dims dragged row to `.4` opacity. Adds `.shop-dov` class to hovered row (border indicator).
+- `onUp`: removes listeners, clears opacity/indicators, splices item to new position, reassigns `shop_order` as sequential index, calls `renderShopOv()`, PATCHes all affected items via `sbReqNullable`.
+
+### State
+- `_shopDrag = {active: false, id: null}` — module-level, tracks active reorder drag.
+- `_shopOvSort(arr)` — shared sort helper used by both render and drop logic.
+
+### Why HTML5 Drag Fails for Reorder
+Once the browser fires `dragstart` on a `draggable` element, it suppresses subsequent `mousemove` events on the document. Even if `dragstart` is `preventDefault()`'d, the suppression can still occur in some browsers. Using pure mouse events (mousedown/mousemove/mouseup) avoids this entirely.
+
+---
+
+## Travel Mode on Tasks
+
+- `travel_mode` field on `tasks` table: `'plane'` | `'drive'` | `null`.
+- Shown in task modal (`tModal`) via `#tTravelMode` select.
+- `tmIcon(t)` renders the icon inline before task name in all views (tRow, weekly chip, monthly chip).
+- Included in POST/PATCH for tasks alongside other fields.
+
+---
+
+## Modal Enter Key — Travel Modal Update
+
+- `travelModal` overlay: `onkeydown` saves if `event.target.tagName !== 'SELECT'` (prevents double-fire and browser select-commit issues).
+- `tvTravelMode` select: `onkeydown="if(event.key==='Enter')setTimeout(saveTravelModal,0)"` — the `setTimeout(0)` lets the browser commit the selected option before reading `.value`.
+- `tvName` input no longer has its own `onkeydown` — the overlay handles it.
