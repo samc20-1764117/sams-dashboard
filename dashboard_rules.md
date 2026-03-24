@@ -468,6 +468,28 @@ Accepts and normalizes any of these input formats:
 
 ---
 
+## TB Block Done State Persistence
+
+- `toggleTask`, `togRec`, and `togShop` must all call `sbUpdateBlock(b.id, {done})` for every linked TB block when the task/item is toggled. Without this, blocks revert to unchecked after next sync (the `time_blocks` table is the source of truth for `_done` on reload).
+- Pattern (follow `toggleTask`): capture `linkedBlocks` before async calls, call `sbUpdateBlock` on each, and repeat in the undo closure with the previous value.
+- `togRec` and `togShop` previously only updated `b._done` in memory but never wrote to `time_blocks`.
+
+## Weekly Calendar (wkc) Wrec Done State
+
+- `wrecForDay`/`wrecForDayDone` in `renderWkCal` and `wrecThisWk` in `renderWkSummary` must use `r._doneByWk[wkKey]` (not `r._done`) to determine done state. Using `r._done` is always falsy for wrec tasks, causing them to always appear undone in the weekly calendar chips regardless of whether they've been checked off.
+
+## Drag-to-Overlap on Existing TB Blocks
+
+- `.body-dragging .tb-block { pointer-events: none }` was removed — blocks now receive drag events so tasks can be dropped directly onto them.
+- `dropOnTB(e, ds, h, row, smOverride)` accepts an optional 5th param. When `smOverride` is set, cursor-position math is skipped and the block is placed at exactly that `sm`.
+- Each `.tb-block` in `drawTBBlock` and `.atb-block` in `drawAutoTBBlock` has `dragover`/`dragleave`/`drop` listeners. Drop calls `dropOnTB(e, b.ds, null, null, b.sm)` to create an overlapping block at the same start time.
+- Visual feedback: `.tb-block.tb-drop-over` and `.atb-block.tb-drop-over` show a dashed purple outline during hover.
+
+## Virtual Recurring Tasks — Drag Behavior
+
+- `tRowTodayVirt` must set `effectAllowed='move'`, add `body-dragging` to document.body, and call `showWkcEdges(true)` on dragstart — matching `tRowShopVirt` and `dStart`. Without this, the browser does not reliably fire drop events on target elements.
+- `tRowTodayVirt` uses `t._isWrec` to set the correct `dragId` prefix: `wrec::recId` for weekly reset tasks, `rec::recId::date` for others. Previously all virtual tasks used `rec::` prefix regardless of type.
+
 ## Git Workflow
 
 - Stop hook: auto-commits and pushes to `origin/dev` branch after every Claude turn.

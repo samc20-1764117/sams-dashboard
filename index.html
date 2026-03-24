@@ -3751,14 +3751,15 @@ function togRec(id,done){
   const wkKeyNow=getWkKey(wkOff);
   if(done)r._doneByWk[wkKeyNow]=true;
   else delete r._doneByWk[wkKeyNow];
-  st.blocks.filter(b=>String(b.recId)===String(id)).forEach(b=>b._done=done);
+  const linkedRecBlocks=st.blocks.filter(b=>String(b.recId)===String(id));
+  linkedRecBlocks.forEach(b=>{b._done=done;sbUpdateBlock(b.id,{done});});
   save();renderRecOv();renderWeeklyPage();renderToday();renderWkSummary();renderWkCal();
   if(document.getElementById('tbGrid'))renderDayTB();
   sbReq('PATCH','recurring_tasks',{done_by_week:r._doneByWk},recQs(id));
   pushUndo(()=>{
     r._done=prev;
     r._doneByWk=prevByWk;
-    st.blocks.filter(b=>String(b.recId)===String(id)).forEach(b=>b._done=prev);
+    st.blocks.filter(b=>String(b.recId)===String(id)).forEach(b=>{b._done=prev;sbUpdateBlock(b.id,{done:prev});});
     save();renderRecOv();renderWeeklyPage();renderToday();renderWkSummary();renderWkCal();
     if(document.getElementById('tbGrid'))renderDayTB();
     sbReq('PATCH','recurring_tasks',{done_by_week:prevByWk},recQs(id));
@@ -3904,10 +3905,11 @@ function unscheduleWRec(rid,wkKey){
 }
 async function togShop(id,done){
   const s=st.shopping.find(x=>String(x.id)===String(id));if(!s)return;const prev=s.done;s.done=done;
-  st.blocks.filter(b=>String(b.shopId)===String(id)).forEach(b=>b._done=done);
+  const linkedShopBlocks=st.blocks.filter(b=>String(b.shopId)===String(id));
+  linkedShopBlocks.forEach(b=>{b._done=done;sbUpdateBlock(b.id,{done});});
   renderShopFull();renderToday();renderWkSummary();renderWkCal();
   if(document.getElementById('tbGrid'))renderDayTB();
-  pushUndo(()=>{s.done=prev;st.blocks.filter(b=>String(b.shopId)===String(id)).forEach(b=>b._done=prev);renderShopFull();renderToday();renderWkSummary();renderWkCal();if(document.getElementById('tbGrid'))renderDayTB();sbReq('PATCH','shopping_list',{done:prev},`?id=eq.${id}`);},(done?'Checked':'Unchecked')+' item');
+  pushUndo(()=>{s.done=prev;st.blocks.filter(b=>String(b.shopId)===String(id)).forEach(b=>{b._done=prev;sbUpdateBlock(b.id,{done:prev});});renderShopFull();renderToday();renderWkSummary();renderWkCal();if(document.getElementById('tbGrid'))renderDayTB();sbReq('PATCH','shopping_list',{done:prev},`?id=eq.${id}`);},(done?'Checked':'Unchecked')+' item');
   await sbReq('PATCH','shopping_list',{done},`?id=eq.${id}`);
 }
 async function delShop(id){const s=st.shopping.find(x=>String(x.id)===String(id));if(!s)return;const copy={...s};st.shopping=st.shopping.filter(x=>String(x.id)!==String(id));renderShopFull();pushUndo(()=>{st.shopping.push(copy);renderShopFull();},'Deleted item');await sbReq('DELETE','shopping_list',null,`?id=eq.${id}`);}
