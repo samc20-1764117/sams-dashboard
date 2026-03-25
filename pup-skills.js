@@ -85,12 +85,14 @@ async function savePupModal(){
   }
 }
 async function setPupField(id,field,val,origVal){
-  if(origVal!==undefined&&String(val)===String(origVal))return;
+  const normVal=val===''?null:val;
+  if(origVal!==undefined&&String(normVal)===String(origVal??''))return;
   const idx=st.pup_skills.findIndex(x=>x.id==id);if(idx<0)return;
   pupSnapshot();
   let sv=val;
   if(field==='success_rate')sv=(val===''||val===null||val===undefined)?null:parseFloat(val)/100;
-  if(field==='focus')sv=!!val;
+  else if(field==='focus')sv=!!val;
+  else if(val==='')sv=null;
   st.pup_skills[idx][field]=sv;
   const patch={[field]:sv};
   if(field==='focus'&&sv===true&&st.pup_skills[idx].stage!=='Mastered'){
@@ -271,10 +273,11 @@ function pupCellEdit(td,id,field){
   td.textContent='';td.appendChild(el);
   requestAnimationFrame(()=>{el.focus();if(el.tagName==='INPUT')el.select();});
   let saved=false;
-  const doSave=async()=>{if(saved)return;saved=true;td._editing=false;await setPupField(id,field,el.value,String(s[field]??''));renderPupTable();};
+  const origFieldVal=s[field]??null;
+  const doSave=async()=>{if(saved)return;saved=true;td._editing=false;await setPupField(id,field,el.value,origFieldVal);renderPupTable();};
   el.onblur=doSave;
   el.onkeydown=ev=>{if(ev.key==='Enter'){ev.preventDefault();el.blur();}if(ev.key==='Escape'){saved=true;td._editing=false;td.textContent=origTxt;}};
-  if(el.tagName==='SELECT')el.onchange=async()=>{saved=true;td._editing=false;el.onblur=null;await setPupField(id,field,el.value,String(s[field]??''));renderPupTable();};
+  if(el.tagName==='SELECT')el.onchange=async()=>{saved=true;td._editing=false;el.onblur=null;await setPupField(id,field,el.value,origFieldVal);renderPupTable();};
 }
 async function togglePupMastered(id,checked){
   const idx=st.pup_skills.findIndex(x=>String(x.id)===String(id));if(idx<0)return;
