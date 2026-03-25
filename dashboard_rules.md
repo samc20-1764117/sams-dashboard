@@ -119,10 +119,15 @@ All three checkbox types share identical visual style:
 - **Non-weekly-reset**: appear in This Week calendar based on `appears_on_date` day of week and `cadence`.
 - `getRecurringWeekTasks(off)` filters `!r.is_weekly_reset` and applies cadence logic:
   - `weekly`: show every week.
-  - `biweekly`: show every 2 weeks. Anchor = Monday of week containing `starting_date`. Show when `weekDiff % 2 === 0` and `weekDiff >= 0`.
+  - `biweekly`: show every 2 weeks. Anchor = Monday of week containing `starting_date`. Show when `weekDiff % 2 === 0` and `weekDiff >= 0`. **Requires `starting_date`** — returns false if missing.
   - `monthly`: show on the week containing `repeat_date` day-of-month. `appears_on_date` is ignored for monthly.
+- `getRecurringWeekTasks()` returns `{id, name, category, due_date, done, _recId, _virtual, _wkKey}`. It does **NOT** set `_isWrec`. Only `wrecForDay`, `wrecToday`, and `wrecThisWk` builders set `_isWrec:true`. Always check the builder, not the function, when looking for `_isWrec`.
 - Overdue wrec tasks: detected via `_dateOverrides[wkKey] < today` and `!(r._doneByWk&&r._doneByWk[wkKey])` (use `_doneByWk`, not `_done`).
-- `wrecToday` in `renderToday()` checks BOTH current week key AND all past week keys for overdue entries. `getOvRecurring()` does the same — they must stay in sync or banner counts tasks not shown in the list.
+- **renderToday() overdue loop**: `for(let w=0; w>=wkOff-4; w--)` collects virtual recurring tasks from up to 4 weeks back. Each task is deduped by `_recId` — only the most-recent-week occurrence is kept. The cascading skip check (`for sw=w; sw<=0; sw++`) inspects ALL weeks from the occurrence week through today; if ANY week has `__skip__`, the entry is excluded. `getOvRecurring()` applies the same cascading check — they must stay in sync or the banner will count tasks not shown in the list.
+- **wrecToday** uses `_wkKeyNow = getWkKey(wkOff)` (calendar view week, not always today's week). Shows WR tasks where `_dateOverrides[_wkKeyNow] === ds` OR overdue (`< ds`) when `dayOff===0`.
+- **wrecThisWk** in `renderWkSummary()`: filters via `Object.values(r._dateOverrides).some(d => wkDss.includes(d))` — checks if ANY date in any week's override falls within the viewed week. Then extracts `due_date` via `Object.entries(...).find(([k,v]) => isInWk(v, wkOff))?.[1]`. Filters out done tasks.
+- **wrecForDay / wrecForDayDone** in `renderWkCal()`: filter `r._dateOverrides[wkKey2] === ds`. Done vs undone split uses `_doneByWk[wkKey2]`. The `wkKey2 = getWkKey(wkOff)` is the same key for the entire week — not day-specific.
+- **`isWRecDueThisWeek(r, off)`**: weekly → always true; biweekly → requires `starting_date`, computes `weekDiff` from Monday of `starting_date`'s week; monthly → checks if any week date matches the day-of-month. Same logic as `getRecurringWeekTasks()` — keep both in sync.
 - DB save for recurring: `PATCH recurring_tasks { date_overrides: r._dateOverrides }` using `recQs(id)`.
 - New recurring task payload must include: `name`, `is_weekly_reset`, `appears_on_date`, `cadence` (always, never omit — NOT NULL in DB). Do NOT send `day_of_week` — column does not exist in `recurring_tasks` schema.
 - Optional columns to include when present: `appears_on_date`, `starting_date`, `repeat_date`, `day_added`, `task_due_day`. Do NOT send `day_of_week`, `repeat_day` — these do not exist in the schema.
@@ -187,8 +192,27 @@ All three checkbox types share identical visual style:
 ## Recurring Task Skip / Delete Routing
 
 - `skipRecVirtThisWk(rid, wkKey)`: starts with a WR safety guard — if task is `is_weekly_reset`, redirects to `unscheduleWRec`. Prevents WR tasks from ever receiving `__skip__` in their `_dateOverrides`.
-- Multi-select Delete (keyboard): `rec-virt-{id}` items are checked for `is_weekly_reset` before acting. WR tasks → unschedule (same as `wrec-` path). Non-WR tasks → permanent delete.
-- `getOvRecurring()`: applies the same cascading `__skip__` check as `renderToday` — if a task is `__skip__`'d for week `w` or any later week up to the current, it is excluded from the overdue banner count. Without this, the banner can show a task that has been removed from the today list.
+- `unscheduleWRec` vs `skipRecVirtThisWk` render calls: `unscheduleWRec` calls `renderAll()` only. `skipRecVirtThisWk` calls `renderRecOv()`, `renderWeeklyPage()`, `renderToday()`, `renderWkSummary()`, `renderWkCal()`, and `renderDayTB()` if open. Both remove linked time blocks (`isInWk(b.ds, wkOff)`).
+- Multi-select Delete (keyboard): `rec-virt-{id}` items are checked for `is_weekly_reset` before acting. WR tasks → unschedule (same as `wrec-` path, stored in `wrecRestores`). Non-WR tasks → permanent delete (stored in `recCopies`, `deletedRecIds.add`). The `rec-virt-` prefix can represent EITHER type — always check `is_weekly_reset`.
+- Multi-select Delete undo: single `pushUndo` closure handles all types — restores shop `due_date`, WR `_dateOverrides`, and re-POSTs deleted tasks/recurring. Undo for recurring does NOT restore `notes`, `pup_related`, or extra optional fields.
+- `getOvRecurring()`: applies the same cascading `__skip__` check as `renderToday` — if a task is `__skip__`'d for week `w` or any later week up to the current, it is excluded from the overdue banner count. Without this, the banner can show a task that has been removed from the today list. WR tasks in `getOvRecurring` are only checked at `w===0` (current week) with composite dedup key `'wrec-'+r.id+'-'+wkKey`.
+
+## Selection ID Prefixes
+
+| Prefix | Source | Type | Delete action |
+|--------|--------|------|---------------|
+| `String(t.id)` | regular task chip/row | task | permanent delete |
+| `rec-virt-{id}` | non-WR chip, renderRecOv row, management table row | recurring (non-WR or WR) | check `is_weekly_reset` first |
+| `wrec-{id}` | WR chip in weekly calendar | WR recurring | unschedule only |
+| `shop-cal-{id}` | shopping chip/row | shopping | remove from calendar (null due_date) |
+| `tv-{id}` | travel banner | travel | permanent delete |
+
+- `dragId` format for recurring: `wrec::{recId}` (WR tasks), `rec::{recId}::{dueDate}` (non-WR). When parsing drops, always use `split('::')[1]` for recId — the date suffix in `rec::` is ignored at lookup time.
+- `dropOnTodayList` uses `getWkKey(wkOff)` (current calendar week) when setting `_dateOverrides`, not the task's `_wkKey`.
+
+## Weekly Reset Card Sorting
+
+`renderRecOv()` sorts WR tasks: done tasks last, then by cadence order (weekly=0, biweekly=1, monthly=2, other=3), with pup-related tasks always last (order=10).
 
 ## Dev Badge
 
