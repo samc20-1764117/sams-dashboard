@@ -201,18 +201,21 @@ Per-week keyed by `getWkKey(wkOff)` in `_doneByWk`. Never use `r._done`. `togRec
 ## Pup Skills Page
 
 - Page ID: `page-pups`. Table: `pup_skills(id, pup, skill, stage, level, category, skill_order, next_step, word, signal, comments, focus)`.
-- `pup`: 'Mochi'|'Sunny'. `stage`: 'In Progress'|'Mastered'|'Not Started'. `focus`: boolean.
+- `pup`: 'Mochi'|'Sunny'. `stage`: 'In Progress'|'Mastered'|'Not Started'. `focus`: boolean. `next_step`: TEXT, values `'1. Duration'|'2. Distance'|'3. Distraction'|null`. `word`: TEXT (verbal cue). `signal`: TEXT (hand signal).
 - Layout: 3-col grid (Mochi card | Sunny card | All Skills table).
 - **Sort/Filter**: 250ms header debounce — single click → `pupSortBy` (3-state none→asc→desc→none), dblclick → `pupFilterBy`. Popup `#pupFilterPop` positioned under live `<th>` (not `e.currentTarget`).
-- **Inline cell edit**: `pupCellEdit(td, id, field)` — `td._editing` guard. next_step + category use selects. `setPupField()` calls `pupSnapshot()`.
+- **Inline cell edit**: `pupCellEdit(td, id, field)` — `td._editing` guard. next_step + category use selects. `setPupField()` calls `pupSnapshot()`, then `renderPupsPage()` (full re-render for all views). Empty string values converted to `null` before PATCH.
 - **Focus → In Progress**: setting focus auto-sets stage=In Progress unless already Mastered.
-- **Undo**: `pupSnapshot()` before any destructive op. `_pupUndoDirty` blocks auto-sync overwrite. `_pupSyncToServer(prev,next)` diffs + fires minimal API calls.
+- **Undo**: `pupSnapshot()` before any destructive op. `_pupUndoDirty` blocks silent auto-sync overwrite only. `_pupSyncToServer(prev,next)` diffs + fires minimal API calls.
+- **Sync race protection**: `_pupPendingIds` (Set) tracks IDs with in-flight PATCHes. `syncAll` preserves local state for pending IDs instead of overwriting with stale DB data.
 - **Outside-click deselect**: stored at `window._pupOutsideClick`, re-registered each `renderPupsPage()`.
 - **Keyboard** (pup page only, first keydown listener): Cmd+Z → `pupUndo()`, Cmd+Shift+Z → `pupRedo()`, Del/Bksp → `pupCtxDelete()`, Cmd+C/V → copy/paste. Skips global Cmd+Z.
 - Dog card header: 3-col grid (`1fr 92px 1fr`), headshot `position:absolute top:-36px`.
-- Default table sort: mastered last → category (commands=0, manners=1, fun=2, other=9) → focus first → pup → level → `order`.
+- Default table sort: mastered last → category (commands=0, manners=1, fun=2, other=9) → focus first → pup → level → `skill_order`.
 - Section dividers only in default sort: category headers for non-mastered; "Mastered" header (green).
-- `colIdx` for filter: `{pup:0, skill:1, level:2, stage:3, next_step:4, category:5}`.
+- `colIdx` for filter: `{pup:0, skill:1, word:2, level:3, stage:4, next_step:5, category:6}`.
+- **Card view skill row layout**: Row 1 left: checkbox + skill name + `"word"` (omitted if same as skill name) + `☞` icon (if signal exists). Row 1 right: next_step. Row 2 (optional): comment. Hover entire row → signal tooltip.
+- **Table view**: columns — `·, Skill, Word, Level, Stage, Next Step, Category, ···`. Word cell italic when set. Signal shown as tooltip on row hover. `colspan=8` for dividers.
 
 ---
 
