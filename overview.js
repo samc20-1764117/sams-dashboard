@@ -1326,20 +1326,31 @@ function drawTBBlock(col,b){
     resizing={id:b.id,sy:e.clientY,sd:b.dur};
     document.addEventListener('mousemove',onRM);document.addEventListener('mouseup',onRU);
   });
-  let tbDragTimer=null,tbDragging=false,tbOnMove=null,tbOnUp=null,tbDownE=null;
+  let tbDragging=false,tbOnMove=null,tbOnUp=null;
+  function _tbSelId(){const _r2=b.recId?st.recurring.find(x=>String(x.id)===String(b.recId)):null;const _isWr2=_r2&&(_r2.is_weekly_reset===true||_r2.is_weekly_reset==='true');return b.taskId?String(b.taskId):b.recId?(_isWr2?'wrec-':'rec-virt-')+b.recId:b.shopId?'shop-cal-'+b.shopId:null;}
+  function _tbBlockSelId(bl){const r3=bl.recId?st.recurring.find(x=>String(x.id)===String(bl.recId)):null;const iw=r3&&(r3.is_weekly_reset===true||r3.is_weekly_reset==='true');return bl.taskId?String(bl.taskId):bl.recId?(iw?'wrec-':'rec-virt-')+bl.recId:bl.shopId?'shop-cal-'+bl.shopId:null;}
+  el.addEventListener('click',e=>{
+    if(e.target.classList.contains('tb-resize')||e.target.classList.contains('tb-bdel')||e.target.classList.contains('tb-chk'))return;
+    if(tbDragging)return;
+    e.stopPropagation();
+    const tbSelId=_tbSelId();if(!tbSelId)return;
+    if(e.metaKey||e.ctrlKey){if(selectedTasks.has(tbSelId))selectedTasks.delete(tbSelId);else selectedTasks.add(tbSelId);lastSelectedId=tbSelId;}
+    else if(e.shiftKey&&lastSelectedId){const col2=el.closest('.tb-col')||document.getElementById('tbScroll');const ids=col2?[...col2.querySelectorAll('.tb-block[data-bid]')].map(be=>{const bl=st.blocks.find(x=>String(x.id)===String(be.dataset.bid));return bl?_tbBlockSelId(bl):null;}).filter(Boolean):[];const ai=ids.indexOf(lastSelectedId),bi2=ids.indexOf(tbSelId);if(ai>-1&&bi2>-1){const lo=Math.min(ai,bi2),hi=Math.max(ai,bi2);ids.slice(lo,hi+1).forEach(x=>selectedTasks.add(x));}else selectedTasks.add(tbSelId);lastSelectedId=tbSelId;}
+    else{selectedTasks.clear();selectedTasks.add(tbSelId);lastSelectedId=tbSelId;}
+    applySelHighlight();
+  });
   el.addEventListener('dblclick',e=>{
     if(e.target.classList.contains('tb-resize')||e.target.classList.contains('tb-bdel')||e.target.classList.contains('tb-chk'))return;
-    e.preventDefault();e.stopPropagation();
-    clearTimeout(tbDragTimer);tbDragTimer=null;
+    e.stopPropagation();
+    clearSelection();
     if(b.taskId){openEditTask(b.taskId);}
     else if(b.recId){openRecEditModal(String(b.recId));}
     else{startTBInlineEdit(b.id,el.closest('.tb-col'));}
   });
   el.addEventListener('mousedown',e=>{
     if(e.target.classList.contains('tb-resize')||e.target.classList.contains('tb-bdel')||e.target.classList.contains('tb-chk'))return;
-    if(e.detail>=2)return;// let dblclick handle it
-    e.preventDefault();e.stopPropagation();
-    tbDownE=e;
+    if(e.detail>=2)return;
+    e.stopPropagation();
     const startY=e.clientY,startSm=b.sm;
     tbDragging=false;
     tbOnMove=ev=>{
@@ -1356,8 +1367,8 @@ function drawTBBlock(col,b){
       document.removeEventListener('mousemove',tbOnMove);
       document.removeEventListener('mouseup',tbOnUp);
       el.classList.remove('dragging-block');
-      if(tbDragging){tbDragging=false;save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();sbUpdateBlock(b.id,{start_minutes:b.sm});}
-      else{const _r2=b.recId?st.recurring.find(x=>String(x.id)===String(b.recId)):null;const _isWr2=_r2&&(_r2.is_weekly_reset===true||_r2.is_weekly_reset==='true');const tbSelId=b.taskId?String(b.taskId):b.recId?(_isWr2?'wrec-':'rec-virt-')+b.recId:b.shopId?'shop-cal-'+b.shopId:null;if(tbSelId&&tbDownE){function _tbBlockSelId(bl){const r3=bl.recId?st.recurring.find(x=>String(x.id)===String(bl.recId)):null;const iw=r3&&(r3.is_weekly_reset===true||r3.is_weekly_reset==='true');return bl.taskId?String(bl.taskId):bl.recId?(iw?'wrec-':'rec-virt-')+bl.recId:bl.shopId?'shop-cal-'+bl.shopId:null;}if(tbDownE.metaKey||tbDownE.ctrlKey){if(selectedTasks.has(tbSelId))selectedTasks.delete(tbSelId);else selectedTasks.add(tbSelId);lastSelectedId=tbSelId;}else if(tbDownE.shiftKey&&lastSelectedId){const col=el.closest('.tb-col')||document.getElementById('tbScroll');const ids=col?[...col.querySelectorAll('.tb-block[data-bid]')].map(be=>{const bl=st.blocks.find(x=>String(x.id)===String(be.dataset.bid));return bl?_tbBlockSelId(bl):null;}).filter(Boolean):[];const ai=ids.indexOf(lastSelectedId),bi2=ids.indexOf(tbSelId);if(ai>-1&&bi2>-1){const lo=Math.min(ai,bi2),hi=Math.max(ai,bi2);ids.slice(lo,hi+1).forEach(x=>selectedTasks.add(x));}else selectedTasks.add(tbSelId);lastSelectedId=tbSelId;}else{selectedTasks.clear();selectedTasks.add(tbSelId);lastSelectedId=tbSelId;}applySelHighlight();}}
+      if(tbDragging){save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();sbUpdateBlock(b.id,{start_minutes:b.sm});}
+      tbDragging=false;
     };
     document.addEventListener('mousemove',tbOnMove);
     document.addEventListener('mouseup',tbOnUp);
