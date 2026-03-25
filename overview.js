@@ -1352,7 +1352,7 @@ function drawTBBlock(col,b){
       document.removeEventListener('mousemove',tbOnMove);
       document.removeEventListener('mouseup',tbOnUp);
       el.classList.remove('dragging-block');
-      if(tbDragging){save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();sbUpdateBlock(b.id,{start_minutes:b.sm});}
+      if(tbDragging){const newSm=b.sm;pushUndo(()=>{b.sm=startSm;save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();sbUpdateBlock(b.id,{start_minutes:startSm});},'Moved block');save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();sbUpdateBlock(b.id,{start_minutes:newSm});}
       tbDragging=false;
     };
     document.addEventListener('mousemove',tbOnMove);
@@ -1461,10 +1461,15 @@ function drawAutoTBBlock(col,atb,ds){
         const endSm=atb.sm+atb.dur;
         const newStart=`${String(Math.floor(atb.sm/60)).padStart(2,'0')}:${String(atb.sm%60).padStart(2,'0')}:00`;
         const newEnd=`${String(Math.floor(endSm/60)).padStart(2,'0')}:${String(endSm%60).padStart(2,'0')}:00`;
+        const prevEndSm=startSm+atb.dur;
+        const prevStart=`${String(Math.floor(startSm/60)).padStart(2,'0')}:${String(startSm%60).padStart(2,'0')}:00`;
+        const prevEnd=`${String(Math.floor(prevEndSm/60)).padStart(2,'0')}:${String(prevEndSm%60).padStart(2,'0')}:00`;
         if(atb._ovId){
           const ov=st.autoTBOverrides.find(o=>String(o.id)===atb._ovId);
           if(ov){ov.start_time=newStart;ov.end_time=newEnd;}
           sbReqSilent('PATCH','auto_timeblock_overrides',{start_time:newStart,end_time:newEnd},`?id=eq.${atb._ovId}`);
+          const ovId=atb._ovId;
+          pushUndo(()=>{atb.sm=startSm;const ov2=st.autoTBOverrides.find(o=>String(o.id)===ovId);if(ov2){ov2.start_time=prevStart;ov2.end_time=prevEnd;}sbReqSilent('PATCH','auto_timeblock_overrides',{start_time:prevStart,end_time:prevEnd},`?id=eq.${ovId}`);save();if(document.getElementById('tbGrid'))renderDayTB();},'Moved auto block');
         } else {
           const payload={base_id:atb._atbId,date:ds,start_time:newStart,end_time:newEnd};
           const tmpId='atbov-tmp-'+Date.now();
@@ -1476,6 +1481,7 @@ function drawAutoTBBlock(col,atb,ds){
               save();
             }
           });
+          pushUndo(()=>{atb.sm=startSm;st.autoTBOverrides=st.autoTBOverrides.filter(o=>String(o.id)!==tmpId&&o.id!==tmpId);if(atb._ovId)sbReqSilent('DELETE','auto_timeblock_overrides',null,`?id=eq.${atb._ovId}`);atb._ovId=null;save();if(document.getElementById('tbGrid'))renderDayTB();},'Moved auto block');
         }
         save();
       }
@@ -1660,7 +1666,7 @@ function updateNowLine(){
 }
 if(!window._nowLineInterval)window._nowLineInterval=setInterval(updateNowLine,60000);
 function onRM(e){if(!resizing)return;const b=st.blocks.find(x=>x.id===resizing.id);if(!b)return;b.dur=Math.max(15,Math.round((resizing.sd+(e.clientY-resizing.sy)/PX)/15)*15);renderDayTB();}
-function onRU(){if(!resizing)return;const bid=resizing.id;resizing=null;save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();document.removeEventListener('mousemove',onRM);document.removeEventListener('mouseup',onRU);const b=st.blocks.find(x=>x.id===bid);if(b)sbUpdateBlock(bid,{duration_minutes:b.dur});}
+function onRU(){if(!resizing)return;const bid=resizing.id;const prevDur=resizing.sd;resizing=null;document.removeEventListener('mousemove',onRM);document.removeEventListener('mouseup',onRU);const b=st.blocks.find(x=>x.id===bid);if(!b)return;const newDur=b.dur;pushUndo(()=>{b.dur=prevDur;save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();sbUpdateBlock(bid,{duration_minutes:prevDur});},'Resized block');save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();sbUpdateBlock(bid,{duration_minutes:newDur});}
 function delBlock(id,e){
   e&&e.stopPropagation();
   const b=st.blocks.find(x=>x.id===id);if(!b)return;
