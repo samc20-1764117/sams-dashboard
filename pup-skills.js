@@ -384,7 +384,7 @@ function renderPupsPage(){
       <div style="display:flex;align-items:center;justify-content:space-between;gap:6px">
         <div style="display:flex;align-items:center;gap:5px;flex:1;min-width:0;overflow:hidden">
           <input type="checkbox" ${isMastered?'checked':''} onclick="event.stopPropagation();togglePupMastered('${sid}',this.checked)" title="Mark mastered" style="width:13px;height:13px;cursor:pointer;accent-color:#8b5cf6;flex-shrink:0">
-          <span class="pup-skill-name" style="${isMastered?'opacity:.5;text-decoration:line-through':''}white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.skill}</span>${wd?`<span style="font-size:10px;color:var(--muted);white-space:nowrap">"${wd}"</span>`:''}${sig?`<span style="font-size:9px;color:var(--muted);opacity:.6;flex-shrink:0">☞</span>`:''}
+          <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;${isMastered?'opacity:.5;text-decoration:line-through':''}"><span class="pup-skill-name">${s.skill}</span>${wd?`<span style="font-size:10px;color:var(--muted);margin-left:4px">"${wd}"</span>`:''}</span>${sig?`<span style="font-size:9px;color:var(--muted);opacity:.6;flex-shrink:0;margin-left:2px">☞</span>`:''}
         </div>
         ${ns?`<span style="font-size:10px;color:var(--muted);white-space:nowrap;flex-shrink:0">${ns}</span>`:''}
       </div>
