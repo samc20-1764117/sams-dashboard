@@ -182,6 +182,13 @@ All three checkbox types share identical visual style:
 - On `init()`, when Supabase config is present, `deletedRecIds` is cleared before sync (`deletedRecIds=new Set();save()`). DB is authoritative — stale deleted IDs from localStorage would otherwise filter out valid tasks.
 - `syncAll` `if(rec)` guard: only replaces `st.recurring` when `rec` is non-null (error returns null, preserving local state).
 - Race condition guard in `saveRecModal`/`ctxDoDuplicate`: after POST resolves, `findIndex` by localId; if not found (sync ran and replaced it), push only if DB id not already present.
+- `syncAll` `_dateOverrides` preservation: all locally-set overrides not yet in DB are preserved (not just `__skip__`). This prevents WR scheduling dates from being lost in the 30s sync window.
+
+## Recurring Task Skip / Delete Routing
+
+- `skipRecVirtThisWk(rid, wkKey)`: starts with a WR safety guard — if task is `is_weekly_reset`, redirects to `unscheduleWRec`. Prevents WR tasks from ever receiving `__skip__` in their `_dateOverrides`.
+- Multi-select Delete (keyboard): `rec-virt-{id}` items are checked for `is_weekly_reset` before acting. WR tasks → unschedule (same as `wrec-` path). Non-WR tasks → permanent delete.
+- `getOvRecurring()`: applies the same cascading `__skip__` check as `renderToday` — if a task is `__skip__`'d for week `w` or any later week up to the current, it is excluded from the overdue banner count. Without this, the banner can show a task that has been removed from the today list.
 
 ## Dev Badge
 

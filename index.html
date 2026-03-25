@@ -1556,9 +1556,10 @@ async function syncAll(silent=false){
             const dbwk=r.done_by_week||{};
             const isDone=!!(dbwk[getWkKey(0)]);
             const dateOvs=r.date_overrides||{};
-            // Preserve any locally-set __skip__ entries not yet confirmed in DB (avoids syncAll race)
+            // Preserve any locally-set overrides not yet confirmed in DB (avoids syncAll race)
+            // This covers both __skip__ entries for non-WR tasks and scheduled dates for WR tasks
             const existingRec=st.recurring.find(x=>String(x.id)===String(stableId));
-            if(existingRec&&existingRec._dateOverrides){Object.keys(existingRec._dateOverrides).forEach(k=>{if(existingRec._dateOverrides[k]==='__skip__'&&!dateOvs[k])dateOvs[k]='__skip__';});}
+            if(existingRec&&existingRec._dateOverrides){Object.keys(existingRec._dateOverrides).forEach(k=>{if(!dateOvs[k])dateOvs[k]=existingRec._dateOverrides[k];});}
             return{...r,id:stableId,_doneByWk:dbwk,_done:isDone,_dateOverrides:dateOvs};
           }),
         ...localPending
@@ -4282,6 +4283,8 @@ function unscheduleWRec(rid,wkKey){
 }
 function skipRecVirtThisWk(rid,wkKey){
   const r=st.recurring.find(x=>String(x.id)===String(rid));if(!r)return;
+  // Safety: WR tasks must use unscheduleWRec, not __skip__
+  if(r.is_weekly_reset===true||r.is_weekly_reset==='true'){unscheduleWRec(rid,wkKey);return;}
   if(!r._dateOverrides)r._dateOverrides={};
   const prev=r._dateOverrides[wkKey];
   r._dateOverrides[wkKey]='__skip__';
@@ -6199,7 +6202,12 @@ document.addEventListener('keydown',async e=>{
       } else if(id.startsWith('rec-virt-')){
         const recId=id.replace('rec-virt-','');
         const r=st.recurring.find(x=>String(x.id)===recId);
-        if(r)recCopies.push({...r,_doneByWk:{...r._doneByWk}});
+        if(r){
+          const _isWr=r.is_weekly_reset===true||r.is_weekly_reset==='true';
+          if(_isWr){// WR task selected via rec-virt- prefix (e.g. from renderRecOv): unschedule, don't permanently delete
+            const wkKey=getWkKey(wkOff);const prev=r._dateOverrides&&r._dateOverrides[wkKey];wrecRestores.push({r,wkKey,prev});if(r._dateOverrides)delete r._dateOverrides[wkKey];
+          }else{recCopies.push({...r,_doneByWk:{...r._doneByWk}});}
+        }
       } else {
         const t=st.tasks.find(x=>String(x.id)===id);
         if(t)taskCopies.push({...t});
@@ -6582,6 +6590,9 @@ function getOvRecurring(){
   for(let w=0;w>=wkOff-4;w--){
     getRecurringWeekTasks(w).forEach(v=>{
       if(seen.has(v._recId))return;
+      // If skipped for this week or any later week up to now, don't count as overdue
+      const _rec=st.recurring.find(x=>String(x.id)===String(v._recId));
+      if(_rec&&_rec._dateOverrides){for(let sw=w;sw<=0;sw++){if(_rec._dateOverrides[getWkKey(sw)]==='__skip__')return;}}
       seen.add(v._recId);
       if(!v.done&&v.due_date<today){out.push(v);}
     });
