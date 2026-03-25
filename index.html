@@ -1556,6 +1556,9 @@ async function syncAll(silent=false){
             const dbwk=r.done_by_week||{};
             const isDone=!!(dbwk[getWkKey(0)]);
             const dateOvs=r.date_overrides||{};
+            // Preserve any locally-set __skip__ entries not yet confirmed in DB (avoids syncAll race)
+            const existingRec=st.recurring.find(x=>String(x.id)===String(stableId));
+            if(existingRec&&existingRec._dateOverrides){Object.keys(existingRec._dateOverrides).forEach(k=>{if(existingRec._dateOverrides[k]==='__skip__'&&!dateOvs[k])dateOvs[k]='__skip__';});}
             return{...r,id:stableId,_doneByWk:dbwk,_done:isDone,_dateOverrides:dateOvs};
           }),
         ...localPending
@@ -6549,7 +6552,7 @@ function ctxDoDelete(){
   if(tvId){delTravel(tvId);clearSelection();return;}
   // If triggered from a timeblock, remove from day only (never delete the underlying item)
   if(blkId){delBlock(blkId);return;}
-  if(sId){unscheduleShop(sId);}else if(isRec&&rId){const _cr=st.recurring.find(x=>String(x.id)===String(rId));const _isWr=_cr&&(_cr.is_weekly_reset===true||_cr.is_weekly_reset==='true');if(_isWr){unscheduleWRec(rId,getWkKey(wkOff));}else{togRecVirt(rId,true,getWkKey(wkOff));}}else{delTask(id,null);}
+  if(sId){unscheduleShop(sId);}else if(isRec&&rId){const _cr=st.recurring.find(x=>String(x.id)===String(rId));const _isWr=_cr&&(_cr.is_weekly_reset===true||_cr.is_weekly_reset==='true');if(_isWr){unscheduleWRec(rId,getWkKey(wkOff));}else{skipRecVirtThisWk(rId,getWkKey(wkOff));}}else{delTask(id,null);}
 }
 
 // ══════════════════════════════════════════════════════════
