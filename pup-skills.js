@@ -380,9 +380,15 @@ function renderPupsPage(){
     const sig=s.signal&&s.signal!=='None'?esc(s.signal):'';
     const sid=String(s.id);
     const sigTip=sig?` onmouseenter="showPupTip(event,'${sig}')" onmouseleave="hidePupTip()" style="cursor:help"`:' style=""';
-    return`<div class="pup-skill-row ${cls}" data-pupid="${sid}" style="align-items:flex-start"${sig?` onmouseenter="showPupTip(event,'${sig}')" onmouseleave="hidePupTip()"`:''}>
-      <input type="checkbox" ${isMastered?'checked':''} onclick="event.stopPropagation();togglePupMastered('${sid}',this.checked)" title="Mark mastered" style="width:13px;height:13px;cursor:pointer;accent-color:#8b5cf6;flex-shrink:0;margin-top:2px">
-      <div style="flex:1;min-width:0"><span class="pup-skill-name" style="${isMastered?'opacity:.5;text-decoration:line-through':''}">${s.skill}</span>${wd?`<span style="font-size:10px;color:var(--muted);margin-left:5px;font-style:italic">"${wd}"</span>`:''}${ns?`<div style="font-size:10px;color:var(--muted);margin-top:1px">↳ ${ns}</div>`:''}${cm?`<div style="font-size:10px;color:var(--subtle);margin-top:1px">${cm}</div>`:''}</div>
+    return`<div class="pup-skill-row ${cls}" data-pupid="${sid}" style="flex-direction:column;align-items:stretch;${sig?'cursor:pointer':''}"${sig?` onmouseenter="showPupTip(event,'${sig}')" onmouseleave="hidePupTip()"`:''}>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:6px">
+        <div style="display:flex;align-items:center;gap:5px;flex:1;min-width:0;overflow:hidden">
+          <input type="checkbox" ${isMastered?'checked':''} onclick="event.stopPropagation();togglePupMastered('${sid}',this.checked)" title="Mark mastered" style="width:13px;height:13px;cursor:pointer;accent-color:#8b5cf6;flex-shrink:0">
+          <span class="pup-skill-name" style="${isMastered?'opacity:.5;text-decoration:line-through':''}white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.skill}</span>${wd?`<span style="font-size:10px;color:var(--muted);white-space:nowrap">"${wd}"</span>`:''}${sig?`<span style="font-size:9px;color:var(--muted);opacity:.6;flex-shrink:0">☞</span>`:''}
+        </div>
+        ${ns?`<span style="font-size:10px;color:var(--muted);white-space:nowrap;flex-shrink:0">↳ ${ns}</span>`:''}
+      </div>
+      ${cm?`<div style="font-size:10px;color:var(--subtle);margin-top:2px;padding-left:18px">${esc(cm)}</div>`:''}
     </div>`;
   }
   const PUP_CAT_ORDER=['commands','manners','fun'];
