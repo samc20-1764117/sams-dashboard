@@ -1032,14 +1032,14 @@ function tRowExtra(t){
   const modeIcon=isTv?(t.travel_mode==='plane'?_PLANE_SVG:t.travel_mode==='drive'?_CAR_SVG:''):'';
   return`<div class="ti ti-${sl}" style="background:${s.bg}" id="ti-${t.id}" onclick="selTask(event,'${t.id}')">
     <span class="tn" style="color:${s.t};font-weight:600">${modeIcon}${t.name}</span>
-    <span class="cpill" style="background:${s.bg};color:${s.t};border-color:${s.b}">${t.category}</span>
+    ${isTv?'':`<span class="cpill" style="background:${s.bg};color:${s.t};border-color:${s.b}">${t.category}</span>`}
     <span class="dlbl">${fmtD(t.due_date)}${sub}</span>
     ${isTv?`<button class="delbtn" onclick="event.stopPropagation();delTravel('${t._srcId}')">✕</button>`:''}
   </div>`;
 }
 
 const _CAR_SVG=`<svg width="14" height="10" viewBox="0 0 24 16" fill="currentColor" style="display:inline-block;vertical-align:middle;margin-right:3px;margin-top:-2px"><path d="M22 9h-.8L18.9 4.1A2 2 0 0017.1 3H6.9a2 2 0 00-1.8 1.1L2.8 9H2a1 1 0 00-1 1v2a1 1 0 001 1h.8a2.5 2.5 0 004.4 0h9.6a2.5 2.5 0 004.4 0H22a1 1 0 001-1v-2a1 1 0 00-1-1zM6 13.5a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm12 0a1.5 1.5 0 110-3 1.5 1.5 0 010 3zM4.4 9l2-4.5h11.2l2 4.5H4.4z"/></svg>`;
-const _PLANE_SVG=`<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="display:inline-block;vertical-align:middle;margin-right:3px;margin-top:-2px"><path d="M21 16v-2l-8-5V3.5A1.5 1.5 0 0011.5 2 1.5 1.5 0 0010 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/></svg>`;
+const _PLANE_SVG=`<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="display:inline-block;vertical-align:middle;margin-right:3px;margin-top:-2px"><g transform="rotate(90,12,12)"><path d="M21 16v-2l-8-5V3.5A1.5 1.5 0 0011.5 2 1.5 1.5 0 0010 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/></g></svg>`;
 function tmIcon(t){if(!t||t._virtual)return '';if(t.travel_mode==='plane')return _PLANE_SVG;if(t.travel_mode==='drive')return _CAR_SVG;return '';}
 
 // ── Task row (overdue→imp→rest) ────────────────────────────────────────────────
