@@ -881,7 +881,7 @@ async function saveTravelModal(){
     const t={id:'l-'+Date.now(),name,destination:dest,start_date:start,end_date:end,travel_mode:tm,notes};
     st.travel.push(t);renderAll();renderTravelPage();
     const sv=await sbReq('POST','travel',{name,destination:dest,start_date:start,end_date:end,travel_mode:tm,notes});
-    if(sv&&sv[0]){const i=st.travel.findIndex(x=>x.id===t.id);if(i>-1)st.travel[i]=sv[0];}
+    if(sv&&sv[0]){const i=st.travel.findIndex(x=>x.id===t.id);if(i>-1){st.travel[i]=sv[0];renderAll();renderTravelPage();}}
   }
 }
 async function delTravel(id){
