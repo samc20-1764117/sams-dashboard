@@ -88,7 +88,7 @@ After clicking X on a recurring non-weekly-reset task, Journal (specifically) st
 ## Pup Skills Page — Logic Reference
 
 ### File
-Single file: `index.html`. All HTML, CSS, and JS in one file.
+`pup-skills.js` — all pup skills logic lives here. HTML structure is in `index.html`, CSS is in `index.html`'s `<style>` block. See dashboard_rules.md "File Structure (Source Split)" for the full breakdown.
 
 ### State
 ```js
