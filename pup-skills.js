@@ -1,0 +1,433 @@
+let _pupEditId=null;
+let _selPupIds=new Set(),_lastSelPupId=null,_copiedPups=[],_pupCtxId=null;
+let _pupSortCol=null,_pupSortDir=1,_pupFilter=null;
+let _pupUndoStack=[],_pupRedoStack=[],_pupHdrClickTimer=null,_pupUndoDirty=false;
+function pupSnapshot(){_pupUndoStack.push(JSON.parse(JSON.stringify(st.pup_skills)));if(_pupUndoStack.length>20)_pupUndoStack.shift();_pupRedoStack=[];}
+function _pupSyncToServer(prev,next){
+  const pm=new Map(prev.map(s=>[String(s.id),s]));
+  const nm=new Map(next.map(s=>[String(s.id),s]));
+  for(const[id,s]of pm)if(!nm.has(id)&&!id.startsWith('l-'))sbReqSilent('DELETE','pup_skills',null,`?id=eq.${id}`);
+  for(const[id,s]of nm){
+    if(!pm.has(id)){const d={pup:s.pup,skill:s.skill,level:s.level,stage:s.stage,focus:s.focus,next_step:s.next_step,comments:s.comments};sbReqSilent('POST','pup_skills',d);}
+    else if(!id.startsWith('l-')){const p=pm.get(id);const flds=['pup','skill','level','stage','focus','next_step','comments'];if(flds.some(f=>String(p[f]??'')!==String(s[f]??''))){sbReqSilent('PATCH','pup_skills',{pup:s.pup,skill:s.skill,level:s.level,stage:s.stage,focus:s.focus,next_step:s.next_step,comments:s.comments},`?id=eq.${id}`);}}
+  }
+}
+function pupUndo(){if(!_pupUndoStack.length){showToast('Nothing to undo','#888');return;}const prev=JSON.parse(JSON.stringify(st.pup_skills));_pupUndoDirty=true;_pupRedoStack.push(prev);st.pup_skills=_pupUndoStack.pop();save();renderPupsPage();showToast('Undone','#6d5fe6',1500);_pupSyncToServer(prev,st.pup_skills);}
+function pupRedo(){if(!_pupRedoStack.length){showToast('Nothing to redo','#888');return;}const prev=JSON.parse(JSON.stringify(st.pup_skills));_pupUndoDirty=true;_pupUndoStack.push(prev);st.pup_skills=_pupRedoStack.pop();save();renderPupsPage();showToast('Redone','#6d5fe6',1500);_pupSyncToServer(prev,st.pup_skills);}
+function pupHdrClick(col){clearTimeout(_pupHdrClickTimer);_pupHdrClickTimer=setTimeout(()=>{_pupHdrClickTimer=null;pupSortBy(col);},250);}
+function pupHdrDbl(e,col){clearTimeout(_pupHdrClickTimer);_pupHdrClickTimer=null;pupFilterBy(e,col);}
+function setPupModalDog(val){
+  document.getElementById('pmPup').value=val;
+  document.getElementById('pmDogMochi').classList.toggle('active',val==='Mochi');
+  document.getElementById('pmDogSunny').classList.toggle('active',val==='Sunny');
+}
+function openPupAddModal(){
+  _pupEditId=null;
+  setPupModalDog('Mochi');
+  document.getElementById('pmSkill').value='';
+  document.getElementById('pmCategory').value='';
+  document.getElementById('pmLevel').value='';
+  document.getElementById('pmStage').value='Not Started';
+  document.getElementById('pmOrder').value='';
+  document.getElementById('pmFocus').checked=false;
+  document.getElementById('pmNextStep').value='';
+  document.getElementById('pmComments').value='';
+  document.getElementById('pupModal').classList.add('open');
+  setTimeout(()=>document.getElementById('pmSkill').focus(),80);
+}
+function openPupEditModal(id){
+  const s=st.pup_skills.find(x=>x.id==id);if(!s)return;
+  _pupEditId=id;
+  setPupModalDog(s.pup||'Mochi');
+  document.getElementById('pmSkill').value=s.skill||'';
+  document.getElementById('pmCategory').value=s.category||'';
+  document.getElementById('pmLevel').value=s.level||'';
+  document.getElementById('pmStage').value=s.stage||'Not Started';
+  document.getElementById('pmOrder').value=s.order||'';
+  document.getElementById('pmFocus').checked=(s.focus===true||s.focus==='true');
+  document.getElementById('pmNextStep').value=s.next_step||'';
+  document.getElementById('pmComments').value=s.comments||'';
+  document.getElementById('pupModal').classList.add('open');
+  setTimeout(()=>document.getElementById('pmSkill').focus(),80);
+}
+async function savePupModal(){
+  const data={
+    pup:document.getElementById('pmPup').value,
+    skill:document.getElementById('pmSkill').value.trim(),
+    category:document.getElementById('pmCategory').value||null,
+    level:document.getElementById('pmLevel').value||null,
+    stage:document.getElementById('pmStage').value,
+    order:document.getElementById('pmOrder').value?parseInt(document.getElementById('pmOrder').value):null,
+    focus:document.getElementById('pmFocus').checked,
+    next_step:document.getElementById('pmNextStep').value||null,
+    comments:document.getElementById('pmComments').value.trim()||null,
+  };
+  if(!data.skill){showToast('Skill name required');return;}
+  if(data.focus&&data.stage!=='Mastered')data.stage='In Progress';
+  pupSnapshot();
+  closeMod('pupModal');
+  if(!_pupEditId){
+    const s={id:'l-'+Date.now(),...data};
+    st.pup_skills.push(s);save();renderPupsPage();
+    const sv=await sbReq('POST','pup_skills',data);
+    if(sv&&sv[0]){const i=st.pup_skills.findIndex(x=>x.id===s.id);if(i>-1)st.pup_skills[i]=sv[0];save();renderPupsPage();}
+  } else {
+    const idx=st.pup_skills.findIndex(x=>x.id==_pupEditId);if(idx<0)return;
+    Object.assign(st.pup_skills[idx],data);save();
+    await sbReqSilent('PATCH','pup_skills',data,`?id=eq.${_pupEditId}`);
+    renderPupsPage();
+  }
+}
+async function setPupField(id,field,val,origVal){
+  if(origVal!==undefined&&String(val)===String(origVal))return;
+  const idx=st.pup_skills.findIndex(x=>x.id==id);if(idx<0)return;
+  pupSnapshot();
+  let sv=val;
+  if(field==='success_rate')sv=(val===''||val===null||val===undefined)?null:parseFloat(val)/100;
+  if(field==='focus')sv=!!val;
+  st.pup_skills[idx][field]=sv;
+  const patch={[field]:sv};
+  if(field==='focus'&&sv===true&&st.pup_skills[idx].stage!=='Mastered'){
+    st.pup_skills[idx].stage='In Progress';patch.stage='In Progress';
+  }
+  save();
+  sbReqSilent('PATCH','pup_skills',patch,`?id=eq.${id}`);
+  if(field==='focus')renderPupsPage();
+}
+function selPupRow(e,sid){
+  if(e.target.closest('input,button'))return;
+  if(e.metaKey||e.ctrlKey){
+    if(_selPupIds.has(sid))_selPupIds.delete(sid);else _selPupIds.add(sid);
+    _lastSelPupId=sid;
+  } else if(e.shiftKey&&_lastSelPupId){
+    const rows=[...document.querySelectorAll('#pupTblBody tr[data-sid]')].map(r=>r.dataset.sid);
+    const a=rows.indexOf(_lastSelPupId),b=rows.indexOf(sid);
+    if(a>-1&&b>-1){const lo=Math.min(a,b),hi=Math.max(a,b);rows.slice(lo,hi+1).forEach(id=>_selPupIds.add(id));}
+    else _selPupIds.add(sid);
+    _lastSelPupId=sid;
+  } else {
+    if(_selPupIds.size===1&&_selPupIds.has(sid)){_selPupIds.clear();_lastSelPupId=null;}
+    else{_selPupIds.clear();_selPupIds.add(sid);_lastSelPupId=sid;}
+  }
+  applyPupSelHighlight();
+}
+function applyPupSelHighlight(){
+  document.querySelectorAll('#pupTblBody tr[data-sid]').forEach(tr=>{
+    tr.classList.toggle('pup-sel',_selPupIds.has(tr.dataset.sid));
+  });
+}
+function showPupCtx(e,sid){
+  e.preventDefault();e.stopPropagation();
+  _pupCtxId=sid;
+  if(!_selPupIds.has(sid)){_selPupIds.clear();_selPupIds.add(sid);_lastSelPupId=sid;applyPupSelHighlight();}
+  const m=document.getElementById('pupCtxMenu');
+  const multi=_selPupIds.size>1;
+  m.querySelector('.ctx-item:nth-child(1)').style.display=multi?'none':'';
+  m.style.display='block';
+  const x=Math.min(e.clientX,window.innerWidth-170),y=Math.min(e.clientY,window.innerHeight-130);
+  m.style.left=x+'px';m.style.top=y+'px';
+}
+function hidePupCtx(){document.getElementById('pupCtxMenu').style.display='none';}
+function pupCtxEdit(){hidePupCtx();if(_pupCtxId)openPupEditModal(_pupCtxId);}
+async function pupCtxDuplicate(){
+  hidePupCtx();
+  pupSnapshot();
+  const ids=_selPupIds.size?[..._selPupIds]:[_pupCtxId].filter(Boolean);
+  for(const id of ids){
+    const s=st.pup_skills.find(x=>String(x.id)===String(id));if(!s)continue;
+    const copy={...s,id:'l-'+Date.now(),skill:s.skill+' (copy)'};
+    st.pup_skills.push(copy);
+    const sv=await sbReq('POST','pup_skills',{pup:copy.pup,skill:copy.skill,category:copy.category,level:copy.level,stage:copy.stage,focus:copy.focus,next_step:copy.next_step,comments:copy.comments});
+    if(sv&&sv[0]){const i=st.pup_skills.findIndex(x=>x.id===copy.id);if(i>-1)st.pup_skills[i]=sv[0];}
+  }
+  save();renderPupsPage();
+}
+async function pupCtxDelete(){
+  hidePupCtx();
+  pupSnapshot();
+  const ids=_selPupIds.size?[..._selPupIds]:[_pupCtxId].filter(Boolean);
+  st.pup_skills=st.pup_skills.filter(x=>!ids.includes(String(x.id)));
+  _selPupIds.clear();_pupCtxId=null;save();renderPupsPage();
+  for(const id of ids)sbReqSilent('DELETE','pup_skills',null,`?id=eq.${id}`);
+}
+// Tooltip for Next Step
+function showPupTip(e,text){
+  const t=document.getElementById('pupTooltip');
+  t.textContent=text;t.style.display='block';
+  const x=Math.min(e.clientX+12,window.innerWidth-230),y=e.clientY-28;
+  t.style.left=x+'px';t.style.top=y+'px';
+}
+function showPupStageTip(e,text,color){
+  const t=document.getElementById('pupTooltip');
+  t.innerHTML=`<span style="color:${color};font-weight:600">${text}</span>`;
+  t.style.display='block';
+  const x=Math.min(e.clientX+12,window.innerWidth-230),y=e.clientY-28;
+  t.style.left=x+'px';t.style.top=y+'px';
+}
+function hidePupTip(){document.getElementById('pupTooltip').style.display='none';}
+function pupSortBy(col){
+  if(_pupSortCol!==col){_pupSortCol=col;_pupSortDir=1;}
+  else if(_pupSortDir===1){_pupSortDir=-1;}
+  else{_pupSortCol=null;_pupSortDir=1;}
+  renderPupTable();
+}
+function pupFilterBy(e,col){
+  e.stopPropagation();
+  const pop=document.getElementById('pupFilterPop');
+  if(pop.dataset.col===col&&pop.classList.contains('pfopen')){pop.classList.remove('pfopen');return;}
+  pop.dataset.col=col;
+  const skills=st.pup_skills||[];
+  const curFilter=_pupFilter&&_pupFilter.col===col?_pupFilter:null;
+  const inp_s='width:100%;padding:5px 8px;border-radius:8px;border:1px solid var(--border);font-family:inherit;font-size:12px;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box';
+  let html='';
+  if(col==='skill'||col==='next_step'){
+    const curText=curFilter?.text||'';
+    html=`<input id="pfText" placeholder="Search…" value="${curText.replace(/"/g,'&quot;')}" style="${inp_s}">
+    <div style="display:flex;gap:6px;margin-top:8px">
+      <button onclick="applyPupTextFilter()" style="flex:1;padding:4px;border-radius:6px;border:1px solid var(--border);background:rgba(139,92,246,.12);cursor:pointer;font-size:12px;color:var(--text)">Apply</button>
+      <button onclick="clearPupFilter()" style="flex:1;padding:4px;border-radius:6px;border:1px solid var(--border);background:transparent;cursor:pointer;font-size:12px;color:var(--muted)">Clear</button>
+    </div>`;
+  } else {
+    const rawVals=[...new Set(skills.map(s=>String(s[col]||'—')))].sort();
+    const vals=[...rawVals.filter(v=>v==='—'),...rawVals.filter(v=>v!=='—')];
+    const curVals=curFilter?.vals||new Set(vals);
+    const allChk=!curFilter||curVals.size===vals.length;
+    const displayVal=v=>col==='category'&&v!=='—'?(v.charAt(0).toUpperCase()+v.slice(1)):v;
+    html=`<div id="pfList" style="max-height:200px;overflow-y:auto;margin-bottom:8px">
+      <label class="pf-cb-row"><input type="checkbox" id="pfAll" ${allChk?'checked':''} onchange="togglePupFilterAll()" style="margin-right:6px;accent-color:#8b5cf6"><em style="font-size:11px">(Select All)</em></label>
+      ${vals.map(v=>`<label class="pf-cb-row"><input type="checkbox" class="pf-cb" data-val="${v.replace(/"/g,'&quot;')}" ${curVals.has(v)?'checked':''} onchange="syncPupFilterAll()" style="margin-right:6px;accent-color:#8b5cf6"> ${displayVal(v)}</label>`).join('')}
+    </div>
+    <div style="display:flex;gap:6px">
+      <button onclick="applyPupCheckFilter('${col}')" style="flex:1;padding:4px;border-radius:6px;border:1px solid var(--border);background:rgba(139,92,246,.12);cursor:pointer;font-size:12px;color:var(--text)">Apply</button>
+      <button onclick="clearPupFilter()" style="flex:1;padding:4px;border-radius:6px;border:1px solid var(--border);background:transparent;cursor:pointer;font-size:12px;color:var(--muted)">Clear</button>
+    </div>`;
+  }
+  document.getElementById('pfContent').innerHTML=html;
+  // Always query the live th from DOM — e.currentTarget may be detached if sort re-rendered thead
+  const colIdx={pup:0,skill:1,level:2,stage:3,next_step:4,category:5}[col]??0;
+  const liveTh=document.getElementById('pupTblHead')?.querySelectorAll('th')[colIdx];
+  const rect=liveTh?liveTh.getBoundingClientRect():{left:200,bottom:200,right:200};
+  let left=rect.left,pw=200;
+  if(left+pw>window.innerWidth-6)left=window.innerWidth-pw-6;
+  pop.style.left=left+'px';pop.style.top=(rect.bottom+4)+'px';
+  pop.classList.add('pfopen');
+  if(col==='skill'||col==='next_step'){
+    setTimeout(()=>{
+      const inp=document.getElementById('pfText');if(!inp)return;inp.focus();inp.select();
+      inp.onkeydown=ev=>{if(ev.key==='Enter'){ev.preventDefault();applyPupTextFilter();}if(ev.key==='Escape')pop.classList.remove('pfopen');};
+    },50);
+  }
+}
+function togglePupFilterAll(){
+  const allCb=document.getElementById('pfAll');
+  const cbs=document.querySelectorAll('.pf-cb');
+  cbs.forEach(c=>c.checked=allCb.checked);
+}
+function syncPupFilterAll(){
+  const allCb=document.getElementById('pfAll');
+  const cbs=[...document.querySelectorAll('.pf-cb')];
+  allCb.checked=cbs.every(c=>c.checked);
+}
+function applyPupCheckFilter(col){
+  const cbs=[...document.querySelectorAll('.pf-cb')];
+  const checked=new Set(cbs.filter(c=>c.checked).map(c=>c.dataset.val));
+  const all=cbs.every(c=>c.checked);
+  _pupFilter=all?null:{col,vals:checked,type:'set'};
+  document.getElementById('pupFilterPop').classList.remove('pfopen');
+  renderPupTable();
+}
+function clearPupFilter(){
+  _pupFilter=null;
+  document.getElementById('pupFilterPop').classList.remove('pfopen');
+  renderPupTable();
+}
+function applyPupTextFilter(){
+  const col=document.getElementById('pupFilterPop').dataset.col;
+  const val=(document.getElementById('pfText')?.value||'').trim();
+  _pupFilter=val?{col,text:val,type:'text'}:null;
+  document.getElementById('pupFilterPop').classList.remove('pfopen');
+  renderPupTable();
+}
+function pupCellEdit(td,id,field){
+  if(td._editing)return;
+  const s=st.pup_skills.find(x=>String(x.id)===String(id));if(!s)return;
+  td._editing=true;
+  let el;
+  const elStyle='width:100%;font-size:11px;border:1px solid var(--border);border-radius:4px;padding:2px 4px;background:var(--bg);color:var(--text);outline:none;font-family:inherit;box-sizing:border-box';
+  if(field==='pup'){el=document.createElement('select');['Mochi','Sunny'].forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;if(s.pup===v)o.selected=true;el.appendChild(o);});}
+  else if(field==='category'){el=document.createElement('select');[['','—'],['commands','Commands'],['manners','Manners'],['fun','Fun']].forEach(([v,t])=>{const o=document.createElement('option');o.value=v;o.textContent=t;if((s.category||'')===v)o.selected=true;el.appendChild(o);});}
+  else if(field==='level'){el=document.createElement('select');['','Easy','Medium','Hard'].forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v||'—';if((s.level||'')===v)o.selected=true;el.appendChild(o);});}
+  else if(field==='stage'){el=document.createElement('select');['Not Started','In Progress','Mastered'].forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;if(s.stage===v)o.selected=true;el.appendChild(o);});}
+  else if(field==='next_step'){el=document.createElement('select');[['','—'],['Duration','1. Duration'],['Distance','2. Distance'],['Distraction','3. Distraction']].forEach(([v,t])=>{const o=document.createElement('option');o.value=v;o.textContent=t;if((s.next_step||'')===v)o.selected=true;el.appendChild(o);});}
+  else{el=document.createElement('input');el.value=s[field]||'';}
+  el.style.cssText=elStyle;
+  const origTxt=td.textContent;
+  td.textContent='';td.appendChild(el);
+  requestAnimationFrame(()=>{el.focus();if(el.tagName==='INPUT')el.select();});
+  let saved=false;
+  const doSave=async()=>{if(saved)return;saved=true;td._editing=false;await setPupField(id,field,el.value,String(s[field]??''));renderPupTable();};
+  el.onblur=doSave;
+  el.onkeydown=ev=>{if(ev.key==='Enter'){ev.preventDefault();el.blur();}if(ev.key==='Escape'){saved=true;td._editing=false;td.textContent=origTxt;}};
+  if(el.tagName==='SELECT')el.onchange=async()=>{saved=true;td._editing=false;el.onblur=null;await setPupField(id,field,el.value,String(s[field]??''));renderPupTable();};
+}
+async function togglePupMastered(id,checked){
+  const idx=st.pup_skills.findIndex(x=>String(x.id)===String(id));if(idx<0)return;
+  pupSnapshot();
+  const stage=checked?'Mastered':'In Progress';
+  st.pup_skills[idx].stage=stage;
+  save();renderPupsPage();
+  sbReqSilent('PATCH','pup_skills',{stage},`?id=eq.${id}`);
+}
+function renderPupTable(){
+  const thead=document.getElementById('pupTblHead');
+  const tbody=document.getElementById('pupTblBody');if(!thead||!tbody)return;
+  const skills=st.pup_skills||[];
+  function esc(v){return(v||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+  const LDEG={Easy:0,Medium:1,Hard:2},SDEG={'Not Started':0,'In Progress':1,'Mastered':2};
+  let rows=[...skills];
+  if(_pupFilter){
+    if(_pupFilter.type==='text'){const fv=_pupFilter.text.toLowerCase();rows=rows.filter(s=>String(s[_pupFilter.col]||'').toLowerCase().includes(fv));}
+    else if(_pupFilter.type==='set'){rows=rows.filter(s=>_pupFilter.vals.has(String(s[_pupFilter.col]||'—')));}
+  }
+  if(_pupSortCol){
+    rows.sort((a,b)=>{
+      if(_pupSortCol==='level')return _pupSortDir*((LDEG[a.level]??9)-(LDEG[b.level]??9));
+      if(_pupSortCol==='stage')return _pupSortDir*((SDEG[a.stage]??9)-(SDEG[b.stage]??9));
+      if(_pupSortCol==='focus')return _pupSortDir*((a.focus?0:1)-(b.focus?0:1));
+      return _pupSortDir*String(a[_pupSortCol]||'').toLowerCase().localeCompare(String(b[_pupSortCol]||'').toLowerCase());
+    });
+  } else {
+    const CATO={commands:0,manners:1,fun:2};
+    const LVLO={Easy:0,Medium:1,Hard:2};
+    rows.sort((a,b)=>{
+      const ma=(a.stage==='Mastered'?1:0),mb=(b.stage==='Mastered'?1:0);if(ma!==mb)return ma-mb;
+      const ca=CATO[a.category]??9,cb=CATO[b.category]??9;if(ca!==cb)return ca-cb;
+      const fa=(a.focus===true||a.focus==='true'?0:1),fb=(b.focus===true||b.focus==='true'?0:1);if(fa!==fb)return fa-fb;
+      const pa=(a.pup||'').localeCompare(b.pup||'');if(pa)return pa;
+      const la=LVLO[a.level]??9,lb=LVLO[b.level]??9;if(la!==lb)return la-lb;
+      return (a.order??9999)-(b.order??9999);
+    });
+  }
+  const arrow=col=>_pupSortCol===col?(_pupSortDir>0?' ↑':' ↓'):'';
+  const fdot=col=>(_pupFilter&&_pupFilter.col===col)?'<span style="color:#f97316;font-size:9px;margin-left:2px">▼</span>':'';
+  const ths='cursor:pointer;user-select:none;white-space:nowrap;padding:6px 8px';
+  const tdE='user-select:none;cursor:default';
+  function catText(cat){return cat?(cat.charAt(0).toUpperCase()+cat.slice(1)):'—';}
+  thead.innerHTML=`<tr>
+    <th onclick="pupHdrClick('pup')" ondblclick="pupHdrDbl(event,'pup')" style="${ths};width:32px;text-align:center">·${arrow('pup')}${fdot('pup')}</th>
+    <th onclick="pupHdrClick('skill')" ondblclick="pupHdrDbl(event,'skill')" style="${ths}">Skill${arrow('skill')}${fdot('skill')}</th>
+    <th onclick="pupHdrClick('level')" ondblclick="pupHdrDbl(event,'level')" style="${ths};width:66px">Level${arrow('level')}${fdot('level')}</th>
+    <th onclick="pupHdrClick('stage')" ondblclick="pupHdrDbl(event,'stage')" style="${ths};width:90px">Stage${arrow('stage')}${fdot('stage')}</th>
+    <th onclick="pupHdrClick('next_step')" ondblclick="pupHdrDbl(event,'next_step')" style="${ths}">Next Step${arrow('next_step')}${fdot('next_step')}</th>
+    <th onclick="pupHdrClick('category')" ondblclick="pupHdrDbl(event,'category')" style="${ths};width:86px">Category${arrow('category')}${fdot('category')}</th>
+    <th style="width:28px"></th>
+  </tr>`;
+  const showCatDividers=!_pupSortCol;
+  let lastCat=null,lastMastered=null;
+  const rowsHtml=[];
+  rows.forEach(s=>{
+    const foc=s.focus===true||s.focus==='true';
+    const isMastered=s.stage==='Mastered';
+    const pupColor=s.pup==='Mochi'?'#8b5cf6':s.pup==='Sunny'?'#fbbf24':'#94a3b8';
+    const bg=isMastered?'':(s.pup==='Mochi'?'rgba(139,92,246,.07)':s.pup==='Sunny'?'rgba(234,179,8,.08)':'');
+    const comment=s.comments&&s.comments!=='None'?esc(s.comments):'';
+    const nextStep=s.next_step&&s.next_step!=='None'?esc(s.next_step):'';
+    const sid=String(s.id);
+    const isSel=_selPupIds.has(sid);
+    const curCat=s.category||'';
+    if(showCatDividers&&isMastered&&lastMastered===false){
+      rowsHtml.push(`<tr class="pup-cat-sep"><td colspan="7" style="padding:8px 8px 3px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#16a34a;border-top:2px solid rgba(34,197,94,.15);border-bottom:1px solid rgba(34,197,94,.1)">Mastered</td></tr>`);
+      lastCat=null;
+    }
+    if(showCatDividers&&!isMastered&&curCat!==lastCat&&curCat){
+      const label=curCat.charAt(0).toUpperCase()+curCat.slice(1);
+      rowsHtml.push(`<tr class="pup-cat-sep"><td colspan="7" style="padding:6px 8px 3px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);border-bottom:1px solid rgba(0,0,0,.04)">${label}</td></tr>`);
+      lastCat=curCat;
+    }
+    lastMastered=isMastered;
+    rowsHtml.push(`<tr data-sid="${sid}" style="background:${bg}" class="${isSel?'pup-sel':''}" onclick="selPupRow(event,'${sid}')" oncontextmenu="showPupCtx(event,'${sid}')">
+      <td style="text-align:center;width:32px;padding:4px 0">${isMastered?`<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${pupColor};opacity:.5"></span>`:`<input type="checkbox"${foc?' checked':''} onchange="setPupField('${sid}','focus',this.checked)" style="width:13px;height:13px;cursor:pointer;accent-color:${pupColor}">`}</td>
+      <td ondblclick="pupCellEdit(this,'${sid}','skill')" style="padding:4px 8px;${tdE}">${esc(s.skill)}</td>
+      <td ondblclick="pupCellEdit(this,'${sid}','level')" style="width:66px;padding:4px 8px;${tdE}">${esc(s.level)||'—'}</td>
+      <td ondblclick="pupCellEdit(this,'${sid}','stage')" style="width:90px;padding:4px 8px;${tdE}">${esc(s.stage||'')}</td>
+      <td ondblclick="pupCellEdit(this,'${sid}','next_step')" onmouseenter="${comment?`showPupTip(event,'${comment}')`:''}" onmouseleave="${comment?'hidePupTip()':''}" style="padding:4px 8px;${tdE}${comment?';cursor:help':''}">${nextStep}</td>
+      <td ondblclick="pupCellEdit(this,'${sid}','category')" style="width:86px;padding:4px 8px;${tdE}">${catText(s.category)}</td>
+      <td style="width:28px;padding:2px 4px;text-align:right"><button class="pup-dots" onclick="event.stopPropagation();openPupEditModal('${sid}')" title="Edit">···</button></td>
+    </tr>`);
+  });
+  tbody.innerHTML=rowsHtml.join('');
+}
+function renderPupsPage(){
+  const page=document.getElementById('page-pups');if(!page)return;
+  const skills=st.pup_skills||[];
+  function esc(v){return(v||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;');}
+  function lvlPill(s){return s.level?`<span class="pup-pill">${s.level}</span>`:'';}
+  function skillCardRow(s,cls){
+    const isMastered=s.stage==='Mastered';
+    const ns=!isMastered&&s.next_step&&s.next_step!=='None'?s.next_step:'';
+    const cm=!isMastered&&s.comments&&s.comments!=='None'?s.comments:'';
+    const sid=String(s.id);
+    return`<div class="pup-skill-row ${cls}" data-pupid="${sid}" style="align-items:flex-start">
+      <input type="checkbox" ${isMastered?'checked':''} onclick="event.stopPropagation();togglePupMastered('${sid}',this.checked)" title="Mark mastered" style="width:13px;height:13px;cursor:pointer;accent-color:#8b5cf6;flex-shrink:0;margin-top:2px">
+      <div style="flex:1;min-width:0"><span class="pup-skill-name" style="${isMastered?'opacity:.5;text-decoration:line-through':''}">${s.skill}</span>${ns?`<div style="font-size:10px;color:var(--muted);margin-top:1px">↳ ${ns}</div>`:''}${cm?`<div style="font-size:10px;color:var(--subtle);margin-top:1px">${cm}</div>`:''}</div>
+    </div>`;
+  }
+  const PUP_CAT_ORDER=['commands','manners','fun'];
+  const PUP_CAT_LABELS={commands:'Commands',manners:'Manners',fun:'Fun'};
+  const CATO_CARD={commands:0,manners:1,fun:2};
+  const LVLO_CARD={Easy:0,Medium:1,Hard:2};
+  function sortCardSkills(list){
+    return [...list].sort((a,b)=>{
+      const fa=(a.focus===true||a.focus==='true'?0:1),fb=(b.focus===true||b.focus==='true'?0:1);if(fa!==fb)return fa-fb;
+      const ca=CATO_CARD[a.category]??9,cb=CATO_CARD[b.category]??9;if(ca!==cb)return ca-cb;
+      const la=LVLO_CARD[a.level]??9,lb=LVLO_CARD[b.level]??9;if(la!==lb)return la-lb;
+      return (a.order??9999)-(b.order??9999);
+    });
+  }
+  function groupedCardRows(list,cls){
+    const sorted=sortCardSkills(list);
+    const grouped={};
+    sorted.forEach(s=>{const k=s.category||'other';(grouped[k]=grouped[k]||[]).push(s);});
+    const order=[...PUP_CAT_ORDER,...Object.keys(grouped).filter(k=>!PUP_CAT_ORDER.includes(k))];
+    return order.filter(k=>grouped[k]).map(k=>{
+      const label=PUP_CAT_LABELS[k]||(k.charAt(0).toUpperCase()+k.slice(1));
+      return`<div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin:6px 0 3px">${label}</div>${grouped[k].map(s=>skillCardRow(s,cls)).join('')}`;
+    }).join('');
+  }
+  function pupCol(pup,color){
+    const ps=skills.filter(s=>s.pup===pup);
+    const mastered=ps.filter(s=>s.stage==='Mastered');
+    const inProgress=ps.filter(s=>s.stage==='In Progress');
+    const notStarted=ps.filter(s=>!s.stage||s.stage==='Not Started');
+    const total=ps.length||1;
+    const pMastered=mastered.length/total*100,pInProg=inProgress.length/total*100,pNot=notStarted.length/total*100;
+    const progressBar=`<div style="height:8px;border-radius:0 0 var(--r) var(--r);overflow:hidden;background:rgba(210,205,228,.2);display:flex;flex-shrink:0">${pMastered>0?`<div onmouseenter="showPupStageTip(event,'Mastered: ${mastered.length}','#22c55e')" onmouseleave="hidePupTip()" style="width:${pMastered}%;background:#22c55e;cursor:default;transition:width .3s"></div>`:''} ${pInProg>0?`<div onmouseenter="showPupStageTip(event,'In Progress: ${inProgress.length}','#eab308')" onmouseleave="hidePupTip()" style="width:${pInProg}%;background:#eab308;cursor:default;transition:width .3s"></div>`:''} ${pNot>0?`<div onmouseenter="showPupStageTip(event,'Not Started: ${notStarted.length}','#94a3b8')" onmouseleave="hidePupTip()" style="width:${pNot}%;background:rgba(210,205,228,.4);cursor:default;transition:width .3s"></div>`:''}</div>`;
+    const trainWeek=ps.filter(s=>s.focus===true||s.focus==='true');
+    const upNext=inProgress.filter(s=>!(s.focus===true||s.focus==='true'));
+    const img=pup==='Mochi'?'./mochi_headshot.png':'./sunny_headshot.png';
+    const glowColor=pup==='Mochi'?'rgba(139,92,246,0.2)':'rgba(251,191,36,0.24)';
+    const themeBg=pup==='Mochi'?'rgba(139,92,246,0.05)':'rgba(251,191,36,0.07)';
+    const themeBorder=pup==='Mochi'?'rgba(139,92,246,0.12)':'rgba(251,191,36,0.18)';
+    return`<div class="pup-col card" style="display:flex;flex-direction:column;overflow:visible;position:relative"><img src="${img}" style="position:absolute;top:-44px;left:50%;transform:translateX(-50%);width:92px;height:92px;border-radius:50%;object-fit:cover;object-position:top;border:3px solid rgba(255,255,255,.9);box-shadow:0 0 18px 6px ${glowColor},0 4px 14px rgba(0,0,0,.1)"><div style="display:grid;grid-template-columns:1fr 92px 1fr;align-items:center;min-height:52px;border-bottom:1px solid rgba(210,205,228,.22);flex-shrink:0"><span style="font-weight:700;font-size:13px;color:var(--text);padding-left:13px">${pup}</span><span></span><span style="font-size:11px;color:var(--muted);font-weight:500;padding-right:13px;text-align:right">${inProgress.length} in progress</span></div><div style="padding:8px;overflow-y:auto;flex:1;min-height:0;display:flex;flex-direction:column;gap:12px">${trainWeek.length?`<div style="background:${themeBg};border:1px solid ${themeBorder};border-radius:10px;padding:10px 8px"><div class="pup-section-label">Train This Week</div>${trainWeek.map(s=>skillCardRow(s,'pup-focus-row')).join('')}</div>`:''} ${upNext.length?`<div><div class="pup-section-label" style="color:var(--text);font-weight:800">Up Next</div>${groupedCardRows(upNext,'pup-skill-emphasis')}</div>`:''} ${ps.length===0?'<div style="font-size:11px;color:var(--muted);text-align:center;padding:20px 0">No skills yet</div>':''}</div>${progressBar}</div>`;
+  }
+  const tableCol=`<div class="pup-col card" style="overflow:hidden"><div class="ch"><span style="font-weight:700;font-size:13px;color:var(--text)">All Skills</span><button class="btn-plus" onclick="openPupAddModal()" style="margin-left:auto;padding:2px 8px;font-size:13px;border-radius:8px;border:1px solid var(--border);background:transparent;cursor:pointer;color:var(--text)">+</button></div><div style="overflow-y:auto;flex:1;min-height:0"><table class="pup-tbl"><thead id="pupTblHead"></thead><tbody id="pupTblBody"></tbody></table></div></div>`;
+  page.innerHTML=`<div class="ov-topbar"><div class="ov-topbar-left"><span class="ov-topbar-label">Pups</span><span class="ov-topbar-dot"></span></div><span class="ov-topbar-date topbar-date"></span><div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div></div><div style="display:grid;grid-template-columns:1fr 1fr 2.2fr;gap:14px;height:calc(100vh - 80px);padding-top:26px">${pupCol('Mochi','#8b5cf6')}${pupCol('Sunny','#fbbf24')}${tableCol}</div>`;
+  if(!page._pupDblClick){
+    page._pupDblClick=true;
+    page.addEventListener('dblclick',e=>{
+      const row=e.target.closest('[data-pupid]');
+      if(!row)return;
+      e.preventDefault();
+      openPupEditModal(row.dataset.pupid);
+    });
+  }
+  if(window._pupOutsideClick)document.removeEventListener('click',window._pupOutsideClick);
+  window._pupOutsideClick=e=>{
+    const pg=document.getElementById('page-pups');
+    if(!pg||!pg.classList.contains('active'))return;
+    if(!e.target.closest('#pupTblBody')){_selPupIds.clear();_lastSelPupId=null;applyPupSelHighlight();}
+  };
+  document.addEventListener('click',window._pupOutsideClick);
+  renderPupTable();
+  const now=new Date();document.querySelectorAll('#page-pups .topbar-date').forEach(e=>e.textContent=now.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}));document.querySelectorAll('#page-pups .topbar-time').forEach(e=>e.textContent=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}));
+}

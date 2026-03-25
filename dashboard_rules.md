@@ -1,5 +1,41 @@
 # Dashboard Implementation Rules
 
+## File Structure (Source Split)
+
+All files live in the same folder. `index.html` loads the JS files in order via `<script src="...">` tags. All files share the same global scope — no modules, no bundler.
+
+### Files
+
+| File | Lines | Contains |
+|------|-------|----------|
+| `index.html` | ~1,392 | HTML structure + all CSS (`<style>`) + 4 `<script src>` tags + small inline clock script |
+| `core.js` | ~682 | Must load **first**. Constants (CATS, KCATS), state variables (cfg, st, dayOff, wkOff…), localStorage (load/save), Supabase helpers (sbReq, sbReqSilent, sbReqNullable), time block DB helpers (sbSaveBlock, sbDeleteBlock, sbUpdateBlock), syncAll, setBadge, date utilities (getWkKey, getWkBounds, getDayDate, d2s…), recurring virtual task helpers (getRecurringWeekTasks), undo/redo (pushUndo, doUndo, doRedo, showToast), global keydown listener |
+| `overview.js` | ~1,694 | renderAll, renderOv, renderToday, renderWkSummary, renderWkCal, renderRecOv, renderShopOv, renderUnassigned, renderKanban, renderDayTB, auto-timeblock logic (getAutoTBForDate), virtual recurring row renderers, task row helper (tRow), drag-and-drop on today list |
+| `features.js` | ~2,661 | Quick-add popup (openQA/submitQA), task CRUD (toggleTask, editTask, delTask, addTask), renderTasksPage, recurring tasks page (renderWeeklyPage/renderRecurringPage), shopping full page (renderShopFull), month modal/date picker, travel page (renderTravelPage), birthdays page (renderBdayPage) + all birthday interaction state, unscheduleWRec, skipRecVirtThisWk, recipes page (renderRecipesPage), showPage, closeMod, init, selection system (selTask, applySelHighlight), context menus (showCtx, ctxDoDuplicate, ctxDoDelete), quick notes (toggleQN) |
+| `pup-skills.js` | ~433 | All pup skills state (_pupEditId, _selPupIds, _pupUndoStack…), renderPupsPage, renderPupTable, pupSnapshot/pupUndo/pupRedo/_pupSyncToServer, openPupAddModal/openPupEditModal/savePupModal, setPupField, selPupRow, applyPupSelHighlight, pupCellEdit, showPupCtx, pupSortBy, pupFilterBy, showPupTip/hidePupTip, togglePupMastered |
+
+### Loading Order
+```html
+<script src="core.js"></script>       <!-- defines st, cfg, sbReq, dates, undo -->
+<script src="overview.js"></script>   <!-- defines renderAll and all overview rendering -->
+<script src="features.js"></script>   <!-- defines all pages, CRUD, init() — init() runs here -->
+<script src="pup-skills.js"></script> <!-- defines pup skills feature -->
+```
+
+### Key Rules for Making Changes
+- **Where is X?** — If it renders the Overview page (today, calendar, time blocks, kanban): `overview.js`. If it's a secondary page (recurring, shopping, travel, birthdays, recipes) or task CRUD or selection/context menu: `features.js`. If it's pup skills: `pup-skills.js`. If it's a shared utility, Supabase helper, date function, or undo/redo: `core.js`.
+- **Adding a new shared function** (called from multiple files) → put it in `core.js`.
+- **Cross-file function calls are safe** — all 4 files share global scope. A function defined in `core.js` can be called from `features.js` and vice versa.
+- **`init()` is in `features.js`** — it runs at the end of that file and calls `renderAll()` (overview.js) and `syncAll()` (core.js). This works because scripts are synchronous — all 4 files are fully loaded before any user interaction.
+- **`skipRecVirtThisWk` and `unscheduleWRec`** are in `features.js` (not core.js), even though they're called from the overview calendar chips. This is fine because the calls happen at event-fire time, after all scripts have loaded.
+- **Pup skills `_pupUndoDirty` flag** interacts with `syncAll()` in `core.js` via the global `_pupUndoDirty` variable. Do not move either without updating the other.
+- **CSS stays in `index.html`** — it's only ~674 lines and is tightly coupled to HTML class names. Do not split it out.
+
+### What NOT to Split Further
+- The CSS from `index.html` (too tightly coupled to HTML)
+- The inline clock `<script>` in `index.html` (5 lines, standalone)
+- `core.js` constants and state into separate files (everything depends on them loading together)
+
 ## Layout Structure
 
 - **Root layout**: sidebar (fixed, 186px) + `.main` (flex:1, overflow-y:auto, padding:22px 56px 36px 56px)
