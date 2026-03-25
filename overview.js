@@ -295,6 +295,20 @@ function renderWkCal(){
       const del=document.createElement('button');del.className='ban-del';del.textContent='✕';
       del.addEventListener('click',e=>{e.stopPropagation();delTravel(tv.id);});
       ban.appendChild(del);
+      ban.draggable=true;
+      ban.addEventListener('dragstart',e=>{
+        e.stopPropagation();
+        const x=e.clientX;
+        let fromDi=0;
+        for(let i=0;i<colEls.length;i++){const r=colEls[i].getBoundingClientRect();if(x>=r.left&&x<r.right){fromDi=i;break;}}
+        const fromDs=wkDss[fromDi];
+        const offsetDays=Math.round((new Date(fromDs+'T00:00:00')-new Date(sd+'T00:00:00'))/86400000);
+        dragId='travel::'+tv.id+'::'+offsetDays;
+        e.dataTransfer.effectAllowed='move';
+        document.body.classList.add('body-dragging');
+        showWkcEdges(true);
+      });
+      ban.addEventListener('dragend',()=>{document.body.classList.remove('body-dragging');showWkcEdges(false);if(dragId&&dragId.startsWith('travel::'))dragId=null;});
       ban.addEventListener('click',e=>{
         if(e.target.classList.contains('ban-del'))return;
         e.stopPropagation();
@@ -373,6 +387,21 @@ function renderWkCal(){
       if(_wr){const _r=_wr.getBoundingClientRect();if(e.clientX-_r.left<44||_r.right-e.clientX<44)return;}
       e.preventDefault();col.classList.remove('drop-here');
       if(!dragId)return;
+      if(dragId.startsWith('travel::')){
+        const parts=dragId.split('::');const tvId=parts[1],offsetDays=parseInt(parts[2])||0;
+        const tv2=st.travel.find(x=>String(x.id)===String(tvId));
+        if(tv2){
+          const tvSd=(tv2.start_date||'').split('T')[0];const tvEd=(tv2.end_date||'').split('T')[0]||tvSd;
+          const dur=Math.round((new Date(tvEd+'T00:00:00')-new Date(tvSd+'T00:00:00'))/86400000);
+          const newStartDate=new Date(new Date(ds+'T00:00:00').getTime()-offsetDays*86400000);
+          const newStart=d2s(newStartDate),newEnd=d2s(new Date(newStartDate.getTime()+dur*86400000));
+          const prevStart=tv2.start_date,prevEnd=tv2.end_date;
+          tv2.start_date=newStart;tv2.end_date=newEnd;dragId=null;save();renderAll();
+          sbReq('PATCH','travel',{start_date:newStart,end_date:newEnd},`?id=eq.${tvId}`);
+          pushUndo(()=>{tv2.start_date=prevStart;tv2.end_date=prevEnd;save();renderAll();sbReq('PATCH','travel',{start_date:(prevStart||'').split('T')[0],end_date:(prevEnd||'').split('T')[0]},`?id=eq.${tvId}`);},'Moved trip');
+        }
+        dragId=null;return;
+      }
       if(dragId.startsWith('rec::')){
         const [,recId,origDate]=dragId.split('::');
         const r=st.recurring.find(x=>String(x.id)===String(recId));
@@ -662,6 +691,21 @@ function setupWkcEdgeDrop(){
       }
       dragId=null;return;
     }
+    if(dragId.startsWith('travel::')){
+      const parts=dragId.split('::');const tvId=parts[1],offsetDays=parseInt(parts[2])||0;
+      const tv2=st.travel.find(x=>String(x.id)===String(tvId));
+      if(tv2){
+        const tvSd=(tv2.start_date||'').split('T')[0];const tvEd=(tv2.end_date||'').split('T')[0]||tvSd;
+        const dur=Math.round((new Date(tvEd+'T00:00:00')-new Date(tvSd+'T00:00:00'))/86400000);
+        const newStartDate=new Date(new Date(newDs+'T00:00:00').getTime()-offsetDays*86400000);
+        const newStart=d2s(newStartDate),newEnd=d2s(new Date(newStartDate.getTime()+dur*86400000));
+        const prevStart=tv2.start_date,prevEnd=tv2.end_date;
+        tv2.start_date=newStart;tv2.end_date=newEnd;dragId=null;shiftWk(dir);save();renderAll();
+        sbReq('PATCH','travel',{start_date:newStart,end_date:newEnd},`?id=eq.${tvId}`);
+        pushUndo(()=>{tv2.start_date=prevStart;tv2.end_date=prevEnd;save();renderAll();sbReq('PATCH','travel',{start_date:(prevStart||'').split('T')[0],end_date:(prevEnd||'').split('T')[0]},`?id=eq.${tvId}`);},'Moved trip');
+      }
+      dragId=null;return;
+    }
     const t=st.tasks.find(x=>String(x.id)===String(dragId));if(!t){dragId=null;return;}
     const prev={due_date:t.due_date};
     t.due_date=newDs;dragId=null;
@@ -710,6 +754,21 @@ function setupEdge(id,dir){
         dragId=null;shiftWk(dir);save();renderAll();
         sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},recQs(r.id));
         pushUndo(()=>{if(prev)r._dateOverrides[wkKey]=prev;else delete r._dateOverrides[wkKey];save();renderAll();sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},recQs(r.id));},'Moved to other week');
+      }
+      dragId=null;return;
+    }
+    if(dragId.startsWith('travel::')){
+      const parts=dragId.split('::');const tvId=parts[1],offsetDays=parseInt(parts[2])||0;
+      const tv2=st.travel.find(x=>String(x.id)===String(tvId));
+      if(tv2){
+        const tvSd=(tv2.start_date||'').split('T')[0];const tvEd=(tv2.end_date||'').split('T')[0]||tvSd;
+        const dur=Math.round((new Date(tvEd+'T00:00:00')-new Date(tvSd+'T00:00:00'))/86400000);
+        const newStartDate=new Date(new Date(newDs+'T00:00:00').getTime()-offsetDays*86400000);
+        const newStart=d2s(newStartDate),newEnd=d2s(new Date(newStartDate.getTime()+dur*86400000));
+        const prevStart=tv2.start_date,prevEnd=tv2.end_date;
+        tv2.start_date=newStart;tv2.end_date=newEnd;dragId=null;shiftWk(dir);save();renderAll();
+        sbReq('PATCH','travel',{start_date:newStart,end_date:newEnd},`?id=eq.${tvId}`);
+        pushUndo(()=>{tv2.start_date=prevStart;tv2.end_date=prevEnd;save();renderAll();sbReq('PATCH','travel',{start_date:(prevStart||'').split('T')[0],end_date:(prevEnd||'').split('T')[0]},`?id=eq.${tvId}`);},'Moved trip');
       }
       dragId=null;return;
     }
