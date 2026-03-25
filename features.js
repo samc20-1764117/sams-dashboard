@@ -2434,13 +2434,20 @@ function ctxDoDelete(){
 // ══════════════════════════════════════════════════════════
 function toggleDark(){
   const isDark=document.body.classList.toggle('dark');
-  document.getElementById('darkToggle').textContent=isDark?'☀️':'🌙';
   cfg.dark=isDark;save();
-  // Persist dark mode preference to Supabase via recurring_tasks metadata (use a special sentinel row) -- actually just save to localStorage cfg which is fine for per-device preference
-  const ic=document.getElementById('darkToggleIcon');if(ic)ic.textContent=document.body.classList.contains('dark')?'☀️':'🌙';
+  const ic=document.getElementById('darkToggleIcon');if(ic)ic.textContent=isDark?'☀️':'🌙';
+  const lb=document.getElementById('darkToggleLabel');if(lb)lb.textContent=isDark?'Light Mode':'Night Mode';
 }
+function toggleSettingsPopup(){
+  const p=document.getElementById('settingsPopup');if(p)p.classList.toggle('open');
+}
+document.addEventListener('click',function(e){
+  const popup=document.getElementById('settingsPopup');
+  const btn=document.getElementById('settingsBtn');
+  if(popup&&popup.classList.contains('open')&&!popup.contains(e.target)&&e.target!==btn&&!btn.contains(e.target))popup.classList.remove('open');
+});
 // Apply on load
-if(cfg.dark){document.body.classList.add('dark');const dt=document.getElementById('darkToggle');if(dt)dt.textContent='☀️';}
+if(cfg.dark){document.body.classList.add('dark');const ic=document.getElementById('darkToggleIcon');if(ic)ic.textContent='☀️';const lb=document.getElementById('darkToggleLabel');if(lb)lb.textContent='Light Mode';}
 
 // ══════════════════════════════════════════════════════════
 // OVERDUE ROLLOVER BANNER

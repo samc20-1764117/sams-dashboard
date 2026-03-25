@@ -76,6 +76,18 @@ body.dark .ch-prog-bar{background:rgba(255,255,255,.08);}
 .dark-toggle:hover{background:rgba(255,255,255,.85);box-shadow:0 3px 12px rgba(0,0,0,.1);}
 body.dark .dark-toggle{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.12);color:var(--text);}
 body.dark .dark-toggle:hover{background:rgba(255,255,255,.14);}
+/* Settings button + popup */
+.settings-btn{display:flex;align-items:center;justify-content:center;font-family:'DM Sans',sans-serif;font-size:14px;background:rgba(255,255,255,.65);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.7);border-radius:20px;padding:4px 10px;cursor:pointer;transition:all .15s;box-shadow:0 2px 8px rgba(0,0,0,.06);color:var(--muted);line-height:1;}
+.settings-btn:hover{background:rgba(255,255,255,.85);box-shadow:0 3px 12px rgba(0,0,0,.1);}
+body.dark .settings-btn{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.12);color:var(--text);}
+body.dark .settings-btn:hover{background:rgba(255,255,255,.14);}
+.settings-popup{display:none;position:absolute;top:calc(100% + 8px);right:0;background:rgba(255,255,255,.92);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.8);border-radius:14px;padding:10px;box-shadow:0 8px 32px rgba(0,0,0,.12);min-width:160px;z-index:200;flex-direction:column;gap:6px;}
+.settings-popup.open{display:flex;}
+body.dark .settings-popup{background:rgba(28,26,48,.95);border-color:rgba(255,255,255,.1);}
+.settings-popup-item{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:8px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:11px;color:var(--muted);transition:background .12s;white-space:nowrap;}
+.settings-popup-item:hover{background:rgba(0,0,0,.06);}
+body.dark .settings-popup-item:hover{background:rgba(255,255,255,.08);}
+body.dark .settings-popup-item{color:var(--text);}
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;overflow:hidden}
 body{font-family:'DM Sans',sans-serif;background:#fef6f0;background-attachment:fixed;color:var(--text);font-size:13px;-webkit-font-smoothing:antialiased;letter-spacing:-.01em}
@@ -713,12 +725,19 @@ body.dark .bday-add-menu{background:rgba(38,20,10,.97);border-color:rgba(255,220
 <!-- Main -->
 <div id="main" style="position:fixed;left:0;top:0;right:0;bottom:0;overflow-y:auto;overflow-x:hidden;transition:left .25s cubic-bezier(.4,0,.2,1);">
 
-<!-- Top-right controls: Night Mode + Sync -->
+<!-- Top-right controls: Settings + Sync -->
 <div class="top-right-controls">
-  <button class="dark-toggle" id="darkToggle" onclick="toggleDark()" title="Toggle dark mode"><span id="darkToggleIcon">🌙</span></button>
-  <div class="sync-bar" id="backupBar" onclick="manualBackup()" title="Save manual backup (backup_manual.json)" style="cursor:pointer">
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-    <span id="backupTxt" style="font-size:9px">Backup</span>
+  <div style="position:relative">
+    <button class="settings-btn" id="settingsBtn" onclick="toggleSettingsPopup()" title="Settings">⚙</button>
+    <div class="settings-popup" id="settingsPopup">
+      <div class="settings-popup-item" onclick="toggleDark();toggleSettingsPopup()">
+        <span id="darkToggleIcon">🌙</span><span id="darkToggleLabel">Night Mode</span>
+      </div>
+      <div class="settings-popup-item" id="backupBar" onclick="manualBackup();toggleSettingsPopup()" title="Save manual backup">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        <span id="backupTxt">Backup Sync</span>
+      </div>
+    </div>
   </div>
   <div class="sync-bar" id="syncBar" onclick="syncAll()">
     <svg id="syncIcon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path></svg>

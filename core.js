@@ -168,10 +168,10 @@ async function manualBackup(){
     a.click();
     URL.revokeObjectURL(a.href);
     btn.textContent='Saved!';
-    setTimeout(()=>btn.textContent='Backup',2000);
+    setTimeout(()=>btn.textContent='Backup Sync',2000);
   }catch(e){
     btn.textContent='Failed';
-    setTimeout(()=>btn.textContent='Backup',2000);
+    setTimeout(()=>btn.textContent='Backup Sync',2000);
   }
 }
 
