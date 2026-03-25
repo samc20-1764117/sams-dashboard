@@ -162,7 +162,7 @@ function openTModal(cat=''){
   document.getElementById('tMTitle').textContent='Add Task';document.getElementById('tSaveBtn').textContent='Add';
   document.getElementById('tName').value='';document.getElementById('tCat').value=cat||'Home';
   document.getElementById('tDue').value=tPreDate||'';document.getElementById('tImp').checked=false;document.getElementById('tNotes').value='';tPreDate=null;
-  document.getElementById('tModal').classList.add('open');setTimeout(()=>document.getElementById('tName').focus(),80);
+  document.getElementById('tModal').classList.add('open');setTimeout(()=>{const _el=document.getElementById('tName');if(_el){_el.focus();const _l=_el.value.length;_el.setSelectionRange(_l,_l);}},80);
 }
 function openEditTask(id){
   const t=st.tasks.find(x=>String(x.id)===String(id));if(!t)return;
@@ -170,7 +170,7 @@ function openEditTask(id){
   document.getElementById('tMTitle').textContent='Edit Task';document.getElementById('tSaveBtn').textContent='Save';
   document.getElementById('tName').value=t.name;document.getElementById('tCat').value=t.category||'Home';
   document.getElementById('tDue').value=t.due_date||'';document.getElementById('tImp').checked=!!t.important;document.getElementById('tNotes').value=t.notes||'';
-  document.getElementById('tModal').classList.add('open');
+  document.getElementById('tModal').classList.add('open');setTimeout(()=>{const _el=document.getElementById('tName');if(_el){_el.focus();const _l=_el.value.length;_el.setSelectionRange(_l,_l);}},80);
 }
 async function saveTModal(){
   const n=document.getElementById('tName').value.trim();if(!n){closeMod('tModal');return;}
@@ -316,7 +316,7 @@ function rtDblEdit(td, rid, field){
   widget.className='rt-edit-input';
   const origHTML=td.innerHTML;
   td.innerHTML='';td.appendChild(widget);
-  widget.focus();if(widget.tagName==='INPUT'&&widget.type==='text'&&widget.select)widget.select();
+  widget.focus();if(widget.tagName==='INPUT'&&widget.type==='text'){const _l=widget.value.length;widget.setSelectionRange(_l,_l);}
   function commit(){
     const newVal=widget.tagName==='SELECT'?widget.value:widget.value.trim();
     if(newVal!==String(val)){
@@ -853,7 +853,7 @@ function openTravelModal(id,preStart,preEnd){
     document.getElementById('tvNotes').value='';
   }
   document.getElementById('travelModal').classList.add('open');
-  setTimeout(()=>document.getElementById('tvName').focus(),60);
+  setTimeout(()=>{const _el=document.getElementById('tvName');if(_el){_el.focus();const _l=_el.value.length;_el.setSelectionRange(_l,_l);}},60);
 }
 async function saveTravelModal(){
   const name=document.getElementById('tvName').value.trim();if(!name){closeMod('travelModal');return;}
@@ -2220,7 +2220,7 @@ function openEditShop(id){
   document.getElementById('shopEditName').value=s.name;
   document.getElementById('shopEditStore').value=s.store||'';
   document.getElementById('shopEditModal').classList.add('open');
-  setTimeout(()=>document.getElementById('shopEditName').focus(),80);
+  setTimeout(()=>{const _el=document.getElementById('shopEditName');if(_el){_el.focus();const _l=_el.value.length;_el.setSelectionRange(_l,_l);}},80);
 }
 function saveShopEdit(){
   const id=_shopEditId;if(!id)return;
@@ -2283,7 +2283,7 @@ function openRecEditModal(rid){
   const recEditNotesEl=document.getElementById('recEditNotes');if(recEditNotesEl)recEditNotesEl.value=r.notes||'';
   updateRecEditUI();
   document.getElementById('recEditModal').classList.add('open');
-  setTimeout(()=>document.getElementById('recEditName').focus(),80);
+  setTimeout(()=>{const _el=document.getElementById('recEditName');if(_el){_el.focus();const _l=_el.value.length;_el.setSelectionRange(_l,_l);}},80);
 }
 function saveRecEdit(){
   const rid=_recEditId;if(!rid)return;

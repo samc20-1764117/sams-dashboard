@@ -1707,7 +1707,7 @@ function startTBInlineEdit(blockId,col,onCommit){
   });
   inp.addEventListener('blur',commit);
   // Focus after a tick so the element is in the DOM
-  requestAnimationFrame(()=>{inp.focus();});
+  requestAnimationFrame(()=>{inp.focus();const _l=inp.value.length;inp.setSelectionRange(_l,_l);});
 }
 
 function updateNowLine(){
