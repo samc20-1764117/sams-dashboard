@@ -53,7 +53,7 @@ function openPupEditModal(id){
   document.getElementById('pmSignal').value=s.signal||'';
   document.getElementById('pmComments').value=s.comments||'';
   document.getElementById('pupModal').classList.add('open');
-  setTimeout(()=>document.getElementById('pmSkill').focus(),80);
+  setTimeout(()=>{const _el=document.getElementById('pmSkill');if(_el){_el.focus();const _l=_el.value.length;_el.setSelectionRange(_l,_l);}},80);
 }
 async function savePupModal(){
   const data={
@@ -274,7 +274,7 @@ function pupCellEdit(td,id,field){
   el.style.cssText=elStyle;
   const origTxt=td.textContent;
   td.textContent='';td.appendChild(el);
-  requestAnimationFrame(()=>{el.focus();if(el.tagName==='INPUT')el.select();});
+  requestAnimationFrame(()=>{el.focus();if(el.tagName==='INPUT'){const _l=el.value.length;el.setSelectionRange(_l,_l);}});
   let saved=false;
   const origFieldVal=s[field]??null;
   const doSave=async()=>{if(saved)return;saved=true;td._editing=false;await setPupField(id,field,el.value,origFieldVal);renderPupTable();};

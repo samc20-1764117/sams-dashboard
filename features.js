@@ -155,7 +155,7 @@ function openTModal(cat=''){
   const tCatEl=document.getElementById('tCat');
   if(tCatEl&&!tCatEl._patched){
     tCatEl._patched=true;
-    tCatEl.addEventListener('change',()=>{tCatEl.blur();setTimeout(()=>document.getElementById('tName').focus(),0);});
+    tCatEl.addEventListener('change',()=>{tCatEl.blur();setTimeout(()=>{const _el=document.getElementById('tName');if(_el){_el.focus();const _l=_el.value.length;_el.setSelectionRange(_l,_l);}},0);});
     tCatEl.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();e.stopPropagation();saveTModal();}});
   }
   tMode='add';tId=null;
@@ -947,7 +947,7 @@ function openBdayModal(id,month){
     document.getElementById('bdPresent').value='';
   }
   document.getElementById('bdayModal').classList.add('open');
-  setTimeout(()=>document.getElementById('bdName').focus(),60);
+  setTimeout(()=>{const _el=document.getElementById('bdName');if(_el){_el.focus();const _l=_el.value.length;_el.setSelectionRange(_l,_l);}},60);
 }
 async function saveBdayModal(){
   const name=document.getElementById('bdName').value.trim();if(!name){closeMod('bdayModal');return;}
@@ -1412,7 +1412,7 @@ function openRecipeEditModal(id){
   document.getElementById('rmInstructions').value=r.instructions||'';
   _rmIngredients=_parseIngredients(r.ingredients);renderIngList();
   document.getElementById('recipeModal').classList.add('open');
-  setTimeout(()=>document.getElementById('rmName').focus(),80);
+  setTimeout(()=>{const _el=document.getElementById('rmName');if(_el){_el.focus();const _l=_el.value.length;_el.setSelectionRange(_l,_l);}},80);
 }
 async function saveRecipeModal(){
   const name=document.getElementById('rmName').value.trim();
