@@ -1,5 +1,10 @@
 # Dashboard Implementation Rules
 
+## Search Efficiency Rules
+- Never run broad/exploratory greps. Always grep for the exact function name or variable first.
+- Do not chain multiple search passes when one targeted grep suffices.
+- For timeblock drag/resize fixes: functions are `tbOnUp`, `onRU`, `atbOnUp`, `onRM` in `overview.js`.
+
 ## File Structure (Source Split)
 
 All files share global scope — no modules, no bundler. Load order matters.
