@@ -773,9 +773,9 @@ function mkMCell(date,om,today){
     chip.addEventListener('dragstart',e=>{e.stopPropagation();dStart(e,t.id);chip.style.opacity='.4';});
     chip.addEventListener('dragend',()=>{chip.style.opacity='1';});
     chip.addEventListener('click',e=>{
+      if(e.target.closest('.wchk')||e.target.closest('.chip-del'))return;
       e.stopPropagation();
-      if(t._virtual||t._type)return;
-      const sid=String(t.id);
+      const sid=chip.dataset.tid;if(!sid)return;
       if(e.metaKey||e.ctrlKey){
         if(selectedTasks.has(sid))selectedTasks.delete(sid);else selectedTasks.add(sid);
         lastSelectedId=sid;
@@ -790,7 +790,7 @@ function mkMCell(date,om,today){
       }
       applySelHighlight();
     });
-    chip.addEventListener('dblclick',e=>{e.stopPropagation();if(!t._virtual&&!t._type)openEditTask(t.id);else if(t._virtual&&t._recId)tiDblRec(e,t._recId);});
+    chip.addEventListener('dblclick',e=>{e.stopPropagation();if(t._type==='shop')tiDblShop(e,t._shopId);else if(!t._virtual)tiDbl(e,t.id);else tiDblRec(e,t._recId);});
     chip.addEventListener('contextmenu',e=>{if(!t._virtual&&!t._type)showCtx(e,t.id);});
     cell.appendChild(chip);
   });

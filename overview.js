@@ -525,7 +525,7 @@ function renderWkCal(){
         }
         applySelHighlight();
       });
-      chip.addEventListener('dblclick',e=>{e.stopPropagation();if(!t._virtual)openEditTask(t.id);else tiDblRec(e,t._recId);});
+      chip.addEventListener('dblclick',e=>{e.stopPropagation();if(t._type==='shop')tiDblShop(e,t._shopId);else if(!t._virtual)tiDbl(e,t.id);else tiDblRec(e,t._recId);});
       const dx=document.createElement('button');dx.className='chip-del';dx.textContent='✕';
       dx.title=t._type==='shop'?'Remove from calendar':t._isWrec?'Remove from calendar':t._virtual?'Delete recurring task':'Delete task';
       dx.addEventListener('click',e2=>{
@@ -1087,10 +1087,10 @@ function renderKanban(){
             if(t.due_date){const dl=document.createElement('span');dl.className='dlbl';dl.textContent=fmtD(t.due_date)+(t.end_date?' – '+fmtD(t.end_date):'');row.appendChild(dl);}
             const del=document.createElement('button');del.className='delbtn';del.textContent='✕';del.addEventListener('click',ev=>{ev.stopPropagation();delTravel(t._srcId);});row.appendChild(del);
           } else {
-            row.dataset.tid=String(t.id);row.draggable=true;row.addEventListener('dragstart',e=>dStart(e,t.id));row.addEventListener('dragend',()=>row.classList.remove('dragging'));row.addEventListener('contextmenu',e=>showCtx(e,t.id));row.addEventListener('click',e=>selTask(e,t.id));
+            row.dataset.tid=String(t.id);row.draggable=true;row.addEventListener('dragstart',e=>dStart(e,t.id));row.addEventListener('dragend',()=>row.classList.remove('dragging'));row.addEventListener('contextmenu',e=>showCtx(e,t.id));row.addEventListener('click',e=>selTask(e,t.id));row.addEventListener('dblclick',e=>tiDbl(e,t.id));
             const chkWrap=document.createElement('label');chkWrap.className='chk-wrap';chkWrap.addEventListener('click',e=>e.stopPropagation());const chk=document.createElement('input');chk.type='checkbox';chk.className='chk';chk.checked=!!t.done;chk.addEventListener('change',()=>toggleTask(t.id,chk.checked));chkWrap.appendChild(chk);row.appendChild(chkWrap);
 
-            const nm=document.createElement('span');nm.className='kn';nm.textContent=t.name;nm.addEventListener('dblclick',e=>{e.stopPropagation();openEditTask(t.id);});row.appendChild(nm);
+            const nm=document.createElement('span');nm.className='kn';nm.textContent=t.name;row.appendChild(nm);
             if(t.due_date){const dl=document.createElement('span');dl.className=`dlbl ${ov2?'ov':''}`;dl.textContent=fmtD(t.due_date);row.appendChild(dl);}
             const del=document.createElement('button');del.className='delbtn';del.textContent='✕';del.addEventListener('click',e=>delTask(t.id,e));row.appendChild(del);
           }
@@ -1128,10 +1128,10 @@ function renderKanban(){
     tasks.forEach(t=>{
       const ov2=isOv(t.due_date)&&!t.done,imp2=t.important&&!ov2&&!t.done;
       const row=document.createElement('div');row.className=`kol-item ${ov2?'ov-row':''} ${imp2?'imp-row':''}`.trim();
-      row.dataset.tid=String(t.id);row.draggable=true;row.addEventListener('dragstart',e=>dStart(e,t.id));row.addEventListener('dragend',()=>row.classList.remove('dragging'));row.addEventListener('contextmenu',e=>showCtx(e,t.id));row.addEventListener('click',e=>selTask(e,t.id));
+      row.dataset.tid=String(t.id);row.draggable=true;row.addEventListener('dragstart',e=>dStart(e,t.id));row.addEventListener('dragend',()=>row.classList.remove('dragging'));row.addEventListener('contextmenu',e=>showCtx(e,t.id));row.addEventListener('click',e=>selTask(e,t.id));row.addEventListener('dblclick',e=>tiDbl(e,t.id));
       const chkWrap=document.createElement('label');chkWrap.className='chk-wrap';chkWrap.addEventListener('click',e=>e.stopPropagation());const chk=document.createElement('input');chk.type='checkbox';chk.className='chk';chk.checked=!!t.done;chk.addEventListener('change',()=>toggleTask(t.id,chk.checked));chkWrap.appendChild(chk);row.appendChild(chkWrap);
 
-      const nm=document.createElement('span');nm.className='kn';nm.textContent=t.name;nm.addEventListener('dblclick',e=>{e.stopPropagation();openEditTask(t.id);});row.appendChild(nm);
+      const nm=document.createElement('span');nm.className='kn';nm.textContent=t.name;row.appendChild(nm);
       if(t.due_date){const dl=document.createElement('span');dl.className=`dlbl ${ov2?'ov':''}`;dl.textContent=fmtD(t.due_date);row.appendChild(dl);}
       const del=document.createElement('button');del.className='delbtn';del.textContent='✕';del.addEventListener('click',e=>delTask(t.id,e));row.appendChild(del);
       body.appendChild(row);
