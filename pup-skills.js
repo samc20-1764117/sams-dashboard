@@ -99,7 +99,7 @@ async function setPupField(id,field,val,origVal){
     st.pup_skills[idx].stage='In Progress';patch.stage='In Progress';
   }
   save();
-  sbReqSilent('PATCH','pup_skills',patch,`?id=eq.${id}`);
+  await sbReqSilent('PATCH','pup_skills',patch,`?id=eq.${id}`);
   if(field==='focus')renderPupsPage();
 }
 function selPupRow(e,sid){
