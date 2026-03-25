@@ -298,12 +298,7 @@ function renderWkCal(){
       ban.draggable=true;
       ban.addEventListener('dragstart',e=>{
         e.stopPropagation();
-        const x=e.clientX;
-        let fromDi=0;
-        for(let i=0;i<colEls.length;i++){const r=colEls[i].getBoundingClientRect();if(x>=r.left&&x<r.right){fromDi=i;break;}}
-        const fromDs=wkDss[fromDi];
-        const offsetDays=Math.round((new Date(fromDs+'T00:00:00')-new Date(sd+'T00:00:00'))/86400000);
-        dragId='travel::'+tv.id+'::'+offsetDays;
+        dragId='travel::'+tv.id+'::0';
         e.dataTransfer.effectAllowed='move';
         document.body.classList.add('body-dragging');
         showWkcEdges(true);
@@ -393,8 +388,7 @@ function renderWkCal(){
         if(tv2){
           const tvSd=(tv2.start_date||'').split('T')[0];const tvEd=(tv2.end_date||'').split('T')[0]||tvSd;
           const dur=Math.round((new Date(tvEd+'T00:00:00')-new Date(tvSd+'T00:00:00'))/86400000);
-          const newStartDate=new Date(new Date(ds+'T00:00:00').getTime()-offsetDays*86400000);
-          const newStart=d2s(newStartDate),newEnd=d2s(new Date(newStartDate.getTime()+dur*86400000));
+          const newStart=ds,newEnd=d2s(new Date(new Date(ds+'T00:00:00').getTime()+dur*86400000));
           const prevStart=tv2.start_date,prevEnd=tv2.end_date;
           tv2.start_date=newStart;tv2.end_date=newEnd;dragId=null;save();renderAll();
           sbReq('PATCH','travel',{start_date:newStart,end_date:newEnd},`?id=eq.${tvId}`);
@@ -697,8 +691,7 @@ function setupWkcEdgeDrop(){
       if(tv2){
         const tvSd=(tv2.start_date||'').split('T')[0];const tvEd=(tv2.end_date||'').split('T')[0]||tvSd;
         const dur=Math.round((new Date(tvEd+'T00:00:00')-new Date(tvSd+'T00:00:00'))/86400000);
-        const newStartDate=new Date(new Date(newDs+'T00:00:00').getTime()-offsetDays*86400000);
-        const newStart=d2s(newStartDate),newEnd=d2s(new Date(newStartDate.getTime()+dur*86400000));
+        const newStart=newDs,newEnd=d2s(new Date(new Date(newDs+'T00:00:00').getTime()+dur*86400000));
         const prevStart=tv2.start_date,prevEnd=tv2.end_date;
         tv2.start_date=newStart;tv2.end_date=newEnd;dragId=null;shiftWk(dir);save();renderAll();
         sbReq('PATCH','travel',{start_date:newStart,end_date:newEnd},`?id=eq.${tvId}`);
@@ -763,8 +756,7 @@ function setupEdge(id,dir){
       if(tv2){
         const tvSd=(tv2.start_date||'').split('T')[0];const tvEd=(tv2.end_date||'').split('T')[0]||tvSd;
         const dur=Math.round((new Date(tvEd+'T00:00:00')-new Date(tvSd+'T00:00:00'))/86400000);
-        const newStartDate=new Date(new Date(newDs+'T00:00:00').getTime()-offsetDays*86400000);
-        const newStart=d2s(newStartDate),newEnd=d2s(new Date(newStartDate.getTime()+dur*86400000));
+        const newStart=newDs,newEnd=d2s(new Date(new Date(newDs+'T00:00:00').getTime()+dur*86400000));
         const prevStart=tv2.start_date,prevEnd=tv2.end_date;
         tv2.start_date=newStart;tv2.end_date=newEnd;dragId=null;shiftWk(dir);save();renderAll();
         sbReq('PATCH','travel',{start_date:newStart,end_date:newEnd},`?id=eq.${tvId}`);
