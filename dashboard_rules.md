@@ -236,6 +236,16 @@ Per-week keyed by `getWkKey(wkOff)` in `_doneByWk`. Never use `r._done`. `togRec
 
 ---
 
+## Focus & Cursor Placement Rules
+
+**Rule**: Whenever an edit input is opened with existing text, the cursor must land at the **end** of the text so the user can immediately continue typing. Use `setSelectionRange(el.value.length, el.value.length)` inside the same `setTimeout`/`requestAnimationFrame` as the `.focus()` call.
+
+- New/empty inputs: cursor-at-end is a no-op — still apply for consistency.
+- Never use `.select()` on edit inputs (selects all, overwrites on type). Exception: filter/search inputs where select-all is intentional (e.g. `rfText`, `pfText`).
+- Applies to all pages: task modal, travel modal, birthday modal, recipe modal, recurring edit modal, shopping edit modal, pup modal, pup table inline edit, weekly inline edit, time block inline edit.
+- Pattern for `setTimeout` focus: `setTimeout(()=>{const _el=document.getElementById('...');if(_el){_el.focus();const _l=_el.value.length;_el.setSelectionRange(_l,_l);}}, delay);`
+- Pattern for `requestAnimationFrame` focus: `requestAnimationFrame(()=>{el.focus();const _l=el.value.length;el.setSelectionRange(_l,_l);});`
+
 ## Modal Enter / Escape Key Rules
 
 **Pattern**: overlay `div` owns Enter/Escape. Individual inputs must NOT have their own save handlers (double-fire).
