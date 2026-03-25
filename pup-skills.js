@@ -43,7 +43,7 @@ function openPupEditModal(id){
   document.getElementById('pmCategory').value=s.category||'';
   document.getElementById('pmLevel').value=s.level||'';
   document.getElementById('pmStage').value=s.stage||'Not Started';
-  document.getElementById('pmOrder').value=s.order||'';
+  document.getElementById('pmOrder').value=s.skill_order||'';
   document.getElementById('pmFocus').checked=(s.focus===true||s.focus==='true');
   document.getElementById('pmNextStep').value=s.next_step||'';
   document.getElementById('pmComments').value=s.comments||'';
@@ -57,7 +57,7 @@ async function savePupModal(){
     category:document.getElementById('pmCategory').value||null,
     level:document.getElementById('pmLevel').value||null,
     stage:document.getElementById('pmStage').value,
-    order:document.getElementById('pmOrder').value?parseInt(document.getElementById('pmOrder').value):null,
+    skill_order:document.getElementById('pmOrder').value?parseInt(document.getElementById('pmOrder').value):null,
     focus:document.getElementById('pmFocus').checked,
     next_step:document.getElementById('pmNextStep').value||null,
     comments:document.getElementById('pmComments').value.trim()||null,
@@ -305,7 +305,7 @@ function renderPupTable(){
       const fa=(a.focus===true||a.focus==='true'?0:1),fb=(b.focus===true||b.focus==='true'?0:1);if(fa!==fb)return fa-fb;
       const pa=(a.pup||'').localeCompare(b.pup||'');if(pa)return pa;
       const la=LVLO[a.level]??9,lb=LVLO[b.level]??9;if(la!==lb)return la-lb;
-      return (a.order??9999)-(b.order??9999);
+      return (a.skill_order??9999)-(b.skill_order??9999);
     });
   }
   const arrow=col=>_pupSortCol===col?(_pupSortDir>0?' ↑':' ↓'):'';
@@ -381,7 +381,7 @@ function renderPupsPage(){
       const fa=(a.focus===true||a.focus==='true'?0:1),fb=(b.focus===true||b.focus==='true'?0:1);if(fa!==fb)return fa-fb;
       const ca=CATO_CARD[a.category]??9,cb=CATO_CARD[b.category]??9;if(ca!==cb)return ca-cb;
       const la=LVLO_CARD[a.level]??9,lb=LVLO_CARD[b.level]??9;if(la!==lb)return la-lb;
-      return (a.order??9999)-(b.order??9999);
+      return (a.skill_order??9999)-(b.skill_order??9999);
     });
   }
   function groupedCardRows(list,cls){
