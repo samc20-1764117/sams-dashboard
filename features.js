@@ -158,16 +158,10 @@ function openTModal(cat=''){
     tCatEl.addEventListener('change',()=>{tCatEl.blur();setTimeout(()=>document.getElementById('tName').focus(),0);});
     tCatEl.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();e.stopPropagation();saveTModal();}});
   }
-  const tTmEl=document.getElementById('tTravelMode');
-  if(tTmEl&&!tTmEl._patched){
-    tTmEl._patched=true;
-    tTmEl.addEventListener('change',()=>{tTmEl.blur();setTimeout(()=>document.getElementById('tName').focus(),0);});
-    tTmEl.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();e.stopPropagation();saveTModal();}});
-  }
   tMode='add';tId=null;
   document.getElementById('tMTitle').textContent='Add Task';document.getElementById('tSaveBtn').textContent='Add';
   document.getElementById('tName').value='';document.getElementById('tCat').value=cat||'Home';
-  document.getElementById('tDue').value=tPreDate||'';document.getElementById('tImp').checked=false;document.getElementById('tNotes').value='';document.getElementById('tTravelMode').value='';tPreDate=null;
+  document.getElementById('tDue').value=tPreDate||'';document.getElementById('tImp').checked=false;document.getElementById('tNotes').value='';tPreDate=null;
   document.getElementById('tModal').classList.add('open');setTimeout(()=>document.getElementById('tName').focus(),80);
 }
 function openEditTask(id){
@@ -175,22 +169,21 @@ function openEditTask(id){
   tMode='edit';tId=id;
   document.getElementById('tMTitle').textContent='Edit Task';document.getElementById('tSaveBtn').textContent='Save';
   document.getElementById('tName').value=t.name;document.getElementById('tCat').value=t.category||'Home';
-  document.getElementById('tDue').value=t.due_date||'';document.getElementById('tImp').checked=!!t.important;document.getElementById('tNotes').value=t.notes||'';document.getElementById('tTravelMode').value=t.travel_mode||'';
+  document.getElementById('tDue').value=t.due_date||'';document.getElementById('tImp').checked=!!t.important;document.getElementById('tNotes').value=t.notes||'';
   document.getElementById('tModal').classList.add('open');
 }
 async function saveTModal(){
   const n=document.getElementById('tName').value.trim();if(!n){closeMod('tModal');return;}
   const c=document.getElementById('tCat').value,d=document.getElementById('tDue').value.trim()||null,imp=document.getElementById('tImp').checked;
   const notes=document.getElementById('tNotes').value.trim()||null;
-  const tm=document.getElementById('tTravelMode').value||null;
   closeMod('tModal');
   if(tMode==='edit'&&tId){
     const t=st.tasks.find(x=>String(x.id)===String(tId));if(!t)return;
-    const prev={name:t.name,category:t.category,due_date:t.due_date,important:t.important,notes:t.notes,travel_mode:t.travel_mode||null};
+    const prev={name:t.name,category:t.category,due_date:t.due_date,important:t.important,notes:t.notes};
     const stid=String(tId);
     localOverrides[stid]={name:n,category:c,due_date:d,important:imp};
     pendingLocal.add(stid);save();
-    t.name=n;t.category=c;t.important=imp;t.notes=notes;t.travel_mode=tm;
+    t.name=n;t.category=c;t.important=imp;t.notes=notes;
     if(t.due_date!==d){
       // Remove blocks on the old date since task is moving to a new date
       const oldDs=(t.due_date||'').split('T')[0];
@@ -198,18 +191,18 @@ async function saveTModal(){
     }
     t.due_date=d;renderAll();
     pushUndo(()=>{
-      t.name=prev.name;t.category=prev.category;t.due_date=prev.due_date;t.important=prev.important;t.notes=prev.notes;t.travel_mode=prev.travel_mode;
+      t.name=prev.name;t.category=prev.category;t.due_date=prev.due_date;t.important=prev.important;t.notes=prev.notes;
       localOverrides[stid]={...prev};pendingLocal.add(stid);renderAll();
-      sbReqNullable('PATCH','tasks',{name:prev.name,category:prev.category,due_date:prev.due_date,important:prev.important,notes:prev.notes||null,travel_mode:prev.travel_mode},`?id=eq.${stid}`)
+      sbReqNullable('PATCH','tasks',{name:prev.name,category:prev.category,due_date:prev.due_date,important:prev.important,notes:prev.notes||null},`?id=eq.${stid}`)
         .then(()=>{ delete localOverrides[stid]; pendingLocal.delete(stid); });
     },'Edited task');
-    await sbReqNullable('PATCH','tasks',{name:n,category:c,due_date:d,important:imp,notes:notes||null,travel_mode:tm},`?id=eq.${stid}`);
+    await sbReqNullable('PATCH','tasks',{name:n,category:c,due_date:d,important:imp,notes:notes||null},`?id=eq.${stid}`);
     pendingLocal.delete(stid);
     // localOverrides[stid] stays until syncAll confirms DB matches
   } else {
-    const t={id:'l-'+Date.now(),name:n,category:c,due_date:d,done:false,important:imp,notes,travel_mode:tm};st.tasks.push(t);renderAll();
+    const t={id:'l-'+Date.now(),name:n,category:c,due_date:d,done:false,important:imp,notes};st.tasks.push(t);renderAll();
     pushUndo(()=>{st.tasks=st.tasks.filter(x=>x.id!==t.id);renderAll();sbReq('DELETE','tasks',null,`?id=eq.${t.id}`);},'Added task');
-    const sv=await sbReq('POST','tasks',{name:n,category:c,due_date:d,done:false,important:imp,notes:notes||null,travel_mode:tm});if(sv&&sv[0]){const i=st.tasks.findIndex(x=>x.id===t.id);if(i>-1)st.tasks[i]=sv[0];}
+    const sv=await sbReq('POST','tasks',{name:n,category:c,due_date:d,done:false,important:imp,notes:notes||null});if(sv&&sv[0]){const i=st.tasks.findIndex(x=>x.id===t.id);if(i>-1)st.tasks[i]=sv[0];}
   }
 }
 async function addTask(){

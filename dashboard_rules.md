@@ -760,13 +760,6 @@ Once the browser fires `dragstart` on a `draggable` element, it suppresses subse
 
 ---
 
-## Travel Mode on Tasks
-
-- `travel_mode` field on `tasks` table: `'plane'` | `'drive'` | `null`.
-- Shown in task modal (`tModal`) via `#tTravelMode` select.
-- `tmIcon(t)` renders the icon inline before task name in all views (tRow, weekly chip, monthly chip).
-- Included in POST/PATCH for tasks alongside other fields.
-
 ---
 
 ## Modal Enter Key — Travel Modal Update

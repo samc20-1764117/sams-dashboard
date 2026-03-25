@@ -1,5 +1,5 @@
 {
-  "exported_at": "2026-03-24T13:19:22.472Z",
+  "exported_at": "2026-03-25T13:00:00.832Z",
   "mode": "auto",
   "tables": {
     "tasks": [
@@ -44,6 +44,16 @@
         "notes": null
       },
       {
+        "name": "Fill in TC objectives",
+        "category": "My work",
+        "due_date": "2026-03-24",
+        "done": true,
+        "importance": null,
+        "id": "ef95e9a5-67ef-42fc-ad8e-09e52743eee1",
+        "important": true,
+        "notes": null
+      },
+      {
         "name": "Switch retrirement",
         "category": "Home",
         "due_date": "2026-03-04",
@@ -54,12 +64,42 @@
         "notes": null
       },
       {
+        "name": "TC 26: Learning objectives due",
+        "category": "My work",
+        "due_date": "2026-03-25",
+        "done": true,
+        "importance": "Normal",
+        "id": "7395e2fc-467f-4ccc-8313-32e51e45b0ff",
+        "important": false,
+        "notes": null
+      },
+      {
+        "name": "PM dash - finalize build",
+        "category": "My work",
+        "due_date": "2026-03-25",
+        "done": false,
+        "importance": null,
+        "id": "7141d74b-fa75-41e8-9e24-5663274000bd",
+        "important": false,
+        "notes": null
+      },
+      {
         "name": "CRC",
         "category": "Work",
         "due_date": "2026-03-05",
         "done": true,
         "importance": "Normal",
         "id": "a5bc6ef1-a5a2-4cfb-afe7-518920e5e8ec",
+        "important": false,
+        "notes": null
+      },
+      {
+        "name": "Derm Apt @10:20am",
+        "category": "Home",
+        "due_date": "2026-03-24",
+        "done": true,
+        "importance": null,
+        "id": "fcf8218d-38ca-4c81-83db-3964ddcf6b96",
         "important": false,
         "notes": null
       },
@@ -140,6 +180,16 @@
         "done": true,
         "importance": "Normal",
         "id": "08f5848e-142b-4045-8383-85e175d04eae",
+        "important": false,
+        "notes": null
+      },
+      {
+        "name": "Haircut apt schedule",
+        "category": "Home",
+        "due_date": "2026-03-27",
+        "done": false,
+        "importance": null,
+        "id": "e393ce8b-201f-41ca-a8d4-104d1307f7cc",
         "important": false,
         "notes": null
       },
@@ -244,6 +294,16 @@
         "notes": null
       },
       {
+        "name": "Favorite my session",
+        "category": "My work",
+        "due_date": "2026-03-26",
+        "done": false,
+        "importance": null,
+        "id": "7b3bf72c-5ea1-45b3-ade8-0ae747844d1b",
+        "important": false,
+        "notes": null
+      },
+      {
         "name": "TUG @3:30",
         "category": "My work",
         "due_date": "2026-04-09",
@@ -254,12 +314,12 @@
         "notes": null
       },
       {
-        "name": "TC 26: Learning objectives due",
+        "name": "Find Ruchi req",
         "category": "My work",
-        "due_date": "2026-03-25",
+        "due_date": "2026-03-26",
         "done": false,
-        "importance": "Normal",
-        "id": "7395e2fc-467f-4ccc-8313-32e51e45b0ff",
+        "importance": null,
+        "id": "3a6c834c-e6ce-46f0-a1b9-43d70333c90f",
         "important": false,
         "notes": null
       },
@@ -270,6 +330,26 @@
         "done": false,
         "importance": "Normal",
         "id": "2e986907-7e6c-44e6-b337-5cd9f86387b6",
+        "important": false,
+        "notes": null
+      },
+      {
+        "name": "Make dentist apt",
+        "category": "Home",
+        "due_date": "2026-03-30",
+        "done": false,
+        "importance": null,
+        "id": "684df50b-70ca-4a44-9133-8531ba05356a",
+        "important": false,
+        "notes": null
+      },
+      {
+        "name": "Start VO PM dash - needs to be finished 4/7",
+        "category": "My work",
+        "due_date": "2026-03-27",
+        "done": false,
+        "importance": null,
+        "id": "4143707c-d83e-47ce-a8cf-e3571586d772",
         "important": false,
         "notes": null
       },
@@ -294,22 +374,22 @@
         "notes": null
       },
       {
+        "name": "TC 26 build",
+        "category": "My work",
+        "due_date": "2026-03-25",
+        "done": false,
+        "importance": null,
+        "id": "08f99f01-a42e-43c7-a00a-192ede96b797",
+        "important": false,
+        "notes": null
+      },
+      {
         "name": "Respond BOA",
         "category": "My work",
         "due_date": "2026-03-12",
         "done": true,
         "importance": null,
         "id": "906a1cd9-099e-4b5d-abba-602d47a4b3c3",
-        "important": false,
-        "notes": null
-      },
-      {
-        "name": "Tableau Call 11-12pm",
-        "category": "My work",
-        "due_date": "2026-03-24",
-        "done": false,
-        "importance": null,
-        "id": "d4215691-7227-4fa9-af3b-5c37ab76b8d1",
         "important": false,
         "notes": null
       },
@@ -321,6 +401,16 @@
         "importance": null,
         "id": "ba2952ec-4493-4f87-b2b3-e7a9f5dda600",
         "important": false,
+        "notes": null
+      },
+      {
+        "name": "TC 26 announcment",
+        "category": "My work",
+        "due_date": "2026-03-25",
+        "done": false,
+        "importance": null,
+        "id": "c82082da-542c-4689-8ea9-0415ce9a902c",
+        "important": true,
         "notes": null
       },
       {
@@ -504,16 +594,6 @@
         "notes": null
       },
       {
-        "name": "PM dash - finalize build",
-        "category": "My work",
-        "due_date": "2026-03-24",
-        "done": false,
-        "importance": null,
-        "id": "4321808e-edd5-4481-bf49-af258ca02760",
-        "important": true,
-        "notes": null
-      },
-      {
         "name": "Get mail - corporate card",
         "category": "Home",
         "due_date": "2026-03-11",
@@ -594,16 +674,6 @@
         "notes": null
       },
       {
-        "name": "Make dentist apt",
-        "category": "Home",
-        "due_date": "2026-03-25",
-        "done": false,
-        "importance": null,
-        "id": "684df50b-70ca-4a44-9133-8531ba05356a",
-        "important": false,
-        "notes": null
-      },
-      {
         "name": "Check TC slack",
         "category": "My work",
         "due_date": "2026-03-13",
@@ -664,32 +734,12 @@
         "notes": null
       },
       {
-        "name": "Start VO PM dash - needs to be finished 4/7",
-        "category": "My work",
-        "due_date": "2026-03-25",
-        "done": false,
-        "importance": null,
-        "id": "4143707c-d83e-47ce-a8cf-e3571586d772",
-        "important": false,
-        "notes": null
-      },
-      {
         "name": "Sign up pilates",
         "category": "Home",
         "due_date": "2026-03-18",
         "done": true,
         "importance": null,
         "id": "4ece599a-2364-4fca-8763-1820ce1ae302",
-        "important": false,
-        "notes": null
-      },
-      {
-        "name": "Haircut apt schedule",
-        "category": "Home",
-        "due_date": "2026-03-27",
-        "done": false,
-        "importance": null,
-        "id": "e393ce8b-201f-41ca-a8d4-104d1307f7cc",
         "important": false,
         "notes": null
       },
@@ -710,16 +760,6 @@
         "done": true,
         "importance": null,
         "id": "2fb548a0-cadb-49f9-be31-f7de2609aa5d",
-        "important": false,
-        "notes": null
-      },
-      {
-        "name": "Find Ruchi req",
-        "category": "My work",
-        "due_date": "2026-03-24",
-        "done": false,
-        "importance": null,
-        "id": "3a6c834c-e6ce-46f0-a1b9-43d70333c90f",
         "important": false,
         "notes": null
       },
@@ -824,22 +864,22 @@
         "notes": null
       },
       {
-        "name": "Fill in TC objectives",
+        "name": "Tableau Call 11-12pm",
         "category": "My work",
         "due_date": "2026-03-24",
-        "done": false,
+        "done": true,
         "importance": null,
-        "id": "ef95e9a5-67ef-42fc-ad8e-09e52743eee1",
-        "important": true,
+        "id": "07fb1c1d-c068-48b5-8c83-ea937d83fa8b",
+        "important": false,
         "notes": null
       },
       {
-        "name": "Derm Apt @10:20am",
-        "category": "Home",
-        "due_date": "2026-03-24",
+        "name": "Between videos",
+        "category": "My work",
+        "due_date": "2026-03-25",
         "done": false,
         "importance": null,
-        "id": "fcf8218d-38ca-4c81-83db-3964ddcf6b96",
+        "id": "bdc0a571-3056-4171-9398-da22e313bbac",
         "important": false,
         "notes": null
       },
@@ -864,12 +904,32 @@
         "notes": null
       },
       {
-        "name": "Between videos",
-        "category": "My work",
-        "due_date": "2026-03-24",
+        "name": "Sprinies",
+        "category": "Home",
+        "due_date": "2026-03-25",
         "done": false,
         "importance": null,
-        "id": "943fc330-ddb6-45ed-984a-b793269d12e7",
+        "id": "cb515d3b-4493-4037-bd50-8e575d2187b8",
+        "important": false,
+        "notes": null
+      },
+      {
+        "name": "Reapond comments",
+        "category": "Home",
+        "due_date": "2026-03-25",
+        "done": false,
+        "importance": null,
+        "id": "dc4c0145-f3c9-42d5-ad6d-778bc9f3cbc7",
+        "important": false,
+        "notes": null
+      },
+      {
+        "name": "Refill caffiene",
+        "category": "Home",
+        "due_date": "2026-03-25",
+        "done": false,
+        "importance": null,
+        "id": "9c9f95aa-1798-48cb-8e28-06e33e254cb6",
         "important": false,
         "notes": null
       }
@@ -898,26 +958,6 @@
         "done_this_week": false,
         "done_by_week": {},
         "date_overrides": {},
-        "pup_related": null,
-        "notes": null
-      },
-      {
-        "name": "HEB",
-        "is_weekly_reset": false,
-        "day_added": "Previous Sunday",
-        "appears_on_date": "Sunday",
-        "starting_date": "2026-03-07",
-        "cadence": "weekly",
-        "done_this_week": false,
-        "done_by_week": {
-          "2026-03-02": true,
-          "2026-03-09": true,
-          "2026-03-16": true,
-          "2026-03-23": true
-        },
-        "date_overrides": {
-          "2026-03-23": "2026-03-23"
-        },
         "pup_related": null,
         "notes": null
       },
@@ -981,18 +1021,40 @@
         "notes": null
       },
       {
-        "name": "Vacuum",
-        "is_weekly_reset": true,
+        "name": "HEB",
+        "is_weekly_reset": false,
+        "day_added": "Previous Sunday",
+        "appears_on_date": "Sunday",
+        "starting_date": "2026-03-07",
+        "cadence": "weekly",
+        "done_this_week": false,
+        "done_by_week": {
+          "2026-03-02": true,
+          "2026-03-09": true,
+          "2026-03-16": true,
+          "2026-03-23": true
+        },
+        "date_overrides": {
+          "2026-03-23": "2026-03-23",
+          "2026-03-30": "__skip__"
+        },
+        "pup_related": null,
+        "notes": null
+      },
+      {
+        "name": "Journal",
+        "is_weekly_reset": false,
         "day_added": "Sunday",
         "appears_on_date": "Friday",
         "starting_date": "2026-03-07",
         "cadence": "weekly",
-        "done_this_week": true,
+        "done_this_week": false,
         "done_by_week": {
-          "2026-03-16": true,
-          "weekly-reset": true
+          "2026-03-09": true
         },
-        "date_overrides": {},
+        "date_overrides": {
+          "2026-03-16": "2026-03-23"
+        },
         "pup_related": null,
         "notes": null
       },
@@ -1035,19 +1097,6 @@
           "2026-03-09": "2026-03-18"
         },
         "pup_related": true,
-        "notes": null
-      },
-      {
-        "name": "Watebottles",
-        "is_weekly_reset": true,
-        "day_added": "Sunday",
-        "appears_on_date": "Friday",
-        "starting_date": "2026-03-18",
-        "cadence": "weekly",
-        "done_this_week": false,
-        "done_by_week": {},
-        "date_overrides": {},
-        "pup_related": null,
         "notes": null
       },
       {
@@ -1140,19 +1189,34 @@
         "notes": null
       },
       {
-        "name": "Journal",
-        "is_weekly_reset": false,
+        "name": "Vacuum",
+        "is_weekly_reset": true,
         "day_added": "Sunday",
         "appears_on_date": "Friday",
         "starting_date": "2026-03-07",
         "cadence": "weekly",
+        "done_this_week": true,
+        "done_by_week": {
+          "2026-03-16": true,
+          "2026-03-23": true,
+          "weekly-reset": true
+        },
+        "date_overrides": {},
+        "pup_related": null,
+        "notes": null
+      },
+      {
+        "name": "Watebottles",
+        "is_weekly_reset": true,
+        "day_added": "Sunday",
+        "appears_on_date": "Friday",
+        "starting_date": "2026-03-18",
+        "cadence": "weekly",
         "done_this_week": false,
         "done_by_week": {
-          "2026-03-09": true
+          "2026-03-23": true
         },
-        "date_overrides": {
-          "2026-03-16": "2026-03-23"
-        },
+        "date_overrides": {},
         "pup_related": null,
         "notes": null
       }
@@ -1168,40 +1232,13 @@
         "shop_order": null
       },
       {
-        "id": "2fc1a3c7-0cbc-4d49-a19a-48f20e289721",
-        "name": "Bowls",
-        "store": "Ikea",
+        "id": "5060e587-8c21-4ce5-8bc3-ec6d43be311e",
+        "name": "Garlic squeeze",
+        "store": "HEB",
         "done": false,
-        "created_at": "2026-03-18T17:50:33.110344+00:00",
+        "created_at": "2026-03-18T03:06:00.699938+00:00",
         "due_date": null,
-        "shop_order": 1
-      },
-      {
-        "id": "0ee083d7-85d0-424b-82e3-2a7f84c3723f",
-        "name": "griup socks",
-        "store": "Other",
-        "done": false,
-        "created_at": "2026-03-18T17:56:48.651649+00:00",
-        "due_date": null,
-        "shop_order": 7
-      },
-      {
-        "id": "63d4a10b-e42d-43dd-9771-728f5e6cabfb",
-        "name": "Mochi collar",
-        "store": "Online",
-        "done": false,
-        "created_at": "2026-03-10T14:18:17.412058+00:00",
-        "due_date": "2026-03-26",
-        "shop_order": 0
-      },
-      {
-        "id": "54e31205-2d10-4a78-9057-5800c1587948",
-        "name": "Hanging planter",
-        "store": "Ikea",
-        "done": false,
-        "created_at": "2026-03-10T14:18:17.412058+00:00",
-        "due_date": null,
-        "shop_order": 6
+        "shop_order": 2
       },
       {
         "id": "9eeb0d0c-283a-4e0d-9f29-b1bc965db522",
@@ -1210,25 +1247,7 @@
         "done": false,
         "created_at": "2026-03-10T14:18:17.412058+00:00",
         "due_date": null,
-        "shop_order": 3
-      },
-      {
-        "id": "8d195c44-9915-4513-812e-e30725a386b2",
-        "name": "Donut lamp",
-        "store": "Ikea",
-        "done": false,
-        "created_at": "2026-03-10T14:18:17.412058+00:00",
-        "due_date": null,
         "shop_order": 5
-      },
-      {
-        "id": "8e27aad9-b437-4066-81dd-fd449bf538d5",
-        "name": "Leashes - adjustable",
-        "store": "Other",
-        "done": false,
-        "created_at": "2026-03-19T14:30:01.109607+00:00",
-        "due_date": null,
-        "shop_order": 8
       },
       {
         "id": "010dd63b-57ff-457b-9ce4-d40bdb8bf1c2",
@@ -1237,16 +1256,7 @@
         "done": false,
         "created_at": "2026-03-23T01:44:25.166696+00:00",
         "due_date": null,
-        "shop_order": 4
-      },
-      {
-        "id": "5060e587-8c21-4ce5-8bc3-ec6d43be311e",
-        "name": "Garlic squeeze",
-        "store": "HEB",
-        "done": false,
-        "created_at": "2026-03-18T03:06:00.699938+00:00",
-        "due_date": null,
-        "shop_order": 2
+        "shop_order": 0
       },
       {
         "id": "c18fd7a4-8484-4636-a93d-b9e349595c5a",
@@ -1292,6 +1302,60 @@
         "created_at": "2026-03-15T15:30:13.864587+00:00",
         "due_date": null,
         "shop_order": null
+      },
+      {
+        "id": "8e27aad9-b437-4066-81dd-fd449bf538d5",
+        "name": "Leashes - adjustable",
+        "store": "Other",
+        "done": false,
+        "created_at": "2026-03-19T14:30:01.109607+00:00",
+        "due_date": null,
+        "shop_order": 4
+      },
+      {
+        "id": "63d4a10b-e42d-43dd-9771-728f5e6cabfb",
+        "name": "Mochi collar",
+        "store": "Online",
+        "done": false,
+        "created_at": "2026-03-10T14:18:17.412058+00:00",
+        "due_date": "2026-03-26",
+        "shop_order": 1
+      },
+      {
+        "id": "2fc1a3c7-0cbc-4d49-a19a-48f20e289721",
+        "name": "Bowls",
+        "store": "Ikea",
+        "done": false,
+        "created_at": "2026-03-18T17:50:33.110344+00:00",
+        "due_date": null,
+        "shop_order": 6
+      },
+      {
+        "id": "8d195c44-9915-4513-812e-e30725a386b2",
+        "name": "Donut lamp",
+        "store": "Ikea",
+        "done": false,
+        "created_at": "2026-03-10T14:18:17.412058+00:00",
+        "due_date": null,
+        "shop_order": 7
+      },
+      {
+        "id": "0ee083d7-85d0-424b-82e3-2a7f84c3723f",
+        "name": "griup socks",
+        "store": "Other",
+        "done": false,
+        "created_at": "2026-03-18T17:56:48.651649+00:00",
+        "due_date": null,
+        "shop_order": 3
+      },
+      {
+        "id": "54e31205-2d10-4a78-9057-5800c1587948",
+        "name": "Hanging planter",
+        "store": "Ikea",
+        "done": false,
+        "created_at": "2026-03-10T14:18:17.412058+00:00",
+        "due_date": null,
+        "shop_order": 8
       },
       {
         "id": "b7dae470-1ba1-4763-a66d-fece577fff49",
@@ -1352,23 +1416,33 @@
         "travel_mode": null
       },
       {
-        "id": "132be040-decd-4ede-a47b-16d49654c699",
+        "id": "56bb4c40-a8f8-44b7-ba55-37a108a7f3cb",
         "name": "San Antonio",
         "start_date": "2026-03-27",
         "end_date": "2026-03-29",
         "destination": null,
         "notes": null,
-        "created_at": "2026-03-24T02:06:36.772427+00:00",
+        "created_at": "2026-03-25T01:41:30.671708+00:00",
         "travel_mode": "drive"
       },
       {
-        "id": "b494d972-ae60-4eea-b29e-09cc13184a97",
+        "id": "2d395efa-23ea-4013-b8a7-2667ba3b819a",
+        "name": "etest",
+        "start_date": "2026-03-25",
+        "end_date": "2026-03-27",
+        "destination": null,
+        "notes": null,
+        "created_at": "2026-03-25T12:58:15.215892+00:00",
+        "travel_mode": null
+      },
+      {
+        "id": "f6977480-a6e4-4253-861b-cee1aa88eb13",
         "name": "what",
         "start_date": "2026-04-01",
         "end_date": "2026-04-03",
         "destination": null,
         "notes": null,
-        "created_at": "2026-03-24T02:22:42.03834+00:00",
+        "created_at": "2026-03-25T02:53:46.073979+00:00",
         "travel_mode": "plane"
       }
     ],
@@ -1727,22 +1801,76 @@
         "category": "commands"
       },
       {
-        "id": "0f17aed1-54cd-4ec6-8335-414b58441caf",
+        "id": "69237dcd-d494-4d99-be0c-c572565532f2",
         "pup": "Mochi",
-        "skill": "Leave it",
+        "skill": "Hold",
         "level": "Medium",
-        "skill_order": 8,
-        "stage": "In Progress",
-        "next_step": "None",
-        "word": "Leave it",
+        "skill_order": null,
+        "stage": "Not Started",
+        "next_step": null,
+        "word": null,
         "signal": null,
-        "currently_working_on": true,
+        "currently_working_on": false,
         "trainer_tip": null,
         "comments": null,
-        "created_at": "2026-03-12T14:03:48.056131+00:00",
-        "updated_at": "2026-03-12T14:03:48.056131+00:00",
+        "created_at": "2026-03-25T00:35:12.074219+00:00",
+        "updated_at": "2026-03-25T00:35:12.074219+00:00",
         "focus": false,
         "category": "commands"
+      },
+      {
+        "id": "5b931844-eabd-40c1-9c9e-5056118e3ea3",
+        "pup": "Mochi",
+        "skill": "Cross legs?",
+        "level": "Medium",
+        "skill_order": null,
+        "stage": "Not Started",
+        "next_step": null,
+        "word": null,
+        "signal": null,
+        "currently_working_on": false,
+        "trainer_tip": null,
+        "comments": null,
+        "created_at": "2026-03-25T00:34:14.21605+00:00",
+        "updated_at": "2026-03-25T00:34:14.21605+00:00",
+        "focus": false,
+        "category": "fun"
+      },
+      {
+        "id": "a1e67423-ccc0-47e8-b5f4-c042dd0ece29",
+        "pup": "Mochi",
+        "skill": "Secret",
+        "level": "Medium",
+        "skill_order": null,
+        "stage": "Not Started",
+        "next_step": null,
+        "word": null,
+        "signal": null,
+        "currently_working_on": false,
+        "trainer_tip": null,
+        "comments": null,
+        "created_at": "2026-03-25T00:34:14.798762+00:00",
+        "updated_at": "2026-03-25T00:34:14.798762+00:00",
+        "focus": false,
+        "category": "fun"
+      },
+      {
+        "id": "f8065433-3723-48f1-8b96-1a41a1c21352",
+        "pup": "Mochi",
+        "skill": "Hide",
+        "level": "Medium",
+        "skill_order": null,
+        "stage": "Not Started",
+        "next_step": null,
+        "word": null,
+        "signal": null,
+        "currently_working_on": false,
+        "trainer_tip": null,
+        "comments": null,
+        "created_at": "2026-03-25T00:35:07.007874+00:00",
+        "updated_at": "2026-03-25T00:35:07.007874+00:00",
+        "focus": false,
+        "category": "fun"
       },
       {
         "id": "5ef6af56-5ff1-4a31-8843-0df5d40706e4",
@@ -1907,6 +2035,24 @@
         "category": "commands"
       },
       {
+        "id": "ba4a70bc-572f-415b-8f59-74f0b7d168cf",
+        "pup": "Mochi",
+        "skill": "Sit pretty",
+        "level": "Medium",
+        "skill_order": null,
+        "stage": "Not Started",
+        "next_step": null,
+        "word": null,
+        "signal": null,
+        "currently_working_on": false,
+        "trainer_tip": null,
+        "comments": null,
+        "created_at": "2026-03-25T00:34:13.73258+00:00",
+        "updated_at": "2026-03-25T00:34:13.73258+00:00",
+        "focus": false,
+        "category": "fun"
+      },
+      {
         "id": "bb59f212-f9de-453d-adb4-afb705ae8285",
         "pup": "Sunny",
         "skill": "Backup",
@@ -2012,6 +2158,60 @@
         "created_at": "2026-03-12T14:03:48.056131+00:00",
         "updated_at": "2026-03-12T14:03:48.056131+00:00",
         "focus": true,
+        "category": "commands"
+      },
+      {
+        "id": "878659ba-164c-4b7c-b36c-29ada6ee5e0d",
+        "pup": "Mochi",
+        "skill": "Bring",
+        "level": "Medium",
+        "skill_order": null,
+        "stage": "Not Started",
+        "next_step": null,
+        "word": null,
+        "signal": null,
+        "currently_working_on": false,
+        "trainer_tip": null,
+        "comments": null,
+        "created_at": "2026-03-25T00:36:04.166631+00:00",
+        "updated_at": "2026-03-25T00:36:04.166631+00:00",
+        "focus": false,
+        "category": "commands"
+      },
+      {
+        "id": "0f17aed1-54cd-4ec6-8335-414b58441caf",
+        "pup": "Mochi",
+        "skill": "Leave it",
+        "level": "Medium",
+        "skill_order": 8,
+        "stage": "In Progress",
+        "next_step": "None",
+        "word": "Leave it",
+        "signal": null,
+        "currently_working_on": true,
+        "trainer_tip": null,
+        "comments": null,
+        "created_at": "2026-03-12T14:03:48.056131+00:00",
+        "updated_at": "2026-03-12T14:03:48.056131+00:00",
+        "focus": false,
+        "category": "commands"
+      },
+      {
+        "id": "f8b6991e-3422-4cc2-b05e-f2c1d73d1acc",
+        "pup": "Mochi",
+        "skill": "Shy",
+        "level": "Medium",
+        "skill_order": null,
+        "stage": "Not Started",
+        "next_step": null,
+        "word": null,
+        "signal": null,
+        "currently_working_on": false,
+        "trainer_tip": null,
+        "comments": null,
+        "created_at": "2026-03-25T00:32:44.577495+00:00",
+        "updated_at": "2026-03-25T00:32:44.577495+00:00",
+        "focus": false,
         "category": "commands"
       }
     ],
@@ -2252,6 +2452,20 @@
         "task_id": "3a6c834c-e6ce-46f0-a1b9-43d70333c90f",
         "rec_id": null,
         "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "631c94ff-1e76-4105-88a6-c1474509de23",
+        "title": "Mochi collar",
+        "day_date": "2026-03-16",
+        "start_time": "15:15:00",
+        "duration_minutes": 30,
+        "category": "Shopping",
+        "created_at": "2026-03-16T12:36:19.883918+00:00",
+        "start_minutes": 1140,
+        "task_id": null,
+        "rec_id": null,
+        "shop_id": "63d4a10b-e42d-43dd-9771-728f5e6cabfb",
         "done": false
       },
       {
@@ -2549,20 +2763,6 @@
         "done": false
       },
       {
-        "id": "5099894b-0706-4fdf-b03d-dead52d75aa6",
-        "title": "Mochi collar",
-        "day_date": "2026-03-15",
-        "start_time": "15:15:00",
-        "duration_minutes": 30,
-        "category": "Shopping",
-        "created_at": "2026-03-15T15:27:31.218927+00:00",
-        "start_minutes": 930,
-        "task_id": null,
-        "rec_id": null,
-        "shop_id": "63d4a10b-e42d-43dd-9771-728f5e6cabfb",
-        "done": false
-      },
-      {
         "id": "18f25232-69fd-4c37-9d8e-bd227a8cc07d",
         "title": "Make dentist apt",
         "day_date": "2026-03-16",
@@ -2574,6 +2774,20 @@
         "task_id": "684df50b-70ca-4a44-9133-8531ba05356a",
         "rec_id": null,
         "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "5099894b-0706-4fdf-b03d-dead52d75aa6",
+        "title": "Mochi collar",
+        "day_date": "2026-03-15",
+        "start_time": "15:15:00",
+        "duration_minutes": 30,
+        "category": "Shopping",
+        "created_at": "2026-03-15T15:27:31.218927+00:00",
+        "start_minutes": 930,
+        "task_id": null,
+        "rec_id": null,
+        "shop_id": "63d4a10b-e42d-43dd-9771-728f5e6cabfb",
         "done": false
       },
       {
@@ -2647,20 +2861,6 @@
         "done": true
       },
       {
-        "id": "631c94ff-1e76-4105-88a6-c1474509de23",
-        "title": "Mochi collar",
-        "day_date": "2026-03-16",
-        "start_time": "15:15:00",
-        "duration_minutes": 30,
-        "category": "Shopping",
-        "created_at": "2026-03-16T12:36:19.883918+00:00",
-        "start_minutes": 1140,
-        "task_id": null,
-        "rec_id": null,
-        "shop_id": "63d4a10b-e42d-43dd-9771-728f5e6cabfb",
-        "done": false
-      },
-      {
         "id": "521bb7e1-d21b-4187-8ece-781aebbd6792",
         "title": "Derm",
         "day_date": "2026-03-16",
@@ -2731,20 +2931,6 @@
         "done": true
       },
       {
-        "id": "0a6d1409-37ce-4823-8c3a-fd64266d187b",
-        "title": "Fill in TC objectives",
-        "day_date": "2026-03-24",
-        "start_time": "09:00:00",
-        "duration_minutes": 75,
-        "category": "My work",
-        "created_at": "2026-03-24T00:46:41.428418+00:00",
-        "start_minutes": 510,
-        "task_id": "ef95e9a5-67ef-42fc-ad8e-09e52743eee1",
-        "rec_id": null,
-        "shop_id": null,
-        "done": false
-      },
-      {
         "id": "8d671387-bfa5-4e6e-983e-01402237ad7c",
         "title": "Between videos",
         "day_date": "2026-03-20",
@@ -2754,20 +2940,6 @@
         "created_at": "2026-03-20T13:54:48.413625+00:00",
         "start_minutes": 720,
         "task_id": "b9a7b537-2afb-49f5-b474-251b89460550",
-        "rec_id": null,
-        "shop_id": null,
-        "done": false
-      },
-      {
-        "id": "7599b852-cd26-46cc-abc5-d89f451dc39b",
-        "title": "Between videos",
-        "day_date": "2026-03-24",
-        "start_time": "17:30:00",
-        "duration_minutes": 60,
-        "category": "My work",
-        "created_at": "2026-03-24T00:46:58.863045+00:00",
-        "start_minutes": 960,
-        "task_id": "943fc330-ddb6-45ed-984a-b793269d12e7",
         "rec_id": null,
         "shop_id": null,
         "done": false
@@ -2855,6 +3027,20 @@
         "rec_id": null,
         "shop_id": null,
         "done": true
+      },
+      {
+        "id": "727b5f97-aa9e-49de-9f87-3556fc6604f7",
+        "title": "Mochi vet apt @11am",
+        "day_date": "2026-03-26",
+        "start_time": "09:15:00",
+        "duration_minutes": 60,
+        "category": "Home",
+        "created_at": "2026-03-24T23:53:26.902717+00:00",
+        "start_minutes": 630,
+        "task_id": "135d8ba7-f859-409e-b9d7-c2e97f71f82a",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
       },
       {
         "id": "089be895-1d3a-4941-804f-07fb359b7932",
@@ -2955,6 +3141,34 @@
         "done": false
       },
       {
+        "id": "0a6d1409-37ce-4823-8c3a-fd64266d187b",
+        "title": "Fill in TC objectives",
+        "day_date": "2026-03-24",
+        "start_time": "09:00:00",
+        "duration_minutes": 75,
+        "category": "My work",
+        "created_at": "2026-03-24T00:46:41.428418+00:00",
+        "start_minutes": 510,
+        "task_id": "ef95e9a5-67ef-42fc-ad8e-09e52743eee1",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
+        "id": "05beb949-7ee7-4de0-a00a-a3cfcdf39275",
+        "title": "Tableau Call 11-12pm",
+        "day_date": "2026-03-24",
+        "start_time": "11:45:00",
+        "duration_minutes": 60,
+        "category": "My work",
+        "created_at": "2026-03-17T17:13:24.402753+00:00",
+        "start_minutes": 660,
+        "task_id": "d4215691-7227-4fa9-af3b-5c37ab76b8d1",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
         "id": "656e4637-28e3-40ec-a033-a9d1e8b16172",
         "title": "Make Sunny kongs and mochi lick mats",
         "day_date": "2026-03-16",
@@ -2978,20 +3192,6 @@
         "created_at": "2026-03-18T17:16:40.955462+00:00",
         "start_minutes": 900,
         "task_id": "b9a7b537-2afb-49f5-b474-251b89460550",
-        "rec_id": null,
-        "shop_id": null,
-        "done": false
-      },
-      {
-        "id": "05beb949-7ee7-4de0-a00a-a3cfcdf39275",
-        "title": "Tableau Call 11-12pm",
-        "day_date": "2026-03-24",
-        "start_time": "11:45:00",
-        "duration_minutes": 60,
-        "category": "My work",
-        "created_at": "2026-03-17T17:13:24.402753+00:00",
-        "start_minutes": 660,
-        "task_id": "d4215691-7227-4fa9-af3b-5c37ab76b8d1",
         "rec_id": null,
         "shop_id": null,
         "done": false
@@ -3095,34 +3295,6 @@
         "done": true
       },
       {
-        "id": "1b5c543e-eb5f-45d6-ad1a-35b67a800350",
-        "title": "Mochi collar",
-        "day_date": "2026-03-23",
-        "start_time": "19:15:00",
-        "duration_minutes": 30,
-        "category": "Shopping",
-        "created_at": "2026-03-23T13:23:01.398324+00:00",
-        "start_minutes": 1140,
-        "task_id": null,
-        "rec_id": null,
-        "shop_id": "63d4a10b-e42d-43dd-9771-728f5e6cabfb",
-        "done": false
-      },
-      {
-        "id": "a8fd338c-b6ed-4a5a-abff-359f93dd4dd3",
-        "title": "Derm Apt @10:20am",
-        "day_date": "2026-03-24",
-        "start_time": "10:15:00",
-        "duration_minutes": 45,
-        "category": "Home",
-        "created_at": "2026-03-17T17:13:21.191448+00:00",
-        "start_minutes": 615,
-        "task_id": "fcf8218d-38ca-4c81-83db-3964ddcf6b96",
-        "rec_id": null,
-        "shop_id": null,
-        "done": false
-      },
-      {
         "id": "fdda05de-6124-402d-b2da-82cedb793db4",
         "title": "Build out pages",
         "day_date": "2026-03-23",
@@ -3190,20 +3362,6 @@
         "task_id": "af5faa13-19b1-4f1d-858e-5d491114e498",
         "rec_id": null,
         "shop_id": null,
-        "done": false
-      },
-      {
-        "id": "94f39e23-0318-49da-a193-a6a23b6309dd",
-        "title": "Mochi collar",
-        "day_date": "2026-03-17",
-        "start_time": "18:45:00",
-        "duration_minutes": 30,
-        "category": "Shopping",
-        "created_at": "2026-03-17T03:03:58.063765+00:00",
-        "start_minutes": 1065,
-        "task_id": null,
-        "rec_id": null,
-        "shop_id": "63d4a10b-e42d-43dd-9771-728f5e6cabfb",
         "done": false
       },
       {
@@ -3305,6 +3463,34 @@
         "done": true
       },
       {
+        "id": "a8fd338c-b6ed-4a5a-abff-359f93dd4dd3",
+        "title": "Derm Apt @10:20am",
+        "day_date": "2026-03-24",
+        "start_time": "10:15:00",
+        "duration_minutes": 45,
+        "category": "Home",
+        "created_at": "2026-03-17T17:13:21.191448+00:00",
+        "start_minutes": 615,
+        "task_id": "fcf8218d-38ca-4c81-83db-3964ddcf6b96",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
+        "id": "e917f946-9e25-484d-b7fe-857fac838b55",
+        "title": "Between videos",
+        "day_date": "2026-03-25",
+        "start_time": "09:15:00",
+        "duration_minutes": 30,
+        "category": "My work",
+        "created_at": "2026-03-25T02:41:43.873579+00:00",
+        "start_minutes": 555,
+        "task_id": "bdc0a571-3056-4171-9398-da22e313bbac",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
         "id": "5b2247bc-0d0d-42a9-9291-3ad11ccf9bf7",
         "title": "HEB",
         "day_date": "2026-03-23",
@@ -3330,6 +3516,34 @@
         "task_id": "3a6c834c-e6ce-46f0-a1b9-43d70333c90f",
         "rec_id": null,
         "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "1b5c543e-eb5f-45d6-ad1a-35b67a800350",
+        "title": "Mochi collar",
+        "day_date": "2026-03-23",
+        "start_time": "19:15:00",
+        "duration_minutes": 30,
+        "category": "Shopping",
+        "created_at": "2026-03-23T13:23:01.398324+00:00",
+        "start_minutes": 1140,
+        "task_id": null,
+        "rec_id": null,
+        "shop_id": "63d4a10b-e42d-43dd-9771-728f5e6cabfb",
+        "done": false
+      },
+      {
+        "id": "94f39e23-0318-49da-a193-a6a23b6309dd",
+        "title": "Mochi collar",
+        "day_date": "2026-03-17",
+        "start_time": "18:45:00",
+        "duration_minutes": 30,
+        "category": "Shopping",
+        "created_at": "2026-03-17T03:03:58.063765+00:00",
+        "start_minutes": 1065,
+        "task_id": null,
+        "rec_id": null,
+        "shop_id": "63d4a10b-e42d-43dd-9771-728f5e6cabfb",
         "done": false
       }
     ],
@@ -3465,6 +3679,20 @@
         "date": "2026-03-19",
         "start_time": "14:45:00",
         "end_time": "15:15:00"
+      },
+      {
+        "id": 11,
+        "base_id": 2,
+        "date": "2026-03-24",
+        "start_time": "07:30:00",
+        "end_time": "08:00:00"
+      },
+      {
+        "id": 12,
+        "base_id": 3,
+        "date": "2026-03-25",
+        "start_time": null,
+        "end_time": null
       }
     ]
   }
