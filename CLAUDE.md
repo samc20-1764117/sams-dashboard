@@ -24,6 +24,67 @@ After pushing, confirm success by reporting the pushed commit hash.
 
 ---
 
+## Overview Page — Recurring Task Logic
+
+### Two types of recurring tasks
+- **Weekly-reset** (`is_weekly_reset=true`): appear only when explicitly scheduled via `_dateOverrides[wkKey]` = a date string. Managed by `unscheduleWRec(rid, wkKey)` (deletes the override).
+- **Non-weekly-reset** (regular recurring): appear automatically based on cadence + `appears_on_date`. Built by `getRecurringWeekTasks(off)`. Removed for a week via `skipRecVirtThisWk(rid, wkKey)` which sets `_dateOverrides[wkKey]='__skip__'`.
+
+### getRecurringWeekTasks(off)
+- Filters `st.recurring` to `!r.is_weekly_reset && r.appears_on_date` only
+- Returns one virtual task per task per week
+- Respects cadence: `weekly`, `biweekly`, `monthly`
+- Skips tasks with `_dateOverrides[wkKey]==='__skip__'` (line ~1701)
+- Returns `{..., _recId: r.id, _virtual: true, _wkKey: wkKey}` — note: `_isWrec` is NOT set here
+
+### skipRecVirtThisWk(rid, wkKey)
+Sets `_dateOverrides[wkKey]='__skip__'`, removes linked timeblocks, re-renders, PATCHes server, and pushes undo. Called when user clicks X on a non-weekly-reset recurring task.
+
+**IMPORTANT**: `ctxDoDelete` must call `skipRecVirtThisWk` (not `togRecVirt(true)`) for non-weekly-reset recurring tasks.
+
+### syncAll race condition
+When `syncAll` rebuilds `st.recurring` from DB, it must preserve any locally-pending `__skip__` entries not yet confirmed in DB:
+```js
+const existingRec = st.recurring.find(x => String(x.id) === String(stableId));
+if (existingRec && existingRec._dateOverrides) {
+  Object.keys(existingRec._dateOverrides).forEach(k => {
+    if (existingRec._dateOverrides[k] === '__skip__' && !dateOvs[k]) dateOvs[k] = '__skip__';
+  });
+}
+```
+
+### renderToday — overdue recurring task filtering
+The today list loops `for(let w=0; w>=wkOff-4; w--)` to collect virtual recurring tasks including overdue ones from prior weeks. To prevent a skipped task from reappearing as overdue from an earlier week, the loop checks all weeks from the task's occurrence week up to today:
+```js
+const _rec = st.recurring.find(x => String(x.id) === String(v._recId));
+if (_rec && _rec._dateOverrides) {
+  for (let sw = w; sw <= 0; sw++) {
+    if (_rec._dateOverrides[getWkKey(sw)] === '__skip__') return;
+  }
+}
+```
+This means: if a task was explicitly removed (`__skip__`) for week -1, it won't show as overdue from week -2 or earlier.
+
+### wrecToday (weekly-reset tasks in today's list)
+Uses `_wkKeyNow = getWkKey(wkOff)` — affected by the weekly calendar's viewed week. Shows weekly-reset tasks scheduled for `_wkKeyNow` that are overdue (`_dateOverrides[_wkKeyNow] < ds`). After `unscheduleWRec` deletes the override, the task disappears.
+
+### X button routing (which function to call)
+| Location | Task type | Function called |
+|----------|-----------|-----------------|
+| Weekly cal chip | `_isWrec=true` | inline: `delete _dateOverrides[wkKey]` + PATCH |
+| Weekly cal chip | `_virtual=true` (non-wrec) | `skipRecVirtThisWk` |
+| Today list row | `_isWrec=true` | `unscheduleWRec` |
+| Today list row | `_virtual=true` (non-wrec) | `skipRecVirtThisWk` |
+| Weekly summary row | `_isWrec=true` | `unscheduleWRec` |
+| Weekly summary row | `_virtual=true` (non-wrec) | `skipRecVirtThisWk` |
+| Context menu delete | `_isWrec=true` | `unscheduleWRec` |
+| Context menu delete | non-wrec recurring | `skipRecVirtThisWk` ← was `togRecVirt(true)`, now fixed |
+
+### Known issue (unresolved as of this session)
+After clicking X on a recurring non-weekly-reset task, Journal (specifically) still sometimes appears in today's list as overdue. Root cause not fully confirmed. Suspect: the overdue filtering logic in `renderToday` may not be running correctly in all code paths, or Journal may have a unique state (accumulated `_dateOverrides` entries from multiple past weeks).
+
+---
+
 ## Pup Skills Page — Logic Reference
 
 ### File
