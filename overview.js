@@ -263,7 +263,8 @@ function renderWkCal(){
 
     function addBanner(label,startDs,endDs,s,onClick,isPast){
       const si=Math.max(0,wkDss.indexOf(wkDss.find(d=>d>=startDs)));
-      const ei=Math.min(6,wkDss.findIndex(d=>d>=(endDs||startDs)));
+      const _eiRaw=wkDss.findIndex(d=>d>=(endDs||startDs));
+      const ei=_eiRaw<0?6:Math.min(6,_eiRaw);
       if(si<0||si>6)return;
       const colStart=colEls[si],colEnd=colEls[ei];
       if(!colStart||!colEnd)return;
