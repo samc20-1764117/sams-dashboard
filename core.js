@@ -395,10 +395,10 @@ function getTravelTasks(filterDate, onlyStartDate=false){
   return st.travel.map(tv=>{
     const sd=tv.start_date?tv.start_date.split('T')[0]:null;
     const ed=tv.end_date?tv.end_date.split('T')[0]:null;
-    const label=tv.destination?`${tv.name} ✈ ${tv.destination}`:`✈ ${tv.name}`;
+    const label=tv.destination?`${tv.name} → ${tv.destination}`:tv.name;
     return{
       id:'tv-'+tv.id, name:label, category:'Travel',
-      due_date:sd, end_date:ed, done:false,
+      due_date:sd, end_date:ed, done:false, travel_mode:tv.travel_mode||null,
       _srcId:tv.id, _srcTable:'travel', _virtual:true, _type:'travel'
     };
   }).filter(t=>{
@@ -462,8 +462,8 @@ function getExtrasForWeek(off=0){
   }).map(tv=>{
     const sd=tv.start_date.split('T')[0];
     const ed=tv.end_date?tv.end_date.split('T')[0]:sd;
-    const label=tv.destination?`${tv.name} ✈ ${tv.destination}`:`✈ ${tv.name}`;
-    return{id:'tv-'+tv.id,name:label,category:'Travel',due_date:sd,end_date:ed,done:false,_virtual:true,_type:'travel'};
+    const label=tv.destination?`${tv.name} → ${tv.destination}`:tv.name;
+    return{id:'tv-'+tv.id,name:label,category:'Travel',due_date:sd,end_date:ed,done:false,travel_mode:tv.travel_mode||null,_virtual:true,_type:'travel'};
   });
   const bdayItems=dates.flatMap(d=>getBirthdayTasks(d2s(d)));
   return[...travelItems,...bdayItems];
