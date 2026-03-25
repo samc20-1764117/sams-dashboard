@@ -490,21 +490,23 @@ function sortTasks(tasks){
   });
 }
 
-// ── Remove linked TB blocks when task moves off today ──────────────────────────
+// ── Remove linked TB blocks when task moves off a date ──────────────────────────
 function removeTBBlocksForDate(ds, opts={}){
-  // opts: {taskId, recId, shopId}
-  const today=d2s(new Date());
-  if(ds===today)return; // moved TO today — don't remove
+  // opts: {taskId, recId, shopId, oldDs}
+  const fromDs=opts.oldDs||d2s(new Date());
+  if(ds===fromDs)return; // moved to same day — don't remove
   if(opts.taskId){
-    st.blocks=st.blocks.filter(b=>!(String(b.taskId)===String(opts.taskId)&&b.ds===today));
+    const removed=st.blocks.filter(b=>String(b.taskId)===String(opts.taskId)&&b.ds===fromDs);
+    removed.forEach(b=>sbDeleteBlock(b.id));
+    st.blocks=st.blocks.filter(b=>!(String(b.taskId)===String(opts.taskId)&&b.ds===fromDs));
   }
   if(opts.recId){
     // TB blocks linked to recurring tasks store taskId as 'rec-'+recId or match by title — remove by recId field
-    st.blocks=st.blocks.filter(b=>!(b.recId&&String(b.recId)===String(opts.recId)&&b.ds===today));
+    st.blocks=st.blocks.filter(b=>!(b.recId&&String(b.recId)===String(opts.recId)&&b.ds===fromDs));
   }
   // shopping items: match by shopId
   if(opts.shopId){
-    st.blocks=st.blocks.filter(b=>!(b.shopId&&String(b.shopId)===String(opts.shopId)&&b.ds===today));
+    st.blocks=st.blocks.filter(b=>!(b.shopId&&String(b.shopId)===String(opts.shopId)&&b.ds===fromDs));
   }
   save();
   if(document.getElementById('tbGrid'))renderDayTB();

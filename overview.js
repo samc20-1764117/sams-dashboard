@@ -431,9 +431,10 @@ function renderWkCal(){
       if(t){
         const prev={due_date:t.due_date};
         const sid=String(t.id);
+        const prevDs=(prev.due_date||'').split('T')[0];
         localOverrides[sid]={due_date:ds};pendingLocal.add(sid);save();
         t.due_date=ds;dragId=null;
-        removeTBBlocksForDate(ds,{taskId:t.id});
+        removeTBBlocksForDate(ds,{taskId:t.id,oldDs:prevDs});
         renderAll();
         pushUndo(()=>{
           t.due_date=prev.due_date;
