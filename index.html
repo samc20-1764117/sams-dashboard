@@ -2041,8 +2041,11 @@ function renderToday(){
   // Add virtual recurring tasks + travel + birthdays for today
   // Also pull overdue recurring from past weeks (up to 4 weeks back)
   const allRecVirt=[];
+  // Build set of recIds skipped for the currently-viewed week so overdue instances are also hidden
+  const _skippedThisWk=new Set(st.recurring.filter(r=>r._dateOverrides&&r._dateOverrides[getWkKey(wkOff)]==='__skip__').map(r=>String(r.id)));
   for(let w=0;w>=wkOff-4;w--){
     getRecurringWeekTasks(w).forEach(v=>{
+      if(_skippedThisWk.has(String(v._recId)))return;
       if(!allRecVirt.find(x=>x._recId===v._recId))allRecVirt.push(v);
     });
   }
