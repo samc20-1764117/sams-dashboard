@@ -916,91 +916,68 @@ function dropOnTodayList(e){
 }
 
 // ── Shop overview ──────────────────────────────────────────────────────────────
-let shopOvSortMode='manual'; // 'manual'|'store'|'alpha'
-let _shopDrag={active:false,id:null};
 function _shopOvSort(arr){
-  const a=[...arr];
-  if(shopOvSortMode==='store')return a.sort((x,y)=>(x.store||'').localeCompare(y.store||'')||(x.name||'').localeCompare(y.name||''));
-  if(shopOvSortMode==='alpha')return a.sort((x,y)=>(x.name||'').localeCompare(y.name||''));
-  return a.sort((x,y)=>(x.shop_order??9999)-(y.shop_order??9999));
-}
-function cycleShopOvSort(){
-  shopOvSortMode=shopOvSortMode==='manual'?'store':shopOvSortMode==='store'?'alpha':'manual';
-  const btn=document.getElementById('shopOvSortBtn');
-  if(btn)btn.textContent=shopOvSortMode==='store'?'⇅ Store':shopOvSortMode==='alpha'?'⇅ A–Z':'⇅ Manual';
-  renderShopOv();
+  return[...arr].sort((x,y)=>(x.shop_order??9999)-(y.shop_order??9999));
 }
 function renderShopOv(){
   const shopSorted=_shopOvSort(st.shopping.filter(s=>!s.done));
-  const isManual=shopOvSortMode==='manual';
   const container=document.getElementById('shopOv');
   container.innerHTML='';
   shopSorted.forEach(s=>{
     const el=document.createElement('div');
     el.className='ti';el.id='ti-shop-cal-'+s.id;
-    el.draggable=true;
-    el.innerHTML=(isManual?'<span class="shop-grip" title="Drag to reorder">⠿</span>':'')+
+    el.innerHTML=
       `<label class="chk-wrap"><input type="checkbox" class="chk"${s.done?' checked':''}></label>`+
       `<span class="tn">${escHtml(s.name)}</span>`+
       `<span class="cpill" style="background:rgba(241,245,249,.9);color:#64748b;border-color:rgba(148,163,184,.25);flex-shrink:0">${escHtml(s.store||'')}</span>`+
       `<button class="delbtn">✕</button>`;
-    el.addEventListener('dragstart',e=>{
-      if(_shopDrag.active){e.preventDefault();return;}
-      dragId='shop::'+s.id;e.dataTransfer.effectAllowed='move';
-      el.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);
-    });
-    el.addEventListener('dragend',()=>{el.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false);});
     el.addEventListener('click',e=>tiClickShop(e,s.id));
     el.addEventListener('dblclick',e=>tiDblShop(e,s.id));
     el.addEventListener('contextmenu',e=>showCtxShop(e,s.id));
     el.querySelector('.chk-wrap').addEventListener('click',e=>e.stopPropagation());
     el.querySelector('.chk').addEventListener('change',e=>togShop(s.id,e.target.checked));
     el.querySelector('.delbtn').addEventListener('click',e=>{e.stopPropagation();delShop(s.id);});
-    if(isManual){
-      el.querySelector('.shop-grip').addEventListener('mousedown',e=>{
-        e.preventDefault();e.stopPropagation();
-        let dragging=false;
-        const startY=e.clientY;
-        _shopDrag.active=true;_shopDrag.id=s.id;
-        const onMove=ev=>{
-          const dy=ev.clientY-startY;
-          if(!dragging&&Math.abs(dy)<5)return;
-          dragging=true;
-          el.style.opacity='.4';
-          const rows=[...document.querySelectorAll('#shopOv .ti')];
-          rows.forEach(r=>r.classList.remove('shop-dov'));
-          const over=rows.find(r=>{
-            if(r===el)return false;
-            const rc=r.getBoundingClientRect();
-            return ev.clientY>=rc.top&&ev.clientY<=rc.bottom;
-          });
-          if(over)over.classList.add('shop-dov');
-        };
-        const onUp=()=>{
-          document.removeEventListener('mousemove',onMove);
-          document.removeEventListener('mouseup',onUp);
-          el.style.opacity='';
-          _shopDrag.active=false;_shopDrag.id=null;
-          const rows=[...document.querySelectorAll('#shopOv .ti')];
-          const target=rows.find(r=>r.classList.contains('shop-dov'));
-          rows.forEach(r=>r.classList.remove('shop-dov'));
-          if(dragging&&target){
-            const targetId=target.id.replace('ti-shop-cal-','');
-            const items=_shopOvSort(st.shopping.filter(x=>!x.done));
-            const fi=items.findIndex(x=>String(x.id)===String(s.id));
-            const ti=items.findIndex(x=>String(x.id)===String(targetId));
-            if(fi>=0&&ti>=0){
-              items.splice(ti,0,items.splice(fi,1)[0]);
-              items.forEach((x,i)=>{x.shop_order=i;});
-              renderShopOv();
-              items.forEach(x=>sbReqNullable('PATCH','shopping_list',{shop_order:x.shop_order},`?id=eq.${x.id}`));
-            }
+    el.addEventListener('mousedown',e=>{
+      if(e.target.closest('.chk-wrap')||e.target.closest('.delbtn'))return;
+      let dragging=false;
+      const startY=e.clientY;
+      const onMove=ev=>{
+        const dy=ev.clientY-startY;
+        if(!dragging&&Math.abs(dy)<5)return;
+        dragging=true;
+        el.style.opacity='.4';
+        const rows=[...document.querySelectorAll('#shopOv .ti')];
+        rows.forEach(r=>r.classList.remove('shop-dov'));
+        const over=rows.find(r=>{
+          if(r===el)return false;
+          const rc=r.getBoundingClientRect();
+          return ev.clientY>=rc.top&&ev.clientY<=rc.bottom;
+        });
+        if(over)over.classList.add('shop-dov');
+      };
+      const onUp=()=>{
+        document.removeEventListener('mousemove',onMove);
+        document.removeEventListener('mouseup',onUp);
+        el.style.opacity='';
+        const rows=[...document.querySelectorAll('#shopOv .ti')];
+        const target=rows.find(r=>r.classList.contains('shop-dov'));
+        rows.forEach(r=>r.classList.remove('shop-dov'));
+        if(dragging&&target){
+          const targetId=target.id.replace('ti-shop-cal-','');
+          const items=_shopOvSort(st.shopping.filter(x=>!x.done));
+          const fi=items.findIndex(x=>String(x.id)===String(s.id));
+          const ti=items.findIndex(x=>String(x.id)===String(targetId));
+          if(fi>=0&&ti>=0){
+            items.splice(ti,0,items.splice(fi,1)[0]);
+            items.forEach((x,i)=>{x.shop_order=i;});
+            renderShopOv();
+            items.forEach(x=>sbReqNullable('PATCH','shopping_list',{shop_order:x.shop_order},`?id=eq.${x.id}`));
           }
-        };
-        document.addEventListener('mousemove',onMove);
-        document.addEventListener('mouseup',onUp);
-      });
-    }
+        }
+      };
+      document.addEventListener('mousemove',onMove);
+      document.addEventListener('mouseup',onUp);
+    });
     container.appendChild(el);
   });
 }
