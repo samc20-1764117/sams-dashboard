@@ -2535,7 +2535,7 @@ function renderWkCal(){
             delete r._dateOverrides[wkKey];save();renderAll();renderWkCal();
             sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},recQs(r.id));
             pushUndo(()=>{if(!r._dateOverrides)r._dateOverrides={};r._dateOverrides[wkKey]=prev;save();renderAll();renderWkCal();sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},recQs(r.id));},'Removed from calendar');}
-        } else if(t._virtual){togRecVirt(t._recId,true,t._wkKey||getWkKey(wkOff));}
+        } else if(t._virtual){skipRecVirtThisWk(t._recId,t._wkKey||getWkKey(wkOff));}
         else{delTask(t.id,e2);}
       });
       chip.appendChild(dx);
