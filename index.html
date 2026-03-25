@@ -1360,7 +1360,7 @@ body.dark .bday-add-menu{background:rgba(38,20,10,.97);border-color:rgba(255,220
 <script>
 function tickClock(){const t=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});const el=document.getElementById('liveClock');if(el)el.textContent=t;document.querySelectorAll('.topbar-time').forEach(e=>e.textContent=t);}
 function _updateOvTopDate(){const now=new Date();const ds=now.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});document.querySelectorAll('.topbar-date').forEach(e=>e.textContent=ds);}
-tickClock();_updateOvTopDate();setInterval(tickClock,1000);
+tickClock();_updateOvTopDate();setInterval(tickClock,1000);init();
 </script>
 <!-- Quick Notes -->
 <button id="qnBtn" onclick="toggleQN()" title="Quick Notes">📝</button>

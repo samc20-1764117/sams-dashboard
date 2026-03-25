@@ -1878,7 +1878,6 @@ function init(){
   setupWkcEdgeDrop();setupEdge('wkListEdgeR',1);
   setInterval(()=>{if(cfg.url&&cfg.key)syncAll(true);},30000);
 }
-init();
 
 function toggleKanban(){
   const wrap=document.getElementById('kanbanWrap');
