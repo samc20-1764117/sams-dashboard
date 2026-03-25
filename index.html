@@ -2183,9 +2183,10 @@ function tRowShopVirt(t,noDate=false,tbArrow=false,noColor=false){
 function renderWkSummary(){
   const virtRec=getRecurringWeekTasks(wkOff);
   const virtExtras=getExtrasForWeek(wkOff);
+  const _wrecWkk=getWkKey(wkOff);
   const wrecThisWk=st.recurring
-    .filter(r=>(r.is_weekly_reset===true||r.is_weekly_reset==='true')&&r._dateOverrides&&Object.values(r._dateOverrides).some(d=>{const wkDss=[];for(let i=0;i<7;i++){const day=new Date();day.setDate(day.getDate()-((day.getDay()||7)-1)+wkOff*7+i);wkDss.push(d2s(day));}return wkDss.includes(d);}))
-    .map(r=>{const ds=r._dateOverrides&&Object.entries(r._dateOverrides).find(([k,v])=>isInWk(v,wkOff))?.[1];const wkk=getWkKey(wkOff);return{id:'rec-virt-'+r.id,name:r.name,category:'Recurring',due_date:ds,done:!!(r._doneByWk&&r._doneByWk[wkk]),_recId:r.id,_virtual:true,_isWrec:true};})
+    .filter(r=>(r.is_weekly_reset===true||r.is_weekly_reset==='true')&&r._dateOverrides&&r._dateOverrides[_wrecWkk]&&r._dateOverrides[_wrecWkk]!=='__skip__')
+    .map(r=>{const ds=r._dateOverrides[_wrecWkk];return{id:'rec-virt-'+r.id,name:r.name,category:'Recurring',due_date:ds,done:!!(r._doneByWk&&r._doneByWk[_wrecWkk]),_recId:r.id,_virtual:true,_isWrec:true,_wkKey:_wrecWkk};})
     .filter(v=>v.due_date&&!v.done);
   const shopThisWk=st.shopping
     .filter(s=>s.due_date&&isInWk(s.due_date,wkOff)&&!s.done)
@@ -4290,14 +4291,14 @@ function skipRecVirtThisWk(rid,wkKey){
   r._dateOverrides[wkKey]='__skip__';
   const linkedBlocks=st.blocks?st.blocks.filter(b=>String(b.recId)===String(rid)&&isInWk(b.ds,wkOff)):[];
   if(st.blocks)st.blocks=st.blocks.filter(b=>!(String(b.recId)===String(rid)&&isInWk(b.ds,wkOff)));
-  save();renderRecOv();renderWeeklyPage();renderToday();renderWkSummary();renderWkCal();
+  save();renderWeeklyPage();renderToday();renderWkSummary();renderWkCal();
   if(document.getElementById('tbGrid'))renderDayTB();
   linkedBlocks.forEach(b=>sbDeleteBlock(b.id));
   sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},recQs(rid));
   pushUndo(()=>{
     if(prev!==undefined)r._dateOverrides[wkKey]=prev;else delete r._dateOverrides[wkKey];
     linkedBlocks.forEach(b=>{if(st.blocks)st.blocks.push(b);sbSaveBlock(b);});
-    save();renderRecOv();renderWeeklyPage();renderToday();renderWkSummary();renderWkCal();
+    save();renderWeeklyPage();renderToday();renderWkSummary();renderWkCal();
     if(document.getElementById('tbGrid'))renderDayTB();
     sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},recQs(rid));
   },'Removed from week');
