@@ -377,7 +377,7 @@ function renderPupsPage(){
     const NS_LABEL={Duration:'1. Duration',Distance:'2. Distance',Distraction:'3. Distraction'};
     const ns=!isMastered&&s.next_step&&s.next_step!=='None'?(NS_LABEL[s.next_step]||s.next_step):'';
     const cm=!isMastered&&s.comments&&s.comments!=='None'?s.comments:'';
-    const wd=s.word&&s.word!=='None'?esc(s.word):'';
+    const wd=(s.word&&s.word!=='None'&&s.word.toLowerCase()!==s.skill.toLowerCase())?esc(s.word):'';
     const sig=s.signal&&s.signal!=='None'?esc(s.signal):'';
     const sid=String(s.id);
     const sigTip=sig?` onmouseenter="showPupTip(event,'${sig}')" onmouseleave="hidePupTip()" style="cursor:help"`:' style=""';
