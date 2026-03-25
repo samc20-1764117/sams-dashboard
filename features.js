@@ -2439,7 +2439,15 @@ function toggleDark(){
   const lb=document.getElementById('darkToggleLabel');if(lb)lb.textContent=isDark?'Light Mode':'Night Mode';
 }
 function toggleSettingsPopup(){
-  const p=document.getElementById('settingsPopup');if(p)p.classList.toggle('open');
+  const p=document.getElementById('settingsPopup');if(!p)return;
+  const isOpen=p.classList.contains('open');
+  if(!isOpen){
+    const btn=document.getElementById('settingsBtn');
+    const r=btn.getBoundingClientRect();
+    p.style.top=(r.bottom+8)+'px';
+    p.style.right=(window.innerWidth-r.right)+'px';
+  }
+  p.classList.toggle('open');
 }
 document.addEventListener('click',function(e){
   const popup=document.getElementById('settingsPopup');

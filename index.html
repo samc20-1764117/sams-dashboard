@@ -81,7 +81,7 @@ body.dark .dark-toggle:hover{background:rgba(255,255,255,.14);}
 .settings-btn:hover{background:rgba(255,255,255,.85);box-shadow:0 3px 12px rgba(0,0,0,.1);}
 body.dark .settings-btn{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.12);color:var(--text);}
 body.dark .settings-btn:hover{background:rgba(255,255,255,.14);}
-.settings-popup{display:none;position:absolute;top:calc(100% + 8px);right:0;background:rgba(255,255,255,.92);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.8);border-radius:14px;padding:10px;box-shadow:0 8px 32px rgba(0,0,0,.12);min-width:160px;z-index:200;flex-direction:column;gap:6px;}
+.settings-popup{display:none;position:fixed;background:rgba(255,255,255,.92);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.8);border-radius:14px;padding:10px;box-shadow:0 8px 32px rgba(0,0,0,.12);min-width:160px;z-index:9999;flex-direction:column;gap:6px;}
 .settings-popup.open{display:flex;}
 body.dark .settings-popup{background:rgba(28,26,48,.95);border-color:rgba(255,255,255,.1);}
 .settings-popup-item{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:8px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:11px;color:var(--muted);transition:background .12s;white-space:nowrap;}
