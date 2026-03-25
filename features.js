@@ -856,7 +856,7 @@ function openTravelModal(id,preStart,preEnd){
   setTimeout(()=>document.getElementById('tvName').focus(),60);
 }
 async function saveTravelModal(){
-  const name=document.getElementById('tvName').value.trim();if(!name)return;
+  const name=document.getElementById('tvName').value.trim();if(!name){closeMod('travelModal');return;}
   const dest=document.getElementById('tvDest').value.trim()||null;
   const start=document.getElementById('tvStart').value||null;
   const end=document.getElementById('tvEnd').value||null;
