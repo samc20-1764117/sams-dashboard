@@ -258,8 +258,18 @@ async function syncAll(silent=false){
     }
     if(bdays)st.birthdays=bdays.map(b=>{const loc=st.birthdays.find(x=>String(x.id)===String(b.id));return(loc&&loc.present_ideas&&!b.present_ideas)?{...b,present_ideas:loc.present_ideas}:b;});
     if(pupSkills){
-      if(!silent){_pupUndoDirty=false;st.pup_skills=pupSkills;}
-      else if(!_pupUndoDirty){st.pup_skills=pupSkills;}
+      if(!silent){
+        _pupUndoDirty=false;
+        if(typeof _pupPendingIds!=='undefined'&&_pupPendingIds.size>0){
+          st.pup_skills=pupSkills.map(dbS=>{
+            const sid=String(dbS.id);
+            if(_pupPendingIds.has(sid)){const loc=st.pup_skills.find(x=>String(x.id)===sid);return loc||dbS;}
+            return dbS;
+          });
+        } else {
+          st.pup_skills=pupSkills;
+        }
+      } else if(!_pupUndoDirty){st.pup_skills=pupSkills;}
     }
     if(recipes){
       if(!silent){_recUndoDirty=false;st.recipes=recipes;}

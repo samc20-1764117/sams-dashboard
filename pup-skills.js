@@ -2,6 +2,7 @@ let _pupEditId=null;
 let _selPupIds=new Set(),_lastSelPupId=null,_copiedPups=[],_pupCtxId=null;
 let _pupSortCol=null,_pupSortDir=1,_pupFilter=null;
 let _pupUndoStack=[],_pupRedoStack=[],_pupHdrClickTimer=null,_pupUndoDirty=false;
+let _pupPendingIds=new Set();
 function pupSnapshot(){_pupUndoStack.push(JSON.parse(JSON.stringify(st.pup_skills)));if(_pupUndoStack.length>20)_pupUndoStack.shift();_pupRedoStack=[];}
 function _pupSyncToServer(prev,next){
   const pm=new Map(prev.map(s=>[String(s.id),s]));
@@ -99,7 +100,9 @@ async function setPupField(id,field,val,origVal){
     st.pup_skills[idx].stage='In Progress';patch.stage='In Progress';
   }
   save();
+  _pupPendingIds.add(String(id));
   await sbReqSilent('PATCH','pup_skills',patch,`?id=eq.${id}`);
+  _pupPendingIds.delete(String(id));
   if(field==='focus')renderPupsPage();
 }
 function selPupRow(e,sid){
