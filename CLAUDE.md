@@ -1,5 +1,14 @@
 # Sam's Dashboard
 
+## Response & Search Rules
+
+- Responses: short numbered list of changes only. No explanations unless asked.
+- Grep: use `-C 1` or no context by default. Only expand if the first result is insufficient.
+- File reads: grep for the exact function/line first, then read only that range. Never read a full large file (overview.js, features.js, core.js) in one pass.
+- dashboard_rules.md: grep for the relevant section keyword instead of reading the whole file.
+
+---
+
 ## Git Workflow
 
 ### Auto-commit
