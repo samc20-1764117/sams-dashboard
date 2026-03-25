@@ -103,7 +103,7 @@ async function setPupField(id,field,val,origVal){
   _pupPendingIds.add(String(id));
   await sbReqSilent('PATCH','pup_skills',patch,`?id=eq.${id}`);
   _pupPendingIds.delete(String(id));
-  if(field==='focus')renderPupsPage();
+  renderPupsPage();
 }
 function selPupRow(e,sid){
   if(e.target.closest('input,button'))return;
