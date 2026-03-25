@@ -281,11 +281,22 @@ Per-week keyed by `getWkKey(wkOff)` in `_doneByWk`. Never use `r._done`. `togRec
 
 ---
 
+## Top-Right Controls
+
+- Fixed position (`top:14px; right:20px; z-index:90`), visible on all pages.
+- Order (left → right): **Sync bar** | **Settings button (⚙)**
+- **Settings button** (`#settingsBtn`): opens/closes `#settingsPopup` via `toggleSettingsPopup()`.
+- **Settings popup** contains: Night Mode toggle + Backup Sync button. Closes on outside click.
+- Night Mode: `toggleDark()` toggles `body.dark`, updates `#darkToggleIcon` (🌙/☀️) and `#darkToggleLabel` (Night Mode/Light Mode). Persists in `cfg.dark`.
+- No standalone dark-toggle button — night mode lives only in the settings popup.
+
+---
+
 ## Local Backup System
 
 - `backup.js` + cron `0 8 * * *` → `backup_auto.json`. `restore.js`: deletes all rows then re-inserts.
 - Tables: `tasks, recurring_tasks, shopping_list, travel, birthdays, pup_skills, time_blocks, auto_timeblocks, auto_timeblock_overrides`.
-- Manual backup: "Backup" button → browser download `backup_manual.json`.
+- Manual backup: "Backup Sync" item in settings popup → browser download `backup_manual.json`. Button text resets to "Backup Sync" after save/fail.
 
 ---
 
