@@ -11,23 +11,42 @@ All files live in the same folder. `index.html` loads the JS files in order via 
 | `index.html` | ~1,392 | HTML structure + all CSS (`<style>`) + 4 `<script src>` tags + small inline clock script |
 | `core.js` | ~682 | Must load **first**. Constants (CATS, KCATS), state variables (cfg, st, dayOff, wkOff…), localStorage (load/save), Supabase helpers (sbReq, sbReqSilent, sbReqNullable), time block DB helpers (sbSaveBlock, sbDeleteBlock, sbUpdateBlock), syncAll, setBadge, date utilities (getWkKey, getWkBounds, getDayDate, d2s…), recurring virtual task helpers (getRecurringWeekTasks), undo/redo (pushUndo, doUndo, doRedo, showToast), global keydown listener |
 | `overview.js` | ~1,694 | renderAll, renderOv, renderToday, renderWkSummary, renderWkCal, renderRecOv, renderShopOv, renderUnassigned, renderKanban, renderDayTB, auto-timeblock logic (getAutoTBForDate), virtual recurring row renderers, task row helper (tRow), drag-and-drop on today list |
-| `features.js` | ~2,661 | Quick-add popup (openQA/submitQA), task CRUD (toggleTask, editTask, delTask, addTask), renderTasksPage, recurring tasks page (renderWeeklyPage/renderRecurringPage), shopping full page (renderShopFull), month modal/date picker, travel page (renderTravelPage), birthdays page (renderBdayPage) + all birthday interaction state, unscheduleWRec, skipRecVirtThisWk, recipes page (renderRecipesPage), showPage, closeMod, init, selection system (selTask, applySelHighlight), context menus (showCtx, ctxDoDuplicate, ctxDoDelete), quick notes (toggleQN) |
+| `features.js` | ~2,661 | Quick-add popup (openQA/submitQA), task CRUD (toggleTask, editTask, delTask, addTask), renderTasksPage, recurring tasks page (renderWeeklyPage/renderRecurringPage), shopping full page (renderShopFull), month modal/date picker, travel page (renderTravelPage), birthdays page (renderBdayPage) + all birthday interaction state, unscheduleWRec, skipRecVirtThisWk, recipes page (renderRecipesPage), showPage, closeMod, init() definition (NOT called here — called from index.html after all scripts load), selection system (selTask, applySelHighlight, selectedTasks, clearSelection), context menus (showCtx, ctxDoDuplicate, ctxDoDelete), quick notes (toggleQN) |
 | `pup-skills.js` | ~433 | All pup skills state (_pupEditId, _selPupIds, _pupUndoStack…), renderPupsPage, renderPupTable, pupSnapshot/pupUndo/pupRedo/_pupSyncToServer, openPupAddModal/openPupEditModal/savePupModal, setPupField, selPupRow, applyPupSelHighlight, pupCellEdit, showPupCtx, pupSortBy, pupFilterBy, showPupTip/hidePupTip, togglePupMastered |
 
 ### Loading Order
 ```html
 <script src="core.js"></script>       <!-- defines st, cfg, sbReq, dates, undo -->
 <script src="overview.js"></script>   <!-- defines renderAll and all overview rendering -->
-<script src="features.js"></script>   <!-- defines all pages, CRUD, init() — init() runs here -->
+<script src="features.js"></script>   <!-- defines all pages, CRUD, selection system -->
 <script src="pup-skills.js"></script> <!-- defines pup skills feature -->
+<!-- inline <script> at bottom of index.html: calls init() AFTER all 4 files are loaded -->
 ```
 
 ### Key Rules for Making Changes
 - **Where is X?** — If it renders the Overview page (today, calendar, time blocks, kanban): `overview.js`. If it's a secondary page (recurring, shopping, travel, birthdays, recipes) or task CRUD or selection/context menu: `features.js`. If it's pup skills: `pup-skills.js`. If it's a shared utility, Supabase helper, date function, or undo/redo: `core.js`.
 - **Adding a new shared function** (called from multiple files) → put it in `core.js`.
 - **Cross-file function calls are safe** — all 4 files share global scope. A function defined in `core.js` can be called from `features.js` and vice versa.
-- **`init()` is in `features.js`** — it runs at the end of that file and calls `renderAll()` (overview.js) and `syncAll()` (core.js). This works because scripts are synchronous — all 4 files are fully loaded before any user interaction.
+- **`init()` is called in the inline `<script>` at the bottom of `index.html`**, NOT inside `features.js`. This is critical — see the warning below.
 - **`skipRecVirtThisWk` and `unscheduleWRec`** are in `features.js` (not core.js), even though they're called from the overview calendar chips. This is fine because the calls happen at event-fire time, after all scripts have loaded.
+
+### ⚠️ CRITICAL: init() Must Run After ALL Scripts Are Loaded
+
+**The bug:** If `init()` is called inside `features.js` (which loads 3rd), it runs before `pup-skills.js` (4th) is loaded. `renderAll()` calls `renderPupsPage()` which is defined in `pup-skills.js` — this throws `TypeError: renderPupsPage is not a function`. That error stops `features.js` execution mid-script, leaving critical globals uninitialized:
+- `const selectedTasks` (declared after the `init()` call) stays in the Temporal Dead Zone
+- `document.addEventListener('keydown', ...)` (copy/paste/delete shortcuts) is never registered
+- `document.addEventListener('mousedown', ...)` (clear-on-outside-click) is never registered
+
+**Symptom:** Everything interactive appears broken — single-click select, double-click edit, copy/paste, multi-select all silently fail with `ReferenceError: Cannot access 'selectedTasks' before initialization`.
+
+**The fix:** `init()` is called in the inline `<script>` at the bottom of `index.html`, which runs after all 4 `<script src>` tags have executed. `renderAll()` also guards against functions from later-loaded scripts:
+```js
+// overview.js renderAll — guards against pup-skills.js not yet loaded (safety net)
+if(typeof renderPupsPage==='function')renderPupsPage();
+if(typeof renderRecipesPage==='function')renderRecipesPage();
+```
+
+**Rule:** Never move `init()` back into `features.js`. If you add a new page whose render function lives in a file loaded after `features.js`, add a `typeof` guard in `renderAll()`.
 - **Pup skills `_pupUndoDirty` flag** interacts with `syncAll()` in `core.js` via the global `_pupUndoDirty` variable. Do not move either without updating the other.
 - **CSS stays in `index.html`** — it's only ~674 lines and is tightly coupled to HTML class names. Do not split it out.
 
