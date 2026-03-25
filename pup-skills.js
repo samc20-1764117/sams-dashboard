@@ -374,7 +374,8 @@ function renderPupsPage(){
   function lvlPill(s){return s.level?`<span class="pup-pill">${s.level}</span>`:'';}
   function skillCardRow(s,cls){
     const isMastered=s.stage==='Mastered';
-    const ns=!isMastered&&s.next_step&&s.next_step!=='None'?s.next_step:'';
+    const NS_LABEL={Duration:'1. Duration',Distance:'2. Distance',Distraction:'3. Distraction'};
+    const ns=!isMastered&&s.next_step&&s.next_step!=='None'?(NS_LABEL[s.next_step]||s.next_step):'';
     const cm=!isMastered&&s.comments&&s.comments!=='None'?s.comments:'';
     const wd=s.word&&s.word!=='None'?esc(s.word):'';
     const sig=s.signal&&s.signal!=='None'?esc(s.signal):'';
