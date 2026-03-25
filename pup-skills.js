@@ -269,7 +269,7 @@ function pupCellEdit(td,id,field){
   else if(field==='category'){el=document.createElement('select');[['','—'],['commands','Commands'],['manners','Manners'],['fun','Fun']].forEach(([v,t])=>{const o=document.createElement('option');o.value=v;o.textContent=t;if((s.category||'')===v)o.selected=true;el.appendChild(o);});}
   else if(field==='level'){el=document.createElement('select');['','Easy','Medium','Hard'].forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v||'—';if((s.level||'')===v)o.selected=true;el.appendChild(o);});}
   else if(field==='stage'){el=document.createElement('select');['Not Started','In Progress','Mastered'].forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;if(s.stage===v)o.selected=true;el.appendChild(o);});}
-  else if(field==='next_step'){el=document.createElement('select');[['','—'],['Duration','1. Duration'],['Distance','2. Distance'],['Distraction','3. Distraction']].forEach(([v,t])=>{const o=document.createElement('option');o.value=v;o.textContent=t;if((s.next_step||'')===v)o.selected=true;el.appendChild(o);});}
+  else if(field==='next_step'){el=document.createElement('select');[['','—'],['1. Duration','1. Duration'],['2. Distance','2. Distance'],['3. Distraction','3. Distraction']].forEach(([v,t])=>{const o=document.createElement('option');o.value=v;o.textContent=t;if((s.next_step||'')===v)o.selected=true;el.appendChild(o);});}
   else{el=document.createElement('input');el.value=s[field]||'';}
   el.style.cssText=elStyle;
   const origTxt=td.textContent;
@@ -380,8 +380,7 @@ function renderPupsPage(){
   function lvlPill(s){return s.level?`<span class="pup-pill">${s.level}</span>`:'';}
   function skillCardRow(s,cls){
     const isMastered=s.stage==='Mastered';
-    const NS_LABEL={Duration:'1. Duration',Distance:'2. Distance',Distraction:'3. Distraction'};
-    const ns=!isMastered&&s.next_step&&s.next_step!=='None'?(NS_LABEL[s.next_step]||s.next_step):'';
+    const ns=!isMastered&&s.next_step&&s.next_step!=='None'?s.next_step:'';
     const cm=!isMastered&&s.comments&&s.comments!=='None'?s.comments:'';
     const wd=(s.word&&s.word!=='None'&&s.word.toLowerCase()!==s.skill.toLowerCase())?esc(s.word):'';
     const sig=s.signal&&s.signal!=='None'?esc(s.signal):'';
