@@ -944,7 +944,9 @@ function renderShopOv(){
       const onMove=ev=>{
         const dy=ev.clientY-startY;
         if(!dragging&&Math.abs(dy)<5)return;
+        if(!dragging)window.getSelection()?.removeAllRanges();
         dragging=true;
+        ev.preventDefault();
         el.style.opacity='.4';
         const rows=[...document.querySelectorAll('#shopOv .ti')];
         rows.forEach(r=>r.classList.remove('shop-dov'));
