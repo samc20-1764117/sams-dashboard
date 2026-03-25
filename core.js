@@ -621,6 +621,8 @@ function doRedo(){
 }
 document.addEventListener('keydown',e=>{
   if((e.metaKey||e.ctrlKey)&&e.key==='z'){
+    const _focusedInput=document.activeElement&&(document.activeElement.tagName==='INPUT'||document.activeElement.tagName==='TEXTAREA'||document.activeElement.tagName==='SELECT');
+    if(_focusedInput)return;
     e.preventDefault();
     const _onPupsZ=document.getElementById('page-pups')?.classList.contains('active');
     if(_onPupsZ){if(e.shiftKey){pupRedo();}else{pupUndo();}return;}

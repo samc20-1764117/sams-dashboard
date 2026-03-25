@@ -1329,7 +1329,8 @@ function drawTBBlock(col,b){
   const _linkedRec=b.recId?st.recurring.find(r=>String(r.id)===String(b.recId)):null;
   const _notes=(_linkedTask&&_linkedTask.notes)||(_linkedRec&&_linkedRec.notes)||'';
   const _notesHtml=_notes?`<div class="tb-notes">${_notes.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>`:'';
-  el.innerHTML=`<div class="tb-row"><input type="checkbox" class="tb-chk" ${b._done?'checked':''}><span class="tb-bt">${b.title}</span>${_showTime?`<span class="tb-btime">${tStr(b.sm)}-${tStr(b.sm+b.dur)}</span>`:''}<button class="tb-bdel" onclick="delBlock('${b.id}',event)">✕</button></div>${_notesHtml}<div class="tb-resize" data-id="${b.id}"></div>`;
+  const _displayTitle=(_linkedTask&&_linkedTask.name)||(_linkedRec&&_linkedRec.name)||(linkedShop&&linkedShop.name)||b.title;
+  el.innerHTML=`<div class="tb-row"><input type="checkbox" class="tb-chk" ${b._done?'checked':''}><span class="tb-bt">${_displayTitle}</span>${_showTime?`<span class="tb-btime">${tStr(b.sm)}-${tStr(b.sm+b.dur)}</span>`:''}<button class="tb-bdel" onclick="delBlock('${b.id}',event)">✕</button></div>${_notesHtml}<div class="tb-resize" data-id="${b.id}"></div>`;
   const tbChk=el.querySelector('.tb-chk');
   if(tbChk)tbChk.addEventListener('change',function(e){
     e.stopPropagation();
