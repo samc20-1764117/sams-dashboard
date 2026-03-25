@@ -200,7 +200,7 @@ Per-week keyed by `getWkKey(wkOff)` in `_doneByWk`. Never use `r._done`. `togRec
 
 ## Pup Skills Page
 
-- Page ID: `page-pups`. Table: `pup_skills(id, pup, skill, stage, level, category, skill_order, next_step, comments, focus)`.
+- Page ID: `page-pups`. Table: `pup_skills(id, pup, skill, stage, level, category, skill_order, next_step, word, signal, comments, focus)`.
 - `pup`: 'Mochi'|'Sunny'. `stage`: 'In Progress'|'Mastered'|'Not Started'. `focus`: boolean.
 - Layout: 3-col grid (Mochi card | Sunny card | All Skills table).
 - **Sort/Filter**: 250ms header debounce — single click → `pupSortBy` (3-state none→asc→desc→none), dblclick → `pupFilterBy`. Popup `#pupFilterPop` positioned under live `<th>` (not `e.currentTarget`).

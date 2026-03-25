@@ -8,8 +8,8 @@ function _pupSyncToServer(prev,next){
   const nm=new Map(next.map(s=>[String(s.id),s]));
   for(const[id,s]of pm)if(!nm.has(id)&&!id.startsWith('l-'))sbReqSilent('DELETE','pup_skills',null,`?id=eq.${id}`);
   for(const[id,s]of nm){
-    if(!pm.has(id)){const d={pup:s.pup,skill:s.skill,level:s.level,stage:s.stage,focus:s.focus,next_step:s.next_step,comments:s.comments};sbReqSilent('POST','pup_skills',d);}
-    else if(!id.startsWith('l-')){const p=pm.get(id);const flds=['pup','skill','level','stage','focus','next_step','comments'];if(flds.some(f=>String(p[f]??'')!==String(s[f]??''))){sbReqSilent('PATCH','pup_skills',{pup:s.pup,skill:s.skill,level:s.level,stage:s.stage,focus:s.focus,next_step:s.next_step,comments:s.comments},`?id=eq.${id}`);}}
+    if(!pm.has(id)){const d={pup:s.pup,skill:s.skill,level:s.level,stage:s.stage,focus:s.focus,next_step:s.next_step,word:s.word,signal:s.signal,comments:s.comments};sbReqSilent('POST','pup_skills',d);}
+    else if(!id.startsWith('l-')){const p=pm.get(id);const flds=['pup','skill','level','stage','focus','next_step','word','signal','comments'];if(flds.some(f=>String(p[f]??'')!==String(s[f]??''))){sbReqSilent('PATCH','pup_skills',{pup:s.pup,skill:s.skill,level:s.level,stage:s.stage,focus:s.focus,next_step:s.next_step,word:s.word,signal:s.signal,comments:s.comments},`?id=eq.${id}`);}}
   }
 }
 function pupUndo(){if(!_pupUndoStack.length){showToast('Nothing to undo','#888');return;}const prev=JSON.parse(JSON.stringify(st.pup_skills));_pupUndoDirty=true;_pupRedoStack.push(prev);st.pup_skills=_pupUndoStack.pop();save();renderPupsPage();showToast('Undone','#6d5fe6',1500);_pupSyncToServer(prev,st.pup_skills);}
@@ -31,6 +31,8 @@ function openPupAddModal(){
   document.getElementById('pmOrder').value='';
   document.getElementById('pmFocus').checked=false;
   document.getElementById('pmNextStep').value='';
+  document.getElementById('pmWord').value='';
+  document.getElementById('pmSignal').value='';
   document.getElementById('pmComments').value='';
   document.getElementById('pupModal').classList.add('open');
   setTimeout(()=>document.getElementById('pmSkill').focus(),80);
@@ -46,6 +48,8 @@ function openPupEditModal(id){
   document.getElementById('pmOrder').value=s.skill_order||'';
   document.getElementById('pmFocus').checked=(s.focus===true||s.focus==='true');
   document.getElementById('pmNextStep').value=s.next_step||'';
+  document.getElementById('pmWord').value=s.word||'';
+  document.getElementById('pmSignal').value=s.signal||'';
   document.getElementById('pmComments').value=s.comments||'';
   document.getElementById('pupModal').classList.add('open');
   setTimeout(()=>document.getElementById('pmSkill').focus(),80);
@@ -60,6 +64,8 @@ async function savePupModal(){
     skill_order:document.getElementById('pmOrder').value?parseInt(document.getElementById('pmOrder').value):null,
     focus:document.getElementById('pmFocus').checked,
     next_step:document.getElementById('pmNextStep').value||null,
+    word:document.getElementById('pmWord').value.trim()||null,
+    signal:document.getElementById('pmSignal').value.trim()||null,
     comments:document.getElementById('pmComments').value.trim()||null,
   };
   if(!data.skill){showToast('Skill name required');return;}
@@ -316,6 +322,7 @@ function renderPupTable(){
   thead.innerHTML=`<tr>
     <th onclick="pupHdrClick('pup')" ondblclick="pupHdrDbl(event,'pup')" style="${ths};width:32px;text-align:center">·${arrow('pup')}${fdot('pup')}</th>
     <th onclick="pupHdrClick('skill')" ondblclick="pupHdrDbl(event,'skill')" style="${ths}">Skill${arrow('skill')}${fdot('skill')}</th>
+    <th onclick="pupHdrClick('word')" ondblclick="pupHdrDbl(event,'word')" style="${ths};width:80px">Word${arrow('word')}${fdot('word')}</th>
     <th onclick="pupHdrClick('level')" ondblclick="pupHdrDbl(event,'level')" style="${ths};width:66px">Level${arrow('level')}${fdot('level')}</th>
     <th onclick="pupHdrClick('stage')" ondblclick="pupHdrDbl(event,'stage')" style="${ths};width:90px">Stage${arrow('stage')}${fdot('stage')}</th>
     <th onclick="pupHdrClick('next_step')" ondblclick="pupHdrDbl(event,'next_step')" style="${ths}">Next Step${arrow('next_step')}${fdot('next_step')}</th>
@@ -336,18 +343,21 @@ function renderPupTable(){
     const isSel=_selPupIds.has(sid);
     const curCat=s.category||'';
     if(showCatDividers&&isMastered&&lastMastered===false){
-      rowsHtml.push(`<tr class="pup-cat-sep"><td colspan="7" style="padding:8px 8px 3px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#16a34a;border-top:2px solid rgba(34,197,94,.15);border-bottom:1px solid rgba(34,197,94,.1)">Mastered</td></tr>`);
+      rowsHtml.push(`<tr class="pup-cat-sep"><td colspan="8" style="padding:8px 8px 3px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#16a34a;border-top:2px solid rgba(34,197,94,.15);border-bottom:1px solid rgba(34,197,94,.1)">Mastered</td></tr>`);
       lastCat=null;
     }
     if(showCatDividers&&!isMastered&&curCat!==lastCat&&curCat){
       const label=curCat.charAt(0).toUpperCase()+curCat.slice(1);
-      rowsHtml.push(`<tr class="pup-cat-sep"><td colspan="7" style="padding:6px 8px 3px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);border-bottom:1px solid rgba(0,0,0,.04)">${label}</td></tr>`);
+      rowsHtml.push(`<tr class="pup-cat-sep"><td colspan="8" style="padding:6px 8px 3px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);border-bottom:1px solid rgba(0,0,0,.04)">${label}</td></tr>`);
       lastCat=curCat;
     }
     lastMastered=isMastered;
-    rowsHtml.push(`<tr data-sid="${sid}" style="background:${bg}" class="${isSel?'pup-sel':''}" onclick="selPupRow(event,'${sid}')" oncontextmenu="showPupCtx(event,'${sid}')">
+    const word=s.word&&s.word!=='None'?esc(s.word):'';
+    const signal=s.signal&&s.signal!=='None'?esc(s.signal):'';
+    rowsHtml.push(`<tr data-sid="${sid}" style="background:${bg}" class="${isSel?'pup-sel':''}" onclick="selPupRow(event,'${sid}')" oncontextmenu="showPupCtx(event,'${sid}')"${signal?` onmouseenter="showPupTip(event,'${signal}')" onmouseleave="hidePupTip()"`:''}>
       <td style="text-align:center;width:32px;padding:4px 0">${isMastered?`<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${pupColor};opacity:.5"></span>`:`<input type="checkbox"${foc?' checked':''} onchange="setPupField('${sid}','focus',this.checked)" style="width:13px;height:13px;cursor:pointer;accent-color:${pupColor}">`}</td>
       <td ondblclick="pupCellEdit(this,'${sid}','skill')" style="padding:4px 8px;${tdE}">${esc(s.skill)}</td>
+      <td ondblclick="pupCellEdit(this,'${sid}','word')" style="width:80px;padding:4px 8px;${tdE};font-style:${word?'italic':'normal'};color:${word?'var(--text)':'var(--muted)'}">${word||'—'}</td>
       <td ondblclick="pupCellEdit(this,'${sid}','level')" style="width:66px;padding:4px 8px;${tdE}">${esc(s.level)||'—'}</td>
       <td ondblclick="pupCellEdit(this,'${sid}','stage')" style="width:90px;padding:4px 8px;${tdE}">${esc(s.stage||'')}</td>
       <td ondblclick="pupCellEdit(this,'${sid}','next_step')" onmouseenter="${comment?`showPupTip(event,'${comment}')`:''}" onmouseleave="${comment?'hidePupTip()':''}" style="padding:4px 8px;${tdE}${comment?';cursor:help':''}">${nextStep}</td>
@@ -366,10 +376,13 @@ function renderPupsPage(){
     const isMastered=s.stage==='Mastered';
     const ns=!isMastered&&s.next_step&&s.next_step!=='None'?s.next_step:'';
     const cm=!isMastered&&s.comments&&s.comments!=='None'?s.comments:'';
+    const wd=s.word&&s.word!=='None'?esc(s.word):'';
+    const sig=s.signal&&s.signal!=='None'?esc(s.signal):'';
     const sid=String(s.id);
-    return`<div class="pup-skill-row ${cls}" data-pupid="${sid}" style="align-items:flex-start">
+    const sigTip=sig?` onmouseenter="showPupTip(event,'${sig}')" onmouseleave="hidePupTip()" style="cursor:help"`:' style=""';
+    return`<div class="pup-skill-row ${cls}" data-pupid="${sid}" style="align-items:flex-start"${sig?` onmouseenter="showPupTip(event,'${sig}')" onmouseleave="hidePupTip()"`:''}>
       <input type="checkbox" ${isMastered?'checked':''} onclick="event.stopPropagation();togglePupMastered('${sid}',this.checked)" title="Mark mastered" style="width:13px;height:13px;cursor:pointer;accent-color:#8b5cf6;flex-shrink:0;margin-top:2px">
-      <div style="flex:1;min-width:0"><span class="pup-skill-name" style="${isMastered?'opacity:.5;text-decoration:line-through':''}">${s.skill}</span>${ns?`<div style="font-size:10px;color:var(--muted);margin-top:1px">↳ ${ns}</div>`:''}${cm?`<div style="font-size:10px;color:var(--subtle);margin-top:1px">${cm}</div>`:''}</div>
+      <div style="flex:1;min-width:0"><span class="pup-skill-name" style="${isMastered?'opacity:.5;text-decoration:line-through':''}">${s.skill}</span>${wd?`<span style="font-size:10px;color:var(--muted);margin-left:5px;font-style:italic">"${wd}"</span>`:''}${ns?`<div style="font-size:10px;color:var(--muted);margin-top:1px">↳ ${ns}</div>`:''}${cm?`<div style="font-size:10px;color:var(--subtle);margin-top:1px">${cm}</div>`:''}</div>
     </div>`;
   }
   const PUP_CAT_ORDER=['commands','manners','fun'];
