@@ -181,6 +181,9 @@ Per-week keyed by `getWkKey(wkOff)` in `_doneByWk`. Never use `r._done`. `togRec
 - `delTravel`: restores synchronously, POSTs async. Skips DELETE for `l-` ids.
 - After new travel POST resolves: call `renderAll()` + `renderTravelPage()` so banner gets real ID.
 - `ban.dataset.tvid` for selection. Click → select, dblclick → `openTravelModal`, contextmenu → `showCtx`.
+- **Drag to move trip**: banners are `draggable=true`. `dragId='travel::'+tv.id+'::0'`. Drop target column = new `start_date`; duration preserved. Handled in col drop, wkcWrap edge drop, setupEdge drop. Undo via `pushUndo`.
+- **Week boundary rendering**: `addBanner` `ei` uses `findIndex` — if end date is beyond current week, `findIndex` returns -1; fix: `_eiRaw<0 ? 6 : Math.min(6,_eiRaw)`. Always clamp to week bounds so cross-week trips render correctly in both weeks.
+- **Enter on empty travel modal name**: `saveTravelModal` calls `closeMod('travelModal')` before returning when name is empty.
 
 ---
 
