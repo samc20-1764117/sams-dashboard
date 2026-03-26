@@ -2,343 +2,166 @@
 
 ---
 
-## Global Rules (apply to every page)
+## Global Rules
 
-### File Structure (Source Split)
-All files share global scope — no modules, no bundler. Load order matters.
+> **Applying to a new page/item type:** All subsections below define the standard patterns. When adding a new page, field, or data type, apply each relevant pattern by default. Page sections only document deviations or page-specific values.
 
-| File | Lines | Contains |
-|------|-------|----------|
-| `index.html` | ~1,392 | HTML + all CSS + 4 `<script src>` tags |
-| `core.js` | ~682 | Constants (CATS, KCATS), state (cfg, st, dayOff, wkOff), localStorage, Supabase helpers (sbReq, sbReqSilent, sbReqNullable), time block DB helpers, syncAll, date utils (getWkKey, getWkBounds, getDayDate, d2s), getRecurringWeekTasks, undo/redo (pushUndo, doUndo, doRedo, showToast), global keydown listener |
-| `overview.js` | ~1,694 | renderAll, renderOv, renderToday, renderWkSummary, renderWkCal, renderRecOv, renderShopOv, renderUnassigned, renderKanban, renderDayTB, getAutoTBForDate, tRow, drag-and-drop on today list |
-| `features.js` | ~2,661 | Quick-add (openQA/submitQA), task CRUD, renderTasksPage, recurring/shopping/travel/birthdays/recipes pages, unscheduleWRec, skipRecVirtThisWk, showPage, closeMod, init(), selection system (selTask, selectedTasks, clearSelection), context menus (showCtx, ctxDoDuplicate, ctxDoDelete), quick notes |
-| `pup-skills.js` | ~433 | All pup skills logic |
+### Architecture
+All files share global scope — no modules, no bundler.
 
-**Where is X?** Overview page (today, calendar, time blocks, kanban) → `overview.js`. Secondary pages (recurring, shopping, travel, birthdays, recipes) + task CRUD + context menus → `features.js`. Pup skills → `pup-skills.js`. Shared utilities/Supabase/dates/undo → `core.js`.
+| File | Contains |
+|------|----------|
+| `index.html` | HTML + CSS + 4 `<script src>` tags |
+| `core.js` | State (cfg, st, dayOff, wkOff), Supabase helpers (sbReq, sbReqSilent, sbReqNullable), syncAll, date utils (getWkKey, getWkBounds, getDayDate, d2s), getRecurringWeekTasks, undo/redo (pushUndo, doUndo, doRedo, showToast), global keydown |
+| `overview.js` | renderAll, renderOv, renderToday, renderWkSummary, renderWkCal, renderRecOv, renderShopOv, renderUnassigned, renderKanban, renderDayTB, getAutoTBForDate, tRow, drag-and-drop |
+| `features.js` | Task CRUD, all secondary pages (recurring/shopping/travel/birthdays/recipes), showPage, closeMod, init(), selTask, clearSelection, showCtx, quick notes |
+| `pup-skills.js` | All pup skills logic |
 
-- New shared function (called from multiple files) → `core.js`.
-- Cross-file function calls are safe — all files share global scope.
+**Where is X?** Overview/today/calendar/kanban/timeblocks → `overview.js`. Secondary pages + CRUD + context menus → `features.js`. Pup → `pup-skills.js`. Shared utils/Supabase/undo → `core.js`. New shared function → `core.js`.
 
-### Search Efficiency
-- Grep for the exact function name or variable first. Never broad/exploratory greps.
-- Do not chain multiple search passes when one targeted grep suffices.
-- Timeblock drag/resize: functions are `tbOnUp`, `onRU`, `atbOnUp`, `onRM` in `overview.js`.
+- Grep exact function/variable name first. Never broad greps. Don't chain passes when one suffices.
+- Timeblock drag/resize: `tbOnUp`, `onRU`, `atbOnUp`, `onRM` in `overview.js`.
 
-### Persistence / Supabase
-- All create/duplicate must POST with ALL required fields. Missing NOT NULL → silent 400 failure.
+### Data & Persistence
+- POST must include ALL required fields. Missing NOT NULL → silent 400 failure.
 - `tasks` POST required: `name`, `category`, `due_date`, `done`, `important`.
-- `recurring_tasks` POST required: `name`, `is_weekly_reset`, `cadence`. **Do NOT send `day_of_week` or `repeat_day`** (columns don't exist). Valid optional: `appears_on_date`, `starting_date`, `repeat_date`, `day_added`, `task_due_day`.
-- **Local temp IDs**: tasks use `l-`, recurring use `rec-tmp-` (NOT `l-` — sync only preserves `rec-tmp-`/`rec-local-`).
-- **Undo ID pattern**: `let serverId=null` captured by closure, set after POST resolves. Undo reads `serverId||localId`.
-- `sbReq` error toast shows Supabase `message` field for 8 seconds.
-- `pendingTravelIds` Set: add id before PATCH, remove after. `syncAll` skips overwriting entries in this set.
-- `toggleTask`, `togRec`, `togShop`: must call `sbUpdateBlock(b.id, {done})` for every linked TB block.
-- `drawTBBlock` derives `b._done` from linked item at render time (not stale block field).
-- `rolloverOverdue()`: writes `localOverrides[sid]={due_date:today}` + `pendingLocal.add(sid)` before async PATCH.
-- On `init()`, `deletedRecIds` cleared before sync — DB is authoritative.
+- `recurring_tasks` POST required: `name`, `is_weekly_reset`, `cadence`. Do NOT send `day_of_week`/`repeat_day`. Optional: `appears_on_date`, `starting_date`, `repeat_date`, `day_added`, `task_due_day`.
+- Local temp IDs: tasks=`l-`, recurring=`rec-tmp-` (sync only preserves `rec-tmp-`/`rec-local-`).
+- Undo ID: `let serverId=null` in closure, set after POST resolves. Undo reads `serverId||localId`.
+- `sbReq` shows Supabase `message` field in toast for 8s.
+- `toggleTask`/`togRec`/`togShop`: call `sbUpdateBlock(b.id,{done})` for every linked TB block.
+- `drawTBBlock` derives `b._done` from linked item at render time.
+- `rolloverOverdue()`: write `localOverrides[sid]={due_date:today}` + `pendingLocal.add(sid)` before async PATCH.
+- On `init()`, `deletedRecIds` cleared — DB is authoritative.
+- Notes: `notes` column on `tasks` + `recurring_tasks`. Include in POST/PATCH. Show via `.tb-notes` in time blocks.
+
+### Interaction Patterns
+
+**Focus & Cursor** — cursor lands at end of text on every input open. Use `setSelectionRange(len,len)` in same `setTimeout`/`rAF` as `.focus()`. Never `.select()` on edit inputs (exception: filter/search inputs). Applies to all modals and inline edits.
+
+**Outside-Click Close** — all popups/panels that close on outside click:
+- Store handler at stable ref (e.g. `window._pageOutsideClick`), remove + re-register on every `renderPage()`.
+- Handler: `!el.contains(e.target)` before closing.
+- Add listener via `setTimeout(0)` after open to avoid immediate re-close.
+- Backdrop (`position:fixed;inset:0`) alternative for popups needing pointer-events blocking during drag.
+
+**Modal Enter / Escape** — overlay `div` owns Enter/Escape. Individual inputs must NOT have save handlers (double-fire).
+- Default: overlay keydown handles Enter → save, Escape → `closeMod`.
+- Enter cancels if name empty: `if(!name){closeMod('id');return;}`.
+- SELECT elements excluded from Enter-save on: recModal, recEditModal, pupModal, travelModal, recipeModal.
+- `travelModal`: `tvTravelMode` SELECT uses `setTimeout(saveTravelModal,0)`.
+- `bModal` exception: input `onkeydown` (not overlay).
+- `tCat` select: `addEventListener + e.stopPropagation()` — only legitimate per-element override.
+- Document-level Enter fallback for tModal/shopEdit/recEdit/recModal when `.open`. Must NOT gate on field content.
+
+**Cmd+Z in Modals** — global keydown in `core.js`. Check: `_isInput && !_ael.closest('.overlay:not(.open)')` — if true, return early (native undo). Overlays use `opacity:0;pointer-events:none` NOT `display:none`, so focused input persists after close. Never add `stopPropagation` for Cmd+Z to overlay attributes. Undo closures must re-find items by ID at undo time, not capture by reference.
+
+**Page-Level Keyboard Shortcuts** — pages with own undo stack (pup, birthdays, recipes) register keydown as first listener:
+- Cmd+Z → page undo, Cmd+Shift+Z → page redo, Del/Bksp → delete (skip if input focused), Cmd+C → copy, Cmd+V → paste.
+- Must check `e.target.tagName` to skip when input focused.
+
+**Sort/Filter with Debounce** — table pages (pup, recipes):
+- 250ms debounce on header click/dblclick.
+- Single click → 3-state sort: none→asc→desc→none.
+- Double click → filter popup positioned under live `<th>` (re-query DOM at open time, not `e.currentTarget`).
+- Filter popup uses Outside-Click Close. Sort state in module variable.
+
+**Per-Page Undo Stack** — pages with own undo (pup, birthdays, recipes):
+- `pageSnapshot()` deep-clones state before any destructive op.
+- `_pageUndoDirty` flag blocks `syncAll` from overwriting pending local changes.
+- `_pageSyncToServer(prev,next)` diffs and fires minimal API calls.
+- Undo: restore snapshot locally → call `_pageSyncToServer`. Redo: store forward snapshot before applying.
+
+**Sync Race Protection** — pages/features with in-flight PATCHes:
+- `_pendingIds` Set: add ID before PATCH, remove in `.then()`.
+- `syncAll` skips overwriting entries in `_pendingIds`.
+- Instances: pup=`_pupPendingIds`, travel=`pendingTravelIds`, tasks=`pendingLocal`.
 
 ### Selection & Drag IDs
 
 | Prefix | Source | Delete action |
 |--------|--------|---------------|
-| `String(t.id)` | regular task chip/row | permanent delete |
+| `String(t.id)` | regular task | permanent delete |
 | `rec-virt-{id}` | recurring (WR or non-WR) | check `is_weekly_reset` first |
-| `wrec-{id}` | WR chip in weekly calendar | unschedule only |
-| `shop-cal-{id}` | shopping chip/row | null `due_date` |
+| `wrec-{id}` | WR chip in weekly cal | unschedule only |
+| `shop-cal-{id}` | shopping chip | null `due_date` |
 | `tv-{id}` | travel banner | permanent delete |
 
-- Drag ID: `wrec::{recId}` (WR), `rec::{recId}::{dueDate}` (non-WR). Parse recId with `split('::')[1]`.
-- `tRowTodayVirt` drag: must set `effectAllowed='move'`, add `body-dragging`, call `showWkcEdges(true)`. Uses `_isWrec` for `wrec::`/`rec::` prefix.
-- `dropOnTodayList` uses `getWkKey(wkOff)` when setting `_dateOverrides`.
-- Multi-select Delete undo: single `pushUndo` handles all types. Undo for recurring does NOT restore `notes`, `pup_related`, or extra optional fields.
+- Drag ID: `wrec::{recId}` (WR), `rec::{recId}::{dueDate}` (non-WR). Parse: `split('::')[1]`.
+- Multi-select Delete: single `pushUndo`. Undo for recurring does NOT restore `notes`/`pup_related`/extra fields.
 
-### Notes Field
-- `notes` column on `tasks` and `recurring_tasks`. Modals: `tModal`, `recModal`, `recEditModal`.
-- `saveRecModal`/`saveRecEdit` include `notes` in POST/PATCH. `openRecEditModal` populates `recEditNotes`.
-- Notes display in time blocks via `.tb-notes` when non-empty.
-
-### Focus & Cursor Placement
-Whenever an edit input is opened with existing text, cursor must land at the **end**. Use `setSelectionRange(el.value.length, el.value.length)` inside the same `setTimeout`/`requestAnimationFrame` as `.focus()`.
-
-- Never use `.select()` on edit inputs. Exception: filter/search inputs where select-all is intentional (e.g. `rfText`, `pfText`).
-- Applies to ALL modals and inline edits on all pages.
-- Pattern: `setTimeout(()=>{const _el=document.getElementById('...');if(_el){_el.focus();const _l=_el.value.length;_el.setSelectionRange(_l,_l);}}, delay);`
-
-### Cmd+Z Undo in Modals
-Global `keydown` in `core.js` handles Cmd+Z. Correct check:
-```javascript
-const _ael=document.activeElement;
-const _isInput=_ael&&(_ael.tagName==='INPUT'||_ael.tagName==='TEXTAREA'||_ael.tagName==='SELECT');
-const _focusedInput=_isInput&&!_ael.closest('.overlay:not(.open)');
-if(_focusedInput)return; // native browser undo
-// else: fall through to doUndo()
-```
-- Overlays hide via `opacity:0; pointer-events:none` (NOT `display:none`) — focused input retains focus after close.
-- **Never add `stopPropagation` for Cmd+Z to overlay `onkeydown` attributes.**
-- `saveTravelModal` calls `pushUndo` for edits. Undo closure must re-find travel by ID (`st.travel.find(x=>String(x.id)===_undoId)`) — not capture `tv` by reference.
-
-### Modal Enter / Escape Key Rules
-Pattern: overlay `div` owns Enter/Escape. Individual inputs must NOT have their own save handlers (double-fire).
-
-| Modal | Enter saves | SELECT excluded |
-|-------|-------------|-----------------|
-| `tModal` | overlay | no |
-| `recModal` / `recEditModal` | overlay | yes (`tagName!=='SELECT'`) |
-| `bdayModal` / `shopEditModal` | overlay | no |
-| `pupModal` | overlay | yes |
-| `travelModal` | overlay | yes — `tvTravelMode` uses `setTimeout(saveTravelModal,0)` |
-| `recipeModal` | overlay | yes (excludes `.rm-ing-row` + textarea) |
-| `bModal` | input `onkeydown` | — |
-
-- All save functions: `if(!name){closeMod('modalId');return;}` — Enter cancels if empty.
-- Document-level Enter fallback for `tModal`/`shopEdit`/`recEdit`/`recModal` when `.open`. Must NOT gate on field content.
-- `tCat` select uses `addEventListener + e.stopPropagation()` — only legitimate per-element override.
-
-### Keyboard Shortcuts (Page-Level Pattern)
-Pages with their own undo stacks (pup, birthdays, recipes) register a keydown listener that intercepts before global Cmd+Z:
-- **Cmd+Z** → page `undo()`
-- **Cmd+Shift+Z** → page `redo()`
-- **Del / Bksp** → page context delete (skips if input focused)
-- **Cmd+C** → copy selected item
-- **Cmd+V** → paste
-- Must skip when an input/textarea/select is focused. Must skip global Cmd+Z (check `e.target.tagName`).
-- Page-specific keyboard listener is the **first** keydown listener registered (so it runs before global `core.js` handler).
-
-### Outside-Click Close Pattern
-All popups, panels, and overlays that close on outside click follow this pattern:
-- Store the handler at a stable reference (e.g. `window._pageOutsideClick`) so it can be removed on re-render.
-- Re-register on every `renderPage()` call.
-- Handler checks `!el.contains(e.target)` before closing.
-- Use `setTimeout(0)` when adding the listener after an open event, to avoid immediately re-closing.
-- Backdrop element (`position:fixed; inset:0`) is an alternative for popups that need pointer-events blocking during drag.
-
-### Undo Pattern (Per-Page Undo Stack)
-Pages with their own undo (pup, birthdays, recipes) use this pattern:
-- `pageSnapshot()` — deep-clone current state before any destructive op.
-- `_pageUndoDirty` flag — set when local changes are pending; blocks `syncAll` from overwriting with stale DB data.
-- `_pageSyncToServer(prev, next)` — diffs prev vs next, fires only the minimal PATCH/POST/DELETE calls needed.
-- Undo restores snapshot locally first, then calls `_pageSyncToServer`.
-- Redo stores the forward snapshot before undo applies.
-
-### Sync Race Protection Pattern
-For pages/features with in-flight PATCHes:
-- Use a `_pendingIds` Set. Add ID before PATCH, remove in `.then()`.
-- `syncAll` must skip overwriting any entry whose ID is in `_pendingIds`.
-- Applies to: pup skills (`_pupPendingIds`), travel (`pendingTravelIds`), tasks (`pendingLocal`).
-
-### Sort/Filter with Debounce Pattern
-Used by table pages (pup skills, recipes):
-- **250ms debounce** on column header click/dblclick.
-- Single click → cycle sort: none → asc → desc → none (`3-state`).
-- Double click → open filter popup positioned under the live `<th>` element (not `e.currentTarget` — must re-query DOM at open time).
-- Filter popup has its own outside-click close (see Outside-Click Close Pattern).
-- Sort state stored in module variable (e.g. `pupSortBy`, `_recSortBy`).
-
-### Top-Right Controls
-Fixed position (`top:14px; right:20px; z-index:90`), visible on all pages.
-Order (left → right): **Sync bar** | **Settings button (⚙)**
-- **Settings button** (`#settingsBtn`): opens/closes `#settingsPopup` via `toggleSettingsPopup()`. Contains: Night Mode toggle + Backup Sync button. Closes on outside click.
-- Night Mode: `toggleDark()` toggles `body.dark`, updates `#darkToggleIcon` (🌙/☀️) and `#darkToggleLabel`. Persists in `cfg.dark`. Lives only in settings popup — no standalone button.
-
-### Local Backup
-- `backup.js` + cron `0 8 * * *` → `backup_auto.json`. `restore.js`: deletes all rows then re-inserts.
-- Tables: `tasks, recurring_tasks, shopping_list, travel, birthdays, pup_skills, time_blocks, auto_timeblocks, auto_timeblock_overrides`.
-- Manual backup: "Backup Sync" in settings popup → browser download `backup_manual.json`. Button text resets after save/fail.
+### UI
+- **Top-right controls** (`top:14px;right:20px;z-index:90`): Sync bar | Settings ⚙. Settings popup: Night Mode toggle + Backup Sync. Closes on outside click. `toggleDark()` → `body.dark`, persists in `cfg.dark`. Night mode only in settings popup.
+- **Local backup**: `backup.js` cron `0 8 * * *` → `backup_auto.json`. Manual: settings popup → `backup_manual.json`. Tables: tasks, recurring_tasks, shopping_list, travel, birthdays, pup_skills, time_blocks, auto_timeblocks, auto_timeblock_overrides.
 
 ---
 
-## Recurring Task Logic (cross-page feature)
+## Recurring Task Logic
 
-### Types
-- **Weekly-reset** (`is_weekly_reset=true`): scheduled via `_dateOverrides[wkKey]` = date string. Remove via `unscheduleWRec`.
-- **Non-weekly-reset**: appear automatically by cadence + `appears_on_date`. Built by `getRecurringWeekTasks(off)`. Skip via `skipRecVirtThisWk` → `__skip__`.
-
-### getRecurringWeekTasks(off)
-Filters `!r.is_weekly_reset && r.appears_on_date`. Returns `{_recId, _virtual:true, _wkKey}` — `_isWrec` is NOT set. Respects cadence: weekly/biweekly/monthly. Skips `__skip__` entries.
-
-### skipRecVirtThisWk(rid, wkKey)
-Sets `__skip__`, removes linked timeblocks, re-renders, PATCHes, pushes undo. Has WR safety guard (redirects to `unscheduleWRec` if `is_weekly_reset`). Calls renderWeeklyPage, renderToday, renderWkSummary, renderWkCal, renderDayTB. Does NOT call `renderRecOv`.
-
-### syncAll race conditions
-- Preserve all locally-pending `_dateOverrides` (including `__skip__`) not yet confirmed in DB.
-- Only replace `st.recurring` when result is non-null.
-- After POST: replace temp entry with `{...sv[0], _doneByWk:{}, _done:false, _dateOverrides:{}}` + `save()`.
-
-### renderToday overdue filtering
-Loop `for(w=0; w>=wkOff-4; w--)`. Cascading skip check: if `__skip__` for week `w` through `0`, exclude. `getOvRecurring()` must use same logic. WR tasks in `getOvRecurring` only at `w===0`, dedup key `'wrec-'+r.id+'-'+wkKey`.
-
-### wrecToday
-Uses `_wkKeyNow = getWkKey(wkOff)`. Shows WR tasks where `_dateOverrides[_wkKeyNow]===ds` OR overdue when `dayOff===0`.
-
-### wrecThisWk (renderWkSummary)
-Direct key lookup `r._dateOverrides[wkKey]` — NOT `Object.values()` scan (matches stale dates). Returns objects with `_wkKey` set.
-
-### WR Done State
-Per-week keyed by `getWkKey(wkOff)` in `_doneByWk`. Never use `r._done`. `togRec(id,done)` writes/deletes `_doneByWk[getWkKey(wkOff)]`. PATCHes `done_by_week`. `renderRecOv`/`renderWeeklyPage`: isDone = `!!(r._doneByWk&&r._doneByWk[getWkKey(wkOff)])`.
-
-### Duplicating Recurring Tasks
-- `uniqueRecName(base)`: appends ` (2)`, ` (3)` etc.
-- Local copy: `{...r, id:tempId, name:dupName, starting_date:todayDs, _doneByWk:{}, _done:false, _dateOverrides:{}}`.
-- DB payload: `name, is_weekly_reset, cadence, starting_date:todayDs` + optional fields. `starting_date` always = today.
-
-### pup_related Field
-Boolean on `recurring_tasks` (NOT NULL default false). `recModal` shows 🐾 checkbox only when type is `weekly_reset` (managed by `updateRecTypeUI()`). POST/PATCH include `pup_related` when true.
+- **WR** (`is_weekly_reset=true`): scheduled via `_dateOverrides[wkKey]`=date. Remove via `unscheduleWRec`.
+- **Non-WR**: auto by cadence+`appears_on_date`. Built by `getRecurringWeekTasks(off)` → `{_recId,_virtual:true,_wkKey}` (`_isWrec` NOT set). Skip via `skipRecVirtThisWk` → `__skip__`.
+- `skipRecVirtThisWk`: sets `__skip__`, removes TBs, PATCHes, pushes undo. Calls renderWeeklyPage/renderToday/renderWkSummary/renderWkCal/renderDayTB. NOT renderRecOv. WR guard → redirects to `unscheduleWRec`.
+- `syncAll`: preserve locally-pending `_dateOverrides` (incl. `__skip__`). Only replace `st.recurring` when non-null. After POST: `{...sv[0],_doneByWk:{},_done:false,_dateOverrides:{}}` + `save()`.
+- **renderToday overdue**: `for(w=0;w>=wkOff-4;w--)`. Cascading `__skip__` check. WR in `getOvRecurring` only at `w===0`, dedup key `'wrec-'+r.id+'-'+wkKey`.
+- **wrecToday**: `_wkKeyNow=getWkKey(wkOff)`. Shows WR where `_dateOverrides[_wkKeyNow]===ds` OR overdue at `dayOff===0`.
+- **wrecThisWk**: direct key lookup `r._dateOverrides[wkKey]` — NOT `Object.values()`.
+- **WR done**: `_doneByWk[getWkKey(wkOff)]`. Never `r._done`. `togRec` writes/deletes key, PATCHes `done_by_week`.
+- **Duplicate**: `uniqueRecName` appends ` (2)/(3)`. Local: `{...r,id:tempId,name:dupName,starting_date:today,_doneByWk:{},_done:false,_dateOverrides:{}}`. DB: `name,is_weekly_reset,cadence,starting_date:today`.
+- `pup_related`: boolean on `recurring_tasks` NOT NULL default false. `recModal` shows 🐾 only for `weekly_reset` type. Include in POST/PATCH when true.
+- `isWRecDueThisWeek(r,off)` and `getRecurringWeekTasks()` must stay in sync.
 
 ---
 
 ## Pages
 
-### Overview Page (`overview.js`)
+### Overview (`overview.js`)
 
-**Today List**
-- Sort order: done last → travel first → overdue → important → type priority → name.
-- Type priority: regular=1, recurring=2, shopping=3, birthday=4. Travel has dedicated pre-check above overdue in both `sortByTypeOrder` and `sortTasksForDay`.
-- Tasks render without category background color (`noColor:true`). Overdue and important backgrounds still show.
-- `_hasTBToday(t)`: if `dayOff===0 && isOv(t.due_date) && !t.done`, any linked block counts as on-TB.
+**Today List** — sort: done last → travel → overdue → important → type (regular=1,recurring=2,shopping=3,birthday=4) → name. No category bg (`noColor:true`). `_hasTBToday(t)`: `dayOff===0 && isOv(due_date) && !done` + linked block.
 
-**Unassigned Tasks Badge**
-- `#unAssignedBadge` in `.wkc-foot`. Filter: `!due_date && !done && category !== 'Long term'`.
-- Popup `#unMenu`: `position:fixed`, 300px. Opens upward above badge. Backdrop `#unMenuBack` closes on outside click (see Global Outside-Click Pattern).
-- `dEnd` closes popup, restores backdrop pointer-events on drag end.
-- Badge only visible on overview page (`activePg` variable).
+**Weekly Reset filter** — `renderRecOv()` uses `isWRecDueThisWeek`. Sort: done last → cadence (weekly=0,biweekly=1,monthly=2,other=3) → pup-related last (order=10).
 
-**Weekly Reset Overview Filter**
-`renderRecOv()` uses `isWRecDueThisWeek(r, wkOff)` — same cadence logic as `getRecurringWeekTasks`. Weekly → always shows. Biweekly → alternating weeks by `starting_date`. Monthly → only during week containing target date. Sorts: done last, then cadence (weekly=0, biweekly=1, monthly=2, other=3), pup-related always last (order=10).
+**Unassigned badge** — `#unAssignedBadge` in `.wkc-foot`. Filter: `!due_date&&!done&&category!=='Long term'`. Popup `#unMenu`: fixed 300px, opens upward. Backdrop `#unMenuBack` (outside-click). `dEnd` restores backdrop. Visible only on overview page.
 
-**Time Block System**
-- Auto blocks (`st.autoTimeblocks` + `st.autoTBOverrides`) participate in `computeTBLayout` alongside normal blocks.
-- `getAutoTBForDate(ds)`: uses override if exists, else base times. Skips weekdays-only on Sat/Sun. `start_time=null` override = deleted sentinel.
-- `delAutoTBForDay`: PATCH null times if override exists, else POST new override with null times.
-- Drop-on-block: each `.tb-block`/`.atb-block` has dragover/dragleave/drop listeners. `dropOnTB(e, b.ds, null, null, b.sm)` — 5th param skips cursor math.
-- `.tb-drop-over`: dashed purple outline on hover.
-- `selAtbId`/`selAtbDs`: track selected auto block. Delete key triggers `delAutoTBForDay`.
-- All auto block DB via `sbReqSilent`. Tables: `auto_timeblocks(id, label, start_time, end_time, day_scope, is_enabled, sort_order)` + `auto_timeblock_overrides(id, base_id, date, start_time, end_time)`.
-- Auto blocks never appear in Today list, overdue banner, metrics, recurring page, or weekly calendar.
+**Time Blocks** — auto blocks (`st.autoTimeblocks`+`st.autoTBOverrides`) in `computeTBLayout`. `getAutoTBForDate(ds)`: override or base times, skip Sat/Sun if weekdays-only, `start_time=null`=deleted. `delAutoTBForDay`: PATCH null if override exists, else POST null override. Drop: `dropOnTB(e,ds,null,null,b.sm)` (5th param skips cursor math). `.tb-drop-over`: dashed purple. `selAtbId`/`selAtbDs` track selected auto block. All auto block DB via `sbReqSilent`. Auto blocks never in today/overdue/metrics/recurring/weekly-cal.
 
-**Auto Block Duration (`autoDur`)**
-
-| Match | Duration |
-|-------|----------|
-| name `/\bheb\b/i` or `/pilates/i` | 60 min |
-| category `'social'` or name `/social/i` | 120 min |
-| everything else | 30 min |
+**Auto block duration**: name `/\bheb\b/i` or `/pilates/i`→60min; category/name `social`→120min; else→30min.
 
 ---
 
-### Recurring Tasks Page (`features.js`, page ID: `page-weekly`)
-- Two-column grid: WR left, non-WR right. 4 cadence groups each: `#rt-wr-weekly/biweekly/monthly/other` + `#rt-sch-*`.
-- `renderRecurringPage()` renders all 8 groups via `renderRtGroup(containerId, tasks, isWr, cadence)`.
-- Quick-add: `addRecDirect(inputEl, isWr, cadence)`. WR quick-add has 🐾 checkbox. "Other" bucket saves with cadence `weekly`.
-- `duplicateRecDirect(rid)`: `uniqueRecName`, POST, supports undo.
-- WR card splits Regular/🐾 columns. `renderRtGroup` quick-add includes 🐾 checkbox (`id="qa-pup-{containerId}"`).
-- `openRecModalForSection(type, cadence)` opens recModal pre-filled.
-- Hidden compat elements kept `display:none`: `#wrBar #wrPct2 #wrPL #wrList #shopFull #shopCountLbl #shopSortBtn #nsN #nsS`.
-- `isWRecDueThisWeek(r, off)` and `getRecurringWeekTasks()` must stay in sync.
+### Recurring Tasks Page (`features.js`, `page-weekly`)
+Two-col grid: WR left, non-WR right. 4 cadence groups each: `#rt-wr-*/rt-sch-*`. `renderRecurringPage()` → `renderRtGroup(containerId,tasks,isWr,cadence)`. Quick-add: `addRecDirect`. WR quick-add has 🐾 checkbox (`id="qa-pup-{containerId}"`). "Other" saves as cadence `weekly`. `duplicateRecDirect`: `uniqueRecName`, POST, undo. Hidden compat elements: `#wrBar #wrPct2 #wrPL #wrList #shopFull #shopCountLbl #shopSortBtn #nsN #nsS`.
 
 ---
 
 ### Monthly Calendar (`overview.js`)
-- Continuous week scroll: `renderMoCal` renders 22 weeks total (8 past + 14 future) from current week's Monday when no year filter is active. No month-based pagination.
-- Month name separators (`.mo-sep`, `grid-column:1/-1`) inserted when month changes between weeks.
-- On open: `scrollMoToday()` fires via `setTimeout(30ms)`. "This Week" button also calls `scrollMoToday()`.
-- No ← → navigation; no `moOff`-based rendering. `shiftMo` is unused.
-- Wheel scroll is native — old `e.preventDefault()` wheel listener removed from `openMModal`.
-- Cell height: `max(70px, calc((94vh - 100px) / 4 - 4px))`.
-- Cell structure: `.mcell` → `hdr` (day number + add btn) → `.mcell-body` (chips).
-- Travel banners start at `hdrH + lane*22px` from cell top; `hdrH` measured from `.mcell-body.offsetTop`. Padding applied to `.mcell-body` only.
-- `addMoTravelBanners(cells)` — no yr/mo params; derives range from cell `dataset.ds` values.
-- "+X more" chip: click opens `showMcellMorePop(e, tasks, ds)` — full overlay with all tasks. Full task interactions: click→`selTask`, dblclick→edit, contextmenu→`showCtx`, drag. Click outside or Escape closes.
-- Shift-click range uses `#mCells .mcell-t[data-tid]`.
-- Monthly chip click uses `selTask(e, chip.dataset.tid)`. Contextmenu: shop→`showCtx` with shopId; recurring→`showCtx` with isRec=true, recId; regular→`showCtx` with taskId.
-- **Year dropdown** (`#moYearSel`): current year −3 to +2 plus "All". `jumpMoYear(yr)`. Year selected: `_moYrFilter` set, renders all weeks covering Jan 1–Dec 31. Scroll to first `.mo-sep` with year string. "All" resets `_moYrFilter=null`, re-renders 22-week view, scrolls to today.
+`renderMoCal`: 22 weeks (8 past + 14 future) from current Monday, no pagination. Month separators: `.mo-sep` (`grid-column:1/-1`). Open: `scrollMoToday()` via `setTimeout(30ms)`. No `moOff`/`shiftMo`. Native wheel scroll. Cell: `max(70px,calc((94vh-100px)/4-4px))`. Structure: `.mcell`→`hdr`→`.mcell-body`. Travel banners: `hdrH+lane*22px`; `hdrH` from `.mcell-body.offsetTop`; padding on `.mcell-body` only. `addMoTravelBanners(cells)` derives range from `dataset.ds`. Chip click: `selTask(e,tid)`. "+X more": `showMcellMorePop` — full overlay, all task interactions, outside-click/Escape closes. Shift-click: `#mCells .mcell-t[data-tid]`. **Year dropdown** `#moYearSel`: −3 to +2 + "All". `jumpMoYear(yr)` sets `_moYrFilter`, renders weeks for full year, scrolls to first `.mo-sep` with year. "All" resets to 22-week view.
 
 ---
 
 ### Shopping List (`features.js`)
-- Reorder column: `shop_order integer`. Fetch: `?order=shop_order.asc.nullslast,store.asc,name.asc`.
-- Sort modes (`shopOvSortMode`): `'manual'` | `'store'` | `'alpha'`. Cycle: `cycleShopOvSort()`. Button `#shopOvSortBtn`. Grips only shown in manual mode.
-- **Drag reorder MUST use mousedown/mousemove/mouseup — NOT HTML5 drag API** (HTML5 suppresses mousemove after dragstart).
-- `renderShopOv()` uses `createElement` + `addEventListener` (not innerHTML).
-- Grip `mousedown`: sets `_shopDrag.active`, adds doc-level `mousemove`/`mouseup` closures. `dragstart` listener cancels HTML5 drag when `_shopDrag.active`.
-- `onUp`: splices to new position, reassigns sequential `shop_order`, re-renders, PATCHes affected rows.
+`shop_order integer`. Fetch: `?order=shop_order.asc.nullslast,store.asc,name.asc`. Sort modes: `manual`|`store`|`alpha` via `cycleShopOvSort()` (`#shopOvSortBtn`). Grips only in manual mode. **Drag MUST use mousedown/mousemove/mouseup — NOT HTML5 drag** (suppresses mousemove). `renderShopOv()` uses `createElement`. Grip mousedown: `_shopDrag.active` + doc-level listeners. `dragstart` cancels HTML5 when active. `onUp`: splice, reassign sequential `shop_order`, re-render, PATCH affected rows.
 
 ---
 
 ### Travel System (`features.js` + `overview.js`)
-- Table: `travel(id, name, destination, start_date, end_date, travel_mode, notes)`. `travel_mode`: `'plane'|'drive'|null`.
-- Stored in `st.travel`. Fetched `?order=start_date.asc&select=*`. Local entries use `l-` prefix.
-- `_PLANE_SVG` + `_CAR_SVG`: silhouette SVG constants in `overview.js`. `tmIcon(t)` returns icon for non-virtual tasks.
-- `getTravelTasks` + `getExtrasForWeek`: pass through `travel_mode`, use clean name (no baked-in icon).
-- `tRowExtra`: prepends `modeIcon` for travel type. Hides "Travel" pill label for travel rows.
-- Banners use `innerHTML` (SVG requires it). Sorted by `start_date`. Lane algorithm: `colLanes` (weekly) / `rowLanes` keyed by `rowTop` (monthly).
-- `openTravelModal(id, preStart, preEnd)`. Enter: overlay saves if target isn't SELECT; `tvTravelMode` uses `setTimeout(saveTravelModal, 0)`.
-- Drag-to-create: `calDrag {active, startDs, endDs, moved}`. `mouseup` opens modal. `calDrag.moved` prevents modal on plain click.
-- `delTravel`: restores synchronously, POSTs async. Skips DELETE for `l-` ids.
-- After new travel POST resolves: call `renderAll()` + `renderTravelPage()` so banner gets real ID.
-- `ban.dataset.tvid` for selection. Click → select, dblclick → `openTravelModal`, contextmenu → `showCtx`.
-- **Drag to move trip**: banners are `draggable=true`. `dragId='travel::'+tv.id+'::0'`. Drop target column = new `start_date`; duration preserved. Handled in col drop, wkcWrap edge drop, setupEdge drop. Undo via `pushUndo`.
-- **Week boundary rendering**: `addBanner` `ei` uses `findIndex` — if end date beyond current week, `findIndex` returns -1; fix: `_eiRaw<0 ? 6 : Math.min(6,_eiRaw)`.
-- **Enter on empty travel modal name**: `saveTravelModal` calls `closeMod('travelModal')` before returning when name is empty.
+Table: `travel(id,name,destination,start_date,end_date,travel_mode,notes)`. `travel_mode`: `'plane'|'drive'|null`. Stored in `st.travel`. Local IDs: `l-`. `_PLANE_SVG`/`_CAR_SVG` in `overview.js`. Banners use `innerHTML` (SVG). Lane: `colLanes` (weekly) / `rowLanes` by `rowTop` (monthly). Drag-to-create: `calDrag{active,startDs,endDs,moved}`. `delTravel`: sync restore, async DELETE (skip `l-`). After POST: `renderAll()+renderTravelPage()`. Drag-to-move: `draggable=true`, `dragId='travel::'+id+'::0'`, duration preserved. Week boundary: clamp `ei` → `_eiRaw<0?6:Math.min(6,_eiRaw)`. Enter on empty name → `closeMod` immediately.
 
 ---
 
-### Pup Skills Page (`pup-skills.js`, page ID: `page-pups`)
-- Table: `pup_skills(id, pup, skill, stage, level, category, skill_order, next_step, word, signal, comments, focus)`.
-- `pup`: 'Mochi'|'Sunny'. `stage`: 'In Progress'|'Mastered'|'Not Started'. `focus`: boolean. `next_step`: TEXT values `'1. Duration'|'2. Distance'|'3. Distraction'|null`. `word`: TEXT (verbal cue). `signal`: TEXT (hand signal).
-- Layout: 3-col grid (Mochi card | Sunny card | All Skills table).
-- **Sort/Filter**: 250ms debounce, 3-state sort, filter popup — see Global Sort/Filter Pattern. Sort var: `pupSortBy`. Filter popup: `#pupFilterPop`.
-- **Inline cell edit**: `pupCellEdit(td, id, field)` — `td._editing` guard. next_step + category use selects. `setPupField()` calls `pupSnapshot()`, then `renderPupsPage()`. Empty string → `null` before PATCH.
-- **Focus → In Progress**: setting focus auto-sets stage=In Progress unless already Mastered.
-- **Undo**: `pupSnapshot()` / `_pupUndoDirty` / `_pupSyncToServer` — see Global Undo Pattern.
-- **Sync race protection**: `_pupPendingIds` — see Global Sync Race Protection Pattern.
-- **Outside-click deselect**: `window._pupOutsideClick` — see Global Outside-Click Pattern.
-- **Keyboard**: Cmd+Z/redo/Del/Cmd+C/V — see Global Keyboard Shortcuts Pattern. Handler name: first keydown listener in `pup-skills.js`.
-- Dog card header: 3-col grid (`1fr 92px 1fr`), headshot `position:absolute top:-36px`.
-- Default table sort: mastered last → category (commands=0, manners=1, fun=2, other=9) → focus first → pup → level → `skill_order`.
-- Section dividers only in default sort: category headers for non-mastered; "Mastered" header (green).
-- `colIdx` for filter: `{pup:0, skill:1, word:2, level:3, stage:4, next_step:5, category:6}`.
-- **Card view skill row**: Row 1 left: checkbox + skill name + `"word"` (omitted if same as skill name) + `☞` icon (if signal). Row 1 right: next_step. Row 2 (optional): comment. Hover → signal tooltip.
-- **Table view**: columns — `·, Skill, Word, Level, Stage, Next Step, Category, ···`. Word cell italic when set. Signal as tooltip on hover. `colspan=8` for dividers.
+### Pup Skills (`pup-skills.js`, `page-pups`)
+Table: `pup_skills(id,pup,skill,stage,level,category,skill_order,next_step,word,signal,comments,focus)`. `pup`: Mochi|Sunny. `stage`: In Progress|Mastered|Not Started. `next_step`: 1.Duration|2.Distance|3.Distraction|null. Layout: 3-col (Mochi card | Sunny card | table). **Sort/Filter**: see §Interaction Patterns. Sort var: `pupSortBy`. Filter: `#pupFilterPop`. **Inline edit**: `pupCellEdit(td,id,field)`, `td._editing` guard, selects for next_step+category, empty→null before PATCH. Focus→In Progress unless Mastered. **Undo/sync/keyboard/outside-click**: see §Interaction Patterns. Pup-specific names: `pupSnapshot`, `_pupUndoDirty`, `_pupSyncToServer`, `_pupPendingIds`, `window._pupOutsideClick`. Default sort: mastered last → category (commands=0,manners=1,fun=2,other=9) → focus first → pup → level → skill_order. Dividers only in default sort. Card header: `1fr 92px 1fr`, headshot `position:absolute top:-36px`. Card row: checkbox+skill+`"word"`(if≠skill)+☞(if signal) | next_step | comment. Table cols: `·,Skill,Word,Level,Stage,Next Step,Category,···`. `colIdx`: `{pup:0,skill:1,word:2,level:3,stage:4,next_step:5,category:6}`.
 
 ---
 
-### Birthdays Page (`features.js`, page ID: `page-birthdays`)
-- Table: `birthdays(id, name, birthday, present_ideas)`. `present_ideas`: TEXT storing JSON array.
-- Grid: 4×3 months. Rows use `grid-column:1/-1; grid-template-columns:subgrid` — 4 cols: name | right-badge | date | delete.
-- **Right-badge**: countdown OR age pill (countdown priority ≤30d). Always one placeholder col.
-- Countdown: today=orange, tmrw=light-orange, ≤7d=yellow, ≤30d=green. Returns `''` >30d (triggers age fallback). Age only shown when birth year known.
-- **Date normalization** (`_normBdayDate`): `7/5` → `1900-07-05` (sentinel = no year). `7/5/2025` → `2025-07-05`. 2-digit year: ≤30 → 2000+YY, >30 → 1900+YY.
-- `_bdayHasYear(b)`: year ≠ 1900. `_bdayMD(b)`: extracts MM-DD. `_bdayFmtDate(b)`: display. `_bdayEditFmt(b)`: modal field.
-- **Present ideas**: `#bdayPresentPopup` is `position:fixed`. `addBdayPresentFromPopup`/`delBdayPresent` re-render page + refresh popup if open. Both guard against `l-` temp IDs.
-- `saveBdayModal` does NOT include `present_ideas`. `delBday` guards temp IDs.
-- `syncAll` merges local `present_ideas` if server returns null.
-- **Keyboard**: see Global Keyboard Shortcuts Pattern.
-- **Undo**: `bdaySnapshot()` / `_bdaySyncToServer` — see Global Undo Pattern.
-- Non-current month rows: `color:#777`. Current month past `.bday-past`: lighter.
+### Birthdays (`features.js`, `page-birthdays`)
+Table: `birthdays(id,name,birthday,present_ideas)`. `present_ideas`: JSON array TEXT. Grid: 4×3 months, `subgrid` 4 cols (name|badge|date|delete). Badge: countdown (priority ≤30d) OR age. Countdown colors: today=orange, tmrw=light-orange, ≤7d=yellow, ≤30d=green, >30d=`''`. Age only if year known. `_normBdayDate`: `7/5`→`1900-07-05` (no-year sentinel); 2-digit: ≤30→2000s, >30→1900s. `saveBdayModal` does NOT include `present_ideas`. `#bdayPresentPopup` is `position:fixed`. `syncAll` merges local `present_ideas` if server null. **Undo/keyboard**: see §Interaction Patterns. Names: `bdaySnapshot`, `_bdaySyncToServer`.
 
 ---
 
-### Recipes Page (`features.js`)
-- Table: `recipes(id, name, meal_type, cuisine, time, servings, notes, favorite, ingredients, instructions, source)`. Removed cols (don't reference): `protein, prep_time, cook_time, difficulty, last_made_date, substitutions, storage_reheating, total_time`.
-- `_recFields(r)`: DB field subset for POST/PATCH. Variable: `_recipeEditId` (NOT `_recEditId` — taken by recurring).
-- Page skeleton built once via `page._recInit` guard. Filter bar also built once (not rebuilt on re-render). Filter bar: `position:relative; z-index:10`.
-- Filter chips: `data-recmeal/data-recfav/data-rectime` attrs. `_applyRecFilterUI()` toggles `.active`. Search `oninput` → `recSearchChange` → `renderRecipeTable()` only.
-- **Selection → Panel**: single-click selects only, dblclick/`···` → `openRecSidePanel(id)`. `openRecipeAddModal()` for add only.
-- Panel `#recSidePanel` (400px, CSS transition). All fields inline-editable. `_saveSpField` → `setRecField(id,field,val,skipPanel=true)` to avoid focus loss.
-- Panel ingredients (`_panelIngredients`): separate from modal (`_rmIngredients`). `onblur` → `_savePanelIngredients()`.
-- **Ingredients**: JSON string `[{name,amount}]`. Legacy plain text supported. `_serializeIngredients` filters both-blank entries.
-- Ingredient row keys: Enter in amount → focus name; Enter in name → `rmIngAdd()` new row; Backspace on empty → delete row.
-- Search includes: name, meal_type, cuisine, notes, instructions, ingredient names+amounts. `_recPanelId` persists across re-renders.
-- **Sort/Filter**: see Global Sort/Filter Pattern. Popup: `#recFilterPop/.rfopen`.
-- **Undo**: `recSnapshot()` / `_recUndoDirty` / `_recSyncToServer` — see Global Undo Pattern.
-- **Keyboard**: see Global Keyboard Shortcuts Pattern.
-- Right-click context menu `#recCtxMenu`: view, edit, toggle fav, duplicate, delete. Single-item actions hidden on multi-select.
+### Recipes (`features.js`)
+Table: `recipes(id,name,meal_type,cuisine,time,servings,notes,favorite,ingredients,instructions,source)`. Do NOT reference removed cols: protein,prep_time,cook_time,difficulty,last_made_date,substitutions,storage_reheating,total_time. `_recipeEditId` (NOT `_recEditId`). Page skeleton + filter bar built once via `page._recInit`. Selection→Panel: single-click selects, dblclick/`···`→`openRecSidePanel`. `#recSidePanel` 400px CSS transition. `_saveSpField`→`setRecField(id,field,val,skipPanel=true)`. Panel ingredients: `_panelIngredients` (separate from modal `_rmIngredients`), `onblur`→`_savePanelIngredients()`. Ingredients: JSON `[{name,amount}]`, `_serializeIngredients` filters blank entries. Enter in amount→focus name; Enter in name→new row; Bksp on empty→delete row. Search: name,meal_type,cuisine,notes,instructions,ingredient names+amounts. **Sort/filter/undo/keyboard**: see §Interaction Patterns. Names: `recSnapshot`, `_recUndoDirty`, `_recSyncToServer`. Filter popup: `#recFilterPop/.rfopen`. Context menu `#recCtxMenu`: view,edit,fav,duplicate,delete.
 
 ---
 
 ### Quick Notes (`features.js`)
-- Table: `quick_notes(id, note_text, is_visible, created_at, hidden_at)`.
-- `loadQN()`: GET `?is_visible=eq.true&order=created_at.asc`. Called on panel open.
-- `deleteQN(id)`: PATCH `{is_visible:false}`. Soft-delete only — never hard delete.
-- Outside-click closes panel (see Global Outside-Click Pattern).
+Table: `quick_notes(id,note_text,is_visible,created_at,hidden_at)`. `loadQN()`: `?is_visible=eq.true&order=created_at.asc`, called on panel open. `deleteQN`: PATCH `{is_visible:false}` — soft delete only. Outside-click closes panel (see §Interaction Patterns).
