@@ -2,10 +2,11 @@
 
 ## Response & Search Rules
 
+STRICT — these override all defaults:
 - Responses: short numbered list of changes only. No explanations unless asked.
-- Grep: use `-C 1` or no context by default. Only expand if the first result is insufficient.
-- File reads: grep for the exact function/line first, then read only that range. Never read a full large file (overview.js, features.js, core.js) in one pass.
-- dashboard_rules.md: grep for the relevant section keyword instead of reading the whole file.
+- ALWAYS use the Grep tool (never `grep`/`rg`/`find` via Bash). Use `-C 1` or no context. Expand only if first result is insufficient.
+- ALWAYS use the Read tool (never `cat`/`head`/`tail` via Bash). Grep for exact function/line first, then read only that range.
+- NEVER read a full large file in one pass: overview.js, features.js, core.js, dashboard_rules.md. Always grep the section keyword first.
 
 ---
 
