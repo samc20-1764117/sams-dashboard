@@ -834,7 +834,7 @@ function mkMCell(date,om,today){
       if(s){const prev=s.due_date;s.due_date=ds;save();sbReqNullable('PATCH','shopping_list',{due_date:ds},`?id=eq.${s.id}`);pushUndo(()=>{s.due_date=prev;save();renderAll();renderMoCal();sbReqNullable('PATCH','shopping_list',{due_date:prev||null},`?id=eq.${s.id}`);},'Assigned shopping item');}
       dragId=null;renderAll();renderMoCal();return;
     }
-    if(t){const prev=t.due_date;t.due_date=ds;pushUndo(()=>{t.due_date=prev;renderAll();renderMoCal();sbReq('PATCH','tasks',{due_date:prev},`?id=eq.${t.id}`);},'Moved task');await sbReq('PATCH','tasks',{due_date:ds},`?id=eq.${t.id}`);}
+    if(t){const prev=t.due_date;const sid=String(t.id);localOverrides[sid]={due_date:ds};pendingLocal.add(sid);save();t.due_date=ds;pushUndo(()=>{t.due_date=prev;localOverrides[sid]={due_date:prev};pendingLocal.add(sid);save();renderAll();renderMoCal();sbReqNullable('PATCH','tasks',{due_date:prev},`?id=eq.${sid}`).then(()=>{delete localOverrides[sid];pendingLocal.delete(sid);});},'Moved task');await sbReqNullable('PATCH','tasks',{due_date:ds},`?id=eq.${sid}`);pendingLocal.delete(sid);}
     dragId=null;renderAll();renderMoCal();
   });
   // Double-click on cell (not chip) = add task
@@ -887,7 +887,7 @@ function showMcellMorePop(e,tasks,ds){
   ov.appendChild(modal);
   document.body.appendChild(ov);
   ov.addEventListener('click',closeMorePop);
-  const onKey=ev=>{if(ev.key==='Escape'){closeMorePop();document.removeEventListener('keydown',onKey);}};
+  const onKey=ev=>{if(ev.key==='Escape'||ev.key==='Enter'){closeMorePop();document.removeEventListener('keydown',onKey);}};
   document.addEventListener('keydown',onKey);
   ov.addEventListener('transitionend',()=>{if(!ov.classList.contains('open'))document.removeEventListener('keydown',onKey);},{once:true});
   requestAnimationFrame(()=>ov.classList.add('open'));
