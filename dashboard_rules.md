@@ -189,7 +189,7 @@ Per-week keyed by `getWkKey(wkOff)` in `_doneByWk`. Never use `r._done`. `togRec
 
 ## Monthly Calendar
 
-- Continuous week scroll: `renderMoCal` renders 22 weeks total (8 past + 14 future) from current week's Monday. No month-based pagination.
+- Continuous week scroll: `renderMoCal` renders 22 weeks total (8 past + 14 future) from current week's Monday when no year filter is active. No month-based pagination.
 - Month name separators (`.mo-sep`, `grid-column:1/-1`) inserted when month changes between weeks.
 - On open: `scrollMoToday()` fires via `setTimeout(30ms)` to scroll current week's row to top of `.mgrid`. "This Week" button in header also calls `scrollMoToday()`.
 - No ← → navigation; no `moOff`-based rendering. `shiftMo` is unused.
@@ -198,8 +198,10 @@ Per-week keyed by `getWkKey(wkOff)` in `_doneByWk`. Never use `r._done`. `togRec
 - Cell structure: `.mcell` → `hdr` (day number + add btn) → `.mcell-body` (chips). Day number always visible above tasks.
 - Travel banners start at `hdrH + lane*22px` from cell top; `hdrH` measured from `.mcell-body.offsetTop`. Padding applied to `.mcell-body` only.
 - `addMoTravelBanners(cells)` — no yr/mo params; derives range from cell `dataset.ds` values.
-- "+X more" chip: click opens `showMcellMorePop(e, tasks, ds)` — full overlay (`.overlay.mcell-more-ov`) with `.modal.task-modal` listing all tasks. Click outside or Escape closes. Dblclick on chip opens edit modal then closes popup.
+- "+X more" chip: click opens `showMcellMorePop(e, tasks, ds)` — full overlay (`.overlay.mcell-more-ov`) with `.modal.task-modal` listing all tasks. Chips have full task interactions: click→`selTask`, dblclick→edit (closes popup first), contextmenu→`showCtx`, drag. Click outside or Escape closes.
 - Shift-click range uses `#mCells .mcell-t[data-tid]` (fixed from broken `#moCal`).
+- Monthly chip click uses `selTask(e, chip.dataset.tid)` — not inline logic. Contextmenu: shop→`showCtx` with shopId; recurring (WR + non-WR)→`showCtx` with isRec=true, recId; regular→`showCtx` with taskId.
+- **Year dropdown** (`#moYearSel`): populated in `openMModal` (current year −3 to +2, plus "All"). Calls `jumpMoYear(yr)`. When year selected: `_moYrFilter` set, `renderMoCal` renders all weeks covering Jan 1–Dec 31 of that year (weekStart = Monday on/before Jan 1; TOTAL = weeks from that Monday to Monday of Dec 31's week, inclusive). Scroll to first `.mo-sep` containing the year string. "All" resets `_moYrFilter=null`, re-renders default 22-week view, scrolls to today. Dropdown value synced at end of `renderMoCal`.
 
 ---
 
