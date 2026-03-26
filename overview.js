@@ -1,5 +1,5 @@
 // ── Render all ─────────────────────────────────────────────────────────────────
-function renderAll(){renderOv();renderWeeklyPage();renderShopFull();renderTravelPage();renderBdayPage();if(typeof renderPupsPage==='function')renderPupsPage();if(typeof renderRecipesPage==='function')renderRecipesPage();save();requestAnimationFrame(applySelHighlight);}
+function renderAll(){renderOv();renderWeeklyPage();renderShopFull();renderTravelPage();renderBdayPage();if(typeof renderPupsPage==='function')renderPupsPage();if(typeof renderRecipesPage==='function')renderRecipesPage();if(document.getElementById('mModal')?.classList.contains('open'))renderMoCal();save();requestAnimationFrame(applySelHighlight);}
 
 function renderOv(){
   const n=new Date();
