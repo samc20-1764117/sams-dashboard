@@ -807,10 +807,13 @@ function mkMCell(date,om,today){
     else if(t._type==='shop')chip.dataset.tid='shop-cal-'+t._shopId;
     else if(t._isWrec)chip.dataset.tid='wrec-'+t._recId;
     else if(t._recId)chip.dataset.tid='rec-virt-'+t._recId;
-    chip.innerHTML=tmIcon(t)+escHtml(t.name);
+    chip.innerHTML=`<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${tmIcon(t)}${escHtml(t.name)}</span>`;
+    const dx=document.createElement('button');dx.className='chip-del';dx.textContent='✕';
+    dx.addEventListener('click',e2=>{e2.stopPropagation();moChipDel(t,ds,e2);});
+    chip.appendChild(dx);
     chip.addEventListener('dragstart',e=>{e.stopPropagation();dStart(e,t.id);chip.style.opacity='.4';});
     chip.addEventListener('dragend',()=>{chip.style.opacity='1';});
-    chip.addEventListener('click',e=>{const sid=chip.dataset.tid;if(!sid)return;selTask(e,sid);});
+    chip.addEventListener('click',e=>{if(e.target.closest('.chip-del'))return;const sid=chip.dataset.tid;if(!sid)return;selTask(e,sid);});
     chip.addEventListener('dblclick',e=>{e.stopPropagation();if(t._type==='shop')tiDblShop(e,t._shopId);else if(!t._virtual)tiDbl(e,t.id);else tiDblRec(e,t._recId);});
     chip.addEventListener('contextmenu',e=>{if(t._type==='shop')showCtx(e,null,false,null,t._shopId);else if(t._isWrec||t._recId)showCtx(e,null,true,t._recId);else if(!t._virtual)showCtx(e,t.id);});
     body.appendChild(chip);
@@ -834,7 +837,7 @@ function mkMCell(date,om,today){
       if(s){const prev=s.due_date;s.due_date=ds;save();sbReqNullable('PATCH','shopping_list',{due_date:ds},`?id=eq.${s.id}`);pushUndo(()=>{s.due_date=prev;save();renderAll();renderMoCal();sbReqNullable('PATCH','shopping_list',{due_date:prev||null},`?id=eq.${s.id}`);},'Assigned shopping item');}
       dragId=null;renderAll();renderMoCal();return;
     }
-    if(t){const prev=t.due_date;const sid=String(t.id);localOverrides[sid]={due_date:ds};pendingLocal.add(sid);save();t.due_date=ds;pushUndo(()=>{t.due_date=prev;localOverrides[sid]={due_date:prev};pendingLocal.add(sid);save();renderAll();renderMoCal();sbReqNullable('PATCH','tasks',{due_date:prev},`?id=eq.${sid}`).then(()=>{delete localOverrides[sid];pendingLocal.delete(sid);});},'Moved task');await sbReqNullable('PATCH','tasks',{due_date:ds},`?id=eq.${sid}`);pendingLocal.delete(sid);}
+    if(t){const prev=t.due_date;const sid=String(t.id);localOverrides[sid]={due_date:ds};pendingLocal.add(sid);save();t.due_date=ds;dragId=null;renderAll();renderMoCal();pushUndo(()=>{t.due_date=prev;localOverrides[sid]={due_date:prev};pendingLocal.add(sid);save();renderAll();renderMoCal();sbReqNullable('PATCH','tasks',{due_date:prev},`?id=eq.${sid}`).then(()=>{delete localOverrides[sid];pendingLocal.delete(sid);});},'Moved task');sbReqNullable('PATCH','tasks',{due_date:ds},`?id=eq.${sid}`).then(()=>pendingLocal.delete(sid));return;}
     dragId=null;renderAll();renderMoCal();
   });
   // Double-click on cell (not chip) = add task
@@ -859,6 +862,29 @@ function mkMCell(date,om,today){
   });
   return cell;
 }
+function moChipDel(t,ds,e){
+  e&&e.stopPropagation();
+  if(t._type==='shop'){
+    const s=st.shopping.find(x=>String(x.id)===String(t._shopId));
+    if(s){const prev=s.due_date;s.due_date=null;save();renderAll();renderMoCal();
+      sbReqNullable('PATCH','shopping_list',{due_date:null},`?id=eq.${s.id}`);
+      pushUndo(()=>{s.due_date=prev;save();renderAll();renderMoCal();sbReqNullable('PATCH','shopping_list',{due_date:prev||null},`?id=eq.${s.id}`);},'Removed from calendar');}
+  } else if(t._isWrec){
+    const r=st.recurring.find(x=>String(x.id)===String(t._recId));
+    if(r){const wkKey=dsToWkKey(ds);if(!r._dateOverrides)r._dateOverrides={};const prev=r._dateOverrides[wkKey];
+      delete r._dateOverrides[wkKey];save();renderAll();renderMoCal();
+      sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},recQs(r.id));
+      pushUndo(()=>{if(!r._dateOverrides)r._dateOverrides={};r._dateOverrides[wkKey]=prev;save();renderAll();renderMoCal();sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},recQs(r.id));},'Removed from calendar');}
+  } else if(t._recId){
+    const r=st.recurring.find(x=>String(x.id)===String(t._recId));
+    if(r){const wkKey=dsToWkKey(ds);if(!r._dateOverrides)r._dateOverrides={};const prev=r._dateOverrides[wkKey];
+      r._dateOverrides[wkKey]='__skip__';save();renderAll();renderMoCal();
+      sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},recQs(r.id));
+      pushUndo(()=>{if(prev!==undefined)r._dateOverrides[wkKey]=prev;else delete r._dateOverrides[wkKey];save();renderAll();renderMoCal();sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},recQs(r.id));},'Removed from calendar');}
+  } else {
+    delTask(t.id,e);renderMoCal();
+  }
+}
 function showMcellMorePop(e,tasks,ds){
   document.querySelectorAll('.mcell-more-ov').forEach(p=>p.remove());
   const ov=document.createElement('div');ov.className='overlay mcell-more-ov';
@@ -871,13 +897,16 @@ function showMcellMorePop(e,tasks,ds){
   tasks.forEach(t=>{
     const s=t.important&&!t.done?IMP:gc(t.category);
     const chip=document.createElement('div');chip.className='mcell-t';chip.draggable=!t.done;
-    chip.style.cssText=`background:${s.bg};color:${s.t};border-color:${s.b};display:block;margin-bottom:3px;cursor:${t.done?'default':'grab'};${t.done?'opacity:.25;text-decoration:line-through;':''}`;
+    chip.style.cssText=`background:${s.bg};color:${s.t};border-color:${s.b};display:flex;align-items:center;gap:2px;margin-bottom:3px;cursor:${t.done?'default':'grab'};${t.done?'opacity:.25;text-decoration:line-through;':''}`;
     if(!t._virtual&&!t._type)chip.dataset.tid=String(t.id);
     else if(t._type==='shop')chip.dataset.tid='shop-cal-'+t._shopId;
     else if(t._isWrec)chip.dataset.tid='wrec-'+t._recId;
     else if(t._recId)chip.dataset.tid='rec-virt-'+t._recId;
-    chip.innerHTML=tmIcon(t)+escHtml(t.name);
-    chip.addEventListener('click',ev=>{const sid=chip.dataset.tid;if(!sid)return;selTask(ev,sid);});
+    chip.innerHTML=`<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${tmIcon(t)}${escHtml(t.name)}</span>`;
+    const mdx=document.createElement('button');mdx.className='chip-del';mdx.textContent='✕';
+    mdx.addEventListener('click',e2=>{e2.stopPropagation();closeMorePop();moChipDel(t,ds,e2);});
+    chip.appendChild(mdx);
+    chip.addEventListener('click',ev=>{if(ev.target.closest('.chip-del'))return;const sid=chip.dataset.tid;if(!sid)return;selTask(ev,sid);});
     chip.addEventListener('dblclick',ev=>{ev.stopPropagation();closeMorePop();if(t._type==='shop')tiDblShop(ev,t._shopId);else if(!t._virtual)tiDbl(ev,t.id);else tiDblRec(ev,t._recId);});
     chip.addEventListener('contextmenu',ev=>{if(t._type==='shop')showCtx(ev,null,false,null,t._shopId);else if(t._isWrec||t._recId)showCtx(ev,null,true,t._recId);else if(!t._virtual)showCtx(ev,t.id);});
     chip.addEventListener('dragstart',ev=>{ev.stopPropagation();dStart(ev,t.id);chip.style.opacity='.4';});
