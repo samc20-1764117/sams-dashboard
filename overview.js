@@ -404,13 +404,16 @@ function renderWkCal(){
           const wkKey=origDate?getWkKey(wkOff):getWkKey(wkOff);
           if(!r._dateOverrides)r._dateOverrides={};
           const prevOverride=r._dateOverrides[wkKey];
+          const savedBlocks=st.blocks.filter(b=>b.recId&&String(b.recId)===String(r.id)&&b.ds===origDate).map(b=>({...b}));
           r._dateOverrides[wkKey]=ds;
-          removeTBBlocksForDate(ds,{recId:r.id});
+          removeTBBlocksForDate(ds,{recId:r.id,oldDs:origDate});
           save();dragId=null;renderAll();if(document.getElementById('tbGrid'))renderDayTB();
           sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},recQs(r.id));
           pushUndo(()=>{
             if(prevOverride)r._dateOverrides[wkKey]=prevOverride;
             else delete r._dateOverrides[wkKey];
+            st.blocks=st.blocks.filter(b=>!(b.recId&&String(b.recId)===String(r.id)&&b.ds===ds));
+            savedBlocks.forEach(b=>{st.blocks.push(b);sbSaveBlock(b);});
             save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
             sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},recQs(r.id));
           },'Moved recurring task');
