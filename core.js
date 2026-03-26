@@ -621,7 +621,9 @@ function doRedo(){
 }
 document.addEventListener('keydown',e=>{
   if((e.metaKey||e.ctrlKey)&&e.key==='z'){
-    const _focusedInput=document.activeElement&&(document.activeElement.tagName==='INPUT'||document.activeElement.tagName==='TEXTAREA'||document.activeElement.tagName==='SELECT');
+    const _ael=document.activeElement;
+    const _isInput=_ael&&(_ael.tagName==='INPUT'||_ael.tagName==='TEXTAREA'||_ael.tagName==='SELECT');
+    const _focusedInput=_isInput&&!_ael.closest('.overlay:not(.open)');
     if(_focusedInput)return;
     e.preventDefault();
     const _onPupsZ=document.getElementById('page-pups')?.classList.contains('active');
