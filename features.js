@@ -709,9 +709,9 @@ function renderMoCal(){
   const dowEl=document.getElementById('mDow');
   if(!dowEl.children.length)['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach(dn=>{const el=document.createElement('div');el.className='mdowl';el.textContent=dn;dowEl.appendChild(el);});
   const cells=document.getElementById('mCells');cells.innerHTML='';
-  const WEEKS=18;let curMo=-1;
-  for(let w=0;w<WEEKS;w++){
-    const wkMon=new Date(weekStart);wkMon.setDate(weekStart.getDate()+w*7);
+  const PAST=8,FUTURE=14,TOTAL=PAST+FUTURE;let curMo=-1;
+  for(let w=0;w<TOTAL;w++){
+    const wkMon=new Date(weekStart);wkMon.setDate(weekStart.getDate()+(w-PAST)*7);
     const mo=wkMon.getMonth();
     if(mo!==curMo){
       curMo=mo;
