@@ -95,6 +95,46 @@ Pattern: overlay `div` owns Enter/Escape. Individual inputs must NOT have their 
 - Document-level Enter fallback for `tModal`/`shopEdit`/`recEdit`/`recModal` when `.open`. Must NOT gate on field content.
 - `tCat` select uses `addEventListener + e.stopPropagation()` — only legitimate per-element override.
 
+### Keyboard Shortcuts (Page-Level Pattern)
+Pages with their own undo stacks (pup, birthdays, recipes) register a keydown listener that intercepts before global Cmd+Z:
+- **Cmd+Z** → page `undo()`
+- **Cmd+Shift+Z** → page `redo()`
+- **Del / Bksp** → page context delete (skips if input focused)
+- **Cmd+C** → copy selected item
+- **Cmd+V** → paste
+- Must skip when an input/textarea/select is focused. Must skip global Cmd+Z (check `e.target.tagName`).
+- Page-specific keyboard listener is the **first** keydown listener registered (so it runs before global `core.js` handler).
+
+### Outside-Click Close Pattern
+All popups, panels, and overlays that close on outside click follow this pattern:
+- Store the handler at a stable reference (e.g. `window._pageOutsideClick`) so it can be removed on re-render.
+- Re-register on every `renderPage()` call.
+- Handler checks `!el.contains(e.target)` before closing.
+- Use `setTimeout(0)` when adding the listener after an open event, to avoid immediately re-closing.
+- Backdrop element (`position:fixed; inset:0`) is an alternative for popups that need pointer-events blocking during drag.
+
+### Undo Pattern (Per-Page Undo Stack)
+Pages with their own undo (pup, birthdays, recipes) use this pattern:
+- `pageSnapshot()` — deep-clone current state before any destructive op.
+- `_pageUndoDirty` flag — set when local changes are pending; blocks `syncAll` from overwriting with stale DB data.
+- `_pageSyncToServer(prev, next)` — diffs prev vs next, fires only the minimal PATCH/POST/DELETE calls needed.
+- Undo restores snapshot locally first, then calls `_pageSyncToServer`.
+- Redo stores the forward snapshot before undo applies.
+
+### Sync Race Protection Pattern
+For pages/features with in-flight PATCHes:
+- Use a `_pendingIds` Set. Add ID before PATCH, remove in `.then()`.
+- `syncAll` must skip overwriting any entry whose ID is in `_pendingIds`.
+- Applies to: pup skills (`_pupPendingIds`), travel (`pendingTravelIds`), tasks (`pendingLocal`).
+
+### Sort/Filter with Debounce Pattern
+Used by table pages (pup skills, recipes):
+- **250ms debounce** on column header click/dblclick.
+- Single click → cycle sort: none → asc → desc → none (`3-state`).
+- Double click → open filter popup positioned under the live `<th>` element (not `e.currentTarget` — must re-query DOM at open time).
+- Filter popup has its own outside-click close (see Outside-Click Close Pattern).
+- Sort state stored in module variable (e.g. `pupSortBy`, `_recSortBy`).
+
 ### Top-Right Controls
 Fixed position (`top:14px; right:20px; z-index:90`), visible on all pages.
 Order (left → right): **Sync bar** | **Settings button (⚙)**
@@ -159,7 +199,7 @@ Boolean on `recurring_tasks` (NOT NULL default false). `recModal` shows 🐾 che
 
 **Unassigned Tasks Badge**
 - `#unAssignedBadge` in `.wkc-foot`. Filter: `!due_date && !done && category !== 'Long term'`.
-- Popup `#unMenu`: `position:fixed`, 300px. Opens upward above badge. Backdrop `#unMenuBack` closes on outside click.
+- Popup `#unMenu`: `position:fixed`, 300px. Opens upward above badge. Backdrop `#unMenuBack` closes on outside click (see Global Outside-Click Pattern).
 - `dEnd` closes popup, restores backdrop pointer-events on drag end.
 - Badge only visible on overview page (`activePg` variable).
 
@@ -247,13 +287,13 @@ Boolean on `recurring_tasks` (NOT NULL default false). `recModal` shows 🐾 che
 - Table: `pup_skills(id, pup, skill, stage, level, category, skill_order, next_step, word, signal, comments, focus)`.
 - `pup`: 'Mochi'|'Sunny'. `stage`: 'In Progress'|'Mastered'|'Not Started'. `focus`: boolean. `next_step`: TEXT values `'1. Duration'|'2. Distance'|'3. Distraction'|null`. `word`: TEXT (verbal cue). `signal`: TEXT (hand signal).
 - Layout: 3-col grid (Mochi card | Sunny card | All Skills table).
-- **Sort/Filter**: 250ms header debounce — single click → `pupSortBy` (3-state none→asc→desc→none), dblclick → `pupFilterBy`. Popup `#pupFilterPop` positioned under live `<th>`.
+- **Sort/Filter**: 250ms debounce, 3-state sort, filter popup — see Global Sort/Filter Pattern. Sort var: `pupSortBy`. Filter popup: `#pupFilterPop`.
 - **Inline cell edit**: `pupCellEdit(td, id, field)` — `td._editing` guard. next_step + category use selects. `setPupField()` calls `pupSnapshot()`, then `renderPupsPage()`. Empty string → `null` before PATCH.
 - **Focus → In Progress**: setting focus auto-sets stage=In Progress unless already Mastered.
-- **Undo**: `pupSnapshot()` before any destructive op. `_pupUndoDirty` blocks silent auto-sync overwrite only. `_pupSyncToServer(prev,next)` diffs + fires minimal API calls.
-- **Sync race protection**: `_pupPendingIds` (Set) tracks IDs with in-flight PATCHes. `syncAll` preserves local state for pending IDs.
-- **Outside-click deselect**: stored at `window._pupOutsideClick`, re-registered each `renderPupsPage()`.
-- **Keyboard** (pup page only): Cmd+Z → `pupUndo()`, Cmd+Shift+Z → `pupRedo()`, Del/Bksp → `pupCtxDelete()`, Cmd+C/V → copy/paste. Skips global Cmd+Z.
+- **Undo**: `pupSnapshot()` / `_pupUndoDirty` / `_pupSyncToServer` — see Global Undo Pattern.
+- **Sync race protection**: `_pupPendingIds` — see Global Sync Race Protection Pattern.
+- **Outside-click deselect**: `window._pupOutsideClick` — see Global Outside-Click Pattern.
+- **Keyboard**: Cmd+Z/redo/Del/Cmd+C/V — see Global Keyboard Shortcuts Pattern. Handler name: first keydown listener in `pup-skills.js`.
 - Dog card header: 3-col grid (`1fr 92px 1fr`), headshot `position:absolute top:-36px`.
 - Default table sort: mastered last → category (commands=0, manners=1, fun=2, other=9) → focus first → pup → level → `skill_order`.
 - Section dividers only in default sort: category headers for non-mastered; "Mastered" header (green).
@@ -273,8 +313,8 @@ Boolean on `recurring_tasks` (NOT NULL default false). `recModal` shows 🐾 che
 - **Present ideas**: `#bdayPresentPopup` is `position:fixed`. `addBdayPresentFromPopup`/`delBdayPresent` re-render page + refresh popup if open. Both guard against `l-` temp IDs.
 - `saveBdayModal` does NOT include `present_ideas`. `delBday` guards temp IDs.
 - `syncAll` merges local `present_ideas` if server returns null.
-- **Keyboard**: Cmd+Z/Shift+Z → undo/redo, Del/Bksp → delete, Cmd+C/V → copy/paste.
-- **Undo**: `bdaySnapshot()` + `_bdaySyncToServer(prev,next)`.
+- **Keyboard**: see Global Keyboard Shortcuts Pattern.
+- **Undo**: `bdaySnapshot()` / `_bdaySyncToServer` — see Global Undo Pattern.
 - Non-current month rows: `color:#777`. Current month past `.bday-past`: lighter.
 
 ---
@@ -290,9 +330,9 @@ Boolean on `recurring_tasks` (NOT NULL default false). `recModal` shows 🐾 che
 - **Ingredients**: JSON string `[{name,amount}]`. Legacy plain text supported. `_serializeIngredients` filters both-blank entries.
 - Ingredient row keys: Enter in amount → focus name; Enter in name → `rmIngAdd()` new row; Backspace on empty → delete row.
 - Search includes: name, meal_type, cuisine, notes, instructions, ingredient names+amounts. `_recPanelId` persists across re-renders.
-- **Sort/Filter**: 250ms debounce. Popup `#recFilterPop/.rfopen`.
-- **Undo**: `recSnapshot()` + `_recSyncToServer(prev,next)`. `_recUndoDirty` blocks auto-sync.
-- **Keyboard**: same as pup skills pattern.
+- **Sort/Filter**: see Global Sort/Filter Pattern. Popup: `#recFilterPop/.rfopen`.
+- **Undo**: `recSnapshot()` / `_recUndoDirty` / `_recSyncToServer` — see Global Undo Pattern.
+- **Keyboard**: see Global Keyboard Shortcuts Pattern.
 - Right-click context menu `#recCtxMenu`: view, edit, toggle fav, duplicate, delete. Single-item actions hidden on multi-select.
 
 ---
@@ -301,4 +341,4 @@ Boolean on `recurring_tasks` (NOT NULL default false). `recModal` shows 🐾 che
 - Table: `quick_notes(id, note_text, is_visible, created_at, hidden_at)`.
 - `loadQN()`: GET `?is_visible=eq.true&order=created_at.asc`. Called on panel open.
 - `deleteQN(id)`: PATCH `{is_visible:false}`. Soft-delete only — never hard delete.
-- Outside-click closes panel.
+- Outside-click closes panel (see Global Outside-Click Pattern).
