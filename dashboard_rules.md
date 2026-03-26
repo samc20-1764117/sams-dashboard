@@ -127,6 +127,7 @@ All files share global scope — no modules, no bundler.
 - `pup_related`: boolean on `recurring_tasks` NOT NULL default false. `recModal` shows 🐾 only for `weekly_reset` type. Include in POST/PATCH when true.
 - `isWRecDueThisWeek(r,off)` and `getRecurringWeekTasks()` must stay in sync.
 - **Drag move to another day** (`rec::` in weekly cal): snapshot `savedBlocks` (copies of TB blocks for this recId on `origDate`) before calling `removeTBBlocksForDate`. Pass `oldDs:origDate` explicitly (not defaulting to today). Undo must: restore `_dateOverrides`, remove any blocks added on the new date, re-add `savedBlocks` via `sbSaveBlock`, then call `renderAll()` + `renderDayTB()`.
+- **`removeTBBlocksForDate` — `recId` branch**: must call `sbDeleteBlock(b.id)` for each removed block (same as `taskId` branch) before filtering `st.blocks`. Without this, old blocks persist on the server and are restored on next `syncAll`.
 
 ---
 
