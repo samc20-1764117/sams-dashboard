@@ -406,12 +406,12 @@ function renderWkCal(){
           const prevOverride=r._dateOverrides[wkKey];
           r._dateOverrides[wkKey]=ds;
           removeTBBlocksForDate(ds,{recId:r.id});
-          save();dragId=null;renderAll();
+          save();dragId=null;renderAll();if(document.getElementById('tbGrid'))renderDayTB();
           sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},recQs(r.id));
           pushUndo(()=>{
             if(prevOverride)r._dateOverrides[wkKey]=prevOverride;
             else delete r._dateOverrides[wkKey];
-            save();renderAll();
+            save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
             sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},recQs(r.id));
           },'Moved recurring task');
         }
