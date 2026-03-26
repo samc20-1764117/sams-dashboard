@@ -511,7 +511,8 @@ function removeTBBlocksForDate(ds, opts={}){
     st.blocks=st.blocks.filter(b=>!(String(b.taskId)===String(opts.taskId)&&b.ds===fromDs));
   }
   if(opts.recId){
-    // TB blocks linked to recurring tasks store taskId as 'rec-'+recId or match by title — remove by recId field
+    const removedRec=st.blocks.filter(b=>b.recId&&String(b.recId)===String(opts.recId)&&b.ds===fromDs);
+    removedRec.forEach(b=>sbDeleteBlock(b.id));
     st.blocks=st.blocks.filter(b=>!(b.recId&&String(b.recId)===String(opts.recId)&&b.ds===fromDs));
   }
   // shopping items: match by shopId
