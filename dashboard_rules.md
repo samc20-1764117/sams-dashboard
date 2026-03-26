@@ -246,6 +246,28 @@ Per-week keyed by `getWkKey(wkOff)` in `_doneByWk`. Never use `r._done`. `togRec
 - Pattern for `setTimeout` focus: `setTimeout(()=>{const _el=document.getElementById('...');if(_el){_el.focus();const _l=_el.value.length;_el.setSelectionRange(_l,_l);}}, delay);`
 - Pattern for `requestAnimationFrame` focus: `requestAnimationFrame(()=>{el.focus();const _l=el.value.length;el.setSelectionRange(_l,_l);});`
 
+## Cmd+Z Undo in Modals
+
+**Rule**: The global `keydown` listener in `core.js` handles Cmd+Z. It must distinguish between two states:
+
+- **Modal open, input focused** → return early (no `preventDefault`) so native browser text undo works inside the input.
+- **Modal closed, input still focused** → call `doUndo()` for dashboard undo.
+
+**Why this matters**: Overlays hide via `opacity:0; pointer-events:none` (NOT `display:none`). The focused input retains focus even after the modal closes. A naive `tagName==='INPUT'` check returns `true` in both states and incorrectly blocks `doUndo()`.
+
+**Correct check** (core.js):
+```javascript
+const _ael=document.activeElement;
+const _isInput=_ael&&(_ael.tagName==='INPUT'||_ael.tagName==='TEXTAREA'||_ael.tagName==='SELECT');
+const _focusedInput=_isInput&&!_ael.closest('.overlay:not(.open)');
+if(_focusedInput)return; // native browser undo
+// else: fall through to doUndo()
+```
+
+**Never add `stopPropagation` for Cmd+Z to overlay `onkeydown` attributes.** Overlays exist in the DOM permanently; `stopPropagation` on a closed overlay would silently swallow Cmd+Z before `doUndo()` is reached.
+
+**Travel edit undo**: `saveTravelModal` calls `pushUndo` for edits. The undo closure must re-find the travel entry by ID at undo time (`st.travel.find(x=>String(x.id)===_undoId)`) — not capture `tv` by reference — since `syncAll` can replace `st.travel` entries after the PATCH resolves.
+
 ## Modal Enter / Escape Key Rules
 
 **Pattern**: overlay `div` owns Enter/Escape. Individual inputs must NOT have their own save handlers (double-fire).
