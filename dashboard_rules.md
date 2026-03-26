@@ -21,6 +21,7 @@ All files share global scope — no modules, no bundler.
 
 - Grep exact function/variable name first. Never broad greps. Don't chain passes when one suffices.
 - Timeblock drag/resize: `tbOnUp`, `onRU`, `atbOnUp`, `onRM` in `overview.js`.
+- `renderAll()` does NOT call `renderDayTB()`. Any operation that changes timeblock state must also call `if(document.getElementById('tbGrid'))renderDayTB()` separately — including undo closures.
 
 ### Data & Persistence
 - POST must include ALL required fields. Missing NOT NULL → silent 400 failure.
@@ -125,6 +126,7 @@ All files share global scope — no modules, no bundler.
 - **Duplicate**: `uniqueRecName` appends ` (2)/(3)`. Local: `{...r,id:tempId,name:dupName,starting_date:today,_doneByWk:{},_done:false,_dateOverrides:{}}`. DB: `name,is_weekly_reset,cadence,starting_date:today`.
 - `pup_related`: boolean on `recurring_tasks` NOT NULL default false. `recModal` shows 🐾 only for `weekly_reset` type. Include in POST/PATCH when true.
 - `isWRecDueThisWeek(r,off)` and `getRecurringWeekTasks()` must stay in sync.
+- **Drag move to another day** (`rec::` in weekly cal): snapshot `savedBlocks` (copies of TB blocks for this recId on `origDate`) before calling `removeTBBlocksForDate`. Pass `oldDs:origDate` explicitly (not defaulting to today). Undo must: restore `_dateOverrides`, remove any blocks added on the new date, re-add `savedBlocks` via `sbSaveBlock`, then call `renderAll()` + `renderDayTB()`.
 
 ---
 
