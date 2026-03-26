@@ -681,9 +681,6 @@ function addMoTravelBanners(cells){
       rowGroups.get(rt).push(c);
       cellColIdx.set(c,ci);
     });
-    // Measure header height from first cell so banners start below day number
-    const firstBody=cellEls[0]?.querySelector('.mcell-body');
-    const hdrH=firstBody?(firstBody.offsetTop-cellEls[0].offsetTop):24;
     trips.forEach(tv=>{
       const sd=(tv.start_date||'').split('T')[0],ed=(tv.end_date||'').split('T')[0]||sd;
       const clampS=sd<rangeStart?rangeStart:sd,clampE=ed>rangeEnd?rangeEnd:ed;
@@ -691,7 +688,7 @@ function addMoTravelBanners(cells){
       const rangeCells=cellEls.filter(c=>c.dataset.ds&&c.dataset.ds>=clampS&&c.dataset.ds<=clampE);
       if(!rangeCells.length)return;
       const s=gc('travel');
-      const modeIconHtml=tv.travel_mode==='plane'?'✈️ ':tv.travel_mode==='drive'?_CAR_SVG:'';
+      const modeIconHtml=tv.travel_mode==='plane'?_PLANE_SVG:tv.travel_mode==='drive'?_CAR_SVG:'';
       const label=tv.destination?`${modeIconHtml}${escHtml(tv.name)} → ${escHtml(tv.destination)}`:`${modeIconHtml}${escHtml(tv.name)}`;
       let rows=[],cur=[rangeCells[0]];
       for(let i=1;i<rangeCells.length;i++){
@@ -703,19 +700,13 @@ function addMoTravelBanners(cells){
         const rowTop=fc.offsetTop;
         const si=cellColIdx.get(fc)??0,ei=cellColIdx.get(lc)??6;
         const lane=getMoLane(rowTop,si,ei);
-        const left=fc.offsetLeft+2,top=rowTop+hdrH+lane*22,width=lc.offsetLeft+lc.offsetWidth-fc.offsetLeft-4;
+        const left=fc.offsetLeft+2,top=rowTop+lane*22,width=lc.offsetLeft+lc.offsetWidth-fc.offsetLeft-4;
         const ban=document.createElement('div');ban.className='wkc-banner';
         ban.style.cssText=`position:absolute;left:${left}px;top:${top}px;width:${width}px;background:${s.bg};color:${s.t};border-color:${s.b};pointer-events:all;${isPast?'opacity:.35;':''}`;
         ban.innerHTML=ri===0?label:`↳ ${label}`;
         ban.addEventListener('click',()=>openTravelModal(tv.id));
         layer.appendChild(ban);
       });
-    });
-    // Add paddingTop to chip container (mcell-body) so chips appear below banners
-    cellEls.forEach(c=>{
-      const rt=c.offsetTop,ci=cellColIdx.get(c)??0;
-      const occ=(rowLanes.get(rt)||[]).filter(r=>ci>=r.si&&ci<=r.ei);
-      if(occ.length){const ml=Math.max(...occ.map(r=>r.lane));const body=c.querySelector('.mcell-body');if(body)body.style.paddingTop=`${(ml+1)*22+2}px`;}
     });
   },20);
 }
@@ -783,7 +774,7 @@ function mkMCell(date,om,today){
   cell.dataset.ds=ds;
   cell.className='mcell'+(om?' om':'')+(ds===today?' tc':'');
   // Header row with date + add btn
-  const hdr=document.createElement('div');hdr.style.cssText='display:flex;align-items:center;justify-content:space-between;margin-bottom:2px';
+  const hdr=document.createElement('div');hdr.style.cssText='display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;position:relative;z-index:4';
   const dn=document.createElement('div');dn.className='mcell-n';dn.textContent=date.getDate();
   const addBtn=document.createElement('button');addBtn.style.cssText='background:none;border:none;cursor:pointer;font-size:11px;color:var(--subtle);padding:0 1px;line-height:1;border-radius:3px;opacity:0;transition:opacity .12s';addBtn.textContent='+';
   addBtn.addEventListener('click',e=>{e.stopPropagation();tPreDate=ds;openTModal();});

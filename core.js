@@ -671,7 +671,7 @@ document.addEventListener('keydown',e=>{
     if(e.shiftKey){doRedo();}else{doUndo();}
     return;
   }
-  if(e.key==='Escape'){document.querySelectorAll('.overlay.open').forEach(o=>o.classList.remove('open'));closeQA();const pfp=document.getElementById('pupFilterPop');if(pfp)pfp.classList.remove('pfopen');const rfp=document.getElementById('recFilterPop');if(rfp)rfp.classList.remove('rfopen');hidePupCtx();hidePupTip();hideBdayCtx();hideRecCtx();closeRecSidePanel();}
+  if(e.key==='Escape'){const _mWasOpen=document.getElementById('mModal').classList.contains('open');document.querySelectorAll('.overlay.open').forEach(o=>o.classList.remove('open'));if(_mWasOpen)document.activeElement?.blur();closeQA();const pfp=document.getElementById('pupFilterPop');if(pfp)pfp.classList.remove('pfopen');const rfp=document.getElementById('recFilterPop');if(rfp)rfp.classList.remove('rfopen');hidePupCtx();hidePupTip();hideBdayCtx();hideRecCtx();closeRecSidePanel();}
   if(document.getElementById('page-recipes')?.classList.contains('active')&&!document.querySelector('input:focus,textarea:focus,select:focus')){
     if((e.key==='Delete'||e.key==='Backspace')&&_selRecIds.size){e.preventDefault();recCtxDelete();return;}
     if((e.metaKey||e.ctrlKey)&&e.key==='c'&&_selRecIds.size){
@@ -729,6 +729,7 @@ document.addEventListener('keydown',e=>{
     else if(document.getElementById('recEditModal').classList.contains('open')){e.preventDefault();saveRecEdit();}
     else if(document.getElementById('recModal').classList.contains('open')){e.preventDefault();saveRecModal();}
     else if(document.getElementById('bModal').classList.contains('open')){e.preventDefault();saveBlock();}
+    else if(document.getElementById('mModal').classList.contains('open')&&!document.querySelector('input:focus,textarea:focus')){e.preventDefault();closeMod('mModal');}
   }
 });
 
