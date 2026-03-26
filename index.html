@@ -1027,7 +1027,7 @@ body.dark .bday-add-menu{background:rgba(38,20,10,.97);border-color:rgba(255,220
 </div><!-- /shell -->
 
 <!-- Task Modal -->
-<div class="overlay" id="tModal" onclick="closeMod(&#39;tModal&#39;,event)" onkeydown="if(event.key===&#39;Enter&#39;){event.preventDefault();saveTModal();}if(event.key===&#39;Escape&#39;)closeMod(&#39;tModal&#39;)">
+<div class="overlay" id="tModal" onclick="closeMod(&#39;tModal&#39;,event)" onkeydown="if((event.metaKey||event.ctrlKey)&&event.key===&#39;z&#39;&&(event.target.tagName===&#39;INPUT&#39;||event.target.tagName===&#39;TEXTAREA&#39;)){event.stopPropagation();return;}if(event.key===&#39;Enter&#39;){event.preventDefault();saveTModal();}if(event.key===&#39;Escape&#39;)closeMod(&#39;tModal&#39;)">
   <div class="modal task-modal">
     <div class="mt" id="tMTitle">Add Task</div>
     <div class="mfield"><label>Name *</label><input id="tName" placeholder="What needs doing?"></div>
@@ -1052,7 +1052,7 @@ body.dark .bday-add-menu{background:rgba(38,20,10,.97);border-color:rgba(255,220
 </div>
 
 <!-- Travel Modal -->
-<div class="overlay" id="travelModal" onclick="closeMod('travelModal',event)" onkeydown="if(event.key==='Enter'&&event.target.tagName!=='SELECT'){event.preventDefault();saveTravelModal();}if(event.key==='Escape')closeMod('travelModal')">
+<div class="overlay" id="travelModal" onclick="closeMod('travelModal',event)" onkeydown="if((event.metaKey||event.ctrlKey)&&event.key==='z'&&(event.target.tagName==='INPUT'||event.target.tagName==='TEXTAREA')){event.stopPropagation();return;}if(event.key==='Enter'&&event.target.tagName!=='SELECT'){event.preventDefault();saveTravelModal();}if(event.key==='Escape')closeMod('travelModal')">
   <div class="modal task-modal" style="width:330px">
     <div class="mt" id="travelMTitle">Add Trip</div>
     <div class="mfield"><label>Trip name *</label><input id="tvName" placeholder="e.g. NYC weekend"></div>
@@ -1066,7 +1066,7 @@ body.dark .bday-add-menu{background:rgba(38,20,10,.97);border-color:rgba(255,220
 </div>
 
 <!-- Birthday Modal -->
-<div class="overlay" id="bdayModal" onclick="closeMod('bdayModal',event)" onkeydown="if(event.key==='Enter'){event.preventDefault();saveBdayModal();}if(event.key==='Escape')closeMod('bdayModal')">
+<div class="overlay" id="bdayModal" onclick="closeMod('bdayModal',event)" onkeydown="if((event.metaKey||event.ctrlKey)&&event.key==='z'&&(event.target.tagName==='INPUT'||event.target.tagName==='TEXTAREA')){event.stopPropagation();return;}if(event.key==='Enter'){event.preventDefault();saveBdayModal();}if(event.key==='Escape')closeMod('bdayModal')">
   <div class="modal task-modal" style="width:320px;padding:16px">
     <div class="mt" id="bdayMTitle">Add Birthday</div>
     <div class="mfield"><label>Name *</label><input id="bdName" placeholder="e.g. Mom"></div>
@@ -1077,7 +1077,7 @@ body.dark .bday-add-menu{background:rgba(38,20,10,.97);border-color:rgba(255,220
 </div>
 
 <!-- Recurring Task Modal -->
-<div class="overlay" id="recModal" onclick="closeMod(&#39;recModal&#39;,event)" onkeydown="if(event.key===&#39;Enter&#39;&amp;&amp;event.target.tagName!==&#39;SELECT&#39;)saveRecModal();if(event.key===&#39;Escape&#39;)closeMod(&#39;recModal&#39;)">
+<div class="overlay" id="recModal" onclick="closeMod(&#39;recModal&#39;,event)" onkeydown="if((event.metaKey||event.ctrlKey)&&event.key===&#39;z&#39;&amp;&amp;(event.target.tagName===&#39;INPUT&#39;||event.target.tagName===&#39;TEXTAREA&#39;)){event.stopPropagation();return;}if(event.key===&#39;Enter&#39;&amp;&amp;event.target.tagName!==&#39;SELECT&#39;)saveRecModal();if(event.key===&#39;Escape&#39;)closeMod(&#39;recModal&#39;)">
   <div class="modal task-modal" style="width:350px">
     <div class="mt" id="recMTitle">Add Recurring Task</div>
 
@@ -1190,7 +1190,7 @@ body.dark .bday-add-menu{background:rgba(38,20,10,.97);border-color:rgba(255,220
 
 
 <!-- Shop Edit Modal -->
-<div class="overlay" id="shopEditModal" onclick="closeMod(&#39;shopEditModal&#39;,event)" onkeydown="if(event.key===&#39;Enter&#39;)saveShopEdit();if(event.key===&#39;Escape&#39;)closeMod(&#39;shopEditModal&#39;)">
+<div class="overlay" id="shopEditModal" onclick="closeMod(&#39;shopEditModal&#39;,event)" onkeydown="if((event.metaKey||event.ctrlKey)&&event.key===&#39;z&#39;&amp;&amp;(event.target.tagName===&#39;INPUT&#39;||event.target.tagName===&#39;TEXTAREA&#39;)){event.stopPropagation();return;}if(event.key===&#39;Enter&#39;)saveShopEdit();if(event.key===&#39;Escape&#39;)closeMod(&#39;shopEditModal&#39;)">
   <div class="modal task-modal">
     <div class="mt">Edit Item</div>
     <div class="mfield"><label>Item name *</label><input id="shopEditName" placeholder="Item name" onkeydown="if(event.key===&#39;Enter&#39;)saveShopEdit()"></div>
@@ -1200,7 +1200,7 @@ body.dark .bday-add-menu{background:rgba(38,20,10,.97);border-color:rgba(255,220
 </div>
 
 <!-- Recurring Edit Modal -->
-<div class="overlay" id="recEditModal" onclick="closeMod(&#39;recEditModal&#39;,event)" onkeydown="if(event.key===&#39;Enter&#39;&amp;&amp;event.target.tagName!==&#39;SELECT&#39;){event.preventDefault();saveRecEdit();}if(event.key===&#39;Escape&#39;)closeMod(&#39;recEditModal&#39;)">
+<div class="overlay" id="recEditModal" onclick="closeMod(&#39;recEditModal&#39;,event)" onkeydown="if((event.metaKey||event.ctrlKey)&&event.key===&#39;z&#39;&amp;&amp;(event.target.tagName===&#39;INPUT&#39;||event.target.tagName===&#39;TEXTAREA&#39;)){event.stopPropagation();return;}if(event.key===&#39;Enter&#39;&amp;&amp;event.target.tagName!==&#39;SELECT&#39;){event.preventDefault();saveRecEdit();}if(event.key===&#39;Escape&#39;)closeMod(&#39;recEditModal&#39;)">
   <div class="modal task-modal" style="width:350px">
     <div class="mt">Edit Recurring Task</div>
     <div class="mfield"><label>Task name *</label><input id="recEditName" placeholder="Task name"></div>
@@ -1277,7 +1277,7 @@ body.dark .bday-add-menu{background:rgba(38,20,10,.97);border-color:rgba(255,220
 </div>
 
 <!-- Pup Skill Edit Modal -->
-<div class="overlay" id="pupModal" onclick="closeMod('pupModal',event)" onkeydown="if(event.key==='Escape')closeMod('pupModal');if(event.key==='Enter'&&event.target.tagName!=='SELECT'){event.preventDefault();savePupModal();}">
+<div class="overlay" id="pupModal" onclick="closeMod('pupModal',event)" onkeydown="if((event.metaKey||event.ctrlKey)&&event.key==='z'&&(event.target.tagName==='INPUT'||event.target.tagName==='TEXTAREA')){event.stopPropagation();return;}if(event.key==='Escape')closeMod('pupModal');if(event.key==='Enter'&&event.target.tagName!=='SELECT'){event.preventDefault();savePupModal();}">
   <div class="modal task-modal" style="width:420px">
     <select id="pmPup" style="display:none"><option value="Mochi">Mochi</option><option value="Sunny">Sunny</option></select>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
@@ -1304,7 +1304,7 @@ body.dark .bday-add-menu{background:rgba(38,20,10,.97);border-color:rgba(255,220
 </div>
 
 <!-- Recipe Edit Modal -->
-<div class="overlay" id="recipeModal" onclick="closeMod('recipeModal',event)" onkeydown="if(event.key==='Escape'){closeMod('recipeModal');return;}if(event.key==='Enter'&&event.target.tagName!=='TEXTAREA'&&!event.target.closest('.rm-ing-row')){event.preventDefault();saveRecipeModal();}">
+<div class="overlay" id="recipeModal" onclick="closeMod('recipeModal',event)" onkeydown="if((event.metaKey||event.ctrlKey)&&event.key==='z'&&(event.target.tagName==='INPUT'||event.target.tagName==='TEXTAREA')){event.stopPropagation();return;}if(event.key==='Escape'){closeMod('recipeModal');return;}if(event.key==='Enter'&&event.target.tagName!=='TEXTAREA'&&!event.target.closest('.rm-ing-row')){event.preventDefault();saveRecipeModal();}">
   <div class="modal" style="width:min(96vw,600px);padding:18px;max-height:90vh;overflow-y:auto">
     <div class="mt" id="recipeMTitle">Add Recipe</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">

@@ -868,7 +868,7 @@ async function saveTravelModal(){
     const prev={name:tv.name,destination:tv.destination,start_date:tv.start_date,end_date:tv.end_date,travel_mode:tv.travel_mode,notes:tv.notes};
     Object.assign(tv,{name,destination:dest,start_date:start,end_date:end,travel_mode:tm,notes});
     renderAll();renderTravelPage();
-    pushUndo(()=>{Object.assign(tv,prev);renderAll();renderTravelPage();const _tid2=String(travelEditId);pendingTravelIds.add(_tid2);sbReq('PATCH','travel',prev,`?id=eq.${travelEditId}`).then(()=>pendingTravelIds.delete(_tid2));},'Edited trip');
+    const _undoId=String(travelEditId);pushUndo(()=>{Object.assign(tv,prev);renderAll();renderTravelPage();pendingTravelIds.add(_undoId);sbReq('PATCH','travel',prev,`?id=eq.${_undoId}`).then(()=>pendingTravelIds.delete(_undoId));},'Edited trip');
     const _tid=String(travelEditId);pendingTravelIds.add(_tid);
     await sbReq('PATCH','travel',{name,destination:dest,start_date:start,end_date:end,travel_mode:tm,notes},`?id=eq.${travelEditId}`);
     pendingTravelIds.delete(_tid);
