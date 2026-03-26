@@ -609,13 +609,48 @@ function doUndo(){
   document.getElementById('undoToast').classList.remove('show');
 }
 
+function _syncRedoDiff(before,after){
+  const bT=before.tasks||[],aT=after.tasks||[];
+  for(const t of aT){
+    const p=bT.find(x=>String(x.id)===String(t.id));
+    if(!p){sbReq('POST','tasks',{name:t.name,category:t.category,due_date:t.due_date,done:t.done,important:t.important});continue;}
+    const ch={};
+    if(t.due_date!==p.due_date)ch.due_date=t.due_date;
+    if(t.done!==p.done)ch.done=t.done;
+    if(t.category!==p.category)ch.category=t.category;
+    if(t.important!==p.important)ch.important=t.important;
+    if(Object.keys(ch).length)sbReq('PATCH','tasks',ch,`?id=eq.${t.id}`);
+  }
+  for(const t of bT){if(!aT.find(x=>String(x.id)===String(t.id)))sbReq('DELETE','tasks',null,`?id=eq.${t.id}`);}
+  const bR=before.recurring||[],aR=after.recurring||[];
+  for(const r of aR){
+    const p=bR.find(x=>String(x.id)===String(r.id));
+    if(p&&JSON.stringify(r._dateOverrides)!==JSON.stringify(p._dateOverrides))sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},recQs(r.id));
+  }
+  const bS=before.shopping||[],aS=after.shopping||[];
+  for(const s of aS){
+    const p=bS.find(x=>String(x.id)===String(s.id));
+    if(p&&s.due_date!==p.due_date)sbReqNullable('PATCH','shopping_list',{due_date:s.due_date},`?id=eq.${s.id}`);
+  }
+  const bV=before.travel||[],aV=after.travel||[];
+  for(const tv of aV){
+    const p=bV.find(x=>String(x.id)===String(tv.id));
+    if(p&&(tv.start_date!==p.start_date||tv.end_date!==p.end_date))sbReq('PATCH','travel',{start_date:tv.start_date,end_date:tv.end_date},`?id=eq.${tv.id}`);
+  }
+  const bB=before.blocks||[],aB=after.blocks||[];
+  for(const b of aB){
+    const p=bB.find(x=>String(x.id)===String(b.id));
+    if(!p){sbSaveBlock(b);continue;}
+    if(b.sm!==p.sm||b.dur!==p.dur)sbSaveBlock(b);
+  }
+  for(const b of bB){if(!aB.find(x=>String(x.id)===String(b.id)))sbDeleteBlock(b.id);}
+}
 function doRedo(){
   if(!redoStack.length)return;
   const{snap,msg}=redoStack.pop();
-  // Snapshot current state so we can undo the redo
   const beforeRedo=_stateSnap();
   _stateRestore(snap);
-  // Push back to undoStack so Cmd+Z works after Cmd+Shift+Z
+  _syncRedoDiff(beforeRedo,snap);
   undoStack.push({fn:()=>_stateRestore(beforeRedo),msg,snapBeforeUndo:beforeRedo});
   _showRedoToast(msg||'Action');
 }
