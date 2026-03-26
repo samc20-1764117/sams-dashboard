@@ -189,14 +189,17 @@ Per-week keyed by `getWkKey(wkOff)` in `_doneByWk`. Never use `r._done`. `togRec
 
 ## Monthly Calendar
 
-- Continuous week scroll: `renderMoCal` renders 18 weeks starting from current week's Monday. No month-based pagination.
+- Continuous week scroll: `renderMoCal` renders 22 weeks total (8 past + 14 future) from current week's Monday. No month-based pagination.
 - Month name separators (`.mo-sep`, `grid-column:1/-1`) inserted when month changes between weeks.
-- On open: `scrollMoToday()` fires via `setTimeout(30ms)` to scroll current week's row to top of `.mgrid`.
-- "Today" button in header calls `scrollMoToday()`.
+- On open: `scrollMoToday()` fires via `setTimeout(30ms)` to scroll current week's row to top of `.mgrid`. "This Week" button in header also calls `scrollMoToday()`.
+- No ← → navigation; no `moOff`-based rendering. `shiftMo` is unused.
+- Wheel scroll is native — old `e.preventDefault()` wheel listener removed from `openMModal`.
+- Cell height: `max(70px, calc((94vh - 100px) / 4 - 4px))` so ~4 rows are visible at a time.
 - Cell structure: `.mcell` → `hdr` (day number + add btn) → `.mcell-body` (chips). Day number always visible above tasks.
 - Travel banners start at `hdrH + lane*22px` from cell top; `hdrH` measured from `.mcell-body.offsetTop`. Padding applied to `.mcell-body` only.
-- `addMoTravelBanners(cells)` — no yr/mo params; derives range from cell dataset.ds values.
-- Shift-click range uses `#mCells .mcell-t[data-tid]` (was broken `#moCal`).
+- `addMoTravelBanners(cells)` — no yr/mo params; derives range from cell `dataset.ds` values.
+- "+X more" chip: click opens `showMcellMorePop(e, tasks, ds)` — full overlay (`.overlay.mcell-more-ov`) with `.modal.task-modal` listing all tasks. Click outside or Escape closes. Dblclick on chip opens edit modal then closes popup.
+- Shift-click range uses `#mCells .mcell-t[data-tid]` (fixed from broken `#moCal`).
 
 ---
 
