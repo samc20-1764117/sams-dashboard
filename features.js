@@ -729,8 +729,8 @@ function renderMoCal(){
     weekStart=new Date(yrStart);weekStart.setDate(yrStart.getDate()-sd2);
     const yrEnd=new Date(_moYrFilter,11,31);
     const ed2=(yrEnd.getDay()+6)%7;
-    const wkEnd=new Date(yrEnd);if(ed2>0)wkEnd.setDate(yrEnd.getDate()+(7-ed2));
-    TOTAL=Math.round((wkEnd-weekStart)/(7*24*60*60*1000))+1;
+    const wkMonEnd=new Date(yrEnd);wkMonEnd.setDate(yrEnd.getDate()-ed2);
+    TOTAL=Math.round((wkMonEnd-weekStart)/(7*24*60*60*1000)/7)+1;
   }else{
     const PAST=8,FUTURE=14;TOTAL=PAST+FUTURE;
     const startDow=(todayDate.getDay()+6)%7;
