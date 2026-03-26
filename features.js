@@ -620,6 +620,7 @@ function openMModal(){
   renderMoCal();
   const modal=document.getElementById('mModal');
   modal.classList.add('open');
+  setTimeout(scrollMoToday,30);
   // wheel scroll to change month
   if(!modal._wheelBound){
     modal._wheelBound=true;
@@ -636,10 +637,12 @@ function openMModal(){
   }
 }
 function shiftMo(n){moOff+=n;renderMoCal();}
-function addMoTravelBanners(cells,yr,mo){
-  const monthStart=d2s(new Date(yr,mo,1)),monthEnd=d2s(new Date(yr,mo+1,0));
+function addMoTravelBanners(cells){
+  const cellDates=[...cells.querySelectorAll('.mcell[data-ds]')].map(c=>c.dataset.ds).filter(Boolean).sort();
+  if(!cellDates.length)return;
+  const rangeStart=cellDates[0],rangeEnd=cellDates[cellDates.length-1];
   const today2=tod();
-  const trips=st.travel.filter(tv=>{const s=(tv.start_date||'').split('T')[0],e=(tv.end_date||'').split('T')[0]||s;return s&&s<=monthEnd&&e>=monthStart;});
+  const trips=st.travel.filter(tv=>{const s=(tv.start_date||'').split('T')[0],e=(tv.end_date||'').split('T')[0]||s;return s&&s<=rangeEnd&&e>=rangeStart;});
   // Use mgrid (parent) as positioning context to avoid grid layout issues
   const mgrid=cells.parentElement;
   mgrid.style.position='relative';
@@ -674,9 +677,12 @@ function addMoTravelBanners(cells,yr,mo){
       rowGroups.get(rt).push(c);
       cellColIdx.set(c,ci);
     });
+    // Measure header height from first cell so banners start below day number
+    const firstBody=cellEls[0]?.querySelector('.mcell-body');
+    const hdrH=firstBody?(firstBody.offsetTop-cellEls[0].offsetTop):24;
     trips.forEach(tv=>{
       const sd=(tv.start_date||'').split('T')[0],ed=(tv.end_date||'').split('T')[0]||sd;
-      const clampS=sd<monthStart?monthStart:sd,clampE=ed>monthEnd?monthEnd:ed;
+      const clampS=sd<rangeStart?rangeStart:sd,clampE=ed>rangeEnd?rangeEnd:ed;
       const isPast=!!(ed&&ed<today2);
       const rangeCells=cellEls.filter(c=>c.dataset.ds&&c.dataset.ds>=clampS&&c.dataset.ds<=clampE);
       if(!rangeCells.length)return;
@@ -693,7 +699,7 @@ function addMoTravelBanners(cells,yr,mo){
         const rowTop=fc.offsetTop;
         const si=cellColIdx.get(fc)??0,ei=cellColIdx.get(lc)??6;
         const lane=getMoLane(rowTop,si,ei);
-        const left=fc.offsetLeft+2,top=rowTop+2+lane*22,width=lc.offsetLeft+lc.offsetWidth-fc.offsetLeft-4;
+        const left=fc.offsetLeft+2,top=rowTop+hdrH+lane*22,width=lc.offsetLeft+lc.offsetWidth-fc.offsetLeft-4;
         const ban=document.createElement('div');ban.className='wkc-banner';
         ban.style.cssText=`position:absolute;left:${left}px;top:${top}px;width:${width}px;background:${s.bg};color:${s.t};border-color:${s.b};pointer-events:all;${isPast?'opacity:.35;':''}`;
         ban.innerHTML=ri===0?label:`↳ ${label}`;
@@ -701,25 +707,38 @@ function addMoTravelBanners(cells,yr,mo){
         layer.appendChild(ban);
       });
     });
-    // Add paddingTop to cells so task chips appear below banners
+    // Add paddingTop to chip container (mcell-body) so chips appear below banners
     cellEls.forEach(c=>{
       const rt=c.offsetTop,ci=cellColIdx.get(c)??0;
       const occ=(rowLanes.get(rt)||[]).filter(r=>ci>=r.si&&ci<=r.ei);
-      if(occ.length){const ml=Math.max(...occ.map(r=>r.lane));c.style.paddingTop=`${(ml+1)*22+4}px`;}
+      if(occ.length){const ml=Math.max(...occ.map(r=>r.lane));const body=c.querySelector('.mcell-body');if(body)body.style.paddingTop=`${(ml+1)*22+2}px`;}
     });
   },20);
 }
 function renderMoCal(){
-  const n=new Date(),yr=n.getFullYear(),mo=n.getMonth()+moOff;
-  const d=new Date(yr,mo,1);document.getElementById('moTitle').textContent=d.toLocaleDateString('en-US',{month:'long',year:'numeric'});
-  const dow=document.getElementById('mDow');if(!dow.children.length)['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach(dn=>{const el=document.createElement('div');el.className='mdowl';el.textContent=dn;dow.appendChild(el);});
+  const today=tod();
+  const todayDate=new Date(today);
+  const startDow=(todayDate.getDay()+6)%7;
+  const weekStart=new Date(todayDate);weekStart.setDate(todayDate.getDate()-startDow);
+  const dowEl=document.getElementById('mDow');
+  if(!dowEl.children.length)['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach(dn=>{const el=document.createElement('div');el.className='mdowl';el.textContent=dn;dowEl.appendChild(el);});
   const cells=document.getElementById('mCells');cells.innerHTML='';
-  const firstDay=(d.getDay()+6)%7,dim=new Date(yr,mo+1,0).getDate(),today=tod();
-  for(let i=0;i<firstDay;i++)cells.appendChild(mkMCell(new Date(yr,mo,1-firstDay+i),true,today));
-  for(let i=1;i<=dim;i++)cells.appendChild(mkMCell(new Date(yr,mo,i),false,today));
-  const rem=(7-((firstDay+dim)%7))%7;for(let i=1;i<=rem;i++)cells.appendChild(mkMCell(new Date(yr,mo+1,i),true,today));
-  addMoTravelBanners(cells,yr,mo);
-  // unassigned tasks only in sidebar
+  const WEEKS=18;let curMo=-1;
+  for(let w=0;w<WEEKS;w++){
+    const wkMon=new Date(weekStart);wkMon.setDate(weekStart.getDate()+w*7);
+    const mo=wkMon.getMonth();
+    if(mo!==curMo){
+      curMo=mo;
+      const sep=document.createElement('div');sep.className='mo-sep';
+      sep.textContent=wkMon.toLocaleDateString('en-US',{month:'long',year:'numeric'});
+      cells.appendChild(sep);
+    }
+    for(let d=0;d<7;d++){
+      const date=new Date(wkMon);date.setDate(wkMon.getDate()+d);
+      cells.appendChild(mkMCell(date,false,today));
+    }
+  }
+  addMoTravelBanners(cells);
   const mual=document.getElementById('mUAList');mual.innerHTML='';
   const CAT_ORDER=['Home','My work','Work','Social','Recurring'];
   const unassigned=st.tasks
@@ -734,6 +753,11 @@ function renderMoCal(){
     mual.appendChild(el);
   });
 }
+function scrollMoToday(){
+  const mgrid=document.querySelector('#mModal .mgrid');
+  const tc=document.querySelector('#mCells .mcell.tc');
+  if(tc&&mgrid)mgrid.scrollTop=tc.offsetTop-mgrid.offsetTop-8;
+}
 function mkMCell(date,om,today){
   const ds=d2s(date);const cell=document.createElement('div');
   cell.dataset.ds=ds;
@@ -745,6 +769,7 @@ function mkMCell(date,om,today){
   addBtn.addEventListener('click',e=>{e.stopPropagation();tPreDate=ds;openTModal();});
   cell.addEventListener('mouseenter',()=>addBtn.style.opacity='1');cell.addEventListener('mouseleave',()=>addBtn.style.opacity='0');
   hdr.appendChild(dn);hdr.appendChild(addBtn);cell.appendChild(hdr);
+  const body=document.createElement('div');body.className='mcell-body';cell.appendChild(body);
   // Task chips — draggable
   const shopOnDay=st.shopping.filter(s=>s.due_date===ds&&!s.done).map(s=>({id:'shop-cal-'+s.id,name:s.name+(s.store?' ('+s.store+')':''),category:'Shopping',due_date:ds,done:false,_shopId:s.id,_virtual:true,_type:'shop'}));
   const shopOnDayDone=st.shopping.filter(s=>s.due_date===ds&&s.done).map(s=>({id:'shop-cal-done-'+s.id,name:s.name+(s.store?' ('+s.store+')':''),category:'Shopping',due_date:ds,done:true,_shopId:s.id,_virtual:true,_type:'shop'}));
@@ -773,7 +798,7 @@ function mkMCell(date,om,today){
         if(selectedTasks.has(sid))selectedTasks.delete(sid);else selectedTasks.add(sid);
         lastSelectedId=sid;
       } else if(e.shiftKey&&lastSelectedId){
-        const ids=[...document.querySelectorAll('#moCal .mcell-t[data-tid]')].map(el=>el.dataset.tid);
+        const ids=[...document.querySelectorAll('#mCells .mcell-t[data-tid]')].map(el=>el.dataset.tid);
         const a=ids.indexOf(lastSelectedId),b=ids.indexOf(sid);
         if(a>-1&&b>-1){const lo=Math.min(a,b),hi=Math.max(a,b);ids.slice(lo,hi+1).forEach(x=>selectedTasks.add(x));}
         else selectedTasks.add(sid);
@@ -785,9 +810,9 @@ function mkMCell(date,om,today){
     });
     chip.addEventListener('dblclick',e=>{e.stopPropagation();if(t._type==='shop')tiDblShop(e,t._shopId);else if(!t._virtual)tiDbl(e,t.id);else tiDblRec(e,t._recId);});
     chip.addEventListener('contextmenu',e=>{if(!t._virtual&&!t._type)showCtx(e,t.id);});
-    cell.appendChild(chip);
+    body.appendChild(chip);
   });
-  if(tasks.length>5){const more=document.createElement('div');more.style.cssText='font-size:8px;color:var(--muted)';more.textContent=`+${tasks.length-5} more`;cell.appendChild(more);}
+  if(tasks.length>5){const more=document.createElement('div');more.style.cssText='font-size:8px;color:var(--muted)';more.textContent=`+${tasks.length-5} more`;body.appendChild(more);}
   // Drop zone
   cell.addEventListener('dragover',e=>{e.preventDefault();cell.classList.add('dov');});
   cell.addEventListener('dragleave',()=>cell.classList.remove('dov'));
@@ -1900,7 +1925,7 @@ function selTask(e,id){
     // Collect ordered ids from whatever context we're in
     let ids=[];
     const wkcCol=e.currentTarget.closest('.wkc-col');
-    const moCal=e.currentTarget.closest('#moCal');
+    const moCal=e.currentTarget.closest('#mCells');
     const list=e.currentTarget.closest('.tlist,.kol-body');
     if(wkcCol){
       // Weekly calendar: all chips in this column

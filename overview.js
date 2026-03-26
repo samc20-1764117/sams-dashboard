@@ -542,7 +542,7 @@ function renderWkCal(){
           lastSelectedId=sid;
         } else if(e.shiftKey&&lastSelectedId){
           const col=chip.closest('.wkc-col');
-          const allChips=col?[...col.querySelectorAll('.chip[data-tid]')]:[...document.querySelectorAll('#moCal .mcell-t[data-tid]')];
+          const allChips=col?[...col.querySelectorAll('.chip[data-tid]')]:[...document.querySelectorAll('#mCells .mcell-t[data-tid]')];
           const ids=allChips.map(el=>el.dataset.tid);
           const a=ids.indexOf(lastSelectedId),b=ids.indexOf(sid);
           if(a>-1&&b>-1){const lo=Math.min(a,b),hi=Math.max(a,b);ids.slice(lo,hi+1).forEach(x=>selectedTasks.add(x));}

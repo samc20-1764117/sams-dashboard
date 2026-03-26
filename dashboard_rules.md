@@ -175,7 +175,7 @@ Per-week keyed by `getWkKey(wkOff)` in `_doneByWk`. Never use `r._done`. `togRec
 - `_PLANE_SVG` + `_CAR_SVG`: silhouette SVG constants in `overview.js`. `tmIcon(t)` returns icon for non-virtual tasks.
 - `getTravelTasks` + `getExtrasForWeek`: pass through `travel_mode`, use clean name (no baked-in icon).
 - `tRowExtra`: prepends `modeIcon` for travel type. Hides "Travel" pill label for travel rows (row background carries color).
-- Banners use `innerHTML` (SVG requires it). Sorted by `start_date`. Lane algorithm: `colLanes` (weekly) / `rowLanes` keyed by `rowTop` (monthly). Top = `2 + lane*22px`.
+- Banners use `innerHTML` (SVG requires it). Sorted by `start_date`. Lane algorithm: `colLanes` (weekly) / `rowLanes` keyed by `rowTop` (monthly). Monthly banner top = `hdrH + lane*22px` (hdrH measured from `.mcell-body` offsetTop so banners always appear below day number). Padding applied to `.mcell-body`, not `.mcell`.
 - `openTravelModal(id, preStart, preEnd)`. Enter: overlay saves if target isn't SELECT; `tvTravelMode` uses `setTimeout(saveTravelModal, 0)`.
 - Drag-to-create: `calDrag {active, startDs, endDs, moved}`. `mouseup` opens modal. `calDrag.moved` prevents modal on plain click.
 - `delTravel`: restores synchronously, POSTs async. Skips DELETE for `l-` ids.
@@ -184,6 +184,19 @@ Per-week keyed by `getWkKey(wkOff)` in `_doneByWk`. Never use `r._done`. `togRec
 - **Drag to move trip**: banners are `draggable=true`. `dragId='travel::'+tv.id+'::0'`. Drop target column = new `start_date`; duration preserved. Handled in col drop, wkcWrap edge drop, setupEdge drop. Undo via `pushUndo`.
 - **Week boundary rendering**: `addBanner` `ei` uses `findIndex` — if end date is beyond current week, `findIndex` returns -1; fix: `_eiRaw<0 ? 6 : Math.min(6,_eiRaw)`. Always clamp to week bounds so cross-week trips render correctly in both weeks.
 - **Enter on empty travel modal name**: `saveTravelModal` calls `closeMod('travelModal')` before returning when name is empty.
+
+---
+
+## Monthly Calendar
+
+- Continuous week scroll: `renderMoCal` renders 18 weeks starting from current week's Monday. No month-based pagination.
+- Month name separators (`.mo-sep`, `grid-column:1/-1`) inserted when month changes between weeks.
+- On open: `scrollMoToday()` fires via `setTimeout(30ms)` to scroll current week's row to top of `.mgrid`.
+- "Today" button in header calls `scrollMoToday()`.
+- Cell structure: `.mcell` → `hdr` (day number + add btn) → `.mcell-body` (chips). Day number always visible above tasks.
+- Travel banners start at `hdrH + lane*22px` from cell top; `hdrH` measured from `.mcell-body.offsetTop`. Padding applied to `.mcell-body` only.
+- `addMoTravelBanners(cells)` — no yr/mo params; derives range from cell dataset.ds values.
+- Shift-click range uses `#mCells .mcell-t[data-tid]` (was broken `#moCal`).
 
 ---
 
