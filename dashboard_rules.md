@@ -76,6 +76,22 @@ All files share global scope — no modules, no bundler.
 - `_pendingIds` Set: add ID before PATCH, remove in `.then()`.
 - `syncAll` skips overwriting entries in `_pendingIds`.
 - Instances: pup=`_pupPendingIds`, travel=`pendingTravelIds`, tasks=`pendingLocal`.
+- For `due_date` changes: also set `localOverrides[sid]={due_date:val}` before PATCH; clear in `.then()`. Undo closure must also set `localOverrides+pendingLocal` and use `.then()` for cleanup.
+- **Render before PATCH** — always update local state and re-render BEFORE firing the PATCH (use `.then()` not `await`). This makes changes feel instant. Never `await` a PATCH before rendering.
+
+**Hover-X Delete on Chips** — any chip-based view (calendar cells, popups, lists):
+- Chip must be `display:flex;align-items:center;gap:2px`. Text in `<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">`.
+- Add `.chip-del` button (`✕`) as last flex child. CSS: `[container]:hover .chip-del{opacity:1}`.
+- Click handler: `e.stopPropagation()`, then delete based on chip type (no confirm dialog).
+- Chip click handler must guard: `if(e.target.closest('.chip-del'))return` before any selection logic.
+- Delete logic per chip type: regular task→`delTask`; shop chip→clear `due_date` (unschedule); wRec chip→delete `_dateOverrides[wkKey]`; rec-virt chip→set `_dateOverrides[wkKey]='__skip__'`. Always use `dsToWkKey(ds)` for date-relative wkKey, NOT `getWkKey(wkOff)`.
+- After any delete, call the view's own render function (e.g. `renderMoCal()`) in addition to `renderAll()`.
+
+**Modal Stacking / Z-index** — when a persistent modal (like monthly calendar) can have task/edit modals open on top of it:
+- The persistent background modal must have a lower z-index than the standard overlay z-index (500). Set inline `style="z-index:490"` on the background modal.
+- Task/edit overlays stay at the default z-index:500 and will always render in front.
+
+**renderAll and open modals** — `renderAll()` must also re-render any persistent modal that is currently open (e.g. monthly calendar). Check `el.classList.contains('open')` and call its render function. This ensures operations like duplicate, paste, undo, and delete always refresh all visible views.
 
 ### Selection & Drag IDs
 
@@ -136,18 +152,7 @@ Two-col grid: WR left, non-WR right. 4 cadence groups each: `#rt-wr-*/rt-sch-*`.
 ### Monthly Calendar (`overview.js`)
 `renderMoCal`: 22 weeks (8 past + 14 future) from current Monday, no pagination. Month separators: `.mo-sep` (`grid-column:1/-1`). Open: `scrollMoToday()` via `setTimeout(30ms)`. No `moOff`/`shiftMo`. Native wheel scroll. Cell: `max(70px,calc((94vh-100px)/4-4px))`. Structure: `.mcell`→`hdr`→`.mcell-body`. Travel banners: `hdrH+lane*22px`; `hdrH` from `.mcell-body.offsetTop`; padding on `.mcell-body` only. `addMoTravelBanners(cells)` derives range from `dataset.ds`. Chip click: `selTask(e,tid)`. "+X more": `showMcellMorePop` — full overlay, all task interactions, outside-click/Escape/Enter closes. Shift-click: `#mCells .mcell-t[data-tid]`. **Year dropdown** `#moYearSel`: −3 to +2 + "All". `jumpMoYear(yr)` sets `_moYrFilter`, renders weeks for full year, scrolls to first `.mo-sep` with year. "All" resets to 22-week view.
 
-**Monthly chip interactions** (apply to both `mkMCell` and `showMcellMorePop`):
-- `.mcell-t` is `display:flex;align-items:center;gap:2px`. Text in inner `<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">`.
-- **Hover X delete**: every chip gets a `.chip-del` button (`✕`). CSS: `.mcell-t:hover .chip-del{opacity:1}`. Click handler calls `moChipDel(t,ds,e)` — stopPropagation, NO confirm. In `showMcellMorePop` chips, also call `closeMorePop()` before `moChipDel`.
-- `moChipDel(t,ds,e)` in `features.js`: shop→`unscheduleShop` inline with `renderMoCal()`; wRec→inline delete `_dateOverrides[dsToWkKey(ds)]` + `renderMoCal()`; rec-virt→inline `__skip__` + `renderMoCal()`; regular task→`delTask(t.id,e);renderMoCal()`. Always use `dsToWkKey(ds)` (NOT `getWkKey(wkOff)`) so multi-week monthly dates resolve correctly.
-- Chip click: guard `if(e.target.closest('.chip-del'))return` before `selTask`.
-- dblclick, contextmenu, dragstart/dragend: same as weekly calendar chips.
-
-**Sync Race Protection** (monthly drag-drop):
-- Task drop: `localOverrides[sid]={due_date:ds};pendingLocal.add(sid);save();` before state update. Render (`dragId=null;renderAll();renderMoCal()`) BEFORE the PATCH — use `.then()` not `await` so UI is instant. Undo closure also sets `localOverrides+pendingLocal` and uses `.then()` for cleanup.
-- `renderAll()` automatically calls `renderMoCal()` when `#mModal` is open — so all operations (duplicate, delete, paste, undo) refresh the monthly view for free.
-
-**Z-index**: `#mModal` has `style="z-index:490"` so task/travel/edit overlays (z-index:500) always render in front of it.
+**Monthly chip interactions**: chip structure, hover-X delete (`moChipDel(t,ds,e)`), and sync race protection follow Global Interaction Patterns. Delete uses `dsToWkKey(ds)` (not `getWkKey(wkOff)`) — required because monthly view spans multiple weeks. `showMcellMorePop` chips also call `closeMorePop()` before delete. `renderAll()` calls `renderMoCal()` when `#mModal` is open. `#mModal` has `style="z-index:490"`.
 
 ---
 
