@@ -838,8 +838,28 @@ function renderRecOv(){
     const fmt=d=>d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
     lbl.textContent=fmt(mon)+' – '+fmt(sun)+(wrRecOff===0?' (this week)':'');
   }
-  // Generate base list from wr_recurring_rules for this week
-  const items=st.wrRules.filter(r=>isWRRuleDueThisWeek(r,wrRecOff));
+  // ── Merge overrides into base list ─────────────────────────────────────────
+  // 1. Base: rules that naturally fire this week
+  const baseItems=st.wrRules.filter(r=>isWRRuleDueThisWeek(r,wrRecOff));
+  // 2. Classify overrides for this wk_key
+  const ovThisWk=st.wrOverrides.filter(o=>o.wk_key===wkKey);
+  const skipIds=new Set(ovThisWk.filter(o=>o.override_type==='skip').map(o=>String(o.rule_id)));
+  const movedAwayIds=new Set(ovThisWk.filter(o=>o.override_type==='move').map(o=>String(o.rule_id)));
+  // 3. Remove skipped + moved-away items
+  const filtered=baseItems.filter(r=>!skipIds.has(String(r.id))&&!movedAwayIds.has(String(r.id)));
+  // 4. Add rules moved INTO this week from another week
+  const movedIn=st.wrOverrides
+    .filter(o=>o.override_type==='move'&&o.moved_to_wk_key===wkKey)
+    .map(o=>{const rule=st.wrRules.find(r=>String(r.id)===String(o.rule_id));return rule?{...rule,_movedIn:true}:null;})
+    .filter(Boolean)
+    .filter(r=>!filtered.some(x=>String(x.id)===String(r.id)));
+  // 5. Apply edit overrides (custom name for this week only)
+  const items=[...filtered,...movedIn].map(r=>{
+    const editOv=ovThisWk.find(o=>o.override_type==='edit'&&String(o.rule_id)===String(r.id));
+    return{...r,_displayName:(editOv&&editOv.custom_name)||r.name,_edited:!!editOv,_movedIn:r._movedIn||false};
+  });
+  // ── End merge ────────────────────────────────────────────────────────────────
+
   // Done state: look for a 'complete' override for this rule + wkKey
   function isDoneWR(ruleId){
     return st.wrOverrides.some(o=>String(o.rule_id)===String(ruleId)&&o.wk_key===wkKey&&o.override_type==='complete'&&o.done===true);
@@ -890,7 +910,13 @@ function renderRecOv(){
     }
     const nm=document.createElement('span');nm.className='tn';
     if(isDone)nm.style.cssText='text-decoration:line-through;color:var(--muted)';
-    nm.textContent=r.name;
+    nm.textContent=r._displayName;
+    if(r._movedIn||r._edited){
+      const tag=document.createElement('span');
+      tag.style.cssText='font-size:8px;color:var(--muted);margin-left:4px;opacity:.7';
+      tag.textContent=r._movedIn?'moved':'edited';
+      nm.appendChild(tag);
+    }
     row.appendChild(nm);
     if(elReg)elReg.appendChild(row);
   });
