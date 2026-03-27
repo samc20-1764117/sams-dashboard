@@ -681,6 +681,9 @@ function addMoTravelBanners(cells){
       rowGroups.get(rt).push(c);
       cellColIdx.set(c,ci);
     });
+    const firstBody=cellEls[0]?.querySelector('.mcell-body');
+    const hdrH=firstBody?(firstBody.offsetTop-cellEls[0].offsetTop):24;
+    const LANE_H=19; // chip height (18px) + 1px margin
     trips.forEach(tv=>{
       const sd=(tv.start_date||'').split('T')[0],ed=(tv.end_date||'').split('T')[0]||sd;
       const clampS=sd<rangeStart?rangeStart:sd,clampE=ed>rangeEnd?rangeEnd:ed;
@@ -700,13 +703,19 @@ function addMoTravelBanners(cells){
         const rowTop=fc.offsetTop;
         const si=cellColIdx.get(fc)??0,ei=cellColIdx.get(lc)??6;
         const lane=getMoLane(rowTop,si,ei);
-        const left=fc.offsetLeft+2,top=rowTop+lane*22,width=lc.offsetLeft+lc.offsetWidth-fc.offsetLeft-4;
+        const left=fc.offsetLeft+2,top=rowTop+hdrH+lane*LANE_H,width=lc.offsetLeft+lc.offsetWidth-fc.offsetLeft-4;
         const ban=document.createElement('div');ban.className='wkc-banner';
         ban.style.cssText=`position:absolute;left:${left}px;top:${top}px;width:${width}px;background:${s.bg};color:${s.t};border-color:${s.b};pointer-events:all;${isPast?'opacity:.35;':''}`;
         ban.innerHTML=ri===0?label:`↳ ${label}`;
         ban.addEventListener('click',()=>openTravelModal(tv.id));
         layer.appendChild(ban);
       });
+    });
+    // Push chips below banners in each cell
+    cellEls.forEach(c=>{
+      const rt=c.offsetTop,ci=cellColIdx.get(c)??0;
+      const occ=(rowLanes.get(rt)||[]).filter(r=>ci>=r.si&&ci<=r.ei);
+      if(occ.length){const ml=Math.max(...occ.map(r=>r.lane));const body=c.querySelector('.mcell-body');if(body)body.style.paddingTop=`${(ml+1)*LANE_H}px`;}
     });
   },20);
 }
@@ -746,6 +755,7 @@ function renderMoCal(){
       cells.appendChild(mkMCell(date,false,today));
     }
   }
+  addMoTravelBanners(cells);
   // Sync year dropdown
   const yrSel=document.getElementById('moYearSel');
   if(yrSel)yrSel.value=_moYrFilter!==null?String(_moYrFilter):'';
@@ -785,30 +795,27 @@ function mkMCell(date,om,today){
   const shopOnDayDone=st.shopping.filter(s=>s.due_date===ds&&s.done).map(s=>({id:'shop-cal-done-'+s.id,name:s.name+(s.store?' ('+s.store+')':''),category:'Shopping',due_date:ds,done:true,_shopId:s.id,_virtual:true,_type:'shop'}));
   const wrecOnDay=st.recurring.filter(r=>(r.is_weekly_reset===true||r.is_weekly_reset==='true')&&!r._done&&r._dateOverrides&&r._dateOverrides[getWkKey(0)]===ds).map(r=>({id:'rec-virt-'+r.id,name:r.name,category:'Recurring',due_date:ds,done:false,_recId:r.id,_virtual:true,_isWrec:true}));
   const extras=getExtrasForDate(ds);
-  const travelOnDay=extras.filter(t=>t._type==='travel');
-  const undone=[...travelOnDay,...st.tasks.filter(t=>t.due_date&&t.due_date.split('T')[0]===ds&&!t.done),...extras.filter(t=>t._type!=='travel'),...shopOnDay,...wrecOnDay];
+  const undone=[...st.tasks.filter(t=>t.due_date&&t.due_date.split('T')[0]===ds&&!t.done),...extras.filter(t=>t._type!=='travel'),...shopOnDay,...wrecOnDay];
   const done=[...st.tasks.filter(t=>t.due_date&&t.due_date.split('T')[0]===ds&&t.done),...shopOnDayDone];
   const tasks=[...undone,...done];
   tasks.slice(0,5).forEach(t=>{
     const s=t.important&&!t.done?IMP:gc(t.category);
-    const isTravel=t._type==='travel';
-    const chip=document.createElement('div');chip.className='mcell-t';chip.draggable=!t.done&&!isTravel;
-    chip.style.cssText=`background:${s.bg};color:${s.t};border-color:${s.b};cursor:${t.done?'default':isTravel?'pointer':'grab'};${t.done?'opacity:.25;text-decoration:line-through;':''}`;
+    const chip=document.createElement('div');chip.className='mcell-t';chip.draggable=!t.done;
+    chip.style.cssText=`background:${s.bg};color:${s.t};border-color:${s.b};cursor:${t.done?'default':'grab'};${t.done?'opacity:.25;text-decoration:line-through;':''}`;
 
     if(!t._virtual&&!t._type)chip.dataset.tid=String(t.id);
-    else if(isTravel)chip.dataset.tid='tv-'+t._srcId;
     else if(t._type==='shop')chip.dataset.tid='shop-cal-'+t._shopId;
     else if(t._isWrec)chip.dataset.tid='wrec-'+t._recId;
     else if(t._recId)chip.dataset.tid='rec-virt-'+t._recId;
     chip.innerHTML=`<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${tmIcon(t)}${escHtml(t.name)}</span>`;
     const dx=document.createElement('button');dx.className='chip-del';dx.textContent='✕';
-    dx.addEventListener('click',e2=>{e2.stopPropagation();if(isTravel){delTravel(t._srcId);}else{moChipDel(t,ds,e2);}});
+    dx.addEventListener('click',e2=>{e2.stopPropagation();moChipDel(t,ds,e2);});
     chip.appendChild(dx);
     chip.addEventListener('dragstart',e=>{e.stopPropagation();dStart(e,t.id);chip.style.opacity='.4';});
     chip.addEventListener('dragend',()=>{chip.style.opacity='1';});
-    chip.addEventListener('click',e=>{if(e.target.closest('.chip-del'))return;if(isTravel){openTravelModal(t._srcId);return;}const sid=chip.dataset.tid;if(!sid)return;selTask(e,sid);});
-    chip.addEventListener('dblclick',e=>{e.stopPropagation();if(isTravel){openTravelModal(t._srcId);}else if(t._type==='shop')tiDblShop(e,t._shopId);else if(!t._virtual)tiDbl(e,t.id);else tiDblRec(e,t._recId);});
-    chip.addEventListener('contextmenu',e=>{if(t._type==='shop')showCtx(e,null,false,null,t._shopId);else if(t._isWrec||t._recId)showCtx(e,null,true,t._recId);else if(!t._virtual&&!isTravel)showCtx(e,t.id);});
+    chip.addEventListener('click',e=>{if(e.target.closest('.chip-del'))return;const sid=chip.dataset.tid;if(!sid)return;selTask(e,sid);});
+    chip.addEventListener('dblclick',e=>{e.stopPropagation();if(t._type==='shop')tiDblShop(e,t._shopId);else if(!t._virtual)tiDbl(e,t.id);else tiDblRec(e,t._recId);});
+    chip.addEventListener('contextmenu',e=>{if(t._type==='shop')showCtx(e,null,false,null,t._shopId);else if(t._isWrec||t._recId)showCtx(e,null,true,t._recId);else if(!t._virtual)showCtx(e,t.id);});
     body.appendChild(chip);
   });
   if(tasks.length>5){const more=document.createElement('div');more.style.cssText='font-size:8px;color:var(--muted);cursor:pointer;padding:1px 2px;border-radius:3px';more.textContent=`+${tasks.length-5} more`;more.addEventListener('click',e=>{e.stopPropagation();showMcellMorePop(e,tasks,ds);});body.appendChild(more);}
@@ -889,21 +896,19 @@ function showMcellMorePop(e,tasks,ds){
   function closeMorePop(){ov.classList.remove('open');setTimeout(()=>ov.remove(),220);}
   tasks.forEach(t=>{
     const s=t.important&&!t.done?IMP:gc(t.category);
-    const isTravel=t._type==='travel';
-    const chip=document.createElement('div');chip.className='mcell-t';chip.draggable=!t.done&&!isTravel;
-    chip.style.cssText=`background:${s.bg};color:${s.t};border-color:${s.b};display:flex;align-items:center;gap:2px;margin-bottom:3px;cursor:${t.done?'default':isTravel?'pointer':'grab'};${t.done?'opacity:.25;text-decoration:line-through;':''}`;
+    const chip=document.createElement('div');chip.className='mcell-t';chip.draggable=!t.done;
+    chip.style.cssText=`background:${s.bg};color:${s.t};border-color:${s.b};display:flex;align-items:center;gap:2px;margin-bottom:3px;cursor:${t.done?'default':'grab'};${t.done?'opacity:.25;text-decoration:line-through;':''}`;
     if(!t._virtual&&!t._type)chip.dataset.tid=String(t.id);
-    else if(isTravel)chip.dataset.tid='tv-'+t._srcId;
     else if(t._type==='shop')chip.dataset.tid='shop-cal-'+t._shopId;
     else if(t._isWrec)chip.dataset.tid='wrec-'+t._recId;
     else if(t._recId)chip.dataset.tid='rec-virt-'+t._recId;
     chip.innerHTML=`<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${tmIcon(t)}${escHtml(t.name)}</span>`;
     const mdx=document.createElement('button');mdx.className='chip-del';mdx.textContent='✕';
-    mdx.addEventListener('click',e2=>{e2.stopPropagation();closeMorePop();if(isTravel){delTravel(t._srcId);}else{moChipDel(t,ds,e2);}});
+    mdx.addEventListener('click',e2=>{e2.stopPropagation();closeMorePop();moChipDel(t,ds,e2);});
     chip.appendChild(mdx);
-    chip.addEventListener('click',ev=>{if(ev.target.closest('.chip-del'))return;if(isTravel){closeMorePop();openTravelModal(t._srcId);return;}const sid=chip.dataset.tid;if(!sid)return;selTask(ev,sid);});
-    chip.addEventListener('dblclick',ev=>{ev.stopPropagation();closeMorePop();if(isTravel){openTravelModal(t._srcId);}else if(t._type==='shop')tiDblShop(ev,t._shopId);else if(!t._virtual)tiDbl(ev,t.id);else tiDblRec(ev,t._recId);});
-    chip.addEventListener('contextmenu',ev=>{if(t._type==='shop')showCtx(ev,null,false,null,t._shopId);else if(t._isWrec||t._recId)showCtx(ev,null,true,t._recId);else if(!t._virtual&&!isTravel)showCtx(ev,t.id);});
+    chip.addEventListener('click',ev=>{if(ev.target.closest('.chip-del'))return;const sid=chip.dataset.tid;if(!sid)return;selTask(ev,sid);});
+    chip.addEventListener('dblclick',ev=>{ev.stopPropagation();closeMorePop();if(t._type==='shop')tiDblShop(ev,t._shopId);else if(!t._virtual)tiDbl(ev,t.id);else tiDblRec(ev,t._recId);});
+    chip.addEventListener('contextmenu',ev=>{if(t._type==='shop')showCtx(ev,null,false,null,t._shopId);else if(t._isWrec||t._recId)showCtx(ev,null,true,t._recId);else if(!t._virtual)showCtx(ev,t.id);});
     chip.addEventListener('dragstart',ev=>{ev.stopPropagation();dStart(ev,t.id);chip.style.opacity='.4';});
     chip.addEventListener('dragend',()=>{chip.style.opacity='1';});
     modal.appendChild(chip);
