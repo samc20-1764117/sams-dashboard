@@ -906,12 +906,7 @@ function renderRecOv(){
     row.addEventListener('dblclick',e=>{
       if(e.target.closest('button,label'))return;
       e.stopPropagation();clearSelection();
-      showWrScopePicker(e,
-        '✏️  Edit this week only',
-        '✏️  Edit rule (all future)',
-        ()=>openWrOccEditModal(rid,wkKey),
-        ()=>openWrRuleEditModal(rid)
-      );
+      openWrEditModal(rid,wkKey,'this');
     });
     row.addEventListener('contextmenu',e=>showWrRuleCtx(e,rid,wkKey));
     if(isPup){
@@ -927,8 +922,9 @@ function renderRecOv(){
     nm.textContent=r._displayName;
     if(r._movedIn||r._edited){
       const tag=document.createElement('span');
-      tag.style.cssText='font-size:8px;color:var(--muted);margin-left:4px;opacity:.7';
-      tag.textContent=r._movedIn?'moved':'edited';
+      const isMove=r._movedIn;
+      tag.style.cssText='font-size:9px;font-weight:600;padding:1px 6px;border-radius:10px;margin-left:6px;vertical-align:middle;background:'+(isMove?'rgba(90,140,255,.15)':'rgba(240,160,30,.18)')+';color:'+(isMove?'#5a8cff':'#c47a00');
+      tag.textContent=isMove?'moved':'edited';
       nm.appendChild(tag);
     }
     row.appendChild(nm);
@@ -1040,11 +1036,11 @@ function wrCtxMoveNextWeek(){
 }
 function wrCtxEditThisWeek(){
   hideWrRuleCtx();if(!_wrCtxRuleId||!_wrCtxWkKey)return;
-  openWrOccEditModal(_wrCtxRuleId,_wrCtxWkKey);
+  openWrEditModal(_wrCtxRuleId,_wrCtxWkKey,'this');
 }
 function wrCtxEditRule(){
   hideWrRuleCtx();if(!_wrCtxRuleId)return;
-  openWrRuleEditModal(_wrCtxRuleId);
+  openWrEditModal(_wrCtxRuleId,_wrCtxWkKey,'all');
 }
 function wrCtxDeleteRule(ruleId){
   hideWrRuleCtx();
@@ -1119,24 +1115,77 @@ function _wrReadCadenceFields(px){
   return patch;
 }
 
-// ── Edit this occurrence modal ────────────────────────────────────────────────
-let _wrOccRuleId=null,_wrOccWkKey=null;
+// ── Unified edit WR modal ─────────────────────────────────────────────────────
+let _wrEditRuleId=null,_wrEditWkKey=null,_wrEditScope='this';
 
-function openWrOccEditModal(ruleId,wkKey){
-  _wrOccRuleId=String(ruleId);_wrOccWkKey=wkKey;
-  const rule=st.wrRules.find(r=>String(r.id)===_wrOccRuleId);if(!rule)return;
-  const existingOv=st.wrOverrides.find(o=>String(o.rule_id)===_wrOccRuleId&&o.wk_key===_wrOccWkKey&&o.override_type==='edit');
-  document.getElementById('wrOccName').value=(existingOv&&existingOv.custom_name)||rule.name;
-  document.getElementById('wrOccNotes').value=(existingOv&&existingOv.custom_notes)||rule.notes||'';
-  document.getElementById('wrOccEditModal').classList.add('open');
-  setTimeout(()=>{const el=document.getElementById('wrOccName');el.focus();el.select();},50);
+function setWrEditScope(scope){
+  _wrEditScope=scope;
+  const thisBtn=document.getElementById('wrEditScopeThis');
+  const allBtn=document.getElementById('wrEditScopeAll');
+  const base='flex:1;padding:6px 0;font-size:12px;font-weight:500;border:none;cursor:pointer;transition:background .15s,color .15s;';
+  thisBtn.style.cssText=base+(scope==='this'?'background:var(--accent);color:#fff':'background:transparent;color:var(--muted)');
+  allBtn.style.cssText=base+(scope==='all'?'background:var(--accent);color:#fff':'background:transparent;color:var(--muted)');
+  document.getElementById('wrEditPanelThis').style.display=scope==='this'?'block':'none';
+  document.getElementById('wrEditPanelAll').style.display=scope==='all'?'block':'none';
+  const sb=document.getElementById('wrEditSaveBtn');
+  if(sb)sb.textContent=scope==='this'?'Save this week':'Save';
 }
-function saveWrOccEdit(){
-  const name=document.getElementById('wrOccName').value.trim();
-  if(!name){closeMod('wrOccEditModal');return;}
-  const notes=document.getElementById('wrOccNotes').value.trim()||null;
-  writeWrOverride(_wrOccRuleId,_wrOccWkKey,{override_type:'edit',custom_name:name,custom_notes:notes},{undoLabel:'Edited WR occurrence'});
-  closeMod('wrOccEditModal');
+
+function openWrEditModal(ruleId,wkKey,defaultScope='this'){
+  _wrEditRuleId=String(ruleId);_wrEditWkKey=wkKey||null;
+  const rule=st.wrRules.find(r=>String(r.id)===_wrEditRuleId);if(!rule)return;
+  // Populate "this week only" fields
+  const existingOv=wkKey?st.wrOverrides.find(o=>String(o.rule_id)===_wrEditRuleId&&o.wk_key===wkKey&&o.override_type==='edit'):null;
+  document.getElementById('wrMOccName').value=(existingOv&&existingOv.custom_name)||rule.name;
+  document.getElementById('wrMOccNotes').value=(existingOv&&existingOv.custom_notes)||rule.notes||'';
+  // Populate "all future" fields
+  _wrBuildSelects('wrEdit');
+  document.getElementById('wrEditName').value=rule.name||'';
+  document.getElementById('wrEditPup').checked=!!(rule.pup_related===true||rule.pup_related==='true');
+  document.getElementById('wrEditCadence').value=rule.cadence||'weekly';
+  document.getElementById('wrEditDow').value=String(rule.day_of_week??1);
+  document.getElementById('wrEditAnchor').value=rule.anchor_date||'';
+  document.getElementById('wrEditNotes').value=rule.notes||'';
+  const modeVal=rule.monthly_rule_type||'nth_weekday';
+  document.querySelectorAll('input[name="wrEditMonthlyMode"]').forEach(r=>{r.checked=r.value===modeVal;});
+  if(rule.monthly_nth!=null&&rule.monthly_weekday!=null){
+    const target=rule.monthly_nth+'-'+rule.monthly_weekday;
+    [...document.getElementById('wrEditNthWd').options].forEach(o=>{if(o.value===target)o.selected=true;});
+  }
+  if(rule.monthly_date!=null)document.getElementById('wrEditDom').value=String(rule.monthly_date);
+  updateWrRuleCadenceUI('wrEdit');
+  document.getElementById('wrEditModal').classList.add('open');
+  setWrEditScope(defaultScope);
+  setTimeout(()=>{
+    const el=defaultScope==='this'?document.getElementById('wrMOccName'):document.getElementById('wrEditName');
+    el.focus();el.select();
+  },50);
+}
+
+function wrEditSkipThisWeek(){
+  if(!_wrEditRuleId||!_wrEditWkKey)return;
+  closeMod('wrEditModal');
+  writeWrOverride(_wrEditRuleId,_wrEditWkKey,{override_type:'skip'},{undoLabel:'Skipped WR task this week'});
+}
+
+function saveWrEditModal(){
+  if(_wrEditScope==='this'){
+    const name=document.getElementById('wrMOccName').value.trim();
+    if(!name){closeMod('wrEditModal');return;}
+    const notes=document.getElementById('wrMOccNotes').value.trim()||null;
+    writeWrOverride(_wrEditRuleId,_wrEditWkKey,{override_type:'edit',custom_name:name,custom_notes:notes},{undoLabel:'Edited WR occurrence'});
+  } else {
+    const name=document.getElementById('wrEditName').value.trim();if(!name)return;
+    const rule=st.wrRules.find(r=>String(r.id)===_wrEditRuleId);if(!rule)return;
+    const prev={name:rule.name,cadence:rule.cadence,day_of_week:rule.day_of_week,anchor_date:rule.anchor_date,monthly_rule_type:rule.monthly_rule_type,monthly_nth:rule.monthly_nth,monthly_weekday:rule.monthly_weekday,monthly_date:rule.monthly_date,pup_related:rule.pup_related,notes:rule.notes};
+    const cadenceFields=_wrReadCadenceFields('wrEdit');
+    const patch={name,pup_related:document.getElementById('wrEditPup').checked,notes:document.getElementById('wrEditNotes').value.trim()||null,...cadenceFields};
+    Object.assign(rule,patch);
+    sbReqSilent('PATCH','wr_recurring_rules',patch,`?id=eq.${_wrEditRuleId}`);
+    save();renderRecOv();
+    pushUndo(()=>{Object.assign(rule,prev);sbReqSilent('PATCH','wr_recurring_rules',prev,`?id=eq.${_wrEditRuleId}`);save();renderRecOv();},'Edited WR rule');
+  }
+  closeMod('wrEditModal');
 }
 
 // ── Add WR rule modal ─────────────────────────────────────────────────────────
@@ -1181,46 +1230,6 @@ async function saveWrRuleAdd(){
   },'Added WR rule');
 }
 
-// ── Edit WR rule modal (all future) ──────────────────────────────────────────
-let _wrRuleEditId=null;
-
-function openWrRuleEditModal(ruleId){
-  _wrRuleEditId=String(ruleId);
-  const rule=st.wrRules.find(r=>String(r.id)===_wrRuleEditId);if(!rule)return;
-  _wrBuildSelects('wrEdit');
-  document.getElementById('wrEditName').value=rule.name||'';
-  document.getElementById('wrEditPup').checked=!!(rule.pup_related===true||rule.pup_related==='true');
-  document.getElementById('wrEditCadence').value=rule.cadence||'weekly';
-  document.getElementById('wrEditDow').value=String(rule.day_of_week??1);
-  document.getElementById('wrEditAnchor').value=rule.anchor_date||'';
-  document.getElementById('wrEditNotes').value=rule.notes||'';
-  // Monthly mode
-  const modeVal=rule.monthly_rule_type||'nth_weekday';
-  document.querySelectorAll('input[name="wrEditMonthlyMode"]').forEach(r=>{r.checked=r.value===modeVal;});
-  if(rule.monthly_nth!=null&&rule.monthly_weekday!=null){
-    const target=rule.monthly_nth+'-'+rule.monthly_weekday;
-    const nthWdEl=document.getElementById('wrEditNthWd');
-    [...nthWdEl.options].forEach(o=>{if(o.value===target)o.selected=true;});
-  }
-  if(rule.monthly_date!=null){
-    document.getElementById('wrEditDom').value=String(rule.monthly_date);
-  }
-  updateWrRuleCadenceUI('wrEdit');
-  document.getElementById('wrRuleEditModal').classList.add('open');
-  setTimeout(()=>{const el=document.getElementById('wrEditName');el.focus();el.select();},50);
-}
-function saveWrRuleEdit(){
-  const name=document.getElementById('wrEditName').value.trim();if(!name)return;
-  const rule=st.wrRules.find(r=>String(r.id)===_wrRuleEditId);if(!rule)return;
-  const prev={name:rule.name,cadence:rule.cadence,day_of_week:rule.day_of_week,anchor_date:rule.anchor_date,monthly_rule_type:rule.monthly_rule_type,monthly_nth:rule.monthly_nth,monthly_weekday:rule.monthly_weekday,monthly_date:rule.monthly_date,pup_related:rule.pup_related,notes:rule.notes};
-  const cadenceFields=_wrReadCadenceFields('wrEdit');
-  const patch={name,pup_related:document.getElementById('wrEditPup').checked,notes:document.getElementById('wrEditNotes').value.trim()||null,...cadenceFields};
-  Object.assign(rule,patch);
-  sbReqSilent('PATCH','wr_recurring_rules',patch,`?id=eq.${_wrRuleEditId}`);
-  save();renderRecOv();
-  pushUndo(()=>{Object.assign(rule,prev);sbReqSilent('PATCH','wr_recurring_rules',prev,`?id=eq.${_wrRuleEditId}`);save();renderRecOv();},'Edited WR rule');
-  closeMod('wrRuleEditModal');
-}
 
 // ── Unassigned badge ────────────────────────────────────────────────────────────
 function renderUnassigned(){

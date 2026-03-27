@@ -1381,13 +1381,51 @@ body.dark .bday-add-menu{background:rgba(38,20,10,.97);border-color:rgba(255,220
   <div class="ctx-divider"></div>
   <div class="ctx-item ctx-danger" onclick="wrCtxDeleteRule()">✕  Delete rule</div>
 </div>
-<!-- Edit this occurrence modal (this week only, no base rule change) -->
-<div id="wrOccEditModal" class="overlay" onclick="closeMod('wrOccEditModal',event)" onkeydown="if(event.key==='Enter'&&event.target.tagName!=='TEXTAREA'){event.preventDefault();saveWrOccEdit();}if(event.key==='Escape')closeMod('wrOccEditModal')">
+<!-- Unified edit WR recurring task modal -->
+<div id="wrEditModal" class="overlay" onclick="closeMod('wrEditModal',event)" onkeydown="if(event.key==='Enter'&&!['SELECT','TEXTAREA'].includes(event.target.tagName)){event.preventDefault();saveWrEditModal();}if(event.key==='Escape')closeMod('wrEditModal')">
   <div class="modal task-modal" style="width:350px">
-    <div class="mt">Edit This Week Only</div>
-    <div class="mfield"><label>Name <span style="opacity:.45;font-weight:400">(this week only)</span></label><input id="wrOccName" placeholder="Custom name for this week"></div>
-    <div class="mfield"><label>Notes <span style="opacity:.45;font-weight:400">(optional)</span></label><textarea id="wrOccNotes" placeholder="Notes for this week only…" style="resize:vertical;min-height:52px;width:100%;font-family:inherit;font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,.6);color:var(--text);outline:none"></textarea></div>
-    <div class="mact"><button class="btn btn-ghost" onclick="closeMod('wrOccEditModal')">Cancel</button><button class="btn btn-dark" onclick="saveWrOccEdit()">Save this week</button></div>
+    <div class="mt">Edit Recurring Task</div>
+    <div style="display:flex;border-radius:8px;overflow:hidden;border:1px solid var(--border);margin-bottom:14px">
+      <button id="wrEditScopeThis" onclick="setWrEditScope('this')" style="flex:1;padding:6px 0;font-size:12px;font-weight:500;border:none;cursor:pointer;transition:background .15s,color .15s">This week only</button>
+      <button id="wrEditScopeAll" onclick="setWrEditScope('all')" style="flex:1;padding:6px 0;font-size:12px;font-weight:500;border:none;cursor:pointer;transition:background .15s,color .15s">All future</button>
+    </div>
+    <div id="wrEditPanelThis">
+      <div class="mfield"><label>Name <span style="opacity:.45;font-weight:400">(this week only)</span></label><input id="wrMOccName" placeholder="Custom name for this week"></div>
+      <div class="mfield"><label>Notes <span style="opacity:.45;font-weight:400">(optional)</span></label><textarea id="wrMOccNotes" placeholder="Notes for this week only…" style="resize:vertical;min-height:52px;width:100%;font-family:inherit;font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,.6);color:var(--text);outline:none"></textarea></div>
+      <div style="margin-bottom:6px"><button type="button" class="btn btn-ghost" onclick="wrEditSkipThisWeek()" style="color:#e05;font-size:12px">⊘ Skip this week</button></div>
+    </div>
+    <div id="wrEditPanelAll" style="display:none">
+      <div class="mfield"><label>Task name *</label><input id="wrEditName" placeholder="Task name"></div>
+      <div class="mfield"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:400"><input type="checkbox" id="wrEditPup" style="width:13px;height:13px;accent-color:var(--accent)"> 🐾 Pup related</label></div>
+      <div class="mfield">
+        <label>Cadence</label>
+        <select id="wrEditCadence" onchange="updateWrRuleCadenceUI('wrEdit')">
+          <option value="weekly">Every week</option>
+          <option value="biweekly">Every 2 weeks</option>
+          <option value="monthly">Monthly</option>
+          <option value="other">Other / manual</option>
+        </select>
+      </div>
+      <div class="mfield" id="wrEditDowField">
+        <label>Day of week</label>
+        <select id="wrEditDow"><option value="0">Sunday</option><option value="1">Monday</option><option value="2">Tuesday</option><option value="3">Wednesday</option><option value="4">Thursday</option><option value="5">Friday</option><option value="6">Saturday</option></select>
+      </div>
+      <div class="mfield" id="wrEditAnchorField" style="display:none">
+        <label>Anchor date <span style="opacity:.45;font-weight:400">(any Monday in the correct cycle)</span></label>
+        <div style="display:flex;gap:4px;align-items:center"><input id="wrEditAnchor" type="date" style="flex:1"><button type="button" class="btn btn-ghost btn-xs" onclick="document.getElementById('wrEditAnchor').value=''" style="flex-shrink:0;padding:4px 7px;font-size:11px">✕</button></div>
+      </div>
+      <div class="mfield" id="wrEditMonthlyField" style="display:none">
+        <label>Monthly rule</label>
+        <div style="display:flex;gap:12px;margin-bottom:6px">
+          <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-weight:400;font-size:12px"><input type="radio" name="wrEditMonthlyMode" value="nth_weekday" onchange="updateWrRuleCadenceUI('wrEdit')"> Nth weekday</label>
+          <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-weight:400;font-size:12px"><input type="radio" name="wrEditMonthlyMode" value="date_of_month" onchange="updateWrRuleCadenceUI('wrEdit')"> Day of month</label>
+        </div>
+        <div id="wrEditNwdField"><select id="wrEditNthWd"></select></div>
+        <div id="wrEditDomField" style="display:none"><select id="wrEditDom"></select></div>
+      </div>
+      <div class="mfield"><label>Notes <span style="opacity:.45;font-weight:400">(optional)</span></label><textarea id="wrEditNotes" placeholder="Add notes…" style="resize:vertical;min-height:52px;width:100%;font-family:inherit;font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,.6);color:var(--text);outline:none"></textarea></div>
+    </div>
+    <div class="mact"><button class="btn btn-ghost" onclick="closeMod('wrEditModal')">Cancel</button><button id="wrEditSaveBtn" class="btn btn-dark" onclick="saveWrEditModal()">Save</button></div>
   </div>
 </div>
 
@@ -1428,42 +1466,6 @@ body.dark .bday-add-menu{background:rgba(38,20,10,.97);border-color:rgba(255,220
   </div>
 </div>
 
-<!-- Edit WR recurring rule modal (all future) -->
-<div id="wrRuleEditModal" class="overlay" onclick="closeMod('wrRuleEditModal',event)" onkeydown="if(event.key==='Enter'&&!['SELECT','TEXTAREA'].includes(event.target.tagName)){event.preventDefault();saveWrRuleEdit();}if(event.key==='Escape')closeMod('wrRuleEditModal')">
-  <div class="modal task-modal" style="width:350px">
-    <div class="mt">Edit Rule (All Future)</div>
-    <div class="mfield"><label>Task name *</label><input id="wrEditName" placeholder="Task name"></div>
-    <div class="mfield"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:400"><input type="checkbox" id="wrEditPup" style="width:13px;height:13px;accent-color:var(--accent)"> 🐾 Pup related</label></div>
-    <div class="mfield">
-      <label>Cadence</label>
-      <select id="wrEditCadence" onchange="updateWrRuleCadenceUI('wrEdit')">
-        <option value="weekly">Every week</option>
-        <option value="biweekly">Every 2 weeks</option>
-        <option value="monthly">Monthly</option>
-        <option value="other">Other / manual</option>
-      </select>
-    </div>
-    <div class="mfield" id="wrEditDowField">
-      <label>Day of week</label>
-      <select id="wrEditDow"><option value="0">Sunday</option><option value="1">Monday</option><option value="2">Tuesday</option><option value="3">Wednesday</option><option value="4">Thursday</option><option value="5">Friday</option><option value="6">Saturday</option></select>
-    </div>
-    <div class="mfield" id="wrEditAnchorField" style="display:none">
-      <label>Anchor date <span style="opacity:.45;font-weight:400">(any Monday in the correct cycle)</span></label>
-      <div style="display:flex;gap:4px;align-items:center"><input id="wrEditAnchor" type="date" style="flex:1"><button type="button" class="btn btn-ghost btn-xs" onclick="document.getElementById('wrEditAnchor').value=''" style="flex-shrink:0;padding:4px 7px;font-size:11px">✕</button></div>
-    </div>
-    <div class="mfield" id="wrEditMonthlyField" style="display:none">
-      <label>Monthly rule</label>
-      <div style="display:flex;gap:12px;margin-bottom:6px">
-        <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-weight:400;font-size:12px"><input type="radio" name="wrEditMonthlyMode" value="nth_weekday" onchange="updateWrRuleCadenceUI('wrEdit')"> Nth weekday</label>
-        <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-weight:400;font-size:12px"><input type="radio" name="wrEditMonthlyMode" value="date_of_month" onchange="updateWrRuleCadenceUI('wrEdit')"> Day of month</label>
-      </div>
-      <div id="wrEditNwdField"><select id="wrEditNthWd"></select></div>
-      <div id="wrEditDomField" style="display:none"><select id="wrEditDom"></select></div>
-    </div>
-    <div class="mfield"><label>Notes <span style="opacity:.45;font-weight:400">(optional)</span></label><textarea id="wrEditNotes" placeholder="Add notes…" style="resize:vertical;min-height:52px;width:100%;font-family:inherit;font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,.6);color:var(--text);outline:none"></textarea></div>
-    <div class="mact"><button class="btn btn-ghost" onclick="closeMod('wrRuleEditModal')">Cancel</button><button class="btn btn-dark" onclick="saveWrRuleEdit()">Save</button></div>
-  </div>
-</div>
 <div id="inlineDatePicker" class="inline-date-picker">
   <input type="date" id="idpInput">
   <div class="idp-actions">
