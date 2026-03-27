@@ -707,7 +707,17 @@ function addMoTravelBanners(cells){
         const ban=document.createElement('div');ban.className='wkc-banner';
         ban.style.cssText=`position:absolute;left:${left}px;top:${top}px;width:${width}px;background:${s.bg};color:${s.t};border-color:${s.b};pointer-events:all;${isPast?'opacity:.35;':''}`;
         ban.innerHTML=ri===0?label:`↳ ${label}`;
-        ban.addEventListener('click',()=>openTravelModal(tv.id));
+        ban.dataset.tvid=String(tv.id);
+        const tvSid='tv-'+tv.id;
+        const del2=document.createElement('button');del2.className='ban-del';del2.textContent='✕';
+        del2.addEventListener('click',e2=>{e2.stopPropagation();delTravel(tv.id);});
+        ban.appendChild(del2);
+        ban.draggable=true;
+        ban.addEventListener('dragstart',e2=>{e2.stopPropagation();dragId='travel::'+tv.id+'::0';e2.dataTransfer.effectAllowed='move';document.body.classList.add('body-dragging');});
+        ban.addEventListener('dragend',()=>{document.body.classList.remove('body-dragging');if(dragId&&dragId.startsWith('travel::'))dragId=null;});
+        ban.addEventListener('click',e2=>{if(e2.target.classList.contains('ban-del'))return;e2.stopPropagation();selectedTasks.clear();selectedTasks.add(tvSid);lastSelectedId=tvSid;applySelHighlight();});
+        ban.addEventListener('dblclick',e2=>{e2.stopPropagation();openTravelModal(tv.id);});
+        ban.addEventListener('contextmenu',e2=>{e2.preventDefault();e2.stopPropagation();selectedTasks.clear();selectedTasks.add(tvSid);lastSelectedId=tvSid;applySelHighlight();showCtx(e2,null,false,null,null,null,tv.id);});
         layer.appendChild(ban);
       });
     });
@@ -824,6 +834,12 @@ function mkMCell(date,om,today){
   cell.addEventListener('dragleave',()=>cell.classList.remove('dov'));
   cell.addEventListener('drop',async e=>{
     e.preventDefault();cell.classList.remove('dov');if(!dragId)return;
+    if(dragId.startsWith('travel::')){
+      const tvId=dragId.split('::')[1];
+      const tv2=st.travel.find(x=>String(x.id)===String(tvId));
+      if(tv2){const tvSd=(tv2.start_date||'').split('T')[0];const tvEd=(tv2.end_date||'').split('T')[0]||tvSd;const dur=Math.round((new Date(tvEd+'T00:00:00')-new Date(tvSd+'T00:00:00'))/86400000);const newStart=ds,newEnd=d2s(new Date(new Date(ds+'T00:00:00').getTime()+dur*86400000));const prevStart=tv2.start_date,prevEnd=tv2.end_date;tv2.start_date=newStart;tv2.end_date=newEnd;save();renderAll();renderMoCal();sbReq('PATCH','travel',{start_date:newStart,end_date:newEnd},`?id=eq.${tvId}`);pushUndo(()=>{tv2.start_date=prevStart;tv2.end_date=prevEnd;save();renderAll();renderMoCal();sbReq('PATCH','travel',{start_date:(prevStart||'').split('T')[0],end_date:(prevEnd||'').split('T')[0]},`?id=eq.${tvId}`);},'Moved trip');}
+      dragId=null;return;
+    }
     const t=st.tasks.find(x=>String(x.id)===String(dragId));
     if(dragId&&dragId.startsWith('wrec::')){
       const recId=dragId.split('::')[1];
@@ -845,7 +861,7 @@ function mkMCell(date,om,today){
   // Mouse-drag to create travel spanning days
   cell.addEventListener('mousedown',e=>{
     if(e.button!==0)return;
-    if(e.target.closest('.mcell-t,button'))return;
+    if(e.target.closest('.mcell-t,.wkc-banner,button'))return;
     calDrag={active:true,startDs:ds,endDs:ds,view:'mo',moved:false};
     cell.classList.add('travel-sel');
     e.preventDefault();
