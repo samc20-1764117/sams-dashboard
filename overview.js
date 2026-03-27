@@ -1052,11 +1052,11 @@ function wrCtxDeleteRule(ruleId){
   st.wrRules=st.wrRules.filter(r=>String(r.id)!==sRid);
   st.wrOverrides=st.wrOverrides.filter(o=>String(o.rule_id)!==sRid);
   sbReqSilent('DELETE','wr_recurring_rules',null,`?id=eq.${sRid}`);
-  save();renderRecOv();
+  save();renderRecOv();if(typeof renderRecurringPage==='function')renderRecurringPage();
   pushUndo(async()=>{
     const sv=await sbReqSilent('POST','wr_recurring_rules',{name:prevRule.name,cadence:prevRule.cadence,day_of_week:prevRule.day_of_week,anchor_date:prevRule.anchor_date,monthly_rule_type:prevRule.monthly_rule_type,monthly_nth:prevRule.monthly_nth,monthly_weekday:prevRule.monthly_weekday,monthly_date:prevRule.monthly_date,pup_related:prevRule.pup_related,notes:prevRule.notes,is_enabled:prevRule.is_enabled,sort_order:prevRule.sort_order},'');
     if(sv&&sv[0])st.wrRules.push(sv[0]);else st.wrRules.push(prevRule);
-    save();renderRecOv();
+    save();renderRecOv();if(typeof renderRecurringPage==='function')renderRecurringPage();
   },'Deleted WR rule');
 }
 
@@ -1155,10 +1155,14 @@ function openWrEditModal(ruleId,wkKey,defaultScope='this'){
   }
   if(rule.monthly_date!=null)document.getElementById('wrEditDom').value=String(rule.monthly_date);
   updateWrRuleCadenceUI('wrEdit');
+  // Hide scope toggle when no week context (recurring page edits always go to "all future")
+  const toggleEl=document.getElementById('wrEditScopeToggle');
+  if(toggleEl)toggleEl.style.display=wkKey?'flex':'none';
+  const scope=wkKey?defaultScope:'all';
   document.getElementById('wrEditModal').classList.add('open');
-  setWrEditScope(defaultScope);
+  setWrEditScope(scope);
   setTimeout(()=>{
-    const el=defaultScope==='this'?document.getElementById('wrMOccName'):document.getElementById('wrEditName');
+    const el=scope==='this'?document.getElementById('wrMOccName'):document.getElementById('wrEditName');
     el.focus();const len=el.value.length;el.setSelectionRange(len,len);
   },50);
 }
@@ -1183,8 +1187,8 @@ function saveWrEditModal(){
     const patch={name,pup_related:document.getElementById('wrEditPup').checked,notes:document.getElementById('wrEditNotes').value.trim()||null,...cadenceFields};
     Object.assign(rule,patch);
     sbReqSilent('PATCH','wr_recurring_rules',patch,`?id=eq.${_wrEditRuleId}`);
-    save();renderRecOv();
-    pushUndo(()=>{Object.assign(rule,prev);sbReqSilent('PATCH','wr_recurring_rules',prev,`?id=eq.${_wrEditRuleId}`);save();renderRecOv();},'Edited WR rule');
+    save();renderRecOv();if(typeof renderRecurringPage==='function')renderRecurringPage();
+    pushUndo(()=>{Object.assign(rule,prev);sbReqSilent('PATCH','wr_recurring_rules',prev,`?id=eq.${_wrEditRuleId}`);save();renderRecOv();if(typeof renderRecurringPage==='function')renderRecurringPage();},'Edited WR rule');
   }
   closeMod('wrEditModal');
 }

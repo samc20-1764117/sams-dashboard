@@ -236,13 +236,88 @@ function renderWeeklyPage(){
 
 function renderRecurringPage(){
   const KNOWN=['weekly','biweekly','monthly'];
-  const wrTasks=st.recurring.filter(r=>r.is_weekly_reset===true||r.is_weekly_reset==='true');
   const schTasks=st.recurring.filter(r=>!(r.is_weekly_reset===true||r.is_weekly_reset==='true'));
   ['weekly','biweekly','monthly','other'].forEach(cad=>{
     const isOther=cad==='other';
-    renderRtGroup('rt-wr-'+cad, isOther?wrTasks.filter(r=>!KNOWN.includes(r.cadence)):wrTasks.filter(r=>r.cadence===cad), true, cad);
+    const wrRules=(st.wrRules||[]).filter(r=>isOther?!KNOWN.includes(r.cadence):r.cadence===cad);
+    renderRtWrGroup('rt-wr-'+cad, wrRules, cad);
     renderRtGroup('rt-sch-'+cad, isOther?schTasks.filter(r=>!KNOWN.includes(r.cadence)):schTasks.filter(r=>r.cadence===cad), false, cad);
   });
+}
+
+function wrRuleScheduleStr(rule){
+  const DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const NTHS=['1st','2nd','3rd','4th','Last'];
+  const NTH_VALS=[1,2,3,4,-1];
+  const cad=rule.cadence||'weekly';
+  if(cad==='weekly')return DAYS[rule.day_of_week]??'—';
+  if(cad==='biweekly')return (DAYS[rule.day_of_week]??'—')+' (biweekly)';
+  if(cad==='monthly'){
+    if(rule.monthly_rule_type==='nth_weekday'&&rule.monthly_nth!=null&&rule.monthly_weekday!=null){
+      const ni=NTH_VALS.indexOf(rule.monthly_nth);
+      return (NTHS[ni]??rule.monthly_nth)+' '+(DAYS[rule.monthly_weekday]??'—');
+    }
+    if(rule.monthly_rule_type==='date_of_month'&&rule.monthly_date!=null){
+      const n=rule.monthly_date;
+      return n+(n===1?'st':n===2?'nd':n===3?'rd':'th');
+    }
+    return 'Monthly';
+  }
+  return 'Manual';
+}
+
+function renderRtWrGroup(containerId, rules, cadence){
+  const el=document.getElementById(containerId);if(!el)return;
+  const cadLabel={weekly:'Weekly',biweekly:'Biweekly',monthly:'Monthly',other:'Other'}[cadence]||cadence;
+  const esc=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  const thead=`<tr><th style="text-align:left">Name</th><th style="width:36px">Pup</th><th style="width:110px;text-align:left">Schedule</th><th style="width:40px"></th></tr>`;
+  let tbody='';
+  rules.forEach(r=>{
+    const rid=String(r.id);
+    const isPup=r.pup_related===true||r.pup_related==='true';
+    tbody+=`<tr class="rt-row" id="ti-rt-wrrule-${rid}"
+      ondblclick="if(!event.target.closest('[data-pup]')&&!event.target.closest('.delbtn')&&!event.target.closest('.btn-xs')){event.stopPropagation();openWrEditModal('${rid}',null,'all');}"
+      onclick="event.stopPropagation()">
+      <td class="rt-editable">${esc(r.name)}</td>
+      <td data-pup="1" style="text-align:center;cursor:pointer;font-size:13px" onclick="event.stopPropagation();rtToggleWrPup('${rid}')" ondblclick="event.stopPropagation()" title="Toggle pup related">${isPup?'🐾':''}</td>
+      <td style="font-size:11px;color:var(--muted)">${esc(wrRuleScheduleStr(r))}</td>
+      <td onclick="event.stopPropagation()" ondblclick="event.stopPropagation()"><button class="delbtn" onclick="delWrRule('${rid}')">✕</button></td>
+    </tr>`;
+  });
+  const tableHtml=rules.length
+    ?`<table class="rt-tbl"><thead>${thead}</thead><tbody>${tbody}</tbody></table>`
+    :`<div style="padding:6px 4px;font-size:11px;color:var(--subtle);font-style:italic">None</div>`;
+  el.innerHTML=`<div class="card" style="padding:8px 12px;box-shadow:none">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;padding:0 2px">
+      <span style="font-size:12px;font-weight:800;color:var(--text)">${cadLabel}${rules.length?' <span style="opacity:.45;font-weight:400;font-size:11px">· '+rules.length+'</span>':''}</span>
+      <button class="btn-plus" style="padding:0px 5px;font-size:10px;line-height:1.4" onclick="openWrRuleAddModal()">+</button>
+    </div>
+    ${tableHtml}
+  </div>`;
+}
+
+function rtToggleWrPup(rid){
+  const rule=(st.wrRules||[]).find(r=>String(r.id)===String(rid));if(!rule)return;
+  const prev=rule.pup_related;
+  rule.pup_related=!(rule.pup_related===true||rule.pup_related==='true');
+  renderRecurringPage();renderRecOv();
+  sbReqSilent('PATCH','wr_recurring_rules',{pup_related:rule.pup_related},`?id=eq.${rid}`);
+  pushUndo(()=>{rule.pup_related=prev;renderRecurringPage();renderRecOv();},'Toggled pup');
+}
+
+function delWrRule(rid){
+  const rule=(st.wrRules||[]).find(r=>String(r.id)===String(rid));if(!rule)return;
+  const prevRule={...rule};
+  const sRid=String(rid);
+  st.wrRules=st.wrRules.filter(r=>String(r.id)!==sRid);
+  st.wrOverrides=(st.wrOverrides||[]).filter(o=>String(o.rule_id)!==sRid);
+  sbReqSilent('DELETE','wr_recurring_rules',null,`?id=eq.${sRid}`);
+  save();renderRecurringPage();renderRecOv();
+  pushUndo(async()=>{
+    const sv=await sbReqSilent('POST','wr_recurring_rules',{name:prevRule.name,cadence:prevRule.cadence,day_of_week:prevRule.day_of_week,anchor_date:prevRule.anchor_date,monthly_rule_type:prevRule.monthly_rule_type,monthly_nth:prevRule.monthly_nth,monthly_weekday:prevRule.monthly_weekday,monthly_date:prevRule.monthly_date,pup_related:prevRule.pup_related,notes:prevRule.notes,is_enabled:prevRule.is_enabled,sort_order:prevRule.sort_order},'');
+    if(sv&&sv[0])st.wrRules.push(sv[0]);else st.wrRules.push(prevRule);
+    save();renderRecurringPage();renderRecOv();
+  },'Deleted WR rule');
 }
 
 function renderRtGroup(containerId, tasks, isWr, cadence){
