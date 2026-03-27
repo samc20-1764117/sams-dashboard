@@ -1025,6 +1025,64 @@ function wrCtxDeleteRule(){
   },'Deleted WR rule');
 }
 
+// ── WR rule modal shared helpers ──────────────────────────────────────────────
+const _WR_DAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const _WR_NTHS=['1st','2nd','3rd','4th','Last'];
+const _WR_NTH_VALS=[1,2,3,4,-1];
+
+// Populate nth-weekday and day-of-month selects (idempotent — safe to call on every open)
+function _wrBuildSelects(px){
+  const nthWd=document.getElementById(px+'NthWd');
+  if(nthWd&&!nthWd.options.length){
+    _WR_NTH_VALS.forEach((nth,ni)=>_WR_DAYS.forEach((day,di)=>{
+      const o=document.createElement('option');
+      o.value=nth+'-'+di;o.textContent=_WR_NTHS[ni]+' '+day;nthWd.appendChild(o);
+    }));
+  }
+  const dom=document.getElementById(px+'Dom');
+  if(dom&&!dom.options.length){
+    const suf=n=>n===1?'1st':n===2?'2nd':n===3?'3rd':n+'th';
+    for(let i=1;i<=28;i++){const o=document.createElement('option');o.value=i;o.textContent=suf(i);dom.appendChild(o);}
+  }
+}
+
+// Show/hide cadence-dependent fields for the given modal prefix ('wrAdd' or 'wrEdit')
+function updateWrRuleCadenceUI(px){
+  const cadence=document.getElementById(px+'Cadence').value;
+  const isWeekly=cadence==='weekly'||cadence==='biweekly';
+  const isBi=cadence==='biweekly';
+  const isMo=cadence==='monthly';
+  document.getElementById(px+'DowField').style.display=isWeekly?'':'none';
+  document.getElementById(px+'AnchorField').style.display=isBi?'':'none';
+  document.getElementById(px+'MonthlyField').style.display=isMo?'':'none';
+  if(isMo){
+    const mode=[...document.querySelectorAll(`input[name="${px}MonthlyMode"]`)].find(r=>r.checked)?.value||'nth_weekday';
+    document.getElementById(px+'NwdField').style.display=mode==='nth_weekday'?'':'none';
+    document.getElementById(px+'DomField').style.display=mode==='date_of_month'?'':'none';
+  }
+}
+
+// Read cadence-related fields from modal, return partial rule payload
+function _wrReadCadenceFields(px){
+  const cadence=document.getElementById(px+'Cadence').value;
+  const patch={cadence,day_of_week:null,anchor_date:null,monthly_rule_type:null,monthly_nth:null,monthly_weekday:null,monthly_date:null};
+  if(cadence==='weekly'||cadence==='biweekly'){
+    patch.day_of_week=parseInt(document.getElementById(px+'Dow').value,10);
+    if(cadence==='biweekly'){const av=document.getElementById(px+'Anchor').value;patch.anchor_date=av||null;}
+  }
+  if(cadence==='monthly'){
+    const mode=[...document.querySelectorAll(`input[name="${px}MonthlyMode"]`)].find(r=>r.checked)?.value||'nth_weekday';
+    patch.monthly_rule_type=mode;
+    if(mode==='nth_weekday'){
+      const[nth,wd]=document.getElementById(px+'NthWd').value.split('-').map(Number);
+      patch.monthly_nth=nth;patch.monthly_weekday=wd;
+    } else {
+      patch.monthly_date=parseInt(document.getElementById(px+'Dom').value,10);
+    }
+  }
+  return patch;
+}
+
 // ── Edit this occurrence modal ────────────────────────────────────────────────
 let _wrOccRuleId=null,_wrOccWkKey=null;
 
@@ -1035,35 +1093,92 @@ function openWrOccEditModal(ruleId,wkKey){
   document.getElementById('wrOccName').value=(existingOv&&existingOv.custom_name)||rule.name;
   document.getElementById('wrOccNotes').value=(existingOv&&existingOv.custom_notes)||rule.notes||'';
   document.getElementById('wrOccEditModal').classList.add('open');
-  setTimeout(()=>document.getElementById('wrOccName').select(),50);
+  setTimeout(()=>{const el=document.getElementById('wrOccName');el.focus();el.select();},50);
 }
 function saveWrOccEdit(){
   const name=document.getElementById('wrOccName').value.trim();
   if(!name){closeMod('wrOccEditModal');return;}
-  const rule=st.wrRules.find(r=>String(r.id)===_wrOccRuleId);
   const notes=document.getElementById('wrOccNotes').value.trim()||null;
   writeWrOverride(_wrOccRuleId,_wrOccWkKey,{override_type:'edit',custom_name:name,custom_notes:notes},{undoLabel:'Edited WR occurrence'});
   closeMod('wrOccEditModal');
 }
 
-// ── Edit rule (all future) modal ─────────────────────────────────────────────
+// ── Add WR rule modal ─────────────────────────────────────────────────────────
+function openWrRuleAddModal(){
+  _wrBuildSelects('wrAdd');
+  document.getElementById('wrAddName').value='';
+  document.getElementById('wrAddPup').checked=false;
+  document.getElementById('wrAddCadence').value='weekly';
+  document.getElementById('wrAddDow').value='1'; // Monday default
+  document.getElementById('wrAddAnchor').value='';
+  document.querySelectorAll('input[name="wrAddMonthlyMode"]').forEach((r,i)=>{r.checked=i===0;});
+  document.getElementById('wrAddNthWd').selectedIndex=0;
+  document.getElementById('wrAddDom').selectedIndex=0;
+  document.getElementById('wrAddNotes').value='';
+  updateWrRuleCadenceUI('wrAdd');
+  document.getElementById('wrRuleAddModal').classList.add('open');
+  setTimeout(()=>document.getElementById('wrAddName').focus(),50);
+}
+async function saveWrRuleAdd(){
+  const name=document.getElementById('wrAddName').value.trim();if(!name)return;
+  const pup_related=document.getElementById('wrAddPup').checked;
+  const notes=document.getElementById('wrAddNotes').value.trim()||null;
+  const cadenceFields=_wrReadCadenceFields('wrAdd');
+  const payload={name,pup_related,notes,is_enabled:true,sort_order:st.wrRules.length,...cadenceFields};
+  const tmpId='wrrule-tmp-'+Date.now();
+  st.wrRules.push({...payload,id:tmpId});
+  save();renderRecOv();
+  closeMod('wrRuleAddModal');
+  let realId=null;
+  const sv=await sbReqSilent('POST','wr_recurring_rules',payload,'');
+  if(sv&&sv[0]){
+    realId=String(sv[0].id);
+    const idx=st.wrRules.findIndex(r=>String(r.id)===tmpId);
+    if(idx>-1)st.wrRules[idx]=sv[0];
+    save();renderRecOv();
+  }
+  pushUndo(()=>{
+    const id=realId||tmpId;
+    st.wrRules=st.wrRules.filter(r=>String(r.id)!==id);
+    if(realId)sbReqSilent('DELETE','wr_recurring_rules',null,`?id=eq.${realId}`);
+    save();renderRecOv();
+  },'Added WR rule');
+}
+
+// ── Edit WR rule modal (all future) ──────────────────────────────────────────
 let _wrRuleEditId=null;
 
 function openWrRuleEditModal(ruleId){
   _wrRuleEditId=String(ruleId);
   const rule=st.wrRules.find(r=>String(r.id)===_wrRuleEditId);if(!rule)return;
-  document.getElementById('wrRuleName').value=rule.name||'';
-  document.getElementById('wrRuleCadence').value=rule.cadence||'weekly';
-  document.getElementById('wrRuleNotes').value=rule.notes||'';
-  document.getElementById('wrRulePup').checked=!!(rule.pup_related===true||rule.pup_related==='true');
+  _wrBuildSelects('wrEdit');
+  document.getElementById('wrEditName').value=rule.name||'';
+  document.getElementById('wrEditPup').checked=!!(rule.pup_related===true||rule.pup_related==='true');
+  document.getElementById('wrEditCadence').value=rule.cadence||'weekly';
+  document.getElementById('wrEditDow').value=String(rule.day_of_week??1);
+  document.getElementById('wrEditAnchor').value=rule.anchor_date||'';
+  document.getElementById('wrEditNotes').value=rule.notes||'';
+  // Monthly mode
+  const modeVal=rule.monthly_rule_type||'nth_weekday';
+  document.querySelectorAll('input[name="wrEditMonthlyMode"]').forEach(r=>{r.checked=r.value===modeVal;});
+  if(rule.monthly_nth!=null&&rule.monthly_weekday!=null){
+    const target=rule.monthly_nth+'-'+rule.monthly_weekday;
+    const nthWdEl=document.getElementById('wrEditNthWd');
+    [...nthWdEl.options].forEach(o=>{if(o.value===target)o.selected=true;});
+  }
+  if(rule.monthly_date!=null){
+    document.getElementById('wrEditDom').value=String(rule.monthly_date);
+  }
+  updateWrRuleCadenceUI('wrEdit');
   document.getElementById('wrRuleEditModal').classList.add('open');
-  setTimeout(()=>document.getElementById('wrRuleName').select(),50);
+  setTimeout(()=>{const el=document.getElementById('wrEditName');el.focus();el.select();},50);
 }
 function saveWrRuleEdit(){
-  const name=document.getElementById('wrRuleName').value.trim();if(!name)return;
+  const name=document.getElementById('wrEditName').value.trim();if(!name)return;
   const rule=st.wrRules.find(r=>String(r.id)===_wrRuleEditId);if(!rule)return;
-  const prev={name:rule.name,cadence:rule.cadence,notes:rule.notes,pup_related:rule.pup_related};
-  const patch={name,cadence:document.getElementById('wrRuleCadence').value,notes:document.getElementById('wrRuleNotes').value.trim()||null,pup_related:document.getElementById('wrRulePup').checked};
+  const prev={name:rule.name,cadence:rule.cadence,day_of_week:rule.day_of_week,anchor_date:rule.anchor_date,monthly_rule_type:rule.monthly_rule_type,monthly_nth:rule.monthly_nth,monthly_weekday:rule.monthly_weekday,monthly_date:rule.monthly_date,pup_related:rule.pup_related,notes:rule.notes};
+  const cadenceFields=_wrReadCadenceFields('wrEdit');
+  const patch={name,pup_related:document.getElementById('wrEditPup').checked,notes:document.getElementById('wrEditNotes').value.trim()||null,...cadenceFields};
   Object.assign(rule,patch);
   sbReqSilent('PATCH','wr_recurring_rules',patch,`?id=eq.${_wrRuleEditId}`);
   save();renderRecOv();
