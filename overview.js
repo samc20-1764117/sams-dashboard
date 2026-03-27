@@ -897,9 +897,14 @@ function renderRecOv(){
     const rid=String(r.id);
     const isDone=isDoneWR(r.id);
     const isPup=r.pup_related===true||r.pup_related==='true';
+    const selId='wrrule-'+rid;
     const row=document.createElement('div');
+    row.id='ti-'+selId;
     row.className='ti'+(isDone?' done':'');
     row.style.cssText='cursor:pointer;break-inside:avoid';
+    row.addEventListener('click',e=>selTask(e,selId));
+    row.addEventListener('dblclick',e=>{if(e.target.closest('button,label'))return;e.stopPropagation();clearSelection();openWrOccEditModal(rid,wkKey);});
+    row.addEventListener('contextmenu',e=>showWrRuleCtx(e,rid,wkKey));
     if(isPup){
       row.appendChild(makePawEl(rid,isDone));
     } else {
@@ -965,6 +970,105 @@ function togWrRule(ruleId,isDone,wkKey){
     pushUndo(()=>{st.wrOverrides.push(prev);sbReqSilent('POST','wr_recurring_overrides',prev,'');renderRecOv();},'Toggled WR task');
     save();renderRecOv();
   }
+}
+
+// ── WR Rule Context Menu ─────────────────────────────────────────────────────
+let _wrCtxRuleId=null,_wrCtxWkKey=null;
+
+function showWrRuleCtx(e,ruleId,wkKey){
+  e.preventDefault();e.stopPropagation();
+  _wrCtxRuleId=String(ruleId);_wrCtxWkKey=wkKey;
+  const m=document.getElementById('wrRuleCtxMenu');
+  const x=Math.min(e.clientX,window.innerWidth-185),y=Math.min(e.clientY,window.innerHeight-210);
+  m.style.left=x+'px';m.style.top=y+'px';m.style.display='block';
+}
+function hideWrRuleCtx(){const m=document.getElementById('wrRuleCtxMenu');if(m)m.style.display='none';}
+document.addEventListener('mousedown',e=>{if(!e.target.closest('#wrRuleCtxMenu'))hideWrRuleCtx();},{capture:true,passive:true});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')hideWrRuleCtx();});
+
+function wrCtxSkipThisWeek(){
+  hideWrRuleCtx();if(!_wrCtxRuleId||!_wrCtxWkKey)return;
+  writeWrOverride(_wrCtxRuleId,_wrCtxWkKey,{override_type:'skip'},{undoLabel:'Skipped WR task this week'});
+}
+function wrCtxMovePrevWeek(){
+  hideWrRuleCtx();if(!_wrCtxRuleId||!_wrCtxWkKey)return;
+  const d=new Date(_wrCtxWkKey+'T12:00');d.setDate(d.getDate()-7);
+  writeWrOverride(_wrCtxRuleId,_wrCtxWkKey,{override_type:'move',moved_to_wk_key:d2s(d)},{undoLabel:'Moved WR task to prev week'});
+}
+function wrCtxMoveNextWeek(){
+  hideWrRuleCtx();if(!_wrCtxRuleId||!_wrCtxWkKey)return;
+  const d=new Date(_wrCtxWkKey+'T12:00');d.setDate(d.getDate()+7);
+  writeWrOverride(_wrCtxRuleId,_wrCtxWkKey,{override_type:'move',moved_to_wk_key:d2s(d)},{undoLabel:'Moved WR task to next week'});
+}
+function wrCtxEditThisWeek(){
+  hideWrRuleCtx();if(!_wrCtxRuleId||!_wrCtxWkKey)return;
+  openWrOccEditModal(_wrCtxRuleId,_wrCtxWkKey);
+}
+function wrCtxEditRule(){
+  hideWrRuleCtx();if(!_wrCtxRuleId)return;
+  openWrRuleEditModal(_wrCtxRuleId);
+}
+function wrCtxDeleteRule(){
+  hideWrRuleCtx();if(!_wrCtxRuleId)return;
+  const rule=st.wrRules.find(r=>String(r.id)===_wrCtxRuleId);if(!rule)return;
+  const prevRule={...rule};
+  const removedOvs=st.wrOverrides.filter(o=>String(o.rule_id)===_wrCtxRuleId).map(o=>({...o}));
+  st.wrRules=st.wrRules.filter(r=>String(r.id)!==_wrCtxRuleId);
+  st.wrOverrides=st.wrOverrides.filter(o=>String(o.rule_id)!==_wrCtxRuleId);
+  sbReqSilent('DELETE','wr_recurring_rules',null,`?id=eq.${_wrCtxRuleId}`);
+  save();renderRecOv();
+  const deletedId=_wrCtxRuleId;
+  pushUndo(async()=>{
+    const sv=await sbReqSilent('POST','wr_recurring_rules',{name:prevRule.name,cadence:prevRule.cadence,day_of_week:prevRule.day_of_week,anchor_date:prevRule.anchor_date,monthly_rule_type:prevRule.monthly_rule_type,monthly_nth:prevRule.monthly_nth,monthly_weekday:prevRule.monthly_weekday,monthly_date:prevRule.monthly_date,pup_related:prevRule.pup_related,notes:prevRule.notes,is_enabled:prevRule.is_enabled,sort_order:prevRule.sort_order},'');
+    if(sv&&sv[0])st.wrRules.push(sv[0]);else st.wrRules.push(prevRule);
+    save();renderRecOv();
+  },'Deleted WR rule');
+}
+
+// ── Edit this occurrence modal ────────────────────────────────────────────────
+let _wrOccRuleId=null,_wrOccWkKey=null;
+
+function openWrOccEditModal(ruleId,wkKey){
+  _wrOccRuleId=String(ruleId);_wrOccWkKey=wkKey;
+  const rule=st.wrRules.find(r=>String(r.id)===_wrOccRuleId);if(!rule)return;
+  const existingOv=st.wrOverrides.find(o=>String(o.rule_id)===_wrOccRuleId&&o.wk_key===_wrOccWkKey&&o.override_type==='edit');
+  document.getElementById('wrOccName').value=(existingOv&&existingOv.custom_name)||rule.name;
+  document.getElementById('wrOccNotes').value=(existingOv&&existingOv.custom_notes)||rule.notes||'';
+  document.getElementById('wrOccEditModal').classList.add('open');
+  setTimeout(()=>document.getElementById('wrOccName').select(),50);
+}
+function saveWrOccEdit(){
+  const name=document.getElementById('wrOccName').value.trim();
+  if(!name){closeMod('wrOccEditModal');return;}
+  const rule=st.wrRules.find(r=>String(r.id)===_wrOccRuleId);
+  const notes=document.getElementById('wrOccNotes').value.trim()||null;
+  writeWrOverride(_wrOccRuleId,_wrOccWkKey,{override_type:'edit',custom_name:name,custom_notes:notes},{undoLabel:'Edited WR occurrence'});
+  closeMod('wrOccEditModal');
+}
+
+// ── Edit rule (all future) modal ─────────────────────────────────────────────
+let _wrRuleEditId=null;
+
+function openWrRuleEditModal(ruleId){
+  _wrRuleEditId=String(ruleId);
+  const rule=st.wrRules.find(r=>String(r.id)===_wrRuleEditId);if(!rule)return;
+  document.getElementById('wrRuleName').value=rule.name||'';
+  document.getElementById('wrRuleCadence').value=rule.cadence||'weekly';
+  document.getElementById('wrRuleNotes').value=rule.notes||'';
+  document.getElementById('wrRulePup').checked=!!(rule.pup_related===true||rule.pup_related==='true');
+  document.getElementById('wrRuleEditModal').classList.add('open');
+  setTimeout(()=>document.getElementById('wrRuleName').select(),50);
+}
+function saveWrRuleEdit(){
+  const name=document.getElementById('wrRuleName').value.trim();if(!name)return;
+  const rule=st.wrRules.find(r=>String(r.id)===_wrRuleEditId);if(!rule)return;
+  const prev={name:rule.name,cadence:rule.cadence,notes:rule.notes,pup_related:rule.pup_related};
+  const patch={name,cadence:document.getElementById('wrRuleCadence').value,notes:document.getElementById('wrRuleNotes').value.trim()||null,pup_related:document.getElementById('wrRulePup').checked};
+  Object.assign(rule,patch);
+  sbReqSilent('PATCH','wr_recurring_rules',patch,`?id=eq.${_wrRuleEditId}`);
+  save();renderRecOv();
+  pushUndo(()=>{Object.assign(rule,prev);sbReqSilent('PATCH','wr_recurring_rules',prev,`?id=eq.${_wrRuleEditId}`);save();renderRecOv();},'Edited WR rule');
+  closeMod('wrRuleEditModal');
 }
 
 // ── Unassigned badge ────────────────────────────────────────────────────────────

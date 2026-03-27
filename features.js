@@ -1996,6 +1996,7 @@ function applySelHighlight(){
   function csForId(id){
     if(!id)return null;
     if(id.startsWith('tv-'))return gc('travel');
+    if(id.startsWith('wrrule-'))return gc('recurring');
     if(id.startsWith('wrec-')){const r=st.recurring.find(x=>String(x.id)===id.replace('wrec-',''));return gc(r&&(r.is_weekly_reset===true||r.is_weekly_reset==='true')?'weekly_reset':'recurring');}
     if(id.startsWith('rec-virt-'))return gc('recurring');
     if(id.startsWith('shop-cal-'))return gc('shopping');
@@ -2096,10 +2097,28 @@ document.addEventListener('keydown',async e=>{
       save();renderPupsPage();return;
     }
   }
+  // Space bar: toggle done for selected WR rule rows
+  if(e.key===' '&&selectedTasks.size>0&&[...selectedTasks].some(id=>id.startsWith('wrrule-'))){
+    e.preventDefault();
+    [...selectedTasks].filter(id=>id.startsWith('wrrule-')).forEach(id=>{
+      const ruleId=id.replace('wrrule-','');
+      const wkKey=getWkKey(wrRecOff);
+      const isDone=st.wrOverrides.some(o=>String(o.rule_id)===String(ruleId)&&o.wk_key===wkKey&&o.override_type==='complete'&&o.done===true);
+      togWrRule(ruleId,!isDone,wkKey);
+    });
+    return;
+  }
   // Delete selected tasks
   if((e.key==='Delete'||e.key==='Backspace')&&selectedTasks.size>0){
     e.preventDefault();
     const ids=[...selectedTasks];
+    // WR rule rows: skip this week instead of permanent delete
+    const wrRuleIds=ids.filter(id=>id.startsWith('wrrule-'));
+    if(wrRuleIds.length){
+      const wkKey=getWkKey(wrRecOff);
+      wrRuleIds.forEach(id=>writeWrOverride(id.replace('wrrule-',''),wkKey,{override_type:'skip'},{undoLabel:'Skipped WR task this week'}));
+      clearSelection();return;
+    }
     // Collect everything to undo in one batch
     const shopRestores=[];   // {s, prev}
     const wrecRestores=[];   // {r, wkKey, prev}

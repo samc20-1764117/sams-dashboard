@@ -1365,6 +1365,41 @@ body.dark .bday-add-menu{background:rgba(38,20,10,.97);border-color:rgba(255,220
   <div class="ctx-divider"></div>
   <div id="ctxDelete" class="ctx-item ctx-danger" onclick="ctxDoDelete()">✕  Delete task</div>
 </div>
+<!-- WR Rule context menu (Apple Calendar-style: this week vs all future) -->
+<div id="wrRuleCtxMenu" style="display:none;position:fixed;z-index:9999;background:rgba(255,255,255,.98);border:1px solid rgba(210,205,228,.4);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);padding:4px;min-width:175px;backdrop-filter:blur(12px)">
+  <div class="ctx-item" onclick="wrCtxEditThisWeek()">✏️  Edit this week only</div>
+  <div class="ctx-item" onclick="wrCtxSkipThisWeek()">⊘  Skip this week</div>
+  <div class="ctx-item" onclick="wrCtxMovePrevWeek()">←  Move to prev week</div>
+  <div class="ctx-item" onclick="wrCtxMoveNextWeek()">→  Move to next week</div>
+  <div class="ctx-divider"></div>
+  <div class="ctx-item" onclick="wrCtxEditRule()">✏️  Edit rule (all future)</div>
+  <div class="ctx-divider"></div>
+  <div class="ctx-item ctx-danger" onclick="wrCtxDeleteRule()">✕  Delete rule</div>
+</div>
+<!-- Edit this occurrence modal -->
+<div id="wrOccEditModal" class="overlay" onclick="if(event.target===this)closeMod('wrOccEditModal')" onkeydown="if(event.key==='Escape')closeMod('wrOccEditModal');else if(event.key==='Enter'&&event.target.tagName!=='TEXTAREA')saveWrOccEdit()">
+  <div class="modal">
+    <div class="mh"><span class="mt">Edit This Week Only</span><button class="cls-btn" onclick="closeMod('wrOccEditModal')">✕</button></div>
+    <div class="mfields">
+      <div class="mfield"><label>Name</label><input id="wrOccName" class="mi" type="text" placeholder="Custom name for this week"></div>
+      <div class="mfield"><label>Notes</label><textarea id="wrOccNotes" class="mi" rows="3" placeholder="Notes for this week only" style="resize:vertical"></textarea></div>
+    </div>
+    <div class="mfooter"><button class="btn btn-primary" onclick="saveWrOccEdit()">Save</button></div>
+  </div>
+</div>
+<!-- Edit rule (all future) modal -->
+<div id="wrRuleEditModal" class="overlay" onclick="if(event.target===this)closeMod('wrRuleEditModal')" onkeydown="if(event.key==='Escape')closeMod('wrRuleEditModal');else if(event.key==='Enter'&&!['TEXTAREA','SELECT'].includes(event.target.tagName))saveWrRuleEdit()">
+  <div class="modal">
+    <div class="mh"><span class="mt">Edit Rule (All Future)</span><button class="cls-btn" onclick="closeMod('wrRuleEditModal')">✕</button></div>
+    <div class="mfields">
+      <div class="mfield"><label>Name</label><input id="wrRuleName" class="mi" type="text"></div>
+      <div class="mfield"><label>Cadence</label><select id="wrRuleCadence" class="mi"><option value="weekly">Weekly</option><option value="biweekly">Biweekly</option><option value="monthly">Monthly</option><option value="other">Other</option></select></div>
+      <div class="mfield"><label>Notes</label><textarea id="wrRuleNotes" class="mi" rows="2" style="resize:vertical"></textarea></div>
+      <div class="mfield" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="wrRulePup"><label for="wrRulePup" style="margin:0;cursor:pointer">Pup related</label></div>
+    </div>
+    <div class="mfooter"><button class="btn btn-primary" onclick="saveWrRuleEdit()">Save (all future)</button></div>
+  </div>
+</div>
 <div id="inlineDatePicker" class="inline-date-picker">
   <input type="date" id="idpInput">
   <div class="idp-actions">
