@@ -856,7 +856,8 @@ function renderRecOv(){
   // 5. Apply edit overrides (custom name for this week only)
   const items=[...filtered,...movedIn].map(r=>{
     const editOv=ovThisWk.find(o=>o.override_type==='edit'&&String(o.rule_id)===String(r.id));
-    return{...r,_displayName:(editOv&&editOv.custom_name)||r.name,_edited:!!editOv,_movedIn:r._movedIn||false};
+    const hasChange=editOv&&((editOv.custom_name&&editOv.custom_name!==r.name)||(editOv.custom_notes!==undefined&&editOv.custom_notes!==r.notes));
+    return{...r,_displayName:(editOv&&editOv.custom_name)||r.name,_edited:!!hasChange,_movedIn:r._movedIn||false};
   });
   // ── End merge ────────────────────────────────────────────────────────────────
 
@@ -920,14 +921,14 @@ function renderRecOv(){
     const nm=document.createElement('span');nm.className='tn';
     if(isDone)nm.style.cssText='text-decoration:line-through;color:var(--muted)';
     nm.textContent=r._displayName;
-    if(r._movedIn||r._edited){
-      const tag=document.createElement('span');
-      const isMove=r._movedIn;
-      tag.style.cssText='font-size:9px;font-weight:600;padding:1px 6px;border-radius:10px;margin-left:6px;vertical-align:middle;background:'+(isMove?'rgba(90,140,255,.15)':'rgba(240,160,30,.18)')+';color:'+(isMove?'#5a8cff':'#c47a00');
-      tag.textContent=isMove?'moved':'edited';
-      nm.appendChild(tag);
-    }
     row.appendChild(nm);
+    if(r._movedIn||r._edited){
+      const dot=document.createElement('span');
+      const isMove=r._movedIn;
+      dot.style.cssText='width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-left:auto;background:'+(isMove?'#5a8cff':'#e8a020');
+      dot.title=isMove?'Moved this week':'Edited this week';
+      row.appendChild(dot);
+    }
     const del=document.createElement('button');
     del.className='delbtn';del.textContent='✕';del.title='Remove…';
     del.addEventListener('mousedown',e=>e.stopPropagation());
@@ -1158,7 +1159,7 @@ function openWrEditModal(ruleId,wkKey,defaultScope='this'){
   setWrEditScope(defaultScope);
   setTimeout(()=>{
     const el=defaultScope==='this'?document.getElementById('wrMOccName'):document.getElementById('wrEditName');
-    el.focus();el.select();
+    el.focus();const len=el.value.length;el.setSelectionRange(len,len);
   },50);
 }
 
@@ -1205,7 +1206,7 @@ function openWrRuleAddModal(){
   setTimeout(()=>document.getElementById('wrAddName').focus(),50);
 }
 async function saveWrRuleAdd(){
-  const name=document.getElementById('wrAddName').value.trim();if(!name)return;
+  const name=document.getElementById('wrAddName').value.trim();if(!name){closeMod('wrRuleAddModal');return;}
   const pup_related=document.getElementById('wrAddPup').checked;
   const notes=document.getElementById('wrAddNotes').value.trim()||null;
   const cadenceFields=_wrReadCadenceFields('wrAdd');

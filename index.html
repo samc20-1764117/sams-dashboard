@@ -1430,7 +1430,7 @@ body.dark .bday-add-menu{background:rgba(38,20,10,.97);border-color:rgba(255,220
 </div>
 
 <!-- Add WR recurring rule modal -->
-<div id="wrRuleAddModal" class="overlay" onclick="closeMod('wrRuleAddModal',event)" onkeydown="if(event.key==='Enter'&&!['SELECT','TEXTAREA'].includes(event.target.tagName)){event.preventDefault();saveWrRuleAdd();}if(event.key==='Escape')closeMod('wrRuleAddModal')">
+<div id="wrRuleAddModal" class="overlay" onclick="closeMod('wrRuleAddModal',event)" onkeydown="if(event.key==='Enter'&&!['SELECT','TEXTAREA'].includes(event.target.tagName)){event.preventDefault();const n=document.getElementById('wrAddName').value.trim();if(!n){closeMod('wrRuleAddModal');}else{saveWrRuleAdd();}}if(event.key==='Escape')closeMod('wrRuleAddModal')">
   <div class="modal task-modal" style="width:350px">
     <div class="mt">Add Weekly Reset Task</div>
     <div class="mfield"><label>Task name *</label><input id="wrAddName" placeholder="e.g. Laundry, Sunny bowls…"></div>
