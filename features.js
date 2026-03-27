@@ -724,17 +724,37 @@ function mkMCell(date,om,today){
     const s=t.important&&!t.done?IMP:gc(t.category);
     const isTravel=t._type==='travel';
     const isPast=isTravel&&t.end_date&&t.end_date<tod();
-    const chip=document.createElement('div');chip.className='mcell-t';chip.draggable=!t.done&&!isTravel;
-    chip.style.cssText=`background:${s.bg};color:${s.t};border-color:${s.b};cursor:${t.done?'default':isTravel?'pointer':'grab'};${t.done?'opacity:.25;text-decoration:line-through;':''}${isPast?'opacity:.35;':''}`;
+    const chip=document.createElement('div');chip.className='mcell-t';chip.draggable=!t.done;
+    // Travel: compute visual span position to extend chip across cell gaps
+    let travelSpanStyle='';
+    let isVisualFirst=true,isVisualLast=true;
+    if(isTravel){
+      const dow=(new Date(ds+'T12:00:00').getDay()+6)%7; // 0=Mon,6=Sun
+      isVisualFirst=t.due_date===ds||dow===0;
+      isVisualLast=!t.end_date||t.end_date===ds||dow===6;
+      // EXT = cell padding(4) + border(1) + grid gap(3) + border(1) + padding(4) = 13px
+      const EXT=13;
+      const rl=isVisualFirst?'4px':'0';
+      const rr=isVisualLast?'4px':'0';
+      travelSpanStyle=`border-radius:${rl} ${rr} ${rr} ${rl};`
+        +(!isVisualFirst?`margin-left:-${EXT}px;width:calc(100% + ${EXT}px);border-left:none;`:'')
+        +(!isVisualLast?'border-right:none;':'');
+    }
+    chip.style.cssText=`background:${s.bg};color:${s.t};border-color:${s.b};cursor:${t.done?'default':isTravel?'pointer':'grab'};${t.done?'opacity:.25;text-decoration:line-through;':''}${isPast?'opacity:.35;':''}${travelSpanStyle}`;
     if(!t._virtual&&!t._type)chip.dataset.tid=String(t.id);
     else if(isTravel)chip.dataset.tid='tv-'+t._srcId;
     else if(t._type==='shop')chip.dataset.tid='shop-cal-'+t._shopId;
     else if(t._isWrec)chip.dataset.tid='wrec-'+t._recId;
     else if(t._recId)chip.dataset.tid='rec-virt-'+t._recId;
-    chip.innerHTML=`<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${tmIcon(t)}${escHtml(t.name)}</span>`;
-    const dx=document.createElement('button');dx.className='chip-del';dx.textContent='✕';
-    dx.addEventListener('click',e2=>{e2.stopPropagation();if(isTravel)delTravel(t._srcId);else moChipDel(t,ds,e2);});
-    chip.appendChild(dx);
+    // Travel: only show label+delete on the first visual cell of each row; middle/last are plain bars
+    if(isTravel&&!isVisualFirst){
+      chip.innerHTML='';
+    }else{
+      chip.innerHTML=`<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${tmIcon(t)}${escHtml(t.name)}</span>`;
+      const dx=document.createElement('button');dx.className='chip-del';dx.textContent='✕';
+      dx.addEventListener('click',e2=>{e2.stopPropagation();if(isTravel)delTravel(t._srcId);else moChipDel(t,ds,e2);});
+      chip.appendChild(dx);
+    }
     chip.addEventListener('dragstart',e=>{e.stopPropagation();if(isTravel){dragId='travel::'+t._srcId+'::0';e.dataTransfer.effectAllowed='move';document.body.classList.add('body-dragging');}else{dStart(e,t.id);chip.style.opacity='.4';}});
     chip.addEventListener('dragend',()=>{document.body.classList.remove('body-dragging');if(isTravel){if(dragId&&dragId.startsWith('travel::'))dragId=null;}else chip.style.opacity='1';});
     chip.addEventListener('click',e=>{if(e.target.closest('.chip-del'))return;if(isTravel){e.stopPropagation();const tvSid='tv-'+t._srcId;selectedTasks.clear();selectedTasks.add(tvSid);lastSelectedId=tvSid;applySelHighlight();return;}const sid=chip.dataset.tid;if(!sid)return;selTask(e,sid);});
