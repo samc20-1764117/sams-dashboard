@@ -697,7 +697,7 @@ function renderMoCal(){
 function scrollMoToday(){
   const mgrid=document.querySelector('#mModal .mgrid');
   const tc=document.querySelector('#mCells .mcell.tc');
-  if(tc&&mgrid)mgrid.scrollTop=tc.offsetTop-mgrid.offsetTop-8;
+  if(tc&&mgrid){const mdow=document.getElementById('mDow');const mdowH=mdow?mdow.offsetHeight:0;mgrid.scrollTop=tc.offsetTop-mgrid.offsetTop-mdowH-8;}
 }
 function mkMCell(date,om,today){
   const ds=d2s(date);const cell=document.createElement('div');
