@@ -923,29 +923,48 @@ function renderRecOv(){
   requestAnimationFrame(applySelHighlight);
 }
 
-// Toggle done for a wr_recurring_rule via the overrides table
-function togWrRule(ruleId,isDone,wkKey){
-  const existing=st.wrOverrides.find(o=>String(o.rule_id)===String(ruleId)&&o.wk_key===wkKey&&o.override_type==='complete');
+// Upsert a wr_recurring_override — patches if one exists for (ruleId,wkKey), posts if not.
+// payload should include override_type + any relevant fields. Nulls out unrelated fields.
+function writeWrOverride(ruleId,wkKey,payload,{onDone,undoLabel='Changed WR task'}={}){
+  const full={rule_id:ruleId,wk_key:wkKey,done:null,moved_to_wk_key:null,custom_name:null,custom_notes:null,...payload};
+  const existing=st.wrOverrides.find(o=>String(o.rule_id)===String(ruleId)&&o.wk_key===wkKey);
   if(existing){
-    existing.done=isDone;
-    sbReqSilent('PATCH','wr_recurring_overrides',{done:isDone},`?id=eq.${existing.id}`);
-    pushUndo(()=>{existing.done=!isDone;sbReqSilent('PATCH','wr_recurring_overrides',{done:!isDone},`?id=eq.${existing.id}`);renderRecOv();},'Toggled WR task');
-  } else if(isDone){
+    const prev={...existing};
+    Object.assign(existing,full);
+    sbReqSilent('PATCH','wr_recurring_overrides',full,`?id=eq.${existing.id}`);
+    pushUndo(()=>{Object.assign(existing,prev);sbReqSilent('PATCH','wr_recurring_overrides',prev,`?id=eq.${existing.id}`);renderRecOv();},undoLabel);
+    save();renderRecOv();if(onDone)onDone(existing);
+  } else {
     const tmpId='wrov-tmp-'+Date.now();
-    const payload={rule_id:ruleId,wk_key:wkKey,override_type:'complete',done:true};
-    st.wrOverrides.push({...payload,id:tmpId});
+    st.wrOverrides.push({...full,id:tmpId});
     let realId=null;
-    sbReqSilent('POST','wr_recurring_overrides',payload,'').then(res=>{
-      if(res&&res[0]){realId=String(res[0].id);const idx=st.wrOverrides.findIndex(o=>String(o.id)===tmpId);if(idx>-1)st.wrOverrides[idx]=res[0];save();}
+    sbReqSilent('POST','wr_recurring_overrides',full,'').then(res=>{
+      if(res&&res[0]){realId=String(res[0].id);const idx=st.wrOverrides.findIndex(o=>String(o.id)===tmpId);if(idx>-1){st.wrOverrides[idx]=res[0];}save();if(onDone)onDone(res[0]);}
     });
     pushUndo(()=>{
       const id=realId||tmpId;
       st.wrOverrides=st.wrOverrides.filter(o=>String(o.id)!==id);
       if(realId)sbReqSilent('DELETE','wr_recurring_overrides',null,`?id=eq.${realId}`);
       renderRecOv();
-    },'Toggled WR task');
+    },undoLabel);
+    save();renderRecOv();
   }
-  save();renderRecOv();
+}
+
+// Toggle done for a wr_recurring_rule via the overrides table
+function togWrRule(ruleId,isDone,wkKey){
+  if(isDone){
+    writeWrOverride(ruleId,wkKey,{override_type:'complete',done:true},{undoLabel:'Toggled WR task'});
+  } else {
+    // Un-checking: remove the complete override entirely
+    const existing=st.wrOverrides.find(o=>String(o.rule_id)===String(ruleId)&&o.wk_key===wkKey&&o.override_type==='complete');
+    if(!existing)return;
+    const prev={...existing};
+    st.wrOverrides=st.wrOverrides.filter(o=>o!==existing);
+    sbReqSilent('DELETE','wr_recurring_overrides',null,`?id=eq.${existing.id}`);
+    pushUndo(()=>{st.wrOverrides.push(prev);sbReqSilent('POST','wr_recurring_overrides',prev,'');renderRecOv();},'Toggled WR task');
+    save();renderRecOv();
+  }
 }
 
 // ── Unassigned badge ────────────────────────────────────────────────────────────
