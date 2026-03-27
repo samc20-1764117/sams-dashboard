@@ -732,13 +732,18 @@ function mkMCell(date,om,today){
       const dow=(new Date(ds+'T12:00:00').getDay()+6)%7; // 0=Mon,6=Sun
       isVisualFirst=t.due_date===ds||dow===0;
       isVisualLast=!t.end_date||t.end_date===ds||dow===6;
-      // EXT = cell padding(4) + border(1) + grid gap(3) + border(1) + padding(4) = 13px
+      // EXT bridges: cell padding(4)+border(1)+gap(3)+border(1)+padding(4) = 13px
+      // Extend BOTH sides so chips fully overlap the gap from each direction
       const EXT=13;
+      const leftExt=isVisualFirst?0:EXT;
+      const rightExt=isVisualLast?0:EXT;
+      const totalExt=leftExt+rightExt;
       const rl=isVisualFirst?'4px':'0';
       const rr=isVisualLast?'4px':'0';
-      travelSpanStyle=`border-radius:${rl} ${rr} ${rr} ${rl};`
-        +(!isVisualFirst?`margin-left:-${EXT}px;width:calc(100% + ${EXT}px);border-left:none;`:'')
-        +(!isVisualLast?'border-right:none;':'');
+      travelSpanStyle=`border-radius:${rl} ${rr} ${rr} ${rl};position:relative;z-index:1;`
+        +(leftExt?`margin-left:-${leftExt}px;border-left:none;`:'')
+        +(rightExt?`border-right:none;`:'')
+        +(totalExt?`width:calc(100% + ${totalExt}px);`:'');
     }
     chip.style.cssText=`background:${s.bg};color:${s.t};border-color:${s.b};cursor:${t.done?'default':isTravel?'pointer':'grab'};${t.done?'opacity:.25;text-decoration:line-through;':''}${isPast?'opacity:.35;':''}${travelSpanStyle}`;
     if(!t._virtual&&!t._type)chip.dataset.tid=String(t.id);
@@ -746,13 +751,20 @@ function mkMCell(date,om,today){
     else if(t._type==='shop')chip.dataset.tid='shop-cal-'+t._shopId;
     else if(t._isWrec)chip.dataset.tid='wrec-'+t._recId;
     else if(t._recId)chip.dataset.tid='rec-virt-'+t._recId;
-    // Travel: only show label+delete on the first visual cell of each row; middle/last are plain bars
+    // Travel first cell shows label; all cells show delete button on hover
     if(isTravel&&!isVisualFirst){
-      chip.innerHTML='';
+      chip.innerHTML='<span style="flex:1"></span>';
     }else{
       chip.innerHTML=`<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${tmIcon(t)}${escHtml(t.name)}</span>`;
+    }
+    if(isTravel){
       const dx=document.createElement('button');dx.className='chip-del';dx.textContent='✕';
-      dx.addEventListener('click',e2=>{e2.stopPropagation();if(isTravel)delTravel(t._srcId);else moChipDel(t,ds,e2);});
+      dx.style.cssText='margin-right:2px';
+      dx.addEventListener('click',e2=>{e2.stopPropagation();delTravel(t._srcId);});
+      chip.appendChild(dx);
+    }else{
+      const dx=document.createElement('button');dx.className='chip-del';dx.textContent='✕';
+      dx.addEventListener('click',e2=>{e2.stopPropagation();moChipDel(t,ds,e2);});
       chip.appendChild(dx);
     }
     chip.addEventListener('dragstart',e=>{e.stopPropagation();if(isTravel){dragId='travel::'+t._srcId+'::0';e.dataTransfer.effectAllowed='move';document.body.classList.add('body-dragging');}else{dStart(e,t.id);chip.style.opacity='.4';}});
