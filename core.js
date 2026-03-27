@@ -24,8 +24,8 @@ function slug(c){return(c||'other').toLowerCase().replace(/\s+/g,'-');}
 
 // ── State ──────────────────────────────────────────────────────────────────────
 let cfg={url:'https://gtirvyrqfuuuxkkqaeap.supabase.co',key:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0aXJ2eXJxZnV1dXhra3FhZWFwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwODY3NjAsImV4cCI6MjA4ODY2Mjc2MH0.6rtA0WeUUAcuV_sNVrxAbaaviPxPwNakh_bk7uylAOo',showAutoTB:true};
-let st={tasks:[],recurring:[],shopping:[],blocks:[],travel:[],birthdays:[],pup_skills:[],recipes:[],autoTimeblocks:[],autoTBOverrides:[]};
-let dayOff=0,wkOff=0,moOff=0,sbOpen=true,activePg='overview';
+let st={tasks:[],recurring:[],shopping:[],blocks:[],travel:[],birthdays:[],pup_skills:[],recipes:[],autoTimeblocks:[],autoTBOverrides:[],wrRules:[],wrOverrides:[]};
+let dayOff=0,wkOff=0,moOff=0,wrRecOff=0,sbOpen=true,activePg='overview';
 let dragId=null,resizing=null,tMode='add',tId=null,tPreDate=null;
 let qaCtx='today',qaDsTarget=null,qaKCat='';
 let tbWD=0,tbWT=null,wkcWD=0,wkcWT=null;
@@ -153,7 +153,7 @@ async function manualBackup(){
   const btn=document.getElementById('backupTxt');
   btn.textContent='Saving…';
   try{
-    const tables=['tasks','recurring_tasks','shopping_list','travel','birthdays','pup_skills','time_blocks','auto_timeblocks','auto_timeblock_overrides'];
+    const tables=['tasks','recurring_tasks','shopping_list','travel','birthdays','pup_skills','time_blocks','auto_timeblocks','auto_timeblock_overrides','wr_recurring_rules','wr_recurring_overrides'];
     const backup={exported_at:new Date().toISOString(),mode:'manual',tables:{}};
     await Promise.all(tables.map(async t=>{
       try{
@@ -197,6 +197,13 @@ async function syncAll(silent=false){
     ]);
     if(autoTBs)st.autoTimeblocks=autoTBs;
     if(autoTBOvs)st.autoTBOverrides=autoTBOvs;
+    // Fetch WR recurring rules + overrides
+    const[wrRules,wrOvs]=await Promise.all([
+      sbReqSilent('GET','wr_recurring_rules',null,'?is_enabled=eq.true&order=sort_order.asc,name.asc&select=*'),
+      sbReqSilent('GET','wr_recurring_overrides',null,'?order=wk_key.asc&select=*')
+    ]);
+    if(wrRules)st.wrRules=wrRules;
+    if(wrOvs)st.wrOverrides=wrOvs;
     if(tasks){
       const merged=tasks.map(dbT=>{
         const sid=String(dbT.id);
@@ -486,6 +493,57 @@ function getWkKey(off=0){
 function dsToWkKey(ds){
   const d=new Date(ds+'T00:00:00'),day=d.getDay(),mon=new Date(d);
   mon.setDate(d.getDate()-(day===0?6:day-1));return d2s(mon);
+}
+
+// ── WR recurring rules schedule generation ────────────────────────────────────
+// Returns the nth occurrence of `weekday` (0=Sun) in the given year/month.
+// nth=-1 means "last".
+function getNthWeekday(year,month,nth,weekday){
+  if(nth===-1){
+    const last=new Date(year,month+1,0);
+    let off=last.getDay()-weekday;if(off<0)off+=7;
+    return new Date(year,month,last.getDate()-off);
+  }
+  const first=new Date(year,month,1);
+  let off=weekday-first.getDay();if(off<0)off+=7;
+  return new Date(year,month,1+off+(nth-1)*7);
+}
+
+// Returns true if the wr_recurring_rule fires during week `off`.
+function isWRRuleDueThisWeek(rule,off=0){
+  if(!rule.is_enabled)return false;
+  const cadence=rule.cadence||'weekly';
+  if(cadence==='weekly'||cadence==='other')return true;
+  const{mon,sun}=getWkBounds(off);
+  if(cadence==='biweekly'){
+    if(!rule.anchor_date)return false;
+    const anchor=new Date(rule.anchor_date+'T12:00');
+    const aDay=anchor.getDay();
+    const aMon=new Date(anchor);aMon.setDate(anchor.getDate()-(aDay===0?6:aDay-1));
+    const diffMs=mon-aMon;
+    const diffWks=Math.round(diffMs/(7*24*60*60*1000));
+    return diffWks%2===0;
+  }
+  if(cadence==='monthly'){
+    // Check both months that may overlap this Mon–Sun span
+    const months=[];
+    for(const dt of[mon,sun]){
+      const k=dt.getFullYear()*12+dt.getMonth();
+      if(!months.some(x=>x.y===dt.getFullYear()&&x.m===dt.getMonth()))
+        months.push({y:dt.getFullYear(),m:dt.getMonth()});
+    }
+    for(const{y,m}of months){
+      let occ=null;
+      if(rule.monthly_rule_type==='nth_weekday'&&rule.monthly_nth!=null&&rule.monthly_weekday!=null){
+        occ=getNthWeekday(y,m,rule.monthly_nth,rule.monthly_weekday);
+      } else if(rule.monthly_rule_type==='date_of_month'&&rule.monthly_date!=null){
+        occ=new Date(y,m,rule.monthly_date);
+      }
+      if(occ&&occ>=mon&&occ<=sun)return true;
+    }
+    return false;
+  }
+  return false;
 }
 
 // Sort: overdue→important→rest, done last

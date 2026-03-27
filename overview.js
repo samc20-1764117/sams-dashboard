@@ -826,28 +826,42 @@ function isWRecDueThisWeek(r,off=0){
   return true;
 }
 
-// ── Weekly Reset card (only is_weekly_reset=true items due this week) ─────────
+// ── Weekly Reset card — generated from wr_recurring_rules for selected week ────
+function shiftWrRec(n){wrRecOff+=n;renderRecOv();}
+
 function renderRecOv(){
-  const wkKey=getWkKey(wkOff);
-  const items=st.recurring.filter(r=>(r.is_weekly_reset===true||r.is_weekly_reset==='true')&&isWRecDueThisWeek(r,wkOff));
-  const done=items.filter(r=>!!(r._doneByWk&&r._doneByWk[wkKey])).length;
-  const pct=items.length?Math.round(done/items.length*100):0;
-  const _rb=document.getElementById('recBadge');if(_rb)_rb.textContent=items.length-done;
-  if(document.getElementById('recPL'))document.getElementById('recPL').textContent=done+'/'+items.length;const _recP=document.getElementById('recPct2');if(_recP)_recP.textContent=pct+'%';
+  const wkKey=getWkKey(wrRecOff);
+  // Week label for nav bar
+  const{mon,sun}=getWkBounds(wrRecOff);
+  const lbl=document.getElementById('wrRecWkLbl');
+  if(lbl){
+    const fmt=d=>d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    lbl.textContent=fmt(mon)+' – '+fmt(sun)+(wrRecOff===0?' (this week)':'');
+  }
+  // Generate base list from wr_recurring_rules for this week
+  const items=st.wrRules.filter(r=>isWRRuleDueThisWeek(r,wrRecOff));
+  // Done state: look for a 'complete' override for this rule + wkKey
+  function isDoneWR(ruleId){
+    return st.wrOverrides.some(o=>String(o.rule_id)===String(ruleId)&&o.wk_key===wkKey&&o.override_type==='complete'&&o.done===true);
+  }
+  const doneCount=items.filter(r=>isDoneWR(r.id)).length;
+  const pct=items.length?Math.round(doneCount/items.length*100):0;
+  const _rb=document.getElementById('recBadge');if(_rb)_rb.textContent=items.length-doneCount;
+  const _pl=document.getElementById('recPL');if(_pl)_pl.textContent=doneCount+'/'+items.length;
+  const _pct=document.getElementById('recPct2');if(_pct)_pct.textContent=pct+'%';
   document.getElementById('recPB').style.width=pct+'%';
   const elReg=document.getElementById('recList');if(elReg)elReg.innerHTML='';
   function recOvOrder(r){
-    const isPup=r.pup_related===true||r.pup_related==='true';
-    if(isPup)return 10;
+    if(r.pup_related===true||r.pup_related==='true')return 10;
     const c=r.cadence||'weekly';
     return c==='weekly'?0:c==='biweekly'?1:c==='monthly'?2:3;
   }
   const sorted=[...items].sort((a,b)=>{
-    const aDone=!!(a._doneByWk&&a._doneByWk[wkKey]),bDone=!!(b._doneByWk&&b._doneByWk[wkKey]);
+    const aDone=isDoneWR(a.id),bDone=isDoneWR(b.id);
     if(aDone&&!bDone)return 1;if(!aDone&&bDone)return -1;
     return recOvOrder(a)-recOvOrder(b);
   });
-  function makePawEl(rid,isDone){
+  function makePawEl(ruleId,isDone){
     const col=isDone?'#a3c41a':'rgba(255,255,255,.8)';
     const str=isDone?'#a3c41a':'rgba(180,170,210,.5)';
     const wrap=document.createElement('label');
@@ -855,50 +869,57 @@ function renderRecOv(){
     wrap.style.cssText='cursor:pointer;flex-shrink:0';
     wrap.title='Toggle';
     wrap.innerHTML=`<svg viewBox="0 0 100 100" width="10" height="10" xmlns="http://www.w3.org/2000/svg" style="display:block"><ellipse cx="22" cy="18" rx="10" ry="12" fill="${col}" stroke="${str}" stroke-width="8"/><ellipse cx="46" cy="11" rx="10" ry="12" fill="${col}" stroke="${str}" stroke-width="8"/><ellipse cx="70" cy="14" rx="10" ry="12" fill="${col}" stroke="${str}" stroke-width="8"/><ellipse cx="85" cy="36" rx="9" ry="11" fill="${col}" stroke="${str}" stroke-width="8"/><path d="M18 58 Q14 42 28 36 Q46 28 68 34 Q82 40 82 56 Q80 76 50 82 Q20 76 18 58Z" fill="${col}" stroke="${str}" stroke-width="8"/></svg>`;
-    wrap.addEventListener('click',e=>{e.stopPropagation();togRec(rid,!isDone);});
+    wrap.addEventListener('click',e=>{e.stopPropagation();togWrRule(ruleId,!isDone,wkKey);});
     wrap.addEventListener('mousedown',e=>e.stopPropagation());
     return wrap;
   }
   sorted.forEach(r=>{
     const rid=String(r.id);
-    const isDone=!!(r._doneByWk&&r._doneByWk[wkKey]);
+    const isDone=isDoneWR(r.id);
     const isPup=r.pup_related===true||r.pup_related==='true';
     const row=document.createElement('div');
-    const virtId='rec-virt-'+rid;
-    row.id='ti-'+virtId;
     row.className='ti'+(isDone?' done':'');
     row.style.cssText='cursor:pointer;break-inside:avoid';
     if(isPup){
       row.appendChild(makePawEl(rid,isDone));
     } else {
-      const chkWrap1=document.createElement('label');chkWrap1.className='chk-wrap';chkWrap1.addEventListener('click',e=>e.stopPropagation());
+      const chkWrap=document.createElement('label');chkWrap.className='chk-wrap';chkWrap.addEventListener('click',e=>e.stopPropagation());
       const chk=document.createElement('input');chk.type='checkbox';chk.className='chk';chk.checked=isDone;
-      chk.addEventListener('change',function(){togRec(rid,this.checked);});
-      chkWrap1.appendChild(chk);row.appendChild(chkWrap1);
+      chk.addEventListener('change',function(){togWrRule(rid,this.checked,wkKey);});
+      chkWrap.appendChild(chk);row.appendChild(chkWrap);
     }
     const nm=document.createElement('span');nm.className='tn';
     if(isDone)nm.style.cssText='text-decoration:line-through;color:var(--muted)';
     nm.textContent=r.name;
-    const del=document.createElement('button');del.className='delbtn';del.textContent='✕';
-    del.addEventListener('mousedown',e=>e.stopPropagation());
-    del.addEventListener('click',function(e){e.stopPropagation();unscheduleWRec(rid,getWkKey(wkOff));});
-    row.addEventListener('click',e=>selTask(e,virtId));
-    row.addEventListener('dblclick',function(e){
-      if(e.target.closest('button'))return;
-      e.stopPropagation();clearSelection();openRecEditModal(rid);
-    });
-    row.addEventListener('contextmenu',e=>showCtx(e,virtId,true,rid));
-    row.draggable=true;
-    row.addEventListener('dragstart',e=>{
-      dragId='wrec::'+rid;e.dataTransfer.effectAllowed='move';
-      row.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);
-    });
-    row.addEventListener('dragend',e=>{
-      row.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false);
-    });
-    row.appendChild(nm);row.appendChild(del);if(elReg)elReg.appendChild(row);
+    row.appendChild(nm);
+    if(elReg)elReg.appendChild(row);
   });
   requestAnimationFrame(applySelHighlight);
+}
+
+// Toggle done for a wr_recurring_rule via the overrides table
+function togWrRule(ruleId,isDone,wkKey){
+  const existing=st.wrOverrides.find(o=>String(o.rule_id)===String(ruleId)&&o.wk_key===wkKey&&o.override_type==='complete');
+  if(existing){
+    existing.done=isDone;
+    sbReqSilent('PATCH','wr_recurring_overrides',{done:isDone},`?id=eq.${existing.id}`);
+    pushUndo(()=>{existing.done=!isDone;sbReqSilent('PATCH','wr_recurring_overrides',{done:!isDone},`?id=eq.${existing.id}`);renderRecOv();},'Toggled WR task');
+  } else if(isDone){
+    const tmpId='wrov-tmp-'+Date.now();
+    const payload={rule_id:ruleId,wk_key:wkKey,override_type:'complete',done:true};
+    st.wrOverrides.push({...payload,id:tmpId});
+    let realId=null;
+    sbReqSilent('POST','wr_recurring_overrides',payload,'').then(res=>{
+      if(res&&res[0]){realId=String(res[0].id);const idx=st.wrOverrides.findIndex(o=>String(o.id)===tmpId);if(idx>-1)st.wrOverrides[idx]=res[0];save();}
+    });
+    pushUndo(()=>{
+      const id=realId||tmpId;
+      st.wrOverrides=st.wrOverrides.filter(o=>String(o.id)!==id);
+      if(realId)sbReqSilent('DELETE','wr_recurring_overrides',null,`?id=eq.${realId}`);
+      renderRecOv();
+    },'Toggled WR task');
+  }
+  save();renderRecOv();
 }
 
 // ── Unassigned badge ────────────────────────────────────────────────────────────
