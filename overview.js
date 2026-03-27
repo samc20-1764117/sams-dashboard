@@ -903,7 +903,16 @@ function renderRecOv(){
     row.className='ti'+(isDone?' done':'');
     row.style.cssText='cursor:pointer;break-inside:avoid';
     row.addEventListener('click',e=>selTask(e,selId));
-    row.addEventListener('dblclick',e=>{if(e.target.closest('button,label'))return;e.stopPropagation();clearSelection();openWrOccEditModal(rid,wkKey);});
+    row.addEventListener('dblclick',e=>{
+      if(e.target.closest('button,label'))return;
+      e.stopPropagation();clearSelection();
+      showWrScopePicker(e,
+        '✏️  Edit this week only',
+        '✏️  Edit rule (all future)',
+        ()=>openWrOccEditModal(rid,wkKey),
+        ()=>openWrRuleEditModal(rid)
+      );
+    });
     row.addEventListener('contextmenu',e=>showWrRuleCtx(e,rid,wkKey));
     if(isPup){
       row.appendChild(makePawEl(rid,isDone));
@@ -923,6 +932,19 @@ function renderRecOv(){
       nm.appendChild(tag);
     }
     row.appendChild(nm);
+    const del=document.createElement('button');
+    del.className='delbtn';del.textContent='✕';del.title='Remove…';
+    del.addEventListener('mousedown',e=>e.stopPropagation());
+    del.addEventListener('click',e=>{
+      e.stopPropagation();
+      showWrScopePicker(e,
+        '⊘  Skip this week only',
+        '✕  Delete rule (all future)',
+        ()=>writeWrOverride(rid,wkKey,{override_type:'skip'},{undoLabel:'Skipped WR task this week'}),
+        ()=>wrCtxDeleteRule(rid)
+      );
+    });
+    row.appendChild(del);
     if(elReg)elReg.appendChild(row);
   });
   requestAnimationFrame(applySelHighlight);
@@ -984,7 +1006,23 @@ function showWrRuleCtx(e,ruleId,wkKey){
 }
 function hideWrRuleCtx(){const m=document.getElementById('wrRuleCtxMenu');if(m)m.style.display='none';}
 document.addEventListener('mousedown',e=>{if(!e.target.closest('#wrRuleCtxMenu'))hideWrRuleCtx();},{capture:true,passive:true});
-document.addEventListener('keydown',e=>{if(e.key==='Escape')hideWrRuleCtx();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){hideWrRuleCtx();hideWrScopePicker();}});
+
+// ── Scope picker (Apple Calendar style: this week only / all future) ───────────
+let _wrScopeCbThis=null,_wrScopeCbAll=null;
+function showWrScopePicker(e,thisLabel,allLabel,onThis,onAll){
+  e.preventDefault();e.stopPropagation();
+  _wrScopeCbThis=onThis;_wrScopeCbAll=onAll;
+  document.getElementById('wrScopeThis').textContent=thisLabel;
+  document.getElementById('wrScopeAll').textContent=allLabel;
+  const m=document.getElementById('wrScopePicker');
+  const x=Math.min(e.clientX,window.innerWidth-180),y=Math.min(e.clientY,window.innerHeight-90);
+  m.style.left=x+'px';m.style.top=y+'px';m.style.display='block';
+}
+function hideWrScopePicker(){const m=document.getElementById('wrScopePicker');if(m)m.style.display='none';}
+function wrScopeDoThis(){hideWrScopePicker();if(_wrScopeCbThis)_wrScopeCbThis();}
+function wrScopeDoAll(){hideWrScopePicker();if(_wrScopeCbAll)_wrScopeCbAll();}
+document.addEventListener('mousedown',e=>{if(!e.target.closest('#wrScopePicker'))hideWrScopePicker();},{capture:true,passive:true});
 
 function wrCtxSkipThisWeek(){
   hideWrRuleCtx();if(!_wrCtxRuleId||!_wrCtxWkKey)return;
@@ -1008,16 +1046,16 @@ function wrCtxEditRule(){
   hideWrRuleCtx();if(!_wrCtxRuleId)return;
   openWrRuleEditModal(_wrCtxRuleId);
 }
-function wrCtxDeleteRule(){
-  hideWrRuleCtx();if(!_wrCtxRuleId)return;
-  const rule=st.wrRules.find(r=>String(r.id)===_wrCtxRuleId);if(!rule)return;
+function wrCtxDeleteRule(ruleId){
+  hideWrRuleCtx();
+  const rid=ruleId||_wrCtxRuleId;if(!rid)return;
+  const rule=st.wrRules.find(r=>String(r.id)===String(rid));if(!rule)return;
   const prevRule={...rule};
-  const removedOvs=st.wrOverrides.filter(o=>String(o.rule_id)===_wrCtxRuleId).map(o=>({...o}));
-  st.wrRules=st.wrRules.filter(r=>String(r.id)!==_wrCtxRuleId);
-  st.wrOverrides=st.wrOverrides.filter(o=>String(o.rule_id)!==_wrCtxRuleId);
-  sbReqSilent('DELETE','wr_recurring_rules',null,`?id=eq.${_wrCtxRuleId}`);
+  const sRid=String(rid);
+  st.wrRules=st.wrRules.filter(r=>String(r.id)!==sRid);
+  st.wrOverrides=st.wrOverrides.filter(o=>String(o.rule_id)!==sRid);
+  sbReqSilent('DELETE','wr_recurring_rules',null,`?id=eq.${sRid}`);
   save();renderRecOv();
-  const deletedId=_wrCtxRuleId;
   pushUndo(async()=>{
     const sv=await sbReqSilent('POST','wr_recurring_rules',{name:prevRule.name,cadence:prevRule.cadence,day_of_week:prevRule.day_of_week,anchor_date:prevRule.anchor_date,monthly_rule_type:prevRule.monthly_rule_type,monthly_nth:prevRule.monthly_nth,monthly_weekday:prevRule.monthly_weekday,monthly_date:prevRule.monthly_date,pup_related:prevRule.pup_related,notes:prevRule.notes,is_enabled:prevRule.is_enabled,sort_order:prevRule.sort_order},'');
     if(sv&&sv[0])st.wrRules.push(sv[0]);else st.wrRules.push(prevRule);
@@ -1052,14 +1090,12 @@ function updateWrRuleCadenceUI(px){
   const isWeekly=cadence==='weekly'||cadence==='biweekly';
   const isBi=cadence==='biweekly';
   const isMo=cadence==='monthly';
-  document.getElementById(px+'DowField').style.display=isWeekly?'':'none';
-  document.getElementById(px+'AnchorField').style.display=isBi?'':'none';
-  document.getElementById(px+'MonthlyField').style.display=isMo?'':'none';
-  if(isMo){
-    const mode=[...document.querySelectorAll(`input[name="${px}MonthlyMode"]`)].find(r=>r.checked)?.value||'nth_weekday';
-    document.getElementById(px+'NwdField').style.display=mode==='nth_weekday'?'':'none';
-    document.getElementById(px+'DomField').style.display=mode==='date_of_month'?'':'none';
-  }
+  document.getElementById(px+'DowField').style.display=isWeekly?'block':'none';
+  document.getElementById(px+'AnchorField').style.display=isBi?'block':'none';
+  document.getElementById(px+'MonthlyField').style.display=isMo?'block':'none';
+  const mode=[...document.querySelectorAll(`input[name="${px}MonthlyMode"]`)].find(r=>r.checked)?.value||'nth_weekday';
+  document.getElementById(px+'NwdField').style.display=isMo&&mode==='nth_weekday'?'block':'none';
+  document.getElementById(px+'DomField').style.display=isMo&&mode==='date_of_month'?'block':'none';
 }
 
 // Read cadence-related fields from modal, return partial rule payload

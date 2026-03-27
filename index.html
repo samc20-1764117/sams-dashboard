@@ -65,7 +65,7 @@ body.dark .kol{background:rgba(255,255,255,.03);}
 body.dark .kol-item{background:rgba(255,255,255,.04);}
 body.dark .kol-item:hover{background:rgba(255,255,255,.08);}
 body.dark .sync-bar{background:rgba(255,255,255,.08);}
-body.dark #ctxMenu,body.dark #pupCtxMenu,body.dark #bdayCtxMenu,body.dark #wrRuleCtxMenu{background:rgba(20,18,35,.98);}
+body.dark #ctxMenu,body.dark #pupCtxMenu,body.dark #bdayCtxMenu,body.dark #wrRuleCtxMenu,body.dark #wrScopePicker{background:rgba(20,18,35,.98);}
 body.dark .ctx-item:hover{background:rgba(255,255,255,.08);}
 body.dark .wkc-chip{filter:brightness(.85);}
 body.dark .chk{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.2);}
@@ -1364,6 +1364,11 @@ body.dark .bday-add-menu{background:rgba(38,20,10,.97);border-color:rgba(255,220
   <div id="ctxEdit" class="ctx-item" onclick="ctxDoEdit()">✏️  Edit task</div>
   <div class="ctx-divider"></div>
   <div id="ctxDelete" class="ctx-item ctx-danger" onclick="ctxDoDelete()">✕  Delete task</div>
+</div>
+<!-- WR scope picker — shared for X (skip/delete) and dblclick (edit) -->
+<div id="wrScopePicker" style="display:none;position:fixed;z-index:10000;background:rgba(255,255,255,.98);border:1px solid rgba(210,205,228,.4);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);padding:4px;min-width:170px;backdrop-filter:blur(12px)">
+  <div id="wrScopeThis" class="ctx-item" onclick="wrScopeDoThis()"></div>
+  <div id="wrScopeAll" class="ctx-item" onclick="wrScopeDoAll()"></div>
 </div>
 <!-- WR Rule context menu (Apple Calendar-style: this week vs all future) -->
 <div id="wrRuleCtxMenu" style="display:none;position:fixed;z-index:9999;background:rgba(255,255,255,.98);border:1px solid rgba(210,205,228,.4);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);padding:4px;min-width:175px;backdrop-filter:blur(12px)">
