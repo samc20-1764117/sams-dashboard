@@ -53,14 +53,7 @@ async function submitQA(){
     if(sv&&sv[0]){const i=st.shopping.findIndex(x=>x.id===s.id);if(i>-1)st.shopping[i]=sv[0];shopServerId=String(sv[0].id);save();}
     return;
   }
-  if(qaCtx==='rec'){
-    const localRecId='rec-tmp-'+Date.now();
-    const r={id:localRecId,name:n,is_weekly_reset:true,cadence:'weekly',_doneByWk:{},_done:false,_dateOverrides:{}};
-    st.recurring.push(r);save();renderRecOv();
-    const sv=await sbReq('POST','recurring_tasks',{name:n,is_weekly_reset:true,cadence:'weekly'});
-    if(sv&&sv[0]){const i=st.recurring.findIndex(x=>x.id===localRecId);if(i>-1)st.recurring[i]={...sv[0],_doneByWk:{},_done:false,_dateOverrides:{}};save();renderRecOv();}
-    return;
-  }
+  if(qaCtx==='rec'){openWrRuleAddModal();return;}
   const cat=document.getElementById('qaCat')?.value||'Home';
   const due=document.getElementById('qaDue')?.value||null;
   const imp=document.getElementById('qaImp')?.checked||false;
@@ -226,10 +219,11 @@ function renderWeeklyPage(){
   renderRecurringPage();
   // Keep hidden compat elements in sync
   const wkKey=getWkKey(wkOff);
-  const items=st.recurring.filter(r=>r.is_weekly_reset===true||r.is_weekly_reset==='true');
-  const done=items.filter(r=>!!(r._doneByWk&&r._doneByWk[wkKey])).length;
-  const pct=items.length?Math.round(done/items.length*100):0;
-  const elPL=document.getElementById('wrPL');if(elPL)elPL.textContent=done+'/'+items.length;
+  const dueRules=(st.wrRules||[]).filter(r=>r.is_enabled!==false&&isWRRuleDueThisWeek(r,wkOff));
+  const doneCount=dueRules.filter(r=>(st.wrOverrides||[]).some(o=>String(o.rule_id)===String(r.id)&&o.wk_key===wkKey&&o.override_type==='complete'&&o.done)).length;
+  const total=dueRules.length;
+  const pct=total?Math.round(doneCount/total*100):0;
+  const elPL=document.getElementById('wrPL');if(elPL)elPL.textContent=doneCount+'/'+total;
   const elPct=document.getElementById('wrPct2');if(elPct)elPct.textContent=pct+'%';
   const elBar=document.getElementById('wrBar');if(elBar)elBar.style.width=pct+'%';
 }
@@ -241,7 +235,7 @@ function renderRecurringPage(){
     const isOther=cad==='other';
     const wrRules=(st.wrRules||[]).filter(r=>isOther?!KNOWN.includes(r.cadence):r.cadence===cad);
     renderRtWrGroup('rt-wr-'+cad, wrRules, cad);
-    renderRtGroup('rt-sch-'+cad, isOther?schTasks.filter(r=>!KNOWN.includes(r.cadence)):schTasks.filter(r=>r.cadence===cad), false, cad);
+    renderRtGroup('rt-sch-'+cad, isOther?schTasks.filter(r=>!KNOWN.includes(r.cadence)):schTasks.filter(r=>r.cadence===cad), cad);
   });
 }
 
@@ -320,36 +314,21 @@ function delWrRule(rid){
   },'Deleted WR rule');
 }
 
-function renderRtGroup(containerId, tasks, isWr, cadence){
+function renderRtGroup(containerId, tasks, cadence){
   const el=document.getElementById(containerId);if(!el)return;
-  const wkKey=getWkKey(wkOff);
   const cadLabel={weekly:'Weekly',biweekly:'Biweekly',monthly:'Monthly',other:'Other'}[cadence]||cadence;
-  const thead=isWr
-    ?`<tr><th style="width:120px;text-align:left">Name</th><th style="width:36px">Pup</th><th style="width:96px;text-align:center">Adds On</th><th style="width:96px;text-align:center">Due On</th><th style="width:84px;text-align:right">Starting</th><th style="width:40px"></th></tr>`
-    :`<tr><th style="width:120px;text-align:left">Name</th><th style="width:96px;text-align:center">Adds On</th><th style="width:96px;text-align:center">Due On</th><th style="width:84px;text-align:right">Starting</th><th style="width:40px"></th></tr>`;
+  const thead=`<tr><th style="width:120px;text-align:left">Name</th><th style="width:96px;text-align:center">Adds On</th><th style="width:96px;text-align:center">Due On</th><th style="width:84px;text-align:right">Starting</th><th style="width:40px"></th></tr>`;
   let tbody='';
   tasks.forEach(r=>{
     const rid=String(r.id);
-    const isDone=isWr&&!!(r._doneByWk&&r._doneByWk[wkKey]);
     const virtId='rec-virt-'+rid;
     const esc=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-    const isPup=r.pup_related===true||r.pup_related==='true';
-    let tds='';
-    if(isWr){
-      tds=`<td class="rt-editable">${esc(r.name)}</td>
-        <td data-pup="1" style="text-align:center;cursor:pointer;font-size:13px" onclick="event.stopPropagation();rtTogglePup('${rid}')" ondblclick="event.stopPropagation()" title="Toggle pup related">${isPup?'🐾':''}</td>
-        <td class="rt-editable rt-meta" style="text-align:center" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','day_added')">${r.day_added||'—'}</td>
-        <td class="rt-editable rt-meta" style="text-align:center" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','appears_on_date')">${r.appears_on_date||'—'}</td>
-        <td class="rt-editable rt-meta" style="text-align:right" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','starting_date')">${r.starting_date?fmtD(r.starting_date):'—'}</td>`;
-    } else {
-      const dayField='appears_on_date';
-      const dayDisp=r.appears_on_date||'—';
-      tds=`<td class="rt-editable">${esc(r.name)}</td>
-        <td class="rt-editable rt-meta" style="text-align:center" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','day_added')">${r.day_added||'—'}</td>
-        <td class="rt-editable rt-meta" style="text-align:center" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','${dayField}')">${dayDisp}</td>
-        <td class="rt-editable rt-meta" style="text-align:right" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','starting_date')">${r.starting_date?fmtD(r.starting_date):'—'}</td>`;
-    }
-    tbody+=`<tr class="rt-row${isDone?' done':''}" id="ti-rt-${rid}" onclick="selTask(event,'${virtId}')" ondblclick="if(!event.target.closest('[data-pup]')&&!event.target.closest('.delbtn')&&!event.target.closest('.btn-xs')){event.stopPropagation();openRecEditModal('${rid}');}" oncontextmenu="showCtx(event,'${virtId}',true,'${rid}')">
+    const dayDisp=r.appears_on_date||'—';
+    const tds=`<td class="rt-editable">${esc(r.name)}</td>
+      <td class="rt-editable rt-meta" style="text-align:center" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','day_added')">${r.day_added||'—'}</td>
+      <td class="rt-editable rt-meta" style="text-align:center" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','appears_on_date')">${dayDisp}</td>
+      <td class="rt-editable rt-meta" style="text-align:right" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','starting_date')">${r.starting_date?fmtD(r.starting_date):'—'}</td>`;
+    tbody+=`<tr class="rt-row" id="ti-rt-${rid}" onclick="selTask(event,'${virtId}')" ondblclick="if(!event.target.closest('.delbtn')&&!event.target.closest('.btn-xs')){event.stopPropagation();openRecEditModal('${rid}');}" oncontextmenu="showCtx(event,'${virtId}',true,'${rid}')">
       ${tds}
       <td onclick="event.stopPropagation()" ondblclick="event.stopPropagation()"><button class="btn btn-xs btn-ghost" style="padding:1px 5px;font-size:10px;opacity:.55" onclick="duplicateRecDirect('${rid}')" title="Duplicate">⧉</button><button class="delbtn" onclick="delRec('${rid}')">✕</button></td>
     </tr>`;
@@ -360,7 +339,7 @@ function renderRtGroup(containerId, tasks, isWr, cadence){
   el.innerHTML=`<div class="card" style="padding:8px 12px;box-shadow:none">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;padding:0 2px">
       <span style="font-size:12px;font-weight:800;color:var(--text)">${cadLabel}${tasks.length?' <span style="opacity:.45;font-weight:400;font-size:11px">· '+tasks.length+'</span>':''}</span>
-      <button class="btn-plus" style="padding:0px 5px;font-size:10px;line-height:1.4" onclick="openRecModalForSection('${isWr?'weekly_reset':'scheduled'}','${cadence}')">+</button>
+      <button class="btn-plus" style="padding:0px 5px;font-size:10px;line-height:1.4" onclick="openRecModalForSection('scheduled','${cadence}')">+</button>
     </div>
     ${tableHtml}
   </div>`;
@@ -420,6 +399,7 @@ function rtTogglePup(rid){
 }
 
 function openRecModalForSection(type, cadence){
+  if(type==='weekly_reset'){openWrRuleAddModal();return;}
   openRecModal(type);
   if(cadence&&cadence!=='other'){
     document.getElementById('recCadence').value=cadence;
@@ -427,23 +407,19 @@ function openRecModalForSection(type, cadence){
   }
 }
 
-async function addRecDirect(inputEl, isWr, cadence){
+async function addRecDirect(inputEl, cadence){
   const n=inputEl.value.trim();if(!n)return;
   inputEl.value='';
   const containerId=inputEl.id.replace(/^qa-/,'');
   const dayEl=document.getElementById('qa-day-'+containerId);
-  const pupEl=document.getElementById('qa-pup-'+containerId);
-  const pupRelated=isWr&&!!(pupEl&&pupEl.checked);
-  if(pupEl)pupEl.checked=false;
   const useCadence=cadence==='other'?'weekly':cadence;
   const appearsOn=cadence==='monthly'?(dayEl?dayEl.value:'1'):(cadence==='other'?'Friday':(dayEl?dayEl.value:'Friday'));
   const localId='rec-tmp-'+Date.now();
-  const r={id:localId,name:n,is_weekly_reset:isWr,appears_on_date:appearsOn,day_added:'Previous Sunday',starting_date:d2s(new Date()),cadence:useCadence,pup_related:pupRelated,_doneByWk:{},_done:false,_dateOverrides:{}};
-  st.recurring.push(r);save();renderRecOv();renderWeeklyPage();renderWkSummary();renderWkCal();
+  const r={id:localId,name:n,is_weekly_reset:false,appears_on_date:appearsOn,day_added:'Previous Sunday',starting_date:d2s(new Date()),cadence:useCadence,_doneByWk:{},_done:false,_dateOverrides:{}};
+  st.recurring.push(r);save();renderWeeklyPage();renderWkSummary();renderWkCal();
   let serverId=null;
-  pushUndo(()=>{const rid=serverId||localId;st.recurring=st.recurring.filter(x=>String(x.id)!==String(rid));save();renderRecOv();renderWeeklyPage();renderWkSummary();renderWkCal();if(serverId)sbReq('DELETE','recurring_tasks',null,recQs(serverId));},'Added recurring task');
-  const payload={name:n,is_weekly_reset:isWr,cadence:useCadence,appears_on_date:appearsOn,starting_date:r.starting_date};
-  if(pupRelated)payload.pup_related=true;
+  pushUndo(()=>{const rid=serverId||localId;st.recurring=st.recurring.filter(x=>String(x.id)!==String(rid));save();renderWeeklyPage();renderWkSummary();renderWkCal();if(serverId)sbReq('DELETE','recurring_tasks',null,recQs(serverId));},'Added recurring task');
+  const payload={name:n,is_weekly_reset:false,cadence:useCadence,appears_on_date:appearsOn,starting_date:r.starting_date};
   const sv=await sbReq('POST','recurring_tasks',payload);
   if(sv&&sv[0]){
     const i=st.recurring.findIndex(x=>x.id===localId);
@@ -451,7 +427,7 @@ async function addRecDirect(inputEl, isWr, cadence){
     if(i>-1)st.recurring[i]=entry;
     else if(!st.recurring.some(x=>String(x.id)===String(sv[0].id)))st.recurring.push(entry);
     serverId=String(sv[0].id);
-    save();renderRecOv();renderWeeklyPage();renderWkSummary();renderWkCal();
+    save();renderWeeklyPage();renderWkSummary();renderWkCal();
   }
 }
 
@@ -530,16 +506,13 @@ async function delRec(id){
   // won't return it anyway. Only clear when undo is used (done inside undo fn above).
 }
 async function addRec(){
-  // legacy - now opens modal
-  openRecModal('weekly_reset');
+  openWrRuleAddModal();
 }
-function openRecModal(type='weekly_reset'){
-  document.getElementById('recMTitle').textContent = type==='weekly_reset' ? 'Add Weekly Reset Task' : 'Add Scheduled Recurring Task';
+function openRecModal(type='scheduled'){
+  if(type==='weekly_reset'){openWrRuleAddModal();return;}
+  document.getElementById('recMTitle').textContent='Add Scheduled Recurring Task';
   document.getElementById('recName').value='';
-  document.getElementById('recType').value=type;
-  document.getElementById('recCadence').value='weekly';
-  document.getElementById('recName').value='';
-  document.getElementById('recType').value=type;
+  document.getElementById('recType').value='scheduled';
   document.getElementById('recCadence').value='weekly';
   document.getElementById('recRepeatDay').value='Friday';
   document.getElementById('recDayAdded').value='Sunday';
@@ -569,7 +542,8 @@ function updateRecCadenceUI(){
 async function saveRecModal(){
   const n=document.getElementById('recName').value.trim();if(!n){closeMod('recModal');return;}
   const type=document.getElementById('recType').value;
-  const isWeekly=type==='weekly_reset';
+  if(type==='weekly_reset'){closeMod('recModal');openWrRuleAddModal();return;}
+  const isWeekly=false;
   const cadence=document.getElementById('recCadence').value;
   const isMonthly=cadence==='monthly';
   let appearsOn;

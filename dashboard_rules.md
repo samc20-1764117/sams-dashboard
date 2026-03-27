@@ -38,7 +38,7 @@ All files share global scope — no modules, no bundler.
 
 ### Interaction Patterns
 
-**Focus & Cursor** — cursor lands at end of text on every input open. Use `setSelectionRange(len,len)` in same `setTimeout`/`rAF` as `.focus()`. Never `.select()` on edit inputs (exception: filter/search inputs). Applies to all modals and inline edits.
+**Focus & Cursor** — cursor lands at end of text on every input open. Use `setSelectionRange(len,len)` in same `setTimeout`/`rAF` as `.focus()`. Never `.select()` on edit inputs (exception: filter/search inputs). Applies to all modals and inline edits — including WR edit modal (`openWrEditModal`) and add modal (`openWrRuleAddModal`).
 
 **Outside-Click Close** — all popups/panels that close on outside click:
 - Store handler at stable ref (e.g. `window._pageOutsideClick`), remove + re-register on every `renderPage()`.
@@ -48,7 +48,8 @@ All files share global scope — no modules, no bundler.
 
 **Modal Enter / Escape** — overlay `div` owns Enter/Escape. Individual inputs must NOT have save handlers (double-fire).
 - Default: overlay keydown handles Enter → save, Escape → `closeMod`.
-- Enter cancels if name empty: `if(!name){closeMod('id');return;}`.
+- Enter with empty name field: close modal without saving — `if(!name){closeMod('id');return;}`. Applies to all add and edit modals including `wrRuleAddModal`, `wrEditModal`.
+- Add modals: Enter on empty name = close (do not silently ignore). Edit modals: Enter on empty name = close (revert).
 - SELECT elements excluded from Enter-save on: recModal, recEditModal, pupModal, travelModal, recipeModal.
 - `travelModal`: `tvTravelMode` SELECT uses `setTimeout(saveTravelModal,0)`.
 - `bModal` exception: input `onkeydown` (not overlay).
@@ -99,8 +100,9 @@ All files share global scope — no modules, no bundler.
 | Prefix | Source | Delete action |
 |--------|--------|---------------|
 | `String(t.id)` | regular task | permanent delete |
-| `rec-virt-{id}` | recurring (WR or non-WR) | check `is_weekly_reset` first |
-| `wrec-{id}` | WR chip in weekly cal | unschedule only |
+| `wrrule-{id}` | WR recurring rule (new system) | skip this week (override) |
+| `rec-virt-{id}` | non-WR recurring (scheduled) | `skipRecVirtThisWk` |
+| `wrec-{id}` | legacy WR chip in weekly cal (old system) | unschedule only |
 | `shop-cal-{id}` | shopping chip | null `due_date` |
 | `tv-{id}` | travel banner | permanent delete |
 
@@ -109,25 +111,49 @@ All files share global scope — no modules, no bundler.
 
 ### UI
 - **Top-right controls** (`top:14px;right:20px;z-index:90`): Sync bar | Settings ⚙. Settings popup: Night Mode toggle + Backup Sync. Closes on outside click. `toggleDark()` → `body.dark`, persists in `cfg.dark`. Night mode only in settings popup.
-- **Local backup**: `backup.js` cron `0 8 * * *` → `backup_auto.json`. Manual: settings popup → `backup_manual.json`. Tables: tasks, recurring_tasks, shopping_list, travel, birthdays, pup_skills, time_blocks, auto_timeblocks, auto_timeblock_overrides.
+- **Local backup**: `backup.js` cron `0 8 * * *` → `backup_auto.json`. Manual: settings popup → `backup_manual.json`. Tables: tasks, recurring_tasks, shopping_list, travel, birthdays, pup_skills, time_blocks, auto_timeblocks, auto_timeblock_overrides, wr_recurring_rules, wr_recurring_overrides.
 
 ---
 
-## Recurring Task Logic
+## WR Recurring Rules System
 
-- **WR** (`is_weekly_reset=true`): scheduled via `_dateOverrides[wkKey]`=date. Remove via `unscheduleWRec`.
-- **Non-WR**: auto by cadence+`appears_on_date`. Built by `getRecurringWeekTasks(off)` → `{_recId,_virtual:true,_wkKey}` (`_isWrec` NOT set). Skip via `skipRecVirtThisWk` → `__skip__`.
-- `skipRecVirtThisWk`: sets `__skip__`, removes TBs, PATCHes, pushes undo. Calls renderWeeklyPage/renderToday/renderWkSummary/renderWkCal/renderDayTB. NOT renderRecOv. WR guard → redirects to `unscheduleWRec`.
+Tables: `wr_recurring_rules` (base definitions) + `wr_recurring_overrides` (per-week exceptions). State: `st.wrRules`, `st.wrOverrides`. Both fetched in `syncAll`.
+
+**`wr_recurring_rules`** fields: `id, name, cadence` (weekly/biweekly/monthly/other), `day_of_week` (0=Sun), `anchor_date` (DATE, biweekly cycle reference — any past Monday in the correct cycle), `monthly_rule_type` (nth_weekday/date_of_month), `monthly_nth` (-1=last), `monthly_weekday`, `monthly_date` (1–28), `pup_related`, `notes`, `is_enabled`, `sort_order`.
+
+**`wr_recurring_overrides`** fields: `id, rule_id, wk_key` (Monday YYYY-MM-DD), `override_type` (skip/move/edit/complete), `done`, `moved_to_wk_key`, `custom_name`, `custom_notes`. UNIQUE on `(rule_id, wk_key)`.
+
+**Schedule logic** (`isWRRuleDueThisWeek(rule, off)` in `core.js`):
+- weekly/other: always due
+- biweekly: `anchor_date` → compute week diff mod 2 → due if diff===0
+- monthly nth_weekday: `getNthWeekday(y,m,nth,weekday)` — if occurrence falls within Mon–Sun span of the target week
+- monthly date_of_month: same check for fixed date
+- Changes take effect immediately — re-anchor or rule change shows in current week if it now qualifies
+
+**Override upsert** (`writeWrOverride(ruleId, wkKey, payload, opts)` in `overview.js`): PATCH if override exists for `(ruleId, wkKey)`, POST new row if not. Nulls out unrelated fields to prevent stale data. All WR DB ops via `sbReqSilent`.
+
+**Done state**: `complete` override with `done=true`. Written by `togWrRule`. DELETEd when un-checking.
+
+**Edit modal** (`#wrEditModal`): unified scope toggle — "This week only" (custom name/notes + skip action) vs "All future" (full rule fields). Scope toggle hidden when opened without `wkKey` (recurring page always goes to all-future). Dblclick on WR card row → `openWrEditModal(rid, wkKey, 'this')`. Recurring page dblclick → `openWrEditModal(rid, null, 'all')`.
+
+**Add modal** (`#wrRuleAddModal`): `openWrRuleAddModal()` → `saveWrRuleAdd()`. Uses temp ID pattern (`wrrule-tmp-*`). All WR adds go through this modal — `addRec()`, QA bar 'rec' context, and recurring page `+` all redirect here.
+
+**Override indicator**: small colored dot right-aligned on row. Blue=moved, amber=edited. Only shown when value actually differs from base rule.
+
+---
+
+## Non-WR Recurring Task Logic
+
+- **Scheduled** (`is_weekly_reset=false`): auto by cadence+`appears_on_date`. Built by `getRecurringWeekTasks(off)` → `{_recId,_virtual:true,_wkKey}`. Skip via `skipRecVirtThisWk` → `__skip__`.
+- `skipRecVirtThisWk`: sets `__skip__`, removes TBs, PATCHes, pushes undo. Calls renderWeeklyPage/renderToday/renderWkSummary/renderWkCal/renderDayTB. NOT renderRecOv.
 - `syncAll`: preserve locally-pending `_dateOverrides` (incl. `__skip__`). Only replace `st.recurring` when non-null. After POST: `{...sv[0],_doneByWk:{},_done:false,_dateOverrides:{}}` + `save()`.
-- **renderToday overdue**: `for(w=0;w>=wkOff-4;w--)`. Cascading `__skip__` check. WR in `getOvRecurring` only at `w===0`, dedup key `'wrec-'+r.id+'-'+wkKey`.
-- **wrecToday**: `_wkKeyNow=getWkKey(wkOff)`. Shows WR where `_dateOverrides[_wkKeyNow]===ds` OR overdue at `dayOff===0`.
+- **renderToday overdue**: `for(w=0;w>=wkOff-4;w--)`. Cascading `__skip__` check.
+- **wrecToday** (legacy WR chips from old `recurring_tasks` system): `_wkKeyNow=getWkKey(wkOff)`. Shows where `_dateOverrides[_wkKeyNow]===ds`.
 - **wrecThisWk**: direct key lookup `r._dateOverrides[wkKey]` — NOT `Object.values()`.
-- **WR done**: `_doneByWk[getWkKey(wkOff)]`. Never `r._done`. `togRec` writes/deletes key, PATCHes `done_by_week`.
-- **Duplicate**: `uniqueRecName` appends ` (2)/(3)`. Local: `{...r,id:tempId,name:dupName,starting_date:today,_doneByWk:{},_done:false,_dateOverrides:{}}`. DB: `name,is_weekly_reset,cadence,starting_date:today`.
-- `pup_related`: boolean on `recurring_tasks` NOT NULL default false. `recModal` shows 🐾 only for `weekly_reset` type. Include in POST/PATCH when true.
-- `isWRecDueThisWeek(r,off)` and `getRecurringWeekTasks()` must stay in sync.
-- **Drag move to another day** (`rec::` in weekly cal): snapshot `savedBlocks` (copies of TB blocks for this recId on `origDate`) before calling `removeTBBlocksForDate`. Pass `oldDs:origDate` explicitly (not defaulting to today). Undo must: restore `_dateOverrides`, remove any blocks added on the new date, re-add `savedBlocks` via `sbSaveBlock`, then call `renderAll()` + `renderDayTB()`.
-- **`removeTBBlocksForDate` — `recId` branch**: must call `sbDeleteBlock(b.id)` for each removed block (same as `taskId` branch) before filtering `st.blocks`. Without this, old blocks persist on the server and are restored on next `syncAll`.
+- **Non-WR done**: `_doneByWk[getWkKey(wkOff)]`. `togRec` writes/deletes key, PATCHes `done_by_week`.
+- **Duplicate**: `uniqueRecName` appends ` (2)/(3)`. DB: `name,is_weekly_reset,cadence,starting_date:today`.
+- **Drag move to another day** (`rec::` in weekly cal): snapshot `savedBlocks` before `removeTBBlocksForDate`. Pass `oldDs:origDate` explicitly. Undo: restore `_dateOverrides`, remove new-date blocks, re-add `savedBlocks` via `sbSaveBlock`, then `renderAll()+renderDayTB()`.
+- **`removeTBBlocksForDate` — `recId` branch**: call `sbDeleteBlock(b.id)` before filtering `st.blocks`.
 
 ---
 
@@ -137,7 +163,7 @@ All files share global scope — no modules, no bundler.
 
 **Today List** — sort: done last → travel → overdue → important → type (regular=1,recurring=2,shopping=3,birthday=4) → name. No category bg (`noColor:true`). `_hasTBToday(t)`: `dayOff===0 && isOv(due_date) && !done` + linked block.
 
-**Weekly Reset filter** — `renderRecOv()` uses `isWRecDueThisWeek`. Sort: done last → cadence (weekly=0,biweekly=1,monthly=2,other=3) → pup-related last (order=10).
+**Weekly Reset filter** — `renderRecOv()` uses `isWRRuleDueThisWeek(rule, off)` on `st.wrRules`. Merges overrides (skip removes, move redirects, edit applies custom name, complete marks done). Sort: done last → cadence (weekly=0,biweekly=1,monthly=2,other=3) → pup-related last (order=10). Week nav via `wrRecOff` (independent of `wkOff`). Override dot indicator: blue=moved, amber=edited (only when value differs from base rule).
 
 **Unassigned badge** — `#unAssignedBadge` in `.wkc-foot`. Filter: `!due_date&&!done&&category!=='Long term'`. Popup `#unMenu`: fixed 300px, opens upward. Backdrop `#unMenuBack` (outside-click). `dEnd` restores backdrop. Visible only on overview page.
 
@@ -148,7 +174,11 @@ All files share global scope — no modules, no bundler.
 ---
 
 ### Recurring Tasks Page (`features.js`, `page-weekly`)
-Two-col grid: WR left, non-WR right. 4 cadence groups each: `#rt-wr-*/rt-sch-*`. `renderRecurringPage()` → `renderRtGroup(containerId,tasks,isWr,cadence)`. Quick-add: `addRecDirect`. WR quick-add has 🐾 checkbox (`id="qa-pup-{containerId}"`). "Other" saves as cadence `weekly`. `duplicateRecDirect`: `uniqueRecName`, POST, undo. Hidden compat elements: `#wrBar #wrPct2 #wrPL #wrList #shopFull #shopCountLbl #shopSortBtn #nsN #nsS`.
+Two-col grid: WR left (`#rt-wr-*`), non-WR right (`#rt-sch-*`). 4 cadence groups each.
+- **WR left**: `renderRtWrGroup(containerId, rules, cadence)` — reads `st.wrRules`. Columns: Name | 🐾 | Schedule. Dblclick → `openWrEditModal(rid, null, 'all')` (always edits base rule, no scope toggle). 🐾 toggle → `rtToggleWrPup` → PATCH `wr_recurring_rules`. Delete → `delWrRule` (with undo). `+` → `openWrRuleAddModal()`. Schedule display: `wrRuleScheduleStr(rule)` (e.g. "Mon", "Tue (biweekly)", "2nd Fri", "15th").
+- **Non-WR right**: `renderRtGroup(containerId, tasks, cadence)` — reads `st.recurring` (non-WR). Columns: Name | Adds On | Due On | Starting. Inline edit via `rtDblEdit`. `+` → `openRecModalForSection('scheduled', cadence)`. `duplicateRecDirect`: `uniqueRecName`, POST, undo.
+- **Stats bar** (`#wrPL`, `#wrPct2`, `#wrBar`): computed from `st.wrRules` due this week + `st.wrOverrides` with `override_type='complete'&&done=true`.
+- Hidden compat elements: `#wrBar #wrPct2 #wrPL #wrList #shopFull #shopCountLbl #shopSortBtn #nsN #nsS`.
 
 ---
 
