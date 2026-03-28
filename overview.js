@@ -1194,11 +1194,11 @@ function saveWrEditModal(){
 }
 
 // ── Add WR rule modal ─────────────────────────────────────────────────────────
-function openWrRuleAddModal(){
+function openWrRuleAddModal(cadence){
   _wrBuildSelects('wrAdd');
   document.getElementById('wrAddName').value='';
   document.getElementById('wrAddPup').checked=false;
-  document.getElementById('wrAddCadence').value='weekly';
+  document.getElementById('wrAddCadence').value=cadence||'weekly';
   document.getElementById('wrAddDow').value='1'; // Monday default
   document.getElementById('wrAddAnchor').value='';
   document.querySelectorAll('input[name="wrAddMonthlyMode"]').forEach((r,i)=>{r.checked=i===0;});

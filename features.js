@@ -284,7 +284,7 @@ function renderRtWrGroup(containerId, rules, cadence){
   el.innerHTML=`<div class="card" style="padding:8px 12px;box-shadow:none">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;padding:0 2px">
       <span style="font-size:12px;font-weight:800;color:var(--text)">${cadLabel}${rules.length?' <span style="opacity:.45;font-weight:400;font-size:11px">· '+rules.length+'</span>':''}</span>
-      <button class="btn-plus" style="padding:0px 5px;font-size:10px;line-height:1.4" onclick="openWrRuleAddModal()">+</button>
+      <button class="btn-plus" style="padding:0px 5px;font-size:10px;line-height:1.4" onclick="openWrRuleAddModal('${cadence}')">+</button>
     </div>
     ${tableHtml}
   </div>`;
@@ -399,7 +399,7 @@ function rtTogglePup(rid){
 }
 
 function openRecModalForSection(type, cadence){
-  if(type==='weekly_reset'){openWrRuleAddModal();return;}
+  if(type==='weekly_reset'){openWrRuleAddModal(cadence);return;}
   openRecModal(type);
   if(cadence&&cadence!=='other'){
     document.getElementById('recCadence').value=cadence;
