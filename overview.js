@@ -868,9 +868,6 @@ function renderRecOv(){
   const doneCount=items.filter(r=>isDoneWR(r.id)).length;
   const pct=items.length?Math.round(doneCount/items.length*100):0;
   const _rb=document.getElementById('recBadge');if(_rb)_rb.textContent=items.length-doneCount;
-  const _pl=document.getElementById('recPL');if(_pl)_pl.textContent=doneCount+'/'+items.length;
-  const _pct=document.getElementById('recPct2');if(_pct)_pct.textContent=pct+'%';
-  document.getElementById('recPB').style.width=pct+'%';
   const elReg=document.getElementById('recList');if(elReg)elReg.innerHTML='';
   function recOvOrder(r){
     if(r.pup_related===true||r.pup_related==='true')return 10;
