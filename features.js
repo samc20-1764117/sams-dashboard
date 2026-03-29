@@ -2004,7 +2004,7 @@ function selTask(e,id){
     // Collect ordered ids from whatever context we're in
     let ids=[];
     const wkcCol=e.currentTarget.closest('.wkc-col');
-    const moCal=e.currentTarget.closest('#mCells');
+    const moCal=e.currentTarget.closest('#mCells,#recMoCells');
     const list=e.currentTarget.closest('.tlist,.kol-body');
     if(wkcCol){
       // Weekly calendar: all chips in this column

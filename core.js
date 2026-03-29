@@ -789,6 +789,7 @@ document.addEventListener('keydown',e=>{
     else if(document.getElementById('recModal').classList.contains('open')){e.preventDefault();saveRecModal();}
     else if(document.getElementById('bModal').classList.contains('open')){e.preventDefault();saveBlock();}
     else if(document.getElementById('mModal').classList.contains('open')&&!document.querySelector('input:focus,textarea:focus')){e.preventDefault();closeMod('mModal');document.activeElement?.blur();}
+    else if(document.getElementById('recMoModal').classList.contains('open')&&!document.querySelector('input:focus,textarea:focus')&&!selectedTasks.size){e.preventDefault();closeMod('recMoModal');document.activeElement?.blur();}
   }
 });
 

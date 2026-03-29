@@ -844,25 +844,68 @@ function renderRecMoCal(){
   const startDow=(todayDate.getDay()+6)%7;
   const thisMonday=new Date(todayDate);thisMonday.setDate(todayDate.getDate()-startDow);
   const weekStart=new Date(thisMonday);weekStart.setDate(thisMonday.getDate()-PAST*7);
-  // Build day map: ds -> [{name, isPup, isWR, ruleId?, recId?}]
+  // dayMap: ds -> regular recurring items only
   const dayMap={};
   function addToDay(ds,item){if(!dayMap[ds])dayMap[ds]=[];dayMap[ds].push(item);}
+  // wrWeekMap: w (render index) -> WR rule items
+  const wrWeekMap={};
   for(let w=0;w<TOTAL;w++){
     const wkOff=w-PAST;
     const{mon}=getWkBounds(wkOff);
     const monDs=d2s(mon);
+    wrWeekMap[w]=[];
     st.wrRules.filter(r=>r.is_enabled&&isWRRuleDueThisWeek(r,wkOff)).forEach(r=>{
-      addToDay(monDs,{name:r.name,isPup:r.pup_related===true||r.pup_related==='true',isWR:true,ruleId:String(r.id)});
+      wrWeekMap[w].push({name:r.name,isPup:r.pup_related===true||r.pup_related==='true',isWR:true,ruleId:String(r.id),wkKey:monDs});
     });
     getRecurringWeekTasks(wkOff).forEach(t=>{
       const r=st.recurring.find(x=>String(x.id)===String(t._recId));
       addToDay(t.due_date,{name:t.name,isPup:r&&(r.pup_related===true||r.pup_related==='true'),isWR:false,recId:String(t._recId)});
     });
   }
+  // DOW header: 7 days + WR column
   const dowEl=document.getElementById('recMoDow');
-  if(!dowEl.children.length)['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach(dn=>{const el=document.createElement('div');el.className='mdowl';el.textContent=dn;dowEl.appendChild(el);});
+  if(!dowEl.children.length){
+    ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach(dn=>{const el=document.createElement('div');el.className='mdowl';el.textContent=dn;dowEl.appendChild(el);});
+    const wrHdr=document.createElement('div');wrHdr.className='mdowl';wrHdr.textContent='Weekly Reset';wrHdr.style.cssText='color:#3b82f6;border-left:1px solid rgba(59,130,246,.2);padding-left:4px';dowEl.appendChild(wrHdr);
+  }
   const cells=document.getElementById('recMoCells');cells.innerHTML='';
   let curMo=-1;
+  function makeChip(item,ds){
+    const isWR=item.isWR;
+    const s=gc(isWR?'weekly_reset':'Recurring');
+    const chip=document.createElement('div');chip.className='mcell-t';
+    const tid=isWR?'wrrule-'+item.ruleId:'rec-virt-'+item.recId;
+    chip.dataset.tid=tid;
+    chip.style.cssText=`background:${s.bg};color:${s.t};border-color:${s.b};cursor:pointer`;
+    chip.innerHTML=`<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${item.isPup?'🐾 ':''}${escHtml(item.name)}</span>`;
+    // X button
+    const dx=document.createElement('button');dx.className='chip-del';dx.textContent='✕';
+    dx.addEventListener('click',e=>{
+      e.stopPropagation();
+      if(isWR){
+        const wkKey=item.wkKey||dsToWkKey(ds);
+        showWrScopePicker(e,'⊘  Skip this week only','✕  Delete rule (all future)',
+          ()=>writeWrOverride(item.ruleId,wkKey,{override_type:'skip'},{undoLabel:'Skipped WR task this week'}),
+          ()=>wrCtxDeleteRule(item.ruleId));
+      } else {
+        const r=st.recurring.find(x=>String(x.id)===item.recId);if(!r)return;
+        const wkKey=dsToWkKey(ds);
+        showWrScopePicker(e,'⊘  Skip this week only','✕  Delete recurring task',
+          ()=>{if(!r._dateOverrides)r._dateOverrides={};const prev=r._dateOverrides[wkKey];r._dateOverrides[wkKey]='__skip__';save();renderAll();renderRecMoCal();sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},recQs(r.id));pushUndo(()=>{if(prev!==undefined)r._dateOverrides[wkKey]=prev;else delete r._dateOverrides[wkKey];save();renderAll();renderRecMoCal();sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},recQs(r.id));},'Skipped recurring this week');},
+          ()=>delRec(item.recId));
+      }
+    });
+    chip.appendChild(dx);
+    // Click to select
+    chip.addEventListener('click',e=>{if(e.target.closest('.chip-del'))return;selTask(e,tid);});
+    // Double-click to edit
+    chip.addEventListener('dblclick',e=>{
+      e.stopPropagation();
+      if(isWR){const wkKey=item.wkKey||dsToWkKey(ds);openWrEditModal(item.ruleId,wkKey,'all');}
+      else tiDblRec(e,item.recId);
+    });
+    return chip;
+  }
   for(let w=0;w<TOTAL;w++){
     const wkMon=new Date(weekStart);wkMon.setDate(weekStart.getDate()+w*7);
     const mo=wkMon.getMonth();
@@ -881,46 +924,17 @@ function renderRecMoCal(){
       const dn=document.createElement('div');dn.className='mcell-n';dn.textContent=date.getDate();
       hdr.appendChild(dn);cell.appendChild(hdr);
       const body=document.createElement('div');body.className='mcell-body';cell.appendChild(body);
-      (dayMap[ds]||[]).forEach(item=>{
-        const s=gc('Recurring');
-        const chip=document.createElement('div');chip.className='mcell-t';
-        chip.style.cssText=`background:${s.bg};color:${s.t};border-color:${s.b};cursor:pointer`;
-        chip.innerHTML=`<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${item.isPup?'🐾 ':''}${escHtml(item.name)}</span>`;
-        // X button
-        const dx=document.createElement('button');dx.className='chip-del';dx.textContent='✕';
-        dx.addEventListener('click',e=>{
-          e.stopPropagation();
-          if(item.isWR){
-            const wkKey=dsToWkKey(ds);
-            showWrScopePicker(e,
-              '⊘  Skip this week only',
-              '✕  Delete rule (all future)',
-              ()=>writeWrOverride(item.ruleId,wkKey,{override_type:'skip'},{undoLabel:'Skipped WR task this week'}),
-              ()=>wrCtxDeleteRule(item.ruleId)
-            );
-          } else {
-            const r=st.recurring.find(x=>String(x.id)===item.recId);
-            if(!r)return;
-            const wkKey=dsToWkKey(ds);
-            showWrScopePicker(e,
-              '⊘  Skip this week only',
-              '✕  Delete recurring task',
-              ()=>{if(!r._dateOverrides)r._dateOverrides={};const prev=r._dateOverrides[wkKey];r._dateOverrides[wkKey]='__skip__';save();renderAll();renderRecMoCal();sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},recQs(r.id));pushUndo(()=>{if(prev!==undefined)r._dateOverrides[wkKey]=prev;else delete r._dateOverrides[wkKey];save();renderAll();renderRecMoCal();sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},recQs(r.id));},'Skipped recurring this week');},
-              ()=>delRec(item.recId)
-            );
-          }
-        });
-        chip.appendChild(dx);
-        // Double-click to edit
-        chip.addEventListener('dblclick',e=>{
-          e.stopPropagation();
-          if(item.isWR){const wkKey=dsToWkKey(ds);openWrEditModal(item.ruleId,wkKey,'all');}
-          else tiDblRec(e,item.recId);
-        });
-        body.appendChild(chip);
-      });
+      (dayMap[ds]||[]).forEach(item=>body.appendChild(makeChip(item,ds)));
       cells.appendChild(cell);
     }
+    // 8th column: WR tasks for this week
+    const wrCell=document.createElement('div');
+    wrCell.className='mcell';
+    wrCell.style.cssText='background:rgba(239,246,255,.4);border-color:rgba(59,130,246,.18);border-left-width:2px';
+    const wrBody=document.createElement('div');wrBody.className='mcell-body';
+    (wrWeekMap[w]||[]).forEach(item=>wrBody.appendChild(makeChip(item,d2s(wkMon))));
+    wrCell.appendChild(wrBody);
+    cells.appendChild(wrCell);
   }
 }
 
