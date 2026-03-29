@@ -853,7 +853,10 @@ function renderRecMoCal(){
     const monDs=d2s(mon);
     wrWeekMap[w]=[];
     st.wrRules.filter(r=>r.is_enabled&&isWRRuleDueThisWeek(r,wkOff)).forEach(r=>{
-      wrWeekMap[w].push({name:r.name,isPup:r.pup_related===true||r.pup_related==='true',isWR:true,ruleId:String(r.id),wkKey:monDs});
+      const editOv=st.wrOverrides.find(o=>o.override_type==='edit'&&String(o.rule_id)===String(r.id)&&o.wk_key===monDs);
+      const displayName=(editOv&&editOv.custom_name)||r.name;
+      const edited=!!(editOv&&(editOv.custom_name||editOv.custom_notes));
+      wrWeekMap[w].push({name:displayName,isPup:r.pup_related===true||r.pup_related==='true',isWR:true,ruleId:String(r.id),wkKey:monDs,edited});
     });
     getRecurringWeekTasks(wkOff).forEach(t=>{
       const r=st.recurring.find(x=>String(x.id)===String(t._recId));
@@ -891,11 +894,11 @@ function renderRecMoCal(){
     // Name
     const nm=document.createElement('span');nm.style.cssText=`flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap${isDone?';text-decoration:line-through':''}`;
     nm.textContent=(item.isPup?'🐾 ':'')+item.name;chip.appendChild(nm);
-    // Moved-this-week indicator dot for regular recurring
-    if(!isWR&&item.moved){
+    // Indicator dot: moved (regular) or edited (WR)
+    if((isWR&&item.edited)||(!isWR&&item.moved)){
       const dot=document.createElement('span');
-      dot.style.cssText='width:5px;height:5px;border-radius:50%;flex-shrink:0;margin-left:2px;background:#aaa;box-shadow:0 0 0 1px rgba(0,0,0,.15)';
-      dot.title='Moved this week only';chip.appendChild(dot);
+      dot.style.cssText=`width:5px;height:5px;border-radius:50%;flex-shrink:0;margin-left:2px;background:${s.d};box-shadow:0 0 0 1px rgba(0,0,0,.15)`;
+      dot.title=isWR?'Edited this week only':'Moved this week only';chip.appendChild(dot);
     }
     // X button
     const dx=document.createElement('button');dx.className='chip-del';dx.textContent='✕';
