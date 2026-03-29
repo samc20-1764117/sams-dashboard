@@ -160,7 +160,7 @@ function tRowTodayVirt(t,tbArrow=false,noColor=false){
     <span class="tn">${t.name}</span>
     <span class="cpill" style="background:${ps.bg};color:${ps.t};border-color:${ps.b}">Recurring</span>
     ${tbArrow?'<span class="tb-arrow">›</span>':''}
-    <button class="delbtn" onclick="event.stopPropagation();${t._isWrec?`unscheduleWRec('${t._recId}','${t._wkKey||getWkKey(wkOff)}')`:`skipRecVirtThisWk('${t._recId}','${t._wkKey||getWkKey(wkOff)}')`}">✕</button>
+    <button class="delbtn" onclick="event.stopPropagation();${t._isWrec?`showWrXPicker(event,'${t._recId}','${t._wkKey||getWkKey(wkOff)}')`:`skipRecVirtThisWk('${t._recId}','${t._wkKey||getWkKey(wkOff)}')`}">✕</button>
   </div>`;
 }
 
@@ -567,11 +567,7 @@ function renderWkCal(){
             sbReqNullable('PATCH','shopping_list',{due_date:null},`?id=eq.${s.id}`);
             pushUndo(()=>{s.due_date=prev;save();renderAll();renderWkCal();sbReqNullable('PATCH','shopping_list',{due_date:prev||null},`?id=eq.${s.id}`);},'Removed from calendar');}
         } else if(t._isWrec){
-          const r=st.recurring.find(x=>String(x.id)===String(t._recId));
-          if(r&&r._dateOverrides){const wkKey=getWkKey(wkOff);const prev=r._dateOverrides[wkKey];
-            delete r._dateOverrides[wkKey];save();renderAll();renderWkCal();
-            sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},recQs(r.id));
-            pushUndo(()=>{if(!r._dateOverrides)r._dateOverrides={};r._dateOverrides[wkKey]=prev;save();renderAll();renderWkCal();sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},recQs(r.id));},'Removed from calendar');}
+          showWrXPicker(e2,String(t._recId),getWkKey(wkOff));
         } else if(t._virtual){skipRecVirtThisWk(t._recId,t._wkKey||getWkKey(wkOff));}
         else{delTask(t.id,e2);}
       });
@@ -1070,6 +1066,9 @@ function renderRecOv(){
     row.id='ti-'+selId;
     row.className='ti'+(isDone?' done':'');
     row.style.cssText='cursor:pointer;break-inside:avoid';
+    row.draggable=true;
+    row.addEventListener('dragstart',e=>{e.stopPropagation();dragId='wrec::'+rid;e.dataTransfer.effectAllowed='move';row.style.opacity='.4';document.body.classList.add('body-dragging');showWkcEdges(true);});
+    row.addEventListener('dragend',()=>{row.style.opacity='1';document.body.classList.remove('body-dragging');showWkcEdges(false);dragId=null;});
     row.addEventListener('click',e=>selTask(e,selId));
     row.addEventListener('dblclick',e=>{
       if(e.target.closest('button,label'))return;
@@ -1188,6 +1187,14 @@ function hideWrScopePicker(){const m=document.getElementById('wrScopePicker');if
 function wrScopeDoThis(){hideWrScopePicker();if(_wrScopeCbThis)_wrScopeCbThis();}
 function wrScopeDoAll(){hideWrScopePicker();if(_wrScopeCbAll)_wrScopeCbAll();}
 document.addEventListener('mousedown',e=>{if(!e.target.closest('#wrScopePicker'))hideWrScopePicker();},{capture:true,passive:true});
+
+// X button on WR chips/rows outside the WR overlay: skip this week (+ clear date override) or delete rule
+function showWrXPicker(e,rid,wkKey){
+  showWrScopePicker(e,'⊘  Skip this week only','✕  Delete rule (all future)',
+    ()=>{unscheduleWRec(rid,wkKey);writeWrOverride(rid,wkKey,{override_type:'skip'},{undoLabel:'Skipped WR task this week'});},
+    ()=>wrCtxDeleteRule(rid)
+  );
+}
 
 function wrCtxSkipThisWeek(){
   hideWrRuleCtx();if(!_wrCtxRuleId||!_wrCtxWkKey)return;
@@ -1488,6 +1495,9 @@ function renderShopOv(){
   shopSorted.forEach(s=>{
     const el=document.createElement('div');
     el.className='ti';el.id='ti-shop-cal-'+s.id;
+    el.draggable=true;
+    el.addEventListener('dragstart',e=>{if(e.target.closest('.chk-wrap,.delbtn'))return;e.stopPropagation();dragId='shop::'+s.id;e.dataTransfer.effectAllowed='move';el.style.opacity='.4';document.body.classList.add('body-dragging');showWkcEdges(true);});
+    el.addEventListener('dragend',()=>{el.style.opacity='';document.body.classList.remove('body-dragging');showWkcEdges(false);dragId=null;});
     el.innerHTML=
       `<label class="chk-wrap"><input type="checkbox" class="chk"${s.done?' checked':''}></label>`+
       `<span class="tn">${escHtml(s.name)}</span>`+
@@ -1555,7 +1565,7 @@ function tRowWk(t){
       <span class="tn">${t.name}</span>
       <span class="cpill" style="background:${s.bg};color:${s.t};border-color:${s.b}">Recurring</span>
       <span class="dlbl">${fmtD(t.due_date)}</span>
-      <button class="delbtn" onclick="event.stopPropagation();${t._isWrec?`unscheduleWRec('${t._recId}','${t._wkKey||getWkKey(wkOff)}')`:`skipRecVirtThisWk('${t._recId}','${t._wkKey||getWkKey(wkOff)}')`}">✕</button>
+      <button class="delbtn" onclick="event.stopPropagation();${t._isWrec?`showWrXPicker(event,'${t._recId}','${t._wkKey||getWkKey(wkOff)}')`:`skipRecVirtThisWk('${t._recId}','${t._wkKey||getWkKey(wkOff)}')`}">✕</button>
     </div>`;
   }
   return tRow(t,{cat:true,due:true,drag:true});
