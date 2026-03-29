@@ -824,11 +824,10 @@ body.dark .bday-add-menu{background:rgba(38,20,10,.97);border-color:rgba(255,220
     <!-- Weekly Reset -->
     <div class="card">
       <div class="ch-prog">
-        <div class="ct">Weekly Reset</div>
         <button class="btn btn-ghost btn-xs" onclick="shiftWrRec(-1)">←</button>
         <span id="wrRecWkLbl" style="flex:1;text-align:center;font-size:10px;color:var(--muted)"></span>
-        <button class="btn btn-ghost btn-xs" onclick="shiftWrRec(1)">→</button>
         <button class="btn-plus" onclick="openWrRuleAddModal()">+</button>
+        <button class="btn btn-ghost btn-xs" onclick="shiftWrRec(1)">→</button>
       </div>
       <div class="tlist" id="recList" style="flex:1;columns:2;column-gap:2px;overflow-y:auto"></div>
       <div style="display:none" id="recListPup"></div>
