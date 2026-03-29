@@ -844,10 +844,8 @@ function renderRecMoCal(){
   const startDow=(todayDate.getDay()+6)%7;
   const thisMonday=new Date(todayDate);thisMonday.setDate(todayDate.getDate()-startDow);
   const weekStart=new Date(thisMonday);weekStart.setDate(thisMonday.getDate()-PAST*7);
-  // dayMap: ds -> regular recurring items only
   const dayMap={};
   function addToDay(ds,item){if(!dayMap[ds])dayMap[ds]=[];dayMap[ds].push(item);}
-  // wrWeekMap: w (render index) -> WR rule items
   const wrWeekMap={};
   for(let w=0;w<TOTAL;w++){
     const wkOff=w-PAST;
@@ -859,10 +857,11 @@ function renderRecMoCal(){
     });
     getRecurringWeekTasks(wkOff).forEach(t=>{
       const r=st.recurring.find(x=>String(x.id)===String(t._recId));
-      addToDay(t.due_date,{name:t.name,isPup:r&&(r.pup_related===true||r.pup_related==='true'),isWR:false,recId:String(t._recId)});
+      const wkKey=dsToWkKey(t.due_date);
+      const hasMoveOverride=r&&r._dateOverrides&&r._dateOverrides[wkKey]&&r._dateOverrides[wkKey]!=='__skip__';
+      addToDay(t.due_date,{name:t.name,isPup:r&&(r.pup_related===true||r.pup_related==='true'),isWR:false,recId:String(t._recId),moved:!!hasMoveOverride});
     });
   }
-  // DOW header: 7 days + WR column
   const dowEl=document.getElementById('recMoDow');
   if(!dowEl.children.length){
     ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach(dn=>{const el=document.createElement('div');el.className='mdowl';el.textContent=dn;dowEl.appendChild(el);});
@@ -870,14 +869,21 @@ function renderRecMoCal(){
   }
   const cells=document.getElementById('recMoCells');cells.innerHTML='';
   let curMo=-1;
+  const DAYNAMES=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
   function makeChip(item,ds){
     const isWR=item.isWR;
     const s=gc(isWR?'weekly_reset':'Recurring');
     const chip=document.createElement('div');chip.className='mcell-t';
     const tid=isWR?'wrrule-'+item.ruleId:'rec-virt-'+item.recId;
     chip.dataset.tid=tid;
-    chip.style.cssText=`background:${s.bg};color:${s.t};border-color:${s.b};cursor:pointer`;
+    chip.style.cssText=`background:${s.bg};color:${s.t};border-color:${s.b};cursor:${isWR?'pointer':'grab'}`;
     chip.innerHTML=`<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${item.isPup?'🐾 ':''}${escHtml(item.name)}</span>`;
+    // Moved-this-week indicator dot for regular recurring
+    if(!isWR&&item.moved){
+      const dot=document.createElement('span');
+      dot.style.cssText='width:5px;height:5px;border-radius:50%;flex-shrink:0;margin-left:2px;background:#e8a020';
+      dot.title='Moved this week only';chip.appendChild(dot);
+    }
     // X button
     const dx=document.createElement('button');dx.className='chip-del';dx.textContent='✕';
     dx.addEventListener('click',e=>{
@@ -904,6 +910,12 @@ function renderRecMoCal(){
       if(isWR){const wkKey=item.wkKey||dsToWkKey(ds);openWrEditModal(item.ruleId,wkKey,'all');}
       else tiDblRec(e,item.recId);
     });
+    // Drag (regular recurring only)
+    if(!isWR){
+      chip.draggable=true;
+      chip.addEventListener('dragstart',e=>{e.stopPropagation();dragId='recmo::'+item.recId+'::'+ds;chip.style.opacity='.4';document.body.classList.add('body-dragging');});
+      chip.addEventListener('dragend',()=>{chip.style.opacity='1';document.body.classList.remove('body-dragging');dragId=null;});
+    }
     return chip;
   }
   for(let w=0;w<TOTAL;w++){
@@ -925,13 +937,42 @@ function renderRecMoCal(){
       hdr.appendChild(dn);cell.appendChild(hdr);
       const body=document.createElement('div');body.className='mcell-body';cell.appendChild(body);
       (dayMap[ds]||[]).forEach(item=>body.appendChild(makeChip(item,ds)));
+      // Drop target for recurring task drag
+      cell.addEventListener('dragover',e=>{if(dragId&&dragId.startsWith('recmo::'))e.preventDefault();cell.classList.add('dov');});
+      cell.addEventListener('dragleave',()=>cell.classList.remove('dov'));
+      cell.addEventListener('drop',e=>{
+        e.preventDefault();cell.classList.remove('dov');
+        if(!dragId||!dragId.startsWith('recmo::'))return;
+        const parts=dragId.split('::');const recId=parts[1];const srcDs=parts[2];dragId=null;
+        if(ds===srcDs)return;
+        const r=st.recurring.find(x=>String(x.id)===recId);if(!r)return;
+        const wkKey=dsToWkKey(ds);
+        showWrScopePicker(e,
+          '⊘  This week only',
+          '↻  All future',
+          ()=>{// this week only — date override
+            if(!r._dateOverrides)r._dateOverrides={};const prev=r._dateOverrides[wkKey];
+            r._dateOverrides[wkKey]=ds;save();renderAll();renderRecMoCal();
+            sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},recQs(r.id));
+            pushUndo(()=>{if(prev!==undefined)r._dateOverrides[wkKey]=prev;else delete r._dateOverrides[wkKey];save();renderAll();renderRecMoCal();sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},recQs(r.id));},'Moved recurring task this week');
+          },
+          ()=>{// all future — update appears_on_date
+            const prev=r.appears_on_date;
+            const newVal=(r.cadence==='monthly')?String(new Date(ds+'T00:00:00').getDate()):DAYNAMES[new Date(ds+'T00:00:00').getDay()];
+            r.appears_on_date=newVal;save();renderAll();renderRecMoCal();
+            sbReq('PATCH','recurring_tasks',{appears_on_date:newVal},recQs(r.id));
+            pushUndo(()=>{r.appears_on_date=prev;save();renderAll();renderRecMoCal();sbReq('PATCH','recurring_tasks',{appears_on_date:prev},recQs(r.id));},'Moved recurring task all future');
+          }
+        );
+      });
       cells.appendChild(cell);
     }
-    // 8th column: WR tasks for this week
+    // 8th column: WR tasks for this week (2-column layout for overflow)
     const wrCell=document.createElement('div');
     wrCell.className='mcell';
     wrCell.style.cssText='background:rgba(239,246,255,.4);border-color:rgba(59,130,246,.18);border-left-width:2px';
     const wrBody=document.createElement('div');wrBody.className='mcell-body';
+    wrBody.style.cssText='columns:2;column-gap:2px';
     (wrWeekMap[w]||[]).forEach(item=>wrBody.appendChild(makeChip(item,d2s(wkMon))));
     wrCell.appendChild(wrBody);
     cells.appendChild(wrCell);
