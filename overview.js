@@ -1,5 +1,5 @@
 // ── Render all ─────────────────────────────────────────────────────────────────
-function renderAll(){renderOv();renderWeeklyPage();renderShopFull();renderTravelPage();renderBdayPage();if(typeof renderPupsPage==='function')renderPupsPage();if(typeof renderRecipesPage==='function')renderRecipesPage();if(document.getElementById('mModal')?.classList.contains('open'))renderMoCal();save();requestAnimationFrame(applySelHighlight);}
+function renderAll(){renderOv();renderWeeklyPage();renderShopFull();renderTravelPage();renderBdayPage();if(typeof renderPupsPage==='function')renderPupsPage();if(typeof renderRecipesPage==='function')renderRecipesPage();if(document.getElementById('mModal')?.classList.contains('open'))renderMoCal();if(document.getElementById('recMoModal')?.classList.contains('open'))renderRecMoCal();save();requestAnimationFrame(applySelHighlight);}
 
 function renderOv(){
   const n=new Date();
@@ -824,6 +824,76 @@ function isWRecDueThisWeek(r,off=0){
   }
   // weekly — always due
   return true;
+}
+
+// ── Recurring Monthly View ────────────────────────────────────────────────────
+function openRecMoModal(){
+  renderRecMoCal();
+  document.getElementById('recMoModal').classList.add('open');
+  setTimeout(scrollRecMoToday,30);
+}
+function scrollRecMoToday(){
+  const mgrid=document.querySelector('#recMoModal .mgrid');
+  const tc=document.querySelector('#recMoCells .mcell.tc');
+  if(tc&&mgrid){const mdow=document.getElementById('recMoDow');const mdowH=mdow?mdow.offsetHeight:0;mgrid.scrollTop=tc.offsetTop-mgrid.offsetTop-mdowH-8;}
+}
+function renderRecMoCal(){
+  const today=tod();
+  const todayDate=new Date(today);
+  const PAST=8,FUTURE=14,TOTAL=PAST+FUTURE;
+  const startDow=(todayDate.getDay()+6)%7;
+  const thisMonday=new Date(todayDate);thisMonday.setDate(todayDate.getDate()-startDow);
+  const weekStart=new Date(thisMonday);weekStart.setDate(thisMonday.getDate()-PAST*7);
+  // Build day map: ds -> [{name, isPup, isWR}]
+  const dayMap={};
+  function addToDay(ds,item){if(!dayMap[ds])dayMap[ds]=[];dayMap[ds].push(item);}
+  for(let w=0;w<TOTAL;w++){
+    const wkOff=w-PAST;
+    const{mon}=getWkBounds(wkOff);
+    const monDs=d2s(mon);
+    // WR rules: show on Monday of the week they fire
+    st.wrRules.filter(r=>r.is_enabled&&isWRRuleDueThisWeek(r,wkOff)).forEach(r=>{
+      addToDay(monDs,{name:r.name,isPup:r.pup_related===true||r.pup_related==='true',isWR:true});
+    });
+    // Regular recurring tasks (non-weekly-reset): show on their computed date
+    getRecurringWeekTasks(wkOff).forEach(t=>{
+      const r=st.recurring.find(x=>String(x.id)===String(t._recId));
+      addToDay(t.due_date,{name:t.name,isPup:r&&(r.pup_related===true||r.pup_related==='true'),isWR:false});
+    });
+  }
+  // DOW header (only build once)
+  const dowEl=document.getElementById('recMoDow');
+  if(!dowEl.children.length)['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach(dn=>{const el=document.createElement('div');el.className='mdowl';el.textContent=dn;dowEl.appendChild(el);});
+  const cells=document.getElementById('recMoCells');cells.innerHTML='';
+  let curMo=-1;
+  for(let w=0;w<TOTAL;w++){
+    const wkMon=new Date(weekStart);wkMon.setDate(weekStart.getDate()+w*7);
+    const mo=wkMon.getMonth();
+    if(mo!==curMo){
+      curMo=mo;
+      const sep=document.createElement('div');sep.className='mo-sep';
+      sep.textContent=wkMon.toLocaleDateString('en-US',{month:'long',year:'numeric'});
+      cells.appendChild(sep);
+    }
+    for(let d=0;d<7;d++){
+      const date=new Date(wkMon);date.setDate(wkMon.getDate()+d);
+      const ds=d2s(date);
+      const cell=document.createElement('div');
+      cell.className='mcell'+(ds===today?' tc':'');
+      const hdr=document.createElement('div');hdr.style.cssText='display:flex;align-items:center;margin-bottom:2px';
+      const dn=document.createElement('div');dn.className='mcell-n';dn.textContent=date.getDate();
+      hdr.appendChild(dn);cell.appendChild(hdr);
+      const body=document.createElement('div');body.className='mcell-body';cell.appendChild(body);
+      (dayMap[ds]||[]).forEach(item=>{
+        const s=gc('Recurring');
+        const chip=document.createElement('div');chip.className='mcell-t';
+        chip.style.cssText=`background:${s.bg};color:${s.t};border-color:${s.b}`;
+        chip.innerHTML=`<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${item.isPup?'🐾 ':''}${escHtml(item.name)}</span>`;
+        body.appendChild(chip);
+      });
+      cells.appendChild(cell);
+    }
+  }
 }
 
 // ── Weekly Reset card — generated from wr_recurring_rules for selected week ────

@@ -825,13 +825,16 @@ body.dark .bday-add-menu{background:rgba(38,20,10,.97);border-color:rgba(255,220
     <div class="card">
       <div class="ch-prog">
         <button class="btn btn-ghost btn-xs" onclick="shiftWrRec(-1)">←</button>
-        <button class="btn-plus" onclick="openWrRuleAddModal()">+</button>
+        <button class="btn btn-ghost btn-xs" onclick="openRecMoModal()" style="font-size:9px">Month</button>
         <span id="wrRecWkLbl" style="flex:1;text-align:center;font-size:10px;color:var(--muted)"></span>
         <button class="btn btn-ghost btn-xs" onclick="wrRecOff=0;renderRecOv()" style="font-size:9px">This Week</button>
         <button class="btn btn-ghost btn-xs" onclick="shiftWrRec(1)">→</button>
       </div>
       <div class="tlist" id="recList" style="flex:1;columns:2;column-gap:2px;overflow-y:auto"></div>
       <div style="display:none" id="recListPup"></div>
+      <div style="display:flex;align-items:center;padding:4px 8px;flex-shrink:0;border-top:1px solid rgba(210,205,228,.15)">
+        <button class="btn-plus" onclick="openWrRuleAddModal()">+</button>
+      </div>
     </div>
     <!-- Shopping -->
     <div class="card">
@@ -1167,6 +1170,20 @@ body.dark .bday-add-menu{background:rgba(38,20,10,.97);border-color:rgba(255,220
     <div class="mact">
       <button class="btn btn-ghost" onclick="closeMod(&#39;recModal&#39;)">Cancel</button>
       <button class="btn btn-dark" onclick="saveRecModal()">Add</button>
+    </div>
+  </div>
+</div>
+
+<!-- Recurring Monthly View Modal -->
+<div class="overlay" id="recMoModal" style="z-index:490" onclick="closeMod('recMoModal',event)">
+  <div class="modal month-modal" style="width:min(98vw,980px)">
+    <div class="mcal-side" style="flex:1">
+      <div class="mhead">
+        <div style="flex:1;font-size:14px;font-weight:700;letter-spacing:-.3px">Recurring Tasks</div>
+        <button class="btn btn-ghost btn-xs" style="font-size:10px" onclick="scrollRecMoToday()">Today</button>
+        <button class="btn btn-ghost btn-xs" onclick="closeMod('recMoModal')" style="font-size:11px;opacity:.6;padding:2px 5px">✕</button>
+      </div>
+      <div class="mgrid"><div class="mdow" id="recMoDow"></div><div class="mcells" id="recMoCells"></div></div>
     </div>
   </div>
 </div>
