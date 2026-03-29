@@ -27,13 +27,14 @@ All files share global scope — no modules, no bundler.
 - POST must include ALL required fields. Missing NOT NULL → silent 400 failure.
 - `tasks` POST required: `name`, `category`, `due_date`, `done`, `important`.
 - `recurring_tasks` POST required: `name`, `is_weekly_reset`, `cadence`. Do NOT send `day_of_week`/`repeat_day`. Optional: `appears_on_date`, `starting_date`, `repeat_date`, `day_added`, `task_due_day`.
-- Local temp IDs: tasks=`l-`, recurring=`rec-tmp-` (sync only preserves `rec-tmp-`/`rec-local-`).
+- Local temp IDs: tasks=`l-`, recurring=`rec-tmp-`, WR rules=`wrrule-tmp-` (sync only preserves `rec-tmp-`/`rec-local-`).
 - Undo ID: `let serverId=null` in closure, set after POST resolves. Undo reads `serverId||localId`.
 - `sbReq` shows Supabase `message` field in toast for 8s.
 - `toggleTask`/`togRec`/`togShop`: call `sbUpdateBlock(b.id,{done})` for every linked TB block.
 - `drawTBBlock` derives `b._done` from linked item at render time.
 - `rolloverOverdue()`: write `localOverrides[sid]={due_date:today}` + `pendingLocal.add(sid)` before async PATCH.
 - On `init()`, `deletedRecIds` cleared — DB is authoritative.
+- `localStorage` (`save()`/`load()`) persists: tasks, recurring, shopping, travel, birthdays, pup_skills, recipes, autoTimeblocks, autoTBOverrides, **wrRules, wrOverrides** — all load instantly before `syncAll` completes.
 - Notes: `notes` column on `tasks` + `recurring_tasks`. Include in POST/PATCH. Show via `.tb-notes` in time blocks.
 
 ### Interaction Patterns
@@ -60,6 +61,11 @@ All files share global scope — no modules, no bundler.
 
 **Page-Level Keyboard Shortcuts** — pages with own undo stack (pup, birthdays, recipes) register keydown as first listener:
 - Cmd+Z → page undo, Cmd+Shift+Z → page redo, Del/Bksp → delete (skip if input focused), Cmd+C → copy, Cmd+V → paste.
+
+**Global Cmd+C / Cmd+V (task selection)** — copies `selectedTasks` set into `_copiedTasks[]`. Three branches on paste:
+- `wrrule-{id}` → copies from `st.wrRules`, pastes via POST to `wr_recurring_rules` (temp ID `wrrule-tmp-*`), renders `renderRecOv()+renderWeeklyPage()`.
+- `rec-virt-{id}` → copies from `st.recurring`, pastes via POST to `recurring_tasks`.
+- regular task ID → copies from `st.tasks`, pastes via POST to `tasks`.
 - Must check `e.target.tagName` to skip when input focused.
 
 **Sort/Filter with Debounce** — table pages (pup, recipes):
@@ -136,7 +142,7 @@ Tables: `wr_recurring_rules` (base definitions) + `wr_recurring_overrides` (per-
 
 **Edit modal** (`#wrEditModal`): unified scope toggle — "This week only" (custom name/notes + skip action) vs "All future" (full rule fields). Scope toggle hidden when opened without `wkKey` (recurring page always goes to all-future). Dblclick on WR card row → `openWrEditModal(rid, wkKey, 'this')`. Recurring page dblclick → `openWrEditModal(rid, null, 'all')`.
 
-**Add modal** (`#wrRuleAddModal`): `openWrRuleAddModal()` → `saveWrRuleAdd()`. Uses temp ID pattern (`wrrule-tmp-*`). All WR adds go through this modal — `addRec()`, QA bar 'rec' context, and recurring page `+` all redirect here.
+**Add modal** (`#wrRuleAddModal`): `openWrRuleAddModal(cadence?)` → `saveWrRuleAdd()`. Uses temp ID pattern (`wrrule-tmp-*`). All WR adds go through this modal — `addRec()`, QA bar 'rec' context, and recurring page `+` all redirect here. Cadence arg pre-sets `wrAddCadence` dropdown so clicking `+` in a cadence section auto-selects that cadence.
 
 **Override indicator**: small colored dot right-aligned on row. Blue=moved, amber=edited. Only shown when value actually differs from base rule.
 
@@ -163,7 +169,7 @@ Tables: `wr_recurring_rules` (base definitions) + `wr_recurring_overrides` (per-
 
 **Today List** — sort: done last → travel → overdue → important → type (regular=1,recurring=2,shopping=3,birthday=4) → name. No category bg (`noColor:true`). `_hasTBToday(t)`: `dayOff===0 && isOv(due_date) && !done` + linked block.
 
-**Weekly Reset filter** — `renderRecOv()` uses `isWRRuleDueThisWeek(rule, off)` on `st.wrRules`. Merges overrides (skip removes, move redirects, edit applies custom name, complete marks done). Sort: done last → cadence (weekly=0,biweekly=1,monthly=2,other=3) → pup-related last (order=10). Week nav via `wrRecOff` (independent of `wkOff`). Override dot indicator: blue=moved, amber=edited (only when value differs from base rule).
+**Weekly Reset filter** — `renderRecOv()` uses `isWRRuleDueThisWeek(rule, off)` on `st.wrRules`. Merges overrides (skip removes, move redirects, edit applies custom name, complete marks done). Sort: done last → cadence (weekly=0,biweekly=1,monthly=2,other=3) → pup-related last (order=10). Week nav via `wrRecOff` (independent of `wkOff`). Override dot indicator: blue=moved, amber=edited (only when value differs from base rule). Header: `←` · `+` · week date label · `This Week` button · `→`. No progress bar. Week label shows date range only (no "(this week)" suffix).
 
 **Unassigned badge** — `#unAssignedBadge` in `.wkc-foot`. Filter: `!due_date&&!done&&category!=='Long term'`. Popup `#unMenu`: fixed 300px, opens upward. Backdrop `#unMenuBack` (outside-click). `dEnd` restores backdrop. Visible only on overview page.
 
@@ -175,9 +181,9 @@ Tables: `wr_recurring_rules` (base definitions) + `wr_recurring_overrides` (per-
 
 ### Recurring Tasks Page (`features.js`, `page-weekly`)
 Two-col grid: WR left (`#rt-wr-*`), non-WR right (`#rt-sch-*`). 4 cadence groups each.
-- **WR left**: `renderRtWrGroup(containerId, rules, cadence)` — reads `st.wrRules`. Columns: Name | 🐾 | Schedule. Dblclick → `openWrEditModal(rid, null, 'all')` (always edits base rule, no scope toggle). 🐾 toggle → `rtToggleWrPup` → PATCH `wr_recurring_rules`. Delete → `delWrRule` (with undo). `+` → `openWrRuleAddModal()`. Schedule display: `wrRuleScheduleStr(rule)` (e.g. "Mon", "Tue (biweekly)", "2nd Fri", "15th").
+- **WR left**: `renderRtWrGroup(containerId, rules, cadence)` — reads `st.wrRules`. Columns: Name | 🐾 | Schedule. Dblclick → `openWrEditModal(rid, null, 'all')` (always edits base rule, no scope toggle). 🐾 toggle → `rtToggleWrPup` → PATCH `wr_recurring_rules`. Delete → `delWrRule` (with undo). `+` → `openWrRuleAddModal(cadence)` (pre-sets cadence to section's cadence). Schedule display: `wrRuleScheduleStr(rule)` (e.g. "Mon", "Tue (biweekly)", "2nd Fri", "15th").
 - **Non-WR right**: `renderRtGroup(containerId, tasks, cadence)` — reads `st.recurring` (non-WR). Columns: Name | Adds On | Due On | Starting. Inline edit via `rtDblEdit`. `+` → `openRecModalForSection('scheduled', cadence)`. `duplicateRecDirect`: `uniqueRecName`, POST, undo.
-- **Stats bar** (`#wrPL`, `#wrPct2`, `#wrBar`): computed from `st.wrRules` due this week + `st.wrOverrides` with `override_type='complete'&&done=true`.
+- **Stats bar** (`#wrPL`, `#wrPct2`, `#wrBar`): hidden compat elements only — progress bar removed from overview card.
 - Hidden compat elements: `#wrBar #wrPct2 #wrPL #wrList #shopFull #shopCountLbl #shopSortBtn #nsN #nsS`.
 
 ---
