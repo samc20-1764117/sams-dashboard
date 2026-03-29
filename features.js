@@ -2253,6 +2253,10 @@ document.addEventListener('keydown',async e=>{
         const recId=id.replace('rec-virt-','');
         const r=st.recurring.find(x=>String(x.id)===recId);
         if(r)_copiedTasks.push({...r,_isRec:true});
+      } else if(id.startsWith('wrrule-')){
+        const rid=id.replace('wrrule-','');
+        const r=st.wrRules.find(x=>String(x.id)===rid);
+        if(r)_copiedTasks.push({...r,_isWrRule:true});
       } else {
         const t=st.tasks.find(x=>String(x.id)===id);
         if(t)_copiedTasks.push({...t});
@@ -2264,7 +2268,17 @@ document.addEventListener('keydown',async e=>{
   if((e.metaKey||e.ctrlKey)&&e.key==='v'&&_copiedTasks.length>0){
     e.preventDefault();
     _copiedTasks.forEach(async t=>{
-      if(t._isRec){
+      if(t._isWrRule){
+        const dupName=uniqueRecName(t.name);
+        const tmpId='wrrule-tmp-'+Date.now();
+        const payload={name:dupName,cadence:t.cadence||'weekly',day_of_week:t.day_of_week,anchor_date:t.anchor_date||null,monthly_rule_type:t.monthly_rule_type||null,monthly_nth:t.monthly_nth||null,monthly_weekday:t.monthly_weekday||null,monthly_date:t.monthly_date||null,pup_related:t.pup_related||false,notes:t.notes||null,is_enabled:true,sort_order:st.wrRules.length};
+        st.wrRules.push({...payload,id:tmpId});
+        save();renderRecOv();renderWeeklyPage();
+        const sv=await sbReq('POST','wr_recurring_rules',payload);
+        if(sv&&sv[0]){const idx=st.wrRules.findIndex(x=>x.id===tmpId);if(idx>-1)st.wrRules[idx]=sv[0];}
+        save();renderRecOv();renderWeeklyPage();
+        pushUndo(()=>{st.wrRules=st.wrRules.filter(x=>x.id!==tmpId&&!(sv&&sv[0]&&x.id===sv[0].id));save();renderRecOv();renderWeeklyPage();},'Duplicated WR rule');
+      } else if(t._isRec){
         const dupName=uniqueRecName(t.name);
         const todayDs=d2s(new Date());
         const tempId='rec-tmp-'+Date.now();

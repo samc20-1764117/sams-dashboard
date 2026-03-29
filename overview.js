@@ -836,7 +836,7 @@ function renderRecOv(){
   const lbl=document.getElementById('wrRecWkLbl');
   if(lbl){
     const fmt=d=>d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
-    lbl.textContent=fmt(mon)+' – '+fmt(sun)+(wrRecOff===0?' (this week)':'');
+    lbl.textContent=fmt(mon)+' – '+fmt(sun);
   }
   // ── Merge overrides into base list ─────────────────────────────────────────
   // 1. Base: rules that naturally fire this week
