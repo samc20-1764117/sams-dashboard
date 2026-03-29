@@ -54,6 +54,11 @@ function renderToday(){
       r._dateOverrides[_wkKeyNow]===ds||(dayOff===0&&r._dateOverrides[_wkKeyNow]&&r._dateOverrides[_wkKeyNow]<ds)
     ))
     .map(r=>({id:'rec-virt-'+r.id,name:r.name,category:'Recurring',due_date:r._dateOverrides[_wkKeyNow],done:!!(r._doneByWk&&r._doneByWk[_wkKeyNow]),_recId:r.id,_virtual:true,_wkKey:_wkKeyNow,_isWrec:true}));
+  // New-style WR rules pinned to today via _dateOverrides
+  const wrRulesToday=st.wrRules.filter(r=>r._dateOverrides&&(
+    r._dateOverrides[_wkKeyNow]===ds||(dayOff===0&&r._dateOverrides[_wkKeyNow]&&r._dateOverrides[_wkKeyNow]<ds)
+  )&&!isDoneWRRule(r.id,_wkKeyNow))
+    .map(r=>({id:'wrrule-virt-'+r.id,name:r.name,category:'Recurring',due_date:r._dateOverrides[_wkKeyNow],done:false,_ruleId:r.id,_virtual:true,_wkKey:_wkKeyNow,_isWrRule:true}));
   // Shopping items due today (or overdue when viewing today)
   const shopToday=st.shopping
     .filter(s=>!s.done&&s.due_date&&(s.due_date===ds||(dayOff===0&&isOv(s.due_date))))
@@ -61,6 +66,7 @@ function renderToday(){
   const virtToday=[
     ...allRecVirt.filter(v=>v.due_date===ds||(dayOff===0&&isOv(v.due_date)&&!v.done)),
     ...wrecToday,
+    ...wrRulesToday,
     ...shopToday,
     ...getExtrasForDate(ds)
   ];
@@ -152,15 +158,21 @@ function sortByTBWeek(tasks){
 }
 // Virtual task row for today's list - done ones sink to bottom, greyed, uncheckable if done
 function tRowTodayVirt(t,tbArrow=false,noColor=false){
-  const s=gc(t._isWrec?'weekly_reset':'recurring');
+  const s=gc((t._isWrec||t._isWrRule)?'weekly_reset':'recurring');
   const ov=isOv(t.due_date)&&!t.done;
   const ps=ov?OV:s;
-  return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''}" style="${!ov&&!noColor?`background:${s.bg}`:''}" id="ti-${t.id}" draggable="true" ondragstart="dragId='${t._isWrec?`wrec::${t._recId}`:`rec::${t._recId}::${t.due_date||''}`}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);" ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false);" onclick="selTask(event,'${t.id}')" ondblclick="tiDblRec(event,'${t._recId}')" oncontextmenu="showCtx(event,'${t.id}',true,'${t._recId}')">
-    <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="${t._isWrec?`togRec('${t._recId}',this.checked)`:`togRecVirt('${t._recId}',this.checked,'${t._wkKey||getWkKey(wkOff)}')`}"></label>
+  const _dragId=t._isWrRule?`wrrule::${t._ruleId}`:t._isWrec?`wrec::${t._recId}`:`rec::${t._recId}::${t.due_date||''}`;
+  const _chk=t._isWrRule?`togWrRule('${t._ruleId}',this.checked,'${t._wkKey||getWkKey(wkOff)}')`
+    :t._isWrec?`togRec('${t._recId}',this.checked)`:`togRecVirt('${t._recId}',this.checked,'${t._wkKey||getWkKey(wkOff)}')`;
+  const _xBtn=t._isWrRule?`showWrXPicker(event,'${t._ruleId}','${t._wkKey||getWkKey(wkOff)}')`
+    :t._isWrec?`showWrXPicker(event,'${t._recId}','${t._wkKey||getWkKey(wkOff)}')`:`skipRecVirtThisWk('${t._recId}','${t._wkKey||getWkKey(wkOff)}')`;
+  const _recIdAttr=t._isWrRule?t._ruleId:t._recId;
+  return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''}" style="${!ov&&!noColor?`background:${s.bg}`:''}" id="ti-${t.id}" draggable="true" ondragstart="dragId='${_dragId}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);" ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false);" onclick="selTask(event,'${t.id}')" ondblclick="tiDblRec(event,'${_recIdAttr}')" oncontextmenu="showCtx(event,'${t.id}',true,'${_recIdAttr}')">
+    <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="${_chk}"></label>
     <span class="tn">${t.name}</span>
     <span class="cpill" style="background:${ps.bg};color:${ps.t};border-color:${ps.b}">Recurring</span>
     ${tbArrow?'<span class="tb-arrow">›</span>':''}
-    <button class="delbtn" onclick="event.stopPropagation();${t._isWrec?`showWrXPicker(event,'${t._recId}','${t._wkKey||getWkKey(wkOff)}')`:`skipRecVirtThisWk('${t._recId}','${t._wkKey||getWkKey(wkOff)}')`}">✕</button>
+    <button class="delbtn" onclick="event.stopPropagation();${_xBtn}">✕</button>
   </div>`;
 }
 
@@ -189,6 +201,10 @@ function renderWkSummary(){
     .filter(r=>(r.is_weekly_reset===true||r.is_weekly_reset==='true')&&r._dateOverrides&&r._dateOverrides[_wrecWkk]&&r._dateOverrides[_wrecWkk]!=='__skip__')
     .map(r=>{const ds=r._dateOverrides[_wrecWkk];return{id:'rec-virt-'+r.id,name:r.name,category:'Recurring',due_date:ds,done:!!(r._doneByWk&&r._doneByWk[_wrecWkk]),_recId:r.id,_virtual:true,_isWrec:true,_wkKey:_wrecWkk};})
     .filter(v=>v.due_date&&!v.done);
+  const wrRulesThisWk=st.wrRules
+    .filter(r=>r._dateOverrides&&r._dateOverrides[_wrecWkk]&&r._dateOverrides[_wrecWkk]!=='__skip__'&&!isDoneWRRule(r.id,_wrecWkk))
+    .map(r=>{const ds=r._dateOverrides[_wrecWkk];return{id:'wrrule-virt-'+r.id,name:r.name,category:'Recurring',due_date:ds,done:false,_ruleId:r.id,_virtual:true,_isWrRule:true,_wkKey:_wrecWkk};})
+    .filter(v=>v.due_date);
   const shopThisWk=st.shopping
     .filter(s=>s.due_date&&isInWk(s.due_date,wkOff)&&!s.done)
     .map(s=>({id:'shop-cal-'+s.id,name:s.name,category:'Shopping',due_date:s.due_date,done:false,_shopId:s.id,_virtual:true,_type:'shop',store:s.store}));
@@ -205,6 +221,7 @@ function renderWkSummary(){
       ...st.tasks.filter(t=>isInWk(t.due_date,wkOff)&&!t.done),
       ...virtRec.filter(v=>!v.done),
       ...wrecThisWk,
+      ...wrRulesThisWk,
       ...shopThisWk,
       ...virtExtras
     ]),
@@ -420,6 +437,20 @@ function renderWkCal(){
         }
         dragId=null;return;
       }
+      // New-style WR rule dragged onto weekly calendar
+      if(dragId.startsWith('wrrule::')){
+        const ruleId=dragId.split('::')[1];
+        const r=st.wrRules.find(x=>String(x.id)===String(ruleId));
+        if(r){
+          if(!r._dateOverrides)r._dateOverrides={};
+          const wkKey=getWkKey(wkOff);
+          const prev=r._dateOverrides[wkKey];
+          r._dateOverrides[wkKey]=ds;
+          save();dragId=null;renderAll();
+          pushUndo(()=>{if(prev)r._dateOverrides[wkKey]=prev;else delete r._dateOverrides[wkKey];save();renderAll();},'Pinned WR task to '+ds);
+        }
+        dragId=null;return;
+      }
       // Weekly reset task dragged onto calendar
       if(dragId.startsWith('wrec::')){
         const recId=dragId.split('::')[1];
@@ -486,6 +517,8 @@ function renderWkCal(){
     // Add weekly reset tasks that have been pinned to this date via _dateOverrides
     const wrecForDay=st.recurring.filter(r=>(r.is_weekly_reset===true||r.is_weekly_reset==='true')&&!(r._doneByWk&&r._doneByWk[wkKey2])&&r._dateOverrides&&r._dateOverrides[wkKey2]===ds).map(r=>({id:'rec-virt-'+r.id,name:r.name,category:'Recurring',due_date:ds,done:false,_recId:r.id,_virtual:true,_wkKey:wkKey2,_isWrec:true}));
     const wrecForDayDone=st.recurring.filter(r=>(r.is_weekly_reset===true||r.is_weekly_reset==='true')&&!!(r._doneByWk&&r._doneByWk[wkKey2])&&r._dateOverrides&&r._dateOverrides[wkKey2]===ds).map(r=>({id:'rec-virt-'+r.id,name:r.name,category:'Recurring',due_date:ds,done:true,_recId:r.id,_virtual:true,_wkKey:wkKey2,_isWrec:true}));
+    const wrRulesForDay=st.wrRules.filter(r=>r._dateOverrides&&r._dateOverrides[wkKey2]===ds&&!isDoneWRRule(r.id,wkKey2)).map(r=>({id:'wrrule-virt-'+r.id,name:r.name,category:'Recurring',due_date:ds,done:false,_ruleId:r.id,_virtual:true,_wkKey:wkKey2,_isWrRule:true}));
+    const wrRulesForDayDone=st.wrRules.filter(r=>r._dateOverrides&&r._dateOverrides[wkKey2]===ds&&isDoneWRRule(r.id,wkKey2)).map(r=>({id:'wrrule-virt-'+r.id,name:r.name,category:'Recurring',due_date:ds,done:true,_ruleId:r.id,_virtual:true,_wkKey:wkKey2,_isWrRule:true}));
     // Add shopping items assigned to this date
     const shopForDay=st.shopping.filter(s=>s.due_date===ds&&!s.done).map(s=>({id:'shop-cal-'+s.id,name:s.name+(s.store?' ('+s.store+')':''),category:'Shopping',due_date:ds,done:false,_shopId:s.id,_virtual:true,_type:'shop'}));
     const shopForDayDone=st.shopping.filter(s=>s.due_date===ds&&s.done).map(s=>({id:'shop-cal-done-'+s.id,name:s.name+(s.store?' ('+s.store+')':''),category:'Shopping',due_date:ds,done:true,_shopId:s.id,_virtual:true,_type:'shop'}));
@@ -493,28 +526,32 @@ function renderWkCal(){
       ...st.tasks.filter(t=>t.due_date&&t.due_date.split('T')[0]===ds&&!t.done),
       ...virtForDay,
       ...wrecForDay,
+      ...wrRulesForDay,
       ...shopForDay
     ],ds);
     const doneDay=[
       ...st.tasks.filter(t=>t.due_date&&t.due_date.split('T')[0]===ds&&t.done),
       ...virtForDayDone,
       ...wrecForDayDone,
+      ...wrRulesForDayDone,
       ...shopForDayDone
     ];
     let dayTasks=[...undoneDay,...doneDay];
     dayTasks.forEach(t=>{
       const ov=isOv(t.due_date)&&!t.done,imp=t.important&&!ov&&!t.done;
-      const _chipCat=t._isWrec?'weekly_reset':(t._virtual&&t._recId?'recurring':t.category);
+      const _chipCat=(t._isWrec||t._isWrRule)?'weekly_reset':(t._virtual&&t._recId?'recurring':t.category);
       const s=ov?OV:imp?IMP:gc(_chipCat);
       const chip=document.createElement('div');chip.className='chip'+(t.done?' done-chip':'');
       chip.style.cssText=`background:${s.bg};color:${s.t};border-color:${s.b}`;
       if(!t._virtual)chip.dataset.tid=String(t.id);
       else if(t._type==='shop')chip.dataset.tid='shop-cal-'+t._shopId;
+      else if(t._isWrRule)chip.dataset.tid='wrrule-virt-'+t._ruleId;
       else if(t._isWrec)chip.dataset.tid='wrec-'+t._recId;
       else if(t._recId)chip.dataset.tid='rec-virt-'+t._recId;
       chip.draggable=true;
       chip.addEventListener('dragstart',e2=>{
         if(t._type==='shop'){dragId='shop::'+t._shopId;}
+        else if(t._isWrRule){dragId='wrrule::'+t._ruleId;}
         else if(t._isWrec){dragId='wrec::'+t._recId;}
         else if(t._virtual){dragId='rec::'+t._recId+'::'+t.due_date;}
         else{dragId=String(t.id);}
@@ -526,6 +563,7 @@ function renderWkCal(){
       chk.addEventListener('change',e2=>{
         e2.stopPropagation();
         if(t._type==='shop'){togShop(t._shopId,chk.checked);}
+        else if(t._isWrRule){togWrRule(String(t._ruleId),chk.checked,t._wkKey||getWkKey(wkOff));}
         else if(t._isWrec){togRec(t._recId,chk.checked);}
         else if(t._virtual){togRecVirt(t._recId,chk.checked,t._wkKey||getWkKey(wkOff));}
         else{toggleTask(t.id,chk.checked,'week');}
@@ -558,7 +596,7 @@ function renderWkCal(){
       });
       chip.addEventListener('dblclick',e=>{e.stopPropagation();if(t._type==='shop')tiDblShop(e,t._shopId);else if(!t._virtual)tiDbl(e,t.id);else tiDblRec(e,t._recId);});
       const dx=document.createElement('button');dx.className='chip-del';dx.textContent='✕';
-      dx.title=t._type==='shop'?'Remove from calendar':t._isWrec?'Remove from calendar':t._virtual?'Delete recurring task':'Delete task';
+      dx.title=(t._type==='shop'||t._isWrec||t._isWrRule)?'Remove from calendar':t._virtual?'Delete recurring task':'Delete task';
       dx.addEventListener('click',e2=>{
         e2.stopPropagation();
         if(t._type==='shop'){
@@ -566,6 +604,8 @@ function renderWkCal(){
           if(s){const prev=s.due_date;s.due_date=null;save();renderAll();renderWkCal();
             sbReqNullable('PATCH','shopping_list',{due_date:null},`?id=eq.${s.id}`);
             pushUndo(()=>{s.due_date=prev;save();renderAll();renderWkCal();sbReqNullable('PATCH','shopping_list',{due_date:prev||null},`?id=eq.${s.id}`);},'Removed from calendar');}
+        } else if(t._isWrRule){
+          showWrXPicker(e2,String(t._ruleId),getWkKey(wkOff));
         } else if(t._isWrec){
           showWrXPicker(e2,String(t._recId),getWkKey(wkOff));
         } else if(t._virtual){skipRecVirtThisWk(t._recId,t._wkKey||getWkKey(wkOff));}
@@ -1067,7 +1107,7 @@ function renderRecOv(){
     row.className='ti'+(isDone?' done':'');
     row.style.cssText='cursor:pointer;break-inside:avoid';
     row.draggable=true;
-    row.addEventListener('dragstart',e=>{e.stopPropagation();dragId='wrec::'+rid;e.dataTransfer.effectAllowed='move';row.style.opacity='.4';document.body.classList.add('body-dragging');showWkcEdges(true);});
+    row.addEventListener('dragstart',e=>{e.stopPropagation();dragId='wrrule::'+rid;e.dataTransfer.effectAllowed='move';row.style.opacity='.4';document.body.classList.add('body-dragging');showWkcEdges(true);});
     row.addEventListener('dragend',()=>{row.style.opacity='1';document.body.classList.remove('body-dragging');showWkcEdges(false);dragId=null;});
     row.addEventListener('click',e=>selTask(e,selId));
     row.addEventListener('dblclick',e=>{
@@ -1188,10 +1228,27 @@ function wrScopeDoThis(){hideWrScopePicker();if(_wrScopeCbThis)_wrScopeCbThis();
 function wrScopeDoAll(){hideWrScopePicker();if(_wrScopeCbAll)_wrScopeCbAll();}
 document.addEventListener('mousedown',e=>{if(!e.target.closest('#wrScopePicker'))hideWrScopePicker();},{capture:true,passive:true});
 
+// Helper: check if a wr_recurring_rules item is done for a given wkKey
+function isDoneWRRule(ruleId,wkKey){
+  return st.wrOverrides.some(o=>String(o.rule_id)===String(ruleId)&&o.wk_key===wkKey&&o.override_type==='complete'&&o.done===true);
+}
+// Remove a wr_recurring_rules item from a view by clearing its _dateOverrides
+function unscheduleWrRule(rid,wkKey){
+  const r=st.wrRules.find(x=>String(x.id)===String(rid));if(!r||!r._dateOverrides)return;
+  const prev=r._dateOverrides[wkKey];
+  delete r._dateOverrides[wkKey];
+  save();renderAll();
+  pushUndo(()=>{if(!r._dateOverrides)r._dateOverrides={};r._dateOverrides[wkKey]=prev;save();renderAll();},'Removed WR task from calendar');
+}
 // X button on WR chips/rows outside the WR overlay: skip this week (+ clear date override) or delete rule
+// Works for both old WR tasks (st.recurring) and new WR rules (st.wrRules)
 function showWrXPicker(e,rid,wkKey){
+  const isRule=st.wrRules.some(r=>String(r.id)===String(rid));
   showWrScopePicker(e,'⊘  Skip this week only','✕  Delete rule (all future)',
-    ()=>{unscheduleWRec(rid,wkKey);writeWrOverride(rid,wkKey,{override_type:'skip'},{undoLabel:'Skipped WR task this week'});},
+    ()=>{
+      if(isRule){unscheduleWrRule(rid,wkKey);writeWrOverride(rid,wkKey,{override_type:'skip'},{undoLabel:'Skipped WR task this week'});}
+      else{unscheduleWRec(rid,wkKey);}
+    },
     ()=>wrCtxDeleteRule(rid)
   );
 }
@@ -1453,6 +1510,19 @@ function dropOnTodayList(e){
   e.preventDefault();
   document.getElementById('todList').classList.remove('drop-here');
   const ds=d2s(getDayDate(dayOff));
+  if(dragId.startsWith('wrrule::')){
+    const ruleId=dragId.split('::')[1];
+    const r=st.wrRules.find(x=>String(x.id)===String(ruleId));
+    if(r){
+      if(!r._dateOverrides)r._dateOverrides={};
+      const wkKey=getWkKey(wkOff);
+      const prev=r._dateOverrides[wkKey];
+      r._dateOverrides[wkKey]=ds;
+      dragId=null;save();renderAll();
+      pushUndo(()=>{if(prev)r._dateOverrides[wkKey]=prev;else delete r._dateOverrides[wkKey];save();renderAll();},'Assigned WR task to today');
+    }
+    dragId=null;return;
+  }
   if(dragId.startsWith('wrec::')||dragId.startsWith('rec::')){
     const recId=dragId.startsWith('wrec::')?dragId.split('::')[1]:dragId.split('::')[1];
     const r=st.recurring.find(x=>String(x.id)===String(recId));
@@ -2080,6 +2150,24 @@ function dropOnTB(e,ds,h,row,smOverride){
   const autoDur=(name,category)=>{const n=(name||'').toLowerCase();if(/\bheb\b/.test(n)||/pilates/.test(n))return 60;if((category||'').toLowerCase()==='social'||/social/.test(n))return 120;return 30;};
   // helper: compute wkKey (Monday of the week) from a date string
   const wkKeyFromDs=d=>{const dt=new Date(d+'T00:00:00');const dow=(dt.getDay()+6)%7;const mon=new Date(dt);mon.setDate(dt.getDate()-dow);return d2s(mon);};
+  if(dragId.startsWith('wrrule::')){
+    const ruleId=dragId.split('::')[1];
+    const r=st.wrRules.find(x=>String(x.id)===String(ruleId));
+    if(!r){dragId=null;return;}
+    const wkKey=wkKeyFromDs(ds);
+    const prevDateOv=r._dateOverrides?{...r._dateOverrides}:{};
+    if(!r._dateOverrides)r._dateOverrides={};
+    r._dateOverrides[wkKey]=ds;
+    const blk={id:crypto.randomUUID(),title:r.name,ds,sm,dur:autoDur(r.name,'Recurring'),cat:'Recurring',ruleId:String(r.id)};
+    st.blocks.push(blk);dragId=null;save();renderAll();renderRecOv();
+    sbSaveBlock(blk);
+    pushUndo(()=>{
+      st.blocks=st.blocks.filter(b=>b.id!==blk.id);
+      r._dateOverrides=prevDateOv;
+      sbDeleteBlock(blk.id);save();renderAll();renderRecOv();
+    },'Added to time block');
+    return;
+  }
   if(dragId.startsWith('wrec::')){
     const recId=dragId.split('::')[1];
     const r=st.recurring.find(x=>String(x.id)===String(recId));

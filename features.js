@@ -2578,7 +2578,9 @@ function ctxDoDelete(){
   if(tvId){delTravel(tvId);clearSelection();return;}
   // If triggered from a timeblock, remove from day only (never delete the underlying item)
   if(blkId){delBlock(blkId);return;}
-  if(sId){unscheduleShop(sId);}else if(isRec&&rId){const _cr=st.recurring.find(x=>String(x.id)===String(rId));const _isWr=_cr&&(_cr.is_weekly_reset===true||_cr.is_weekly_reset==='true');if(_isWr){unscheduleWRec(rId,getWkKey(wkOff));}else{skipRecVirtThisWk(rId,getWkKey(wkOff));}}else{delTask(id,null);}
+  const _isWrRuleItem=id&&String(id).startsWith('wrrule-');
+  if(_isWrRuleItem){const _ruleId=String(id).replace('wrrule-virt-','').replace('wrrule-','');unscheduleWrRule(_ruleId,getWkKey(wkOff));}
+  else if(sId){unscheduleShop(sId);}else if(isRec&&rId){const _cr=st.recurring.find(x=>String(x.id)===String(rId));const _isWr=_cr&&(_cr.is_weekly_reset===true||_cr.is_weekly_reset==='true');if(_isWr){unscheduleWRec(rId,getWkKey(wkOff));}else{skipRecVirtThisWk(rId,getWkKey(wkOff));}}else{delTask(id,null);}
 }
 
 // ══════════════════════════════════════════════════════════

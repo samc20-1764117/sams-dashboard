@@ -202,7 +202,11 @@ async function syncAll(silent=false){
       sbReqSilent('GET','wr_recurring_rules',null,'?is_enabled=eq.true&order=sort_order.asc,name.asc&select=*'),
       sbReqSilent('GET','wr_recurring_overrides',null,'?order=wk_key.asc&select=*')
     ]);
-    if(wrRules)st.wrRules=wrRules;
+    if(wrRules){
+      const prevPins={};st.wrRules.forEach(r=>{if(r._dateOverrides)prevPins[String(r.id)]=r._dateOverrides;});
+      st.wrRules=wrRules;
+      st.wrRules.forEach(r=>{if(prevPins[String(r.id)])r._dateOverrides=prevPins[String(r.id)];});
+    }
     if(wrOvs)st.wrOverrides=wrOvs;
     if(tasks){
       const merged=tasks.map(dbT=>{
