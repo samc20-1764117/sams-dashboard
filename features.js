@@ -676,6 +676,7 @@ function openMModal(){
   renderMoCal();
   scrollMoToday();
   const modal=document.getElementById('mModal');
+  const bg=document.querySelector('.bg-canvas');if(bg)bg.classList.add('orbs-paused');
   requestAnimationFrame(()=>modal.classList.add('open'));
 }
 function jumpMoYear(yr){
@@ -1969,7 +1970,7 @@ function showPage(id){
 }
 
 // ── Modals ─────────────────────────────────────────────────────────────────────
-function closeMod(id,e){if(e&&e.target!==document.getElementById(id))return;document.getElementById(id).classList.remove('open');}
+function closeMod(id,e){if(e&&e.target!==document.getElementById(id))return;document.getElementById(id).classList.remove('open');if(id==='mModal'||id==='recMoModal'){const bg=document.querySelector('.bg-canvas');if(bg)bg.classList.remove('orbs-paused');}}
 
 // ── Init ───────────────────────────────────────────────────────────────────────
 function init(){

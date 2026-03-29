@@ -830,6 +830,7 @@ function isWRecDueThisWeek(r,off=0){
 function openRecMoModal(){
   renderRecMoCal();
   scrollRecMoToday();
+  const bg=document.querySelector('.bg-canvas');if(bg)bg.classList.add('orbs-paused');
   requestAnimationFrame(()=>document.getElementById('recMoModal').classList.add('open'));
 }
 function scrollRecMoToday(){
