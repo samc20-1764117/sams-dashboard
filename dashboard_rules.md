@@ -89,6 +89,12 @@ All files share global scope — no modules, no bundler.
 - Regular recurring: shown when `r._dateOverrides[wkKey]` exists and `!=='__skip__'` (moved this week).
 - WR rules: shown when `st.wrOverrides` has `override_type:'edit'` for `(ruleId, wkKey)` with `custom_name` or `custom_notes` (edited this week).
 
+**Timeblock X for shop/WR rule blocks** — X button (`tb-bdel`) always calls `delBlock` (timeblock only). Keyboard Delete with `blk-{id}` in `selectedTasks` → `delBlock` only. Does NOT unschedule or remove from other views. Selection of shop/WR rule blocks in timeblock uses `blk-{blockId}` (not `shop-cal-` or `wrrule-`), preventing cross-view highlight/delete.
+
+**Dragged shop/WR rule items on daily/weekly views** — behave like regular tasks (all keyboard shortcuts, editing, selection). Sort follows timeblock start time via `sortTasksForDay`/`sortByTBWeek`/`_hasTBToday` (check `b.ruleId` for WR rule blocks, `b.shopId` for shop blocks). X on shop chip outside shopping list page: nulls `due_date` (removes from views, does NOT delete from list). X on WR rule chip: shows scope picker (`showWrXPicker`) → "Skip this week only" or "Delete rule (all future)". X removes from ALL views including timeblock (linked `st.blocks` entries deleted). Exception: X on timeblock block itself → `delBlock` only (see above).
+
+**Virtual task objects for dragged items** — `_isWrRule:true` (WR rule), `_isWrec:true` (legacy WR), `_type:'shop'` (shopping). Distinguish source: `_ruleId` (WR rule), `_recId` (legacy WR), `_shopId` (shopping). WR rules use `_wkKey` for the week context.
+
 **Modal Stacking / Z-index** — persistent background modals: `style="z-index:490"`. Task/edit overlays stay at default z-index:500.
 
 **renderAll and open modals** — `renderAll()` re-renders any open persistent modal (`#mModal`→`renderMoCal()`, `#recMoModal`→`renderRecMoCal()`). `renderRecOv()` also calls `renderRecMoCal()` if `#recMoModal` is open — so any op calling `renderRecOv` automatically syncs the recurring monthly view.
@@ -98,14 +104,16 @@ All files share global scope — no modules, no bundler.
 | Prefix | Source | Notes |
 |--------|--------|-------|
 | `String(t.id)` | regular task | permanent delete |
-| `wrrule-{id}` | WR recurring rule | skip this week (override) |
+| `wrrule-{id}` | WR recurring rule (selected) | skip this week (override) |
 | `rec-virt-{id}` | non-WR recurring | `skipRecVirtThisWk` |
 | `wrec-{id}` | legacy WR chip in weekly cal | unschedule only |
-| `shop-cal-{id}` | shopping chip | null `due_date` |
+| `shop-cal-{id}` | shopping chip on daily/weekly views | null `due_date` |
+| `blk-{id}` | shop/WR rule block selected in timeblock | keyboard Delete → `delBlock` only, no item-level change |
 | `tv-{id}` | travel banner | permanent delete |
 | `recmo::{recId}::{srcDs}` | recurring chip in `recMoModal` | scope picker on drop |
 
-- Weekly cal drag: `wrec::{recId}` (WR), `rec::{recId}::{dueDate}` (non-WR).
+- Weekly cal drag: `wrec::{recId}` (legacy WR), `rec::{recId}::{dueDate}` (non-WR), `wrrule::{ruleId}` (WR rule from overview), `shop::{shopId}` (shopping from overview).
+- Drag from overviews onto today/timeblock/weekly cal: `wrrule::{ruleId}` (WR rules panel), `shop::{shopId}` (shopping overview). Dropped WR rules use `_dateOverrides[wkKey]` as scheduled marker; dropped shop items set `due_date`.
 - recMoModal drag: `recmo::{recId}::{srcDs}`. Drop on day cell → `showWrScopePicker`: "This week only"→`_dateOverrides[wkKey]=ds`; "All future"→update `appears_on_date` (day name for weekly/biweekly, date-of-month number for monthly).
 - Shift-click range: `#mCells` and `#recMoCells` both use `.mcell-t[data-tid]` DOM order.
 - Multi-select Delete: single `pushUndo`. Undo for recurring does NOT restore `notes`/`pup_related`/extra fields.
@@ -131,6 +139,8 @@ Tables: `wr_recurring_rules` (base definitions) + `wr_recurring_overrides` (per-
 - monthly date_of_month: same check for fixed date.
 
 **Override upsert** (`writeWrOverride(ruleId, wkKey, payload, {onDone, undoLabel})` in `overview.js`): PATCH if override exists for `(ruleId, wkKey)`, POST if not. Nulls out unrelated fields. All WR DB ops via `sbReqSilent`.
+
+**`_dateOverrides` on `st.wrRules`** — client-side only (no DB column). Stores `{[wkKey]: dateString}` when a rule is dragged onto a view for that week. `syncAll` preserves these: save `prevPins` keyed by rule ID before replacing `st.wrRules` from DB, then restore after. Views (today, weekly cal, weekly summary) read `r._dateOverrides[wkKey]` to determine if rule is scheduled for that day.
 
 **Done state**: `complete` override with `done=true`. Written by `togWrRule`. DELETEd when un-checking.
 
@@ -169,7 +179,7 @@ Tables: `wr_recurring_rules` (base definitions) + `wr_recurring_overrides` (per-
 
 ### Overview (`overview.js`)
 
-**Today List** — sort: done last → travel → overdue → important → type (regular=1,recurring=2,shopping=3,birthday=4) → name. No category bg (`noColor:true`). `_hasTBToday(t)`: `dayOff===0 && isOv(due_date) && !done` + linked block.
+**Today List** — sort: done last → travel → overdue → important → type (regular=1,recurring=2,shopping=3,birthday=4) → name. No category bg (`noColor:true`). `_hasTBToday(t)`: `dayOff===0 && isOv(due_date) && !done` + linked block. Sort helpers `_hasTBToday`, `sortTasksForDay`, `sortByTBWeek`: check `b.ruleId` (WR rule blocks), `b.shopId` (shop blocks), `b.recId` (recurring), `b.taskId` (regular) when finding linked blocks.
 
 **Weekly Reset container** — see WR Recurring Rules System section above.
 
@@ -191,7 +201,7 @@ Two-col grid: WR left (`#rt-wr-*`), non-WR right (`#rt-sch-*`). 4 cadence groups
 ---
 
 ### Monthly Calendar (`features.js`, `#mModal`)
-`renderMoCal`: 22 weeks (8 past + 14 future). Month separators: `.mo-sep` (`grid-column:1/-1`). Open: `scrollMoToday()` via `setTimeout(30ms)`. CSS: `#mCells` uses `.mcells` (`grid-template-columns:repeat(7,1fr)`). `.mcell` has `min-width:0`.
+`renderMoCal`: 22 weeks (8 past + 14 future). Month separators: `.mo-sep` (`grid-column:1/-1`). Open: `scrollMoToday()` **before** adding `.open` class (overlay at `opacity:0` still participates in layout; scroll must happen before reveal transition). Then `requestAnimationFrame(()=>modal.classList.add('open'))`. GPU: `backdrop-filter:none` on `#mModal`/`#recMoModal` (prevents continuous repaint from orbs behind overlay). Orb animations paused on open: `bg.classList.add('orbs-paused')` (CSS: `.bg-canvas.orbs-paused .orb{animation-play-state:paused}`); removed on close. CSS: `#mCells` uses `.mcells` (`grid-template-columns:repeat(7,1fr)`). `.mcell` has `min-width:0`.
 
 Chip structure: `[checkbox][text span][chip-del]`. Non-travel chips get 8×8px checkbox (see Global Chip Checkboxes). Travel chips: no checkbox; non-visual-first cells get `<span style="flex:1"></span>` only. Click guard: `.chip-del,.chk-wrap`.
 
@@ -203,7 +213,7 @@ Chip interactions: `moChipDel(t,ds,e)` for delete. `dsToWkKey(ds)` (not `getWkKe
 
 ### Recurring Monthly View (`overview.js`, `#recMoModal`)
 
-Opens via "Month" button in weekly reset card header. `openRecMoModal()` → `renderRecMoCal()` → `.classList.add('open')` → `scrollRecMoToday()`.
+Opens via "Month" button in weekly reset card header. `openRecMoModal()` → `renderRecMoCal()` → `scrollRecMoToday()` (before `.open`) → `requestAnimationFrame(()=>modal.classList.add('open'))`. Same GPU/orb-pause rules as `#mModal` (see Monthly Calendar section).
 
 **Grid**: 8 columns — 7 day columns (Mon–Sun) + 1 WR column. CSS: `#recMoDow,#recMoCells{grid-template-columns:repeat(7,1fr) minmax(160px,1.8fr)}`. DOW header: Mon–Sun labels + "Weekly Reset" label (blue, left border). `#recMoModal` `style="z-index:490"`. Width: `min(98vw,1200px)`.
 
@@ -240,6 +250,8 @@ Indicator dot: WR if `item.edited`, non-WR if `item.moved`. Color = `gc(type).d`
 
 ### Shopping List (`features.js`)
 `shop_order integer`. Fetch: `?order=shop_order.asc.nullslast,store.asc,name.asc`. Sort modes: `manual`|`store`|`alpha` via `cycleShopOvSort()`. Grips only in manual mode. **Drag MUST use mousedown/mousemove/mouseup — NOT HTML5 drag**. `renderShopOv()` uses `createElement`. `onUp`: splice, reassign sequential `shop_order`, re-render, PATCH affected rows.
+
+**Drag onto other views** — `renderShopOv` rows are HTML5-draggable with `dragId='shop::{shopId}'`. Drop onto today list/timeblock/weekly cal sets `due_date` on the shop item. Once on a view, X on chip/row calls `unscheduleShop(id)`: nulls `due_date`, removes linked `st.blocks` entries, renders. Does NOT delete from shopping list. X on timeblock block → `delBlock` only (see Global Timeblock X rule).
 
 ---
 
