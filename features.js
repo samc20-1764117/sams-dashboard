@@ -2116,7 +2116,8 @@ function applySelHighlight(){
     let sel=false,csId=null;
     if(b.taskId){sel=selectedTasks.has(String(b.taskId));csId=String(b.taskId);}
     else if(b.recId){const rid=String(b.recId);const _r=st.recurring.find(x=>String(x.id)===rid);const _isWr=_r&&(_r.is_weekly_reset===true||_r.is_weekly_reset==='true');sel=selectedTasks.has('rec-virt-'+rid)||selRecIds.has(rid)||selectedTasks.has('wrec-'+rid);csId=(_isWr?'wrec-':'rec-virt-')+rid;}
-    else if(b.shopId){const sid=String(b.shopId);sel=selectedTasks.has('shop-cal-'+sid)||selShopIds.has(sid);csId='shop-cal-'+sid;}
+    else if(b.ruleId){const blkId='blk-'+String(b.id);sel=selectedTasks.has(blkId);csId='wrrule-'+String(b.ruleId);}
+    else if(b.shopId){const sid=String(b.shopId);const blkId='blk-'+String(b.id);sel=selectedTasks.has(blkId)||selectedTasks.has('shop-cal-'+sid)||selShopIds.has(sid);csId='shop-cal-'+sid;}
     el.classList.toggle('sel-row',sel);
     if(sel)applySelVars(el,csForId(csId));
     else clearSelVars(el);
@@ -2177,6 +2178,9 @@ document.addEventListener('keydown',async e=>{
   if((e.key==='Delete'||e.key==='Backspace')&&selectedTasks.size>0){
     e.preventDefault();
     const ids=[...selectedTasks];
+    // Timeblock-only blocks (shop/WR rule): just remove from timeblock
+    const blkOnlyIds=ids.filter(id=>id.startsWith('blk-'));
+    if(blkOnlyIds.length){blkOnlyIds.forEach(id=>delBlock(id.replace('blk-','')));clearSelection();return;}
     // WR rule rows: skip this week instead of permanent delete
     const wrRuleIds=ids.filter(id=>id.startsWith('wrrule-'));
     if(wrRuleIds.length){
