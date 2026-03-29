@@ -872,16 +872,29 @@ function renderRecMoCal(){
   const DAYNAMES=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
   function makeChip(item,ds){
     const isWR=item.isWR;
+    const wkKey=isWR?(item.wkKey||dsToWkKey(ds)):dsToWkKey(ds);
+    // Compute done state
+    let isDone=false;
+    if(isWR){isDone=st.wrOverrides.some(o=>String(o.rule_id)===String(item.ruleId)&&o.wk_key===wkKey&&o.override_type==='complete'&&o.done===true);}
+    else{const r=st.recurring.find(x=>String(x.id)===item.recId);isDone=!!(r&&r._doneByWk&&r._doneByWk[wkKey]);}
     const s=gc(isWR?'weekly_reset':'Recurring');
     const chip=document.createElement('div');chip.className='mcell-t';
     const tid=isWR?'wrrule-'+item.ruleId:'rec-virt-'+item.recId;
     chip.dataset.tid=tid;
-    chip.style.cssText=`background:${s.bg};color:${s.t};border-color:${s.b};cursor:${isWR?'pointer':'grab'}`;
-    chip.innerHTML=`<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${item.isPup?'🐾 ':''}${escHtml(item.name)}</span>`;
+    chip.style.cssText=`background:${s.bg};color:${s.t};border-color:${s.b};cursor:${isWR?'pointer':'grab'}${isDone?';opacity:.5':''}`;
+    // Checkbox
+    const chkWrap=document.createElement('label');chkWrap.className='chk-wrap';chkWrap.style.cssText='padding:2px 3px;margin:-2px -1px;flex-shrink:0';
+    chkWrap.addEventListener('click',e=>e.stopPropagation());
+    const chk=document.createElement('input');chk.type='checkbox';chk.className='chk';chk.checked=isDone;
+    chk.addEventListener('change',function(){if(isWR)togWrRule(item.ruleId,this.checked,wkKey);else togRec(item.recId,this.checked,wkKey);});
+    chkWrap.appendChild(chk);chip.appendChild(chkWrap);
+    // Name
+    const nm=document.createElement('span');nm.style.cssText=`flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap${isDone?';text-decoration:line-through':''}`;
+    nm.textContent=(item.isPup?'🐾 ':'')+item.name;chip.appendChild(nm);
     // Moved-this-week indicator dot for regular recurring
     if(!isWR&&item.moved){
       const dot=document.createElement('span');
-      dot.style.cssText='width:5px;height:5px;border-radius:50%;flex-shrink:0;margin-left:2px;background:#fff;box-shadow:0 0 0 1px rgba(0,0,0,.18)';
+      dot.style.cssText='width:5px;height:5px;border-radius:50%;flex-shrink:0;margin-left:2px;background:#fff';
       dot.title='Moved this week only';chip.appendChild(dot);
     }
     // X button
@@ -903,7 +916,7 @@ function renderRecMoCal(){
     });
     chip.appendChild(dx);
     // Click to select
-    chip.addEventListener('click',e=>{if(e.target.closest('.chip-del'))return;selTask(e,tid);});
+    chip.addEventListener('click',e=>{if(e.target.closest('.chip-del,.chk-wrap'))return;selTask(e,tid);});
     // Double-click to edit
     chip.addEventListener('dblclick',e=>{
       e.stopPropagation();
