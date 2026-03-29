@@ -885,7 +885,7 @@ function renderRecMoCal(){
     // Checkbox
     const chkWrap=document.createElement('label');chkWrap.className='chk-wrap';chkWrap.style.cssText='padding:2px 3px;margin:-2px -1px;flex-shrink:0';
     chkWrap.addEventListener('click',e=>e.stopPropagation());
-    const chk=document.createElement('input');chk.type='checkbox';chk.className='chk';chk.checked=isDone;
+    const chk=document.createElement('input');chk.type='checkbox';chk.className='chk';chk.style.cssText='width:8px;height:8px';chk.checked=isDone;
     chk.addEventListener('change',function(){if(isWR)togWrRule(item.ruleId,this.checked,wkKey);else togRec(item.recId,this.checked,wkKey);});
     chkWrap.appendChild(chk);chip.appendChild(chkWrap);
     // Name
@@ -894,7 +894,7 @@ function renderRecMoCal(){
     // Moved-this-week indicator dot for regular recurring
     if(!isWR&&item.moved){
       const dot=document.createElement('span');
-      dot.style.cssText='width:5px;height:5px;border-radius:50%;flex-shrink:0;margin-left:2px;background:#fff';
+      dot.style.cssText='width:5px;height:5px;border-radius:50%;flex-shrink:0;margin-left:2px;background:#aaa;box-shadow:0 0 0 1px rgba(0,0,0,.15)';
       dot.title='Moved this week only';chip.appendChild(dot);
     }
     // X button
