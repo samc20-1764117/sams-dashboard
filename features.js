@@ -605,8 +605,11 @@ function renderShopFull(){save();
 function unscheduleShop(id){
   const s=st.shopping.find(x=>String(x.id)===String(id));if(!s)return;
   const prev=s.due_date;s.due_date=null;
+  const linkedBlocks=st.blocks?st.blocks.filter(b=>String(b.shopId)===String(id)):[];
+  if(st.blocks)st.blocks=st.blocks.filter(b=>String(b.shopId)!==String(id));
   save();renderAll();
-  pushUndo(()=>{s.due_date=prev;save();renderAll();sbReqNullable('PATCH','shopping_list',{due_date:prev||null},`?id=eq.${id}`);},'Removed shopping item from view');
+  linkedBlocks.forEach(b=>sbDeleteBlock(b.id));
+  pushUndo(()=>{s.due_date=prev;linkedBlocks.forEach(b=>{if(st.blocks)st.blocks.push(b);sbSaveBlock(b);});save();renderAll();sbReqNullable('PATCH','shopping_list',{due_date:prev||null},`?id=eq.${id}`);},'Removed shopping item from view');
   sbReqNullable('PATCH','shopping_list',{due_date:null},`?id=eq.${id}`);
 }
 // Remove weekly reset task from a view by clearing its date override — keeps task active in weekly reset overview

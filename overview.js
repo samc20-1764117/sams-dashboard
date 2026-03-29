@@ -81,6 +81,7 @@ function renderToday(){
     if(t._type==='travel'||t._type==='birthday')return true;
     const isOvToday=dayOff===0&&isOv(t.due_date)&&!t.done;
     if(t._shopId)return st.blocks.some(b=>(b.ds===_todDs||isOvToday)&&String(b.shopId)===String(t._shopId));
+    if(t._ruleId)return st.blocks.some(b=>(b.ds===_todDs||isOvToday)&&String(b.ruleId)===String(t._ruleId));
     if(t._recId)return st.blocks.some(b=>(b.ds===_todDs||isOvToday)&&String(b.recId)===String(t._recId));
     if(!t._virtual)return st.blocks.some(b=>(b.ds===_todDs||isOvToday)&&String(b.taskId)===String(t.id));
     return true;
@@ -118,6 +119,7 @@ function sortTasksForDay(tasks,ds){
   function tbSm(t){
     let b=null;
     if(t._shopId)b=blks.find(x=>String(x.shopId)===String(t._shopId));
+    else if(t._ruleId)b=blks.find(x=>String(x.ruleId)===String(t._ruleId));
     else if(t._recId)b=blks.find(x=>String(x.recId)===String(t._recId));
     else if(!t._virtual)b=blks.find(x=>String(x.taskId)===String(t.id));
     return b?b.sm:null;
@@ -140,6 +142,7 @@ function sortByTBWeek(tasks){
   function tbSmAny(t){
     let b=null;
     if(t._shopId)b=st.blocks.find(x=>String(x.shopId)===String(t._shopId));
+    else if(t._ruleId)b=st.blocks.find(x=>String(x.ruleId)===String(t._ruleId));
     else if(t._recId)b=st.blocks.find(x=>String(x.recId)===String(t._recId));
     else if(!t._virtual)b=st.blocks.find(x=>String(x.taskId)===String(t.id));
     return b?b.sm:null;
@@ -1237,8 +1240,11 @@ function unscheduleWrRule(rid,wkKey){
   const r=st.wrRules.find(x=>String(x.id)===String(rid));if(!r||!r._dateOverrides)return;
   const prev=r._dateOverrides[wkKey];
   delete r._dateOverrides[wkKey];
+  const linkedBlocks=st.blocks?st.blocks.filter(b=>String(b.ruleId)===String(rid)):[];
+  if(st.blocks)st.blocks=st.blocks.filter(b=>String(b.ruleId)!==String(rid));
   save();renderAll();
-  pushUndo(()=>{if(!r._dateOverrides)r._dateOverrides={};r._dateOverrides[wkKey]=prev;save();renderAll();},'Removed WR task from calendar');
+  linkedBlocks.forEach(b=>sbDeleteBlock(b.id));
+  pushUndo(()=>{if(!r._dateOverrides)r._dateOverrides={};r._dateOverrides[wkKey]=prev;linkedBlocks.forEach(b=>{if(st.blocks)st.blocks.push(b);sbSaveBlock(b);});save();renderAll();},'Removed WR task from calendar');
 }
 // X button on WR chips/rows outside the WR overlay: skip this week (+ clear date override) or delete rule
 // Works for both old WR tasks (st.recurring) and new WR rules (st.wrRules)
