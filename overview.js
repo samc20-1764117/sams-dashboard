@@ -881,7 +881,7 @@ function renderRecMoCal(){
     // Moved-this-week indicator dot for regular recurring
     if(!isWR&&item.moved){
       const dot=document.createElement('span');
-      dot.style.cssText='width:5px;height:5px;border-radius:50%;flex-shrink:0;margin-left:2px;background:#e8a020';
+      dot.style.cssText='width:5px;height:5px;border-radius:50%;flex-shrink:0;margin-left:2px;background:#fff;box-shadow:0 0 0 1px rgba(0,0,0,.18)';
       dot.title='Moved this week only';chip.appendChild(dot);
     }
     // X button
@@ -970,7 +970,7 @@ function renderRecMoCal(){
     // 8th column: WR tasks for this week (2-column layout for overflow)
     const wrCell=document.createElement('div');
     wrCell.className='mcell';
-    wrCell.style.cssText='background:rgba(239,246,255,.4);border-color:rgba(59,130,246,.18);border-left-width:2px';
+    wrCell.style.cssText='background:rgba(239,246,255,.4);border:none';
     const wrBody=document.createElement('div');wrBody.className='mcell-body';
     wrBody.style.cssText='columns:2;column-gap:2px';
     (wrWeekMap[w]||[]).forEach(item=>wrBody.appendChild(makeChip(item,d2s(wkMon))));
