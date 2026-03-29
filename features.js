@@ -674,9 +674,9 @@ function openMModal(){
     for(let y=curYr-3;y<=curYr+2;y++){yrSel.innerHTML+=`<option value="${y}">${y}</option>`;}
   }
   renderMoCal();
+  scrollMoToday();
   const modal=document.getElementById('mModal');
-  modal.classList.add('open');
-  setTimeout(scrollMoToday,30);
+  requestAnimationFrame(()=>modal.classList.add('open'));
 }
 function jumpMoYear(yr){
   _moYrFilter=yr?parseInt(yr):null;

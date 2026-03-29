@@ -829,8 +829,8 @@ function isWRecDueThisWeek(r,off=0){
 // ── Recurring Monthly View ────────────────────────────────────────────────────
 function openRecMoModal(){
   renderRecMoCal();
-  document.getElementById('recMoModal').classList.add('open');
-  setTimeout(scrollRecMoToday,30);
+  scrollRecMoToday();
+  requestAnimationFrame(()=>document.getElementById('recMoModal').classList.add('open'));
 }
 function scrollRecMoToday(){
   const mgrid=document.querySelector('#recMoModal .mgrid');
