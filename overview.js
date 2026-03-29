@@ -1054,6 +1054,7 @@ function renderRecOv(){
     if(elReg)elReg.appendChild(row);
   });
   requestAnimationFrame(applySelHighlight);
+  if(document.getElementById('recMoModal')?.classList.contains('open'))renderRecMoCal();
 }
 
 // Upsert a wr_recurring_override — patches if one exists for (ruleId,wkKey), posts if not.
