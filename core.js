@@ -779,6 +779,7 @@ document.addEventListener('keydown',e=>{
     if(atb){e.preventDefault();delAutoTBForDay(selAtbId,selAtbDs,atb._ovId);}
   }
   if(e.key===' '&&document.getElementById('mModal').classList.contains('open')){e.preventDefault();closeMod('mModal');}
+  if(e.key===' '&&document.getElementById('recMoModal').classList.contains('open')){e.preventDefault();closeMod('recMoModal');}
   if(e.key==='Enter'&&!e.metaKey&&!e.ctrlKey){
     const qa=document.getElementById('qaPopup');
     if(qa.classList.contains('open')){e.preventDefault();submitQA();return;}

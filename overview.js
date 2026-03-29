@@ -844,24 +844,21 @@ function renderRecMoCal(){
   const startDow=(todayDate.getDay()+6)%7;
   const thisMonday=new Date(todayDate);thisMonday.setDate(todayDate.getDate()-startDow);
   const weekStart=new Date(thisMonday);weekStart.setDate(thisMonday.getDate()-PAST*7);
-  // Build day map: ds -> [{name, isPup, isWR}]
+  // Build day map: ds -> [{name, isPup, isWR, ruleId?, recId?}]
   const dayMap={};
   function addToDay(ds,item){if(!dayMap[ds])dayMap[ds]=[];dayMap[ds].push(item);}
   for(let w=0;w<TOTAL;w++){
     const wkOff=w-PAST;
     const{mon}=getWkBounds(wkOff);
     const monDs=d2s(mon);
-    // WR rules: show on Monday of the week they fire
     st.wrRules.filter(r=>r.is_enabled&&isWRRuleDueThisWeek(r,wkOff)).forEach(r=>{
-      addToDay(monDs,{name:r.name,isPup:r.pup_related===true||r.pup_related==='true',isWR:true});
+      addToDay(monDs,{name:r.name,isPup:r.pup_related===true||r.pup_related==='true',isWR:true,ruleId:String(r.id)});
     });
-    // Regular recurring tasks (non-weekly-reset): show on their computed date
     getRecurringWeekTasks(wkOff).forEach(t=>{
       const r=st.recurring.find(x=>String(x.id)===String(t._recId));
-      addToDay(t.due_date,{name:t.name,isPup:r&&(r.pup_related===true||r.pup_related==='true'),isWR:false});
+      addToDay(t.due_date,{name:t.name,isPup:r&&(r.pup_related===true||r.pup_related==='true'),isWR:false,recId:String(t._recId)});
     });
   }
-  // DOW header (only build once)
   const dowEl=document.getElementById('recMoDow');
   if(!dowEl.children.length)['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach(dn=>{const el=document.createElement('div');el.className='mdowl';el.textContent=dn;dowEl.appendChild(el);});
   const cells=document.getElementById('recMoCells');cells.innerHTML='';
@@ -887,8 +884,39 @@ function renderRecMoCal(){
       (dayMap[ds]||[]).forEach(item=>{
         const s=gc('Recurring');
         const chip=document.createElement('div');chip.className='mcell-t';
-        chip.style.cssText=`background:${s.bg};color:${s.t};border-color:${s.b}`;
+        chip.style.cssText=`background:${s.bg};color:${s.t};border-color:${s.b};cursor:pointer`;
         chip.innerHTML=`<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${item.isPup?'🐾 ':''}${escHtml(item.name)}</span>`;
+        // X button
+        const dx=document.createElement('button');dx.className='chip-del';dx.textContent='✕';
+        dx.addEventListener('click',e=>{
+          e.stopPropagation();
+          if(item.isWR){
+            const wkKey=dsToWkKey(ds);
+            showWrScopePicker(e,
+              '⊘  Skip this week only',
+              '✕  Delete rule (all future)',
+              ()=>writeWrOverride(item.ruleId,wkKey,{override_type:'skip'},{undoLabel:'Skipped WR task this week'}),
+              ()=>wrCtxDeleteRule(item.ruleId)
+            );
+          } else {
+            const r=st.recurring.find(x=>String(x.id)===item.recId);
+            if(!r)return;
+            const wkKey=dsToWkKey(ds);
+            showWrScopePicker(e,
+              '⊘  Skip this week only',
+              '✕  Delete recurring task',
+              ()=>{if(!r._dateOverrides)r._dateOverrides={};const prev=r._dateOverrides[wkKey];r._dateOverrides[wkKey]='__skip__';save();renderAll();renderRecMoCal();sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},recQs(r.id));pushUndo(()=>{if(prev!==undefined)r._dateOverrides[wkKey]=prev;else delete r._dateOverrides[wkKey];save();renderAll();renderRecMoCal();sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},recQs(r.id));},'Skipped recurring this week');},
+              ()=>delRec(item.recId)
+            );
+          }
+        });
+        chip.appendChild(dx);
+        // Double-click to edit
+        chip.addEventListener('dblclick',e=>{
+          e.stopPropagation();
+          if(item.isWR){const wkKey=dsToWkKey(ds);openWrEditModal(item.ruleId,wkKey,'all');}
+          else tiDblRec(e,item.recId);
+        });
         body.appendChild(chip);
       });
       cells.appendChild(cell);
