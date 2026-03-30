@@ -170,7 +170,11 @@ function tRowTodayVirt(t,tbArrow=false,noColor=false){
   const _xBtn=t._isWrRule?`showWrXPicker(event,'${t._ruleId}','${t._wkKey||getWkKey(wkOff)}')`
     :t._isWrec?`showWrXPicker(event,'${t._recId}','${t._wkKey||getWkKey(wkOff)}')`:`skipRecVirtThisWk('${t._recId}','${t._wkKey||getWkKey(wkOff)}')`;
   const _recIdAttr=t._isWrRule?t._ruleId:t._recId;
-  return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''}" style="${!ov&&!noColor?`background:${s.bg}`:''}" id="ti-${t.id}" draggable="true" ondragstart="dragId='${_dragId}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);" ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false);" onclick="selTask(event,'${t.id}')" ondblclick="tiDblRec(event,'${_recIdAttr}')" oncontextmenu="showCtx(event,'${t.id}',true,'${_recIdAttr}')">
+  const _wkKeyAttr=t._wkKey||getWkKey(wkOff);
+  const _dblClick=t._isWrRule?`event.stopPropagation();openWrEditModal('${t._ruleId}','${_wkKeyAttr}','all')`:`tiDblRec(event,'${_recIdAttr}')`;
+  const _ctxMenu=t._isWrRule?`showWrRuleCtx(event,'${t._ruleId}','${_wkKeyAttr}')`:`showCtx(event,'${t.id}',true,'${_recIdAttr}')`;
+
+  return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''}" style="${!ov&&!noColor?`background:${s.bg}`:''}" id="ti-${t.id}" draggable="true" ondragstart="dragId='${_dragId}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);" ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false);" onclick="selTask(event,'${t.id}')" ondblclick="${_dblClick}" oncontextmenu="${_ctxMenu}">
     <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="${_chk}"></label>
     <span class="tn">${t.name}</span>
     <span class="cpill" style="background:${ps.bg};color:${ps.t};border-color:${ps.b}">Recurring</span>
@@ -946,9 +950,9 @@ function renderRecMoCal(){
       e.stopPropagation();
       if(isWR){
         const wkKey=item.wkKey||dsToWkKey(ds);
-        showWrScopePicker(e,'⊘  Skip this week only','✕  Delete rule (all future)',
-          ()=>writeWrOverride(item.ruleId,wkKey,{override_type:'skip'},{undoLabel:'Skipped WR task this week'}),
-          ()=>wrCtxDeleteRule(item.ruleId));
+        showWrScopePicker(e,'⊞  Remove from views','⊘  Skip this week',
+          ()=>unscheduleWrRule(item.ruleId,wkKey),
+          ()=>{unscheduleWrRule(item.ruleId,wkKey);writeWrOverride(item.ruleId,wkKey,{override_type:'skip'},{undoLabel:'Skipped WR task this week'});});
       } else {
         const r=st.recurring.find(x=>String(x.id)===item.recId);if(!r)return;
         const wkKey=dsToWkKey(ds);
@@ -1250,12 +1254,15 @@ function unscheduleWrRule(rid,wkKey){
 // Works for both old WR tasks (st.recurring) and new WR rules (st.wrRules)
 function showWrXPicker(e,rid,wkKey){
   const isRule=st.wrRules.some(r=>String(r.id)===String(rid));
-  showWrScopePicker(e,'⊘  Skip this week only','✕  Delete rule (all future)',
+  showWrScopePicker(e,'⊞  Remove from views','⊘  Skip this week',
+    ()=>{
+      if(isRule){unscheduleWrRule(rid,wkKey);}
+      else{unscheduleWRec(rid,wkKey);}
+    },
     ()=>{
       if(isRule){unscheduleWrRule(rid,wkKey);writeWrOverride(rid,wkKey,{override_type:'skip'},{undoLabel:'Skipped WR task this week'});}
       else{unscheduleWRec(rid,wkKey);}
-    },
-    ()=>wrCtxDeleteRule(rid)
+    }
   );
 }
 
