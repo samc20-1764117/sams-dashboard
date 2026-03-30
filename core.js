@@ -83,6 +83,7 @@ async function sbReqNullable(method,table,body,qs=''){
 // Track task ids that have pending local edits (cleared after confirmed DB write)
 const pendingLocal=new Set();
 const pendingTravelIds=new Set();
+const pendingShopIds=new Set();
 let deletedRecIds=new Set();
 // ── Supabase silent request (no toast on failure) ────────────────────────────
 async function sbReqSilent(method,table,body,qs=''){
@@ -255,7 +256,13 @@ async function syncAll(silent=false){
         ...localPending
       ];
     }
-    if(shop){st.shopping=shop;}
+    if(shop){
+      if(pendingShopIds.size>0){
+        st.shopping=shop.map(sv=>{const sid=String(sv.id);if(pendingShopIds.has(sid)){const loc=st.shopping.find(x=>String(x.id)===sid);if(loc)return loc;}return sv;});
+      } else {
+        st.shopping=shop;
+      }
+    }
     if(trav){
       const localOnly=st.travel.filter(tv=>String(tv.id).startsWith('l-'));
       st.travel=trav.map(sv=>{

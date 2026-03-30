@@ -609,8 +609,8 @@ function unscheduleShop(id){
   if(st.blocks)st.blocks=st.blocks.filter(b=>String(b.shopId)!==String(id));
   save();renderAll();
   linkedBlocks.forEach(b=>sbDeleteBlock(b.id));
-  pushUndo(()=>{s.due_date=prev;linkedBlocks.forEach(b=>{if(st.blocks)st.blocks.push(b);sbSaveBlock(b);});save();renderAll();sbReqNullable('PATCH','shopping_list',{due_date:prev||null},`?id=eq.${id}`);},'Removed shopping item from view');
-  sbReqNullable('PATCH','shopping_list',{due_date:null},`?id=eq.${id}`);
+  pushUndo(()=>{s.due_date=prev;linkedBlocks.forEach(b=>{if(st.blocks)st.blocks.push(b);sbSaveBlock(b);});save();renderAll();const _sid=String(id);pendingShopIds.add(_sid);sbReqNullable('PATCH','shopping_list',{due_date:prev||null},`?id=eq.${id}`).then(()=>pendingShopIds.delete(_sid));},'Removed shopping item from view');
+  pendingShopIds.add(String(id));sbReqNullable('PATCH','shopping_list',{due_date:null},`?id=eq.${id}`).then(()=>pendingShopIds.delete(String(id)));
 }
 // Remove weekly reset task from a view by clearing its date override — keeps task active in weekly reset overview
 function unscheduleWRec(rid,wkKey){
