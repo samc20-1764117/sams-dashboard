@@ -1,5 +1,5 @@
 {
-  "exported_at": "2026-03-30T13:00:00.288Z",
+  "exported_at": "2026-03-31T13:00:01.194Z",
   "mode": "auto",
   "tables": {
     "tasks": [
@@ -24,12 +24,12 @@
         "notes": null
       },
       {
-        "name": "docot apt",
+        "name": "Respond comments",
         "category": "Home",
-        "due_date": "2026-04-02",
+        "due_date": "2026-03-31",
         "done": false,
         "importance": null,
-        "id": "a0258c90-4b67-4c1c-97aa-d7d7d0e89007",
+        "id": "73baa1f4-cf58-4bcd-a871-b0c4bddba5de",
         "important": false,
         "notes": null
       },
@@ -394,16 +394,6 @@
         "notes": null
       },
       {
-        "name": "Meet the makers @11am",
-        "category": "My work",
-        "due_date": "2026-03-30",
-        "done": false,
-        "importance": null,
-        "id": "aaa79368-8e00-4512-b26c-5b1408026979",
-        "important": false,
-        "notes": null
-      },
-      {
         "name": "Switch to Claude",
         "category": "My work",
         "due_date": "2026-03-09",
@@ -430,16 +420,6 @@
         "done": true,
         "importance": null,
         "id": "65ab4759-181e-4830-b907-04bed785d943",
-        "important": false,
-        "notes": null
-      },
-      {
-        "name": "Grass patch",
-        "category": "Home",
-        "due_date": "2026-03-30",
-        "done": false,
-        "importance": null,
-        "id": "4a0a9928-39aa-4a79-8169-fa343732a726",
         "important": false,
         "notes": null
       },
@@ -584,16 +564,6 @@
         "notes": null
       },
       {
-        "name": "Pay tolls",
-        "category": "Home",
-        "due_date": "2026-03-30",
-        "done": false,
-        "importance": null,
-        "id": "4324fcfd-0d94-4090-93af-66efd610e266",
-        "important": false,
-        "notes": null
-      },
-      {
         "name": "Mochi vet apt @11am",
         "category": "Home",
         "due_date": "2026-03-26",
@@ -611,6 +581,16 @@
         "importance": null,
         "id": "6871fded-55f5-433a-a10b-b6950a51ba03",
         "important": true,
+        "notes": null
+      },
+      {
+        "name": "Grass patch",
+        "category": "Home",
+        "due_date": "2026-03-31",
+        "done": true,
+        "importance": null,
+        "id": "4a0a9928-39aa-4a79-8169-fa343732a726",
+        "important": false,
         "notes": null
       },
       {
@@ -874,16 +854,6 @@
         "notes": null
       },
       {
-        "name": "TUG @3:30",
-        "category": "My work",
-        "due_date": "2026-04-09",
-        "done": false,
-        "importance": null,
-        "id": "386d0bd8-9a4d-40f4-8815-3f760db07fd0",
-        "important": false,
-        "notes": null
-      },
-      {
         "name": "Tableau Call 11-12pm",
         "category": "My work",
         "due_date": "2026-03-24",
@@ -894,6 +864,16 @@
         "notes": null
       },
       {
+        "name": "AI tracking video",
+        "category": "My work",
+        "due_date": "2026-04-01",
+        "done": false,
+        "importance": null,
+        "id": "08ddb2d3-42f4-4e48-b0ef-e327ed31b712",
+        "important": false,
+        "notes": "Actual claude (design, interaction)"
+      },
+      {
         "name": "Drive to SA",
         "category": "Home",
         "due_date": "2026-03-27",
@@ -902,6 +882,16 @@
         "id": "a24966c4-4847-4423-9371-9fb816bd0da5",
         "important": false,
         "notes": null
+      },
+      {
+        "name": "AI tracking video",
+        "category": "My work",
+        "due_date": "2026-03-31",
+        "done": false,
+        "importance": null,
+        "id": "fdb0c18c-63f9-4075-8d70-3f2c05348d45",
+        "important": false,
+        "notes": "Video for intro (hook, problem), setup (claude supabase, chat gpt), and actual claude (setup and connect to data)"
       },
       {
         "name": "Build out pages",
@@ -934,62 +924,32 @@
         "notes": null
       },
       {
-        "name": "PM dash - finalize build",
+        "name": "AI tracking video",
         "category": "My work",
-        "due_date": "2026-03-30",
+        "due_date": "2026-04-02",
         "done": false,
         "importance": null,
-        "id": "7141d74b-fa75-41e8-9e24-5663274000bd",
+        "id": "4a3757e6-a91c-4ff5-84d2-287f5db5da6f",
         "important": false,
-        "notes": null
+        "notes": "Script ready"
       },
       {
-        "name": "Between videos",
+        "name": "AI tracking video",
         "category": "My work",
-        "due_date": "2026-03-30",
+        "due_date": "2026-04-03",
         "done": false,
         "importance": null,
-        "id": "bdc0a571-3056-4171-9398-da22e313bbac",
+        "id": "d895f994-cf48-4ab3-95f9-1ffd706914b7",
         "important": false,
-        "notes": null
+        "notes": "Start VO/filming"
       },
       {
-        "name": "Respond comments",
-        "category": "Home",
-        "due_date": "2026-03-30",
+        "name": "Start VO PM dash - needs to be finished 4/7",
+        "category": "My work",
+        "due_date": "2026-04-04",
         "done": false,
         "importance": null,
-        "id": "dc4c0145-f3c9-42d5-ad6d-778bc9f3cbc7",
-        "important": false,
-        "notes": null
-      },
-      {
-        "name": "Get amz back",
-        "category": "Home",
-        "due_date": "2026-03-30",
-        "done": false,
-        "importance": null,
-        "id": "cbfb6f18-b818-4d44-a8d6-e0d82bc30818",
-        "important": false,
-        "notes": null
-      },
-      {
-        "name": "Check CVS sprinies",
-        "category": "Home",
-        "due_date": "2026-03-30",
-        "done": false,
-        "importance": null,
-        "id": "1cf21dfe-83dd-42ad-9857-f1f84d452211",
-        "important": false,
-        "notes": null
-      },
-      {
-        "name": "Gum",
-        "category": "Home",
-        "due_date": "2026-03-30",
-        "done": false,
-        "importance": null,
-        "id": "17332938-d2f6-4166-bc00-8a7f24ab99d9",
+        "id": "4143707c-d83e-47ce-a8cf-e3571586d772",
         "important": false,
         "notes": null
       },
@@ -1001,6 +961,16 @@
         "importance": null,
         "id": "08f99f01-a42e-43c7-a00a-192ede96b797",
         "important": false,
+        "notes": null
+      },
+      {
+        "name": "PM dash - finalize build",
+        "category": "My work",
+        "due_date": "2026-04-03",
+        "done": false,
+        "importance": null,
+        "id": "7141d74b-fa75-41e8-9e24-5663274000bd",
+        "important": true,
         "notes": null
       },
       {
@@ -1064,12 +1034,12 @@
         "notes": null
       },
       {
-        "name": "Start VO PM dash - needs to be finished 4/7",
-        "category": "My work",
-        "due_date": "2026-04-01",
-        "done": false,
+        "name": "Get amz back",
+        "category": "Home",
+        "due_date": "2026-03-30",
+        "done": true,
         "importance": null,
-        "id": "4143707c-d83e-47ce-a8cf-e3571586d772",
+        "id": "cbfb6f18-b818-4d44-a8d6-e0d82bc30818",
         "important": false,
         "notes": null
       },
@@ -1084,22 +1054,32 @@
         "notes": null
       },
       {
-        "name": "Breakdown box",
-        "category": "Home",
-        "due_date": "2026-03-30",
-        "done": false,
-        "importance": null,
-        "id": "8e622d41-bfd0-4a6d-983a-ebd9d66f96e3",
-        "important": false,
-        "notes": null
-      },
-      {
         "name": "Shower",
         "category": "Home",
         "due_date": "2026-03-26",
         "done": true,
         "importance": null,
         "id": "622c31f2-153a-4d5f-a9af-075cdad2d540",
+        "important": false,
+        "notes": null
+      },
+      {
+        "name": "Respond comments",
+        "category": "Home",
+        "due_date": "2026-03-30",
+        "done": true,
+        "importance": null,
+        "id": "dc4c0145-f3c9-42d5-ad6d-778bc9f3cbc7",
+        "important": false,
+        "notes": null
+      },
+      {
+        "name": "Breakdown box",
+        "category": "Home",
+        "due_date": "2026-03-30",
+        "done": true,
+        "importance": null,
+        "id": "8e622d41-bfd0-4a6d-983a-ebd9d66f96e3",
         "important": false,
         "notes": null
       },
@@ -1164,12 +1144,32 @@
         "notes": null
       },
       {
+        "name": "Pay tolls",
+        "category": "Home",
+        "due_date": "2026-03-30",
+        "done": true,
+        "importance": null,
+        "id": "4324fcfd-0d94-4090-93af-66efd610e266",
+        "important": false,
+        "notes": null
+      },
+      {
         "name": "Neuo Dash - build",
         "category": "My work",
         "due_date": null,
         "done": false,
         "importance": null,
         "id": "5fbb5709-9398-4db5-a9db-dac7fdc3e060",
+        "important": false,
+        "notes": null
+      },
+      {
+        "name": "Call Nai Nai",
+        "category": "Home",
+        "due_date": "2026-04-02",
+        "done": false,
+        "importance": null,
+        "id": "d376f4e0-151f-4ce4-a4d2-6216c98403b3",
         "important": false,
         "notes": null
       },
@@ -1204,6 +1204,16 @@
         "notes": null
       },
       {
+        "name": "Sprinie pick up",
+        "category": "Home",
+        "due_date": "2026-03-30",
+        "done": true,
+        "importance": null,
+        "id": "1cf21dfe-83dd-42ad-9857-f1f84d452211",
+        "important": false,
+        "notes": null
+      },
+      {
         "name": "Sunny pick up",
         "category": "Home",
         "due_date": "2026-03-27",
@@ -1212,9 +1222,181 @@
         "id": "7ea30504-f426-4040-a0d2-5dc288a113c9",
         "important": false,
         "notes": null
+      },
+      {
+        "name": "Gum",
+        "category": "Home",
+        "due_date": "2026-03-30",
+        "done": true,
+        "importance": null,
+        "id": "17332938-d2f6-4166-bc00-8a7f24ab99d9",
+        "important": false,
+        "notes": null
+      },
+      {
+        "name": "Mochi vaccine apt call",
+        "category": "Home",
+        "due_date": "2026-03-31",
+        "done": false,
+        "importance": null,
+        "id": "07ac068b-ef9a-4cce-8490-e1768292153b",
+        "important": false,
+        "notes": null
+      },
+      {
+        "name": "Check mail",
+        "category": "Home",
+        "due_date": "2026-03-30",
+        "done": true,
+        "importance": null,
+        "id": "c9da6b07-09d1-41c2-8e61-38734924c271",
+        "important": false,
+        "notes": null
+      },
+      {
+        "name": "Between videos",
+        "category": "My work",
+        "due_date": "2026-03-30",
+        "done": true,
+        "importance": null,
+        "id": "bdc0a571-3056-4171-9398-da22e313bbac",
+        "important": false,
+        "notes": null
+      },
+      {
+        "name": "Hide yellow video",
+        "category": "My work",
+        "due_date": "2026-03-31",
+        "done": false,
+        "importance": null,
+        "id": "be152879-a757-4f11-88b6-476cf6231453",
+        "important": false,
+        "notes": null
+      },
+      {
+        "name": "Six sigma training",
+        "category": "Work",
+        "due_date": "2026-03-31",
+        "done": false,
+        "importance": null,
+        "id": "bac1b0fc-fe4b-4b19-a1f3-da51591dd4b2",
+        "important": false,
+        "notes": null
+      },
+      {
+        "name": "TUG @3:30",
+        "category": "My work",
+        "due_date": "2026-04-09",
+        "done": false,
+        "importance": null,
+        "id": "386d0bd8-9a4d-40f4-8815-3f760db07fd0",
+        "important": false,
+        "notes": null
+      },
+      {
+        "name": "TC 26: Design interface icons",
+        "category": "My work",
+        "due_date": "2026-03-31",
+        "done": false,
+        "importance": null,
+        "id": "daa58298-858d-4952-945d-915793270898",
+        "important": false,
+        "notes": null
+      },
+      {
+        "name": "Shower",
+        "category": "Home",
+        "due_date": "2026-03-31",
+        "done": false,
+        "importance": null,
+        "id": "6373fdff-1d0c-4c80-8297-c42c28e2d83c",
+        "important": false,
+        "notes": null
+      },
+      {
+        "name": "TC 26: Design toggle icons",
+        "category": "My work",
+        "due_date": "2026-04-01",
+        "done": false,
+        "importance": null,
+        "id": "37582608-6923-4245-892b-433d1fea9e26",
+        "important": false,
+        "notes": null
+      },
+      {
+        "name": "Drill down - sets vs parameters",
+        "category": "My work",
+        "due_date": "2026-04-01",
+        "done": false,
+        "importance": null,
+        "id": "84cff1a2-7f2a-45b1-ada6-b27f7f786c39",
+        "important": false,
+        "notes": null
+      },
+      {
+        "name": "TC 26: Menu nav",
+        "category": "My work",
+        "due_date": "2026-04-02",
+        "done": false,
+        "importance": null,
+        "id": "ec9bc8bd-78b7-4900-bf86-a892b4717a19",
+        "important": false,
+        "notes": null
+      },
+      {
+        "name": "TC 26: Filter controls logic",
+        "category": "My work",
+        "due_date": "2026-04-02",
+        "done": false,
+        "importance": null,
+        "id": "98020438-6010-49c4-ab39-40cb012e6ed1",
+        "important": false,
+        "notes": null
+      },
+      {
+        "name": "TC 26 use slide template",
+        "category": "My work",
+        "due_date": "2026-04-03",
+        "done": false,
+        "importance": null,
+        "id": "fddf191d-eda6-46ed-b427-a59d24e8156b",
+        "important": false,
+        "notes": null
       }
     ],
     "recurring_tasks": [
+      {
+        "name": "Vop",
+        "is_weekly_reset": true,
+        "day_added": null,
+        "appears_on_date": "Friday",
+        "starting_date": "2026-03-18",
+        "cadence": "biweekly",
+        "done_this_week": false,
+        "done_by_week": {},
+        "date_overrides": {},
+        "pup_related": null,
+        "notes": null
+      },
+      {
+        "name": "Journal",
+        "is_weekly_reset": false,
+        "day_added": "Sunday",
+        "appears_on_date": "Friday",
+        "starting_date": "2026-03-07",
+        "cadence": "weekly",
+        "done_this_week": false,
+        "done_by_week": {
+          "2026-03-09": true
+        },
+        "date_overrides": {
+          "2026-03-16": "2026-03-23",
+          "2026-03-23": "2026-03-29",
+          "2026-03-30": "2026-04-03"
+        },
+        "pup_related": false,
+        "notes": null
+      },
       {
         "name": "Pilates",
         "is_weekly_reset": false,
@@ -1234,38 +1416,6 @@
         },
         "pup_related": false,
         "notes": "4:30pm"
-      },
-      {
-        "name": "Journal",
-        "is_weekly_reset": false,
-        "day_added": "Sunday",
-        "appears_on_date": "Friday",
-        "starting_date": "2026-03-07",
-        "cadence": "weekly",
-        "done_this_week": false,
-        "done_by_week": {
-          "2026-03-09": true
-        },
-        "date_overrides": {
-          "2026-03-16": "2026-03-23",
-          "2026-03-23": "2026-03-29",
-          "2026-03-30": "2026-03-31"
-        },
-        "pup_related": false,
-        "notes": null
-      },
-      {
-        "name": "Vop",
-        "is_weekly_reset": true,
-        "day_added": null,
-        "appears_on_date": "Friday",
-        "starting_date": "2026-03-18",
-        "cadence": "biweekly",
-        "done_this_week": false,
-        "done_by_week": {},
-        "date_overrides": {},
-        "pup_related": null,
-        "notes": null
       },
       {
         "name": "Pups bowls",
@@ -1537,6 +1687,33 @@
     ],
     "shopping_list": [
       {
+        "id": "0ee083d7-85d0-424b-82e3-2a7f84c3723f",
+        "name": "Grippy socks",
+        "store": "Other",
+        "done": true,
+        "created_at": "2026-03-18T17:56:48.651649+00:00",
+        "due_date": "2026-03-30",
+        "shop_order": 2
+      },
+      {
+        "id": "29ff9d61-c28d-4c88-bfed-a1a07b9f9f4d",
+        "name": "Zip ties",
+        "store": "Other",
+        "done": true,
+        "created_at": "2026-03-26T14:45:23.617245+00:00",
+        "due_date": null,
+        "shop_order": 8
+      },
+      {
+        "id": "010dd63b-57ff-457b-9ce4-d40bdb8bf1c2",
+        "name": "Mochi carrier",
+        "store": "Online",
+        "done": false,
+        "created_at": "2026-03-23T01:44:25.166696+00:00",
+        "due_date": "2026-04-04",
+        "shop_order": 1
+      },
+      {
         "id": "e1aa0f3c-8b72-4200-b4e5-d35ad2d1f74c",
         "name": "testing addng",
         "store": "Online",
@@ -1654,24 +1831,6 @@
         "shop_order": 0
       },
       {
-        "id": "9eeb0d0c-283a-4e0d-9f29-b1bc965db522",
-        "name": "Electronic toothbrush for pups",
-        "store": "Online",
-        "done": false,
-        "created_at": "2026-03-10T14:18:17.412058+00:00",
-        "due_date": null,
-        "shop_order": 3
-      },
-      {
-        "id": "010dd63b-57ff-457b-9ce4-d40bdb8bf1c2",
-        "name": "Mochi carrier",
-        "store": "Online",
-        "done": false,
-        "created_at": "2026-03-23T01:44:25.166696+00:00",
-        "due_date": null,
-        "shop_order": 1
-      },
-      {
         "id": "8a4c2056-807a-464d-9a3e-db4c290d5cc2",
         "name": "Outdoor throw pillows",
         "store": "Home goods",
@@ -1708,22 +1867,13 @@
         "shop_order": 10
       },
       {
-        "id": "29ff9d61-c28d-4c88-bfed-a1a07b9f9f4d",
-        "name": "Zip ties",
-        "store": "Other",
+        "id": "9eeb0d0c-283a-4e0d-9f29-b1bc965db522",
+        "name": "Electronic toothbrush for pups",
+        "store": "Online",
         "done": false,
-        "created_at": "2026-03-26T14:45:23.617245+00:00",
+        "created_at": "2026-03-10T14:18:17.412058+00:00",
         "due_date": null,
-        "shop_order": 8
-      },
-      {
-        "id": "0ee083d7-85d0-424b-82e3-2a7f84c3723f",
-        "name": "griup socks",
-        "store": "Other",
-        "done": false,
-        "created_at": "2026-03-18T17:56:48.651649+00:00",
-        "due_date": "2026-03-30",
-        "shop_order": 2
+        "shop_order": 3
       }
     ],
     "travel": [
@@ -3247,6 +3397,20 @@
         "done": true
       },
       {
+        "id": "3bc96324-3b74-42fb-b4f3-5a4b703a6c66",
+        "title": "Drill down - sets vs parameters",
+        "day_date": "2026-04-01",
+        "start_time": "08:15:00",
+        "duration_minutes": 105,
+        "category": "My work",
+        "created_at": "2026-03-30T21:32:52.646898+00:00",
+        "start_minutes": 495,
+        "task_id": "84cff1a2-7f2a-45b1-ada6-b27f7f786c39",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
         "id": "8d671387-bfa5-4e6e-983e-01402237ad7c",
         "title": "Between videos",
         "day_date": "2026-03-20",
@@ -3256,20 +3420,6 @@
         "created_at": "2026-03-20T13:54:48.413625+00:00",
         "start_minutes": 720,
         "task_id": "b9a7b537-2afb-49f5-b474-251b89460550",
-        "rec_id": null,
-        "shop_id": null,
-        "done": false
-      },
-      {
-        "id": "3a736bfd-45c7-4e49-a45a-fbdb50980254",
-        "title": "Respond comments",
-        "day_date": "2026-03-30",
-        "start_time": "07:45:00",
-        "duration_minutes": 30,
-        "category": "Home",
-        "created_at": "2026-03-30T12:35:26.479926+00:00",
-        "start_minutes": 465,
-        "task_id": "dc4c0145-f3c9-42d5-ad6d-778bc9f3cbc7",
         "rec_id": null,
         "shop_id": null,
         "done": false
@@ -3312,6 +3462,20 @@
         "created_at": "2026-03-23T13:20:03.632115+00:00",
         "start_minutes": 855,
         "task_id": "b9a7b537-2afb-49f5-b474-251b89460550",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
+        "id": "a8adef9e-3083-4241-bb1a-e5eab603719a",
+        "title": "Check mail",
+        "day_date": "2026-03-30",
+        "start_time": "12:45:00",
+        "duration_minutes": 30,
+        "category": "Home",
+        "created_at": "2026-03-30T14:07:54.386594+00:00",
+        "start_minutes": 720,
+        "task_id": "c9da6b07-09d1-41c2-8e61-38734924c271",
         "rec_id": null,
         "shop_id": null,
         "done": true
@@ -3597,34 +3761,6 @@
         "done": true
       },
       {
-        "id": "437e31a9-7d9b-447c-8807-58945d57a182",
-        "title": "Get amz back",
-        "day_date": "2026-03-30",
-        "start_time": "16:15:00",
-        "duration_minutes": 30,
-        "category": "Home",
-        "created_at": "2026-03-30T12:35:46.078993+00:00",
-        "start_minutes": 1080,
-        "task_id": "cbfb6f18-b818-4d44-a8d6-e0d82bc30818",
-        "rec_id": null,
-        "shop_id": null,
-        "done": false
-      },
-      {
-        "id": "4e46c481-e96e-466d-a020-10c6799c6f10",
-        "title": "Grass patch",
-        "day_date": "2026-03-30",
-        "start_time": "08:15:00",
-        "duration_minutes": 30,
-        "category": "Home",
-        "created_at": "2026-03-30T12:40:24.312187+00:00",
-        "start_minutes": 495,
-        "task_id": "4a0a9928-39aa-4a79-8169-fa343732a726",
-        "rec_id": null,
-        "shop_id": null,
-        "done": false
-      },
-      {
         "id": "98d5e28f-df3a-4a71-98e0-2150515ac5ee",
         "title": "PACK",
         "day_date": "2026-03-27",
@@ -3709,6 +3845,34 @@
         "done": true
       },
       {
+        "id": "24c1dc37-a576-4aa2-839b-bb0684a297b9",
+        "title": "Shower",
+        "day_date": "2026-03-31",
+        "start_time": "18:45:00",
+        "duration_minutes": 30,
+        "category": "Home",
+        "created_at": "2026-03-31T02:47:03.41135+00:00",
+        "start_minutes": 1110,
+        "task_id": "6373fdff-1d0c-4c80-8297-c42c28e2d83c",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "3a736bfd-45c7-4e49-a45a-fbdb50980254",
+        "title": "Respond comments",
+        "day_date": "2026-03-30",
+        "start_time": "07:45:00",
+        "duration_minutes": 30,
+        "category": "Home",
+        "created_at": "2026-03-30T12:35:26.479926+00:00",
+        "start_minutes": 465,
+        "task_id": "dc4c0145-f3c9-42d5-ad6d-778bc9f3cbc7",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
         "id": "c5149684-4ac9-40e9-bfc9-f4349dd651d4",
         "title": "Gum",
         "day_date": "2026-03-30",
@@ -3718,6 +3882,76 @@
         "created_at": "2026-03-30T12:35:01.016499+00:00",
         "start_minutes": 690,
         "task_id": "17332938-d2f6-4166-bc00-8a7f24ab99d9",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
+        "id": "fdb140de-b3a6-46b9-b210-91d5499a6430",
+        "title": "Must finalize posting schedule",
+        "day_date": "2026-03-31",
+        "start_time": "08:30:00",
+        "duration_minutes": 30,
+        "category": "My work",
+        "created_at": "2026-03-30T21:30:38.327935+00:00",
+        "start_minutes": 450,
+        "task_id": "e24c9ce2-f85f-40a4-a7ed-5bac063e7e96",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "437e31a9-7d9b-447c-8807-58945d57a182",
+        "title": "Get amz back",
+        "day_date": "2026-03-30",
+        "start_time": "16:15:00",
+        "duration_minutes": 30,
+        "category": "Home",
+        "created_at": "2026-03-30T12:35:46.078993+00:00",
+        "start_minutes": 1080,
+        "task_id": "cbfb6f18-b818-4d44-a8d6-e0d82bc30818",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
+        "id": "9c297ad2-8236-4308-bf68-7f2d21ea8250",
+        "title": "Start AI video",
+        "day_date": "2026-03-31",
+        "start_time": "12:45:00",
+        "duration_minutes": 150,
+        "category": "Home",
+        "created_at": "2026-03-30T21:34:20.868201+00:00",
+        "start_minutes": 720,
+        "task_id": "fdb0c18c-63f9-4075-8d70-3f2c05348d45",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "93d4f066-e7ff-4a12-870e-2ac611c1a25c",
+        "title": "Six sigma training",
+        "day_date": "2026-03-31",
+        "start_time": "09:30:00",
+        "duration_minutes": 120,
+        "category": "Home",
+        "created_at": "2026-03-30T21:32:06.128416+00:00",
+        "start_minutes": 540,
+        "task_id": "bac1b0fc-fe4b-4b19-a1f3-da51591dd4b2",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "0a2c2e2d-431e-4d23-bfc7-3423d57ea142",
+        "title": "AI tracking video",
+        "day_date": "2026-04-02",
+        "start_time": "14:30:00",
+        "duration_minutes": 135,
+        "category": "My work",
+        "created_at": "2026-03-30T21:54:40.065612+00:00",
+        "start_minutes": 750,
+        "task_id": "4a3757e6-a91c-4ff5-84d2-287f5db5da6f",
         "rec_id": null,
         "shop_id": null,
         "done": false
@@ -3734,7 +3968,49 @@
         "task_id": "8e622d41-bfd0-4a6d-983a-ebd9d66f96e3",
         "rec_id": null,
         "shop_id": null,
+        "done": true
+      },
+      {
+        "id": "51eb4905-fb03-47bc-b358-c4e0e12b9759",
+        "title": "Respond comments",
+        "day_date": "2026-03-31",
+        "start_time": "07:30:00",
+        "duration_minutes": 30,
+        "category": "Home",
+        "created_at": "2026-03-31T00:42:17.178327+00:00",
+        "start_minutes": 450,
+        "task_id": "73baa1f4-cf58-4bcd-a871-b0c4bddba5de",
+        "rec_id": null,
+        "shop_id": null,
         "done": false
+      },
+      {
+        "id": "df152724-6ba3-44be-bdfa-ccda97111897",
+        "title": "Mochi vaccine apt call",
+        "day_date": "2026-03-31",
+        "start_time": "11:00:00",
+        "duration_minutes": 30,
+        "category": "Home",
+        "created_at": "2026-03-31T02:48:38.363514+00:00",
+        "start_minutes": 660,
+        "task_id": "07ac068b-ef9a-4cce-8490-e1768292153b",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "4e46c481-e96e-466d-a020-10c6799c6f10",
+        "title": "Grass patch",
+        "day_date": "2026-03-30",
+        "start_time": "08:15:00",
+        "duration_minutes": 30,
+        "category": "Home",
+        "created_at": "2026-03-30T12:40:24.312187+00:00",
+        "start_minutes": 1140,
+        "task_id": "4a0a9928-39aa-4a79-8169-fa343732a726",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
       },
       {
         "id": "05beb949-7ee7-4de0-a00a-a3cfcdf39275",
@@ -3877,20 +4153,6 @@
         "done": true
       },
       {
-        "id": "1acf7bcc-96ff-497b-85fb-f7ba98f32bea",
-        "title": "Check CVS sprinies",
-        "day_date": "2026-03-30",
-        "start_time": "11:00:00",
-        "duration_minutes": 30,
-        "category": "Home",
-        "created_at": "2026-03-30T12:34:57.55596+00:00",
-        "start_minutes": 660,
-        "task_id": "1cf21dfe-83dd-42ad-9857-f1f84d452211",
-        "rec_id": null,
-        "shop_id": null,
-        "done": false
-      },
-      {
         "id": "fdda05de-6124-402d-b2da-82cedb793db4",
         "title": "Build out pages",
         "day_date": "2026-03-23",
@@ -3961,15 +4223,15 @@
         "done": false
       },
       {
-        "id": "21b0be9d-ebe7-45c2-9ad8-ffc8eaa548bb",
-        "title": "Between videos",
-        "day_date": "2026-03-27",
+        "id": "8fa05c7c-ffb0-4c99-a8ba-2672981f53c6",
+        "title": "Hide yellow video",
+        "day_date": "2026-03-31",
         "start_time": "08:45:00",
-        "duration_minutes": 30,
+        "duration_minutes": 60,
         "category": "My work",
-        "created_at": "2026-03-26T20:41:59.350828+00:00",
-        "start_minutes": 1020,
-        "task_id": "bdc0a571-3056-4171-9398-da22e313bbac",
+        "created_at": "2026-03-30T21:31:58.02956+00:00",
+        "start_minutes": 480,
+        "task_id": "be152879-a757-4f11-88b6-476cf6231453",
         "rec_id": null,
         "shop_id": null,
         "done": false
@@ -4059,34 +4321,6 @@
         "done": true
       },
       {
-        "id": "091606b0-8114-4720-88c8-8484f03bfb2b",
-        "title": "Between videos",
-        "day_date": "2026-03-30",
-        "start_time": "08:30:00",
-        "duration_minutes": 90,
-        "category": "My work",
-        "created_at": "2026-03-30T12:35:06.669481+00:00",
-        "start_minutes": 525,
-        "task_id": "bdc0a571-3056-4171-9398-da22e313bbac",
-        "rec_id": null,
-        "shop_id": null,
-        "done": false
-      },
-      {
-        "id": "66605389-ba47-4fe8-94e2-6360a23c6d76",
-        "title": "Meet the makers @11am",
-        "day_date": "2026-03-30",
-        "start_time": "11:00:00",
-        "duration_minutes": 60,
-        "category": "My work",
-        "created_at": "2026-03-30T12:35:39.82459+00:00",
-        "start_minutes": 660,
-        "task_id": "aaa79368-8e00-4512-b26c-5b1408026979",
-        "rec_id": null,
-        "shop_id": null,
-        "done": false
-      },
-      {
         "id": "1e46556b-5ac6-4003-a7b3-e2944a38b96a",
         "title": "Sign up pilates",
         "day_date": "2026-03-18",
@@ -4125,20 +4359,6 @@
         "start_minutes": 960,
         "task_id": null,
         "rec_id": "rec-HEB",
-        "shop_id": null,
-        "done": false
-      },
-      {
-        "id": "005484aa-cb6a-41db-8b94-bfab869599e7",
-        "title": "Respond comments",
-        "day_date": "2026-03-27",
-        "start_time": "16:45:00",
-        "duration_minutes": 30,
-        "category": "Home",
-        "created_at": "2026-03-27T13:17:17.185474+00:00",
-        "start_minutes": 930,
-        "task_id": "dc4c0145-f3c9-42d5-ad6d-778bc9f3cbc7",
-        "rec_id": null,
         "shop_id": null,
         "done": false
       },
@@ -4199,20 +4419,6 @@
         "done": true
       },
       {
-        "id": "49f801d2-dc60-4855-9a63-5a588d3ccc2c",
-        "title": "griup socks",
-        "day_date": "2026-03-30",
-        "start_time": "18:45:00",
-        "duration_minutes": 30,
-        "category": "Shopping",
-        "created_at": "2026-03-30T12:35:51.475099+00:00",
-        "start_minutes": 1110,
-        "task_id": null,
-        "rec_id": null,
-        "shop_id": "0ee083d7-85d0-424b-82e3-2a7f84c3723f",
-        "done": false
-      },
-      {
         "id": "0381d381-77f2-4c26-a56e-9fd0557639d5",
         "title": "Ask vet tick/flee preventative",
         "day_date": "2026-03-26",
@@ -4225,34 +4431,6 @@
         "rec_id": null,
         "shop_id": null,
         "done": true
-      },
-      {
-        "id": "e08182da-f044-4490-af5a-1d1eba1bd5ff",
-        "title": "Pay tolls",
-        "day_date": "2026-03-30",
-        "start_time": "19:15:00",
-        "duration_minutes": 30,
-        "category": "Home",
-        "created_at": "2026-03-30T12:40:29.765574+00:00",
-        "start_minutes": 1140,
-        "task_id": "4324fcfd-0d94-4090-93af-66efd610e266",
-        "rec_id": null,
-        "shop_id": null,
-        "done": false
-      },
-      {
-        "id": "4836126d-57db-467f-98f8-3da52beb6611",
-        "title": "PM dash - finalize build",
-        "day_date": "2026-03-30",
-        "start_time": "13:15:00",
-        "duration_minutes": 105,
-        "category": "My work",
-        "created_at": "2026-03-30T12:36:06.236147+00:00",
-        "start_minutes": 750,
-        "task_id": "7141d74b-fa75-41e8-9e24-5663274000bd",
-        "rec_id": null,
-        "shop_id": null,
-        "done": false
       },
       {
         "id": "ac136fd6-9c40-4d4b-9516-ac74b38fac6c",
@@ -4269,6 +4447,48 @@
         "done": false
       },
       {
+        "id": "005484aa-cb6a-41db-8b94-bfab869599e7",
+        "title": "Respond comments",
+        "day_date": "2026-03-27",
+        "start_time": "16:45:00",
+        "duration_minutes": 30,
+        "category": "Home",
+        "created_at": "2026-03-27T13:17:17.185474+00:00",
+        "start_minutes": 930,
+        "task_id": "dc4c0145-f3c9-42d5-ad6d-778bc9f3cbc7",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
+        "id": "b1b4927f-7771-4222-9ae4-16b03a239b66",
+        "title": "PM dash - finalize build",
+        "day_date": "2026-04-03",
+        "start_time": "08:00:00",
+        "duration_minutes": 30,
+        "category": "My work",
+        "created_at": "2026-03-30T21:55:01.699199+00:00",
+        "start_minutes": 480,
+        "task_id": "7141d74b-fa75-41e8-9e24-5663274000bd",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "1a782c6a-8ba3-49dc-8974-6f51f73998a7",
+        "title": "TC 26: Design interface icons",
+        "day_date": "2026-03-31",
+        "start_time": "15:15:00",
+        "duration_minutes": 30,
+        "category": "My work",
+        "created_at": "2026-03-31T02:46:56.267471+00:00",
+        "start_minutes": 915,
+        "task_id": "daa58298-858d-4952-945d-915793270898",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
         "id": "e9daa85b-e2d3-4b21-b1c8-048f4c4d2594",
         "title": "Refill caffiene",
         "day_date": "2026-03-26",
@@ -4278,6 +4498,146 @@
         "created_at": "2026-03-26T03:01:00.813988+00:00",
         "start_minutes": 750,
         "task_id": "9c9f95aa-1798-48cb-8e28-06e33e254cb6",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
+        "id": "091606b0-8114-4720-88c8-8484f03bfb2b",
+        "title": "Between videos",
+        "day_date": "2026-03-30",
+        "start_time": "08:30:00",
+        "duration_minutes": 90,
+        "category": "My work",
+        "created_at": "2026-03-30T12:35:06.669481+00:00",
+        "start_minutes": 750,
+        "task_id": "bdc0a571-3056-4171-9398-da22e313bbac",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
+        "id": "21b0be9d-ebe7-45c2-9ad8-ffc8eaa548bb",
+        "title": "Between videos",
+        "day_date": "2026-03-27",
+        "start_time": "08:45:00",
+        "duration_minutes": 30,
+        "category": "My work",
+        "created_at": "2026-03-26T20:41:59.350828+00:00",
+        "start_minutes": 1020,
+        "task_id": "bdc0a571-3056-4171-9398-da22e313bbac",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
+        "id": "1acf7bcc-96ff-497b-85fb-f7ba98f32bea",
+        "title": "Check CVS sprinies",
+        "day_date": "2026-03-30",
+        "start_time": "11:00:00",
+        "duration_minutes": 30,
+        "category": "Home",
+        "created_at": "2026-03-30T12:34:57.55596+00:00",
+        "start_minutes": 660,
+        "task_id": "1cf21dfe-83dd-42ad-9857-f1f84d452211",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
+        "id": "49f801d2-dc60-4855-9a63-5a588d3ccc2c",
+        "title": "griup socks",
+        "day_date": "2026-03-30",
+        "start_time": "18:45:00",
+        "duration_minutes": 30,
+        "category": "Shopping",
+        "created_at": "2026-03-30T12:35:51.475099+00:00",
+        "start_minutes": 1110,
+        "task_id": null,
+        "rec_id": null,
+        "shop_id": "0ee083d7-85d0-424b-82e3-2a7f84c3723f",
+        "done": true
+      },
+      {
+        "id": "3a917d43-e58f-4774-bb90-e0431c6f1890",
+        "title": "Pilates",
+        "day_date": "2026-03-31",
+        "start_time": "15:30:00",
+        "duration_minutes": 60,
+        "category": "Recurring",
+        "created_at": "2026-03-30T21:33:17.80255+00:00",
+        "start_minutes": 960,
+        "task_id": null,
+        "rec_id": "rec-Pilates",
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "30a0b85e-5a0e-4b56-9e73-56fd03434eb1",
+        "title": "AI tracking video",
+        "day_date": "2026-04-01",
+        "start_time": "12:45:00",
+        "duration_minutes": 150,
+        "category": "My work",
+        "created_at": "2026-03-30T21:54:33.001861+00:00",
+        "start_minutes": 750,
+        "task_id": "08ddb2d3-42f4-4e48-b0ef-e327ed31b712",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "35da4e43-1577-41a2-8ce5-3ad9288f98b9",
+        "title": "AI tracking video",
+        "day_date": "2026-04-03",
+        "start_time": "08:30:00",
+        "duration_minutes": 105,
+        "category": "My work",
+        "created_at": "2026-03-30T21:54:48.83204+00:00",
+        "start_minutes": 510,
+        "task_id": "d895f994-cf48-4ab3-95f9-1ffd706914b7",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "964e8968-52c1-44d7-8ce0-21b68770a7d7",
+        "title": "Mochi carrier",
+        "day_date": "2026-03-30",
+        "start_time": "18:30:00",
+        "duration_minutes": 30,
+        "category": "Shopping",
+        "created_at": "2026-03-30T13:27:26.725072+00:00",
+        "start_minutes": 960,
+        "task_id": null,
+        "rec_id": null,
+        "shop_id": "010dd63b-57ff-457b-9ce4-d40bdb8bf1c2",
+        "done": false
+      },
+      {
+        "id": "e08182da-f044-4490-af5a-1d1eba1bd5ff",
+        "title": "Pay tolls",
+        "day_date": "2026-03-30",
+        "start_time": "19:15:00",
+        "duration_minutes": 30,
+        "category": "Home",
+        "created_at": "2026-03-30T12:40:29.765574+00:00",
+        "start_minutes": 495,
+        "task_id": "4324fcfd-0d94-4090-93af-66efd610e266",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
+        "id": "2b6e3d23-3392-4389-a9f3-036b4826220e",
+        "title": "Grass patch",
+        "day_date": "2026-03-31",
+        "start_time": "07:00:00",
+        "duration_minutes": 30,
+        "category": "Home",
+        "created_at": "2026-03-31T12:58:41.346658+00:00",
+        "start_minutes": 420,
+        "task_id": "4a0a9928-39aa-4a79-8169-fa343732a726",
         "rec_id": null,
         "shop_id": null,
         "done": true

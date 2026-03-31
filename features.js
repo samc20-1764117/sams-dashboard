@@ -669,6 +669,7 @@ async function addShopFull(){
 
 // ── Month modal ────────────────────────────────────────────────────────────────
 let _moYrFilter=null;
+let _moRecMap={};
 function openMModal(){
   const yrSel=document.getElementById('moYearSel');
   if(yrSel&&!yrSel.children.length){
@@ -711,6 +712,15 @@ function renderMoCal(){
     const startDow=(todayDate.getDay()+6)%7;
     const thisMonday=new Date(todayDate);thisMonday.setDate(todayDate.getDate()-startDow);
     weekStart=new Date(thisMonday);weekStart.setDate(thisMonday.getDate()-PAST*7);
+  }
+  // Precompute non-WR recurring tasks map: ds → [virtual task, ...]
+  _moRecMap={};
+  const _rCurDow=(todayDate.getDay()+6)%7;
+  const _rCurMon=new Date(todayDate);_rCurMon.setDate(todayDate.getDate()-_rCurDow);_rCurMon.setHours(0,0,0,0);
+  for(let w=0;w<TOTAL;w++){
+    const _rWkMon=new Date(weekStart);_rWkMon.setDate(weekStart.getDate()+w*7);
+    const _rOff=Math.round((_rWkMon-_rCurMon)/(7*86400000));
+    getRecurringWeekTasks(_rOff).forEach(t=>{if(!_moRecMap[t.due_date])_moRecMap[t.due_date]=[];_moRecMap[t.due_date].push(t);});
   }
   const dowEl=document.getElementById('mDow');
   if(!dowEl.children.length)['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach(dn=>{const el=document.createElement('div');el.className='mdowl';el.textContent=dn;dowEl.appendChild(el);});
@@ -768,9 +778,10 @@ function mkMCell(date,om,today){
   const shopOnDay=st.shopping.filter(s=>s.due_date===ds&&!s.done).map(s=>({id:'shop-cal-'+s.id,name:s.name+(s.store?' ('+s.store+')':''),category:'Shopping',due_date:ds,done:false,_shopId:s.id,_virtual:true,_type:'shop'}));
   const shopOnDayDone=st.shopping.filter(s=>s.due_date===ds&&s.done).map(s=>({id:'shop-cal-done-'+s.id,name:s.name+(s.store?' ('+s.store+')':''),category:'Shopping',due_date:ds,done:true,_shopId:s.id,_virtual:true,_type:'shop'}));
   const wrecOnDay=st.recurring.filter(r=>(r.is_weekly_reset===true||r.is_weekly_reset==='true')&&!r._done&&r._dateOverrides&&r._dateOverrides[getWkKey(0)]===ds).map(r=>({id:'rec-virt-'+r.id,name:r.name,category:'Recurring',due_date:ds,done:false,_recId:r.id,_virtual:true,_isWrec:true}));
+  const recOnDay=(_moRecMap[ds]||[]).filter(t=>!t.done);
   const extras=getExtrasForDate(ds);
   const travelOnDay=extras.filter(t=>t._type==='travel');
-  const undone=[...travelOnDay,...st.tasks.filter(t=>t.due_date&&t.due_date.split('T')[0]===ds&&!t.done),...extras.filter(t=>t._type!=='travel'),...shopOnDay,...wrecOnDay];
+  const undone=[...travelOnDay,...st.tasks.filter(t=>t.due_date&&t.due_date.split('T')[0]===ds&&!t.done),...extras.filter(t=>t._type!=='travel'),...shopOnDay,...wrecOnDay,...recOnDay];
   const done=[...st.tasks.filter(t=>t.due_date&&t.due_date.split('T')[0]===ds&&t.done),...shopOnDayDone];
   const tasks=[...undone,...done];
   tasks.slice(0,5).forEach(t=>{
