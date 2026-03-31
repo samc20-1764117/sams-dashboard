@@ -250,6 +250,14 @@ function renderWkSummary(){
 let tvDragStart=null,tvDragEnd=null;
 let calDrag={active:false,startDs:null,endDs:null,view:null,moved:false};
 
+let wkcShowWR=true;
+function toggleWkcWR(){
+  wkcShowWR=!wkcShowWR;
+  const btn=document.getElementById('wkcWrToggle');
+  if(btn){btn.style.opacity=wkcShowWR?'1':'.4';btn.style.textDecoration=wkcShowWR?'none':'line-through';}
+  renderWkCal();
+}
+
 function renderWkCal(){
   const dates=getWkDates(wkOff);
   document.getElementById('wkcLbl').textContent=`${dates[0].toLocaleDateString('en-US',{month:'short',day:'numeric'})} – ${dates[6].toLocaleDateString('en-US',{month:'short',day:'numeric'})}`;
@@ -522,10 +530,10 @@ function renderWkCal(){
     const virtForDayDone=getRecurringWeekTasks(wkOff).filter(v=>v.due_date===ds&&v.done);
     const wkKey2=getWkKey(wkOff);
     // Add weekly reset tasks that have been pinned to this date via _dateOverrides
-    const wrecForDay=st.recurring.filter(r=>(r.is_weekly_reset===true||r.is_weekly_reset==='true')&&!(r._doneByWk&&r._doneByWk[wkKey2])&&r._dateOverrides&&r._dateOverrides[wkKey2]===ds).map(r=>({id:'rec-virt-'+r.id,name:r.name,category:'Recurring',due_date:ds,done:false,_recId:r.id,_virtual:true,_wkKey:wkKey2,_isWrec:true}));
-    const wrecForDayDone=st.recurring.filter(r=>(r.is_weekly_reset===true||r.is_weekly_reset==='true')&&!!(r._doneByWk&&r._doneByWk[wkKey2])&&r._dateOverrides&&r._dateOverrides[wkKey2]===ds).map(r=>({id:'rec-virt-'+r.id,name:r.name,category:'Recurring',due_date:ds,done:true,_recId:r.id,_virtual:true,_wkKey:wkKey2,_isWrec:true}));
-    const wrRulesForDay=st.wrRules.filter(r=>r._dateOverrides&&r._dateOverrides[wkKey2]===ds&&!isDoneWRRule(r.id,wkKey2)).map(r=>({id:'wrrule-virt-'+r.id,name:r.name,category:'Recurring',due_date:ds,done:false,_ruleId:r.id,_virtual:true,_wkKey:wkKey2,_isWrRule:true}));
-    const wrRulesForDayDone=st.wrRules.filter(r=>r._dateOverrides&&r._dateOverrides[wkKey2]===ds&&isDoneWRRule(r.id,wkKey2)).map(r=>({id:'wrrule-virt-'+r.id,name:r.name,category:'Recurring',due_date:ds,done:true,_ruleId:r.id,_virtual:true,_wkKey:wkKey2,_isWrRule:true}));
+    const wrecForDay=wkcShowWR?st.recurring.filter(r=>(r.is_weekly_reset===true||r.is_weekly_reset==='true')&&!(r._doneByWk&&r._doneByWk[wkKey2])&&r._dateOverrides&&r._dateOverrides[wkKey2]===ds).map(r=>({id:'rec-virt-'+r.id,name:r.name,category:'Recurring',due_date:ds,done:false,_recId:r.id,_virtual:true,_wkKey:wkKey2,_isWrec:true})):[];
+    const wrecForDayDone=wkcShowWR?st.recurring.filter(r=>(r.is_weekly_reset===true||r.is_weekly_reset==='true')&&!!(r._doneByWk&&r._doneByWk[wkKey2])&&r._dateOverrides&&r._dateOverrides[wkKey2]===ds).map(r=>({id:'rec-virt-'+r.id,name:r.name,category:'Recurring',due_date:ds,done:true,_recId:r.id,_virtual:true,_wkKey:wkKey2,_isWrec:true})):[];
+    const wrRulesForDay=wkcShowWR?st.wrRules.filter(r=>r._dateOverrides&&r._dateOverrides[wkKey2]===ds&&!isDoneWRRule(r.id,wkKey2)).map(r=>({id:'wrrule-virt-'+r.id,name:r.name,category:'Recurring',due_date:ds,done:false,_ruleId:r.id,_virtual:true,_wkKey:wkKey2,_isWrRule:true})):[];
+    const wrRulesForDayDone=wkcShowWR?st.wrRules.filter(r=>r._dateOverrides&&r._dateOverrides[wkKey2]===ds&&isDoneWRRule(r.id,wkKey2)).map(r=>({id:'wrrule-virt-'+r.id,name:r.name,category:'Recurring',due_date:ds,done:true,_ruleId:r.id,_virtual:true,_wkKey:wkKey2,_isWrRule:true})):[];
     // Add shopping items assigned to this date
     const shopForDay=st.shopping.filter(s=>s.due_date===ds&&!s.done).map(s=>({id:'shop-cal-'+s.id,name:s.name+(s.store?' ('+s.store+')':''),category:'Shopping',due_date:ds,done:false,_shopId:s.id,_virtual:true,_type:'shop'}));
     const shopForDayDone=st.shopping.filter(s=>s.due_date===ds&&s.done).map(s=>({id:'shop-cal-done-'+s.id,name:s.name+(s.store?' ('+s.store+')':''),category:'Shopping',due_date:ds,done:true,_shopId:s.id,_virtual:true,_type:'shop'}));
@@ -1179,8 +1187,8 @@ function writeWrOverride(ruleId,wkKey,payload,{onDone,undoLabel='Changed WR task
     const prev={...existing};
     Object.assign(existing,full);
     sbReqSilent('PATCH','wr_recurring_overrides',full,`?id=eq.${existing.id}`);
-    pushUndo(()=>{Object.assign(existing,prev);sbReqSilent('PATCH','wr_recurring_overrides',prev,`?id=eq.${existing.id}`);renderRecOv();},undoLabel);
-    save();renderRecOv();if(onDone)onDone(existing);
+    pushUndo(()=>{Object.assign(existing,prev);sbReqSilent('PATCH','wr_recurring_overrides',prev,`?id=eq.${existing.id}`);renderRecOv();renderWkCal();renderWeeklyPage();},undoLabel);
+    save();renderRecOv();renderWkCal();renderWeeklyPage();if(onDone)onDone(existing);
   } else {
     const tmpId='wrov-tmp-'+Date.now();
     st.wrOverrides.push({...full,id:tmpId});
@@ -1192,9 +1200,9 @@ function writeWrOverride(ruleId,wkKey,payload,{onDone,undoLabel='Changed WR task
       const id=realId||tmpId;
       st.wrOverrides=st.wrOverrides.filter(o=>String(o.id)!==id);
       if(realId)sbReqSilent('DELETE','wr_recurring_overrides',null,`?id=eq.${realId}`);
-      renderRecOv();
+      renderRecOv();renderWkCal();renderWeeklyPage();
     },undoLabel);
-    save();renderRecOv();
+    save();renderRecOv();renderWkCal();renderWeeklyPage();
   }
 }
 
@@ -1441,8 +1449,8 @@ function saveWrEditModal(){
     const patch={name,pup_related:document.getElementById('wrEditPup').checked,notes:document.getElementById('wrEditNotes').value.trim()||null,...cadenceFields};
     Object.assign(rule,patch);
     sbReqSilent('PATCH','wr_recurring_rules',patch,`?id=eq.${_wrEditRuleId}`);
-    save();renderRecOv();if(typeof renderRecurringPage==='function')renderRecurringPage();
-    pushUndo(()=>{Object.assign(rule,prev);sbReqSilent('PATCH','wr_recurring_rules',prev,`?id=eq.${_wrEditRuleId}`);save();renderRecOv();if(typeof renderRecurringPage==='function')renderRecurringPage();},'Edited WR rule');
+    save();renderAll();renderWeeklyPage();
+    pushUndo(()=>{Object.assign(rule,prev);sbReqSilent('PATCH','wr_recurring_rules',prev,`?id=eq.${_wrEditRuleId}`);save();renderAll();renderWeeklyPage();},'Edited WR rule');
   }
   closeMod('wrEditModal');
 }
