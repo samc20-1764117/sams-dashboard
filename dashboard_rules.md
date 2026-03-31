@@ -203,6 +203,8 @@ Two-col grid: WR left (`#rt-wr-*`), non-WR right (`#rt-sch-*`). 4 cadence groups
 ### Monthly Calendar (`features.js`, `#mModal`)
 `renderMoCal`: 22 weeks (8 past + 14 future). Month separators: `.mo-sep` (`grid-column:1/-1`). Open: `scrollMoToday()` **before** adding `.open` class (overlay at `opacity:0` still participates in layout; scroll must happen before reveal transition). Then `requestAnimationFrame(()=>modal.classList.add('open'))`. GPU: `backdrop-filter:none` on `#mModal`/`#recMoModal` (prevents continuous repaint from orbs behind overlay). Orb animations paused on open: `bg.classList.add('orbs-paused')` (CSS: `.bg-canvas.orbs-paused .orb{animation-play-state:paused}`); removed on close. CSS: `#mCells` uses `.mcells` (`grid-template-columns:repeat(7,1fr)`). `.mcell` has `min-width:0`.
 
+**Non-WR recurring tasks in monthly cal**: `renderMoCal` precomputes `_moRecMap` (module-level `let _moRecMap={}`) before the cell loop — iterates all weeks, calls `getRecurringWeekTasks(wkOff)` for each, maps results by `due_date`. `mkMCell` adds `recOnDay=(_moRecMap[ds]||[]).filter(t=>!t.done)` to the `undone` array. These render as teal Recurring chips alongside normal tasks.
+
 Chip structure: `[checkbox][text span][chip-del]`. Non-travel chips get 8×8px checkbox (see Global Chip Checkboxes). Travel chips: no checkbox; non-visual-first cells get `<span style="flex:1"></span>` only. Click guard: `.chip-del,.chk-wrap`.
 
 Travel span trick: `margin-left:-13px;width:calc(100%+Npx)` bridges 13px gap. `isVisualFirst=t.due_date===ds||dow===0`. First cell shows label; continuation = empty spacer. All travel cells get `.chip-del`→`delTravel`.
