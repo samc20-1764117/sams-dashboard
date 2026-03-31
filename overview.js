@@ -578,6 +578,15 @@ function renderWkCal(){
       const nm=document.createElement('span');nm.className='chip-name';nm.innerHTML=tmIcon(t)+escHtml(t.name);
       // name click handled by chip click→selTask, dblclick→openEditTask
       chip.appendChild(chk);chip.appendChild(nm);
+      // Blue dot for WR rule "this week only" edit override
+      if(t._isWrRule){
+        const _editOv=st.wrOverrides.find(o=>String(o.rule_id)===String(t._ruleId)&&o.wk_key===(t._wkKey||getWkKey(wkOff))&&o.override_type==='edit');
+        if(_editOv&&(_editOv.custom_name||_editOv.custom_notes)){
+          const dot=document.createElement('span');
+          dot.style.cssText=`width:5px;height:5px;border-radius:50%;flex-shrink:0;margin-left:2px;background:${gc('weekly_reset').d};box-shadow:0 0 0 1px rgba(0,0,0,.15)`;
+          dot.title='Edited this week only';chip.appendChild(dot);
+        }
+      }
       chip.addEventListener('contextmenu',e=>{if(!t._virtual)showCtx(e,t.id);});
       chip.addEventListener('click',e=>{
         if(e.target.closest('.wchk')||e.target.closest('.chip-del'))return;
@@ -1642,7 +1651,7 @@ function renderShopOv(){
 // ── Virtual recurring task row for This Week ─────────────────────────────────
 function tRowWk(t){
   if(t._virtual){
-    const s=gc(t._isWrec?'weekly_reset':'recurring');
+    const s=gc((t._isWrec||t._isWrRule)?'weekly_reset':'recurring');
     return`<div class="ti ${t.done?'done':''}" style="background:${s.bg}" id="ti-${t.id}" onclick="selTask(event,'${t.id}')" ondblclick="tiDblRec(event,'${t._recId}')" oncontextmenu="showCtx(event,'${t.id}',true,'${t._recId}')">
       <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="${t._isWrec?`togRec('${t._recId}',this.checked)`:`togRecVirt('${t._recId}',this.checked,'${t._wkKey||getWkKey(wkOff)}')`}"></label>
       <span class="tn">${t.name}</span>

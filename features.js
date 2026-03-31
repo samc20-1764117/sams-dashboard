@@ -774,7 +774,7 @@ function mkMCell(date,om,today){
   const done=[...st.tasks.filter(t=>t.due_date&&t.due_date.split('T')[0]===ds&&t.done),...shopOnDayDone];
   const tasks=[...undone,...done];
   tasks.slice(0,5).forEach(t=>{
-    const s=t.important&&!t.done?IMP:gc(t.category);
+    const s=t.important&&!t.done?IMP:gc((t._isWrec||t._isWrRule)?'weekly_reset':t.category);
     const isTravel=t._type==='travel';
     const isPast=isTravel&&t.end_date&&t.end_date<tod();
     const chip=document.createElement('div');chip.className='mcell-t';chip.draggable=!t.done;
@@ -922,7 +922,7 @@ function showMcellMorePop(e,tasks,ds){
   const title=document.createElement('div');title.className='mt';title.style.cssText='margin-bottom:10px';title.textContent=label;modal.appendChild(title);
   function closeMorePop(){ov.classList.remove('open');setTimeout(()=>ov.remove(),220);}
   tasks.forEach(t=>{
-    const s=t.important&&!t.done?IMP:gc(t.category);
+    const s=t.important&&!t.done?IMP:gc((t._isWrec||t._isWrRule)?'weekly_reset':t.category);
     const isTravel=t._type==='travel';
     const isPast=isTravel&&t.end_date&&t.end_date<tod();
     const chip=document.createElement('div');chip.className='mcell-t';chip.draggable=!t.done&&!isTravel;
