@@ -102,13 +102,7 @@ async function sbReqSilent(method,table,body,qs=''){
 // ── Recurring task DB filter helper ─────────────────────────────────────────
 // Some recurring tasks have numeric DB ids; others have local text fallback ids.
 // Returns the correct query string to target the right row.
-function recQs(id){
-  const sid=String(id);
-  if(/^\d+$/.test(sid)) return `?id=eq.${sid}`;
-  // Text id like "rec-Wipe%20surfaces" - decode and filter by name
-  const name=decodeURIComponent(sid.replace(/^rec-/,''));
-  return `?name=eq.${encodeURIComponent(name)}`;
-}
+function recQs(id){return `?id=eq.${id}`;}
 
 // ── Time block DB helpers ────────────────────────────────────────────────────
 async function sbSaveBlock(b){
@@ -180,9 +174,8 @@ async function syncAll(silent=false){
   if(!cfg.url||!cfg.key){setBadge('err','Not connected');return;}
   if(!silent)setBadge('loading','Syncing…');
   try{
-    const[tasks,rec,shop,trav,bdays,pupSkills,recipes]=await Promise.all([
+    const[tasks,shop,trav,bdays,pupSkills,recipes]=await Promise.all([
       sbReq('GET','tasks',null,'?order=due_date.asc.nullslast&select=*'),
-      sbReq('GET','recurring_tasks',null,'?order=name.asc&select=*'),
       sbReq('GET','shopping_list',null,'?order=shop_order.asc.nullslast,store.asc,name.asc&select=*'),
       sbReq('GET','travel',null,'?order=start_date.asc&select=*'),
       sbReq('GET','birthdays',null,'?order=birthday.asc&select=*'),
@@ -205,8 +198,27 @@ async function syncAll(silent=false){
     ]);
     if(wrRules){
       const prevPins={};st.wrRules.forEach(r=>{if(r._dateOverrides)prevPins[String(r.id)]=r._dateOverrides;});
-      st.wrRules=wrRules;
+      const prevRecOvs={};st.recurring.forEach(r=>{if(r._dateOverrides)prevRecOvs[String(r.id)]=r._dateOverrides;});
+      st.wrRules=wrRules.filter(r=>r.is_weekly_reset!==false);
       st.wrRules.forEach(r=>{if(prevPins[String(r.id)])r._dateOverrides=prevPins[String(r.id)];});
+      const nonWR=wrRules.filter(r=>r.is_weekly_reset===false);
+      const dbIds=new Set(nonWR.map(r=>String(r.id)));
+      const localPending=st.recurring.filter(r=>{
+        const sid=String(r.id);
+        if(!sid.startsWith('rec-tmp-')&&!sid.startsWith('rec-local-'))return false;
+        return !r._realId||!dbIds.has(String(r._realId));
+      });
+      st.recurring=[
+        ...nonWR.filter(r=>!deletedRecIds.has(String(r.id))).map(r=>{
+          const dbwk=r.done_by_week||{};
+          const isDone=!!(dbwk[getWkKey(0)]);
+          const dateOvs={...(r.date_overrides||{})};
+          const prevOvs=prevRecOvs[String(r.id)];
+          if(prevOvs){Object.keys(prevOvs).forEach(k=>{if(!dateOvs[k])dateOvs[k]=prevOvs[k];});}
+          return{...r,_doneByWk:dbwk,_done:isDone,_dateOverrides:dateOvs};
+        }),
+        ...localPending
+      ];
     }
     if(wrOvs)st.wrOverrides=wrOvs;
     if(tasks){
@@ -231,30 +243,6 @@ async function syncAll(silent=false){
       const dbIds=new Set(tasks.map(t=>String(t.id)));
       const localOnly=st.tasks.filter(lt=>{const sid=String(lt.id);return(sid.startsWith('l-')||sid.startsWith('t-'))&&!dbIds.has(sid);});
       st.tasks=[...merged,...localOnly];
-    }
-    if(rec){
-      const dbIds=new Set(rec.map(r=>String(r.id)));
-      const localPending=st.recurring.filter(r=>{
-        const sid=String(r.id);
-        if(!sid.startsWith('rec-tmp-')&&!sid.startsWith('rec-local-'))return false;
-        return !r._realId||!dbIds.has(String(r._realId));
-      });
-      st.recurring=[
-        ...rec
-          .filter(r=>!deletedRecIds.has(String(r.id)))
-          .map((r,i)=>{
-            const stableId=r.id!==undefined&&r.id!==null?r.id:('rec-'+encodeURIComponent(r.name||i));
-            const dbwk=r.done_by_week||{};
-            const isDone=!!(dbwk[getWkKey(0)]);
-            const dateOvs=r.date_overrides||{};
-            // Preserve any locally-set overrides not yet confirmed in DB (avoids syncAll race)
-            // This covers both __skip__ entries for non-WR tasks and scheduled dates for WR tasks
-            const existingRec=st.recurring.find(x=>String(x.id)===String(stableId));
-            if(existingRec&&existingRec._dateOverrides){Object.keys(existingRec._dateOverrides).forEach(k=>{if(!dateOvs[k])dateOvs[k]=existingRec._dateOverrides[k];});}
-            return{...r,id:stableId,_doneByWk:dbwk,_done:isDone,_dateOverrides:dateOvs};
-          }),
-        ...localPending
-      ];
     }
     if(shop){
       if(pendingShopIds.size>0){
@@ -692,7 +680,7 @@ function _syncRedoDiff(before,after){
   const bR=before.recurring||[],aR=after.recurring||[];
   for(const r of aR){
     const p=bR.find(x=>String(x.id)===String(r.id));
-    if(p&&JSON.stringify(r._dateOverrides)!==JSON.stringify(p._dateOverrides))sbReq('PATCH','recurring_tasks',{date_overrides:r._dateOverrides},recQs(r.id));
+    if(p&&JSON.stringify(r._dateOverrides)!==JSON.stringify(p._dateOverrides))sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));
   }
   const bS=before.shopping||[],aS=after.shopping||[];
   for(const s of aS){

@@ -11,7 +11,6 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 
 const TABLES = [
   'tasks',
-  'recurring_tasks',
   'shopping_list',
   'travel',
   'birthdays',
