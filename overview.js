@@ -1401,7 +1401,7 @@ function wrCtxMovePrevWeek(){_wrShiftAnchor(-7);}
 function wrCtxMoveNextWeek(){_wrShiftAnchor(7);}
 function wrCtxEditThisWeek(){
   hideWrRuleCtx();
-  if(_wrCtxRecId){openRecEditModal(_wrCtxRecId);return;}
+  if(_wrCtxRecId){openRecEditModal(_wrCtxRecId,_wrCtxWkKey,'this');return;}
   if(!_wrCtxRuleId||!_wrCtxWkKey)return;
   openWrEditModal(_wrCtxRuleId,_wrCtxWkKey,'this');
 }

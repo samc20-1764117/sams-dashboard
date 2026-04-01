@@ -2424,7 +2424,20 @@ function saveShopEdit(){
   sbReq('PATCH','shopping_list',{name:s.name,store:s.store},`?id=eq.${id}`);
   pushUndo(()=>{s.name=prev.name;s.store=prev.store;renderShopFull();sbReq('PATCH','shopping_list',{name:prev.name,store:prev.store},`?id=eq.${id}`);},'Edited item');
 }
-let _recEditId=null;
+let _recEditId=null,_recEditWkKey=null,_recEditScope='all';
+function setRecEditScope(scope){
+  _recEditScope=scope;
+  const isThis=scope==='this';
+  document.getElementById('recEditPanelThis').style.display=isThis?'':'none';
+  document.getElementById('recEditPanelAll').style.display=isThis?'none':'';
+  const btnThis=document.getElementById('recEditScopeThis'),btnAll=document.getElementById('recEditScopeAll');
+  btnThis.style.background=isThis?'var(--accent)':'';btnThis.style.color=isThis?'#fff':'';
+  btnAll.style.background=!isThis?'var(--accent)':'';btnAll.style.color=!isThis?'#fff':'';
+  setTimeout(()=>{
+    const el=isThis?document.getElementById('recEditNameThis'):document.getElementById('recEditName');
+    if(el){el.focus();const l=el.value.length;el.setSelectionRange(l,l);}
+  },50);
+}
 function updateRecEditUI(){
   const isWr=document.getElementById('recEditType').value==='weekly_reset';
   const cad=document.getElementById('recEditCadence').value;
@@ -2439,9 +2452,9 @@ function updateRecEditUI(){
     document.getElementById('recEditMonthlyNwdField').style.display=mode==='nwd'?'flex':'none';
   }
 }
-function openRecEditModal(rid){
+function openRecEditModal(rid,wkKey='',scope='all'){
   const r=st.recurring.find(x=>String(x.id)===String(rid));if(!r)return;
-  _recEditId=rid;
+  _recEditId=rid;_recEditWkKey=wkKey||'';
   const isWr=r.is_weekly_reset===true||r.is_weekly_reset==='true';
   document.getElementById('recEditName').value=r.name;
   document.getElementById('recEditType').value=isWr?'weekly_reset':'scheduled';
@@ -2469,13 +2482,35 @@ function openRecEditModal(rid){
   document.getElementById('recEditStartDate').value=r.starting_date||'';
   const pr=document.getElementById('recEditPupRelated');if(pr)pr.checked=!!(r.pup_related===true||r.pup_related==='true');
   const recEditNotesEl=document.getElementById('recEditNotes');if(recEditNotesEl)recEditNotesEl.value=r.notes||'';
+  // Populate this-week override fields
+  const nameOvKey='name::'+wkKey;
+  const nameOv=(wkKey&&r._dateOverrides&&r._dateOverrides[nameOvKey])||null;
+  document.getElementById('recEditNameThis').value=(nameOv&&nameOv.name)||r.name;
+  document.getElementById('recEditNotesThis').value=(nameOv&&nameOv.notes)||'';
+  // Show/hide scope toggle
+  const toggleEl=document.getElementById('recEditScopeToggle');
+  if(toggleEl)toggleEl.style.display=wkKey?'flex':'none';
   updateRecEditUI();
   document.getElementById('recEditModal').classList.add('open');
-  setTimeout(()=>{const _el=document.getElementById('recEditName');if(_el){_el.focus();const _l=_el.value.length;_el.setSelectionRange(_l,_l);}},80);
+  setRecEditScope(wkKey?scope:'all');
 }
 function saveRecEdit(){
   const rid=_recEditId;if(!rid)return;
   const r=st.recurring.find(x=>String(x.id)===String(rid));if(!r)return;
+  if(_recEditScope==='this'&&_recEditWkKey){
+    const name=document.getElementById('recEditNameThis').value.trim();
+    if(!name){closeMod('recEditModal');return;}
+    const notes=document.getElementById('recEditNotesThis').value.trim()||null;
+    if(!r._dateOverrides)r._dateOverrides={};
+    const nameOvKey='name::'+_recEditWkKey;
+    const prev=r._dateOverrides[nameOvKey];
+    r._dateOverrides[nameOvKey]={name,notes};
+    closeMod('recEditModal');
+    renderRecOv();renderWeeklyPage();renderWkSummary();renderWkCal();
+    sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(rid));
+    pushUndo(()=>{if(prev!==undefined)r._dateOverrides[nameOvKey]=prev;else delete r._dateOverrides[nameOvKey];renderRecOv();renderWeeklyPage();renderWkSummary();renderWkCal();sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(rid));},'Edited recurring this week');
+    return;
+  }
   const name=document.getElementById('recEditName').value.trim();
   if(!name){closeMod('recEditModal');return;}
   const isWr=document.getElementById('recEditType').value==='weekly_reset';
