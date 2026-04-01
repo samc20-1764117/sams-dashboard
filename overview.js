@@ -1280,16 +1280,20 @@ function wrCtxSkipThisWeek(){
   hideWrRuleCtx();if(!_wrCtxRuleId||!_wrCtxWkKey)return;
   writeWrOverride(_wrCtxRuleId,_wrCtxWkKey,{override_type:'skip'},{undoLabel:'Skipped WR task this week'});
 }
-function wrCtxMovePrevWeek(){
-  hideWrRuleCtx();if(!_wrCtxRuleId||!_wrCtxWkKey)return;
-  const d=new Date(_wrCtxWkKey+'T12:00');d.setDate(d.getDate()-7);
-  writeWrOverride(_wrCtxRuleId,_wrCtxWkKey,{override_type:'move',moved_to_wk_key:d2s(d)},{undoLabel:'Moved WR task to prev week'});
+function _wrShiftAnchor(delta){
+  hideWrRuleCtx();if(!_wrCtxRuleId)return;
+  const rule=st.wrRules.find(r=>String(r.id)===_wrCtxRuleId);if(!rule)return;
+  const prev=rule.anchor_date;
+  const base=rule.anchor_date?new Date(rule.anchor_date+'T12:00'):new Date();
+  base.setDate(base.getDate()+delta);
+  const next=d2s(base);
+  rule.anchor_date=next;
+  sbReqSilent('PATCH','wr_recurring_rules',{anchor_date:next},`?id=eq.${_wrCtxRuleId}`);
+  save();renderRecOv();renderWeeklyPage();
+  pushUndo(()=>{rule.anchor_date=prev;sbReqSilent('PATCH','wr_recurring_rules',{anchor_date:prev},`?id=eq.${_wrCtxRuleId}`);save();renderRecOv();renderWeeklyPage();},'Moved WR anchor');
 }
-function wrCtxMoveNextWeek(){
-  hideWrRuleCtx();if(!_wrCtxRuleId||!_wrCtxWkKey)return;
-  const d=new Date(_wrCtxWkKey+'T12:00');d.setDate(d.getDate()+7);
-  writeWrOverride(_wrCtxRuleId,_wrCtxWkKey,{override_type:'move',moved_to_wk_key:d2s(d)},{undoLabel:'Moved WR task to next week'});
-}
+function wrCtxMovePrevWeek(){_wrShiftAnchor(-7);}
+function wrCtxMoveNextWeek(){_wrShiftAnchor(7);}
 function wrCtxEditThisWeek(){
   hideWrRuleCtx();if(!_wrCtxRuleId||!_wrCtxWkKey)return;
   openWrEditModal(_wrCtxRuleId,_wrCtxWkKey,'this');
