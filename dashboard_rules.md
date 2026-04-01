@@ -116,6 +116,8 @@ Supabase Auth (email + password) is required to use the dashboard. RLS is enable
 - Regular recurring: shown when `r._dateOverrides[wkKey]` exists and `!=='__skip__'` (moved this week).
 - WR rules: shown when `st.wrOverrides` has `override_type:'edit'` for `(ruleId, wkKey)` with `custom_name` or `custom_notes` (edited this week).
 
+**Cadence badge on chips** (recurring monthly view + recurring page) — shown only for "Other" cadence group tasks (quarterly/biannual/annual). Right-aligned small pill: `{quarterly:'Q', biannual:'BA', annual:'A', bimonthly:'B', monthly:'M'}`. In monthly view chips: appended after indicator dot, before X button (`flex-shrink:0;margin-left:2px`). In recurring page name cell: `float:right` span. Pup indicator (🐾 prefix) removed from recurring monthly view chip names.
+
 **Timeblock X for shop/WR rule blocks** — X button (`tb-bdel`) always calls `delBlock` (timeblock only). Keyboard Delete with `blk-{id}` in `selectedTasks` → `delBlock` only. Does NOT unschedule or remove from other views. Selection of shop/WR rule blocks in timeblock uses `blk-{blockId}` (not `shop-cal-` or `wrrule-`), preventing cross-view highlight/delete.
 
 **Dragged shop/WR rule items on daily/weekly views** — behave like regular tasks (all keyboard shortcuts, editing, selection). Sort follows timeblock start time via `sortTasksForDay`/`sortByTBWeek`/`_hasTBToday` (check `b.ruleId` for WR rule blocks, `b.shopId` for shop blocks). X on shop chip outside shopping list page: nulls `due_date` (removes from views, does NOT delete from list). X on WR rule chip: shows scope picker (`showWrXPicker`) → "Skip this week only" or "Delete rule (all future)". X removes from ALL views including timeblock (linked `st.blocks` entries deleted). Exception: X on timeblock block itself → `delBlock` only (see above).
@@ -159,9 +161,9 @@ Supabase Auth (email + password) is required to use the dashboard. RLS is enable
 **Single table for all recurring tasks**: `wr_recurring_rules` stores both WR (`is_weekly_reset=true`) and non-WR (`is_weekly_reset=false`) items. Per-week exceptions: `wr_recurring_overrides`. State: `st.wrRules` (WR only), `st.wrOverrides`, `st.recurring` (non-WR only). All fetched from `wr_recurring_rules` in `syncAll` — split by `is_weekly_reset`.
 
 **`wr_recurring_rules`** fields:
-- `id, name, cadence` (weekly/biweekly/monthly/other), `is_weekly_reset` (BOOLEAN)
-- `starting_date` (DATE) — biweekly/monthly: cycle reference + schedule start; non-WR biweekly: same dual purpose
-- `appears_on_date` (TEXT) — non-WR only: day name for weekly/biweekly ("Friday"), date number or "Nth Weekday" string for monthly
+- `id, name, cadence` (weekly/biweekly/monthly/quarterly/biannual/annual/other), `is_weekly_reset` (BOOLEAN)
+- `starting_date` (DATE) — required for biweekly/monthly/quarterly/biannual/annual: cycle anchor + schedule start
+- `appears_on_date` (TEXT) — non-WR only: day name for weekly/biweekly/quarterly/biannual/annual ("Friday"), date number or "Nth Weekday" string for monthly
 - `pup_related`, `notes`, `is_enabled`, `sort_order`
 - `date_overrides` (JSONB) — non-WR only: `{wkKey: dateString|'__skip__'}` per-week overrides
 - `done_by_week` (JSONB) — non-WR only: `{wkKey: true}` done state
@@ -170,8 +172,9 @@ Supabase Auth (email + password) is required to use the dashboard. RLS is enable
 
 **Schedule logic** (`isWRRuleDueThisWeek(rule, off)` in `core.js`):
 - weekly/other: always due.
-- biweekly: `starting_date` → find that date's Monday → week diff from current Monday → due if diff mod 2 === 0.
+- biweekly: `starting_date` → find anchor Monday → week diff from current Monday → due if diff mod 2 === 0.
 - monthly: extract day-of-month from `starting_date` → due if that day-of-month falls within current Mon–Sun span (clamped to month end).
+- quarterly/biannual/annual: `starting_date` → anchor Monday → week diff → due if diff mod 13/26/52 === 0. Requires `starting_date`.
 
 **Override upsert** (`writeWrOverride(ruleId, wkKey, payload, {onDone, undoLabel})` in `overview.js`): PATCH if override exists for `(ruleId, wkKey)`, POST if not. Nulls out unrelated fields. All WR DB ops via `sbReqSilent`.
 
@@ -183,14 +186,14 @@ Supabase Auth (email + password) is required to use the dashboard. RLS is enable
 
 **WR Edit modal** (`#wrEditModal`): "This week only" (custom name/notes/skip) vs "All future" (name, pup, cadence, starting_date, notes). No day-of-week or monthly rule fields — WR rules never show on a specific day. Scope toggle hidden when `wkKey` is null. `openWrEditModal(rid, wkKey, defaultScope)`.
 
-**WR Add modal** (`#wrRuleAddModal`): `openWrRuleAddModal(cadence?)` → `saveWrRuleAdd()`. Fields: name, pup, cadence, starting_date (shown for biweekly/monthly only, defaults to today), notes. Temp ID `wrrule-tmp-*`. Calls `renderWeeklyPage()` on add and undo. All WR adds go through here — `addRec()`, QA bar, recurring page `+` all redirect.
+**Unified Add modal** (`#wrRuleAddModal`): `openWrRuleAddModal(cadence?, type='wr')` → `saveWrRuleAdd()`. Toggle at top: **Weekly Reset** (default) / **Scheduled**. WR mode: name, pup, cadence, starting_date (all non-weekly cadences, defaults to today), notes — no Due on field. Scheduled mode: same fields + Due on day-of-week (non-monthly) or date-of-month (monthly) — no pup field. `_wrAddType` ('wr'/'sch') tracks current mode. WR saves `is_weekly_reset:true` to `st.wrRules`; Scheduled saves `is_weekly_reset:false` + `appears_on_date` to `st.recurring`. Temp ID `wrrule-tmp-*`. All adds go through here — `addRec()`, QA bar, overview `+`, recurring page `+` all call `openWrRuleAddModal`.
 
 **Move prev/next week** (`wrCtxMovePrevWeek`/`wrCtxMoveNextWeek`): shifts `starting_date` ±7 days on the rule — affects all future occurrences (biweekly cycle shifts, monthly day-of-month shifts). Not a per-week override.
 
 **Weekly Reset card** (overview, top-right panel):
 - Header: `←` · `Month` button (`openRecMoModal()`) · week label · `This Week` · `→`.
 - Footer (bottom-left): `+` button (`openWrRuleAddModal()`).
-- Sort: done last → cadence (weekly=0,biweekly=1,monthly=2,other=3) → pup-related last (order=10).
+- Sort: done last → cadence (weekly=0,biweekly=1,monthly=2,other=3 catches quarterly/biannual/annual) → pup-related last (order=10).
 - `wrRecOff` tracks week offset independently of `wkOff`.
 - `renderRecOv()` calls `renderRecMoCal()` at end if `#recMoModal` is open.
 
@@ -200,7 +203,7 @@ Supabase Auth (email + password) is required to use the dashboard. RLS is enable
 
 Non-WR tasks (`is_weekly_reset=false`) live in `wr_recurring_rules` and are loaded into `st.recurring` by `syncAll`. All CRUD goes to `wr_recurring_rules`; `recQs(id)` returns `?id=eq.${id}`.
 
-- **Scheduled**: auto by cadence + `appears_on_date`. Built by `getRecurringWeekTasks(off)` → `{_recId,_virtual:true,_wkKey}`. Skip via `skipRecVirtThisWk` → `__skip__`.
+- **Scheduled**: auto by cadence + `appears_on_date`. Built by `getRecurringWeekTasks(off)` → `{_recId,_virtual:true,_wkKey}`. Skip via `skipRecVirtThisWk` → `__skip__`. Quarterly/biannual/annual use same interval logic as biweekly: week diff from anchor Monday mod 13/26/52 === 0.
 - `skipRecVirtThisWk`: sets `__skip__`, removes TBs, PATCHes `date_overrides`, pushes undo. Calls renderWeeklyPage/renderToday/renderWkSummary/renderWkCal/renderDayTB. NOT renderRecOv.
 - `syncAll` non-WR: locally-pending `_dateOverrides` (incl. `__skip__`) preserved across sync. `st.recurring` populated from `wr_recurring_rules WHERE is_weekly_reset=false`.
 - After POST: `{...sv[0],_doneByWk:{},_done:false,_dateOverrides:{}}` + `save()`.
@@ -234,8 +237,9 @@ Non-WR tasks (`is_weekly_reset=false`) live in `wr_recurring_rules` and are load
 ### Recurring Tasks Page (`features.js`, `page-weekly`)
 Two-col grid: WR left (`#rt-wr-*`), non-WR right (`#rt-sch-*`). 4 cadence groups each. Each column wrapped in a bordered parent container for visual separation.
 
-- **WR left**: `renderRtWrGroup(containerId, rules, cadence)`. Cols: Name | 🐾 | ✕. No Schedule or day-of-week column. Dblclick → `openWrEditModal(rid, null, 'all')`. 🐾 → `rtToggleWrPup`. Delete → `delWrRule`. `+` → `openWrRuleAddModal(cadence)`.
-- **Non-WR right**: `renderRtGroup(containerId, tasks, cadence)`. Cols: Name | Due On | Starting. No Adds On column. Inline edit via `rtDblEdit`. `+` → `openRecModalForSection('scheduled', cadence)`. `duplicateRecDirect`: `uniqueRecName`, POST, undo.
+- **WR left**: `renderRtWrGroup(containerId, rules, cadence)`. Cols: Name | 🐾 | ✕. Name cell shows right-aligned cadence badge (Q/BA/A) for Other group items. Dblclick → `openWrEditModal(rid, null, 'all')`. 🐾 → `rtToggleWrPup`. Delete → `delWrRule`. `+` → `openWrRuleAddModal(cadence, 'wr')`; Other group `+` → `openWrRuleAddModal('quarterly','wr')`.
+- **Non-WR right**: `renderRtGroup(containerId, tasks, cadence)`. Cols: Name | Due On | Starting. Name cell shows right-aligned cadence badge (Q/BA/A) for Other group items. Inline edit via `rtDblEdit`. `+` → `openRecModalForSection('scheduled', cadence)`; Other group `+` → `openWrRuleAddModal('quarterly','sch')`. `duplicateRecDirect`: `uniqueRecName`, POST, undo.
+- **Other group filter**: `OTHER_CADS=['quarterly','biannual','annual']`. WR Other = `wrRules where cadence in OTHER_CADS`. Non-WR Other = `recurring where cadence in OTHER_CADS`. Generic 'other' cadence not shown in these groups.
 - **Stats bar** (`#wrPL`, `#wrPct2`, `#wrBar`): hidden compat elements only.
 - Hidden compat elements: `#wrBar #wrPct2 #wrPL #wrList #shopFull #shopCountLbl #shopSortBtn #nsN #nsS`.
 - New WR rules appear instantly: `saveWrRuleAdd` calls `renderWeeklyPage()` after add, after POST, and in undo.
