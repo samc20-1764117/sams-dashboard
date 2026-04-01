@@ -419,14 +419,15 @@ function getRecurringWeekTasks(off=0){
       const dow=dayNameToIdx(r.appears_on_date);if(dow<0)return;
       date=getDateForDow(dow,off);if(!date)return;
       if(r.starting_date){const sd=new Date(r.starting_date+'T00:00:00');if(date<sd)return;}
-      if(cadence==='biweekly'){
-        if(!r.starting_date)return; // biweekly requires anchor
+      if(cadence==='biweekly'||cadence==='quarterly'||cadence==='biannual'||cadence==='annual'){
+        if(!r.starting_date)return; // interval cadence requires anchor
+        const interval=cadence==='quarterly'?13:cadence==='biannual'?26:cadence==='annual'?52:2;
         const sd=new Date(r.starting_date+'T00:00:00');
         const sdDow=(sd.getDay()+6)%7;
         const sdMon=new Date(sd);sdMon.setDate(sd.getDate()-sdDow);sdMon.setHours(0,0,0,0);
         const tgtMon=new Date(wkDates[0]);tgtMon.setHours(0,0,0,0);
         const weekDiff=Math.round((tgtMon-sdMon)/(7*86400000));
-        if(weekDiff<0||weekDiff%2!==0)return; // not on a valid cycle week
+        if(weekDiff<0||weekDiff%interval!==0)return;
       }
     }
 
@@ -575,6 +576,15 @@ function isWRRuleDueThisWeek(rule,off=0){
       if(occ>=mon&&occ<=sun)return true;
     }
     return false;
+  }
+  if(cadence==='quarterly'||cadence==='biannual'||cadence==='annual'){
+    if(!rule.starting_date)return false;
+    const intervalWks=cadence==='quarterly'?13:cadence==='biannual'?26:52;
+    const anchor=new Date(rule.starting_date+'T12:00');
+    const aDay=anchor.getDay();
+    const aMon=new Date(anchor);aMon.setDate(anchor.getDate()-(aDay===0?6:aDay-1));
+    const diffWks=Math.round((mon-aMon)/(7*24*60*60*1000));
+    return diffWks>=0&&diffWks%intervalWks===0;
   }
   return false;
 }
