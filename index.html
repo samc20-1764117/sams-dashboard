@@ -1447,7 +1447,7 @@ body.dark .bday-add-menu{background:rgba(38,20,10,.97);border-color:rgba(255,220
       <button id="wrAddTypeSch" onclick="wrAddSetType('sch')" style="flex:1;padding:6px 0;font-size:11px;font-weight:600;background:transparent;color:var(--muted);border:none;cursor:pointer;transition:background .12s,color .12s">Scheduled</button>
     </div>
     <div class="mfield"><label>Task name *</label><input id="wrAddName" placeholder="e.g. Laundry, Sunny bowls…"></div>
-    <div class="mfield"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:400"><input type="checkbox" id="wrAddPup" style="width:13px;height:13px;accent-color:var(--accent)"> 🐾 Pup related</label></div>
+    <div class="mfield" id="wrAddPupField"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:400"><input type="checkbox" id="wrAddPup" style="width:13px;height:13px;accent-color:var(--accent)"> 🐾 Pup related</label></div>
     <div class="mfield">
       <label>Cadence</label>
       <select id="wrAddCadence" onchange="updateWrRuleCadenceUI('wrAdd')">
@@ -1457,6 +1457,18 @@ body.dark .bday-add-menu{background:rgba(38,20,10,.97);border-color:rgba(255,220
         <option value="quarterly">Quarterly</option>
         <option value="biannual">Biannual</option>
         <option value="annual">Annual</option>
+      </select>
+    </div>
+    <div class="mfield" id="wrAddAppearDayField" style="display:none">
+      <label>Due on</label>
+      <select id="wrAddAppearDay">
+        <option>Sunday</option><option>Monday</option><option>Tuesday</option><option>Wednesday</option><option>Thursday</option><option value="Friday" selected>Friday</option><option>Saturday</option>
+      </select>
+    </div>
+    <div class="mfield" id="wrAddAppearDateField" style="display:none">
+      <label>Due on</label>
+      <select id="wrAddAppearDate">
+        <option value="1">1st</option><option value="2">2nd</option><option value="3">3rd</option><option value="4">4th</option><option value="5">5th</option><option value="6">6th</option><option value="7">7th</option><option value="8">8th</option><option value="9">9th</option><option value="10">10th</option><option value="11">11th</option><option value="12">12th</option><option value="13">13th</option><option value="14">14th</option><option value="15">15th</option><option value="16">16th</option><option value="17">17th</option><option value="18">18th</option><option value="19">19th</option><option value="20">20th</option><option value="21">21st</option><option value="22">22nd</option><option value="23">23rd</option><option value="24">24th</option><option value="25">25th</option><option value="26">26th</option><option value="27">27th</option><option value="28">28th</option>
       </select>
     </div>
     <div class="mfield" id="wrAddAnchorField" style="display:none">

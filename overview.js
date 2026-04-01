@@ -1386,9 +1386,16 @@ function _wrBuildSelects(px){
 }
 
 // Show/hide cadence-dependent fields for the given modal prefix ('wrAdd' or 'wrEdit')
+let _wrAddType='wr';
 function updateWrRuleCadenceUI(px){
   const cadence=document.getElementById(px+'Cadence').value;
   document.getElementById(px+'AnchorField').style.display=cadence!=='weekly'?'block':'none';
+  if(px==='wrAdd'){
+    const isSch=_wrAddType==='sch';
+    const isMonthly=cadence==='monthly';
+    document.getElementById('wrAddAppearDayField').style.display=isSch&&!isMonthly?'block':'none';
+    document.getElementById('wrAddAppearDateField').style.display=isSch&&isMonthly?'block':'none';
+  }
 }
 
 // Read cadence-related fields from modal, return partial rule payload
@@ -1399,17 +1406,12 @@ function _wrReadCadenceFields(px){
 }
 
 function wrAddSetType(type){
-  const wrBtn=document.getElementById('wrAddTypeWR');
-  const schBtn=document.getElementById('wrAddTypeSch');
+  _wrAddType=type;
   const base='flex:1;padding:6px 0;font-size:11px;font-weight:600;border:none;cursor:pointer;transition:background .12s,color .12s';
-  wrBtn.style.cssText=base+(type==='wr'?';background:var(--accent);color:#fff':';background:transparent;color:var(--muted)');
-  schBtn.style.cssText=base+(type==='sch'?';background:var(--accent);color:#fff':';background:transparent;color:var(--muted)');
-  if(type==='sch'){
-    const nm=document.getElementById('wrAddName').value;
-    closeMod('wrRuleAddModal');
-    openRecModal('scheduled');
-    if(nm){const el=document.getElementById('recName');if(el)el.value=nm;}
-  }
+  document.getElementById('wrAddTypeWR').style.cssText=base+(type==='wr'?';background:var(--accent);color:#fff':';background:transparent;color:var(--muted)');
+  document.getElementById('wrAddTypeSch').style.cssText=base+(type==='sch'?';background:var(--accent);color:#fff':';background:transparent;color:var(--muted)');
+  document.getElementById('wrAddPupField').style.display=type==='wr'?'block':'none';
+  updateWrRuleCadenceUI('wrAdd');
 }
 
 // ── Unified edit WR modal ─────────────────────────────────────────────────────
@@ -1488,22 +1490,39 @@ function openWrRuleAddModal(cadence){
   document.getElementById('wrAddPup').checked=false;
   document.getElementById('wrAddCadence').value=cadence||'weekly';
   document.getElementById('wrAddAnchor').value=d2s(new Date());
+  document.getElementById('wrAddAppearDay').value='Friday';
+  document.getElementById('wrAddAppearDate').value='1';
   document.getElementById('wrAddNotes').value='';
-  updateWrRuleCadenceUI('wrAdd');
   wrAddSetType('wr');
   document.getElementById('wrRuleAddModal').classList.add('open');
   setTimeout(()=>document.getElementById('wrAddName').focus(),50);
 }
 async function saveWrRuleAdd(){
   const name=document.getElementById('wrAddName').value.trim();if(!name){closeMod('wrRuleAddModal');return;}
-  const pup_related=document.getElementById('wrAddPup').checked;
   const notes=document.getElementById('wrAddNotes').value.trim()||null;
   const cadenceFields=_wrReadCadenceFields('wrAdd');
+  closeMod('wrRuleAddModal');
+  if(_wrAddType==='sch'){
+    const cadence=cadenceFields.cadence;
+    const isMonthly=cadence==='monthly';
+    const appearsOn=isMonthly?document.getElementById('wrAddAppearDate').value||'1':document.getElementById('wrAddAppearDay').value||'Friday';
+    const localId='rec-tmp-'+Date.now();
+    const r={id:localId,name,is_weekly_reset:false,appears_on_date:appearsOn,starting_date:cadenceFields.starting_date,cadence,notes,_doneByWk:{},_done:false,_dateOverrides:{}};
+    st.recurring.push(r);save();renderRecOv();renderWeeklyPage();renderWkSummary();renderWkCal();
+    let recServerId=null;
+    pushUndo(()=>{const rid=recServerId||localId;st.recurring=st.recurring.filter(x=>String(x.id)!==String(rid));save();renderRecOv();renderWeeklyPage();renderWkSummary();renderWkCal();if(recServerId)sbReq('DELETE','wr_recurring_rules',null,recQs(recServerId));},'Added recurring task');
+    const payload={name,is_weekly_reset:false,appears_on_date:appearsOn,cadence};
+    if(cadenceFields.starting_date)payload.starting_date=cadenceFields.starting_date;
+    if(notes)payload.notes=notes;
+    const sv=await sbReq('POST','wr_recurring_rules',payload);
+    if(sv&&sv[0]){const i=st.recurring.findIndex(x=>x.id===localId);const entry={...sv[0],_doneByWk:{},_done:false,_dateOverrides:{}};if(i>-1)st.recurring[i]=entry;else if(!st.recurring.some(x=>String(x.id)===String(sv[0].id)))st.recurring.push(entry);recServerId=String(sv[0].id);save();renderRecOv();renderWeeklyPage();renderWkSummary();renderWkCal();}
+    return;
+  }
+  const pup_related=document.getElementById('wrAddPup').checked;
   const payload={name,pup_related,notes,is_enabled:true,sort_order:st.wrRules.length,...cadenceFields};
   const tmpId='wrrule-tmp-'+Date.now();
   st.wrRules.push({...payload,id:tmpId});
   save();renderRecOv();renderWeeklyPage();
-  closeMod('wrRuleAddModal');
   let realId=null;
   const sv=await sbReqSilent('POST','wr_recurring_rules',payload,'');
   if(sv&&sv[0]){
