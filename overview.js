@@ -938,7 +938,7 @@ function renderRecMoCal(){
     const chip=document.createElement('div');chip.className='mcell-t';
     const tid=isWR?'wrrule-'+item.ruleId:'rec-virt-'+item.recId;
     chip.dataset.tid=tid;
-    chip.style.cssText=`background:${s.bg};color:${s.t};border-color:${s.b};cursor:${isWR?'pointer':'grab'}${isDone?';opacity:.5':''}`;
+    chip.style.cssText=`background:${s.bg};color:${s.t};border-color:${s.b};cursor:grab${isDone?';opacity:.5':''}`;
     // Checkbox
     const chkWrap=document.createElement('label');chkWrap.className='chk-wrap';chkWrap.style.cssText='padding:2px 3px;margin:-2px -1px;flex-shrink:0';
     chkWrap.addEventListener('click',e=>e.stopPropagation());
@@ -980,9 +980,13 @@ function renderRecMoCal(){
       if(isWR){const wkKey=item.wkKey||dsToWkKey(ds);openWrEditModal(item.ruleId,wkKey,'all');}
       else tiDblRec(e,item.recId);
     });
-    // Drag (regular recurring only)
-    if(!isWR){
-      chip.draggable=true;
+    // Drag
+    chip.draggable=true;
+    if(isWR){
+      const srcWkKey=item.wkKey||dsToWkKey(ds);
+      chip.addEventListener('dragstart',e=>{e.stopPropagation();dragId='recmo-wr::'+item.ruleId+'::'+srcWkKey;chip.style.opacity='.4';document.body.classList.add('body-dragging');});
+      chip.addEventListener('dragend',()=>{chip.style.opacity='1';document.body.classList.remove('body-dragging');dragId=null;});
+    } else {
       chip.addEventListener('dragstart',e=>{e.stopPropagation();dragId='recmo::'+item.recId+'::'+ds;chip.style.opacity='.4';document.body.classList.add('body-dragging');});
       chip.addEventListener('dragend',()=>{chip.style.opacity='1';document.body.classList.remove('body-dragging');dragId=null;});
     }
@@ -1007,7 +1011,7 @@ function renderRecMoCal(){
       hdr.appendChild(dn);cell.appendChild(hdr);
       const body=document.createElement('div');body.className='mcell-body';cell.appendChild(body);
       (dayMap[ds]||[]).forEach(item=>body.appendChild(makeChip(item,ds)));
-      // Drop target for recurring task drag
+      // Drop target for recurring task drag (same week only)
       cell.addEventListener('dragover',e=>{if(dragId&&dragId.startsWith('recmo::'))e.preventDefault();cell.classList.add('dov');});
       cell.addEventListener('dragleave',()=>cell.classList.remove('dov'));
       cell.addEventListener('drop',e=>{
@@ -1015,6 +1019,7 @@ function renderRecMoCal(){
         if(!dragId||!dragId.startsWith('recmo::'))return;
         const parts=dragId.split('::');const recId=parts[1];const srcDs=parts[2];dragId=null;
         if(ds===srcDs)return;
+        if(dsToWkKey(ds)!==dsToWkKey(srcDs))return;
         const r=st.recurring.find(x=>String(x.id)===recId);if(!r)return;
         const wkKey=dsToWkKey(ds);
         showWrScopePicker(e,
@@ -1045,6 +1050,37 @@ function renderRecMoCal(){
     wrBody.style.cssText='columns:2;column-gap:2px';
     (wrWeekMap[w]||[]).forEach(item=>wrBody.appendChild(makeChip(item,d2s(wkMon))));
     wrCell.appendChild(wrBody);
+    // Drop target for WR chip drag (different weeks)
+    const destWkKey=d2s(wkMon);
+    wrCell.addEventListener('dragover',e=>{if(dragId&&dragId.startsWith('recmo-wr::'))e.preventDefault();wrCell.classList.add('dov');});
+    wrCell.addEventListener('dragleave',()=>wrCell.classList.remove('dov'));
+    wrCell.addEventListener('drop',e=>{
+      e.preventDefault();wrCell.classList.remove('dov');
+      if(!dragId||!dragId.startsWith('recmo-wr::'))return;
+      const parts=dragId.split('::');const ruleId=parts[1];const srcWkKey=parts[2];dragId=null;
+      if(destWkKey===srcWkKey)return;
+      const rule=st.wrRules.find(r=>String(r.id)===ruleId);if(!rule)return;
+      const deltaMs=new Date(destWkKey+'T12:00')-new Date(srcWkKey+'T12:00');
+      const deltaWeeks=Math.round(deltaMs/(7*24*60*60*1000));
+      showWrScopePicker(e,
+        '↻  All future',
+        '⊞  This week only',
+        ()=>{// Shift anchor — affects all future occurrences
+          const prevAnchor=rule.anchor_date;
+          const base=rule.anchor_date?new Date(rule.anchor_date+'T12:00'):new Date(srcWkKey+'T12:00');
+          base.setDate(base.getDate()+deltaWeeks*7);
+          const newAnchor=d2s(base);
+          rule.anchor_date=newAnchor;
+          sbReqSilent('PATCH','wr_recurring_rules',{anchor_date:newAnchor},`?id=eq.${ruleId}`);
+          save();renderRecOv();renderWeeklyPage();renderRecMoCal();
+          pushUndo(()=>{rule.anchor_date=prevAnchor;sbReqSilent('PATCH','wr_recurring_rules',{anchor_date:prevAnchor},`?id=eq.${ruleId}`);save();renderRecOv();renderWeeklyPage();renderRecMoCal();},'Shifted WR rule anchor');
+        },
+        ()=>{// Move override for this week only
+          writeWrOverride(ruleId,srcWkKey,{override_type:'move',moved_to_wk_key:destWkKey},{undoLabel:'Moved WR task this week'});
+          renderRecMoCal();
+        }
+      );
+    });
     cells.appendChild(wrCell);
   }
 }
