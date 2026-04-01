@@ -238,9 +238,10 @@ function renderRecurringPage(){
   const schTasks=st.recurring.filter(r=>!(r.is_weekly_reset===true||r.is_weekly_reset==='true'));
   ['weekly','biweekly','monthly','other'].forEach(cad=>{
     const isOther=cad==='other';
-    const wrRules=(st.wrRules||[]).filter(r=>isOther?!KNOWN.includes(r.cadence):r.cadence===cad);
+    const OTHER_CADS=['quarterly','biannual','annual'];
+    const wrRules=(st.wrRules||[]).filter(r=>isOther?OTHER_CADS.includes(r.cadence):r.cadence===cad);
     renderRtWrGroup('rt-wr-'+cad, wrRules, cad);
-    renderRtGroup('rt-sch-'+cad, isOther?schTasks.filter(r=>!KNOWN.includes(r.cadence)):schTasks.filter(r=>r.cadence===cad), cad);
+    renderRtGroup('rt-sch-'+cad, isOther?schTasks.filter(r=>OTHER_CADS.includes(r.cadence)):schTasks.filter(r=>r.cadence===cad), cad);
   });
 }
 
