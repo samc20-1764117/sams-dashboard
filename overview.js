@@ -1378,7 +1378,7 @@ function openWrEditModal(ruleId,wkKey,defaultScope='this'){
   document.getElementById('wrEditName').value=rule.name||'';
   document.getElementById('wrEditPup').checked=!!(rule.pup_related===true||rule.pup_related==='true');
   document.getElementById('wrEditCadence').value=rule.cadence||'weekly';
-  document.getElementById('wrEditAnchor').value=rule.anchor_date||'';
+  document.getElementById('wrEditAnchor').value=rule.anchor_date||d2s(new Date());
   document.getElementById('wrEditNotes').value=rule.notes||'';
   updateWrRuleCadenceUI('wrEdit');
   // Hide scope toggle when no week context (recurring page edits always go to "all future")
@@ -1425,7 +1425,7 @@ function openWrRuleAddModal(cadence){
   document.getElementById('wrAddName').value='';
   document.getElementById('wrAddPup').checked=false;
   document.getElementById('wrAddCadence').value=cadence||'weekly';
-  document.getElementById('wrAddAnchor').value='';
+  document.getElementById('wrAddAnchor').value=d2s(new Date());
   document.getElementById('wrAddNotes').value='';
   updateWrRuleCadenceUI('wrAdd');
   document.getElementById('wrRuleAddModal').classList.add('open');
