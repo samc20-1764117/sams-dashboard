@@ -954,16 +954,9 @@ function renderRecMoCal(){
       dot.style.cssText=`width:5px;height:5px;border-radius:50%;flex-shrink:0;margin-left:2px;background:${s.d};box-shadow:0 0 0 1px rgba(0,0,0,.15)`;
       dot.title=isWR?'Edited this week only':'Moved this week only';chip.appendChild(dot);
     }
-    // Cadence badge for "Other" tasks
-    const _KNOWN_CAD_MO=['weekly','biweekly','monthly'];
-    const _CAD_BADGE_MO={quarterly:'Q',biannual:'BA',annual:'A',bimonthly:'B',monthly:'M'};
-    const _badgeLetter=!_KNOWN_CAD_MO.includes(item.cadence)&&_CAD_BADGE_MO[item.cadence];
-    if(_badgeLetter){
-      const bdg=document.createElement('span');
-      bdg.style.cssText='font-size:9px;font-weight:700;letter-spacing:.3px;padding:1px 3px;border-radius:3px;background:rgba(0,0,0,.13);color:inherit;flex-shrink:0;margin-left:2px';
-      bdg.textContent=_badgeLetter;chip.appendChild(bdg);
-    }
-    // X button
+    // Cadence badge slot (non-WR, non-weekly only) with hover-to-reveal X
+    const _CAD_BADGE_MO={biweekly:'B',monthly:'M',quarterly:'Q',biannual:'BA',annual:'A',bimonthly:'B'};
+    const _badgeLetter=!isWR&&item.cadence!=='weekly'&&_CAD_BADGE_MO[item.cadence];
     const dx=document.createElement('button');dx.className='chip-del';dx.textContent='✕';
     dx.addEventListener('click',e=>{
       e.stopPropagation();
@@ -980,7 +973,20 @@ function renderRecMoCal(){
           ()=>delRec(item.recId));
       }
     });
-    chip.appendChild(dx);
+    if(_badgeLetter){
+      const slot=document.createElement('span');
+      slot.style.cssText='flex-shrink:0;display:inline-flex;align-items:center;margin-left:2px';
+      const bdg=document.createElement('span');
+      bdg.style.cssText='font-size:9px;font-weight:700;letter-spacing:.3px;padding:1px 3px;border-radius:3px;background:rgba(0,0,0,.13);color:inherit';
+      bdg.textContent=_badgeLetter;
+      dx.style.display='none';
+      slot.appendChild(bdg);slot.appendChild(dx);
+      slot.addEventListener('mouseenter',()=>{bdg.style.display='none';dx.style.display='';});
+      slot.addEventListener('mouseleave',()=>{bdg.style.display='';dx.style.display='none';});
+      chip.appendChild(slot);
+    } else {
+      chip.appendChild(dx);
+    }
     // Click to select
     chip.addEventListener('click',e=>{if(e.target.closest('.chip-del,.chk-wrap'))return;selTask(e,tid);});
     // Double-click to edit
@@ -1190,7 +1196,8 @@ function renderRecOv(){
     if(isDone)nm.style.cssText='text-decoration:line-through;color:var(--muted)';
     nm.textContent=r._displayName;
     row.appendChild(nm);
-    if(r._movedIn||r._edited){
+    const hasDot=r._movedIn||r._edited;
+    if(hasDot){
       const dot=document.createElement('span');
       const isMove=r._movedIn;
       dot.style.cssText='width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-left:auto;background:'+(isMove?'#5a8cff':'#e8a020');
@@ -1209,7 +1216,22 @@ function renderRecOv(){
         ()=>wrCtxDeleteRule(rid)
       );
     });
-    row.appendChild(del);
+    const _WR_CAD_BADGE={biweekly:'B',monthly:'M',quarterly:'Q',biannual:'BA',annual:'A',bimonthly:'B'};
+    const wrBadgeLetter=(r.cadence&&r.cadence!=='weekly')&&_WR_CAD_BADGE[r.cadence];
+    if(wrBadgeLetter){
+      const slot=document.createElement('span');
+      slot.style.cssText=`flex-shrink:0;display:inline-flex;align-items:center${hasDot?'':';margin-left:auto'}`;
+      const bdg=document.createElement('span');
+      bdg.style.cssText='font-size:9px;font-weight:700;letter-spacing:.3px;padding:1px 3px;border-radius:3px;background:rgba(0,0,0,.13);color:inherit';
+      bdg.textContent=wrBadgeLetter;
+      del.style.display='none';
+      slot.appendChild(bdg);slot.appendChild(del);
+      slot.addEventListener('mouseenter',()=>{bdg.style.display='none';del.style.display='';});
+      slot.addEventListener('mouseleave',()=>{bdg.style.display='';del.style.display='none';});
+      row.appendChild(slot);
+    } else {
+      row.appendChild(del);
+    }
     if(elReg)elReg.appendChild(row);
   });
   requestAnimationFrame(applySelHighlight);
