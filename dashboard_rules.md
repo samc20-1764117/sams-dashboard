@@ -26,7 +26,7 @@ All files share global scope — no modules, no bundler.
 ### Data & Persistence
 - POST must include ALL required fields. Missing NOT NULL → silent 400 failure.
 - `tasks` POST required: `name`, `category`, `due_date`, `done`, `important`. Optional: `notes`.
-- `recurring_tasks` POST required: `name`, `is_weekly_reset`, `cadence`. Do NOT send `day_of_week`/`repeat_day`. Optional: `appears_on_date`, `starting_date`, `repeat_date`, `day_added`, `task_due_day`.
+- `wr_recurring_rules` POST required: `name`, `cadence`, `is_weekly_reset`, `is_enabled`. Non-WR adds: `is_weekly_reset:false`. Optional: `appears_on_date`, `starting_date`, `pup_related`, `notes`.
 - Local temp IDs: tasks=`l-`, recurring=`rec-tmp-`, WR rules=`wrrule-tmp-` (sync only preserves `rec-tmp-`/`rec-local-`).
 - Undo ID: `let serverId=null` in closure, set after POST resolves. Undo reads `serverId||localId`.
 - `sbReq` shows Supabase `message` field in toast for 8s.
@@ -35,7 +35,9 @@ All files share global scope — no modules, no bundler.
 - `rolloverOverdue()`: write `localOverrides[sid]={due_date:today}` + `pendingLocal.add(sid)` before async PATCH.
 - On `init()`, `deletedRecIds` cleared — DB is authoritative.
 - `localStorage` (`save()`/`load()`) persists: tasks, recurring, shopping, travel, birthdays, pup_skills, recipes, autoTimeblocks, autoTBOverrides, **wrRules, wrOverrides** — all load instantly before `syncAll` completes.
-- Notes: `notes` column on `tasks` + `recurring_tasks`. Include in POST/PATCH. Show via `.tb-notes` in time blocks.
+- Notes: `notes` column on `tasks` + `wr_recurring_rules`. Include in POST/PATCH. Show via `.tb-notes` in time blocks.
+- **`syncAll` recurring fetch**: `wr_recurring_rules` is the single source for all recurring tasks. Response split: `is_weekly_reset!==false` → `st.wrRules`; `is_weekly_reset===false` → `st.recurring`. `recurring_tasks` table no longer exists.
+- **`recQs(id)`**: returns `?id=eq.${id}`. All non-WR IDs are integers from `wr_recurring_rules`.
 
 ### Task Add / Edit Modals
 
@@ -75,7 +77,7 @@ All files share global scope — no modules, no bundler.
 
 **Global Cmd+C / Cmd+V (task selection)** — copies `selectedTasks` into `_copiedTasks[]`. Paste branches:
 - `wrrule-{id}` → POST to `wr_recurring_rules`, renders `renderRecOv()+renderWeeklyPage()`.
-- `rec-virt-{id}` → POST to `recurring_tasks`.
+- `rec-virt-{id}` → POST to `wr_recurring_rules` with `is_weekly_reset:false`.
 - regular task ID → POST to `tasks`.
 - Skip when input focused.
 
@@ -124,45 +126,55 @@ All files share global scope — no modules, no bundler.
 | `shop-cal-{id}` | shopping chip on daily/weekly views | null `due_date` |
 | `blk-{id}` | shop/WR rule block selected in timeblock | keyboard Delete → `delBlock` only, no item-level change |
 | `tv-{id}` | travel banner | permanent delete |
-| `recmo::{recId}::{srcDs}` | recurring chip in `recMoModal` | scope picker on drop |
+| `recmo::{recId}::{srcDs}` | non-WR recurring chip in `recMoModal` | same-week day drop only |
+| `recmo-wr::{ruleId}::{srcWkKey}` | WR rule chip in `recMoModal` | cross-week drop → shift or move override |
 
 - Weekly cal drag: `wrec::{recId}` (legacy WR), `rec::{recId}::{dueDate}` (non-WR), `wrrule::{ruleId}` (WR rule from overview), `shop::{shopId}` (shopping from overview).
 - Drag from overviews onto today/timeblock/weekly cal: `wrrule::{ruleId}` (WR rules panel), `shop::{shopId}` (shopping overview). Dropped WR rules use `_dateOverrides[wkKey]` as scheduled marker; dropped shop items set `due_date`.
-- recMoModal drag: `recmo::{recId}::{srcDs}`. Drop on day cell → `showWrScopePicker`: "This week only"→`_dateOverrides[wkKey]=ds`; "All future"→update `appears_on_date` (day name for weekly/biweekly, date-of-month number for monthly).
+- recMoModal non-WR drag: constrained to same week only (`dsToWkKey(srcDs)===dsToWkKey(destDs)` required). Drop → scope picker "This week only"→`_dateOverrides[wkKey]=ds`; "All future"→update `appears_on_date`.
+- recMoModal WR drag: `recmo-wr::ruleId::srcWkKey`. Drop on WR column (different week) → scope picker "↻ All future"→shift `starting_date` by delta weeks; "⊞ This week only"→`writeWrOverride({override_type:'move', moved_to_wk_key:destWkKey})`.
 - Shift-click range: `#mCells` and `#recMoCells` both use `.mcell-t[data-tid]` DOM order.
 - Multi-select Delete: single `pushUndo`. Undo for recurring does NOT restore `notes`/`pup_related`/extra fields.
 
 ### UI
 - **Top-right controls** (`top:14px;right:20px;z-index:90`): Sync bar | Settings ⚙. Settings popup: Night Mode toggle + Backup Sync. `toggleDark()` → `body.dark`, persists in `cfg.dark`.
-- **Local backup**: `backup.js` cron `0 8 * * *` → `backup_auto.json`. Manual: settings → `backup_manual.json`. Tables: tasks, recurring_tasks, shopping_list, travel, birthdays, pup_skills, time_blocks, auto_timeblocks, auto_timeblock_overrides, wr_recurring_rules, wr_recurring_overrides.
+- **Local backup**: `backup.js` cron `0 8 * * *` → `backup_auto.json`. Manual: settings → `backup_manual.json`. Tables: tasks, shopping_list, travel, birthdays, pup_skills, time_blocks, auto_timeblocks, auto_timeblock_overrides, wr_recurring_rules, wr_recurring_overrides.
 - **`.mcell` CSS**: must include `min-width:0` to prevent CSS grid `1fr` column blowout from chip content.
 
 ---
 
 ## WR Recurring Rules System
 
-Tables: `wr_recurring_rules` (base definitions) + `wr_recurring_overrides` (per-week exceptions). State: `st.wrRules`, `st.wrOverrides`. Both fetched in `syncAll`.
+**Single table for all recurring tasks**: `wr_recurring_rules` stores both WR (`is_weekly_reset=true`) and non-WR (`is_weekly_reset=false`) items. Per-week exceptions: `wr_recurring_overrides`. State: `st.wrRules` (WR only), `st.wrOverrides`, `st.recurring` (non-WR only). All fetched from `wr_recurring_rules` in `syncAll` — split by `is_weekly_reset`.
 
-**`wr_recurring_rules`** fields: `id, name, cadence` (weekly/biweekly/monthly/other), `day_of_week` (0=Sun), `anchor_date` (DATE, biweekly cycle ref — past Monday in correct cycle), `monthly_rule_type` (nth_weekday/date_of_month), `monthly_nth` (-1=last), `monthly_weekday`, `monthly_date` (1–28), `pup_related`, `notes`, `is_enabled`, `sort_order`.
+**`wr_recurring_rules`** fields:
+- `id, name, cadence` (weekly/biweekly/monthly/other), `is_weekly_reset` (BOOLEAN)
+- `starting_date` (DATE) — biweekly/monthly: cycle reference + schedule start; non-WR biweekly: same dual purpose
+- `appears_on_date` (TEXT) — non-WR only: day name for weekly/biweekly ("Friday"), date number or "Nth Weekday" string for monthly
+- `pup_related`, `notes`, `is_enabled`, `sort_order`
+- `date_overrides` (JSONB) — non-WR only: `{wkKey: dateString|'__skip__'}` per-week overrides
+- `done_by_week` (JSONB) — non-WR only: `{wkKey: true}` done state
 
-**`wr_recurring_overrides`** fields: `id, rule_id, wk_key` (Monday YYYY-MM-DD), `override_type` (skip/move/edit/complete), `done`, `moved_to_wk_key`, `custom_name`, `custom_notes`. UNIQUE on `(rule_id, wk_key)`.
+**`wr_recurring_overrides`** fields: `id, rule_id, wk_key` (Monday YYYY-MM-DD), `override_type` (skip/move/edit/complete), `done`, `moved_to_wk_key`, `custom_name`, `custom_notes`. UNIQUE on `(rule_id, wk_key)`. Used for WR rules only.
 
 **Schedule logic** (`isWRRuleDueThisWeek(rule, off)` in `core.js`):
-- weekly/other: always due. biweekly: `anchor_date` → week diff mod 2 → due if diff===0.
-- monthly nth_weekday: `getNthWeekday(y,m,nth,weekday)` — due if occurrence falls in Mon–Sun of target week.
-- monthly date_of_month: same check for fixed date.
+- weekly/other: always due.
+- biweekly: `starting_date` → find that date's Monday → week diff from current Monday → due if diff mod 2 === 0.
+- monthly: extract day-of-month from `starting_date` → due if that day-of-month falls within current Mon–Sun span (clamped to month end).
 
 **Override upsert** (`writeWrOverride(ruleId, wkKey, payload, {onDone, undoLabel})` in `overview.js`): PATCH if override exists for `(ruleId, wkKey)`, POST if not. Nulls out unrelated fields. All WR DB ops via `sbReqSilent`.
 
-**`_dateOverrides` on `st.wrRules`** — client-side only (no DB column). Stores `{[wkKey]: dateString}` when a rule is dragged onto a view for that week. `syncAll` preserves these: save `prevPins` keyed by rule ID before replacing `st.wrRules` from DB, then restore after. Views (today, weekly cal, weekly summary) read `r._dateOverrides[wkKey]` to determine if rule is scheduled for that day.
+**`_dateOverrides` on `st.wrRules`** — client-side only (no DB column). Stores `{[wkKey]: dateString}` when a rule is dragged onto a view for that week. `syncAll` preserves these: save `prevPins` keyed by rule ID before replacing `st.wrRules` from DB, then restore after.
 
-**Done state**: `complete` override with `done=true`. Written by `togWrRule`. DELETEd when un-checking.
+**Done state** (WR): `complete` override with `done=true`. Written by `togWrRule`. DELETEd when un-checking.
 
 **Display name**: always check `st.wrOverrides` for `override_type:'edit'` on `(ruleId, wkKey)` → use `custom_name` if present, else `r.name`. Required in both `renderRecOv` and `renderRecMoCal`.
 
-**Edit modal** (`#wrEditModal`): "This week only" (custom name/notes) vs "All future" (full rule fields). Scope toggle hidden when `wkKey` is null (always all-future). `openWrEditModal(rid, wkKey, defaultScope)`.
+**WR Edit modal** (`#wrEditModal`): "This week only" (custom name/notes/skip) vs "All future" (name, pup, cadence, starting_date, notes). No day-of-week or monthly rule fields — WR rules never show on a specific day. Scope toggle hidden when `wkKey` is null. `openWrEditModal(rid, wkKey, defaultScope)`.
 
-**Add modal** (`#wrRuleAddModal`): `openWrRuleAddModal(cadence?)` → `saveWrRuleAdd()`. Temp ID `wrrule-tmp-*`. All WR adds go through here — `addRec()`, QA bar, recurring page `+` all redirect.
+**WR Add modal** (`#wrRuleAddModal`): `openWrRuleAddModal(cadence?)` → `saveWrRuleAdd()`. Fields: name, pup, cadence, starting_date (shown for biweekly/monthly only, defaults to today), notes. Temp ID `wrrule-tmp-*`. Calls `renderWeeklyPage()` on add and undo. All WR adds go through here — `addRec()`, QA bar, recurring page `+` all redirect.
+
+**Move prev/next week** (`wrCtxMovePrevWeek`/`wrCtxMoveNextWeek`): shifts `starting_date` ±7 days on the rule — affects all future occurrences (biweekly cycle shifts, monthly day-of-month shifts). Not a per-week override.
 
 **Weekly Reset card** (overview, top-right panel):
 - Header: `←` · `Month` button (`openRecMoModal()`) · week label · `This Week` · `→`.
@@ -175,17 +187,18 @@ Tables: `wr_recurring_rules` (base definitions) + `wr_recurring_overrides` (per-
 
 ## Non-WR Recurring Task Logic
 
-- **Scheduled** (`is_weekly_reset=false`): auto by cadence+`appears_on_date`. Built by `getRecurringWeekTasks(off)` → `{_recId,_virtual:true,_wkKey}`. Skip via `skipRecVirtThisWk` → `__skip__`.
-- `skipRecVirtThisWk`: sets `__skip__`, removes TBs, PATCHes, pushes undo. Calls renderWeeklyPage/renderToday/renderWkSummary/renderWkCal/renderDayTB. NOT renderRecOv.
-- `syncAll`: preserve locally-pending `_dateOverrides` (incl. `__skip__`). Only replace `st.recurring` when non-null. After POST: `{...sv[0],_doneByWk:{},_done:false,_dateOverrides:{}}` + `save()`.
+Non-WR tasks (`is_weekly_reset=false`) live in `wr_recurring_rules` and are loaded into `st.recurring` by `syncAll`. All CRUD goes to `wr_recurring_rules`; `recQs(id)` returns `?id=eq.${id}`.
+
+- **Scheduled**: auto by cadence + `appears_on_date`. Built by `getRecurringWeekTasks(off)` → `{_recId,_virtual:true,_wkKey}`. Skip via `skipRecVirtThisWk` → `__skip__`.
+- `skipRecVirtThisWk`: sets `__skip__`, removes TBs, PATCHes `date_overrides`, pushes undo. Calls renderWeeklyPage/renderToday/renderWkSummary/renderWkCal/renderDayTB. NOT renderRecOv.
+- `syncAll` non-WR: locally-pending `_dateOverrides` (incl. `__skip__`) preserved across sync. `st.recurring` populated from `wr_recurring_rules WHERE is_weekly_reset=false`.
+- After POST: `{...sv[0],_doneByWk:{},_done:false,_dateOverrides:{}}` + `save()`.
 - **renderToday overdue**: `for(w=0;w>=wkOff-4;w--)`. Cascading `__skip__` check.
-- **wrecToday** (legacy WR chips from old `recurring_tasks` system): `_wkKeyNow=getWkKey(wkOff)`. Shows where `_dateOverrides[_wkKeyNow]===ds`.
-- **wrecThisWk**: direct key lookup `r._dateOverrides[wkKey]` — NOT `Object.values()`.
-- **Non-WR done**: `_doneByWk[getWkKey(wkOff)]`. `togRec` writes/deletes key, PATCHes `done_by_week`.
-- **Duplicate**: `uniqueRecName` appends ` (2)/(3)`. DB: `name,is_weekly_reset,cadence,starting_date:today`.
+- **Non-WR done**: `_doneByWk[getWkKey(wkOff)]`. `togRec` writes/deletes key, PATCHes `done_by_week` on `wr_recurring_rules`.
+- **Duplicate**: `uniqueRecName` appends ` (2)/(3)`. DB POST: `name, is_weekly_reset:false, cadence, starting_date:today`.
 - **Drag move** (`rec::` in weekly cal): snapshot `savedBlocks` before `removeTBBlocksForDate`. Pass `oldDs:origDate` explicitly. Undo: restore `_dateOverrides`, remove new-date blocks, re-add `savedBlocks` via `sbSaveBlock`, then `renderAll()+renderDayTB()`.
 - **`removeTBBlocksForDate` — `recId` branch**: call `sbDeleteBlock(b.id)` before filtering `st.blocks`.
-- **`appears_on_date` update** (all-future move from recMoModal): day name string for weekly/biweekly; date-of-month number string for monthly. PATCH `recurring_tasks` with `{appears_on_date:newVal}`.
+- **`appears_on_date` update** (all-future move from recMoModal): day name string for weekly/biweekly; date-of-month number string for monthly. PATCH `wr_recurring_rules` with `{appears_on_date:newVal}`.
 
 ---
 
@@ -206,11 +219,13 @@ Tables: `wr_recurring_rules` (base definitions) + `wr_recurring_overrides` (per-
 ---
 
 ### Recurring Tasks Page (`features.js`, `page-weekly`)
-Two-col grid: WR left (`#rt-wr-*`), non-WR right (`#rt-sch-*`). 4 cadence groups each.
-- **WR left**: `renderRtWrGroup(containerId, rules, cadence)`. Cols: Name | 🐾 | Schedule. Dblclick → `openWrEditModal(rid, null, 'all')`. 🐾 → `rtToggleWrPup`. Delete → `delWrRule`. `+` → `openWrRuleAddModal(cadence)`. Schedule: `wrRuleScheduleStr(rule)`.
-- **Non-WR right**: `renderRtGroup(containerId, tasks, cadence)`. Cols: Name | Adds On | Due On | Starting. Inline edit via `rtDblEdit`. `+` → `openRecModalForSection('scheduled', cadence)`. `duplicateRecDirect`: `uniqueRecName`, POST, undo.
+Two-col grid: WR left (`#rt-wr-*`), non-WR right (`#rt-sch-*`). 4 cadence groups each. Each column wrapped in a bordered parent container for visual separation.
+
+- **WR left**: `renderRtWrGroup(containerId, rules, cadence)`. Cols: Name | 🐾 | ✕. No Schedule or day-of-week column. Dblclick → `openWrEditModal(rid, null, 'all')`. 🐾 → `rtToggleWrPup`. Delete → `delWrRule`. `+` → `openWrRuleAddModal(cadence)`.
+- **Non-WR right**: `renderRtGroup(containerId, tasks, cadence)`. Cols: Name | Due On | Starting. No Adds On column. Inline edit via `rtDblEdit`. `+` → `openRecModalForSection('scheduled', cadence)`. `duplicateRecDirect`: `uniqueRecName`, POST, undo.
 - **Stats bar** (`#wrPL`, `#wrPct2`, `#wrBar`): hidden compat elements only.
 - Hidden compat elements: `#wrBar #wrPct2 #wrPL #wrList #shopFull #shopCountLbl #shopSortBtn #nsN #nsS`.
+- New WR rules appear instantly: `saveWrRuleAdd` calls `renderWeeklyPage()` after add, after POST, and in undo.
 
 ---
 
@@ -243,10 +258,10 @@ Opens via "Month" button in weekly reset card header. `openRecMoModal()` → `re
 
 | Type | `dataset.tid` | Color scheme | Draggable | Done check |
 |------|--------------|-------------|-----------|-----------|
-| WR rule | `wrrule-{id}` | `gc('weekly_reset')` | No | `wrOverrides` `complete` override |
-| Non-WR recurring | `rec-virt-{id}` | `gc('Recurring')` | Yes | `r._doneByWk[wkKey]` |
+| WR rule | `wrrule-{id}` | `gc('weekly_reset')` | Yes (`recmo-wr::` prefix) | `wrOverrides` `complete` override |
+| Non-WR recurring | `rec-virt-{id}` | `gc('Recurring')` | Yes (`recmo::` prefix) | `r._doneByWk[wkKey]` |
 
-Checkbox: 8×8px, `togWrRule(ruleId, checked, wkKey)` / `togRec(recId, checked, wkKey)`. Done: `opacity:.5` + `text-decoration:line-through`.
+Both chip types use `cursor:grab`. Checkbox: 8×8px, `togWrRule(ruleId, checked, wkKey)` / `togRec(recId, checked, wkKey)`. Done: `opacity:.5` + `text-decoration:line-through`.
 
 Indicator dot: WR if `item.edited`, non-WR if `item.moved`. Color = `gc(type).d`. See Global Chip Indicator Dot.
 
@@ -256,7 +271,9 @@ Indicator dot: WR if `item.edited`, non-WR if `item.moved`. Color = `gc(type).d`
 
 **Dblclick**: WR→`openWrEditModal(ruleId, wkKey, 'all')`; non-WR→`tiDblRec(e, recId)`.
 
-**Drag** (non-WR only): `dragId='recmo::{recId}::{srcDs}'`. Day cells are drop targets (guard: `dragId.startsWith('recmo::')` on dragover). Drop → `showWrScopePicker`: "This week only"→`_dateOverrides[wkKey]=ds`; "All future"→update `appears_on_date` (see Non-WR section). Both with undo + `renderAll()+renderRecMoCal()`.
+**Drag — non-WR** (`recmo::{recId}::{srcDs}`): day cells are drop targets. Same-week-only constraint: drop blocked if `dsToWkKey(ds) !== dsToWkKey(srcDs)`. Drop → `showWrScopePicker`: "This week only"→`_dateOverrides[wkKey]=ds`; "All future"→update `appears_on_date`. Both with undo + `renderAll()+renderRecMoCal()`.
+
+**Drag — WR** (`recmo-wr::{ruleId}::{srcWkKey}`): WR column cells are drop targets (guard: `dragId.startsWith('recmo-wr::')` on dragover). Drop on different week → `showWrScopePicker`: "↻ All future"→shift `starting_date` by delta weeks (`sbReqSilent PATCH wr_recurring_rules`); "⊞ This week only"→`writeWrOverride({override_type:'move', moved_to_wk_key:destWkKey})`. Both with undo + `renderRecOv()+renderWeeklyPage()+renderRecMoCal()`.
 
 **Keyboard**: Enter closes when `!selectedTasks.size && !input:focus`. Space closes unconditionally. Both in `core.js` global keydown.
 
