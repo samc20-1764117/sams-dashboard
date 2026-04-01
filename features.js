@@ -289,7 +289,7 @@ function renderRtWrGroup(containerId, rules, cadence){
   el.innerHTML=`<div class="card" style="padding:8px 12px;box-shadow:none">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;padding:0 2px">
       <span style="font-size:12px;font-weight:800;color:var(--text)">${cadLabel}${rules.length?' <span style="opacity:.45;font-weight:400;font-size:11px">· '+rules.length+'</span>':''}</span>
-      <button class="btn-plus" style="padding:0px 5px;font-size:10px;line-height:1.4" onclick="openWrRuleAddModal('${cadence}')">+</button>
+      <button class="btn-plus" style="padding:0px 5px;font-size:10px;line-height:1.4" onclick="openWrRuleAddModal('${cadence==='other'?'quarterly':cadence}','${cadence==='other'?'sch':'wr'}')">+</button>
     </div>
     ${tableHtml}
   </div>`;
@@ -345,7 +345,7 @@ function renderRtGroup(containerId, tasks, cadence){
   el.innerHTML=`<div class="card" style="padding:8px 12px;box-shadow:none">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;padding:0 2px">
       <span style="font-size:12px;font-weight:800;color:var(--text)">${cadLabel}${tasks.length?' <span style="opacity:.45;font-weight:400;font-size:11px">· '+tasks.length+'</span>':''}</span>
-      <button class="btn-plus" style="padding:0px 5px;font-size:10px;line-height:1.4" onclick="openRecModalForSection('scheduled','${cadence}')">+</button>
+      <button class="btn-plus" style="padding:0px 5px;font-size:10px;line-height:1.4" onclick="${cadence==='other'?`openWrRuleAddModal('quarterly','sch')`:`openRecModalForSection('scheduled','${cadence}')`}">+</button>
     </div>
     ${tableHtml}
   </div>`;

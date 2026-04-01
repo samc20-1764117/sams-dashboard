@@ -1484,7 +1484,7 @@ function saveWrEditModal(){
 }
 
 // ── Add WR rule modal ─────────────────────────────────────────────────────────
-function openWrRuleAddModal(cadence){
+function openWrRuleAddModal(cadence,type='wr'){
   _wrBuildSelects('wrAdd');
   document.getElementById('wrAddName').value='';
   document.getElementById('wrAddPup').checked=false;
@@ -1493,7 +1493,7 @@ function openWrRuleAddModal(cadence){
   document.getElementById('wrAddAppearDay').value='Friday';
   document.getElementById('wrAddAppearDate').value='1';
   document.getElementById('wrAddNotes').value='';
-  wrAddSetType('wr');
+  wrAddSetType(type);
   document.getElementById('wrRuleAddModal').classList.add('open');
   setTimeout(()=>document.getElementById('wrAddName').focus(),50);
 }
@@ -1519,7 +1519,7 @@ async function saveWrRuleAdd(){
     return;
   }
   const pup_related=document.getElementById('wrAddPup').checked;
-  const payload={name,pup_related,notes,is_enabled:true,sort_order:st.wrRules.length,...cadenceFields};
+  const payload={name,pup_related,notes,is_weekly_reset:true,is_enabled:true,sort_order:st.wrRules.length,...cadenceFields};
   const tmpId='wrrule-tmp-'+Date.now();
   st.wrRules.push({...payload,id:tmpId});
   save();renderRecOv();renderWeeklyPage();
