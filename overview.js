@@ -167,12 +167,13 @@ function tRowTodayVirt(t,tbArrow=false,noColor=false){
   const _dragId=t._isWrRule?`wrrule::${t._ruleId}`:t._isWrec?`wrec::${t._recId}`:`rec::${t._recId}::${t.due_date||''}`;
   const _chk=t._isWrRule?`togWrRule('${t._ruleId}',this.checked,'${t._wkKey||getWkKey(wkOff)}')`
     :t._isWrec?`togRec('${t._recId}',this.checked)`:`togRecVirt('${t._recId}',this.checked,'${t._wkKey||getWkKey(wkOff)}')`;
-  const _xBtn=t._isWrRule?`showWrXPicker(event,'${t._ruleId}','${t._wkKey||getWkKey(wkOff)}')`
-    :t._isWrec?`showWrXPicker(event,'${t._recId}','${t._wkKey||getWkKey(wkOff)}')`:`skipRecVirtThisWk('${t._recId}','${t._wkKey||getWkKey(wkOff)}')`;
+  const _xBtn=t._isWrRule?`showWrScopePicker(event,'⊘  Skip this week only','✕  Delete rule (all future)',()=>writeWrOverride('${t._ruleId}','${t._wkKey||getWkKey(wkOff)}',{override_type:'skip'},{undoLabel:'Skipped WR task this week'}),()=>wrCtxDeleteRule('${t._ruleId}'))`
+    :t._isWrec?`showWrScopePicker(event,'⊘  Skip this week only','✕  Delete recurring task',()=>unscheduleWRec('${t._recId}','${t._wkKey||getWkKey(wkOff)}'),()=>delRec('${t._recId}'))`
+    :`showWrScopePicker(event,'⊘  Skip this week only','✕  Delete recurring task',()=>skipRecVirtThisWk('${t._recId}','${t._wkKey||getWkKey(wkOff)}'),()=>delRec('${t._recId}'))`;
   const _recIdAttr=t._isWrRule?t._ruleId:t._recId;
   const _wkKeyAttr=t._wkKey||getWkKey(wkOff);
   const _dblClick=t._isWrRule?`event.stopPropagation();openWrEditModal('${t._ruleId}','${_wkKeyAttr}','all')`:`tiDblRec(event,'${_recIdAttr}')`;
-  const _ctxMenu=t._isWrRule?`showWrRuleCtx(event,'${t._ruleId}','${_wkKeyAttr}')`:`showCtx(event,'${t.id}',true,'${_recIdAttr}')`;
+  const _ctxMenu=t._isWrRule?`showWrRuleCtx(event,'${t._ruleId}','${_wkKeyAttr}')`:t._isWrec||t._virtual?`showRecCtx(event,'${_recIdAttr}','${_wkKeyAttr}')`:`showCtx(event,'${t.id}',true,'${_recIdAttr}')`;
 
   return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''}" style="${!ov&&!noColor?`background:${s.bg}`:''}" id="ti-${t.id}" draggable="true" ondragstart="dragId='${_dragId}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);" ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false);" onclick="selTask(event,'${t.id}')" ondblclick="${_dblClick}" oncontextmenu="${_ctxMenu}">
     <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="${_chk}"></label>
@@ -588,7 +589,11 @@ function renderWkCal(){
           dot.title='Edited this week only';chip.appendChild(dot);
         }
       }
-      chip.addEventListener('contextmenu',e=>{if(!t._virtual)showCtx(e,t.id);});
+      chip.addEventListener('contextmenu',e=>{
+        if(t._isWrRule){showWrRuleCtx(e,String(t._ruleId),t._wkKey||getWkKey(wkOff));}
+        else if(t._isWrec||t._virtual){showRecCtx(e,String(t._recId),t._wkKey||getWkKey(wkOff));}
+        else if(!t._virtual)showCtx(e,t.id);
+      });
       chip.addEventListener('click',e=>{
         if(e.target.closest('.wchk')||e.target.closest('.chip-del'))return;
         // Use data-tid as selection id (works for regular tasks, shop-cal-, and wrec- items)
@@ -622,11 +627,21 @@ function renderWkCal(){
             sbReqNullable('PATCH','shopping_list',{due_date:null},`?id=eq.${s.id}`);
             pushUndo(()=>{s.due_date=prev;save();renderAll();renderWkCal();sbReqNullable('PATCH','shopping_list',{due_date:prev||null},`?id=eq.${s.id}`);},'Removed from calendar');}
         } else if(t._isWrRule){
-          showWrXPicker(e2,String(t._ruleId),getWkKey(wkOff));
+          const _rid=String(t._ruleId),_wk=t._wkKey||getWkKey(wkOff);
+          showWrScopePicker(e2,'⊘  Skip this week only','✕  Delete rule (all future)',
+            ()=>writeWrOverride(_rid,_wk,{override_type:'skip'},{undoLabel:'Skipped WR task this week'}),
+            ()=>wrCtxDeleteRule(_rid));
         } else if(t._isWrec){
-          showWrXPicker(e2,String(t._recId),getWkKey(wkOff));
-        } else if(t._virtual){skipRecVirtThisWk(t._recId,t._wkKey||getWkKey(wkOff));}
-        else{delTask(t.id,e2);}
+          const _rid=String(t._recId),_wk=t._wkKey||getWkKey(wkOff);
+          showWrScopePicker(e2,'⊘  Skip this week only','✕  Delete recurring task',
+            ()=>unscheduleWRec(_rid,_wk),
+            ()=>delRec(_rid));
+        } else if(t._virtual){
+          const _rid=String(t._recId),_wk=t._wkKey||getWkKey(wkOff);
+          showWrScopePicker(e2,'⊘  Skip this week only','✕  Delete recurring task',
+            ()=>skipRecVirtThisWk(_rid,_wk),
+            ()=>delRec(_rid));
+        } else{delTask(t.id,e2);}
       });
       chip.appendChild(dx);
       col.appendChild(chip);
@@ -1283,11 +1298,18 @@ function togWrRule(ruleId,isDone,wkKey){
 }
 
 // ── WR Rule Context Menu ─────────────────────────────────────────────────────
-let _wrCtxRuleId=null,_wrCtxWkKey=null;
+let _wrCtxRuleId=null,_wrCtxWkKey=null,_wrCtxRecId=null;
 
 function showWrRuleCtx(e,ruleId,wkKey){
   e.preventDefault();e.stopPropagation();
-  _wrCtxRuleId=String(ruleId);_wrCtxWkKey=wkKey;
+  _wrCtxRuleId=String(ruleId);_wrCtxWkKey=wkKey;_wrCtxRecId=null;
+  const m=document.getElementById('wrRuleCtxMenu');
+  const x=Math.min(e.clientX,window.innerWidth-185),y=Math.min(e.clientY,window.innerHeight-210);
+  m.style.left=x+'px';m.style.top=y+'px';m.style.display='block';
+}
+function showRecCtx(e,recId,wkKey){
+  e.preventDefault();e.stopPropagation();
+  _wrCtxRecId=String(recId);_wrCtxWkKey=wkKey;_wrCtxRuleId=null;
   const m=document.getElementById('wrRuleCtxMenu');
   const x=Math.min(e.clientX,window.innerWidth-185),y=Math.min(e.clientY,window.innerHeight-210);
   m.style.left=x+'px';m.style.top=y+'px';m.style.display='block';
@@ -1344,11 +1366,32 @@ function showWrXPicker(e,rid,wkKey){
 }
 
 function wrCtxSkipThisWeek(){
-  hideWrRuleCtx();if(!_wrCtxRuleId||!_wrCtxWkKey)return;
+  hideWrRuleCtx();if(!_wrCtxWkKey)return;
+  if(_wrCtxRecId){
+    const r=st.recurring.find(x=>String(x.id)===_wrCtxRecId);if(!r)return;
+    if(r.is_weekly_reset===true||r.is_weekly_reset==='true')unscheduleWRec(_wrCtxRecId,_wrCtxWkKey);
+    else skipRecVirtThisWk(_wrCtxRecId,_wrCtxWkKey);
+    return;
+  }
+  if(!_wrCtxRuleId)return;
   writeWrOverride(_wrCtxRuleId,_wrCtxWkKey,{override_type:'skip'},{undoLabel:'Skipped WR task this week'});
 }
 function _wrShiftAnchor(delta){
-  hideWrRuleCtx();if(!_wrCtxRuleId)return;
+  hideWrRuleCtx();
+  if(_wrCtxRecId){
+    const r=st.recurring.find(x=>String(x.id)===_wrCtxRecId);if(!r||!_wrCtxWkKey)return;
+    if(!r._dateOverrides)r._dateOverrides={};
+    const prev=r._dateOverrides[_wrCtxWkKey];
+    const base=prev&&prev!=='__skip__'?new Date(prev+'T12:00'):new Date();
+    base.setDate(base.getDate()+delta);
+    const next=d2s(base);
+    r._dateOverrides[_wrCtxWkKey]=next;
+    save();renderWeeklyPage();renderWkCal();
+    sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(_wrCtxRecId));
+    pushUndo(()=>{if(prev!==undefined)r._dateOverrides[_wrCtxWkKey]=prev;else delete r._dateOverrides[_wrCtxWkKey];save();renderWeeklyPage();renderWkCal();sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(_wrCtxRecId));},'Moved recurring task');
+    return;
+  }
+  if(!_wrCtxRuleId)return;
   const rule=st.wrRules.find(r=>String(r.id)===_wrCtxRuleId);if(!rule)return;
   const prev=rule.starting_date;
   const base=rule.starting_date?new Date(rule.starting_date+'T12:00'):new Date();
@@ -1362,15 +1405,20 @@ function _wrShiftAnchor(delta){
 function wrCtxMovePrevWeek(){_wrShiftAnchor(-7);}
 function wrCtxMoveNextWeek(){_wrShiftAnchor(7);}
 function wrCtxEditThisWeek(){
-  hideWrRuleCtx();if(!_wrCtxRuleId||!_wrCtxWkKey)return;
+  hideWrRuleCtx();
+  if(_wrCtxRecId){openRecEditModal(_wrCtxRecId);return;}
+  if(!_wrCtxRuleId||!_wrCtxWkKey)return;
   openWrEditModal(_wrCtxRuleId,_wrCtxWkKey,'this');
 }
 function wrCtxEditRule(){
-  hideWrRuleCtx();if(!_wrCtxRuleId)return;
+  hideWrRuleCtx();
+  if(_wrCtxRecId){openRecEditModal(_wrCtxRecId);return;}
+  if(!_wrCtxRuleId)return;
   openWrEditModal(_wrCtxRuleId,_wrCtxWkKey,'all');
 }
 function wrCtxDeleteRule(ruleId){
   hideWrRuleCtx();
+  if(!ruleId&&_wrCtxRecId){delRec(_wrCtxRecId);return;}
   const rid=ruleId||_wrCtxRuleId;if(!rid)return;
   const rule=st.wrRules.find(r=>String(r.id)===String(rid));if(!rule)return;
   const prevRule={...rule};
