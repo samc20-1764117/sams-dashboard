@@ -517,7 +517,7 @@ function openRecModal(type='scheduled'){
   document.getElementById('recType').value='scheduled';
   document.getElementById('recCadence').value='weekly';
   document.getElementById('recRepeatDay').value='Friday';
-  document.getElementById('recDayAdded').value='Sunday';
+  const _da=document.getElementById('recDayAdded');if(_da)_da.value='Sunday';
   document.getElementById('recStartDate').value=d2s(new Date());
   const _pr=document.getElementById('recPupRelated');if(_pr)_pr.checked=false;
   updateRecTypeUI();
