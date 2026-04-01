@@ -1472,7 +1472,7 @@ async function saveWrRuleAdd(){
   const payload={name,pup_related,notes,is_enabled:true,sort_order:st.wrRules.length,...cadenceFields};
   const tmpId='wrrule-tmp-'+Date.now();
   st.wrRules.push({...payload,id:tmpId});
-  save();renderRecOv();
+  save();renderRecOv();renderWeeklyPage();
   closeMod('wrRuleAddModal');
   let realId=null;
   const sv=await sbReqSilent('POST','wr_recurring_rules',payload,'');
@@ -1480,13 +1480,13 @@ async function saveWrRuleAdd(){
     realId=String(sv[0].id);
     const idx=st.wrRules.findIndex(r=>String(r.id)===tmpId);
     if(idx>-1)st.wrRules[idx]=sv[0];
-    save();renderRecOv();
+    save();renderRecOv();renderWeeklyPage();
   }
   pushUndo(()=>{
     const id=realId||tmpId;
     st.wrRules=st.wrRules.filter(r=>String(r.id)!==id);
     if(realId)sbReqSilent('DELETE','wr_recurring_rules',null,`?id=eq.${realId}`);
-    save();renderRecOv();
+    save();renderRecOv();renderWeeklyPage();
   },'Added WR rule');
 }
 

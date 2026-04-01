@@ -269,7 +269,7 @@ function renderRtWrGroup(containerId, rules, cadence){
   const el=document.getElementById(containerId);if(!el)return;
   const cadLabel={weekly:'Weekly',biweekly:'Biweekly',monthly:'Monthly',other:'Other'}[cadence]||cadence;
   const esc=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  const thead=`<tr><th style="text-align:left">Name</th><th style="width:36px">Pup</th><th style="width:110px;text-align:left">Schedule</th><th style="width:40px"></th></tr>`;
+  const thead=`<tr><th style="text-align:left">Name</th><th style="width:36px">Pup</th><th style="width:40px"></th></tr>`;
   let tbody='';
   rules.forEach(r=>{
     const rid=String(r.id);
@@ -279,7 +279,6 @@ function renderRtWrGroup(containerId, rules, cadence){
       onclick="event.stopPropagation()">
       <td class="rt-editable">${esc(r.name)}</td>
       <td data-pup="1" style="text-align:center;cursor:pointer;font-size:13px" onclick="event.stopPropagation();rtToggleWrPup('${rid}')" ondblclick="event.stopPropagation()" title="Toggle pup related">${isPup?'🐾':''}</td>
-      <td style="font-size:11px;color:var(--muted)">${esc(wrRuleScheduleStr(r))}</td>
       <td onclick="event.stopPropagation()" ondblclick="event.stopPropagation()"><button class="delbtn" onclick="delWrRule('${rid}')">✕</button></td>
     </tr>`;
   });
