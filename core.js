@@ -38,12 +38,49 @@ let shopSortMode='store'; // 'store' or 'alpha'
 function load(){try{const s=JSON.parse(localStorage.getItem(KEY)||'{}');if(s.cfg)cfg={...cfg,...s.cfg};if(s.blocks)st.blocks=s.blocks.map(b=>{const{_col,_ncols,...rest}=b;return rest;});if(s.sb!==undefined)sbOpen=s.sb;if(s.overrides)localOverrides=s.overrides;if(s.delRec)deletedRecIds=new Set(s.delRec);if(s.tasks)st.tasks=s.tasks;if(s.recurring)st.recurring=s.recurring.map(r=>({...r,_doneByWk:r._doneByWk||{}}));if(s.shopping)st.shopping=s.shopping;if(s.travel)st.travel=s.travel;if(s.birthdays)st.birthdays=s.birthdays;if(s.pup_skills)st.pup_skills=s.pup_skills;if(s.recipes)st.recipes=s.recipes;if(s.autoTimeblocks)st.autoTimeblocks=s.autoTimeblocks;if(s.autoTBOverrides)st.autoTBOverrides=s.autoTBOverrides;if(s.wrRules)st.wrRules=s.wrRules;if(s.wrOverrides)st.wrOverrides=s.wrOverrides;}catch(e){}}
 function save(){try{localStorage.setItem(KEY,JSON.stringify({cfg,blocks:st.blocks,sb:sbOpen,overrides:localOverrides,delRec:[...deletedRecIds],tasks:st.tasks,recurring:st.recurring,shopping:st.shopping,travel:st.travel,birthdays:st.birthdays,pup_skills:st.pup_skills,recipes:st.recipes,autoTimeblocks:st.autoTimeblocks,autoTBOverrides:st.autoTBOverrides,wrRules:st.wrRules,wrOverrides:st.wrOverrides}));}catch(e){}}
 
+// ── Auth ───────────────────────────────────────────────────────────────────────
+let _sbClient=null;
+let _authToken=null;
+function _getAuthToken(){return _authToken||cfg.key;}
+function _initSbClient(){
+  if(_sbClient||!cfg.url||!cfg.key)return;
+  _sbClient=supabase.createClient(cfg.url,cfg.key,{auth:{persistSession:true,autoRefreshToken:true}});
+  _sbClient.auth.onAuthStateChange((event,session)=>{
+    _authToken=session?session.access_token:null;
+    if(!session&&event!=='INITIAL_SESSION'){showLoginOverlay();}
+  });
+}
+function showLoginOverlay(){
+  const el=document.getElementById('loginOverlay');
+  if(el){el.style.display='flex';setTimeout(()=>document.getElementById('loginEmail')&&document.getElementById('loginEmail').focus(),100);}
+}
+function hideLoginOverlay(){const el=document.getElementById('loginOverlay');if(el)el.style.display='none';}
+async function doLogin(){
+  const email=(document.getElementById('loginEmail')||{}).value||'';
+  const pass=(document.getElementById('loginPass')||{}).value||'';
+  const errEl=document.getElementById('loginErr');
+  if(errEl)errEl.style.display='none';
+  if(!_sbClient)_initSbClient();
+  const{data,error}=await _sbClient.auth.signInWithPassword({email,password:pass});
+  if(error){if(errEl){errEl.textContent=error.message;errEl.style.display='block';}return;}
+  _authToken=data.session.access_token;
+  hideLoginOverlay();
+  await syncAll();
+}
+async function checkAuth(){
+  _initSbClient();
+  const{data:{session}}=await _sbClient.auth.getSession();
+  if(session){_authToken=session.access_token;return true;}
+  showLoginOverlay();
+  return false;
+}
+
 // ── Supabase ───────────────────────────────────────────────────────────────────
 async function sbReq(method,table,body,qs=''){
   if(!cfg.url||!cfg.key)return null;
   try{
     const prefer=method==='DELETE'?'return=minimal':'return=representation';
-    const r=await fetch(`${cfg.url}/rest/v1/${table}${qs}`,{method,headers:{'apikey':cfg.key,'Authorization':`Bearer ${cfg.key}`,'Content-Type':'application/json','Prefer':prefer},body:body?JSON.stringify(body):null});
+    const r=await fetch(`${cfg.url}/rest/v1/${table}${qs}`,{method,headers:{'apikey':cfg.key,'Authorization':`Bearer ${_getAuthToken()}`,'Content-Type':'application/json','Prefer':prefer},body:body?JSON.stringify(body):null});
     if(!r.ok){
       const errText=await r.text();
       console.error('Supabase error',method,table,r.status,errText);
@@ -71,7 +108,7 @@ async function sbReqNullable(method,table,body,qs=''){
       method,
       headers:{
         'apikey':cfg.key,
-        'Authorization':`Bearer ${cfg.key}`,
+        'Authorization':`Bearer ${_getAuthToken()}`,
         'Content-Type':'application/json',
         'Prefer':'return=minimal'
       },
@@ -91,7 +128,7 @@ async function sbReqSilent(method,table,body,qs=''){
   try{
     const r=await fetch(`${cfg.url}/rest/v1/${table}${qs}`,{
       method,
-      headers:{'apikey':cfg.key,'Authorization':`Bearer ${cfg.key}`,'Content-Type':'application/json','Prefer':'return=representation'},
+      headers:{'apikey':cfg.key,'Authorization':`Bearer ${_getAuthToken()}`,'Content-Type':'application/json','Prefer':'return=representation'},
       body:body?JSON.stringify(body):null
     });
     if(!r.ok){const t=await r.text();console.warn('Supabase silent fail',method,table,r.status,t);return null;}

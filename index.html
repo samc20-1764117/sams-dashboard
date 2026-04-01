@@ -705,6 +705,19 @@ body.dark .bday-add-menu{background:rgba(38,20,10,.97);border-color:rgba(255,220
 </head>
 <body>
 
+<!-- Login Modal -->
+<div id="loginOverlay" style="display:none;position:fixed;inset:0;z-index:9999;background:var(--bg);background-attachment:fixed;align-items:center;justify-content:center">
+  <div style="background:var(--glass);backdrop-filter:blur(20px);border:1px solid var(--border);border-radius:var(--r);padding:36px 40px;width:320px;box-shadow:var(--shadow-lg);display:flex;flex-direction:column;gap:18px">
+    <div style="font-size:17px;font-weight:700;color:var(--text);text-align:center">Sam's Dashboard</div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <input id="loginEmail" type="email" placeholder="Email" autocomplete="email" style="padding:9px 12px;border-radius:var(--rs);border:1px solid var(--border);background:rgba(255,255,255,.6);font-size:13px;font-family:inherit;color:var(--text);outline:none" onkeydown="if(event.key==='Enter')document.getElementById('loginPass').focus()">
+      <input id="loginPass" type="password" placeholder="Password" autocomplete="current-password" style="padding:9px 12px;border-radius:var(--rs);border:1px solid var(--border);background:rgba(255,255,255,.6);font-size:13px;font-family:inherit;color:var(--text);outline:none" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button onclick="doLogin()" style="padding:9px;border-radius:var(--rs);border:none;background:var(--accent);color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">Sign in</button>
+    <div id="loginErr" style="display:none;font-size:12px;color:#ef4444;text-align:center"></div>
+  </div>
+</div>
+
 <button class="menu-open visible" id="menuOpen" onclick="openSB()">☰</button>
 <div id="undoToast" class="undo-toast"><span id="undoMsg">Undone</span><button class="undo-btn" onclick="doUndo()">⌘Z Undo</button><button class="undo-btn" id="redoBtn" onclick="doRedo()" style="display:none">⌘⇧Z Redo</button></div>
 
@@ -1333,6 +1346,7 @@ body.dark .bday-add-menu{background:rgba(38,20,10,.97);border-color:rgba(255,220
   <div id="rfContent"></div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="core.js"></script>
 <script src="overview.js"></script>
 <script src="features.js"></script>
