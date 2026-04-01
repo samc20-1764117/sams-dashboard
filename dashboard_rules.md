@@ -116,7 +116,7 @@ Supabase Auth (email + password) is required to use the dashboard. RLS is enable
 - Regular recurring: shown when `r._dateOverrides[wkKey]` exists and `!=='__skip__'` (moved this week).
 - WR rules: shown when `st.wrOverrides` has `override_type:'edit'` for `(ruleId, wkKey)` with `custom_name` or `custom_notes` (edited this week).
 
-**Cadence badge on chips** (recurring monthly view + recurring page) — shown only for "Other" cadence group tasks (quarterly/biannual/annual). Right-aligned small pill: `{quarterly:'Q', biannual:'BA', annual:'A', bimonthly:'B', monthly:'M'}`. In monthly view chips: appended after indicator dot, before X button (`flex-shrink:0;margin-left:2px`). In recurring page name cell: `float:right` span. Pup indicator (🐾 prefix) removed from recurring monthly view chip names.
+**Cadence badge on chips** — shown for all non-weekly cadences: `{biweekly:'B', monthly:'M', quarterly:'Q', biannual:'BA', annual:'A', bimonthly:'B'}`. In **recurring monthly view** (`makeChip`): non-WR items only (`!isWR`). Badge and X are wrapped in a shared slot (`span`, `flex-shrink:0;margin-left:2px`). Default: badge visible, X hidden (`display:none`). Hover slot → badge hidden, X visible. WR items (isWR=true) show X only (no badge). In **WR card** (`renderRecOv`): non-weekly WR rules get same slot — badge default, X on hover; slot gets `margin-left:auto` when no moved/edited dot present. In **recurring page name cell**: `float:right` span (no hover behavior). Cadence badge style: `font-size:9px;font-weight:700;padding:1px 3px;border-radius:3px;background:rgba(0,0,0,.13)`. Pup indicator (🐾 prefix) removed from recurring monthly view chip names.
 
 **Timeblock X for shop/WR rule blocks** — X button (`tb-bdel`) always calls `delBlock` (timeblock only). Keyboard Delete with `blk-{id}` in `selectedTasks` → `delBlock` only. Does NOT unschedule or remove from other views. Selection of shop/WR rule blocks in timeblock uses `blk-{blockId}` (not `shop-cal-` or `wrrule-`), preventing cross-view highlight/delete.
 
@@ -282,11 +282,20 @@ Both chip types use `cursor:grab`. Checkbox: 8×8px, `togWrRule(ruleId, checked,
 
 Indicator dot: WR if `item.edited`, non-WR if `item.moved`. Color = `gc(type).d`. See Global Chip Indicator Dot.
 
-**X button** → `showWrScopePicker`:
-- WR: "Skip this week only"→`writeWrOverride({override_type:'skip'})` / "Delete rule"→`wrCtxDeleteRule`.
-- Non-WR: "Skip this week only"→`_dateOverrides[wkKey]='__skip__'` + PATCH / "Delete recurring task"→`delRec`.
+**X button** → `showWrScopePicker` (all recurring chips in weekly cal, wkList, today list, monthly view):
+- WR rule (`_isWrRule`): "⊘ Skip this week only"→`writeWrOverride({override_type:'skip'})` / "✕ Delete rule (all future)"→`wrCtxDeleteRule(ruleId)`.
+- WR recurring (`_isWrec`): "⊘ Skip this week only"→`unscheduleWRec(recId, wkKey)` / "✕ Delete recurring task"→`delRec(recId)`.
+- Non-WR virtual (`_virtual`, not `_isWrec`): "⊘ Skip this week only"→`skipRecVirtThisWk(recId, wkKey)` / "✕ Delete recurring task"→`delRec(recId)`.
+- `delRec` guards against temp IDs (`rec-tmp-`, `rec-local-`) — skips DB DELETE for those.
 
 **Dblclick**: WR→`openWrEditModal(ruleId, wkKey, 'all')`; non-WR→`tiDblRec(e, recId)`.
+
+**Right-click context menu** — all recurring tasks (WR rules, non-WR recurring, virtual) in all views (weekly cal chips, wkList, today list, monthly view chips, recurring rules table rows) use `showWrRuleCtx(e, id, wkKey)`. Function auto-detects type: if `st.wrRules` contains `id` → sets `_wrCtxRuleId`; otherwise → sets `_wrCtxRecId`. Both show `#wrRuleCtxMenu`. Do NOT use `showRecCtx` (that is the recipe page menu). Context menu actions branch on `_wrCtxRecId` vs `_wrCtxRuleId`:
+- **Skip this week** (`wrCtxSkipThisWeek`): WR→`writeWrOverride({override_type:'skip'})`; rec `is_weekly_reset`→`unscheduleWRec`; rec non-WR→`skipRecVirtThisWk`.
+- **Move prev/next week** (`wrCtxMovePrevWeek/Next`): WR→shifts `starting_date` ±7; rec→shifts `_dateOverrides[wkKey]` date ±7, PATCHes `date_overrides`.
+- **Edit this week only / Edit rule** (`wrCtxEditThisWeek/Rule`): WR→`openWrEditModal`; rec→`openRecEditModal`.
+- **Delete** (`wrCtxDeleteRule`): WR→deletes from `st.wrRules`; rec (no `ruleId` arg + `_wrCtxRecId` set)→`delRec(_wrCtxRecId)`.
+- `renderRtWrGroup` rows: `oncontextmenu="showWrRuleCtx(event,'{rid}',getWkKey(wkOff))"`. `renderRtGroup` rows: same.
 
 **Drag — non-WR** (`recmo::{recId}::{srcDs}`): day cells are drop targets. Same-week-only constraint: drop blocked if `dsToWkKey(ds) !== dsToWkKey(srcDs)`. Drop → `showWrScopePicker`: "This week only"→`_dateOverrides[wkKey]=ds`; "All future"→update `appears_on_date`. Both with undo + `renderAll()+renderRecMoCal()`.
 
