@@ -1440,8 +1440,8 @@ async function testConn(){
 function saveSettings(){cfg.url=document.getElementById('cfgUrl').value.trim();cfg.key=document.getElementById('cfgKey').value.trim();save();syncAll();}
 
 // ── Sidebar ────────────────────────────────────────────────────────────────────
-function closeSB(){sbOpen=false;document.getElementById('sidebar').classList.add('closed');document.getElementById('main').style.left='0';document.getElementById('menuOpen').classList.add('visible');save();}
-function openSB(){sbOpen=true;document.getElementById('sidebar').classList.remove('closed');document.getElementById('main').style.left='186px';document.getElementById('menuOpen').classList.remove('visible');save();}
+function closeSB(){sbOpen=false;document.getElementById('sidebar').classList.add('closed');document.getElementById('main').style.left='0';document.getElementById('menuOpen').classList.add('visible');document.querySelectorAll('.ov-topbar').forEach(el=>el.style.left='0');save();}
+function openSB(){sbOpen=true;document.getElementById('sidebar').classList.remove('closed');document.getElementById('main').style.left='186px';document.getElementById('menuOpen').classList.remove('visible');document.querySelectorAll('.ov-topbar').forEach(el=>el.style.left='186px');save();}
 
 // ── Pages ──────────────────────────────────────────────────────────────────────
 const PAGES=['overview','weekly','shopping','travel','birthdays','settings','pups','finance','recipes','notes'];
@@ -1987,7 +1987,7 @@ function closeMod(id,e){if(e&&e.target!==document.getElementById(id))return;docu
 function init(){
   load();
   if(cfg.dark){document.body.classList.add('dark');const ic=document.getElementById('darkToggleIcon');if(ic)ic.textContent='☀️';const dt=document.getElementById('darkToggle');if(dt)dt.textContent='☀️';}
-  if(!sbOpen){document.getElementById('sidebar').classList.add('closed');document.getElementById('main').style.left='0';document.getElementById('menuOpen').classList.add('visible');}
+  if(!sbOpen){document.getElementById('sidebar').classList.add('closed');document.getElementById('main').style.left='0';document.getElementById('menuOpen').classList.add('visible');document.querySelectorAll('.ov-topbar').forEach(el=>el.style.left='0');}else{document.getElementById('sidebar').classList.remove('closed');document.getElementById('main').style.left='186px';document.getElementById('menuOpen').classList.remove('visible');document.querySelectorAll('.ov-topbar').forEach(el=>el.style.left='186px');}
   // Restore page from URL hash
   const initHash=location.hash.replace('#','');
   if(initHash&&PAGES.includes(initHash))showPage(initHash);
