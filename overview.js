@@ -173,7 +173,7 @@ function tRowTodayVirt(t,tbArrow=false,noColor=false){
   const _recIdAttr=t._isWrRule?t._ruleId:t._recId;
   const _wkKeyAttr=t._wkKey||getWkKey(wkOff);
   const _dblClick=t._isWrRule?`event.stopPropagation();openWrEditModal('${t._ruleId}','${_wkKeyAttr}','all')`:`tiDblRec(event,'${_recIdAttr}')`;
-  const _ctxMenu=t._isWrRule?`showWrRuleCtx(event,'${t._ruleId}','${_wkKeyAttr}')`:t._isWrec||t._virtual?`showWrRecCtx(event,'${_recIdAttr}','${_wkKeyAttr}')`:`showCtx(event,'${t.id}',true,'${_recIdAttr}')`;
+  const _ctxMenu=t._isWrRule?`showWrRuleCtx(event,'${t._ruleId}','${_wkKeyAttr}')`:t._isWrec||t._virtual?`showWrRuleCtx(event,'${_recIdAttr}','${_wkKeyAttr}')`:`showCtx(event,'${t.id}',true,'${_recIdAttr}')`;
 
   return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''}" style="${!ov&&!noColor?`background:${s.bg}`:''}" id="ti-${t.id}" draggable="true" ondragstart="dragId='${_dragId}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);" ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false);" onclick="selTask(event,'${t.id}')" ondblclick="${_dblClick}" oncontextmenu="${_ctxMenu}">
     <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="${_chk}"></label>
@@ -591,7 +591,7 @@ function renderWkCal(){
       }
       chip.addEventListener('contextmenu',e=>{
         if(t._isWrRule){showWrRuleCtx(e,String(t._ruleId),t._wkKey||getWkKey(wkOff));}
-        else if((t._isWrec||t._virtual)&&t._recId){showWrRecCtx(e,String(t._recId),t._wkKey||getWkKey(wkOff));}
+        else if((t._isWrec||t._virtual)&&t._recId){showWrRuleCtx(e,String(t._recId),t._wkKey||getWkKey(wkOff));}
         else if(!t._virtual)showCtx(e,t.id);
       });
       chip.addEventListener('click',e=>{
@@ -1300,16 +1300,11 @@ function togWrRule(ruleId,isDone,wkKey){
 // ── WR Rule Context Menu ─────────────────────────────────────────────────────
 let _wrCtxRuleId=null,_wrCtxWkKey=null,_wrCtxRecId=null;
 
-function showWrRuleCtx(e,ruleId,wkKey){
+function showWrRuleCtx(e,id,wkKey){
   e.preventDefault();e.stopPropagation();
-  _wrCtxRuleId=String(ruleId);_wrCtxWkKey=wkKey;_wrCtxRecId=null;
-  const m=document.getElementById('wrRuleCtxMenu');
-  const x=Math.min(e.clientX,window.innerWidth-185),y=Math.min(e.clientY,window.innerHeight-210);
-  m.style.left=x+'px';m.style.top=y+'px';m.style.display='block';
-}
-function showWrRecCtx(e,recId,wkKey){
-  e.preventDefault();e.stopPropagation();
-  _wrCtxRecId=String(recId);_wrCtxWkKey=wkKey;_wrCtxRuleId=null;
+  const isRule=st.wrRules.some(r=>String(r.id)===String(id));
+  if(isRule){_wrCtxRuleId=String(id);_wrCtxRecId=null;}else{_wrCtxRecId=String(id);_wrCtxRuleId=null;}
+  _wrCtxWkKey=wkKey;
   const m=document.getElementById('wrRuleCtxMenu');
   const x=Math.min(e.clientX,window.innerWidth-185),y=Math.min(e.clientY,window.innerHeight-210);
   m.style.left=x+'px';m.style.top=y+'px';m.style.display='block';
@@ -1772,7 +1767,7 @@ function renderShopOv(){
 function tRowWk(t){
   if(t._virtual){
     const s=gc((t._isWrec||t._isWrRule)?'weekly_reset':'recurring');
-    const _wkCtxMenu=t._isWrRule?`showWrRuleCtx(event,'${t._ruleId}','${t._wkKey||getWkKey(wkOff)}')`:`showWrRecCtx(event,'${t._recId}','${t._wkKey||getWkKey(wkOff)}')`;
+    const _wkCtxMenu=t._isWrRule?`showWrRuleCtx(event,'${t._ruleId}','${t._wkKey||getWkKey(wkOff)}')`:`showWrRuleCtx(event,'${t._recId}','${t._wkKey||getWkKey(wkOff)}')`;
     const _wkXBtn=t._isWrRule?`showWrScopePicker(event,'⊘  Skip this week only','✕  Delete rule (all future)',()=>writeWrOverride('${t._ruleId}','${t._wkKey||getWkKey(wkOff)}',{override_type:'skip'},{undoLabel:'Skipped WR task this week'}),()=>wrCtxDeleteRule('${t._ruleId}'))`
       :t._isWrec?`showWrScopePicker(event,'⊘  Skip this week only','✕  Delete recurring task',()=>unscheduleWRec('${t._recId}','${t._wkKey||getWkKey(wkOff)}'),()=>delRec('${t._recId}'))`
       :`showWrScopePicker(event,'⊘  Skip this week only','✕  Delete recurring task',()=>skipRecVirtThisWk('${t._recId}','${t._wkKey||getWkKey(wkOff)}'),()=>delRec('${t._recId}'))`;

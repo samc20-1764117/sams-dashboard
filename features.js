@@ -335,7 +335,7 @@ function renderRtGroup(containerId, tasks, cadence){
     const tds=`<td class="rt-editable">${esc(r.name)}${cadence==='other'?_rtBadge:''}</td>
       <td class="rt-editable rt-meta" style="text-align:center" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','appears_on_date')">${dayDisp}</td>
       <td class="rt-editable rt-meta" style="text-align:right" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','starting_date')">${r.starting_date?fmtD(r.starting_date):'—'}</td>`;
-    tbody+=`<tr class="rt-row" id="ti-rt-${rid}" onclick="selTask(event,'${virtId}')" ondblclick="if(!event.target.closest('.delbtn')&&!event.target.closest('.btn-xs')){event.stopPropagation();openRecEditModal('${rid}');}" oncontextmenu="showWrRecCtx(event,'${rid}',getWkKey(wkOff))">
+    tbody+=`<tr class="rt-row" id="ti-rt-${rid}" onclick="selTask(event,'${virtId}')" ondblclick="if(!event.target.closest('.delbtn')&&!event.target.closest('.btn-xs')){event.stopPropagation();openRecEditModal('${rid}');}" oncontextmenu="showWrRuleCtx(event,'${rid}',getWkKey(wkOff))">
       ${tds}
       <td onclick="event.stopPropagation()" ondblclick="event.stopPropagation()"><button class="btn btn-xs btn-ghost" style="padding:1px 5px;font-size:10px;opacity:.55" onclick="duplicateRecDirect('${rid}')" title="Duplicate">⧉</button><button class="delbtn" onclick="delRec('${rid}')">✕</button></td>
     </tr>`;
@@ -848,7 +848,7 @@ function mkMCell(date,om,today){
     chip.addEventListener('dragend',()=>{document.body.classList.remove('body-dragging');if(isTravel){if(dragId&&dragId.startsWith('travel::'))dragId=null;}else chip.style.opacity='1';});
     chip.addEventListener('click',e=>{if(e.target.closest('.chip-del,.chk-wrap'))return;if(isTravel){e.stopPropagation();const tvSid='tv-'+t._srcId;selectedTasks.clear();selectedTasks.add(tvSid);lastSelectedId=tvSid;applySelHighlight();return;}const sid=chip.dataset.tid;if(!sid)return;selTask(e,sid);});
     chip.addEventListener('dblclick',e=>{e.stopPropagation();if(isTravel){openTravelModal(t._srcId);}else if(t._type==='shop')tiDblShop(e,t._shopId);else if(!t._virtual)tiDbl(e,t.id);else tiDblRec(e,t._recId);});
-    chip.addEventListener('contextmenu',e=>{if(isTravel){e.preventDefault();e.stopPropagation();const tvSid='tv-'+t._srcId;selectedTasks.clear();selectedTasks.add(tvSid);lastSelectedId=tvSid;applySelHighlight();showCtx(e,null,false,null,null,null,t._srcId);}else if(t._type==='shop')showCtx(e,null,false,null,t._shopId);else if(t._isWrRule)showWrRuleCtx(e,String(t._ruleId),t._wkKey||getWkKey(wkOff));else if(t._isWrec||t._recId)showWrRecCtx(e,String(t._recId),t._wkKey||getWkKey(wkOff));else if(!t._virtual)showCtx(e,t.id);});
+    chip.addEventListener('contextmenu',e=>{if(isTravel){e.preventDefault();e.stopPropagation();const tvSid='tv-'+t._srcId;selectedTasks.clear();selectedTasks.add(tvSid);lastSelectedId=tvSid;applySelHighlight();showCtx(e,null,false,null,null,null,t._srcId);}else if(t._type==='shop')showCtx(e,null,false,null,t._shopId);else if(t._isWrRule)showWrRuleCtx(e,String(t._ruleId),t._wkKey||getWkKey(wkOff));else if(t._isWrec||t._recId)showWrRuleCtx(e,String(t._recId),t._wkKey||getWkKey(wkOff));else if(!t._virtual)showCtx(e,t.id);});
     body.appendChild(chip);
   });
   if(tasks.length>5){const more=document.createElement('div');more.style.cssText='font-size:8px;color:var(--muted);cursor:pointer;padding:1px 2px;border-radius:3px';more.textContent=`+${tasks.length-5} more`;more.addEventListener('click',e=>{e.stopPropagation();showMcellMorePop(e,tasks,ds);});body.appendChild(more);}
@@ -950,7 +950,7 @@ function showMcellMorePop(e,tasks,ds){
     chip.appendChild(mdx);
     chip.addEventListener('click',ev=>{if(ev.target.closest('.chip-del'))return;if(isTravel){closeMorePop();const tvSid='tv-'+t._srcId;selectedTasks.clear();selectedTasks.add(tvSid);lastSelectedId=tvSid;applySelHighlight();openTravelModal(t._srcId);return;}const sid=chip.dataset.tid;if(!sid)return;selTask(ev,sid);});
     chip.addEventListener('dblclick',ev=>{ev.stopPropagation();closeMorePop();if(isTravel){openTravelModal(t._srcId);}else if(t._type==='shop')tiDblShop(ev,t._shopId);else if(!t._virtual)tiDbl(ev,t.id);else tiDblRec(ev,t._recId);});
-    chip.addEventListener('contextmenu',ev=>{if(isTravel){ev.preventDefault();ev.stopPropagation();closeMorePop();openTravelModal(t._srcId);}else if(t._type==='shop')showCtx(ev,null,false,null,t._shopId);else if(t._isWrRule)showWrRuleCtx(ev,String(t._ruleId),t._wkKey||getWkKey(wkOff));else if(t._isWrec||t._recId)showWrRecCtx(ev,String(t._recId),t._wkKey||getWkKey(wkOff));else if(!t._virtual)showCtx(ev,t.id);});
+    chip.addEventListener('contextmenu',ev=>{if(isTravel){ev.preventDefault();ev.stopPropagation();closeMorePop();openTravelModal(t._srcId);}else if(t._type==='shop')showCtx(ev,null,false,null,t._shopId);else if(t._isWrRule)showWrRuleCtx(ev,String(t._ruleId),t._wkKey||getWkKey(wkOff));else if(t._isWrec||t._recId)showWrRuleCtx(ev,String(t._recId),t._wkKey||getWkKey(wkOff));else if(!t._virtual)showCtx(ev,t.id);});
     chip.addEventListener('dragstart',ev=>{ev.stopPropagation();dStart(ev,t.id);chip.style.opacity='.4';});
     chip.addEventListener('dragend',()=>{chip.style.opacity='1';});
     modal.appendChild(chip);
