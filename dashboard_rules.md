@@ -11,13 +11,24 @@ All files share global scope — no modules, no bundler.
 
 | File | Contains |
 |------|----------|
-| `index.html` | HTML + CSS + 4 `<script src>` tags |
-| `core.js` | State (`cfg`, `st`, `dayOff`, `wkOff`), Supabase helpers (`sbReq`, `sbReqSilent`, `sbReqNullable`), `syncAll`, date utils (`getWkKey`, `getWkBounds`, `getDayDate`, `d2s`, `dsToWkKey`), `getRecurringWeekTasks`, `isWRRuleDueThisWeek`, undo/redo (`pushUndo`, `doUndo`, `doRedo`, `showToast`) |
+| `index.html` | HTML + CSS + 5 `<script src>` tags (supabase-js CDN first, then core/overview/features/pup-skills) |
+| `core.js` | State (`cfg`, `st`, `dayOff`, `wkOff`), Auth (`_sbClient`, `_authToken`, `checkAuth`, `doLogin`, `showLoginOverlay`, `hideLoginOverlay`), Supabase helpers (`sbReq`, `sbReqSilent`, `sbReqNullable`), `syncAll`, date utils (`getWkKey`, `getWkBounds`, `getDayDate`, `d2s`, `dsToWkKey`), `getRecurringWeekTasks`, `isWRRuleDueThisWeek`, undo/redo (`pushUndo`, `doUndo`, `doRedo`, `showToast`) |
 | `overview.js` | `renderAll`, `renderOv`, `renderToday`, `renderWkSummary`, `renderWkCal`, `renderRecOv`, `renderRecMoCal`, `renderShopOv`, `renderUnassigned`, `renderKanban`, `renderDayTB`, `getAutoTBForDate`, `tRow`, drag-and-drop, WR rule CRUD, scope picker, `writeWrOverride` |
 | `features.js` | Task CRUD, all secondary pages (recurring/shopping/travel/birthdays/recipes), `showPage`, `closeMod`, `init()`, `selTask`, `clearSelection`, `showCtx`, `mkMCell`, `renderMoCal`, quick notes |
 | `pup-skills.js` | All pup skills logic |
 
-**Where is X?** Overview/today/calendar/kanban/timeblocks/recurring-monthly → `overview.js`. Secondary pages + CRUD + context menus + regular monthly cal → `features.js`. Pup → `pup-skills.js`. Shared utils/Supabase/undo → `core.js`.
+**Where is X?** Overview/today/calendar/kanban/timeblocks/recurring-monthly → `overview.js`. Secondary pages + CRUD + context menus + regular monthly cal → `features.js`. Pup → `pup-skills.js`. Shared utils/Supabase/auth/undo → `core.js`.
+
+### Auth & Security
+Supabase Auth (email + password) is required to use the dashboard. RLS is enabled on all tables — only the `authenticated` role has access (SELECT/INSERT/UPDATE/DELETE). Anon role has no permissions.
+
+**Flow:** `init()` (async) calls `checkAuth()` → if no session, shows `#loginOverlay` and returns early. User submits login modal → `doLogin()` → `signInWithPassword` → sets `_authToken` → hides modal → calls `syncAll()`. All `sbReq`/`sbReqSilent`/`sbReqNullable` use `_getAuthToken()` (returns session JWT, falls back to anon key) in the `Authorization` header; `apikey` header always uses anon key (`cfg.key`).
+
+**Session lifetime:** Access token auto-refreshes every hour via `supabase-js` (`autoRefreshToken:true`). Refresh token lasts 1 week by default (configurable in Supabase → Auth → Configuration). Returning within 1 week = auto login. Beyond 1 week = login screen shown again.
+
+**Key variables:** `_sbClient` (supabase-js client, init once via `_initSbClient()`), `_authToken` (current JWT, updated by `onAuthStateChange`), `_getAuthToken()` helper.
+
+**Supabase grants required** (run once): `GRANT USAGE ON SCHEMA public TO authenticated; GRANT ALL ON ALL TABLES IN SCHEMA public TO authenticated; GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO authenticated;`
 
 - Grep exact function/variable name first. Never broad greps.
 - Timeblock drag/resize: `tbOnUp`, `onRU`, `atbOnUp`, `onRM` in `overview.js`.
