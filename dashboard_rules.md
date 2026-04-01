@@ -210,6 +210,8 @@ Non-WR tasks (`is_weekly_reset=false`) live in `wr_recurring_rules` and are load
 
 **Weekly Reset container** — see WR Recurring Rules System section above.
 
+**Overview layout** — `.overview-cols`: `minmax(0,1.5fr) minmax(0,2.55fr)` gap 14px (left=Today+timeblock, right=panel). `.row1-right-top`: `1.05fr 0.9fr 0.6fr` gap 14px (Weekly Reset | Shopping | Quick Links). WR column is sized so its horizontal center aligns with the header center (`ov-topbar` mid-point). `.ov-topbar`: `position:fixed; left:0; right:0` shifts to `left:186px` when sidebar opens — updated in `openSB()`/`closeSB()` and `init()` via `document.querySelectorAll('.ov-topbar').forEach(el=>el.style.left=...)`. Topbar has `transition:left .25s` to match sidebar slide animation.
+
 **Unassigned badge** — `#unAssignedBadge` in `.wkc-foot`. Filter: `!due_date&&!done&&category!=='Long term'`. Popup `#unMenu`: fixed 300px, opens upward. Backdrop `#unMenuBack` (outside-click). `dEnd` restores backdrop. Visible only on overview page.
 
 **Time Blocks** — auto blocks (`st.autoTimeblocks`+`st.autoTBOverrides`) in `computeTBLayout`. `getAutoTBForDate(ds)`: override or base times, skip Sat/Sun if weekdays-only, `start_time=null`=deleted. `delAutoTBForDay`: PATCH null if override exists, else POST null override. Drop: `dropOnTB(e,ds,null,null,b.sm)`. `.tb-drop-over`: dashed purple. `selAtbId`/`selAtbDs` track selected auto block. All auto block DB via `sbReqSilent`. Auto blocks never in today/overdue/metrics/recurring/weekly-cal.
