@@ -25,7 +25,7 @@ All files share global scope — no modules, no bundler.
 
 ### Data & Persistence
 - POST must include ALL required fields. Missing NOT NULL → silent 400 failure.
-- `tasks` POST required: `name`, `category`, `due_date`, `done`, `important`.
+- `tasks` POST required: `name`, `category`, `due_date`, `done`, `important`. Optional: `notes`.
 - `recurring_tasks` POST required: `name`, `is_weekly_reset`, `cadence`. Do NOT send `day_of_week`/`repeat_day`. Optional: `appears_on_date`, `starting_date`, `repeat_date`, `day_added`, `task_due_day`.
 - Local temp IDs: tasks=`l-`, recurring=`rec-tmp-`, WR rules=`wrrule-tmp-` (sync only preserves `rec-tmp-`/`rec-local-`).
 - Undo ID: `let serverId=null` in closure, set after POST resolves. Undo reads `serverId||localId`.
@@ -36,6 +36,20 @@ All files share global scope — no modules, no bundler.
 - On `init()`, `deletedRecIds` cleared — DB is authoritative.
 - `localStorage` (`save()`/`load()`) persists: tasks, recurring, shopping, travel, birthdays, pup_skills, recipes, autoTimeblocks, autoTBOverrides, **wrRules, wrOverrides** — all load instantly before `syncAll` completes.
 - Notes: `notes` column on `tasks` + `recurring_tasks`. Include in POST/PATCH. Show via `.tb-notes` in time blocks.
+
+### Task Add / Edit Modals
+
+**Task Modal (`#tModal`)** — used for both add (`openTModal(cat='')`) and edit (`openEditTask(id)`). Fields: name, category, due date, important checkbox, notes. Both modes show all fields. `openTModal` resets all fields and calls `setCatSel('tCat', cat||'Home')`. `openEditTask` populates fields and calls `setCatSel('tCat', t.category||'Home')`. Save via `saveTModal()`.
+
+**Quick-Add Popup (`#qaPopup`, `openQA(ctx,btn,ds,kcat)`)** — lightweight inline popup. For regular task ctx (not `pup`/`shop`/`rec`): fields are name, category (custom dropdown), due date, important checkbox, notes (`#qaNotes`). `submitQA` reads `qaNotes?.value.trim()||null` and passes `notes` to POST. Category defaults to `kcat` in kanban ctx, else `'Home'`.
+
+**Category Custom Dropdown (`.cat-sel-wrap`)** — replaces native `<select>` in `#tModal` and `#qaPopup`. Helpers in `features.js` (top):
+- `catSelHTML(id, def)` — builds HTML: hidden `<input type="hidden" id="{id}">` + trigger div `#{id}Trigger` + drop panel `#{id}Drop` with one `.cat-sel-opt` per category.
+- `setCatSel(id, v)` — sets hidden input value + updates trigger label/bg/color/border to match CATS style.
+- `pickCat(id, v)` — same as `setCatSel` + closes drop + refocuses name input (`tName` if id=`tCat`, else `qaName`).
+- `toggleCatDrop(id)` — closes all other open drops, toggles this one.
+- Trigger and each option use `CATS[v.toLowerCase()].bg/t/b` colors — matching the category container colors used in views. No native select; `.value` reads from the hidden input.
+- Outside-click closes via document listener: `if(!e.target.closest('.cat-sel-wrap'))` → remove `.open` from all drops.
 
 ### Interaction Patterns
 
@@ -201,7 +215,7 @@ Two-col grid: WR left (`#rt-wr-*`), non-WR right (`#rt-sch-*`). 4 cadence groups
 ---
 
 ### Monthly Calendar (`features.js`, `#mModal`)
-`renderMoCal`: 22 weeks (8 past + 14 future). Month separators: `.mo-sep` (`grid-column:1/-1`). Open: `scrollMoToday()` **before** adding `.open` class (overlay at `opacity:0` still participates in layout; scroll must happen before reveal transition). Then `requestAnimationFrame(()=>modal.classList.add('open'))`. GPU: `backdrop-filter:none` on `#mModal`/`#recMoModal` (prevents continuous repaint from orbs behind overlay). Orb animations paused on open: `bg.classList.add('orbs-paused')` (CSS: `.bg-canvas.orbs-paused .orb{animation-play-state:paused}`); removed on close. CSS: `#mCells` uses `.mcells` (`grid-template-columns:repeat(7,1fr)`). `.mcell` has `min-width:0`.
+`renderMoCal`: 34 weeks (8 past + 26 future). Month separators: `.mo-sep` (`grid-column:1/-1`). Open: `scrollMoToday()` **before** adding `.open` class (overlay at `opacity:0` still participates in layout; scroll must happen before reveal transition). Then `requestAnimationFrame(()=>modal.classList.add('open'))`. GPU: `backdrop-filter:none` on `#mModal`/`#recMoModal` (prevents continuous repaint from orbs behind overlay). Orb animations paused on open: `bg.classList.add('orbs-paused')` (CSS: `.bg-canvas.orbs-paused .orb{animation-play-state:paused}`); removed on close. CSS: `#mCells` uses `.mcells` (`grid-template-columns:repeat(7,1fr)`). `.mcell` has `min-width:0`.
 
 **Non-WR recurring tasks in monthly cal**: `renderMoCal` precomputes `_moRecMap` (module-level `let _moRecMap={}`) before the cell loop — iterates all weeks, calls `getRecurringWeekTasks(wkOff)` for each, maps results by `due_date`. `mkMCell` adds `recOnDay=(_moRecMap[ds]||[]).filter(t=>!t.done)` to the `undone` array. These render as teal Recurring chips alongside normal tasks.
 
