@@ -1,3 +1,12 @@
+// ── Cat-select helpers ──────────────────────────────────────────────────────────
+function _catDot(v){return(CATS[(v||'').toLowerCase()]||{d:'#94a3b8'}).d;}
+function toggleCatDrop(id){const d=document.getElementById(id+'Drop');if(!d)return;const o=d.classList.contains('open');document.querySelectorAll('.cat-sel-drop.open').forEach(el=>el.classList.remove('open'));if(!o)d.classList.add('open');}
+function pickCat(id,v){const inp=document.getElementById(id);if(inp)inp.value=v;const lbl=document.getElementById(id+'Lbl');if(lbl)lbl.textContent=v;const dot=document.getElementById(id+'Dot');if(dot)dot.style.background=_catDot(v);const drop=document.getElementById(id+'Drop');if(drop)drop.classList.remove('open');const nameId=id==='tCat'?'tName':'qaName';const nm=document.getElementById(nameId);if(nm){nm.focus();const l=nm.value.length;nm.setSelectionRange(l,l);}}
+function setCatSel(id,v){const inp=document.getElementById(id);if(inp)inp.value=v;const lbl=document.getElementById(id+'Lbl');if(lbl)lbl.textContent=v;const dot=document.getElementById(id+'Dot');if(dot)dot.style.background=_catDot(v);}
+const _CAT_OPT_LIST=[{v:'Home'},{v:'My work'},{v:'Work'},{v:'Social'},{v:'Long term'}];
+function catSelHTML(id,def){const d=_catDot(def);const opts=_CAT_OPT_LIST.map(c=>`<div class="cat-sel-opt" onclick="pickCat('${id}','${c.v}')">${c.v}<span class="cat-dot" style="background:${_catDot(c.v)}"></span></div>`).join('');return `<div class="cat-sel-wrap" id="${id}Wrap"><input type="hidden" id="${id}" value="${def}"><div class="cat-sel-trigger" onclick="toggleCatDrop('${id}')"><span id="${id}Lbl">${def}</span><span id="${id}Dot" class="cat-dot" style="background:${d}"></span></div><div class="cat-sel-drop" id="${id}Drop">${opts}</div></div>`;}
+document.addEventListener('click',e=>{if(!e.target.closest('.cat-sel-wrap'))document.querySelectorAll('.cat-sel-drop.open').forEach(d=>d.classList.remove('open'));});
+
 // ── Quick-add popup ────────────────────────────────────────────────────────────
 function openQA(ctx,btn,ds='',kcat=''){
   closeQA();qaCtx=ctx;qaDsTarget=ds;qaKCat=kcat;
@@ -17,9 +26,10 @@ function openQA(ctx,btn,ds='',kcat=''){
   } else {
     const def=ctx==='kanban'?kcat:'Home';
     const defaultDate=ctx==='today'?d2s(getDayDate(dayOff)):(ds||'');
-    extra=`<div class="qa-field"><label>Category</label><select id="qaCat" style="width:100%;padding:5px 7px;border-radius:8px;border:1px solid var(--border);font-family:inherit;font-size:12px;background:rgba(255,255,255,.8);color:var(--text);outline:none"><option value="Home" ${def==='Home'?'selected':''}>Home</option><option value="My work" ${def==='My work'?'selected':''}>My work</option><option value="Work" ${def==='Work'?'selected':''}>Work</option><option value="Social" ${def==='Social'?'selected':''}>Social</option><option value="Long term" ${def==='Long term'?'selected':''}>Long term</option></select></div>
+    extra=`<div class="qa-field"><label>Category</label>${catSelHTML('qaCat',def)}</div>
     <div class="qa-field"><label>Due date <span style="opacity:.45">(optional)</span></label><input id="qaDue" type="date" value="${defaultDate}" style="width:100%;padding:5px 7px;border-radius:8px;border:1px solid var(--border);font-family:inherit;font-size:12px;background:rgba(255,255,255,.8);color:var(--text);outline:none"></div>
-    <div class="qa-imp-row"><input type="checkbox" id="qaImp" style="width:13px;height:13px;cursor:pointer;accent-color:#eab308"><label for="qaImp">⭐ Important</label></div>`;
+    <div class="qa-imp-row"><input type="checkbox" id="qaImp" style="width:13px;height:13px;cursor:pointer;accent-color:#eab308"><label for="qaImp">⭐ Important</label></div>
+    <div class="qa-field" style="margin-top:6px"><label>Notes <span style="opacity:.45;font-weight:400">(optional)</span></label><textarea id="qaNotes" placeholder="Add notes…" style="resize:vertical;min-height:44px;width:100%;font-family:inherit;font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,.6);color:var(--text);outline:none;box-sizing:border-box"></textarea></div>`;
   }
   document.getElementById('qaTitle').textContent=title;
   document.getElementById('qaExtra').innerHTML=extra;
@@ -57,13 +67,14 @@ async function submitQA(){
   const cat=document.getElementById('qaCat')?.value||'Home';
   const due=document.getElementById('qaDue')?.value||null;
   const imp=document.getElementById('qaImp')?.checked||false;
+  const notes=document.getElementById('qaNotes')?.value.trim()||null;
   let ds=due;
   if(!ds){if(qaCtx==='today')ds=d2s(getDayDate(dayOff));else if(qaCtx==='week')ds=d2s(getWkDates(wkOff)[0]);else if(qaCtx==='wkc')ds=qaDsTarget||null;else ds=null;}
-  const t={id:'l-'+Date.now(),name:n,category:cat,due_date:ds,done:false,important:imp};
+  const t={id:'l-'+Date.now(),name:n,category:cat,due_date:ds,done:false,important:imp,notes:notes||null};
   st.tasks.push(t);renderAll();
   let taskServerId=null;
   pushUndo(()=>{const rid=taskServerId||t.id;st.tasks=st.tasks.filter(x=>String(x.id)!==String(rid));renderAll();if(taskServerId)sbReq('DELETE','tasks',null,`?id=eq.${taskServerId}`);},'Added task');
-  const sv=await sbReq('POST','tasks',{name:n,category:cat,due_date:ds,done:false,important:imp});
+  const sv=await sbReq('POST','tasks',{name:n,category:cat,due_date:ds,done:false,important:imp,notes:notes||null});
   if(sv&&sv[0]){const i=st.tasks.findIndex(x=>x.id===t.id);if(i>-1){st.tasks[i]=sv[0];}taskServerId=String(sv[0].id);renderAll();}
 }
 document.addEventListener('click',e=>{
@@ -144,16 +155,9 @@ async function delTask(id,e){
   },'Deleted task');
 }
 function openTModal(cat=''){
-  // Ensure select never traps Enter — blur and focus name on change
-  const tCatEl=document.getElementById('tCat');
-  if(tCatEl&&!tCatEl._patched){
-    tCatEl._patched=true;
-    tCatEl.addEventListener('change',()=>{tCatEl.blur();setTimeout(()=>{const _el=document.getElementById('tName');if(_el){_el.focus();const _l=_el.value.length;_el.setSelectionRange(_l,_l);}},0);});
-    tCatEl.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();e.stopPropagation();saveTModal();}});
-  }
   tMode='add';tId=null;
   document.getElementById('tMTitle').textContent='Add Task';document.getElementById('tSaveBtn').textContent='Add';
-  document.getElementById('tName').value='';document.getElementById('tCat').value=cat||'Home';
+  document.getElementById('tName').value='';setCatSel('tCat',cat||'Home');
   document.getElementById('tDue').value=tPreDate||'';document.getElementById('tImp').checked=false;document.getElementById('tNotes').value='';tPreDate=null;
   document.getElementById('tModal').classList.add('open');setTimeout(()=>{const _el=document.getElementById('tName');if(_el){_el.focus();const _l=_el.value.length;_el.setSelectionRange(_l,_l);}},80);
 }
@@ -161,7 +165,7 @@ function openEditTask(id){
   const t=st.tasks.find(x=>String(x.id)===String(id));if(!t)return;
   tMode='edit';tId=id;
   document.getElementById('tMTitle').textContent='Edit Task';document.getElementById('tSaveBtn').textContent='Save';
-  document.getElementById('tName').value=t.name;document.getElementById('tCat').value=t.category||'Home';
+  document.getElementById('tName').value=t.name;setCatSel('tCat',t.category||'Home');
   document.getElementById('tDue').value=t.due_date||'';document.getElementById('tImp').checked=!!t.important;document.getElementById('tNotes').value=t.notes||'';
   document.getElementById('tModal').classList.add('open');setTimeout(()=>{const _el=document.getElementById('tName');if(_el){_el.focus();const _l=_el.value.length;_el.setSelectionRange(_l,_l);}},80);
 }
@@ -708,7 +712,7 @@ function renderMoCal(){
     const wkMonEnd=new Date(yrEnd);wkMonEnd.setDate(yrEnd.getDate()-ed2);
     TOTAL=Math.round((wkMonEnd-weekStart)/(7*24*60*60*1000)/7)+1;
   }else{
-    const PAST=8,FUTURE=14;TOTAL=PAST+FUTURE;
+    const PAST=8,FUTURE=26;TOTAL=PAST+FUTURE;
     const startDow=(todayDate.getDay()+6)%7;
     const thisMonday=new Date(todayDate);thisMonday.setDate(todayDate.getDate()-startDow);
     weekStart=new Date(thisMonday);weekStart.setDate(thisMonday.getDate()-PAST*7);

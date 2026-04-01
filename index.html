@@ -693,6 +693,16 @@ body.dark .bday-add-menu{background:rgba(38,20,10,.97);border-color:rgba(255,220
 .bday-month-card .bday-main{padding:4px 6px}
 .bday-month-card .bday-name{font-size:12px}
 .bday-month-card .bday-date-lbl{font-size:10px}
+.cat-sel-wrap{position:relative;user-select:none}
+.cat-sel-trigger{display:flex;align-items:center;justify-content:space-between;padding:6px 8px;border-radius:var(--rs);border:1px solid var(--border);background:rgba(255,255,255,.8);cursor:pointer;font-family:inherit;font-size:12px;color:var(--text);font-weight:500;transition:border-color .15s}
+.cat-sel-trigger:hover{border-color:var(--accent)}
+.cat-sel-drop{position:absolute;top:calc(100% + 2px);left:0;right:0;background:rgba(255,252,248,.98);border:1px solid var(--border);border-radius:var(--rs);box-shadow:0 4px 14px rgba(0,0,0,.1);z-index:9999;display:none}
+.cat-sel-drop.open{display:block}
+.cat-sel-opt{display:flex;align-items:center;justify-content:space-between;padding:6px 10px;cursor:pointer;font-size:12px;color:var(--text);font-weight:500}
+.cat-sel-opt:hover{background:rgba(0,0,0,.04)}
+.cat-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;display:inline-block}
+body.dark .cat-sel-drop{background:rgba(28,16,10,.97)}
+body.dark .cat-sel-trigger{background:rgba(255,255,255,.07)}
 </style>
 </head>
 <body>
@@ -1039,7 +1049,7 @@ body.dark .bday-add-menu{background:rgba(38,20,10,.97);border-color:rgba(255,220
   <div class="modal task-modal">
     <div class="mt" id="tMTitle">Add Task</div>
     <div class="mfield"><label>Name *</label><input id="tName" placeholder="What needs doing?"></div>
-    <div class="mfield"><label>Category</label><select id="tCat"><option value="Home">Home</option><option value="My work">My work</option><option value="Work">Work</option><option value="Social">Social</option><option value="Long term">Long term</option></select></div>
+    <div class="mfield"><label>Category</label><div class="cat-sel-wrap" id="tCatWrap"><input type="hidden" id="tCat" value="Home"><div class="cat-sel-trigger" onclick="toggleCatDrop('tCat')"><span id="tCatLbl">Home</span><span id="tCatDot" class="cat-dot" style="background:#3b82f6"></span></div><div class="cat-sel-drop" id="tCatDrop"><div class="cat-sel-opt" onclick="pickCat('tCat','Home')">Home<span class="cat-dot" style="background:#3b82f6"></span></div><div class="cat-sel-opt" onclick="pickCat('tCat','My work')">My work<span class="cat-dot" style="background:#65a30d"></span></div><div class="cat-sel-opt" onclick="pickCat('tCat','Work')">Work<span class="cat-dot" style="background:#ec4899"></span></div><div class="cat-sel-opt" onclick="pickCat('tCat','Social')">Social<span class="cat-dot" style="background:#9333ea"></span></div><div class="cat-sel-opt" onclick="pickCat('tCat','Long term')">Long term<span class="cat-dot" style="background:#94a3b8"></span></div></div></div></div>
     <div class="mfield"><label>Due date <span style="opacity:.45;font-weight:400">(optional)</span></label><div style="display:flex;gap:4px;align-items:center"><input id="tDue" type="date" style="flex:1"><button type="button" class="btn btn-ghost btn-xs" onclick="document.getElementById(&#39;tDue&#39;).value=&#39;&#39;" title="Clear date" style="flex-shrink:0;padding:4px 7px;font-size:11px">✕ Clear</button></div></div>
     <div class="mimp-row"><input type="checkbox" id="tImp" style="width:14px;height:14px;cursor:pointer;accent-color:#eab308"><label for="tImp">⭐ Mark as important</label></div>
     <div class="mfield"><label>Notes <span style="opacity:.45;font-weight:400">(optional)</span></label><textarea id="tNotes" placeholder="Add notes…" style="resize:vertical;min-height:52px;width:100%;font-family:inherit;font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,.6);color:var(--text);outline:none"></textarea></div>
