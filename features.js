@@ -1990,20 +1990,20 @@ function closeMod(id,e){if(e&&e.target!==document.getElementById(id))return;docu
 // ── Init ───────────────────────────────────────────────────────────────────────
 async function init(){
   load();
+  // Apply dark mode and sidebar state immediately — before checkAuth await — to prevent flash
   if(cfg.dark){document.body.classList.add('dark');const ic=document.getElementById('darkToggleIcon');if(ic)ic.textContent='☀️';const dt=document.getElementById('darkToggle');if(dt)dt.textContent='☀️';}
-  const authed=await checkAuth();
-  if(!authed)return;
   if(!sbOpen){document.getElementById('sidebar').classList.add('closed');document.getElementById('main').style.left='0';document.getElementById('menuOpen').classList.add('visible');document.querySelectorAll('.ov-topbar').forEach(el=>el.style.left='0');}else{document.getElementById('sidebar').classList.remove('closed');document.getElementById('main').style.left='186px';document.getElementById('menuOpen').classList.remove('visible');document.querySelectorAll('.ov-topbar').forEach(el=>el.style.left='186px');}
-  // Restore page from URL hash
+  // Restore page from URL hash immediately
   const initHash=location.hash.replace('#','');
   if(initHash&&PAGES.includes(initHash))showPage(initHash);
+  // Render from localStorage before auth check so UI is populated instantly
+  if(cfg.url&&cfg.key){document.getElementById('cfgUrl').value=cfg.url;document.getElementById('cfgKey').value=cfg.key;renderAll();}
+  const authed=await checkAuth();
+  if(!authed)return;
   if(cfg.url&&cfg.key){
-    document.getElementById('cfgUrl').value=cfg.url;document.getElementById('cfgKey').value=cfg.key;
-    deletedRecIds=new Set();save(); // clear stale deletedRecIds — DB is authoritative after sync
-    renderAll(); // render from localStorage immediately
-    syncAll(false); // fetch fresh data — syncAll calls renderAll internally when done
+    deletedRecIds=new Set();save();
+    syncAll(false);
   } else{renderAll();setBadge('err','Not connected');}
-  // Set up edge zones after DOM ready
   setupWkcEdgeDrop();setupEdge('wkListEdgeR',1);
   setInterval(()=>{if(cfg.url&&cfg.key)syncAll(true);},30000);
 }
