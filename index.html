@@ -1231,6 +1231,15 @@ body.dark .bday-add-menu{background:rgba(38,20,10,.97);border-color:rgba(255,220
 <div class="overlay" id="recEditModal" onclick="closeMod(&#39;recEditModal&#39;,event)" onkeydown="if(event.key===&#39;Enter&#39;&amp;&amp;event.target.tagName!==&#39;SELECT&#39;){event.preventDefault();saveRecEdit();}if(event.key===&#39;Escape&#39;)closeMod(&#39;recEditModal&#39;)">
   <div class="modal task-modal" style="width:350px">
     <div class="mt">Edit Recurring Task</div>
+    <div id="recEditScopeToggle" style="display:none;border-radius:8px;overflow:hidden;border:1px solid var(--border);margin-bottom:14px">
+      <button id="recEditScopeThis" onclick="setRecEditScope('this')" style="flex:1;padding:6px 0;font-size:12px;font-weight:500;border:none;cursor:pointer;transition:background .15s,color .15s">This week only</button>
+      <button id="recEditScopeAll" onclick="setRecEditScope('all')" style="flex:1;padding:6px 0;font-size:12px;font-weight:500;border:none;cursor:pointer;transition:background .15s,color .15s">All future</button>
+    </div>
+    <div id="recEditPanelThis" style="display:none">
+      <div class="mfield"><label>Name <span style="opacity:.45;font-weight:400">(this week only)</span></label><input id="recEditNameThis" placeholder="Custom name for this week"></div>
+      <div class="mfield"><label>Notes <span style="opacity:.45;font-weight:400">(optional)</span></label><textarea id="recEditNotesThis" placeholder="Notes for this week only…" style="resize:vertical;min-height:52px;width:100%;font-family:inherit;font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,.6);color:var(--text);outline:none"></textarea></div>
+    </div>
+    <div id="recEditPanelAll">
     <div class="mfield"><label>Task name *</label><input id="recEditName" placeholder="Task name"></div>
     <div class="mfield">
       <label>Type</label>
