@@ -1066,14 +1066,14 @@ function renderRecMoCal(){
         '↻  All future',
         '⊞  This week only',
         ()=>{// Shift anchor — affects all future occurrences
-          const prevAnchor=rule.anchor_date;
-          const base=rule.anchor_date?new Date(rule.anchor_date+'T12:00'):new Date(srcWkKey+'T12:00');
+          const prevAnchor=rule.starting_date;
+          const base=rule.starting_date?new Date(rule.starting_date+'T12:00'):new Date(srcWkKey+'T12:00');
           base.setDate(base.getDate()+deltaWeeks*7);
           const newAnchor=d2s(base);
-          rule.anchor_date=newAnchor;
-          sbReqSilent('PATCH','wr_recurring_rules',{anchor_date:newAnchor},`?id=eq.${ruleId}`);
+          rule.starting_date=newAnchor;
+          sbReqSilent('PATCH','wr_recurring_rules',{starting_date:newAnchor},`?id=eq.${ruleId}`);
           save();renderRecOv();renderWeeklyPage();renderRecMoCal();
-          pushUndo(()=>{rule.anchor_date=prevAnchor;sbReqSilent('PATCH','wr_recurring_rules',{anchor_date:prevAnchor},`?id=eq.${ruleId}`);save();renderRecOv();renderWeeklyPage();renderRecMoCal();},'Shifted WR rule anchor');
+          pushUndo(()=>{rule.starting_date=prevAnchor;sbReqSilent('PATCH','wr_recurring_rules',{starting_date:prevAnchor},`?id=eq.${ruleId}`);save();renderRecOv();renderWeeklyPage();renderRecMoCal();},'Shifted WR rule start');
         },
         ()=>{// Move override for this week only
           writeWrOverride(ruleId,srcWkKey,{override_type:'move',moved_to_wk_key:destWkKey},{undoLabel:'Moved WR task this week'});
@@ -1319,14 +1319,14 @@ function wrCtxSkipThisWeek(){
 function _wrShiftAnchor(delta){
   hideWrRuleCtx();if(!_wrCtxRuleId)return;
   const rule=st.wrRules.find(r=>String(r.id)===_wrCtxRuleId);if(!rule)return;
-  const prev=rule.anchor_date;
-  const base=rule.anchor_date?new Date(rule.anchor_date+'T12:00'):new Date();
+  const prev=rule.starting_date;
+  const base=rule.starting_date?new Date(rule.starting_date+'T12:00'):new Date();
   base.setDate(base.getDate()+delta);
   const next=d2s(base);
-  rule.anchor_date=next;
-  sbReqSilent('PATCH','wr_recurring_rules',{anchor_date:next},`?id=eq.${_wrCtxRuleId}`);
+  rule.starting_date=next;
+  sbReqSilent('PATCH','wr_recurring_rules',{starting_date:next},`?id=eq.${_wrCtxRuleId}`);
   save();renderRecOv();renderWeeklyPage();
-  pushUndo(()=>{rule.anchor_date=prev;sbReqSilent('PATCH','wr_recurring_rules',{anchor_date:prev},`?id=eq.${_wrCtxRuleId}`);save();renderRecOv();renderWeeklyPage();},'Moved WR anchor');
+  pushUndo(()=>{rule.starting_date=prev;sbReqSilent('PATCH','wr_recurring_rules',{starting_date:prev},`?id=eq.${_wrCtxRuleId}`);save();renderRecOv();renderWeeklyPage();},'Moved WR start');
 }
 function wrCtxMovePrevWeek(){_wrShiftAnchor(-7);}
 function wrCtxMoveNextWeek(){_wrShiftAnchor(7);}
@@ -1349,7 +1349,7 @@ function wrCtxDeleteRule(ruleId){
   sbReqSilent('DELETE','wr_recurring_rules',null,`?id=eq.${sRid}`);
   save();renderRecOv();if(typeof renderRecurringPage==='function')renderRecurringPage();
   pushUndo(async()=>{
-    const sv=await sbReqSilent('POST','wr_recurring_rules',{name:prevRule.name,cadence:prevRule.cadence,day_of_week:prevRule.day_of_week,anchor_date:prevRule.anchor_date,monthly_rule_type:prevRule.monthly_rule_type,monthly_nth:prevRule.monthly_nth,monthly_weekday:prevRule.monthly_weekday,monthly_date:prevRule.monthly_date,pup_related:prevRule.pup_related,notes:prevRule.notes,is_enabled:prevRule.is_enabled,sort_order:prevRule.sort_order},'');
+    const sv=await sbReqSilent('POST','wr_recurring_rules',{name:prevRule.name,cadence:prevRule.cadence,day_of_week:prevRule.day_of_week,starting_date:prevRule.starting_date,monthly_rule_type:prevRule.monthly_rule_type,monthly_nth:prevRule.monthly_nth,monthly_weekday:prevRule.monthly_weekday,monthly_date:prevRule.monthly_date,pup_related:prevRule.pup_related,notes:prevRule.notes,is_enabled:prevRule.is_enabled,sort_order:prevRule.sort_order},'');
     if(sv&&sv[0])st.wrRules.push(sv[0]);else st.wrRules.push(prevRule);
     save();renderRecOv();if(typeof renderRecurringPage==='function')renderRecurringPage();
   },'Deleted WR rule');
@@ -1387,7 +1387,7 @@ function updateWrRuleCadenceUI(px){
 function _wrReadCadenceFields(px){
   const cadence=document.getElementById(px+'Cadence').value;
   const anchorVal=document.getElementById(px+'Anchor').value;
-  return {cadence,anchor_date:(cadence==='biweekly'||cadence==='monthly')?anchorVal||null:null};
+  return {cadence,starting_date:(cadence==='biweekly'||cadence==='monthly')?anchorVal||null:null};
 }
 
 // ── Unified edit WR modal ─────────────────────────────────────────────────────
@@ -1418,7 +1418,7 @@ function openWrEditModal(ruleId,wkKey,defaultScope='this'){
   document.getElementById('wrEditName').value=rule.name||'';
   document.getElementById('wrEditPup').checked=!!(rule.pup_related===true||rule.pup_related==='true');
   document.getElementById('wrEditCadence').value=rule.cadence||'weekly';
-  document.getElementById('wrEditAnchor').value=rule.anchor_date||d2s(new Date());
+  document.getElementById('wrEditAnchor').value=rule.starting_date||d2s(new Date());
   document.getElementById('wrEditNotes').value=rule.notes||'';
   updateWrRuleCadenceUI('wrEdit');
   // Hide scope toggle when no week context (recurring page edits always go to "all future")
@@ -1448,7 +1448,7 @@ function saveWrEditModal(){
   } else {
     const name=document.getElementById('wrEditName').value.trim();if(!name)return;
     const rule=st.wrRules.find(r=>String(r.id)===_wrEditRuleId);if(!rule)return;
-    const prev={name:rule.name,cadence:rule.cadence,anchor_date:rule.anchor_date,pup_related:rule.pup_related,notes:rule.notes};
+    const prev={name:rule.name,cadence:rule.cadence,starting_date:rule.starting_date,pup_related:rule.pup_related,notes:rule.notes};
     const cadenceFields=_wrReadCadenceFields('wrEdit');
     const patch={name,pup_related:document.getElementById('wrEditPup').checked,notes:document.getElementById('wrEditNotes').value.trim()||null,...cadenceFields};
     Object.assign(rule,patch);

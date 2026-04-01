@@ -312,7 +312,7 @@ function delWrRule(rid){
   sbReqSilent('DELETE','wr_recurring_rules',null,`?id=eq.${sRid}`);
   save();renderRecurringPage();renderRecOv();
   pushUndo(async()=>{
-    const sv=await sbReqSilent('POST','wr_recurring_rules',{name:prevRule.name,cadence:prevRule.cadence,day_of_week:prevRule.day_of_week,anchor_date:prevRule.anchor_date,monthly_rule_type:prevRule.monthly_rule_type,monthly_nth:prevRule.monthly_nth,monthly_weekday:prevRule.monthly_weekday,monthly_date:prevRule.monthly_date,pup_related:prevRule.pup_related,notes:prevRule.notes,is_enabled:prevRule.is_enabled,sort_order:prevRule.sort_order},'');
+    const sv=await sbReqSilent('POST','wr_recurring_rules',{name:prevRule.name,cadence:prevRule.cadence,day_of_week:prevRule.day_of_week,starting_date:prevRule.starting_date,monthly_rule_type:prevRule.monthly_rule_type,monthly_nth:prevRule.monthly_nth,monthly_weekday:prevRule.monthly_weekday,monthly_date:prevRule.monthly_date,pup_related:prevRule.pup_related,notes:prevRule.notes,is_enabled:prevRule.is_enabled,sort_order:prevRule.sort_order},'');
     if(sv&&sv[0])st.wrRules.push(sv[0]);else st.wrRules.push(prevRule);
     save();renderRecurringPage();renderRecOv();
   },'Deleted WR rule');
@@ -321,7 +321,7 @@ function delWrRule(rid){
 function renderRtGroup(containerId, tasks, cadence){
   const el=document.getElementById(containerId);if(!el)return;
   const cadLabel={weekly:'Weekly',biweekly:'Biweekly',monthly:'Monthly',other:'Other'}[cadence]||cadence;
-  const thead=`<tr><th style="width:120px;text-align:left">Name</th><th style="width:96px;text-align:center">Adds On</th><th style="width:96px;text-align:center">Due On</th><th style="width:84px;text-align:right">Starting</th><th style="width:40px"></th></tr>`;
+  const thead=`<tr><th style="width:120px;text-align:left">Name</th><th style="width:96px;text-align:center">Due On</th><th style="width:84px;text-align:right">Starting</th><th style="width:40px"></th></tr>`;
   let tbody='';
   tasks.forEach(r=>{
     const rid=String(r.id);
@@ -329,7 +329,6 @@ function renderRtGroup(containerId, tasks, cadence){
     const esc=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     const dayDisp=r.appears_on_date||'—';
     const tds=`<td class="rt-editable">${esc(r.name)}</td>
-      <td class="rt-editable rt-meta" style="text-align:center" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','day_added')">${r.day_added||'—'}</td>
       <td class="rt-editable rt-meta" style="text-align:center" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','appears_on_date')">${dayDisp}</td>
       <td class="rt-editable rt-meta" style="text-align:right" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','starting_date')">${r.starting_date?fmtD(r.starting_date):'—'}</td>`;
     tbody+=`<tr class="rt-row" id="ti-rt-${rid}" onclick="selTask(event,'${virtId}')" ondblclick="if(!event.target.closest('.delbtn')&&!event.target.closest('.btn-xs')){event.stopPropagation();openRecEditModal('${rid}');}" oncontextmenu="showCtx(event,'${virtId}',true,'${rid}')">
@@ -365,9 +364,6 @@ function rtDblEdit(td, rid, field){
       widget=document.createElement('select');
       DAYS.forEach(d=>{const o=document.createElement('option');o.value=d;o.textContent=d;if(d===val)o.selected=true;widget.appendChild(o);});
     }
-  } else if(field==='day_added'){
-    widget=document.createElement('select');
-    DAY_ADDED.forEach(d=>{const o=document.createElement('option');o.value=d;o.textContent=d;if(d===val)o.selected=true;widget.appendChild(o);});
   } else if(field==='starting_date'){
     widget=document.createElement('input');widget.type='date';widget.value=val;
   } else return;
@@ -419,7 +415,7 @@ async function addRecDirect(inputEl, cadence){
   const useCadence=cadence==='other'?'weekly':cadence;
   const appearsOn=cadence==='monthly'?(dayEl?dayEl.value:'1'):(cadence==='other'?'Friday':(dayEl?dayEl.value:'Friday'));
   const localId='rec-tmp-'+Date.now();
-  const r={id:localId,name:n,is_weekly_reset:false,appears_on_date:appearsOn,day_added:'Previous Sunday',starting_date:d2s(new Date()),cadence:useCadence,_doneByWk:{},_done:false,_dateOverrides:{}};
+  const r={id:localId,name:n,is_weekly_reset:false,appears_on_date:appearsOn,starting_date:d2s(new Date()),cadence:useCadence,_doneByWk:{},_done:false,_dateOverrides:{}};
   st.recurring.push(r);save();renderWeeklyPage();renderWkSummary();renderWkCal();
   let serverId=null;
   pushUndo(()=>{const rid=serverId||localId;st.recurring=st.recurring.filter(x=>String(x.id)!==String(rid));save();renderWeeklyPage();renderWkSummary();renderWkCal();if(serverId)sbReq('DELETE','wr_recurring_rules',null,recQs(serverId));},'Added recurring task');
@@ -445,8 +441,7 @@ async function duplicateRecDirect(rid){
   save();renderRecOv();renderWeeklyPage();renderToday();renderWkSummary();renderWkCal();
   const payload={name:dupName,is_weekly_reset:r.is_weekly_reset||false,cadence:r.cadence||'weekly',starting_date:todayDs};
   if(r.appears_on_date)payload.appears_on_date=r.appears_on_date;
-  if(r.day_added)payload.day_added=r.day_added;
-  const sv=await sbReq('POST','wr_recurring_rules',payload);
+    const sv=await sbReq('POST','wr_recurring_rules',payload);
   if(sv&&sv[0]){
     const idx=st.recurring.findIndex(x=>x.id===tempId);
     if(idx>-1)st.recurring[idx]={...sv[0],_doneByWk:{},_done:false,_dateOverrides:{}};
@@ -558,20 +553,18 @@ async function saveRecModal(){
   } else {
     appearsOn=document.getElementById('recRepeatDay').value||'Friday';
   }
-  const dayAdded=document.getElementById('recDayAdded').value||'Previous Sunday';
   const startDate=document.getElementById('recStartDate').value||null;
   const pupRelated=isWeekly&&!!(document.getElementById('recPupRelated')?.checked);
   const notes=document.getElementById('recNotes')?.value.trim()||null;
   closeMod('recModal');
   // Use rec-tmp- prefix so sync localPending keeps it if POST hasn't resolved yet
   const localId='rec-tmp-'+Date.now();
-  const r={id:localId,name:n,is_weekly_reset:isWeekly,appears_on_date:appearsOn,day_added:dayAdded,starting_date:startDate,cadence,pup_related:pupRelated,notes,_doneByWk:{},_done:false,_dateOverrides:{}};
+  const r={id:localId,name:n,is_weekly_reset:isWeekly,appears_on_date:appearsOn,starting_date:startDate,cadence,pup_related:pupRelated,notes,_doneByWk:{},_done:false,_dateOverrides:{}};
   st.recurring.push(r);save();renderRecOv();renderWeeklyPage();renderWkSummary();renderWkCal();
   let recServerId=null;
   pushUndo(()=>{const rid=recServerId||localId;st.recurring=st.recurring.filter(x=>String(x.id)!==String(rid));save();renderRecOv();renderWeeklyPage();renderWkSummary();renderWkCal();if(recServerId)sbReq('DELETE','wr_recurring_rules',null,recQs(recServerId));},'Added recurring task');
   const payload={name:n,is_weekly_reset:isWeekly,appears_on_date:appearsOn,cadence};
-  if(dayAdded)payload.day_added=dayAdded;
-  if(startDate)payload.starting_date=startDate;
+    if(startDate)payload.starting_date=startDate;
   if(pupRelated)payload.pup_related=true;
   if(notes)payload.notes=notes;
   const sv=await sbReq('POST','wr_recurring_rules',payload);
@@ -2323,7 +2316,7 @@ document.addEventListener('keydown',async e=>{
       if(t._isWrRule){
         const dupName=uniqueRecName(t.name);
         const tmpId='wrrule-tmp-'+Date.now();
-        const payload={name:dupName,cadence:t.cadence||'weekly',day_of_week:t.day_of_week,anchor_date:t.anchor_date||null,monthly_rule_type:t.monthly_rule_type||null,monthly_nth:t.monthly_nth||null,monthly_weekday:t.monthly_weekday||null,monthly_date:t.monthly_date||null,pup_related:t.pup_related||false,notes:t.notes||null,is_enabled:true,sort_order:st.wrRules.length};
+        const payload={name:dupName,cadence:t.cadence||'weekly',day_of_week:t.day_of_week,starting_date:t.starting_date||null,monthly_rule_type:t.monthly_rule_type||null,monthly_nth:t.monthly_nth||null,monthly_weekday:t.monthly_weekday||null,monthly_date:t.monthly_date||null,pup_related:t.pup_related||false,notes:t.notes||null,is_enabled:true,sort_order:st.wrRules.length};
         st.wrRules.push({...payload,id:tmpId});
         save();renderRecOv();renderWeeklyPage();
         const sv=await sbReq('POST','wr_recurring_rules',payload);
@@ -2340,8 +2333,7 @@ document.addEventListener('keydown',async e=>{
         const payload={name:dupName,is_weekly_reset:t.is_weekly_reset||false,cadence:t.cadence||'weekly',starting_date:todayDs};
         if(t.appears_on_date)payload.appears_on_date=t.appears_on_date;
         if(t.repeat_date)payload.repeat_date=t.repeat_date;
-        if(t.day_added)payload.day_added=t.day_added;
-              const sv=await sbReq('POST','wr_recurring_rules',payload);
+                      const sv=await sbReq('POST','wr_recurring_rules',payload);
         if(sv&&sv[0]){const idx=st.recurring.findIndex(x=>x.id===tempId);if(idx>-1)st.recurring[idx]={...sv[0],_doneByWk:{},_done:false,_dateOverrides:{}};}
         save();renderRecOv();renderWeeklyPage();renderToday();renderWkSummary();renderWkCal();
         pushUndo(()=>{st.recurring=st.recurring.filter(x=>x.id!==tempId&&!(sv&&sv[0]&&x.id===sv[0].id));save();renderRecOv();renderWeeklyPage();renderToday();renderWkSummary();renderWkCal();},'Duplicated recurring');
@@ -2469,7 +2461,6 @@ function openRecEditModal(rid){
     document.getElementById('recEditMonthlyModeDom').checked=true;rdSel.value='1';
   }
   document.getElementById('recEditStartDate').value=r.starting_date||'';
-  document.getElementById('recEditDayAdded').value=r.day_added||'';
   const pr=document.getElementById('recEditPupRelated');if(pr)pr.checked=!!(r.pup_related===true||r.pup_related==='true');
   const recEditNotesEl=document.getElementById('recEditNotes');if(recEditNotesEl)recEditNotesEl.value=r.notes||'';
   updateRecEditUI();
@@ -2493,16 +2484,14 @@ function saveRecEdit(){
     appearsOn=document.getElementById('recEditRepeatDay').value;
   }
   const startDate=document.getElementById('recEditStartDate').value||null;
-  const dayAdded=document.getElementById('recEditDayAdded').value||null;
   const pupRelated=isWr&&!!(document.getElementById('recEditPupRelated')?.checked);
   const notes=document.getElementById('recEditNotes')?.value.trim()||null;
   closeMod('recEditModal');
-  const prev={name:r.name,is_weekly_reset:r.is_weekly_reset,cadence:r.cadence,appears_on_date:r.appears_on_date,starting_date:r.starting_date,day_added:r.day_added,pup_related:r.pup_related,notes:r.notes};
-  r.name=name;r.is_weekly_reset=isWr;r.cadence=cadence;r.appears_on_date=appearsOn;r.starting_date=startDate;r.day_added=dayAdded;r.pup_related=pupRelated;r.notes=notes;
+  const prev={name:r.name,is_weekly_reset:r.is_weekly_reset,cadence:r.cadence,appears_on_date:r.appears_on_date,starting_date:r.starting_date,pup_related:r.pup_related,notes:r.notes};
+  r.name=name;r.is_weekly_reset=isWr;r.cadence=cadence;r.appears_on_date=appearsOn;r.starting_date=startDate;r.pup_related=pupRelated;r.notes=notes;
   renderRecOv();renderWeeklyPage();renderWkSummary();renderWkCal();
   const patch={name,is_weekly_reset:isWr,cadence,appears_on_date:appearsOn,pup_related:pupRelated,notes:notes||null};
   if(startDate)patch.starting_date=startDate;
-  if(dayAdded)patch.day_added=dayAdded;
   sbReq('PATCH','wr_recurring_rules',patch,recQs(rid));
   pushUndo(()=>{Object.assign(r,prev);renderRecOv();renderWeeklyPage();},'Edited recurring');
 }
@@ -2573,8 +2562,7 @@ async function ctxDoDuplicate(){
     const payload={name:dupName,is_weekly_reset:r.is_weekly_reset||false,cadence:r.cadence||'weekly',starting_date:todayDs};
     if(r.appears_on_date)payload.appears_on_date=r.appears_on_date;
     if(r.repeat_date)payload.repeat_date=r.repeat_date;
-    if(r.day_added)payload.day_added=r.day_added;
-      const sv=await sbReq('POST','wr_recurring_rules',payload);
+          const sv=await sbReq('POST','wr_recurring_rules',payload);
     if(sv&&sv[0]){
       // Replace temp with real DB entry
       const idx=st.recurring.findIndex(x=>x.id===tempId);

@@ -148,7 +148,7 @@ async function manualBackup(){
   const btn=document.getElementById('backupTxt');
   btn.textContent='Saving…';
   try{
-    const tables=['tasks','recurring_tasks','shopping_list','travel','birthdays','pup_skills','time_blocks','auto_timeblocks','auto_timeblock_overrides','wr_recurring_rules','wr_recurring_overrides'];
+    const tables=['tasks','shopping_list','travel','birthdays','pup_skills','time_blocks','auto_timeblocks','auto_timeblock_overrides','wr_recurring_rules','wr_recurring_overrides'];
     const backup={exported_at:new Date().toISOString(),mode:'manual',tables:{}};
     await Promise.all(tables.map(async t=>{
       try{
@@ -515,8 +515,8 @@ function isWRRuleDueThisWeek(rule,off=0){
   if(cadence==='weekly'||cadence==='other')return true;
   const{mon,sun}=getWkBounds(off);
   if(cadence==='biweekly'){
-    if(!rule.anchor_date)return false;
-    const anchor=new Date(rule.anchor_date+'T12:00');
+    if(!rule.starting_date)return false;
+    const anchor=new Date(rule.starting_date+'T12:00');
     const aDay=anchor.getDay();
     const aMon=new Date(anchor);aMon.setDate(anchor.getDate()-(aDay===0?6:aDay-1));
     const diffMs=mon-aMon;
@@ -524,8 +524,8 @@ function isWRRuleDueThisWeek(rule,off=0){
     return diffWks%2===0;
   }
   if(cadence==='monthly'){
-    if(!rule.anchor_date)return false;
-    const anchorDay=new Date(rule.anchor_date+'T12:00').getDate();
+    if(!rule.starting_date)return false;
+    const anchorDay=new Date(rule.starting_date+'T12:00').getDate();
     // Check both months that may overlap this Mon–Sun span
     const months=[];
     for(const dt of[mon,sun]){
