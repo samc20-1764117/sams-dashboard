@@ -277,6 +277,7 @@ function renderRtWrGroup(containerId, rules, cadence){
     const isPup=r.pup_related===true||r.pup_related==='true';
     tbody+=`<tr class="rt-row" id="ti-rt-wrrule-${rid}"
       ondblclick="if(!event.target.closest('[data-pup]')&&!event.target.closest('.delbtn')&&!event.target.closest('.btn-xs')){event.stopPropagation();openWrEditModal('${rid}',null,'all');}"
+      oncontextmenu="showWrRuleCtx(event,'${rid}',getWkKey(wkOff))"
       onclick="event.stopPropagation()">
       <td class="rt-editable">${esc(r.name)}${cadence==='other'?(()=>{const _KB=['weekly','biweekly','monthly'];const _CB={quarterly:'Q',biannual:'BA',annual:'A',bimonthly:'B',monthly:'M'};const _bl=_CB[r.cadence];return _bl?`<span style="float:right;font-size:9px;font-weight:700;letter-spacing:.3px;padding:1px 3px;border-radius:3px;background:rgba(0,0,0,.11);color:var(--subtle);margin-left:4px">${_bl}</span>`:''})():''}</td>
       <td data-pup="1" style="text-align:center;cursor:pointer;font-size:13px" onclick="event.stopPropagation();rtToggleWrPup('${rid}')" ondblclick="event.stopPropagation()" title="Toggle pup related">${isPup?'🐾':''}</td>
@@ -334,7 +335,7 @@ function renderRtGroup(containerId, tasks, cadence){
     const tds=`<td class="rt-editable">${esc(r.name)}${cadence==='other'?_rtBadge:''}</td>
       <td class="rt-editable rt-meta" style="text-align:center" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','appears_on_date')">${dayDisp}</td>
       <td class="rt-editable rt-meta" style="text-align:right" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','starting_date')">${r.starting_date?fmtD(r.starting_date):'—'}</td>`;
-    tbody+=`<tr class="rt-row" id="ti-rt-${rid}" onclick="selTask(event,'${virtId}')" ondblclick="if(!event.target.closest('.delbtn')&&!event.target.closest('.btn-xs')){event.stopPropagation();openRecEditModal('${rid}');}" oncontextmenu="showCtx(event,'${virtId}',true,'${rid}')">
+    tbody+=`<tr class="rt-row" id="ti-rt-${rid}" onclick="selTask(event,'${virtId}')" ondblclick="if(!event.target.closest('.delbtn')&&!event.target.closest('.btn-xs')){event.stopPropagation();openRecEditModal('${rid}');}" oncontextmenu="showRecCtx(event,'${rid}',getWkKey(wkOff))">
       ${tds}
       <td onclick="event.stopPropagation()" ondblclick="event.stopPropagation()"><button class="btn btn-xs btn-ghost" style="padding:1px 5px;font-size:10px;opacity:.55" onclick="duplicateRecDirect('${rid}')" title="Duplicate">⧉</button><button class="delbtn" onclick="delRec('${rid}')">✕</button></td>
     </tr>`;
