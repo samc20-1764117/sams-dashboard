@@ -1339,36 +1339,15 @@ function _wrBuildSelects(px){
 // Show/hide cadence-dependent fields for the given modal prefix ('wrAdd' or 'wrEdit')
 function updateWrRuleCadenceUI(px){
   const cadence=document.getElementById(px+'Cadence').value;
-  const isWeekly=cadence==='weekly'||cadence==='biweekly';
-  const isBi=cadence==='biweekly';
-  const isMo=cadence==='monthly';
-  document.getElementById(px+'DowField').style.display=isWeekly?'block':'none';
-  document.getElementById(px+'AnchorField').style.display=isBi?'block':'none';
-  document.getElementById(px+'MonthlyField').style.display=isMo?'block':'none';
-  const mode=[...document.querySelectorAll(`input[name="${px}MonthlyMode"]`)].find(r=>r.checked)?.value||'nth_weekday';
-  document.getElementById(px+'NwdField').style.display=isMo&&mode==='nth_weekday'?'block':'none';
-  document.getElementById(px+'DomField').style.display=isMo&&mode==='date_of_month'?'block':'none';
+  const needsAnchor=cadence==='biweekly'||cadence==='monthly';
+  document.getElementById(px+'AnchorField').style.display=needsAnchor?'block':'none';
 }
 
 // Read cadence-related fields from modal, return partial rule payload
 function _wrReadCadenceFields(px){
   const cadence=document.getElementById(px+'Cadence').value;
-  const patch={cadence,day_of_week:null,anchor_date:null,monthly_rule_type:null,monthly_nth:null,monthly_weekday:null,monthly_date:null};
-  if(cadence==='weekly'||cadence==='biweekly'){
-    patch.day_of_week=parseInt(document.getElementById(px+'Dow').value,10);
-    if(cadence==='biweekly'){const av=document.getElementById(px+'Anchor').value;patch.anchor_date=av||null;}
-  }
-  if(cadence==='monthly'){
-    const mode=[...document.querySelectorAll(`input[name="${px}MonthlyMode"]`)].find(r=>r.checked)?.value||'nth_weekday';
-    patch.monthly_rule_type=mode;
-    if(mode==='nth_weekday'){
-      const[nth,wd]=document.getElementById(px+'NthWd').value.split('-').map(Number);
-      patch.monthly_nth=nth;patch.monthly_weekday=wd;
-    } else {
-      patch.monthly_date=parseInt(document.getElementById(px+'Dom').value,10);
-    }
-  }
-  return patch;
+  const anchorVal=document.getElementById(px+'Anchor').value;
+  return {cadence,anchor_date:(cadence==='biweekly'||cadence==='monthly')?anchorVal||null:null};
 }
 
 // ── Unified edit WR modal ─────────────────────────────────────────────────────
@@ -1399,16 +1378,8 @@ function openWrEditModal(ruleId,wkKey,defaultScope='this'){
   document.getElementById('wrEditName').value=rule.name||'';
   document.getElementById('wrEditPup').checked=!!(rule.pup_related===true||rule.pup_related==='true');
   document.getElementById('wrEditCadence').value=rule.cadence||'weekly';
-  document.getElementById('wrEditDow').value=String(rule.day_of_week??1);
   document.getElementById('wrEditAnchor').value=rule.anchor_date||'';
   document.getElementById('wrEditNotes').value=rule.notes||'';
-  const modeVal=rule.monthly_rule_type||'nth_weekday';
-  document.querySelectorAll('input[name="wrEditMonthlyMode"]').forEach(r=>{r.checked=r.value===modeVal;});
-  if(rule.monthly_nth!=null&&rule.monthly_weekday!=null){
-    const target=rule.monthly_nth+'-'+rule.monthly_weekday;
-    [...document.getElementById('wrEditNthWd').options].forEach(o=>{if(o.value===target)o.selected=true;});
-  }
-  if(rule.monthly_date!=null)document.getElementById('wrEditDom').value=String(rule.monthly_date);
   updateWrRuleCadenceUI('wrEdit');
   // Hide scope toggle when no week context (recurring page edits always go to "all future")
   const toggleEl=document.getElementById('wrEditScopeToggle');
@@ -1437,7 +1408,7 @@ function saveWrEditModal(){
   } else {
     const name=document.getElementById('wrEditName').value.trim();if(!name)return;
     const rule=st.wrRules.find(r=>String(r.id)===_wrEditRuleId);if(!rule)return;
-    const prev={name:rule.name,cadence:rule.cadence,day_of_week:rule.day_of_week,anchor_date:rule.anchor_date,monthly_rule_type:rule.monthly_rule_type,monthly_nth:rule.monthly_nth,monthly_weekday:rule.monthly_weekday,monthly_date:rule.monthly_date,pup_related:rule.pup_related,notes:rule.notes};
+    const prev={name:rule.name,cadence:rule.cadence,anchor_date:rule.anchor_date,pup_related:rule.pup_related,notes:rule.notes};
     const cadenceFields=_wrReadCadenceFields('wrEdit');
     const patch={name,pup_related:document.getElementById('wrEditPup').checked,notes:document.getElementById('wrEditNotes').value.trim()||null,...cadenceFields};
     Object.assign(rule,patch);
@@ -1454,11 +1425,7 @@ function openWrRuleAddModal(cadence){
   document.getElementById('wrAddName').value='';
   document.getElementById('wrAddPup').checked=false;
   document.getElementById('wrAddCadence').value=cadence||'weekly';
-  document.getElementById('wrAddDow').value='1'; // Monday default
   document.getElementById('wrAddAnchor').value='';
-  document.querySelectorAll('input[name="wrAddMonthlyMode"]').forEach((r,i)=>{r.checked=i===0;});
-  document.getElementById('wrAddNthWd').selectedIndex=0;
-  document.getElementById('wrAddDom').selectedIndex=0;
   document.getElementById('wrAddNotes').value='';
   updateWrRuleCadenceUI('wrAdd');
   document.getElementById('wrRuleAddModal').classList.add('open');

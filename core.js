@@ -536,21 +536,18 @@ function isWRRuleDueThisWeek(rule,off=0){
     return diffWks%2===0;
   }
   if(cadence==='monthly'){
+    if(!rule.anchor_date)return false;
+    const anchorDay=new Date(rule.anchor_date+'T12:00').getDate();
     // Check both months that may overlap this Mon–Sun span
     const months=[];
     for(const dt of[mon,sun]){
-      const k=dt.getFullYear()*12+dt.getMonth();
       if(!months.some(x=>x.y===dt.getFullYear()&&x.m===dt.getMonth()))
         months.push({y:dt.getFullYear(),m:dt.getMonth()});
     }
     for(const{y,m}of months){
-      let occ=null;
-      if(rule.monthly_rule_type==='nth_weekday'&&rule.monthly_nth!=null&&rule.monthly_weekday!=null){
-        occ=getNthWeekday(y,m,rule.monthly_nth,rule.monthly_weekday);
-      } else if(rule.monthly_rule_type==='date_of_month'&&rule.monthly_date!=null){
-        occ=new Date(y,m,rule.monthly_date);
-      }
-      if(occ&&occ>=mon&&occ<=sun)return true;
+      const maxDay=new Date(y,m+1,0).getDate();
+      const occ=new Date(y,m,Math.min(anchorDay,maxDay));
+      if(occ>=mon&&occ<=sun)return true;
     }
     return false;
   }
