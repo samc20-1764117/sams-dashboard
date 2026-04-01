@@ -1390,12 +1390,6 @@ let _wrAddType='wr';
 function updateWrRuleCadenceUI(px){
   const cadence=document.getElementById(px+'Cadence').value;
   document.getElementById(px+'AnchorField').style.display=cadence!=='weekly'?'block':'none';
-  if(px==='wrAdd'){
-    const isSch=_wrAddType==='sch';
-    const isMonthly=cadence==='monthly';
-    document.getElementById('wrAddAppearDayField').style.display=isSch&&!isMonthly?'block':'none';
-    document.getElementById('wrAddAppearDateField').style.display=isSch&&isMonthly?'block':'none';
-  }
 }
 
 // Read cadence-related fields from modal, return partial rule payload
@@ -1490,8 +1484,6 @@ function openWrRuleAddModal(cadence,type='wr'){
   document.getElementById('wrAddPup').checked=false;
   document.getElementById('wrAddCadence').value=cadence||'weekly';
   document.getElementById('wrAddAnchor').value=d2s(new Date());
-  document.getElementById('wrAddAppearDay').value='Friday';
-  document.getElementById('wrAddAppearDate').value='1';
   document.getElementById('wrAddNotes').value='';
   wrAddSetType(type);
   document.getElementById('wrRuleAddModal').classList.add('open');
@@ -1505,7 +1497,9 @@ async function saveWrRuleAdd(){
   if(_wrAddType==='sch'){
     const cadence=cadenceFields.cadence;
     const isMonthly=cadence==='monthly';
-    const appearsOn=isMonthly?document.getElementById('wrAddAppearDate').value||'1':document.getElementById('wrAddAppearDay').value||'Friday';
+    const _sd=cadenceFields.starting_date;
+    const _DAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    const appearsOn=isMonthly?(_sd?String(new Date(_sd+'T00:00:00').getDate()):'1'):(_sd?_DAYS[new Date(_sd+'T00:00:00').getDay()]:'Friday');
     const localId='rec-tmp-'+Date.now();
     const r={id:localId,name,is_weekly_reset:false,appears_on_date:appearsOn,starting_date:cadenceFields.starting_date,cadence,notes,_doneByWk:{},_done:false,_dateOverrides:{}};
     st.recurring.push(r);save();renderRecOv();renderWeeklyPage();renderWkSummary();renderWkCal();
