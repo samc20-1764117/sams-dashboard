@@ -1388,15 +1388,28 @@ function _wrBuildSelects(px){
 // Show/hide cadence-dependent fields for the given modal prefix ('wrAdd' or 'wrEdit')
 function updateWrRuleCadenceUI(px){
   const cadence=document.getElementById(px+'Cadence').value;
-  const needsAnchor=cadence==='biweekly'||cadence==='monthly';
-  document.getElementById(px+'AnchorField').style.display=needsAnchor?'block':'none';
+  document.getElementById(px+'AnchorField').style.display=cadence!=='weekly'?'block':'none';
 }
 
 // Read cadence-related fields from modal, return partial rule payload
 function _wrReadCadenceFields(px){
   const cadence=document.getElementById(px+'Cadence').value;
   const anchorVal=document.getElementById(px+'Anchor').value;
-  return {cadence,starting_date:(cadence==='biweekly'||cadence==='monthly')?anchorVal||null:null};
+  return {cadence,starting_date:cadence!=='weekly'?anchorVal||null:null};
+}
+
+function wrAddSetType(type){
+  const wrBtn=document.getElementById('wrAddTypeWR');
+  const schBtn=document.getElementById('wrAddTypeSch');
+  const base='flex:1;padding:6px 0;font-size:11px;font-weight:600;border:none;cursor:pointer;transition:background .12s,color .12s';
+  wrBtn.style.cssText=base+(type==='wr'?';background:var(--accent);color:#fff':';background:transparent;color:var(--muted)');
+  schBtn.style.cssText=base+(type==='sch'?';background:var(--accent);color:#fff':';background:transparent;color:var(--muted)');
+  if(type==='sch'){
+    const nm=document.getElementById('wrAddName').value;
+    closeMod('wrRuleAddModal');
+    openRecModal('scheduled');
+    if(nm){const el=document.getElementById('recName');if(el)el.value=nm;}
+  }
 }
 
 // ── Unified edit WR modal ─────────────────────────────────────────────────────
@@ -1477,6 +1490,7 @@ function openWrRuleAddModal(cadence){
   document.getElementById('wrAddAnchor').value=d2s(new Date());
   document.getElementById('wrAddNotes').value='';
   updateWrRuleCadenceUI('wrAdd');
+  wrAddSetType('wr');
   document.getElementById('wrRuleAddModal').classList.add('open');
   setTimeout(()=>document.getElementById('wrAddName').focus(),50);
 }
