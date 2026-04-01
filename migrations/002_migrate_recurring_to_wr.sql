@@ -50,7 +50,7 @@ SELECT
   COALESCE(rt.pup_related, false),
   rt.notes,
   true,                                                     -- is_enabled
-  max_ord.mo + ROW_NUMBER() OVER (ORDER BY rt.id),          -- sort_order
+  max_ord.mo + ROW_NUMBER() OVER (ORDER BY rt.name),        -- sort_order
   false,                                                    -- is_weekly_reset = false
   COALESCE(rt.date_overrides, '{}'),
   COALESCE(rt.done_by_week, '{}')
