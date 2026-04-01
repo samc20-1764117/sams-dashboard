@@ -492,7 +492,7 @@ async function delRec(id){
   save();renderRecOv();renderWeeklyPage();renderToday();renderWkSummary();renderWkCal();
   if(document.getElementById('tbGrid'))renderDayTB();
   // DELETE from DB first, then undo is safe
-  await sbReq('DELETE','wr_recurring_rules',null,recQs(sid));
+  if(!sid.startsWith('rec-tmp-')&&!sid.startsWith('rec-local-'))await sbReq('DELETE','wr_recurring_rules',null,recQs(sid));
   // Keep sid in deletedRecIds until undo window expires, so sync can't resurrect it
   pushUndo(async()=>{
     deletedRecIds.delete(sid);save();

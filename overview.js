@@ -956,7 +956,7 @@ function renderRecMoCal(){
     }
     // Cadence badge slot (non-WR, non-weekly only) with hover-to-reveal X
     const _CAD_BADGE_MO={biweekly:'B',monthly:'M',quarterly:'Q',biannual:'BA',annual:'A',bimonthly:'B'};
-    const _badgeLetter=!isWR&&item.cadence!=='weekly'&&_CAD_BADGE_MO[item.cadence];
+    const _badgeLetter=item.cadence!=='weekly'&&_CAD_BADGE_MO[item.cadence];
     const dx=document.createElement('button');dx.className='chip-del';dx.textContent='✕';
     dx.addEventListener('click',e=>{
       e.stopPropagation();
