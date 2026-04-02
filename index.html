@@ -64,7 +64,6 @@ body.dark .ainput,body.dark .asel{background:rgba(255,255,255,.06);color:var(--t
 body.dark .kol{background:rgba(255,255,255,.03);}
 body.dark .kol-item{background:rgba(255,255,255,.04);}
 body.dark .kol-item:hover{background:rgba(255,255,255,.08);}
-body.dark .sync-bar{background:rgba(255,255,255,.08);}
 body.dark #ctxMenu,body.dark #pupCtxMenu,body.dark #bdayCtxMenu,body.dark #wrRuleCtxMenu,body.dark #wrScopePicker{background:rgba(20,18,35,.98);}
 body.dark .ctx-item:hover{background:rgba(255,255,255,.08);}
 body.dark .wkc-chip{filter:brightness(.85);}
@@ -120,9 +119,8 @@ body{font-family:'DM Sans',sans-serif;background:#fef6f0;background-attachment:f
 .menu-open.visible{display:flex}
 
 
-.sync-bar{display:flex;align-items:center;gap:4px;position:relative;background:rgba(255,255,255,.65);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.7);border-radius:20px;padding:5px 10px;cursor:pointer;transition:all .15s;box-shadow:0 2px 8px rgba(0,0,0,.06)}
-.sync-bar:hover{background:#fff;color:var(--text)}
-.sync-bar[data-tip]:hover::after,.settings-btn[data-tip]:hover::after{content:attr(data-tip);position:absolute;top:calc(100% + 6px);right:0;white-space:nowrap;background:rgba(30,30,40,.88);color:#fff;font-size:10px;font-family:'DM Sans',sans-serif;padding:3px 8px;border-radius:6px;pointer-events:none;z-index:9999;}
+.sync-bar{position:relative;}
+.settings-btn[data-tip]:hover::after,.sync-bar[data-tip]:hover::after{content:attr(data-tip);position:absolute;top:calc(100% + 6px);right:0;white-space:nowrap;background:rgba(30,30,40,.88);color:#fff;font-size:10px;font-family:'DM Sans',sans-serif;padding:3px 8px;border-radius:6px;pointer-events:none;z-index:9999;}
 .sdot{width:5px;height:5px;border-radius:50%;background:#22c55e;flex-shrink:0}
 .sdot.loading{background:#f59e0b;animation:bl 1s infinite}.sdot.err{background:#ef4444}
 @keyframes bl{0%,100%{opacity:1}50%{opacity:.2}}
@@ -767,10 +765,10 @@ html.init-sb .ov-topbar{left:186px!important;}
 
 <!-- Top-right controls: Sync + Settings -->
 <div class="top-right-controls">
-  <div class="sync-bar" id="syncBar" onclick="syncAll()" data-tip="Sync">
+  <div class="sync-bar settings-btn" id="syncBar" onclick="syncAll()" data-tip="Sync">
     <svg id="syncIcon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path></svg>
   </div>
-  <button class="settings-btn" onclick="location.reload()" data-tip="Refresh" style="font-size:16px;padding:3px 9px">↻</button>
+  <button class="settings-btn" onclick="location.reload()" data-tip="Refresh">↻</button>
   <div style="position:relative">
     <button class="settings-btn" id="settingsBtn" onclick="toggleSettingsPopup()" title="Settings">⚙</button>
   </div>
