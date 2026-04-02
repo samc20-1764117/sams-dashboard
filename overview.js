@@ -274,6 +274,24 @@ function renderWkCal(){
     return s<=wkDss[6]&&(e||s)>=wkDss[0];
   });
   const bdayThisWk=getBirthdayTasks(null).filter(b=>wkDss.includes(b.due_date));
+  // Pre-compute banner lane counts (no DOM needed) so paddingTop is set before chips render
+  const _preLanes=Array.from({length:7},()=>new Set());
+  function _prePickLane(si,ei){for(let lane=0;;lane++){let ok=true;for(let i=si;i<=ei;i++){if(_preLanes[i].has(lane)){ok=false;break;}}if(ok)return lane;}}
+  function _preAddBanner(startDs,endDs){
+    const si=Math.max(0,wkDss.indexOf(wkDss.find(d=>d>=startDs)));
+    const _eiRaw=wkDss.findIndex(d=>d>=(endDs||startDs));
+    const ei=_eiRaw<0?6:Math.min(6,_eiRaw);
+    if(si<0||si>6)return;
+    const lane=_prePickLane(si,ei);
+    for(let i=si;i<=ei;i++)_preLanes[i].add(lane);
+  }
+  [...travelThisWk].sort((a,b)=>(a.start_date||'').localeCompare(b.start_date||'')).forEach(tv=>{
+    const sd=tv.start_date?tv.start_date.split('T')[0]:null;
+    const ed=tv.end_date?tv.end_date.split('T')[0]:sd;
+    if(sd)_preAddBanner(sd,ed);
+  });
+  bdayThisWk.forEach(b=>_preAddBanner(b.due_date,b.due_date));
+  const _colPaddingPre=_preLanes.map(lanes=>lanes.size?`${(Math.max(...lanes)+1)*22}px`:'0');
   setTimeout(()=>{
     const wrap=document.getElementById('wkcWrap');
     if(!wrap)return;
@@ -281,7 +299,6 @@ function renderWkCal(){
     if(colEls.length!==7)return;
     const wrapRect=wrap.getBoundingClientRect();
     const today2=tod();
-    colEls.forEach(c=>c.style.paddingTop='0');
 
     // Lane tracking: for each column, which row-lanes are occupied
     const colLanes=Array.from({length:7},()=>new Set());
@@ -350,13 +367,9 @@ function renderWkCal(){
       addBanner(b.name,b.due_date,b.due_date,s,null,b.due_date<today2);
     });
 
-    // Set per-column padding and banner container height based on lanes used
+    // Set banner container height based on lanes used (paddingTop already set synchronously)
     let maxLane=-1;
-    colEls.forEach((c,i)=>{
-      const ml=colLanes[i].size?Math.max(...colLanes[i]):-1;
-      c.style.paddingTop=ml>=0?`${(ml+1)*22}px`:'0';
-      if(ml>maxLane)maxLane=ml;
-    });
+    colLanes.forEach(lanes=>{const ml=lanes.size?Math.max(...lanes):-1;if(ml>maxLane)maxLane=ml;});
     if(maxLane>=0)bannerEl.style.height=`${(maxLane+1)*22+4}px`;
   },10);
 
@@ -366,6 +379,7 @@ function renderWkCal(){
     const ds=d2s(date);
     const col=document.createElement('div');col.className='wkc-col';
     col.dataset.ds=ds;
+    col.style.paddingTop=_colPaddingPre[di];
 
     // Mouse-drag to create travel spanning days
     col.addEventListener('mousedown',e=>{
