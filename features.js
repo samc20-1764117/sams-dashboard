@@ -755,7 +755,12 @@ function renderMoCal(){
 function scrollMoToday(){
   const mgrid=document.querySelector('#mModal .mgrid');
   const tc=document.querySelector('#mCells .mcell.tc');
-  if(tc&&mgrid){const mdow=document.getElementById('mDow');const mdowH=mdow?mdow.offsetHeight:0;mgrid.scrollTop=tc.offsetTop-mgrid.offsetTop-mdowH-16;}
+  if(!tc||!mgrid)return;
+  const mdow=document.getElementById('mDow');
+  const mdowH=mdow?mdow.offsetHeight:0;
+  const tcRect=tc.getBoundingClientRect();
+  const mgridRect=mgrid.getBoundingClientRect();
+  mgrid.scrollTop=mgrid.scrollTop+(tcRect.top-mgridRect.top)-mdowH-16;
 }
 function moGoToday(){
   _moNavYear=new Date().getFullYear();const yrSel2=document.getElementById('moYearSel');if(yrSel2)yrSel2.value=String(_moNavYear);
