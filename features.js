@@ -692,7 +692,7 @@ function jumpMoYear(yr){
   setTimeout(()=>{
     const mgrid=document.querySelector('#mModal .mgrid');
     const firstSep=[...document.querySelectorAll('#mCells .mo-sep')].find(s=>s.textContent.includes(String(parsed)));
-    if(firstSep&&mgrid)mgrid.scrollTop=firstSep.offsetTop-mgrid.offsetTop-8;
+    if(firstSep&&mgrid)mgrid.scrollTop=firstSep.offsetTop-mgrid.offsetTop-18;
   },30);
 }
 function shiftMo(n){moOff+=n;renderMoCal();}
