@@ -1226,7 +1226,7 @@ html.init-sb .ov-topbar{left:186px!important;}
         </div>
         <div style="display:flex;align-items:center;gap:1px;background:rgba(255,255,255,.6);border:1px solid rgba(210,205,228,.5);border-radius:7px;padding:2px 4px;flex-shrink:0">
           <button onclick="moYearStep(-1)" style="background:none;border:none;cursor:pointer;font-size:10px;color:var(--subtle);padding:0 2px;line-height:1" title="Previous year">◀</button>
-          <input id="moYearSel" type="text" value="All" onchange="jumpMoYear(this.value)" onkeydown="if(event.key==='Enter')jumpMoYear(this.value)" style="border:none;background:transparent;outline:none;font-size:10px;font-family:inherit;color:var(--text);width:32px;text-align:center;padding:0;font-weight:600"/>
+          <input id="moYearSel" type="text" onchange="jumpMoYear(this.value)" onkeydown="if(event.key==='Enter'){jumpMoYear(this.value);this.blur();}" style="border:none;background:transparent;outline:none;font-size:10px;font-family:inherit;color:var(--text);width:32px;text-align:center;padding:0;font-weight:600"/>
           <button onclick="moYearStep(1)" style="background:none;border:none;cursor:pointer;font-size:10px;color:var(--subtle);padding:0 2px;line-height:1" title="Next year">▶</button>
         </div>
         <button class="btn btn-ghost btn-xs" onclick="moGoToday()">This Week</button>

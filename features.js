@@ -669,9 +669,11 @@ async function addShopFull(){
 }
 
 // ── Month modal ────────────────────────────────────────────────────────────────
-let _moYrFilter=null;
 let _moRecMap={};
+let _moNavYear=new Date().getFullYear();
 function openMModal(){
+  _moNavYear=new Date().getFullYear();
+  const inp=document.getElementById('moYearSel');if(inp)inp.value=String(_moNavYear);
   renderMoCal();
   scrollMoToday();
   const modal=document.getElementById('mModal');
@@ -679,42 +681,32 @@ function openMModal(){
   requestAnimationFrame(()=>modal.classList.add('open'));
 }
 function moYearStep(dir){
-  const cur=_moYrFilter!==null?_moYrFilter:new Date().getFullYear();
-  jumpMoYear(String(cur+dir));
+  const inp=document.getElementById('moYearSel');
+  const cur=parseInt(inp&&inp.value)||new Date().getFullYear();
+  jumpMoYear(cur+dir);
 }
 function jumpMoYear(yr){
-  const parsed=parseInt(yr);
-  _moYrFilter=(!yr||yr==='All'||isNaN(parsed))?null:parsed;
-  const inp=document.getElementById('moYearSel');
-  if(inp)inp.value=_moYrFilter!==null?String(_moYrFilter):'All';
-  renderMoCal();
-  if(_moYrFilter!==null){
-    setTimeout(()=>{
-      const mgrid=document.querySelector('#mModal .mgrid');
-      const firstSep=[...document.querySelectorAll('#mCells .mo-sep')].find(s=>s.textContent.includes(String(_moYrFilter)));
-      if(firstSep&&mgrid)mgrid.scrollTop=firstSep.offsetTop-mgrid.offsetTop-8;
-    },30);
-  }else{setTimeout(scrollMoToday,30);}
+  const parsed=parseInt(yr);if(isNaN(parsed))return;
+  _moNavYear=parsed;
+  const inp=document.getElementById('moYearSel');if(inp)inp.value=String(parsed);
+  setTimeout(()=>{
+    const mgrid=document.querySelector('#mModal .mgrid');
+    const firstSep=[...document.querySelectorAll('#mCells .mo-sep')].find(s=>s.textContent.includes(String(parsed)));
+    if(firstSep&&mgrid)mgrid.scrollTop=firstSep.offsetTop-mgrid.offsetTop-8;
+  },30);
 }
 function shiftMo(n){moOff+=n;renderMoCal();}
 function renderMoCal(){
   const today=tod();
   const todayDate=new Date(today);
-  let weekStart,TOTAL;
-  if(_moYrFilter!==null){
-    const yrStart=new Date(_moYrFilter,0,1);
-    const sd2=(yrStart.getDay()+6)%7;
-    weekStart=new Date(yrStart);weekStart.setDate(yrStart.getDate()-sd2);
-    const yrEnd=new Date(_moYrFilter,11,31);
-    const ed2=(yrEnd.getDay()+6)%7;
-    const wkMonEnd=new Date(yrEnd);wkMonEnd.setDate(yrEnd.getDate()-ed2);
-    TOTAL=Math.round((wkMonEnd-weekStart)/(7*24*60*60*1000)/7)+1;
-  }else{
-    const PAST=8,FUTURE=26;TOTAL=PAST+FUTURE;
-    const startDow=(todayDate.getDay()+6)%7;
-    const thisMonday=new Date(todayDate);thisMonday.setDate(todayDate.getDate()-startDow);
-    weekStart=new Date(thisMonday);weekStart.setDate(thisMonday.getDate()-PAST*7);
-  }
+  const curYr=todayDate.getFullYear();
+  const rangeStart=new Date(curYr-3,0,1);
+  const sd2=(rangeStart.getDay()+6)%7;
+  const weekStart=new Date(rangeStart);weekStart.setDate(rangeStart.getDate()-sd2);
+  const rangeEnd=new Date(curYr+2,11,31);
+  const ed2=(rangeEnd.getDay()+6)%7;
+  const wkMonEnd=new Date(rangeEnd);wkMonEnd.setDate(rangeEnd.getDate()-ed2);
+  const TOTAL=Math.round((wkMonEnd-weekStart)/(7*86400000))+1;
   // Precompute non-WR recurring tasks map: ds → [virtual task, ...]
   _moRecMap={};
   const _rCurDow=(todayDate.getDay()+6)%7;
@@ -744,7 +736,7 @@ function renderMoCal(){
   }
   // Sync year dropdown
   const yrSel=document.getElementById('moYearSel');
-  if(yrSel)yrSel.value=_moYrFilter!==null?String(_moYrFilter):'All';
+  if(yrSel)yrSel.value=String(_moNavYear);
   if(_moSearchQuery)setTimeout(()=>moSearch(_moSearchQuery),0);
   const mual=document.getElementById('mUAList');mual.innerHTML='';
   const CAT_ORDER=['Home','My work','Work','Social','Recurring'];
@@ -766,7 +758,7 @@ function scrollMoToday(){
   if(tc&&mgrid){const mdow=document.getElementById('mDow');const mdowH=mdow?mdow.offsetHeight:0;mgrid.scrollTop=tc.offsetTop-mgrid.offsetTop-mdowH-8;}
 }
 function moGoToday(){
-  if(_moYrFilter!==null){_moYrFilter=null;const yrSel=document.getElementById('moYearSel');if(yrSel)yrSel.value='All';renderMoCal();}
+  _moNavYear=new Date().getFullYear();const yrSel2=document.getElementById('moYearSel');if(yrSel2)yrSel2.value=String(_moNavYear);
   setTimeout(scrollMoToday,30);
 }
 function mkMCell(date,om,today){
