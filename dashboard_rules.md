@@ -104,7 +104,7 @@ Supabase Auth (email+password), RLS on all tables. `init()`→`checkAuth()`→no
 
 **Move prev/next week** (`wrCtxMovePrevWeek/Next`): shifts `starting_date` ±7 days — affects all future. Not a per-week override.
 
-**WR card** (overview top-right): header `←`·`Month`·week label·`This Week`·`→`. Footer: `+` (`openWrRuleAddModal()`). Sort: done last→cadence (weekly=0,biweekly=1,monthly=2,other=3)→pup last (order=10). `wrRecOff` tracks week independently.
+**WR card** (overview top-right): header `←`·`Month`·week label·`This Week`·`→`. `+` button: `position:absolute;bottom:8px;right:8px;z-index:10`. `#recList`: `flex:1;columns:2;column-gap:2px;column-fill:auto;overflow-y:auto;padding:0` (padding:0 overrides `.tlist` default). Sort: done last→cadence (weekly=0,biweekly=2,monthly=4,quarterly=6,biannual=8,annual=10,other=12)→pup adds +1 within cadence. Cadence badge (`wr-cad-badge`): `position:absolute;right:3px`, hidden on hover/sel to reveal X. Changed+non-weekly: badge turns blue. Changed+weekly: blue dot (`wr-dot`) at right:5px. `wrRecOff` tracks week independently.
 
 ---
 
