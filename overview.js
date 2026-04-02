@@ -1235,14 +1235,13 @@ function renderRecOv(){
     const wrBadgeLetter=(r.cadence&&r.cadence!=='weekly')&&_WR_CAD_BADGE[r.cadence];
     if(wrBadgeLetter){
       const slot=document.createElement('span');
-      slot.style.cssText=`flex-shrink:0;display:inline-flex;align-items:center${hasDot?'':';margin-left:auto'}`;
+      slot.className='wr-cad-slot';
+      if(!hasDot)slot.style.marginLeft='auto';
       const bdg=document.createElement('span');
+      bdg.className='wr-cad-badge';
       bdg.style.cssText='font-size:9px;font-weight:700;letter-spacing:.3px;padding:1px 3px;border-radius:3px;background:rgba(0,0,0,.13);color:inherit';
       bdg.textContent=wrBadgeLetter;
-      del.style.display='none';
       slot.appendChild(bdg);slot.appendChild(del);
-      slot.addEventListener('mouseenter',()=>{bdg.style.display='none';del.style.display='';});
-      slot.addEventListener('mouseleave',()=>{bdg.style.display='';del.style.display='none';});
       row.appendChild(slot);
     } else {
       row.appendChild(del);
