@@ -201,7 +201,7 @@ body.dark .pup-dog-btn.active{background:rgba(194,107,79,.5);color:#fff}
 .btn-plus:hover{background:#fff;color:var(--accent);border-color:var(--accent)}
 
 /* Cards */
-.card{background:rgba(255,255,255,0.62);backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);border:1px solid rgba(255,255,255,0.55);border-radius:var(--r);box-shadow:0 10px 30px rgba(0,0,0,0.08),inset 0 1.5px 0 rgba(255,255,255,1),inset 1px 0 0 rgba(255,255,255,0.6),inset -1px 0 0 rgba(255,255,255,0.6);overflow:hidden;display:flex;flex-direction:column;transition:box-shadow .2s}
+.card{background:rgba(255,255,255,0.62);backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);border:1px solid rgba(255,255,255,0.55);border-radius:var(--r);box-shadow:0 10px 30px rgba(0,0,0,0.08),inset 0 1.5px 0 rgba(255,255,255,1),inset 1px 0 0 rgba(255,255,255,0.6),inset -1px 0 0 rgba(255,255,255,0.6);overflow:hidden;display:flex;flex-direction:column;transition:box-shadow .2s;position:relative}
 .card-hero{background:rgba(255,255,255,0.88)!important;border-color:rgba(255,255,255,0.6)!important;box-shadow:0 10px 30px rgba(0,0,0,0.1),inset 0 1px 0 rgba(255,255,255,0.8)!important}
 .ch{padding:9px 13px;display:flex;align-items:center;gap:6px;border-bottom:1px solid rgba(210,205,228,.22);flex-shrink:0;min-height:38px;box-sizing:border-box}
 .ch-prog{display:flex;align-items:center;gap:6px;padding:0 10px;border-bottom:1px solid rgba(210,205,228,.22);flex-shrink:0;min-height:38px;box-sizing:border-box}
@@ -863,11 +863,9 @@ html.init-sb .ov-topbar{left:186px!important;}
         <button class="btn btn-ghost btn-xs" onclick="wrRecOff=0;renderRecOv()" style="white-space:nowrap">This Week</button>
         <button class="btn btn-ghost btn-xs" onclick="shiftWrRec(1)">→</button>
       </div>
-      <div class="tlist" id="recList" style="flex:1;columns:2;column-gap:2px;column-fill:auto;overflow-y:auto"></div>
+      <div class="tlist" id="recList" style="flex:1;columns:2;column-gap:2px;column-fill:auto;overflow-y:auto;padding-bottom:28px"></div>
       <div style="display:none" id="recListPup"></div>
-      <div style="display:flex;align-items:center;padding:4px 8px;flex-shrink:0;border-top:1px solid rgba(210,205,228,.15)">
-        <button class="btn-plus" onclick="openWrRuleAddModal()">+</button>
-      </div>
+      <button class="btn-plus" onclick="openWrRuleAddModal()" style="position:absolute;bottom:8px;right:8px;z-index:10">+</button>
     </div>
     <!-- Shopping -->
     <div class="card">
