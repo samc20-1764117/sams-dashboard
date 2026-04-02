@@ -452,6 +452,8 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 
 /* Month modal — larger */
 .month-modal{width:min(98vw,1400px);display:flex;height:94vh;overflow:hidden}
+.mo-search-hl{outline:2px solid #a78bfa!important;outline-offset:1px;z-index:2;position:relative}
+.mo-search-hl-cur{outline:2px solid #7c3aed!important;outline-offset:1px;z-index:3;position:relative}
 .mcal-side{flex:1;display:flex;flex-direction:column;overflow:hidden}
 .mua-side{width:200px;flex-shrink:0;border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
 .mhead{display:flex;align-items:center;gap:7px;padding:0 13px;min-height:38px;border-bottom:1px solid rgba(210,205,228,.3);border-radius:8px;box-sizing:border-box}
@@ -1212,6 +1214,12 @@ html.init-sb .ov-topbar{left:186px!important;}
       <div class="mhead">
         <div style="flex:1;font-size:14px;font-weight:700;letter-spacing:-.3px" id="moTitle">Calendar</div>
         <select id="moYearSel" onchange="jumpMoYear(this.value)" style="font-size:10px;padding:2px 5px;border-radius:6px;border:1px solid rgba(210,205,228,.5);background:rgba(255,255,255,.7);color:var(--text);font-family:inherit;cursor:pointer;outline:none"></select>
+        <div id="moSearchWrap" style="display:flex;align-items:center;gap:3px;background:rgba(255,255,255,.6);border:1px solid rgba(210,205,228,.5);border-radius:7px;padding:2px 5px;transition:border-color .15s">
+          <input id="moSearchInput" type="text" placeholder="Search…" oninput="moSearch(this.value)" onkeydown="if(event.key==='Enter')moSearchNav(event.shiftKey?-1:1);else if(event.key==='Escape'){this.value='';moSearch('');}" style="border:none;background:transparent;outline:none;font-size:10px;font-family:inherit;color:var(--text);width:110px;padding:0"/>
+          <span id="moSearchCount" style="font-size:9px;color:var(--subtle);white-space:nowrap;display:none"></span>
+          <button onclick="moSearchNav(-1)" id="moSearchPrev" style="background:none;border:none;cursor:pointer;font-size:10px;color:var(--subtle);padding:0 1px;line-height:1;display:none" title="Previous (Shift+Enter)">▲</button>
+          <button onclick="moSearchNav(1)" id="moSearchNext" style="background:none;border:none;cursor:pointer;font-size:10px;color:var(--subtle);padding:0 1px;line-height:1;display:none" title="Next (Enter)">▼</button>
+        </div>
         <button class="btn btn-ghost btn-xs" onclick="scrollMoToday()">This Week</button>
       </div>
       <div class="mgrid"><div class="mdow" id="mDow"></div><div class="mcells" id="mCells"></div></div>
