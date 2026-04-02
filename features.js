@@ -675,10 +675,9 @@ function openMModal(){
   _moNavYear=new Date().getFullYear();
   const inp=document.getElementById('moYearSel');if(inp)inp.value=String(_moNavYear);
   renderMoCal();
-  scrollMoToday();
   const modal=document.getElementById('mModal');
   const bg=document.querySelector('.bg-canvas');if(bg)bg.classList.add('orbs-paused');
-  requestAnimationFrame(()=>modal.classList.add('open'));
+  requestAnimationFrame(()=>{modal.classList.add('open');setTimeout(scrollMoToday,30);});
 }
 function moYearStep(dir){
   const inp=document.getElementById('moYearSel');
