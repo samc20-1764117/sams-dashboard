@@ -3005,3 +3005,13 @@ function _moScrollToMatch(i){
   const mdowH=mdow?mdow.offsetHeight:0;
   mgrid.scrollTo({top:Math.max(0,cell.offsetTop-mgrid.offsetTop-mdowH-40),behavior:'smooth'});
 }
+
+// ── Keyboard shortcuts ──────────────────────────────────────────────────────────
+document.addEventListener('keydown',e=>{
+  const tag=document.activeElement?.tagName;
+  if(tag==='INPUT'||tag==='TEXTAREA'||document.activeElement?.isContentEditable)return;
+  if(e.metaKey||e.ctrlKey||e.altKey)return;
+  if(e.key==='n'){e.preventDefault();openQA('today',null,d2s(getDayDate(dayOff)));}
+  if(e.key==='r'){e.preventDefault();location.reload();}
+  if(e.key==='s'){e.preventDefault();syncAll(false);}
+});
