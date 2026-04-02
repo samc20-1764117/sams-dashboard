@@ -687,8 +687,8 @@ function moYearStep(dir){
 }
 function jumpMoYear(yr){
   const parsed=parseInt(yr);if(isNaN(parsed))return;
-  _moNavYear=parsed;
-  const inp=document.getElementById('moYearSel');if(inp)inp.value=String(parsed);
+  _moNavYear=Math.max(2026,parsed);
+  const inp=document.getElementById('moYearSel');if(inp)inp.value=String(_moNavYear);
   setTimeout(()=>{
     const mgrid=document.querySelector('#mModal .mgrid');
     const firstSep=[...document.querySelectorAll('#mCells .mo-sep')].find(s=>s.textContent.includes(String(parsed)));
@@ -760,7 +760,7 @@ function scrollMoToday(){
   const mdowH=mdow?mdow.offsetHeight:0;
   let top=0,el=tc;
   while(el&&el!==mgrid){top+=el.offsetTop;el=el.offsetParent;}
-  mgrid.scrollTop=top-mdowH-16;
+  mgrid.scrollTop=top-mdowH-28;
 }
 function moGoToday(){
   _moNavYear=new Date().getFullYear();const yrSel2=document.getElementById('moYearSel');if(yrSel2)yrSel2.value=String(_moNavYear);
