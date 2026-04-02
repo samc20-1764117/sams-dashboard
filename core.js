@@ -335,12 +335,12 @@ async function syncAll(silent=false){
 function setBadge(t,x){
   ['','2','3','4','5','6'].forEach(s=>{
     const ic=document.getElementById('syncIcon'+(s?s:''));
-    const tx=document.getElementById('syncTxt'+s);
+    const bar=document.getElementById('syncBar'+s);
     if(ic){
       ic.style.animation=t==='loading'?'spin .8s linear infinite':'';
       ic.style.color=t==='err'?'#ef4444':t==='loading'?'#f59e0b':'';
     }
-    if(tx)tx.textContent=x||'Sync';
+    if(bar)bar.dataset.tip=x||'Sync';
   });
 }
 
