@@ -672,20 +672,21 @@ async function addShopFull(){
 let _moYrFilter=null;
 let _moRecMap={};
 function openMModal(){
-  const yrSel=document.getElementById('moYearSel');
-  if(yrSel&&!yrSel.children.length){
-    const curYr=new Date().getFullYear();
-    yrSel.innerHTML='<option value="">All</option>';
-    for(let y=curYr-3;y<=curYr+2;y++){yrSel.innerHTML+=`<option value="${y}">${y}</option>`;}
-  }
   renderMoCal();
   scrollMoToday();
   const modal=document.getElementById('mModal');
   const bg=document.querySelector('.bg-canvas');if(bg)bg.classList.add('orbs-paused');
   requestAnimationFrame(()=>modal.classList.add('open'));
 }
+function moYearStep(dir){
+  const cur=_moYrFilter!==null?_moYrFilter:new Date().getFullYear();
+  jumpMoYear(String(cur+dir));
+}
 function jumpMoYear(yr){
-  _moYrFilter=yr?parseInt(yr):null;
+  const parsed=parseInt(yr);
+  _moYrFilter=(!yr||yr==='All'||isNaN(parsed))?null:parsed;
+  const inp=document.getElementById('moYearSel');
+  if(inp)inp.value=_moYrFilter!==null?String(_moYrFilter):'All';
   renderMoCal();
   if(_moYrFilter!==null){
     setTimeout(()=>{
@@ -743,7 +744,7 @@ function renderMoCal(){
   }
   // Sync year dropdown
   const yrSel=document.getElementById('moYearSel');
-  if(yrSel)yrSel.value=_moYrFilter!==null?String(_moYrFilter):'';
+  if(yrSel)yrSel.value=_moYrFilter!==null?String(_moYrFilter):'All';
   if(_moSearchQuery)setTimeout(()=>moSearch(_moSearchQuery),0);
   const mual=document.getElementById('mUAList');mual.innerHTML='';
   const CAT_ORDER=['Home','My work','Work','Social','Recurring'];
@@ -765,7 +766,7 @@ function scrollMoToday(){
   if(tc&&mgrid){const mdow=document.getElementById('mDow');const mdowH=mdow?mdow.offsetHeight:0;mgrid.scrollTop=tc.offsetTop-mgrid.offsetTop-mdowH-8;}
 }
 function moGoToday(){
-  if(_moYrFilter!==null){_moYrFilter=null;const yrSel=document.getElementById('moYearSel');if(yrSel)yrSel.value='';renderMoCal();}
+  if(_moYrFilter!==null){_moYrFilter=null;const yrSel=document.getElementById('moYearSel');if(yrSel)yrSel.value='All';renderMoCal();}
   setTimeout(scrollMoToday,30);
 }
 function mkMCell(date,om,today){
