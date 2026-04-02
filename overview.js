@@ -1138,8 +1138,8 @@ function renderRecOv(){
   const{mon,sun}=getWkBounds(wrRecOff);
   const lbl=document.getElementById('wrRecWkLbl');
   if(lbl){
-    const fmt=d=>d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
-    lbl.textContent=fmt(mon)+' – '+fmt(sun);
+    if(wrRecOff===0){lbl.textContent='Weekly Reset';}
+    else{const fmt=d=>d.toLocaleDateString('en-US',{month:'short',day:'numeric'});lbl.textContent=fmt(mon)+' – '+fmt(sun);}
   }
   // ── Merge overrides into base list ─────────────────────────────────────────
   // 1. Base: rules that naturally fire this week
