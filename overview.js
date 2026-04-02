@@ -1161,7 +1161,7 @@ function renderRecOv(){
   function recOvOrder(r){
     if(r.pup_related===true||r.pup_related==='true')return 10;
     const c=r.cadence||'weekly';
-    return c==='weekly'?0:c==='biweekly'?1:c==='monthly'?2:3;
+    return c==='weekly'?0:c==='biweekly'?1:c==='monthly'?2:c==='quarterly'?3:c==='biannual'?4:c==='annual'?5:6;
   }
   const sorted=[...items].sort((a,b)=>{
     const aDone=isDoneWR(a.id),bDone=isDoneWR(b.id);

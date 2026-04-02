@@ -265,7 +265,7 @@ body.dark .inline-date-picker input[type="date"]{background:rgba(255,255,255,.08
 .ti:hover .delbtn,.ti.sel-row .delbtn{opacity:1;color:var(--subtle)}.delbtn:hover{color:#ef4444!important}
 .wr-cad-badge{position:absolute;right:3px;top:50%;transform:translateY(-50%);font-size:9px;font-weight:700;letter-spacing:.3px;padding:1px 3px;border-radius:3px;background:rgba(0,0,0,.13);color:inherit;pointer-events:none}
 .wr-cad-badge.changed{background:rgba(59,130,246,.18);color:#1e40af}
-.wr-dot{position:absolute;right:5px;top:50%;transform:translateY(-50%);width:6px;height:6px;border-radius:50%;background:#3b82f6;pointer-events:none;flex-shrink:0}
+.wr-dot{position:absolute;right:5px;top:50%;transform:translateY(-50%);width:6px;height:6px;border-radius:50%;background:#93c5fd;pointer-events:none;flex-shrink:0}
 .ti:hover .wr-cad-badge,.ti.sel-row .wr-cad-badge,.ti:hover .wr-dot,.ti.sel-row .wr-dot{display:none}
 .arow{padding:4px 8px;border-top:1px solid rgba(210,205,228,.22);display:flex;gap:3px;background:rgba(255,255,255,.18);flex-shrink:0}
 .ov-banner{display:none;align-items:center;gap:8px;padding:6px 16px;background:rgba(254,242,242,.9);border-bottom:1px solid rgba(239,68,68,.15);font-size:11px;font-weight:500;color:#b91c1c;flex-shrink:0}
@@ -863,7 +863,7 @@ html.init-sb .ov-topbar{left:186px!important;}
         <button class="btn btn-ghost btn-xs" onclick="wrRecOff=0;renderRecOv()" style="white-space:nowrap">This Week</button>
         <button class="btn btn-ghost btn-xs" onclick="shiftWrRec(1)">→</button>
       </div>
-      <div class="tlist" id="recList" style="flex:1;columns:2;column-gap:2px;overflow-y:auto"></div>
+      <div class="tlist" id="recList" style="flex:1;columns:2;column-gap:2px;column-fill:auto;overflow-y:auto"></div>
       <div style="display:none" id="recListPup"></div>
       <div style="display:flex;align-items:center;padding:4px 8px;flex-shrink:0;border-top:1px solid rgba(210,205,228,.15)">
         <button class="btn-plus" onclick="openWrRuleAddModal()">+</button>
