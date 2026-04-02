@@ -2002,9 +2002,7 @@ async function init(){
   const initHash=location.hash.replace('#','');
   if(initHash&&PAGES.includes(initHash))showPage(initHash);
   // Render from localStorage before auth check so UI is populated instantly
-  // Skip pre-sync render on page reload to avoid double-render flash; sync result will render instead
-  const _navType=(performance.getEntriesByType('navigation')[0]||{}).type;
-  if(cfg.url&&cfg.key){document.getElementById('cfgUrl').value=cfg.url;document.getElementById('cfgKey').value=cfg.key;if(_navType!=='reload')renderAll();}
+  if(cfg.url&&cfg.key){document.getElementById('cfgUrl').value=cfg.url;document.getElementById('cfgKey').value=cfg.key;renderAll();}
   const authed=await checkAuth();
   if(!authed)return;
   if(cfg.url&&cfg.key){
