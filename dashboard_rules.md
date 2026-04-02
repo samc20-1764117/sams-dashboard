@@ -11,6 +11,8 @@ All files share global scope — no modules/bundler.
 
 ## Auth
 Supabase Auth (email+password), RLS on all tables. `init()`→`checkAuth()`→no session→`#loginOverlay`. `doLogin()`→`signInWithPassword`→`_authToken`→`syncAll()`. All `sbReq*` use `_getAuthToken()` JWT + anon `apikey`. Token auto-refreshes hourly; refresh lasts 1 week.
+- **Init flash prevention**: `#main` starts `opacity:0` in HTML; `renderAll()` sets it to `1` on first call (0.15s CSS transition). `history.scrollRestoration='manual'` set in `init()` to prevent scroll jump on soft refresh.
+- **Overdue banner**: guarded by `_firstSyncDone` flag (features.js). `updateOvBanner()` is a no-op until after the first `syncAll()` completes, preventing stale localStorage overdue state from flashing.
 
 ## Data & Persistence
 - POST must include ALL required fields. Missing NOT NULL → silent 400.
@@ -40,6 +42,7 @@ Supabase Auth (email+password), RLS on all tables. `init()`→`checkAuth()`→no
 - **Modal Enter/Escape**: overlay `div` owns Enter/Escape. Inputs must NOT have save handlers (double-fire). Empty name → close without saving. SELECT excluded from Enter-save on: recModal,recEditModal,pupModal,travelModal,recipeModal. Doc-level Enter fallback for tModal/shopEdit/recEdit/recModal/mModal/recMoModal when `.open`.
 - **Cmd+Z in modals**: check `_isInput && !_ael.closest('.overlay:not(.open)')` → return early if true. Overlays use `opacity:0;pointer-events:none` NOT `display:none`. Undo closures re-find items by ID at undo time.
 - **Page keyboard**: Cmd+Z/Shift+Z/Del/Bksp/Cmd+C/Cmd+V on pages with own undo (pup, birthdays, recipes).
+- **Global shortcuts** (features.js, bottom): `n`=new task for today, `r`=reload, `s`=sync. Guard: skip if `activeElement` is INPUT/TEXTAREA/contentEditable or if meta/ctrl/alt held.
 - **Global Cmd+C/V**: copies `selectedTasks`. Paste: `wrrule-{id}`→POST `wr_recurring_rules`; `rec-virt-{id}`→POST `is_weekly_reset:false`; task ID→POST `tasks`.
 - **Sort/filter**: 250ms debounce, 3-state sort. Double-click→filter popup under `<th>`.
 - **Per-page undo**: `pageSnapshot()` deep-clones state. `_pageUndoDirty` blocks `syncAll`. `_pageSyncToServer(prev,next)` diffs + fires minimal API calls.
