@@ -452,8 +452,8 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 
 /* Month modal — larger */
 .month-modal{width:min(98vw,1400px);display:flex;height:94vh;overflow:hidden}
-.mo-search-hl{outline:2px solid #a78bfa!important;outline-offset:1px;z-index:2;position:relative}
-.mo-search-hl-cur{outline:2px solid #7c3aed!important;outline-offset:1px;z-index:3;position:relative}
+.mo-search-hl{outline:2px solid #a78bfa!important;outline-offset:1px;z-index:2;position:relative;opacity:.7}
+.mo-search-hl-cur{outline:3px solid #7c3aed!important;outline-offset:1px;z-index:3;position:relative;opacity:1!important;box-shadow:0 0 0 4px rgba(124,58,237,.18)!important}
 #moSearchWrap:focus-within{border-color:rgba(124,58,237,.5)}
 #moSearchSug .mo-sug-item:first-child{border-radius:8px 8px 0 0}
 #moSearchSug .mo-sug-item:last-child{border-radius:0 0 8px 8px}
@@ -1225,7 +1225,7 @@ html.init-sb .ov-topbar{left:186px!important;}
           <div id="moSearchSug" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:rgba(255,255,255,.97);border:1px solid rgba(210,205,228,.6);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.12);z-index:600;overflow:hidden;max-height:200px;overflow-y:auto"></div>
         </div>
         <select id="moYearSel" onchange="jumpMoYear(this.value)" style="font-size:10px;padding:2px 5px;border-radius:6px;border:1px solid rgba(210,205,228,.5);background:rgba(255,255,255,.7);color:var(--text);font-family:inherit;cursor:pointer;outline:none;flex-shrink:0"></select>
-        <button class="btn btn-ghost btn-xs" onclick="scrollMoToday()">This Week</button>
+        <button class="btn btn-ghost btn-xs" onclick="moGoToday()">This Week</button>
       </div>
       <div class="mgrid"><div class="mdow" id="mDow"></div><div class="mcells" id="mCells"></div></div>
     </div>
