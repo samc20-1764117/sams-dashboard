@@ -675,9 +675,10 @@ function openMModal(){
   _moNavYear=new Date().getFullYear();
   const inp=document.getElementById('moYearSel');if(inp)inp.value=String(_moNavYear);
   renderMoCal();
+  scrollMoToday();
   const modal=document.getElementById('mModal');
   const bg=document.querySelector('.bg-canvas');if(bg)bg.classList.add('orbs-paused');
-  requestAnimationFrame(()=>{modal.classList.add('open');setTimeout(scrollMoToday,30);});
+  requestAnimationFrame(()=>modal.classList.add('open'));
 }
 function moYearStep(dir){
   const inp=document.getElementById('moYearSel');
@@ -757,9 +758,9 @@ function scrollMoToday(){
   if(!tc||!mgrid)return;
   const mdow=document.getElementById('mDow');
   const mdowH=mdow?mdow.offsetHeight:0;
-  const tcRect=tc.getBoundingClientRect();
-  const mgridRect=mgrid.getBoundingClientRect();
-  mgrid.scrollTop=mgrid.scrollTop+(tcRect.top-mgridRect.top)-mdowH-16;
+  let top=0,el=tc;
+  while(el&&el!==mgrid){top+=el.offsetTop;el=el.offsetParent;}
+  mgrid.scrollTop=top-mdowH-16;
 }
 function moGoToday(){
   _moNavYear=new Date().getFullYear();const yrSel2=document.getElementById('moYearSel');if(yrSel2)yrSel2.value=String(_moNavYear);
