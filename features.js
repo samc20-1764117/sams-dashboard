@@ -1991,7 +1991,9 @@ function showPage(id){
 function closeMod(id,e){if(e&&e.target!==document.getElementById(id))return;document.getElementById(id).classList.remove('open');if(id==='mModal'||id==='recMoModal'){const bg=document.querySelector('.bg-canvas');if(bg)bg.classList.remove('orbs-paused');}}
 
 // ── Init ───────────────────────────────────────────────────────────────────────
+let _firstSyncDone=false;
 async function init(){
+  history.scrollRestoration='manual';
   load();
   // Apply dark mode and sidebar state immediately — before checkAuth await — to prevent flash
   if(cfg.dark){document.body.classList.add('dark');const ic=document.getElementById('darkToggleIcon');if(ic)ic.textContent='☀️';const dt=document.getElementById('darkToggle');if(dt)dt.textContent='☀️';}
@@ -2000,13 +2002,15 @@ async function init(){
   const initHash=location.hash.replace('#','');
   if(initHash&&PAGES.includes(initHash))showPage(initHash);
   // Render from localStorage before auth check so UI is populated instantly
-  if(cfg.url&&cfg.key){document.getElementById('cfgUrl').value=cfg.url;document.getElementById('cfgKey').value=cfg.key;renderAll();}
+  // Skip pre-sync render on page reload to avoid double-render flash; sync result will render instead
+  const _navType=(performance.getEntriesByType('navigation')[0]||{}).type;
+  if(cfg.url&&cfg.key){document.getElementById('cfgUrl').value=cfg.url;document.getElementById('cfgKey').value=cfg.key;if(_navType!=='reload')renderAll();}
   const authed=await checkAuth();
   if(!authed)return;
   if(cfg.url&&cfg.key){
     deletedRecIds=new Set();save();
-    syncAll(false);
-  } else{renderAll();setBadge('err','Not connected');}
+    syncAll(false).then(()=>{_firstSyncDone=true;});
+  } else{_firstSyncDone=true;renderAll();setBadge('err','Not connected');}
   setupWkcEdgeDrop();setupEdge('wkListEdgeR',1);
   setInterval(()=>{if(cfg.url&&cfg.key)syncAll(true);},30000);
 }
@@ -2715,6 +2719,7 @@ function getOvShopping(){
   return st.shopping.filter(s=>!s.done&&s.due_date&&s.due_date.split('T')[0]<today);
 }
 function updateOvBanner(){
+  if(!_firstSyncDone){document.getElementById('ovBanner').classList.remove('show');return;}
   if(dayOff!==0){document.getElementById('ovBanner').classList.remove('show');return;}
   const today=tod();
   const ovTasks=st.tasks.filter(t=>!t.done&&t.due_date&&t.due_date.split('T')[0]<today);

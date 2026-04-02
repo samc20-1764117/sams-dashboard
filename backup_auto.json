@@ -1,5 +1,5 @@
 {
-  "exported_at": "2026-04-01T13:00:01.212Z",
+  "exported_at": "2026-04-02T13:00:00.865Z",
   "mode": "auto",
   "tables": {
     "tasks": [
@@ -20,6 +20,16 @@
         "done": true,
         "importance": "Normal",
         "id": "570d8000-b2f3-4fe4-9b0b-736bd624be87",
+        "important": false,
+        "notes": null
+      },
+      {
+        "name": "Respond comments",
+        "category": "Home",
+        "due_date": "2026-04-01",
+        "done": true,
+        "importance": null,
+        "id": "73baa1f4-cf58-4bcd-a871-b0c4bddba5de",
         "important": false,
         "notes": null
       },
@@ -60,16 +70,6 @@
         "done": true,
         "importance": "Normal",
         "id": "7395e2fc-467f-4ccc-8313-32e51e45b0ff",
-        "important": false,
-        "notes": null
-      },
-      {
-        "name": "Respond comments",
-        "category": "Home",
-        "due_date": "2026-04-01",
-        "done": false,
-        "importance": null,
-        "id": "73baa1f4-cf58-4bcd-a871-b0c4bddba5de",
         "important": false,
         "notes": null
       },
@@ -876,12 +876,12 @@
       {
         "name": "AI tracking video",
         "category": "My work",
-        "due_date": "2026-04-01",
+        "due_date": "2026-04-05",
         "done": false,
         "importance": null,
-        "id": "08ddb2d3-42f4-4e48-b0ef-e327ed31b712",
+        "id": "d895f994-cf48-4ab3-95f9-1ffd706914b7",
         "important": false,
-        "notes": "Actual claude (design, interaction)"
+        "notes": "Start VO/filming"
       },
       {
         "name": "Drive to SA",
@@ -934,42 +934,12 @@
         "notes": null
       },
       {
-        "name": "AI tracking video",
-        "category": "My work",
-        "due_date": "2026-04-02",
-        "done": false,
-        "importance": null,
-        "id": "4a3757e6-a91c-4ff5-84d2-287f5db5da6f",
-        "important": false,
-        "notes": "Script ready"
-      },
-      {
         "name": "Friends workout",
         "category": "Social",
         "due_date": "2026-04-03",
         "done": false,
         "importance": null,
         "id": "5b558157-40ed-47c6-a75d-e7710e461bf9",
-        "important": false,
-        "notes": null
-      },
-      {
-        "name": "AI tracking video",
-        "category": "My work",
-        "due_date": "2026-04-03",
-        "done": false,
-        "importance": null,
-        "id": "d895f994-cf48-4ab3-95f9-1ffd706914b7",
-        "important": false,
-        "notes": "Start VO/filming"
-      },
-      {
-        "name": "TC 26: Design interface icons",
-        "category": "My work",
-        "due_date": "2026-04-01",
-        "done": false,
-        "importance": null,
-        "id": "ad67dc5f-e17b-4753-9112-8a3aac82ca3e",
         "important": false,
         "notes": null
       },
@@ -1014,16 +984,6 @@
         "notes": null
       },
       {
-        "name": "TC 26 announcment",
-        "category": "My work",
-        "due_date": "2026-04-01",
-        "done": false,
-        "importance": null,
-        "id": "95b66b6c-32a1-4d3c-89f5-c6b470747292",
-        "important": true,
-        "notes": null
-      },
-      {
         "name": "Refill caffiene",
         "category": "Home",
         "due_date": "2026-03-26",
@@ -1040,16 +1000,6 @@
         "done": true,
         "importance": null,
         "id": "73e81333-6104-4a13-b72f-7803ac047f6a",
-        "important": false,
-        "notes": null
-      },
-      {
-        "name": "Charger back from Sindi",
-        "category": "Home",
-        "due_date": null,
-        "done": false,
-        "importance": null,
-        "id": "073a5ac9-565a-4b6c-bd8f-760550fb41fe",
         "important": false,
         "notes": null
       },
@@ -1314,6 +1264,16 @@
         "notes": null
       },
       {
+        "name": "Drill down icons",
+        "category": "My work",
+        "due_date": "2026-04-01",
+        "done": true,
+        "importance": null,
+        "id": "3a9283db-1179-4b96-b56c-206e5e88d91c",
+        "important": false,
+        "notes": null
+      },
+      {
         "name": "Oria @7 something",
         "category": "Social",
         "due_date": "2026-04-02",
@@ -1386,7 +1346,7 @@
       {
         "name": "Hide yellow video",
         "category": "My work",
-        "due_date": "2026-04-01",
+        "due_date": "2026-04-02",
         "done": false,
         "importance": null,
         "id": "be152879-a757-4f11-88b6-476cf6231453",
@@ -1394,14 +1354,144 @@
         "notes": null
       },
       {
+        "name": "TC 26: Design interface icons",
+        "category": "My work",
+        "due_date": "2026-04-01",
+        "done": true,
+        "importance": null,
+        "id": "ad67dc5f-e17b-4753-9112-8a3aac82ca3e",
+        "important": false,
+        "notes": null
+      },
+      {
+        "name": "Six sigma training",
+        "category": "Work",
+        "due_date": "2026-04-01",
+        "done": true,
+        "importance": null,
+        "id": "8da482fa-9f55-424b-8aa9-44ac660b2b5a",
+        "important": false,
+        "notes": null
+      },
+      {
+        "name": "TC26 rough draft due",
+        "category": "My work",
+        "due_date": "2026-04-13",
+        "done": false,
+        "importance": null,
+        "id": "6c0e9d3a-663e-41cc-ba90-5e1c99b8bba5",
+        "important": true,
+        "notes": null
+      },
+      {
+        "name": "TC26 appreciation party 6-9pm",
+        "category": "My work",
+        "due_date": "2026-05-05",
+        "done": false,
+        "importance": null,
+        "id": "cf6640b7-e1ff-40ad-8afd-0032d86d93bf",
+        "important": false,
+        "notes": null
+      },
+      {
+        "name": "Update dashboard",
+        "category": "My work",
+        "due_date": "2026-04-01",
+        "done": true,
+        "importance": null,
+        "id": "e0640d75-a4c1-4f9c-801f-7877a8d8c8ab",
+        "important": false,
+        "notes": null
+      },
+      {
         "name": "Drill down - sets vs parameters",
         "category": "My work",
-        "due_date": "2026-04-02",
-        "done": false,
+        "due_date": "2026-04-01",
+        "done": true,
         "importance": null,
         "id": "84cff1a2-7f2a-45b1-ada6-b27f7f786c39",
         "important": false,
         "notes": null
+      },
+      {
+        "name": "Read carolean project",
+        "category": "Work",
+        "due_date": "2026-04-02",
+        "done": false,
+        "importance": null,
+        "id": "2c345cad-1059-40e9-adc2-6e7700e10ac7",
+        "important": false,
+        "notes": null
+      },
+      {
+        "name": "TC 26 announcment",
+        "category": "My work",
+        "due_date": "2026-04-02",
+        "done": false,
+        "importance": null,
+        "id": "95b66b6c-32a1-4d3c-89f5-c6b470747292",
+        "important": true,
+        "notes": null
+      },
+      {
+        "name": "DTP search param",
+        "category": "Work",
+        "due_date": "2026-04-01",
+        "done": true,
+        "importance": null,
+        "id": "3e20ee32-7d32-4625-ab67-778ecc56d539",
+        "important": false,
+        "notes": null
+      },
+      {
+        "name": "Applied outing",
+        "category": "Social",
+        "due_date": "2026-04-18",
+        "done": false,
+        "importance": null,
+        "id": "e06091de-8f33-4275-973c-ce6f972f0b8a",
+        "important": false,
+        "notes": null
+      },
+      {
+        "name": "Charger back from Sindi",
+        "category": "Home",
+        "due_date": "2026-04-04",
+        "done": false,
+        "importance": null,
+        "id": "073a5ac9-565a-4b6c-bd8f-760550fb41fe",
+        "important": false,
+        "notes": null
+      },
+      {
+        "name": "Update talent",
+        "category": "Work",
+        "due_date": "2026-04-01",
+        "done": true,
+        "importance": null,
+        "id": "127542c5-db10-49e8-95e3-28aaf579b6d5",
+        "important": false,
+        "notes": null
+      },
+      {
+        "name": "AI tracking video",
+        "category": "My work",
+        "due_date": "2026-04-02",
+        "done": false,
+        "importance": null,
+        "id": "08ddb2d3-42f4-4e48-b0ef-e327ed31b712",
+        "important": false,
+        "notes": "Actual claude (design, interaction)"
+      },
+      {
+        "name": "AI tracking video",
+        "category": "My work",
+        "due_date": "2026-04-03",
+        "done": false,
+        "importance": null,
+        "id": "4a3757e6-a91c-4ff5-84d2-287f5db5da6f",
+        "important": false,
+        "notes": "Script ready"
       }
     ],
     "shopping_list": [
@@ -3639,18 +3729,18 @@
         "done": true
       },
       {
-        "id": "0a2c2e2d-431e-4d23-bfc7-3423d57ea142",
-        "title": "AI tracking video",
-        "day_date": "2026-04-02",
-        "start_time": "14:30:00",
-        "duration_minutes": 135,
-        "category": "My work",
-        "created_at": "2026-03-30T21:54:40.065612+00:00",
-        "start_minutes": 750,
-        "task_id": "4a3757e6-a91c-4ff5-84d2-287f5db5da6f",
+        "id": "3b641c0b-f8c9-490c-bbcd-2d73d4b7ba43",
+        "title": "Drill down icons",
+        "day_date": "2026-04-01",
+        "start_time": "13:15:00",
+        "duration_minutes": 105,
+        "category": "Home",
+        "created_at": "2026-04-01T19:05:35.038208+00:00",
+        "start_minutes": 795,
+        "task_id": "3a9283db-1179-4b96-b56c-206e5e88d91c",
         "rec_id": null,
         "shop_id": null,
-        "done": false
+        "done": true
       },
       {
         "id": "ff5629af-2c03-408f-a8e9-f8e912ccee74",
@@ -3709,6 +3799,20 @@
         "done": true
       },
       {
+        "id": "3617324b-f8b9-4e9b-b076-74b1ea01b86b",
+        "title": "Oria @7 something",
+        "day_date": "2026-04-02",
+        "start_time": "18:45:00",
+        "duration_minutes": 120,
+        "category": "Social",
+        "created_at": "2026-04-01T13:14:38.346646+00:00",
+        "start_minutes": 1110,
+        "task_id": "8898968d-a050-4958-af74-a8b64919ed86",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
         "id": "24c1dc37-a576-4aa2-839b-bb0684a297b9",
         "title": "Shower",
         "day_date": "2026-03-31",
@@ -3723,15 +3827,57 @@
         "done": true
       },
       {
-        "id": "cb28e1df-bd7c-4e44-a4cf-183d18998812",
-        "title": "Hide yellow video",
+        "id": "5ec35dcd-dd0b-4a32-a9e1-7b60a3643f17",
+        "title": "Update talent",
         "day_date": "2026-04-01",
-        "start_time": "08:30:00",
+        "start_time": "12:15:00",
+        "duration_minutes": 30,
+        "category": "Home",
+        "created_at": "2026-04-01T13:32:58.793273+00:00",
+        "start_minutes": 750,
+        "task_id": "127542c5-db10-49e8-95e3-28aaf579b6d5",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
+        "id": "48c21306-a0b4-4ee0-869e-a8f6b0eb76fc",
+        "title": "Drill down - sets vs parameters",
+        "day_date": "2026-04-01",
+        "start_time": "09:45:00",
         "duration_minutes": 60,
         "category": "My work",
-        "created_at": "2026-03-31T19:58:02.179158+00:00",
-        "start_minutes": 525,
-        "task_id": "be152879-a757-4f11-88b6-476cf6231453",
+        "created_at": "2026-04-01T15:01:30.915849+00:00",
+        "start_minutes": 555,
+        "task_id": "84cff1a2-7f2a-45b1-ada6-b27f7f786c39",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
+        "id": "5c6d3761-f622-4de2-8dd8-2b8db7f42f8f",
+        "title": "Six sigma training",
+        "day_date": "2026-04-01",
+        "start_time": "08:15:00",
+        "duration_minutes": 45,
+        "category": "Home",
+        "created_at": "2026-04-01T15:02:19.508014+00:00",
+        "start_minutes": 480,
+        "task_id": "8da482fa-9f55-424b-8aa9-44ac660b2b5a",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
+        "id": "ba9b3829-434b-440f-a45d-fcfc9d0c14af",
+        "title": "Read carolean project",
+        "day_date": "2026-04-02",
+        "start_time": "13:15:00",
+        "duration_minutes": 120,
+        "category": "Work",
+        "created_at": "2026-04-01T19:55:39.804138+00:00",
+        "start_minutes": 735,
+        "task_id": "2c345cad-1059-40e9-adc2-6e7700e10ac7",
         "rec_id": null,
         "shop_id": null,
         "done": false
@@ -3819,6 +3965,20 @@
         "rec_id": null,
         "shop_id": null,
         "done": true
+      },
+      {
+        "id": "af3aa298-4db3-461c-928a-ec72890c356b",
+        "title": "TC 26 announcment",
+        "day_date": "2026-04-02",
+        "start_time": "11:00:00",
+        "duration_minutes": 30,
+        "category": "My work",
+        "created_at": "2026-04-02T12:59:03.039266+00:00",
+        "start_minutes": 660,
+        "task_id": "95b66b6c-32a1-4d3c-89f5-c6b470747292",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
       },
       {
         "id": "fb7d741c-3689-4e42-aad4-5f5da4408f23",
@@ -4255,32 +4415,18 @@
         "done": false
       },
       {
-        "id": "30a0b85e-5a0e-4b56-9e73-56fd03434eb1",
-        "title": "AI tracking video",
+        "id": "72b7ada6-5022-4f28-8904-41ced4f59145",
+        "title": "TC 26: Design interface icons",
         "day_date": "2026-04-01",
-        "start_time": "12:45:00",
-        "duration_minutes": 150,
+        "start_time": "15:45:00",
+        "duration_minutes": 90,
         "category": "My work",
-        "created_at": "2026-03-30T21:54:33.001861+00:00",
-        "start_minutes": 750,
-        "task_id": "08ddb2d3-42f4-4e48-b0ef-e327ed31b712",
+        "created_at": "2026-04-01T15:01:37.091534+00:00",
+        "start_minutes": 900,
+        "task_id": "ad67dc5f-e17b-4753-9112-8a3aac82ca3e",
         "rec_id": null,
         "shop_id": null,
-        "done": false
-      },
-      {
-        "id": "35da4e43-1577-41a2-8ce5-3ad9288f98b9",
-        "title": "AI tracking video",
-        "day_date": "2026-04-03",
-        "start_time": "08:30:00",
-        "duration_minutes": 105,
-        "category": "My work",
-        "created_at": "2026-03-30T21:54:48.83204+00:00",
-        "start_minutes": 510,
-        "task_id": "d895f994-cf48-4ab3-95f9-1ffd706914b7",
-        "rec_id": null,
-        "shop_id": null,
-        "done": false
+        "done": true
       },
       {
         "id": "964e8968-52c1-44d7-8ce0-21b68770a7d7",
@@ -4325,6 +4471,20 @@
         "done": true
       },
       {
+        "id": "17ae2d7c-7e7b-4696-b2d0-eb4ba09a4345",
+        "title": "Respond comments",
+        "day_date": "2026-04-01",
+        "start_time": "07:30:00",
+        "duration_minutes": 30,
+        "category": "Home",
+        "created_at": "2026-04-01T00:21:25.018607+00:00",
+        "start_minutes": 450,
+        "task_id": "73baa1f4-cf58-4bcd-a871-b0c4bddba5de",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
         "id": "1a782c6a-8ba3-49dc-8974-6f51f73998a7",
         "title": "TC 26: Design interface icons",
         "day_date": "2026-03-31",
@@ -4339,29 +4499,57 @@
         "done": true
       },
       {
-        "id": "17ae2d7c-7e7b-4696-b2d0-eb4ba09a4345",
-        "title": "Respond comments",
-        "day_date": "2026-04-01",
-        "start_time": "07:30:00",
-        "duration_minutes": 30,
-        "category": "Home",
-        "created_at": "2026-04-01T00:21:25.018607+00:00",
-        "start_minutes": 450,
-        "task_id": "73baa1f4-cf58-4bcd-a871-b0c4bddba5de",
+        "id": "63a8b993-ef61-4522-865f-3d5d9463f9e5",
+        "title": "Friends workout",
+        "day_date": "2026-04-03",
+        "start_time": "11:00:00",
+        "duration_minutes": 120,
+        "category": "Social",
+        "created_at": "2026-04-01T13:14:46.558439+00:00",
+        "start_minutes": 660,
+        "task_id": "5b558157-40ed-47c6-a75d-e7710e461bf9",
         "rec_id": null,
         "shop_id": null,
         "done": false
       },
       {
-        "id": "6ec1b7ab-8290-45e2-aa7a-44e4d945038e",
-        "title": "TC 26 announcment",
+        "id": "c97ee3e1-dd3e-496a-8e76-cbf748341f70",
+        "title": "Update dashboard",
         "day_date": "2026-04-01",
-        "start_time": "07:30:00",
+        "start_time": "08:45:00",
         "duration_minutes": 30,
+        "category": "Home",
+        "created_at": "2026-04-01T13:33:36.534518+00:00",
+        "start_minutes": 525,
+        "task_id": "e0640d75-a4c1-4f9c-801f-7877a8d8c8ab",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
+        "id": "a23ec6c0-62c6-4d3e-b41d-5954a8e2a7b7",
+        "title": "DTP search param",
+        "day_date": "2026-04-01",
+        "start_time": "10:30:00",
+        "duration_minutes": 45,
+        "category": "Home",
+        "created_at": "2026-04-01T16:46:49.876288+00:00",
+        "start_minutes": 615,
+        "task_id": "3e20ee32-7d32-4625-ab67-778ecc56d539",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
+        "id": "a2af722a-453c-4a53-900b-dff9763541f1",
+        "title": "Hide yellow video",
+        "day_date": "2026-04-02",
+        "start_time": "08:30:00",
+        "duration_minutes": 105,
         "category": "My work",
-        "created_at": "2026-04-01T00:00:47.130119+00:00",
-        "start_minutes": 480,
-        "task_id": "95b66b6c-32a1-4d3c-89f5-c6b470747292",
+        "created_at": "2026-04-01T19:55:31.116511+00:00",
+        "start_minutes": 510,
+        "task_id": "be152879-a757-4f11-88b6-476cf6231453",
         "rec_id": null,
         "shop_id": null,
         "done": false
