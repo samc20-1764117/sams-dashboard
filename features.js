@@ -760,7 +760,7 @@ function scrollMoToday(){
   const mdowH=mdow?mdow.offsetHeight:0;
   let top=0,el=tc;
   while(el&&el!==mgrid){top+=el.offsetTop;el=el.offsetParent;}
-  mgrid.scrollTop=top-mdowH-63;
+  mgrid.scrollTop=top-mdowH-64;
 }
 function moGoToday(){
   _moNavYear=new Date().getFullYear();const yrSel2=document.getElementById('moYearSel');if(yrSel2)yrSel2.value=String(_moNavYear);

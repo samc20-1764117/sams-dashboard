@@ -142,11 +142,11 @@ Two-col grid: WR left (`#rt-wr-*`), non-WR right (`#rt-sch-*`). 4 cadence groups
 - New rules appear instantly: `saveWrRuleAdd` calls `renderWeeklyPage()` after add, after POST, and in undo.
 
 ### Monthly Calendar (`features.js`, `#mModal`)
-`renderMoCal`: 34 weeks (8 past+26 future). Month seps: `.mo-sep`. Open: `scrollMoToday()` BEFORE `.open`, then `requestAnimationFrame(()=>modal.classList.add('open'))`. GPU: `backdrop-filter:none` on `#mModal`/`#recMoModal`. Orbs paused: `bg.classList.add('orbs-paused')`. `#mCells` uses `grid-template-columns:repeat(7,1fr)`. `.mcell` has `min-width:0`.
+`renderMoCal`: fixed range Jan 1 (curYr-3) → Dec 31 (curYr+2), ~314 weeks. No year filtering — `_moNavYear` (min 2026, default current year) is navigation-only. Month seps: `.mo-sep`. Open: `scrollMoToday()` BEFORE `.open`, then `requestAnimationFrame(()=>modal.classList.add('open'))`. `scrollMoToday` uses offsetParent chain traversal (`while el!==mgrid`) with offset `-mdowH-64`. GPU: `backdrop-filter:none` on `#mModal`/`#recMoModal`. Orbs paused: `bg.classList.add('orbs-paused')`. `#mCells` uses `grid-template-columns:repeat(7,1fr)`. `.mcell` has `min-width:0`.
 
 Non-WR in monthly cal: `_moRecMap` precomputed before cell loop via `getRecurringWeekTasks(wkOff)` per week, mapped by `due_date`.
 
-Chip: `[checkbox][text][chip-del]`. Travel: no checkbox, span spacer for continuations. `margin-left:-13px;width:calc(100%+Npx)` bridges gap. `dsToWkKey(ds)` not `getWkKey(wkOff)`. `renderAll()`→`renderMoCal()` if open. Year dropdown `#moYearSel`→`jumpMoYear(yr)`.
+Chip: `[checkbox][text][chip-del]`. Travel: no checkbox, span spacer for continuations. `margin-left:-13px;width:calc(100%+Npx)` bridges gap. `dsToWkKey(ds)` not `getWkKey(wkOff)`. `renderAll()`→`renderMoCal()` if open. Year picker `#moYearSel` (input, min 2026): `◀/▶` via `moYearStep(dir)`, type+Enter calls `jumpMoYear(yr)` which scrolls to that year's first `.mo-sep`. `moGoToday()` resets year input to current year and calls `scrollMoToday()`.
 
 ### Recurring Monthly View (`overview.js`, `#recMoModal`)
 Opens via "Month" in WR card header. Same GPU/orb-pause rules as `#mModal`.
