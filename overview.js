@@ -1212,13 +1212,6 @@ function renderRecOv(){
     nm.textContent=r._displayName;
     row.appendChild(nm);
     const hasDot=r._movedIn||r._edited;
-    if(hasDot){
-      const dot=document.createElement('span');
-      const isMove=r._movedIn;
-      dot.style.cssText='width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-left:auto;background:'+(isMove?'#5a8cff':'#e8a020');
-      dot.title=isMove?'Moved this week':'Edited this week';
-      row.appendChild(dot);
-    }
     const del=document.createElement('button');
     del.className='delbtn';del.textContent='✕';del.title='Remove…';
     del.addEventListener('mousedown',e=>e.stopPropagation());
@@ -1235,9 +1228,15 @@ function renderRecOv(){
     const wrBadgeLetter=(r.cadence&&r.cadence!=='weekly')&&_WR_CAD_BADGE[r.cadence];
     if(wrBadgeLetter){
       const bdg=document.createElement('span');
-      bdg.className='wr-cad-badge';
+      bdg.className='wr-cad-badge'+(hasDot?' changed':'');
+      bdg.title=hasDot?(r._movedIn?'Moved this week':'Edited this week'):'';
       bdg.textContent=wrBadgeLetter;
       row.appendChild(bdg);
+    } else if(hasDot){
+      const dot=document.createElement('span');
+      dot.className='wr-dot';
+      dot.title=r._movedIn?'Moved this week':'Edited this week';
+      row.appendChild(dot);
     }
     row.appendChild(del);
     if(elReg)elReg.appendChild(row);
