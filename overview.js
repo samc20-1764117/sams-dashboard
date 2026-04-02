@@ -1159,9 +1159,10 @@ function renderRecOv(){
   const _rb=document.getElementById('recBadge');if(_rb)_rb.textContent=items.length-doneCount;
   const elReg=document.getElementById('recList');if(elReg)elReg.innerHTML='';
   function recOvOrder(r){
-    if(r.pup_related===true||r.pup_related==='true')return 10;
+    const isPup=r.pup_related===true||r.pup_related==='true';
     const c=r.cadence||'weekly';
-    return c==='weekly'?0:c==='biweekly'?1:c==='monthly'?2:c==='quarterly'?3:c==='biannual'?4:c==='annual'?5:6;
+    const cadOrd=c==='weekly'?0:c==='biweekly'?2:c==='monthly'?4:c==='quarterly'?6:c==='biannual'?8:c==='annual'?10:12;
+    return cadOrd+(isPup?1:0);
   }
   const sorted=[...items].sort((a,b)=>{
     const aDone=isDoneWR(a.id),bDone=isDoneWR(b.id);

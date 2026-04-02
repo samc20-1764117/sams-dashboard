@@ -2089,7 +2089,7 @@ function applySelHighlight(){
   function csForId(id){
     if(!id)return null;
     if(id.startsWith('tv-'))return gc('travel');
-    if(id.startsWith('wrrule-'))return gc('recurring');
+    if(id.startsWith('wrrule-'))return gc('weekly_reset');
     if(id.startsWith('wrec-')){const r=st.recurring.find(x=>String(x.id)===id.replace('wrec-',''));return gc(r&&(r.is_weekly_reset===true||r.is_weekly_reset==='true')?'weekly_reset':'recurring');}
     if(id.startsWith('rec-virt-'))return gc('recurring');
     if(id.startsWith('shop-cal-'))return gc('shopping');
