@@ -76,7 +76,7 @@ body.dark .ch-prog-bar{background:rgba(255,255,255,.08);}
 body.dark .dark-toggle{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.12);color:var(--text);}
 body.dark .dark-toggle:hover{background:rgba(255,255,255,.14);}
 /* Settings button + popup */
-.settings-btn{display:flex;align-items:center;justify-content:center;font-family:'DM Sans',sans-serif;font-size:12px;background:rgba(255,255,255,.65);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.7);border-radius:20px;padding:4px 8px;cursor:pointer;transition:all .15s;box-shadow:0 2px 8px rgba(0,0,0,.06);color:var(--muted);line-height:1;}
+.settings-btn{display:flex;align-items:center;justify-content:center;min-width:0;font-family:'DM Sans',sans-serif;font-size:12px;background:rgba(255,255,255,.65);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.7);border-radius:20px;padding:4px 8px;cursor:pointer;transition:all .15s;box-shadow:0 2px 8px rgba(0,0,0,.06);color:var(--muted);line-height:1;}
 .settings-btn:hover{background:rgba(255,255,255,.85);box-shadow:0 3px 12px rgba(0,0,0,.1);}
 body.dark .settings-btn{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.12);color:var(--text);}
 body.dark .settings-btn:hover{background:rgba(255,255,255,.14);}
@@ -766,7 +766,7 @@ html.init-sb .ov-topbar{left:186px!important;}
 <!-- Top-right controls: Sync + Settings -->
 <div class="top-right-controls">
   <button class="sync-bar settings-btn" id="syncBar" onclick="syncAll()" data-tip="Sync">
-    <svg id="syncIcon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path></svg>
+    <svg id="syncIcon" width="10" height="10" style="width:10px;height:10px;flex-shrink:0;display:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path></svg>
   </button>
   <button class="settings-btn" onclick="location.reload()" data-tip="Refresh">↻</button>
   <div style="position:relative">

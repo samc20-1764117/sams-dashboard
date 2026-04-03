@@ -1,5 +1,5 @@
 {
-  "exported_at": "2026-04-02T13:00:00.865Z",
+  "exported_at": "2026-04-03T13:00:01.006Z",
   "mode": "auto",
   "tables": {
     "tasks": [
@@ -934,6 +934,16 @@
         "notes": null
       },
       {
+        "name": "Unapplied cash",
+        "category": "Work",
+        "due_date": "2026-04-03",
+        "done": false,
+        "importance": null,
+        "id": "2cbb2dc6-3010-412f-a6c0-3a4fa0d10639",
+        "important": false,
+        "notes": null
+      },
+      {
         "name": "Friends workout",
         "category": "Social",
         "due_date": "2026-04-03",
@@ -944,13 +954,13 @@
         "notes": null
       },
       {
-        "name": "Start VO PM dash - needs to be finished 4/7",
+        "name": "TC 26 announcment",
         "category": "My work",
-        "due_date": "2026-04-04",
-        "done": false,
+        "due_date": "2026-04-02",
+        "done": true,
         "importance": null,
-        "id": "4143707c-d83e-47ce-a8cf-e3571586d772",
-        "important": false,
+        "id": "95b66b6c-32a1-4d3c-89f5-c6b470747292",
+        "important": true,
         "notes": null
       },
       {
@@ -964,22 +974,22 @@
         "notes": null
       },
       {
-        "name": "PM dash - finalize build",
-        "category": "My work",
-        "due_date": "2026-04-03",
-        "done": false,
-        "importance": null,
-        "id": "7141d74b-fa75-41e8-9e24-5663274000bd",
-        "important": true,
-        "notes": null
-      },
-      {
         "name": "Documentation - add pics",
         "category": "Work",
         "due_date": "2026-03-25",
         "done": true,
         "importance": null,
         "id": "68608c65-b75a-43e0-b70b-1bb2db3c826c",
+        "important": false,
+        "notes": null
+      },
+      {
+        "name": "TC 26: Design toggle icons",
+        "category": "My work",
+        "due_date": "2026-04-02",
+        "done": true,
+        "importance": null,
+        "id": "37582608-6923-4245-892b-433d1fea9e26",
         "important": false,
         "notes": null
       },
@@ -1024,14 +1034,14 @@
         "notes": null
       },
       {
-        "name": "TC 26: Design toggle icons",
+        "name": "AI tracking video",
         "category": "My work",
-        "due_date": "2026-04-02",
+        "due_date": "2026-04-04",
         "done": false,
         "importance": null,
-        "id": "37582608-6923-4245-892b-433d1fea9e26",
+        "id": "4a3757e6-a91c-4ff5-84d2-287f5db5da6f",
         "important": false,
-        "notes": null
+        "notes": "Script ready"
       },
       {
         "name": "Shower",
@@ -1144,16 +1154,6 @@
         "notes": null
       },
       {
-        "name": "Call Nai Nai",
-        "category": "Home",
-        "due_date": "2026-04-02",
-        "done": false,
-        "importance": null,
-        "id": "d376f4e0-151f-4ce4-a4d2-6216c98403b3",
-        "important": false,
-        "notes": null
-      },
-      {
         "name": "EDP migration changes",
         "category": "Work",
         "due_date": "2026-03-27",
@@ -1234,12 +1234,12 @@
         "notes": null
       },
       {
-        "name": "TC 26: Menu nav",
+        "name": "Start VO PM dash - needs to be finished 4/7",
         "category": "My work",
-        "due_date": "2026-04-02",
+        "due_date": "2026-04-05",
         "done": false,
         "importance": null,
-        "id": "ec9bc8bd-78b7-4900-bf86-a892b4717a19",
+        "id": "4143707c-d83e-47ce-a8cf-e3571586d772",
         "important": false,
         "notes": null
       },
@@ -1254,14 +1254,14 @@
         "notes": null
       },
       {
-        "name": "TC 26: Filter controls logic",
+        "name": "AI tracking video",
         "category": "My work",
-        "due_date": "2026-04-02",
+        "due_date": "2026-04-03",
         "done": false,
         "importance": null,
-        "id": "98020438-6010-49c4-ab39-40cb012e6ed1",
+        "id": "08ddb2d3-42f4-4e48-b0ef-e327ed31b712",
         "important": false,
-        "notes": null
+        "notes": "Actual claude (design, interaction)"
       },
       {
         "name": "Drill down icons",
@@ -1270,16 +1270,6 @@
         "done": true,
         "importance": null,
         "id": "3a9283db-1179-4b96-b56c-206e5e88d91c",
-        "important": false,
-        "notes": null
-      },
-      {
-        "name": "Oria @7 something",
-        "category": "Social",
-        "due_date": "2026-04-02",
-        "done": false,
-        "importance": null,
-        "id": "8898968d-a050-4958-af74-a8b64919ed86",
         "important": false,
         "notes": null
       },
@@ -1344,13 +1334,23 @@
         "notes": null
       },
       {
-        "name": "Hide yellow video",
+        "name": "TC 26: Menu nav",
         "category": "My work",
         "due_date": "2026-04-02",
+        "done": true,
+        "importance": null,
+        "id": "ec9bc8bd-78b7-4900-bf86-a892b4717a19",
+        "important": false,
+        "notes": null
+      },
+      {
+        "name": "Hide yellow video",
+        "category": "My work",
+        "due_date": "2026-04-03",
         "done": false,
         "importance": null,
         "id": "be152879-a757-4f11-88b6-476cf6231453",
-        "important": false,
+        "important": true,
         "notes": null
       },
       {
@@ -1360,6 +1360,16 @@
         "done": true,
         "importance": null,
         "id": "ad67dc5f-e17b-4753-9112-8a3aac82ca3e",
+        "important": false,
+        "notes": null
+      },
+      {
+        "name": "TC 26: Filter controls logic",
+        "category": "My work",
+        "due_date": "2026-04-02",
+        "done": true,
+        "importance": null,
+        "id": "98020438-6010-49c4-ab39-40cb012e6ed1",
         "important": false,
         "notes": null
       },
@@ -1414,23 +1424,13 @@
         "notes": null
       },
       {
-        "name": "Read carolean project",
-        "category": "Work",
-        "due_date": "2026-04-02",
+        "name": "Call Nai Nai",
+        "category": "Home",
+        "due_date": "2026-04-04",
         "done": false,
         "importance": null,
-        "id": "2c345cad-1059-40e9-adc2-6e7700e10ac7",
+        "id": "d376f4e0-151f-4ce4-a4d2-6216c98403b3",
         "important": false,
-        "notes": null
-      },
-      {
-        "name": "TC 26 announcment",
-        "category": "My work",
-        "due_date": "2026-04-02",
-        "done": false,
-        "importance": null,
-        "id": "95b66b6c-32a1-4d3c-89f5-c6b470747292",
-        "important": true,
         "notes": null
       },
       {
@@ -1474,24 +1474,34 @@
         "notes": null
       },
       {
-        "name": "AI tracking video",
+        "name": "PM dash - finalize build",
         "category": "My work",
-        "due_date": "2026-04-02",
+        "due_date": "2026-04-04",
         "done": false,
         "importance": null,
-        "id": "08ddb2d3-42f4-4e48-b0ef-e327ed31b712",
+        "id": "7141d74b-fa75-41e8-9e24-5663274000bd",
         "important": false,
-        "notes": "Actual claude (design, interaction)"
+        "notes": null
       },
       {
-        "name": "AI tracking video",
-        "category": "My work",
-        "due_date": "2026-04-03",
-        "done": false,
+        "name": "Unapplied cash",
+        "category": "Work",
+        "due_date": "2026-04-02",
+        "done": true,
         "importance": null,
-        "id": "4a3757e6-a91c-4ff5-84d2-287f5db5da6f",
+        "id": "2c345cad-1059-40e9-adc2-6e7700e10ac7",
         "important": false,
-        "notes": "Script ready"
+        "notes": null
+      },
+      {
+        "name": "Oria @7 something",
+        "category": "Social",
+        "due_date": "2026-04-02",
+        "done": true,
+        "importance": null,
+        "id": "8898968d-a050-4958-af74-a8b64919ed86",
+        "important": false,
+        "notes": null
       }
     ],
     "shopping_list": [
@@ -3799,20 +3809,6 @@
         "done": true
       },
       {
-        "id": "3617324b-f8b9-4e9b-b076-74b1ea01b86b",
-        "title": "Oria @7 something",
-        "day_date": "2026-04-02",
-        "start_time": "18:45:00",
-        "duration_minutes": 120,
-        "category": "Social",
-        "created_at": "2026-04-01T13:14:38.346646+00:00",
-        "start_minutes": 1110,
-        "task_id": "8898968d-a050-4958-af74-a8b64919ed86",
-        "rec_id": null,
-        "shop_id": null,
-        "done": false
-      },
-      {
         "id": "24c1dc37-a576-4aa2-839b-bb0684a297b9",
         "title": "Shower",
         "day_date": "2026-03-31",
@@ -3873,14 +3869,42 @@
         "title": "Read carolean project",
         "day_date": "2026-04-02",
         "start_time": "13:15:00",
-        "duration_minutes": 120,
+        "duration_minutes": 90,
         "category": "Work",
         "created_at": "2026-04-01T19:55:39.804138+00:00",
-        "start_minutes": 735,
+        "start_minutes": 570,
         "task_id": "2c345cad-1059-40e9-adc2-6e7700e10ac7",
         "rec_id": null,
         "shop_id": null,
+        "done": true
+      },
+      {
+        "id": "de3be79f-3eaf-48e3-84c3-ba65c6ed0e39",
+        "title": "Hide yellow video",
+        "day_date": "2026-04-03",
+        "start_time": "13:30:00",
+        "duration_minutes": 90,
+        "category": "My work",
+        "created_at": "2026-04-02T23:30:31.809569+00:00",
+        "start_minutes": 780,
+        "task_id": "be152879-a757-4f11-88b6-476cf6231453",
+        "rec_id": null,
+        "shop_id": null,
         "done": false
+      },
+      {
+        "id": "3617324b-f8b9-4e9b-b076-74b1ea01b86b",
+        "title": "Oria @7 something",
+        "day_date": "2026-04-02",
+        "start_time": "18:45:00",
+        "duration_minutes": 120,
+        "category": "Social",
+        "created_at": "2026-04-01T13:14:38.346646+00:00",
+        "start_minutes": 1155,
+        "task_id": "8898968d-a050-4958-af74-a8b64919ed86",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
       },
       {
         "id": "05beb949-7ee7-4de0-a00a-a3cfcdf39275",
@@ -3965,20 +3989,6 @@
         "rec_id": null,
         "shop_id": null,
         "done": true
-      },
-      {
-        "id": "af3aa298-4db3-461c-928a-ec72890c356b",
-        "title": "TC 26 announcment",
-        "day_date": "2026-04-02",
-        "start_time": "11:00:00",
-        "duration_minutes": 30,
-        "category": "My work",
-        "created_at": "2026-04-02T12:59:03.039266+00:00",
-        "start_minutes": 660,
-        "task_id": "95b66b6c-32a1-4d3c-89f5-c6b470747292",
-        "rec_id": null,
-        "shop_id": null,
-        "done": false
       },
       {
         "id": "fb7d741c-3689-4e42-aad4-5f5da4408f23",
@@ -4317,20 +4327,6 @@
         "done": true
       },
       {
-        "id": "b1b4927f-7771-4222-9ae4-16b03a239b66",
-        "title": "PM dash - finalize build",
-        "day_date": "2026-04-03",
-        "start_time": "08:00:00",
-        "duration_minutes": 30,
-        "category": "My work",
-        "created_at": "2026-03-30T21:55:01.699199+00:00",
-        "start_minutes": 480,
-        "task_id": "7141d74b-fa75-41e8-9e24-5663274000bd",
-        "rec_id": null,
-        "shop_id": null,
-        "done": false
-      },
-      {
         "id": "e9daa85b-e2d3-4b21-b1c8-048f4c4d2594",
         "title": "Refill caffiene",
         "day_date": "2026-03-26",
@@ -4541,15 +4537,29 @@
         "done": true
       },
       {
-        "id": "a2af722a-453c-4a53-900b-dff9763541f1",
-        "title": "Hide yellow video",
+        "id": "af3aa298-4db3-461c-928a-ec72890c356b",
+        "title": "TC 26 announcment",
         "day_date": "2026-04-02",
-        "start_time": "08:30:00",
-        "duration_minutes": 105,
+        "start_time": "11:00:00",
+        "duration_minutes": 30,
         "category": "My work",
-        "created_at": "2026-04-01T19:55:31.116511+00:00",
-        "start_minutes": 510,
-        "task_id": "be152879-a757-4f11-88b6-476cf6231453",
+        "created_at": "2026-04-02T12:59:03.039266+00:00",
+        "start_minutes": 990,
+        "task_id": "95b66b6c-32a1-4d3c-89f5-c6b470747292",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
+        "id": "8ab4e0ad-648d-4a93-abcd-42ea4724732b",
+        "title": "Unapplied cash",
+        "day_date": "2026-04-03",
+        "start_time": "08:30:00",
+        "duration_minutes": 210,
+        "category": "Work",
+        "created_at": "2026-04-02T23:29:28.735077+00:00",
+        "start_minutes": 450,
+        "task_id": "2cbb2dc6-3010-412f-a6c0-3a4fa0d10639",
         "rec_id": null,
         "shop_id": null,
         "done": false
