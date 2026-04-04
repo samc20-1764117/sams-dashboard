@@ -2069,8 +2069,8 @@ function getVisibleBlocks(ds){
       const r=st.wrRules.find(x=>String(x.id)===String(b.ruleId));
       if(!r)return false;
     } else {
-      const t=st.tasks.find(x=>x.name===b.title);
-      if(t){const tds=(t.due_date||'').split('T')[0];if(tds&&tds!==ds&&!(isViewingToday&&isOv(t.due_date)&&!t.done))return false;}
+      const t=st.tasks.find(x=>x.name===b.title&&!x.done);
+      if(t){const tds=(t.due_date||'').split('T')[0];if(tds&&tds!==ds&&!(isViewingToday&&isOv(t.due_date)))return false;}
     }
     return true;
   });
