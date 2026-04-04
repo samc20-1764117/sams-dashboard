@@ -157,7 +157,7 @@ async function sbSaveBlock(b){
     const r=await fetch(`${cfg.url}/rest/v1/time_blocks?on_conflict=id`,{
       method:'POST',
       headers:{
-        'apikey':cfg.key,'Authorization':`Bearer ${cfg.key}`,
+        'apikey':cfg.key,'Authorization':`Bearer ${_getAuthToken()}`,
         'Content-Type':'application/json',
         'Prefer':'resolution=merge-duplicates,return=representation'
       },
@@ -169,14 +169,14 @@ async function sbSaveBlock(b){
 async function sbDeleteBlock(id){
   if(!cfg.url||!cfg.key)return;
   try{
-    const r=await fetch(`${cfg.url}/rest/v1/time_blocks?id=eq.${id}`,{method:'DELETE',headers:{'apikey':cfg.key,'Authorization':`Bearer ${cfg.key}`,'Prefer':'return=minimal'}});
+    const r=await fetch(`${cfg.url}/rest/v1/time_blocks?id=eq.${id}`,{method:'DELETE',headers:{'apikey':cfg.key,'Authorization':`Bearer ${_getAuthToken()}`,'Prefer':'return=minimal'}});
     if(!r.ok){const t=await r.text();console.error('sbDeleteBlock error',r.status,t);}
   }catch(e){console.error('sbDeleteBlock error',e);}
 }
 async function sbUpdateBlock(id,fields){
   if(!cfg.url||!cfg.key)return;
   try{
-    const r=await fetch(`${cfg.url}/rest/v1/time_blocks?id=eq.${id}`,{method:'PATCH',headers:{'apikey':cfg.key,'Authorization':`Bearer ${cfg.key}`,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify(fields)});
+    const r=await fetch(`${cfg.url}/rest/v1/time_blocks?id=eq.${id}`,{method:'PATCH',headers:{'apikey':cfg.key,'Authorization':`Bearer ${_getAuthToken()}`,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify(fields)});
     if(!r.ok){const t=await r.text();console.error('sbUpdateBlock error',r.status,t);}
   }catch(e){console.error('sbUpdateBlock error',e);}
 }
