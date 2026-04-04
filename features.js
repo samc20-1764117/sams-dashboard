@@ -2703,6 +2703,10 @@ function getOvRecurring(){
   // Overdue recurring virtual tasks — check current + past 4 weeks
   const today=tod();
   const seen=new Set();
+  // Separate "handled" sets for WR types: once a rule/rec is encountered in any week
+  // (even if not overdue, e.g. already moved to today), stop checking older weeks for it
+  const wrRuleHandled=new Set();
+  const wrRecHandled=new Set();
   const out=[];
   for(let w=0;w>=wkOff-4;w--){
     getRecurringWeekTasks(w).forEach(v=>{
@@ -2714,9 +2718,16 @@ function getOvRecurring(){
       if(!v.done&&v.due_date<today){out.push(v);}
     });
     // Weekly reset tasks: check all past-week overrides
-    {const wkKey=getWkKey(w);st.recurring.filter(r=>(r.is_weekly_reset===true||r.is_weekly_reset==='true')&&!(r._doneByWk&&r._doneByWk[wkKey])&&r._dateOverrides&&r._dateOverrides[wkKey]&&r._dateOverrides[wkKey]!=='__skip__'&&r._dateOverrides[wkKey]<today&&!seen.has('wrec-'+r.id)).forEach(r=>{seen.add('wrec-'+r.id);out.push({id:'rec-virt-'+r.id,name:r.name,category:'Recurring',due_date:r._dateOverrides[wkKey],done:false,_recId:r.id,_virtual:true,_wkKey:wkKey,_isWrec:true});});
+    {const wkKey=getWkKey(w);
+    st.recurring.filter(r=>(r.is_weekly_reset===true||r.is_weekly_reset==='true')&&r._dateOverrides&&r._dateOverrides[wkKey]&&r._dateOverrides[wkKey]!=='__skip__'&&!wrRecHandled.has(String(r.id))).forEach(r=>{
+      wrRecHandled.add(String(r.id));// mark handled so older weeks don't fire
+      if(!(r._doneByWk&&r._doneByWk[wkKey])&&r._dateOverrides[wkKey]<today&&!seen.has('wrec-'+r.id)){seen.add('wrec-'+r.id);out.push({id:'rec-virt-'+r.id,name:r.name,category:'Recurring',due_date:r._dateOverrides[wkKey],done:false,_recId:r.id,_virtual:true,_wkKey:wkKey,_isWrec:true});}
+    });
     // WR rules: check all past-week overrides
-    st.wrRules.filter(r=>r._dateOverrides&&r._dateOverrides[wkKey]&&r._dateOverrides[wkKey]!=='__skip__'&&r._dateOverrides[wkKey]<today&&!isDoneWRRule(r.id,wkKey)&&!seen.has('wrrule-'+r.id)).forEach(r=>{seen.add('wrrule-'+r.id);out.push({id:'wrrule-virt-'+r.id,name:r.name,category:'Recurring',due_date:r._dateOverrides[wkKey],done:false,_ruleId:r.id,_virtual:true,_wkKey:wkKey,_isWrRule:true});});}
+    st.wrRules.filter(r=>r._dateOverrides&&r._dateOverrides[wkKey]&&r._dateOverrides[wkKey]!=='__skip__'&&!wrRuleHandled.has(String(r.id))).forEach(r=>{
+      wrRuleHandled.add(String(r.id));// mark handled so older weeks don't fire
+      if(!isDoneWRRule(r.id,wkKey)&&r._dateOverrides[wkKey]<today&&!seen.has('wrrule-'+r.id)){seen.add('wrrule-'+r.id);out.push({id:'wrrule-virt-'+r.id,name:r.name,category:'Recurring',due_date:r._dateOverrides[wkKey],done:false,_ruleId:r.id,_virtual:true,_wkKey:wkKey,_isWrRule:true});}
+    });}
   }
   return out;
 }
