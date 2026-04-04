@@ -47,24 +47,19 @@ function renderToday(){
       if(!allRecVirt.find(x=>x._recId===v._recId))allRecVirt.push(v);
     });
   }
-  // Weekly reset tasks pinned to today via _dateOverrides (current week only)
+  // Weekly reset tasks pinned to today/overdue via _dateOverrides (look back 4 weeks)
   const _wkKeyNow=getWkKey(wkOff);
-  const wrecToday=st.recurring
-    .filter(r=>(r.is_weekly_reset===true||r.is_weekly_reset==='true')&&!(r._doneByWk&&r._doneByWk[_wkKeyNow])&&r._dateOverrides&&(
-      r._dateOverrides[_wkKeyNow]===ds||(dayOff===0&&r._dateOverrides[_wkKeyNow]&&r._dateOverrides[_wkKeyNow]<ds)
-    ))
-    .map(r=>({id:'rec-virt-'+r.id,name:r.name,category:'Recurring',due_date:r._dateOverrides[_wkKeyNow],done:!!(r._doneByWk&&r._doneByWk[_wkKeyNow]),_recId:r.id,_virtual:true,_wkKey:_wkKeyNow,_isWrec:true}));
-  // New-style WR rules pinned to today via _dateOverrides
-  const wrRulesToday=st.wrRules.filter(r=>r._dateOverrides&&(
-    r._dateOverrides[_wkKeyNow]===ds||(dayOff===0&&r._dateOverrides[_wkKeyNow]&&r._dateOverrides[_wkKeyNow]<ds)
-  )&&!isDoneWRRule(r.id,_wkKeyNow))
-    .map(r=>({id:'wrrule-virt-'+r.id,name:r.name,category:'Recurring',due_date:r._dateOverrides[_wkKeyNow],done:false,_ruleId:r.id,_virtual:true,_wkKey:_wkKeyNow,_isWrRule:true}));
+  const _wrecSeen=new Set();const wrecToday=[];
+  for(let _w=0;_w>=wkOff-4;_w--){const _wkKey=getWkKey(_w);st.recurring.filter(r=>(r.is_weekly_reset===true||r.is_weekly_reset==='true')&&!(r._doneByWk&&r._doneByWk[_wkKey])&&r._dateOverrides&&r._dateOverrides[_wkKey]&&r._dateOverrides[_wkKey]!=='__skip__'&&(r._dateOverrides[_wkKey]===ds||(dayOff===0&&r._dateOverrides[_wkKey]<ds))&&!_wrecSeen.has(String(r.id))).forEach(r=>{_wrecSeen.add(String(r.id));wrecToday.push({id:'rec-virt-'+r.id,name:r.name,category:'Recurring',due_date:r._dateOverrides[_wkKey],done:false,_recId:r.id,_virtual:true,_wkKey:_wkKey,_isWrec:true});});}
+  // New-style WR rules pinned to today/overdue via _dateOverrides (look back 4 weeks)
+  const _wrRulesSeen=new Set();const wrRulesToday=[];
+  for(let _w=0;_w>=wkOff-4;_w--){const _wkKey=getWkKey(_w);st.wrRules.filter(r=>r._dateOverrides&&r._dateOverrides[_wkKey]&&r._dateOverrides[_wkKey]!=='__skip__'&&(r._dateOverrides[_wkKey]===ds||(dayOff===0&&r._dateOverrides[_wkKey]<ds))&&!isDoneWRRule(r.id,_wkKey)&&!_wrRulesSeen.has(String(r.id))).forEach(r=>{_wrRulesSeen.add(String(r.id));wrRulesToday.push({id:'wrrule-virt-'+r.id,name:r.name,category:'Recurring',due_date:r._dateOverrides[_wkKey],done:false,_ruleId:r.id,_virtual:true,_wkKey:_wkKey,_isWrRule:true});});}
   // Shopping items due today (or overdue when viewing today)
   const shopToday=st.shopping
     .filter(s=>!s.done&&s.due_date&&(s.due_date===ds||(dayOff===0&&isOv(s.due_date))))
     .map(s=>({id:'shop-cal-'+s.id,name:s.name,category:'Shopping',due_date:s.due_date,done:!!s.done,_shopId:s.id,_virtual:true,_type:'shop',store:s.store}));
   const virtToday=[
-    ...allRecVirt.filter(v=>{if(v.due_date===ds)return true;if(!(dayOff===0&&isOv(v.due_date)&&!v.done))return false;const _r=st.recurring.find(x=>String(x.id)===String(v._recId));const explicitlyPlaced=_r&&_r._dateOverrides&&_r._dateOverrides[v._wkKey]&&_r._dateOverrides[v._wkKey]!=='__skip__';return explicitlyPlaced||st.blocks.some(b=>String(b.recId)===String(v._recId));}),
+    ...allRecVirt.filter(v=>v.due_date===ds||(dayOff===0&&isOv(v.due_date)&&!v.done)),
     ...wrecToday,
     ...wrRulesToday,
     ...shopToday,

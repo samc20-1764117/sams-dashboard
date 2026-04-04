@@ -2701,14 +2701,10 @@ function getOvRecurring(){
       seen.add(v._recId);
       if(!v.done&&v.due_date<today){out.push(v);}
     });
-    // Weekly reset tasks: only check current week key (past-week overrides are stale, not overdue)
-    if(w===0){
-      const wkKey=getWkKey(w);
-      st.recurring.filter(r=>(r.is_weekly_reset===true||r.is_weekly_reset==='true')&&!(r._doneByWk&&r._doneByWk[wkKey])&&r._dateOverrides&&r._dateOverrides[wkKey]&&r._dateOverrides[wkKey]<today&&!seen.has('wrec-'+r.id+'-'+wkKey)).forEach(r=>{
-        seen.add('wrec-'+r.id+'-'+wkKey);
-        out.push({id:'rec-virt-'+r.id,name:r.name,category:'Recurring',due_date:r._dateOverrides[wkKey],done:false,_recId:r.id,_virtual:true,_wkKey:wkKey,_isWrec:true});
-      });
-    }
+    // Weekly reset tasks: check all past-week overrides
+    {const wkKey=getWkKey(w);st.recurring.filter(r=>(r.is_weekly_reset===true||r.is_weekly_reset==='true')&&!(r._doneByWk&&r._doneByWk[wkKey])&&r._dateOverrides&&r._dateOverrides[wkKey]&&r._dateOverrides[wkKey]!=='__skip__'&&r._dateOverrides[wkKey]<today&&!seen.has('wrec-'+r.id)).forEach(r=>{seen.add('wrec-'+r.id);out.push({id:'rec-virt-'+r.id,name:r.name,category:'Recurring',due_date:r._dateOverrides[wkKey],done:false,_recId:r.id,_virtual:true,_wkKey:wkKey,_isWrec:true});});
+    // WR rules: check all past-week overrides
+    st.wrRules.filter(r=>r._dateOverrides&&r._dateOverrides[wkKey]&&r._dateOverrides[wkKey]!=='__skip__'&&r._dateOverrides[wkKey]<today&&!isDoneWRRule(r.id,wkKey)&&!seen.has('wrrule-'+r.id)).forEach(r=>{seen.add('wrrule-'+r.id);out.push({id:'wrrule-virt-'+r.id,name:r.name,category:'Recurring',due_date:r._dateOverrides[wkKey],done:false,_ruleId:r.id,_virtual:true,_wkKey:wkKey,_isWrRule:true});});}
   }
   return out;
 }
@@ -2740,32 +2736,32 @@ async function rolloverOverdue(){
   const ovShop=getOvShopping();
   if(!ovTasks.length&&!ovRec.length&&!ovShop.length)return;
   const prevDates=ovTasks.map(t=>({id:String(t.id),date:t.due_date}));
-  const prevRecWkKeys=ovRec.map(v=>({recId:v._recId,wkKey:v._wkKey}));
+  const prevRecWkKeys=ovRec.map(v=>({recId:v._recId,ruleId:v._ruleId,wkKey:v._wkKey}));
   const prevShopDates=ovShop.map(s=>({id:String(s.id),date:s.due_date}));
   ovTasks.forEach(t=>{t.due_date=today;const sid=String(t.id);localOverrides[sid]={due_date:today};pendingLocal.add(sid);});
   ovRec.forEach(v=>{
-    const r=st.recurring.find(x=>String(x.id)===String(v._recId));
-    if(!r)return;
-    if(!r._dateOverrides)r._dateOverrides={};
-    r._dateOverrides[v._wkKey]=today;
+    if(v._ruleId){const r=st.wrRules.find(x=>String(x.id)===String(v._ruleId));if(!r)return;if(!r._dateOverrides)r._dateOverrides={};r._dateOverrides[v._wkKey]=today;}
+    else{const r=st.recurring.find(x=>String(x.id)===String(v._recId));if(!r)return;if(!r._dateOverrides)r._dateOverrides={};r._dateOverrides[v._wkKey]=today;}
   });
   ovShop.forEach(s=>{s.due_date=today;});
   renderAll();
   const total=ovTasks.length+ovRec.length+ovShop.length;
   pushUndo(()=>{
     prevDates.forEach(({id,date})=>{const t=st.tasks.find(x=>String(x.id)===id);if(t)t.due_date=date;});
-    prevRecWkKeys.forEach(({recId,wkKey})=>{const r=st.recurring.find(x=>String(x.id)===String(recId));if(r&&r._dateOverrides)delete r._dateOverrides[wkKey];});
+    prevRecWkKeys.forEach(({recId,ruleId,wkKey})=>{if(ruleId){const r=st.wrRules.find(x=>String(x.id)===String(ruleId));if(r&&r._dateOverrides)delete r._dateOverrides[wkKey];}else{const r=st.recurring.find(x=>String(x.id)===String(recId));if(r&&r._dateOverrides)delete r._dateOverrides[wkKey];}});
     prevShopDates.forEach(({id,date})=>{const s=st.shopping.find(x=>String(x.id)===id);if(s)s.due_date=date;});
     renderAll();
     prevDates.forEach(({id,date})=>sbReq('PATCH','tasks',{due_date:date},`?id=eq.${id}`));
     prevShopDates.forEach(({id,date})=>sbReqNullable('PATCH','shopping_list',{due_date:date||null},`?id=eq.${id}`));
   },'Rolled over '+total+' item'+(total>1?'s':''));
   save();
-  const recsToPatch=[...new Set(ovRec.map(v=>v._recId))];
+  const recsToPatch=[...new Set(ovRec.filter(v=>!v._ruleId).map(v=>v._recId))];
+  const rulesToPatch=[...new Set(ovRec.filter(v=>v._ruleId).map(v=>v._ruleId))];
   await Promise.all([
     ...ovTasks.map(t=>sbReq('PATCH','tasks',{due_date:today},`?id=eq.${t.id}`).then(()=>{const sid=String(t.id);delete localOverrides[sid];pendingLocal.delete(sid);})),
     ...ovShop.map(s=>sbReqNullable('PATCH','shopping_list',{due_date:today},`?id=eq.${s.id}`)),
-    ...recsToPatch.map(rid=>{const r=st.recurring.find(x=>String(x.id)===String(rid));return r?sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id)):Promise.resolve();})
+    ...recsToPatch.map(rid=>{const r=st.recurring.find(x=>String(x.id)===String(rid));return r?sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id)):Promise.resolve();}),
+    ...rulesToPatch.map(rid=>{const r=st.wrRules.find(x=>String(x.id)===String(rid));return r?sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id)):Promise.resolve();})
   ]);
 }
 
