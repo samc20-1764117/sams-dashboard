@@ -775,6 +775,7 @@ function doRedo(){
   _showRedoToast(msg||'Action');
 }
 document.addEventListener('keydown',e=>{
+  if((e.metaKey||e.ctrlKey)&&e.key==='a'){const _ael=document.activeElement;const _isInput=_ael&&(_ael.tagName==='INPUT'||_ael.tagName==='TEXTAREA');if(!_isInput)e.preventDefault();return;}
   if((e.metaKey||e.ctrlKey)&&e.key==='z'){
     const _ael=document.activeElement;
     const _isInput=_ael&&(_ael.tagName==='INPUT'||_ael.tagName==='TEXTAREA'||_ael.tagName==='SELECT');
