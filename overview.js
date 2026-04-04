@@ -1242,6 +1242,11 @@ function renderRecOv(){
     row.appendChild(del);
     if(elReg)elReg.appendChild(row);
   });
+  // Update skipped-this-week button
+  const _skippedWrecCount=st.recurring.filter(r=>(r.is_weekly_reset===true||r.is_weekly_reset==='true')&&r._dateOverrides&&r._dateOverrides[wkKey]==='__skip__').length;
+  const _skCount=skipIds.size+_skippedWrecCount;
+  const _skBtn=document.getElementById('wrSkippedBtn');
+  if(_skBtn){_skBtn.style.display=_skCount?'':'none';_skBtn.textContent='↩ '+_skCount;}
   requestAnimationFrame(applySelHighlight);
   if(document.getElementById('recMoModal')?.classList.contains('open'))renderRecMoCal();
 }
@@ -1332,6 +1337,53 @@ function wrScopeDoRemove(){hideWrScopePicker();if(_wrScopeCbRemove)_wrScopeCbRem
 function wrScopeDoThis(){hideWrScopePicker();if(_wrScopeCbThis)_wrScopeCbThis();}
 function wrScopeDoAll(){hideWrScopePicker();if(_wrScopeCbAll)_wrScopeCbAll();}
 document.addEventListener('mousedown',e=>{if(!e.target.closest('#wrScopePicker'))hideWrScopePicker();},{capture:true,passive:true});
+
+/// ── Skipped-this-week popup ───────────────────────────────────────────────────
+function openWrSkipped(e){
+  e.stopPropagation();
+  const wkKey=getWkKey(wrRecOff);
+  const skippedRules=st.wrRules.filter(r=>(st.wrOverrides||[]).some(o=>String(o.rule_id)===String(r.id)&&o.wk_key===wkKey&&o.override_type==='skip'));
+  const skippedWrec=st.recurring.filter(r=>(r.is_weekly_reset===true||r.is_weekly_reset==='true')&&r._dateOverrides&&r._dateOverrides[wkKey]==='__skip__');
+  const picker=document.getElementById('wrSkippedPicker');if(!picker)return;
+  picker.innerHTML='';
+  if(!skippedRules.length&&!skippedWrec.length){picker.style.display='none';return;}
+  const hdr=document.createElement('div');
+  hdr.style.cssText='padding:4px 10px 4px;font-size:10px;color:var(--muted);font-weight:600;letter-spacing:.05em;border-bottom:1px solid rgba(210,205,228,.25);margin-bottom:2px';
+  hdr.textContent='SKIPPED THIS WEEK';picker.appendChild(hdr);
+  skippedRules.forEach(r=>{
+    const itm=document.createElement('div');itm.className='ctx-item';itm.textContent='↩  '+r.name;
+    itm.addEventListener('click',()=>{hideWrSkipped();unSkipWrRule(r.id,wkKey);});picker.appendChild(itm);
+  });
+  skippedWrec.forEach(r=>{
+    const itm=document.createElement('div');itm.className='ctx-item';itm.textContent='↩  '+r.name;
+    itm.addEventListener('click',()=>{hideWrSkipped();unSkipWRec(r.id,wkKey);});picker.appendChild(itm);
+  });
+  const rect=e.currentTarget.getBoundingClientRect();
+  picker.style.left=Math.min(rect.left,window.innerWidth-200)+'px';
+  picker.style.top='-9999px';picker.style.display='block';
+  requestAnimationFrame(()=>{picker.style.top=Math.max(rect.top-picker.offsetHeight-6,8)+'px';});
+}
+function hideWrSkipped(){const m=document.getElementById('wrSkippedPicker');if(m)m.style.display='none';}
+document.addEventListener('mousedown',e=>{if(!e.target.closest('#wrSkippedPicker,#wrSkippedBtn'))hideWrSkipped();},{capture:true,passive:true});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')hideWrSkipped();});
+
+function unSkipWrRule(ruleId,wkKey){
+  const existing=st.wrOverrides.find(o=>String(o.rule_id)===String(ruleId)&&o.wk_key===wkKey&&o.override_type==='skip');
+  if(!existing)return;
+  const prev={...existing};
+  st.wrOverrides=st.wrOverrides.filter(o=>!(String(o.rule_id)===String(ruleId)&&o.wk_key===wkKey&&o.override_type==='skip'));
+  sbReqSilent('DELETE','wr_recurring_overrides',null,`?id=eq.${existing.id}`);
+  pushUndo(()=>{st.wrOverrides.push(prev);sbReqSilent('POST','wr_recurring_overrides',prev,'');renderRecOv();renderWkCal();renderWeeklyPage();renderToday();if(document.getElementById('tbGrid'))renderDayTB();},'Restored WR task');
+  renderRecOv();renderWkCal();renderWeeklyPage();renderToday();if(document.getElementById('tbGrid'))renderDayTB();
+}
+function unSkipWRec(rid,wkKey){
+  const r=st.recurring.find(x=>String(x.id)===String(rid));if(!r||!r._dateOverrides)return;
+  const prev=r._dateOverrides[wkKey];
+  delete r._dateOverrides[wkKey];
+  save();sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(rid));
+  pushUndo(()=>{if(!r._dateOverrides)r._dateOverrides={};r._dateOverrides[wkKey]=prev;save();renderRecOv();renderWkCal();renderWeeklyPage();renderToday();},'Restored WR task');
+  renderRecOv();renderWkCal();renderWeeklyPage();renderToday();
+}
 
 // Helper: check if a wr_recurring_rules item is done for a given wkKey
 function isDoneWRRule(ruleId,wkKey){
