@@ -639,7 +639,9 @@ function _stateSnap(){
     shopping:JSON.parse(JSON.stringify(st.shopping)),
     travel:JSON.parse(JSON.stringify(st.travel)),
     birthdays:JSON.parse(JSON.stringify(st.birthdays)),
-    blocks:JSON.parse(JSON.stringify(st.blocks||[]))
+    blocks:JSON.parse(JSON.stringify(st.blocks||[])),
+    wrRules:JSON.parse(JSON.stringify(st.wrRules||[])),
+    wrOverrides:JSON.parse(JSON.stringify(st.wrOverrides||[]))
   };
 }
 
@@ -650,6 +652,8 @@ function _stateRestore(snap){
   st.travel=snap.travel;
   st.birthdays=snap.birthdays;
   st.blocks=snap.blocks;
+  if(snap.wrRules)st.wrRules=snap.wrRules;
+  if(snap.wrOverrides)st.wrOverrides=snap.wrOverrides;
   save();
   renderAll();
   if(document.getElementById('tbGrid'))renderDayTB();
@@ -731,6 +735,18 @@ function _syncRedoDiff(before,after){
     const p=bR.find(x=>String(x.id)===String(r.id));
     if(p&&JSON.stringify(r._dateOverrides)!==JSON.stringify(p._dateOverrides))sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));
   }
+  const bWR=before.wrRules||[],aWR=after.wrRules||[];
+  for(const r of aWR){
+    const p=bWR.find(x=>String(x.id)===String(r.id));
+    if(p&&JSON.stringify(r._dateOverrides)!==JSON.stringify(p._dateOverrides))sbReqSilent('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},`?id=eq.${r.id}`);
+  }
+  const bWO=before.wrOverrides||[],aWO=after.wrOverrides||[];
+  for(const o of aWO){
+    const p=bWO.find(x=>String(x.id)===String(o.id));
+    if(!p)sbReqSilent('POST','wr_recurring_overrides',o,'');
+    else if(JSON.stringify(o)!==JSON.stringify(p))sbReqSilent('PATCH','wr_recurring_overrides',o,`?id=eq.${o.id}`);
+  }
+  for(const o of bWO){if(!aWO.find(x=>String(x.id)===String(o.id)))sbReqSilent('DELETE','wr_recurring_overrides',null,`?id=eq.${o.id}`);}
   const bS=before.shopping||[],aS=after.shopping||[];
   for(const s of aS){
     const p=bS.find(x=>String(x.id)===String(s.id));
