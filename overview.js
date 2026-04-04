@@ -2065,6 +2065,9 @@ function getVisibleBlocks(ds){
     } else if(b.recId){
       const r=st.recurring.find(x=>String(x.id)===String(b.recId));
       if(!r)return false;
+    } else if(b.ruleId){
+      const r=st.wrRules.find(x=>String(x.id)===String(b.ruleId));
+      if(!r)return false;
     } else {
       const t=st.tasks.find(x=>x.name===b.title);
       if(t){const tds=(t.due_date||'').split('T')[0];if(tds&&tds!==ds&&!(isViewingToday&&isOv(t.due_date)&&!t.done))return false;}
