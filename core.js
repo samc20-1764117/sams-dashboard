@@ -150,7 +150,7 @@ async function sbSaveBlock(b){
     id:b.id,title:b.title||'',day_date:b.ds,
     start_time:startTime,start_minutes:smVal,
     duration_minutes:b.dur,category:b.cat||'Home',
-    task_id:b.taskId||null,rec_id:b.recId||null,shop_id:b.shopId||null,rule_id:b.ruleId||null,
+    task_id:b.taskId||null,rec_id:b.recId||null,shop_id:b.shopId||null,
     done:b._done||false
   };
   try{
@@ -163,9 +163,7 @@ async function sbSaveBlock(b){
       },
       body:JSON.stringify(payload)
     });
-    const t=await r.text();
-    if(!r.ok){console.error('sbSaveBlock error',r.status,t);setBadge('err','Block save failed');}
-    else{console.log('sbSaveBlock ok',r.status,t);}
+    if(!r.ok){const t=await r.text();console.error('sbSaveBlock error',r.status,t);setBadge('err','Block save failed');}
   }catch(e){console.error('sbSaveBlock fetch error',e);}
 }
 async function sbDeleteBlock(id){
@@ -320,14 +318,13 @@ async function syncAll(silent=false){
       if(!silent){_recUndoDirty=false;st.recipes=recipes;}
       else if(!_recUndoDirty){st.recipes=recipes;}
     }
-    console.log('syncAll blocks from DB',blocks);
     if(blocks){
       st.blocks=blocks.map(b=>{
         let sm=b.start_minutes;
         if(sm==null&&b.start_time){const[hh,mm]=(b.start_time||'00:00').split(':');sm=parseInt(hh)*60+parseInt(mm);}
         return{id:b.id,title:b.title||'',ds:b.day_date,sm:sm||0,
           dur:b.duration_minutes||30,cat:b.category||'Home',
-          taskId:b.task_id||null,recId:b.rec_id||null,shopId:b.shop_id||null,ruleId:b.rule_id||null,_done:b.done||false};
+          taskId:b.task_id||null,recId:b.rec_id||null,shopId:b.shop_id||null,ruleId:null,_done:b.done||false};
       });
     }
     save();
