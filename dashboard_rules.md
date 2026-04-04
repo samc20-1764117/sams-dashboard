@@ -77,7 +77,10 @@ Supabase Auth (email+password), RLS on all tables. `init()`→`checkAuth()`→no
 - Multi-select Delete: single `pushUndo`. Undo for recurring does NOT restore `notes`/`pup_related`/extra fields.
 
 ## UI Notes
-- Top-right controls (`top:14px;right:20px;z-index:90`): sync bar | settings ⚙. `toggleDark()`→`body.dark`, persists `cfg.dark`.
+- Top-right controls (`top:14px;right:20px;z-index:90`): three icon-only buttons — sync, refresh, settings — each `20×20px` circle (`.settings-btn` + `width:20px;height:20px;padding:0;border-radius:20px`), all using SVG icons at `10×10px`. `toggleDark()`→`body.dark`, persists `cfg.dark`.
+- **Sync button** (`#syncBar`): `.sync-bar.settings-btn`, SVG sync icon. `setBadge(t,x)` sets `data-tip` on `#syncBar`/`#syncBar2` (no visible text). Tooltip shown on hover via CSS `::after{content:attr(data-tip)}`. Shows "Synced HH:MM", "Syncing…", or "Error".
+- **Weekly Reset card header** (`#wrRecWkLbl`): shows "Weekly Reset" when `wrRecOff===0`, otherwise shows date range `Mon – Sun`.
+- **Weekly cal bounce fix**: banner lane counts pre-computed synchronously before chips render; `paddingTop` set on columns before DOM paint. `setTimeout(10ms)` only positions banner pixel coords + sets `bannerEl` height.
 - Local backup: `backup.js` cron `0 8 * * *`→`backup_auto.json`.
 - `.mcell` must include `min-width:0` (prevents CSS grid `1fr` blowout).
 
