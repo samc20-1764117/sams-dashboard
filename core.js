@@ -163,7 +163,9 @@ async function sbSaveBlock(b){
       },
       body:JSON.stringify(payload)
     });
-    if(!r.ok){const t=await r.text();console.error('sbSaveBlock error',r.status,t);setBadge('err','Block save failed');}
+    const _t=await r.text();
+    if(!r.ok){console.error('sbSaveBlock error',r.status,_t);setBadge('err','Block save failed');}
+    else{console.log('sbSaveBlock response',r.status,_t||'(empty)');}
   }catch(e){console.error('sbSaveBlock fetch error',e);}
 }
 async function sbDeleteBlock(id){
