@@ -51,20 +51,20 @@ function renderToday(){
   const _wkKeyNow=getWkKey(wkOff);
   const wrecToday=st.recurring
     .filter(r=>(r.is_weekly_reset===true||r.is_weekly_reset==='true')&&!(r._doneByWk&&r._doneByWk[_wkKeyNow])&&r._dateOverrides&&(
-      r._dateOverrides[_wkKeyNow]===ds||(dayOff===0&&r._dateOverrides[_wkKeyNow]&&r._dateOverrides[_wkKeyNow]<ds)
+      r._dateOverrides[_wkKeyNow]===ds||(dayOff===0&&r._dateOverrides[_wkKeyNow]&&r._dateOverrides[_wkKeyNow]<ds&&st.blocks.some(b=>String(b.recId)===String(r.id)))
     ))
     .map(r=>({id:'rec-virt-'+r.id,name:r.name,category:'Recurring',due_date:r._dateOverrides[_wkKeyNow],done:!!(r._doneByWk&&r._doneByWk[_wkKeyNow]),_recId:r.id,_virtual:true,_wkKey:_wkKeyNow,_isWrec:true}));
   // New-style WR rules pinned to today via _dateOverrides
   const wrRulesToday=st.wrRules.filter(r=>r._dateOverrides&&(
-    r._dateOverrides[_wkKeyNow]===ds||(dayOff===0&&r._dateOverrides[_wkKeyNow]&&r._dateOverrides[_wkKeyNow]<ds)
+    r._dateOverrides[_wkKeyNow]===ds||(dayOff===0&&r._dateOverrides[_wkKeyNow]&&r._dateOverrides[_wkKeyNow]<ds&&st.blocks.some(b=>String(b.ruleId)===String(r.id)))
   )&&!isDoneWRRule(r.id,_wkKeyNow))
     .map(r=>({id:'wrrule-virt-'+r.id,name:r.name,category:'Recurring',due_date:r._dateOverrides[_wkKeyNow],done:false,_ruleId:r.id,_virtual:true,_wkKey:_wkKeyNow,_isWrRule:true}));
   // Shopping items due today (or overdue when viewing today)
   const shopToday=st.shopping
-    .filter(s=>!s.done&&s.due_date&&(s.due_date===ds||(dayOff===0&&isOv(s.due_date))))
+    .filter(s=>!s.done&&s.due_date&&(s.due_date===ds||(dayOff===0&&isOv(s.due_date)&&st.blocks.some(b=>String(b.shopId)===String(s.id)))))
     .map(s=>({id:'shop-cal-'+s.id,name:s.name,category:'Shopping',due_date:s.due_date,done:!!s.done,_shopId:s.id,_virtual:true,_type:'shop',store:s.store}));
   const virtToday=[
-    ...allRecVirt.filter(v=>v.due_date===ds||(dayOff===0&&isOv(v.due_date)&&!v.done)),
+    ...allRecVirt.filter(v=>v.due_date===ds||(dayOff===0&&isOv(v.due_date)&&!v.done&&st.blocks.some(b=>String(b.recId)===String(v._recId)))),
     ...wrecToday,
     ...wrRulesToday,
     ...shopToday,
