@@ -2026,8 +2026,9 @@ function drawTBBlock(col,b){
   else if(linkedRec)b._done=!!(linkedRec._doneByWk&&linkedRec._doneByWk[dsToWkKey(b.ds)]);
   else if(linkedShop)b._done=!!linkedShop.done;
   const isImp=linkedTask&&linkedTask.important&&!linkedTask.done;
+  const linkedRule=b.ruleId?st.wrRules.find(x=>String(x.id)===String(b.ruleId)):null;
   const recCat=linkedRec?(linkedRec.is_weekly_reset===true||linkedRec.is_weekly_reset==='true'?'weekly_reset':'recurring'):null;
-  const effectiveCat=linkedTask?linkedTask.category:recCat||(b.cat||'Home');
+  const effectiveCat=linkedTask?linkedTask.category:recCat||(linkedRule?'weekly_reset':null)||(b.cat||'Home');
   const s=isImp?IMP:gc(effectiveCat);
   const el=document.createElement('div');
   el.className='tb-block'+(b._done?' done-block':'');el.dataset.bid=b.id;
