@@ -2759,7 +2759,12 @@ async function rolloverOverdue(){
   const ovShop=getOvShopping();
   if(!ovTasks.length&&!ovRec.length&&!ovShop.length)return;
   const prevDates=ovTasks.map(t=>({id:String(t.id),date:t.due_date}));
-  const prevRecWkKeys=ovRec.map(v=>({recId:v._recId,ruleId:v._ruleId,wkKey:v._wkKey}));
+  const prevRecWkKeys=ovRec.map(v=>{
+    const prevDate=v._ruleId
+      ?(st.wrRules.find(x=>String(x.id)===String(v._ruleId))?._dateOverrides?.[v._wkKey]||null)
+      :(st.recurring.find(x=>String(x.id)===String(v._recId))?._dateOverrides?.[v._wkKey]||null);
+    return{recId:v._recId,ruleId:v._ruleId,wkKey:v._wkKey,prevDate};
+  });
   const prevShopDates=ovShop.map(s=>({id:String(s.id),date:s.due_date}));
   ovTasks.forEach(t=>{t.due_date=today;const sid=String(t.id);localOverrides[sid]={due_date:today};pendingLocal.add(sid);});
   ovRec.forEach(v=>{
@@ -2771,11 +2776,15 @@ async function rolloverOverdue(){
   const total=ovTasks.length+ovRec.length+ovShop.length;
   pushUndo(()=>{
     prevDates.forEach(({id,date})=>{const t=st.tasks.find(x=>String(x.id)===id);if(t)t.due_date=date;});
-    prevRecWkKeys.forEach(({recId,ruleId,wkKey})=>{if(ruleId){const r=st.wrRules.find(x=>String(x.id)===String(ruleId));if(r&&r._dateOverrides)delete r._dateOverrides[wkKey];}else{const r=st.recurring.find(x=>String(x.id)===String(recId));if(r&&r._dateOverrides)delete r._dateOverrides[wkKey];}});
+    prevRecWkKeys.forEach(({recId,ruleId,wkKey,prevDate})=>{if(ruleId){const r=st.wrRules.find(x=>String(x.id)===String(ruleId));if(r){if(!r._dateOverrides)r._dateOverrides={};if(prevDate)r._dateOverrides[wkKey]=prevDate;else delete r._dateOverrides[wkKey];}}else{const r=st.recurring.find(x=>String(x.id)===String(recId));if(r){if(!r._dateOverrides)r._dateOverrides={};if(prevDate)r._dateOverrides[wkKey]=prevDate;else delete r._dateOverrides[wkKey];}}});
     prevShopDates.forEach(({id,date})=>{const s=st.shopping.find(x=>String(x.id)===id);if(s)s.due_date=date;});
     renderAll();
     prevDates.forEach(({id,date})=>sbReq('PATCH','tasks',{due_date:date},`?id=eq.${id}`));
     prevShopDates.forEach(({id,date})=>sbReqNullable('PATCH','shopping_list',{due_date:date||null},`?id=eq.${id}`));
+    const _undoRecsToPatch=[...new Set(prevRecWkKeys.filter(v=>!v.ruleId).map(v=>v.recId))];
+    const _undoRulesToPatch=[...new Set(prevRecWkKeys.filter(v=>v.ruleId).map(v=>v.ruleId))];
+    _undoRecsToPatch.forEach(rid=>{const r=st.recurring.find(x=>String(x.id)===String(rid));if(r)sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));});
+    _undoRulesToPatch.forEach(rid=>{const r=st.wrRules.find(x=>String(x.id)===String(rid));if(r)sbReqSilent('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},`?id=eq.${rid}`);});
   },'Rolled over '+total+' item'+(total>1?'s':''));
   save();
   const recsToPatch=[...new Set(ovRec.filter(v=>!v._ruleId).map(v=>v._recId))];
