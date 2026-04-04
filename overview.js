@@ -1252,7 +1252,9 @@ function writeWrOverride(ruleId,wkKey,payload,{onDone,undoLabel='Changed WR task
   const full={rule_id:ruleId,wk_key:wkKey,done:null,moved_to_wk_key:null,custom_name:null,custom_notes:null,...payload};
   const isSkip=payload.override_type==='skip';
   // Capture and remove timeblocks for this rule in the target week (skip only)
-  const linkedBlocks=isSkip&&st.blocks?st.blocks.filter(b=>String(b.ruleId)===String(ruleId)&&dsToWkKey(b.ds)===wkKey):[];
+  const _skipRule=isSkip?st.wrRules.find(x=>String(x.id)===String(ruleId)):null;
+  const _pinnedDs=_skipRule?._dateOverrides?.[wkKey];
+  const linkedBlocks=isSkip&&st.blocks?st.blocks.filter(b=>dsToWkKey(b.ds)===wkKey&&(String(b.ruleId)===String(ruleId)||(!b.ruleId&&_pinnedDs&&b.ds===_pinnedDs&&!b.taskId&&!b.recId&&!b.shopId))):[];
   if(isSkip&&linkedBlocks.length){st.blocks=st.blocks.filter(b=>!(String(b.ruleId)===String(ruleId)&&dsToWkKey(b.ds)===wkKey));linkedBlocks.forEach(b=>sbDeleteBlock(b.id));}
   const _rerender=()=>{renderRecOv();renderWkCal();renderWeeklyPage();renderToday();if(document.getElementById('tbGrid'))renderDayTB();};
   const existing=st.wrOverrides.find(o=>String(o.rule_id)===String(ruleId)&&o.wk_key===wkKey);
@@ -1339,9 +1341,10 @@ function isDoneWRRule(ruleId,wkKey){
 function unscheduleWrRule(rid,wkKey){
   const r=st.wrRules.find(x=>String(x.id)===String(rid));if(!r||!r._dateOverrides)return;
   const prev=r._dateOverrides[wkKey];
+  const _unschDs=prev&&prev!=='__skip__'?prev:null;
   delete r._dateOverrides[wkKey];
-  const linkedBlocks=st.blocks?st.blocks.filter(b=>String(b.ruleId)===String(rid)):[];
-  if(st.blocks)st.blocks=st.blocks.filter(b=>String(b.ruleId)!==String(rid));
+  const linkedBlocks=st.blocks?st.blocks.filter(b=>String(b.ruleId)===String(rid)||(!b.ruleId&&_unschDs&&b.ds===_unschDs&&!b.taskId&&!b.recId&&!b.shopId)):[];
+  if(st.blocks)st.blocks=st.blocks.filter(b=>!linkedBlocks.some(lb=>lb.id===b.id));
   save();renderAll();
   linkedBlocks.forEach(b=>sbDeleteBlock(b.id));
   pushUndo(()=>{if(!r._dateOverrides)r._dateOverrides={};r._dateOverrides[wkKey]=prev;linkedBlocks.forEach(b=>{if(st.blocks)st.blocks.push(b);sbSaveBlock(b);});save();renderAll();},'Removed WR task from calendar');
