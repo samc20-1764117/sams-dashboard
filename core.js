@@ -163,7 +163,9 @@ async function sbSaveBlock(b){
       },
       body:JSON.stringify(payload)
     });
-    if(!r.ok){const t=await r.text();console.error('sbSaveBlock error',r.status,t);setBadge('err','Block save failed');}
+    const t=await r.text();
+    if(!r.ok){console.error('sbSaveBlock error',r.status,t);setBadge('err','Block save failed');}
+    else{console.log('sbSaveBlock ok',r.status,t);}
   }catch(e){console.error('sbSaveBlock fetch error',e);}
 }
 async function sbDeleteBlock(id){
@@ -318,6 +320,7 @@ async function syncAll(silent=false){
       if(!silent){_recUndoDirty=false;st.recipes=recipes;}
       else if(!_recUndoDirty){st.recipes=recipes;}
     }
+    console.log('syncAll blocks from DB',blocks);
     if(blocks){
       st.blocks=blocks.map(b=>{
         let sm=b.start_minutes;
