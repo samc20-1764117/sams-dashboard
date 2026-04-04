@@ -1371,9 +1371,18 @@ function unSkipWrRule(ruleId,wkKey){
   const existing=st.wrOverrides.find(o=>String(o.rule_id)===String(ruleId)&&o.wk_key===wkKey&&o.override_type==='skip');
   if(!existing)return;
   const prev={...existing};
+  // Also clear any date override so the rule returns to WR container only, not other views
+  const r=st.wrRules.find(x=>String(x.id)===String(ruleId));
+  const prevDateOv=r&&r._dateOverrides?{...r._dateOverrides}:null;
+  if(r&&r._dateOverrides&&r._dateOverrides[wkKey]){delete r._dateOverrides[wkKey];sbReqSilent('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},`?id=eq.${ruleId}`);}
   st.wrOverrides=st.wrOverrides.filter(o=>!(String(o.rule_id)===String(ruleId)&&o.wk_key===wkKey&&o.override_type==='skip'));
   sbReqSilent('DELETE','wr_recurring_overrides',null,`?id=eq.${existing.id}`);
-  pushUndo(()=>{st.wrOverrides.push(prev);sbReqSilent('POST','wr_recurring_overrides',prev,'');renderRecOv();renderWkCal();renderWeeklyPage();renderToday();if(document.getElementById('tbGrid'))renderDayTB();},'Restored WR task');
+  pushUndo(()=>{
+    st.wrOverrides.push(prev);
+    sbReqSilent('POST','wr_recurring_overrides',prev,'');
+    if(r&&prevDateOv){r._dateOverrides=prevDateOv;sbReqSilent('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},`?id=eq.${ruleId}`);}
+    renderRecOv();renderWkCal();renderWeeklyPage();renderToday();if(document.getElementById('tbGrid'))renderDayTB();
+  },'Restored WR task');
   renderRecOv();renderWkCal();renderWeeklyPage();renderToday();if(document.getElementById('tbGrid'))renderDayTB();
 }
 function unSkipWRec(rid,wkKey){
