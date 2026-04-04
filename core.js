@@ -237,7 +237,7 @@ async function syncAll(silent=false){
       const prevPins={};st.wrRules.forEach(r=>{if(r._dateOverrides)prevPins[String(r.id)]=r._dateOverrides;});
       const prevRecOvs={};st.recurring.forEach(r=>{if(r._dateOverrides)prevRecOvs[String(r.id)]=r._dateOverrides;});
       st.wrRules=wrRules.filter(r=>r.is_weekly_reset!==false);
-      st.wrRules.forEach(r=>{if(prevPins[String(r.id)])r._dateOverrides=prevPins[String(r.id)];});
+      st.wrRules.forEach(r=>{const dbOvs={...(r.date_overrides||{})};const prevOvs=prevPins[String(r.id)];if(prevOvs){Object.keys(prevOvs).forEach(k=>{if(!dbOvs[k])dbOvs[k]=prevOvs[k];});}r._dateOverrides=dbOvs;});
       const nonWR=wrRules.filter(r=>r.is_weekly_reset===false);
       const dbIds=new Set(nonWR.map(r=>String(r.id)));
       const localPending=st.recurring.filter(r=>{
