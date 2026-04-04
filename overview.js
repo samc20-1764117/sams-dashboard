@@ -1221,7 +1221,7 @@ function renderRecOv(){
     if(isDone)nm.style.cssText='text-decoration:line-through;color:var(--muted)';
     nm.textContent=r._displayName;
     row.appendChild(nm);
-    const hasDot=r._movedIn||r._edited;
+    const hasDot=r._edited;
     const del=document.createElement('button');
     del.className='delbtn';del.textContent='✕';del.title='Remove…';
     del.addEventListener('mousedown',e=>e.stopPropagation());
@@ -1239,7 +1239,7 @@ function renderRecOv(){
     if(wrBadgeLetter){
       const bdg=document.createElement('span');
       bdg.className='wr-cad-badge'+(hasDot?' changed':'');
-      bdg.title=hasDot?(r._movedIn?'Moved this week':'Edited this week'):'';
+      bdg.title=hasDot?'Edited this week':'';
       bdg.textContent=wrBadgeLetter;
       row.appendChild(bdg);
     } else if(hasDot){
