@@ -631,6 +631,18 @@ function unscheduleWRec(rid,wkKey){
   },'Removed from view');
   sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(rid));
 }
+function skipWRec(rid,wkKey){
+  const r=st.recurring.find(x=>String(x.id)===String(rid));if(!r)return;
+  if(!r._dateOverrides)r._dateOverrides={};
+  const prev=r._dateOverrides[wkKey];
+  r._dateOverrides[wkKey]='__skip__';
+  const linkedBlocks=st.blocks?st.blocks.filter(b=>String(b.recId)===String(rid)&&isInWk(b.ds,wkOff)):[];
+  if(st.blocks)st.blocks=st.blocks.filter(b=>!(String(b.recId)===String(rid)&&isInWk(b.ds,wkOff)));
+  save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
+  linkedBlocks.forEach(b=>sbDeleteBlock(b.id));
+  sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(rid));
+  pushUndo(()=>{if(!r._dateOverrides)r._dateOverrides={};if(prev!==undefined)r._dateOverrides[wkKey]=prev;else delete r._dateOverrides[wkKey];linkedBlocks.forEach(b=>{if(st.blocks)st.blocks.push(b);sbSaveBlock(b);});save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(rid));},'Skipped WR task this week');
+}
 function skipRecVirtThisWk(rid,wkKey){
   const r=st.recurring.find(x=>String(x.id)===String(rid));if(!r)return;
   // Safety: WR tasks must use unscheduleWRec, not __skip__

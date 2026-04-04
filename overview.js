@@ -162,8 +162,8 @@ function tRowTodayVirt(t,tbArrow=false,noColor=false){
   const _dragId=t._isWrRule?`wrrule::${t._ruleId}`:t._isWrec?`wrec::${t._recId}`:`rec::${t._recId}::${t.due_date||''}`;
   const _chk=t._isWrRule?`togWrRule('${t._ruleId}',this.checked,'${t._wkKey||getWkKey(wkOff)}')`
     :t._isWrec?`togRec('${t._recId}',this.checked)`:`togRecVirt('${t._recId}',this.checked,'${t._wkKey||getWkKey(wkOff)}')`;
-  const _xBtn=t._isWrRule?`showWrScopePicker(event,'⊘  Skip this week only','✕  Delete rule (all future)',()=>writeWrOverride('${t._ruleId}','${t._wkKey||getWkKey(wkOff)}',{override_type:'skip'},{undoLabel:'Skipped WR task this week'}),()=>wrCtxDeleteRule('${t._ruleId}'))`
-    :t._isWrec?`showWrScopePicker(event,'⊘  Skip this week only','✕  Delete recurring task',()=>unscheduleWRec('${t._recId}','${t._wkKey||getWkKey(wkOff)}'),()=>delRec('${t._recId}'))`
+  const _xBtn=t._isWrRule?`showWrScopePicker(event,'⊘  Skip this week only','✕  Delete rule (all future)',()=>writeWrOverride('${t._ruleId}','${t._wkKey||getWkKey(wkOff)}',{override_type:'skip'},{undoLabel:'Skipped WR task this week'}),()=>wrCtxDeleteRule('${t._ruleId}'),'⊠  Remove from views',()=>unscheduleWrRule('${t._ruleId}','${t._wkKey||getWkKey(wkOff)}'))`
+    :t._isWrec?`showWrScopePicker(event,'⊘  Skip this week only','✕  Delete recurring task',()=>skipWRec('${t._recId}','${t._wkKey||getWkKey(wkOff)}'),()=>delRec('${t._recId}'),'⊠  Remove from views',()=>unscheduleWRec('${t._recId}','${t._wkKey||getWkKey(wkOff)}'))`
     :`showWrScopePicker(event,'⊘  Skip this week only','✕  Delete recurring task',()=>skipRecVirtThisWk('${t._recId}','${t._wkKey||getWkKey(wkOff)}'),()=>delRec('${t._recId}'))`;
   const _recIdAttr=t._isWrRule?t._ruleId:t._recId;
   const _wkKeyAttr=t._wkKey||getWkKey(wkOff);
@@ -630,12 +630,12 @@ function renderWkCal(){
           const _rid=String(t._ruleId),_wk=t._wkKey||getWkKey(wkOff);
           showWrScopePicker(e2,'⊘  Skip this week only','✕  Delete rule (all future)',
             ()=>writeWrOverride(_rid,_wk,{override_type:'skip'},{undoLabel:'Skipped WR task this week'}),
-            ()=>wrCtxDeleteRule(_rid));
+            ()=>wrCtxDeleteRule(_rid),'⊠  Remove from views',()=>unscheduleWrRule(_rid,_wk));
         } else if(t._isWrec){
           const _rid=String(t._recId),_wk=t._wkKey||getWkKey(wkOff);
           showWrScopePicker(e2,'⊘  Skip this week only','✕  Delete recurring task',
-            ()=>unscheduleWRec(_rid,_wk),
-            ()=>delRec(_rid));
+            ()=>skipWRec(_rid,_wk),
+            ()=>delRec(_rid),'⊠  Remove from views',()=>unscheduleWRec(_rid,_wk));
         } else if(t._virtual){
           const _rid=String(t._recId),_wk=t._wkKey||getWkKey(wkOff);
           showWrScopePicker(e2,'⊘  Skip this week only','✕  Delete recurring task',
@@ -1307,17 +1307,20 @@ document.addEventListener('mousedown',e=>{if(!e.target.closest('#wrRuleCtxMenu')
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){hideWrRuleCtx();hideWrScopePicker();}});
 
 // ── Scope picker (Apple Calendar style: this week only / all future) ───────────
-let _wrScopeCbThis=null,_wrScopeCbAll=null;
-function showWrScopePicker(e,thisLabel,allLabel,onThis,onAll){
+let _wrScopeCbThis=null,_wrScopeCbAll=null,_wrScopeCbRemove=null;
+function showWrScopePicker(e,thisLabel,allLabel,onThis,onAll,removeLabel,onRemove){
   e.preventDefault();e.stopPropagation();
-  _wrScopeCbThis=onThis;_wrScopeCbAll=onAll;
+  _wrScopeCbThis=onThis;_wrScopeCbAll=onAll;_wrScopeCbRemove=onRemove||null;
   document.getElementById('wrScopeThis').textContent=thisLabel;
   document.getElementById('wrScopeAll').textContent=allLabel;
+  const removeEl=document.getElementById('wrScopeRemove');
+  if(removeEl){removeEl.textContent=removeLabel||'';removeEl.style.display=onRemove?'':'none';}
   const m=document.getElementById('wrScopePicker');
-  const x=Math.min(e.clientX,window.innerWidth-180),y=Math.min(e.clientY,window.innerHeight-90);
+  const x=Math.min(e.clientX,window.innerWidth-180),y=Math.min(e.clientY,window.innerHeight-120);
   m.style.left=x+'px';m.style.top=y+'px';m.style.display='block';
 }
 function hideWrScopePicker(){const m=document.getElementById('wrScopePicker');if(m)m.style.display='none';}
+function wrScopeDoRemove(){hideWrScopePicker();if(_wrScopeCbRemove)_wrScopeCbRemove();}
 function wrScopeDoThis(){hideWrScopePicker();if(_wrScopeCbThis)_wrScopeCbThis();}
 function wrScopeDoAll(){hideWrScopePicker();if(_wrScopeCbAll)_wrScopeCbAll();}
 document.addEventListener('mousedown',e=>{if(!e.target.closest('#wrScopePicker'))hideWrScopePicker();},{capture:true,passive:true});
@@ -1761,8 +1764,8 @@ function tRowWk(t){
   if(t._virtual){
     const s=gc((t._isWrec||t._isWrRule)?'weekly_reset':'recurring');
     const _wkCtxMenu=t._isWrRule?`showWrRuleCtx(event,'${t._ruleId}','${t._wkKey||getWkKey(wkOff)}')`:`showWrRuleCtx(event,'${t._recId}','${t._wkKey||getWkKey(wkOff)}')`;
-    const _wkXBtn=t._isWrRule?`showWrScopePicker(event,'⊘  Skip this week only','✕  Delete rule (all future)',()=>writeWrOverride('${t._ruleId}','${t._wkKey||getWkKey(wkOff)}',{override_type:'skip'},{undoLabel:'Skipped WR task this week'}),()=>wrCtxDeleteRule('${t._ruleId}'))`
-      :t._isWrec?`showWrScopePicker(event,'⊘  Skip this week only','✕  Delete recurring task',()=>unscheduleWRec('${t._recId}','${t._wkKey||getWkKey(wkOff)}'),()=>delRec('${t._recId}'))`
+    const _wkXBtn=t._isWrRule?`showWrScopePicker(event,'⊘  Skip this week only','✕  Delete rule (all future)',()=>writeWrOverride('${t._ruleId}','${t._wkKey||getWkKey(wkOff)}',{override_type:'skip'},{undoLabel:'Skipped WR task this week'}),()=>wrCtxDeleteRule('${t._ruleId}'),'⊠  Remove from views',()=>unscheduleWrRule('${t._ruleId}','${t._wkKey||getWkKey(wkOff)}'))`
+      :t._isWrec?`showWrScopePicker(event,'⊘  Skip this week only','✕  Delete recurring task',()=>skipWRec('${t._recId}','${t._wkKey||getWkKey(wkOff)}'),()=>delRec('${t._recId}'),'⊠  Remove from views',()=>unscheduleWRec('${t._recId}','${t._wkKey||getWkKey(wkOff)}'))`
       :`showWrScopePicker(event,'⊘  Skip this week only','✕  Delete recurring task',()=>skipRecVirtThisWk('${t._recId}','${t._wkKey||getWkKey(wkOff)}'),()=>delRec('${t._recId}'))`;
     return`<div class="ti ${t.done?'done':''}" style="background:${s.bg}" id="ti-${t.id}" onclick="selTask(event,'${t.id}')" ondblclick="tiDblRec(event,'${t._recId}')" oncontextmenu="${_wkCtxMenu}">
       <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="${t._isWrec?`togRec('${t._recId}',this.checked)`:`togRecVirt('${t._recId}',this.checked,'${t._wkKey||getWkKey(wkOff)}')`}"></label>
