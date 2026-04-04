@@ -589,15 +589,6 @@ function renderWkCal(){
       const nm=document.createElement('span');nm.className='chip-name';nm.innerHTML=tmIcon(t)+escHtml(t.name);
       // name click handled by chip click→selTask, dblclick→openEditTask
       chip.appendChild(chk);chip.appendChild(nm);
-      // Blue dot for WR rule "this week only" edit override
-      if(t._isWrRule){
-        const _editOv=st.wrOverrides.find(o=>String(o.rule_id)===String(t._ruleId)&&o.wk_key===(t._wkKey||getWkKey(wkOff))&&o.override_type==='edit');
-        if(_editOv&&(_editOv.custom_name||_editOv.custom_notes)){
-          const dot=document.createElement('span');
-          dot.style.cssText=`width:5px;height:5px;border-radius:50%;flex-shrink:0;margin-left:2px;background:${gc('weekly_reset').d};box-shadow:0 0 0 1px rgba(0,0,0,.15)`;
-          dot.title='Edited this week only';chip.appendChild(dot);
-        }
-      }
       chip.addEventListener('contextmenu',e=>{
         if(t._isWrRule){showWrRuleCtx(e,String(t._ruleId),t._wkKey||getWkKey(wkOff));}
         else if((t._isWrec||t._virtual)&&t._recId){showWrRuleCtx(e,String(t._recId),t._wkKey||getWkKey(wkOff));}
