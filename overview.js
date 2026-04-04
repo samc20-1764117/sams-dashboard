@@ -1250,13 +1250,18 @@ function renderRecOv(){
 // payload should include override_type + any relevant fields. Nulls out unrelated fields.
 function writeWrOverride(ruleId,wkKey,payload,{onDone,undoLabel='Changed WR task'}={}){
   const full={rule_id:ruleId,wk_key:wkKey,done:null,moved_to_wk_key:null,custom_name:null,custom_notes:null,...payload};
+  const isSkip=payload.override_type==='skip';
+  // Capture and remove timeblocks for this rule in the target week (skip only)
+  const linkedBlocks=isSkip&&st.blocks?st.blocks.filter(b=>String(b.ruleId)===String(ruleId)&&dsToWkKey(b.ds)===wkKey):[];
+  if(isSkip&&linkedBlocks.length){st.blocks=st.blocks.filter(b=>!(String(b.ruleId)===String(ruleId)&&dsToWkKey(b.ds)===wkKey));linkedBlocks.forEach(b=>sbDeleteBlock(b.id));}
+  const _rerender=()=>{renderRecOv();renderWkCal();renderWeeklyPage();renderToday();if(document.getElementById('tbGrid'))renderDayTB();};
   const existing=st.wrOverrides.find(o=>String(o.rule_id)===String(ruleId)&&o.wk_key===wkKey);
   if(existing){
     const prev={...existing};
     Object.assign(existing,full);
     sbReqSilent('PATCH','wr_recurring_overrides',full,`?id=eq.${existing.id}`);
-    pushUndo(()=>{Object.assign(existing,prev);sbReqSilent('PATCH','wr_recurring_overrides',prev,`?id=eq.${existing.id}`);renderRecOv();renderWkCal();renderWeeklyPage();},undoLabel);
-    save();renderRecOv();renderWkCal();renderWeeklyPage();renderToday();if(onDone)onDone(existing);
+    pushUndo(()=>{Object.assign(existing,prev);if(isSkip){linkedBlocks.forEach(b=>{if(st.blocks)st.blocks.push(b);sbSaveBlock(b);});}sbReqSilent('PATCH','wr_recurring_overrides',prev,`?id=eq.${existing.id}`);_rerender();},undoLabel);
+    save();_rerender();if(onDone)onDone(existing);
   } else {
     const tmpId='wrov-tmp-'+Date.now();
     st.wrOverrides.push({...full,id:tmpId});
@@ -1267,10 +1272,11 @@ function writeWrOverride(ruleId,wkKey,payload,{onDone,undoLabel='Changed WR task
     pushUndo(()=>{
       const id=realId||tmpId;
       st.wrOverrides=st.wrOverrides.filter(o=>String(o.id)!==id);
+      if(isSkip){linkedBlocks.forEach(b=>{if(st.blocks)st.blocks.push(b);sbSaveBlock(b);});}
       if(realId)sbReqSilent('DELETE','wr_recurring_overrides',null,`?id=eq.${realId}`);
-      renderRecOv();renderWkCal();renderWeeklyPage();
+      _rerender();
     },undoLabel);
-    save();renderRecOv();renderWkCal();renderWeeklyPage();renderToday();
+    save();_rerender();
   }
 }
 
