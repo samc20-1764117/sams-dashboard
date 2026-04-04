@@ -12,7 +12,7 @@ All files share global scope — no modules/bundler.
 ## Auth
 Supabase Auth (email+password), RLS on all tables. `init()`→`checkAuth()`→no session→`#loginOverlay`. `doLogin()`→`signInWithPassword`→`_authToken`→`syncAll()`. All `sbReq*` use `_getAuthToken()` JWT + anon `apikey`. Token auto-refreshes hourly; refresh lasts 1 week.
 - **Init flash prevention**: `#main` starts `opacity:0` in HTML; `renderAll()` sets it to `1` on first call. `history.scrollRestoration='manual'` set in `init()`.
-- **Overdue banner**: guarded by `_firstSyncDone` flag. `updateOvBanner()` no-op until first `syncAll()` completes.
+- **Overdue banner**: `_firstSyncDone` is set `true` before the initial `renderAll()` from localStorage, so banner shows instantly on load without waiting for sync.
 
 ## Data & Persistence
 - POST must include ALL required fields. Missing NOT NULL → silent 400.
@@ -41,8 +41,8 @@ Supabase Auth (email+password), RLS on all tables. `init()`→`checkAuth()`→no
 - **Tasks**: `due_date < today && !done`.
 - **Shopping**: `due_date < today && !done`.
 - **Non-WR recurring**: `getRecurringWeekTasks(w)` for w=0 to wkOff-4. Cascading `__skip__` check across weeks. Seen set prevents duplicates.
-- **WR recurring** (`is_weekly_reset=true` in `st.recurring`): overdue if `_dateOverrides[wkKey] < today && !_doneByWk[wkKey]`. Looks back 4 weeks. Uses `wrRecHandled` set — once any wkKey override is encountered for a task, older weeks are not checked (prevents re-trigger after rollover).
-- **WR rules** (`st.wrRules`): overdue if `_dateOverrides[wkKey] < today && !isDoneWRRule`. Same 4-week lookback + `wrRuleHandled` set.
+- **WR recurring** (`is_weekly_reset=true` in `st.recurring`): overdue if `_dateOverrides[wkKey] < today && !_doneByWk[wkKey]`. Looks back 4 weeks. Uses `wrRecHandled` set — only added when `_dateOverrides[wkKey] <= today` (future dates do NOT block older-week lookback).
+- **WR rules** (`st.wrRules`): overdue if `_dateOverrides[wkKey] < today && !isDoneWRRule`. Same 4-week lookback + `wrRuleHandled` set with same future-date exception.
 - Tasks/shopping/non-WR recurring only count as overdue if assigned to a date (has `due_date` / `_dateOverrides`).
 - `updateOvBanner()` called from `renderToday()`.
 
@@ -57,6 +57,7 @@ Supabase Auth (email+password), RLS on all tables. `init()`→`checkAuth()`→no
 - **Modal Enter/Escape**: overlay `div` owns handlers. Inputs must NOT have save handlers.
 - **Cmd+Z in modals**: check `_isInput && !_ael.closest('.overlay:not(.open)')` → return early.
 - **Global shortcuts**: `n`=new task, `r`=reload, `s`=sync. Skip if INPUT/TEXTAREA/contentEditable or meta held.
+- **Text selection disabled**: `user-select:none` on `html,body`. `Ctrl/Cmd+A` blocked globally (allowed inside INPUT/TEXTAREA).
 - **Global Cmd+C/V**: copies `selectedTasks`. Paste: `wrrule-{id}`→POST `wr_recurring_rules`; task ID→POST `tasks`.
 - **Hover-X delete on chips**: `.chip-del` last flex child. X removes from ALL views + linked blocks. Exception: X on TB block itself→`delBlock` only.
 - **Chip checkboxes**: 8×8px. Done: `opacity:.5` + `text-decoration:line-through`.
