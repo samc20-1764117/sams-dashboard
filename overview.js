@@ -2372,10 +2372,12 @@ function dropOnTB(e,ds,h,row,smOverride){
     const blk={id:crypto.randomUUID(),title:r.name,ds,sm,dur:autoDur(r.name,'Recurring'),cat:'Recurring',ruleId:String(r.id)};
     st.blocks.push(blk);dragId=null;save();renderAll();renderRecOv();
     sbSaveBlock(blk);
+    sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));
     pushUndo(()=>{
       st.blocks=st.blocks.filter(b=>b.id!==blk.id);
       r._dateOverrides=prevDateOv;
       sbDeleteBlock(blk.id);save();renderAll();renderRecOv();
+      sbReq('PATCH','wr_recurring_rules',{date_overrides:prevDateOv},recQs(r.id));
     },'Added to time block');
     return;
   }
