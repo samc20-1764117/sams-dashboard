@@ -209,6 +209,7 @@ async function manualBackup(){
 
 async function syncAll(silent=false){
   if(!cfg.url||!cfg.key){setBadge('err','Not connected');return;}
+  if(_sbClient){const{data:{session}}=await _sbClient.auth.getSession();if(session)_authToken=session.access_token;}
   if(!silent)setBadge('loading','Syncing…');
   try{
     const[tasks,shop,trav,bdays,pupSkills,recipes]=await Promise.all([
