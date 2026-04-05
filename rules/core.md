@@ -10,7 +10,7 @@ All files share global scope — no modules/bundler.
 **Where is X?** Overview/today/calendar/kanban/timeblocks/recurring-monthly → `overview.js`. Secondary pages + CRUD + ctx menus + regular monthly cal → `features.js`. Utils/Supabase/auth/undo → `core.js`.
 
 ## Auth
-Supabase Auth (email+password), RLS on all tables. `init()`→`checkAuth()`→no session→`#loginOverlay`. `doLogin()`→`signInWithPassword`→`_authToken`→`syncAll()`. All `sbReq*` use `_getAuthToken()` JWT + anon `apikey`. Token auto-refreshes hourly; refresh lasts 1 week.
+Supabase Auth (email+password), RLS on all tables. `init()`→`checkAuth()`→no session→`#loginOverlay`. `doLogin()`→`signInWithPassword`→`_authToken`→`syncAll()`. All `sbReq*` use `_getAuthToken()` JWT + anon `apikey`. Token auto-refreshes hourly; refresh lasts 1 week. `syncAll` calls `_sbClient.auth.getSession()` at the top to refresh `_authToken` before every sync — prevents 401 JWT-expired errors on long sessions.
 - **Init flash prevention**: `#main` starts `opacity:0` in HTML; `renderAll()` sets it to `1` on first call. `history.scrollRestoration='manual'` set in `init()`.
 - **Overdue banner**: `_firstSyncDone` is set `true` before the initial `renderAll()` from localStorage, so banner shows instantly on load without waiting for sync.
 
@@ -18,7 +18,7 @@ Supabase Auth (email+password), RLS on all tables. `init()`→`checkAuth()`→no
 - POST must include ALL required fields. Missing NOT NULL → silent 400.
 - `tasks` POST required: `name,category,due_date,done,important`. Optional: `notes`.
 - `wr_recurring_rules` POST required: `name,cadence,is_weekly_reset,is_enabled`. Non-WR adds `is_weekly_reset:false`. Optional: `appears_on_date,starting_date,pup_related,notes`.
-- `time_blocks` fields used: `id,title,day_date,start_time,start_minutes,duration_minutes,category,task_id,rec_id,shop_id,rule_id,done`. `rule_id` links WR rule blocks — requires DB column `rule_id uuid REFERENCES wr_recurring_rules(id)`. `sbSaveBlock` saves all fields incl. `rule_id`. `syncAll` maps `rule_id`→`ruleId`.
+- `time_blocks` fields used: `id,title,day_date,start_time,start_minutes,duration_minutes,category,task_id,rec_id,shop_id,done`. `rule_id` column links WR rule blocks — **pending migration** `migrations/003_add_rule_id_to_time_blocks.sql` (run in Supabase SQL editor). Until migration is run: `sbSaveBlock` omits `rule_id`, `syncAll` maps `ruleId:null`. After migration: re-enable `rule_id` in both.
 - Local temp IDs: tasks=`l-`, recurring=`rec-tmp-`, WR rules=`wrrule-tmp-`.
 - `sbReq` shows Supabase `message` field in toast 8s.
 - `toggleTask`/`togRec`/`togShop`: call `sbUpdateBlock(b.id,{done})` for linked TB blocks.
