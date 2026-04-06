@@ -218,6 +218,7 @@ body.dark .pup-dog-btn.active{background:rgba(194,107,79,.5);color:#fff}
 .tlist{overflow-y:auto;padding:2px 0}
 #todList .ti{margin-left:10px}
 #shopOv .ti{padding-top:1px;padding-bottom:1px;margin-top:2px;margin-bottom:2px}
+#recList{padding-top:2px}
 #recList .ti{margin-top:0;margin-bottom:2px}
 #shopOv .tn,#recList .tn{font-size:11px;color:rgba(80,70,65,.72)}
 #shopOv .chk,#recList .chk{width:11px;height:11px}
