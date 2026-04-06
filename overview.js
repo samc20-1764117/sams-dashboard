@@ -1408,7 +1408,8 @@ function unscheduleWrRule(rid,wkKey){
   if(st.blocks)st.blocks=st.blocks.filter(b=>!linkedBlocks.some(lb=>lb.id===b.id));
   save();renderAll();
   linkedBlocks.forEach(b=>sbDeleteBlock(b.id));
-  pushUndo(()=>{if(!r._dateOverrides)r._dateOverrides={};r._dateOverrides[wkKey]=prev;linkedBlocks.forEach(b=>{if(st.blocks)st.blocks.push(b);sbSaveBlock(b);});save();renderAll();},'Removed WR task from calendar');
+  sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(rid));
+  pushUndo(()=>{if(!r._dateOverrides)r._dateOverrides={};r._dateOverrides[wkKey]=prev;linkedBlocks.forEach(b=>{if(st.blocks)st.blocks.push(b);sbSaveBlock(b);});save();renderAll();sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(rid));},'Removed WR task from calendar');
 }
 // X button on WR chips/rows outside the WR overlay: skip this week (+ clear date override) or delete rule
 // Works for both old WR tasks (st.recurring) and new WR rules (st.wrRules)
