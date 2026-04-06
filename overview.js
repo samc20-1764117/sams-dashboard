@@ -1124,9 +1124,9 @@ function renderRecOv(){
   const{mon,sun}=getWkBounds(wrRecOff);
   const lbl=document.getElementById('wrRecWkLbl');
   if(lbl){
-    const _lnk=`<a href="#weekly" onclick="event.preventDefault();showPage('weekly')" class="btn btn-ghost btn-xs" style="text-decoration:none">`;
-    if(wrRecOff===0){lbl.innerHTML=_lnk+'Weekly Reset ↗</a>';}
-    else{const fmt=d=>d.toLocaleDateString('en-US',{month:'short',day:'numeric'});lbl.innerHTML=_lnk+fmt(mon)+' – '+fmt(sun)+' ↗</a>';}
+    const _lnk=`<a href="#weekly" onclick="event.preventDefault();showPage('weekly')" class="btn btn-ghost btn-xs" style="text-decoration:none;align-self:center">`;
+    if(wrRecOff===0){lbl.innerHTML=_lnk+'Weekly Reset</a>';}
+    else{const fmt=d=>d.toLocaleDateString('en-US',{month:'short',day:'numeric'});lbl.innerHTML=_lnk+fmt(mon)+' – '+fmt(sun)+'</a>';}
   }
   // ── Merge overrides into base list ─────────────────────────────────────────
   // 1. Base: rules that naturally fire this week
