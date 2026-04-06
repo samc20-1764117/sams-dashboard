@@ -1,5 +1,5 @@
 {
-  "exported_at": "2026-04-03T13:00:01.006Z",
+  "exported_at": "2026-04-06T13:00:00.970Z",
   "mode": "auto",
   "tables": {
     "tasks": [
@@ -436,7 +436,7 @@
       {
         "name": "Taxes",
         "category": "Home",
-        "due_date": "2026-04-04",
+        "due_date": "2026-04-11",
         "done": false,
         "importance": "Normal",
         "id": "a6dbeb5c-7b7d-4d65-b76d-fabed940b8e2",
@@ -496,7 +496,7 @@
       {
         "name": "Haircut apt schedule",
         "category": "Home",
-        "due_date": "2026-04-05",
+        "due_date": "2026-04-11",
         "done": false,
         "importance": null,
         "id": "e393ce8b-201f-41ca-a8d4-104d1307f7cc",
@@ -556,7 +556,7 @@
       {
         "name": "Make dentist apt",
         "category": "Home",
-        "due_date": "2026-04-05",
+        "due_date": "2026-04-11",
         "done": false,
         "importance": null,
         "id": "684df50b-70ca-4a44-9133-8531ba05356a",
@@ -854,16 +854,6 @@
         "notes": null
       },
       {
-        "name": "Ben's B day party",
-        "category": "Social",
-        "due_date": "2026-04-05",
-        "done": false,
-        "importance": null,
-        "id": "258103bd-e004-45e8-bebb-c8f49d78f0cb",
-        "important": false,
-        "notes": null
-      },
-      {
         "name": "Tableau Call 11-12pm",
         "category": "My work",
         "due_date": "2026-03-24",
@@ -874,14 +864,14 @@
         "notes": null
       },
       {
-        "name": "AI tracking video",
-        "category": "My work",
-        "due_date": "2026-04-05",
+        "name": "Book london → iceland",
+        "category": "Home",
+        "due_date": "2026-04-09",
         "done": false,
         "importance": null,
-        "id": "d895f994-cf48-4ab3-95f9-1ffd706914b7",
+        "id": "3b7f34e0-2db9-4c24-a332-7314b9df9d79",
         "important": false,
-        "notes": "Start VO/filming"
+        "notes": null
       },
       {
         "name": "Drive to SA",
@@ -924,32 +914,12 @@
         "notes": null
       },
       {
-        "name": "Book london → iceland",
-        "category": "Home",
-        "due_date": "2026-04-04",
-        "done": false,
+        "name": "TC dash",
+        "category": "My work",
+        "due_date": "2026-04-05",
+        "done": true,
         "importance": null,
-        "id": "3b7f34e0-2db9-4c24-a332-7314b9df9d79",
-        "important": false,
-        "notes": null
-      },
-      {
-        "name": "Unapplied cash",
-        "category": "Work",
-        "due_date": "2026-04-03",
-        "done": false,
-        "importance": null,
-        "id": "2cbb2dc6-3010-412f-a6c0-3a4fa0d10639",
-        "important": false,
-        "notes": null
-      },
-      {
-        "name": "Friends workout",
-        "category": "Social",
-        "due_date": "2026-04-03",
-        "done": false,
-        "importance": null,
-        "id": "5b558157-40ed-47c6-a75d-e7710e461bf9",
+        "id": "ff41196f-f019-4ab5-bcb5-41313b5ef67f",
         "important": false,
         "notes": null
       },
@@ -964,6 +934,16 @@
         "notes": null
       },
       {
+        "name": "Friends",
+        "category": "Social",
+        "due_date": "2026-04-03",
+        "done": true,
+        "importance": null,
+        "id": "5b558157-40ed-47c6-a75d-e7710e461bf9",
+        "important": false,
+        "notes": null
+      },
+      {
         "name": "TC 26 build",
         "category": "My work",
         "due_date": "2026-03-25",
@@ -972,6 +952,16 @@
         "id": "08f99f01-a42e-43c7-a00a-192ede96b797",
         "important": false,
         "notes": null
+      },
+      {
+        "name": "AI tracking video",
+        "category": "My work",
+        "due_date": "2026-04-07",
+        "done": false,
+        "importance": null,
+        "id": "4a3757e6-a91c-4ff5-84d2-287f5db5da6f",
+        "important": false,
+        "notes": "Script ready"
       },
       {
         "name": "Documentation - add pics",
@@ -1034,14 +1024,14 @@
         "notes": null
       },
       {
-        "name": "AI tracking video",
+        "name": "TC dashboard",
         "category": "My work",
         "due_date": "2026-04-04",
-        "done": false,
+        "done": true,
         "importance": null,
-        "id": "4a3757e6-a91c-4ff5-84d2-287f5db5da6f",
+        "id": "0d8f9d28-387c-4ed3-90b5-64a469e31b13",
         "important": false,
-        "notes": "Script ready"
+        "notes": null
       },
       {
         "name": "Shower",
@@ -1234,12 +1224,12 @@
         "notes": null
       },
       {
-        "name": "Start VO PM dash - needs to be finished 4/7",
+        "name": "PM dash - finalize build",
         "category": "My work",
-        "due_date": "2026-04-05",
+        "due_date": "2026-04-08",
         "done": false,
         "importance": null,
-        "id": "4143707c-d83e-47ce-a8cf-e3571586d772",
+        "id": "7141d74b-fa75-41e8-9e24-5663274000bd",
         "important": false,
         "notes": null
       },
@@ -1254,32 +1244,12 @@
         "notes": null
       },
       {
-        "name": "AI tracking video",
-        "category": "My work",
-        "due_date": "2026-04-03",
-        "done": false,
-        "importance": null,
-        "id": "08ddb2d3-42f4-4e48-b0ef-e327ed31b712",
-        "important": false,
-        "notes": "Actual claude (design, interaction)"
-      },
-      {
         "name": "Drill down icons",
         "category": "My work",
         "due_date": "2026-04-01",
         "done": true,
         "importance": null,
         "id": "3a9283db-1179-4b96-b56c-206e5e88d91c",
-        "important": false,
-        "notes": null
-      },
-      {
-        "name": "TC 26 use slide template",
-        "category": "My work",
-        "due_date": "2026-04-03",
-        "done": false,
-        "importance": null,
-        "id": "fddf191d-eda6-46ed-b427-a59d24e8156b",
         "important": false,
         "notes": null
       },
@@ -1344,13 +1314,13 @@
         "notes": null
       },
       {
-        "name": "Hide yellow video",
-        "category": "My work",
-        "due_date": "2026-04-03",
-        "done": false,
+        "name": "Ben's B day party",
+        "category": "Social",
+        "due_date": "2026-04-05",
+        "done": true,
         "importance": null,
-        "id": "be152879-a757-4f11-88b6-476cf6231453",
-        "important": true,
+        "id": "258103bd-e004-45e8-bebb-c8f49d78f0cb",
+        "important": false,
         "notes": null
       },
       {
@@ -1424,12 +1394,22 @@
         "notes": null
       },
       {
-        "name": "Call Nai Nai",
-        "category": "Home",
-        "due_date": "2026-04-04",
+        "name": "Start VO PM dash - needs to be finished 4/7",
+        "category": "My work",
+        "due_date": "2026-04-10",
         "done": false,
         "importance": null,
-        "id": "d376f4e0-151f-4ce4-a4d2-6216c98403b3",
+        "id": "4143707c-d83e-47ce-a8cf-e3571586d772",
+        "important": false,
+        "notes": null
+      },
+      {
+        "name": "Respond linkedin",
+        "category": "My work",
+        "due_date": "2026-04-06",
+        "done": false,
+        "importance": null,
+        "id": "4e8b5f7d-b6bc-4b3b-b6fb-80dedf9f9f14",
         "important": false,
         "notes": null
       },
@@ -1454,16 +1434,6 @@
         "notes": null
       },
       {
-        "name": "Charger back from Sindi",
-        "category": "Home",
-        "due_date": "2026-04-04",
-        "done": false,
-        "importance": null,
-        "id": "073a5ac9-565a-4b6c-bd8f-760550fb41fe",
-        "important": false,
-        "notes": null
-      },
-      {
         "name": "Update talent",
         "category": "Work",
         "due_date": "2026-04-01",
@@ -1474,14 +1444,24 @@
         "notes": null
       },
       {
-        "name": "PM dash - finalize build",
-        "category": "My work",
+        "name": "HEB",
+        "category": "Home",
         "due_date": "2026-04-04",
-        "done": false,
+        "done": true,
         "importance": null,
-        "id": "7141d74b-fa75-41e8-9e24-5663274000bd",
+        "id": "c12f024c-c839-4b41-a26f-361561a77d02",
         "important": false,
         "notes": null
+      },
+      {
+        "name": "AI tracking video",
+        "category": "My work",
+        "due_date": "2026-04-03",
+        "done": true,
+        "importance": null,
+        "id": "08ddb2d3-42f4-4e48-b0ef-e327ed31b712",
+        "important": false,
+        "notes": "Actual claude (design, interaction)"
       },
       {
         "name": "Unapplied cash",
@@ -1502,6 +1482,76 @@
         "id": "8898968d-a050-4958-af74-a8b64919ed86",
         "important": false,
         "notes": null
+      },
+      {
+        "name": "Unapplied cash",
+        "category": "Work",
+        "due_date": "2026-04-03",
+        "done": true,
+        "importance": null,
+        "id": "2cbb2dc6-3010-412f-a6c0-3a4fa0d10639",
+        "important": false,
+        "notes": null
+      },
+      {
+        "name": "Charger back from Sindi",
+        "category": "Home",
+        "due_date": "2026-04-03",
+        "done": true,
+        "importance": null,
+        "id": "073a5ac9-565a-4b6c-bd8f-760550fb41fe",
+        "important": false,
+        "notes": null
+      },
+      {
+        "name": "Pick up at home/target",
+        "category": "Home",
+        "due_date": "2026-04-04",
+        "done": true,
+        "importance": null,
+        "id": "6366f44b-7950-4374-9967-8b01a6e285c1",
+        "important": false,
+        "notes": null
+      },
+      {
+        "name": "TC 26 use slide template",
+        "category": "My work",
+        "due_date": "2026-04-09",
+        "done": false,
+        "importance": null,
+        "id": "fddf191d-eda6-46ed-b427-a59d24e8156b",
+        "important": false,
+        "notes": null
+      },
+      {
+        "name": "Hide yellow video",
+        "category": "My work",
+        "due_date": "2026-04-06",
+        "done": false,
+        "importance": null,
+        "id": "be152879-a757-4f11-88b6-476cf6231453",
+        "important": true,
+        "notes": null
+      },
+      {
+        "name": "Call Nai Nai",
+        "category": "Home",
+        "due_date": "2026-04-11",
+        "done": false,
+        "importance": null,
+        "id": "d376f4e0-151f-4ce4-a4d2-6216c98403b3",
+        "important": false,
+        "notes": null
+      },
+      {
+        "name": "AI tracking video",
+        "category": "My work",
+        "due_date": "2026-04-07",
+        "done": false,
+        "importance": null,
+        "id": "d895f994-cf48-4ab3-95f9-1ffd706914b7",
+        "important": false,
+        "notes": "Start VO/filming"
       }
     ],
     "shopping_list": [
@@ -1524,15 +1574,6 @@
         "shop_order": 8
       },
       {
-        "id": "010dd63b-57ff-457b-9ce4-d40bdb8bf1c2",
-        "name": "Mochi carrier",
-        "store": "Online",
-        "done": false,
-        "created_at": "2026-03-23T01:44:25.166696+00:00",
-        "due_date": "2026-04-04",
-        "shop_order": 1
-      },
-      {
         "id": "e1aa0f3c-8b72-4200-b4e5-d35ad2d1f74c",
         "name": "testing addng",
         "store": "Online",
@@ -1542,13 +1583,22 @@
         "shop_order": null
       },
       {
-        "id": "f05e8b0b-788a-475a-94ed-f73f6576181e",
-        "name": "Whitening strips",
-        "store": "Other",
+        "id": "8a4c2056-807a-464d-9a3e-db4c290d5cc2",
+        "name": "Outdoor throw pillows",
+        "store": "Home goods",
+        "done": true,
+        "created_at": "2026-03-26T14:45:18.837297+00:00",
+        "due_date": null,
+        "shop_order": 6
+      },
+      {
+        "id": "010dd63b-57ff-457b-9ce4-d40bdb8bf1c2",
+        "name": "Mochi carrier",
+        "store": "Online",
         "done": false,
-        "created_at": "2026-03-31T20:41:34.874508+00:00",
-        "due_date": "2026-04-03",
-        "shop_order": null
+        "created_at": "2026-03-23T01:44:25.166696+00:00",
+        "due_date": null,
+        "shop_order": 1
       },
       {
         "id": "c18fd7a4-8484-4636-a93d-b9e349595c5a",
@@ -1596,6 +1646,33 @@
         "shop_order": null
       },
       {
+        "id": "2fc1a3c7-0cbc-4d49-a19a-48f20e289721",
+        "name": "Bowls",
+        "store": "Ikea",
+        "done": false,
+        "created_at": "2026-03-18T17:50:33.110344+00:00",
+        "due_date": null,
+        "shop_order": 4
+      },
+      {
+        "id": "8d195c44-9915-4513-812e-e30725a386b2",
+        "name": "Donut lamp",
+        "store": "Ikea",
+        "done": false,
+        "created_at": "2026-03-10T14:18:17.412058+00:00",
+        "due_date": null,
+        "shop_order": 5
+      },
+      {
+        "id": "f05e8b0b-788a-475a-94ed-f73f6576181e",
+        "name": "Whitening strips",
+        "store": "Other",
+        "done": true,
+        "created_at": "2026-03-31T20:41:34.874508+00:00",
+        "due_date": null,
+        "shop_order": null
+      },
+      {
         "id": "b7dae470-1ba1-4763-a66d-fece577fff49",
         "name": "Pee pads",
         "store": "Other",
@@ -1632,15 +1709,6 @@
         "shop_order": null
       },
       {
-        "id": "8d195c44-9915-4513-812e-e30725a386b2",
-        "name": "Donut lamp",
-        "store": "Ikea",
-        "done": false,
-        "created_at": "2026-03-10T14:18:17.412058+00:00",
-        "due_date": null,
-        "shop_order": 5
-      },
-      {
         "id": "5060e587-8c21-4ce5-8bc3-ec6d43be311e",
         "name": "Garlic squeeze",
         "store": "HEB",
@@ -1659,15 +1727,6 @@
         "shop_order": 0
       },
       {
-        "id": "8a4c2056-807a-464d-9a3e-db4c290d5cc2",
-        "name": "Outdoor throw pillows",
-        "store": "Home goods",
-        "done": false,
-        "created_at": "2026-03-26T14:45:18.837297+00:00",
-        "due_date": null,
-        "shop_order": 6
-      },
-      {
         "id": "314d0e7a-10a5-4f1e-8a8d-5dfe99801d99",
         "name": "Outdoor fabric",
         "store": "Other",
@@ -1675,15 +1734,6 @@
         "created_at": "2026-03-26T14:44:45.457788+00:00",
         "due_date": null,
         "shop_order": 7
-      },
-      {
-        "id": "2fc1a3c7-0cbc-4d49-a19a-48f20e289721",
-        "name": "Bowls",
-        "store": "Ikea",
-        "done": false,
-        "created_at": "2026-03-18T17:50:33.110344+00:00",
-        "due_date": null,
-        "shop_order": 4
       },
       {
         "id": "8e27aad9-b437-4066-81dd-fd449bf538d5",
@@ -3235,6 +3285,34 @@
         "done": true
       },
       {
+        "id": "1192567d-ebd2-4c19-b002-c6e9f41989cb",
+        "title": "Ben's B day party",
+        "day_date": "2026-04-05",
+        "start_time": "11:30:00",
+        "duration_minutes": 120,
+        "category": "Social",
+        "created_at": "2026-04-05T03:38:22.768921+00:00",
+        "start_minutes": 750,
+        "task_id": "258103bd-e004-45e8-bebb-c8f49d78f0cb",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
+        "id": "e8bb43f9-c311-47e5-83fa-b1363d1c6360",
+        "title": "HEB",
+        "day_date": "2026-04-04",
+        "start_time": "14:45:00",
+        "duration_minutes": 120,
+        "category": "Home",
+        "created_at": "2026-04-04T03:37:50.766388+00:00",
+        "start_minutes": 690,
+        "task_id": "c12f024c-c839-4b41-a26f-361561a77d02",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
         "id": "8d671387-bfa5-4e6e-983e-01402237ad7c",
         "title": "Between videos",
         "day_date": "2026-03-20",
@@ -3879,20 +3957,6 @@
         "done": true
       },
       {
-        "id": "de3be79f-3eaf-48e3-84c3-ba65c6ed0e39",
-        "title": "Hide yellow video",
-        "day_date": "2026-04-03",
-        "start_time": "13:30:00",
-        "duration_minutes": 90,
-        "category": "My work",
-        "created_at": "2026-04-02T23:30:31.809569+00:00",
-        "start_minutes": 780,
-        "task_id": "be152879-a757-4f11-88b6-476cf6231453",
-        "rec_id": null,
-        "shop_id": null,
-        "done": false
-      },
-      {
         "id": "3617324b-f8b9-4e9b-b076-74b1ea01b86b",
         "title": "Oria @7 something",
         "day_date": "2026-04-02",
@@ -3986,6 +4050,20 @@
         "created_at": "2026-03-18T15:46:17.364061+00:00",
         "start_minutes": 840,
         "task_id": "2fb548a0-cadb-49f9-be31-f7de2609aa5d",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
+        "id": "3b24087a-99b7-400c-9a9e-794e4ef19427",
+        "title": "Pick up at home/target",
+        "day_date": "2026-04-04",
+        "start_time": "08:00:00",
+        "duration_minutes": 135,
+        "category": "Home",
+        "created_at": "2026-04-04T03:35:32.577438+00:00",
+        "start_minutes": 540,
+        "task_id": "6366f44b-7950-4374-9967-8b01a6e285c1",
         "rec_id": null,
         "shop_id": null,
         "done": true
@@ -4187,6 +4265,34 @@
         "done": true
       },
       {
+        "id": "becd2bf4-823c-41a8-aeef-16d98aff986e",
+        "title": "Hide yellow video",
+        "day_date": "2026-04-06",
+        "start_time": "09:15:00",
+        "duration_minutes": 105,
+        "category": "My work",
+        "created_at": "2026-04-06T02:34:50.518683+00:00",
+        "start_minutes": 555,
+        "task_id": "be152879-a757-4f11-88b6-476cf6231453",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "7ee65dda-0102-472d-9e2e-44f935e87b0d",
+        "title": "Ben's B day party",
+        "day_date": "2026-04-05",
+        "start_time": "16:45:00",
+        "duration_minutes": 120,
+        "category": "Social",
+        "created_at": "2026-04-05T03:38:32.983196+00:00",
+        "start_minutes": 1095,
+        "task_id": "258103bd-e004-45e8-bebb-c8f49d78f0cb",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
         "id": "1e46556b-5ac6-4003-a7b3-e2944a38b96a",
         "title": "Sign up pilates",
         "day_date": "2026-03-18",
@@ -4213,6 +4319,20 @@
         "rec_id": null,
         "shop_id": null,
         "done": true
+      },
+      {
+        "id": "14bf2016-76c5-4a69-b50b-0a84580797bd",
+        "title": "Check lik",
+        "day_date": "2026-04-06",
+        "start_time": "08:15:00",
+        "duration_minutes": 30,
+        "category": "Home",
+        "created_at": "2026-04-06T02:35:19.09179+00:00",
+        "start_minutes": 450,
+        "task_id": "4e8b5f7d-b6bc-4b3b-b6fb-80dedf9f9f14",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
       },
       {
         "id": "5b2247bc-0d0d-42a9-9291-3ad11ccf9bf7",
@@ -4425,20 +4545,6 @@
         "done": true
       },
       {
-        "id": "964e8968-52c1-44d7-8ce0-21b68770a7d7",
-        "title": "Mochi carrier",
-        "day_date": "2026-03-30",
-        "start_time": "18:30:00",
-        "duration_minutes": 30,
-        "category": "Shopping",
-        "created_at": "2026-03-30T13:27:26.725072+00:00",
-        "start_minutes": 960,
-        "task_id": null,
-        "rec_id": null,
-        "shop_id": "010dd63b-57ff-457b-9ce4-d40bdb8bf1c2",
-        "done": false
-      },
-      {
         "id": "e08182da-f044-4490-af5a-1d1eba1bd5ff",
         "title": "Pay tolls",
         "day_date": "2026-03-30",
@@ -4495,20 +4601,6 @@
         "done": true
       },
       {
-        "id": "63a8b993-ef61-4522-865f-3d5d9463f9e5",
-        "title": "Friends workout",
-        "day_date": "2026-04-03",
-        "start_time": "11:00:00",
-        "duration_minutes": 120,
-        "category": "Social",
-        "created_at": "2026-04-01T13:14:46.558439+00:00",
-        "start_minutes": 660,
-        "task_id": "5b558157-40ed-47c6-a75d-e7710e461bf9",
-        "rec_id": null,
-        "shop_id": null,
-        "done": false
-      },
-      {
         "id": "c97ee3e1-dd3e-496a-8e76-cbf748341f70",
         "title": "Update dashboard",
         "day_date": "2026-04-01",
@@ -4551,6 +4643,20 @@
         "done": true
       },
       {
+        "id": "63a8b993-ef61-4522-865f-3d5d9463f9e5",
+        "title": "Friends workout",
+        "day_date": "2026-04-03",
+        "start_time": "11:00:00",
+        "duration_minutes": 225,
+        "category": "Social",
+        "created_at": "2026-04-01T13:14:46.558439+00:00",
+        "start_minutes": 975,
+        "task_id": "5b558157-40ed-47c6-a75d-e7710e461bf9",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
         "id": "8ab4e0ad-648d-4a93-abcd-42ea4724732b",
         "title": "Unapplied cash",
         "day_date": "2026-04-03",
@@ -4562,7 +4668,91 @@
         "task_id": "2cbb2dc6-3010-412f-a6c0-3a4fa0d10639",
         "rec_id": null,
         "shop_id": null,
+        "done": true
+      },
+      {
+        "id": "6b9a6f9c-0693-4c85-90bf-344ced0e9c85",
+        "title": "Pups teeth",
+        "day_date": "2026-04-02",
+        "start_time": "13:15:00",
+        "duration_minutes": 30,
+        "category": "Recurring",
+        "created_at": "2026-04-04T04:00:09.696098+00:00",
+        "start_minutes": 795,
+        "task_id": null,
+        "rec_id": null,
+        "shop_id": null,
         "done": false
+      },
+      {
+        "id": "d796e49d-e117-4f6c-82f6-84ed84c7f6e3",
+        "title": "TC dashboard",
+        "day_date": "2026-04-04",
+        "start_time": "17:15:00",
+        "duration_minutes": 105,
+        "category": "Home",
+        "created_at": "2026-04-04T03:37:59.404481+00:00",
+        "start_minutes": 1005,
+        "task_id": "0d8f9d28-387c-4ed3-90b5-64a469e31b13",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
+        "id": "3b972a3b-2b17-4d30-906d-d0258528975b",
+        "title": "Call Nai Nai",
+        "day_date": "2026-04-05",
+        "start_time": "14:15:00",
+        "duration_minutes": 30,
+        "category": "Home",
+        "created_at": "2026-04-05T03:38:44.520062+00:00",
+        "start_minutes": 960,
+        "task_id": "d376f4e0-151f-4ce4-a4d2-6216c98403b3",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "1438ff99-23d4-44cb-9f92-9f75b80373ab",
+        "title": "Book london → iceland",
+        "day_date": "2026-04-05",
+        "start_time": "12:30:00",
+        "duration_minutes": 30,
+        "category": "Home",
+        "created_at": "2026-04-05T03:38:39.082282+00:00",
+        "start_minutes": 930,
+        "task_id": "3b7f34e0-2db9-4c24-a332-7314b9df9d79",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "5d71d313-752c-4248-9198-fc597c19dab6",
+        "title": "Hide yellow video",
+        "day_date": "2026-04-05",
+        "start_time": "09:15:00",
+        "duration_minutes": 45,
+        "category": "My work",
+        "created_at": "2026-04-05T03:37:26.266026+00:00",
+        "start_minutes": 885,
+        "task_id": "be152879-a757-4f11-88b6-476cf6231453",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "f36bd43d-8d41-4e83-8aaa-7eabe3277120",
+        "title": "TC dash",
+        "day_date": "2026-04-05",
+        "start_time": "12:45:00",
+        "duration_minutes": 105,
+        "category": "My work",
+        "created_at": "2026-04-05T03:39:07.343313+00:00",
+        "start_minutes": 990,
+        "task_id": "ff41196f-f019-4ab5-bcb5-41313b5ef67f",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
       }
     ],
     "auto_timeblocks": [
