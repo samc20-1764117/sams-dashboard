@@ -1190,7 +1190,7 @@ function renderRecOv(){
     const row=document.createElement('div');
     row.id='ti-'+selId;
     row.className='ti'+(isDone?' done':'');
-    row.style.cssText='cursor:pointer;break-inside:avoid;padding-top:1px;padding-bottom:1px;margin-top:0;margin-bottom:1px';
+    row.style.cssText='cursor:pointer;break-inside:avoid;padding-top:1px;padding-bottom:1px;margin-top:0;margin-bottom:2px';
     row.draggable=true;
     row.addEventListener('dragstart',e=>{e.stopPropagation();dragId='wrrule::'+rid;e.dataTransfer.effectAllowed='move';row.style.opacity='.4';document.body.classList.add('body-dragging');showWkcEdges(true);});
     row.addEventListener('dragend',()=>{row.style.opacity='1';document.body.classList.remove('body-dragging');showWkcEdges(false);dragId=null;});
