@@ -257,7 +257,8 @@ body.dark .inline-date-picker input[type="date"]{background:rgba(255,255,255,.08
 .imp-star{font-size:11px;flex-shrink:0;line-height:1}
 .delbtn{opacity:0;background:none;border:none;cursor:pointer;color:var(--subtle);font-size:10px;padding:1px 2px;border-radius:3px;flex-shrink:0;transition:opacity .1s;position:absolute;right:3px;top:50%;transform:translateY(-50%)}
 .ti:hover .delbtn,.ti.sel-row .delbtn{opacity:1;color:var(--subtle)}.delbtn:hover{color:#ef4444!important}
-.wr-cad-badge{position:absolute;right:3px;top:50%;transform:translateY(-50%);font-size:9px;font-weight:700;letter-spacing:.3px;padding:1px 3px;border-radius:3px;background:rgba(0,0,0,.13);color:inherit;pointer-events:none}
+.wr-has-cad{font-size:10.5px;color:var(--subtle);opacity:.75}
+.wr-cad-badge{position:absolute;right:3px;top:50%;transform:translateY(-50%);font-size:9px;font-weight:700;letter-spacing:.3px;padding:1px 3px;border-radius:3px;background:rgba(0,0,0,.08);color:rgba(148,163,184,.7);pointer-events:none}
 .wr-cad-badge.changed{background:rgba(59,130,246,.18);color:#1e40af}
 .wr-dot{position:absolute;right:5px;top:50%;transform:translateY(-50%);width:6px;height:6px;border-radius:50%;background:#93c5fd;pointer-events:none;flex-shrink:0}
 .ti:hover .wr-cad-badge,.ti.sel-row .wr-cad-badge,.ti:hover .wr-dot,.ti.sel-row .wr-dot{display:none}

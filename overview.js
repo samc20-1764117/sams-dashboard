@@ -1229,6 +1229,7 @@ function renderRecOv(){
     const _WR_CAD_BADGE={biweekly:'B',monthly:'M',quarterly:'Q',biannual:'BA',annual:'A',bimonthly:'B'};
     const wrBadgeLetter=(r.cadence&&r.cadence!=='weekly')&&_WR_CAD_BADGE[r.cadence];
     if(wrBadgeLetter){
+      row.classList.add('wr-has-cad');
       const bdg=document.createElement('span');
       bdg.className='wr-cad-badge'+(hasDot?' changed':'');
       bdg.title=hasDot?'Edited this week':'';
