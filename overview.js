@@ -1190,7 +1190,7 @@ function renderRecOv(){
     const row=document.createElement('div');
     row.id='ti-'+selId;
     row.className='ti'+(isDone?' done':'');
-    row.style.cssText='cursor:pointer;break-inside:avoid;margin-top:0';
+    row.style.cssText='cursor:pointer;break-inside:avoid;margin:0 6px;padding:3px 22px 3px 10px';
     row.draggable=true;
     row.addEventListener('dragstart',e=>{e.stopPropagation();dragId='wrrule::'+rid;e.dataTransfer.effectAllowed='move';row.style.opacity='.4';document.body.classList.add('body-dragging');showWkcEdges(true);});
     row.addEventListener('dragend',()=>{row.style.opacity='1';document.body.classList.remove('body-dragging');showWkcEdges(false);dragId=null;});
@@ -1769,7 +1769,7 @@ function renderShopOv(){
   container.innerHTML='';
   shopSorted.forEach(s=>{
     const el=document.createElement('div');
-    el.className='ti';el.id='ti-shop-cal-'+s.id;el.style.marginTop='0';
+    el.className='ti';el.id='ti-shop-cal-'+s.id;el.style.cssText='margin:0 6px;padding:3px 22px 3px 10px';
     el.draggable=true;
     el.addEventListener('dragstart',e=>{if(e.target.closest('.chk-wrap,.delbtn'))return;e.stopPropagation();dragId='shop::'+s.id;e.dataTransfer.effectAllowed='move';el.style.opacity='.4';document.body.classList.add('body-dragging');showWkcEdges(true);});
     el.addEventListener('dragend',()=>{el.style.opacity='';document.body.classList.remove('body-dragging');showWkcEdges(false);dragId=null;});
