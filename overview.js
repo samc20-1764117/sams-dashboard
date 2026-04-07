@@ -1830,7 +1830,7 @@ function renderShopOv(){
     });
     container.appendChild(el);
   });
-  const fi=container.querySelector('.ti');if(fi)container.style.maxHeight=(4+7*fi.offsetHeight)+'px';
+  container.style.maxHeight='';
 }
 
 // ── Virtual recurring task row for This Week ─────────────────────────────────
