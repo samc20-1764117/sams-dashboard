@@ -1770,7 +1770,6 @@ function renderShopOv(){
   shopSorted.forEach(s=>{
     const el=document.createElement('div');
     el.className='ti';el.id='ti-shop-cal-'+s.id;
-    el.style.cssText='padding-top:1px;padding-bottom:1px;margin-top:0;margin-bottom:2px';
     el.draggable=true;
     el.addEventListener('dragstart',e=>{if(e.target.closest('.chk-wrap,.delbtn'))return;e.stopPropagation();dragId='shop::'+s.id;e.dataTransfer.effectAllowed='move';el.style.opacity='.4';document.body.classList.add('body-dragging');showWkcEdges(true);});
     el.addEventListener('dragend',()=>{el.style.opacity='';document.body.classList.remove('body-dragging');showWkcEdges(false);dragId=null;});
