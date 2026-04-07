@@ -1248,7 +1248,7 @@ function renderRecOv(){
   const _skCount=skipIds.size+_skippedWrecCount;
   const _skBtn=document.getElementById('wrSkippedBtn');
   if(_skBtn){_skBtn.style.display=_skCount?'':'none';_skBtn.textContent='↩ '+_skCount;}
-  requestAnimationFrame(applySelHighlight);
+  requestAnimationFrame(()=>{applySelHighlight();const fi=elReg&&elReg.querySelector('.ti');if(fi)elReg.style.maxHeight=(4+7*fi.offsetHeight)+'px';});
   if(document.getElementById('recMoModal')?.classList.contains('open'))renderRecMoCal();
 }
 
@@ -1829,6 +1829,7 @@ function renderShopOv(){
     });
     container.appendChild(el);
   });
+  const fi=container.querySelector('.ti');if(fi)container.style.maxHeight=(4+7*fi.offsetHeight)+'px';
 }
 
 // ── Virtual recurring task row for This Week ─────────────────────────────────
