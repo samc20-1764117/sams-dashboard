@@ -1,19 +1,19 @@
 // ── Categories ─────────────────────────────────────────────────────────────────
 const CATS={
-  'home':     {bg:'#eff6ff',t:'#1e40af',d:'#3b82f6',b:'rgba(59,130,246,.2)'},
-  'my work':  {bg:'#f3fde8',t:'#365314',d:'#65a30d',b:'rgba(101,163,13,.2)'},
-  'work':     {bg:'#fdf2f8',t:'#9d174d',d:'#ec4899',b:'rgba(236,72,153,.2)'},
-  'social':   {bg:'#faf5ff',t:'#6b21a8',d:'#9333ea',b:'rgba(147,51,234,.2)'},
-  'long term':{bg:'#f8fafc',t:'#475569',d:'#94a3b8',b:'rgba(148,163,184,.25)'},
-  'recurring':{bg:'#ddf4f0',t:'#0f6b7a',d:'#2a9db5',b:'rgba(42,157,181,.25)'},
-  'weekly_reset':{bg:'#eff6ff',t:'#1e40af',d:'#3b82f6',b:'rgba(59,130,246,.2)'},
-  'buy':      {bg:'#fef9c3',t:'#713f12',d:'#eab308',b:'rgba(234,179,8,.25)'},
-  'travel':   {bg:'#dcfce7',t:'#15803d',d:'#22c55e',b:'rgba(34,197,94,.3)'},
-  'birthday': {bg:'#ffedd5',t:'#c2410c',d:'#f97316',b:'rgba(249,115,22,.3)'},
-  'shopping': {bg:'#fff7ed',t:'#9a3412',d:'#ea580c',b:'rgba(234,88,12,.25)'},
+  'home':     {bg:'#eff6ff',t:'#1e40af',d:'#3b82f6',dot:'#60a5fa',b:'rgba(59,130,246,.2)'},
+  'my work':  {bg:'#f3fde8',t:'#365314',d:'#65a30d',dot:'#4ade80',b:'rgba(101,163,13,.2)'},
+  'work':     {bg:'#fdf2f8',t:'#9d174d',d:'#ec4899',dot:'#f9a8d4',b:'rgba(236,72,153,.2)'},
+  'social':   {bg:'#faf5ff',t:'#6b21a8',d:'#9333ea',dot:'#c084fc',b:'rgba(147,51,234,.2)'},
+  'long term':{bg:'#f8fafc',t:'#475569',d:'#94a3b8',dot:'#cbd5e1',b:'rgba(148,163,184,.25)'},
+  'recurring':{bg:'#ddf4f0',t:'#0f6b7a',d:'#2a9db5',dot:'#5eead4',b:'rgba(42,157,181,.25)'},
+  'weekly_reset':{bg:'#eff6ff',t:'#1e40af',d:'#3b82f6',dot:'#60a5fa',b:'rgba(59,130,246,.2)'},
+  'buy':      {bg:'#fef9c3',t:'#713f12',d:'#eab308',dot:'#fde047',b:'rgba(234,179,8,.25)'},
+  'travel':   {bg:'#dcfce7',t:'#15803d',d:'#22c55e',dot:'#86efac',b:'rgba(34,197,94,.3)'},
+  'birthday': {bg:'#ffedd5',t:'#c2410c',d:'#f97316',dot:'#fdba74',b:'rgba(249,115,22,.3)'},
+  'shopping': {bg:'#fff7ed',t:'#9a3412',d:'#ea580c',dot:'#fb923c',b:'rgba(234,88,12,.25)'},
 };
-const IMP={bg:'#fef9c3',t:'#854d0e',d:'#eab308',b:'rgba(234,179,8,.35)'};
-const OV={bg:'#fff0f0',t:'#b91c1c',d:'#ef4444',b:'rgba(239,68,68,.28)'};
+const IMP={bg:'#fef9c3',t:'#854d0e',d:'#eab308',dot:'#fde047',b:'rgba(234,179,8,.35)'};
+const OV={bg:'#fff0f0',t:'#b91c1c',d:'#ef4444',dot:'#fca5a5',b:'rgba(239,68,68,.28)'};
 const KCATS=['Home','My work','Work','Social+Travel','Long term'];
 let HOURS=[...Array(20)].map((_,i)=>i+4);
 const DNAMES=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
