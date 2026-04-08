@@ -2000,7 +2000,9 @@ function showPage(id){
 }
 
 // ── Modals ─────────────────────────────────────────────────────────────────────
-function closeMod(id,e){if(e&&e.target!==document.getElementById(id))return;document.getElementById(id).classList.remove('open');if(id==='mModal'||id==='recMoModal'){const bg=document.querySelector('.bg-canvas');if(bg)bg.classList.remove('orbs-paused');}}
+let _modMousedownInside=false;
+document.addEventListener('mousedown',e=>{_modMousedownInside=!!e.target.closest('.modal');});
+function closeMod(id,e){if(e&&e.target!==document.getElementById(id))return;if(e&&_modMousedownInside)return;document.getElementById(id).classList.remove('open');if(id==='mModal'||id==='recMoModal'){const bg=document.querySelector('.bg-canvas');if(bg)bg.classList.remove('orbs-paused');}}
 
 // ── Init ───────────────────────────────────────────────────────────────────────
 let _firstSyncDone=false;
