@@ -173,7 +173,7 @@ function tRowTodayVirt(t,tbArrow=false,noColor=false){
   return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''}" style="${!ov&&!noColor?`background:${s.bg}`:''}" id="ti-${t.id}" draggable="true" ondragstart="dragId='${_dragId}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);" ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false);" onclick="selTask(event,'${t.id}')" ondblclick="${_dblClick}" oncontextmenu="${_ctxMenu}">
     <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="${_chk}"></label>
     <span class="tn">${t.name}</span>
-    <svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3.5" fill="${ps.dot||ps.d}"/></svg>
+    <svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3" fill="${ps.bg}" stroke="${ps.d}" stroke-width="1"/></svg>
     ${tbArrow?'<span class="tb-arrow">›</span>':''}
     <button class="delbtn" onclick="event.stopPropagation();${_xBtn}">✕</button>
   </div>`;
@@ -189,7 +189,7 @@ function tRowShopVirt(t,noDate=false,tbArrow=false,noColor=false){
     onclick="selTask(event,'${t.id}')" ondblclick="tiDblShop(event,'${t._shopId}')" oncontextmenu="showCtxShop(event,'${t._shopId}')">
     <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="togShop('${t._shopId}',this.checked)"></label>
     <span class="tn">${t.name}</span>
-    <svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3.5" fill="${ps.dot||ps.d}"/></svg>
+    <svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3" fill="${ps.bg}" stroke="${ps.d}" stroke-width="1"/></svg>
     ${!noDate&&t.due_date?`<span class="dlbl ${ov?'ov':''}">${fmtD(t.due_date)}</span>`:''}
     ${tbArrow?'<span class="tb-arrow">›</span>':''}
     <button class="delbtn" onclick="event.stopPropagation();unscheduleShop('${t._shopId}')">✕</button>
@@ -1883,7 +1883,7 @@ function tRowExtra(t){
   const modeIcon=isTv?(t.travel_mode==='plane'?_PLANE_SVG:t.travel_mode==='drive'?_CAR_SVG:''):'';
   return`<div class="ti ti-${sl}" style="background:${s.bg}" id="ti-${t.id}" onclick="selTask(event,'${t.id}')">
     <span class="tn" style="color:${s.t};font-weight:600">${modeIcon}${t.name}</span>
-    ${isTv?'':`<svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3.5" fill="${s.dot||s.d}"/></svg>`}
+    ${isTv?'':`<svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3" fill="${s.bg}" stroke="${s.d}" stroke-width="1"/></svg>`}
     <span class="dlbl">${fmtD(t.due_date)}${sub}</span>
     ${isTv?`<button class="delbtn" onclick="event.stopPropagation();delTravel('${t._srcId}')">✕</button>`:''}
   </div>`;
@@ -1902,7 +1902,7 @@ function tRow(t,o={}){
   return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''} ${imp&&!ov?'imp-row':''}" style="${!ov&&!imp&&!o.noColor?`background:${s.bg}`:''}" id="ti-${t.id}" ${o.drag?`draggable="true" ondragstart="dStart(event,'${t.id}')" ondragend="dEnd(event)"`:''} onclick="selTask(event,'${t.id}')" ondblclick="tiDbl(event,'${t.id}')" oncontextmenu="showCtx(event,'${t.id}')">
     <label class="chk-wrap" onclick="event.stopPropagation()" onmousedown="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="toggleTask('${t.id}',this.checked,'${o.drag?'wk':''}')"></label>
     <span class="tn">${tmIcon(t)}${t.name}</span>
-    ${o.cat?(o.catDot?`<svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3.5" fill="${s.dot||s.d}"/></svg>`:`<span class="cpill" style="background:${s.bg};color:${s.t};border-color:${s.b}">${t.category||'?'}</span>`):''}
+    ${o.cat?(o.catDot?`<svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3" fill="${s.bg}" stroke="${s.d}" stroke-width="1"/></svg>`:`<span class="cpill" style="background:${s.bg};color:${s.t};border-color:${s.b}">${t.category||'?'}</span>`):''}
     ${o.flag?'<span class="flag-u">📅</span>':''}
     ${!o.flag&&(!o.noDate||ov)&&t.due_date?`<span class="dlbl ${ov?'ov':''}" style="cursor:pointer" onclick="openInlineDatePicker(event,'${t.id}','${t.due_date}')">${fmtD(t.due_date)} <span class="date-clr" title="Clear date" onclick="event.stopPropagation();clearTaskDate('${t.id}',event)">×</span></span>`:''}
     ${o.tbArrow?'<span class="tb-arrow">›</span>':''}
