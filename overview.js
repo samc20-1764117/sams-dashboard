@@ -2517,7 +2517,7 @@ function startTBInlineEdit(blockId,col,onCommit){
         const ti=st.tasks.findIndex(x=>x.id===newTask.id);
         if(ti>-1)st.tasks[ti]={...sv[0]};
         b.taskId=String(sv[0].id);
-        save();
+        save();renderAll();
       }
       // Now save the block itself to DB
       sbSaveBlock(b);
