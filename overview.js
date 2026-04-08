@@ -2570,13 +2570,11 @@ function goThisWk(){wkOff=0;renderWkSummary();renderWkCal();}
     if(block._expandOrig!==undefined)return;
     block._expandOrig=block.style.height;
     block.style.height=block.scrollHeight+'px';
-    block.style.zIndex='20';
     block.classList.add('tb-expanded');
   }
   function collapseNotes(block){
     if(!block||block._expandOrig===undefined)return;
     block.style.height=block._expandOrig;
-    block.style.zIndex='';
     block.classList.remove('tb-expanded');
     delete block._expandOrig;
   }
