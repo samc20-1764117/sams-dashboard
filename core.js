@@ -855,5 +855,17 @@ document.addEventListener('keydown',e=>{
     else if(document.getElementById('mModal').classList.contains('open')&&!document.querySelector('input:focus,textarea:focus')){e.preventDefault();closeMod('mModal');document.activeElement?.blur();}
     else if(document.getElementById('recMoModal').classList.contains('open')&&!document.querySelector('input:focus,textarea:focus')&&!selectedTasks.size){e.preventDefault();closeMod('recMoModal');document.activeElement?.blur();}
   }
+  if(e.key==='Enter'&&(e.metaKey||e.ctrlKey)){
+    e.preventDefault();
+    const qa=document.getElementById('qaPopup');
+    if(qa.classList.contains('open')){submitQA();return;}
+    if(document.getElementById('tModal').classList.contains('open')){saveTModal();}
+    else if(document.getElementById('shopEditModal').classList.contains('open')){saveShopEdit();}
+    else if(document.getElementById('recEditModal').classList.contains('open')){saveRecEdit();}
+    else if(document.getElementById('recModal').classList.contains('open')){saveRecModal();}
+    else if(document.getElementById('bModal').classList.contains('open')){saveBlock();}
+    else if(document.getElementById('mModal').classList.contains('open')){closeMod('mModal');document.activeElement?.blur();}
+    else if(document.getElementById('recMoModal').classList.contains('open')&&!selectedTasks.size){closeMod('recMoModal');document.activeElement?.blur();}
+  }
 });
 
