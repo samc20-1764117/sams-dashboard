@@ -1,5 +1,5 @@
 {
-  "exported_at": "2026-04-07T13:00:01.284Z",
+  "exported_at": "2026-04-08T13:00:01.360Z",
   "mode": "auto",
   "tables": {
     "tasks": [
@@ -954,16 +954,6 @@
         "notes": null
       },
       {
-        "name": "AI tracking video",
-        "category": "My work",
-        "due_date": "2026-04-07",
-        "done": false,
-        "importance": null,
-        "id": "4a3757e6-a91c-4ff5-84d2-287f5db5da6f",
-        "important": false,
-        "notes": "Script ready"
-      },
-      {
         "name": "Documentation - add pics",
         "category": "Work",
         "due_date": "2026-03-25",
@@ -1554,24 +1544,24 @@
         "notes": null
       },
       {
+        "name": "Shower",
+        "category": "Home",
+        "due_date": "2026-04-07",
+        "done": true,
+        "importance": null,
+        "id": "b5c9f7ce-86ed-4cb6-948c-0f594b25aa9d",
+        "important": false,
+        "notes": null
+      },
+      {
         "name": "AI tracking video",
         "category": "My work",
-        "due_date": "2026-04-07",
+        "due_date": "2026-04-10",
         "done": false,
         "importance": null,
         "id": "d895f994-cf48-4ab3-95f9-1ffd706914b7",
         "important": false,
         "notes": "Start VO/filming"
-      },
-      {
-        "name": "Drill down get ready for film",
-        "category": "My work",
-        "due_date": "2026-04-07",
-        "done": false,
-        "importance": null,
-        "id": "4286cb35-70e7-4129-9098-53ef12ee8bb1",
-        "important": false,
-        "notes": "- thumbnail"
       },
       {
         "name": "Nav icons",
@@ -1580,16 +1570,6 @@
         "done": true,
         "importance": null,
         "id": "d891ffe8-2fcf-4ebe-ac78-19e2d729aece",
-        "important": false,
-        "notes": null
-      },
-      {
-        "name": "Add 3 more UX",
-        "category": "My work",
-        "due_date": "2026-04-06",
-        "done": false,
-        "importance": null,
-        "id": "a27c5afe-8078-4283-96d1-bdec50520900",
         "important": false,
         "notes": null
       },
@@ -1614,12 +1594,122 @@
         "notes": null
       },
       {
-        "name": "Shower",
-        "category": "Home",
-        "due_date": "2026-04-07",
+        "name": "Add 3 more UX",
+        "category": "My work",
+        "due_date": "2026-04-08",
         "done": false,
         "importance": null,
-        "id": "b5c9f7ce-86ed-4cb6-948c-0f594b25aa9d",
+        "id": "042be408-b0b7-47f5-ba85-c606e67beb42",
+        "important": false,
+        "notes": null
+      },
+      {
+        "name": "Unapplied cash",
+        "category": "Work",
+        "due_date": "2026-04-07",
+        "done": true,
+        "importance": null,
+        "id": "b3038eae-e7e4-4bcd-9f8e-30e6517ab85d",
+        "important": false,
+        "notes": null
+      },
+      {
+        "name": "Confirm tab scheudle",
+        "category": "My work",
+        "due_date": "2026-04-07",
+        "done": true,
+        "importance": null,
+        "id": "0e6e056d-87bc-40f0-bb9c-f8edf6939851",
+        "important": true,
+        "notes": null
+      },
+      {
+        "name": "AI tracking video",
+        "category": "My work",
+        "due_date": "2026-04-10",
+        "done": false,
+        "importance": null,
+        "id": "4a3757e6-a91c-4ff5-84d2-287f5db5da6f",
+        "important": false,
+        "notes": "Script ready"
+      },
+      {
+        "name": "Jaffer 1:1",
+        "category": "Work",
+        "due_date": "2026-04-07",
+        "done": true,
+        "importance": null,
+        "id": "25432047-7726-448a-a364-a2bd9c542341",
+        "important": false,
+        "notes": null
+      },
+      {
+        "name": "Add 3 more UX",
+        "category": "My work",
+        "due_date": "2026-04-07",
+        "done": true,
+        "importance": null,
+        "id": "a27c5afe-8078-4283-96d1-bdec50520900",
+        "important": false,
+        "notes": null
+      },
+      {
+        "name": "VO drill down",
+        "category": "My work",
+        "due_date": "2026-04-09",
+        "done": false,
+        "importance": null,
+        "id": "d687cd58-082d-493b-a334-45e8017f3e88",
+        "important": false,
+        "notes": null
+      },
+      {
+        "name": "Unapplied Cash",
+        "category": "Work",
+        "due_date": "2026-04-08",
+        "done": false,
+        "importance": null,
+        "id": "5ea82e1b-4651-4651-978e-2527c7d8654b",
+        "important": false,
+        "notes": "- dynamic legend (1 week vs distinct status categories) - add color indicators to kpis > 50% last week → blue. - bins for oldest unapplied? - make selections same color to tie together"
+      },
+      {
+        "name": "Remove black outline - shapes",
+        "category": "My work",
+        "due_date": "2026-04-08",
+        "done": false,
+        "importance": null,
+        "id": "d0bc180d-f5f5-43b2-aa17-96a8b1bc1f07",
+        "important": false,
+        "notes": null
+      },
+      {
+        "name": "Drill down get ready for film",
+        "category": "My work",
+        "due_date": "2026-04-08",
+        "done": false,
+        "importance": null,
+        "id": "4286cb35-70e7-4129-9098-53ef12ee8bb1",
+        "important": false,
+        "notes": "- thumbnail"
+      },
+      {
+        "name": "UAT submission",
+        "category": "Work",
+        "due_date": "2026-04-08",
+        "done": false,
+        "importance": null,
+        "id": "5ece1475-4f34-4081-8778-a16a5525b30d",
+        "important": false,
+        "notes": null
+      },
+      {
+        "name": "Add 3 more UX",
+        "category": "My work",
+        "due_date": "2026-04-07",
+        "done": true,
+        "importance": null,
+        "id": "713597f4-d644-4857-be48-2ec06968afe9",
         "important": false,
         "notes": null
       }
@@ -1660,15 +1750,6 @@
         "created_at": "2026-03-26T14:45:18.837297+00:00",
         "due_date": null,
         "shop_order": 6
-      },
-      {
-        "id": "010dd63b-57ff-457b-9ce4-d40bdb8bf1c2",
-        "name": "Mochi carrier",
-        "store": "Online",
-        "done": false,
-        "created_at": "2026-03-23T01:44:25.166696+00:00",
-        "due_date": null,
-        "shop_order": 1
       },
       {
         "id": "c18fd7a4-8484-4636-a93d-b9e349595c5a",
@@ -1716,24 +1797,6 @@
         "shop_order": null
       },
       {
-        "id": "2fc1a3c7-0cbc-4d49-a19a-48f20e289721",
-        "name": "Bowls",
-        "store": "Ikea",
-        "done": false,
-        "created_at": "2026-03-18T17:50:33.110344+00:00",
-        "due_date": null,
-        "shop_order": 4
-      },
-      {
-        "id": "8d195c44-9915-4513-812e-e30725a386b2",
-        "name": "Donut lamp",
-        "store": "Ikea",
-        "done": false,
-        "created_at": "2026-03-10T14:18:17.412058+00:00",
-        "due_date": null,
-        "shop_order": 5
-      },
-      {
         "id": "f05e8b0b-788a-475a-94ed-f73f6576181e",
         "name": "Whitening strips",
         "store": "Other",
@@ -1779,40 +1842,49 @@
         "shop_order": null
       },
       {
-        "id": "5060e587-8c21-4ce5-8bc3-ec6d43be311e",
-        "name": "Garlic squeeze",
-        "store": "HEB",
-        "done": false,
-        "created_at": "2026-03-18T03:06:00.699938+00:00",
-        "due_date": null,
-        "shop_order": 9
-      },
-      {
-        "id": "63d4a10b-e42d-43dd-9771-728f5e6cabfb",
-        "name": "Mochi collar",
-        "store": "Online",
-        "done": false,
-        "created_at": "2026-03-10T14:18:17.412058+00:00",
-        "due_date": null,
-        "shop_order": 0
-      },
-      {
-        "id": "314d0e7a-10a5-4f1e-8a8d-5dfe99801d99",
-        "name": "Outdoor fabric",
-        "store": "Other",
-        "done": false,
-        "created_at": "2026-03-26T14:44:45.457788+00:00",
-        "due_date": null,
-        "shop_order": 7
-      },
-      {
         "id": "8e27aad9-b437-4066-81dd-fd449bf538d5",
         "name": "Leashes - adjustables",
         "store": "Other",
         "done": false,
         "created_at": "2026-03-19T14:30:01.109607+00:00",
         "due_date": null,
-        "shop_order": 10
+        "shop_order": 7
+      },
+      {
+        "id": "010dd63b-57ff-457b-9ce4-d40bdb8bf1c2",
+        "name": "Mochi carrier",
+        "store": "Online",
+        "done": false,
+        "created_at": "2026-03-23T01:44:25.166696+00:00",
+        "due_date": null,
+        "shop_order": 2
+      },
+      {
+        "id": "8d195c44-9915-4513-812e-e30725a386b2",
+        "name": "Donut lamp",
+        "store": "Ikea",
+        "done": false,
+        "created_at": "2026-03-10T14:18:17.412058+00:00",
+        "due_date": null,
+        "shop_order": 5
+      },
+      {
+        "id": "2fc1a3c7-0cbc-4d49-a19a-48f20e289721",
+        "name": "Bowls",
+        "store": "Ikea",
+        "done": false,
+        "created_at": "2026-03-18T17:50:33.110344+00:00",
+        "due_date": null,
+        "shop_order": 4
+      },
+      {
+        "id": "5060e587-8c21-4ce5-8bc3-ec6d43be311e",
+        "name": "Garlic squeeze",
+        "store": "HEB",
+        "done": false,
+        "created_at": "2026-03-18T03:06:00.699938+00:00",
+        "due_date": null,
+        "shop_order": 6
       },
       {
         "id": "9eeb0d0c-283a-4e0d-9f29-b1bc965db522",
@@ -1822,6 +1894,33 @@
         "created_at": "2026-03-10T14:18:17.412058+00:00",
         "due_date": null,
         "shop_order": 3
+      },
+      {
+        "id": "3009b869-a6c5-4f4a-adc5-10bbff5338d8",
+        "name": "test",
+        "store": "Other",
+        "done": false,
+        "created_at": "2026-04-07T18:30:26.733226+00:00",
+        "due_date": null,
+        "shop_order": 8
+      },
+      {
+        "id": "314d0e7a-10a5-4f1e-8a8d-5dfe99801d99",
+        "name": "Outdoor fabric",
+        "store": "Other",
+        "done": false,
+        "created_at": "2026-03-26T14:44:45.457788+00:00",
+        "due_date": null,
+        "shop_order": 0
+      },
+      {
+        "id": "63d4a10b-e42d-43dd-9771-728f5e6cabfb",
+        "name": "Mochi collar",
+        "store": "Online",
+        "done": false,
+        "created_at": "2026-03-10T14:18:17.412058+00:00",
+        "due_date": null,
+        "shop_order": 1
       }
     ],
     "travel": [
@@ -4755,6 +4854,20 @@
         "done": true
       },
       {
+        "id": "7dfb12b3-af11-4f1f-bf86-da5b67a6579b",
+        "title": "Pups teeth",
+        "day_date": "2026-04-08",
+        "start_time": "18:45:00",
+        "duration_minutes": 30,
+        "category": "Recurring",
+        "created_at": "2026-04-08T03:37:37.457682+00:00",
+        "start_minutes": 1110,
+        "task_id": null,
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
         "id": "3b972a3b-2b17-4d30-906d-d0258528975b",
         "title": "Call Nai Nai",
         "day_date": "2026-04-05",
@@ -4839,6 +4952,20 @@
         "done": true
       },
       {
+        "id": "de67cfa3-7cd0-4a61-858f-28f1986d4afa",
+        "title": "Drill down get ready for film",
+        "day_date": "2026-04-08",
+        "start_time": "13:30:00",
+        "duration_minutes": 90,
+        "category": "My work",
+        "created_at": "2026-04-07T18:03:02.151767+00:00",
+        "start_minutes": 450,
+        "task_id": "4286cb35-70e7-4129-9098-53ef12ee8bb1",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
         "id": "08867e9c-9fd7-4022-8187-6f594af19e63",
         "title": "Unapplied cash",
         "day_date": "2026-04-06",
@@ -4848,6 +4975,20 @@
         "created_at": "2026-04-06T13:47:05.381984+00:00",
         "start_minutes": 585,
         "task_id": "b898e591-deea-4844-baaf-2423a2dd3bc7",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
+        "id": "1114d6af-fb41-4aca-b3aa-6654aeabe8e2",
+        "title": "Add 3 more UX",
+        "day_date": "2026-04-06",
+        "start_time": "13:45:00",
+        "duration_minutes": 60,
+        "category": "Home",
+        "created_at": "2026-04-06T18:13:23.565937+00:00",
+        "start_minutes": 1140,
+        "task_id": "a27c5afe-8078-4283-96d1-bdec50520900",
         "rec_id": null,
         "shop_id": null,
         "done": true
@@ -4867,20 +5008,6 @@
         "done": true
       },
       {
-        "id": "1114d6af-fb41-4aca-b3aa-6654aeabe8e2",
-        "title": "Add 3 more UX",
-        "day_date": "2026-04-06",
-        "start_time": "13:45:00",
-        "duration_minutes": 60,
-        "category": "Home",
-        "created_at": "2026-04-06T18:13:23.565937+00:00",
-        "start_minutes": 1140,
-        "task_id": "a27c5afe-8078-4283-96d1-bdec50520900",
-        "rec_id": null,
-        "shop_id": null,
-        "done": false
-      },
-      {
         "id": "2ad46c9f-81a1-4ce3-a93e-ffcc4f83e51e",
         "title": "Pups treats",
         "day_date": "2026-04-06",
@@ -4893,6 +5020,132 @@
         "rec_id": null,
         "shop_id": null,
         "done": true
+      },
+      {
+        "id": "7c3b706c-1976-4347-ad86-42b0283f435c",
+        "title": "Add 3 more UX",
+        "day_date": "2026-04-07",
+        "start_time": "10:15:00",
+        "duration_minutes": 75,
+        "category": "My work",
+        "created_at": "2026-04-07T13:18:34.528855+00:00",
+        "start_minutes": 510,
+        "task_id": "a27c5afe-8078-4283-96d1-bdec50520900",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
+        "id": "92482da3-ab4f-4b3a-ade4-0b13f350b9cc",
+        "title": "Unapplied cash",
+        "day_date": "2026-04-07",
+        "start_time": "09:00:00",
+        "duration_minutes": 75,
+        "category": "Home",
+        "created_at": "2026-04-07T13:17:56.533251+00:00",
+        "start_minutes": 585,
+        "task_id": "b3038eae-e7e4-4bcd-9f8e-30e6517ab85d",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
+        "id": "3dc42a31-fa8d-4a52-ba5c-9336af443a15",
+        "title": "Shower",
+        "day_date": "2026-04-07",
+        "start_time": "18:00:00",
+        "duration_minutes": 30,
+        "category": "Home",
+        "created_at": "2026-04-07T13:18:46.205537+00:00",
+        "start_minutes": 795,
+        "task_id": "b5c9f7ce-86ed-4cb6-948c-0f594b25aa9d",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
+        "id": "3f788179-bb85-4deb-a398-077bf17308e6",
+        "title": "UAT submission",
+        "day_date": "2026-04-08",
+        "start_time": "09:00:00",
+        "duration_minutes": 30,
+        "category": "Work",
+        "created_at": "2026-04-08T03:25:26.426347+00:00",
+        "start_minutes": 720,
+        "task_id": "5ece1475-4f34-4081-8778-a16a5525b30d",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "dedba994-9e53-4141-b6df-08464638791f",
+        "title": "Confirm tab scheudle",
+        "day_date": "2026-04-07",
+        "start_time": "11:00:00",
+        "duration_minutes": 30,
+        "category": "My work",
+        "created_at": "2026-04-07T14:43:39.260041+00:00",
+        "start_minutes": 690,
+        "task_id": "0e6e056d-87bc-40f0-bb9c-f8edf6939851",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
+        "id": "160dbb6a-735d-4bcf-93c4-63fbd80579e0",
+        "title": "Jaffer 1:1",
+        "day_date": "2026-04-07",
+        "start_time": "10:00:00",
+        "duration_minutes": 30,
+        "category": "Home",
+        "created_at": "2026-04-07T13:18:24.778467+00:00",
+        "start_minutes": 720,
+        "task_id": "25432047-7726-448a-a364-a2bd9c542341",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
+        "id": "8842d7f1-1846-4b21-b146-a2b0c348d302",
+        "title": "Unapplied Cash",
+        "day_date": "2026-04-08",
+        "start_time": "09:00:00",
+        "duration_minutes": 120,
+        "category": "Work",
+        "created_at": "2026-04-07T17:55:48.93016+00:00",
+        "start_minutes": 540,
+        "task_id": "5ea82e1b-4651-4651-978e-2527c7d8654b",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "0061dfd8-b3d8-41d0-a067-655c78897f3d",
+        "title": "Remove black outline - shapes",
+        "day_date": "2026-04-08",
+        "start_time": "12:00:00",
+        "duration_minutes": 75,
+        "category": "My work",
+        "created_at": "2026-04-07T18:00:14.410731+00:00",
+        "start_minutes": 750,
+        "task_id": "d0bc180d-f5f5-43b2-aa17-96a8b1bc1f07",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "0e7d129e-e0ff-409c-9fef-5746938435a2",
+        "title": "PM dash - finalize build",
+        "day_date": "2026-04-08",
+        "start_time": "14:15:00",
+        "duration_minutes": 135,
+        "category": "My work",
+        "created_at": "2026-04-07T18:02:56.801041+00:00",
+        "start_minutes": 840,
+        "task_id": "7141d74b-fa75-41e8-9e24-5663274000bd",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
       }
     ],
     "auto_timeblocks": [
