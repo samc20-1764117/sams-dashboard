@@ -1261,8 +1261,8 @@ function writeWrOverride(ruleId,wkKey,payload,{onDone,undoLabel='Changed WR task
   // Capture and remove timeblocks for this rule in the target week (skip only)
   const _skipRule=isSkip?st.wrRules.find(x=>String(x.id)===String(ruleId)):null;
   const _pinnedDs=_skipRule?._dateOverrides?.[wkKey];
-  const linkedBlocks=isSkip&&st.blocks?st.blocks.filter(b=>dsToWkKey(b.ds)===wkKey&&(String(b.ruleId)===String(ruleId)||(!b.ruleId&&_pinnedDs&&b.ds===_pinnedDs&&!b.taskId&&!b.recId&&!b.shopId))):[];
-  if(isSkip&&linkedBlocks.length){st.blocks=st.blocks.filter(b=>!(String(b.ruleId)===String(ruleId)&&dsToWkKey(b.ds)===wkKey));linkedBlocks.forEach(b=>sbDeleteBlock(b.id));}
+  const linkedBlocks=isSkip&&st.blocks?st.blocks.filter(b=>dsToWkKey(b.ds)===wkKey&&(String(b.ruleId)===String(ruleId)||String(b.recId)===String(ruleId)||(!b.ruleId&&!b.recId&&_pinnedDs&&b.ds===_pinnedDs&&!b.taskId&&!b.shopId))):[];
+  if(isSkip&&linkedBlocks.length){st.blocks=st.blocks.filter(b=>!linkedBlocks.some(lb=>lb.id===b.id));linkedBlocks.forEach(b=>sbDeleteBlock(b.id));}
   const _rerender=()=>{renderRecOv();renderWkCal();renderWeeklyPage();renderToday();if(document.getElementById('tbGrid'))renderDayTB();};
   const existing=st.wrOverrides.find(o=>String(o.rule_id)===String(ruleId)&&o.wk_key===wkKey);
   if(existing){
@@ -1406,7 +1406,7 @@ function unscheduleWrRule(rid,wkKey){
   const prev=r._dateOverrides[wkKey];
   const _unschDs=prev&&prev!=='__skip__'?prev:null;
   delete r._dateOverrides[wkKey];
-  const linkedBlocks=st.blocks?st.blocks.filter(b=>String(b.ruleId)===String(rid)||(!b.ruleId&&_unschDs&&b.ds===_unschDs&&!b.taskId&&!b.recId&&!b.shopId)):[];
+  const linkedBlocks=st.blocks?st.blocks.filter(b=>String(b.ruleId)===String(rid)||String(b.recId)===String(rid)||(!b.ruleId&&!b.recId&&_unschDs&&b.ds===_unschDs&&!b.taskId&&!b.shopId)):[];
   if(st.blocks)st.blocks=st.blocks.filter(b=>!linkedBlocks.some(lb=>lb.id===b.id));
   save();renderAll();
   linkedBlocks.forEach(b=>sbDeleteBlock(b.id));
@@ -2071,7 +2071,7 @@ function getVisibleBlocks(ds){
       if(!t)return false;
       const tds=(t.due_date||'').split('T')[0];if(tds&&tds!==ds&&!(isViewingToday&&isOv(t.due_date)&&!t.done))return false;
     } else if(b.recId){
-      const r=st.recurring.find(x=>String(x.id)===String(b.recId));
+      const r=st.recurring.find(x=>String(x.id)===String(b.recId))||st.wrRules.find(x=>String(x.id)===String(b.recId));
       if(!r)return false;
     } else if(b.ruleId){
       const r=st.wrRules.find(x=>String(x.id)===String(b.ruleId));
@@ -2377,7 +2377,7 @@ function dropOnTB(e,ds,h,row,smOverride){
     const prevDateOv=r._dateOverrides?{...r._dateOverrides}:{};
     if(!r._dateOverrides)r._dateOverrides={};
     r._dateOverrides[wkKey]=ds;
-    const blk={id:crypto.randomUUID(),title:r.name,ds,sm,dur:autoDur(r.name,'Recurring'),cat:'Recurring',ruleId:String(r.id)};
+    const blk={id:crypto.randomUUID(),title:r.name,ds,sm,dur:autoDur(r.name,'Recurring'),cat:'Recurring',ruleId:String(r.id),recId:String(r.id)};
     st.blocks.push(blk);dragId=null;save();renderAll();renderRecOv();
     sbSaveBlock(blk);
     sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));
