@@ -16,7 +16,7 @@
 `#wrScopePicker` HTML order: `#wrScopeRemove` (hidden by default), `#wrScopeThis`, `#wrScopeAll`.
 
 ## Skip Behavior
-- **WR rule skip** (`writeWrOverride({override_type:'skip'})`): adds to `st.wrOverrides`. Captures linked TB blocks (`b.ruleId===ruleId && dsToWkKey(b.ds)===wkKey`, with fallback: title+date match for blocks missing `ruleId`). Removes them from `st.blocks` + `sbDeleteBlock`. Undo restores blocks + removes override. Calls `renderToday()`,`renderWkCal()`,`renderRecOv()`,`renderWeeklyPage()`,`renderDayTB()`.
+- **WR rule skip** (`writeWrOverride({override_type:'skip'})`): adds to `st.wrOverrides`. Captures linked TB blocks by `b.ruleId===ruleId` OR `b.recId===ruleId` (WR rule blocks store rule ID in both fields; after refresh only `recId` persists). Fallback: no-ID block matching by date. Removes from `st.blocks` + `sbDeleteBlock`. Undo restores. Calls `renderToday`,`renderWkCal`,`renderRecOv`,`renderWeeklyPage`,`renderDayTB`.
 - **WR recurring skip** (`skipWRec(rid,wkKey)`): sets `_dateOverrides[wkKey]='__skip__'`. Removes linked TB blocks (`b.recId===rid && isInWk(b.ds,wkOff)`). Calls `renderAll()`,`renderDayTB()`. PATCHes `wr_recurring_rules`.
 - **Skip filtering**: `wrRulesToday`, `wrRulesForDay`, `wrRulesForDayDone` all filter out rules where `st.wrOverrides` has `override_type:'skip'` for that wkKey. `wrecToday`/`wrecForDay` filter `_dateOverrides[wkKey]!=='__skip__'`.
 
@@ -60,7 +60,11 @@
 
 **Schedule logic** (`isWRRuleDueThisWeek`): weekly/other=always; biweekly=week diff mod 2===0; monthly=day-of-month in Mon–Sun; quarterly/biannual/annual=week diff mod 13/26/52===0.
 
-**`writeWrOverride(ruleId,wkKey,payload,{onDone,undoLabel})`**: PATCH if override exists, POST if not. Nulls unrelated fields. On `override_type:'skip'`: removes linked TB blocks (by `ruleId` or date+title fallback), restores on undo. Calls `renderRecOv`,`renderWkCal`,`renderWeeklyPage`,`renderToday`,`renderDayTB`.
+**`writeWrOverride(ruleId,wkKey,payload,{onDone,undoLabel})`**: PATCH if override exists, POST if not. Nulls unrelated fields. On `override_type:'skip'`: removes linked TB blocks by `b.ruleId===ruleId` OR `b.recId===ruleId`, restores on undo. Calls `renderRecOv`,`renderWkCal`,`renderWeeklyPage`,`renderToday`,`renderDayTB`.
+
+**`unscheduleWrRule(rid,wkKey)`**: removes `_dateOverrides[wkKey]`. Finds linked TB blocks by `b.ruleId===rid` OR `b.recId===rid`, removes + `sbDeleteBlock`. Undo restores.
+
+**WR rule TB block identity**: `dropOnTB` for `wrrule::` sets both `ruleId:String(r.id)` and `recId:String(r.id)`. `rec_id` persists to DB; after refresh `ruleId` is null but `recId` carries the rule ID. All lookups (`getVisibleBlocks`, `drawTBBlock`, `_hasTBToday`, `sortTasksForDay`, `sortByTBWeek`, skip/unschedule) check `b.recId` as fallback when `b.ruleId` is null. `getVisibleBlocks` checks `st.wrRules` when `b.recId` not found in `st.recurring`. Today-list arrow (`_hasTBToday`) for `t._ruleId` checks `b.ruleId||b.recId`.
 
 **`_dateOverrides` on `st.wrRules`**: client-side only. `syncAll` preserves via `prevPins`. Used to pin a rule to a specific date within a week. Cleared by `unSkipWrRule` so restored rules appear in WR container only.
 

@@ -20,11 +20,15 @@ Supabase Auth (email+password), RLS on all tables. `init()`→`checkAuth()`→no
 - POST must include ALL required fields. Missing NOT NULL → silent 400.
 - `tasks` POST required: `name,category,due_date,done,important`. Optional: `notes`.
 - `wr_recurring_rules` POST required: `name,cadence,is_weekly_reset,is_enabled`. Non-WR adds `is_weekly_reset:false`. Optional: `appears_on_date,starting_date,pup_related,notes`.
-- `time_blocks` fields used: `id,title,day_date,start_time,start_minutes,duration_minutes,category,task_id,rec_id,shop_id,done`. `rule_id` column links WR rule blocks — **pending migration** `migrations/003_add_rule_id_to_time_blocks.sql` (run in Supabase SQL editor). Until migration is run: `sbSaveBlock` omits `rule_id`, `syncAll` maps `ruleId:null`. After migration: re-enable `rule_id` in both.
+- `time_blocks` fields used: `id,title,day_date,start_time,start_minutes,duration_minutes,category,task_id,rec_id,shop_id,done`. `rule_id` migration is pending — `sbSaveBlock` omits it, `syncAll` maps `ruleId:null`. **Workaround**: WR rule blocks set both `ruleId` and `recId` to `String(r.id)` so the rule ID persists via `rec_id`. All TB lookups (visibility, color, sort, arrow, skip/unschedule) check `b.recId` as fallback when `b.ruleId` is null.
 - Local temp IDs: tasks=`l-`, recurring=`rec-tmp-`, WR rules=`wrrule-tmp-`.
 - `sbReq` shows Supabase `message` field in toast 8s.
 - `toggleTask`/`togRec`/`togShop`: call `sbUpdateBlock(b.id,{done})` for linked TB blocks.
-- `drawTBBlock` derives `b._done` from linked item at render time.
+- `drawTBBlock` derives `b._done` from linked item at render time. `linkedRec` lookup checks both `st.recurring` and `st.wrRules` (fallback for WR rule blocks stored via `recId`). `recCat` is `'weekly_reset'` unless `is_weekly_reset===false`.
+- **Timeblock inline edit** (`startTBInlineEdit`): double-click creates block with empty title. `window._tbEditing=true` set on start, cleared immediately in `commit()` and on Escape — so `renderDayTB()` skips re-render only while actively typing (not after Enter/blur). After DB save returns real task ID, calls `renderAll()` so list DOM reflects real ID (enables immediate deletion from other views).
+- **`syncAll` blocks**: preserves local-only blocks (not yet in DB) during sync via `localOnly` filter, so inline-edit blocks survive 30s sync interval.
+- **`renderDayTB`**: skips if `window._tbEditing` is true.
+- **`delTask`**: removes linked TB blocks by `taskId` match AND title match (for blocks not yet assigned a real `taskId`). Calls `sbDeleteBlock` for each.
 - `rolloverOverdue()`: stores `prevDate` per WR rule/rec before rollover. Undo restores original overdue date (not delete). Undo also patches `wr_recurring_rules` DB. Stores `localOverrides[sid]={due_date:today}` + `pendingLocal.add(sid)` before async PATCH.
 - `localStorage` `save()`/`load()` persists: tasks, recurring, shopping, travel, birthdays, pup_skills, recipes, autoTimeblocks, autoTBOverrides, wrRules, wrOverrides.
 - `syncAll` recurring fetch: `wr_recurring_rules` single source. `is_weekly_reset!==false`→`st.wrRules`; `is_weekly_reset===false`→`st.recurring`.
