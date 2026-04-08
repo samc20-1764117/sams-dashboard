@@ -134,9 +134,9 @@ async function delTask(id,e){
   const copy={...t};
   // Remove from local state immediately so UI feels fast
   st.tasks=st.tasks.filter(x=>String(x.id)!==String(id));
-  // Remove any time blocks linked to this task
-  const linkedBlocks=st.blocks?st.blocks.filter(b=>String(b.taskId)===String(id)):[];
-  if(st.blocks)st.blocks=st.blocks.filter(b=>String(b.taskId)!==String(id));
+  // Remove any time blocks linked to this task (by taskId or title match for local-id blocks)
+  const linkedBlocks=st.blocks?st.blocks.filter(b=>String(b.taskId)===String(id)||(b.title&&b.title===copy.name&&!b.taskId)):[];
+  if(st.blocks)st.blocks=st.blocks.filter(b=>!(String(b.taskId)===String(id)||(b.title&&b.title===copy.name&&!b.taskId)));
   renderAll();if(document.getElementById('tbGrid'))renderDayTB();save();
   // DELETE from DB first, then push undo — so undo always has clean DB state
   await sbReq('DELETE','tasks',null,`?id=eq.${id}`);

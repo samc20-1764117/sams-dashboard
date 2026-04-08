@@ -2068,7 +2068,8 @@ function getVisibleBlocks(ds){
     if(b.ds!==ds)return false;
     if(b.taskId){
       const t=st.tasks.find(x=>String(x.id)===String(b.taskId));
-      if(t){const tds=(t.due_date||'').split('T')[0];if(tds&&tds!==ds&&!(isViewingToday&&isOv(t.due_date)&&!t.done))return false;}
+      if(!t)return false;
+      const tds=(t.due_date||'').split('T')[0];if(tds&&tds!==ds&&!(isViewingToday&&isOv(t.due_date)&&!t.done))return false;
     } else if(b.recId){
       const r=st.recurring.find(x=>String(x.id)===String(b.recId));
       if(!r)return false;
