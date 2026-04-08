@@ -114,7 +114,7 @@ function sortTasksForDay(tasks,ds){
   function tbSm(t){
     let b=null;
     if(t._shopId)b=blks.find(x=>String(x.shopId)===String(t._shopId));
-    else if(t._ruleId)b=blks.find(x=>String(x.ruleId)===String(t._ruleId));
+    else if(t._ruleId)b=blks.find(x=>String(x.ruleId)===String(t._ruleId)||String(x.recId)===String(t._ruleId));
     else if(t._recId)b=blks.find(x=>String(x.recId)===String(t._recId));
     else if(!t._virtual)b=blks.find(x=>String(x.taskId)===String(t.id));
     return b?b.sm:null;
@@ -137,7 +137,7 @@ function sortByTBWeek(tasks){
   function tbSmAny(t){
     let b=null;
     if(t._shopId)b=st.blocks.find(x=>String(x.shopId)===String(t._shopId));
-    else if(t._ruleId)b=st.blocks.find(x=>String(x.ruleId)===String(t._ruleId));
+    else if(t._ruleId)b=st.blocks.find(x=>String(x.ruleId)===String(t._ruleId)||String(x.recId)===String(t._ruleId));
     else if(t._recId)b=st.blocks.find(x=>String(x.recId)===String(t._recId));
     else if(!t._virtual)b=st.blocks.find(x=>String(x.taskId)===String(t.id));
     return b?b.sm:null;
