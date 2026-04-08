@@ -415,7 +415,7 @@
 </div>
 
 <!-- Recurring Task Modal -->
-<div class="overlay" id="recModal" onclick="closeMod(&#39;recModal&#39;,event)" onkeydown="if(event.key===&#39;Enter&#39;&amp;&amp;event.target.tagName!==&#39;SELECT&#39;)saveRecModal();if(event.key===&#39;Escape&#39;)closeMod(&#39;recModal&#39;)">
+<div class="overlay" id="recModal" onclick="closeMod(&#39;recModal&#39;,event)" onkeydown="if(event.key===&#39;Enter&#39;&amp;&amp;![&#39;SELECT&#39;,&#39;TEXTAREA&#39;].includes(event.target.tagName))saveRecModal();if(event.key===&#39;Escape&#39;)closeMod(&#39;recModal&#39;)">
   <div class="modal task-modal" style="width:350px">
     <div class="mt" id="recMTitle">Add Recurring Task</div>
 
@@ -549,7 +549,7 @@
 </div>
 
 <!-- Recurring Edit Modal -->
-<div class="overlay" id="recEditModal" onclick="closeMod(&#39;recEditModal&#39;,event)" onkeydown="if(event.key===&#39;Enter&#39;&amp;&amp;event.target.tagName!==&#39;SELECT&#39;){event.preventDefault();saveRecEdit();}if(event.key===&#39;Escape&#39;)closeMod(&#39;recEditModal&#39;)">
+<div class="overlay" id="recEditModal" onclick="closeMod(&#39;recEditModal&#39;,event)" onkeydown="if(event.key===&#39;Enter&#39;&amp;&amp;![&#39;SELECT&#39;,&#39;TEXTAREA&#39;].includes(event.target.tagName)){event.preventDefault();saveRecEdit();}if(event.key===&#39;Escape&#39;)closeMod(&#39;recEditModal&#39;)">
   <div class="modal task-modal" style="width:350px">
     <div class="mt">Edit Recurring Task</div>
     <div id="recEditScopeToggle" style="display:none;border-radius:8px;overflow:hidden;border:1px solid var(--border);margin-bottom:14px">

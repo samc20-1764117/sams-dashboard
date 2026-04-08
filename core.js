@@ -846,6 +846,7 @@ document.addEventListener('keydown',e=>{
   if(e.key==='Enter'&&!e.metaKey&&!e.ctrlKey){
     const qa=document.getElementById('qaPopup');
     if(qa.classList.contains('open')){e.preventDefault();submitQA();return;}
+    if(document.activeElement?.tagName==='TEXTAREA') return;
     if(document.getElementById('tModal').classList.contains('open')){e.preventDefault();saveTModal();}
     else if(document.getElementById('shopEditModal').classList.contains('open')){e.preventDefault();saveShopEdit();}
     else if(document.getElementById('recEditModal').classList.contains('open')){e.preventDefault();saveRecEdit();}
