@@ -2011,7 +2011,10 @@ async function init(){
   load();
   // Apply dark mode and sidebar state immediately — before checkAuth await — to prevent flash
   if(cfg.dark){document.body.classList.add('dark');const ic=document.getElementById('darkToggleIcon');if(ic)ic.textContent='☀️';const dt=document.getElementById('darkToggle');if(dt)dt.textContent='☀️';}
+  // Suppress left transition during init so sidebar positioning is instant (no squish glitch)
+  const _initMain=document.getElementById('main');const _initMainT=_initMain.style.transition;_initMain.style.transition='none';
   if(!sbOpen){document.getElementById('sidebar').classList.add('closed');document.getElementById('main').style.left='0';document.getElementById('menuOpen').classList.add('visible');document.querySelectorAll('.ov-topbar').forEach(el=>el.style.left='0');}else{document.getElementById('sidebar').classList.remove('closed');document.getElementById('main').style.left='186px';document.getElementById('menuOpen').classList.remove('visible');document.querySelectorAll('.ov-topbar').forEach(el=>el.style.left='186px');}
+  _initMain.offsetWidth;requestAnimationFrame(()=>{_initMain.style.transition=_initMainT;});
   // Restore page from URL hash immediately
   const initHash=location.hash.replace('#','');
   if(initHash&&PAGES.includes(initHash))showPage(initHash);
