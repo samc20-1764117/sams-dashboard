@@ -2562,30 +2562,30 @@ function goToday(){dayOff=0;if(wkOff!==0){wkOff=0;renderWkSummary();renderWkCal(
 function shiftWk(n){wkOff+=n;renderWkSummary();renderWkCal();}
 function goThisWk(){wkOff=0;renderWkSummary();renderWkCal();}
 
-// ── Notes popover ───────────────────────────────────────────────────────────
+// ── Notes expand on hover ────────────────────────────────────────────────────
 (function(){
-  const pop=document.createElement('div');pop.id='tbNotesPop';pop.className='tb-notes-pop';document.body.appendChild(pop);
-  let _hideTimer=null;
-  function showPop(notesEl){
+  function expandNotes(notesEl){
     const block=notesEl.closest('.tb-block');if(!block)return;
-    const bRect=block.getBoundingClientRect();
-    // Only show if notes are clipped by the block (offsetTop+offsetHeight vs block clientHeight)
     if(notesEl.offsetTop+notesEl.offsetHeight<=block.clientHeight+2)return;
-    clearTimeout(_hideTimer);
-    pop.textContent=notesEl.textContent;
-    pop.style.display='block';
-    // Position: prefer below block, flip above if off-screen
-    const GAP=4,PW=200;
-    let top=bRect.bottom+GAP,left=bRect.left;
-    if(top+80>window.innerHeight)top=bRect.top-GAP-80;
-    if(left+PW>window.innerWidth-8)left=window.innerWidth-PW-8;
-    pop.style.top=top+'px';pop.style.left=left+'px';pop.style.maxWidth=PW+'px';
+    if(block._expandOrig!==undefined)return;
+    block._expandOrig=block.style.height;
+    block.style.height=block.scrollHeight+'px';
+    block.style.zIndex='20';
+    block.classList.add('tb-expanded');
   }
-  function hidePop(){_hideTimer=setTimeout(()=>{pop.style.display='none';},80);}
-  document.addEventListener('mouseover',e=>{const n=e.target.closest('.tb-notes');if(n)showPop(n);});
-  document.addEventListener('mouseout',e=>{if(e.target.closest('.tb-notes'))hidePop();});
-  pop.addEventListener('mouseover',()=>clearTimeout(_hideTimer));
-  pop.addEventListener('mouseout',()=>hidePop());
+  function collapseNotes(block){
+    if(!block||block._expandOrig===undefined)return;
+    block.style.height=block._expandOrig;
+    block.style.zIndex='';
+    block.classList.remove('tb-expanded');
+    delete block._expandOrig;
+  }
+  document.addEventListener('mouseover',e=>{const n=e.target.closest('.tb-notes');if(n)expandNotes(n);});
+  document.addEventListener('mouseleave',e=>{const b=e.target.closest&&e.target.closest('.tb-block');if(b)collapseNotes(b);},true);
+  document.addEventListener('mouseover',e=>{
+    const b=e.target.closest('.tb-block');
+    document.querySelectorAll('.tb-block.tb-expanded').forEach(bl=>{if(bl!==b)collapseNotes(bl);});
+  });
 })();
 function openBModal(){document.getElementById('bModal').classList.add('open');}
 function saveBlock(){
