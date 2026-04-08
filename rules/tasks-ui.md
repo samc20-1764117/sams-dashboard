@@ -17,8 +17,11 @@
 ## Interaction Patterns
 - **Focus**: cursor at end on every input open. `setSelectionRange(len,len)` in same `setTimeout`/`rAF` as `.focus()`.
 - **Outside-click close**: stable handler ref, remove+re-register on every `renderPage()`. Add via `setTimeout(0)`.
-- **Modal Enter/Escape**: overlay `div` owns handlers. Inputs must NOT have save handlers. Enter saves/closes everywhere **except** when a `TEXTAREA` is focused — textarea Enter creates a new line. Guard: `event.target.tagName!=='TEXTAREA'` on overlay handlers; `document.activeElement?.tagName==='TEXTAREA'` early-return in global core.js handler.
+- **Modal Enter/Escape**: overlay `div` owns handlers. Inputs must NOT have save handlers. Enter saves/closes everywhere **except** when a `TEXTAREA` is focused — textarea Enter creates a new line. Guard: `event.target.tagName!=='TEXTAREA'` on overlay handlers; `document.activeElement?.tagName==='TEXTAREA'` early-return in global core.js handler. **Cmd+Enter** saves/closes everywhere including inside textareas (no textarea guard).
+- **Modal outside-click drag fix**: `_modMousedownInside` flag set on `mousedown` inside `.modal`; `closeMod` skips close if flag is set — prevents text-selection drag releasing outside from closing modal.
 - **`#tNotes` textarea**: auto-expands as user types (`oninput` sets `height=scrollHeight`), capped at `max-height:160px` then scrolls. Reset to collapsed on open (add mode); pre-expanded to fit content on open (edit mode). Newlines in timeblock `.tb-notes` display rendered via `.replace(/\n/g,'<br>')` in `drawTBBlock`.
+- **Timeblock notes**: `opacity:.5`, left-aligned. When notes overflow block height, hovering the note text expands the block to show full content (`tb-expanded` class, `z-index:25` to clear nowline at `z-index:20`); collapses on mouseleave.
+- **Timeblock title wrap**: titles in blocks ≥30 min get `.tb-bt.wrap` (white-space:normal). Time range and ✕ share `.tb-right` container — time visible by default, ✕ overlays on hover.
 - **Cmd+Z in modals**: check `_isInput && !_ael.closest('.overlay:not(.open)')` → return early.
 - **Global shortcuts**: `n`=new task, `r`=reload, `s`=sync. Skip if INPUT/TEXTAREA/contentEditable or meta held.
 - **Text selection disabled**: `user-select:none` on `html,body`. `Ctrl/Cmd+A` blocked globally (allowed inside INPUT/TEXTAREA).
