@@ -76,7 +76,7 @@ function renderToday(){
     if(t._type==='travel'||t._type==='birthday')return true;
     const isOvToday=dayOff===0&&isOv(t.due_date)&&!t.done;
     if(t._shopId)return st.blocks.some(b=>(b.ds===_todDs||isOvToday)&&String(b.shopId)===String(t._shopId));
-    if(t._ruleId)return st.blocks.some(b=>(b.ds===_todDs||isOvToday)&&String(b.ruleId)===String(t._ruleId));
+    if(t._ruleId)return st.blocks.some(b=>(b.ds===_todDs||isOvToday)&&(String(b.ruleId)===String(t._ruleId)||String(b.recId)===String(t._ruleId)));
     if(t._recId)return st.blocks.some(b=>(b.ds===_todDs||isOvToday)&&String(b.recId)===String(t._recId));
     if(!t._virtual)return st.blocks.some(b=>(b.ds===_todDs||isOvToday)&&String(b.taskId)===String(t.id));
     return true;
@@ -2103,7 +2103,7 @@ function computeTBLayout(ds,extraBlocks=[]){
 function drawTBBlock(col,b){
   const top=(b.sm-HOURS[0]*60)*PX,ht=Math.max(b.dur*PX,16);
   const linkedTask=b.taskId?st.tasks.find(x=>String(x.id)===String(b.taskId)):null;
-  const linkedRec=b.recId?st.recurring.find(x=>String(x.id)===String(b.recId)):null;
+  const linkedRec=b.recId?(st.recurring.find(x=>String(x.id)===String(b.recId))||st.wrRules.find(x=>String(x.id)===String(b.recId))):null;
   const linkedShop=b.shopId?st.shopping.find(x=>String(x.id)===String(b.shopId)):null;
   // Derive done from linked item (authoritative) so stale block._done never causes mismatch
   if(linkedTask)b._done=!!linkedTask.done;
@@ -2111,7 +2111,7 @@ function drawTBBlock(col,b){
   else if(linkedShop)b._done=!!linkedShop.done;
   const isImp=linkedTask&&linkedTask.important&&!linkedTask.done;
   const linkedRule=b.ruleId?st.wrRules.find(x=>String(x.id)===String(b.ruleId)):null;
-  const recCat=linkedRec?(linkedRec.is_weekly_reset===true||linkedRec.is_weekly_reset==='true'?'weekly_reset':'recurring'):null;
+  const recCat=linkedRec?(linkedRec.is_weekly_reset===false?'recurring':'weekly_reset'):null;
   const effectiveCat=linkedTask?linkedTask.category:recCat||(linkedRule?'weekly_reset':null)||(b.cat||'Home');
   const s=isImp?IMP:gc(effectiveCat);
   const el=document.createElement('div');
