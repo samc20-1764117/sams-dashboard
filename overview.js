@@ -2012,6 +2012,7 @@ async function reassignCat(id,cat){if(!id)return;const t=st.tasks.find(x=>String
 
 // ── Time blocker ───────────────────────────────────────────────────────────────
 function renderDayTB(){
+  if(document.activeElement&&document.activeElement.classList.contains('tb-edit'))return;
   const date=getDayDate(dayOff),ds=d2s(date);
   const lbl=document.getElementById('dayLbl');if(lbl)lbl.textContent=isDateToday(date)?`Today ${date.toLocaleDateString('en-US',{month:'short',day:'numeric'})}`:date.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
   const grid=document.getElementById('tbGrid');if(!grid)return;grid.innerHTML='';

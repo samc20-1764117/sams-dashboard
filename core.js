@@ -320,13 +320,15 @@ async function syncAll(silent=false){
       else if(!_recUndoDirty){st.recipes=recipes;}
     }
     if(blocks){
-      st.blocks=blocks.map(b=>{
+      const dbIds=new Set(blocks.map(b=>String(b.id)));
+      const localOnly=st.blocks.filter(b=>!dbIds.has(String(b.id)));
+      st.blocks=[...blocks.map(b=>{
         let sm=b.start_minutes;
         if(sm==null&&b.start_time){const[hh,mm]=(b.start_time||'00:00').split(':');sm=parseInt(hh)*60+parseInt(mm);}
         return{id:b.id,title:b.title||'',ds:b.day_date,sm:sm||0,
           dur:b.duration_minutes||30,cat:b.category||'Home',
           taskId:b.task_id||null,recId:b.rec_id||null,shopId:b.shop_id||null,ruleId:null,_done:b.done||false};
-      });
+      }),...localOnly];
     }
     save();
     const n=new Date();setBadge('',`Synced ${n.getHours()}:${String(n.getMinutes()).padStart(2,'0')}`);
