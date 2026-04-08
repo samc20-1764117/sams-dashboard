@@ -2012,7 +2012,7 @@ async function reassignCat(id,cat){if(!id)return;const t=st.tasks.find(x=>String
 
 // ── Time blocker ───────────────────────────────────────────────────────────────
 function renderDayTB(){
-  if(document.activeElement&&document.activeElement.classList.contains('tb-edit'))return;
+  if(window._tbEditing)return;
   const date=getDayDate(dayOff),ds=d2s(date);
   const lbl=document.getElementById('dayLbl');if(lbl)lbl.textContent=isDateToday(date)?`Today ${date.toLocaleDateString('en-US',{month:'short',day:'numeric'})}`:date.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
   const grid=document.getElementById('tbGrid');if(!grid)return;grid.innerHTML='';
@@ -2492,9 +2492,10 @@ function startTBInlineEdit(blockId,col,onCommit){
   inp.placeholder='Name…';
   inp.style.cssText='width:100%;font-size:9px;font-weight:600;background:rgba(255,255,255,.8);border:none;border-radius:3px;padding:1px 3px;outline:none;font-family:inherit;color:var(--text);min-width:0;box-sizing:border-box';
   if(btSpan) btSpan.replaceWith(inp); else {const tbRow=el.querySelector('.tb-row');if(tbRow)tbRow.prepend(inp);else el.prepend(inp);}
+  window._tbEditing=true;
   let committed=false;
   async function commit(){
-    if(committed)return; committed=true;
+    if(committed)return; committed=true; window._tbEditing=false;
     const val=inp.value.trim();
     if(!val){
       st.blocks=st.blocks.filter(x=>x.id!==blockId);
@@ -2527,7 +2528,7 @@ function startTBInlineEdit(blockId,col,onCommit){
   }
   inp.addEventListener('keydown',e=>{
     if(e.key==='Enter'){e.preventDefault();commit();}
-    if(e.key==='Escape'){committed=true;st.blocks=st.blocks.filter(x=>x.id!==blockId);save();renderDayTB();}
+    if(e.key==='Escape'){committed=true;window._tbEditing=false;st.blocks=st.blocks.filter(x=>x.id!==blockId);save();renderDayTB();}
   });
   inp.addEventListener('blur',commit);
   // Focus after a tick so the element is in the DOM
