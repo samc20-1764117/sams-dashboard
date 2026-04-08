@@ -365,7 +365,7 @@
 </div><!-- /shell -->
 
 <!-- Task Modal -->
-<div class="overlay" id="tModal" onclick="closeMod(&#39;tModal&#39;,event)" onkeydown="if(event.key===&#39;Enter&#39;){event.preventDefault();saveTModal();}if(event.key===&#39;Escape&#39;)closeMod(&#39;tModal&#39;)">
+<div class="overlay" id="tModal" onclick="closeMod(&#39;tModal&#39;,event)" onkeydown="if(event.key===&#39;Enter&#39;&amp;&amp;event.target.tagName!==&#39;TEXTAREA&#39;){event.preventDefault();saveTModal();}if(event.key===&#39;Escape&#39;)closeMod(&#39;tModal&#39;)">
   <div class="modal task-modal">
     <div class="mt" id="tMTitle">Add Task</div>
     <div class="mfield"><label>Name *</label><input id="tName" placeholder="What needs doing?"></div>

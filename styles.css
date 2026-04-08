@@ -344,7 +344,7 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 .tb-btime{font-size:7.5px;opacity:.7;white-space:nowrap;flex-shrink:0;line-height:1.1}
 .tb-bdel{font-size:9px;opacity:0;background:none;border:none;cursor:pointer;color:inherit;padding:0 2px;flex-shrink:0;line-height:1}
 .tb-block:hover .tb-bdel{opacity:1;color:var(--subtle)}
-.tb-notes{font-size:9px;opacity:.75;padding:0 2px 1px 20px;line-height:1.2}
+.tb-notes{font-size:8px;opacity:.75;padding:0 2px 1px 20px;line-height:1.2}
 .tb-resize{position:absolute;bottom:0;left:0;right:0;height:4px;cursor:ns-resize}
 .tb-resize::after{content:'';display:block;width:12px;height:1.5px;border-radius:1px;background:currentColor;opacity:.2;margin:0 auto}
 .nowline{position:absolute;left:0;right:0;z-index:20;pointer-events:none;height:2px;background:rgba(120,120,120,0.7)}
