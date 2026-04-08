@@ -2569,9 +2569,8 @@ function goThisWk(){wkOff=0;renderWkSummary();renderWkCal();}
   function showPop(notesEl){
     const block=notesEl.closest('.tb-block');if(!block)return;
     const bRect=block.getBoundingClientRect();
-    const nRect=notesEl.getBoundingClientRect();
-    // Only show if notes are clipped by the block
-    if(nRect.bottom<=bRect.bottom+2)return;
+    // Only show if notes are clipped by the block (offsetTop+offsetHeight vs block clientHeight)
+    if(notesEl.offsetTop+notesEl.offsetHeight<=block.clientHeight+2)return;
     clearTimeout(_hideTimer);
     pop.textContent=notesEl.textContent;
     pop.style.display='block';
