@@ -1182,7 +1182,6 @@ function renderRecOv(){
     wrap.addEventListener('mousedown',e=>e.stopPropagation());
     return wrap;
   }
-  const _wrRows=[];
   sorted.forEach(r=>{
     const rid=String(r.id);
     const isDone=isDoneWR(r.id);
@@ -1191,7 +1190,7 @@ function renderRecOv(){
     const row=document.createElement('div');
     row.id='ti-'+selId;
     row.className='ti'+(isDone?' done':'');
-    row.style.cssText='cursor:pointer;margin:0 6px;padding:3px 22px 3px 10px';
+    row.style.cssText='cursor:pointer;break-inside:avoid;margin:0 6px;padding:3px 22px 3px 10px';
     row.draggable=true;
     row.addEventListener('dragstart',e=>{e.stopPropagation();dragId='wrrule::'+rid;e.dataTransfer.effectAllowed='move';row.style.opacity='.4';document.body.classList.add('body-dragging');showWkcEdges(true);});
     row.addEventListener('dragend',()=>{row.style.opacity='1';document.body.classList.remove('body-dragging');showWkcEdges(false);dragId=null;});
@@ -1243,16 +1242,14 @@ function renderRecOv(){
       row.appendChild(dot);
     }
     row.appendChild(del);
-    _wrRows.push(row);
+    if(elReg)elReg.appendChild(row);
   });
-  // Split rows into two static columns by count (font-independent)
-  if(elReg){const _c1=document.createElement('div');_c1.style.cssText='flex:1;min-width:0;overflow-y:auto';const _c2=document.createElement('div');_c2.style.cssText='flex:1;min-width:0;overflow-y:auto';const _mid=Math.ceil(_wrRows.length/2);_wrRows.slice(0,_mid).forEach(r=>_c1.appendChild(r));_wrRows.slice(_mid).forEach(r=>_c2.appendChild(r));elReg.appendChild(_c1);elReg.appendChild(_c2);}
   // Update skipped-this-week button
   const _skippedWrecCount=st.recurring.filter(r=>(r.is_weekly_reset===true||r.is_weekly_reset==='true')&&r._dateOverrides&&r._dateOverrides[wkKey]==='__skip__').length;
   const _skCount=skipIds.size+_skippedWrecCount;
   const _skBtn=document.getElementById('wrSkippedBtn');
   if(_skBtn){_skBtn.style.display=_skCount?'':'none';_skBtn.textContent='↩ '+_skCount;}
-  requestAnimationFrame(()=>{applySelHighlight();});
+  requestAnimationFrame(()=>{applySelHighlight();const fi=elReg&&elReg.querySelector('.ti');if(fi)elReg.style.maxHeight=(4+7*fi.offsetHeight)+'px';});
   if(document.getElementById('recMoModal')?.classList.contains('open'))renderRecMoCal();
 }
 

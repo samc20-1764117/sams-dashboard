@@ -2019,7 +2019,7 @@ async function init(){
   const initHash=location.hash.replace('#','');
   if(initHash&&PAGES.includes(initHash))showPage(initHash);
   // Render from localStorage before auth check so UI is populated instantly
-  if(cfg.url&&cfg.key){document.getElementById('cfgUrl').value=cfg.url;document.getElementById('cfgKey').value=cfg.key;_firstSyncDone=true;requestAnimationFrame(renderAll);}
+  if(cfg.url&&cfg.key){document.getElementById('cfgUrl').value=cfg.url;document.getElementById('cfgKey').value=cfg.key;_firstSyncDone=true;(document.fonts?document.fonts.ready:Promise.resolve()).then(()=>requestAnimationFrame(renderAll));}
   const authed=await checkAuth();
   if(!authed)return;
   if(cfg.url&&cfg.key){
