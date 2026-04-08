@@ -20,6 +20,12 @@
 - **WR recurring skip** (`skipWRec(rid,wkKey)`): sets `_dateOverrides[wkKey]='__skip__'`. Removes linked TB blocks (`b.recId===rid && isInWk(b.ds,wkOff)`). Calls `renderAll()`,`renderDayTB()`. PATCHes `wr_recurring_rules`.
 - **Skip filtering**: `wrRulesToday`, `wrRulesForDay`, `wrRulesForDayDone` all filter out rules where `st.wrOverrides` has `override_type:'skip'` for that wkKey. `wrecToday`/`wrecForDay` filter `_dateOverrides[wkKey]!=='__skip__'`.
 
+## WR Overview Widget Layout (`#recList`)
+- Uses CSS `columns:2;column-gap:2px;column-fill:auto` — fills column 1 completely (up to ~7 items) before overflowing to column 2.
+- `renderRecOv()` sets `elReg.style.maxHeight=(4+7*fi.offsetHeight)+'px'` in a rAF after render, giving the column algorithm an explicit height to work with (required for `column-fill:auto`).
+- **Do not** compute this maxHeight synchronously or before fonts load — it must use actual rendered item height with DM Sans loaded, or column distribution will be wrong. The `document.fonts.ready` init deferral (see core.md) ensures this.
+- Each row has `break-inside:avoid` to prevent items splitting across columns.
+
 ## Skipped-This-Week Popup
 - **Button** `#wrSkippedBtn`: `position:absolute;bottom:8px;left:8px` in WR container. Shows `↩ N` count. Hidden when N=0. Updated by `renderRecOv()`.
 - **Popup** `#wrSkippedPicker`: fixed, z-index 10001, appears above button. Lists skipped WR rules + WR recurring for `wrRecOff` week. Click item → un-skip.

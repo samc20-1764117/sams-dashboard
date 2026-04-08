@@ -12,6 +12,8 @@ All files share global scope — no modules/bundler.
 ## Auth
 Supabase Auth (email+password), RLS on all tables. `init()`→`checkAuth()`→no session→`#loginOverlay`. `doLogin()`→`signInWithPassword`→`_authToken`→`syncAll()`. All `sbReq*` use `_getAuthToken()` JWT + anon `apikey`. Token auto-refreshes hourly; refresh lasts 1 week. `syncAll` calls `_sbClient.auth.getSession()` at the top to refresh `_authToken` before every sync — prevents 401 JWT-expired errors on long sessions.
 - **Init flash prevention**: `#main` starts `opacity:0` in HTML; `renderAll()` sets it to `1` on first call. `history.scrollRestoration='manual'` set in `init()`.
+- **Init render timing**: initial `renderAll()` (from localStorage) is deferred via `document.fonts.ready.then(()=>requestAnimationFrame(renderAll))` — ensures DM Sans is loaded before first paint so font-metric-dependent layouts (WR column maxHeight, CSS columns) are stable on hard refresh. On normal refresh fonts resolve instantly; on hard refresh waits for download.
+- **Init sidebar transition**: `#main` left transition is suppressed during `init()` (`style.transition='none'`, force reflow, restore in rAF) so the sidebar position snaps instantly — prevents shopping list squish caused by the 0→186px left animation being visible after opacity:1.
 - **Overdue banner**: `_firstSyncDone` is set `true` before the initial `renderAll()` from localStorage, so banner shows instantly on load without waiting for sync.
 
 ## Data & Persistence
