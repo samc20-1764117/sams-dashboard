@@ -159,7 +159,7 @@ function openTModal(cat=''){
   tMode='add';tId=null;
   document.getElementById('tMTitle').textContent='Add Task';document.getElementById('tSaveBtn').textContent='Add';
   document.getElementById('tName').value='';setCatSel('tCat',cat||'Home');
-  document.getElementById('tDue').value=tPreDate||'';document.getElementById('tImp').checked=false;document.getElementById('tNotes').value='';tPreDate=null;
+  document.getElementById('tDue').value=tPreDate||'';document.getElementById('tImp').checked=false;const _tnA=document.getElementById('tNotes');_tnA.value='';_tnA.style.height='';_tnA.style.overflowY='hidden';tPreDate=null;
   document.getElementById('tModal').classList.add('open');setTimeout(()=>{const _el=document.getElementById('tName');if(_el){_el.focus();const _l=_el.value.length;_el.setSelectionRange(_l,_l);}},80);
 }
 function openEditTask(id){
@@ -167,7 +167,7 @@ function openEditTask(id){
   tMode='edit';tId=id;
   document.getElementById('tMTitle').textContent='Edit Task';document.getElementById('tSaveBtn').textContent='Save';
   document.getElementById('tName').value=t.name;setCatSel('tCat',t.category||'Home');
-  document.getElementById('tDue').value=t.due_date||'';document.getElementById('tImp').checked=!!t.important;document.getElementById('tNotes').value=t.notes||'';
+  document.getElementById('tDue').value=t.due_date||'';document.getElementById('tImp').checked=!!t.important;const _tnE=document.getElementById('tNotes');_tnE.value=t.notes||'';_tnE.style.height='auto';_tnE.style.height=Math.min(_tnE.scrollHeight,160)+'px';_tnE.style.overflowY=_tnE.scrollHeight>=160?'auto':'hidden';
   document.getElementById('tModal').classList.add('open');setTimeout(()=>{const _el=document.getElementById('tName');if(_el){_el.focus();const _l=_el.value.length;_el.setSelectionRange(_l,_l);}},80);
 }
 async function saveTModal(){
