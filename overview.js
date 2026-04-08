@@ -2561,6 +2561,33 @@ function shiftDay(n){const fl=document.getElementById('dayFlash');fl.textContent
 function goToday(){dayOff=0;if(wkOff!==0){wkOff=0;renderWkSummary();renderWkCal();}renderDayTB();renderToday();}
 function shiftWk(n){wkOff+=n;renderWkSummary();renderWkCal();}
 function goThisWk(){wkOff=0;renderWkSummary();renderWkCal();}
+
+// ── Notes popover ───────────────────────────────────────────────────────────
+(function(){
+  const pop=document.createElement('div');pop.id='tbNotesPop';pop.className='tb-notes-pop';document.body.appendChild(pop);
+  let _hideTimer=null;
+  function showPop(notesEl){
+    const block=notesEl.closest('.tb-block');if(!block)return;
+    const bRect=block.getBoundingClientRect();
+    const nRect=notesEl.getBoundingClientRect();
+    // Only show if notes are clipped by the block
+    if(nRect.bottom<=bRect.bottom+2)return;
+    clearTimeout(_hideTimer);
+    pop.textContent=notesEl.textContent;
+    pop.style.display='block';
+    // Position: prefer below block, flip above if off-screen
+    const GAP=4,PW=200;
+    let top=bRect.bottom+GAP,left=bRect.left;
+    if(top+80>window.innerHeight)top=bRect.top-GAP-80;
+    if(left+PW>window.innerWidth-8)left=window.innerWidth-PW-8;
+    pop.style.top=top+'px';pop.style.left=left+'px';pop.style.maxWidth=PW+'px';
+  }
+  function hidePop(){_hideTimer=setTimeout(()=>{pop.style.display='none';},80);}
+  document.addEventListener('mouseover',e=>{const n=e.target.closest('.tb-notes');if(n)showPop(n);});
+  document.addEventListener('mouseout',e=>{if(e.target.closest('.tb-notes'))hidePop();});
+  pop.addEventListener('mouseover',()=>clearTimeout(_hideTimer));
+  pop.addEventListener('mouseout',()=>hidePop());
+})();
 function openBModal(){document.getElementById('bModal').classList.add('open');}
 function saveBlock(){
   const title=document.getElementById('bTitle').value.trim();if(!title)return;
