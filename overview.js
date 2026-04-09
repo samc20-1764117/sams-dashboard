@@ -469,7 +469,8 @@ function renderWkCal(){
           const prev=r._dateOverrides[wkKey];
           r._dateOverrides[wkKey]=ds;
           save();dragId=null;renderAll();
-          pushUndo(()=>{if(prev)r._dateOverrides[wkKey]=prev;else delete r._dateOverrides[wkKey];save();renderAll();},'Pinned WR task to '+ds);
+          sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},`?id=eq.${ruleId}`);
+          pushUndo(()=>{if(prev)r._dateOverrides[wkKey]=prev;else delete r._dateOverrides[wkKey];save();renderAll();sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},`?id=eq.${ruleId}`);},'Pinned WR task to '+ds);
         }
         dragId=null;return;
       }
@@ -1831,7 +1832,8 @@ function dropOnTodayList(e){
       const prev=r._dateOverrides[wkKey];
       r._dateOverrides[wkKey]=ds;
       dragId=null;save();renderAll();
-      pushUndo(()=>{if(prev)r._dateOverrides[wkKey]=prev;else delete r._dateOverrides[wkKey];save();renderAll();},'Assigned WR task to today');
+      sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},`?id=eq.${ruleId}`);
+      pushUndo(()=>{if(prev)r._dateOverrides[wkKey]=prev;else delete r._dateOverrides[wkKey];save();renderAll();sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},`?id=eq.${ruleId}`);},'Assigned WR task to today');
     }
     dragId=null;return;
   }
