@@ -517,14 +517,16 @@ function renderWkCal(){
         const prev={due_date:t.due_date};
         const sid=String(t.id);
         const prevDs=(prev.due_date||'').split('T')[0];
+        const savedTBs=st.blocks.filter(b=>String(b.taskId)===String(t.id)&&b.ds===prevDs).map(b=>({...b}));
         localOverrides[sid]={due_date:ds};pendingLocal.add(sid);save();
         t.due_date=ds;dragId=null;
         removeTBBlocksForDate(ds,{taskId:t.id,oldDs:prevDs});
         renderAll();
         pushUndo(()=>{
           t.due_date=prev.due_date;
-          localOverrides[sid]={due_date:prev.due_date};pendingLocal.add(sid);save();
-          renderAll();
+          localOverrides[sid]={due_date:prev.due_date};pendingLocal.add(sid);
+          savedTBs.forEach(b=>{if(!st.blocks.find(x=>x.id===b.id))st.blocks.push(b);sbSaveBlock(b);});
+          save();renderAll();
           sbReqNullable('PATCH','tasks',{due_date:prev.due_date},`?id=eq.${sid}`)
             .then(()=>{delete localOverrides[sid];pendingLocal.delete(sid);});
         },'Moved task');
