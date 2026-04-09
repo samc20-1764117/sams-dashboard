@@ -757,7 +757,7 @@ function renderMoCal(){
     const gBody=document.createElement('div');gBody.className='mcell-body';
     goalTasks.slice(0,5).forEach(t=>{
       const chip=document.createElement('div');chip.className='mcell-t';chip.dataset.tid=String(t.id);chip.draggable=true;
-      chip.style.cssText=`background:${_mgs.bg};color:${_mgs.t};border-color:${_mgs.b};cursor:grab${t.done?';opacity:.5':''}`;
+      chip.style.cssText=`background:rgba(255,255,255,.6);color:rgba(80,80,95,.75);border-color:rgba(255,255,255,.75);cursor:grab${t.done?';opacity:.5':''}`;
       chip.addEventListener('dragstart',e=>{e.stopPropagation();dragId='wkgoal-mo::'+t.id+'::'+wkMonDs;chip.style.opacity='.4';document.body.classList.add('body-dragging');});
       chip.addEventListener('dragend',()=>{chip.style.opacity='1';document.body.classList.remove('body-dragging');dragId=null;});
       const chk=document.createElement('input');chk.type='checkbox';chk.className='chk';chk.style.cssText='width:8px;height:8px';chk.checked=t.done;
