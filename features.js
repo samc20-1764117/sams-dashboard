@@ -729,8 +729,12 @@ function renderMoCal(){
     getRecurringWeekTasks(_rOff).forEach(t=>{if(!_moRecMap[t.due_date])_moRecMap[t.due_date]=[];_moRecMap[t.due_date].push(t);});
   }
   const dowEl=document.getElementById('mDow');
-  if(!dowEl.children.length)['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach(dn=>{const el=document.createElement('div');el.className='mdowl';el.textContent=dn;dowEl.appendChild(el);});
+  if(!dowEl.children.length){
+    ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach(dn=>{const el=document.createElement('div');el.className='mdowl';el.textContent=dn;dowEl.appendChild(el);});
+    const gh=document.createElement('div');gh.className='mdowl';gh.textContent='Goals';gh.style.cssText='color:#6366f1;border-left:2px solid rgba(255,255,255,.88);padding-left:4px';dowEl.appendChild(gh);
+  }
   const cells=document.getElementById('mCells');cells.innerHTML='';
+  const _mgs=gc('weekly goals');
   let curMo=-1;
   for(let w=0;w<TOTAL;w++){
     const wkMon=new Date(weekStart);wkMon.setDate(weekStart.getDate()+w*7);
@@ -745,6 +749,43 @@ function renderMoCal(){
       const date=new Date(wkMon);date.setDate(wkMon.getDate()+d);
       cells.appendChild(mkMCell(date,false,today));
     }
+    // Goals This Week cell
+    const wkMonDs=d2s(wkMon);
+    const wkEndDate=new Date(wkMon);wkEndDate.setDate(wkMon.getDate()+6);const wkEndDs=d2s(wkEndDate);
+    const goalTasks=st.tasks.filter(t=>t.category==='Weekly Goals'&&t.due_date&&t.due_date.split('T')[0]>=wkMonDs&&t.due_date.split('T')[0]<=wkEndDs);
+    const goalsCell=document.createElement('div');goalsCell.className='mcell mo-goals-cell';
+    const gBody=document.createElement('div');gBody.className='mcell-body';
+    goalTasks.slice(0,5).forEach(t=>{
+      const chip=document.createElement('div');chip.className='mcell-t';chip.dataset.tid=String(t.id);chip.draggable=true;
+      chip.style.cssText=`background:${_mgs.bg};color:${_mgs.t};border-color:${_mgs.b};cursor:grab${t.done?';opacity:.5':''}`;
+      chip.addEventListener('dragstart',e=>{e.stopPropagation();dragId='wkgoal-mo::'+t.id+'::'+wkMonDs;chip.style.opacity='.4';document.body.classList.add('body-dragging');});
+      chip.addEventListener('dragend',()=>{chip.style.opacity='1';document.body.classList.remove('body-dragging');dragId=null;});
+      const chk=document.createElement('input');chk.type='checkbox';chk.className='chk';chk.style.cssText='width:8px;height:8px';chk.checked=t.done;
+      chk.addEventListener('change',function(){toggleTask(t.id,this.checked,'week');renderMoCal();});
+      const nm=document.createElement('span');nm.style.cssText='flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';nm.textContent=t.name;
+      const dx=document.createElement('button');dx.className='chip-del';dx.textContent='✕';dx.addEventListener('click',e2=>{e2.stopPropagation();delTask(t.id,e2);});
+      chip.appendChild(chk);chip.appendChild(nm);chip.appendChild(dx);
+      gBody.appendChild(chip);
+    });
+    if(goalTasks.length>5){const more=document.createElement('div');more.style.cssText='font-size:8px;color:var(--subtle);padding:1px 2px';more.textContent=`+${goalTasks.length-5} more`;gBody.appendChild(more);}
+    goalsCell.appendChild(gBody);
+    goalsCell.addEventListener('dragover',e=>{if(dragId&&dragId.startsWith('wkgoal-mo::'))e.preventDefault();goalsCell.classList.add('dov');});
+    goalsCell.addEventListener('dragleave',()=>goalsCell.classList.remove('dov'));
+    goalsCell.addEventListener('drop',async e=>{
+      e.preventDefault();goalsCell.classList.remove('dov');
+      if(!dragId||!dragId.startsWith('wkgoal-mo::'))return;
+      const parts=dragId.split('::');const tid=parts[1];const srcWkMonDs=parts[2];dragId=null;
+      if(wkMonDs===srcWkMonDs)return;
+      const gt=st.tasks.find(x=>String(x.id)===tid);if(!gt)return;
+      const prevDs=gt.due_date;
+      const deltaMs=new Date(wkMonDs+'T12:00')-new Date(srcWkMonDs+'T12:00');
+      const deltaDays=Math.round(deltaMs/86400000);
+      const nd=new Date((gt.due_date||wkMonDs)+'T12:00');nd.setDate(nd.getDate()+deltaDays);
+      const nDs=d2s(nd);gt.due_date=nDs;save();renderMoCal();renderAll();
+      pushUndo(()=>{gt.due_date=prevDs;save();renderMoCal();renderAll();sbReqNullable('PATCH','tasks',{due_date:prevDs},`?id=eq.${tid}`);},'Moved goal week');
+      await sbReqNullable('PATCH','tasks',{due_date:nDs},`?id=eq.${tid}`);
+    });
+    cells.appendChild(goalsCell);
   }
   // Sync year dropdown
   const yrSel=document.getElementById('moYearSel');
@@ -753,7 +794,7 @@ function renderMoCal(){
   const mual=document.getElementById('mUAList');mual.innerHTML='';
   const CAT_ORDER=['Home','My work','Work','Social','Recurring'];
   const unassigned=st.tasks
-    .filter(t=>!t.due_date&&!t.done&&t.category!=='Long term')
+    .filter(t=>!t.due_date&&!t.done&&t.category!=='Long term'&&t.category!=='Weekly Goals')
     .sort((a,b)=>{const ai=CAT_ORDER.indexOf(a.category),bi=CAT_ORDER.indexOf(b.category);return(ai<0?99:ai)-(bi<0?99:bi)||(a.name||'').localeCompare(b.name||'');});
   if(!unassigned.length){const empty=document.createElement('div');empty.style.cssText='font-size:10px;color:var(--subtle);padding:12px 8px;text-align:center';empty.textContent='All tasks assigned ✓';mual.appendChild(empty);}
   unassigned.forEach(t=>{
@@ -797,8 +838,8 @@ function mkMCell(date,om,today){
   const recOnDay=(_moRecMap[ds]||[]).filter(t=>!t.done);
   const extras=getExtrasForDate(ds);
   const travelOnDay=extras.filter(t=>t._type==='travel');
-  const undone=[...travelOnDay,...st.tasks.filter(t=>t.due_date&&t.due_date.split('T')[0]===ds&&!t.done),...extras.filter(t=>t._type!=='travel'),...shopOnDay,...wrecOnDay,...recOnDay];
-  const done=[...st.tasks.filter(t=>t.due_date&&t.due_date.split('T')[0]===ds&&t.done),...shopOnDayDone];
+  const undone=[...travelOnDay,...st.tasks.filter(t=>t.due_date&&t.due_date.split('T')[0]===ds&&!t.done&&t.category!=='Weekly Goals'),...extras.filter(t=>t._type!=='travel'),...shopOnDay,...wrecOnDay,...recOnDay];
+  const done=[...st.tasks.filter(t=>t.due_date&&t.due_date.split('T')[0]===ds&&t.done&&t.category!=='Weekly Goals'),...shopOnDayDone];
   const tasks=[...undone,...done];
   tasks.slice(0,5).forEach(t=>{
     const s=t.important&&!t.done?IMP:gc((t._isWrec||t._isWrRule)?'weekly_reset':t.category);
