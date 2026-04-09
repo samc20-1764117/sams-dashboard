@@ -30,7 +30,7 @@ function renderToday(){
   const _hdot=document.getElementById('headerDot');if(_hdot)_hdot.style.display='none';
   const _hclk=document.getElementById('liveClock');if(_hclk)_hclk.style.display='none';
   let ts=st.tasks.filter(t=>{
-    if(!t.due_date)return false;
+    if(!t.due_date||t.category==='Weekly Goals')return false;
     const tds=t.due_date.split('T')[0];
     if(tds===ds)return true;
     if(dayOff===0&&isOv(t.due_date)&&!t.done)return true;
@@ -2109,7 +2109,7 @@ function getVisibleBlocks(ds){
     if(b.ds!==ds)return false;
     if(b.taskId){
       const t=st.tasks.find(x=>String(x.id)===String(b.taskId));
-      if(!t)return false;
+      if(!t||t.category==='Weekly Goals')return false;
       const tds=(t.due_date||'').split('T')[0];if(tds&&tds!==ds&&!(isViewingToday&&isOv(t.due_date)&&!t.done))return false;
     } else if(b.recId){
       const r=st.recurring.find(x=>String(x.id)===String(b.recId))||st.wrRules.find(x=>String(x.id)===String(b.recId));
