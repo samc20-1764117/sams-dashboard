@@ -11,7 +11,7 @@ const CATS={
   'travel':   {bg:'#dcfce7',t:'#15803d',d:'#22c55e',dot:'#bbf7d0',b:'rgba(34,197,94,.3)'},
   'birthday': {bg:'#ffedd5',t:'#c2410c',d:'#f97316',dot:'#fed7aa',b:'rgba(249,115,22,.3)'},
   'shopping': {bg:'#fff7ed',t:'#9a3412',d:'#ea580c',dot:'#fed7aa',b:'rgba(234,88,12,.25)'},
-  'weekly goals':{bg:'#eef2ff',t:'#3730a3',d:'#6366f1',dot:'#c7d2fe',b:'rgba(99,102,241,.2)'},
+  'weekly goals':{bg:'#f4f4f8',t:'rgba(80,80,95,.85)',d:'rgba(200,200,215,.8)',dot:'#e0e0ea',b:'rgba(200,200,215,.5)'},
 };
 const IMP={bg:'#fef9c3',t:'#854d0e',d:'#eab308',dot:'#fef08a',b:'rgba(234,179,8,.35)'};
 const OV={bg:'#fff0f0',t:'#b91c1c',d:'#ef4444',dot:'#fecaca',b:'rgba(239,68,68,.28)'};
