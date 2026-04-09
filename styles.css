@@ -261,7 +261,7 @@ body.dark .inline-date-picker input[type="date"]{background:rgba(255,255,255,.08
 .delbtn{opacity:0;background:none;border:none;cursor:pointer;color:var(--subtle);font-size:10px;padding:1px 2px;border-radius:3px;flex-shrink:0;transition:opacity .1s;position:absolute;right:3px;top:50%;transform:translateY(-50%)}
 .ti:hover .delbtn,.ti.sel-row .delbtn{opacity:1;color:var(--subtle)}.delbtn:hover{color:#ef4444!important}
 .wr-has-cad{font-size:10.5px}
-.wr-cad-badge{flex-shrink:0;margin-left:auto;font-size:9px;font-weight:700;letter-spacing:.3px;padding:1px 3px;border-radius:3px;background:rgba(0,0,0,.08);color:rgba(100,116,139,.95);pointer-events:none}
+.wr-cad-badge{position:absolute;right:3px;top:50%;transform:translateY(-50%);font-size:9px;font-weight:700;letter-spacing:.3px;padding:1px 3px;border-radius:3px;background:rgba(0,0,0,.08);color:rgba(100,116,139,.95);pointer-events:none}
 .wr-cad-badge.changed{background:rgba(59,130,246,.18);color:#1e40af}
 .wr-dot{position:absolute;right:5px;top:50%;transform:translateY(-50%);width:6px;height:6px;border-radius:50%;background:#93c5fd;pointer-events:none;flex-shrink:0}
 .ti:hover .wr-cad-badge,.ti.sel-row .wr-cad-badge,.ti:hover .wr-dot,.ti.sel-row .wr-dot{display:none}
@@ -342,7 +342,7 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 .atb-block.dragging-block{opacity:.35;cursor:grabbing}
 .atb-block.sel-atb{outline:1px solid rgba(160,155,185,.35);outline-offset:-1px;box-shadow:0 0 0 2px rgba(160,155,185,.1)}
 .tb-row{display:flex;align-items:flex-start;justify-content:space-between;gap:4px;padding:clamp(2px,0.5vh,5px) 2px 0;min-width:0;flex:1}
-.tb-bt{font-size:8px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0;line-height:1.1;margin-top:0.365px}
+.tb-bt{font-size:8px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0;line-height:1.1;margin-top:0.335px}
 .tb-bt.wrap{white-space:normal;overflow:visible;text-overflow:unset}
 .tb-edit{font-size:8px;font-weight:600;flex:1;min-width:0;background:rgba(255,255,255,.7);border:none;border-radius:3px;padding:1px 3px;outline:none;font-family:inherit;color:var(--text);line-height:1.1}
 .tb-right{position:relative;flex-shrink:0;display:flex;align-items:center}
