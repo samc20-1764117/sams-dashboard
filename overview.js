@@ -1184,13 +1184,13 @@ function renderRecMoCal(){
     cells.appendChild(wrCell);
     // Goals This Week cell
     const goalsCell=document.createElement('div');goalsCell.className='mcell';
-    goalsCell.style.cssText='background:rgba(238,242,255,.4);border:none';
+    goalsCell.style.cssText='background:rgba(255,255,255,.18);border:none';
     const goalsBody=document.createElement('div');goalsBody.className='mcell-body';
     const wkMonDs=d2s(wkMon);
     const _gs=gc('weekly goals');
     (goalsWeekMap[w]||[]).forEach(t=>{
       const chip=document.createElement('div');chip.className='mcell-t';
-      chip.style.cssText=`background:${_gs.bg};color:${_gs.t};border-color:${_gs.b};cursor:grab${t.done?';opacity:.5':''}`;
+      chip.style.cssText=`background:rgba(255,255,255,.6);color:rgba(80,80,95,.75);border-color:rgba(255,255,255,.75);cursor:grab${t.done?';opacity:.5':''}`;
       chip.dataset.tid=String(t.id);chip.draggable=true;
       chip.addEventListener('dragstart',e=>{e.stopPropagation();dragId='wkgoal-mo::'+t.id+'::'+wkMonDs;chip.style.opacity='.4';document.body.classList.add('body-dragging');});
       chip.addEventListener('dragend',()=>{chip.style.opacity='1';document.body.classList.remove('body-dragging');dragId=null;});
