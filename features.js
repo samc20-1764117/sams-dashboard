@@ -2744,7 +2744,7 @@ function updateOvBanner(){
   if(!_firstSyncDone){document.getElementById('ovBanner').classList.remove('show');return;}
   if(dayOff!==0){document.getElementById('ovBanner').classList.remove('show');return;}
   const today=tod();
-  const ovTasks=st.tasks.filter(t=>!t.done&&t.due_date&&t.due_date.split('T')[0]<today);
+  const ovTasks=st.tasks.filter(t=>!t.done&&t.due_date&&t.due_date.split('T')[0]<today&&t.category!=='Weekly Goals');
   const ovRec=getOvRecurring();
   const ovShop=getOvShopping();
   const total=ovTasks.length+ovRec.length+ovShop.length;
@@ -2759,7 +2759,7 @@ function updateOvBanner(){
 }
 async function rolloverOverdue(){
   const today=tod();
-  const ovTasks=st.tasks.filter(t=>!t.done&&t.due_date&&t.due_date.split('T')[0]<today);
+  const ovTasks=st.tasks.filter(t=>!t.done&&t.due_date&&t.due_date.split('T')[0]<today&&t.category!=='Weekly Goals');
   const ovRec=getOvRecurring();
   const ovShop=getOvShopping();
   if(!ovTasks.length&&!ovRec.length&&!ovShop.length)return;
