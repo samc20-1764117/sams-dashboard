@@ -2288,10 +2288,46 @@ function drawAutoTBBlock(col,atb,ds){
   const ncols=atb._ncols||1,col_i=atb._col||0,colW=100/ncols,left=col_i*colW;
   const _showTime=ncols<=1;
   el.style.cssText=`top:${top}px;height:${ht}px;left:calc(${left}% + 2px);right:calc(${100-left-colW}% + 2px);width:auto`;
-  el.innerHTML=`<div class="tb-row"><span class="tb-bt${atb.dur>=30?' wrap':''}">${atb.label}</span><div class="tb-right">${_showTime?`<span class="tb-btime">${tStr(atb.sm)}-${tStr(atb.sm+atb.dur)}</span>`:''}<button class="tb-bdel atb-del" onclick="event.stopPropagation();delAutoTBForDay('${atb._atbId}','${ds}',${atb._ovId?`'${atb._ovId}'`:'null'})">✕</button></div></div>`;
+  el.innerHTML=`<div class="tb-row"><span class="tb-bt${atb.dur>=30?' wrap':''}">${atb.label}</span><div class="tb-right">${_showTime?`<span class="tb-btime">${tStr(atb.sm)}-${tStr(atb.sm+atb.dur)}</span>`:''}<button class="tb-bdel atb-del" onclick="event.stopPropagation();delAutoTBForDay('${atb._atbId}','${ds}',${atb._ovId?`'${atb._ovId}'`:'null'})">✕</button></div></div><div class="tb-resize atb-resize"></div>`;
+  const atbRes=el.querySelector('.atb-resize');
+  if(atbRes)atbRes.addEventListener('mousedown',e=>{
+    e.stopPropagation();e.preventDefault();
+    const startY=e.clientY,startDur=atb.dur;
+    let atbResizing=true;
+    const onResMove=ev=>{
+      if(!atbResizing)return;
+      atb.dur=Math.max(15,Math.round((startDur+(ev.clientY-startY)/PX)/15)*15);
+      el.style.height=Math.max(atb.dur*PX,16)+'px';
+      const bt=el.querySelector('.tb-btime');if(bt)bt.textContent=tStr(atb.sm)+'-'+tStr(atb.sm+atb.dur);
+    };
+    const onResUp=()=>{
+      atbResizing=false;
+      document.removeEventListener('mousemove',onResMove);document.removeEventListener('mouseup',onResUp);
+      const newDur=atb.dur;if(newDur===startDur)return;
+      const endSm=atb.sm+newDur;
+      const newStart=`${String(Math.floor(atb.sm/60)).padStart(2,'0')}:${String(atb.sm%60).padStart(2,'0')}:00`;
+      const newEnd=`${String(Math.floor(endSm/60)).padStart(2,'0')}:${String(endSm%60).padStart(2,'0')}:00`;
+      const prevEndSm=atb.sm+startDur;
+      const prevEnd=`${String(Math.floor(prevEndSm/60)).padStart(2,'0')}:${String(prevEndSm%60).padStart(2,'0')}:00`;
+      if(atb._ovId){
+        const ov=st.autoTBOverrides.find(o=>String(o.id)===atb._ovId);if(ov)ov.end_time=newEnd;
+        sbReqSilent('PATCH','auto_timeblock_overrides',{start_time:newStart,end_time:newEnd},`?id=eq.${atb._ovId}`);
+        const ovId=atb._ovId;
+        pushUndo(()=>{atb.dur=startDur;const ov2=st.autoTBOverrides.find(o=>String(o.id)===ovId);if(ov2)ov2.end_time=prevEnd;sbReqSilent('PATCH','auto_timeblock_overrides',{start_time:newStart,end_time:prevEnd},`?id=eq.${ovId}`);save();if(document.getElementById('tbGrid'))renderDayTB();},'Resized auto block');
+      }else{
+        const payload={base_id:atb._atbId,date:ds,start_time:newStart,end_time:newEnd};
+        const tmpId='atbov-tmp-'+Date.now();
+        st.autoTBOverrides.push({...payload,id:tmpId});
+        sbReqSilent('POST','auto_timeblock_overrides',payload,'').then(res=>{if(res&&res[0]){const idx=st.autoTBOverrides.findIndex(o=>String(o.id)===tmpId);if(idx>-1){st.autoTBOverrides[idx]=res[0];atb._ovId=String(res[0].id);}save();}});
+        pushUndo(()=>{atb.dur=startDur;st.autoTBOverrides=st.autoTBOverrides.filter(o=>String(o.id)!==tmpId&&o.id!==tmpId);if(atb._ovId)sbReqSilent('DELETE','auto_timeblock_overrides',null,`?id=eq.${atb._ovId}`);atb._ovId=null;save();if(document.getElementById('tbGrid'))renderDayTB();},'Resized auto block');
+      }
+      save();if(document.getElementById('tbGrid'))renderDayTB();
+    };
+    document.addEventListener('mousemove',onResMove);document.addEventListener('mouseup',onResUp);
+  });
   let atbDragging=false,atbOnMove=null,atbOnUp=null;
   el.addEventListener('mousedown',e=>{
-    if(e.target.classList.contains('atb-del'))return;
+    if(e.target.classList.contains('atb-del')||e.target.classList.contains('atb-resize'))return;
     if(e.detail>=2)return;
     e.preventDefault();e.stopPropagation();
     selAtbId=atb._atbId;selAtbDs=ds;
