@@ -4,7 +4,7 @@ function toggleCatDrop(id){const d=document.getElementById(id+'Drop');if(!d)retu
 function _applyCatTrigger(id,v){const s=_catStyle(v);const tr=document.getElementById(id+'Trigger');if(tr){tr.style.background=s.bg;tr.style.color=s.t;tr.style.borderColor=s.b;}const lbl=document.getElementById(id+'Lbl');if(lbl)lbl.textContent=v;}
 function pickCat(id,v){const inp=document.getElementById(id);if(inp)inp.value=v;_applyCatTrigger(id,v);const drop=document.getElementById(id+'Drop');if(drop)drop.classList.remove('open');const nameId=id==='tCat'?'tName':'qaName';const nm=document.getElementById(nameId);if(nm){nm.focus();const l=nm.value.length;nm.setSelectionRange(l,l);}}
 function setCatSel(id,v){const inp=document.getElementById(id);if(inp)inp.value=v;_applyCatTrigger(id,v);}
-const _CAT_OPT_LIST=[{v:'Home'},{v:'My work'},{v:'Work'},{v:'Social'},{v:'Long term'}];
+const _CAT_OPT_LIST=[{v:'Home'},{v:'My work'},{v:'Work'},{v:'Social'},{v:'Long term'},{v:'Weekly Goals'}];
 function catSelHTML(id,def){const ds=_catStyle(def);const opts=_CAT_OPT_LIST.map(c=>{const s=_catStyle(c.v);return`<div class="cat-sel-opt" style="background:${s.bg};color:${s.t}" onclick="pickCat('${id}','${c.v}')">${c.v}</div>`;}).join('');return `<div class="cat-sel-wrap" id="${id}Wrap"><input type="hidden" id="${id}" value="${def}"><div class="cat-sel-trigger" id="${id}Trigger" style="background:${ds.bg};color:${ds.t};border-color:${ds.b}" onclick="toggleCatDrop('${id}')"><span id="${id}Lbl">${def}</span><span style="opacity:.5;font-size:9px;margin-left:2px">▾</span></div><div class="cat-sel-drop" id="${id}Drop">${opts}</div></div>`;}
 document.addEventListener('click',e=>{if(!e.target.closest('.cat-sel-wrap'))document.querySelectorAll('.cat-sel-drop.open').forEach(d=>d.classList.remove('open'));});
 
@@ -25,7 +25,7 @@ function openQA(ctx,btn,ds='',kcat=''){
   } else if(ctx==='rec'){
     title='Add Recurring Task';extra='';
   } else {
-    const def=ctx==='kanban'?kcat:'Home';
+    const def=(ctx==='kanban'||ctx==='wkc')&&kcat?kcat:'Home';
     const defaultDate=ctx==='today'?d2s(getDayDate(dayOff)):(ds||'');
     extra=`<div class="qa-field"><label>Category</label>${catSelHTML('qaCat',def)}</div>
     <div class="qa-field"><label>Due date <span style="opacity:.45">(optional)</span></label><input id="qaDue" type="date" value="${defaultDate}" style="width:100%;padding:5px 7px;border-radius:8px;border:1px solid var(--border);font-family:inherit;font-size:12px;background:rgba(255,255,255,.8);color:var(--text);outline:none"></div>

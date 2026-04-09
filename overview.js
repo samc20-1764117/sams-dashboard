@@ -256,6 +256,9 @@ function renderWkCal(){
     h.innerHTML=`<div class="wkc-dn">${DNAMES[d.getDay()===0?6:d.getDay()-1].slice(0,3)}</div><div class="wkc-dd ${isDateToday(d)?'tn2':''}">${d.getDate()}</div>`;
     head.appendChild(h);
   });
+  const goalsH=document.createElement('div');goalsH.className='wkc-day-h wkc-goals-h';
+  goalsH.innerHTML=`<div class="wkc-dn">Goals</div><div class="wkc-dd wkc-goals-dd">This Wk</div>`;
+  head.appendChild(goalsH);
 
   // ── Render travel banners ────────────────────────────────────────────────────
   const bannerEl=document.getElementById('wkcBanners');bannerEl.innerHTML='';
@@ -541,14 +544,14 @@ function renderWkCal(){
     const shopForDay=st.shopping.filter(s=>s.due_date===ds&&!s.done).map(s=>({id:'shop-cal-'+s.id,name:s.name+(s.store?' ('+s.store+')':''),category:'Shopping',due_date:ds,done:false,_shopId:s.id,_virtual:true,_type:'shop'}));
     const shopForDayDone=st.shopping.filter(s=>s.due_date===ds&&s.done).map(s=>({id:'shop-cal-done-'+s.id,name:s.name+(s.store?' ('+s.store+')':''),category:'Shopping',due_date:ds,done:true,_shopId:s.id,_virtual:true,_type:'shop'}));
     const undoneDay=sortTasksForDay([
-      ...st.tasks.filter(t=>t.due_date&&t.due_date.split('T')[0]===ds&&!t.done),
+      ...st.tasks.filter(t=>t.due_date&&t.due_date.split('T')[0]===ds&&!t.done&&t.category!=='Weekly Goals'),
       ...virtForDay,
       ...wrecForDay,
       ...wrRulesForDay,
       ...shopForDay
     ],ds);
     const doneDay=[
-      ...st.tasks.filter(t=>t.due_date&&t.due_date.split('T')[0]===ds&&t.done),
+      ...st.tasks.filter(t=>t.due_date&&t.due_date.split('T')[0]===ds&&t.done&&t.category!=='Weekly Goals'),
       ...virtForDayDone,
       ...wrecForDayDone,
       ...wrRulesForDayDone,
@@ -650,6 +653,44 @@ function renderWkCal(){
 
     cols.appendChild(col);
   });
+
+  // ── Goals This Week column ────────────────────────────────────────────────
+  const wkStart=d2s(dates[0]),wkEnd=d2s(dates[6]);
+  const goalsCol=document.createElement('div');goalsCol.className='wkc-goals-col';
+  goalsCol.addEventListener('dblclick',e=>{
+    if(e.target.classList.contains('chip')||e.target.closest('.chip'))return;
+    openQA('wkc',null,wkStart,'Weekly Goals');
+  });
+  const goalsUndone=st.tasks.filter(t=>t.category==='Weekly Goals'&&!t.done&&t.due_date&&t.due_date.split('T')[0]>=wkStart&&t.due_date.split('T')[0]<=wkEnd);
+  const goalsDone=st.tasks.filter(t=>t.category==='Weekly Goals'&&t.done&&t.due_date&&t.due_date.split('T')[0]>=wkStart&&t.due_date.split('T')[0]<=wkEnd);
+  [...goalsUndone,...goalsDone].forEach(t=>{
+    const s=gc('weekly goals');
+    const chip=document.createElement('div');chip.className='chip'+(t.done?' done-chip':'');
+    chip.style.cssText=`background:${s.bg};color:${s.t};border-color:${s.b}`;
+    chip.dataset.tid=String(t.id);
+    chip.draggable=true;
+    chip.addEventListener('dragstart',e2=>{dragId=String(t.id);document.body.classList.add('body-dragging');chip.style.opacity='.4';showWkcEdges(true);e2.stopPropagation();});
+    chip.addEventListener('dragend',()=>{chip.style.opacity='1';document.body.classList.remove('body-dragging');showWkcEdges(false);});
+    const chk=document.createElement('input');chk.type='checkbox';chk.className='wchk';chk.checked=t.done;
+    chk.addEventListener('change',e2=>{e2.stopPropagation();toggleTask(t.id,chk.checked,'week');});
+    const nm=document.createElement('span');nm.className='chip-name';nm.innerHTML=tmIcon(t)+escHtml(t.name);
+    chip.appendChild(chk);chip.appendChild(nm);
+    chip.addEventListener('contextmenu',e=>{showCtx(e,t.id);});
+    chip.addEventListener('click',e=>{
+      if(e.target.closest('.wchk')||e.target.closest('.chip-del'))return;
+      const sid=String(t.id);e.stopPropagation();
+      if(e.metaKey||e.ctrlKey){if(selectedTasks.has(sid))selectedTasks.delete(sid);else selectedTasks.add(sid);lastSelectedId=sid;}
+      else if(e.shiftKey&&lastSelectedId){const allC=[...goalsCol.querySelectorAll('.chip[data-tid]')];const ids=allC.map(el=>el.dataset.tid);const a=ids.indexOf(lastSelectedId),b=ids.indexOf(sid);if(a>-1&&b>-1){const lo=Math.min(a,b),hi=Math.max(a,b);ids.slice(lo,hi+1).forEach(x=>selectedTasks.add(x));}else selectedTasks.add(sid);lastSelectedId=sid;}
+      else{selectedTasks.clear();selectedTasks.add(sid);lastSelectedId=sid;}
+      applySelHighlight();
+    });
+    chip.addEventListener('dblclick',e=>{e.stopPropagation();tiDbl(e,t.id);});
+    const dx=document.createElement('button');dx.className='chip-del';dx.textContent='✕';dx.title='Delete task';
+    dx.addEventListener('click',e2=>{e2.stopPropagation();delTask(t.id,e2);});
+    chip.appendChild(dx);
+    goalsCol.appendChild(chip);
+  });
+  cols.appendChild(goalsCol);
 }
 
 function highlightTvDrag(dates){
@@ -1676,7 +1717,7 @@ async function saveWrRuleAdd(){
 
 // ── Unassigned badge ────────────────────────────────────────────────────────────
 function renderUnassigned(){
-  const ts=st.tasks.filter(t=>!t.due_date&&!t.done&&t.category!=='Long term');
+  const ts=st.tasks.filter(t=>!t.due_date&&!t.done&&t.category!=='Long term'&&t.category!=='Weekly Goals');
   const badge=document.getElementById('unAssignedBadge');
   if(!badge)return;
   if(ts.length>0){badge.textContent=ts.length;badge.style.display='flex';}
@@ -1693,7 +1734,7 @@ function toggleUnMenu(){
   const badge=document.getElementById('unAssignedBadge');
   if(!menu||!badge)return;
   if(menu.style.display==='block'){closeUnMenu();return;}
-  const ts=sortTasks(st.tasks.filter(t=>!t.due_date&&!t.done&&t.category!=='Long term'));
+  const ts=sortTasks(st.tasks.filter(t=>!t.due_date&&!t.done&&t.category!=='Long term'&&t.category!=='Weekly Goals'));
   menu.innerHTML=ts.length?ts.map(t=>tRow(t,{cat:true,drag:true,noColor:true})).join('')
     :`<div style="padding:12px;font-size:10px;color:var(--subtle);text-align:center">All assigned ✓</div>`;
   const r=badge.getBoundingClientRect();
