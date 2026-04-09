@@ -11,7 +11,7 @@ function renderOv(){
 function renderSummaryMetrics(){
   const ds=d2s(getDayDate(dayOff));
   const blocked=st.blocks.filter(b=>b.ds===ds).reduce((s,b)=>s+b.dur,0);
-  const ovCount=st.tasks.filter(t=>!t.done&&isOv(t.due_date)).length+st.shopping.filter(s=>!s.done&&s.due_date&&isOv(s.due_date)).length;
+  const ovCount=st.tasks.filter(t=>!t.done&&isOv(t.due_date)&&t.category!=='Weekly Goals').length+st.shopping.filter(s=>!s.done&&s.due_date&&isOv(s.due_date)).length;
   const tpEl=document.getElementById('todPct'),wpEl=document.getElementById('wkPct');
   const el_tp=document.getElementById('smTodayPct'),el_wp=document.getElementById('smWkPct'),el_bl=document.getElementById('smBlocked'),el_ov=document.getElementById('smOverdue');
   if(el_tp&&tpEl)el_tp.textContent=tpEl.textContent||'0%';
@@ -401,6 +401,7 @@ function renderWkCal(){
       // Skip if cursor is in edge zone — let wkcWrap handle it
       const wr=document.getElementById('wkcWrap');
       if(wr){const rr=wr.getBoundingClientRect();if(e.clientX-rr.left<44||rr.right-e.clientX<44){col.classList.remove('drop-here');return;}}
+      if(dragId&&dragId.startsWith('wkgoal::'))return;
       e.preventDefault();
       if(tvDragStart!==null){
         // Travel drag-select mode
@@ -669,13 +670,13 @@ function renderWkCal(){
     chip.style.cssText=`background:${s.bg};color:${s.t};border-color:${s.b}`;
     chip.dataset.tid=String(t.id);
     chip.draggable=true;
-    chip.addEventListener('dragstart',e2=>{dragId=String(t.id);document.body.classList.add('body-dragging');chip.style.opacity='.4';showWkcEdges(true);e2.stopPropagation();});
+    chip.addEventListener('dragstart',e2=>{dragId='wkgoal::'+String(t.id);document.body.classList.add('body-dragging');chip.style.opacity='.4';showWkcEdges(true);e2.stopPropagation();});
     chip.addEventListener('dragend',()=>{chip.style.opacity='1';document.body.classList.remove('body-dragging');showWkcEdges(false);});
     const chk=document.createElement('input');chk.type='checkbox';chk.className='wchk';chk.checked=t.done;
     chk.addEventListener('change',e2=>{e2.stopPropagation();toggleTask(t.id,chk.checked,'week');});
     const nm=document.createElement('span');nm.className='chip-name';nm.innerHTML=tmIcon(t)+escHtml(t.name);
     chip.appendChild(chk);chip.appendChild(nm);
-    chip.addEventListener('contextmenu',e=>{showCtx(e,t.id);});
+    chip.addEventListener('contextmenu',e=>{showGoalCtx(e,String(t.id));});
     chip.addEventListener('click',e=>{
       if(e.target.closest('.wchk')||e.target.closest('.chip-del'))return;
       const sid=String(t.id);e.stopPropagation();
@@ -812,6 +813,12 @@ function setupWkcEdgeDrop(){
       }
       dragId=null;return;
     }
+    if(dragId.startsWith('wkgoal::')){
+      const tid=dragId.split('::')[1];
+      const gt=st.tasks.find(x=>String(x.id)===tid);dragId=null;
+      if(gt){const prevDs=gt.due_date;const d=new Date((gt.due_date||d2s(new Date()))+'T12:00');d.setDate(d.getDate()+dir*7);const nDs=d2s(d);gt.due_date=nDs;shiftWk(dir);save();renderAll();pushUndo(()=>{gt.due_date=prevDs;save();renderAll();sbReqNullable('PATCH','tasks',{due_date:prevDs},`?id=eq.${tid}`);},'Moved goal week');await sbReqNullable('PATCH','tasks',{due_date:nDs},`?id=eq.${tid}`);}
+      return;
+    }
     const t=st.tasks.find(x=>String(x.id)===String(dragId));if(!t){dragId=null;return;}
     const prev={due_date:t.due_date};
     t.due_date=newDs;dragId=null;
@@ -878,6 +885,12 @@ function setupEdge(id,dir){
       dragId=null;return;
     }
     // Regular task
+    if(dragId.startsWith('wkgoal::')){
+      const tid=dragId.split('::')[1];
+      const gt=st.tasks.find(x=>String(x.id)===tid);dragId=null;
+      if(gt){const prevDs=gt.due_date;const d=new Date((gt.due_date||d2s(new Date()))+'T12:00');d.setDate(d.getDate()+dir*7);const nDs=d2s(d);gt.due_date=nDs;shiftWk(dir);save();renderAll();pushUndo(()=>{gt.due_date=prevDs;save();renderAll();sbReqNullable('PATCH','tasks',{due_date:prevDs},`?id=eq.${tid}`);},'Moved goal week');await sbReqNullable('PATCH','tasks',{due_date:nDs},`?id=eq.${tid}`);}
+      return;
+    }
     const t=st.tasks.find(x=>String(x.id)===String(dragId));if(!t){dragId=null;return;}
     const prev={due_date:t.due_date};
     t.due_date=newDs;dragId=null;
@@ -887,6 +900,16 @@ function setupEdge(id,dir){
   });
 }
 
+function moveGoalWeeks(taskId,delta){const t=st.tasks.find(x=>String(x.id)===taskId);if(!t)return;const prev=t.due_date;const d=new Date((t.due_date||d2s(new Date()))+'T12:00');d.setDate(d.getDate()+delta*7);const nDs=d2s(d);t.due_date=nDs;save();renderAll();renderRecMoCal();pushUndo(()=>{t.due_date=prev;save();renderAll();renderRecMoCal();sbReqNullable('PATCH','tasks',{due_date:prev},`?id=eq.${taskId}`);},'Moved goal week');sbReqNullable('PATCH','tasks',{due_date:nDs},`?id=eq.${taskId}`);}
+function showGoalCtx(e,taskId){
+  e.preventDefault();e.stopPropagation();
+  showWrScopePicker(e,'← Previous week','→ Next week',
+    ()=>moveGoalWeeks(taskId,-1),
+    ()=>moveGoalWeeks(taskId,1),
+    'Custom…',
+    ()=>{const n=parseInt(prompt('Move how many weeks? (use negative for past)','1'));if(!isNaN(n)&&n!==0)moveGoalWeeks(taskId,n);}
+  );
+}
 function onWkcWheel(e){
   if(Math.abs(e.deltaX)<8&&!e.shiftKey)return;
   e.preventDefault();
@@ -957,11 +980,13 @@ function renderRecMoCal(){
   const dayMap={};
   function addToDay(ds,item){if(!dayMap[ds])dayMap[ds]=[];dayMap[ds].push(item);}
   const wrWeekMap={};
+  const goalsWeekMap={};
   for(let w=0;w<TOTAL;w++){
     const wkOff=w-PAST;
-    const{mon}=getWkBounds(wkOff);
-    const monDs=d2s(mon);
+    const{mon,sun}=getWkBounds(wkOff);
+    const monDs=d2s(mon),sunDs=d2s(sun);
     wrWeekMap[w]=[];
+    goalsWeekMap[w]=st.tasks.filter(t=>t.category==='Weekly Goals'&&t.due_date&&t.due_date.split('T')[0]>=monDs&&t.due_date.split('T')[0]<=sunDs);
     st.wrRules.filter(r=>r.is_enabled&&isWRRuleDueThisWeek(r,wkOff)).forEach(r=>{
       const editOv=st.wrOverrides.find(o=>o.override_type==='edit'&&String(o.rule_id)===String(r.id)&&o.wk_key===monDs);
       const displayName=(editOv&&editOv.custom_name)||r.name;
@@ -979,6 +1004,7 @@ function renderRecMoCal(){
   if(!dowEl.children.length){
     ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach(dn=>{const el=document.createElement('div');el.className='mdowl';el.textContent=dn;dowEl.appendChild(el);});
     const wrHdr=document.createElement('div');wrHdr.className='mdowl';wrHdr.textContent='Weekly Reset';wrHdr.style.cssText='color:#3b82f6;border-left:1px solid rgba(59,130,246,.2);padding-left:4px';dowEl.appendChild(wrHdr);
+    const goalsHdr=document.createElement('div');goalsHdr.className='mdowl';goalsHdr.textContent='Goals';goalsHdr.style.cssText='color:#6366f1;border-left:1px solid rgba(99,102,241,.2);padding-left:4px';dowEl.appendChild(goalsHdr);
   }
   const cells=document.getElementById('recMoCells');cells.innerHTML='';
   let curMo=-1;
@@ -1153,6 +1179,45 @@ function renderRecMoCal(){
       );
     });
     cells.appendChild(wrCell);
+    // Goals This Week cell
+    const goalsCell=document.createElement('div');goalsCell.className='mcell';
+    goalsCell.style.cssText='background:rgba(238,242,255,.4);border:none';
+    const goalsBody=document.createElement('div');goalsBody.className='mcell-body';
+    const wkMonDs=d2s(wkMon);
+    const _gs=gc('weekly goals');
+    (goalsWeekMap[w]||[]).forEach(t=>{
+      const chip=document.createElement('div');chip.className='mcell-t';
+      chip.style.cssText=`background:${_gs.bg};color:${_gs.t};border-color:${_gs.b};cursor:grab${t.done?';opacity:.5':''}`;
+      chip.dataset.tid=String(t.id);chip.draggable=true;
+      chip.addEventListener('dragstart',e=>{e.stopPropagation();dragId='wkgoal-mo::'+t.id+'::'+wkMonDs;chip.style.opacity='.4';document.body.classList.add('body-dragging');});
+      chip.addEventListener('dragend',()=>{chip.style.opacity='1';document.body.classList.remove('body-dragging');dragId=null;});
+      const chk=document.createElement('input');chk.type='checkbox';chk.className='chk';chk.style.cssText='width:8px;height:8px';chk.checked=t.done;
+      chk.addEventListener('change',function(){toggleTask(t.id,this.checked,'week');});
+      const nm=document.createElement('span');nm.style.cssText='flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';nm.textContent=t.name;
+      chip.appendChild(chk);chip.appendChild(nm);
+      const dx=document.createElement('button');dx.className='chip-del';dx.textContent='✕';dx.addEventListener('click',e2=>{e2.stopPropagation();delTask(t.id,e2);});
+      chip.appendChild(dx);
+      goalsBody.appendChild(chip);
+    });
+    goalsCell.appendChild(goalsBody);
+    goalsCell.addEventListener('dragover',e=>{if(dragId&&dragId.startsWith('wkgoal-mo::'))e.preventDefault();goalsCell.classList.add('dov');});
+    goalsCell.addEventListener('dragleave',()=>goalsCell.classList.remove('dov'));
+    goalsCell.addEventListener('drop',async e=>{
+      e.preventDefault();goalsCell.classList.remove('dov');
+      if(!dragId||!dragId.startsWith('wkgoal-mo::'))return;
+      const parts=dragId.split('::');const tid=parts[1];const srcWkMonDs=parts[2];dragId=null;
+      if(wkMonDs===srcWkMonDs)return;
+      const gt=st.tasks.find(x=>String(x.id)===tid);if(!gt)return;
+      const prevDs=gt.due_date;
+      const deltaMs=new Date(wkMonDs+'T12:00')-new Date(srcWkMonDs+'T12:00');
+      const deltaDays=Math.round(deltaMs/86400000);
+      const nd=new Date((gt.due_date||wkMonDs)+'T12:00');nd.setDate(nd.getDate()+deltaDays);
+      const nDs=d2s(nd);gt.due_date=nDs;
+      save();renderRecMoCal();
+      pushUndo(()=>{gt.due_date=prevDs;save();renderRecMoCal();sbReqNullable('PATCH','tasks',{due_date:prevDs},`?id=eq.${tid}`);},'Moved goal week');
+      await sbReqNullable('PATCH','tasks',{due_date:nDs},`?id=eq.${tid}`);
+    });
+    cells.appendChild(goalsCell);
   }
 }
 

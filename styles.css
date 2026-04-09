@@ -466,7 +466,7 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 .mhead{display:flex;align-items:center;gap:7px;padding:0 13px;min-height:38px;border-bottom:1px solid rgba(210,205,228,.3);border-radius:8px;box-sizing:border-box}
 .mgrid{flex:1;overflow-y:auto;padding:0 12px 12px;scroll-padding-top:21px}
 .mdow{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:0;position:sticky;top:0;z-index:5;background:var(--bg);padding:4px 12px 3px;margin-left:-12px;margin-right:-12px;border-radius:0}
-#recMoDow,#recMoCells{grid-template-columns:repeat(7,1fr) minmax(160px,1.8fr)}
+#recMoDow,#recMoCells{grid-template-columns:repeat(7,1fr) minmax(160px,1.8fr) minmax(80px,1fr)}
 .mdowl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);text-align:center;padding:2px 0}
 .mo-sep{grid-column:1/-1;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:10px 4px 4px;border-top:1px solid rgba(210,205,228,.3);margin-top:2px}
 .mcells{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
