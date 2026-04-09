@@ -1,7 +1,7 @@
 # Tasks & UI Rules
 
 ## Overdue Logic
-- **Tasks**: `due_date < today && !done`.
+- **Tasks**: `due_date < today && !done && category !== 'Weekly Goals'`. Weekly Goals are never overdue.
 - **Shopping**: `due_date < today && !done`.
 - **Non-WR recurring**: `getRecurringWeekTasks(w)` for w=0 to wkOff-4. Cascading `__skip__` check across weeks. Seen set prevents duplicates.
 - **WR recurring** (`is_weekly_reset=true` in `st.recurring`): overdue if `_dateOverrides[wkKey] < today && !_doneByWk[wkKey]`. Looks back 4 weeks. Uses `wrRecHandled` set — only added when `_dateOverrides[wkKey] <= today` (future dates do NOT block older-week lookback).
@@ -11,7 +11,7 @@
 
 ## Task Modals
 - **`#tModal`**: add (`openTModal(cat='')`) + edit (`openEditTask(id)`). Fields: name,category,due date,important,notes. Save: `saveTModal()`.
-- **`#qaPopup`** (`openQA(ctx,btn,ds,kcat)`): name,category,due date,important,notes. Cat defaults `kcat` in kanban, else `'Home'`.
+- **`#qaPopup`** (`openQA(ctx,btn,ds,kcat)`): name,category,due date,important,notes. Cat defaults `kcat` when `ctx==='kanban'` OR `ctx==='wkc'` and `kcat` provided, else `'Home'`.
 - **Category dropdown** (`.cat-sel-wrap`): `catSelHTML(id,def)`, `setCatSel(id,v)`, `pickCat(id,v)`, `toggleCatDrop(id)`.
 
 ## Interaction Patterns
