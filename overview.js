@@ -2179,11 +2179,21 @@ function getVisibleBlocks(ds){
       if(!t||t.category==='Weekly Goals')return false;
       const tds=(t.due_date||'').split('T')[0];if(tds&&tds!==ds&&!(isViewingToday&&isOv(t.due_date)&&!t.done))return false;
     } else if(b.recId){
-      const r=st.recurring.find(x=>String(x.id)===String(b.recId))||st.wrRules.find(x=>String(x.id)===String(b.recId));
-      if(!r)return false;
+      const rec=st.recurring.find(x=>String(x.id)===String(b.recId));
+      if(rec){
+        const wkk=dsToWkKey(ds);
+        if(rec._dateOverrides&&rec._dateOverrides[wkk]!==undefined&&rec._dateOverrides[wkk]!==ds)return false;
+      } else {
+        const r=st.wrRules.find(x=>String(x.id)===String(b.recId));
+        if(!r)return false;
+        const wkk=dsToWkKey(ds);
+        if(r._dateOverrides&&r._dateOverrides[wkk]!==undefined&&r._dateOverrides[wkk]!==ds)return false;
+      }
     } else if(b.ruleId){
       const r=st.wrRules.find(x=>String(x.id)===String(b.ruleId));
       if(!r)return false;
+      const wkk=dsToWkKey(ds);
+      if(r._dateOverrides&&r._dateOverrides[wkk]!==undefined&&r._dateOverrides[wkk]!==ds)return false;
     } else {
       const t=st.tasks.find(x=>x.name===b.title&&!x.done);
       if(t){const tds=(t.due_date||'').split('T')[0];if(tds&&tds!==ds&&!(isViewingToday&&isOv(t.due_date)))return false;}
