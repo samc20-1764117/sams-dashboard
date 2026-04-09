@@ -1060,7 +1060,7 @@ function renderRecMoCal(){
     });
     if(_badgeLetter){
       const slot=document.createElement('span');
-      slot.style.cssText='flex-shrink:0;display:inline-flex;align-items:center;margin-left:2px';
+      slot.style.cssText='flex-shrink:0;display:inline-flex;align-items:center;margin-left:2px;position:relative';
       const bdg=document.createElement('span');
       bdg.style.cssText='font-size:9px;font-weight:700;letter-spacing:.3px;padding:1px 3px;border-radius:3px;background:rgba(0,0,0,.13);color:inherit';
       bdg.textContent=_badgeLetter;
