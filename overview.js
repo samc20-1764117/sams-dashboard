@@ -983,13 +983,11 @@ function renderRecMoCal(){
   const dayMap={};
   function addToDay(ds,item){if(!dayMap[ds])dayMap[ds]=[];dayMap[ds].push(item);}
   const wrWeekMap={};
-  const goalsWeekMap={};
   for(let w=0;w<TOTAL;w++){
     const wkOff=w-PAST;
     const{mon,sun}=getWkBounds(wkOff);
     const monDs=d2s(mon),sunDs=d2s(sun);
     wrWeekMap[w]=[];
-    goalsWeekMap[w]=st.tasks.filter(t=>t.category==='Weekly Goals'&&t.due_date&&t.due_date.split('T')[0]>=monDs&&t.due_date.split('T')[0]<=sunDs);
     st.wrRules.filter(r=>r.is_enabled&&isWRRuleDueThisWeek(r,wkOff)).forEach(r=>{
       const editOv=st.wrOverrides.find(o=>o.override_type==='edit'&&String(o.rule_id)===String(r.id)&&o.wk_key===monDs);
       const displayName=(editOv&&editOv.custom_name)||r.name;
@@ -1007,7 +1005,6 @@ function renderRecMoCal(){
   if(!dowEl.children.length){
     ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach(dn=>{const el=document.createElement('div');el.className='mdowl';el.textContent=dn;dowEl.appendChild(el);});
     const wrHdr=document.createElement('div');wrHdr.className='mdowl';wrHdr.textContent='Weekly Reset';wrHdr.style.cssText='color:#3b82f6;border-left:1px solid rgba(59,130,246,.2);padding-left:4px';dowEl.appendChild(wrHdr);
-    const goalsHdr=document.createElement('div');goalsHdr.className='mdowl';goalsHdr.textContent='Goals';goalsHdr.style.cssText='color:#6366f1;border-left:1px solid rgba(99,102,241,.2);padding-left:4px';dowEl.appendChild(goalsHdr);
   }
   const cells=document.getElementById('recMoCells');cells.innerHTML='';
   let curMo=-1;
@@ -1182,45 +1179,6 @@ function renderRecMoCal(){
       );
     });
     cells.appendChild(wrCell);
-    // Goals This Week cell
-    const goalsCell=document.createElement('div');goalsCell.className='mcell';
-    goalsCell.style.cssText='background:rgba(255,255,255,.18);border:none';
-    const goalsBody=document.createElement('div');goalsBody.className='mcell-body';
-    const wkMonDs=d2s(wkMon);
-    const _gs=gc('weekly goals');
-    (goalsWeekMap[w]||[]).forEach(t=>{
-      const chip=document.createElement('div');chip.className='mcell-t';
-      chip.style.cssText=`background:rgba(255,255,255,.6);color:rgba(80,80,95,.75);border-color:rgba(255,255,255,.75);cursor:grab${t.done?';opacity:.5':''}`;
-      chip.dataset.tid=String(t.id);chip.draggable=true;
-      chip.addEventListener('dragstart',e=>{e.stopPropagation();dragId='wkgoal-mo::'+t.id+'::'+wkMonDs;chip.style.opacity='.4';document.body.classList.add('body-dragging');});
-      chip.addEventListener('dragend',()=>{chip.style.opacity='1';document.body.classList.remove('body-dragging');dragId=null;});
-      const chk=document.createElement('input');chk.type='checkbox';chk.className='chk';chk.style.cssText='width:8px;height:8px';chk.checked=t.done;
-      chk.addEventListener('change',function(){toggleTask(t.id,this.checked,'week');});
-      const nm=document.createElement('span');nm.style.cssText='flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';nm.textContent=t.name;
-      chip.appendChild(chk);chip.appendChild(nm);
-      const dx=document.createElement('button');dx.className='chip-del';dx.textContent='✕';dx.addEventListener('click',e2=>{e2.stopPropagation();delTask(t.id,e2);});
-      chip.appendChild(dx);
-      goalsBody.appendChild(chip);
-    });
-    goalsCell.appendChild(goalsBody);
-    goalsCell.addEventListener('dragover',e=>{if(dragId&&dragId.startsWith('wkgoal-mo::'))e.preventDefault();goalsCell.classList.add('dov');});
-    goalsCell.addEventListener('dragleave',()=>goalsCell.classList.remove('dov'));
-    goalsCell.addEventListener('drop',async e=>{
-      e.preventDefault();goalsCell.classList.remove('dov');
-      if(!dragId||!dragId.startsWith('wkgoal-mo::'))return;
-      const parts=dragId.split('::');const tid=parts[1];const srcWkMonDs=parts[2];dragId=null;
-      if(wkMonDs===srcWkMonDs)return;
-      const gt=st.tasks.find(x=>String(x.id)===tid);if(!gt)return;
-      const prevDs=gt.due_date;
-      const deltaMs=new Date(wkMonDs+'T12:00')-new Date(srcWkMonDs+'T12:00');
-      const deltaDays=Math.round(deltaMs/86400000);
-      const nd=new Date((gt.due_date||wkMonDs)+'T12:00');nd.setDate(nd.getDate()+deltaDays);
-      const nDs=d2s(nd);gt.due_date=nDs;
-      save();renderRecMoCal();
-      pushUndo(()=>{gt.due_date=prevDs;save();renderRecMoCal();sbReqNullable('PATCH','tasks',{due_date:prevDs},`?id=eq.${tid}`);},'Moved goal week');
-      await sbReqNullable('PATCH','tasks',{due_date:nDs},`?id=eq.${tid}`);
-    });
-    cells.appendChild(goalsCell);
   }
 }
 
