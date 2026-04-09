@@ -257,7 +257,7 @@ function renderWkCal(){
     head.appendChild(h);
   });
   const goalsH=document.createElement('div');goalsH.className='wkc-day-h wkc-goals-h';
-  goalsH.innerHTML=`<div class="wkc-dn">Goals</div><div class="wkc-dd wkc-goals-dd">This Wk</div>`;
+  goalsH.innerHTML=`<div class="wkc-dn">Goals</div>`;
   head.appendChild(goalsH);
 
   // ── Render travel banners ────────────────────────────────────────────────────
@@ -656,10 +656,10 @@ function renderWkCal(){
 
   // ── Goals This Week column ────────────────────────────────────────────────
   const wkStart=d2s(dates[0]),wkEnd=d2s(dates[6]);
-  const goalsCol=document.createElement('div');goalsCol.className='wkc-goals-col';
+  const goalsCol=document.createElement('div');goalsCol.className='wkc-goals-col';goalsCol.style.paddingTop='0';
   goalsCol.addEventListener('dblclick',e=>{
     if(e.target.classList.contains('chip')||e.target.closest('.chip'))return;
-    openQA('wkc',null,wkStart,'Weekly Goals');
+    openQA('wkc',null,d2s(getDayDate(0)),'Weekly Goals');
   });
   const goalsUndone=st.tasks.filter(t=>t.category==='Weekly Goals'&&!t.done&&t.due_date&&t.due_date.split('T')[0]>=wkStart&&t.due_date.split('T')[0]<=wkEnd);
   const goalsDone=st.tasks.filter(t=>t.category==='Weekly Goals'&&t.done&&t.due_date&&t.due_date.split('T')[0]>=wkStart&&t.due_date.split('T')[0]<=wkEnd);
