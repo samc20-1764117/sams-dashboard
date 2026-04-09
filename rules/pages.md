@@ -1,35 +1,35 @@
 # Pages Rules
 
 ### Overview (`overview.js`)
-- **Today list** sort: done last→travel→overdue→important→type (regular=1,rec=2,shop=3,bday=4)→name. `_hasTBToday` check uses `b.ruleId`/`b.shopId`/`b.recId`/`b.taskId`.
-- **WR tasks in today list**: appear if `_dateOverrides[wkKey]===today` OR overdue (looking back 4 weeks). `wrRulesToday`/`wrecToday` loops use `_wrRulesSeen`/`_wrecSeen` to dedup across weeks. Skip check: `_dateOverrides[wkKey]!=='__skip__'` (WRec) + `st.wrOverrides` skip check (WR rules).
-- **Layout**: `.overview-cols` `minmax(0,1.5fr) minmax(0,2.55fr)`. `row1-right-top` is a 3-col grid (1.05fr WR / 0.9fr Shopping / 0.6fr Quick Links) with `height:min(225px,28vh)`.
-- **WR overview list** (`#recList`): `columns:2;column-gap:2px;column-fill:auto;padding:4px 0 0`. Items use inline `margin:0 6px;padding:3px 22px 3px 10px;break-inside:avoid`. `max-height` set dynamically in JS to `4 + 7 * itemHeight` to show exactly 7 rows per column.
-- **Shopping overview list** (`#shopOv`): block layout, `padding:4px 0 0`. Items use inline `margin:0 6px;padding:3px 22px 3px 10px`. `max-height` set dynamically to show exactly 7 items then scroll — calculated inside `requestAnimationFrame` + `document.fonts.ready` (both needed) to ensure font-loaded row height is used; measuring before fonts load causes the 7th item to be half-clipped. `#shopOv` starts empty in HTML (no pre-rendered items). CSS: `#shopOv .cpill{padding-top:1px;padding-bottom:1px;line-height:1}` — critical: without this the cpill stretches rows taller than WR rows, breaking alignment.
+- **Today list** sort: done last→travel→overdue→important→type (regular=1,rec=2,shop=3,bday=4)→name. `_hasTBToday` checks `b.ruleId/shopId/recId/taskId`.
+- **WR tasks in today list**: appear if `_dateOverrides[wkKey]===today` OR overdue (4-week lookback). `wrRulesToday/wrecToday` use `_wrRulesSeen/_wrecSeen` to dedup.
+- **Layout**: `.overview-cols` `minmax(0,1.5fr) minmax(0,2.55fr)`. `row1-right-top` is 3-col grid (1.05fr WR / 0.9fr Shopping / 0.6fr Quick Links) with `height:min(225px,28vh)`.
+- **WR overview list** (`#recList`): `columns:2;column-gap:2px;column-fill:auto;padding:4px 0 0`. Items: `margin:0 6px;padding:3px 22px 3px 10px;break-inside:avoid`. `max-height = 4 + 7 * itemHeight` (set in rAF, exactly 7 rows per column).
+- **Shopping overview list** (`#shopOv`): block layout, `padding:4px 0 0`. Items: `margin:0 6px;padding:3px 22px 3px 10px`. `max-height` for 7 items calculated in `requestAnimationFrame` + `document.fonts.ready` (both needed — measuring before fonts load clips 7th item). `#shopOv` starts empty in HTML. `#shopOv .cpill{padding-top:1px;padding-bottom:1px;line-height:1}` — critical: prevents cpill stretching rows taller than WR rows.
 - **List text/checkbox**: `#shopOv .tn,#recList .tn{font-size:11px}`. `#shopOv .chk,#recList .chk{width:11px;height:11px}`.
 - **Time blocks**: auto blocks in `computeTBLayout`. Auto blocks never in today/overdue/metrics/recurring/weekly-cal.
 
 ### Weekly Goals (`overview.js` + `features.js`)
-- **Category**: `'Weekly Goals'` — indigo color in CATS. In `KCATS` and `_CAT_OPT_LIST`.
-- **Scoping**: tasks belong to a week via `due_date` (any date in that Mon–Sun range). Shown only in the Goals column; never in day columns, Today list, timeblock, overdue banner/count, or unassigned popup.
-- **Weekly calendar Goals column**: 8th column (`.wkc-goals-col`) after Sunday. Header: `.wkc-goals-h` (bottom-aligned). Divider: `2px solid rgba(255,255,255,.88)`. Background: `rgba(255,255,255,.18)`. Chips match day-column chip behavior (checkbox, click/select, dblclick edit, right-click, delete). Dblclick empty → `openQA('wkc', null, today, 'Weekly Goals')`.
-- **Cannot drag to day columns**: dragId uses `'wkgoal::'+id` prefix; day column dragover returns early for this prefix.
-- **Move to different week — 3 methods**:
-  1. Drag left/right edge of weekly cal → shifts `due_date` ±7 days, navigates week view.
-  2. Right-click → `showGoalCtx` → scope picker: "← Previous week" / "→ Next week" / "Custom…" (prompts for N weeks, negative = past). Uses `moveGoalWeeks(taskId, delta)`.
-  3. Monthly calendar Goals cell drag up/down between week rows (`wkgoal-mo::taskId::srcWkMonDs`), preserves day-of-week offset.
-- **`openQA` default category**: when `ctx==='wkc'` and `kcat` provided, uses `kcat` as default (not always 'Home').
+- **Category**: `'Weekly Goals'`. In `KCATS` and `_CAT_OPT_LIST`. Not overdue. Not in Today list, timeblock, overdue banner, unassigned popup.
+- **Scoping**: tasks belong to a week via `due_date` (any Mon–Sun date). Shown only in Goals column and monthly cal Goals column.
+- **Weekly cal Goals column**: 8th column (`.wkc-goals-col`) after Sunday. Header `.wkc-goals-h` (bottom-aligned). Divider: `2px solid rgba(255,255,255,.88)`. Background: `rgba(255,255,255,.18)`.
+- **Chip styling**: `background:rgba(255,255,255,.82);color:rgba(80,80,95,.75);border-color:rgba(255,255,255,.9)` + `backdrop-filter:blur(8px);box-shadow:inset 0 1px 0 rgba(255,255,255,.6)`. **IMP override**: when `t.important && !t.done`, use IMP yellow — CSS must NOT have `!important` on color/border.
+- **Cannot drag to day columns**: dragId `'wkgoal::'+id`; day col dragover returns early for this prefix.
+- **Move to different week**: (1) drag left/right edge ±7 days; (2) right-click→`showGoalCtx`→"← Prev"/"→ Next"/"Custom…" via `moveGoalWeeks(taskId,delta)`; (3) monthly cal Goals cell drag (`wkgoal-mo::taskId::srcWkMonDs`).
+- **`openQA` default category**: `ctx==='wkc'` + `kcat` provided → uses `kcat`, not 'Home'.
 
 ### Recurring Tasks Page (`features.js`, `page-weekly`)
-Two-col grid: WR left, non-WR right. 4 cadence groups each. WR: `renderRtWrGroup`. Non-WR: `renderRtGroup`. Other group: `OTHER_CADS=['quarterly','biannual','annual']`.
+Two-col grid: WR left, non-WR right. 4 cadence groups each. WR: `renderRtWrGroup`. Non-WR: `renderRtGroup`. `OTHER_CADS=['quarterly','biannual','annual']`.
 
 ### Monthly Calendar (`features.js`, `#mModal`)
-Fixed range Jan 1 (curYr-3) → Dec 31 (curYr+2). `scrollMoToday()` BEFORE `.open`. GPU: `backdrop-filter:none`. Orbs paused. **Grid**: 8 cols — `#mDow,#mCells{grid-template-columns:repeat(7,1fr) minmax(80px,1fr)}`. 8th col = Goals (light white bg, white left border). Weekly Goals tasks filtered from day cells and unassigned panel. Goals cells support drag between weeks via `wkgoal-mo::taskId::srcWkMonDs`.
+Fixed range Jan 1 (curYr-3) → Dec 31 (curYr+2). `scrollMoToday()` BEFORE `.open`. GPU: `backdrop-filter:none`. Orbs paused. **Grid**: 8 cols — `#mDow,#mCells{grid-template-columns:repeat(7,1fr) minmax(80px,1fr)}`. 8th col = Goals (light white bg, white left border). Weekly Goals filtered from day cells and unassigned panel. Goals cells support `wkgoal-mo::taskId::srcWkMonDs` drag.
+- **Goals chips**: `background:rgba(255,255,255,.82);color:rgba(80,80,95,.75);border-color:rgba(255,255,255,.9)`. IMP override applies (`t.important && !t.done` → IMP yellow).
 
 ### Recurring Monthly View (`overview.js`, `#recMoModal`)
-**Grid**: 9 cols — 7 day + 1 WR + 1 Goals. WR col: blue-tinted, `columns:2`. Goals col: light white. Width: `min(98vw,1200px)`. 22-week range.
+**Grid**: 8 cols — 7 day + 1 WR col (blue-tinted, `columns:2`). **No Goals column** — Goals only in weekly calendar.  `#recMoDow,#recMoCells{grid-template-columns:repeat(7,1fr) minmax(160px,1.8fr)}`. Width: `min(98vw,1200px)`. 22-week range.
 **X button**: WR→skip/delete; WRec→skip/`delRec`; non-WR→`skipRecVirtThisWk`/`delRec`.
 **Right-click** (`showWrRuleCtx`): Skip/Move/Edit/Delete. Auto-detects type via `st.wrRules`.
+**Header rebuild**: `dowEl.innerHTML=''` before repopulating headers — required because `if(!dowEl.children.length)` guard prevents stale header removal otherwise.
 
 ### Shopping List (`features.js`)
 `shop_order integer`. Drag MUST use mousedown/mousemove/mouseup — NOT HTML5. X→`unscheduleShop`: null `due_date`, remove `st.blocks`.
