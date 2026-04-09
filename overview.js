@@ -669,7 +669,7 @@ function renderWkCal(){
   const goalsDone=st.tasks.filter(t=>t.category==='Weekly Goals'&&t.done&&t.due_date&&t.due_date.split('T')[0]>=wkStart&&t.due_date.split('T')[0]<=wkEnd);
   [...goalsUndone,...goalsDone].forEach(t=>{
     const imp=t.important&&!t.done;
-    const s=imp?IMP:{bg:'rgba(255,255,255,.6)',t:'rgba(80,80,95,.75)',b:'rgba(255,255,255,.75)'};
+    const s=imp?IMP:{bg:'rgba(255,255,255,.82)',t:'rgba(80,80,95,.75)',b:'rgba(255,255,255,.9)'};
     const chip=document.createElement('div');chip.className='chip'+(t.done?' done-chip':'');
     chip.style.cssText=`background:${s.bg};color:${s.t};border-color:${s.b}`;
     chip.dataset.tid=String(t.id);
