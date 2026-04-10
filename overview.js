@@ -106,7 +106,7 @@ function renderDailyHabits(){
       <button class="delbtn" onclick="event.stopPropagation();delRec('${r.id}')">✕</button>
     </div>`;
   }).join('');
-  el.innerHTML=`<div style="display:flex;align-items:center;padding:4px 10px 2px;gap:6px;border-top:1px solid rgba(0,0,0,.07)">
+  el.innerHTML=`<div style="display:flex;align-items:center;padding:4px 10px 2px;gap:6px;border-top:1px solid rgba(0,0,0,.06);margin-top:2px">
     <span style="font-size:10px;font-weight:600;letter-spacing:.05em;color:rgba(60,60,80,.55);text-transform:uppercase;flex:1">Daily</span>
     ${habits.length?`<span style="font-size:10px;color:rgba(60,60,80,.45);font-weight:500">${doneCount}/${habits.length}</span>`:''}
     <button class="btn btn-ghost btn-xs" onclick="openAddDailyHabit()" style="padding:1px 6px;font-size:11px;line-height:1.4">+</button>
