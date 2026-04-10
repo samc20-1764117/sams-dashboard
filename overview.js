@@ -1391,13 +1391,15 @@ function writeWrOverride(ruleId,wkKey,payload,{onDone,undoLabel='Changed WR task
   const _pinnedDs=_skipRule?._dateOverrides?.[wkKey];
   const linkedBlocks=isSkip&&st.blocks?st.blocks.filter(b=>dsToWkKey(b.ds)===wkKey&&(String(b.ruleId)===String(ruleId)||String(b.recId)===String(ruleId)||(!b.ruleId&&!b.recId&&_pinnedDs&&b.ds===_pinnedDs&&!b.taskId&&!b.shopId))):[];
   if(isSkip&&linkedBlocks.length){st.blocks=st.blocks.filter(b=>!linkedBlocks.some(lb=>lb.id===b.id));linkedBlocks.forEach(b=>sbDeleteBlock(b.id));}
+  const _syncBlockDone=(isDone)=>{if(st.blocks)st.blocks.filter(b=>dsToWkKey(b.ds)===wkKey&&(String(b.ruleId)===String(ruleId)||String(b.recId)===String(ruleId))).forEach(b=>{b._done=isDone;});};
   const _rerender=()=>{renderRecOv();renderWkCal();renderWeeklyPage();renderToday();if(document.getElementById('tbGrid'))renderDayTB();};
   const existing=st.wrOverrides.find(o=>String(o.rule_id)===String(ruleId)&&o.wk_key===wkKey);
   if(existing){
     const prev={...existing};
     Object.assign(existing,full);
     sbReqSilent('PATCH','wr_recurring_overrides',full,`?id=eq.${existing.id}`);
-    pushUndo(()=>{Object.assign(existing,prev);if(isSkip){linkedBlocks.forEach(b=>{if(st.blocks)st.blocks.push(b);sbSaveBlock(b);});}sbReqSilent('PATCH','wr_recurring_overrides',prev,`?id=eq.${existing.id}`);_rerender();},undoLabel);
+    pushUndo(()=>{Object.assign(existing,prev);if(isSkip){linkedBlocks.forEach(b=>{if(st.blocks)st.blocks.push(b);sbSaveBlock(b);});}sbReqSilent('PATCH','wr_recurring_overrides',prev,`?id=eq.${existing.id}`);_syncBlockDone(prev.override_type==='complete'&&prev.done===true);_rerender();},undoLabel);
+    if(payload.override_type==='complete')_syncBlockDone(payload.done===true);
     save();_rerender();if(onDone)onDone(existing);
   } else {
     const tmpId='wrov-tmp-'+Date.now();
@@ -1411,8 +1413,9 @@ function writeWrOverride(ruleId,wkKey,payload,{onDone,undoLabel='Changed WR task
       st.wrOverrides=st.wrOverrides.filter(o=>String(o.id)!==id);
       if(isSkip){linkedBlocks.forEach(b=>{if(st.blocks)st.blocks.push(b);sbSaveBlock(b);});}
       if(realId)sbReqSilent('DELETE','wr_recurring_overrides',null,`?id=eq.${realId}`);
-      _rerender();
+      _syncBlockDone(false);_rerender();
     },undoLabel);
+    if(payload.override_type==='complete')_syncBlockDone(payload.done===true);
     save();_rerender();
   }
 }
@@ -1427,9 +1430,10 @@ function togWrRule(ruleId,isDone,wkKey){
     if(!existing)return;
     const prev={...existing};
     st.wrOverrides=st.wrOverrides.filter(o=>o!==existing);
+    if(st.blocks)st.blocks.filter(b=>dsToWkKey(b.ds)===wkKey&&(String(b.ruleId)===String(ruleId)||String(b.recId)===String(ruleId))).forEach(b=>{b._done=false;});
     sbReqSilent('DELETE','wr_recurring_overrides',null,`?id=eq.${existing.id}`);
-    pushUndo(()=>{st.wrOverrides.push(prev);sbReqSilent('POST','wr_recurring_overrides',prev,'');renderRecOv();renderWkCal();renderWeeklyPage();renderToday();},'Toggled WR task');
-    save();renderRecOv();renderWkCal();renderWeeklyPage();renderToday();
+    pushUndo(()=>{st.wrOverrides.push(prev);if(st.blocks)st.blocks.filter(b=>dsToWkKey(b.ds)===wkKey&&(String(b.ruleId)===String(ruleId)||String(b.recId)===String(ruleId))).forEach(b=>{b._done=true;});sbReqSilent('POST','wr_recurring_overrides',prev,'');renderRecOv();renderWkCal();renderWeeklyPage();renderToday();if(document.getElementById('tbGrid'))renderDayTB();},'Toggled WR task');
+    save();renderRecOv();renderWkCal();renderWeeklyPage();renderToday();if(document.getElementById('tbGrid'))renderDayTB();
   }
 }
 
@@ -2284,6 +2288,8 @@ function drawTBBlock(col,b){
     sbUpdateBlock(b.id,{done:checked});
     if(b.taskId){
       toggleTask(b.taskId,checked,'tb');
+    } else if(b.ruleId){
+      togWrRule(String(b.ruleId),checked,dsToWkKey(b.ds));
     } else if(b.recId){
       const _lr=st.recurring.find(x=>String(x.id)===String(b.recId));
       const _isWr=_lr&&(_lr.is_weekly_reset===true||_lr.is_weekly_reset==='true');
