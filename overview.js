@@ -665,7 +665,7 @@ function renderWkCal(){
     if(e.target.classList.contains('chip')||e.target.closest('.chip'))return;
     openQA('wkc',null,d2s(getDayDate(0)),'Weekly Goals');
   });
-  const goalsUndone=st.tasks.filter(t=>t.category==='Weekly Goals'&&!t.done&&t.due_date&&t.due_date.split('T')[0]>=wkStart&&t.due_date.split('T')[0]<=wkEnd);
+  const goalsUndone=st.tasks.filter(t=>t.category==='Weekly Goals'&&!t.done&&t.due_date&&t.due_date.split('T')[0]>=wkStart&&t.due_date.split('T')[0]<=wkEnd).sort((a,b)=>(b.important?1:0)-(a.important?1:0));
   const goalsDone=st.tasks.filter(t=>t.category==='Weekly Goals'&&t.done&&t.due_date&&t.due_date.split('T')[0]>=wkStart&&t.due_date.split('T')[0]<=wkEnd);
   [...goalsUndone,...goalsDone].forEach(t=>{
     const imp=t.important&&!t.done;
