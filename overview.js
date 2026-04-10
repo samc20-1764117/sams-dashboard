@@ -2249,8 +2249,9 @@ function drawTBBlock(col,b){
   const linkedRec=b.recId?(st.recurring.find(x=>String(x.id)===String(b.recId))||st.wrRules.find(x=>String(x.id)===String(b.recId))):null;
   const linkedShop=b.shopId?st.shopping.find(x=>String(x.id)===String(b.shopId)):null;
   // Derive done from linked item (authoritative) so stale block._done never causes mismatch
+  const _wrRuleId=b.ruleId||(b.recId&&st.wrRules.some(x=>String(x.id)===String(b.recId))?b.recId:null);
   if(linkedTask)b._done=!!linkedTask.done;
-  else if(b.ruleId)b._done=isDoneWRRule(b.ruleId,dsToWkKey(b.ds));
+  else if(_wrRuleId)b._done=isDoneWRRule(_wrRuleId,dsToWkKey(b.ds));
   else if(linkedRec)b._done=!!(linkedRec._doneByWk&&linkedRec._doneByWk[dsToWkKey(b.ds)]);
   else if(linkedShop)b._done=!!linkedShop.done;
   const isImp=linkedTask&&linkedTask.important&&!linkedTask.done;
@@ -2289,8 +2290,8 @@ function drawTBBlock(col,b){
     sbUpdateBlock(b.id,{done:checked});
     if(b.taskId){
       toggleTask(b.taskId,checked,'tb');
-    } else if(b.ruleId){
-      togWrRule(String(b.ruleId),checked,dsToWkKey(b.ds));
+    } else if(b.ruleId||st.wrRules.some(x=>String(x.id)===String(b.recId))){
+      togWrRule(String(b.ruleId||b.recId),checked,dsToWkKey(b.ds));
     } else if(b.recId){
       const _lr=st.recurring.find(x=>String(x.id)===String(b.recId));
       const _isWr=_lr&&(_lr.is_weekly_reset===true||_lr.is_weekly_reset==='true');
