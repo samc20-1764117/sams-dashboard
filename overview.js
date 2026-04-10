@@ -118,12 +118,13 @@ function togDailyHabit(recId,done,ds){
   const prev=!!r._doneByWk[ds];
   if(done)r._doneByWk[ds]=true;else delete r._doneByWk[ds];
   save();renderDailyHabits();
-  sbReq('PATCH','wr_recurring_rules',{done_by_week:r._doneByWk},recQs(recId));
+  const _isTemp=String(recId).startsWith('rec-tmp-')||String(recId).startsWith('rec-local-');
+  if(!_isTemp)sbReq('PATCH','wr_recurring_rules',{done_by_week:r._doneByWk},recQs(recId));
   pushUndo(()=>{
     if(!r._doneByWk)r._doneByWk={};
     if(prev)r._doneByWk[ds]=true;else delete r._doneByWk[ds];
     save();renderDailyHabits();
-    sbReq('PATCH','wr_recurring_rules',{done_by_week:r._doneByWk},recQs(recId));
+    if(!_isTemp)sbReq('PATCH','wr_recurring_rules',{done_by_week:r._doneByWk},recQs(recId));
   },(done?'Checked':'Unchecked')+' daily habit');
 }
 function openAddDailyHabit(btn){
