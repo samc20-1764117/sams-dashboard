@@ -1428,8 +1428,8 @@ function togWrRule(ruleId,isDone,wkKey){
     const prev={...existing};
     st.wrOverrides=st.wrOverrides.filter(o=>o!==existing);
     sbReqSilent('DELETE','wr_recurring_overrides',null,`?id=eq.${existing.id}`);
-    pushUndo(()=>{st.wrOverrides.push(prev);sbReqSilent('POST','wr_recurring_overrides',prev,'');renderRecOv();},'Toggled WR task');
-    save();renderRecOv();
+    pushUndo(()=>{st.wrOverrides.push(prev);sbReqSilent('POST','wr_recurring_overrides',prev,'');renderRecOv();renderWkCal();renderWeeklyPage();renderToday();},'Toggled WR task');
+    save();renderRecOv();renderWkCal();renderWeeklyPage();renderToday();
   }
 }
 

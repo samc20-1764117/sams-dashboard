@@ -599,7 +599,8 @@ function renderShopFull(){save();
       el.innerHTML=`<input type="checkbox" class="chk"${s.done?' checked':''}><span class="tn">${escHtml(s.name)}</span><span class="cpill" style="background:rgba(241,245,249,.9);color:#64748b;border-color:rgba(148,163,184,.25);flex-shrink:0;margin-left:auto;margin-right:2px">${escHtml(s.store||'Other')}</span><button class="delbtn">✕</button>`;
       el.querySelector('.chk').addEventListener('change',e=>togShop(s.id,e.target.checked));
       el.querySelector('.delbtn').addEventListener('click',e=>{e.stopPropagation();delShop(s.id);});
-      el.addEventListener('click',e=>tiClickShop(e,s.id));
+      let _shopDragged=false;
+      el.addEventListener('click',e=>{if(_shopDragged){_shopDragged=false;return;}tiClickShop(e,s.id);});
       el.addEventListener('dblclick',e=>tiDblShop(e,s.id));
       el.addEventListener('contextmenu',e=>showCtxShop(e,s.id));
       if(!s.done){
@@ -623,12 +624,13 @@ function renderShopFull(){save();
             const target=rows.find(r=>r.classList.contains('shop-dov'));
             rows.forEach(r=>r.classList.remove('shop-dov'));
             if(dragging&&target){
+              _shopDragged=true;
               const targetId=target.id.replace('ti-shop-cal-','');
               const items=[...todo].sort((a,b)=>(a.shop_order??9999)-(b.shop_order??9999));
               const fi=items.findIndex(x=>String(x.id)===String(s.id));
               const ti=items.findIndex(x=>String(x.id)===String(targetId));
               if(fi>=0&&ti>=0){items.splice(ti,0,items.splice(fi,1)[0]);items.forEach((x,i)=>{x.shop_order=i;});renderShopFull();items.forEach(x=>sbReqNullable('PATCH','shopping_list',{shop_order:x.shop_order},`?id=eq.${x.id}`));}
-            }
+            } else if(dragging){_shopDragged=true;}
           };
           document.addEventListener('mousemove',onMove);document.addEventListener('mouseup',onUp);
         });

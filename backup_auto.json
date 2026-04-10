@@ -1,5 +1,5 @@
 {
-  "exported_at": "2026-04-09T13:00:01.263Z",
+  "exported_at": "2026-04-10T13:00:00.891Z",
   "mode": "auto",
   "tables": {
     "tasks": [
@@ -74,16 +74,6 @@
         "notes": null
       },
       {
-        "name": "Taxes",
-        "category": "Home",
-        "due_date": "2026-04-10",
-        "done": false,
-        "importance": "Normal",
-        "id": "a6dbeb5c-7b7d-4d65-b76d-fabed940b8e2",
-        "important": false,
-        "notes": null
-      },
-      {
         "name": "CRC",
         "category": "Work",
         "due_date": "2026-03-05",
@@ -140,6 +130,16 @@
         "done": false,
         "importance": "Normal",
         "id": "e85c240d-a376-402c-90cb-adfe27e73b1d",
+        "important": false,
+        "notes": null
+      },
+      {
+        "name": "Haircut apt schedule",
+        "category": "Home",
+        "due_date": "2026-04-20",
+        "done": false,
+        "importance": null,
+        "id": "e393ce8b-201f-41ca-a8d4-104d1307f7cc",
         "important": false,
         "notes": null
       },
@@ -294,6 +294,16 @@
         "notes": null
       },
       {
+        "name": "TC 26 -complete all vizzes",
+        "category": "My work",
+        "due_date": "2026-04-10",
+        "done": false,
+        "importance": null,
+        "id": "23ad6823-0c0f-4ce7-b279-7f619bb2170e",
+        "important": false,
+        "notes": null
+      },
+      {
         "name": "Update documentation checklist",
         "category": "Work",
         "due_date": "2026-03-26",
@@ -320,6 +330,16 @@
         "done": true,
         "importance": null,
         "id": "9933b9b6-f550-43d7-bdea-6baf616bdaee",
+        "important": false,
+        "notes": null
+      },
+      {
+        "name": "Unapplied Cash",
+        "category": "Work",
+        "due_date": "2026-04-10",
+        "done": false,
+        "importance": null,
+        "id": "6fa8afb3-4637-4e2a-b324-a7379fcfdcc7",
         "important": false,
         "notes": null
       },
@@ -490,16 +510,6 @@
         "done": true,
         "importance": null,
         "id": "da1ddf20-94ca-44e3-9c47-9d08477bff86",
-        "important": false,
-        "notes": null
-      },
-      {
-        "name": "Haircut apt schedule",
-        "category": "Home",
-        "due_date": "2026-04-11",
-        "done": false,
-        "importance": null,
-        "id": "e393ce8b-201f-41ca-a8d4-104d1307f7cc",
         "important": false,
         "notes": null
       },
@@ -894,6 +904,16 @@
         "notes": null
       },
       {
+        "name": "CVS physical apt make",
+        "category": "Home",
+        "due_date": "2026-04-17",
+        "done": false,
+        "importance": null,
+        "id": "8b400859-0828-4489-a59d-4787ab47fbbb",
+        "important": false,
+        "notes": null
+      },
+      {
         "name": "Shower",
         "category": "Home",
         "due_date": "2026-03-31",
@@ -914,6 +934,16 @@
         "notes": null
       },
       {
+        "name": "Book london → iceland",
+        "category": "Home",
+        "due_date": "2026-04-11",
+        "done": false,
+        "importance": null,
+        "id": "3b7f34e0-2db9-4c24-a332-7314b9df9d79",
+        "important": false,
+        "notes": null
+      },
+      {
         "name": "TC dash",
         "category": "My work",
         "due_date": "2026-04-05",
@@ -922,6 +952,26 @@
         "id": "ff41196f-f019-4ab5-bcb5-41313b5ef67f",
         "important": false,
         "notes": null
+      },
+      {
+        "name": "AI tracking video",
+        "category": "My work",
+        "due_date": "2026-04-12",
+        "done": false,
+        "importance": null,
+        "id": "d895f994-cf48-4ab3-95f9-1ffd706914b7",
+        "important": false,
+        "notes": "Start VO/filming"
+      },
+      {
+        "name": "AI tracking video",
+        "category": "My work",
+        "due_date": "2026-04-12",
+        "done": false,
+        "importance": null,
+        "id": "4a3757e6-a91c-4ff5-84d2-287f5db5da6f",
+        "important": false,
+        "notes": "Script ready"
       },
       {
         "name": "TC 26 announcment",
@@ -1004,6 +1054,16 @@
         "notes": null
       },
       {
+        "name": "Friends wfh",
+        "category": "Social",
+        "due_date": "2026-04-10",
+        "done": false,
+        "importance": null,
+        "id": "699339d9-240a-41c7-8f43-f696168df2b8",
+        "important": false,
+        "notes": null
+      },
+      {
         "name": "Get amz back",
         "category": "Home",
         "due_date": "2026-03-30",
@@ -1040,6 +1100,16 @@
         "done": true,
         "importance": null,
         "id": "dc4c0145-f3c9-42d5-ad6d-778bc9f3cbc7",
+        "important": false,
+        "notes": null
+      },
+      {
+        "name": "Start VO PM dash - needs to be finished 4/7",
+        "category": "My work",
+        "due_date": "2026-04-12",
+        "done": false,
+        "importance": null,
+        "id": "4143707c-d83e-47ce-a8cf-e3571586d772",
         "important": false,
         "notes": null
       },
@@ -1214,22 +1284,12 @@
         "notes": null
       },
       {
-        "name": "PM dash - finalize build",
+        "name": "TC 26 use slide template",
         "category": "My work",
-        "due_date": "2026-04-09",
+        "due_date": "2026-04-10",
         "done": false,
         "importance": null,
-        "id": "7141d74b-fa75-41e8-9e24-5663274000bd",
-        "important": false,
-        "notes": null
-      },
-      {
-        "name": "TUG @3:30",
-        "category": "My work",
-        "due_date": "2026-04-09",
-        "done": false,
-        "importance": null,
-        "id": "386d0bd8-9a4d-40f4-8815-3f760db07fd0",
+        "id": "fddf191d-eda6-46ed-b427-a59d24e8156b",
         "important": false,
         "notes": null
       },
@@ -1384,16 +1444,6 @@
         "notes": null
       },
       {
-        "name": "Start VO PM dash - needs to be finished 4/7",
-        "category": "My work",
-        "due_date": "2026-04-10",
-        "done": false,
-        "importance": null,
-        "id": "4143707c-d83e-47ce-a8cf-e3571586d772",
-        "important": false,
-        "notes": null
-      },
-      {
         "name": "Unapplied cash",
         "category": "Work",
         "due_date": "2026-04-06",
@@ -1494,16 +1544,6 @@
         "notes": null
       },
       {
-        "name": "TC 26 use slide template",
-        "category": "My work",
-        "due_date": "2026-04-09",
-        "done": false,
-        "importance": null,
-        "id": "fddf191d-eda6-46ed-b427-a59d24e8156b",
-        "important": false,
-        "notes": null
-      },
-      {
         "name": "Pups treats",
         "category": "Home",
         "due_date": "2026-04-06",
@@ -1544,16 +1584,6 @@
         "notes": null
       },
       {
-        "name": "AI tracking video",
-        "category": "My work",
-        "due_date": "2026-04-10",
-        "done": false,
-        "importance": null,
-        "id": "d895f994-cf48-4ab3-95f9-1ffd706914b7",
-        "important": false,
-        "notes": "Start VO/filming"
-      },
-      {
         "name": "Nav icons",
         "category": "My work",
         "due_date": "2026-04-06",
@@ -1584,6 +1614,16 @@
         "notes": null
       },
       {
+        "name": "PM dash - finalize build",
+        "category": "My work",
+        "due_date": "2026-04-10",
+        "done": false,
+        "importance": null,
+        "id": "7141d74b-fa75-41e8-9e24-5663274000bd",
+        "important": false,
+        "notes": null
+      },
+      {
         "name": "Unapplied cash",
         "category": "Work",
         "due_date": "2026-04-07",
@@ -1602,16 +1642,6 @@
         "id": "0e6e056d-87bc-40f0-bb9c-f8edf6939851",
         "important": true,
         "notes": null
-      },
-      {
-        "name": "AI tracking video",
-        "category": "My work",
-        "due_date": "2026-04-10",
-        "done": false,
-        "importance": null,
-        "id": "4a3757e6-a91c-4ff5-84d2-287f5db5da6f",
-        "important": false,
-        "notes": "Script ready"
       },
       {
         "name": "Jaffer 1:1",
@@ -1644,26 +1674,6 @@
         "notes": null
       },
       {
-        "name": "Book london → iceland",
-        "category": "Home",
-        "due_date": "2026-04-09",
-        "done": false,
-        "importance": null,
-        "id": "3b7f34e0-2db9-4c24-a332-7314b9df9d79",
-        "important": false,
-        "notes": null
-      },
-      {
-        "name": "VO drill down",
-        "category": "My work",
-        "due_date": "2026-04-09",
-        "done": false,
-        "importance": null,
-        "id": "d687cd58-082d-493b-a334-45e8017f3e88",
-        "important": false,
-        "notes": null
-      },
-      {
         "name": "Add 3 more UX",
         "category": "My work",
         "due_date": "2026-04-07",
@@ -1674,12 +1684,32 @@
         "notes": null
       },
       {
+        "name": "Native rounded corners",
+        "category": "My work",
+        "due_date": "2026-04-09",
+        "done": true,
+        "importance": null,
+        "id": "4e985aad-a078-4b03-a279-cc23e601995b",
+        "important": false,
+        "notes": null
+      },
+      {
         "name": "Site",
         "category": "Home",
         "due_date": "2026-04-08",
         "done": true,
         "importance": null,
         "id": "325f984d-567d-46cf-b88a-7a149c4f40d8",
+        "important": false,
+        "notes": null
+      },
+      {
+        "name": "Native rounded corners",
+        "category": "My work",
+        "due_date": "2026-04-10",
+        "done": false,
+        "importance": null,
+        "id": "e4bc8163-d045-43b6-96e8-be5f3535e9f5",
         "important": false,
         "notes": null
       },
@@ -1704,6 +1734,16 @@
         "notes": null
       },
       {
+        "name": "TC 26 -complete all vizzes",
+        "category": "My work",
+        "due_date": "2026-04-09",
+        "done": true,
+        "importance": null,
+        "id": "cd4a0d90-25ae-4f50-ad15-aa8be72146b4",
+        "important": false,
+        "notes": null
+      },
+      {
         "name": "Unapplied Cash",
         "category": "Work",
         "due_date": "2026-04-08",
@@ -1712,16 +1752,6 @@
         "id": "5ea82e1b-4651-4651-978e-2527c7d8654b",
         "important": false,
         "notes": "- dynamic legend (1 week vs distinct status categories) \n- add color indicators to kpis > 50% last week → blue. \n- bins for oldest unapplied? \n- make selections same color to tie together"
-      },
-      {
-        "name": "test",
-        "category": "Weekly Goals",
-        "due_date": "2026-04-08",
-        "done": false,
-        "importance": null,
-        "id": "683aa6e4-c63d-438f-be66-05a17809e6f4",
-        "important": false,
-        "notes": null
       },
       {
         "name": "UAT submission",
@@ -1744,12 +1774,12 @@
         "notes": null
       },
       {
-        "name": "Check mail",
+        "name": "Respond linkedin",
         "category": "Home",
-        "due_date": "2026-04-09",
+        "due_date": "2026-04-10",
         "done": false,
         "importance": null,
-        "id": "69a22f2e-4243-4115-9359-6fafe8d567fd",
+        "id": "c17ae004-0fa1-4b26-bd5b-9fffe63c2707",
         "important": false,
         "notes": null
       },
@@ -1774,12 +1804,12 @@
         "notes": null
       },
       {
-        "name": "Unapplied Cash",
-        "category": "Work",
+        "name": "Pups showers",
+        "category": "Home",
         "due_date": "2026-04-09",
-        "done": false,
+        "done": true,
         "importance": null,
-        "id": "81070706-7eaa-47c8-91ad-c250e40e606e",
+        "id": "f2b3d044-0289-4cac-af3c-0bb0ff42a99d",
         "important": false,
         "notes": null
       },
@@ -1787,19 +1817,39 @@
         "name": "Journal",
         "category": "Home",
         "due_date": "2026-04-09",
-        "done": false,
+        "done": true,
         "importance": null,
         "id": "070b57eb-1195-419a-96f7-d40063108682",
         "important": false,
         "notes": null
       },
       {
-        "name": "Remove black outline - shapes",
-        "category": "My work",
+        "name": "Check mail",
+        "category": "Home",
         "due_date": "2026-04-09",
+        "done": true,
+        "importance": null,
+        "id": "ea63c772-26a9-4d12-b058-88e7f12f2208",
+        "important": false,
+        "notes": null
+      },
+      {
+        "name": "Unapplied Cash",
+        "category": "Work",
+        "due_date": "2026-04-09",
+        "done": true,
+        "importance": null,
+        "id": "81070706-7eaa-47c8-91ad-c250e40e606e",
+        "important": false,
+        "notes": null
+      },
+      {
+        "name": "VO drill down",
+        "category": "My work",
+        "due_date": "2026-04-11",
         "done": false,
         "importance": null,
-        "id": "d0bc180d-f5f5-43b2-aa17-96a8b1bc1f07",
+        "id": "d687cd58-082d-493b-a334-45e8017f3e88",
         "important": false,
         "notes": null
       },
@@ -1807,10 +1857,90 @@
         "name": "Drill down get ready for film",
         "category": "My work",
         "due_date": "2026-04-09",
-        "done": false,
+        "done": true,
         "importance": null,
         "id": "bb5db3eb-963b-4cce-8fd7-b0565666caf9",
         "important": false,
+        "notes": null
+      },
+      {
+        "name": "Remove black outline - shapes",
+        "category": "My work",
+        "due_date": "2026-04-10",
+        "done": false,
+        "importance": null,
+        "id": "d0bc180d-f5f5-43b2-aa17-96a8b1bc1f07",
+        "important": false,
+        "notes": null
+      },
+      {
+        "name": "Taxes",
+        "category": "Home",
+        "due_date": "2026-04-11",
+        "done": false,
+        "importance": null,
+        "id": "255a25d5-ada0-40cc-93f4-4d434f654405",
+        "important": true,
+        "notes": null
+      },
+      {
+        "name": "PM finalize build",
+        "category": "Weekly Goals",
+        "due_date": "2026-04-09",
+        "done": false,
+        "importance": null,
+        "id": "675b1e67-f03d-4d1e-980b-f0512255a6dd",
+        "important": false,
+        "notes": null
+      },
+      {
+        "name": "Rounded corners native",
+        "category": "Weekly Goals",
+        "due_date": "2026-04-09",
+        "done": false,
+        "importance": null,
+        "id": "338ba59b-e5f7-4f53-9c10-c74eb812c2ce",
+        "important": false,
+        "notes": null
+      },
+      {
+        "name": "TC 26 finalizes vizzes",
+        "category": "Weekly Goals",
+        "due_date": "2026-04-09",
+        "done": false,
+        "importance": null,
+        "id": "8ca15c7f-5ef7-42f1-bd7f-22bdec70ddbe",
+        "important": false,
+        "notes": null
+      },
+      {
+        "name": "Remove black outline",
+        "category": "Weekly Goals",
+        "due_date": "2026-04-09",
+        "done": false,
+        "importance": null,
+        "id": "fc04865c-f33a-4255-8abb-9c2806cfaa26",
+        "important": false,
+        "notes": null
+      },
+      {
+        "name": "Arrows wo/ union",
+        "category": "Weekly Goals",
+        "due_date": "2026-04-08",
+        "done": false,
+        "importance": null,
+        "id": "683aa6e4-c63d-438f-be66-05a17809e6f4",
+        "important": false,
+        "notes": null
+      },
+      {
+        "name": "TC 26 slides",
+        "category": "Weekly Goals",
+        "due_date": "2026-04-09",
+        "done": false,
+        "importance": null,
+        "id": "e135ea26-9943-4f53-b9be-81cca8e6ff12",
+        "important": true,
         "notes": null
       }
     ],
@@ -2980,6 +3110,20 @@
         "done": false
       },
       {
+        "id": "b0ef0ecc-5300-4480-8fde-196324228ed1",
+        "title": "Pups teeth",
+        "day_date": "2026-04-09",
+        "start_time": "10:15:00",
+        "duration_minutes": 30,
+        "category": "Recurring",
+        "created_at": "2026-04-09T13:14:40.332399+00:00",
+        "start_minutes": 615,
+        "task_id": null,
+        "rec_id": "10",
+        "shop_id": null,
+        "done": false
+      },
+      {
         "id": "9e6f3d3b-80fb-4c29-ad2b-d0e81de8df1a",
         "title": "Mochi ears",
         "day_date": "2026-03-13",
@@ -3594,6 +3738,20 @@
         "rec_id": null,
         "shop_id": null,
         "done": false
+      },
+      {
+        "id": "4854327e-06db-413c-9869-8b4ec45e04de",
+        "title": "Unapplied Cash",
+        "day_date": "2026-04-09",
+        "start_time": "08:30:00",
+        "duration_minutes": 165,
+        "category": "Work",
+        "created_at": "2026-04-09T13:19:05.191432+00:00",
+        "start_minutes": 495,
+        "task_id": "81070706-7eaa-47c8-91ad-c250e40e606e",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
       },
       {
         "id": "f4306387-7a75-4df9-b5f9-e8dcf47a44fc",
@@ -4940,6 +5098,34 @@
         "done": false
       },
       {
+        "id": "c791a99c-6939-4d46-be8d-270f8938080a",
+        "title": "Remove black outline - shapes",
+        "day_date": "2026-04-10",
+        "start_time": "13:45:00",
+        "duration_minutes": 90,
+        "category": "My work",
+        "created_at": "2026-04-10T03:24:14.150031+00:00",
+        "start_minutes": 810,
+        "task_id": "d0bc180d-f5f5-43b2-aa17-96a8b1bc1f07",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "c4f77d11-7de2-47c4-b00c-d4189f0e1c9a",
+        "title": "Check mail",
+        "day_date": "2026-04-09",
+        "start_time": "08:15:00",
+        "duration_minutes": 30,
+        "category": "Home",
+        "created_at": "2026-04-10T03:19:43.746555+00:00",
+        "start_minutes": 495,
+        "task_id": "ea63c772-26a9-4d12-b058-88e7f12f2208",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
         "id": "d796e49d-e117-4f6c-82f6-84ed84c7f6e3",
         "title": "TC dashboard",
         "day_date": "2026-04-04",
@@ -4952,6 +5138,34 @@
         "rec_id": null,
         "shop_id": null,
         "done": true
+      },
+      {
+        "id": "a10ba8be-2f3a-4e44-9502-83cb63fa067f",
+        "title": "Pups teeth",
+        "day_date": "2026-04-10",
+        "start_time": "17:00:00",
+        "duration_minutes": 30,
+        "category": "Recurring",
+        "created_at": "2026-04-10T03:23:00.130215+00:00",
+        "start_minutes": 660,
+        "task_id": null,
+        "rec_id": "10",
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "07cdbd71-e4c4-43d9-aa0d-f86e87a895ae",
+        "title": "Native rounded corners",
+        "day_date": "2026-04-10",
+        "start_time": "07:45:00",
+        "duration_minutes": 75,
+        "category": "My work",
+        "created_at": "2026-04-10T03:21:31.310696+00:00",
+        "start_minutes": 465,
+        "task_id": "e4bc8163-d045-43b6-96e8-be5f3535e9f5",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
       },
       {
         "id": "3b972a3b-2b17-4d30-906d-d0258528975b",
@@ -4996,6 +5210,20 @@
         "done": true
       },
       {
+        "id": "c5e6b1cb-bb1b-47c2-99b1-7fe6e76841ce",
+        "title": "Unapplied Cash",
+        "day_date": "2026-04-10",
+        "start_time": "09:30:00",
+        "duration_minutes": 75,
+        "category": "Work",
+        "created_at": "2026-04-10T03:22:24.079923+00:00",
+        "start_minutes": 540,
+        "task_id": "6fa8afb3-4637-4e2a-b324-a7379fcfdcc7",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
         "id": "14bf2016-76c5-4a69-b50b-0a84580797bd",
         "title": "Check lik",
         "day_date": "2026-04-06",
@@ -5010,18 +5238,32 @@
         "done": true
       },
       {
-        "id": "bf24ece5-c175-45a7-933f-4042e177583c",
-        "title": "TUG @3:30",
-        "day_date": "2026-04-09",
-        "start_time": "15:15:00",
-        "duration_minutes": 75,
+        "id": "0eff0ba9-4e6a-4f73-93b4-026968836cda",
+        "title": "PM dash - finalize build",
+        "day_date": "2026-04-10",
+        "start_time": "15:30:00",
+        "duration_minutes": 90,
         "category": "My work",
-        "created_at": "2026-04-08T21:42:42.306225+00:00",
-        "start_minutes": 915,
-        "task_id": "386d0bd8-9a4d-40f4-8815-3f760db07fd0",
+        "created_at": "2026-04-10T03:22:31.320962+00:00",
+        "start_minutes": 900,
+        "task_id": "7141d74b-fa75-41e8-9e24-5663274000bd",
         "rec_id": null,
         "shop_id": null,
         "done": false
+      },
+      {
+        "id": "4679979a-4e5e-432e-845d-e2541e1337a6",
+        "title": "Native rounded corners",
+        "day_date": "2026-04-09",
+        "start_time": "11:00:00",
+        "duration_minutes": 45,
+        "category": "My work",
+        "created_at": "2026-04-09T13:34:38.663877+00:00",
+        "start_minutes": 900,
+        "task_id": "4e985aad-a078-4b03-a279-cc23e601995b",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
       },
       {
         "id": "7fc29ab9-9836-4832-8205-fc2d17734d23",
@@ -5136,6 +5378,34 @@
         "done": true
       },
       {
+        "id": "e78ac30f-a66f-41d4-a4a2-0331797c733f",
+        "title": "TC 26 -complete all vizzes",
+        "day_date": "2026-04-09",
+        "start_time": "19:00:00",
+        "duration_minutes": 105,
+        "category": "My work",
+        "created_at": "2026-04-09T23:56:31.889456+00:00",
+        "start_minutes": 1140,
+        "task_id": "cd4a0d90-25ae-4f50-ad15-aa8be72146b4",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
+        "id": "afcd89a6-1d2b-45b9-b158-d7e542b9be90",
+        "title": "TC 26 -complete all vizzes",
+        "day_date": "2026-04-10",
+        "start_time": "10:15:00",
+        "duration_minutes": 45,
+        "category": "My work",
+        "created_at": "2026-04-10T03:22:41.615272+00:00",
+        "start_minutes": 615,
+        "task_id": "23ad6823-0c0f-4ce7-b279-7f619bb2170e",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
         "id": "92482da3-ab4f-4b3a-ade4-0b13f350b9cc",
         "title": "Unapplied cash",
         "day_date": "2026-04-07",
@@ -5159,6 +5429,20 @@
         "created_at": "2026-04-07T13:18:46.205537+00:00",
         "start_minutes": 795,
         "task_id": "b5c9f7ce-86ed-4cb6-948c-0f594b25aa9d",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
+        "id": "eb180f71-8143-477a-b375-af49f8d8b9c8",
+        "title": "Journal",
+        "day_date": "2026-04-09",
+        "start_time": "10:30:00",
+        "duration_minutes": 30,
+        "category": "Home",
+        "created_at": "2026-04-09T13:27:39.29504+00:00",
+        "start_minutes": 780,
+        "task_id": "070b57eb-1195-419a-96f7-d40063108682",
         "rec_id": null,
         "shop_id": null,
         "done": true
@@ -5190,6 +5474,34 @@
         "rec_id": null,
         "shop_id": null,
         "done": true
+      },
+      {
+        "id": "07431a81-0d1b-426b-af5a-ba34d9500aee",
+        "title": "Respond linkedin",
+        "day_date": "2026-04-10",
+        "start_time": "11:45:00",
+        "duration_minutes": 30,
+        "category": "Home",
+        "created_at": "2026-04-10T03:23:54.524275+00:00",
+        "start_minutes": 690,
+        "task_id": "c17ae004-0fa1-4b26-bd5b-9fffe63c2707",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "86394d6d-4dba-4103-a043-9293d03bf34c",
+        "title": "Friends wfh",
+        "day_date": "2026-04-10",
+        "start_time": "17:00:00",
+        "duration_minutes": 270,
+        "category": "Social",
+        "created_at": "2026-04-10T03:23:27.85882+00:00",
+        "start_minutes": 1110,
+        "task_id": "699339d9-240a-41c7-8f43-f696168df2b8",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
       },
       {
         "id": "3f788179-bb85-4deb-a398-077bf17308e6",
@@ -5234,30 +5546,16 @@
         "done": true
       },
       {
-        "id": "7858f2a9-2805-4387-a7ba-d8c9c652e88e",
-        "title": "Vacuum",
-        "day_date": "2026-04-08",
-        "start_time": "15:45:00",
-        "duration_minutes": 30,
-        "category": "Recurring",
-        "created_at": "2026-04-08T22:58:24.09828+00:00",
-        "start_minutes": 1170,
-        "task_id": null,
-        "rec_id": "12",
-        "shop_id": null,
-        "done": false
-      },
-      {
-        "id": "c4f5c1d7-3371-4ab7-a9d2-aa95b890f8fc",
-        "title": "Pups teeth",
-        "day_date": "2026-04-08",
-        "start_time": "16:00:00",
-        "duration_minutes": 30,
-        "category": "Recurring",
-        "created_at": "2026-04-08T22:52:59.041664+00:00",
-        "start_minutes": 1170,
-        "task_id": null,
-        "rec_id": "10",
+        "id": "c9c30f86-1525-4ec7-a9cd-fdb0aace1f3a",
+        "title": "TC 26 use slide template",
+        "day_date": "2026-04-10",
+        "start_time": "12:30:00",
+        "duration_minutes": 90,
+        "category": "My work",
+        "created_at": "2026-04-10T03:24:26.90903+00:00",
+        "start_minutes": 720,
+        "task_id": "fddf191d-eda6-46ed-b427-a59d24e8156b",
+        "rec_id": null,
         "shop_id": null,
         "done": false
       },
@@ -5499,6 +5797,20 @@
         "date": "2026-04-08",
         "start_time": "18:00:00",
         "end_time": "19:30:00"
+      },
+      {
+        "id": 29,
+        "base_id": 6,
+        "date": "2026-04-09",
+        "start_time": "18:00:00",
+        "end_time": "18:30:00"
+      },
+      {
+        "id": 31,
+        "base_id": 4,
+        "date": "2026-04-09",
+        "start_time": "17:00:00",
+        "end_time": "17:30:00"
       }
     ]
   }
