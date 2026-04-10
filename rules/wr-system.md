@@ -53,7 +53,7 @@
 
 **Single table**: `wr_recurring_rules`. State: `st.wrRules` (WR, `is_weekly_reset=true`), `st.wrOverrides`, `st.recurring` (non-WR).
 
-**`wr_recurring_rules`** fields: `id,name,cadence` (weekly/biweekly/monthly/quarterly/biannual/annual/other), `is_weekly_reset,starting_date,appears_on_date,pup_related,notes,is_enabled,sort_order,date_overrides` (JSONB), `done_by_week` (JSONB).
+**`wr_recurring_rules`** fields: `id,name,cadence` (weekly/biweekly/monthly/quarterly/biannual/annual/other/**daily**), `is_weekly_reset,starting_date,appears_on_date,pup_related,notes,is_enabled,sort_order,date_overrides` (JSONB), `done_by_week` (JSONB).
 
 **`wr_recurring_overrides`** fields: `id,rule_id,wk_key` (Mon YYYY-MM-DD), `override_type` (skip/move/edit/complete), `done,moved_to_wk_key,custom_name,custom_notes`. UNIQUE `(rule_id,wk_key)`.
 
@@ -91,8 +91,9 @@
 
 ## Non-WR Recurring Task Logic
 Non-WR (`is_weekly_reset=false`) → `st.recurring`. All CRUD to `wr_recurring_rules`.
-- **Scheduled**: auto by cadence+`appears_on_date`. `getRecurringWeekTasks(off)`→`{_recId,_virtual:true,_wkKey}`.
+- **Scheduled**: auto by cadence+`appears_on_date`. `getRecurringWeekTasks(off)`→`{_recId,_virtual:true,_wkKey}`. Excludes `cadence==='daily'`.
 - `skipRecVirtThisWk`: sets `__skip__`, removes TBs, PATCHes `date_overrides`, undo.
 - **Done**: `_doneByWk[getWkKey(wkOff)]`. `togRec` writes/deletes key.
+- **Daily habits** (`cadence==='daily'`): excluded from `getRecurringWeekTasks` and all other views. Done keyed by date string `ds` in `_doneByWk` (not week key). See pages.md Daily Habits.
 - **Drag move** (`rec::` in weekly cal): snapshot `savedBlocks` before `removeTBBlocksForDate`. Undo restores `_dateOverrides` + blocks.
 - **Edit this week only**: `openRecEditModal(rid,wkKey,'this')`. Saves `_dateOverrides['name::'+wkKey]={name,notes}`.

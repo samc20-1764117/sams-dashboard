@@ -3,7 +3,7 @@
 ## Architecture
 Global scope — no modules/bundler.
 - `core.js`: state (`cfg,st,dayOff,wkOff`), auth, supabase helpers (`sbReq,sbReqSilent,sbReqNullable`), `syncAll`, date utils (`getWkKey,getWkBounds,getDayDate,d2s,dsToWkKey`), `getRecurringWeekTasks,isWRRuleDueThisWeek`, undo/redo (`pushUndo,doUndo,doRedo,_stateSnap,_stateRestore,_syncRedoDiff,showToast`)
-- `overview.js`: `renderAll,renderOv,renderToday,renderWkSummary,renderWkCal,renderRecOv,renderRecMoCal,renderShopOv,renderUnassigned,renderKanban,renderDayTB,tRow`, drag-drop, WR rule CRUD, scope picker, `writeWrOverride,unSkipWrRule,unSkipWRec,openWrSkipped`
+- `overview.js`: `renderAll,renderOv,renderToday,renderWkSummary,renderWkCal,renderRecOv,renderRecMoCal,renderShopOv,renderUnassigned,renderKanban,renderDayTB,tRow`, drag-drop, WR rule CRUD, scope picker, `writeWrOverride,unSkipWrRule,unSkipWRec,openWrSkipped`, daily habits: `renderDailyHabits,togDailyHabit,openAddDailyHabit,closeDailyHabitPopup,submitDailyHabit`
 - `features.js`: task CRUD, secondary pages, `showPage,closeMod,init(),selTask,clearSelection,showCtx,mkMCell,renderMoCal`, quick notes, `getOvRecurring,rolloverOverdue,updateOvBanner,skipWRec`
 - `pup-skills.js`: all pup skills logic
 
