@@ -806,7 +806,7 @@ function renderMoCal(){
     const s=gc(t.category);
     const el=document.createElement('div');el.className='uitem';el.draggable=true;
     el.addEventListener('dragstart',e=>dStart(e,t.id));el.addEventListener('dragend',()=>el.style.opacity='');
-    el.innerHTML=`<span class="udot" style="background:${s.d}"></span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px">${t.name}</span>`;
+    el.innerHTML=`<span class="udot" style="background:${s.d}"></span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.name}</span>`;
     mual.appendChild(el);
   });
 }

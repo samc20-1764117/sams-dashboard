@@ -465,12 +465,12 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 #moSearchSug .mo-sug-item:first-child{border-radius:8px 8px 0 0}
 #moSearchSug .mo-sug-item:last-child{border-radius:0 0 8px 8px}
 .mcal-side{flex:1;display:flex;flex-direction:column;overflow:hidden}
-.mua-side{width:200px;flex-shrink:0;border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.mua-side{width:150px;flex-shrink:0;border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
 .mhead{display:flex;align-items:center;gap:7px;padding:0 13px;min-height:38px;border-bottom:1px solid rgba(210,205,228,.3);border-radius:8px;box-sizing:border-box}
 .mgrid{flex:1;overflow-y:auto;padding:0 12px 12px;scroll-padding-top:21px}
 .mdow{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:0;position:sticky;top:0;z-index:5;background:var(--bg);padding:4px 12px 3px;margin-left:-12px;margin-right:-12px;border-radius:0}
 #recMoDow,#recMoCells{grid-template-columns:repeat(7,1fr) minmax(160px,1.8fr)}
-#mDow,#mCells{grid-template-columns:repeat(7,1fr) minmax(80px,1fr)}
+#mDow,#mCells{grid-template-columns:repeat(7,1fr) minmax(120px,1.4fr)}
 .mdowl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);text-align:center;padding:2px 0}
 .mo-sep{grid-column:1/-1;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:10px 4px 4px;border-top:1px solid rgba(210,205,228,.3);margin-top:2px}
 .mcells{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
@@ -489,7 +489,7 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 .mcell.dov{background:rgba(109,95,230,.07);border-color:var(--accent)}
 .muah{padding:9px 12px 5px;border-bottom:1px solid rgba(210,205,228,.28);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
 .mual{flex:1;overflow-y:auto;padding:4px}
-.uitem{padding:4px 7px;background:rgba(255,255,255,.55);border:1px solid var(--border);border-radius:var(--rxs);margin-bottom:3px;font-size:11px;font-weight:500;cursor:grab;display:flex;align-items:center;gap:4px}
+.uitem{padding:3px 5px;background:rgba(255,255,255,.55);border:1px solid var(--border);border-radius:var(--rxs);margin-bottom:2px;font-size:9px;font-weight:500;cursor:grab;display:flex;align-items:center;gap:3px}
 .uitem:hover{box-shadow:var(--shadow)}.uitem:active{cursor:grabbing;opacity:.4}
 .udot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
 
