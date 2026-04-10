@@ -86,6 +86,53 @@ function renderToday(){
     return t._type==='travel'||t._type==='birthday'?tRowExtra(t):t._type==='shop'?tRowShopVirt(t,true,arr,true):t._virtual?tRowTodayVirt(t,arr,true):tRow(t,{cat:true,catDot:true,drag:true,noDate:true,tbArrow:arr,noColor:true});
   }).join('');
   updateOvBanner();
+  renderDailyHabits();
+}
+// ── Daily Habits ──────────────────────────────────────────────────────────────
+function renderDailyHabits(){
+  const el=document.getElementById('dailyHabitsSection');if(!el)return;
+  const ds=d2s(getDayDate(dayOff));
+  const habits=[...st.recurring.filter(r=>r.cadence==='daily'&&r.is_weekly_reset===false)].sort((a,b)=>{
+    const ad=!!(a._doneByWk&&a._doneByWk[ds]),bd=!!(b._doneByWk&&b._doneByWk[ds]);
+    if(ad&&!bd)return 1;if(!ad&&bd)return -1;
+    return(a.name||'').localeCompare(b.name||'');
+  });
+  const doneCount=habits.filter(r=>r._doneByWk&&r._doneByWk[ds]).length;
+  const rows=habits.map(r=>{
+    const done=!!(r._doneByWk&&r._doneByWk[ds]);
+    return`<div class="ti${done?' done':''}" style="${done?'opacity:.5':''}">
+      <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${done?'checked':''} onchange="togDailyHabit('${r.id}',this.checked,'${ds}')"></label>
+      <span class="tn">${escHtml(r.name)}</span>
+      <button class="delbtn" onclick="event.stopPropagation();delRec('${r.id}')">✕</button>
+    </div>`;
+  }).join('');
+  el.innerHTML=`<div style="display:flex;align-items:center;padding:4px 10px 2px;gap:6px;border-top:1px solid rgba(0,0,0,.07)">
+    <span style="font-size:10px;font-weight:600;letter-spacing:.05em;color:rgba(60,60,80,.55);text-transform:uppercase;flex:1">Daily</span>
+    ${habits.length?`<span style="font-size:10px;color:rgba(60,60,80,.45);font-weight:500">${doneCount}/${habits.length}</span>`:''}
+    <button class="btn btn-ghost btn-xs" onclick="openAddDailyHabit()" style="padding:1px 6px;font-size:11px;line-height:1.4">+</button>
+  </div>${rows?`<div style="padding:0 0 4px">${rows}</div>`:''}`;
+}
+function togDailyHabit(recId,done,ds){
+  const r=st.recurring.find(x=>String(x.id)===String(recId));if(!r)return;
+  if(!r._doneByWk)r._doneByWk={};
+  const prev=!!r._doneByWk[ds];
+  if(done)r._doneByWk[ds]=true;else delete r._doneByWk[ds];
+  save();renderDailyHabits();
+  sbReq('PATCH','wr_recurring_rules',{done_by_week:r._doneByWk},recQs(recId));
+  pushUndo(()=>{
+    if(!r._doneByWk)r._doneByWk={};
+    if(prev)r._doneByWk[ds]=true;else delete r._doneByWk[ds];
+    save();renderDailyHabits();
+    sbReq('PATCH','wr_recurring_rules',{done_by_week:r._doneByWk},recQs(recId));
+  },(done?'Checked':'Unchecked')+' daily habit');
+}
+async function openAddDailyHabit(){
+  const name=(prompt('Habit name:')||'').trim();if(!name)return;
+  const tmp='rec-tmp-'+Date.now();
+  st.recurring.push({id:tmp,name,cadence:'daily',is_weekly_reset:false,is_enabled:true,_doneByWk:{},_dateOverrides:{}});
+  save();renderDailyHabits();
+  const res=await sbReqSilent('POST','wr_recurring_rules',{name,cadence:'daily',is_weekly_reset:false,is_enabled:true},'');
+  if(res&&res[0]){const idx=st.recurring.findIndex(x=>x.id===tmp);if(idx>=0)st.recurring[idx]={...st.recurring[idx],...res[0],_doneByWk:{},_dateOverrides:{}};save();renderDailyHabits();}
 }
 // Type priority for sorting: regular=1, recurring=2, shopping=3, birthday=4 (travel sorts first via pre-check)
 function taskTypePri(t){

@@ -386,7 +386,7 @@ function getDateForDow(dow,wkOff2=0){
 function getRecurringWeekTasks(off=0){
   const out=[];
   const wkDates=getWkDates(off);
-  st.recurring.filter(r=>!r.is_weekly_reset&&r.appears_on_date).forEach(r=>{
+  st.recurring.filter(r=>!r.is_weekly_reset&&r.appears_on_date&&r.cadence!=='daily').forEach(r=>{
     const cadence=r.cadence||'weekly';
     const wkKey=getWkKey(off);
     let date=null;
