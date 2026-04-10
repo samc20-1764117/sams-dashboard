@@ -127,7 +127,7 @@ body{font-family:'DM Sans',sans-serif;background:#fef6f0;background-attachment:f
 .ov-topbar-date{font-size:13px;font-weight:700;color:var(--text)}
 .ov-topbar-dot{width:2.5px;height:2.5px;border-radius:50%;background:var(--text);opacity:0.25;flex-shrink:0}
 .ov-topbar-time{display:inline-flex;align-items:center;justify-content:center;padding:3px 11px;border-radius:20px;font-size:12px;font-weight:600;background:rgba(120,110,180,.03);border:1px solid rgba(120,110,180,.06);color:var(--muted)}
-.overview-cols{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,2.8fr);gap:14px;margin:0 auto 36px;max-width:1600px;width:100%;height:min(740px,calc(100vh - 84px))}
+.overview-cols{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,2.7fr);gap:14px;margin:0 auto 36px;max-width:1600px;width:100%;height:min(740px,calc(100vh - 84px))}
 @media(max-width:1280px){.row1-right-top{grid-template-columns:1fr 1fr;height:auto}}
 @media(max-width:900px){.main{margin-left:0;padding:12px 0 24px 0}#page-overview{padding:0 12px}.overview-cols{grid-template-columns:1fr;height:auto}}
 .main.full{margin-left:0}
@@ -216,7 +216,7 @@ body.dark .pup-dog-btn.active{background:rgba(194,107,79,.5);color:#fff}
 .ql-icon{font-size:16px;line-height:1}
 /* Task items — tighter */
 .tlist{overflow-y:auto;padding:2px 0}
-#todList .ti{margin-left:4px}
+#todList .ti{margin-left:0;padding-left:7px;padding-right:16px}
 #shopOv .ti,#recList .ti{margin:0 6px;padding:3px 22px 3px 10px}
 #shopOv .cpill{position:absolute;right:3px;top:50%;transform:translateY(-50%);padding:1px 4px;line-height:1;margin:0;transition:opacity .1s;pointer-events:none}
 #shopOv .ti:hover .cpill,#shopOv .ti.sel-row .cpill{opacity:0}
