@@ -589,6 +589,54 @@ function renderShopFull(){save();
   // Update count label
   const lbl=document.getElementById('shopCountLbl');
   if(lbl)lbl.textContent=todo.length?`Shopping (${todo.length} left)`:'Shopping ✓ All done!';
+  const sf=document.getElementById('shopFull');if(!sf){renderShopOv();return;}
+  if(mode==='manual'){
+    sf.innerHTML='';
+    const sorted=[...[...todo].sort((a,b)=>(a.shop_order??9999)-(b.shop_order??9999)),...done];
+    sorted.forEach(s=>{
+      const el=document.createElement('div');
+      el.className='ti'+(s.done?' done':'');el.id='ti-shop-cal-'+s.id;
+      el.innerHTML=`<input type="checkbox" class="chk"${s.done?' checked':''}><span class="tn">${escHtml(s.name)}</span><span class="cpill" style="background:rgba(241,245,249,.9);color:#64748b;border-color:rgba(148,163,184,.25);flex-shrink:0;margin-left:auto;margin-right:2px">${escHtml(s.store||'Other')}</span><button class="delbtn">✕</button>`;
+      el.querySelector('.chk').addEventListener('change',e=>togShop(s.id,e.target.checked));
+      el.querySelector('.delbtn').addEventListener('click',e=>{e.stopPropagation();delShop(s.id);});
+      el.addEventListener('click',e=>tiClickShop(e,s.id));
+      el.addEventListener('dblclick',e=>tiDblShop(e,s.id));
+      el.addEventListener('contextmenu',e=>showCtxShop(e,s.id));
+      if(!s.done){
+        el.addEventListener('mousedown',e=>{
+          if(e.target.closest('.chk')||e.target.closest('.delbtn'))return;
+          let dragging=false;const startY=e.clientY;
+          const onMove=ev=>{
+            const dy=ev.clientY-startY;
+            if(!dragging&&Math.abs(dy)<5)return;
+            if(!dragging)window.getSelection()?.removeAllRanges();
+            dragging=true;ev.preventDefault();el.style.opacity='.4';
+            const rows=[...document.querySelectorAll('#shopFull .ti:not(.done)')];
+            rows.forEach(r=>r.classList.remove('shop-dov'));
+            const over=rows.find(r=>{if(r===el)return false;const rc=r.getBoundingClientRect();return ev.clientY>=rc.top&&ev.clientY<=rc.bottom;});
+            if(over)over.classList.add('shop-dov');
+          };
+          const onUp=()=>{
+            document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);
+            el.style.opacity='';
+            const rows=[...document.querySelectorAll('#shopFull .ti:not(.done)')];
+            const target=rows.find(r=>r.classList.contains('shop-dov'));
+            rows.forEach(r=>r.classList.remove('shop-dov'));
+            if(dragging&&target){
+              const targetId=target.id.replace('ti-shop-cal-','');
+              const items=[...todo].sort((a,b)=>(a.shop_order??9999)-(b.shop_order??9999));
+              const fi=items.findIndex(x=>String(x.id)===String(s.id));
+              const ti=items.findIndex(x=>String(x.id)===String(targetId));
+              if(fi>=0&&ti>=0){items.splice(ti,0,items.splice(fi,1)[0]);items.forEach((x,i)=>{x.shop_order=i;});renderShopFull();items.forEach(x=>sbReqNullable('PATCH','shopping_list',{shop_order:x.shop_order},`?id=eq.${x.id}`));}
+            }
+          };
+          document.addEventListener('mousemove',onMove);document.addEventListener('mouseup',onUp);
+        });
+      }
+      sf.appendChild(el);
+    });
+    renderShopOv();return;
+  }
   let html='';
   if(mode==='alpha'){
     const all=[...todo,...done].sort((a,b)=>(a.name||'').localeCompare(b.name||''));
@@ -599,7 +647,7 @@ function renderShopFull(){save();
       `<div style="padding:5px 10px 2px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-top:2px">${store}</div>${items.map(s=>`<div class="ti ${s.done?'done':''}" id="ti-shop-cal-${s.id}" draggable="true" ondragstart="dragId='shop::${s.id}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);" ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false);" onclick="tiClickShop(event,'${s.id}')" ondblclick="tiDblShop(event,'${s.id}')"><input type="checkbox" class="chk" ${s.done?'checked':''} onchange="togShop('${s.id}',this.checked)"><span class="tn">${s.name}</span><span class="cpill" style="background:rgba(241,245,249,.9);color:#64748b;border-color:rgba(148,163,184,.25);flex-shrink:0;margin-left:auto;margin-right:2px">${s.store||'Other'}</span><button class="delbtn" onclick="delShop('${s.id}')">✕</button></div>`).join('')}`
     ).join('');
   }
-  const sf=document.getElementById('shopFull');if(sf)sf.innerHTML=html;
+  sf.innerHTML=html;
   renderShopOv();
 }
 // Remove shopping item from a specific view (clear due_date) but keep in shopping list and timeblocks
@@ -2909,8 +2957,8 @@ document.addEventListener('DOMContentLoaded',()=>{
 // SHOPPING: SORT TOGGLE + COPY LIST
 // ══════════════════════════════════════════════════════════
 function toggleShopSort(){
-  shopSortMode=shopSortMode==='store'?'alpha':'store';
-  document.getElementById('shopSortBtn').textContent=shopSortMode==='store'?'By store':'A → Z';
+  shopSortMode=shopSortMode==='store'?'alpha':shopSortMode==='alpha'?'manual':'store';
+  document.getElementById('shopSortBtn').textContent=shopSortMode==='store'?'By store':shopSortMode==='alpha'?'A → Z':'Manual';
   renderShopFull();
 }
 function copyShopList(){
