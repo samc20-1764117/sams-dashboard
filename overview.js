@@ -109,7 +109,7 @@ function renderDailyHabits(){
   el.innerHTML=`<div style="display:flex;align-items:center;padding:4px 10px 2px;gap:6px;border-top:1px solid rgba(0,0,0,.06);margin-top:2px">
     <span style="font-size:10px;font-weight:600;letter-spacing:.05em;color:rgba(60,60,80,.55);text-transform:uppercase;flex:1">Daily</span>
     ${habits.length?`<span style="font-size:10px;color:rgba(60,60,80,.45);font-weight:500">${doneCount}/${habits.length}</span>`:''}
-    <button class="btn btn-ghost btn-xs" onclick="openAddDailyHabit()" style="padding:1px 6px;font-size:11px;line-height:1.4">+</button>
+    <button class="btn btn-ghost btn-xs" onclick="openAddDailyHabit(this)" style="padding:1px 6px;font-size:11px;line-height:1.4">+</button>
   </div>${rows?`<div style="padding:0 0 4px">${rows}</div>`:''}`;
 }
 function togDailyHabit(recId,done,ds){
@@ -126,8 +126,19 @@ function togDailyHabit(recId,done,ds){
     sbReq('PATCH','wr_recurring_rules',{done_by_week:r._doneByWk},recQs(recId));
   },(done?'Checked':'Unchecked')+' daily habit');
 }
-async function openAddDailyHabit(){
-  const name=(prompt('Habit name:')||'').trim();if(!name)return;
+function openAddDailyHabit(btn){
+  closeDailyHabitPopup();
+  const p=document.getElementById('dailyHabitPopup');
+  if(btn){const r=btn.getBoundingClientRect();let top=r.bottom+5,left=r.left,pw=220;if(left+pw>window.innerWidth-6)left=window.innerWidth-pw-6;if(top+120>window.innerHeight)top=r.top-124;p.style.top=top+'px';p.style.left=left+'px';p.style.transform='';}
+  else{p.style.top='50%';p.style.left='50%';p.style.transform='translate(-50%,-50%)';}
+  p.classList.add('open');
+  document.getElementById('dhName').value='';
+  setTimeout(()=>document.getElementById('dhName').focus(),50);
+}
+function closeDailyHabitPopup(){document.getElementById('dailyHabitPopup').classList.remove('open');}
+async function submitDailyHabit(){
+  const name=document.getElementById('dhName').value.trim();if(!name)return;
+  closeDailyHabitPopup();
   const tmp='rec-tmp-'+Date.now();
   st.recurring.push({id:tmp,name,cadence:'daily',is_weekly_reset:false,is_enabled:true,_doneByWk:{},_dateOverrides:{}});
   save();renderDailyHabits();

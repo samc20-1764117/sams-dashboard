@@ -632,6 +632,13 @@
   <div class="qa-hint">↵ Enter to add · Esc to close</div>
 </div>
 
+<div id="dailyHabitPopup" class="qa-popup">
+  <button class="qa-close" onclick="closeDailyHabitPopup()">✕</button>
+  <div class="qa-title">Add Daily Habit</div>
+  <div class="qa-field"><label>Name *</label><input id="dhName" placeholder="e.g. Brush teeth…" onkeydown="if(event.key==='Enter')submitDailyHabit();if(event.key==='Escape')closeDailyHabitPopup()"></div>
+  <div class="qa-hint">↵ Enter to add · Esc to close</div>
+</div>
+
 <!-- Pup Skill Edit Modal -->
 <div class="overlay" id="pupModal" onclick="closeMod('pupModal',event)" onkeydown="if(event.key==='Escape')closeMod('pupModal');if(event.key==='Enter'&&event.target.tagName!=='SELECT'){event.preventDefault();savePupModal();}">
   <div class="modal task-modal" style="width:420px">

@@ -6,7 +6,7 @@ function pickCat(id,v){const inp=document.getElementById(id);if(inp)inp.value=v;
 function setCatSel(id,v){const inp=document.getElementById(id);if(inp)inp.value=v;_applyCatTrigger(id,v);}
 const _CAT_OPT_LIST=[{v:'Home'},{v:'My work'},{v:'Work'},{v:'Social'},{v:'Weekly Goals'}];
 function catSelHTML(id,def){const ds=_catStyle(def);const opts=_CAT_OPT_LIST.map(c=>{const s=_catStyle(c.v);return`<div class="cat-sel-opt" style="background:${s.bg};color:${s.t}" onclick="pickCat('${id}','${c.v}')">${c.v}</div>`;}).join('');return `<div class="cat-sel-wrap" id="${id}Wrap"><input type="hidden" id="${id}" value="${def}"><div class="cat-sel-trigger" id="${id}Trigger" style="background:${ds.bg};color:${ds.t};border-color:${ds.b}" onclick="toggleCatDrop('${id}')"><span id="${id}Lbl">${def}</span><span style="opacity:.5;font-size:9px;margin-left:2px">▾</span></div><div class="cat-sel-drop" id="${id}Drop">${opts}</div></div>`;}
-document.addEventListener('click',e=>{if(!e.target.closest('.cat-sel-wrap'))document.querySelectorAll('.cat-sel-drop.open').forEach(d=>d.classList.remove('open'));});
+document.addEventListener('click',e=>{if(!e.target.closest('.cat-sel-wrap'))document.querySelectorAll('.cat-sel-drop.open').forEach(d=>d.classList.remove('open'));if(!e.target.closest('#dailyHabitPopup')&&!e.target.closest('#dailyHabitsSection'))closeDailyHabitPopup();});
 
 // ── Quick-add popup ────────────────────────────────────────────────────────────
 function openQA(ctx,btn,ds='',kcat=''){
