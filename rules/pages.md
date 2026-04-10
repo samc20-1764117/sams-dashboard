@@ -13,6 +13,7 @@
 - **Category**: `'Weekly Goals'`. In `KCATS` and `_CAT_OPT_LIST`. Not overdue. Not in Today list, timeblock, overdue banner, unassigned popup.
 - **Scoping**: tasks belong to a week via `due_date` (any Mon–Sun date). Shown only in Goals column and monthly cal Goals column.
 - **Weekly cal Goals column**: 8th column (`.wkc-goals-col`) after Sunday. Header `.wkc-goals-h` (bottom-aligned). Divider: `2px solid rgba(255,255,255,.88)`. Background: `rgba(255,255,255,.18)`.
+- **Sort order**: important+undone tasks first in both weekly cal (`goalsUndone` sorted before `goalsDone` forEach) and monthly cal goals cell.
 - **Chip styling**: `background:rgba(255,255,255,.82);color:rgba(80,80,95,.75);border-color:rgba(255,255,255,.9)` + `backdrop-filter:blur(8px);box-shadow:inset 0 1px 0 rgba(255,255,255,.6)`. **IMP override**: when `t.important && !t.done`, use IMP yellow — CSS must NOT have `!important` on color/border.
 - **Cannot drag to day columns**: dragId `'wkgoal::'+id`; day col dragover returns early for this prefix.
 - **Move to different week**: (1) drag left/right edge ±7 days; (2) right-click→`showGoalCtx`→"← Prev"/"→ Next"/"Custom…" via `moveGoalWeeks(taskId,delta)`; (3) monthly cal Goals cell drag (`wkgoal-mo::taskId::srcWkMonDs`).
@@ -22,8 +23,10 @@
 Two-col grid: WR left, non-WR right. 4 cadence groups each. WR: `renderRtWrGroup`. Non-WR: `renderRtGroup`. `OTHER_CADS=['quarterly','biannual','annual']`.
 
 ### Monthly Calendar (`features.js`, `#mModal`)
-Fixed range Jan 1 (curYr-3) → Dec 31 (curYr+2). `scrollMoToday()` BEFORE `.open`. GPU: `backdrop-filter:none`. Orbs paused. **Grid**: 8 cols — `#mDow,#mCells{grid-template-columns:repeat(7,1fr) minmax(80px,1fr)}`. 8th col = Goals (light white bg, white left border). Weekly Goals filtered from day cells and unassigned panel. Goals cells support `wkgoal-mo::taskId::srcWkMonDs` drag.
-- **Goals chips**: `background:rgba(255,255,255,.82);color:rgba(80,80,95,.75);border-color:rgba(255,255,255,.9)`. IMP override applies (`t.important && !t.done` → IMP yellow).
+Fixed range Jan 1 (curYr-3) → Dec 31 (curYr+2). `scrollMoToday()` BEFORE `.open`. GPU: `backdrop-filter:none`. Orbs paused. **Grid**: 8 cols — `#mDow,#mCells{grid-template-columns:repeat(7,1fr) minmax(120px,1.4fr)}`. 8th col = Goals (light white bg, white left border). Weekly Goals filtered from day cells and unassigned panel. Goals cells support `wkgoal-mo::taskId::srcWkMonDs` drag.
+- **Goals chips**: `background:rgba(255,255,255,.82);color:rgba(80,80,95,.75);border-color:rgba(255,255,255,.9)`. IMP override applies (`t.important && !t.done` → IMP yellow). **Sort**: important+undone first.
+- **Unassigned panel** (`.mua-side`): `width:150px`. Items (`.uitem`): `font-size:9px`. Narrower to give more space to goals column.
+- **Dynamic "+ x more"** (day cells and goals cell): chips computed from viewport height (`_cellH = max(70,(94vh-100)/4-4)`). Day cells subtract 28px overhead (header+padding); goals cell subtracts 8px (padding only, no date header). All chips rendered to DOM; extras hidden with `display:none;data-more-hidden=1`. Click "+ x more" reveals hidden chips inline — no popup. Only shown when hidden count > 0.
 
 ### Recurring Monthly View (`overview.js`, `#recMoModal`)
 **Grid**: 8 cols — 7 day + 1 WR col (blue-tinted, `columns:2`). **No Goals column** — Goals only in weekly calendar.  `#recMoDow,#recMoCells{grid-template-columns:repeat(7,1fr) minmax(160px,1.8fr)}`. Width: `min(98vw,1200px)`. 22-week range.

@@ -41,6 +41,6 @@ Supabase Auth (email+password), RLS on all tables. `init()`→`checkAuth()`→no
 - `pushUndo(fn,msg)`: snapshots state BEFORE action, pushes `{fn,snapBeforeUndo}`. Toast 4s.
 - `doUndo()`: pops entry, captures snap for redo, calls `entry.fn()`.
 - `doRedo()`: restores snap via `_stateRestore`, diffs + patches DB via `_syncRedoDiff`.
-- `_stateSnap` captures: `tasks,recurring,shopping,travel,birthdays,blocks,wrRules,wrOverrides`.
+- `_stateSnap` captures: `tasks,recurring,shopping,travel,birthdays,blocks,wrRules,wrOverrides,autoTBOverrides`.
 - `_stateRestore` restores all above, calls `renderAll(),renderDayTB(),renderWkCal(),renderRecOv(),renderWeeklyPage()`.
-- `_syncRedoDiff` diffs: tasks (PATCH/POST/DELETE), recurring `_dateOverrides` (PATCH), wrRules `_dateOverrides` (PATCH), wrOverrides (POST/PATCH/DELETE), shopping `due_date`, travel dates, blocks (save/delete).
+- `_syncRedoDiff` diffs: tasks (PATCH/POST/DELETE), recurring `_dateOverrides` (PATCH), wrRules `_dateOverrides` (PATCH), wrOverrides (POST/PATCH/DELETE), shopping `due_date`, travel dates, blocks (save/delete), autoTBOverrides (POST/PATCH/DELETE).

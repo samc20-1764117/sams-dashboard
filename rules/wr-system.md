@@ -71,6 +71,10 @@
 
 **Undo for task-move-to-day**: snapshot `savedTBs` (blocks being removed) BEFORE `removeTBBlocksForDate`. In undo closure: `savedTBs.forEach(b=>{if(!st.blocks.find(x=>x.id===b.id))st.blocks.push(b);sbSaveBlock(b);})` — restores blocks in both state and DB.
 
+**Auto block drag/resize undo**: `pushUndo` is called after drag/resize commits. Two cases:
+- **Existing override** (`atb._ovId` set): capture `ovId=atb._ovId` before closure. Undo PATCHes override back to `prevStart/prevEnd`. Redo via `_stateSnap`/`_stateRestore` (autoTBOverrides included in snap).
+- **No existing override**: POST creates new override with `tmpId`. After POST resolves, `st.autoTBOverrides[idx]` replaced with real record and `atb._ovId` set to real ID. Undo closure: capture `_realOvId=atb._ovId` at call time, filter `st.autoTBOverrides` by BOTH `tmpId` AND `_realOvId`, then DELETE from DB. **Critical**: must filter by real ID too — after POST resolves the tmpId entry is replaced and filtering only by tmpId leaves a stale override in state.
+
 **`_dateOverrides` on `st.wrRules`**: client-side only. `syncAll` preserves via `prevPins`. Pins rule to specific date within week. Cleared by `unSkipWrRule`.
 
 **Done state**: `complete` override `done:true`. Written by `togWrRule`. DELETEd on uncheck.
