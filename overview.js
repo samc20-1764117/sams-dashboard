@@ -2632,6 +2632,12 @@ function dropOnTB(e,ds,h,row,smOverride){
     const t=st.tasks.find(x=>String(x.id)===String(dragId));
     if(!t){dragId=null;return;}
     title=t.name;cat=t.category||'Home';taskId=String(t.id);
+    // Prevent pulling same task into timeblock twice on same day
+    if(st.blocks.find(b=>b.taskId===taskId&&b.ds===ds)){
+      dragId=null;
+      showToast('Already in time block','#6b7280',2000);
+      return;
+    }
     // Set task due_date to this day so it appears in Today/This Week/Calendar
     const prevDate=t.due_date;
     const blk={id:crypto.randomUUID(),title,ds,sm,dur:autoDur(title,cat),cat,taskId};

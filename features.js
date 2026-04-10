@@ -2473,7 +2473,7 @@ document.addEventListener('keydown',async e=>{
         let pasteServerId=null;
         pushUndo(()=>{const rid=pasteServerId||dup.id;st.tasks=st.tasks.filter(x=>String(x.id)!==String(rid));renderAll();if(pasteServerId)sbReq('DELETE','tasks',null,`?id=eq.${pasteServerId}`);},'Pasted task');
         const sv=await sbReq('POST','tasks',{name:dup.name,category:dup.category,due_date:dup.due_date,done:false,important:dup.important});
-        if(sv&&sv[0]){const i=st.tasks.findIndex(x=>x.id===dup.id);if(i>-1){st.tasks[i]=sv[0];}pasteServerId=String(sv[0].id);save();}
+        if(sv&&sv[0]){const i=st.tasks.findIndex(x=>x.id===dup.id);if(i>-1){st.tasks[i]=sv[0];}pasteServerId=String(sv[0].id);save();renderAll();}
       }
     });
     return;
