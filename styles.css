@@ -238,7 +238,7 @@ body.dark .pup-dog-btn.active{background:rgba(194,107,79,.5);color:#fff}
 .tn{flex:1;font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;letter-spacing:-.01em}
 .tn:hover{color:var(--accent)}
 .cpill{font-size:9px;font-weight:600;padding:2px 7px;border-radius:5px;flex-shrink:0;border:1px solid rgba(255,255,255,0.6);white-space:nowrap;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:inset 0 1px 0 rgba(255,255,255,0.7)}
-.cat-dot{position:absolute;right:14px;top:50%;transform:translateY(-50%);display:block;overflow:visible;transition:opacity .1s}
+.cat-dot{position:absolute;right:11px;top:50%;transform:translateY(-50%);display:block;overflow:visible;transition:opacity .1s}
 .ti:hover .cat-dot,.ti.sel-row .cat-dot{opacity:0}
 .dlbl{font-family:'DM Sans',sans-serif;font-size:10px;color:var(--subtle);flex-shrink:0;min-width:44px;text-align:right;white-space:nowrap;margin-left:auto}
 .date-clr{opacity:0;font-size:9px;color:var(--muted);transition:opacity .12s;margin-left:1px}
