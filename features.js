@@ -2294,6 +2294,7 @@ function clearSelection(){
 
 // Keyboard shortcuts
 let _copiedTasks=[];
+document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key==='s'){e.preventDefault();}},{capture:true});
 document.addEventListener('keydown',async e=>{
   const tag=document.activeElement?.tagName;
   if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT')return;
