@@ -645,7 +645,8 @@ function _stateSnap(){
     birthdays:JSON.parse(JSON.stringify(st.birthdays)),
     blocks:JSON.parse(JSON.stringify(st.blocks||[])),
     wrRules:JSON.parse(JSON.stringify(st.wrRules||[])),
-    wrOverrides:JSON.parse(JSON.stringify(st.wrOverrides||[]))
+    wrOverrides:JSON.parse(JSON.stringify(st.wrOverrides||[])),
+    autoTBOverrides:JSON.parse(JSON.stringify(st.autoTBOverrides||[]))
   };
 }
 
@@ -658,6 +659,7 @@ function _stateRestore(snap){
   st.blocks=snap.blocks;
   if(snap.wrRules)st.wrRules=snap.wrRules;
   if(snap.wrOverrides)st.wrOverrides=snap.wrOverrides;
+  if(snap.autoTBOverrides)st.autoTBOverrides=snap.autoTBOverrides;
   save();
   renderAll();
   if(document.getElementById('tbGrid'))renderDayTB();
@@ -768,6 +770,13 @@ function _syncRedoDiff(before,after){
     if(b.sm!==p.sm||b.dur!==p.dur)sbSaveBlock(b);
   }
   for(const b of bB){if(!aB.find(x=>String(x.id)===String(b.id)))sbDeleteBlock(b.id);}
+  const bAO=before.autoTBOverrides||[],aAO=after.autoTBOverrides||[];
+  for(const o of aAO){
+    const p=bAO.find(x=>String(x.id)===String(o.id));
+    if(!p){sbReqSilent('POST','auto_timeblock_overrides',{base_id:o.base_id,date:o.date,start_time:o.start_time,end_time:o.end_time},'');continue;}
+    if(o.start_time!==p.start_time||o.end_time!==p.end_time)sbReqSilent('PATCH','auto_timeblock_overrides',{start_time:o.start_time,end_time:o.end_time},`?id=eq.${o.id}`);
+  }
+  for(const o of bAO){if(!aAO.find(x=>String(x.id)===String(o.id)))sbReqSilent('DELETE','auto_timeblock_overrides',null,`?id=eq.${o.id}`);}
 }
 function doRedo(){
   if(!redoStack.length)return;
