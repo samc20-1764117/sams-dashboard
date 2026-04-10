@@ -80,7 +80,7 @@ async function submitQA(){
 }
 document.addEventListener('click',e=>{
   const p=document.getElementById('qaPopup');if(!p.classList.contains('open'))return;
-  if(!p.contains(e.target)&&!e.target.classList.contains('btn-plus')&&!e.target.classList.contains('wkc-add-btn'))closeQA();
+  if(!p.contains(e.target)&&!e.target.closest('.btn-plus,#todPlusBtn,.wkc-add-btn'))closeQA();
 });
 document.addEventListener('click',e=>{
   const pop=document.getElementById('pupFilterPop');if(!pop||!pop.classList.contains('pfopen'))return;
