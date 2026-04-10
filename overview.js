@@ -138,11 +138,12 @@ function openAddDailyHabit(btn){
 function closeDailyHabitPopup(){document.getElementById('dailyHabitPopup').classList.remove('open');}
 async function submitDailyHabit(){
   const name=document.getElementById('dhName').value.trim();if(!name)return;
+  const notes=(document.getElementById('dhNotes')?.value||'').trim()||null;
   closeDailyHabitPopup();
   const tmp='rec-tmp-'+Date.now();
-  st.recurring.push({id:tmp,name,cadence:'daily',is_weekly_reset:false,is_enabled:true,_doneByWk:{},_dateOverrides:{}});
+  st.recurring.push({id:tmp,name,notes,cadence:'daily',is_weekly_reset:false,is_enabled:true,_doneByWk:{},_dateOverrides:{}});
   save();renderDailyHabits();
-  const res=await sbReqSilent('POST','wr_recurring_rules',{name,cadence:'daily',is_weekly_reset:false,is_enabled:true},'');
+  const res=await sbReqSilent('POST','wr_recurring_rules',{name,notes,cadence:'daily',is_weekly_reset:false,is_enabled:true},'');
   if(res&&res[0]){const idx=st.recurring.findIndex(x=>x.id===tmp);if(idx>=0)st.recurring[idx]={...st.recurring[idx],...res[0],_doneByWk:{},_dateOverrides:{}};save();renderDailyHabits();}
 }
 // Type priority for sorting: regular=1, recurring=2, shopping=3, birthday=4 (travel sorts first via pre-check)
