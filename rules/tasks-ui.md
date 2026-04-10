@@ -31,7 +31,8 @@
 
 ## Indicator Placement (all views)
 All indicators sit at far right overlapping X position; swap to X on hover:
-- **cat-dot** (Today List): `position:absolute;right:3px;top:50%;transform:translateY(-50%);transition:opacity .1s`. Hidden on `.ti:hover` and `.ti.sel-row`.
+- **cat-dot** (Today List): `position:absolute;right:11px;top:50%;transform:translateY(-50%);transition:opacity .1s`. Hidden on `.ti:hover` and `.ti.sel-row`. Sits left of `tb-arrow` (right:3px).
+- **tb-arrow** (Today List, not-in-timeblock indicator): `position:absolute;right:3px;top:50%;transform:translateY(-50%);font-size:9px;font-weight:600;opacity:.75;color:var(--accent)`. Hidden on `.ti:hover`. Rightmost indicator, just right of cat-dot.
 - **chip-del** (weekly cal chips): `position:absolute;right:2px;top:50%;transform:translateY(-50%)` inside `position:relative` chip. Parent `.wkc-col .chip,.wkc-goals-col .chip` must have `position:relative`.
 - **wr-cad-badge**: `position:absolute;right:3px;top:50%;transform:translateY(-50%)`. Hidden on row hover to reveal X.
 - **cpill** (Shopping List): `position:absolute;right:3px;top:50%;transform:translateY(-50%);pointer-events:none`. Hidden on `.ti:hover` and `.ti.sel-row`.
