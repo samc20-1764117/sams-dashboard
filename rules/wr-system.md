@@ -77,7 +77,10 @@
 
 **`_dateOverrides` on `st.wrRules`**: client-side only. `syncAll` preserves via `prevPins`. Pins rule to specific date within week. Cleared by `unSkipWrRule`.
 
-**Done state**: `complete` override `done:true`. Written by `togWrRule`. DELETEd on uncheck.
+**Done state**: `complete` override `done:true`. Written by `togWrRule`. DELETEd on uncheck. Toggling in any view (Today, weekly cal, WR list, timeblock) syncs all others — `writeWrOverride` calls `_syncBlockDone(isDone)` and `renderDayTB()`. Uncheck path in `togWrRule` also updates `b._done` and calls `renderDayTB()`.
+- **WR tasks in Today/weekly views**: done WR tasks remain visible with `done` class (strikethrough) — NOT filtered out on check. `wrecToday`/`wrRulesToday` include done items with `done:true`.
+- **Timeblock done detection**: `drawTBBlock` detects WR rule blocks via `_wrRuleId = b.ruleId || (b.recId in st.wrRules ? b.recId : null)`. Uses `isDoneWRRule(_wrRuleId, wkKey)` — NOT `_doneByWk` (WR rules don't have that). Critical: `ruleId` is `null` after DB load (not persisted); blocks link via `recId` set to the rule's ID.
+- **Timeblock checkbox**: detects WR rule blocks via `b.ruleId || st.wrRules.some(x=>x.id===b.recId)` → calls `togWrRule`. Do NOT call `togRec` for WR rule blocks.
 
 **Display name**: check `st.wrOverrides` for `override_type:'edit'` → `custom_name`. Required in `renderRecOv` + `renderRecMoCal`.
 

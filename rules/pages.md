@@ -38,6 +38,8 @@ Fixed range Jan 1 (curYr-3) → Dec 31 (curYr+2). `scrollMoToday()` BEFORE `.ope
 
 ### Shopping List (`features.js`)
 `shop_order integer`. Drag MUST use mousedown/mousemove/mouseup — NOT HTML5. X→`unscheduleShop`: null `due_date`, remove `st.blocks`.
+- **Sort modes**: `shopSortMode` cycles store→alpha→manual via `toggleShopSort()`. Button label: "By store" / "A → Z" / "Manual".
+- **Manual mode**: DOM-rendered (not innerHTML). Items sorted by `shop_order`. mousedown/mousemove/mouseup drag-to-reorder (same pattern as `renderShopOv`). Single click suppressed after drag (`_shopDragged` flag). Double-click opens edit modal. PATCHes `shop_order` for all items after reorder.
 
 ### Travel System
 Table: `travel(id,name,destination,start_date,end_date,travel_mode,notes)`. Drag-to-create: `calDrag{active,startDs,endDs,moved}`. Week boundary: `ei` clamped.
