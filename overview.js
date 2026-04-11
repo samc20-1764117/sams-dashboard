@@ -1924,16 +1924,20 @@ function renderShopOv(){
       const onMove=ev=>{
         const dy=ev.clientY-startY;
         if(!dragging&&Math.abs(dy)<5)return;
-        if(!dragging){window.getSelection()?.removeAllRanges();dragging=true;el.style.opacity='.35';ph=document.createElement('div');ph.style.cssText=`height:${el.offsetHeight}px;margin:0 6px;border-radius:7px;background:rgba(109,95,230,.12);border:2px dashed rgba(109,95,230,.5);box-sizing:border-box;pointer-events:none;flex-shrink:0`;}
+        if(!dragging){
+          window.getSelection()?.removeAllRanges();dragging=true;
+          ph=document.createElement('div');
+          ph.style.cssText=`height:${el.offsetHeight}px;margin:0 6px;border-radius:7px;background:rgba(109,95,230,.12);border:2px dashed rgba(109,95,230,.5);box-sizing:border-box;pointer-events:none`;
+          container.insertBefore(ph,el);el.remove();
+        }
         ev.preventDefault();
-        const rows=[...document.querySelectorAll('#shopOv .ti')].filter(r=>r!==el&&r!==ph);
+        const rows=[...document.querySelectorAll('#shopOv .ti')];
         let inserted=false;
         for(const r of rows){const rc=r.getBoundingClientRect();if(ev.clientY<rc.top+rc.height/2){container.insertBefore(ph,r);inserted=true;break;}}
         if(!inserted&&rows.length)rows[rows.length-1].after(ph);
       };
       const onUp=()=>{
         document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);
-        el.style.opacity='';
         if(dragging&&ph){
           container.insertBefore(el,ph);ph.remove();
           const allRows=[...document.querySelectorAll('#shopOv .ti')];
@@ -1941,7 +1945,7 @@ function renderShopOv(){
           allRows.forEach((row,i)=>{const id=row.id.replace('ti-shop-cal-','');const item=items.find(x=>String(x.id)===id);if(item)item.shop_order=i;});
           save();
           allRows.forEach(row=>{const id=row.id.replace('ti-shop-cal-','');const item=items.find(x=>String(x.id)===id);if(item)sbReqNullable('PATCH','shopping_list',{shop_order:item.shop_order},`?id=eq.${item.id}`);});
-        }else if(ph)ph.remove();
+        }else if(ph){const next=ph.nextSibling;ph.remove();container.insertBefore(el,next);}
       };
       document.addEventListener('mousemove',onMove);document.addEventListener('mouseup',onUp);
     });
