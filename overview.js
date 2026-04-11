@@ -1905,7 +1905,8 @@ function renderShopOv(){
     const el=document.createElement('div');
     el.className='ti';el.id='ti-shop-cal-'+s.id;el.style.cssText='margin:0 6px;padding:3px 22px 3px 10px';
     el.draggable=true;
-    el.addEventListener('dragstart',e=>{if(e.target.closest('.chk-wrap,.delbtn'))return;e.stopPropagation();dragId='shop::'+s.id;e.dataTransfer.effectAllowed='move';el.style.opacity='.4';document.body.classList.add('body-dragging');showWkcEdges(true);});
+    let _blockNativeDrag=false;
+    el.addEventListener('dragstart',e=>{if(_blockNativeDrag){e.preventDefault();e.stopPropagation();return;}if(e.target.closest('.chk-wrap,.delbtn'))return;e.stopPropagation();dragId='shop::'+s.id;e.dataTransfer.effectAllowed='move';el.style.opacity='.4';document.body.classList.add('body-dragging');showWkcEdges(true);});
     el.addEventListener('dragend',()=>{el.style.opacity='';document.body.classList.remove('body-dragging');showWkcEdges(false);dragId=null;});
     el.innerHTML=
       `<label class="chk-wrap"><input type="checkbox" class="chk" style="width:11px;height:11px"${s.done?' checked':''}></label>`+
@@ -1920,7 +1921,7 @@ function renderShopOv(){
     el.querySelector('.delbtn').addEventListener('click',e=>{e.stopPropagation();delShop(s.id);});
     el.addEventListener('mousedown',e=>{
       if(e.target.closest('.chk-wrap')||e.target.closest('.delbtn'))return;
-      el.draggable=false;
+      _blockNativeDrag=true;el.draggable=false;
       let dragging=false;const startY=e.clientY;let ph=null;
       const onMove=ev=>{
         const dy=ev.clientY-startY;
@@ -1928,7 +1929,7 @@ function renderShopOv(){
         if(!dragging){
           window.getSelection()?.removeAllRanges();dragging=true;
           ph=document.createElement('div');
-          ph.style.cssText=`height:2px;margin:2px 10px;border-radius:99px;background:rgba(109,95,230,.7);pointer-events:none;flex-shrink:0`;
+          ph.style.cssText=`height:2px;margin:2px 10px;border-radius:99px;background:rgba(150,150,160,.5);pointer-events:none;flex-shrink:0`;
           container.insertBefore(ph,el);el.remove();
         }
         ev.preventDefault();
@@ -1939,7 +1940,7 @@ function renderShopOv(){
       };
       const onUp=()=>{
         document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);
-        el.draggable=true;
+        _blockNativeDrag=false;el.draggable=true;
         if(dragging&&ph){
           container.insertBefore(el,ph);ph.remove();
           const allRows=[...document.querySelectorAll('#shopOv .ti')];
