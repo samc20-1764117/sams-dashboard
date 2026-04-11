@@ -1928,7 +1928,7 @@ function renderShopOv(){
         if(!dragging){
           window.getSelection()?.removeAllRanges();dragging=true;
           ph=document.createElement('div');
-          ph.style.cssText=`height:${el.offsetHeight}px;margin:0 6px;border-radius:7px;background:rgba(109,95,230,.12);border:2px dashed rgba(109,95,230,.5);box-sizing:border-box;pointer-events:none`;
+          ph.style.cssText=`height:2px;margin:2px 10px;border-radius:99px;background:rgba(109,95,230,.7);pointer-events:none;flex-shrink:0`;
           container.insertBefore(ph,el);el.remove();
         }
         ev.preventDefault();
