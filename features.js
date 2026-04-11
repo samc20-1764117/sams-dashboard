@@ -611,28 +611,23 @@ function renderShopFull(){save();
             const dy=ev.clientY-startY;
             if(!dragging&&Math.abs(dy)<5)return;
             if(!dragging)window.getSelection()?.removeAllRanges();
-            dragging=true;ev.preventDefault();el.style.opacity='.4';
+            dragging=true;ev.preventDefault();el.style.opacity='.5';el.style.outline='2px dashed rgba(109,95,230,.5)';el.style.outlineOffset='-2px';
             const rows=[...document.querySelectorAll('#shopFull .ti:not(.done)')].filter(r=>r!==el);
-            rows.forEach(r=>r.classList.remove('shop-drop-before','shop-drop-after'));
-            let placed=false;
-            for(const r of rows){const rc=r.getBoundingClientRect();if(ev.clientY<rc.top+rc.height/2){r.classList.add('shop-drop-before');placed=true;break;}}
-            if(!placed&&rows.length)rows[rows.length-1].classList.add('shop-drop-after');
+            let inserted=false;
+            for(const r of rows){const rc=r.getBoundingClientRect();if(ev.clientY<rc.top+rc.height/2){sf.insertBefore(el,r);inserted=true;break;}}
+            if(!inserted&&rows.length)rows[rows.length-1].after(el);
           };
           const onUp=()=>{
             document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);
-            el.style.opacity='';
-            const rows=[...document.querySelectorAll('#shopFull .ti:not(.done)')];
-            const before=rows.find(r=>r.classList.contains('shop-drop-before'));
-            const after=rows.find(r=>r.classList.contains('shop-drop-after'));
-            const target=before||after;const insertBefore=!!before;
-            rows.forEach(r=>r.classList.remove('shop-drop-before','shop-drop-after'));
-            if(dragging&&target){
+            el.style.opacity='';el.style.outline='';el.style.outlineOffset='';
+            if(dragging){
               _shopDragged=true;
-              const targetId=target.id.replace('ti-shop-cal-','');
+              const allRows=[...document.querySelectorAll('#shopFull .ti:not(.done)')];
               const items=[...todo].sort((a,b)=>(a.shop_order??9999)-(b.shop_order??9999));
-              const fi=items.findIndex(x=>String(x.id)===String(s.id));
-              if(fi>=0){const[moved]=items.splice(fi,1);let newTi=items.findIndex(x=>String(x.id)===String(targetId));if(!insertBefore)newTi++;if(newTi>=0){items.splice(newTi,0,moved);items.forEach((x,i)=>{x.shop_order=i;});renderShopFull();items.forEach(x=>sbReqNullable('PATCH','shopping_list',{shop_order:x.shop_order},`?id=eq.${x.id}`));}}
-            } else if(dragging){_shopDragged=true;}
+              allRows.forEach((row,i)=>{const id=row.id.replace('ti-shop-cal-','');const item=items.find(x=>String(x.id)===id);if(item)item.shop_order=i;});
+              save();renderShopOv();
+              allRows.forEach(row=>{const id=row.id.replace('ti-shop-cal-','');const item=items.find(x=>String(x.id)===id);if(item)sbReqNullable('PATCH','shopping_list',{shop_order:item.shop_order},`?id=eq.${item.id}`);});
+            }
           };
           document.addEventListener('mousemove',onMove);document.addEventListener('mouseup',onUp);
         });
