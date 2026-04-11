@@ -606,28 +606,28 @@ function renderShopFull(){save();
       if(!s.done){
         el.addEventListener('mousedown',e=>{
           if(e.target.closest('.chk')||e.target.closest('.delbtn'))return;
-          let dragging=false;const startY=e.clientY;
+          let dragging=false;const startY=e.clientY;let ph=null;
           const onMove=ev=>{
             const dy=ev.clientY-startY;
             if(!dragging&&Math.abs(dy)<5)return;
-            if(!dragging)window.getSelection()?.removeAllRanges();
-            dragging=true;ev.preventDefault();el.style.opacity='.5';el.style.outline='2px dashed rgba(109,95,230,.5)';el.style.outlineOffset='-2px';
-            const rows=[...document.querySelectorAll('#shopFull .ti:not(.done)')].filter(r=>r!==el);
+            if(!dragging){window.getSelection()?.removeAllRanges();dragging=true;el.style.opacity='.35';ph=document.createElement('div');ph.style.cssText=`height:${el.offsetHeight}px;margin:1px 6px;border-radius:7px;background:rgba(109,95,230,.12);border:2px dashed rgba(109,95,230,.45);box-sizing:border-box;pointer-events:none`;}
+            ev.preventDefault();
+            const rows=[...document.querySelectorAll('#shopFull .ti:not(.done)')].filter(r=>r!==el&&r!==ph);
             let inserted=false;
-            for(const r of rows){const rc=r.getBoundingClientRect();if(ev.clientY<rc.top+rc.height/2){sf.insertBefore(el,r);inserted=true;break;}}
-            if(!inserted&&rows.length)rows[rows.length-1].after(el);
+            for(const r of rows){const rc=r.getBoundingClientRect();if(ev.clientY<rc.top+rc.height/2){sf.insertBefore(ph,r);inserted=true;break;}}
+            if(!inserted&&rows.length)rows[rows.length-1].after(ph);
           };
           const onUp=()=>{
             document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);
-            el.style.opacity='';el.style.outline='';el.style.outlineOffset='';
-            if(dragging){
-              _shopDragged=true;
+            el.style.opacity='';
+            if(dragging&&ph){
+              _shopDragged=true;sf.insertBefore(el,ph);ph.remove();
               const allRows=[...document.querySelectorAll('#shopFull .ti:not(.done)')];
               const items=[...todo].sort((a,b)=>(a.shop_order??9999)-(b.shop_order??9999));
               allRows.forEach((row,i)=>{const id=row.id.replace('ti-shop-cal-','');const item=items.find(x=>String(x.id)===id);if(item)item.shop_order=i;});
               save();renderShopOv();
               allRows.forEach(row=>{const id=row.id.replace('ti-shop-cal-','');const item=items.find(x=>String(x.id)===id);if(item)sbReqNullable('PATCH','shopping_list',{shop_order:item.shop_order},`?id=eq.${item.id}`);});
-            }
+            }else if(dragging){_shopDragged=true;if(ph)ph.remove();}
           };
           document.addEventListener('mousemove',onMove);document.addEventListener('mouseup',onUp);
         });
