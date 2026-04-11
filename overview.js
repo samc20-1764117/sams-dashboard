@@ -1920,6 +1920,7 @@ function renderShopOv(){
     el.querySelector('.delbtn').addEventListener('click',e=>{e.stopPropagation();delShop(s.id);});
     el.addEventListener('mousedown',e=>{
       if(e.target.closest('.chk-wrap')||e.target.closest('.delbtn'))return;
+      el.draggable=false;
       let dragging=false;const startY=e.clientY;let ph=null;
       const onMove=ev=>{
         const dy=ev.clientY-startY;
@@ -1938,6 +1939,7 @@ function renderShopOv(){
       };
       const onUp=()=>{
         document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);
+        el.draggable=true;
         if(dragging&&ph){
           container.insertBefore(el,ph);ph.remove();
           const allRows=[...document.querySelectorAll('#shopOv .ti')];
