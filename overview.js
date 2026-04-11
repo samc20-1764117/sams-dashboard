@@ -757,27 +757,51 @@ function renderWkCal(){
     chip.addEventListener('mousedown',e=>{
       if(e.target.closest('.wchk')||e.target.closest('.chip-del'))return;
       _blockGoalDrag=true;chip.draggable=false;
-      let dragging=false;const startY=e.clientY;let ph=null;
+      let dragging=false,mode=null,ph=null;
+      const startX=e.clientX,startY=e.clientY;
       const onMove=ev=>{
-        const dy=ev.clientY-startY;
-        if(!dragging&&Math.abs(dy)<5)return;
-        if(!dragging){window.getSelection()?.removeAllRanges();dragging=true;ph=document.createElement('div');ph.style.cssText=`height:2px;margin:2px 4px;border-radius:99px;background:rgba(150,150,160,.5);pointer-events:none;flex-shrink:0`;goalsCol.insertBefore(ph,chip);chip.remove();}
+        const ddx=ev.clientX-startX,ddy=ev.clientY-startY;
+        const dist=Math.abs(ddx)+Math.abs(ddy);
+        if(!dragging&&dist<5)return;
+        if(!dragging){window.getSelection()?.removeAllRanges();dragging=true;}
+        if(!mode&&dist>=15){
+          mode=Math.abs(ddx)>Math.abs(ddy)?'horiz':'vert';
+          if(mode==='vert'){ph=document.createElement('div');ph.style.cssText=`height:2px;margin:2px 4px;border-radius:99px;background:rgba(150,150,160,.5);pointer-events:none;flex-shrink:0`;goalsCol.insertBefore(ph,chip);chip.remove();}
+          else chip.style.opacity='.4';
+        }
+        if(!mode)return;
         ev.preventDefault();
-        const chips=[...goalsCol.querySelectorAll('.chip')];
-        let inserted=false;
-        for(const c of chips){const rc=c.getBoundingClientRect();if(ev.clientY<rc.top+rc.height/2){goalsCol.insertBefore(ph,c);inserted=true;break;}}
-        if(!inserted&&chips.length)chips[chips.length-1].after(ph);
+        if(mode==='vert'){
+          const chips=[...goalsCol.querySelectorAll('.chip')];let inserted=false;
+          for(const c of chips){const rc=c.getBoundingClientRect();if(ev.clientY<rc.top+rc.height/2){goalsCol.insertBefore(ph,c);inserted=true;break;}}
+          if(!inserted&&chips.length)chips[chips.length-1].after(ph);
+        }else{
+          const dir=ddx<-30?-1:ddx>30?1:0;
+          goalsCol.style.outline=dir?'2px solid rgba(150,150,160,.4)':'';
+          goalsCol.dataset.wkdir=String(dir);
+        }
       };
       const onUp=()=>{
         document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);
-        _blockGoalDrag=false;chip.draggable=true;
-        if(dragging&&ph){
-          goalsCol.insertBefore(chip,ph);ph.remove();
+        _blockGoalDrag=false;chip.draggable=true;goalsCol.style.outline='';
+        if(mode==='vert'&&ph){
+          goalsCol.insertBefore(chip,ph);ph.remove();chip.style.opacity='';
           const allChips=[...goalsCol.querySelectorAll('.chip[data-tid]')];
           allChips.forEach((c,i)=>{const task=st.tasks.find(x=>String(x.id)===c.dataset.tid);if(task)task.goal_order=i;});
-          save();
-          allChips.forEach(c=>{const task=st.tasks.find(x=>String(x.id)===c.dataset.tid);if(task)sbReqNullable('PATCH','tasks',{goal_order:task.goal_order},`?id=eq.${task.id}`);});
-        }else if(ph){const next=ph.nextSibling;ph.remove();goalsCol.insertBefore(chip,next);}
+          save();allChips.forEach(c=>{const task=st.tasks.find(x=>String(x.id)===c.dataset.tid);if(task)sbReqNullable('PATCH','tasks',{goal_order:task.goal_order},`?id=eq.${task.id}`);});
+        }else if(mode==='horiz'){
+          chip.style.opacity='';
+          const dir=parseInt(goalsCol.dataset.wkdir||'0');
+          delete goalsCol.dataset.wkdir;
+          if(dir!==0){
+            const nd=new Date((t.due_date||d2s(dates[0]))+'T12:00');nd.setDate(nd.getDate()+dir*7);
+            const nDs=d2s(nd);const prevDs=t.due_date;t.due_date=nDs;save();
+            pushUndo(()=>{t.due_date=prevDs;save();renderWkCal();renderWkSummary();sbReqNullable('PATCH','tasks',{due_date:prevDs},`?id=eq.${t.id}`);},'Moved goal week');
+            sbReqNullable('PATCH','tasks',{due_date:nDs},`?id=eq.${t.id}`);
+            shiftWk(dir);
+          }
+        }else if(ph){const next=ph.nextSibling;ph.remove();goalsCol.insertBefore(chip,next);chip.style.opacity='';}
+        else chip.style.opacity='';
       };
       document.addEventListener('mousemove',onMove);document.addEventListener('mouseup',onUp);
     });

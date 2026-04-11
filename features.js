@@ -825,13 +825,15 @@ function renderMoCal(){
         const startX=e.clientX,startY=e.clientY;
         const onMove=ev=>{
           const ddx=ev.clientX-startX,ddy=ev.clientY-startY;
-          if(!dragging&&Math.abs(ddx)<5&&Math.abs(ddy)<5)return;
-          if(!dragging){
-            window.getSelection()?.removeAllRanges();dragging=true;
-            mode=Math.abs(ddx)>=Math.abs(ddy)?'horiz':'vert';
+          const dist=Math.abs(ddx)+Math.abs(ddy);
+          if(!dragging&&dist<5)return;
+          if(!dragging){window.getSelection()?.removeAllRanges();dragging=true;}
+          if(!mode&&dist>=15){
+            mode=Math.abs(ddx)>Math.abs(ddy)?'horiz':'vert';
             if(mode==='vert'){ph=document.createElement('div');ph.style.cssText=`height:2px;margin:1px 2px;border-radius:99px;background:rgba(150,150,160,.5);pointer-events:none`;gBody.insertBefore(ph,chip);chip.remove();}
-            else{chip.style.opacity='.4';}
+            else chip.style.opacity='.4';
           }
+          if(!mode)return;
           ev.preventDefault();
           if(mode==='vert'){
             const chips=[...gBody.querySelectorAll('.mcell-t')];let inserted=false;
@@ -840,10 +842,9 @@ function renderMoCal(){
           }else{
             const allGC=[...document.querySelectorAll('.mo-goals-cell')];
             const curIdx=allGC.indexOf(goalsCell);
-            document.querySelectorAll('.mo-goals-cell').forEach(c=>c.classList.remove('dov'));
-            const ddx2=ev.clientX-startX;
-            if(ddx2<-20&&curIdx>0){targetCell=allGC[curIdx-1];targetCell.classList.add('dov');}
-            else if(ddx2>20&&curIdx<allGC.length-1){targetCell=allGC[curIdx+1];targetCell.classList.add('dov');}
+            allGC.forEach(c=>c.classList.remove('dov'));
+            if(ddx<-30&&curIdx>0){targetCell=allGC[curIdx-1];targetCell.classList.add('dov');}
+            else if(ddx>30&&curIdx<allGC.length-1){targetCell=allGC[curIdx+1];targetCell.classList.add('dov');}
             else targetCell=null;
           }
         };
