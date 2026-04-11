@@ -799,45 +799,87 @@ function renderMoCal(){
     // Goals This Week cell
     const wkMonDs=d2s(wkMon);
     const wkEndDate=new Date(wkMon);wkEndDate.setDate(wkMon.getDate()+6);const wkEndDs=d2s(wkEndDate);
-    const goalTasks=st.tasks.filter(t=>t.category==='Weekly Goals'&&t.due_date&&t.due_date.split('T')[0]>=wkMonDs&&t.due_date.split('T')[0]<=wkEndDs).sort((a,b)=>(b.important&&!b.done?1:0)-(a.important&&!a.done?1:0));
-    const goalsCell=document.createElement('div');goalsCell.className='mcell mo-goals-cell';
+    const goalTasks=st.tasks.filter(t=>t.category==='Weekly Goals'&&t.due_date&&t.due_date.split('T')[0]>=wkMonDs&&t.due_date.split('T')[0]<=wkEndDs).sort((a,b)=>(a.goal_order??9999)-(b.goal_order??9999)||(b.important&&!b.done?1:0)-(a.important&&!a.done?1:0));
+    const goalsCell=document.createElement('div');goalsCell.className='mcell mo-goals-cell';goalsCell.dataset.wkmon=wkMonDs;
     const gBody=document.createElement('div');gBody.className='mcell-body';
     const _gCellH=Math.max(70,(window.innerHeight*0.94-100)/4-4);
-    const _gAvailH=_gCellH-8; // goals cell has no date header, just 4px top+bottom padding
+    const _gAvailH=_gCellH-8;
     const _gMaxVis=goalTasks.length<=Math.floor(_gAvailH/19)?goalTasks.length:Math.max(1,Math.floor((_gAvailH-16)/19));
     goalTasks.forEach((t,_gi)=>{
       const chip=document.createElement('div');chip.className='mcell-t';chip.dataset.tid=String(t.id);chip.draggable=true;
       const _imp=t.important&&!t.done;
       chip.style.cssText=`background:${_imp?IMP.bg:'rgba(255,255,255,.82)'};color:${_imp?IMP.t:'rgba(80,80,95,.75)'};border-color:${_imp?IMP.b:'rgba(255,255,255,.9)'};cursor:grab${t.done?';opacity:.5':''}`;
       if(_gi>=_gMaxVis){chip.style.display='none';chip.dataset.moreHidden='1';}
-      chip.addEventListener('dragstart',e=>{e.stopPropagation();dragId='wkgoal-mo::'+t.id+'::'+wkMonDs;chip.style.opacity='.4';document.body.classList.add('body-dragging');});
+      let _blockMoDrag=false;
+      chip.addEventListener('dragstart',e=>{if(_blockMoDrag){e.preventDefault();e.stopPropagation();return;}e.stopPropagation();dragId='wkgoal-mo::'+t.id+'::'+wkMonDs;chip.style.opacity='.4';document.body.classList.add('body-dragging');});
       chip.addEventListener('dragend',()=>{chip.style.opacity='1';document.body.classList.remove('body-dragging');dragId=null;});
       const chk=document.createElement('input');chk.type='checkbox';chk.className='chk';chk.style.cssText='width:8px;height:8px';chk.checked=t.done;
       chk.addEventListener('change',function(){toggleTask(t.id,this.checked,'week');renderMoCal();});
       const nm=document.createElement('span');nm.style.cssText='flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';nm.textContent=t.name;
       const dx=document.createElement('button');dx.className='chip-del';dx.textContent='✕';dx.addEventListener('click',e2=>{e2.stopPropagation();delTask(t.id,e2);});
       chip.appendChild(chk);chip.appendChild(nm);chip.appendChild(dx);
+      chip.addEventListener('mousedown',e=>{
+        if(e.target.closest('.chk,.chip-del'))return;
+        _blockMoDrag=true;chip.draggable=false;
+        let dragging=false,mode=null,ph=null,targetCell=null;
+        const startX=e.clientX,startY=e.clientY;
+        const onMove=ev=>{
+          const ddx=ev.clientX-startX,ddy=ev.clientY-startY;
+          if(!dragging&&Math.abs(ddx)<5&&Math.abs(ddy)<5)return;
+          if(!dragging){
+            window.getSelection()?.removeAllRanges();dragging=true;
+            mode=Math.abs(ddx)>=Math.abs(ddy)?'horiz':'vert';
+            if(mode==='vert'){ph=document.createElement('div');ph.style.cssText=`height:2px;margin:1px 2px;border-radius:99px;background:rgba(150,150,160,.5);pointer-events:none`;gBody.insertBefore(ph,chip);chip.remove();}
+            else{chip.style.opacity='.4';}
+          }
+          ev.preventDefault();
+          if(mode==='vert'){
+            const chips=[...gBody.querySelectorAll('.mcell-t')];let inserted=false;
+            for(const c of chips){const rc=c.getBoundingClientRect();if(ev.clientY<rc.top+rc.height/2){gBody.insertBefore(ph,c);inserted=true;break;}}
+            if(!inserted&&chips.length)chips[chips.length-1].after(ph);
+          }else{
+            const allGC=[...document.querySelectorAll('.mo-goals-cell')];
+            const curIdx=allGC.indexOf(goalsCell);
+            document.querySelectorAll('.mo-goals-cell').forEach(c=>c.classList.remove('dov'));
+            const ddx2=ev.clientX-startX;
+            if(ddx2<-20&&curIdx>0){targetCell=allGC[curIdx-1];targetCell.classList.add('dov');}
+            else if(ddx2>20&&curIdx<allGC.length-1){targetCell=allGC[curIdx+1];targetCell.classList.add('dov');}
+            else targetCell=null;
+          }
+        };
+        const onUp=()=>{
+          document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);
+          _blockMoDrag=false;chip.draggable=true;
+          if(mode==='vert'&&ph){
+            gBody.insertBefore(chip,ph);ph.remove();chip.style.opacity='';
+            const allChips=[...gBody.querySelectorAll('.mcell-t[data-tid]')];
+            allChips.forEach((c,i)=>{const task=st.tasks.find(x=>String(x.id)===c.dataset.tid);if(task)task.goal_order=i;});
+            save();allChips.forEach(c=>{const task=st.tasks.find(x=>String(x.id)===c.dataset.tid);if(task)sbReqNullable('PATCH','tasks',{goal_order:task.goal_order},`?id=eq.${task.id}`);});
+          }else if(mode==='horiz'){
+            chip.style.opacity='';document.querySelectorAll('.mo-goals-cell').forEach(c=>c.classList.remove('dov'));
+            if(targetCell){
+              const tgtWkMonDs=targetCell.dataset.wkmon;
+              const gt=st.tasks.find(x=>String(x.id)===String(t.id));
+              if(gt&&tgtWkMonDs){
+                const prevDs=gt.due_date;
+                const deltaMs=new Date(tgtWkMonDs+'T12:00')-new Date(wkMonDs+'T12:00');
+                const deltaDays=Math.round(deltaMs/86400000);
+                const nd=new Date((gt.due_date||wkMonDs)+'T12:00');nd.setDate(nd.getDate()+deltaDays);
+                const nDs=d2s(nd);gt.due_date=nDs;save();renderMoCal();renderAll();
+                pushUndo(()=>{gt.due_date=prevDs;save();renderMoCal();renderAll();sbReqNullable('PATCH','tasks',{due_date:prevDs},`?id=eq.${gt.id}`);},'Moved goal week');
+                sbReqNullable('PATCH','tasks',{due_date:nDs},`?id=eq.${gt.id}`);
+              }
+            }
+          }else if(ph){const next=ph.nextSibling;ph.remove();gBody.insertBefore(chip,next);chip.style.opacity='';}
+          else chip.style.opacity='';
+        };
+        document.addEventListener('mousemove',onMove);document.addEventListener('mouseup',onUp);
+      });
       gBody.appendChild(chip);
     });
     const _gHidden=goalTasks.length-_gMaxVis;
     if(_gHidden>0){const more=document.createElement('div');more.style.cssText='font-size:8px;color:var(--subtle);cursor:pointer;padding:1px 2px;border-radius:3px';more.textContent=`+${_gHidden} more`;more.addEventListener('click',e=>{e.stopPropagation();gBody.querySelectorAll('.mcell-t[data-more-hidden]').forEach(el=>{el.style.display='';delete el.dataset.moreHidden;});more.remove();});gBody.appendChild(more);}
     goalsCell.appendChild(gBody);
-    goalsCell.addEventListener('dragover',e=>{if(dragId&&dragId.startsWith('wkgoal-mo::'))e.preventDefault();goalsCell.classList.add('dov');});
-    goalsCell.addEventListener('dragleave',()=>goalsCell.classList.remove('dov'));
-    goalsCell.addEventListener('drop',async e=>{
-      e.preventDefault();goalsCell.classList.remove('dov');
-      if(!dragId||!dragId.startsWith('wkgoal-mo::'))return;
-      const parts=dragId.split('::');const tid=parts[1];const srcWkMonDs=parts[2];dragId=null;
-      if(wkMonDs===srcWkMonDs)return;
-      const gt=st.tasks.find(x=>String(x.id)===tid);if(!gt)return;
-      const prevDs=gt.due_date;
-      const deltaMs=new Date(wkMonDs+'T12:00')-new Date(srcWkMonDs+'T12:00');
-      const deltaDays=Math.round(deltaMs/86400000);
-      const nd=new Date((gt.due_date||wkMonDs)+'T12:00');nd.setDate(nd.getDate()+deltaDays);
-      const nDs=d2s(nd);gt.due_date=nDs;save();renderMoCal();renderAll();
-      pushUndo(()=>{gt.due_date=prevDs;save();renderMoCal();renderAll();sbReqNullable('PATCH','tasks',{due_date:prevDs},`?id=eq.${tid}`);},'Moved goal week');
-      await sbReqNullable('PATCH','tasks',{due_date:nDs},`?id=eq.${tid}`);
-    });
     cells.appendChild(goalsCell);
   }
   // Sync year dropdown
