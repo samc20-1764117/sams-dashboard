@@ -1920,46 +1920,30 @@ function renderShopOv(){
     el.querySelector('.delbtn').addEventListener('click',e=>{e.stopPropagation();delShop(s.id);});
     el.addEventListener('mousedown',e=>{
       if(e.target.closest('.chk-wrap')||e.target.closest('.delbtn'))return;
-      let dragging=false;
-      const startY=e.clientY;
+      let dragging=false;const startY=e.clientY;let ph=null;
       const onMove=ev=>{
         const dy=ev.clientY-startY;
         if(!dragging&&Math.abs(dy)<5)return;
-        if(!dragging)window.getSelection()?.removeAllRanges();
-        dragging=true;
+        if(!dragging){window.getSelection()?.removeAllRanges();dragging=true;el.style.opacity='.35';ph=document.createElement('div');ph.style.cssText=`height:${el.offsetHeight}px;margin:0 6px;border-radius:7px;background:rgba(109,95,230,.12);border:2px dashed rgba(109,95,230,.5);box-sizing:border-box;pointer-events:none;flex-shrink:0`;}
         ev.preventDefault();
-        el.style.opacity='.4';
-        const rows=[...document.querySelectorAll('#shopOv .ti')];
-        rows.forEach(r=>r.classList.remove('shop-dov'));
-        const over=rows.find(r=>{
-          if(r===el)return false;
-          const rc=r.getBoundingClientRect();
-          return ev.clientY>=rc.top&&ev.clientY<=rc.bottom;
-        });
-        if(over)over.classList.add('shop-dov');
+        const rows=[...document.querySelectorAll('#shopOv .ti')].filter(r=>r!==el&&r!==ph);
+        let inserted=false;
+        for(const r of rows){const rc=r.getBoundingClientRect();if(ev.clientY<rc.top+rc.height/2){container.insertBefore(ph,r);inserted=true;break;}}
+        if(!inserted&&rows.length)rows[rows.length-1].after(ph);
       };
       const onUp=()=>{
-        document.removeEventListener('mousemove',onMove);
-        document.removeEventListener('mouseup',onUp);
+        document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);
         el.style.opacity='';
-        const rows=[...document.querySelectorAll('#shopOv .ti')];
-        const target=rows.find(r=>r.classList.contains('shop-dov'));
-        rows.forEach(r=>r.classList.remove('shop-dov'));
-        if(dragging&&target){
-          const targetId=target.id.replace('ti-shop-cal-','');
+        if(dragging&&ph){
+          container.insertBefore(el,ph);ph.remove();
+          const allRows=[...document.querySelectorAll('#shopOv .ti')];
           const items=_shopOvSort(st.shopping.filter(x=>!x.done));
-          const fi=items.findIndex(x=>String(x.id)===String(s.id));
-          const ti=items.findIndex(x=>String(x.id)===String(targetId));
-          if(fi>=0&&ti>=0){
-            items.splice(ti,0,items.splice(fi,1)[0]);
-            items.forEach((x,i)=>{x.shop_order=i;});
-            renderShopOv();
-            items.forEach(x=>sbReqNullable('PATCH','shopping_list',{shop_order:x.shop_order},`?id=eq.${x.id}`));
-          }
-        }
+          allRows.forEach((row,i)=>{const id=row.id.replace('ti-shop-cal-','');const item=items.find(x=>String(x.id)===id);if(item)item.shop_order=i;});
+          save();
+          allRows.forEach(row=>{const id=row.id.replace('ti-shop-cal-','');const item=items.find(x=>String(x.id)===id);if(item)sbReqNullable('PATCH','shopping_list',{shop_order:item.shop_order},`?id=eq.${item.id}`);});
+        }else if(ph)ph.remove();
       };
-      document.addEventListener('mousemove',onMove);
-      document.addEventListener('mouseup',onUp);
+      document.addEventListener('mousemove',onMove);document.addEventListener('mouseup',onUp);
     });
     container.appendChild(el);
   });
