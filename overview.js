@@ -725,8 +725,8 @@ function renderWkCal(){
     if(e.target.classList.contains('chip')||e.target.closest('.chip'))return;
     openQA('wkc',null,d2s(getDayDate(0)),'Weekly Goals');
   });
-  const goalsUndone=st.tasks.filter(t=>t.category==='Weekly Goals'&&!t.done&&t.due_date&&t.due_date.split('T')[0]>=wkStart&&t.due_date.split('T')[0]<=wkEnd).sort((a,b)=>(b.important?1:0)-(a.important?1:0));
-  const goalsDone=st.tasks.filter(t=>t.category==='Weekly Goals'&&t.done&&t.due_date&&t.due_date.split('T')[0]>=wkStart&&t.due_date.split('T')[0]<=wkEnd);
+  const goalsUndone=st.tasks.filter(t=>t.category==='Weekly Goals'&&!t.done&&t.due_date&&t.due_date.split('T')[0]>=wkStart&&t.due_date.split('T')[0]<=wkEnd).sort((a,b)=>(a.goal_order??9999)-(b.goal_order??9999)||(b.important?1:0)-(a.important?1:0));
+  const goalsDone=st.tasks.filter(t=>t.category==='Weekly Goals'&&t.done&&t.due_date&&t.due_date.split('T')[0]>=wkStart&&t.due_date.split('T')[0]<=wkEnd).sort((a,b)=>(a.goal_order??9999)-(b.goal_order??9999));
   [...goalsUndone,...goalsDone].forEach(t=>{
     const imp=t.important&&!t.done;
     const s=imp?IMP:{bg:'rgba(255,255,255,.82)',t:'rgba(80,80,95,.75)',b:'rgba(255,255,255,.9)'};
@@ -734,7 +734,8 @@ function renderWkCal(){
     chip.style.cssText=`background:${s.bg};color:${s.t};border-color:${s.b}`;
     chip.dataset.tid=String(t.id);
     chip.draggable=true;
-    chip.addEventListener('dragstart',e2=>{dragId='wkgoal::'+String(t.id);document.body.classList.add('body-dragging');chip.style.opacity='.4';showWkcEdges(true);e2.stopPropagation();});
+    let _blockGoalDrag=false;
+    chip.addEventListener('dragstart',e2=>{if(_blockGoalDrag){e2.preventDefault();e2.stopPropagation();return;}dragId='wkgoal::'+String(t.id);document.body.classList.add('body-dragging');chip.style.opacity='.4';showWkcEdges(true);e2.stopPropagation();});
     chip.addEventListener('dragend',()=>{chip.style.opacity='1';document.body.classList.remove('body-dragging');showWkcEdges(false);});
     const chk=document.createElement('input');chk.type='checkbox';chk.className='wchk';chk.checked=t.done;
     chk.addEventListener('change',e2=>{e2.stopPropagation();toggleTask(t.id,chk.checked,'week');});
@@ -753,6 +754,33 @@ function renderWkCal(){
     const dx=document.createElement('button');dx.className='chip-del';dx.textContent='✕';dx.title='Delete task';
     dx.addEventListener('click',e2=>{e2.stopPropagation();delTask(t.id,e2);});
     chip.appendChild(dx);
+    chip.addEventListener('mousedown',e=>{
+      if(e.target.closest('.wchk')||e.target.closest('.chip-del'))return;
+      _blockGoalDrag=true;chip.draggable=false;
+      let dragging=false;const startY=e.clientY;let ph=null;
+      const onMove=ev=>{
+        const dy=ev.clientY-startY;
+        if(!dragging&&Math.abs(dy)<5)return;
+        if(!dragging){window.getSelection()?.removeAllRanges();dragging=true;ph=document.createElement('div');ph.style.cssText=`height:2px;margin:2px 4px;border-radius:99px;background:rgba(150,150,160,.5);pointer-events:none;flex-shrink:0`;goalsCol.insertBefore(ph,chip);chip.remove();}
+        ev.preventDefault();
+        const chips=[...goalsCol.querySelectorAll('.chip')];
+        let inserted=false;
+        for(const c of chips){const rc=c.getBoundingClientRect();if(ev.clientY<rc.top+rc.height/2){goalsCol.insertBefore(ph,c);inserted=true;break;}}
+        if(!inserted&&chips.length)chips[chips.length-1].after(ph);
+      };
+      const onUp=()=>{
+        document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);
+        _blockGoalDrag=false;chip.draggable=true;
+        if(dragging&&ph){
+          goalsCol.insertBefore(chip,ph);ph.remove();
+          const allChips=[...goalsCol.querySelectorAll('.chip[data-tid]')];
+          allChips.forEach((c,i)=>{const task=st.tasks.find(x=>String(x.id)===c.dataset.tid);if(task)task.goal_order=i;});
+          save();
+          allChips.forEach(c=>{const task=st.tasks.find(x=>String(x.id)===c.dataset.tid);if(task)sbReqNullable('PATCH','tasks',{goal_order:task.goal_order},`?id=eq.${task.id}`);});
+        }else if(ph){const next=ph.nextSibling;ph.remove();goalsCol.insertBefore(chip,next);}
+      };
+      document.addEventListener('mousemove',onMove);document.addEventListener('mouseup',onUp);
+    });
     goalsCol.appendChild(chip);
   });
   cols.appendChild(goalsCol);
