@@ -612,24 +612,26 @@ function renderShopFull(){save();
             if(!dragging&&Math.abs(dy)<5)return;
             if(!dragging)window.getSelection()?.removeAllRanges();
             dragging=true;ev.preventDefault();el.style.opacity='.4';
-            const rows=[...document.querySelectorAll('#shopFull .ti:not(.done)')];
-            rows.forEach(r=>r.classList.remove('shop-dov'));
-            const over=rows.find(r=>{if(r===el)return false;const rc=r.getBoundingClientRect();return ev.clientY>=rc.top&&ev.clientY<=rc.bottom;});
-            if(over)over.classList.add('shop-dov');
+            const rows=[...document.querySelectorAll('#shopFull .ti:not(.done)')].filter(r=>r!==el);
+            rows.forEach(r=>r.classList.remove('shop-drop-before','shop-drop-after'));
+            let placed=false;
+            for(const r of rows){const rc=r.getBoundingClientRect();if(ev.clientY<rc.top+rc.height/2){r.classList.add('shop-drop-before');placed=true;break;}}
+            if(!placed&&rows.length)rows[rows.length-1].classList.add('shop-drop-after');
           };
           const onUp=()=>{
             document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);
             el.style.opacity='';
             const rows=[...document.querySelectorAll('#shopFull .ti:not(.done)')];
-            const target=rows.find(r=>r.classList.contains('shop-dov'));
-            rows.forEach(r=>r.classList.remove('shop-dov'));
+            const before=rows.find(r=>r.classList.contains('shop-drop-before'));
+            const after=rows.find(r=>r.classList.contains('shop-drop-after'));
+            const target=before||after;const insertBefore=!!before;
+            rows.forEach(r=>r.classList.remove('shop-drop-before','shop-drop-after'));
             if(dragging&&target){
               _shopDragged=true;
               const targetId=target.id.replace('ti-shop-cal-','');
               const items=[...todo].sort((a,b)=>(a.shop_order??9999)-(b.shop_order??9999));
               const fi=items.findIndex(x=>String(x.id)===String(s.id));
-              const ti=items.findIndex(x=>String(x.id)===String(targetId));
-              if(fi>=0&&ti>=0){items.splice(ti,0,items.splice(fi,1)[0]);items.forEach((x,i)=>{x.shop_order=i;});renderShopFull();items.forEach(x=>sbReqNullable('PATCH','shopping_list',{shop_order:x.shop_order},`?id=eq.${x.id}`));}
+              if(fi>=0){const[moved]=items.splice(fi,1);let newTi=items.findIndex(x=>String(x.id)===String(targetId));if(!insertBefore)newTi++;if(newTi>=0){items.splice(newTi,0,moved);items.forEach((x,i)=>{x.shop_order=i;});renderShopFull();items.forEach(x=>sbReqNullable('PATCH','shopping_list',{shop_order:x.shop_order},`?id=eq.${x.id}`));}}
             } else if(dragging){_shopDragged=true;}
           };
           document.addEventListener('mousemove',onMove);document.addEventListener('mouseup',onUp);
