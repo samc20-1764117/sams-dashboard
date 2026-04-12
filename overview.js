@@ -317,7 +317,7 @@ function renderWkCal(){
     head.appendChild(h);
   });
   const goalsH=document.createElement('div');goalsH.className='wkc-day-h wkc-goals-h';
-  goalsH.innerHTML=`<div class="wkc-dn">Goals</div>`;
+  goalsH.innerHTML=`<button class="wo-hdr-btn" onclick="openWOModal()">Weekly<br>Objectives</button>`;
   head.appendChild(goalsH);
 
   // ── Render travel banners ────────────────────────────────────────────────────
@@ -1044,6 +1044,116 @@ function showGoalCtx(e,taskId){
     'Custom…',
     ()=>{const n=parseInt(prompt('Move how many weeks? (use negative for past)','1'));if(!isNaN(n)&&n!==0)moveGoalWeeks(taskId,n);}
   );
+}
+// ── Weekly Objectives Modal ────────────────────────────────────────────────────
+let _woViewOff=0; // weeks offset relative to wkOff for the modal view start
+function openWOModal(){
+  _woViewOff=0;
+  renderWOModal();
+  document.getElementById('woModal').classList.add('open');
+}
+function closeWOModal(e){
+  const el=document.getElementById('woModal');
+  if(e&&e.target!==el)return;
+  el.classList.remove('open');
+}
+function woShift(dir){_woViewOff+=dir;renderWOModal();}
+function renderWOModal(){
+  const cols=document.getElementById('woCols');if(!cols)return;
+  cols.innerHTML='';
+  const MON_ABBR=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  for(let i=0;i<5;i++){
+    const off=wkOff+_woViewOff+i;
+    const{mon}=getWkBounds(off);
+    const sun=new Date(mon);sun.setDate(mon.getDate()+6);
+    const wkStart=d2s(mon),wkEnd=d2s(sun);
+    const isCurrent=(off===wkOff);
+    const isPast=off<wkOff;
+    const col=document.createElement('div');
+    col.className='wo-col'+(isCurrent?' wo-col-current':isPast?' wo-col-past':'');
+    col.dataset.wkOff=String(off);col.dataset.wkStart=wkStart;col.dataset.wkEnd=wkEnd;
+    const lbl=isCurrent?'This Week':(isPast?`${Math.abs(off-wkOff)}w ago`:(off-wkOff===1?'Next Week':`+${off-wkOff} wks`));
+    const hdr=document.createElement('div');hdr.className='wo-col-h';
+    hdr.innerHTML=`<div class="wo-col-lbl">${lbl}</div><div class="wo-col-range">${MON_ABBR[mon.getMonth()]} ${mon.getDate()} – ${MON_ABBR[sun.getMonth()]} ${sun.getDate()}</div>`;
+    col.appendChild(hdr);
+    const body=document.createElement('div');body.className='wo-col-body';body.dataset.wkOff=String(off);body.dataset.wkStart=wkStart;
+    const goals=st.tasks.filter(t=>t.category==='Weekly Goals'&&t.due_date&&t.due_date.split('T')[0]>=wkStart&&t.due_date.split('T')[0]<=wkEnd)
+      .sort((a,b)=>(a.goal_order??9999)-(b.goal_order??9999)||(b.important&&!b.done?1:0)-(a.important&&!a.done?1:0));
+    goals.forEach(t=>{
+      const imp=t.important&&!t.done;
+      const s=imp?IMP:{bg:'rgba(255,255,255,.82)',t:'rgba(80,80,95,.75)',b:'rgba(255,255,255,.9)'};
+      const chip=document.createElement('div');
+      chip.className='chip wo-chip';chip.dataset.tid=String(t.id);
+      chip.style.cssText=`background:${s.bg};color:${s.t};border-color:${s.b};${t.done?'opacity:.5;text-decoration:line-through;':''}width:100%;box-sizing:border-box;cursor:grab`;
+      chip.innerHTML=`<span class="tn" style="overflow:hidden;text-overflow:ellipsis;flex:1">${t.name}</span>`;
+      chip.addEventListener('click',e=>{e.stopPropagation();openTModal(t.id);});
+      chip.addEventListener('contextmenu',e=>{e.preventDefault();e.stopPropagation();showGoalCtx(e,String(t.id));});
+      // Drag to move between columns
+      chip.addEventListener('mousedown',ev=>{
+        if(ev.button!==0)return;
+        ev.preventDefault();ev.stopPropagation();
+        let startX=ev.clientX,startY=ev.clientY,moved=false,ph=null,srcBody=body,srcTid=String(t.id);
+        let clone=null;
+        const onMove=mv=>{
+          const dx=mv.clientX-startX,dy=mv.clientY-startY;
+          if(!moved&&Math.hypot(dx,dy)<8)return;
+          if(!moved){
+            moved=true;
+            chip.style.opacity='.3';
+            clone=chip.cloneNode(true);
+            clone.style.cssText+=';position:fixed;pointer-events:none;z-index:9999;opacity:.85;cursor:grabbing;min-width:80px';
+            clone.style.left=(ev.clientX-40)+'px';clone.style.top=(ev.clientY-10)+'px';
+            document.body.appendChild(clone);
+            ph=document.createElement('div');ph.className='wo-ph';ph.style.cssText='height:20px;margin:2px 0;border-radius:5px;background:rgba(109,95,230,.15);border:1.5px dashed rgba(109,95,230,.35)';
+            srcBody.insertBefore(ph,chip);
+          }
+          if(clone){clone.style.left=(mv.clientX-40)+'px';clone.style.top=(mv.clientY-10)+'px';}
+          // Find which column body we're over
+          const allBodies=[...document.querySelectorAll('.wo-col-body')];
+          let overBody=null;
+          for(const b of allBodies){const r=b.getBoundingClientRect();if(mv.clientX>=r.left&&mv.clientX<=r.right&&mv.clientY>=r.top&&mv.clientY<=r.bottom){overBody=b;break;}}
+          if(overBody){
+            // Remove ph from wherever it is, insert in right position
+            const chips=[...overBody.querySelectorAll('.wo-chip:not([data-tid="'+srcTid+'"])')];
+            let inserted=false;
+            for(const c of chips){const rc=c.getBoundingClientRect();if(mv.clientY<rc.top+rc.height/2){overBody.insertBefore(ph,c);inserted=true;break;}}
+            if(!inserted)overBody.appendChild(ph);
+          }
+        };
+        const onUp=async uv=>{
+          document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);
+          if(clone)clone.remove();
+          chip.style.opacity='';
+          if(!moved||!ph){if(ph)ph.remove();return;}
+          const destBody=ph.parentElement;
+          if(!destBody){ph.remove();return;}
+          const destOff=parseInt(destBody.dataset.wkOff);
+          const destWkStart=destBody.dataset.wkStart;
+          ph.replaceWith(chip);
+          const srcOff=parseInt(srcBody.dataset.wkOff);
+          if(destOff!==srcOff){
+            // Move to a different week
+            const nd=new Date(destWkStart+'T12:00');
+            const nDs=d2s(nd);
+            const prev=t.due_date;t.due_date=nDs;save();
+            sbReqNullable('PATCH','tasks',{due_date:nDs},`?id=eq.${t.id}`);
+            pushUndo(()=>{t.due_date=prev;save();renderAll();renderWkCal();sbReqNullable('PATCH','tasks',{due_date:prev},`?id=eq.${t.id}`);},'Moved goal week');
+            renderWkCal();renderWkSummary();
+          }
+          // Update goal_order for destination column
+          const allChips=[...destBody.querySelectorAll('.wo-chip[data-tid]')];
+          allChips.forEach((c,i)=>{const tk=st.tasks.find(x=>String(x.id)===c.dataset.tid);if(tk){tk.goal_order=i;sbReqNullable('PATCH','tasks',{goal_order:i},`?id=eq.${tk.id}`);}});
+          save();
+        };
+        document.addEventListener('mousemove',onMove);document.addEventListener('mouseup',onUp);
+      });
+      body.appendChild(chip);
+    });
+    // Double-click empty area to add new goal for this week
+    body.addEventListener('dblclick',e=>{if(e.target===body)openQA('wkc',null,wkStart,'Weekly Goals');});
+    col.appendChild(body);
+    cols.appendChild(col);
+  }
 }
 function onWkcWheel(e){
   if(Math.abs(e.deltaX)<8&&!e.shiftKey)return;

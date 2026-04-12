@@ -873,4 +873,15 @@ tickClock();_updateOvTopDate();setInterval(tickClock,1000);init();
     <span id="backupTxt">Backup Sync</span>
   </div>
 </div>
+<!-- Weekly Objectives Modal -->
+<div class="overlay" id="woModal" onclick="closeWOModal(event)" onkeydown="if(event.key==='Escape')closeWOModal()">
+  <div class="modal wo-modal">
+    <div class="wo-modal-hdr">
+      <button class="wo-nav-btn" onclick="woShift(-1)" title="Previous weeks">&#8592;</button>
+      <div class="wo-modal-title">Weekly Objectives</div>
+      <button class="wo-nav-btn" onclick="woShift(1)" title="Next weeks">&#8594;</button>
+    </div>
+    <div class="wo-cols" id="woCols"></div>
+  </div>
+</div>
 </body></html>
