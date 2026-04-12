@@ -781,7 +781,7 @@ function renderWkCal(){
           const eL=document.getElementById('wkcEdgeL'),eR=document.getElementById('wkcEdgeR');
           if(eL&&eR){
             const gc=document.querySelector('.wkc-goals-col'),wrap=document.querySelector('.wkc-cols-wrap');
-            if(gc&&wrap){const gr=gc.getBoundingClientRect(),wr=wrap.getBoundingClientRect();eL.style.left=(gr.left-wr.left)+'px';eR.style.right='0';}
+            if(gc&&wrap){const gr=gc.getBoundingClientRect(),wr=wrap.getBoundingClientRect();eL.style.left=(gr.left-wr.left)+'px';eR.style.right='0';eR.style.transform='';}
             eL.classList.toggle('active',dir===-1);eR.classList.toggle('active',dir===1);
           }
         }
@@ -850,12 +850,10 @@ function showWkcEdges(show){
   const eL=document.getElementById('wkcEdgeL'),eR=document.getElementById('wkcEdgeR');
   if(!eL||!eR)return;
   if(show){
-    const gc=document.querySelector('.wkc-goals-col'),wrap=document.querySelector('.wkc-cols-wrap');
-    eL.style.left='0';eL.style.right='';
-    if(gc&&wrap){const gr=gc.getBoundingClientRect(),wr=wrap.getBoundingClientRect();eR.style.left=(gr.left-wr.left-32)+'px';eR.style.right='auto';}
-    else{eR.style.left='auto';eR.style.right='0';}
+    const gc=document.querySelector('.wkc-goals-col');
+    eR.style.transform=gc?`translateX(-${gc.getBoundingClientRect().width}px)`:'';
     eL.classList.add('active');eR.classList.add('active');
-  }else{eL.style.left='';eR.style.left='auto';eR.style.right='';eL.classList.remove('active');eR.classList.remove('active');}
+  }else{eR.style.transform='';eL.classList.remove('active');eR.classList.remove('active');}
   const er=document.getElementById('wkListEdgeR');
   if(er)er.classList.toggle('active',show);
 }
