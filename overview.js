@@ -778,6 +778,7 @@ function renderWkCal(){
         }else{
           const dir=ddx<-30?-1:ddx>30?1:0;
           goalsCol.dataset.wkdir=String(dir);
+          if(dir!==0)showWkcEdges(true,'goals');
           const eL=document.getElementById('wkcEdgeL'),eR=document.getElementById('wkcEdgeR');
           if(eL&&eR){eL.classList.toggle('active',dir===-1);eR.classList.toggle('active',dir===1);}
         }
@@ -785,8 +786,7 @@ function renderWkCal(){
       const onUp=()=>{
         document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);
         _blockGoalDrag=false;chip.draggable=true;
-        const eL=document.getElementById('wkcEdgeL'),eR=document.getElementById('wkcEdgeR');
-        if(eL)eL.classList.remove('active');if(eR)eR.classList.remove('active');
+        showWkcEdges(false);
         if(mode==='vert'&&ph){
           goalsCol.insertBefore(chip,ph);ph.remove();chip.style.opacity='';
           const allChips=[...goalsCol.querySelectorAll('.chip[data-tid]')];
@@ -841,9 +841,20 @@ document.addEventListener('mouseup',()=>{
 document.addEventListener('dragstart',()=>{if(calDrag.active)clearCalDrag();});
 
 // Edge zones for dragging to next/prev week
-function showWkcEdges(show){
-  document.getElementById('wkcEdgeL').classList.toggle('active',show);
-  document.getElementById('wkcEdgeR').classList.toggle('active',show);
+// type='goals': left edge starts at goals col, right edge after goals col (default right:0)
+// type='cal' (default): left edge before Mon, right edge stops before goals col
+function showWkcEdges(show,type){
+  const eL=document.getElementById('wkcEdgeL'),eR=document.getElementById('wkcEdgeR');
+  if(!eL||!eR)return;
+  if(show){
+    const gc=document.querySelector('.wkc-goals-col'),wrap=document.querySelector('.wkc-cols-wrap');
+    if(gc&&wrap){
+      const gr=gc.getBoundingClientRect(),wr=wrap.getBoundingClientRect();
+      if(type==='goals'){eL.style.left=(gr.left-wr.left)+'px';eR.style.right='0';}
+      else{eL.style.left='0';eR.style.right=gr.width+'px';}
+    }
+  }else{eL.style.left='';eR.style.right='';}
+  eL.classList.toggle('active',show);eR.classList.toggle('active',show);
   const er=document.getElementById('wkListEdgeR');
   if(er)er.classList.toggle('active',show);
 }
