@@ -779,17 +779,14 @@ function renderWkCal(){
           const dir=ddx<-30?-1:ddx>30?1:0;
           goalsCol.dataset.wkdir=String(dir);
           const eL=document.getElementById('wkcEdgeL'),eR=document.getElementById('wkcEdgeR');
-          if(eL&&eR){
-            eL.classList.toggle('active',dir===-1);eL.classList.toggle('glow',dir===-1);
-            eR.classList.toggle('active',dir===1);eR.classList.toggle('glow',dir===1);
-          }
+          if(eL&&eR){eL.classList.toggle('active',dir===-1);eR.classList.toggle('active',dir===1);}
         }
       };
       const onUp=()=>{
         document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);
         _blockGoalDrag=false;chip.draggable=true;
         const eL=document.getElementById('wkcEdgeL'),eR=document.getElementById('wkcEdgeR');
-        if(eL){eL.classList.remove('active','glow');}if(eR){eR.classList.remove('active','glow');}
+        if(eL)eL.classList.remove('active');if(eR)eR.classList.remove('active');
         if(mode==='vert'&&ph){
           goalsCol.insertBefore(chip,ph);ph.remove();chip.style.opacity='';
           const allChips=[...goalsCol.querySelectorAll('.chip[data-tid]')];
