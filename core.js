@@ -284,10 +284,12 @@ async function syncAll(silent=false){
       st.tasks=[...merged,...localOnly];
     }
     if(shop){
+      const dbShopIds=new Set(shop.map(s=>String(s.id)));
+      const localOnlyShop=st.shopping.filter(s=>String(s.id).startsWith('l-')&&!dbShopIds.has(String(s.id)));
       if(pendingShopIds.size>0){
-        st.shopping=shop.map(sv=>{const sid=String(sv.id);if(pendingShopIds.has(sid)){const loc=st.shopping.find(x=>String(x.id)===sid);if(loc)return loc;}return sv;});
+        st.shopping=[...shop.map(sv=>{const sid=String(sv.id);if(pendingShopIds.has(sid)){const loc=st.shopping.find(x=>String(x.id)===sid);if(loc)return loc;}return sv;}),...localOnlyShop];
       } else {
-        st.shopping=shop;
+        st.shopping=[...shop,...localOnlyShop];
       }
     }
     if(trav){
