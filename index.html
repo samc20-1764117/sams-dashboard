@@ -874,7 +874,7 @@ tickClock();_updateOvTopDate();setInterval(tickClock,1000);init();
   </div>
 </div>
 <!-- Weekly Objectives Modal -->
-<div class="overlay" id="woModal" onclick="closeWOModal(event)" onkeydown="if(event.key==='Escape')closeWOModal()">
+<div class="overlay" id="woModal" style="z-index:490" onclick="closeWOModal(event)" onkeydown="if(event.key==='Escape')closeWOModal()">
   <div class="modal wo-modal">
     <div class="wo-modal-hdr">
       <button class="wo-nav-btn" onclick="woShift(-1)" title="Previous weeks">&#8592;</button>
