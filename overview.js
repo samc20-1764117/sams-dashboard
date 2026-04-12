@@ -2141,8 +2141,6 @@ function _shopOvSort(arr){
 function renderShopOv(){
   const shopSorted=_shopOvSort(st.shopping.filter(s=>!s.done));
   const container=document.getElementById('shopOv');
-  const shopTitle=document.querySelector('#shopOv')?.closest('.card')?.querySelector('.ct');
-  if(shopTitle)shopTitle.textContent=shopSorted.length?`Shopping (${shopSorted.length})`:'Shopping';
   container.style.maxHeight='';
   container.innerHTML='';
   shopSorted.forEach(s=>{
@@ -2198,9 +2196,6 @@ function renderShopOv(){
     });
     container.appendChild(el);
   });
-  const _setShopMH=()=>{const fi=container.querySelector('.ti');if(fi&&fi.offsetHeight>0)container.style.maxHeight=(4+7*fi.offsetHeight)+'px';};
-  requestAnimationFrame(_setShopMH);
-  document.fonts.ready.then(_setShopMH);
 }
 
 // ── Virtual recurring task row for This Week ─────────────────────────────────
