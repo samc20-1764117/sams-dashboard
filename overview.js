@@ -872,7 +872,9 @@ function setupWkcEdgeDrop(){
   wrap.addEventListener('dragover',e=>{
     if(!dragId)return;
     const r=wrap.getBoundingClientRect();
-    const fl=e.clientX-r.left<EDGE,fr=r.right-e.clientX<EDGE;
+    const sunCol=[...document.querySelectorAll('#wkcCols .wkc-col')].pop();
+    const sunRight=sunCol?sunCol.getBoundingClientRect().right:r.right;
+    const fl=e.clientX-r.left<EDGE,fr=e.clientX>sunRight-EDGE;
     if(fl||fr){
       e.preventDefault();
       if(edgeL)edgeL.style.opacity=fl?'1':'0';
@@ -891,7 +893,9 @@ function setupWkcEdgeDrop(){
   wrap.addEventListener('drop',async e=>{
     if(!dragId)return;
     const r=wrap.getBoundingClientRect();
-    const fl=e.clientX-r.left<EDGE,fr=r.right-e.clientX<EDGE;
+    const sunCol2=[...document.querySelectorAll('#wkcCols .wkc-col')].pop();
+    const sunRight2=sunCol2?sunCol2.getBoundingClientRect().right:r.right;
+    const fl=e.clientX-r.left<EDGE,fr=e.clientX>sunRight2-EDGE;
     if(!fl&&!fr)return;
     e.preventDefault();
     if(edgeL)edgeL.style.opacity='';
