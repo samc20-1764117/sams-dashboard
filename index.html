@@ -881,7 +881,11 @@ tickClock();_updateOvTopDate();setInterval(tickClock,1000);init();
       <div class="wo-modal-title">Weekly Objectives</div>
       <button class="wo-nav-btn" onclick="woShift(1)" title="Next weeks">&#8594;</button>
     </div>
-    <div class="wo-cols" id="woCols"></div>
+    <div class="wo-cols-wrap" id="woColsWrap">
+      <div class="wo-edge left" id="woEdgeL">‹</div>
+      <div class="wo-edge right" id="woEdgeR">›</div>
+      <div class="wo-cols" id="woCols"></div>
+    </div>
   </div>
 </div>
 </body></html>

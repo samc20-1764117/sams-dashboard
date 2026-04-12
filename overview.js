@@ -1079,81 +1079,118 @@ function renderWOModal(){
     const body=document.createElement('div');body.className='wo-col-body';body.dataset.wkOff=String(off);body.dataset.wkStart=wkStart;
     const goals=st.tasks.filter(t=>t.category==='Weekly Goals'&&t.due_date&&t.due_date.split('T')[0]>=wkStart&&t.due_date.split('T')[0]<=wkEnd)
       .sort((a,b)=>(a.goal_order??9999)-(b.goal_order??9999)||(b.important&&!b.done?1:0)-(a.important&&!a.done?1:0));
-    goals.forEach(t=>{
-      const imp=t.important&&!t.done;
-      const s=imp?IMP:{bg:'rgba(255,255,255,.82)',t:'rgba(80,80,95,.75)',b:'rgba(255,255,255,.9)'};
-      const chip=document.createElement('div');
-      chip.className='chip wo-chip';chip.dataset.tid=String(t.id);
-      chip.style.cssText=`background:${s.bg};color:${s.t};border-color:${s.b};${t.done?'opacity:.5;text-decoration:line-through;':''}width:100%;box-sizing:border-box;cursor:grab`;
-      chip.innerHTML=`<span class="tn" style="overflow:hidden;text-overflow:ellipsis;flex:1">${t.name}</span>`;
-      chip.addEventListener('click',e=>{e.stopPropagation();openTModal(t.id);});
-      chip.addEventListener('contextmenu',e=>{e.preventDefault();e.stopPropagation();showGoalCtx(e,String(t.id));});
-      // Drag to move between columns
-      chip.addEventListener('mousedown',ev=>{
-        if(ev.button!==0)return;
-        ev.preventDefault();ev.stopPropagation();
-        let startX=ev.clientX,startY=ev.clientY,moved=false,ph=null,srcBody=body,srcTid=String(t.id);
-        let clone=null;
-        const onMove=mv=>{
-          const dx=mv.clientX-startX,dy=mv.clientY-startY;
-          if(!moved&&Math.hypot(dx,dy)<8)return;
-          if(!moved){
-            moved=true;
-            chip.style.opacity='.3';
-            clone=chip.cloneNode(true);
-            clone.style.cssText+=';position:fixed;pointer-events:none;z-index:9999;opacity:.85;cursor:grabbing;min-width:80px';
-            clone.style.left=(ev.clientX-40)+'px';clone.style.top=(ev.clientY-10)+'px';
-            document.body.appendChild(clone);
-            ph=document.createElement('div');ph.className='wo-ph';ph.style.cssText='height:20px;margin:2px 0;border-radius:5px;background:rgba(109,95,230,.15);border:1.5px dashed rgba(109,95,230,.35)';
-            srcBody.insertBefore(ph,chip);
-          }
-          if(clone){clone.style.left=(mv.clientX-40)+'px';clone.style.top=(mv.clientY-10)+'px';}
-          // Find which column body we're over
-          const allBodies=[...document.querySelectorAll('.wo-col-body')];
-          let overBody=null;
-          for(const b of allBodies){const r=b.getBoundingClientRect();if(mv.clientX>=r.left&&mv.clientX<=r.right&&mv.clientY>=r.top&&mv.clientY<=r.bottom){overBody=b;break;}}
-          if(overBody){
-            // Remove ph from wherever it is, insert in right position
-            const chips=[...overBody.querySelectorAll('.wo-chip:not([data-tid="'+srcTid+'"])')];
-            let inserted=false;
-            for(const c of chips){const rc=c.getBoundingClientRect();if(mv.clientY<rc.top+rc.height/2){overBody.insertBefore(ph,c);inserted=true;break;}}
-            if(!inserted)overBody.appendChild(ph);
-          }
-        };
-        const onUp=async uv=>{
-          document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);
-          if(clone)clone.remove();
-          chip.style.opacity='';
-          if(!moved||!ph){if(ph)ph.remove();return;}
-          const destBody=ph.parentElement;
-          if(!destBody){ph.remove();return;}
-          const destOff=parseInt(destBody.dataset.wkOff);
-          const destWkStart=destBody.dataset.wkStart;
-          ph.replaceWith(chip);
-          const srcOff=parseInt(srcBody.dataset.wkOff);
-          if(destOff!==srcOff){
-            // Move to a different week
-            const nd=new Date(destWkStart+'T12:00');
-            const nDs=d2s(nd);
-            const prev=t.due_date;t.due_date=nDs;save();
-            sbReqNullable('PATCH','tasks',{due_date:nDs},`?id=eq.${t.id}`);
-            pushUndo(()=>{t.due_date=prev;save();renderAll();renderWkCal();sbReqNullable('PATCH','tasks',{due_date:prev},`?id=eq.${t.id}`);},'Moved goal week');
-            renderWkCal();renderWkSummary();
-          }
-          // Update goal_order for destination column
-          const allChips=[...destBody.querySelectorAll('.wo-chip[data-tid]')];
-          allChips.forEach((c,i)=>{const tk=st.tasks.find(x=>String(x.id)===c.dataset.tid);if(tk){tk.goal_order=i;sbReqNullable('PATCH','tasks',{goal_order:i},`?id=eq.${tk.id}`);}});
-          save();
-        };
-        document.addEventListener('mousemove',onMove);document.addEventListener('mouseup',onUp);
-      });
-      body.appendChild(chip);
-    });
-    // Double-click empty area to add new goal for this week
+    goals.forEach(t=>{ body.appendChild(_woMakeChip(t,body)); });
     body.addEventListener('dblclick',e=>{if(e.target===body)openQA('wkc',null,wkStart,'Weekly Goals');});
     col.appendChild(body);
     cols.appendChild(col);
   }
+}
+function _woMakeChip(t,body){
+  const imp=t.important&&!t.done;
+  const s=imp?IMP:{bg:'rgba(255,255,255,.82)',t:'rgba(80,80,95,.75)',b:'rgba(255,255,255,.9)'};
+  const chip=document.createElement('div');
+  chip.className='chip wo-chip';chip.dataset.tid=String(t.id);
+  chip.style.cssText=`background:${s.bg};color:${s.t};border-color:${s.b};${t.done?'opacity:.5;text-decoration:line-through;':''}width:100%;box-sizing:border-box;cursor:grab`;
+  chip.innerHTML=`<span class="tn" style="overflow:hidden;text-overflow:ellipsis;flex:1">${t.name}</span>`;
+  chip.addEventListener('click',e=>{e.stopPropagation();openTModal(t.id);});
+  chip.addEventListener('contextmenu',e=>{e.preventDefault();e.stopPropagation();showGoalCtx(e,String(t.id));});
+  chip.addEventListener('mousedown',ev=>{
+    if(ev.button!==0)return;
+    ev.preventDefault();ev.stopPropagation();
+    const srcBody=body,srcTid=String(t.id);
+    let startX=ev.clientX,startY=ev.clientY,mode=null,ph=null,clone=null;
+    const phStyle='height:20px;margin:2px 0;border-radius:5px;background:rgba(109,95,230,.15);border:1.5px dashed rgba(109,95,230,.35)';
+    const eL=document.getElementById('woEdgeL'),eR=document.getElementById('woEdgeR');
+    const onMove=mv=>{
+      const dx=mv.clientX-startX,dy=mv.clientY-startY;
+      if(!mode&&Math.hypot(dx,dy)<15)return;
+      if(!mode){
+        mode=Math.abs(dy)>=Math.abs(dx)?'vert':'horiz';
+        chip.style.opacity='.3';
+        ph=document.createElement('div');ph.className='wo-ph';ph.style.cssText=phStyle;
+        srcBody.insertBefore(ph,chip);
+        if(mode==='horiz'){
+          clone=chip.cloneNode(true);
+          clone.style.cssText+=';position:fixed;pointer-events:none;z-index:9999;opacity:.85;cursor:grabbing';
+          document.body.appendChild(clone);
+        }
+      }
+      if(mode==='vert'){
+        const chips=[...srcBody.querySelectorAll('.wo-chip:not([data-tid="'+srcTid+'"])')];
+        let ins=false;
+        for(const c of chips){const rc=c.getBoundingClientRect();if(mv.clientY<rc.top+rc.height/2){srcBody.insertBefore(ph,c);ins=true;break;}}
+        if(!ins)srcBody.appendChild(ph);
+      } else {
+        clone.style.left=(mv.clientX-40)+'px';clone.style.top=(mv.clientY-10)+'px';
+        const wrap=document.getElementById('woColsWrap');
+        const wr=wrap?wrap.getBoundingClientRect():null;
+        const onLeft=wr&&mv.clientX<wr.left+44;
+        const onRight=wr&&mv.clientX>wr.right-44;
+        if(eL)eL.classList.toggle('active',onLeft);
+        if(eR)eR.classList.toggle('active',onRight);
+        if(!onLeft&&!onRight){
+          const allBodies=[...document.querySelectorAll('.wo-col-body')];
+          let overBody=null;
+          for(const b of allBodies){const r=b.getBoundingClientRect();if(mv.clientX>=r.left&&mv.clientX<=r.right&&mv.clientY>=r.top&&mv.clientY<=r.bottom){overBody=b;break;}}
+          if(overBody){
+            const chips=[...overBody.querySelectorAll('.wo-chip:not([data-tid="'+srcTid+'"])')];
+            let ins=false;
+            for(const c of chips){const rc=c.getBoundingClientRect();if(mv.clientY<rc.top+rc.height/2){overBody.insertBefore(ph,c);ins=true;break;}}
+            if(!ins)overBody.appendChild(ph);
+          }
+        }
+      }
+    };
+    const onUp=async uv=>{
+      document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);
+      if(clone)clone.remove();
+      chip.style.opacity='';
+      if(eL)eL.classList.remove('active');
+      if(eR)eR.classList.remove('active');
+      if(!mode){return;}
+      if(mode==='vert'){
+        if(!ph){return;}
+        srcBody.insertBefore(chip,ph);ph.remove();
+        const allChips=[...srcBody.querySelectorAll('.wo-chip[data-tid]')];
+        allChips.forEach((c,i)=>{const tk=st.tasks.find(x=>String(x.id)===c.dataset.tid);if(tk){tk.goal_order=i;sbReqNullable('PATCH','tasks',{goal_order:i},`?id=eq.${tk.id}`);}});
+        save();return;
+      }
+      // horiz mode
+      const wrap=document.getElementById('woColsWrap');
+      const wr=wrap?wrap.getBoundingClientRect():null;
+      const onLeft=wr&&uv.clientX<wr.left+44;
+      const onRight=wr&&uv.clientX>wr.right-44;
+      if(onLeft||onRight){
+        if(ph)ph.remove();
+        const dir=onLeft?-1:1;
+        const targetOff=(onLeft?wkOff+_woViewOff-1:wkOff+_woViewOff+5);
+        const{mon:tMon}=getWkBounds(targetOff);
+        const nDs=d2s(tMon);const prev=t.due_date;t.due_date=nDs;save();
+        sbReqNullable('PATCH','tasks',{due_date:nDs},`?id=eq.${t.id}`);
+        pushUndo(()=>{t.due_date=prev;save();renderAll();renderWkCal();sbReqNullable('PATCH','tasks',{due_date:prev},`?id=eq.${t.id}`);},'Moved goal week');
+        renderWkCal();renderWkSummary();
+        _woViewOff+=dir;renderWOModal();
+      } else {
+        if(!ph){return;}
+        const destBody=ph.parentElement;
+        if(!destBody){ph.remove();return;}
+        const destOff=parseInt(destBody.dataset.wkOff);
+        const destWkStart=destBody.dataset.wkStart;
+        ph.replaceWith(chip);
+        if(destOff!==parseInt(srcBody.dataset.wkOff)){
+          const nDs=destWkStart;const prev=t.due_date;t.due_date=nDs;save();
+          sbReqNullable('PATCH','tasks',{due_date:nDs},`?id=eq.${t.id}`);
+          pushUndo(()=>{t.due_date=prev;save();renderAll();renderWkCal();sbReqNullable('PATCH','tasks',{due_date:prev},`?id=eq.${t.id}`);},'Moved goal week');
+          renderWkCal();renderWkSummary();
+        }
+        const allChips=[...destBody.querySelectorAll('.wo-chip[data-tid]')];
+        allChips.forEach((c,i)=>{const tk=st.tasks.find(x=>String(x.id)===c.dataset.tid);if(tk){tk.goal_order=i;sbReqNullable('PATCH','tasks',{goal_order:i},`?id=eq.${tk.id}`);}});
+        save();
+      }
+    };
+    document.addEventListener('mousemove',onMove);document.addEventListener('mouseup',onUp);
+  });
+  return chip;
 }
 function onWkcWheel(e){
   if(Math.abs(e.deltaX)<8&&!e.shiftKey)return;
