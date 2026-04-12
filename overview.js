@@ -850,8 +850,10 @@ function showWkcEdges(show){
   const eL=document.getElementById('wkcEdgeL'),eR=document.getElementById('wkcEdgeR');
   if(!eL||!eR)return;
   if(show){
-    const gc=document.querySelector('.wkc-goals-col');
-    eR.style.transform=gc?`translateX(-${gc.getBoundingClientRect().width}px)`:'';
+    const wrap=document.querySelector('.wkc-cols-wrap');
+    const sunCol=[...document.querySelectorAll('#wkcCols .wkc-col')].pop();
+    if(wrap&&sunCol){const sr=sunCol.getBoundingClientRect(),wr=wrap.getBoundingClientRect();eR.style.transform=`translateX(${sr.right-wr.right}px)`;}
+    else eR.style.transform='';
     eL.classList.add('active');eR.classList.add('active');
   }else{eR.style.transform='';eL.classList.remove('active');eR.classList.remove('active');}
   const er=document.getElementById('wkListEdgeR');
@@ -870,11 +872,7 @@ function setupWkcEdgeDrop(){
   wrap.addEventListener('dragover',e=>{
     if(!dragId)return;
     const r=wrap.getBoundingClientRect();
-    const gc=document.querySelector('.wkc-goals-col');
-    const gcW=gc?gc.getBoundingClientRect().width:0;
-    const rightBound=r.right-gcW; // x of Sunday/goals boundary
-    const fl=e.clientX-r.left<EDGE;
-    const fr=e.clientX<=rightBound&&rightBound-e.clientX<EDGE;
+    const fl=e.clientX-r.left<EDGE,fr=r.right-e.clientX<EDGE;
     if(fl||fr){
       e.preventDefault();
       if(edgeL)edgeL.style.opacity=fl?'1':'0';
@@ -893,8 +891,7 @@ function setupWkcEdgeDrop(){
   wrap.addEventListener('drop',async e=>{
     if(!dragId)return;
     const r=wrap.getBoundingClientRect();
-    const gc2=document.querySelector('.wkc-goals-col');const gcW2=gc2?gc2.getBoundingClientRect().width:0;
-    const fl=e.clientX-r.left<EDGE,fr=e.clientX<=(r.right-gcW2)&&(r.right-gcW2)-e.clientX<EDGE;
+    const fl=e.clientX-r.left<EDGE,fr=r.right-e.clientX<EDGE;
     if(!fl&&!fr)return;
     e.preventDefault();
     if(edgeL)edgeL.style.opacity='';
