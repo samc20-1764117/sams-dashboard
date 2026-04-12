@@ -799,7 +799,7 @@ function renderMoCal(){
     // Goals This Week cell
     const wkMonDs=d2s(wkMon);
     const wkEndDate=new Date(wkMon);wkEndDate.setDate(wkMon.getDate()+6);const wkEndDs=d2s(wkEndDate);
-    const goalTasks=st.tasks.filter(t=>t.category==='Weekly Goals'&&t.due_date&&t.due_date.split('T')[0]>=wkMonDs&&t.due_date.split('T')[0]<=wkEndDs).sort((a,b)=>(a.goal_order??9999)-(b.goal_order??9999)||(b.important&&!b.done?1:0)-(a.important&&!a.done?1:0));
+    const goalTasks=st.tasks.filter(t=>t.category==='Weekly Goals'&&t.due_date&&t.due_date.split('T')[0]>=wkMonDs&&t.due_date.split('T')[0]<=wkEndDs).sort((a,b)=>{const aI=a.important&&!a.done?0:1,bI=b.important&&!b.done?0:1;if(aI!==bI)return aI-bI;return(a.goal_order??9999)-(b.goal_order??9999);});
     const goalsCell=document.createElement('div');goalsCell.className='mcell mo-goals-cell';goalsCell.dataset.wkmon=wkMonDs;
     const gBody=document.createElement('div');gBody.className='mcell-body';
     const _gCellH=Math.max(70,(window.innerHeight*0.94-100)/4-4);

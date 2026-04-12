@@ -356,6 +356,8 @@ function renderWkCal(){
     const colEls=[...document.querySelectorAll('#wkcCols .wkc-col')];
     if(colEls.length!==7)return;
     const wrapRect=wrap.getBoundingClientRect();
+    const headEl=document.getElementById('wkcHead');
+    const headH=headEl?headEl.offsetHeight:0;
     const today2=tod();
 
     // Lane tracking: for each column, which row-lanes are occupied
@@ -374,7 +376,7 @@ function renderWkCal(){
       const lane=pickLane(si,ei);
       for(let i=si;i<=ei;i++)colLanes[i].add(lane);
       const ban=document.createElement('div');ban.className='wkc-banner';
-      ban.style.cssText=`left:${left+2}px;top:${2+lane*22}px;width:${right-left-4}px;background:${s.bg};color:${s.t};border-color:${s.b}${isPast?';opacity:.35':''}`;
+      ban.style.cssText=`left:${left+2}px;top:${headH+2+lane*22}px;width:${right-left-4}px;background:${s.bg};color:${s.t};border-color:${s.b}${isPast?';opacity:.35':''}`;
       ban.innerHTML=label;
       if(onClick)ban.addEventListener('click',onClick);
       bannerEl.appendChild(ban);
@@ -428,7 +430,7 @@ function renderWkCal(){
     // Set banner container height based on lanes used (paddingTop already set synchronously)
     let maxLane=-1;
     colLanes.forEach(lanes=>{const ml=lanes.size?Math.max(...lanes):-1;if(ml>maxLane)maxLane=ml;});
-    if(maxLane>=0)bannerEl.style.height=`${(maxLane+1)*22+4}px`;
+    if(maxLane>=0)bannerEl.style.height=`${headH+(maxLane+1)*22+4}px`;
   },10);
 
   // ── Render per-day columns ───────────────────────────────────────────────────
@@ -725,7 +727,7 @@ function renderWkCal(){
     if(e.target.classList.contains('chip')||e.target.closest('.chip'))return;
     openQA('wkc',null,d2s(getDayDate(0)),'Weekly Goals');
   });
-  const goalsUndone=st.tasks.filter(t=>t.category==='Weekly Goals'&&!t.done&&t.due_date&&t.due_date.split('T')[0]>=wkStart&&t.due_date.split('T')[0]<=wkEnd).sort((a,b)=>(a.goal_order??9999)-(b.goal_order??9999)||(b.important?1:0)-(a.important?1:0));
+  const goalsUndone=st.tasks.filter(t=>t.category==='Weekly Goals'&&!t.done&&t.due_date&&t.due_date.split('T')[0]>=wkStart&&t.due_date.split('T')[0]<=wkEnd).sort((a,b)=>{const aI=a.important?0:1,bI=b.important?0:1;if(aI!==bI)return aI-bI;return(a.goal_order??9999)-(b.goal_order??9999);});
   const goalsDone=st.tasks.filter(t=>t.category==='Weekly Goals'&&t.done&&t.due_date&&t.due_date.split('T')[0]>=wkStart&&t.due_date.split('T')[0]<=wkEnd).sort((a,b)=>(a.goal_order??9999)-(b.goal_order??9999));
   [...goalsUndone,...goalsDone].forEach(t=>{
     const imp=t.important&&!t.done;
@@ -1078,7 +1080,7 @@ function renderWOModal(){
     col.appendChild(hdr);
     const body=document.createElement('div');body.className='wo-col-body';body.dataset.wkOff=String(off);body.dataset.wkStart=wkStart;
     const goals=st.tasks.filter(t=>t.category==='Weekly Goals'&&t.due_date&&t.due_date.split('T')[0]>=wkStart&&t.due_date.split('T')[0]<=wkEnd)
-      .sort((a,b)=>(a.goal_order??9999)-(b.goal_order??9999)||(b.important&&!b.done?1:0)-(a.important&&!a.done?1:0));
+      .sort((a,b)=>{const aI=a.important&&!a.done?0:1,bI=b.important&&!b.done?0:1;if(aI!==bI)return aI-bI;return(a.goal_order??9999)-(b.goal_order??9999);});
     goals.forEach(t=>{ body.appendChild(_woMakeChip(t,body)); });
     body.addEventListener('dblclick',e=>{if(e.target===body)openQA('wkc',null,wkStart,'Weekly Goals');});
     col.appendChild(body);
