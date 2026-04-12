@@ -2141,6 +2141,8 @@ function _shopOvSort(arr){
 function renderShopOv(){
   const shopSorted=_shopOvSort(st.shopping.filter(s=>!s.done));
   const container=document.getElementById('shopOv');
+  const shopTitle=document.querySelector('#shopOv')?.closest('.card')?.querySelector('.ct');
+  if(shopTitle)shopTitle.textContent=shopSorted.length?`Shopping (${shopSorted.length})`:'Shopping';
   container.style.maxHeight='';
   container.innerHTML='';
   shopSorted.forEach(s=>{

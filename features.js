@@ -62,7 +62,7 @@ async function submitQA(){
     pushUndo(()=>{const rid=shopServerId||s.id;st.shopping=st.shopping.filter(x=>String(x.id)!==String(rid));renderAll();if(shopServerId)sbReq('DELETE','shopping_list',null,`?id=eq.${shopServerId}`);},'Added item');
     const sv=await sbReq('POST','shopping_list',{name:n,store,done:false});
     if(sv&&sv[0]){const i=st.shopping.findIndex(x=>x.id===s.id);if(i>-1)st.shopping[i]=sv[0];shopServerId=String(sv[0].id);save();}
-    return;
+    renderShopOv();return;
   }
   if(qaCtx==='rec'){openWrRuleAddModal();return;}
   const cat=document.getElementById('qaCat')?.value||'Home';
