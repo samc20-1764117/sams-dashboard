@@ -1132,8 +1132,9 @@ function _woMakeChip(t,body){
         ph=document.createElement('div');ph.className='wo-ph';ph.style.cssText=phStyle;
         srcBody.insertBefore(ph,chip);
         if(mode==='horiz'){
+          const cw=chip.getBoundingClientRect().width;
           clone=chip.cloneNode(true);
-          clone.style.cssText+=';position:fixed;pointer-events:none;z-index:9999;opacity:.85;cursor:grabbing';
+          clone.style.cssText+=`;position:fixed;pointer-events:none;z-index:9999;opacity:.85;cursor:grabbing;width:${cw}px`;
           document.body.appendChild(clone);
         }
       }
