@@ -777,13 +777,19 @@ function renderWkCal(){
           if(!inserted&&chips.length)chips[chips.length-1].after(ph);
         }else{
           const dir=ddx<-30?-1:ddx>30?1:0;
-          goalsCol.style.outline=dir?'2px solid rgba(150,150,160,.4)':'';
           goalsCol.dataset.wkdir=String(dir);
+          const eL=document.getElementById('wkcEdgeL'),eR=document.getElementById('wkcEdgeR');
+          if(eL&&eR){
+            eL.classList.toggle('active',dir===-1);eL.classList.toggle('glow',dir===-1);
+            eR.classList.toggle('active',dir===1);eR.classList.toggle('glow',dir===1);
+          }
         }
       };
       const onUp=()=>{
         document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);
-        _blockGoalDrag=false;chip.draggable=true;goalsCol.style.outline='';
+        _blockGoalDrag=false;chip.draggable=true;
+        const eL=document.getElementById('wkcEdgeL'),eR=document.getElementById('wkcEdgeR');
+        if(eL){eL.classList.remove('active','glow');}if(eR){eR.classList.remove('active','glow');}
         if(mode==='vert'&&ph){
           goalsCol.insertBefore(chip,ph);ph.remove();chip.style.opacity='';
           const allChips=[...goalsCol.querySelectorAll('.chip[data-tid]')];
