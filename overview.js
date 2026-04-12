@@ -1121,7 +1121,7 @@ function _woMakeChip(t,body){
     ev.preventDefault();ev.stopPropagation();
     const srcBody=body,srcTid=String(t.id);
     let startX=ev.clientX,startY=ev.clientY,mode=null,ph=null,clone=null;
-    const phStyle='height:20px;margin:2px 0;border-radius:5px;background:rgba(109,95,230,.15);border:1.5px dashed rgba(109,95,230,.35)';
+    const phStyle='height:20px;margin:2px 0;border-radius:5px;background:rgba(255,255,255,.25);border:1.5px dashed rgba(255,255,255,.7)';
     const eL=document.getElementById('woEdgeL'),eR=document.getElementById('woEdgeR');
     const onMove=mv=>{
       const dx=mv.clientX-startX,dy=mv.clientY-startY;
