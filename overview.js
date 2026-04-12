@@ -781,7 +781,7 @@ function renderWkCal(){
           const eL=document.getElementById('wkcEdgeL'),eR=document.getElementById('wkcEdgeR');
           if(eL&&eR){
             const gc=document.querySelector('.wkc-goals-col'),wrap=document.querySelector('.wkc-cols-wrap');
-            if(gc&&wrap){const gr=gc.getBoundingClientRect(),wr=wrap.getBoundingClientRect();eL.style.left=(gr.left-wr.left)+'px';eR.style.right='0';eR.style.transform='';}
+            if(gc&&wrap){const gr=gc.getBoundingClientRect(),wr=wrap.getBoundingClientRect();eL.style.left=(gr.left-wr.left)+'px';eR.style.left='';eR.style.right='';eR.style.transform='';}
             eL.classList.toggle('active',dir===-1);eR.classList.toggle('active',dir===1);
           }
         }
@@ -852,10 +852,10 @@ function showWkcEdges(show){
   if(show){
     const wrap=document.querySelector('.wkc-cols-wrap');
     const sunCol=[...document.querySelectorAll('#wkcCols .wkc-col')].pop();
-    if(wrap&&sunCol){const sr=sunCol.getBoundingClientRect(),wr=wrap.getBoundingClientRect();eR.style.transform=`translateX(${sr.right-wr.right}px)`;}
-    else eR.style.transform='';
+    if(wrap&&sunCol){const sr=sunCol.getBoundingClientRect(),wr=wrap.getBoundingClientRect();eR.style.left=(sr.right-wr.left-32)+'px';eR.style.right='auto';}
+    else{eR.style.left='';eR.style.right='';}
     eL.classList.add('active');eR.classList.add('active');
-  }else{eR.style.transform='';eL.classList.remove('active');eR.classList.remove('active');}
+  }else{eR.style.left='';eR.style.right='';eL.classList.remove('active');eR.classList.remove('active');}
   const er=document.getElementById('wkListEdgeR');
   if(er)er.classList.toggle('active',show);
 }

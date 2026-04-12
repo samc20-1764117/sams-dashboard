@@ -381,7 +381,8 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 .wkc-edge{position:absolute;top:0;bottom:0;width:32px;z-index:10;display:flex;align-items:center;justify-content:center;pointer-events:none;transition:background .15s;opacity:0}
 .wkc-edge.active{opacity:1}
 .wkc-edge.left{left:0;background:linear-gradient(to right,rgba(109,95,230,.12),transparent)}
-.wkc-edge.right{right:0;background:linear-gradient(to left,rgba(109,95,230,.12),transparent)}
+.wkc-edge.right{background:linear-gradient(to left,rgba(109,95,230,.12),transparent)}
+#wkcEdgeR{right:0}
 .wkc-cols-wrap{flex:1;position:relative;overflow:hidden;display:flex;flex-direction:column;padding-top:0}
 .wk-list-edge{position:absolute;top:0;bottom:0;width:36px;z-index:10;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:0;transition:opacity .15s;font-size:15px;font-weight:700;color:var(--accent);cursor:pointer}
 .wk-list-edge.active{opacity:1;pointer-events:all}
