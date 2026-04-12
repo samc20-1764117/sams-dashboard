@@ -1493,7 +1493,7 @@ function renderRecOv(){
   const{mon,sun}=getWkBounds(wrRecOff);
   const lbl=document.getElementById('wrRecWkLbl');
   if(lbl){
-    const _lnk=`<a href="#weekly" onclick="event.preventDefault();showPage('weekly')" class="btn btn-ghost btn-xs" style="text-decoration:none;align-self:center">`;
+    const _lnk=`<a href="#weekly" onclick="event.preventDefault();showPage('weekly')" class="btn btn-ghost btn-xs" style="text-decoration:none;align-self:center;background:rgba(255,255,255,.9);color:var(--text);border-color:rgba(210,205,228,.6)">`;
     if(wrRecOff===0){lbl.innerHTML=_lnk+'Weekly Reset</a>';}
     else{const fmt=d=>d.toLocaleDateString('en-US',{month:'short',day:'numeric'});lbl.innerHTML=_lnk+fmt(mon)+' – '+fmt(sun)+'</a>';}
   }
@@ -2153,7 +2153,7 @@ function renderShopOv(){
     el.innerHTML=
       `<label class="chk-wrap"><input type="checkbox" class="chk" style="width:11px;height:11px"${s.done?' checked':''}></label>`+
       `<span class="tn">${escHtml(s.name)}</span>`+
-      `<span class="cpill" style="background:rgba(241,245,249,.9);color:#64748b;border-color:rgba(148,163,184,.25);flex-shrink:0">${escHtml(s.store||'')}</span>`+
+      `<span class="cpill" style="background:none;color:#94a3b8;border:none;box-shadow:none;flex-shrink:0">${escHtml(s.store||'')}</span>`+
       `<button class="delbtn">✕</button>`;
     el.addEventListener('click',e=>tiClickShop(e,s.id));
     el.addEventListener('dblclick',e=>tiDblShop(e,s.id));
