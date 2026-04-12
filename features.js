@@ -2198,9 +2198,12 @@ function selTask(e,id){
     // Collect ordered ids from whatever context we're in
     let ids=[];
     const wkcCol=e.currentTarget.closest('.wkc-col');
+    const woCol=e.currentTarget.closest('.wo-col');
     const moCal=e.currentTarget.closest('#mCells,#recMoCells');
     const list=e.currentTarget.closest('.tlist,.kol-body');
-    if(wkcCol){
+    if(woCol){
+      ids=[...woCol.querySelectorAll('.chip[data-tid]')].map(el=>el.dataset.tid);
+    } else if(wkcCol){
       // Weekly calendar: all chips in this column
       ids=[...wkcCol.querySelectorAll('.chip[data-tid]')].map(el=>el.dataset.tid);
     } else if(moCal){
