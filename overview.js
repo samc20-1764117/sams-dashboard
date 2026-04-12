@@ -851,10 +851,11 @@ function showWkcEdges(show){
   if(!eL||!eR)return;
   if(show){
     const gc=document.querySelector('.wkc-goals-col'),wrap=document.querySelector('.wkc-cols-wrap');
-    eL.style.left='0';
-    eR.style.right=(gc&&wrap)?gc.getBoundingClientRect().width+'px':'0';
+    eL.style.left='0';eL.style.right='';
+    if(gc&&wrap){const gr=gc.getBoundingClientRect(),wr=wrap.getBoundingClientRect();eR.style.left=(gr.left-wr.left-32)+'px';eR.style.right='auto';}
+    else{eR.style.left='auto';eR.style.right='0';}
     eL.classList.add('active');eR.classList.add('active');
-  }else{eL.style.left='';eR.style.right='';eL.classList.remove('active');eR.classList.remove('active');}
+  }else{eL.style.left='';eR.style.left='auto';eR.style.right='';eL.classList.remove('active');eR.classList.remove('active');}
   const er=document.getElementById('wkListEdgeR');
   if(er)er.classList.toggle('active',show);
 }
