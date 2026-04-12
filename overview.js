@@ -468,7 +468,7 @@ function renderWkCal(){
         tvDragEnd=di;
         highlightTvDrag(dates);
       } else {
-        col.classList.add('drop-here');showWkcEdges(false);
+        col.classList.add('drop-here');const _eL=document.getElementById('wkcEdgeL'),_eR=document.getElementById('wkcEdgeR');if(_eL)_eL.classList.remove('active');if(_eR)_eR.classList.remove('active');
       }
     });
     col.addEventListener('dragleave',()=>col.classList.remove('drop-here'));
@@ -852,8 +852,8 @@ function showWkcEdges(show){
   if(show){
     const wrap=document.querySelector('.wkc-cols-wrap');
     const sunCol=[...document.querySelectorAll('#wkcCols .wkc-col')].pop();
-    if(wrap&&sunCol){const sr=sunCol.getBoundingClientRect(),wr=wrap.getBoundingClientRect();const lv=(sr.right-wr.left-32);console.log('wkcEdgeR left:',lv,'sunRight:',sr.right,'wrapLeft:',wr.left,'sunCol:',sunCol);eR.style.left=lv+'px';eR.style.right='auto';}
-    else{eR.style.left='';eR.style.right='';console.log('wkcEdgeR: no wrap or sunCol',wrap,sunCol);}
+    if(wrap&&sunCol){const sr=sunCol.getBoundingClientRect(),wr=wrap.getBoundingClientRect();eR.style.left=(sr.right-wr.left-32)+'px';eR.style.right='auto';}
+    else{eR.style.left='';eR.style.right='';}
     eL.classList.add('active');eR.classList.add('active');
   }else{eR.style.left='';eR.style.right='';eL.classList.remove('active');eR.classList.remove('active');}
   const er=document.getElementById('wkListEdgeR');
