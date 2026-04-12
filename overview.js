@@ -2195,7 +2195,7 @@ function renderShopOv(){
     });
     container.appendChild(el);
   });
-  const _setShopMH=()=>{const fi=container.querySelector('.ti');if(fi)container.style.maxHeight=(4+7*fi.offsetHeight)+'px';};
+  const _setShopMH=()=>{const fi=container.querySelector('.ti');if(fi&&fi.offsetHeight>0)container.style.maxHeight=(4+7*fi.offsetHeight)+'px';};
   requestAnimationFrame(_setShopMH);
   document.fonts.ready.then(_setShopMH);
 }
