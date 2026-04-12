@@ -15,11 +15,13 @@
 - **Category**: `'Weekly Goals'`. In `KCATS` and `_CAT_OPT_LIST`. Not overdue. Not in Today list, timeblock, overdue banner, unassigned popup.
 - **Scoping**: tasks belong to a week via `due_date` (any Mon–Sun date). Shown only in Goals column and monthly cal Goals column.
 - **Weekly cal Goals column**: 8th column (`.wkc-goals-col`) after Sunday. Header `.wkc-goals-h` (bottom-aligned). Divider: `2px solid rgba(255,255,255,.88)`. Background: `rgba(255,255,255,.18)`.
-- **Sort order**: important+undone tasks first in both weekly cal (`goalsUndone` sorted before `goalsDone` forEach) and monthly cal goals cell.
+- **Sort order**: `goal_order` (DB col, integer) first, then important+undone. Both weekly cal and monthly cal goals cell. PATCH `goal_order` after reorder.
 - **Chip styling**: `background:rgba(255,255,255,.82);color:rgba(80,80,95,.75);border-color:rgba(255,255,255,.9)` + `backdrop-filter:blur(8px);box-shadow:inset 0 1px 0 rgba(255,255,255,.6)`. **IMP override**: when `t.important && !t.done`, use IMP yellow — CSS must NOT have `!important` on color/border.
 - **Cannot drag to day columns**: dragId `'wkgoal::'+id`; day col dragover returns early for this prefix.
-- **Move to different week**: (1) drag left/right edge ±7 days; (2) right-click→`showGoalCtx`→"← Prev"/"→ Next"/"Custom…" via `moveGoalWeeks(taskId,delta)`; (3) monthly cal Goals cell drag (`wkgoal-mo::taskId::srcWkMonDs`).
+- **Chip mousedown drag** (`_blockGoalDrag` flag, `draggable=false` on mousedown): mode locked at 15px movement. **Vert** = reorder (`goal_order`), placeholder div technique. **Horiz** = move week (±7 days to `due_date`, `shiftWk(dir)`). Edge indicators set directly (not via `showWkcEdges`): `eL.style.left=(goalsColLeft-wrapLeft)+'px'`, `eR.style.left/right/transform=''` (default `right:0`).
+- **Move to different week**: (1) chip horiz drag; (2) right-click→`showGoalCtx`→"← Prev"/"→ Next"/"Custom…" via `moveGoalWeeks(taskId,delta)`; (3) monthly cal Goals cell drag (`wkgoal-mo::taskId::srcWkMonDs`).
 - **`openQA` default category**: `ctx==='wkc'` + `kcat` provided → uses `kcat`, not 'Home'.
+- **Week-nav edge indicators** (`#wkcEdgeL`/`#wkcEdgeR`, `.wkc-edge.left/.right`): `showWkcEdges(true)` called from `dStart` (native drag start). Positions `eR` via `style.left=(sundayRight-wrapLeft-32)+'px'` + `style.right='auto'` (overrides CSS `right:0`) so it overlaps Sunday's right 32px. Trigger zone: 44px from Sunday's right edge (`e.clientX > sunRight-44`) in both `dragover` and `drop` on `#wkcWrap`. Col `dragover` guard also uses Sunday's right edge — returns early if `e.clientX > sunRight-44` so wrap handles it. **Critical**: col dragover must only remove `.active` (not call `showWkcEdges(false)`) — calling `showWkcEdges(false)` clears `style.left` causing indicator to revert to goals col position.
 
 ### Recurring Tasks Page (`features.js`, `page-weekly`)
 Two-col grid: WR left, non-WR right. 4 cadence groups each. WR: `renderRtWrGroup`. Non-WR: `renderRtGroup`. `OTHER_CADS=['quarterly','biannual','annual']`.
