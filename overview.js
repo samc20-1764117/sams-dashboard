@@ -460,7 +460,7 @@ function renderWkCal(){
     col.addEventListener('dragover',e=>{
       // Skip if cursor is in edge zone — let wkcWrap handle it
       const wr=document.getElementById('wkcWrap');
-      if(wr){const rr=wr.getBoundingClientRect();if(e.clientX-rr.left<44||rr.right-e.clientX<44){col.classList.remove('drop-here');return;}}
+      if(wr){const rr=wr.getBoundingClientRect();const _sun=[...document.querySelectorAll('#wkcCols .wkc-col')].pop();const _sunR=_sun?_sun.getBoundingClientRect().right:rr.right;if(e.clientX-rr.left<44||e.clientX>_sunR-44){col.classList.remove('drop-here');return;}}
       if(dragId&&dragId.startsWith('wkgoal::'))return;
       e.preventDefault();
       if(tvDragStart!==null){
