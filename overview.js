@@ -607,8 +607,8 @@ function renderWkCal(){
     const wrRulesForDay=st.wrRules.filter(r=>r._dateOverrides&&r._dateOverrides[wkKey2]===ds&&!isDoneWRRule(r.id,wkKey2)&&!(st.wrOverrides||[]).some(o=>String(o.rule_id)===String(r.id)&&o.wk_key===wkKey2&&o.override_type==='skip')).map(r=>({id:'wrrule-virt-'+r.id,name:r.name,category:'Recurring',due_date:ds,done:false,_ruleId:r.id,_virtual:true,_wkKey:wkKey2,_isWrRule:true}));
     const wrRulesForDayDone=st.wrRules.filter(r=>r._dateOverrides&&r._dateOverrides[wkKey2]===ds&&isDoneWRRule(r.id,wkKey2)&&!(st.wrOverrides||[]).some(o=>String(o.rule_id)===String(r.id)&&o.wk_key===wkKey2&&o.override_type==='skip')).map(r=>({id:'wrrule-virt-'+r.id,name:r.name,category:'Recurring',due_date:ds,done:true,_ruleId:r.id,_virtual:true,_wkKey:wkKey2,_isWrRule:true}));
     // Add shopping items assigned to this date
-    const shopForDay=st.shopping.filter(s=>s.due_date===ds&&!s.done).map(s=>({id:'shop-cal-'+s.id,name:s.name+(s.store?' ('+s.store+')':''),category:'Shopping',due_date:ds,done:false,_shopId:s.id,_virtual:true,_type:'shop'}));
-    const shopForDayDone=st.shopping.filter(s=>s.due_date===ds&&s.done).map(s=>({id:'shop-cal-done-'+s.id,name:s.name+(s.store?' ('+s.store+')':''),category:'Shopping',due_date:ds,done:true,_shopId:s.id,_virtual:true,_type:'shop'}));
+    const shopForDay=st.shopping.filter(s=>s.due_date===ds&&!s.done).map(s=>({id:'shop-cal-'+s.id,name:s.name,category:'Shopping',due_date:ds,done:false,_shopId:s.id,_virtual:true,_type:'shop'}));
+    const shopForDayDone=st.shopping.filter(s=>s.due_date===ds&&s.done).map(s=>({id:'shop-cal-done-'+s.id,name:s.name,category:'Shopping',due_date:ds,done:true,_shopId:s.id,_virtual:true,_type:'shop'}));
     const undoneDay=sortTasksForDay([
       ...st.tasks.filter(t=>t.due_date&&t.due_date.split('T')[0]===ds&&!t.done&&t.category!=='Weekly Goals'),
       ...virtForDay,
@@ -2154,7 +2154,7 @@ function renderShopOv(){
     el.addEventListener('dragend',()=>{el.style.opacity='';document.body.classList.remove('body-dragging');showWkcEdges(false);dragId=null;});
     el.innerHTML=
       `<label class="chk-wrap"><input type="checkbox" class="chk" style="width:11px;height:11px"${s.done?' checked':''}></label>`+
-      `<span class="shop-ov-handle" style="cursor:grab;opacity:.3;font-size:10px;padding:0 3px 0 0;flex-shrink:0;user-select:none">⠿</span>`+
+      `<span class="shop-ov-handle" style="cursor:grab;opacity:0;font-size:10px;padding:0 3px 0 0;flex-shrink:0;user-select:none;width:0;overflow:hidden">⠿</span>`+
       `<span class="tn">${escHtml(s.name)}</span>`+
       `<span class="cpill" style="background:none;color:#94a3b8;border:none;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;padding:0;flex-shrink:0">${escHtml(s.store||'')}</span>`+
       `<button class="delbtn">✕</button>`;
