@@ -1,5 +1,5 @@
 {
-  "exported_at": "2026-04-13T13:00:01.210Z",
+  "exported_at": "2026-04-14T13:00:00.695Z",
   "mode": "auto",
   "tables": {
     "tasks": [
@@ -444,17 +444,6 @@
         "goal_order": null
       },
       {
-        "name": "Unapplied Cash",
-        "category": "Work",
-        "due_date": "2026-04-13",
-        "done": false,
-        "importance": null,
-        "id": "8671d2dd-8303-42bb-ab44-28f9e99b7106",
-        "important": false,
-        "notes": null,
-        "goal_order": null
-      },
-      {
         "name": "Switch to Claude",
         "category": "My work",
         "due_date": "2026-03-09",
@@ -578,7 +567,7 @@
       {
         "name": "Make dentist apt",
         "category": "Home",
-        "due_date": "2026-04-17",
+        "due_date": "2026-04-18",
         "done": false,
         "importance": null,
         "id": "684df50b-70ca-4a44-9133-8531ba05356a",
@@ -692,6 +681,17 @@
         "done": true,
         "importance": null,
         "id": "1386f207-ed8b-4bf0-9260-f53449af9d74",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Unapplied Cash",
+        "category": "Work",
+        "due_date": "2026-04-13",
+        "done": true,
+        "importance": null,
+        "id": "8671d2dd-8303-42bb-ab44-28f9e99b7106",
         "important": false,
         "notes": null,
         "goal_order": null
@@ -1000,17 +1000,6 @@
         "done": true,
         "importance": null,
         "id": "daa58298-858d-4952-945d-915793270898",
-        "important": false,
-        "notes": null,
-        "goal_order": null
-      },
-      {
-        "name": "CVS physical apt make",
-        "category": "Home",
-        "due_date": "2026-04-17",
-        "done": false,
-        "importance": null,
-        "id": "8b400859-0828-4489-a59d-4787ab47fbbb",
         "important": false,
         "notes": null,
         "goal_order": null
@@ -1440,6 +1429,17 @@
         "done": true,
         "importance": null,
         "id": "bdc0a571-3056-4171-9398-da22e313bbac",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "CVS physical apt make",
+        "category": "Home",
+        "due_date": "2026-04-18",
+        "done": false,
+        "importance": null,
+        "id": "8b400859-0828-4489-a59d-4787ab47fbbb",
         "important": false,
         "notes": null,
         "goal_order": null
@@ -1896,6 +1896,39 @@
         "goal_order": null
       },
       {
+        "name": "Haywire @6pm",
+        "category": "Social",
+        "due_date": "2026-04-16",
+        "done": false,
+        "importance": null,
+        "id": "09caedb2-1887-46af-b2c7-a63062913dce",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "TC 26 Review @1:10pm",
+        "category": "Home",
+        "due_date": "2026-04-17",
+        "done": false,
+        "importance": null,
+        "id": "095d51fa-09ec-4187-a38c-76aa3f830adf",
+        "important": true,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "TC 26 slides",
+        "category": "My work",
+        "due_date": "2026-04-14",
+        "done": false,
+        "importance": null,
+        "id": "b9c65f85-8c64-41b9-b62f-631d10b6416f",
+        "important": true,
+        "notes": null,
+        "goal_order": null
+      },
+      {
         "name": "Drill down get ready for film",
         "category": "My work",
         "due_date": "2026-04-08",
@@ -1904,6 +1937,28 @@
         "id": "4286cb35-70e7-4129-9098-53ef12ee8bb1",
         "important": false,
         "notes": "- thumbnail",
+        "goal_order": null
+      },
+      {
+        "name": "Post rounded corner video",
+        "category": "My work",
+        "due_date": "2026-04-13",
+        "done": true,
+        "importance": null,
+        "id": "50c4eb9c-edd1-4caf-a2e2-a81ede9d50f4",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Unapplied Cash Doc",
+        "category": "Work",
+        "due_date": "2026-04-14",
+        "done": false,
+        "importance": null,
+        "id": "69c1bae4-8492-4f5f-b84c-e103dbd1cc6f",
+        "important": false,
+        "notes": null,
         "goal_order": null
       },
       {
@@ -1973,6 +2028,17 @@
         "goal_order": 2
       },
       {
+        "name": "Goose playdate",
+        "category": "Social",
+        "due_date": "2026-04-13",
+        "done": true,
+        "importance": null,
+        "id": "c4846dd4-791b-4f3a-a9b6-2d0b2539fcf7",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
         "name": "Rounded corners native",
         "category": "Weekly Goals",
         "due_date": "2026-04-13",
@@ -1982,6 +2048,17 @@
         "important": false,
         "notes": null,
         "goal_order": 4
+      },
+      {
+        "name": "VO drill down",
+        "category": "My work",
+        "due_date": "2026-04-15",
+        "done": false,
+        "importance": null,
+        "id": "d687cd58-082d-493b-a334-45e8017f3e88",
+        "important": false,
+        "notes": null,
+        "goal_order": null
       },
       {
         "name": "Unapplied Cash",
@@ -1995,6 +2072,28 @@
         "goal_order": null
       },
       {
+        "name": "PM finalize build",
+        "category": "Weekly Goals",
+        "due_date": "2026-04-20",
+        "done": false,
+        "importance": null,
+        "id": "27bc6923-df79-4676-9f18-c3e4963a1d57",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "PM finalize build",
+        "category": "Weekly Goals",
+        "due_date": "2026-04-27",
+        "done": false,
+        "importance": null,
+        "id": "675b1e67-f03d-4d1e-980b-f0512255a6dd",
+        "important": false,
+        "notes": null,
+        "goal_order": 0
+      },
+      {
         "name": "Pups showers",
         "category": "Home",
         "due_date": "2026-04-09",
@@ -2004,6 +2103,17 @@
         "important": false,
         "notes": null,
         "goal_order": null
+      },
+      {
+        "name": "TC 26 slides",
+        "category": "Weekly Goals",
+        "due_date": "2026-04-27",
+        "done": false,
+        "importance": null,
+        "id": "3a146dba-340e-4b41-b271-17182bf600a6",
+        "important": true,
+        "notes": null,
+        "goal_order": 1
       },
       {
         "name": "Journal",
@@ -2056,28 +2166,6 @@
         "done": true,
         "importance": null,
         "id": "5ece1475-4f34-4081-8778-a16a5525b30d",
-        "important": false,
-        "notes": null,
-        "goal_order": null
-      },
-      {
-        "name": "PM finalize build",
-        "category": "Weekly Goals",
-        "due_date": "2026-04-20",
-        "done": false,
-        "importance": null,
-        "id": "675b1e67-f03d-4d1e-980b-f0512255a6dd",
-        "important": false,
-        "notes": null,
-        "goal_order": 0
-      },
-      {
-        "name": "VO drill down",
-        "category": "My work",
-        "due_date": "2026-04-14",
-        "done": false,
-        "importance": null,
-        "id": "d687cd58-082d-493b-a334-45e8017f3e88",
         "important": false,
         "notes": null,
         "goal_order": null
@@ -2182,34 +2270,12 @@
         "goal_order": null
       },
       {
-        "name": "Post rounded corner video",
-        "category": "My work",
-        "due_date": "2026-04-13",
-        "done": false,
-        "importance": null,
-        "id": "50c4eb9c-edd1-4caf-a2e2-a81ede9d50f4",
-        "important": false,
-        "notes": null,
-        "goal_order": null
-      },
-      {
         "name": "Taxes due",
         "category": "Home",
         "due_date": "2026-04-15",
         "done": true,
         "importance": null,
         "id": "1e76df6e-4163-4de9-ae45-428c26dd5e44",
-        "important": true,
-        "notes": null,
-        "goal_order": null
-      },
-      {
-        "name": "TC 26 slides",
-        "category": "My work",
-        "due_date": "2026-04-13",
-        "done": false,
-        "importance": null,
-        "id": "b9c65f85-8c64-41b9-b62f-631d10b6416f",
         "important": true,
         "notes": null,
         "goal_order": null
@@ -5943,15 +6009,15 @@
         "done": false
       },
       {
-        "id": "ec5e3466-e32b-4b5b-8487-45816d85c402",
-        "title": "Post rounded corner video",
-        "day_date": "2026-04-13",
-        "start_time": "09:15:00",
-        "duration_minutes": 105,
-        "category": "My work",
-        "created_at": "2026-04-12T18:17:18.314815+00:00",
-        "start_minutes": 555,
-        "task_id": "50c4eb9c-edd1-4caf-a2e2-a81ede9d50f4",
+        "id": "5d386ab3-d008-4ec6-bddf-d8fc2d885778",
+        "title": "Unapplied Cash Doc",
+        "day_date": "2026-04-14",
+        "start_time": "07:30:00",
+        "duration_minutes": 210,
+        "category": "Work",
+        "created_at": "2026-04-13T23:15:03.441723+00:00",
+        "start_minutes": 450,
+        "task_id": "69c1bae4-8492-4f5f-b84c-e103dbd1cc6f",
         "rec_id": null,
         "shop_id": null,
         "done": false
@@ -5971,18 +6037,18 @@
         "done": true
       },
       {
-        "id": "70584728-3c53-42f3-bd9c-e03e638f096d",
-        "title": "Unapplied Cash",
+        "id": "ec5e3466-e32b-4b5b-8487-45816d85c402",
+        "title": "Post rounded corner video",
         "day_date": "2026-04-13",
-        "start_time": "07:45:00",
+        "start_time": "09:15:00",
         "duration_minutes": 105,
-        "category": "Work",
-        "created_at": "2026-04-12T18:17:21.392892+00:00",
-        "start_minutes": 450,
-        "task_id": "8671d2dd-8303-42bb-ab44-28f9e99b7106",
+        "category": "My work",
+        "created_at": "2026-04-12T18:17:18.314815+00:00",
+        "start_minutes": 555,
+        "task_id": "50c4eb9c-edd1-4caf-a2e2-a81ede9d50f4",
         "rec_id": null,
         "shop_id": null,
-        "done": false
+        "done": true
       },
       {
         "id": "3b972a3b-2b17-4d30-906d-d0258528975b",
@@ -5999,15 +6065,43 @@
         "done": true
       },
       {
-        "id": "a40b596a-c031-4c00-8fe8-1a10932bcde5",
-        "title": "TC 26 slides",
+        "id": "70584728-3c53-42f3-bd9c-e03e638f096d",
+        "title": "Unapplied Cash",
         "day_date": "2026-04-13",
-        "start_time": "12:15:00",
-        "duration_minutes": 210,
+        "start_time": "07:45:00",
+        "duration_minutes": 105,
+        "category": "Work",
+        "created_at": "2026-04-12T18:17:21.392892+00:00",
+        "start_minutes": 450,
+        "task_id": "8671d2dd-8303-42bb-ab44-28f9e99b7106",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
+        "id": "843705f3-f485-4272-bc85-7c5e30ca4a18",
+        "title": "TC 26 slides",
+        "day_date": "2026-04-14",
+        "start_time": "07:45:00",
+        "duration_minutes": 195,
         "category": "My work",
-        "created_at": "2026-04-13T00:51:32.380612+00:00",
+        "created_at": "2026-04-13T23:14:59.102365+00:00",
         "start_minutes": 720,
         "task_id": "b9c65f85-8c64-41b9-b62f-631d10b6416f",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "ceeb0fa0-e80f-495d-8950-473cf02f2348",
+        "title": "Remove black outline - shapes",
+        "day_date": "2026-04-14",
+        "start_time": "15:45:00",
+        "duration_minutes": 90,
+        "category": "My work",
+        "created_at": "2026-04-13T23:15:15.255053+00:00",
+        "start_minutes": 915,
+        "task_id": "d0bc180d-f5f5-43b2-aa17-96a8b1bc1f07",
         "rec_id": null,
         "shop_id": null,
         "done": false
