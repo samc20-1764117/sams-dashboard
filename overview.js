@@ -1210,7 +1210,7 @@ function _woMakeChip(t,body){
         }
         const allChips=[...destBody.querySelectorAll('.wo-chip[data-tid]')];
         allChips.forEach((c,i)=>{const tk=st.tasks.find(x=>String(x.id)===c.dataset.tid);if(tk){tk.goal_order=i;sbReqNullable('PATCH','tasks',{goal_order:i},`?id=eq.${tk.id}`);}});
-        save();
+        save();renderWOModal();
       }
     };
     document.addEventListener('mousemove',onMove);document.addEventListener('mouseup',onUp);
