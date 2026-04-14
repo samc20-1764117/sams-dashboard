@@ -88,7 +88,7 @@
 
 **Unified Add modal** (`#wrRuleAddModal`): `openWrRuleAddModal(cadence?,type='wr')`. WR vs Scheduled toggle.
 
-**Move prev/next week**: shifts `starting_date` ±7 — affects all future.
+**Move prev/next week** (`_wrShiftAnchor`): For non-WR recurring (`_wrCtxRecId`): marks current week `__skip__`, moves task to adjacent week (`wkOff±1`) by setting `_dateOverrides[targetWkKey]` to the computed date. Uses natural dow date as base if no current pin. Undo restores both `_dateOverrides` entries. For WR rules (`_wrCtxRuleId`): shifts `_dateOverrides[wkKey]` date by ±7 days — affects all future.
 
 **WR card sort**: done last→cadence (weekly=0,biweekly=2,monthly=4,quarterly=6,biannual=8,annual=10,other=12)→pup +1.
 

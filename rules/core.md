@@ -33,7 +33,7 @@ Supabase Auth (email+password), RLS on all tables. `init()`→`checkAuth()`→no
 - `delTask`: removes linked TB blocks by `taskId` AND title match. Calls `sbDeleteBlock` for each.
 - `rolloverOverdue()`: stores `prevDate` per WR rule/rec before rollover. Undo restores original date + patches `wr_recurring_rules` DB.
 - `localStorage` persists: tasks, recurring, shopping, travel, birthdays, pup_skills, recipes, autoTimeblocks, autoTBOverrides, wrRules, wrOverrides.
-- `syncAll` recurring: `wr_recurring_rules` single source. `is_weekly_reset!==false`→`st.wrRules`; `is_weekly_reset===false`→`st.recurring`.
+- `syncAll` recurring: `wr_recurring_rules` single source. `is_weekly_reset===true||==='true'`→`st.wrRules`; all others→`st.recurring`.
 - `recQs(id)`: returns `?id=eq.${id}`.
 - `renderAll()` does NOT call `renderDayTB()`. Ops changing TB state must also call `if(document.getElementById('tbGrid'))renderDayTB()` — including undo closures.
 
