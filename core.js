@@ -426,14 +426,15 @@ function getRecurringWeekTasks(off=0){
       date=getDateForDow(dow,off);if(!date)return;
       if(r.starting_date){const sd=new Date(r.starting_date+'T00:00:00');if(date<sd)return;}
       if(cadence==='biweekly'||cadence==='quarterly'||cadence==='biannual'||cadence==='annual'){
-        if(!r.starting_date)return; // interval cadence requires anchor
-        const interval=cadence==='quarterly'?13:cadence==='biannual'?26:cadence==='annual'?52:2;
-        const sd=new Date(r.starting_date+'T00:00:00');
-        const sdDow=(sd.getDay()+6)%7;
-        const sdMon=new Date(sd);sdMon.setDate(sd.getDate()-sdDow);sdMon.setHours(0,0,0,0);
-        const tgtMon=new Date(wkDates[0]);tgtMon.setHours(0,0,0,0);
-        const weekDiff=Math.round((tgtMon-sdMon)/(7*86400000));
-        if(weekDiff<0||weekDiff%interval!==0)return;
+        if(r.starting_date){
+          const interval=cadence==='quarterly'?13:cadence==='biannual'?26:cadence==='annual'?52:2;
+          const sd=new Date(r.starting_date+'T00:00:00');
+          const sdDow=(sd.getDay()+6)%7;
+          const sdMon=new Date(sd);sdMon.setDate(sd.getDate()-sdDow);sdMon.setHours(0,0,0,0);
+          const tgtMon=new Date(wkDates[0]);tgtMon.setHours(0,0,0,0);
+          const weekDiff=Math.round((tgtMon-sdMon)/(7*86400000));
+          if(weekDiff<0||weekDiff%interval!==0)return;
+        }
       }
     }
 

@@ -2150,7 +2150,12 @@ function dropOnTodayList(e){
 // ── Shop overview ──────────────────────────────────────────────────────────────
 function _shopTopOrder(s){const orders=st.shopping.filter(x=>String(x.id)!==String(s.id)&&x.shop_order!=null).map(x=>x.shop_order);return orders.length?Math.min(...orders)-1:0;}
 function _shopOvSort(arr){
-  return[...arr].sort((x,y)=>(x.shop_order??9999)-(y.shop_order??9999));
+  return[...arr].sort((x,y)=>{
+    const ad=x.due_date?1:0,bd=y.due_date?1:0;
+    if(ad!==bd)return bd-ad;
+    if(x.due_date&&y.due_date&&x.due_date!==y.due_date)return x.due_date<y.due_date?-1:1;
+    return(x.shop_order??9999)-(y.shop_order??9999);
+  });
 }
 function renderShopOv(){
   const shopSorted=_shopOvSort(st.shopping.filter(s=>!s.done));
@@ -2179,6 +2184,7 @@ function renderShopOv(){
       if(e.target.closest('.chk-wrap')||e.target.closest('.delbtn'))return;
       const startX=e.clientX,startY=e.clientY;
       let dragging=false,decided=false,ph=null;
+      const prevOrders=st.shopping.filter(x=>!x.done).map(x=>({id:x.id,shop_order:x.shop_order}));
       const onMove=ev=>{
         const adx=Math.abs(ev.clientX-startX),ady=Math.abs(ev.clientY-startY);
         if(!decided){
@@ -2207,8 +2213,13 @@ function renderShopOv(){
           const allRows=[...document.querySelectorAll('#shopOv .ti')];
           const items=_shopOvSort(st.shopping.filter(x=>!x.done));
           allRows.forEach((row,i)=>{const id=row.id.replace('ti-shop-cal-','');const item=items.find(x=>String(x.id)===id);if(item)item.shop_order=i;});
+          const newOrders=items.map(x=>({id:x.id,shop_order:x.shop_order}));
           save();
           allRows.forEach(row=>{const id=row.id.replace('ti-shop-cal-','');const item=items.find(x=>String(x.id)===id);if(item)sbReqNullable('PATCH','shopping_list',{shop_order:item.shop_order},`?id=eq.${item.id}`);});
+          pushUndo(()=>{
+            prevOrders.forEach(({id,shop_order})=>{const it=st.shopping.find(x=>String(x.id)===String(id));if(it){it.shop_order=shop_order;sbReqNullable('PATCH','shopping_list',{shop_order:shop_order??null},`?id=eq.${id}`);}});
+            renderShopOv();
+          },'Reorder shopping');
         }else if(ph){const next=ph.nextSibling;ph.remove();container.insertBefore(el,next);}
       };
       document.addEventListener('mousemove',onMove);document.addEventListener('mouseup',onUp);
