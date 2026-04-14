@@ -2162,13 +2162,51 @@ function renderShopOv(){
   const container=document.getElementById('shopOv');
   container.style.maxHeight='';
   container.innerHTML='';
+  // Set up container DnD for in-list reorder (once per container lifetime)
+  if(!container._shopDnDSetup){
+    container._shopDnDSetup=true;
+    container.addEventListener('dragover',e=>{
+      if(!dragId||!dragId.startsWith('shop::'))return;
+      e.preventDefault();
+      let ph=container.querySelector('.shop-ov-ph');
+      if(!ph){ph=document.createElement('div');ph.className='shop-ov-ph';ph.style.cssText='height:2px;margin:2px 10px;border-radius:99px;background:rgba(150,150,160,.5);pointer-events:none;flex-shrink:0';container.appendChild(ph);}
+      const rows=[...container.querySelectorAll('.ti')];
+      let inserted=false;
+      for(const r of rows){const rc=r.getBoundingClientRect();if(e.clientY<rc.top+rc.height/2){container.insertBefore(ph,r);inserted=true;break;}}
+      if(!inserted&&rows.length)rows[rows.length-1].after(ph);
+    });
+    container.addEventListener('dragleave',e=>{
+      if(!container.contains(e.relatedTarget)){const ph=container.querySelector('.shop-ov-ph');if(ph)ph.remove();}
+    });
+    container.addEventListener('drop',e=>{
+      e.preventDefault();
+      const ph=container.querySelector('.shop-ov-ph');
+      if(!dragId||!dragId.startsWith('shop::'))return;
+      const shopId=dragId.split('::')[1];
+      const s=st.shopping.find(x=>String(x.id)===String(shopId));
+      if(!s){if(ph)ph.remove();return;}
+      if(!ph)return; // no placeholder means not a reorder drop
+      const prevOrders=st.shopping.filter(x=>!x.done).map(x=>({id:x.id,shop_order:x.shop_order}));
+      const allRows=[...container.querySelectorAll('.ti')];
+      const children=[...container.children];
+      const phIdx=children.indexOf(ph);
+      const before=allRows.filter(r=>children.indexOf(r)<phIdx).map(r=>r.id.replace('ti-shop-cal-',''));
+      const after=allRows.filter(r=>children.indexOf(r)>=phIdx&&r.id!=='ti-shop-cal-'+shopId).map(r=>r.id.replace('ti-shop-cal-',''));
+      const orderedIds=[...before,shopId,...after];
+      orderedIds.forEach((id,i)=>{const it=st.shopping.find(x=>String(x.id)===String(id));if(it)it.shop_order=i;});
+      ph.remove();
+      save();
+      st.shopping.filter(x=>!x.done).forEach(it=>sbReqNullable('PATCH','shopping_list',{shop_order:it.shop_order??null},`?id=eq.${it.id}`));
+      pushUndo(()=>{prevOrders.forEach(({id,shop_order})=>{const it=st.shopping.find(x=>String(x.id)===String(id));if(it){it.shop_order=shop_order;sbReqNullable('PATCH','shopping_list',{shop_order:shop_order??null},`?id=eq.${id}`);}});renderShopOv();},'Reorder shopping');
+      renderShopOv();
+    });
+  }
   shopSorted.forEach(s=>{
     const el=document.createElement('div');
     el.className='ti';el.id='ti-shop-cal-'+s.id;el.style.cssText='margin:0 6px;padding:3px 22px 3px 10px';
     el.draggable=true;
-    let _blockNativeDrag=false;
-    el.addEventListener('dragstart',e=>{if(_blockNativeDrag){e.preventDefault();e.stopPropagation();return;}if(e.target.closest('.chk-wrap,.delbtn'))return;e.stopPropagation();dragId='shop::'+s.id;e.dataTransfer.effectAllowed='move';el.style.opacity='.4';document.body.classList.add('body-dragging');showWkcEdges(true);});
-    el.addEventListener('dragend',()=>{el.style.opacity='';document.body.classList.remove('body-dragging');showWkcEdges(false);dragId=null;});
+    el.addEventListener('dragstart',e=>{if(e.target.closest('.chk-wrap,.delbtn'))return;e.stopPropagation();dragId='shop::'+s.id;e.dataTransfer.effectAllowed='move';el.style.opacity='.4';document.body.classList.add('body-dragging');showWkcEdges(true);});
+    el.addEventListener('dragend',()=>{el.style.opacity='';document.body.classList.remove('body-dragging');showWkcEdges(false);const ph=container.querySelector('.shop-ov-ph');if(ph)ph.remove();dragId=null;});
     el.innerHTML=
       `<label class="chk-wrap"><input type="checkbox" class="chk" style="width:11px;height:11px"${s.done?' checked':''}></label>`+
       `<span class="tn">${escHtml(s.name)}</span>`+
@@ -2180,50 +2218,6 @@ function renderShopOv(){
     el.querySelector('.chk-wrap').addEventListener('click',e=>e.stopPropagation());
     el.querySelector('.chk').addEventListener('change',e=>togShop(s.id,e.target.checked));
     el.querySelector('.delbtn').addEventListener('click',e=>{e.stopPropagation();delShop(s.id);});
-    el.addEventListener('mousedown',e=>{
-      if(e.target.closest('.chk-wrap')||e.target.closest('.delbtn'))return;
-      const startX=e.clientX,startY=e.clientY;
-      let dragging=false,decided=false,ph=null;
-      const prevOrders=st.shopping.filter(x=>!x.done).map(x=>({id:x.id,shop_order:x.shop_order}));
-      const onMove=ev=>{
-        const adx=Math.abs(ev.clientX-startX),ady=Math.abs(ev.clientY-startY);
-        if(!decided){
-          if(adx<3&&ady<3)return;
-          if(ady>=adx){decided=true;_blockNativeDrag=true;el.draggable=false;}
-          else{decided=true;document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);return;}
-        }
-        if(!dragging&&ady<5)return;
-        if(!dragging){
-          window.getSelection()?.removeAllRanges();dragging=true;
-          ph=document.createElement('div');
-          ph.style.cssText=`height:2px;margin:2px 10px;border-radius:99px;background:rgba(150,150,160,.5);pointer-events:none;flex-shrink:0`;
-          container.insertBefore(ph,el);el.remove();
-        }
-        ev.preventDefault();
-        const rows=[...document.querySelectorAll('#shopOv .ti')];
-        let inserted=false;
-        for(const r of rows){const rc=r.getBoundingClientRect();if(ev.clientY<rc.top+rc.height/2){container.insertBefore(ph,r);inserted=true;break;}}
-        if(!inserted&&rows.length)rows[rows.length-1].after(ph);
-      };
-      const onUp=()=>{
-        document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);
-        _blockNativeDrag=false;el.draggable=true;
-        if(dragging&&ph){
-          container.insertBefore(el,ph);ph.remove();
-          const allRows=[...document.querySelectorAll('#shopOv .ti')];
-          const items=_shopOvSort(st.shopping.filter(x=>!x.done));
-          allRows.forEach((row,i)=>{const id=row.id.replace('ti-shop-cal-','');const item=items.find(x=>String(x.id)===id);if(item)item.shop_order=i;});
-          const newOrders=items.map(x=>({id:x.id,shop_order:x.shop_order}));
-          save();
-          allRows.forEach(row=>{const id=row.id.replace('ti-shop-cal-','');const item=items.find(x=>String(x.id)===id);if(item)sbReqNullable('PATCH','shopping_list',{shop_order:item.shop_order},`?id=eq.${item.id}`);});
-          pushUndo(()=>{
-            prevOrders.forEach(({id,shop_order})=>{const it=st.shopping.find(x=>String(x.id)===String(id));if(it){it.shop_order=shop_order;sbReqNullable('PATCH','shopping_list',{shop_order:shop_order??null},`?id=eq.${id}`);}});
-            renderShopOv();
-          },'Reorder shopping');
-        }else if(ph){const next=ph.nextSibling;ph.remove();container.insertBefore(el,next);}
-      };
-      document.addEventListener('mousemove',onMove);document.addEventListener('mouseup',onUp);
-    });
     container.appendChild(el);
   });
 }
