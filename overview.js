@@ -562,14 +562,14 @@ function renderWkCal(){
         const shopId=dragId.split('::')[1];
         const s=st.shopping.find(x=>String(x.id)===String(shopId));
         if(s){
-          const prev=s.due_date;
-          s.due_date=ds;
+          const prev=s.due_date;const prevOrder=s.shop_order;
+          const newOrder=_shopTopOrder(s);s.shop_order=newOrder;s.due_date=ds;
           removeTBBlocksForDate(ds,{shopId:s.id});
           save();dragId=null;renderAll();renderWkCal();
-          sbReqNullable('PATCH','shopping_list',{due_date:ds},`?id=eq.${s.id}`);
+          sbReqNullable('PATCH','shopping_list',{due_date:ds,shop_order:newOrder},`?id=eq.${s.id}`);
           pushUndo(()=>{
-            s.due_date=prev;save();renderAll();renderWkCal();
-            sbReqNullable('PATCH','shopping_list',{due_date:prev||null},`?id=eq.${s.id}`);
+            s.due_date=prev;s.shop_order=prevOrder;save();renderAll();renderWkCal();
+            sbReqNullable('PATCH','shopping_list',{due_date:prev||null,shop_order:prevOrder??null},`?id=eq.${s.id}`);
           },'Assigned shopping item to '+ds);
         }
         dragId=null;return;
@@ -1820,14 +1820,25 @@ function _wrShiftAnchor(delta){
   if(_wrCtxRecId){
     const r=st.recurring.find(x=>String(x.id)===_wrCtxRecId);if(!r||!_wrCtxWkKey)return;
     if(!r._dateOverrides)r._dateOverrides={};
-    const prev=r._dateOverrides[_wrCtxWkKey];
-    const base=prev&&prev!=='__skip__'?new Date(prev+'T12:00'):new Date();
+    const dir=delta>0?1:-1;
+    const targetWkKey=getWkKey(wkOff+dir);
+    const prevCurrent=r._dateOverrides[_wrCtxWkKey];
+    const prevTarget=r._dateOverrides[targetWkKey];
+    const _natDow=dayNameToIdx(r.appears_on_date);
+    const _natDate=_natDow>=0?getDateForDow(_natDow,wkOff):null;
+    const base=prevCurrent&&prevCurrent!=='__skip__'?new Date(prevCurrent+'T12:00'):_natDate?new Date(d2s(_natDate)+'T12:00'):new Date();
     base.setDate(base.getDate()+delta);
     const next=d2s(base);
-    r._dateOverrides[_wrCtxWkKey]=next;
-    save();renderWeeklyPage();renderWkCal();
+    r._dateOverrides[_wrCtxWkKey]='__skip__';
+    r._dateOverrides[targetWkKey]=next;
+    save();renderWeeklyPage();renderWkCal();renderToday();
     sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(_wrCtxRecId));
-    pushUndo(()=>{if(prev!==undefined)r._dateOverrides[_wrCtxWkKey]=prev;else delete r._dateOverrides[_wrCtxWkKey];save();renderWeeklyPage();renderWkCal();sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(_wrCtxRecId));},'Moved recurring task');
+    pushUndo(()=>{
+      if(prevCurrent!==undefined)r._dateOverrides[_wrCtxWkKey]=prevCurrent;else delete r._dateOverrides[_wrCtxWkKey];
+      if(prevTarget!==undefined)r._dateOverrides[targetWkKey]=prevTarget;else delete r._dateOverrides[targetWkKey];
+      save();renderWeeklyPage();renderWkCal();renderToday();
+      sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(_wrCtxRecId));
+    },'Moved recurring task');
     return;
   }
   if(!_wrCtxRuleId)return;
@@ -2126,17 +2137,18 @@ function dropOnTodayList(e){
     const shopId=dragId.split('::')[1];
     const s=st.shopping.find(x=>String(x.id)===String(shopId));
     if(s){
-      const prev=s.due_date;
-      s.due_date=ds;
+      const prev=s.due_date;const prevOrder=s.shop_order;
+      const newOrder=_shopTopOrder(s);s.shop_order=newOrder;s.due_date=ds;
       dragId=null;save();renderAll();
-      sbReq('PATCH','shopping_list',{due_date:ds},`?id=eq.${s.id}`);
-      pushUndo(()=>{s.due_date=prev;save();renderAll();sbReq('PATCH','shopping_list',{due_date:prev||null},`?id=eq.${s.id}`);},'Assigned shopping to today');
+      sbReq('PATCH','shopping_list',{due_date:ds,shop_order:newOrder},`?id=eq.${s.id}`);
+      pushUndo(()=>{s.due_date=prev;s.shop_order=prevOrder;save();renderAll();sbReq('PATCH','shopping_list',{due_date:prev||null,shop_order:prevOrder??null},`?id=eq.${s.id}`);},'Assigned shopping to today');
     }
     dragId=null;return;
   }
 }
 
 // ── Shop overview ──────────────────────────────────────────────────────────────
+function _shopTopOrder(s){const orders=st.shopping.filter(x=>String(x.id)!==String(s.id)&&x.shop_order!=null).map(x=>x.shop_order);return orders.length?Math.min(...orders)-1:0;}
 function _shopOvSort(arr){
   return[...arr].sort((x,y)=>(x.shop_order??9999)-(y.shop_order??9999));
 }
@@ -2832,16 +2844,16 @@ function dropOnTB(e,ds,h,row,smOverride){
     const shopId=dragId.split('::')[1];
     const s=st.shopping.find(x=>String(x.id)===String(shopId));
     if(!s){dragId=null;return;}
-    const prevDue=s.due_date;
-    s.due_date=ds;
+    const prevDue=s.due_date;const prevOrder=s.shop_order;
+    const newOrder=_shopTopOrder(s);s.shop_order=newOrder;s.due_date=ds;
     const blk={id:crypto.randomUUID(),title:s.name,ds,sm,dur:autoDur(s.name,'Shopping'),cat:'Shopping',shopId:String(s.id)};
     st.blocks.push(blk);dragId=null;save();renderAll();
     sbSaveBlock(blk);
-    sbReq('PATCH','shopping_list',{due_date:ds},`?id=eq.${s.id}`);
+    sbReq('PATCH','shopping_list',{due_date:ds,shop_order:newOrder},`?id=eq.${s.id}`);
     pushUndo(()=>{
       st.blocks=st.blocks.filter(b=>b.id!==blk.id);
-      s.due_date=prevDue;
-      sbReq('PATCH','shopping_list',{due_date:prevDue||null},`?id=eq.${s.id}`);
+      s.due_date=prevDue;s.shop_order=prevOrder;
+      sbReq('PATCH','shopping_list',{due_date:prevDue||null,shop_order:prevOrder??null},`?id=eq.${s.id}`);
       sbDeleteBlock(blk.id);save();renderAll();
     },'Added to time block');
     return;

@@ -1030,7 +1030,7 @@ function mkMCell(date,om,today){
     if(dragId&&dragId.startsWith('shop::')){
       const shopId=dragId.split('::')[1];
       const s=st.shopping.find(x=>String(x.id)===String(shopId));
-      if(s){const prev=s.due_date;s.due_date=ds;save();sbReqNullable('PATCH','shopping_list',{due_date:ds},`?id=eq.${s.id}`);pushUndo(()=>{s.due_date=prev;save();renderAll();renderMoCal();sbReqNullable('PATCH','shopping_list',{due_date:prev||null},`?id=eq.${s.id}`);},'Assigned shopping item');}
+      if(s){const prev=s.due_date;const prevOrder=s.shop_order;const newOrder=_shopTopOrder(s);s.shop_order=newOrder;s.due_date=ds;save();sbReqNullable('PATCH','shopping_list',{due_date:ds,shop_order:newOrder},`?id=eq.${s.id}`);pushUndo(()=>{s.due_date=prev;s.shop_order=prevOrder;save();renderAll();renderMoCal();sbReqNullable('PATCH','shopping_list',{due_date:prev||null,shop_order:prevOrder??null},`?id=eq.${s.id}`);},'Assigned shopping item');}
       dragId=null;renderAll();renderMoCal();return;
     }
     if(t){const prev=t.due_date;const sid=String(t.id);localOverrides[sid]={due_date:ds};pendingLocal.add(sid);save();t.due_date=ds;dragId=null;renderAll();renderMoCal();pushUndo(()=>{t.due_date=prev;localOverrides[sid]={due_date:prev};pendingLocal.add(sid);save();renderAll();renderMoCal();sbReqNullable('PATCH','tasks',{due_date:prev},`?id=eq.${sid}`).then(()=>{delete localOverrides[sid];pendingLocal.delete(sid);});},'Moved task');sbReqNullable('PATCH','tasks',{due_date:ds},`?id=eq.${sid}`).then(()=>pendingLocal.delete(sid));return;}
