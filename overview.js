@@ -1909,7 +1909,7 @@ function _wrBuildSelects(px){
 let _wrAddType='wr';
 function updateWrRuleCadenceUI(px){
   const cadence=document.getElementById(px+'Cadence').value;
-  document.getElementById(px+'AnchorField').style.display=cadence!=='weekly'?'block':'none';
+  document.getElementById(px+'AnchorField').style.display=(cadence!=='weekly'||(px==='wrAdd'&&_wrAddType==='sch'))?'block':'none';
   if(px==='wrAdd'){
     const isSch=_wrAddType==='sch';
     const isMonthly=cadence==='monthly';
@@ -1922,7 +1922,7 @@ function updateWrRuleCadenceUI(px){
 function _wrReadCadenceFields(px){
   const cadence=document.getElementById(px+'Cadence').value;
   const anchorVal=document.getElementById(px+'Anchor').value;
-  return {cadence,starting_date:cadence!=='weekly'?anchorVal||null:null};
+  return {cadence,starting_date:(cadence!=='weekly'||(px==='wrAdd'&&_wrAddType==='sch'))?anchorVal||null:null};
 }
 
 function wrAddSetType(type){
