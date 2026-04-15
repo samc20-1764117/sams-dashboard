@@ -90,24 +90,33 @@ function renderToday(){
   renderDailyHabits();
 }
 // ── Pup Skills Highlight ───────────────────────────────────────────────────────
+function _pupWkSessions(skillId){
+  const{mon,sun}=getWkBounds(0);
+  const monDs=d2s(mon),sunDs=d2s(sun);
+  return(st.pupSessions||[]).filter(s=>String(s.skill_id)===String(skillId)&&s.day_date>=monDs&&s.day_date<=sunDs);
+}
 function renderPupSkillsHighlight(){
   const el=document.getElementById('pupSkillsHighlight');if(!el)return;
-  const wk=getWkKey(0);
   const allSkills=(st.pup_skills||[]).filter(s=>(s.focus===true||s.focus==='true')&&s.stage!=='Mastered');
   if(!allSkills.length){el.style.cssText='display:none';return;}
   el.style.cssText='display:block;background:rgba(255,255,255,0.18);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,0.35);border-radius:14px;box-shadow:0 2px 12px rgba(0,0,0,.06);margin:10px 14px;padding:4px 0';
   const skills=[...allSkills].sort((a,b)=>{
-    const ad=!!(a._trainedWk&&a._trainedWk[wk]),bd=!!(b._trainedWk&&b._trainedWk[wk]);
-    if(ad&&!bd)return 1;if(!ad&&bd)return -1;
+    const aSess=_pupWkSessions(a.id),bSess=_pupWkSessions(b.id);
+    const aDone=aSess.length>0&&aSess.every(s=>s.done),bDone=bSess.length>0&&bSess.every(s=>s.done);
+    if(aDone&&!bDone)return 1;if(!aDone&&bDone)return -1;
     const pupOrd=p=>p==='Mochi'?0:p==='Sunny'?1:2;
     return pupOrd(a.pup)-pupOrd(b.pup);
   });
-  const doneCount=skills.filter(s=>s._trainedWk&&s._trainedWk[wk]).length;
   const rows=skills.map(s=>{
-    const done=!!(s._trainedWk&&s._trainedWk[wk]);
+    const sess=_pupWkSessions(s.id);
+    const total=sess.length,doneC=sess.filter(x=>x.done).length;
+    const allDone=total>0&&doneC===total;
     const glow=s.pup==='Mochi'?'0 0 4px 2px rgba(167,139,250,.2)':s.pup==='Sunny'?'0 0 4px 2px rgba(253,224,71,.25)':'0 0 4px 1px rgba(148,163,184,.15)';
-    return`<div class="ti${done?' done':''}" style="${done?'opacity:.45':''}" ondblclick="openPupEditModal('${s.id}')" onmouseenter="showPupSkillTip(this,'${s.id}')" onmouseleave="hidePupSkillTip()">
-      <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${done?'checked':''} onchange="togPupSkillTrained('${s.id}',this.checked)" style="box-shadow:${glow}"></label>
+    const right=total>0
+      ?`<span style="font-size:10px;font-weight:600;color:${allDone?'var(--muted)':'var(--accent)'};margin-left:auto;flex-shrink:0">${doneC}/${total}</span>`
+      :`<label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" onchange="togPupSkillTrained('${s.id}',this.checked)" style="box-shadow:${glow}"></label>`;
+    return`<div class="ti${allDone?' done':''}" style="${allDone?'opacity:.45':''}" ondblclick="openPupEditModal('${s.id}')" onmouseenter="showPupSkillTip(this,'${s.id}')" onmouseleave="hidePupSkillTip()">
+      ${right}
       <span class="tn" style="color:var(--muted);font-size:11px;font-weight:400">${escHtml(s.skill)}</span>
     </div>`;
   }).join('');
@@ -116,12 +125,29 @@ function renderPupSkillsHighlight(){
     <button class="btn-plus" onclick="openPupAddModal()" style="margin-left:auto">+</button>
   </div><div style="padding:2px 0 2px">${rows}</div>`;
 }
-function togPupSkillTrained(id,done){
-  const s=(st.pup_skills||[]).find(x=>String(x.id)===String(id));if(!s)return;
-  if(!s._trainedWk)s._trainedWk={};
-  const wk=getWkKey(0);
-  if(done)s._trainedWk[wk]=true;else delete s._trainedWk[wk];
-  save();renderPupSkillsHighlight();
+async function togPupSkillTrained(id,checked){
+  const today=d2s(new Date());
+  const existing=st.pupSessions.find(s=>String(s.skill_id)===String(id)&&s.day_date===today);
+  if(checked){
+    if(existing){
+      existing.done=true;
+      save();renderPupSkillsHighlight();
+      sbReqSilent('PATCH','pup_skill_sessions',{done:true},`?id=eq.${existing.id}`);
+    } else {
+      const tmp='pss-tmp-'+Date.now();
+      st.pupSessions.push({id:tmp,skill_id:id,day_date:today,done:true});
+      save();renderPupSkillsHighlight();
+      const sv=await sbReqSilent('POST','pup_skill_sessions',{skill_id:id,day_date:today,done:true});
+      if(sv&&sv[0]){const i=st.pupSessions.findIndex(s=>s.id===tmp);if(i>-1)st.pupSessions[i]=sv[0];}
+      save();
+    }
+  } else {
+    if(existing){
+      existing.done=false;
+      save();renderPupSkillsHighlight();
+      sbReqSilent('PATCH','pup_skill_sessions',{done:false},`?id=eq.${existing.id}`);
+    }
+  }
 }
 // ── Pup Skill Tooltip ────────────────────────────────────────────────────────
 let _pupTipTimer=null;

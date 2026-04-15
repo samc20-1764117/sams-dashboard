@@ -30,7 +30,7 @@ Supabase Auth (email+password), RLS on all tables. `init()`→`checkAuth()`→`d
 - `renderDayTB` skips if `window._tbEditing===true`. `renderAll()` does NOT call `renderDayTB()`. Ops changing TB state must also call `if(document.getElementById('tbGrid'))renderDayTB()` — including undo closures.
 - `delTask`: removes linked TB blocks by `taskId` AND title match.
 - `rolloverOverdue()`: stores `prevDate` before rollover. Undo restores original date + patches DB.
-- `localStorage` persists: tasks, recurring, shopping, travel, birthdays, pup_skills, recipes, autoTimeblocks, autoTBOverrides, wrRules, wrOverrides. `pup_skills._trainedWk` (weekly done state for focus skills) is local-only — never synced to Supabase.
+- `localStorage` persists: tasks, recurring, shopping, travel, birthdays, pup_skills, pupSessions, recipes, autoTimeblocks, autoTBOverrides, wrRules, wrOverrides. `st.pupSessions` = `pup_skill_sessions` rows (skill_id uuid, day_date text, done bool, created_at). Synced from Supabase in `syncAll`. Checking a skill in overview creates/patches a session for today. `_pupWkSessions(skillId)` returns sessions for current week. Overview shows checkbox if no sessions this week, else shows `done/total` count.
 - `syncAll` recurring: `is_weekly_reset===true`→`st.wrRules`; others→`st.recurring`.
 - Timeblock inline edit (`startTBInlineEdit`): dblclick creates block with empty title. `window._tbEditing=true` set on start, cleared in `commit()` and Escape. After DB save returns real ID, calls `renderAll()`.
 
