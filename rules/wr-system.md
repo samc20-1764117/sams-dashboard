@@ -79,7 +79,7 @@
 
 **WR Edit modal** (`#wrEditModal`): `openWrEditModal(rid,wkKey,defaultScope)` — "This week only" vs "All future".
 
-**Unified Add modal** (`#wrRuleAddModal`): `openWrRuleAddModal(cadence?,type='wr')`. WR vs Scheduled toggle.
+**Unified Add modal** (`#wrRuleAddModal`): `openWrRuleAddModal(cadence?,type='wr')`. WR vs Scheduled toggle. Starting date field (`#wrAddAnchorField`) always visible when type=`sch` regardless of cadence (including weekly). `_wrReadCadenceFields` returns `starting_date` for `sch` type on all cadences.
 
 **Move prev/next week** (`_wrShiftAnchor`): Non-WR: marks current week `__skip__`, moves to adjacent week via `_dateOverrides[targetWkKey]`. WR rules: shifts `_dateOverrides[wkKey]` by ±7 days.
 

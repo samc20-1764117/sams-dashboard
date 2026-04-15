@@ -5,7 +5,8 @@
 - **WR tasks in today list**: appear if `_dateOverrides[wkKey]===today` OR overdue (4-week lookback, undone only). `wrRulesToday/wrecToday` use seen sets to dedup.
 - **Shopping overview** (`#shopOv`): NO rAF-based max-height — caused items to be hidden when `offsetHeight=0` during background sync. Height naturally constrained by card's `overflow:hidden` + flex. Sort (`_shopOvSort`): `due_date` items first (by date), then no-date by `shop_order`. Drag-to-calendar assigns `_shopTopOrder` (min `shop_order` - 1). **Weekly cal chips**: store name NOT shown in parentheses.
 - **WR overview list** (`#recList`): `columns:2;column-fill:auto`. `max-height = 4 + 7 * itemHeight` (set in rAF, exactly 7 rows per column).
-- **Daily Habits** (`#dailyHabitsSection`): below `#todList`. Overview only — never in other views. Items: `st.recurring` where `cadence==='daily'`. Done state: `_doneByWk[ds]`. `togDailyHabit` skips DB call if ID starts with `rec-tmp-` or `rec-local-`. Add via `#dailyHabitPopup`: `submitDailyHabit()` POSTs `{cadence:'daily',is_weekly_reset:false}`. Delete reuses `delRec()`.
+- **Daily Habits** (`#dailyHabitsSection`): below `#todList`. Overview only. Items: `st.recurring` where `cadence==='daily'`. Done state: `_doneByWk[ds]`. `togDailyHabit` skips DB call if ID starts with `rec-tmp-` or `rec-local-`. Add via `#dailyHabitPopup`: `submitDailyHabit()` POSTs `{cadence:'daily',is_weekly_reset:false}`. Delete reuses `delRec()`.
+- **Pup Skills Highlight** (`#pupSkillsHighlight`): above `#dailyHabitsSection`, below `#todList`. Overview only. Shows `st.pup_skills` where `focus===true` and `stage!=='Mastered'`. Done-this-week state: `_trainedWk[wkKey]` (local only, not synced to server). `togPupSkillTrained` saves via `save()`. Sort: undone first, done sink to bottom. Checkbox = trained this week (NOT mastered). Dblclick → `openPupEditModal(id)`. Title button → `showPage('pups')`. `+` button → `openPupAddModal()`. `savePupModal` calls `renderPupSkillsHighlight()` after add/edit. Timeblock labels at 8am/4pm are darker+bold (`rgba(45,40,85,.95)`, weight 800) on Mon–Fri only.
 - **Header "+" button**: `id="todPlusBtn"`. Opens `openQA('today',this)`. QA close handler: `.closest('.btn-plus,#todPlusBtn,.wkc-add-btn')`.
 - **Auto blocks**: `computeTBLayout`. Never in today/overdue/metrics/recurring/weekly-cal.
 
@@ -57,7 +58,7 @@ Fixed range Jan 1 (curYr-3) → Dec 31 (curYr+2). `scrollMoToday()` BEFORE `.ope
 Table: `travel(id,name,destination,start_date,end_date,travel_mode,notes)`. Drag-to-create: `calDrag{active,startDs,endDs,moved}`. Week boundary: `ei` clamped.
 
 ### Pup Skills (`pup-skills.js`)
-Table: `pup_skills`. Sort: mastered last→category→focus→pup→level→skill_order. Inline edit: `pupCellEdit(td,id,field)`.
+Table: `pup_skills`. Sort: mastered last→category→focus→pup→level→skill_order. Inline edit: `pupCellEdit(td,id,field)`. Add modal: `openPupAddModal()`. Edit modal: `openPupEditModal(id)`. Enter in modal: closes if skill empty, saves otherwise. `savePupModal` POSTs/PATCHes Supabase and calls both `renderPupsPage()` and `renderPupSkillsHighlight()`.
 
 ### Birthdays (`features.js`)
 Table: `birthdays(id,name,birthday,present_ideas)`. `present_ideas` JSON array. `saveBdayModal` does NOT include `present_ideas`.
