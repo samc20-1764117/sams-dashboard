@@ -95,7 +95,7 @@ function renderPupSkillsHighlight(){
   const wk=getWkKey(0);
   const allSkills=(st.pup_skills||[]).filter(s=>(s.focus===true||s.focus==='true')&&s.stage!=='Mastered');
   if(!allSkills.length){el.style.cssText='display:none';return;}
-  el.style.cssText='display:block;background:rgba(255,255,255,0.18);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,0.35);border-radius:14px;box-shadow:0 2px 12px rgba(109,95,230,.08);margin:6px 0;padding:8px 0 6px';
+  el.style.cssText='display:block;background:rgba(255,255,255,0.18);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,0.35);border-radius:14px;box-shadow:0 2px 12px rgba(0,0,0,.06);margin:10px 8px;padding:4px 0';
   const skills=[...allSkills].sort((a,b)=>{
     const ad=!!(a._trainedWk&&a._trainedWk[wk]),bd=!!(b._trainedWk&&b._trainedWk[wk]);
     if(ad&&!bd)return 1;if(!ad&&bd)return -1;return 0;
@@ -104,16 +104,16 @@ function renderPupSkillsHighlight(){
   const rows=skills.map(s=>{
     const done=!!(s._trainedWk&&s._trainedWk[wk]);
     const glow=s.pup==='Mochi'?'0 0 0 2px rgba(167,139,250,.35)':s.pup==='Sunny'?'0 0 0 2px rgba(253,224,71,.5)':'0 0 0 2px rgba(148,163,184,.2)';
-    return`<div class="ti${done?' done':''}" style="${done?'opacity:.45':''}" ondblclick="openPupEditModal('${s.id}')">
+    return`<div class="ti${done?' done':''}" style="${done?'opacity:.45':''}" ondblclick="openPupEditModal('${s.id}')" onmouseenter="showPupSkillTip(this,'${s.id}')" onmouseleave="hidePupSkillTip()">
       <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${done?'checked':''} onchange="togPupSkillTrained('${s.id}',this.checked)" style="box-shadow:${glow}"></label>
-      <span class="tn" style="color:rgba(80,72,140,.75);font-weight:400">${escHtml(s.skill)}</span>
+      <span class="tn" style="font-weight:400">${escHtml(s.skill)}</span>
     </div>`;
   }).join('');
-  el.innerHTML=`<div style="display:flex;align-items:center;padding:4px 12px 8px;gap:8px;border-bottom:1px solid rgba(196,181,253,.2)">
-    <button onclick="showPage('pups')" style="flex:1;text-align:left;background:rgba(109,95,230,.12);border:1px solid rgba(109,95,230,.2);border-radius:20px;cursor:pointer;font-size:11px;font-weight:600;color:rgba(109,95,230,.85);font-family:inherit;padding:4px 12px;letter-spacing:.04em;text-transform:uppercase">Pup Skills</button>
-    ${allSkills.length?`<span style="font-size:10px;color:rgba(109,95,230,.45);font-weight:500">${doneCount}/${allSkills.length}</span>`:''}
-    <button class="btn-plus" onclick="openPupAddModal()">+</button>
-  </div><div style="padding:4px 0 4px">${rows}</div>`;
+  el.innerHTML=`<div style="display:flex;align-items:center;padding:4px 10px 5px;gap:8px;border-bottom:1px solid rgba(210,205,228,.3)">
+    <button onclick="showPage('pups')" style="flex-shrink:0;text-align:left;background:rgba(255,255,255,.9);border:1px solid rgba(210,205,228,.6);border-radius:var(--rs);cursor:pointer;font-size:10px;font-weight:600;color:var(--text);font-family:inherit;padding:2px 6px;box-shadow:inset 0 1px 0 rgba(255,255,255,.6);display:inline-flex;align-items:center">Pup Skills</button>
+    ${allSkills.length?`<span style="font-size:10px;color:var(--muted);font-weight:500">${doneCount}/${allSkills.length}</span>`:''}
+    <button class="btn-plus" onclick="openPupAddModal()" style="margin-left:auto">+</button>
+  </div><div style="padding:2px 0 2px">${rows}</div>`;
 }
 function togPupSkillTrained(id,done){
   const s=(st.pup_skills||[]).find(x=>String(x.id)===String(id));if(!s)return;
@@ -121,6 +121,30 @@ function togPupSkillTrained(id,done){
   const wk=getWkKey(0);
   if(done)s._trainedWk[wk]=true;else delete s._trainedWk[wk];
   save();renderPupSkillsHighlight();
+}
+// ── Pup Skill Tooltip ────────────────────────────────────────────────────────
+let _pupTipTimer=null;
+function showPupSkillTip(el,id){
+  clearTimeout(_pupTipTimer);
+  const s=(st.pup_skills||[]).find(x=>String(x.id)===String(id));if(!s)return;
+  let tip=document.getElementById('_pupSkillTip');
+  if(!tip){tip=document.createElement('div');tip.id='_pupSkillTip';tip.style.cssText='position:fixed;z-index:9999;background:rgba(255,255,255,.97);border:1px solid rgba(210,205,228,.7);border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.12);padding:8px 11px;font-size:11px;font-family:inherit;pointer-events:none;min-width:140px;max-width:200px';document.body.appendChild(tip);}
+  const lines=[];
+  if(s.pup)lines.push(`<span style="font-weight:600;color:var(--text)">${escHtml(s.pup)}</span>`);
+  if(s.category)lines.push(`<span style="color:var(--muted)">Category: </span><span>${escHtml(s.category)}</span>`);
+  if(s.level)lines.push(`<span style="color:var(--muted)">Level: </span><span>${escHtml(s.level)}</span>`);
+  if(s.stage)lines.push(`<span style="color:var(--muted)">Stage: </span><span>${escHtml(s.stage)}</span>`);
+  if(s.next_step)lines.push(`<span style="color:var(--muted)">Next: </span><span>${escHtml(s.next_step)}</span>`);
+  if(s.comments)lines.push(`<span style="color:var(--muted)">Notes: </span><span>${escHtml(s.comments)}</span>`);
+  tip.innerHTML=lines.map(l=>`<div style="margin-bottom:2px;line-height:1.4">${l}</div>`).join('');
+  const r=el.getBoundingClientRect();
+  const tw=tip.offsetWidth||200;
+  let left=r.right+6;if(left+tw>window.innerWidth-8)left=r.left-tw-6;
+  let top=r.top;if(top+tip.offsetHeight>window.innerHeight-8)top=window.innerHeight-tip.offsetHeight-8;
+  tip.style.left=left+'px';tip.style.top=top+'px';tip.style.display='block';
+}
+function hidePupSkillTip(){
+  _pupTipTimer=setTimeout(()=>{const t=document.getElementById('_pupSkillTip');if(t)t.style.display='none';},80);
 }
 // ── Daily Habits ──────────────────────────────────────────────────────────────
 function renderDailyHabits(){
