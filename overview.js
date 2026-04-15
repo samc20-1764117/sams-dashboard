@@ -98,15 +98,17 @@ function renderPupSkillsHighlight(){
   el.style.cssText='display:block;background:rgba(255,255,255,0.18);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,0.35);border-radius:14px;box-shadow:0 2px 12px rgba(0,0,0,.06);margin:10px 8px;padding:4px 0';
   const skills=[...allSkills].sort((a,b)=>{
     const ad=!!(a._trainedWk&&a._trainedWk[wk]),bd=!!(b._trainedWk&&b._trainedWk[wk]);
-    if(ad&&!bd)return 1;if(!ad&&bd)return -1;return 0;
+    if(ad&&!bd)return 1;if(!ad&&bd)return -1;
+    const pupOrd=p=>p==='Mochi'?0:p==='Sunny'?1:2;
+    return pupOrd(a.pup)-pupOrd(b.pup);
   });
   const doneCount=skills.filter(s=>s._trainedWk&&s._trainedWk[wk]).length;
   const rows=skills.map(s=>{
     const done=!!(s._trainedWk&&s._trainedWk[wk]);
-    const glow=s.pup==='Mochi'?'0 0 0 2px rgba(167,139,250,.35)':s.pup==='Sunny'?'0 0 0 2px rgba(253,224,71,.5)':'0 0 0 2px rgba(148,163,184,.2)';
+    const glow=s.pup==='Mochi'?'0 0 7px 3px rgba(167,139,250,.35)':s.pup==='Sunny'?'0 0 7px 3px rgba(253,224,71,.45)':'0 0 6px 2px rgba(148,163,184,.25)';
     return`<div class="ti${done?' done':''}" style="${done?'opacity:.45':''}" ondblclick="openPupEditModal('${s.id}')" onmouseenter="showPupSkillTip(this,'${s.id}')" onmouseleave="hidePupSkillTip()">
       <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${done?'checked':''} onchange="togPupSkillTrained('${s.id}',this.checked)" style="box-shadow:${glow}"></label>
-      <span class="tn" style="font-weight:400">${escHtml(s.skill)}</span>
+      <span class="tn" style="color:var(--muted)">${escHtml(s.skill)}</span>
     </div>`;
   }).join('');
   el.innerHTML=`<div style="display:flex;align-items:center;padding:4px 10px 5px;gap:8px;border-bottom:1px solid rgba(210,205,228,.3)">
@@ -134,7 +136,7 @@ function showPupSkillTip(el,id){
   if(s.category)lines.push(`<span style="color:var(--muted)">Category: </span><span>${escHtml(s.category)}</span>`);
   if(s.level)lines.push(`<span style="color:var(--muted)">Level: </span><span>${escHtml(s.level)}</span>`);
   if(s.stage)lines.push(`<span style="color:var(--muted)">Stage: </span><span>${escHtml(s.stage)}</span>`);
-  if(s.next_step)lines.push(`<span style="color:var(--muted)">Next: </span><span>${escHtml(s.next_step)}</span>`);
+  if(s.next_step)lines.push(`<span style="color:var(--muted)">Next: </span><span style="font-weight:600">${escHtml(s.next_step)}</span>`);
   if(s.comments)lines.push(`<span style="color:var(--muted)">Notes: </span><span>${escHtml(s.comments)}</span>`);
   tip.innerHTML=lines.map(l=>`<div style="margin-bottom:2px;line-height:1.4">${l}</div>`).join('');
   const r=el.getBoundingClientRect();
