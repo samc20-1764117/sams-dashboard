@@ -308,16 +308,27 @@ async function syncAll(silent=false){
     if(pupSkills){
       if(!silent){
         _pupUndoDirty=false;
+        const prevMap=new Map(st.pup_skills.map(s=>[String(s.id),s]));
         if(typeof _pupPendingIds!=='undefined'&&_pupPendingIds.size>0){
           st.pup_skills=pupSkills.map(dbS=>{
             const sid=String(dbS.id);
-            if(_pupPendingIds.has(sid)){const loc=st.pup_skills.find(x=>String(x.id)===sid);return loc||dbS;}
-            return dbS;
+            const prev=prevMap.get(sid);
+            if(_pupPendingIds.has(sid)){return prev||dbS;}
+            return prev&&prev._trainedWk?{...dbS,_trainedWk:prev._trainedWk}:dbS;
           });
         } else {
-          st.pup_skills=pupSkills;
+          st.pup_skills=pupSkills.map(dbS=>{
+            const prev=prevMap.get(String(dbS.id));
+            return prev&&prev._trainedWk?{...dbS,_trainedWk:prev._trainedWk}:dbS;
+          });
         }
-      } else if(!_pupUndoDirty){st.pup_skills=pupSkills;}
+      } else if(!_pupUndoDirty){
+        const prevMap=new Map(st.pup_skills.map(s=>[String(s.id),s]));
+        st.pup_skills=pupSkills.map(dbS=>{
+          const prev=prevMap.get(String(dbS.id));
+          return prev&&prev._trainedWk?{...dbS,_trainedWk:prev._trainedWk}:dbS;
+        });
+      }
     }
     if(recipes){
       if(!silent){_recUndoDirty=false;st.recipes=recipes;}
