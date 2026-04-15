@@ -312,7 +312,7 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 .tod-section{flex:0.95;min-width:0;display:flex;flex-direction:column;overflow:hidden}
 .tb-section{flex:1.05;min-width:0;display:flex;flex-direction:column;overflow:hidden}
 .tod-tb-divider{flex-shrink:0;border-left:1px solid rgba(210,205,228,.3);margin:0}
-.pup-skills-highlight{flex-shrink:0;margin:4px 8px 2px;border-radius:10px;background:rgba(255,252,248,.82);border:1px solid rgba(255,220,200,.55);box-shadow:0 3px 10px rgba(0,0,0,.07),inset 0 1px 0 rgba(255,255,255,.9);padding:6px 8px;min-height:32px}
+.pup-skills-highlight{flex-shrink:0;margin:4px 6px 2px;border-radius:10px;background:rgba(255,252,250,.88);border:1px solid rgba(210,200,235,.45);box-shadow:0 3px 12px rgba(0,0,0,.06),inset 0 1px 0 rgba(255,255,255,.92);overflow:hidden}
 .row2{display:flex;flex-direction:column;gap:12px;margin-bottom:14px}
 .row3{margin-top:20px;margin-bottom:14px;padding-bottom:2px}
 

@@ -86,7 +86,38 @@ function renderToday(){
     return t._type==='travel'||t._type==='birthday'?tRowExtra(t):t._type==='shop'?tRowShopVirt(t,true,arr,true):t._virtual?tRowTodayVirt(t,arr,true):tRow(t,{cat:true,catDot:true,drag:true,noDate:true,tbArrow:arr,noColor:true});
   }).join('');
   updateOvBanner();
+  renderPupSkillsHighlight();
   renderDailyHabits();
+}
+// ── Pup Skills Highlight ───────────────────────────────────────────────────────
+function renderPupSkillsHighlight(){
+  const el=document.getElementById('pupSkillsHighlight');if(!el)return;
+  const wk=getWkKey(0);
+  const skills=(st.pup_skills||[]).filter(s=>(s.focus===true||s.focus==='true')&&s.stage!=='Mastered');
+  if(!skills.length){el.style.display='none';return;}
+  el.style.display='block';
+  const doneCount=skills.filter(s=>s._trainedWk&&s._trainedWk[wk]).length;
+  const rows=skills.map(s=>{
+    const done=!!(s._trainedWk&&s._trainedWk[wk]);
+    const pupColor=s.pup==='Mochi'?'#8b5cf6':s.pup==='Sunny'?'#d97706':'#94a3b8';
+    const pupBg=s.pup==='Mochi'?'rgba(139,92,246,.12)':s.pup==='Sunny'?'rgba(217,119,6,.1)':'rgba(148,163,184,.1)';
+    return`<div class="ti${done?' done':''}" style="${done?'opacity:.45':''}" ondblclick="openPupEditModal('${s.id}')">
+      <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${done?'checked':''} onchange="togPupSkillTrained('${s.id}',this.checked)"></label>
+      <span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;background:${pupBg};color:${pupColor};flex-shrink:0;line-height:1.5;white-space:nowrap">${escHtml(s.pup)}</span>
+      <span class="tn">${escHtml(s.skill)}</span>
+    </div>`;
+  }).join('');
+  el.innerHTML=`<div style="display:flex;align-items:center;padding:4px 10px 2px;gap:6px">
+    <span style="font-size:10px;font-weight:600;letter-spacing:.05em;color:rgba(60,60,80,.55);text-transform:uppercase;flex:1">Train This Week</span>
+    ${skills.length?`<span style="font-size:10px;color:rgba(60,60,80,.45);font-weight:500">${doneCount}/${skills.length}</span>`:''}
+  </div><div style="padding:0 0 4px">${rows}</div>`;
+}
+function togPupSkillTrained(id,done){
+  const s=(st.pup_skills||[]).find(x=>String(x.id)===String(id));if(!s)return;
+  if(!s._trainedWk)s._trainedWk={};
+  const wk=getWkKey(0);
+  if(done)s._trainedWk[wk]=true;else delete s._trainedWk[wk];
+  save();renderPupSkillsHighlight();
 }
 // ── Daily Habits ──────────────────────────────────────────────────────────────
 function renderDailyHabits(){
@@ -2408,7 +2439,7 @@ function renderDayTB(){
   if(tbSc&&!tbSc._dragBound){tbSc._dragBound=true;tbSc.addEventListener('dragover',e=>e.preventDefault(),{passive:false});}
   const gut=document.createElement('div');gut.className='tb-gutter';
   const _dow=new Date(ds+'T00:00:00').getDay(),_isWkday=_dow>=1&&_dow<=5;
-  HOURS.forEach(h=>{const l=document.createElement('div');l.className='tb-tlbl';l.textContent=h===12?'12p':h>12?`${h-12}p`:`${h}a`;if(_isWkday&&(h===8||h===16)){l.style.color='rgba(80,75,110,.7)';l.style.fontWeight='700';}gut.appendChild(l);});
+  HOURS.forEach(h=>{const l=document.createElement('div');l.className='tb-tlbl';l.textContent=h===12?'12p':h>12?`${h-12}p`:`${h}a`;if(_isWkday&&(h===8||h===16)){l.style.color='rgba(45,40,85,.95)';l.style.fontWeight='800';}gut.appendChild(l);});
   grid.appendChild(gut);
   const col=document.createElement('div');col.className='tb-col';
   HOURS.forEach(h=>{
