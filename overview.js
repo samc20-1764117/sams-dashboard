@@ -106,12 +106,12 @@ function renderPupSkillsHighlight(){
     const glow=s.pup==='Mochi'?'0 0 0 2px rgba(167,139,250,.35)':s.pup==='Sunny'?'0 0 0 2px rgba(253,224,71,.5)':'0 0 0 2px rgba(148,163,184,.2)';
     return`<div class="ti${done?' done':''}" style="${done?'opacity:.45':''}" ondblclick="openPupEditModal('${s.id}')">
       <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${done?'checked':''} onchange="togPupSkillTrained('${s.id}',this.checked)" style="box-shadow:${glow}"></label>
-      <span class="tn">${escHtml(s.skill)}</span>
+      <span class="tn" style="color:rgba(80,72,140,.75);font-weight:400">${escHtml(s.skill)}</span>
     </div>`;
   }).join('');
-  el.innerHTML=`<div style="display:flex;align-items:center;padding:4px 10px 4px;gap:6px;border-bottom:1px solid rgba(0,0,0,.05)">
-    <button onclick="showPage('pups')" style="flex:1;text-align:left;background:none;border:none;cursor:pointer;font-size:12px;font-weight:800;color:var(--text);font-family:inherit;padding:0">Pup Skills${allSkills.length?` <span style="opacity:.45;font-weight:400;font-size:11px">· ${allSkills.length}</span>`:''}</button>
-    ${allSkills.length?`<span style="font-size:10px;color:rgba(60,60,80,.45);font-weight:500">${doneCount}/${allSkills.length}</span>`:''}
+  el.innerHTML=`<div style="display:flex;align-items:center;padding:4px 10px 4px;gap:6px;border-bottom:1px solid rgba(196,181,253,.25)">
+    <button onclick="showPage('pups')" style="flex:1;text-align:left;background:none;border:none;cursor:pointer;font-size:11px;font-weight:600;color:rgba(109,95,230,.7);font-family:inherit;padding:0;letter-spacing:.04em;text-transform:uppercase">Pup Skills</button>
+    ${allSkills.length?`<span style="font-size:10px;color:rgba(109,95,230,.45);font-weight:500">${doneCount}/${allSkills.length}</span>`:''}
     <button class="btn-plus" onclick="openPupAddModal()">+</button>
   </div><div style="padding:0 0 4px">${rows}</div>`;
 }
