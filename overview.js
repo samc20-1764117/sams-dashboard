@@ -115,7 +115,7 @@ function renderPupSkillsHighlight(){
     const right=total>0
       ?`<span style="font-size:10px;font-weight:600;color:${allDone?'var(--muted)':'var(--accent)'};margin-left:auto;flex-shrink:0">${doneC}/${total}</span>`
       :`<label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" onchange="togPupSkillTrained('${s.id}',this.checked)" style="box-shadow:${glow}"></label>`;
-    return`<div class="ti${allDone?' done':''}" style="${allDone?'opacity:.45':''}" ondblclick="openPupEditModal('${s.id}')" onmouseenter="showPupSkillTip(this,'${s.id}')" onmouseleave="hidePupSkillTip()">
+    return`<div class="ti${allDone?' done':''}" draggable="true" style="${allDone?'opacity:.45':''}" ondragstart="dragId='pupskill::${s.id}';event.dataTransfer.effectAllowed='copy';this.style.opacity='.4';document.body.classList.add('body-dragging');showWkcEdges(true);" ondragend="this.style.opacity='';document.body.classList.remove('body-dragging');showWkcEdges(false);" ondblclick="openPupEditModal('${s.id}')" onmouseenter="showPupSkillTip(this,'${s.id}')" onmouseleave="hidePupSkillTip()">
       ${right}
       <span class="tn" style="color:var(--muted);font-size:11px;font-weight:400">${escHtml(s.skill)}</span>
     </div>`;
@@ -637,6 +637,20 @@ function renderWkCal(){
             save();renderAll();renderWkCal();
             sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));
           },'Pinned weekly task to '+ds);
+        }
+        dragId=null;return;
+      }
+      // Pup skill dragged onto calendar day — create a session
+      if(dragId.startsWith('pupskill::')){
+        const skillId=dragId.split('::')[1];
+        const already=st.pupSessions.find(s=>String(s.skill_id)===String(skillId)&&s.day_date===ds);
+        if(!already){
+          const tmp='pss-tmp-'+Date.now();
+          st.pupSessions.push({id:tmp,skill_id:skillId,day_date:ds,done:false});
+          save();dragId=null;renderPupSkillsHighlight();
+          const sv=await sbReqSilent('POST','pup_skill_sessions',{skill_id:skillId,day_date:ds,done:false});
+          if(sv&&sv[0]){const i=st.pupSessions.findIndex(s=>s.id===tmp);if(i>-1)st.pupSessions[i]=sv[0];}
+          save();
         }
         dragId=null;return;
       }
