@@ -312,6 +312,8 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 .tod-section{flex:0.95;min-width:0;display:flex;flex-direction:column;overflow:hidden}
 .tb-section{flex:1.05;min-width:0;display:flex;flex-direction:column;overflow:hidden}
 .tod-tb-divider{flex-shrink:0;border-left:1px solid rgba(210,205,228,.3);margin:0}
+.pup-skills-highlight{flex-shrink:0;margin:4px 8px 2px;border-radius:10px;background:rgba(255,252,248,.72);border:1px solid rgba(255,220,200,.45);box-shadow:0 2px 8px rgba(0,0,0,.05),inset 0 1px 0 rgba(255,255,255,.8);overflow:hidden;display:none}
+.pup-skills-highlight:not(:empty){display:block}
 .row2{display:flex;flex-direction:column;gap:12px;margin-bottom:14px}
 .row3{margin-top:20px;margin-bottom:14px;padding-bottom:2px}
 
@@ -320,7 +322,7 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 .tb-lbl{flex:1;text-align:center;font-size:10px;font-weight:700;color:var(--text)}
 .tb-scroll{flex:1;overflow-y:scroll;position:relative;scrollbar-width:none;-ms-overflow-style:none}.tb-scroll::-webkit-scrollbar{display:none}
 .tb-grid{display:flex}
-.tb-gutter{width:30px;flex-shrink:0}
+.tb-gutter{width:24px;flex-shrink:0}
 .tb-tlbl{height:40px;display:flex;align-items:flex-start;justify-content:flex-end;padding-right:4px;padding-top:2px;font-family:'DM Sans',sans-serif;font-size:8px;color:var(--muted);border-right:1px solid rgba(210,205,228,.25)}
 .tb-col{flex:1;position:relative;border-left:1px solid rgba(210,205,228,.15)}
 .tb-hour{height:40px;border-bottom:1px solid rgba(210,205,228,.12);position:relative;cursor:crosshair;transition:background .1s}
