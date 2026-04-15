@@ -69,7 +69,7 @@ async function savePupModal(){
     signal:document.getElementById('pmSignal').value.trim()||null,
     comments:document.getElementById('pmComments').value.trim()||null,
   };
-  if(!data.skill){showToast('Skill name required');return;}
+  if(!data.skill){closeMod('pupModal');return;}
   if(data.focus&&data.stage!=='Mastered')data.stage='In Progress';
   pupSnapshot();
   closeMod('pupModal');

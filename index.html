@@ -644,7 +644,7 @@
 </div>
 
 <!-- Pup Skill Edit Modal -->
-<div class="overlay" id="pupModal" onclick="closeMod('pupModal',event)" onkeydown="if(event.key==='Escape')closeMod('pupModal');if(event.key==='Enter'&&event.target.tagName!=='SELECT'){event.preventDefault();savePupModal();}">
+<div class="overlay" id="pupModal" onclick="closeMod('pupModal',event)" onkeydown="if(event.key==='Escape')closeMod('pupModal');if(event.key==='Enter'&&event.target.tagName!=='SELECT'&&event.target.tagName!=='TEXTAREA'){event.preventDefault();const _n=document.getElementById('pmSkill').value.trim();if(!_n){closeMod('pupModal');}else{savePupModal();}}">
   <div class="modal task-modal" style="width:420px">
     <select id="pmPup" style="display:none"><option value="Mochi">Mochi</option><option value="Sunny">Sunny</option></select>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
