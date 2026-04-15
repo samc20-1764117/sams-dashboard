@@ -105,10 +105,10 @@ function renderPupSkillsHighlight(){
   const doneCount=skills.filter(s=>s._trainedWk&&s._trainedWk[wk]).length;
   const rows=skills.map(s=>{
     const done=!!(s._trainedWk&&s._trainedWk[wk]);
-    const glow=s.pup==='Mochi'?'0 0 7px 3px rgba(167,139,250,.35)':s.pup==='Sunny'?'0 0 7px 3px rgba(253,224,71,.45)':'0 0 6px 2px rgba(148,163,184,.25)';
+    const glow=s.pup==='Mochi'?'0 0 4px 2px rgba(167,139,250,.2)':s.pup==='Sunny'?'0 0 4px 2px rgba(253,224,71,.25)':'0 0 4px 1px rgba(148,163,184,.15)';
     return`<div class="ti${done?' done':''}" style="${done?'opacity:.45':''}" ondblclick="openPupEditModal('${s.id}')" onmouseenter="showPupSkillTip(this,'${s.id}')" onmouseleave="hidePupSkillTip()">
       <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${done?'checked':''} onchange="togPupSkillTrained('${s.id}',this.checked)" style="box-shadow:${glow}"></label>
-      <span class="tn" style="color:var(--muted)">${escHtml(s.skill)}</span>
+      <span class="tn" style="color:var(--muted);font-size:11px;font-weight:400">${escHtml(s.skill)}</span>
     </div>`;
   }).join('');
   el.innerHTML=`<div style="display:flex;align-items:center;padding:4px 10px 5px;gap:8px;border-bottom:1px solid rgba(210,205,228,.3)">
@@ -131,13 +131,11 @@ function showPupSkillTip(el,id){
   const s=(st.pup_skills||[]).find(x=>String(x.id)===String(id));if(!s)return;
   let tip=document.getElementById('_pupSkillTip');
   if(!tip){tip=document.createElement('div');tip.id='_pupSkillTip';tip.style.cssText='position:fixed;z-index:9999;background:rgba(255,255,255,.97);border:1px solid rgba(210,205,228,.7);border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.12);padding:8px 11px;font-size:11px;font-family:inherit;pointer-events:none;min-width:140px;max-width:200px';document.body.appendChild(tip);}
+  const pupColor=s.pup==='Mochi'?'#a78bfa':s.pup==='Sunny'?'#ca8a04':'var(--muted)';
   const lines=[];
-  if(s.pup)lines.push(`<span style="font-weight:600;color:var(--text)">${escHtml(s.pup)}</span>`);
-  if(s.category)lines.push(`<span style="color:var(--muted)">Category: </span><span>${escHtml(s.category)}</span>`);
-  if(s.level)lines.push(`<span style="color:var(--muted)">Level: </span><span>${escHtml(s.level)}</span>`);
-  if(s.stage)lines.push(`<span style="color:var(--muted)">Stage: </span><span>${escHtml(s.stage)}</span>`);
-  if(s.next_step)lines.push(`<span style="color:var(--muted)">Next: </span><span style="font-weight:600">${escHtml(s.next_step)}</span>`);
-  if(s.comments)lines.push(`<span style="color:var(--muted)">Notes: </span><span>${escHtml(s.comments)}</span>`);
+  if(s.pup)lines.push(`<span style="font-weight:600;color:${pupColor}">${escHtml(s.pup)}</span>${s.skill?` <span style="color:var(--text);font-weight:500">· ${escHtml(s.skill)}</span>`:''}`)
+  if(s.next_step)lines.push(`<span style="color:var(--muted);font-size:10px">Next: </span><span style="font-weight:600;font-size:10px">${escHtml(s.next_step)}</span>`);
+  if(s.comments)lines.push(`<span style="color:var(--muted);font-size:10px">${escHtml(s.comments)}</span>`);
   tip.innerHTML=lines.map(l=>`<div style="margin-bottom:2px;line-height:1.4">${l}</div>`).join('');
   const r=el.getBoundingClientRect();
   const tw=tip.offsetWidth||200;
