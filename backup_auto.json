@@ -1,5 +1,5 @@
 {
-  "exported_at": "2026-04-14T13:00:00.695Z",
+  "exported_at": "2026-04-15T13:00:00.309Z",
   "mode": "auto",
   "tables": {
     "tasks": [
@@ -444,6 +444,17 @@
         "goal_order": null
       },
       {
+        "name": "Make dentist apt",
+        "category": "Home",
+        "due_date": "2026-04-18",
+        "done": false,
+        "importance": null,
+        "id": "684df50b-70ca-4a44-9133-8531ba05356a",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
         "name": "Switch to Claude",
         "category": "My work",
         "due_date": "2026-03-09",
@@ -560,17 +571,6 @@
         "done": true,
         "importance": null,
         "id": "da1ddf20-94ca-44e3-9c47-9d08477bff86",
-        "important": false,
-        "notes": null,
-        "goal_order": null
-      },
-      {
-        "name": "Make dentist apt",
-        "category": "Home",
-        "due_date": "2026-04-18",
-        "done": false,
-        "importance": null,
-        "id": "684df50b-70ca-4a44-9133-8531ba05356a",
         "important": false,
         "notes": null,
         "goal_order": null
@@ -1049,7 +1049,7 @@
         "goal_order": null
       },
       {
-        "name": "TC26 rough draft due",
+        "name": "TC26 rough draft submit",
         "category": "My work",
         "due_date": "2026-04-15",
         "done": false,
@@ -1203,12 +1203,12 @@
         "goal_order": null
       },
       {
-        "name": "Start VO PM dash - needs to be finished 4/7",
+        "name": "PM dash - finalize build",
         "category": "My work",
         "due_date": "2026-04-17",
         "done": false,
         "importance": null,
-        "id": "4143707c-d83e-47ce-a8cf-e3571586d772",
+        "id": "7141d74b-fa75-41e8-9e24-5663274000bd",
         "important": false,
         "notes": null,
         "goal_order": null
@@ -1258,12 +1258,12 @@
         "goal_order": null
       },
       {
-        "name": "PM dash - finalize build",
-        "category": "My work",
-        "due_date": "2026-04-15",
+        "name": "Book london → iceland",
+        "category": "Home",
+        "due_date": "2026-04-17",
         "done": false,
         "importance": null,
-        "id": "7141d74b-fa75-41e8-9e24-5663274000bd",
+        "id": "3b7f34e0-2db9-4c24-a332-7314b9df9d79",
         "important": false,
         "notes": null,
         "goal_order": null
@@ -1275,6 +1275,17 @@
         "done": true,
         "importance": null,
         "id": "23b5f9cf-3eeb-470c-afd4-fae10d3511ad",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Start VO PM dash - needs to be finished 4/7",
+        "category": "My work",
+        "due_date": "2026-04-19",
+        "done": false,
+        "importance": null,
+        "id": "4143707c-d83e-47ce-a8cf-e3571586d772",
         "important": false,
         "notes": null,
         "goal_order": null
@@ -1324,12 +1335,12 @@
         "goal_order": null
       },
       {
-        "name": "Book london → iceland",
+        "name": "CVS physical apt make",
         "category": "Home",
-        "due_date": "2026-04-16",
+        "due_date": "2026-04-18",
         "done": false,
         "importance": null,
-        "id": "3b7f34e0-2db9-4c24-a332-7314b9df9d79",
+        "id": "8b400859-0828-4489-a59d-4787ab47fbbb",
         "important": false,
         "notes": null,
         "goal_order": null
@@ -1434,12 +1445,12 @@
         "goal_order": null
       },
       {
-        "name": "CVS physical apt make",
+        "name": "Mochi vet apt @10:30am",
         "category": "Home",
-        "due_date": "2026-04-18",
+        "due_date": "2026-04-16",
         "done": false,
         "importance": null,
-        "id": "8b400859-0828-4489-a59d-4787ab47fbbb",
+        "id": "71c209f1-1be2-4fed-bc94-a5ea334ac617",
         "important": false,
         "notes": null,
         "goal_order": null
@@ -1451,17 +1462,6 @@
         "done": true,
         "importance": null,
         "id": "3a9283db-1179-4b96-b56c-206e5e88d91c",
-        "important": false,
-        "notes": null,
-        "goal_order": null
-      },
-      {
-        "name": "Mochi vet apt @9am",
-        "category": "Home",
-        "due_date": "2026-04-23",
-        "done": false,
-        "importance": null,
-        "id": "71c209f1-1be2-4fed-bc94-a5ea334ac617",
         "important": false,
         "notes": null,
         "goal_order": null
@@ -1918,13 +1918,13 @@
         "goal_order": null
       },
       {
-        "name": "TC 26 slides",
-        "category": "My work",
-        "due_date": "2026-04-14",
+        "name": "Gum",
+        "category": "Home",
+        "due_date": "2026-04-16",
         "done": false,
         "importance": null,
-        "id": "b9c65f85-8c64-41b9-b62f-631d10b6416f",
-        "important": true,
+        "id": "a0cecb89-2992-42ce-9a8c-59934ba5febe",
+        "important": false,
         "notes": null,
         "goal_order": null
       },
@@ -1951,12 +1951,12 @@
         "goal_order": null
       },
       {
-        "name": "Unapplied Cash Doc",
-        "category": "Work",
-        "due_date": "2026-04-14",
+        "name": "Shower",
+        "category": "Home",
+        "due_date": "2026-04-15",
         "done": false,
         "importance": null,
-        "id": "69c1bae4-8492-4f5f-b84c-e103dbd1cc6f",
+        "id": "a718fe1b-99be-4d60-bf38-194b93e8be9c",
         "important": false,
         "notes": null,
         "goal_order": null
@@ -2050,17 +2050,6 @@
         "goal_order": 4
       },
       {
-        "name": "VO drill down",
-        "category": "My work",
-        "due_date": "2026-04-15",
-        "done": false,
-        "importance": null,
-        "id": "d687cd58-082d-493b-a334-45e8017f3e88",
-        "important": false,
-        "notes": null,
-        "goal_order": null
-      },
-      {
         "name": "Unapplied Cash",
         "category": "Work",
         "due_date": "2026-04-08",
@@ -2083,17 +2072,6 @@
         "goal_order": null
       },
       {
-        "name": "PM finalize build",
-        "category": "Weekly Goals",
-        "due_date": "2026-04-27",
-        "done": false,
-        "importance": null,
-        "id": "675b1e67-f03d-4d1e-980b-f0512255a6dd",
-        "important": false,
-        "notes": null,
-        "goal_order": 0
-      },
-      {
         "name": "Pups showers",
         "category": "Home",
         "due_date": "2026-04-09",
@@ -2103,17 +2081,6 @@
         "important": false,
         "notes": null,
         "goal_order": null
-      },
-      {
-        "name": "TC 26 slides",
-        "category": "Weekly Goals",
-        "due_date": "2026-04-27",
-        "done": false,
-        "importance": null,
-        "id": "3a146dba-340e-4b41-b271-17182bf600a6",
-        "important": true,
-        "notes": null,
-        "goal_order": 1
       },
       {
         "name": "Journal",
@@ -2149,6 +2116,17 @@
         "goal_order": null
       },
       {
+        "name": "PM finalize build",
+        "category": "Weekly Goals",
+        "due_date": "2026-04-27",
+        "done": false,
+        "importance": null,
+        "id": "675b1e67-f03d-4d1e-980b-f0512255a6dd",
+        "important": false,
+        "notes": null,
+        "goal_order": 0
+      },
+      {
         "name": "Drill down get ready for film",
         "category": "My work",
         "due_date": "2026-04-09",
@@ -2171,6 +2149,28 @@
         "goal_order": null
       },
       {
+        "name": "Unapplied Cash Doc",
+        "category": "Work",
+        "due_date": "2026-04-14",
+        "done": true,
+        "importance": null,
+        "id": "69c1bae4-8492-4f5f-b84c-e103dbd1cc6f",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "TC 26 slides",
+        "category": "My work",
+        "due_date": "2026-04-14",
+        "done": true,
+        "importance": null,
+        "id": "b9c65f85-8c64-41b9-b62f-631d10b6416f",
+        "important": true,
+        "notes": null,
+        "goal_order": null
+      },
+      {
         "name": "TC 26 slides",
         "category": "Weekly Goals",
         "due_date": "2026-04-20",
@@ -2182,13 +2182,13 @@
         "goal_order": 1
       },
       {
-        "name": "Remove black outline - shapes",
+        "name": "Datafam Present @6pm",
         "category": "My work",
-        "due_date": "2026-04-14",
+        "due_date": "2026-06-23",
         "done": false,
         "importance": null,
-        "id": "d0bc180d-f5f5-43b2-aa17-96a8b1bc1f07",
-        "important": false,
+        "id": "e1e65482-c567-4119-b0dc-7e48a3a84c57",
+        "important": true,
         "notes": null,
         "goal_order": null
       },
@@ -2200,6 +2200,17 @@
         "importance": null,
         "id": "e4bc8163-d045-43b6-96e8-be5f3535e9f5",
         "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Fix Tab license before 18th",
+        "category": "My work",
+        "due_date": "2026-05-11",
+        "done": false,
+        "importance": null,
+        "id": "0229bedc-773f-4ab3-8332-cab3d894dd67",
+        "important": true,
         "notes": null,
         "goal_order": null
       },
@@ -2235,6 +2246,17 @@
         "important": false,
         "notes": null,
         "goal_order": 1
+      },
+      {
+        "name": "Respond Linkedin",
+        "category": "Home",
+        "due_date": "2026-04-14",
+        "done": true,
+        "importance": null,
+        "id": "4c52811c-53dd-42d4-ad56-b9b5f5ab961c",
+        "important": false,
+        "notes": null,
+        "goal_order": null
       },
       {
         "name": "Get mail",
@@ -2279,9 +2301,73 @@
         "important": true,
         "notes": null,
         "goal_order": null
+      },
+      {
+        "name": "VO drill down",
+        "category": "My work",
+        "due_date": "2026-04-17",
+        "done": false,
+        "importance": null,
+        "id": "d687cd58-082d-493b-a334-45e8017f3e88",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "TC slides",
+        "category": "My work",
+        "due_date": "2026-04-15",
+        "done": false,
+        "importance": null,
+        "id": "95e8587d-67c8-4f15-9884-f85e56b86a50",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Icons design",
+        "category": "Work",
+        "due_date": "2026-04-15",
+        "done": false,
+        "importance": null,
+        "id": "3009729b-2fea-4b6c-8402-fdb718f96d2c",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Six sigma training",
+        "category": "Work",
+        "due_date": "2026-04-15",
+        "done": false,
+        "importance": null,
+        "id": "5ab1dec3-34e7-4b10-bed1-9eed3d726a44",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Remove black outline - shapes",
+        "category": "My work",
+        "due_date": "2026-04-15",
+        "done": false,
+        "importance": null,
+        "id": "d0bc180d-f5f5-43b2-aa17-96a8b1bc1f07",
+        "important": false,
+        "notes": null,
+        "goal_order": null
       }
     ],
     "shopping_list": [
+      {
+        "id": "314d0e7a-10a5-4f1e-8a8d-5dfe99801d99",
+        "name": "Outdoor fabric",
+        "store": "Other",
+        "done": false,
+        "created_at": "2026-03-26T14:44:45.457788+00:00",
+        "due_date": null,
+        "shop_order": -1
+      },
       {
         "id": "0ee083d7-85d0-424b-82e3-2a7f84c3723f",
         "name": "Grippy socks",
@@ -2301,6 +2387,15 @@
         "shop_order": 8
       },
       {
+        "id": "63d4a10b-e42d-43dd-9771-728f5e6cabfb",
+        "name": "Mochi collar",
+        "store": "Online",
+        "done": false,
+        "created_at": "2026-03-10T14:18:17.412058+00:00",
+        "due_date": "2026-04-17",
+        "shop_order": -3
+      },
+      {
         "id": "e1aa0f3c-8b72-4200-b4e5-d35ad2d1f74c",
         "name": "testing addng",
         "store": "Online",
@@ -2317,6 +2412,15 @@
         "created_at": "2026-03-26T14:45:18.837297+00:00",
         "due_date": null,
         "shop_order": 6
+      },
+      {
+        "id": "ad07b4ed-fd9b-4df5-8b36-e57374f43a28",
+        "name": "Dog ramp",
+        "store": "test",
+        "done": false,
+        "created_at": "2026-04-12T16:47:20.197015+00:00",
+        "due_date": "2026-04-15",
+        "shop_order": -4
       },
       {
         "id": "c18fd7a4-8484-4636-a93d-b9e349595c5a",
@@ -2373,24 +2477,6 @@
         "shop_order": null
       },
       {
-        "id": "010dd63b-57ff-457b-9ce4-d40bdb8bf1c2",
-        "name": "Mochi carrier",
-        "store": "Online",
-        "done": false,
-        "created_at": "2026-03-23T01:44:25.166696+00:00",
-        "due_date": null,
-        "shop_order": 3
-      },
-      {
-        "id": "8e27aad9-b437-4066-81dd-fd449bf538d5",
-        "name": "Leashes - adjustables",
-        "store": "Other",
-        "done": false,
-        "created_at": "2026-03-19T14:30:01.109607+00:00",
-        "due_date": null,
-        "shop_order": 0
-      },
-      {
         "id": "b7dae470-1ba1-4763-a66d-fece577fff49",
         "name": "Pee pads",
         "store": "Other",
@@ -2407,15 +2493,6 @@
         "created_at": "2026-03-18T03:20:12.333254+00:00",
         "due_date": null,
         "shop_order": null
-      },
-      {
-        "id": "2fc1a3c7-0cbc-4d49-a19a-48f20e289721",
-        "name": "Bowls",
-        "store": "Ikea",
-        "done": false,
-        "created_at": "2026-03-18T17:50:33.110344+00:00",
-        "due_date": null,
-        "shop_order": 1
       },
       {
         "id": "b2d7416b-a71c-4eb9-bd8f-032ac05c9e55",
@@ -2436,31 +2513,22 @@
         "shop_order": null
       },
       {
-        "id": "314d0e7a-10a5-4f1e-8a8d-5dfe99801d99",
-        "name": "Outdoor fabric",
-        "store": "Other",
-        "done": false,
-        "created_at": "2026-03-26T14:44:45.457788+00:00",
-        "due_date": null,
-        "shop_order": 5
-      },
-      {
         "id": "5060e587-8c21-4ce5-8bc3-ec6d43be311e",
         "name": "Garlic squeeze",
         "store": "HEB",
-        "done": false,
+        "done": true,
         "created_at": "2026-03-18T03:06:00.699938+00:00",
         "due_date": null,
-        "shop_order": 4
+        "shop_order": 6
       },
       {
-        "id": "63d4a10b-e42d-43dd-9771-728f5e6cabfb",
-        "name": "Mochi collar",
-        "store": "Online",
+        "id": "8e27aad9-b437-4066-81dd-fd449bf538d5",
+        "name": "Leashes - adjustables",
+        "store": "Other",
         "done": false,
-        "created_at": "2026-03-10T14:18:17.412058+00:00",
+        "created_at": "2026-03-19T14:30:01.109607+00:00",
         "due_date": null,
-        "shop_order": 7
+        "shop_order": 2
       },
       {
         "id": "9eeb0d0c-283a-4e0d-9f29-b1bc965db522",
@@ -2469,7 +2537,7 @@
         "done": false,
         "created_at": "2026-03-10T14:18:17.412058+00:00",
         "due_date": null,
-        "shop_order": 2
+        "shop_order": 3
       },
       {
         "id": "8d195c44-9915-4513-812e-e30725a386b2",
@@ -2478,16 +2546,16 @@
         "done": false,
         "created_at": "2026-03-10T14:18:17.412058+00:00",
         "due_date": null,
-        "shop_order": 6
+        "shop_order": 4
       },
       {
-        "id": "ad07b4ed-fd9b-4df5-8b36-e57374f43a28",
-        "name": "Dog ramp",
-        "store": "test",
+        "id": "2fc1a3c7-0cbc-4d49-a19a-48f20e289721",
+        "name": "Bowls",
+        "store": "Ikea",
         "done": false,
-        "created_at": "2026-04-12T16:47:20.197015+00:00",
+        "created_at": "2026-03-18T17:50:33.110344+00:00",
         "due_date": null,
-        "shop_order": null
+        "shop_order": 6
       }
     ],
     "travel": [
@@ -2653,6 +2721,24 @@
         "next_step": null
       },
       {
+        "id": "344aa60c-2049-4503-b545-f948903a987c",
+        "pup": "Mochi",
+        "skill": "Drop it",
+        "level": "Medium",
+        "skill_order": 9,
+        "stage": "In Progress",
+        "word": "Drop it",
+        "signal": null,
+        "currently_working_on": false,
+        "trainer_tip": null,
+        "comments": "With toys",
+        "created_at": "2026-03-12T14:03:48.056131+00:00",
+        "updated_at": "2026-03-12T14:03:48.056131+00:00",
+        "focus": true,
+        "category": "commands",
+        "next_step": "2. Distance"
+      },
+      {
         "id": "f74db5c4-4c9b-4a89-b758-a9e3a60fd40a",
         "pup": "Sunny",
         "skill": "Heel right",
@@ -2671,22 +2757,22 @@
         "next_step": null
       },
       {
-        "id": "344aa60c-2049-4503-b545-f948903a987c",
+        "id": "f3f51ea2-2179-47de-a150-ebaf252d40b4",
         "pup": "Mochi",
-        "skill": "Drop it",
+        "skill": "Come",
         "level": "Medium",
-        "skill_order": 9,
+        "skill_order": 7,
         "stage": "In Progress",
-        "word": "Drop it",
+        "word": "Come",
         "signal": null,
         "currently_working_on": false,
         "trainer_tip": null,
-        "comments": "test",
+        "comments": null,
         "created_at": "2026-03-12T14:03:48.056131+00:00",
         "updated_at": "2026-03-12T14:03:48.056131+00:00",
         "focus": true,
         "category": "commands",
-        "next_step": "2. Distance"
+        "next_step": "1. Duration"
       },
       {
         "id": "69237dcd-d494-4d99-be0c-c572565532f2",
@@ -2779,24 +2865,6 @@
         "next_step": null
       },
       {
-        "id": "9c34fd5e-32c1-4ee8-948b-32e823b422b6",
-        "pup": "Mochi",
-        "skill": "Wait",
-        "level": "Easy",
-        "skill_order": 3,
-        "stage": "In Progress",
-        "word": "Wait + Free",
-        "signal": "Palm",
-        "currently_working_on": true,
-        "trainer_tip": null,
-        "comments": null,
-        "created_at": "2026-03-12T14:03:48.056131+00:00",
-        "updated_at": "2026-03-12T14:03:48.056131+00:00",
-        "focus": true,
-        "category": "commands",
-        "next_step": "3. Distraction"
-      },
-      {
         "id": "ba49764c-aec1-466e-a08d-550184e397a8",
         "pup": "Mochi",
         "skill": "Sit",
@@ -2848,24 +2916,6 @@
         "updated_at": "2026-03-12T14:03:48.056131+00:00",
         "focus": false,
         "category": "manners",
-        "next_step": null
-      },
-      {
-        "id": "d2099888-e442-4235-b55b-bc0864287700",
-        "pup": "Sunny",
-        "skill": "Touch",
-        "level": "Easy",
-        "skill_order": 2,
-        "stage": "In Progress",
-        "word": "Boop",
-        "signal": "Hand or sticky",
-        "currently_working_on": true,
-        "trainer_tip": null,
-        "comments": "Add sticky note",
-        "created_at": "2026-03-12T14:03:48.056131+00:00",
-        "updated_at": "2026-03-12T14:03:48.056131+00:00",
-        "focus": true,
-        "category": "commands",
         "next_step": null
       },
       {
@@ -3013,24 +3063,6 @@
         "next_step": null
       },
       {
-        "id": "f3f51ea2-2179-47de-a150-ebaf252d40b4",
-        "pup": "Mochi",
-        "skill": "Come",
-        "level": "Medium",
-        "skill_order": 7,
-        "stage": "In Progress",
-        "word": "Come",
-        "signal": null,
-        "currently_working_on": false,
-        "trainer_tip": null,
-        "comments": null,
-        "created_at": "2026-03-12T14:03:48.056131+00:00",
-        "updated_at": "2026-03-12T14:03:48.056131+00:00",
-        "focus": true,
-        "category": "commands",
-        "next_step": null
-      },
-      {
         "id": "4c1774cb-3364-464f-a069-a30c5e3ff887",
         "pup": "Sunny",
         "skill": "Bring me",
@@ -3064,24 +3096,6 @@
         "updated_at": "2026-03-12T14:03:48.056131+00:00",
         "focus": true,
         "category": "fun",
-        "next_step": null
-      },
-      {
-        "id": "1f09d51a-c1d1-4790-b6ec-95e5bdd13c47",
-        "pup": "Sunny",
-        "skill": "Loose leash",
-        "level": "Hard",
-        "skill_order": 12,
-        "stage": "In Progress",
-        "word": null,
-        "signal": null,
-        "currently_working_on": true,
-        "trainer_tip": null,
-        "comments": "Adding dog distractions",
-        "created_at": "2026-03-12T14:03:48.056131+00:00",
-        "updated_at": "2026-03-12T14:03:48.056131+00:00",
-        "focus": true,
-        "category": "manners",
         "next_step": null
       },
       {
@@ -3294,6 +3308,60 @@
         "currently_working_on": true,
         "trainer_tip": null,
         "comments": "No hand signal - just word",
+        "created_at": "2026-03-12T14:03:48.056131+00:00",
+        "updated_at": "2026-03-12T14:03:48.056131+00:00",
+        "focus": true,
+        "category": "commands",
+        "next_step": "3. Distraction"
+      },
+      {
+        "id": "d2099888-e442-4235-b55b-bc0864287700",
+        "pup": "Sunny",
+        "skill": "Touch",
+        "level": "Easy",
+        "skill_order": 2,
+        "stage": "In Progress",
+        "word": "Boop",
+        "signal": "Hand or sticky",
+        "currently_working_on": true,
+        "trainer_tip": null,
+        "comments": "Add sticky note",
+        "created_at": "2026-03-12T14:03:48.056131+00:00",
+        "updated_at": "2026-03-12T14:03:48.056131+00:00",
+        "focus": true,
+        "category": "commands",
+        "next_step": null
+      },
+      {
+        "id": "1f09d51a-c1d1-4790-b6ec-95e5bdd13c47",
+        "pup": "Sunny",
+        "skill": "Loose leash",
+        "level": "Hard",
+        "skill_order": 12,
+        "stage": "In Progress",
+        "word": null,
+        "signal": null,
+        "currently_working_on": true,
+        "trainer_tip": null,
+        "comments": "Adding dog distractions",
+        "created_at": "2026-03-12T14:03:48.056131+00:00",
+        "updated_at": "2026-03-12T14:03:48.056131+00:00",
+        "focus": true,
+        "category": "manners",
+        "next_step": null
+      },
+      {
+        "id": "9c34fd5e-32c1-4ee8-948b-32e823b422b6",
+        "pup": "Mochi",
+        "skill": "Wait",
+        "level": "Easy",
+        "skill_order": 3,
+        "stage": "In Progress",
+        "word": "Wait + Free",
+        "signal": "Palm",
+        "currently_working_on": true,
+        "trainer_tip": null,
+        "comments": null,
         "created_at": "2026-03-12T14:03:48.056131+00:00",
         "updated_at": "2026-03-12T14:03:48.056131+00:00",
         "focus": true,
@@ -6009,20 +6077,6 @@
         "done": false
       },
       {
-        "id": "5d386ab3-d008-4ec6-bddf-d8fc2d885778",
-        "title": "Unapplied Cash Doc",
-        "day_date": "2026-04-14",
-        "start_time": "07:30:00",
-        "duration_minutes": 210,
-        "category": "Work",
-        "created_at": "2026-04-13T23:15:03.441723+00:00",
-        "start_minutes": 450,
-        "task_id": "69c1bae4-8492-4f5f-b84c-e103dbd1cc6f",
-        "rec_id": null,
-        "shop_id": null,
-        "done": false
-      },
-      {
         "id": "afcd89a6-1d2b-45b9-b158-d7e542b9be90",
         "title": "TC 26 -complete all vizzes",
         "day_date": "2026-04-10",
@@ -6079,6 +6133,20 @@
         "done": true
       },
       {
+        "id": "5d386ab3-d008-4ec6-bddf-d8fc2d885778",
+        "title": "Unapplied Cash Doc",
+        "day_date": "2026-04-14",
+        "start_time": "07:30:00",
+        "duration_minutes": 210,
+        "category": "Work",
+        "created_at": "2026-04-13T23:15:03.441723+00:00",
+        "start_minutes": 450,
+        "task_id": "69c1bae4-8492-4f5f-b84c-e103dbd1cc6f",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
         "id": "843705f3-f485-4272-bc85-7c5e30ca4a18",
         "title": "TC 26 slides",
         "day_date": "2026-04-14",
@@ -6090,18 +6158,172 @@
         "task_id": "b9c65f85-8c64-41b9-b62f-631d10b6416f",
         "rec_id": null,
         "shop_id": null,
+        "done": true
+      },
+      {
+        "id": "7ad2c455-329f-4a0f-86c8-ad8659879830",
+        "title": "Dog ramp",
+        "day_date": "2026-04-14",
+        "start_time": "18:30:00",
+        "duration_minutes": 30,
+        "category": "Shopping",
+        "created_at": "2026-04-14T19:46:07.161976+00:00",
+        "start_minutes": 1110,
+        "task_id": null,
+        "rec_id": null,
+        "shop_id": "ad07b4ed-fd9b-4df5-8b36-e57374f43a28",
         "done": false
       },
       {
-        "id": "ceeb0fa0-e80f-495d-8950-473cf02f2348",
-        "title": "Remove black outline - shapes",
+        "id": "c7f0ed6d-5004-4200-9926-8c825873eb31",
+        "title": "Respond Linkedin",
         "day_date": "2026-04-14",
-        "start_time": "15:45:00",
+        "start_time": "18:00:00",
+        "duration_minutes": 30,
+        "category": "Home",
+        "created_at": "2026-04-14T19:46:05.074335+00:00",
+        "start_minutes": 1080,
+        "task_id": "4c52811c-53dd-42d4-ad56-b9b5f5ab961c",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
+        "id": "89eeab05-a595-4f8d-81db-db897280e2d0",
+        "title": "TC slides",
+        "day_date": "2026-04-15",
+        "start_time": "07:45:00",
+        "duration_minutes": 210,
+        "category": "My work",
+        "created_at": "2026-04-14T21:31:00.368626+00:00",
+        "start_minutes": 450,
+        "task_id": "95e8587d-67c8-4f15-9884-f85e56b86a50",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "90e1233d-5bf0-42a0-bb69-a998d5d8c37c",
+        "title": "Six sigma training",
+        "day_date": "2026-04-15",
+        "start_time": "12:15:00",
+        "duration_minutes": 90,
+        "category": "Work",
+        "created_at": "2026-04-14T21:31:03.702581+00:00",
+        "start_minutes": 720,
+        "task_id": "5ab1dec3-34e7-4b10-bed1-9eed3d726a44",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "253be4dc-93fb-40f5-abaa-d9fe554fc3e9",
+        "title": "Icons design",
+        "day_date": "2026-04-15",
+        "start_time": "13:30:00",
+        "duration_minutes": 120,
+        "category": "Work",
+        "created_at": "2026-04-14T21:31:07.485829+00:00",
+        "start_minutes": 810,
+        "task_id": "3009729b-2fea-4b6c-8402-fdb718f96d2c",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "a24310b5-1961-4d32-bc69-7fcf876f34b9",
+        "title": "Gum",
+        "day_date": "2026-04-16",
+        "start_time": "17:30:00",
+        "duration_minutes": 30,
+        "category": "Home",
+        "created_at": "2026-04-14T21:32:10.527396+00:00",
+        "start_minutes": 1050,
+        "task_id": "a0cecb89-2992-42ce-9a8c-59934ba5febe",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "7edab5fe-4ab6-4892-9222-e3b38dc0d631",
+        "title": "Remove black outline - shapes",
+        "day_date": "2026-04-15",
+        "start_time": "16:15:00",
         "duration_minutes": 90,
         "category": "My work",
-        "created_at": "2026-04-13T23:15:15.255053+00:00",
-        "start_minutes": 915,
+        "created_at": "2026-04-14T21:31:24.324551+00:00",
+        "start_minutes": 930,
         "task_id": "d0bc180d-f5f5-43b2-aa17-96a8b1bc1f07",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "f86b37bb-3985-4118-b2bb-1a1878fc023a",
+        "title": "Haywire @6pm",
+        "day_date": "2026-04-16",
+        "start_time": "18:00:00",
+        "duration_minutes": 120,
+        "category": "Social",
+        "created_at": "2026-04-14T21:31:46.060411+00:00",
+        "start_minutes": 1080,
+        "task_id": "09caedb2-1887-46af-b2c7-a63062913dce",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "63a960b0-fced-416e-8970-4b418724be75",
+        "title": "Mochi vet apt @10:30am",
+        "day_date": "2026-04-16",
+        "start_time": "10:00:00",
+        "duration_minutes": 60,
+        "category": "Home",
+        "created_at": "2026-04-14T21:31:52.894104+00:00",
+        "start_minutes": 600,
+        "task_id": "71c209f1-1be2-4fed-bc94-a5ea334ac617",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "17c8e3f5-dcf5-4772-91ad-3dabe3f426a3",
+        "title": "Shower",
+        "day_date": "2026-04-15",
+        "start_time": "18:45:00",
+        "duration_minutes": 30,
+        "category": "Home",
+        "created_at": "2026-04-15T02:47:00.48603+00:00",
+        "start_minutes": 1080,
+        "task_id": "a718fe1b-99be-4d60-bf38-194b93e8be9c",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "e2c92ff5-d5f7-4763-b97b-257e0acb995b",
+        "title": "Dog ramp",
+        "day_date": "2026-04-15",
+        "start_time": "19:15:00",
+        "duration_minutes": 30,
+        "category": "Shopping",
+        "created_at": "2026-04-15T02:47:17.997312+00:00",
+        "start_minutes": 1140,
+        "task_id": null,
+        "rec_id": null,
+        "shop_id": "ad07b4ed-fd9b-4df5-8b36-e57374f43a28",
+        "done": false
+      },
+      {
+        "id": "3cd5cd6a-7894-4ed4-962f-de289c94cf3b",
+        "title": "TC26 rough draft due",
+        "day_date": "2026-04-15",
+        "start_time": "15:45:00",
+        "duration_minutes": 60,
+        "category": "My work",
+        "created_at": "2026-04-14T21:31:13.721946+00:00",
+        "start_minutes": 660,
+        "task_id": "6c0e9d3a-663e-41cc-ba90-5e1c99b8bba5",
         "rec_id": null,
         "shop_id": null,
         "done": false
@@ -6344,6 +6566,27 @@
         "date": "2026-04-10",
         "start_time": null,
         "end_time": null
+      },
+      {
+        "id": 34,
+        "base_id": 6,
+        "date": "2026-04-14",
+        "start_time": null,
+        "end_time": null
+      },
+      {
+        "id": 35,
+        "base_id": 6,
+        "date": "2026-04-16",
+        "start_time": null,
+        "end_time": null
+      },
+      {
+        "id": 36,
+        "base_id": 6,
+        "date": "2026-04-15",
+        "start_time": "18:30:00",
+        "end_time": "19:00:00"
       }
     ]
   }

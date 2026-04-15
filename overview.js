@@ -356,11 +356,16 @@ function tRowShopVirt(t,noDate=false,tbArrow=false,noColor=false){
     <button class="delbtn" onclick="event.stopPropagation();unscheduleShop('${t._shopId}')">✕</button>
   </div>`;
 }
+function _pupSessStyle(pup){
+  if(pup==='Mochi')return{bg:'rgba(167,139,250,.1)',b:'rgba(167,139,250,.25)',t:'rgba(80,60,160,.8)'};
+  if(pup==='Sunny')return{bg:'rgba(253,200,50,.13)',b:'rgba(234,179,8,.28)',t:'rgba(120,90,0,.8)'};
+  return{bg:'rgba(148,163,184,.08)',b:'rgba(148,163,184,.2)',t:'var(--text)'};
+}
 function tRowPupSess(t,noColor=false){
   const ov=isOv(t.due_date)&&!t.done;
-  const s=gc('recurring');const ps=ov?OV:s;
+  const ps=ov?OV:_pupSessStyle(t._pup);
   const pupGlow=t._pup==='Mochi'?'0 0 4px 2px rgba(167,139,250,.2)':t._pup==='Sunny'?'0 0 4px 2px rgba(253,224,71,.25)':'0 0 4px 1px rgba(148,163,184,.15)';
-  return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''}" draggable="true" style="${!ov&&!noColor?`background:${s.bg}`:''}" id="ti-pup-sess-${t._pupSessId}" ondragstart="dragId='pupsess::${t._pupSessId}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);" ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false);">
+  return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''}" draggable="true" style="${!ov&&!noColor?`background:${ps.bg};border:1px solid ${ps.b}`:''}" id="ti-pup-sess-${t._pupSessId}" ondragstart="dragId='pupsess::${t._pupSessId}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);" ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false);">
     <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="togPupSessionDone('${t._pupSessId}',this.checked)" style="box-shadow:${pupGlow}"></label>
     <span class="tn">${escHtml(t.name)}</span>
     <svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3" fill="${ps.bg}" stroke="${ps.d}" stroke-opacity="0.4" stroke-width="1"/></svg>
@@ -776,7 +781,7 @@ function renderWkCal(){
     dayTasks.forEach(t=>{
       const ov=isOv(t.due_date)&&!t.done,imp=t.important&&!ov&&!t.done;
       const _chipCat=(t._isWrec||t._isWrRule)?'weekly_reset':(t._virtual&&t._recId?'recurring':t.category);
-      const s=ov?OV:imp?IMP:gc(_chipCat);
+      const s=ov?OV:imp?IMP:t._type==='pup'?_pupSessStyle(t._pup):gc(_chipCat);
       const chip=document.createElement('div');chip.className='chip'+(t.done?' done-chip':'');
       chip.style.cssText=`background:${s.bg};color:${s.t};border-color:${s.b}`;
       if(!t._virtual)chip.dataset.tid=String(t.id);
@@ -784,6 +789,7 @@ function renderWkCal(){
       else if(t._isWrRule)chip.dataset.tid='wrrule-virt-'+t._ruleId;
       else if(t._isWrec)chip.dataset.tid='wrec-'+t._recId;
       else if(t._recId)chip.dataset.tid='rec-virt-'+t._recId;
+      else if(t._type==='pup')chip.dataset.tid='pup-sess-'+t._pupSessId;
       chip.draggable=true;
       chip.addEventListener('dragstart',e2=>{
         if(t._type==='pup'){dragId='pupsess::'+t._pupSessId+'::'+ds;}
