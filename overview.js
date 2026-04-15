@@ -58,11 +58,15 @@ function renderToday(){
   const shopToday=st.shopping
     .filter(s=>!s.done&&s.due_date&&(s.due_date===ds||(dayOff===0&&isOv(s.due_date))))
     .map(s=>({id:'shop-cal-'+s.id,name:s.name,category:'Shopping',due_date:s.due_date,done:!!s.done,_shopId:s.id,_virtual:true,_type:'shop',store:s.store}));
+  const pupSessToday=(st.pupSessions||[])
+    .filter(s=>s.day_date===ds||(dayOff===0&&s.day_date<ds&&!s.done))
+    .map(s=>{const skill=(st.pup_skills||[]).find(x=>String(x.id)===String(s.skill_id));if(!skill)return null;return{id:'pup-sess-'+s.id,name:skill.skill,category:'Recurring',due_date:s.day_date,done:s.done,_pupSessId:s.id,_skillId:s.skill_id,_pup:skill.pup,_virtual:true,_type:'pup'};}).filter(Boolean);
   const virtToday=[
     ...allRecVirt.filter(v=>v.due_date===ds||(dayOff===0&&isOv(v.due_date)&&!v.done)),
     ...wrecToday,
     ...wrRulesToday,
     ...shopToday,
+    ...pupSessToday,
     ...getExtrasForDate(ds)
   ];
   const allToday=[...ts,...virtToday];
@@ -83,7 +87,7 @@ function renderToday(){
   }
   document.getElementById('todList').innerHTML=sorted.map(t=>{
     const arr=!t.done&&!_hasTBToday(t);
-    return t._type==='travel'||t._type==='birthday'?tRowExtra(t):t._type==='shop'?tRowShopVirt(t,true,arr,true):t._virtual?tRowTodayVirt(t,arr,true):tRow(t,{cat:true,catDot:true,drag:true,noDate:true,tbArrow:arr,noColor:true});
+    return t._type==='travel'||t._type==='birthday'?tRowExtra(t):t._type==='shop'?tRowShopVirt(t,true,arr,true):t._type==='pup'?tRowPupSess(t,true):t._virtual?tRowTodayVirt(t,arr,true):tRow(t,{cat:true,catDot:true,drag:true,noDate:true,tbArrow:arr,noColor:true});
   }).join('');
   updateOvBanner();
   renderPupSkillsHighlight();
@@ -148,6 +152,17 @@ async function togPupSkillTrained(id,checked){
       sbReqSilent('PATCH','pup_skill_sessions',{done:false},`?id=eq.${existing.id}`);
     }
   }
+}
+async function togPupSessionDone(sessId,done){
+  const sess=st.pupSessions.find(s=>String(s.id)===String(sessId));if(!sess)return;
+  sess.done=done;
+  save();renderPupSkillsHighlight();renderToday();renderWkCal();
+  sbReqSilent('PATCH','pup_skill_sessions',{done},`?id=eq.${sessId}`);
+}
+async function removePupSession(sessId){
+  st.pupSessions=st.pupSessions.filter(s=>String(s.id)!==String(sessId));
+  save();renderPupSkillsHighlight();renderToday();renderWkCal();
+  sbReqSilent('DELETE','pup_skill_sessions',null,`?id=eq.${sessId}`);
 }
 // ── Pup Skill Tooltip ────────────────────────────────────────────────────────
 let _pupTipTimer=null;
@@ -234,6 +249,7 @@ async function submitDailyHabit(){
 function taskTypePri(t){
   if(t._type==='birthday')return 4;
   if(t._type==='shop')return 3;
+  if(t._type==='pup')return 2;
   if(t._virtual)return 2;
   return 1;
 }
@@ -336,6 +352,17 @@ function tRowShopVirt(t,noDate=false,tbArrow=false,noColor=false){
     ${!noDate&&t.due_date?`<span class="dlbl ${ov?'ov':''}">${fmtD(t.due_date)}</span>`:''}
     ${tbArrow?'<span class="tb-arrow">›</span>':''}
     <button class="delbtn" onclick="event.stopPropagation();unscheduleShop('${t._shopId}')">✕</button>
+  </div>`;
+}
+function tRowPupSess(t,noColor=false){
+  const ov=isOv(t.due_date)&&!t.done;
+  const s=gc('recurring');const ps=ov?OV:s;
+  const pupGlow=t._pup==='Mochi'?'0 0 4px 2px rgba(167,139,250,.2)':t._pup==='Sunny'?'0 0 4px 2px rgba(253,224,71,.25)':'0 0 4px 1px rgba(148,163,184,.15)';
+  return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''}" style="${!ov&&!noColor?`background:${s.bg}`:''}" id="ti-pup-sess-${t._pupSessId}">
+    <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="togPupSessionDone('${t._pupSessId}',this.checked)" style="box-shadow:${pupGlow}"></label>
+    <span class="tn">${escHtml(t.name)}</span>
+    <svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3" fill="${ps.bg}" stroke="${ps.d}" stroke-opacity="0.4" stroke-width="1"/></svg>
+    <button class="delbtn" onclick="event.stopPropagation();removePupSession('${t._pupSessId}')">✕</button>
   </div>`;
 }
 // ── Week summary (important→rest, NO overdue; + recurring tasks for this week) ─
@@ -640,6 +667,24 @@ function renderWkCal(){
         }
         dragId=null;return;
       }
+      // Pup session chip dragged to a new day — move the session
+      if(dragId.startsWith('pupsess::')){
+        const[,sessId,origDs]=dragId.split('::');
+        if(ds!==origDs){
+          const sess=st.pupSessions.find(s=>String(s.id)===String(sessId));
+          if(sess){
+            const already=st.pupSessions.find(s=>String(s.skill_id)===String(sess.skill_id)&&s.day_date===ds&&String(s.id)!==String(sessId));
+            if(!already){
+              const prev=sess.day_date;
+              sess.day_date=ds;
+              save();dragId=null;renderPupSkillsHighlight();renderWkCal();renderToday();
+              sbReqSilent('PATCH','pup_skill_sessions',{day_date:ds},`?id=eq.${sessId}`);
+              pushUndo(()=>{sess.day_date=prev;save();renderPupSkillsHighlight();renderWkCal();renderToday();sbReqSilent('PATCH','pup_skill_sessions',{day_date:prev},`?id=eq.${sessId}`);},'Moved pup session');
+            }
+          }
+        }
+        dragId=null;return;
+      }
       // Pup skill dragged onto calendar day — create a session
       if(dragId.startsWith('pupskill::')){
         const skillId=dragId.split('::')[1];
@@ -706,19 +751,24 @@ function renderWkCal(){
     // Add shopping items assigned to this date
     const shopForDay=st.shopping.filter(s=>s.due_date===ds&&!s.done).map(s=>({id:'shop-cal-'+s.id,name:s.name,category:'Shopping',due_date:ds,done:false,_shopId:s.id,_virtual:true,_type:'shop'}));
     const shopForDayDone=st.shopping.filter(s=>s.due_date===ds&&s.done).map(s=>({id:'shop-cal-done-'+s.id,name:s.name,category:'Shopping',due_date:ds,done:true,_shopId:s.id,_virtual:true,_type:'shop'}));
+    const _mkPupSessItem=(s,done)=>{const skill=(st.pup_skills||[]).find(x=>String(x.id)===String(s.skill_id));if(!skill)return null;return{id:'pup-sess-'+(done?'done-':'')+s.id,name:skill.skill,category:'Recurring',due_date:ds,done,_pupSessId:s.id,_skillId:s.skill_id,_pup:skill.pup,_virtual:true,_type:'pup'};};
+    const pupSessForDay=(st.pupSessions||[]).filter(s=>s.day_date===ds&&!s.done).map(s=>_mkPupSessItem(s,false)).filter(Boolean);
+    const pupSessForDayDone=(st.pupSessions||[]).filter(s=>s.day_date===ds&&s.done).map(s=>_mkPupSessItem(s,true)).filter(Boolean);
     const undoneDay=sortTasksForDay([
       ...st.tasks.filter(t=>t.due_date&&t.due_date.split('T')[0]===ds&&!t.done&&t.category!=='Weekly Goals'),
       ...virtForDay,
       ...wrecForDay,
       ...wrRulesForDay,
-      ...shopForDay
+      ...shopForDay,
+      ...pupSessForDay
     ],ds);
     const doneDay=[
       ...st.tasks.filter(t=>t.due_date&&t.due_date.split('T')[0]===ds&&t.done&&t.category!=='Weekly Goals'),
       ...virtForDayDone,
       ...wrecForDayDone,
       ...wrRulesForDayDone,
-      ...shopForDayDone
+      ...shopForDayDone,
+      ...pupSessForDayDone
     ];
     let dayTasks=[...undoneDay,...doneDay];
     dayTasks.forEach(t=>{
@@ -734,7 +784,8 @@ function renderWkCal(){
       else if(t._recId)chip.dataset.tid='rec-virt-'+t._recId;
       chip.draggable=true;
       chip.addEventListener('dragstart',e2=>{
-        if(t._type==='shop'){dragId='shop::'+t._shopId;}
+        if(t._type==='pup'){dragId='pupsess::'+t._pupSessId+'::'+ds;}
+        else if(t._type==='shop'){dragId='shop::'+t._shopId;}
         else if(t._isWrRule){dragId='wrrule::'+t._ruleId;}
         else if(t._isWrec){dragId='wrec::'+t._recId;}
         else if(t._virtual){dragId='rec::'+t._recId+'::'+t.due_date;}
@@ -746,7 +797,8 @@ function renderWkCal(){
       const chk=document.createElement('input');chk.type='checkbox';chk.className='wchk';chk.checked=t.done;
       chk.addEventListener('change',e2=>{
         e2.stopPropagation();
-        if(t._type==='shop'){togShop(t._shopId,chk.checked);}
+        if(t._type==='pup'){togPupSessionDone(t._pupSessId,chk.checked);}
+        else if(t._type==='shop'){togShop(t._shopId,chk.checked);}
         else if(t._isWrRule){togWrRule(String(t._ruleId),chk.checked,t._wkKey||getWkKey(wkOff));}
         else if(t._isWrec){togRec(t._recId,chk.checked);}
         else if(t._virtual){togRecVirt(t._recId,chk.checked,t._wkKey||getWkKey(wkOff));}
@@ -782,11 +834,12 @@ function renderWkCal(){
         }
         applySelHighlight();
       });
-      chip.addEventListener('dblclick',e=>{e.stopPropagation();if(t._type==='shop')tiDblShop(e,t._shopId);else if(!t._virtual)tiDbl(e,t.id);else tiDblRec(e,t._recId);});
+      chip.addEventListener('dblclick',e=>{e.stopPropagation();if(t._type==='pup'){openPupEditModal(t._skillId);}else if(t._type==='shop')tiDblShop(e,t._shopId);else if(!t._virtual)tiDbl(e,t.id);else tiDblRec(e,t._recId);});
       const dx=document.createElement('button');dx.className='chip-del';dx.textContent='✕';
       dx.title=(t._type==='shop'||t._isWrec||t._isWrRule)?'Remove from calendar':t._virtual?'Delete recurring task':'Delete task';
       dx.addEventListener('click',e2=>{
         e2.stopPropagation();
+        if(t._type==='pup'){removePupSession(t._pupSessId);return;}
         if(t._type==='shop'){
           const s=st.shopping.find(x=>String(x.id)===String(t._shopId));
           if(s){const prev=s.due_date;s.due_date=null;save();renderAll();renderWkCal();
