@@ -113,7 +113,6 @@ function renderPupSkillsHighlight(){
   }).join('');
   el.innerHTML=`<div style="display:flex;align-items:center;padding:4px 10px 5px;gap:8px;border-bottom:1px solid rgba(210,205,228,.3)">
     <button onclick="showPage('pups')" style="flex-shrink:0;text-align:left;background:rgba(255,255,255,.9);border:1px solid rgba(210,205,228,.6);border-radius:var(--rs);cursor:pointer;font-size:10px;font-weight:600;color:var(--text);font-family:inherit;padding:2px 6px;box-shadow:inset 0 1px 0 rgba(255,255,255,.6);display:inline-flex;align-items:center">Pup Skills</button>
-    ${allSkills.length?`<span style="font-size:10px;color:var(--muted);font-weight:500">${doneCount}/${allSkills.length}</span>`:''}
     <button class="btn-plus" onclick="openPupAddModal()" style="margin-left:auto">+</button>
   </div><div style="padding:2px 0 2px">${rows}</div>`;
 }
@@ -134,7 +133,7 @@ function showPupSkillTip(el,id){
   const pupColor=s.pup==='Mochi'?'#a78bfa':s.pup==='Sunny'?'#ca8a04':'var(--muted)';
   const pupLetter=s.pup==='Mochi'?'M':s.pup==='Sunny'?'S':'?';
   const skillLine=s.skill?`<div style="display:flex;justify-content:space-between;align-items:baseline;line-height:1.4;margin-bottom:3px"><span style="color:var(--text);font-weight:700;font-size:12px">${escHtml(s.skill)}</span><span style="font-weight:700;font-size:11px;color:${pupColor};margin-left:10px">${pupLetter}</span></div>`:'';
-  const nextLine=s.next_step?`<div style="line-height:1.4;margin-bottom:2px;font-size:11px;font-weight:500;color:var(--muted)">${escHtml(s.next_step)}</div>`:'';
+  const nextLine=s.next_step?`<div style="line-height:1.4;margin-bottom:2px;font-size:11px;font-weight:500;color:rgba(44,24,16,.55)">${escHtml(s.next_step)}</div>`:'';
   const notesLine=s.comments?`<div style="line-height:1.4;font-size:10px;color:var(--subtle)">${escHtml(s.comments)}</div>`:'';
   tip.innerHTML=skillLine+nextLine+notesLine;
   const r=el.getBoundingClientRect();
