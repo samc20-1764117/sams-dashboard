@@ -887,5 +887,8 @@ document.addEventListener('keydown',e=>{
     else if(document.getElementById('mModal').classList.contains('open')){closeMod('mModal');document.activeElement?.blur();}
     else if(document.getElementById('recMoModal').classList.contains('open')&&!selectedTasks.size){closeMod('recMoModal');document.activeElement?.blur();}
   }
+  if(e.key==='o'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus')&&!document.querySelector('.overlay.open')){
+    e.preventDefault();showPage('overview');
+  }
 });
 

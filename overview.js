@@ -93,23 +93,26 @@ function renderToday(){
 function renderPupSkillsHighlight(){
   const el=document.getElementById('pupSkillsHighlight');if(!el)return;
   const wk=getWkKey(0);
-  const skills=(st.pup_skills||[]).filter(s=>(s.focus===true||s.focus==='true')&&s.stage!=='Mastered');
-  if(!skills.length){el.style.display='none';return;}
+  const allSkills=(st.pup_skills||[]).filter(s=>(s.focus===true||s.focus==='true')&&s.stage!=='Mastered');
+  if(!allSkills.length){el.style.display='none';return;}
   el.style.display='block';
+  const skills=[...allSkills].sort((a,b)=>{
+    const ad=!!(a._trainedWk&&a._trainedWk[wk]),bd=!!(b._trainedWk&&b._trainedWk[wk]);
+    if(ad&&!bd)return 1;if(!ad&&bd)return -1;return 0;
+  });
   const doneCount=skills.filter(s=>s._trainedWk&&s._trainedWk[wk]).length;
   const rows=skills.map(s=>{
     const done=!!(s._trainedWk&&s._trainedWk[wk]);
-    const pupColor=s.pup==='Mochi'?'#8b5cf6':s.pup==='Sunny'?'#d97706':'#94a3b8';
-    const pupBg=s.pup==='Mochi'?'rgba(139,92,246,.12)':s.pup==='Sunny'?'rgba(217,119,6,.1)':'rgba(148,163,184,.1)';
+    const glow=s.pup==='Mochi'?'0 0 0 5px rgba(167,139,250,.28)':s.pup==='Sunny'?'0 0 0 5px rgba(253,224,71,.35)':'0 0 0 5px rgba(148,163,184,.2)';
     return`<div class="ti${done?' done':''}" style="${done?'opacity:.45':''}" ondblclick="openPupEditModal('${s.id}')">
-      <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${done?'checked':''} onchange="togPupSkillTrained('${s.id}',this.checked)"></label>
-      <span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;background:${pupBg};color:${pupColor};flex-shrink:0;line-height:1.5;white-space:nowrap">${escHtml(s.pup)}</span>
+      <label class="chk-wrap" onclick="event.stopPropagation()" style="box-shadow:${glow};border-radius:50%"><input type="checkbox" class="chk" ${done?'checked':''} onchange="togPupSkillTrained('${s.id}',this.checked)"></label>
       <span class="tn">${escHtml(s.skill)}</span>
     </div>`;
   }).join('');
-  el.innerHTML=`<div style="display:flex;align-items:center;padding:4px 10px 2px;gap:6px">
-    <span style="font-size:10px;font-weight:600;letter-spacing:.05em;color:rgba(60,60,80,.55);text-transform:uppercase;flex:1">Train This Week</span>
-    ${skills.length?`<span style="font-size:10px;color:rgba(60,60,80,.45);font-weight:500">${doneCount}/${skills.length}</span>`:''}
+  el.innerHTML=`<div style="display:flex;align-items:center;padding:4px 10px 2px;gap:6px;border-bottom:1px solid rgba(0,0,0,.05)">
+    <span style="font-size:10px;font-weight:600;letter-spacing:.05em;color:rgba(60,60,80,.55);text-transform:uppercase;flex:1">Pup Skills</span>
+    ${allSkills.length?`<span style="font-size:10px;color:rgba(60,60,80,.45);font-weight:500">${doneCount}/${allSkills.length}</span>`:''}
+    <button class="btn btn-ghost btn-xs" onclick="showPage('pups')" style="padding:1px 6px;font-size:11px;line-height:1.4">🐾</button>
   </div><div style="padding:0 0 4px">${rows}</div>`;
 }
 function togPupSkillTrained(id,done){
