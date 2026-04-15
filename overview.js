@@ -94,8 +94,8 @@ function renderPupSkillsHighlight(){
   const el=document.getElementById('pupSkillsHighlight');if(!el)return;
   const wk=getWkKey(0);
   const allSkills=(st.pup_skills||[]).filter(s=>(s.focus===true||s.focus==='true')&&s.stage!=='Mastered');
-  if(!allSkills.length){el.style.display='none';return;}
-  el.style.display='block';
+  if(!allSkills.length){el.style.cssText='display:none';return;}
+  el.style.cssText='display:block;background:rgba(255,255,255,0.18);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,0.35);border-radius:14px;box-shadow:0 2px 12px rgba(109,95,230,.08);margin:6px 0;padding:8px 0 6px';
   const skills=[...allSkills].sort((a,b)=>{
     const ad=!!(a._trainedWk&&a._trainedWk[wk]),bd=!!(b._trainedWk&&b._trainedWk[wk]);
     if(ad&&!bd)return 1;if(!ad&&bd)return -1;return 0;
@@ -109,11 +109,11 @@ function renderPupSkillsHighlight(){
       <span class="tn" style="color:rgba(80,72,140,.75);font-weight:400">${escHtml(s.skill)}</span>
     </div>`;
   }).join('');
-  el.innerHTML=`<div style="display:flex;align-items:center;padding:4px 10px 4px;gap:6px;border-bottom:1px solid rgba(196,181,253,.25)">
-    <button onclick="showPage('pups')" style="flex:1;text-align:left;background:none;border:none;cursor:pointer;font-size:11px;font-weight:600;color:rgba(109,95,230,.7);font-family:inherit;padding:0;letter-spacing:.04em;text-transform:uppercase">Pup Skills</button>
+  el.innerHTML=`<div style="display:flex;align-items:center;padding:4px 12px 8px;gap:8px;border-bottom:1px solid rgba(196,181,253,.2)">
+    <button onclick="showPage('pups')" style="flex:1;text-align:left;background:rgba(109,95,230,.12);border:1px solid rgba(109,95,230,.2);border-radius:20px;cursor:pointer;font-size:11px;font-weight:600;color:rgba(109,95,230,.85);font-family:inherit;padding:4px 12px;letter-spacing:.04em;text-transform:uppercase">Pup Skills</button>
     ${allSkills.length?`<span style="font-size:10px;color:rgba(109,95,230,.45);font-weight:500">${doneCount}/${allSkills.length}</span>`:''}
     <button class="btn-plus" onclick="openPupAddModal()">+</button>
-  </div><div style="padding:0 0 4px">${rows}</div>`;
+  </div><div style="padding:4px 0 4px">${rows}</div>`;
 }
 function togPupSkillTrained(id,done){
   const s=(st.pup_skills||[]).find(x=>String(x.id)===String(id));if(!s)return;
