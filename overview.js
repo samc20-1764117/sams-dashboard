@@ -103,16 +103,16 @@ function renderPupSkillsHighlight(){
   const doneCount=skills.filter(s=>s._trainedWk&&s._trainedWk[wk]).length;
   const rows=skills.map(s=>{
     const done=!!(s._trainedWk&&s._trainedWk[wk]);
-    const glow=s.pup==='Mochi'?'0 0 0 5px rgba(167,139,250,.28)':s.pup==='Sunny'?'0 0 0 5px rgba(253,224,71,.35)':'0 0 0 5px rgba(148,163,184,.2)';
+    const glow=s.pup==='Mochi'?'0 0 0 3px rgba(167,139,250,.15)':s.pup==='Sunny'?'0 0 0 3px rgba(253,224,71,.2)':'0 0 0 3px rgba(148,163,184,.12)';
     return`<div class="ti${done?' done':''}" style="${done?'opacity:.45':''}" ondblclick="openPupEditModal('${s.id}')">
       <label class="chk-wrap" onclick="event.stopPropagation()" style="box-shadow:${glow};border-radius:50%"><input type="checkbox" class="chk" ${done?'checked':''} onchange="togPupSkillTrained('${s.id}',this.checked)"></label>
       <span class="tn">${escHtml(s.skill)}</span>
     </div>`;
   }).join('');
   el.innerHTML=`<div style="display:flex;align-items:center;padding:4px 10px 2px;gap:6px;border-bottom:1px solid rgba(0,0,0,.05)">
-    <span style="font-size:10px;font-weight:600;letter-spacing:.05em;color:rgba(60,60,80,.55);text-transform:uppercase;flex:1">Pup Skills</span>
+    <button class="btn btn-ghost btn-xs" onclick="showPage('pups')" style="padding:0;font-size:10px;font-weight:600;letter-spacing:.05em;color:rgba(60,60,80,.55);text-transform:uppercase;background:none;border:none;cursor:pointer;flex:1;text-align:left">Pup Skills</button>
     ${allSkills.length?`<span style="font-size:10px;color:rgba(60,60,80,.45);font-weight:500">${doneCount}/${allSkills.length}</span>`:''}
-    <button class="btn btn-ghost btn-xs" onclick="showPage('pups')" style="padding:1px 6px;font-size:11px;line-height:1.4">🐾</button>
+    <button class="btn btn-ghost btn-xs" onclick="openPupAddModal()" style="padding:1px 6px;font-size:11px;line-height:1.4">+</button>
   </div><div style="padding:0 0 4px">${rows}</div>`;
 }
 function togPupSkillTrained(id,done){
