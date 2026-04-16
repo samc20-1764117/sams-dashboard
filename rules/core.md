@@ -34,12 +34,28 @@ Supabase Auth (email+password), RLS on all tables. `init()`→`checkAuth()`→`d
 - `syncAll` recurring: `is_weekly_reset===true`→`st.wrRules`; others→`st.recurring`.
 - Timeblock inline edit (`startTBInlineEdit`): dblclick creates block with empty title. `window._tbEditing=true` set on start, cleared in `commit()` and Escape. After DB save returns real ID, calls `renderAll()`.
 
+## New Item Type / Field Inheritance Rule
+
+**Default**: any new item type or new field on an existing type must automatically match all existing behavior unless explicitly overridden. No partial implementations.
+
+**Checklist — validate every location the item appears before marking done:**
+- **State**: add to `st`, `load()`, `save()`, `syncAll` (fetch + merge), `_stateSnap`, `_stateRestore`, `_syncRedoDiff` (PATCH/POST/DELETE)
+- **Undo/redo**: `pushUndo` on every mutating op (create, edit, delete, move, toggle); undo fn patches DB; `doRedo` undo entry also patches DB via `_syncRedoDiff(snap, beforeRedo)`
+- **Today list**: render row, sort priority, overdue logic, drag ID prefix, drag-to-timeblock, `_hasTBToday` check
+- **Weekly cal**: chip render (color, text, dragstart ID), chip click→`selTask`, dblclick→edit modal, X→remove, checkbox→toggle, dragover drop handler
+- **Timeblock**: `dropOnTB` handler for dragId prefix, `drawTBBlock` color/done derivation, dblclick→edit, `delBlock` removes linked item, checkbox syncs linked item
+- **Selection**: `applySelHighlight` — `.ti` id match, `.chip`/`.mcell-t` dataset.tid, `.tb-block` bid→selId, `csForId` color, `applySelVars` CSS vars
+- **Monthly cal**: chip render, drag drop, unassigned panel
+- **Database**: POST all required fields, PATCH on edit/toggle, DELETE on remove; `sbSaveBlock` category field for TB link type detection
+- **Cross-view sync**: name/state change in one view must reflect in all others — call `renderAll()` + `renderPupSkillsHighlight()` (or equivalent) after any mutation
+- **Temp IDs**: use `prefix-tmp-`+Date.now(); replace with real DB id after POST; update any linked objects (e.g. TB block's `_pupSessId`) when real id arrives
+
 ## Keyboard Shortcuts (global, `core.js` keydown handler)
 - `Cmd/Ctrl+Z`: undo (page-aware: pups/recipes/birthdays use their own stacks).
 - `o`: `showPage('overview')` — only when no input/textarea/select focused and no modal open.
 
 ## Undo / Redo
-- `pushUndo(fn,msg)`: snapshots state BEFORE action. `doUndo()`: pops, captures snap for redo, calls fn. `doRedo()`: restores snap, diffs + patches DB.
-- `_stateSnap` captures: `tasks,recurring,shopping,travel,birthdays,blocks,wrRules,wrOverrides,autoTBOverrides`.
-- `_stateRestore` restores all above, calls `renderAll(),renderDayTB(),renderWkCal(),renderRecOv(),renderWeeklyPage()`.
-- `_syncRedoDiff` diffs: tasks (PATCH/POST/DELETE), recurring `_dateOverrides`, wrRules `_dateOverrides`, wrOverrides, shopping `due_date`, travel dates, blocks, autoTBOverrides.
+- `pushUndo(fn,msg)`: snapshots state AFTER action (called post-mutation). `doUndo()`: pops, captures current snap for redo, calls fn. `doRedo()` (async): restores snap, `await _syncRedoDiff(before,after)`, pushes undo entry whose fn calls both `_stateRestore(beforeRedo)` AND `_syncRedoDiff(snap,beforeRedo)` to keep DB in sync on undo-after-redo.
+- `_stateSnap` captures: `tasks,recurring,shopping,travel,birthdays,blocks,wrRules,wrOverrides,autoTBOverrides,pupSessions,pup_skills`.
+- `_stateRestore` restores all above + calls `renderAll(),renderPupSkillsHighlight(),renderDayTB(),renderWkCal(),renderRecOv(),renderWeeklyPage()`.
+- `_syncRedoDiff` (returns `Promise.all`): diffs tasks, recurring `_dateOverrides`, wrRules `_dateOverrides`, wrOverrides, shopping `due_date`, travel dates, blocks, autoTBOverrides, pupSessions (done/POST/DELETE), pup_skills (field PATCH).
