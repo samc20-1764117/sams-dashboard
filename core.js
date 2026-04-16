@@ -666,7 +666,8 @@ function _stateSnap(){
     wrRules:JSON.parse(JSON.stringify(st.wrRules||[])),
     wrOverrides:JSON.parse(JSON.stringify(st.wrOverrides||[])),
     autoTBOverrides:JSON.parse(JSON.stringify(st.autoTBOverrides||[])),
-    pupSessions:JSON.parse(JSON.stringify(st.pupSessions||[]))
+    pupSessions:JSON.parse(JSON.stringify(st.pupSessions||[])),
+    pup_skills:JSON.parse(JSON.stringify(st.pup_skills||[]))
   };
 }
 
@@ -681,6 +682,7 @@ function _stateRestore(snap){
   if(snap.wrOverrides)st.wrOverrides=snap.wrOverrides;
   if(snap.autoTBOverrides)st.autoTBOverrides=snap.autoTBOverrides;
   if(snap.pupSessions)st.pupSessions=snap.pupSessions;
+  if(snap.pup_skills)st.pup_skills=snap.pup_skills;
   save();
   renderAll();
   renderPupSkillsHighlight();
@@ -806,6 +808,14 @@ function _syncRedoDiff(before,after){
     if(s.done!==p.done)sbReqSilent('PATCH','pup_skill_sessions',{done:s.done},`?id=eq.${s.id}`);
   }
   for(const s of bPS){if(!aPS.find(x=>String(x.id)===String(s.id)))sbReqSilent('DELETE','pup_skill_sessions',null,`?id=eq.${s.id}`);}
+  const bPK=before.pup_skills||[],aPK=after.pup_skills||[];
+  for(const s of aPK){
+    const p=bPK.find(x=>String(x.id)===String(s.id));if(!p)continue;
+    const ch={};
+    const fields=['skill','pup','category','level','stage','focus','next_step','word','signal','comments','skill_order'];
+    fields.forEach(f=>{if(String(s[f]??'')!==String(p[f]??''))ch[f]=s[f]??null;});
+    if(Object.keys(ch).length)sbReqSilent('PATCH','pup_skills',ch,`?id=eq.${s.id}`);
+  }
 }
 function doRedo(){
   if(!redoStack.length)return;

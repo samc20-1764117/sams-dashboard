@@ -81,9 +81,21 @@ async function savePupModal(){
   } else {
     const idx=st.pup_skills.findIndex(x=>x.id==_pupEditId);if(idx<0)return;
     const oldSkill=st.pup_skills[idx].skill;
+    const prevData={...st.pup_skills[idx]};
     Object.assign(st.pup_skills[idx],data);
     if(data.skill&&data.skill!==oldSkill){st.blocks.filter(b=>b.cat==='pup_session'&&b.title===oldSkill).forEach(b=>{b.title=data.skill;});}
     save();
+    if(!document.getElementById('page-pups')?.classList.contains('active')){
+      const editId=_pupEditId;
+      pushUndo(()=>{
+        const i=st.pup_skills.findIndex(x=>String(x.id)===String(editId));if(i<0)return;
+        const curSkill=st.pup_skills[i].skill;
+        Object.assign(st.pup_skills[i],prevData);
+        if(curSkill!==prevData.skill){st.blocks.filter(b=>b.cat==='pup_session'&&b.title===curSkill).forEach(b=>{b.title=prevData.skill;});}
+        save();renderPupsPage();renderPupSkillsHighlight();renderToday();renderWkCal();if(document.getElementById('tbGrid'))renderDayTB();
+        sbReqSilent('PATCH','pup_skills',prevData,`?id=eq.${editId}`);
+      },'Edited pup skill');
+    }
     await sbReqSilent('PATCH','pup_skills',data,`?id=eq.${_pupEditId}`);
     renderPupsPage();renderPupSkillsHighlight();renderToday();renderWkCal();if(document.getElementById('tbGrid'))renderDayTB();
   }

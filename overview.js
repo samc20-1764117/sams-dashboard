@@ -183,7 +183,11 @@ async function togPupSessionDone(sessId,done){
 async function removePupSession(sessId){
   const removed=st.pupSessions.find(s=>String(s.id)===String(sessId));if(!removed)return;
   const skill=(st.pup_skills||[]).find(x=>String(x.id)===String(removed.skill_id));
-  const removedBlocks=st.blocks.filter(b=>(b._pupSessId&&String(b._pupSessId)===String(sessId))||(b.cat==='pup_session'&&skill&&b.title===skill.skill&&b.ds===removed.day_date));
+  const removedBlocks=st.blocks.filter(b=>
+    (b._pupSessId&&String(b._pupSessId)===String(sessId))||
+    (b.cat==='pup_session'&&skill&&b.title===skill.skill&&b.ds===removed.day_date)||
+    (skill&&b.title===skill.skill&&b.ds===removed.day_date&&!b.taskId&&!b.recId&&!b.shopId&&!b.ruleId)
+  );
   st.pupSessions=st.pupSessions.filter(s=>String(s.id)!==String(sessId));
   st.blocks=st.blocks.filter(b=>!removedBlocks.includes(b));
   save();renderAll();renderPupSkillsHighlight();
