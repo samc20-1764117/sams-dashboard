@@ -247,11 +247,11 @@ async function submitDailyHabit(){
   const res=await sbReqSilent('POST','wr_recurring_rules',{name,notes,cadence:'daily',is_weekly_reset:false,is_enabled:true},'');
   if(res&&res[0]){const idx=st.recurring.findIndex(x=>x.id===tmp);if(idx>=0)st.recurring[idx]={...st.recurring[idx],...res[0],_doneByWk:{},_dateOverrides:{}};save();renderDailyHabits();}
 }
-// Type priority for sorting: regular=1, recurring=2, shopping=3, birthday=4 (travel sorts first via pre-check)
+// Type priority for sorting: regular=1, recurring=2, shopping=3, birthday=4, pup=5 (travel sorts first via pre-check)
 function taskTypePri(t){
+  if(t._type==='pup')return 5;
   if(t._type==='birthday')return 4;
   if(t._type==='shop')return 3;
-  if(t._type==='pup')return 2;
   if(t._virtual)return 2;
   return 1;
 }
@@ -357,9 +357,9 @@ function tRowShopVirt(t,noDate=false,tbArrow=false,noColor=false){
   </div>`;
 }
 function _pupSessStyle(pup){
-  if(pup==='Mochi')return{bg:'rgba(243,240,255,.88)',b:'rgba(167,139,250,.18)',t:'var(--text)'};
-  if(pup==='Sunny')return{bg:'rgba(255,252,235,.88)',b:'rgba(234,179,8,.18)',t:'var(--text)'};
-  return{bg:'rgba(255,255,255,.82)',b:'rgba(210,205,228,.3)',t:'var(--text)'};
+  if(pup==='Mochi')return{bg:'rgba(250,248,255,.94)',b:'rgba(167,139,250,.14)',t:'var(--text)'};
+  if(pup==='Sunny')return{bg:'rgba(255,254,248,.94)',b:'rgba(234,179,8,.14)',t:'var(--text)'};
+  return{bg:'rgba(255,255,255,.9)',b:'rgba(210,205,228,.25)',t:'var(--text)'};
 }
 function tRowPupSess(t,noColor=false){
   const ov=isOv(t.due_date)&&!t.done;
