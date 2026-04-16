@@ -663,7 +663,8 @@ function _stateSnap(){
     blocks:JSON.parse(JSON.stringify(st.blocks||[])),
     wrRules:JSON.parse(JSON.stringify(st.wrRules||[])),
     wrOverrides:JSON.parse(JSON.stringify(st.wrOverrides||[])),
-    autoTBOverrides:JSON.parse(JSON.stringify(st.autoTBOverrides||[]))
+    autoTBOverrides:JSON.parse(JSON.stringify(st.autoTBOverrides||[])),
+    pupSessions:JSON.parse(JSON.stringify(st.pupSessions||[]))
   };
 }
 
@@ -677,6 +678,7 @@ function _stateRestore(snap){
   if(snap.wrRules)st.wrRules=snap.wrRules;
   if(snap.wrOverrides)st.wrOverrides=snap.wrOverrides;
   if(snap.autoTBOverrides)st.autoTBOverrides=snap.autoTBOverrides;
+  if(snap.pupSessions)st.pupSessions=snap.pupSessions;
   save();
   renderAll();
   if(document.getElementById('tbGrid'))renderDayTB();
@@ -794,6 +796,13 @@ function _syncRedoDiff(before,after){
     if(o.start_time!==p.start_time||o.end_time!==p.end_time)sbReqSilent('PATCH','auto_timeblock_overrides',{start_time:o.start_time,end_time:o.end_time},`?id=eq.${o.id}`);
   }
   for(const o of bAO){if(!aAO.find(x=>String(x.id)===String(o.id)))sbReqSilent('DELETE','auto_timeblock_overrides',null,`?id=eq.${o.id}`);}
+  const bPS=before.pupSessions||[],aPS=after.pupSessions||[];
+  for(const s of aPS){
+    const p=bPS.find(x=>String(x.id)===String(s.id));
+    if(!p){sbReqSilent('POST','pup_skill_sessions',{skill_id:s.skill_id,day_date:s.day_date,done:s.done},'');continue;}
+    if(s.done!==p.done)sbReqSilent('PATCH','pup_skill_sessions',{done:s.done},`?id=eq.${s.id}`);
+  }
+  for(const s of bPS){if(!aPS.find(x=>String(x.id)===String(s.id)))sbReqSilent('DELETE','pup_skill_sessions',null,`?id=eq.${s.id}`);}
 }
 function doRedo(){
   if(!redoStack.length)return;

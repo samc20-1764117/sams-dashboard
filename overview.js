@@ -147,22 +147,28 @@ async function togPupSkillTrained(id,checked){
   const existing=st.pupSessions.find(s=>String(s.skill_id)===String(id)&&s.day_date===today);
   if(checked){
     if(existing){
+      const prev=existing.done;
       existing.done=true;
-      save();renderPupSkillsHighlight();
+      save();renderPupSkillsHighlight();renderToday();renderWkCal();
       sbReqSilent('PATCH','pup_skill_sessions',{done:true},`?id=eq.${existing.id}`);
+      pushUndo(()=>{existing.done=prev;save();renderPupSkillsHighlight();renderToday();renderWkCal();sbReqSilent('PATCH','pup_skill_sessions',{done:prev},`?id=eq.${existing.id}`);},'Checked pup skill');
     } else {
       const tmp='pss-tmp-'+Date.now();
       st.pupSessions.push({id:tmp,skill_id:id,day_date:today,done:true});
-      save();renderPupSkillsHighlight();
+      save();renderPupSkillsHighlight();renderToday();renderWkCal();
       const sv=await sbReqSilent('POST','pup_skill_sessions',{skill_id:id,day_date:today,done:true});
       if(sv&&sv[0]){const i=st.pupSessions.findIndex(s=>s.id===tmp);if(i>-1)st.pupSessions[i]=sv[0];}
       save();
+      const realId=st.pupSessions.find(s=>String(s.skill_id)===String(id)&&s.day_date===today)?.id;
+      pushUndo(()=>{st.pupSessions=st.pupSessions.filter(s=>!(String(s.skill_id)===String(id)&&s.day_date===today));save();renderPupSkillsHighlight();renderToday();renderWkCal();if(realId)sbReqSilent('DELETE','pup_skill_sessions',null,`?id=eq.${realId}`);},'Checked pup skill');
     }
   } else {
     if(existing){
+      const prev=existing.done;
       existing.done=false;
-      save();renderPupSkillsHighlight();
+      save();renderPupSkillsHighlight();renderToday();renderWkCal();
       sbReqSilent('PATCH','pup_skill_sessions',{done:false},`?id=eq.${existing.id}`);
+      pushUndo(()=>{existing.done=prev;save();renderPupSkillsHighlight();renderToday();renderWkCal();sbReqSilent('PATCH','pup_skill_sessions',{done:prev},`?id=eq.${existing.id}`);},'Unchecked pup skill');
     }
   }
 }
@@ -175,9 +181,11 @@ async function togPupSessionDone(sessId,done){
   pushUndo(()=>{sess.done=prev;save();renderPupSkillsHighlight();renderToday();renderWkCal();sbReqSilent('PATCH','pup_skill_sessions',{done:prev},`?id=eq.${sessId}`);},done?'Checked pup skill':'Unchecked pup skill');
 }
 async function removePupSession(sessId){
+  const removed=st.pupSessions.find(s=>String(s.id)===String(sessId));if(!removed)return;
   st.pupSessions=st.pupSessions.filter(s=>String(s.id)!==String(sessId));
   save();renderPupSkillsHighlight();renderToday();renderWkCal();
   sbReqSilent('DELETE','pup_skill_sessions',null,`?id=eq.${sessId}`);
+  pushUndo(()=>{st.pupSessions.push(removed);save();renderPupSkillsHighlight();renderToday();renderWkCal();sbReqSilent('POST','pup_skill_sessions',{skill_id:removed.skill_id,day_date:removed.day_date,done:removed.done},'');},'Removed pup session');
 }
 // ── Pup Skill Tooltip ────────────────────────────────────────────────────────
 let _pupTipTimer=null;
@@ -375,7 +383,7 @@ function _pupSessStyle(){
 function tRowPupSess(t,noColor=false){
   const ov=isOv(t.due_date)&&!t.done;
   const ps=ov?OV:_pupSessStyle();
-  return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''}" draggable="true" style="${!ov&&!noColor?`background:${ps.bg};border:1px solid ${ps.b}`:''}" id="ti-pup-sess-${t._pupSessId}" ondragstart="dragId='pupsess::${t._pupSessId}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);" ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false);">
+  return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''}" draggable="true" style="${!ov&&!noColor?`background:${ps.bg};border:1px solid ${ps.b}`:''}" id="ti-pup-sess-${t._pupSessId}" onclick="selTask(event,'pup-sess-${t._pupSessId}')" ondblclick="openPupEditModal('${t._skillId}')" ondragstart="dragId='pupsess::${t._pupSessId}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);" ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false);">
     <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="togPupSessionDone('${t._pupSessId}',this.checked)"></label>
     <span class="tn">${escHtml(t.name)}</span>
     <svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3" fill="${ps.bg}" stroke="${ps.d}" stroke-opacity="0.4" stroke-width="1"/></svg>
@@ -709,10 +717,12 @@ function renderWkCal(){
         if(!already){
           const tmp='pss-tmp-'+Date.now();
           st.pupSessions.push({id:tmp,skill_id:skillId,day_date:ds,done:false});
-          save();dragId=null;renderPupSkillsHighlight();renderWkCal();renderToday();
+          save();renderPupSkillsHighlight();renderWkCal();renderToday();
           const sv=await sbReqSilent('POST','pup_skill_sessions',{skill_id:skillId,day_date:ds,done:false});
           if(sv&&sv[0]){const i=st.pupSessions.findIndex(s=>s.id===tmp);if(i>-1)st.pupSessions[i]=sv[0];}
           save();
+          const realId=st.pupSessions.find(s=>String(s.skill_id)===String(skillId)&&s.day_date===ds)?.id;
+          pushUndo(()=>{st.pupSessions=st.pupSessions.filter(s=>!(String(s.skill_id)===String(skillId)&&s.day_date===ds));save();renderPupSkillsHighlight();renderWkCal();renderToday();if(realId)sbReqSilent('DELETE','pup_skill_sessions',null,`?id=eq.${realId}`);},'Added pup session');
         }
         dragId=null;return;
       }
@@ -2980,14 +2990,21 @@ function dropOnTB(e,ds,h,row,smOverride){
     if(isPupSess){const sessId=dragId.split('::')[1];const sess=st.pupSessions.find(s=>String(s.id)===String(sessId));if(!sess){dragId=null;return;}skillId=sess.skill_id;}
     else{skillId=dragId.split('::')[1];}
     const skill=(st.pup_skills||[]).find(x=>String(x.id)===String(skillId));if(!skill){dragId=null;return;}
-    if(!st.pupSessions.find(s=>String(s.skill_id)===String(skillId)&&s.day_date===ds)){
-      const tmp='pss-tmp-'+Date.now();st.pupSessions.push({id:tmp,skill_id:skillId,day_date:ds,done:false});
-      sbReqSilent('POST','pup_skill_sessions',{skill_id:skillId,day_date:ds,done:false}).then(sv=>{if(sv&&sv[0]){const i=st.pupSessions.findIndex(s=>s.id===tmp);if(i>-1)st.pupSessions[i]=sv[0];}save();});
+    const sessAlready=st.pupSessions.find(s=>String(s.skill_id)===String(skillId)&&s.day_date===ds);
+    let newSessCreated=false;let tmpSessId=null;
+    if(!sessAlready){
+      const tmp='pss-tmp-'+Date.now();tmpSessId=tmp;newSessCreated=true;
+      st.pupSessions.push({id:tmp,skill_id:skillId,day_date:ds,done:false});
+      sbReqSilent('POST','pup_skill_sessions',{skill_id:skillId,day_date:ds,done:false}).then(sv=>{if(sv&&sv[0]){const i=st.pupSessions.findIndex(s=>s.id===tmp);if(i>-1){tmpSessId=sv[0].id;st.pupSessions[i]=sv[0];}}save();});
     }
     const blk={id:crypto.randomUUID(),title:skill.skill,ds,sm,dur:30,cat:'Recurring'};
     st.blocks.push(blk);dragId=null;save();renderAll();sbSaveBlock(blk);
     renderPupSkillsHighlight();renderWkCal();renderToday();
-    pushUndo(()=>{st.blocks=st.blocks.filter(b=>b.id!==blk.id);sbDeleteBlock(blk.id);save();renderAll();renderPupSkillsHighlight();},'Added pup skill to time block');
+    pushUndo(()=>{
+      st.blocks=st.blocks.filter(b=>b.id!==blk.id);sbDeleteBlock(blk.id);
+      if(newSessCreated){st.pupSessions=st.pupSessions.filter(s=>!(String(s.skill_id)===String(skillId)&&s.day_date===ds));if(tmpSessId)sbReqSilent('DELETE','pup_skill_sessions',null,`?id=eq.${tmpSessId}`);}
+      save();renderAll();renderPupSkillsHighlight();renderWkCal();renderToday();
+    },'Added pup skill to time block');
     return;
   }
   if(dragId.startsWith('wrrule::')){
