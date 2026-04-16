@@ -115,8 +115,8 @@ function renderPupSkillsHighlight(){
     const doneC=_pupWkDone(s.id);
     const total=_pupWkSessTotal(s.id);
     const allDone=total>0&&doneC===total;
-    const right=`<span onclick="event.stopPropagation();openPupCountEdit('${s.id}',this)" title="Click to edit" style="font-size:10px;font-weight:600;color:var(--muted);margin-left:auto;flex-shrink:0;cursor:pointer">${doneC}/${total}</span>`;
-    return`<div class="ti${allDone?' done':''}" draggable="true" style="padding:1px 10px;${allDone?'opacity:.45':''}" ondragstart="dragId='pupskill::${s.id}';event.dataTransfer.effectAllowed='copy';this.style.opacity='.4';document.body.classList.add('body-dragging');showWkcEdges(true);" ondragend="this.style.opacity='';document.body.classList.remove('body-dragging');showWkcEdges(false);" ondblclick="openPupEditModal('${s.id}')" onmouseenter="showPupSkillTip(this,'${s.id}')" onmouseleave="hidePupSkillTip()">
+    const right=`<span onclick="event.stopPropagation();openPupCountEdit('${s.id}',this)" title="Click to edit" style="font-size:9px;font-weight:600;color:var(--muted);margin-left:auto;flex-shrink:0;cursor:pointer">${doneC}/${total}</span>`;
+    return`<div class="ti${allDone?' done':''}" draggable="true" style="padding:2px 10px;${allDone?'opacity:.45':''}" ondragstart="dragId='pupskill::${s.id}';event.dataTransfer.effectAllowed='copy';this.style.opacity='.4';document.body.classList.add('body-dragging');showWkcEdges(true);" ondragend="this.style.opacity='';document.body.classList.remove('body-dragging');showWkcEdges(false);" ondblclick="openPupEditModal('${s.id}')" onmouseenter="showPupSkillTip(this,'${s.id}')" onmouseleave="hidePupSkillTip()">
       ${right}
       <span class="tn" style="color:var(--muted);font-size:10px;font-weight:400">${escHtml(s.skill)}</span>
     </div>`;
