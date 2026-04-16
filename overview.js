@@ -182,10 +182,20 @@ async function togPupSessionDone(sessId,done){
 }
 async function removePupSession(sessId){
   const removed=st.pupSessions.find(s=>String(s.id)===String(sessId));if(!removed)return;
+  const skill=(st.pup_skills||[]).find(x=>String(x.id)===String(removed.skill_id));
+  const removedBlocks=st.blocks.filter(b=>b._pupSessId&&String(b._pupSessId)===String(sessId)||(skill&&b.title===skill.skill&&b.ds===removed.day_date&&!b.taskId&&!b.recId));
   st.pupSessions=st.pupSessions.filter(s=>String(s.id)!==String(sessId));
-  save();renderPupSkillsHighlight();renderToday();renderWkCal();
+  st.blocks=st.blocks.filter(b=>!removedBlocks.includes(b));
+  save();renderPupSkillsHighlight();renderToday();renderWkCal();if(document.getElementById('tbGrid'))renderDayTB();
   sbReqSilent('DELETE','pup_skill_sessions',null,`?id=eq.${sessId}`);
-  pushUndo(()=>{st.pupSessions.push(removed);save();renderPupSkillsHighlight();renderToday();renderWkCal();sbReqSilent('POST','pup_skill_sessions',{skill_id:removed.skill_id,day_date:removed.day_date,done:removed.done},'');},'Removed pup session');
+  removedBlocks.forEach(b=>sbDeleteBlock(b.id));
+  pushUndo(()=>{
+    st.pupSessions.push(removed);
+    removedBlocks.forEach(b=>st.blocks.push(b));
+    save();renderPupSkillsHighlight();renderToday();renderWkCal();if(document.getElementById('tbGrid'))renderDayTB();
+    sbReqSilent('POST','pup_skill_sessions',{skill_id:removed.skill_id,day_date:removed.day_date,done:removed.done},'');
+    removedBlocks.forEach(b=>sbSaveBlock(b));
+  },'Removed pup session');
 }
 // ── Pup Skill Tooltip ────────────────────────────────────────────────────────
 let _pupTipTimer=null;
@@ -378,15 +388,15 @@ function tRowShopVirt(t,noDate=false,tbArrow=false,noColor=false){
   </div>`;
 }
 function _pupSessStyle(){
-  return{bg:'rgba(221,244,240,.38)',b:'rgba(42,157,181,.14)',t:'var(--text)'};
+  return{bg:'rgba(221,244,240,.38)',b:'rgba(42,157,181,.14)',t:'rgba(32,140,165,1)',d:'rgba(42,157,181,.55)'};
 }
 function tRowPupSess(t,noColor=false){
   const ov=isOv(t.due_date)&&!t.done;
   const ps=ov?OV:_pupSessStyle();
   return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''}" draggable="true" style="${!ov&&!noColor?`background:${ps.bg};border:1px solid ${ps.b}`:''}" id="ti-pup-sess-${t._pupSessId}" onclick="selTask(event,'pup-sess-${t._pupSessId}')" ondblclick="openPupEditModal('${t._skillId}')" ondragstart="dragId='pupsess::${t._pupSessId}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);" ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false);">
     <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="togPupSessionDone('${t._pupSessId}',this.checked)"></label>
-    <span class="tn">${escHtml(t.name)}</span>
-    <svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3" fill="${ps.bg}" stroke="${ps.d}" stroke-opacity="0.4" stroke-width="1"/></svg>
+    <span class="tn" style="color:${ps.t}">${escHtml(t.name)}</span>
+    <svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3" fill="rgba(42,157,181,.18)" stroke="${ps.d}" stroke-width="1.5"/></svg>
     <button class="delbtn" onclick="event.stopPropagation();removePupSession('${t._pupSessId}')">✕</button>
   </div>`;
 }
@@ -2690,7 +2700,7 @@ function drawTBBlock(col,b){
   const linkedRule=b.ruleId?st.wrRules.find(x=>String(x.id)===String(b.ruleId)):null;
   const recCat=linkedRec?(linkedRec.is_weekly_reset===false?'recurring':'weekly_reset'):null;
   const effectiveCat=linkedTask?linkedTask.category:recCat||(linkedRule?'weekly_reset':null)||(b.cat||'Home');
-  const s=isImp?IMP:gc(effectiveCat);
+  const s=isImp?IMP:b._pupSessId?_pupSessStyle():gc(effectiveCat);
   const el=document.createElement('div');
   el.className='tb-block'+(b._done?' done-block':'');el.dataset.bid=b.id;
   el.addEventListener('contextmenu',e=>{
@@ -2997,7 +3007,8 @@ function dropOnTB(e,ds,h,row,smOverride){
       st.pupSessions.push({id:tmp,skill_id:skillId,day_date:ds,done:false});
       sbReqSilent('POST','pup_skill_sessions',{skill_id:skillId,day_date:ds,done:false}).then(sv=>{if(sv&&sv[0]){const i=st.pupSessions.findIndex(s=>s.id===tmp);if(i>-1){tmpSessId=sv[0].id;st.pupSessions[i]=sv[0];}}save();});
     }
-    const blk={id:crypto.randomUUID(),title:skill.skill,ds,sm,dur:30,cat:'Recurring'};
+    const sessRef=st.pupSessions.find(s=>String(s.skill_id)===String(skillId)&&s.day_date===ds);
+    const blk={id:crypto.randomUUID(),title:skill.skill,ds,sm,dur:30,cat:'Recurring',_pupSessId:sessRef?.id||tmpSessId};
     st.blocks.push(blk);dragId=null;save();renderAll();sbSaveBlock(blk);
     renderPupSkillsHighlight();renderWkCal();renderToday();
     pushUndo(()=>{
