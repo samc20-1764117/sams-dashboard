@@ -1,4 +1,60 @@
 let _pupEditId=null;
+function _pupWkDone(skillId){const{mon,sun}=getWkBounds(0);const monDs=d2s(mon),sunDs=d2s(sun);return(st.pupSessions||[]).filter(s=>String(s.skill_id)===String(skillId)&&s.day_date>=monDs&&s.day_date<=sunDs&&s.done).length;}
+function _pupWkTotal(skill){return skill.times_per_week!=null?skill.times_per_week:_pupWkDone(skill.id);}
+function _pupWkCountBadge(skill){const done=_pupWkDone(skill.id);const total=skill.times_per_week!=null?skill.times_per_week:'?';const allDone=skill.times_per_week!=null&&done>=skill.times_per_week&&skill.times_per_week>0;return`<span style="font-size:10px;font-weight:600;color:${allDone?'#22c55e':'var(--accent)'}">${done}/${total}</span>`;}
+async function setPupWkDone(skillId,newDone){
+  if(newDone<0)newDone=0;
+  const{mon,sun}=getWkBounds(0);const monDs=d2s(mon),sunDs=d2s(sun);
+  const wkSess=(st.pupSessions||[]).filter(s=>String(s.skill_id)===String(skillId)&&s.day_date>=monDs&&s.day_date<=sunDs);
+  const doneSess=wkSess.filter(s=>s.done);
+  const today=d2s(new Date());
+  if(newDone>doneSess.length){
+    const toAdd=newDone-doneSess.length;
+    for(let i=0;i<toAdd;i++){
+      const undone=wkSess.find(s=>!s.done);
+      if(undone){undone.done=true;await sbReqSilent('PATCH','pup_skill_sessions',{done:true},`?id=eq.${undone.id}`);}
+      else{const tmp='pss-tmp-'+Date.now()+'-'+i;st.pupSessions.push({id:tmp,skill_id:skillId,day_date:today,done:true});const sv=await sbReqSilent('POST','pup_skill_sessions',{skill_id:skillId,day_date:today,done:true});if(sv&&sv[0]){const ix=st.pupSessions.findIndex(s=>s.id===tmp);if(ix>-1)st.pupSessions[ix]=sv[0];}}
+    }
+  } else if(newDone<doneSess.length){
+    const sorted=[...doneSess].sort((a,b)=>b.day_date.localeCompare(a.day_date));
+    const toRemove=doneSess.length-newDone;
+    for(let i=0;i<toRemove&&i<sorted.length;i++){const s=sorted[i];st.pupSessions=st.pupSessions.filter(x=>String(x.id)!==String(s.id));await sbReqSilent('DELETE','pup_skill_sessions',null,`?id=eq.${s.id}`);}
+  }
+  save();renderPupSkillsHighlight();if(document.getElementById('page-pups')?.classList.contains('active'))renderPupsPage();renderToday();renderWkCal();
+}
+async function setPupWkTarget(skillId,newTarget){
+  const idx=st.pup_skills.findIndex(x=>String(x.id)===String(skillId));if(idx<0)return;
+  const val=newTarget===''||newTarget==null?null:parseInt(newTarget)||null;
+  st.pup_skills[idx].times_per_week=val;
+  save();renderPupSkillsHighlight();if(document.getElementById('page-pups')?.classList.contains('active'))renderPupsPage();
+  await sbReqSilent('PATCH','pup_skills',{times_per_week:val},`?id=eq.${skillId}`);
+}
+function openPupCountEdit(skillId,anchorEl){
+  let pop=document.getElementById('_pupCountPop');
+  if(!pop){pop=document.createElement('div');pop.id='_pupCountPop';pop.style.cssText='position:fixed;z-index:9999;background:var(--bg);border:1px solid var(--border);border-radius:10px;box-shadow:0 4px 18px rgba(0,0,0,.14);padding:10px 12px;font-size:12px;font-family:inherit;min-width:160px';document.body.appendChild(pop);}
+  const skill=(st.pup_skills||[]).find(x=>String(x.id)===String(skillId));if(!skill)return;
+  const done=_pupWkDone(skillId);
+  const target=skill.times_per_week!=null?skill.times_per_week:'';
+  const inpS='width:52px;padding:3px 6px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:12px;background:var(--bg);color:var(--text);outline:none;text-align:center';
+  pop.innerHTML=`<div style="font-size:10px;font-weight:700;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">${skill.skill}</div><div style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><span style="color:var(--text)">Done this wk</span><input id="_pcDone" type="number" min="0" value="${done}" style="${inpS}"></div><div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><span style="color:var(--text)">Target / wk</span><input id="_pcTarget" type="number" min="0" placeholder="—" value="${target}" style="${inpS}"></div></div><div style="display:flex;gap:6px;margin-top:8px"><button onclick="_savePupCountEdit('${skillId}')" style="flex:1;padding:3px 0;border-radius:6px;border:1px solid var(--border);background:rgba(139,92,246,.12);cursor:pointer;font-size:11px;color:var(--text)">Save</button><button onclick="document.getElementById('_pupCountPop').style.display='none'" style="flex:1;padding:3px 0;border-radius:6px;border:1px solid var(--border);background:transparent;cursor:pointer;font-size:11px;color:var(--muted)">Cancel</button></div>`;
+  pop.style.display='block';
+  const rect=anchorEl.getBoundingClientRect?anchorEl.getBoundingClientRect():{left:200,bottom:200};
+  let left=rect.left,top=rect.bottom+4;
+  if(left+180>window.innerWidth-6)left=window.innerWidth-186;
+  if(top+140>window.innerHeight-6)top=rect.top-144;
+  pop.style.left=left+'px';pop.style.top=top+'px';
+  setTimeout(()=>{const d=document.getElementById('_pcDone');if(d){d.focus();d.select();}},40);
+  if(!pop._outsideClick){pop._outsideClick=e=>{if(!pop.contains(e.target)&&e.target!==anchorEl)pop.style.display='none';};document.addEventListener('mousedown',pop._outsideClick);}
+}
+async function _savePupCountEdit(skillId){
+  const doneEl=document.getElementById('_pcDone');
+  const targetEl=document.getElementById('_pcTarget');
+  document.getElementById('_pupCountPop').style.display='none';
+  const newDone=doneEl?parseInt(doneEl.value)||0:null;
+  const newTarget=targetEl?targetEl.value:'';
+  if(newDone!=null)await setPupWkDone(skillId,newDone);
+  await setPupWkTarget(skillId,newTarget);
+}
 let _selPupIds=new Set(),_lastSelPupId=null,_copiedPups=[],_pupCtxId=null;
 let _pupSortCol=null,_pupSortDir=1,_pupFilter=null;
 let _pupUndoStack=[],_pupRedoStack=[],_pupHdrClickTimer=null,_pupUndoDirty=false;
@@ -9,8 +65,8 @@ function _pupSyncToServer(prev,next){
   const nm=new Map(next.map(s=>[String(s.id),s]));
   for(const[id,s]of pm)if(!nm.has(id)&&!id.startsWith('l-'))sbReqSilent('DELETE','pup_skills',null,`?id=eq.${id}`);
   for(const[id,s]of nm){
-    if(!pm.has(id)){const d={pup:s.pup,skill:s.skill,level:s.level,stage:s.stage,focus:s.focus,next_step:s.next_step,word:s.word,signal:s.signal,comments:s.comments};sbReqSilent('POST','pup_skills',d);}
-    else if(!id.startsWith('l-')){const p=pm.get(id);const flds=['pup','skill','level','stage','focus','next_step','word','signal','comments'];if(flds.some(f=>String(p[f]??'')!==String(s[f]??''))){sbReqSilent('PATCH','pup_skills',{pup:s.pup,skill:s.skill,level:s.level,stage:s.stage,focus:s.focus,next_step:s.next_step,word:s.word,signal:s.signal,comments:s.comments},`?id=eq.${id}`);}}
+    if(!pm.has(id)){const d={pup:s.pup,skill:s.skill,level:s.level,stage:s.stage,focus:s.focus,next_step:s.next_step,word:s.word,signal:s.signal,comments:s.comments,times_per_week:s.times_per_week??null};sbReqSilent('POST','pup_skills',d);}
+    else if(!id.startsWith('l-')){const p=pm.get(id);const flds=['pup','skill','level','stage','focus','next_step','word','signal','comments','times_per_week'];if(flds.some(f=>String(p[f]??'')!==String(s[f]??''))){sbReqSilent('PATCH','pup_skills',{pup:s.pup,skill:s.skill,level:s.level,stage:s.stage,focus:s.focus,next_step:s.next_step,word:s.word,signal:s.signal,comments:s.comments,times_per_week:s.times_per_week??null},`?id=eq.${id}`);}}
   }
 }
 function pupUndo(){if(!_pupUndoStack.length){showToast('Nothing to undo','#888');return;}const prev=JSON.parse(JSON.stringify(st.pup_skills));_pupUndoDirty=true;_pupRedoStack.push(prev);st.pup_skills=_pupUndoStack.pop();save();renderPupsPage();showToast('Undone','#6d5fe6',1500);_pupSyncToServer(prev,st.pup_skills);}
@@ -35,6 +91,7 @@ function openPupAddModal(){
   document.getElementById('pmWord').value='';
   document.getElementById('pmSignal').value='';
   document.getElementById('pmComments').value='';
+  document.getElementById('pmTimesPerWeek').value='';
   document.getElementById('pupModal').classList.add('open');
   setTimeout(()=>document.getElementById('pmSkill').focus(),80);
 }
@@ -52,6 +109,7 @@ function openPupEditModal(id){
   document.getElementById('pmWord').value=s.word||'';
   document.getElementById('pmSignal').value=s.signal||'';
   document.getElementById('pmComments').value=s.comments||'';
+  document.getElementById('pmTimesPerWeek').value=s.times_per_week!=null?s.times_per_week:'';
   document.getElementById('pupModal').classList.add('open');
   setTimeout(()=>{const _el=document.getElementById('pmSkill');if(_el){_el.focus();const _l=_el.value.length;_el.setSelectionRange(_l,_l);}},80);
 }
@@ -68,6 +126,7 @@ async function savePupModal(){
     word:document.getElementById('pmWord').value.trim()||null,
     signal:document.getElementById('pmSignal').value.trim()||null,
     comments:document.getElementById('pmComments').value.trim()||null,
+    times_per_week:document.getElementById('pmTimesPerWeek').value!==''?parseInt(document.getElementById('pmTimesPerWeek').value)||null:null,
   };
   if(!data.skill){closeMod('pupModal');return;}
   if(data.focus&&data.stage!=='Mastered')data.stage='In Progress';
@@ -163,7 +222,7 @@ async function pupCtxDuplicate(){
     const s=st.pup_skills.find(x=>String(x.id)===String(id));if(!s)continue;
     const copy={...s,id:'l-'+Date.now(),skill:s.skill+' (copy)'};
     st.pup_skills.push(copy);
-    const sv=await sbReq('POST','pup_skills',{pup:copy.pup,skill:copy.skill,category:copy.category,level:copy.level,stage:copy.stage,focus:copy.focus,next_step:copy.next_step,comments:copy.comments});
+    const sv=await sbReq('POST','pup_skills',{pup:copy.pup,skill:copy.skill,category:copy.category,level:copy.level,stage:copy.stage,focus:copy.focus,next_step:copy.next_step,comments:copy.comments,times_per_week:copy.times_per_week??null});
     if(sv&&sv[0]){const i=st.pup_skills.findIndex(x=>x.id===copy.id);if(i>-1)st.pup_skills[i]=sv[0];}
   }
   save();renderPupsPage();
@@ -348,6 +407,7 @@ function renderPupTable(){
     <th onclick="pupHdrClick('stage')" ondblclick="pupHdrDbl(event,'stage')" style="${ths};width:90px">Stage${arrow('stage')}${fdot('stage')}</th>
     <th onclick="pupHdrClick('next_step')" ondblclick="pupHdrDbl(event,'next_step')" style="${ths}">Next Step${arrow('next_step')}${fdot('next_step')}</th>
     <th onclick="pupHdrClick('category')" ondblclick="pupHdrDbl(event,'category')" style="${ths};width:86px">Category${arrow('category')}${fdot('category')}</th>
+    <th style="${ths};width:54px;text-align:center" title="Done / target this week">This Wk</th>
     <th style="width:28px"></th>
   </tr>`;
   const showCatDividers=!_pupSortCol;
@@ -364,12 +424,12 @@ function renderPupTable(){
     const isSel=_selPupIds.has(sid);
     const curCat=s.category||'';
     if(showCatDividers&&isMastered&&lastMastered===false){
-      rowsHtml.push(`<tr class="pup-cat-sep"><td colspan="8" style="padding:8px 8px 3px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#16a34a;border-top:2px solid rgba(34,197,94,.15);border-bottom:1px solid rgba(34,197,94,.1)">Mastered</td></tr>`);
+      rowsHtml.push(`<tr class="pup-cat-sep"><td colspan="9" style="padding:8px 8px 3px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#16a34a;border-top:2px solid rgba(34,197,94,.15);border-bottom:1px solid rgba(34,197,94,.1)">Mastered</td></tr>`);
       lastCat=null;
     }
     if(showCatDividers&&!isMastered&&curCat!==lastCat&&curCat){
       const label=curCat.charAt(0).toUpperCase()+curCat.slice(1);
-      rowsHtml.push(`<tr class="pup-cat-sep"><td colspan="8" style="padding:6px 8px 3px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);border-bottom:1px solid rgba(0,0,0,.04)">${label}</td></tr>`);
+      rowsHtml.push(`<tr class="pup-cat-sep"><td colspan="9" style="padding:6px 8px 3px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);border-bottom:1px solid rgba(0,0,0,.04)">${label}</td></tr>`);
       lastCat=curCat;
     }
     lastMastered=isMastered;
@@ -383,6 +443,7 @@ function renderPupTable(){
       <td ondblclick="pupCellEdit(this,'${sid}','stage')" style="width:90px;padding:4px 8px;${tdE}">${esc(s.stage||'')}</td>
       <td ondblclick="pupCellEdit(this,'${sid}','next_step')" onmouseenter="${comment?`showPupTip(event,'${comment}')`:''}" onmouseleave="${comment?'hidePupTip()':''}" style="padding:4px 8px;${tdE}${comment?';cursor:help':''}">${nextStep}</td>
       <td ondblclick="pupCellEdit(this,'${sid}','category')" style="width:86px;padding:4px 8px;${tdE}">${catText(s.category)}</td>
+      <td ondblclick="event.stopPropagation();openPupCountEdit('${sid}',this)" style="width:54px;padding:4px 6px;text-align:center;cursor:pointer;${tdE}" title="Dblclick to edit practice count">${_pupWkCountBadge(s)}</td>
       <td style="width:28px;padding:2px 4px;text-align:right"><button class="pup-dots" onclick="event.stopPropagation();openPupEditModal('${sid}')" title="Edit">···</button></td>
     </tr>`);
   });
@@ -407,7 +468,7 @@ function renderPupsPage(){
           <input type="checkbox" ${isMastered?'checked':''} onclick="event.stopPropagation();togglePupMastered('${sid}',this.checked)" title="Mark mastered" style="width:13px;height:13px;cursor:pointer;accent-color:#8b5cf6;flex-shrink:0">
           <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;${isMastered?'opacity:.5;text-decoration:line-through':''}"><span class="pup-skill-name">${s.skill}</span>${wd?`<span style="font-size:10px;color:var(--muted);margin-left:4px">"${wd}"</span>`:''}</span>${sig?`<span style="font-size:9px;color:var(--muted);opacity:.6;flex-shrink:0;margin-left:2px">☞</span>`:''}
         </div>
-        ${ns?`<span style="font-size:10px;color:var(--muted);white-space:nowrap;flex-shrink:0">${ns}</span>`:''}
+        <div style="display:flex;align-items:center;gap:5px;flex-shrink:0">${ns?`<span style="font-size:10px;color:var(--muted);white-space:nowrap">${ns}</span>`:''}${!isMastered?`<span onclick="event.stopPropagation();openPupCountEdit('${sid}',this)" title="Edit practice count" style="font-size:10px;font-weight:600;color:var(--accent);cursor:pointer;padding:1px 4px;border-radius:4px;background:rgba(139,92,246,.08)">${_pupWkDone(sid)}/${s.times_per_week!=null?s.times_per_week:'?'}</span>`:''}</div>
       </div>
       ${cm?`<div style="font-size:10px;color:var(--subtle);margin-top:2px;padding-left:18px">${esc(cm)}</div>`:''}
     </div>`;
