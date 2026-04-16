@@ -2256,6 +2256,7 @@ function applySelHighlight(){
   function csForId(id){
     if(!id)return null;
     if(id.startsWith('tv-'))return gc('travel');
+    if(id.startsWith('pup-sess-'))return typeof _pupSessStyle==='function'?_pupSessStyle():gc('recurring');
     if(id.startsWith('wrrule-'))return gc('weekly_reset');
     if(id.startsWith('wrec-')){const r=st.recurring.find(x=>String(x.id)===id.replace('wrec-',''));return gc(r&&(r.is_weekly_reset===true||r.is_weekly_reset==='true')?'weekly_reset':'recurring');}
     if(id.startsWith('rec-virt-'))return gc('recurring');
@@ -2312,7 +2313,8 @@ function applySelHighlight(){
     const b=st.blocks.find(x=>String(x.id)===String(el.dataset.bid));
     if(!b){el.classList.remove('sel-row');clearSelVars(el);return;}
     let sel=false,csId=null;
-    if(b.taskId){sel=selectedTasks.has(String(b.taskId));csId=String(b.taskId);}
+    if(b.cat==='pup_session'&&b._pupSessId){const psid='pup-sess-'+String(b._pupSessId);sel=selectedTasks.has(psid);csId=psid;}
+    else if(b.taskId){sel=selectedTasks.has(String(b.taskId));csId=String(b.taskId);}
     else if(b.recId){const rid=String(b.recId);const _r=st.recurring.find(x=>String(x.id)===rid);const _isWr=_r&&(_r.is_weekly_reset===true||_r.is_weekly_reset==='true');sel=selectedTasks.has('rec-virt-'+rid)||selRecIds.has(rid)||selectedTasks.has('wrec-'+rid);csId=(_isWr?'wrec-':'rec-virt-')+rid;}
     else if(b.ruleId){const blkId='blk-'+String(b.id);const rid=String(b.ruleId);sel=selectedTasks.has(blkId)||selWrRuleIds.has(rid);csId='wrrule-'+rid;}
     else if(b.shopId){const sid=String(b.shopId);const blkId='blk-'+String(b.id);sel=selectedTasks.has(blkId)||selectedTasks.has('shop-cal-'+sid)||selShopIds.has(sid);csId='shop-cal-'+sid;}

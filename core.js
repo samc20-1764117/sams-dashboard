@@ -342,9 +342,11 @@ async function syncAll(silent=false){
       st.blocks=[...blocks.map(b=>{
         let sm=b.start_minutes;
         if(sm==null&&b.start_time){const[hh,mm]=(b.start_time||'00:00').split(':');sm=parseInt(hh)*60+parseInt(mm);}
+        let _pupSessId=null;
+        if(b.category==='pup_session'){const _sk=(st.pup_skills||[]).find(x=>x.skill===b.title);if(_sk){const _ss=(st.pupSessions||[]).find(s=>String(s.skill_id)===String(_sk.id)&&s.day_date===b.day_date);if(_ss)_pupSessId=_ss.id;}}
         return{id:b.id,title:b.title||'',ds:b.day_date,sm:sm||0,
           dur:b.duration_minutes||30,cat:b.category||'Home',
-          taskId:b.task_id||null,recId:b.rec_id||null,shopId:b.shop_id||null,ruleId:null,_done:b.done||false};
+          taskId:b.task_id||null,recId:b.rec_id||null,shopId:b.shop_id||null,ruleId:null,_done:b.done||false,_pupSessId};
       }),...localOnly];
     }
     save();

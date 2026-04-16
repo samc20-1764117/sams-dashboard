@@ -395,7 +395,7 @@ function tRowPupSess(t,noColor=false){
   const ps=ov?OV:_pupSessStyle();
   return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''}" draggable="true" style="${!ov&&!noColor?`background:${ps.bg};border:1px solid ${ps.b}`:''}" id="ti-pup-sess-${t._pupSessId}" onclick="selTask(event,'pup-sess-${t._pupSessId}')" ondblclick="openPupEditModal('${t._skillId}')" ondragstart="dragId='pupsess::${t._pupSessId}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);" ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false);">
     <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="togPupSessionDone('${t._pupSessId}',this.checked)"></label>
-    <span class="tn" style="color:${ps.t}">${escHtml(t.name)}</span>
+    <span class="tn">${escHtml(t.name)}</span>
     <svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3" fill="rgba(42,157,181,.18)" stroke="${ps.d}" stroke-width="1.5"/></svg>
     <button class="delbtn" onclick="event.stopPropagation();removePupSession('${t._pupSessId}')">✕</button>
   </div>`;
@@ -2700,7 +2700,8 @@ function drawTBBlock(col,b){
   const linkedRule=b.ruleId?st.wrRules.find(x=>String(x.id)===String(b.ruleId)):null;
   const recCat=linkedRec?(linkedRec.is_weekly_reset===false?'recurring':'weekly_reset'):null;
   const effectiveCat=linkedTask?linkedTask.category:recCat||(linkedRule?'weekly_reset':null)||(b.cat||'Home');
-  const s=isImp?IMP:b._pupSessId?_pupSessStyle():gc(effectiveCat);
+  const isPupBlock=b.cat==='pup_session';
+  const s=isImp?IMP:isPupBlock?_pupSessStyle():gc(effectiveCat);
   const el=document.createElement('div');
   el.className='tb-block'+(b._done?' done-block':'');el.dataset.bid=b.id;
   el.addEventListener('contextmenu',e=>{
@@ -2759,7 +2760,7 @@ function drawTBBlock(col,b){
     document.addEventListener('mousemove',onRM);document.addEventListener('mouseup',onRU);
   });
   let tbDragging=false,tbOnMove=null,tbOnUp=null;
-  function _tbSelId(){const _r2=b.recId?st.recurring.find(x=>String(x.id)===String(b.recId)):null;const _isWr2=_r2&&(_r2.is_weekly_reset===true||_r2.is_weekly_reset==='true');return b.taskId?String(b.taskId):b.recId?(_isWr2?'wrec-':'rec-virt-')+b.recId:(b.shopId||b.ruleId)?'blk-'+b.id:null;}
+  function _tbSelId(){if(b.cat==='pup_session'&&b._pupSessId)return'pup-sess-'+String(b._pupSessId);const _r2=b.recId?st.recurring.find(x=>String(x.id)===String(b.recId)):null;const _isWr2=_r2&&(_r2.is_weekly_reset===true||_r2.is_weekly_reset==='true');return b.taskId?String(b.taskId):b.recId?(_isWr2?'wrec-':'rec-virt-')+b.recId:(b.shopId||b.ruleId)?'blk-'+b.id:null;}
   function _tbBlockSelId(bl){const r3=bl.recId?st.recurring.find(x=>String(x.id)===String(bl.recId)):null;const iw=r3&&(r3.is_weekly_reset===true||r3.is_weekly_reset==='true');return bl.taskId?String(bl.taskId):bl.recId?(iw?'wrec-':'rec-virt-')+bl.recId:(bl.shopId||bl.ruleId)?'blk-'+bl.id:null;}
   el.addEventListener('click',e=>{
     if(e.target.classList.contains('tb-resize')||e.target.classList.contains('tb-bdel')||e.target.classList.contains('tb-chk'))return;
@@ -2775,7 +2776,8 @@ function drawTBBlock(col,b){
     if(e.target.classList.contains('tb-resize')||e.target.classList.contains('tb-bdel')||e.target.classList.contains('tb-chk'))return;
     e.stopPropagation();
     clearSelection();
-    if(b.taskId){openEditTask(b.taskId);}
+    if(b.cat==='pup_session'){const _ps=b._pupSessId?(st.pupSessions||[]).find(s=>String(s.id)===String(b._pupSessId)):null;const _sk=_ps?(st.pup_skills||[]).find(x=>String(x.id)===String(_ps.skill_id)):((st.pup_skills||[]).find(x=>x.skill===b.title));if(_sk)openPupEditModal(_sk.id);}
+    else if(b.taskId){openEditTask(b.taskId);}
     else if(b.recId){openRecEditModal(String(b.recId));}
     else{startTBInlineEdit(b.id,el.closest('.tb-col'));}
   });
@@ -3008,7 +3010,7 @@ function dropOnTB(e,ds,h,row,smOverride){
       sbReqSilent('POST','pup_skill_sessions',{skill_id:skillId,day_date:ds,done:false}).then(sv=>{if(sv&&sv[0]){const i=st.pupSessions.findIndex(s=>s.id===tmp);if(i>-1){tmpSessId=sv[0].id;st.pupSessions[i]=sv[0];}}save();});
     }
     const sessRef=st.pupSessions.find(s=>String(s.skill_id)===String(skillId)&&s.day_date===ds);
-    const blk={id:crypto.randomUUID(),title:skill.skill,ds,sm,dur:30,cat:'Recurring',_pupSessId:sessRef?.id||tmpSessId};
+    const blk={id:crypto.randomUUID(),title:skill.skill,ds,sm,dur:30,cat:'pup_session',_pupSessId:(sessRef?.id||tmpSessId)||null};
     st.blocks.push(blk);dragId=null;save();renderAll();sbSaveBlock(blk);
     renderPupSkillsHighlight();renderWkCal();renderToday();
     pushUndo(()=>{
@@ -3205,10 +3207,18 @@ function delBlock(id,e){
   e&&e.stopPropagation();
   const b=st.blocks.find(x=>x.id===id);if(!b)return;
   const copy={...b};
-  // Removing from timeblock only — item stays in all other views (today list, shopping, etc.)
-  pushUndo(()=>{st.blocks.push(copy);save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();sbSaveBlock(copy);},'Removed from time block');
+  let removedSess=null;
+  if(b.cat==='pup_session'&&b._pupSessId){
+    removedSess=st.pupSessions.find(s=>String(s.id)===String(b._pupSessId));
+    if(removedSess){st.pupSessions=st.pupSessions.filter(s=>String(s.id)!==String(b._pupSessId));sbReqSilent('DELETE','pup_skill_sessions',null,`?id=eq.${b._pupSessId}`);}
+  }
+  pushUndo(()=>{
+    st.blocks.push(copy);
+    if(removedSess){st.pupSessions.push(removedSess);sbReqSilent('POST','pup_skill_sessions',{skill_id:removedSess.skill_id,day_date:removedSess.day_date,done:removedSess.done},'');}
+    save();renderAll();renderPupSkillsHighlight();renderToday();renderWkCal();if(document.getElementById('tbGrid'))renderDayTB();sbSaveBlock(copy);
+  },'Removed from time block');
   st.blocks=st.blocks.filter(x=>x.id!==id);
-  save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();sbDeleteBlock(id);
+  save();renderAll();renderPupSkillsHighlight();renderToday();renderWkCal();if(document.getElementById('tbGrid'))renderDayTB();sbDeleteBlock(id);
 }
 function onTBWheel(e){
   const sc=document.getElementById('tbScroll');const atTop=sc.scrollTop<=0,atBot=sc.scrollTop+sc.clientHeight>=sc.scrollHeight-2;
