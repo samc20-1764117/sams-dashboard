@@ -1,7 +1,7 @@
 let _pupEditId=null;
 function _pupWkDone(skillId){const{mon,sun}=getWkBounds(0);const monDs=d2s(mon),sunDs=d2s(sun);return(st.pupSessions||[]).filter(s=>String(s.skill_id)===String(skillId)&&s.day_date>=monDs&&s.day_date<=sunDs&&s.done).length;}
-function _pupWkTotal(skill){return skill.times_per_week!=null?skill.times_per_week:_pupWkDone(skill.id);}
-function _pupWkCountBadge(skill){const done=_pupWkDone(skill.id);const total=skill.times_per_week!=null?skill.times_per_week:'?';const allDone=skill.times_per_week!=null&&done>=skill.times_per_week&&skill.times_per_week>0;return`<span style="font-size:10px;font-weight:600;color:${allDone?'#22c55e':'var(--accent)'}">${done}/${total}</span>`;}
+function _pupWkSessTotal(skillId){const{mon,sun}=getWkBounds(0);const monDs=d2s(mon),sunDs=d2s(sun);return(st.pupSessions||[]).filter(s=>String(s.skill_id)===String(skillId)&&s.day_date>=monDs&&s.day_date<=sunDs).length;}
+function _pupWkCountBadge(skill){const done=_pupWkDone(skill.id);const total=_pupWkSessTotal(skill.id);const allDone=total>0&&done===total;return`<span style="font-size:10px;font-weight:600;color:${allDone?'#22c55e':'var(--accent)'}">${done}/${total}</span>`;}
 async function setPupWkDone(skillId,newDone){
   if(newDone<0)newDone=0;
   const{mon,sun}=getWkBounds(0);const monDs=d2s(mon),sunDs=d2s(sun);
@@ -22,38 +22,26 @@ async function setPupWkDone(skillId,newDone){
   }
   save();renderPupSkillsHighlight();if(document.getElementById('page-pups')?.classList.contains('active'))renderPupsPage();renderToday();renderWkCal();
 }
-async function setPupWkTarget(skillId,newTarget){
-  const idx=st.pup_skills.findIndex(x=>String(x.id)===String(skillId));if(idx<0)return;
-  const val=newTarget===''||newTarget==null?null:parseInt(newTarget)||null;
-  st.pup_skills[idx].times_per_week=val;
-  save();renderPupSkillsHighlight();if(document.getElementById('page-pups')?.classList.contains('active'))renderPupsPage();
-  await sbReqSilent('PATCH','pup_skills',{times_per_week:val},`?id=eq.${skillId}`);
-}
 function openPupCountEdit(skillId,anchorEl){
   let pop=document.getElementById('_pupCountPop');
-  if(!pop){pop=document.createElement('div');pop.id='_pupCountPop';pop.style.cssText='position:fixed;z-index:9999;background:var(--bg);border:1px solid var(--border);border-radius:10px;box-shadow:0 4px 18px rgba(0,0,0,.14);padding:10px 12px;font-size:12px;font-family:inherit;min-width:160px';document.body.appendChild(pop);}
+  if(!pop){pop=document.createElement('div');pop.id='_pupCountPop';pop.style.cssText='position:fixed;z-index:9999;background:var(--bg);border:1px solid var(--border);border-radius:10px;box-shadow:0 4px 18px rgba(0,0,0,.14);padding:10px 12px;font-size:12px;font-family:inherit;min-width:150px';document.body.appendChild(pop);}
   const skill=(st.pup_skills||[]).find(x=>String(x.id)===String(skillId));if(!skill)return;
   const done=_pupWkDone(skillId);
-  const target=skill.times_per_week!=null?skill.times_per_week:'';
   const inpS='width:52px;padding:3px 6px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:12px;background:var(--bg);color:var(--text);outline:none;text-align:center';
-  pop.innerHTML=`<div style="font-size:10px;font-weight:700;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">${skill.skill}</div><div style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><span style="color:var(--text)">Done this wk</span><input id="_pcDone" type="number" min="0" value="${done}" style="${inpS}"></div><div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><span style="color:var(--text)">Target / wk</span><input id="_pcTarget" type="number" min="0" placeholder="—" value="${target}" style="${inpS}"></div></div><div style="display:flex;gap:6px;margin-top:8px"><button onclick="_savePupCountEdit('${skillId}')" style="flex:1;padding:3px 0;border-radius:6px;border:1px solid var(--border);background:rgba(139,92,246,.12);cursor:pointer;font-size:11px;color:var(--text)">Save</button><button onclick="document.getElementById('_pupCountPop').style.display='none'" style="flex:1;padding:3px 0;border-radius:6px;border:1px solid var(--border);background:transparent;cursor:pointer;font-size:11px;color:var(--muted)">Cancel</button></div>`;
+  pop.innerHTML=`<div style="font-size:10px;font-weight:700;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">${skill.skill}</div><div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><span style="color:var(--text)">Done this wk</span><input id="_pcDone" type="number" min="0" value="${done}" style="${inpS}" onkeydown="if(event.key==='Enter'){event.preventDefault();_savePupCountEdit('${skillId}');}if(event.key==='Escape'){event.preventDefault();document.getElementById('_pupCountPop').style.display='none';}"></div><div style="display:flex;gap:6px;margin-top:8px"><button onclick="_savePupCountEdit('${skillId}')" style="flex:1;padding:3px 0;border-radius:6px;border:1px solid var(--border);background:rgba(139,92,246,.12);cursor:pointer;font-size:11px;color:var(--text)">Save</button><button onclick="document.getElementById('_pupCountPop').style.display='none'" style="flex:1;padding:3px 0;border-radius:6px;border:1px solid var(--border);background:transparent;cursor:pointer;font-size:11px;color:var(--muted)">Cancel</button></div>`;
   pop.style.display='block';
   const rect=anchorEl.getBoundingClientRect?anchorEl.getBoundingClientRect():{left:200,bottom:200};
   let left=rect.left,top=rect.bottom+4;
-  if(left+180>window.innerWidth-6)left=window.innerWidth-186;
-  if(top+140>window.innerHeight-6)top=rect.top-144;
+  if(left+160>window.innerWidth-6)left=window.innerWidth-166;
+  if(top+110>window.innerHeight-6)top=rect.top-114;
   pop.style.left=left+'px';pop.style.top=top+'px';
   setTimeout(()=>{const d=document.getElementById('_pcDone');if(d){d.focus();d.select();}},40);
   if(!pop._outsideClick){pop._outsideClick=e=>{if(!pop.contains(e.target)&&e.target!==anchorEl)pop.style.display='none';};document.addEventListener('mousedown',pop._outsideClick);}
 }
 async function _savePupCountEdit(skillId){
   const doneEl=document.getElementById('_pcDone');
-  const targetEl=document.getElementById('_pcTarget');
   document.getElementById('_pupCountPop').style.display='none';
-  const newDone=doneEl?parseInt(doneEl.value)||0:null;
-  const newTarget=targetEl?targetEl.value:'';
-  if(newDone!=null)await setPupWkDone(skillId,newDone);
-  await setPupWkTarget(skillId,newTarget);
+  if(doneEl)await setPupWkDone(skillId,parseInt(doneEl.value)||0);
 }
 let _selPupIds=new Set(),_lastSelPupId=null,_copiedPups=[],_pupCtxId=null;
 let _pupSortCol=null,_pupSortDir=1,_pupFilter=null;
