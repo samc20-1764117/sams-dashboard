@@ -183,16 +183,16 @@ async function togPupSessionDone(sessId,done){
 async function removePupSession(sessId){
   const removed=st.pupSessions.find(s=>String(s.id)===String(sessId));if(!removed)return;
   const skill=(st.pup_skills||[]).find(x=>String(x.id)===String(removed.skill_id));
-  const removedBlocks=st.blocks.filter(b=>b._pupSessId&&String(b._pupSessId)===String(sessId)||(skill&&b.title===skill.skill&&b.ds===removed.day_date&&!b.taskId&&!b.recId));
+  const removedBlocks=st.blocks.filter(b=>(b._pupSessId&&String(b._pupSessId)===String(sessId))||(b.cat==='pup_session'&&skill&&b.title===skill.skill&&b.ds===removed.day_date));
   st.pupSessions=st.pupSessions.filter(s=>String(s.id)!==String(sessId));
   st.blocks=st.blocks.filter(b=>!removedBlocks.includes(b));
-  save();renderPupSkillsHighlight();renderToday();renderWkCal();if(document.getElementById('tbGrid'))renderDayTB();
+  save();renderAll();renderPupSkillsHighlight();
   sbReqSilent('DELETE','pup_skill_sessions',null,`?id=eq.${sessId}`);
   removedBlocks.forEach(b=>sbDeleteBlock(b.id));
   pushUndo(()=>{
     st.pupSessions.push(removed);
     removedBlocks.forEach(b=>st.blocks.push(b));
-    save();renderPupSkillsHighlight();renderToday();renderWkCal();if(document.getElementById('tbGrid'))renderDayTB();
+    save();renderAll();renderPupSkillsHighlight();
     sbReqSilent('POST','pup_skill_sessions',{skill_id:removed.skill_id,day_date:removed.day_date,done:removed.done},'');
     removedBlocks.forEach(b=>sbSaveBlock(b));
   },'Removed pup session');
@@ -388,7 +388,7 @@ function tRowShopVirt(t,noDate=false,tbArrow=false,noColor=false){
   </div>`;
 }
 function _pupSessStyle(){
-  return{bg:'rgba(221,244,240,.38)',b:'rgba(42,157,181,.14)',t:'rgba(32,140,165,1)',d:'rgba(42,157,181,.55)'};
+  return{bg:'rgba(221,244,240,.38)',b:'rgba(42,157,181,.14)',t:'rgba(32,140,165,1)',d:'#2a9db5',dot:'rgba(42,157,181,.18)'};
 }
 function tRowPupSess(t,noColor=false){
   const ov=isOv(t.due_date)&&!t.done;
@@ -3007,7 +3007,7 @@ function dropOnTB(e,ds,h,row,smOverride){
     if(!sessAlready){
       const tmp='pss-tmp-'+Date.now();tmpSessId=tmp;newSessCreated=true;
       st.pupSessions.push({id:tmp,skill_id:skillId,day_date:ds,done:false});
-      sbReqSilent('POST','pup_skill_sessions',{skill_id:skillId,day_date:ds,done:false}).then(sv=>{if(sv&&sv[0]){const i=st.pupSessions.findIndex(s=>s.id===tmp);if(i>-1){tmpSessId=sv[0].id;st.pupSessions[i]=sv[0];}}save();});
+      sbReqSilent('POST','pup_skill_sessions',{skill_id:skillId,day_date:ds,done:false}).then(sv=>{if(sv&&sv[0]){const i=st.pupSessions.findIndex(s=>s.id===tmp);if(i>-1){tmpSessId=sv[0].id;st.pupSessions[i]=sv[0];}const blkRef=st.blocks.find(b=>b._pupSessId===tmp);if(blkRef)blkRef._pupSessId=sv[0].id;}save();});
     }
     const sessRef=st.pupSessions.find(s=>String(s.skill_id)===String(skillId)&&s.day_date===ds);
     const blk={id:crypto.randomUUID(),title:skill.skill,ds,sm,dur:30,cat:'pup_session',_pupSessId:(sessRef?.id||tmpSessId)||null};

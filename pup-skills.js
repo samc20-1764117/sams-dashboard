@@ -77,12 +77,15 @@ async function savePupModal(){
     const s={id:'l-'+Date.now(),...data};
     st.pup_skills.push(s);save();renderPupsPage();renderPupSkillsHighlight();
     const sv=await sbReq('POST','pup_skills',data);
-    if(sv&&sv[0]){const i=st.pup_skills.findIndex(x=>x.id===s.id);if(i>-1)st.pup_skills[i]=sv[0];save();renderPupsPage();renderPupSkillsHighlight();}
+    if(sv&&sv[0]){const i=st.pup_skills.findIndex(x=>x.id===s.id);if(i>-1)st.pup_skills[i]=sv[0];save();renderPupsPage();renderPupSkillsHighlight();renderToday();renderWkCal();}
   } else {
     const idx=st.pup_skills.findIndex(x=>x.id==_pupEditId);if(idx<0)return;
-    Object.assign(st.pup_skills[idx],data);save();
+    const oldSkill=st.pup_skills[idx].skill;
+    Object.assign(st.pup_skills[idx],data);
+    if(data.skill&&data.skill!==oldSkill){st.blocks.filter(b=>b.cat==='pup_session'&&b.title===oldSkill).forEach(b=>{b.title=data.skill;});}
+    save();
     await sbReqSilent('PATCH','pup_skills',data,`?id=eq.${_pupEditId}`);
-    renderPupsPage();renderPupSkillsHighlight();
+    renderPupsPage();renderPupSkillsHighlight();renderToday();renderWkCal();if(document.getElementById('tbGrid'))renderDayTB();
   }
 }
 async function setPupField(id,field,val,origVal){

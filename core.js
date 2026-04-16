@@ -683,6 +683,7 @@ function _stateRestore(snap){
   if(snap.pupSessions)st.pupSessions=snap.pupSessions;
   save();
   renderAll();
+  renderPupSkillsHighlight();
   if(document.getElementById('tbGrid'))renderDayTB();
   renderWkCal();renderRecOv();renderWeeklyPage();
 }
