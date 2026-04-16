@@ -111,19 +111,32 @@ function renderPupSkillsHighlight(){
     const pupOrd=p=>p==='Mochi'?0:p==='Sunny'?1:2;
     return pupOrd(a.pup)-pupOrd(b.pup);
   });
-  const rows=skills.map(s=>{
+  const mkRow=s=>{
     const sess=_pupWkSessions(s.id);
     const total=sess.length,doneC=sess.filter(x=>x.done).length;
     const allDone=total>0&&doneC===total;
-    const glow=s.pup==='Mochi'?'0 0 4px 2px rgba(167,139,250,.2)':s.pup==='Sunny'?'0 0 4px 2px rgba(253,224,71,.25)':'0 0 4px 1px rgba(148,163,184,.15)';
     const right=total>0
       ?`<span style="font-size:10px;font-weight:600;color:${allDone?'var(--muted)':'var(--accent)'};margin-left:auto;flex-shrink:0">${doneC}/${total}</span>`
-      :`<label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" onchange="togPupSkillTrained('${s.id}',this.checked)" style="box-shadow:${glow}"></label>`;
+      :`<label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" onchange="togPupSkillTrained('${s.id}',this.checked)"></label>`;
     return`<div class="ti${allDone?' done':''}" draggable="true" style="${allDone?'opacity:.45':''}" ondragstart="dragId='pupskill::${s.id}';event.dataTransfer.effectAllowed='copy';this.style.opacity='.4';document.body.classList.add('body-dragging');showWkcEdges(true);" ondragend="this.style.opacity='';document.body.classList.remove('body-dragging');showWkcEdges(false);" ondblclick="openPupEditModal('${s.id}')" onmouseenter="showPupSkillTip(this,'${s.id}')" onmouseleave="hidePupSkillTip()">
       ${right}
       <span class="tn" style="color:var(--muted);font-size:11px;font-weight:400">${escHtml(s.skill)}</span>
     </div>`;
-  }).join('');
+  };
+  const mochiSkills=skills.filter(s=>s.pup==='Mochi');
+  const sunnySkills=skills.filter(s=>s.pup==='Sunny');
+  const otherSkills=skills.filter(s=>s.pup!=='Mochi'&&s.pup!=='Sunny');
+  const mkGroup=(label,color,items)=>{
+    if(!items.length)return'';
+    return`<div style="padding:3px 10px 1px;display:flex;align-items:center;gap:6px">
+      <span style="font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:${color}">${label}</span>
+      <span style="flex:1;height:1px;background:${color};opacity:.25"></span>
+    </div>${items.map(mkRow).join('')}`;
+  };
+  const hasBoth=mochiSkills.length>0&&sunnySkills.length>0;
+  const rows=hasBoth
+    ?mkGroup('Mochi','rgba(167,139,250,.8)',mochiSkills)+mkGroup('Sunny','rgba(202,138,4,.7)',sunnySkills)+otherSkills.map(mkRow).join('')
+    :skills.map(mkRow).join('');
   el.innerHTML=`<div style="display:flex;align-items:center;padding:4px 10px 5px;gap:8px;border-bottom:1px solid rgba(210,205,228,.3)">
     <button onclick="showPage('pups')" style="flex-shrink:0;text-align:left;background:rgba(255,255,255,.9);border:1px solid rgba(210,205,228,.6);border-radius:var(--rs);cursor:pointer;font-size:10px;font-weight:600;color:var(--text);font-family:inherit;padding:2px 6px;box-shadow:inset 0 1px 0 rgba(255,255,255,.6);display:inline-flex;align-items:center">Pup Skills</button>
     <button class="btn-plus" onclick="openPupAddModal()" style="margin-left:auto">+</button>
@@ -356,17 +369,14 @@ function tRowShopVirt(t,noDate=false,tbArrow=false,noColor=false){
     <button class="delbtn" onclick="event.stopPropagation();unscheduleShop('${t._shopId}')">✕</button>
   </div>`;
 }
-function _pupSessStyle(pup){
-  if(pup==='Mochi')return{bg:'rgba(250,248,255,.94)',b:'rgba(167,139,250,.14)',t:'var(--text)'};
-  if(pup==='Sunny')return{bg:'rgba(255,254,248,.94)',b:'rgba(234,179,8,.14)',t:'var(--text)'};
-  return{bg:'rgba(255,255,255,.9)',b:'rgba(210,205,228,.25)',t:'var(--text)'};
+function _pupSessStyle(){
+  return{bg:'rgba(221,244,240,.38)',b:'rgba(42,157,181,.14)',t:'var(--text)'};
 }
 function tRowPupSess(t,noColor=false){
   const ov=isOv(t.due_date)&&!t.done;
-  const ps=ov?OV:_pupSessStyle(t._pup);
-  const pupGlow=t._pup==='Mochi'?'0 0 4px 2px rgba(167,139,250,.2)':t._pup==='Sunny'?'0 0 4px 2px rgba(253,224,71,.25)':'0 0 4px 1px rgba(148,163,184,.15)';
+  const ps=ov?OV:_pupSessStyle();
   return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''}" draggable="true" style="${!ov&&!noColor?`background:${ps.bg};border:1px solid ${ps.b}`:''}" id="ti-pup-sess-${t._pupSessId}" ondragstart="dragId='pupsess::${t._pupSessId}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);" ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false);">
-    <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="togPupSessionDone('${t._pupSessId}',this.checked)" style="box-shadow:${pupGlow}"></label>
+    <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="togPupSessionDone('${t._pupSessId}',this.checked)"></label>
     <span class="tn">${escHtml(t.name)}</span>
     <svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3" fill="${ps.bg}" stroke="${ps.d}" stroke-opacity="0.4" stroke-width="1"/></svg>
     <button class="delbtn" onclick="event.stopPropagation();removePupSession('${t._pupSessId}')">✕</button>
@@ -781,7 +791,7 @@ function renderWkCal(){
     dayTasks.forEach(t=>{
       const ov=isOv(t.due_date)&&!t.done,imp=t.important&&!ov&&!t.done;
       const _chipCat=(t._isWrec||t._isWrRule)?'weekly_reset':(t._virtual&&t._recId?'recurring':t.category);
-      const s=ov?OV:imp?IMP:t._type==='pup'?_pupSessStyle(t._pup):gc(_chipCat);
+      const s=ov?OV:imp?IMP:t._type==='pup'?_pupSessStyle():gc(_chipCat);
       const chip=document.createElement('div');chip.className='chip'+(t.done?' done-chip':'');
       chip.style.cssText=`background:${s.bg};color:${s.t};border-color:${s.b}`;
       if(!t._virtual)chip.dataset.tid=String(t.id);
