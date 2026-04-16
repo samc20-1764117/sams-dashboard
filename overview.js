@@ -357,9 +357,9 @@ function tRowShopVirt(t,noDate=false,tbArrow=false,noColor=false){
   </div>`;
 }
 function _pupSessStyle(pup){
-  if(pup==='Mochi')return{bg:'rgba(167,139,250,.1)',b:'rgba(167,139,250,.25)',t:'rgba(80,60,160,.8)'};
-  if(pup==='Sunny')return{bg:'rgba(253,200,50,.13)',b:'rgba(234,179,8,.28)',t:'rgba(120,90,0,.8)'};
-  return{bg:'rgba(148,163,184,.08)',b:'rgba(148,163,184,.2)',t:'var(--text)'};
+  if(pup==='Mochi')return{bg:'rgba(243,240,255,.88)',b:'rgba(167,139,250,.18)',t:'var(--text)'};
+  if(pup==='Sunny')return{bg:'rgba(255,252,235,.88)',b:'rgba(234,179,8,.18)',t:'var(--text)'};
+  return{bg:'rgba(255,255,255,.82)',b:'rgba(210,205,228,.3)',t:'var(--text)'};
 }
 function tRowPupSess(t,noColor=false){
   const ov=isOv(t.due_date)&&!t.done;
