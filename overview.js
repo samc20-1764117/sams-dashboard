@@ -105,17 +105,17 @@ function renderPupSkillsHighlight(){
   if(!allSkills.length){el.style.cssText='display:none';return;}
   el.style.cssText='display:block;background:rgba(255,255,255,0.18);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,0.35);border-radius:14px;box-shadow:0 2px 12px rgba(0,0,0,.06);margin:10px 14px;padding:4px 0';
   const skills=[...allSkills].sort((a,b)=>{
-    const aDone=a.times_per_week!=null&&a.times_per_week>0&&_pupWkDone(a.id)>=a.times_per_week;
-    const bDone=b.times_per_week!=null&&b.times_per_week>0&&_pupWkDone(b.id)>=b.times_per_week;
+    const aDone=_pupWkDone(a.id)>0&&_pupWkDone(a.id)===_pupWkSessTotal(a.id)&&_pupWkSessTotal(a.id)>0;
+    const bDone=_pupWkDone(b.id)>0&&_pupWkDone(b.id)===_pupWkSessTotal(b.id)&&_pupWkSessTotal(b.id)>0;
     if(aDone&&!bDone)return 1;if(!aDone&&bDone)return -1;
     const pupOrd=p=>p==='Mochi'?0:p==='Sunny'?1:2;
     return pupOrd(a.pup)-pupOrd(b.pup);
   });
   const mkRow=s=>{
     const doneC=_pupWkDone(s.id);
-    const target=s.times_per_week!=null?s.times_per_week:'?';
-    const allDone=s.times_per_week!=null&&s.times_per_week>0&&doneC>=s.times_per_week;
-    const right=`<span onclick="event.stopPropagation();openPupCountEdit('${s.id}',this)" title="Click to edit" style="font-size:10px;font-weight:600;color:${allDone?'var(--muted)':'var(--accent)'};margin-left:auto;flex-shrink:0;cursor:pointer">${doneC}/${target}</span>`;
+    const total=_pupWkSessTotal(s.id);
+    const allDone=total>0&&doneC===total;
+    const right=`<span onclick="event.stopPropagation();openPupCountEdit('${s.id}',this)" title="Click to edit" style="font-size:10px;font-weight:600;color:${allDone?'var(--muted)':'var(--accent)'};margin-left:auto;flex-shrink:0;cursor:pointer">${doneC}/${total}</span>`;
     return`<div class="ti${allDone?' done':''}" draggable="true" style="${allDone?'opacity:.45':''}" ondragstart="dragId='pupskill::${s.id}';event.dataTransfer.effectAllowed='copy';this.style.opacity='.4';document.body.classList.add('body-dragging');showWkcEdges(true);" ondragend="this.style.opacity='';document.body.classList.remove('body-dragging');showWkcEdges(false);" ondblclick="openPupEditModal('${s.id}')" onmouseenter="showPupSkillTip(this,'${s.id}')" onmouseleave="hidePupSkillTip()">
       ${right}
       <span class="tn" style="color:var(--muted);font-size:11px;font-weight:400">${escHtml(s.skill)}</span>

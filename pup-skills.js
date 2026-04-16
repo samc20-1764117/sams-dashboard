@@ -53,8 +53,8 @@ function _pupSyncToServer(prev,next){
   const nm=new Map(next.map(s=>[String(s.id),s]));
   for(const[id,s]of pm)if(!nm.has(id)&&!id.startsWith('l-'))sbReqSilent('DELETE','pup_skills',null,`?id=eq.${id}`);
   for(const[id,s]of nm){
-    if(!pm.has(id)){const d={pup:s.pup,skill:s.skill,level:s.level,stage:s.stage,focus:s.focus,next_step:s.next_step,word:s.word,signal:s.signal,comments:s.comments,times_per_week:s.times_per_week??null};sbReqSilent('POST','pup_skills',d);}
-    else if(!id.startsWith('l-')){const p=pm.get(id);const flds=['pup','skill','level','stage','focus','next_step','word','signal','comments','times_per_week'];if(flds.some(f=>String(p[f]??'')!==String(s[f]??''))){sbReqSilent('PATCH','pup_skills',{pup:s.pup,skill:s.skill,level:s.level,stage:s.stage,focus:s.focus,next_step:s.next_step,word:s.word,signal:s.signal,comments:s.comments,times_per_week:s.times_per_week??null},`?id=eq.${id}`);}}
+    if(!pm.has(id)){const d={pup:s.pup,skill:s.skill,level:s.level,stage:s.stage,focus:s.focus,next_step:s.next_step,word:s.word,signal:s.signal,comments:s.comments};sbReqSilent('POST','pup_skills',d);}
+    else if(!id.startsWith('l-')){const p=pm.get(id);const flds=['pup','skill','level','stage','focus','next_step','word','signal','comments'];if(flds.some(f=>String(p[f]??'')!==String(s[f]??''))){sbReqSilent('PATCH','pup_skills',{pup:s.pup,skill:s.skill,level:s.level,stage:s.stage,focus:s.focus,next_step:s.next_step,word:s.word,signal:s.signal,comments:s.comments},`?id=eq.${id}`);}}
   }
 }
 function pupUndo(){if(!_pupUndoStack.length){showToast('Nothing to undo','#888');return;}const prev=JSON.parse(JSON.stringify(st.pup_skills));_pupUndoDirty=true;_pupRedoStack.push(prev);st.pup_skills=_pupUndoStack.pop();save();renderPupsPage();showToast('Undone','#6d5fe6',1500);_pupSyncToServer(prev,st.pup_skills);}
@@ -79,7 +79,6 @@ function openPupAddModal(){
   document.getElementById('pmWord').value='';
   document.getElementById('pmSignal').value='';
   document.getElementById('pmComments').value='';
-  document.getElementById('pmTimesPerWeek').value='';
   document.getElementById('pupModal').classList.add('open');
   setTimeout(()=>document.getElementById('pmSkill').focus(),80);
 }
@@ -97,7 +96,6 @@ function openPupEditModal(id){
   document.getElementById('pmWord').value=s.word||'';
   document.getElementById('pmSignal').value=s.signal||'';
   document.getElementById('pmComments').value=s.comments||'';
-  document.getElementById('pmTimesPerWeek').value=s.times_per_week!=null?s.times_per_week:'';
   document.getElementById('pupModal').classList.add('open');
   setTimeout(()=>{const _el=document.getElementById('pmSkill');if(_el){_el.focus();const _l=_el.value.length;_el.setSelectionRange(_l,_l);}},80);
 }
@@ -114,7 +112,6 @@ async function savePupModal(){
     word:document.getElementById('pmWord').value.trim()||null,
     signal:document.getElementById('pmSignal').value.trim()||null,
     comments:document.getElementById('pmComments').value.trim()||null,
-    times_per_week:document.getElementById('pmTimesPerWeek').value!==''?parseInt(document.getElementById('pmTimesPerWeek').value)||null:null,
   };
   if(!data.skill){closeMod('pupModal');return;}
   if(data.focus&&data.stage!=='Mastered')data.stage='In Progress';
@@ -210,7 +207,7 @@ async function pupCtxDuplicate(){
     const s=st.pup_skills.find(x=>String(x.id)===String(id));if(!s)continue;
     const copy={...s,id:'l-'+Date.now(),skill:s.skill+' (copy)'};
     st.pup_skills.push(copy);
-    const sv=await sbReq('POST','pup_skills',{pup:copy.pup,skill:copy.skill,category:copy.category,level:copy.level,stage:copy.stage,focus:copy.focus,next_step:copy.next_step,comments:copy.comments,times_per_week:copy.times_per_week??null});
+    const sv=await sbReq('POST','pup_skills',{pup:copy.pup,skill:copy.skill,category:copy.category,level:copy.level,stage:copy.stage,focus:copy.focus,next_step:copy.next_step,comments:copy.comments});
     if(sv&&sv[0]){const i=st.pup_skills.findIndex(x=>x.id===copy.id);if(i>-1)st.pup_skills[i]=sv[0];}
   }
   save();renderPupsPage();
@@ -456,7 +453,7 @@ function renderPupsPage(){
           <input type="checkbox" ${isMastered?'checked':''} onclick="event.stopPropagation();togglePupMastered('${sid}',this.checked)" title="Mark mastered" style="width:13px;height:13px;cursor:pointer;accent-color:#8b5cf6;flex-shrink:0">
           <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;${isMastered?'opacity:.5;text-decoration:line-through':''}"><span class="pup-skill-name">${s.skill}</span>${wd?`<span style="font-size:10px;color:var(--muted);margin-left:4px">"${wd}"</span>`:''}</span>${sig?`<span style="font-size:9px;color:var(--muted);opacity:.6;flex-shrink:0;margin-left:2px">☞</span>`:''}
         </div>
-        <div style="display:flex;align-items:center;gap:5px;flex-shrink:0">${ns?`<span style="font-size:10px;color:var(--muted);white-space:nowrap">${ns}</span>`:''}${!isMastered?`<span onclick="event.stopPropagation();openPupCountEdit('${sid}',this)" title="Edit practice count" style="font-size:10px;font-weight:600;color:var(--accent);cursor:pointer;padding:1px 4px;border-radius:4px;background:rgba(139,92,246,.08)">${_pupWkDone(sid)}/${s.times_per_week!=null?s.times_per_week:'?'}</span>`:''}</div>
+        <div style="display:flex;align-items:center;gap:5px;flex-shrink:0">${ns?`<span style="font-size:10px;color:var(--muted);white-space:nowrap">${ns}</span>`:''}${!isMastered?`<span onclick="event.stopPropagation();openPupCountEdit('${sid}',this)" title="Edit practice count" style="font-size:10px;font-weight:600;color:var(--accent);cursor:pointer;padding:1px 4px;border-radius:4px;background:rgba(139,92,246,.08)">${_pupWkDone(sid)}/${_pupWkSessTotal(sid)}</span>`:''}</div>
       </div>
       ${cm?`<div style="font-size:10px;color:var(--subtle);margin-top:2px;padding-left:18px">${esc(cm)}</div>`:''}
     </div>`;
