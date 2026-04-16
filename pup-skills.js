@@ -5,7 +5,7 @@ function _pupAllSess(skillId){return(st.pupSessions||[]).filter(s=>String(s.skil
 function _pupAllDone(skillId){return _pupAllSess(skillId).filter(s=>s.done).length;}
 function _pupAllTotal(skillId){return _pupAllSess(skillId).length;}
 function _pupLastPracticed(skillId){const done=_pupAllSess(skillId).filter(s=>s.done).map(s=>s.day_date).sort();return done.length?done[done.length-1]:null;}
-function _pupCountBadge(skill){const done=_pupAllDone(skill.id);const total=_pupAllTotal(skill.id);return`<span style="font-size:10px;font-weight:600;color:var(--accent)">${done}/${total}</span>`;}
+function _pupCountBadge(skill){const done=_pupAllDone(skill.id);const total=_pupAllTotal(skill.id);return`<span style="font-size:10px;font-weight:600;color:var(--muted)">${done}/${total}</span>`;}
 async function setPupWkDone(skillId,newDone){
   if(newDone<0)newDone=0;
   const{mon,sun}=getWkBounds(0);const monDs=d2s(mon),sunDs=d2s(sun);
@@ -463,7 +463,7 @@ function renderPupsPage(){
           <input type="checkbox" ${isMastered?'checked':''} onclick="event.stopPropagation();togglePupMastered('${sid}',this.checked)" title="Mark mastered" style="width:13px;height:13px;cursor:pointer;accent-color:#8b5cf6;flex-shrink:0">
           <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;${isMastered?'opacity:.5;text-decoration:line-through':''}"><span class="pup-skill-name">${s.skill}</span>${wd?`<span style="font-size:10px;color:var(--muted);margin-left:4px">"${wd}"</span>`:''}</span>${sig?`<span style="font-size:9px;color:var(--muted);opacity:.6;flex-shrink:0;margin-left:2px">☞</span>`:''}
         </div>
-        <div style="display:flex;align-items:center;gap:5px;flex-shrink:0">${ns?`<span style="font-size:10px;color:var(--muted);white-space:nowrap">${ns}</span>`:''}${!isMastered?`<span onclick="event.stopPropagation();openPupCountEdit('${sid}',this)" title="Click for session details" style="font-size:10px;font-weight:600;color:var(--accent);cursor:pointer;padding:1px 4px;border-radius:4px;background:rgba(139,92,246,.08)">${_pupAllDone(sid)}/${_pupAllTotal(sid)}</span>`:''}</div>
+        <div style="display:flex;align-items:center;gap:5px;flex-shrink:0">${ns?`<span style="font-size:10px;color:var(--muted);white-space:nowrap">${ns}</span>`:''}${!isMastered?`<span onclick="event.stopPropagation();openPupCountEdit('${sid}',this)" title="Click for session details" style="font-size:10px;font-weight:600;color:var(--muted);cursor:pointer;padding:1px 4px;border-radius:4px;background:rgba(0,0,0,.04)">${_pupAllDone(sid)}/${_pupAllTotal(sid)}</span>`:''}</div>
       </div>
       ${cm?`<div style="font-size:10px;color:var(--subtle);margin-top:2px;padding-left:18px">${esc(cm)}</div>`:''}
     </div>`;
