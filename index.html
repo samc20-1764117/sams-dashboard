@@ -141,7 +141,7 @@
     <button class="delbtn" onclick="event.stopPropagation();delRec(&#39;rec-Wipe%20surfaces&#39;)">✕</button>
   </div></div>
       <div id="pupSkillsHighlight" class="pup-skills-highlight"></div>
-      <button id="_pupSkillsBtn" onclick="togglePupSkillsOpen()" style="display:none;width:calc(100% - 28px);margin:1px 14px 2px;padding:2px 8px;background:transparent;border:none;cursor:pointer;font-family:inherit;text-align:left;align-items:center;gap:4px"><span style="font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)">Pup Skills</span><span id="_pupSkillsArrow" style="font-size:8px;color:var(--muted)">▾</span></button>
+      <div id="_pupSkillsBtn" style="display:none;margin:1px 14px 2px;align-items:center"><button onclick="togglePupSkillsOpen()" style="flex:1;display:flex;align-items:center;gap:3px;background:transparent;border:none;cursor:pointer;font-family:inherit;padding:2px 0"><span style="font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)">Pup Skills</span><span id="_pupSkillsArrow" style="font-size:8px;color:var(--muted)">▾</span></button><button class="btn-plus" onclick="openPupAddModal()">+</button></div>
       <div id="dailyHabitsSection"></div>
       </div><!-- tod-section -->
       <div class="tod-tb-divider"></div>
