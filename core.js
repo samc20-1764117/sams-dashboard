@@ -748,82 +748,85 @@ function doUndo(){
 }
 
 function _syncRedoDiff(before,after){
+  const ps=[];
   const bT=before.tasks||[],aT=after.tasks||[];
   for(const t of aT){
     const p=bT.find(x=>String(x.id)===String(t.id));
-    if(!p){sbReq('POST','tasks',{name:t.name,category:t.category,due_date:t.due_date,done:t.done,important:t.important});continue;}
+    if(!p){ps.push(sbReq('POST','tasks',{name:t.name,category:t.category,due_date:t.due_date,done:t.done,important:t.important}));continue;}
     const ch={};
     if(t.due_date!==p.due_date)ch.due_date=t.due_date;
     if(t.done!==p.done)ch.done=t.done;
     if(t.category!==p.category)ch.category=t.category;
     if(t.important!==p.important)ch.important=t.important;
-    if(Object.keys(ch).length)sbReq('PATCH','tasks',ch,`?id=eq.${t.id}`);
+    if(Object.keys(ch).length)ps.push(sbReq('PATCH','tasks',ch,`?id=eq.${t.id}`));
   }
-  for(const t of bT){if(!aT.find(x=>String(x.id)===String(t.id)))sbReq('DELETE','tasks',null,`?id=eq.${t.id}`);}
+  for(const t of bT){if(!aT.find(x=>String(x.id)===String(t.id)))ps.push(sbReq('DELETE','tasks',null,`?id=eq.${t.id}`));}
   const bR=before.recurring||[],aR=after.recurring||[];
   for(const r of aR){
     const p=bR.find(x=>String(x.id)===String(r.id));
-    if(p&&JSON.stringify(r._dateOverrides)!==JSON.stringify(p._dateOverrides))sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));
+    if(p&&JSON.stringify(r._dateOverrides)!==JSON.stringify(p._dateOverrides))ps.push(sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id)));
   }
   const bWR=before.wrRules||[],aWR=after.wrRules||[];
   for(const r of aWR){
     const p=bWR.find(x=>String(x.id)===String(r.id));
-    if(p&&JSON.stringify(r._dateOverrides)!==JSON.stringify(p._dateOverrides))sbReqSilent('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},`?id=eq.${r.id}`);
+    if(p&&JSON.stringify(r._dateOverrides)!==JSON.stringify(p._dateOverrides))ps.push(sbReqSilent('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},`?id=eq.${r.id}`));
   }
   const bWO=before.wrOverrides||[],aWO=after.wrOverrides||[];
   for(const o of aWO){
     const p=bWO.find(x=>String(x.id)===String(o.id));
-    if(!p)sbReqSilent('POST','wr_recurring_overrides',o,'');
-    else if(JSON.stringify(o)!==JSON.stringify(p))sbReqSilent('PATCH','wr_recurring_overrides',o,`?id=eq.${o.id}`);
+    if(!p)ps.push(sbReqSilent('POST','wr_recurring_overrides',o,''));
+    else if(JSON.stringify(o)!==JSON.stringify(p))ps.push(sbReqSilent('PATCH','wr_recurring_overrides',o,`?id=eq.${o.id}`));
   }
-  for(const o of bWO){if(!aWO.find(x=>String(x.id)===String(o.id)))sbReqSilent('DELETE','wr_recurring_overrides',null,`?id=eq.${o.id}`);}
+  for(const o of bWO){if(!aWO.find(x=>String(x.id)===String(o.id)))ps.push(sbReqSilent('DELETE','wr_recurring_overrides',null,`?id=eq.${o.id}`));}
   const bS=before.shopping||[],aS=after.shopping||[];
   for(const s of aS){
     const p=bS.find(x=>String(x.id)===String(s.id));
-    if(p&&s.due_date!==p.due_date)sbReqNullable('PATCH','shopping_list',{due_date:s.due_date},`?id=eq.${s.id}`);
+    if(p&&s.due_date!==p.due_date)ps.push(sbReqNullable('PATCH','shopping_list',{due_date:s.due_date},`?id=eq.${s.id}`));
   }
   const bV=before.travel||[],aV=after.travel||[];
   for(const tv of aV){
     const p=bV.find(x=>String(x.id)===String(tv.id));
-    if(p&&(tv.start_date!==p.start_date||tv.end_date!==p.end_date))sbReq('PATCH','travel',{start_date:tv.start_date,end_date:tv.end_date},`?id=eq.${tv.id}`);
+    if(p&&(tv.start_date!==p.start_date||tv.end_date!==p.end_date))ps.push(sbReq('PATCH','travel',{start_date:tv.start_date,end_date:tv.end_date},`?id=eq.${tv.id}`));
   }
   const bB=before.blocks||[],aB=after.blocks||[];
   for(const b of aB){
     const p=bB.find(x=>String(x.id)===String(b.id));
-    if(!p){sbSaveBlock(b);continue;}
-    if(b.sm!==p.sm||b.dur!==p.dur)sbSaveBlock(b);
+    if(!p){ps.push(sbSaveBlock(b));continue;}
+    if(b.sm!==p.sm||b.dur!==p.dur)ps.push(sbSaveBlock(b));
   }
-  for(const b of bB){if(!aB.find(x=>String(x.id)===String(b.id)))sbDeleteBlock(b.id);}
+  for(const b of bB){if(!aB.find(x=>String(x.id)===String(b.id)))ps.push(sbDeleteBlock(b.id));}
   const bAO=before.autoTBOverrides||[],aAO=after.autoTBOverrides||[];
   for(const o of aAO){
     const p=bAO.find(x=>String(x.id)===String(o.id));
-    if(!p){sbReqSilent('POST','auto_timeblock_overrides',{base_id:o.base_id,date:o.date,start_time:o.start_time,end_time:o.end_time},'');continue;}
-    if(o.start_time!==p.start_time||o.end_time!==p.end_time)sbReqSilent('PATCH','auto_timeblock_overrides',{start_time:o.start_time,end_time:o.end_time},`?id=eq.${o.id}`);
+    if(!p){ps.push(sbReqSilent('POST','auto_timeblock_overrides',{base_id:o.base_id,date:o.date,start_time:o.start_time,end_time:o.end_time},''));continue;}
+    if(o.start_time!==p.start_time||o.end_time!==p.end_time)ps.push(sbReqSilent('PATCH','auto_timeblock_overrides',{start_time:o.start_time,end_time:o.end_time},`?id=eq.${o.id}`));
   }
-  for(const o of bAO){if(!aAO.find(x=>String(x.id)===String(o.id)))sbReqSilent('DELETE','auto_timeblock_overrides',null,`?id=eq.${o.id}`);}
+  for(const o of bAO){if(!aAO.find(x=>String(x.id)===String(o.id)))ps.push(sbReqSilent('DELETE','auto_timeblock_overrides',null,`?id=eq.${o.id}`));}
   const bPS=before.pupSessions||[],aPS=after.pupSessions||[];
   for(const s of aPS){
     const p=bPS.find(x=>String(x.id)===String(s.id));
-    if(!p){sbReqSilent('POST','pup_skill_sessions',{skill_id:s.skill_id,day_date:s.day_date,done:s.done},'');continue;}
-    if(s.done!==p.done)sbReqSilent('PATCH','pup_skill_sessions',{done:s.done},`?id=eq.${s.id}`);
+    if(!p){ps.push(sbReqSilent('POST','pup_skill_sessions',{skill_id:s.skill_id,day_date:s.day_date,done:s.done},''));continue;}
+    if(s.done!==p.done)ps.push(sbReqSilent('PATCH','pup_skill_sessions',{done:s.done},`?id=eq.${s.id}`));
   }
-  for(const s of bPS){if(!aPS.find(x=>String(x.id)===String(s.id)))sbReqSilent('DELETE','pup_skill_sessions',null,`?id=eq.${s.id}`);}
+  for(const s of bPS){if(!aPS.find(x=>String(x.id)===String(s.id)))ps.push(sbReqSilent('DELETE','pup_skill_sessions',null,`?id=eq.${s.id}`));}
   const bPK=before.pup_skills||[],aPK=after.pup_skills||[];
   for(const s of aPK){
     const p=bPK.find(x=>String(x.id)===String(s.id));if(!p)continue;
     const ch={};
     const fields=['skill','pup','category','level','stage','focus','next_step','word','signal','comments','skill_order'];
     fields.forEach(f=>{if(String(s[f]??'')!==String(p[f]??''))ch[f]=s[f]??null;});
-    if(Object.keys(ch).length)sbReqSilent('PATCH','pup_skills',ch,`?id=eq.${s.id}`);
+    if(Object.keys(ch).length)ps.push(sbReqSilent('PATCH','pup_skills',ch,`?id=eq.${s.id}`));
   }
+  return Promise.all(ps);
 }
-function doRedo(){
+async function doRedo(){
   if(!redoStack.length)return;
   const{snap,msg}=redoStack.pop();
   const beforeRedo=_stateSnap();
   _stateRestore(snap);
-  _syncRedoDiff(beforeRedo,snap);
-  undoStack.push({fn:()=>_stateRestore(beforeRedo),msg,snapBeforeUndo:beforeRedo});
+  await _syncRedoDiff(beforeRedo,snap);
+  // undo-after-redo must also patch DB back to pre-redo state
+  undoStack.push({fn:()=>{_stateRestore(beforeRedo);_syncRedoDiff(snap,beforeRedo);},msg,snapBeforeUndo:beforeRedo});
   _showRedoToast(msg||'Action');
 }
 document.addEventListener('keydown',e=>{
