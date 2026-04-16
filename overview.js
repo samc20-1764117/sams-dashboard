@@ -94,6 +94,14 @@ function renderToday(){
   renderDailyHabits();
 }
 // ── Pup Skills Highlight ───────────────────────────────────────────────────────
+let _pupSkillsOpen=false;
+function togglePupSkillsOpen(){
+  _pupSkillsOpen=!_pupSkillsOpen;
+  const el=document.getElementById('pupSkillsHighlight');
+  if(el){el.style.maxHeight=_pupSkillsOpen?'600px':'0';el.style.margin=_pupSkillsOpen?'10px 14px':'0 14px';}
+  const arr=document.getElementById('_pupSkillsArrow');
+  if(arr)arr.textContent=_pupSkillsOpen?'▴':'▾';
+}
 function _pupWkSessions(skillId){
   const{mon,sun}=getWkBounds(0);
   const monDs=d2s(mon),sunDs=d2s(sun);
@@ -101,9 +109,11 @@ function _pupWkSessions(skillId){
 }
 function renderPupSkillsHighlight(){
   const el=document.getElementById('pupSkillsHighlight');if(!el)return;
+  const btn=document.getElementById('_pupSkillsBtn');
   const allSkills=(st.pup_skills||[]).filter(s=>(s.focus===true||s.focus==='true')&&s.stage!=='Mastered');
-  if(!allSkills.length){el.style.cssText='display:none';return;}
-  el.style.cssText='display:block;background:rgba(255,255,255,0.18);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,0.35);border-radius:14px;box-shadow:0 2px 12px rgba(0,0,0,.06);margin:10px 14px;padding:4px 0';
+  if(!allSkills.length){el.style.cssText='overflow:hidden;max-height:0;margin:0';if(btn)btn.style.display='none';return;}
+  if(btn)btn.style.display='flex';
+  el.style.cssText='overflow:hidden;transition:max-height .28s ease,margin .28s ease;background:rgba(255,255,255,0.18);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,0.35);border-radius:14px;box-shadow:0 2px 12px rgba(0,0,0,.06);padding:4px 0';
   const skills=[...allSkills].sort((a,b)=>{
     const aDone=_pupWkDone(a.id)>0&&_pupWkDone(a.id)===_pupWkSessTotal(a.id)&&_pupWkSessTotal(a.id)>0;
     const bDone=_pupWkDone(b.id)>0&&_pupWkDone(b.id)===_pupWkSessTotal(b.id)&&_pupWkSessTotal(b.id)>0;
@@ -139,6 +149,10 @@ function renderPupSkillsHighlight(){
     <button onclick="showPage('pups')" style="flex-shrink:0;text-align:left;background:rgba(255,255,255,.9);border:1px solid rgba(210,205,228,.6);border-radius:var(--rs);cursor:pointer;font-size:10px;font-weight:600;color:var(--text);font-family:inherit;padding:2px 6px;box-shadow:inset 0 1px 0 rgba(255,255,255,.6);display:inline-flex;align-items:center">Pup Skills</button>
     <button class="btn-plus" onclick="openPupAddModal()" style="margin-left:auto">+</button>
   </div><div style="padding:2px 0 2px">${rows}</div>`;
+  el.style.maxHeight=_pupSkillsOpen?'600px':'0';
+  el.style.margin=_pupSkillsOpen?'10px 14px':'0 14px';
+  const arr=document.getElementById('_pupSkillsArrow');
+  if(arr)arr.textContent=_pupSkillsOpen?'▴':'▾';
 }
 async function togPupSkillTrained(id,checked){
   const today=d2s(new Date());
