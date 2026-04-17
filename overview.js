@@ -726,7 +726,7 @@ function renderWkCal(){
             if(!already){
               const prev=sess.day_date;
               sess.day_date=ds;
-              save();dragId=null;renderPupSkillsHighlight();renderWkCal();renderToday();
+              save();dragId=null;renderPupSkillsHighlight();setTimeout(()=>{renderWkCal();renderToday();},0);
               sbReqSilent('PATCH','pup_skill_sessions',{day_date:ds},`?id=eq.${sessId}`);
               pushUndo(()=>{sess.day_date=prev;save();renderPupSkillsHighlight();renderWkCal();renderToday();sbReqSilent('PATCH','pup_skill_sessions',{day_date:prev},`?id=eq.${sessId}`);},'Moved pup session');
             }
