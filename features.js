@@ -80,12 +80,15 @@ async function submitQA(){
   const taskName=n;
   const _adQA=(c)=>{const lc=(c||'').toLowerCase();if(lc==='social')return 180;if(lc==='work'||lc==='recurring')return 60;return 30;};
   const t={id:'l-'+Date.now(),name:taskName,category:cat,due_date:ds,done:false,important:imp,notes:notes||null};
-  st.tasks.push(t);renderAll();
+  let _blk=null;
+  if(_smAt!==null&&ds){_blk={id:crypto.randomUUID(),title:taskName,ds,sm:_smAt,dur:_adQA(cat),cat,taskId:String(t.id)};st.blocks.push(_blk);}
+  st.tasks.push(t);save();renderAll();if(_blk&&document.getElementById('tbGrid'))renderDayTB();
   let taskServerId=null;
-  pushUndo(()=>{const rid=taskServerId||t.id;st.tasks=st.tasks.filter(x=>String(x.id)!==String(rid));renderAll();if(taskServerId)sbReq('DELETE','tasks',null,`?id=eq.${taskServerId}`);},'Added task');
+  pushUndo(()=>{const rid=taskServerId||t.id;st.tasks=st.tasks.filter(x=>String(x.id)!==String(rid));if(_blk)st.blocks=st.blocks.filter(b=>b.id!==_blk.id);renderAll();if(taskServerId)sbReq('DELETE','tasks',null,`?id=eq.${taskServerId}`);if(_blk)sbDeleteBlock(_blk.id);},'Added task');
   const sv=await sbReq('POST','tasks',{name:taskName,category:cat,due_date:ds,done:false,important:imp,notes:notes||null});
-  if(sv&&sv[0]){const i=st.tasks.findIndex(x=>x.id===t.id);if(i>-1){st.tasks[i]=sv[0];}taskServerId=String(sv[0].id);renderAll();
-    if(_smAt!==null&&ds){const blk={id:crypto.randomUUID(),title:taskName,ds,sm:_smAt,dur:_adQA(cat),cat,taskId:String(sv[0].id)};st.blocks.push(blk);save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();sbSaveBlock(blk);}
+  if(sv&&sv[0]){const i=st.tasks.findIndex(x=>x.id===t.id);if(i>-1){st.tasks[i]=sv[0];}taskServerId=String(sv[0].id);
+    if(_blk){_blk.taskId=String(sv[0].id);sbSaveBlock(_blk);}
+    renderAll();
   }
 }
 document.addEventListener('click',e=>{
@@ -178,6 +181,7 @@ function openEditTask(id){
   document.getElementById('tMTitle').textContent='Edit Task';document.getElementById('tSaveBtn').textContent='Save';
   document.getElementById('tName').value=t.name;setCatSel('tCat',t.category||'Home');
   document.getElementById('tDue').value=t.due_date||'';document.getElementById('tImp').checked=!!t.important;const _tnE=document.getElementById('tNotes');_tnE.value=t.notes||'';_tnE.style.height='auto';_tnE.style.height=Math.min(_tnE.scrollHeight,160)+'px';_tnE.style.overflowY=_tnE.scrollHeight>=160?'auto':'hidden';
+  const _tds=(t.due_date||'').split('T')[0];const _tblk=_tds?st.blocks.find(b=>String(b.taskId)===String(id)&&b.ds===_tds):null;const _tEl=document.getElementById('tTime');if(_tEl)_tEl.value=_tblk?`${String(Math.floor(_tblk.sm/60)).padStart(2,'0')}:${String(_tblk.sm%60).padStart(2,'0')}`:'';
   document.getElementById('tModal').classList.add('open');setTimeout(()=>{const _el=document.getElementById('tName');if(_el){_el.focus();const _l=_el.value.length;_el.setSelectionRange(_l,_l);}},80);
 }
 async function saveTModal(){
@@ -197,7 +201,11 @@ async function saveTModal(){
       const oldDs=(t.due_date||'').split('T')[0];
       if(oldDs){const blksToKill=st.blocks.filter(b=>String(b.taskId)===stid&&b.ds===oldDs);blksToKill.forEach(b=>sbDeleteBlock(b.id));st.blocks=st.blocks.filter(b=>!(String(b.taskId)===stid&&b.ds===oldDs));}
     }
-    t.due_date=d;renderAll();
+    t.due_date=d;
+    // Handle time block from tTime field
+    const _ttVal=document.getElementById('tTime')?.value;
+    if(d){const _ttDs=d;const _ttSm=_ttVal?parseInt(_ttVal.split(':')[0])*60+parseInt(_ttVal.split(':')[1]):null;const _existBlk=st.blocks.find(b=>String(b.taskId)===stid&&b.ds===_ttDs);if(_ttSm!==null){if(_existBlk){_existBlk.sm=_ttSm;_existBlk.title=n;sbSaveBlock(_existBlk);}else{const _adT=(cc)=>{const lc=(cc||'').toLowerCase();if(lc==='social')return 180;if(lc==='work'||lc==='recurring')return 60;return 30;};const _nb={id:crypto.randomUUID(),title:n,ds:_ttDs,sm:_ttSm,dur:_adT(c),cat:c,taskId:stid};st.blocks.push(_nb);sbSaveBlock(_nb);}}else if(_existBlk){st.blocks=st.blocks.filter(b=>b.id!==_existBlk.id);sbDeleteBlock(_existBlk.id);}}
+    renderAll();if(document.getElementById('tbGrid'))renderDayTB();
     pushUndo(()=>{
       t.name=prev.name;t.category=prev.category;t.due_date=prev.due_date;t.important=prev.important;t.notes=prev.notes;
       localOverrides[stid]={...prev};pendingLocal.add(stid);renderAll();
