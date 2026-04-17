@@ -151,8 +151,8 @@ async function delTask(id,e){
   const linkedBlocks=st.blocks?st.blocks.filter(b=>String(b.taskId)===String(id)||(b.title&&b.title===copy.name&&!b.taskId)):[];
   if(st.blocks)st.blocks=st.blocks.filter(b=>!(String(b.taskId)===String(id)||(b.title&&b.title===copy.name&&!b.taskId)));
   renderAll();if(document.getElementById('tbGrid'))renderDayTB();save();
-  // DELETE from DB first, then push undo — so undo always has clean DB state
-  await sbReq('DELETE','tasks',null,`?id=eq.${id}`);
+  // DELETE from DB only if task has a real server ID (not a local temp ID)
+  if(!String(id).startsWith('l-'))await sbReq('DELETE','tasks',null,`?id=eq.${id}`);
   linkedBlocks.forEach(b=>sbDeleteBlock(b.id));
   pushUndo(async()=>{
     // Re-insert into DB and get back the real id
