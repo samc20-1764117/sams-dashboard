@@ -3007,7 +3007,7 @@ function dropOnTB(e,ds,h,row,smOverride){
   sm=h*60+Math.max(0,Math.min(45,minsInRow));}
   let title='New block',cat='Home',taskId=null;
   // Default duration by task name/category
-  const autoDur=(name,category)=>{const n=(name||'').toLowerCase();if(/\bheb\b/.test(n)||/pilates/.test(n))return 60;if((category||'').toLowerCase()==='social'||/social/.test(n))return 120;return 30;};
+  const autoDur=(name,category)=>{const c=(category||'').toLowerCase();const n=(name||'').toLowerCase();if(c==='social'||/social/.test(n))return 180;if(c==='work'||c==='recurring'||/\bheb\b/.test(n)||/pilates/.test(n))return 60;return 30;};
   // helper: compute wkKey (Monday of the week) from a date string
   const wkKeyFromDs=d=>{const dt=new Date(d+'T00:00:00');const dow=(dt.getDay()+6)%7;const mon=new Date(dt);mon.setDate(dt.getDate()-dow);return d2s(mon);};
   if(dragId.startsWith('pupskill::')||dragId.startsWith('pupsess::')){

@@ -71,12 +71,21 @@ async function submitQA(){
   const notes=document.getElementById('qaNotes')?.value.trim()||null;
   let ds=due;
   if(!ds){if(qaCtx==='today')ds=d2s(getDayDate(dayOff));else if(qaCtx==='week')ds=d2s(getWkDates(wkOff)[0]);else if(qaCtx==='wkc')ds=qaDsTarget||null;else ds=null;}
-  const t={id:'l-'+Date.now(),name:n,category:cat,due_date:ds,done:false,important:imp,notes:notes||null};
+  // Parse @time from name (e.g. @1:30pm, @2pm, @10am)
+  const _timeRx=/@(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i;
+  const _tm=n.match(_timeRx);
+  let _smAt=null;
+  if(_tm){let h=parseInt(_tm[1]),mm=parseInt(_tm[2]||'0');const ap=(_tm[3]||'').toLowerCase();if(ap==='pm'&&h!==12)h+=12;else if(ap==='am'&&h===12)h=0;else if(!ap&&h>=1&&h<=6)h+=12;_smAt=h*60+mm;}
+  const taskName=_tm?n.replace(_timeRx,'').trim():n;
+  const _adQA=(c)=>{const lc=(c||'').toLowerCase();if(lc==='social')return 180;if(lc==='work'||lc==='recurring')return 60;return 30;};
+  const t={id:'l-'+Date.now(),name:taskName,category:cat,due_date:ds,done:false,important:imp,notes:notes||null};
   st.tasks.push(t);renderAll();
   let taskServerId=null;
   pushUndo(()=>{const rid=taskServerId||t.id;st.tasks=st.tasks.filter(x=>String(x.id)!==String(rid));renderAll();if(taskServerId)sbReq('DELETE','tasks',null,`?id=eq.${taskServerId}`);},'Added task');
-  const sv=await sbReq('POST','tasks',{name:n,category:cat,due_date:ds,done:false,important:imp,notes:notes||null});
-  if(sv&&sv[0]){const i=st.tasks.findIndex(x=>x.id===t.id);if(i>-1){st.tasks[i]=sv[0];}taskServerId=String(sv[0].id);renderAll();}
+  const sv=await sbReq('POST','tasks',{name:taskName,category:cat,due_date:ds,done:false,important:imp,notes:notes||null});
+  if(sv&&sv[0]){const i=st.tasks.findIndex(x=>x.id===t.id);if(i>-1){st.tasks[i]=sv[0];}taskServerId=String(sv[0].id);renderAll();
+    if(_smAt!==null&&ds){const blk={id:crypto.randomUUID(),title:taskName,ds,sm:_smAt,dur:_adQA(cat),cat,taskId:String(sv[0].id)};st.blocks.push(blk);save();renderAll();sbSaveBlock(blk);}
+  }
 }
 document.addEventListener('click',e=>{
   const p=document.getElementById('qaPopup');if(!p.classList.contains('open'))return;
