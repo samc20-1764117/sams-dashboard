@@ -1159,11 +1159,13 @@ function setupWkcEdgeDrop(){
       return;
     }
     const t=st.tasks.find(x=>String(x.id)===String(dragId));if(!t){dragId=null;return;}
-    const prev={due_date:t.due_date};
+    const prev={due_date:t.due_date};const sid=String(t.id);
+    localOverrides[sid]={due_date:newDs};pendingLocal.add(sid);
     t.due_date=newDs;dragId=null;
-    shiftWk(dir);renderAll();
-    pushUndo(()=>{t.due_date=prev.due_date;renderAll();sbReq('PATCH','tasks',{due_date:prev.due_date},`?id=eq.${t.id}`);},'Moved to other week');
-    await sbReq('PATCH','tasks',{due_date:newDs},`?id=eq.${t.id}`);
+    shiftWk(dir);save();renderAll();
+    pushUndo(()=>{t.due_date=prev.due_date;localOverrides[sid]={due_date:prev.due_date};pendingLocal.add(sid);renderAll();sbReqNullable('PATCH','tasks',{due_date:prev.due_date},`?id=eq.${sid}`).then(()=>pendingLocal.delete(sid));},'Moved to other week');
+    await sbReqNullable('PATCH','tasks',{due_date:newDs},`?id=eq.${sid}`);
+    pendingLocal.delete(sid);
   });
 }
 function setupEdge(id,dir){
@@ -1231,11 +1233,13 @@ function setupEdge(id,dir){
       return;
     }
     const t=st.tasks.find(x=>String(x.id)===String(dragId));if(!t){dragId=null;return;}
-    const prev={due_date:t.due_date};
+    const prev={due_date:t.due_date};const sid=String(t.id);
+    localOverrides[sid]={due_date:newDs};pendingLocal.add(sid);
     t.due_date=newDs;dragId=null;
-    shiftWk(dir);renderAll();
-    pushUndo(()=>{t.due_date=prev.due_date;renderAll();sbReq('PATCH','tasks',{due_date:prev.due_date},`?id=eq.${t.id}`);},'Moved to other week');
-    await sbReq('PATCH','tasks',{due_date:newDs},`?id=eq.${t.id}`);
+    shiftWk(dir);save();renderAll();
+    pushUndo(()=>{t.due_date=prev.due_date;localOverrides[sid]={due_date:prev.due_date};pendingLocal.add(sid);renderAll();sbReqNullable('PATCH','tasks',{due_date:prev.due_date},`?id=eq.${sid}`).then(()=>pendingLocal.delete(sid));},'Moved to other week');
+    await sbReqNullable('PATCH','tasks',{due_date:newDs},`?id=eq.${sid}`);
+    pendingLocal.delete(sid);
   });
 }
 
