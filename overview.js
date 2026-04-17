@@ -1130,12 +1130,28 @@ function setupWkcEdgeDrop(){
       const rec=st.recurring.find(x=>String(x.id)===String(recId));
       if(rec){
         if(!rec._dateOverrides)rec._dateOverrides={};
-        const wkKey=getWkKey(targetWkOff);
-        const prev=rec._dateOverrides[wkKey];
-        rec._dateOverrides[wkKey]=newDs;
+        const curWkKey=getWkKey(wkOff);const tgtWkKey=getWkKey(targetWkOff);
+        const prevCurOv=rec._dateOverrides[curWkKey];const prevTgtOv=rec._dateOverrides[tgtWkKey];
+        const prevStart=rec.starting_date;
+        // Skip current week, add override for target week
+        rec._dateOverrides[curWkKey]='__skip__';
+        // For target week, use the same day-of-week as natural occurrence
+        const cadence=rec.cadence||'weekly';
+        const dow=dayNameToIdx(rec.appears_on_date);
+        const tgtDate=dow>=0?getDateForDow(dow,targetWkOff):null;
+        rec._dateOverrides[tgtWkKey]=tgtDate?d2s(tgtDate):newDs;
+        // For interval tasks, shift starting_date so all future weeks align
+        if((cadence==='biweekly'||cadence==='quarterly'||cadence==='biannual'||cadence==='annual')&&rec.starting_date){
+          const sd=new Date(rec.starting_date+'T00:00:00');sd.setDate(sd.getDate()+dir*7);rec.starting_date=d2s(sd);
+        }
         dragId=null;shiftWk(dir);save();renderAll();
-        sbReq('PATCH','wr_recurring_rules',{date_overrides:rec._dateOverrides},recQs(rec.id));
-        pushUndo(()=>{if(prev)rec._dateOverrides[wkKey]=prev;else delete rec._dateOverrides[wkKey];save();renderAll();sbReq('PATCH','wr_recurring_rules',{date_overrides:rec._dateOverrides},recQs(rec.id));},'Moved to other week');
+        sbReqSilent('PATCH','wr_recurring_rules',{date_overrides:rec._dateOverrides,starting_date:rec.starting_date||null},`?id=eq.${rec.id}`);
+        pushUndo(()=>{
+          if(prevCurOv!==undefined)rec._dateOverrides[curWkKey]=prevCurOv;else delete rec._dateOverrides[curWkKey];
+          if(prevTgtOv!==undefined)rec._dateOverrides[tgtWkKey]=prevTgtOv;else delete rec._dateOverrides[tgtWkKey];
+          rec.starting_date=prevStart;save();renderAll();
+          sbReqSilent('PATCH','wr_recurring_rules',{date_overrides:rec._dateOverrides,starting_date:rec.starting_date||null},`?id=eq.${rec.id}`);
+        },'Moved to other week');
       }
       dragId=null;return;
     }
@@ -1201,15 +1217,28 @@ function setupEdge(id,dir){
     // Handle rec:: (non-weekly recurring virtual)
     if(dragId.startsWith('rec::')){
       const recId=dragId.split('::')[1];
-      const r=st.recurring.find(x=>String(x.id)===String(recId));
-      if(r){
-        if(!r._dateOverrides)r._dateOverrides={};
-        const wkKey=getWkKey(targetWkOff);
-        const prev=r._dateOverrides[wkKey];
-        r._dateOverrides[wkKey]=newDs;
+      const rec=st.recurring.find(x=>String(x.id)===String(recId));
+      if(rec){
+        if(!rec._dateOverrides)rec._dateOverrides={};
+        const curWkKey=getWkKey(wkOff);const tgtWkKey=getWkKey(targetWkOff);
+        const prevCurOv=rec._dateOverrides[curWkKey];const prevTgtOv=rec._dateOverrides[tgtWkKey];
+        const prevStart=rec.starting_date;
+        rec._dateOverrides[curWkKey]='__skip__';
+        const cadence=rec.cadence||'weekly';
+        const dow=dayNameToIdx(rec.appears_on_date);
+        const tgtDate=dow>=0?getDateForDow(dow,targetWkOff):null;
+        rec._dateOverrides[tgtWkKey]=tgtDate?d2s(tgtDate):newDs;
+        if((cadence==='biweekly'||cadence==='quarterly'||cadence==='biannual'||cadence==='annual')&&rec.starting_date){
+          const sd=new Date(rec.starting_date+'T00:00:00');sd.setDate(sd.getDate()+dir*7);rec.starting_date=d2s(sd);
+        }
         dragId=null;shiftWk(dir);save();renderAll();
-        sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));
-        pushUndo(()=>{if(prev)r._dateOverrides[wkKey]=prev;else delete r._dateOverrides[wkKey];save();renderAll();sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));},'Moved to other week');
+        sbReqSilent('PATCH','wr_recurring_rules',{date_overrides:rec._dateOverrides,starting_date:rec.starting_date||null},`?id=eq.${rec.id}`);
+        pushUndo(()=>{
+          if(prevCurOv!==undefined)rec._dateOverrides[curWkKey]=prevCurOv;else delete rec._dateOverrides[curWkKey];
+          if(prevTgtOv!==undefined)rec._dateOverrides[tgtWkKey]=prevTgtOv;else delete rec._dateOverrides[tgtWkKey];
+          rec.starting_date=prevStart;save();renderAll();
+          sbReqSilent('PATCH','wr_recurring_rules',{date_overrides:rec._dateOverrides,starting_date:rec.starting_date||null},`?id=eq.${rec.id}`);
+        },'Moved to other week');
       }
       dragId=null;return;
     }

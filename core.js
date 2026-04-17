@@ -450,7 +450,8 @@ function getRecurringWeekTasks(off=0){
           const sdMon=new Date(sd);sdMon.setDate(sd.getDate()-sdDow);sdMon.setHours(0,0,0,0);
           const tgtMon=new Date(wkDates[0]);tgtMon.setHours(0,0,0,0);
           const weekDiff=Math.round((tgtMon-sdMon)/(7*86400000));
-          if(weekDiff<0||weekDiff%interval!==0)return;
+          // Allow if there's an explicit override for this week even if off-cycle
+          if((weekDiff<0||weekDiff%interval!==0)&&!(r._dateOverrides&&r._dateOverrides[wkKey]&&r._dateOverrides[wkKey]!=='__skip__'))return;
         }
       }
     }
