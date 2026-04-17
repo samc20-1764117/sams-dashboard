@@ -36,8 +36,8 @@ let undoStack=[];let undoTimer=null;
 let shopSortMode='store'; // 'store' or 'alpha'
 
 // ── Storage ────────────────────────────────────────────────────────────────────
-function load(){try{const s=JSON.parse(localStorage.getItem(KEY)||'{}');if(s.cfg)cfg={...cfg,...s.cfg};if(s.blocks)st.blocks=s.blocks.map(b=>{const{_col,_ncols,...rest}=b;return rest;});if(s.sb!==undefined)sbOpen=s.sb;if(s.overrides)localOverrides=s.overrides;if(s.delRec)deletedRecIds=new Set(s.delRec);if(s.tasks)st.tasks=s.tasks;if(s.recurring)st.recurring=s.recurring.map(r=>({...r,_doneByWk:r._doneByWk||{}}));if(s.shopping)st.shopping=s.shopping;if(s.travel)st.travel=s.travel;if(s.birthdays)st.birthdays=s.birthdays;if(s.pup_skills)st.pup_skills=s.pup_skills;if(s.pupSessions)st.pupSessions=s.pupSessions;if(s.recipes)st.recipes=s.recipes;if(s.autoTimeblocks)st.autoTimeblocks=s.autoTimeblocks;if(s.autoTBOverrides)st.autoTBOverrides=s.autoTBOverrides;if(s.wrRules)st.wrRules=s.wrRules;if(s.wrOverrides)st.wrOverrides=s.wrOverrides;}catch(e){}}
-function save(){try{localStorage.setItem(KEY,JSON.stringify({cfg,blocks:st.blocks,sb:sbOpen,overrides:localOverrides,delRec:[...deletedRecIds],tasks:st.tasks,recurring:st.recurring,shopping:st.shopping,travel:st.travel,birthdays:st.birthdays,pup_skills:st.pup_skills,pupSessions:st.pupSessions,recipes:st.recipes,autoTimeblocks:st.autoTimeblocks,autoTBOverrides:st.autoTBOverrides,wrRules:st.wrRules,wrOverrides:st.wrOverrides}));}catch(e){}}
+function load(){try{const s=JSON.parse(localStorage.getItem(KEY)||'{}');if(s.cfg)cfg={...cfg,...s.cfg};if(s.blocks)st.blocks=s.blocks.map(b=>{const{_col,_ncols,...rest}=b;return rest;});if(s.sb!==undefined)sbOpen=s.sb;if(s.overrides)localOverrides=s.overrides;if(s.delRec)deletedRecIds=new Set(s.delRec);if(s.delPupSess)deletedPupSessIds=new Set(s.delPupSess);if(s.tasks)st.tasks=s.tasks;if(s.recurring)st.recurring=s.recurring.map(r=>({...r,_doneByWk:r._doneByWk||{}}));if(s.shopping)st.shopping=s.shopping;if(s.travel)st.travel=s.travel;if(s.birthdays)st.birthdays=s.birthdays;if(s.pup_skills)st.pup_skills=s.pup_skills;if(s.pupSessions)st.pupSessions=s.pupSessions;if(s.recipes)st.recipes=s.recipes;if(s.autoTimeblocks)st.autoTimeblocks=s.autoTimeblocks;if(s.autoTBOverrides)st.autoTBOverrides=s.autoTBOverrides;if(s.wrRules)st.wrRules=s.wrRules;if(s.wrOverrides)st.wrOverrides=s.wrOverrides;}catch(e){}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify({cfg,blocks:st.blocks,sb:sbOpen,overrides:localOverrides,delRec:[...deletedRecIds],delPupSess:[...deletedPupSessIds],tasks:st.tasks,recurring:st.recurring,shopping:st.shopping,travel:st.travel,birthdays:st.birthdays,pup_skills:st.pup_skills,pupSessions:st.pupSessions,recipes:st.recipes,autoTimeblocks:st.autoTimeblocks,autoTBOverrides:st.autoTBOverrides,wrRules:st.wrRules,wrOverrides:st.wrOverrides}));}catch(e){}}
 
 // ── Auth ───────────────────────────────────────────────────────────────────────
 let _sbClient=null;
@@ -123,6 +123,7 @@ const pendingLocal=new Set();
 const pendingTravelIds=new Set();
 const pendingShopIds=new Set();
 let deletedRecIds=new Set();
+let deletedPupSessIds=new Set();
 // ── Supabase silent request (no toast on failure) ────────────────────────────
 async function sbReqSilent(method,table,body,qs=''){
   if(!cfg.url||!cfg.key)return null;
@@ -222,7 +223,7 @@ async function syncAll(silent=false){
       sbReqSilent('GET','pup_skill_sessions',null,'?order=day_date.asc&select=*'),
       sbReqSilent('GET','recipes',null,'?order=name.asc&select=*')
     ]);
-    if(pupSessionsDb)st.pupSessions=pupSessionsDb;
+    if(pupSessionsDb)st.pupSessions=pupSessionsDb.filter(s=>!deletedPupSessIds.has(String(s.id)));
     // Fetch time_blocks separately so a failure doesn't break the whole sync
     const blocks=await sbReqSilent('GET','time_blocks',null,'?order=day_date.asc,start_minutes.asc&select=*');
     // Fetch auto timeblocks

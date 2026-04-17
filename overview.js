@@ -200,11 +200,12 @@ async function removePupSession(sessId){
   );
   st.pupSessions=st.pupSessions.filter(s=>String(s.id)!==String(sessId));
   st.blocks=st.blocks.filter(b=>!removedBlocks.includes(b));
+  deletedPupSessIds.add(String(sessId));
   save();renderAll();renderPupSkillsHighlight();
   sbReqSilent('DELETE','pup_skill_sessions',null,`?id=eq.${sessId}`);
   removedBlocks.forEach(b=>sbDeleteBlock(b.id));
   pushUndo(()=>{
-    st.pupSessions.push(removed);
+    st.pupSessions.push(removed);deletedPupSessIds.delete(String(sessId));
     removedBlocks.forEach(b=>st.blocks.push(b));
     save();renderAll();renderPupSkillsHighlight();
     sbReqSilent('POST','pup_skill_sessions',{skill_id:removed.skill_id,day_date:removed.day_date,done:removed.done},'');
@@ -1158,14 +1159,15 @@ function setupWkcEdgeDrop(){
       if(gt){const prevDs=gt.due_date;const d=new Date((gt.due_date||d2s(new Date()))+'T12:00');d.setDate(d.getDate()+dir*7);const nDs=d2s(d);gt.due_date=nDs;shiftWk(dir);save();renderAll();pushUndo(()=>{gt.due_date=prevDs;save();renderAll();sbReqNullable('PATCH','tasks',{due_date:prevDs},`?id=eq.${tid}`);},'Moved goal week');await sbReqNullable('PATCH','tasks',{due_date:nDs},`?id=eq.${tid}`);}
       return;
     }
-    const t=st.tasks.find(x=>String(x.id)===String(dragId));if(!t){dragId=null;return;}
-    const prev={due_date:t.due_date};const sid=String(t.id);
-    localOverrides[sid]={due_date:newDs};pendingLocal.add(sid);
-    t.due_date=newDs;dragId=null;
-    shiftWk(dir);save();renderAll();
-    pushUndo(()=>{t.due_date=prev.due_date;localOverrides[sid]={due_date:prev.due_date};pendingLocal.add(sid);renderAll();sbReqNullable('PATCH','tasks',{due_date:prev.due_date},`?id=eq.${sid}`).then(()=>pendingLocal.delete(sid));},'Moved to other week');
-    await sbReqNullable('PATCH','tasks',{due_date:newDs},`?id=eq.${sid}`);
-    pendingLocal.delete(sid);
+    // Multi-task move: if dragged task is in selectedTasks with others, move all selected real tasks
+    const _dragSid=String(dragId);const _isMulti=selectedTasks.has(_dragSid)&&selectedTasks.size>1;
+    const _taskSids=_isMulti?[..._dragSid?selectedTasks:[]].filter(sid=>{const _t=st.tasks.find(x=>String(x.id)===sid);return _t&&!_t._virtual;}):[_dragSid];
+    const _moved=_taskSids.map(sid=>({t:st.tasks.find(x=>String(x.id)===sid),prev:null})).filter(x=>x.t);
+    _moved.forEach(x=>x.prev=x.t.due_date);
+    _moved.forEach(x=>{x.t.due_date=newDs;localOverrides[String(x.t.id)]={due_date:newDs};pendingLocal.add(String(x.t.id));});
+    dragId=null;shiftWk(dir);save();renderAll();
+    pushUndo(()=>{_moved.forEach(x=>{x.t.due_date=x.prev;localOverrides[String(x.t.id)]={due_date:x.prev};pendingLocal.add(String(x.t.id));sbReqNullable('PATCH','tasks',{due_date:x.prev},`?id=eq.${x.t.id}`).then(()=>pendingLocal.delete(String(x.t.id)));});renderAll();},'Moved to other week');
+    await Promise.all(_moved.map(x=>sbReqNullable('PATCH','tasks',{due_date:newDs},`?id=eq.${x.t.id}`).then(()=>pendingLocal.delete(String(x.t.id)))));
   });
 }
 function setupEdge(id,dir){
@@ -1232,14 +1234,14 @@ function setupEdge(id,dir){
       if(gt){const prevDs=gt.due_date;const d=new Date((gt.due_date||d2s(new Date()))+'T12:00');d.setDate(d.getDate()+dir*7);const nDs=d2s(d);gt.due_date=nDs;shiftWk(dir);save();renderAll();pushUndo(()=>{gt.due_date=prevDs;save();renderAll();sbReqNullable('PATCH','tasks',{due_date:prevDs},`?id=eq.${tid}`);},'Moved goal week');await sbReqNullable('PATCH','tasks',{due_date:nDs},`?id=eq.${tid}`);}
       return;
     }
-    const t=st.tasks.find(x=>String(x.id)===String(dragId));if(!t){dragId=null;return;}
-    const prev={due_date:t.due_date};const sid=String(t.id);
-    localOverrides[sid]={due_date:newDs};pendingLocal.add(sid);
-    t.due_date=newDs;dragId=null;
-    shiftWk(dir);save();renderAll();
-    pushUndo(()=>{t.due_date=prev.due_date;localOverrides[sid]={due_date:prev.due_date};pendingLocal.add(sid);renderAll();sbReqNullable('PATCH','tasks',{due_date:prev.due_date},`?id=eq.${sid}`).then(()=>pendingLocal.delete(sid));},'Moved to other week');
-    await sbReqNullable('PATCH','tasks',{due_date:newDs},`?id=eq.${sid}`);
-    pendingLocal.delete(sid);
+    const _dragSid2=String(dragId);const _isMulti2=selectedTasks.has(_dragSid2)&&selectedTasks.size>1;
+    const _taskSids2=_isMulti2?[..._dragSid2?selectedTasks:[]].filter(sid=>{const _t=st.tasks.find(x=>String(x.id)===sid);return _t&&!_t._virtual;}):[_dragSid2];
+    const _moved2=_taskSids2.map(sid=>({t:st.tasks.find(x=>String(x.id)===sid),prev:null})).filter(x=>x.t);
+    _moved2.forEach(x=>x.prev=x.t.due_date);
+    _moved2.forEach(x=>{x.t.due_date=newDs;localOverrides[String(x.t.id)]={due_date:newDs};pendingLocal.add(String(x.t.id));});
+    dragId=null;shiftWk(dir);save();renderAll();
+    pushUndo(()=>{_moved2.forEach(x=>{x.t.due_date=x.prev;localOverrides[String(x.t.id)]={due_date:x.prev};pendingLocal.add(String(x.t.id));sbReqNullable('PATCH','tasks',{due_date:x.prev},`?id=eq.${x.t.id}`).then(()=>pendingLocal.delete(String(x.t.id)));});renderAll();},'Moved to other week');
+    await Promise.all(_moved2.map(x=>sbReqNullable('PATCH','tasks',{due_date:newDs},`?id=eq.${x.t.id}`).then(()=>pendingLocal.delete(String(x.t.id)))));
   });
 }
 
