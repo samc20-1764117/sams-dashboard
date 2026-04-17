@@ -7,6 +7,7 @@ STRICT — these override all defaults:
 - ALWAYS use the Grep tool (never `grep`/`rg`/`find` via Bash). Use `-C 1` or no context. Expand only if first result is insufficient.
 - ALWAYS use the Read tool (never `cat`/`head`/`tail` via Bash). Grep for exact function/line first, then read only that range.
 - NEVER read a full large file in one pass: overview.js, features.js, core.js. Always grep the section keyword first.
+- Token budget: form a hypothesis after ≤5 searches. Make the fix. Do not keep searching to confirm — trust the fix.
 
 ---
 
