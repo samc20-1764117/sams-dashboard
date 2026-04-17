@@ -76,7 +76,8 @@ async function submitQA(){
   const _tm=n.match(_timeRx);
   let _smAt=null;
   if(_tm){let h=parseInt(_tm[1]),mm=parseInt(_tm[2]||'0');const ap=(_tm[3]||'').toLowerCase();if(ap==='pm'&&h!==12)h+=12;else if(ap==='am'&&h===12)h=0;else if(!ap&&h>=1&&h<=6)h+=12;_smAt=h*60+mm;}
-  const taskName=_tm?n.replace(_timeRx,'').trim():n;
+  if(_smAt!==null&&!ds)ds=d2s(getDayDate(dayOff));
+  const taskName=n;
   const _adQA=(c)=>{const lc=(c||'').toLowerCase();if(lc==='social')return 180;if(lc==='work'||lc==='recurring')return 60;return 30;};
   const t={id:'l-'+Date.now(),name:taskName,category:cat,due_date:ds,done:false,important:imp,notes:notes||null};
   st.tasks.push(t);renderAll();
@@ -84,7 +85,7 @@ async function submitQA(){
   pushUndo(()=>{const rid=taskServerId||t.id;st.tasks=st.tasks.filter(x=>String(x.id)!==String(rid));renderAll();if(taskServerId)sbReq('DELETE','tasks',null,`?id=eq.${taskServerId}`);},'Added task');
   const sv=await sbReq('POST','tasks',{name:taskName,category:cat,due_date:ds,done:false,important:imp,notes:notes||null});
   if(sv&&sv[0]){const i=st.tasks.findIndex(x=>x.id===t.id);if(i>-1){st.tasks[i]=sv[0];}taskServerId=String(sv[0].id);renderAll();
-    if(_smAt!==null&&ds){const blk={id:crypto.randomUUID(),title:taskName,ds,sm:_smAt,dur:_adQA(cat),cat,taskId:String(sv[0].id)};st.blocks.push(blk);save();renderAll();sbSaveBlock(blk);}
+    if(_smAt!==null&&ds){const blk={id:crypto.randomUUID(),title:taskName,ds,sm:_smAt,dur:_adQA(cat),cat,taskId:String(sv[0].id)};st.blocks.push(blk);save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();sbSaveBlock(blk);}
   }
 }
 document.addEventListener('click',e=>{
