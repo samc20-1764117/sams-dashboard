@@ -814,14 +814,14 @@ function renderWkCal(){
       ...shopForDay,
       ...pupSessForDay
     ],ds);
-    const doneDay=[
+    const doneDay=sortTasksForDay([
       ...st.tasks.filter(t=>t.due_date&&t.due_date.split('T')[0]===ds&&t.done&&t.category!=='Weekly Goals'),
       ...virtForDayDone,
       ...wrecForDayDone,
       ...wrRulesForDayDone,
       ...shopForDayDone,
       ...pupSessForDayDone
-    ];
+    ],ds);
     let dayTasks=[...undoneDay,...doneDay];
     dayTasks.forEach(t=>{
       const ov=isOv(t.due_date)&&!t.done,imp=t.important&&!ov&&!t.done;
