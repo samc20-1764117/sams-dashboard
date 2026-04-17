@@ -78,7 +78,7 @@ async function submitQA(){
   if(_tm){let h=parseInt(_tm[1]),mm=parseInt(_tm[2]||'0');const ap=(_tm[3]||'').toLowerCase();if(ap==='pm'&&h!==12)h+=12;else if(ap==='am'&&h===12)h=0;else if(!ap&&h>=1&&h<=6)h+=12;_smAt=h*60+mm;}
   if(_smAt!==null&&!ds)ds=d2s(getDayDate(dayOff));
   const taskName=n;
-  const _adQA=(c)=>{const lc=(c||'').toLowerCase();if(lc==='social')return 180;if(lc==='work'||lc==='recurring')return 60;return 30;};
+  const _adQA=(c)=>{const lc=(c||'').toLowerCase();if(lc==='social')return 180;if(lc==='work'||lc==='my work'||lc==='recurring')return 60;return 30;};
   const t={id:'l-'+Date.now(),name:taskName,category:cat,due_date:ds,done:false,important:imp,notes:notes||null};
   let _blk=null;
   if(_smAt!==null&&ds){_blk={id:crypto.randomUUID(),title:taskName,ds,sm:_smAt,dur:_adQA(cat),cat,taskId:String(t.id)};st.blocks.push(_blk);}
