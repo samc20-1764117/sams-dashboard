@@ -86,7 +86,7 @@ async function submitQA(){
   let taskServerId=null;
   pushUndo(()=>{const rid=taskServerId||t.id;st.tasks=st.tasks.filter(x=>String(x.id)!==String(rid));if(_blk)st.blocks=st.blocks.filter(b=>b.id!==_blk.id);renderAll();if(taskServerId)sbReq('DELETE','tasks',null,`?id=eq.${taskServerId}`);if(_blk)sbDeleteBlock(_blk.id);},'Added task');
   const sv=await sbReq('POST','tasks',{name:taskName,category:cat,due_date:ds,done:false,important:imp,notes:notes||null});
-  if(sv&&sv[0]){const i=st.tasks.findIndex(x=>x.id===t.id);if(i>-1){st.tasks[i]=sv[0];}taskServerId=String(sv[0].id);
+  if(sv&&sv[0]){st.tasks=st.tasks.filter(x=>String(x.id)!==String(sv[0].id));const i=st.tasks.findIndex(x=>x.id===t.id);if(i>-1){st.tasks[i]=sv[0];}else st.tasks.push(sv[0]);taskServerId=String(sv[0].id);
     if(_blk){_blk.taskId=String(sv[0].id);sbSaveBlock(_blk);}
     renderAll();
   }
