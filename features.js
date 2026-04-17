@@ -103,7 +103,7 @@ document.addEventListener('click',e=>{
 // ── Task CRUD ──────────────────────────────────────────────────────────────────
 async function toggleTask(id,done,mode=''){
   const t=st.tasks.find(x=>String(x.id)===String(id));if(!t)return;const prev=t.done;t.done=done;
-  const sid=String(id);pendingLocal.add(sid);
+  const sid=String(id);localOverrides[sid]={...localOverrides[sid],done};pendingLocal.add(sid);
   // Sync linked TB blocks _done state
   if(st.blocks)st.blocks.filter(b=>String(b.taskId)===String(id)).forEach(b=>b._done=done);
   const rerender=()=>{
@@ -113,7 +113,7 @@ async function toggleTask(id,done,mode=''){
   };
   rerender();
   const linkedBlocks=st.blocks?st.blocks.filter(b=>String(b.taskId)===String(id)):[];
-  pushUndo(()=>{t.done=prev;pendingLocal.add(sid);if(st.blocks)st.blocks.filter(b=>String(b.taskId)===String(id)).forEach(b=>b._done=prev);rerender();sbReq('PATCH','tasks',{done:prev},`?id=eq.${id}`).then(()=>pendingLocal.delete(sid));linkedBlocks.forEach(b=>sbUpdateBlock(b.id,{done:prev}));},(done?'Checked':'Unchecked')+' task');
+  pushUndo(()=>{t.done=prev;localOverrides[sid]={...localOverrides[sid],done:prev};pendingLocal.add(sid);if(st.blocks)st.blocks.filter(b=>String(b.taskId)===String(id)).forEach(b=>b._done=prev);rerender();sbReq('PATCH','tasks',{done:prev},`?id=eq.${id}`).then(()=>pendingLocal.delete(sid));linkedBlocks.forEach(b=>sbUpdateBlock(b.id,{done:prev}));},(done?'Checked':'Unchecked')+' task');
   await sbReq('PATCH','tasks',{done},`?id=eq.${id}`);
   pendingLocal.delete(sid);
   linkedBlocks.forEach(b=>sbUpdateBlock(b.id,{done}));
