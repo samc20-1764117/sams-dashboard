@@ -107,7 +107,7 @@ async function toggleTask(id,done,mode=''){
   // Sync linked TB blocks _done state
   if(st.blocks)st.blocks.filter(b=>String(b.taskId)===String(id)).forEach(b=>b._done=done);
   const rerender=()=>{
-    if(mode==='wk'||mode==='week'){renderWkCal();renderWkSummary();renderToday();renderKanban();renderUnassigned();save();}
+    if(mode==='wk'||mode==='week'){renderWkCal();renderWkSummary();renderToday();renderKanban();renderUnassigned();if(document.getElementById('woModal')?.classList.contains('open'))renderWOModal();save();}
     else renderAll();
     if(document.getElementById('tbGrid'))renderDayTB();
   };
@@ -751,11 +751,10 @@ let _moNavYear=new Date().getFullYear();
 function openMModal(){
   _moNavYear=new Date().getFullYear();
   const inp=document.getElementById('moYearSel');if(inp)inp.value=String(_moNavYear);
-  renderMoCal();
-  scrollMoToday();
   const modal=document.getElementById('mModal');
   const bg=document.querySelector('.bg-canvas');if(bg)bg.classList.add('orbs-paused');
-  requestAnimationFrame(()=>modal.classList.add('open'));
+  modal.classList.add('open');
+  requestAnimationFrame(()=>{renderMoCal();scrollMoToday();});
 }
 function moYearStep(dir){
   const inp=document.getElementById('moYearSel');
