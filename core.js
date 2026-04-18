@@ -810,7 +810,7 @@ function _syncRedoDiff(before,after){
   for(const s of aPS){
     const p=bPS.find(x=>String(x.id)===String(s.id));
     if(!p){ps.push(sbReqSilent('POST','pup_skill_sessions',{skill_id:s.skill_id,day_date:s.day_date,done:s.done},''));continue;}
-    if(s.done!==p.done)ps.push(sbReqSilent('PATCH','pup_skill_sessions',{done:s.done},`?id=eq.${s.id}`));
+    const ch={};if(s.done!==p.done)ch.done=s.done;if(s.day_date!==p.day_date)ch.day_date=s.day_date;if(Object.keys(ch).length)ps.push(sbReqSilent('PATCH','pup_skill_sessions',ch,`?id=eq.${s.id}`));
   }
   for(const s of bPS){if(!aPS.find(x=>String(x.id)===String(s.id)))ps.push(sbReqSilent('DELETE','pup_skill_sessions',null,`?id=eq.${s.id}`));}
   const bPK=before.pup_skills||[],aPK=after.pup_skills||[];
