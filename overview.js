@@ -405,7 +405,7 @@ function tRowShopVirt(t,noDate=false,tbArrow=false,noColor=false){
 function _pupSessStyle(){
   return{bg:'rgba(221,244,240,.38)',b:'rgba(42,157,181,.14)',t:'rgba(32,140,165,1)',d:'#2a9db5',dot:'rgba(42,157,181,.18)'};
 }
-function _pupDisplayName(t){const p=t._pup;const prefix=p==='Sunny'?'S - ':p==='Mochi'?'M - ':'';return prefix+(t.name||'');}
+function _pupDisplayName(t){const p=t._pup;return p?(p+': '+(t.name||'')):(t.name||'');}
 function tRowPupSess(t,noColor=false){
   const ov=isOv(t.due_date)&&!t.done;
   const ps=ov?OV:_pupSessStyle();
@@ -2778,7 +2778,7 @@ function drawTBBlock(col,b){
   const _notes=(_linkedTask&&_linkedTask.notes)||(_linkedRec&&_linkedRec.notes)||'';
   const _notesHtml=_notes?`<div class="tb-notes">${_notes.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>')}</div>`:'';
   let _displayTitle=(_linkedTask&&_linkedTask.name)||(_linkedRec&&_linkedRec.name)||(linkedShop&&linkedShop.name)||b.title;
-  if(isPupBlock){const _ps=b._pupSessId?(st.pupSessions||[]).find(s=>String(s.id)===String(b._pupSessId)):null;const _sk=_ps?(st.pup_skills||[]).find(x=>String(x.id)===String(_ps.skill_id)):null;const _pup=_sk?.pup;if(_pup==='Sunny')_displayTitle='S - '+_displayTitle;else if(_pup==='Mochi')_displayTitle='M - '+_displayTitle;}
+  if(isPupBlock){const _ps=b._pupSessId?(st.pupSessions||[]).find(s=>String(s.id)===String(b._pupSessId)):null;const _sk=_ps?(st.pup_skills||[]).find(x=>String(x.id)===String(_ps.skill_id)):null;const _pup=_sk?.pup;if(_pup)_displayTitle=_pup+': '+_displayTitle;}
   el.innerHTML=`<div class="tb-row"><input type="checkbox" class="tb-chk" ${b._done?'checked':''}><span class="tb-bt${b.dur>=30?' wrap':''}">${_displayTitle}</span><div class="tb-right">${_showTime?`<span class="tb-btime">${tStr(b.sm)}-${tStr(b.sm+b.dur)}</span>`:''}<button class="tb-bdel" onclick="delBlock('${b.id}',event)">✕</button></div></div>${_notesHtml}<div class="tb-resize" data-id="${b.id}"></div>`;
   const tbChk=el.querySelector('.tb-chk');
   if(tbChk)tbChk.addEventListener('change',function(e){
