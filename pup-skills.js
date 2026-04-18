@@ -63,8 +63,8 @@ function _pupSyncToServer(prev,next){
   const nm=new Map(next.map(s=>[String(s.id),s]));
   for(const[id,s]of pm)if(!nm.has(id)&&!id.startsWith('l-'))sbReqSilent('DELETE','pup_skills',null,`?id=eq.${id}`);
   for(const[id,s]of nm){
-    if(!pm.has(id)){const d={pup:s.pup,skill:s.skill,level:s.level,stage:s.stage,focus:s.focus,next_step:s.next_step,word:s.word,signal:s.signal,comments:s.comments};sbReqSilent('POST','pup_skills',d);}
-    else if(!id.startsWith('l-')){const p=pm.get(id);const flds=['pup','skill','level','stage','focus','next_step','word','signal','comments'];if(flds.some(f=>String(p[f]??'')!==String(s[f]??''))){sbReqSilent('PATCH','pup_skills',{pup:s.pup,skill:s.skill,level:s.level,stage:s.stage,focus:s.focus,next_step:s.next_step,word:s.word,signal:s.signal,comments:s.comments},`?id=eq.${id}`);}}
+    if(!pm.has(id)){const d={pup:s.pup,skill:s.skill,level:s.level,stage:s.stage,focus:s.focus,next_step:s.next_step,word:s.word,signal:s.signal,comments:s.comments};_pupPendingIds.add(id);sbReqSilent('POST','pup_skills',d).then(()=>_pupPendingIds.delete(id));}
+    else if(!id.startsWith('l-')){const p=pm.get(id);const flds=['pup','skill','level','stage','focus','next_step','word','signal','comments'];if(flds.some(f=>String(p[f]??'')!==String(s[f]??''))){_pupPendingIds.add(id);sbReqSilent('PATCH','pup_skills',{pup:s.pup,skill:s.skill,level:s.level,stage:s.stage,focus:s.focus,next_step:s.next_step,word:s.word,signal:s.signal,comments:s.comments},`?id=eq.${id}`).then(()=>_pupPendingIds.delete(id));}}
   }
 }
 function pupUndo(){if(!_pupUndoStack.length){showToast('Nothing to undo','#888');return;}const prev=JSON.parse(JSON.stringify(st.pup_skills));_pupUndoDirty=true;_pupRedoStack.push(prev);st.pup_skills=_pupUndoStack.pop();save();renderPupsPage();showToast('Undone','#6d5fe6',1500);_pupSyncToServer(prev,st.pup_skills);}

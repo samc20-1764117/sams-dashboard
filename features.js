@@ -994,7 +994,7 @@ function mkMCell(date,om,today){
     if(isTravel&&!isVisualFirst){
       chip.innerHTML='<span style="flex:1"></span>';
     }else{
-      chip.innerHTML=`<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${tmIcon(t)}${escHtml(t.name)}</span>`;
+      chip.innerHTML=`<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${tmIcon(t)}${escHtml(t._type==='pup'&&typeof _pupDisplayName==='function'?_pupDisplayName(t):t.name)}</span>`;
       if(!isTravel){
         const _cw=document.createElement('label');_cw.className='chk-wrap';_cw.style.cssText='padding:2px 3px;margin:-2px -1px;flex-shrink:0';
         _cw.addEventListener('click',e=>e.stopPropagation());
@@ -1119,7 +1119,7 @@ function showMcellMorePop(e,tasks,ds){
     else if(t._type==='shop')chip.dataset.tid='shop-cal-'+t._shopId;
     else if(t._isWrec)chip.dataset.tid='wrec-'+t._recId;
     else if(t._recId)chip.dataset.tid='rec-virt-'+t._recId;
-    chip.innerHTML=`<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${tmIcon(t)}${escHtml(t.name)}</span>`;
+    chip.innerHTML=`<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${tmIcon(t)}${escHtml(t._type==='pup'&&typeof _pupDisplayName==='function'?_pupDisplayName(t):t.name)}</span>`;
     const mdx=document.createElement('button');mdx.className='chip-del';mdx.textContent='✕';
     mdx.addEventListener('click',e2=>{e2.stopPropagation();closeMorePop();if(isTravel)delTravel(t._srcId);else moChipDel(t,ds,e2);});
     chip.appendChild(mdx);
