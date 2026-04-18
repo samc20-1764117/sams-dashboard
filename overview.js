@@ -737,7 +737,8 @@ function renderWkCal(){
       }
       // Pup skill dragged onto calendar day — create a session
       if(dragId.startsWith('pupskill::')){
-        const skillId=dragId.split('::')[1];
+        const skillId=dragId.split('::')[1];const _capDragId=dragId;
+        dragId=null;
         const already=st.pupSessions.find(s=>String(s.skill_id)===String(skillId)&&s.day_date===ds);
         if(!already){
           const tmp='pss-tmp-'+Date.now();
@@ -749,7 +750,7 @@ function renderWkCal(){
           const realId=st.pupSessions.find(s=>String(s.skill_id)===String(skillId)&&s.day_date===ds)?.id;
           pushUndo(()=>{st.pupSessions=st.pupSessions.filter(s=>!(String(s.skill_id)===String(skillId)&&s.day_date===ds));save();renderPupSkillsHighlight();renderWkCal();renderToday();if(realId)sbReqSilent('DELETE','pup_skill_sessions',null,`?id=eq.${realId}`);},'Added pup session');
         }
-        dragId=null;return;
+        return;
       }
       // Shopping item dragged onto calendar
       if(dragId.startsWith('shop::')){
