@@ -2913,7 +2913,8 @@ function updateOvBanner(){
   const ovTasks=st.tasks.filter(t=>!t.done&&t.due_date&&t.due_date.split('T')[0]<today&&t.category!=='Weekly Goals');
   const ovRec=getOvRecurring();
   const ovShop=getOvShopping();
-  const total=ovTasks.length+ovRec.length+ovShop.length;
+  const ovPup=(st.pupSessions||[]).filter(s=>!s.done&&s.day_date&&s.day_date<today);
+  const total=ovTasks.length+ovRec.length+ovShop.length+ovPup.length;
   const banner=document.getElementById('ovBanner');
   if(total>0){
     document.getElementById('ovBannerTxt').textContent=
@@ -2928,7 +2929,8 @@ async function rolloverOverdue(){
   const ovTasks=st.tasks.filter(t=>!t.done&&t.due_date&&t.due_date.split('T')[0]<today&&t.category!=='Weekly Goals');
   const ovRec=getOvRecurring();
   const ovShop=getOvShopping();
-  if(!ovTasks.length&&!ovRec.length&&!ovShop.length)return;
+  const ovPup=(st.pupSessions||[]).filter(s=>!s.done&&s.day_date&&s.day_date<today);
+  if(!ovTasks.length&&!ovRec.length&&!ovShop.length&&!ovPup.length)return;
   const prevDates=ovTasks.map(t=>({id:String(t.id),date:t.due_date}));
   const prevRecWkKeys=ovRec.map(v=>{
     const prevDate=v._ruleId
@@ -2937,21 +2939,25 @@ async function rolloverOverdue(){
     return{recId:v._recId,ruleId:v._ruleId,wkKey:v._wkKey,prevDate};
   });
   const prevShopDates=ovShop.map(s=>({id:String(s.id),date:s.due_date}));
+  const prevPupDates=ovPup.map(s=>({id:String(s.id),date:s.day_date}));
   ovTasks.forEach(t=>{t.due_date=today;const sid=String(t.id);localOverrides[sid]={due_date:today};pendingLocal.add(sid);});
   ovRec.forEach(v=>{
     if(v._ruleId){const r=st.wrRules.find(x=>String(x.id)===String(v._ruleId));if(!r)return;if(!r._dateOverrides)r._dateOverrides={};r._dateOverrides[v._wkKey]=today;}
     else{const r=st.recurring.find(x=>String(x.id)===String(v._recId));if(!r)return;if(!r._dateOverrides)r._dateOverrides={};r._dateOverrides[v._wkKey]=today;}
   });
   ovShop.forEach(s=>{s.due_date=today;});
+  ovPup.forEach(s=>{s.day_date=today;});
   renderAll();
-  const total=ovTasks.length+ovRec.length+ovShop.length;
+  const total=ovTasks.length+ovRec.length+ovShop.length+ovPup.length;
   pushUndo(()=>{
     prevDates.forEach(({id,date})=>{const t=st.tasks.find(x=>String(x.id)===id);if(t)t.due_date=date;});
     prevRecWkKeys.forEach(({recId,ruleId,wkKey,prevDate})=>{if(ruleId){const r=st.wrRules.find(x=>String(x.id)===String(ruleId));if(r){if(!r._dateOverrides)r._dateOverrides={};if(prevDate)r._dateOverrides[wkKey]=prevDate;else delete r._dateOverrides[wkKey];}}else{const r=st.recurring.find(x=>String(x.id)===String(recId));if(r){if(!r._dateOverrides)r._dateOverrides={};if(prevDate)r._dateOverrides[wkKey]=prevDate;else delete r._dateOverrides[wkKey];}}});
     prevShopDates.forEach(({id,date})=>{const s=st.shopping.find(x=>String(x.id)===id);if(s)s.due_date=date;});
+    prevPupDates.forEach(({id,date})=>{const s=(st.pupSessions||[]).find(x=>String(x.id)===id);if(s)s.day_date=date;});
     renderAll();
     prevDates.forEach(({id,date})=>sbReq('PATCH','tasks',{due_date:date},`?id=eq.${id}`));
     prevShopDates.forEach(({id,date})=>sbReqNullable('PATCH','shopping_list',{due_date:date||null},`?id=eq.${id}`));
+    prevPupDates.forEach(({id,date})=>sbReqSilent('PATCH','pup_skill_sessions',{day_date:date},`?id=eq.${id}`));
     const _undoRecsToPatch=[...new Set(prevRecWkKeys.filter(v=>!v.ruleId).map(v=>v.recId))];
     const _undoRulesToPatch=[...new Set(prevRecWkKeys.filter(v=>v.ruleId).map(v=>v.ruleId))];
     _undoRecsToPatch.forEach(rid=>{const r=st.recurring.find(x=>String(x.id)===String(rid));if(r)sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));});
@@ -2964,7 +2970,8 @@ async function rolloverOverdue(){
     ...ovTasks.map(t=>sbReq('PATCH','tasks',{due_date:today},`?id=eq.${t.id}`).then(()=>{const sid=String(t.id);delete localOverrides[sid];pendingLocal.delete(sid);})),
     ...ovShop.map(s=>sbReqNullable('PATCH','shopping_list',{due_date:today},`?id=eq.${s.id}`)),
     ...recsToPatch.map(rid=>{const r=st.recurring.find(x=>String(x.id)===String(rid));return r?sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id)):Promise.resolve();}),
-    ...rulesToPatch.map(rid=>{const r=st.wrRules.find(x=>String(x.id)===String(rid));return r?sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id)):Promise.resolve();})
+    ...rulesToPatch.map(rid=>{const r=st.wrRules.find(x=>String(x.id)===String(rid));return r?sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id)):Promise.resolve();}),
+    ...ovPup.map(s=>sbReqSilent('PATCH','pup_skill_sessions',{day_date:today},`?id=eq.${s.id}`))
   ]);
 }
 
