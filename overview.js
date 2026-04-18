@@ -742,7 +742,7 @@ function renderWkCal(){
         if(!already){
           const tmp='pss-tmp-'+Date.now();
           st.pupSessions.push({id:tmp,skill_id:skillId,day_date:ds,done:false});
-          save();renderPupSkillsHighlight();renderWkCal();renderToday();
+          save();renderPupSkillsHighlight();setTimeout(()=>{renderWkCal();renderToday();},0);
           const sv=await sbReqSilent('POST','pup_skill_sessions',{skill_id:skillId,day_date:ds,done:false});
           if(sv&&sv[0]){const i=st.pupSessions.findIndex(s=>s.id===tmp);if(i>-1)st.pupSessions[i]=sv[0];}
           save();
