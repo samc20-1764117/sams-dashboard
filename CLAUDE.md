@@ -19,6 +19,16 @@ Auto-commit after every turn via Stop hook (pushes to `dev`). No manual action n
 
 ---
 
+## Auto-Update Rules
+
+When Sam says **"update rules"** (or "update the rules"): after completing the task, update only the rules files that are affected by changes made in that turn. Rules must be:
+- Written as terse, reusable patterns (not task descriptions) — future-me should be able to apply the rule to new code without re-reading the implementation
+- Merged into existing entries where possible; only add new bullets when the pattern is genuinely new
+- Placed in the correct file (grep first if unsure)
+- Skipped entirely if nothing changed that affects documented behavior
+
+---
+
 ## Rules Reference
 
 Grep the relevant file only — do not read files not needed for the task:
