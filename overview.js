@@ -411,7 +411,8 @@ function tRowPupSess(t,noColor=false){
   return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''}" draggable="true" style="${!ov&&!noColor?`background:${ps.bg};border:1px solid ${ps.b}`:''}" id="ti-pup-sess-${t._pupSessId}" onclick="selTask(event,'pup-sess-${t._pupSessId}')" ondblclick="openPupEditModal('${t._skillId}')" ondragstart="dragId='pupsess::${t._pupSessId}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);" ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false);">
     <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="togPupSessionDone('${t._pupSessId}',this.checked)"></label>
     <span class="tn">${escHtml(t.name)}</span>
-    <svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3" fill="rgba(42,157,181,.18)" stroke="${ps.d}" stroke-width="1.5"/></svg>
+    ${ov&&t.due_date?`<span class="dlbl ov">${fmtD(t.due_date)}</span>`:''}
+    <svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3" fill="${ov?'#fecaca':'rgba(42,157,181,.18)'}" stroke="${ps.d}" stroke-width="1.5"/></svg>
     <button class="delbtn" onclick="event.stopPropagation();removePupSession('${t._pupSessId}')">✕</button>
   </div>`;
 }
@@ -745,8 +746,7 @@ function renderWkCal(){
           st.pupSessions.push({id:tmp,skill_id:skillId,day_date:ds,done:false});
           save();setTimeout(()=>{renderPupSkillsHighlight();renderWkCal();renderToday();},0);
           const sv=await sbReqSilent('POST','pup_skill_sessions',{skill_id:skillId,day_date:ds,done:false});
-          if(sv&&sv[0]){const i=st.pupSessions.findIndex(s=>s.id===tmp);if(i>-1)st.pupSessions[i]=sv[0];}
-          save();
+          if(sv&&sv[0]){const i=st.pupSessions.findIndex(s=>s.id===tmp);if(i>-1)st.pupSessions[i]=sv[0];save();renderWkCal();renderToday();}else save();
           const realId=st.pupSessions.find(s=>String(s.skill_id)===String(skillId)&&s.day_date===ds)?.id;
           pushUndo(()=>{st.pupSessions=st.pupSessions.filter(s=>!(String(s.skill_id)===String(skillId)&&s.day_date===ds));save();renderPupSkillsHighlight();renderWkCal();renderToday();if(realId)sbReqSilent('DELETE','pup_skill_sessions',null,`?id=eq.${realId}`);},'Added pup session');
         }
