@@ -645,6 +645,8 @@ function removeTBBlocksForDate(ds, opts={}){
   }
   // shopping items: match by shopId
   if(opts.shopId){
+    const removedShop=st.blocks.filter(b=>b.shopId&&String(b.shopId)===String(opts.shopId)&&b.ds===fromDs);
+    removedShop.forEach(b=>sbDeleteBlock(b.id));
     st.blocks=st.blocks.filter(b=>!(b.shopId&&String(b.shopId)===String(opts.shopId)&&b.ds===fromDs));
   }
   save();

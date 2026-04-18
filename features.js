@@ -1048,7 +1048,7 @@ function mkMCell(date,om,today){
     if(dragId&&dragId.startsWith('shop::')){
       const shopId=dragId.split('::')[1];
       const s=st.shopping.find(x=>String(x.id)===String(shopId));
-      if(s){const prev=s.due_date;const prevOrder=s.shop_order;const newOrder=_shopTopOrder(s);s.shop_order=newOrder;s.due_date=ds;save();sbReqNullable('PATCH','shopping_list',{due_date:ds,shop_order:newOrder},`?id=eq.${s.id}`);pushUndo(()=>{s.due_date=prev;s.shop_order=prevOrder;save();renderAll();renderMoCal();sbReqNullable('PATCH','shopping_list',{due_date:prev||null,shop_order:prevOrder??null},`?id=eq.${s.id}`);},'Assigned shopping item');}
+      if(s){const prev=s.due_date;const prevOrder=s.shop_order;const prevDs=(prev||'').split('T')[0];const savedShopTBs=st.blocks.filter(b=>b.shopId&&String(b.shopId)===String(shopId)&&b.ds===prevDs).map(b=>({...b}));const newOrder=_shopTopOrder(s);s.shop_order=newOrder;s.due_date=ds;removeTBBlocksForDate(ds,{shopId:s.id,oldDs:prevDs});save();sbReqNullable('PATCH','shopping_list',{due_date:ds,shop_order:newOrder},`?id=eq.${s.id}`);pushUndo(()=>{s.due_date=prev;s.shop_order=prevOrder;savedShopTBs.forEach(b=>{if(!st.blocks.find(x=>x.id===b.id))st.blocks.push(b);sbSaveBlock(b);});save();renderAll();renderMoCal();sbReqNullable('PATCH','shopping_list',{due_date:prev||null,shop_order:prevOrder??null},`?id=eq.${s.id}`);},'Assigned shopping item');}
       dragId=null;renderAll();renderMoCal();return;
     }
     if(t){const prev=t.due_date;const sid=String(t.id);localOverrides[sid]={due_date:ds};pendingLocal.add(sid);save();t.due_date=ds;dragId=null;renderAll();renderMoCal();pushUndo(()=>{t.due_date=prev;localOverrides[sid]={due_date:prev};pendingLocal.add(sid);save();renderAll();renderMoCal();sbReqNullable('PATCH','tasks',{due_date:prev},`?id=eq.${sid}`).then(()=>{delete localOverrides[sid];pendingLocal.delete(sid);});},'Moved task');sbReqNullable('PATCH','tasks',{due_date:ds},`?id=eq.${sid}`).then(()=>pendingLocal.delete(sid));return;}
@@ -1080,9 +1080,9 @@ function moChipDel(t,ds,e){
   e&&e.stopPropagation();
   if(t._type==='shop'){
     const s=st.shopping.find(x=>String(x.id)===String(t._shopId));
-    if(s){const prev=s.due_date;s.due_date=null;save();renderAll();renderMoCal();
+    if(s){const prev=s.due_date;const linkedShopBlks=st.blocks.filter(b=>b.shopId&&String(b.shopId)===String(t._shopId)).map(b=>({...b}));s.due_date=null;st.blocks=st.blocks.filter(b=>!(b.shopId&&String(b.shopId)===String(t._shopId)));linkedShopBlks.forEach(b=>sbDeleteBlock(b.id));save();renderAll();renderMoCal();
       sbReqNullable('PATCH','shopping_list',{due_date:null},`?id=eq.${s.id}`);
-      pushUndo(()=>{s.due_date=prev;save();renderAll();renderMoCal();sbReqNullable('PATCH','shopping_list',{due_date:prev||null},`?id=eq.${s.id}`);},'Removed from calendar');}
+      pushUndo(()=>{s.due_date=prev;linkedShopBlks.forEach(b=>{if(!st.blocks.find(x=>x.id===b.id))st.blocks.push(b);sbSaveBlock(b);});save();renderAll();renderMoCal();sbReqNullable('PATCH','shopping_list',{due_date:prev||null},`?id=eq.${s.id}`);},'Removed from calendar');}
   } else if(t._isWrec){
     const r=st.recurring.find(x=>String(x.id)===String(t._recId));
     if(r){const wkKey=dsToWkKey(ds);if(!r._dateOverrides)r._dateOverrides={};const prev=r._dateOverrides[wkKey];

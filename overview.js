@@ -758,12 +758,16 @@ function renderWkCal(){
         const s=st.shopping.find(x=>String(x.id)===String(shopId));
         if(s){
           const prev=s.due_date;const prevOrder=s.shop_order;
+          const prevDs=(prev||'').split('T')[0];
+          const savedShopTBs=st.blocks.filter(b=>b.shopId&&String(b.shopId)===String(shopId)&&b.ds===prevDs).map(b=>({...b}));
           const newOrder=_shopTopOrder(s);s.shop_order=newOrder;s.due_date=ds;
-          removeTBBlocksForDate(ds,{shopId:s.id});
+          removeTBBlocksForDate(ds,{shopId:s.id,oldDs:prevDs});
           save();dragId=null;renderAll();renderWkCal();
           sbReqNullable('PATCH','shopping_list',{due_date:ds,shop_order:newOrder},`?id=eq.${s.id}`);
           pushUndo(()=>{
-            s.due_date=prev;s.shop_order=prevOrder;save();renderAll();renderWkCal();
+            s.due_date=prev;s.shop_order=prevOrder;
+            savedShopTBs.forEach(b=>{if(!st.blocks.find(x=>x.id===b.id))st.blocks.push(b);sbSaveBlock(b);});
+            save();renderAll();renderWkCal();
             sbReqNullable('PATCH','shopping_list',{due_date:prev||null,shop_order:prevOrder??null},`?id=eq.${s.id}`);
           },'Assigned shopping item to '+ds);
         }
@@ -896,9 +900,9 @@ function renderWkCal(){
         if(t._type==='pup'){removePupSession(t._pupSessId);return;}
         if(t._type==='shop'){
           const s=st.shopping.find(x=>String(x.id)===String(t._shopId));
-          if(s){const prev=s.due_date;s.due_date=null;save();renderAll();renderWkCal();
+          if(s){const prev=s.due_date;const linkedShopBlks=st.blocks.filter(b=>b.shopId&&String(b.shopId)===String(t._shopId)).map(b=>({...b}));s.due_date=null;st.blocks=st.blocks.filter(b=>!(b.shopId&&String(b.shopId)===String(t._shopId)));linkedShopBlks.forEach(b=>sbDeleteBlock(b.id));save();renderAll();renderWkCal();
             sbReqNullable('PATCH','shopping_list',{due_date:null},`?id=eq.${s.id}`);
-            pushUndo(()=>{s.due_date=prev;save();renderAll();renderWkCal();sbReqNullable('PATCH','shopping_list',{due_date:prev||null},`?id=eq.${s.id}`);},'Removed from calendar');}
+            pushUndo(()=>{s.due_date=prev;linkedShopBlks.forEach(b=>{if(!st.blocks.find(x=>x.id===b.id))st.blocks.push(b);sbSaveBlock(b);});save();renderAll();renderWkCal();sbReqNullable('PATCH','shopping_list',{due_date:prev||null},`?id=eq.${s.id}`);},'Removed from calendar');}
         } else if(t._isWrRule){
           const _rid=String(t._ruleId),_wk=t._wkKey||getWkKey(wkOff);
           showWrScopePicker(e2,'⊘  Skip this week only','✕  Delete rule (all future)',
