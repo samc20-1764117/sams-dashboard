@@ -2691,18 +2691,14 @@ function renderDayTB(){
   col.addEventListener('mousedown',e=>{
     if(e.button!==0||e.target.closest('.tb-block'))return;
     e.preventDefault();
-    const tbScEl=col.closest('#tbScroll')||col.closest('#tbGrid');
-    const colRect=col.getBoundingClientRect();
-    const scrollTop0=tbScEl?tbScEl.scrollTop:0;
-    const startRelY=e.clientY-colRect.top+scrollTop0;
+    const startRelY=e.clientY-col.getBoundingClientRect().top;
     const selBox=document.createElement('div');
     selBox.style.cssText='position:absolute;left:2px;right:2px;background:rgba(42,157,181,.12);border:1px solid rgba(42,157,181,.45);border-radius:3px;pointer-events:none;z-index:50;';
     selBox.style.top=startRelY+'px';selBox.style.height='0px';
     col.appendChild(selBox);
     let rbMoved=false;
     const onRBMove=ev=>{
-      const scrollTopN=tbScEl?tbScEl.scrollTop:0;
-      const curRelY=ev.clientY-colRect.top+scrollTopN;
+      const curRelY=ev.clientY-col.getBoundingClientRect().top;
       const top2=Math.min(startRelY,curRelY),bot2=Math.max(startRelY,curRelY);
       selBox.style.top=top2+'px';selBox.style.height=(bot2-top2)+'px';
       rbMoved=true;
@@ -2710,8 +2706,7 @@ function renderDayTB(){
     const onRBUp=ev=>{
       document.removeEventListener('mousemove',onRBMove);
       document.removeEventListener('mouseup',onRBUp);
-      const scrollTopN=tbScEl?tbScEl.scrollTop:0;
-      const curRelY=ev.clientY-colRect.top+scrollTopN;
+      const curRelY=ev.clientY-col.getBoundingClientRect().top;
       const selTop=Math.min(startRelY,curRelY),selBot=Math.max(startRelY,curRelY);
       selBox.remove();
       if(rbMoved&&(selBot-selTop)>5){
