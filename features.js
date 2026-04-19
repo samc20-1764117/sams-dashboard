@@ -3057,13 +3057,14 @@ function copyShopList(){
 }
 
 // ── Quick Notes ──
+const _QN_KEY='samdash_qn';
 let _qnOpen=false,_qnNotes=[];
-function toggleQN(){_qnOpen=!_qnOpen;document.getElementById('qnPanel').classList.toggle('open',_qnOpen);if(_qnOpen)loadQN();}
-async function loadQN(){
-  try{
-    const data=await sbReq('GET','quick_notes',null,'?is_visible=eq.true&order=created_at.asc&select=*');
-    _qnNotes=data||[];renderQN();
-  }catch(e){console.warn('loadQN error',e);}
+function _qnLoad(){try{return JSON.parse(localStorage.getItem(_QN_KEY)||'[]');}catch(e){return[];}}
+function _qnSave(){try{localStorage.setItem(_QN_KEY,JSON.stringify(_qnNotes));}catch(e){}}
+function toggleQN(){
+  _qnOpen=!_qnOpen;
+  document.getElementById('qnPanel').classList.toggle('open',_qnOpen);
+  if(_qnOpen){_qnNotes=_qnLoad();renderQN();requestAnimationFrame(()=>{const inp=document.getElementById('qnInput');if(inp)inp.focus();});}
 }
 function renderQN(){
   const el=document.getElementById('qnList');
@@ -3073,27 +3074,22 @@ function renderQN(){
     <div class="qn-item">
       <div class="qn-bullet"></div>
       <span class="qn-text">${escHtml(n.note_text)}</span>
-      <button class="qn-del" onclick="event.stopPropagation();deleteQN(${n.id})" title="Remove">✕</button>
+      <button class="qn-del" onclick="event.stopPropagation();deleteQN('${n.id}')" title="Remove">✕</button>
     </div>`).join('');
 }
 function escHtml(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
-async function addQN(){
+function addQN(){
   const inp=document.getElementById('qnInput');
   const txt=(inp?.value||'').trim();
   if(!txt)return;
-  inp.value='';
-  try{
-    const sv=await sbReq('POST','quick_notes',{note_text:txt,is_visible:true});
-    if(sv&&sv[0])_qnNotes.push(sv[0]);
-    renderQN();
-    document.getElementById('qnList').scrollTop=9999;
-  }catch(e){console.warn('addQN error',e);}
+  inp.value='';inp.focus();
+  _qnNotes.push({id:Date.now().toString(),note_text:txt});
+  _qnSave();renderQN();
+  const list=document.getElementById('qnList');if(list)list.scrollTop=9999;
 }
-async function deleteQN(id){
-  _qnNotes=_qnNotes.filter(n=>n.id!==id);renderQN();
-  try{
-    await sbReq('PATCH','quick_notes',{is_visible:false,hidden_at:new Date().toISOString()},`?id=eq.${id}`);
-  }catch(e){console.warn('deleteQN error',e);}
+function deleteQN(id){
+  _qnNotes=_qnNotes.filter(n=>n.id!==String(id));
+  _qnSave();renderQN();
 }
 // Close panel on outside click
 document.addEventListener('click',function(e){
