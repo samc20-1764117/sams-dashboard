@@ -3142,7 +3142,7 @@ function dropOnTB(e,ds,h,row,smOverride){
     const prevDateOv=r._dateOverrides?{...r._dateOverrides}:{};
     if(!r._dateOverrides)r._dateOverrides={};
     r._dateOverrides[wkKey]=ds;
-    const blk={id:crypto.randomUUID(),title:r.name,ds,sm,dur:autoDur(r.name,'Recurring'),cat:'Recurring',ruleId:String(r.id),recId:String(r.id)};
+    const blk={id:crypto.randomUUID(),title:r.name,ds,sm,dur:30,cat:'Recurring',ruleId:String(r.id),recId:String(r.id)};
     st.blocks.push(blk);dragId=null;save();renderAll();renderRecOv();
     sbSaveBlock(blk);
     sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));

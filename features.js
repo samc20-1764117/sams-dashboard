@@ -2268,7 +2268,7 @@ function applySelHighlight(){
     if(!b)return;
     if(b.shopId)selShopIds.add(String(b.shopId));
     if(b.ruleId)selWrRuleIds.add(String(b.ruleId));
-    if(b.recId)selRecIds.add(String(b.recId));
+    if(b.recId){const _isWrR=!b.ruleId&&(st.wrRules||[]).some(x=>String(x.id)===String(b.recId));if(_isWrR)selWrRuleIds.add(String(b.recId));else selRecIds.add(String(b.recId));}
   });
   function csForId(id){
     if(!id)return null;
