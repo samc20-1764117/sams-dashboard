@@ -2687,6 +2687,47 @@ function renderDayTB(){
   autoBlocks.forEach(a=>drawAutoTBBlock(col,a,ds));
   const autoBtn=document.getElementById('autoTBToggle');if(autoBtn)autoBtn.style.opacity=cfg.showAutoTB?'1':'0.4';
   if(isDateToday(date)){const nl=document.createElement('div');nl.className='nowline';nl.id='tbNowLine';const nm=new Date(),nmins=(nm.getHours()-HOURS[0])*60+nm.getMinutes();if(nmins>=0){nl.style.top=nmins*PX+'px';nl.innerHTML='<div class="nowdot"></div>';}col.appendChild(nl);}
+  // Rubber-band selection: drag on empty space to select blocks by area
+  col.addEventListener('mousedown',e=>{
+    if(e.button!==0||e.target.closest('.tb-block'))return;
+    e.preventDefault();
+    const tbScEl=col.closest('#tbScroll')||col.closest('#tbGrid');
+    const colRect=col.getBoundingClientRect();
+    const scrollTop0=tbScEl?tbScEl.scrollTop:0;
+    const startRelY=e.clientY-colRect.top+scrollTop0;
+    const selBox=document.createElement('div');
+    selBox.style.cssText='position:absolute;left:2px;right:2px;background:rgba(42,157,181,.12);border:1px solid rgba(42,157,181,.45);border-radius:3px;pointer-events:none;z-index:50;';
+    selBox.style.top=startRelY+'px';selBox.style.height='0px';
+    col.appendChild(selBox);
+    let rbMoved=false;
+    const onRBMove=ev=>{
+      const scrollTopN=tbScEl?tbScEl.scrollTop:0;
+      const curRelY=ev.clientY-colRect.top+scrollTopN;
+      const top2=Math.min(startRelY,curRelY),bot2=Math.max(startRelY,curRelY);
+      selBox.style.top=top2+'px';selBox.style.height=(bot2-top2)+'px';
+      rbMoved=true;
+    };
+    const onRBUp=ev=>{
+      document.removeEventListener('mousemove',onRBMove);
+      document.removeEventListener('mouseup',onRBUp);
+      const scrollTopN=tbScEl?tbScEl.scrollTop:0;
+      const curRelY=ev.clientY-colRect.top+scrollTopN;
+      const selTop=Math.min(startRelY,curRelY),selBot=Math.max(startRelY,curRelY);
+      selBox.remove();
+      if(rbMoved&&(selBot-selTop)>5){
+        if(!e.shiftKey)selectedTasks.clear();
+        col.querySelectorAll('.tb-block[data-bid]').forEach(be=>{
+          const bl=st.blocks.find(x=>String(x.id)===String(be.dataset.bid));
+          if(!bl)return;
+          const blTop=(bl.sm-HOURS[0]*60)*PX,blBot=blTop+bl.dur*PX;
+          if(blBot>selTop&&blTop<selBot){const sid=_getTBBlockSelId(bl);if(sid){selectedTasks.add(sid);lastSelectedId=sid;}}
+        });
+        applySelHighlight();
+      }
+    };
+    document.addEventListener('mousemove',onRBMove);
+    document.addEventListener('mouseup',onRBUp);
+  });
   grid.appendChild(col);renderTBSum(ds);requestAnimationFrame(applySelHighlight);
   // Default scroll to current time minus 1 hour; reset when day changes but preserve position mid-session
   const tbSc2=document.getElementById('tbScroll');
@@ -2740,6 +2781,7 @@ function computeTBLayout(ds,extraBlocks=[]){
     b._ncols=maxCol+1;
   });
 }
+function _getTBBlockSelId(bl){if(bl.cat==='pup_session'&&bl._pupSessId)return'pup-sess-'+String(bl._pupSessId);const r=bl.recId?st.recurring.find(x=>String(x.id)===String(bl.recId)):null;const iw=r&&(r.is_weekly_reset===true||r.is_weekly_reset==='true');return bl.taskId?String(bl.taskId):bl.recId?(iw?'wrec-':'rec-virt-')+bl.recId:(bl.shopId||bl.ruleId)?'blk-'+bl.id:null;}
 function drawTBBlock(col,b){
   const top=(b.sm-HOURS[0]*60)*PX,ht=Math.max(b.dur*PX,16);
   const linkedTask=b.taskId?st.tasks.find(x=>String(x.id)===String(b.taskId)):null;
@@ -2843,21 +2885,42 @@ function drawTBBlock(col,b){
     e.stopPropagation();
     const startY=e.clientY,startSm=b.sm;
     tbDragging=false;
+    // Multi-select drag: if this block is in a multi-selection, move all selected blocks
+    const tbSelId=_tbSelId();
+    const isMultiDrag=tbSelId&&selectedTasks.has(tbSelId)&&selectedTasks.size>1;
+    let multiBlocks=null;
+    if(isMultiDrag){
+      const col2=el.closest('.tb-col');
+      if(col2){multiBlocks=[...col2.querySelectorAll('.tb-block[data-bid]')].map(be=>{const bl=st.blocks.find(x=>String(x.id)===String(be.dataset.bid));if(!bl)return null;const sid=_getTBBlockSelId(bl);if(!sid||!selectedTasks.has(sid))return null;return{bl,el2:be,startSm2:bl.sm};}).filter(Boolean);}
+    }
     tbOnMove=ev=>{
       const dy=ev.clientY-startY;
       if(!tbDragging&&Math.abs(dy)<5)return;
       tbDragging=true;
       const dm=Math.round(dy/PX/15)*15;
-      const newSm=Math.max(HOURS[0]*60,Math.min(HOURS[HOURS.length-1]*60,startSm+dm));
-      b.sm=newSm;el.style.top=(b.sm-HOURS[0]*60)*PX+'px';
-      const bt=el.querySelector('.tb-btime');if(bt)bt.textContent=tStr(b.sm)+'-'+tStr(b.sm+b.dur);
+      if(multiBlocks){
+        multiBlocks.forEach(({bl,el2,startSm2})=>{const ns=Math.max(HOURS[0]*60,Math.min(HOURS[HOURS.length-1]*60,startSm2+dm));bl.sm=ns;el2.style.top=(ns-HOURS[0]*60)*PX+'px';const bt2=el2.querySelector('.tb-btime');if(bt2)bt2.textContent=tStr(ns)+'-'+tStr(ns+bl.dur);});
+      } else {
+        const newSm=Math.max(HOURS[0]*60,Math.min(HOURS[HOURS.length-1]*60,startSm+dm));
+        b.sm=newSm;el.style.top=(b.sm-HOURS[0]*60)*PX+'px';
+        const bt=el.querySelector('.tb-btime');if(bt)bt.textContent=tStr(b.sm)+'-'+tStr(b.sm+b.dur);
+      }
       el.classList.add('dragging-block');
     };
     tbOnUp=()=>{
       document.removeEventListener('mousemove',tbOnMove);
       document.removeEventListener('mouseup',tbOnUp);
       el.classList.remove('dragging-block');
-      if(tbDragging){const newSm=b.sm;pushUndo(()=>{b.sm=startSm;save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();sbUpdateBlock(b.id,{start_minutes:startSm});},'Moved block');save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();sbUpdateBlock(b.id,{start_minutes:newSm});}
+      if(tbDragging){
+        if(multiBlocks){
+          const snaps=multiBlocks.map(({bl,startSm2})=>({bl,startSm2,newSm:bl.sm}));
+          pushUndo(()=>{snaps.forEach(({bl,startSm2})=>{bl.sm=startSm2;sbUpdateBlock(bl.id,{start_minutes:startSm2});});save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();},'Moved blocks');
+          save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
+          snaps.forEach(({bl,newSm})=>sbUpdateBlock(bl.id,{start_minutes:newSm}));
+        } else {
+          const newSm=b.sm;pushUndo(()=>{b.sm=startSm;save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();sbUpdateBlock(b.id,{start_minutes:startSm});},'Moved block');save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();sbUpdateBlock(b.id,{start_minutes:newSm});
+        }
+      }
       tbDragging=false;
     };
     document.addEventListener('mousemove',tbOnMove);
