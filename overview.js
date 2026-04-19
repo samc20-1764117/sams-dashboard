@@ -3138,7 +3138,7 @@ function dropOnTB(e,ds,h,row,smOverride){
     const ruleId=dragId.split('::')[1];
     const r=st.wrRules.find(x=>String(x.id)===String(ruleId));
     if(!r){dragId=null;return;}
-    if(st.blocks.some(b=>b.ds===ds&&(String(b.ruleId)===String(ruleId)||String(b.recId)===String(ruleId)))){dragId=null;return;}
+    if(st.blocks.some(b=>b.ds===ds&&(String(b.ruleId)===String(ruleId)||String(b.recId)===String(ruleId)))){dragId=null;showToast('Already in time block','#6b7280',2000);return;}
     const wkKey=wkKeyFromDs(ds);
     const prevDateOv=r._dateOverrides?{...r._dateOverrides}:{};
     if(!r._dateOverrides)r._dateOverrides={};
@@ -3159,7 +3159,7 @@ function dropOnTB(e,ds,h,row,smOverride){
     const recId=dragId.split('::')[1];
     const r=st.recurring.find(x=>String(x.id)===String(recId));
     if(!r){dragId=null;return;}
-    if(st.blocks.some(b=>b.ds===ds&&String(b.recId)===String(recId))){dragId=null;return;}
+    if(st.blocks.some(b=>b.ds===ds&&String(b.recId)===String(recId))){dragId=null;showToast('Already in time block','#6b7280',2000);return;}
     const wkKey=wkKeyFromDs(ds);
     const prevDateOv=r._dateOverrides?{...r._dateOverrides}:{};
     if(!r._dateOverrides)r._dateOverrides={};
@@ -3179,7 +3179,7 @@ function dropOnTB(e,ds,h,row,smOverride){
     const shopId=dragId.split('::')[1];
     const s=st.shopping.find(x=>String(x.id)===String(shopId));
     if(!s){dragId=null;return;}
-    if(st.blocks.some(b=>b.ds===ds&&String(b.shopId)===String(shopId))){dragId=null;return;}
+    if(st.blocks.some(b=>b.ds===ds&&String(b.shopId)===String(shopId))){dragId=null;showToast('Already in time block','#6b7280',2000);return;}
     const prevDue=s.due_date;const prevOrder=s.shop_order;
     const newOrder=_shopTopOrder(s);s.shop_order=newOrder;s.due_date=ds;
     const blk={id:crypto.randomUUID(),title:s.name,ds,sm,dur:autoDur(s.name,'Shopping'),cat:'Shopping',shopId:String(s.id)};

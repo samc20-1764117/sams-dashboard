@@ -3081,7 +3081,7 @@ function escHtml(s){const d=document.createElement('div');d.textContent=s;return
 function addQN(){
   const inp=document.getElementById('qnInput');
   const txt=(inp?.value||'').trim();
-  if(!txt)return;
+  if(!txt){_qnOpen=false;document.getElementById('qnPanel').classList.remove('open');return;}
   inp.value='';inp.focus();
   _qnNotes.push({id:Date.now().toString(),note_text:txt});
   _qnSave();renderQN();
