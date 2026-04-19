@@ -42,12 +42,14 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify({cfg,blocks:st.block
 // ── Auth ───────────────────────────────────────────────────────────────────────
 let _sbClient=null;
 let _authToken=null;
+let _userId=null;
 function _getAuthToken(){return _authToken||cfg.key;}
 function _initSbClient(){
   if(_sbClient||!cfg.url||!cfg.key)return;
   _sbClient=supabase.createClient(cfg.url,cfg.key,{auth:{persistSession:true,autoRefreshToken:true}});
   _sbClient.auth.onAuthStateChange((event,session)=>{
     _authToken=session?session.access_token:null;
+    _userId=session?.user?.id||null;
     if(!session&&event!=='INITIAL_SESSION'){showLoginOverlay();}
   });
 }
@@ -65,13 +67,14 @@ async function doLogin(){
   const{data,error}=await _sbClient.auth.signInWithPassword({email,password:pass});
   if(error){if(errEl){errEl.textContent=error.message;errEl.style.display='block';}return;}
   _authToken=data.session.access_token;
+  _userId=data.session.user?.id||null;
   hideLoginOverlay();
   await syncAll();
 }
 async function checkAuth(){
   _initSbClient();
   const{data:{session}}=await _sbClient.auth.getSession();
-  if(session){_authToken=session.access_token;return true;}
+  if(session){_authToken=session.access_token;_userId=session.user?.id||null;return true;}
   showLoginOverlay();
   return false;
 }

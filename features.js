@@ -2302,6 +2302,7 @@ function applySelHighlight(){
     if(!sel&&id.startsWith('rec-virt-')){sel=selRecIds.has(id.replace('rec-virt-',''));}
     if(!sel&&id.startsWith('shop-cal-')){sel=selShopIds.has(id.replace('shop-cal-',''));}
     if(!sel&&id.startsWith('wrrule-virt-')){sel=selWrRuleIds.has(id.replace('wrrule-virt-',''));}
+    else if(!sel&&id.startsWith('wrrule-')){sel=selWrRuleIds.has(id.replace('wrrule-',''));}
     el.classList.toggle('sel-row',sel);
     if(sel)applySelVars(el,csForId(csId));
     else clearSelVars(el);
@@ -3082,7 +3083,7 @@ async function addQN(){
   if(!txt)return;
   inp.value='';
   try{
-    const sv=await sbReq('POST','quick_notes',{note_text:txt,is_visible:true});
+    const sv=await sbReq('POST','quick_notes',{note_text:txt,is_visible:true,...(_userId?{user_id:_userId}:{})});
     if(sv&&sv[0])_qnNotes.push(sv[0]);
     renderQN();
     document.getElementById('qnList').scrollTop=9999;
