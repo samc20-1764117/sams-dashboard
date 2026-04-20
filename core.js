@@ -946,7 +946,7 @@ document.addEventListener('keydown',e=>{
     const el=e.target.closest('[data-tip]');
     if(el){
       tip.style.left=(e.clientX+14)+'px';tip.style.top=(e.clientY-36)+'px';
-      if(el!==_tipEl){clearTimeout(_tipTimer);tip.style.opacity='0';_tipEl=el;_tipTimer=setTimeout(()=>{tip.textContent=el.dataset.tip;tip.style.opacity='1';},3000);}
+      if(el!==_tipEl){clearTimeout(_tipTimer);tip.style.opacity='0';_tipEl=el;_tipTimer=setTimeout(()=>{tip.textContent=el.dataset.tip;tip.style.opacity='1';},1000);}
     } else {
       clearTimeout(_tipTimer);_tipTimer=null;_tipEl=null;tip.style.opacity='0';
     }

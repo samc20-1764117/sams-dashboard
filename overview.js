@@ -117,7 +117,7 @@ function renderTodDonut(done,total){
     requestAnimationFrame(()=>requestAnimationFrame(()=>{
       arc.style.transition='stroke-dasharray .9s cubic-bezier(.4,0,.2,1)';
       arc.setAttribute('stroke-dasharray',`${pct*C} ${C}`);
-      setTimeout(()=>{if(svg)svg.classList.add('donut-glow');},1000);
+      // glow removed
     }));
   } else {
     arc.style.transition='stroke-dasharray .45s cubic-bezier(.4,0,.2,1)';
