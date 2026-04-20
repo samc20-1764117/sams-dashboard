@@ -797,7 +797,7 @@ function renderMoCal(){
   const dowEl=document.getElementById('mDow');
   if(!dowEl.children.length){
     ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach(dn=>{const el=document.createElement('div');el.className='mdowl';el.textContent=dn;dowEl.appendChild(el);});
-    const gh=document.createElement('div');gh.className='mdowl';gh.textContent='Goals';gh.style.cssText='color:#6366f1;border-left:2px solid rgba(255,255,255,.88);padding-left:4px';dowEl.appendChild(gh);
+    const gh=document.createElement('div');gh.className='mdowl';gh.style.cssText='border-left:2px solid rgba(255,255,255,.88);padding:1px 4px';const _ghBtn=document.createElement('button');_ghBtn.className='wo-hdr-btn';_ghBtn.innerHTML='Weekly<br>Objectives';_ghBtn.onclick=openWOModal;gh.appendChild(_ghBtn);dowEl.appendChild(gh);
   }
   const cells=document.getElementById('mCells');cells.innerHTML='';
   const _mgs=gc('weekly goals');
@@ -822,8 +822,8 @@ function renderMoCal(){
     const goalsCell=document.createElement('div');goalsCell.className='mcell mo-goals-cell';goalsCell.dataset.wkmon=wkMonDs;
     const gBody=document.createElement('div');gBody.className='mcell-body';
     const _gCellH=Math.max(70,(window.innerHeight*0.94-100)/4-4);
-    const _gAvailH=_gCellH-8;
-    const _gMaxVis=goalTasks.length<=Math.floor(_gAvailH/19)?goalTasks.length:Math.max(1,Math.floor((_gAvailH-16)/19));
+    const _gAvailH=_gCellH-4;
+    const _gMaxVis=goalTasks.length<=Math.floor(_gAvailH/19)?goalTasks.length:Math.max(1,Math.floor((_gAvailH-10)/19));
     goalTasks.forEach((t,_gi)=>{
       const chip=document.createElement('div');chip.className='mcell-t';chip.dataset.tid=String(t.id);chip.draggable=true;
       const _imp=t.important&&!t.done;
@@ -938,7 +938,8 @@ function mkMCell(date,om,today){
   const ds=d2s(date);const cell=document.createElement('div');
   cell.dataset.ds=ds;
   cell.className='mcell'+(om?' om':'')+(ds===today?' tc':'');
-  cell.dataset.tip=`${date.getMonth()+1}/${date.getDate()}`;
+  const _MO=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  cell.dataset.tip=`${_MO[date.getMonth()]} ${date.getDate()}`;
   // Header row with date + add btn
   const hdr=document.createElement('div');hdr.style.cssText='display:flex;align-items:center;justify-content:space-between;margin-bottom:2px';
   const dn=document.createElement('div');dn.className='mcell-n';dn.textContent=date.getDate();
@@ -958,8 +959,8 @@ function mkMCell(date,om,today){
   const done=[...st.tasks.filter(t=>t.due_date&&t.due_date.split('T')[0]===ds&&t.done&&t.category!=='Weekly Goals'),...shopOnDayDone];
   const tasks=[...undone,...done];
   const _cellH=Math.max(70,(window.innerHeight*0.94-100)/4-4);
-  const _availH=_cellH-28; // header(18)+margin(2)+padding-top(4)+padding-bottom(4)
-  const _maxVis=tasks.length<=Math.floor(_availH/19)?tasks.length:Math.max(1,Math.floor((_availH-16)/19));
+  const _availH=_cellH-20;
+  const _maxVis=tasks.length<=Math.floor(_availH/19)?tasks.length:Math.max(1,Math.floor((_availH-10)/19));
   tasks.forEach((t,_ti)=>{
     const s=t.important&&!t.done?IMP:gc((t._isWrec||t._isWrRule)?'weekly_reset':t.category);
     const isTravel=t._type==='travel';
