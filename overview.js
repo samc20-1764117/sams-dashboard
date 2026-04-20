@@ -323,13 +323,19 @@ async function submitDailyHabit(){
   const res=await sbReqSilent('POST','wr_recurring_rules',{name,notes,cadence:'daily',is_weekly_reset:false,is_enabled:true},'');
   if(res&&res[0]){const idx=st.recurring.findIndex(x=>x.id===tmp);if(idx>=0)st.recurring[idx]={...st.recurring[idx],...res[0],_doneByWk:{},_dateOverrides:{}};save();renderDailyHabits();}
 }
-// Type priority for sorting: regular=1, recurring=2, shopping=3, birthday=4, pup=5 (travel sorts first via pre-check)
+// Type priority for untimed tasks: travel sorted first via pre-check; important via pre-check
+// Order: birthday(1) home(2) my work(3) work(4) social(5) recurring(6) shopping(7) pup(8)
 function taskTypePri(t){
-  if(t._type==='pup')return 5;
-  if(t._type==='birthday')return 4;
-  if(t._type==='shop')return 3;
-  if(t._virtual)return 2;
-  return 1;
+  if(t._type==='birthday')return 1;
+  const cat=(t.category||'').toLowerCase();
+  if(cat==='home')return 2;
+  if(cat==='my work')return 3;
+  if(cat==='work')return 4;
+  if(cat==='social')return 5;
+  if(t._type==='shop')return 7;
+  if(t._type==='pup')return 8;
+  if(t._virtual)return 6; // recurring (WR + non-WR), checked after shop/pup
+  return 5; // other regular tasks
 }
 function sortByTypeOrder(tasks){
   return[...tasks].sort((a,b)=>{
