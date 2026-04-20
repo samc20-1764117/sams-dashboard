@@ -2757,7 +2757,7 @@ function _attachTBEdgeRubberBand(){
       if(!rbMoved&&Math.sqrt(dx*dx+dy*dy)>5){
         rbMoved=true;
         selBox=document.createElement('div');
-        selBox.style.cssText='position:fixed;background:rgba(42,157,181,.12);border:1px solid rgba(42,157,181,.45);border-radius:3px;pointer-events:none;z-index:999;';
+        selBox.style.cssText='position:fixed;background:rgba(245,158,11,.1);border:2px solid rgba(245,158,11,.7);border-radius:3px;pointer-events:none;z-index:999;';
         document.body.appendChild(selBox);
       }
       if(selBox){
@@ -2774,13 +2774,9 @@ function _attachTBEdgeRubberBand(){
       if(rbMoved){
         const y1=Math.min(startY,ev.clientY),y2=Math.max(startY,ev.clientY);
         if(!ev.shiftKey)selectedTasks.clear();
-        const listRect=list.getBoundingClientRect();
-        const scrollTop=list.scrollTop;
         list.querySelectorAll('[id^="ti-"]').forEach(el=>{
-          // Use position relative to list top + scroll, mapped back to viewport coords
-          const elTop=listRect.top+el.offsetTop-scrollTop;
-          const elBot=elTop+el.offsetHeight;
-          if(elBot>y1&&elTop<y2){const sid=el.id.replace(/^ti-/,'');if(sid){selectedTasks.add(sid);lastSelectedId=sid;}}
+          const r=el.getBoundingClientRect();
+          if(r.bottom>y1&&r.top<y2){const sid=el.id.replace(/^ti-/,'');if(sid){selectedTasks.add(sid);lastSelectedId=sid;}}
         });
         applySelHighlight();
       }
