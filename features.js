@@ -938,7 +938,7 @@ function mkMCell(date,om,today){
   const ds=d2s(date);const cell=document.createElement('div');
   cell.dataset.ds=ds;
   cell.className='mcell'+(om?' om':'')+(ds===today?' tc':'');
-  cell.title=`${date.getMonth()+1}/${date.getDate()}`;
+  cell.dataset.tip=`${date.getMonth()+1}/${date.getDate()}`;
   // Header row with date + add btn
   const hdr=document.createElement('div');hdr.style.cssText='display:flex;align-items:center;justify-content:space-between;margin-bottom:2px';
   const dn=document.createElement('div');dn.className='mcell-n';dn.textContent=date.getDate();

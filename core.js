@@ -937,3 +937,15 @@ document.addEventListener('keydown',e=>{
   }
 });
 
+// ── UI Tooltip ────────────────────────────────────────────────────────────────
+(function(){
+  const _t=()=>document.getElementById('uiTip');
+  document.addEventListener('mousemove',e=>{
+    const tip=_t();if(!tip)return;
+    const el=e.target.closest('[data-tip]');
+    if(el){tip.textContent=el.dataset.tip;tip.style.opacity='1';tip.style.left=(e.clientX+14)+'px';tip.style.top=(e.clientY-36)+'px';}
+    else{tip.style.opacity='0';}
+  });
+  document.addEventListener('mouseleave',()=>{const tip=_t();if(tip)tip.style.opacity='0';});
+})();
+
