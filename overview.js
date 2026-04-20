@@ -1860,7 +1860,10 @@ function renderRecOv(){
   const _skCount=skipIds.size+_skippedWrecCount;
   const _skBtn=document.getElementById('wrSkippedBtn');
   if(_skBtn){_skBtn.style.display=_skCount?'':'none';_skBtn.textContent='↩ '+_skCount;}
-  requestAnimationFrame(()=>{applySelHighlight();const fi=elReg&&elReg.querySelector('.ti');if(fi)elReg.style.maxHeight=(4+9*fi.offsetHeight)+'px';});
+  requestAnimationFrame(()=>{
+    applySelHighlight();
+    if(elReg){elReg.style.maxHeight='';requestAnimationFrame(()=>{const h=elReg.offsetHeight;if(h>0)elReg.style.maxHeight=h+'px';});}
+  });
   if(document.getElementById('recMoModal')?.classList.contains('open'))renderRecMoCal();
   _attachListRubberBand(document.getElementById('recList'));
 }
