@@ -2740,12 +2740,15 @@ function _attachListRubberBand(container){
 function _attachTBEdgeRubberBand(){
   const panel=document.querySelector('.row1-right-panel');
   const list=document.getElementById('todList');
+  console.log('[RB] panel found:',!!panel,'list found:',!!list,'already setup:',!!panel?._tbEdgeRbSetup);
   if(!panel||!list||panel._tbEdgeRbSetup)return;
   panel._tbEdgeRbSetup=true;
+  console.log('[RB] attached to row1-right-panel');
   panel.addEventListener('mousedown',e=>{
+    console.log('[RB] mousedown on panel, target:',e.target.className||e.target.tagName);
     if(e.button!==0)return;
     // Skip any interactive elements inside the right panel
-    if(e.target.closest('button,a,input,textarea,select,[draggable="true"],.chip,.task-item,.wr-task,.rec-task,.wk-task,.wk-goal'))return;
+    if(e.target.closest('button,a,input,textarea,select,[draggable="true"],.chip,.task-item,.wr-task,.rec-task,.wk-task,.wk-goal')){console.log('[RB] skipped - interactive');return;}
     e.preventDefault();
     const startX=e.clientX,startY=e.clientY;
     let rbMoved=false,selBox=null;
