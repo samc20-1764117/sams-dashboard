@@ -2484,7 +2484,7 @@ function tRowWk(t){
     const _wkXBtn=t._isWrRule?`showWrScopePicker(event,'⊘  Skip this week only','✕  Delete rule (all future)',()=>writeWrOverride('${t._ruleId}','${t._wkKey||getWkKey(wkOff)}',{override_type:'skip'},{undoLabel:'Skipped WR task this week'}),()=>wrCtxDeleteRule('${t._ruleId}'),'⊠  Remove from views',()=>unscheduleWrRule('${t._ruleId}','${t._wkKey||getWkKey(wkOff)}'))`
       :t._isWrec?`showWrScopePicker(event,'⊘  Skip this week only','✕  Delete recurring task',()=>skipWRec('${t._recId}','${t._wkKey||getWkKey(wkOff)}'),()=>delRec('${t._recId}'),'⊠  Remove from views',()=>unscheduleWRec('${t._recId}','${t._wkKey||getWkKey(wkOff)}'))`
       :`showWrScopePicker(event,'⊘  Skip this week only','✕  Delete recurring task',()=>skipRecVirtThisWk('${t._recId}','${t._wkKey||getWkKey(wkOff)}'),()=>delRec('${t._recId}'))`;
-    return`<div class="ti ${t.done?'done':''}" style="background:${s.bg}" id="ti-${t.id}" onclick="selTask(event,'${t.id}')" ondblclick="tiDblRec(event,'${t._recId}')" oncontextmenu="${_wkCtxMenu}">
+    return`<div class="ti ${t.done?'done':''}" style="background:${s.bg}" id="ti-${t.id}" onclick="selTask(event,'${t.id}')" ondblclick="${t._isWrRule?`event.stopPropagation();openWrEditModal('${t._ruleId}','${t._wkKey||getWkKey(wkOff)}','all')`:`tiDblRec(event,'${t._recId}')`}" oncontextmenu="${_wkCtxMenu}">
       <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="${t._isWrec?`togRec('${t._recId}',this.checked)`:`togRecVirt('${t._recId}',this.checked,'${t._wkKey||getWkKey(wkOff)}')`}"></label>
       <span class="tn">${t.name}</span>
       <span class="cpill" style="background:${s.bg};color:${s.t};border-color:${s.b}">Recurring</span>
@@ -3349,7 +3349,7 @@ function startTBInlineEdit(blockId,col,onCommit){
         const ti=st.tasks.findIndex(x=>x.id===newTask.id);
         if(ti>-1)st.tasks[ti]={...sv[0]};
         b.taskId=String(sv[0].id);
-        save();renderAll();
+        save();renderToday();renderWkSummary();renderWkCal();
       }
       // Now save the block itself to DB
       sbSaveBlock(b);
