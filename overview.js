@@ -100,7 +100,7 @@ function renderTodDonut(done,total){
   const wrap=document.getElementById('todProgressDonut');if(!wrap)return;
   if(!total){wrap.style.display='none';return;}
   wrap.style.display='flex';
-  const C=2*Math.PI*15;
+  const C=2*Math.PI*22;
   const arc=document.getElementById('_donutArc');
   if(arc)arc.setAttribute('stroke-dasharray',`${(done/total)*C} ${C}`);
   const pEl=document.getElementById('_donutPct');
