@@ -2897,7 +2897,7 @@ function getOvRecurring(){
       if(!(r._doneByWk&&r._doneByWk[wkKey])&&r._dateOverrides[wkKey]<today&&!seen.has('wrec-'+r.id)){seen.add('wrec-'+r.id);out.push({id:'rec-virt-'+r.id,name:r.name,category:'Recurring',due_date:r._dateOverrides[wkKey],done:false,_recId:r.id,_virtual:true,_wkKey:wkKey,_isWrec:true});}
     });
     // WR rules: check all past-week overrides
-    st.wrRules.filter(r=>r._dateOverrides&&r._dateOverrides[wkKey]&&r._dateOverrides[wkKey]!=='__skip__'&&!wrRuleHandled.has(String(r.id))).forEach(r=>{
+    st.wrRules.filter(r=>r._dateOverrides&&r._dateOverrides[wkKey]&&r._dateOverrides[wkKey]!=='__skip__'&&!wrRuleHandled.has(String(r.id))&&!(st.wrOverrides||[]).some(o=>String(o.rule_id)===String(r.id)&&o.wk_key===wkKey&&o.override_type==='skip')).forEach(r=>{
       if(r._dateOverrides[wkKey]<=today)wrRuleHandled.add(String(r.id));// only block older-week lookback when date is today or past (not future)
       if(!isDoneWRRule(r.id,wkKey)&&r._dateOverrides[wkKey]<today&&!seen.has('wrrule-'+r.id)){seen.add('wrrule-'+r.id);out.push({id:'wrrule-virt-'+r.id,name:r.name,category:'Recurring',due_date:r._dateOverrides[wkKey],done:false,_ruleId:r.id,_virtual:true,_wkKey:wkKey,_isWrRule:true});}
     });}
@@ -2919,8 +2919,15 @@ function updateOvBanner(){
   const total=ovTasks.length+ovRec.length+ovShop.length+ovPup.length;
   const banner=document.getElementById('ovBanner');
   if(total>0){
-    document.getElementById('ovBannerTxt').textContent=
-      total===1?'1 overdue task — move to today?':`${total} overdue tasks — move all to today?`;
+    let bannerTxt;
+    if(total===1){
+      const item=[...ovTasks,...ovRec,...ovShop,...ovPup][0];
+      const name=item.name||item.title||'task';
+      bannerTxt=`1 overdue: "${name}" — move to today?`;
+    } else {
+      bannerTxt=`${total} overdue tasks — move all to today?`;
+    }
+    document.getElementById('ovBannerTxt').textContent=bannerTxt;
     banner.classList.add('show');
   } else {
     banner.classList.remove('show');
