@@ -1862,7 +1862,16 @@ function renderRecOv(){
   if(_skBtn){_skBtn.style.display=_skCount?'':'none';_skBtn.textContent='↩ '+_skCount;}
   requestAnimationFrame(()=>{
     applySelHighlight();
-    if(elReg){elReg.style.maxHeight='';requestAnimationFrame(()=>{const h=elReg.offsetHeight;if(h>0)elReg.style.maxHeight=h+'px';});}
+    if(elReg){
+      elReg.style.maxHeight='';
+      const card=elReg.closest('.card');
+      if(card){
+        let taken=0;
+        Array.from(card.children).forEach(c=>{if(c!==elReg&&c.id!=='recListPup'&&getComputedStyle(c).position!=='absolute')taken+=c.offsetHeight;});
+        const avail=card.clientHeight-taken-1;
+        if(avail>40)elReg.style.maxHeight=avail+'px';
+      }
+    }
   });
   if(document.getElementById('recMoModal')?.classList.contains('open'))renderRecMoCal();
   _attachListRubberBand(document.getElementById('recList'));
