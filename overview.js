@@ -75,6 +75,7 @@ function renderToday(){
   // todBadge removed
   document.getElementById('todPL').textContent=`${doneCount}/${sorted.length}`;const _todP=document.getElementById('todPct');if(_todP)_todP.textContent=(sorted.length?Math.round(doneCount/sorted.length*100):0)+'%';
   document.getElementById('todPB').style.width=sorted.length?`${doneCount/sorted.length*100}%`:'0%';
+  renderTodDonut(doneCount,sorted.length);
   const _todDs=ds;
   function _hasTBToday(t){
     if(t._type==='travel'||t._type==='birthday')return true;
@@ -95,6 +96,18 @@ function renderToday(){
   _attachListRubberBand(document.getElementById('todList'));
 }
 // ── Pup Skills Highlight ───────────────────────────────────────────────────────
+function renderTodDonut(done,total){
+  const wrap=document.getElementById('todProgressDonut');if(!wrap)return;
+  if(!total){wrap.style.display='none';return;}
+  wrap.style.display='flex';
+  const C=2*Math.PI*15;
+  const arc=document.getElementById('_donutArc');
+  if(arc)arc.setAttribute('stroke-dasharray',`${(done/total)*C} ${C}`);
+  const pEl=document.getElementById('_donutPct');
+  if(pEl)pEl.textContent=Math.round(done/total*100)+'%';
+  const fEl=document.getElementById('_donutFrac');
+  if(fEl)fEl.textContent=`${done}/${total}`;
+}
 let _pupSkillsOpen=false;
 function togglePupSkillsOpen(){
   _pupSkillsOpen=!_pupSkillsOpen;
