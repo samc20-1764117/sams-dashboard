@@ -2774,10 +2774,13 @@ function _attachTBEdgeRubberBand(){
       if(selBox)selBox.remove();
       if(rbMoved){
         const y1=Math.min(startY,ev.clientY),y2=Math.max(startY,ev.clientY);
+        console.log('[RB] drag y1='+y1+' y2='+y2);
         if(!ev.shiftKey)selectedTasks.clear();
         list.querySelectorAll('[id^="ti-"]').forEach(el=>{
           const r=el.getBoundingClientRect();
-          if(r.bottom>y1&&r.top<y2){const sid=el.id.replace(/^ti-/,'');if(sid){selectedTasks.add(sid);lastSelectedId=sid;}}
+          const hit=r.bottom>y1&&r.top<y2;
+          console.log('[RB] el='+el.id+' done='+el.classList.contains('done')+' top='+Math.round(r.top)+' bot='+Math.round(r.bottom)+' hit='+hit);
+          if(hit){const sid=el.id.replace(/^ti-/,'');if(sid){selectedTasks.add(sid);lastSelectedId=sid;}}
         });
         applySelHighlight();
       }
