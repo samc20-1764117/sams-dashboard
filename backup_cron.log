@@ -172,3 +172,13 @@ Saved to /Users/samanthacohn/Documents/sams-dashboard/backup_auto.json
 ✗ auto_timeblock_overrides: getaddrinfo ENOTFOUND gtirvyrqfuuuxkkqaeap.supabase.co
 
 Saved to /Users/samanthacohn/Documents/sams-dashboard/backup_auto.json
+✓ tasks (246 rows)
+✓ shopping_list (23 rows)
+✓ travel (5 rows)
+✓ birthdays (11 rows)
+✓ pup_skills (38 rows)
+✓ time_blocks (239 rows)
+✓ auto_timeblocks (6 rows)
+✓ auto_timeblock_overrides (31 rows)
+
+Saved to /Users/samanthacohn/Documents/sams-dashboard/backup_auto.json
