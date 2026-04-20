@@ -92,6 +92,7 @@ function renderToday(){
   updateOvBanner();
   renderPupSkillsHighlight();
   renderDailyHabits();
+  _attachListRubberBand(document.getElementById('todList'));
 }
 // ── Pup Skills Highlight ───────────────────────────────────────────────────────
 let _pupSkillsOpen=false;
@@ -461,6 +462,7 @@ function renderWkSummary(){
   document.getElementById('wkPL').textContent=`${totalDone}/${totalAll}`;const _wkP=document.getElementById('wkPct');if(_wkP)_wkP.textContent=(totalAll?Math.round(totalDone/totalAll*100):0)+'%';
   document.getElementById('wkPB').style.width=totalAll?`${totalDone/totalAll*100}%`:'0%';
   document.getElementById('wkList').innerHTML=ts.map(t=>t._type==='travel'||t._type==='birthday'?tRowExtra(t):t._type==='shop'?tRowShopVirt(t):tRowWk(t)).join('');
+  _attachListRubberBand(document.getElementById('wkList'));
 }
 
 // ── Week calendar ──────────────────────────────────────────────────────────────
@@ -1865,6 +1867,7 @@ function renderRecOv(){
   if(_skBtn){_skBtn.style.display=_skCount?'':'none';_skBtn.textContent='↩ '+_skCount;}
   requestAnimationFrame(()=>{applySelHighlight();const fi=elReg&&elReg.querySelector('.ti');if(fi)elReg.style.maxHeight=(4+7*fi.offsetHeight)+'px';});
   if(document.getElementById('recMoModal')?.classList.contains('open'))renderRecMoCal();
+  _attachListRubberBand(document.getElementById('recList'));
 }
 
 // Upsert a wr_recurring_override — patches if one exists for (ruleId,wkKey), posts if not.
@@ -2463,6 +2466,7 @@ function renderShopOv(){
     el.querySelector('.delbtn').addEventListener('click',e=>{e.stopPropagation();delShop(s.id);});
     container.appendChild(el);
   });
+  _attachListRubberBand(container);
 }
 
 // ── Virtual recurring task row for This Week ─────────────────────────────────
@@ -2639,6 +2643,51 @@ function renderKanban(){
 async function addKanban(cat,inp){const n=inp?.value.trim();if(!n)return;const t={id:'l-'+Date.now(),name:n,category:cat,due_date:null,done:false,important:false};st.tasks.push(t);renderAll();inp.value='';const sv=await sbReq('POST','tasks',{name:n,category:cat,due_date:null,done:false});if(sv&&sv[0]){const i=st.tasks.findIndex(x=>x.id===t.id);if(i>-1)st.tasks[i]=sv[0];}
   pushUndo(()=>{st.tasks=st.tasks.filter(x=>x.id!==t.id);renderAll();sbReq('DELETE','tasks',null,`?id=eq.${t.id}`);},'Added task');}
 async function reassignCat(id,cat){if(!id)return;const t=st.tasks.find(x=>String(x.id)===String(id));if(!t)return;const prev=t.category;t.category=cat;renderAll();dragId=null;pushUndo(()=>{t.category=prev;renderAll();sbReq('PATCH','tasks',{category:prev},`?id=eq.${id}`);},'Moved category');await sbReq('PATCH','tasks',{category:cat},`?id=eq.${id}`);}
+
+// ── Rubber-band drag-select for list containers ────────────────────────────────
+function _attachListRubberBand(container){
+  if(!container||container._rbSetup)return;
+  container._rbSetup=true;
+  container.addEventListener('mousedown',e=>{
+    if(e.button!==0)return;
+    if(e.target.closest('.chk-wrap,.delbtn,.btn,input,button,a'))return;
+    const startX=e.clientX,startY=e.clientY;
+    let rbMoved=false,selBox=null;
+    const onMove=ev=>{
+      const dx=ev.clientX-startX,dy=ev.clientY-startY;
+      if(!rbMoved&&Math.sqrt(dx*dx+dy*dy)>5){
+        rbMoved=true;
+        selBox=document.createElement('div');
+        selBox.style.cssText='position:fixed;background:rgba(42,157,181,.12);border:1px solid rgba(42,157,181,.45);border-radius:3px;pointer-events:none;z-index:999;';
+        document.body.appendChild(selBox);
+      }
+      if(selBox){
+        const x1=Math.min(startX,ev.clientX),y1=Math.min(startY,ev.clientY);
+        const x2=Math.max(startX,ev.clientX),y2=Math.max(startY,ev.clientY);
+        selBox.style.left=x1+'px';selBox.style.top=y1+'px';
+        selBox.style.width=(x2-x1)+'px';selBox.style.height=(y2-y1)+'px';
+      }
+    };
+    const onUp=ev=>{
+      document.removeEventListener('mousemove',onMove);
+      document.removeEventListener('mouseup',onUp);
+      if(selBox)selBox.remove();
+      if(rbMoved){
+        const x1=Math.min(startX,ev.clientX),y1=Math.min(startY,ev.clientY);
+        const y2=Math.max(startY,ev.clientY);
+        if(!ev.shiftKey)selectedTasks.clear();
+        container.querySelectorAll('[id^="ti-"]').forEach(el=>{
+          const r=el.getBoundingClientRect();
+          if(r.bottom>y1&&r.top<y2){const sid=el.id.replace(/^ti-/,'');if(sid){selectedTasks.add(sid);lastSelectedId=sid;}}
+        });
+        applySelHighlight();
+        container.addEventListener('click',ev2=>ev2.stopPropagation(),{capture:true,once:true});
+      }
+    };
+    document.addEventListener('mousemove',onMove);
+    document.addEventListener('mouseup',onUp);
+  });
+}
 
 // ── Time blocker ───────────────────────────────────────────────────────────────
 function renderDayTB(){
