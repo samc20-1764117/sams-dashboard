@@ -2774,9 +2774,13 @@ function _attachTBEdgeRubberBand(){
       if(rbMoved){
         const y1=Math.min(startY,ev.clientY),y2=Math.max(startY,ev.clientY);
         if(!ev.shiftKey)selectedTasks.clear();
+        const lr=list.getBoundingClientRect(),sc=list.scrollTop;
+        // Convert drag viewport Y to todList content coordinates
+        const cy1=y1-lr.top+sc,cy2=y2-lr.top+sc;
         list.querySelectorAll('[id^="ti-"]').forEach(el=>{
-          const r=el.getBoundingClientRect();
-          if(r.bottom>y1&&r.top<y2){const sid=el.id.replace(/^ti-/,'');if(sid){selectedTasks.add(sid);lastSelectedId=sid;}}
+          const er=el.getBoundingClientRect();
+          const et=er.top-lr.top+sc,eb=et+er.height;
+          if(eb>cy1&&et<cy2){const sid=el.id.replace(/^ti-/,'');if(sid){selectedTasks.add(sid);lastSelectedId=sid;}}
         });
         applySelHighlight();
       }
