@@ -2738,16 +2738,14 @@ function _attachListRubberBand(container){
 
 // ── Rubber-band from right side (tb-section / divider) into today list ─────────
 function _attachTBEdgeRubberBand(){
-  const body=document.querySelector('.tod-tb-body');
+  const panel=document.querySelector('.row1-right-panel');
   const list=document.getElementById('todList');
-  if(!body||!list||body._tbEdgeRbSetup)return;
-  body._tbEdgeRbSetup=true;
-  body.addEventListener('mousedown',e=>{
+  if(!panel||!list||panel._tbEdgeRbSetup)return;
+  panel._tbEdgeRbSetup=true;
+  panel.addEventListener('mousedown',e=>{
     if(e.button!==0)return;
-    // Only activate when starting in tb-section or the divider, not in tod-section
-    if(!e.target.closest('.tb-section,.tod-tb-divider'))return;
-    // Skip interactive timeblock elements
-    if(e.target.closest('.tb-block,.tb-resize,.tb-chk,.tb-bdel,.tb-btime,.nowline,.nowdot,input,button,a'))return;
+    // Skip any interactive elements inside the right panel
+    if(e.target.closest('button,a,input,textarea,select,[draggable="true"],.chip,.task-item,.wr-task,.rec-task,.wk-task,.wk-goal'))return;
     e.preventDefault();
     const startX=e.clientX,startY=e.clientY;
     let rbMoved=false,selBox=null;

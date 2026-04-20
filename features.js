@@ -961,7 +961,7 @@ function mkMCell(date,om,today){
   const travelOnDay=extras.filter(t=>t._type==='travel');
   const undone=[...travelOnDay,...st.tasks.filter(t=>t.due_date&&t.due_date.split('T')[0]===ds&&!t.done&&t.category!=='Weekly Goals'),...extras.filter(t=>t._type!=='travel'),...shopOnDay,...wrecOnDay,...recOnDay];
   const done=[...st.tasks.filter(t=>t.due_date&&t.due_date.split('T')[0]===ds&&t.done&&t.category!=='Weekly Goals'),...shopOnDayDone];
-  const tasks=[...undone,...done];
+  const tasks=typeof sortByTypeOrder==='function'?sortByTypeOrder([...undone,...done]):[...undone,...done];
   const _cellH=Math.max(70,(window.innerHeight*0.94-100)/4-4);
   const _availH=_cellH-20;
   const _maxVis=tasks.length<=Math.floor(_availH/19)?tasks.length:Math.max(1,Math.floor((_availH-10)/19));
