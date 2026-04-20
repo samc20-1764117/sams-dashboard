@@ -758,20 +758,17 @@ function renderWkCal(){
       // Shopping item dragged onto calendar
       if(dragId.startsWith('shop::')){
         const shopId=dragId.split('::')[1];
-        const s=st.shopping.find(x=>String(x.id)===String(shopId));
-        if(s){
-          const prev=s.due_date;const prevOrder=s.shop_order;
-          const prevDs=(prev||'').split('T')[0];
-          const savedShopTBs=st.blocks.filter(b=>b.shopId&&String(b.shopId)===String(shopId)&&b.ds===prevDs).map(b=>({...b}));
-          const newOrder=_shopTopOrder(s);s.shop_order=newOrder;s.due_date=ds;
-          removeTBBlocksForDate(ds,{shopId:s.id,oldDs:prevDs});
+        const _isMultiShop=selectedTasks.has('shop-cal-'+shopId)&&selectedTasks.size>1;
+        const _shopMoveIds=_isMultiShop?[...selectedTasks].filter(sid=>sid.startsWith('shop-cal-')).map(sid=>sid.replace('shop-cal-','')):[shopId];
+        const _shopMoves=_shopMoveIds.map(sid=>{const s=st.shopping.find(x=>String(x.id)===String(sid));return s?{s,prev:s.due_date,prevOrder:s.shop_order,prevDs:(s.due_date||'').split('T')[0],savedTBs:st.blocks.filter(b=>b.shopId&&String(b.shopId)===String(sid)&&b.ds===(s.due_date||'').split('T')[0]).map(b=>({...b}))}:null;}).filter(Boolean);
+        if(_shopMoves.length){
+          const newOrder=_shopTopOrder(_shopMoves[0].s);
+          _shopMoves.forEach(({s},i)=>{s.due_date=ds;s.shop_order=newOrder-i;removeTBBlocksForDate(ds,{shopId:s.id,oldDs:_shopMoves[i].prevDs});});
           save();dragId=null;renderAll();renderWkCal();
-          sbReqNullable('PATCH','shopping_list',{due_date:ds,shop_order:newOrder},`?id=eq.${s.id}`);
+          _shopMoves.forEach(({s})=>sbReqNullable('PATCH','shopping_list',{due_date:ds,shop_order:s.shop_order},`?id=eq.${s.id}`));
           pushUndo(()=>{
-            s.due_date=prev;s.shop_order=prevOrder;
-            savedShopTBs.forEach(b=>{if(!st.blocks.find(x=>x.id===b.id))st.blocks.push(b);sbSaveBlock(b);});
+            _shopMoves.forEach(({s,prev,prevOrder,savedTBs})=>{s.due_date=prev;s.shop_order=prevOrder;savedTBs.forEach(b=>{if(!st.blocks.find(x=>x.id===b.id))st.blocks.push(b);sbSaveBlock(b);});sbReqNullable('PATCH','shopping_list',{due_date:prev||null,shop_order:prevOrder??null},`?id=eq.${s.id}`);});
             save();renderAll();renderWkCal();
-            sbReqNullable('PATCH','shopping_list',{due_date:prev||null,shop_order:prevOrder??null},`?id=eq.${s.id}`);
           },'Assigned shopping item to '+ds);
         }
         dragId=null;return;
@@ -2381,13 +2378,15 @@ function dropOnTodayList(e){
   }
   if(dragId.startsWith('shop::')){
     const shopId=dragId.split('::')[1];
-    const s=st.shopping.find(x=>String(x.id)===String(shopId));
-    if(s){
-      const prev=s.due_date;const prevOrder=s.shop_order;
-      const newOrder=_shopTopOrder(s);s.shop_order=newOrder;s.due_date=ds;
+    const _isMultiShop=selectedTasks.has('shop-cal-'+shopId)&&selectedTasks.size>1;
+    const _shopMoveIds=_isMultiShop?[...selectedTasks].filter(sid=>sid.startsWith('shop-cal-')).map(sid=>sid.replace('shop-cal-','')):[shopId];
+    const _shopMoves=_shopMoveIds.map(sid=>{const s=st.shopping.find(x=>String(x.id)===String(sid));return s?{s,prev:s.due_date,prevOrder:s.shop_order}:null;}).filter(Boolean);
+    if(_shopMoves.length){
+      const newOrder=_shopTopOrder(_shopMoves[0].s);
+      _shopMoves.forEach(({s},i)=>{s.due_date=ds;s.shop_order=newOrder-i;});
       dragId=null;save();renderAll();
-      sbReq('PATCH','shopping_list',{due_date:ds,shop_order:newOrder},`?id=eq.${s.id}`);
-      pushUndo(()=>{s.due_date=prev;s.shop_order=prevOrder;save();renderAll();sbReq('PATCH','shopping_list',{due_date:prev||null,shop_order:prevOrder??null},`?id=eq.${s.id}`);},'Assigned shopping to today');
+      _shopMoves.forEach(({s})=>sbReq('PATCH','shopping_list',{due_date:ds,shop_order:s.shop_order},`?id=eq.${s.id}`));
+      pushUndo(()=>{_shopMoves.forEach(({s,prev,prevOrder})=>{s.due_date=prev;s.shop_order=prevOrder;sbReq('PATCH','shopping_list',{due_date:prev||null,shop_order:prevOrder??null},`?id=eq.${s.id}`);});save();renderAll();},'Assigned shopping to today');
     }
     dragId=null;return;
   }
@@ -2651,6 +2650,7 @@ function _attachListRubberBand(container){
   container.addEventListener('mousedown',e=>{
     if(e.button!==0)return;
     if(e.target.closest('.chk-wrap,.delbtn,.btn,input,button,a'))return;
+    e.preventDefault();
     const startX=e.clientX,startY=e.clientY;
     let rbMoved=false,selBox=null;
     const onMove=ev=>{
