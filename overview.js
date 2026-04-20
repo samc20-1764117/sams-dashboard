@@ -822,9 +822,9 @@ function renderWkCal(){
         });
         dragId=null;renderAll();
         pushUndo(()=>{
-          _moved.forEach(x=>{x.t.due_date=x.prev;localOverrides[String(x.t.id)]={due_date:x.prev};pendingLocal.add(String(x.t.id));x.savedTBs.forEach(b=>{if(!st.blocks.find(y=>y.id===b.id))st.blocks.push(b);sbSaveBlock(b);});sbReqNullable('PATCH','tasks',{due_date:x.prev},`?id=eq.${x.t.id}`).then(()=>pendingLocal.delete(String(x.t.id)));});
+          _moved.forEach(x=>{x.t.due_date=x.prev;localOverrides[String(x.t.id)]={due_date:x.prev};pendingLocal.add(String(x.t.id));x.savedTBs.forEach(b=>{if(!st.blocks.find(y=>y.id===b.id))st.blocks.push(b);sbSaveBlock(b);});sbReqNullable('PATCH','tasks',{due_date:x.prev},`?id=eq.${x.t.id}`).then(()=>{delete localOverrides[String(x.t.id)];pendingLocal.delete(String(x.t.id));});});
           save();renderAll();
-        },'Moved task'+(  _moved.length>1?'s':''));
+        },'Moved task'+(_moved.length>1?'s':''));
         await Promise.all(_moved.map(x=>sbReqNullable('PATCH','tasks',{due_date:ds},`?id=eq.${x.t.id}`).then(()=>pendingLocal.delete(String(x.t.id)))));
       } else { dragId=null; }
     });
@@ -2745,10 +2745,10 @@ function _attachTBEdgeRubberBand(){
   cols._tbEdgeRbSetup=true;
   cols.addEventListener('mousedown',e=>{
     if(e.button!==0)return;
-    // Only activate in the gap zone between the two columns (with 8px tolerance into each side)
-    const lR=leftCard.getBoundingClientRect().right;
-    const rL=rightPanel.getBoundingClientRect().left;
-    if(e.clientX<lR-8||e.clientX>rL+8)return;
+    // Trigger only from: the column gap (not inside left card or any card)
+    if(e.target.closest('.overview-left'))return;
+    if(e.target.closest('.card,.wkc-outer,.wkc-inner,.wkc-cols-wrap'))return;
+    if(e.target.closest('button,a,input,textarea,select,.chip,.ti,.tb-block,.wkc-banner'))return;
     e.preventDefault();
     const startX=e.clientX,startY=e.clientY;
     let rbMoved=false,selBox=null;
