@@ -94,6 +94,7 @@ function renderToday(){
   renderPupSkillsHighlight();
   renderDailyHabits();
   _attachListRubberBand(document.getElementById('todList'));
+  _attachTBEdgeRubberBand();
 }
 // ── Pup Skills Highlight ───────────────────────────────────────────────────────
 let _donutInited=false;
@@ -2728,6 +2729,55 @@ function _attachListRubberBand(container){
         });
         applySelHighlight();
         container.addEventListener('click',ev2=>ev2.stopPropagation(),{capture:true,once:true});
+      }
+    };
+    document.addEventListener('mousemove',onMove);
+    document.addEventListener('mouseup',onUp);
+  });
+}
+
+// ── Rubber-band from right side (tb-section / divider) into today list ─────────
+function _attachTBEdgeRubberBand(){
+  const body=document.querySelector('.tod-tb-body');
+  const list=document.getElementById('todList');
+  if(!body||!list||body._tbEdgeRbSetup)return;
+  body._tbEdgeRbSetup=true;
+  body.addEventListener('mousedown',e=>{
+    if(e.button!==0)return;
+    // Only activate when starting in tb-section or the divider, not in tod-section
+    if(!e.target.closest('.tb-section,.tod-tb-divider'))return;
+    // Skip interactive timeblock elements
+    if(e.target.closest('.tb-block,.tb-resize,.tb-chk,.tb-bdel,.tb-btime,.nowline,.nowdot,input,button,a'))return;
+    e.preventDefault();
+    const startX=e.clientX,startY=e.clientY;
+    let rbMoved=false,selBox=null;
+    const onMove=ev=>{
+      const dx=ev.clientX-startX,dy=ev.clientY-startY;
+      if(!rbMoved&&Math.sqrt(dx*dx+dy*dy)>5){
+        rbMoved=true;
+        selBox=document.createElement('div');
+        selBox.style.cssText='position:fixed;background:rgba(42,157,181,.12);border:1px solid rgba(42,157,181,.45);border-radius:3px;pointer-events:none;z-index:999;';
+        document.body.appendChild(selBox);
+      }
+      if(selBox){
+        const x1=Math.min(startX,ev.clientX),y1=Math.min(startY,ev.clientY);
+        const x2=Math.max(startX,ev.clientX),y2=Math.max(startY,ev.clientY);
+        selBox.style.left=x1+'px';selBox.style.top=y1+'px';
+        selBox.style.width=(x2-x1)+'px';selBox.style.height=(y2-y1)+'px';
+      }
+    };
+    const onUp=ev=>{
+      document.removeEventListener('mousemove',onMove);
+      document.removeEventListener('mouseup',onUp);
+      if(selBox)selBox.remove();
+      if(rbMoved){
+        const y1=Math.min(startY,ev.clientY),y2=Math.max(startY,ev.clientY);
+        if(!ev.shiftKey)selectedTasks.clear();
+        list.querySelectorAll('[id^="ti-"]').forEach(el=>{
+          const r=el.getBoundingClientRect();
+          if(r.bottom>y1&&r.top<y2){const sid=el.id.replace(/^ti-/,'');if(sid){selectedTasks.add(sid);lastSelectedId=sid;}}
+        });
+        applySelHighlight();
       }
     };
     document.addEventListener('mousemove',onMove);
