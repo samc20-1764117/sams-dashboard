@@ -405,7 +405,7 @@
 </div>
 
 <!-- Travel Modal -->
-<div class="overlay" id="travelModal" onclick="closeMod('travelModal',event)" onkeydown="if(event.key==='Enter'&&event.target.tagName!=='SELECT'){event.preventDefault();saveTravelModal();}if(event.key==='Escape')closeMod('travelModal')">
+<div class="overlay" id="travelModal" onclick="closeMod('travelModal',event)" onkeydown="if(event.key==='Enter'&&event.target.tagName!=='SELECT'){event.preventDefault();event.stopPropagation();saveTravelModal();}if(event.key==='Escape'){event.stopPropagation();closeMod('travelModal');}">
   <div class="modal task-modal" style="width:330px">
     <div class="mt" id="travelMTitle">Add Trip</div>
     <div class="mfield"><label>Trip name *</label><input id="tvName" placeholder="e.g. NYC weekend"></div>
