@@ -1660,6 +1660,7 @@ function renderRecMoCal(){
       const ds=d2s(date);
       const cell=document.createElement('div');
       cell.className='mcell'+(ds===today?' tc':'');
+      cell.title=`${date.getMonth()+1}/${date.getDate()}`;
       const hdr=document.createElement('div');hdr.style.cssText='display:flex;align-items:center;margin-bottom:2px';
       const dn=document.createElement('div');dn.className='mcell-n';dn.textContent=date.getDate();
       hdr.appendChild(dn);cell.appendChild(hdr);
