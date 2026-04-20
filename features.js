@@ -798,7 +798,7 @@ function renderMoCal(){
   const dowEl=document.getElementById('mDow');
   if(!dowEl.children.length){
     ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach(dn=>{const el=document.createElement('div');el.className='mdowl';el.textContent=dn;dowEl.appendChild(el);});
-    const gh=document.createElement('div');gh.className='mdowl';gh.style.cssText='border-left:2px solid rgba(255,255,255,.88);padding:1px 4px';const _ghBtn=document.createElement('button');_ghBtn.className='wo-hdr-btn';_ghBtn.innerHTML='Weekly<br>Objectives';_ghBtn.onclick=openWOModal;gh.appendChild(_ghBtn);dowEl.appendChild(gh);
+    const gh=document.createElement('div');gh.className='mdowl';gh.style.cssText='border-left:2px solid rgba(255,255,255,.88);padding:1px 4px';const _ghBtn=document.createElement('button');_ghBtn.className='wo-hdr-btn';_ghBtn.innerHTML='Weekly<br>Objectives';_ghBtn.onclick=()=>{closeMod('mModal');openWOModal();};gh.appendChild(_ghBtn);dowEl.appendChild(gh);
   }
   const cells=document.getElementById('mCells');cells.innerHTML='';
   const _mgs=gc('weekly goals');

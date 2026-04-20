@@ -940,12 +940,17 @@ document.addEventListener('keydown',e=>{
 // ── UI Tooltip ────────────────────────────────────────────────────────────────
 (function(){
   const _t=()=>document.getElementById('uiTip');
+  let _tipTimer=null,_tipEl=null;
   document.addEventListener('mousemove',e=>{
     const tip=_t();if(!tip)return;
     const el=e.target.closest('[data-tip]');
-    if(el){tip.textContent=el.dataset.tip;tip.style.opacity='1';tip.style.left=(e.clientX+14)+'px';tip.style.top=(e.clientY-36)+'px';}
-    else{tip.style.opacity='0';}
+    if(el){
+      tip.style.left=(e.clientX+14)+'px';tip.style.top=(e.clientY-36)+'px';
+      if(el!==_tipEl){clearTimeout(_tipTimer);tip.style.opacity='0';_tipEl=el;_tipTimer=setTimeout(()=>{tip.textContent=el.dataset.tip;tip.style.opacity='1';},3000);}
+    } else {
+      clearTimeout(_tipTimer);_tipTimer=null;_tipEl=null;tip.style.opacity='0';
+    }
   });
-  document.addEventListener('mouseleave',()=>{const tip=_t();if(tip)tip.style.opacity='0';});
+  document.addEventListener('mouseleave',()=>{clearTimeout(_tipTimer);_tipTimer=null;_tipEl=null;const tip=_t();if(tip)tip.style.opacity='0';});
 })();
 

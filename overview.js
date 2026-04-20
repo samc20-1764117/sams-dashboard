@@ -96,17 +96,33 @@ function renderToday(){
   _attachListRubberBand(document.getElementById('todList'));
 }
 // ── Pup Skills Highlight ───────────────────────────────────────────────────────
+let _donutInited=false;
 function renderTodDonut(done,total){
   const wrap=document.getElementById('todProgressDonut');if(!wrap)return;
-  if(!total){wrap.style.display='none';return;}
+  if(!total){wrap.style.display='none';_donutInited=false;return;}
   wrap.style.display='flex';
   const C=2*Math.PI*22;
   const arc=document.getElementById('_donutArc');
-  if(arc)arc.setAttribute('stroke-dasharray',`${(done/total)*C} ${C}`);
   const pEl=document.getElementById('_donutPct');
-  if(pEl)pEl.textContent=Math.round(done/total*100)+'%';
   const fEl=document.getElementById('_donutFrac');
+  const pct=done/total;
+  if(pEl)pEl.textContent=Math.round(pct*100)+'%';
   if(fEl)fEl.textContent=`${done}/${total}`;
+  if(!arc)return;
+  if(!_donutInited){
+    _donutInited=true;
+    arc.style.transition='none';
+    arc.setAttribute('stroke-dasharray',`0 ${C}`);
+    const svg=arc.closest('svg');if(svg)svg.classList.remove('donut-glow');
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      arc.style.transition='stroke-dasharray .9s cubic-bezier(.4,0,.2,1)';
+      arc.setAttribute('stroke-dasharray',`${pct*C} ${C}`);
+      setTimeout(()=>{if(svg)svg.classList.add('donut-glow');},1000);
+    }));
+  } else {
+    arc.style.transition='stroke-dasharray .45s cubic-bezier(.4,0,.2,1)';
+    arc.setAttribute('stroke-dasharray',`${pct*C} ${C}`);
+  }
 }
 let _pupSkillsOpen=false;
 function togglePupSkillsOpen(){

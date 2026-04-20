@@ -745,6 +745,8 @@ body.dark .bday-add-menu{background:rgba(38,20,10,.97);border-color:rgba(255,220
 .cat-sel-drop.open{display:block}
 .cat-sel-opt{padding:6px 10px;cursor:pointer;font-size:12px;font-weight:600;border-radius:6px;margin-bottom:2px}
 .cat-sel-opt:last-child{margin-bottom:0}
+@keyframes donut-glow{0%,100%{filter:drop-shadow(0 0 2px rgba(34,197,94,.3))}50%{filter:drop-shadow(0 0 7px rgba(34,197,94,.65))}}
+.donut-glow{animation:donut-glow 3s ease-in-out infinite}
 .cat-sel-opt:hover{filter:brightness(.95)}
 /* Anti-FOUC: applied before first paint via html classes set in head script */
 html.init-dark body{background:#1a100a!important;background-attachment:fixed!important;}
