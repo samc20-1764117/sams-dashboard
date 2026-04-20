@@ -807,27 +807,26 @@ function renderWkCal(){
         }
         dragId=null;return;
       }
-      const t=st.tasks.find(x=>String(x.id)===String(dragId));
-      if(t){
-        const prev={due_date:t.due_date};
-        const sid=String(t.id);
-        const prevDs=(prev.due_date||'').split('T')[0];
-        const savedTBs=st.blocks.filter(b=>String(b.taskId)===String(t.id)&&b.ds===prevDs).map(b=>({...b}));
-        localOverrides[sid]={due_date:ds};pendingLocal.add(sid);save();
-        t.due_date=ds;dragId=null;
-        removeTBBlocksForDate(ds,{taskId:t.id,oldDs:prevDs});
-        renderAll();
+      const _dragSid=String(dragId);
+      const _isMulti=selectedTasks.has(_dragSid)&&selectedTasks.size>1;
+      const _taskSids=_isMulti?[...selectedTasks].filter(sid=>{const _t=st.tasks.find(x=>String(x.id)===sid);return _t&&!_t._virtual;}):[_dragSid];
+      const _moved=_taskSids.map(sid=>({t:st.tasks.find(x=>String(x.id)===sid),prev:null})).filter(x=>x.t);
+      if(_moved.length){
+        _moved.forEach(x=>{x.prev=x.t.due_date;});
+        _moved.forEach(x=>{
+          const prevDs=(x.prev||'').split('T')[0];
+          x.savedTBs=st.blocks.filter(b=>String(b.taskId)===String(x.t.id)&&b.ds===prevDs).map(b=>({...b}));
+          x.t.due_date=ds;
+          localOverrides[String(x.t.id)]={due_date:ds};pendingLocal.add(String(x.t.id));
+          removeTBBlocksForDate(ds,{taskId:x.t.id,oldDs:prevDs});
+        });
+        dragId=null;renderAll();
         pushUndo(()=>{
-          t.due_date=prev.due_date;
-          localOverrides[sid]={due_date:prev.due_date};pendingLocal.add(sid);
-          savedTBs.forEach(b=>{if(!st.blocks.find(x=>x.id===b.id))st.blocks.push(b);sbSaveBlock(b);});
+          _moved.forEach(x=>{x.t.due_date=x.prev;localOverrides[String(x.t.id)]={due_date:x.prev};pendingLocal.add(String(x.t.id));x.savedTBs.forEach(b=>{if(!st.blocks.find(y=>y.id===b.id))st.blocks.push(b);sbSaveBlock(b);});sbReqNullable('PATCH','tasks',{due_date:x.prev},`?id=eq.${x.t.id}`).then(()=>pendingLocal.delete(String(x.t.id)));});
           save();renderAll();
-          sbReqNullable('PATCH','tasks',{due_date:prev.due_date},`?id=eq.${sid}`)
-            .then(()=>{delete localOverrides[sid];pendingLocal.delete(sid);});
-        },'Moved task');
-        await sbReqNullable('PATCH','tasks',{due_date:ds},`?id=eq.${sid}`);
-        pendingLocal.delete(sid);
-      }
+        },'Moved task'+(  _moved.length>1?'s':''));
+        await Promise.all(_moved.map(x=>sbReqNullable('PATCH','tasks',{due_date:ds},`?id=eq.${x.t.id}`).then(()=>pendingLocal.delete(String(x.t.id)))));
+      } else { dragId=null; }
     });
 
     // Exclude travel+birthday from per-col chips (shown as banners instead)
@@ -2774,13 +2773,14 @@ function _attachTBEdgeRubberBand(){
       if(selBox)selBox.remove();
       if(rbMoved){
         const y1=Math.min(startY,ev.clientY),y2=Math.max(startY,ev.clientY);
-        console.log('[RB] drag y1='+y1+' y2='+y2);
         if(!ev.shiftKey)selectedTasks.clear();
+        const listRect=list.getBoundingClientRect();
+        const scrollTop=list.scrollTop;
         list.querySelectorAll('[id^="ti-"]').forEach(el=>{
-          const r=el.getBoundingClientRect();
-          const hit=r.bottom>y1&&r.top<y2;
-          console.log('[RB] el='+el.id+' done='+el.classList.contains('done')+' top='+Math.round(r.top)+' bot='+Math.round(r.bottom)+' hit='+hit);
-          if(hit){const sid=el.id.replace(/^ti-/,'');if(sid){selectedTasks.add(sid);lastSelectedId=sid;}}
+          // Use position relative to list top + scroll, mapped back to viewport coords
+          const elTop=listRect.top+el.offsetTop-scrollTop;
+          const elBot=elTop+el.offsetHeight;
+          if(elBot>y1&&elTop<y2){const sid=el.id.replace(/^ti-/,'');if(sid){selectedTasks.add(sid);lastSelectedId=sid;}}
         });
         applySelHighlight();
       }
