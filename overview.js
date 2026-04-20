@@ -688,16 +688,14 @@ function renderWkCal(){
       // New-style WR rule dragged onto weekly calendar
       if(dragId.startsWith('wrrule::')){
         const ruleId=dragId.split('::')[1];
-        const r=st.wrRules.find(x=>String(x.id)===String(ruleId));
-        if(r){
-          if(!r._dateOverrides)r._dateOverrides={};
-          const wkKey=getWkKey(wkOff);
-          const prev=r._dateOverrides[wkKey];
-          r._dateOverrides[wkKey]=ds;
-          save();dragId=null;renderAll();
-          sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},`?id=eq.${ruleId}`);
-          pushUndo(()=>{if(prev)r._dateOverrides[wkKey]=prev;else delete r._dateOverrides[wkKey];save();renderAll();sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},`?id=eq.${ruleId}`);},'Pinned WR task to '+ds);
-        }
+        const wkKey=getWkKey(wkOff);
+        const _isMultiWR=selectedTasks.has('wrrule-'+ruleId)&&selectedTasks.size>1;
+        const _wrMoveIds=_isMultiWR?[...selectedTasks].filter(sid=>sid.startsWith('wrrule-')).map(sid=>sid.replace('wrrule-','')):[ruleId];
+        const _wrMoves=_wrMoveIds.map(rid=>{const r=st.wrRules.find(x=>String(x.id)===String(rid));return r?{r,rid,prev:r._dateOverrides?.[wkKey]}:null;}).filter(Boolean);
+        _wrMoves.forEach(({r})=>{if(!r._dateOverrides)r._dateOverrides={};r._dateOverrides[wkKey]=ds;});
+        save();dragId=null;renderAll();
+        _wrMoves.forEach(({r,rid})=>sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},`?id=eq.${rid}`));
+        pushUndo(()=>{_wrMoves.forEach(({r,rid,prev})=>{if(!r._dateOverrides)r._dateOverrides={};if(prev)r._dateOverrides[wkKey]=prev;else delete r._dateOverrides[wkKey];sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},`?id=eq.${rid}`);});save();renderAll();},'Pinned WR task to '+ds);
         dragId=null;return;
       }
       // Weekly reset task dragged onto calendar
@@ -1862,7 +1860,7 @@ function renderRecOv(){
   const _skCount=skipIds.size+_skippedWrecCount;
   const _skBtn=document.getElementById('wrSkippedBtn');
   if(_skBtn){_skBtn.style.display=_skCount?'':'none';_skBtn.textContent='↩ '+_skCount;}
-  requestAnimationFrame(()=>{applySelHighlight();const fi=elReg&&elReg.querySelector('.ti');if(fi)elReg.style.maxHeight=(4+7*fi.offsetHeight)+'px';});
+  requestAnimationFrame(()=>{applySelHighlight();const fi=elReg&&elReg.querySelector('.ti');if(fi)elReg.style.maxHeight=(4+9*fi.offsetHeight)+'px';});
   if(document.getElementById('recMoModal')?.classList.contains('open'))renderRecMoCal();
   _attachListRubberBand(document.getElementById('recList'));
 }
@@ -2347,16 +2345,14 @@ function dropOnTodayList(e){
   const ds=d2s(getDayDate(dayOff));
   if(dragId.startsWith('wrrule::')){
     const ruleId=dragId.split('::')[1];
-    const r=st.wrRules.find(x=>String(x.id)===String(ruleId));
-    if(r){
-      if(!r._dateOverrides)r._dateOverrides={};
-      const wkKey=getWkKey(wkOff);
-      const prev=r._dateOverrides[wkKey];
-      r._dateOverrides[wkKey]=ds;
-      dragId=null;save();renderAll();
-      sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},`?id=eq.${ruleId}`);
-      pushUndo(()=>{if(prev)r._dateOverrides[wkKey]=prev;else delete r._dateOverrides[wkKey];save();renderAll();sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},`?id=eq.${ruleId}`);},'Assigned WR task to today');
-    }
+    const wkKey=getWkKey(wkOff);
+    const _isMultiWR=selectedTasks.has('wrrule-'+ruleId)&&selectedTasks.size>1;
+    const _wrMoveIds=_isMultiWR?[...selectedTasks].filter(sid=>sid.startsWith('wrrule-')).map(sid=>sid.replace('wrrule-','')):[ruleId];
+    const _wrMoves=_wrMoveIds.map(rid=>{const r=st.wrRules.find(x=>String(x.id)===String(rid));return r?{r,rid,prev:r._dateOverrides?.[wkKey]}:null;}).filter(Boolean);
+    _wrMoves.forEach(({r})=>{if(!r._dateOverrides)r._dateOverrides={};r._dateOverrides[wkKey]=ds;});
+    dragId=null;save();renderAll();
+    _wrMoves.forEach(({r,rid})=>sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},`?id=eq.${rid}`));
+    pushUndo(()=>{_wrMoves.forEach(({r,rid,prev})=>{if(!r._dateOverrides)r._dateOverrides={};if(prev)r._dateOverrides[wkKey]=prev;else delete r._dateOverrides[wkKey];sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},`?id=eq.${rid}`);});save();renderAll();},'Assigned WR task to today');
     dragId=null;return;
   }
   if(dragId.startsWith('wrec::')||dragId.startsWith('rec::')){
@@ -2650,6 +2646,7 @@ function _attachListRubberBand(container){
   container.addEventListener('mousedown',e=>{
     if(e.button!==0)return;
     if(e.target.closest('.chk-wrap,.delbtn,.btn,input,button,a'))return;
+    if(e.target.closest('[draggable="true"]'))return;
     e.preventDefault();
     const startX=e.clientX,startY=e.clientY;
     let rbMoved=false,selBox=null;
