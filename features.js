@@ -3249,17 +3249,34 @@ document.addEventListener('keydown',e=>{
   if(e.key==='r'){e.preventDefault();location.reload();}
   if(e.key==='s'){e.preventDefault();syncAll(false);}
 });
-// 'A' key: add auto-blocks in range to selection (capture phase, case-insensitive)
-document.addEventListener('keydown',e=>{
-  if(e.key.toLowerCase()!=='q')return;
+// 'A' key: add auto-blocks in rubber-band range (or all for today) to selection
+window.addEventListener('keydown',e=>{
+  if(e.key!=='a'&&e.key!=='A')return;
   const tag=document.activeElement?.tagName;
-  if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT')return;
+  if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT'||document.activeElement?.isContentEditable)return;
   if(e.metaKey||e.ctrlKey||e.altKey)return;
-  if(!document.getElementById('tbGrid'))return;
+  if(!document.querySelector('.tb-col'))return;
   e.preventDefault();
   const ds=d2s(getDayDate(dayOff));
+  const allAtbs=typeof getAutoTBForDate==='function'?getAutoTBForDate(ds):[];
+  if(!allAtbs.length)return;
   let minSm=null,maxSm=null;
-  if(selectedTasks.size>0){const selBlks=st.blocks.filter(b=>{if(b.ds!==ds)return false;const sid=typeof _getTBBlockSelId==='function'?_getTBBlockSelId(b):null;return sid&&selectedTasks.has(sid);});if(selBlks.length){minSm=Math.min(...selBlks.map(b=>b.sm));maxSm=Math.max(...selBlks.map(b=>b.sm+b.dur));}}
-  if(minSm===null&&_lastTBRbRange){minSm=HOURS[0]*60+_lastTBRbRange.selTop/PX;maxSm=HOURS[0]*60+_lastTBRbRange.selBot/PX;}
-  if(minSm!==null){getAutoTBForDate(ds).filter(a=>a.sm+a.dur>minSm&&a.sm<maxSm).forEach(a=>selectedTasks.add('atb::'+a._atbId));applySelHighlight();}
+  // Try: range from selected regular TB blocks
+  if(selectedTasks.size>0){
+    const selBlks=(st.blocks||[]).filter(b=>{
+      if(b.ds!==ds)return false;
+      const sid=typeof _getTBBlockSelId==='function'?_getTBBlockSelId(b):null;
+      return sid&&selectedTasks.has(sid);
+    });
+    if(selBlks.length){minSm=Math.min(...selBlks.map(b=>b.sm));maxSm=Math.max(...selBlks.map(b=>b.sm+b.dur));}
+  }
+  // Try: range from last rubber-band
+  if(minSm===null&&_lastTBRbRange){
+    minSm=HOURS[0]*60+_lastTBRbRange.selTop/PX;
+    maxSm=HOURS[0]*60+_lastTBRbRange.selBot/PX;
+  }
+  // Fallback: select all auto-blocks for the day
+  const targets=minSm!==null?allAtbs.filter(a=>a.sm+a.dur>minSm&&a.sm<maxSm):allAtbs;
+  targets.forEach(a=>selectedTasks.add('atb::'+a._atbId));
+  applySelHighlight();
 },{capture:true});
