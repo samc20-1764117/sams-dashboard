@@ -2735,55 +2735,52 @@ function _attachListRubberBand(container){
   });
 }
 
-// ── Rubber-band from right side (tb-section / divider) into today list ─────────
+// ── Rubber-band from outside timeblock column — selects timeblock blocks ────────
 function _attachTBEdgeRubberBand(){
   const cols=document.querySelector('.overview-cols');
-  const leftCard=document.querySelector('.overview-left');
-  const rightPanel=document.querySelector('.row1-right-panel');
-  const list=document.getElementById('todList');
-  if(!cols||!leftCard||!rightPanel||!list||cols._tbEdgeRbSetup)return;
+  if(!cols||cols._tbEdgeRbSetup)return;
   cols._tbEdgeRbSetup=true;
   cols.addEventListener('mousedown',e=>{
     if(e.button!==0)return;
-    // Trigger only from: the column gap (not inside left card or any card)
     if(e.target.closest('.overview-left'))return;
     if(e.target.closest('.card,.wkc-outer,.wkc-inner,.wkc-cols-wrap'))return;
     if(e.target.closest('button,a,input,textarea,select,.chip,.ti,.tb-block,.wkc-banner'))return;
     e.preventDefault();
-    const startX=e.clientX,startY=e.clientY;
+    const startY=e.clientY;
     let rbMoved=false,selBox=null;
     const onMove=ev=>{
-      const dx=ev.clientX-startX,dy=ev.clientY-startY;
-      if(!rbMoved&&Math.sqrt(dx*dx+dy*dy)>5){
+      if(!rbMoved&&Math.abs(ev.clientY-startY)>5){
         rbMoved=true;
         selBox=document.createElement('div');
-        selBox.style.cssText='position:fixed;background:rgba(245,158,11,.1);border:2px solid rgba(245,158,11,.7);border-radius:3px;pointer-events:none;z-index:999;';
+        selBox.style.cssText='position:fixed;left:0;right:0;background:rgba(42,157,181,.10);border-top:1.5px solid rgba(42,157,181,.5);border-bottom:1.5px solid rgba(42,157,181,.5);pointer-events:none;z-index:999;';
         document.body.appendChild(selBox);
       }
       if(selBox){
-        const x1=Math.min(startX,ev.clientX),y1=Math.min(startY,ev.clientY);
-        const x2=Math.max(startX,ev.clientX),y2=Math.max(startY,ev.clientY);
-        selBox.style.left=x1+'px';selBox.style.top=y1+'px';
-        selBox.style.width=(x2-x1)+'px';selBox.style.height=(y2-y1)+'px';
+        const y1=Math.min(startY,ev.clientY),y2=Math.max(startY,ev.clientY);
+        selBox.style.top=y1+'px';selBox.style.height=(y2-y1)+'px';
       }
     };
     const onUp=ev=>{
       document.removeEventListener('mousemove',onMove);
       document.removeEventListener('mouseup',onUp);
       if(selBox)selBox.remove();
-      if(rbMoved){
-        const y1=Math.min(startY,ev.clientY),y2=Math.max(startY,ev.clientY);
-        if(!ev.shiftKey)selectedTasks.clear();
-        const lr=list.getBoundingClientRect(),sc=list.scrollTop;
-        // Convert drag viewport Y to todList content coordinates
-        const cy1=y1-lr.top+sc,cy2=y2-lr.top+sc;
-        list.querySelectorAll('[id^="ti-"]').forEach(el=>{
-          const er=el.getBoundingClientRect();
-          const et=er.top-lr.top+sc,eb=et+er.height;
-          if(eb>cy1&&et<cy2){const sid=el.id.replace(/^ti-/,'');if(sid){selectedTasks.add(sid);lastSelectedId=sid;}}
-        });
-        applySelHighlight();
-      }
+      if(!rbMoved)return;
+      const y1=Math.min(startY,ev.clientY),y2=Math.max(startY,ev.clientY);
+      // Find tb-col and tbScroll to convert viewport Y to timeblock content coords
+      const tbCol=document.querySelector('.tb-col');
+      const tbScroll=document.getElementById('tbScroll');
+      if(!tbCol||!tbScroll)return;
+      const colRect=tbCol.getBoundingClientRect();
+      const sc=tbScroll.scrollTop;
+      const selTop=y1-colRect.top+sc,selBot=y2-colRect.top+sc;
+      if(!ev.shiftKey)selectedTasks.clear();
+      tbCol.querySelectorAll('.tb-block[data-bid]').forEach(be=>{
+        const bl=st.blocks.find(x=>String(x.id)===String(be.dataset.bid));
+        if(!bl)return;
+        const blTop=(bl.sm-HOURS[0]*60)*PX,blBot=blTop+bl.dur*PX;
+        if(blBot>selTop&&blTop<selBot){const sid=_getTBBlockSelId(bl);if(sid){selectedTasks.add(sid);lastSelectedId=sid;}}
+      });
+      applySelHighlight();
     };
     document.addEventListener('mousemove',onMove);
     document.addEventListener('mouseup',onUp);
