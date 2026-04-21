@@ -2709,10 +2709,10 @@ function _attachListRubberBand(container){
         document.body.appendChild(selBox);
       }
       if(selBox){
-        const x1=Math.min(startX,ev.clientX),y1=Math.min(startY,ev.clientY);
-        const x2=Math.max(startX,ev.clientX),y2=Math.max(startY,ev.clientY);
-        selBox.style.left=x1+'px';selBox.style.top=y1+'px';
-        selBox.style.width=(x2-x1)+'px';selBox.style.height=(y2-y1)+'px';
+        const cr=container.getBoundingClientRect();
+        const y1=Math.min(startY,ev.clientY),y2=Math.max(startY,ev.clientY);
+        selBox.style.left=cr.left+'px';selBox.style.width=cr.width+'px';
+        selBox.style.top=y1+'px';selBox.style.height=(y2-y1)+'px';
       }
     };
     const onUp=ev=>{

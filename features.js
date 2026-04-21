@@ -2359,6 +2359,10 @@ function applySelHighlight(){
     if(sel)applySelVars(el,gc('travel'));
     else clearSelVars(el);
   });
+  const selAtbIds=new Set([...selectedTasks].filter(id=>id.startsWith('atb::')).map(id=>id.replace('atb::','')));
+  document.querySelectorAll('.atb-block[data-atb-id]').forEach(el=>{
+    el.classList.toggle('sel-atb',selAtbIds.has(el.dataset.atbId));
+  });
 }
 
 function clearSelection(){
@@ -2409,6 +2413,9 @@ document.addEventListener('keydown',async e=>{
   if((e.key==='Delete'||e.key==='Backspace')&&selectedTasks.size>0){
     e.preventDefault();
     const ids=[...selectedTasks];
+    // Auto-timeblock blocks: delete for that day
+    const atbDelIds=ids.filter(id=>id.startsWith('atb::'));
+    if(atbDelIds.length){const ds=d2s(getDayDate(dayOff));atbDelIds.forEach(id=>{const atbId=id.replace('atb::','');const atb=getAutoTBForDate(ds).find(a=>a._atbId===atbId);if(atb)delAutoTBForDay(atbId,ds,atb._ovId||null);});clearSelection();return;}
     // Timeblock-only blocks (shop/WR rule): just remove from timeblock
     const blkOnlyIds=ids.filter(id=>id.startsWith('blk-'));
     if(blkOnlyIds.length){blkOnlyIds.forEach(id=>delBlock(id.replace('blk-','')));clearSelection();return;}
@@ -3235,4 +3242,9 @@ document.addEventListener('keydown',e=>{
   if(e.key==='n'){e.preventDefault();openQA('today',null,d2s(getDayDate(dayOff)));}
   if(e.key==='r'){e.preventDefault();location.reload();}
   if(e.key==='s'){e.preventDefault();syncAll(false);}
+  if(e.key==='a'&&selectedTasks.size>0&&document.getElementById('tbGrid')){
+    e.preventDefault();
+    const selBlks=[...selectedTasks].filter(id=>id.startsWith('blk-')).map(id=>st.blocks.find(b=>String(b.id)===id.replace('blk-',''))).filter(Boolean);
+    if(selBlks.length){const minSm=Math.min(...selBlks.map(b=>b.sm)),maxSm=Math.max(...selBlks.map(b=>b.sm+b.dur));const ds=d2s(getDayDate(dayOff));getAutoTBForDate(ds).filter(a=>a.sm+a.dur>minSm&&a.sm<maxSm).forEach(a=>selectedTasks.add('atb::'+a._atbId));applySelHighlight();}
+  }
 });
