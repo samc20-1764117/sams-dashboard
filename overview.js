@@ -3587,54 +3587,49 @@ function dropOnTB(e,ds,h,row,smOverride){
   pushUndo(()=>{st.blocks=st.blocks.filter(b=>b.id!==blk.id);save();renderDayTB();},'Added block');
 }
 function startTBInlineEdit(blockId,col,onCommit){
-  // Find the block element — search whole document if col not found
   const el=(col||document).querySelector(`[data-bid="${blockId}"]`);
-  if(!el){
-    // Try document-wide fallback
-    const el2=document.querySelector(`[data-bid="${blockId}"]`);
-    if(!el2)return;
-    return startTBInlineEdit(blockId,el2.closest('.tb-col'),onCommit);
-  }
+  if(!el){const el2=document.querySelector(`[data-bid="${blockId}"]`);if(!el2)return;return startTBInlineEdit(blockId,el2.closest('.tb-col'),onCommit);}
   const b=st.blocks.find(x=>x.id===blockId);
   if(!b)return;
-  // Make block tall enough to show input while editing
-  el.style.minHeight='22px';
-  el.style.zIndex='10';
-  // Replace the tb-bt span with an input (or create one if span is missing)
+  el.style.minHeight='22px';el.style.zIndex='10';
+  // Category cycling — up/down arrows flip through KCATS, block color updates live
+  const _cycleCats=KCATS.filter(c=>c!=='Weekly Goals');
+  let _catIdx=Math.max(0,_cycleCats.indexOf(b.cat||'Home'));
+  function _applyColor(){
+    const cs=gc(_cycleCats[_catIdx]);
+    el.style.background=cs.bg;el.style.color=cs.t;el.style.borderColor=cs.b;
+    if(_catLbl){_catLbl.textContent=_cycleCats[_catIdx];_catLbl.style.color=cs.t;}
+  }
+  // Small category label shown below the input while editing
+  const _catLbl=document.createElement('div');
+  _catLbl.style.cssText='font-size:7.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:1px 3px 0;opacity:.75;pointer-events:none;transition:color .15s';
+  _catLbl.textContent=_cycleCats[_catIdx];
+  const tbRow=el.querySelector('.tb-row');
+  if(tbRow)tbRow.after(_catLbl);else el.appendChild(_catLbl);
   let btSpan=el.querySelector('.tb-bt');
   const inp=document.createElement('input');
   inp.className='tb-edit';
   inp.value=b.title||'';
   inp.placeholder='Name…';
   inp.style.cssText='width:100%;font-size:9px;font-weight:600;background:rgba(255,255,255,.8);border:none;border-radius:3px;padding:1px 3px;outline:none;font-family:inherit;color:var(--text);min-width:0;box-sizing:border-box';
-  if(btSpan) btSpan.replaceWith(inp); else {const tbRow=el.querySelector('.tb-row');if(tbRow)tbRow.prepend(inp);else el.prepend(inp);}
+  if(btSpan)btSpan.replaceWith(inp);else{if(tbRow)tbRow.prepend(inp);else el.prepend(inp);}
+  _applyColor();
   window._tbEditing=true;
   let committed=false;
   async function commit(){
-    if(committed)return; committed=true; window._tbEditing=false;
+    if(committed)return;committed=true;window._tbEditing=false;
+    _catLbl.remove();
     const val=inp.value.trim();
-    if(!val){
-      st.blocks=st.blocks.filter(x=>x.id!==blockId);
-      save();renderDayTB();
-      return;
-    }
-    b.title=val;
-    // Create a real task so it shows in Today/This Week/Calendar
+    const chosenCat=_cycleCats[_catIdx];
+    if(!val){st.blocks=st.blocks.filter(x=>x.id!==blockId);save();renderDayTB();return;}
+    b.title=val;b.cat=chosenCat;
     if(!b.taskId){
-      const newTask={id:'t-'+Date.now(),name:val,category:'Home',due_date:b.ds,done:false,important:false};
-      st.tasks.push(newTask);
-      b.taskId=String(newTask.id);
+      const newTask={id:'t-'+Date.now(),name:val,category:chosenCat,due_date:b.ds,done:false,important:false};
+      st.tasks.push(newTask);b.taskId=String(newTask.id);
       if(onCommit)onCommit();
       save();renderAll();
-      // Persist task to DB
-      const sv=await sbReq('POST','tasks',{name:val,category:'Home',due_date:b.ds,done:false,important:false});
-      if(sv&&sv[0]){
-        const ti=st.tasks.findIndex(x=>x.id===newTask.id);
-        if(ti>-1)st.tasks[ti]={...sv[0]};
-        b.taskId=String(sv[0].id);
-        save();renderToday();renderWkSummary();renderWkCal();
-      }
-      // Now save the block itself to DB
+      const sv=await sbReq('POST','tasks',{name:val,category:chosenCat,due_date:b.ds,done:false,important:false});
+      if(sv&&sv[0]){const ti=st.tasks.findIndex(x=>x.id===newTask.id);if(ti>-1)st.tasks[ti]={...sv[0]};b.taskId=String(sv[0].id);save();renderToday();renderWkSummary();renderWkCal();}
       sbSaveBlock(b);
     } else {
       if(onCommit)onCommit();
@@ -3643,11 +3638,12 @@ function startTBInlineEdit(blockId,col,onCommit){
     }
   }
   inp.addEventListener('keydown',e=>{
-    if(e.key==='Enter'){e.preventDefault();commit();}
-    if(e.key==='Escape'){committed=true;window._tbEditing=false;st.blocks=st.blocks.filter(x=>x.id!==blockId);save();renderDayTB();}
+    if(e.key==='ArrowDown'){e.preventDefault();_catIdx=(_catIdx+1)%_cycleCats.length;_applyColor();}
+    else if(e.key==='ArrowUp'){e.preventDefault();_catIdx=(_catIdx-1+_cycleCats.length)%_cycleCats.length;_applyColor();}
+    else if(e.key==='Enter'){e.preventDefault();commit();}
+    else if(e.key==='Escape'){committed=true;window._tbEditing=false;_catLbl.remove();st.blocks=st.blocks.filter(x=>x.id!==blockId);save();renderDayTB();}
   });
   inp.addEventListener('blur',commit);
-  // Focus after a tick so the element is in the DOM
   requestAnimationFrame(()=>{inp.focus();const _l=inp.value.length;inp.setSelectionRange(_l,_l);});
 }
 

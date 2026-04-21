@@ -1,5 +1,5 @@
 {
-  "exported_at": "2026-04-20T13:00:00.538Z",
+  "exported_at": "2026-04-21T13:00:00.681Z",
   "mode": "auto",
   "tables": {
     "tasks": [
@@ -142,17 +142,6 @@
         "done": false,
         "importance": "Normal",
         "id": "e85c240d-a376-402c-90cb-adfe27e73b1d",
-        "important": false,
-        "notes": null,
-        "goal_order": null
-      },
-      {
-        "name": "Make dentist apt",
-        "category": "Home",
-        "due_date": "2026-04-22",
-        "done": false,
-        "importance": null,
-        "id": "684df50b-70ca-4a44-9133-8531ba05356a",
         "important": false,
         "notes": null,
         "goal_order": null
@@ -444,6 +433,17 @@
         "goal_order": null
       },
       {
+        "name": "Haircut apt schedule",
+        "category": "Home",
+        "due_date": "2026-04-21",
+        "done": false,
+        "importance": null,
+        "id": "e393ce8b-201f-41ca-a8d4-104d1307f7cc",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
         "name": "Switch to Claude",
         "category": "My work",
         "due_date": "2026-03-09",
@@ -565,12 +565,12 @@
         "goal_order": null
       },
       {
-        "name": "Haircut apt schedule",
+        "name": "Make dentist apt",
         "category": "Home",
-        "due_date": "2026-04-22",
+        "due_date": "2026-04-21",
         "done": false,
         "importance": null,
-        "id": "e393ce8b-201f-41ca-a8d4-104d1307f7cc",
+        "id": "684df50b-70ca-4a44-9133-8531ba05356a",
         "important": false,
         "notes": null,
         "goal_order": null
@@ -972,17 +972,6 @@
         "goal_order": null
       },
       {
-        "name": "Book london → iceland",
-        "category": "Home",
-        "due_date": "2026-04-20",
-        "done": false,
-        "importance": null,
-        "id": "3b7f34e0-2db9-4c24-a332-7314b9df9d79",
-        "important": false,
-        "notes": null,
-        "goal_order": null
-      },
-      {
         "name": "Drive to SA",
         "category": "Home",
         "due_date": "2026-03-27",
@@ -1062,8 +1051,8 @@
       {
         "name": "CVS physical apt make",
         "category": "Home",
-        "due_date": "2026-04-24",
-        "done": false,
+        "due_date": "2026-04-20",
+        "done": true,
         "importance": null,
         "id": "8b400859-0828-4489-a59d-4787ab47fbbb",
         "important": false,
@@ -1962,12 +1951,12 @@
         "goal_order": null
       },
       {
-        "name": "Drill down",
+        "name": "Arrows wo/ union",
         "category": "Weekly Goals",
-        "due_date": "2026-04-20",
+        "due_date": "2026-04-27",
         "done": false,
         "importance": null,
-        "id": "2318cebf-cdff-4e64-874c-97e769d0e273",
+        "id": "683aa6e4-c63d-438f-be66-05a17809e6f4",
         "important": false,
         "notes": null,
         "goal_order": 1
@@ -2083,15 +2072,15 @@
         "goal_order": null
       },
       {
-        "name": "Arrows wo/ union",
-        "category": "Weekly Goals",
-        "due_date": "2026-04-27",
-        "done": false,
+        "name": "Call modern animal records",
+        "category": "Home",
+        "due_date": "2026-04-20",
+        "done": true,
         "importance": null,
-        "id": "683aa6e4-c63d-438f-be66-05a17809e6f4",
+        "id": "3ddff2f4-9bbf-4160-9b81-3d1470c84fe0",
         "important": false,
         "notes": null,
-        "goal_order": 1
+        "goal_order": null
       },
       {
         "name": "Drill down get ready for film",
@@ -2303,34 +2292,12 @@
         "goal_order": null
       },
       {
-        "name": "Figure out UX videos",
-        "category": "Weekly Goals",
-        "due_date": "2026-04-20",
-        "done": false,
-        "importance": null,
-        "id": "e0a57087-bc89-410d-9274-a0ff8125d1d7",
-        "important": false,
-        "notes": null,
-        "goal_order": null
-      },
-      {
         "name": "Icons design",
         "category": "Work",
         "due_date": "2026-04-16",
         "done": true,
         "importance": null,
         "id": "3009729b-2fea-4b6c-8402-fdb718f96d2c",
-        "important": false,
-        "notes": null,
-        "goal_order": null
-      },
-      {
-        "name": "VO drill down",
-        "category": "My work",
-        "due_date": "2026-04-21",
-        "done": false,
-        "importance": null,
-        "id": "d687cd58-082d-493b-a334-45e8017f3e88",
         "important": false,
         "notes": null,
         "goal_order": null
@@ -2393,10 +2360,10 @@
       {
         "name": "TC 26 slides",
         "category": "Weekly Goals",
-        "due_date": "2026-04-20",
+        "due_date": "2026-04-27",
         "done": false,
         "importance": null,
-        "id": "d9fd2fef-495f-4f55-ab86-c518aae17795",
+        "id": "64c4d2d7-c5a5-4961-9139-8216d8f9a001",
         "important": true,
         "notes": null,
         "goal_order": 0
@@ -2413,12 +2380,12 @@
         "goal_order": null
       },
       {
-        "name": "Write post",
+        "name": "VO drill down",
         "category": "My work",
-        "due_date": "2026-04-20",
+        "due_date": "2026-04-22",
         "done": false,
         "importance": null,
-        "id": "105407b1-82b9-4ae7-a462-ed649222e538",
+        "id": "d687cd58-082d-493b-a334-45e8017f3e88",
         "important": false,
         "notes": null,
         "goal_order": null
@@ -2435,45 +2402,23 @@
         "goal_order": 2
       },
       {
-        "name": "Claude setup cvs",
-        "category": "Work",
+        "name": "Post black outline",
+        "category": "My work",
         "due_date": "2026-04-20",
-        "done": false,
+        "done": true,
         "importance": null,
-        "id": "c88fe416-bdad-4564-a092-4adb5d6e555f",
+        "id": "11e54d57-1e1f-480c-a9dd-58ea409e0016",
         "important": false,
-        "notes": null,
+        "notes": "- cut \n- watch\n- description \n- thumbnail\n- post",
         "goal_order": null
       },
       {
-        "name": "Costco",
-        "category": "Home",
-        "due_date": "2026-04-25",
+        "name": "Write post",
+        "category": "My work",
+        "due_date": "2026-04-21",
         "done": false,
         "importance": null,
-        "id": "3988e105-6d43-4cb8-9e16-d1855483eb4a",
-        "important": false,
-        "notes": null,
-        "goal_order": null
-      },
-      {
-        "name": "Car insurance",
-        "category": "Home",
-        "due_date": "2026-04-20",
-        "done": false,
-        "importance": null,
-        "id": "08f1905a-0009-4f9a-9bd9-81ba0ebee463",
-        "important": false,
-        "notes": null,
-        "goal_order": null
-      },
-      {
-        "name": "Buy VTI",
-        "category": "Home",
-        "due_date": "2026-04-20",
-        "done": false,
-        "importance": null,
-        "id": "a28abff0-a7d6-45ea-84e7-88a9ce3ff939",
+        "id": "105407b1-82b9-4ae7-a462-ed649222e538",
         "important": false,
         "notes": null,
         "goal_order": null
@@ -2490,24 +2435,24 @@
         "goal_order": null
       },
       {
-        "name": "Post black outline",
+        "name": "Post double clikc",
         "category": "My work",
         "due_date": "2026-04-20",
-        "done": false,
+        "done": true,
         "importance": null,
-        "id": "11e54d57-1e1f-480c-a9dd-58ea409e0016",
+        "id": "5bb1ab17-6e57-4f59-9b6e-515199455ba7",
         "important": false,
-        "notes": "- cut \n- watch\n- description \n- thumbnail\n- post",
+        "notes": "- watch\n- post",
         "goal_order": null
       },
       {
-        "name": "TC 26 slides",
-        "category": "My work",
-        "due_date": "2026-04-20",
+        "name": "Car insurance",
+        "category": "Home",
+        "due_date": "2026-04-21",
         "done": false,
         "importance": null,
-        "id": "95f6249e-c436-4e5b-8ae7-98f005c4d8e2",
-        "important": true,
+        "id": "08f1905a-0009-4f9a-9bd9-81ba0ebee463",
+        "important": false,
         "notes": null,
         "goal_order": null
       },
@@ -2556,34 +2501,23 @@
         "goal_order": null
       },
       {
-        "name": "TC 26 slides",
-        "category": "Weekly Goals",
-        "due_date": "2026-04-27",
+        "name": "Costco",
+        "category": "Home",
+        "due_date": "2026-04-25",
         "done": false,
         "importance": null,
-        "id": "64c4d2d7-c5a5-4961-9139-8216d8f9a001",
-        "important": true,
-        "notes": null,
-        "goal_order": 0
+        "id": "3988e105-6d43-4cb8-9e16-d1855483eb4a",
+        "important": false,
+        "notes": "- Pup meds",
+        "goal_order": null
       },
       {
         "name": "Six sigma",
         "category": "Work",
-        "due_date": "2026-04-20",
+        "due_date": "2026-04-21",
         "done": false,
         "importance": null,
         "id": "393db50e-fb1f-43d3-a631-43c641dcd5d9",
-        "important": false,
-        "notes": null,
-        "goal_order": null
-      },
-      {
-        "name": "Call modern animal records",
-        "category": "Home",
-        "due_date": "2026-04-20",
-        "done": false,
-        "importance": null,
-        "id": "3ddff2f4-9bbf-4160-9b81-3d1470c84fe0",
         "important": false,
         "notes": null,
         "goal_order": null
@@ -2611,15 +2545,15 @@
         "goal_order": 0
       },
       {
-        "name": "PM finalize build",
-        "category": "Weekly Goals",
-        "due_date": "2026-04-27",
-        "done": false,
+        "name": "TC 26 slides",
+        "category": "My work",
+        "due_date": "2026-04-20",
+        "done": true,
         "importance": null,
-        "id": "27bc6923-df79-4676-9f18-c3e4963a1d57",
-        "important": false,
+        "id": "95f6249e-c436-4e5b-8ae7-98f005c4d8e2",
+        "important": true,
         "notes": null,
-        "goal_order": 2
+        "goal_order": null
       },
       {
         "name": "Practice TC slides",
@@ -2688,9 +2622,42 @@
         "goal_order": null
       },
       {
+        "name": "Buy VTI",
+        "category": "Home",
+        "due_date": "2026-04-20",
+        "done": true,
+        "importance": null,
+        "id": "a28abff0-a7d6-45ea-84e7-88a9ce3ff939",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "PM finalize build",
+        "category": "Weekly Goals",
+        "due_date": "2026-04-27",
+        "done": false,
+        "importance": null,
+        "id": "27bc6923-df79-4676-9f18-c3e4963a1d57",
+        "important": false,
+        "notes": null,
+        "goal_order": 2
+      },
+      {
+        "name": "Claude setup cvs",
+        "category": "Work",
+        "due_date": "2026-04-21",
+        "done": false,
+        "importance": null,
+        "id": "c88fe416-bdad-4564-a092-4adb5d6e555f",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
         "name": "Icons",
         "category": "Work",
-        "due_date": "2026-04-20",
+        "due_date": "2026-04-21",
         "done": false,
         "importance": null,
         "id": "73e63302-bd4d-4a7b-93f4-f460b98c30ab",
@@ -2699,14 +2666,168 @@
         "goal_order": null
       },
       {
-        "name": "Post double clikc",
-        "category": "My work",
+        "name": "Doctor apt @10:40am",
+        "category": "Home",
+        "due_date": "2026-06-30",
+        "done": false,
+        "importance": null,
+        "id": "6ecb5e55-fda7-4ff2-ac13-4d5c9d96baca",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Golf invitational",
+        "category": "Social",
+        "due_date": "2026-06-06",
+        "done": false,
+        "importance": null,
+        "id": "503dd0f5-898d-45f2-88f4-5aef993356c4",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "HEB",
+        "category": "Home",
+        "due_date": "2026-04-20",
+        "done": true,
+        "importance": null,
+        "id": "fb484dbc-46a5-428e-8d45-518b24075623",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "OBGYN apt @11:15am",
+        "category": "Home",
+        "due_date": "2026-05-21",
+        "done": false,
+        "importance": null,
+        "id": "29a7baa2-cd4a-4efe-a4c2-ebc1d79bc51a",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Pick up scrips - pups",
+        "category": "Home",
+        "due_date": "2026-04-23",
+        "done": false,
+        "importance": null,
+        "id": "15bf31bb-fd5e-4944-9710-6d4d6b9ef3ca",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "TC 26 slides",
+        "category": "Weekly Goals",
         "due_date": "2026-04-20",
         "done": false,
         "importance": null,
-        "id": "5bb1ab17-6e57-4f59-9b6e-515199455ba7",
+        "id": "d9fd2fef-495f-4f55-ab86-c518aae17795",
+        "important": true,
+        "notes": null,
+        "goal_order": 3
+      },
+      {
+        "name": "Figure out UX videos",
+        "category": "Weekly Goals",
+        "due_date": "2026-04-20",
+        "done": false,
+        "importance": null,
+        "id": "e0a57087-bc89-410d-9274-a0ff8125d1d7",
         "important": false,
-        "notes": "- watch\n- post",
+        "notes": null,
+        "goal_order": 2
+      },
+      {
+        "name": "Drill down",
+        "category": "Weekly Goals",
+        "due_date": "2026-04-20",
+        "done": false,
+        "importance": null,
+        "id": "2318cebf-cdff-4e64-874c-97e769d0e273",
+        "important": false,
+        "notes": null,
+        "goal_order": 0
+      },
+      {
+        "name": "TC 26 post",
+        "category": "Weekly Goals",
+        "due_date": "2026-04-20",
+        "done": false,
+        "importance": null,
+        "id": "722df9bd-8851-4d79-955a-bcf89ddd6d4e",
+        "important": false,
+        "notes": null,
+        "goal_order": 1
+      },
+      {
+        "name": "Pet meds - email honnas",
+        "category": "Home",
+        "due_date": "2026-04-21",
+        "done": false,
+        "importance": null,
+        "id": "37eb74b3-6fe8-4739-8370-fb59d17491d5",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Black outline TH",
+        "category": "My work",
+        "due_date": "2026-04-20",
+        "done": true,
+        "importance": null,
+        "id": "3c0164a8-6e4d-41eb-b496-8ef5b727f66b",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Book london → iceland",
+        "category": "Home",
+        "due_date": "2026-04-20",
+        "done": true,
+        "importance": null,
+        "id": "d131b15b-fdb5-4b19-bafa-5c055c19d456",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Meals",
+        "category": "Home",
+        "due_date": "2026-04-20",
+        "done": true,
+        "importance": null,
+        "id": "43fa9774-3f30-4c60-b0f2-2eba559154c2",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Test",
+        "category": "Social+Travel",
+        "due_date": "2026-04-20",
+        "done": true,
+        "importance": null,
+        "id": "1dcc22c4-989b-4712-b829-3d1c65141665",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Tesr",
+        "category": "Home",
+        "due_date": "2026-04-20",
+        "done": true,
+        "importance": null,
+        "id": "01046a66-8d1d-41d0-96f9-8e22cf30dc4a",
+        "important": false,
+        "notes": null,
         "goal_order": null
       }
     ],
@@ -2901,15 +3022,6 @@
         "shop_order": 0
       },
       {
-        "id": "9eeb0d0c-283a-4e0d-9f29-b1bc965db522",
-        "name": "Electronic toothbrush for pups",
-        "store": "Online",
-        "done": false,
-        "created_at": "2026-03-10T14:18:17.412058+00:00",
-        "due_date": null,
-        "shop_order": 4
-      },
-      {
         "id": "75b03e08-a4d3-4775-894e-baf6426de22d",
         "name": "Mochi carrier",
         "store": "Other",
@@ -2917,6 +3029,15 @@
         "created_at": "2026-04-16T12:46:32.121703+00:00",
         "due_date": null,
         "shop_order": 3
+      },
+      {
+        "id": "9eeb0d0c-283a-4e0d-9f29-b1bc965db522",
+        "name": "Electronic toothbrush for pups",
+        "store": "Online",
+        "done": false,
+        "created_at": "2026-03-10T14:18:17.412058+00:00",
+        "due_date": null,
+        "shop_order": 4
       }
     ],
     "travel": [
@@ -3355,25 +3476,6 @@
         "updated_at": "2026-03-25T00:36:04.166631+00:00",
         "focus": false,
         "category": "commands",
-        "next_step": null,
-        "times_per_week": null
-      },
-      {
-        "id": "20f2fcc6-0ef1-49ee-9d74-de6897247cf8",
-        "pup": "Mochi",
-        "skill": "test",
-        "level": null,
-        "skill_order": null,
-        "stage": "Not Started",
-        "word": null,
-        "signal": null,
-        "currently_working_on": false,
-        "trainer_tip": null,
-        "comments": null,
-        "created_at": "2026-03-25T17:14:37.827387+00:00",
-        "updated_at": "2026-03-25T17:14:37.827387+00:00",
-        "focus": false,
-        "category": null,
         "next_step": null,
         "times_per_week": null
       },
@@ -4694,20 +4796,6 @@
         "done": true
       },
       {
-        "id": "cea65e02-aa20-475b-864d-0bd3a5cf95f8",
-        "title": "Book london → iceland",
-        "day_date": "2026-03-23",
-        "start_time": "18:45:00",
-        "duration_minutes": 30,
-        "category": "Home",
-        "created_at": "2026-03-23T13:22:35.527342+00:00",
-        "start_minutes": 1110,
-        "task_id": "3b7f34e0-2db9-4c24-a332-7314b9df9d79",
-        "rec_id": null,
-        "shop_id": null,
-        "done": false
-      },
-      {
         "id": "5c57e045-c2d9-42da-968d-77aea2522af7",
         "title": "Respond Andy",
         "day_date": "2026-03-19",
@@ -4843,6 +4931,20 @@
         "created_at": "2026-03-26T18:34:46.290154+00:00",
         "start_minutes": 1110,
         "task_id": "95b16574-7460-4478-a982-4c3a57520c02",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
+        "id": "cea65e02-aa20-475b-864d-0bd3a5cf95f8",
+        "title": "Book london → iceland",
+        "day_date": "2026-03-23",
+        "start_time": "18:45:00",
+        "duration_minutes": 30,
+        "category": "Home",
+        "created_at": "2026-03-23T13:22:35.527342+00:00",
+        "start_minutes": 1110,
+        "task_id": "3b7f34e0-2db9-4c24-a332-7314b9df9d79",
         "rec_id": null,
         "shop_id": null,
         "done": true
@@ -5940,6 +6042,20 @@
         "done": true
       },
       {
+        "id": "1438ff99-23d4-44cb-9f92-9f75b80373ab",
+        "title": "Book london → iceland",
+        "day_date": "2026-04-05",
+        "start_time": "12:30:00",
+        "duration_minutes": 30,
+        "category": "Home",
+        "created_at": "2026-04-05T03:38:39.082282+00:00",
+        "start_minutes": 930,
+        "task_id": "3b7f34e0-2db9-4c24-a332-7314b9df9d79",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
         "id": "b4be1c18-25ac-4613-91d5-ef4c6898b9fb",
         "title": "Pups bowls",
         "day_date": "2026-04-10",
@@ -5952,20 +6068,6 @@
         "rec_id": "11",
         "shop_id": null,
         "done": true
-      },
-      {
-        "id": "1438ff99-23d4-44cb-9f92-9f75b80373ab",
-        "title": "Book london → iceland",
-        "day_date": "2026-04-05",
-        "start_time": "12:30:00",
-        "duration_minutes": 30,
-        "category": "Home",
-        "created_at": "2026-04-05T03:38:39.082282+00:00",
-        "start_minutes": 930,
-        "task_id": "3b7f34e0-2db9-4c24-a332-7314b9df9d79",
-        "rec_id": null,
-        "shop_id": null,
-        "done": false
       },
       {
         "id": "f36bd43d-8d41-4e83-8aaa-7eabe3277120",
@@ -6598,18 +6700,18 @@
         "done": true
       },
       {
-        "id": "c2e7b4b4-d571-4441-bc96-22bdd9e1abf6",
-        "title": "Post double clikc",
-        "day_date": "2026-04-20",
-        "start_time": "10:15:00",
-        "duration_minutes": 45,
-        "category": "My work",
-        "created_at": "2026-04-20T02:32:27.443559+00:00",
-        "start_minutes": 615,
-        "task_id": "5bb1ab17-6e57-4f59-9b6e-515199455ba7",
+        "id": "86460985-60cd-4775-acc1-369200b3d571",
+        "title": "Book london → iceland",
+        "day_date": "2026-04-19",
+        "start_time": "19:30:00",
+        "duration_minutes": 30,
+        "category": "Home",
+        "created_at": "2026-04-19T04:50:17.769703+00:00",
+        "start_minutes": 1125,
+        "task_id": "3b7f34e0-2db9-4c24-a332-7314b9df9d79",
         "rec_id": null,
         "shop_id": null,
-        "done": false
+        "done": true
       },
       {
         "id": "90e1233d-5bf0-42a0-bb69-a998d5d8c37c",
@@ -6640,18 +6742,18 @@
         "done": false
       },
       {
-        "id": "86460985-60cd-4775-acc1-369200b3d571",
-        "title": "Book london → iceland",
-        "day_date": "2026-04-19",
-        "start_time": "19:30:00",
+        "id": "c2e7b4b4-d571-4441-bc96-22bdd9e1abf6",
+        "title": "Post double clikc",
+        "day_date": "2026-04-20",
+        "start_time": "10:15:00",
         "duration_minutes": 30,
-        "category": "Home",
-        "created_at": "2026-04-19T04:50:17.769703+00:00",
-        "start_minutes": 1125,
-        "task_id": "3b7f34e0-2db9-4c24-a332-7314b9df9d79",
+        "category": "My work",
+        "created_at": "2026-04-20T02:32:27.443559+00:00",
+        "start_minutes": 450,
+        "task_id": "5bb1ab17-6e57-4f59-9b6e-515199455ba7",
         "rec_id": null,
         "shop_id": null,
-        "done": false
+        "done": true
       },
       {
         "id": "34f655d1-970b-4231-8f9f-0a3ad748937e",
@@ -6668,18 +6770,74 @@
         "done": true
       },
       {
-        "id": "abd1b5c6-0a32-4b60-a858-6ba599385efa",
-        "title": "Claude setup cvs",
+        "id": "ad12e7f4-1ee7-4319-b60b-7e570ea1a3d1",
+        "title": "Pet meds - email honnas",
+        "day_date": "2026-04-21",
+        "start_time": "11:45:00",
+        "duration_minutes": 30,
+        "category": "Home",
+        "created_at": "2026-04-21T00:57:27.069192+00:00",
+        "start_minutes": 990,
+        "task_id": "37eb74b3-6fe8-4739-8370-fb59d17491d5",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "c630561c-3e3d-446a-80fa-39fb42118553",
+        "title": "Car insurance",
+        "day_date": "2026-04-21",
+        "start_time": "17:00:00",
+        "duration_minutes": 30,
+        "category": "Home",
+        "created_at": "2026-04-21T00:58:19.337528+00:00",
+        "start_minutes": 1020,
+        "task_id": "08f1905a-0009-4f9a-9bd9-81ba0ebee463",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "2de6da76-2e6d-48c4-826e-1d55a7149f76",
+        "title": "Book london → iceland",
         "day_date": "2026-04-20",
+        "start_time": "19:00:00",
+        "duration_minutes": 15,
+        "category": "Home",
+        "created_at": "2026-04-21T01:05:55.07469+00:00",
+        "start_minutes": 1140,
+        "task_id": "d131b15b-fdb5-4b19-bafa-5c055c19d456",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
+        "id": "a1161dcb-08ab-4889-b3a0-5bd16e0649c5",
+        "title": "Claude setup cvs",
+        "day_date": "2026-04-21",
         "start_time": "08:30:00",
-        "duration_minutes": 45,
+        "duration_minutes": 60,
         "category": "Work",
-        "created_at": "2026-04-20T02:27:29.896595+00:00",
-        "start_minutes": 465,
+        "created_at": "2026-04-21T00:58:03.250621+00:00",
+        "start_minutes": 540,
         "task_id": "c88fe416-bdad-4564-a092-4adb5d6e555f",
         "rec_id": null,
         "shop_id": null,
         "done": false
+      },
+      {
+        "id": "573d67f7-0cf3-4db0-9b4d-c003e6215807",
+        "title": "Meals",
+        "day_date": "2026-04-20",
+        "start_time": "19:15:00",
+        "duration_minutes": 30,
+        "category": "Home",
+        "created_at": "2026-04-20T14:57:34.602146+00:00",
+        "start_minutes": 1140,
+        "task_id": "1d0840a2-faf8-4be1-9b94-c5f272ac4861",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
       },
       {
         "id": "4f80289d-4980-4919-b06d-73c914d32a73",
@@ -6693,7 +6851,7 @@
         "task_id": "95f6249e-c436-4e5b-8ae7-98f005c4d8e2",
         "rec_id": null,
         "shop_id": null,
-        "done": false
+        "done": true
       },
       {
         "id": "be0e4e6c-ca59-4ea8-b679-a740ea5d960f",
@@ -6703,39 +6861,11 @@
         "duration_minutes": 30,
         "category": "Home",
         "created_at": "2026-04-20T03:28:47.65206+00:00",
-        "start_minutes": 990,
+        "start_minutes": 840,
         "task_id": "3ddff2f4-9bbf-4160-9b81-3d1470c84fe0",
         "rec_id": null,
         "shop_id": null,
-        "done": false
-      },
-      {
-        "id": "674613a8-6b41-476b-8309-c62cc920f93b",
-        "title": "Car insurance",
-        "day_date": "2026-04-20",
-        "start_time": "11:45:00",
-        "duration_minutes": 30,
-        "category": "Home",
-        "created_at": "2026-04-20T02:28:25.931965+00:00",
-        "start_minutes": 690,
-        "task_id": "08f1905a-0009-4f9a-9bd9-81ba0ebee463",
-        "rec_id": null,
-        "shop_id": null,
-        "done": false
-      },
-      {
-        "id": "4f389470-852f-449d-867c-4d961f50e5a3",
-        "title": "Six sigma",
-        "day_date": "2026-04-20",
-        "start_time": "08:30:00",
-        "duration_minutes": 75,
-        "category": "Home",
-        "created_at": "2026-04-20T02:32:44.721084+00:00",
-        "start_minutes": 510,
-        "task_id": "393db50e-fb1f-43d3-a631-43c641dcd5d9",
-        "rec_id": null,
-        "shop_id": null,
-        "done": false
+        "done": true
       },
       {
         "id": "9f3793fd-a8b2-484e-b6dc-5260267bb5c2",
@@ -6766,6 +6896,20 @@
         "done": true
       },
       {
+        "id": "249c8ae5-80ae-4d0c-bf7a-31601c45cda6",
+        "title": "Make dentist apt",
+        "day_date": "2026-04-21",
+        "start_time": "11:00:00",
+        "duration_minutes": 30,
+        "category": "Home",
+        "created_at": "2026-04-21T00:57:24.699146+00:00",
+        "start_minutes": 990,
+        "task_id": "684df50b-70ca-4a44-9133-8531ba05356a",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
         "id": "2955f601-aeaa-40ad-96fe-78f934fdaaa6",
         "title": "Pic with Sunny + Mochi",
         "day_date": "2026-04-18",
@@ -6775,6 +6919,20 @@
         "created_at": "2026-04-18T18:23:33.896217+00:00",
         "start_minutes": 1095,
         "task_id": "978dfc71-be24-4233-8e96-3e6a3abe4414",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "fcdb0c03-0d2b-4e5b-a19d-de02ff6c46ca",
+        "title": "Practice TC slides",
+        "day_date": "2026-04-21",
+        "start_time": "12:15:00",
+        "duration_minutes": 135,
+        "category": "My work",
+        "created_at": "2026-04-21T00:57:31.296051+00:00",
+        "start_minutes": 720,
+        "task_id": "59221c05-5ab3-439e-9035-712c3c38bccb",
         "rec_id": null,
         "shop_id": null,
         "done": false
@@ -6794,29 +6952,15 @@
         "done": true
       },
       {
-        "id": "0f607999-6958-4596-92e5-8dc80480cbcb",
-        "title": "Book london → iceland",
-        "day_date": "2026-04-20",
-        "start_time": "18:45:00",
-        "duration_minutes": 30,
-        "category": "Home",
-        "created_at": "2026-04-20T02:27:25.56555+00:00",
-        "start_minutes": 1110,
-        "task_id": "3b7f34e0-2db9-4c24-a332-7314b9df9d79",
-        "rec_id": null,
-        "shop_id": null,
-        "done": false
-      },
-      {
-        "id": "b678e7bd-e85b-41e4-84f2-4400ed6f068a",
-        "title": "Buy VTI",
-        "day_date": "2026-04-20",
-        "start_time": "08:15:00",
-        "duration_minutes": 30,
-        "category": "Home",
-        "created_at": "2026-04-20T02:28:15.473583+00:00",
-        "start_minutes": 660,
-        "task_id": "a28abff0-a7d6-45ea-84e7-88a9ce3ff939",
+        "id": "4dfc249c-f2ea-49fb-b9c9-980c38b36dcc",
+        "title": "Six sigma",
+        "day_date": "2026-04-21",
+        "start_time": "09:45:00",
+        "duration_minutes": 60,
+        "category": "Work",
+        "created_at": "2026-04-21T00:58:05.216172+00:00",
+        "start_minutes": 600,
+        "task_id": "393db50e-fb1f-43d3-a631-43c641dcd5d9",
         "rec_id": null,
         "shop_id": null,
         "done": false
@@ -7004,20 +7148,6 @@
         "done": true
       },
       {
-        "id": "95c406fd-2953-43f9-aebc-42570b4e0a5e",
-        "title": "Write post",
-        "day_date": "2026-04-20",
-        "start_time": "16:00:00",
-        "duration_minutes": 30,
-        "category": "My work",
-        "created_at": "2026-04-20T02:28:33.487648+00:00",
-        "start_minutes": 960,
-        "task_id": "105407b1-82b9-4ae7-a462-ed649222e538",
-        "rec_id": null,
-        "shop_id": null,
-        "done": false
-      },
-      {
         "id": "b3aa7f82-6985-4e9d-bf1f-17f312ad3d08",
         "title": "WFH with friends",
         "day_date": "2026-04-17",
@@ -7046,32 +7176,32 @@
         "done": true
       },
       {
-        "id": "4827ee33-52ec-4d56-b67b-a706fc982a68",
-        "title": "Icons",
-        "day_date": "2026-04-20",
-        "start_time": "19:15:00",
-        "duration_minutes": 30,
-        "category": "Home",
-        "created_at": "2026-04-20T03:33:24.110728+00:00",
-        "start_minutes": 585,
-        "task_id": "73e63302-bd4d-4a7b-93f4-f460b98c30ab",
+        "id": "e295d477-31b0-414c-81b2-4803eb63c0df",
+        "title": "Write post",
+        "day_date": "2026-04-21",
+        "start_time": "16:30:00",
+        "duration_minutes": 60,
+        "category": "My work",
+        "created_at": "2026-04-21T00:58:11.369176+00:00",
+        "start_minutes": 930,
+        "task_id": "105407b1-82b9-4ae7-a462-ed649222e538",
         "rec_id": null,
         "shop_id": null,
         "done": false
       },
       {
-        "id": "02ecd9d6-2c19-4ddf-9aff-04380681c01c",
-        "title": "Post black outline",
+        "id": "b678e7bd-e85b-41e4-84f2-4400ed6f068a",
+        "title": "Buy VTI",
         "day_date": "2026-04-20",
-        "start_time": "14:00:00",
-        "duration_minutes": 120,
-        "category": "My work",
-        "created_at": "2026-04-20T02:27:33.395942+00:00",
-        "start_minutes": 840,
-        "task_id": "11e54d57-1e1f-480c-a9dd-58ea409e0016",
+        "start_time": "08:15:00",
+        "duration_minutes": 30,
+        "category": "Home",
+        "created_at": "2026-04-20T02:28:15.473583+00:00",
+        "start_minutes": 480,
+        "task_id": "a28abff0-a7d6-45ea-84e7-88a9ce3ff939",
         "rec_id": null,
         "shop_id": null,
-        "done": false
+        "done": true
       },
       {
         "id": "66f389ae-aa7c-4cc0-94ff-0d93296d34d0",
@@ -7116,6 +7246,62 @@
         "done": false
       },
       {
+        "id": "0f607999-6958-4596-92e5-8dc80480cbcb",
+        "title": "Book london → iceland",
+        "day_date": "2026-04-20",
+        "start_time": "18:45:00",
+        "duration_minutes": 30,
+        "category": "Home",
+        "created_at": "2026-04-20T02:27:25.56555+00:00",
+        "start_minutes": 1110,
+        "task_id": "3b7f34e0-2db9-4c24-a332-7314b9df9d79",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
+        "id": "332c417c-6a88-4326-bcae-d19068619421",
+        "title": "Haircut apt schedule",
+        "day_date": "2026-04-21",
+        "start_time": "18:45:00",
+        "duration_minutes": 30,
+        "category": "Home",
+        "created_at": "2026-04-21T00:58:24.335022+00:00",
+        "start_minutes": 1110,
+        "task_id": "e393ce8b-201f-41ca-a8d4-104d1307f7cc",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "02ecd9d6-2c19-4ddf-9aff-04380681c01c",
+        "title": "Post black outline",
+        "day_date": "2026-04-20",
+        "start_time": "14:00:00",
+        "duration_minutes": 120,
+        "category": "My work",
+        "created_at": "2026-04-20T02:27:33.395942+00:00",
+        "start_minutes": 510,
+        "task_id": "11e54d57-1e1f-480c-a9dd-58ea409e0016",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
+        "id": "d0550833-35ea-4613-b829-bd5c5400992a",
+        "title": "HEB",
+        "day_date": "2026-04-20",
+        "start_time": "11:00:00",
+        "duration_minutes": 90,
+        "category": "Home",
+        "created_at": "2026-04-20T18:32:27.369982+00:00",
+        "start_minutes": 630,
+        "task_id": "fb484dbc-46a5-428e-8d45-518b24075623",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
         "id": "aeb46033-9487-47e0-8461-672c8c1ff384",
         "title": "Shave",
         "day_date": "2026-04-18",
@@ -7142,6 +7328,34 @@
         "rec_id": null,
         "shop_id": null,
         "done": true
+      },
+      {
+        "id": "08e38a48-6960-4721-b7f5-30cadd4ec734",
+        "title": "Meals",
+        "day_date": "2026-04-20",
+        "start_time": "19:30:00",
+        "duration_minutes": 30,
+        "category": "Home",
+        "created_at": "2026-04-21T01:05:45.330713+00:00",
+        "start_minutes": 1170,
+        "task_id": "43fa9774-3f30-4c60-b0f2-2eba559154c2",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
+        "id": "0bffc5db-2cbe-46c4-8548-287fdbefbaee",
+        "title": "Icons",
+        "day_date": "2026-04-21",
+        "start_time": "13:45:00",
+        "duration_minutes": 60,
+        "category": "Work",
+        "created_at": "2026-04-21T00:16:08.703726+00:00",
+        "start_minutes": 480,
+        "task_id": "73e63302-bd4d-4a7b-93f4-f460b98c30ab",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
       }
     ],
     "auto_timeblocks": [
@@ -7423,6 +7637,34 @@
         "date": "2026-04-17",
         "start_time": null,
         "end_time": null
+      },
+      {
+        "id": 40,
+        "base_id": 3,
+        "date": "2026-04-20",
+        "start_time": "11:00:00",
+        "end_time": "12:00:00"
+      },
+      {
+        "id": 59,
+        "base_id": 4,
+        "date": "2026-04-20",
+        "start_time": "17:30:00",
+        "end_time": "18:00:00"
+      },
+      {
+        "id": 58,
+        "base_id": 5,
+        "date": "2026-04-20",
+        "start_time": "18:00:00",
+        "end_time": "18:30:00"
+      },
+      {
+        "id": 60,
+        "base_id": 6,
+        "date": "2026-04-20",
+        "start_time": "18:30:00",
+        "end_time": "19:00:00"
       }
     ]
   }
