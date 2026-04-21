@@ -16,6 +16,13 @@
 - **Category dropdown** (`.cat-sel-wrap`): `catSelHTML(id,def)`, `setCatSel(id,v)`, `pickCat(id,v)`, `toggleCatDrop(id)`.
 - **Long term excluded** from all dropdowns (`#tCatDrop`,`#bCat`,`#qaPopup`,`_CAT_OPT_LIST`) except kanban columns (`KCATS`). `#tCatDrop` and `#bCat` are hardcoded HTML in index.html.
 
+## Timeblock Inline Edit (`startTBInlineEdit`)
+- **↑/↓ arrows** cycle category while typing. Cycles through `['Home','My work','Work','Social']` only (not full KCATS).
+- Block background/text/border updates live via `gc(cat)` as user cycles.
+- Small uppercase label below the input shows current category name.
+- **Enter** saves with selected category. New tasks created with `category: chosenCat` (not hardcoded `'Home'`).
+- **Escape** cancels and removes the block.
+
 ## Interaction Patterns
 - **Focus**: cursor at end on every input open. `setSelectionRange(len,len)` in same tick as `.focus()`.
 - **Outside-click close**: stable handler ref, remove+re-register on every `renderPage()`. Add via `setTimeout(0)`.
