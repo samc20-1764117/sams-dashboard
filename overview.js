@@ -2775,6 +2775,7 @@ function _attachTBEdgeRubberBand(){
       const colRect=tbCol.getBoundingClientRect();
       // Same coordinate system as internal rubber band: Y relative to col viewport top (no scrollTop needed)
       const selTop=y1-colRect.top,selBot=y2-colRect.top;
+      _lastTBRbRange={selTop,selBot};
       if(!ev.shiftKey)selectedTasks.clear();
       tbCol.querySelectorAll('.tb-block[data-bid]').forEach(be=>{
         const bl=st.blocks.find(x=>String(x.id)===String(be.dataset.bid));
@@ -2918,6 +2919,7 @@ function renderDayTB(){
       const selTop=Math.min(startRelY,curRelY),selBot=Math.max(startRelY,curRelY);
       selBox.remove();
       if(rbMoved&&(selBot-selTop)>5){
+        _lastTBRbRange={selTop,selBot};
         if(!e.shiftKey)selectedTasks.clear();
         col.querySelectorAll('.tb-block[data-bid]').forEach(be=>{
           const bl=st.blocks.find(x=>String(x.id)===String(be.dataset.bid));

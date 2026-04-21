@@ -2214,6 +2214,7 @@ function toggleKanban(){
 // ── Selection System ─────────────────────────────────────────────────────────
 const selectedTasks=new Set(); // set of task id strings
 let lastSelectedId=null; // for shift-click range
+let _lastTBRbRange=null; // {selTop,selBot} last rubber-band range in tb-col coordinates, for 'a' key
 
 function selTask(e,id){
   if(e.target.closest('.chk')||e.target.closest('.delbtn')||e.target.closest('.dlbl'))return;
@@ -3247,10 +3248,14 @@ document.addEventListener('keydown',e=>{
   if(e.key==='n'){e.preventDefault();openQA('today',null,d2s(getDayDate(dayOff)));}
   if(e.key==='r'){e.preventDefault();location.reload();}
   if(e.key==='s'){e.preventDefault();syncAll(false);}
-  if(e.key==='a'&&selectedTasks.size>0&&document.getElementById('tbGrid')){
+  if(e.key==='a'&&document.getElementById('tbGrid')){
     e.preventDefault();
     const ds=d2s(getDayDate(dayOff));
-    const selBlks=st.blocks.filter(b=>{if(b.ds!==ds)return false;const sid=_getTBBlockSelId(b);return sid&&selectedTasks.has(sid);});
-    if(selBlks.length){const minSm=Math.min(...selBlks.map(b=>b.sm)),maxSm=Math.max(...selBlks.map(b=>b.sm+b.dur));getAutoTBForDate(ds).filter(a=>a.sm+a.dur>minSm&&a.sm<maxSm).forEach(a=>selectedTasks.add('atb::'+a._atbId));applySelHighlight();}
+    let minSm=null,maxSm=null;
+    // Prefer time range from selected regular blocks
+    if(selectedTasks.size>0){const selBlks=st.blocks.filter(b=>{if(b.ds!==ds)return false;const sid=_getTBBlockSelId(b);return sid&&selectedTasks.has(sid);});if(selBlks.length){minSm=Math.min(...selBlks.map(b=>b.sm));maxSm=Math.max(...selBlks.map(b=>b.sm+b.dur));}}
+    // Fall back to last rubber-band range (in px → minutes)
+    if(minSm===null&&_lastTBRbRange){minSm=HOURS[0]*60+_lastTBRbRange.selTop/PX;maxSm=HOURS[0]*60+_lastTBRbRange.selBot/PX;}
+    if(minSm!==null){if(!selectedTasks.size)selectedTasks.clear();getAutoTBForDate(ds).filter(a=>a.sm+a.dur>minSm&&a.sm<maxSm).forEach(a=>selectedTasks.add('atb::'+a._atbId));applySelHighlight();}
   }
 });
