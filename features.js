@@ -3249,6 +3249,51 @@ document.addEventListener('keydown',e=>{
   if(e.key==='r'){e.preventDefault();location.reload();}
   if(e.key==='s'){e.preventDefault();syncAll(false);}
 });
+// Arrow keys: move selected TB blocks ±30 min
+window.addEventListener('keydown',e=>{
+  if(e.key!=='ArrowUp'&&e.key!=='ArrowDown')return;
+  if(!document.querySelector('.tb-col')||!selectedTasks.size)return;
+  const tag=document.activeElement?.tagName;
+  if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT'||document.activeElement?.isContentEditable)return;
+  if(e.metaKey||e.ctrlKey||e.altKey)return;
+  e.preventDefault();
+  const dm=e.key==='ArrowUp'?-30:30;
+  const ds=d2s(getDayDate(dayOff));
+  const _sm2t=sm=>`${String(Math.floor(sm/60)).padStart(2,'0')}:${String(sm%60).padStart(2,'0')}:00`;
+  // Regular TB blocks
+  const selBlks=(st.blocks||[]).filter(b=>{if(b.ds!==ds)return false;const sid=typeof _getTBBlockSelId==='function'?_getTBBlockSelId(b):null;return sid&&selectedTasks.has(sid);});
+  // Auto-blocks
+  const selAtbIds=[...selectedTasks].filter(id=>id.startsWith('atb::')).map(id=>id.replace('atb::',''));
+  const allAtbs=typeof getAutoTBForDate==='function'?getAutoTBForDate(ds):[];
+  const selAtbs=allAtbs.filter(a=>selAtbIds.includes(a._atbId));
+  if(!selBlks.length&&!selAtbs.length)return;
+  // Snapshots for undo (capture pre-move state)
+  const blkSnaps=selBlks.map(b=>({b,prevSm:b.sm}));
+  const atbSnaps=selAtbs.map(a=>({atbId:a._atbId,prevSm:a.sm,dur:a.dur,hadOv:!!st.autoTBOverrides.find(o=>String(o.base_id)===a._atbId&&o.date===ds)}));
+  // Move regular blocks
+  selBlks.forEach(b=>{b.sm=Math.max(HOURS[0]*60,Math.min(HOURS[HOURS.length-1]*60,b.sm+dm));sbUpdateBlock(b.id,{start_minutes:b.sm});});
+  // Move auto-blocks via overrides
+  selAtbs.forEach(a=>{
+    a.sm=Math.max(HOURS[0]*60,Math.min(HOURS[HOURS.length-1]*60,a.sm+dm));
+    const ns2=_sm2t(a.sm),ne2=_sm2t(a.sm+a.dur);
+    const curOv=st.autoTBOverrides.find(o=>String(o.base_id)===a._atbId&&o.date===ds);
+    if(curOv){curOv.start_time=ns2;curOv.end_time=ne2;sbReqSilent('PATCH','auto_timeblock_overrides',{start_time:ns2,end_time:ne2},`?id=eq.${curOv.id}`);}
+    else{const pl={base_id:a._atbId,date:ds,start_time:ns2,end_time:ne2};const tid='atbov-tmp-'+Date.now();st.autoTBOverrides.push({...pl,id:tid});sbReqSilent('POST','auto_timeblock_overrides',pl,'').then(res=>{if(res&&res[0]){const i=st.autoTBOverrides.findIndex(o=>String(o.id)===tid);if(i>-1)st.autoTBOverrides[i]=res[0];}save();});}
+  });
+  save();
+  if(document.getElementById('tbGrid'))renderDayTB();
+  // Undo: restore all positions using base_id+date lookup (works even after re-renders)
+  pushUndo(()=>{
+    blkSnaps.forEach(({b,prevSm})=>{b.sm=prevSm;sbUpdateBlock(b.id,{start_minutes:prevSm});});
+    atbSnaps.forEach(({atbId,prevSm,dur,hadOv})=>{
+      const ps2=_sm2t(prevSm),pe2=_sm2t(prevSm+dur);
+      const curOv=st.autoTBOverrides.find(o=>String(o.base_id)===atbId&&o.date===ds);
+      if(curOv){if(!hadOv){st.autoTBOverrides=st.autoTBOverrides.filter(o=>o!==curOv);sbReqSilent('DELETE','auto_timeblock_overrides',null,`?id=eq.${curOv.id}`);}else{curOv.start_time=ps2;curOv.end_time=pe2;sbReqSilent('PATCH','auto_timeblock_overrides',{start_time:ps2,end_time:pe2},`?id=eq.${curOv.id}`);}}
+    });
+    save();
+    if(document.getElementById('tbGrid'))renderDayTB();
+  },'Moved blocks');
+},{capture:true});
 // 'A' key: add auto-blocks in rubber-band range (or all for today) to selection
 window.addEventListener('keydown',e=>{
   if(e.key!=='a'&&e.key!=='A')return;

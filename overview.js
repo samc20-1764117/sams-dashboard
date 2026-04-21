@@ -3317,12 +3317,14 @@ function drawAutoTBBlock(col,atb,ds){
         const prevStart=`${String(Math.floor(startSm/60)).padStart(2,'0')}:${String(startSm%60).padStart(2,'0')}:00`;
         const prevEnd=`${String(Math.floor(prevEndSm/60)).padStart(2,'0')}:${String(prevEndSm%60).padStart(2,'0')}:00`;
         const mbSnaps=atbMultiBlocks?atbMultiBlocks.map(({bl,startSm2})=>({bl,startSm2,newSm:bl.sm})):[];
+        const otherAtbSnaps=otherSelAtbs?otherSelAtbs.map(({aa,startSm2})=>({atbId:aa._atbId,prevSm:startSm2,dur:aa.dur,hadOv:!!st.autoTBOverrides.find(o=>String(o.base_id)===aa._atbId&&o.date===ds)})):[];
+        const _undoOtherAtbs=()=>{otherAtbSnaps.forEach(({atbId,prevSm,dur,hadOv})=>{const ps2=_atbSm2t(prevSm),pe2=_atbSm2t(prevSm+dur);const curOv=st.autoTBOverrides.find(o=>String(o.base_id)===atbId&&o.date===ds);if(curOv){if(!hadOv){st.autoTBOverrides=st.autoTBOverrides.filter(o=>o!==curOv);sbReqSilent('DELETE','auto_timeblock_overrides',null,`?id=eq.${curOv.id}`);}else{curOv.start_time=ps2;curOv.end_time=pe2;sbReqSilent('PATCH','auto_timeblock_overrides',{start_time:ps2,end_time:pe2},`?id=eq.${curOv.id}`);}}});};
         if(atb._ovId){
           const ov=st.autoTBOverrides.find(o=>String(o.id)===atb._ovId);
           if(ov){ov.start_time=newStart;ov.end_time=newEnd;}
           sbReqSilent('PATCH','auto_timeblock_overrides',{start_time:newStart,end_time:newEnd},`?id=eq.${atb._ovId}`);
           const ovId=atb._ovId;
-          pushUndo(()=>{atb.sm=startSm;const ov2=st.autoTBOverrides.find(o=>String(o.id)===ovId);if(ov2){ov2.start_time=prevStart;ov2.end_time=prevEnd;}sbReqSilent('PATCH','auto_timeblock_overrides',{start_time:prevStart,end_time:prevEnd},`?id=eq.${ovId}`);mbSnaps.forEach(({bl,startSm2})=>{bl.sm=startSm2;sbUpdateBlock(bl.id,{start_minutes:startSm2});});save();if(document.getElementById('tbGrid'))renderDayTB();},'Moved auto block');
+          pushUndo(()=>{atb.sm=startSm;const ov2=st.autoTBOverrides.find(o=>String(o.id)===ovId);if(ov2){ov2.start_time=prevStart;ov2.end_time=prevEnd;}sbReqSilent('PATCH','auto_timeblock_overrides',{start_time:prevStart,end_time:prevEnd},`?id=eq.${ovId}`);mbSnaps.forEach(({bl,startSm2})=>{bl.sm=startSm2;sbUpdateBlock(bl.id,{start_minutes:startSm2});});_undoOtherAtbs();save();if(document.getElementById('tbGrid'))renderDayTB();},'Moved auto block');
         } else {
           const payload={base_id:atb._atbId,date:ds,start_time:newStart,end_time:newEnd};
           const tmpId='atbov-tmp-'+Date.now();
@@ -3334,14 +3336,15 @@ function drawAutoTBBlock(col,atb,ds){
               save();
             }
           });
-          pushUndo(()=>{atb.sm=startSm;const _realOvId=atb._ovId;st.autoTBOverrides=st.autoTBOverrides.filter(o=>String(o.id)!==tmpId&&(!_realOvId||String(o.id)!==String(_realOvId)));if(_realOvId)sbReqSilent('DELETE','auto_timeblock_overrides',null,`?id=eq.${_realOvId}`);atb._ovId=null;mbSnaps.forEach(({bl,startSm2})=>{bl.sm=startSm2;sbUpdateBlock(bl.id,{start_minutes:startSm2});});save();if(document.getElementById('tbGrid'))renderDayTB();},'Moved auto block');
+          pushUndo(()=>{atb.sm=startSm;const _realOvId=atb._ovId;st.autoTBOverrides=st.autoTBOverrides.filter(o=>String(o.id)!==tmpId&&(!_realOvId||String(o.id)!==String(_realOvId)));if(_realOvId)sbReqSilent('DELETE','auto_timeblock_overrides',null,`?id=eq.${_realOvId}`);atb._ovId=null;mbSnaps.forEach(({bl,startSm2})=>{bl.sm=startSm2;sbUpdateBlock(bl.id,{start_minutes:startSm2});});_undoOtherAtbs();save();if(document.getElementById('tbGrid'))renderDayTB();},'Moved auto block');
         }
         mbSnaps.forEach(({bl,newSm})=>sbUpdateBlock(bl.id,{start_minutes:newSm}));
         // Persist other selected auto-blocks
         if(otherSelAtbs)otherSelAtbs.forEach(({aa})=>{
           const ns=aa.sm,ne=aa.sm+aa.dur;
           const ns2=_atbSm2t(ns),ne2=_atbSm2t(ne);
-          if(aa._ovId){const ov2=st.autoTBOverrides.find(o=>String(o.id)===aa._ovId);if(ov2){ov2.start_time=ns2;ov2.end_time=ne2;}sbReqSilent('PATCH','auto_timeblock_overrides',{start_time:ns2,end_time:ne2},`?id=eq.${aa._ovId}`);}
+          const curOv2=st.autoTBOverrides.find(o=>String(o.base_id)===aa._atbId&&o.date===ds);
+          if(curOv2){curOv2.start_time=ns2;curOv2.end_time=ne2;sbReqSilent('PATCH','auto_timeblock_overrides',{start_time:ns2,end_time:ne2},`?id=eq.${curOv2.id}`);}
           else{const pl={base_id:aa._atbId,date:ds,start_time:ns2,end_time:ne2};const tid='atbov-tmp-'+Date.now();st.autoTBOverrides.push({...pl,id:tid});sbReqSilent('POST','auto_timeblock_overrides',pl,'').then(res=>{if(res&&res[0]){const i=st.autoTBOverrides.findIndex(o=>String(o.id)===tid);if(i>-1){st.autoTBOverrides[i]=res[0];aa._ovId=String(res[0].id);}}save();});}
         });
         save();
