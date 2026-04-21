@@ -2811,7 +2811,7 @@ function _attachWkcRubberBand(){
         rbMoved=true;
         ev.preventDefault();
         selBox=document.createElement('div');
-        selBox.style.cssText='position:fixed;background:rgba(42,157,181,.10);border-top:1.5px solid rgba(42,157,181,.5);border-bottom:1.5px solid rgba(42,157,181,.5);pointer-events:none;z-index:999;';
+        selBox.style.cssText='position:fixed;background:rgba(42,157,181,.12);border:1px solid rgba(42,157,181,.45);border-radius:3px;pointer-events:none;z-index:999;';
         document.body.appendChild(selBox);
       }
       if(selBox){
