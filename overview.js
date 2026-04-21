@@ -3088,14 +3088,19 @@ function drawTBBlock(col,b){
     e.stopPropagation();
     const startY=e.clientY,startSm=b.sm;
     tbDragging=false;
-    // Multi-select drag: if this block is in a multi-selection, move all selected blocks
+    // Multi-select drag: if this block is in a multi-selection, move all selected blocks + selected auto-blocks
     const tbSelId=_tbSelId();
     const isMultiDrag=tbSelId&&selectedTasks.has(tbSelId)&&selectedTasks.size>1;
-    let multiBlocks=null;
+    let multiBlocks=null,multiAutoBlocks=null;
     if(isMultiDrag){
       const col2=el.closest('.tb-col');
-      if(col2){multiBlocks=[...col2.querySelectorAll('.tb-block[data-bid]')].map(be=>{const bl=st.blocks.find(x=>String(x.id)===String(be.dataset.bid));if(!bl)return null;const sid=_getTBBlockSelId(bl);if(!sid||!selectedTasks.has(sid))return null;return{bl,el2:be,startSm2:bl.sm};}).filter(Boolean);}
+      if(col2){
+        multiBlocks=[...col2.querySelectorAll('.tb-block[data-bid]')].map(be=>{const bl=st.blocks.find(x=>String(x.id)===String(be.dataset.bid));if(!bl)return null;const sid=_getTBBlockSelId(bl);if(!sid||!selectedTasks.has(sid))return null;return{bl,el2:be,startSm2:bl.sm};}).filter(Boolean);
+        const selAtbSet=new Set([...selectedTasks].filter(id=>id.startsWith('atb::')).map(id=>id.replace('atb::','')));
+        if(selAtbSet.size){const atbs=getAutoTBForDate(b.ds||d2s(getDayDate(dayOff)));multiAutoBlocks=[];col2.querySelectorAll('.atb-block[data-atb-id]').forEach(ae=>{if(!selAtbSet.has(ae.dataset.atbId))return;const aa=atbs.find(a=>a._atbId===ae.dataset.atbId);if(aa)multiAutoBlocks.push({aa,el2:ae,startSm2:aa.sm});});if(!multiAutoBlocks.length)multiAutoBlocks=null;}
+      }
     }
+    const _sm2t=sm=>`${String(Math.floor(sm/60)).padStart(2,'0')}:${String(sm%60).padStart(2,'0')}:00`;
     tbOnMove=ev=>{
       const dy=ev.clientY-startY;
       if(!tbDragging&&Math.abs(dy)<5)return;
@@ -3103,6 +3108,7 @@ function drawTBBlock(col,b){
       const dm=Math.round(dy/PX/15)*15;
       if(multiBlocks){
         multiBlocks.forEach(({bl,el2,startSm2})=>{const ns=Math.max(HOURS[0]*60,Math.min(HOURS[HOURS.length-1]*60,startSm2+dm));bl.sm=ns;el2.style.top=(ns-HOURS[0]*60)*PX+'px';const bt2=el2.querySelector('.tb-btime');if(bt2)bt2.textContent=tStr(ns)+'-'+tStr(ns+bl.dur);});
+        if(multiAutoBlocks)multiAutoBlocks.forEach(({aa,el2,startSm2})=>{const ns=Math.max(HOURS[0]*60,Math.min(HOURS[HOURS.length-1]*60,startSm2+dm));aa.sm=ns;el2.style.top=(ns-HOURS[0]*60)*PX+'px';const bt2=el2.querySelector('.tb-btime');if(bt2)bt2.textContent=tStr(ns)+'-'+tStr(ns+aa.dur);});
       } else {
         const newSm=Math.max(HOURS[0]*60,Math.min(HOURS[HOURS.length-1]*60,startSm+dm));
         b.sm=newSm;el.style.top=(b.sm-HOURS[0]*60)*PX+'px';
@@ -3117,9 +3123,15 @@ function drawTBBlock(col,b){
       if(tbDragging){
         if(multiBlocks){
           const snaps=multiBlocks.map(({bl,startSm2})=>({bl,startSm2,newSm:bl.sm}));
-          pushUndo(()=>{snaps.forEach(({bl,startSm2})=>{bl.sm=startSm2;sbUpdateBlock(bl.id,{start_minutes:startSm2});});save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();},'Moved blocks');
+          const atbSnaps=multiAutoBlocks?multiAutoBlocks.map(({aa,startSm2})=>({aa,startSm2,newSm:aa.sm,prevOvId:aa._ovId})):[];
+          pushUndo(()=>{
+            snaps.forEach(({bl,startSm2})=>{bl.sm=startSm2;sbUpdateBlock(bl.id,{start_minutes:startSm2});});
+            atbSnaps.forEach(({aa,startSm2,prevOvId})=>{aa.sm=startSm2;const ps=_sm2t(startSm2),pe=_sm2t(startSm2+aa.dur);if(prevOvId){const ov=st.autoTBOverrides.find(o=>String(o.id)===prevOvId);if(ov){ov.start_time=ps;ov.end_time=pe;}sbReqSilent('PATCH','auto_timeblock_overrides',{start_time:ps,end_time:pe},`?id=eq.${prevOvId}`);}else if(aa._ovId){const rid=aa._ovId;st.autoTBOverrides=st.autoTBOverrides.filter(o=>String(o.id)!==rid);sbReqSilent('DELETE','auto_timeblock_overrides',null,`?id=eq.${rid}`);aa._ovId=null;}});
+            save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
+          },'Moved blocks');
           save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
           snaps.forEach(({bl,newSm})=>sbUpdateBlock(bl.id,{start_minutes:newSm}));
+          atbSnaps.forEach(({aa,newSm,prevOvId})=>{const ns2=_sm2t(newSm),ne2=_sm2t(newSm+aa.dur);if(prevOvId){const ov=st.autoTBOverrides.find(o=>String(o.id)===prevOvId);if(ov){ov.start_time=ns2;ov.end_time=ne2;}sbReqSilent('PATCH','auto_timeblock_overrides',{start_time:ns2,end_time:ne2},`?id=eq.${prevOvId}`);}else{const pl={base_id:aa._atbId,date:aa.ds,start_time:ns2,end_time:ne2};const tmpId='atbov-tmp-'+Date.now();st.autoTBOverrides.push({...pl,id:tmpId});sbReqSilent('POST','auto_timeblock_overrides',pl,'').then(res=>{if(res&&res[0]){const idx=st.autoTBOverrides.findIndex(o=>String(o.id)===tmpId);if(idx>-1){st.autoTBOverrides[idx]=res[0];aa._ovId=String(res[0].id);}save();}});}});
         } else {
           const newSm=b.sm;pushUndo(()=>{b.sm=startSm;save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();sbUpdateBlock(b.id,{start_minutes:startSm});},'Moved block');save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();sbUpdateBlock(b.id,{start_minutes:newSm});
         }
@@ -3248,6 +3260,14 @@ function drawAutoTBBlock(col,atb,ds){
     el.classList.add('sel-atb');
     const startY=e.clientY,startSm=atb.sm;
     atbDragging=false;
+    // Multi-drag: collect any selected regular TB blocks
+    const _atbSm2t=sm=>`${String(Math.floor(sm/60)).padStart(2,'0')}:${String(sm%60).padStart(2,'0')}:00`;
+    const _atbMultiSelId=selectedTasks.has('atb::'+atb._atbId);
+    let atbMultiBlocks=null;
+    if(_atbMultiSelId&&selectedTasks.size>1){
+      const col2=el.closest('.tb-col');
+      if(col2){atbMultiBlocks=[...col2.querySelectorAll('.tb-block[data-bid]')].map(be=>{const bl=st.blocks.find(x=>String(x.id)===String(be.dataset.bid));if(!bl)return null;const sid=_getTBBlockSelId(bl);if(!sid||!selectedTasks.has(sid))return null;return{bl,el2:be,startSm2:bl.sm};}).filter(Boolean);if(!atbMultiBlocks.length)atbMultiBlocks=null;}
+    }
     atbOnMove=ev=>{
       const dy=ev.clientY-startY;
       if(!atbDragging&&Math.abs(dy)<5)return;
@@ -3257,6 +3277,7 @@ function drawAutoTBBlock(col,atb,ds){
       atb.sm=newSm;
       el.style.top=(atb.sm-HOURS[0]*60)*PX+'px';
       const bt=el.querySelector('.tb-btime');if(bt)bt.textContent=tStr(atb.sm)+'-'+tStr(atb.sm+atb.dur);
+      if(atbMultiBlocks)atbMultiBlocks.forEach(({bl,el2,startSm2})=>{const ns=Math.max(HOURS[0]*60,Math.min(HOURS[HOURS.length-1]*60,startSm2+dm));bl.sm=ns;el2.style.top=(ns-HOURS[0]*60)*PX+'px';const bt2=el2.querySelector('.tb-btime');if(bt2)bt2.textContent=tStr(ns)+'-'+tStr(ns+bl.dur);});
       el.classList.add('dragging-block');
     };
     atbOnUp=()=>{
@@ -3271,12 +3292,13 @@ function drawAutoTBBlock(col,atb,ds){
         const prevEndSm=startSm+atb.dur;
         const prevStart=`${String(Math.floor(startSm/60)).padStart(2,'0')}:${String(startSm%60).padStart(2,'0')}:00`;
         const prevEnd=`${String(Math.floor(prevEndSm/60)).padStart(2,'0')}:${String(prevEndSm%60).padStart(2,'0')}:00`;
+        const mbSnaps=atbMultiBlocks?atbMultiBlocks.map(({bl,startSm2})=>({bl,startSm2,newSm:bl.sm})):[];
         if(atb._ovId){
           const ov=st.autoTBOverrides.find(o=>String(o.id)===atb._ovId);
           if(ov){ov.start_time=newStart;ov.end_time=newEnd;}
           sbReqSilent('PATCH','auto_timeblock_overrides',{start_time:newStart,end_time:newEnd},`?id=eq.${atb._ovId}`);
           const ovId=atb._ovId;
-          pushUndo(()=>{atb.sm=startSm;const ov2=st.autoTBOverrides.find(o=>String(o.id)===ovId);if(ov2){ov2.start_time=prevStart;ov2.end_time=prevEnd;}sbReqSilent('PATCH','auto_timeblock_overrides',{start_time:prevStart,end_time:prevEnd},`?id=eq.${ovId}`);save();if(document.getElementById('tbGrid'))renderDayTB();},'Moved auto block');
+          pushUndo(()=>{atb.sm=startSm;const ov2=st.autoTBOverrides.find(o=>String(o.id)===ovId);if(ov2){ov2.start_time=prevStart;ov2.end_time=prevEnd;}sbReqSilent('PATCH','auto_timeblock_overrides',{start_time:prevStart,end_time:prevEnd},`?id=eq.${ovId}`);mbSnaps.forEach(({bl,startSm2})=>{bl.sm=startSm2;sbUpdateBlock(bl.id,{start_minutes:startSm2});});save();if(document.getElementById('tbGrid'))renderDayTB();},'Moved auto block');
         } else {
           const payload={base_id:atb._atbId,date:ds,start_time:newStart,end_time:newEnd};
           const tmpId='atbov-tmp-'+Date.now();
@@ -3288,8 +3310,9 @@ function drawAutoTBBlock(col,atb,ds){
               save();
             }
           });
-          pushUndo(()=>{atb.sm=startSm;const _realOvId=atb._ovId;st.autoTBOverrides=st.autoTBOverrides.filter(o=>String(o.id)!==tmpId&&(!_realOvId||String(o.id)!==String(_realOvId)));if(_realOvId)sbReqSilent('DELETE','auto_timeblock_overrides',null,`?id=eq.${_realOvId}`);atb._ovId=null;save();if(document.getElementById('tbGrid'))renderDayTB();},'Moved auto block');
+          pushUndo(()=>{atb.sm=startSm;const _realOvId=atb._ovId;st.autoTBOverrides=st.autoTBOverrides.filter(o=>String(o.id)!==tmpId&&(!_realOvId||String(o.id)!==String(_realOvId)));if(_realOvId)sbReqSilent('DELETE','auto_timeblock_overrides',null,`?id=eq.${_realOvId}`);atb._ovId=null;mbSnaps.forEach(({bl,startSm2})=>{bl.sm=startSm2;sbUpdateBlock(bl.id,{start_minutes:startSm2});});save();if(document.getElementById('tbGrid'))renderDayTB();},'Moved auto block');
         }
+        mbSnaps.forEach(({bl,newSm})=>sbUpdateBlock(bl.id,{start_minutes:newSm}));
         save();
       }
     };
