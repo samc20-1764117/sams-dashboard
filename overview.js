@@ -105,11 +105,36 @@ function launchDonutConfetti(){
   const svg=arc.closest('svg');
   const rect=svg.getBoundingClientRect();
   const ox=rect.left+rect.width/2, oy=rect.top+rect.height/2;
-  // donut bounce
-  svg.classList.remove('donut-bounce');
-  void svg.offsetWidth;
-  svg.classList.add('donut-bounce');
-  setTimeout(()=>svg.classList.remove('donut-bounce'),700);
+  // donut dance
+  const NS='http://www.w3.org/2000/svg';
+  const lc='#22c55e',lw='2.8';
+  function makeLimb(cls,tx,ty,x2,y2){
+    const g=document.createElementNS(NS,'g');
+    g.setAttribute('transform',`translate(${tx},${ty})`);
+    g.classList.add(cls);
+    const line=document.createElementNS(NS,'line');
+    line.setAttribute('x1','0');line.setAttribute('y1','0');
+    line.setAttribute('x2',String(x2));line.setAttribute('y2',String(y2));
+    line.setAttribute('stroke',lc);line.setAttribute('stroke-width',lw);
+    line.setAttribute('stroke-linecap','round');
+    const dot=document.createElementNS(NS,'circle');
+    dot.setAttribute('cx',String(x2));dot.setAttribute('cy',String(y2));
+    dot.setAttribute('r','3');dot.setAttribute('fill',lc);
+    g.appendChild(line);g.appendChild(dot);
+    return g;
+  }
+  const armL=makeLimb('d-arm-l',6,26,-10,-6);
+  const armR=makeLimb('d-arm-r',50,26,10,-6);
+  const legL=makeLimb('d-leg-l',23,50,-6,12);
+  const legR=makeLimb('d-leg-r',33,50,6,12);
+  svg.style.overflow='visible';
+  svg.classList.add('donut-dancing');
+  [armL,armR,legL,legR].forEach(el=>svg.appendChild(el));
+  setTimeout(()=>{
+    svg.classList.remove('donut-dancing');
+    svg.style.overflow='';
+    [armL,armR,legL,legR].forEach(el=>el.remove());
+  },2400);
   // sprinkles
   const colors=['#ffffff','#22c55e','#4ade80','#bbf7d0','#ffffff','#16a34a'];
   for(let i=0;i<42;i++){
