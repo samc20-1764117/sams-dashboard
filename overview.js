@@ -123,11 +123,12 @@ function launchDonutConfetti(){
     g.appendChild(line);g.appendChild(dot);
     return g;
   }
-  // pivot at exact donut ring edges; endpoints go straight out so rotation looks natural
-  const armL=makeLimb('d-arm-l',6,28,-13,0);   // left edge, arm extends left
-  const armR=makeLimb('d-arm-r',50,28,13,0);   // right edge, arm extends right
-  const legL=makeLimb('d-leg-l',23,50,0,13);   // bottom-left, leg hangs straight down
-  const legR=makeLimb('d-leg-r',33,50,0,13);   // bottom-right, leg hangs straight down
+  // 7-o'clock & 5-o'clock on the ring for arms; just below 6-o'clock for legs
+  // arm endpoints: left arm hangs down-left, right arm raises up-right (like the image)
+  const armL=makeLimb('d-arm-l',17,47,-11,9);  // 7 o'clock, extends lower-left
+  const armR=makeLimb('d-arm-r',39,47,11,-9);  // 5 o'clock, extends upper-right (raised)
+  const legL=makeLimb('d-leg-l',23,50,-4,14);  // bottom-left, slight outward angle
+  const legR=makeLimb('d-leg-r',33,50,4,14);   // bottom-right, slight outward angle
   svg.style.overflow='visible';
   svg.classList.add('donut-dancing');
   [armL,armR,legL,legR].forEach(el=>svg.appendChild(el));
