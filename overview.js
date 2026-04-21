@@ -95,6 +95,7 @@ function renderToday(){
   renderDailyHabits();
   _attachListRubberBand(document.getElementById('todList'));
   _attachTBEdgeRubberBand();
+  _attachWkcRubberBand();
 }
 // ── Pup Skills Highlight ───────────────────────────────────────────────────────
 let _donutInited=false;
@@ -2780,6 +2781,57 @@ function _attachTBEdgeRubberBand(){
         if(!bl)return;
         const blTop=(bl.sm-HOURS[0]*60)*PX,blBot=blTop+bl.dur*PX;
         if(blBot>selTop&&blTop<selBot){const sid=_getTBBlockSelId(bl);if(sid){selectedTasks.add(sid);lastSelectedId=sid;}}
+      });
+      applySelHighlight();
+    };
+    document.addEventListener('mousemove',onMove);
+    document.addEventListener('mouseup',onUp);
+  });
+}
+
+// ── Rubber-band from empty areas in weekly calendar — selects chips ────────────
+function _attachWkcRubberBand(){
+  const wrap=document.getElementById('wkcWrap');
+  if(!wrap||wrap._wkcRbSetup)return;
+  wrap._wkcRbSetup=true;
+  wrap.addEventListener('mousedown',e=>{
+    if(e.button!==0)return;
+    if(e.target.closest('.chip,.ti,.tb-block,.wkc-banner,.wkc-goals-col'))return;
+    if(e.target.closest('button,a,input,textarea,select'))return;
+    const colsEl=document.getElementById('wkcCols');
+    if(!colsEl)return;
+    const colsRect=colsEl.getBoundingClientRect();
+    if(e.clientX<colsRect.left||e.clientX>colsRect.right)return;
+    e.preventDefault();
+    const startY=e.clientY;
+    let rbMoved=false,selBox=null;
+    const onMove=ev=>{
+      if(!rbMoved&&Math.abs(ev.clientY-startY)>5){
+        rbMoved=true;
+        selBox=document.createElement('div');
+        selBox.style.cssText='position:fixed;background:rgba(42,157,181,.10);border-top:1.5px solid rgba(42,157,181,.5);border-bottom:1.5px solid rgba(42,157,181,.5);pointer-events:none;z-index:999;';
+        document.body.appendChild(selBox);
+      }
+      if(selBox){
+        const cr=colsEl.getBoundingClientRect();
+        const y1=Math.min(startY,ev.clientY),y2=Math.max(startY,ev.clientY);
+        selBox.style.left=cr.left+'px';selBox.style.width=cr.width+'px';
+        selBox.style.top=y1+'px';selBox.style.height=(y2-y1)+'px';
+      }
+    };
+    const onUp=ev=>{
+      document.removeEventListener('mousemove',onMove);
+      document.removeEventListener('mouseup',onUp);
+      if(selBox)selBox.remove();
+      if(!rbMoved)return;
+      const y1=Math.min(startY,ev.clientY),y2=Math.max(startY,ev.clientY);
+      if(!ev.shiftKey)selectedTasks.clear();
+      document.querySelectorAll('#wkcCols .chip[data-tid]').forEach(chip=>{
+        const r=chip.getBoundingClientRect();
+        if(r.bottom>y1&&r.top<y2){
+          const sid=chip.dataset.tid;
+          if(sid){selectedTasks.add(sid);lastSelectedId=sid;}
+        }
       });
       applySelHighlight();
     };
