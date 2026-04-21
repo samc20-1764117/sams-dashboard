@@ -102,23 +102,33 @@ let _donutInited=false;
 let _donutWas100=false;
 function launchDonutConfetti(){
   const arc=document.getElementById('_donutArc');if(!arc)return;
-  const rect=arc.closest('svg').getBoundingClientRect();
+  const svg=arc.closest('svg');
+  const rect=svg.getBoundingClientRect();
   const ox=rect.left+rect.width/2, oy=rect.top+rect.height/2;
+  // donut bounce
+  svg.classList.remove('donut-bounce');
+  void svg.offsetWidth;
+  svg.classList.add('donut-bounce');
+  setTimeout(()=>svg.classList.remove('donut-bounce'),700);
+  // sprinkles
   const colors=['#ffffff','#22c55e','#4ade80','#bbf7d0','#ffffff','#16a34a'];
-  for(let i=0;i<32;i++){
+  for(let i=0;i<42;i++){
+    const delay=(Math.random()*150).toFixed(0)+'ms';
     const el=document.createElement('span');
     el.className='confetti-particle';
+    // bias angle downward: more particles in lower half
     const angle=(Math.random()*360)*(Math.PI/180);
-    const dist=55+Math.random()*80;
-    const cx=Math.cos(angle)*dist, cy=Math.sin(angle)*dist-30;
-    const cr=(Math.random()-0.5)*540;
-    const cd=(0.9+Math.random()*0.8).toFixed(2)+'s';
-    const w=(3+Math.random()*3).toFixed(1)+'px';
-    const h=(7+Math.random()*6).toFixed(1)+'px';
+    const dist=60+Math.random()*90;
+    const cx=Math.cos(angle)*dist;
+    const cy=Math.sin(angle)*dist+20; // +20 pulls center of spread down
+    const cr=(Math.random()-0.5)*600;
+    const cd=(1.0+Math.random()*0.7).toFixed(2)+'s';
+    const w=(2+Math.random()*3).toFixed(1)+'px';
+    const h=(6+Math.random()*8).toFixed(1)+'px';
     const color=colors[Math.floor(Math.random()*colors.length)];
-    el.style.cssText=`--cx:${cx.toFixed(1)}px;--cy:${cy.toFixed(1)}px;--cr:${cr.toFixed(1)}deg;--cd:${cd};left:${ox}px;top:${oy}px;width:${w};height:${h};background:${color};border-radius:2px;`;
+    el.style.cssText=`--cx:${cx.toFixed(1)}px;--cy:${cy.toFixed(1)}px;--cr:${cr.toFixed(1)}deg;--cd:${cd};--delay:${delay};left:${ox}px;top:${oy}px;width:${w};height:${h};background:${color};border-radius:2px;`;
     document.body.appendChild(el);
-    setTimeout(()=>el.remove(), 1800);
+    setTimeout(()=>el.remove(), 2000);
   }
 }
 function renderTodDonut(done,total){
