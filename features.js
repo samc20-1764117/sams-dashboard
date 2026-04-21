@@ -3255,13 +3255,12 @@ window.addEventListener('keydown',e=>{
   const tag=document.activeElement?.tagName;
   if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT'||document.activeElement?.isContentEditable)return;
   if(e.metaKey||e.ctrlKey||e.altKey)return;
-  if(!document.querySelector('.tb-col'))return;
   e.preventDefault();
+  if(!document.querySelector('.tb-col')){showToast('A: no tb-col','#e11d48',1500);return;}
   const ds=d2s(getDayDate(dayOff));
   const allAtbs=typeof getAutoTBForDate==='function'?getAutoTBForDate(ds):[];
-  if(!allAtbs.length)return;
+  if(!allAtbs.length){showToast('A: no auto-blocks (showAutoTB='+cfg.showAutoTB+')','#e11d48',2000);return;}
   let minSm=null,maxSm=null;
-  // Try: range from selected regular TB blocks
   if(selectedTasks.size>0){
     const selBlks=(st.blocks||[]).filter(b=>{
       if(b.ds!==ds)return false;
@@ -3270,13 +3269,12 @@ window.addEventListener('keydown',e=>{
     });
     if(selBlks.length){minSm=Math.min(...selBlks.map(b=>b.sm));maxSm=Math.max(...selBlks.map(b=>b.sm+b.dur));}
   }
-  // Try: range from last rubber-band
   if(minSm===null&&_lastTBRbRange){
     minSm=HOURS[0]*60+_lastTBRbRange.selTop/PX;
     maxSm=HOURS[0]*60+_lastTBRbRange.selBot/PX;
   }
-  // Fallback: select all auto-blocks for the day
   const targets=minSm!==null?allAtbs.filter(a=>a.sm+a.dur>minSm&&a.sm<maxSm):allAtbs;
+  showToast('A: '+targets.length+' atbs, minSm='+minSm,'#2a9db5',1800);
   targets.forEach(a=>selectedTasks.add('atb::'+a._atbId));
   applySelHighlight();
 },{capture:true});
