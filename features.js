@@ -2466,7 +2466,7 @@ document.addEventListener('keydown',async e=>{
     st.tasks=st.tasks.filter(t=>!taskIds.includes(String(t.id)));
     recIds.forEach(rid=>{deletedRecIds.add(rid);st.recurring=st.recurring.filter(r=>String(r.id)!==rid);});
     st.travel=st.travel.filter(tv=>!tvIds.includes(String(tv.id)));
-    renderAll();renderWkSummary();renderWkCal();renderRecOv();renderWeeklyPage();save();
+    renderAll();renderWkSummary();renderWkCal();renderRecOv();renderWeeklyPage();if(document.getElementById('tbGrid'))renderDayTB();save();
     // DB deletes
     await Promise.all([
       ...taskCopies.map(t=>sbReq('DELETE','tasks',null,`?id=eq.${t.id}`)),
@@ -2480,8 +2480,13 @@ document.addEventListener('keydown',async e=>{
       shopRestores.forEach(({s,prev})=>{s.due_date=prev;});
       wrecRestores.forEach(({r,wkKey,prev})=>{if(!r._dateOverrides)r._dateOverrides={};if(prev)r._dateOverrides[wkKey]=prev;});
       const taskPromises=taskCopies.map(async t=>{
+        const oldId=String(t.id);
         const sv=await sbReq('POST','tasks',{name:t.name,category:t.category,due_date:t.due_date,done:t.done,important:t.important||false});
-        st.tasks.push(sv&&sv[0]?sv[0]:t);
+        const newTask=sv&&sv[0]?sv[0]:t;
+        st.tasks.push(newTask);
+        // Re-link timeblock blocks that referenced the old task ID
+        const newId=String(newTask.id);
+        st.blocks.filter(b=>String(b.taskId)===oldId).forEach(b=>{b.taskId=newId;sbUpdateBlock(b.id,{task_id:newId});});
       });
       const recPromises=recCopies.map(async r=>{
         deletedRecIds.delete(String(r.id));
@@ -2498,7 +2503,7 @@ document.addEventListener('keydown',async e=>{
         st.travel.push(sv&&sv[0]?sv[0]:tv);
       });
       await Promise.all([...taskPromises,...recPromises,...tvPromises]);
-      renderAll();renderWkSummary();renderWkCal();renderRecOv();renderWeeklyPage();save();
+      renderAll();renderWkSummary();renderWkCal();renderRecOv();renderWeeklyPage();if(document.getElementById('tbGrid'))renderDayTB();save();
     },'Deleted '+(totalCount>1?totalCount+' items':'item'));
     clearSelection();
     return;
@@ -3244,7 +3249,8 @@ document.addEventListener('keydown',e=>{
   if(e.key==='s'){e.preventDefault();syncAll(false);}
   if(e.key==='a'&&selectedTasks.size>0&&document.getElementById('tbGrid')){
     e.preventDefault();
-    const selBlks=[...selectedTasks].filter(id=>id.startsWith('blk-')).map(id=>st.blocks.find(b=>String(b.id)===id.replace('blk-',''))).filter(Boolean);
-    if(selBlks.length){const minSm=Math.min(...selBlks.map(b=>b.sm)),maxSm=Math.max(...selBlks.map(b=>b.sm+b.dur));const ds=d2s(getDayDate(dayOff));getAutoTBForDate(ds).filter(a=>a.sm+a.dur>minSm&&a.sm<maxSm).forEach(a=>selectedTasks.add('atb::'+a._atbId));applySelHighlight();}
+    const ds=d2s(getDayDate(dayOff));
+    const selBlks=st.blocks.filter(b=>{if(b.ds!==ds)return false;const sid=_getTBBlockSelId(b);return sid&&selectedTasks.has(sid);});
+    if(selBlks.length){const minSm=Math.min(...selBlks.map(b=>b.sm)),maxSm=Math.max(...selBlks.map(b=>b.sm+b.dur));getAutoTBForDate(ds).filter(a=>a.sm+a.dur>minSm&&a.sm<maxSm).forEach(a=>selectedTasks.add('atb::'+a._atbId));applySelHighlight();}
   }
 });
