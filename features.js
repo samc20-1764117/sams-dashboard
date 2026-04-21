@@ -3251,7 +3251,7 @@ document.addEventListener('keydown',e=>{
 });
 // 'A' key: add auto-blocks in range to selection (capture phase, case-insensitive)
 document.addEventListener('keydown',e=>{
-  if(e.key.toLowerCase()!=='a')return;
+  if(e.key.toLowerCase()!=='q')return;
   const tag=document.activeElement?.tagName;
   if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT')return;
   if(e.metaKey||e.ctrlKey||e.altKey)return;
