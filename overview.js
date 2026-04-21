@@ -3593,7 +3593,7 @@ function startTBInlineEdit(blockId,col,onCommit){
   if(!b)return;
   el.style.minHeight='22px';el.style.zIndex='10';
   // Category cycling — up/down arrows flip through KCATS, block color updates live
-  const _cycleCats=KCATS.filter(c=>c!=='Weekly Goals');
+  const _cycleCats=['Home','My work','Work','Social'];
   let _catIdx=Math.max(0,_cycleCats.indexOf(b.cat||'Home'));
   function _applyColor(){
     const cs=gc(_cycleCats[_catIdx]);
