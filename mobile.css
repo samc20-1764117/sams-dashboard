@@ -17,14 +17,26 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 #mMain{flex:1;padding:12px 16px;display:flex;flex-direction:column;gap:14px;overflow-y:auto}
 
 /* ── Section card ─────────────────────────────────────────────────────────── */
-.m-section{background:var(--glass);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.m-section{background:var(--glass);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;overflow:clip}
 .m-section-hd{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--sub);padding:10px 14px 8px}
 
+/* ── Pull-to-refresh ──────────────────────────────────────────────────────── */
+#mPTR{display:flex;align-items:center;justify-content:center;gap:8px;height:0;overflow:hidden;opacity:0;transition:height .2s,opacity .2s;color:var(--sub);font-size:12px}
+#mPTR.ptr-ready{color:var(--accent)}
+#mPTR.ptr-loading #mPTRLbl{display:none}
+.m-ptr-spinner{width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;display:none}
+#mPTR.ptr-loading .m-ptr-spinner{display:block;animation:ptr-spin .7s linear infinite}
+@keyframes ptr-spin{to{transform:rotate(360deg)}}
+
+/* ── Task row wrapper (swipe-to-delete) ───────────────────────────────────── */
+.m-row-outer{position:relative;background:#ef4444;overflow:hidden}
+.m-row-outer:first-child .m-row{border-top:none}
+.m-del-hint{position:absolute;right:16px;top:50%;transform:translateY(-50%);color:#fff;font-size:13px;font-weight:600;pointer-events:none}
+
 /* ── Task rows ────────────────────────────────────────────────────────────── */
-.m-row{display:flex;align-items:center;gap:10px;padding:11px 14px;border-top:1px solid var(--border);min-height:46px;transition:opacity .15s}
-.m-row:first-child{border-top:none}
+.m-row{display:flex;align-items:center;gap:10px;padding:11px 14px;border-top:1px solid var(--border);min-height:46px;background:var(--glass);position:relative;will-change:transform}
 .m-done{opacity:.45}
-.m-ov{background:rgba(239,68,68,.06)}
+.m-ov{background:rgba(255,240,240,.85)}
 
 .m-chk-wrap{display:flex;align-items:center;justify-content:center;width:28px;height:28px;flex-shrink:0;cursor:pointer}
 .m-chk-wrap input[type=checkbox]{width:18px;height:18px;accent-color:var(--accent);cursor:pointer;flex-shrink:0}

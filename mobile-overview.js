@@ -93,7 +93,7 @@ async function togPupSessionDone(sessId, done) {
 }
 
 // ── Category picker ───────────────────────────────────────────────────────────
-const M_CATS = ['Home', 'My work', 'Work', 'Social', 'Long term', 'Weekly Goals'];
+const M_CATS = ['Home', 'My work', 'Work', 'Social', 'Long term'];
 let _mAddCat = 'Home';
 let _mEditCat = 'Home';
 
@@ -270,7 +270,7 @@ function mTaskRow(t) {
   const safeName = escHtml(t.name || '');
   const editBtn = canEdit ? `<button class="m-edit-btn" onclick="event.stopPropagation();mOpenEdit('${t.id}')" aria-label="Edit">${_EDIT_SVG}</button>` : '';
 
-  return `<div class="m-row${t.done ? ' m-done' : ''}${ov ? ' m-ov' : ''}">
+  const inner = `<div class="m-row${t.done ? ' m-done' : ''}${ov ? ' m-ov' : ''}">
     ${noCheck
       ? `<span class="m-row-icon">📅</span>`
       : `<label class="m-chk-wrap"><input type="checkbox" ${t.done ? 'checked' : ''} onchange="${onchange}"></label>`
@@ -278,6 +278,11 @@ function mTaskRow(t) {
     <span class="m-row-name${t.done ? ' done' : ''}">${safeName}</span>
     <span class="m-row-tag" style="background:${s.bg};color:${s.t}">${tagLabel}</span>
     ${editBtn}
+  </div>`;
+
+  return `<div class="m-row-outer"${canEdit ? ` data-tid="${t.id}"` : ''}>
+    ${canEdit ? '<div class="m-del-hint">Delete</div>' : ''}
+    ${inner}
   </div>`;
 }
 
@@ -359,6 +364,103 @@ async function mDeleteEditTask() {
   await sbReq('DELETE', 'tasks', null, `?id=eq.${id}`);
 }
 
+// ── Delete by id (swipe-to-delete) ───────────────────────────────────────────
+async function mDeleteById(id) {
+  st.tasks = st.tasks.filter(x => String(x.id) !== String(id));
+  save();
+  mRenderToday();
+  await sbReq('DELETE', 'tasks', null, `?id=eq.${id}`);
+}
+
+// ── Swipe-to-delete ───────────────────────────────────────────────────────────
+let _sw = null;
+function mInitSwipe() {
+  const list = document.getElementById('mTodayList');
+  if (!list || list._swipeInited) return;
+  list._swipeInited = true;
+  const THRESHOLD = 90;
+
+  list.addEventListener('touchstart', e => {
+    const outer = e.target.closest('.m-row-outer[data-tid]');
+    if (!outer) return;
+    _sw = {outer, row: outer.querySelector('.m-row'), startX: e.touches[0].clientX, startY: e.touches[0].clientY, decided: false, dx: 0};
+  }, {passive: true});
+
+  list.addEventListener('touchmove', e => {
+    if (!_sw) return;
+    const dx = e.touches[0].clientX - _sw.startX;
+    const dy = e.touches[0].clientY - _sw.startY;
+    if (!_sw.decided) {
+      if (Math.abs(dy) > Math.abs(dx) + 3) { _sw = null; return; }
+      if (Math.abs(dx) > 6) _sw.decided = true;
+      else return;
+    }
+    if (dx > 0) return;
+    _sw.dx = Math.max(-(THRESHOLD + 30), dx);
+    _sw.row.style.transform = `translateX(${_sw.dx}px)`;
+    _sw.outer.classList.toggle('ptr-ready', _sw.dx <= -THRESHOLD);
+  }, {passive: true});
+
+  list.addEventListener('touchend', () => {
+    if (!_sw) return;
+    const {outer, row, dx} = _sw; _sw = null;
+    if (dx <= -THRESHOLD) {
+      row.style.transition = 'transform .18s';
+      row.style.transform = 'translateX(-110%)';
+      outer.style.transition = 'opacity .18s';
+      outer.style.opacity = '0';
+      setTimeout(() => mDeleteById(outer.dataset.tid), 190);
+    } else {
+      row.style.transition = 'transform .2s';
+      row.style.transform = '';
+      outer.classList.remove('ptr-ready');
+      setTimeout(() => row.style.transition = '', 200);
+    }
+  }, {passive: true});
+}
+
+// ── Pull-to-refresh ───────────────────────────────────────────────────────────
+function mInitPTR() {
+  const main = document.getElementById('mMain');
+  const ptr = document.getElementById('mPTR');
+  const lbl = document.getElementById('mPTRLbl');
+  if (!main || !ptr) return;
+  const THRESHOLD = 65;
+  let startY = 0, active = false, triggered = false;
+
+  main.addEventListener('touchstart', e => {
+    if (main.scrollTop <= 0) { startY = e.touches[0].clientY; active = true; triggered = false; }
+  }, {passive: true});
+
+  main.addEventListener('touchmove', e => {
+    if (!active) return;
+    const dy = e.touches[0].clientY - startY;
+    if (dy <= 0) { active = false; return; }
+    const pull = Math.min(dy * 0.5, THRESHOLD * 1.1);
+    ptr.style.height = pull + 'px';
+    ptr.style.opacity = String(Math.min(pull / THRESHOLD, 1));
+    triggered = pull >= THRESHOLD;
+    ptr.classList.toggle('ptr-ready', triggered);
+    if (lbl) lbl.textContent = triggered ? 'Release to refresh' : 'Pull to refresh';
+  }, {passive: true});
+
+  main.addEventListener('touchend', async () => {
+    if (!active) return;
+    active = false;
+    if (triggered) {
+      ptr.classList.add('ptr-loading');
+      ptr.classList.remove('ptr-ready');
+      ptr.style.height = '44px';
+      await syncAll(true);
+      mRenderToday();
+    }
+    ptr.style.height = '0';
+    ptr.style.opacity = '0';
+    ptr.classList.remove('ptr-loading', 'ptr-ready');
+    if (lbl) lbl.textContent = 'Pull to refresh';
+  }, {passive: true});
+}
+
 // ── Login ─────────────────────────────────────────────────────────────────────
 async function mDoLogin() {
   const email = document.getElementById('mEmail').value.trim();
@@ -389,6 +491,8 @@ async function mInit() {
   load();
   _mSetDate();
   mInitPickers();
+  mInitSwipe();
+  mInitPTR();
   const authed = await checkAuth();
   if (!authed) return;
   hideLoginOverlay();
