@@ -118,16 +118,16 @@ body{font-family:'DM Sans',sans-serif;background:#fef6f0;background-attachment:f
 @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
 @keyframes confetti-fall{0%{transform:translate(0,0) rotate(0deg) scale(1);opacity:1}60%{opacity:1}100%{transform:translate(var(--cx),var(--cy)) rotate(var(--cr)) scale(.5);opacity:0}}
 @keyframes donut-wiggle{0%,100%{transform:rotate(-10deg) translateY(0)}25%{transform:rotate(10deg) translateY(-3px)}50%{transform:rotate(-8deg) translateY(0)}75%{transform:rotate(8deg) translateY(-2px)}}
-@keyframes d-arm-l{0%,100%{transform:rotate(-22deg)}50%{transform:rotate(22deg)}}
-@keyframes d-arm-r{0%,100%{transform:rotate(-28deg)}50%{transform:rotate(18deg)}}
-@keyframes d-leg-l{0%,100%{transform:rotate(28deg)}50%{transform:rotate(-22deg)}}
-@keyframes d-leg-r{0%,100%{transform:rotate(-28deg)}50%{transform:rotate(22deg)}}
+@keyframes d-arm-l{0%,100%{transform:translate(var(--tx),var(--ty)) rotate(-20deg)}50%{transform:translate(var(--tx),var(--ty)) rotate(28deg)}}
+@keyframes d-arm-r{0%,100%{transform:translate(var(--tx),var(--ty)) rotate(-32deg)}50%{transform:translate(var(--tx),var(--ty)) rotate(16deg)}}
+@keyframes d-leg-l{0%,100%{transform:translate(var(--tx),var(--ty)) rotate(24deg)}50%{transform:translate(var(--tx),var(--ty)) rotate(-18deg)}}
+@keyframes d-leg-r{0%,100%{transform:translate(var(--tx),var(--ty)) rotate(-24deg)}50%{transform:translate(var(--tx),var(--ty)) rotate(18deg)}}
 .confetti-particle{position:fixed;pointer-events:none;z-index:9999;animation:confetti-fall var(--cd) cubic-bezier(.2,.8,.4,1) var(--delay) both;user-select:none}
 .donut-dancing{animation:donut-wiggle .45s ease-in-out 5 forwards;transform-origin:28px 28px;overflow:visible}
-.d-arm-l{transform-origin:0 0;animation:d-arm-l .45s ease-in-out 5 forwards}
-.d-arm-r{transform-origin:0 0;animation:d-arm-r .45s ease-in-out 5 forwards}
-.d-leg-l{transform-origin:0 0;animation:d-leg-l .45s ease-in-out 5 forwards}
-.d-leg-r{transform-origin:0 0;animation:d-leg-r .45s ease-in-out 5 forwards}
+.d-arm-l{animation:d-arm-l .45s ease-in-out 5 forwards}
+.d-arm-r{animation:d-arm-r .45s ease-in-out 5 forwards}
+.d-leg-l{animation:d-leg-l .45s ease-in-out 5 forwards}
+.d-leg-r{animation:d-leg-r .45s ease-in-out 5 forwards}
 
 /* Main */
 .main{flex:1;overflow-y:auto;overflow-x:hidden;padding:0 0 36px 0;margin-left:186px;transition:margin-left .25s cubic-bezier(.4,0,.2,1)}

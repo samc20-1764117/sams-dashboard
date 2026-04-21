@@ -105,13 +105,15 @@ function launchDonutConfetti(){
   const svg=arc.closest('svg');
   const rect=svg.getBoundingClientRect();
   const ox=rect.left+rect.width/2, oy=rect.top+rect.height/2;
-  // donut dance
+  // donut dance — NOTE: SVG attribute transform is overridden by CSS animation,
+  // so we embed translate(--tx,--ty) directly inside each keyframe instead.
   const NS='http://www.w3.org/2000/svg';
   const lc='#22c55e',lw='2.8';
   function makeLimb(cls,tx,ty,x2,y2){
     const g=document.createElementNS(NS,'g');
-    g.setAttribute('transform',`translate(${tx},${ty})`);
     g.classList.add(cls);
+    g.style.setProperty('--tx',tx+'px');
+    g.style.setProperty('--ty',ty+'px');
     const line=document.createElementNS(NS,'line');
     line.setAttribute('x1','0');line.setAttribute('y1','0');
     line.setAttribute('x2',String(x2));line.setAttribute('y2',String(y2));
@@ -123,19 +125,32 @@ function launchDonutConfetti(){
     g.appendChild(line);g.appendChild(dot);
     return g;
   }
-  // 7-o'clock & 5-o'clock on the ring for arms; just below 6-o'clock for legs
-  // arm endpoints: left arm hangs down-left, right arm raises up-right (like the image)
-  const armL=makeLimb('d-arm-l',17,47,-11,9);  // 7 o'clock, extends lower-left
-  const armR=makeLimb('d-arm-r',39,47,11,-9);  // 5 o'clock, extends upper-right (raised)
-  const legL=makeLimb('d-leg-l',23,50,-4,14);  // bottom-left, slight outward angle
-  const legR=makeLimb('d-leg-r',33,50,4,14);   // bottom-right, slight outward angle
+  function makeEye(cx,cy){
+    const g=document.createElementNS(NS,'g');
+    const w=document.createElementNS(NS,'circle');w.setAttribute('cx',String(cx));w.setAttribute('cy',String(cy));w.setAttribute('r','3.8');w.setAttribute('fill','white');
+    const p=document.createElementNS(NS,'circle');p.setAttribute('cx',String(cx+0.7));p.setAttribute('cy',String(cy+0.8));p.setAttribute('r','2.3');p.setAttribute('fill','#1a1a1a');
+    const s=document.createElementNS(NS,'circle');s.setAttribute('cx',String(cx+1.8));s.setAttribute('cy',String(cy-0.4));s.setAttribute('r','0.9');s.setAttribute('fill','white');
+    g.appendChild(w);g.appendChild(p);g.appendChild(s);
+    return g;
+  }
+  // Positions on the ring (r=22 from center 28,28):
+  // right arm: 4 o'clock (~30° past right) → (47,39), extends up-right (raised)
+  // left arm:  8 o'clock (~150° from right) → (9,39), extends down-left (hanging)
+  // legs: 5 o'clock → (39,47) and 7 o'clock → (17,47)
+  const armR=makeLimb('d-arm-r',47,39, 11,-12);
+  const armL=makeLimb('d-arm-l', 9,39,-11, 10);
+  const legR=makeLimb('d-leg-r',39,47,  5, 13);
+  const legL=makeLimb('d-leg-l',17,47, -5, 13);
+  // eyes on upper ring: ~(-8,-20) and (+8,-20) offset from center
+  const eyeL=makeEye(20,8);
+  const eyeR=makeEye(36,8);
   svg.style.overflow='visible';
   svg.classList.add('donut-dancing');
-  [armL,armR,legL,legR].forEach(el=>svg.appendChild(el));
+  [armR,armL,legR,legL,eyeL,eyeR].forEach(el=>svg.appendChild(el));
   setTimeout(()=>{
     svg.classList.remove('donut-dancing');
     svg.style.overflow='';
-    [armL,armR,legL,legR].forEach(el=>el.remove());
+    [armR,armL,legR,legL,eyeL,eyeR].forEach(el=>el.remove());
   },2400);
   // sprinkles
   const colors=['#ffffff','#22c55e','#4ade80','#bbf7d0','#ffffff','#16a34a'];
