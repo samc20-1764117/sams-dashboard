@@ -30,32 +30,46 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .m-chk-wrap input[type=checkbox]{width:18px;height:18px;accent-color:var(--accent);cursor:pointer;flex-shrink:0}
 
 .m-row-icon{font-size:16px;width:28px;text-align:center;flex-shrink:0}
-
 .m-row-name{flex:1;font-size:14px;line-height:1.35}
 .m-row-name.done{text-decoration:line-through}
-
 .m-row-tag{font-size:11px;padding:2px 8px;border-radius:20px;white-space:nowrap;flex-shrink:0;font-weight:500}
+
+/* Edit button on rows */
+.m-edit-btn{background:none;border:none;padding:4px 2px;cursor:pointer;color:var(--sub);display:flex;align-items:center;flex-shrink:0;opacity:.5}
+.m-edit-btn:active{opacity:1}
 
 /* ── Empty state ──────────────────────────────────────────────────────────── */
 .m-empty{padding:12px 14px;font-size:13px;color:var(--sub)}
+
+/* ── Custom category picker ───────────────────────────────────────────────── */
+.m-cpick{position:relative;flex:1}
+.m-cpick-btn{display:flex;align-items:center;gap:7px;width:100%;padding:9px 11px;border-radius:var(--rs);border:1px solid var(--border);background:var(--glass);font-size:15px;font-family:inherit;color:var(--text);cursor:pointer;text-align:left}
+.m-cpick-btn span:nth-child(2){flex:1}
+.m-cpick-arr{font-size:11px;color:var(--sub);flex-shrink:0}
+.m-cpick-dot{width:11px;height:11px;border-radius:50%;flex-shrink:0;display:inline-block;border:1.5px solid transparent}
+.m-cpick-opts{position:absolute;bottom:calc(100% + 5px);left:0;right:0;background:var(--bg);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;z-index:300;box-shadow:0 -4px 24px rgba(0,0,0,.12);display:none}
+.m-cpick-opts.open{display:block}
+.m-cpick-opts--up{bottom:calc(100% + 5px)}
+.m-cpick-opt{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--border);cursor:pointer;font-size:14px;background:var(--bg)}
+.m-cpick-opt:last-child{border-bottom:none}
+.m-cpick-opt:active{filter:brightness(.95)}
 
 /* ── Add task bar ─────────────────────────────────────────────────────────── */
 #mAddBar{position:fixed;bottom:0;left:0;right:0;display:flex;flex-direction:column;gap:7px;padding:10px 16px;padding-bottom:calc(10px + env(safe-area-inset-bottom));background:var(--bg);border-top:1px solid var(--border);z-index:20}
 #mNewTask{width:100%;padding:10px 13px;border-radius:var(--rs);border:1px solid var(--border);background:var(--glass);font-size:16px;font-family:inherit;color:var(--text);outline:none}
 #mNewTask:focus{border-color:var(--accent)}
 .m-add-row2{display:flex;gap:8px;align-items:center}
-#mNewCat{flex:1;padding:9px 10px;border-radius:var(--rs);border:1px solid var(--border);background:var(--glass);font-size:16px;font-family:inherit;color:var(--text);outline:none;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b6880'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px}
 #mAddBtn{height:40px;padding:0 18px;border-radius:var(--rs);border:none;background:var(--accent);color:#fff;font-size:15px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0}
 
 /* ── Edit bottom sheet ────────────────────────────────────────────────────── */
 #mEditBackdrop{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:100;display:none;opacity:0;transition:opacity .22s}
 #mEditBackdrop.open{display:block;opacity:1}
-#mEditSheet{position:fixed;bottom:0;left:0;right:0;background:var(--bg);border-radius:18px 18px 0 0;padding:20px 16px;padding-bottom:calc(20px + env(safe-area-inset-bottom));z-index:101;transform:translateY(100%);transition:transform .25s cubic-bezier(.32,1,.23,1)}
+#mEditSheet{position:fixed;bottom:0;left:0;right:0;background:var(--bg);border-radius:18px 18px 0 0;padding:20px 16px;padding-bottom:calc(24px + env(safe-area-inset-bottom));z-index:101;transform:translateY(100%);transition:transform .25s cubic-bezier(.32,1,.23,1)}
 #mEditSheet.open{transform:translateY(0)}
 #mEditSheet h3{font-size:15px;font-weight:700;margin-bottom:14px;text-align:center}
 #mEditName{width:100%;padding:11px 13px;border-radius:var(--rs);border:1px solid var(--border);background:var(--glass);font-size:16px;font-family:inherit;color:var(--text);outline:none;margin-bottom:10px}
 #mEditName:focus{border-color:var(--accent)}
-#mEditCat{width:100%;padding:11px 13px;border-radius:var(--rs);border:1px solid var(--border);background:var(--glass);font-size:16px;font-family:inherit;color:var(--text);outline:none;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b6880'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:30px;margin-bottom:16px}
+#mEditSheet .m-cpick-opts{z-index:102}
 .m-edit-actions{display:flex;gap:10px}
 .m-edit-actions button{flex:1;padding:12px;border-radius:var(--rs);border:none;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer}
 #mEditDel{background:rgba(239,68,68,.12);color:#dc2626}

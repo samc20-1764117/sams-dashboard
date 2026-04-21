@@ -47,14 +47,15 @@
   <div id="mAddBar">
     <input id="mNewTask" type="text" placeholder="Add task for today…" onkeydown="if(event.key==='Enter')mAddTask()">
     <div class="m-add-row2">
-      <select id="mNewCat">
-        <option value="Home">Home</option>
-        <option value="My work">My work</option>
-        <option value="Work">Work</option>
-        <option value="Social">Social</option>
-        <option value="Long term">Long term</option>
-        <option value="Weekly Goals">Weekly Goals</option>
-      </select>
+      <!-- Custom category picker -->
+      <div class="m-cpick" id="mAddPick">
+        <button type="button" class="m-cpick-btn" onclick="mTogglePick('add')">
+          <span class="m-cpick-dot" id="mAddPickDot"></span>
+          <span id="mAddPickLbl">Home</span>
+          <span class="m-cpick-arr">▾</span>
+        </button>
+        <div class="m-cpick-opts" id="mAddPickOpts"></div>
+      </div>
       <button id="mAddBtn" onclick="mAddTask()">Add</button>
     </div>
   </div>
@@ -64,15 +65,15 @@
 <div id="mEditBackdrop" onclick="mCloseEdit()"></div>
 <div id="mEditSheet">
   <h3>Edit Task</h3>
-  <input id="mEditName" type="text" placeholder="Task name">
-  <select id="mEditCat">
-    <option value="Home">Home</option>
-    <option value="My work">My work</option>
-    <option value="Work">Work</option>
-    <option value="Social">Social</option>
-    <option value="Long term">Long term</option>
-    <option value="Weekly Goals">Weekly Goals</option>
-  </select>
+  <input id="mEditName" type="text" placeholder="Task name" onkeydown="if(event.key==='Enter')mSaveEditTask()">
+  <div class="m-cpick" id="mEditPick" style="margin-bottom:16px">
+    <button type="button" class="m-cpick-btn" onclick="mTogglePick('edit')">
+      <span class="m-cpick-dot" id="mEditPickDot"></span>
+      <span id="mEditPickLbl">Home</span>
+      <span class="m-cpick-arr">▾</span>
+    </button>
+    <div class="m-cpick-opts m-cpick-opts--up" id="mEditPickOpts"></div>
+  </div>
   <div class="m-edit-actions">
     <button id="mEditDel" onclick="mDeleteEditTask()">Delete</button>
     <button id="mEditSave" onclick="mSaveEditTask()">Save</button>

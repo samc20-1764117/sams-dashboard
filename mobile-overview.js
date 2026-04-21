@@ -44,7 +44,7 @@ function openWOModal() {}
 function dStart() {}
 function dEnd() {}
 
-// ── Mobile-only helpers (not in overview.js) ──────────────────────────────────
+// ── Mobile-only helpers ───────────────────────────────────────────────────────
 function isDoneWRRule(ruleId, wkKey) {
   return !!(st.wrOverrides || []).some(o =>
     String(o.rule_id) === String(ruleId) && o.wk_key === wkKey && o.override_type === 'complete' && o.done
@@ -55,7 +55,7 @@ function togWrRule(ruleId, isDone, wkKey) {
   if (isDone) {
     const ov = {rule_id: String(ruleId), wk_key: wkKey, override_type: 'complete', done: true};
     st.wrOverrides.push(ov);
-    if (st.blocks) st.blocks.filter(b => dsToWkKey && dsToWkKey(b.ds) === wkKey && (String(b.ruleId) === String(ruleId) || String(b.recId) === String(ruleId))).forEach(b => { b._done = true; });
+    if (st.blocks) st.blocks.filter(b => typeof dsToWkKey === 'function' && dsToWkKey(b.ds) === wkKey && (String(b.ruleId) === String(ruleId) || String(b.recId) === String(ruleId))).forEach(b => { b._done = true; });
     save(); mRenderToday();
     sbReqSilent('POST', 'wr_recurring_overrides', ov, '').then(sv => {
       if (sv && sv[0]) { const i = st.wrOverrides.indexOf(ov); if (i > -1) st.wrOverrides[i] = sv[0]; save(); }
@@ -64,7 +64,7 @@ function togWrRule(ruleId, isDone, wkKey) {
     const existing = st.wrOverrides.find(o => String(o.rule_id) === String(ruleId) && o.wk_key === wkKey && o.override_type === 'complete');
     if (!existing) return;
     st.wrOverrides = st.wrOverrides.filter(o => o !== existing);
-    if (st.blocks) st.blocks.filter(b => dsToWkKey && dsToWkKey(b.ds) === wkKey && (String(b.ruleId) === String(ruleId) || String(b.recId) === String(ruleId))).forEach(b => { b._done = false; });
+    if (st.blocks) st.blocks.filter(b => typeof dsToWkKey === 'function' && dsToWkKey(b.ds) === wkKey && (String(b.ruleId) === String(ruleId) || String(b.recId) === String(ruleId))).forEach(b => { b._done = false; });
     save(); mRenderToday();
     if (existing.id) sbReqSilent('DELETE', 'wr_recurring_overrides', null, `?id=eq.${existing.id}`);
   }
@@ -92,6 +92,64 @@ async function togPupSessionDone(sessId, done) {
   if (!ok) { sess.done = prev; save(); mRenderToday(); }
 }
 
+// ── Category picker ───────────────────────────────────────────────────────────
+const M_CATS = ['Home', 'My work', 'Work', 'Social', 'Long term', 'Weekly Goals'];
+let _mAddCat = 'Home';
+let _mEditCat = 'Home';
+
+const _EDIT_SVG = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="m18.5 2.5 2 2L10 15l-3 1 1-3z"/></svg>`;
+
+function _mDotStyle(cat) {
+  const s = gc(cat);
+  return `background:${s.bg};border:1.5px solid ${s.d}`;
+}
+
+function _mBuildOpts(elId, which) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  el.innerHTML = M_CATS.map(cat => {
+    const s = gc(cat);
+    return `<div class="m-cpick-opt" onclick="mSelectCat('${which}','${escHtml(cat)}')">
+      <span class="m-cpick-dot" style="background:${s.bg};border:1.5px solid ${s.d}"></span>
+      <span>${escHtml(cat)}</span>
+    </div>`;
+  }).join('');
+}
+
+function mTogglePick(which) {
+  const myId = which === 'add' ? 'mAddPickOpts' : 'mEditPickOpts';
+  const otherId = which === 'add' ? 'mEditPickOpts' : 'mAddPickOpts';
+  document.getElementById(otherId)?.classList.remove('open');
+  document.getElementById(myId)?.classList.toggle('open');
+}
+
+function mSelectCat(which, cat) {
+  const dotId = which === 'add' ? 'mAddPickDot' : 'mEditPickDot';
+  const lblId = which === 'add' ? 'mAddPickLbl' : 'mEditPickLbl';
+  const optId = which === 'add' ? 'mAddPickOpts' : 'mEditPickOpts';
+  if (which === 'add') _mAddCat = cat;
+  else _mEditCat = cat;
+  const dotEl = document.getElementById(dotId);
+  const lblEl = document.getElementById(lblId);
+  if (dotEl) dotEl.style.cssText = _mDotStyle(cat);
+  if (lblEl) lblEl.textContent = cat;
+  document.getElementById(optId)?.classList.remove('open');
+}
+
+function mInitPickers() {
+  _mBuildOpts('mAddPickOpts', 'add');
+  _mBuildOpts('mEditPickOpts', 'edit');
+  mSelectCat('add', 'Home');
+  // Close pickers on outside tap
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.m-cpick')) {
+      document.getElementById('mAddPickOpts')?.classList.remove('open');
+      document.getElementById('mEditPickOpts')?.classList.remove('open');
+    }
+  }, true);
+}
+
+// ── Sort today ────────────────────────────────────────────────────────────────
 function mSortToday(tasks) {
   return [...tasks].sort((a, b) => {
     if (a.done && !b.done) return 1;
@@ -106,11 +164,10 @@ function mSortToday(tasks) {
   });
 }
 
-// ── Gather today's tasks (mirrors desktop renderToday logic) ──────────────────
+// ── Gather today's tasks ──────────────────────────────────────────────────────
 function mGetTodayTasks() {
   const ds = d2s(getDayDate(0));
 
-  // Regular tasks due today or overdue
   const ts = st.tasks.filter(t => {
     if (!t.due_date || t.category === 'Weekly Goals') return false;
     const tds = t.due_date.split('T')[0];
@@ -119,7 +176,6 @@ function mGetTodayTasks() {
     return false;
   });
 
-  // Non-WR recurring virtual tasks (pinned to this week)
   const allRecVirt = [];
   for (let w = 0; w >= -4; w--) {
     getRecurringWeekTasks(w).forEach(v => {
@@ -133,7 +189,6 @@ function mGetTodayTasks() {
     });
   }
 
-  // Old-style WR recurring (is_weekly_reset)
   const _wrecSeen = new Set();
   const wrecToday = [];
   for (let _w = 0; _w >= -4; _w--) {
@@ -153,7 +208,6 @@ function mGetTodayTasks() {
       });
   }
 
-  // New-style WR rules
   const _wrRulesSeen = new Set();
   const wrRulesToday = [];
   for (let _w = 0; _w >= -4; _w--) {
@@ -173,12 +227,10 @@ function mGetTodayTasks() {
       });
   }
 
-  // Shopping items due today or overdue
   const shopToday = st.shopping
     .filter(s => !s.done && s.due_date && (s.due_date === ds || isOv(s.due_date)))
     .map(s => ({id: 'shop-cal-' + s.id, name: s.name, category: 'Shopping', due_date: s.due_date, done: false, _shopId: s.id, _virtual: true, _type: 'shop'}));
 
-  // Pup sessions
   const pupSessToday = (st.pupSessions || [])
     .filter(s => s.day_date === ds || (isOv(s.day_date) && !s.done))
     .map(s => {
@@ -187,19 +239,18 @@ function mGetTodayTasks() {
       return {id: 'pup-sess-' + s.id, name: (skill.pup ? skill.pup + ': ' : '') + skill.skill, category: 'Recurring', due_date: s.day_date, done: s.done, _pupSessId: s.id, _skillId: s.skill_id, _virtual: true, _type: 'pup'};
     }).filter(Boolean);
 
-  const virtToday = [
+  return mSortToday([
+    ...ts,
     ...allRecVirt.filter(v => v.due_date === ds || (isOv(v.due_date) && !v.done)),
     ...wrecToday,
     ...wrRulesToday,
     ...shopToday,
     ...pupSessToday,
     ...getExtrasForDate(ds)
-  ];
-
-  return mSortToday([...ts, ...virtToday]);
+  ]);
 }
 
-// ── Task row HTML ─────────────────────────────────────────────────────────────
+// ── Task row ──────────────────────────────────────────────────────────────────
 function mTaskRow(t) {
   const ov = isOv(t.due_date) && !t.done;
   const catKey = t._isWrRule || t._isWrec ? 'weekly_reset' : t._type === 'shop' ? 'shopping' : t._type === 'travel' ? 'travel' : t._type === 'birthday' ? 'birthday' : (t.category || '');
@@ -216,35 +267,29 @@ function mTaskRow(t) {
   else if (!t._virtual) onchange = `toggleTask('${t.id}',this.checked)`;
 
   const tagLabel = ov ? 'Overdue' : t._type === 'shop' ? 'Shopping' : t._type === 'pup' ? 'Pup' : t._type === 'travel' ? 'Travel' : t._type === 'birthday' ? 'Birthday' : (t._isWrRule || t._isWrec || (t._virtual && t._recId)) ? 'Recurring' : (t.category || '');
-  const tagBg = ov ? OV.bg : s.bg;
-  const tagColor = ov ? OV.t : s.t;
   const safeName = escHtml(t.name || '');
-  const editAttr = canEdit ? `onclick="mOpenEdit('${t.id}')" style="cursor:pointer"` : '';
+  const editBtn = canEdit ? `<button class="m-edit-btn" onclick="event.stopPropagation();mOpenEdit('${t.id}')" aria-label="Edit">${_EDIT_SVG}</button>` : '';
 
   return `<div class="m-row${t.done ? ' m-done' : ''}${ov ? ' m-ov' : ''}">
     ${noCheck
       ? `<span class="m-row-icon">📅</span>`
       : `<label class="m-chk-wrap"><input type="checkbox" ${t.done ? 'checked' : ''} onchange="${onchange}"></label>`
     }
-    <span class="m-row-name${t.done ? ' done' : ''}" ${editAttr}>${safeName}</span>
-    <span class="m-row-tag" style="background:${tagBg};color:${tagColor}">${tagLabel}</span>
+    <span class="m-row-name${t.done ? ' done' : ''}">${safeName}</span>
+    <span class="m-row-tag" style="background:${s.bg};color:${s.t}">${tagLabel}</span>
+    ${editBtn}
   </div>`;
 }
 
-// ── Render today list ─────────────────────────────────────────────────────────
+// ── Render today ──────────────────────────────────────────────────────────────
 function mRenderToday() {
   const sorted = mGetTodayTasks();
   const doneCount = sorted.filter(t => t.done).length;
-
   const progEl = document.getElementById('mProgress');
   if (progEl) progEl.textContent = doneCount + '/' + sorted.length;
-
   const el = document.getElementById('mTodayList');
   if (!el) return;
-
-  el.innerHTML = sorted.length
-    ? sorted.map(mTaskRow).join('')
-    : '<div class="m-empty">All done ✓</div>';
+  el.innerHTML = sorted.length ? sorted.map(mTaskRow).join('') : '<div class="m-empty">All done ✓</div>';
 }
 
 // ── Add task ──────────────────────────────────────────────────────────────────
@@ -252,7 +297,7 @@ async function mAddTask() {
   const inp = document.getElementById('mNewTask');
   const n = inp.value.trim();
   if (!n) return;
-  const cat = document.getElementById('mNewCat').value || 'Home';
+  const cat = _mAddCat;
   const ds = d2s(getDayDate(0));
   const t = {id: 'l-' + Date.now(), name: n, category: cat, due_date: ds, done: false, important: false};
   st.tasks.push(t);
@@ -275,8 +320,7 @@ function mOpenEdit(id) {
   if (!t) return;
   _mEditId = String(id);
   document.getElementById('mEditName').value = t.name || '';
-  const catSel = document.getElementById('mEditCat');
-  catSel.value = t.category || 'Home';
+  mSelectCat('edit', t.category || 'Home');
   document.getElementById('mEditBackdrop').classList.add('open');
   document.getElementById('mEditSheet').classList.add('open');
   setTimeout(() => document.getElementById('mEditName').focus(), 300);
@@ -286,6 +330,7 @@ function mCloseEdit() {
   _mEditId = null;
   document.getElementById('mEditBackdrop').classList.remove('open');
   document.getElementById('mEditSheet').classList.remove('open');
+  document.getElementById('mEditPickOpts')?.classList.remove('open');
 }
 
 async function mSaveEditTask() {
@@ -293,14 +338,15 @@ async function mSaveEditTask() {
   const t = st.tasks.find(x => String(x.id) === String(_mEditId));
   if (!t) return;
   const name = document.getElementById('mEditName').value.trim();
-  const category = document.getElementById('mEditCat').value;
+  const category = _mEditCat;
   if (!name) return;
+  const id = _mEditId;
   t.name = name;
   t.category = category;
   save();
   mCloseEdit();
   mRenderToday();
-  await sbReq('PATCH', 'tasks', {name, category}, `?id=eq.${_mEditId}`);
+  await sbReq('PATCH', 'tasks', {name, category}, `?id=eq.${id}`);
 }
 
 async function mDeleteEditTask() {
@@ -342,6 +388,7 @@ function _mSetDate() {
 async function mInit() {
   load();
   _mSetDate();
+  mInitPickers();
   const authed = await checkAuth();
   if (!authed) return;
   hideLoginOverlay();
