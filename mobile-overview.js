@@ -1,77 +1,303 @@
 // mobile-overview.js
-window._mobileMode=true;
+window._mobileMode = true;
 
-// Override desktop login overlay functions — core.js calls these
-function showLoginOverlay(){
-  document.getElementById('mLogin').style.display='flex';
+// ── Login overlay ─────────────────────────────────────────────────────────────
+function showLoginOverlay() {
+  document.getElementById('mLogin').style.display = 'flex';
   document.getElementById('mApp').classList.remove('ready');
-  setTimeout(()=>document.getElementById('mEmail')&&document.getElementById('mEmail').focus(),100);
+  setTimeout(() => document.getElementById('mEmail') && document.getElementById('mEmail').focus(), 100);
 }
-function hideLoginOverlay(){
-  document.getElementById('mLogin').style.display='none';
+function hideLoginOverlay() {
+  document.getElementById('mLogin').style.display = 'none';
   document.getElementById('mApp').classList.add('ready');
 }
 
-// core.js renderAll hook
-function renderAll(){
+// ── Desktop render stubs ──────────────────────────────────────────────────────
+function renderAll() { mRenderToday(); }
+function renderToday() { mRenderToday(); }
+function renderWkCal() {}
+function renderWkSummary() {}
+function renderRecOv() {}
+function renderUnassigned() {}
+function renderShopOv() {}
+function renderKanban() {}
+function renderSummaryMetrics() {}
+function renderWeeklyPage() {}
+function renderBdayPage() {}
+function renderShopFull() {}
+function renderDayTB() {}
+function setBadge() {}
+function renderPupSkillsHighlight() {}
+function renderDailyHabits() {}
+function updateOvBanner() {}
+function _showUndoToast() {}
+function _showRedoToast() {}
+function selTask() {}
+function showCtx() {}
+function showWrRuleCtx() {}
+function showCtxShop() {}
+function showWrScopePicker() {}
+function openWrEditModal() {}
+function tiDblRec() {}
+function tiDblShop() {}
+function openWOModal() {}
+function dStart() {}
+function dEnd() {}
+
+// ── Mobile-only helpers (not in overview.js) ──────────────────────────────────
+function isDoneWRRule(ruleId, wkKey) {
+  return !!(st.wrOverrides || []).some(o =>
+    String(o.rule_id) === String(ruleId) && o.wk_key === wkKey && o.override_type === 'complete' && o.done
+  );
+}
+
+function togWrRule(ruleId, isDone, wkKey) {
+  if (isDone) {
+    const ov = {rule_id: String(ruleId), wk_key: wkKey, override_type: 'complete', done: true};
+    st.wrOverrides.push(ov);
+    if (st.blocks) st.blocks.filter(b => dsToWkKey && dsToWkKey(b.ds) === wkKey && (String(b.ruleId) === String(ruleId) || String(b.recId) === String(ruleId))).forEach(b => { b._done = true; });
+    save(); mRenderToday();
+    sbReqSilent('POST', 'wr_recurring_overrides', ov, '').then(sv => {
+      if (sv && sv[0]) { const i = st.wrOverrides.indexOf(ov); if (i > -1) st.wrOverrides[i] = sv[0]; save(); }
+    });
+  } else {
+    const existing = st.wrOverrides.find(o => String(o.rule_id) === String(ruleId) && o.wk_key === wkKey && o.override_type === 'complete');
+    if (!existing) return;
+    st.wrOverrides = st.wrOverrides.filter(o => o !== existing);
+    if (st.blocks) st.blocks.filter(b => dsToWkKey && dsToWkKey(b.ds) === wkKey && (String(b.ruleId) === String(ruleId) || String(b.recId) === String(ruleId))).forEach(b => { b._done = false; });
+    save(); mRenderToday();
+    if (existing.id) sbReqSilent('DELETE', 'wr_recurring_overrides', null, `?id=eq.${existing.id}`);
+  }
+}
+
+function togRecVirt(recId, done, wkKey) {
+  const r = st.recurring.find(x => String(x.id) === String(recId));
+  if (!r) return;
+  if (!r._doneByWk) r._doneByWk = {};
+  if (done) r._doneByWk[wkKey] = true;
+  else delete r._doneByWk[wkKey];
+  r._done = false;
+  if (st.blocks) st.blocks.filter(b => String(b.recId) === String(recId)).forEach(b => b._done = done);
+  save(); mRenderToday();
+  sbReq('PATCH', 'wr_recurring_rules', {done_by_week: r._doneByWk}, `?id=eq.${recId}`);
+}
+
+async function togPupSessionDone(sessId, done) {
+  const sess = (st.pupSessions || []).find(s => String(s.id) === String(sessId));
+  if (!sess) return;
+  const prev = sess.done;
+  sess.done = done;
+  save(); mRenderToday();
+  const ok = await sbReqSilent('PATCH', 'pup_skill_sessions', {done}, `?id=eq.${sessId}`);
+  if (!ok) { sess.done = prev; save(); mRenderToday(); }
+}
+
+function mSortToday(tasks) {
+  return [...tasks].sort((a, b) => {
+    if (a.done && !b.done) return 1;
+    if (!a.done && b.done) return -1;
+    const aOv = isOv(a.due_date) && !a.done, bOv = isOv(b.due_date) && !b.done;
+    if (aOv && !bOv) return -1;
+    if (!aOv && bOv) return 1;
+    const typeOrd = t => t._type === 'travel' ? 0 : t._type === 'birthday' ? 1 : t._isWrRule || t._isWrec || (t._virtual && t._recId) ? 3 : t._type === 'shop' ? 4 : 2;
+    const diff = typeOrd(a) - typeOrd(b);
+    if (diff !== 0) return diff;
+    return (a.name || '').localeCompare(b.name || '');
+  });
+}
+
+// ── Gather today's tasks (mirrors desktop renderToday logic) ──────────────────
+function mGetTodayTasks() {
+  const ds = d2s(getDayDate(0));
+
+  // Regular tasks due today or overdue
+  const ts = st.tasks.filter(t => {
+    if (!t.due_date || t.category === 'Weekly Goals') return false;
+    const tds = t.due_date.split('T')[0];
+    if (tds === ds) return true;
+    if (isOv(t.due_date) && !t.done) return true;
+    return false;
+  });
+
+  // Non-WR recurring virtual tasks (pinned to this week)
+  const allRecVirt = [];
+  for (let w = 0; w >= -4; w--) {
+    getRecurringWeekTasks(w).forEach(v => {
+      const _rec = st.recurring.find(x => String(x.id) === String(v._recId));
+      if (_rec && _rec._dateOverrides) {
+        for (let sw = w; sw <= 0; sw++) {
+          if (_rec._dateOverrides[getWkKey(sw)] === '__skip__') return;
+        }
+      }
+      if (!allRecVirt.find(x => x._recId === v._recId)) allRecVirt.push(v);
+    });
+  }
+
+  // Old-style WR recurring (is_weekly_reset)
+  const _wrecSeen = new Set();
+  const wrecToday = [];
+  for (let _w = 0; _w >= -4; _w--) {
+    const _wkKey = getWkKey(_w);
+    st.recurring
+      .filter(r =>
+        (r.is_weekly_reset === true || r.is_weekly_reset === 'true') &&
+        r._dateOverrides && r._dateOverrides[_wkKey] &&
+        r._dateOverrides[_wkKey] !== '__skip__' &&
+        (r._dateOverrides[_wkKey] === ds || r._dateOverrides[_wkKey] < ds) &&
+        !_wrecSeen.has(String(r.id))
+      )
+      .forEach(r => {
+        _wrecSeen.add(String(r.id));
+        const _isDone = !!(r._doneByWk && r._doneByWk[_wkKey]);
+        wrecToday.push({id: 'rec-virt-' + r.id, name: r.name, category: 'Recurring', due_date: r._dateOverrides[_wkKey], done: _isDone, _recId: r.id, _virtual: true, _wkKey: _wkKey, _isWrec: true});
+      });
+  }
+
+  // New-style WR rules
+  const _wrRulesSeen = new Set();
+  const wrRulesToday = [];
+  for (let _w = 0; _w >= -4; _w--) {
+    const _wkKey = getWkKey(_w);
+    st.wrRules
+      .filter(r =>
+        r._dateOverrides && r._dateOverrides[_wkKey] &&
+        r._dateOverrides[_wkKey] !== '__skip__' &&
+        !(st.wrOverrides || []).some(o => String(o.rule_id) === String(r.id) && o.wk_key === _wkKey && o.override_type === 'skip') &&
+        (r._dateOverrides[_wkKey] === ds || (r._dateOverrides[_wkKey] < ds && !isDoneWRRule(r.id, _wkKey))) &&
+        !_wrRulesSeen.has(String(r.id))
+      )
+      .forEach(r => {
+        _wrRulesSeen.add(String(r.id));
+        const _isDone = isDoneWRRule(r.id, _wkKey);
+        wrRulesToday.push({id: 'wrrule-virt-' + r.id, name: r.name, category: 'Recurring', due_date: r._dateOverrides[_wkKey], done: _isDone, _ruleId: r.id, _virtual: true, _wkKey: _wkKey, _isWrRule: true});
+      });
+  }
+
+  // Shopping items due today or overdue
+  const shopToday = st.shopping
+    .filter(s => !s.done && s.due_date && (s.due_date === ds || isOv(s.due_date)))
+    .map(s => ({id: 'shop-cal-' + s.id, name: s.name, category: 'Shopping', due_date: s.due_date, done: false, _shopId: s.id, _virtual: true, _type: 'shop'}));
+
+  // Pup sessions
+  const pupSessToday = (st.pupSessions || [])
+    .filter(s => s.day_date === ds || (isOv(s.day_date) && !s.done))
+    .map(s => {
+      const skill = (st.pup_skills || []).find(x => String(x.id) === String(s.skill_id));
+      if (!skill) return null;
+      return {id: 'pup-sess-' + s.id, name: (skill.pup ? skill.pup + ': ' : '') + skill.skill, category: 'Recurring', due_date: s.day_date, done: s.done, _pupSessId: s.id, _skillId: s.skill_id, _virtual: true, _type: 'pup'};
+    }).filter(Boolean);
+
+  const virtToday = [
+    ...allRecVirt.filter(v => v.due_date === ds || (isOv(v.due_date) && !v.done)),
+    ...wrecToday,
+    ...wrRulesToday,
+    ...shopToday,
+    ...pupSessToday,
+    ...getExtrasForDate(ds)
+  ];
+
+  return mSortToday([...ts, ...virtToday]);
+}
+
+// ── Task row HTML ─────────────────────────────────────────────────────────────
+function mTaskRow(t) {
+  const ov = isOv(t.due_date) && !t.done;
+  const catKey = t._isWrRule || t._isWrec ? 'weekly_reset' : t._type === 'shop' ? 'shopping' : t._type === 'travel' ? 'travel' : t._type === 'birthday' ? 'birthday' : (t.category || '');
+  const s = ov ? OV : gc(catKey);
+  const noCheck = t._type === 'travel' || t._type === 'birthday';
+
+  let onchange = '';
+  if (t._isWrRule) onchange = `togWrRule('${t._ruleId}',this.checked,'${t._wkKey}')`;
+  else if (t._isWrec) onchange = `togRec('${t._recId}',this.checked,'${t._wkKey}')`;
+  else if (t._virtual && t._recId) onchange = `togRecVirt('${t._recId}',this.checked,'${t._wkKey}')`;
+  else if (t._type === 'shop') onchange = `togShop('${t._shopId}',this.checked)`;
+  else if (t._type === 'pup') onchange = `togPupSessionDone('${t._pupSessId}',this.checked)`;
+  else if (!t._virtual) onchange = `toggleTask('${t.id}',this.checked)`;
+
+  const tagLabel = ov ? 'Overdue' : t._type === 'shop' ? 'Shopping' : t._type === 'pup' ? 'Pup' : t._type === 'travel' ? 'Travel' : t._type === 'birthday' ? 'Birthday' : (t._isWrRule || t._isWrec || (t._virtual && t._recId)) ? 'Recurring' : (t.category || '');
+  const tagBg = ov ? OV.bg : s.bg;
+  const tagColor = ov ? OV.t : s.t;
+  const safeName = escHtml(t.name || '');
+
+  return `<div class="m-row${t.done ? ' m-done' : ''}${ov ? ' m-ov' : ''}">
+    ${noCheck
+      ? `<span class="m-row-icon">📅</span>`
+      : `<label class="m-chk-wrap"><input type="checkbox" ${t.done ? 'checked' : ''} onchange="${onchange}"></label>`
+    }
+    <span class="m-row-name${t.done ? ' done' : ''}">${safeName}</span>
+    <span class="m-row-tag" style="background:${tagBg};color:${tagColor}">${tagLabel}</span>
+  </div>`;
+}
+
+// ── Render today list ─────────────────────────────────────────────────────────
+function mRenderToday() {
+  const sorted = mGetTodayTasks();
+  const doneCount = sorted.filter(t => t.done).length;
+
+  const progEl = document.getElementById('mProgress');
+  if (progEl) progEl.textContent = doneCount + '/' + sorted.length;
+
+  const el = document.getElementById('mTodayList');
+  if (!el) return;
+
+  el.innerHTML = sorted.length
+    ? sorted.map(mTaskRow).join('')
+    : '<div class="m-empty">All done ✓</div>';
+}
+
+// ── Add task ──────────────────────────────────────────────────────────────────
+async function mAddTask() {
+  const inp = document.getElementById('mNewTask');
+  const n = inp.value.trim();
+  if (!n) return;
+  const ds = d2s(getDayDate(0));
+  const t = {id: 'l-' + Date.now(), name: n, category: 'Home', due_date: ds, done: false, important: false};
+  st.tasks.push(t);
+  save();
+  inp.value = '';
   mRenderToday();
+  const sv = await sbReq('POST', 'tasks', {name: n, category: 'Home', due_date: ds, done: false});
+  if (sv && sv[0]) {
+    const i = st.tasks.findIndex(x => x.id === t.id);
+    if (i > -1) st.tasks[i] = sv[0];
+    save();
+  }
 }
 
-// Stub desktop-only render functions called from features.js / core.js
-function renderWkCal(){}
-function renderWkSummary(){}
-function renderRecOv(){}
-function renderUnassigned(){}
-function renderShopOv(){}
-function renderKanban(){}
-function renderSummaryMetrics(){}
-function renderWeeklyPage(){}
-function renderBdayPage(){}
-function renderShopFull(){}
-function renderDayTB(){}
-function setBadge(){}
-
-// Mobile login
-async function mDoLogin(){
-  const email=document.getElementById('mEmail').value.trim();
-  const pass=document.getElementById('mPass').value;
-  const err=document.getElementById('mLoginErr');
-  err.style.display='none';
-  if(!email||!pass){err.textContent='Enter email and password.';err.style.display='block';return;}
-  await doLogin_m(email,pass);
+// ── Login ─────────────────────────────────────────────────────────────────────
+async function mDoLogin() {
+  const email = document.getElementById('mEmail').value.trim();
+  const pass = document.getElementById('mPass').value;
+  const err = document.getElementById('mLoginErr');
+  err.style.display = 'none';
+  if (!email || !pass) { err.textContent = 'Enter email and password.'; err.style.display = 'block'; return; }
+  await doLogin_m(email, pass);
 }
-async function doLogin_m(email,pass){
-  const err=document.getElementById('mLoginErr');
-  if(!_sbClient)_initSbClient();
-  const{data,error}=await _sbClient.auth.signInWithPassword({email,password:pass});
-  if(error){err.textContent=error.message;err.style.display='block';return;}
-  _authToken=data.session.access_token;
+async function doLogin_m(email, pass) {
+  const err = document.getElementById('mLoginErr');
+  if (!_sbClient) _initSbClient();
+  const {data, error} = await _sbClient.auth.signInWithPassword({email, password: pass});
+  if (error) { err.textContent = error.message; err.style.display = 'block'; return; }
+  _authToken = data.session.access_token;
   hideLoginOverlay();
   await syncAll();
 }
 
-// Date label
-function _mSetDate(){
-  const lbl=document.getElementById('mDateLbl');
-  if(lbl)lbl.textContent=new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+// ── Date label ────────────────────────────────────────────────────────────────
+function _mSetDate() {
+  const lbl = document.getElementById('mDateLbl');
+  if (lbl) lbl.textContent = new Date().toLocaleDateString('en-US', {weekday: 'long', month: 'long', day: 'numeric'});
 }
 
-// Init — called at bottom of this file after DOM ready
-async function mInit(){
+// ── Init ──────────────────────────────────────────────────────────────────────
+async function mInit() {
   load();
   _mSetDate();
-  const authed=await checkAuth();
-  if(!authed)return;
+  const authed = await checkAuth();
+  if (!authed) return;
   hideLoginOverlay();
   await syncAll();
-  setInterval(()=>{if(cfg.url&&cfg.key)syncAll(true);},30000);
+  setInterval(() => { if (cfg.url && cfg.key) syncAll(true); }, 30000);
 }
 
-// Today list — Step 2 will fill this in
-function mRenderToday(){
-  const el=document.getElementById('mTodayList');
-  if(!el)return;
-  el.innerHTML='<div class="m-empty">Connected ✓</div>';
-}
-
-document.addEventListener('DOMContentLoaded',mInit);
+document.addEventListener('DOMContentLoaded', mInit);
