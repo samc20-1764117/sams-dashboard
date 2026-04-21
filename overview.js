@@ -99,9 +99,30 @@ function renderToday(){
 }
 // ── Pup Skills Highlight ───────────────────────────────────────────────────────
 let _donutInited=false;
+let _donutWas100=false;
+function launchDonutConfetti(){
+  const arc=document.getElementById('_donutArc');if(!arc)return;
+  const rect=arc.closest('svg').getBoundingClientRect();
+  const ox=rect.left+rect.width/2, oy=rect.top+rect.height/2;
+  const shapes=['⭐','🌸','✨','💛','🩷','🩵','💜','🍬'];
+  for(let i=0;i<28;i++){
+    const el=document.createElement('span');
+    el.className='confetti-particle';
+    const angle=(Math.random()*360)*(Math.PI/180);
+    const dist=55+Math.random()*80;
+    const cx=Math.cos(angle)*dist, cy=Math.sin(angle)*dist-30;
+    const cr=(Math.random()-0.5)*540;
+    const cd=(0.9+Math.random()*0.8).toFixed(2)+'s';
+    const cs=(10+Math.random()*8).toFixed(1)+'px';
+    el.style.cssText=`--cx:${cx.toFixed(1)}px;--cy:${cy.toFixed(1)}px;--cr:${cr.toFixed(1)}deg;--cd:${cd};--cs:${cs};left:${ox}px;top:${oy}px;`;
+    el.textContent=shapes[Math.floor(Math.random()*shapes.length)];
+    document.body.appendChild(el);
+    setTimeout(()=>el.remove(), 1800);
+  }
+}
 function renderTodDonut(done,total){
   const wrap=document.getElementById('todProgressDonut');if(!wrap)return;
-  if(!total){wrap.style.display='none';_donutInited=false;return;}
+  if(!total){wrap.style.display='none';_donutInited=false;_donutWas100=false;return;}
   wrap.style.display='flex';
   const C=2*Math.PI*22;
   const arc=document.getElementById('_donutArc');
@@ -111,6 +132,7 @@ function renderTodDonut(done,total){
   if(pEl)pEl.textContent=Math.round(pct*100)+'%';
   if(fEl)fEl.textContent=`${done}/${total}`;
   if(!arc)return;
+  const isNow100=pct>=1;
   if(!_donutInited){
     _donutInited=true;
     arc.style.transition='none';
@@ -119,12 +141,14 @@ function renderTodDonut(done,total){
     requestAnimationFrame(()=>requestAnimationFrame(()=>{
       arc.style.transition='stroke-dasharray .9s cubic-bezier(.4,0,.2,1)';
       arc.setAttribute('stroke-dasharray',`${pct*C} ${C}`);
-      // glow removed
+      if(isNow100&&!_donutWas100){_donutWas100=true;setTimeout(launchDonutConfetti,950);}
     }));
   } else {
     arc.style.transition='stroke-dasharray .45s cubic-bezier(.4,0,.2,1)';
     arc.setAttribute('stroke-dasharray',`${pct*C} ${C}`);
+    if(isNow100&&!_donutWas100){_donutWas100=true;setTimeout(launchDonutConfetti,500);}
   }
+  if(!isNow100)_donutWas100=false;
 }
 let _pupSkillsOpen=false;
 function togglePupSkillsOpen(){

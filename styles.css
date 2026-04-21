@@ -116,6 +116,8 @@ body{font-family:'DM Sans',sans-serif;background:#fef6f0;background-attachment:f
 .sdot.loading{background:#f59e0b;animation:bl 1s infinite}.sdot.err{background:#ef4444}
 @keyframes bl{0%,100%{opacity:1}50%{opacity:.2}}
 @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes confetti-fall{0%{transform:translate(0,0) rotate(0deg) scale(1);opacity:1}80%{opacity:1}100%{transform:translate(var(--cx),var(--cy)) rotate(var(--cr)) scale(.6);opacity:0}}
+.confetti-particle{position:fixed;pointer-events:none;z-index:9999;animation:confetti-fall var(--cd) cubic-bezier(.25,.46,.45,.94) forwards;font-size:var(--cs);line-height:1;user-select:none}
 
 /* Main */
 .main{flex:1;overflow-y:auto;overflow-x:hidden;padding:0 0 36px 0;margin-left:186px;transition:margin-left .25s cubic-bezier(.4,0,.2,1)}
