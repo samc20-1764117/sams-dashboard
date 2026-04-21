@@ -205,6 +205,7 @@ function mTaskRow(t) {
   const catKey = t._isWrRule || t._isWrec ? 'weekly_reset' : t._type === 'shop' ? 'shopping' : t._type === 'travel' ? 'travel' : t._type === 'birthday' ? 'birthday' : (t.category || '');
   const s = ov ? OV : gc(catKey);
   const noCheck = t._type === 'travel' || t._type === 'birthday';
+  const canEdit = !t._virtual && !t._type;
 
   let onchange = '';
   if (t._isWrRule) onchange = `togWrRule('${t._ruleId}',this.checked,'${t._wkKey}')`;
@@ -218,13 +219,14 @@ function mTaskRow(t) {
   const tagBg = ov ? OV.bg : s.bg;
   const tagColor = ov ? OV.t : s.t;
   const safeName = escHtml(t.name || '');
+  const editAttr = canEdit ? `onclick="mOpenEdit('${t.id}')" style="cursor:pointer"` : '';
 
   return `<div class="m-row${t.done ? ' m-done' : ''}${ov ? ' m-ov' : ''}">
     ${noCheck
       ? `<span class="m-row-icon">📅</span>`
       : `<label class="m-chk-wrap"><input type="checkbox" ${t.done ? 'checked' : ''} onchange="${onchange}"></label>`
     }
-    <span class="m-row-name${t.done ? ' done' : ''}">${safeName}</span>
+    <span class="m-row-name${t.done ? ' done' : ''}" ${editAttr}>${safeName}</span>
     <span class="m-row-tag" style="background:${tagBg};color:${tagColor}">${tagLabel}</span>
   </div>`;
 }
@@ -250,18 +252,65 @@ async function mAddTask() {
   const inp = document.getElementById('mNewTask');
   const n = inp.value.trim();
   if (!n) return;
+  const cat = document.getElementById('mNewCat').value || 'Home';
   const ds = d2s(getDayDate(0));
-  const t = {id: 'l-' + Date.now(), name: n, category: 'Home', due_date: ds, done: false, important: false};
+  const t = {id: 'l-' + Date.now(), name: n, category: cat, due_date: ds, done: false, important: false};
   st.tasks.push(t);
   save();
   inp.value = '';
   mRenderToday();
-  const sv = await sbReq('POST', 'tasks', {name: n, category: 'Home', due_date: ds, done: false});
+  const sv = await sbReq('POST', 'tasks', {name: n, category: cat, due_date: ds, done: false});
   if (sv && sv[0]) {
     const i = st.tasks.findIndex(x => x.id === t.id);
     if (i > -1) st.tasks[i] = sv[0];
     save();
   }
+}
+
+// ── Edit task sheet ───────────────────────────────────────────────────────────
+let _mEditId = null;
+
+function mOpenEdit(id) {
+  const t = st.tasks.find(x => String(x.id) === String(id));
+  if (!t) return;
+  _mEditId = String(id);
+  document.getElementById('mEditName').value = t.name || '';
+  const catSel = document.getElementById('mEditCat');
+  catSel.value = t.category || 'Home';
+  document.getElementById('mEditBackdrop').classList.add('open');
+  document.getElementById('mEditSheet').classList.add('open');
+  setTimeout(() => document.getElementById('mEditName').focus(), 300);
+}
+
+function mCloseEdit() {
+  _mEditId = null;
+  document.getElementById('mEditBackdrop').classList.remove('open');
+  document.getElementById('mEditSheet').classList.remove('open');
+}
+
+async function mSaveEditTask() {
+  if (!_mEditId) return;
+  const t = st.tasks.find(x => String(x.id) === String(_mEditId));
+  if (!t) return;
+  const name = document.getElementById('mEditName').value.trim();
+  const category = document.getElementById('mEditCat').value;
+  if (!name) return;
+  t.name = name;
+  t.category = category;
+  save();
+  mCloseEdit();
+  mRenderToday();
+  await sbReq('PATCH', 'tasks', {name, category}, `?id=eq.${_mEditId}`);
+}
+
+async function mDeleteEditTask() {
+  if (!_mEditId) return;
+  const id = _mEditId;
+  st.tasks = st.tasks.filter(x => String(x.id) !== String(id));
+  save();
+  mCloseEdit();
+  mRenderToday();
+  await sbReq('DELETE', 'tasks', null, `?id=eq.${id}`);
 }
 
 // ── Login ─────────────────────────────────────────────────────────────────────

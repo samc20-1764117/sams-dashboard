@@ -46,7 +46,36 @@
   <!-- Add task bar -->
   <div id="mAddBar">
     <input id="mNewTask" type="text" placeholder="Add task for today…" onkeydown="if(event.key==='Enter')mAddTask()">
-    <button id="mAddBtn" onclick="mAddTask()">+</button>
+    <div class="m-add-row2">
+      <select id="mNewCat">
+        <option value="Home">Home</option>
+        <option value="My work">My work</option>
+        <option value="Work">Work</option>
+        <option value="Social+Travel">Social + Travel</option>
+        <option value="Long term">Long term</option>
+        <option value="Weekly Goals">Weekly Goals</option>
+      </select>
+      <button id="mAddBtn" onclick="mAddTask()">Add</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit task sheet -->
+<div id="mEditBackdrop" onclick="mCloseEdit()"></div>
+<div id="mEditSheet">
+  <h3>Edit Task</h3>
+  <input id="mEditName" type="text" placeholder="Task name">
+  <select id="mEditCat">
+    <option value="Home">Home</option>
+    <option value="My work">My work</option>
+    <option value="Work">Work</option>
+    <option value="Social+Travel">Social + Travel</option>
+    <option value="Long term">Long term</option>
+    <option value="Weekly Goals">Weekly Goals</option>
+  </select>
+  <div class="m-edit-actions">
+    <button id="mEditDel" onclick="mDeleteEditTask()">Delete</button>
+    <button id="mEditSave" onclick="mSaveEditTask()">Save</button>
   </div>
 </div>
 
