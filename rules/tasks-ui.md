@@ -42,3 +42,12 @@ All indicators at far right, swap to X on hover. From right: `tb-arrow` (rightmo
 - **`@time` in task name**: `submitQA` auto-detects `@1:30pm` style, creates timeblock immediately with local task ID, updates `taskId` after server confirm. Name kept as-is. If no due date, defaults to today. `autoDur`: Social=180min, Work/My work/Recurring=60min, Home=30min. Same durations apply when dragging tasks onto timeblock grid.
 - **Weekly Reset card header** (`#wrRecWkLbl`): "Weekly Reset" when `wrRecOff===0`, else date range.
 - **Weekly cal bounce fix**: banner lane counts pre-computed synchronously; `paddingTop` set before paint.
+
+### Timeblock selection & keyboard
+- **Rubber-band on TB col** (`renderDayTB`): drag on empty space selects `.tb-block` by bounding rect. Coordinates: `ev.clientY - col.getBoundingClientRect().top` (scroll-adjusted). Stores `_lastTBRbRange={selTop,selBot}` (px from col top) for 'A' key use.
+- **Auto-select auto-blocks**: if rubber-band selects zero regular blocks, auto-blocks in range are auto-selected immediately. If regular blocks are also selected, press **A** to add auto-blocks in range. If no `_lastTBRbRange` or 0 auto-blocks match range, **A** selects ALL auto-blocks for the day.
+- **Auto-block selection IDs**: `'atb::'+_atbId` in `selectedTasks`. Visual: `.atb-block.sel-atb` (light grey + glow). `applySelHighlight()` toggles `sel-atb` class.
+- **Arrow keys (Up/Down)**: moves all selected TB blocks (regular + auto) ±30 min. Each press is one undo entry. Handler on `window` with `{capture:true}` + `e.preventDefault()`.
+- **Arrow key undo**: uses `base_id+date` lookup in `st.autoTBOverrides` (NOT `atb._ovId` references) — stable across re-renders. If auto-block had no override before move (`hadOv=false`), undo DELETEs; otherwise PATCHes back.
+- **Multi-auto-block drag**: when dragging an auto-block with other auto-blocks selected, `otherSelAtbs` collects them (by `data-atb-id` + `selectedTasks`). All move together. Persist via `base_id+date` lookup (PATCH if override exists, else POST). Undo via `_undoOtherAtbs()` included in both `pushUndo` paths.
+- **Rubber-band on weekly cal** (`_attachWkcRubberBand`): column-aware X filtering — selBox snaps to column boundaries. Only activates when `dy>5 && dy>dx*2` (vertical drag). Left/right drag reserved for travel task creation.

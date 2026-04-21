@@ -66,9 +66,11 @@
 
 **Undo for task-move-to-day**: snapshot `savedTBs` BEFORE `removeTBBlocksForDate`. Undo restores blocks in state + DB.
 
-**Auto block drag/resize undo**:
+**Auto block drag undo**:
 - **Existing override** (`atb._ovId` set): capture `ovId` before closure. Undo PATCHes back to `prevStart/prevEnd`.
-- **No existing override**: POST creates with `tmpId`. After POST resolves, replace entry with real record. Undo: filter `st.autoTBOverrides` by BOTH `tmpId` AND real ID — after POST, tmpId entry is replaced so filtering only by tmpId leaves stale override in state.
+- **No existing override**: POST creates with `tmpId`. After POST resolves, replace entry with real record. Undo: filter `st.autoTBOverrides` by BOTH `tmpId` AND real ID.
+- **Multi-auto-block drag undo**: `otherAtbSnaps = [{atbId,prevSm,dur,hadOv}]` captured at drag start. `_undoOtherAtbs()` uses `base_id+date` lookup — if `!hadOv` DELETE override, else PATCH back. Called in both PATCH and POST undo closures.
+- **Persist `otherSelAtbs`**: use `base_id+date` lookup (not `aa._ovId`) — PATCH existing override if found, else POST new one.
 
 **Done state**: `complete` override written by `togWrRule`. DELETEd on uncheck. Toggling syncs all views via `_syncBlockDone(isDone)` + `renderDayTB()`.
 - Done WR tasks remain visible with `done` class — NOT filtered out.
