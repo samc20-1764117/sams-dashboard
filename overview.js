@@ -2752,11 +2752,14 @@ function _attachTBEdgeRubberBand(){
       if(!rbMoved&&Math.abs(ev.clientY-startY)>5){
         rbMoved=true;
         selBox=document.createElement('div');
-        selBox.style.cssText='position:fixed;left:0;right:0;background:rgba(42,157,181,.10);border-top:1.5px solid rgba(42,157,181,.5);border-bottom:1.5px solid rgba(42,157,181,.5);pointer-events:none;z-index:999;';
+        selBox.style.cssText='position:fixed;background:rgba(42,157,181,.10);border-top:1.5px solid rgba(42,157,181,.5);border-bottom:1.5px solid rgba(42,157,181,.5);pointer-events:none;z-index:999;';
         document.body.appendChild(selBox);
       }
       if(selBox){
+        const tbCol2=document.querySelector('.tb-col');
+        const cr=tbCol2?tbCol2.getBoundingClientRect():{left:0,width:window.innerWidth};
         const y1=Math.min(startY,ev.clientY),y2=Math.max(startY,ev.clientY);
+        selBox.style.left=cr.left+'px';selBox.style.width=cr.width+'px';
         selBox.style.top=y1+'px';selBox.style.height=(y2-y1)+'px';
       }
     };
@@ -2766,13 +2769,11 @@ function _attachTBEdgeRubberBand(){
       if(selBox)selBox.remove();
       if(!rbMoved)return;
       const y1=Math.min(startY,ev.clientY),y2=Math.max(startY,ev.clientY);
-      // Find tb-col and tbScroll to convert viewport Y to timeblock content coords
       const tbCol=document.querySelector('.tb-col');
-      const tbScroll=document.getElementById('tbScroll');
-      if(!tbCol||!tbScroll)return;
+      if(!tbCol)return;
       const colRect=tbCol.getBoundingClientRect();
-      const sc=tbScroll.scrollTop;
-      const selTop=y1-colRect.top+sc,selBot=y2-colRect.top+sc;
+      // Same coordinate system as internal rubber band: Y relative to col viewport top (no scrollTop needed)
+      const selTop=y1-colRect.top,selBot=y2-colRect.top;
       if(!ev.shiftKey)selectedTasks.clear();
       tbCol.querySelectorAll('.tb-block[data-bid]').forEach(be=>{
         const bl=st.blocks.find(x=>String(x.id)===String(be.dataset.bid));
