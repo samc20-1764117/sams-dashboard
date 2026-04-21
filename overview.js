@@ -3263,13 +3263,23 @@ function drawAutoTBBlock(col,atb,ds){
     el.classList.add('sel-atb');
     const startY=e.clientY,startSm=atb.sm;
     atbDragging=false;
-    // Multi-drag: collect any selected regular TB blocks
+    // Multi-drag: collect any selected regular TB blocks AND other selected auto-blocks
     const _atbSm2t=sm=>`${String(Math.floor(sm/60)).padStart(2,'0')}:${String(sm%60).padStart(2,'0')}:00`;
     const _atbMultiSelId=selectedTasks.has('atb::'+atb._atbId);
-    let atbMultiBlocks=null;
+    let atbMultiBlocks=null,otherSelAtbs=null;
     if(_atbMultiSelId&&selectedTasks.size>1){
       const col2=el.closest('.tb-col');
       if(col2){atbMultiBlocks=[...col2.querySelectorAll('.tb-block[data-bid]')].map(be=>{const bl=st.blocks.find(x=>String(x.id)===String(be.dataset.bid));if(!bl)return null;const sid=_getTBBlockSelId(bl);if(!sid||!selectedTasks.has(sid))return null;return{bl,el2:be,startSm2:bl.sm};}).filter(Boolean);if(!atbMultiBlocks.length)atbMultiBlocks=null;}
+      // Collect other selected auto-blocks (not the one being dragged)
+      const allAtbsNow=getAutoTBForDate(ds);
+      const otherList=[];
+      col2&&col2.querySelectorAll('.atb-block[data-atb-id]').forEach(ae=>{
+        const aid=ae.dataset.atbId;
+        if(aid===atb._atbId||!selectedTasks.has('atb::'+aid))return;
+        const aa=allAtbsNow.find(a=>a._atbId===aid);
+        if(aa)otherList.push({aa,el2:ae,startSm2:aa.sm});
+      });
+      if(otherList.length)otherSelAtbs=otherList;
     }
     atbOnMove=ev=>{
       const dy=ev.clientY-startY;
@@ -3281,6 +3291,7 @@ function drawAutoTBBlock(col,atb,ds){
       el.style.top=(atb.sm-HOURS[0]*60)*PX+'px';
       const bt=el.querySelector('.tb-btime');if(bt)bt.textContent=tStr(atb.sm)+'-'+tStr(atb.sm+atb.dur);
       if(atbMultiBlocks)atbMultiBlocks.forEach(({bl,el2,startSm2})=>{const ns=Math.max(HOURS[0]*60,Math.min(HOURS[HOURS.length-1]*60,startSm2+dm));bl.sm=ns;el2.style.top=(ns-HOURS[0]*60)*PX+'px';const bt2=el2.querySelector('.tb-btime');if(bt2)bt2.textContent=tStr(ns)+'-'+tStr(ns+bl.dur);});
+      if(otherSelAtbs)otherSelAtbs.forEach(({aa,el2,startSm2})=>{const ns=Math.max(HOURS[0]*60,Math.min(HOURS[HOURS.length-1]*60,startSm2+dm));aa.sm=ns;el2.style.top=(ns-HOURS[0]*60)*PX+'px';const bt2=el2.querySelector('.tb-btime');if(bt2)bt2.textContent=tStr(ns)+'-'+tStr(ns+aa.dur);});
       el.classList.add('dragging-block');
     };
     atbOnUp=()=>{
@@ -3316,6 +3327,13 @@ function drawAutoTBBlock(col,atb,ds){
           pushUndo(()=>{atb.sm=startSm;const _realOvId=atb._ovId;st.autoTBOverrides=st.autoTBOverrides.filter(o=>String(o.id)!==tmpId&&(!_realOvId||String(o.id)!==String(_realOvId)));if(_realOvId)sbReqSilent('DELETE','auto_timeblock_overrides',null,`?id=eq.${_realOvId}`);atb._ovId=null;mbSnaps.forEach(({bl,startSm2})=>{bl.sm=startSm2;sbUpdateBlock(bl.id,{start_minutes:startSm2});});save();if(document.getElementById('tbGrid'))renderDayTB();},'Moved auto block');
         }
         mbSnaps.forEach(({bl,newSm})=>sbUpdateBlock(bl.id,{start_minutes:newSm}));
+        // Persist other selected auto-blocks
+        if(otherSelAtbs)otherSelAtbs.forEach(({aa})=>{
+          const ns=aa.sm,ne=aa.sm+aa.dur;
+          const ns2=_atbSm2t(ns),ne2=_atbSm2t(ne);
+          if(aa._ovId){const ov2=st.autoTBOverrides.find(o=>String(o.id)===aa._ovId);if(ov2){ov2.start_time=ns2;ov2.end_time=ne2;}sbReqSilent('PATCH','auto_timeblock_overrides',{start_time:ns2,end_time:ne2},`?id=eq.${aa._ovId}`);}
+          else{const pl={base_id:aa._atbId,date:ds,start_time:ns2,end_time:ne2};const tid='atbov-tmp-'+Date.now();st.autoTBOverrides.push({...pl,id:tid});sbReqSilent('POST','auto_timeblock_overrides',pl,'').then(res=>{if(res&&res[0]){const i=st.autoTBOverrides.findIndex(o=>String(o.id)===tid);if(i>-1){st.autoTBOverrides[i]=res[0];aa._ovId=String(res[0].id);}}save();});}
+        });
         save();
       }
     };
