@@ -105,27 +105,24 @@ function launchDonutConfetti(){
   const svg=arc.closest('svg');
   const rect=svg.getBoundingClientRect();
   const ox=rect.left+rect.width/2, oy=rect.top+rect.height/2;
-  // donut dance — nested <g> pattern:
-  // outer g uses SVG transform attribute for position (never touched by CSS)
-  // inner g gets the CSS rotation class (rotates around 0,0 = the pivot)
+  // donut dance — single <g> per limb, line drawn in absolute SVG coords,
+  // transformOrigin set to exact pivot so rotation stays anchored to ring.
   const NS='http://www.w3.org/2000/svg';
   const lc='#22c55e',lw='2.8';
-  function makeLimb(cls,tx,ty,x2,y2){
-    const outer=document.createElementNS(NS,'g');
-    outer.setAttribute('transform',`translate(${tx},${ty})`);
-    const inner=document.createElementNS(NS,'g');
-    inner.classList.add(cls);
+  function makeLimb(cls,tx,ty,dx,dy){
+    const g=document.createElementNS(NS,'g');
+    g.classList.add(cls);
+    g.style.transformOrigin=`${tx}px ${ty}px`;
     const line=document.createElementNS(NS,'line');
-    line.setAttribute('x1','0');line.setAttribute('y1','0');
-    line.setAttribute('x2',String(x2));line.setAttribute('y2',String(y2));
+    line.setAttribute('x1',String(tx));line.setAttribute('y1',String(ty));
+    line.setAttribute('x2',String(tx+dx));line.setAttribute('y2',String(ty+dy));
     line.setAttribute('stroke',lc);line.setAttribute('stroke-width',lw);
     line.setAttribute('stroke-linecap','round');
     const dot=document.createElementNS(NS,'circle');
-    dot.setAttribute('cx',String(x2));dot.setAttribute('cy',String(y2));
+    dot.setAttribute('cx',String(tx+dx));dot.setAttribute('cy',String(ty+dy));
     dot.setAttribute('r','3');dot.setAttribute('fill',lc);
-    inner.appendChild(line);inner.appendChild(dot);
-    outer.appendChild(inner);
-    return outer;
+    g.appendChild(line);g.appendChild(dot);
+    return g;
   }
   function makeEye(cx,cy){
     const g=document.createElementNS(NS,'g');
@@ -153,7 +150,7 @@ function launchDonutConfetti(){
     svg.classList.remove('donut-dancing');
     svg.style.overflow='';
     [armR,armL,legR,legL,eyeL,eyeR].forEach(el=>el.remove());
-  },2400);
+  },3000);
   // sprinkles
   const colors=['#ffffff','#22c55e','#4ade80','#bbf7d0','#ffffff','#16a34a'];
   for(let i=0;i<42;i++){
