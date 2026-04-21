@@ -105,15 +105,16 @@ function launchDonutConfetti(){
   const svg=arc.closest('svg');
   const rect=svg.getBoundingClientRect();
   const ox=rect.left+rect.width/2, oy=rect.top+rect.height/2;
-  // donut dance — NOTE: SVG attribute transform is overridden by CSS animation,
-  // so we embed translate(--tx,--ty) directly inside each keyframe instead.
+  // donut dance — nested <g> pattern:
+  // outer g uses SVG transform attribute for position (never touched by CSS)
+  // inner g gets the CSS rotation class (rotates around 0,0 = the pivot)
   const NS='http://www.w3.org/2000/svg';
   const lc='#22c55e',lw='2.8';
   function makeLimb(cls,tx,ty,x2,y2){
-    const g=document.createElementNS(NS,'g');
-    g.classList.add(cls);
-    g.style.setProperty('--tx',tx+'px');
-    g.style.setProperty('--ty',ty+'px');
+    const outer=document.createElementNS(NS,'g');
+    outer.setAttribute('transform',`translate(${tx},${ty})`);
+    const inner=document.createElementNS(NS,'g');
+    inner.classList.add(cls);
     const line=document.createElementNS(NS,'line');
     line.setAttribute('x1','0');line.setAttribute('y1','0');
     line.setAttribute('x2',String(x2));line.setAttribute('y2',String(y2));
@@ -122,8 +123,9 @@ function launchDonutConfetti(){
     const dot=document.createElementNS(NS,'circle');
     dot.setAttribute('cx',String(x2));dot.setAttribute('cy',String(y2));
     dot.setAttribute('r','3');dot.setAttribute('fill',lc);
-    g.appendChild(line);g.appendChild(dot);
-    return g;
+    inner.appendChild(line);inner.appendChild(dot);
+    outer.appendChild(inner);
+    return outer;
   }
   function makeEye(cx,cy){
     const g=document.createElementNS(NS,'g');
@@ -134,14 +136,14 @@ function launchDonutConfetti(){
     return g;
   }
   // Positions on the ring (r=22 from center 28,28):
-  // right arm: 4 o'clock (~30° past right) → (47,39), extends up-right (raised)
-  // left arm:  8 o'clock (~150° from right) → (9,39), extends down-left (hanging)
+  // right arm: 4 o'clock → (47,39), endpoint up-right (raised)
+  // left arm:  8 o'clock → (9,39),  endpoint down-left (hanging)
   // legs: 5 o'clock → (39,47) and 7 o'clock → (17,47)
   const armR=makeLimb('d-arm-r',47,39, 11,-12);
   const armL=makeLimb('d-arm-l', 9,39,-11, 10);
   const legR=makeLimb('d-leg-r',39,47,  5, 13);
   const legL=makeLimb('d-leg-l',17,47, -5, 13);
-  // eyes on upper ring: ~(-8,-20) and (+8,-20) offset from center
+  // eyes at ~10 o'clock and ~2 o'clock on the ring
   const eyeL=makeEye(20,8);
   const eyeR=makeEye(36,8);
   svg.style.overflow='visible';
