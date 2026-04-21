@@ -2783,6 +2783,10 @@ function _attachTBEdgeRubberBand(){
         const blTop=(bl.sm-HOURS[0]*60)*PX,blBot=blTop+bl.dur*PX;
         if(blBot>selTop&&blTop<selBot){const sid=_getTBBlockSelId(bl);if(sid){selectedTasks.add(sid);lastSelectedId=sid;}}
       });
+      // Also select auto blocks in range
+      const _edDs=d2s(getDayDate(dayOff));
+      const _edSmMin=HOURS[0]*60+selTop/PX,_edSmMax=HOURS[0]*60+selBot/PX;
+      getAutoTBForDate(_edDs).filter(a=>a.sm+a.dur>_edSmMin&&a.sm<_edSmMax).forEach(a=>selectedTasks.add('atb::'+a._atbId));
       applySelHighlight();
     };
     document.addEventListener('mousemove',onMove);
@@ -2927,6 +2931,10 @@ function renderDayTB(){
           const blTop=(bl.sm-HOURS[0]*60)*PX,blBot=blTop+bl.dur*PX;
           if(blBot>selTop&&blTop<selBot){const sid=_getTBBlockSelId(bl);if(sid){selectedTasks.add(sid);lastSelectedId=sid;}}
         });
+        // Also select auto blocks in range
+        const _rbDs=d2s(getDayDate(dayOff));
+        const _rbSmMin=HOURS[0]*60+selTop/PX,_rbSmMax=HOURS[0]*60+selBot/PX;
+        getAutoTBForDate(_rbDs).filter(a=>a.sm+a.dur>_rbSmMin&&a.sm<_rbSmMax).forEach(a=>selectedTasks.add('atb::'+a._atbId));
         applySelHighlight();
       }
     };
