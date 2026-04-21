@@ -2802,20 +2802,27 @@ function _attachWkcRubberBand(){
     if(!colsEl)return;
     const colsRect=colsEl.getBoundingClientRect();
     if(e.clientX<colsRect.left||e.clientX>colsRect.right)return;
-    e.preventDefault();
-    const startY=e.clientY;
+    const startX=e.clientX,startY=e.clientY;
     let rbMoved=false,selBox=null;
     const onMove=ev=>{
-      if(!rbMoved&&Math.abs(ev.clientY-startY)>5){
+      const dx=Math.abs(ev.clientX-startX),dy=Math.abs(ev.clientY-startY);
+      // Don't activate if drag is primarily horizontal (let calDrag handle travel)
+      if(!rbMoved&&dy>5&&dy>dx*2){
         rbMoved=true;
+        ev.preventDefault();
         selBox=document.createElement('div');
         selBox.style.cssText='position:fixed;background:rgba(42,157,181,.10);border-top:1.5px solid rgba(42,157,181,.5);border-bottom:1.5px solid rgba(42,157,181,.5);pointer-events:none;z-index:999;';
         document.body.appendChild(selBox);
       }
       if(selBox){
-        const cr=colsEl.getBoundingClientRect();
+        // Compute X span across covered columns only
+        const x1v=Math.min(startX,ev.clientX),x2v=Math.max(startX,ev.clientX);
+        const colEls=[...document.querySelectorAll('#wkcCols .wkc-col')];
+        let boxLeft=Infinity,boxRight=-Infinity;
+        colEls.forEach(c=>{const r=c.getBoundingClientRect();if(r.right>x1v&&r.left<x2v){boxLeft=Math.min(boxLeft,r.left);boxRight=Math.max(boxRight,r.right);}});
+        if(boxLeft===Infinity){boxLeft=x1v;boxRight=x2v;}
         const y1=Math.min(startY,ev.clientY),y2=Math.max(startY,ev.clientY);
-        selBox.style.left=cr.left+'px';selBox.style.width=cr.width+'px';
+        selBox.style.left=boxLeft+'px';selBox.style.width=(boxRight-boxLeft)+'px';
         selBox.style.top=y1+'px';selBox.style.height=(y2-y1)+'px';
       }
     };
@@ -2824,11 +2831,12 @@ function _attachWkcRubberBand(){
       document.removeEventListener('mouseup',onUp);
       if(selBox)selBox.remove();
       if(!rbMoved)return;
+      const x1=Math.min(startX,ev.clientX),x2=Math.max(startX,ev.clientX);
       const y1=Math.min(startY,ev.clientY),y2=Math.max(startY,ev.clientY);
       if(!ev.shiftKey)selectedTasks.clear();
       document.querySelectorAll('#wkcCols .chip[data-tid]').forEach(chip=>{
         const r=chip.getBoundingClientRect();
-        if(r.bottom>y1&&r.top<y2){
+        if(r.bottom>y1&&r.top<y2&&r.right>x1&&r.left<x2){
           const sid=chip.dataset.tid;
           if(sid){selectedTasks.add(sid);lastSelectedId=sid;}
         }
