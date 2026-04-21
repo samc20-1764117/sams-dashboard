@@ -3248,14 +3248,18 @@ document.addEventListener('keydown',e=>{
   if(e.key==='n'){e.preventDefault();openQA('today',null,d2s(getDayDate(dayOff)));}
   if(e.key==='r'){e.preventDefault();location.reload();}
   if(e.key==='s'){e.preventDefault();syncAll(false);}
-  if(e.key==='a'&&document.getElementById('tbGrid')){
-    e.preventDefault();
-    const ds=d2s(getDayDate(dayOff));
-    let minSm=null,maxSm=null;
-    // Prefer time range from selected regular blocks
-    if(selectedTasks.size>0){const selBlks=st.blocks.filter(b=>{if(b.ds!==ds)return false;const sid=_getTBBlockSelId(b);return sid&&selectedTasks.has(sid);});if(selBlks.length){minSm=Math.min(...selBlks.map(b=>b.sm));maxSm=Math.max(...selBlks.map(b=>b.sm+b.dur));}}
-    // Fall back to last rubber-band range (in px → minutes)
-    if(minSm===null&&_lastTBRbRange){minSm=HOURS[0]*60+_lastTBRbRange.selTop/PX;maxSm=HOURS[0]*60+_lastTBRbRange.selBot/PX;}
-    if(minSm!==null){if(!selectedTasks.size)selectedTasks.clear();getAutoTBForDate(ds).filter(a=>a.sm+a.dur>minSm&&a.sm<maxSm).forEach(a=>selectedTasks.add('atb::'+a._atbId));applySelHighlight();}
-  }
 });
+// 'A' key: add auto-blocks in range to selection (capture phase, case-insensitive)
+document.addEventListener('keydown',e=>{
+  if(e.key.toLowerCase()!=='a')return;
+  const tag=document.activeElement?.tagName;
+  if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT')return;
+  if(e.metaKey||e.ctrlKey||e.altKey)return;
+  if(!document.getElementById('tbGrid'))return;
+  e.preventDefault();
+  const ds=d2s(getDayDate(dayOff));
+  let minSm=null,maxSm=null;
+  if(selectedTasks.size>0){const selBlks=st.blocks.filter(b=>{if(b.ds!==ds)return false;const sid=typeof _getTBBlockSelId==='function'?_getTBBlockSelId(b):null;return sid&&selectedTasks.has(sid);});if(selBlks.length){minSm=Math.min(...selBlks.map(b=>b.sm));maxSm=Math.max(...selBlks.map(b=>b.sm+b.dur));}}
+  if(minSm===null&&_lastTBRbRange){minSm=HOURS[0]*60+_lastTBRbRange.selTop/PX;maxSm=HOURS[0]*60+_lastTBRbRange.selBot/PX;}
+  if(minSm!==null){getAutoTBForDate(ds).filter(a=>a.sm+a.dur>minSm&&a.sm<maxSm).forEach(a=>selectedTasks.add('atb::'+a._atbId));applySelHighlight();}
+},{capture:true});
