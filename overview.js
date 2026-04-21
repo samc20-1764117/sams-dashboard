@@ -2783,10 +2783,6 @@ function _attachTBEdgeRubberBand(){
         const blTop=(bl.sm-HOURS[0]*60)*PX,blBot=blTop+bl.dur*PX;
         if(blBot>selTop&&blTop<selBot){const sid=_getTBBlockSelId(bl);if(sid){selectedTasks.add(sid);lastSelectedId=sid;}}
       });
-      // Also select auto blocks in range
-      const _edDs=d2s(getDayDate(dayOff));
-      const _edSmMin=HOURS[0]*60+selTop/PX,_edSmMax=HOURS[0]*60+selBot/PX;
-      getAutoTBForDate(_edDs).filter(a=>a.sm+a.dur>_edSmMin&&a.sm<_edSmMax).forEach(a=>selectedTasks.add('atb::'+a._atbId));
       applySelHighlight();
     };
     document.addEventListener('mousemove',onMove);
@@ -2931,10 +2927,6 @@ function renderDayTB(){
           const blTop=(bl.sm-HOURS[0]*60)*PX,blBot=blTop+bl.dur*PX;
           if(blBot>selTop&&blTop<selBot){const sid=_getTBBlockSelId(bl);if(sid){selectedTasks.add(sid);lastSelectedId=sid;}}
         });
-        // Also select auto blocks in range
-        const _rbDs=d2s(getDayDate(dayOff));
-        const _rbSmMin=HOURS[0]*60+selTop/PX,_rbSmMax=HOURS[0]*60+selBot/PX;
-        getAutoTBForDate(_rbDs).filter(a=>a.sm+a.dur>_rbSmMin&&a.sm<_rbSmMax).forEach(a=>selectedTasks.add('atb::'+a._atbId));
         applySelHighlight();
       }
     };
@@ -3139,9 +3131,10 @@ function drawTBBlock(col,b){
             atbSnaps.forEach(({aa,startSm2,prevOvId})=>{aa.sm=startSm2;const ps=_sm2t(startSm2),pe=_sm2t(startSm2+aa.dur);if(prevOvId){const ov=st.autoTBOverrides.find(o=>String(o.id)===prevOvId);if(ov){ov.start_time=ps;ov.end_time=pe;}sbReqSilent('PATCH','auto_timeblock_overrides',{start_time:ps,end_time:pe},`?id=eq.${prevOvId}`);}else if(aa._ovId){const rid=aa._ovId;st.autoTBOverrides=st.autoTBOverrides.filter(o=>String(o.id)!==rid);sbReqSilent('DELETE','auto_timeblock_overrides',null,`?id=eq.${rid}`);aa._ovId=null;}});
             save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
           },'Moved blocks');
+          // Update auto-block overrides in memory BEFORE rendering so renderDayTB sees new positions
+          atbSnaps.forEach(({aa,newSm,prevOvId})=>{const ns2=_sm2t(newSm),ne2=_sm2t(newSm+aa.dur);if(prevOvId){const ov=st.autoTBOverrides.find(o=>String(o.id)===prevOvId);if(ov){ov.start_time=ns2;ov.end_time=ne2;}sbReqSilent('PATCH','auto_timeblock_overrides',{start_time:ns2,end_time:ne2},`?id=eq.${prevOvId}`);}else{const pl={base_id:aa._atbId,date:aa.ds,start_time:ns2,end_time:ne2};const tmpId='atbov-tmp-'+Date.now();st.autoTBOverrides.push({...pl,id:tmpId});sbReqSilent('POST','auto_timeblock_overrides',pl,'').then(res=>{if(res&&res[0]){const idx=st.autoTBOverrides.findIndex(o=>String(o.id)===tmpId);if(idx>-1){st.autoTBOverrides[idx]=res[0];aa._ovId=String(res[0].id);}save();}});}});
           save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
           snaps.forEach(({bl,newSm})=>sbUpdateBlock(bl.id,{start_minutes:newSm}));
-          atbSnaps.forEach(({aa,newSm,prevOvId})=>{const ns2=_sm2t(newSm),ne2=_sm2t(newSm+aa.dur);if(prevOvId){const ov=st.autoTBOverrides.find(o=>String(o.id)===prevOvId);if(ov){ov.start_time=ns2;ov.end_time=ne2;}sbReqSilent('PATCH','auto_timeblock_overrides',{start_time:ns2,end_time:ne2},`?id=eq.${prevOvId}`);}else{const pl={base_id:aa._atbId,date:aa.ds,start_time:ns2,end_time:ne2};const tmpId='atbov-tmp-'+Date.now();st.autoTBOverrides.push({...pl,id:tmpId});sbReqSilent('POST','auto_timeblock_overrides',pl,'').then(res=>{if(res&&res[0]){const idx=st.autoTBOverrides.findIndex(o=>String(o.id)===tmpId);if(idx>-1){st.autoTBOverrides[idx]=res[0];aa._ovId=String(res[0].id);}save();}});}});
         } else {
           const newSm=b.sm;pushUndo(()=>{b.sm=startSm;save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();sbUpdateBlock(b.id,{start_minutes:startSm});},'Moved block');save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();sbUpdateBlock(b.id,{start_minutes:newSm});
         }
