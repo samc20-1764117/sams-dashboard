@@ -104,8 +104,8 @@ function launchDonutConfetti(){
   const arc=document.getElementById('_donutArc');if(!arc)return;
   const rect=arc.closest('svg').getBoundingClientRect();
   const ox=rect.left+rect.width/2, oy=rect.top+rect.height/2;
-  const shapes=['⭐','🌸','✨','💛','🩷','🩵','💜','🍬'];
-  for(let i=0;i<28;i++){
+  const colors=['#ffffff','#22c55e','#4ade80','#bbf7d0','#ffffff','#16a34a'];
+  for(let i=0;i<32;i++){
     const el=document.createElement('span');
     el.className='confetti-particle';
     const angle=(Math.random()*360)*(Math.PI/180);
@@ -113,9 +113,10 @@ function launchDonutConfetti(){
     const cx=Math.cos(angle)*dist, cy=Math.sin(angle)*dist-30;
     const cr=(Math.random()-0.5)*540;
     const cd=(0.9+Math.random()*0.8).toFixed(2)+'s';
-    const cs=(10+Math.random()*8).toFixed(1)+'px';
-    el.style.cssText=`--cx:${cx.toFixed(1)}px;--cy:${cy.toFixed(1)}px;--cr:${cr.toFixed(1)}deg;--cd:${cd};--cs:${cs};left:${ox}px;top:${oy}px;`;
-    el.textContent=shapes[Math.floor(Math.random()*shapes.length)];
+    const w=(3+Math.random()*3).toFixed(1)+'px';
+    const h=(7+Math.random()*6).toFixed(1)+'px';
+    const color=colors[Math.floor(Math.random()*colors.length)];
+    el.style.cssText=`--cx:${cx.toFixed(1)}px;--cy:${cy.toFixed(1)}px;--cr:${cr.toFixed(1)}deg;--cd:${cd};left:${ox}px;top:${oy}px;width:${w};height:${h};background:${color};border-radius:2px;`;
     document.body.appendChild(el);
     setTimeout(()=>el.remove(), 1800);
   }
