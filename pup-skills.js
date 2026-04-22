@@ -426,10 +426,13 @@ async function pupStageCheck(sid,checked){
   sbReqSilent('PATCH','pup_skills',{stage},`?id=eq.${sid}`);
 }
 async function deletePupGroup(skillName){
+  // Delete clicked skill + any other selected skills
+  const toDelete=new Set(_selSkillKeys.size>1&&_selSkillKeys.has(skillName)?[..._selSkillKeys]:[skillName]);
   pupSnapshot();
-  const ids=st.pup_skills.filter(s=>s.skill===skillName).map(s=>String(s.id));
-  st.pup_skills=st.pup_skills.filter(s=>s.skill!==skillName);
-  _selPupIds.clear();save();renderPupsPage();renderPupSkillsHighlight();
+  const ids=st.pup_skills.filter(s=>toDelete.has(s.skill)).map(s=>String(s.id));
+  st.pup_skills=st.pup_skills.filter(s=>!toDelete.has(s.skill));
+  _selSkillKeys.clear();_lastSelKey=null;_selPupIds.clear();
+  save();renderPupsPage();renderPupSkillsHighlight();
   for(const id of ids)sbReqSilent('DELETE','pup_skills',null,`?id=eq.${id}`);
 }
 function renderPupTable(){
@@ -543,21 +546,35 @@ function renderPupTable(){
         if(e.button!==0)return;
         if(e.target.closest('input,button'))return;
         let dragging=false;const startY=e.clientY;let ph=null;
+        // multi-drag: rows being moved = this row + other selected rows (if this row is selected)
+        const isMulti=_selSkillKeys.has(row.dataset.skillkey)&&_selSkillKeys.size>1;
         const onMove=ev=>{
           const dy=ev.clientY-startY;
           if(!dragging&&Math.abs(dy)<5)return;
-          if(!dragging){window.getSelection()?.removeAllRanges();dragging=true;row.style.opacity='.35';ph=document.createElement('tr');ph.className='pup-drag-ph';ph.innerHTML=`<td colspan="100" style="height:${row.offsetHeight}px;background:rgba(139,92,246,.08);border-top:2px dashed rgba(139,92,246,.4);border-bottom:2px dashed rgba(139,92,246,.4);padding:0"></td>`;}
+          if(!dragging){
+            window.getSelection()?.removeAllRanges();dragging=true;
+            // fade all dragged rows
+            row.style.opacity='.35';
+            if(isMulti)dataRows.filter(r=>r!==row&&_selSkillKeys.has(r.dataset.skillkey)).forEach(r=>r.style.opacity='.35');
+            ph=document.createElement('tr');ph.className='pup-drag-ph';
+            ph.innerHTML=`<td colspan="100" style="height:${row.offsetHeight}px;background:rgba(139,92,246,.08);border-top:2px dashed rgba(139,92,246,.4);border-bottom:2px dashed rgba(139,92,246,.4);padding:0"></td>`;
+          }
           ev.preventDefault();
-          const refs=[...tbody.querySelectorAll('tr[data-skillkey]')].filter(r=>r!==row);
+          const refs=[...tbody.querySelectorAll('tr[data-skillkey]')].filter(r=>r!==row&&(!isMulti||!_selSkillKeys.has(r.dataset.skillkey)));
           let inserted=false;
           for(const r of refs){const rc=r.getBoundingClientRect();if(ev.clientY<rc.top+rc.height/2){tbody.insertBefore(ph,r);inserted=true;break;}}
           if(!inserted&&refs.length)refs[refs.length-1].after(ph);
         };
         const onUp=()=>{
           document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);
-          row.style.opacity='';
+          [row,...dataRows.filter(r=>r!==row)].forEach(r=>r.style.opacity='');
           if(dragging&&ph){
             tbody.insertBefore(row,ph);ph.remove();
+            // place other selected rows right after dragged row, preserving relative order
+            if(isMulti){
+              const others=[...tbody.querySelectorAll('tr[data-skillkey]')].filter(r=>r!==row&&_selSkillKeys.has(r.dataset.skillkey));
+              let anchor=row;others.forEach(r=>{anchor.after(r);anchor=r;});
+            }
             const ordered=[...tbody.querySelectorAll('tr[data-skillkey]')];
             pupSnapshot();
             ordered.forEach((r,i)=>{const key=r.dataset.skillkey;st.pup_skills.forEach(s=>{if(s.skill===key)s.skill_order=i;});});
@@ -648,7 +665,7 @@ function renderPupsPage(){
   window._pupOutsideClick=e=>{
     const pg=document.getElementById('page-pups');
     if(!pg||!pg.classList.contains('active'))return;
-    if(!e.target.closest('#pupTblBody')){_selPupIds.clear();_lastSelPupId=null;applyPupSelHighlight();}
+    if(!e.target.closest('#pupTblBody')){_selSkillKeys.clear();_lastSelKey=null;_selPupIds.clear();applyPupSelHighlight();}
   };
   document.addEventListener('click',window._pupOutsideClick);
   renderPupTable();
