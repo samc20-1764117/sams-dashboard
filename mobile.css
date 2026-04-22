@@ -29,14 +29,16 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 @keyframes ptr-spin{to{transform:rotate(360deg)}}
 
 /* ── Task row wrapper (swipe-to-delete) ───────────────────────────────────── */
-.m-row-outer{position:relative;background:#ef4444;overflow:hidden}
+.m-row-outer{position:relative;background:transparent;overflow:hidden}
+.m-row-outer.ptr-ready{background:#ef4444}
 .m-row-outer:first-child .m-row{border-top:none}
-.m-del-hint{position:absolute;right:16px;top:50%;transform:translateY(-50%);color:#fff;font-size:13px;font-weight:600;pointer-events:none}
+.m-del-hint{position:absolute;right:16px;top:50%;transform:translateY(-50%);color:#fff;font-size:13px;font-weight:600;pointer-events:none;opacity:0;transition:opacity .1s}
+.m-row-outer.ptr-ready .m-del-hint{opacity:1}
 
 /* ── Task rows ────────────────────────────────────────────────────────────── */
-.m-row{display:flex;align-items:center;gap:10px;padding:11px 14px;border-top:1px solid var(--border);min-height:46px;background:var(--glass);position:relative;will-change:transform}
+.m-row{display:flex;align-items:center;gap:10px;padding:11px 14px;border-top:1px solid var(--border);min-height:46px;background:var(--bg);position:relative;will-change:transform}
 .m-done{opacity:.45}
-.m-ov{background:rgba(255,240,240,.85)}
+.m-ov{background:rgba(239,68,68,.06)}
 
 .m-chk-wrap{display:flex;align-items:center;justify-content:center;width:28px;height:28px;flex-shrink:0;cursor:pointer}
 .m-chk-wrap input[type=checkbox]{width:18px;height:18px;accent-color:var(--accent);cursor:pointer;flex-shrink:0}

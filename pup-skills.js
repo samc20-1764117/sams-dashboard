@@ -284,7 +284,7 @@ function pupFilterBy(e,col){
   }
   document.getElementById('pfContent').innerHTML=html;
   // Always query the live th from DOM — e.currentTarget may be detached if sort re-rendered thead
-  const colIdx={pup:0,skill:1,level:2,stage:3,next_step:4,category:5}[col]??0;
+  const colIdx={skill:0,word:1,level:2,category:3}[col]??0;
   const liveTh=document.getElementById('pupTblHead')?.querySelectorAll('th')[colIdx];
   const rect=liveTh?liveTh.getBoundingClientRect():{left:200,bottom:200,right:200};
   let left=rect.left,pw=200;
