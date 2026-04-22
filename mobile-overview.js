@@ -13,7 +13,7 @@ function hideLoginOverlay() {
 }
 
 // ── Desktop render stubs ──────────────────────────────────────────────────────
-function renderAll() { mRenderToday(); }
+function renderAll() { mRenderToday(); if (_mCurTab === 'tb') mRenderTB(); }
 function renderToday() { mRenderToday(); }
 function renderWkCal() {}
 function renderWkSummary() {}
@@ -96,6 +96,7 @@ async function togPupSessionDone(sessId, done) {
 const M_CATS = ['Home', 'My work', 'Work', 'Social', 'Long term'];
 let _mAddCat = 'Home';
 let _mEditCat = 'Home';
+let _mBlockCat = 'Home';
 
 const _EDIT_SVG = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="m18.5 2.5 2 2L10 15l-3 1 1-3z"/></svg>`;
 
@@ -117,18 +118,22 @@ function _mBuildOpts(elId, which) {
 }
 
 function mTogglePick(which) {
-  const myId = which === 'add' ? 'mAddPickOpts' : 'mEditPickOpts';
-  const otherId = which === 'add' ? 'mEditPickOpts' : 'mAddPickOpts';
-  document.getElementById(otherId)?.classList.remove('open');
+  const ids = {add: 'mAddPickOpts', edit: 'mEditPickOpts', block: 'mBlockPickOpts'};
+  const myId = ids[which];
+  Object.entries(ids).forEach(([k, id]) => { if (k !== which) document.getElementById(id)?.classList.remove('open'); });
   document.getElementById(myId)?.classList.toggle('open');
 }
 
 function mSelectCat(which, cat) {
-  const dotId = which === 'add' ? 'mAddPickDot' : 'mEditPickDot';
-  const lblId = which === 'add' ? 'mAddPickLbl' : 'mEditPickLbl';
-  const optId = which === 'add' ? 'mAddPickOpts' : 'mEditPickOpts';
+  const map = {
+    add:   {dot: 'mAddPickDot',   lbl: 'mAddPickLbl',   opts: 'mAddPickOpts'},
+    edit:  {dot: 'mEditPickDot',  lbl: 'mEditPickLbl',  opts: 'mEditPickOpts'},
+    block: {dot: 'mBlockPickDot', lbl: 'mBlockPickLbl', opts: 'mBlockPickOpts'},
+  };
+  const {dot: dotId, lbl: lblId, opts: optId} = map[which] || {};
   if (which === 'add') _mAddCat = cat;
-  else _mEditCat = cat;
+  else if (which === 'edit') _mEditCat = cat;
+  else if (which === 'block') _mBlockCat = cat;
   const dotEl = document.getElementById(dotId);
   const lblEl = document.getElementById(lblId);
   if (dotEl) dotEl.style.cssText = _mDotStyle(cat);
@@ -139,12 +144,14 @@ function mSelectCat(which, cat) {
 function mInitPickers() {
   _mBuildOpts('mAddPickOpts', 'add');
   _mBuildOpts('mEditPickOpts', 'edit');
+  _mBuildOpts('mBlockPickOpts', 'block');
   mSelectCat('add', 'Home');
-  // Close pickers on outside tap
+  mSelectCat('block', 'Home');
   document.addEventListener('click', e => {
     if (!e.target.closest('.m-cpick')) {
       document.getElementById('mAddPickOpts')?.classList.remove('open');
       document.getElementById('mEditPickOpts')?.classList.remove('open');
+      document.getElementById('mBlockPickOpts')?.classList.remove('open');
     }
   }, true);
 }
@@ -291,7 +298,7 @@ function mRenderToday() {
   const sorted = mGetTodayTasks();
   const doneCount = sorted.filter(t => t.done).length;
   const progEl = document.getElementById('mProgress');
-  if (progEl) progEl.textContent = doneCount + '/' + sorted.length;
+  if (progEl && _mCurTab === 'today') progEl.textContent = doneCount + '/' + sorted.length;
   const el = document.getElementById('mTodayList');
   if (!el) return;
   el.innerHTML = sorted.length ? sorted.map(mTaskRow).join('') : '<div class="m-empty">All done ✓</div>';
@@ -429,6 +436,7 @@ function mInitPTR() {
   let startY = 0, active = false, triggered = false;
 
   main.addEventListener('touchstart', e => {
+    if (_mCurTab !== 'today') return;
     if (main.scrollTop <= 0) { startY = e.touches[0].clientY; active = true; triggered = false; }
   }, {passive: true});
 
@@ -461,11 +469,255 @@ function mInitPTR() {
   }, {passive: true});
 }
 
+// ── Tab switching ─────────────────────────────────────────────────────────────
+let _mCurTab = 'today';
+
+function mShowTab(tab) {
+  _mCurTab = tab;
+  const isToday = tab === 'today';
+  document.getElementById('mTodayPage').style.display = isToday ? '' : 'none';
+  document.getElementById('mTBPage').style.display = isToday ? 'none' : '';
+  document.getElementById('mAddBar').style.display = isToday ? '' : 'none';
+  document.getElementById('mApp').style.paddingBottom = isToday
+    ? 'calc(162px + env(safe-area-inset-bottom))'
+    : 'calc(52px + env(safe-area-inset-bottom))';
+  document.querySelectorAll('.m-nav-btn').forEach((b, i) => {
+    b.classList.toggle('active', (isToday && i === 0) || (!isToday && i === 1));
+  });
+  const titleEl = document.getElementById('mHeaderTitle');
+  if (titleEl) titleEl.textContent = isToday ? 'Today' : 'Timeblock';
+  const progEl = document.getElementById('mProgress');
+  if (progEl) progEl.style.display = isToday ? '' : 'none';
+  // Adjust mMain padding for TB (no horizontal padding needed)
+  document.getElementById('mMain').style.padding = isToday ? '12px 16px' : '0';
+  if (!isToday) { mRenderTB(); _mScrollNow(); }
+}
+
+// ── Timeblock constants ───────────────────────────────────────────────────────
+const M_TB_START = 6 * 60;   // 6am in minutes
+const M_TB_END   = 22 * 60;  // 10pm in minutes
+const M_PX       = 1.5;      // px per minute (90px per hour)
+
+// ── Timeblock rendering ───────────────────────────────────────────────────────
+function mRenderTB() {
+  mRenderUnassigned();
+  mRenderTimeline();
+}
+
+function mRenderUnassigned() {
+  const bar = document.getElementById('mUnassignedBar');
+  if (!bar) return;
+  const ds = d2s(getDayDate(0));
+  const todayRegular = mGetTodayTasks().filter(t => !t._virtual && !t._type && !t.done);
+  const blockedIds = new Set((st.blocks || []).filter(b => b.ds === ds && b.taskId).map(b => String(b.taskId)));
+  const unassigned = todayRegular.filter(t => !blockedIds.has(String(t.id)));
+
+  if (!unassigned.length) {
+    bar.innerHTML = '<span class="m-chip-empty">No unassigned tasks</span>';
+    return;
+  }
+  bar.innerHTML = unassigned.map(t => {
+    const s = gc(t.category || '');
+    const sel = _mSelectedChipId === String(t.id);
+    return `<button class="m-chip${sel ? ' selected' : ''}" onclick="mSelectChip('${t.id}')" style="--cdot:${s.bg};--cborder:${s.d}">${escHtml(t.name)}</button>`;
+  }).join('');
+}
+
+function mRenderTimeline() {
+  const labels = document.getElementById('mTLLabels');
+  const col    = document.getElementById('mTLCol');
+  if (!labels || !col) return;
+
+  const totalH = (M_TB_END - M_TB_START) * M_PX;
+  labels.style.height = totalH + 'px';
+  col.style.height    = totalH + 'px';
+
+  // Hour labels + lines
+  const hrs = [];
+  for (let m = M_TB_START; m <= M_TB_END; m += 60) {
+    const y  = (m - M_TB_START) * M_PX;
+    const h  = m / 60;
+    const lbl = h === 12 ? '12pm' : h > 12 ? (h - 12) + 'pm' : h + 'am';
+    hrs.push(`<div style="position:absolute;top:${y}px;left:0;right:0;display:flex;align-items:center;pointer-events:none">
+      <span style="font-size:10px;color:var(--sub);width:40px;padding-right:6px;text-align:right;flex-shrink:0;line-height:1;margin-top:-7px">${lbl}</span>
+      <div style="flex:1;border-top:1px solid var(--border)"></div>
+    </div>`);
+  }
+  labels.innerHTML = hrs.join('');
+
+  // Today's blocks
+  const ds = d2s(getDayDate(0));
+  const todayBlocks = (st.blocks || []).filter(b => b.ds === ds).sort((a, b) => a.sm - b.sm);
+  const blockHtml = todayBlocks.map(b => {
+    const y   = (b.sm - M_TB_START) * M_PX;
+    const h   = Math.max(b.dur * M_PX, 28);
+    const s   = gc(b.cat || '');
+    const smH = Math.floor(b.sm / 60);
+    const smM = b.sm % 60;
+    const timeLbl = `${smH > 12 ? smH - 12 : smH}:${String(smM).padStart(2, '0')}${smH >= 12 ? 'pm' : 'am'}`;
+    return `<div class="m-tl-block" style="top:${y}px;height:${h}px;background:${s.bg};border-left:3px solid ${s.d};color:${s.t}" onclick="event.stopPropagation();mOpenBlockEdit('${b.id}')">
+      <div style="overflow:hidden;flex:1">
+        <div style="font-size:11px;color:${s.d};font-weight:500;margin-bottom:1px">${timeLbl}</div>
+        <div class="m-tl-block-name" style="color:${s.t}">${escHtml(b.title || '')}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Now line
+  const now    = new Date();
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  const nowHtml = (nowMin >= M_TB_START && nowMin <= M_TB_END)
+    ? `<div class="m-tl-now" style="top:${(nowMin - M_TB_START) * M_PX}px"></div>`
+    : '';
+
+  col.innerHTML = blockHtml + nowHtml;
+
+  // Tap to create block
+  col.onclick = e => {
+    if (e.target.closest('.m-tl-block')) return;
+    const rect   = col.getBoundingClientRect();
+    const rawMin = Math.round((e.clientY - rect.top) / M_PX) + M_TB_START;
+    const snapMin = Math.round(rawMin / 15) * 15;
+    const sm = Math.max(M_TB_START, Math.min(M_TB_END - 30, snapMin));
+    mOpenNewBlock(sm);
+  };
+}
+
+function _mScrollNow() {
+  const scroll = document.getElementById('mTLScroll');
+  if (!scroll) return;
+  const now    = new Date();
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  if (nowMin >= M_TB_START && nowMin <= M_TB_END) {
+    const y = (nowMin - M_TB_START) * M_PX;
+    setTimeout(() => { scroll.scrollTop = Math.max(0, y - 120); }, 50);
+  }
+}
+
+// ── Chip selection ────────────────────────────────────────────────────────────
+let _mSelectedChipId = null;
+
+function mSelectChip(taskId) {
+  _mSelectedChipId = (_mSelectedChipId === String(taskId)) ? null : String(taskId);
+  mRenderUnassigned();
+}
+
+// ── Block sheet ───────────────────────────────────────────────────────────────
+let _mEditBlockId = null;
+let _mBlockDur    = 60;
+
+function mOpenNewBlock(sm) {
+  _mEditBlockId = null;
+  _mBlockDur    = 60;
+  document.getElementById('mBlockSheetTitle').textContent = 'Add Block';
+  document.getElementById('mBlockDel').style.display = 'none';
+
+  const hh = Math.floor(sm / 60);
+  const mm = sm % 60;
+  document.getElementById('mBlockTime').value = `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
+
+  // Pre-fill from selected chip
+  if (_mSelectedChipId) {
+    const t = st.tasks.find(x => String(x.id) === _mSelectedChipId);
+    if (t) {
+      document.getElementById('mBlockName').value = t.name || '';
+      mSelectCat('block', t.category || 'Home');
+    } else {
+      document.getElementById('mBlockName').value = '';
+      mSelectCat('block', _mBlockCat);
+    }
+  } else {
+    document.getElementById('mBlockName').value = '';
+    mSelectCat('block', _mBlockCat);
+  }
+
+  _mUpdateDurBtns();
+  document.getElementById('mBlockBackdrop').classList.add('open');
+  document.getElementById('mBlockSheet').classList.add('open');
+  setTimeout(() => document.getElementById('mBlockName').focus(), 300);
+}
+
+function mOpenBlockEdit(blockId) {
+  const b = (st.blocks || []).find(x => String(x.id) === String(blockId));
+  if (!b) return;
+  _mEditBlockId = String(blockId);
+  _mBlockDur    = b.dur || 60;
+  document.getElementById('mBlockSheetTitle').textContent = 'Edit Block';
+  document.getElementById('mBlockDel').style.display = '';
+  document.getElementById('mBlockName').value = b.title || '';
+  const hh = Math.floor(b.sm / 60);
+  const mm = b.sm % 60;
+  document.getElementById('mBlockTime').value = `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
+  mSelectCat('block', b.cat || 'Home');
+  _mUpdateDurBtns();
+  document.getElementById('mBlockBackdrop').classList.add('open');
+  document.getElementById('mBlockSheet').classList.add('open');
+}
+
+function mSetDur(mins) {
+  _mBlockDur = mins;
+  _mUpdateDurBtns();
+}
+
+function _mUpdateDurBtns() {
+  document.querySelectorAll('.m-dur-btn').forEach(b => {
+    b.classList.toggle('active', Number(b.dataset.dur) === _mBlockDur);
+  });
+}
+
+function mCloseBlock() {
+  _mEditBlockId = null;
+  document.getElementById('mBlockBackdrop').classList.remove('open');
+  document.getElementById('mBlockSheet').classList.remove('open');
+  document.getElementById('mBlockPickOpts')?.classList.remove('open');
+}
+
+async function mSaveBlock() {
+  const name    = document.getElementById('mBlockName').value.trim();
+  const timeVal = document.getElementById('mBlockTime').value;
+  if (!name || !timeVal) return;
+  const [hh, mm] = timeVal.split(':').map(Number);
+  const sm  = hh * 60 + mm;
+  const ds  = d2s(getDayDate(0));
+  const cat = _mBlockCat;
+
+  if (_mEditBlockId) {
+    const b = (st.blocks || []).find(x => String(x.id) === _mEditBlockId);
+    if (!b) { mCloseBlock(); return; }
+    b.title = name; b.sm = sm; b.dur = _mBlockDur; b.cat = cat;
+    save(); mCloseBlock(); mRenderTB();
+    await sbUpdateBlock(_mEditBlockId, {
+      title: name,
+      start_minutes: sm,
+      start_time: `${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}:00`,
+      duration_minutes: _mBlockDur,
+      category: cat
+    });
+  } else {
+    const taskId = _mSelectedChipId || null;
+    const b = {id: 'lb-' + Date.now(), title: name, ds, sm, dur: _mBlockDur, cat, taskId, recId: null, shopId: null, _done: false};
+    if (!st.blocks) st.blocks = [];
+    st.blocks.push(b);
+    save();
+    _mSelectedChipId = null;
+    mCloseBlock(); mRenderTB();
+    await sbSaveBlock(b);
+  }
+}
+
+async function mDeleteBlock() {
+  if (!_mEditBlockId) return;
+  const id = _mEditBlockId;
+  st.blocks = (st.blocks || []).filter(x => String(x.id) !== String(id));
+  save(); mCloseBlock(); mRenderTB();
+  await sbDeleteBlock(id);
+}
+
 // ── Login ─────────────────────────────────────────────────────────────────────
 async function mDoLogin() {
   const email = document.getElementById('mEmail').value.trim();
-  const pass = document.getElementById('mPass').value;
-  const err = document.getElementById('mLoginErr');
+  const pass  = document.getElementById('mPass').value;
+  const err   = document.getElementById('mLoginErr');
   err.style.display = 'none';
   if (!email || !pass) { err.textContent = 'Enter email and password.'; err.style.display = 'block'; return; }
   await doLogin_m(email, pass);

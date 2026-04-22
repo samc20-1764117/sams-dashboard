@@ -31,7 +31,7 @@
 <div id="mApp">
   <div id="mHeader">
     <div>
-      <h1>Today</h1>
+      <h1 id="mHeaderTitle">Today</h1>
       <div id="mDateLbl"></div>
     </div>
     <span id="mProgress" class="m-prog"></span>
@@ -39,17 +39,32 @@
   </div>
   <div id="mPTR"><div class="m-ptr-spinner"></div><span id="mPTRLbl">Pull to refresh</span></div>
   <div id="mMain">
-    <div id="mTodaySection" class="m-section">
-      <div class="m-section-hd">Tasks</div>
-      <div id="mTodayList"></div>
+
+    <!-- Today tab -->
+    <div id="mTodayPage">
+      <div id="mTodaySection" class="m-section">
+        <div class="m-section-hd">Tasks</div>
+        <div id="mTodayList"></div>
+      </div>
     </div>
+
+    <!-- Timeblock tab -->
+    <div id="mTBPage" style="display:none">
+      <div id="mUnassignedBar"></div>
+      <div id="mTLScroll">
+        <div id="mTLInner">
+          <div id="mTLLabels"></div>
+          <div id="mTLCol"></div>
+        </div>
+      </div>
+    </div>
+
   </div>
 
-  <!-- Add task bar -->
+  <!-- Add task bar (today tab only) -->
   <div id="mAddBar">
     <input id="mNewTask" type="text" placeholder="Add task for today…" onkeydown="if(event.key==='Enter')mAddTask()">
     <div class="m-add-row2">
-      <!-- Custom category picker -->
       <div class="m-cpick" id="mAddPick">
         <button type="button" class="m-cpick-btn" onclick="mTogglePick('add')">
           <span class="m-cpick-dot" id="mAddPickDot"></span>
@@ -61,6 +76,12 @@
       <button id="mAddBtn" onclick="mAddTask()">Add</button>
     </div>
   </div>
+
+  <!-- Bottom nav -->
+  <nav id="mNav">
+    <button class="m-nav-btn active" onclick="mShowTab('today')">Today</button>
+    <button class="m-nav-btn" onclick="mShowTab('tb')">Timeblock</button>
+  </nav>
 </div>
 
 <!-- Edit task sheet -->
@@ -79,6 +100,35 @@
   <div class="m-edit-actions">
     <button id="mEditDel" onclick="mDeleteEditTask()">Delete</button>
     <button id="mEditSave" onclick="mSaveEditTask()">Save</button>
+  </div>
+</div>
+
+<!-- Block edit/create sheet -->
+<div id="mBlockBackdrop" onclick="mCloseBlock()"></div>
+<div id="mBlockSheet">
+  <h3 id="mBlockSheetTitle">Add Block</h3>
+  <input id="mBlockName" type="text" placeholder="Block title" onkeydown="if(event.key==='Enter')mSaveBlock()">
+  <div class="m-block-row">
+    <input id="mBlockTime" type="time" class="m-time-inp">
+    <div class="m-dur-btns">
+      <button class="m-dur-btn" data-dur="30" onclick="mSetDur(30)">30m</button>
+      <button class="m-dur-btn" data-dur="45" onclick="mSetDur(45)">45m</button>
+      <button class="m-dur-btn" data-dur="60" onclick="mSetDur(60)">1h</button>
+      <button class="m-dur-btn" data-dur="90" onclick="mSetDur(90)">1.5h</button>
+      <button class="m-dur-btn" data-dur="120" onclick="mSetDur(120)">2h</button>
+    </div>
+  </div>
+  <div class="m-cpick" id="mBlockPick" style="margin-bottom:16px">
+    <button type="button" class="m-cpick-btn" onclick="mTogglePick('block')">
+      <span class="m-cpick-dot" id="mBlockPickDot"></span>
+      <span id="mBlockPickLbl">Home</span>
+      <span class="m-cpick-arr">▾</span>
+    </button>
+    <div class="m-cpick-opts m-cpick-opts--up" id="mBlockPickOpts"></div>
+  </div>
+  <div class="m-edit-actions">
+    <button id="mBlockDel" onclick="mDeleteBlock()">Delete</button>
+    <button id="mBlockSave" onclick="mSaveBlock()">Save</button>
   </div>
 </div>
 
