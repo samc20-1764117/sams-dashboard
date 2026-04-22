@@ -466,7 +466,7 @@ function renderPupTable(){
     }).join('');
     const firstRec=pups.map(p=>g.byPup[p]).find(Boolean);
     const skillTip=allNotes?` onmouseenter="showPupTip(event,'${allNotes}')" onmouseleave="hidePupTip()" style="padding:4px 8px;${tdE};cursor:help"`:` style="padding:4px 8px;${tdE}"`;
-    rowsHtml.push(`<tr>
+    rowsHtml.push(`<tr data-skillkey="${esc(g.skill)}"${!_pupSortCol?' style="cursor:grab"':''}>
       <td ondblclick="pupCellEdit(this,'${anyId}','skill')"${skillTip}>${esc(g.skill)}</td>
       <td ondblclick="pupCellEdit(this,'${anyId}','word')" style="width:72px;padding:4px 6px;${tdE};font-style:${word?'italic':'normal'};color:${word?'var(--text)':'var(--muted)'}">${word||'—'}</td>
       <td ondblclick="pupCellEdit(this,'${anyId}','category')" style="width:74px;padding:4px 6px;${tdE}">${g.category?(g.category.charAt(0).toUpperCase()+g.category.slice(1)):'—'}</td>
@@ -475,6 +475,40 @@ function renderPupTable(){
     </tr>`);
   });
   tbody.innerHTML=rowsHtml.join('');
+  // Drag-to-sort — only when using default sort (no custom sort column)
+  if(!_pupSortCol){
+    const dataRows=[...tbody.querySelectorAll('tr[data-skillkey]')];
+    dataRows.forEach(row=>{
+      row.addEventListener('mousedown',e=>{
+        if(e.button!==0)return;
+        if(e.target.closest('input,button'))return;
+        let dragging=false;const startY=e.clientY;let ph=null;
+        const onMove=ev=>{
+          const dy=ev.clientY-startY;
+          if(!dragging&&Math.abs(dy)<5)return;
+          if(!dragging){window.getSelection()?.removeAllRanges();dragging=true;row.style.opacity='.35';ph=document.createElement('tr');ph.className='pup-drag-ph';ph.innerHTML=`<td colspan="100" style="height:${row.offsetHeight}px;background:rgba(139,92,246,.08);border-top:2px dashed rgba(139,92,246,.4);border-bottom:2px dashed rgba(139,92,246,.4);padding:0"></td>`;}
+          ev.preventDefault();
+          const refs=[...tbody.querySelectorAll('tr[data-skillkey]')].filter(r=>r!==row);
+          let inserted=false;
+          for(const r of refs){const rc=r.getBoundingClientRect();if(ev.clientY<rc.top+rc.height/2){tbody.insertBefore(ph,r);inserted=true;break;}}
+          if(!inserted&&refs.length)refs[refs.length-1].after(ph);
+        };
+        const onUp=()=>{
+          document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);
+          row.style.opacity='';
+          if(dragging&&ph){
+            tbody.insertBefore(row,ph);ph.remove();
+            const ordered=[...tbody.querySelectorAll('tr[data-skillkey]')];
+            pupSnapshot();
+            ordered.forEach((r,i)=>{const key=r.dataset.skillkey;st.pup_skills.forEach(s=>{if(s.skill===key)s.skill_order=i;});});
+            save();renderPupTable();
+            ordered.forEach((r,i)=>{const key=r.dataset.skillkey;st.pup_skills.forEach(s=>{if(s.skill===key)sbReqSilent('PATCH','pup_skills',{skill_order:i},`?id=eq.${s.id}`);});});
+          }else if(dragging){if(ph)ph.remove();}
+        };
+        document.addEventListener('mousemove',onMove);document.addEventListener('mouseup',onUp);
+      });
+    });
+  }
 }
 function renderPupsPage(){
   const page=document.getElementById('page-pups');if(!page)return;
