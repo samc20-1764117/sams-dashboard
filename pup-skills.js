@@ -530,43 +530,38 @@ function renderPupTable(){
     </tr>`);
   });
   tbody.innerHTML=rowsHtml.join('');
-  // Drag-to-sort — only when using default sort (no custom sort column)
   if(!_pupSortCol){
-    const dataRows=[...tbody.querySelectorAll('tr[data-skillkey]')];
-    dataRows.forEach(row=>{
+    [...tbody.querySelectorAll('tr[data-skillkey]')].forEach(row=>{
       row.addEventListener('mousedown',e=>{
-        if(e.button!==0)return;
-        if(e.target.closest('input,button'))return;
+        if(e.button!==0||e.target.closest('input,button'))return;
         let dragging=false;const startY=e.clientY;let ph=null;
-        // multi-drag: rows being moved = this row + other selected rows (if this row is selected)
-        const isMulti=_selSkillKeys.has(row.dataset.skillkey)&&_selSkillKeys.size>1;
+        // rows being moved: this row + other selected rows if this row is part of selection
+        const dragKeys=(_selSkillKeys.has(row.dataset.skillkey)&&_selSkillKeys.size>1)
+          ?[...tbody.querySelectorAll('tr[data-skillkey]')].filter(r=>_selSkillKeys.has(r.dataset.skillkey)).map(r=>r.dataset.skillkey)
+          :[row.dataset.skillkey];
         const onMove=ev=>{
           const dy=ev.clientY-startY;
           if(!dragging&&Math.abs(dy)<5)return;
           if(!dragging){
             window.getSelection()?.removeAllRanges();dragging=true;
-            // fade all dragged rows
-            row.style.opacity='.35';
-            if(isMulti)dataRows.filter(r=>r!==row&&_selSkillKeys.has(r.dataset.skillkey)).forEach(r=>r.style.opacity='.35');
-            ph=document.createElement('tr');ph.className='pup-drag-ph';
-            ph.innerHTML=`<td colspan="100" style="height:${row.offsetHeight}px;background:rgba(139,92,246,.08);border-top:2px dashed rgba(139,92,246,.4);border-bottom:2px dashed rgba(139,92,246,.4);padding:0"></td>`;
+            [...tbody.querySelectorAll('tr[data-skillkey]')].filter(r=>dragKeys.includes(r.dataset.skillkey)).forEach(r=>r.style.opacity='.3');
+            ph=document.createElement('tr');
+            ph.innerHTML=`<td colspan="100" style="padding:0;height:0;border-top:2px dashed rgba(139,92,246,.65);pointer-events:none"></td>`;
           }
           ev.preventDefault();
-          const refs=[...tbody.querySelectorAll('tr[data-skillkey]')].filter(r=>r!==row&&(!isMulti||!_selSkillKeys.has(r.dataset.skillkey)));
-          let inserted=false;
-          for(const r of refs){const rc=r.getBoundingClientRect();if(ev.clientY<rc.top+rc.height/2){tbody.insertBefore(ph,r);inserted=true;break;}}
-          if(!inserted&&refs.length)refs[refs.length-1].after(ph);
+          const refs=[...tbody.querySelectorAll('tr[data-skillkey]')].filter(r=>!dragKeys.includes(r.dataset.skillkey));
+          let ins=false;
+          for(const r of refs){const rc=r.getBoundingClientRect();if(ev.clientY<rc.top+rc.height/2){tbody.insertBefore(ph,r);ins=true;break;}}
+          if(!ins){if(refs.length)refs[refs.length-1].after(ph);else tbody.appendChild(ph);}
         };
         const onUp=()=>{
           document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);
-          [row,...dataRows.filter(r=>r!==row)].forEach(r=>r.style.opacity='');
+          [...tbody.querySelectorAll('tr[data-skillkey]')].forEach(r=>r.style.opacity='');
           if(dragging&&ph){
-            tbody.insertBefore(row,ph);ph.remove();
-            // place other selected rows right after dragged row, preserving relative order
-            if(isMulti){
-              const others=[...tbody.querySelectorAll('tr[data-skillkey]')].filter(r=>r!==row&&_selSkillKeys.has(r.dataset.skillkey));
-              let anchor=row;others.forEach(r=>{anchor.after(r);anchor=r;});
-            }
+            // insert all dragged rows at ph in their original relative order
+            const dRows=[...tbody.querySelectorAll('tr[data-skillkey]')].filter(r=>dragKeys.includes(r.dataset.skillkey));
+            if(dRows.length){tbody.insertBefore(dRows[0],ph);for(let i=1;i<dRows.length;i++)dRows[i-1].after(dRows[i]);}
+            ph.remove();
             const ordered=[...tbody.querySelectorAll('tr[data-skillkey]')];
             pupSnapshot();
             ordered.forEach((r,i)=>{const key=r.dataset.skillkey;st.pup_skills.forEach(s=>{if(s.skill===key)s.skill_order=i;});});
