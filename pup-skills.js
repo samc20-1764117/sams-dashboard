@@ -53,7 +53,7 @@ async function _savePupCountEdit(skillId){
   document.getElementById('_pupCountPop').style.display='none';
   if(doneEl)await setPupWkDone(skillId,parseInt(doneEl.value)||0);
 }
-let _selPupIds=new Set(),_lastSelPupId=null,_copiedPups=[],_pupCtxId=null;
+let _selSkillKeys=new Set(),_lastSelKey=null,_selPupIds=new Set(),_copiedPups=[],_pupCtxId=null;
 let _pupSortCol=null,_pupSortDir=1,_pupFilter=null;
 let _pupUndoStack=[],_pupRedoStack=[],_pupHdrClickTimer=null,_pupUndoDirty=false;
 let _pupPendingIds=new Set();
@@ -211,27 +211,43 @@ async function setPupField(id,field,val,origVal){
   _pupPendingIds.delete(String(id));
   renderPupsPage();
 }
-function selPupRow(e,sid){
+function _syncSelPupIds(){
+  _selPupIds.clear();
+  [..._selSkillKeys].forEach(key=>{st.pup_skills.filter(s=>s.skill===key).forEach(s=>_selPupIds.add(String(s.id)));});
+}
+function pupRowClick(e,key){
   if(e.target.closest('input,button'))return;
   if(e.metaKey||e.ctrlKey){
-    if(_selPupIds.has(sid))_selPupIds.delete(sid);else _selPupIds.add(sid);
-    _lastSelPupId=sid;
-  } else if(e.shiftKey&&_lastSelPupId){
-    const rows=[...document.querySelectorAll('#pupTblBody tr[data-sid]')].map(r=>r.dataset.sid);
-    const a=rows.indexOf(_lastSelPupId),b=rows.indexOf(sid);
-    if(a>-1&&b>-1){const lo=Math.min(a,b),hi=Math.max(a,b);rows.slice(lo,hi+1).forEach(id=>_selPupIds.add(id));}
-    else _selPupIds.add(sid);
-    _lastSelPupId=sid;
+    if(_selSkillKeys.has(key))_selSkillKeys.delete(key);else _selSkillKeys.add(key);
+    _lastSelKey=key;
+  } else if(e.shiftKey&&_lastSelKey){
+    const rows=[...document.querySelectorAll('#pupTblBody tr[data-skillkey]')].map(r=>r.dataset.skillkey);
+    const a=rows.indexOf(_lastSelKey),b=rows.indexOf(key);
+    if(a>-1&&b>-1){const lo=Math.min(a,b),hi=Math.max(a,b);rows.slice(lo,hi+1).forEach(k=>_selSkillKeys.add(k));}
+    else _selSkillKeys.add(key);
+    _lastSelKey=key;
   } else {
-    if(_selPupIds.size===1&&_selPupIds.has(sid)){_selPupIds.clear();_lastSelPupId=null;}
-    else{_selPupIds.clear();_selPupIds.add(sid);_lastSelPupId=sid;}
+    if(_selSkillKeys.size===1&&_selSkillKeys.has(key)){_selSkillKeys.clear();_lastSelKey=null;}
+    else{_selSkillKeys.clear();_selSkillKeys.add(key);_lastSelKey=key;}
   }
-  applyPupSelHighlight();
+  _syncSelPupIds();applyPupSelHighlight();
 }
 function applyPupSelHighlight(){
-  document.querySelectorAll('#pupTblBody tr[data-sid]').forEach(tr=>{
-    tr.classList.toggle('pup-sel',_selPupIds.has(tr.dataset.sid));
+  document.querySelectorAll('#pupTblBody tr[data-skillkey]').forEach(tr=>{
+    tr.classList.toggle('pup-sel',_selSkillKeys.has(tr.dataset.skillkey));
   });
+}
+function pupMoveSelected(dir){
+  if(!_selSkillKeys.size||_pupSortCol)return;
+  const ordered=[...document.querySelectorAll('#pupTblBody tr[data-skillkey]')].map(r=>r.dataset.skillkey);
+  if(!ordered.length)return;
+  pupSnapshot();
+  const arr=[...ordered];
+  if(dir<0){for(let i=0;i<arr.length;i++){if(_selSkillKeys.has(arr[i])&&i>0&&!_selSkillKeys.has(arr[i-1])){[arr[i-1],arr[i]]=[arr[i],arr[i-1]];}}}
+  else{for(let i=arr.length-1;i>=0;i--){if(_selSkillKeys.has(arr[i])&&i<arr.length-1&&!_selSkillKeys.has(arr[i+1])){[arr[i],arr[i+1]]=[arr[i+1],arr[i]];}}}
+  arr.forEach((key,i)=>{st.pup_skills.forEach(s=>{if(s.skill===key)s.skill_order=i;});});
+  save();renderPupTable();
+  arr.forEach((key,i)=>{st.pup_skills.forEach(s=>{if(s.skill===key)sbReqSilent('PATCH','pup_skills',{skill_order:i},`?id=eq.${s.id}`);});});
 }
 function showPupCtx(e,sid){
   e.preventDefault();e.stopPropagation();
@@ -510,11 +526,12 @@ function renderPupTable(){
     }).join('');
     const firstRec=pups.map(p=>g.byPup[p]).find(Boolean);
     const skillTip=allNotes?` onmouseenter="showPupTip(event,'${allNotes}')" onmouseleave="hidePupTip()" style="padding:4px 8px;${tdE};cursor:help"`:` style="padding:4px 8px;${tdE}"`;
-    rowsHtml.push(`<tr data-skillkey="${esc(g.skill)}"${!_pupSortCol?' style="cursor:grab"':''}>
-      <td ondblclick="event.stopPropagation();openPupEditModal('${anyId}')"${skillTip}>${esc(g.skill)}</td>
-      <td ondblclick="event.stopPropagation();openPupEditModal('${anyId}')" style="width:72px;padding:4px 6px;${tdE};font-style:${word?'italic':'normal'};color:${word?'var(--text)':'var(--muted)'}">${word||'—'}</td>
+    const rowSel=_selSkillKeys.has(g.skill)?'pup-sel':'';
+    rowsHtml.push(`<tr data-skillkey="${esc(g.skill)}" class="${rowSel}" onclick="pupRowClick(event,'${esc(g.skill)}')" ondblclick="openPupEditModal('${firstRec?String(firstRec.id):''}')"${!_pupSortCol?' style="cursor:grab"':''}>
+      <td${skillTip}>${esc(g.skill)}</td>
+      <td style="width:72px;padding:4px 6px;${tdE};font-style:${word?'italic':'normal'};color:${word?'var(--text)':'var(--muted)'}">${word||'—'}</td>
       ${pupCells}
-      <td style="width:44px;padding:2px 4px;text-align:right;white-space:nowrap"><button class="pup-del" data-skillkey="${esc(g.skill)}" onclick="event.stopPropagation();deletePupGroup(this.dataset.skillkey)" title="Delete">×</button><button class="pup-dots" onclick="event.stopPropagation();openPupEditModal('${firstRec?String(firstRec.id):''}')" title="Edit">···</button></td>
+      <td style="width:28px;padding:2px 4px;text-align:right"><button class="pup-del" data-skillkey="${esc(g.skill)}" onclick="event.stopPropagation();deletePupGroup(this.dataset.skillkey)" title="Delete">×</button></td>
     </tr>`);
   });
   tbody.innerHTML=rowsHtml.join('');
