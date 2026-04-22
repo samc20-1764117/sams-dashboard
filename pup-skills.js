@@ -364,82 +364,92 @@ function renderPupTable(){
   const tbody=document.getElementById('pupTblBody');if(!thead||!tbody)return;
   const skills=st.pup_skills||[];
   function esc(v){return(v||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
-  const LDEG={Easy:0,Medium:1,Hard:2},SDEG={'Not Started':0,'In Progress':1,'Mastered':2};
-  let rows=[...skills];
+  const LDEG={Easy:0,Medium:1,Hard:2};
+  const CATO={commands:0,manners:1,fun:2};
+  const PUP_ORDER=['Mochi','Sunny'];
+  const pups=PUP_ORDER.filter(p=>skills.some(s=>s.pup===p));
+  const pupColor={Mochi:'#8b5cf6',Sunny:'#fbbf24'};
+  // Group skills by name — each unique skill name = one row
+  const groupMap={};
+  skills.forEach(s=>{
+    const key=s.skill||'';
+    if(!groupMap[key]){groupMap[key]={skill:s.skill,word:s.word,level:s.level,category:s.category,skill_order:s.skill_order,byPup:{}};}
+    groupMap[key].byPup[s.pup]=s;
+  });
+  let groups=Object.values(groupMap);
+  const allMastered=g=>pups.every(p=>!g.byPup[p]||g.byPup[p].stage==='Mastered');
+  // Filter
   if(_pupFilter){
-    if(_pupFilter.type==='text'){const fv=_pupFilter.text.toLowerCase();rows=rows.filter(s=>String(s[_pupFilter.col]||'').toLowerCase().includes(fv));}
-    else if(_pupFilter.type==='set'){rows=rows.filter(s=>_pupFilter.vals.has(String(s[_pupFilter.col]||'—')));}
+    const sharedCols=new Set(['skill','word','level','category']);
+    if(_pupFilter.type==='text'){const fv=_pupFilter.text.toLowerCase();const col=_pupFilter.col;groups=groups.filter(g=>{if(sharedCols.has(col))return String(g[col]||'').toLowerCase().includes(fv);return pups.some(p=>g.byPup[p]&&String(g.byPup[p][col]||'').toLowerCase().includes(fv));});}
+    else if(_pupFilter.type==='set'){const col=_pupFilter.col;groups=groups.filter(g=>{if(sharedCols.has(col))return _pupFilter.vals.has(String(g[col]||'—'));return pups.some(p=>g.byPup[p]&&_pupFilter.vals.has(String(g.byPup[p][col]||'—')));});}
   }
+  // Sort
   if(_pupSortCol){
-    rows.sort((a,b)=>{
+    groups.sort((a,b)=>{
       if(_pupSortCol==='level')return _pupSortDir*((LDEG[a.level]??9)-(LDEG[b.level]??9));
-      if(_pupSortCol==='stage')return _pupSortDir*((SDEG[a.stage]??9)-(SDEG[b.stage]??9));
-      if(_pupSortCol==='focus')return _pupSortDir*((a.focus?0:1)-(b.focus?0:1));
       return _pupSortDir*String(a[_pupSortCol]||'').toLowerCase().localeCompare(String(b[_pupSortCol]||'').toLowerCase());
     });
   } else {
-    const CATO={commands:0,manners:1,fun:2};
-    const LVLO={Easy:0,Medium:1,Hard:2};
-    rows.sort((a,b)=>{
-      const ma=(a.stage==='Mastered'?1:0),mb=(b.stage==='Mastered'?1:0);if(ma!==mb)return ma-mb;
+    groups.sort((a,b)=>{
+      const ma=allMastered(a)?1:0,mb=allMastered(b)?1:0;if(ma!==mb)return ma-mb;
       const ca=CATO[a.category]??9,cb=CATO[b.category]??9;if(ca!==cb)return ca-cb;
-      const fa=(a.focus===true||a.focus==='true'?0:1),fb=(b.focus===true||b.focus==='true'?0:1);if(fa!==fb)return fa-fb;
-      const pa=(a.pup||'').localeCompare(b.pup||'');if(pa)return pa;
-      const la=LVLO[a.level]??9,lb=LVLO[b.level]??9;if(la!==lb)return la-lb;
+      const la=LDEG[a.level]??9,lb=LDEG[b.level]??9;if(la!==lb)return la-lb;
       return (a.skill_order??9999)-(b.skill_order??9999);
     });
   }
   const arrow=col=>_pupSortCol===col?(_pupSortDir>0?' ↑':' ↓'):'';
   const fdot=col=>(_pupFilter&&_pupFilter.col===col)?'<span style="color:#f97316;font-size:9px;margin-left:2px">▼</span>':'';
-  const ths='cursor:pointer;user-select:none;white-space:nowrap;padding:6px 8px';
-  const tdE='user-select:none;cursor:default';
-  function catText(cat){return cat?(cat.charAt(0).toUpperCase()+cat.slice(1)):'—';}
+  const ths='cursor:pointer;user-select:none;white-space:nowrap;padding:5px 6px;font-size:11px';
+  const thsS='user-select:none;white-space:nowrap;padding:5px 6px;font-size:11px';
+  const tdE='user-select:none;cursor:default;font-size:11px';
+  const totalCols=4+pups.length*4+1;
   thead.innerHTML=`<tr>
-    <th onclick="pupHdrClick('pup')" ondblclick="pupHdrDbl(event,'pup')" style="${ths};width:32px;text-align:center">·${arrow('pup')}${fdot('pup')}</th>
-    <th onclick="pupHdrClick('skill')" ondblclick="pupHdrDbl(event,'skill')" style="${ths}">Skill${arrow('skill')}${fdot('skill')}</th>
-    <th onclick="pupHdrClick('word')" ondblclick="pupHdrDbl(event,'word')" style="${ths};width:80px">Word${arrow('word')}${fdot('word')}</th>
-    <th onclick="pupHdrClick('level')" ondblclick="pupHdrDbl(event,'level')" style="${ths};width:66px">Level${arrow('level')}${fdot('level')}</th>
-    <th onclick="pupHdrClick('stage')" ondblclick="pupHdrDbl(event,'stage')" style="${ths};width:90px">Stage${arrow('stage')}${fdot('stage')}</th>
-    <th onclick="pupHdrClick('next_step')" ondblclick="pupHdrDbl(event,'next_step')" style="${ths}">Next Step${arrow('next_step')}${fdot('next_step')}</th>
-    <th onclick="pupHdrClick('category')" ondblclick="pupHdrDbl(event,'category')" style="${ths};width:86px">Category${arrow('category')}${fdot('category')}</th>
-    <th style="${ths};width:54px;text-align:center" title="Total done / total sessions (all time)">Sessions</th>
-    <th style="width:28px"></th>
+    <th onclick="pupHdrClick('skill')" ondblclick="pupHdrDbl(event,'skill')" rowspan="2" style="${ths}">Skill${arrow('skill')}${fdot('skill')}</th>
+    <th onclick="pupHdrClick('word')" ondblclick="pupHdrDbl(event,'word')" rowspan="2" style="${ths};width:72px">Word${arrow('word')}</th>
+    <th onclick="pupHdrClick('level')" ondblclick="pupHdrDbl(event,'level')" rowspan="2" style="${ths};width:60px">Level${arrow('level')}${fdot('level')}</th>
+    <th onclick="pupHdrClick('category')" ondblclick="pupHdrDbl(event,'category')" rowspan="2" style="${ths};width:74px">Cat${arrow('category')}${fdot('category')}</th>
+    ${pups.map(p=>`<th colspan="4" style="${thsS};text-align:center;color:${pupColor[p]||'var(--text)'};border-left:2px solid ${pupColor[p]||'var(--border)'}33">${p}</th>`).join('')}
+    <th rowspan="2" style="width:24px"></th>
+  </tr><tr>
+    ${pups.map(p=>`<th style="${thsS};width:82px;border-left:2px solid ${pupColor[p]||'var(--border)'}33">Stage</th><th style="${thsS};width:68px">Next</th><th style="${thsS};min-width:80px">Notes</th><th style="${thsS};width:46px;text-align:center">Sess</th>`).join('')}
   </tr>`;
   const showCatDividers=!_pupSortCol;
-  let lastCat=null,lastMastered=null;
+  let lastCat=null,lastMasteredSec=null;
   const rowsHtml=[];
-  rows.forEach(s=>{
-    const foc=s.focus===true||s.focus==='true';
-    const isMastered=s.stage==='Mastered';
-    const pupColor=s.pup==='Mochi'?'#8b5cf6':s.pup==='Sunny'?'#fbbf24':'#94a3b8';
-    const bg=isMastered?'':(s.pup==='Mochi'?'rgba(139,92,246,.07)':s.pup==='Sunny'?'rgba(234,179,8,.08)':'');
-    const comment=s.comments&&s.comments!=='None'?esc(s.comments):'';
-    const nextStep=s.next_step&&s.next_step!=='None'?esc(s.next_step):'';
-    const sid=String(s.id);
-    const isSel=_selPupIds.has(sid);
-    const curCat=s.category||'';
-    if(showCatDividers&&isMastered&&lastMastered===false){
-      rowsHtml.push(`<tr class="pup-cat-sep"><td colspan="9" style="padding:8px 8px 3px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#16a34a;border-top:2px solid rgba(34,197,94,.15);border-bottom:1px solid rgba(34,197,94,.1)">Mastered</td></tr>`);
+  groups.forEach(g=>{
+    const isMasteredAll=allMastered(g);
+    const curCat=g.category||'';
+    if(showCatDividers&&isMasteredAll&&lastMasteredSec===false){
+      rowsHtml.push(`<tr class="pup-cat-sep"><td colspan="${totalCols}" style="padding:8px 8px 3px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#16a34a;border-top:2px solid rgba(34,197,94,.15);border-bottom:1px solid rgba(34,197,94,.1)">Mastered</td></tr>`);
       lastCat=null;
     }
-    if(showCatDividers&&!isMastered&&curCat!==lastCat&&curCat){
-      const label=curCat.charAt(0).toUpperCase()+curCat.slice(1);
-      rowsHtml.push(`<tr class="pup-cat-sep"><td colspan="9" style="padding:6px 8px 3px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);border-bottom:1px solid rgba(0,0,0,.04)">${label}</td></tr>`);
+    if(showCatDividers&&!isMasteredAll&&curCat!==lastCat&&curCat){
+      rowsHtml.push(`<tr class="pup-cat-sep"><td colspan="${totalCols}" style="padding:6px 8px 3px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);border-bottom:1px solid rgba(0,0,0,.04)">${curCat.charAt(0).toUpperCase()+curCat.slice(1)}</td></tr>`);
       lastCat=curCat;
     }
-    lastMastered=isMastered;
-    const word=s.word&&s.word!=='None'?esc(s.word):'';
-    const signal=s.signal&&s.signal!=='None'?esc(s.signal):'';
-    rowsHtml.push(`<tr data-sid="${sid}" style="background:${bg}" class="${isSel?'pup-sel':''}" onclick="selPupRow(event,'${sid}')" oncontextmenu="showPupCtx(event,'${sid}')"${signal?` onmouseenter="showPupTip(event,'${signal}')" onmouseleave="hidePupTip()"`:''}>
-      <td style="text-align:center;width:32px;padding:4px 0">${isMastered?`<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${pupColor};opacity:.5"></span>`:`<input type="checkbox"${foc?' checked':''} onchange="setPupField('${sid}','focus',this.checked)" style="width:13px;height:13px;cursor:pointer;accent-color:${pupColor}">`}</td>
-      <td ondblclick="pupCellEdit(this,'${sid}','skill')" style="padding:4px 8px;${tdE}">${esc(s.skill)}</td>
-      <td ondblclick="pupCellEdit(this,'${sid}','word')" style="width:80px;padding:4px 8px;${tdE};font-style:${word?'italic':'normal'};color:${word?'var(--text)':'var(--muted)'}">${word||'—'}</td>
-      <td ondblclick="pupCellEdit(this,'${sid}','level')" style="width:66px;padding:4px 8px;${tdE}">${esc(s.level)||'—'}</td>
-      <td ondblclick="pupCellEdit(this,'${sid}','stage')" style="width:90px;padding:4px 8px;${tdE}">${esc(s.stage||'')}</td>
-      <td ondblclick="pupCellEdit(this,'${sid}','next_step')" onmouseenter="${comment?`showPupTip(event,'${comment}')`:''}" onmouseleave="${comment?'hidePupTip()':''}" style="padding:4px 8px;${tdE}${comment?';cursor:help':''}">${nextStep}</td>
-      <td ondblclick="pupCellEdit(this,'${sid}','category')" style="width:86px;padding:4px 8px;${tdE}">${catText(s.category)}</td>
-      <td onclick="event.stopPropagation();openPupCountEdit('${sid}',this)" style="width:54px;padding:4px 6px;text-align:center;cursor:pointer;${tdE}" title="Click for session details">${_pupCountBadge(s)}</td>
-      <td style="width:28px;padding:2px 4px;text-align:right"><button class="pup-dots" onclick="event.stopPropagation();openPupEditModal('${sid}')" title="Edit">···</button></td>
+    lastMasteredSec=isMasteredAll;
+    const anyRec=pups.map(p=>g.byPup[p]).find(Boolean);
+    const anyId=anyRec?String(anyRec.id):'';
+    const word=g.word&&g.word!=='None'?esc(g.word):'';
+    const pupCells=pups.map(p=>{
+      const s=g.byPup[p];
+      const borderL=`border-left:2px solid ${pupColor[p]||'var(--border)'}33`;
+      if(!s)return`<td colspan="4" style="padding:4px 6px;color:var(--muted);font-size:10px;${borderL}">—</td>`;
+      const sid=String(s.id);
+      const stageColor=s.stage==='Mastered'?'#22c55e':s.stage==='In Progress'?'#eab308':'var(--muted)';
+      const nextStep=s.next_step&&s.next_step!=='None'?esc(s.next_step):'';
+      const comment=s.comments&&s.comments!=='None'?esc(s.comments):'';
+      return`<td ondblclick="pupCellEdit(this,'${sid}','stage')" style="padding:4px 6px;${tdE};color:${stageColor};${borderL}">${esc(s.stage||'—')}</td><td ondblclick="pupCellEdit(this,'${sid}','next_step')" style="padding:4px 6px;${tdE}">${nextStep||'—'}</td><td ondblclick="pupCellEdit(this,'${sid}','comments')" style="padding:4px 6px;${tdE};color:var(--muted)">${comment||''}</td><td onclick="event.stopPropagation();openPupCountEdit('${sid}',this)" style="padding:4px 4px;text-align:center;cursor:pointer;${tdE}" title="Click for session details">${_pupCountBadge(s)}</td>`;
+    }).join('');
+    const firstId=pups.map(p=>g.byPup[p]).find(Boolean);
+    rowsHtml.push(`<tr>
+      <td ondblclick="pupCellEdit(this,'${anyId}','skill')" style="padding:4px 8px;${tdE}">${esc(g.skill)}</td>
+      <td ondblclick="pupCellEdit(this,'${anyId}','word')" style="width:72px;padding:4px 6px;${tdE};font-style:${word?'italic':'normal'};color:${word?'var(--text)':'var(--muted)'}">${word||'—'}</td>
+      <td ondblclick="pupCellEdit(this,'${anyId}','level')" style="width:60px;padding:4px 6px;${tdE}">${esc(g.level)||'—'}</td>
+      <td ondblclick="pupCellEdit(this,'${anyId}','category')" style="width:74px;padding:4px 6px;${tdE}">${g.category?(g.category.charAt(0).toUpperCase()+g.category.slice(1)):'—'}</td>
+      ${pupCells}
+      <td style="width:24px;padding:2px 4px;text-align:right"><button class="pup-dots" onclick="event.stopPropagation();openPupEditModal('${firstId?String(firstId.id):''}')" title="Edit">···</button></td>
     </tr>`);
   });
   tbody.innerHTML=rowsHtml.join('');
@@ -506,7 +516,7 @@ function renderPupsPage(){
     const themeBorder=pup==='Mochi'?'rgba(139,92,246,0.12)':'rgba(251,191,36,0.18)';
     return`<div class="pup-col card" style="display:flex;flex-direction:column;overflow:visible;position:relative"><img src="${img}" style="position:absolute;top:-44px;left:50%;transform:translateX(-50%);width:92px;height:92px;border-radius:50%;object-fit:cover;object-position:top;border:3px solid rgba(255,255,255,.9);box-shadow:0 0 18px 6px ${glowColor},0 4px 14px rgba(0,0,0,.1)"><div style="display:grid;grid-template-columns:1fr 92px 1fr;align-items:center;min-height:52px;border-bottom:1px solid rgba(210,205,228,.22);flex-shrink:0"><span style="font-weight:700;font-size:13px;color:var(--text);padding-left:13px">${pup}</span><span></span><span style="font-size:11px;color:var(--muted);font-weight:500;padding-right:13px;text-align:right">${inProgress.length} in progress</span></div><div style="padding:8px;overflow-y:auto;flex:1;min-height:0;display:flex;flex-direction:column;gap:12px">${trainWeek.length?`<div style="background:${themeBg};border:1px solid ${themeBorder};border-radius:10px;padding:10px 8px"><div class="pup-section-label">Train This Week</div>${trainWeek.map(s=>skillCardRow(s,'pup-focus-row')).join('')}</div>`:''} ${upNext.length?`<div><div class="pup-section-label" style="color:var(--text);font-weight:800">Up Next</div>${groupedCardRows(upNext,'pup-skill-emphasis')}</div>`:''} ${ps.length===0?'<div style="font-size:11px;color:var(--muted);text-align:center;padding:20px 0">No skills yet</div>':''}</div>${progressBar}</div>`;
   }
-  const tableCol=`<div class="pup-col card" style="overflow:hidden"><div class="ch"><span style="font-weight:700;font-size:13px;color:var(--text)">All Skills</span><button class="btn-plus" onclick="openPupAddModal()" style="margin-left:auto;padding:2px 8px;font-size:13px;border-radius:8px;border:1px solid var(--border);background:transparent;cursor:pointer;color:var(--text)">+</button></div><div style="overflow-y:auto;flex:1;min-height:0"><table class="pup-tbl"><thead id="pupTblHead"></thead><tbody id="pupTblBody"></tbody></table></div></div>`;
+  const tableCol=`<div class="pup-col card" style="overflow:hidden"><div class="ch"><span style="font-weight:700;font-size:13px;color:var(--text)">All Skills</span><button class="btn-plus" onclick="openPupAddModal()" style="margin-left:auto;padding:2px 8px;font-size:13px;border-radius:8px;border:1px solid var(--border);background:transparent;cursor:pointer;color:var(--text)">+</button></div><div style="overflow:auto;flex:1;min-height:0"><table class="pup-tbl"><thead id="pupTblHead"></thead><tbody id="pupTblBody"></tbody></table></div></div>`;
   page.innerHTML=`<div class="ov-topbar"><div class="ov-topbar-left"><span class="ov-topbar-label">Pups</span><span class="ov-topbar-dot"></span></div><span class="ov-topbar-date topbar-date"></span><div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div></div><div style="display:grid;grid-template-columns:1fr 1fr 2.2fr;gap:14px;height:calc(100vh - 80px);padding-top:26px">${pupCol('Mochi','#8b5cf6')}${pupCol('Sunny','#fbbf24')}${tableCol}</div>`;
   if(!page._pupDblClick){
     page._pupDblClick=true;

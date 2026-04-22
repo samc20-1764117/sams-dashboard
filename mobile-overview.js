@@ -266,8 +266,8 @@ function mTaskRow(t) {
   else if (t._type === 'pup') onchange = `togPupSessionDone('${t._pupSessId}',this.checked)`;
   else if (!t._virtual) onchange = `toggleTask('${t.id}',this.checked)`;
 
-  const tagLabel = ov ? 'Overdue' : t._type === 'shop' ? 'Shopping' : t._type === 'pup' ? 'Pup' : t._type === 'travel' ? 'Travel' : t._type === 'birthday' ? 'Birthday' : (t._isWrRule || t._isWrec || (t._virtual && t._recId)) ? 'Recurring' : (t.category || '');
   const safeName = escHtml(t.name || '');
+  const dot = `<span class="m-cat-dot" style="background:${s.bg};border:1.5px solid ${s.d};flex-shrink:0;width:10px;height:10px;border-radius:50%;display:inline-block"></span>`;
   const editBtn = canEdit ? `<button class="m-edit-btn" onclick="event.stopPropagation();mOpenEdit('${t.id}')" aria-label="Edit">${_EDIT_SVG}</button>` : '';
 
   const inner = `<div class="m-row${t.done ? ' m-done' : ''}${ov ? ' m-ov' : ''}">
@@ -276,12 +276,12 @@ function mTaskRow(t) {
       : `<label class="m-chk-wrap"><input type="checkbox" ${t.done ? 'checked' : ''} onchange="${onchange}"></label>`
     }
     <span class="m-row-name${t.done ? ' done' : ''}">${safeName}</span>
-    <span class="m-row-tag" style="background:${s.bg};color:${s.t}">${tagLabel}</span>
+    ${dot}
     ${editBtn}
   </div>`;
 
   return `<div class="m-row-outer"${canEdit ? ` data-tid="${t.id}"` : ''}>
-    ${canEdit ? '<div class="m-del-hint">Delete</div>' : ''}
+    ${canEdit ? '<div class="m-del-hint">✕</div>' : ''}
     ${inner}
   </div>`;
 }
