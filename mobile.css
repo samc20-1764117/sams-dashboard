@@ -12,6 +12,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 #mHeader h1{font-size:18px;font-weight:700}
 #mDateLbl{font-size:12px;color:var(--sub);margin-top:1px}
 .m-prog{font-size:13px;font-weight:600;color:var(--accent);background:rgba(124,106,247,.1);padding:4px 10px;border-radius:20px;white-space:nowrap}
+.m-reload-btn{background:none;border:none;font-size:20px;color:var(--sub);cursor:pointer;padding:4px;line-height:1;opacity:.6}
 
 /* ── Main scroll area ─────────────────────────────────────────────────────── */
 #mMain{flex:1;padding:12px 16px;display:flex;flex-direction:column;gap:14px;overflow-y:auto}
