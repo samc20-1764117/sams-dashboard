@@ -164,7 +164,7 @@ async function savePupModal(){
     recs.forEach(s=>st.pup_skills.push(s));
     save();renderPupsPage();renderPupSkillsHighlight();
     for(const s of recs){
-      const recData={...data,pup:s.pup,skip:false};
+      const{skip:_sk,...recData}={...data,pup:s.pup};
       const sv=await sbReq('POST','pup_skills',recData);
       if(sv&&sv[0]){const i=st.pup_skills.findIndex(x=>x.id===s.id);if(i>-1)st.pup_skills[i]=sv[0];save();}
     }
@@ -187,7 +187,7 @@ async function savePupModal(){
         sbReqSilent('PATCH','pup_skills',prevData,`?id=eq.${editId}`);
       },'Edited pup skill');
     }
-    await sbReqSilent('PATCH','pup_skills',data,`?id=eq.${_pupEditId}`);
+    const{skip:_sk,...dbData}=data;await sbReqSilent('PATCH','pup_skills',dbData,`?id=eq.${_pupEditId}`);
     renderPupsPage();renderPupSkillsHighlight();renderToday();renderWkCal();if(document.getElementById('tbGrid'))renderDayTB();
   }
 }
@@ -607,8 +607,9 @@ function renderPupsPage(){
     const total=ps.length||1;
     const pMastered=mastered.length/total*100,pInProg=inProgress.length/total*100,pNot=notStarted.length/total*100;
     const progressBar=`<div style="height:8px;border-radius:0 0 var(--r) var(--r);overflow:hidden;background:rgba(210,205,228,.2);display:flex;flex-shrink:0">${pMastered>0?`<div onmouseenter="showPupStageTip(event,'Mastered: ${mastered.length}','#22c55e')" onmouseleave="hidePupTip()" style="width:${pMastered}%;background:#22c55e;cursor:default;transition:width .3s"></div>`:''} ${pInProg>0?`<div onmouseenter="showPupStageTip(event,'In Progress: ${inProgress.length}','#eab308')" onmouseleave="hidePupTip()" style="width:${pInProg}%;background:#eab308;cursor:default;transition:width .3s"></div>`:''} ${pNot>0?`<div onmouseenter="showPupStageTip(event,'Not Started: ${notStarted.length}','#94a3b8')" onmouseleave="hidePupTip()" style="width:${pNot}%;background:rgba(210,205,228,.4);cursor:default;transition:width .3s"></div>`:''}</div>`;
-    const trainWeek=ps.filter(s=>s.focus===true||s.focus==='true');
-    const upNext=inProgress.filter(s=>!(s.focus===true||s.focus==='true'));
+    const isSkip=s=>s.skip===true||s.skip==='true';
+    const trainWeek=ps.filter(s=>!isSkip(s)&&(s.focus===true||s.focus==='true'));
+    const upNext=inProgress.filter(s=>!isSkip(s)&&!(s.focus===true||s.focus==='true'));
     const img=pup==='Mochi'?'./mochi_headshot.png':'./sunny_headshot.png';
     const glowColor=pup==='Mochi'?'rgba(139,92,246,0.2)':'rgba(251,191,36,0.24)';
     const themeBg=pup==='Mochi'?'rgba(139,92,246,0.05)':'rgba(251,191,36,0.07)';
