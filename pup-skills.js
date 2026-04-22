@@ -433,11 +433,11 @@ function renderPupTable(){
     const isMasteredAll=allMastered(g);
     const curCat=g.category||'';
     if(showCatDividers&&isMasteredAll&&lastMasteredSec===false){
-      rowsHtml.push(`<tr class="pup-cat-sep"><td colspan="${totalCols}" style="padding:8px 8px 3px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#16a34a;border-top:2px solid rgba(34,197,94,.15);border-bottom:1px solid rgba(34,197,94,.1)">Mastered</td></tr>`);
+      rowsHtml.push(`<tr class="pup-cat-sep"><td colspan="${totalCols}" style="padding:8px 8px 3px;font-size:9px;font-weight:700;color:#16a34a;border-top:2px solid rgba(34,197,94,.15);border-bottom:1px solid rgba(34,197,94,.1)">Mastered</td></tr>`);
       lastCat=null;
     }
     if(showCatDividers&&!isMasteredAll&&curCat!==lastCat&&curCat){
-      rowsHtml.push(`<tr class="pup-cat-sep"><td colspan="${totalCols}" style="padding:6px 8px 3px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);border-bottom:1px solid rgba(0,0,0,.04)">${curCat.charAt(0).toUpperCase()+curCat.slice(1)}</td></tr>`);
+      rowsHtml.push(`<tr class="pup-cat-sep"><td colspan="${totalCols}" style="padding:6px 8px 3px;font-size:9px;font-weight:700;color:var(--muted);border-bottom:1px solid rgba(0,0,0,.04)">${curCat.charAt(0).toUpperCase()+curCat.slice(1)}</td></tr>`);
       lastCat=curCat;
     }
     lastMasteredSec=isMasteredAll;
