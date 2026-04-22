@@ -75,10 +75,35 @@ function setPupModalDog(val){
   document.getElementById('pmPup').value=val;
   document.getElementById('pmDogMochi').classList.toggle('active',val==='Mochi');
   document.getElementById('pmDogSunny').classList.toggle('active',val==='Sunny');
+  if(_pupEditId){
+    const curRec=st.pup_skills.find(x=>x.id==_pupEditId);
+    if(curRec&&curRec.pup!==val){
+      const other=st.pup_skills.find(s=>s.pup===val&&s.skill===curRec.skill);
+      if(other){
+        _pupEditId=other.id;
+        document.getElementById('pmSkill').value=other.skill||'';
+        document.getElementById('pmCategory').value=other.category||'';
+        document.getElementById('pmLevel').value=other.level||'';
+        document.getElementById('pmStage').value=other.stage||'Not Started';
+        document.getElementById('pmOrder').value=other.skill_order||'';
+        document.getElementById('pmFocus').checked=(other.focus===true||other.focus==='true');
+        document.getElementById('pmNextStep').value=other.next_step||'';
+        document.getElementById('pmWord').value=other.word||'';
+        document.getElementById('pmSignal').value=other.signal||'';
+        document.getElementById('pmComments').value=other.comments||'';
+        document.getElementById('pmSkip').checked=(other.skip===true||other.skip==='true');
+      }
+    }
+  }
 }
 function openPupAddModal(){
   _pupEditId=null;
-  setPupModalDog('Mochi');
+  document.getElementById('pmPup').value='Mochi';
+  document.getElementById('pmDogMochi').classList.add('active');
+  document.getElementById('pmDogSunny').classList.remove('active');
+  document.getElementById('pmDogToggle').style.display='none';
+  document.getElementById('pmBothLabel').style.display='';
+  document.getElementById('pmSkipRow').style.display='none';
   document.getElementById('pmSkill').value='';
   document.getElementById('pmCategory').value='';
   document.getElementById('pmLevel').value='';
@@ -89,12 +114,16 @@ function openPupAddModal(){
   document.getElementById('pmWord').value='';
   document.getElementById('pmSignal').value='';
   document.getElementById('pmComments').value='';
+  document.getElementById('pmSkip').checked=false;
   document.getElementById('pupModal').classList.add('open');
   setTimeout(()=>document.getElementById('pmSkill').focus(),80);
 }
 function openPupEditModal(id){
   const s=st.pup_skills.find(x=>x.id==id);if(!s)return;
   _pupEditId=id;
+  document.getElementById('pmDogToggle').style.display='';
+  document.getElementById('pmBothLabel').style.display='none';
+  document.getElementById('pmSkipRow').style.display='';
   setPupModalDog(s.pup||'Mochi');
   document.getElementById('pmSkill').value=s.skill||'';
   document.getElementById('pmCategory').value=s.category||'';
@@ -106,6 +135,7 @@ function openPupEditModal(id){
   document.getElementById('pmWord').value=s.word||'';
   document.getElementById('pmSignal').value=s.signal||'';
   document.getElementById('pmComments').value=s.comments||'';
+  document.getElementById('pmSkip').checked=(s.skip===true||s.skip==='true');
   document.getElementById('pupModal').classList.add('open');
   setTimeout(()=>{const _el=document.getElementById('pmSkill');if(_el){_el.focus();const _l=_el.value.length;_el.setSelectionRange(_l,_l);}},80);
 }
@@ -122,16 +152,23 @@ async function savePupModal(){
     word:document.getElementById('pmWord').value.trim()||null,
     signal:document.getElementById('pmSignal').value.trim()||null,
     comments:document.getElementById('pmComments').value.trim()||null,
+    skip:document.getElementById('pmSkip').checked||false,
   };
   if(!data.skill){closeMod('pupModal');return;}
   if(data.focus&&data.stage!=='Mastered')data.stage='In Progress';
   pupSnapshot();
   closeMod('pupModal');
   if(!_pupEditId){
-    const s={id:'l-'+Date.now(),...data};
-    st.pup_skills.push(s);save();renderPupsPage();renderPupSkillsHighlight();
-    const sv=await sbReq('POST','pup_skills',data);
-    if(sv&&sv[0]){const i=st.pup_skills.findIndex(x=>x.id===s.id);if(i>-1)st.pup_skills[i]=sv[0];save();renderPupsPage();renderPupSkillsHighlight();renderToday();renderWkCal();}
+    const tmp=Date.now();
+    const recs=[{...data,pup:'Mochi',skip:false,id:'l-'+tmp+'-M'},{...data,pup:'Sunny',skip:false,id:'l-'+tmp+'-S'}];
+    recs.forEach(s=>st.pup_skills.push(s));
+    save();renderPupsPage();renderPupSkillsHighlight();
+    for(const s of recs){
+      const recData={...data,pup:s.pup,skip:false};
+      const sv=await sbReq('POST','pup_skills',recData);
+      if(sv&&sv[0]){const i=st.pup_skills.findIndex(x=>x.id===s.id);if(i>-1)st.pup_skills[i]=sv[0];save();}
+    }
+    renderPupsPage();renderPupSkillsHighlight();renderToday();renderWkCal();
   } else {
     const idx=st.pup_skills.findIndex(x=>x.id==_pupEditId);if(idx<0)return;
     const oldSkill=st.pup_skills[idx].skill;
@@ -284,7 +321,7 @@ function pupFilterBy(e,col){
   }
   document.getElementById('pfContent').innerHTML=html;
   // Always query the live th from DOM — e.currentTarget may be detached if sort re-rendered thead
-  const colIdx={skill:0,word:1,category:2}[col]??0;
+  const colIdx={skill:0,word:1}[col]??0;
   const liveTh=document.getElementById('pupTblHead')?.querySelectorAll('th')[colIdx];
   const rect=liveTh?liveTh.getBoundingClientRect():{left:200,bottom:200,right:200};
   let left=rect.left,pw=200;
@@ -372,6 +409,13 @@ async function pupStageCheck(sid,checked){
   save();renderPupTable();renderPupsPage();
   sbReqSilent('PATCH','pup_skills',{stage},`?id=eq.${sid}`);
 }
+async function deletePupGroup(skillName){
+  pupSnapshot();
+  const ids=st.pup_skills.filter(s=>s.skill===skillName).map(s=>String(s.id));
+  st.pup_skills=st.pup_skills.filter(s=>s.skill!==skillName);
+  _selPupIds.clear();save();renderPupsPage();renderPupSkillsHighlight();
+  for(const id of ids)sbReqSilent('DELETE','pup_skills',null,`?id=eq.${id}`);
+}
 function renderPupTable(){
   const thead=document.getElementById('pupTblHead');
   const tbody=document.getElementById('pupTblBody');if(!thead||!tbody)return;
@@ -416,13 +460,12 @@ function renderPupTable(){
   const ths='cursor:pointer;user-select:none;white-space:nowrap;padding:5px 6px;font-size:11px';
   const thsS='user-select:none;white-space:nowrap;padding:5px 6px;font-size:11px';
   const tdE='user-select:none;cursor:default;font-size:11px';
-  const totalCols=3+pups.length*3+1;
+  const totalCols=2+pups.length*3+1;
   thead.innerHTML=`<tr>
     <th onclick="pupHdrClick('skill')" ondblclick="pupHdrDbl(event,'skill')" rowspan="2" style="${ths}">Skill${arrow('skill')}${fdot('skill')}</th>
     <th onclick="pupHdrClick('word')" ondblclick="pupHdrDbl(event,'word')" rowspan="2" style="${ths};width:72px">Word${arrow('word')}</th>
-    <th onclick="pupHdrClick('category')" ondblclick="pupHdrDbl(event,'category')" rowspan="2" style="${ths};width:74px">Cat${arrow('category')}${fdot('category')}</th>
     ${pups.map(p=>`<th colspan="3" style="${thsS};text-align:center;color:${pupColor[p]||'var(--text)'};border-left:2px solid ${pupColor[p]||'var(--border)'}33">${p}</th>`).join('')}
-    <th rowspan="2" style="width:24px"></th>
+    <th rowspan="2" style="width:44px"></th>
   </tr><tr>
     ${pups.map(p=>`<th style="${thsS};width:50px;text-align:center;border-left:2px solid ${pupColor[p]||'var(--border)'}33">Stage</th><th style="${thsS};width:72px">Next</th><th style="${thsS};width:50px;text-align:center">Sess</th>`).join('')}
   </tr>`;
@@ -450,6 +493,7 @@ function renderPupTable(){
       const s=g.byPup[p];
       const borderL=`border-left:2px solid ${pupColor[p]||'var(--border)'}33`;
       if(!s)return`<td colspan="3" style="padding:4px 6px;color:var(--muted);font-size:10px;${borderL}">—</td>`;
+      if(s.skip===true||s.skip==='true'){return`<td colspan="3" style="text-align:center;color:var(--muted);opacity:.3;font-size:14px;letter-spacing:2px;${borderL}">— —</td>`;}
       const sid=String(s.id);
       const nextStep=s.next_step&&s.next_step!=='None'?esc(s.next_step):'';
       const comment=s.comments&&s.comments!=='None'?esc(s.comments):'';
@@ -467,11 +511,10 @@ function renderPupTable(){
     const firstRec=pups.map(p=>g.byPup[p]).find(Boolean);
     const skillTip=allNotes?` onmouseenter="showPupTip(event,'${allNotes}')" onmouseleave="hidePupTip()" style="padding:4px 8px;${tdE};cursor:help"`:` style="padding:4px 8px;${tdE}"`;
     rowsHtml.push(`<tr data-skillkey="${esc(g.skill)}"${!_pupSortCol?' style="cursor:grab"':''}>
-      <td ondblclick="pupCellEdit(this,'${anyId}','skill')"${skillTip}>${esc(g.skill)}</td>
-      <td ondblclick="pupCellEdit(this,'${anyId}','word')" style="width:72px;padding:4px 6px;${tdE};font-style:${word?'italic':'normal'};color:${word?'var(--text)':'var(--muted)'}">${word||'—'}</td>
-      <td ondblclick="pupCellEdit(this,'${anyId}','category')" style="width:74px;padding:4px 6px;${tdE}">${g.category?(g.category.charAt(0).toUpperCase()+g.category.slice(1)):'—'}</td>
+      <td ondblclick="event.stopPropagation();openPupEditModal('${anyId}')"${skillTip}>${esc(g.skill)}</td>
+      <td ondblclick="event.stopPropagation();openPupEditModal('${anyId}')" style="width:72px;padding:4px 6px;${tdE};font-style:${word?'italic':'normal'};color:${word?'var(--text)':'var(--muted)'}">${word||'—'}</td>
       ${pupCells}
-      <td style="width:24px;padding:2px 4px;text-align:right"><button class="pup-dots" onclick="event.stopPropagation();openPupEditModal('${firstRec?String(firstRec.id):''}')" title="Edit">···</button></td>
+      <td style="width:44px;padding:2px 4px;text-align:right;white-space:nowrap"><button class="pup-del" data-skillkey="${esc(g.skill)}" onclick="event.stopPropagation();deletePupGroup(this.dataset.skillkey)" title="Delete">×</button><button class="pup-dots" onclick="event.stopPropagation();openPupEditModal('${firstRec?String(firstRec.id):''}')" title="Edit">···</button></td>
     </tr>`);
   });
   tbody.innerHTML=rowsHtml.join('');
@@ -570,7 +613,7 @@ function renderPupsPage(){
     const glowColor=pup==='Mochi'?'rgba(139,92,246,0.2)':'rgba(251,191,36,0.24)';
     const themeBg=pup==='Mochi'?'rgba(139,92,246,0.05)':'rgba(251,191,36,0.07)';
     const themeBorder=pup==='Mochi'?'rgba(139,92,246,0.12)':'rgba(251,191,36,0.18)';
-    return`<div class="pup-col card" style="display:flex;flex-direction:column;overflow:visible;position:relative"><img src="${img}" style="position:absolute;top:-44px;left:50%;transform:translateX(-50%);width:92px;height:92px;border-radius:50%;object-fit:cover;object-position:top;border:3px solid rgba(255,255,255,.9);box-shadow:0 0 18px 6px ${glowColor},0 4px 14px rgba(0,0,0,.1)"><div style="display:grid;grid-template-columns:1fr 92px 1fr;align-items:center;min-height:52px;border-bottom:1px solid rgba(210,205,228,.22);flex-shrink:0"><span style="font-weight:700;font-size:13px;color:var(--text);padding-left:13px">${pup}</span><span></span><span style="font-size:11px;color:var(--muted);font-weight:500;padding-right:13px;text-align:right">${inProgress.length} in progress</span></div><div style="padding:8px;overflow-y:auto;flex:1;min-height:0;display:flex;flex-direction:column;gap:12px">${trainWeek.length?`<div style="background:${themeBg};border:1px solid ${themeBorder};border-radius:10px;padding:10px 8px"><div class="pup-section-label">Train This Week</div>${trainWeek.map(s=>skillCardRow(s,'pup-focus-row')).join('')}</div>`:''} ${upNext.length?`<div><div class="pup-section-label" style="color:var(--text);font-weight:800">Up Next</div>${groupedCardRows(upNext,'pup-skill-emphasis')}</div>`:''} ${ps.length===0?'<div style="font-size:11px;color:var(--muted);text-align:center;padding:20px 0">No skills yet</div>':''}</div>${progressBar}</div>`;
+    return`<div class="pup-col card" style="display:flex;flex-direction:column;overflow:visible;position:relative;background:rgba(255,255,255,.92);border:1.5px solid rgba(210,205,228,.5);border-radius:18px"><img src="${img}" style="position:absolute;top:-44px;left:50%;transform:translateX(-50%);width:92px;height:92px;border-radius:50%;object-fit:cover;object-position:top;border:3px solid rgba(255,255,255,.9);box-shadow:0 0 18px 6px ${glowColor},0 4px 14px rgba(0,0,0,.1)"><div style="display:grid;grid-template-columns:1fr 92px 1fr;align-items:center;min-height:52px;border-bottom:1px solid rgba(210,205,228,.22);flex-shrink:0"><span style="font-weight:700;font-size:13px;color:var(--text);padding-left:13px">${pup}</span><span></span><span style="font-size:11px;color:var(--muted);font-weight:500;padding-right:13px;text-align:right">${inProgress.length} in progress</span></div><div style="padding:8px;overflow-y:auto;flex:1;min-height:0;display:flex;flex-direction:column;gap:12px">${trainWeek.length?`<div style="background:${themeBg};border:1px solid ${themeBorder};border-radius:10px;padding:10px 8px"><div class="pup-section-label">Train This Week</div>${trainWeek.map(s=>skillCardRow(s,'pup-focus-row')).join('')}</div>`:''} ${upNext.length?`<div><div class="pup-section-label" style="color:var(--text);font-weight:800">Up Next</div>${groupedCardRows(upNext,'pup-skill-emphasis')}</div>`:''} ${ps.length===0?'<div style="font-size:11px;color:var(--muted);text-align:center;padding:20px 0">No skills yet</div>':''}</div>${progressBar}</div>`;
   }
   const tableCol=`<div class="pup-col card" style="overflow:hidden"><div class="ch"><span style="font-weight:700;font-size:13px;color:var(--text)">All Skills</span><button class="btn-plus" onclick="openPupAddModal()" style="margin-left:auto;padding:2px 8px;font-size:13px;border-radius:8px;border:1px solid var(--border);background:transparent;cursor:pointer;color:var(--text)">+</button></div><div style="overflow:auto;flex:1;min-height:0"><table class="pup-tbl"><thead id="pupTblHead"></thead><tbody id="pupTblBody"></tbody></table></div></div>`;
   page.innerHTML=`<div class="ov-topbar"><div class="ov-topbar-left"><span class="ov-topbar-label">Pups</span><span class="ov-topbar-dot"></span></div><span class="ov-topbar-date topbar-date"></span><div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div></div><div style="display:grid;grid-template-columns:1fr 1fr 2.2fr;gap:14px;height:calc(100vh - 80px);padding-top:26px">${pupCol('Mochi','#8b5cf6')}${pupCol('Sunny','#fbbf24')}${tableCol}</div>`;

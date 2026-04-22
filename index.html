@@ -670,7 +670,7 @@
   <div class="modal task-modal" style="width:420px">
     <select id="pmPup" style="display:none"><option value="Mochi">Mochi</option><option value="Sunny">Sunny</option></select>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-      <div class="pup-dog-toggle"><button id="pmDogMochi" class="pup-dog-btn active" onclick="setPupModalDog('Mochi')">Mochi</button><button id="pmDogSunny" class="pup-dog-btn" onclick="setPupModalDog('Sunny')">Sunny</button></div>
+      <div id="pmDogToggle"><div class="pup-dog-toggle"><button id="pmDogMochi" class="pup-dog-btn active" onclick="setPupModalDog('Mochi')">Mochi</button><button id="pmDogSunny" class="pup-dog-btn" onclick="setPupModalDog('Sunny')">Sunny</button></div></div><span id="pmBothLabel" style="display:none;font-size:11px;color:var(--muted);font-weight:500">Creates skill for both pups</span>
       <input type="checkbox" id="pmFocus" title="Focus this week" style="width:15px;height:15px;cursor:pointer;accent-color:#eab308">
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
@@ -688,6 +688,7 @@
       <div class="mfield"><label>Signal</label><input id="pmSignal" placeholder="Hand signal…"></div>
     </div>
     <div class="mfield"><label>Comments</label><input id="pmComments" placeholder="Notes or observations…"></div>
+    <div id="pmSkipRow" style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><input type="checkbox" id="pmSkip" style="width:14px;height:14px;cursor:pointer;accent-color:#94a3b8"><label style="font-size:11px;color:var(--muted);cursor:pointer" for="pmSkip">Not relevant for this pup (skip)</label></div>
     <div class="mact"><button class="btn btn-ghost" onclick="closeMod('pupModal')">Cancel</button><button class="btn btn-dark" onclick="savePupModal()">Save</button></div>
   </div>
 </div>
