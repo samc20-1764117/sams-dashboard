@@ -2977,47 +2977,48 @@ function renderDayTB(){
   autoBlocks.forEach(a=>drawAutoTBBlock(col,a,ds));
   const autoBtn=document.getElementById('autoTBToggle');if(autoBtn)autoBtn.style.opacity=cfg.showAutoTB?'1':'0.4';
   if(isDateToday(date)){const nl=document.createElement('div');nl.className='nowline';nl.id='tbNowLine';const nm=new Date(),nmins=(nm.getHours()-HOURS[0])*60+nm.getMinutes();if(nmins>=0){nl.style.top=nmins*PX+'px';nl.innerHTML='<div class="nowdot"></div>';}col.appendChild(nl);}
-  // Rubber-band selection: drag on empty space to select blocks by area
+  // Drag on empty space to create a new block
   col.addEventListener('mousedown',e=>{
-    if(e.button!==0||e.target.closest('.tb-block'))return;
+    if(e.button!==0||e.target.closest('.tb-block,.atb-block'))return;
     e.preventDefault();
-    const startRelY=e.clientY-col.getBoundingClientRect().top;
-    const selBox=document.createElement('div');
-    selBox.style.cssText='position:absolute;left:2px;right:2px;background:rgba(42,157,181,.12);border:1px solid rgba(42,157,181,.45);border-radius:3px;pointer-events:none;z-index:50;';
-    selBox.style.top=startRelY+'px';selBox.style.height='0px';
-    col.appendChild(selBox);
-    let rbMoved=false;
-    const onRBMove=ev=>{
-      const curRelY=ev.clientY-col.getBoundingClientRect().top;
+    const colRect=col.getBoundingClientRect();
+    const startRelY=Math.max(0,e.clientY-colRect.top);
+    const snap=y=>Math.round((HOURS[0]*60+y/PX)/15)*15;
+    const preview=document.createElement('div');
+    preview.style.cssText='position:absolute;left:2px;right:2px;background:rgba(42,157,181,.18);border:1.5px dashed rgba(42,157,181,.7);border-radius:5px;pointer-events:none;z-index:50;box-sizing:border-box;';
+    preview.style.top=startRelY+'px';preview.style.height='0px';
+    col.appendChild(preview);
+    let dragging=false;
+    const onMove=ev=>{
+      const curRelY=Math.max(0,ev.clientY-col.getBoundingClientRect().top);
+      const dy=Math.abs(curRelY-startRelY);
+      if(!dragging&&dy<5)return;
+      dragging=true;
       const top2=Math.min(startRelY,curRelY),bot2=Math.max(startRelY,curRelY);
-      selBox.style.top=top2+'px';selBox.style.height=(bot2-top2)+'px';
-      rbMoved=true;
+      const smSnap=snap(top2),emSnap=snap(bot2);
+      const snappedTop=(smSnap-HOURS[0]*60)*PX,snappedBot=(emSnap-HOURS[0]*60)*PX;
+      preview.style.top=snappedTop+'px';preview.style.height=Math.max(15*PX,snappedBot-snappedTop)+'px';
     };
-    const onRBUp=ev=>{
-      document.removeEventListener('mousemove',onRBMove);
-      document.removeEventListener('mouseup',onRBUp);
-      const curRelY=ev.clientY-col.getBoundingClientRect().top;
-      const selTop=Math.min(startRelY,curRelY),selBot=Math.max(startRelY,curRelY);
-      selBox.remove();
-      if(rbMoved&&(selBot-selTop)>5){
-        _lastTBRbRange={selTop,selBot};
-        if(!e.shiftKey)selectedTasks.clear();
-        col.querySelectorAll('.tb-block[data-bid]').forEach(be=>{
-          const bl=st.blocks.find(x=>String(x.id)===String(be.dataset.bid));
-          if(!bl)return;
-          const blTop=(bl.sm-HOURS[0]*60)*PX,blBot=blTop+bl.dur*PX;
-          if(blBot>selTop&&blTop<selBot){const sid=_getTBBlockSelId(bl);if(sid){selectedTasks.add(sid);lastSelectedId=sid;}}
-        });
-        // Auto-select auto-blocks in range when no regular blocks were selected
-        if(![...selectedTasks].some(id=>!id.startsWith('atb::'))){
-          const minSm=HOURS[0]*60+selTop/PX,maxSm=HOURS[0]*60+selBot/PX;
-          getAutoTBForDate(d2s(getDayDate(dayOff))).filter(a=>a.sm+a.dur>minSm&&a.sm<maxSm).forEach(a=>selectedTasks.add('atb::'+a._atbId));
-        }
-        applySelHighlight();
-      }
+    const onUp=ev=>{
+      document.removeEventListener('mousemove',onMove);
+      document.removeEventListener('mouseup',onUp);
+      preview.remove();
+      if(!dragging)return;
+      const curRelY=Math.max(0,ev.clientY-col.getBoundingClientRect().top);
+      const top2=Math.min(startRelY,curRelY),bot2=Math.max(startRelY,curRelY);
+      const sm=snap(top2),em=snap(bot2);
+      const dur=Math.max(15,em-sm);
+      const blk={id:crypto.randomUUID(),title:'',ds,sm,dur,cat:'Home'};
+      st.blocks.push(blk);save();
+      computeTBLayout(ds);
+      col.querySelectorAll('.tb-block').forEach(el=>el.remove());
+      getVisibleBlocks(ds).forEach(b=>drawTBBlock(col,b));
+      startTBInlineEdit(blk.id,col,()=>{
+        pushUndo(()=>{st.blocks=st.blocks.filter(b=>b.id!==blk.id);save();renderDayTB();},'Added block');
+      });
     };
-    document.addEventListener('mousemove',onRBMove);
-    document.addEventListener('mouseup',onRBUp);
+    document.addEventListener('mousemove',onMove);
+    document.addEventListener('mouseup',onUp);
   });
   grid.appendChild(col);renderTBSum(ds);requestAnimationFrame(applySelHighlight);
   // Default scroll to current time minus 1 hour; reset when day changes but preserve position mid-session
