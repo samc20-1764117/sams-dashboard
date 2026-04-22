@@ -453,7 +453,8 @@ function renderPupTable(){
     groupMap[key].byPup[s.pup]=s;
   });
   let groups=Object.values(groupMap);
-  const allMastered=g=>pups.every(p=>!g.byPup[p]||g.byPup[p].stage==='Mastered');
+  // "all done" = every pup that has a record is either Mastered or marked skip
+  const allMastered=g=>pups.some(p=>g.byPup[p])&&pups.filter(p=>g.byPup[p]).every(p=>g.byPup[p].stage==='Mastered'||(g.byPup[p].skip===true||g.byPup[p].skip==='true'));
   // Filter
   if(_pupFilter){
     const sharedCols=new Set(['skill','word','level','category']);
@@ -469,8 +470,6 @@ function renderPupTable(){
   } else {
     groups.sort((a,b)=>{
       const ma=allMastered(a)?1:0,mb=allMastered(b)?1:0;if(ma!==mb)return ma-mb;
-      const ca=CATO[a.category]??9,cb=CATO[b.category]??9;if(ca!==cb)return ca-cb;
-      const la=LDEG[a.level]??9,lb=LDEG[b.level]??9;if(la!==lb)return la-lb;
       return (a.skill_order??9999)-(b.skill_order??9999);
     });
   }
@@ -488,19 +487,12 @@ function renderPupTable(){
   </tr><tr>
     ${pups.map(p=>`<th style="${thsS};width:50px;text-align:center;border-left:2px solid ${pupColor[p]||'var(--border)'}33">Stage</th><th style="${thsS};width:72px">Next</th><th style="${thsS};width:50px;text-align:center">Sess</th>`).join('')}
   </tr>`;
-  const showCatDividers=!_pupSortCol;
-  let lastCat=null,lastMasteredSec=null;
+  let lastMasteredSec=null;
   const rowsHtml=[];
   groups.forEach(g=>{
     const isMasteredAll=allMastered(g);
-    const curCat=g.category||'';
-    if(showCatDividers&&isMasteredAll&&lastMasteredSec===false){
+    if(!_pupSortCol&&isMasteredAll&&lastMasteredSec===false){
       rowsHtml.push(`<tr class="pup-cat-sep"><td colspan="${totalCols}" style="padding:8px 8px 3px;font-size:9px;font-weight:700;color:#16a34a;border-top:2px solid rgba(34,197,94,.15);border-bottom:1px solid rgba(34,197,94,.1)">Mastered</td></tr>`);
-      lastCat=null;
-    }
-    if(showCatDividers&&!isMasteredAll&&curCat!==lastCat&&curCat){
-      rowsHtml.push(`<tr class="pup-cat-sep"><td colspan="${totalCols}" style="padding:6px 8px 3px;font-size:9px;font-weight:700;color:var(--muted);border-bottom:1px solid rgba(0,0,0,.04)">${curCat.charAt(0).toUpperCase()+curCat.slice(1)}</td></tr>`);
-      lastCat=curCat;
     }
     lastMasteredSec=isMasteredAll;
     const anyRec=pups.map(p=>g.byPup[p]).find(Boolean);
