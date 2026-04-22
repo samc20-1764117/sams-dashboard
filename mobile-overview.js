@@ -94,8 +94,8 @@ async function togPupSessionDone(sessId, done) {
 
 // ── Category picker ───────────────────────────────────────────────────────────
 const M_CATS = ['Home', 'My work', 'Work', 'Social', 'Long term'];
-let _mAddCat = 'Home';
-let _mEditCat = 'Home';
+let _mAddCat   = 'Home';
+let _mEditCat  = 'Home';
 let _mBlockCat = 'Home';
 
 const _EDIT_SVG = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="m18.5 2.5 2 2L10 15l-3 1 1-3z"/></svg>`;
@@ -429,8 +429,8 @@ function mInitSwipe() {
 // ── Pull-to-refresh ───────────────────────────────────────────────────────────
 function mInitPTR() {
   const main = document.getElementById('mMain');
-  const ptr = document.getElementById('mPTR');
-  const lbl = document.getElementById('mPTRLbl');
+  const ptr  = document.getElementById('mPTR');
+  const lbl  = document.getElementById('mPTRLbl');
   if (!main || !ptr) return;
   const THRESHOLD = 65;
   let startY = 0, active = false, triggered = false;
@@ -476,8 +476,8 @@ function mShowTab(tab) {
   _mCurTab = tab;
   const isToday = tab === 'today';
   document.getElementById('mTodayPage').style.display = isToday ? '' : 'none';
-  document.getElementById('mTBPage').style.display = isToday ? 'none' : '';
-  document.getElementById('mAddBar').style.display = isToday ? '' : 'none';
+  document.getElementById('mTBPage').style.display    = isToday ? 'none' : '';
+  document.getElementById('mAddBar').style.display    = isToday ? '' : 'none';
   document.getElementById('mApp').style.paddingBottom = isToday
     ? 'calc(162px + env(safe-area-inset-bottom))'
     : 'calc(52px + env(safe-area-inset-bottom))';
@@ -488,18 +488,28 @@ function mShowTab(tab) {
   if (titleEl) titleEl.textContent = isToday ? 'Today' : 'Timeblock';
   const progEl = document.getElementById('mProgress');
   if (progEl) progEl.style.display = isToday ? '' : 'none';
-  // Adjust mMain padding for TB (no horizontal padding needed)
   document.getElementById('mMain').style.padding = isToday ? '12px 16px' : '0';
-  if (!isToday) { mRenderTB(); _mScrollNow(); }
+  if (!isToday) { _mTBOffset = 0; mRenderTB(); _mScrollNow(); }
+  else { _mSetDate(); }
 }
 
 // ── Timeblock constants ───────────────────────────────────────────────────────
-const M_TB_START = 6 * 60;   // 6am in minutes
-const M_TB_END   = 22 * 60;  // 10pm in minutes
-const M_PX       = 1.5;      // px per minute (90px per hour)
+const M_TB_START = 6 * 60;   // 6am
+const M_TB_END   = 22 * 60;  // 10pm
+const M_PX       = 0.75;     // px per minute → 45px per hour, ~720px total
+
+let _mTBOffset = 0; // day offset (0=today, -1=yesterday, +1=tomorrow)
 
 // ── Timeblock rendering ───────────────────────────────────────────────────────
 function mRenderTB() {
+  // Update date label for displayed day
+  const d    = getDayDate(_mTBOffset);
+  const lbl  = document.getElementById('mDateLbl');
+  if (lbl) {
+    const opts = {weekday: 'short', month: 'short', day: 'numeric'};
+    const prefix = _mTBOffset === 0 ? 'Today · ' : _mTBOffset === -1 ? 'Yesterday · ' : _mTBOffset === 1 ? 'Tomorrow · ' : '';
+    lbl.textContent = prefix + d.toLocaleDateString('en-US', opts);
+  }
   mRenderUnassigned();
   mRenderTimeline();
 }
@@ -507,17 +517,19 @@ function mRenderTB() {
 function mRenderUnassigned() {
   const bar = document.getElementById('mUnassignedBar');
   if (!bar) return;
-  const ds = d2s(getDayDate(0));
-  const todayRegular = mGetTodayTasks().filter(t => !t._virtual && !t._type && !t.done);
+  const ds = d2s(getDayDate(_mTBOffset));
+  const dayTasks = st.tasks.filter(t =>
+    t.due_date && t.due_date.split('T')[0] === ds && !t.done && t.category !== 'Weekly Goals'
+  );
   const blockedIds = new Set((st.blocks || []).filter(b => b.ds === ds && b.taskId).map(b => String(b.taskId)));
-  const unassigned = todayRegular.filter(t => !blockedIds.has(String(t.id)));
+  const unassigned = dayTasks.filter(t => !blockedIds.has(String(t.id)));
 
   if (!unassigned.length) {
     bar.innerHTML = '<span class="m-chip-empty">No unassigned tasks</span>';
     return;
   }
   bar.innerHTML = unassigned.map(t => {
-    const s = gc(t.category || '');
+    const s   = gc(t.category || '');
     const sel = _mSelectedChipId === String(t.id);
     return `<button class="m-chip${sel ? ' selected' : ''}" onclick="mSelectChip('${t.id}')" style="--cdot:${s.bg};--cborder:${s.d}">${escHtml(t.name)}</button>`;
   }).join('');
@@ -535,50 +547,55 @@ function mRenderTimeline() {
   // Hour labels + lines
   const hrs = [];
   for (let m = M_TB_START; m <= M_TB_END; m += 60) {
-    const y  = (m - M_TB_START) * M_PX;
-    const h  = m / 60;
+    const y   = (m - M_TB_START) * M_PX;
+    const h   = m / 60;
     const lbl = h === 12 ? '12pm' : h > 12 ? (h - 12) + 'pm' : h + 'am';
     hrs.push(`<div style="position:absolute;top:${y}px;left:0;right:0;display:flex;align-items:center;pointer-events:none">
-      <span style="font-size:10px;color:var(--sub);width:40px;padding-right:6px;text-align:right;flex-shrink:0;line-height:1;margin-top:-7px">${lbl}</span>
+      <span style="font-size:10px;color:var(--sub);width:40px;padding-right:6px;text-align:right;flex-shrink:0;line-height:1;margin-top:-6px">${lbl}</span>
       <div style="flex:1;border-top:1px solid var(--border)"></div>
     </div>`);
   }
   labels.innerHTML = hrs.join('');
 
-  // Today's blocks
-  const ds = d2s(getDayDate(0));
+  // Blocks for displayed day
+  const ds = d2s(getDayDate(_mTBOffset));
   const todayBlocks = (st.blocks || []).filter(b => b.ds === ds).sort((a, b) => a.sm - b.sm);
-  const blockHtml = todayBlocks.map(b => {
-    const y   = (b.sm - M_TB_START) * M_PX;
-    const h   = Math.max(b.dur * M_PX, 28);
-    const s   = gc(b.cat || '');
-    const smH = Math.floor(b.sm / 60);
-    const smM = b.sm % 60;
-    const timeLbl = `${smH > 12 ? smH - 12 : smH}:${String(smM).padStart(2, '0')}${smH >= 12 ? 'pm' : 'am'}`;
-    return `<div class="m-tl-block" style="top:${y}px;height:${h}px;background:${s.bg};border-left:3px solid ${s.d};color:${s.t}" onclick="event.stopPropagation();mOpenBlockEdit('${b.id}')">
-      <div style="overflow:hidden;flex:1">
-        <div style="font-size:11px;color:${s.d};font-weight:500;margin-bottom:1px">${timeLbl}</div>
+  col.innerHTML = todayBlocks.map(b => {
+    const y      = (b.sm - M_TB_START) * M_PX;
+    const hPx    = Math.max(b.dur * M_PX, 28);
+    const s      = gc(b.cat || '');
+    const smH    = Math.floor(b.sm / 60);
+    const smM    = b.sm % 60;
+    const timeLbl = `${smH > 12 ? smH - 12 : smH === 0 ? 12 : smH}:${String(smM).padStart(2, '0')}${smH >= 12 ? 'pm' : 'am'}`;
+    return `<div class="m-tl-block" data-bid="${b.id}" style="top:${y}px;height:${hPx}px;background:${s.bg};border-left:3px solid ${s.d}">
+      <div style="overflow:hidden;flex:1;pointer-events:none">
+        <div style="font-size:10px;color:${s.d};font-weight:600;line-height:1.2">${timeLbl}</div>
         <div class="m-tl-block-name" style="color:${s.t}">${escHtml(b.title || '')}</div>
       </div>
     </div>`;
   }).join('');
 
-  // Now line
-  const now    = new Date();
-  const nowMin = now.getHours() * 60 + now.getMinutes();
-  const nowHtml = (nowMin >= M_TB_START && nowMin <= M_TB_END)
-    ? `<div class="m-tl-now" style="top:${(nowMin - M_TB_START) * M_PX}px"></div>`
-    : '';
+  // Now line (only for today)
+  if (_mTBOffset === 0) {
+    const now    = new Date();
+    const nowMin = now.getHours() * 60 + now.getMinutes();
+    if (nowMin >= M_TB_START && nowMin <= M_TB_END) {
+      const nowEl = document.createElement('div');
+      nowEl.className = 'm-tl-now';
+      nowEl.style.top = ((nowMin - M_TB_START) * M_PX) + 'px';
+      col.appendChild(nowEl);
+    }
+  }
 
-  col.innerHTML = blockHtml + nowHtml;
-
-  // Tap to create block
+  // Click handler: open block edit or create new block
   col.onclick = e => {
-    if (e.target.closest('.m-tl-block')) return;
-    const rect   = col.getBoundingClientRect();
-    const rawMin = Math.round((e.clientY - rect.top) / M_PX) + M_TB_START;
+    if (_mDragJustEnded) return;
+    const blockEl = e.target.closest('.m-tl-block');
+    if (blockEl) { mOpenBlockEdit(blockEl.dataset.bid); return; }
+    const rect    = col.getBoundingClientRect();
+    const rawMin  = Math.round((e.clientY - rect.top) / M_PX) + M_TB_START;
     const snapMin = Math.round(rawMin / 15) * 15;
-    const sm = Math.max(M_TB_START, Math.min(M_TB_END - 30, snapMin));
+    const sm      = Math.max(M_TB_START, Math.min(M_TB_END - 30, snapMin));
     mOpenNewBlock(sm);
   };
 }
@@ -586,12 +603,124 @@ function mRenderTimeline() {
 function _mScrollNow() {
   const scroll = document.getElementById('mTLScroll');
   if (!scroll) return;
+  if (_mTBOffset !== 0) { scroll.scrollTop = 0; return; }
   const now    = new Date();
   const nowMin = now.getHours() * 60 + now.getMinutes();
   if (nowMin >= M_TB_START && nowMin <= M_TB_END) {
     const y = (nowMin - M_TB_START) * M_PX;
-    setTimeout(() => { scroll.scrollTop = Math.max(0, y - 120); }, 50);
+    setTimeout(() => { scroll.scrollTop = Math.max(0, y - 100); }, 50);
   }
+}
+
+// ── Day swipe navigation on timeline ─────────────────────────────────────────
+function mInitTBSwipe() {
+  const scroll = document.getElementById('mTLScroll');
+  if (!scroll || scroll._tbSwipeInited) return;
+  scroll._tbSwipeInited = true;
+
+  let startX = 0, startY = 0;
+
+  scroll.addEventListener('touchstart', e => {
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+  }, {passive: true});
+
+  scroll.addEventListener('touchend', e => {
+    if (_mDragBlock) return; // don't navigate while dragging a block
+    const dx = e.changedTouches[0].clientX - startX;
+    const dy = e.changedTouches[0].clientY - startY;
+    if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    if (dx < 0) _mTBOffset++; // swipe left → next day
+    else         _mTBOffset--; // swipe right → previous day
+    mRenderTB();
+    _mScrollNow();
+  }, {passive: true});
+}
+
+// ── Block drag (longpress + drag up/down to change time) ─────────────────────
+let _mDragBlock    = null;
+let _mDragJustEnded = false;
+
+function mInitBlockDrag() {
+  const col = document.getElementById('mTLCol');
+  if (!col || col._dragInited) return;
+  col._dragInited = true;
+
+  let pressTimer  = null;
+  let touchStartY = 0;
+  let touchStartX = 0;
+
+  col.addEventListener('touchstart', e => {
+    const blockEl = e.target.closest('.m-tl-block');
+    if (!blockEl) return;
+    touchStartY = e.touches[0].clientY;
+    touchStartX = e.touches[0].clientX;
+
+    pressTimer = setTimeout(() => {
+      pressTimer = null;
+      const bid = blockEl.dataset.bid;
+      const b   = (st.blocks || []).find(x => String(x.id) === bid);
+      if (!b) return;
+      _mDragBlock = {el: blockEl, b, origSm: b.sm, startY: touchStartY};
+      blockEl.style.opacity   = '0.7';
+      blockEl.style.transform = 'scale(1.02)';
+      blockEl.style.boxShadow = '0 6px 24px rgba(0,0,0,.18)';
+      blockEl.style.zIndex    = '5';
+      // Lock scroll so vertical drag doesn't scroll the container
+      const scrl = document.getElementById('mTLScroll');
+      if (scrl) scrl.style.overflowY = 'hidden';
+    }, 480);
+  }, {passive: true});
+
+  col.addEventListener('touchmove', e => {
+    if (pressTimer) {
+      // Cancel longpress if finger moved before threshold
+      if (Math.abs(e.touches[0].clientY - touchStartY) > 8 ||
+          Math.abs(e.touches[0].clientX - touchStartX) > 8) {
+        clearTimeout(pressTimer);
+        pressTimer = null;
+      }
+      return;
+    }
+    if (!_mDragBlock) return;
+    const dy    = e.touches[0].clientY - _mDragBlock.startY;
+    const dMin  = Math.round((dy / M_PX) / 15) * 15; // snap to 15 min
+    const newSm = Math.max(M_TB_START, Math.min(M_TB_END - _mDragBlock.b.dur, _mDragBlock.origSm + dMin));
+    _mDragBlock.b.sm       = newSm;
+    _mDragBlock.el.style.top = ((newSm - M_TB_START) * M_PX) + 'px';
+  }, {passive: true});
+
+  col.addEventListener('touchend', async () => {
+    if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+    if (!_mDragBlock) return;
+
+    const {el, b} = _mDragBlock;
+    _mDragBlock = null;
+
+    // Restore styles
+    el.style.opacity   = '';
+    el.style.transform = '';
+    el.style.boxShadow = '';
+    el.style.zIndex    = '';
+
+    // Unlock scroll
+    const scrl = document.getElementById('mTLScroll');
+    if (scrl) scrl.style.overflowY = '';
+
+    // Suppress the click that fires after touchend
+    _mDragJustEnded = true;
+    setTimeout(() => { _mDragJustEnded = false; }, 300);
+
+    const finalSm = b.sm;
+    save();
+    mRenderTimeline();
+    const hh = Math.floor(finalSm / 60);
+    const mm = finalSm % 60;
+    await sbUpdateBlock(b.id, {
+      start_minutes: finalSm,
+      start_time: `${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}:00`
+    });
+  }, {passive: true});
 }
 
 // ── Chip selection ────────────────────────────────────────────────────────────
@@ -616,7 +745,6 @@ function mOpenNewBlock(sm) {
   const mm = sm % 60;
   document.getElementById('mBlockTime').value = `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
 
-  // Pre-fill from selected chip
   if (_mSelectedChipId) {
     const t = st.tasks.find(x => String(x.id) === _mSelectedChipId);
     if (t) {
@@ -678,13 +806,13 @@ async function mSaveBlock() {
   if (!name || !timeVal) return;
   const [hh, mm] = timeVal.split(':').map(Number);
   const sm  = hh * 60 + mm;
-  const ds  = d2s(getDayDate(0));
+  const ds  = d2s(getDayDate(_mTBOffset));
   const cat = _mBlockCat;
 
   if (_mEditBlockId) {
     const b = (st.blocks || []).find(x => String(x.id) === _mEditBlockId);
     if (!b) { mCloseBlock(); return; }
-    b.title = name; b.sm = sm; b.dur = _mBlockDur; b.cat = cat;
+    b.title = name; b.sm = sm; b.dur = _mBlockDur; b.cat = cat; b.ds = ds;
     save(); mCloseBlock(); mRenderTB();
     await sbUpdateBlock(_mEditBlockId, {
       title: name,
@@ -745,6 +873,8 @@ async function mInit() {
   mInitPickers();
   mInitSwipe();
   mInitPTR();
+  mInitTBSwipe();
+  mInitBlockDrag();
   const authed = await checkAuth();
   if (!authed) return;
   hideLoginOverlay();
