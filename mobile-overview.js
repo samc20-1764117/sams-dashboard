@@ -886,21 +886,24 @@ function mGetDayTasks(ds, weekOff) {
 }
 
 function mWkTaskRow(t) {
-  const ov = isOv(t.due_date) && !t.done;
-  const catKey = t._type === 'shop' ? 'shopping' : (t._virtual && t._recId) ? 'recurring' : (t.category || '');
-  const s = ov ? OV : gc(catKey);
+  const ov      = isOv(t.due_date) && !t.done;
+  const catKey  = t._type === 'shop' ? 'shopping' : (t._virtual && t._recId) ? 'recurring' : (t.category || '');
+  const s       = ov ? OV : gc(catKey);
+  const canDrag = !t._virtual && !t._type;
 
   let onchange = '';
-  if (t._type === 'shop')              onchange = `togShop('${t._shopId}',this.checked)`;
-  else if (t._virtual && t._recId)     onchange = `togRecVirt('${t._recId}',this.checked,'${t._wkKey}')`;
-  else if (!t._virtual)                onchange = `toggleTask('${t.id}',this.checked)`;
+  if (t._type === 'shop')          onchange = `togShop('${t._shopId}',this.checked)`;
+  else if (t._virtual && t._recId) onchange = `togRecVirt('${t._recId}',this.checked,'${t._wkKey}')`;
+  else if (!t._virtual)            onchange = `toggleTask('${t.id}',this.checked)`;
 
   const dot = `<span style="width:8px;height:8px;border-radius:50%;background:${s.bg};border:1.5px solid ${s.d};flex-shrink:0;display:inline-block"></span>`;
   const chk = onchange
     ? `<label style="display:flex;align-items:center;justify-content:center;width:22px;height:32px;flex-shrink:0;cursor:pointer"><input type="checkbox"${t.done ? ' checked' : ''} onchange="${onchange}" style="width:16px;height:16px;accent-color:var(--accent)"></label>`
     : `<span style="width:22px;height:32px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px">📅</span>`;
 
-  return `<div class="m-wk-row${ov ? ' m-ov' : ''}">
+  const dragAttrs = canDrag ? ` data-tid="${t.id}" data-tname="${escHtml(t.name || '')}"` : '';
+
+  return `<div class="m-wk-row${ov ? ' m-ov' : ''}"${dragAttrs}>
     ${chk}
     <span style="flex:1;font-size:13px;line-height:1.3;${t.done ? 'text-decoration:line-through;opacity:.4' : ''}${ov ? ';color:#dc2626' : ''}">${escHtml(t.name || '')}</span>
     ${dot}
@@ -933,7 +936,7 @@ function mRenderWeek() {
     const tasks   = mGetDayTasks(ds, _mWeekOffset);
     const doneC   = tasks.filter(t => t.done).length;
 
-    return `<div class="m-wk-day${isToday ? ' is-today' : ''}${isPast ? ' is-past' : ''}">
+    return `<div class="m-wk-day${isToday ? ' is-today' : ''}${isPast ? ' is-past' : ''}" data-ds="${ds}">
       <div class="m-wk-hd">
         <div class="m-wk-hd-left">
           <span class="m-wk-dname">${_WK_DAYS[i]}</span>
@@ -996,6 +999,102 @@ async function mSaveWkTask() {
   }
 }
 
+// ── Week drag: hold + drag row to a different day ─────────────────────────────
+let _mWkDrag = null;
+
+function _mWkDragMove(e) {
+  if (!_mWkDrag) return;
+  e.preventDefault(); // block scroll while dragging
+  const touch = e.touches[0];
+  _mWkDrag.ghost.style.left = touch.clientX + 'px';
+  _mWkDrag.ghost.style.top  = (touch.clientY - 44) + 'px';
+
+  // ghost has pointer-events:none so elementFromPoint hits through it
+  const el       = document.elementFromPoint(touch.clientX, touch.clientY);
+  const dayEl    = el?.closest('.m-wk-day[data-ds]');
+  const targetDs = dayEl?.dataset.ds || null;
+
+  document.querySelectorAll('.m-wk-day[data-ds]').forEach(d => {
+    d.classList.toggle('m-wk-drop-target',
+      !!targetDs && d.dataset.ds === targetDs && targetDs !== _mWkDrag.origDs);
+  });
+  _mWkDrag.currentTargetDs = targetDs;
+}
+
+function mInitWkDrag() {
+  const list = document.getElementById('mWeekList');
+  if (!list || list._wkDragInited) return;
+  list._wkDragInited = true;
+
+  let pressTimer  = null;
+  let touchStartX = 0, touchStartY = 0;
+
+  list.addEventListener('touchstart', e => {
+    const rowEl = e.target.closest('.m-wk-row[data-tid]');
+    if (!rowEl) return;
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+
+    pressTimer = setTimeout(() => {
+      pressTimer = null;
+      const tid    = rowEl.dataset.tid;
+      const tname  = rowEl.dataset.tname;
+      const dayEl  = rowEl.closest('.m-wk-day[data-ds]');
+      const origDs = dayEl?.dataset.ds;
+      if (!origDs) return;
+
+      const ghost = document.createElement('div');
+      ghost.textContent = tname;
+      ghost.style.cssText = [
+        'position:fixed', 'pointer-events:none', 'z-index:500',
+        `background:var(--accent)`, 'color:#fff',
+        'padding:8px 16px', 'border-radius:20px',
+        'font-size:13px', 'font-weight:600',
+        'box-shadow:0 8px 28px rgba(0,0,0,.28)',
+        'max-width:240px', 'white-space:nowrap',
+        'overflow:hidden', 'text-overflow:ellipsis',
+        `left:${touchStartX}px`, `top:${touchStartY - 44}px`,
+        'transform:translateX(-50%)',
+      ].join(';');
+      document.body.appendChild(ghost);
+      rowEl.style.opacity = '0.3';
+
+      _mWkDrag = {tid, origDs, ghost, rowEl, currentTargetDs: origDs};
+      document.addEventListener('touchmove', _mWkDragMove, {passive: false});
+    }, 480);
+  }, {passive: true});
+
+  list.addEventListener('touchmove', e => {
+    if (!pressTimer) return;
+    if (Math.abs(e.touches[0].clientX - touchStartX) > 8 ||
+        Math.abs(e.touches[0].clientY - touchStartY) > 8) {
+      clearTimeout(pressTimer); pressTimer = null;
+    }
+  }, {passive: true});
+
+  list.addEventListener('touchend', async () => {
+    if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+    if (!_mWkDrag) return;
+    document.removeEventListener('touchmove', _mWkDragMove);
+
+    const {tid, origDs, ghost, rowEl, currentTargetDs} = _mWkDrag;
+    _mWkDrag = null;
+    ghost.remove();
+    rowEl.style.opacity = '';
+    document.querySelectorAll('.m-wk-day').forEach(d => d.classList.remove('m-wk-drop-target'));
+
+    if (currentTargetDs && currentTargetDs !== origDs) {
+      const t = st.tasks.find(x => String(x.id) === String(tid));
+      if (t) {
+        t.due_date = currentTargetDs;
+        save();
+        mRenderWeek();
+        await sbReq('PATCH', 'tasks', {due_date: currentTargetDs}, `?id=eq.${tid}`);
+      }
+    }
+  }, {passive: true});
+}
+
 // ── Week swipe navigation ─────────────────────────────────────────────────────
 function mInitWeekSwipe() {
   const page = document.getElementById('mWeekPage');
@@ -1010,6 +1109,7 @@ function mInitWeekSwipe() {
   }, {passive: true});
 
   page.addEventListener('touchend', e => {
+    if (_mWkDrag) return; // don't navigate while dragging a task
     const dx = e.changedTouches[0].clientX - startX;
     const dy = e.changedTouches[0].clientY - startY;
     if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
@@ -1053,6 +1153,7 @@ async function mInit() {
   mInitTBSwipe();
   mInitBlockDrag();
   mInitWeekSwipe();
+  mInitWkDrag();
   const authed = await checkAuth();
   if (!authed) return;
   hideLoginOverlay();
