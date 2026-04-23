@@ -187,6 +187,10 @@ async function savePupModal(){
       },'Edited pup skill');
     }
     await sbReqSilent('PATCH','pup_skills',data,`?id=eq.${_pupEditId}`);
+    // Sync shared fields to the other pup's record
+    const _sharedFields={skill:data.skill,word:data.word,signal:data.signal,level:data.level,category:data.category,skill_order:data.skill_order};
+    const _curPup=st.pup_skills[idx].pup;
+    st.pup_skills.filter(s=>s.skill===oldSkill&&s.pup!==_curPup).forEach(s=>{Object.assign(s,_sharedFields);sbReqSilent('PATCH','pup_skills',_sharedFields,`?id=eq.${s.id}`);});
     renderPupsPage();renderPupSkillsHighlight();renderToday();renderWkCal();if(document.getElementById('tbGrid'))renderDayTB();
   }
 }
@@ -537,9 +541,8 @@ function renderPupTable(){
       const isNotStarted=!s.stage||s.stage==='Not Started';
       let stageWidget;
       if(isNotStarted){
-        // blank clickable area — no circle, no border shown until hover
         const naBtnNS=`<button onclick="event.stopPropagation();setPupSkip('${sid}',true)" class="pup-na-btn" title="Not relevant for this pup">n/a</button>`;
-        return`<td onclick="event.stopPropagation();pupStageClick('${sid}')" style="padding:3px 5px;cursor:pointer;position:relative" title="Click to start"><div style="${pillEmpty};width:100%"></div>${naBtnNS}</td>`;
+        return`<td onclick="event.stopPropagation();pupStageClick('${sid}')" style="padding:3px 5px;cursor:pointer;position:relative" title="Click to start"><div style="${pillBase};opacity:.18;width:100%"></div>${naBtnNS}</td>`;
       } else if(s.stage==='In Progress'){
         stageWidget=`<div style="width:34px;height:100%;display:flex;align-items:center;justify-content:center;flex-shrink:0"><input type="checkbox" onclick="event.stopPropagation();pupStageCheck('${sid}',this.checked)" style="width:13px;height:13px;cursor:pointer;accent-color:${col}" title="Mark mastered"></div>`;
       } else {
