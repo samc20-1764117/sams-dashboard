@@ -513,7 +513,7 @@ function renderPupTable(){
     const anySkillRec=pups.map(p=>g.byPup[p]).find(Boolean);
     const tipSignal=anySkillRec&&anySkillRec.signal&&anySkillRec.signal!=='None'?esc(anySkillRec.signal):'';
     const tipComments=pups.map(p=>{const s=g.byPup[p];return s&&s.comments&&s.comments!=='None'?{label:p,value:esc(s.comments),color:pupColor[p]+'bb'}:null;}).filter(Boolean);
-    const tipRows=JSON.stringify([...(word?[{label:'Word',value:word}]:[]),...(tipSignal?[{label:'Signal',value:tipSignal}]:[]),...tipComments]);
+    const tipRows=JSON.stringify([...(word?[{label:'🗣️ Word',value:word}]:[]),...(tipSignal?[{label:'👌 Signal',value:tipSignal}]:[]),...tipComments]);
     const hasTip=word||tipSignal||tipComments.length;
     const pupCells=pups.map(p=>{
       const s=g.byPup[p];
