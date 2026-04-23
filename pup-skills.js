@@ -172,6 +172,7 @@ async function savePupModal(){
   // Save skip immediately — before any guards that might return early
   if(_pupModalMochiId)_saveSkip(_pupModalMochiId,_skipMochi);
   if(_pupModalSunnyId)_saveSkip(_pupModalSunnyId,_skipSunny);
+  alert('DEBUG skip save:\nMochiId='+_pupModalMochiId+' skip='+_skipMochi+'\nSunnyId='+_pupModalSunnyId+' skip='+_skipSunny+'\npup_skip store='+localStorage.getItem('pup_skip'));
   renderPupTable();
   pupSnapshot();
   closeMod('pupModal');

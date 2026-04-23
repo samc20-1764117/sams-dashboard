@@ -138,7 +138,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 /* Timeline scroll */
 #mTLScroll{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
 #mTLInner{display:flex;position:relative;padding:0 16px 40px 0}
-#mTLLabels{width:44px;flex-shrink:0;position:relative}
+#mTLLabels{width:44px;flex-shrink:0;position:relative;border-right:1px solid rgba(210,205,228,.3)}
 #mTLCol{flex:1;position:relative;cursor:pointer}
 
 /* Hour lines and labels */
@@ -147,8 +147,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .m-tl-hr-line{position:absolute;left:44px;right:16px;border-top:1px solid var(--border)}
 
 /* Blocks */
-.m-tl-block{position:absolute;left:4px;right:4px;border-radius:6px;padding:4px 8px;overflow:hidden;cursor:pointer;display:flex;align-items:flex-start;gap:2px}
+.m-tl-block{position:absolute;left:4px;right:4px;border-radius:8px;padding:4px 8px 4px 7px;overflow:hidden;cursor:pointer;display:flex;align-items:flex-start;gap:3px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:inset 0 1px 0 rgba(255,255,255,.72),0 2px 8px rgba(0,0,0,.07)}
 .m-tl-block-name{font-size:12px;font-weight:600;line-height:1.3;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.m-tl-block-time{font-size:10px;font-weight:600;flex-shrink:0;white-space:nowrap;line-height:1.3;align-self:flex-start;opacity:.8;padding-right:2px}
 
 /* Now line */
 .m-tl-now{position:absolute;left:0;right:0;height:2px;background:var(--accent);border-radius:1px;pointer-events:none}

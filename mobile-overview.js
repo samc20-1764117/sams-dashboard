@@ -690,11 +690,11 @@ function mRenderTimeline() {
     const hPx  = Math.max(b.dur * M_PX, 28);
     const s    = gc(b.cat || '');
     const timeRange = `${_mTStr(b.sm)}–${_mTStr(b.sm + b.dur)}`;
-    return `<div class="m-tl-block" data-bid="${b.id}" style="top:${y}px;height:${hPx}px;background:${s.bg};border-left:3px solid ${s.d}">
+    return `<div class="m-tl-block" data-bid="${b.id}" style="top:${y}px;height:${hPx}px;background:${s.bg};border:1px solid rgba(255,255,255,.55);border-left:3px solid ${s.d}">
       <div style="overflow:hidden;flex:1;min-width:0;pointer-events:none">
         <div class="m-tl-block-name" style="color:${s.t}">${escHtml(b.title || '')}</div>
       </div>
-      <span style="font-size:10px;color:${s.d};font-weight:600;flex-shrink:0;white-space:nowrap;pointer-events:none;padding-left:4px;line-height:1.3;align-self:flex-start">${timeRange}</span>
+      <span class="m-tl-block-time" style="color:${s.d};pointer-events:none">${timeRange}</span>
     </div>`;
   }).join('');
 
