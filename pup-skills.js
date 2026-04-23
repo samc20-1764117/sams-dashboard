@@ -1,3 +1,8 @@
+// ── Per-pup skip flag (local-only, keyed by record ID) ──────────────────────
+function _skipMap(){try{return JSON.parse(localStorage.getItem('pup_skip')||'{}')}catch{return{}}}
+function isPupSkip(id){return _skipMap()[String(id)]===true}
+function _saveSkip(id,val){const m=_skipMap();if(val)m[String(id)]=true;else delete m[String(id)];localStorage.setItem('pup_skip',JSON.stringify(m))}
+// ─────────────────────────────────────────────────────────────────────────────
 let _pupEditId=null;
 function _pupWkDone(skillId){const{mon,sun}=getWkBounds(0);const monDs=d2s(mon),sunDs=d2s(sun);return(st.pupSessions||[]).filter(s=>String(s.skill_id)===String(skillId)&&s.day_date>=monDs&&s.day_date<=sunDs&&s.done).length;}
 function _pupWkSessTotal(skillId){const{mon,sun}=getWkBounds(0);const monDs=d2s(mon),sunDs=d2s(sun);return(st.pupSessions||[]).filter(s=>String(s.skill_id)===String(skillId)&&s.day_date>=monDs&&s.day_date<=sunDs).length;}
@@ -92,7 +97,7 @@ function setPupModalDog(val){
         document.getElementById('pmWord').value=other.word||'';
         document.getElementById('pmSignal').value=other.signal||'';
         document.getElementById('pmComments').value=other.comments||'';
-        document.getElementById('pmSkip').checked=(other.skip===true||other.skip==='true');
+        document.getElementById('pmSkip').checked=isPupSkip(other.id);
       }
     }
   }
@@ -136,7 +141,7 @@ function openPupEditModal(id){
   document.getElementById('pmWord').value=s.word||'';
   document.getElementById('pmSignal').value=s.signal||'';
   document.getElementById('pmComments').value=s.comments||'';
-  document.getElementById('pmSkip').checked=(s.skip===true||s.skip==='true');
+  document.getElementById('pmSkip').checked=isPupSkip(s.id);
   document.getElementById('pupModal').classList.add('open');
   setTimeout(()=>{const _el=document.getElementById('pmSkill');if(_el){_el.focus();const _l=_el.value.length;_el.setSelectionRange(_l,_l);}},80);
 }
@@ -174,7 +179,8 @@ async function savePupModal(){
     const oldSkill=st.pup_skills[idx].skill;
     const prevData={...st.pup_skills[idx]};
     // Don't overwrite pup field on existing records — pup is determined by _pupEditId
-    const editData={skill:data.skill,category:data.category,level:data.level,stage:data.stage,skill_order:data.skill_order,focus:data.focus,next_step:data.next_step,word:data.word,signal:data.signal,comments:data.comments,skip:data.skip};
+    _saveSkip(_pupEditId,data.skip);
+    const editData={skill:data.skill,category:data.category,level:data.level,stage:data.stage,skill_order:data.skill_order,focus:data.focus,next_step:data.next_step,word:data.word,signal:data.signal,comments:data.comments};
     Object.assign(st.pup_skills[idx],editData);
     if(data.skill&&data.skill!==oldSkill){st.blocks.filter(b=>b.cat==='pup_session'&&b.title===oldSkill).forEach(b=>{b.title=data.skill;});}
     save();
@@ -436,11 +442,9 @@ async function pupStageClick(sid){
   const s=st.pup_skills[idx];
   if(s.stage==='Not Started'||!s.stage){pupSnapshot();s.stage='In Progress';save();renderPupsPageKeepScroll();sbReqSilent('PATCH','pup_skills',{stage:'In Progress'},`?id=eq.${sid}`);}
 }
-async function setPupSkip(sid,val){
-  const idx=st.pup_skills.findIndex(x=>String(x.id)===String(sid));if(idx<0)return;
-  pupSnapshot();
-  st.pup_skills[idx].skip=val;
-  save();renderPupsPageKeepScroll();
+function setPupSkip(sid,val){
+  _saveSkip(sid,val);
+  renderPupsPageKeepScroll();
 }
 async function pupStageCheck(sid,checked){
   const idx=st.pup_skills.findIndex(x=>String(x.id)===String(sid));if(idx<0)return;
@@ -482,7 +486,7 @@ function renderPupTable(){
   });
   let groups=Object.values(groupMap);
   // "all done" = every pup that has a record is either Mastered or marked skip
-  const allMastered=g=>pups.length>0&&pups.every(p=>g.byPup[p]&&(g.byPup[p].stage==='Mastered'||(g.byPup[p].skip===true||g.byPup[p].skip==='true')));
+  const allMastered=g=>pups.length>0&&pups.every(p=>g.byPup[p]&&(g.byPup[p].stage==='Mastered'||isPupSkip(g.byPup[p].id)));
   // Filter
   if(_pupFilter){
     const sharedCols=new Set(['skill','word','level','category']);
@@ -536,7 +540,7 @@ function renderPupTable(){
       const col=pupColor[p]||'var(--border)';
       const pillBase=`display:grid;grid-template-columns:30px 1fr 34px;align-items:center;border-radius:7px;overflow:hidden;height:24px;box-sizing:border-box;background:rgba(255,255,255,.6);border:1.5px solid ${col}28;box-shadow:0 1px 3px rgba(0,0,0,.06)`;
       if(!s)return`<td style="padding:2px 5px"><div style="${pillBase};grid-template-columns:1fr;justify-items:center;opacity:.3"><span style="font-size:10px;color:var(--muted)">—</span></div></td>`;
-      if(s.skip===true||s.skip==='true')return`<td style="padding:2px 5px"><div onclick="event.stopPropagation();setPupSkip('${String(s.id)}',false)" title="Remove not relevant" style="${pillBase};grid-template-columns:1fr;justify-items:center;opacity:.25;cursor:pointer"><span style="font-size:12px;color:var(--muted);letter-spacing:3px">— —</span></div></td>`;
+      if(isPupSkip(s.id))return`<td style="padding:2px 5px"><div onclick="event.stopPropagation();setPupSkip('${String(s.id)}',false)" title="Remove not relevant" style="${pillBase};grid-template-columns:1fr;justify-items:center;opacity:.25;cursor:pointer"><span style="font-size:12px;color:var(--muted);letter-spacing:3px">— —</span></div></td>`;
       const sid=String(s.id);
       const nextStep=s.next_step&&s.next_step!=='None'?esc(s.next_step):'';
       const comment=s.comments&&s.comments!=='None'?esc(s.comments):'';
@@ -672,7 +676,7 @@ function renderPupsPage(){
     const total=ps.length||1;
     const pMastered=mastered.length/total*100,pInProg=inProgress.length/total*100,pNot=notStarted.length/total*100;
     const progressBar=`<div style="height:8px;border-radius:0 0 var(--r) var(--r);overflow:hidden;background:rgba(210,205,228,.2);display:flex;flex-shrink:0">${pMastered>0?`<div onmouseenter="showPupStageTip(event,'Mastered: ${mastered.length}','#22c55e')" onmouseleave="hidePupTip()" style="width:${pMastered}%;background:#22c55e;cursor:default;transition:width .3s"></div>`:''} ${pInProg>0?`<div onmouseenter="showPupStageTip(event,'In Progress: ${inProgress.length}','#eab308')" onmouseleave="hidePupTip()" style="width:${pInProg}%;background:#eab308;cursor:default;transition:width .3s"></div>`:''} ${pNot>0?`<div onmouseenter="showPupStageTip(event,'Not Started: ${notStarted.length}','#94a3b8')" onmouseleave="hidePupTip()" style="width:${pNot}%;background:rgba(210,205,228,.4);cursor:default;transition:width .3s"></div>`:''}</div>`;
-    const isSkip=s=>s.skip===true||s.skip==='true';
+    const isSkip=s=>isPupSkip(s.id);
     const trainWeek=ps.filter(s=>!isSkip(s)&&(s.focus===true||s.focus==='true'));
     const upNext=inProgress.filter(s=>!isSkip(s)&&!(s.focus===true||s.focus==='true'));
     const img=pup==='Mochi'?'./mochi_headshot.png':'./sunny_headshot.png';
