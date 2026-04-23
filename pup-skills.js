@@ -191,7 +191,6 @@ async function savePupModal(){
     // Patch per-pup fields (without skip — separate call so skip column absence doesn't break stage/next_step saves)
     const perPupPatch={skill:editData.skill,category:editData.category,level:editData.level,stage:editData.stage,skill_order:editData.skill_order,focus:editData.focus,next_step:editData.next_step,word:editData.word,signal:editData.signal,comments:editData.comments};
     await sbReqSilent('PATCH','pup_skills',perPupPatch,`?id=eq.${_pupEditId}`);
-    sbReqSilent('PATCH','pup_skills',{skip:editData.skip},`?id=eq.${_pupEditId}`);
     // Sync shared fields to the other pup's record (never includes skip)
     const _sharedFields={skill:editData.skill,word:editData.word,signal:editData.signal,level:editData.level,category:editData.category,skill_order:editData.skill_order};
     const _curPup=st.pup_skills[idx].pup;
@@ -441,7 +440,6 @@ async function setPupSkip(sid,val){
   pupSnapshot();
   st.pup_skills[idx].skip=val;
   save();renderPupsPageKeepScroll();
-  sbReqSilent('PATCH','pup_skills',{skip:val},`?id=eq.${sid}`);
 }
 async function pupStageCheck(sid,checked){
   const idx=st.pup_skills.findIndex(x=>String(x.id)===String(sid));if(idx<0)return;

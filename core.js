@@ -315,7 +315,7 @@ async function syncAll(silent=false){
       if(!silent){
         _pupUndoDirty=false;
         const prevMap=new Map(st.pup_skills.map(s=>[String(s.id),s]));
-        const _mergePup=(dbS,prev)=>{const m={...dbS};if(prev?._trainedWk)m._trainedWk=prev._trainedWk;if(prev&&'skip' in prev&&!('skip' in dbS))m.skip=prev.skip;return m;};
+        const _mergePup=(dbS,prev)=>{const m={...dbS};if(prev?._trainedWk)m._trainedWk=prev._trainedWk;if(prev&&'skip' in prev)m.skip=prev.skip;return m;};
         if(typeof _pupPendingIds!=='undefined'&&_pupPendingIds.size>0){
           st.pup_skills=pupSkills.map(dbS=>{
             const sid=String(dbS.id);
@@ -328,7 +328,7 @@ async function syncAll(silent=false){
         }
       } else if(!_pupUndoDirty){
         const prevMap=new Map(st.pup_skills.map(s=>[String(s.id),s]));
-        const _mergePup2=(dbS,prev)=>{const m={...dbS};if(prev?._trainedWk)m._trainedWk=prev._trainedWk;if(prev&&'skip' in prev&&!('skip' in dbS))m.skip=prev.skip;return m;};
+        const _mergePup2=(dbS,prev)=>{const m={...dbS};if(prev?._trainedWk)m._trainedWk=prev._trainedWk;if(prev&&'skip' in prev)m.skip=prev.skip;return m;};
         st.pup_skills=pupSkills.map(dbS=>_mergePup2(dbS,prevMap.get(String(dbS.id))));
       }
     }
