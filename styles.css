@@ -179,9 +179,6 @@ body.dark .pup-tbl th{background:rgba(40,22,14,.97)}
 .pup-tbl tr:hover .pup-dots,.pup-tbl tr.pup-sel .pup-dots{opacity:1}
 .pup-tbl .pup-del{opacity:0;padding:0 3px;cursor:pointer;font-size:13px;color:var(--muted);background:none;border:none;line-height:1}
 .pup-tbl tr:hover .pup-del,.pup-tbl tr.pup-sel .pup-del{opacity:1}
-.pup-na-btn{position:absolute;right:7px;top:50%;transform:translateY(-50%);opacity:0;font-size:9px;font-weight:700;color:var(--muted);background:rgba(255,255,255,.9);border:1px solid rgba(210,205,228,.5);border-radius:4px;padding:1px 5px;cursor:pointer;line-height:1.4;transition:opacity .1s;z-index:2;white-space:nowrap}
-.pup-tbl tr:hover .pup-na-btn{opacity:.6}
-.pup-na-btn:hover{opacity:1!important;background:rgba(239,68,68,.08);border-color:rgba(239,68,68,.3);color:#ef4444}
 .pup-tbl .pup-del:hover{color:#ef4444}
 .pup-tbl input,.pup-tbl select{font-size:11px;font-family:inherit;border:none;background:transparent;color:var(--text);width:100%;outline:none;cursor:pointer;padding:2px 3px;border-radius:3px;transition:background .12s}
 .pup-tbl input:focus,.pup-tbl select:focus{background:rgba(255,255,255,.85);cursor:text}
