@@ -59,6 +59,16 @@
       </div>
     </div>
 
+    <!-- Week tab -->
+    <div id="mWeekPage" style="display:none">
+      <div id="mWeekNav">
+        <button class="m-wk-nav-btn" onclick="mWeekPrev()">‹</button>
+        <span id="mWeekRangeLbl">This Week</span>
+        <button class="m-wk-nav-btn" onclick="mWeekNext()">›</button>
+      </div>
+      <div id="mWeekList"></div>
+    </div>
+
   </div>
 
   <!-- Add task bar (today tab only) -->
@@ -81,6 +91,7 @@
   <nav id="mNav">
     <button class="m-nav-btn active" onclick="mShowTab('today')">Today</button>
     <button class="m-nav-btn" onclick="mShowTab('tb')">Timeblock</button>
+    <button class="m-nav-btn" onclick="mShowTab('week')">Week</button>
   </nav>
 </div>
 
@@ -130,6 +141,22 @@
     <button id="mBlockDel" onclick="mDeleteBlock()">Delete</button>
     <button id="mBlockSave" onclick="mSaveBlock()">Save</button>
   </div>
+</div>
+
+<!-- Week day add sheet -->
+<div id="mWkAddBackdrop" onclick="mCloseWkAdd()"></div>
+<div id="mWkAddSheet">
+  <h3 id="mWkAddTitle">Add Task</h3>
+  <input id="mWkAddName" type="text" placeholder="Task name" onkeydown="if(event.key==='Enter')mSaveWkTask()">
+  <div class="m-cpick" id="mWkAddPick" style="margin-bottom:16px">
+    <button type="button" class="m-cpick-btn" onclick="mTogglePick('wkadd')">
+      <span class="m-cpick-dot" id="mWkAddPickDot"></span>
+      <span id="mWkAddPickLbl">Home</span>
+      <span class="m-cpick-arr">▾</span>
+    </button>
+    <div class="m-cpick-opts m-cpick-opts--up" id="mWkAddPickOpts"></div>
+  </div>
+  <button id="mWkAddSave" onclick="mSaveWkTask()">Add Task</button>
 </div>
 
 <!-- Hidden undo scaffolding (required by core.js pushUndo) -->

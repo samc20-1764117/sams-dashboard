@@ -145,6 +145,44 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .m-tl-now{position:absolute;left:0;right:0;height:2px;background:var(--accent);border-radius:1px;pointer-events:none}
 .m-tl-now::before{content:'';position:absolute;left:-4px;top:-4px;width:10px;height:10px;border-radius:50%;background:var(--accent)}
 
+/* ── Week view ────────────────────────────────────────────────────────────── */
+#mWeekPage{display:flex;flex-direction:column;flex:1}
+#mWeekNav{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:var(--bg);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:5}
+#mWeekRangeLbl{font-size:14px;font-weight:600}
+.m-wk-nav-btn{background:none;border:none;font-size:22px;color:var(--sub);cursor:pointer;padding:4px 8px;line-height:1;font-weight:300}
+.m-wk-nav-btn:active{color:var(--accent)}
+#mWeekList{display:flex;flex-direction:column}
+
+/* Day group */
+.m-wk-day{border-bottom:1px solid var(--border)}
+.m-wk-day.is-today .m-wk-hd{background:rgba(124,106,247,.06)}
+.m-wk-day.is-past{opacity:.7}
+.m-wk-hd{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;background:var(--bg);position:sticky;top:44px;z-index:4;border-bottom:1px solid var(--border)}
+.m-wk-hd-left{display:flex;align-items:center;gap:8px}
+.m-wk-dname{font-size:13px;font-weight:700;color:var(--text);min-width:28px}
+.m-wk-ddate{font-size:12px;color:var(--sub)}
+.m-wk-today-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);flex-shrink:0}
+.m-wk-hd-right{display:flex;align-items:center;gap:8px}
+.m-wk-cnt{font-size:11px;font-weight:600;color:var(--sub);background:var(--glass);border:1px solid var(--border);padding:2px 7px;border-radius:10px}
+.m-wk-add{background:none;border:none;font-size:20px;color:var(--sub);cursor:pointer;padding:0 2px;line-height:1;font-weight:300;opacity:.6}
+.m-wk-add:active{opacity:1;color:var(--accent)}
+.m-wk-empty{padding:8px 14px;font-size:12px;color:var(--sub)}
+
+/* Week task row */
+.m-wk-row{display:flex;align-items:center;gap:7px;padding:7px 14px;border-top:1px solid var(--border);background:var(--bg)}
+.m-wk-row.m-ov{background:rgba(239,68,68,.04)}
+
+/* Week add sheet */
+#mWkAddBackdrop{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:100;display:none;opacity:0;transition:opacity .22s}
+#mWkAddBackdrop.open{display:block;opacity:1}
+#mWkAddSheet{position:fixed;bottom:0;left:0;right:0;background:var(--bg);border-radius:18px 18px 0 0;padding:20px 16px;padding-bottom:calc(24px + env(safe-area-inset-bottom));z-index:101;transform:translateY(100%);transition:transform .25s cubic-bezier(.32,1,.23,1)}
+#mWkAddSheet.open{transform:translateY(0)}
+#mWkAddSheet h3{font-size:15px;font-weight:700;margin-bottom:14px;text-align:center}
+#mWkAddName{width:100%;padding:11px 13px;border-radius:var(--rs);border:1px solid var(--border);background:var(--glass);font-size:16px;font-family:inherit;color:var(--text);outline:none;margin-bottom:10px}
+#mWkAddName:focus{border-color:var(--accent)}
+#mWkAddSheet .m-cpick-opts{z-index:102}
+#mWkAddSave{width:100%;padding:12px;border-radius:var(--rs);border:none;background:var(--accent);color:#fff;font-size:15px;font-weight:600;font-family:inherit;cursor:pointer}
+
 /* ── Login ────────────────────────────────────────────────────────────────── */
 #mLogin{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100dvh;padding:24px;gap:16px}
 #mLogin .card{background:var(--glass);border:1px solid var(--border);border-radius:var(--r);padding:28px 24px;width:100%;max-width:360px;display:flex;flex-direction:column;gap:12px}

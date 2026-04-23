@@ -13,7 +13,7 @@ function hideLoginOverlay() {
 }
 
 // ── Desktop render stubs ──────────────────────────────────────────────────────
-function renderAll() { mRenderToday(); if (_mCurTab === 'tb') mRenderTB(); }
+function renderAll() { mRenderToday(); if (_mCurTab === 'tb') mRenderTB(); if (_mCurTab === 'week') mRenderWeek(); }
 function renderToday() { mRenderToday(); }
 function renderWkCal() {}
 function renderWkSummary() {}
@@ -94,9 +94,10 @@ async function togPupSessionDone(sessId, done) {
 
 // ── Category picker ───────────────────────────────────────────────────────────
 const M_CATS = ['Home', 'My work', 'Work', 'Social', 'Long term'];
-let _mAddCat   = 'Home';
-let _mEditCat  = 'Home';
-let _mBlockCat = 'Home';
+let _mAddCat    = 'Home';
+let _mEditCat   = 'Home';
+let _mBlockCat  = 'Home';
+let _mWkAddCat  = 'Home';
 
 const _EDIT_SVG = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="m18.5 2.5 2 2L10 15l-3 1 1-3z"/></svg>`;
 
@@ -118,7 +119,7 @@ function _mBuildOpts(elId, which) {
 }
 
 function mTogglePick(which) {
-  const ids = {add: 'mAddPickOpts', edit: 'mEditPickOpts', block: 'mBlockPickOpts'};
+  const ids = {add: 'mAddPickOpts', edit: 'mEditPickOpts', block: 'mBlockPickOpts', wkadd: 'mWkAddPickOpts'};
   const myId = ids[which];
   Object.entries(ids).forEach(([k, id]) => { if (k !== which) document.getElementById(id)?.classList.remove('open'); });
   document.getElementById(myId)?.classList.toggle('open');
@@ -129,11 +130,13 @@ function mSelectCat(which, cat) {
     add:   {dot: 'mAddPickDot',   lbl: 'mAddPickLbl',   opts: 'mAddPickOpts'},
     edit:  {dot: 'mEditPickDot',  lbl: 'mEditPickLbl',  opts: 'mEditPickOpts'},
     block: {dot: 'mBlockPickDot', lbl: 'mBlockPickLbl', opts: 'mBlockPickOpts'},
+    wkadd: {dot: 'mWkAddPickDot', lbl: 'mWkAddPickLbl', opts: 'mWkAddPickOpts'},
   };
   const {dot: dotId, lbl: lblId, opts: optId} = map[which] || {};
-  if (which === 'add') _mAddCat = cat;
-  else if (which === 'edit') _mEditCat = cat;
-  else if (which === 'block') _mBlockCat = cat;
+  if (which === 'add')   _mAddCat   = cat;
+  else if (which === 'edit')   _mEditCat   = cat;
+  else if (which === 'block')  _mBlockCat  = cat;
+  else if (which === 'wkadd')  _mWkAddCat  = cat;
   const dotEl = document.getElementById(dotId);
   const lblEl = document.getElementById(lblId);
   if (dotEl) dotEl.style.cssText = _mDotStyle(cat);
@@ -142,16 +145,18 @@ function mSelectCat(which, cat) {
 }
 
 function mInitPickers() {
-  _mBuildOpts('mAddPickOpts', 'add');
-  _mBuildOpts('mEditPickOpts', 'edit');
+  _mBuildOpts('mAddPickOpts',   'add');
+  _mBuildOpts('mEditPickOpts',  'edit');
   _mBuildOpts('mBlockPickOpts', 'block');
-  mSelectCat('add', 'Home');
+  _mBuildOpts('mWkAddPickOpts', 'wkadd');
+  mSelectCat('add',   'Home');
   mSelectCat('block', 'Home');
+  mSelectCat('wkadd', 'Home');
   document.addEventListener('click', e => {
     if (!e.target.closest('.m-cpick')) {
-      document.getElementById('mAddPickOpts')?.classList.remove('open');
-      document.getElementById('mEditPickOpts')?.classList.remove('open');
-      document.getElementById('mBlockPickOpts')?.classList.remove('open');
+      ['mAddPickOpts','mEditPickOpts','mBlockPickOpts','mWkAddPickOpts'].forEach(id => {
+        document.getElementById(id)?.classList.remove('open');
+      });
     }
   }, true);
 }
@@ -474,22 +479,28 @@ let _mCurTab = 'today';
 
 function mShowTab(tab) {
   _mCurTab = tab;
+  const pages = {today: 'mTodayPage', tb: 'mTBPage', week: 'mWeekPage'};
+  Object.entries(pages).forEach(([k, id]) => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = k === tab ? '' : 'none';
+  });
   const isToday = tab === 'today';
-  document.getElementById('mTodayPage').style.display = isToday ? '' : 'none';
-  document.getElementById('mTBPage').style.display    = isToday ? 'none' : '';
-  document.getElementById('mAddBar').style.display    = isToday ? '' : 'none';
+  document.getElementById('mAddBar').style.display = isToday ? '' : 'none';
   document.getElementById('mApp').style.paddingBottom = isToday
     ? 'calc(162px + env(safe-area-inset-bottom))'
     : 'calc(52px + env(safe-area-inset-bottom))';
   document.querySelectorAll('.m-nav-btn').forEach((b, i) => {
-    b.classList.toggle('active', (isToday && i === 0) || (!isToday && i === 1));
+    b.classList.toggle('active', (tab === 'today' && i === 0) || (tab === 'tb' && i === 1) || (tab === 'week' && i === 2));
   });
+  const titles = {today: 'Today', tb: 'Timeblock', week: 'Week'};
   const titleEl = document.getElementById('mHeaderTitle');
-  if (titleEl) titleEl.textContent = isToday ? 'Today' : 'Timeblock';
+  if (titleEl) titleEl.textContent = titles[tab] || '';
   const progEl = document.getElementById('mProgress');
   if (progEl) progEl.style.display = isToday ? '' : 'none';
   document.getElementById('mMain').style.padding = isToday ? '12px 16px' : '0';
-  if (!isToday) { _mTBOffset = 0; mRenderTB(); _mScrollNow(); }
+
+  if (tab === 'tb')   { _mTBOffset = 0; mRenderTB(); _mScrollNow(); }
+  else if (tab === 'week') { _mWeekOffset = 0; mRenderWeek(); }
   else { _mSetDate(); }
 }
 
@@ -841,6 +852,172 @@ async function mDeleteBlock() {
   await sbDeleteBlock(id);
 }
 
+// ── Week view ─────────────────────────────────────────────────────────────────
+let _mWeekOffset = 0;
+
+const _WK_DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
+function mWeekPrev() { _mWeekOffset--; mRenderWeek(); }
+function mWeekNext() { _mWeekOffset++; mRenderWeek(); }
+
+function mGetDayTasks(ds, weekOff) {
+  const today = d2s(getDayDate(0));
+  const isToday = ds === today;
+
+  const regular = st.tasks.filter(t => {
+    if (!t.due_date || t.category === 'Weekly Goals') return false;
+    const tds = t.due_date.split('T')[0];
+    if (tds === ds) return true;
+    if (isToday && isOv(t.due_date) && !t.done) return true;
+    return false;
+  });
+
+  const recVirt = getRecurringWeekTasks(weekOff).filter(v => v.due_date === ds);
+
+  const shopItems = st.shopping
+    .filter(s => !s.done && s.due_date && (s.due_date === ds || (isToday && isOv(s.due_date))))
+    .map(s => ({id: 'shop-' + s.id, name: s.name, category: 'Shopping', due_date: s.due_date, done: false, _shopId: s.id, _virtual: true, _type: 'shop'}));
+
+  return [...regular, ...recVirt, ...shopItems].sort((a, b) => {
+    if (a.done && !b.done) return 1;
+    if (!a.done && b.done) return -1;
+    return (a.name || '').localeCompare(b.name || '');
+  });
+}
+
+function mWkTaskRow(t) {
+  const ov = isOv(t.due_date) && !t.done;
+  const catKey = t._type === 'shop' ? 'shopping' : (t._virtual && t._recId) ? 'recurring' : (t.category || '');
+  const s = ov ? OV : gc(catKey);
+
+  let onchange = '';
+  if (t._type === 'shop')              onchange = `togShop('${t._shopId}',this.checked)`;
+  else if (t._virtual && t._recId)     onchange = `togRecVirt('${t._recId}',this.checked,'${t._wkKey}')`;
+  else if (!t._virtual)                onchange = `toggleTask('${t.id}',this.checked)`;
+
+  const dot = `<span style="width:8px;height:8px;border-radius:50%;background:${s.bg};border:1.5px solid ${s.d};flex-shrink:0;display:inline-block"></span>`;
+  const chk = onchange
+    ? `<label style="display:flex;align-items:center;justify-content:center;width:22px;height:32px;flex-shrink:0;cursor:pointer"><input type="checkbox"${t.done ? ' checked' : ''} onchange="${onchange}" style="width:16px;height:16px;accent-color:var(--accent)"></label>`
+    : `<span style="width:22px;height:32px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px">📅</span>`;
+
+  return `<div class="m-wk-row${ov ? ' m-ov' : ''}">
+    ${chk}
+    <span style="flex:1;font-size:13px;line-height:1.3;${t.done ? 'text-decoration:line-through;opacity:.4' : ''}${ov ? ';color:#dc2626' : ''}">${escHtml(t.name || '')}</span>
+    ${dot}
+  </div>`;
+}
+
+function mRenderWeek() {
+  const dates  = getWkDates(_mWeekOffset);
+  const today  = d2s(getDayDate(0));
+  const start  = dates[0].toLocaleDateString('en-US', {month: 'short', day: 'numeric'});
+  const end    = dates[6].toLocaleDateString('en-US', {month: 'short', day: 'numeric'});
+
+  // Range label
+  const rangeLbl = document.getElementById('mWeekRangeLbl');
+  if (rangeLbl) {
+    rangeLbl.textContent = _mWeekOffset === 0 ? 'This Week'
+      : _mWeekOffset === -1 ? 'Last Week'
+      : _mWeekOffset === 1  ? 'Next Week'
+      : `${start} – ${end}`;
+  }
+  // Header date label
+  const dateLbl = document.getElementById('mDateLbl');
+  if (dateLbl) dateLbl.textContent = `${start} – ${end}`;
+
+  const html = dates.map((d, i) => {
+    const ds      = d2s(d);
+    const isToday = ds === today;
+    const isPast  = !isToday && ds < today;
+    const dateStr = d.toLocaleDateString('en-US', {month: 'short', day: 'numeric'});
+    const tasks   = mGetDayTasks(ds, _mWeekOffset);
+    const doneC   = tasks.filter(t => t.done).length;
+
+    return `<div class="m-wk-day${isToday ? ' is-today' : ''}${isPast ? ' is-past' : ''}">
+      <div class="m-wk-hd">
+        <div class="m-wk-hd-left">
+          <span class="m-wk-dname">${_WK_DAYS[i]}</span>
+          <span class="m-wk-ddate">${dateStr}</span>
+          ${isToday ? '<span class="m-wk-today-dot"></span>' : ''}
+        </div>
+        <div class="m-wk-hd-right">
+          ${tasks.length ? `<span class="m-wk-cnt">${doneC}/${tasks.length}</span>` : ''}
+          <button class="m-wk-add" onclick="mWkAddTask('${ds}')">+</button>
+        </div>
+      </div>
+      ${tasks.length
+        ? tasks.map(mWkTaskRow).join('')
+        : '<div class="m-wk-empty">—</div>'
+      }
+    </div>`;
+  }).join('');
+
+  document.getElementById('mWeekList').innerHTML = html;
+}
+
+// ── Week: add task for specific day ──────────────────────────────────────────
+let _mWkAddDs = null;
+
+function mWkAddTask(ds) {
+  _mWkAddDs = ds;
+  const d   = new Date(ds + 'T12:00:00');
+  const lbl = d.toLocaleDateString('en-US', {weekday: 'short', month: 'short', day: 'numeric'});
+  document.getElementById('mWkAddTitle').textContent = `Add — ${lbl}`;
+  document.getElementById('mWkAddName').value = '';
+  mSelectCat('wkadd', 'Home');
+  document.getElementById('mWkAddBackdrop').classList.add('open');
+  document.getElementById('mWkAddSheet').classList.add('open');
+  setTimeout(() => document.getElementById('mWkAddName').focus(), 300);
+}
+
+function mCloseWkAdd() {
+  _mWkAddDs = null;
+  document.getElementById('mWkAddBackdrop').classList.remove('open');
+  document.getElementById('mWkAddSheet').classList.remove('open');
+  document.getElementById('mWkAddPickOpts')?.classList.remove('open');
+}
+
+async function mSaveWkTask() {
+  if (!_mWkAddDs) return;
+  const n = document.getElementById('mWkAddName').value.trim();
+  if (!n) return;
+  const cat = _mWkAddCat;
+  const ds  = _mWkAddDs;
+  const t   = {id: 'l-' + Date.now(), name: n, category: cat, due_date: ds, done: false, important: false};
+  st.tasks.push(t);
+  save();
+  mCloseWkAdd();
+  mRenderWeek();
+  const sv = await sbReq('POST', 'tasks', {name: n, category: cat, due_date: ds, done: false});
+  if (sv && sv[0]) {
+    const i = st.tasks.findIndex(x => x.id === t.id);
+    if (i > -1) st.tasks[i] = sv[0];
+    save();
+  }
+}
+
+// ── Week swipe navigation ─────────────────────────────────────────────────────
+function mInitWeekSwipe() {
+  const page = document.getElementById('mWeekPage');
+  if (!page || page._weekSwipeInited) return;
+  page._weekSwipeInited = true;
+
+  let startX = 0, startY = 0;
+
+  page.addEventListener('touchstart', e => {
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+  }, {passive: true});
+
+  page.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - startX;
+    const dy = e.changedTouches[0].clientY - startY;
+    if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    if (dx < 0) mWeekNext();
+    else         mWeekPrev();
+  }, {passive: true});
+}
+
 // ── Login ─────────────────────────────────────────────────────────────────────
 async function mDoLogin() {
   const email = document.getElementById('mEmail').value.trim();
@@ -875,6 +1052,7 @@ async function mInit() {
   mInitPTR();
   mInitTBSwipe();
   mInitBlockDrag();
+  mInitWeekSwipe();
   const authed = await checkAuth();
   if (!authed) return;
   hideLoginOverlay();
