@@ -5,7 +5,7 @@ function _pupAllSess(skillId){return(st.pupSessions||[]).filter(s=>String(s.skil
 function _pupAllDone(skillId){return _pupAllSess(skillId).filter(s=>s.done).length;}
 function _pupAllTotal(skillId){return _pupAllSess(skillId).length;}
 function _pupLastPracticed(skillId){const done=_pupAllSess(skillId).filter(s=>s.done).map(s=>s.day_date).sort();return done.length?done[done.length-1]:null;}
-function _pupCountBadge(skill){const done=_pupAllDone(skill.id);const total=_pupAllTotal(skill.id);if(!done&&!total)return'';return`<span style="font-size:10px;font-weight:600;color:var(--muted)">${done}/${total}</span>`;}
+function _pupCountBadge(skill){const total=_pupAllTotal(skill.id);if(!total)return'';return`<span style="font-size:10px;font-weight:600;color:var(--muted)">${total}</span>`;}
 async function setPupWkDone(skillId,newDone){
   if(newDone<0)newDone=0;
   const{mon,sun}=getWkBounds(0);const monDs=d2s(mon),sunDs=d2s(sun);
@@ -544,7 +544,8 @@ function renderPupTable(){
       if(s.stage==='In Progress'){
         stageWidget=`<div style="height:100%;display:flex;align-items:center;justify-content:center"><input type="checkbox" onclick="event.stopPropagation();pupStageCheck('${sid}',this.checked)" style="width:12px;height:12px;cursor:pointer;accent-color:${col}" title="Mark mastered"></div>`;
       } else {
-        stageWidget=`<div style="height:100%;display:flex;align-items:center;justify-content:center"><input type="checkbox" checked onclick="event.stopPropagation();pupStageCheck('${sid}',this.checked)" style="width:12px;height:12px;cursor:pointer;accent-color:#22c55e;opacity:.75" title="Mastered — click to revert"></div>`;
+        const mTotal=_pupAllTotal(s.id);
+        stageWidget=`<div onclick="event.stopPropagation();pupStageCheck('${sid}',false)" style="height:100%;display:flex;align-items:center;justify-content:center;cursor:pointer" title="Mastered — click to revert"><span style="font-size:10px;font-weight:700;color:#22c55e;background:rgba(34,197,94,.12);border-radius:4px;padding:1px 5px;line-height:1.4">${mTotal||'✓'}</span></div>`;
       }
       const nextHover=comment?`onmouseenter="showPupTip(event,'${comment}')" onmouseleave="hidePupTip()" style="cursor:help;padding:0 6px;font-size:11px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:var(--text)"`:`style="padding:0 6px;font-size:11px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:var(--text)"`;
       const nextDiv=`<div ondblclick="event.stopPropagation();pupCellEdit(this.closest('td'),'${sid}','next_step')" ${nextHover}>${nextStep}</div>`;
