@@ -294,7 +294,7 @@ function showPupRichTip(e,rows){
   const t=document.getElementById('pupTooltip');
   const visible=rows.filter(r=>r.value);
   if(!visible.length)return;
-  t.innerHTML=visible.map(r=>`<div style="display:flex;gap:6px;align-items:baseline"><span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:${r.color||'rgba(255,255,255,.45)'};">${r.label}</span><span style="color:rgba(255,255,255,.92);font-size:11px">${r.value}</span></div>`).join('<div style="height:4px"></div>');
+  t.innerHTML=visible.map(r=>`<div style="display:flex;gap:6px;align-items:baseline"><span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:${r.color||'rgba(80,60,120,.45)'};">${r.label}</span><span style="color:#2d2040;font-size:11px">${r.value}</span></div>`).join('<div style="height:4px"></div>');
   t.style.display='block';
   const tw=240;
   const x=Math.min(e.clientX+14,window.innerWidth-tw-8),y=Math.max(8,e.clientY-8-visible.length*22);
@@ -493,8 +493,8 @@ function renderPupTable(){
   const tdE='user-select:none;cursor:default;font-size:11px';
   const totalCols=2+pups.length+1;
   thead.innerHTML=`<tr>
-    <th onclick="pupHdrClick('skill')" ondblclick="pupHdrDbl(event,'skill')" style="${ths};width:100px;max-width:100px">Skill${arrow('skill')}${fdot('skill')}</th>
-    <th onclick="pupHdrClick('word')" ondblclick="pupHdrDbl(event,'word')" style="${ths};width:72px">Word${arrow('word')}</th>
+    <th onclick="pupHdrClick('skill')" ondblclick="pupHdrDbl(event,'skill')" style="${ths};width:100px;max-width:100px;padding-left:14px;text-align:left">Skill${arrow('skill')}${fdot('skill')}</th>
+    <th onclick="pupHdrClick('word')" ondblclick="pupHdrDbl(event,'word')" style="${ths};width:72px;padding-left:10px;text-align:left">Word${arrow('word')}</th>
     ${pups.map(p=>`<th style="${thsS};color:${pupColor[p]||'var(--text)'}">${p}</th>`).join('')}
     <th style="width:28px"></th>
   </tr>`;
@@ -542,8 +542,8 @@ function renderPupTable(){
     const tipAttr=hasTip?` onmouseenter="showPupRichTip(event,${tipRows.replace(/"/g,'&quot;')})" onmouseleave="hidePupTip()" style="cursor:help"`:'';
     const rowSel=_selSkillKeys.has(g.skill)?'pup-sel':'';
     rowsHtml.push(`<tr data-skillkey="${esc(g.skill)}" class="${rowSel}" onclick="pupRowClick(event,'${esc(g.skill)}')" ondblclick="openPupEditModal('${firstRec?String(firstRec.id):''}')"${!_pupSortCol?` style="cursor:grab${isMasteredAll?';opacity:.45':''}"`:isMasteredAll?' style="opacity:.45"':''}>
-      <td${tipAttr} style="padding:4px 8px;height:36px;max-width:100px;width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;${tdE}">${esc(g.skill)}</td>
-      <td${tipAttr} style="width:72px;padding:4px 6px;${tdE};font-style:${word?'italic':'normal'};color:${word?'var(--text)':'var(--muted)'}">${word||'—'}</td>
+      <td${tipAttr} style="padding:4px 12px 4px 14px;height:36px;max-width:100px;width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left;${tdE}">${esc(g.skill)}</td>
+      <td${tipAttr} style="width:72px;padding:4px 6px 4px 10px;text-align:left;${tdE};font-style:${word?'italic':'normal'};color:${word?'var(--text)':'var(--muted)'}">${word||'—'}</td>
       ${pupCells}
       <td style="width:28px;padding:2px 4px;text-align:right"><button class="pup-del" data-skillkey="${esc(g.skill)}" onclick="event.stopPropagation();deletePupGroup(this.dataset.skillkey)" title="Delete">×</button></td>
     </tr>`);
