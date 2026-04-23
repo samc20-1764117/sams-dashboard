@@ -75,6 +75,7 @@ function setPupModalDog(val){
   document.getElementById('pmPup').value=val;
   document.getElementById('pmDogMochi').classList.toggle('active',val==='Mochi');
   document.getElementById('pmDogSunny').classList.toggle('active',val==='Sunny');
+  const lbl=document.getElementById('pmSkipLabel');if(lbl)lbl.textContent=`Not relevant for ${val}`;
   if(_pupEditId){
     const curRec=st.pup_skills.find(x=>x.id==_pupEditId);
     if(curRec&&curRec.pup!==val){
