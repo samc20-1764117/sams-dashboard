@@ -543,8 +543,7 @@ function renderPupTable(){
       const comment=s.comments&&s.comments!=='None'?esc(s.comments):'';
       const isNotStarted=!s.stage||s.stage==='Not Started';
       if(isNotStarted){
-        const skipBtnNS=`<span class="pup-skip-btn" onclick="event.stopPropagation();setPupSkip('${sid}',true)" title="Mark as not relevant for ${p}">N/A</span>`;
-        return`<td style="padding:2px 5px;position:relative;cursor:pointer" onclick="event.stopPropagation();pupStageClick('${sid}')" title="Click to start"><div style="${pillBase};grid-template-columns:1fr;opacity:.18"></div>${skipBtnNS}</td>`;
+        return`<td onclick="event.stopPropagation();pupStageClick('${sid}')" style="padding:2px 5px;cursor:pointer" title="Click to start"><div style="${pillBase};grid-template-columns:1fr;opacity:.18"></div></td>`;
       }
       let stageWidget;
       if(s.stage==='In Progress'){
@@ -556,8 +555,7 @@ function renderPupTable(){
       const nextHover=comment?`onmouseenter="showPupTip(event,'${comment}')" onmouseleave="hidePupTip()" style="cursor:help;padding:0 6px;font-size:11px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:var(--text)"`:`style="padding:0 6px;font-size:11px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:var(--text)"`;
       const nextDiv=`<div ondblclick="event.stopPropagation();pupCellEdit(this.closest('td'),'${sid}','next_step')" ${nextHover}>${nextStep}</div>`;
       const sessDiv=`<div onclick="event.stopPropagation();openPupCountEdit('${sid}',this)" style="height:100%;display:flex;align-items:center;justify-content:flex-end;padding-right:6px;cursor:pointer" title="Session details">${_pupCountBadge(s)}</div>`;
-      const skipBtn=`<span class="pup-skip-btn" onclick="event.stopPropagation();setPupSkip('${sid}',true)" title="Mark as not relevant for ${p}">N/A</span>`;
-      return`<td style="padding:2px 5px;position:relative"><div style="${pillBase}">${stageWidget}${nextDiv}${sessDiv}</div>${skipBtn}</td>`;
+      return`<td style="padding:2px 5px"><div style="${pillBase}">${stageWidget}${nextDiv}${sessDiv}</div></td>`;
     }).join('');
     const firstRec=pups.map(p=>g.byPup[p]).find(Boolean);
     const tipAttr=hasTip?` onmouseenter="showPupRichTip(event,${tipRows.replace(/"/g,'&quot;')})" onmouseleave="hidePupTip()" style="cursor:help"`:'';
