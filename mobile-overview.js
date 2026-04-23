@@ -94,10 +94,14 @@ async function togPupSessionDone(sessId, done) {
 
 // ── Category picker ───────────────────────────────────────────────────────────
 const M_CATS = ['Home', 'My work', 'Work', 'Social', 'Long term'];
-let _mAddCat    = 'Home';
-let _mEditCat   = 'Home';
-let _mBlockCat  = 'Home';
-let _mWkAddCat  = 'Home';
+let _mAddCat       = 'Home';
+let _mEditCat      = 'Home';
+let _mBlockCat     = 'Home';
+let _mWkAddCat     = 'Home';
+let _mFullAddCat   = 'Home';
+let _mAddImportant    = false;
+let _mEditImportant   = false;
+let _mFullAddImportant = false;
 
 const _EDIT_SVG = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="m18.5 2.5 2 2L10 15l-3 1 1-3z"/></svg>`;
 
@@ -119,7 +123,7 @@ function _mBuildOpts(elId, which) {
 }
 
 function mTogglePick(which) {
-  const ids = {add: 'mAddPickOpts', edit: 'mEditPickOpts', block: 'mBlockPickOpts', wkadd: 'mWkAddPickOpts'};
+  const ids = {add: 'mAddPickOpts', edit: 'mEditPickOpts', block: 'mBlockPickOpts', wkadd: 'mWkAddPickOpts', fulladd: 'mFullAddPickOpts'};
   const myId = ids[which];
   Object.entries(ids).forEach(([k, id]) => { if (k !== which) document.getElementById(id)?.classList.remove('open'); });
   document.getElementById(myId)?.classList.toggle('open');
@@ -127,16 +131,18 @@ function mTogglePick(which) {
 
 function mSelectCat(which, cat) {
   const map = {
-    add:   {dot: 'mAddPickDot',   lbl: 'mAddPickLbl',   opts: 'mAddPickOpts'},
-    edit:  {dot: 'mEditPickDot',  lbl: 'mEditPickLbl',  opts: 'mEditPickOpts'},
-    block: {dot: 'mBlockPickDot', lbl: 'mBlockPickLbl', opts: 'mBlockPickOpts'},
-    wkadd: {dot: 'mWkAddPickDot', lbl: 'mWkAddPickLbl', opts: 'mWkAddPickOpts'},
+    add:     {dot: 'mAddPickDot',     lbl: 'mAddPickLbl',     opts: 'mAddPickOpts'},
+    edit:    {dot: 'mEditPickDot',    lbl: 'mEditPickLbl',    opts: 'mEditPickOpts'},
+    block:   {dot: 'mBlockPickDot',   lbl: 'mBlockPickLbl',   opts: 'mBlockPickOpts'},
+    wkadd:   {dot: 'mWkAddPickDot',   lbl: 'mWkAddPickLbl',   opts: 'mWkAddPickOpts'},
+    fulladd: {dot: 'mFullAddPickDot', lbl: 'mFullAddPickLbl', opts: 'mFullAddPickOpts'},
   };
   const {dot: dotId, lbl: lblId, opts: optId} = map[which] || {};
-  if (which === 'add')   _mAddCat   = cat;
-  else if (which === 'edit')   _mEditCat   = cat;
-  else if (which === 'block')  _mBlockCat  = cat;
-  else if (which === 'wkadd')  _mWkAddCat  = cat;
+  if (which === 'add')         _mAddCat       = cat;
+  else if (which === 'edit')   _mEditCat      = cat;
+  else if (which === 'block')  _mBlockCat     = cat;
+  else if (which === 'wkadd')  _mWkAddCat     = cat;
+  else if (which === 'fulladd') _mFullAddCat  = cat;
   const dotEl = document.getElementById(dotId);
   const lblEl = document.getElementById(lblId);
   if (dotEl) dotEl.style.cssText = _mDotStyle(cat);
@@ -145,16 +151,18 @@ function mSelectCat(which, cat) {
 }
 
 function mInitPickers() {
-  _mBuildOpts('mAddPickOpts',   'add');
-  _mBuildOpts('mEditPickOpts',  'edit');
-  _mBuildOpts('mBlockPickOpts', 'block');
-  _mBuildOpts('mWkAddPickOpts', 'wkadd');
-  mSelectCat('add',   'Home');
-  mSelectCat('block', 'Home');
-  mSelectCat('wkadd', 'Home');
+  _mBuildOpts('mAddPickOpts',     'add');
+  _mBuildOpts('mEditPickOpts',    'edit');
+  _mBuildOpts('mBlockPickOpts',   'block');
+  _mBuildOpts('mWkAddPickOpts',   'wkadd');
+  _mBuildOpts('mFullAddPickOpts', 'fulladd');
+  mSelectCat('add',     'Home');
+  mSelectCat('block',   'Home');
+  mSelectCat('wkadd',   'Home');
+  mSelectCat('fulladd', 'Home');
   document.addEventListener('click', e => {
     if (!e.target.closest('.m-cpick')) {
-      ['mAddPickOpts','mEditPickOpts','mBlockPickOpts','mWkAddPickOpts'].forEach(id => {
+      ['mAddPickOpts','mEditPickOpts','mBlockPickOpts','mWkAddPickOpts','mFullAddPickOpts'].forEach(id => {
         document.getElementById(id)?.classList.remove('open');
       });
     }
@@ -310,18 +318,27 @@ function mRenderToday() {
 }
 
 // ── Add task ──────────────────────────────────────────────────────────────────
+function mToggleAddFlag() {
+  _mAddImportant = !_mAddImportant;
+  const btn = document.getElementById('mAddFlagBtn');
+  if (btn) btn.classList.toggle('flagged', _mAddImportant);
+}
+
 async function mAddTask() {
   const inp = document.getElementById('mNewTask');
   const n = inp.value.trim();
   if (!n) return;
   const cat = _mAddCat;
   const ds = d2s(getDayDate(0));
-  const t = {id: 'l-' + Date.now(), name: n, category: cat, due_date: ds, done: false, important: false};
+  const important = _mAddImportant;
+  const t = {id: 'l-' + Date.now(), name: n, category: cat, due_date: ds, done: false, important};
   st.tasks.push(t);
   save();
   inp.value = '';
+  _mAddImportant = false;
+  document.getElementById('mAddFlagBtn')?.classList.remove('flagged');
   mRenderToday();
-  const sv = await sbReq('POST', 'tasks', {name: n, category: cat, due_date: ds, done: false});
+  const sv = await sbReq('POST', 'tasks', {name: n, category: cat, due_date: ds, done: false, important});
   if (sv && sv[0]) {
     const i = st.tasks.findIndex(x => x.id === t.id);
     if (i > -1) st.tasks[i] = sv[0];
@@ -332,12 +349,22 @@ async function mAddTask() {
 // ── Edit task sheet ───────────────────────────────────────────────────────────
 let _mEditId = null;
 
+function mToggleEditImp() {
+  _mEditImportant = !_mEditImportant;
+  const btn = document.getElementById('mEditImpBtn');
+  if (btn) { btn.textContent = _mEditImportant ? 'on' : 'off'; btn.classList.toggle('on', _mEditImportant); }
+}
+
 function mOpenEdit(id) {
   const t = st.tasks.find(x => String(x.id) === String(id));
   if (!t) return;
   _mEditId = String(id);
+  _mEditImportant = !!t.important;
   document.getElementById('mEditName').value = t.name || '';
+  document.getElementById('mEditDue').value = t.due_date || '';
   mSelectCat('edit', t.category || 'Home');
+  const btn = document.getElementById('mEditImpBtn');
+  if (btn) { btn.textContent = _mEditImportant ? 'on' : 'off'; btn.classList.toggle('on', _mEditImportant); }
   document.getElementById('mEditBackdrop').classList.add('open');
   document.getElementById('mEditSheet').classList.add('open');
   setTimeout(() => document.getElementById('mEditName').focus(), 300);
@@ -356,14 +383,18 @@ async function mSaveEditTask() {
   if (!t) return;
   const name = document.getElementById('mEditName').value.trim();
   const category = _mEditCat;
+  const due_date = document.getElementById('mEditDue').value || null;
+  const important = _mEditImportant;
   if (!name) return;
   const id = _mEditId;
   t.name = name;
   t.category = category;
+  t.due_date = due_date;
+  t.important = important;
   save();
   mCloseEdit();
   mRenderToday();
-  await sbReq('PATCH', 'tasks', {name, category}, `?id=eq.${id}`);
+  await sbReq('PATCH', 'tasks', {name, category, due_date, important}, `?id=eq.${id}`);
 }
 
 async function mDeleteEditTask() {
@@ -374,6 +405,50 @@ async function mDeleteEditTask() {
   mCloseEdit();
   mRenderToday();
   await sbReq('DELETE', 'tasks', null, `?id=eq.${id}`);
+}
+
+// ── Full add sheet (today, all fields) ───────────────────────────────────────
+function mToggleFullAddImp() {
+  _mFullAddImportant = !_mFullAddImportant;
+  const btn = document.getElementById('mFullAddImpBtn');
+  if (btn) { btn.textContent = _mFullAddImportant ? 'on' : 'off'; btn.classList.toggle('on', _mFullAddImportant); }
+}
+
+function mOpenFullAdd() {
+  _mFullAddImportant = false;
+  document.getElementById('mFullAddName').value = '';
+  document.getElementById('mFullAddDue').value = d2s(getDayDate(0));
+  mSelectCat('fulladd', 'Home');
+  const btn = document.getElementById('mFullAddImpBtn');
+  if (btn) { btn.textContent = 'off'; btn.classList.remove('on'); }
+  document.getElementById('mFullAddBackdrop').classList.add('open');
+  document.getElementById('mFullAddSheet').classList.add('open');
+  setTimeout(() => document.getElementById('mFullAddName').focus(), 300);
+}
+
+function mCloseFullAdd() {
+  document.getElementById('mFullAddBackdrop').classList.remove('open');
+  document.getElementById('mFullAddSheet').classList.remove('open');
+  document.getElementById('mFullAddPickOpts')?.classList.remove('open');
+}
+
+async function mSaveFullAdd() {
+  const name = document.getElementById('mFullAddName').value.trim();
+  if (!name) return;
+  const category = _mFullAddCat;
+  const due_date = document.getElementById('mFullAddDue').value || d2s(getDayDate(0));
+  const important = _mFullAddImportant;
+  const t = {id: 'l-' + Date.now(), name, category, due_date, done: false, important};
+  st.tasks.push(t);
+  save();
+  mCloseFullAdd();
+  mRenderToday();
+  const sv = await sbReq('POST', 'tasks', {name, category, due_date, done: false, important});
+  if (sv && sv[0]) {
+    const i = st.tasks.findIndex(x => x.id === t.id);
+    if (i > -1) st.tasks[i] = sv[0];
+    save();
+  }
 }
 
 // ── Delete by id (swipe-to-delete) ───────────────────────────────────────────

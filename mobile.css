@@ -180,7 +180,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .m-wk-empty{padding:8px 14px;font-size:12px;color:var(--sub)}
 
 /* Week task row */
-.m-wk-row{display:flex;align-items:center;gap:7px;padding:7px 14px;border-top:1px solid var(--border);background:var(--bg)}
+.m-wk-row{display:flex;align-items:center;gap:7px;padding:7px 14px;border-top:1px solid var(--border);background:var(--bg);-webkit-user-select:none;user-select:none}
 .m-wk-row.m-ov{background:rgba(239,68,68,.04)}
 
 /* Week add sheet */
@@ -193,6 +193,19 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 #mWkAddName:focus{border-color:var(--accent)}
 #mWkAddSheet .m-cpick-opts{z-index:102}
 #mWkAddSave{width:100%;padding:12px;border-radius:var(--rs);border:none;background:var(--accent);color:#fff;font-size:15px;font-weight:600;font-family:inherit;cursor:pointer}
+
+/* ── Full add sheet (today) ───────────────────────────────────────────────── */
+#mFullAddBackdrop{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:100;display:none;opacity:0;transition:opacity .22s}
+#mFullAddBackdrop.open{display:block;opacity:1}
+#mFullAddSheet{position:fixed;bottom:0;left:0;right:0;background:var(--bg);border-radius:18px 18px 0 0;padding:20px 16px;padding-bottom:calc(24px + env(safe-area-inset-bottom));z-index:101;transform:translateY(100%);transition:transform .25s cubic-bezier(.32,1,.23,1)}
+#mFullAddSheet.open{transform:translateY(0)}
+#mFullAddSheet h3{font-size:15px;font-weight:700;margin-bottom:14px;text-align:center}
+#mFullAddName{width:100%;padding:11px 13px;border-radius:var(--rs);border:1px solid var(--border);background:var(--glass);font-size:16px;font-family:inherit;color:var(--text);outline:none;margin-bottom:10px}
+#mFullAddName:focus{border-color:var(--accent)}
+#mFullAddDue{width:100%;padding:11px 13px;border-radius:var(--rs);border:1px solid var(--border);background:var(--glass);font-size:16px;font-family:inherit;color:var(--text);outline:none;margin-bottom:10px}
+#mFullAddDue:focus{border-color:var(--accent)}
+#mFullAddSheet .m-cpick-opts{z-index:102}
+#mFullAddSave{width:100%;padding:12px;border-radius:var(--rs);border:none;background:var(--accent);color:#fff;font-size:15px;font-weight:600;font-family:inherit;cursor:pointer}
 
 /* ── Login ────────────────────────────────────────────────────────────────── */
 #mLogin{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100dvh;padding:24px;gap:16px}

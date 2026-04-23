@@ -43,7 +43,7 @@
     <!-- Today tab -->
     <div id="mTodayPage">
       <div id="mTodaySection" class="m-section">
-        <div class="m-section-hd">Tasks</div>
+        <div class="m-section-hd"><span>Tasks</span><button class="m-section-hd-add" onclick="mOpenFullAdd()" aria-label="Add task">+</button></div>
         <div id="mTodayList"></div>
       </div>
     </div>
@@ -83,6 +83,7 @@
         </button>
         <div class="m-cpick-opts" id="mAddPickOpts"></div>
       </div>
+      <button id="mAddFlagBtn" onclick="mToggleAddFlag()" aria-label="Flag important" title="Flag important">⚑</button>
       <button id="mAddBtn" onclick="mAddTask()">Add</button>
     </div>
   </div>
@@ -100,13 +101,18 @@
 <div id="mEditSheet">
   <h3>Edit Task</h3>
   <input id="mEditName" type="text" placeholder="Task name" onkeydown="if(event.key==='Enter')mSaveEditTask()">
-  <div class="m-cpick" id="mEditPick" style="margin-bottom:16px">
+  <input id="mEditDue" type="date" style="margin-bottom:10px">
+  <div class="m-cpick" id="mEditPick" style="margin-bottom:12px">
     <button type="button" class="m-cpick-btn" onclick="mTogglePick('edit')">
       <span class="m-cpick-dot" id="mEditPickDot"></span>
       <span id="mEditPickLbl">Home</span>
       <span class="m-cpick-arr">▾</span>
     </button>
     <div class="m-cpick-opts m-cpick-opts--up" id="mEditPickOpts"></div>
+  </div>
+  <div class="m-imp-row">
+    <label>Important</label>
+    <button type="button" class="m-imp-toggle" id="mEditImpBtn" onclick="mToggleEditImp()">off</button>
   </div>
   <div class="m-edit-actions">
     <button id="mEditDel" onclick="mDeleteEditTask()">Delete</button>
@@ -157,6 +163,27 @@
     <div class="m-cpick-opts m-cpick-opts--up" id="mWkAddPickOpts"></div>
   </div>
   <button id="mWkAddSave" onclick="mSaveWkTask()">Add Task</button>
+</div>
+
+<!-- Full add sheet (today) -->
+<div id="mFullAddBackdrop" onclick="mCloseFullAdd()"></div>
+<div id="mFullAddSheet">
+  <h3>Add Task</h3>
+  <input id="mFullAddName" type="text" placeholder="Task name" onkeydown="if(event.key==='Enter')mSaveFullAdd()">
+  <input id="mFullAddDue" type="date" style="margin-bottom:10px">
+  <div class="m-cpick" id="mFullAddPick" style="margin-bottom:12px">
+    <button type="button" class="m-cpick-btn" onclick="mTogglePick('fulladd')">
+      <span class="m-cpick-dot" id="mFullAddPickDot"></span>
+      <span id="mFullAddPickLbl">Home</span>
+      <span class="m-cpick-arr">▾</span>
+    </button>
+    <div class="m-cpick-opts m-cpick-opts--up" id="mFullAddPickOpts"></div>
+  </div>
+  <div class="m-imp-row">
+    <label>Important</label>
+    <button type="button" class="m-imp-toggle" id="mFullAddImpBtn" onclick="mToggleFullAddImp()">off</button>
+  </div>
+  <button id="mFullAddSave" onclick="mSaveFullAdd()">Add Task</button>
 </div>
 
 <!-- Hidden undo scaffolding (required by core.js pushUndo) -->

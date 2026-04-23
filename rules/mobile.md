@@ -109,19 +109,21 @@ Colors come from `gc(catName)` (core.js `CATS` object). Never use native `<selec
 
 ### Picker state variables
 ```js
-let _mAddCat   = 'Home';  // add task bar
-let _mEditCat  = 'Home';  // edit task sheet
-let _mBlockCat = 'Home';  // block sheet
-let _mWkAddCat = 'Home';  // week day add sheet
+let _mAddCat      = 'Home';  // add task bar
+let _mEditCat     = 'Home';  // edit task sheet
+let _mBlockCat    = 'Home';  // block sheet
+let _mWkAddCat    = 'Home';  // week day add sheet
+let _mFullAddCat  = 'Home';  // full add sheet (today)
 ```
 
 ### Picker types and DOM IDs
 | which | dot | lbl | opts |
 |-------|-----|-----|------|
-| `'add'`   | `mAddPickDot`   | `mAddPickLbl`   | `mAddPickOpts`   |
-| `'edit'`  | `mEditPickDot`  | `mEditPickLbl`  | `mEditPickOpts`  |
-| `'block'` | `mBlockPickDot` | `mBlockPickLbl` | `mBlockPickOpts` |
-| `'wkadd'` | `mWkAddPickDot` | `mWkAddPickLbl` | `mWkAddPickOpts` |
+| `'add'`     | `mAddPickDot`     | `mAddPickLbl`     | `mAddPickOpts`     |
+| `'edit'`    | `mEditPickDot`    | `mEditPickLbl`    | `mEditPickOpts`    |
+| `'block'`   | `mBlockPickDot`   | `mBlockPickLbl`   | `mBlockPickOpts`   |
+| `'wkadd'`   | `mWkAddPickDot`   | `mWkAddPickLbl`   | `mWkAddPickOpts`   |
+| `'fulladd'` | `mFullAddPickDot` | `mFullAddPickLbl` | `mFullAddPickOpts` |
 
 `mTogglePick(which)` — opens one, closes others.
 `mSelectCat(which, cat)` — sets state var + updates dot/label.
@@ -188,13 +190,22 @@ Fixed at bottom, `height: calc(52px + env(safe-area-inset-bottom))`.
 
 ### Add task bar (`#mAddBar`)
 - Fixed above nav: `bottom: calc(52px + env(safe-area-inset-bottom))`
-- Two rows: text input + [category picker | Add button]
-- `mAddTask()` → optimistic local add → `sbReq POST tasks` → replace temp id with real
+- Two rows: text input + [category picker | flag btn | Add button]
+- `_mAddImportant` state; `mToggleAddFlag()` toggles + styles `#mAddFlagBtn`
+- `mAddTask()` → optimistic local add (includes `important`) → `sbReq POST tasks` → replace temp id with real
+- Flag resets to off after each add
+
+### Full add sheet (`#mFullAddSheet`)
+- Opened by "+" button in Today section header
+- Fields: name, due_date, category picker (`'fulladd'`), important toggle (`_mFullAddImportant`)
+- `mOpenFullAdd()` / `mCloseFullAdd()` / `mSaveFullAdd()`
+- Pre-fills due_date to today
 
 ### Edit task sheet (`#mEditSheet`)
 - `mOpenEdit(id)` / `mCloseEdit()` / `mSaveEditTask()` / `mDeleteEditTask()`
+- Fields: name, due_date (`#mEditDue`), category picker, important toggle (`_mEditImportant`, `#mEditImpBtn`)
 - Bottom slide-up sheet with backdrop
-- `mSaveEditTask()` → `sbReq PATCH tasks`
+- `mSaveEditTask()` → `sbReq PATCH tasks` (name, category, due_date, important)
 - `mDeleteEditTask()` → `sbReq DELETE tasks`
 
 ---
@@ -297,6 +308,7 @@ Each `.m-wk-day` has `data-ds="YYYY-MM-DD"` and contains:
 - Blocked when `_mWkDrag` is active
 
 ### Drag-to-reschedule (between days)
+- `.m-wk-row` has `-webkit-user-select:none; user-select:none` in CSS to prevent text selection on long-press
 - `mInitWkDrag()` — event delegation on `#mWeekList` (persists through re-renders)
 - Long-press (480ms) on `.m-wk-row[data-tid]` → activates drag
 - Ghost: fixed-position pill element appended to `<body>`, follows finger at `-44px` vertical offset
