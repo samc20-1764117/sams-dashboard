@@ -5,7 +5,7 @@ function _pupAllSess(skillId){return(st.pupSessions||[]).filter(s=>String(s.skil
 function _pupAllDone(skillId){return _pupAllSess(skillId).filter(s=>s.done).length;}
 function _pupAllTotal(skillId){return _pupAllSess(skillId).length;}
 function _pupLastPracticed(skillId){const done=_pupAllSess(skillId).filter(s=>s.done).map(s=>s.day_date).sort();return done.length?done[done.length-1]:null;}
-function _pupCountBadge(skill){const done=_pupAllDone(skill.id);const total=_pupAllTotal(skill.id);return`<span style="font-size:10px;font-weight:600;color:var(--muted)">${done}/${total}</span>`;}
+function _pupCountBadge(skill){const done=_pupAllDone(skill.id);const total=_pupAllTotal(skill.id);if(!done&&!total)return'';return`<span style="font-size:10px;font-weight:600;color:var(--muted)">${done}/${total}</span>`;}
 async function setPupWkDone(skillId,newDone){
   if(newDone<0)newDone=0;
   const{mon,sun}=getWkBounds(0);const monDs=d2s(mon),sunDs=d2s(sun);
@@ -164,8 +164,7 @@ async function savePupModal(){
     recs.forEach(s=>st.pup_skills.push(s));
     save();renderPupsPage();renderPupSkillsHighlight();
     for(const s of recs){
-      const{skip:_sk,...recData}={...data,pup:s.pup};
-      const sv=await sbReq('POST','pup_skills',recData);
+      const sv=await sbReq('POST','pup_skills',{...data,pup:s.pup,skip:false});
       if(sv&&sv[0]){const i=st.pup_skills.findIndex(x=>x.id===s.id);if(i>-1)st.pup_skills[i]=sv[0];save();}
     }
     renderPupsPage();renderPupSkillsHighlight();renderToday();renderWkCal();
@@ -187,7 +186,7 @@ async function savePupModal(){
         sbReqSilent('PATCH','pup_skills',prevData,`?id=eq.${editId}`);
       },'Edited pup skill');
     }
-    const{skip:_sk,...dbData}=data;await sbReqSilent('PATCH','pup_skills',dbData,`?id=eq.${_pupEditId}`);
+    await sbReqSilent('PATCH','pup_skills',data,`?id=eq.${_pupEditId}`);
     renderPupsPage();renderPupSkillsHighlight();renderToday();renderWkCal();if(document.getElementById('tbGrid'))renderDayTB();
   }
 }
@@ -454,7 +453,7 @@ function renderPupTable(){
   });
   let groups=Object.values(groupMap);
   // "all done" = every pup that has a record is either Mastered or marked skip
-  const allMastered=g=>pups.some(p=>g.byPup[p])&&pups.filter(p=>g.byPup[p]).every(p=>g.byPup[p].stage==='Mastered'||(g.byPup[p].skip===true||g.byPup[p].skip==='true'));
+  const allMastered=g=>pups.length>0&&pups.every(p=>g.byPup[p]&&(g.byPup[p].stage==='Mastered'||(g.byPup[p].skip===true||g.byPup[p].skip==='true')));
   // Filter
   if(_pupFilter){
     const sharedCols=new Set(['skill','word','level','category']);
@@ -480,7 +479,7 @@ function renderPupTable(){
   const tdE='user-select:none;cursor:default;font-size:11px';
   const totalCols=2+pups.length*3+1;
   thead.innerHTML=`<tr>
-    <th onclick="pupHdrClick('skill')" ondblclick="pupHdrDbl(event,'skill')" rowspan="2" style="${ths}">Skill${arrow('skill')}${fdot('skill')}</th>
+    <th onclick="pupHdrClick('skill')" ondblclick="pupHdrDbl(event,'skill')" rowspan="2" style="${ths};max-width:140px;width:140px">Skill${arrow('skill')}${fdot('skill')}</th>
     <th onclick="pupHdrClick('word')" ondblclick="pupHdrDbl(event,'word')" rowspan="2" style="${ths};width:72px">Word${arrow('word')}</th>
     ${pups.map(p=>`<th colspan="3" style="${thsS};text-align:center;color:${pupColor[p]||'var(--text)'};border-left:2px solid ${pupColor[p]||'var(--border)'}33">${p}</th>`).join('')}
     <th rowspan="2" style="width:44px"></th>
@@ -523,7 +522,7 @@ function renderPupTable(){
     const skillTip=allNotes?` onmouseenter="showPupTip(event,'${allNotes}')" onmouseleave="hidePupTip()" style="padding:4px 8px;${tdE};cursor:help"`:` style="padding:4px 8px;${tdE}"`;
     const rowSel=_selSkillKeys.has(g.skill)?'pup-sel':'';
     rowsHtml.push(`<tr data-skillkey="${esc(g.skill)}" class="${rowSel}" onclick="pupRowClick(event,'${esc(g.skill)}')" ondblclick="openPupEditModal('${firstRec?String(firstRec.id):''}')"${!_pupSortCol?' style="cursor:grab"':''}>
-      <td${skillTip}>${esc(g.skill)}</td>
+      <td${skillTip} style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(g.skill)}</td>
       <td style="width:72px;padding:4px 6px;${tdE};font-style:${word?'italic':'normal'};color:${word?'var(--text)':'var(--muted)'}">${word||'—'}</td>
       ${pupCells}
       <td style="width:28px;padding:2px 4px;text-align:right"><button class="pup-del" data-skillkey="${esc(g.skill)}" onclick="event.stopPropagation();deletePupGroup(this.dataset.skillkey)" title="Delete">×</button></td>
