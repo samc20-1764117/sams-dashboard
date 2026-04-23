@@ -541,7 +541,7 @@ function renderPupTable(){
     const firstRec=pups.map(p=>g.byPup[p]).find(Boolean);
     const tipAttr=hasTip?` onmouseenter="showPupRichTip(event,${tipRows.replace(/"/g,'&quot;')})" onmouseleave="hidePupTip()" style="cursor:help"`:'';
     const rowSel=_selSkillKeys.has(g.skill)?'pup-sel':'';
-    rowsHtml.push(`<tr data-skillkey="${esc(g.skill)}" class="${rowSel}" onclick="pupRowClick(event,'${esc(g.skill)}')" ondblclick="openPupEditModal('${firstRec?String(firstRec.id):''}')"${!_pupSortCol?' style="cursor:grab"':''}>
+    rowsHtml.push(`<tr data-skillkey="${esc(g.skill)}" class="${rowSel}" onclick="pupRowClick(event,'${esc(g.skill)}')" ondblclick="openPupEditModal('${firstRec?String(firstRec.id):''}')"${!_pupSortCol?` style="cursor:grab${isMasteredAll?';opacity:.45':''}"`:isMasteredAll?' style="opacity:.45"':''}>
       <td${tipAttr} style="padding:4px 8px;height:36px;max-width:100px;width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;${tdE}">${esc(g.skill)}</td>
       <td${tipAttr} style="width:72px;padding:4px 6px;${tdE};font-style:${word?'italic':'normal'};color:${word?'var(--text)':'var(--muted)'}">${word||'—'}</td>
       ${pupCells}
