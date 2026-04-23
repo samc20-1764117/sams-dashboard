@@ -172,7 +172,9 @@ async function savePupModal(){
     const idx=st.pup_skills.findIndex(x=>x.id==_pupEditId);if(idx<0)return;
     const oldSkill=st.pup_skills[idx].skill;
     const prevData={...st.pup_skills[idx]};
-    Object.assign(st.pup_skills[idx],data);
+    // Don't overwrite pup field on existing records — pup is determined by _pupEditId
+    const editData={skill:data.skill,category:data.category,level:data.level,stage:data.stage,skill_order:data.skill_order,focus:data.focus,next_step:data.next_step,word:data.word,signal:data.signal,comments:data.comments,skip:data.skip};
+    Object.assign(st.pup_skills[idx],editData);
     if(data.skill&&data.skill!==oldSkill){st.blocks.filter(b=>b.cat==='pup_session'&&b.title===oldSkill).forEach(b=>{b.title=data.skill;});}
     save();
     if(!document.getElementById('page-pups')?.classList.contains('active')){
@@ -186,9 +188,12 @@ async function savePupModal(){
         sbReqSilent('PATCH','pup_skills',prevData,`?id=eq.${editId}`);
       },'Edited pup skill');
     }
-    await sbReqSilent('PATCH','pup_skills',data,`?id=eq.${_pupEditId}`);
-    // Sync shared fields to the other pup's record
-    const _sharedFields={skill:data.skill,word:data.word,signal:data.signal,level:data.level,category:data.category,skill_order:data.skill_order};
+    // Patch per-pup fields (without skip — separate call so skip column absence doesn't break stage/next_step saves)
+    const perPupPatch={skill:editData.skill,category:editData.category,level:editData.level,stage:editData.stage,skill_order:editData.skill_order,focus:editData.focus,next_step:editData.next_step,word:editData.word,signal:editData.signal,comments:editData.comments};
+    await sbReqSilent('PATCH','pup_skills',perPupPatch,`?id=eq.${_pupEditId}`);
+    sbReqSilent('PATCH','pup_skills',{skip:editData.skip},`?id=eq.${_pupEditId}`);
+    // Sync shared fields to the other pup's record (never includes skip)
+    const _sharedFields={skill:editData.skill,word:editData.word,signal:editData.signal,level:editData.level,category:editData.category,skill_order:editData.skill_order};
     const _curPup=st.pup_skills[idx].pup;
     st.pup_skills.filter(s=>s.skill===oldSkill&&s.pup!==_curPup).forEach(s=>{Object.assign(s,_sharedFields);sbReqSilent('PATCH','pup_skills',_sharedFields,`?id=eq.${s.id}`);});
     renderPupsPage();renderPupSkillsHighlight();renderToday();renderWkCal();if(document.getElementById('tbGrid'))renderDayTB();
@@ -538,7 +543,8 @@ function renderPupTable(){
       const comment=s.comments&&s.comments!=='None'?esc(s.comments):'';
       const isNotStarted=!s.stage||s.stage==='Not Started';
       if(isNotStarted){
-        return`<td onclick="event.stopPropagation();pupStageClick('${sid}')" style="padding:2px 5px;cursor:pointer" title="Click to start"><div style="${pillBase};grid-template-columns:1fr;opacity:.18"></div></td>`;
+        const skipBtnNS=`<span class="pup-skip-btn" onclick="event.stopPropagation();setPupSkip('${sid}',true)" title="Mark as not relevant for ${p}">N/A</span>`;
+        return`<td style="padding:2px 5px;position:relative;cursor:pointer" onclick="event.stopPropagation();pupStageClick('${sid}')" title="Click to start"><div style="${pillBase};grid-template-columns:1fr;opacity:.18"></div>${skipBtnNS}</td>`;
       }
       let stageWidget;
       if(s.stage==='In Progress'){
@@ -550,7 +556,8 @@ function renderPupTable(){
       const nextHover=comment?`onmouseenter="showPupTip(event,'${comment}')" onmouseleave="hidePupTip()" style="cursor:help;padding:0 6px;font-size:11px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:var(--text)"`:`style="padding:0 6px;font-size:11px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:var(--text)"`;
       const nextDiv=`<div ondblclick="event.stopPropagation();pupCellEdit(this.closest('td'),'${sid}','next_step')" ${nextHover}>${nextStep}</div>`;
       const sessDiv=`<div onclick="event.stopPropagation();openPupCountEdit('${sid}',this)" style="height:100%;display:flex;align-items:center;justify-content:flex-end;padding-right:6px;cursor:pointer" title="Session details">${_pupCountBadge(s)}</div>`;
-      return`<td style="padding:2px 5px"><div style="${pillBase}">${stageWidget}${nextDiv}${sessDiv}</div></td>`;
+      const skipBtn=`<span class="pup-skip-btn" onclick="event.stopPropagation();setPupSkip('${sid}',true)" title="Mark as not relevant for ${p}">N/A</span>`;
+      return`<td style="padding:2px 5px;position:relative"><div style="${pillBase}">${stageWidget}${nextDiv}${sessDiv}</div>${skipBtn}</td>`;
     }).join('');
     const firstRec=pups.map(p=>g.byPup[p]).find(Boolean);
     const tipAttr=hasTip?` onmouseenter="showPupRichTip(event,${tipRows.replace(/"/g,'&quot;')})" onmouseleave="hidePupTip()" style="cursor:help"`:'';
