@@ -688,7 +688,10 @@
       <div class="mfield"><label>Signal</label><input id="pmSignal" placeholder="Hand signal…"></div>
     </div>
     <div class="mfield"><label>Comments</label><input id="pmComments" placeholder="Notes or observations…"></div>
-    <div id="pmSkipRow" style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><input type="checkbox" id="pmSkip" style="width:14px;height:14px;cursor:pointer;accent-color:#94a3b8"><label id="pmSkipLabel" style="font-size:11px;color:var(--muted);cursor:pointer" for="pmSkip">Not relevant for this pup</label></div>
+    <div id="pmSkipRow" style="display:flex;gap:16px;margin-bottom:10px">
+      <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);cursor:pointer"><input type="checkbox" id="pmSkipMochi" style="width:13px;height:13px;cursor:pointer;accent-color:#8b5cf6"> Not relevant for Mochi</label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);cursor:pointer"><input type="checkbox" id="pmSkipSunny" style="width:13px;height:13px;cursor:pointer;accent-color:#fbbf24"> Not relevant for Sunny</label>
+    </div>
     <div class="mact"><button class="btn btn-ghost" onclick="closeMod('pupModal')">Cancel</button><button class="btn btn-dark" onclick="savePupModal()">Save</button></div>
   </div>
 </div>

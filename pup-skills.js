@@ -80,7 +80,6 @@ function setPupModalDog(val){
   document.getElementById('pmPup').value=val;
   document.getElementById('pmDogMochi').classList.toggle('active',val==='Mochi');
   document.getElementById('pmDogSunny').classList.toggle('active',val==='Sunny');
-  const lbl=document.getElementById('pmSkipLabel');if(lbl)lbl.textContent=`Not relevant for ${val}`;
   if(_pupEditId){
     const curRec=st.pup_skills.find(x=>x.id==_pupEditId);
     if(curRec&&curRec.pup!==val){
@@ -97,7 +96,6 @@ function setPupModalDog(val){
         document.getElementById('pmWord').value=other.word||'';
         document.getElementById('pmSignal').value=other.signal||'';
         document.getElementById('pmComments').value=other.comments||'';
-        document.getElementById('pmSkip').checked=isPupSkip(other.id);
       }
     }
   }
@@ -130,6 +128,12 @@ function openPupEditModal(id){
   document.getElementById('pmDogToggle').style.display='';
   document.getElementById('pmBothLabel').style.display='none';
   document.getElementById('pmSkipRow').style.display='flex';
+  // Load skip for both pups independently
+  const _allRecs=st.pup_skills.filter(x=>x.skill===s.skill);
+  const _mochiRec=_allRecs.find(x=>x.pup==='Mochi');
+  const _sunnyRec=_allRecs.find(x=>x.pup==='Sunny');
+  document.getElementById('pmSkipMochi').checked=_mochiRec?isPupSkip(_mochiRec.id):false;
+  document.getElementById('pmSkipSunny').checked=_sunnyRec?isPupSkip(_sunnyRec.id):false;
   setPupModalDog(s.pup||'Mochi');
   document.getElementById('pmSkill').value=s.skill||'';
   document.getElementById('pmCategory').value=s.category||'';
@@ -179,7 +183,12 @@ async function savePupModal(){
     const oldSkill=st.pup_skills[idx].skill;
     const prevData={...st.pup_skills[idx]};
     // Don't overwrite pup field on existing records — pup is determined by _pupEditId
-    _saveSkip(_pupEditId,data.skip);
+    // Save skip independently for each pup (both checkboxes always visible)
+    const _allSkillRecs=st.pup_skills.filter(x=>x.skill===oldSkill||x.skill===data.skill);
+    const _mochiSkipRec=_allSkillRecs.find(x=>x.pup==='Mochi');
+    const _sunnySkipRec=_allSkillRecs.find(x=>x.pup==='Sunny');
+    if(_mochiSkipRec)_saveSkip(_mochiSkipRec.id,document.getElementById('pmSkipMochi').checked);
+    if(_sunnySkipRec)_saveSkip(_sunnySkipRec.id,document.getElementById('pmSkipSunny').checked);
     const editData={skill:data.skill,category:data.category,level:data.level,stage:data.stage,skill_order:data.skill_order,focus:data.focus,next_step:data.next_step,word:data.word,signal:data.signal,comments:data.comments};
     Object.assign(st.pup_skills[idx],editData);
     if(data.skill&&data.skill!==oldSkill){st.blocks.filter(b=>b.cat==='pup_session'&&b.title===oldSkill).forEach(b=>{b.title=data.skill;});}
