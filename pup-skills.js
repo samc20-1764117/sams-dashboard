@@ -289,6 +289,17 @@ function showPupTip(e,text){
   const x=Math.min(e.clientX+12,window.innerWidth-230),y=e.clientY-28;
   t.style.left=x+'px';t.style.top=y+'px';
 }
+function showPupRichTip(e,rows){
+  // rows: array of {label,value,color?}
+  const t=document.getElementById('pupTooltip');
+  const visible=rows.filter(r=>r.value);
+  if(!visible.length)return;
+  t.innerHTML=visible.map(r=>`<div style="display:flex;gap:6px;align-items:baseline"><span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:${r.color||'rgba(255,255,255,.45)'};">${r.label}</span><span style="color:rgba(255,255,255,.92);font-size:11px">${r.value}</span></div>`).join('<div style="height:4px"></div>');
+  t.style.display='block';
+  const tw=240;
+  const x=Math.min(e.clientX+14,window.innerWidth-tw-8),y=Math.max(8,e.clientY-8-visible.length*22);
+  t.style.left=x+'px';t.style.top=y+'px';
+}
 function showPupStageTip(e,text,color){
   const t=document.getElementById('pupTooltip');
   t.innerHTML=`<span style="color:${color};font-weight:600">${text}</span>`;
@@ -420,9 +431,12 @@ async function pupStageCheck(sid,checked){
   const idx=st.pup_skills.findIndex(x=>String(x.id)===String(sid));if(idx<0)return;
   pupSnapshot();
   const stage=checked?'Mastered':'In Progress';
+  const prevNext=st.pup_skills[idx].next_step;
   st.pup_skills[idx].stage=stage;
+  if(checked)st.pup_skills[idx].next_step=null;
   save();renderPupTable();renderPupsPage();
-  sbReqSilent('PATCH','pup_skills',{stage},`?id=eq.${sid}`);
+  const patch=checked?{stage,next_step:null}:{stage,next_step:prevNext};
+  sbReqSilent('PATCH','pup_skills',patch,`?id=eq.${sid}`);
 }
 async function deletePupGroup(skillName){
   // Delete clicked skill + any other selected skills
@@ -495,8 +509,12 @@ function renderPupTable(){
     const anyRec=pups.map(p=>g.byPup[p]).find(Boolean);
     const anyId=anyRec?String(anyRec.id):'';
     const word=g.word&&g.word!=='None'?esc(g.word):'';
-    // Collect notes from any pup for tooltip on skill cell
-    const allNotes=pups.map(p=>{const s=g.byPup[p];return s&&s.comments&&s.comments!=='None'?`${p}: ${esc(s.comments)}`:null;}).filter(Boolean).join(' | ');
+    // Rich tooltip data: word, signal, per-pup comments
+    const anySkillRec=pups.map(p=>g.byPup[p]).find(Boolean);
+    const tipSignal=anySkillRec&&anySkillRec.signal&&anySkillRec.signal!=='None'?esc(anySkillRec.signal):'';
+    const tipComments=pups.map(p=>{const s=g.byPup[p];return s&&s.comments&&s.comments!=='None'?{label:p,value:esc(s.comments),color:pupColor[p]+'bb'}:null;}).filter(Boolean);
+    const tipRows=JSON.stringify([...(word?[{label:'Word',value:word}]:[]),...(tipSignal?[{label:'Signal',value:tipSignal}]:[]),...tipComments]);
+    const hasTip=word||tipSignal||tipComments.length;
     const pupCells=pups.map(p=>{
       const s=g.byPup[p];
       const col=pupColor[p]||'var(--border)';
@@ -521,11 +539,11 @@ function renderPupTable(){
       return`<td style="padding:3px 5px"><div style="${pillBase}">${stageWidget}${sep}${nextDiv}${sep}${sessDiv}</div></td>`;
     }).join('');
     const firstRec=pups.map(p=>g.byPup[p]).find(Boolean);
-    const skillTip=allNotes?` onmouseenter="showPupTip(event,'${allNotes}')" onmouseleave="hidePupTip()" style="padding:4px 8px;${tdE};cursor:help"`:` style="padding:4px 8px;${tdE}"`;
+    const tipAttr=hasTip?` onmouseenter="showPupRichTip(event,${tipRows.replace(/"/g,'&quot;')})" onmouseleave="hidePupTip()" style="cursor:help"`:'';
     const rowSel=_selSkillKeys.has(g.skill)?'pup-sel':'';
     rowsHtml.push(`<tr data-skillkey="${esc(g.skill)}" class="${rowSel}" onclick="pupRowClick(event,'${esc(g.skill)}')" ondblclick="openPupEditModal('${firstRec?String(firstRec.id):''}')"${!_pupSortCol?' style="cursor:grab"':''}>
-      <td${skillTip} style="height:36px;max-width:100px;width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(g.skill)}</td>
-      <td style="width:72px;padding:4px 6px;${tdE};font-style:${word?'italic':'normal'};color:${word?'var(--text)':'var(--muted)'}">${word||'—'}</td>
+      <td${tipAttr} style="padding:4px 8px;height:36px;max-width:100px;width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;${tdE}">${esc(g.skill)}</td>
+      <td${tipAttr} style="width:72px;padding:4px 6px;${tdE};font-style:${word?'italic':'normal'};color:${word?'var(--text)':'var(--muted)'}">${word||'—'}</td>
       ${pupCells}
       <td style="width:28px;padding:2px 4px;text-align:right"><button class="pup-del" data-skillkey="${esc(g.skill)}" onclick="event.stopPropagation();deletePupGroup(this.dataset.skillkey)" title="Delete">×</button></td>
     </tr>`);
