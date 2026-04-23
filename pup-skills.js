@@ -123,7 +123,7 @@ function openPupEditModal(id){
   _pupEditId=id;
   document.getElementById('pmDogToggle').style.display='';
   document.getElementById('pmBothLabel').style.display='none';
-  document.getElementById('pmSkipRow').style.display='';
+  document.getElementById('pmSkipRow').style.display='none';
   setPupModalDog(s.pup||'Mochi');
   document.getElementById('pmSkill').value=s.skill||'';
   document.getElementById('pmCategory').value=s.category||'';
@@ -543,8 +543,8 @@ function renderPupTable(){
       const nextHover=comment?`onmouseenter="showPupTip(event,'${comment}')" onmouseleave="hidePupTip()" style="cursor:help"`:'';
       const nextDiv=`<div ondblclick="event.stopPropagation();pupCellEdit(this.closest('td'),'${sid}','next_step')" ${nextHover} style="flex:1;padding:0 7px;font-size:11px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;min-width:0;color:var(--text)">${nextStep}</div>`;
       const sessDiv=`<div onclick="event.stopPropagation();openPupCountEdit('${sid}',this)" style="width:38px;height:100%;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0" title="Session details">${_pupCountBadge(s)}</div>`;
-      const naBtn=`<button onclick="event.stopPropagation();setPupSkip('${sid}',true)" class="pup-na-btn" title="Mark as not relevant for this pup">n/a</button>`;
-      return`<td style="padding:3px 5px"><div style="${pillBase};position:relative">${stageWidget}${sep}${nextDiv}${sep}${sessDiv}${naBtn}</div></td>`;
+      const naBtn=`<button onclick="event.stopPropagation();setPupSkip('${sid}',true)" class="pup-na-btn" title="Not relevant for this pup">n/a</button>`;
+      return`<td style="padding:3px 5px;position:relative"><div style="${pillBase}">${stageWidget}${sep}${nextDiv}${sep}${sessDiv}</div>${naBtn}</td>`;
     }).join('');
     const firstRec=pups.map(p=>g.byPup[p]).find(Boolean);
     const tipAttr=hasTip?` onmouseenter="showPupRichTip(event,${tipRows.replace(/"/g,'&quot;')})" onmouseleave="hidePupTip()" style="cursor:help"`:'';
