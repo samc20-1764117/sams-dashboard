@@ -171,8 +171,8 @@ body{font-family:'DM Sans',sans-serif;background:#fef6f0;background-attachment:f
 .pup-tbl th{font-size:10px;font-weight:600;color:var(--muted);padding:5px 6px;border-bottom:1.5px solid rgba(210,205,228,.25);text-align:left;white-space:nowrap;position:sticky;top:0;background:rgba(255,248,244,0.97);z-index:2}
 body.dark .pup-tbl th{background:rgba(40,22,14,.97)}
 .pup-tbl td{padding:3px 5px;border-bottom:1px solid rgba(210,205,228,.1);vertical-align:middle;text-align:left}
-.pup-tbl th:first-child,.pup-tbl td:first-child{padding-left:14px}
-.pup-tbl th:nth-child(2),.pup-tbl td:nth-child(2){padding-left:10px}
+.pup-tbl th:first-child,.pup-tbl td:first-child{padding-left:14px!important}
+.pup-tbl th:nth-child(2),.pup-tbl td:nth-child(2){padding-left:10px!important}
 .pup-tbl tr:hover td{background:rgba(255,255,255,.4)}
 .pup-tbl tr.pup-sel td{background:var(--sel-bg,rgba(130,115,100,.1))!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.7)}
 .pup-tbl .pup-dots{opacity:0;padding:0 4px;cursor:pointer;font-size:13px;color:var(--muted);background:none;border:none;line-height:1}
