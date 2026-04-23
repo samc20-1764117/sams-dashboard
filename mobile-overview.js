@@ -288,7 +288,6 @@ function mTaskRow(t) {
 
   const safeName = escHtml(t.name || '');
   const dot = `<span class="m-cat-dot" style="background:${s.bg};border:1.5px solid ${s.d};flex-shrink:0;width:10px;height:10px;border-radius:50%;display:inline-block"></span>`;
-  const editBtn = canEdit ? `<button class="m-edit-btn" onclick="event.stopPropagation();mOpenEdit('${t.id}')" aria-label="Edit">${_EDIT_SVG}</button>` : '';
 
   const inner = `<div class="m-row${t.done ? ' m-done' : ''}${ov ? ' m-ov' : ''}">
     ${noCheck
@@ -297,7 +296,6 @@ function mTaskRow(t) {
     }
     <span class="m-row-name${t.done ? ' done' : ''}">${safeName}</span>
     ${dot}
-    ${editBtn}
   </div>`;
 
   return `<div class="m-row-outer"${canEdit ? ` data-tid="${t.id}"` : ''}>
@@ -457,6 +455,33 @@ async function mDeleteById(id) {
   save();
   mRenderToday();
   await sbReq('DELETE', 'tasks', null, `?id=eq.${id}`);
+}
+
+// ── Double-tap to edit ────────────────────────────────────────────────────────
+let _dtap = {t: 0, id: null};
+function _isDblTap(id) {
+  const now = Date.now();
+  const dbl = now - _dtap.t < 350 && _dtap.id === id;
+  _dtap = {t: now, id};
+  return dbl;
+}
+
+function mInitTodayDblTap() {
+  const list = document.getElementById('mTodayList');
+  if (!list || list._dblTapInited) return;
+  list._dblTapInited = true;
+  let tapStartX = 0, tapStartY = 0;
+  list.addEventListener('touchstart', e => {
+    tapStartX = e.touches[0].clientX;
+    tapStartY = e.touches[0].clientY;
+  }, {passive: true});
+  list.addEventListener('touchend', e => {
+    const outer = e.target.closest('.m-row-outer[data-tid]');
+    if (!outer) return;
+    const ct = e.changedTouches[0];
+    if (Math.abs(ct.clientX - tapStartX) > 10 || Math.abs(ct.clientY - tapStartY) > 10) return;
+    if (_isDblTap(outer.dataset.tid)) mOpenEdit(outer.dataset.tid);
+  }, {passive: true});
 }
 
 // ── Swipe-to-delete ───────────────────────────────────────────────────────────
@@ -1084,6 +1109,15 @@ function _mWkDragMove(e) {
   _mWkDrag.ghost.style.left = touch.clientX + 'px';
   _mWkDrag.ghost.style.top  = (touch.clientY - 44) + 'px';
 
+  // Auto-scroll #mMain when near top/bottom edges
+  const main = document.getElementById('mMain');
+  if (main) {
+    const mr = main.getBoundingClientRect();
+    const EDGE = 80, SPEED = 8;
+    if (touch.clientY > mr.bottom - EDGE)      main.scrollTop += SPEED;
+    else if (touch.clientY < mr.top + EDGE)    main.scrollTop -= SPEED;
+  }
+
   // ghost has pointer-events:none so elementFromPoint hits through it
   const el       = document.elementFromPoint(touch.clientX, touch.clientY);
   const dayEl    = el?.closest('.m-wk-day[data-ds]');
@@ -1147,9 +1181,19 @@ function mInitWkDrag() {
     }
   }, {passive: true});
 
-  list.addEventListener('touchend', async () => {
+  list.addEventListener('touchend', async e => {
     if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
-    if (!_mWkDrag) return;
+    if (!_mWkDrag) {
+      // double-tap to edit
+      const rowEl = e.target.closest('.m-wk-row[data-tid]');
+      if (rowEl) {
+        const ct = e.changedTouches[0];
+        if (Math.abs(ct.clientX - touchStartX) <= 10 && Math.abs(ct.clientY - touchStartY) <= 10) {
+          if (_isDblTap(rowEl.dataset.tid)) mOpenEdit(rowEl.dataset.tid);
+        }
+      }
+      return;
+    }
     document.removeEventListener('touchmove', _mWkDragMove);
 
     const {tid, origDs, ghost, rowEl, currentTargetDs} = _mWkDrag;
@@ -1223,6 +1267,7 @@ async function mInit() {
   load();
   _mSetDate();
   mInitPickers();
+  mInitTodayDblTap();
   mInitSwipe();
   mInitPTR();
   mInitTBSwipe();
