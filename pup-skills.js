@@ -118,7 +118,8 @@ function openPupAddModal(){
   document.getElementById('pmWord').value='';
   document.getElementById('pmSignal').value='';
   document.getElementById('pmComments').value='';
-  document.getElementById('pmSkip').checked=false;
+  document.getElementById('pmSkipMochi').checked=false;
+  document.getElementById('pmSkipSunny').checked=false;
   document.getElementById('pupModal').classList.add('open');
   setTimeout(()=>document.getElementById('pmSkill').focus(),80);
 }
@@ -145,7 +146,6 @@ function openPupEditModal(id){
   document.getElementById('pmWord').value=s.word||'';
   document.getElementById('pmSignal').value=s.signal||'';
   document.getElementById('pmComments').value=s.comments||'';
-  document.getElementById('pmSkip').checked=isPupSkip(s.id);
   document.getElementById('pupModal').classList.add('open');
   setTimeout(()=>{const _el=document.getElementById('pmSkill');if(_el){_el.focus();const _l=_el.value.length;_el.setSelectionRange(_l,_l);}},80);
 }
@@ -162,7 +162,6 @@ async function savePupModal(){
     word:document.getElementById('pmWord').value.trim()||null,
     signal:document.getElementById('pmSignal').value.trim()||null,
     comments:document.getElementById('pmComments').value.trim()||null,
-    skip:document.getElementById('pmSkip').checked||false,
   };
   if(!data.skill){closeMod('pupModal');return;}
   if(data.focus&&data.stage!=='Mastered')data.stage='In Progress';
