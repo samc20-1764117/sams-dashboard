@@ -609,6 +609,13 @@ const M_TB_START = 6 * 60;   // 6am
 const M_TB_END   = 22 * 60;  // 10pm
 const M_PX       = 0.75;     // px per minute → 45px per hour, ~720px total
 
+function _mTStr(m) {
+  const h = Math.floor(m / 60), mn = m % 60;
+  const hd = h > 12 ? h - 12 : h === 0 ? 12 : h;
+  const suf = h >= 12 ? 'p' : 'a';
+  return mn ? `${hd}:${String(mn).padStart(2, '0')}${suf}` : `${hd}${suf}`;
+}
+
 let _mTBOffset = 0; // day offset (0=today, -1=yesterday, +1=tomorrow)
 
 // ── Timeblock rendering ───────────────────────────────────────────────────────
@@ -661,9 +668,16 @@ function mRenderTimeline() {
     const y   = (m - M_TB_START) * M_PX;
     const h   = m / 60;
     const lbl = h === 12 ? '12pm' : h > 12 ? (h - 12) + 'pm' : h + 'am';
+    const key = h === 8 || h === 16;
+    const lblCss = key
+      ? 'font-size:11px;color:var(--text);font-weight:700;width:40px;padding-right:6px;text-align:right;flex-shrink:0;line-height:1;margin-top:-7px'
+      : 'font-size:10px;color:var(--sub);width:40px;padding-right:6px;text-align:right;flex-shrink:0;line-height:1;margin-top:-6px';
+    const lineCss = key
+      ? 'flex:1;border-top:1.5px solid rgba(124,106,247,.25)'
+      : 'flex:1;border-top:1px solid var(--border)';
     hrs.push(`<div style="position:absolute;top:${y}px;left:0;right:0;display:flex;align-items:center;pointer-events:none">
-      <span style="font-size:10px;color:var(--sub);width:40px;padding-right:6px;text-align:right;flex-shrink:0;line-height:1;margin-top:-6px">${lbl}</span>
-      <div style="flex:1;border-top:1px solid var(--border)"></div>
+      <span style="${lblCss}">${lbl}</span>
+      <div style="${lineCss}"></div>
     </div>`);
   }
   labels.innerHTML = hrs.join('');
@@ -672,17 +686,15 @@ function mRenderTimeline() {
   const ds = d2s(getDayDate(_mTBOffset));
   const todayBlocks = (st.blocks || []).filter(b => b.ds === ds).sort((a, b) => a.sm - b.sm);
   col.innerHTML = todayBlocks.map(b => {
-    const y      = (b.sm - M_TB_START) * M_PX;
-    const hPx    = Math.max(b.dur * M_PX, 28);
-    const s      = gc(b.cat || '');
-    const smH    = Math.floor(b.sm / 60);
-    const smM    = b.sm % 60;
-    const timeLbl = `${smH > 12 ? smH - 12 : smH === 0 ? 12 : smH}:${String(smM).padStart(2, '0')}${smH >= 12 ? 'pm' : 'am'}`;
+    const y    = (b.sm - M_TB_START) * M_PX;
+    const hPx  = Math.max(b.dur * M_PX, 28);
+    const s    = gc(b.cat || '');
+    const timeRange = `${_mTStr(b.sm)}–${_mTStr(b.sm + b.dur)}`;
     return `<div class="m-tl-block" data-bid="${b.id}" style="top:${y}px;height:${hPx}px;background:${s.bg};border-left:3px solid ${s.d}">
-      <div style="overflow:hidden;flex:1;pointer-events:none">
-        <div style="font-size:10px;color:${s.d};font-weight:600;line-height:1.2">${timeLbl}</div>
+      <div style="overflow:hidden;flex:1;min-width:0;pointer-events:none">
         <div class="m-tl-block-name" style="color:${s.t}">${escHtml(b.title || '')}</div>
       </div>
+      <span style="font-size:10px;color:${s.d};font-weight:600;flex-shrink:0;white-space:nowrap;pointer-events:none;padding-left:4px;line-height:1.3;align-self:flex-start">${timeRange}</span>
     </div>`;
   }).join('');
 
