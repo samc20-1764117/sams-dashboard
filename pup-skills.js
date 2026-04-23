@@ -3,7 +3,7 @@ function _skipMap(){try{return JSON.parse(localStorage.getItem('pup_skip')||'{}'
 function isPupSkip(id){return _skipMap()[String(id)]===true}
 function _saveSkip(id,val){const m=_skipMap();if(val)m[String(id)]=true;else delete m[String(id)];localStorage.setItem('pup_skip',JSON.stringify(m))}
 // ─────────────────────────────────────────────────────────────────────────────
-let _pupEditId=null;
+let _pupEditId=null,_pupModalMochiId=null,_pupModalSunnyId=null;
 function _pupWkDone(skillId){const{mon,sun}=getWkBounds(0);const monDs=d2s(mon),sunDs=d2s(sun);return(st.pupSessions||[]).filter(s=>String(s.skill_id)===String(skillId)&&s.day_date>=monDs&&s.day_date<=sunDs&&s.done).length;}
 function _pupWkSessTotal(skillId){const{mon,sun}=getWkBounds(0);const monDs=d2s(mon),sunDs=d2s(sun);return(st.pupSessions||[]).filter(s=>String(s.skill_id)===String(skillId)&&s.day_date>=monDs&&s.day_date<=sunDs).length;}
 function _pupAllSess(skillId){return(st.pupSessions||[]).filter(s=>String(s.skill_id)===String(skillId));}
@@ -101,7 +101,7 @@ function setPupModalDog(val){
   }
 }
 function openPupAddModal(){
-  _pupEditId=null;
+  _pupEditId=null;_pupModalMochiId=null;_pupModalSunnyId=null;
   document.getElementById('pmPup').value='Mochi';
   document.getElementById('pmDogMochi').classList.add('active');
   document.getElementById('pmDogSunny').classList.remove('active');
@@ -133,6 +133,8 @@ function openPupEditModal(id){
   const _allRecs=st.pup_skills.filter(x=>x.skill===s.skill);
   const _mochiRec=_allRecs.find(x=>x.pup==='Mochi');
   const _sunnyRec=_allRecs.find(x=>x.pup==='Sunny');
+  _pupModalMochiId=_mochiRec?_mochiRec.id:null;
+  _pupModalSunnyId=_sunnyRec?_sunnyRec.id:null;
   document.getElementById('pmSkipMochi').checked=_mochiRec?isPupSkip(_mochiRec.id):false;
   document.getElementById('pmSkipSunny').checked=_sunnyRec?isPupSkip(_sunnyRec.id):false;
   setPupModalDog(s.pup||'Mochi');
@@ -150,6 +152,8 @@ function openPupEditModal(id){
   setTimeout(()=>{const _el=document.getElementById('pmSkill');if(_el){_el.focus();const _l=_el.value.length;_el.setSelectionRange(_l,_l);}},80);
 }
 async function savePupModal(){
+  const _skipMochi=document.getElementById('pmSkipMochi').checked;
+  const _skipSunny=document.getElementById('pmSkipSunny').checked;
   const data={
     pup:document.getElementById('pmPup').value,
     skill:document.getElementById('pmSkill').value.trim(),
@@ -174,20 +178,19 @@ async function savePupModal(){
     save();renderPupsPage();renderPupSkillsHighlight();
     for(const s of recs){
       const sv=await sbReq('POST','pup_skills',{...data,pup:s.pup,skip:false});
-      if(sv&&sv[0]){const i=st.pup_skills.findIndex(x=>x.id===s.id);if(i>-1)st.pup_skills[i]=sv[0];save();}
+      if(sv&&sv[0]){const i=st.pup_skills.findIndex(x=>x.id===s.id);if(i>-1)st.pup_skills[i]=sv[0];save();
+        if(s.pup==='Mochi'&&_skipMochi)_saveSkip(sv[0].id,true);
+        if(s.pup==='Sunny'&&_skipSunny)_saveSkip(sv[0].id,true);
+      }
     }
     renderPupsPage();renderPupSkillsHighlight();renderToday();renderWkCal();
   } else {
     const idx=st.pup_skills.findIndex(x=>x.id==_pupEditId);if(idx<0)return;
     const oldSkill=st.pup_skills[idx].skill;
     const prevData={...st.pup_skills[idx]};
-    // Don't overwrite pup field on existing records — pup is determined by _pupEditId
-    // Save skip independently for each pup (both checkboxes always visible)
-    const _allSkillRecs=st.pup_skills.filter(x=>x.skill===oldSkill||x.skill===data.skill);
-    const _mochiSkipRec=_allSkillRecs.find(x=>x.pup==='Mochi');
-    const _sunnySkipRec=_allSkillRecs.find(x=>x.pup==='Sunny');
-    if(_mochiSkipRec)_saveSkip(_mochiSkipRec.id,document.getElementById('pmSkipMochi').checked);
-    if(_sunnySkipRec)_saveSkip(_sunnySkipRec.id,document.getElementById('pmSkipSunny').checked);
+    // Save skip independently for each pup using IDs captured at modal open
+    if(_pupModalMochiId)_saveSkip(_pupModalMochiId,_skipMochi);
+    if(_pupModalSunnyId)_saveSkip(_pupModalSunnyId,_skipSunny);
     const editData={skill:data.skill,category:data.category,level:data.level,stage:data.stage,skill_order:data.skill_order,focus:data.focus,next_step:data.next_step,word:data.word,signal:data.signal,comments:data.comments};
     Object.assign(st.pup_skills[idx],editData);
     if(data.skill&&data.skill!==oldSkill){st.blocks.filter(b=>b.cat==='pup_session'&&b.title===oldSkill).forEach(b=>{b.title=data.skill;});}
