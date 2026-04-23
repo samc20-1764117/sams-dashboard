@@ -77,7 +77,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .m-add-row2{display:flex;gap:8px;align-items:center}
 #mAddBtn{height:40px;padding:0 18px;border-radius:var(--rs);border:none;background:var(--accent);color:#fff;font-size:15px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0}
 #mAddFlagBtn{height:40px;width:40px;border-radius:var(--rs);border:1px solid var(--border);background:var(--glass);color:var(--sub);font-size:18px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:background .15s,color .15s}
-#mAddFlagBtn.flagged{background:rgba(239,68,68,.12);color:#dc2626;border-color:rgba(239,68,68,.3)}
+#mAddFlagBtn.flagged{background:rgba(245,158,11,.15);color:#d97706;border-color:rgba(245,158,11,.4)}
 
 /* ── Bottom nav ───────────────────────────────────────────────────────────── */
 #mNav{position:fixed;bottom:0;left:0;right:0;height:calc(52px + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);display:flex;background:var(--bg);border-top:1px solid var(--border);z-index:15}
@@ -97,7 +97,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .m-imp-row{display:flex;align-items:center;gap:10px;margin-bottom:14px}
 .m-imp-row label{font-size:13px;color:var(--sub);flex:1}
 .m-imp-toggle{height:32px;padding:0 14px;border-radius:20px;border:1px solid var(--border);background:var(--glass);color:var(--sub);font-size:13px;font-weight:600;cursor:pointer;transition:background .15s,color .15s}
-.m-imp-toggle.on{background:rgba(239,68,68,.12);color:#dc2626;border-color:rgba(239,68,68,.3)}
+.m-imp-toggle.on{background:rgba(245,158,11,.15);color:#d97706;border-color:rgba(245,158,11,.4)}
 #mEditSheet .m-cpick-opts{z-index:102}
 .m-edit-actions{display:flex;gap:10px}
 .m-edit-actions button{flex:1;padding:12px;border-radius:var(--rs);border:none;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer}
@@ -175,8 +175,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .m-wk-cnt{font-size:11px;font-weight:600;color:var(--sub);background:var(--glass);border:1px solid var(--border);padding:2px 7px;border-radius:10px}
 .m-wk-add{background:none;border:none;font-size:20px;color:var(--sub);cursor:pointer;padding:0 2px;line-height:1;font-weight:300;opacity:.6}
 .m-wk-add:active{opacity:1;color:var(--accent)}
-.m-wk-day.m-wk-drop-target{outline:2px solid var(--accent);outline-offset:-2px;border-radius:2px}
-.m-wk-day.m-wk-drop-target .m-wk-hd{background:rgba(124,106,247,.12)}
+.m-wk-day.m-wk-drop-target{background:rgba(124,106,247,.08);outline:none}
+.m-wk-day.m-wk-drop-target .m-wk-hd{background:rgba(124,106,247,.18);color:var(--accent)}
+.m-wk-day.m-wk-drop-target .m-wk-row{background:rgba(124,106,247,.05)}
 .m-wk-empty{padding:8px 14px;font-size:12px;color:var(--sub)}
 
 /* Week task row */

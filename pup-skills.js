@@ -123,7 +123,7 @@ function openPupEditModal(id){
   _pupEditId=id;
   document.getElementById('pmDogToggle').style.display='';
   document.getElementById('pmBothLabel').style.display='none';
-  document.getElementById('pmSkipRow').style.display='';
+  document.getElementById('pmSkipRow').style.display='flex';
   setPupModalDog(s.pup||'Mochi');
   document.getElementById('pmSkill').value=s.skill||'';
   document.getElementById('pmCategory').value=s.category||'';
