@@ -530,25 +530,25 @@ function renderPupTable(){
     const pupCells=pups.map(p=>{
       const s=g.byPup[p];
       const col=pupColor[p]||'var(--border)';
-      const pillBase=`display:flex;align-items:center;border-radius:7px;overflow:hidden;height:24px;box-sizing:border-box;background:rgba(255,255,255,.6);border:1.5px solid ${col}28;box-shadow:0 1px 3px rgba(0,0,0,.06)`;
-      if(!s)return`<td style="padding:2px 5px"><div style="${pillBase};opacity:.3;justify-content:center"><span style="font-size:10px;color:var(--muted)">—</span></div></td>`;
-      if(s.skip===true||s.skip==='true')return`<td style="padding:2px 5px"><div onclick="event.stopPropagation();setPupSkip('${String(s.id)}',false)" title="Remove not relevant" style="${pillBase};opacity:.25;justify-content:center;cursor:pointer"><span style="font-size:12px;color:var(--muted);letter-spacing:3px">— —</span></div></td>`;
+      const pillBase=`display:grid;grid-template-columns:30px 1fr 34px;align-items:center;border-radius:7px;overflow:hidden;height:24px;box-sizing:border-box;background:rgba(255,255,255,.6);border:1.5px solid ${col}28;box-shadow:0 1px 3px rgba(0,0,0,.06)`;
+      if(!s)return`<td style="padding:2px 5px"><div style="${pillBase};grid-template-columns:1fr;justify-items:center;opacity:.3"><span style="font-size:10px;color:var(--muted)">—</span></div></td>`;
+      if(s.skip===true||s.skip==='true')return`<td style="padding:2px 5px"><div onclick="event.stopPropagation();setPupSkip('${String(s.id)}',false)" title="Remove not relevant" style="${pillBase};grid-template-columns:1fr;justify-items:center;opacity:.25;cursor:pointer"><span style="font-size:12px;color:var(--muted);letter-spacing:3px">— —</span></div></td>`;
       const sid=String(s.id);
       const nextStep=s.next_step&&s.next_step!=='None'?esc(s.next_step):'';
       const comment=s.comments&&s.comments!=='None'?esc(s.comments):'';
       const isNotStarted=!s.stage||s.stage==='Not Started';
       if(isNotStarted){
-        return`<td onclick="event.stopPropagation();pupStageClick('${sid}')" style="padding:2px 5px;cursor:pointer" title="Click to start"><div style="${pillBase};opacity:.18;width:100%"></div></td>`;
+        return`<td onclick="event.stopPropagation();pupStageClick('${sid}')" style="padding:2px 5px;cursor:pointer" title="Click to start"><div style="${pillBase};grid-template-columns:1fr;opacity:.18"></div></td>`;
       }
       let stageWidget;
       if(s.stage==='In Progress'){
-        stageWidget=`<div style="width:30px;height:100%;display:flex;align-items:center;justify-content:center;flex-shrink:0"><input type="checkbox" onclick="event.stopPropagation();pupStageCheck('${sid}',this.checked)" style="width:12px;height:12px;cursor:pointer;accent-color:${col}" title="Mark mastered"></div>`;
+        stageWidget=`<div style="height:100%;display:flex;align-items:center;justify-content:center"><input type="checkbox" onclick="event.stopPropagation();pupStageCheck('${sid}',this.checked)" style="width:12px;height:12px;cursor:pointer;accent-color:${col}" title="Mark mastered"></div>`;
       } else {
-        stageWidget=`<div style="width:30px;height:100%;display:flex;align-items:center;justify-content:center;flex-shrink:0"><input type="checkbox" checked onclick="event.stopPropagation();pupStageCheck('${sid}',this.checked)" style="width:12px;height:12px;cursor:pointer;accent-color:#22c55e;opacity:.75" title="Mastered — click to revert"></div>`;
+        stageWidget=`<div style="height:100%;display:flex;align-items:center;justify-content:center"><input type="checkbox" checked onclick="event.stopPropagation();pupStageCheck('${sid}',this.checked)" style="width:12px;height:12px;cursor:pointer;accent-color:#22c55e;opacity:.75" title="Mastered — click to revert"></div>`;
       }
-      const nextHover=comment?`onmouseenter="showPupTip(event,'${comment}')" onmouseleave="hidePupTip()" style="cursor:help"`:'';
-      const nextDiv=`<div ondblclick="event.stopPropagation();pupCellEdit(this.closest('td'),'${sid}','next_step')" ${nextHover} style="flex:1;padding:0 6px;font-size:11px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;min-width:0;color:var(--text)">${nextStep}</div>`;
-      const sessDiv=`<div onclick="event.stopPropagation();openPupCountEdit('${sid}',this)" style="width:34px;height:100%;display:flex;align-items:center;justify-content:flex-end;padding-right:6px;cursor:pointer;flex-shrink:0" title="Session details">${_pupCountBadge(s)}</div>`;
+      const nextHover=comment?`onmouseenter="showPupTip(event,'${comment}')" onmouseleave="hidePupTip()" style="cursor:help;padding:0 6px;font-size:11px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:var(--text)"`:`style="padding:0 6px;font-size:11px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:var(--text)"`;
+      const nextDiv=`<div ondblclick="event.stopPropagation();pupCellEdit(this.closest('td'),'${sid}','next_step')" ${nextHover}>${nextStep}</div>`;
+      const sessDiv=`<div onclick="event.stopPropagation();openPupCountEdit('${sid}',this)" style="height:100%;display:flex;align-items:center;justify-content:flex-end;padding-right:6px;cursor:pointer" title="Session details">${_pupCountBadge(s)}</div>`;
       return`<td style="padding:2px 5px"><div style="${pillBase}">${stageWidget}${nextDiv}${sessDiv}</div></td>`;
     }).join('');
     const firstRec=pups.map(p=>g.byPup[p]).find(Boolean);
