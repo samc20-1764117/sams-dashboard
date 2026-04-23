@@ -427,6 +427,13 @@ async function pupStageClick(sid){
   const s=st.pup_skills[idx];
   if(s.stage==='Not Started'||!s.stage){pupSnapshot();s.stage='In Progress';save();renderPupTable();sbReqSilent('PATCH','pup_skills',{stage:'In Progress'},`?id=eq.${sid}`);}
 }
+async function setPupSkip(sid,val){
+  const idx=st.pup_skills.findIndex(x=>String(x.id)===String(sid));if(idx<0)return;
+  pupSnapshot();
+  st.pup_skills[idx].skip=val;
+  save();renderPupTable();renderPupsPage();
+  sbReqSilent('PATCH','pup_skills',{skip:val},`?id=eq.${sid}`);
+}
 async function pupStageCheck(sid,checked){
   const idx=st.pup_skills.findIndex(x=>String(x.id)===String(sid));if(idx<0)return;
   pupSnapshot();
@@ -521,7 +528,7 @@ function renderPupTable(){
       const pillBase=`display:flex;align-items:center;border-radius:8px;overflow:hidden;height:28px;box-sizing:border-box;background:rgba(255,255,255,.6);border:1.5px solid ${col}28;box-shadow:0 1px 4px rgba(0,0,0,.07)`;
       const sep=`<div style="width:1px;height:16px;background:${col}22;flex-shrink:0"></div>`;
       if(!s)return`<td style="padding:3px 5px"><div style="${pillBase};opacity:.35;justify-content:center"><span style="font-size:10px;color:var(--muted)">—</span></div></td>`;
-      if(s.skip===true||s.skip==='true')return`<td style="padding:3px 5px"><div style="${pillBase};opacity:.25;justify-content:center"><span style="font-size:13px;color:var(--muted);letter-spacing:3px">— —</span></div></td>`;
+      if(s.skip===true||s.skip==='true')return`<td style="padding:3px 5px"><div onclick="event.stopPropagation();setPupSkip('${String(s.id)}',false)" title="Remove not relevant" style="${pillBase};opacity:.28;justify-content:center;cursor:pointer"><span style="font-size:13px;color:var(--muted);letter-spacing:3px">— —</span></div></td>`;
       const sid=String(s.id);
       const nextStep=s.next_step&&s.next_step!=='None'?esc(s.next_step):'';
       const comment=s.comments&&s.comments!=='None'?esc(s.comments):'';
@@ -536,7 +543,8 @@ function renderPupTable(){
       const nextHover=comment?`onmouseenter="showPupTip(event,'${comment}')" onmouseleave="hidePupTip()" style="cursor:help"`:'';
       const nextDiv=`<div ondblclick="event.stopPropagation();pupCellEdit(this.closest('td'),'${sid}','next_step')" ${nextHover} style="flex:1;padding:0 7px;font-size:11px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;min-width:0;color:var(--text)">${nextStep}</div>`;
       const sessDiv=`<div onclick="event.stopPropagation();openPupCountEdit('${sid}',this)" style="width:38px;height:100%;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0" title="Session details">${_pupCountBadge(s)}</div>`;
-      return`<td style="padding:3px 5px"><div style="${pillBase}">${stageWidget}${sep}${nextDiv}${sep}${sessDiv}</div></td>`;
+      const naBtn=`<button onclick="event.stopPropagation();setPupSkip('${sid}',true)" class="pup-na-btn" title="Mark as not relevant for this pup">n/a</button>`;
+      return`<td style="padding:3px 5px"><div style="${pillBase};position:relative">${stageWidget}${sep}${nextDiv}${sep}${sessDiv}${naBtn}</div></td>`;
     }).join('');
     const firstRec=pups.map(p=>g.byPup[p]).find(Boolean);
     const tipAttr=hasTip?` onmouseenter="showPupRichTip(event,${tipRows.replace(/"/g,'&quot;')})" onmouseleave="hidePupTip()" style="cursor:help"`:'';
