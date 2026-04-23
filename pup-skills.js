@@ -477,14 +477,12 @@ function renderPupTable(){
   const ths='cursor:pointer;user-select:none;white-space:nowrap;padding:5px 6px;font-size:11px';
   const thsS='user-select:none;white-space:nowrap;padding:5px 6px;font-size:11px';
   const tdE='user-select:none;cursor:default;font-size:11px';
-  const totalCols=2+pups.length*3+1;
+  const totalCols=2+pups.length+1;
   thead.innerHTML=`<tr>
-    <th onclick="pupHdrClick('skill')" ondblclick="pupHdrDbl(event,'skill')" rowspan="2" style="${ths};max-width:140px;width:140px">Skill${arrow('skill')}${fdot('skill')}</th>
-    <th onclick="pupHdrClick('word')" ondblclick="pupHdrDbl(event,'word')" rowspan="2" style="${ths};width:72px">Word${arrow('word')}</th>
-    ${pups.map(p=>`<th colspan="3" style="${thsS};text-align:center;color:${pupColor[p]||'var(--text)'};border-left:2px solid ${pupColor[p]||'var(--border)'}33">${p}</th>`).join('')}
-    <th rowspan="2" style="width:44px"></th>
-  </tr><tr>
-    ${pups.map(p=>`<th style="${thsS};width:50px;text-align:center;border-left:2px solid ${pupColor[p]||'var(--border)'}33">Stage</th><th style="${thsS};width:72px">Next</th><th style="${thsS};width:50px;text-align:center">Sess</th>`).join('')}
+    <th onclick="pupHdrClick('skill')" ondblclick="pupHdrDbl(event,'skill')" style="${ths};width:100px;max-width:100px">Skill${arrow('skill')}${fdot('skill')}</th>
+    <th onclick="pupHdrClick('word')" ondblclick="pupHdrDbl(event,'word')" style="${ths};width:72px">Word${arrow('word')}</th>
+    ${pups.map(p=>`<th style="${thsS};color:${pupColor[p]||'var(--text)'}">${p}</th>`).join('')}
+    <th style="width:28px"></th>
   </tr>`;
   let lastMasteredSec=null;
   const rowsHtml=[];
@@ -501,28 +499,32 @@ function renderPupTable(){
     const allNotes=pups.map(p=>{const s=g.byPup[p];return s&&s.comments&&s.comments!=='None'?`${p}: ${esc(s.comments)}`:null;}).filter(Boolean).join(' | ');
     const pupCells=pups.map(p=>{
       const s=g.byPup[p];
-      const borderL=`border-left:2px solid ${pupColor[p]||'var(--border)'}33`;
-      if(!s)return`<td colspan="3" style="padding:4px 6px;color:var(--muted);font-size:10px;${borderL}">—</td>`;
-      if(s.skip===true||s.skip==='true'){return`<td colspan="3" style="text-align:center;color:var(--muted);opacity:.3;font-size:14px;letter-spacing:2px;${borderL}">— —</td>`;}
+      const col=pupColor[p]||'var(--border)';
+      const pillBase=`display:flex;align-items:center;border-radius:8px;overflow:hidden;height:28px;box-sizing:border-box;background:rgba(255,255,255,.6);border:1.5px solid ${col}28;box-shadow:0 1px 4px rgba(0,0,0,.07)`;
+      const sep=`<div style="width:1px;height:16px;background:${col}22;flex-shrink:0"></div>`;
+      if(!s)return`<td style="padding:3px 5px"><div style="${pillBase};opacity:.35;justify-content:center"><span style="font-size:10px;color:var(--muted)">—</span></div></td>`;
+      if(s.skip===true||s.skip==='true')return`<td style="padding:3px 5px"><div style="${pillBase};opacity:.25;justify-content:center"><span style="font-size:13px;color:var(--muted);letter-spacing:3px">— —</span></div></td>`;
       const sid=String(s.id);
       const nextStep=s.next_step&&s.next_step!=='None'?esc(s.next_step):'';
       const comment=s.comments&&s.comments!=='None'?esc(s.comments):'';
-      let stageCell;
+      let stageWidget;
       if(!s.stage||s.stage==='Not Started'){
-        stageCell=`<td onclick="event.stopPropagation();pupStageClick('${sid}')" style="padding:4px 6px;cursor:pointer;text-align:center;${borderL}" title="Click to start"></td>`;
+        stageWidget=`<div onclick="event.stopPropagation();pupStageClick('${sid}')" style="width:34px;height:100%;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0" title="Click to start"><span style="font-size:9px;color:${col};opacity:.4">○</span></div>`;
       } else if(s.stage==='In Progress'){
-        stageCell=`<td style="padding:4px 6px;text-align:center;${borderL}"><input type="checkbox" onclick="event.stopPropagation();pupStageCheck('${sid}',this.checked)" style="width:13px;height:13px;cursor:pointer;accent-color:${pupColor[p]||'#8b5cf6'}" title="Mark mastered"></td>`;
+        stageWidget=`<div style="width:34px;height:100%;display:flex;align-items:center;justify-content:center;flex-shrink:0"><input type="checkbox" onclick="event.stopPropagation();pupStageCheck('${sid}',this.checked)" style="width:13px;height:13px;cursor:pointer;accent-color:${col}" title="Mark mastered"></div>`;
       } else {
-        stageCell=`<td style="padding:4px 6px;text-align:center;${borderL}"><input type="checkbox" checked onclick="event.stopPropagation();pupStageCheck('${sid}',this.checked)" style="width:13px;height:13px;cursor:pointer;accent-color:#22c55e;opacity:.75" title="Mastered — click to revert"></td>`;
+        stageWidget=`<div style="width:34px;height:100%;display:flex;align-items:center;justify-content:center;flex-shrink:0"><input type="checkbox" checked onclick="event.stopPropagation();pupStageCheck('${sid}',this.checked)" style="width:13px;height:13px;cursor:pointer;accent-color:#22c55e;opacity:.75" title="Mastered — click to revert"></div>`;
       }
-      const nextTip=comment?` onmouseenter="showPupTip(event,'${comment}')" onmouseleave="hidePupTip()" style="padding:4px 6px;${tdE};cursor:help"`:` style="padding:4px 6px;${tdE}"`;
-      return`${stageCell}<td ondblclick="pupCellEdit(this,'${sid}','next_step')"${nextTip}>${nextStep||''}</td><td onclick="event.stopPropagation();openPupCountEdit('${sid}',this)" style="padding:4px 4px;text-align:center;cursor:pointer;${tdE}" title="Click for session details">${_pupCountBadge(s)}</td>`;
+      const nextHover=comment?`onmouseenter="showPupTip(event,'${comment}')" onmouseleave="hidePupTip()" style="cursor:help"`:'';
+      const nextDiv=`<div ondblclick="event.stopPropagation();pupCellEdit(this.closest('td'),'${sid}','next_step')" ${nextHover} style="flex:1;padding:0 7px;font-size:11px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;min-width:0;color:var(--text)">${nextStep}</div>`;
+      const sessDiv=`<div onclick="event.stopPropagation();openPupCountEdit('${sid}',this)" style="width:38px;height:100%;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0" title="Session details">${_pupCountBadge(s)}</div>`;
+      return`<td style="padding:3px 5px"><div style="${pillBase}">${stageWidget}${sep}${nextDiv}${sep}${sessDiv}</div></td>`;
     }).join('');
     const firstRec=pups.map(p=>g.byPup[p]).find(Boolean);
     const skillTip=allNotes?` onmouseenter="showPupTip(event,'${allNotes}')" onmouseleave="hidePupTip()" style="padding:4px 8px;${tdE};cursor:help"`:` style="padding:4px 8px;${tdE}"`;
     const rowSel=_selSkillKeys.has(g.skill)?'pup-sel':'';
     rowsHtml.push(`<tr data-skillkey="${esc(g.skill)}" class="${rowSel}" onclick="pupRowClick(event,'${esc(g.skill)}')" ondblclick="openPupEditModal('${firstRec?String(firstRec.id):''}')"${!_pupSortCol?' style="cursor:grab"':''}>
-      <td${skillTip} style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(g.skill)}</td>
+      <td${skillTip} style="height:36px;max-width:100px;width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(g.skill)}</td>
       <td style="width:72px;padding:4px 6px;${tdE};font-style:${word?'italic':'normal'};color:${word?'var(--text)':'var(--muted)'}">${word||'—'}</td>
       ${pupCells}
       <td style="width:28px;padding:2px 4px;text-align:right"><button class="pup-del" data-skillkey="${esc(g.skill)}" onclick="event.stopPropagation();deletePupGroup(this.dataset.skillkey)" title="Delete">×</button></td>
