@@ -169,6 +169,10 @@ async function savePupModal(){
   };
   if(!data.skill){closeMod('pupModal');return;}
   if(data.focus&&data.stage!=='Mastered')data.stage='In Progress';
+  // Save skip immediately — before any guards that might return early
+  if(_pupModalMochiId)_saveSkip(_pupModalMochiId,_skipMochi);
+  if(_pupModalSunnyId)_saveSkip(_pupModalSunnyId,_skipSunny);
+  renderPupTable();
   pupSnapshot();
   closeMod('pupModal');
   if(!_pupEditId){
@@ -188,9 +192,6 @@ async function savePupModal(){
     const idx=st.pup_skills.findIndex(x=>x.id==_pupEditId);if(idx<0)return;
     const oldSkill=st.pup_skills[idx].skill;
     const prevData={...st.pup_skills[idx]};
-    // Save skip independently for each pup using IDs captured at modal open
-    if(_pupModalMochiId)_saveSkip(_pupModalMochiId,_skipMochi);
-    if(_pupModalSunnyId)_saveSkip(_pupModalSunnyId,_skipSunny);
     const editData={skill:data.skill,category:data.category,level:data.level,stage:data.stage,skill_order:data.skill_order,focus:data.focus,next_step:data.next_step,word:data.word,signal:data.signal,comments:data.comments};
     Object.assign(st.pup_skills[idx],editData);
     if(data.skill&&data.skill!==oldSkill){st.blocks.filter(b=>b.cat==='pup_session'&&b.title===oldSkill).forEach(b=>{b.title=data.skill;});}
