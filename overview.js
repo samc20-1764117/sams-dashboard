@@ -2988,8 +2988,6 @@ function drawRecAutoTBBlock(col,ratb,ds){
   const el=document.createElement('div');
   el.className='atb-block rec-atb-block';
   el.dataset.recAutoId=ratb._recAutoId;
-  el.style.cssText=`top:${top}px;height:${ht}px;left:2px;right:2px`;
-  el.style.background='rgba(42,157,181,.13)';el.style.borderColor='rgba(42,157,181,.35)';
   const ncols=ratb._ncols||1,col_i=ratb._col||0,colW=100/ncols,left2=col_i*colW;
   el.style.cssText=`top:${top}px;height:${ht}px;left:calc(${left2}% + 2px);right:calc(${100-left2-colW}% + 2px);width:auto`;
   const _showTime=ncols<=1;

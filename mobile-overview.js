@@ -575,7 +575,7 @@ function mInitPTR() {
 }
 
 // ── Tab switching ─────────────────────────────────────────────────────────────
-let _mCurTab = 'today';
+let _mCurTab = 'tb';
 
 function mShowTab(tab) {
   _mCurTab = tab;
@@ -685,7 +685,7 @@ function mRenderTimeline() {
   // Blocks for displayed day
   const ds = d2s(getDayDate(_mTBOffset));
   const todayBlocks = (st.blocks || []).filter(b => b.ds === ds).sort((a, b) => a.sm - b.sm);
-  col.innerHTML = todayBlocks.map(b => {
+  let html = todayBlocks.map(b => {
     const y    = (b.sm - M_TB_START) * M_PX;
     const hPx  = Math.max(b.dur * M_PX, 28);
     const s    = gc(b.cat || '');
@@ -697,6 +697,69 @@ function mRenderTimeline() {
       <span class="m-tl-block-time" style="color:${s.d};pointer-events:none">${timeRange}</span>
     </div>`;
   }).join('');
+
+  // Auto blocks
+  if (cfg.showAutoTB) {
+    const dow = new Date(ds + 'T00:00:00').getDay();
+    const isWeekday = dow >= 1 && dow <= 5;
+    if (isWeekday) {
+      (st.autoTimeblocks || []).filter(a => a.is_enabled).forEach(a => {
+        const ov = (st.autoTBOverrides || []).find(o => String(o.base_id) === String(a.id) && o.date === ds);
+        if (ov && (ov.start_time === null || ov.start_time === undefined)) return;
+        const startTime = ov ? ov.start_time : a.start_time;
+        const endTime = ov ? ov.end_time : a.end_time;
+        const [sh, sm2] = (startTime || '00:00').split(':');
+        const [eh, em] = (endTime || '00:30').split(':');
+        const startMin = parseInt(sh) * 60 + parseInt(sm2 || 0);
+        const endMin = parseInt(eh) * 60 + parseInt(em || 0);
+        const dur = Math.max(15, endMin - startMin);
+        const y = (startMin - M_TB_START) * M_PX;
+        const hPx = Math.max(dur * M_PX, 28);
+        html += `<div class="m-tl-block m-auto-block" style="top:${y}px;height:${hPx}px;background:rgba(124,106,247,.12);border:1px dashed rgba(124,106,247,.35);border-left:3px solid rgba(124,106,247,.5)">
+          <div style="overflow:hidden;flex:1;min-width:0;pointer-events:none">
+            <div class="m-tl-block-name" style="color:rgba(124,106,247,.8)">${escHtml(a.label || '')}</div>
+          </div>
+          <span class="m-tl-block-time" style="color:rgba(124,106,247,.6);pointer-events:none">${_mTStr(startMin)}–${_mTStr(startMin + dur)}</span>
+        </div>`;
+      });
+    }
+  }
+
+  // Recurring auto blocks
+  const dsDate = new Date(ds + 'T00:00:00');
+  const today2 = new Date(); today2.setHours(0, 0, 0, 0);
+  const dsDow = (dsDate.getDay() + 6) % 7;
+  const todDow = (today2.getDay() + 6) % 7;
+  const dsMon = new Date(dsDate); dsMon.setDate(dsDate.getDate() - dsDow);
+  const todMon = new Date(today2); todMon.setDate(today2.getDate() - todDow);
+  const wOff = Math.round((dsMon - todMon) / (7 * 86400000));
+  const wkKey = dsToWkKey(ds);
+  const virtTasks = getRecurringWeekTasks(wOff);
+  virtTasks.forEach(v => {
+    if (v.due_date !== ds || v.done) return;
+    const r = st.recurring.find(x => String(x.id) === String(v._recId));
+    if (!r || !r.default_start_time) return;
+    if ((st.blocks || []).some(b => b.ds === ds && String(b.recId) === String(r.id))) return;
+    const tbOv = r._dateOverrides && r._dateOverrides['tb::' + wkKey];
+    if (tbOv === '__skip__') return;
+    const startTime = tbOv && tbOv.start ? tbOv.start : r.default_start_time;
+    const endTime = tbOv && tbOv.end ? tbOv.end : r.default_end_time;
+    const [sh, sm2] = (startTime || '00:00').split(':');
+    const [eh, em] = (endTime || '00:30').split(':');
+    const startMin = parseInt(sh) * 60 + parseInt(sm2 || 0);
+    const endMin = parseInt(eh) * 60 + parseInt(em || 0);
+    const dur = Math.max(15, endMin - startMin);
+    const y = (startMin - M_TB_START) * M_PX;
+    const hPx = Math.max(dur * M_PX, 28);
+    html += `<div class="m-tl-block m-rec-auto-block" style="top:${y}px;height:${hPx}px;background:rgba(124,106,247,.08);border:1px dashed rgba(124,106,247,.3);border-left:3px solid rgba(124,106,247,.4)">
+      <div style="overflow:hidden;flex:1;min-width:0;pointer-events:none">
+        <div class="m-tl-block-name" style="color:rgba(124,106,247,.7)">${escHtml(v.name || '')}</div>
+      </div>
+      <span class="m-tl-block-time" style="color:rgba(124,106,247,.5);pointer-events:none">${_mTStr(startMin)}–${_mTStr(startMin + dur)}</span>
+    </div>`;
+  });
+
+  col.innerHTML = html;
 
   // Now line (only for today)
   if (_mTBOffset === 0) {
@@ -1290,6 +1353,7 @@ async function mInit() {
   if (!authed) return;
   hideLoginOverlay();
   await syncAll();
+  mShowTab('tb');
   setInterval(() => { if (cfg.url && cfg.key) syncAll(true); }, 30000);
 }
 
