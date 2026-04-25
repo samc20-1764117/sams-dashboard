@@ -636,17 +636,41 @@ function mRenderUnassigned() {
   const bar = document.getElementById('mUnassignedBar');
   if (!bar) return;
   const ds = d2s(getDayDate(_mTBOffset));
+  // Regular tasks due this day
   const dayTasks = st.tasks.filter(t =>
     t.due_date && t.due_date.split('T')[0] === ds && !t.done && t.category !== 'Weekly Goals'
   );
   const blockedIds = new Set((st.blocks || []).filter(b => b.ds === ds && b.taskId).map(b => String(b.taskId)));
+  const blockedRecIds = new Set((st.blocks || []).filter(b => b.ds === ds && b.recId).map(b => String(b.recId)));
   const unassigned = dayTasks.filter(t => !blockedIds.has(String(t.id)));
 
-  if (!unassigned.length) {
+  // Recurring virtual tasks due this day without blocks or auto-placement
+  const dsDate = new Date(ds + 'T00:00:00');
+  const today2 = new Date(); today2.setHours(0, 0, 0, 0);
+  const dsDow2 = (dsDate.getDay() + 6) % 7;
+  const todDow2 = (today2.getDay() + 6) % 7;
+  const dsMon2 = new Date(dsDate); dsMon2.setDate(dsDate.getDate() - dsDow2);
+  const todMon2 = new Date(today2); todMon2.setDate(today2.getDate() - todDow2);
+  const wOff2 = Math.round((dsMon2 - todMon2) / (7 * 86400000));
+  const recUnassigned = getRecurringWeekTasks(wOff2).filter(v => {
+    if (v.due_date !== ds || v.done) return false;
+    const r = st.recurring.find(x => String(x.id) === String(v._recId));
+    if (!r) return false;
+    if (blockedRecIds.has(String(r.id))) return false;
+    if (r.default_start_time) return false; // has auto-placement
+    return true;
+  });
+
+  const allUnassigned = [
+    ...unassigned.map(t => ({ id: t.id, name: t.name, category: t.category, isRec: false })),
+    ...recUnassigned.map(v => ({ id: 'rec-' + v._recId, name: v.name, category: v.category, isRec: true }))
+  ];
+
+  if (!allUnassigned.length) {
     bar.innerHTML = '<span class="m-chip-empty">No unassigned tasks</span>';
     return;
   }
-  bar.innerHTML = unassigned.map(t => {
+  bar.innerHTML = allUnassigned.map(t => {
     const s   = gc(t.category || '');
     const sel = _mSelectedChipId === String(t.id);
     return `<button class="m-chip${sel ? ' selected' : ''}" onclick="mSelectChip('${t.id}')" style="--cdot:${s.bg};--cborder:${s.d}">${escHtml(t.name)}</button>`;
