@@ -612,8 +612,8 @@ const M_PX       = 0.75;     // px per minute → 45px per hour, ~720px total
 function _mTStr(m) {
   const h = Math.floor(m / 60), mn = m % 60;
   const hd = h > 12 ? h - 12 : h === 0 ? 12 : h;
-  const suf = h >= 12 ? 'p' : 'a';
-  return mn ? `${hd}:${String(mn).padStart(2, '0')}${suf}` : `${hd}${suf}`;
+  const suf = h >= 12 ? 'pm' : 'am';
+  return `${hd}:${String(mn).padStart(2, '0')}${suf}`;
 }
 
 let _mTBOffset = 0; // day offset (0=today, -1=yesterday, +1=tomorrow)
@@ -636,10 +636,15 @@ function mRenderUnassigned() {
   const bar = document.getElementById('mUnassignedBar');
   if (!bar) return;
   const ds = d2s(getDayDate(_mTBOffset));
-  // Regular tasks due this day
-  const dayTasks = st.tasks.filter(t =>
-    t.due_date && t.due_date.split('T')[0] === ds && !t.done && t.category !== 'Weekly Goals'
-  );
+  const isToday = _mTBOffset === 0;
+  // Regular tasks due this day (include overdue if viewing today)
+  const dayTasks = st.tasks.filter(t => {
+    if (!t.due_date || t.done || t.category === 'Weekly Goals') return false;
+    const tds = t.due_date.split('T')[0];
+    if (tds === ds) return true;
+    if (isToday && isOv(t.due_date)) return true;
+    return false;
+  });
   const blockedIds = new Set((st.blocks || []).filter(b => b.ds === ds && b.taskId).map(b => String(b.taskId)));
   const blockedRecIds = new Set((st.blocks || []).filter(b => b.ds === ds && b.recId).map(b => String(b.recId)));
   const unassigned = dayTasks.filter(t => !blockedIds.has(String(t.id)));
@@ -661,9 +666,18 @@ function mRenderUnassigned() {
     return true;
   });
 
+  // Shopping items due this day
+  const shopUnassigned = (st.shopping || []).filter(s => {
+    if (!s.due_date || s.done) return false;
+    if (s.due_date === ds) return true;
+    if (isToday && isOv(s.due_date)) return true;
+    return false;
+  }).filter(s => !(st.blocks || []).some(b => b.ds === ds && String(b.shopId) === String(s.id)));
+
   const allUnassigned = [
-    ...unassigned.map(t => ({ id: t.id, name: t.name, category: t.category, isRec: false })),
-    ...recUnassigned.map(v => ({ id: 'rec-' + v._recId, name: v.name, category: v.category, isRec: true }))
+    ...unassigned.map(t => ({ id: t.id, name: t.name, category: t.category || '' })),
+    ...recUnassigned.map(v => ({ id: 'rec-' + v._recId, name: v.name, category: v.category || '' })),
+    ...shopUnassigned.map(s => ({ id: 'shop-' + s.id, name: s.name, category: 'Shopping' }))
   ];
 
   if (!allUnassigned.length) {
@@ -714,9 +728,11 @@ function mRenderTimeline() {
     const hPx  = Math.max(b.dur * M_PX, 28);
     const s    = gc(b.cat || '');
     const timeRange = `${_mTStr(b.sm)}–${_mTStr(b.sm + b.dur)}`;
-    return `<div class="m-tl-block" data-bid="${b.id}" style="top:${y}px;height:${hPx}px;background:${s.bg};border:1px solid rgba(255,255,255,.55);border-left:3px solid ${s.d}">
+    const doneStyle = b._done ? 'opacity:.45;' : '';
+    const nameDecor = b._done ? 'text-decoration:line-through;' : '';
+    return `<div class="m-tl-block" data-bid="${b.id}" style="${doneStyle}top:${y}px;height:${hPx}px;background:${s.bg};border:1px solid rgba(255,255,255,.55);border-left:3px solid ${s.d}">
       <div style="overflow:hidden;flex:1;min-width:0;pointer-events:none">
-        <div class="m-tl-block-name" style="color:${s.t}">${escHtml(b.title || '')}</div>
+        <div class="m-tl-block-name" style="${nameDecor}color:${s.t}">${escHtml(b.title || '')}</div>
       </div>
       <span class="m-tl-block-time" style="color:${s.d};pointer-events:none">${timeRange}</span>
     </div>`;
