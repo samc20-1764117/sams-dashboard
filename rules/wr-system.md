@@ -48,7 +48,7 @@
 
 **Single table**: `wr_recurring_rules`. State: `st.wrRules` (WR, `is_weekly_reset=true`), `st.wrOverrides`, `st.recurring` (non-WR).
 
-**Fields**: `id,name,cadence` (weekly/biweekly/monthly/quarterly/biannual/annual/other/daily), `is_weekly_reset,starting_date,appears_on_date,pup_related,notes,is_enabled,sort_order,date_overrides` (JSONB), `done_by_week` (JSONB).
+**Fields**: `id,name,cadence` (weekly/biweekly/monthly/quarterly/biannual/annual/other/daily), `is_weekly_reset,starting_date,appears_on_date,pup_related,notes,is_enabled,sort_order,date_overrides` (JSONB), `done_by_week` (JSONB), `default_start_time,default_end_time` (optional HH:MM, for auto-timeblock).
 
 **`wr_recurring_overrides`**: `id,rule_id,wk_key` (Mon YYYY-MM-DD), `override_type` (skip/move/edit/complete), `done,moved_to_wk_key,custom_name,custom_notes`. UNIQUE `(rule_id,wk_key)`.
 
@@ -93,6 +93,7 @@
 ## Non-WR Recurring Task Logic
 Non-WR (`is_weekly_reset=false`) → `st.recurring`. All CRUD to `wr_recurring_rules`.
 - **Scheduled**: auto by cadence+`appears_on_date`. `getRecurringWeekTasks(off)`. Excludes `cadence==='daily'`.
+- **Default timeblock time** (optional): `default_start_time`/`default_end_time` on `wr_recurring_rules`. When set, `getRecAutoTBForDate(ds)` auto-generates virtual TB blocks (like autoTB). Per-week overrides stored in `_dateOverrides['tb::'+wkKey]` = `{start,end}` or `'__skip__'`. Skipped if already manually placed (`st.blocks` has matching `recId`). `drawRecAutoTBBlock` renders; move/resize saves via `_saveRecAutoTBOv`; delete via `delRecAutoTBForDay`.
 - `skipRecVirtThisWk`: sets `__skip__`, removes TBs, PATCHes `date_overrides`, undo.
 - **Done**: `_doneByWk[getWkKey(wkOff)]`. `togRec` writes/deletes key.
 - **Daily habits** (`cadence==='daily'`): excluded from all recurring views. Done keyed by date string `ds`. See pages.md Daily Habits.

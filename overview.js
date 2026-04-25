@@ -2939,7 +2939,15 @@ function _attachWkcRubberBand(){
 
 // ── Recurring auto-timeblock ──────────────────────────────────────────────────
 function getRecAutoTBForDate(ds){
-  const virtTasks=getRecurringWeekTasks(dayOff);
+  // Compute week offset from ds to get the right recurring tasks
+  const dsDate=new Date(ds+'T00:00:00');
+  const today=new Date();today.setHours(0,0,0,0);
+  const dsDow=(dsDate.getDay()+6)%7;
+  const todDow=(today.getDay()+6)%7;
+  const dsMon=new Date(dsDate);dsMon.setDate(dsDate.getDate()-dsDow);
+  const todMon=new Date(today);todMon.setDate(today.getDate()-todDow);
+  const wOff=Math.round((dsMon-todMon)/(7*86400000));
+  const virtTasks=getRecurringWeekTasks(wOff);
   const wkKey=dsToWkKey(ds);
   return virtTasks.filter(v=>{
     if(v.due_date!==ds||v.done)return false;
