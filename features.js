@@ -2656,6 +2656,7 @@ function updateRecEditUI(){
   const cad=document.getElementById('recEditCadence').value;
   const isMonthly=cad==='monthly';
   const pf=document.getElementById('recEditPupField');if(pf)pf.style.display=isWr?'block':'none';
+  const tf=document.getElementById('recEditTimeField');if(tf)tf.style.display=isWr?'none':'block';
   document.getElementById('recEditDayField').style.display=isMonthly?'none':'block';
   document.getElementById('recEditDateField').style.display=isMonthly?'block':'none';
   document.getElementById('recEditDayLabel').textContent=cad==='biweekly'?'Due on (every 2nd)':'Due on';
@@ -2695,6 +2696,8 @@ function openRecEditModal(rid,wkKey='',scope='all'){
   document.getElementById('recEditStartDate').value=r.starting_date||'';
   const pr=document.getElementById('recEditPupRelated');if(pr)pr.checked=!!(r.pup_related===true||r.pup_related==='true');
   const recEditNotesEl=document.getElementById('recEditNotes');if(recEditNotesEl)recEditNotesEl.value=r.notes||'';
+  const rst=document.getElementById('recEditStartTime');if(rst)rst.value=r.default_start_time||'';
+  const ret=document.getElementById('recEditEndTime');if(ret)ret.value=r.default_end_time||'';
   // Populate this-week override fields
   const nameOvKey='name::'+wkKey;
   const nameOv=(wkKey&&r._dateOverrides&&r._dateOverrides[nameOvKey])||null;
@@ -2740,14 +2743,16 @@ function saveRecEdit(){
   const startDate=document.getElementById('recEditStartDate').value||null;
   const pupRelated=isWr&&!!(document.getElementById('recEditPupRelated')?.checked);
   const notes=document.getElementById('recEditNotes')?.value.trim()||null;
+  const defStart=document.getElementById('recEditStartTime')?.value||null;
+  const defEnd=document.getElementById('recEditEndTime')?.value||null;
   closeMod('recEditModal');
-  const prev={name:r.name,is_weekly_reset:r.is_weekly_reset,cadence:r.cadence,appears_on_date:r.appears_on_date,starting_date:r.starting_date,pup_related:r.pup_related,notes:r.notes};
-  r.name=name;r.is_weekly_reset=isWr;r.cadence=cadence;r.appears_on_date=appearsOn;r.starting_date=startDate;r.pup_related=pupRelated;r.notes=notes;
-  renderRecOv();renderWeeklyPage();renderWkSummary();renderWkCal();
-  const patch={name,is_weekly_reset:isWr,cadence,appears_on_date:appearsOn,pup_related:pupRelated,notes:notes||null};
+  const prev={name:r.name,is_weekly_reset:r.is_weekly_reset,cadence:r.cadence,appears_on_date:r.appears_on_date,starting_date:r.starting_date,pup_related:r.pup_related,notes:r.notes,default_start_time:r.default_start_time,default_end_time:r.default_end_time};
+  r.name=name;r.is_weekly_reset=isWr;r.cadence=cadence;r.appears_on_date=appearsOn;r.starting_date=startDate;r.pup_related=pupRelated;r.notes=notes;r.default_start_time=defStart;r.default_end_time=defEnd;
+  renderRecOv();renderWeeklyPage();renderWkSummary();renderWkCal();if(document.getElementById('tbGrid'))renderDayTB();
+  const patch={name,is_weekly_reset:isWr,cadence,appears_on_date:appearsOn,pup_related:pupRelated,notes:notes||null,default_start_time:defStart,default_end_time:defEnd};
   if(startDate)patch.starting_date=startDate;
   sbReq('PATCH','wr_recurring_rules',patch,recQs(rid));
-  pushUndo(()=>{Object.assign(r,prev);renderRecOv();renderWeeklyPage();},'Edited recurring');
+  pushUndo(()=>{Object.assign(r,prev);renderRecOv();renderWeeklyPage();if(document.getElementById('tbGrid'))renderDayTB();},'Edited recurring');
 }
 
 

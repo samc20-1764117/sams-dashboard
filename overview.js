@@ -2298,6 +2298,7 @@ function wrAddSetType(type){
   document.getElementById('wrAddTypeWR').style.cssText=base+(type==='wr'?';background:var(--accent);color:#fff':';background:transparent;color:var(--muted)');
   document.getElementById('wrAddTypeSch').style.cssText=base+(type==='sch'?';background:var(--accent);color:#fff':';background:transparent;color:var(--muted)');
   document.getElementById('wrAddPupField').style.display=type==='wr'?'block':'none';
+  document.getElementById('wrAddTimeField').style.display=type==='sch'?'block':'none';
   updateWrRuleCadenceUI('wrAdd');
 }
 
@@ -2380,6 +2381,8 @@ function openWrRuleAddModal(cadence,type='wr'){
   document.getElementById('wrAddAppearDay').value='Friday';
   document.getElementById('wrAddAppearDate').value='1';
   document.getElementById('wrAddNotes').value='';
+  document.getElementById('wrAddStartTime').value='';
+  document.getElementById('wrAddEndTime').value='';
   wrAddSetType(type);
   document.getElementById('wrRuleAddModal').classList.add('open');
   setTimeout(()=>document.getElementById('wrAddName').focus(),50);
@@ -2393,14 +2396,18 @@ async function saveWrRuleAdd(){
     const cadence=cadenceFields.cadence;
     const isMonthly=cadence==='monthly';
     const appearsOn=isMonthly?document.getElementById('wrAddAppearDate').value||'1':document.getElementById('wrAddAppearDay').value||'Friday';
+    const defStart=document.getElementById('wrAddStartTime').value||null;
+    const defEnd=document.getElementById('wrAddEndTime').value||null;
     const localId='rec-tmp-'+Date.now();
-    const r={id:localId,name,is_weekly_reset:false,appears_on_date:appearsOn,starting_date:cadenceFields.starting_date,cadence,notes,_doneByWk:{},_done:false,_dateOverrides:{}};
-    st.recurring.push(r);save();renderRecOv();renderWeeklyPage();renderWkSummary();renderWkCal();
+    const r={id:localId,name,is_weekly_reset:false,appears_on_date:appearsOn,starting_date:cadenceFields.starting_date,cadence,notes,default_start_time:defStart,default_end_time:defEnd,_doneByWk:{},_done:false,_dateOverrides:{}};
+    st.recurring.push(r);save();renderRecOv();renderWeeklyPage();renderWkSummary();renderWkCal();if(document.getElementById('tbGrid'))renderDayTB();
     let recServerId=null;
-    pushUndo(()=>{const rid=recServerId||localId;st.recurring=st.recurring.filter(x=>String(x.id)!==String(rid));save();renderRecOv();renderWeeklyPage();renderWkSummary();renderWkCal();if(recServerId)sbReq('DELETE','wr_recurring_rules',null,recQs(recServerId));},'Added recurring task');
+    pushUndo(()=>{const rid=recServerId||localId;st.recurring=st.recurring.filter(x=>String(x.id)!==String(rid));save();renderRecOv();renderWeeklyPage();renderWkSummary();renderWkCal();if(document.getElementById('tbGrid'))renderDayTB();if(recServerId)sbReq('DELETE','wr_recurring_rules',null,recQs(recServerId));},'Added recurring task');
     const payload={name,is_weekly_reset:false,appears_on_date:appearsOn,cadence};
     if(cadenceFields.starting_date)payload.starting_date=cadenceFields.starting_date;
     if(notes)payload.notes=notes;
+    if(defStart)payload.default_start_time=defStart;
+    if(defEnd)payload.default_end_time=defEnd;
     const sv=await sbReq('POST','wr_recurring_rules',payload);
     if(sv&&sv[0]){const i=st.recurring.findIndex(x=>x.id===localId);const entry={...sv[0],_doneByWk:{},_done:false,_dateOverrides:{}};if(i>-1)st.recurring[i]=entry;else if(!st.recurring.some(x=>String(x.id)===String(sv[0].id)))st.recurring.push(entry);recServerId=String(sv[0].id);save();renderRecOv();renderWeeklyPage();renderWkSummary();renderWkCal();}
     return;
@@ -2930,6 +2937,94 @@ function _attachWkcRubberBand(){
   });
 }
 
+// ── Recurring auto-timeblock ──────────────────────────────────────────────────
+function getRecAutoTBForDate(ds){
+  const virtTasks=getRecurringWeekTasks(dayOff);
+  const wkKey=dsToWkKey(ds);
+  return virtTasks.filter(v=>{
+    if(v.due_date!==ds||v.done)return false;
+    const r=st.recurring.find(x=>String(x.id)===String(v._recId));
+    if(!r||!r.default_start_time)return false;
+    // Skip if already manually placed in timeblock
+    if(st.blocks.some(b=>b.ds===ds&&String(b.recId)===String(r.id)))return false;
+    // Skip if deleted for this week via tb override
+    const tbOv=r._dateOverrides&&r._dateOverrides['tb::'+wkKey];
+    if(tbOv==='__skip__')return false;
+    return true;
+  }).map(v=>{
+    const r=st.recurring.find(x=>String(x.id)===String(v._recId));
+    const wkKey2=dsToWkKey(ds);
+    const tbOv=r._dateOverrides&&r._dateOverrides['tb::'+wkKey2];
+    const startTime=tbOv&&tbOv.start?tbOv.start:r.default_start_time;
+    const endTime=tbOv&&tbOv.end?tbOv.end:r.default_end_time;
+    const [sh,sm2]=(startTime||'00:00').split(':');
+    const [eh,em]=(endTime||'00:30').split(':');
+    const startMinutes=parseInt(sh)*60+parseInt(sm2||0);
+    const endMinutes=parseInt(eh)*60+parseInt(em||0);
+    const dur=Math.max(15,endMinutes-startMinutes);
+    return{_recAutoId:String(r.id),_recId:String(r.id),label:v.name,sm:startMinutes,dur,ds,_hasOv:!!tbOv};
+  });
+}
+function delRecAutoTBForDay(recId,ds){
+  const r=st.recurring.find(x=>String(x.id)===String(recId));if(!r)return;
+  const wkKey=dsToWkKey(ds);
+  if(!r._dateOverrides)r._dateOverrides={};
+  const prev=r._dateOverrides['tb::'+wkKey];
+  r._dateOverrides['tb::'+wkKey]='__skip__';
+  sbReqSilent('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},`?id=eq.${r.id}`);
+  pushUndo(()=>{if(prev!==undefined)r._dateOverrides['tb::'+wkKey]=prev;else delete r._dateOverrides['tb::'+wkKey];sbReqSilent('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},`?id=eq.${r.id}`);save();if(document.getElementById('tbGrid'))renderDayTB();},'Removed recurring from timeblock');
+  save();if(document.getElementById('tbGrid'))renderDayTB();
+}
+function drawRecAutoTBBlock(col,ratb,ds){
+  const top=(ratb.sm-HOURS[0]*60)*PX,ht=Math.max(ratb.dur*PX,16);
+  const el=document.createElement('div');
+  el.className='atb-block rec-atb-block';
+  el.dataset.recAutoId=ratb._recAutoId;
+  el.style.cssText=`top:${top}px;height:${ht}px;left:2px;right:2px`;
+  el.style.background='rgba(42,157,181,.13)';el.style.borderColor='rgba(42,157,181,.35)';
+  const ncols=ratb._ncols||1,col_i=ratb._col||0,colW=100/ncols,left2=col_i*colW;
+  el.style.cssText=`top:${top}px;height:${ht}px;left:calc(${left2}% + 2px);right:calc(${100-left2-colW}% + 2px);width:auto`;
+  const _showTime=ncols<=1;
+  el.innerHTML=`<div class="tb-row"><span class="tb-bt${ratb.dur>=30?' wrap':''}">${ratb.label}</span><div class="tb-right">${_showTime?`<span class="tb-btime">${tStr(ratb.sm)}-${tStr(ratb.sm+ratb.dur)}</span>`:''}<button class="tb-bdel atb-del" onclick="event.stopPropagation();delRecAutoTBForDay('${ratb._recAutoId}','${ds}')">✕</button></div></div><div class="tb-resize atb-resize"></div>`;
+  // Resize
+  const resH=el.querySelector('.atb-resize');
+  if(resH)resH.addEventListener('mousedown',e=>{
+    e.stopPropagation();e.preventDefault();
+    const startY=e.clientY,startDur=ratb.dur;
+    const onResMove=ev=>{ratb.dur=Math.max(15,Math.round((startDur+(ev.clientY-startY)/PX)/15)*15);el.style.height=Math.max(ratb.dur*PX,16)+'px';const bt=el.querySelector('.tb-btime');if(bt)bt.textContent=tStr(ratb.sm)+'-'+tStr(ratb.sm+ratb.dur);};
+    const onResUp=()=>{document.removeEventListener('mousemove',onResMove);document.removeEventListener('mouseup',onResUp);if(ratb.dur===startDur)return;_saveRecAutoTBOv(ratb,ds,startDur,ratb.sm);};
+    document.addEventListener('mousemove',onResMove);document.addEventListener('mouseup',onResUp);
+  });
+  // Drag to move
+  el.addEventListener('mousedown',e=>{
+    if(e.target.classList.contains('atb-del')||e.target.classList.contains('atb-resize'))return;
+    if(e.detail>=2){e.stopPropagation();openRecEditModal(ratb._recId);return;}
+    e.preventDefault();e.stopPropagation();
+    const startY=e.clientY,startSm=ratb.sm;
+    let dragging=false;
+    const onMove=ev=>{const dy=ev.clientY-startY;if(!dragging&&Math.abs(dy)<5)return;dragging=true;ratb.sm=Math.max(HOURS[0]*60,Math.round((startSm+dy/PX)/15)*15);el.style.top=(ratb.sm-HOURS[0]*60)*PX+'px';const bt=el.querySelector('.tb-btime');if(bt)bt.textContent=tStr(ratb.sm)+'-'+tStr(ratb.sm+ratb.dur);};
+    const onUp=()=>{document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);if(!dragging||ratb.sm===startSm)return;_saveRecAutoTBOv(ratb,ds,ratb.dur,startSm);};
+    document.addEventListener('mousemove',onMove);document.addEventListener('mouseup',onUp);
+  });
+  // Drop zone for tasks
+  el.addEventListener('dragover',e=>{if(!dragId)return;e.preventDefault();e.stopPropagation();el.classList.add('tb-drop-over');});
+  el.addEventListener('dragleave',()=>el.classList.remove('tb-drop-over'));
+  el.addEventListener('drop',e=>{if(!dragId)return;e.preventDefault();e.stopPropagation();el.classList.remove('tb-drop-over');dropOnTB(e,ds,null,null,ratb.sm);});
+  col.appendChild(el);
+}
+function _saveRecAutoTBOv(ratb,ds,prevDur,prevSm){
+  const r=st.recurring.find(x=>String(x.id)===String(ratb._recId));if(!r)return;
+  const wkKey=dsToWkKey(ds);
+  if(!r._dateOverrides)r._dateOverrides={};
+  const prevOv=r._dateOverrides['tb::'+wkKey];
+  const newStart=`${String(Math.floor(ratb.sm/60)).padStart(2,'0')}:${String(ratb.sm%60).padStart(2,'0')}`;
+  const endSm=ratb.sm+ratb.dur;
+  const newEnd=`${String(Math.floor(endSm/60)).padStart(2,'0')}:${String(endSm%60).padStart(2,'0')}`;
+  r._dateOverrides['tb::'+wkKey]={start:newStart,end:newEnd};
+  sbReqSilent('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},`?id=eq.${r.id}`);
+  pushUndo(()=>{ratb.sm=prevSm;ratb.dur=prevDur;if(prevOv!==undefined)r._dateOverrides['tb::'+wkKey]=prevOv;else delete r._dateOverrides['tb::'+wkKey];sbReqSilent('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},`?id=eq.${r.id}`);save();if(document.getElementById('tbGrid'))renderDayTB();},'Moved recurring block');
+  save();if(document.getElementById('tbGrid'))renderDayTB();
+}
 // ── Time blocker ───────────────────────────────────────────────────────────────
 function renderDayTB(){
   if(window._tbEditing)return;
@@ -2972,9 +3067,11 @@ function renderDayTB(){
   });
   // Compute layout then draw (auto blocks participate in overlap calc)
   const autoBlocks=getAutoTBForDate(ds);
-  computeTBLayout(ds,autoBlocks);
+  const recAutoBlocks=getRecAutoTBForDate(ds);
+  computeTBLayout(ds,[...autoBlocks,...recAutoBlocks]);
   getVisibleBlocks(ds).forEach(b=>drawTBBlock(col,b));
   autoBlocks.forEach(a=>drawAutoTBBlock(col,a,ds));
+  recAutoBlocks.forEach(a=>drawRecAutoTBBlock(col,a,ds));
   const autoBtn=document.getElementById('autoTBToggle');if(autoBtn)autoBtn.style.opacity=cfg.showAutoTB?'1':'0.4';
   if(isDateToday(date)){const nl=document.createElement('div');nl.className='nowline';nl.id='tbNowLine';const nm=new Date(),nmins=(nm.getHours()-HOURS[0])*60+nm.getMinutes();if(nmins>=0){nl.style.top=nmins*PX+'px';nl.innerHTML='<div class="nowdot"></div>';}col.appendChild(nl);}
   // Drag on empty space to create a new block
