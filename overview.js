@@ -3080,45 +3080,84 @@ function renderDayTB(){
   recAutoBlocks.forEach(a=>drawRecAutoTBBlock(col,a,ds));
   const autoBtn=document.getElementById('autoTBToggle');if(autoBtn)autoBtn.style.opacity=cfg.showAutoTB?'1':'0.4';
   if(isDateToday(date)){const nl=document.createElement('div');nl.className='nowline';nl.id='tbNowLine';const nm=new Date(),nmins=(nm.getHours()-HOURS[0])*60+nm.getMinutes();if(nmins>=0){nl.style.top=nmins*PX+'px';nl.innerHTML='<div class="nowdot"></div>';}col.appendChild(nl);}
-  // Drag on empty space to create a new block
+  // Drag on empty space: DOWN = create new block, UP = select multiple blocks
   col.addEventListener('mousedown',e=>{
     if(e.button!==0||e.target.closest('.tb-block,.atb-block'))return;
     e.preventDefault();
     const colRect=col.getBoundingClientRect();
     const startRelY=Math.max(0,e.clientY-colRect.top);
+    const startClientY=e.clientY;
     const snap=y=>Math.round((HOURS[0]*60+y/PX)/15)*15;
-    const preview=document.createElement('div');
-    preview.style.cssText='position:absolute;left:2px;right:2px;background:rgba(42,157,181,.18);border:1.5px dashed rgba(42,157,181,.7);border-radius:5px;pointer-events:none;z-index:50;box-sizing:border-box;';
-    preview.style.top=startRelY+'px';preview.style.height='0px';
-    col.appendChild(preview);
-    let dragging=false;
+    let mode=null; // null until threshold, then 'create' or 'select'
+    let preview=null,selBox=null;
     const onMove=ev=>{
-      const curRelY=Math.max(0,ev.clientY-col.getBoundingClientRect().top);
-      const dy=Math.abs(curRelY-startRelY);
-      if(!dragging&&dy<5)return;
-      dragging=true;
-      const top2=Math.min(startRelY,curRelY),bot2=Math.max(startRelY,curRelY);
-      const smSnap=snap(top2),emSnap=snap(bot2);
-      const snappedTop=(smSnap-HOURS[0]*60)*PX,snappedBot=(emSnap-HOURS[0]*60)*PX;
-      preview.style.top=snappedTop+'px';preview.style.height=Math.max(15*PX,snappedBot-snappedTop)+'px';
+      const curClientY=ev.clientY;
+      const curRelY=Math.max(0,curClientY-col.getBoundingClientRect().top);
+      const dy=curClientY-startClientY;
+      if(!mode&&Math.abs(dy)<5)return;
+      if(!mode){
+        mode=dy>0?'create':'select';
+        if(mode==='create'){
+          preview=document.createElement('div');
+          preview.style.cssText='position:absolute;left:2px;right:2px;background:rgba(42,157,181,.18);border:1.5px dashed rgba(42,157,181,.7);border-radius:5px;pointer-events:none;z-index:50;box-sizing:border-box;';
+          preview.style.top=startRelY+'px';preview.style.height='0px';
+          col.appendChild(preview);
+        } else {
+          selBox=document.createElement('div');
+          selBox.style.cssText='position:fixed;background:rgba(42,157,181,.10);border-top:1.5px solid rgba(42,157,181,.5);border-bottom:1.5px solid rgba(42,157,181,.5);pointer-events:none;z-index:999;left:0;right:0';
+          document.body.appendChild(selBox);
+        }
+      }
+      if(mode==='create'){
+        const top2=Math.min(startRelY,curRelY),bot2=Math.max(startRelY,curRelY);
+        const smSnap=snap(top2),emSnap=snap(bot2);
+        const snappedTop=(smSnap-HOURS[0]*60)*PX,snappedBot=(emSnap-HOURS[0]*60)*PX;
+        preview.style.top=snappedTop+'px';preview.style.height=Math.max(15*PX,snappedBot-snappedTop)+'px';
+      } else {
+        const y1=Math.min(startClientY,curClientY),y2=Math.max(startClientY,curClientY);
+        const cr=col.getBoundingClientRect();
+        selBox.style.left=cr.left+'px';selBox.style.width=cr.width+'px';
+        selBox.style.top=y1+'px';selBox.style.height=(y2-y1)+'px';
+      }
     };
     const onUp=ev=>{
       document.removeEventListener('mousemove',onMove);
       document.removeEventListener('mouseup',onUp);
-      preview.remove();
-      if(!dragging)return;
-      const curRelY=Math.max(0,ev.clientY-col.getBoundingClientRect().top);
-      const top2=Math.min(startRelY,curRelY),bot2=Math.max(startRelY,curRelY);
-      const sm=snap(top2),em=snap(bot2);
-      const dur=Math.max(15,em-sm);
-      const blk={id:crypto.randomUUID(),title:'',ds,sm,dur,cat:'Home'};
-      st.blocks.push(blk);save();
-      computeTBLayout(ds);
-      col.querySelectorAll('.tb-block').forEach(el=>el.remove());
-      getVisibleBlocks(ds).forEach(b=>drawTBBlock(col,b));
-      startTBInlineEdit(blk.id,col,()=>{
-        pushUndo(()=>{st.blocks=st.blocks.filter(b=>b.id!==blk.id);save();renderDayTB();},'Added block');
-      });
+      if(preview)preview.remove();
+      if(selBox)selBox.remove();
+      if(!mode)return;
+      if(mode==='create'){
+        const curRelY=Math.max(0,ev.clientY-col.getBoundingClientRect().top);
+        const top2=Math.min(startRelY,curRelY),bot2=Math.max(startRelY,curRelY);
+        const sm=snap(top2),em=snap(bot2);
+        const dur=Math.max(15,em-sm);
+        const blk={id:crypto.randomUUID(),title:'',ds,sm,dur,cat:'Home'};
+        st.blocks.push(blk);save();
+        computeTBLayout(ds);
+        col.querySelectorAll('.tb-block').forEach(el=>el.remove());
+        getVisibleBlocks(ds).forEach(b=>drawTBBlock(col,b));
+        startTBInlineEdit(blk.id,col,()=>{
+          pushUndo(()=>{st.blocks=st.blocks.filter(b=>b.id!==blk.id);save();renderDayTB();},'Added block');
+        });
+      } else {
+        // Select blocks in range
+        const y1=Math.min(startClientY,ev.clientY),y2=Math.max(startClientY,ev.clientY);
+        const colRect2=col.getBoundingClientRect();
+        const selTop=y1-colRect2.top,selBot=y2-colRect2.top;
+        _lastTBRbRange={selTop,selBot};
+        if(!ev.shiftKey)selectedTasks.clear();
+        col.querySelectorAll('.tb-block[data-bid]').forEach(be=>{
+          const bl=st.blocks.find(x=>String(x.id)===String(be.dataset.bid));
+          if(!bl)return;
+          const blTop=(bl.sm-HOURS[0]*60)*PX,blBot=blTop+bl.dur*PX;
+          if(blBot>selTop&&blTop<selBot){const sid=_getTBBlockSelId(bl);if(sid){selectedTasks.add(sid);lastSelectedId=sid;}}
+        });
+        // Also select auto-blocks in range
+        const minSm=HOURS[0]*60+selTop/PX,maxSm=HOURS[0]*60+selBot/PX;
+        getAutoTBForDate(ds).filter(a=>a.sm+a.dur>minSm&&a.sm<maxSm).forEach(a=>selectedTasks.add('atb::'+a._atbId));
+        getRecAutoTBForDate(ds).filter(a=>a.sm+a.dur>minSm&&a.sm<maxSm).forEach(a=>selectedTasks.add('rec-virt-'+a._recId));
+        applySelHighlight();
+      }
     };
     document.addEventListener('mousemove',onMove);
     document.addEventListener('mouseup',onUp);
