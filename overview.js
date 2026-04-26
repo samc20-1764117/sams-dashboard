@@ -3817,6 +3817,8 @@ function delBlock(id,e){
   save();renderAll();renderPupSkillsHighlight();renderToday();renderWkCal();if(document.getElementById('tbGrid'))renderDayTB();sbDeleteBlock(id);
 }
 function onTBWheel(e){
+  // Horizontal two-finger swipe to shift day (same as weekly cal)
+  if(Math.abs(e.deltaX)>=8){e.preventDefault();tbWD+=(e.shiftKey?e.deltaY:e.deltaX);if(tbWT)clearTimeout(tbWT);tbWT=setTimeout(()=>{if(Math.abs(tbWD)>40)shiftDay(tbWD>0?1:-1);tbWD=0;tbWT=null;},100);return;}
   const sc=document.getElementById('tbScroll');const atTop=sc.scrollTop<=0,atBot=sc.scrollTop+sc.clientHeight>=sc.scrollHeight-2;
   if(e.deltaY<0&&atTop){e.preventDefault();tbWD+=e.deltaY;if(tbWT)clearTimeout(tbWT);tbWT=setTimeout(()=>{if(tbWD<-40)shiftDay(-1);tbWD=0;tbWT=null;},100);}
   else if(e.deltaY>0&&atBot){e.preventDefault();tbWD+=e.deltaY;if(tbWT)clearTimeout(tbWT);tbWT=setTimeout(()=>{if(tbWD>40)shiftDay(1);tbWD=0;tbWT=null;},100);}
