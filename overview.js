@@ -1571,13 +1571,8 @@ function _woMakeChip(t,body){
   });
   return chip;
 }
-function onWkcWheel(e){
-  if(Math.abs(e.deltaX)<5&&!e.shiftKey)return;
-  e.preventDefault();
-  wkcWD+=(e.shiftKey?e.deltaY:e.deltaX);
-  if(wkcWT)clearTimeout(wkcWT);
-  wkcWT=setTimeout(()=>{if(Math.abs(wkcWD)>10)shiftWk(wkcWD>0?1:-1);wkcWD=0;wkcWT=null;},40);
-}
+const _wkcSw={d:0,t:null,lock:false};
+function onWkcWheel(e){_hSwipe(_wkcSw,e,dir=>shiftWk(dir));}
 
 // Returns true if a weekly-reset recurring task is scheduled during week `off`
 function isWRecDueThisWeek(r,off=0){
@@ -3819,25 +3814,24 @@ function delBlock(id,e){
   st.blocks=st.blocks.filter(x=>x.id!==id);
   save();renderAll();renderPupSkillsHighlight();renderToday();renderWkCal();if(document.getElementById('tbGrid'))renderDayTB();sbDeleteBlock(id);
 }
-let wrRecWD=0,wrRecWT=null;
-function onWrRecWheel(e){
-  if(Math.abs(e.deltaX)<5)return;
+// Shared horizontal swipe helper: fires callback once per gesture, with cooldown to prevent double-fire
+function _hSwipe(state,e,cb){
+  if(Math.abs(e.deltaX)<5)return false;
   e.preventDefault();
-  wrRecWD+=(e.shiftKey?e.deltaY:e.deltaX);
-  if(wrRecWT)clearTimeout(wrRecWT);
-  wrRecWT=setTimeout(()=>{if(Math.abs(wrRecWD)>10)shiftWrRec(wrRecWD>0?1:-1);wrRecWD=0;wrRecWT=null;},40);
+  if(state.lock)return true;
+  state.d+=(e.shiftKey?e.deltaY:e.deltaX);
+  if(state.t)clearTimeout(state.t);
+  if(Math.abs(state.d)>15){const dir=state.d>0?1:-1;state.d=0;state.lock=true;cb(dir);setTimeout(()=>{state.lock=false;},250);state.t=null;}
+  else{state.t=setTimeout(()=>{state.d=0;state.t=null;},80);}
+  return true;
 }
-let todWD=0,todWT=null;
-function onTodWheel(e){
-  if(Math.abs(e.deltaX)<5)return;
-  e.preventDefault();
-  todWD+=(e.shiftKey?e.deltaY:e.deltaX);
-  if(todWT)clearTimeout(todWT);
-  todWT=setTimeout(()=>{if(Math.abs(todWD)>10)shiftDay(todWD>0?1:-1);todWD=0;todWT=null;},40);
-}
+const _wrRecSw={d:0,t:null,lock:false};
+function onWrRecWheel(e){_hSwipe(_wrRecSw,e,dir=>shiftWrRec(dir));}
+const _todSw={d:0,t:null,lock:false};
+function onTodWheel(e){_hSwipe(_todSw,e,dir=>shiftDay(dir));}
+const _tbSw={d:0,t:null,lock:false};
 function onTBWheel(e){
-  // Horizontal two-finger swipe to shift day (same as weekly cal)
-  if(Math.abs(e.deltaX)>=8){e.preventDefault();tbWD+=(e.shiftKey?e.deltaY:e.deltaX);if(tbWT)clearTimeout(tbWT);tbWT=setTimeout(()=>{if(Math.abs(tbWD)>20)shiftDay(tbWD>0?1:-1);tbWD=0;tbWT=null;},60);return;}
+  if(_hSwipe(_tbSw,e,dir=>shiftDay(dir)))return;
   const sc=document.getElementById('tbScroll');const atTop=sc.scrollTop<=0,atBot=sc.scrollTop+sc.clientHeight>=sc.scrollHeight-2;
   if(e.deltaY<0&&atTop){e.preventDefault();tbWD+=e.deltaY;if(tbWT)clearTimeout(tbWT);tbWT=setTimeout(()=>{if(tbWD<-40)shiftDay(-1);tbWD=0;tbWT=null;},100);}
   else if(e.deltaY>0&&atBot){e.preventDefault();tbWD+=e.deltaY;if(tbWT)clearTimeout(tbWT);tbWT=setTimeout(()=>{if(tbWD>40)shiftDay(1);tbWD=0;tbWT=null;},100);}
