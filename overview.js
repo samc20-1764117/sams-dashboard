@@ -3819,6 +3819,14 @@ function delBlock(id,e){
   st.blocks=st.blocks.filter(x=>x.id!==id);
   save();renderAll();renderPupSkillsHighlight();renderToday();renderWkCal();if(document.getElementById('tbGrid'))renderDayTB();sbDeleteBlock(id);
 }
+let todWD=0,todWT=null;
+function onTodWheel(e){
+  if(Math.abs(e.deltaX)<5)return;
+  e.preventDefault();
+  todWD+=(e.shiftKey?e.deltaY:e.deltaX);
+  if(todWT)clearTimeout(todWT);
+  todWT=setTimeout(()=>{if(Math.abs(todWD)>10)shiftDay(todWD>0?1:-1);todWD=0;todWT=null;},40);
+}
 function onTBWheel(e){
   // Horizontal two-finger swipe to shift day (same as weekly cal)
   if(Math.abs(e.deltaX)>=8){e.preventDefault();tbWD+=(e.shiftKey?e.deltaY:e.deltaX);if(tbWT)clearTimeout(tbWT);tbWT=setTimeout(()=>{if(Math.abs(tbWD)>20)shiftDay(tbWD>0?1:-1);tbWD=0;tbWT=null;},60);return;}
