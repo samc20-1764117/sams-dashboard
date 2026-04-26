@@ -51,7 +51,7 @@ All indicators at far right, swap to X on hover. From right: `tb-arrow` (rightmo
 - **Weekly cal bounce fix**: banner lane counts pre-computed synchronously; `paddingTop` set before paint.
 
 ### Timeblock selection & keyboard
-- **Rubber-band on TB col** (`renderDayTB`): drag on empty space selects `.tb-block` by bounding rect. Coordinates: `ev.clientY - col.getBoundingClientRect().top` (scroll-adjusted). Stores `_lastTBRbRange={selTop,selBot}` (px from col top) for 'A' key use.
+- **TB empty-space drag direction**: drag **down** = create new block; drag **up** = rubber-band select blocks in range (regular, auto, rec-auto). Stores `_lastTBRbRange={selTop,selBot}` for 'A' key use. Edge rubber-band (`_attachTBEdgeRubberBand`) still works both directions from outside the col.
 - **Auto-select auto-blocks**: if rubber-band selects zero regular blocks, auto-blocks in range are auto-selected immediately. If regular blocks are also selected, press **A** to add auto-blocks in range. If no `_lastTBRbRange` or 0 auto-blocks match range, **A** selects ALL auto-blocks for the day.
 - **Auto-block selection IDs**: `'atb::'+_atbId` in `selectedTasks`. Visual: `.atb-block.sel-atb` (light grey + glow). `applySelHighlight()` toggles `sel-atb` class.
 - **Arrow keys (Up/Down)**: moves all selected TB blocks (regular + auto) ±30 min. Each press is one undo entry. Handler on `window` with `{capture:true}` + `e.preventDefault()`.
