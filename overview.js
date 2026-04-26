@@ -38,8 +38,11 @@ function renderToday(){
   });
   // Add virtual recurring tasks + travel + birthdays for today
   // Also pull overdue recurring from past weeks (up to 4 weeks back)
+  // Include the week containing the viewed day so forward-navigated recurring tasks appear
+  const _dayWkKey=dsToWkKey(ds);const _dayWkOff=Math.round((new Date(_dayWkKey+'T00:00:00')-new Date(getWkKey(0)+'T00:00:00'))/(7*86400000));
+  const _wkHi=Math.max(0,_dayWkOff);
   const allRecVirt=[];
-  for(let w=0;w>=wkOff-4;w--){
+  for(let w=_wkHi;w>=Math.min(0,_dayWkOff)-4;w--){
     getRecurringWeekTasks(w).forEach(v=>{
       // If this task has been __skip__'d for its occurrence week or any later week up to today, don't show as overdue
       const _rec=st.recurring.find(x=>String(x.id)===String(v._recId));
@@ -50,10 +53,10 @@ function renderToday(){
   // Weekly reset tasks pinned to today/overdue via _dateOverrides (look back 4 weeks)
   const _wkKeyNow=getWkKey(wkOff);
   const _wrecSeen=new Set();const wrecToday=[];
-  for(let _w=0;_w>=wkOff-4;_w--){const _wkKey=getWkKey(_w);st.recurring.filter(r=>(r.is_weekly_reset===true||r.is_weekly_reset==='true')&&r._dateOverrides&&r._dateOverrides[_wkKey]&&r._dateOverrides[_wkKey]!=='__skip__'&&(r._dateOverrides[_wkKey]===ds||(dayOff===0&&r._dateOverrides[_wkKey]<ds))&&!_wrecSeen.has(String(r.id))).forEach(r=>{_wrecSeen.add(String(r.id));const _isDone=!!(r._doneByWk&&r._doneByWk[_wkKey]);wrecToday.push({id:'rec-virt-'+r.id,name:r.name,category:'Recurring',due_date:r._dateOverrides[_wkKey],done:_isDone,_recId:r.id,_virtual:true,_wkKey:_wkKey,_isWrec:true});});}
+  for(let _w=_wkHi;_w>=Math.min(0,_dayWkOff)-4;_w--){const _wkKey=getWkKey(_w);st.recurring.filter(r=>(r.is_weekly_reset===true||r.is_weekly_reset==='true')&&r._dateOverrides&&r._dateOverrides[_wkKey]&&r._dateOverrides[_wkKey]!=='__skip__'&&(r._dateOverrides[_wkKey]===ds||(dayOff===0&&r._dateOverrides[_wkKey]<ds))&&!_wrecSeen.has(String(r.id))).forEach(r=>{_wrecSeen.add(String(r.id));const _isDone=!!(r._doneByWk&&r._doneByWk[_wkKey]);wrecToday.push({id:'rec-virt-'+r.id,name:r.name,category:'Recurring',due_date:r._dateOverrides[_wkKey],done:_isDone,_recId:r.id,_virtual:true,_wkKey:_wkKey,_isWrec:true});});}
   // New-style WR rules pinned to today/overdue via _dateOverrides (look back 4 weeks)
   const _wrRulesSeen=new Set();const wrRulesToday=[];
-  for(let _w=0;_w>=wkOff-4;_w--){const _wkKey=getWkKey(_w);st.wrRules.filter(r=>r._dateOverrides&&r._dateOverrides[_wkKey]&&r._dateOverrides[_wkKey]!=='__skip__'&&!(st.wrOverrides||[]).some(o=>String(o.rule_id)===String(r.id)&&o.wk_key===_wkKey&&o.override_type==='skip')&&(r._dateOverrides[_wkKey]===ds||(dayOff===0&&r._dateOverrides[_wkKey]<ds&&!isDoneWRRule(r.id,_wkKey)))&&!_wrRulesSeen.has(String(r.id))).forEach(r=>{_wrRulesSeen.add(String(r.id));const _isDone=isDoneWRRule(r.id,_wkKey);wrRulesToday.push({id:'wrrule-virt-'+r.id,name:r.name,category:'Recurring',due_date:r._dateOverrides[_wkKey],done:_isDone,_ruleId:r.id,_virtual:true,_wkKey:_wkKey,_isWrRule:true});});}
+  for(let _w=_wkHi;_w>=Math.min(0,_dayWkOff)-4;_w--){const _wkKey=getWkKey(_w);st.wrRules.filter(r=>r._dateOverrides&&r._dateOverrides[_wkKey]&&r._dateOverrides[_wkKey]!=='__skip__'&&!(st.wrOverrides||[]).some(o=>String(o.rule_id)===String(r.id)&&o.wk_key===_wkKey&&o.override_type==='skip')&&(r._dateOverrides[_wkKey]===ds||(dayOff===0&&r._dateOverrides[_wkKey]<ds&&!isDoneWRRule(r.id,_wkKey)))&&!_wrRulesSeen.has(String(r.id))).forEach(r=>{_wrRulesSeen.add(String(r.id));const _isDone=isDoneWRRule(r.id,_wkKey);wrRulesToday.push({id:'wrrule-virt-'+r.id,name:r.name,category:'Recurring',due_date:r._dateOverrides[_wkKey],done:_isDone,_ruleId:r.id,_virtual:true,_wkKey:_wkKey,_isWrRule:true});});}
   // Shopping items due today (or overdue when viewing today)
   const shopToday=st.shopping
     .filter(s=>!s.done&&s.due_date&&(s.due_date===ds||(dayOff===0&&isOv(s.due_date))))
@@ -1573,7 +1576,7 @@ function onWkcWheel(e){
   e.preventDefault();
   wkcWD+=(e.shiftKey?e.deltaY:e.deltaX);
   if(wkcWT)clearTimeout(wkcWT);
-  wkcWT=setTimeout(()=>{if(Math.abs(wkcWD)>40)shiftWk(wkcWD>0?1:-1);wkcWD=0;wkcWT=null;},100);
+  wkcWT=setTimeout(()=>{if(Math.abs(wkcWD)>20)shiftWk(wkcWD>0?1:-1);wkcWD=0;wkcWT=null;},60);
 }
 
 // Returns true if a weekly-reset recurring task is scheduled during week `off`
@@ -3818,7 +3821,7 @@ function delBlock(id,e){
 }
 function onTBWheel(e){
   // Horizontal two-finger swipe to shift day (same as weekly cal)
-  if(Math.abs(e.deltaX)>=8){e.preventDefault();tbWD+=(e.shiftKey?e.deltaY:e.deltaX);if(tbWT)clearTimeout(tbWT);tbWT=setTimeout(()=>{if(Math.abs(tbWD)>40)shiftDay(tbWD>0?1:-1);tbWD=0;tbWT=null;},100);return;}
+  if(Math.abs(e.deltaX)>=8){e.preventDefault();tbWD+=(e.shiftKey?e.deltaY:e.deltaX);if(tbWT)clearTimeout(tbWT);tbWT=setTimeout(()=>{if(Math.abs(tbWD)>20)shiftDay(tbWD>0?1:-1);tbWD=0;tbWT=null;},60);return;}
   const sc=document.getElementById('tbScroll');const atTop=sc.scrollTop<=0,atBot=sc.scrollTop+sc.clientHeight>=sc.scrollHeight-2;
   if(e.deltaY<0&&atTop){e.preventDefault();tbWD+=e.deltaY;if(tbWT)clearTimeout(tbWT);tbWT=setTimeout(()=>{if(tbWD<-40)shiftDay(-1);tbWD=0;tbWT=null;},100);}
   else if(e.deltaY>0&&atBot){e.preventDefault();tbWD+=e.deltaY;if(tbWT)clearTimeout(tbWT);tbWT=setTimeout(()=>{if(tbWD>40)shiftDay(1);tbWD=0;tbWT=null;},100);}
