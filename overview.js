@@ -3819,6 +3819,14 @@ function delBlock(id,e){
   st.blocks=st.blocks.filter(x=>x.id!==id);
   save();renderAll();renderPupSkillsHighlight();renderToday();renderWkCal();if(document.getElementById('tbGrid'))renderDayTB();sbDeleteBlock(id);
 }
+let wrRecWD=0,wrRecWT=null;
+function onWrRecWheel(e){
+  if(Math.abs(e.deltaX)<5)return;
+  e.preventDefault();
+  wrRecWD+=(e.shiftKey?e.deltaY:e.deltaX);
+  if(wrRecWT)clearTimeout(wrRecWT);
+  wrRecWT=setTimeout(()=>{if(Math.abs(wrRecWD)>10)shiftWrRec(wrRecWD>0?1:-1);wrRecWD=0;wrRecWT=null;},40);
+}
 let todWD=0,todWT=null;
 function onTodWheel(e){
   if(Math.abs(e.deltaX)<5)return;
