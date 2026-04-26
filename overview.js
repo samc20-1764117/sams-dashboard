@@ -938,7 +938,12 @@ function renderWkCal(){
       ...pupSessForDayDone
     ],ds);
     let dayTasks=[...undoneDay,...doneDay];
-    const MAX_VISIBLE_CHIPS=8;
+    const _colsEl=document.getElementById('wkcCols');
+    const _colH=_colsEl?_colsEl.clientHeight:400;
+    const _chipH=20;
+    const _padTop=parseInt(col.style.paddingTop)||0;
+    const _moreH=18;
+    const MAX_VISIBLE_CHIPS=Math.max(4,Math.floor((_colH-_padTop-_moreH)/_chipH));
     const _needsCollapse=dayTasks.length>MAX_VISIBLE_CHIPS;
     dayTasks.forEach((t,ti)=>{
       const _hidden=_needsCollapse&&ti>=MAX_VISIBLE_CHIPS;
