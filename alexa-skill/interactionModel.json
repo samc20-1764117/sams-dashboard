@@ -1,0 +1,56 @@
+{
+  "interactionModel": {
+    "languageModel": {
+      "invocationName": "my dashboard",
+      "intents": [
+        {
+          "name": "AddTaskIntent",
+          "slots": [
+            { "name": "TaskName", "type": "AMAZON.SearchQuery" },
+            { "name": "TaskDate", "type": "AMAZON.DATE" }
+          ],
+          "samples": [
+            "create task {TaskName}",
+            "create task {TaskName} for {TaskDate}",
+            "add task {TaskName}",
+            "add task {TaskName} for {TaskDate}",
+            "create a task {TaskName}",
+            "create a task {TaskName} for {TaskDate}",
+            "new task {TaskName}",
+            "new task {TaskName} for {TaskDate}",
+            "create task for {TaskDate} {TaskName}",
+            "add {TaskName} to my tasks",
+            "add {TaskName} to my tasks for {TaskDate}",
+            "task {TaskName} for {TaskDate}",
+            "task {TaskName}"
+          ]
+        },
+        {
+          "name": "AddShoppingIntent",
+          "slots": [
+            { "name": "ItemName", "type": "AMAZON.SearchQuery" },
+            { "name": "StoreName", "type": "AMAZON.SearchQuery" }
+          ],
+          "samples": [
+            "add {ItemName} to shopping list",
+            "add {ItemName} to my shopping list",
+            "add {ItemName} to the shopping list",
+            "put {ItemName} on the shopping list",
+            "put {ItemName} on shopping list",
+            "shopping list add {ItemName}",
+            "add {ItemName} to shopping list for {StoreName}",
+            "add {ItemName} for {StoreName}",
+            "I need {ItemName}",
+            "I need to buy {ItemName}",
+            "buy {ItemName}",
+            "add {ItemName}"
+          ]
+        },
+        { "name": "AMAZON.HelpIntent", "samples": [] },
+        { "name": "AMAZON.StopIntent", "samples": [] },
+        { "name": "AMAZON.CancelIntent", "samples": [] },
+        { "name": "AMAZON.FallbackIntent", "samples": [] }
+      ]
+    }
+  }
+}

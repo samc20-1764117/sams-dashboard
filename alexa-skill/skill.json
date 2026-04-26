@@ -1,0 +1,35 @@
+{
+  "manifest": {
+    "apis": {
+      "custom": {
+        "endpoint": {
+          "uri": "YOUR_SUPABASE_EDGE_FUNCTION_URL"
+        }
+      }
+    },
+    "manifestVersion": "1.0",
+    "publishingInformation": {
+      "locales": {
+        "en-US": {
+          "name": "Sam Dashboard",
+          "summary": "Add tasks and shopping items to my dashboard",
+          "description": "Personal dashboard voice assistant for adding tasks and shopping list items",
+          "examplePhrases": [
+            "Alexa, tell my dashboard to create task buy groceries for today",
+            "Alexa, tell my dashboard to add milk to shopping list",
+            "Alexa, open my dashboard"
+          ]
+        }
+      },
+      "isAvailableWorldwide": false,
+      "testingInstructions": "Personal use only"
+    },
+    "privacyAndCompliance": {
+      "allowsPurchases": false,
+      "isExportCompliant": true,
+      "containsAds": false,
+      "isChildDirected": false,
+      "usesPersonalInfo": false
+    }
+  }
+}
