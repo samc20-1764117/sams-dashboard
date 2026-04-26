@@ -940,7 +940,7 @@ function renderWkCal(){
     let dayTasks=[...undoneDay,...doneDay];
     const _colsEl=document.getElementById('wkcCols');
     const _colH=_colsEl?_colsEl.clientHeight:400;
-    const _chipH=20;
+    const _chipH=17;
     const _padTop=parseInt(col.style.paddingTop)||0;
     const _moreH=18;
     const MAX_VISIBLE_CHIPS=Math.max(4,Math.floor((_colH-_padTop-_moreH)/_chipH));
