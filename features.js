@@ -188,7 +188,7 @@ function openEditTask(id){
 }
 async function saveTModal(){
   const n=document.getElementById('tName').value.trim();if(!n){closeMod('tModal');return;}
-  const c=document.getElementById('tCat').value,d=document.getElementById('tDue').value.trim()||null,imp=document.getElementById('tImp').checked;
+  const c=document.getElementById('tCat').value,imp=document.getElementById('tImp').checked;let d=document.getElementById('tDue').value.trim()||null;
   const notes=document.getElementById('tNotes').value.trim()||null;
   closeMod('tModal');
   if(tMode==='edit'&&tId){
@@ -204,9 +204,15 @@ async function saveTModal(){
       if(oldDs){const blksToKill=st.blocks.filter(b=>String(b.taskId)===stid&&b.ds===oldDs);blksToKill.forEach(b=>sbDeleteBlock(b.id));st.blocks=st.blocks.filter(b=>!(String(b.taskId)===stid&&b.ds===oldDs));}
     }
     t.due_date=d;
-    // Handle time block from tTime field
+    // Parse @time from name (e.g. @1:30pm, @2pm, @10am)
+    const _timeRx=/@(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i;
+    const _tmMatch=n.match(_timeRx);
+    let _smFromName=null;
+    if(_tmMatch){let h=parseInt(_tmMatch[1]),mm=parseInt(_tmMatch[2]||'0');const ap=(_tmMatch[3]||'').toLowerCase();if(ap==='pm'&&h!==12)h+=12;else if(ap==='am'&&h===12)h=0;else if(!ap&&h>=1&&h<=6)h+=12;_smFromName=h*60+mm;}
+    // Handle time block from @time in name or tTime field
     const _ttVal=document.getElementById('tTime')?.value;
-    if(d){const _ttDs=d;const _ttSm=_ttVal?parseInt(_ttVal.split(':')[0])*60+parseInt(_ttVal.split(':')[1]):null;const _existBlk=st.blocks.find(b=>String(b.taskId)===stid&&b.ds===_ttDs);if(_ttSm!==null){if(_existBlk){_existBlk.sm=_ttSm;_existBlk.title=n;sbSaveBlock(_existBlk);}else{const _adT=(cc)=>{const lc=(cc||'').toLowerCase();if(lc==='social')return 180;if(lc==='work'||lc==='recurring')return 60;return 30;};const _nb={id:crypto.randomUUID(),title:n,ds:_ttDs,sm:_ttSm,dur:_adT(c),cat:c,taskId:stid};st.blocks.push(_nb);sbSaveBlock(_nb);}}else if(_existBlk){st.blocks=st.blocks.filter(b=>b.id!==_existBlk.id);sbDeleteBlock(_existBlk.id);}}
+    if(_smFromName!==null&&!d){d=d2s(getDayDate(dayOff));t.due_date=d;}
+    if(d){const _ttDs=d;const _ttSm=_smFromName!==null?_smFromName:(_ttVal?parseInt(_ttVal.split(':')[0])*60+parseInt(_ttVal.split(':')[1]):null);const _existBlk=st.blocks.find(b=>String(b.taskId)===stid&&b.ds===_ttDs);if(_ttSm!==null){if(_existBlk){_existBlk.sm=_ttSm;_existBlk.title=n;sbSaveBlock(_existBlk);}else{const _adT=(cc)=>{const lc=(cc||'').toLowerCase();if(lc==='social')return 180;if(lc==='work'||lc==='recurring')return 60;return 30;};const _nb={id:crypto.randomUUID(),title:n,ds:_ttDs,sm:_ttSm,dur:_adT(c),cat:c,taskId:stid};st.blocks.push(_nb);sbSaveBlock(_nb);}}else if(_existBlk){st.blocks=st.blocks.filter(b=>b.id!==_existBlk.id);sbDeleteBlock(_existBlk.id);}}
     renderAll();if(document.getElementById('tbGrid'))renderDayTB();
     pushUndo(()=>{
       t.name=prev.name;t.category=prev.category;t.due_date=prev.due_date;t.important=prev.important;t.notes=prev.notes;

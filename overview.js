@@ -938,20 +938,12 @@ function renderWkCal(){
       ...pupSessForDayDone
     ],ds);
     let dayTasks=[...undoneDay,...doneDay];
-    const _colsEl=document.getElementById('wkcCols');
-    const _colH=_colsEl?_colsEl.clientHeight:400;
-    const _chipH=17;
-    const _padTop=parseInt(col.style.paddingTop)||0;
-    const _moreH=18;
-    const MAX_VISIBLE_CHIPS=Math.max(4,Math.floor((_colH-_padTop-_moreH)/_chipH));
-    const _needsCollapse=dayTasks.length>MAX_VISIBLE_CHIPS;
-    dayTasks.forEach((t,ti)=>{
-      const _hidden=_needsCollapse&&ti>=MAX_VISIBLE_CHIPS;
+    dayTasks.forEach(t=>{
       const ov=isOv(t.due_date)&&!t.done,imp=t.important&&!ov&&!t.done;
       const _chipCat=(t._isWrec||t._isWrRule)?'weekly_reset':(t._virtual&&t._recId?'recurring':t.category);
       const s=ov?OV:imp?IMP:t._type==='pup'?_pupSessStyle():gc(_chipCat);
-      const chip=document.createElement('div');chip.className='chip'+(t.done?' done-chip':'')+(_hidden?' wkc-hidden-chip':'');
-      chip.style.cssText=`background:${s.bg};color:${s.t};border-color:${s.b}${_hidden?';display:none':''}`;
+      const chip=document.createElement('div');chip.className='chip'+(t.done?' done-chip':'');
+      chip.style.cssText=`background:${s.bg};color:${s.t};border-color:${s.b}`;
       if(!t._virtual)chip.dataset.tid=String(t.id);
       else if(t._type==='shop')chip.dataset.tid='shop-cal-'+t._shopId;
       else if(t._isWrRule)chip.dataset.tid='wrrule-virt-'+t._ruleId;
@@ -1041,19 +1033,6 @@ function renderWkCal(){
       chip.appendChild(dx);
       col.appendChild(chip);
     });
-
-    if(_needsCollapse){
-      const moreBtn=document.createElement('div');moreBtn.className='wkc-more-btn';
-      moreBtn.textContent=`+ ${dayTasks.length-MAX_VISIBLE_CHIPS} more`;
-      moreBtn.addEventListener('click',e=>{
-        e.stopPropagation();
-        col.querySelectorAll('.wkc-hidden-chip').forEach(c=>{c.style.display='';c.classList.remove('wkc-hidden-chip');});
-        moreBtn.textContent='− show less';
-        moreBtn.classList.add('wkc-less-btn');
-        moreBtn.onclick=e2=>{e2.stopPropagation();renderWkCal();};
-      });
-      col.appendChild(moreBtn);
-    }
 
     cols.appendChild(col);
   });
