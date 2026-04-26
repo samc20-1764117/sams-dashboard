@@ -1572,11 +1572,11 @@ function _woMakeChip(t,body){
   return chip;
 }
 function onWkcWheel(e){
-  if(Math.abs(e.deltaX)<8&&!e.shiftKey)return;
+  if(Math.abs(e.deltaX)<5&&!e.shiftKey)return;
   e.preventDefault();
   wkcWD+=(e.shiftKey?e.deltaY:e.deltaX);
   if(wkcWT)clearTimeout(wkcWT);
-  wkcWT=setTimeout(()=>{if(Math.abs(wkcWD)>20)shiftWk(wkcWD>0?1:-1);wkcWD=0;wkcWT=null;},60);
+  wkcWT=setTimeout(()=>{if(Math.abs(wkcWD)>10)shiftWk(wkcWD>0?1:-1);wkcWD=0;wkcWT=null;},40);
 }
 
 // Returns true if a weekly-reset recurring task is scheduled during week `off`
