@@ -135,7 +135,7 @@ let _mFullAddCat  = 'Home';  // full add sheet (today)
 
 ### State
 ```js
-let _mCurTab = 'today'; // 'today' | 'tb' | 'week'
+let _mCurTab = 'tb'; // 'today' | 'tb' | 'week'  (default: tb)
 ```
 
 ### `mShowTab(tab)`
@@ -152,8 +152,8 @@ let _mCurTab = 'today'; // 'today' | 'tb' | 'week'
 ### Bottom nav
 ```html
 <nav id="mNav">
-  <button class="m-nav-btn active" onclick="mShowTab('today')">Today</button>
-  <button class="m-nav-btn" onclick="mShowTab('tb')">Timeblock</button>
+  <button class="m-nav-btn" onclick="mShowTab('today')">Today</button>
+  <button class="m-nav-btn active" onclick="mShowTab('tb')">Timeblock</button>
   <button class="m-nav-btn" onclick="mShowTab('week')">Week</button>
 </nav>
 ```
@@ -231,15 +231,20 @@ let _mTBOffset   = 0;        // day offset (0=today, ±N days)
 ```
 
 ### Unassigned chips (`#mUnassignedBar`)
-- `mRenderUnassigned()` — shows today's regular tasks not yet assigned to a block on the displayed day
-- Task has no block when no `st.blocks` entry with matching `taskId` and `ds`
+- `mRenderUnassigned()` — shows tasks for displayed day not yet assigned to a block
+- Sources: `st.tasks` (+ overdue via `isOv()` when today), recurring virtual tasks (no `default_start_time`), shopping items with due dates
+- Task has no block when no `st.blocks` entry with matching `taskId`/`recId`/`shopId` and `ds`
 - Tap chip: `mSelectChip(taskId)` toggles `_mSelectedChipId`
 - Selected chip: blue/accent, shown with `::before` dot using CSS custom props `--cdot`, `--cborder`
 
 ### Timeline rendering (`mRenderTimeline()`)
 - Hour lines: absolutely positioned in `#mTLLabels` (and extend across `#mTLCol`)
-- Blocks: absolutely positioned in `#mTLCol` by `top = (sm - M_TB_START) * M_PX`
+- Regular blocks: absolutely positioned in `#mTLCol` by `top = (sm - M_TB_START) * M_PX`
+- Done blocks: `opacity:.45`, name gets `text-decoration:line-through`
+- Auto blocks: rendered when `cfg.showAutoTB` + weekday; dashed purple border, from `st.autoTimeblocks` with `st.autoTBOverrides`
+- Recurring auto blocks: recurring tasks with `default_start_time` not manually placed; dashed purple, lighter than auto blocks
 - Block height: `Math.max(dur * M_PX, 28)`
+- Time format: `_mTStr()` outputs `h:mmam/pm` (matches desktop `tStr()`)
 - Now line: `.m-tl-now` with `::before` dot, only rendered when `_mTBOffset === 0`
 - Tap on empty area → `mOpenNewBlock(sm)` (snaps to 15 min)
 - Tap on block → `mOpenBlockEdit(blockId)` (via `col.onclick` — checks `_mDragJustEnded`)
@@ -362,6 +367,7 @@ async function mInit() {
   if (!authed) return; // showLoginOverlay() called by core.js
   hideLoginOverlay();
   await syncAll();     // fetch from Supabase → renderAll()
+  mShowTab('tb');      // default to timeblock tab after data loads
   setInterval(() => { if (cfg.url && cfg.key) syncAll(true); }, 30000);
 }
 document.addEventListener('DOMContentLoaded', mInit);
