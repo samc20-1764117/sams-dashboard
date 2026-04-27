@@ -3815,17 +3815,21 @@ function delBlock(id,e){
   save();renderAll();renderPupSkillsHighlight();renderToday();renderWkCal();if(document.getElementById('tbGrid'))renderDayTB();sbDeleteBlock(id);
 }
 // Shared horizontal swipe helper: one fire per swipe, rapid successive swipes allowed
-let _hSwipeLast=0;
 function _hSwipe(state,e,cb){
   if(Math.abs(e.deltaX)<5&&!e.shiftKey)return false;
   e.preventDefault();
   const dx=e.shiftKey?e.deltaY:e.deltaX;
-  const now=Date.now();
-  // After firing, eat events for a fixed 250ms cooldown — no state to get stuck
-  if(now-state.fireAt<250)return true;
+  // While locked, keep resetting d to 0 and extend lock until events stop
+  if(state.lock){
+    state.d=0;
+    if(state.t)clearTimeout(state.t);
+    state.t=setTimeout(()=>{state.lock=false;state.d=0;state.t=null;},100);
+    return true;
+  }
   state.d+=dx;
   if(state.t)clearTimeout(state.t);
-  if(Math.abs(state.d)>50){cb(state.d>0?1:-1);state.d=0;state.fireAt=now;}
+  if(Math.abs(state.d)>30){cb(state.d>0?1:-1);state.d=0;state.lock=true;
+    state.t=setTimeout(()=>{state.lock=false;state.d=0;state.t=null;},100);}
   else{state.t=setTimeout(()=>{state.d=0;state.t=null;},200);}
   return true;
 }
