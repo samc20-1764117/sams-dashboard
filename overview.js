@@ -3819,12 +3819,17 @@ function _hSwipe(state,e,cb){
   if(Math.abs(e.deltaX)<5&&!e.shiftKey)return false;
   e.preventDefault();
   const now=Date.now();
-  // Fixed cooldown: ignore events for 180ms after firing, then immediately ready
-  if(state.fireAt&&now-state.fireAt<180){state.d=0;return true;}
-  state.d+=(e.shiftKey?e.deltaY:e.deltaX);
-  if(state.t)clearTimeout(state.t);
-  if(Math.abs(state.d)>20){cb(state.d>0?1:-1);state.d=0;state.fireAt=now;state.t=null;}
-  else{state.t=setTimeout(()=>{state.d=0;state.t=null;},150);}
+  const dx=e.shiftKey?e.deltaY:e.deltaX;
+  // After firing, stay locked until no wheel events for 150ms
+  if(state.fired){
+    if(state.t)clearTimeout(state.t);
+    state.t=setTimeout(()=>{state.fired=false;state.d=0;state.t=null;},150);
+    return true;
+  }
+  state.d+=dx;
+  if(Math.abs(state.d)>30){cb(state.d>0?1:-1);state.d=0;state.fired=true;
+    state.t=setTimeout(()=>{state.fired=false;state.d=0;state.t=null;},150);}
+  else{if(state.t)clearTimeout(state.t);state.t=setTimeout(()=>{state.d=0;state.t=null;},150);}
   return true;
 }
 const _wrRecSw={d:0,t:null,lock:false};
