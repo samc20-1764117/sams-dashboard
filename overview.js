@@ -3814,16 +3814,20 @@ function delBlock(id,e){
   st.blocks=st.blocks.filter(x=>x.id!==id);
   save();renderAll();renderPupSkillsHighlight();renderToday();renderWkCal();if(document.getElementById('tbGrid'))renderDayTB();sbDeleteBlock(id);
 }
-// Shared horizontal swipe helper: fires once per gesture, locks until wheel events stop
+// Shared horizontal swipe helper: fires once per gesture, allows rapid successive swipes
 function _hSwipe(state,e,cb){
-  if(Math.abs(e.deltaX)<5)return false;
+  const dx=e.shiftKey?e.deltaY:e.deltaX;
+  if(Math.abs(e.deltaX)<5&&!e.shiftKey)return false;
   e.preventDefault();
-  // Reset unlock timer on every event — lock stays until events stop for 300ms
-  if(state.unlock)clearTimeout(state.unlock);
-  if(state.lock){state.unlock=setTimeout(()=>{state.lock=false;state.d=0;state.unlock=null;},300);return true;}
-  state.d+=(e.shiftKey?e.deltaY:e.deltaX);
+  const now=Date.now();
+  // If locked: check if momentum has died down (small delta = tail end of gesture)
+  if(state.lock){
+    if(Math.abs(dx)<3){state.lock=false;state.d=0;}
+    else return true;
+  }
+  state.d+=dx;
   if(state.t)clearTimeout(state.t);
-  if(Math.abs(state.d)>15){const dir=state.d>0?1:-1;state.d=0;state.lock=true;cb(dir);state.t=null;state.unlock=setTimeout(()=>{state.lock=false;state.d=0;state.unlock=null;},300);}
+  if(Math.abs(state.d)>15){const dir=state.d>0?1:-1;state.d=0;state.lock=true;cb(dir);state.t=null;}
   else{state.t=setTimeout(()=>{state.d=0;state.t=null;},120);}
   return true;
 }
