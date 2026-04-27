@@ -3814,14 +3814,16 @@ function delBlock(id,e){
   st.blocks=st.blocks.filter(x=>x.id!==id);
   save();renderAll();renderPupSkillsHighlight();renderToday();renderWkCal();if(document.getElementById('tbGrid'))renderDayTB();sbDeleteBlock(id);
 }
-// Shared horizontal swipe helper: fires callback once per gesture, with cooldown to prevent double-fire
+// Shared horizontal swipe helper: fires once per gesture, locks until wheel events stop
 function _hSwipe(state,e,cb){
   if(Math.abs(e.deltaX)<5)return false;
   e.preventDefault();
-  if(state.lock)return true;
+  // Reset unlock timer on every event — lock stays until events stop for 300ms
+  if(state.unlock)clearTimeout(state.unlock);
+  if(state.lock){state.unlock=setTimeout(()=>{state.lock=false;state.d=0;state.unlock=null;},300);return true;}
   state.d+=(e.shiftKey?e.deltaY:e.deltaX);
   if(state.t)clearTimeout(state.t);
-  if(Math.abs(state.d)>15){const dir=state.d>0?1:-1;state.d=0;state.lock=true;cb(dir);setTimeout(()=>{state.lock=false;state.d=0;},400);state.t=null;}
+  if(Math.abs(state.d)>15){const dir=state.d>0?1:-1;state.d=0;state.lock=true;cb(dir);state.t=null;state.unlock=setTimeout(()=>{state.lock=false;state.d=0;state.unlock=null;},300);}
   else{state.t=setTimeout(()=>{state.d=0;state.t=null;},120);}
   return true;
 }
