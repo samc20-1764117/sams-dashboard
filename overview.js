@@ -3818,17 +3818,19 @@ function delBlock(id,e){
 function _hSwipe(state,e,cb){
   if(Math.abs(e.deltaX)<5&&!e.shiftKey)return false;
   e.preventDefault();
-  const now=Date.now();
   const dx=e.shiftKey?e.deltaY:e.deltaX;
-  // After firing, stay locked until no wheel events for 150ms
+  // After firing, eat all events until 200ms of silence, then require 2 fresh events before accumulating
   if(state.fired){
     if(state.t)clearTimeout(state.t);
-    state.t=setTimeout(()=>{state.fired=false;state.d=0;state.t=null;},150);
+    state.t=setTimeout(()=>{state.fired=false;state.d=0;state.warmup=2;state.t=null;},200);
     return true;
   }
+  // Warmup: skip first N events after unlock to avoid stale momentum
+  if(state.warmup>0){state.warmup--;state.d=0;return true;}
   state.d+=dx;
   if(Math.abs(state.d)>30){cb(state.d>0?1:-1);state.d=0;state.fired=true;
-    state.t=setTimeout(()=>{state.fired=false;state.d=0;state.t=null;},150);}
+    if(state.t)clearTimeout(state.t);
+    state.t=setTimeout(()=>{state.fired=false;state.d=0;state.warmup=2;state.t=null;},200);}
   else{if(state.t)clearTimeout(state.t);state.t=setTimeout(()=>{state.d=0;state.t=null;},150);}
   return true;
 }
