@@ -3821,8 +3821,8 @@ function _hSwipe(state,e,cb){
   if(state.lock)return true;
   state.d+=(e.shiftKey?e.deltaY:e.deltaX);
   if(state.t)clearTimeout(state.t);
-  if(Math.abs(state.d)>15){const dir=state.d>0?1:-1;state.d=0;state.lock=true;cb(dir);setTimeout(()=>{state.lock=false;},250);state.t=null;}
-  else{state.t=setTimeout(()=>{state.d=0;state.t=null;},80);}
+  if(Math.abs(state.d)>15){const dir=state.d>0?1:-1;state.d=0;state.lock=true;cb(dir);setTimeout(()=>{state.lock=false;state.d=0;},400);state.t=null;}
+  else{state.t=setTimeout(()=>{state.d=0;state.t=null;},120);}
   return true;
 }
 const _wrRecSw={d:0,t:null,lock:false};
