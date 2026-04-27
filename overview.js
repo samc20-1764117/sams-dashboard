@@ -3814,21 +3814,17 @@ function delBlock(id,e){
   st.blocks=st.blocks.filter(x=>x.id!==id);
   save();renderAll();renderPupSkillsHighlight();renderToday();renderWkCal();if(document.getElementById('tbGrid'))renderDayTB();sbDeleteBlock(id);
 }
-// Shared horizontal swipe helper: fires once per gesture, allows rapid successive swipes
+// Shared horizontal swipe helper: one fire per swipe, rapid successive swipes allowed
 function _hSwipe(state,e,cb){
-  const dx=e.shiftKey?e.deltaY:e.deltaX;
   if(Math.abs(e.deltaX)<5&&!e.shiftKey)return false;
   e.preventDefault();
   const now=Date.now();
-  // If locked: check if momentum has died down (small delta = tail end of gesture)
-  if(state.lock){
-    if(Math.abs(dx)<3){state.lock=false;state.d=0;}
-    else return true;
-  }
-  state.d+=dx;
+  // Fixed cooldown: ignore events for 180ms after firing, then immediately ready
+  if(state.fireAt&&now-state.fireAt<180){state.d=0;return true;}
+  state.d+=(e.shiftKey?e.deltaY:e.deltaX);
   if(state.t)clearTimeout(state.t);
-  if(Math.abs(state.d)>15){const dir=state.d>0?1:-1;state.d=0;state.lock=true;cb(dir);state.t=null;}
-  else{state.t=setTimeout(()=>{state.d=0;state.t=null;},120);}
+  if(Math.abs(state.d)>20){cb(state.d>0?1:-1);state.d=0;state.fireAt=now;state.t=null;}
+  else{state.t=setTimeout(()=>{state.d=0;state.t=null;},150);}
   return true;
 }
 const _wrRecSw={d:0,t:null,lock:false};
