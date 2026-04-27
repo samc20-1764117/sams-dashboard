@@ -3815,23 +3815,18 @@ function delBlock(id,e){
   save();renderAll();renderPupSkillsHighlight();renderToday();renderWkCal();if(document.getElementById('tbGrid'))renderDayTB();sbDeleteBlock(id);
 }
 // Shared horizontal swipe helper: one fire per swipe, rapid successive swipes allowed
+let _hSwipeLast=0;
 function _hSwipe(state,e,cb){
   if(Math.abs(e.deltaX)<5&&!e.shiftKey)return false;
   e.preventDefault();
   const dx=e.shiftKey?e.deltaY:e.deltaX;
-  // After firing, eat all events until 200ms of silence, then require 2 fresh events before accumulating
-  if(state.fired){
-    if(state.t)clearTimeout(state.t);
-    state.t=setTimeout(()=>{state.fired=false;state.d=0;state.warmup=2;state.t=null;},200);
-    return true;
-  }
-  // Warmup: skip first N events after unlock to avoid stale momentum
-  if(state.warmup>0){state.warmup--;state.d=0;return true;}
+  const now=Date.now();
+  // After firing, eat events for a fixed 250ms cooldown — no state to get stuck
+  if(now-state.fireAt<250)return true;
   state.d+=dx;
-  if(Math.abs(state.d)>30){cb(state.d>0?1:-1);state.d=0;state.fired=true;
-    if(state.t)clearTimeout(state.t);
-    state.t=setTimeout(()=>{state.fired=false;state.d=0;state.warmup=2;state.t=null;},200);}
-  else{if(state.t)clearTimeout(state.t);state.t=setTimeout(()=>{state.d=0;state.t=null;},150);}
+  if(state.t)clearTimeout(state.t);
+  if(Math.abs(state.d)>50){cb(state.d>0?1:-1);state.d=0;state.fireAt=now;}
+  else{state.t=setTimeout(()=>{state.d=0;state.t=null;},200);}
   return true;
 }
 const _wrRecSw={d:0,t:null,lock:false};
