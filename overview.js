@@ -585,7 +585,7 @@ function renderWkSummary(){
 // Track drag-to-add-travel state
 let tvDragStart=null,tvDragEnd=null;
 let calDrag={active:false,startDs:null,endDs:null,view:null,moved:false};
-let _lastClickedColDs=null;
+let _pasteColDates=null;
 
 
 function renderWkCal(){
@@ -725,7 +725,7 @@ function renderWkCal(){
     // Mouse-drag to create travel spanning days
     col.addEventListener('mousedown',e=>{
       if(e.button!==0)return;
-      _lastClickedColDs=ds;
+      _pasteColDates=[ds];
       if(e.target.closest('.chip,.wkc-banner,button'))return;
       calDrag={active:true,startDs:ds,endDs:ds,view:'wkc',moved:false};
       tvDragStart=di;tvDragEnd=di;
@@ -1174,7 +1174,16 @@ document.addEventListener('mouseup',()=>{
   clearCalDrag();
   if(moved&&s){
     const start=s<=e?s:e,end=s<=e?e:s;
-    openTravelModal(null,start,end);
+    if(typeof _copiedTasks!=='undefined'&&_copiedTasks.length>0){
+      // Build array of dates in the dragged range for paste
+      const arr=[];
+      let cur=new Date(start+'T00:00:00');
+      const endD=new Date(end+'T00:00:00');
+      while(cur<=endD){arr.push(d2s(cur));cur.setDate(cur.getDate()+1);}
+      _pasteColDates=arr;
+    } else {
+      openTravelModal(null,start,end);
+    }
   }
 });
 document.addEventListener('dragstart',()=>{if(calDrag.active)clearCalDrag();});
