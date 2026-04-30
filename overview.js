@@ -3017,7 +3017,7 @@ function drawRecAutoTBBlock(col,ratb,ds){
   if(resH)resH.addEventListener('mousedown',e=>{
     e.stopPropagation();e.preventDefault();
     const startY=e.clientY,startDur=ratb.dur;
-    const onResMove=ev=>{ratb.dur=Math.max(15,Math.round((startDur+(ev.clientY-startY)/PX)/15)*15);el.style.height=Math.max(ratb.dur*PX,16)+'px';const bt=el.querySelector('.tb-btime');if(bt)bt.textContent=tStr(ratb.sm)+'-'+tStr(ratb.sm+ratb.dur);};
+    const onResMove=ev=>{ratb.dur=Math.max(15,Math.round((startDur+(ev.clientY-startY)/PX)/15)*15);el.style.height=Math.max(ratb.dur*PX,16)+'px';const bt=el.querySelector('.tb-btime');if(bt)bt.textContent=tStr(ratb.sm)+'-'+tStr(ratb.sm+ratb.dur);const _c=el.closest('.tb-col');if(_c)_relayoutTBCol(_c,ds);};
     const onResUp=()=>{document.removeEventListener('mousemove',onResMove);document.removeEventListener('mouseup',onResUp);if(ratb.dur===startDur)return;_saveRecAutoTBOv(ratb,ds,startDur,ratb.sm);};
     document.addEventListener('mousemove',onResMove);document.addEventListener('mouseup',onResUp);
   });
@@ -3028,7 +3028,7 @@ function drawRecAutoTBBlock(col,ratb,ds){
     e.preventDefault();e.stopPropagation();
     const startY=e.clientY,startSm=ratb.sm;
     let dragging=false;
-    const onMove=ev=>{const dy=ev.clientY-startY;if(!dragging&&Math.abs(dy)<5)return;dragging=true;ratb.sm=Math.max(HOURS[0]*60,Math.round((startSm+dy/PX)/15)*15);el.style.top=(ratb.sm-HOURS[0]*60)*PX+'px';const bt=el.querySelector('.tb-btime');if(bt)bt.textContent=tStr(ratb.sm)+'-'+tStr(ratb.sm+ratb.dur);};
+    const onMove=ev=>{const dy=ev.clientY-startY;if(!dragging&&Math.abs(dy)<5)return;dragging=true;ratb.sm=Math.max(HOURS[0]*60,Math.round((startSm+dy/PX)/15)*15);el.style.top=(ratb.sm-HOURS[0]*60)*PX+'px';const bt=el.querySelector('.tb-btime');if(bt)bt.textContent=tStr(ratb.sm)+'-'+tStr(ratb.sm+ratb.dur);const _c=el.closest('.tb-col');if(_c)_relayoutTBCol(_c,ds);};
     const onUp=()=>{document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);if(!dragging||ratb.sm===startSm)return;_saveRecAutoTBOv(ratb,ds,ratb.dur,startSm);};
     document.addEventListener('mousemove',onMove);document.addEventListener('mouseup',onUp);
   });
@@ -3235,6 +3235,23 @@ function computeTBLayout(ds,extraBlocks=[]){
     b._ncols=maxCol+1;
   });
 }
+function _relayoutTBCol(col,ds){
+  const autoBlocks=getAutoTBForDate(ds);
+  const recAutoBlocks=getRecAutoTBForDate(ds);
+  computeTBLayout(ds,[...autoBlocks,...recAutoBlocks]);
+  col.querySelectorAll('.tb-block[data-bid]').forEach(el=>{
+    const b=st.blocks.find(x=>String(x.id)===el.dataset.bid);
+    if(!b)return;
+    const ncols=b._ncols||1,col_i=b._col||0,colW=100/ncols,left=col_i*colW;
+    el.style.left=`calc(${left}% + 2px)`;el.style.right=`calc(${100-left-colW}% + 2px)`;
+  });
+  col.querySelectorAll('.atb-block[data-atb-id]').forEach(el=>{
+    const a=[...autoBlocks,...recAutoBlocks].find(x=>x._atbId===el.dataset.atbId);
+    if(!a)return;
+    const ncols=a._ncols||1,col_i=a._col||0,colW=100/ncols,left=col_i*colW;
+    el.style.left=`calc(${left}% + 2px)`;el.style.right=`calc(${100-left-colW}% + 2px)`;
+  });
+}
 function _getTBBlockSelId(bl){if(bl.cat==='pup_session'&&bl._pupSessId)return'pup-sess-'+String(bl._pupSessId);if(bl.ruleId)return'blk-'+bl.id;if(bl.recId&&(st.wrRules||[]).some(x=>String(x.id)===String(bl.recId)))return'blk-'+bl.id;const r=bl.recId?st.recurring.find(x=>String(x.id)===String(bl.recId)):null;const iw=r&&(r.is_weekly_reset===true||r.is_weekly_reset==='true');return bl.taskId?String(bl.taskId):bl.recId?(iw?'wrec-':'rec-virt-')+bl.recId:bl.shopId?'blk-'+bl.id:null;}
 function drawTBBlock(col,b){
   const top=(b.sm-HOURS[0]*60)*PX,ht=Math.max(b.dur*PX,16);
@@ -3365,6 +3382,7 @@ function drawTBBlock(col,b){
         b.sm=newSm;el.style.top=(b.sm-HOURS[0]*60)*PX+'px';
         const bt=el.querySelector('.tb-btime');if(bt)bt.textContent=tStr(b.sm)+'-'+tStr(b.sm+b.dur);
       }
+      const _col2=el.closest('.tb-col');if(_col2)_relayoutTBCol(_col2,b.ds);
       el.classList.add('dragging-block');
     };
     tbOnUp=()=>{
@@ -3476,6 +3494,7 @@ function drawAutoTBBlock(col,atb,ds){
       atb.dur=Math.max(15,Math.round((startDur+(ev.clientY-startY)/PX)/15)*15);
       el.style.height=Math.max(atb.dur*PX,16)+'px';
       const bt=el.querySelector('.tb-btime');if(bt)bt.textContent=tStr(atb.sm)+'-'+tStr(atb.sm+atb.dur);
+      const _col2=el.closest('.tb-col');if(_col2)_relayoutTBCol(_col2,ds);
     };
     const onResUp=()=>{
       atbResizing=false;
@@ -3541,6 +3560,7 @@ function drawAutoTBBlock(col,atb,ds){
       const bt=el.querySelector('.tb-btime');if(bt)bt.textContent=tStr(atb.sm)+'-'+tStr(atb.sm+atb.dur);
       if(atbMultiBlocks)atbMultiBlocks.forEach(({bl,el2,startSm2})=>{const ns=Math.max(HOURS[0]*60,Math.min(HOURS[HOURS.length-1]*60,startSm2+dm));bl.sm=ns;el2.style.top=(ns-HOURS[0]*60)*PX+'px';const bt2=el2.querySelector('.tb-btime');if(bt2)bt2.textContent=tStr(ns)+'-'+tStr(ns+bl.dur);});
       if(otherSelAtbs)otherSelAtbs.forEach(({aa,el2,startSm2})=>{const ns=Math.max(HOURS[0]*60,Math.min(HOURS[HOURS.length-1]*60,startSm2+dm));aa.sm=ns;el2.style.top=(ns-HOURS[0]*60)*PX+'px';const bt2=el2.querySelector('.tb-btime');if(bt2)bt2.textContent=tStr(ns)+'-'+tStr(ns+aa.dur);});
+      const _col2=el.closest('.tb-col');if(_col2)_relayoutTBCol(_col2,ds);
       el.classList.add('dragging-block');
     };
     atbOnUp=()=>{
