@@ -1,5 +1,5 @@
 {
-  "exported_at": "2026-04-27T13:00:00.441Z",
+  "exported_at": "2026-04-29T13:00:00.718Z",
   "mode": "auto",
   "tables": {
     "tasks": [
@@ -1940,15 +1940,15 @@
         "goal_order": null
       },
       {
-        "name": "Arrows wo/ union",
-        "category": "Weekly Goals",
-        "due_date": "2026-04-27",
+        "name": "Pic with Sunny + Mochi",
+        "category": "Home",
+        "due_date": "2026-05-01",
         "done": false,
         "importance": null,
-        "id": "683aa6e4-c63d-438f-be66-05a17809e6f4",
-        "important": false,
+        "id": "978dfc71-be24-4233-8e96-3e6a3abe4414",
+        "important": true,
         "notes": null,
-        "goal_order": 1
+        "goal_order": null
       },
       {
         "name": "Goose playdate",
@@ -2292,12 +2292,12 @@
         "goal_order": null
       },
       {
-        "name": "Pic with Sunny + Mochi",
-        "category": "Home",
-        "due_date": "2026-04-28",
+        "name": "Icons",
+        "category": "Work",
+        "due_date": "2026-04-29",
         "done": false,
         "importance": null,
-        "id": "978dfc71-be24-4233-8e96-3e6a3abe4414",
+        "id": "73e63302-bd4d-4a7b-93f4-f460b98c30ab",
         "important": false,
         "notes": null,
         "goal_order": null
@@ -2446,12 +2446,12 @@
         "goal_order": null
       },
       {
-        "name": "Icons",
+        "name": "Six sigma",
         "category": "Work",
         "due_date": "2026-04-27",
-        "done": false,
+        "done": true,
         "importance": null,
-        "id": "73e63302-bd4d-4a7b-93f4-f460b98c30ab",
+        "id": "393db50e-fb1f-43d3-a631-43c641dcd5d9",
         "important": false,
         "notes": null,
         "goal_order": null
@@ -2490,17 +2490,6 @@
         "goal_order": null
       },
       {
-        "name": "Six sigma",
-        "category": "Work",
-        "due_date": "2026-04-27",
-        "done": false,
-        "importance": null,
-        "id": "393db50e-fb1f-43d3-a631-43c641dcd5d9",
-        "important": false,
-        "notes": null,
-        "goal_order": null
-      },
-      {
         "name": "Car insurance",
         "category": "Home",
         "due_date": "2026-04-25",
@@ -2510,6 +2499,17 @@
         "important": true,
         "notes": null,
         "goal_order": null
+      },
+      {
+        "name": "PM finalize build",
+        "category": "Weekly Goals",
+        "due_date": "2026-05-04",
+        "done": false,
+        "importance": null,
+        "id": "27bc6923-df79-4676-9f18-c3e4963a1d57",
+        "important": false,
+        "notes": null,
+        "goal_order": 2
       },
       {
         "name": "Rounded corners native",
@@ -2600,15 +2600,15 @@
         "goal_order": null
       },
       {
-        "name": "PM finalize build",
+        "name": "Arrows wo/ union",
         "category": "Weekly Goals",
-        "due_date": "2026-04-27",
+        "due_date": "2026-05-04",
         "done": false,
         "importance": null,
-        "id": "27bc6923-df79-4676-9f18-c3e4963a1d57",
+        "id": "683aa6e4-c63d-438f-be66-05a17809e6f4",
         "important": false,
         "notes": null,
-        "goal_order": 2
+        "goal_order": 1
       },
       {
         "name": "Doctor apt @10:40am",
@@ -2633,6 +2633,17 @@
         "goal_order": null
       },
       {
+        "name": "Figure out UX videos",
+        "category": "Weekly Goals",
+        "due_date": "2026-04-27",
+        "done": false,
+        "importance": null,
+        "id": "e0a57087-bc89-410d-9274-a0ff8125d1d7",
+        "important": false,
+        "notes": null,
+        "goal_order": 2
+      },
+      {
         "name": "HEB",
         "category": "Home",
         "due_date": "2026-04-20",
@@ -2655,34 +2666,12 @@
         "goal_order": null
       },
       {
-        "name": "TC: demo 3",
-        "category": "My work",
-        "due_date": "2026-04-28",
-        "done": false,
-        "importance": null,
-        "id": "7b08f394-30f6-4a0a-b7cd-b8f536f5e11f",
-        "important": false,
-        "notes": null,
-        "goal_order": null
-      },
-      {
         "name": "TC: practice all",
         "category": "My work",
         "due_date": "2026-04-29",
         "done": false,
         "importance": null,
         "id": "c22d368d-de6a-46bf-a86d-44dccb150c17",
-        "important": false,
-        "notes": null,
-        "goal_order": null
-      },
-      {
-        "name": "Finalize slides",
-        "category": "My work",
-        "due_date": "2026-04-28",
-        "done": false,
-        "importance": null,
-        "id": "c97ef7a1-4f6d-432d-9ca3-6ad6dc9a66d4",
         "important": false,
         "notes": null,
         "goal_order": null
@@ -2721,15 +2710,37 @@
         "goal_order": null
       },
       {
-        "name": "Figure out UX videos",
+        "name": "Drill down",
         "category": "Weekly Goals",
-        "due_date": "2026-04-20",
+        "due_date": "2026-05-04",
         "done": false,
         "importance": null,
-        "id": "e0a57087-bc89-410d-9274-a0ff8125d1d7",
+        "id": "2318cebf-cdff-4e64-874c-97e769d0e273",
         "important": false,
         "notes": null,
-        "goal_order": 2
+        "goal_order": 0
+      },
+      {
+        "name": "TC: demo 3",
+        "category": "My work",
+        "due_date": "2026-04-28",
+        "done": true,
+        "importance": null,
+        "id": "7b08f394-30f6-4a0a-b7cd-b8f536f5e11f",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Respond comments",
+        "category": "Home",
+        "due_date": "2026-04-29",
+        "done": true,
+        "importance": null,
+        "id": "37cd7b45-f0e5-42a8-89f0-48702395781f",
+        "important": false,
+        "notes": null,
+        "goal_order": null
       },
       {
         "name": "TC: finalized demo slides",
@@ -2782,6 +2793,17 @@
         "done": true,
         "importance": null,
         "id": "568fab3c-27d2-4315-b620-31604b0929d8",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Practice method + demo 1",
+        "category": "My work",
+        "due_date": "2026-04-27",
+        "done": true,
+        "importance": null,
+        "id": "db8766f9-ac7c-40ee-8b76-7facfd363bd0",
         "important": false,
         "notes": null,
         "goal_order": null
@@ -2886,23 +2908,12 @@
         "goal_order": null
       },
       {
-        "name": "Post linkedin",
+        "name": "TC: demo 2 slides",
         "category": "My work",
-        "due_date": "2026-04-28",
-        "done": false,
+        "due_date": "2026-04-27",
+        "done": true,
         "importance": null,
-        "id": "5ada664a-86eb-4032-a746-31abb42fcab7",
-        "important": false,
-        "notes": "- add correct tab pub link",
-        "goal_order": null
-      },
-      {
-        "name": "Pick up scrips - pups",
-        "category": "Home",
-        "due_date": "2026-05-01",
-        "done": false,
-        "importance": null,
-        "id": "15bf31bb-fd5e-4944-9710-6d4d6b9ef3ca",
+        "id": "56387419-6a01-422b-883c-fd77f7e93d19",
         "important": false,
         "notes": null,
         "goal_order": null
@@ -2919,34 +2930,23 @@
         "goal_order": null
       },
       {
+        "name": "Get tableau pub ready",
+        "category": "My work",
+        "due_date": "2026-04-27",
+        "done": true,
+        "importance": null,
+        "id": "c28acb43-c95f-4512-95c3-7455ef69bfe3",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
         "name": "Haircut @12pm",
         "category": "Home",
         "due_date": "2026-04-28",
-        "done": false,
+        "done": true,
         "importance": null,
         "id": "36953d43-6cc6-4fc4-8cd0-4d82686cb14a",
-        "important": false,
-        "notes": null,
-        "goal_order": null
-      },
-      {
-        "name": "Post Tableau Public",
-        "category": "My work",
-        "due_date": "2026-04-28",
-        "done": false,
-        "importance": null,
-        "id": "3ebfcb63-7c82-4a4d-938e-e52ea8dffb75",
-        "important": false,
-        "notes": null,
-        "goal_order": null
-      },
-      {
-        "name": "Check mail",
-        "category": "Home",
-        "due_date": "2026-04-27",
-        "done": false,
-        "importance": null,
-        "id": "dee1958a-ace9-42bd-b9e1-ad97a93bb5d7",
         "important": false,
         "notes": null,
         "goal_order": null
@@ -2985,6 +2985,17 @@
         "goal_order": null
       },
       {
+        "name": "Change all for phone views on tab pub",
+        "category": "My work",
+        "due_date": "2026-05-03",
+        "done": false,
+        "importance": null,
+        "id": "919a5928-8917-4283-8c76-b2abb74129b7",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
         "name": "Nails",
         "category": "Home",
         "due_date": "2026-04-25",
@@ -3003,17 +3014,6 @@
         "importance": null,
         "id": "37eb74b3-6fe8-4739-8370-fb59d17491d5",
         "important": false,
-        "notes": null,
-        "goal_order": null
-      },
-      {
-        "name": "TC 26: Final presentation de",
-        "category": "My work",
-        "due_date": "2026-04-28",
-        "done": false,
-        "importance": "Normal",
-        "id": "2e986907-7e6c-44e6-b337-5cd9f86387b6",
-        "important": true,
         "notes": null,
         "goal_order": null
       },
@@ -3062,17 +3062,6 @@
         "goal_order": null
       },
       {
-        "name": "Get tableau pub ready",
-        "category": "My work",
-        "due_date": "2026-04-27",
-        "done": false,
-        "importance": null,
-        "id": "c28acb43-c95f-4512-95c3-7455ef69bfe3",
-        "important": false,
-        "notes": null,
-        "goal_order": null
-      },
-      {
         "name": "TC: method + demo 1",
         "category": "My work",
         "due_date": "2026-04-26",
@@ -3117,17 +3106,6 @@
         "goal_order": null
       },
       {
-        "name": "Call haircut place to verify before noon",
-        "category": "Home",
-        "due_date": "2026-04-27",
-        "done": false,
-        "importance": null,
-        "id": "51cb0d0e-45fa-456c-ae39-cf01c6ec8f86",
-        "important": false,
-        "notes": null,
-        "goal_order": null
-      },
-      {
         "name": "Check mail",
         "category": "Home",
         "due_date": "2026-04-26",
@@ -3150,23 +3128,12 @@
         "goal_order": null
       },
       {
-        "name": "TC: demo 2 slides",
-        "category": "My work",
-        "due_date": "2026-04-27",
-        "done": false,
+        "name": "Check mail",
+        "category": "Home",
+        "due_date": "2026-04-28",
+        "done": true,
         "importance": null,
-        "id": "56387419-6a01-422b-883c-fd77f7e93d19",
-        "important": false,
-        "notes": null,
-        "goal_order": null
-      },
-      {
-        "name": "Practice method + demo 1",
-        "category": "My work",
-        "due_date": "2026-04-27",
-        "done": false,
-        "importance": null,
-        "id": "db8766f9-ac7c-40ee-8b76-7facfd363bd0",
+        "id": "dee1958a-ace9-42bd-b9e1-ad97a93bb5d7",
         "important": false,
         "notes": null,
         "goal_order": null
@@ -3178,6 +3145,17 @@
         "done": false,
         "importance": null,
         "id": "428995ee-f8c7-4cf4-a84f-91f3858198df",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Write Sindis martini card",
+        "category": "Social",
+        "due_date": "2026-04-30",
+        "done": false,
+        "importance": null,
+        "id": "f082efee-e20f-480f-b88d-853c1cdedbd6",
         "important": false,
         "notes": null,
         "goal_order": null
@@ -3205,23 +3183,122 @@
         "goal_order": 3
       },
       {
-        "name": "Drill down",
-        "category": "Weekly Goals",
-        "due_date": "2026-04-27",
+        "name": "Submit 6 sigma",
+        "category": "Work",
+        "due_date": "2026-04-29",
         "done": false,
         "importance": null,
-        "id": "2318cebf-cdff-4e64-874c-97e769d0e273",
+        "id": "535b6390-c421-4b77-85e8-b2d6ee74147e",
         "important": false,
         "notes": null,
-        "goal_order": 0
+        "goal_order": null
       },
       {
-        "name": "Clean phone case",
+        "name": "TC 26: Final presentation de",
+        "category": "My work",
+        "due_date": "2026-04-28",
+        "done": true,
+        "importance": "Normal",
+        "id": "2e986907-7e6c-44e6-b337-5cd9f86387b6",
+        "important": true,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Post Tableau Public",
+        "category": "My work",
+        "due_date": "2026-04-28",
+        "done": true,
+        "importance": null,
+        "id": "3ebfcb63-7c82-4a4d-938e-e52ea8dffb75",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Post linkedin",
+        "category": "My work",
+        "due_date": "2026-04-28",
+        "done": true,
+        "importance": null,
+        "id": "5ada664a-86eb-4032-a746-31abb42fcab7",
+        "important": false,
+        "notes": "- add correct tab pub link",
+        "goal_order": null
+      },
+      {
+        "name": "Call haircut place to verify before noon",
         "category": "Home",
-        "due_date": "2026-04-27",
+        "due_date": "2026-04-28",
+        "done": true,
+        "importance": null,
+        "id": "51cb0d0e-45fa-456c-ae39-cf01c6ec8f86",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Finalize slides",
+        "category": "My work",
+        "due_date": "2026-04-28",
+        "done": true,
+        "importance": null,
+        "id": "c97ef7a1-4f6d-432d-9ca3-6ad6dc9a66d4",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Keynote slides",
+        "category": "My work",
+        "due_date": "2026-04-29",
         "done": false,
         "importance": null,
-        "id": "5a4c5803-7899-42d7-b03e-1484637d1ec5",
+        "id": "ecf78029-8217-4dd7-b2b1-7267cb48cc8d",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Sindi b day @8pm",
+        "category": "Social",
+        "due_date": "2026-05-01",
+        "done": false,
+        "importance": null,
+        "id": "1f4980a1-4be5-4e11-b168-ee99da24ecae",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Cancel keynote apple subscription",
+        "category": "Home",
+        "due_date": "2026-05-25",
+        "done": false,
+        "importance": null,
+        "id": "a2195c7f-4645-4eb9-93e6-704f4609c996",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Cancel apple subs keynote",
+        "category": "Home",
+        "due_date": "2026-05-25",
+        "done": false,
+        "importance": null,
+        "id": "fb37c19c-9ea0-4aea-8ad5-09fe159ffeb4",
+        "important": true,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Sindi b day present",
+        "category": "Home",
+        "due_date": "2026-04-29",
+        "done": false,
+        "importance": null,
+        "id": "f10a3358-af34-4a2d-a211-b8664ec26bb2",
         "important": false,
         "notes": null,
         "goal_order": null
@@ -7374,6 +7451,20 @@
         "done": true
       },
       {
+        "id": "7e981f5f-3c35-4133-83fb-f2b27e4630ed",
+        "title": "Six sigma",
+        "day_date": "2026-04-27",
+        "start_time": "10:30:00",
+        "duration_minutes": 90,
+        "category": "Work",
+        "created_at": "2026-04-26T20:18:52.581955+00:00",
+        "start_minutes": 885,
+        "task_id": "393db50e-fb1f-43d3-a631-43c641dcd5d9",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
         "id": "0988ea26-3538-44d2-928b-36a54ab8316d",
         "title": "TC: film and add snippets",
         "day_date": "2026-04-26",
@@ -7400,20 +7491,6 @@
         "rec_id": null,
         "shop_id": null,
         "done": true
-      },
-      {
-        "id": "45343f73-b18c-43fa-81a6-2d5859dd9f7c",
-        "title": "Six sigma",
-        "day_date": "2026-04-24",
-        "start_time": "11:00:00",
-        "duration_minutes": 60,
-        "category": "Work",
-        "created_at": "2026-04-24T13:21:58.961583+00:00",
-        "start_minutes": 660,
-        "task_id": "393db50e-fb1f-43d3-a631-43c641dcd5d9",
-        "rec_id": null,
-        "shop_id": null,
-        "done": false
       },
       {
         "id": "6bc234c7-0c5f-424b-8aad-44a54a229af3",
@@ -7560,14 +7637,14 @@
         "title": "Haircut @12pm",
         "day_date": "2026-04-28",
         "start_time": "12:00:00",
-        "duration_minutes": 90,
+        "duration_minutes": 120,
         "category": "Home",
         "created_at": "2026-04-26T16:39:31.047561+00:00",
         "start_minutes": 720,
         "task_id": "36953d43-6cc6-4fc4-8cd0-4d82686cb14a",
         "rec_id": null,
         "shop_id": null,
-        "done": false
+        "done": true
       },
       {
         "id": "3b32bcd5-5a84-4ee9-9aea-db15ce85eaf5",
@@ -7624,20 +7701,6 @@
         "rec_id": null,
         "shop_id": null,
         "done": true
-      },
-      {
-        "id": "4b57f4f5-5343-42a0-ad67-7c8c9b765821",
-        "title": "Clean phone case",
-        "day_date": "2026-04-25",
-        "start_time": "19:30:00",
-        "duration_minutes": 30,
-        "category": "Home",
-        "created_at": "2026-04-26T00:43:04.334585+00:00",
-        "start_minutes": 1155,
-        "task_id": "5a4c5803-7899-42d7-b03e-1484637d1ec5",
-        "rec_id": null,
-        "shop_id": null,
-        "done": false
       },
       {
         "id": "3edf3495-ca05-4328-9946-7ac32dfb046c",
@@ -7724,46 +7787,32 @@
         "done": false
       },
       {
-        "id": "e26bf572-2a21-4a57-80b8-1c20bb7f10c5",
-        "title": "Call haircut place to verify before noon",
-        "day_date": "2026-04-27",
-        "start_time": "07:00:00",
-        "duration_minutes": 30,
-        "category": "Home",
-        "created_at": "2026-04-26T20:18:46.629197+00:00",
-        "start_minutes": 495,
-        "task_id": "51cb0d0e-45fa-456c-ae39-cf01c6ec8f86",
-        "rec_id": null,
-        "shop_id": null,
-        "done": false
-      },
-      {
-        "id": "c169eeeb-7c03-4155-9e93-477f32ecf53e",
-        "title": "Icons",
-        "day_date": "2026-04-27",
-        "start_time": "09:00:00",
-        "duration_minutes": 60,
-        "category": "Work",
-        "created_at": "2026-04-26T20:18:51.35886+00:00",
-        "start_minutes": 525,
-        "task_id": "73e63302-bd4d-4a7b-93f4-f460b98c30ab",
-        "rec_id": null,
-        "shop_id": null,
-        "done": false
-      },
-      {
-        "id": "7e981f5f-3c35-4133-83fb-f2b27e4630ed",
+        "id": "45343f73-b18c-43fa-81a6-2d5859dd9f7c",
         "title": "Six sigma",
-        "day_date": "2026-04-27",
-        "start_time": "10:30:00",
+        "day_date": "2026-04-24",
+        "start_time": "11:00:00",
         "duration_minutes": 60,
         "category": "Work",
-        "created_at": "2026-04-26T20:18:52.581955+00:00",
-        "start_minutes": 585,
+        "created_at": "2026-04-24T13:21:58.961583+00:00",
+        "start_minutes": 660,
         "task_id": "393db50e-fb1f-43d3-a631-43c641dcd5d9",
         "rec_id": null,
         "shop_id": null,
-        "done": false
+        "done": true
+      },
+      {
+        "id": "f575615a-e8d7-4df1-884f-42541be1d4d0",
+        "title": "Post linkedin",
+        "day_date": "2026-04-28",
+        "start_time": "07:30:00",
+        "duration_minutes": 45,
+        "category": "My work",
+        "created_at": "2026-04-26T21:22:21.101173+00:00",
+        "start_minutes": 450,
+        "task_id": "5ada664a-86eb-4032-a746-31abb42fcab7",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
       },
       {
         "id": "3ff0e7b5-d88d-4a1f-b863-e639a8a63930",
@@ -7778,34 +7827,6 @@
         "rec_id": null,
         "shop_id": null,
         "done": true
-      },
-      {
-        "id": "b0c07008-64ec-4038-952e-c1f3de5234eb",
-        "title": "Pic with Sunny + Mochi",
-        "day_date": "2026-04-28",
-        "start_time": "13:45:00",
-        "duration_minutes": 30,
-        "category": "Home",
-        "created_at": "2026-04-26T21:22:35.049934+00:00",
-        "start_minutes": 810,
-        "task_id": "978dfc71-be24-4233-8e96-3e6a3abe4414",
-        "rec_id": null,
-        "shop_id": null,
-        "done": false
-      },
-      {
-        "id": "f575615a-e8d7-4df1-884f-42541be1d4d0",
-        "title": "Post linkedin",
-        "day_date": "2026-04-28",
-        "start_time": "07:30:00",
-        "duration_minutes": 45,
-        "category": "My work",
-        "created_at": "2026-04-26T21:22:21.101173+00:00",
-        "start_minutes": 450,
-        "task_id": "5ada664a-86eb-4032-a746-31abb42fcab7",
-        "rec_id": null,
-        "shop_id": null,
-        "done": false
       },
       {
         "id": "9f3793fd-a8b2-484e-b6dc-5260267bb5c2",
@@ -7859,20 +7880,6 @@
         "created_at": "2026-04-18T18:23:33.896217+00:00",
         "start_minutes": 1095,
         "task_id": "978dfc71-be24-4233-8e96-3e6a3abe4414",
-        "rec_id": null,
-        "shop_id": null,
-        "done": false
-      },
-      {
-        "id": "d7729f3c-3096-4578-aa6b-bf431ea0ecf2",
-        "title": "Six sigma",
-        "day_date": "2026-04-23",
-        "start_time": "09:45:00",
-        "duration_minutes": 45,
-        "category": "Work",
-        "created_at": "2026-04-22T20:29:07.346204+00:00",
-        "start_minutes": 975,
-        "task_id": "393db50e-fb1f-43d3-a631-43c641dcd5d9",
         "rec_id": null,
         "shop_id": null,
         "done": false
@@ -8368,6 +8375,20 @@
         "done": true
       },
       {
+        "id": "d7729f3c-3096-4578-aa6b-bf431ea0ecf2",
+        "title": "Six sigma",
+        "day_date": "2026-04-23",
+        "start_time": "09:45:00",
+        "duration_minutes": 45,
+        "category": "Work",
+        "created_at": "2026-04-22T20:29:07.346204+00:00",
+        "start_minutes": 975,
+        "task_id": "393db50e-fb1f-43d3-a631-43c641dcd5d9",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
         "id": "dee7db79-8263-47bc-81fb-ed742e9f7c67",
         "title": "TC: finalized demo slides",
         "day_date": "2026-04-23",
@@ -8424,20 +8445,6 @@
         "done": true
       },
       {
-        "id": "8d066ed9-2efd-4187-84cf-70f37e4fbe10",
-        "title": "Pups teeth",
-        "day_date": "2026-04-25",
-        "start_time": "17:45:00",
-        "duration_minutes": 30,
-        "category": "Recurring",
-        "created_at": "2026-04-25T08:36:40.568283+00:00",
-        "start_minutes": 1065,
-        "task_id": null,
-        "rec_id": "10",
-        "shop_id": null,
-        "done": false
-      },
-      {
         "id": "ff1ae975-4496-4a23-8406-9c7913008ba7",
         "title": "TC: present practice",
         "day_date": "2026-04-25",
@@ -8480,15 +8487,43 @@
         "done": true
       },
       {
-        "id": "6d36248e-2ddd-49e2-bc7f-c9eee9953c5d",
-        "title": "TC 26: Final presentation de",
-        "day_date": "2026-04-28",
-        "start_time": "16:00:00",
-        "duration_minutes": 105,
+        "id": "3036066a-d3bb-40b3-86ea-9aee8f47c51b",
+        "title": "Keynote slides",
+        "day_date": "2026-04-29",
+        "start_time": "08:45:00",
+        "duration_minutes": 120,
         "category": "My work",
-        "created_at": "2026-04-26T21:22:59.243407+00:00",
-        "start_minutes": 915,
-        "task_id": "2e986907-7e6c-44e6-b337-5cd9f86387b6",
+        "created_at": "2026-04-28T21:27:32.890918+00:00",
+        "start_minutes": 540,
+        "task_id": "ecf78029-8217-4dd7-b2b1-7267cb48cc8d",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "3994d5d4-fe96-4831-bce5-45e3236a1fcf",
+        "title": "Icons",
+        "day_date": "2026-04-29",
+        "start_time": "07:45:00",
+        "duration_minutes": 60,
+        "category": "Work",
+        "created_at": "2026-04-28T16:08:46.702864+00:00",
+        "start_minutes": 855,
+        "task_id": "73e63302-bd4d-4a7b-93f4-f460b98c30ab",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "7950acee-d302-44aa-870c-6203fa4ff8aa",
+        "title": "Submit 6 sigma",
+        "day_date": "2026-04-29",
+        "start_time": "08:00:00",
+        "duration_minutes": 60,
+        "category": "Work",
+        "created_at": "2026-04-28T21:27:38.378006+00:00",
+        "start_minutes": 480,
+        "task_id": "535b6390-c421-4b77-85e8-b2d6ee74147e",
         "rec_id": null,
         "shop_id": null,
         "done": false
@@ -8498,70 +8533,70 @@
         "title": "TC: demo 3",
         "day_date": "2026-04-28",
         "start_time": "08:15:00",
-        "duration_minutes": 120,
+        "duration_minutes": 135,
         "category": "My work",
         "created_at": "2026-04-26T21:23:12.057998+00:00",
-        "start_minutes": 540,
+        "start_minutes": 525,
         "task_id": "7b08f394-30f6-4a0a-b7cd-b8f536f5e11f",
         "rec_id": null,
         "shop_id": null,
-        "done": false
+        "done": true
       },
       {
-        "id": "622d5578-96f0-4f02-85e1-3199714c5556",
-        "title": "Finalize slides",
-        "day_date": "2026-04-28",
-        "start_time": "14:15:00",
-        "duration_minutes": 75,
-        "category": "My work",
-        "created_at": "2026-04-26T21:23:35.591197+00:00",
-        "start_minutes": 840,
-        "task_id": "c97ef7a1-4f6d-432d-9ca3-6ad6dc9a66d4",
+        "id": "177a53f7-a70c-411a-a9cd-bee9e7ee48b7",
+        "title": "Pic with Sunny + Mochi",
+        "day_date": "2026-05-01",
+        "start_time": "18:30:00",
+        "duration_minutes": 45,
+        "category": "Home",
+        "created_at": "2026-04-29T00:24:56.79083+00:00",
+        "start_minutes": 1110,
+        "task_id": "978dfc71-be24-4233-8e96-3e6a3abe4414",
         "rec_id": null,
         "shop_id": null,
         "done": false
       },
       {
-        "id": "76a0fca8-fab3-4684-8304-bbb7fdf9f664",
-        "title": "Post Tableau Public",
-        "day_date": "2026-04-28",
-        "start_time": "07:30:00",
-        "duration_minutes": 45,
-        "category": "My work",
-        "created_at": "2026-04-26T21:22:50.043684+00:00",
+        "id": "12e79cbe-f760-440b-b7e4-b0893e71722a",
+        "title": "Sindi b day @8pm",
+        "day_date": "2026-05-01",
+        "start_time": "20:00:00",
+        "duration_minutes": 180,
+        "category": "Social",
+        "created_at": "2026-04-29T00:24:18.074328+00:00",
+        "start_minutes": 1155,
+        "task_id": "1f4980a1-4be5-4e11-b168-ee99da24ecae",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "e3c28268-e02b-496d-a841-06e289044271",
+        "title": "Sindi b day present",
+        "day_date": "2026-04-29",
+        "start_time": "18:45:00",
+        "duration_minutes": 30,
+        "category": "Home",
+        "created_at": "2026-04-29T12:32:08.504443+00:00",
+        "start_minutes": 1110,
+        "task_id": "f10a3358-af34-4a2d-a211-b8664ec26bb2",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "0a12e693-9a07-4168-80f6-03ab2edb24f6",
+        "title": "Respond comments",
+        "day_date": "2026-04-29",
+        "start_time": "07:45:00",
+        "duration_minutes": 30,
+        "category": "Home",
+        "created_at": "2026-04-29T12:38:20.238938+00:00",
         "start_minutes": 450,
-        "task_id": "3ebfcb63-7c82-4a4d-938e-e52ea8dffb75",
+        "task_id": "37cd7b45-f0e5-42a8-89f0-48702395781f",
         "rec_id": null,
         "shop_id": null,
-        "done": false
-      },
-      {
-        "id": "99239d29-ea92-43db-abde-9f30415d7924",
-        "title": "Get tableau pub ready",
-        "day_date": "2026-04-27",
-        "start_time": "16:45:00",
-        "duration_minutes": 45,
-        "category": "My work",
-        "created_at": "2026-04-26T22:45:31.768527+00:00",
-        "start_minutes": 975,
-        "task_id": "c28acb43-c95f-4512-95c3-7455ef69bfe3",
-        "rec_id": null,
-        "shop_id": null,
-        "done": false
-      },
-      {
-        "id": "46d01fa3-7e7f-48e1-a0e1-a67c24e774ae",
-        "title": "TC: demo 2 slides",
-        "day_date": "2026-04-27",
-        "start_time": "12:45:00",
-        "duration_minutes": 60,
-        "category": "My work",
-        "created_at": "2026-04-26T22:45:42.350615+00:00",
-        "start_minutes": 825,
-        "task_id": "56387419-6a01-422b-883c-fd77f7e93d19",
-        "rec_id": null,
-        "shop_id": null,
-        "done": false
+        "done": true
       },
       {
         "id": "09860cb7-7bb0-4bd6-b492-af2e11e4eed7",
@@ -8575,18 +8610,116 @@
         "task_id": "db8766f9-ac7c-40ee-8b76-7facfd363bd0",
         "rec_id": null,
         "shop_id": null,
-        "done": false
+        "done": true
       },
       {
-        "id": "7c2178de-2c33-4b7f-a1ab-d223fccc14bc",
-        "title": "Check mail",
+        "id": "46d01fa3-7e7f-48e1-a0e1-a67c24e774ae",
+        "title": "TC: demo 2 slides",
         "day_date": "2026-04-27",
-        "start_time": "17:00:00",
+        "start_time": "12:45:00",
+        "duration_minutes": 60,
+        "category": "My work",
+        "created_at": "2026-04-26T22:45:42.350615+00:00",
+        "start_minutes": 825,
+        "task_id": "56387419-6a01-422b-883c-fd77f7e93d19",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
+        "id": "99239d29-ea92-43db-abde-9f30415d7924",
+        "title": "Get tableau pub ready",
+        "day_date": "2026-04-27",
+        "start_time": "16:45:00",
+        "duration_minutes": 45,
+        "category": "My work",
+        "created_at": "2026-04-26T22:45:31.768527+00:00",
+        "start_minutes": 975,
+        "task_id": "c28acb43-c95f-4512-95c3-7455ef69bfe3",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
+        "id": "f418d7dc-f7b9-43cd-895d-ae2be8940596",
+        "title": "Check mail",
+        "day_date": "2026-04-28",
+        "start_time": "18:30:00",
         "duration_minutes": 30,
         "category": "Home",
-        "created_at": "2026-04-26T22:46:08.145724+00:00",
+        "created_at": "2026-04-28T16:09:13.385149+00:00",
         "start_minutes": 1020,
         "task_id": "dee1958a-ace9-42bd-b9e1-ad97a93bb5d7",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
+        "id": "76a0fca8-fab3-4684-8304-bbb7fdf9f664",
+        "title": "Post Tableau Public",
+        "day_date": "2026-04-28",
+        "start_time": "07:30:00",
+        "duration_minutes": 45,
+        "category": "My work",
+        "created_at": "2026-04-26T21:22:50.043684+00:00",
+        "start_minutes": 450,
+        "task_id": "3ebfcb63-7c82-4a4d-938e-e52ea8dffb75",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
+        "id": "73842822-a365-49a7-b5c2-8b70abe58675",
+        "title": "Call haircut place to verify before noon",
+        "day_date": "2026-04-28",
+        "start_time": "08:30:00",
+        "duration_minutes": 30,
+        "category": "Home",
+        "created_at": "2026-04-27T16:23:06.989659+00:00",
+        "start_minutes": 495,
+        "task_id": "51cb0d0e-45fa-456c-ae39-cf01c6ec8f86",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
+        "id": "6d36248e-2ddd-49e2-bc7f-c9eee9953c5d",
+        "title": "TC 26: Final presentation de",
+        "day_date": "2026-04-28",
+        "start_time": "16:00:00",
+        "duration_minutes": 45,
+        "category": "My work",
+        "created_at": "2026-04-26T21:22:59.243407+00:00",
+        "start_minutes": 975,
+        "task_id": "2e986907-7e6c-44e6-b337-5cd9f86387b6",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
+        "id": "622d5578-96f0-4f02-85e1-3199714c5556",
+        "title": "Finalize slides",
+        "day_date": "2026-04-28",
+        "start_time": "14:15:00",
+        "duration_minutes": 105,
+        "category": "My work",
+        "created_at": "2026-04-26T21:23:35.591197+00:00",
+        "start_minutes": 855,
+        "task_id": "c97ef7a1-4f6d-432d-9ca3-6ad6dc9a66d4",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
+        "id": "ade0af7d-cb48-474b-b81a-b619ec3cbe86",
+        "title": "TC: practice all",
+        "day_date": "2026-04-29",
+        "start_time": "07:45:00",
+        "duration_minutes": 135,
+        "category": "My work",
+        "created_at": "2026-04-28T16:08:41.809683+00:00",
+        "start_minutes": 720,
+        "task_id": "c22d368d-de6a-46bf-a86d-44dccb150c17",
         "rec_id": null,
         "shop_id": null,
         "done": false

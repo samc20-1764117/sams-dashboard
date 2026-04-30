@@ -2563,7 +2563,8 @@ document.addEventListener('keydown',async e=>{
         save();renderRecOv();renderWeeklyPage();renderToday();renderWkSummary();renderWkCal();
         pushUndo(()=>{st.recurring=st.recurring.filter(x=>x.id!==tempId&&!(sv&&sv[0]&&x.id===sv[0].id));save();renderRecOv();renderWeeklyPage();renderToday();renderWkSummary();renderWkCal();},'Duplicated recurring');
       } else {
-        const dup={id:'l-'+Date.now()+Math.random(),name:t.name,category:t.category,due_date:t.due_date,done:false,important:t.important||false};
+        const pasteDate=(activePg==='overview'&&typeof _lastClickedColDs==='string'&&_lastClickedColDs)?_lastClickedColDs:t.due_date;
+        const dup={id:'l-'+Date.now()+Math.random(),name:t.name,category:t.category,due_date:pasteDate,done:false,important:t.important||false};
         st.tasks.push(dup);renderAll();
         let pasteServerId=null;
         pushUndo(()=>{const rid=pasteServerId||dup.id;st.tasks=st.tasks.filter(x=>String(x.id)!==String(rid));renderAll();if(pasteServerId)sbReq('DELETE','tasks',null,`?id=eq.${pasteServerId}`);},'Pasted task');

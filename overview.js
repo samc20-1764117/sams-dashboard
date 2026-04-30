@@ -585,6 +585,7 @@ function renderWkSummary(){
 // Track drag-to-add-travel state
 let tvDragStart=null,tvDragEnd=null;
 let calDrag={active:false,startDs:null,endDs:null,view:null,moved:false};
+let _lastClickedColDs=null;
 
 
 function renderWkCal(){
@@ -724,6 +725,7 @@ function renderWkCal(){
     // Mouse-drag to create travel spanning days
     col.addEventListener('mousedown',e=>{
       if(e.button!==0)return;
+      _lastClickedColDs=ds;
       if(e.target.closest('.chip,.wkc-banner,button'))return;
       calDrag={active:true,startDs:ds,endDs:ds,view:'wkc',moved:false};
       tvDragStart=di;tvDragEnd=di;
