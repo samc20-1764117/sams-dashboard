@@ -3799,6 +3799,11 @@ function startTBInlineEdit(blockId,col,onCommit){
   _applyColor();
   window._tbEditing=true;
   let committed=false;
+  let _tbImp=false;
+  function _applyImpStyle(){
+    if(_tbImp){const is=IMP;el.style.background=is.bg;el.style.color=is.t;el.style.borderColor=is.b;if(_catLbl)_catLbl.style.color=is.t;}
+    else _applyColor();
+  }
   async function commit(){
     if(committed)return;committed=true;window._tbEditing=false;
     _catLbl.remove();
@@ -3807,22 +3812,26 @@ function startTBInlineEdit(blockId,col,onCommit){
     if(!val){st.blocks=st.blocks.filter(x=>x.id!==blockId);save();renderDayTB();return;}
     b.title=val;b.cat=chosenCat;
     if(!b.taskId){
-      const newTask={id:'t-'+Date.now(),name:val,category:chosenCat,due_date:b.ds,done:false,important:false};
+      const newTask={id:'t-'+Date.now(),name:val,category:chosenCat,due_date:b.ds,done:false,important:_tbImp};
       st.tasks.push(newTask);b.taskId=String(newTask.id);
       if(onCommit)onCommit();
       save();renderAll();
-      const sv=await sbReq('POST','tasks',{name:val,category:chosenCat,due_date:b.ds,done:false,important:false});
+      const sv=await sbReq('POST','tasks',{name:val,category:chosenCat,due_date:b.ds,done:false,important:_tbImp});
       if(sv&&sv[0]){const ti=st.tasks.findIndex(x=>x.id===newTask.id);if(ti>-1)st.tasks[ti]={...sv[0]};b.taskId=String(sv[0].id);save();renderToday();renderWkSummary();renderWkCal();}
       sbSaveBlock(b);
     } else {
+      const lt=st.tasks.find(x=>String(x.id)===String(b.taskId));
+      if(lt)lt.important=_tbImp;
       if(onCommit)onCommit();
       save();renderDayTB();
       sbUpdateBlock(b.id,{title:b.title});
+      if(lt)sbReq('PATCH','tasks',{important:_tbImp},`?id=eq.${b.taskId}`);
     }
   }
   inp.addEventListener('keydown',e=>{
     if(e.key==='ArrowDown'){e.preventDefault();_catIdx=(_catIdx+1)%_cycleCats.length;_applyColor();}
     else if(e.key==='ArrowUp'){e.preventDefault();_catIdx=(_catIdx-1+_cycleCats.length)%_cycleCats.length;_applyColor();}
+    else if((e.metaKey||e.ctrlKey)&&e.key==='i'){e.preventDefault();_tbImp=!_tbImp;_applyImpStyle();}
     else if(e.key==='Enter'){e.preventDefault();commit();}
     else if(e.key==='Escape'){committed=true;window._tbEditing=false;_catLbl.remove();st.blocks=st.blocks.filter(x=>x.id!==blockId);save();renderDayTB();}
   });
