@@ -3078,8 +3078,8 @@ function renderDayTB(){
       const minsInRow2=Math.round(frac2*60/15)*15;
       const sm=h*60+Math.max(0,Math.min(45,minsInRow2));
       const blk={id:crypto.randomUUID(),title:'',ds,sm,dur:30,cat:'Home'};
-      st.blocks.push(blk);save();
-      // DB save happens after inline edit commits (in startTBInlineEdit)
+      st.blocks.push(blk);
+      // Don't save() yet — block only persists after inline edit commits
       // Compute layout (handles overlap) then redraw all blocks in col
       computeTBLayout(ds);
       // Remove existing blocks from col and redraw all with correct positions
@@ -3152,7 +3152,7 @@ function renderDayTB(){
         const sm=snap(top2),em=snap(bot2);
         const dur=Math.max(15,em-sm);
         const blk={id:crypto.randomUUID(),title:'',ds,sm,dur,cat:'Home'};
-        st.blocks.push(blk);save();
+        st.blocks.push(blk);
         computeTBLayout(ds);
         col.querySelectorAll('.tb-block').forEach(el=>el.remove());
         getVisibleBlocks(ds).forEach(b=>drawTBBlock(col,b));
@@ -3796,6 +3796,35 @@ function startTBInlineEdit(blockId,col,onCommit){
   inp.placeholder='Name…';
   inp.style.cssText='width:100%;font-size:9px;font-weight:600;background:rgba(255,255,255,.8);border:none;border-radius:3px;padding:1px 3px;outline:none;font-family:inherit;color:var(--text);min-width:0;box-sizing:border-box';
   if(btSpan)btSpan.replaceWith(inp);else{if(tbRow)tbRow.prepend(inp);else el.prepend(inp);}
+  // Time row: start + end time inputs
+  const _catAutoDur=(cat)=>{const c=(cat||'').toLowerCase();if(c==='social')return 180;if(c==='work'||c==='my work'||c==='recurring')return 60;return 30;};
+  const _smToTime=sm=>`${String(Math.floor(sm/60)).padStart(2,'0')}:${String(sm%60).padStart(2,'0')}`;
+  const _timeToSm=v=>{const[h,m]=v.split(':').map(Number);return h*60+(m||0);};
+  const timeRow=document.createElement('div');
+  timeRow.style.cssText='display:flex;gap:3px;align-items:center;padding:1px 3px;font-size:7.5px;opacity:.85';
+  const startInp=document.createElement('input');startInp.type='time';startInp.value=_smToTime(b.sm);
+  startInp.style.cssText='font-size:8px;border:none;background:rgba(255,255,255,.8);border-radius:3px;padding:0 2px;font-family:inherit;color:var(--text);outline:none;width:62px';
+  const sep=document.createElement('span');sep.textContent='–';sep.style.cssText='font-weight:700;opacity:.5';
+  const endInp=document.createElement('input');endInp.type='time';endInp.value=_smToTime(b.sm+b.dur);
+  endInp.style.cssText='font-size:8px;border:none;background:rgba(255,255,255,.8);border-radius:3px;padding:0 2px;font-family:inherit;color:var(--text);outline:none;width:62px';
+  timeRow.append(startInp,sep,endInp);
+  _catLbl.after(timeRow);
+  let _endManual=false;
+  function _updateBlockTime(){
+    const ns=_timeToSm(startInp.value),ne=_timeToSm(endInp.value);
+    if(isNaN(ns))return;
+    b.sm=ns;
+    if(!isNaN(ne)&&ne>ns)b.dur=ne-ns;
+    el.style.top=(b.sm-HOURS[0]*60)*PX+'px';
+    el.style.height=Math.max(b.dur*PX,16)+'px';
+    const bt=el.querySelector('.tb-btime');if(bt)bt.textContent=tStr(b.sm)+'-'+tStr(b.sm+b.dur);
+    const col2=el.closest('.tb-col');if(col2)_relayoutTBCol(col2,b.ds);
+  }
+  startInp.addEventListener('change',()=>{
+    if(!_endManual){const dur=_catAutoDur(_cycleCats[_catIdx]);endInp.value=_smToTime(_timeToSm(startInp.value)+dur);}
+    _updateBlockTime();
+  });
+  endInp.addEventListener('change',()=>{_endManual=true;_updateBlockTime();});
   _applyColor();
   window._tbEditing=true;
   let committed=false;
@@ -3806,7 +3835,7 @@ function startTBInlineEdit(blockId,col,onCommit){
   }
   async function commit(){
     if(committed)return;committed=true;window._tbEditing=false;
-    _catLbl.remove();
+    _catLbl.remove();timeRow.remove();
     const val=inp.value.trim();
     const chosenCat=_cycleCats[_catIdx];
     if(!val){st.blocks=st.blocks.filter(x=>x.id!==blockId);save();renderDayTB();return;}
@@ -3824,18 +3853,24 @@ function startTBInlineEdit(blockId,col,onCommit){
       if(lt)lt.important=_tbImp;
       if(onCommit)onCommit();
       save();renderDayTB();
-      sbUpdateBlock(b.id,{title:b.title});
+      sbUpdateBlock(b.id,{title:b.title,start_minutes:b.sm,duration_minutes:b.dur});
       if(lt)sbReq('PATCH','tasks',{important:_tbImp},`?id=eq.${b.taskId}`);
     }
   }
+  function _catChanged(){_applyColor();if(!_endManual){b.dur=_catAutoDur(_cycleCats[_catIdx]);endInp.value=_smToTime(b.sm+b.dur);_updateBlockTime();}}
   inp.addEventListener('keydown',e=>{
-    if(e.key==='ArrowDown'){e.preventDefault();_catIdx=(_catIdx+1)%_cycleCats.length;_applyColor();}
-    else if(e.key==='ArrowUp'){e.preventDefault();_catIdx=(_catIdx-1+_cycleCats.length)%_cycleCats.length;_applyColor();}
+    if(e.key==='ArrowDown'){e.preventDefault();_catIdx=(_catIdx+1)%_cycleCats.length;_catChanged();}
+    else if(e.key==='ArrowUp'){e.preventDefault();_catIdx=(_catIdx-1+_cycleCats.length)%_cycleCats.length;_catChanged();}
     else if((e.metaKey||e.ctrlKey)&&e.key==='i'){e.preventDefault();_tbImp=!_tbImp;_applyImpStyle();}
     else if(e.key==='Enter'){e.preventDefault();commit();}
-    else if(e.key==='Escape'){committed=true;window._tbEditing=false;_catLbl.remove();st.blocks=st.blocks.filter(x=>x.id!==blockId);save();renderDayTB();}
+    else if(e.key==='Escape'){committed=true;window._tbEditing=false;_catLbl.remove();timeRow.remove();st.blocks=st.blocks.filter(x=>x.id!==blockId);save();renderDayTB();}
   });
-  inp.addEventListener('blur',commit);
+  inp.addEventListener('blur',()=>{if(!startInp.matches(':focus')&&!endInp.matches(':focus'))commit();});
+  startInp.addEventListener('blur',()=>{if(!inp.matches(':focus')&&!endInp.matches(':focus'))commit();});
+  endInp.addEventListener('blur',()=>{if(!inp.matches(':focus')&&!startInp.matches(':focus'))commit();});
+  const _timeKey=e=>{if(e.key==='Enter'){e.preventDefault();commit();}else if(e.key==='Escape'){e.preventDefault();committed=true;window._tbEditing=false;_catLbl.remove();timeRow.remove();st.blocks=st.blocks.filter(x=>x.id!==blockId);save();renderDayTB();}};
+  startInp.addEventListener('keydown',_timeKey);
+  endInp.addEventListener('keydown',_timeKey);
   requestAnimationFrame(()=>{inp.focus();const _l=inp.value.length;inp.setSelectionRange(_l,_l);});
 }
 
