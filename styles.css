@@ -398,7 +398,7 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 .wkc-dn{font-size:8px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);line-height:1;margin-top:2px}
 .wkc-dd{font-size:11px;font-weight:700;color:var(--text);width:22px;height:22px;display:flex;align-items:center;justify-content:center;border-radius:50%}
 .wkc-dd.tn2{background:var(--accent);color:#fff}
-.wkc-day-sel .wkc-dd{width:19px;height:19px;background:linear-gradient(180deg,rgba(255,255,255,.95),rgba(240,240,245,.85));color:var(--text);box-shadow:0 0 0 1.5px #fff,0 1px 3px rgba(0,0,0,.06);backdrop-filter:blur(4px)}
+.wkc-day-sel .wkc-dd{width:19px;height:19px;background:#fff;color:var(--text);box-shadow:0 0 0 1.5px #fff,0 1px 3px rgba(0,0,0,.06)}
 .wkc-cols{flex:1;display:flex;overflow:hidden}
 /* drag zone at edges for week navigation */
 .wkc-edge{position:absolute;top:0;bottom:0;width:32px;z-index:10;display:flex;align-items:center;justify-content:center;pointer-events:none;transition:background .15s;opacity:0}
