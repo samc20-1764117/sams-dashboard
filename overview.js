@@ -84,8 +84,20 @@ function renderToday(){
     if(t._type==='travel'||t._type==='birthday')return true;
     const isOvToday=dayOff===0&&isOv(t.due_date)&&!t.done;
     if(t._shopId)return st.blocks.some(b=>(b.ds===_todDs||isOvToday)&&String(b.shopId)===String(t._shopId));
-    if(t._ruleId)return st.blocks.some(b=>(b.ds===_todDs||isOvToday)&&(String(b.ruleId)===String(t._ruleId)||String(b.recId)===String(t._ruleId)));
-    if(t._recId)return st.blocks.some(b=>(b.ds===_todDs||isOvToday)&&String(b.recId)===String(t._recId));
+    if(t._ruleId){
+      if(st.blocks.some(b=>(b.ds===_todDs||isOvToday)&&(String(b.ruleId)===String(t._ruleId)||String(b.recId)===String(t._ruleId))))return true;
+      const recAutos=getRecAutoTBForDate(_todDs);
+      if(recAutos.some(a=>String(a._recId)===String(t._ruleId)))return true;
+      if(isOvToday){const ov=getRecAutoTBForDate(t.due_date);if(ov.some(a=>String(a._recId)===String(t._ruleId)))return true;}
+      return false;
+    }
+    if(t._recId){
+      if(st.blocks.some(b=>(b.ds===_todDs||isOvToday)&&String(b.recId)===String(t._recId)))return true;
+      const recAutos=getRecAutoTBForDate(_todDs);
+      if(recAutos.some(a=>String(a._recId)===String(t._recId)))return true;
+      if(isOvToday){const ov=getRecAutoTBForDate(t.due_date);if(ov.some(a=>String(a._recId)===String(t._recId)))return true;}
+      return false;
+    }
     if(!t._virtual)return st.blocks.some(b=>(b.ds===_todDs||isOvToday)&&String(b.taskId)===String(t.id));
     return true;
   }
