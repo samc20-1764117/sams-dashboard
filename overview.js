@@ -423,6 +423,8 @@ function sortByTypeOrder(tasks){
     if(a.done&&!b.done)return 1;if(!a.done&&b.done)return -1;
     const aT=a._type==='travel'&&!a.done,bT=b._type==='travel'&&!b.done;
     if(aT&&!bT)return -1;if(!aT&&bT)return 1;
+    const aB=a._type==='birthday'&&!a.done,bB=b._type==='birthday'&&!b.done;
+    if(aB&&!bB)return -1;if(!aB&&bB)return 1;
     const aO=isOv(a.due_date)&&!a.done,bO=isOv(b.due_date)&&!b.done;
     if(aO&&!bO)return -1;if(!aO&&bO)return 1;
     const aI=a.important&&!a.done,bI=b.important&&!b.done;
@@ -447,6 +449,8 @@ function sortTasksForDay(tasks,ds){
     if(a.done&&!b.done)return 1;if(!a.done&&b.done)return -1;
     const aT=a._type==='travel'&&!a.done,bT=b._type==='travel'&&!b.done;
     if(aT&&!bT)return -1;if(!aT&&bT)return 1;
+    const aB=a._type==='birthday'&&!a.done,bB=b._type==='birthday'&&!b.done;
+    if(aB&&!bB)return -1;if(!aB&&bB)return 1;
     const aO=isOv(a.due_date)&&!a.done,bO=isOv(b.due_date)&&!b.done;
     if(aO&&!bO)return -1;if(!aO&&bO)return 1;
     const aSm=tbSm(a),bSm=tbSm(b);
@@ -469,6 +473,10 @@ function sortByTBWeek(tasks){
   if(!tasks.some(t=>tbSmAny(t)!==null))return sortByTypeOrder(tasks);
   return[...tasks].sort((a,b)=>{
     if(a.done&&!b.done)return 1;if(!a.done&&b.done)return -1;
+    const aT=a._type==='travel'&&!a.done,bT=b._type==='travel'&&!b.done;
+    if(aT&&!bT)return -1;if(!aT&&bT)return 1;
+    const aB=a._type==='birthday'&&!a.done,bB=b._type==='birthday'&&!b.done;
+    if(aB&&!bB)return -1;if(!aB&&bB)return 1;
     const aO=isOv(a.due_date)&&!a.done,bO=isOv(b.due_date)&&!b.done;
     if(aO&&!bO)return -1;if(!aO&&bO)return 1;
     const aSm=tbSmAny(a),bSm=tbSmAny(b);
@@ -2661,12 +2669,14 @@ function tRowExtra(t){
   const s=gc(t.category);
   const sl=t.category.toLowerCase();
   const isTv=t._type==='travel';
+  const isBd=t._type==='birthday';
   const sub=isTv&&t.end_date?` – ${fmtD(t.end_date)}`:'';
   const modeIcon=isTv?(t.travel_mode==='plane'?_PLANE_SVG:t.travel_mode==='drive'?_CAR_SVG:''):'';
-  return`<div class="ti ti-${sl}" style="background:${s.bg}" id="ti-${t.id}" onclick="selTask(event,'${t.id}')">
+  const bdDrag=isBd?`draggable="true" ondragstart="dStart(event,'bday::${t._srcId}::${t.due_date}')" ondragend="dEnd(event)"`:'';
+  return`<div class="ti ti-${sl}" style="background:${s.bg}" id="ti-${t.id}" ${bdDrag} onclick="selTask(event,'${t.id}')">
     <span class="tn" style="color:${s.t};font-weight:600">${modeIcon}${t.name}</span>
-    ${isTv?'':`<svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3" fill="${s.bg}" stroke="${s.d}" stroke-opacity="0.4" stroke-width="1"/></svg>`}
-    <span class="dlbl">${fmtD(t.due_date)}${sub}</span>
+    ${isTv||isBd?'':`<svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3" fill="${s.bg}" stroke="${s.d}" stroke-opacity="0.4" stroke-width="1"/></svg>`}
+    ${isBd?'':`<span class="dlbl">${fmtD(t.due_date)}${sub}</span>`}
     ${isTv?`<button class="delbtn" onclick="event.stopPropagation();delTravel('${t._srcId}')">✕</button>`:''}
   </div>`;
 }
@@ -3737,6 +3747,14 @@ function dropOnTB(e,ds,h,row,smOverride){
       sbDeleteBlock(blk.id);save();renderAll();
     },'Added to time block');
     return;
+  } else if(dragId.startsWith('bday::')){
+    const parts=dragId.split('::');const bdayId=parts[1],bdayName=st.birthdays.find(x=>String(x.id)===String(bdayId));
+    if(!bdayName){dragId=null;return;}
+    const blk={id:crypto.randomUUID(),title:`${bdayName.name}'s Birthday 🎂`,ds,sm,dur:60,cat:'Birthday'};
+    st.blocks.push(blk);dragId=null;save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
+    sbSaveBlock(blk);
+    pushUndo(()=>{st.blocks=st.blocks.filter(b=>b.id!==blk.id);sbDeleteBlock(blk.id);save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();},'Added birthday to time block');
+    return;
   } else {
     const t=st.tasks.find(x=>String(x.id)===String(dragId));
     if(!t){dragId=null;return;}
@@ -3796,35 +3814,6 @@ function startTBInlineEdit(blockId,col,onCommit){
   inp.placeholder='Name…';
   inp.style.cssText='width:100%;font-size:9px;font-weight:600;background:rgba(255,255,255,.8);border:none;border-radius:3px;padding:1px 3px;outline:none;font-family:inherit;color:var(--text);min-width:0;box-sizing:border-box';
   if(btSpan)btSpan.replaceWith(inp);else{if(tbRow)tbRow.prepend(inp);else el.prepend(inp);}
-  // Time row: start + end time inputs
-  const _catAutoDur=(cat)=>{const c=(cat||'').toLowerCase();if(c==='social')return 180;if(c==='work'||c==='my work'||c==='recurring')return 60;return 30;};
-  const _smToTime=sm=>`${String(Math.floor(sm/60)).padStart(2,'0')}:${String(sm%60).padStart(2,'0')}`;
-  const _timeToSm=v=>{const[h,m]=v.split(':').map(Number);return h*60+(m||0);};
-  const timeRow=document.createElement('div');
-  timeRow.style.cssText='display:flex;gap:3px;align-items:center;padding:1px 3px;font-size:7.5px;opacity:.85';
-  const startInp=document.createElement('input');startInp.type='time';startInp.value=_smToTime(b.sm);
-  startInp.style.cssText='font-size:8px;border:none;background:rgba(255,255,255,.8);border-radius:3px;padding:0 2px;font-family:inherit;color:var(--text);outline:none;width:62px';
-  const sep=document.createElement('span');sep.textContent='–';sep.style.cssText='font-weight:700;opacity:.5';
-  const endInp=document.createElement('input');endInp.type='time';endInp.value=_smToTime(b.sm+b.dur);
-  endInp.style.cssText='font-size:8px;border:none;background:rgba(255,255,255,.8);border-radius:3px;padding:0 2px;font-family:inherit;color:var(--text);outline:none;width:62px';
-  timeRow.append(startInp,sep,endInp);
-  _catLbl.after(timeRow);
-  let _endManual=false;
-  function _updateBlockTime(){
-    const ns=_timeToSm(startInp.value),ne=_timeToSm(endInp.value);
-    if(isNaN(ns))return;
-    b.sm=ns;
-    if(!isNaN(ne)&&ne>ns)b.dur=ne-ns;
-    el.style.top=(b.sm-HOURS[0]*60)*PX+'px';
-    el.style.height=Math.max(b.dur*PX,16)+'px';
-    const bt=el.querySelector('.tb-btime');if(bt)bt.textContent=tStr(b.sm)+'-'+tStr(b.sm+b.dur);
-    const col2=el.closest('.tb-col');if(col2)_relayoutTBCol(col2,b.ds);
-  }
-  startInp.addEventListener('change',()=>{
-    if(!_endManual){const dur=_catAutoDur(_cycleCats[_catIdx]);endInp.value=_smToTime(_timeToSm(startInp.value)+dur);}
-    _updateBlockTime();
-  });
-  endInp.addEventListener('change',()=>{_endManual=true;_updateBlockTime();});
   _applyColor();
   window._tbEditing=true;
   let committed=false;
@@ -3835,7 +3824,7 @@ function startTBInlineEdit(blockId,col,onCommit){
   }
   async function commit(){
     if(committed)return;committed=true;window._tbEditing=false;
-    _catLbl.remove();timeRow.remove();
+    _catLbl.remove();
     const val=inp.value.trim();
     const chosenCat=_cycleCats[_catIdx];
     if(!val){st.blocks=st.blocks.filter(x=>x.id!==blockId);save();renderDayTB();return;}
@@ -3853,24 +3842,18 @@ function startTBInlineEdit(blockId,col,onCommit){
       if(lt)lt.important=_tbImp;
       if(onCommit)onCommit();
       save();renderDayTB();
-      sbUpdateBlock(b.id,{title:b.title,start_minutes:b.sm,duration_minutes:b.dur});
+      sbUpdateBlock(b.id,{title:b.title});
       if(lt)sbReq('PATCH','tasks',{important:_tbImp},`?id=eq.${b.taskId}`);
     }
   }
-  function _catChanged(){_applyColor();if(!_endManual){b.dur=_catAutoDur(_cycleCats[_catIdx]);endInp.value=_smToTime(b.sm+b.dur);_updateBlockTime();}}
   inp.addEventListener('keydown',e=>{
-    if(e.key==='ArrowDown'){e.preventDefault();_catIdx=(_catIdx+1)%_cycleCats.length;_catChanged();}
-    else if(e.key==='ArrowUp'){e.preventDefault();_catIdx=(_catIdx-1+_cycleCats.length)%_cycleCats.length;_catChanged();}
+    if(e.key==='ArrowDown'){e.preventDefault();_catIdx=(_catIdx+1)%_cycleCats.length;_applyColor();}
+    else if(e.key==='ArrowUp'){e.preventDefault();_catIdx=(_catIdx-1+_cycleCats.length)%_cycleCats.length;_applyColor();}
     else if((e.metaKey||e.ctrlKey)&&e.key==='i'){e.preventDefault();_tbImp=!_tbImp;_applyImpStyle();}
     else if(e.key==='Enter'){e.preventDefault();commit();}
-    else if(e.key==='Escape'){committed=true;window._tbEditing=false;_catLbl.remove();timeRow.remove();st.blocks=st.blocks.filter(x=>x.id!==blockId);save();renderDayTB();}
+    else if(e.key==='Escape'){committed=true;window._tbEditing=false;_catLbl.remove();st.blocks=st.blocks.filter(x=>x.id!==blockId);save();renderDayTB();}
   });
-  inp.addEventListener('blur',()=>{if(!startInp.matches(':focus')&&!endInp.matches(':focus'))commit();});
-  startInp.addEventListener('blur',()=>{if(!inp.matches(':focus')&&!endInp.matches(':focus'))commit();});
-  endInp.addEventListener('blur',()=>{if(!inp.matches(':focus')&&!startInp.matches(':focus'))commit();});
-  const _timeKey=e=>{if(e.key==='Enter'){e.preventDefault();commit();}else if(e.key==='Escape'){e.preventDefault();committed=true;window._tbEditing=false;_catLbl.remove();timeRow.remove();st.blocks=st.blocks.filter(x=>x.id!==blockId);save();renderDayTB();}};
-  startInp.addEventListener('keydown',_timeKey);
-  endInp.addEventListener('keydown',_timeKey);
+  inp.addEventListener('blur',commit);
   requestAnimationFrame(()=>{inp.focus();const _l=inp.value.length;inp.setSelectionRange(_l,_l);});
 }
 

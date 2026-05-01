@@ -175,6 +175,7 @@ function openTModal(cat=''){
   document.getElementById('tMTitle').textContent='Add Task';document.getElementById('tSaveBtn').textContent='Add';
   document.getElementById('tName').value='';setCatSel('tCat',cat||'Home');
   document.getElementById('tDue').value=tPreDate||'';document.getElementById('tImp').checked=false;const _tnA=document.getElementById('tNotes');_tnA.value='';_tnA.style.height='';_tnA.style.overflowY='hidden';tPreDate=null;
+  const _tEl2=document.getElementById('tTime');if(_tEl2)_tEl2.value='';const _tEndEl2=document.getElementById('tTimeEnd');if(_tEndEl2)_tEndEl2.value='';
   document.getElementById('tModal').classList.add('open');setTimeout(()=>{const _el=document.getElementById('tName');if(_el){_el.focus();const _l=_el.value.length;_el.setSelectionRange(_l,_l);}},80);
 }
 function openEditTask(id){
@@ -184,6 +185,7 @@ function openEditTask(id){
   document.getElementById('tName').value=t.name;setCatSel('tCat',t.category||'Home');
   document.getElementById('tDue').value=t.due_date||'';document.getElementById('tImp').checked=!!t.important;const _tnE=document.getElementById('tNotes');_tnE.value=t.notes||'';_tnE.style.height='auto';_tnE.style.height=Math.min(_tnE.scrollHeight,160)+'px';_tnE.style.overflowY=_tnE.scrollHeight>=160?'auto':'hidden';
   const _tds=(t.due_date||'').split('T')[0];const _tblk=_tds?st.blocks.find(b=>String(b.taskId)===String(id)&&b.ds===_tds):null;const _tEl=document.getElementById('tTime');if(_tEl)_tEl.value=_tblk?`${String(Math.floor(_tblk.sm/60)).padStart(2,'0')}:${String(_tblk.sm%60).padStart(2,'0')}`:'';
+  const _tEndEl=document.getElementById('tTimeEnd');if(_tEndEl)_tEndEl.value=_tblk?`${String(Math.floor((_tblk.sm+_tblk.dur)/60)).padStart(2,'0')}:${String((_tblk.sm+_tblk.dur)%60).padStart(2,'0')}`:'';
   document.getElementById('tModal').classList.add('open');setTimeout(()=>{const _el=document.getElementById('tName');if(_el){_el.focus();const _l=_el.value.length;_el.setSelectionRange(_l,_l);}},80);
 }
 async function saveTModal(){
@@ -191,6 +193,7 @@ async function saveTModal(){
   const c=document.getElementById('tCat').value,imp=document.getElementById('tImp').checked;let d=document.getElementById('tDue').value.trim()||null;
   const notes=document.getElementById('tNotes').value.trim()||null;
   closeMod('tModal');
+  const _adT=(cc)=>{const lc=(cc||'').toLowerCase();if(lc==='social')return 180;if(lc==='work'||lc==='my work'||lc==='recurring')return 60;return 30;};
   if(tMode==='edit'&&tId){
     const t=st.tasks.find(x=>String(x.id)===String(tId));if(!t)return;
     const prev={name:t.name,category:t.category,due_date:t.due_date,important:t.important,notes:t.notes};
@@ -211,8 +214,10 @@ async function saveTModal(){
     if(_tmMatch){let h=parseInt(_tmMatch[1]),mm=parseInt(_tmMatch[2]||'0');const ap=(_tmMatch[3]||'').toLowerCase();if(ap==='pm'&&h!==12)h+=12;else if(ap==='am'&&h===12)h=0;else if(!ap&&h>=1&&h<=6)h+=12;_smFromName=h*60+mm;}
     // Handle time block from @time in name or tTime field
     const _ttVal=document.getElementById('tTime')?.value;
+    const _ttEndVal=document.getElementById('tTimeEnd')?.value;
+    const _parseDur=(startSm,endVal,cat)=>{if(endVal){const em=parseInt(endVal.split(':')[0])*60+parseInt(endVal.split(':')[1]);if(em>startSm)return em-startSm;}return _adT(cat);};
     if(_smFromName!==null&&!d){d=d2s(getDayDate(dayOff));t.due_date=d;}
-    if(d){const _ttDs=d;const _ttSm=_smFromName!==null?_smFromName:(_ttVal?parseInt(_ttVal.split(':')[0])*60+parseInt(_ttVal.split(':')[1]):null);const _existBlk=st.blocks.find(b=>String(b.taskId)===stid&&b.ds===_ttDs);if(_ttSm!==null){if(_existBlk){_existBlk.sm=_ttSm;_existBlk.title=n;sbSaveBlock(_existBlk);}else{const _adT=(cc)=>{const lc=(cc||'').toLowerCase();if(lc==='social')return 180;if(lc==='work'||lc==='recurring')return 60;return 30;};const _nb={id:crypto.randomUUID(),title:n,ds:_ttDs,sm:_ttSm,dur:_adT(c),cat:c,taskId:stid};st.blocks.push(_nb);sbSaveBlock(_nb);}}else if(_existBlk){st.blocks=st.blocks.filter(b=>b.id!==_existBlk.id);sbDeleteBlock(_existBlk.id);}}
+    if(d){const _ttDs=d;const _ttSm=_smFromName!==null?_smFromName:(_ttVal?parseInt(_ttVal.split(':')[0])*60+parseInt(_ttVal.split(':')[1]):null);const _existBlk=st.blocks.find(b=>String(b.taskId)===stid&&b.ds===_ttDs);if(_ttSm!==null){const _dur=_parseDur(_ttSm,_ttEndVal,c);if(_existBlk){_existBlk.sm=_ttSm;_existBlk.dur=_dur;_existBlk.title=n;sbSaveBlock(_existBlk);}else{const _nb={id:crypto.randomUUID(),title:n,ds:_ttDs,sm:_ttSm,dur:_dur,cat:c,taskId:stid};st.blocks.push(_nb);sbSaveBlock(_nb);}}else if(_existBlk){st.blocks=st.blocks.filter(b=>b.id!==_existBlk.id);sbDeleteBlock(_existBlk.id);}}
     renderAll();if(document.getElementById('tbGrid'))renderDayTB();
     pushUndo(()=>{
       t.name=prev.name;t.category=prev.category;t.due_date=prev.due_date;t.important=prev.important;t.notes=prev.notes;
@@ -224,9 +229,13 @@ async function saveTModal(){
     pendingLocal.delete(stid);
     // localOverrides[stid] stays until syncAll confirms DB matches
   } else {
-    const t={id:'l-'+Date.now(),name:n,category:c,due_date:d,done:false,important:imp,notes};st.tasks.push(t);renderAll();
-    pushUndo(()=>{st.tasks=st.tasks.filter(x=>x.id!==t.id);renderAll();sbReq('DELETE','tasks',null,`?id=eq.${t.id}`);},'Added task');
-    const sv=await sbReq('POST','tasks',{name:n,category:c,due_date:d,done:false,important:imp,notes:notes||null});if(sv&&sv[0]){const i=st.tasks.findIndex(x=>x.id===t.id);if(i>-1)st.tasks[i]=sv[0];}
+    const t={id:'l-'+Date.now(),name:n,category:c,due_date:d,done:false,important:imp,notes};st.tasks.push(t);
+    // Create time block if start time provided
+    const _ntTime=document.getElementById('tTime')?.value;const _ntTimeEnd=document.getElementById('tTimeEnd')?.value;
+    if(_ntTime&&d){const _ntSm=parseInt(_ntTime.split(':')[0])*60+parseInt(_ntTime.split(':')[1]);const _ntDur=_ntTimeEnd?(() =>{const em=parseInt(_ntTimeEnd.split(':')[0])*60+parseInt(_ntTimeEnd.split(':')[1]);return em>_ntSm?em-_ntSm:_adT(c);})():_adT(c);const _nb={id:crypto.randomUUID(),title:n,ds:d,sm:_ntSm,dur:_ntDur,cat:c,taskId:String(t.id)};st.blocks.push(_nb);sbSaveBlock(_nb);}
+    renderAll();
+    pushUndo(()=>{st.tasks=st.tasks.filter(x=>x.id!==t.id);st.blocks=st.blocks.filter(b=>String(b.taskId)!==String(t.id));renderAll();sbReq('DELETE','tasks',null,`?id=eq.${t.id}`);},'Added task');
+    const sv=await sbReq('POST','tasks',{name:n,category:c,due_date:d,done:false,important:imp,notes:notes||null});if(sv&&sv[0]){const i=st.tasks.findIndex(x=>x.id===t.id);if(i>-1){st.tasks[i]=sv[0];const _blk=st.blocks.find(b=>String(b.taskId)===String(t.id));if(_blk){_blk.taskId=String(sv[0].id);sbSaveBlock(_blk);}}}
   }
 }
 async function addTask(){
