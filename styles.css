@@ -393,7 +393,7 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 .wkc-lbl{flex:1;text-align:center;font-size:10px;font-weight:700;color:var(--text);letter-spacing:-.1px}
 .wkc-inner{flex:1;overflow:hidden;display:flex;flex-direction:column}
 .wkc-head{display:flex;border-bottom:1px solid rgba(210,205,228,.25);flex-shrink:0;background:rgba(255,255,255,.18);padding:2px 0 1px}
-.wkc-day-h{flex:1;min-width:0;padding:2px 2px 4px;text-align:center;border-left:1px solid rgba(210,205,228,.18);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px}
+.wkc-day-h{flex:1;min-width:0;padding:4px 2px 5px;text-align:center;border-left:1px solid rgba(210,205,228,.18);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px}
 .wkc-day-h:first-child{border-left:none}
 .wkc-dn{font-size:8px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);line-height:1}
 .wkc-dd{font-size:11px;font-weight:700;color:var(--text);width:22px;height:22px;display:flex;align-items:center;justify-content:center;border-radius:50%}
