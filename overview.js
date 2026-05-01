@@ -931,11 +931,18 @@ function renderWkCal(){
           x.t.due_date=ds;
           localOverrides[String(x.t.id)]={due_date:ds};pendingLocal.add(String(x.t.id));
           removeTBBlocksForDate(ds,{taskId:x.t.id,oldDs:prevDs});
+          // Auto-create timeblock on new day if task had one or has @time in name
+          const _timeRx=/@(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i;
+          const _tmM=x.t.name.match(_timeRx);
+          let _newSm=null,_newDur=null;
+          if(x.savedTBs.length){_newSm=x.savedTBs[0].sm;_newDur=x.savedTBs[0].dur;}
+          else if(_tmM){let h=parseInt(_tmM[1]),mm=parseInt(_tmM[2]||'0');const ap=(_tmM[3]||'').toLowerCase();if(ap==='pm'&&h!==12)h+=12;else if(ap==='am'&&h===12)h=0;else if(!ap&&h>=1&&h<=6)h+=12;_newSm=h*60+mm;const lc=(x.t.category||'').toLowerCase();_newDur=lc==='social'?180:lc==='work'||lc==='my work'||lc==='recurring'?60:30;}
+          if(_newSm!==null){const _nb={id:crypto.randomUUID(),title:x.t.name,ds,sm:_newSm,dur:_newDur,cat:x.t.category||'',taskId:String(x.t.id)};st.blocks.push(_nb);sbSaveBlock(_nb);}
         });
-        dragId=null;renderAll();
+        dragId=null;save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
         pushUndo(()=>{
-          _moved.forEach(x=>{x.t.due_date=x.prev;localOverrides[String(x.t.id)]={due_date:x.prev};pendingLocal.add(String(x.t.id));x.savedTBs.forEach(b=>{if(!st.blocks.find(y=>y.id===b.id))st.blocks.push(b);sbSaveBlock(b);});sbReqNullable('PATCH','tasks',{due_date:x.prev},`?id=eq.${x.t.id}`).then(()=>{delete localOverrides[String(x.t.id)];pendingLocal.delete(String(x.t.id));});});
-          save();renderAll();
+          _moved.forEach(x=>{x.t.due_date=x.prev;localOverrides[String(x.t.id)]={due_date:x.prev};pendingLocal.add(String(x.t.id));const _newBlks=st.blocks.filter(b=>String(b.taskId)===String(x.t.id)&&b.ds===ds);_newBlks.forEach(b=>sbDeleteBlock(b.id));st.blocks=st.blocks.filter(b=>!(String(b.taskId)===String(x.t.id)&&b.ds===ds));x.savedTBs.forEach(b=>{if(!st.blocks.find(y=>y.id===b.id))st.blocks.push(b);sbSaveBlock(b);});sbReqNullable('PATCH','tasks',{due_date:x.prev},`?id=eq.${x.t.id}`).then(()=>{delete localOverrides[String(x.t.id)];pendingLocal.delete(String(x.t.id));});});
+          save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
         },'Moved task'+(_moved.length>1?'s':''));
         await Promise.all(_moved.map(x=>sbReqNullable('PATCH','tasks',{due_date:ds},`?id=eq.${x.t.id}`).then(()=>pendingLocal.delete(String(x.t.id)))));
       } else { dragId=null; }
