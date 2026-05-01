@@ -2393,6 +2393,8 @@ document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key==='s'){
 document.addEventListener('keydown',async e=>{
   const tag=document.activeElement?.tagName;
   if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT')return;
+  // t key: jump to today on overview
+  if(e.key==='t'&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&activePg==='overview'&&!document.querySelector('.overlay.open')){goToday();return;}
   // Pup skill shortcuts
   const onPups=document.getElementById('page-pups')?.classList.contains('active');
   if(onPups&&_selPupIds.size>0){

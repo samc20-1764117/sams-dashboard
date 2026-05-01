@@ -398,7 +398,7 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 .wkc-dn{font-size:8px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);line-height:1}
 .wkc-dd{font-size:11px;font-weight:700;color:var(--text);width:18px;height:18px;display:flex;align-items:center;justify-content:center;border-radius:50%}
 .wkc-dd.tn2{background:var(--accent);color:#fff}
-.wkc-day-sel .wkc-dd{background:rgba(42,157,181,.15);color:var(--accent);outline:1.5px solid rgba(42,157,181,.4)}
+.wkc-day-sel .wkc-dd{background:#fff;color:var(--text);box-shadow:0 0 0 1.5px rgba(0,0,0,.12)}
 .wkc-cols{flex:1;display:flex;overflow:hidden}
 /* drag zone at edges for week navigation */
 .wkc-edge{position:absolute;top:0;bottom:0;width:32px;z-index:10;display:flex;align-items:center;justify-content:center;pointer-events:none;transition:background .15s;opacity:0}
