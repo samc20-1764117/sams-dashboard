@@ -3322,6 +3322,45 @@ window.addEventListener('keydown',e=>{
     if(document.getElementById('tbGrid'))renderDayTB();
   },'Moved blocks');
 },{capture:true});
+// Cmd/Ctrl+Arrow: resize selected TB blocks ±30 min
+window.addEventListener('keydown',e=>{
+  if(e.key!=='ArrowUp'&&e.key!=='ArrowDown')return;
+  if(!(e.metaKey||e.ctrlKey))return;
+  if(!document.querySelector('.tb-col')||!selectedTasks.size)return;
+  const tag=document.activeElement?.tagName;
+  if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT'||document.activeElement?.isContentEditable)return;
+  e.preventDefault();
+  const dd=e.key==='ArrowUp'?-30:30;
+  const ds=d2s(getDayDate(dayOff));
+  const _sm2t=sm=>`${String(Math.floor(sm/60)).padStart(2,'0')}:${String(sm%60).padStart(2,'0')}:00`;
+  const selBlks=(st.blocks||[]).filter(b=>{if(b.ds!==ds)return false;const sid=typeof _getTBBlockSelId==='function'?_getTBBlockSelId(b):null;return sid&&selectedTasks.has(sid);});
+  const selAtbIds=[...selectedTasks].filter(id=>id.startsWith('atb::')).map(id=>id.replace('atb::',''));
+  const allAtbs=typeof getAutoTBForDate==='function'?getAutoTBForDate(ds):[];
+  const selAtbs=allAtbs.filter(a=>selAtbIds.includes(a._atbId));
+  if(!selBlks.length&&!selAtbs.length)return;
+  const blkSnaps=selBlks.map(b=>({b,prevDur:b.dur}));
+  const atbSnaps=selAtbs.map(a=>({atbId:a._atbId,prevDur:a.dur,hadOv:!!st.autoTBOverrides.find(o=>String(o.base_id)===a._atbId&&o.date===ds)}));
+  selBlks.forEach(b=>{b.dur=Math.max(15,b.dur+dd);sbUpdateBlock(b.id,{duration_minutes:b.dur});});
+  selAtbs.forEach(a=>{
+    a.dur=Math.max(15,a.dur+dd);
+    const ns2=_sm2t(a.sm),ne2=_sm2t(a.sm+a.dur);
+    const curOv=st.autoTBOverrides.find(o=>String(o.base_id)===a._atbId&&o.date===ds);
+    if(curOv){curOv.start_time=ns2;curOv.end_time=ne2;sbReqSilent('PATCH','auto_timeblock_overrides',{start_time:ns2,end_time:ne2},`?id=eq.${curOv.id}`);}
+    else{const pl={base_id:a._atbId,date:ds,start_time:ns2,end_time:ne2};const tid='atbov-tmp-'+Date.now();st.autoTBOverrides.push({...pl,id:tid});sbReqSilent('POST','auto_timeblock_overrides',pl,'').then(res=>{if(res&&res[0]){const i=st.autoTBOverrides.findIndex(o=>String(o.id)===tid);if(i>-1)st.autoTBOverrides[i]=res[0];}save();});}
+  });
+  save();
+  if(document.getElementById('tbGrid'))renderDayTB();
+  pushUndo(()=>{
+    blkSnaps.forEach(({b,prevDur})=>{b.dur=prevDur;sbUpdateBlock(b.id,{duration_minutes:prevDur});});
+    atbSnaps.forEach(({atbId,prevDur,hadOv})=>{
+      const a2=allAtbs.find(x=>x._atbId===atbId);
+      const ps2=_sm2t(a2?a2.sm:0),pe2=_sm2t((a2?a2.sm:0)+prevDur);
+      const curOv=st.autoTBOverrides.find(o=>String(o.base_id)===atbId&&o.date===ds);
+      if(curOv){if(!hadOv){st.autoTBOverrides=st.autoTBOverrides.filter(o=>o!==curOv);sbReqSilent('DELETE','auto_timeblock_overrides',null,`?id=eq.${curOv.id}`);}else{curOv.start_time=ps2;curOv.end_time=pe2;sbReqSilent('PATCH','auto_timeblock_overrides',{start_time:ps2,end_time:pe2},`?id=eq.${curOv.id}`);}}
+    });
+    save();if(document.getElementById('tbGrid'))renderDayTB();
+  },'Resized blocks');
+},{capture:true});
 // 'A' key: add auto-blocks in rubber-band range (or all for today) to selection
 window.addEventListener('keydown',e=>{
   if(e.key!=='a'&&e.key!=='A')return;
