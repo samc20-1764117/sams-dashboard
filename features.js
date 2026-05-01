@@ -2395,6 +2395,8 @@ document.addEventListener('keydown',async e=>{
   if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT')return;
   // t key: jump to today on overview
   if(e.key==='t'&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&activePg==='overview'&&!document.querySelector('.overlay.open')){goToday();return;}
+  // Arrow left/right: shift day on overview when nothing selected
+  if((e.key==='ArrowLeft'||e.key==='ArrowRight')&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&activePg==='overview'&&!document.querySelector('.overlay.open')&&!selectedTasks.size){e.preventDefault();shiftDay(e.key==='ArrowLeft'?-1:1);return;}
   // Pup skill shortcuts
   const onPups=document.getElementById('page-pups')?.classList.contains('active');
   if(onPups&&_selPupIds.size>0){
