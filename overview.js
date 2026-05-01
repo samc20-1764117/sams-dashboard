@@ -3849,11 +3849,20 @@ function startTBInlineEdit(blockId,col,onCommit){
       sbSaveBlock(b);
     } else {
       const lt=st.tasks.find(x=>String(x.id)===String(b.taskId));
-      if(lt)lt.important=_tbImp;
+      const prevTitle=b.title,prevCat=b.cat,prevImp=lt?lt.important:false,prevTCat=lt?lt.category:null;
+      if(lt){lt.important=_tbImp;lt.category=chosenCat;}
+      b.cat=chosenCat;
       if(onCommit)onCommit();
-      save();renderDayTB();
-      sbUpdateBlock(b.id,{title:b.title});
-      if(lt)sbReq('PATCH','tasks',{important:_tbImp},`?id=eq.${b.taskId}`);
+      save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
+      sbUpdateBlock(b.id,{title:b.title,category:chosenCat});
+      if(lt)sbReq('PATCH','tasks',{important:_tbImp,category:chosenCat},`?id=eq.${b.taskId}`);
+      pushUndo(()=>{
+        b.title=prevTitle;b.cat=prevCat;
+        if(lt){lt.important=prevImp;lt.category=prevTCat;}
+        save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
+        sbUpdateBlock(b.id,{title:prevTitle,category:prevCat});
+        if(lt)sbReq('PATCH','tasks',{important:prevImp,category:prevTCat},`?id=eq.${b.taskId}`);
+      },'Edited block');
     }
   }
   inp.addEventListener('keydown',e=>{
