@@ -1205,6 +1205,20 @@ function clearCalDrag(){
   clearTvHighlight();
   document.querySelectorAll('#mCells .mcell.travel-sel').forEach(c=>c.classList.remove('travel-sel'));
 }
+let _calDragShiftLock=false;
+document.addEventListener('mousemove',e=>{
+  if(!calDrag.active||calDrag.view!=='wkc'||_calDragShiftLock)return;
+  const wrap=document.getElementById('wkcCols');if(!wrap)return;
+  const r=wrap.getBoundingClientRect();
+  const EDGE=30;
+  if(e.clientX<r.left+EDGE){
+    _calDragShiftLock=true;clearCalDrag();shiftWk(-1);
+    setTimeout(()=>{_calDragShiftLock=false;},300);
+  } else if(e.clientX>r.right-EDGE){
+    _calDragShiftLock=true;clearCalDrag();shiftWk(1);
+    setTimeout(()=>{_calDragShiftLock=false;},300);
+  }
+});
 document.addEventListener('mouseup',()=>{
   if(!calDrag.active)return;
   const s=calDrag.startDs,e=calDrag.endDs,moved=calDrag.moved;
