@@ -1,7 +1,7 @@
 # Pages Rules
 
 ### Overview (`overview.js`)
-- **Today list** sort: done last→travel→overdue→important→type (regular=1,rec=2,shop=3,bday=4)→name. `_hasTBToday` checks `b.ruleId/shopId/recId/taskId`. Overdue pup sessions (`day_date < today && !done`) appear in today list when `dayOff===0` via `isOv(s.day_date)` filter.
+- **Today list** sort: done last→travel→overdue→important→type (regular=1,rec=2,shop=3,bday=4)→name. `_hasTBToday` checks `st.blocks` (by `ruleId/shopId/recId/taskId`) AND `getRecAutoTBForDate` (by `_recId`) for recurring tasks with `default_start_time`. Overdue pup sessions (`day_date < today && !done`) appear in today list when `dayOff===0` via `isOv(s.day_date)` filter.
 - **WR tasks in today list**: appear if `_dateOverrides[wkKey]===today` OR overdue (4-week lookback, undone only). `wrRulesToday/wrecToday` use seen sets to dedup.
 - **Shopping overview** (`#shopOv`): NO rAF-based max-height — caused items to be hidden when `offsetHeight=0` during background sync. Height naturally constrained by card's `overflow:hidden` + flex. Sort (`_shopOvSort`): `due_date` items first (by date), then no-date by `shop_order`. Drag-to-calendar assigns `_shopTopOrder` (min `shop_order` - 1). **Weekly cal chips**: store name NOT shown in parentheses.
 - **WR overview list** (`#recList`): `columns:2;column-fill:auto`. `max-height = 4 + 7 * itemHeight` (set in rAF, exactly 7 rows per column).
@@ -56,7 +56,7 @@ Fixed range Jan 1 (curYr-3) → Dec 31 (curYr+2). `scrollMoToday()` BEFORE `.ope
 - **Manual mode**: mousedown/mousemove/mouseup drag-to-reorder. Single click suppressed after drag (`_shopDragged`). PATCHes `shop_order` for all items after reorder.
 
 ### Travel System
-Table: `travel(id,name,destination,start_date,end_date,travel_mode,notes)`. Drag-to-create: `calDrag{active,startDs,endDs,moved}`. Week boundary: `ei` clamped.
+Table: `travel(id,name,destination,start_date,end_date,travel_mode,notes)`. Drag-to-create: `calDrag{active,startDs,endDs,moved}`. Week boundary: `ei` clamped. **Drag-to-navigate**: mousemove during `calDrag` detects cursor within 30px of `wkcCols` left/right edge → calls `shiftWk(±1)` and clears drag (300ms lock prevents rapid fire).
 - **mModal stays open when travelModal opens**: `travelModal` (z-index:500) can open on top of `mModal` (z-index:490). Global Escape handler (`core.js:856`) must not close `mModal` when a foreground overlay is still open — checks `.overlay.open:not(#mModal):not(#recMoModal)` first. `travelModal`'s `onkeydown` calls `event.stopPropagation()` on Enter/Escape so keys don't bubble to the document handler that would close `mModal`.
 
 ### Pup Skills (`pup-skills.js`)
