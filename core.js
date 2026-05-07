@@ -904,6 +904,11 @@ document.addEventListener('keydown',e=>{
   }
   if(e.key===' '&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable]:focus')&&document.getElementById('mModal').classList.contains('open')){e.preventDefault();closeMod('mModal');}
   if(e.key===' '&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable]:focus')&&document.getElementById('recMoModal').classList.contains('open')){e.preventDefault();closeMod('recMoModal');}
+  if((e.metaKey||e.ctrlKey)&&e.key==='i'){
+    const _tImp=document.getElementById('tImp');const _qaImp=document.getElementById('qaImp');
+    if(_tImp&&document.getElementById('tModal').classList.contains('open')){e.preventDefault();_tImp.checked=!_tImp.checked;}
+    else if(_qaImp&&document.getElementById('qaPopup').classList.contains('open')){e.preventDefault();_qaImp.checked=!_qaImp.checked;}
+  }
   if(e.key==='Enter'&&!e.metaKey&&!e.ctrlKey){
     const qa=document.getElementById('qaPopup');
     const dhp=document.getElementById('dailyHabitPopup');
