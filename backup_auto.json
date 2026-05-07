@@ -1,5 +1,5 @@
 {
-  "exported_at": "2026-05-02T13:00:01.066Z",
+  "exported_at": "2026-05-05T15:00:01.094Z",
   "mode": "auto",
   "tables": {
     "tasks": [
@@ -323,12 +323,34 @@
         "goal_order": null
       },
       {
+        "name": "Flight TC 26",
+        "category": "Home",
+        "due_date": "2026-05-08",
+        "done": false,
+        "importance": "Normal",
+        "id": "49f0bfbf-4593-4f76-9692-ff0cdfe70e8a",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
         "name": "Update documentation checklist",
         "category": "Work",
         "due_date": "2026-03-26",
         "done": true,
         "importance": null,
         "id": "c9eb5840-5fde-4abf-9e21-4975a8d458b2",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "TC 26: final presentation slides due",
+        "category": "My work",
+        "due_date": "2026-05-04",
+        "done": true,
+        "importance": "Normal",
+        "id": "ecba0a5f-6f57-427b-8064-b53f587f84be",
         "important": false,
         "notes": null,
         "goal_order": null
@@ -351,17 +373,6 @@
         "done": true,
         "importance": null,
         "id": "23ad6823-0c0f-4ce7-b279-7f619bb2170e",
-        "important": false,
-        "notes": null,
-        "goal_order": null
-      },
-      {
-        "name": "Flight TC 26",
-        "category": "Work",
-        "due_date": "2026-05-08",
-        "done": false,
-        "importance": "Normal",
-        "id": "49f0bfbf-4593-4f76-9692-ff0cdfe70e8a",
         "important": false,
         "notes": null,
         "goal_order": null
@@ -554,17 +565,6 @@
         "goal_order": null
       },
       {
-        "name": "Flight @10:40am",
-        "category": "Home",
-        "due_date": "2026-05-04",
-        "done": false,
-        "importance": "Normal",
-        "id": "1c3b18f9-d959-4818-9506-d877b5030dc1",
-        "important": false,
-        "notes": "APEXN7\n10:40-11:45am",
-        "goal_order": null
-      },
-      {
         "name": "Make Sunny kongs and mochi lick mats",
         "category": "Home",
         "due_date": "2026-03-16",
@@ -604,17 +604,6 @@
         "done": false,
         "importance": "Normal",
         "id": "579d278b-67d4-466f-9452-30bb3c46c773",
-        "important": false,
-        "notes": null,
-        "goal_order": null
-      },
-      {
-        "name": "TC 26: final presentation slides due",
-        "category": "My work",
-        "due_date": "2026-05-04",
-        "done": false,
-        "importance": "Normal",
-        "id": "ecba0a5f-6f57-427b-8064-b53f587f84be",
         "important": false,
         "notes": null,
         "goal_order": null
@@ -961,17 +950,6 @@
         "goal_order": null
       },
       {
-        "name": "Shower",
-        "category": "Home",
-        "due_date": "2026-05-01",
-        "done": false,
-        "importance": null,
-        "id": "db3a0962-7de9-4ab7-86c4-079fd2c537b0",
-        "important": false,
-        "notes": null,
-        "goal_order": null
-      },
-      {
         "name": "Tableau Call 11-12pm",
         "category": "My work",
         "due_date": "2026-03-24",
@@ -1046,6 +1024,28 @@
         "id": "d376f4e0-151f-4ce4-a4d2-6216c98403b3",
         "important": false,
         "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Shower",
+        "category": "Home",
+        "due_date": "2026-05-01",
+        "done": true,
+        "importance": null,
+        "id": "db3a0962-7de9-4ab7-86c4-079fd2c537b0",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Lunch with parents",
+        "category": "Home",
+        "due_date": "2026-05-09",
+        "done": false,
+        "importance": null,
+        "id": "46f438e9-86f4-444c-8424-7a9492f5d12e",
+        "important": false,
+        "notes": "Grove",
         "goal_order": null
       },
       {
@@ -1863,13 +1863,13 @@
         "goal_order": null
       },
       {
-        "name": "Practice presentation",
-        "category": "My work",
-        "due_date": "2026-05-04",
+        "name": "Pic with Sunny + Mochi",
+        "category": "Home",
+        "due_date": "2026-05-08",
         "done": false,
         "importance": null,
-        "id": "85f69a17-71b8-492d-a69d-54d7480eab38",
-        "important": false,
+        "id": "978dfc71-be24-4233-8e96-3e6a3abe4414",
+        "important": true,
         "notes": null,
         "goal_order": null
       },
@@ -1894,6 +1894,17 @@
         "important": false,
         "notes": null,
         "goal_order": null
+      },
+      {
+        "name": "PM finalize build",
+        "category": "Weekly Goals",
+        "due_date": "2026-05-18",
+        "done": false,
+        "importance": null,
+        "id": "27bc6923-df79-4676-9f18-c3e4963a1d57",
+        "important": false,
+        "notes": null,
+        "goal_order": 0
       },
       {
         "name": "Remove black outline - shapes",
@@ -1937,17 +1948,6 @@
         "id": "5ea82e1b-4651-4651-978e-2527c7d8654b",
         "important": false,
         "notes": "- dynamic legend (1 week vs distinct status categories) \n- add color indicators to kpis > 50% last week → blue. \n- bins for oldest unapplied? \n- make selections same color to tie together",
-        "goal_order": null
-      },
-      {
-        "name": "Pic with Sunny + Mochi",
-        "category": "Home",
-        "due_date": "2026-05-01",
-        "done": false,
-        "importance": null,
-        "id": "978dfc71-be24-4233-8e96-3e6a3abe4414",
-        "important": true,
-        "notes": null,
         "goal_order": null
       },
       {
@@ -1995,6 +1995,17 @@
         "goal_order": null
       },
       {
+        "name": "TC 26 slides",
+        "category": "Weekly Goals",
+        "due_date": "2026-04-27",
+        "done": true,
+        "importance": null,
+        "id": "64c4d2d7-c5a5-4961-9139-8216d8f9a001",
+        "important": true,
+        "notes": null,
+        "goal_order": 0
+      },
+      {
         "name": "Six sigma training",
         "category": "Work",
         "due_date": "2026-04-15",
@@ -2004,6 +2015,17 @@
         "important": false,
         "notes": null,
         "goal_order": null
+      },
+      {
+        "name": "Arrows wo/ union",
+        "category": "Weekly Goals",
+        "due_date": "2026-05-11",
+        "done": false,
+        "importance": null,
+        "id": "683aa6e4-c63d-438f-be66-05a17809e6f4",
+        "important": false,
+        "notes": null,
+        "goal_order": 0
       },
       {
         "name": "Pups showers",
@@ -2039,6 +2061,17 @@
         "goal_order": null
       },
       {
+        "name": "Practice presentation",
+        "category": "My work",
+        "due_date": "2026-05-04",
+        "done": true,
+        "importance": null,
+        "id": "63698cf7-efdd-4cae-8627-43a5e5e9edc8",
+        "important": false,
+        "notes": "Practice following: \n- intro/outro/transitions\n- standing \n- middle of sections (random) \n\nFix: \n- animations/ss",
+        "goal_order": null
+      },
+      {
         "name": "Check mail",
         "category": "Home",
         "due_date": "2026-04-09",
@@ -2056,6 +2089,17 @@
         "done": true,
         "importance": null,
         "id": "81070706-7eaa-47c8-91ad-c250e40e606e",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Practice presentation",
+        "category": "My work",
+        "due_date": "2026-05-04",
+        "done": true,
+        "importance": null,
+        "id": "85f69a17-71b8-492d-a69d-54d7480eab38",
         "important": false,
         "notes": null,
         "goal_order": null
@@ -2358,17 +2402,6 @@
         "goal_order": null
       },
       {
-        "name": "TC 26 slides",
-        "category": "Weekly Goals",
-        "due_date": "2026-04-27",
-        "done": false,
-        "importance": null,
-        "id": "64c4d2d7-c5a5-4961-9139-8216d8f9a001",
-        "important": true,
-        "notes": null,
-        "goal_order": 0
-      },
-      {
         "name": "WFH with friends",
         "category": "Social",
         "due_date": "2026-04-17",
@@ -2512,17 +2545,6 @@
         "goal_order": null
       },
       {
-        "name": "PM finalize build",
-        "category": "Weekly Goals",
-        "due_date": "2026-05-04",
-        "done": false,
-        "importance": null,
-        "id": "27bc6923-df79-4676-9f18-c3e4963a1d57",
-        "important": false,
-        "notes": null,
-        "goal_order": 2
-      },
-      {
         "name": "Rounded corners native",
         "category": "Weekly Goals",
         "due_date": "2026-04-13",
@@ -2600,17 +2622,6 @@
         "goal_order": null
       },
       {
-        "name": "Arrows wo/ union",
-        "category": "Weekly Goals",
-        "due_date": "2026-05-04",
-        "done": false,
-        "importance": null,
-        "id": "683aa6e4-c63d-438f-be66-05a17809e6f4",
-        "important": false,
-        "notes": null,
-        "goal_order": 1
-      },
-      {
         "name": "Practice presentation",
         "category": "My work",
         "due_date": "2026-05-01",
@@ -2644,25 +2655,25 @@
         "goal_order": null
       },
       {
-        "name": "Figure out UX videos",
-        "category": "Weekly Goals",
-        "due_date": "2026-04-27",
-        "done": false,
-        "importance": null,
-        "id": "e0a57087-bc89-410d-9274-a0ff8125d1d7",
+        "name": "Flight @10:40am",
+        "category": "Home",
+        "due_date": "2026-05-04",
+        "done": true,
+        "importance": "Normal",
+        "id": "1c3b18f9-d959-4818-9506-d877b5030dc1",
         "important": false,
-        "notes": null,
-        "goal_order": 2
+        "notes": "APEXN7\n10:40-11:45am",
+        "goal_order": null
       },
       {
-        "name": "Practice presentation",
-        "category": "My work",
-        "due_date": "2026-05-02",
+        "name": "Write Sindis martini card",
+        "category": "Social",
+        "due_date": "2026-05-08",
         "done": false,
         "importance": null,
-        "id": "e0c1924b-00d5-4f90-9a6a-aa9ea8f988bc",
+        "id": "f082efee-e20f-480f-b88d-853c1cdedbd6",
         "important": false,
-        "notes": "Practice following: \n- slow down and pauses \n- standing \n- middle of sections (random) \n- no screen",
+        "notes": null,
         "goal_order": null
       },
       {
@@ -2699,15 +2710,15 @@
         "goal_order": null
       },
       {
-        "name": "Practice presentation",
-        "category": "My work",
-        "due_date": "2026-05-03",
+        "name": "Figure out UX videos",
+        "category": "Weekly Goals",
+        "due_date": "2026-05-04",
         "done": false,
         "importance": null,
-        "id": "63698cf7-efdd-4cae-8627-43a5e5e9edc8",
+        "id": "e0a57087-bc89-410d-9274-a0ff8125d1d7",
         "important": false,
-        "notes": "Practice following: \n- slow down and pauses \n- standing \n- middle of sections (random) \n- no screen",
-        "goal_order": null
+        "notes": null,
+        "goal_order": 2
       },
       {
         "name": "Sleep early!",
@@ -2765,15 +2776,15 @@
         "goal_order": null
       },
       {
-        "name": "Drill down",
-        "category": "Weekly Goals",
-        "due_date": "2026-05-04",
+        "name": "Submit 6 sigma",
+        "category": "Work",
+        "due_date": "2026-05-08",
         "done": false,
         "importance": null,
-        "id": "2318cebf-cdff-4e64-874c-97e769d0e273",
+        "id": "535b6390-c421-4b77-85e8-b2d6ee74147e",
         "important": false,
         "notes": null,
-        "goal_order": 0
+        "goal_order": null
       },
       {
         "name": "TC: demo 3",
@@ -2820,6 +2831,28 @@
         "goal_order": null
       },
       {
+        "name": "Pack for TC 26",
+        "category": "Home",
+        "due_date": "2026-05-02",
+        "done": true,
+        "importance": null,
+        "id": "98b31a99-42d4-4ff1-b533-6ef7f1fe4be6",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Sindi b day @8pm",
+        "category": "Social",
+        "due_date": "2026-05-01",
+        "done": true,
+        "importance": null,
+        "id": "1f4980a1-4be5-4e11-b168-ee99da24ecae",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
         "name": "Book london → iceland",
         "category": "Home",
         "due_date": "2026-04-20",
@@ -2842,12 +2875,34 @@
         "goal_order": null
       },
       {
+        "name": "Practice presentation",
+        "category": "My work",
+        "due_date": "2026-05-01",
+        "done": true,
+        "importance": null,
+        "id": "8096d91c-a85b-499f-a64c-ee6b59e8171b",
+        "important": false,
+        "notes": "- with dad",
+        "goal_order": null
+      },
+      {
         "name": "Dentist apt @1:30pm",
         "category": "Home",
         "due_date": "2026-04-23",
         "done": true,
         "importance": null,
         "id": "568fab3c-27d2-4315-b620-31604b0929d8",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Sindi b day present",
+        "category": "Home",
+        "due_date": "2026-05-08",
+        "done": false,
+        "importance": null,
+        "id": "f10a3358-af34-4a2d-a211-b8664ec26bb2",
         "important": false,
         "notes": null,
         "goal_order": null
@@ -2886,12 +2941,56 @@
         "goal_order": null
       },
       {
+        "name": "Practice presentation",
+        "category": "My work",
+        "due_date": "2026-05-02",
+        "done": true,
+        "importance": null,
+        "id": "e0c1924b-00d5-4f90-9a6a-aa9ea8f988bc",
+        "important": false,
+        "notes": "Practice following: \n- slow down and pauses \n- standing \n- middle of sections (random) \n- no screen",
+        "goal_order": null
+      },
+      {
+        "name": "Upload PDF presentation",
+        "category": "My work",
+        "due_date": "2026-05-04",
+        "done": true,
+        "importance": null,
+        "id": "7e93d4ff-1333-429d-ae51-c477165cc30e",
+        "important": true,
+        "notes": null,
+        "goal_order": null
+      },
+      {
         "name": "TC Slides",
         "category": "My work",
         "due_date": "2026-04-21",
         "done": true,
         "importance": null,
         "id": "172be981-be33-455a-aa1b-fada1b250246",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Drill down",
+        "category": "Weekly Goals",
+        "due_date": "2026-05-11",
+        "done": false,
+        "importance": null,
+        "id": "2318cebf-cdff-4e64-874c-97e769d0e273",
+        "important": false,
+        "notes": null,
+        "goal_order": 2
+      },
+      {
+        "name": "Change all for phone views on tab pub",
+        "category": "My work",
+        "due_date": "2026-05-04",
+        "done": true,
+        "importance": null,
+        "id": "919a5928-8917-4283-8c76-b2abb74129b7",
         "important": false,
         "notes": null,
         "goal_order": null
@@ -2974,17 +3073,6 @@
         "goal_order": null
       },
       {
-        "name": "Pack for TC 26",
-        "category": "Home",
-        "due_date": "2026-05-02",
-        "done": false,
-        "importance": null,
-        "id": "98b31a99-42d4-4ff1-b533-6ef7f1fe4be6",
-        "important": false,
-        "notes": null,
-        "goal_order": null
-      },
-      {
         "name": "Get tableau pub ready",
         "category": "My work",
         "due_date": "2026-04-27",
@@ -3035,17 +3123,6 @@
         "done": false,
         "importance": null,
         "id": "97abb103-5135-4ad8-a093-5cb9f3c9b5ed",
-        "important": false,
-        "notes": null,
-        "goal_order": null
-      },
-      {
-        "name": "Change all for phone views on tab pub",
-        "category": "My work",
-        "due_date": "2026-05-03",
-        "done": false,
-        "importance": null,
-        "id": "919a5928-8917-4283-8c76-b2abb74129b7",
         "important": false,
         "notes": null,
         "goal_order": null
@@ -3106,17 +3183,6 @@
         "goal_order": null
       },
       {
-        "name": "Upload PDF presentation",
-        "category": "My work",
-        "due_date": "2026-05-03",
-        "done": false,
-        "importance": null,
-        "id": "7e93d4ff-1333-429d-ae51-c477165cc30e",
-        "important": true,
-        "notes": null,
-        "goal_order": null
-      },
-      {
         "name": "TC: method + demo 1",
         "category": "My work",
         "due_date": "2026-04-26",
@@ -3167,28 +3233,6 @@
         "done": true,
         "importance": null,
         "id": "dee1958a-ace9-42bd-b9e1-ad97a93bb5d7",
-        "important": false,
-        "notes": null,
-        "goal_order": null
-      },
-      {
-        "name": "TC 26 build agenda",
-        "category": "My work",
-        "due_date": "2026-05-02",
-        "done": false,
-        "importance": null,
-        "id": "428995ee-f8c7-4cf4-a84f-91f3858198df",
-        "important": false,
-        "notes": null,
-        "goal_order": null
-      },
-      {
-        "name": "Sindi b day present",
-        "category": "Home",
-        "due_date": "2026-05-02",
-        "done": false,
-        "importance": null,
-        "id": "f10a3358-af34-4a2d-a211-b8664ec26bb2",
         "important": false,
         "notes": null,
         "goal_order": null
@@ -3282,17 +3326,6 @@
         "goal_order": null
       },
       {
-        "name": "Sindi b day @8pm",
-        "category": "Social",
-        "due_date": "2026-05-01",
-        "done": false,
-        "importance": null,
-        "id": "1f4980a1-4be5-4e11-b168-ee99da24ecae",
-        "important": false,
-        "notes": null,
-        "goal_order": null
-      },
-      {
         "name": "Cancel keynote apple subscription",
         "category": "Home",
         "due_date": "2026-05-25",
@@ -3337,28 +3370,6 @@
         "goal_order": null
       },
       {
-        "name": "Practice presentation",
-        "category": "My work",
-        "due_date": "2026-05-01",
-        "done": false,
-        "importance": null,
-        "id": "8096d91c-a85b-499f-a64c-ee6b59e8171b",
-        "important": false,
-        "notes": "- with dad",
-        "goal_order": null
-      },
-      {
-        "name": "Submit 6 sigma",
-        "category": "Work",
-        "due_date": "2026-05-01",
-        "done": false,
-        "importance": null,
-        "id": "535b6390-c421-4b77-85e8-b2d6ee74147e",
-        "important": false,
-        "notes": null,
-        "goal_order": null
-      },
-      {
         "name": "Community Leader Appreciation Party @6pm",
         "category": "Social",
         "due_date": "2026-05-05",
@@ -3378,28 +3389,6 @@
         "id": "38b5739b-9bf4-4a18-a99f-fc298ee3e844",
         "important": false,
         "notes": null,
-        "goal_order": null
-      },
-      {
-        "name": "Write Sindis martini card",
-        "category": "Social",
-        "due_date": "2026-05-01",
-        "done": false,
-        "importance": null,
-        "id": "f082efee-e20f-480f-b88d-853c1cdedbd6",
-        "important": false,
-        "notes": null,
-        "goal_order": null
-      },
-      {
-        "name": "Sindi b day dinner",
-        "category": "Social",
-        "due_date": "2026-05-02",
-        "done": false,
-        "importance": null,
-        "id": "0b0b8e4a-4c26-40ca-80ff-1cfd47a4a72e",
-        "important": false,
-        "notes": "@Kimberly",
         "goal_order": null
       },
       {
@@ -3447,17 +3436,6 @@
         "goal_order": null
       },
       {
-        "name": "Email version to work laptop",
-        "category": "Home",
-        "due_date": "2026-05-04",
-        "done": false,
-        "importance": null,
-        "id": "b7609adf-3057-4e6c-ba05-fdbbf15db8ae",
-        "important": false,
-        "notes": null,
-        "goal_order": null
-      },
-      {
         "name": "Check in hotel",
         "category": "Home",
         "due_date": "2026-05-04",
@@ -3466,28 +3444,6 @@
         "id": "0d2ac3c6-2fb1-4227-a6fe-7d1b7bc89955",
         "important": false,
         "notes": null,
-        "goal_order": null
-      },
-      {
-        "name": "Convention center",
-        "category": "My work",
-        "due_date": "2026-05-04",
-        "done": false,
-        "importance": null,
-        "id": "fd1d44d1-86b8-4289-8b7e-e91c11ac9cda",
-        "important": false,
-        "notes": null,
-        "goal_order": null
-      },
-      {
-        "name": "Tab amb photo @11am",
-        "category": "My work",
-        "due_date": "2026-05-05",
-        "done": false,
-        "importance": null,
-        "id": "9c20c885-027a-4f67-ace8-34ec63016904",
-        "important": false,
-        "notes": "please meet us at the Data Village Welcome Moment for a group photo immediately following the Main Keynote on TC Day 1! \nPlease ensure you are on time. Photo will be taken at 11:15 sharp!",
         "goal_order": null
       },
       {
@@ -3557,6 +3513,28 @@
         "goal_order": null
       },
       {
+        "name": "Tab amb photo @11am",
+        "category": "My work",
+        "due_date": "2026-05-05",
+        "done": false,
+        "importance": null,
+        "id": "9c20c885-027a-4f67-ace8-34ec63016904",
+        "important": false,
+        "notes": "please meet us at the Data Village Welcome Moment for a group photo immediately following the Main Keynote on TC Day 1! \nPlease ensure you are on time. Photo will be taken at 11:15 sharp!",
+        "goal_order": null
+      },
+      {
+        "name": "Check in @10:40am APEXN7",
+        "category": "Home",
+        "due_date": "2026-05-03",
+        "done": true,
+        "importance": null,
+        "id": "c6089d91-616a-4c23-b936-c58fc7b17343",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
         "name": "Iron viz",
         "category": "My work",
         "due_date": "2026-05-06",
@@ -3565,6 +3543,17 @@
         "id": "d7f0ad5e-9c56-4e4a-b582-b1fea9968cb4",
         "important": false,
         "notes": "Arrive by 3:15am\nWalk in 3:30am\nStarts @4pm",
+        "goal_order": null
+      },
+      {
+        "name": "Email version to work laptop",
+        "category": "Home",
+        "due_date": "2026-05-04",
+        "done": false,
+        "importance": null,
+        "id": "b7609adf-3057-4e6c-ba05-fdbbf15db8ae",
+        "important": false,
+        "notes": null,
         "goal_order": null
       },
       {
@@ -3581,21 +3570,10 @@
       {
         "name": "TC agenda",
         "category": "My work",
-        "due_date": "2026-05-01",
+        "due_date": "2026-05-05",
         "done": false,
         "importance": null,
         "id": "a7315c14-c65c-404d-90f3-a909b69c922a",
-        "important": false,
-        "notes": null,
-        "goal_order": null
-      },
-      {
-        "name": "Check in @10:40am APEXN7",
-        "category": "Home",
-        "due_date": "2026-05-03",
-        "done": false,
-        "importance": null,
-        "id": "c6089d91-616a-4c23-b936-c58fc7b17343",
         "important": false,
         "notes": null,
         "goal_order": null
@@ -3655,6 +3633,15 @@
         "created_at": "2026-03-26T14:45:18.837297+00:00",
         "due_date": null,
         "shop_order": 6
+      },
+      {
+        "id": "5230f851-04d2-4eab-afc1-e2576f4f1150",
+        "name": "Breadsticks",
+        "store": "Other",
+        "done": false,
+        "created_at": "2026-05-03T01:23:31.976185+00:00",
+        "due_date": null,
+        "shop_order": null
       },
       {
         "id": "63d4a10b-e42d-43dd-9771-728f5e6cabfb",
@@ -4957,6 +4944,20 @@
         "done": true
       },
       {
+        "id": "938cb3a2-a7c6-441d-a876-6255ea3617ed",
+        "title": "TC agenda",
+        "day_date": "2026-05-02",
+        "start_time": "12:30:00",
+        "duration_minutes": 30,
+        "category": "My work",
+        "created_at": "2026-05-02T15:32:30.619973+00:00",
+        "start_minutes": 945,
+        "task_id": "a7315c14-c65c-404d-90f3-a909b69c922a",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
         "id": "fc66fcf6-6116-425e-a927-ca9dcf4f78f8",
         "title": "London tickets",
         "day_date": "2026-03-12",
@@ -5428,6 +5429,20 @@
         "created_at": "2026-03-20T13:54:48.413625+00:00",
         "start_minutes": 720,
         "task_id": "b9a7b537-2afb-49f5-b474-251b89460550",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "f2bb8652-9975-4050-9d71-11b03566fcac",
+        "title": "Write Sindis martini card",
+        "day_date": "2026-05-03",
+        "start_time": "17:00:00",
+        "duration_minutes": 30,
+        "category": "Social",
+        "created_at": "2026-05-02T21:21:47.275612+00:00",
+        "start_minutes": 1020,
+        "task_id": "f082efee-e20f-480f-b88d-853c1cdedbd6",
         "rec_id": null,
         "shop_id": null,
         "done": false
@@ -6203,6 +6218,20 @@
         "done": true
       },
       {
+        "id": "ca4132b9-70ba-4a6e-9ffc-d828f808549e",
+        "title": "TC agenda",
+        "day_date": "2026-05-05",
+        "start_time": "18:45:00",
+        "duration_minutes": 60,
+        "category": "My work",
+        "created_at": "2026-05-05T00:32:50.809329+00:00",
+        "start_minutes": 840,
+        "task_id": "a7315c14-c65c-404d-90f3-a909b69c922a",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
         "id": "fb7d741c-3689-4e42-aad4-5f5da4408f23",
         "title": "Between videos",
         "day_date": "2026-03-19",
@@ -6761,6 +6790,20 @@
         "rec_id": null,
         "shop_id": null,
         "done": true
+      },
+      {
+        "id": "a37bf72b-ceae-41fe-b038-1b5d3aacd12a",
+        "title": "Tab amb photo @11am",
+        "day_date": "2026-05-05",
+        "start_time": "11:00:00",
+        "duration_minutes": 30,
+        "category": "My work",
+        "created_at": "2026-05-03T01:16:30.086733+00:00",
+        "start_minutes": 660,
+        "task_id": "9c20c885-027a-4f67-ace8-34ec63016904",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
       },
       {
         "id": "5cbaab31-7840-4211-babe-ec7db87362bb",
@@ -7505,6 +7548,20 @@
         "done": true
       },
       {
+        "id": "9271bd7f-c240-4fa6-b7c1-be5357ee9628",
+        "title": "Change all for phone views on tab pub",
+        "day_date": "2026-05-03",
+        "start_time": "16:30:00",
+        "duration_minutes": 60,
+        "category": "My work",
+        "created_at": "2026-05-03T01:17:59.257694+00:00",
+        "start_minutes": 900,
+        "task_id": "919a5928-8917-4283-8c76-b2abb74129b7",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
         "id": "90e1233d-5bf0-42a0-bb69-a998d5d8c37c",
         "title": "Six sigma training",
         "day_date": "2026-04-15",
@@ -8163,6 +8220,20 @@
         "done": true
       },
       {
+        "id": "4f96bcd6-d775-493d-8d3c-b95fcb62f886",
+        "title": "Upload PDF presentation",
+        "day_date": "2026-05-04",
+        "start_time": "09:45:00",
+        "duration_minutes": 60,
+        "category": "My work",
+        "created_at": "2026-05-04T13:13:53.851367+00:00",
+        "start_minutes": 570,
+        "task_id": "7e93d4ff-1333-429d-ae51-c477165cc30e",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
         "id": "3cd5cd6a-7894-4ed4-962f-de289c94cf3b",
         "title": "TC26 rough draft due",
         "day_date": "2026-04-15",
@@ -8793,6 +8864,20 @@
         "done": false
       },
       {
+        "id": "74c6d115-8c70-47c5-87b0-be37bfd0b9a9",
+        "title": "Practice presentation",
+        "day_date": "2026-05-01",
+        "start_time": "13:30:00",
+        "duration_minutes": 105,
+        "category": "My work",
+        "created_at": "2026-04-30T19:22:35.710546+00:00",
+        "start_minutes": 810,
+        "task_id": "8096d91c-a85b-499f-a64c-ee6b59e8171b",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
         "id": "9f4423f6-506d-46b2-8f92-008011b4486a",
         "title": "TC: demo 3",
         "day_date": "2026-04-28",
@@ -8835,20 +8920,6 @@
         "done": false
       },
       {
-        "id": "d87a1b8a-3731-4d6a-823d-835242d82b9a",
-        "title": "Upload PDF presentation",
-        "day_date": "2026-05-03",
-        "start_time": "14:15:00",
-        "duration_minutes": 60,
-        "category": "My work",
-        "created_at": "2026-05-01T00:35:16.261022+00:00",
-        "start_minutes": 855,
-        "task_id": "7e93d4ff-1333-429d-ae51-c477165cc30e",
-        "rec_id": null,
-        "shop_id": null,
-        "done": false
-      },
-      {
         "id": "50b7d41b-0eda-4b75-b664-14dbaa913b6c",
         "title": "Sindi's Birthday 🎂",
         "day_date": "2026-05-05",
@@ -8863,6 +8934,34 @@
         "done": false
       },
       {
+        "id": "5c32763f-1f34-441b-a13b-1641c7f38960",
+        "title": "Journal",
+        "day_date": "2026-05-04",
+        "start_time": "17:45:00",
+        "duration_minutes": 30,
+        "category": "Recurring",
+        "created_at": "2026-05-04T13:20:45.86419+00:00",
+        "start_minutes": 1065,
+        "task_id": null,
+        "rec_id": "25",
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "9daa45f8-ad3c-4830-96f5-d19d5d68fda8",
+        "title": "Practice presentation",
+        "day_date": "2026-05-02",
+        "start_time": "10:15:00",
+        "duration_minutes": 150,
+        "category": "My work",
+        "created_at": "2026-05-01T00:36:04.019804+00:00",
+        "start_minutes": 615,
+        "task_id": "e0c1924b-00d5-4f90-9a6a-aa9ea8f988bc",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
         "id": "292a7b52-f50f-4572-b27e-3961cbd23c89",
         "title": "Respond",
         "day_date": "2026-04-30",
@@ -8872,6 +8971,34 @@
         "created_at": "2026-04-30T02:05:24.711571+00:00",
         "start_minutes": 450,
         "task_id": "4bd5dca7-d1a5-462e-93c8-3190d69f2872",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
+        "id": "ce657d8c-a324-44c6-89eb-9707059b73ce",
+        "title": "Pack for TC 26",
+        "day_date": "2026-05-02",
+        "start_time": "13:15:00",
+        "duration_minutes": 90,
+        "category": "Home",
+        "created_at": "2026-05-01T00:36:10.940671+00:00",
+        "start_minutes": 765,
+        "task_id": "98b31a99-42d4-4ff1-b533-6ef7f1fe4be6",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
+        "id": "5f710fa0-b0c9-4176-838d-f367a1cc9464",
+        "title": "Convention center",
+        "day_date": "2026-05-04",
+        "start_time": "13:15:00",
+        "duration_minutes": 105,
+        "category": "My work",
+        "created_at": "2026-05-01T00:30:05.027631+00:00",
+        "start_minutes": 780,
+        "task_id": "fd1d44d1-86b8-4289-8b7e-e91c11ac9cda",
         "rec_id": null,
         "shop_id": null,
         "done": true
@@ -8933,32 +9060,46 @@
         "done": true
       },
       {
-        "id": "9daa45f8-ad3c-4830-96f5-d19d5d68fda8",
-        "title": "Practice presentation",
-        "day_date": "2026-05-02",
-        "start_time": "10:15:00",
-        "duration_minutes": 150,
-        "category": "My work",
-        "created_at": "2026-05-01T00:36:04.019804+00:00",
-        "start_minutes": 615,
-        "task_id": "e0c1924b-00d5-4f90-9a6a-aa9ea8f988bc",
-        "rec_id": null,
-        "shop_id": null,
-        "done": false
-      },
-      {
-        "id": "177a53f7-a70c-411a-a9cd-bee9e7ee48b7",
-        "title": "Pic with Sunny + Mochi",
-        "day_date": "2026-05-01",
-        "start_time": "18:30:00",
+        "id": "5728437b-242a-427f-af06-66489605ebb3",
+        "title": "Check in @10:40am APEXN7",
+        "day_date": "2026-05-03",
+        "start_time": "10:20:00",
         "duration_minutes": 45,
         "category": "Home",
-        "created_at": "2026-04-29T00:24:56.79083+00:00",
-        "start_minutes": 1080,
-        "task_id": "978dfc71-be24-4233-8e96-3e6a3abe4414",
+        "created_at": "2026-05-01T13:41:36.18063+00:00",
+        "start_minutes": 620,
+        "task_id": "c6089d91-616a-4c23-b936-c58fc7b17343",
         "rec_id": null,
         "shop_id": null,
-        "done": false
+        "done": true
+      },
+      {
+        "id": "ab4ee579-cea9-41e1-9202-99b19d6b2372",
+        "title": "Flight @10:40am",
+        "day_date": "2026-05-04",
+        "start_time": "10:40:00",
+        "duration_minutes": 225,
+        "category": "Work",
+        "created_at": "2026-05-01T00:29:16.099415+00:00",
+        "start_minutes": 520,
+        "task_id": "1c3b18f9-d959-4818-9506-d877b5030dc1",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
+        "id": "12e79cbe-f760-440b-b7e4-b0893e71722a",
+        "title": "Sindi b day @8pm",
+        "day_date": "2026-05-01",
+        "start_time": "20:00:00",
+        "duration_minutes": 180,
+        "category": "Social",
+        "created_at": "2026-04-29T00:24:18.074328+00:00",
+        "start_minutes": 1125,
+        "task_id": "1f4980a1-4be5-4e11-b168-ee99da24ecae",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
       },
       {
         "id": "f418d7dc-f7b9-43cd-895d-ae2be8940596",
@@ -8989,18 +9130,18 @@
         "done": true
       },
       {
-        "id": "12e79cbe-f760-440b-b7e4-b0893e71722a",
-        "title": "Sindi b day @8pm",
-        "day_date": "2026-05-01",
-        "start_time": "20:00:00",
-        "duration_minutes": 180,
-        "category": "Social",
-        "created_at": "2026-04-29T00:24:18.074328+00:00",
-        "start_minutes": 1125,
-        "task_id": "1f4980a1-4be5-4e11-b168-ee99da24ecae",
+        "id": "d87a1b8a-3731-4d6a-823d-835242d82b9a",
+        "title": "Upload PDF presentation",
+        "day_date": "2026-05-03",
+        "start_time": "14:15:00",
+        "duration_minutes": 45,
+        "category": "My work",
+        "created_at": "2026-05-01T00:35:16.261022+00:00",
+        "start_minutes": 855,
+        "task_id": "7e93d4ff-1333-429d-ae51-c477165cc30e",
         "rec_id": null,
         "shop_id": null,
-        "done": false
+        "done": true
       },
       {
         "id": "73842822-a365-49a7-b5c2-8b70abe58675",
@@ -9087,20 +9228,6 @@
         "done": false
       },
       {
-        "id": "7a4c5a8d-c385-4c45-a5ef-2d1859ad6fad",
-        "title": "Sindi b day dinner",
-        "day_date": "2026-05-02",
-        "start_time": "18:30:00",
-        "duration_minutes": 180,
-        "category": "Social",
-        "created_at": "2026-05-01T00:36:00.667317+00:00",
-        "start_minutes": 1110,
-        "task_id": "0b0b8e4a-4c26-40ca-80ff-1cfd47a4a72e",
-        "rec_id": null,
-        "shop_id": null,
-        "done": false
-      },
-      {
         "id": "6d7050b4-e8b5-4f78-8da4-540a6a67f43e",
         "title": "Practice presentation",
         "day_date": "2026-04-30",
@@ -9113,34 +9240,6 @@
         "rec_id": null,
         "shop_id": null,
         "done": true
-      },
-      {
-        "id": "cdd6414e-c10e-416c-9807-7f2f2ff2db1f",
-        "title": "TC 26 build agenda",
-        "day_date": "2026-05-02",
-        "start_time": "14:30:00",
-        "duration_minutes": 60,
-        "category": "My work",
-        "created_at": "2026-05-01T00:36:19.807135+00:00",
-        "start_minutes": 855,
-        "task_id": "428995ee-f8c7-4cf4-a84f-91f3858198df",
-        "rec_id": null,
-        "shop_id": null,
-        "done": false
-      },
-      {
-        "id": "74c6d115-8c70-47c5-87b0-be37bfd0b9a9",
-        "title": "Practice presentation",
-        "day_date": "2026-05-01",
-        "start_time": "13:30:00",
-        "duration_minutes": 105,
-        "category": "My work",
-        "created_at": "2026-04-30T19:22:35.710546+00:00",
-        "start_minutes": 810,
-        "task_id": "8096d91c-a85b-499f-a64c-ee6b59e8171b",
-        "rec_id": null,
-        "shop_id": null,
-        "done": false
       },
       {
         "id": "56087af7-30b4-4eed-b509-5cbd0b60505c",
@@ -9213,20 +9312,6 @@
         "done": false
       },
       {
-        "id": "5f710fa0-b0c9-4176-838d-f367a1cc9464",
-        "title": "Convention center",
-        "day_date": "2026-05-04",
-        "start_time": "13:15:00",
-        "duration_minutes": 105,
-        "category": "My work",
-        "created_at": "2026-05-01T00:30:05.027631+00:00",
-        "start_minutes": 780,
-        "task_id": "fd1d44d1-86b8-4289-8b7e-e91c11ac9cda",
-        "rec_id": null,
-        "shop_id": null,
-        "done": false
-      },
-      {
         "id": "82183e10-1cb2-448c-9bef-3d65a47869ad",
         "title": "Devs on stage",
         "day_date": "2026-05-06",
@@ -9250,20 +9335,6 @@
         "created_at": "2026-05-01T00:33:29.293925+00:00",
         "start_minutes": 660,
         "task_id": "9c20c885-027a-4f67-ace8-34ec63016904",
-        "rec_id": null,
-        "shop_id": null,
-        "done": false
-      },
-      {
-        "id": "ce657d8c-a324-44c6-89eb-9707059b73ce",
-        "title": "Pack for TC 26",
-        "day_date": "2026-05-02",
-        "start_time": "13:15:00",
-        "duration_minutes": 90,
-        "category": "Home",
-        "created_at": "2026-05-01T00:36:10.940671+00:00",
-        "start_minutes": 765,
-        "task_id": "98b31a99-42d4-4ff1-b533-6ef7f1fe4be6",
         "rec_id": null,
         "shop_id": null,
         "done": false
@@ -9353,20 +9424,6 @@
         "done": false
       },
       {
-        "id": "8f15e61d-fffe-43cc-aeb4-dfaacc2e2bf2",
-        "title": "TC agenda",
-        "day_date": "2026-05-01",
-        "start_time": "12:45:00",
-        "duration_minutes": 30,
-        "category": "My work",
-        "created_at": "2026-05-01T12:49:57.794254+00:00",
-        "start_minutes": 750,
-        "task_id": "a7315c14-c65c-404d-90f3-a909b69c922a",
-        "rec_id": null,
-        "shop_id": null,
-        "done": false
-      },
-      {
         "id": "09c7c7cf-936f-4e42-9792-036520ec0bf2",
         "title": "Gum",
         "day_date": "2026-05-01",
@@ -9395,56 +9452,28 @@
         "done": false
       },
       {
-        "id": "a0a214fc-d5c3-476e-ad13-6d066bb9a126",
-        "title": "Write Sindis martini card",
-        "day_date": "2026-05-01",
-        "start_time": "17:45:00",
-        "duration_minutes": 30,
-        "category": "Social",
-        "created_at": "2026-05-01T12:50:30.698461+00:00",
-        "start_minutes": 1050,
-        "task_id": "f082efee-e20f-480f-b88d-853c1cdedbd6",
-        "rec_id": null,
-        "shop_id": null,
-        "done": false
-      },
-      {
-        "id": "ab4ee579-cea9-41e1-9202-99b19d6b2372",
-        "title": "Flight @10:40am",
-        "day_date": "2026-05-04",
-        "start_time": "10:40:00",
-        "duration_minutes": 180,
-        "category": "Work",
-        "created_at": "2026-05-01T00:29:16.099415+00:00",
-        "start_minutes": 565,
-        "task_id": "1c3b18f9-d959-4818-9506-d877b5030dc1",
-        "rec_id": null,
-        "shop_id": null,
-        "done": false
-      },
-      {
-        "id": "5728437b-242a-427f-af06-66489605ebb3",
-        "title": "Check in @10:40am APEXN7",
-        "day_date": "2026-05-03",
-        "start_time": "10:20:00",
-        "duration_minutes": 30,
+        "id": "2f5e729f-79c0-4416-96a0-0d225b61c171",
+        "title": "Pic with Sunny + Mochi",
+        "day_date": "2026-05-02",
+        "start_time": "18:00:00",
+        "duration_minutes": 45,
         "category": "Home",
-        "created_at": "2026-05-01T13:41:36.18063+00:00",
-        "start_minutes": 620,
-        "task_id": "c6089d91-616a-4c23-b936-c58fc7b17343",
+        "created_at": "2026-05-02T15:31:34.163322+00:00",
+        "start_minutes": 1080,
+        "task_id": "978dfc71-be24-4233-8e96-3e6a3abe4414",
         "rec_id": null,
         "shop_id": null,
         "done": false
       },
       {
-        "id": "eea0c9a9-c1d9-468a-a96a-a90d6e191ea6",
+        "id": "fcd6f09d-cb71-4c5e-aba8-69b9af885587",
         "title": "Submit 6 sigma",
-        "day_date": "2026-05-01",
-        "start_time": "07:45:00",
+        "day_date": "2026-05-03",
+        "start_time": "15:15:00",
         "duration_minutes": 60,
         "category": "Work",
-        "created_at": "2026-04-30T21:20:52.3931+00:00",
-        "start_minutes": 915,
+        "created_at": "2026-05-02T15:31:44.949427+00:00",
+        "start_minutes": 1035,
         "task_id": "535b6390-c421-4b77-85e8-b2d6ee74147e",
         "rec_id": null,
         "shop_id": null,
@@ -9465,15 +9494,43 @@
         "done": false
       },
       {
-        "id": "e232ca1d-70c5-4f7f-bf9c-f2ed0b018ad4",
-        "title": "Shower",
-        "day_date": "2026-05-01",
-        "start_time": "17:15:00",
+        "id": "f3450910-ad56-4098-acda-ed3482497375",
+        "title": "Figure out UX videos",
+        "day_date": "2026-05-04",
+        "start_time": "10:00:00",
+        "duration_minutes": 60,
+        "category": "My work",
+        "created_at": "2026-05-01T13:42:45.168027+00:00",
+        "start_minutes": 690,
+        "task_id": "030fcae4-8dda-4684-a687-96f852a782a7",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "2ed573ef-2fba-4e37-8e0e-12c8ed529e2b",
+        "title": "Practice presentation",
+        "day_date": "2026-05-03",
+        "start_time": "11:00:00",
+        "duration_minutes": 180,
+        "category": "My work",
+        "created_at": "2026-05-01T00:35:18.617691+00:00",
+        "start_minutes": 675,
+        "task_id": "63698cf7-efdd-4cae-8627-43a5e5e9edc8",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
+        "id": "794458a7-5483-4ee8-b02c-1908564e4657",
+        "title": "Sleep early!",
+        "day_date": "2026-05-04",
+        "start_time": "17:45:00",
         "duration_minutes": 30,
         "category": "Home",
-        "created_at": "2026-05-01T14:34:48.748551+00:00",
-        "start_minutes": 1020,
-        "task_id": "db3a0962-7de9-4ab7-86c4-079fd2c537b0",
+        "created_at": "2026-05-01T16:56:26.59603+00:00",
+        "start_minutes": 1095,
+        "task_id": "b7919511-ade8-419b-98b2-2185070a79c5",
         "rec_id": null,
         "shop_id": null,
         "done": false
@@ -9493,57 +9550,15 @@
         "done": false
       },
       {
-        "id": "f3450910-ad56-4098-acda-ed3482497375",
-        "title": "Figure out UX videos",
+        "id": "d6c39366-570c-4c24-a0f1-614af370ab6c",
+        "title": "Email version to work laptop",
         "day_date": "2026-05-04",
-        "start_time": "10:00:00",
-        "duration_minutes": 60,
-        "category": "My work",
-        "created_at": "2026-05-01T13:42:45.168027+00:00",
-        "start_minutes": 600,
-        "task_id": "030fcae4-8dda-4684-a687-96f852a782a7",
-        "rec_id": null,
-        "shop_id": null,
-        "done": false
-      },
-      {
-        "id": "2ed573ef-2fba-4e37-8e0e-12c8ed529e2b",
-        "title": "Practice presentation",
-        "day_date": "2026-05-03",
-        "start_time": "11:00:00",
-        "duration_minutes": 180,
-        "category": "My work",
-        "created_at": "2026-05-01T00:35:18.617691+00:00",
-        "start_minutes": 660,
-        "task_id": "63698cf7-efdd-4cae-8627-43a5e5e9edc8",
-        "rec_id": null,
-        "shop_id": null,
-        "done": false
-      },
-      {
-        "id": "81bbb32e-15e0-4d0b-a16a-bdc7df007d4b",
-        "title": "Practice presentation",
-        "day_date": "2026-05-04",
-        "start_time": "15:00:00",
-        "duration_minutes": 180,
-        "category": "My work",
-        "created_at": "2026-05-01T16:55:57.671684+00:00",
-        "start_minutes": 885,
-        "task_id": "85f69a17-71b8-492d-a69d-54d7480eab38",
-        "rec_id": null,
-        "shop_id": null,
-        "done": false
-      },
-      {
-        "id": "794458a7-5483-4ee8-b02c-1908564e4657",
-        "title": "Sleep early!",
-        "day_date": "2026-05-04",
-        "start_time": "17:45:00",
+        "start_time": "14:45:00",
         "duration_minutes": 30,
         "category": "Home",
-        "created_at": "2026-05-01T16:56:26.59603+00:00",
-        "start_minutes": 1065,
-        "task_id": "b7919511-ade8-419b-98b2-2185070a79c5",
+        "created_at": "2026-05-04T14:34:24.843726+00:00",
+        "start_minutes": 1035,
+        "task_id": "b7609adf-3057-4e6c-ba05-fdbbf15db8ae",
         "rec_id": null,
         "shop_id": null,
         "done": false
@@ -9561,6 +9576,48 @@
         "rec_id": null,
         "shop_id": null,
         "done": false
+      },
+      {
+        "id": "e232ca1d-70c5-4f7f-bf9c-f2ed0b018ad4",
+        "title": "Shower",
+        "day_date": "2026-05-01",
+        "start_time": "17:15:00",
+        "duration_minutes": 30,
+        "category": "Home",
+        "created_at": "2026-05-01T14:34:48.748551+00:00",
+        "start_minutes": 1020,
+        "task_id": "db3a0962-7de9-4ab7-86c4-079fd2c537b0",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
+        "id": "7700a879-3ea5-4be7-8d55-99f8f94b33d3",
+        "title": "Change all for phone views on tab pub",
+        "day_date": "2026-05-04",
+        "start_time": "08:45:00",
+        "duration_minutes": 60,
+        "category": "My work",
+        "created_at": "2026-05-04T14:34:55.556901+00:00",
+        "start_minutes": 630,
+        "task_id": "919a5928-8917-4283-8c76-b2abb74129b7",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
+        "id": "81bbb32e-15e0-4d0b-a16a-bdc7df007d4b",
+        "title": "Practice presentation",
+        "day_date": "2026-05-04",
+        "start_time": "15:00:00",
+        "duration_minutes": 150,
+        "category": "My work",
+        "created_at": "2026-05-01T16:55:57.671684+00:00",
+        "start_minutes": 885,
+        "task_id": "85f69a17-71b8-492d-a69d-54d7480eab38",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
       }
     ],
     "auto_timeblocks": [
