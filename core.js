@@ -908,6 +908,24 @@ document.addEventListener('keydown',e=>{
     const _tImp=document.getElementById('tImp');const _qaImp=document.getElementById('qaImp');
     if(_tImp&&document.getElementById('tModal').classList.contains('open')){e.preventDefault();_tImp.checked=!_tImp.checked;}
     else if(_qaImp&&document.getElementById('qaPopup').classList.contains('open')){e.preventDefault();_qaImp.checked=!_qaImp.checked;}
+    else if(selectedTasks.size){
+      e.preventDefault();
+      const undos=[];
+      for(const sid of selectedTasks){
+        const t=st.tasks.find(x=>String(x.id)===sid);
+        if(t){const prev=!!t.important;t.important=!prev;sbReqNullable('PATCH','tasks',{important:t.important},`?id=eq.${t.id}`);undos.push(()=>{t.important=prev;sbReqNullable('PATCH','tasks',{important:prev},`?id=eq.${t.id}`);});continue;}
+        // Recurring
+        const recId=sid.startsWith('rec-virt-')?sid.replace('rec-virt-',''):sid.startsWith('wrec-')?sid.replace('wrec-',''):null;
+        if(recId){const r=st.recurring.find(x=>String(x.id)===recId);if(r){const prev=!!r.important;r.important=!prev;sbReqSilent('PATCH','wr_recurring_rules',{important:r.important},`?id=eq.${recId}`);undos.push(()=>{r.important=prev;sbReqSilent('PATCH','wr_recurring_rules',{important:prev},`?id=eq.${recId}`);});continue;}}
+        // WR rule
+        const wrId=sid.startsWith('wrrule-virt-')?sid.replace('wrrule-virt-',''):sid.startsWith('wrrule-')?sid.replace('wrrule-',''):null;
+        if(wrId){const r=st.wrRules.find(x=>String(x.id)===wrId);if(r){const prev=!!r.important;r.important=!prev;sbReqSilent('PATCH','wr_recurring_rules',{important:r.important},`?id=eq.${wrId}`);undos.push(()=>{r.important=prev;sbReqSilent('PATCH','wr_recurring_rules',{important:prev},`?id=eq.${wrId}`);});continue;}}
+        // Shopping
+        if(sid.startsWith('shop-cal-')){const shopId=sid.replace('shop-cal-','');const s=st.shopping.find(x=>String(x.id)===shopId);if(s){const prev=!!s.important;s.important=!prev;sbReqNullable('PATCH','shopping_list',{important:s.important},`?id=eq.${shopId}`);undos.push(()=>{s.important=prev;sbReqNullable('PATCH','shopping_list',{important:prev},`?id=eq.${shopId}`);});continue;}}
+      }
+      save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
+      pushUndo(()=>{undos.forEach(fn=>fn());save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();},'Toggled important');
+    }
   }
   if(e.key==='Enter'&&!e.metaKey&&!e.ctrlKey){
     const qa=document.getElementById('qaPopup');
