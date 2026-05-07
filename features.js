@@ -2396,7 +2396,82 @@ document.addEventListener('keydown',async e=>{
   // t key: jump to today on overview
   if(e.key==='t'&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&activePg==='overview'&&!document.querySelector('.overlay.open')){goToday();return;}
   // Arrow left/right: shift day on overview when nothing selected
-  if((e.key==='ArrowLeft'||e.key==='ArrowRight')&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&activePg==='overview'&&!document.querySelector('.overlay.open')&&!selectedTasks.size){e.preventDefault();shiftDay(e.key==='ArrowLeft'?-1:1);return;}
+  if((e.key==='ArrowLeft'||e.key==='ArrowRight')&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&activePg==='overview'&&!document.querySelector('.overlay.open')){
+    if(!selectedTasks.size){e.preventDefault();shiftDay(e.key==='ArrowLeft'?-1:1);return;}
+    // Move selected tasks ±1 day on weekly cal
+    if(!document.querySelector('.tb-col')||document.querySelector('.tb-col')){
+      const dir=e.key==='ArrowLeft'?-1:1;
+      const _shiftDs=(ds,n)=>{const d=new Date(ds+'T12:00:00');d.setDate(d.getDate()+n);return d2s(d);};
+      const undos=[];
+      let moved=false;
+      for(const sid of selectedTasks){
+        // Regular task
+        const rt=st.tasks.find(x=>String(x.id)===sid);
+        if(rt&&!rt._virtual){
+          const prev=rt.due_date;const prevDs=(prev||'').split('T')[0];if(!prevDs)continue;
+          const newDs=_shiftDs(prevDs,dir);
+          const savedTBs=st.blocks.filter(b=>String(b.taskId)===sid&&b.ds===prevDs).map(b=>({...b}));
+          rt.due_date=newDs;
+          removeTBBlocksForDate(newDs,{taskId:rt.id,oldDs:prevDs});
+          // Re-create timeblock on new day
+          if(savedTBs.length){const nb={id:crypto.randomUUID(),title:rt.name,ds:newDs,sm:savedTBs[0].sm,dur:savedTBs[0].dur,cat:rt.category||'',taskId:sid};st.blocks.push(nb);sbSaveBlock(nb);}
+          sbReqNullable('PATCH','tasks',{due_date:newDs},`?id=eq.${sid}`);
+          undos.push(()=>{rt.due_date=prev;const nBlks=st.blocks.filter(b=>String(b.taskId)===sid&&b.ds===newDs);nBlks.forEach(b=>sbDeleteBlock(b.id));st.blocks=st.blocks.filter(b=>!(String(b.taskId)===sid&&b.ds===newDs));savedTBs.forEach(b=>{if(!st.blocks.find(y=>y.id===b.id))st.blocks.push(b);sbSaveBlock(b);});sbReqNullable('PATCH','tasks',{due_date:prev},`?id=eq.${sid}`);});
+          moved=true;continue;
+        }
+        // Recurring task
+        if(sid.startsWith('rec-virt-')){
+          const recId=sid.replace('rec-virt-','');
+          const r=st.recurring.find(x=>String(x.id)===recId);if(!r)continue;
+          const wkKey=getWkKey(wkOff);if(!r._dateOverrides)r._dateOverrides={};
+          const curDs=r._dateOverrides[wkKey];if(!curDs||curDs==='__skip__')continue;
+          const prev=curDs;const newDs=_shiftDs(curDs,dir);
+          r._dateOverrides[wkKey]=newDs;
+          sbReqSilent('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},`?id=eq.${recId}`);
+          undos.push(()=>{r._dateOverrides[wkKey]=prev;sbReqSilent('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},`?id=eq.${recId}`);});
+          moved=true;continue;
+        }
+        // Wrec (weekly reset recurring)
+        if(sid.startsWith('wrec-')){
+          const recId=sid.replace('wrec-','');
+          const r=st.recurring.find(x=>String(x.id)===recId);if(!r)continue;
+          const wkKey=getWkKey(wkOff);if(!r._dateOverrides)r._dateOverrides={};
+          const curDs=r._dateOverrides[wkKey];if(!curDs||curDs==='__skip__')continue;
+          const prev=curDs;const newDs=_shiftDs(curDs,dir);
+          r._dateOverrides[wkKey]=newDs;
+          sbReqSilent('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},`?id=eq.${recId}`);
+          undos.push(()=>{r._dateOverrides[wkKey]=prev;sbReqSilent('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},`?id=eq.${recId}`);});
+          moved=true;continue;
+        }
+        // WR rule
+        if(sid.startsWith('wrrule-virt-')){
+          const ruleId=sid.replace('wrrule-virt-','');
+          const r=st.wrRules.find(x=>String(x.id)===ruleId);if(!r)continue;
+          const wkKey=getWkKey(wkOff);if(!r._dateOverrides)r._dateOverrides={};
+          const curDs=r._dateOverrides[wkKey];if(!curDs||curDs==='__skip__')continue;
+          const prev=curDs;const newDs=_shiftDs(curDs,dir);
+          r._dateOverrides[wkKey]=newDs;
+          sbReqSilent('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},`?id=eq.${ruleId}`);
+          undos.push(()=>{r._dateOverrides[wkKey]=prev;sbReqSilent('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},`?id=eq.${ruleId}`);});
+          moved=true;continue;
+        }
+        // Shopping
+        if(sid.startsWith('shop-cal-')){
+          const shopId=sid.replace('shop-cal-','');
+          const s=st.shopping.find(x=>String(x.id)===shopId);if(!s||!s.due_date)continue;
+          const prevDs=(s.due_date||'').split('T')[0];const newDs=_shiftDs(prevDs,dir);
+          const prev=s.due_date;s.due_date=newDs;
+          sbReqNullable('PATCH','shopping_list',{due_date:newDs},`?id=eq.${shopId}`);
+          undos.push(()=>{s.due_date=prev;sbReqNullable('PATCH','shopping_list',{due_date:prev},`?id=eq.${shopId}`);});
+          moved=true;continue;
+        }
+      }
+      if(moved){e.preventDefault();save();renderAll();renderWkCal();if(document.getElementById('tbGrid'))renderDayTB();
+        pushUndo(()=>{undos.forEach(fn=>fn());save();renderAll();renderWkCal();if(document.getElementById('tbGrid'))renderDayTB();},'Moved tasks');
+      }
+    }
+    return;
+  }
   // Pup skill shortcuts
   const onPups=document.getElementById('page-pups')?.classList.contains('active');
   if(onPups&&_selPupIds.size>0){
