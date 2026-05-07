@@ -3273,7 +3273,7 @@ function getVisibleBlocks(ds){
 }
 function computeTBLayout(ds,extraBlocks=[]){
   const blocks=[...getVisibleBlocks(ds),...extraBlocks];
-  const sorted=[...blocks].sort((a,b)=>a.sm-b.sm);
+  const sorted=[...blocks].sort((a,b)=>a.sm-b.sm||(b.dur-a.dur));
   const colEnds=[];
   sorted.forEach(b=>{
     let placed=false;
