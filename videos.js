@@ -6,7 +6,7 @@ let _vidFilter='all';
 let _vidGroupFilter='all';
 let _vidSearch='';
 let _vidView='dashboard'; // dashboard | table | board | groups
-let _vidSortCol=null,_vidSortDir=1,_vidShowCompleted=false;
+let _vidSortCol=null,_vidSortDir=1,_vidShowCompleted=true;
 let _vidMonthOffset=0; // 0=current month, -1=last month, etc
 
 const VID_STEPS=['step_build','step_record','step_film','step_cut','step_thumbnail','step_description','step_tableau_public','step_upload_tableau'];
@@ -286,7 +286,7 @@ function _vidRenderTable(){
         <th style="width:50px;${thStyle}" onclick="vidTblSort('duration')">Dur${_vidSortArrow('duration')}</th>
         <th style="width:62px;${thStyle}" onclick="vidTblSort('posted')">Posted${_vidSortArrow('posted')}</th>
         ${VID_STEPS.map(s=>`<th style="width:28px;text-align:center;font-size:9px" title="${VID_STEP_LABELS[s]}">${VID_STEP_LABELS[s].slice(0,2)}</th>`).join('')}
-        <th style="width:28px"><button class="vid-filter-btn${_vidShowCompleted?' active':''}" onclick="_vidToggleCompleted()" style="font-size:9px;padding:2px 4px;border-radius:4px" title="${_vidShowCompleted?'Hide':'Show'} Completed">+</button></th>
+        <th style="width:28px"><button class="vid-filter-btn${!_vidShowCompleted?' active':''}" onclick="_vidToggleCompleted()" style="font-size:9px;padding:2px 4px;border-radius:4px" title="${_vidShowCompleted?'Hide':'Show'} Completed">−</button></th>
       </tr></thead>
       <tbody>${groupedHtml}</tbody>
     </table>
