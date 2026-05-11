@@ -815,6 +815,36 @@ function mRenderTimeline() {
 
   col.innerHTML = html;
 
+  // Wire up checkbox handlers
+  col.querySelectorAll('.m-tb-chk').forEach(chk => {
+    chk.addEventListener('change', e => {
+      e.stopPropagation();
+      const bid = chk.dataset.bid;
+      const b = (st.blocks || []).find(x => String(x.id) === String(bid));
+      if (!b) return;
+      const checked = chk.checked;
+      b._done = checked;
+      const blockEl = chk.closest('.m-tl-block');
+      if (blockEl) blockEl.classList.toggle('m-done-block', checked);
+      sbUpdateBlock(b.id, {done: checked});
+      if (b.taskId) {
+        toggleTask(b.taskId, checked, 'tb');
+      } else if (b.ruleId || (st.wrRules || []).some(x => String(x.id) === String(b.recId))) {
+        togWrRule(String(b.ruleId || b.recId), checked, dsToWkKey(b.ds));
+      } else if (b.recId) {
+        const _lr = st.recurring.find(x => String(x.id) === String(b.recId));
+        const _isWr = _lr && (_lr.is_weekly_reset === true || _lr.is_weekly_reset === 'true');
+        const _bwk = dsToWkKey(b.ds);
+        if (_isWr) togRec(String(b.recId), checked, _bwk);
+        else togRecVirt(String(b.recId), checked, _bwk);
+      } else if (b.shopId) {
+        togShop(String(b.shopId), checked);
+      } else {
+        save();
+      }
+    });
+  });
+
   // Now line (only for today)
   if (_mTBOffset === 0) {
     const now    = new Date();
@@ -830,6 +860,7 @@ function mRenderTimeline() {
   // Click handler: open block edit or create new block
   col.onclick = e => {
     if (_mDragJustEnded) return;
+    if (e.target.closest('.m-tb-chk')) return;
     const blockEl = e.target.closest('.m-tl-block');
     if (blockEl) { mOpenBlockEdit(blockEl.dataset.bid); return; }
     const rect    = col.getBoundingClientRect();
