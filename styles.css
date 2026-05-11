@@ -801,9 +801,9 @@ body.dark .bday-add-menu{background:rgba(38,20,10,.97);border-color:rgba(255,220
 .vid-groups-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-top:8px}
 .vid-group-card{background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:14px 16px;cursor:pointer;transition:box-shadow .15s,transform .15s}
 .vid-group-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.08);transform:translateY(-2px)}
-.vid-stat-card{background:var(--glass);border:1px solid var(--border);border-radius:10px;padding:10px 16px;text-align:center;min-width:70px}
-.vid-stat-num{font-size:20px;font-weight:700;color:var(--text);line-height:1.2}
-.vid-stat-lbl{font-size:10px;color:var(--muted);font-weight:500;margin-top:1px}
+.vid-stat-card{background:var(--glass);border:1px solid var(--border);border-radius:8px;padding:4px 10px;text-align:center;min-width:40px}
+.vid-stat-num{font-size:14px;font-weight:700;color:var(--text);line-height:1.2}
+.vid-stat-lbl{font-size:9px;color:var(--muted);font-weight:500;margin-top:1px}
 .vid-dash-section{margin-bottom:18px}
 .vid-dash-header{font-size:12px;font-weight:700;color:var(--text);padding:6px 0 6px 10px;border-left:3px solid var(--accent);margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em}
 .vid-dash-row{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:8px;cursor:pointer;transition:background .12s;border-bottom:1px solid rgba(210,205,228,.08)}

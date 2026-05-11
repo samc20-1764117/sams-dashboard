@@ -53,8 +53,7 @@ function renderVideosPage(){
 
   el.innerHTML=`
     <div class="ov-topbar"><div class="ov-topbar-left"><span class="ov-topbar-label">🎬 Videos</span><span class="ov-topbar-dot"></span></div><span class="ov-topbar-date topbar-date"></span><div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div></div>
-    <div style="display:flex;flex-direction:column;height:calc(100vh - 60px)">
-    <div style="display:flex;gap:10px;align-items:center;margin:14px 0 6px;flex-wrap:wrap;position:relative;z-index:2;flex-shrink:0">
+    <div style="display:flex;gap:10px;align-items:center;margin:14px 0 6px;flex-wrap:wrap;position:relative;z-index:2">
       <div style="display:flex;gap:2px;background:var(--glass);border:1px solid var(--border);border-radius:8px;padding:2px">
         <button class="${viewBtnS('dashboard')}" onclick="_vidSetView('dashboard')">Dashboard</button>
         <button class="${viewBtnS('table')}" onclick="_vidSetView('table')">All Details</button>
@@ -74,12 +73,15 @@ function renderVideosPage(){
       </select>`:''}
       <input id="vidSearchInput" type="text" placeholder="Search videos..." value="${_vidSearch.replace(/"/g,'&quot;')}" oninput="_vidSetSearch(this.value)" style="padding:5px 10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:12px;background:var(--bg);color:var(--text);outline:none;width:180px">
       <div style="flex:1"></div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <div class="vid-stat-card"><div class="vid-stat-num" style="color:#10b981">${stats.published}</div><div class="vid-stat-lbl">Published</div></div>
+        <div class="vid-stat-card"><div class="vid-stat-num" style="color:#f59e0b">${stats.in_progress}</div><div class="vid-stat-lbl">In Progress</div></div>
+        <div class="vid-stat-card"><div class="vid-stat-num" style="color:#8b5cf6">${stats.idea}</div><div class="vid-stat-lbl">Ideas</div></div>
+        <div class="vid-stat-card"><div class="vid-stat-num">${stats.total}</div><div class="vid-stat-lbl">Total</div></div>
+      </div>
       <button class="btn btn-dark" onclick="openVidModal()" style="padding:5px 14px;font-size:12px">+ Add Video</button>
     </div>
-    <div style="flex:1;min-height:0;overflow-y:auto;padding-bottom:20px">
-    ${bodyHtml}
-    </div>
-    </div>`;
+    ${bodyHtml}`;
   const now=new Date();
   el.querySelectorAll('.topbar-date').forEach(e=>e.textContent=now.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}));
   el.querySelectorAll('.topbar-time').forEach(e=>e.textContent=now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}));
@@ -96,17 +98,8 @@ function _vidRenderDashboard(){
     const match=v=>(v.title||'').toLowerCase().includes(q)||(v.topic||'').toLowerCase().includes(q)||(v.group_name||'').toLowerCase().includes(q);
     inProgress=inProgress.filter(match);ideas=ideas.filter(match);backup=backup.filter(match);
   }
-  const stats=_vidStats();
-
   return`
-    <div style="display:flex;gap:12px;margin:8px 0 16px">
-      <div class="vid-stat-card"><div class="vid-stat-num" style="color:#10b981">${stats.published}</div><div class="vid-stat-lbl">Published</div></div>
-      <div class="vid-stat-card"><div class="vid-stat-num" style="color:#f59e0b">${stats.in_progress}</div><div class="vid-stat-lbl">In Progress</div></div>
-      <div class="vid-stat-card"><div class="vid-stat-num" style="color:#8b5cf6">${stats.idea}</div><div class="vid-stat-lbl">Ideas</div></div>
-      <div class="vid-stat-card"><div class="vid-stat-num" style="color:#94a3b8">${stats.backup}</div><div class="vid-stat-lbl">Backup</div></div>
-      <div class="vid-stat-card"><div class="vid-stat-num">${stats.total}</div><div class="vid-stat-lbl">Total</div></div>
-    </div>
-    <div style="display:flex;gap:20px;align-items:flex-start">
+    <div style="display:flex;gap:20px;align-items:flex-start;margin-top:10px">
       <div style="flex:1;min-width:0">
         ${inProgress.length?`
         <div class="vid-dash-section">
