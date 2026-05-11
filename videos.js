@@ -51,26 +51,32 @@ function renderVideosPage(){
   else if(_vidView==='board')bodyHtml=_vidRenderBoard();
   if(_vidView==='groups'){_vidView='dashboard';bodyHtml=_vidRenderDashboard();}
 
+  // Use the exact same pattern as recipes page (features.js line 2130-2139)
+  el.style.cssText='padding:60px 56px 0 56px';
   el.innerHTML=`
     <div class="ov-topbar"><div class="ov-topbar-left"><span class="ov-topbar-label">🎬 Videos</span><span class="ov-topbar-dot"></span></div><span class="ov-topbar-date topbar-date"></span><div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div></div>
-    <div style="display:flex;gap:10px;align-items:center;margin:14px 0 6px;flex-wrap:wrap;position:relative;z-index:2">
-      <div style="display:flex;gap:2px;background:var(--glass);border:1px solid var(--border);border-radius:8px;padding:2px">
-        <button class="${viewBtnS('dashboard')}" onclick="_vidSetView('dashboard')">Dashboard</button>
-        <button class="${viewBtnS('table')}" onclick="_vidSetView('table')">All Details</button>
-        <button class="${viewBtnS('board')}" onclick="_vidSetView('board')">Videos by Progress</button>
+    <div style="padding-top:26px;position:relative;z-index:10">
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:6px;flex-wrap:wrap">
+        <div style="display:flex;gap:2px;background:var(--glass);border:1px solid var(--border);border-radius:8px;padding:2px">
+          <button class="${viewBtnS('dashboard')}" onclick="_vidSetView('dashboard')">Dashboard</button>
+          <button class="${viewBtnS('table')}" onclick="_vidSetView('table')">All Details</button>
+          <button class="${viewBtnS('board')}" onclick="_vidSetView('board')">Videos by Progress</button>
+        </div>
+        <input id="vidSearchInput" type="text" placeholder="Search videos..." value="${_vidSearch.replace(/"/g,'&quot;')}" oninput="_vidSetSearch(this.value)" style="padding:5px 10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:12px;background:var(--bg);color:var(--text);outline:none;width:180px">
+        <div style="flex:1"></div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <div class="vid-stat-card"><div class="vid-stat-num" style="color:#10b981">${stats.published}</div><div class="vid-stat-lbl">Published</div></div>
+          <div class="vid-stat-card"><div class="vid-stat-num" style="color:#f59e0b">${stats.in_progress}</div><div class="vid-stat-lbl">In Progress</div></div>
+          <div class="vid-stat-card"><div class="vid-stat-num" style="color:#8b5cf6">${stats.idea}</div><div class="vid-stat-lbl">Ideas</div></div>
+          <div class="vid-stat-card"><div class="vid-stat-num">${stats.total}</div><div class="vid-stat-lbl">Total</div></div>
+        </div>
+        <button class="btn btn-dark" onclick="openVidModal()" style="padding:5px 14px;font-size:12px">+ Add Video</button>
       </div>
-      <input id="vidSearchInput" type="text" placeholder="Search videos..." value="${_vidSearch.replace(/"/g,'&quot;')}" oninput="_vidSetSearch(this.value)" style="padding:5px 10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:12px;background:var(--bg);color:var(--text);outline:none;width:180px">
-      <div style="flex:1"></div>
-      <div style="display:flex;gap:8px;align-items:center">
-        <div class="vid-stat-card"><div class="vid-stat-num" style="color:#10b981">${stats.published}</div><div class="vid-stat-lbl">Published</div></div>
-        <div class="vid-stat-card"><div class="vid-stat-num" style="color:#f59e0b">${stats.in_progress}</div><div class="vid-stat-lbl">In Progress</div></div>
-        <div class="vid-stat-card"><div class="vid-stat-num" style="color:#8b5cf6">${stats.idea}</div><div class="vid-stat-lbl">Ideas</div></div>
-        <div class="vid-stat-card"><div class="vid-stat-num">${stats.total}</div><div class="vid-stat-lbl">Total</div></div>
-      </div>
-      <button class="btn btn-dark" onclick="openVidModal()" style="padding:5px 14px;font-size:12px">+ Add Video</button>
     </div>
-    <div id="vidScrollBody" style="overflow-y:auto;height:calc(100vh - 130px);padding-bottom:20px">
-    ${bodyHtml}
+    <div class="card" style="overflow:hidden">
+      <div style="overflow-y:auto;flex:1;min-height:0;max-height:calc(100vh - 180px)">
+        ${bodyHtml}
+      </div>
     </div>`;
   const now=new Date();
   el.querySelectorAll('.topbar-date').forEach(e=>e.textContent=now.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}));
