@@ -697,39 +697,36 @@ function _vidRenderSteps(vals){
   const el=document.getElementById('vmSteps');
   el.innerHTML=VID_STEPS.map(s=>{
     const cur=vals[s]||'not_started';
-    const isDone=cur==='done';
-    const isNa=cur==='na';
-    const bg=isDone?'#10b981':isNa?'var(--border)':'transparent';
-    const border=isDone?'#10b981':isNa?'var(--border)':'var(--border)';
-    const opacity=isNa?'0.35':'1';
-    const check=isDone?'✓':isNa?'—':'';
-    const color=isDone?'#fff':isNa?'var(--muted)':'var(--muted)';
     return`<div style="display:flex;flex-direction:column;gap:2px;align-items:center">
-      <span style="font-size:9px;color:var(--muted)">${VID_STEP_LABELS[s]}</span>
-      <div data-step="${s}" data-val="${cur}" onclick="_vidToggleModalStep(this)" oncontextmenu="_vidNaModalStep(event,this);return false" style="width:24px;height:24px;border-radius:6px;border:2px solid ${border};background:${bg};opacity:${opacity};cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:${color};user-select:none">${check}</div>
+      <span style="font-size:9px;color:${cur==='na'?'var(--border)':'var(--muted)'}">${VID_STEP_LABELS[s]}</span>
+      <div data-step="${s}" data-val="${cur}" onclick="_vidToggleModalStep(this)" oncontextmenu="_vidNaModalStep(event,this);return false" style="${_vidModalStepCSS(cur)}"></div>
     </div>`;
   }).join('');
 }
+function _vidModalStepCSS(val){
+  const base='width:24px;height:24px;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;user-select:none;';
+  if(val==='done')return base+'border:2px solid #10b981;background:#10b981;color:#fff';
+  if(val==='na')return base+'border:none;background:transparent;color:transparent';
+  return base+'border:2px solid var(--border);background:transparent;color:transparent';
+}
 function _vidToggleModalStep(el){
   const cur=el.dataset.val;
+  if(cur==='na')return;
   const next=cur==='done'?'not_started':'done';
   el.dataset.val=next;
-  _vidUpdateModalStepStyle(el,next);
+  _vidUpdateModalStep(el,next);
 }
 function _vidNaModalStep(e,el){
   e.preventDefault();
   const cur=el.dataset.val;
   const next=cur==='na'?'not_started':'na';
   el.dataset.val=next;
-  _vidUpdateModalStepStyle(el,next);
+  _vidUpdateModalStep(el,next);
 }
-function _vidUpdateModalStepStyle(el,val){
-  const isDone=val==='done';const isNa=val==='na';
-  el.style.background=isDone?'#10b981':isNa?'var(--border)':'transparent';
-  el.style.borderColor=isDone?'#10b981':'var(--border)';
-  el.style.opacity=isNa?'0.35':'1';
-  el.style.color=isDone?'#fff':isNa?'var(--muted)':'var(--muted)';
-  el.textContent=isDone?'✓':isNa?'—':'';
+function _vidUpdateModalStep(el,val){
+  el.style.cssText=_vidModalStepCSS(val);
+  el.textContent=val==='done'?'✓':'';
+  el.parentElement.querySelector('span').style.color=val==='na'?'var(--border)':'var(--muted)';
 }
 
 async function saveVidModal(){
