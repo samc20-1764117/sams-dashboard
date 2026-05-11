@@ -695,16 +695,41 @@ function openVidEdit(id){
 
 function _vidRenderSteps(vals){
   const el=document.getElementById('vmSteps');
-  const opts=['not_started','done','in_progress','na','backup','issue'];
   el.innerHTML=VID_STEPS.map(s=>{
     const cur=vals[s]||'not_started';
+    const isDone=cur==='done';
+    const isNa=cur==='na';
+    const bg=isDone?'#10b981':isNa?'var(--border)':'transparent';
+    const border=isDone?'#10b981':isNa?'var(--border)':'var(--border)';
+    const opacity=isNa?'0.35':'1';
+    const check=isDone?'✓':isNa?'—':'';
+    const color=isDone?'#fff':isNa?'var(--muted)':'var(--muted)';
     return`<div style="display:flex;flex-direction:column;gap:2px;align-items:center">
       <span style="font-size:9px;color:var(--muted)">${VID_STEP_LABELS[s]}</span>
-      <select data-step="${s}" style="width:100%;padding:3px 2px;border:1px solid var(--border);border-radius:5px;font-size:10px;background:var(--bg);color:var(--text);outline:none">
-        ${opts.map(o=>`<option value="${o}"${o===cur?' selected':''}>${o.replace('_',' ')}</option>`).join('')}
-      </select>
+      <div data-step="${s}" data-val="${cur}" onclick="_vidToggleModalStep(this)" oncontextmenu="_vidNaModalStep(event,this)" style="width:24px;height:24px;border-radius:6px;border:2px solid ${border};background:${bg};opacity:${opacity};cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:${color};user-select:none">${check}</div>
     </div>`;
   }).join('');
+}
+function _vidToggleModalStep(el){
+  const cur=el.dataset.val;
+  const next=cur==='done'?'not_started':'done';
+  el.dataset.val=next;
+  _vidUpdateModalStepStyle(el,next);
+}
+function _vidNaModalStep(e,el){
+  e.preventDefault();
+  const cur=el.dataset.val;
+  const next=cur==='na'?'not_started':'na';
+  el.dataset.val=next;
+  _vidUpdateModalStepStyle(el,next);
+}
+function _vidUpdateModalStepStyle(el,val){
+  const isDone=val==='done';const isNa=val==='na';
+  el.style.background=isDone?'#10b981':isNa?'var(--border)':'transparent';
+  el.style.borderColor=isDone?'#10b981':'var(--border)';
+  el.style.opacity=isNa?'0.35':'1';
+  el.style.color=isDone?'#fff':isNa?'var(--muted)':'var(--muted)';
+  el.textContent=isDone?'✓':isNa?'—':'';
 }
 
 async function saveVidModal(){
@@ -721,7 +746,7 @@ async function saveVidModal(){
     big_video_id:document.getElementById('vmBigVideo').value?parseInt(document.getElementById('vmBigVideo').value):null,
     playlist:document.getElementById('vmPlaylist').value.trim()||null
   };
-  document.querySelectorAll('#vmSteps select[data-step]').forEach(sel=>{data[sel.dataset.step]=sel.value;});
+  document.querySelectorAll('#vmSteps [data-step]').forEach(el=>{data[el.dataset.step]=el.dataset.val||'not_started';});
   // Default Tab Pub + Upload to na for L-type videos with a parent group (not standalone)
   if(_vidMode==='add'&&data.video_type==='L'&&data.big_video_id){
     if(!data.step_tableau_public||data.step_tableau_public==='not_started')data.step_tableau_public='na';

@@ -743,7 +743,7 @@
     <div style="display:flex;gap:8px;margin-top:8px">
       <input id="vmTopic" placeholder="Topic" style="flex:1;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;background:var(--bg);color:var(--text);outline:none">
       <select id="vmType" style="width:80px;padding:8px 6px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;background:var(--bg);color:var(--text);outline:none">
-        <option value="">Type</option><option value="B">Build</option><option value="L">Lesson</option>
+        <option value="">Type</option><option value="B">Big</option><option value="L">Small</option>
       </select>
     </div>
     <div style="display:flex;gap:8px;margin-top:8px">
@@ -762,8 +762,8 @@
       </select>
       <input id="vmPlaylist" placeholder="Playlist" style="flex:1;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;background:var(--bg);color:var(--text);outline:none">
     </div>
-    <div style="margin-top:8px;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">Pipeline Steps</div>
-    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin-top:4px" id="vmSteps"></div>
+    <div style="margin-top:8px;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">Stages <span style="font-weight:400;text-transform:none;letter-spacing:0">(click = toggle, right-click = n/a)</span></div>
+    <div style="display:grid;grid-template-columns:repeat(8,1fr);gap:4px;margin-top:4px" id="vmSteps"></div>
     <div class="mact" style="margin-top:12px"><button class="btn btn-ghost" onclick="closeMod('vidModal')">Cancel</button><button class="btn btn-dark" onclick="saveVidModal()">Save</button></div>
   </div>
 </div>
