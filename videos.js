@@ -39,6 +39,12 @@ function _vidPostStr(d,withYear){
   if(withYear)return(dt.getMonth()+1)+'/'+dt.getDate()+'/'+String(dt.getFullYear()).slice(2);
   return(dt.getMonth()+1)+'/'+dt.getDate();
 }
+function _vidDateColor(d){
+  if(!d)return'var(--muted)';
+  const today=d2s(new Date());
+  if(d===today)return'#0ea5e9';
+  return d<today?'#10b981':'#f59e0b';
+}
 
 // ── Main Render ──────────────────────────────────────────────────────────────
 function renderVideosPage(){
@@ -163,7 +169,7 @@ function _vidDashRow(v,isChild,simple){
       ${childMark}${numHtml}<span class="${titleCls}">${_esc(v.title)}</span>
     </div>
     <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
-      ${postStr?`<span style="font-size:10px;color:var(--muted)">${postStr}</span>`:''}
+      ${postStr?`<span style="font-size:10px;color:${_vidDateColor(v.post_date)}">${postStr}</span>`:''}
       <div style="display:flex;gap:2px">${VID_STEPS.map(s=>`<div class="vid-step-dot${v[s]==='done'?' done':v[s]==='na'?' na':''}" data-vid="${sid}" data-step="${s}" title="${VID_STEP_LABELS[s]}"></div>`).join('')}</div>
       <button class="vid-del" data-vid="${sid}">✕</button>
     </div>
@@ -208,14 +214,11 @@ function _vidSortVids(vids){
       return av<bv?-dir:av>bv?dir:0;
     });
   }else{
-    // When showing completed: completed first, then rest. Otherwise: posted first, in_progress, ideas
-    const statusOrder=_vidShowCompleted?{published:0,in_progress:1,idea:2,backup:3}:{in_progress:0,idea:1,published:2,backup:3};
+    // Default: oldest posted at top (asc), nulls last
     sorted.sort((a,b)=>{
-      const sa=statusOrder[a.status]??9,sb=statusOrder[b.status]??9;
-      if(sa!==sb)return sa-sb;
-      if(a.post_date&&b.post_date)return b.post_date.localeCompare(a.post_date);
-      if(a.post_date)return-1;if(b.post_date)return 1;
-      return 0;
+      if(!a.post_date&&!b.post_date)return 0;
+      if(!a.post_date)return 1;if(!b.post_date)return-1;
+      return a.post_date.localeCompare(b.post_date);
     });
   }
   return sorted;
@@ -224,7 +227,17 @@ function _vidToggleCompleted(){_vidShowCompleted=!_vidShowCompleted;renderVideos
 function _vidRenderTable(){
   let vids=_vidFiltered();
   const today=d2s(new Date());
-  if(!_vidShowCompleted)vids=vids.filter(v=>!(v.status==='published'&&v.post_date&&v.post_date<today));
+  if(!_vidShowCompleted){
+    // Find B groups that have L children with future/today post dates
+    const keepGroups=new Set();
+    vids.forEach(v=>{if(v.video_type==='L'&&v.group_name&&v.post_date&&v.post_date>=today)keepGroups.add(v.group_name);});
+    vids=vids.filter(v=>{
+      if(!(v.status==='published'&&v.post_date&&v.post_date<today))return true;
+      // Keep if B video with active children
+      if(v.video_type==='B'&&v.group_name&&keepGroups.has(v.group_name))return true;
+      return false;
+    });
+  }
   const sorted=_vidSortVids(vids);
   const groupedHtml=_vidSortCol?sorted.map(v=>_vidRow(v,false)).join(''):_vidBuildRows(sorted);
   const thStyle='cursor:pointer;user-select:none';
@@ -250,7 +263,7 @@ function _vidChildSort(a,b){
   const order={published:0,in_progress:1,idea:2,backup:3};
   const sa=order[a.status]??9,sb=order[b.status]??9;
   if(sa!==sb)return sa-sb;
-  if(a.post_date&&b.post_date)return b.post_date.localeCompare(a.post_date);
+  if(a.post_date&&b.post_date)return a.post_date.localeCompare(b.post_date);
   if(a.post_date)return-1;if(b.post_date)return 1;
   return 0;
 }
@@ -296,7 +309,7 @@ function _vidRow(v,isChild){
     <td style="font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:90px" title="${_esc(v.playlist||'')}">${_esc(v.playlist||'')}</td>
     <td><span class="vid-status-pill" style="background:${sc}20;color:${sc}">${v.status}</span></td>
     <td style="font-size:11px;color:var(--muted)">${durStr}</td>
-    <td style="font-size:11px;color:var(--muted)">${postStr}</td>
+    <td style="font-size:11px;color:${_vidDateColor(v.post_date)}">${postStr}</td>
     ${VID_STEPS.map(s=>`<td style="text-align:center"><div class="vid-step-dot${v[s]==='done'?' done':v[s]==='na'?' na':''}" data-vid="${sid}" data-step="${s}" title="${VID_STEP_LABELS[s]}"></div></td>`).join('')}
     <td><button class="vid-del" data-vid="${sid}">✕</button></td>
   </tr>`;
