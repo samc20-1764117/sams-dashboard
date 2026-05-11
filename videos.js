@@ -85,6 +85,10 @@ function renderVideosPage(){
   const now=new Date();
   el.querySelectorAll('.topbar-date').forEach(e=>e.textContent=now.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}));
   el.querySelectorAll('.topbar-time').forEach(e=>e.textContent=now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}));
+  // Ensure scroll works — forward wheel events to #main
+  const mainEl=document.getElementById('main');
+  if(mainEl&&!el._vidWheelBound){el._vidWheelBound=true;el.addEventListener('wheel',e=>{if(activePg==='videos')mainEl.scrollTop+=e.deltaY;},{passive:true});}
+
 }
 
 // ── DASHBOARD VIEW (default — In Progress + Ideas) ───────────────────────────
