@@ -17,7 +17,8 @@ const VID_STEP_COLORS={done:'#10b981',in_progress:'#f59e0b',not_started:'transpa
 // Use DB id as display number
 function _vidSeqMap(){
   const map={};
-  (st.videos||[]).filter(v=>!v.is_deleted).forEach(v=>{map[String(v.id)]=v.id;});
+  const dated=(st.videos||[]).filter(v=>!v.is_deleted&&v.status!=='idea').sort((a,b)=>(a.post_date||'9999')< (b.post_date||'9999')?-1:1);
+  dated.forEach((v,i)=>{map[String(v.id)]=i+1;});
   return map;
 }
 
@@ -344,12 +345,12 @@ function _vidRow(v,isChild,postMap){
   const titleColor=isSmall?'color:var(--muted);':'';
   const postNum=postMap&&postMap[sid];
   const numHtml=postNum?`<span style="color:var(--muted);font-size:10px;margin-right:6px;min-width:18px;display:inline-block">${postNum}</span>`:'';
-  return`<tr class="vid-row${sel?' vid-sel':''}" data-vid="${sid}" onclick="vidRowClick(event,'${sid}')" ondblclick="openVidEdit('${sid}')" oncontextmenu="showVidCtx(event,'${sid}')">
-    <td style="${indent}${!isChild?'font-weight:600;':''}${titleColor}overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${childMark}${numHtml}<span class="${isSmall?'':'vid-title-text'}">${_esc(v.title)}</span></td>
-    <td style="font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:90px" title="${_esc(v.playlist||'')}">${_esc(v.playlist||'')}</td>
-    <td><span class="vid-status-pill" style="background:${sc}20;color:${sc}">${v.status}</span></td>
-    <td style="font-size:11px;color:var(--muted)">${durStr}</td>
-    <td style="font-size:11px;color:${_vidDateColor(v.post_date,v)}">${postStr}</td>
+  return`<tr class="vid-row${sel?' vid-sel':''}" data-vid="${sid}" onclick="vidCellClick(event,'${sid}')" ondblclick="openVidEdit('${sid}')" oncontextmenu="showVidCtx(event,'${sid}')">
+    <td data-field="title" style="${indent}${!isChild?'font-weight:600;':''}${titleColor}overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${childMark}${numHtml}<span class="${isSmall?'':'vid-title-text'}">${_esc(v.title)}</span></td>
+    <td data-field="playlist" style="font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:90px" title="${_esc(v.playlist||'')}">${_esc(v.playlist||'')}</td>
+    <td data-field="status"><span class="vid-status-pill" style="background:${sc}20;color:${sc}">${v.status}</span></td>
+    <td data-field="duration_minutes" style="font-size:11px;color:var(--muted)">${durStr}</td>
+    <td data-field="post_date" style="font-size:11px;color:${_vidDateColor(v.post_date,v)}">${postStr}</td>
     ${VID_STEPS.map(s=>`<td style="text-align:center"><div class="vid-step-dot${v[s]==='done'?' done':v[s]==='na'?' na':''}" data-vid="${sid}" data-step="${s}" title="${VID_STEP_LABELS[s]}"></div></td>`).join('')}
     <td><button class="vid-del" data-vid="${sid}">✕</button></td>
   </tr>`;
@@ -538,6 +539,55 @@ function vidRowClick(e,id){
   }
   _vidLastSel=sid;
   _applyVidSel();
+}
+
+function vidCellClick(e,id){
+  if(e.target.closest('.vid-del')||e.target.closest('.vid-step-dot'))return;
+  const td=e.target.closest('td');
+  const field=td&&td.dataset.field;
+  if(field&&_vidView==='table'){vidCellEdit(td,id,field);return;}
+  vidRowClick(e,id);
+}
+
+function vidCellEdit(td,id,field){
+  if(td._editing)return;
+  const v=(st.videos||[]).find(x=>String(x.id)===String(id));if(!v)return;
+  td._editing=true;
+  const elStyle='width:100%;font-size:11px;border:1px solid var(--border);border-radius:4px;padding:2px 4px;background:var(--bg);color:var(--text);outline:none;font-family:inherit;box-sizing:border-box';
+  let el;
+  if(field==='status'){
+    el=document.createElement('select');
+    ['idea','in_progress','published','backup'].forEach(s=>{const o=document.createElement('option');o.value=s;o.textContent=s;if(v.status===s)o.selected=true;el.appendChild(o);});
+  }else if(field==='playlist'){
+    el=document.createElement('input');el.value=v.playlist||'';
+  }else if(field==='duration_minutes'){
+    el=document.createElement('input');el.type='number';el.step='0.1';el.value=v.duration_minutes||'';
+  }else if(field==='post_date'){
+    el=document.createElement('input');el.type='date';el.value=v.post_date||'';
+  }else if(field==='title'){
+    el=document.createElement('input');el.value=v.title||'';
+  }else{return;}
+  el.style.cssText=elStyle;
+  const origHtml=td.innerHTML;
+  td.textContent='';td.appendChild(el);
+  requestAnimationFrame(()=>{el.focus();if(el.tagName==='INPUT'&&el.type==='text'){const l=el.value.length;el.setSelectionRange(l,l);}});
+  let saved=false;
+  const doSave=async()=>{
+    if(saved)return;saved=true;td._editing=false;
+    let val=el.value;
+    if(field==='duration_minutes')val=val?parseFloat(val):null;
+    if(field==='post_date')val=val||null;
+    if(field==='playlist')val=val||null;
+    const prev=v[field]??null;
+    if(val===prev){td.innerHTML=origHtml;return;}
+    v[field]=val;save();
+    pushUndo(async()=>{v[field]=prev;save();renderVideosPage();await sbReqSilent('PATCH','videos',{[field]:prev},`?id=eq.${id}`);},'Edit '+field);
+    await sbReqSilent('PATCH','videos',{[field]:val},`?id=eq.${id}`);
+    renderVideosPage();
+  };
+  el.onblur=doSave;
+  el.onkeydown=ev=>{if(ev.key==='Enter'){ev.preventDefault();el.blur();}if(ev.key==='Escape'){saved=true;td._editing=false;td.innerHTML=origHtml;}};
+  if(el.tagName==='SELECT')el.onchange=()=>{el.blur();};
 }
 
 function _applyVidSel(){
