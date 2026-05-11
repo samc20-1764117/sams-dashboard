@@ -57,7 +57,7 @@ function renderVideosPage(){
       <div style="display:flex;gap:2px;background:var(--glass);border:1px solid var(--border);border-radius:8px;padding:2px">
         <button class="${viewBtnS('dashboard')}" onclick="_vidSetView('dashboard')">Dashboard</button>
         <button class="${viewBtnS('table')}" onclick="_vidSetView('table')">All Details</button>
-        <button class="${viewBtnS('board')}" onclick="_vidSetView('board')">Board</button>
+        <button class="${viewBtnS('board')}" onclick="_vidSetView('board')">Videos by Progress</button>
       </div>
       ${_vidView==='table'?`
       <div style="display:flex;gap:4px">
