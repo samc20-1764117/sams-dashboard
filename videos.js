@@ -6,7 +6,7 @@ let _vidFilter='all';
 let _vidGroupFilter='all';
 let _vidSearch='';
 let _vidView='dashboard'; // dashboard | table | board | groups
-let _vidSortCol=null,_vidSortDir=1,_vidShowCompleted=true;
+let _vidSortCol=null,_vidSortDir=1,_vidShowCompleted=false;
 let _vidMonthOffset=0; // 0=current month, -1=last month, etc
 
 const VID_STEPS=['step_build','step_record','step_film','step_cut','step_thumbnail','step_description','step_tableau_public','step_upload_tableau'];
