@@ -59,18 +59,6 @@ function renderVideosPage(){
         <button class="${viewBtnS('table')}" onclick="_vidSetView('table')">All Details</button>
         <button class="${viewBtnS('board')}" onclick="_vidSetView('board')">Videos by Progress</button>
       </div>
-      ${_vidView==='table'?`
-      <div style="display:flex;gap:4px">
-        <button class="vid-filter-btn${_vidFilter==='all'?' active':''}" onclick="_vidSetFilter('all')">All <span class="vid-count">${stats.total}</span></button>
-        <button class="vid-filter-btn${_vidFilter==='published'?' active':''}" onclick="_vidSetFilter('published')">Published <span class="vid-count">${stats.published}</span></button>
-        <button class="vid-filter-btn${_vidFilter==='in_progress'?' active':''}" onclick="_vidSetFilter('in_progress')">In Progress <span class="vid-count">${stats.in_progress}</span></button>
-        <button class="vid-filter-btn${_vidFilter==='idea'?' active':''}" onclick="_vidSetFilter('idea')">Ideas <span class="vid-count">${stats.idea}</span></button>
-        <button class="vid-filter-btn${_vidFilter==='backup'?' active':''}" onclick="_vidSetFilter('backup')">Backup <span class="vid-count">${stats.backup}</span></button>
-      </div>
-      <select id="vidGroupSel" onchange="_vidSetGroup(this.value)" style="padding:5px 8px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:12px;background:var(--bg);color:var(--text);outline:none">
-        <option value="all"${_vidGroupFilter==='all'?' selected':''}>All Groups</option>
-        ${groups.map(g=>`<option value="${_esc(g)}"${_vidGroupFilter===g?' selected':''}>${_esc(g)}</option>`).join('')}
-      </select>`:''}
       <input id="vidSearchInput" type="text" placeholder="Search videos..." value="${_vidSearch.replace(/"/g,'&quot;')}" oninput="_vidSetSearch(this.value)" style="padding:5px 10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:12px;background:var(--bg);color:var(--text);outline:none;width:180px">
       <div style="flex:1"></div>
       <div style="display:flex;gap:8px;align-items:center">
@@ -84,12 +72,16 @@ function renderVideosPage(){
     <div id="vidScrollBody" style="overflow-y:auto;height:calc(100vh - 130px);padding-bottom:20px">
     ${bodyHtml}
     </div>`;
-  // Force scroll container to be scrollable
-  const sb=document.getElementById('vidScrollBody');
-  if(sb)sb.addEventListener('wheel',function(e){this.scrollTop+=e.deltaY;},{passive:true});
   const now=new Date();
   el.querySelectorAll('.topbar-date').forEach(e=>e.textContent=now.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}));
   el.querySelectorAll('.topbar-time').forEach(e=>e.textContent=now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}));
+  // Bind step dot clicks via delegation (inline onclick can fail)
+  el.addEventListener('click',function(e){
+    const dot=e.target.closest('.vid-step-dot');
+    if(dot){e.stopPropagation();const vid=dot.dataset.vid;const step=dot.dataset.step;if(vid&&step)cycleVidStep(vid,step);return;}
+    const del=e.target.closest('.vid-del');
+    if(del){e.stopPropagation();const vid=del.dataset.vid;if(vid)delVideo(vid);return;}
+  });
 }
 
 // ── DASHBOARD VIEW (default — In Progress + Ideas) ───────────────────────────
@@ -97,33 +89,26 @@ function _vidRenderDashboard(){
   const all=(st.videos||[]).filter(v=>!v.is_deleted);
   let inProgress=all.filter(v=>v.status==='in_progress');
   let ideas=all.filter(v=>v.status==='idea');
-  let backup=all.filter(v=>v.status==='backup');
   if(_vidSearch){
     const q=_vidSearch.toLowerCase();
     const match=v=>(v.title||'').toLowerCase().includes(q)||(v.topic||'').toLowerCase().includes(q)||(v.group_name||'').toLowerCase().includes(q);
-    inProgress=inProgress.filter(match);ideas=ideas.filter(match);backup=backup.filter(match);
+    inProgress=inProgress.filter(match);ideas=ideas.filter(match);
   }
   return`
-    <div style="display:flex;gap:20px;align-items:flex-start;margin-top:10px">
-      <div style="flex:1;min-width:0" ondragover="event.preventDefault()" ondrop="_vidDashDrop(event,'in_progress')">
-        ${inProgress.length?`
+    <div style="display:flex;gap:20px;align-items:stretch;margin-top:10px;height:calc(100% - 10px)">
+      <div style="flex:2;min-width:0;overflow-y:auto" ondragover="event.preventDefault()" ondrop="_vidDashDrop(event,'in_progress')">
         <div class="vid-dash-section">
           <div class="vid-dash-header" style="border-left-color:#f59e0b">In Progress <span class="vid-count">${inProgress.length}</span></div>
+          ${inProgress.length?`
           <div style="display:flex;justify-content:flex-end;gap:2px;padding:0 8px 4px;margin-right:26px"><div style="display:flex;gap:2px">${VID_STEPS.map(s=>`<div style="width:14px;text-align:center;font-size:7px;color:var(--muted);font-weight:600" title="${VID_STEP_LABELS[s]}">${VID_STEP_LABELS[s].slice(0,2)}</div>`).join('')}</div></div>
-          ${_vidDashList(inProgress,false)}
-        </div>`:'<div class="vid-dash-section"><div class="vid-dash-header" style="border-left-color:#f59e0b">In Progress <span class="vid-count">0</span></div><div style="color:var(--muted);font-size:12px;padding:16px 0">Drag ideas here to start</div></div>'}
-        ${backup.length?`
-        <div class="vid-dash-section">
-          <div class="vid-dash-header" style="border-left-color:#94a3b8">Backup <span class="vid-count">${backup.length}</span></div>
-          ${_vidDashList(backup,false)}
-        </div>`:''}
+          ${_vidDashList(inProgress,false)}`:'<div style="color:var(--muted);font-size:12px;padding:16px 0">Drag ideas here to start</div>'}
+        </div>
       </div>
-      <div style="flex:1;min-width:0" ondragover="event.preventDefault()" ondrop="_vidDashDrop(event,'idea')">
-        ${ideas.length?`
+      <div style="flex:1;min-width:0;overflow-y:auto" ondragover="event.preventDefault()" ondrop="_vidDashDrop(event,'idea')">
         <div class="vid-dash-section">
           <div class="vid-dash-header" style="border-left-color:#8b5cf6">Ideas <span class="vid-count">${ideas.length}</span></div>
-          ${_vidDashList(ideas,true)}
-        </div>`:'<div class="vid-dash-section"><div class="vid-dash-header" style="border-left-color:#8b5cf6">Ideas <span class="vid-count">0</span></div><div style="color:var(--muted);font-size:12px;padding:16px 0">No ideas yet</div></div>'}
+          ${ideas.length?_vidDashList(ideas,true):'<div style="color:var(--muted);font-size:12px;padding:16px 0">No ideas yet</div>'}
+        </div>
       </div>
     </div>`;
 }
@@ -152,7 +137,7 @@ function _vidDashRow(v,isChild,simple){
     return`<div class="vid-dash-row${sel?' vid-sel':''}" draggable="true" ondragstart="_vidDashDragStart(event,'${sid}')" data-vid="${sid}" onclick="vidRowClick(event,'${sid}')" ondblclick="openVidEdit('${sid}')" oncontextmenu="showVidCtx(event,'${sid}')">
       <span class="vid-type-badge" style="background:${v.video_type==='B'?'#0ea5e9':'#a78bfa'};color:#fff">${v.video_type||'?'}</span>
       <div style="flex:1;min-width:0;${indent}">${childMark}<span class="vid-title-text">${_esc(v.title)}</span></div>
-      <button class="vid-del" onclick="event.stopPropagation();delVideo('${sid}')">✕</button>
+      <button class="vid-del" data-vid="${sid}">✕</button>
     </div>`;
   }
   return`<div class="vid-dash-row${sel?' vid-sel':''}" draggable="true" ondragstart="_vidDashDragStart(event,'${sid}')" data-vid="${sid}" onclick="vidRowClick(event,'${sid}')" ondblclick="openVidEdit('${sid}')" oncontextmenu="showVidCtx(event,'${sid}')">
@@ -162,8 +147,8 @@ function _vidDashRow(v,isChild,simple){
       ${v.group_name&&!isChild?`<span style="font-size:10px;color:var(--muted);margin-left:6px">${_esc(v.group_name)}</span>`:''}
     </div>
     <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
-      <div style="display:flex;gap:2px">${VID_STEPS.map(s=>`<div class="vid-step-dot${v[s]==='done'?' done':''}" title="${VID_STEP_LABELS[s]}" onclick="event.stopPropagation();cycleVidStep('${sid}','${s}')"></div>`).join('')}</div>
-      <button class="vid-del" onclick="event.stopPropagation();delVideo('${sid}')">✕</button>
+      <div style="display:flex;gap:2px">${VID_STEPS.map(s=>`<div class="vid-step-dot${v[s]==='done'?' done':''}" data-vid="${sid}" data-step="${s}" title="${VID_STEP_LABELS[s]}"></div>`).join('')}</div>
+      <button class="vid-del" data-vid="${sid}">✕</button>
     </div>
   </div>`;
 }
@@ -230,8 +215,8 @@ function _vidRow(v,isChild){
     <td><span class="vid-status-pill" style="background:${sc}20;color:${sc}">${v.status}</span></td>
     <td style="font-size:11px;color:var(--muted)">${durStr}</td>
     <td style="font-size:11px;color:var(--muted)">${postStr}</td>
-    ${VID_STEPS.map(s=>`<td style="text-align:center"><div class="vid-step-dot${v[s]==='done'?' done':''}" title="${VID_STEP_LABELS[s]}" onclick="event.stopPropagation();cycleVidStep('${sid}','${s}')"></div></td>`).join('')}
-    <td><button class="vid-del" onclick="event.stopPropagation();delVideo('${sid}')">✕</button></td>
+    ${VID_STEPS.map(s=>`<td style="text-align:center"><div class="vid-step-dot${v[s]==='done'?' done':''}" data-vid="${sid}" data-step="${s}" title="${VID_STEP_LABELS[s]}"></div></td>`).join('')}
+    <td><button class="vid-del" data-vid="${sid}">✕</button></td>
   </tr>`;
 }
 
