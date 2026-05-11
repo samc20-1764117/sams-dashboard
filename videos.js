@@ -20,11 +20,11 @@ function _vidSeqMap(orderedIds){
   orderedIds.forEach((id,i)=>{map[String(id)]=i+1;});
   return map;
 }
-// Build display-order ID list: only published videos get numbers
+// Build display-order ID list: videos with post_date get numbers
 function _vidOrderedIds(vids){
   const ids=[];
-  const pubOnly=vids.filter(v=>v.status==='published');
-  const sorted=_vidSortVids([...pubOnly]);
+  const dated=vids.filter(v=>v.post_date);
+  const sorted=_vidSortVids([...dated]);
   const seen=new Set();
   const lVids=sorted.filter(v=>v.video_type!=='B');
   sorted.forEach(v=>{
