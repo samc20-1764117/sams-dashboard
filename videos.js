@@ -102,54 +102,59 @@ function _vidRenderDashboard(){
   }
   return`
     <div style="display:flex;gap:20px;align-items:flex-start;margin-top:10px">
-      <div style="flex:1;min-width:0">
+      <div style="flex:1;min-width:0" ondragover="event.preventDefault()" ondrop="_vidDashDrop(event,'in_progress')">
         ${inProgress.length?`
         <div class="vid-dash-section">
           <div class="vid-dash-header" style="border-left-color:#f59e0b">In Progress <span class="vid-count">${inProgress.length}</span></div>
-          ${_vidDashList(inProgress)}
-        </div>`:'<div style="color:var(--muted);font-size:12px;padding:16px 0">No videos in progress</div>'}
+          ${_vidDashList(inProgress,false)}
+        </div>`:'<div class="vid-dash-section"><div class="vid-dash-header" style="border-left-color:#f59e0b">In Progress <span class="vid-count">0</span></div><div style="color:var(--muted);font-size:12px;padding:16px 0">Drag ideas here to start</div></div>'}
         ${backup.length?`
         <div class="vid-dash-section">
           <div class="vid-dash-header" style="border-left-color:#94a3b8">Backup <span class="vid-count">${backup.length}</span></div>
-          ${_vidDashList(backup)}
+          ${_vidDashList(backup,false)}
         </div>`:''}
       </div>
-      <div style="flex:1;min-width:0">
+      <div style="flex:1;min-width:0" ondragover="event.preventDefault()" ondrop="_vidDashDrop(event,'idea')">
         ${ideas.length?`
         <div class="vid-dash-section">
           <div class="vid-dash-header" style="border-left-color:#8b5cf6">Ideas <span class="vid-count">${ideas.length}</span></div>
-          ${_vidDashList(ideas)}
-        </div>`:'<div style="color:var(--muted);font-size:12px;padding:16px 0">No ideas yet</div>'}
+          ${_vidDashList(ideas,true)}
+        </div>`:'<div class="vid-dash-section"><div class="vid-dash-header" style="border-left-color:#8b5cf6">Ideas <span class="vid-count">0</span></div><div style="color:var(--muted);font-size:12px;padding:16px 0">No ideas yet</div></div>'}
       </div>
     </div>`;
 }
 
-function _vidDashList(vids){
-  // Group B with children
+function _vidDashList(vids,simple){
   const seen=new Set();
   let html='';
   const bVids=vids.filter(v=>v.video_type==='B');
   const lVids=vids.filter(v=>v.video_type!=='B');
   bVids.forEach(b=>{
     seen.add(String(b.id));
-    html+=_vidDashRow(b,false);
+    html+=_vidDashRow(b,false,simple);
     const children=lVids.filter(l=>l.group_name&&l.group_name===b.group_name);
-    children.forEach(l=>{seen.add(String(l.id));html+=_vidDashRow(l,true);});
+    children.forEach(l=>{seen.add(String(l.id));html+=_vidDashRow(l,true,simple);});
   });
-  lVids.filter(l=>!seen.has(String(l.id))).forEach(l=>{html+=_vidDashRow(l,false);});
+  lVids.filter(l=>!seen.has(String(l.id))).forEach(l=>{html+=_vidDashRow(l,false,simple);});
   return html;
 }
 
-function _vidDashRow(v,isChild){
+function _vidDashRow(v,isChild,simple){
   const sid=String(v.id);
   const sel=_vidSelected.has(sid);
   const indent=isChild?'padding-left:20px;':'';
   const childMark=isChild?'<span style="color:var(--muted);font-size:10px;margin-right:4px">└</span>':'';
+  if(simple){
+    return`<div class="vid-dash-row${sel?' vid-sel':''}" draggable="true" ondragstart="_vidDashDragStart(event,'${sid}')" data-vid="${sid}" onclick="vidRowClick(event,'${sid}')" ondblclick="openVidEdit('${sid}')" oncontextmenu="showVidCtx(event,'${sid}')">
+      <span class="vid-type-badge" style="background:${v.video_type==='B'?'#0ea5e9':'#a78bfa'};color:#fff">${v.video_type||'?'}</span>
+      <div style="flex:1;min-width:0;${indent}">${childMark}<span class="vid-title-text">${_esc(v.title)}</span></div>
+      <button class="vid-del" onclick="event.stopPropagation();delVideo('${sid}')">✕</button>
+    </div>`;
+  }
   const doneSteps=VID_STEPS.filter(s=>v[s]==='done').length;
-  const totalSteps=VID_STEPS.filter(s=>v[s]!=='na'&&v[s]!=='not_started').length||VID_STEPS.length;
   const applicableSteps=VID_STEPS.filter(s=>v[s]!=='na').length;
   const pct=applicableSteps?Math.round(doneSteps/applicableSteps*100):0;
-  return`<div class="vid-dash-row${sel?' vid-sel':''}" data-vid="${sid}" onclick="vidRowClick(event,'${sid}')" ondblclick="openVidEdit('${sid}')" oncontextmenu="showVidCtx(event,'${sid}')">
+  return`<div class="vid-dash-row${sel?' vid-sel':''}" draggable="true" ondragstart="_vidDashDragStart(event,'${sid}')" data-vid="${sid}" onclick="vidRowClick(event,'${sid}')" ondblclick="openVidEdit('${sid}')" oncontextmenu="showVidCtx(event,'${sid}')">
     <span class="vid-type-badge" style="background:${v.video_type==='B'?'#0ea5e9':'#a78bfa'};color:#fff">${v.video_type||'?'}</span>
     <div style="flex:1;min-width:0;${indent}">
       ${childMark}<span class="vid-title-text">${_esc(v.title)}</span>
@@ -161,6 +166,19 @@ function _vidDashRow(v,isChild){
       <button class="vid-del" onclick="event.stopPropagation();delVideo('${sid}')">✕</button>
     </div>
   </div>`;
+}
+
+let _vidDashDragId=null;
+function _vidDashDragStart(e,id){_vidDashDragId=id;e.dataTransfer.effectAllowed='move';}
+async function _vidDashDrop(e,newStatus){
+  e.preventDefault();
+  if(!_vidDashDragId)return;
+  const v=(st.videos||[]).find(x=>String(x.id)===_vidDashDragId);if(!v)return;
+  const prev=v.status;
+  if(prev===newStatus){_vidDashDragId=null;return;}
+  pushUndo();v.status=newStatus;save();renderVideosPage();
+  await sbReqSilent('PATCH','videos',{status:newStatus},`?id=eq.${v.id}`);
+  _vidDashDragId=null;
 }
 
 // ── TABLE VIEW (All Details) ─────────────────────────────────────────────────
