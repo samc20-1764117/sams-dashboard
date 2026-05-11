@@ -178,8 +178,18 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 
 /* Blocks */
 .m-tl-block{position:absolute;left:4px;right:4px;border-radius:8px;padding:4px 8px 4px 7px;overflow:hidden;cursor:pointer;display:flex;align-items:flex-start;gap:3px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:inset 0 1px 0 rgba(255,255,255,.72),0 2px 8px rgba(0,0,0,.07)}
+.m-tl-block.m-done-block{opacity:.45}
+.m-tl-block.m-done-block .m-tl-block-name{text-decoration:line-through}
 .m-tl-block-name{font-size:12px;font-weight:600;line-height:1.3;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .m-tl-block-time{font-size:10px;font-weight:600;flex-shrink:0;white-space:nowrap;line-height:1.3;align-self:flex-start;opacity:.8;padding-right:4px}
+.m-tb-chk{width:12px;height:12px;border-radius:50%;border:1.5px solid rgba(180,170,210,.5);cursor:pointer;appearance:none;-webkit-appearance:none;flex-shrink:0;background:rgba(255,255,255,.8);transition:all .2s;margin-right:1px;align-self:center;margin-top:0}
+.m-tb-chk:checked{background:#a3c41a;border-color:#a3c41a;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M3.5 8l3 3 6-6' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")}
+.m-auto-block{background:rgba(245,244,250,.28)!important;border:1px solid rgba(180,175,200,.18)!important;border-left:3px solid rgba(180,175,200,.35)!important}
+.m-auto-block .m-tl-block-name{color:#b0aec0!important}
+.m-auto-block .m-tl-block-time{color:#c8c6d4!important}
+.m-rec-auto-block{background:rgba(221,244,240,.45)!important;border:1px solid rgba(42,157,181,.3)!important;border-left:3px solid rgba(42,157,181,.4)!important}
+.m-rec-auto-block .m-tl-block-name{color:#0f6b7a!important}
+.m-rec-auto-block .m-tl-block-time{color:#2a9db5!important}
 
 /* Now line */
 .m-tl-now{position:absolute;left:0;right:0;height:2px;background:var(--accent);border-radius:1px;pointer-events:none}

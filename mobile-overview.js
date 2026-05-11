@@ -730,13 +730,23 @@ function mRenderTimeline() {
   let html = todayBlocks.map(b => {
     const y    = (b.sm - M_TB_START) * M_PX;
     const hPx  = Math.max(b.dur * M_PX, 28);
+    // Derive done from linked item (authoritative)
+    const linkedTask = b.taskId ? st.tasks.find(x => String(x.id) === String(b.taskId)) : null;
+    const linkedRec = b.recId ? (st.recurring.find(x => String(x.id) === String(b.recId)) || (st.wrRules || []).find(x => String(x.id) === String(b.recId))) : null;
+    const linkedShop = b.shopId ? st.shopping.find(x => String(x.id) === String(b.shopId)) : null;
+    const _wrRuleId = b.ruleId || (b.recId && (st.wrRules || []).some(x => String(x.id) === String(b.recId)) ? b.recId : null);
+    if (linkedTask) b._done = !!linkedTask.done;
+    else if (_wrRuleId) b._done = isDoneWRRule(_wrRuleId, dsToWkKey(b.ds));
+    else if (linkedRec && linkedRec._doneByWk) b._done = !!linkedRec._doneByWk[dsToWkKey(b.ds)];
+    else if (linkedShop) b._done = !!linkedShop.done;
+    const displayName = (linkedTask && linkedTask.name) || (linkedRec && linkedRec.name) || (linkedShop && linkedShop.name) || b.title;
     const s    = gc(b.cat || '');
     const timeRange = `${_mTStr(b.sm)}–${_mTStr(b.sm + b.dur)}`;
-    const doneStyle = b._done ? 'opacity:.45;' : '';
-    const nameDecor = b._done ? 'text-decoration:line-through;' : '';
-    return `<div class="m-tl-block" data-bid="${b.id}" style="${doneStyle}top:${y}px;height:${hPx}px;background:${s.bg};border:1px solid rgba(255,255,255,.55);border-left:3px solid ${s.d}">
+    const doneClass = b._done ? ' m-done-block' : '';
+    return `<div class="m-tl-block${doneClass}" data-bid="${b.id}" style="top:${y}px;height:${hPx}px;background:${s.bg};border:1px solid rgba(255,255,255,.55);border-left:3px solid ${s.d}">
+      <input type="checkbox" class="m-tb-chk" data-bid="${b.id}" ${b._done ? 'checked' : ''}>
       <div style="overflow:hidden;flex:1;min-width:0;pointer-events:none">
-        <div class="m-tl-block-name" style="${nameDecor}color:${s.t}">${escHtml(b.title || '')}</div>
+        <div class="m-tl-block-name" style="color:${s.t}">${escHtml(displayName || '')}</div>
       </div>
       <span class="m-tl-block-time" style="color:${s.d};pointer-events:none">${timeRange}</span>
     </div>`;
@@ -759,11 +769,11 @@ function mRenderTimeline() {
         const dur = Math.max(15, endMin - startMin);
         const y = (startMin - M_TB_START) * M_PX;
         const hPx = Math.max(dur * M_PX, 28);
-        html += `<div class="m-tl-block m-auto-block" style="top:${y}px;height:${hPx}px;background:rgba(124,106,247,.12);border:1px dashed rgba(124,106,247,.35);border-left:3px solid rgba(124,106,247,.5)">
+        html += `<div class="m-tl-block m-auto-block" style="top:${y}px;height:${hPx}px">
           <div style="overflow:hidden;flex:1;min-width:0;pointer-events:none">
-            <div class="m-tl-block-name" style="color:rgba(124,106,247,.8)">${escHtml(a.label || '')}</div>
+            <div class="m-tl-block-name">${escHtml(a.label || '')}</div>
           </div>
-          <span class="m-tl-block-time" style="color:rgba(124,106,247,.6);pointer-events:none">${_mTStr(startMin)}–${_mTStr(startMin + dur)}</span>
+          <span class="m-tl-block-time" style="pointer-events:none">${_mTStr(startMin)}–${_mTStr(startMin + dur)}</span>
         </div>`;
       });
     }
@@ -795,11 +805,11 @@ function mRenderTimeline() {
     const dur = Math.max(15, endMin - startMin);
     const y = (startMin - M_TB_START) * M_PX;
     const hPx = Math.max(dur * M_PX, 28);
-    html += `<div class="m-tl-block m-rec-auto-block" style="top:${y}px;height:${hPx}px;background:rgba(124,106,247,.08);border:1px dashed rgba(124,106,247,.3);border-left:3px solid rgba(124,106,247,.4)">
+    html += `<div class="m-tl-block m-rec-auto-block" style="top:${y}px;height:${hPx}px">
       <div style="overflow:hidden;flex:1;min-width:0;pointer-events:none">
-        <div class="m-tl-block-name" style="color:rgba(124,106,247,.7)">${escHtml(v.name || '')}</div>
+        <div class="m-tl-block-name">${escHtml(v.name || '')}</div>
       </div>
-      <span class="m-tl-block-time" style="color:rgba(124,106,247,.5);pointer-events:none">${_mTStr(startMin)}–${_mTStr(startMin + dur)}</span>
+      <span class="m-tl-block-time" style="pointer-events:none">${_mTStr(startMin)}–${_mTStr(startMin + dur)}</span>
     </div>`;
   });
 
