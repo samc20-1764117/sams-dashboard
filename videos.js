@@ -18,8 +18,8 @@ const VID_STEP_COLORS={done:'#10b981',in_progress:'#f59e0b',not_started:'transpa
 function _vidSeqMap(){
   const map={};
   const all=(st.videos||[]).filter(v=>!v.is_deleted&&v.status!=='idea');
-  // Top-level = B videos + standalone L (no big_video_id). Children = L with big_video_id.
-  const topLevel=all.filter(v=>!v.big_video_id).sort((a,b)=>(a.post_date||'9999').localeCompare(b.post_date||'9999'));
+  // Top-level = B videos (always) + standalone L (no big_video_id). Children = L with big_video_id.
+  const topLevel=all.filter(v=>v.video_type==='B'||!v.big_video_id).sort((a,b)=>(a.post_date||'9999').localeCompare(b.post_date||'9999'));
   const numbered=new Set();
   let n=1;
   topLevel.forEach(t=>{
