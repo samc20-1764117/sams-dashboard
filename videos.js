@@ -56,6 +56,16 @@ function _vidDateColor(d,v){
 }
 
 // ── Main Render ──────────────────────────────────────────────────────────────
+function _vidScrollEl(){
+  const pg=document.getElementById('page-videos');if(!pg)return null;
+  const card=pg.querySelector('.card');if(!card)return null;
+  return card.querySelector('div')||null;
+}
+function renderVideosPageKeepScroll(){
+  const se=_vidScrollEl();const top=se?se.scrollTop:0;
+  renderVideosPage();
+  const se2=_vidScrollEl();if(se2)se2.scrollTop=top;
+}
 function renderVideosPage(){
   const el=document.getElementById('page-videos');if(!el)return;
   if(!st.videos)st.videos=[];
@@ -581,9 +591,9 @@ function vidCellEdit(td,id,field){
     const prev=v[field]??null;
     if(val===prev){td.innerHTML=origHtml;return;}
     v[field]=val;save();
-    pushUndo(async()=>{v[field]=prev;save();renderVideosPage();await sbReqSilent('PATCH','videos',{[field]:prev},`?id=eq.${id}`);},'Edit '+field);
+    pushUndo(async()=>{v[field]=prev;save();renderVideosPageKeepScroll();await sbReqSilent('PATCH','videos',{[field]:prev},`?id=eq.${id}`);},'Edit '+field);
     await sbReqSilent('PATCH','videos',{[field]:val},`?id=eq.${id}`);
-    renderVideosPage();
+    renderVideosPageKeepScroll();
   };
   el.onblur=doSave;
   el.onkeydown=ev=>{if(ev.key==='Enter'){ev.preventDefault();el.blur();}if(ev.key==='Escape'){saved=true;td._editing=false;td.innerHTML=origHtml;}};
@@ -745,8 +755,8 @@ async function cycleVidStep(id,step){
   }
   const patch={[step]:next};
   if(v.status!==prevStatus)patch.status=v.status;
-  save();renderVideosPage();
-  pushUndo(async()=>{v[step]=prev;v.status=prevStatus;save();renderVideosPage();await sbReqSilent('PATCH','videos',{[step]:prev,status:prevStatus},`?id=eq.${id}`);},'Step change');
+  save();renderVideosPageKeepScroll();
+  pushUndo(async()=>{v[step]=prev;v.status=prevStatus;save();renderVideosPageKeepScroll();await sbReqSilent('PATCH','videos',{[step]:prev,status:prevStatus},`?id=eq.${id}`);},'Step change');
   await sbReqSilent('PATCH','videos',patch,`?id=eq.${id}`);
 }
 
