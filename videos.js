@@ -115,10 +115,10 @@ function _vidRenderDashboard(){
     inProgress=inProgress.filter(match);ideas=ideas.filter(match);
   }
   return`
-    <div style="display:flex;gap:12px;padding:0;height:100%">
+    <div style="display:flex;gap:0;padding:0;height:100%">
       <div style="flex:2;min-width:0;display:flex;flex-direction:column;border-right:1px solid var(--border)" ondragover="event.preventDefault()" ondrop="_vidDashDrop(event,'in_progress')">
         <div class="vid-dash-header">In Progress <span class="vid-count">${inProgress.length}</span>
-          ${inProgress.length?`<span style="float:right;display:flex;gap:2px;margin-right:20px">${VID_STEPS.map(s=>`<span style="width:14px;text-align:center;font-size:7px;font-weight:600" title="${VID_STEP_LABELS[s]}">${VID_STEP_LABELS[s].slice(0,2)}</span>`).join('')}</span>`:''}</div>
+          ${inProgress.length?`<span style="float:right;display:flex;gap:0;margin-right:26px">${VID_STEPS.map(s=>`<span style="width:28px;text-align:center;font-size:9px" title="${VID_STEP_LABELS[s]}">${VID_STEP_LABELS[s].slice(0,2)}</span>`).join('')}</span>`:''}</div>
         <div style="flex:1;min-height:0;overflow-y:auto">
           ${inProgress.length?_vidDashList(inProgress,false):'<div style="color:var(--muted);font-size:12px;padding:16px 10px">Drag ideas here to start</div>'}
         </div>
@@ -173,7 +173,7 @@ function _vidDashRow(v,isChild,simple){
     </div>
     <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
       ${postStr?`<span style="font-size:10px;color:${_vidDateColor(v.post_date)}">${postStr}</span>`:''}
-      <div style="display:flex;gap:2px">${VID_STEPS.map(s=>`<div class="vid-step-dot${v[s]==='done'?' done':v[s]==='na'?' na':''}" data-vid="${sid}" data-step="${s}" title="${VID_STEP_LABELS[s]}"></div>`).join('')}</div>
+      <div style="display:flex;gap:0">${VID_STEPS.map(s=>`<div style="width:28px;text-align:center"><div class="vid-step-dot${v[s]==='done'?' done':v[s]==='na'?' na':''}" data-vid="${sid}" data-step="${s}" title="${VID_STEP_LABELS[s]}"></div></div>`).join('')}</div>
       <button class="vid-del" data-vid="${sid}">✕</button>
     </div>
   </div>`;
