@@ -17,8 +17,22 @@ const VID_STEP_COLORS={done:'#10b981',in_progress:'#f59e0b',not_started:'transpa
 // Use DB id as display number
 function _vidSeqMap(){
   const map={};
-  const dated=(st.videos||[]).filter(v=>!v.is_deleted&&v.status!=='idea').sort((a,b)=>(a.post_date||'9999')< (b.post_date||'9999')?-1:1);
-  dated.forEach((v,i)=>{map[String(v.id)]=i+1;});
+  const all=(st.videos||[]).filter(v=>!v.is_deleted&&v.status!=='idea');
+  const bMap={};
+  all.forEach(v=>{if(v.video_type==='B')bMap[String(v.id)]=v;});
+  // Sort B videos by post_date to determine group order
+  const bVids=all.filter(v=>v.video_type==='B'&&v.post_date).sort((a,b)=>a.post_date.localeCompare(b.post_date));
+  let n=1;
+  bVids.forEach(b=>{
+    map[String(b.id)]=n++;
+    const children=all.filter(v=>v.big_video_id&&String(v.big_video_id)===String(b.id)&&v.post_date)
+      .sort((a,c)=>a.post_date.localeCompare(c.post_date));
+    children.forEach(c=>{map[String(c.id)]=n++;});
+  });
+  // Standalone (no parent, not B) with post_date
+  all.filter(v=>v.video_type!=='B'&&!v.big_video_id&&v.post_date)
+    .sort((a,b)=>a.post_date.localeCompare(b.post_date))
+    .forEach(v=>{map[String(v.id)]=n++;});
   return map;
 }
 
@@ -269,18 +283,17 @@ function _vidSortVids(vids){
     const bMap={};
     allVids.forEach(v=>{if(v.video_type==='B')bMap[String(v.id)]=v;});
     sorted.sort((a,b)=>{
-      // Group key = parent B video's id, or own id if standalone/B
-      const aParentId=a.video_type==='B'?a.id:a.big_video_id||null;
-      const bParentId=b.video_type==='B'?b.id:b.big_video_id||null;
-      // Standalone (no parent) sorts by own post_date among groups
-      const aGroupId=aParentId||99999;
-      const bGroupId=bParentId||99999;
-      // Different groups — sort by B video id (creation order)
-      if(aGroupId!==bGroupId){
-        if(!aParentId)return 1; // standalone after grouped
-        if(!bParentId)return-1;
-        return aGroupId-bGroupId;
-      }
+      // Group key = parent B video's post_date
+      const aParent=a.video_type==='B'?a:a.big_video_id?bMap[String(a.big_video_id)]:null;
+      const bParent=b.video_type==='B'?b:b.big_video_id?bMap[String(b.big_video_id)]:null;
+      const aGroupDate=aParent?aParent.post_date||'9999':a.post_date||'9999';
+      const bGroupDate=bParent?bParent.post_date||'9999':b.post_date||'9999';
+      // Different groups — sort by B video's post_date
+      if(aGroupDate!==bGroupDate)return aGroupDate.localeCompare(bGroupDate);
+      // Same group date but different groups (tie-break by B id)
+      const aGroupId=aParent?aParent.id:99999;
+      const bGroupId=bParent?bParent.id:99999;
+      if(aGroupId!==bGroupId)return aGroupId-bGroupId;
       // Same group — B first, then children by post_date
       const aIsB=a.video_type==='B'?0:1;
       const bIsB=b.video_type==='B'?0:1;
