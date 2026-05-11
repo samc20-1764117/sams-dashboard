@@ -20,19 +20,20 @@ function _vidSeqMap(orderedIds){
   orderedIds.forEach((id,i)=>{map[String(id)]=i+1;});
   return map;
 }
-// Build display-order ID list: B→children grouped, sorted by B post_date
+// Build display-order ID list: only published videos get numbers
 function _vidOrderedIds(vids){
   const ids=[];
-  const sorted=_vidSortVids([...vids]);
+  const pubOnly=vids.filter(v=>v.status==='published');
+  const sorted=_vidSortVids([...pubOnly]);
   const seen=new Set();
   const lVids=sorted.filter(v=>v.video_type!=='B');
   sorted.forEach(v=>{
     if(seen.has(String(v.id)))return;
     seen.add(String(v.id));
-    if(v.status!=='idea')ids.push(v.id);
+    ids.push(v.id);
     if(v.video_type==='B'){
       lVids.filter(l=>String(l.big_video_id)===String(v.id)&&!seen.has(String(l.id)))
-        .forEach(l=>{seen.add(String(l.id));if(l.status!=='idea')ids.push(l.id);});
+        .forEach(l=>{seen.add(String(l.id));ids.push(l.id);});
     }
   });
   return ids;
