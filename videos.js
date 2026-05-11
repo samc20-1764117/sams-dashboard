@@ -285,7 +285,7 @@ function _vidRenderTable(){
         <th style="width:50px;${thStyle}" onclick="vidTblSort('duration')">Dur${_vidSortArrow('duration')}</th>
         <th style="width:62px;${thStyle}" onclick="vidTblSort('posted')">Posted${_vidSortArrow('posted')}</th>
         ${VID_STEPS.map(s=>`<th style="width:28px;text-align:center;font-size:9px" title="${VID_STEP_LABELS[s]}">${VID_STEP_LABELS[s].slice(0,2)}</th>`).join('')}
-        <th style="width:28px"><button class="vid-filter-btn${_vidShowCompleted?' active':''}" onclick="_vidToggleCompleted()" style="font-size:9px;padding:2px 4px;border-radius:4px" title="${_vidShowCompleted?'Hide':'Show'} Completed">${_vidShowCompleted?'−':'+'}</button></th>
+        <th style="width:36px"><button onclick="_vidToggleCompleted()" style="font-size:14px;font-weight:700;width:24px;height:24px;line-height:22px;text-align:center;border-radius:6px;border:1.5px solid var(--border);background:${_vidShowCompleted?'rgba(14,165,233,.12)':'var(--bg)'};color:${_vidShowCompleted?'#0ea5e9':'var(--muted)'};cursor:pointer" title="${_vidShowCompleted?'Hide':'Show'} Completed">${_vidShowCompleted?'−':'+'}</button></th>
       </tr></thead>
       <tbody>${groupedHtml}</tbody>
     </table>
@@ -333,7 +333,7 @@ function _vidRow(v,isChild,postMap){
   const postStr=_vidPostStr(v.post_date,true);
   const durStr=v.duration_minutes?v.duration_minutes.toFixed(1):'';
   const isSmall=v.video_type==='L'&&v.group_name;
-  const indent=isChild?'padding-left:24px;':'padding-left:10px;';
+  const indent=isChild?'padding-left:32px;':'padding-left:16px;';
   const childMark=isChild?'<span style="color:var(--muted);font-size:10px;margin-right:4px">└</span>':'';
   const titleColor=isSmall?'color:var(--muted);':'';
   const postNum=postMap&&postMap[sid];
