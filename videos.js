@@ -6,6 +6,7 @@ let _vidFilter='all';
 let _vidGroupFilter='all';
 let _vidSearch='';
 let _vidView='dashboard'; // dashboard | table | board | groups
+let _vidSortCol=null,_vidSortDir=1;
 
 const VID_STEPS=['step_build','step_record','step_film','step_cut','step_thumbnail','step_description','step_tableau_public','step_upload_tableau','step_answer_comments','step_short'];
 const VID_STEP_LABELS={step_build:'Build',step_record:'Rec',step_film:'Film',step_cut:'Cut',step_thumbnail:'Thumb',step_description:'Desc',step_tableau_public:'Tab Pub',step_upload_tableau:'Upload',step_answer_comments:'Ans',step_short:'Short'};
@@ -16,7 +17,7 @@ function _vidFiltered(){
   let vids=(st.videos||[]).filter(v=>!v.is_deleted);
   if(_vidFilter!=='all')vids=vids.filter(v=>v.status===_vidFilter);
   if(_vidGroupFilter!=='all')vids=vids.filter(v=>v.group_name===_vidGroupFilter);
-  if(_vidSearch){const q=_vidSearch.toLowerCase();vids=vids.filter(v=>(v.title||'').toLowerCase().includes(q)||(v.topic||'').toLowerCase().includes(q)||(v.group_name||'').toLowerCase().includes(q));}
+  if(_vidSearch){const q=_vidSearch.toLowerCase();vids=vids.filter(v=>(v.title||'').toLowerCase().includes(q)||(v.topic||'').toLowerCase().includes(q)||(v.group_name||'').toLowerCase().includes(q)||(v.playlist||'').toLowerCase().includes(q));}
   return vids;
 }
 
@@ -31,9 +32,10 @@ function _vidStats(){
   return{total:vids.length,published:vids.filter(v=>v.status==='published').length,in_progress:vids.filter(v=>v.status==='in_progress').length,idea:vids.filter(v=>v.status==='idea').length,backup:vids.filter(v=>v.status==='backup').length};
 }
 
-function _vidPostStr(d){
+function _vidPostStr(d,withYear){
   if(!d)return'';
   const dt=new Date(d+'T12:00:00');
+  if(withYear)return(dt.getMonth()+1)+'/'+dt.getDate()+'/'+String(dt.getFullYear()).slice(2);
   return(dt.getMonth()+1)+'/'+dt.getDate();
 }
 
@@ -176,16 +178,53 @@ async function _vidDashDrop(e,newStatus){
 }
 
 // ── TABLE VIEW (All Details) ─────────────────────────────────────────────────
+function _vidSortArrow(col){if(_vidSortCol!==col)return'';return _vidSortDir===1?' ▲':' ▼';}
+function vidTblSort(col){
+  if(_vidSortCol!==col){_vidSortCol=col;_vidSortDir=1;}
+  else if(_vidSortDir===1){_vidSortDir=-1;}
+  else{_vidSortCol=null;_vidSortDir=1;}
+  renderVideosPage();
+}
+function _vidSortVids(vids){
+  const sorted=[...vids];
+  if(_vidSortCol){
+    const col=_vidSortCol,dir=_vidSortDir;
+    sorted.sort((a,b)=>{
+      let av,bv;
+      if(col==='title'){av=(a.title||'').toLowerCase();bv=(b.title||'').toLowerCase();}
+      else if(col==='group'){av=(a.group_name||'').toLowerCase();bv=(b.group_name||'').toLowerCase();}
+      else if(col==='playlist'){av=(a.playlist||'').toLowerCase();bv=(b.playlist||'').toLowerCase();}
+      else if(col==='status'){av=a.status||'';bv=b.status||'';}
+      else if(col==='duration'){av=a.duration_minutes||0;bv=b.duration_minutes||0;}
+      else if(col==='posted'){av=a.post_date||'';bv=b.post_date||'';}
+      else{av='';bv='';}
+      if(!av&&!bv)return 0;if(!av)return 1;if(!bv)return-1;
+      return av<bv?-dir:av>bv?dir:0;
+    });
+  }else{
+    // Default: post_date desc, nulls last
+    sorted.sort((a,b)=>{
+      if(!a.post_date&&!b.post_date)return 0;
+      if(!a.post_date)return 1;if(!b.post_date)return-1;
+      return b.post_date.localeCompare(a.post_date);
+    });
+  }
+  return sorted;
+}
 function _vidRenderTable(){
   const vids=_vidFiltered();
-  const groupedHtml=_vidBuildRows(vids);
+  const sorted=_vidSortVids(vids);
+  const groupedHtml=_vidSortCol?sorted.map(v=>_vidRow(v,false)).join(''):_vidBuildRows(sorted);
+  const thStyle='cursor:pointer;user-select:none';
   return`<div style="overflow-x:auto;margin-top:4px">
     <table class="vid-tbl">
       <thead><tr>
-        <th>Title</th>
-        <th style="width:70px">Status</th>
-        <th style="width:50px">Dur</th>
-        <th style="width:52px">Posted</th>
+        <th style="${thStyle}" onclick="vidTblSort('title')">Title${_vidSortArrow('title')}</th>
+        <th style="width:80px;${thStyle}" onclick="vidTblSort('group')">Group${_vidSortArrow('group')}</th>
+        <th style="width:90px;${thStyle}" onclick="vidTblSort('playlist')">Playlist${_vidSortArrow('playlist')}</th>
+        <th style="width:70px;${thStyle}" onclick="vidTblSort('status')">Status${_vidSortArrow('status')}</th>
+        <th style="width:50px;${thStyle}" onclick="vidTblSort('duration')">Dur${_vidSortArrow('duration')}</th>
+        <th style="width:62px;${thStyle}" onclick="vidTblSort('posted')">Posted${_vidSortArrow('posted')}</th>
         ${VID_STEPS.map(s=>`<th style="width:28px;text-align:center;font-size:9px" title="${VID_STEP_LABELS[s]}">${VID_STEP_LABELS[s].slice(0,2)}</th>`).join('')}
         <th style="width:28px"></th>
       </tr></thead>
@@ -213,12 +252,14 @@ function _vidRow(v,isChild){
   const sid=String(v.id);
   const sel=_vidSelected.has(sid);
   const sc=VID_STATUS_COLORS[v.status]||'#94a3b8';
-  const postStr=_vidPostStr(v.post_date);
+  const postStr=_vidPostStr(v.post_date,true);
   const durStr=v.duration_minutes?v.duration_minutes.toFixed(1):'';
   const indent=isChild?'padding-left:24px;':'';
   const childMark=isChild?'<span style="color:var(--muted);font-size:10px;margin-right:4px">└</span>':'';
   return`<tr class="vid-row${sel?' vid-sel':''}" data-vid="${sid}" onclick="vidRowClick(event,'${sid}')" ondblclick="openVidEdit('${sid}')" oncontextmenu="showVidCtx(event,'${sid}')">
     <td style="${indent}${!isChild?'font-weight:600;':''}">${childMark}<span class="vid-title-text">${_esc(v.title)}</span></td>
+    <td style="font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:80px" title="${_esc(v.group_name||'')}">${_esc(v.group_name||'')}</td>
+    <td style="font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:90px" title="${_esc(v.playlist||'')}">${_esc(v.playlist||'')}</td>
     <td><span class="vid-status-pill" style="background:${sc}20;color:${sc}">${v.status}</span></td>
     <td style="font-size:11px;color:var(--muted)">${durStr}</td>
     <td style="font-size:11px;color:var(--muted)">${postStr}</td>
