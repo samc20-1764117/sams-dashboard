@@ -49,17 +49,16 @@ function renderVideosPage(){
   if(_vidView==='dashboard')bodyHtml=_vidRenderDashboard();
   else if(_vidView==='table')bodyHtml=_vidRenderTable();
   else if(_vidView==='board')bodyHtml=_vidRenderBoard();
-  else if(_vidView==='groups')bodyHtml=_vidRenderGroups();
+  if(_vidView==='groups'){_vidView='dashboard';bodyHtml=_vidRenderDashboard();}
 
   el.innerHTML=`
     <div class="ov-topbar"><div class="ov-topbar-left"><span class="ov-topbar-label">🎬 Videos</span><span class="ov-topbar-dot"></span></div><span class="ov-topbar-date topbar-date"></span><div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div></div>
-    <div style="display:flex;flex-direction:column;height:calc(100vh - 80px)">
+    <div style="display:flex;flex-direction:column;height:calc(100vh - 60px)">
     <div style="display:flex;gap:10px;align-items:center;margin:14px 0 6px;flex-wrap:wrap;position:relative;z-index:2;flex-shrink:0">
       <div style="display:flex;gap:2px;background:var(--glass);border:1px solid var(--border);border-radius:8px;padding:2px">
         <button class="${viewBtnS('dashboard')}" onclick="_vidSetView('dashboard')">Dashboard</button>
         <button class="${viewBtnS('table')}" onclick="_vidSetView('table')">All Details</button>
         <button class="${viewBtnS('board')}" onclick="_vidSetView('board')">Board</button>
-        <button class="${viewBtnS('groups')}" onclick="_vidSetView('groups')">Groups</button>
       </div>
       ${_vidView==='table'?`
       <div style="display:flex;gap:4px">
@@ -81,6 +80,9 @@ function renderVideosPage(){
     ${bodyHtml}
     </div>
     </div>`;
+  const now=new Date();
+  el.querySelectorAll('.topbar-date').forEach(e=>e.textContent=now.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}));
+  el.querySelectorAll('.topbar-time').forEach(e=>e.textContent=now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}));
 }
 
 // ── DASHBOARD VIEW (default — In Progress + Ideas) ───────────────────────────
