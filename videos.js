@@ -81,13 +81,15 @@ function renderVideosPage(){
       </div>
       <button class="btn btn-dark" onclick="openVidModal()" style="padding:5px 14px;font-size:12px">+ Add Video</button>
     </div>
-    ${bodyHtml}`;
+    <div id="vidScrollBody" style="overflow-y:auto;height:calc(100vh - 130px);padding-bottom:20px">
+    ${bodyHtml}
+    </div>`;
+  // Force scroll container to be scrollable
+  const sb=document.getElementById('vidScrollBody');
+  if(sb)sb.addEventListener('wheel',function(e){this.scrollTop+=e.deltaY;},{passive:true});
   const now=new Date();
   el.querySelectorAll('.topbar-date').forEach(e=>e.textContent=now.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}));
   el.querySelectorAll('.topbar-time').forEach(e=>e.textContent=now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}));
-  // Disable #main scroll so page-videos handles it
-  const mainEl=document.getElementById('main');
-  if(mainEl){mainEl.style.overflowY='hidden';}
 }
 
 // ── DASHBOARD VIEW (default — In Progress + Ideas) ───────────────────────────
