@@ -7,6 +7,7 @@ let _vidGroupFilter='all';
 let _vidSearch='';
 let _vidView='dashboard'; // dashboard | table | board | groups
 let _vidSortCol=null,_vidSortDir=1,_vidShowCompleted=false;
+let _vidMonthOffset=0; // 0=current month, -1=last month, etc
 
 const VID_STEPS=['step_build','step_record','step_film','step_cut','step_thumbnail','step_description','step_tableau_public','step_upload_tableau'];
 const VID_STEP_LABELS={step_build:'Build',step_record:'Rec',step_film:'Film',step_cut:'Cut',step_thumbnail:'Thumb',step_description:'Desc',step_tableau_public:'Tab Pub',step_upload_tableau:'Upload'};
@@ -51,6 +52,7 @@ function renderVideosPage(){
   if(_vidView==='dashboard')bodyHtml=_vidRenderDashboard();
   else if(_vidView==='table')bodyHtml=_vidRenderTable();
   else if(_vidView==='board')bodyHtml=_vidRenderBoard();
+  else if(_vidView==='monthly')bodyHtml=_vidRenderMonthly();
   if(_vidView==='groups'){_vidView='dashboard';bodyHtml=_vidRenderDashboard();}
 
   // Use the exact same pattern as recipes page (features.js line 2130-2139)
@@ -63,6 +65,7 @@ function renderVideosPage(){
           <button class="${viewBtnS('dashboard')}" onclick="_vidSetView('dashboard')">Dashboard</button>
           <button class="${viewBtnS('table')}" onclick="_vidSetView('table')">All Details</button>
           <button class="${viewBtnS('board')}" onclick="_vidSetView('board')">Videos by Progress</button>
+          <button class="${viewBtnS('monthly')}" onclick="_vidSetView('monthly')">Monthly</button>
         </div>
         <input id="vidSearchInput" type="text" placeholder="Search videos..." value="${_vidSearch.replace(/"/g,'&quot;')}" oninput="_vidSetSearch(this.value)" style="padding:5px 10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:12px;background:var(--bg);color:var(--text);outline:none;width:180px">
         <div style="flex:1"></div>
@@ -394,6 +397,62 @@ function _vidRenderGroups(){
   }
   html+='</div>';
   return html;
+}
+
+// ── MONTHLY VIEW ─────────────────────────────────────────────────────────────
+function _vidMonthNav(dir){_vidMonthOffset+=dir;renderVideosPage();}
+function _vidRenderMonthly(){
+  const now=new Date();
+  const viewDate=new Date(now.getFullYear(),now.getMonth()+_vidMonthOffset,1);
+  const year=viewDate.getFullYear(),month=viewDate.getMonth();
+  const monthStr=viewDate.toLocaleDateString('en-US',{month:'long',year:'numeric'});
+  const daysInMonth=new Date(year,month+1,0).getDate();
+  const firstDow=new Date(year,month,1).getDay();
+
+  const all=(st.videos||[]).filter(v=>!v.is_deleted&&v.post_date);
+  // Videos posted this month
+  const pad=n=>String(n).padStart(2,'0');
+  const mKey=`${year}-${pad(month+1)}`;
+  const monthVids=all.filter(v=>v.post_date.startsWith(mKey));
+  const byDay={};
+  monthVids.forEach(v=>{const d=parseInt(v.post_date.slice(8,10));(byDay[d]=byDay[d]||[]).push(v);});
+
+  // Stats for this month
+  const pubCount=monthVids.filter(v=>v.status==='published').length;
+  const totalCount=monthVids.length;
+
+  let cells='';
+  // Day-of-week headers
+  ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].forEach(d=>{
+    cells+=`<div style="text-align:center;font-size:10px;font-weight:600;color:var(--muted);padding:4px 0">${d}</div>`;
+  });
+  // Empty cells before first day
+  for(let i=0;i<firstDow;i++)cells+=`<div></div>`;
+  // Day cells
+  const todayStr=d2s(new Date());
+  for(let d=1;d<=daysInMonth;d++){
+    const dateStr=`${year}-${pad(month+1)}-${pad(d)}`;
+    const isToday=dateStr===todayStr;
+    const vids=byDay[d]||[];
+    const dayStyle=isToday?'border:1.5px solid #0ea5e9;':'border:1px solid var(--border);';
+    cells+=`<div style="${dayStyle}border-radius:6px;min-height:60px;padding:3px;overflow:hidden">
+      <div style="font-size:10px;font-weight:600;color:${isToday?'#0ea5e9':'var(--muted)'};margin-bottom:2px">${d}</div>
+      ${vids.map(v=>{
+        const sc=VID_STATUS_COLORS[v.status]||'#94a3b8';
+        const isB=v.video_type==='B';
+        return`<div style="font-size:9px;padding:2px 3px;margin-bottom:1px;border-radius:3px;background:${sc}15;color:${sc};cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;${isB?'font-weight:600;':''}" title="${_esc(v.title)}" ondblclick="openVidEdit('${v.id}')">${v.number?'#'+v.number+' ':''}${_esc(v.title)}</div>`;
+      }).join('')}
+    </div>`;
+  }
+
+  return`<div style="padding:8px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <button class="vid-filter-btn" onclick="_vidMonthNav(-1)" style="padding:3px 10px">← Prev</button>
+      <span style="font-size:14px;font-weight:700;color:var(--text)">${monthStr} <span style="font-size:11px;font-weight:400;color:var(--muted)">${pubCount} published · ${totalCount} total</span></span>
+      <button class="vid-filter-btn" onclick="_vidMonthNav(1)" style="padding:3px 10px">Next →</button>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px">${cells}</div>
+  </div>`;
 }
 
 // ── View / Filter ────────────────────────────────────────────────────────────
