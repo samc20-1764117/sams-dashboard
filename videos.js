@@ -75,13 +75,16 @@ function renderVideosPage(){
   const now=new Date();
   el.querySelectorAll('.topbar-date').forEach(e=>e.textContent=now.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}));
   el.querySelectorAll('.topbar-time').forEach(e=>e.textContent=now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}));
-  // Bind step dot clicks via delegation (inline onclick can fail)
-  el.addEventListener('click',function(e){
-    const dot=e.target.closest('.vid-step-dot');
-    if(dot){e.stopPropagation();const vid=dot.dataset.vid;const step=dot.dataset.step;if(vid&&step)cycleVidStep(vid,step);return;}
-    const del=e.target.closest('.vid-del');
-    if(del){e.stopPropagation();const vid=del.dataset.vid;if(vid)delVideo(vid);return;}
-  });
+  // Bind step dot + delete clicks via delegation (only once)
+  if(!el._vidClickBound){
+    el._vidClickBound=true;
+    el.addEventListener('click',function(e){
+      const dot=e.target.closest('.vid-step-dot');
+      if(dot){e.stopPropagation();const vid=dot.dataset.vid;const step=dot.dataset.step;if(vid&&step)cycleVidStep(vid,step);return;}
+      const del=e.target.closest('.vid-del');
+      if(del){e.stopPropagation();const vid=del.dataset.vid;if(vid)delVideo(vid);return;}
+    });
+  }
 }
 
 // ── DASHBOARD VIEW (default — In Progress + Ideas) ───────────────────────────
@@ -95,8 +98,8 @@ function _vidRenderDashboard(){
     inProgress=inProgress.filter(match);ideas=ideas.filter(match);
   }
   return`
-    <div style="display:flex;gap:20px;align-items:stretch;margin-top:10px;height:calc(100% - 10px)">
-      <div style="flex:2;min-width:0;overflow-y:auto" ondragover="event.preventDefault()" ondrop="_vidDashDrop(event,'in_progress')">
+    <div style="display:flex;gap:20px;align-items:flex-start;margin-top:10px">
+      <div style="flex:2;min-width:0" ondragover="event.preventDefault()" ondrop="_vidDashDrop(event,'in_progress')">
         <div class="vid-dash-section">
           <div class="vid-dash-header" style="border-left-color:#f59e0b">In Progress <span class="vid-count">${inProgress.length}</span></div>
           ${inProgress.length?`
@@ -104,7 +107,7 @@ function _vidRenderDashboard(){
           ${_vidDashList(inProgress,false)}`:'<div style="color:var(--muted);font-size:12px;padding:16px 0">Drag ideas here to start</div>'}
         </div>
       </div>
-      <div style="flex:1;min-width:0;overflow-y:auto" ondragover="event.preventDefault()" ondrop="_vidDashDrop(event,'idea')">
+      <div style="flex:1;min-width:0" ondragover="event.preventDefault()" ondrop="_vidDashDrop(event,'idea')">
         <div class="vid-dash-section">
           <div class="vid-dash-header" style="border-left-color:#8b5cf6">Ideas <span class="vid-count">${ideas.length}</span></div>
           ${ideas.length?_vidDashList(ideas,true):'<div style="color:var(--muted);font-size:12px;padding:16px 0">No ideas yet</div>'}
