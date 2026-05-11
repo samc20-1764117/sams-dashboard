@@ -2174,7 +2174,8 @@ function showPage(id){
   if(id==='tasks')return;
   if(id==='shopping')id='weekly';// shopping merged into weekly page
   activePg=id;
-  document.querySelectorAll('.page').forEach(p=>{p.classList.remove('active');p.removeAttribute('style');});
+  document.querySelectorAll('.page').forEach(p=>{p.classList.remove('active');});
+  const vidPage=document.getElementById('page-videos');if(vidPage)vidPage.removeAttribute('style');
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   const pageEl=document.getElementById('page-'+id);if(pageEl)pageEl.classList.add('active');
   const idx=PAGES.indexOf(id);if(idx>-1&&document.querySelectorAll('.nav-item')[idx])document.querySelectorAll('.nav-item')[idx].classList.add('active');
