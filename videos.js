@@ -285,7 +285,7 @@ function _vidRenderTable(){
         <th style="width:50px;${thStyle}" onclick="vidTblSort('duration')">Dur${_vidSortArrow('duration')}</th>
         <th style="width:62px;${thStyle}" onclick="vidTblSort('posted')">Posted${_vidSortArrow('posted')}</th>
         ${VID_STEPS.map(s=>`<th style="width:28px;text-align:center;font-size:9px" title="${VID_STEP_LABELS[s]}">${VID_STEP_LABELS[s].slice(0,2)}</th>`).join('')}
-        <th style="width:28px"><button class="vid-filter-btn${!_vidShowCompleted?' active':''}" onclick="_vidToggleCompleted()" style="font-size:9px;padding:2px 4px;border-radius:4px" title="${_vidShowCompleted?'Hide':'Show'} Completed">−</button></th>
+        <th style="width:28px"><button class="vid-filter-btn${_vidShowCompleted?' active':''}" onclick="_vidToggleCompleted()" style="font-size:9px;padding:2px 4px;border-radius:4px" title="${_vidShowCompleted?'Hide':'Show'} Completed">${_vidShowCompleted?'−':'+'}</button></th>
       </tr></thead>
       <tbody>${groupedHtml}</tbody>
     </table>
