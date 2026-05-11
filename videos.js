@@ -155,7 +155,7 @@ function _vidRenderDashboard(){
             <span style="width:36px;text-align:right;font-size:9px">Dur</span>
             <span style="width:52px;text-align:left;font-size:9px">Posted</span>
             <div style="display:flex;gap:0">${VID_STEPS.map(s=>`<span style="width:28px;text-align:center;font-size:9px" title="${VID_STEP_LABELS[s]}">${VID_STEP_LABELS[s].slice(0,2)}</span>`).join('')}</div>
-            <span style="width:20px"></span>
+            <span style="width:40px"></span>
           </div>`:''}
         </div>
         <div style="flex:1;min-height:0;overflow-y:auto">
@@ -205,7 +205,7 @@ function _vidDashRow(v,isChild,simple){
   if(simple){
     return`<div class="vid-dash-row${sel?' vid-sel':''}" draggable="true" ondragstart="_vidDashDragStart(event,'${sid}')" data-vid="${sid}" onclick="vidRowClick(event,'${sid}')" ondblclick="openVidEdit('${sid}')" oncontextmenu="showVidCtx(event,'${sid}')">
       <div style="flex:1;min-width:0;padding-left:10px;${indent}${!isChild?'font-weight:600;':''}${titleStyle}">${childMark}${numHtml}<span class="${titleCls}">${_esc(primary)}</span>${subtitle?`<span style="font-size:10px;color:var(--muted);margin-left:6px;font-weight:400">${_esc(subtitle)}</span>`:''}</div>
-      ${v.video_type==='B'?`<button onclick="event.stopPropagation();openVidModalForBig('${sid}')" style="font-size:12px;font-weight:700;width:18px;height:18px;line-height:16px;text-align:center;border-radius:4px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer" title="Add child video">+</button>`:''}<button class="vid-del" data-vid="${sid}">✕</button>
+      <div style="width:40px;display:flex;align-items:center;justify-content:flex-end;gap:2px;flex-shrink:0">${v.video_type==='B'?`<button onclick="event.stopPropagation();openVidModalForBig('${sid}')" style="font-size:12px;font-weight:700;width:18px;height:18px;line-height:16px;text-align:center;border-radius:4px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer" title="Add child video">+</button>`:''}<button class="vid-del" data-vid="${sid}">✕</button></div>
     </div>`;
   }
   const postStr=_vidPostStr(v.post_date);
@@ -219,7 +219,7 @@ function _vidDashRow(v,isChild,simple){
       <span style="width:36px;text-align:right;font-size:11px;color:var(--muted)">${durStr}</span>
       <span style="width:52px;font-size:11px;color:${_vidDateColor(v.post_date,v)}">${postStr||''}</span>
       <div style="display:flex;gap:0">${VID_STEPS.map(s=>`<div style="width:28px;text-align:center"><div class="vid-step-dot${v[s]==='done'?' done':v[s]==='na'?' na':''}" data-vid="${sid}" data-step="${s}" title="${VID_STEP_LABELS[s]}"></div></div>`).join('')}</div>
-      ${v.video_type==='B'?`<button onclick="event.stopPropagation();openVidModalForBig('${sid}')" style="font-size:12px;font-weight:700;width:18px;height:18px;line-height:16px;text-align:center;border-radius:4px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer" title="Add child video">+</button>`:''}<button class="vid-del" data-vid="${sid}">✕</button>
+      <div style="width:40px;display:flex;align-items:center;justify-content:flex-end;gap:2px;flex-shrink:0">${v.video_type==='B'?`<button onclick="event.stopPropagation();openVidModalForBig('${sid}')" style="font-size:12px;font-weight:700;width:18px;height:18px;line-height:16px;text-align:center;border-radius:4px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer" title="Add child video">+</button>`:''}<button class="vid-del" data-vid="${sid}">✕</button></div>
     </div>
   </div>`;
 }
@@ -652,12 +652,12 @@ function _vidPopulateBigVideoSelect(selectedId){
 }
 
 function openVidModalForBig(bigId){
-  openVidModal();
+  openVidModal('L');
   document.getElementById('vmType').value='L';
   _vidPopulateBigVideoSelect(bigId);
 }
 
-function openVidModal(){
+function openVidModal(type){
   _vidMode='add';_vidEditId=null;
   document.getElementById('vidMTitle').textContent='Add Video';
   document.getElementById('vmTitle').value='';
@@ -669,7 +669,9 @@ function openVidModal(){
 
   _vidPopulateBigVideoSelect('');
   document.getElementById('vmPlaylist').value='';
-  _vidRenderSteps({});
+  const defaults={};
+  if(type==='L'){defaults.step_tableau_public='na';defaults.step_upload_tableau='na';}
+  _vidRenderSteps(defaults);
   document.getElementById('vidModal').classList.add('open');
   setTimeout(()=>{const inp=document.getElementById('vmTitle');inp.focus();inp.setSelectionRange(0,0);},80);
 }
@@ -722,6 +724,18 @@ function _vidNaModalStep(e,el){
   const next=cur==='na'?'not_started':'na';
   el.dataset.val=next;
   _vidUpdateModalStep(el,next);
+}
+function _vidTypeChanged(type){
+  if(_vidMode!=='add')return;
+  const els=document.querySelectorAll('#vmSteps [data-step]');
+  els.forEach(el=>{
+    const s=el.dataset.step;
+    if(type==='L'&&(s==='step_tableau_public'||s==='step_upload_tableau')){
+      el.dataset.val='na';_vidUpdateModalStep(el,'na');
+    }else if(el.dataset.val==='na'&&(s==='step_tableau_public'||s==='step_upload_tableau')){
+      el.dataset.val='not_started';_vidUpdateModalStep(el,'not_started');
+    }
+  });
 }
 function _vidUpdateModalStep(el,val){
   el.style.cssText=_vidModalStepCSS(val);
