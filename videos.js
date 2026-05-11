@@ -380,7 +380,7 @@ function _vidRow(v,isChild,postMap){
   const numHtml=postNum?`<span style="color:var(--muted);font-size:10px;margin-right:6px;min-width:18px;display:inline-block">${postNum}</span>`:'';
   const addBtn=v.video_type==='B'?`<button onclick="event.stopPropagation();openVidModalForBig('${sid}')" style="font-size:10px;font-weight:700;width:16px;height:16px;line-height:14px;text-align:center;border-radius:3px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;margin-right:4px;flex-shrink:0" title="Add child video">+</button>`:'';
   return`<tr class="vid-row${sel?' vid-sel':''}" data-vid="${sid}" onclick="vidCellClick(event,'${sid}')" ondblclick="openVidEdit('${sid}')" oncontextmenu="showVidCtx(event,'${sid}')">
-    <td data-field="title" style="${indent}${!isChild?'font-weight:600;':''}${titleColor}overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${addBtn}${childMark}${numHtml}${v.status==='in_progress'&&v.topic?`<span class="${isSmall?'':'vid-title-text'}">${_esc(v.topic)}</span><span style="font-size:10px;color:var(--muted);margin-left:4px;font-weight:400">- ${_esc(v.title)}</span>`:`<span class="${isSmall?'':'vid-title-text'}">${_esc(v.title)}</span>`}</td>
+    <td data-field="title" style="${indent}${!isChild?'font-weight:600;':''}${titleColor}overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${addBtn}${childMark}${numHtml}${v.status==='in_progress'&&v.topic?`<span class="${isSmall?'':'vid-title-text'}" ${isSmall?'style="color:var(--muted)"':''}>${_esc(v.topic)}</span><span style="font-size:10px;color:var(--muted);margin-left:4px;font-weight:400">- ${_esc(v.title)}</span>`:`<span class="${isSmall?'':'vid-title-text'}">${_esc(v.title)}</span>`}</td>
     <td data-field="playlist" style="font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:90px" title="${_esc(v.playlist||'')}">${_esc(v.playlist||'')}</td>
     <td data-field="status"><span class="vid-status-pill" style="background:${sc}20;color:${sc}">${v.status}</span></td>
     <td data-field="duration_minutes" style="font-size:11px;color:var(--muted)">${durStr}</td>
@@ -653,10 +653,21 @@ function _vidPopulatePlaylistList(){
   dl.innerHTML=[...playlists].sort().map(p=>`<option value="${_esc(p)}">`).join('');
 }
 function _vidPopulateBigVideoSelect(selectedId){
-  const sel=document.getElementById('vmBigVideo');
+  const inp=document.getElementById('vmBigVideo');
+  const dl=document.getElementById('vmBigVideoList');
   const bVids=(st.videos||[]).filter(v=>!v.is_deleted&&v.video_type==='B').sort((a,b)=>(a.title||'').localeCompare(b.title||''));
-  sel.innerHTML='<option value="">Big Video (none)</option>';
-  bVids.forEach(v=>{const o=document.createElement('option');o.value=v.id;o.textContent=v.title;if(String(v.id)===String(selectedId))o.selected=true;sel.appendChild(o);});
+  dl.innerHTML=bVids.map(v=>`<option value="${_esc(v.title)}" data-id="${v.id}">`).join('');
+  if(selectedId){
+    const match=bVids.find(v=>String(v.id)===String(selectedId));
+    inp.value=match?match.title:'';
+  }else{inp.value='';}
+}
+function _vidGetBigVideoId(){
+  const inp=document.getElementById('vmBigVideo');
+  const title=inp.value.trim();
+  if(!title)return null;
+  const match=(st.videos||[]).find(v=>!v.is_deleted&&v.video_type==='B'&&v.title===title);
+  return match?match.id:null;
 }
 
 function openVidModalForBig(bigId){
@@ -764,7 +775,7 @@ async function saveVidModal(){
     post_date:document.getElementById('vmPostDate').value||null,
     duration_minutes:parseFloat(document.getElementById('vmDuration').value)||null,
 
-    big_video_id:document.getElementById('vmBigVideo').value?parseInt(document.getElementById('vmBigVideo').value):null,
+    big_video_id:_vidGetBigVideoId(),
     playlist:document.getElementById('vmPlaylist').value.trim()||null
   };
   document.querySelectorAll('#vmSteps [data-step]').forEach(el=>{data[el.dataset.step]=el.dataset.val||'not_started';});

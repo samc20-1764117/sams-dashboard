@@ -756,9 +756,8 @@
       <input id="vmDuration" type="number" step="0.01" placeholder="Duration (min.sec)" style="flex:1;min-width:0;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box">
     </div>
     <div style="display:flex;gap:8px;margin-top:8px">
-      <select id="vmBigVideo" style="flex:1;min-width:0;padding:8px 6px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box;overflow:hidden;text-overflow:ellipsis">
-        <option value="">Big Video (none)</option>
-      </select>
+      <input id="vmBigVideo" list="vmBigVideoList" placeholder="Big Video (none)" autocomplete="off" style="flex:1;min-width:0;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box">
+      <datalist id="vmBigVideoList"></datalist>
       <input id="vmPlaylist" list="vmPlaylistList" placeholder="Playlist" autocomplete="off" style="flex:1;min-width:0;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box">
       <datalist id="vmPlaylistList"></datalist>
     </div>
