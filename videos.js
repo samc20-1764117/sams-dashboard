@@ -109,17 +109,17 @@ function _vidRenderDashboard(){
     inProgress=inProgress.filter(match);ideas=ideas.filter(match);
   }
   return`
-    <div style="display:flex;gap:20px;align-items:flex-start;margin-top:10px">
-      <div style="flex:2;min-width:0" ondragover="event.preventDefault()" ondrop="_vidDashDrop(event,'in_progress')">
-        <div class="vid-dash-section">
+    <div style="display:flex;gap:20px;padding:10px 8px;height:100%">
+      <div style="flex:2;min-width:0;display:flex;flex-direction:column" ondragover="event.preventDefault()" ondrop="_vidDashDrop(event,'in_progress')">
+        <div class="vid-dash-section" style="flex:1;min-height:0;display:flex;flex-direction:column">
           <div class="vid-dash-header" style="border-left-color:#f59e0b">In Progress <span class="vid-count">${inProgress.length}</span></div>
           ${inProgress.length?`
           <div style="display:flex;justify-content:flex-end;gap:2px;padding:0 8px 4px;margin-right:26px"><div style="display:flex;gap:2px">${VID_STEPS.map(s=>`<div style="width:14px;text-align:center;font-size:7px;color:var(--muted);font-weight:600" title="${VID_STEP_LABELS[s]}">${VID_STEP_LABELS[s].slice(0,2)}</div>`).join('')}</div></div>
           ${_vidDashList(inProgress,false)}`:'<div style="color:var(--muted);font-size:12px;padding:16px 0">Drag ideas here to start</div>'}
         </div>
       </div>
-      <div style="flex:1;min-width:0" ondragover="event.preventDefault()" ondrop="_vidDashDrop(event,'idea')">
-        <div class="vid-dash-section">
+      <div style="flex:1;min-width:0;display:flex;flex-direction:column" ondragover="event.preventDefault()" ondrop="_vidDashDrop(event,'idea')">
+        <div class="vid-dash-section" style="flex:1;min-height:0;display:flex;flex-direction:column">
           <div class="vid-dash-header" style="border-left-color:#8b5cf6">Ideas <span class="vid-count">${ideas.length}</span></div>
           ${ideas.length?_vidDashList(ideas,true):'<div style="color:var(--muted);font-size:12px;padding:16px 0">No ideas yet</div>'}
         </div>
