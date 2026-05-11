@@ -56,7 +56,7 @@ function renderVideosPage(){
   if(_vidView==='groups'){_vidView='dashboard';bodyHtml=_vidRenderDashboard();}
 
   // Use the exact same pattern as recipes page (features.js line 2130-2139)
-  el.style.cssText='padding:60px 56px 0 56px';
+  el.style.cssText='padding:60px 56px 0 56px;display:flex;flex-direction:column;height:100vh;box-sizing:border-box';
   el.innerHTML=`
     <div class="ov-topbar"><div class="ov-topbar-left"><span class="ov-topbar-label">🎬 Videos</span><span class="ov-topbar-dot"></span></div><span class="ov-topbar-date topbar-date"></span><div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div></div>
     <div style="padding-top:26px;position:relative;z-index:10">
@@ -78,8 +78,8 @@ function renderVideosPage(){
         <button class="btn btn-dark" onclick="openVidModal()" style="padding:5px 14px;font-size:12px">+ Add Video</button>
       </div>
     </div>
-    <div class="card" style="overflow:hidden">
-      <div style="overflow-y:auto;flex:1;min-height:0;max-height:calc(100vh - 180px)">
+    <div class="card" style="overflow:hidden;flex:1;min-height:0">
+      <div style="overflow-y:auto;flex:1;min-height:0">
         ${bodyHtml}
       </div>
     </div>`;
@@ -445,13 +445,15 @@ function _vidRenderMonthly(){
     </div>`;
   }
 
-  return`<div style="padding:8px">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+  const totalCells=firstDow+daysInMonth;
+  const numRows=Math.ceil(totalCells/7);
+  return`<div style="padding:8px;display:flex;flex-direction:column;height:100%">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-shrink:0">
       <button class="vid-filter-btn" onclick="_vidMonthNav(-1)" style="padding:3px 10px">← Prev</button>
       <span style="font-size:14px;font-weight:700;color:var(--text)">${monthStr} <span style="font-size:11px;font-weight:400;color:var(--muted)">${pubCount} published · ${totalCount} total</span></span>
       <button class="vid-filter-btn" onclick="_vidMonthNav(1)" style="padding:3px 10px">Next →</button>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px">${cells}</div>
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);grid-template-rows:auto repeat(${numRows},1fr);gap:3px;flex:1;min-height:0">${cells}</div>
   </div>`;
 }
 
