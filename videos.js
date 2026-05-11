@@ -330,7 +330,8 @@ function _vidRenderTable(){
     });
   }
   const sorted=_vidSortVids(vids);
-  const postMap=_vidSeqMap(_vidOrderedIds(vids));
+  const allNonIdea=(st.videos||[]).filter(v=>!v.is_deleted&&v.status!=='idea');
+  const postMap=_vidSeqMap(_vidOrderedIds(allNonIdea));
   let groupedHtml;
   if(_vidSortCol){
     groupedHtml=sorted.map(v=>_vidRow(v,false,postMap)).join('');
