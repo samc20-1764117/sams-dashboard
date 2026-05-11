@@ -217,7 +217,7 @@ function _vidRenderTable(){
   const groupedHtml=_vidSortCol?sorted.map(v=>_vidRow(v,false)).join(''):_vidBuildRows(sorted);
   const thStyle='cursor:pointer;user-select:none';
   return`<div style="overflow-x:auto;margin-top:4px">
-    <table class="vid-tbl">
+    <table class="vid-tbl" style="table-layout:fixed;width:100%">
       <thead><tr>
         <th style="${thStyle}" onclick="vidTblSort('title')">Title${_vidSortArrow('title')}</th>
         <th style="width:80px;${thStyle}" onclick="vidTblSort('group')">Group${_vidSortArrow('group')}</th>
@@ -257,7 +257,7 @@ function _vidRow(v,isChild){
   const indent=isChild?'padding-left:24px;':'';
   const childMark=isChild?'<span style="color:var(--muted);font-size:10px;margin-right:4px">└</span>':'';
   return`<tr class="vid-row${sel?' vid-sel':''}" data-vid="${sid}" onclick="vidRowClick(event,'${sid}')" ondblclick="openVidEdit('${sid}')" oncontextmenu="showVidCtx(event,'${sid}')">
-    <td style="${indent}${!isChild?'font-weight:600;':''}">${childMark}<span class="vid-title-text">${_esc(v.title)}</span></td>
+    <td style="${indent}${!isChild?'font-weight:600;':''}overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${childMark}<span class="vid-title-text">${_esc(v.title)}</span></td>
     <td style="font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:80px" title="${_esc(v.group_name||'')}">${_esc(v.group_name||'')}</td>
     <td style="font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:90px" title="${_esc(v.playlist||'')}">${_esc(v.playlist||'')}</td>
     <td><span class="vid-status-pill" style="background:${sc}20;color:${sc}">${v.status}</span></td>
