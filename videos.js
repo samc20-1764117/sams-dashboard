@@ -348,7 +348,7 @@ function _vidRow(v,isChild,postMap){
   const sel=_vidSelected.has(sid);
   const sc=VID_STATUS_COLORS[v.status]||'#94a3b8';
   const postStr=_vidPostStr(v.post_date,true);
-  const durStr=v.duration_minutes?v.duration_minutes.toFixed(1):'';
+  const durStr=v.duration_minutes?v.duration_minutes.toFixed(2):'';
   const isSmall=v.video_type==='L'&&v.group_name;
   const indent=isChild?'padding-left:32px;':'padding-left:16px;';
   const childMark=isChild?'<span style="color:var(--muted);font-size:10px;margin-right:4px">└</span>':'';
@@ -402,7 +402,7 @@ function _vidBoardCard(v){
     <div style="font-size:12px;font-weight:${v.video_type==='B'||!v.group_name?'500':'400'};color:${v.video_type==='L'&&v.group_name?'var(--muted)':'var(--text)'};line-height:1.35;margin-bottom:4px">${_esc(v.title)}</div>
     <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:var(--muted)">
       ${postStr?`<span>${postStr}</span>`:''}
-      ${v.duration_minutes?`<span>${v.duration_minutes.toFixed(1)}m</span>`:''}
+      ${v.duration_minutes?`<span>${v.duration_minutes.toFixed(2)}</span>`:''}
       <div style="flex:1"></div>
       <div style="display:flex;align-items:center;gap:3px">
         <div style="width:36px;height:4px;background:var(--border);border-radius:2px;overflow:hidden"><div style="width:${pct}%;height:100%;background:#10b981;border-radius:2px"></div></div>
@@ -571,7 +571,7 @@ function vidCellEdit(td,id,field){
   }else if(field==='playlist'){
     el=document.createElement('input');el.value=v.playlist||'';
   }else if(field==='duration_minutes'){
-    el=document.createElement('input');el.type='number';el.step='0.1';el.value=v.duration_minutes||'';
+    el=document.createElement('input');el.type='number';el.step='0.01';el.value=v.duration_minutes||'';
   }else if(field==='post_date'){
     el=document.createElement('input');el.type='date';el.value=v.post_date||'';
   }else if(field==='title'){
