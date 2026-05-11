@@ -72,6 +72,14 @@ function renderVideosPageKeepScroll(){
 function renderVideosPage(){
   const el=document.getElementById('page-videos');if(!el)return;
   if(!st.videos)st.videos=[];
+  // Auto-migrate group_name → big_video_id (client-side, until DB migration runs)
+  const bVids=(st.videos||[]).filter(v=>v.video_type==='B'&&!v.is_deleted);
+  st.videos.forEach(v=>{
+    if(v.group_name&&!v.big_video_id){
+      const parent=bVids.find(b=>(b.title||'')===v.group_name||(b.group_name||'')===v.group_name);
+      if(parent)v.big_video_id=parent.id;
+    }
+  });
   _vidDashPostMap=null;
   const stats=_vidStats();
   const groups=_vidGroups();
