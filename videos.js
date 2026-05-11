@@ -243,7 +243,7 @@ function _vidRenderTable(){
     });
   }
   const sorted=_vidSortVids(vids);
-  const groupedHtml=_vidSortCol?sorted.map(v=>_vidRow(v,false)).join(''):_vidBuildRows(sorted);
+  const groupedHtml=sorted.map(v=>_vidRow(v,false)).join('');
   const thStyle='cursor:pointer;user-select:none';
   return`<div style="overflow-x:auto">
     <table class="vid-tbl" style="table-layout:fixed;width:100%">
