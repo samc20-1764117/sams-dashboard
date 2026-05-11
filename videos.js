@@ -166,8 +166,8 @@ function _vidRenderDashboard(){
   return`
     <div style="display:flex;gap:0;padding:0;height:100%">
       <div style="flex:2;min-width:0;display:flex;flex-direction:column;border-right:1px solid var(--border)" ondragover="event.preventDefault()" ondrop="_vidDashDrop(event,'in_progress')">
-        <div class="vid-dash-header" style="display:flex;align-items:center">
-          <div style="flex:1;min-width:0">In Progress <span class="vid-count">${inProgress.length}</span></div>
+        <div class="vid-dash-header" style="display:flex;align-items:center;gap:8px">
+          <div style="flex:1;min-width:0;padding-left:10px">In Progress <span class="vid-count">${inProgress.length}</span></div>
           ${inProgress.length?`<div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
             <span style="width:70px;text-align:left;font-size:9px">Playlist</span>
             <span style="width:36px;text-align:right;font-size:9px">Dur</span>
