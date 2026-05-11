@@ -14,6 +14,14 @@ const VID_STEP_LABELS={step_build:'Build',step_record:'Rec',step_film:'Film',ste
 const VID_STATUS_COLORS={published:'#10b981',in_progress:'#f59e0b',idea:'#8b5cf6',backup:'#94a3b8'};
 const VID_STEP_COLORS={done:'#10b981',in_progress:'#f59e0b',not_started:'transparent',na:'#d1d5db',backup:'#94a3b8',issue:'#ef4444'};
 
+// Static post-order numbering: videos with post_date sorted asc get sequential #
+function _vidPostOrder(){
+  const map={};
+  const posted=(st.videos||[]).filter(v=>!v.is_deleted&&v.post_date).sort((a,b)=>a.post_date.localeCompare(b.post_date));
+  posted.forEach((v,i)=>{map[String(v.id)]=i+1;});
+  return map;
+}
+
 function _vidFiltered(){
   let vids=(st.videos||[]).filter(v=>!v.is_deleted);
   if(_vidFilter!=='all')vids=vids.filter(v=>v.status===_vidFilter);
@@ -51,6 +59,7 @@ function _vidDateColor(d,v){
 function renderVideosPage(){
   const el=document.getElementById('page-videos');if(!el)return;
   if(!st.videos)st.videos=[];
+  _vidDashPostMap=null;
   const stats=_vidStats();
   const groups=_vidGroups();
   const viewBtnS=v=>`vid-view-btn${_vidView===v?' active':''}`;
@@ -148,14 +157,17 @@ function _vidDashList(vids,simple){
   return html;
 }
 
+let _vidDashPostMap=null;
 function _vidDashRow(v,isChild,simple){
+  if(!_vidDashPostMap)_vidDashPostMap=_vidPostOrder();
   const sid=String(v.id);
   const sel=_vidSelected.has(sid);
   const isSmall=v.video_type==='L'&&v.group_name;
   const indent=isChild?'padding-left:20px;':'';
   const childMark=isChild?'<span style="color:var(--muted);font-size:10px;margin-right:4px">└</span>':'';
   const titleStyle=isSmall?'color:var(--muted)':'';
-  const numHtml=v.number?`<span style="color:var(--muted);font-size:10px;margin-right:6px;min-width:18px;display:inline-block">${v.number}</span>`:'';
+  const postNum=_vidDashPostMap[sid];
+  const numHtml=postNum?`<span style="color:var(--muted);font-size:10px;margin-right:6px;min-width:18px;display:inline-block">${postNum}</span>`:'';
   const titleCls=isSmall?'':'vid-title-text';
   const isComplete=v.status==='published';
   const topic=v.topic||'';
@@ -243,7 +255,26 @@ function _vidRenderTable(){
     });
   }
   const sorted=_vidSortVids(vids);
-  const groupedHtml=sorted.map(v=>_vidRow(v,false)).join('');
+  const postMap=_vidPostOrder();
+  let groupedHtml;
+  if(_vidSortCol){
+    groupedHtml=sorted.map(v=>_vidRow(v,false,postMap)).join('');
+  }else{
+    // Group B→L while maintaining post_date sort
+    const seen=new Set();
+    let rows='';
+    const lVids=sorted.filter(v=>v.video_type!=='B');
+    sorted.forEach(v=>{
+      if(seen.has(String(v.id)))return;
+      seen.add(String(v.id));
+      rows+=_vidRow(v,false,postMap);
+      if(v.video_type==='B'&&v.group_name){
+        const children=lVids.filter(l=>l.group_name===v.group_name&&!seen.has(String(l.id)));
+        children.forEach(l=>{seen.add(String(l.id));rows+=_vidRow(l,true,postMap);});
+      }
+    });
+    groupedHtml=rows;
+  }
   const thStyle='cursor:pointer;user-select:none';
   return`<div style="overflow-x:auto">
     <table class="vid-tbl" style="table-layout:fixed;width:100%">
@@ -296,7 +327,7 @@ function _vidBuildRows(vids){
   return html;
 }
 
-function _vidRow(v,isChild){
+function _vidRow(v,isChild,postMap){
   const sid=String(v.id);
   const sel=_vidSelected.has(sid);
   const sc=VID_STATUS_COLORS[v.status]||'#94a3b8';
@@ -306,7 +337,8 @@ function _vidRow(v,isChild){
   const indent=isChild?'padding-left:24px;':'padding-left:10px;';
   const childMark=isChild?'<span style="color:var(--muted);font-size:10px;margin-right:4px">└</span>':'';
   const titleColor=isSmall?'color:var(--muted);':'';
-  const numHtml=v.number?`<span style="color:var(--muted);font-size:10px;margin-right:6px;min-width:18px;display:inline-block">${v.number}</span>`:'';
+  const postNum=postMap&&postMap[sid];
+  const numHtml=postNum?`<span style="color:var(--muted);font-size:10px;margin-right:6px;min-width:18px;display:inline-block">${postNum}</span>`:'';
   return`<tr class="vid-row${sel?' vid-sel':''}" data-vid="${sid}" onclick="vidRowClick(event,'${sid}')" ondblclick="openVidEdit('${sid}')" oncontextmenu="showVidCtx(event,'${sid}')">
     <td style="${indent}${!isChild?'font-weight:600;':''}${titleColor}overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${childMark}${numHtml}<span class="${isSmall?'':'vid-title-text'}">${_esc(v.title)}</span></td>
     <td style="font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:80px" title="${_esc(v.group_name||'')}">${_esc(v.group_name||'')}</td>
