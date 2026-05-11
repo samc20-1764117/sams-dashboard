@@ -149,17 +149,18 @@ function _vidDashRow(v,isChild,simple){
   const indent=isChild?'padding-left:20px;':'';
   const childMark=isChild?'<span style="color:var(--muted);font-size:10px;margin-right:4px">└</span>':'';
   const titleStyle=isSmall?'color:var(--muted)':'';
+  const numHtml=v.number?`<span style="color:var(--muted);font-size:10px;margin-right:5px">#${v.number}</span>`:'';
+  const titleCls=isSmall?'':'vid-title-text';
   if(simple){
     return`<div class="vid-dash-row${sel?' vid-sel':''}" draggable="true" ondragstart="_vidDashDragStart(event,'${sid}')" data-vid="${sid}" onclick="vidRowClick(event,'${sid}')" ondblclick="openVidEdit('${sid}')" oncontextmenu="showVidCtx(event,'${sid}')">
-      <div style="flex:1;min-width:0;${indent}${!isChild?'font-weight:600;':''}${titleStyle}">${childMark}<span>${_esc(v.title)}</span></div>
+      <div style="flex:1;min-width:0;padding-left:10px;${indent}${!isChild?'font-weight:600;':''}${titleStyle}">${childMark}${numHtml}<span class="${titleCls}">${_esc(v.title)}</span></div>
       <button class="vid-del" data-vid="${sid}">✕</button>
     </div>`;
   }
   const postStr=_vidPostStr(v.post_date);
   return`<div class="vid-dash-row${sel?' vid-sel':''}" draggable="true" ondragstart="_vidDashDragStart(event,'${sid}')" data-vid="${sid}" onclick="vidRowClick(event,'${sid}')" ondblclick="openVidEdit('${sid}')" oncontextmenu="showVidCtx(event,'${sid}')">
-    <div style="flex:1;min-width:0;${indent}${!isChild?'font-weight:600;':''}${titleStyle}">
-      ${childMark}<span>${_esc(v.title)}</span>
-      ${v.group_name&&!isChild?`<span style="font-size:10px;color:var(--muted);margin-left:6px;font-weight:400">${_esc(v.group_name)}</span>`:''}
+    <div style="flex:1;min-width:0;padding-left:10px;${indent}${!isChild?'font-weight:600;':''}${titleStyle}">
+      ${childMark}${numHtml}<span class="${titleCls}">${_esc(v.title)}</span>
     </div>
     <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
       ${postStr?`<span style="font-size:10px;color:var(--muted)">${postStr}</span>`:''}
