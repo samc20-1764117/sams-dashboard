@@ -39,7 +39,7 @@ function showCtxShop() {}
 function showWrScopePicker() {}
 function openWrEditModal() {}
 function tiDblRec() {}
-function tiDblShop() {}
+function tiDblShop(e, id) { if (id) mOpenShopEdit(id); }
 function openWOModal() {}
 function dStart() {}
 function dEnd() {}
@@ -579,28 +579,32 @@ let _mCurTab = 'tb';
 
 function mShowTab(tab) {
   _mCurTab = tab;
-  const pages = {today: 'mTodayPage', tb: 'mTBPage', week: 'mWeekPage'};
+  const pages = {today: 'mTodayPage', tb: 'mTBPage', week: 'mWeekPage', shop: 'mShopPage'};
   Object.entries(pages).forEach(([k, id]) => {
     const el = document.getElementById(id);
     if (el) el.style.display = k === tab ? '' : 'none';
   });
   const isToday = tab === 'today';
+  const isShop = tab === 'shop';
   document.getElementById('mAddBar').style.display = isToday ? '' : 'none';
-  document.getElementById('mApp').style.paddingBottom = isToday
+  const shopBar = document.getElementById('mShopAddBar');
+  if (shopBar) shopBar.style.display = isShop ? '' : 'none';
+  document.getElementById('mApp').style.paddingBottom = (isToday || isShop)
     ? 'calc(162px + env(safe-area-inset-bottom))'
     : 'calc(52px + env(safe-area-inset-bottom))';
   document.querySelectorAll('.m-nav-btn').forEach((b, i) => {
-    b.classList.toggle('active', (tab === 'today' && i === 0) || (tab === 'tb' && i === 1) || (tab === 'week' && i === 2));
+    b.classList.toggle('active', (tab === 'today' && i === 0) || (tab === 'tb' && i === 1) || (tab === 'week' && i === 2) || (tab === 'shop' && i === 3));
   });
-  const titles = {today: 'Today', tb: 'Timeblock', week: 'Week'};
+  const titles = {today: 'Today', tb: 'Timeblock', week: 'Week', shop: 'Shopping'};
   const titleEl = document.getElementById('mHeaderTitle');
   if (titleEl) titleEl.textContent = titles[tab] || '';
   const progEl = document.getElementById('mProgress');
   if (progEl) progEl.style.display = isToday ? '' : 'none';
-  document.getElementById('mMain').style.padding = isToday ? '12px 16px' : '0';
+  document.getElementById('mMain').style.padding = (isToday || isShop) ? '12px 16px' : '0';
 
   if (tab === 'tb')   { _mTBOffset = 0; mRenderTB(); _mScrollNow(); }
   else if (tab === 'week') { _mWeekOffset = 0; mRenderWeek(); }
+  else if (tab === 'shop') { mRenderShop(); }
   else { _mSetDate(); }
 }
 
@@ -1375,6 +1379,209 @@ async function doLogin_m(email, pass) {
 function _mSetDate() {
   const lbl = document.getElementById('mDateLbl');
   if (lbl) lbl.textContent = new Date().toLocaleDateString('en-US', {weekday: 'long', month: 'long', day: 'numeric'});
+}
+
+// ── Shop tab ──────────────────────────────────────────────────────────────────
+function mRenderShop() {
+  const list = document.getElementById('mShopList');
+  const countEl = document.getElementById('mShopCount');
+  if (!list) return;
+  const todo = (st.shopping || []).filter(s => !s.done);
+  if (countEl) countEl.textContent = todo.length ? `Shopping (${todo.length} left)` : 'Shopping \u2713 All done!';
+
+  // Group by store
+  const groups = {};
+  todo.forEach(s => {
+    const k = s.store || 'Other';
+    if (!groups[k]) groups[k] = [];
+    groups[k].push(s);
+  });
+  // Sort items within each store by shop_order
+  Object.values(groups).forEach(arr => arr.sort((a, b) => (a.shop_order ?? 9999) - (b.shop_order ?? 9999)));
+
+  list.innerHTML = '';
+  const storeNames = Object.keys(groups).sort((a, b) => a.localeCompare(b));
+  storeNames.forEach(store => {
+    const hd = document.createElement('div');
+    hd.className = 'm-shop-store-hd';
+    hd.textContent = store;
+    list.appendChild(hd);
+
+    groups[store].forEach(s => {
+      const row = document.createElement('div');
+      row.className = 'm-shop-item';
+      row.dataset.shopId = s.id;
+      row.dataset.store = store;
+
+      const chk = document.createElement('input');
+      chk.type = 'checkbox'; chk.className = 'chk';
+      chk.addEventListener('change', () => togShop(s.id, chk.checked));
+
+      const name = document.createElement('span');
+      name.className = 'm-shop-name';
+      name.textContent = s.name;
+
+      const dueLbl = document.createElement('span');
+      dueLbl.className = 'm-shop-due-lbl';
+      if (s.due_date) {
+        const d = new Date(s.due_date + 'T00:00:00');
+        dueLbl.textContent = d.toLocaleDateString('en-US', {month: 'short', day: 'numeric'});
+      }
+
+      const del = document.createElement('button');
+      del.className = 'm-shop-del'; del.textContent = '\u2715';
+      del.addEventListener('click', e => { e.stopPropagation(); mDeleteShopDirect(s.id); });
+
+      row.appendChild(chk); row.appendChild(name); row.appendChild(dueLbl); row.appendChild(del);
+
+      // Tap to edit
+      row.addEventListener('click', e => {
+        if (e.target.closest('.chk') || e.target.closest('.m-shop-del')) return;
+        mOpenShopEdit(s.id);
+      });
+
+      // Touch drag reorder within store
+      _mShopTouchDrag(row, store);
+
+      list.appendChild(row);
+    });
+  });
+}
+
+// Touch drag reorder within a store group
+function _mShopTouchDrag(row, store) {
+  let startY = 0, dragging = false, ph = null, scrollStart = 0;
+  row.addEventListener('touchstart', e => {
+    if (e.target.closest('.chk') || e.target.closest('.m-shop-del')) return;
+    startY = e.touches[0].clientY;
+    scrollStart = document.getElementById('mMain').scrollTop;
+    dragging = false;
+  }, {passive: true});
+
+  row.addEventListener('touchmove', e => {
+    const dy = Math.abs(e.touches[0].clientY - startY);
+    const scrollDelta = Math.abs(document.getElementById('mMain').scrollTop - scrollStart);
+    if (!dragging && dy < 12) return;
+    if (!dragging && scrollDelta > 5) return; // scrolling, not dragging
+    if (!dragging) {
+      dragging = true;
+      row.classList.add('m-shop-dragging');
+      ph = document.createElement('div');
+      ph.className = 'm-shop-drag-ph';
+    }
+    e.preventDefault();
+    const list = document.getElementById('mShopList');
+    const y = e.touches[0].clientY;
+    const siblings = [...list.querySelectorAll(`.m-shop-item[data-store="${store}"]`)].filter(r => r !== row);
+    let inserted = false;
+    for (const sib of siblings) {
+      const rc = sib.getBoundingClientRect();
+      if (y < rc.top + rc.height / 2) { list.insertBefore(ph, sib); inserted = true; break; }
+    }
+    if (!inserted && siblings.length) siblings[siblings.length - 1].after(ph);
+    else if (!inserted) {
+      // Find store header and insert after it
+      const headers = [...list.querySelectorAll('.m-shop-store-hd')];
+      const hd = headers.find(h => h.textContent === store);
+      if (hd) hd.after(ph);
+    }
+  }, {passive: false});
+
+  row.addEventListener('touchend', () => {
+    if (!dragging) return;
+    row.classList.remove('m-shop-dragging');
+    if (ph && ph.parentNode) {
+      ph.parentNode.insertBefore(row, ph);
+      ph.remove();
+      // Update shop_order for this store group
+      const list = document.getElementById('mShopList');
+      const rows = [...list.querySelectorAll(`.m-shop-item[data-store="${store}"]`)];
+      rows.forEach((r, i) => {
+        const id = r.dataset.shopId;
+        const item = st.shopping.find(x => String(x.id) === String(id));
+        if (item) {
+          item.shop_order = i;
+          sbReqSilent('PATCH', 'shopping_list', {shop_order: i}, `?id=eq.${id}`);
+        }
+      });
+      save();
+    }
+    ph = null; dragging = false;
+  });
+}
+
+// Add shop item
+async function mAddShopItem() {
+  const nameEl = document.getElementById('mShopNewName');
+  const storeEl = document.getElementById('mShopNewStore');
+  const n = nameEl.value.trim();
+  if (!n) return;
+  const store = storeEl.value || 'Other';
+  const s = {id: 'l-' + Date.now(), name: n, store, done: false};
+  st.shopping.push(s);
+  save(); mRenderShop();
+  nameEl.value = '';
+  const sv = await sbReq('POST', 'shopping_list', {name: n, store, done: false});
+  if (sv && sv[0]) {
+    const i = st.shopping.findIndex(x => x.id === s.id);
+    if (i > -1) st.shopping[i] = sv[0];
+    save();
+  }
+}
+
+// Delete shop item directly (X button)
+async function mDeleteShopDirect(id) {
+  const s = st.shopping.find(x => String(x.id) === String(id));
+  if (!s) return;
+  st.shopping = st.shopping.filter(x => String(x.id) !== String(id));
+  save(); mRenderShop();
+  await sbReq('DELETE', 'shopping_list', null, `?id=eq.${id}`);
+}
+
+// Shop edit sheet
+let _mShopEditId = null;
+function mOpenShopEdit(id) {
+  const s = st.shopping.find(x => String(x.id) === String(id));
+  if (!s) return;
+  _mShopEditId = String(id);
+  document.getElementById('mShopEditName').value = s.name || '';
+  document.getElementById('mShopEditStore').value = s.store || 'Other';
+  document.getElementById('mShopEditDue').value = s.due_date || '';
+  document.getElementById('mShopEditTime').value = s.default_start_time || '';
+  document.getElementById('mShopEditBackdrop').classList.add('open');
+  document.getElementById('mShopEditSheet').classList.add('open');
+  setTimeout(() => document.getElementById('mShopEditName').focus(), 300);
+}
+
+function mCloseShopEdit() {
+  _mShopEditId = null;
+  document.getElementById('mShopEditBackdrop').classList.remove('open');
+  document.getElementById('mShopEditSheet').classList.remove('open');
+}
+
+async function mSaveShopEdit() {
+  if (!_mShopEditId) return;
+  const s = st.shopping.find(x => String(x.id) === String(_mShopEditId));
+  if (!s) return;
+  const name = document.getElementById('mShopEditName').value.trim();
+  if (!name) return;
+  const store = document.getElementById('mShopEditStore').value || s.store;
+  const due_date = document.getElementById('mShopEditDue').value || null;
+  const time = document.getElementById('mShopEditTime').value || null;
+  const id = _mShopEditId;
+  s.name = name; s.store = store; s.due_date = due_date; s.default_start_time = time;
+  save(); mCloseShopEdit(); mRenderShop(); mRenderToday();
+  const patch = {name, store, due_date};
+  if (time !== null) patch.default_start_time = time;
+  await sbReq('PATCH', 'shopping_list', patch, `?id=eq.${id}`);
+}
+
+async function mDeleteShopItem() {
+  if (!_mShopEditId) return;
+  const id = _mShopEditId;
+  st.shopping = st.shopping.filter(x => String(x.id) !== String(id));
+  save(); mCloseShopEdit(); mRenderShop(); mRenderToday();
+  await sbReq('DELETE', 'shopping_list', null, `?id=eq.${id}`);
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
