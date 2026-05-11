@@ -18,21 +18,19 @@ const VID_STEP_COLORS={done:'#10b981',in_progress:'#f59e0b',not_started:'transpa
 function _vidSeqMap(){
   const map={};
   const all=(st.videos||[]).filter(v=>!v.is_deleted&&v.status!=='idea');
-  // Sort B videos by post_date — this determines group order
-  const bVids=all.filter(v=>v.video_type==='B').sort((a,b)=>(a.post_date||'9999').localeCompare(b.post_date||'9999'));
+  // Top-level = B videos + standalone L (no big_video_id). Children = L with big_video_id.
+  const topLevel=all.filter(v=>!v.big_video_id).sort((a,b)=>(a.post_date||'9999').localeCompare(b.post_date||'9999'));
   const numbered=new Set();
   let n=1;
-  bVids.forEach(b=>{
-    map[String(b.id)]=n++;numbered.add(String(b.id));
-    // Children sorted by post_date within group
-    all.filter(v=>v.big_video_id&&String(v.big_video_id)===String(b.id))
-      .sort((a,c)=>(a.post_date||'9999').localeCompare(c.post_date||'9999'))
-      .forEach(c=>{map[String(c.id)]=n++;numbered.add(String(c.id));});
+  topLevel.forEach(t=>{
+    map[String(t.id)]=n++;numbered.add(String(t.id));
+    // If B video, number its children right after
+    if(t.video_type==='B'){
+      all.filter(v=>v.big_video_id&&String(v.big_video_id)===String(t.id))
+        .sort((a,c)=>(a.post_date||'9999').localeCompare(c.post_date||'9999'))
+        .forEach(c=>{map[String(c.id)]=n++;numbered.add(String(c.id));});
+    }
   });
-  // Standalone L videos (no parent) with post_date
-  all.filter(v=>!numbered.has(String(v.id))&&v.post_date)
-    .sort((a,b)=>a.post_date.localeCompare(b.post_date))
-    .forEach(v=>{map[String(v.id)]=n++;});
   return map;
 }
 
