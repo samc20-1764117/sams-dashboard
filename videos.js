@@ -85,6 +85,9 @@ function renderVideosPage(){
   const now=new Date();
   el.querySelectorAll('.topbar-date').forEach(e=>e.textContent=now.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}));
   el.querySelectorAll('.topbar-time').forEach(e=>e.textContent=now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}));
+  // Disable #main scroll so page-videos handles it
+  const mainEl=document.getElementById('main');
+  if(mainEl){mainEl.style.overflowY='hidden';}
 }
 
 // ── DASHBOARD VIEW (default — In Progress + Ideas) ───────────────────────────
@@ -104,6 +107,7 @@ function _vidRenderDashboard(){
         ${inProgress.length?`
         <div class="vid-dash-section">
           <div class="vid-dash-header" style="border-left-color:#f59e0b">In Progress <span class="vid-count">${inProgress.length}</span></div>
+          <div style="display:flex;justify-content:flex-end;gap:2px;padding:0 8px 4px;margin-right:26px"><div style="display:flex;gap:2px">${VID_STEPS.map(s=>`<div style="width:14px;text-align:center;font-size:7px;color:var(--muted);font-weight:600" title="${VID_STEP_LABELS[s]}">${VID_STEP_LABELS[s].slice(0,2)}</div>`).join('')}</div></div>
           ${_vidDashList(inProgress,false)}
         </div>`:'<div class="vid-dash-section"><div class="vid-dash-header" style="border-left-color:#f59e0b">In Progress <span class="vid-count">0</span></div><div style="color:var(--muted);font-size:12px;padding:16px 0">Drag ideas here to start</div></div>'}
         ${backup.length?`
@@ -149,9 +153,6 @@ function _vidDashRow(v,isChild,simple){
       <button class="vid-del" onclick="event.stopPropagation();delVideo('${sid}')">✕</button>
     </div>`;
   }
-  const doneSteps=VID_STEPS.filter(s=>v[s]==='done').length;
-  const applicableSteps=VID_STEPS.filter(s=>v[s]!=='na').length;
-  const pct=applicableSteps?Math.round(doneSteps/applicableSteps*100):0;
   return`<div class="vid-dash-row${sel?' vid-sel':''}" draggable="true" ondragstart="_vidDashDragStart(event,'${sid}')" data-vid="${sid}" onclick="vidRowClick(event,'${sid}')" ondblclick="openVidEdit('${sid}')" oncontextmenu="showVidCtx(event,'${sid}')">
     <span class="vid-type-badge" style="background:${v.video_type==='B'?'#0ea5e9':'#a78bfa'};color:#fff">${v.video_type||'?'}</span>
     <div style="flex:1;min-width:0;${indent}">
@@ -159,8 +160,7 @@ function _vidDashRow(v,isChild,simple){
       ${v.group_name&&!isChild?`<span style="font-size:10px;color:var(--muted);margin-left:6px">${_esc(v.group_name)}</span>`:''}
     </div>
     <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
-      <div style="display:flex;gap:2px">${VID_STEPS.map(s=>{const c=VID_STEP_COLORS[v[s]]||'transparent';return`<div class="vid-step-dot" style="background:${c}" title="${VID_STEP_LABELS[s]}: ${v[s]}" onclick="event.stopPropagation();cycleVidStep('${sid}','${s}')"></div>`;}).join('')}</div>
-      <div style="width:32px;height:4px;background:var(--border);border-radius:2px;overflow:hidden"><div style="width:${pct}%;height:100%;background:#10b981;border-radius:2px"></div></div>
+      <div style="display:flex;gap:2px">${VID_STEPS.map(s=>`<div class="vid-step-dot${v[s]==='done'?' done':''}" title="${VID_STEP_LABELS[s]}" onclick="event.stopPropagation();cycleVidStep('${sid}','${s}')"></div>`).join('')}</div>
       <button class="vid-del" onclick="event.stopPropagation();delVideo('${sid}')">✕</button>
     </div>
   </div>`;
@@ -228,7 +228,7 @@ function _vidRow(v,isChild){
     <td><span class="vid-status-pill" style="background:${sc}20;color:${sc}">${v.status}</span></td>
     <td style="font-size:11px;color:var(--muted)">${durStr}</td>
     <td style="font-size:11px;color:var(--muted)">${postStr}</td>
-    ${VID_STEPS.map(s=>{const c=VID_STEP_COLORS[v[s]]||'transparent';return`<td style="text-align:center"><div class="vid-step-dot" style="background:${c}" title="${VID_STEP_LABELS[s]}: ${v[s]}" onclick="event.stopPropagation();cycleVidStep('${sid}','${s}')"></div></td>`;}).join('')}
+    ${VID_STEPS.map(s=>`<td style="text-align:center"><div class="vid-step-dot${v[s]==='done'?' done':''}" title="${VID_STEP_LABELS[s]}" onclick="event.stopPropagation();cycleVidStep('${sid}','${s}')"></div></td>`).join('')}
     <td><button class="vid-del" onclick="event.stopPropagation();delVideo('${sid}')">✕</button></td>
   </tr>`;
 }
@@ -494,10 +494,8 @@ async function _vidDuplicate(id){
 // ── Cycle Step ────────────────────────────────────────────────────────────────
 async function cycleVidStep(id,step){
   const v=(st.videos||[]).find(x=>String(x.id)===String(id));if(!v)return;
-  const order=['not_started','in_progress','done','na'];
   const cur=v[step]||'not_started';
-  const idx=order.indexOf(cur);
-  const next=order[(idx+1)%order.length];
+  const next=cur==='done'?'not_started':'done';
   const prev=cur;
   v[step]=next;
   save();renderVideosPage();
