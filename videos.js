@@ -14,11 +14,10 @@ const VID_STEP_LABELS={step_build:'Build',step_record:'Rec',step_film:'Film',ste
 const VID_STATUS_COLORS={published:'#10b981',in_progress:'#f59e0b',idea:'#8b5cf6',backup:'#94a3b8'};
 const VID_STEP_COLORS={done:'#10b981',in_progress:'#f59e0b',not_started:'transparent',na:'#d1d5db',backup:'#94a3b8',issue:'#ef4444'};
 
-// Sequential numbering by post_date order, only for videos with a date
+// Use DB id as display number
 function _vidSeqMap(){
   const map={};
-  const dated=(st.videos||[]).filter(v=>!v.is_deleted&&v.post_date).sort((a,b)=>a.post_date.localeCompare(b.post_date));
-  dated.forEach((v,i)=>{map[String(v.id)]=i+1;});
+  (st.videos||[]).filter(v=>!v.is_deleted).forEach(v=>{map[String(v.id)]=v.id;});
   return map;
 }
 
@@ -567,7 +566,7 @@ function openVidModal(){
   document.getElementById('vmStatus').value='idea';
   document.getElementById('vmPostDate').value='';
   document.getElementById('vmDuration').value='';
-  document.getElementById('vmBuildHours').value='';
+
   document.getElementById('vmGroup').value='';
   document.getElementById('vmPlaylist').value='';
   _vidRenderSteps({});
@@ -585,7 +584,7 @@ function openVidEdit(id){
   document.getElementById('vmStatus').value=v.status||'idea';
   document.getElementById('vmPostDate').value=v.post_date||'';
   document.getElementById('vmDuration').value=v.duration_minutes||'';
-  document.getElementById('vmBuildHours').value=v.build_hours||'';
+
   document.getElementById('vmGroup').value=v.group_name||'';
   document.getElementById('vmPlaylist').value=v.playlist||'';
   const stepVals={};VID_STEPS.forEach(s=>{stepVals[s]=v[s]||'not_started';});
@@ -618,7 +617,7 @@ async function saveVidModal(){
     status:document.getElementById('vmStatus').value||'idea',
     post_date:document.getElementById('vmPostDate').value||null,
     duration_minutes:parseFloat(document.getElementById('vmDuration').value)||null,
-    build_hours:parseFloat(document.getElementById('vmBuildHours').value)||null,
+
     group_name:document.getElementById('vmGroup').value.trim()||null,
     playlist:document.getElementById('vmPlaylist').value.trim()||null
   };
