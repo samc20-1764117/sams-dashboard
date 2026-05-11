@@ -115,19 +115,18 @@ function _vidRenderDashboard(){
     inProgress=inProgress.filter(match);ideas=ideas.filter(match);
   }
   return`
-    <div style="display:flex;gap:20px;padding:10px 8px;height:100%">
-      <div style="flex:2;min-width:0;display:flex;flex-direction:column" ondragover="event.preventDefault()" ondrop="_vidDashDrop(event,'in_progress')">
-        <div class="vid-dash-section" style="flex:1;min-height:0;display:flex;flex-direction:column">
-          <div class="vid-dash-header" style="border-left-color:#f59e0b">In Progress <span class="vid-count">${inProgress.length}</span></div>
-          ${inProgress.length?`
-          <div style="display:flex;justify-content:flex-end;gap:2px;padding:0 8px 4px;margin-right:26px"><div style="display:flex;gap:2px">${VID_STEPS.map(s=>`<div style="width:14px;text-align:center;font-size:7px;color:var(--muted);font-weight:600" title="${VID_STEP_LABELS[s]}">${VID_STEP_LABELS[s].slice(0,2)}</div>`).join('')}</div></div>
-          ${_vidDashList(inProgress,false)}`:'<div style="color:var(--muted);font-size:12px;padding:16px 0">Drag ideas here to start</div>'}
+    <div style="display:flex;gap:12px;padding:0;height:100%">
+      <div style="flex:2;min-width:0;display:flex;flex-direction:column;border-right:1px solid var(--border)" ondragover="event.preventDefault()" ondrop="_vidDashDrop(event,'in_progress')">
+        <div class="vid-dash-header">In Progress <span class="vid-count">${inProgress.length}</span>
+          ${inProgress.length?`<span style="float:right;display:flex;gap:2px;margin-right:20px">${VID_STEPS.map(s=>`<span style="width:14px;text-align:center;font-size:7px;font-weight:600" title="${VID_STEP_LABELS[s]}">${VID_STEP_LABELS[s].slice(0,2)}</span>`).join('')}</span>`:''}</div>
+        <div style="flex:1;min-height:0;overflow-y:auto">
+          ${inProgress.length?_vidDashList(inProgress,false):'<div style="color:var(--muted);font-size:12px;padding:16px 10px">Drag ideas here to start</div>'}
         </div>
       </div>
       <div style="flex:1;min-width:0;display:flex;flex-direction:column" ondragover="event.preventDefault()" ondrop="_vidDashDrop(event,'idea')">
-        <div class="vid-dash-section" style="flex:1;min-height:0;display:flex;flex-direction:column">
-          <div class="vid-dash-header" style="border-left-color:#8b5cf6">Ideas <span class="vid-count">${ideas.length}</span></div>
-          ${ideas.length?_vidDashList(ideas,true):'<div style="color:var(--muted);font-size:12px;padding:16px 0">No ideas yet</div>'}
+        <div class="vid-dash-header">Ideas <span class="vid-count">${ideas.length}</span></div>
+        <div style="flex:1;min-height:0;overflow-y:auto">
+          ${ideas.length?_vidDashList(ideas,true):'<div style="color:var(--muted);font-size:12px;padding:16px 10px">No ideas yet</div>'}
         </div>
       </div>
     </div>`;
@@ -239,7 +238,8 @@ function _vidRenderTable(){
     });
   }
   const sorted=_vidSortVids(vids);
-  const groupedHtml=_vidSortCol?sorted.map(v=>_vidRow(v,false)).join(''):_vidBuildRows(sorted);
+  let _vidRowIdx=0;
+  const groupedHtml=_vidSortCol?sorted.map(v=>_vidRow(v,false,++_vidRowIdx)).join(''):_vidBuildRows(sorted);
   const thStyle='cursor:pointer;user-select:none';
   return`<div style="overflow-x:auto">
     <table class="vid-tbl" style="table-layout:fixed;width:100%">
@@ -269,10 +269,9 @@ function _vidChildSort(a,b){
 }
 function _vidBuildRows(vids){
   const seen=new Set();
-  let html='';
+  let html='',idx=0;
   const bVids=vids.filter(v=>v.video_type==='B');
   const lVids=vids.filter(v=>v.video_type!=='B');
-  // Sort B groups: ones with in_progress children first
   const bSorted=[...bVids].sort((a,b)=>{
     const aKids=lVids.filter(l=>l.group_name&&l.group_name===a.group_name);
     const bKids=lVids.filter(l=>l.group_name&&l.group_name===b.group_name);
@@ -285,15 +284,15 @@ function _vidBuildRows(vids){
   });
   bSorted.forEach(b=>{
     seen.add(String(b.id));
-    html+=_vidRow(b,false);
+    html+=_vidRow(b,false,++idx);
     const children=lVids.filter(l=>l.group_name&&l.group_name===b.group_name).sort(_vidChildSort);
-    children.forEach(l=>{seen.add(String(l.id));html+=_vidRow(l,true);});
+    children.forEach(l=>{seen.add(String(l.id));html+=_vidRow(l,true,++idx);});
   });
-  lVids.filter(l=>!seen.has(String(l.id))).sort(_vidChildSort).forEach(l=>{html+=_vidRow(l,false);});
+  lVids.filter(l=>!seen.has(String(l.id))).sort(_vidChildSort).forEach(l=>{html+=_vidRow(l,false,++idx);});
   return html;
 }
 
-function _vidRow(v,isChild){
+function _vidRow(v,isChild,rowIdx){
   const sid=String(v.id);
   const sel=_vidSelected.has(sid);
   const sc=VID_STATUS_COLORS[v.status]||'#94a3b8';
@@ -303,8 +302,9 @@ function _vidRow(v,isChild){
   const indent=isChild?'padding-left:24px;':'padding-left:10px;';
   const childMark=isChild?'<span style="color:var(--muted);font-size:10px;margin-right:4px">└</span>':'';
   const titleColor=isSmall?'color:var(--muted);':'';
+  const idxHtml=rowIdx?`<span style="color:var(--muted);font-size:10px;margin-right:6px;min-width:18px;display:inline-block">${rowIdx}</span>`:'';
   return`<tr class="vid-row${sel?' vid-sel':''}" data-vid="${sid}" onclick="vidRowClick(event,'${sid}')" ondblclick="openVidEdit('${sid}')" oncontextmenu="showVidCtx(event,'${sid}')">
-    <td style="${indent}${!isChild?'font-weight:600;':''}${titleColor}overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${childMark}${v.number?`<span style="color:var(--muted);font-size:10px;margin-right:5px">#${v.number}</span>`:''}<span class="${isSmall?'':'vid-title-text'}">${_esc(v.title)}</span></td>
+    <td style="${indent}${!isChild?'font-weight:600;':''}${titleColor}overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${childMark}${idxHtml}<span class="${isSmall?'':'vid-title-text'}">${_esc(v.title)}</span></td>
     <td style="font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:80px" title="${_esc(v.group_name||'')}">${_esc(v.group_name||'')}</td>
     <td style="font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:90px" title="${_esc(v.playlist||'')}">${_esc(v.playlist||'')}</td>
     <td><span class="vid-status-pill" style="background:${sc}20;color:${sc}">${v.status}</span></td>
