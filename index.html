@@ -743,7 +743,7 @@
     <div style="display:flex;gap:8px;margin-top:8px">
       <input id="vmTopic" placeholder="Topic" style="flex:1;min-width:0;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box">
       <select id="vmType" onchange="_vidTypeChanged(this.value)" style="width:80px;padding:8px 6px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box">
-        <option value="B">Big</option><option value="L">Small</option>
+        <option value="B">Series</option><option value="L">Standalone</option>
       </select>
     </div>
     <div style="display:flex;gap:8px;margin-top:8px">
@@ -761,11 +761,7 @@
         <span onclick="_vidToggleDropdown('BigVideo')" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--muted);font-size:10px;user-select:none">▼</span>
         <div id="vmBigVideoDrop" style="display:none;position:absolute;top:100%;left:0;right:0;max-height:180px;overflow-y:auto;background:var(--bg);border:1px solid var(--border);border-radius:8px;margin-top:2px;z-index:10;box-shadow:0 4px 12px rgba(0,0,0,.12)"></div>
       </div>
-      <div style="flex:1;min-width:0;position:relative">
-        <input id="vmPlaylist" placeholder="Playlist" autocomplete="off" style="width:100%;padding:8px 28px 8px 10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box" onfocus="_vidShowDropdown('Playlist')" oninput="_vidFilterDropdown('Playlist')">
-        <span onclick="_vidToggleDropdown('Playlist')" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--muted);font-size:10px;user-select:none">▼</span>
-        <div id="vmPlaylistDrop" style="display:none;position:absolute;top:100%;left:0;right:0;max-height:180px;overflow-y:auto;background:var(--bg);border:1px solid var(--border);border-radius:8px;margin-top:2px;z-index:10;box-shadow:0 4px 12px rgba(0,0,0,.12)"></div>
-      </div>
+      <div id="vmBigVideoSpacer" style="flex:1;min-width:0"></div>
     </div>
     <div style="margin-top:8px;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">Stages <span style="font-weight:400;text-transform:none;letter-spacing:0">(click = toggle, right-click = n/a)</span></div>
     <div style="display:grid;grid-template-columns:repeat(8,1fr);gap:4px;margin-top:4px" id="vmSteps"></div>

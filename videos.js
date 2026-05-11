@@ -43,7 +43,7 @@ function _vidFiltered(){
   let vids=(st.videos||[]).filter(v=>!v.is_deleted);
   if(_vidFilter!=='all')vids=vids.filter(v=>v.status===_vidFilter);
   if(_vidGroupFilter!=='all')vids=vids.filter(v=>String(v.big_video_id)===String(_vidGroupFilter)||String(v.id)===String(_vidGroupFilter));
-  if(_vidSearch){const q=_vidSearch.toLowerCase();vids=vids.filter(v=>(v.title||'').toLowerCase().includes(q)||(v.topic||'').toLowerCase().includes(q)||(v.playlist||'').toLowerCase().includes(q));}
+  if(_vidSearch){const q=_vidSearch.toLowerCase();vids=vids.filter(v=>(v.title||'').toLowerCase().includes(q)||(v.topic||'').toLowerCase().includes(q));}
   return vids;
 }
 
@@ -161,7 +161,7 @@ function _vidRenderDashboard(){
   let ideas=all.filter(v=>v.status==='idea');
   if(_vidSearch){
     const q=_vidSearch.toLowerCase();
-    const match=v=>(v.title||'').toLowerCase().includes(q)||(v.topic||'').toLowerCase().includes(q)||(v.playlist||'').toLowerCase().includes(q);
+    const match=v=>(v.title||'').toLowerCase().includes(q)||(v.topic||'').toLowerCase().includes(q);
     inProgress=inProgress.filter(match);ideas=ideas.filter(match);
   }
   _vidDashVids=all.filter(v=>v.status!=='idea');
@@ -171,7 +171,6 @@ function _vidRenderDashboard(){
         <div class="vid-dash-header" style="display:flex;align-items:center;gap:8px">
           <div style="flex:1;min-width:0;padding-left:10px">In Progress <span class="vid-count">${inProgress.length}</span></div>
           ${inProgress.length?`<div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
-            <span style="width:70px;text-align:left;font-size:9px">Playlist</span>
             <span style="width:36px;text-align:right;font-size:9px">Dur</span>
             <span style="width:52px;text-align:right;font-size:9px">Posted</span>
             <div style="display:flex;gap:0">${VID_STEPS.map(s=>`<span style="width:28px;text-align:center;font-size:9px" title="${VID_STEP_LABELS[s]}">${VID_STEP_LABELS[s].slice(0,2)}</span>`).join('')}</div>
@@ -217,7 +216,7 @@ function _vidDashRow(v,isChild,simple){
   const titleStyle=isSmall?'color:var(--muted)':'';
   const postNum=_vidDashPostMap[sid];
   const numHtml=postNum?`<span style="color:var(--muted);font-size:10px;margin-right:6px;min-width:18px;display:inline-block">${postNum}</span>`:'';
-  const titleCls=isSmall?'':'vid-title-text';
+  const titleCls='vid-title-text';
   const isComplete=v.status==='published';
   const topic=v.topic||'';
   const showTopicTitle=v.status==='in_progress'&&topic;
@@ -236,7 +235,6 @@ function _vidDashRow(v,isChild,simple){
       ${v.video_type!=='L'||!v.big_video_id?`<button onclick="event.stopPropagation();openVidModalForBig('${sid}')" style="font-size:10px;font-weight:700;width:16px;height:16px;line-height:14px;text-align:center;border-radius:3px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;margin-right:4px" title="Add child video">+</button>`:(!isChild?'<button style="font-size:10px;font-weight:700;width:16px;height:16px;line-height:14px;text-align:center;border-radius:3px;border:1px solid transparent;background:transparent;color:transparent;margin-right:4px;pointer-events:none">+</button>':'')}${childMark}${numHtml}${showTopicTitle?`<span class="${titleCls}">${_esc(topic)}</span><span style="font-size:10px;color:var(--muted);margin-left:4px;font-weight:400">- ${_esc(v.title)}</span>`:`<span class="${titleCls}">${_esc(primary)}</span>`}
     </div>
     <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
-      <span style="width:70px;font-size:10px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${_esc(v.playlist||'')}">${_esc(v.playlist||'')}</span>
       <span style="width:36px;text-align:right;font-size:11px;color:var(--muted)">${durStr}</span>
       <span style="width:52px;text-align:right;font-size:11px;color:${_vidDateColor(v.post_date,v)}">${postStr||''}</span>
       <div style="display:flex;gap:0">${VID_STEPS.map(s=>`<div style="width:28px;text-align:center"><div class="vid-step-dot${v[s]==='done'?' done':v[s]==='na'?' na':''}" data-vid="${sid}" data-step="${s}" title="${VID_STEP_LABELS[s]}"></div></div>`).join('')}</div>
@@ -359,7 +357,6 @@ function _vidRenderTable(){
     <table class="vid-tbl" style="table-layout:fixed;width:100%">
       <thead><tr>
         <th style="${thStyle}" onclick="vidTblSort('title')">Title${_vidSortArrow('title')}</th>
-        <th style="width:90px;${thStyle}" onclick="vidTblSort('playlist')">Playlist${_vidSortArrow('playlist')}</th>
         <th style="width:70px;${thStyle}" onclick="vidTblSort('status')">Status${_vidSortArrow('status')}</th>
         <th style="width:50px;text-align:right;${thStyle}" onclick="vidTblSort('duration')">Dur${_vidSortArrow('duration')}</th>
         <th style="width:62px;text-align:right;${thStyle}" onclick="vidTblSort('posted')">Posted${_vidSortArrow('posted')}</th>
@@ -419,8 +416,7 @@ function _vidRow(v,isChild,postMap){
   const numHtml=postNum?`<span style="color:var(--muted);font-size:10px;margin-right:6px;min-width:18px;display:inline-block">${postNum}</span>`:'';
   const addBtn=v.video_type!=='L'||!v.big_video_id?`<button onclick="event.stopPropagation();openVidModalForBig('${sid}')" style="font-size:10px;font-weight:700;width:16px;height:16px;line-height:14px;text-align:center;border-radius:3px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;margin-right:4px;flex-shrink:0" title="Add child video">+</button>`:(!isChild?'<button style="font-size:10px;font-weight:700;width:16px;height:16px;line-height:14px;text-align:center;border-radius:3px;border:1px solid transparent;background:transparent;color:transparent;margin-right:4px;pointer-events:none;flex-shrink:0">+</button>':'');
   return`<tr class="vid-row${sel?' vid-sel':''}" data-vid="${sid}" onclick="vidCellClick(event,'${sid}')" ondblclick="openVidEdit('${sid}')" oncontextmenu="showVidCtx(event,'${sid}')">
-    <td data-field="title" style="${indent}${!isChild?'font-weight:600;':''}${titleColor}overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${addBtn}${childMark}${numHtml}${v.status==='in_progress'&&v.topic?`<span class="${isSmall?'':'vid-title-text'}" ${isSmall?'style="color:var(--muted)"':''}>${_esc(v.topic)}</span><span style="font-size:10px;color:var(--muted);margin-left:4px;font-weight:400">- ${_esc(v.title)}</span>`:`<span class="${isSmall?'':'vid-title-text'}">${_esc(v.title)}</span>`}</td>
-    <td data-field="playlist" style="font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:90px" title="${_esc(v.playlist||'')}">${_esc(v.playlist||'')}</td>
+    <td data-field="title" style="${indent}${!isChild?'font-weight:600;':''}${titleColor}overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${addBtn}${childMark}${numHtml}${v.status==='in_progress'&&v.topic?`<span class="vid-title-text">${_esc(v.topic)}</span><span style="font-size:10px;color:var(--muted);margin-left:4px;font-weight:400">- ${_esc(v.title)}</span>`:`<span class="vid-title-text">${_esc(v.title)}</span>`}</td>
     <td data-field="status"><span class="vid-status-pill" style="background:${sc}20;color:${sc}">${v.status}</span></td>
     <td data-field="duration_minutes" style="text-align:right;font-size:11px;color:var(--muted)">${durStr}</td>
     <td data-field="post_date" style="text-align:right;font-size:11px;color:${_vidDateColor(v.post_date,v)}">${postStr}</td>
@@ -631,8 +627,6 @@ function vidCellEdit(td,id,field){
   if(field==='status'){
     el=document.createElement('select');
     ['idea','in_progress','published','backup'].forEach(s=>{const o=document.createElement('option');o.value=s;o.textContent=s;if(v.status===s)o.selected=true;el.appendChild(o);});
-  }else if(field==='playlist'){
-    el=document.createElement('input');el.value=v.playlist||'';
   }else if(field==='duration_minutes'){
     el=document.createElement('input');el.type='number';el.step='0.01';el.value=v.duration_minutes||'';
   }else if(field==='post_date'){
@@ -650,7 +644,6 @@ function vidCellEdit(td,id,field){
     let val=el.value;
     if(field==='duration_minutes')val=val?parseFloat(val):null;
     if(field==='post_date')val=val||null;
-    if(field==='playlist')val=val||null;
     const prev=v[field]??null;
     if(val===prev){td.innerHTML=origHtml;return;}
     v[field]=val;save();
@@ -857,7 +850,7 @@ async function saveVidModal(){
     duration_minutes:parseFloat(document.getElementById('vmDuration').value)||null,
 
     big_video_id:_vidGetBigVideoId(),
-    playlist:document.getElementById('vmPlaylist').value.trim()||null
+    playlist:null
   };
   document.querySelectorAll('#vmSteps [data-step]').forEach(el=>{data[el.dataset.step]=el.dataset.val||'not_started';});
   // Default Tab Pub + Upload to na for L-type videos with a parent group (not standalone)
