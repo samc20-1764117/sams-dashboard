@@ -759,7 +759,8 @@
       <select id="vmBigVideo" style="flex:1;min-width:0;padding:8px 6px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box;overflow:hidden;text-overflow:ellipsis">
         <option value="">Big Video (none)</option>
       </select>
-      <input id="vmPlaylist" placeholder="Playlist" style="flex:1;min-width:0;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box">
+      <input id="vmPlaylist" list="vmPlaylistList" placeholder="Playlist" autocomplete="off" style="flex:1;min-width:0;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box">
+      <datalist id="vmPlaylistList"></datalist>
     </div>
     <div style="margin-top:8px;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">Stages <span style="font-weight:400;text-transform:none;letter-spacing:0">(click = toggle, right-click = n/a)</span></div>
     <div style="display:grid;grid-template-columns:repeat(8,1fr);gap:4px;margin-top:4px" id="vmSteps"></div>
