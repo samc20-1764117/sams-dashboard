@@ -53,7 +53,8 @@ function renderVideosPage(){
 
   el.innerHTML=`
     <div class="ov-topbar"><div class="ov-topbar-left"><span class="ov-topbar-label">🎬 Videos</span><span class="ov-topbar-dot"></span></div><span class="ov-topbar-date topbar-date"></span><div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div></div>
-    <div style="display:flex;gap:10px;align-items:center;margin:14px 0 6px;flex-wrap:wrap;position:relative;z-index:2">
+    <div style="display:flex;flex-direction:column;height:calc(100vh - 80px)">
+    <div style="display:flex;gap:10px;align-items:center;margin:14px 0 6px;flex-wrap:wrap;position:relative;z-index:2;flex-shrink:0">
       <div style="display:flex;gap:2px;background:var(--glass);border:1px solid var(--border);border-radius:8px;padding:2px">
         <button class="${viewBtnS('dashboard')}" onclick="_vidSetView('dashboard')">Dashboard</button>
         <button class="${viewBtnS('table')}" onclick="_vidSetView('table')">All Details</button>
@@ -76,7 +77,10 @@ function renderVideosPage(){
       <div style="flex:1"></div>
       <button class="btn btn-dark" onclick="openVidModal()" style="padding:5px 14px;font-size:12px">+ Add Video</button>
     </div>
-    ${bodyHtml}`;
+    <div style="flex:1;min-height:0;overflow-y:auto;padding-bottom:20px">
+    ${bodyHtml}
+    </div>
+    </div>`;
 }
 
 // ── DASHBOARD VIEW (default — In Progress + Ideas) ───────────────────────────
@@ -100,22 +104,27 @@ function _vidRenderDashboard(){
       <div class="vid-stat-card"><div class="vid-stat-num" style="color:#94a3b8">${stats.backup}</div><div class="vid-stat-lbl">Backup</div></div>
       <div class="vid-stat-card"><div class="vid-stat-num">${stats.total}</div><div class="vid-stat-lbl">Total</div></div>
     </div>
-    ${inProgress.length?`
-    <div class="vid-dash-section">
-      <div class="vid-dash-header" style="border-left-color:#f59e0b">In Progress <span class="vid-count">${inProgress.length}</span></div>
-      ${_vidDashList(inProgress)}
-    </div>`:''}
-    ${ideas.length?`
-    <div class="vid-dash-section">
-      <div class="vid-dash-header" style="border-left-color:#8b5cf6">Ideas <span class="vid-count">${ideas.length}</span></div>
-      ${_vidDashList(ideas)}
-    </div>`:''}
-    ${backup.length?`
-    <div class="vid-dash-section">
-      <div class="vid-dash-header" style="border-left-color:#94a3b8">Backup <span class="vid-count">${backup.length}</span></div>
-      ${_vidDashList(backup)}
-    </div>`:''}
-    ${!inProgress.length&&!ideas.length&&!backup.length?'<div style="text-align:center;color:var(--muted);margin:40px 0;font-size:13px">No active videos. All caught up!</div>':''}`;
+    <div style="display:flex;gap:20px;align-items:flex-start">
+      <div style="flex:1;min-width:0">
+        ${inProgress.length?`
+        <div class="vid-dash-section">
+          <div class="vid-dash-header" style="border-left-color:#f59e0b">In Progress <span class="vid-count">${inProgress.length}</span></div>
+          ${_vidDashList(inProgress)}
+        </div>`:'<div style="color:var(--muted);font-size:12px;padding:16px 0">No videos in progress</div>'}
+        ${backup.length?`
+        <div class="vid-dash-section">
+          <div class="vid-dash-header" style="border-left-color:#94a3b8">Backup <span class="vid-count">${backup.length}</span></div>
+          ${_vidDashList(backup)}
+        </div>`:''}
+      </div>
+      <div style="flex:1;min-width:0">
+        ${ideas.length?`
+        <div class="vid-dash-section">
+          <div class="vid-dash-header" style="border-left-color:#8b5cf6">Ideas <span class="vid-count">${ideas.length}</span></div>
+          ${_vidDashList(ideas)}
+        </div>`:'<div style="color:var(--muted);font-size:12px;padding:16px 0">No ideas yet</div>'}
+      </div>
+    </div>`;
 }
 
 function _vidDashList(vids){
