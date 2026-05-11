@@ -756,11 +756,12 @@ function openVidModal(type){
   document.getElementById('vidMTitle').textContent='Add Video';
   document.getElementById('vmTitle').value='';
   document.getElementById('vmTopic').value='';
-  document.getElementById('vmType').value='';
+  document.getElementById('vmType').value=type||'B';
   document.getElementById('vmStatus').value='idea';
   document.getElementById('vmPostDate').value='';
   document.getElementById('vmDuration').value='';
 
+  document.getElementById('vmBigVideoWrap').style.display=(type||'B')==='B'?'none':'';
   _vidPopulateBigVideoSelect('');
   _vidPopulatePlaylistList();
   document.getElementById('vmPlaylist').value='';
@@ -782,6 +783,7 @@ function openVidEdit(id){
   document.getElementById('vmPostDate').value=v.post_date||'';
   document.getElementById('vmDuration').value=v.duration_minutes||'';
 
+  document.getElementById('vmBigVideoWrap').style.display=v.video_type==='B'?'none':'';
   _vidPopulateBigVideoSelect(v.big_video_id||'');
   _vidPopulatePlaylistList();
   document.getElementById('vmPlaylist').value=v.playlist||'';
@@ -822,6 +824,8 @@ function _vidNaModalStep(e,el){
   _vidUpdateModalStep(el,next);
 }
 function _vidTypeChanged(type){
+  document.getElementById('vmBigVideoWrap').style.display=type==='B'?'none':'';
+  if(type==='B'){document.getElementById('vmBigVideo').value='';}
   if(_vidMode!=='add')return;
   const els=document.querySelectorAll('#vmSteps [data-step]');
   els.forEach(el=>{
