@@ -6,7 +6,7 @@ let _vidFilter='all';
 let _vidGroupFilter='all';
 let _vidSearch='';
 let _vidView='dashboard'; // dashboard | table | board | groups
-let _vidSortCol=null,_vidSortDir=1;
+let _vidSortCol=null,_vidSortDir=1,_vidShowCompleted=false;
 
 const VID_STEPS=['step_build','step_record','step_film','step_cut','step_thumbnail','step_description','step_tableau_public','step_upload_tableau'];
 const VID_STEP_LABELS={step_build:'Build',step_record:'Rec',step_film:'Film',step_cut:'Cut',step_thumbnail:'Thumb',step_description:'Desc',step_tableau_public:'Tab Pub',step_upload_tableau:'Upload'};
@@ -202,8 +202,8 @@ function _vidSortVids(vids){
       return av<bv?-dir:av>bv?dir:0;
     });
   }else{
-    // Default: posted (has date) first, then in_progress, then ideas
-    const statusOrder={published:0,in_progress:1,idea:2,backup:3};
+    // When showing completed: completed first, then rest. Otherwise: posted first, in_progress, ideas
+    const statusOrder=_vidShowCompleted?{published:0,in_progress:1,idea:2,backup:3}:{in_progress:0,idea:1,published:2,backup:3};
     sorted.sort((a,b)=>{
       const sa=statusOrder[a.status]??9,sb=statusOrder[b.status]??9;
       if(sa!==sb)return sa-sb;
@@ -214,15 +214,16 @@ function _vidSortVids(vids){
   }
   return sorted;
 }
+function _vidToggleCompleted(){_vidShowCompleted=!_vidShowCompleted;renderVideosPage();}
 function _vidRenderTable(){
   let vids=_vidFiltered();
-  // Hide published videos with post_date in the past
   const today=d2s(new Date());
-  vids=vids.filter(v=>!(v.status==='published'&&v.post_date&&v.post_date<today));
+  if(!_vidShowCompleted)vids=vids.filter(v=>!(v.status==='published'&&v.post_date&&v.post_date<today));
   const sorted=_vidSortVids(vids);
   const groupedHtml=_vidSortCol?sorted.map(v=>_vidRow(v,false)).join(''):_vidBuildRows(sorted);
   const thStyle='cursor:pointer;user-select:none';
-  return`<div style="overflow-x:auto;margin-top:4px">
+  return`<div style="display:flex;justify-content:flex-end;padding:4px 8px 0"><button class="vid-filter-btn${_vidShowCompleted?' active':''}" onclick="_vidToggleCompleted()" style="font-size:11px;padding:3px 10px">${_vidShowCompleted?'Hide':'Show'} Completed</button></div>
+  <div style="overflow-x:auto">
     <table class="vid-tbl" style="table-layout:fixed;width:100%">
       <thead><tr>
         <th style="${thStyle}" onclick="vidTblSort('title')">Title${_vidSortArrow('title')}</th>
