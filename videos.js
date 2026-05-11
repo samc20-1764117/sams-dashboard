@@ -928,24 +928,48 @@ async function cycleVidStep(id,step){
 function _vidCelebrate(id){
   const row=document.querySelector(`[data-vid="${id}"]`);if(!row)return;
   const rect=row.getBoundingClientRect();
+  // Glow pulse
+  row.style.transition='box-shadow .4s, transform .4s';
+  row.style.boxShadow='0 0 20px rgba(16,185,129,.5), 0 0 40px rgba(16,185,129,.2)';
+  row.style.transform='scale(1.02)';
+  // Shimmer sweep
+  const shimmer=document.createElement('div');
+  shimmer.style.cssText='position:absolute;top:0;left:-100%;width:60%;height:100%;background:linear-gradient(90deg,transparent,rgba(16,185,129,.15),transparent);pointer-events:none;border-radius:inherit;z-index:5';
+  const prevPos=row.style.position;const prevOvf=row.style.overflow;
+  row.style.position='relative';row.style.overflow='hidden';
+  row.appendChild(shimmer);
+  shimmer.style.transition='left 1s ease-in-out';
+  requestAnimationFrame(()=>requestAnimationFrame(()=>shimmer.style.left='140%'));
+  // Green confetti around (not inside) the row
+  const colors=['#10b981','#4ade80','#bbf7d0','#16a34a','#a7f3d0'];
   const cx=rect.left+rect.width/2,cy=rect.top+rect.height/2;
-  const colors=['#10b981','#f59e0b','#8b5cf6','#ec4899','#3b82f6','#ef4444'];
-  for(let i=0;i<28;i++){
+  for(let i=0;i<24;i++){
     const p=document.createElement('div');
     const sz=Math.random()*6+3;
-    const angle=Math.random()*Math.PI*2;
-    const dist=Math.random()*120+40;
+    // Start from edges of row, not center
+    const side=Math.floor(Math.random()*4);
+    let sx,sy;
+    if(side===0){sx=rect.left+Math.random()*rect.width;sy=rect.top-2;}
+    else if(side===1){sx=rect.left+Math.random()*rect.width;sy=rect.bottom+2;}
+    else if(side===2){sx=rect.left-2;sy=rect.top+Math.random()*rect.height;}
+    else{sx=rect.right+2;sy=rect.top+Math.random()*rect.height;}
+    const angle=Math.atan2(sy-cy,sx-cx);
+    const dist=40+Math.random()*80;
     const dx=Math.cos(angle)*dist,dy=Math.sin(angle)*dist;
-    p.style.cssText=`position:fixed;left:${cx}px;top:${cy}px;width:${sz}px;height:${sz}px;border-radius:${Math.random()>.5?'50%':'1px'};background:${colors[i%colors.length]};pointer-events:none;z-index:9999;opacity:1;transition:all .7s cubic-bezier(.25,.46,.45,.94)`;
+    p.style.cssText=`position:fixed;left:${sx}px;top:${sy}px;width:${sz}px;height:${sz}px;border-radius:${Math.random()>.4?'50%':'2px'};background:${colors[i%colors.length]};pointer-events:none;z-index:9999;opacity:1;transition:all .8s cubic-bezier(.15,.46,.45,.94)`;
     document.body.appendChild(p);
     requestAnimationFrame(()=>requestAnimationFrame(()=>{
-      p.style.left=cx+dx+'px';p.style.top=cy+dy+'px';p.style.opacity='0';p.style.transform=`scale(0.3) rotate(${Math.random()*360}deg)`;
+      p.style.left=sx+dx+'px';p.style.top=sy+dy+'px';p.style.opacity='0';
+      p.style.transform=`scale(0.2) rotate(${Math.random()*360}deg)`;
     }));
-    setTimeout(()=>p.remove(),750);
+    setTimeout(()=>p.remove(),900);
   }
-  row.style.transition='box-shadow .3s';
-  row.style.boxShadow='0 0 12px rgba(16,185,129,.4)';
-  setTimeout(()=>{row.style.boxShadow='';setTimeout(()=>row.style.transition='',300);},1200);
+  // Reset
+  setTimeout(()=>{
+    row.style.boxShadow='';row.style.transform='';
+    shimmer.remove();row.style.position=prevPos;row.style.overflow=prevOvf;
+    setTimeout(()=>row.style.transition='',300);
+  },1800);
 }
 
 // ── Keyboard ──────────────────────────────────────────────────────────────────
