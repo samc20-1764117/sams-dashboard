@@ -14,11 +14,15 @@ const VID_STEP_LABELS={step_build:'Build',step_record:'Rec',step_film:'Film',ste
 const VID_STATUS_COLORS={published:'#10b981',in_progress:'#f59e0b',idea:'#8b5cf6',backup:'#94a3b8'};
 const VID_STEP_COLORS={done:'#10b981',in_progress:'#f59e0b',not_started:'transparent',na:'#d1d5db',backup:'#94a3b8',issue:'#ef4444'};
 
-// Static post-order numbering: videos with post_date sorted asc get sequential #
-function _vidPostOrder(){
+// Sequential numbering by id order, adjusts on delete
+function _vidSeqMap(){
   const map={};
-  const posted=(st.videos||[]).filter(v=>!v.is_deleted&&v.post_date).sort((a,b)=>a.post_date.localeCompare(b.post_date));
-  posted.forEach((v,i)=>{map[String(v.id)]=i+1;});
+  const all=(st.videos||[]).filter(v=>!v.is_deleted).sort((a,b)=>{
+    const ai=typeof a.id==='number'?a.id:parseInt(a.id)||9999999;
+    const bi=typeof b.id==='number'?b.id:parseInt(b.id)||9999999;
+    return ai-bi;
+  });
+  all.forEach((v,i)=>{map[String(v.id)]=i+1;});
   return map;
 }
 
@@ -159,7 +163,7 @@ function _vidDashList(vids,simple){
 
 let _vidDashPostMap=null;
 function _vidDashRow(v,isChild,simple){
-  if(!_vidDashPostMap)_vidDashPostMap=_vidPostOrder();
+  if(!_vidDashPostMap)_vidDashPostMap=_vidSeqMap();
   const sid=String(v.id);
   const sel=_vidSelected.has(sid);
   const isSmall=v.video_type==='L'&&v.group_name;
@@ -255,7 +259,7 @@ function _vidRenderTable(){
     });
   }
   const sorted=_vidSortVids(vids);
-  const postMap=_vidPostOrder();
+  const postMap=_vidSeqMap();
   let groupedHtml;
   if(_vidSortCol){
     groupedHtml=sorted.map(v=>_vidRow(v,false,postMap)).join('');
