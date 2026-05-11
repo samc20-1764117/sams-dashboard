@@ -706,7 +706,7 @@ function _vidRenderSteps(vals){
     const color=isDone?'#fff':isNa?'var(--muted)':'var(--muted)';
     return`<div style="display:flex;flex-direction:column;gap:2px;align-items:center">
       <span style="font-size:9px;color:var(--muted)">${VID_STEP_LABELS[s]}</span>
-      <div data-step="${s}" data-val="${cur}" onclick="_vidToggleModalStep(this)" oncontextmenu="_vidNaModalStep(event,this)" style="width:24px;height:24px;border-radius:6px;border:2px solid ${border};background:${bg};opacity:${opacity};cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:${color};user-select:none">${check}</div>
+      <div data-step="${s}" data-val="${cur}" onclick="_vidToggleModalStep(this)" oncontextmenu="_vidNaModalStep(event,this);return false" style="width:24px;height:24px;border-radius:6px;border:2px solid ${border};background:${bg};opacity:${opacity};cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:${color};user-select:none">${check}</div>
     </div>`;
   }).join('');
 }
