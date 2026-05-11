@@ -14,15 +14,11 @@ const VID_STEP_LABELS={step_build:'Build',step_record:'Rec',step_film:'Film',ste
 const VID_STATUS_COLORS={published:'#10b981',in_progress:'#f59e0b',idea:'#8b5cf6',backup:'#94a3b8'};
 const VID_STEP_COLORS={done:'#10b981',in_progress:'#f59e0b',not_started:'transparent',na:'#d1d5db',backup:'#94a3b8',issue:'#ef4444'};
 
-// Sequential numbering by id order, adjusts on delete
+// Sequential numbering by post_date order, only for videos with a date
 function _vidSeqMap(){
   const map={};
-  const all=(st.videos||[]).filter(v=>!v.is_deleted).sort((a,b)=>{
-    const ai=typeof a.id==='number'?a.id:parseInt(a.id)||9999999;
-    const bi=typeof b.id==='number'?b.id:parseInt(b.id)||9999999;
-    return ai-bi;
-  });
-  all.forEach((v,i)=>{map[String(v.id)]=i+1;});
+  const dated=(st.videos||[]).filter(v=>!v.is_deleted&&v.post_date).sort((a,b)=>a.post_date.localeCompare(b.post_date));
+  dated.forEach((v,i)=>{map[String(v.id)]=i+1;});
   return map;
 }
 
