@@ -5,6 +5,7 @@ let _vidCtxId=null;
 let _vidFilter='all'; // all | published | in_progress | idea | backup
 let _vidGroupFilter='all';
 let _vidSearch='';
+let _vidView='table'; // table | board | groups
 
 const VID_STEPS=['step_build','step_record','step_film','step_cut','step_thumbnail','step_description','step_tableau_public','step_upload_tableau','step_answer_comments','step_short'];
 const VID_STEP_LABELS={step_build:'Build',step_record:'Rec',step_film:'Film',step_cut:'Cut',step_thumbnail:'Thumb',step_description:'Desc',step_tableau_public:'Tab Pub',step_upload_tableau:'Upload',step_answer_comments:'Ans',step_short:'Short'};
@@ -30,19 +31,26 @@ function _vidStats(){
   return{total:vids.length,published:vids.filter(v=>v.status==='published').length,in_progress:vids.filter(v=>v.status==='in_progress').length,idea:vids.filter(v=>v.status==='idea').length,backup:vids.filter(v=>v.status==='backup').length};
 }
 
-// ── Render ────────────────────────────────────────────────────────────────────
+// ── Main Render ──────────────────────────────────────────────────────────────
 function renderVideosPage(){
   const el=document.getElementById('page-videos');if(!el)return;
   const stats=_vidStats();
-  const vids=_vidFiltered();
   const groups=_vidGroups();
+  const viewBtnS=v=>`vid-view-btn${_vidView===v?' active':''}`;
 
-  // Build grouped view: B videos with their L children
-  const groupedHtml=_vidBuildRows(vids);
+  let bodyHtml='';
+  if(_vidView==='table')bodyHtml=_vidRenderTable();
+  else if(_vidView==='board')bodyHtml=_vidRenderBoard();
+  else if(_vidView==='groups')bodyHtml=_vidRenderGroups();
 
   el.innerHTML=`
     <div class="ov-topbar"><div class="ov-topbar-left"><span class="ov-topbar-label">🎬 Videos</span><span class="ov-topbar-dot"></span></div><span class="ov-topbar-date topbar-date"></span><div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div></div>
-    <div style="display:flex;gap:10px;align-items:center;margin:14px 0 10px;flex-wrap:wrap">
+    <div style="display:flex;gap:10px;align-items:center;margin:14px 0 6px;flex-wrap:wrap">
+      <div style="display:flex;gap:2px;background:var(--glass);border:1px solid var(--border);border-radius:8px;padding:2px">
+        <button class="${viewBtnS('table')}" onclick="_vidSetView('table')">Table</button>
+        <button class="${viewBtnS('board')}" onclick="_vidSetView('board')">Board</button>
+        <button class="${viewBtnS('groups')}" onclick="_vidSetView('groups')">Groups</button>
+      </div>
       <div style="display:flex;gap:4px">
         <button class="vid-filter-btn${_vidFilter==='all'?' active':''}" onclick="_vidSetFilter('all')">All <span class="vid-count">${stats.total}</span></button>
         <button class="vid-filter-btn${_vidFilter==='published'?' active':''}" onclick="_vidSetFilter('published')">Published <span class="vid-count">${stats.published}</span></button>
@@ -52,52 +60,49 @@ function renderVideosPage(){
       </div>
       <select id="vidGroupSel" onchange="_vidSetGroup(this.value)" style="padding:5px 8px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:12px;background:var(--bg);color:var(--text);outline:none">
         <option value="all"${_vidGroupFilter==='all'?' selected':''}>All Groups</option>
-        ${groups.map(g=>`<option value="${g}"${_vidGroupFilter===g?' selected':''}>${g}</option>`).join('')}
+        ${groups.map(g=>`<option value="${_esc(g)}"${_vidGroupFilter===g?' selected':''}>${_esc(g)}</option>`).join('')}
       </select>
       <input id="vidSearchInput" type="text" placeholder="Search videos..." value="${_vidSearch.replace(/"/g,'&quot;')}" oninput="_vidSetSearch(this.value)" style="padding:5px 10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:12px;background:var(--bg);color:var(--text);outline:none;width:180px">
       <div style="flex:1"></div>
       <button class="btn btn-dark" onclick="openVidModal()" style="padding:5px 14px;font-size:12px">+ Add Video</button>
     </div>
-    <div style="overflow-x:auto">
-      <table class="vid-tbl">
-        <thead><tr>
-          <th style="width:36px">#</th>
-          <th style="width:36px">Type</th>
-          <th>Title</th>
-          <th style="width:120px">Group</th>
-          <th style="width:70px">Status</th>
-          <th style="width:50px">Dur</th>
-          <th style="width:82px">Posted</th>
-          ${VID_STEPS.map(s=>`<th style="width:28px;text-align:center;font-size:9px" title="${VID_STEP_LABELS[s]}">${VID_STEP_LABELS[s].slice(0,2)}</th>`).join('')}
-          <th style="width:28px"></th>
-        </tr></thead>
-        <tbody>${groupedHtml}</tbody>
-      </table>
-    </div>`;
+    ${bodyHtml}`;
+}
+
+// ── TABLE VIEW ───────────────────────────────────────────────────────────────
+function _vidRenderTable(){
+  const vids=_vidFiltered();
+  const groupedHtml=_vidBuildRows(vids);
+  return`<div style="overflow-x:auto;margin-top:4px">
+    <table class="vid-tbl">
+      <thead><tr>
+        <th style="width:36px">#</th>
+        <th style="width:36px">Type</th>
+        <th>Title</th>
+        <th style="width:120px">Group</th>
+        <th style="width:70px">Status</th>
+        <th style="width:50px">Dur</th>
+        <th style="width:82px">Posted</th>
+        ${VID_STEPS.map(s=>`<th style="width:28px;text-align:center;font-size:9px" title="${VID_STEP_LABELS[s]}">${VID_STEP_LABELS[s].slice(0,2)}</th>`).join('')}
+        <th style="width:28px"></th>
+      </tr></thead>
+      <tbody>${groupedHtml}</tbody>
+    </table>
+  </div>`;
 }
 
 function _vidBuildRows(vids){
-  // Group B videos with their L children
   const seen=new Set();
   let html='';
-  // First show B videos with children expanded
   const bVids=vids.filter(v=>v.video_type==='B');
   const lVids=vids.filter(v=>v.video_type!=='B');
-
   bVids.forEach(b=>{
     seen.add(String(b.id));
     html+=_vidRow(b,false);
-    // Find L children
     const children=lVids.filter(l=>l.group_name&&l.group_name===b.group_name);
-    children.forEach(l=>{
-      seen.add(String(l.id));
-      html+=_vidRow(l,true);
-    });
+    children.forEach(l=>{seen.add(String(l.id));html+=_vidRow(l,true);});
   });
-  // Remaining L videos not under any B
-  lVids.filter(l=>!seen.has(String(l.id))).forEach(l=>{
-    html+=_vidRow(l,false);
-  });
+  lVids.filter(l=>!seen.has(String(l.id))).forEach(l=>{html+=_vidRow(l,false);});
   return html;
 }
 
@@ -122,13 +127,118 @@ function _vidRow(v,isChild){
   </tr>`;
 }
 
-function _esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+// ── BOARD VIEW (Kanban by status) ────────────────────────────────────────────
+function _vidRenderBoard(){
+  const vids=_vidFiltered();
+  const cols=[
+    {key:'idea',label:'Ideas',color:'#8b5cf6'},
+    {key:'in_progress',label:'In Progress',color:'#f59e0b'},
+    {key:'published',label:'Published',color:'#10b981'},
+    {key:'backup',label:'Backup',color:'#94a3b8'}
+  ];
+  return`<div class="vid-board">${cols.map(col=>{
+    const items=vids.filter(v=>v.status===col.key);
+    return`<div class="vid-board-col" ondragover="event.preventDefault();this.classList.add('vid-board-dragover')" ondragleave="this.classList.remove('vid-board-dragover')" ondrop="_vidBoardDrop(event,'${col.key}');this.classList.remove('vid-board-dragover')">
+      <div class="vid-board-header" style="border-bottom-color:${col.color}">
+        <span style="color:${col.color};font-weight:700">${col.label}</span>
+        <span class="vid-count">${items.length}</span>
+      </div>
+      <div class="vid-board-items">${items.map(v=>_vidBoardCard(v)).join('')}</div>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+function _vidBoardCard(v){
+  const sid=String(v.id);
+  const sel=_vidSelected.has(sid);
+  const postStr=v.post_date?new Date(v.post_date+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}):'';
+  const doneSteps=VID_STEPS.filter(s=>v[s]==='done').length;
+  const totalSteps=VID_STEPS.filter(s=>v[s]!=='na').length;
+  const pct=totalSteps?Math.round(doneSteps/totalSteps*100):0;
+  return`<div class="vid-board-card${sel?' vid-sel':''}" draggable="true" ondragstart="_vidBoardDragStart(event,'${sid}')" onclick="vidRowClick(event,'${sid}')" ondblclick="openVidEdit('${sid}')" oncontextmenu="showVidCtx(event,'${sid}')">
+    <div style="display:flex;align-items:center;gap:4px;margin-bottom:3px">
+      <span class="vid-type-badge" style="background:${v.video_type==='B'?'#0ea5e9':'#a78bfa'};color:#fff;font-size:9px;padding:0 4px">${v.video_type||'?'}</span>
+      ${v.group_name?`<span style="font-size:9px;color:var(--muted)">${_esc(v.group_name)}</span>`:''}
+    </div>
+    <div style="font-size:12px;font-weight:500;color:var(--text);line-height:1.35;margin-bottom:4px">${_esc(v.title)}</div>
+    <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:var(--muted)">
+      ${postStr?`<span>${postStr}</span>`:''}
+      ${v.duration_minutes?`<span>${v.duration_minutes.toFixed(1)}m</span>`:''}
+      <div style="flex:1"></div>
+      <div style="display:flex;align-items:center;gap:3px">
+        <div style="width:36px;height:4px;background:var(--border);border-radius:2px;overflow:hidden"><div style="width:${pct}%;height:100%;background:#10b981;border-radius:2px"></div></div>
+        <span style="font-size:9px">${pct}%</span>
+      </div>
+    </div>
+  </div>`;
+}
+
+let _vidDragId=null;
+function _vidBoardDragStart(e,id){_vidDragId=id;e.dataTransfer.effectAllowed='move';}
+async function _vidBoardDrop(e,newStatus){
+  e.preventDefault();
+  if(!_vidDragId)return;
+  const v=(st.videos||[]).find(x=>String(x.id)===_vidDragId);if(!v)return;
+  const prev=v.status;
+  if(prev===newStatus){_vidDragId=null;return;}
+  v.status=newStatus;
+  if(newStatus==='published'&&!v.post_date)v.post_date=d2s(new Date());
+  save();renderVideosPage();
+  const patch={status:newStatus};
+  if(newStatus==='published'&&v.post_date)patch.post_date=v.post_date;
+  pushUndo(async()=>{v.status=prev;save();renderVideosPage();await sbReqSilent('PATCH','videos',{status:prev},`?id=eq.${_vidDragId}`);},'Status change');
+  await sbReqSilent('PATCH','videos',patch,`?id=eq.${_vidDragId}`);
+  _vidDragId=null;
+}
+
+// ── GROUPS VIEW (Cards per build group) ──────────────────────────────────────
+function _vidRenderGroups(){
+  const vids=_vidFiltered();
+  const groupNames=_vidGroups();
+  // Also include ungrouped
+  const ungrouped=vids.filter(v=>!v.group_name);
+
+  let html='<div class="vid-groups-grid">';
+  groupNames.forEach(gn=>{
+    const gVids=vids.filter(v=>v.group_name===gn);
+    const bVid=gVids.find(v=>v.video_type==='B');
+    const lVids=gVids.filter(v=>v.video_type!=='B');
+    const pub=gVids.filter(v=>v.status==='published').length;
+    const total=gVids.length;
+    const pct=total?Math.round(pub/total*100):0;
+    const sc=pct===100?'#10b981':pct>0?'#f59e0b':'#8b5cf6';
+
+    html+=`<div class="vid-group-card" onclick="_vidSetGroup('${_esc(gn)}');_vidSetView('table')">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <span style="font-size:13px;font-weight:700;color:var(--text)">${_esc(gn)}</span>
+        <span style="font-size:10px;font-weight:600;color:${sc}">${pub}/${total}</span>
+      </div>
+      ${bVid?`<div style="font-size:11px;color:var(--muted);margin-bottom:6px;line-height:1.3">${_esc(bVid.title)}</div>`:''}
+      <div style="width:100%;height:5px;background:var(--border);border-radius:3px;overflow:hidden;margin-bottom:6px"><div style="width:${pct}%;height:100%;background:${sc};border-radius:3px;transition:width .3s"></div></div>
+      <div style="display:flex;flex-wrap:wrap;gap:3px">
+        ${lVids.slice(0,8).map(l=>{const lsc=VID_STATUS_COLORS[l.status]||'#94a3b8';return`<span style="font-size:9px;padding:1px 5px;border-radius:4px;background:${lsc}15;color:${lsc}">${_esc((l.topic||l.title).slice(0,20))}</span>`;}).join('')}
+        ${lVids.length>8?`<span style="font-size:9px;color:var(--muted)">+${lVids.length-8} more</span>`:''}
+      </div>
+    </div>`;
+  });
+
+  if(ungrouped.length){
+    html+=`<div class="vid-group-card">
+      <div style="font-size:13px;font-weight:700;color:var(--muted);margin-bottom:6px">Ungrouped</div>
+      <div style="font-size:11px;color:var(--muted)">${ungrouped.length} video(s)</div>
+    </div>`;
+  }
+  html+='</div>';
+  return html;
+}
+
+// ── View Switcher ────────────────────────────────────────────────────────────
+function _vidSetView(v){_vidView=v;renderVideosPage();}
 
 // ── Filters ───────────────────────────────────────────────────────────────────
 function _vidSetFilter(f){_vidFilter=f;renderVideosPage();}
 function _vidSetGroup(g){_vidGroupFilter=g;renderVideosPage();}
 function _vidSetSearch(q){_vidSearch=q;renderVideosPage();
-  // Keep focus on search input after re-render
   requestAnimationFrame(()=>{const inp=document.getElementById('vidSearchInput');if(inp){inp.focus();inp.setSelectionRange(inp.value.length,inp.value.length);}});
 }
 
@@ -150,9 +260,9 @@ function vidRowClick(e,id){
 }
 
 function _applyVidSel(){
-  document.querySelectorAll('.vid-row').forEach(r=>{
-    const id=r.dataset.vid;
-    r.classList.toggle('vid-sel',_vidSelected.has(id));
+  document.querySelectorAll('.vid-row,.vid-board-card').forEach(r=>{
+    const id=r.dataset?.vid;
+    if(id)r.classList.toggle('vid-sel',_vidSelected.has(id));
   });
 }
 
@@ -166,21 +276,9 @@ function showVidCtx(e,id){
   menu.style.left=Math.min(e.clientX,window.innerWidth-165)+'px';
   menu.style.top=Math.min(e.clientY,window.innerHeight-120)+'px';
 }
-
-function vidCtxEdit(){
-  document.getElementById('vidCtxMenu').style.display='none';
-  if(_vidCtxId)openVidEdit(_vidCtxId);
-}
-
-function vidCtxDuplicate(){
-  document.getElementById('vidCtxMenu').style.display='none';
-  _vidSelected.forEach(id=>_vidDuplicate(id));
-}
-
-function vidCtxDelete(){
-  document.getElementById('vidCtxMenu').style.display='none';
-  [..._vidSelected].forEach(id=>delVideo(id));
-}
+function vidCtxEdit(){document.getElementById('vidCtxMenu').style.display='none';if(_vidCtxId)openVidEdit(_vidCtxId);}
+function vidCtxDuplicate(){document.getElementById('vidCtxMenu').style.display='none';_vidSelected.forEach(id=>_vidDuplicate(id));}
+function vidCtxDelete(){document.getElementById('vidCtxMenu').style.display='none';[..._vidSelected].forEach(id=>delVideo(id));}
 
 // ── Modal ─────────────────────────────────────────────────────────────────────
 function openVidModal(){
@@ -247,11 +345,7 @@ async function saveVidModal(){
     group_name:document.getElementById('vmGroup').value.trim()||null,
     playlist:document.getElementById('vmPlaylist').value.trim()||null
   };
-  // Collect step values from selects
-  document.querySelectorAll('#vmSteps select[data-step]').forEach(sel=>{
-    data[sel.dataset.step]=sel.value;
-  });
-
+  document.querySelectorAll('#vmSteps select[data-step]').forEach(sel=>{data[sel.dataset.step]=sel.value;});
   closeMod('vidModal');
 
   if(_vidMode==='edit'&&_vidEditId){
@@ -281,10 +375,7 @@ async function delVideo(id){
   st.videos=st.videos.filter(x=>String(x.id)!==sid);
   _vidSelected.delete(sid);
   save();renderVideosPage();
-  pushUndo(async()=>{
-    st.videos.push(copy);save();renderVideosPage();
-    await sbReqSilent('POST','videos',copy);
-  },'Deleted video');
+  pushUndo(async()=>{st.videos.push(copy);save();renderVideosPage();await sbReqSilent('POST','videos',copy);},'Deleted video');
   if(!sid.startsWith('l-'))await sbReqSilent('DELETE','videos',null,`?id=eq.${sid}`);
 }
 
@@ -300,7 +391,7 @@ async function _vidDuplicate(id){
   save();renderVideosPage();
 }
 
-// ── Cycle Step (click dot to cycle status) ────────────────────────────────────
+// ── Cycle Step ────────────────────────────────────────────────────────────────
 async function cycleVidStep(id,step){
   const v=(st.videos||[]).find(x=>String(x.id)===String(id));if(!v)return;
   const order=['not_started','in_progress','done','na'];
@@ -314,31 +405,17 @@ async function cycleVidStep(id,step){
   await sbReqSilent('PATCH','videos',{[step]:next},`?id=eq.${id}`);
 }
 
-// ── Copy/Paste (keyboard) ─────────────────────────────────────────────────────
+// ── Keyboard ──────────────────────────────────────────────────────────────────
 document.addEventListener('keydown',e=>{
   if(activePg!=='videos')return;
   if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'||e.target.tagName==='SELECT'||e.target.isContentEditable)return;
-  // Delete selected
-  if((e.key==='Delete'||e.key==='Backspace')&&_vidSelected.size>0){
-    e.preventDefault();[..._vidSelected].forEach(id=>delVideo(id));return;
-  }
-  // Copy
-  if((e.metaKey||e.ctrlKey)&&e.key==='c'&&_vidSelected.size>0){
-    e.preventDefault();
-    _vidCopied=[];
-    _vidSelected.forEach(id=>{const v=(st.videos||[]).find(x=>String(x.id)===String(id));if(v)_vidCopied.push({...v});});
-    showToast('Copied '+_vidCopied.length+' video(s)','#0ea5e9',1500);return;
-  }
-  // Paste
-  if((e.metaKey||e.ctrlKey)&&e.key==='v'&&_vidCopied.length>0){
-    e.preventDefault();
-    _vidCopied.forEach(v=>_vidDuplicate(v.id));return;
-  }
-  // N = new video
+  if((e.key==='Delete'||e.key==='Backspace')&&_vidSelected.size>0){e.preventDefault();[..._vidSelected].forEach(id=>delVideo(id));return;}
+  if((e.metaKey||e.ctrlKey)&&e.key==='c'&&_vidSelected.size>0){e.preventDefault();_vidCopied=[];_vidSelected.forEach(id=>{const v=(st.videos||[]).find(x=>String(x.id)===String(id));if(v)_vidCopied.push({...v});});showToast('Copied '+_vidCopied.length+' video(s)','#0ea5e9',1500);return;}
+  if((e.metaKey||e.ctrlKey)&&e.key==='v'&&_vidCopied.length>0){e.preventDefault();_vidCopied.forEach(v=>_vidDuplicate(v.id));return;}
   if(e.key==='n'&&!e.metaKey&&!e.ctrlKey){e.preventDefault();openVidModal();return;}
 });
 
 // ── Close context menu on click elsewhere ─────────────────────────────────────
-document.addEventListener('click',e=>{
-  if(!e.target.closest('#vidCtxMenu')){document.getElementById('vidCtxMenu').style.display='none';}
-});
+document.addEventListener('click',e=>{if(!e.target.closest('#vidCtxMenu'))document.getElementById('vidCtxMenu').style.display='none';});
+
+function _esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}

@@ -787,6 +787,22 @@ body.dark .bday-add-menu{background:rgba(38,20,10,.97);border-color:rgba(255,220
 .vid-filter-btn.active{background:rgba(14,165,233,.12);color:#0ea5e9;border-color:rgba(14,165,233,.3)}
 .vid-filter-btn:hover{border-color:rgba(14,165,233,.4)}
 .vid-count{font-size:10px;opacity:.7;margin-left:2px}
+.vid-view-btn{padding:4px 10px;border:none;border-radius:6px;background:transparent;color:var(--muted);font-family:inherit;font-size:11px;font-weight:500;cursor:pointer;transition:all .12s}
+.vid-view-btn.active{background:rgba(14,165,233,.15);color:#0ea5e9;font-weight:600}
+.vid-view-btn:hover{color:var(--text)}
+.vid-board{display:flex;gap:12px;margin-top:8px;align-items:flex-start;overflow-x:auto;padding-bottom:12px}
+.vid-board-col{flex:1;min-width:220px;background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:0;overflow:hidden}
+.vid-board-header{padding:10px 12px;font-size:12px;display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid var(--border)}
+.vid-board-items{padding:8px;display:flex;flex-direction:column;gap:6px;max-height:calc(100vh - 220px);overflow-y:auto}
+.vid-board-card{background:rgba(255,255,255,.7);border:1px solid var(--border);border-radius:8px;padding:8px 10px;cursor:pointer;transition:box-shadow .12s,transform .12s}
+.vid-board-card:hover{box-shadow:0 2px 8px rgba(0,0,0,.06);transform:translateY(-1px)}
+.vid-board-card.vid-sel{border-color:rgba(14,165,233,.4);background:rgba(14,165,233,.05)}
+.vid-board-dragover{background:rgba(14,165,233,.06)!important}
+.vid-groups-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-top:8px}
+.vid-group-card{background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:14px 16px;cursor:pointer;transition:box-shadow .15s,transform .15s}
+.vid-group-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.08);transform:translateY(-2px)}
+body.dark .vid-board-card{background:rgba(40,30,50,.6)}
+body.dark .vid-group-card,body.dark .vid-board-col{background:rgba(40,30,50,.4)}
 
 /* Anti-FOUC: applied before first paint via html classes set in head script */
 html.init-dark body{background:#1a100a!important;background-attachment:fixed!important;}
