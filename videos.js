@@ -173,7 +173,7 @@ function _vidRenderDashboard(){
             <span style="width:36px;text-align:right;font-size:9px">Dur</span>
             <span style="width:52px;text-align:right;font-size:9px">Posted</span>
             <div style="display:flex;gap:0">${VID_STEPS.map(s=>`<span style="width:28px;text-align:center;font-size:9px" title="${VID_STEP_LABELS[s]}">${VID_STEP_LABELS[s].slice(0,2)}</span>`).join('')}</div>
-            <span style="width:20px"></span>
+            <button class="vid-del" style="visibility:hidden">✕</button>
           </div>`:''}
         </div>
         <div style="flex:1;min-height:0;overflow-y:auto">
