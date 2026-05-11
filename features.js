@@ -2174,7 +2174,7 @@ function showPage(id){
   if(id==='tasks')return;
   if(id==='shopping')id='weekly';// shopping merged into weekly page
   activePg=id;
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p=>{p.classList.remove('active');p.removeAttribute('style');});
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   const pageEl=document.getElementById('page-'+id);if(pageEl)pageEl.classList.add('active');
   const idx=PAGES.indexOf(id);if(idx>-1&&document.querySelectorAll('.nav-item')[idx])document.querySelectorAll('.nav-item')[idx].classList.add('active');
@@ -2200,7 +2200,7 @@ async function init(){
   // Suppress left transition during init so sidebar positioning is instant (no squish glitch)
   const _initMain=document.getElementById('main');const _initMainT=_initMain.style.transition;_initMain.style.transition='none';
   if(!sbOpen){document.getElementById('sidebar').classList.add('closed');document.getElementById('main').style.left='0';document.getElementById('menuOpen').classList.add('visible');document.querySelectorAll('.ov-topbar').forEach(el=>el.style.left='0');}else{document.getElementById('sidebar').classList.remove('closed');document.getElementById('main').style.left='186px';document.getElementById('menuOpen').classList.remove('visible');document.querySelectorAll('.ov-topbar').forEach(el=>el.style.left='186px');}
-  _initMain.offsetWidth;requestAnimationFrame(()=>{_initMain.style.transition=_initMainT;});
+  _initMain.offsetWidth;requestAnimationFrame(()=>{_initMain.style.transition=_initMainT;document.body.classList.remove('preload');});
   // Restore page from URL hash immediately
   const initHash=location.hash.replace('#','');
   if(initHash&&PAGES.includes(initHash))showPage(initHash);

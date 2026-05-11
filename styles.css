@@ -1,4 +1,4 @@
-
+body.preload,body.preload *{transition:none!important;animation:none!important}
 :root{
   --bg:linear-gradient(135deg,#fef3ee 0%,#fffbf2 50%,#fdf0fb 100%);
   --glass:rgba(255,255,255,0.75);--gb:rgba(255,255,255,0.88);
