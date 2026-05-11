@@ -69,13 +69,13 @@ function renderVideosPage(){
         </div>
         <input id="vidSearchInput" type="text" placeholder="Search videos..." value="${_vidSearch.replace(/"/g,'&quot;')}" oninput="_vidSetSearch(this.value)" style="padding:5px 10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:12px;background:var(--bg);color:var(--text);outline:none;width:180px">
         <div style="flex:1"></div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <div class="vid-stat-card"><div class="vid-stat-num" style="color:#10b981">${stats.published}</div><div class="vid-stat-lbl">Published</div></div>
-          <div class="vid-stat-card"><div class="vid-stat-num" style="color:#f59e0b">${stats.in_progress}</div><div class="vid-stat-lbl">In Progress</div></div>
-          <div class="vid-stat-card"><div class="vid-stat-num" style="color:#8b5cf6">${stats.idea}</div><div class="vid-stat-lbl">Ideas</div></div>
-          <div class="vid-stat-card"><div class="vid-stat-num">${stats.total}</div><div class="vid-stat-lbl">Total</div></div>
+        <div style="display:flex;gap:10px;align-items:center;font-size:12px;font-weight:500">
+          <span style="color:#10b981">${stats.published} published</span>
+          <span style="color:#f59e0b">${stats.in_progress} in progress</span>
+          <span style="color:#8b5cf6">${stats.idea} ideas</span>
+          <span style="color:var(--muted)">${stats.total} total</span>
         </div>
-        <button class="btn btn-dark" onclick="openVidModal()" style="padding:5px 14px;font-size:12px">+ Add Video</button>
+        <button class="btn btn-dark" onclick="openVidModal()" style="padding:5px 14px;font-size:12px">Add</button>
       </div>
     </div>
     <div class="card" style="overflow:hidden;flex:1;min-height:0">
@@ -145,18 +145,20 @@ function _vidDashList(vids,simple){
 function _vidDashRow(v,isChild,simple){
   const sid=String(v.id);
   const sel=_vidSelected.has(sid);
+  const isSmall=v.video_type==='L'&&v.group_name;
   const indent=isChild?'padding-left:20px;':'';
   const childMark=isChild?'<span style="color:var(--muted);font-size:10px;margin-right:4px">└</span>':'';
+  const titleStyle=isSmall?'color:var(--muted)':'';
   if(simple){
     return`<div class="vid-dash-row${sel?' vid-sel':''}" draggable="true" ondragstart="_vidDashDragStart(event,'${sid}')" data-vid="${sid}" onclick="vidRowClick(event,'${sid}')" ondblclick="openVidEdit('${sid}')" oncontextmenu="showVidCtx(event,'${sid}')">
-      <div style="flex:1;min-width:0;${indent}${!isChild?'font-weight:600;':''}">${childMark}<span class="vid-title-text">${_esc(v.title)}</span></div>
+      <div style="flex:1;min-width:0;${indent}${!isChild?'font-weight:600;':''}${titleStyle}">${childMark}<span>${_esc(v.title)}</span></div>
       <button class="vid-del" data-vid="${sid}">✕</button>
     </div>`;
   }
   const postStr=_vidPostStr(v.post_date);
   return`<div class="vid-dash-row${sel?' vid-sel':''}" draggable="true" ondragstart="_vidDashDragStart(event,'${sid}')" data-vid="${sid}" onclick="vidRowClick(event,'${sid}')" ondblclick="openVidEdit('${sid}')" oncontextmenu="showVidCtx(event,'${sid}')">
-    <div style="flex:1;min-width:0;${indent}${!isChild?'font-weight:600;':''}">
-      ${childMark}<span class="vid-title-text">${_esc(v.title)}</span>
+    <div style="flex:1;min-width:0;${indent}${!isChild?'font-weight:600;':''}${titleStyle}">
+      ${childMark}<span>${_esc(v.title)}</span>
       ${v.group_name&&!isChild?`<span style="font-size:10px;color:var(--muted);margin-left:6px;font-weight:400">${_esc(v.group_name)}</span>`:''}
     </div>
     <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
@@ -225,8 +227,7 @@ function _vidRenderTable(){
   const sorted=_vidSortVids(vids);
   const groupedHtml=_vidSortCol?sorted.map(v=>_vidRow(v,false)).join(''):_vidBuildRows(sorted);
   const thStyle='cursor:pointer;user-select:none';
-  return`<div style="display:flex;justify-content:flex-end;padding:4px 8px 0"><button class="vid-filter-btn${_vidShowCompleted?' active':''}" onclick="_vidToggleCompleted()" style="font-size:11px;padding:3px 10px">${_vidShowCompleted?'Hide':'Show'} Completed</button></div>
-  <div style="overflow-x:auto">
+  return`<div style="overflow-x:auto">
     <table class="vid-tbl" style="table-layout:fixed;width:100%">
       <thead><tr>
         <th style="${thStyle}" onclick="vidTblSort('title')">Title${_vidSortArrow('title')}</th>
@@ -236,7 +237,7 @@ function _vidRenderTable(){
         <th style="width:50px;${thStyle}" onclick="vidTblSort('duration')">Dur${_vidSortArrow('duration')}</th>
         <th style="width:62px;${thStyle}" onclick="vidTblSort('posted')">Posted${_vidSortArrow('posted')}</th>
         ${VID_STEPS.map(s=>`<th style="width:28px;text-align:center;font-size:9px" title="${VID_STEP_LABELS[s]}">${VID_STEP_LABELS[s].slice(0,2)}</th>`).join('')}
-        <th style="width:28px"></th>
+        <th style="width:28px"><button class="vid-filter-btn${_vidShowCompleted?' active':''}" onclick="_vidToggleCompleted()" style="font-size:9px;padding:2px 4px;border-radius:4px" title="${_vidShowCompleted?'Hide':'Show'} Completed">+</button></th>
       </tr></thead>
       <tbody>${groupedHtml}</tbody>
     </table>
@@ -284,10 +285,12 @@ function _vidRow(v,isChild){
   const sc=VID_STATUS_COLORS[v.status]||'#94a3b8';
   const postStr=_vidPostStr(v.post_date,true);
   const durStr=v.duration_minutes?v.duration_minutes.toFixed(1):'';
-  const indent=isChild?'padding-left:24px;':'';
+  const isSmall=v.video_type==='L'&&v.group_name;
+  const indent=isChild?'padding-left:24px;':'padding-left:10px;';
   const childMark=isChild?'<span style="color:var(--muted);font-size:10px;margin-right:4px">└</span>':'';
+  const titleColor=isSmall?'color:var(--muted);':'';
   return`<tr class="vid-row${sel?' vid-sel':''}" data-vid="${sid}" onclick="vidRowClick(event,'${sid}')" ondblclick="openVidEdit('${sid}')" oncontextmenu="showVidCtx(event,'${sid}')">
-    <td style="${indent}${!isChild?'font-weight:600;':''}overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${childMark}${v.number?`<span style="color:var(--muted);font-size:10px;margin-right:5px">#${v.number}</span>`:''}<span class="vid-title-text">${_esc(v.title)}</span></td>
+    <td style="${indent}${!isChild?'font-weight:600;':''}${titleColor}overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${childMark}${v.number?`<span style="color:var(--muted);font-size:10px;margin-right:5px">#${v.number}</span>`:''}<span class="${isSmall?'':'vid-title-text'}">${_esc(v.title)}</span></td>
     <td style="font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:80px" title="${_esc(v.group_name||'')}">${_esc(v.group_name||'')}</td>
     <td style="font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:90px" title="${_esc(v.playlist||'')}">${_esc(v.playlist||'')}</td>
     <td><span class="vid-status-pill" style="background:${sc}20;color:${sc}">${v.status}</span></td>
@@ -331,7 +334,7 @@ function _vidBoardCard(v){
       <span class="vid-type-badge" style="background:${v.video_type==='B'?'#0ea5e9':'#a78bfa'};color:#fff;font-size:9px;padding:0 4px">${v.video_type||'?'}</span>
       ${v.group_name?`<span style="font-size:9px;color:var(--muted)">${_esc(v.group_name)}</span>`:''}
     </div>
-    <div style="font-size:12px;font-weight:500;color:var(--text);line-height:1.35;margin-bottom:4px">${_esc(v.title)}</div>
+    <div style="font-size:12px;font-weight:${v.video_type==='B'||!v.group_name?'500':'400'};color:${v.video_type==='L'&&v.group_name?'var(--muted)':'var(--text)'};line-height:1.35;margin-bottom:4px">${_esc(v.title)}</div>
     <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:var(--muted)">
       ${postStr?`<span>${postStr}</span>`:''}
       ${v.duration_minutes?`<span>${v.duration_minutes.toFixed(1)}m</span>`:''}
@@ -440,7 +443,8 @@ function _vidRenderMonthly(){
       ${vids.map(v=>{
         const sc=VID_STATUS_COLORS[v.status]||'#94a3b8';
         const isB=v.video_type==='B';
-        return`<div style="font-size:9px;padding:2px 3px;margin-bottom:1px;border-radius:3px;background:${sc}15;color:${sc};cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;${isB?'font-weight:600;':''}" title="${_esc(v.title)}" ondblclick="openVidEdit('${v.id}')">${v.number?'#'+v.number+' ':''}${_esc(v.title)}</div>`;
+        const isSmallCal=v.video_type==='L'&&v.group_name;
+        return`<div style="font-size:9px;padding:2px 3px;margin-bottom:1px;border-radius:3px;background:${sc}15;color:${sc};cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;${isB?'font-weight:600;':''}${isSmallCal?'opacity:.6;':''}" title="${_esc(v.title)}" ondblclick="openVidEdit('${v.id}')">${v.number?'#'+v.number+' ':''}${_esc(v.title)}</div>`;
       }).join('')}
     </div>`;
   }
