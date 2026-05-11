@@ -39,11 +39,12 @@ function _vidPostStr(d,withYear){
   if(withYear)return(dt.getMonth()+1)+'/'+dt.getDate()+'/'+String(dt.getFullYear()).slice(2);
   return(dt.getMonth()+1)+'/'+dt.getDate();
 }
-function _vidDateColor(d){
+function _vidDateColor(d,v){
   if(!d)return'var(--muted)';
-  const today=d2s(new Date());
-  if(d===today)return'#0ea5e9';
-  return d<today?'#10b981':'#f59e0b';
+  if(v&&v.status==='published')return'var(--text)';
+  const allDone=v&&VID_STEPS.every(s=>v[s]==='done'||v[s]==='na');
+  if(allDone)return'#10b981';
+  return'#f59e0b';
 }
 
 // ── Main Render ──────────────────────────────────────────────────────────────
@@ -154,7 +155,7 @@ function _vidDashRow(v,isChild,simple){
   const indent=isChild?'padding-left:20px;':'';
   const childMark=isChild?'<span style="color:var(--muted);font-size:10px;margin-right:4px">└</span>':'';
   const titleStyle=isSmall?'color:var(--muted)':'';
-  const numHtml=v.number?`<span style="color:var(--muted);font-size:10px;margin-right:5px">#${v.number}</span>`:'';
+  const numHtml=v.number?`<span style="color:var(--muted);font-size:10px;margin-right:6px;min-width:18px;display:inline-block">${v.number}</span>`:'';
   const titleCls=isSmall?'':'vid-title-text';
   const isComplete=v.status==='published';
   const topic=v.topic||'';
@@ -172,7 +173,7 @@ function _vidDashRow(v,isChild,simple){
       ${childMark}${numHtml}<span class="${titleCls}">${_esc(primary)}</span>${subtitle?`<span style="font-size:10px;color:var(--muted);margin-left:6px;font-weight:400">${_esc(subtitle)}</span>`:''}
     </div>
     <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
-      ${postStr?`<span style="font-size:10px;color:${_vidDateColor(v.post_date)}">${postStr}</span>`:''}
+      ${postStr?`<span style="font-size:10px;color:${_vidDateColor(v.post_date,v)}">${postStr}</span>`:''}
       <div style="display:flex;gap:0">${VID_STEPS.map(s=>`<div style="width:28px;text-align:center"><div class="vid-step-dot${v[s]==='done'?' done':v[s]==='na'?' na':''}" data-vid="${sid}" data-step="${s}" title="${VID_STEP_LABELS[s]}"></div></div>`).join('')}</div>
       <button class="vid-del" data-vid="${sid}">✕</button>
     </div>
@@ -242,8 +243,7 @@ function _vidRenderTable(){
     });
   }
   const sorted=_vidSortVids(vids);
-  let _vidRowIdx=0;
-  const groupedHtml=_vidSortCol?sorted.map(v=>_vidRow(v,false,++_vidRowIdx)).join(''):_vidBuildRows(sorted);
+  const groupedHtml=_vidSortCol?sorted.map(v=>_vidRow(v,false)).join(''):_vidBuildRows(sorted);
   const thStyle='cursor:pointer;user-select:none';
   return`<div style="overflow-x:auto">
     <table class="vid-tbl" style="table-layout:fixed;width:100%">
@@ -273,7 +273,7 @@ function _vidChildSort(a,b){
 }
 function _vidBuildRows(vids){
   const seen=new Set();
-  let html='',idx=0;
+  let html='';
   const bVids=vids.filter(v=>v.video_type==='B');
   const lVids=vids.filter(v=>v.video_type!=='B');
   const bSorted=[...bVids].sort((a,b)=>{
@@ -288,15 +288,15 @@ function _vidBuildRows(vids){
   });
   bSorted.forEach(b=>{
     seen.add(String(b.id));
-    html+=_vidRow(b,false,++idx);
+    html+=_vidRow(b,false);
     const children=lVids.filter(l=>l.group_name&&l.group_name===b.group_name).sort(_vidChildSort);
-    children.forEach(l=>{seen.add(String(l.id));html+=_vidRow(l,true,++idx);});
+    children.forEach(l=>{seen.add(String(l.id));html+=_vidRow(l,true);});
   });
-  lVids.filter(l=>!seen.has(String(l.id))).sort(_vidChildSort).forEach(l=>{html+=_vidRow(l,false,++idx);});
+  lVids.filter(l=>!seen.has(String(l.id))).sort(_vidChildSort).forEach(l=>{html+=_vidRow(l,false);});
   return html;
 }
 
-function _vidRow(v,isChild,rowIdx){
+function _vidRow(v,isChild){
   const sid=String(v.id);
   const sel=_vidSelected.has(sid);
   const sc=VID_STATUS_COLORS[v.status]||'#94a3b8';
@@ -306,14 +306,14 @@ function _vidRow(v,isChild,rowIdx){
   const indent=isChild?'padding-left:24px;':'padding-left:10px;';
   const childMark=isChild?'<span style="color:var(--muted);font-size:10px;margin-right:4px">└</span>':'';
   const titleColor=isSmall?'color:var(--muted);':'';
-  const idxHtml=rowIdx?`<span style="color:var(--muted);font-size:10px;margin-right:6px;min-width:18px;display:inline-block">${rowIdx}</span>`:'';
+  const numHtml=v.number?`<span style="color:var(--muted);font-size:10px;margin-right:6px;min-width:18px;display:inline-block">${v.number}</span>`:'';
   return`<tr class="vid-row${sel?' vid-sel':''}" data-vid="${sid}" onclick="vidRowClick(event,'${sid}')" ondblclick="openVidEdit('${sid}')" oncontextmenu="showVidCtx(event,'${sid}')">
-    <td style="${indent}${!isChild?'font-weight:600;':''}${titleColor}overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${childMark}${idxHtml}<span class="${isSmall?'':'vid-title-text'}">${_esc(v.title)}</span></td>
+    <td style="${indent}${!isChild?'font-weight:600;':''}${titleColor}overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${childMark}${numHtml}<span class="${isSmall?'':'vid-title-text'}">${_esc(v.title)}</span></td>
     <td style="font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:80px" title="${_esc(v.group_name||'')}">${_esc(v.group_name||'')}</td>
     <td style="font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:90px" title="${_esc(v.playlist||'')}">${_esc(v.playlist||'')}</td>
     <td><span class="vid-status-pill" style="background:${sc}20;color:${sc}">${v.status}</span></td>
     <td style="font-size:11px;color:var(--muted)">${durStr}</td>
-    <td style="font-size:11px;color:${_vidDateColor(v.post_date)}">${postStr}</td>
+    <td style="font-size:11px;color:${_vidDateColor(v.post_date,v)}">${postStr}</td>
     ${VID_STEPS.map(s=>`<td style="text-align:center"><div class="vid-step-dot${v[s]==='done'?' done':v[s]==='na'?' na':''}" data-vid="${sid}" data-step="${s}" title="${VID_STEP_LABELS[s]}"></div></td>`).join('')}
     <td><button class="vid-del" data-vid="${sid}">✕</button></td>
   </tr>`;
