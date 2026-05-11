@@ -8,8 +8,8 @@ let _vidSearch='';
 let _vidView='dashboard'; // dashboard | table | board | groups
 let _vidSortCol=null,_vidSortDir=1;
 
-const VID_STEPS=['step_build','step_record','step_film','step_cut','step_thumbnail','step_description','step_tableau_public','step_upload_tableau','step_answer_comments','step_short'];
-const VID_STEP_LABELS={step_build:'Build',step_record:'Rec',step_film:'Film',step_cut:'Cut',step_thumbnail:'Thumb',step_description:'Desc',step_tableau_public:'Tab Pub',step_upload_tableau:'Upload',step_answer_comments:'Ans',step_short:'Short'};
+const VID_STEPS=['step_build','step_record','step_film','step_cut','step_thumbnail','step_description','step_tableau_public','step_upload_tableau'];
+const VID_STEP_LABELS={step_build:'Build',step_record:'Rec',step_film:'Film',step_cut:'Cut',step_thumbnail:'Thumb',step_description:'Desc',step_tableau_public:'Tab Pub',step_upload_tableau:'Upload'};
 const VID_STATUS_COLORS={published:'#10b981',in_progress:'#f59e0b',idea:'#8b5cf6',backup:'#94a3b8'};
 const VID_STEP_COLORS={done:'#10b981',in_progress:'#f59e0b',not_started:'transparent',na:'#d1d5db',backup:'#94a3b8',issue:'#ef4444'};
 
@@ -158,7 +158,7 @@ function _vidDashRow(v,isChild,simple){
     </div>
     <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
       ${postStr?`<span style="font-size:10px;color:var(--muted)">${postStr}</span>`:''}
-      <div style="display:flex;gap:2px">${VID_STEPS.map(s=>`<div class="vid-step-dot${v[s]==='done'?' done':''}" data-vid="${sid}" data-step="${s}" title="${VID_STEP_LABELS[s]}"></div>`).join('')}</div>
+      <div style="display:flex;gap:2px">${VID_STEPS.map(s=>`<div class="vid-step-dot${v[s]==='done'?' done':v[s]==='na'?' na':''}" data-vid="${sid}" data-step="${s}" title="${VID_STEP_LABELS[s]}"></div>`).join('')}</div>
       <button class="vid-del" data-vid="${sid}">✕</button>
     </div>
   </div>`;
@@ -263,7 +263,7 @@ function _vidRow(v,isChild){
     <td><span class="vid-status-pill" style="background:${sc}20;color:${sc}">${v.status}</span></td>
     <td style="font-size:11px;color:var(--muted)">${durStr}</td>
     <td style="font-size:11px;color:var(--muted)">${postStr}</td>
-    ${VID_STEPS.map(s=>`<td style="text-align:center"><div class="vid-step-dot${v[s]==='done'?' done':''}" data-vid="${sid}" data-step="${s}" title="${VID_STEP_LABELS[s]}"></div></td>`).join('')}
+    ${VID_STEPS.map(s=>`<td style="text-align:center"><div class="vid-step-dot${v[s]==='done'?' done':v[s]==='na'?' na':''}" data-vid="${sid}" data-step="${s}" title="${VID_STEP_LABELS[s]}"></div></td>`).join('')}
     <td><button class="vid-del" data-vid="${sid}">✕</button></td>
   </tr>`;
 }
@@ -481,6 +481,11 @@ async function saveVidModal(){
     playlist:document.getElementById('vmPlaylist').value.trim()||null
   };
   document.querySelectorAll('#vmSteps select[data-step]').forEach(sel=>{data[sel.dataset.step]=sel.value;});
+  // Default Tab Pub + Upload to na for L-type videos with a parent group (not standalone)
+  if(_vidMode==='add'&&data.video_type==='L'&&data.group_name){
+    if(!data.step_tableau_public||data.step_tableau_public==='not_started')data.step_tableau_public='na';
+    if(!data.step_upload_tableau||data.step_upload_tableau==='not_started')data.step_upload_tableau='na';
+  }
   closeMod('vidModal');
 
   if(_vidMode==='edit'&&_vidEditId){
@@ -530,7 +535,7 @@ async function _vidDuplicate(id){
 async function cycleVidStep(id,step){
   const v=(st.videos||[]).find(x=>String(x.id)===String(id));if(!v)return;
   const cur=v[step]||'not_started';
-  const next=cur==='done'?'not_started':'done';
+  const next=cur==='na'?'not_started':cur==='done'?'not_started':'done';
   const prev=cur;
   const prevStatus=v.status;
   v[step]=next;
