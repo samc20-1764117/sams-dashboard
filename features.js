@@ -2200,18 +2200,18 @@ async function init(){
   // Suppress left transition during init so sidebar positioning is instant (no squish glitch)
   const _initMain=document.getElementById('main');const _initMainT=_initMain.style.transition;_initMain.style.transition='none';
   if(!sbOpen){document.getElementById('sidebar').classList.add('closed');document.getElementById('main').style.left='0';document.getElementById('menuOpen').classList.add('visible');document.querySelectorAll('.ov-topbar').forEach(el=>el.style.left='0');}else{document.getElementById('sidebar').classList.remove('closed');document.getElementById('main').style.left='186px';document.getElementById('menuOpen').classList.remove('visible');document.querySelectorAll('.ov-topbar').forEach(el=>el.style.left='186px');}
-  _initMain.offsetWidth;requestAnimationFrame(()=>{_initMain.style.transition=_initMainT;document.body.classList.remove('preload');});
+  _initMain.offsetWidth;requestAnimationFrame(()=>{_initMain.style.transition=_initMainT;});
   // Restore page from URL hash immediately
   const initHash=location.hash.replace('#','');
   if(initHash&&PAGES.includes(initHash))showPage(initHash);
   // Render from localStorage before auth check so UI is populated instantly
-  if(cfg.url&&cfg.key){document.getElementById('cfgUrl').value=cfg.url;document.getElementById('cfgKey').value=cfg.key;_firstSyncDone=true;(document.fonts?document.fonts.ready:Promise.resolve()).then(()=>requestAnimationFrame(renderAll));}
+  if(cfg.url&&cfg.key){document.getElementById('cfgUrl').value=cfg.url;document.getElementById('cfgKey').value=cfg.key;_firstSyncDone=true;(document.fonts?document.fonts.ready:Promise.resolve()).then(()=>requestAnimationFrame(()=>{renderAll();requestAnimationFrame(()=>document.body.classList.remove('preload'));}));}
   const authed=await checkAuth();
-  if(!authed)return;
+  if(!authed){document.body.classList.remove('preload');return;}
   if(cfg.url&&cfg.key){
     deletedRecIds=new Set();save();
     syncAll(false).then(()=>{_firstSyncDone=true;});
-  } else{_firstSyncDone=true;renderAll();setBadge('err','Not connected');}
+  } else{_firstSyncDone=true;renderAll();setBadge('err','Not connected');requestAnimationFrame(()=>document.body.classList.remove('preload'));}
   setupWkcEdgeDrop();setupEdge('wkListEdgeR',1);
   setInterval(()=>{if(cfg.url&&cfg.key)syncAll(true);},30000);
 }
