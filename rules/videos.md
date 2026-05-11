@@ -18,8 +18,14 @@
 - **Videos by Progress** (`_vidView='board'`): kanban by status. Drag between columns.
 - **Monthly** (`_vidView='monthly'`): calendar grid by `post_date`. Nav with `_vidMonthOffset`.
 
+### Numbering & Sorting
+- **Numbering** (`_vidSeqMap` + `_vidOrderedIds`): only videos with `post_date` get a number. No date = no number. Ideas and in-progress without a posted date have no number.
+- **Number order**: B (Big) video first, then its L (Small) children, all sorted by `post_date`. Standalone L videos (no `big_video_id`) numbered as top-level by their own `post_date`.
+- **Global numbering**: numbers computed from ALL non-deleted videos with `post_date` (not just visible ones). Numbers are stable regardless of show/hide completed toggle.
+- **Default sort** (`_vidSortVids`): groups by parent B video's `post_date`. Within group: B first, then children by `post_date`. Standalone L by own `post_date`. Sortable column headers override this (click asc, click desc, click reset).
+- **B→L grouping**: maintained in all views. B videos always appear before their children.
+
 ### Display Rules
-- **Numbering** (`_vidSeqMap`): sequential by post_date order, only for `published` and `in_progress` (ideas get no number).
 - **In progress videos**: show "Topic - Title" where topic is normal color, title is muted. For small (L) videos, both topic and title are muted/grey.
 - **Completed videos**: show title only.
 - **Small videos** (L with big_video_id): muted/grey text, lighter weight. `└` indent mark when shown as child.
@@ -57,7 +63,8 @@
 
 ### Key Functions
 - `_vidScrollEl()` — finds scroll container for keep-scroll renders
-- `_vidSeqMap()` — builds id→sequential number map (published+in_progress only, by post_date)
+- `_vidSeqMap(orderedIds)` — maps ordered ID array to sequential numbers (1, 2, 3...)
+- `_vidOrderedIds(vids)` — builds display-order ID list from videos with `post_date`, B→children grouped
 - `_vidDateColor(d,v)` — returns CSS color for post_date display
 - `_vidSortVids(vids)` — applies current sort or default B→L grouped post_date sort
 - `_vidFiltered()` — filters by group, search, status
