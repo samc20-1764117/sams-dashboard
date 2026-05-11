@@ -14,21 +14,28 @@ const VID_STEP_LABELS={step_build:'Build',step_record:'Rec',step_film:'Film',ste
 const VID_STATUS_COLORS={published:'#10b981',in_progress:'#f59e0b',idea:'#8b5cf6',backup:'#94a3b8'};
 const VID_STEP_COLORS={done:'#10b981',in_progress:'#f59e0b',not_started:'transparent',na:'#d1d5db',backup:'#94a3b8',issue:'#ef4444'};
 
-// Sequential numbering — pass visible vids so numbers are contiguous
-function _vidSeqMap(visibleVids){
+// Build numbering from an ordered array of videos (display order)
+function _vidSeqMap(orderedIds){
   const map={};
-  const all=visibleVids||(st.videos||[]).filter(v=>!v.is_deleted&&v.status!=='idea');
-  const topLevel=all.filter(v=>v.video_type==='B'||!v.big_video_id).sort((a,b)=>(a.post_date||'9999').localeCompare(b.post_date||'9999'));
-  let n=1;
-  topLevel.forEach(t=>{
-    map[String(t.id)]=n++;
-    if(t.video_type==='B'){
-      all.filter(v=>v.big_video_id&&String(v.big_video_id)===String(t.id))
-        .sort((a,c)=>(a.post_date||'9999').localeCompare(c.post_date||'9999'))
-        .forEach(c=>{map[String(c.id)]=n++;});
+  orderedIds.forEach((id,i)=>{map[String(id)]=i+1;});
+  return map;
+}
+// Build display-order ID list: B→children grouped, sorted by B post_date
+function _vidOrderedIds(vids){
+  const ids=[];
+  const sorted=_vidSortVids([...vids]);
+  const seen=new Set();
+  const lVids=sorted.filter(v=>v.video_type!=='B');
+  sorted.forEach(v=>{
+    if(seen.has(String(v.id)))return;
+    seen.add(String(v.id));
+    if(v.status!=='idea')ids.push(v.id);
+    if(v.video_type==='B'){
+      lVids.filter(l=>String(l.big_video_id)===String(v.id)&&!seen.has(String(l.id)))
+        .forEach(l=>{seen.add(String(l.id));if(l.status!=='idea')ids.push(l.id);});
     }
   });
-  return map;
+  return ids;
 }
 
 function _vidFiltered(){
@@ -198,7 +205,7 @@ function _vidDashList(vids,simple){
 
 let _vidDashVids=null,_vidDashPostMap=null;
 function _vidDashRow(v,isChild,simple){
-  if(!_vidDashPostMap)_vidDashPostMap=_vidSeqMap(_vidDashVids);
+  if(!_vidDashPostMap)_vidDashPostMap=_vidSeqMap(_vidOrderedIds(_vidDashVids||[]));
   const sid=String(v.id);
   const sel=_vidSelected.has(sid);
   const isSmall=v.video_type==='L'&&v.big_video_id;
@@ -323,7 +330,7 @@ function _vidRenderTable(){
     });
   }
   const sorted=_vidSortVids(vids);
-  const postMap=_vidSeqMap(vids);
+  const postMap=_vidSeqMap(_vidOrderedIds(vids));
   let groupedHtml;
   if(_vidSortCol){
     groupedHtml=sorted.map(v=>_vidRow(v,false,postMap)).join('');
