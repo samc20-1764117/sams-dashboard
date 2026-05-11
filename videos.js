@@ -646,29 +646,67 @@ function vidCtxDuplicate(){document.getElementById('vidCtxMenu').style.display='
 function vidCtxDelete(){document.getElementById('vidCtxMenu').style.display='none';[..._vidSelected].forEach(id=>delVideo(id));}
 
 // ── Modal ─────────────────────────────────────────────────────────────────────
+let _vidDropdownData={BigVideo:[],Playlist:[]};
+
 function _vidPopulatePlaylistList(){
-  const dl=document.getElementById('vmPlaylistList');
   const playlists=new Set();
   (st.videos||[]).forEach(v=>{if(v.playlist&&!v.is_deleted)playlists.add(v.playlist);});
-  dl.innerHTML=[...playlists].sort().map(p=>`<option value="${_esc(p)}">`).join('');
+  _vidDropdownData.Playlist=[...playlists].sort();
 }
 function _vidPopulateBigVideoSelect(selectedId){
   const inp=document.getElementById('vmBigVideo');
-  const dl=document.getElementById('vmBigVideoList');
   const bVids=(st.videos||[]).filter(v=>!v.is_deleted&&v.video_type==='B').sort((a,b)=>(a.title||'').localeCompare(b.title||''));
-  dl.innerHTML=bVids.map(v=>`<option value="${_esc(v.title)}" data-id="${v.id}">`).join('');
+  _vidDropdownData.BigVideo=bVids.map(v=>({id:v.id,label:v.title}));
   if(selectedId){
     const match=bVids.find(v=>String(v.id)===String(selectedId));
     inp.value=match?match.title:'';
   }else{inp.value='';}
 }
 function _vidGetBigVideoId(){
-  const inp=document.getElementById('vmBigVideo');
-  const title=inp.value.trim();
+  const title=document.getElementById('vmBigVideo').value.trim();
   if(!title)return null;
   const match=(st.videos||[]).find(v=>!v.is_deleted&&v.video_type==='B'&&v.title===title);
   return match?match.id:null;
 }
+
+function _vidShowDropdown(type){_vidFilterDropdown(type);}
+function _vidToggleDropdown(type){
+  const drop=document.getElementById('vm'+type+'Drop');
+  if(drop.style.display==='block'){drop.style.display='none';return;}
+  _vidFilterDropdown(type);
+}
+function _vidFilterDropdown(type){
+  const inp=document.getElementById('vm'+type);
+  const drop=document.getElementById('vm'+type+'Drop');
+  const q=(inp.value||'').toLowerCase();
+  const itemStyle='padding:6px 10px;cursor:pointer;font-size:12px;border-bottom:1px solid rgba(210,205,228,.1)';
+  const hoverIn="this.style.background='rgba(139,92,246,.08)'";
+  const hoverOut="this.style.background='transparent'";
+  let html='';
+  if(type==='BigVideo'){
+    const items=_vidDropdownData.BigVideo.filter(v=>!q||v.label.toLowerCase().includes(q));
+    html=`<div onclick="_vidPickDropdown('BigVideo','')" onmouseenter="${hoverIn}" onmouseleave="${hoverOut}" style="${itemStyle};color:var(--muted);font-style:italic">None</div>`;
+    html+=items.map(v=>`<div onclick="_vidPickDropdown('BigVideo','${_esc(v.label)}')" onmouseenter="${hoverIn}" onmouseleave="${hoverOut}" style="${itemStyle}">${_esc(v.label)}</div>`).join('');
+  }else{
+    const items=_vidDropdownData.Playlist.filter(p=>!q||p.toLowerCase().includes(q));
+    html=items.map(p=>`<div onclick="_vidPickDropdown('Playlist','${_esc(p)}')" onmouseenter="${hoverIn}" onmouseleave="${hoverOut}" style="${itemStyle}">${_esc(p)}</div>`).join('');
+    if(!items.length)html=`<div style="${itemStyle};color:var(--muted);font-style:italic">Type to add new</div>`;
+  }
+  drop.innerHTML=html;
+  drop.style.display='block';
+}
+function _vidPickDropdown(type,val){
+  document.getElementById('vm'+type).value=val;
+  document.getElementById('vm'+type+'Drop').style.display='none';
+}
+document.addEventListener('click',e=>{
+  if(!e.target.closest('#vmBigVideo')&&!e.target.closest('#vmBigVideoDrop')&&!e.target.closest('[onclick*="BigVideo"]')){
+    const d=document.getElementById('vmBigVideoDrop');if(d)d.style.display='none';
+  }
+  if(!e.target.closest('#vmPlaylist')&&!e.target.closest('#vmPlaylistDrop')&&!e.target.closest('[onclick*="Playlist"]')){
+    const d=document.getElementById('vmPlaylistDrop');if(d)d.style.display='none';
+  }
+});
 
 function openVidModalForBig(bigId){
   openVidModal('L');
