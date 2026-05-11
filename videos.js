@@ -2,10 +2,10 @@
 let _vidMode='add',_vidEditId=null;
 let _vidSelected=new Set(),_vidLastSel=null,_vidCopied=[];
 let _vidCtxId=null;
-let _vidFilter='all'; // all | published | in_progress | idea | backup
+let _vidFilter='all';
 let _vidGroupFilter='all';
 let _vidSearch='';
-let _vidView='table'; // table | board | groups
+let _vidView='dashboard'; // dashboard | table | board | groups
 
 const VID_STEPS=['step_build','step_record','step_film','step_cut','step_thumbnail','step_description','step_tableau_public','step_upload_tableau','step_answer_comments','step_short'];
 const VID_STEP_LABELS={step_build:'Build',step_record:'Rec',step_film:'Film',step_cut:'Cut',step_thumbnail:'Thumb',step_description:'Desc',step_tableau_public:'Tab Pub',step_upload_tableau:'Upload',step_answer_comments:'Ans',step_short:'Short'};
@@ -31,6 +31,12 @@ function _vidStats(){
   return{total:vids.length,published:vids.filter(v=>v.status==='published').length,in_progress:vids.filter(v=>v.status==='in_progress').length,idea:vids.filter(v=>v.status==='idea').length,backup:vids.filter(v=>v.status==='backup').length};
 }
 
+function _vidPostStr(d){
+  if(!d)return'';
+  const dt=new Date(d+'T12:00:00');
+  return(dt.getMonth()+1)+'/'+dt.getDate();
+}
+
 // ── Main Render ──────────────────────────────────────────────────────────────
 function renderVideosPage(){
   const el=document.getElementById('page-videos');if(!el)return;
@@ -40,7 +46,8 @@ function renderVideosPage(){
   const viewBtnS=v=>`vid-view-btn${_vidView===v?' active':''}`;
 
   let bodyHtml='';
-  if(_vidView==='table')bodyHtml=_vidRenderTable();
+  if(_vidView==='dashboard')bodyHtml=_vidRenderDashboard();
+  else if(_vidView==='table')bodyHtml=_vidRenderTable();
   else if(_vidView==='board')bodyHtml=_vidRenderBoard();
   else if(_vidView==='groups')bodyHtml=_vidRenderGroups();
 
@@ -48,10 +55,12 @@ function renderVideosPage(){
     <div class="ov-topbar"><div class="ov-topbar-left"><span class="ov-topbar-label">🎬 Videos</span><span class="ov-topbar-dot"></span></div><span class="ov-topbar-date topbar-date"></span><div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div></div>
     <div style="display:flex;gap:10px;align-items:center;margin:14px 0 6px;flex-wrap:wrap;position:relative;z-index:2">
       <div style="display:flex;gap:2px;background:var(--glass);border:1px solid var(--border);border-radius:8px;padding:2px">
-        <button class="${viewBtnS('table')}" onclick="_vidSetView('table')">Table</button>
+        <button class="${viewBtnS('dashboard')}" onclick="_vidSetView('dashboard')">Dashboard</button>
+        <button class="${viewBtnS('table')}" onclick="_vidSetView('table')">All Details</button>
         <button class="${viewBtnS('board')}" onclick="_vidSetView('board')">Board</button>
         <button class="${viewBtnS('groups')}" onclick="_vidSetView('groups')">Groups</button>
       </div>
+      ${_vidView==='table'?`
       <div style="display:flex;gap:4px">
         <button class="vid-filter-btn${_vidFilter==='all'?' active':''}" onclick="_vidSetFilter('all')">All <span class="vid-count">${stats.total}</span></button>
         <button class="vid-filter-btn${_vidFilter==='published'?' active':''}" onclick="_vidSetFilter('published')">Published <span class="vid-count">${stats.published}</span></button>
@@ -62,7 +71,7 @@ function renderVideosPage(){
       <select id="vidGroupSel" onchange="_vidSetGroup(this.value)" style="padding:5px 8px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:12px;background:var(--bg);color:var(--text);outline:none">
         <option value="all"${_vidGroupFilter==='all'?' selected':''}>All Groups</option>
         ${groups.map(g=>`<option value="${_esc(g)}"${_vidGroupFilter===g?' selected':''}>${_esc(g)}</option>`).join('')}
-      </select>
+      </select>`:''}
       <input id="vidSearchInput" type="text" placeholder="Search videos..." value="${_vidSearch.replace(/"/g,'&quot;')}" oninput="_vidSetSearch(this.value)" style="padding:5px 10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:12px;background:var(--bg);color:var(--text);outline:none;width:180px">
       <div style="flex:1"></div>
       <button class="btn btn-dark" onclick="openVidModal()" style="padding:5px 14px;font-size:12px">+ Add Video</button>
@@ -70,20 +79,96 @@ function renderVideosPage(){
     ${bodyHtml}`;
 }
 
-// ── TABLE VIEW ───────────────────────────────────────────────────────────────
+// ── DASHBOARD VIEW (default — In Progress + Ideas) ───────────────────────────
+function _vidRenderDashboard(){
+  const all=(st.videos||[]).filter(v=>!v.is_deleted);
+  let inProgress=all.filter(v=>v.status==='in_progress');
+  let ideas=all.filter(v=>v.status==='idea');
+  let backup=all.filter(v=>v.status==='backup');
+  if(_vidSearch){
+    const q=_vidSearch.toLowerCase();
+    const match=v=>(v.title||'').toLowerCase().includes(q)||(v.topic||'').toLowerCase().includes(q)||(v.group_name||'').toLowerCase().includes(q);
+    inProgress=inProgress.filter(match);ideas=ideas.filter(match);backup=backup.filter(match);
+  }
+  const stats=_vidStats();
+
+  return`
+    <div style="display:flex;gap:12px;margin:8px 0 16px">
+      <div class="vid-stat-card"><div class="vid-stat-num" style="color:#10b981">${stats.published}</div><div class="vid-stat-lbl">Published</div></div>
+      <div class="vid-stat-card"><div class="vid-stat-num" style="color:#f59e0b">${stats.in_progress}</div><div class="vid-stat-lbl">In Progress</div></div>
+      <div class="vid-stat-card"><div class="vid-stat-num" style="color:#8b5cf6">${stats.idea}</div><div class="vid-stat-lbl">Ideas</div></div>
+      <div class="vid-stat-card"><div class="vid-stat-num" style="color:#94a3b8">${stats.backup}</div><div class="vid-stat-lbl">Backup</div></div>
+      <div class="vid-stat-card"><div class="vid-stat-num">${stats.total}</div><div class="vid-stat-lbl">Total</div></div>
+    </div>
+    ${inProgress.length?`
+    <div class="vid-dash-section">
+      <div class="vid-dash-header" style="border-left-color:#f59e0b">In Progress <span class="vid-count">${inProgress.length}</span></div>
+      ${_vidDashList(inProgress)}
+    </div>`:''}
+    ${ideas.length?`
+    <div class="vid-dash-section">
+      <div class="vid-dash-header" style="border-left-color:#8b5cf6">Ideas <span class="vid-count">${ideas.length}</span></div>
+      ${_vidDashList(ideas)}
+    </div>`:''}
+    ${backup.length?`
+    <div class="vid-dash-section">
+      <div class="vid-dash-header" style="border-left-color:#94a3b8">Backup <span class="vid-count">${backup.length}</span></div>
+      ${_vidDashList(backup)}
+    </div>`:''}
+    ${!inProgress.length&&!ideas.length&&!backup.length?'<div style="text-align:center;color:var(--muted);margin:40px 0;font-size:13px">No active videos. All caught up!</div>':''}`;
+}
+
+function _vidDashList(vids){
+  // Group B with children
+  const seen=new Set();
+  let html='';
+  const bVids=vids.filter(v=>v.video_type==='B');
+  const lVids=vids.filter(v=>v.video_type!=='B');
+  bVids.forEach(b=>{
+    seen.add(String(b.id));
+    html+=_vidDashRow(b,false);
+    const children=lVids.filter(l=>l.group_name&&l.group_name===b.group_name);
+    children.forEach(l=>{seen.add(String(l.id));html+=_vidDashRow(l,true);});
+  });
+  lVids.filter(l=>!seen.has(String(l.id))).forEach(l=>{html+=_vidDashRow(l,false);});
+  return html;
+}
+
+function _vidDashRow(v,isChild){
+  const sid=String(v.id);
+  const sel=_vidSelected.has(sid);
+  const indent=isChild?'padding-left:20px;':'';
+  const childMark=isChild?'<span style="color:var(--muted);font-size:10px;margin-right:4px">└</span>':'';
+  const doneSteps=VID_STEPS.filter(s=>v[s]==='done').length;
+  const totalSteps=VID_STEPS.filter(s=>v[s]!=='na'&&v[s]!=='not_started').length||VID_STEPS.length;
+  const applicableSteps=VID_STEPS.filter(s=>v[s]!=='na').length;
+  const pct=applicableSteps?Math.round(doneSteps/applicableSteps*100):0;
+  return`<div class="vid-dash-row${sel?' vid-sel':''}" data-vid="${sid}" onclick="vidRowClick(event,'${sid}')" ondblclick="openVidEdit('${sid}')" oncontextmenu="showVidCtx(event,'${sid}')">
+    <span class="vid-type-badge" style="background:${v.video_type==='B'?'#0ea5e9':'#a78bfa'};color:#fff">${v.video_type||'?'}</span>
+    <div style="flex:1;min-width:0;${indent}">
+      ${childMark}<span class="vid-title-text">${_esc(v.title)}</span>
+      ${v.group_name&&!isChild?`<span style="font-size:10px;color:var(--muted);margin-left:6px">${_esc(v.group_name)}</span>`:''}
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+      <div style="display:flex;gap:2px">${VID_STEPS.map(s=>{const c=VID_STEP_COLORS[v[s]]||'transparent';return`<div class="vid-step-dot" style="background:${c}" title="${VID_STEP_LABELS[s]}: ${v[s]}" onclick="event.stopPropagation();cycleVidStep('${sid}','${s}')"></div>`;}).join('')}</div>
+      <div style="width:32px;height:4px;background:var(--border);border-radius:2px;overflow:hidden"><div style="width:${pct}%;height:100%;background:#10b981;border-radius:2px"></div></div>
+      <button class="vid-del" onclick="event.stopPropagation();delVideo('${sid}')">✕</button>
+    </div>
+  </div>`;
+}
+
+// ── TABLE VIEW (All Details) ─────────────────────────────────────────────────
 function _vidRenderTable(){
   const vids=_vidFiltered();
   const groupedHtml=_vidBuildRows(vids);
   return`<div style="overflow-x:auto;margin-top:4px">
     <table class="vid-tbl">
       <thead><tr>
-        <th style="width:36px">#</th>
         <th style="width:36px">Type</th>
         <th>Title</th>
-        <th style="width:120px">Group</th>
         <th style="width:70px">Status</th>
         <th style="width:50px">Dur</th>
-        <th style="width:82px">Posted</th>
+        <th style="width:52px">Posted</th>
         ${VID_STEPS.map(s=>`<th style="width:28px;text-align:center;font-size:9px" title="${VID_STEP_LABELS[s]}">${VID_STEP_LABELS[s].slice(0,2)}</th>`).join('')}
         <th style="width:28px"></th>
       </tr></thead>
@@ -111,15 +196,13 @@ function _vidRow(v,isChild){
   const sid=String(v.id);
   const sel=_vidSelected.has(sid);
   const sc=VID_STATUS_COLORS[v.status]||'#94a3b8';
-  const postStr=v.post_date?new Date(v.post_date+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}):'';
+  const postStr=_vidPostStr(v.post_date);
   const durStr=v.duration_minutes?v.duration_minutes.toFixed(1):'';
   const indent=isChild?'padding-left:22px;':'';
   const childMark=isChild?'<span style="color:var(--muted);font-size:10px;margin-right:4px">└</span>':'';
   return`<tr class="vid-row${sel?' vid-sel':''}" data-vid="${sid}" onclick="vidRowClick(event,'${sid}')" ondblclick="openVidEdit('${sid}')" oncontextmenu="showVidCtx(event,'${sid}')">
-    <td style="color:var(--muted);font-size:11px">${v.number||''}</td>
     <td><span class="vid-type-badge" style="background:${v.video_type==='B'?'#0ea5e9':'#a78bfa'};color:#fff">${v.video_type||''}</span></td>
     <td style="${indent}">${childMark}<span class="vid-title-text">${_esc(v.title)}</span></td>
-    <td style="font-size:11px;color:var(--muted)">${_esc(v.group_name||'')}</td>
     <td><span class="vid-status-pill" style="background:${sc}20;color:${sc}">${v.status}</span></td>
     <td style="font-size:11px;color:var(--muted)">${durStr}</td>
     <td style="font-size:11px;color:var(--muted)">${postStr}</td>
@@ -152,7 +235,7 @@ function _vidRenderBoard(){
 function _vidBoardCard(v){
   const sid=String(v.id);
   const sel=_vidSelected.has(sid);
-  const postStr=v.post_date?new Date(v.post_date+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}):'';
+  const postStr=_vidPostStr(v.post_date);
   const doneSteps=VID_STEPS.filter(s=>v[s]==='done').length;
   const totalSteps=VID_STEPS.filter(s=>v[s]!=='na').length;
   const pct=totalSteps?Math.round(doneSteps/totalSteps*100):0;
@@ -192,13 +275,11 @@ async function _vidBoardDrop(e,newStatus){
   _vidDragId=null;
 }
 
-// ── GROUPS VIEW (Cards per build group) ──────────────────────────────────────
+// ── GROUPS VIEW ──────────────────────────────────────────────────────────────
 function _vidRenderGroups(){
   const vids=_vidFiltered();
   const groupNames=_vidGroups();
-  // Also include ungrouped
   const ungrouped=vids.filter(v=>!v.group_name);
-
   let html='<div class="vid-groups-grid">';
   groupNames.forEach(gn=>{
     const gVids=vids.filter(v=>v.group_name===gn);
@@ -208,7 +289,6 @@ function _vidRenderGroups(){
     const total=gVids.length;
     const pct=total?Math.round(pub/total*100):0;
     const sc=pct===100?'#10b981':pct>0?'#f59e0b':'#8b5cf6';
-
     html+=`<div class="vid-group-card" onclick="_vidSetGroup('${_esc(gn)}');_vidSetView('table')">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
         <span style="font-size:13px;font-weight:700;color:var(--text)">${_esc(gn)}</span>
@@ -222,7 +302,6 @@ function _vidRenderGroups(){
       </div>
     </div>`;
   });
-
   if(ungrouped.length){
     html+=`<div class="vid-group-card">
       <div style="font-size:13px;font-weight:700;color:var(--muted);margin-bottom:6px">Ungrouped</div>
@@ -233,10 +312,8 @@ function _vidRenderGroups(){
   return html;
 }
 
-// ── View Switcher ────────────────────────────────────────────────────────────
+// ── View / Filter ────────────────────────────────────────────────────────────
 function _vidSetView(v){_vidView=v;renderVideosPage();}
-
-// ── Filters ───────────────────────────────────────────────────────────────────
 function _vidSetFilter(f){_vidFilter=f;renderVideosPage();}
 function _vidSetGroup(g){_vidGroupFilter=g;renderVideosPage();}
 function _vidSetSearch(q){_vidSearch=q;renderVideosPage();
@@ -261,7 +338,7 @@ function vidRowClick(e,id){
 }
 
 function _applyVidSel(){
-  document.querySelectorAll('.vid-row,.vid-board-card').forEach(r=>{
+  document.querySelectorAll('.vid-row,.vid-board-card,.vid-dash-row').forEach(r=>{
     const id=r.dataset?.vid;
     if(id)r.classList.toggle('vid-sel',_vidSelected.has(id));
   });
