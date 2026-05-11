@@ -14,21 +14,18 @@ const VID_STEP_LABELS={step_build:'Build',step_record:'Rec',step_film:'Film',ste
 const VID_STATUS_COLORS={published:'#10b981',in_progress:'#f59e0b',idea:'#8b5cf6',backup:'#94a3b8'};
 const VID_STEP_COLORS={done:'#10b981',in_progress:'#f59e0b',not_started:'transparent',na:'#d1d5db',backup:'#94a3b8',issue:'#ef4444'};
 
-// Use DB id as display number
-function _vidSeqMap(){
+// Sequential numbering — pass visible vids so numbers are contiguous
+function _vidSeqMap(visibleVids){
   const map={};
-  const all=(st.videos||[]).filter(v=>!v.is_deleted&&v.status!=='idea');
-  // Top-level = B videos (always) + standalone L (no big_video_id). Children = L with big_video_id.
+  const all=visibleVids||(st.videos||[]).filter(v=>!v.is_deleted&&v.status!=='idea');
   const topLevel=all.filter(v=>v.video_type==='B'||!v.big_video_id).sort((a,b)=>(a.post_date||'9999').localeCompare(b.post_date||'9999'));
-  const numbered=new Set();
   let n=1;
   topLevel.forEach(t=>{
-    map[String(t.id)]=n++;numbered.add(String(t.id));
-    // If B video, number its children right after
+    map[String(t.id)]=n++;
     if(t.video_type==='B'){
       all.filter(v=>v.big_video_id&&String(v.big_video_id)===String(t.id))
         .sort((a,c)=>(a.post_date||'9999').localeCompare(c.post_date||'9999'))
-        .forEach(c=>{map[String(c.id)]=n++;numbered.add(String(c.id));});
+        .forEach(c=>{map[String(c.id)]=n++;});
     }
   });
   return map;
@@ -92,7 +89,7 @@ function renderVideosPage(){
       if(parent)v.big_video_id=parent.id;
     }
   });
-  _vidDashPostMap=null;
+  _vidDashVids=null;_vidDashPostMap=null;
   const stats=_vidStats();
   const groups=_vidGroups();
   const viewBtnS=v=>`vid-view-btn${_vidView===v?' active':''}`;
@@ -157,6 +154,7 @@ function _vidRenderDashboard(){
     const match=v=>(v.title||'').toLowerCase().includes(q)||(v.topic||'').toLowerCase().includes(q)||(v.playlist||'').toLowerCase().includes(q);
     inProgress=inProgress.filter(match);ideas=ideas.filter(match);
   }
+  _vidDashVids=inProgress;
   return`
     <div style="display:flex;gap:0;padding:0;height:100%">
       <div style="flex:2;min-width:0;display:flex;flex-direction:column;border-right:1px solid var(--border)" ondragover="event.preventDefault()" ondrop="_vidDashDrop(event,'in_progress')">
@@ -198,9 +196,9 @@ function _vidDashList(vids,simple){
   return html;
 }
 
-let _vidDashPostMap=null;
+let _vidDashVids=null,_vidDashPostMap=null;
 function _vidDashRow(v,isChild,simple){
-  if(!_vidDashPostMap)_vidDashPostMap=_vidSeqMap();
+  if(!_vidDashPostMap)_vidDashPostMap=_vidSeqMap(_vidDashVids);
   const sid=String(v.id);
   const sel=_vidSelected.has(sid);
   const isSmall=v.video_type==='L'&&v.big_video_id;
@@ -325,7 +323,7 @@ function _vidRenderTable(){
     });
   }
   const sorted=_vidSortVids(vids);
-  const postMap=_vidSeqMap();
+  const postMap=_vidSeqMap(vids);
   let groupedHtml;
   if(_vidSortCol){
     groupedHtml=sorted.map(v=>_vidRow(v,false,postMap)).join('');
