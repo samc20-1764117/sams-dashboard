@@ -161,7 +161,7 @@ function _vidRenderDashboard(){
     const match=v=>(v.title||'').toLowerCase().includes(q)||(v.topic||'').toLowerCase().includes(q)||(v.playlist||'').toLowerCase().includes(q);
     inProgress=inProgress.filter(match);ideas=ideas.filter(match);
   }
-  _vidDashVids=inProgress;
+  _vidDashVids=all.filter(v=>v.status!=='idea');
   return`
     <div style="display:flex;gap:0;padding:0;height:100%">
       <div style="flex:2;min-width:0;display:flex;flex-direction:column;border-right:1px solid var(--border)" ondragover="event.preventDefault()" ondrop="_vidDashDrop(event,'in_progress')">
