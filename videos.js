@@ -202,20 +202,23 @@ function _vidSortVids(vids){
       return av<bv?-dir:av>bv?dir:0;
     });
   }else{
-    // Default: in_progress first, then by post_date desc, nulls after in_progress
-    const statusOrder={in_progress:0,idea:1,published:2,backup:3};
+    // Default: posted (has date) first, then in_progress, then ideas
+    const statusOrder={published:0,in_progress:1,idea:2,backup:3};
     sorted.sort((a,b)=>{
       const sa=statusOrder[a.status]??9,sb=statusOrder[b.status]??9;
       if(sa!==sb)return sa-sb;
-      if(!a.post_date&&!b.post_date)return 0;
-      if(!a.post_date)return-1;if(!b.post_date)return 1;
-      return b.post_date.localeCompare(a.post_date);
+      if(a.post_date&&b.post_date)return b.post_date.localeCompare(a.post_date);
+      if(a.post_date)return-1;if(b.post_date)return 1;
+      return 0;
     });
   }
   return sorted;
 }
 function _vidRenderTable(){
-  const vids=_vidFiltered();
+  let vids=_vidFiltered();
+  // Hide published videos with post_date in the past
+  const today=d2s(new Date());
+  vids=vids.filter(v=>!(v.status==='published'&&v.post_date&&v.post_date<today));
   const sorted=_vidSortVids(vids);
   const groupedHtml=_vidSortCol?sorted.map(v=>_vidRow(v,false)).join(''):_vidBuildRows(sorted);
   const thStyle='cursor:pointer;user-select:none';
@@ -236,18 +239,38 @@ function _vidRenderTable(){
   </div>`;
 }
 
+function _vidChildSort(a,b){
+  // posted (has date) first, then in_progress, then ideas
+  const order={published:0,in_progress:1,idea:2,backup:3};
+  const sa=order[a.status]??9,sb=order[b.status]??9;
+  if(sa!==sb)return sa-sb;
+  if(a.post_date&&b.post_date)return b.post_date.localeCompare(a.post_date);
+  if(a.post_date)return-1;if(b.post_date)return 1;
+  return 0;
+}
 function _vidBuildRows(vids){
   const seen=new Set();
   let html='';
   const bVids=vids.filter(v=>v.video_type==='B');
   const lVids=vids.filter(v=>v.video_type!=='B');
-  bVids.forEach(b=>{
+  // Sort B groups: ones with in_progress children first
+  const bSorted=[...bVids].sort((a,b)=>{
+    const aKids=lVids.filter(l=>l.group_name&&l.group_name===a.group_name);
+    const bKids=lVids.filter(l=>l.group_name&&l.group_name===b.group_name);
+    const aHasIP=a.status==='in_progress'||aKids.some(l=>l.status==='in_progress');
+    const bHasIP=b.status==='in_progress'||bKids.some(l=>l.status==='in_progress');
+    if(aHasIP&&!bHasIP)return-1;if(!aHasIP&&bHasIP)return 1;
+    const aOrder={published:2,in_progress:0,idea:1,backup:3}[a.status]??9;
+    const bOrder={published:2,in_progress:0,idea:1,backup:3}[b.status]??9;
+    return aOrder-bOrder;
+  });
+  bSorted.forEach(b=>{
     seen.add(String(b.id));
     html+=_vidRow(b,false);
-    const children=lVids.filter(l=>l.group_name&&l.group_name===b.group_name);
+    const children=lVids.filter(l=>l.group_name&&l.group_name===b.group_name).sort(_vidChildSort);
     children.forEach(l=>{seen.add(String(l.id));html+=_vidRow(l,true);});
   });
-  lVids.filter(l=>!seen.has(String(l.id))).forEach(l=>{html+=_vidRow(l,false);});
+  lVids.filter(l=>!seen.has(String(l.id))).sort(_vidChildSort).forEach(l=>{html+=_vidRow(l,false);});
   return html;
 }
 
