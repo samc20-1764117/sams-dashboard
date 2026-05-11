@@ -81,9 +81,7 @@ function renderVideosPage(){
       </div>
       <button class="btn btn-dark" onclick="openVidModal()" style="padding:5px 14px;font-size:12px">+ Add Video</button>
     </div>
-    <div style="overflow-y:auto;max-height:calc(100vh - 140px);padding-bottom:20px">
-    ${bodyHtml}
-    </div>`;
+    ${bodyHtml}`;
   const now=new Date();
   el.querySelectorAll('.topbar-date').forEach(e=>e.textContent=now.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}));
   el.querySelectorAll('.topbar-time').forEach(e=>e.textContent=now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}));
