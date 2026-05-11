@@ -116,7 +116,7 @@ function renderVideosPage(){
       </div>
     </div>
     <div class="card" style="overflow:hidden;flex:1;min-height:0">
-      <div style="overflow-y:auto;flex:1;min-height:0">
+      <div style="overflow:auto;flex:1;min-height:0">
         ${bodyHtml}
       </div>
     </div>`;
@@ -316,7 +316,7 @@ function _vidRenderTable(){
     groupedHtml=rows;
   }
   const thStyle='cursor:pointer;user-select:none';
-  return`<div style="overflow-x:auto">
+  return`<div>
     <table class="vid-tbl" style="table-layout:fixed;width:100%">
       <thead><tr>
         <th style="${thStyle}" onclick="vidTblSort('title')">Title${_vidSortArrow('title')}</th>
