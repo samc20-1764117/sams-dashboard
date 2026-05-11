@@ -144,18 +144,18 @@ function _vidDashRow(v,isChild,simple){
   const childMark=isChild?'<span style="color:var(--muted);font-size:10px;margin-right:4px">└</span>':'';
   if(simple){
     return`<div class="vid-dash-row${sel?' vid-sel':''}" draggable="true" ondragstart="_vidDashDragStart(event,'${sid}')" data-vid="${sid}" onclick="vidRowClick(event,'${sid}')" ondblclick="openVidEdit('${sid}')" oncontextmenu="showVidCtx(event,'${sid}')">
-      <span class="vid-type-badge" style="background:${v.video_type==='B'?'#0ea5e9':'#a78bfa'};color:#fff">${v.video_type||'?'}</span>
-      <div style="flex:1;min-width:0;${indent}">${childMark}<span class="vid-title-text">${_esc(v.title)}</span></div>
+      <div style="flex:1;min-width:0;${indent}${!isChild?'font-weight:600;':''}">${childMark}<span class="vid-title-text">${_esc(v.title)}</span></div>
       <button class="vid-del" data-vid="${sid}">✕</button>
     </div>`;
   }
+  const postStr=_vidPostStr(v.post_date);
   return`<div class="vid-dash-row${sel?' vid-sel':''}" draggable="true" ondragstart="_vidDashDragStart(event,'${sid}')" data-vid="${sid}" onclick="vidRowClick(event,'${sid}')" ondblclick="openVidEdit('${sid}')" oncontextmenu="showVidCtx(event,'${sid}')">
-    <span class="vid-type-badge" style="background:${v.video_type==='B'?'#0ea5e9':'#a78bfa'};color:#fff">${v.video_type||'?'}</span>
-    <div style="flex:1;min-width:0;${indent}">
+    <div style="flex:1;min-width:0;${indent}${!isChild?'font-weight:600;':''}">
       ${childMark}<span class="vid-title-text">${_esc(v.title)}</span>
-      ${v.group_name&&!isChild?`<span style="font-size:10px;color:var(--muted);margin-left:6px">${_esc(v.group_name)}</span>`:''}
+      ${v.group_name&&!isChild?`<span style="font-size:10px;color:var(--muted);margin-left:6px;font-weight:400">${_esc(v.group_name)}</span>`:''}
     </div>
     <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+      ${postStr?`<span style="font-size:10px;color:var(--muted)">${postStr}</span>`:''}
       <div style="display:flex;gap:2px">${VID_STEPS.map(s=>`<div class="vid-step-dot${v[s]==='done'?' done':''}" data-vid="${sid}" data-step="${s}" title="${VID_STEP_LABELS[s]}"></div>`).join('')}</div>
       <button class="vid-del" data-vid="${sid}">✕</button>
     </div>
@@ -182,7 +182,6 @@ function _vidRenderTable(){
   return`<div style="overflow-x:auto;margin-top:4px">
     <table class="vid-tbl">
       <thead><tr>
-        <th style="width:36px">Type</th>
         <th>Title</th>
         <th style="width:70px">Status</th>
         <th style="width:50px">Dur</th>
@@ -216,11 +215,10 @@ function _vidRow(v,isChild){
   const sc=VID_STATUS_COLORS[v.status]||'#94a3b8';
   const postStr=_vidPostStr(v.post_date);
   const durStr=v.duration_minutes?v.duration_minutes.toFixed(1):'';
-  const indent=isChild?'padding-left:22px;':'';
+  const indent=isChild?'padding-left:24px;':'';
   const childMark=isChild?'<span style="color:var(--muted);font-size:10px;margin-right:4px">└</span>':'';
   return`<tr class="vid-row${sel?' vid-sel':''}" data-vid="${sid}" onclick="vidRowClick(event,'${sid}')" ondblclick="openVidEdit('${sid}')" oncontextmenu="showVidCtx(event,'${sid}')">
-    <td><span class="vid-type-badge" style="background:${v.video_type==='B'?'#0ea5e9':'#a78bfa'};color:#fff">${v.video_type||''}</span></td>
-    <td style="${indent}">${childMark}<span class="vid-title-text">${_esc(v.title)}</span></td>
+    <td style="${indent}${!isChild?'font-weight:600;':''}">${childMark}<span class="vid-title-text">${_esc(v.title)}</span></td>
     <td><span class="vid-status-pill" style="background:${sc}20;color:${sc}">${v.status}</span></td>
     <td style="font-size:11px;color:var(--muted)">${durStr}</td>
     <td style="font-size:11px;color:var(--muted)">${postStr}</td>
@@ -493,10 +491,21 @@ async function cycleVidStep(id,step){
   const cur=v[step]||'not_started';
   const next=cur==='done'?'not_started':'done';
   const prev=cur;
+  const prevStatus=v.status;
   v[step]=next;
+  // Auto-complete: all applicable steps done + has date → published
+  const allDone=VID_STEPS.every(s=>v[s]==='done'||v[s]==='na');
+  if(allDone&&v.post_date&&v.status!=='published'){
+    v.status='published';
+  }else if(!allDone&&v.status==='published'&&prevStatus==='published'){
+    // Un-toggled a step on a published video — move back to in_progress
+    v.status='in_progress';
+  }
+  const patch={[step]:next};
+  if(v.status!==prevStatus)patch.status=v.status;
   save();renderVideosPage();
-  pushUndo(async()=>{v[step]=prev;save();renderVideosPage();await sbReqSilent('PATCH','videos',{[step]:prev},`?id=eq.${id}`);},'Step change');
-  await sbReqSilent('PATCH','videos',{[step]:next},`?id=eq.${id}`);
+  pushUndo(async()=>{v[step]=prev;v.status=prevStatus;save();renderVideosPage();await sbReqSilent('PATCH','videos',{[step]:prev,status:prevStatus},`?id=eq.${id}`);},'Step change');
+  await sbReqSilent('PATCH','videos',patch,`?id=eq.${id}`);
 }
 
 // ── Keyboard ──────────────────────────────────────────────────────────────────
