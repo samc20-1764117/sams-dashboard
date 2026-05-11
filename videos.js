@@ -200,11 +200,12 @@ function _vidDashRow(v,isChild,simple){
   const titleCls=isSmall?'':'vid-title-text';
   const isComplete=v.status==='published';
   const topic=v.topic||'';
+  const showTopicTitle=v.status==='in_progress'&&topic;
   const primary=isComplete?v.title:(topic||v.title);
-  const subtitle=(!isComplete&&topic)?v.title:'';
+  const secondary=showTopicTitle?v.title:'';
   if(simple){
     return`<div class="vid-dash-row${sel?' vid-sel':''}" draggable="true" ondragstart="_vidDashDragStart(event,'${sid}')" data-vid="${sid}" onclick="vidRowClick(event,'${sid}')" ondblclick="openVidEdit('${sid}')" oncontextmenu="showVidCtx(event,'${sid}')">
-      <div style="flex:1;min-width:0;padding-left:10px;${indent}${!isChild?'font-weight:600;':''}${titleStyle}">${childMark}${numHtml}<span class="${titleCls}">${_esc(primary)}</span>${subtitle?`<span style="font-size:10px;color:var(--muted);margin-left:6px;font-weight:400">${_esc(subtitle)}</span>`:''}</div>
+      <div style="flex:1;min-width:0;padding-left:10px;${indent}${!isChild?'font-weight:600;':''}${titleStyle}">${childMark}${numHtml}${showTopicTitle?`<span class="${titleCls}">${_esc(topic)}</span><span style="font-size:10px;color:var(--muted);margin-left:4px;font-weight:400">- ${_esc(v.title)}</span>`:`<span class="${titleCls}">${_esc(primary)}</span>`}</div>
       <div style="width:40px;display:flex;align-items:center;justify-content:flex-end;gap:2px;flex-shrink:0">${v.video_type==='B'?`<button onclick="event.stopPropagation();openVidModalForBig('${sid}')" style="font-size:12px;font-weight:700;width:18px;height:18px;line-height:16px;text-align:center;border-radius:4px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer" title="Add child video">+</button>`:''}<button class="vid-del" data-vid="${sid}">✕</button></div>
     </div>`;
   }
@@ -212,7 +213,7 @@ function _vidDashRow(v,isChild,simple){
   const durStr=v.duration_minutes?v.duration_minutes.toFixed(2):'';
   return`<div class="vid-dash-row${sel?' vid-sel':''}" draggable="true" ondragstart="_vidDashDragStart(event,'${sid}')" data-vid="${sid}" onclick="vidRowClick(event,'${sid}')" ondblclick="openVidEdit('${sid}')" oncontextmenu="showVidCtx(event,'${sid}')">
     <div style="flex:1;min-width:0;padding-left:10px;${indent}${!isChild?'font-weight:600;':''}${titleStyle}">
-      ${childMark}${numHtml}<span class="${titleCls}">${_esc(primary)}</span>${subtitle?`<span style="font-size:10px;color:var(--muted);margin-left:6px;font-weight:400">${_esc(subtitle)}</span>`:''}
+      ${childMark}${numHtml}${showTopicTitle?`<span class="${titleCls}">${_esc(topic)}</span><span style="font-size:10px;color:var(--muted);margin-left:4px;font-weight:400">- ${_esc(v.title)}</span>`:`<span class="${titleCls}">${_esc(primary)}</span>`}
     </div>
     <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
       <span style="width:70px;font-size:10px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${_esc(v.playlist||'')}">${_esc(v.playlist||'')}</span>
@@ -378,7 +379,7 @@ function _vidRow(v,isChild,postMap){
   const postNum=postMap&&postMap[sid];
   const numHtml=postNum?`<span style="color:var(--muted);font-size:10px;margin-right:6px;min-width:18px;display:inline-block">${postNum}</span>`:'';
   return`<tr class="vid-row${sel?' vid-sel':''}" data-vid="${sid}" onclick="vidCellClick(event,'${sid}')" ondblclick="openVidEdit('${sid}')" oncontextmenu="showVidCtx(event,'${sid}')">
-    <td data-field="title" style="${indent}${!isChild?'font-weight:600;':''}${titleColor}overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${childMark}${numHtml}<span class="${isSmall?'':'vid-title-text'}">${_esc(v.title)}</span>${v.status==='in_progress'&&v.topic?`<span style="font-size:10px;color:var(--muted);margin-left:6px;font-weight:400">${_esc(v.topic)}</span>`:''}</td>
+    <td data-field="title" style="${indent}${!isChild?'font-weight:600;':''}${titleColor}overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${childMark}${numHtml}${v.status==='in_progress'&&v.topic?`<span class="${isSmall?'':'vid-title-text'}">${_esc(v.topic)}</span><span style="font-size:10px;color:var(--muted);margin-left:4px;font-weight:400">- ${_esc(v.title)}</span>`:`<span class="${isSmall?'':'vid-title-text'}">${_esc(v.title)}</span>`}</td>
     <td data-field="playlist" style="font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:90px" title="${_esc(v.playlist||'')}">${_esc(v.playlist||'')}</td>
     <td data-field="status"><span class="vid-status-pill" style="background:${sc}20;color:${sc}">${v.status}</span></td>
     <td data-field="duration_minutes" style="font-size:11px;color:var(--muted)">${durStr}</td>
