@@ -62,6 +62,9 @@ Table: `travel(id,name,destination,start_date,end_date,travel_mode,notes)`. Drag
 ### Pup Skills (`pup-skills.js`)
 Table: `pup_skills`. Sort: mastered last→category→focus→pup→level→skill_order. Inline edit: `pupCellEdit(td,id,field)`. Add modal: `openPupAddModal()`. Edit modal: `openPupEditModal(id)`. Enter in modal: closes if skill empty, saves otherwise. `savePupModal` POSTs/PATCHes Supabase and calls both `renderPupsPage()` and `renderPupSkillsHighlight()`. **Session counts**: table has a "Sessions" column and card rows (non-mastered) show a count badge — both display lifetime `done/total` from `st.pupSessions`. Clicking either opens `openPupCountEdit(skillId, anchorEl)`: a popover showing total done (lifetime), total sessions (lifetime), last practiced date, this week done/total, and an editable "done this wk" field (Enter saves, Escape closes). `setPupWkDone(skillId, newDone)` creates/removes `pup_skill_sessions` rows to match the desired done count. Count color: `var(--muted)` always. Key helpers defined at top of file: `_pupWkDone`, `_pupWkSessTotal`, `_pupAllSess`, `_pupAllDone`, `_pupAllTotal`, `_pupLastPracticed`, `_pupCountBadge`.
 
+### Videos (`videos.js`)
+See `rules/videos.md` for full rules. Table: `videos`. 4 views: Dashboard, All Details, Videos by Progress, Monthly. B→L grouping via `big_video_id`. 8 stages (steps). Auto-publish when core stages done + has post_date. Inline cell editing. Searchable big video + playlist fields.
+
 ### Birthdays (`features.js`)
 Table: `birthdays(id,name,birthday,present_ideas)`. `present_ideas` JSON array. `saveBdayModal` does NOT include `present_ideas`.
 
