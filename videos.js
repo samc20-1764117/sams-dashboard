@@ -113,7 +113,7 @@ function renderVideosPage(){
   // Use the exact same pattern as recipes page (features.js line 2130-2139)
   el.style.cssText='padding:60px 56px 0 56px;display:flex;flex-direction:column;height:100vh;box-sizing:border-box';
   el.innerHTML=`
-    <div class="ov-topbar"><div class="ov-topbar-left"><span class="ov-topbar-label">🎬 Videos</span><span class="ov-topbar-dot"></span></div><span class="ov-topbar-date topbar-date"></span><div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div></div>
+    <div class="ov-topbar"><div class="ov-topbar-left"><span class="ov-topbar-label">Videos</span><span class="ov-topbar-dot"></span></div><span class="ov-topbar-date topbar-date"></span><div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div></div>
     <div style="padding-top:26px;position:relative;z-index:10">
       <div style="display:flex;gap:10px;align-items:center;margin-bottom:6px;flex-wrap:wrap">
         <div style="display:flex;gap:2px;background:var(--glass);border:1px solid var(--border);border-radius:8px;padding:2px">
@@ -130,7 +130,7 @@ function renderVideosPage(){
           <span style="color:#8b5cf6">${stats.idea} ideas</span>
           <span style="color:var(--muted)">${stats.total} total</span>
         </div>
-        <button class="btn btn-dark" onclick="openVidModal()" style="padding:5px 14px;font-size:12px">Add</button>
+        <button onclick="openVidModal()" style="width:26px;height:26px;border-radius:8px;border:none;background:#334155;color:#fff;font-size:16px;font-weight:700;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center" title="Add video">+</button>
       </div>
     </div>
     <div class="card" style="overflow:hidden;flex:1;min-height:0">
@@ -928,10 +928,9 @@ async function cycleVidStep(id,step){
 function _vidCelebrate(id){
   const row=document.querySelector(`[data-vid="${id}"]`);if(!row)return;
   const rect=row.getBoundingClientRect();
-  // Glow pulse
-  row.style.transition='box-shadow .4s, transform .4s';
-  row.style.boxShadow='0 0 20px rgba(16,185,129,.5), 0 0 40px rgba(16,185,129,.2)';
-  row.style.transform='scale(1.02)';
+  // Glow pulse (inset so it stays within the row)
+  row.style.transition='box-shadow .4s';
+  row.style.boxShadow='inset 0 0 12px rgba(16,185,129,.35)';
   // Shimmer sweep
   const shimmer=document.createElement('div');
   shimmer.style.cssText='position:absolute;top:0;left:-100%;width:60%;height:100%;background:linear-gradient(90deg,transparent,rgba(16,185,129,.15),transparent);pointer-events:none;border-radius:inherit;z-index:5';
@@ -966,7 +965,7 @@ function _vidCelebrate(id){
   }
   // Reset
   setTimeout(()=>{
-    row.style.boxShadow='';row.style.transform='';
+    row.style.boxShadow='';
     shimmer.remove();row.style.position=prevPos;row.style.overflow=prevOvf;
     setTimeout(()=>row.style.transition='',300);
   },1800);
