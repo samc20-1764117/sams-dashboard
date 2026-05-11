@@ -263,11 +263,30 @@ function _vidSortVids(vids){
       return av<bv?-dir:av>bv?dir:0;
     });
   }else{
-    // Default: oldest posted at top (asc), nulls last
+    // Default: group by big video, ordered by B video's id (creation order)
+    // B video first, then its children by post_date. Standalone L by own post_date.
+    const allVids=(st.videos||[]).filter(v=>!v.is_deleted);
+    const bMap={};
+    allVids.forEach(v=>{if(v.video_type==='B')bMap[String(v.id)]=v;});
     sorted.sort((a,b)=>{
-      if(!a.post_date&&!b.post_date)return 0;
-      if(!a.post_date)return 1;if(!b.post_date)return-1;
-      return a.post_date.localeCompare(b.post_date);
+      // Group key = parent B video's id, or own id if standalone/B
+      const aParentId=a.video_type==='B'?a.id:a.big_video_id||null;
+      const bParentId=b.video_type==='B'?b.id:b.big_video_id||null;
+      // Standalone (no parent) sorts by own post_date among groups
+      const aGroupId=aParentId||99999;
+      const bGroupId=bParentId||99999;
+      // Different groups — sort by B video id (creation order)
+      if(aGroupId!==bGroupId){
+        if(!aParentId)return 1; // standalone after grouped
+        if(!bParentId)return-1;
+        return aGroupId-bGroupId;
+      }
+      // Same group — B first, then children by post_date
+      const aIsB=a.video_type==='B'?0:1;
+      const bIsB=b.video_type==='B'?0:1;
+      if(aIsB!==bIsB)return aIsB-bIsB;
+      const ad=a.post_date||'9999',bd=b.post_date||'9999';
+      return ad.localeCompare(bd);
     });
   }
   return sorted;
