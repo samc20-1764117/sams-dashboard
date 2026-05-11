@@ -58,6 +58,7 @@
     <a class="nav-item" href="#finance" onclick="event.preventDefault();showPage('finance')"><div class="ndot" style="background:#22c55e"></div>💰 Finance</a>
     <a class="nav-item" href="#recipes" onclick="event.preventDefault();showPage('recipes')"><div class="ndot" style="background:#f59e0b"></div>🍳 Recipes</a>
     <a class="nav-item" href="#notes" onclick="event.preventDefault();showPage('notes')"><div class="ndot" style="background:#8b5cf6"></div>📝 Notes</a>
+    <a class="nav-item" href="#videos" onclick="event.preventDefault();showPage('videos')"><div class="ndot" style="background:#0ea5e9"></div>🎬 Videos</a>
   </nav>
 </div>
 
@@ -209,6 +210,7 @@
         <a class="ql-btn" href="#finance" onclick="event.preventDefault();showPage('finance')"><span class="ql-icon">💰</span>Finance</a>
         <a class="ql-btn" href="#recipes" onclick="event.preventDefault();showPage('recipes')"><span class="ql-icon">🍳</span>Recipes</a>
         <a class="ql-btn" href="#notes" onclick="event.preventDefault();showPage('notes')"><span class="ql-icon">📝</span>Notes</a>
+        <a class="ql-btn" href="#videos" onclick="event.preventDefault();showPage('videos')"><span class="ql-icon">🎬</span>Videos</a>
       </div>
     </div>
     </div><!-- row1-right-top -->
@@ -384,6 +386,7 @@
 <div class="page" id="page-finance" style="padding:clamp(12px,3vw,56px);padding-top:60px"><div class="ov-topbar"><div class="ov-topbar-left"><span class="ov-topbar-label">💰 Finance</span><span class="ov-topbar-dot"></span></div><span class="ov-topbar-date topbar-date"></span><div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div></div></div>
 <div class="page" id="page-recipes" style="padding:22px 56px 36px 56px;padding-top:60px"></div>
 <div class="page" id="page-notes" style="padding:clamp(12px,3vw,56px);padding-top:60px"><div class="ov-topbar"><div class="ov-topbar-left"><span class="ov-topbar-label">📝 Notes</span><span class="ov-topbar-dot"></span></div><span class="ov-topbar-date topbar-date"></span><div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div></div></div>
+<div class="page" id="page-videos" style="padding:22px 56px 36px 56px;padding-top:60px"></div>
 <div class="page" id="page-settings" style="display:none!important"><input class="si2" id="cfgUrl" style="display:none"><input class="si2" id="cfgKey" style="display:none"><div class="cst idle" id="cst" style="display:none"></div></div>
 
 </div><!-- /main -->
@@ -730,6 +733,45 @@
 <script src="overview.js"></script>
 <script src="features.js"></script>
 <script src="pup-skills.js"></script>
+<script src="videos.js"></script>
+
+<!-- Video Modal -->
+<div class="overlay" id="vidModal" onclick="closeMod('vidModal',event)" onkeydown="if(event.key==='Escape'){event.stopPropagation();closeMod('vidModal');}else if(event.key==='Enter'&&event.target.tagName!=='TEXTAREA'){event.preventDefault();saveVidModal();}">
+  <div class="modal task-modal" style="width:480px">
+    <div class="mt" id="vidMTitle">Add Video</div>
+    <input id="vmTitle" placeholder="Video title" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;background:var(--bg);color:var(--text);outline:none">
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <input id="vmTopic" placeholder="Topic" style="flex:1;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;background:var(--bg);color:var(--text);outline:none">
+      <select id="vmType" style="width:80px;padding:8px 6px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;background:var(--bg);color:var(--text);outline:none">
+        <option value="">Type</option><option value="B">Build</option><option value="L">Lesson</option>
+      </select>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <select id="vmStatus" style="flex:1;padding:8px 6px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;background:var(--bg);color:var(--text);outline:none">
+        <option value="idea">Idea</option><option value="in_progress">In Progress</option><option value="published">Published</option><option value="backup">Backup</option>
+      </select>
+      <input id="vmPostDate" type="date" placeholder="Post date" style="flex:1;padding:8px 6px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;background:var(--bg);color:var(--text);outline:none">
+    </div>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <input id="vmDuration" type="number" step="0.01" placeholder="Duration (min)" style="flex:1;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;background:var(--bg);color:var(--text);outline:none">
+      <input id="vmBuildHours" type="number" step="0.5" placeholder="Build hours" style="flex:1;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;background:var(--bg);color:var(--text);outline:none">
+    </div>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <input id="vmGroup" placeholder="Group name" style="flex:1;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;background:var(--bg);color:var(--text);outline:none">
+      <input id="vmPlaylist" placeholder="Playlist" style="flex:1;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;background:var(--bg);color:var(--text);outline:none">
+    </div>
+    <div style="margin-top:8px;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">Pipeline Steps</div>
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin-top:4px" id="vmSteps"></div>
+    <div class="mact" style="margin-top:12px"><button class="btn btn-ghost" onclick="closeMod('vidModal')">Cancel</button><button class="btn btn-dark" onclick="saveVidModal()">Save</button></div>
+  </div>
+</div>
+
+<div id="vidCtxMenu" style="display:none;position:fixed;z-index:9999;background:rgba(255,255,255,.98);border:1px solid rgba(210,205,228,.4);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);padding:4px;min-width:155px;backdrop-filter:blur(12px)">
+  <div class="ctx-item" onclick="vidCtxEdit()">✏️  Edit video</div>
+  <div class="ctx-item" onclick="vidCtxDuplicate()">⧉  Duplicate video</div>
+  <div class="ctx-divider"></div>
+  <div class="ctx-item ctx-danger" onclick="vidCtxDelete()">✕  Delete video</div>
+</div>
 
 <div id="pupCtxMenu" style="display:none;position:fixed;z-index:9999;background:rgba(255,255,255,.98);border:1px solid rgba(210,205,228,.4);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);padding:4px;min-width:155px;backdrop-filter:blur(12px)">
   <div class="ctx-item" onclick="pupCtxEdit()">✏️  Edit skill</div>
