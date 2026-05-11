@@ -205,7 +205,7 @@ function _vidDashRow(v,isChild,simple){
   if(simple){
     return`<div class="vid-dash-row${sel?' vid-sel':''}" draggable="true" ondragstart="_vidDashDragStart(event,'${sid}')" data-vid="${sid}" onclick="vidRowClick(event,'${sid}')" ondblclick="openVidEdit('${sid}')" oncontextmenu="showVidCtx(event,'${sid}')">
       <div style="flex:1;min-width:0;padding-left:10px;${indent}${!isChild?'font-weight:600;':''}${titleStyle}">${childMark}${numHtml}<span class="${titleCls}">${_esc(primary)}</span>${subtitle?`<span style="font-size:10px;color:var(--muted);margin-left:6px;font-weight:400">${_esc(subtitle)}</span>`:''}</div>
-      <button class="vid-del" data-vid="${sid}">✕</button>
+      ${v.video_type==='B'?`<button onclick="event.stopPropagation();openVidModalForBig('${sid}')" style="font-size:12px;font-weight:700;width:18px;height:18px;line-height:16px;text-align:center;border-radius:4px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer" title="Add child video">+</button>`:''}<button class="vid-del" data-vid="${sid}">✕</button>
     </div>`;
   }
   const postStr=_vidPostStr(v.post_date);
@@ -219,7 +219,7 @@ function _vidDashRow(v,isChild,simple){
       <span style="width:36px;text-align:right;font-size:11px;color:var(--muted)">${durStr}</span>
       <span style="width:52px;font-size:11px;color:${_vidDateColor(v.post_date,v)}">${postStr||''}</span>
       <div style="display:flex;gap:0">${VID_STEPS.map(s=>`<div style="width:28px;text-align:center"><div class="vid-step-dot${v[s]==='done'?' done':v[s]==='na'?' na':''}" data-vid="${sid}" data-step="${s}" title="${VID_STEP_LABELS[s]}"></div></div>`).join('')}</div>
-      <button class="vid-del" data-vid="${sid}">✕</button>
+      ${v.video_type==='B'?`<button onclick="event.stopPropagation();openVidModalForBig('${sid}')" style="font-size:12px;font-weight:700;width:18px;height:18px;line-height:16px;text-align:center;border-radius:4px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer" title="Add child video">+</button>`:''}<button class="vid-del" data-vid="${sid}">✕</button>
     </div>
   </div>`;
 }
@@ -803,6 +803,8 @@ document.addEventListener('keydown',e=>{
   if((e.metaKey||e.ctrlKey)&&e.key==='c'&&_vidSelected.size>0){e.preventDefault();_vidCopied=[];_vidSelected.forEach(id=>{const v=(st.videos||[]).find(x=>String(x.id)===String(id));if(v)_vidCopied.push({...v});});showToast('Copied '+_vidCopied.length+' video(s)','#0ea5e9',1500);return;}
   if((e.metaKey||e.ctrlKey)&&e.key==='v'&&_vidCopied.length>0){e.preventDefault();_vidCopied.forEach(v=>_vidDuplicate(v.id));return;}
   if(e.key==='n'&&!e.metaKey&&!e.ctrlKey){e.preventDefault();openVidModal();return;}
+  if(e.key==='ArrowUp'&&!e.metaKey&&!e.ctrlKey){e.preventDefault();const se=_vidScrollEl();if(se)se.scrollTop=0;return;}
+  if(e.key==='ArrowDown'&&!e.metaKey&&!e.ctrlKey){e.preventDefault();const se=_vidScrollEl();if(se)se.scrollTop=se.scrollHeight;return;}
 });
 
 // ── Close context menu on click elsewhere ─────────────────────────────────────
