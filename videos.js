@@ -25,14 +25,14 @@ function _vidSeqMap(){
 function _vidFiltered(){
   let vids=(st.videos||[]).filter(v=>!v.is_deleted);
   if(_vidFilter!=='all')vids=vids.filter(v=>v.status===_vidFilter);
-  if(_vidGroupFilter!=='all')vids=vids.filter(v=>v.group_name===_vidGroupFilter);
-  if(_vidSearch){const q=_vidSearch.toLowerCase();vids=vids.filter(v=>(v.title||'').toLowerCase().includes(q)||(v.topic||'').toLowerCase().includes(q)||(v.group_name||'').toLowerCase().includes(q)||(v.playlist||'').toLowerCase().includes(q));}
+  if(_vidGroupFilter!=='all')vids=vids.filter(v=>String(v.big_video_id)===String(_vidGroupFilter)||String(v.id)===String(_vidGroupFilter));
+  if(_vidSearch){const q=_vidSearch.toLowerCase();vids=vids.filter(v=>(v.title||'').toLowerCase().includes(q)||(v.topic||'').toLowerCase().includes(q)||(v.playlist||'').toLowerCase().includes(q));}
   return vids;
 }
 
 function _vidGroups(){
   const groups=new Set();
-  (st.videos||[]).forEach(v=>{if(v.group_name&&!v.is_deleted)groups.add(v.group_name);});
+  (st.videos||[]).forEach(v=>{if(v.big_video_id&&!v.is_deleted)groups.add(v.big_video_id);});
   return[...groups].sort();
 }
 
@@ -134,7 +134,7 @@ function _vidRenderDashboard(){
   let ideas=all.filter(v=>v.status==='idea');
   if(_vidSearch){
     const q=_vidSearch.toLowerCase();
-    const match=v=>(v.title||'').toLowerCase().includes(q)||(v.topic||'').toLowerCase().includes(q)||(v.group_name||'').toLowerCase().includes(q);
+    const match=v=>(v.title||'').toLowerCase().includes(q)||(v.topic||'').toLowerCase().includes(q)||(v.playlist||'').toLowerCase().includes(q);
     inProgress=inProgress.filter(match);ideas=ideas.filter(match);
   }
   return`
@@ -171,7 +171,7 @@ function _vidDashList(vids,simple){
   bVids.forEach(b=>{
     seen.add(String(b.id));
     html+=_vidDashRow(b,false,simple);
-    const children=lVids.filter(l=>l.group_name&&l.group_name===b.group_name);
+    const children=lVids.filter(l=>l.big_video_id&&String(l.big_video_id)===String(b.id));
     children.forEach(l=>{seen.add(String(l.id));html+=_vidDashRow(l,true,simple);});
   });
   lVids.filter(l=>!seen.has(String(l.id))).forEach(l=>{html+=_vidDashRow(l,false,simple);});
@@ -183,7 +183,7 @@ function _vidDashRow(v,isChild,simple){
   if(!_vidDashPostMap)_vidDashPostMap=_vidSeqMap();
   const sid=String(v.id);
   const sel=_vidSelected.has(sid);
-  const isSmall=v.video_type==='L'&&v.group_name;
+  const isSmall=v.video_type==='L'&&v.big_video_id;
   const indent=isChild?'padding-left:20px;':'';
   const childMark=isChild?'<span style="color:var(--muted);font-size:10px;margin-right:4px">└</span>':'';
   const titleStyle=isSmall?'color:var(--muted)':'';
@@ -244,7 +244,7 @@ function _vidSortVids(vids){
     sorted.sort((a,b)=>{
       let av,bv;
       if(col==='title'){av=(a.title||'').toLowerCase();bv=(b.title||'').toLowerCase();}
-      else if(col==='group'){av=(a.group_name||'').toLowerCase();bv=(b.group_name||'').toLowerCase();}
+      else if(col==='group'){av=a.big_video_id||0;bv=b.big_video_id||0;}
       else if(col==='playlist'){av=(a.playlist||'').toLowerCase();bv=(b.playlist||'').toLowerCase();}
       else if(col==='status'){av=a.status||'';bv=b.status||'';}
       else if(col==='duration'){av=a.duration_minutes||0;bv=b.duration_minutes||0;}
@@ -270,11 +270,11 @@ function _vidRenderTable(){
   if(!_vidShowCompleted){
     // Find B groups that have L children with future/today post dates
     const keepGroups=new Set();
-    vids.forEach(v=>{if(v.video_type==='L'&&v.group_name&&v.post_date&&v.post_date>=today)keepGroups.add(v.group_name);});
+    vids.forEach(v=>{if(v.video_type==='L'&&v.big_video_id&&v.post_date&&v.post_date>=today)keepGroups.add(String(v.big_video_id));});
     vids=vids.filter(v=>{
       // Hide published with past date
       if(v.status==='published'&&v.post_date&&v.post_date<today){
-        if(v.video_type==='B'&&v.group_name&&keepGroups.has(v.group_name))return true;
+        if(v.video_type==='B'&&keepGroups.has(String(v.id)))return true;
         return false;
       }
       // Hide backup if all steps done
@@ -299,8 +299,8 @@ function _vidRenderTable(){
       if(seen.has(String(v.id)))return;
       seen.add(String(v.id));
       rows+=_vidRow(v,false,postMap);
-      if(v.video_type==='B'&&v.group_name){
-        const children=lVids.filter(l=>l.group_name===v.group_name&&!seen.has(String(l.id)));
+      if(v.video_type==='B'){
+        const children=lVids.filter(l=>String(l.big_video_id)===String(v.id)&&!seen.has(String(l.id)));
         children.forEach(l=>{seen.add(String(l.id));rows+=_vidRow(l,true,postMap);});
       }
     });
@@ -338,8 +338,8 @@ function _vidBuildRows(vids){
   const bVids=vids.filter(v=>v.video_type==='B');
   const lVids=vids.filter(v=>v.video_type!=='B');
   const bSorted=[...bVids].sort((a,b)=>{
-    const aKids=lVids.filter(l=>l.group_name&&l.group_name===a.group_name);
-    const bKids=lVids.filter(l=>l.group_name&&l.group_name===b.group_name);
+    const aKids=lVids.filter(l=>l.big_video_id&&String(l.big_video_id)===String(a.id));
+    const bKids=lVids.filter(l=>l.big_video_id&&String(l.big_video_id)===String(b.id));
     const aHasIP=a.status==='in_progress'||aKids.some(l=>l.status==='in_progress');
     const bHasIP=b.status==='in_progress'||bKids.some(l=>l.status==='in_progress');
     if(aHasIP&&!bHasIP)return-1;if(!aHasIP&&bHasIP)return 1;
@@ -350,7 +350,7 @@ function _vidBuildRows(vids){
   bSorted.forEach(b=>{
     seen.add(String(b.id));
     html+=_vidRow(b,false);
-    const children=lVids.filter(l=>l.group_name&&l.group_name===b.group_name).sort(_vidChildSort);
+    const children=lVids.filter(l=>l.big_video_id&&String(l.big_video_id)===String(b.id)).sort(_vidChildSort);
     children.forEach(l=>{seen.add(String(l.id));html+=_vidRow(l,true);});
   });
   lVids.filter(l=>!seen.has(String(l.id))).sort(_vidChildSort).forEach(l=>{html+=_vidRow(l,false);});
@@ -363,7 +363,7 @@ function _vidRow(v,isChild,postMap){
   const sc=VID_STATUS_COLORS[v.status]||'#94a3b8';
   const postStr=_vidPostStr(v.post_date,true);
   const durStr=v.duration_minutes?v.duration_minutes.toFixed(2):'';
-  const isSmall=v.video_type==='L'&&v.group_name;
+  const isSmall=v.video_type==='L'&&v.big_video_id;
   const indent=isChild?'padding-left:32px;':'padding-left:16px;';
   const childMark=isChild?'<span style="color:var(--muted);font-size:10px;margin-right:4px">└</span>':'';
   const titleColor=isSmall?'color:var(--muted);':'';
@@ -376,7 +376,7 @@ function _vidRow(v,isChild,postMap){
     <td data-field="duration_minutes" style="font-size:11px;color:var(--muted)">${durStr}</td>
     <td data-field="post_date" style="font-size:11px;color:${_vidDateColor(v.post_date,v)}">${postStr}</td>
     ${VID_STEPS.map(s=>`<td style="text-align:center"><div class="vid-step-dot${v[s]==='done'?' done':v[s]==='na'?' na':''}" data-vid="${sid}" data-step="${s}" title="${VID_STEP_LABELS[s]}"></div></td>`).join('')}
-    <td><button class="vid-del" data-vid="${sid}">✕</button></td>
+    <td style="white-space:nowrap">${v.video_type==='B'?`<button onclick="event.stopPropagation();openVidModalForBig('${sid}')" style="font-size:12px;font-weight:700;width:18px;height:18px;line-height:16px;text-align:center;border-radius:4px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;margin-right:2px" title="Add child video">+</button>`:''}<button class="vid-del" data-vid="${sid}">✕</button></td>
   </tr>`;
 }
 
@@ -411,9 +411,9 @@ function _vidBoardCard(v){
   return`<div class="vid-board-card${sel?' vid-sel':''}" draggable="true" ondragstart="_vidBoardDragStart(event,'${sid}')" onclick="vidRowClick(event,'${sid}')" ondblclick="openVidEdit('${sid}')" oncontextmenu="showVidCtx(event,'${sid}')">
     <div style="display:flex;align-items:center;gap:4px;margin-bottom:3px">
       <span class="vid-type-badge" style="background:${v.video_type==='B'?'#0ea5e9':'#a78bfa'};color:#fff;font-size:9px;padding:0 4px">${v.video_type||'?'}</span>
-      ${v.group_name?`<span style="font-size:9px;color:var(--muted)">${_esc(v.group_name)}</span>`:''}
+      ${v.big_video_id?`<span style="font-size:9px;color:var(--muted)">${_esc(((st.videos||[]).find(x=>x.id==v.big_video_id)||{}).title||'')}</span>`:''}
     </div>
-    <div style="font-size:12px;font-weight:${v.video_type==='B'||!v.group_name?'500':'400'};color:${v.video_type==='L'&&v.group_name?'var(--muted)':'var(--text)'};line-height:1.35;margin-bottom:4px">${_esc(v.title)}</div>
+    <div style="font-size:12px;font-weight:${v.video_type==='B'||!v.big_video_id?'500':'400'};color:${v.video_type==='L'&&v.big_video_id?'var(--muted)':'var(--text)'};line-height:1.35;margin-bottom:4px">${_esc(v.title)}</div>
     <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:var(--muted)">
       ${postStr?`<span>${postStr}</span>`:''}
       ${v.duration_minutes?`<span>${v.duration_minutes.toFixed(2)}</span>`:''}
@@ -448,22 +448,22 @@ async function _vidBoardDrop(e,newStatus){
 function _vidRenderGroups(){
   const vids=_vidFiltered();
   const groupNames=_vidGroups();
-  const ungrouped=vids.filter(v=>!v.group_name);
+  const ungrouped=vids.filter(v=>!v.big_video_id);
   let html='<div class="vid-groups-grid">';
   groupNames.forEach(gn=>{
-    const gVids=vids.filter(v=>v.group_name===gn);
-    const bVid=gVids.find(v=>v.video_type==='B');
+    const bVid=(st.videos||[]).find(v=>!v.is_deleted&&String(v.id)===String(gn));
+    const bTitle=bVid?bVid.title:'Unknown';
+    const gVids=vids.filter(v=>String(v.big_video_id)===String(gn)||String(v.id)===String(gn));
     const lVids=gVids.filter(v=>v.video_type!=='B');
     const pub=gVids.filter(v=>v.status==='published').length;
     const total=gVids.length;
     const pct=total?Math.round(pub/total*100):0;
     const sc=pct===100?'#10b981':pct>0?'#f59e0b':'#8b5cf6';
-    html+=`<div class="vid-group-card" onclick="_vidSetGroup('${_esc(gn)}');_vidSetView('table')">
+    html+=`<div class="vid-group-card" onclick="_vidSetGroup('${gn}');_vidSetView('table')">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-        <span style="font-size:13px;font-weight:700;color:var(--text)">${_esc(gn)}</span>
+        <span style="font-size:13px;font-weight:700;color:var(--text)">${_esc(bTitle)}</span>
         <span style="font-size:10px;font-weight:600;color:${sc}">${pub}/${total}</span>
       </div>
-      ${bVid?`<div style="font-size:11px;color:var(--muted);margin-bottom:6px;line-height:1.3">${_esc(bVid.title)}</div>`:''}
       <div style="width:100%;height:5px;background:var(--border);border-radius:3px;overflow:hidden;margin-bottom:6px"><div style="width:${pct}%;height:100%;background:${sc};border-radius:3px;transition:width .3s"></div></div>
       <div style="display:flex;flex-wrap:wrap;gap:3px">
         ${lVids.slice(0,8).map(l=>{const lsc=VID_STATUS_COLORS[l.status]||'#94a3b8';return`<span style="font-size:9px;padding:1px 5px;border-radius:4px;background:${lsc}15;color:${lsc}">${_esc((l.topic||l.title).slice(0,20))}</span>`;}).join('')}
@@ -522,7 +522,7 @@ function _vidRenderMonthly(){
       ${vids.map(v=>{
         const sc=VID_STATUS_COLORS[v.status]||'#94a3b8';
         const isB=v.video_type==='B';
-        const isSmallCal=v.video_type==='L'&&v.group_name;
+        const isSmallCal=v.video_type==='L'&&v.big_video_id;
         return`<div style="font-size:9px;padding:2px 3px;margin-bottom:1px;border-radius:3px;background:${sc}15;color:${sc};cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;${isB?'font-weight:600;':''}${isSmallCal?'opacity:.6;':''}" title="${_esc(v.title)}" ondblclick="openVidEdit('${v.id}')">${v.number?'#'+v.number+' ':''}${_esc(v.title)}</div>`;
       }).join('')}
     </div>`;
@@ -636,6 +636,19 @@ function vidCtxDuplicate(){document.getElementById('vidCtxMenu').style.display='
 function vidCtxDelete(){document.getElementById('vidCtxMenu').style.display='none';[..._vidSelected].forEach(id=>delVideo(id));}
 
 // ── Modal ─────────────────────────────────────────────────────────────────────
+function _vidPopulateBigVideoSelect(selectedId){
+  const sel=document.getElementById('vmBigVideo');
+  const bVids=(st.videos||[]).filter(v=>!v.is_deleted&&v.video_type==='B').sort((a,b)=>(a.title||'').localeCompare(b.title||''));
+  sel.innerHTML='<option value="">Big Video (none)</option>';
+  bVids.forEach(v=>{const o=document.createElement('option');o.value=v.id;o.textContent=v.title;if(String(v.id)===String(selectedId))o.selected=true;sel.appendChild(o);});
+}
+
+function openVidModalForBig(bigId){
+  openVidModal();
+  document.getElementById('vmType').value='L';
+  _vidPopulateBigVideoSelect(bigId);
+}
+
 function openVidModal(){
   _vidMode='add';_vidEditId=null;
   document.getElementById('vidMTitle').textContent='Add Video';
@@ -646,7 +659,7 @@ function openVidModal(){
   document.getElementById('vmPostDate').value='';
   document.getElementById('vmDuration').value='';
 
-  document.getElementById('vmGroup').value='';
+  _vidPopulateBigVideoSelect('');
   document.getElementById('vmPlaylist').value='';
   _vidRenderSteps({});
   document.getElementById('vidModal').classList.add('open');
@@ -664,7 +677,7 @@ function openVidEdit(id){
   document.getElementById('vmPostDate').value=v.post_date||'';
   document.getElementById('vmDuration').value=v.duration_minutes||'';
 
-  document.getElementById('vmGroup').value=v.group_name||'';
+  _vidPopulateBigVideoSelect(v.big_video_id||'');
   document.getElementById('vmPlaylist').value=v.playlist||'';
   const stepVals={};VID_STEPS.forEach(s=>{stepVals[s]=v[s]||'not_started';});
   _vidRenderSteps(stepVals);
@@ -697,12 +710,12 @@ async function saveVidModal(){
     post_date:document.getElementById('vmPostDate').value||null,
     duration_minutes:parseFloat(document.getElementById('vmDuration').value)||null,
 
-    group_name:document.getElementById('vmGroup').value.trim()||null,
+    big_video_id:document.getElementById('vmBigVideo').value?parseInt(document.getElementById('vmBigVideo').value):null,
     playlist:document.getElementById('vmPlaylist').value.trim()||null
   };
   document.querySelectorAll('#vmSteps select[data-step]').forEach(sel=>{data[sel.dataset.step]=sel.value;});
   // Default Tab Pub + Upload to na for L-type videos with a parent group (not standalone)
-  if(_vidMode==='add'&&data.video_type==='L'&&data.group_name){
+  if(_vidMode==='add'&&data.video_type==='L'&&data.big_video_id){
     if(!data.step_tableau_public||data.step_tableau_public==='not_started')data.step_tableau_public='na';
     if(!data.step_upload_tableau||data.step_upload_tableau==='not_started')data.step_upload_tableau='na';
   }
@@ -759,12 +772,12 @@ async function cycleVidStep(id,step){
   const prev=cur;
   const prevStatus=v.status;
   v[step]=next;
-  // Auto-complete: all applicable steps done + has date → published
-  const allDone=VID_STEPS.every(s=>v[s]==='done'||v[s]==='na');
-  if(allDone&&v.post_date&&v.status!=='published'){
+  // Auto-complete: core steps done + has date → published (Tab Pub & Upload excluded)
+  const coreSteps=VID_STEPS.filter(s=>s!=='step_tableau_public'&&s!=='step_upload_tableau');
+  const coreDone=coreSteps.every(s=>v[s]==='done'||v[s]==='na');
+  if(coreDone&&v.post_date&&v.status!=='published'){
     v.status='published';
-  }else if(!allDone&&v.status==='published'&&prevStatus==='published'){
-    // Un-toggled a step on a published video — move back to in_progress
+  }else if(!coreDone&&v.status==='published'&&prevStatus==='published'){
     v.status='in_progress';
   }
   const patch={[step]:next};
