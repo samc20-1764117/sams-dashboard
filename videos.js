@@ -34,6 +34,7 @@ function _vidStats(){
 // ── Main Render ──────────────────────────────────────────────────────────────
 function renderVideosPage(){
   const el=document.getElementById('page-videos');if(!el)return;
+  if(!st.videos)st.videos=[];
   const stats=_vidStats();
   const groups=_vidGroups();
   const viewBtnS=v=>`vid-view-btn${_vidView===v?' active':''}`;
@@ -45,7 +46,7 @@ function renderVideosPage(){
 
   el.innerHTML=`
     <div class="ov-topbar"><div class="ov-topbar-left"><span class="ov-topbar-label">🎬 Videos</span><span class="ov-topbar-dot"></span></div><span class="ov-topbar-date topbar-date"></span><div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div></div>
-    <div style="display:flex;gap:10px;align-items:center;margin:14px 0 6px;flex-wrap:wrap">
+    <div style="display:flex;gap:10px;align-items:center;margin:14px 0 6px;flex-wrap:wrap;position:relative;z-index:2">
       <div style="display:flex;gap:2px;background:var(--glass);border:1px solid var(--border);border-radius:8px;padding:2px">
         <button class="${viewBtnS('table')}" onclick="_vidSetView('table')">Table</button>
         <button class="${viewBtnS('board')}" onclick="_vidSetView('board')">Board</button>
