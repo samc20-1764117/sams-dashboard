@@ -247,10 +247,17 @@ function _vidRenderTable(){
     const keepGroups=new Set();
     vids.forEach(v=>{if(v.video_type==='L'&&v.group_name&&v.post_date&&v.post_date>=today)keepGroups.add(v.group_name);});
     vids=vids.filter(v=>{
-      if(!(v.status==='published'&&v.post_date&&v.post_date<today))return true;
-      // Keep if B video with active children
-      if(v.video_type==='B'&&v.group_name&&keepGroups.has(v.group_name))return true;
-      return false;
+      // Hide published with past date
+      if(v.status==='published'&&v.post_date&&v.post_date<today){
+        if(v.video_type==='B'&&v.group_name&&keepGroups.has(v.group_name))return true;
+        return false;
+      }
+      // Hide backup if all steps done
+      if(v.status==='backup'){
+        const allDone=VID_STEPS.every(s=>v[s]==='done'||v[s]==='na');
+        if(allDone)return false;
+      }
+      return true;
     });
   }
   const sorted=_vidSortVids(vids);
@@ -279,7 +286,6 @@ function _vidRenderTable(){
     <table class="vid-tbl" style="table-layout:fixed;width:100%">
       <thead><tr>
         <th style="${thStyle}" onclick="vidTblSort('title')">Title${_vidSortArrow('title')}</th>
-        <th style="width:80px;${thStyle}" onclick="vidTblSort('group')">Group${_vidSortArrow('group')}</th>
         <th style="width:90px;${thStyle}" onclick="vidTblSort('playlist')">Playlist${_vidSortArrow('playlist')}</th>
         <th style="width:70px;${thStyle}" onclick="vidTblSort('status')">Status${_vidSortArrow('status')}</th>
         <th style="width:50px;${thStyle}" onclick="vidTblSort('duration')">Dur${_vidSortArrow('duration')}</th>
@@ -340,7 +346,6 @@ function _vidRow(v,isChild,postMap){
   const numHtml=postNum?`<span style="color:var(--muted);font-size:10px;margin-right:6px;min-width:18px;display:inline-block">${postNum}</span>`:'';
   return`<tr class="vid-row${sel?' vid-sel':''}" data-vid="${sid}" onclick="vidRowClick(event,'${sid}')" ondblclick="openVidEdit('${sid}')" oncontextmenu="showVidCtx(event,'${sid}')">
     <td style="${indent}${!isChild?'font-weight:600;':''}${titleColor}overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${childMark}${numHtml}<span class="${isSmall?'':'vid-title-text'}">${_esc(v.title)}</span></td>
-    <td style="font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:80px" title="${_esc(v.group_name||'')}">${_esc(v.group_name||'')}</td>
     <td style="font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:90px" title="${_esc(v.playlist||'')}">${_esc(v.playlist||'')}</td>
     <td><span class="vid-status-pill" style="background:${sc}20;color:${sc}">${v.status}</span></td>
     <td style="font-size:11px;color:var(--muted)">${durStr}</td>

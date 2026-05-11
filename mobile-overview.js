@@ -13,18 +13,18 @@ function hideLoginOverlay() {
 }
 
 // ── Desktop render stubs ──────────────────────────────────────────────────────
-function renderAll() { mRenderToday(); if (_mCurTab === 'tb') mRenderTB(); if (_mCurTab === 'week') mRenderWeek(); }
+function renderAll() { mRenderToday(); if (_mCurTab === 'tb') mRenderTB(); if (_mCurTab === 'week') mRenderWeek(); if (_mCurTab === 'shop') mRenderShop(); }
 function renderToday() { mRenderToday(); }
 function renderWkCal() {}
 function renderWkSummary() {}
 function renderRecOv() {}
 function renderUnassigned() {}
-function renderShopOv() {}
+function renderShopOv() { if (_mCurTab === 'shop') mRenderShop(); }
 function renderKanban() {}
 function renderSummaryMetrics() {}
 function renderWeeklyPage() {}
 function renderBdayPage() {}
-function renderShopFull() {}
+function renderShopFull() { if (_mCurTab === 'shop') mRenderShop(); }
 function renderDayTB() {}
 function setBadge() {}
 function renderPupSkillsHighlight() {}

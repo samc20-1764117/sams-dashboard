@@ -69,6 +69,14 @@
       <div id="mWeekList"></div>
     </div>
 
+    <!-- Shop tab -->
+    <div id="mShopPage" style="display:none">
+      <div class="m-shop-header">
+        <span id="mShopCount">Shopping</span>
+      </div>
+      <div id="mShopList"></div>
+    </div>
+
   </div>
 
   <!-- Add task bar (today tab only) -->
@@ -88,11 +96,26 @@
     </div>
   </div>
 
+  <!-- Shop add bar (shop tab only) -->
+  <div id="mShopAddBar" style="display:none">
+    <input id="mShopNewName" type="text" placeholder="Add item..." onkeydown="if(event.key==='Enter')mAddShopItem()">
+    <div class="m-add-row2">
+      <select id="mShopNewStore" class="m-shop-store-sel">
+        <option value="HEB">HEB</option>
+        <option value="Ikea">Ikea</option>
+        <option value="Online">Online</option>
+        <option value="Other">Other</option>
+      </select>
+      <button id="mShopAddBtn" onclick="mAddShopItem()">Add</button>
+    </div>
+  </div>
+
   <!-- Bottom nav -->
   <nav id="mNav">
     <button class="m-nav-btn" onclick="mShowTab('today')">Today</button>
     <button class="m-nav-btn active" onclick="mShowTab('tb')">Timeblock</button>
     <button class="m-nav-btn" onclick="mShowTab('week')">Week</button>
+    <button class="m-nav-btn" onclick="mShowTab('shop')">Shop</button>
   </nav>
 </div>
 
@@ -184,6 +207,25 @@
     <button type="button" class="m-imp-toggle" id="mFullAddImpBtn" onclick="mToggleFullAddImp()">off</button>
   </div>
   <button id="mFullAddSave" onclick="mSaveFullAdd()">Add Task</button>
+</div>
+
+<!-- Shop edit sheet -->
+<div id="mShopEditBackdrop" onclick="mCloseShopEdit()"></div>
+<div id="mShopEditSheet">
+  <h3>Edit Item</h3>
+  <input id="mShopEditName" type="text" placeholder="Item name" onkeydown="if(event.key==='Enter')mSaveShopEdit()">
+  <select id="mShopEditStore" class="m-shop-store-sel" style="margin-bottom:10px">
+    <option value="HEB">HEB</option>
+    <option value="Ikea">Ikea</option>
+    <option value="Online">Online</option>
+    <option value="Other">Other</option>
+  </select>
+  <input id="mShopEditDue" type="date" style="margin-bottom:10px">
+  <input id="mShopEditTime" type="time" style="margin-bottom:12px">
+  <div class="m-edit-actions">
+    <button id="mShopEditDel" onclick="mDeleteShopItem()">Delete</button>
+    <button id="mShopEditSave" onclick="mSaveShopEdit()">Save</button>
+  </div>
 </div>
 
 <!-- Hidden undo scaffolding (required by core.js pushUndo) -->
