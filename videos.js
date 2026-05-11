@@ -842,6 +842,8 @@ document.addEventListener('keydown',e=>{
   if(e.key==='n'&&!e.metaKey&&!e.ctrlKey){e.preventDefault();openVidModal();return;}
   if(e.key==='ArrowUp'&&!e.metaKey&&!e.ctrlKey){e.preventDefault();const se=_vidScrollEl();if(se)se.scrollTop=0;return;}
   if(e.key==='ArrowDown'&&!e.metaKey&&!e.ctrlKey){e.preventDefault();const se=_vidScrollEl();if(se)se.scrollTop=se.scrollHeight;return;}
+  if(e.key==='e'&&!e.metaKey&&!e.ctrlKey&&_vidView==='table'){e.preventDefault();if(!_vidShowCompleted){_vidShowCompleted=true;renderVideosPageKeepScroll();}return;}
+  if(e.key==='c'&&!e.metaKey&&!e.ctrlKey&&_vidView==='table'){e.preventDefault();if(_vidShowCompleted){_vidShowCompleted=false;renderVideosPageKeepScroll();}return;}
 });
 
 // ── Close context menu on click elsewhere ─────────────────────────────────────
