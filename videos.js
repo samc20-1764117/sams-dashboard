@@ -193,7 +193,7 @@ function renderVideosPage(){
       </div>
     </div>
     <div id="yt-analytics-slot"></div>
-    <div class="card" style="overflow-y:auto;flex:1;min-height:0">
+    <div class="card" style="overflow:${_vidView==='dashboard'?'hidden':'auto'};flex:1;min-height:0">
         ${bodyHtml}
     </div>`;
   const now=new Date();
