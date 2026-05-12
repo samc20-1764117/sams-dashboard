@@ -231,9 +231,9 @@ function _vidRenderDashboard(){
   }
   _vidDashVids=all.filter(v=>v.status!=='idea');
   const _colHdr=`<div style="display:flex;align-items:center;gap:6px;flex-shrink:0;padding-right:0">
-            <div style="display:flex;gap:0">${VID_STEPS.map(s=>`<div style="width:20px;text-align:center;font-size:9px" title="${VID_STEP_LABELS[s]}">${VID_STEP_LABELS[s].slice(0,2)}</div>`).join('')}</div>
-            <span style="width:46px;text-align:right;font-size:9px;display:inline-block">Posted</span>
-            <span style="width:32px;text-align:right;font-size:9px;display:inline-block">Dur</span>
+            <div style="display:flex;gap:0">${VID_STEPS.map(s=>`<div style="width:28px;text-align:center;font-size:9px" title="${VID_STEP_LABELS[s]}">${VID_STEP_LABELS[s].slice(0,2)}</div>`).join('')}</div>
+            <span style="width:52px;text-align:right;font-size:9px;display:inline-block">Posted</span>
+            <span style="width:36px;text-align:right;font-size:9px;display:inline-block">Dur</span>
             <span style="width:42px;display:inline-block"></span>
             <button class="vid-del" style="visibility:hidden">✕</button>
             <span style="width:28px;display:inline-block"></span>
@@ -254,7 +254,7 @@ function _vidRenderDashboard(){
   })();
   return`
     <div style="display:flex;gap:0;padding:0;position:absolute;top:0;left:0;right:0;bottom:0">
-      <div style="flex:4;min-width:0;display:flex;flex-direction:column;border-right:1px solid var(--border)">
+      <div style="flex:2;min-width:0;display:flex;flex-direction:column;border-right:1px solid var(--border)">
         <div style="flex:1;min-height:0;overflow-y:auto;overflow-x:hidden">
           <div class="vid-dash-header">
             <div style="flex:1;min-width:0;padding-left:10px">Current <span class="vid-count">${upNext.length+inProgress.length}</span></div>
@@ -334,9 +334,9 @@ function _vidDashRow(v,isChild,simple){
       ${_addBtn}${childMark}${numHtml}${_tHtml}
     </div>
     <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
-      <div style="display:flex;gap:0">${VID_STEPS.map(s=>`<div style="width:20px;text-align:center"><div class="vid-step-dot${v[s]==='done'?' done':v[s]==='na'?' na':''}" data-vid="${sid}" data-step="${s}" title="${VID_STEP_LABELS[s]}"></div></div>`).join('')}</div>
-      <span data-field="post_date" style="width:46px;text-align:right;font-size:11px;color:${_vidDateColor(v.post_date,v)};cursor:pointer;min-height:16px;display:inline-block">${postStr||''}</span>
-      <span data-field="duration_minutes" style="width:32px;text-align:right;font-size:11px;color:var(--muted);cursor:pointer;min-height:16px;display:inline-block">${durStr||''}</span>
+      <div style="display:flex;gap:0">${VID_STEPS.map(s=>`<div style="width:28px;text-align:center"><div class="vid-step-dot${v[s]==='done'?' done':v[s]==='na'?' na':''}" data-vid="${sid}" data-step="${s}" title="${VID_STEP_LABELS[s]}"></div></div>`).join('')}</div>
+      <span data-field="post_date" style="width:52px;text-align:right;font-size:11px;color:${_vidDateColor(v.post_date,v)};cursor:pointer;min-height:16px;display:inline-block">${postStr||''}</span>
+      <span data-field="duration_minutes" style="width:36px;text-align:right;font-size:11px;color:var(--muted);cursor:pointer;min-height:16px;display:inline-block">${durStr||''}</span>
       ${(()=>{const ym=_ytForVid(sid);return ym?'<span style="width:42px;text-align:right;font-size:10px;color:#8b5cf6;display:inline-block" title="'+ym.views+' views / '+ym.likes+' likes">'+_ytNum(ym.views)+'</span>':'<span style="width:42px;display:inline-block"></span>';})()}
       <button class="vid-del" data-vid="${sid}">✕</button>
       ${_pctHtml}
