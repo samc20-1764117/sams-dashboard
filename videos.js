@@ -117,7 +117,7 @@ function renderVideosPage(){
     <div style="padding-top:26px;position:relative;z-index:10">
       <div style="display:flex;gap:10px;align-items:center;margin-bottom:6px;flex-wrap:wrap">
         <div style="display:flex;gap:2px;background:var(--glass);border:1px solid var(--border);border-radius:8px;padding:2px">
-          <button class="${viewBtnS('dashboard')}" onclick="_vidSetView('dashboard')">Dashboard</button>
+          <button class="${viewBtnS('dashboard')}" onclick="_vidSetView('dashboard')">Current</button>
           <button class="${viewBtnS('table')}" onclick="_vidSetView('table')">All Details</button>
           <button class="${viewBtnS('board')}" onclick="_vidSetView('board')">Videos by Progress</button>
           <button class="${viewBtnS('monthly')}" onclick="_vidSetView('monthly')">Monthly</button>
@@ -177,7 +177,7 @@ function _vidRenderDashboard(){
     <div style="display:flex;gap:0;padding:0;height:100%">
       <div style="flex:2;min-width:0;display:flex;flex-direction:column;border-right:1px solid var(--border)">
         <div class="vid-dash-header" style="display:flex;align-items:center;gap:8px">
-          <div style="flex:1;min-width:0;padding-left:10px">Up Next <span class="vid-count">${upNext.length}</span> &nbsp;·&nbsp; In Progress <span class="vid-count">${inProgress.length}</span></div>
+          <div style="flex:1;min-width:0;padding-left:10px">Current <span class="vid-count">${upNext.length+inProgress.length}</span></div>
           ${(upNext.length||inProgress.length)?_colHdr:''}
         </div>
         <div style="flex:1;min-height:0;overflow-y:auto">
