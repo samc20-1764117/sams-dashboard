@@ -131,7 +131,7 @@ function renderVideosPage(){
           <span style="color:#f59e0b">${stats.up_next+stats.in_progress} current</span>
           <span style="color:#10b981">${stats.published} complete</span>
         </div>
-        <button onclick="openVidModal()" style="width:26px;height:26px;border-radius:8px;border:none;background:#334155;color:#fff;font-size:16px;font-weight:700;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center" title="Add video">+</button>
+        <button onclick="openVidModal()" style="width:26px;height:26px;border-radius:50%;border:1.5px solid var(--border);background:rgba(255,255,255,.9);color:var(--accent);font-size:16px;font-weight:700;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center" title="Add video">+</button>
       </div>
     </div>
     <div class="card" style="overflow:hidden;flex:1;min-height:0">
