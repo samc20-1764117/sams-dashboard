@@ -254,7 +254,7 @@ function _vidRenderDashboard(){
   })();
   return`
     <div style="display:flex;flex-direction:column;position:absolute;top:0;left:0;right:0;bottom:0">
-      <div style="display:flex;border-bottom:1px solid var(--border)">
+      <div style="display:flex;border-bottom:2px solid var(--border)">
         <div class="vid-dash-header" style="flex:2;border-bottom:none;border-right:1px solid var(--border)">
           <div style="flex:1;min-width:0;padding-left:10px">Current</div>
           ${(upNext.length||inProgress.length)?_colHdr:''}
