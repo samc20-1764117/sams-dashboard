@@ -1031,7 +1031,7 @@ function renderWkCal(){
         else{toggleTask(t.id,chk.checked,'week');}
       });
       const _chipHeb=/\bheb\b/i.test(t.name||'')?st.shopping.filter(s=>!s.done&&s.store&&s.store.toLowerCase()==='heb').length:0;
-      const nm=document.createElement('span');nm.className='chip-name';nm.innerHTML=tmIcon(t)+escHtml(t._type==='pup'?_pupDisplayName(t):t.name)+(_chipHeb?`<span style="color:rgba(220,215,235,.9);margin-left:3px;font-weight:700">${_chipHeb}</span>`:'');
+      const nm=document.createElement('span');nm.className='chip-name';nm.innerHTML=tmIcon(t)+escHtml(t._type==='pup'?_pupDisplayName(t):t.name)+(_chipHeb?`<span style="color:rgba(160,150,180,.85);margin-left:3px;font-weight:700">${_chipHeb}</span>`:'');
       // name click handled by chip click→selTask, dblclick→openEditTask
       chip.appendChild(chk);chip.appendChild(nm);
       chip.addEventListener('contextmenu',e=>{
