@@ -1,6 +1,6 @@
 export async function onRequest(context) {
   const corsHeaders = {
-    'Access-Control-Allow-Origin': context.request.headers.get('Origin') || '*',
+    'Access-Control-Allow-Origin': context.request.headers.get('Origin') || 'https://dev.sams-dashboard.pages.dev',
     'Access-Control-Allow-Methods': 'GET, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
   };

@@ -175,8 +175,7 @@ function renderVideosPage(){
       h+='<div style="background:var(--glass);border:1px solid var(--border);border-radius:10px;padding:8px 14px"><div style="font-size:10px;color:var(--muted)">Total Views</div><div style="font-size:16px;font-weight:600">'+_ytNum(c.totalViews)+'</div></div>';
       h+='<div style="background:var(--glass);border:1px solid var(--border);border-radius:10px;padding:8px 14px"><div style="font-size:10px;color:var(--muted)">Published on YT</div><div style="font-size:16px;font-weight:600">'+c.totalVideos+'</div></div>';
       h+='</div>';
-      h+='<div style="margin-bottom:8px"><button onclick="var el=document.getElementById(\'yt-recent\');el.style.display=el.style.display===\'none\'?\'grid\':\'none\'" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);font-family:inherit;padding:0">&#9654; Recent Videos</button></div>';
-      h+='<div id="yt-recent" style="display:none;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px;margin-bottom:10px">';
+      h+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px;margin-bottom:10px">';
       for(var i=0;i<d.videos.length;i++){
         var v=d.videos[i];
         var dt=new Date(v.publishedAt).toLocaleDateString('en-US',{month:'short',day:'numeric'});
