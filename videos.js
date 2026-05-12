@@ -321,9 +321,16 @@ async function _vidDashDrop(e,newStatus){
     await sbReqSilent('PATCH','videos',{status:prev},`?id=eq.${dragId}`);
     for(const cp of childPrevs)await sbReqSilent('PATCH','videos',{status:cp.status},`?id=eq.${cp.id}`);
   },'Status change');
-  console.log('[vidDrop] PATCH',v.id,'→',newStatus);
-  const res=await sbReqSilent('PATCH','videos',{status:newStatus},`?id=eq.${v.id}`);
-  console.log('[vidDrop] result',res);
+  console.log('[vidDrop] PATCH id=',v.id,'type=',typeof v.id,'→',newStatus);
+  try{
+    const r=await fetch(`${cfg.url}/rest/v1/videos?id=eq.${v.id}`,{
+      method:'PATCH',
+      headers:{'apikey':cfg.key,'Authorization':`Bearer ${_getAuthToken()}`,'Content-Type':'application/json','Prefer':'return=representation'},
+      body:JSON.stringify({status:newStatus})
+    });
+    const txt=await r.text();
+    console.log('[vidDrop] response',r.status,txt);
+  }catch(err){console.error('[vidDrop] fetch error',err);}
 }
 
 // ── TABLE VIEW (All Details) ─────────────────────────────────────────────────
