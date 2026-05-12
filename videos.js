@@ -181,11 +181,11 @@ function _vidRenderDashboard(){
           ${(upNext.length||inProgress.length)?_colHdr:''}
         </div>
         <div style="flex:1;min-height:0;overflow-y:auto">
-          <div ondragover="event.preventDefault()" ondrop="_vidDashDrop(event,'up_next')">
+          <div ondragover="_vidZoneDragOver(event)" ondragleave="_vidZoneDragLeave(event)" ondrop="_vidDashDrop(event,'up_next')" style="min-height:40px">
             <div style="font-size:9px;font-weight:600;color:var(--muted);padding:6px 10px 2px;letter-spacing:.03em">Up Next</div>
             ${upNext.length?_vidDashList(upNext,false):'<div style="color:var(--muted);font-size:11px;padding:8px 10px;opacity:.5">Drag ideas here</div>'}
           </div>
-          <div ondragover="event.preventDefault()" ondrop="_vidDashDrop(event,'in_progress')">
+          <div ondragover="_vidZoneDragOver(event)" ondragleave="_vidZoneDragLeave(event)" ondrop="_vidDashDrop(event,'in_progress')" style="min-height:40px">
             <div style="font-size:9px;font-weight:600;color:var(--muted);padding:8px 10px 2px;letter-spacing:.03em;border-top:1px solid rgba(210,205,228,.15);margin-top:4px">In Progress</div>
             ${inProgress.length?_vidDashList(inProgress,false):'<div style="color:var(--muted);font-size:11px;padding:8px 10px;opacity:.5">Drag up next here to start</div>'}
           </div>
@@ -274,15 +274,19 @@ async function _vidPromoteChildren(parentId,newStatus){
   if(children.length){save();renderVideosPageKeepScroll();for(const c of children)await sbReqSilent('PATCH','videos',{status:newStatus},`?id=eq.${c.id}`);}
 }
 
+function _vidZoneDragOver(e){e.preventDefault();e.currentTarget.style.background='rgba(139,92,246,.05)';}
+function _vidZoneDragLeave(e){e.currentTarget.style.background='';}
 function _vidGroupDragOver(e){e.preventDefault();e.stopPropagation();const row=e.currentTarget;row.style.boxShadow='inset 0 0 8px rgba(139,92,246,.3)';row.style.borderColor='rgba(139,92,246,.4)';row.style.borderBottom='2px solid rgba(139,92,246,.6)';}
 function _vidGroupDragLeave(e){const row=e.currentTarget;row.style.boxShadow='';row.style.borderColor='';row.style.borderBottom='';}
 async function _vidGroupDrop(e,parentId){
-  e.preventDefault();e.stopPropagation();
+  e.preventDefault();
   const row=e.currentTarget;row.style.boxShadow='';row.style.borderColor='';row.style.borderBottom='';
-  const dragId=_vidDashDragId;if(!dragId||dragId===parentId)return;
+  const dragId=_vidDashDragId;if(!dragId)return;
   const v=(st.videos||[]).find(x=>String(x.id)===dragId);if(!v)return;
   const parent=(st.videos||[]).find(x=>String(x.id)===parentId);if(!parent||parent.video_type!=='B')return;
-  if(v.video_type==='B')return;// don't nest groups
+  // B videos can't nest under B — let event bubble to zone handler for status change
+  if(v.video_type==='B'||dragId===parentId)return;
+  e.stopPropagation();
   const prevParent=v.big_video_id;const prevStatus=v.status;const prevType=v.video_type;
   pushUndo();
   v.big_video_id=parseInt(parentId)||parentId;
@@ -298,7 +302,7 @@ async function _vidGroupDrop(e,parentId){
 let _vidDashDragId=null;
 function _vidDashDragStart(e,id){_vidDashDragId=id;e.dataTransfer.effectAllowed='move';}
 async function _vidDashDrop(e,newStatus){
-  e.preventDefault();
+  e.preventDefault();e.currentTarget.style.background='';
   if(!_vidDashDragId)return;
   const dragId=_vidDashDragId;_vidDashDragId=null;
   const v=(st.videos||[]).find(x=>String(x.id)===dragId);if(!v)return;
