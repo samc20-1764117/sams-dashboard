@@ -14,8 +14,8 @@
 - **Date colors**: no date=muted, published+future/today=green, published+past=black, all core done=green, has date=yellow.
 
 ### Views (4 tabs)
-- **Current** (`_vidView='dashboard'`): two-pane flex — Current (flex:2, Up Next + In Progress sections) + Ideas (flex:1). Shows stage dots, posted, duration, +/x buttons. B→L grouping with indent. Drag between zones changes status. Tab named "Current" with combined up_next+in_progress count. Up Next and In Progress have white section headers.
-- **All Details** (`_vidView='table'`): full table with sortable headers (click asc, click desc, click reset). `table-layout:fixed`. Sticky thead. Default sort: post_date asc with B→L grouping. Ideas excluded from this view. Column order: Title → Stages → Posted → Dur → Status. Status pills use `VID_STATUS_LABELS` with lighter color backgrounds.
+- **Current** (`_vidView='dashboard'`): two-pane flex — Current (flex:2, Up Next + In Progress sections) + Ideas (flex:1). Shows stage dots, posted, duration, YT views, +/x buttons, % complete. B→L grouping with indent. Drag between zones changes status. Tab named "Current" with combined up_next+in_progress count. Up Next and In Progress have white section headers. B (Big) videos have white background (`rgba(255,255,255,.55)`) to distinguish from small videos. Header includes 42px spacer for YT views column alignment.
+- **All Details** (`_vidView='table'`): full table with sortable headers (click asc, click desc, click reset). `table-layout:fixed`. Sticky thead. Default sort: post_date asc with B→L grouping. Ideas excluded from this view. Column order: Title (450px) → Stages (22px each) → Posted → Dur → % → Status (80px). Status pills use `VID_STATUS_LABELS` with lighter color backgrounds. B videos have white background. Stage columns are narrower than Current tab (22px vs 28px).
 - **Videos by Progress** (`_vidView='board'`): kanban by status. Drag between columns.
 - **Monthly** (`_vidView='monthly'`): calendar grid by `post_date`. Nav with `_vidMonthOffset`.
 
@@ -29,7 +29,9 @@
 ### Display Rules
 - **In progress videos**: show "Topic - Title" where topic is normal color, title is muted. For small (L) videos, both topic and title are muted/grey.
 - **Completed videos**: show title only.
-- **Small videos** (L with big_video_id): muted/grey text, lighter weight. `└` indent mark when shown as child.
+- **Big videos** (B): white background (`rgba(255,255,255,.55)`) on both Current and All Details tabs.
+- **Small videos** (L with big_video_id): muted/grey text in All Details, normal text in Current tab. `└` indent mark when shown as child.
+- **% complete**: shown for `up_next`/`in_progress` videos between 1-99% (hidden at 0% and 100%). Calculated from done/applicable stages (excludes `na`). Far right on Current tab, between Dur and Status on All Details.
 - **Hide by default** (`_vidShowCompleted=false`): published with past date hidden (unless B video has L children with future dates). Completed backup hidden. Toggle with +/- button or keyboard E/C.
 
 ### Inline Editing

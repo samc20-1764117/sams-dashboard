@@ -15,6 +15,7 @@ Supabase Auth (email+password), RLS on all tables. `init()`→`checkAuth()`→`d
 - Initial `renderAll()` deferred via `document.fonts.ready.then(()=>requestAnimationFrame(renderAll))` — fonts loaded before first paint so WR column maxHeight stable on hard refresh.
 - `_firstSyncDone=true` before initial `renderAll()` from localStorage so overdue banner shows instantly.
 - `#main` left transition suppressed during `init()` (prevents shopping list squish animation).
+- `#backToOv` button lives OUTSIDE `#main` (sibling, between sidebar and `#main` in DOM). Must stay outside `#main` — `#main`'s `position:fixed` + `overflow:auto` traps z-index of children. `position:fixed;z-index:999` on backToOv.
 
 ## Data & Persistence
 - POST must include ALL required fields. Missing NOT NULL → silent 400.
