@@ -8,13 +8,14 @@
 - `VID_STEPS` array and `VID_STEP_LABELS` map define the 8 stages.
 
 ### Status & Published Logic
-- Statuses: `idea`, `in_progress`, `published`, `backup`.
+- Statuses: `idea`, `up_next`, `in_progress`, `published`, `backup`. Order: 1. Idea → 2. Up Next → 3. In Progress → 4. Complete → 4. Backup (two 4s intentional).
+- `VID_STATUS_LABELS` maps internal names to display names (e.g. `published`→"Complete", `up_next`→"Up Next"). `VID_STATUS_ORDER` defines sort order.
 - **Auto-publish**: core steps (all except `step_tableau_public` and `step_upload_tableau`) done/na + has `post_date` → auto-set `published`. Un-toggling a core step on published → `in_progress`.
 - **Date colors**: no date=muted, published+future/today=green, published+past=black, all core done=green, has date=yellow.
 
 ### Views (4 tabs)
-- **Dashboard** (`_vidView='dashboard'`): two-pane flex — In Progress (flex:2) + Ideas (flex:1). In Progress shows playlist, duration, posted, stage dots, +/x buttons. B→L grouping with indent. Drag between panes changes status.
-- **All Details** (`_vidView='table'`): full table with sortable headers (click asc, click desc, click reset — same as pup skills). `table-layout:fixed`. Sticky thead. Default sort: post_date asc with B→L grouping.
+- **Current** (`_vidView='dashboard'`): two-pane flex — Current (flex:2, Up Next + In Progress sections) + Ideas (flex:1). Shows stage dots, posted, duration, +/x buttons. B→L grouping with indent. Drag between zones changes status. Tab named "Current" with combined up_next+in_progress count. Up Next and In Progress have white section headers.
+- **All Details** (`_vidView='table'`): full table with sortable headers (click asc, click desc, click reset). `table-layout:fixed`. Sticky thead. Default sort: post_date asc with B→L grouping. Ideas excluded from this view. Column order: Title → Stages → Posted → Dur → Status. Status pills use `VID_STATUS_LABELS` with lighter color backgrounds.
 - **Videos by Progress** (`_vidView='board'`): kanban by status. Drag between columns.
 - **Monthly** (`_vidView='monthly'`): calendar grid by `post_date`. Nav with `_vidMonthOffset`.
 
@@ -31,14 +32,16 @@
 - **Small videos** (L with big_video_id): muted/grey text, lighter weight. `└` indent mark when shown as child.
 - **Hide by default** (`_vidShowCompleted=false`): published with past date hidden (unless B video has L children with future dates). Completed backup hidden. Toggle with +/- button or keyboard E/C.
 
-### Inline Editing (All Details)
-- **Single click** on td with `data-field` → `vidCellEdit()`: inline input for title/playlist/duration/post_date, dropdown for status. Save on blur/Enter, cancel on Escape.
-- **Double click** → `openVidEdit(id)` full edit modal.
-- **Step dots**: click cycles `not_started→done→not_started`. If `na`, click cycles `na→not_started`.
+### Inline Editing
+- **All Details**: Single click on td with `data-field` → `vidCellEdit()`: inline input for title/playlist/duration/post_date, dropdown for status. Save on blur/Enter, cancel on Escape. Double click → `openVidEdit(id)` full edit modal.
+- **Current tab**: Double-click on posted/duration spans → `_vidDashInlineEdit()`: text input for post_date (m/d format, auto-fills year via `_vidParseDate()`), number input for duration. Save on blur/Enter, cancel on Escape.
+- **Step dots**: click cycles `not_started→done→not_started`. If `na`, click cycles `na→not_started`. Right-click toggles na/required via `_vidToggleStepNa()`.
+- **TA+Up linking**: `step_tableau_public` and `step_upload_tableau` always stay in sync — toggling na/required on one toggles the other. Applies in inline right-click (`_vidToggleStepNa`), modal right-click (`_vidNaModalStep`), and type change (`_vidTypeChanged`).
 - All edits use `renderVideosPageKeepScroll()` to preserve scroll position.
 
 ### Edit Modal (`#vidModal`)
-- Fields: title, topic, type (Big/Small), status, post_date, duration (min.sec), big video (searchable input+datalist), playlist (searchable input+datalist).
+- Layout: topic first, title second, B/L toggle top-right, status+big video row, then outset container with stages + posted/duration side by side.
+- Fields: title, topic, type (Big/Small toggle), status, post_date, duration (min.sec), big video (searchable input+datalist).
 - **Stages**: toggle buttons — click=done/not done, right-click=na (invisible). Na stages can't be clicked, only right-click to restore.
 - **Defaults for new**: Big → all stages required. Small → Tab Pub & Upload default to `na`. Changing type dropdown updates stages.
 - **Big Video field**: searchable via datalist of all B video titles. `_vidGetBigVideoId()` resolves title→id on save.
@@ -68,6 +71,11 @@
 - `_vidDateColor(d,v)` — returns CSS color for post_date display
 - `_vidSortVids(vids)` — applies current sort or default B→L grouped post_date sort
 - `_vidFiltered()` — filters by group, search, status
+- `_vidEnsureSynced(v)` — pushes local-only `l-` prefix videos to Supabase before PATCH ops. Syncs parent B first if needed.
+- `_vidParseDate(str)` — parses "m/d" or "m/d/yy" to ISO date with auto current year
+- `_vidLinkedStep(step)` — returns linked step (TA↔Up) or null
+- `_vidToggleStepNa(id,step)` — right-click toggle na/required with linked TA+Up sync
+- `_vidDashInlineEdit(span,id,field)` — inline editing for posted/duration on current tab
 - `cycleVidStep(id,step)` — toggles step with auto-publish logic
 - `vidCellEdit(td,id,field)` — inline cell editing
 - `vidCellClick(e,id)` — routes to inline edit (table) or selection (other views)
