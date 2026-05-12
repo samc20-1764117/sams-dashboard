@@ -126,10 +126,8 @@ function renderVideosPage(){
         <div style="flex:1"></div>
         <div style="display:flex;gap:10px;align-items:center;font-size:12px;font-weight:500">
           <span style="color:#8b5cf6">${stats.idea} ideas</span>
-          <span style="color:#0ea5e9">${stats.up_next} up next</span>
-          <span style="color:#f59e0b">${stats.in_progress} in progress</span>
+          <span style="color:#f59e0b">${stats.up_next+stats.in_progress} current</span>
           <span style="color:#10b981">${stats.published} complete</span>
-          <span style="color:var(--muted)">${stats.total} total</span>
         </div>
         <button onclick="openVidModal()" style="width:26px;height:26px;border-radius:8px;border:none;background:#334155;color:#fff;font-size:16px;font-weight:700;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center" title="Add video">+</button>
       </div>
