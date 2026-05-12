@@ -47,16 +47,26 @@ export async function onRequest(context) {
       totalVideos: Number(chan.statistics.videoCount),
     };
 
-    // Last 50 videos
-    const searchRes = await fetch(`https://www.googleapis.com/youtube/v3/search?part=id&channelId=${CHANNEL_ID}&order=date&maxResults=50&type=video&key=${API_KEY}`);
-    const searchData = await searchRes.json();
-    const videoIds = (searchData.items || []).map(i => i.id.videoId).join(',');
+    // Fetch ALL videos with pagination
+    let allVideoIds = [];
+    let nextPageToken = '';
+    while (true) {
+      const pageParam = nextPageToken ? `&pageToken=${nextPageToken}` : '';
+      const searchRes = await fetch(`https://www.googleapis.com/youtube/v3/search?part=id&channelId=${CHANNEL_ID}&order=date&maxResults=50&type=video&key=${API_KEY}${pageParam}`);
+      const searchData = await searchRes.json();
+      const ids = (searchData.items || []).map(i => i.id.videoId).filter(Boolean);
+      allVideoIds = allVideoIds.concat(ids);
+      if (!searchData.nextPageToken) break;
+      nextPageToken = searchData.nextPageToken;
+    }
 
     let videos = [];
-    if (videoIds) {
-      const vidRes = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics,contentDetails&id=${videoIds}&key=${API_KEY}`);
+    // Fetch details in batches of 50
+    for (let i = 0; i < allVideoIds.length; i += 50) {
+      const batch = allVideoIds.slice(i, i + 50).join(',');
+      const vidRes = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics,contentDetails&id=${batch}&key=${API_KEY}`);
       const vidData = await vidRes.json();
-      videos = (vidData.items || []).map(v => ({
+      const mapped = (vidData.items || []).map(v => ({
         id: v.id,
         title: v.snippet.title,
         publishedAt: v.snippet.publishedAt,
@@ -66,12 +76,13 @@ export async function onRequest(context) {
         comments: Number(v.statistics.commentCount || 0),
         duration: v.contentDetails.duration,
       }));
+      videos = videos.concat(mapped);
     }
 
     const result = { channelStats, videos, fetchedAt: new Date().toISOString() };
 
-    // Cache for 1 hour
-    if (KV) await KV.put('yt-stats', JSON.stringify(result), { expirationTtl: 3600 });
+    // Cache for 4 hours
+    if (KV) await KV.put('yt-stats', JSON.stringify(result), { expirationTtl: 14400 });
 
     return new Response(JSON.stringify(result), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (e) {
