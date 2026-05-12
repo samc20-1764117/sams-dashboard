@@ -21,6 +21,7 @@
 - **Week-nav edge indicators**: `showWkcEdges(true)` from `dStart`. Col dragover must only remove `.active` — calling `showWkcEdges(false)` clears `style.left` causing indicator to revert to goals col position.
 - **IMP override**: `t.important && !t.done` → IMP yellow. No `!important` CSS on color/border so inline JS wins.
 - **Selection highlight**: soft grey outline+shadow (NOT purple).
+- **Selected day indicator**: `wkc-day-sel` — white filled circle with light grey inset ring. Day-of-week label stays default grey. Column gets `wkc-col-sel` subtle tint. `shiftDay()` already calls `renderWkCal()` so arrows update it.
 - **Weekly cal Goals column**: 8th col (`.wkc-goals-col`). Click header → `openWOModal()`.
 - Cross-column/cross-week drops call `renderWOModal()` immediately so important items snap to top.
 - **`openQA` default**: `ctx==='wkc'` + `kcat` provided → uses `kcat`, not 'Home'.
