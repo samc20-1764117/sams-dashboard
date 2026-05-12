@@ -315,10 +315,10 @@ async function _vidEnsureSynced(v){
   const payload={};
   _VID_DB_COLS.forEach(k=>{
     if(v[k]===undefined)return;
-    // Skip big_video_id if it's still a local ID
     if(k==='big_video_id'&&v[k]&&String(v[k]).startsWith('l-'))return;
     payload[k]=v[k];
   });
+  if(!payload.title)payload.title='';
   const sv=await sbReqSilent('POST','videos',payload);
   console.log('[vidSync] POST local→DB',v.id,JSON.stringify(payload),sv);
   if(sv&&sv[0]){
@@ -956,7 +956,7 @@ async function saveVidModal(){
   if(!topic){closeMod('vidModal');return;}
   const title=document.getElementById('vmTitle').value.trim();
   const data={
-    title:title||null,
+    title:title||'',
     topic,
     status:document.getElementById('vmStatus').value||'idea',
     post_date:document.getElementById('vmPostDate').value||null,
