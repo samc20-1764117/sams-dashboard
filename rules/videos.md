@@ -79,3 +79,15 @@
 - `cycleVidStep(id,step)` — toggles step with auto-publish logic
 - `vidCellEdit(td,id,field)` — inline cell editing
 - `vidCellClick(e,id)` — routes to inline edit (table) or selection (other views)
+
+### YouTube Analytics Integration
+- **Endpoint**: `/api/yt` — Cloudflare Pages Function at `functions/api/yt.js`.
+- **Secrets** (set in Cloudflare dashboard, both production + preview): `YOUTUBE_API_KEY`, `YOUTUBE_CHANNEL_ID`.
+- **KV cache**: namespace `YT_CACHE`, key `yt-stats`. Successful responses cached 4 hours (14400s). Errors cached 15 min (900s). Reload as much as you want — only hits YouTube API when cache expires.
+- **Quota**: YouTube Data API v3 gives 10,000 units/day, resets midnight Pacific. One full fetch ≈ 200-400 units. With 4-hour cache = ~4 calls/day = ~1,600 units max.
+- **Matching**: YouTube videos matched to Supabase videos by date (`post_date` === `publishedAt.slice(0,10)`). Stored in `_ytMatch` map (Supabase ID → `{views, likes, comments, ytId}`).
+- **Display**: Channel stats bar (subscribers, total views, video count) at top of page. Views & Likes columns in All Details table. Purple view count in Current dashboard rows.
+- **Data flow**: `fetch('/api/yt')` → `_ytData` → `_ytBuildMatch()` → `_ytMatch` → `renderVideosPageKeepScroll()`.
+- **Only fetches on Videos page** — `ytSlot._loaded` flag prevents re-fetch on re-render.
+- **Key functions**: `_ytBuildMatch()`, `_ytForVid(id)`, `_ytNum(n)`, `_ytEsc(s)`, `_ytDur(iso)`.
+- **Errors**: silently hidden in UI (no red text). Console shows `[YT]` debug logs for troubleshooting.
