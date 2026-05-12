@@ -254,7 +254,7 @@ function _vidRenderDashboard(){
   })();
   return`
     <div style="display:flex;gap:0;padding:0;position:absolute;top:0;left:0;right:0;bottom:0">
-      <div style="flex:3;min-width:0;display:flex;flex-direction:column;border-right:1px solid var(--border)">
+      <div style="flex:4;min-width:0;display:flex;flex-direction:column;border-right:1px solid var(--border)">
         <div style="flex:1;min-height:0;overflow-y:auto;overflow-x:hidden">
           <div class="vid-dash-header">
             <div style="flex:1;min-width:0;padding-left:10px">Current <span class="vid-count">${upNext.length+inProgress.length}</span></div>
@@ -543,7 +543,7 @@ function _vidRenderTable(){
   return`<div>
     <table class="vid-tbl" style="table-layout:fixed;width:100%">
       <thead><tr>
-        <th style="${thStyle};padding-left:10px" onclick="vidTblSort('title')">Title${_vidSortArrow('title')}</th>
+        <th style="width:30%;${thStyle};padding-left:10px" onclick="vidTblSort('title')">Title${_vidSortArrow('title')}</th>
         ${VID_STEPS.map(s=>`<th style="width:28px;text-align:center;font-size:9px" title="${VID_STEP_LABELS[s]}">${VID_STEP_LABELS[s].slice(0,2)}</th>`).join('')}
         <th style="width:52px;text-align:right;${thStyle}" onclick="vidTblSort('posted')">Posted${_vidSortArrow('posted')}</th>
         <th style="width:36px;text-align:right;${thStyle}" onclick="vidTblSort('duration')">Dur${_vidSortArrow('duration')}</th>
