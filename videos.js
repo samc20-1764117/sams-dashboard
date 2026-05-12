@@ -169,12 +169,12 @@ function renderVideosPage(){
         </div>
         <input id="vidSearchInput" type="text" placeholder="Search videos..." value="${_vidSearch.replace(/"/g,'&quot;')}" oninput="_vidSetSearch(this.value)" style="padding:5px 10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:12px;background:var(--bg);color:var(--text);outline:none;width:180px">
         <div style="flex:1"></div>
-        <div style="display:flex;gap:10px;align-items:center;font-size:12px;font-weight:500">
+        <div style="display:flex;gap:10px;align-items:center;font-size:12px;font-weight:500;margin-right:10px">
           <span style="color:#8b5cf6">${stats.idea} ideas</span>
           <span style="color:#f59e0b">${stats.up_next+stats.in_progress} current</span>
           <span style="color:#10b981">${stats.published} complete</span>
         </div>
-        <button onclick="openVidModal()" style="width:22px;height:22px;border-radius:50%;border:1.5px solid var(--border);background:rgba(255,255,255,.9);color:var(--muted);font-size:14px;font-weight:700;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;margin-right:35px" title="Add video">+</button>
+        <button onclick="openVidModal()" style="width:22px;height:22px;border-radius:50%;border:1.5px solid var(--border);background:rgba(255,255,255,.9);color:var(--muted);font-size:14px;font-weight:700;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;margin-right:55px" title="Add video">+</button>
       </div>
     </div>
     <div id="yt-analytics-slot"></div>
@@ -303,7 +303,7 @@ function _vidDashRow(v,isChild,simple){
   const indent=isChild?'padding-left:20px;':'';
   const childMark=isChild?'<span style="color:var(--muted);font-size:10px;margin-right:4px">└</span>':'';
   const titleStyle=isSmall?'color:var(--muted)':'';
-  const bigRowStyle=isBig?'background:rgba(255,255,255,.06);':'';
+  const bigRowStyle=isBig?'background:rgba(255,255,255,.35);':'';
   const postNum=_vidDashPostMap[sid];
   const numHtml=postNum?`<span style="color:var(--muted);font-size:10px;margin-right:6px;min-width:18px;display:inline-block">${postNum}</span>`:'';
   const titleCls='vid-title-text';
@@ -599,7 +599,7 @@ function _vidRow(v,isChild,postMap){
   const numHtml=postNum?`<span style="color:var(--muted);font-size:10px;margin-right:6px;min-width:18px;display:inline-block">${postNum}</span>`:'';
   const addBtn=v.video_type==='B'?`<button onclick="event.stopPropagation();openVidModalForBig('${sid}')" style="font-size:10px;font-weight:700;width:16px;height:16px;line-height:14px;text-align:center;border-radius:3px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;margin-right:4px;flex-shrink:0" title="Add child video">+</button>`:(!isChild?'<button style="font-size:10px;font-weight:700;width:16px;height:16px;line-height:14px;text-align:center;border-radius:3px;border:1px solid transparent;background:transparent;color:transparent;margin-right:4px;pointer-events:none;flex-shrink:0">+</button>':'');
   const _titleSuffix=v.title?'- '+_esc(v.title):'';
-  return`<tr class="vid-row${sel?' vid-sel':''}" data-vid="${sid}" onclick="vidCellClick(event,'${sid}')" ondblclick="openVidEdit('${sid}')" oncontextmenu="showVidCtx(event,'${sid}')" style="${isBig?'background:rgba(255,255,255,.06)':''}">
+  return`<tr class="vid-row${sel?' vid-sel':''}" data-vid="${sid}" onclick="vidCellClick(event,'${sid}')" ondblclick="openVidEdit('${sid}')" oncontextmenu="showVidCtx(event,'${sid}')" style="${isBig?'background:rgba(255,255,255,.35)':''}">
     <td data-field="title" style="${indent}${!isChild?'font-weight:600;':''}${titleColor}overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${addBtn}${childMark}${numHtml}${(v.status==='in_progress'||v.status==='up_next')&&v.topic?`<span class="vid-title-text">${_esc(v.topic)}</span><span style="font-size:10px;color:var(--muted);margin-left:4px;font-weight:400">${_titleSuffix}</span>`:`<span class="vid-title-text">${_esc(v.title)}</span>`}</td>
     ${VID_STEPS.map(s=>`<td style="text-align:center"><div class="vid-step-dot${v[s]==='done'?' done':v[s]==='na'?' na':''}" data-vid="${sid}" data-step="${s}" title="${VID_STEP_LABELS[s]}"></div></td>`).join('')}
     <td data-field="post_date" style="text-align:right;font-size:11px;color:${_vidDateColor(v.post_date,v)}">${postStr}</td>
