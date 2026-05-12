@@ -738,17 +738,19 @@
 <!-- Video Modal -->
 <div class="overlay" id="vidModal" onclick="closeMod('vidModal',event)" onkeydown="if(event.key==='Escape'){event.stopPropagation();closeMod('vidModal');}else if(event.key==='Enter'&&event.target.tagName!=='TEXTAREA'){event.preventDefault();saveVidModal();}">
   <div class="modal task-modal" style="width:480px;box-sizing:border-box">
-    <div class="mt" id="vidMTitle">Add Video</div>
-    <input id="vmTopic" placeholder="Topic" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div class="mt" id="vidMTitle" style="margin:0">Add Video</div>
+      <div id="vmTypeToggle" style="display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;flex-shrink:0">
+        <button type="button" onclick="_vidSetType('B')" id="vmTypeB" style="padding:5px 10px;font-family:inherit;font-size:11px;font-weight:600;border:none;cursor:pointer;background:transparent;color:var(--muted)">Big</button>
+        <button type="button" onclick="_vidSetType('L')" id="vmTypeL" style="padding:5px 10px;font-family:inherit;font-size:11px;font-weight:600;border:none;cursor:pointer;background:var(--accent);color:#fff">Little</button>
+      </div>
+    </div>
+    <input id="vmType" type="hidden" value="L">
+    <input id="vmTopic" placeholder="Topic" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box;margin-top:8px">
     <input id="vmTitle" placeholder="Video title" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box;margin-top:8px">
     <div style="display:flex;gap:8px;margin-top:8px">
-      <div id="vmTypeToggle" style="display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;flex-shrink:0">
-        <button type="button" onclick="_vidSetType('B')" id="vmTypeB" style="padding:8px 12px;font-family:inherit;font-size:12px;font-weight:600;border:none;cursor:pointer;background:transparent;color:var(--muted)">Big</button>
-        <button type="button" onclick="_vidSetType('L')" id="vmTypeL" style="padding:8px 12px;font-family:inherit;font-size:12px;font-weight:600;border:none;cursor:pointer;background:var(--accent);color:#fff">Little</button>
-      </div>
-      <input id="vmType" type="hidden" value="L">
       <select id="vmStatus" style="flex:1;min-width:0;padding:8px 6px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box">
-        <option value="idea">Idea</option><option value="up_next">Up Next</option><option value="in_progress">In Progress</option><option value="published">Published</option><option value="backup">Backup</option>
+        <option value="idea">1. Idea</option><option value="in_progress">2. In Progress</option><option value="up_next">3. Up Next</option><option value="published">4. Complete</option><option value="backup">5. Backup</option>
       </select>
     </div>
     <div style="display:flex;gap:8px;margin-top:8px">
