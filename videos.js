@@ -118,8 +118,8 @@ function renderVideosPage(){
   el.style.cssText='padding:60px 56px 0 56px;display:flex;flex-direction:column;height:100vh;box-sizing:border-box';
   el.innerHTML=`
     <div class="ov-topbar"><div class="ov-topbar-left"><span class="ov-topbar-label">Videos</span><span class="ov-topbar-dot"></span></div><span class="ov-topbar-date topbar-date"></span><div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div></div>
-    <div style="padding-top:26px;position:relative;z-index:10">
-      <div style="display:flex;gap:10px;align-items:center;margin-bottom:6px;flex-wrap:wrap">
+    <div style="padding-top:10px;position:relative;z-index:10">
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:4px;flex-wrap:wrap">
         <div style="display:flex;gap:2px;background:var(--glass);border:1px solid var(--border);border-radius:8px;padding:2px">
           <button class="${viewBtnS('dashboard')}" onclick="_vidSetView('dashboard')">Current</button>
           <button class="${viewBtnS('table')}" onclick="_vidSetView('table')">All Details</button>
@@ -173,14 +173,14 @@ function _vidRenderDashboard(){
     upNext=upNext.filter(match);inProgress=inProgress.filter(match);ideas=ideas.filter(match);
   }
   _vidDashVids=all.filter(v=>v.status!=='idea');
-  const _colHdr=`<div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
-            <div style="display:flex;gap:0">${VID_STEPS.map(s=>`<span style="width:28px;text-align:center;font-size:9px" title="${VID_STEP_LABELS[s]}">${VID_STEP_LABELS[s].slice(0,2)}</span>`).join('')}</div>
-            <span style="width:52px;text-align:right;font-size:9px">Posted</span>
-            <span style="width:36px;text-align:right;font-size:9px">Dur</span>
+  const _colHdr=`<div style="display:flex;align-items:center;gap:6px;flex-shrink:0;padding-right:0">
+            <div style="display:flex;gap:0">${VID_STEPS.map(s=>`<div style="width:28px;text-align:center;font-size:9px" title="${VID_STEP_LABELS[s]}">${VID_STEP_LABELS[s].slice(0,2)}</div>`).join('')}</div>
+            <span style="width:52px;text-align:right;font-size:9px;display:inline-block">Posted</span>
+            <span style="width:36px;text-align:right;font-size:9px;display:inline-block">Dur</span>
             <button class="vid-del" style="visibility:hidden">✕</button>
           </div>`;
   return`
-    <div style="display:flex;gap:0;padding:0;height:100%">
+    <div style="display:flex;gap:0;padding:0;flex:1;min-height:0">
       <div style="flex:2;min-width:0;display:flex;flex-direction:column;border-right:1px solid var(--border)">
         <div class="vid-dash-header" style="display:flex;align-items:center;gap:8px">
           <div style="flex:1;min-width:0;padding-left:10px">Current <span class="vid-count">${upNext.length+inProgress.length}</span></div>
