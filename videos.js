@@ -98,6 +98,8 @@ function renderVideosPage(){
       if(parent)v.big_video_id=parent.id;
     }
   });
+  // Push any local-only videos to Supabase
+  _vidSyncLocalVideos();
   _vidDashVids=null;_vidDashPostMap=null;
   const stats=_vidStats();
   const groups=_vidGroups();
@@ -180,11 +182,11 @@ function _vidRenderDashboard(){
         </div>
         <div style="flex:1;min-height:0;overflow-y:auto">
           <div class="vid-drop-zone" data-drop-status="up_next" ondragover="event.preventDefault()" ondrop="_vidDashDrop(event,'up_next')" style="min-height:40px;padding-bottom:8px">
-            <div style="font-size:9px;font-weight:600;color:var(--muted);padding:6px 10px 2px;letter-spacing:.03em">Up Next</div>
+            <div style="font-size:9px;font-weight:600;color:var(--muted);padding:6px 10px 2px 30px;letter-spacing:.03em">Up Next</div>
             ${upNext.length?_vidDashList(upNext,false):'<div style="color:var(--muted);font-size:11px;padding:8px 10px;opacity:.5">Drag ideas here</div>'}
           </div>
           <div class="vid-drop-zone" data-drop-status="in_progress" ondragover="event.preventDefault()" ondrop="_vidDashDrop(event,'in_progress')" style="min-height:40px;padding-bottom:8px">
-            <div style="font-size:9px;font-weight:600;color:var(--muted);padding:8px 10px 2px;letter-spacing:.03em;border-top:1px solid rgba(210,205,228,.15);margin-top:4px">In Progress</div>
+            <div style="font-size:9px;font-weight:600;color:var(--muted);padding:8px 10px 2px 30px;letter-spacing:.03em;border-top:1px solid rgba(210,205,228,.15);margin-top:4px">In Progress</div>
             ${inProgress.length?_vidDashList(inProgress,false):'<div style="color:var(--muted);font-size:11px;padding:8px 10px;opacity:.5">Drag up next here to start</div>'}
           </div>
         </div>
@@ -289,6 +291,7 @@ async function _vidGroupDrop(e,parentId){
   v.video_type='L';
   if(v.status!==parent.status)v.status=parent.status;
   save();renderVideosPageKeepScroll();
+  await _vidEnsureSynced(v);
   const patch={big_video_id:v.big_video_id,video_type:'L'};
   if(v.status!==prevStatus)patch.status=v.status;
   await sbReqSilent('PATCH','videos',patch,`?id=eq.${v.id}`);
@@ -296,7 +299,27 @@ async function _vidGroupDrop(e,parentId){
 }
 
 let _vidDashDragId=null;
-function _vidDashDragStart(e,id){console.log('[vidDrag] start',id);_vidDashDragId=id;e.dataTransfer.effectAllowed='move';}
+function _vidDashDragStart(e,id){_vidDashDragId=id;e.dataTransfer.effectAllowed='move';}
+
+// Push a local-only video (l-xxx id) to Supabase and replace the temp id
+async function _vidEnsureSynced(v){
+  if(!String(v.id).startsWith('l-'))return;
+  const{id:_,created_at:__,...payload}=v;
+  delete payload.is_deleted;
+  const sv=await sbReqSilent('POST','videos',payload);
+  if(sv&&sv[0]){
+    Object.assign(v,sv[0]);
+    save();
+  }
+}
+let _vidSyncRan=false;
+async function _vidSyncLocalVideos(){
+  if(_vidSyncRan||!cfg.url||!cfg.key)return;
+  _vidSyncRan=true;
+  const locals=(st.videos||[]).filter(v=>String(v.id).startsWith('l-')&&!v.is_deleted);
+  for(const v of locals)await _vidEnsureSynced(v);
+  if(locals.length)renderVideosPageKeepScroll();
+}
 async function _vidDashDrop(e,newStatus){
   e.preventDefault();e.currentTarget.style.background='';
   console.log('[vidDrop] fired, dragId=',_vidDashDragId,'newStatus=',newStatus);
@@ -312,23 +335,15 @@ async function _vidDashDrop(e,newStatus){
   }
   v.status=newStatus;save();renderVideosPageKeepScroll();
   if(v.video_type==='B')await _vidPromoteChildren(v.id,newStatus);
+  await _vidEnsureSynced(v);
   pushUndo(async()=>{
     v.status=prev;
     childPrevs.forEach(cp=>{const c=(st.videos||[]).find(x=>String(x.id)===String(cp.id));if(c)c.status=cp.status;});
     save();renderVideosPageKeepScroll();
-    await sbReqSilent('PATCH','videos',{status:prev},`?id=eq.${dragId}`);
+    await sbReqSilent('PATCH','videos',{status:prev},`?id=eq.${v.id}`);
     for(const cp of childPrevs)await sbReqSilent('PATCH','videos',{status:cp.status},`?id=eq.${cp.id}`);
   },'Status change');
-  console.log('[vidDrop] PATCH id=',v.id,'type=',typeof v.id,'→',newStatus);
-  try{
-    const r=await fetch(`${cfg.url}/rest/v1/videos?id=eq.${v.id}`,{
-      method:'PATCH',
-      headers:{'apikey':cfg.key,'Authorization':`Bearer ${_getAuthToken()}`,'Content-Type':'application/json','Prefer':'return=representation'},
-      body:JSON.stringify({status:newStatus})
-    });
-    const txt=await r.text();
-    console.log('[vidDrop] response',r.status,txt);
-  }catch(err){console.error('[vidDrop] fetch error',err);}
+  await sbReqSilent('PATCH','videos',{status:newStatus},`?id=eq.${v.id}`);
 }
 
 // ── TABLE VIEW (All Details) ─────────────────────────────────────────────────
