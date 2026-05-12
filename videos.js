@@ -181,11 +181,11 @@ function _vidRenderDashboard(){
           ${(upNext.length||inProgress.length)?_colHdr:''}
         </div>
         <div style="flex:1;min-height:0;overflow-y:auto">
-          <div ondragover="_vidZoneDragOver(event)" ondragleave="_vidZoneDragLeave(event)" ondrop="_vidDashDrop(event,'up_next')" style="min-height:40px">
+          <div class="vid-drop-zone" data-drop-status="up_next" ondragover="event.preventDefault()" ondrop="_vidDashDrop(event,'up_next')" style="min-height:40px;padding-bottom:8px">
             <div style="font-size:9px;font-weight:600;color:var(--muted);padding:6px 10px 2px;letter-spacing:.03em">Up Next</div>
             ${upNext.length?_vidDashList(upNext,false):'<div style="color:var(--muted);font-size:11px;padding:8px 10px;opacity:.5">Drag ideas here</div>'}
           </div>
-          <div ondragover="_vidZoneDragOver(event)" ondragleave="_vidZoneDragLeave(event)" ondrop="_vidDashDrop(event,'in_progress')" style="min-height:40px">
+          <div class="vid-drop-zone" data-drop-status="in_progress" ondragover="event.preventDefault()" ondrop="_vidDashDrop(event,'in_progress')" style="min-height:40px;padding-bottom:8px">
             <div style="font-size:9px;font-weight:600;color:var(--muted);padding:8px 10px 2px;letter-spacing:.03em;border-top:1px solid rgba(210,205,228,.15);margin-top:4px">In Progress</div>
             ${inProgress.length?_vidDashList(inProgress,false):'<div style="color:var(--muted);font-size:11px;padding:8px 10px;opacity:.5">Drag up next here to start</div>'}
           </div>
@@ -274,8 +274,6 @@ async function _vidPromoteChildren(parentId,newStatus){
   if(children.length){save();renderVideosPageKeepScroll();for(const c of children)await sbReqSilent('PATCH','videos',{status:newStatus},`?id=eq.${c.id}`);}
 }
 
-function _vidZoneDragOver(e){e.preventDefault();e.currentTarget.style.background='rgba(139,92,246,.05)';}
-function _vidZoneDragLeave(e){e.currentTarget.style.background='';}
 function _vidGroupDragOver(e){e.preventDefault();e.stopPropagation();const row=e.currentTarget;row.style.boxShadow='inset 0 0 8px rgba(139,92,246,.3)';row.style.borderColor='rgba(139,92,246,.4)';row.style.borderBottom='2px solid rgba(139,92,246,.6)';}
 function _vidGroupDragLeave(e){const row=e.currentTarget;row.style.boxShadow='';row.style.borderColor='';row.style.borderBottom='';}
 async function _vidGroupDrop(e,parentId){
@@ -300,10 +298,11 @@ async function _vidGroupDrop(e,parentId){
 }
 
 let _vidDashDragId=null;
-function _vidDashDragStart(e,id){_vidDashDragId=id;e.dataTransfer.effectAllowed='move';}
+function _vidDashDragStart(e,id){console.log('[vidDrag] start',id);_vidDashDragId=id;e.dataTransfer.effectAllowed='move';}
 async function _vidDashDrop(e,newStatus){
   e.preventDefault();e.currentTarget.style.background='';
-  if(!_vidDashDragId)return;
+  console.log('[vidDrop] fired, dragId=',_vidDashDragId,'newStatus=',newStatus);
+  if(!_vidDashDragId){console.log('[vidDrop] no dragId, returning');return;}
   const dragId=_vidDashDragId;_vidDashDragId=null;
   const v=(st.videos||[]).find(x=>String(x.id)===dragId);if(!v)return;
   const prev=v.status;
@@ -322,7 +321,9 @@ async function _vidDashDrop(e,newStatus){
     await sbReqSilent('PATCH','videos',{status:prev},`?id=eq.${dragId}`);
     for(const cp of childPrevs)await sbReqSilent('PATCH','videos',{status:cp.status},`?id=eq.${cp.id}`);
   },'Status change');
-  await sbReqSilent('PATCH','videos',{status:newStatus},`?id=eq.${v.id}`);
+  console.log('[vidDrop] PATCH',v.id,'→',newStatus);
+  const res=await sbReqSilent('PATCH','videos',{status:newStatus},`?id=eq.${v.id}`);
+  console.log('[vidDrop] result',res);
 }
 
 // ── TABLE VIEW (All Details) ─────────────────────────────────────────────────
@@ -821,7 +822,7 @@ function openVidModal(type){
   if(type==='L'){defaults.step_tableau_public='na';defaults.step_upload_tableau='na';}
   _vidRenderSteps(defaults);
   document.getElementById('vidModal').classList.add('open');
-  setTimeout(()=>{const inp=document.getElementById('vmTitle');inp.focus();inp.setSelectionRange(0,0);},80);
+  setTimeout(()=>{const inp=document.getElementById('vmTopic');inp.focus();inp.setSelectionRange(0,0);},80);
 }
 
 function openVidEdit(id){
@@ -894,17 +895,17 @@ function _vidUpdateModalStep(el,val){
 }
 
 async function saveVidModal(){
+  const topic=document.getElementById('vmTopic').value.trim();
+  if(!topic){closeMod('vidModal');return;}
   const title=document.getElementById('vmTitle').value.trim();
-  if(!title){closeMod('vidModal');return;}
   const data={
-    title,
-    topic:document.getElementById('vmTopic').value.trim()||null,
+    title:title||null,
+    topic,
     status:document.getElementById('vmStatus').value||'idea',
     post_date:document.getElementById('vmPostDate').value||null,
     duration_minutes:parseFloat(document.getElementById('vmDuration').value)||null,
 
-    big_video_id:_vidGetBigVideoId(),
-    playlist:null  // kept for DB compat, not shown in UI
+    big_video_id:_vidGetBigVideoId()
   };
   data.video_type=data.big_video_id?'L':'B';
   document.querySelectorAll('#vmSteps [data-step]').forEach(el=>{data[el.dataset.step]=el.dataset.val||'not_started';});
