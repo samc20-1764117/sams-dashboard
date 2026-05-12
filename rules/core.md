@@ -50,6 +50,11 @@ Supabase Auth (email+password), RLS on all tables. `init()`→`checkAuth()`→`d
 - **Cross-view sync**: name/state change in one view must reflect in all others — call `renderAll()` + `renderPupSkillsHighlight()` (or equivalent) after any mutation
 - **Temp IDs**: use `prefix-tmp-`+Date.now(); replace with real DB id after POST; update any linked objects (e.g. TB block's `_pupSessId`) when real id arrives
 
+## Page Layout
+- **Standard page padding**: `padding: <top> clamp(12px,3vw,56px) 24px clamp(12px,3vw,56px)`. Sides use responsive clamp, bottom is always 24px. Top varies per page (typically 41–60px).
+- **Videos page** sets padding via JS (`el.style.cssText`), all other pages set it inline in `index.html`.
+- All content pages must use these same side/bottom margins so the content area feels consistent across pages.
+
 ## Keyboard Shortcuts (global, `core.js` keydown handler)
 - `Cmd/Ctrl+Z`: undo (page-aware: pups/recipes/birthdays use their own stacks).
 - `o`: `showPage('overview')` — only when no input/textarea/select focused and no modal open.

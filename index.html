@@ -209,7 +209,6 @@
         <a class="ql-btn" href="#pups" onclick="event.preventDefault();showPage('pups')"><span class="ql-icon">🐾</span>Pups</a>
         <a class="ql-btn" href="#finance" onclick="event.preventDefault();showPage('finance')"><span class="ql-icon">💰</span>Finance</a>
         <a class="ql-btn" href="#recipes" onclick="event.preventDefault();showPage('recipes')"><span class="ql-icon">🍳</span>Recipes</a>
-        <a class="ql-btn" href="#notes" onclick="event.preventDefault();showPage('notes')"><span class="ql-icon">📝</span>Notes</a>
         <a class="ql-btn" href="#videos" onclick="event.preventDefault();showPage('videos')"><span class="ql-icon">🎬</span>Videos</a>
       </div>
     </div>
@@ -324,7 +323,7 @@
 </div>
 
 <!-- RECURRING TASKS -->
-<div class="page" id="page-weekly" style="padding:22px 56px 36px 56px;padding-top:60px">
+<div class="page" id="page-weekly" style="padding:60px clamp(12px,3vw,56px) 24px clamp(12px,3vw,56px)">
   <div class="ov-topbar">
     <div class="ov-topbar-left"><span class="ov-topbar-label">Recurring Tasks</span><span class="ov-topbar-dot"></span></div>
     <span class="ov-topbar-date topbar-date" id="wkTopDate"></span>
@@ -368,7 +367,7 @@
 
 <!-- OTHER PAGES (empty) -->
 <div class="page" id="page-travel" style="display:none!important"><div id="travelList" style="display:none"></div></div>
-<div class="page" id="page-birthdays" style="padding:clamp(12px,3vw,56px);padding-top:60px">
+<div class="page" id="page-birthdays" style="padding:60px clamp(12px,3vw,56px) 24px clamp(12px,3vw,56px)">
   <div class="ov-topbar">
     <div class="ov-topbar-left"><span class="ov-topbar-label">Birthdays</span><span class="ov-topbar-dot"></span></div>
     <span class="ov-topbar-date topbar-date"></span>
@@ -382,9 +381,9 @@
   <div id="bdayPresentPopup" style="display:none;position:fixed;z-index:9998;background:rgba(255,255,255,.97);border:1px solid rgba(210,205,228,.35);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.13);padding:10px 12px 10px;min-width:200px;max-width:280px;backdrop-filter:blur(10px)"></div>
   <div id="bdayList" style="display:none"></div>
 </div>
-<div class="page" id="page-pups" style="padding:22px 56px 36px 56px;padding-top:60px"></div>
-<div class="page" id="page-finance" style="padding:clamp(12px,3vw,56px);padding-top:60px"><div class="ov-topbar"><div class="ov-topbar-left"><span class="ov-topbar-label">💰 Finance</span><span class="ov-topbar-dot"></span></div><span class="ov-topbar-date topbar-date"></span><div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div></div></div>
-<div class="page" id="page-recipes" style="padding:22px 56px 36px 56px;padding-top:60px"></div>
+<div class="page" id="page-pups" style="padding:60px clamp(12px,3vw,56px) 24px clamp(12px,3vw,56px)"></div>
+<div class="page" id="page-finance" style="padding:60px clamp(12px,3vw,56px) 24px clamp(12px,3vw,56px)"><div class="ov-topbar"><div class="ov-topbar-left"><span class="ov-topbar-label">💰 Finance</span><span class="ov-topbar-dot"></span></div><span class="ov-topbar-date topbar-date"></span><div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div></div></div>
+<div class="page" id="page-recipes" style="padding:60px clamp(12px,3vw,56px) 24px clamp(12px,3vw,56px)"></div>
 <div class="page" id="page-notes" style="padding:clamp(12px,3vw,56px);padding-top:60px"><div class="ov-topbar"><div class="ov-topbar-left"><span class="ov-topbar-label">📝 Notes</span><span class="ov-topbar-dot"></span></div><span class="ov-topbar-date topbar-date"></span><div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div></div></div>
 <div class="page" id="page-videos"></div>
 <div class="page" id="page-settings" style="display:none!important"><input class="si2" id="cfgUrl" style="display:none"><input class="si2" id="cfgKey" style="display:none"><div class="cst idle" id="cst" style="display:none"></div></div>
