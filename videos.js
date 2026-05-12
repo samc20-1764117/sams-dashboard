@@ -136,10 +136,8 @@ function renderVideosPage(){
         <button onclick="openVidModal()" style="width:22px;height:22px;border-radius:50%;border:1.5px solid var(--border);background:rgba(255,255,255,.9);color:var(--muted);font-size:14px;font-weight:700;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;margin-right:20px" title="Add video">+</button>
       </div>
     </div>
-    <div class="card" style="overflow:hidden;flex:1;min-height:0">
-      <div style="flex:1;min-height:0;overflow:${_vidView==='dashboard'?'hidden':'auto'};display:flex;flex-direction:column">
+    <div class="card" style="overflow:${_vidView==='dashboard'?'hidden':'auto'};flex:1;min-height:0">
         ${bodyHtml}
-      </div>
     </div>`;
   const now=new Date();
   el.querySelectorAll('.topbar-date').forEach(e=>e.textContent=now.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}));
@@ -183,7 +181,7 @@ function _vidRenderDashboard(){
     <div style="display:flex;gap:0;padding:0;flex:1;min-height:0;width:100%">
       <div style="flex:2;min-width:0;display:flex;flex-direction:column;border-right:1px solid var(--border)">
         <div style="flex:1;min-height:0;overflow-y:auto;overflow-x:hidden">
-          <div class="vid-dash-header" style="display:flex;align-items:center;gap:8px;position:sticky;top:0;z-index:2;background:var(--bg)">
+          <div class="vid-dash-header">
             <div style="flex:1;min-width:0;padding-left:10px">Current <span class="vid-count">${upNext.length+inProgress.length}</span></div>
             ${(upNext.length||inProgress.length)?_colHdr:''}
           </div>
