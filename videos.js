@@ -218,14 +218,13 @@ function renderVideosPage(){
     });
   }
   const _rvpSe2=_vidScrollEl();if(_rvpSe2)_rvpSe2.scrollTop=_rvpTop;
-  try{
-    var ytSlot=document.getElementById('yt-analytics-slot');
-    if(ytSlot){
-      var ytHtml=_ytRender();
-      if(ytHtml)ytSlot.innerHTML=ytHtml;
-    }
-  }catch(e){console.error('YT render error',e);}
-  if(!_ytStats&&!_ytLoading&&!_ytFailed)_ytFetch();
+  var ytSlot=document.getElementById('yt-analytics-slot');
+  if(ytSlot&&!ytSlot._loaded){
+    ytSlot._loaded=true;
+    fetch('/api/youtube-stats').then(function(r){return r.json();}).then(function(d){
+      ytSlot.innerHTML='<div style="padding:6px 0;font-size:13px;font-weight:600">Subscribers: '+d.channelStats.subscribers+'</div>';
+    }).catch(function(e){ytSlot.innerHTML='<div style="padding:6px 0;font-size:12px;color:red">YT error: '+e.message+'</div>';});
+  }
 }
 
 // ── DASHBOARD VIEW (default — In Progress + Ideas) ───────────────────────────
