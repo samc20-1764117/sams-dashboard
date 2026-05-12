@@ -1,62 +1,8 @@
 // ── YouTube Analytics ────────────────────────────────────────────────────────
-let _ytStats=null,_ytLoading=false,_ytExpanded=false,_ytFailed=false;
-async function _ytFetch(){
-  if(_ytLoading||_ytStats||_ytFailed)return;
-  _ytLoading=true;
-  try{
-    const r=await fetch('/api/youtube-stats');
-    if(r.ok){_ytStats=await r.json();}else{_ytFailed=true;}
-  }catch(e){console.error('YT fetch error',e);_ytFailed=true;}
-  _ytLoading=false;
-  renderVideosPageKeepScroll();
-}
-function _ytFormatDuration(iso){
-  const m=iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
-  if(!m)return'0:00';
-  const h=m[1]?parseInt(m[1]):0,min=m[2]?parseInt(m[2]):0,s=m[3]?parseInt(m[3]):0;
-  if(h)return`${h}:${String(min).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-  return`${min}:${String(s).padStart(2,'0')}`;
-}
-function _ytFormatNum(n){
-  if(n>=1000000)return(n/1000000).toFixed(1)+'M';
-  if(n>=1000)return(n/1000).toFixed(1)+'K';
-  return String(n);
-}
+let _ytData=null;
 function _ytEsc(s){return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-function _ytToggle(){_ytExpanded=!_ytExpanded;if(_ytExpanded&&!_ytStats){_ytFailed=false;_ytFetch();}else{renderVideosPageKeepScroll();}}
-function _ytRender(){
-  var toggleBtn='<button onclick="_ytToggle()" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);font-family:inherit;padding:0">'+(_ytExpanded?'&#9660; Hide':'&#9654; YouTube Analytics')+'</button>';
-  if(!_ytStats){
-    if(!_ytExpanded)return'<div style="padding:4px 0">'+toggleBtn+'</div>';
-    return'<div style="padding:4px 0">'+toggleBtn+'</div><div style="font-size:12px;color:var(--muted);padding:4px 0">'+(_ytLoading?'Loading...':'Could not load YouTube stats. <button onclick="_ytFailed=false;_ytFetch()" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--muted);text-decoration:underline;font-family:inherit;padding:0">Retry</button>')+'</div>';
-  }
-  const c=_ytStats.channelStats;
-  if(!_ytExpanded)return'<div style="padding:4px 0">'+toggleBtn+'</div>';
-  var html='<div style="padding:4px 0">'+toggleBtn+'</div>';
-  html+='<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:12px">';
-  html+='<div style="background:var(--glass);border:1px solid var(--border);border-radius:10px;padding:10px 16px;min-width:100px"><div style="font-size:11px;color:var(--muted)">Subscribers</div><div style="font-size:18px;font-weight:600">'+_ytFormatNum(c.subscribers)+'</div></div>';
-  html+='<div style="background:var(--glass);border:1px solid var(--border);border-radius:10px;padding:10px 16px;min-width:100px"><div style="font-size:11px;color:var(--muted)">Total Views</div><div style="font-size:18px;font-weight:600">'+_ytFormatNum(c.totalViews)+'</div></div>';
-  html+='<div style="background:var(--glass);border:1px solid var(--border);border-radius:10px;padding:10px 16px;min-width:100px"><div style="font-size:11px;color:var(--muted)">Published</div><div style="font-size:18px;font-weight:600">'+c.totalVideos+'</div></div>';
-  html+='</div>';
-  if(_ytStats.videos.length){
-    html+='<div style="font-size:12px;font-weight:600;margin-bottom:6px">Recent Videos</div>';
-    html+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;margin-bottom:12px">';
-    for(var i=0;i<_ytStats.videos.length;i++){
-      var v=_ytStats.videos[i];
-      var date=new Date(v.publishedAt).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
-      html+='<div style="background:var(--glass);border:1px solid var(--border);border-radius:10px;padding:10px;display:flex;gap:10px;align-items:center">';
-      if(v.thumbnail)html+='<img src="'+_ytEsc(v.thumbnail)+'" style="width:80px;height:45px;border-radius:6px;object-fit:cover;flex-shrink:0">';
-      html+='<div style="min-width:0"><div style="font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+_ytEsc(v.title)+'</div>';
-      html+='<div style="font-size:11px;color:var(--muted);margin-top:2px">'+date+' &middot; '+_ytFormatDuration(v.duration)+'</div>';
-      html+='<div style="font-size:11px;color:var(--muted);margin-top:1px">'+_ytFormatNum(v.views)+' views &middot; '+_ytFormatNum(v.likes)+' likes &middot; '+_ytFormatNum(v.comments)+' comments</div>';
-      html+='</div></div>';
-    }
-    html+='</div>';
-  }
-  var age=_ytStats.fetchedAt?new Date(_ytStats.fetchedAt).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}):'';
-  html+='<div style="font-size:10px;color:var(--muted)">Last updated '+age+' &middot; <button onclick="_ytStats=null;_ytFetch()" style="background:none;border:none;cursor:pointer;font-size:10px;color:var(--muted);text-decoration:underline;font-family:inherit;padding:0">Refresh</button></div>';
-  return html;
-}
+function _ytDur(iso){var m=iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);if(!m)return'0:00';var h=m[1]?parseInt(m[1]):0,min=m[2]?parseInt(m[2]):0,s=m[3]?parseInt(m[3]):0;if(h)return h+':'+String(min).padStart(2,'0')+':'+String(s).padStart(2,'0');return min+':'+String(s).padStart(2,'0');}
+function _ytNum(n){if(n>=1000000)return(n/1000000).toFixed(1)+'M';if(n>=1000)return(n/1000).toFixed(1)+'K';return String(n);}
 
 // ── Videos Page ─────────────────────────────────────────────────────────────
 let _vidMode='add',_vidEditId=null;
@@ -218,14 +164,32 @@ function renderVideosPage(){
     });
   }
   const _rvpSe2=_vidScrollEl();if(_rvpSe2)_rvpSe2.scrollTop=_rvpTop;
-  try{
-    var ytSlot=document.getElementById('yt-analytics-slot');
-    if(ytSlot){
-      var ytHtml=_ytRender();
-      if(ytHtml)ytSlot.innerHTML=ytHtml;
-    }
-  }catch(e){console.error('YT render error',e);}
-  if(!_ytStats&&!_ytLoading&&!_ytFailed)_ytFetch();
+  var ytSlot=document.getElementById('yt-analytics-slot');
+  if(ytSlot&&!ytSlot._loaded){
+    ytSlot._loaded=true;
+    fetch('/api/youtube-stats').then(function(r){return r.json();}).then(function(d){
+      _ytData=d;
+      var c=d.channelStats;
+      var h='<div style="display:flex;gap:12px;flex-wrap:wrap;margin:8px 0">';
+      h+='<div style="background:var(--glass);border:1px solid var(--border);border-radius:10px;padding:8px 14px"><div style="font-size:10px;color:var(--muted)">Subscribers</div><div style="font-size:16px;font-weight:600">'+_ytNum(c.subscribers)+'</div></div>';
+      h+='<div style="background:var(--glass);border:1px solid var(--border);border-radius:10px;padding:8px 14px"><div style="font-size:10px;color:var(--muted)">Total Views</div><div style="font-size:16px;font-weight:600">'+_ytNum(c.totalViews)+'</div></div>';
+      h+='<div style="background:var(--glass);border:1px solid var(--border);border-radius:10px;padding:8px 14px"><div style="font-size:10px;color:var(--muted)">Published on YT</div><div style="font-size:16px;font-weight:600">'+c.totalVideos+'</div></div>';
+      h+='</div>';
+      h+='<div style="margin-bottom:8px"><button onclick="var el=document.getElementById(\'yt-recent\');el.style.display=el.style.display===\'none\'?\'grid\':\'none\'" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);font-family:inherit;padding:0">&#9654; Recent Videos</button></div>';
+      h+='<div id="yt-recent" style="display:none;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px;margin-bottom:10px">';
+      for(var i=0;i<d.videos.length;i++){
+        var v=d.videos[i];
+        var dt=new Date(v.publishedAt).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+        h+='<div style="background:var(--glass);border:1px solid var(--border);border-radius:8px;padding:8px;display:flex;gap:8px;align-items:center">';
+        if(v.thumbnail)h+='<img src="'+_ytEsc(v.thumbnail)+'" style="width:72px;height:40px;border-radius:5px;object-fit:cover;flex-shrink:0">';
+        h+='<div style="min-width:0"><div style="font-size:11px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+_ytEsc(v.title)+'</div>';
+        h+='<div style="font-size:10px;color:var(--muted)">'+dt+' &middot; '+_ytDur(v.duration)+' &middot; '+_ytNum(v.views)+' views &middot; '+_ytNum(v.likes)+' likes</div>';
+        h+='</div></div>';
+      }
+      h+='</div>';
+      ytSlot.innerHTML=h;
+    }).catch(function(){});
+  }
 }
 
 // ── DASHBOARD VIEW (default — In Progress + Ideas) ───────────────────────────
