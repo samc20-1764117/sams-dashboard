@@ -12,6 +12,8 @@ let _vidMonthOffset=0; // 0=current month, -1=last month, etc
 const VID_STEPS=['step_build','step_record','step_film','step_cut','step_thumbnail','step_description','step_tableau_public','step_upload_tableau'];
 const VID_STEP_LABELS={step_build:'Build',step_record:'Rec',step_film:'Film',step_cut:'Cut',step_thumbnail:'Thumb',step_description:'Desc',step_tableau_public:'Tab Pub',step_upload_tableau:'Upload'};
 const VID_STATUS_COLORS={published:'#10b981',in_progress:'#f59e0b',up_next:'#0ea5e9',idea:'#8b5cf6',backup:'#94a3b8'};
+const VID_STATUS_LABELS={published:'Complete',in_progress:'In Progress',up_next:'Up Next',idea:'Idea',backup:'Backup'};
+const VID_STATUS_ORDER={published:0,up_next:1,in_progress:2,backup:3,idea:4};
 const VID_STEP_COLORS={done:'#10b981',in_progress:'#f59e0b',not_started:'transparent',na:'#d1d5db',backup:'#94a3b8',issue:'#ef4444'};
 
 // Build numbering from an ordered array of videos (display order)
@@ -390,7 +392,7 @@ function _vidSortVids(vids){
       if(col==='title'){av=(a.title||'').toLowerCase();bv=(b.title||'').toLowerCase();}
       else if(col==='group'){av=a.big_video_id||0;bv=b.big_video_id||0;}
       else if(col==='playlist'){av=(a.playlist||'').toLowerCase();bv=(b.playlist||'').toLowerCase();}
-      else if(col==='status'){av=a.status||'';bv=b.status||'';}
+      else if(col==='status'){av=VID_STATUS_ORDER[a.status]??99;bv=VID_STATUS_ORDER[b.status]??99;}
       else if(col==='duration'){av=a.duration_minutes||0;bv=b.duration_minutes||0;}
       else if(col==='posted'){av=a.post_date||'';bv=b.post_date||'';}
       else{av='';bv='';}
@@ -427,7 +429,7 @@ function _vidSortVids(vids){
 }
 function _vidToggleCompleted(){_vidShowCompleted=!_vidShowCompleted;renderVideosPageKeepScroll();}
 function _vidRenderTable(){
-  let vids=_vidFiltered();
+  let vids=_vidFiltered().filter(v=>v.status!=='idea');
   const today=d2s(new Date());
   if(!_vidShowCompleted){
     // Find B groups that have L children with future/today post dates
@@ -538,7 +540,7 @@ function _vidRow(v,isChild,postMap){
     ${VID_STEPS.map(s=>`<td style="text-align:center"><div class="vid-step-dot${v[s]==='done'?' done':v[s]==='na'?' na':''}" data-vid="${sid}" data-step="${s}" title="${VID_STEP_LABELS[s]}"></div></td>`).join('')}
     <td data-field="post_date" style="text-align:right;font-size:11px;color:${_vidDateColor(v.post_date,v)}">${postStr}</td>
     <td data-field="duration_minutes" style="text-align:right;font-size:11px;color:var(--muted)">${durStr}</td>
-    <td data-field="status"><span class="vid-status-pill" style="background:${sc}20;color:${sc}">${v.status}</span></td>
+    <td data-field="status"><span class="vid-status-pill" style="background:${sc}12;color:${sc}">${VID_STATUS_LABELS[v.status]||v.status}</span></td>
     <td><button class="vid-del" data-vid="${sid}">✕</button></td>
   </tr>`;
 }
