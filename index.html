@@ -741,11 +741,17 @@
     <div class="mt" id="vidMTitle">Add Video</div>
     <input id="vmTopic" placeholder="Topic" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box">
     <input id="vmTitle" placeholder="Video title" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box;margin-top:8px">
-    <input id="vmType" type="hidden" value="B">
     <div style="display:flex;gap:8px;margin-top:8px">
+      <div id="vmTypeToggle" style="display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;flex-shrink:0">
+        <button type="button" onclick="_vidSetType('B')" id="vmTypeB" style="padding:8px 12px;font-family:inherit;font-size:12px;font-weight:600;border:none;cursor:pointer;background:transparent;color:var(--muted)">Big</button>
+        <button type="button" onclick="_vidSetType('L')" id="vmTypeL" style="padding:8px 12px;font-family:inherit;font-size:12px;font-weight:600;border:none;cursor:pointer;background:var(--accent);color:#fff">Little</button>
+      </div>
+      <input id="vmType" type="hidden" value="L">
       <select id="vmStatus" style="flex:1;min-width:0;padding:8px 6px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box">
         <option value="idea">Idea</option><option value="up_next">Up Next</option><option value="in_progress">In Progress</option><option value="published">Published</option><option value="backup">Backup</option>
       </select>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:8px">
       <div id="vmBigVideoWrap" style="flex:1;min-width:0;position:relative">
         <input id="vmBigVideo" placeholder="Big Video (none)" autocomplete="off" style="width:100%;padding:8px 28px 8px 10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box" onfocus="_vidShowDropdown('BigVideo')" oninput="_vidFilterDropdown('BigVideo')">
         <span onclick="_vidToggleDropdown('BigVideo')" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--muted);font-size:10px;user-select:none">▼</span>
