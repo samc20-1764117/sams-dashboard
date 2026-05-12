@@ -182,30 +182,38 @@ function _vidRenderDashboard(){
     const singleIdeas=ideas.filter(v=>v.video_type!=='B');
     let h='';
     if(groupIdeas.length||singleIdeas.length){
-      h+=groupIdeas.map(v=>_vidDashRow(v,false,true)).join('');
-      if(singleIdeas.length)h+=singleIdeas.map(v=>_vidDashRow(v,false,true)).join('');
+      h+=`<div style="font-size:9px;font-weight:600;color:var(--muted);padding:6px 10px 2px;letter-spacing:.03em">Group</div>`;
+      h+=groupIdeas.length?groupIdeas.map(v=>_vidDashRow(v,false,true)).join(''):'<div style="color:var(--muted);font-size:11px;padding:4px 10px;opacity:.5">None</div>';
+      h+=`<div style="font-size:9px;font-weight:600;color:var(--muted);padding:8px 10px 2px;letter-spacing:.03em;border-top:1px solid rgba(210,205,228,.15);margin-top:4px">Single</div>`;
+      h+=singleIdeas.length?singleIdeas.map(v=>_vidDashRow(v,false,true)).join(''):'<div style="color:var(--muted);font-size:11px;padding:4px 10px;opacity:.5">None</div>';
     }else{
       h='<div style="color:var(--muted);font-size:12px;padding:16px 10px">No ideas yet</div>';
     }
     return h;
   })();
   return`
-    <div style="display:flex;flex-direction:column;flex:1;min-height:0;overflow-y:auto">
-      <div class="vid-dash-header">
-        <div style="flex:1;min-width:0;padding-left:10px">Current <span class="vid-count">${upNext.length+inProgress.length}</span></div>
-        ${(upNext.length||inProgress.length)?_colHdr:''}
+    <div style="display:flex;gap:0;padding:0;position:absolute;top:0;left:0;right:0;bottom:0">
+      <div style="flex:2;min-width:0;display:flex;flex-direction:column;border-right:1px solid var(--border)">
+        <div style="flex:1;min-height:0;overflow-y:auto;overflow-x:hidden">
+          <div class="vid-dash-header">
+            <div style="flex:1;min-width:0;padding-left:10px">Current <span class="vid-count">${upNext.length+inProgress.length}</span></div>
+            ${(upNext.length||inProgress.length)?_colHdr:''}
+          </div>
+          <div class="vid-drop-zone" data-drop-status="up_next" ondragover="event.preventDefault()" ondrop="_vidDashDrop(event,'up_next')" style="min-height:40px;padding-bottom:8px">
+            <div style="font-size:9px;font-weight:600;color:var(--muted);padding:6px 10px 6px 10px;letter-spacing:.03em;background:rgba(255,255,255,.85);display:flex;align-items:center">Up Next</div>
+            ${upNext.length?_vidDashList(upNext,false):'<div style="color:var(--muted);font-size:11px;padding:8px 10px;opacity:.5">Drag ideas here</div>'}
+          </div>
+          <div class="vid-drop-zone" data-drop-status="in_progress" ondragover="event.preventDefault()" ondrop="_vidDashDrop(event,'in_progress')" style="min-height:40px;padding-bottom:8px">
+            <div style="font-size:9px;font-weight:600;color:var(--muted);padding:6px 10px 6px 10px;letter-spacing:.03em;border-top:1px solid rgba(210,205,228,.15);margin-top:4px;background:rgba(255,255,255,.85);display:flex;align-items:center">In Progress</div>
+            ${inProgress.length?_vidDashList(inProgress,false):'<div style="color:var(--muted);font-size:11px;padding:8px 10px;opacity:.5">Drag up next here to start</div>'}
+          </div>
+        </div>
       </div>
-      <div class="vid-drop-zone" data-drop-status="up_next" ondragover="event.preventDefault()" ondrop="_vidDashDrop(event,'up_next')" style="min-height:40px;padding-bottom:8px">
-        <div style="font-size:9px;font-weight:600;color:var(--muted);padding:6px 10px 6px 10px;letter-spacing:.03em;background:rgba(255,255,255,.85);display:flex;align-items:center">Up Next</div>
-        ${upNext.length?_vidDashList(upNext,false):'<div style="color:var(--muted);font-size:11px;padding:8px 10px;opacity:.5">Drag ideas here</div>'}
-      </div>
-      <div class="vid-drop-zone" data-drop-status="in_progress" ondragover="event.preventDefault()" ondrop="_vidDashDrop(event,'in_progress')" style="min-height:40px;padding-bottom:8px">
-        <div style="font-size:9px;font-weight:600;color:var(--muted);padding:6px 10px 6px 10px;letter-spacing:.03em;border-top:1px solid rgba(210,205,228,.15);margin-top:4px;background:rgba(255,255,255,.85);display:flex;align-items:center">In Progress</div>
-        ${inProgress.length?_vidDashList(inProgress,false):'<div style="color:var(--muted);font-size:11px;padding:8px 10px;opacity:.5">Drag up next here to start</div>'}
-      </div>
-      <div style="border-top:2px solid var(--border);margin-top:8px" ondragover="event.preventDefault()" ondrop="_vidDashDrop(event,'idea')">
-        <div class="vid-dash-header" style="border-bottom:none">Ideas <span class="vid-count">${ideas.length}</span></div>
-        ${ideasHtml}
+      <div style="flex:1;min-width:0;display:flex;flex-direction:column" ondragover="event.preventDefault()" ondrop="_vidDashDrop(event,'idea')">
+        <div class="vid-dash-header">Ideas <span class="vid-count">${ideas.length}</span></div>
+        <div style="flex:1;min-height:0;overflow-y:auto">
+          ${ideasHtml}
+        </div>
       </div>
     </div>`;
 }
