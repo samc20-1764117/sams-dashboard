@@ -519,7 +519,8 @@ function tRowTodayVirt(t,tbArrow=false,noColor=false){
 
   return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''}" style="${!ov&&!noColor?`background:${s.bg}`:''}" id="ti-${t.id}" draggable="true" ondragstart="dragId='${_dragId}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);" ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false);" onclick="selTask(event,'${t.id}')" ondblclick="${_dblClick}" oncontextmenu="${_ctxMenu}">
     <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="${_chk}"></label>
-    <span class="tn">${t.name}${_hebBadge(t.name)}</span>
+    <span class="tn">${t.name}</span>
+    ${_hebBadge(t.name)}
     ${!ov?`<svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3" fill="${ps.bg}" stroke="${ps.d}" stroke-opacity="0.4" stroke-width="1"/></svg>`:''}
     ${tbArrow?'<span class="tb-arrow">›</span>':''}
     <button class="delbtn" onclick="event.stopPropagation();${_xBtn}">✕</button>
@@ -1029,7 +1030,8 @@ function renderWkCal(){
         else if(t._virtual){togRecVirt(t._recId,chk.checked,t._wkKey||getWkKey(wkOff));}
         else{toggleTask(t.id,chk.checked,'week');}
       });
-      const nm=document.createElement('span');nm.className='chip-name';nm.innerHTML=tmIcon(t)+escHtml(t._type==='pup'?_pupDisplayName(t):t.name)+_hebBadge(t.name);
+      const _chipHeb=/\bheb\b/i.test(t.name||'')?st.shopping.filter(s=>!s.done&&s.store&&s.store.toLowerCase()==='heb').length:0;
+      const nm=document.createElement('span');nm.className='chip-name';nm.innerHTML=tmIcon(t)+escHtml(t._type==='pup'?_pupDisplayName(t):t.name)+(_chipHeb?`<span style="color:var(--muted);margin-left:3px;font-weight:400">${_chipHeb}</span>`:'');
       // name click handled by chip click→selTask, dblclick→openEditTask
       chip.appendChild(chk);chip.appendChild(nm);
       chip.addEventListener('contextmenu',e=>{
@@ -2010,9 +2012,10 @@ function renderRecOv(){
     }
     const nm=document.createElement('span');nm.className='tn';
     if(isDone)nm.style.cssText='text-decoration:line-through;color:var(--muted)';
-    const _hb=_hebBadge(r._displayName);
-    if(_hb){nm.innerHTML=escHtml(r._displayName)+_hb;}else{nm.textContent=r._displayName;}
+    nm.textContent=r._displayName;
     row.appendChild(nm);
+    const _hb=_hebBadge(r._displayName);
+    if(_hb){const _hel=document.createElement('span');_hel.className='heb-cnt';_hel.textContent=st.shopping.filter(s=>!s.done&&s.store&&s.store.toLowerCase()==='heb').length;row.appendChild(_hel);}
     const hasDot=r._edited;
     const del=document.createElement('button');
     del.className='delbtn';del.textContent='✕';del.title='Remove…';
@@ -2682,7 +2685,8 @@ function tRowWk(t){
       :`showWrScopePicker(event,'⊘  Skip this week only','✕  Delete recurring task',()=>skipRecVirtThisWk('${t._recId}','${t._wkKey||getWkKey(wkOff)}'),()=>delRec('${t._recId}'))`;
     return`<div class="ti ${t.done?'done':''}" style="background:${s.bg}" id="ti-${t.id}" onclick="selTask(event,'${t.id}')" ondblclick="${t._isWrRule?`event.stopPropagation();openWrEditModal('${t._ruleId}','${t._wkKey||getWkKey(wkOff)}','all')`:`tiDblRec(event,'${t._recId}')`}" oncontextmenu="${_wkCtxMenu}">
       <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="${t._isWrec?`togRec('${t._recId}',this.checked)`:`togRecVirt('${t._recId}',this.checked,'${t._wkKey||getWkKey(wkOff)}')`}"></label>
-      <span class="tn">${t.name}${_hebBadge(t.name)}</span>
+      <span class="tn">${t.name}</span>
+      ${_hebBadge(t.name)}
       <span class="cpill" style="background:${s.bg};color:${s.t};border-color:${s.b}">Recurring</span>
       <span class="dlbl">${fmtD(t.due_date)}</span>
       <button class="delbtn" onclick="event.stopPropagation();${_wkXBtn}">✕</button>
