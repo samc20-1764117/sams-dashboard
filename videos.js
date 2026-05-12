@@ -168,9 +168,9 @@ function _vidRenderDashboard(){
   }
   _vidDashVids=all.filter(v=>v.status!=='idea');
   const _colHdr=`<div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+            <div style="display:flex;gap:0">${VID_STEPS.map(s=>`<span style="width:28px;text-align:center;font-size:9px" title="${VID_STEP_LABELS[s]}">${VID_STEP_LABELS[s].slice(0,2)}</span>`).join('')}</div>
             <span style="width:52px;text-align:right;font-size:9px">Posted</span>
             <span style="width:36px;text-align:right;font-size:9px">Dur</span>
-            <div style="display:flex;gap:0">${VID_STEPS.map(s=>`<span style="width:28px;text-align:center;font-size:9px" title="${VID_STEP_LABELS[s]}">${VID_STEP_LABELS[s].slice(0,2)}</span>`).join('')}</div>
             <button class="vid-del" style="visibility:hidden">✕</button>
           </div>`;
   return`
@@ -259,9 +259,9 @@ function _vidDashRow(v,isChild,simple){
       ${v.video_type==='B'?`<button onclick="event.stopPropagation();openVidModalForBig('${sid}')" style="font-size:10px;font-weight:700;width:16px;height:16px;line-height:14px;text-align:center;border-radius:3px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;margin-right:4px" title="Add child video">+</button>`:(!isChild?'<button style="font-size:10px;font-weight:700;width:16px;height:16px;line-height:14px;text-align:center;border-radius:3px;border:1px solid transparent;background:transparent;color:transparent;margin-right:4px;pointer-events:none">+</button>':'')}${childMark}${numHtml}${showTopicTitle?`<span class="${titleCls}">${_esc(topic)}</span><span style="font-size:10px;color:var(--muted);margin-left:4px;font-weight:400">- ${_esc(v.title)}</span>`:`<span class="${titleCls}">${_esc(primary)}</span>`}
     </div>
     <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+      <div style="display:flex;gap:0">${VID_STEPS.map(s=>`<div style="width:28px;text-align:center"><div class="vid-step-dot${v[s]==='done'?' done':v[s]==='na'?' na':''}" data-vid="${sid}" data-step="${s}" title="${VID_STEP_LABELS[s]}"></div></div>`).join('')}</div>
       <span style="width:52px;text-align:right;font-size:11px;color:${_vidDateColor(v.post_date,v)}">${postStr||''}</span>
       <span style="width:36px;text-align:right;font-size:11px;color:var(--muted)">${durStr}</span>
-      <div style="display:flex;gap:0">${VID_STEPS.map(s=>`<div style="width:28px;text-align:center"><div class="vid-step-dot${v[s]==='done'?' done':v[s]==='na'?' na':''}" data-vid="${sid}" data-step="${s}" title="${VID_STEP_LABELS[s]}"></div></div>`).join('')}</div>
       <button class="vid-del" data-vid="${sid}">✕</button>
     </div>
   </div>`;
@@ -468,10 +468,10 @@ function _vidRenderTable(){
     <table class="vid-tbl" style="table-layout:fixed;width:100%">
       <thead><tr>
         <th style="${thStyle}" onclick="vidTblSort('title')">Title${_vidSortArrow('title')}</th>
-        <th style="width:62px;text-align:right;${thStyle}" onclick="vidTblSort('posted')">Posted${_vidSortArrow('posted')}</th>
-        <th style="width:50px;text-align:right;${thStyle}" onclick="vidTblSort('duration')">Dur${_vidSortArrow('duration')}</th>
         <th style="width:70px;${thStyle}" onclick="vidTblSort('status')">Status${_vidSortArrow('status')}</th>
         ${VID_STEPS.map(s=>`<th style="width:28px;text-align:center;font-size:9px" title="${VID_STEP_LABELS[s]}">${VID_STEP_LABELS[s].slice(0,2)}</th>`).join('')}
+        <th style="width:62px;text-align:right;${thStyle}" onclick="vidTblSort('posted')">Posted${_vidSortArrow('posted')}</th>
+        <th style="width:50px;text-align:right;${thStyle}" onclick="vidTblSort('duration')">Dur${_vidSortArrow('duration')}</th>
         <th style="width:36px"><button onclick="_vidToggleCompleted()" style="font-size:14px;font-weight:700;width:24px;height:24px;line-height:22px;text-align:center;border-radius:6px;border:1.5px solid var(--border);background:${_vidShowCompleted?'rgba(14,165,233,.12)':'var(--bg)'};color:${_vidShowCompleted?'#0ea5e9':'var(--muted)'};cursor:pointer" title="${_vidShowCompleted?'Hide':'Show'} Completed">${_vidShowCompleted?'−':'+'}</button></th>
       </tr></thead>
       <tbody>${groupedHtml}</tbody>
@@ -528,10 +528,10 @@ function _vidRow(v,isChild,postMap){
   const addBtn=v.video_type==='B'?`<button onclick="event.stopPropagation();openVidModalForBig('${sid}')" style="font-size:10px;font-weight:700;width:16px;height:16px;line-height:14px;text-align:center;border-radius:3px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;margin-right:4px;flex-shrink:0" title="Add child video">+</button>`:(!isChild?'<button style="font-size:10px;font-weight:700;width:16px;height:16px;line-height:14px;text-align:center;border-radius:3px;border:1px solid transparent;background:transparent;color:transparent;margin-right:4px;pointer-events:none;flex-shrink:0">+</button>':'');
   return`<tr class="vid-row${sel?' vid-sel':''}" data-vid="${sid}" onclick="vidCellClick(event,'${sid}')" ondblclick="openVidEdit('${sid}')" oncontextmenu="showVidCtx(event,'${sid}')">
     <td data-field="title" style="${indent}${!isChild?'font-weight:600;':''}${titleColor}overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${addBtn}${childMark}${numHtml}${(v.status==='in_progress'||v.status==='up_next')&&v.topic?`<span class="vid-title-text">${_esc(v.topic)}</span><span style="font-size:10px;color:var(--muted);margin-left:4px;font-weight:400">- ${_esc(v.title)}</span>`:`<span class="vid-title-text">${_esc(v.title)}</span>`}</td>
-    <td data-field="post_date" style="text-align:right;font-size:11px;color:${_vidDateColor(v.post_date,v)}">${postStr}</td>
-    <td data-field="duration_minutes" style="text-align:right;font-size:11px;color:var(--muted)">${durStr}</td>
     <td data-field="status"><span class="vid-status-pill" style="background:${sc}20;color:${sc}">${v.status}</span></td>
     ${VID_STEPS.map(s=>`<td style="text-align:center"><div class="vid-step-dot${v[s]==='done'?' done':v[s]==='na'?' na':''}" data-vid="${sid}" data-step="${s}" title="${VID_STEP_LABELS[s]}"></div></td>`).join('')}
+    <td data-field="post_date" style="text-align:right;font-size:11px;color:${_vidDateColor(v.post_date,v)}">${postStr}</td>
+    <td data-field="duration_minutes" style="text-align:right;font-size:11px;color:var(--muted)">${durStr}</td>
     <td><button class="vid-del" data-vid="${sid}">✕</button></td>
   </tr>`;
 }
