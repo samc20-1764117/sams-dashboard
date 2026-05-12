@@ -190,28 +190,14 @@ function renderVideosPage(){
   var ytSlot=document.getElementById('yt-analytics-slot');
   if(ytSlot&&!ytSlot._loaded){
     ytSlot._loaded=true;
-    fetch(location.origin+'/api/yt?_='+Date.now(),{cache:'no-store'}).then(function(r){
-      if(!r.ok){ytSlot.innerHTML='<div style="color:red;font-size:12px;padding:6px 0">YT error: '+r.status+'</div>';return Promise.reject(r.status);}
-      return r.json();
-    }).then(function(d){
-      if(!d||!d.channelStats){ytSlot.innerHTML='<div style="color:red;font-size:12px;padding:6px 0">YT: bad response</div>';return;}
+    fetch('/api/yt?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
+      if(d.error){ytSlot.innerHTML='<div style="color:red;font-size:12px;padding:6px 0">YT: '+JSON.stringify(d)+'</div>';return;}
       _ytData=d;
       var c=d.channelStats;
       var h='<div style="display:flex;gap:12px;flex-wrap:wrap;margin:8px 0">';
       h+='<div style="background:var(--glass);border:1px solid var(--border);border-radius:10px;padding:8px 14px"><div style="font-size:10px;color:var(--muted)">Subscribers</div><div style="font-size:16px;font-weight:600">'+_ytNum(c.subscribers)+'</div></div>';
       h+='<div style="background:var(--glass);border:1px solid var(--border);border-radius:10px;padding:8px 14px"><div style="font-size:10px;color:var(--muted)">Total Views</div><div style="font-size:16px;font-weight:600">'+_ytNum(c.totalViews)+'</div></div>';
       h+='<div style="background:var(--glass);border:1px solid var(--border);border-radius:10px;padding:8px 14px"><div style="font-size:10px;color:var(--muted)">Published on YT</div><div style="font-size:16px;font-weight:600">'+c.totalVideos+'</div></div>';
-      h+='</div>';
-      h+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px;margin-bottom:10px">';
-      for(var i=0;i<d.videos.length;i++){
-        var v=d.videos[i];
-        var dt=new Date(v.publishedAt).toLocaleDateString('en-US',{month:'short',day:'numeric'});
-        h+='<div style="background:var(--glass);border:1px solid var(--border);border-radius:8px;padding:8px;display:flex;gap:8px;align-items:center">';
-        if(v.thumbnail)h+='<img src="'+_ytEsc(v.thumbnail)+'" style="width:72px;height:40px;border-radius:5px;object-fit:cover;flex-shrink:0">';
-        h+='<div style="min-width:0"><div style="font-size:11px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+_ytEsc(v.title)+'</div>';
-        h+='<div style="font-size:10px;color:var(--muted)">'+dt+' &middot; '+_ytDur(v.duration)+' &middot; '+_ytNum(v.views)+' views &middot; '+_ytNum(v.likes)+' likes</div>';
-        h+='</div></div>';
-      }
       h+='</div>';
       ytSlot.innerHTML=h;
       _ytBuildMatch();
