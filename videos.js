@@ -254,12 +254,12 @@ function _vidRenderDashboard(){
   })();
   return`
     <div style="display:flex;flex-direction:column;position:absolute;top:0;left:0;right:0;bottom:0">
-      <div style="display:flex;border-bottom:2px solid var(--border)">
-        <div class="vid-dash-header" style="flex:2;border-bottom:none;border-right:1px solid var(--border)">
+      <div style="display:flex">
+        <div class="vid-dash-header" style="flex:2;border-right:1px solid var(--border)">
           <div style="flex:1;min-width:0;padding-left:10px">Current</div>
           ${(upNext.length||inProgress.length)?_colHdr:''}
         </div>
-        <div class="vid-dash-header" style="flex:1;border-bottom:none">
+        <div class="vid-dash-header" style="flex:1">
           <div style="padding-left:10px">Ideas <span class="vid-count">${ideas.length}</span></div>
         </div>
       </div>
@@ -325,7 +325,7 @@ function _vidDashRow(v,isChild,simple){
   const postStr=_vidPostStr(v.post_date);
   const durStr=v.duration_minutes?v.duration_minutes.toFixed(2):'';
   const isBig=v.video_type==='B';
-  const bigRowStyle=isBig?'background:rgba(255,255,255,.55);':'';
+  const bigRowStyle=isBig?'background:rgba(255,255,255,.70);':'';
   const _applicable=VID_STEPS.filter(s=>v[s]!=='na');
   const _done=_applicable.filter(s=>v[s]==='done').length;
   const _pct=_applicable.length?Math.round((_done/_applicable.length)*100):0;
