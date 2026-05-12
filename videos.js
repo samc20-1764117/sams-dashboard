@@ -1,3 +1,57 @@
+// ── YouTube Analytics ────────────────────────────────────────────────────────
+let _ytStats=null,_ytLoading=false,_ytExpanded=false;
+async function _ytFetch(){
+  if(_ytLoading||_ytStats)return;
+  _ytLoading=true;
+  try{
+    const r=await fetch('/api/youtube-stats');
+    if(r.ok)_ytStats=await r.json();
+  }catch(e){console.error('YT fetch error',e);}
+  _ytLoading=false;
+  renderVideosPageKeepScroll();
+}
+function _ytFormatDuration(iso){
+  const m=iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+  if(!m)return'0:00';
+  const h=m[1]?parseInt(m[1]):0,min=m[2]?parseInt(m[2]):0,s=m[3]?parseInt(m[3]):0;
+  if(h)return`${h}:${String(min).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  return`${min}:${String(s).padStart(2,'0')}`;
+}
+function _ytFormatNum(n){
+  if(n>=1000000)return(n/1000000).toFixed(1)+'M';
+  if(n>=1000)return(n/1000).toFixed(1)+'K';
+  return String(n);
+}
+function _ytRender(){
+  if(!_ytStats)return _ytLoading?'<div style="font-size:12px;color:var(--muted);padding:8px 0">Loading YouTube stats...</div>':'';
+  const c=_ytStats.channelStats;
+  const toggleBtn=`<button onclick="_ytExpanded=!_ytExpanded;renderVideosPageKeepScroll()" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);font-family:inherit;padding:0">${_ytExpanded?'▼ Hide':'▶ YouTube Analytics'}</button>`;
+  if(!_ytExpanded)return`<div style="padding:4px 0">${toggleBtn}</div>`;
+  let html=`<div style="padding:4px 0">${toggleBtn}</div>`;
+  html+=`<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:12px">`;
+  html+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:10px;padding:10px 16px;min-width:100px"><div style="font-size:11px;color:var(--muted)">Subscribers</div><div style="font-size:18px;font-weight:600">${_ytFormatNum(c.subscribers)}</div></div>`;
+  html+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:10px;padding:10px 16px;min-width:100px"><div style="font-size:11px;color:var(--muted)">Total Views</div><div style="font-size:18px;font-weight:600">${_ytFormatNum(c.totalViews)}</div></div>`;
+  html+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:10px;padding:10px 16px;min-width:100px"><div style="font-size:11px;color:var(--muted)">Published</div><div style="font-size:18px;font-weight:600">${c.totalVideos}</div></div>`;
+  html+=`</div>`;
+  if(_ytStats.videos.length){
+    html+=`<div style="font-size:12px;font-weight:600;margin-bottom:6px">Recent Videos</div>`;
+    html+=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;margin-bottom:12px">`;
+    for(const v of _ytStats.videos){
+      const date=new Date(v.publishedAt).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+      html+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:10px;padding:10px;display:flex;gap:10px;align-items:center">`;
+      if(v.thumbnail)html+=`<img src="${v.thumbnail}" style="width:80px;height:45px;border-radius:6px;object-fit:cover;flex-shrink:0">`;
+      html+=`<div style="min-width:0"><div style="font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${v.title}</div>`;
+      html+=`<div style="font-size:11px;color:var(--muted);margin-top:2px">${date} · ${_ytFormatDuration(v.duration)}</div>`;
+      html+=`<div style="font-size:11px;color:var(--muted);margin-top:1px">${_ytFormatNum(v.views)} views · ${_ytFormatNum(v.likes)} likes · ${_ytFormatNum(v.comments)} comments</div>`;
+      html+=`</div></div>`;
+    }
+    html+=`</div>`;
+  }
+  const age=_ytStats.fetchedAt?new Date(_ytStats.fetchedAt).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}):'';
+  html+=`<div style="font-size:10px;color:var(--muted)">Last updated ${age} · <button onclick="_ytStats=null;_ytFetch()" style="background:none;border:none;cursor:pointer;font-size:10px;color:var(--muted);text-decoration:underline;font-family:inherit;padding:0">Refresh</button></div>`;
+  return html;
+}
+
 // ── Videos Page ─────────────────────────────────────────────────────────────
 let _vidMode='add',_vidEditId=null;
 let _vidSelected=new Set(),_vidChildSelected=new Set(),_vidLastSel=null,_vidCopied=[];
@@ -136,6 +190,7 @@ function renderVideosPage(){
         <button onclick="openVidModal()" style="width:22px;height:22px;border-radius:50%;border:1.5px solid var(--border);background:rgba(255,255,255,.9);color:var(--muted);font-size:14px;font-weight:700;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;margin-right:45px" title="Add video">+</button>
       </div>
     </div>
+    ${_ytRender()}
     <div class="card" style="overflow:${_vidView==='dashboard'?'hidden':'auto'};flex:1;min-height:0">
         ${bodyHtml}
     </div>`;
@@ -157,6 +212,7 @@ function renderVideosPage(){
     });
   }
   const _rvpSe2=_vidScrollEl();if(_rvpSe2)_rvpSe2.scrollTop=_rvpTop;
+  if(!_ytStats&&!_ytLoading)_ytFetch();
 }
 
 // ── DASHBOARD VIEW (default — In Progress + Ideas) ───────────────────────────
