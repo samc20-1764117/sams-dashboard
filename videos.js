@@ -543,8 +543,8 @@ function _vidRenderTable(){
       <thead><tr>
         <th style="${thStyle}" onclick="vidTblSort('title')">Title${_vidSortArrow('title')}</th>
         ${VID_STEPS.map(s=>`<th style="width:28px;text-align:center;font-size:9px" title="${VID_STEP_LABELS[s]}">${VID_STEP_LABELS[s].slice(0,2)}</th>`).join('')}
-        <th style="width:62px;text-align:right;${thStyle}" onclick="vidTblSort('posted')">Posted${_vidSortArrow('posted')}</th>
-        <th style="width:50px;text-align:right;${thStyle}" onclick="vidTblSort('duration')">Dur${_vidSortArrow('duration')}</th>
+        <th style="width:52px;text-align:right;${thStyle}" onclick="vidTblSort('posted')">Posted${_vidSortArrow('posted')}</th>
+        <th style="width:36px;text-align:right;${thStyle}" onclick="vidTblSort('duration')">Dur${_vidSortArrow('duration')}</th>
         <th style="width:85px;${thStyle}" onclick="vidTblSort('status')">Status${_vidSortArrow('status')}</th>
         ${_ytMatch?'<th style="width:80px;text-align:right;font-size:9px">Views</th><th style="width:50px;text-align:right;font-size:9px">Likes</th>':''}
         <th style="width:36px"><button onclick="_vidToggleCompleted()" style="font-size:14px;font-weight:700;width:24px;height:24px;line-height:22px;text-align:center;border-radius:6px;border:1.5px solid var(--border);background:${_vidShowCompleted?'rgba(14,165,233,.12)':'var(--bg)'};color:${_vidShowCompleted?'#0ea5e9':'var(--muted)'};cursor:pointer" title="${_vidShowCompleted?'Hide':'Show'} Completed">${_vidShowCompleted?'−':'+'}</button></th>

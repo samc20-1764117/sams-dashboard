@@ -776,7 +776,7 @@ body.dark .bday-add-menu{background:rgba(38,20,10,.97);border-color:rgba(255,220
 .cat-sel-opt:hover{filter:brightness(.95)}
 /* ── Videos Page ──────────────────────────────────────────────────────────── */
 .vid-tbl{width:100%;border-collapse:collapse;font-size:12px;font-family:inherit}
-.vid-tbl th{position:sticky;top:0;background:var(--bg);padding:6px 6px;text-align:left;font-size:10px;font-weight:600;color:var(--muted);letter-spacing:.04em;border-bottom:2px solid var(--border);white-space:nowrap;z-index:2}
+.vid-tbl th{position:sticky;top:0;background:var(--bg);padding:5px 6px;text-align:left;font-size:10px;font-weight:600;color:var(--muted);letter-spacing:.04em;border-bottom:2px solid var(--border);white-space:nowrap;z-index:2}
 .vid-tbl td{padding:5px 6px;border-bottom:1px solid rgba(210,205,228,.12);vertical-align:middle}
 .vid-row{cursor:pointer;transition:background .12s}.vid-row:hover{background:rgba(14,165,233,.04)}
 .vid-sel{background:rgba(14,165,233,.08)!important}
