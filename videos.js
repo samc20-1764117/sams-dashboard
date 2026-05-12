@@ -190,7 +190,11 @@ function renderVideosPage(){
   var ytSlot=document.getElementById('yt-analytics-slot');
   if(ytSlot&&!ytSlot._loaded){
     ytSlot._loaded=true;
-    fetch('/api/youtube-stats',{headers:{'X-YT-Auth':_getAuthToken()}}).then(function(r){return r.json();}).then(function(d){
+    fetch('/api/youtube-stats',{headers:{'X-YT-Auth':_getAuthToken()}}).then(function(r){
+      if(!r.ok){ytSlot.innerHTML='<div style="color:red;font-size:12px;padding:6px 0">YT API error: '+r.status+'</div>';return Promise.reject(r.status);}
+      return r.json();
+    }).then(function(d){
+      if(!d||!d.channelStats){ytSlot.innerHTML='<div style="color:red;font-size:12px;padding:6px 0">YT: bad response</div>';return;}
       _ytData=d;
       var c=d.channelStats;
       var h='<div style="display:flex;gap:12px;flex-wrap:wrap;margin:8px 0">';
@@ -212,7 +216,7 @@ function renderVideosPage(){
       ytSlot.innerHTML=h;
       _ytBuildMatch();
       renderVideosPageKeepScroll();
-    }).catch(function(){});
+    }).catch(function(e){ytSlot.innerHTML='<div style="color:red;font-size:12px;padding:6px 0">YT fetch failed: '+e+'</div>';});
   }
 }
 
