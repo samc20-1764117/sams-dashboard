@@ -1,6 +1,6 @@
 // ── Videos Page ─────────────────────────────────────────────────────────────
 let _vidMode='add',_vidEditId=null;
-let _vidSelected=new Set(),_vidLastSel=null,_vidCopied=[];
+let _vidSelected=new Set(),_vidChildSelected=new Set(),_vidLastSel=null,_vidCopied=[];
 let _vidCtxId=null;
 let _vidFilter='all';
 let _vidGroupFilter='all';
@@ -247,21 +247,21 @@ function _vidDashRow(v,isChild,simple){
   const secondary=showTopicTitle?v.title:'';
   if(simple){
     return`<div class="vid-dash-row${sel?' vid-sel':''}" draggable="true" ondragstart="_vidDashDragStart(event,'${sid}')" data-vid="${sid}" onclick="vidRowClick(event,'${sid}')" ondblclick="openVidEdit('${sid}')" oncontextmenu="showVidCtx(event,'${sid}')">
-      <div style="flex:1;min-width:0;padding-left:10px;${indent}${!isChild?'font-weight:600;':''}${titleStyle}">${v.video_type==='B'?`<button onclick="event.stopPropagation();openVidModalForBig('${sid}')" style="font-size:10px;font-weight:700;width:16px;height:16px;line-height:14px;text-align:center;border-radius:3px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;margin-right:4px" title="Add child video">+</button>`:(!isChild?'<button style="font-size:10px;font-weight:700;width:16px;height:16px;line-height:14px;text-align:center;border-radius:3px;border:1px solid transparent;background:transparent;color:transparent;margin-right:4px;pointer-events:none">+</button>':'')}${childMark}${numHtml}${showTopicTitle?`<span class="${titleCls}">${_esc(topic)}</span><span style="font-size:10px;color:var(--muted);margin-left:4px;font-weight:400">- ${_esc(v.title)}</span>`:`<span class="${titleCls}">${_esc(primary)}</span>`}</div>
+      <div style="flex:1;min-width:0;padding-left:10px;${indent}${!isChild?'font-weight:600;':''}${titleStyle}">${v.video_type==='B'?`<button onclick="event.stopPropagation();openVidModalForBig('${sid}')" style="font-size:10px;font-weight:700;width:16px;height:16px;line-height:14px;text-align:center;border-radius:3px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;margin-right:4px" title="Add child video">+</button>`:(!isChild?'<button style="font-size:10px;font-weight:700;width:16px;height:16px;line-height:14px;text-align:center;border-radius:3px;border:1px solid transparent;background:transparent;color:transparent;margin-right:4px;pointer-events:none">+</button>':'')}${childMark}${numHtml}${showTopicTitle?`<span class="${titleCls}">${_esc(topic)}</span><span style="font-size:10px;color:var(--muted);margin-left:4px;font-weight:400">${v.title?'- '+_esc(v.title):''}</span>`:`<span class="${titleCls}">${_esc(primary)}</span>`}</div>
       <button class="vid-del" data-vid="${sid}">✕</button>
     </div>`;
   }
   const postStr=_vidPostStr(v.post_date);
   const durStr=v.duration_minutes?v.duration_minutes.toFixed(2):'';
   const dropAttrs=v.video_type==='B'?`ondragover="_vidGroupDragOver(event)" ondragleave="_vidGroupDragLeave(event)" ondrop="_vidGroupDrop(event,'${sid}')"`:'';
-  return`<div class="vid-dash-row${sel?' vid-sel':''}" draggable="true" ondragstart="_vidDashDragStart(event,'${sid}')" ${dropAttrs} data-vid="${sid}" onclick="vidRowClick(event,'${sid}')" ondblclick="openVidEdit('${sid}')" oncontextmenu="showVidCtx(event,'${sid}')">
+  return`<div class="vid-dash-row${sel?' vid-sel':''}${_vidChildSelected.has(sid)?' vid-child-sel':''}" draggable="true" ondragstart="_vidDashDragStart(event,'${sid}')" ${dropAttrs} data-vid="${sid}" onclick="vidRowClick(event,'${sid}')" ondblclick="_vidDashDblClick(event,'${sid}')" oncontextmenu="showVidCtx(event,'${sid}')">
     <div style="flex:1;min-width:0;padding-left:10px;${indent}${!isChild?'font-weight:600;':''}${titleStyle}">
-      ${v.video_type==='B'?`<button onclick="event.stopPropagation();openVidModalForBig('${sid}')" style="font-size:10px;font-weight:700;width:16px;height:16px;line-height:14px;text-align:center;border-radius:3px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;margin-right:4px" title="Add child video">+</button>`:(!isChild?'<button style="font-size:10px;font-weight:700;width:16px;height:16px;line-height:14px;text-align:center;border-radius:3px;border:1px solid transparent;background:transparent;color:transparent;margin-right:4px;pointer-events:none">+</button>':'')}${childMark}${numHtml}${showTopicTitle?`<span class="${titleCls}">${_esc(topic)}</span><span style="font-size:10px;color:var(--muted);margin-left:4px;font-weight:400">- ${_esc(v.title)}</span>`:`<span class="${titleCls}">${_esc(primary)}</span>`}
+      ${v.video_type==='B'?`<button onclick="event.stopPropagation();openVidModalForBig('${sid}')" style="font-size:10px;font-weight:700;width:16px;height:16px;line-height:14px;text-align:center;border-radius:3px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;margin-right:4px" title="Add child video">+</button>`:(!isChild?'<button style="font-size:10px;font-weight:700;width:16px;height:16px;line-height:14px;text-align:center;border-radius:3px;border:1px solid transparent;background:transparent;color:transparent;margin-right:4px;pointer-events:none">+</button>`:'')}${childMark}${numHtml}${showTopicTitle?`<span class="${titleCls}">${_esc(topic)}</span><span style="font-size:10px;color:var(--muted);margin-left:4px;font-weight:400">${v.title?'- '+_esc(v.title):''}</span>`:`<span class="${titleCls}">${_esc(primary)}</span>`}
     </div>
     <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
       <div style="display:flex;gap:0">${VID_STEPS.map(s=>`<div style="width:28px;text-align:center"><div class="vid-step-dot${v[s]==='done'?' done':v[s]==='na'?' na':''}" data-vid="${sid}" data-step="${s}" title="${VID_STEP_LABELS[s]}"></div></div>`).join('')}</div>
-      <span style="width:52px;text-align:right;font-size:11px;color:${_vidDateColor(v.post_date,v)}">${postStr||''}</span>
-      <span style="width:36px;text-align:right;font-size:11px;color:var(--muted)">${durStr}</span>
+      <span data-field="post_date" style="width:52px;text-align:right;font-size:11px;color:${_vidDateColor(v.post_date,v)};cursor:pointer">${postStr||''}</span>
+      <span data-field="duration_minutes" style="width:36px;text-align:right;font-size:11px;color:var(--muted);cursor:pointer">${durStr}</span>
       <button class="vid-del" data-vid="${sid}">✕</button>
     </div>
   </div>`;
@@ -343,8 +343,7 @@ async function _vidSyncLocalVideos(){
 }
 async function _vidDashDrop(e,newStatus){
   e.preventDefault();e.currentTarget.style.background='';
-  console.log('[vidDrop] fired, dragId=',_vidDashDragId,'newStatus=',newStatus);
-  if(!_vidDashDragId){console.log('[vidDrop] no dragId, returning');return;}
+  if(!_vidDashDragId)return;
   const dragId=_vidDashDragId;_vidDashDragId=null;
   const v=(st.videos||[]).find(x=>String(x.id)===dragId);if(!v)return;
   const prev=v.status;
@@ -527,7 +526,7 @@ function _vidRow(v,isChild,postMap){
   const numHtml=postNum?`<span style="color:var(--muted);font-size:10px;margin-right:6px;min-width:18px;display:inline-block">${postNum}</span>`:'';
   const addBtn=v.video_type==='B'?`<button onclick="event.stopPropagation();openVidModalForBig('${sid}')" style="font-size:10px;font-weight:700;width:16px;height:16px;line-height:14px;text-align:center;border-radius:3px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;margin-right:4px;flex-shrink:0" title="Add child video">+</button>`:(!isChild?'<button style="font-size:10px;font-weight:700;width:16px;height:16px;line-height:14px;text-align:center;border-radius:3px;border:1px solid transparent;background:transparent;color:transparent;margin-right:4px;pointer-events:none;flex-shrink:0">+</button>':'');
   return`<tr class="vid-row${sel?' vid-sel':''}" data-vid="${sid}" onclick="vidCellClick(event,'${sid}')" ondblclick="openVidEdit('${sid}')" oncontextmenu="showVidCtx(event,'${sid}')">
-    <td data-field="title" style="${indent}${!isChild?'font-weight:600;':''}${titleColor}overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${addBtn}${childMark}${numHtml}${(v.status==='in_progress'||v.status==='up_next')&&v.topic?`<span class="vid-title-text">${_esc(v.topic)}</span><span style="font-size:10px;color:var(--muted);margin-left:4px;font-weight:400">- ${_esc(v.title)}</span>`:`<span class="vid-title-text">${_esc(v.title)}</span>`}</td>
+    <td data-field="title" style="${indent}${!isChild?'font-weight:600;':''}${titleColor}overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${addBtn}${childMark}${numHtml}${(v.status==='in_progress'||v.status==='up_next')&&v.topic?`<span class="vid-title-text">${_esc(v.topic)}</span><span style="font-size:10px;color:var(--muted);margin-left:4px;font-weight:400">${v.title?'- '+_esc(v.title):''}</span>`:`<span class="vid-title-text">${_esc(v.title)}</span>`}</td>
     ${VID_STEPS.map(s=>`<td style="text-align:center"><div class="vid-step-dot${v[s]==='done'?' done':v[s]==='na'?' na':''}" data-vid="${sid}" data-step="${s}" title="${VID_STEP_LABELS[s]}"></div></td>`).join('')}
     <td data-field="post_date" style="text-align:right;font-size:11px;color:${_vidDateColor(v.post_date,v)}">${postStr}</td>
     <td data-field="duration_minutes" style="text-align:right;font-size:11px;color:var(--muted)">${durStr}</td>
@@ -720,7 +719,55 @@ function vidRowClick(e,id){
     _vidSelected.clear();_vidSelected.add(sid);
   }
   _vidLastSel=sid;
+  _vidUpdateChildSel();
   _applyVidSel();
+}
+function _vidDashDblClick(e,id){
+  const span=e.target.closest('[data-field]');
+  if(span&&_vidView==='dashboard'){
+    e.stopPropagation();
+    _vidDashInlineEdit(span,id,span.dataset.field);
+    return;
+  }
+  openVidEdit(id);
+}
+function _vidDashInlineEdit(span,id,field){
+  if(span._editing)return;
+  const v=(st.videos||[]).find(x=>String(x.id)===String(id));if(!v)return;
+  span._editing=true;
+  let el;
+  if(field==='post_date'){
+    el=document.createElement('input');el.type='date';el.value=v.post_date||'';
+    el.style.cssText='width:52px;font-size:10px;border:1px solid var(--border);border-radius:4px;padding:1px 2px;background:var(--bg);color:var(--text);outline:none;font-family:inherit;box-sizing:border-box';
+  }else if(field==='duration_minutes'){
+    el=document.createElement('input');el.type='number';el.step='0.01';el.value=v.duration_minutes||'';
+    el.style.cssText='width:36px;font-size:10px;border:1px solid var(--border);border-radius:4px;padding:1px 2px;background:var(--bg);color:var(--text);outline:none;font-family:inherit;box-sizing:border-box';
+  }else return;
+  const orig=span.innerHTML;
+  span.textContent='';span.appendChild(el);el.focus();
+  const commit=()=>{
+    if(!span._editing)return;span._editing=false;
+    const prev={[field]:v[field]};
+    if(field==='post_date')v.post_date=el.value||null;
+    else if(field==='duration_minutes')v.duration_minutes=parseFloat(el.value)||null;
+    save();renderVideosPageKeepScroll();
+    pushUndo(async()=>{Object.assign(v,prev);save();renderVideosPageKeepScroll();await sbReqSilent('PATCH','videos',prev,`?id=eq.${v.id}`);},'Inline edit');
+    sbReqSilent('PATCH','videos',{[field]:v[field]},`?id=eq.${v.id}`);
+  };
+  el.addEventListener('blur',commit);
+  el.addEventListener('keydown',ev=>{if(ev.key==='Enter'){ev.preventDefault();el.blur();}if(ev.key==='Escape'){span._editing=false;span.innerHTML=orig;}});
+}
+function _vidUpdateChildSel(){
+  _vidChildSelected.clear();
+  _vidSelected.forEach(sid=>{
+    const v=(st.videos||[]).find(x=>String(x.id)===sid);
+    if(v&&v.video_type==='B'){
+      (st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===sid).forEach(c=>{
+        const cid=String(c.id);
+        if(!_vidSelected.has(cid))_vidChildSelected.add(cid);
+      });
+    }
+  });
 }
 
 function vidCellClick(e,id){
@@ -772,7 +819,9 @@ function vidCellEdit(td,id,field){
 function _applyVidSel(){
   document.querySelectorAll('.vid-row,.vid-board-card,.vid-dash-row').forEach(r=>{
     const id=r.dataset?.vid;
-    if(id)r.classList.toggle('vid-sel',_vidSelected.has(id));
+    if(!id)return;
+    r.classList.toggle('vid-sel',_vidSelected.has(id));
+    r.classList.toggle('vid-child-sel',_vidChildSelected.has(id));
   });
 }
 
@@ -788,7 +837,7 @@ function showVidCtx(e,id){
 }
 function vidCtxEdit(){document.getElementById('vidCtxMenu').style.display='none';if(_vidCtxId)openVidEdit(_vidCtxId);}
 function vidCtxDuplicate(){document.getElementById('vidCtxMenu').style.display='none';_vidSelected.forEach(id=>_vidDuplicate(id));}
-function vidCtxDelete(){document.getElementById('vidCtxMenu').style.display='none';[..._vidSelected].forEach(id=>delVideo(id));}
+function vidCtxDelete(){document.getElementById('vidCtxMenu').style.display='none';const all=new Set([..._vidSelected,..._vidChildSelected]);all.forEach(id=>delVideo(id));_vidSelected.clear();_vidChildSelected.clear();}
 
 // ── Modal ─────────────────────────────────────────────────────────────────────
 let _vidDropdownData={BigVideo:[]};
@@ -934,13 +983,12 @@ function _vidSetType(type){
 function _vidTypeChanged(type){
   document.getElementById('vmBigVideoWrap').style.display='';
   if(type==='B'){document.getElementById('vmBigVideo').value='';}
-  if(_vidMode!=='add')return;
   const els=document.querySelectorAll('#vmSteps [data-step]');
   els.forEach(el=>{
     const s=el.dataset.step;
     if(type==='L'&&(s==='step_tableau_public'||s==='step_upload_tableau')){
       el.dataset.val='na';_vidUpdateModalStep(el,'na');
-    }else if(el.dataset.val==='na'&&(s==='step_tableau_public'||s==='step_upload_tableau')){
+    }else if(type==='B'&&el.dataset.val==='na'&&(s==='step_tableau_public'||s==='step_upload_tableau')){
       el.dataset.val='not_started';_vidUpdateModalStep(el,'not_started');
     }
   });
@@ -1110,7 +1158,7 @@ function _vidCelebrate(id){
 document.addEventListener('keydown',e=>{
   if(activePg!=='videos')return;
   if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'||e.target.tagName==='SELECT'||e.target.isContentEditable)return;
-  if((e.key==='Delete'||e.key==='Backspace')&&_vidSelected.size>0){e.preventDefault();[..._vidSelected].forEach(id=>delVideo(id));return;}
+  if((e.key==='Delete'||e.key==='Backspace')&&_vidSelected.size>0){e.preventDefault();const all=new Set([..._vidSelected,..._vidChildSelected]);all.forEach(id=>delVideo(id));_vidSelected.clear();_vidChildSelected.clear();return;}
   if((e.metaKey||e.ctrlKey)&&e.key==='c'&&_vidSelected.size>0){e.preventDefault();_vidCopied=[];_vidSelected.forEach(id=>{const v=(st.videos||[]).find(x=>String(x.id)===String(id));if(v)_vidCopied.push({...v});});showToast('Copied '+_vidCopied.length+' video(s)','#0ea5e9',1500);return;}
   if((e.metaKey||e.ctrlKey)&&e.key==='v'&&_vidCopied.length>0){e.preventDefault();_vidCopied.forEach(v=>_vidDuplicate(v.id));return;}
   if(e.key==='n'&&!e.metaKey&&!e.ctrlKey){e.preventDefault();openVidModal();return;}
