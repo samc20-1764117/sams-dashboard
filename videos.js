@@ -202,7 +202,7 @@ function renderVideosPage(){
   var ytSlot=document.getElementById('yt-analytics-slot');
   if(ytSlot&&!ytSlot._loaded){
     ytSlot._loaded=true;
-    fetch('/api/yt?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
+    fetch('/api/yt?_='+Date.now(),{cache:'no-store'}).then(function(r){if(!r.ok)throw new Error(r.status);return r.json();}).then(function(d){
       if(d.error){ytSlot.innerHTML='';return;}
       _ytData=d;
       var c=d.channelStats;
@@ -214,7 +214,7 @@ function renderVideosPage(){
       ytSlot.innerHTML=h;
       _ytBuildMatch();
       renderVideosPageKeepScroll();
-    }).catch(function(e){ytSlot.innerHTML='<div style="color:red;font-size:12px;padding:6px 0">YT fetch failed: '+e+'</div>';});
+    }).catch(function(){ytSlot.innerHTML='';});
   }
 }
 

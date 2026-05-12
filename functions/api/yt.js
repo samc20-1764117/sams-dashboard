@@ -19,7 +19,10 @@ export async function onRequest(context) {
   const KV = context.env.YT_CACHE;
   if (KV) {
     const cached = await KV.get('yt-stats', 'json');
-    if (cached) return new Response(JSON.stringify(cached), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    if (cached) {
+      if (cached.error) return new Response(JSON.stringify({ error: cached.error }), { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      return new Response(JSON.stringify(cached), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
   }
 
   try {
@@ -27,7 +30,11 @@ export async function onRequest(context) {
     const chanRes = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=statistics,snippet&id=${CHANNEL_ID}&key=${API_KEY}`);
     const chanData = await chanRes.json();
     const chan = chanData.items?.[0];
-    if (!chan) return new Response(JSON.stringify({ error: 'YouTube API unavailable', debug: chanData }), { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    if (!chan) {
+      // Cache errors for 15 min to avoid burning quota on retries
+      if (KV) await KV.put('yt-stats', JSON.stringify({ error: 'quota_or_api_error', fetchedAt: new Date().toISOString() }), { expirationTtl: 900 });
+      return new Response(JSON.stringify({ error: 'YouTube API unavailable' }), { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
 
     const channelStats = {
       name: chan.snippet.title,
