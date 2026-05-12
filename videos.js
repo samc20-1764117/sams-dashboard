@@ -167,7 +167,7 @@ function renderVideosPage(){
   var ytSlot=document.getElementById('yt-analytics-slot');
   if(ytSlot&&!ytSlot._loaded){
     ytSlot._loaded=true;
-    fetch('/api/youtube-stats').then(function(r){return r.json();}).then(function(d){
+    fetch('/api/youtube-stats',{headers:{'X-YT-Auth':_getAuthToken()}}).then(function(r){return r.json();}).then(function(d){
       _ytData=d;
       var c=d.channelStats;
       var h='<div style="display:flex;gap:12px;flex-wrap:wrap;margin:8px 0">';
