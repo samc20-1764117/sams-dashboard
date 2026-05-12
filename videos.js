@@ -1,12 +1,12 @@
 // ── YouTube Analytics ────────────────────────────────────────────────────────
-let _ytStats=null,_ytLoading=false,_ytExpanded=false;
+let _ytStats=null,_ytLoading=false,_ytExpanded=false,_ytFailed=false;
 async function _ytFetch(){
-  if(_ytLoading||_ytStats)return;
+  if(_ytLoading||_ytStats||_ytFailed)return;
   _ytLoading=true;
   try{
     const r=await fetch('/api/youtube-stats');
-    if(r.ok)_ytStats=await r.json();
-  }catch(e){console.error('YT fetch error',e);}
+    if(r.ok){_ytStats=await r.json();}else{_ytFailed=true;}
+  }catch(e){console.error('YT fetch error',e);_ytFailed=true;}
   _ytLoading=false;
   renderVideosPageKeepScroll();
 }
@@ -221,7 +221,7 @@ function renderVideosPage(){
       if(ytHtml)ytSlot.innerHTML=ytHtml;
     }
   }catch(e){console.error('YT render error',e);}
-  if(!_ytStats&&!_ytLoading)_ytFetch();
+  if(!_ytStats&&!_ytLoading&&!_ytFailed)_ytFetch();
 }
 
 // ── DASHBOARD VIEW (default — In Progress + Ideas) ───────────────────────────
