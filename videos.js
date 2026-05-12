@@ -678,13 +678,8 @@ function vidCtxDuplicate(){document.getElementById('vidCtxMenu').style.display='
 function vidCtxDelete(){document.getElementById('vidCtxMenu').style.display='none';[..._vidSelected].forEach(id=>delVideo(id));}
 
 // ── Modal ─────────────────────────────────────────────────────────────────────
-let _vidDropdownData={BigVideo:[],Playlist:[]};
+let _vidDropdownData={BigVideo:[]};
 
-function _vidPopulatePlaylistList(){
-  const playlists=new Set();
-  (st.videos||[]).forEach(v=>{if(v.playlist&&!v.is_deleted)playlists.add(v.playlist);});
-  _vidDropdownData.Playlist=[...playlists].sort();
-}
 function _vidPopulateBigVideoSelect(selectedId){
   const inp=document.getElementById('vmBigVideo');
   const bVids=(st.videos||[]).filter(v=>!v.is_deleted&&v.video_type==='B').sort((a,b)=>(a.title||'').localeCompare(b.title||''));
@@ -719,10 +714,6 @@ function _vidFilterDropdown(type){
     const items=_vidDropdownData.BigVideo.filter(v=>!q||v.label.toLowerCase().includes(q));
     html=`<div onclick="_vidPickDropdown('BigVideo','')" onmouseenter="${hoverIn}" onmouseleave="${hoverOut}" style="${itemStyle};color:var(--muted);font-style:italic">None</div>`;
     html+=items.map(v=>`<div onclick="_vidPickDropdown('BigVideo','${_esc(v.label)}')" onmouseenter="${hoverIn}" onmouseleave="${hoverOut}" style="${itemStyle}">${_esc(v.label)}</div>`).join('');
-  }else{
-    const items=_vidDropdownData.Playlist.filter(p=>!q||p.toLowerCase().includes(q));
-    html=items.map(p=>`<div onclick="_vidPickDropdown('Playlist','${_esc(p)}')" onmouseenter="${hoverIn}" onmouseleave="${hoverOut}" style="${itemStyle}">${_esc(p)}</div>`).join('');
-    if(!items.length)html=`<div style="${itemStyle};color:var(--muted);font-style:italic">Type to add new</div>`;
   }
   drop.innerHTML=html;
   drop.style.display='block';
@@ -843,7 +834,7 @@ async function saveVidModal(){
     duration_minutes:parseFloat(document.getElementById('vmDuration').value)||null,
 
     big_video_id:_vidGetBigVideoId(),
-    playlist:null
+    playlist:null  // kept for DB compat, not shown in UI
   };
   document.querySelectorAll('#vmSteps [data-step]').forEach(el=>{data[el.dataset.step]=el.dataset.val||'not_started';});
   // Default Tab Pub + Upload to na for L-type videos with a parent group (not standalone)
