@@ -47,8 +47,8 @@ export async function onRequest(context) {
       totalVideos: Number(chan.statistics.videoCount),
     };
 
-    // Last 10 videos
-    const searchRes = await fetch(`https://www.googleapis.com/youtube/v3/search?part=id&channelId=${CHANNEL_ID}&order=date&maxResults=10&type=video&key=${API_KEY}`);
+    // Last 50 videos
+    const searchRes = await fetch(`https://www.googleapis.com/youtube/v3/search?part=id&channelId=${CHANNEL_ID}&order=date&maxResults=50&type=video&key=${API_KEY}`);
     const searchData = await searchRes.json();
     const videoIds = (searchData.items || []).map(i => i.id.videoId).join(',');
 

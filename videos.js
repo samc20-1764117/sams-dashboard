@@ -8,14 +8,18 @@ function _ytBuildMatch(){
   _ytMatch={};
   var ytVids=_ytData.videos;
   var dbVids=(st.videos||[]).filter(function(v){return!v.is_deleted;});
+  var usedYt=new Set();
+  // Pass 1: match by post_date = publishedAt date
   for(var i=0;i<dbVids.length;i++){
     var dv=dbVids[i];
-    var dt=(dv.title||'').toLowerCase().trim();
+    if(!dv.post_date)continue;
     for(var j=0;j<ytVids.length;j++){
+      if(usedYt.has(j))continue;
       var yt=ytVids[j];
-      var yt_t=(yt.title||'').toLowerCase().trim();
-      if(dt===yt_t||yt_t.indexOf(dt)!==-1||dt.indexOf(yt_t)!==-1){
+      var ytDate=yt.publishedAt.slice(0,10);
+      if(dv.post_date===ytDate){
         _ytMatch[String(dv.id)]={views:yt.views,likes:yt.likes,comments:yt.comments,ytId:yt.id};
+        usedYt.add(j);
         break;
       }
     }
