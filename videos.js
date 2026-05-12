@@ -126,8 +126,8 @@ function renderVideosPage(){
         <div style="flex:1"></div>
         <div style="display:flex;gap:10px;align-items:center;font-size:12px;font-weight:500">
           <span style="color:#8b5cf6">${stats.idea} ideas</span>
-          <span style="color:#f59e0b">${stats.in_progress} in progress</span>
           <span style="color:#0ea5e9">${stats.up_next} up next</span>
+          <span style="color:#f59e0b">${stats.in_progress} in progress</span>
           <span style="color:#10b981">${stats.published} complete</span>
           <span style="color:var(--muted)">${stats.total} total</span>
         </div>
@@ -177,17 +177,17 @@ function _vidRenderDashboard(){
     <div style="display:flex;gap:0;padding:0;height:100%">
       <div style="flex:2;min-width:0;display:flex;flex-direction:column;border-right:1px solid var(--border)">
         <div class="vid-dash-header" style="display:flex;align-items:center;gap:8px">
-          <div style="flex:1;min-width:0;padding-left:10px">In Progress <span class="vid-count">${inProgress.length}</span> &nbsp;·&nbsp; Up Next <span class="vid-count">${upNext.length}</span></div>
+          <div style="flex:1;min-width:0;padding-left:10px">Up Next <span class="vid-count">${upNext.length}</span> &nbsp;·&nbsp; In Progress <span class="vid-count">${inProgress.length}</span></div>
           ${(upNext.length||inProgress.length)?_colHdr:''}
         </div>
         <div style="flex:1;min-height:0;overflow-y:auto">
-          <div class="vid-drop-zone" data-drop-status="in_progress" ondragover="event.preventDefault()" ondrop="_vidDashDrop(event,'in_progress')" style="min-height:40px;padding-bottom:8px">
-            <div style="font-size:9px;font-weight:600;color:var(--muted);padding:6px 10px 2px;letter-spacing:.03em">In Progress</div>
-            ${inProgress.length?_vidDashList(inProgress,false):'<div style="color:var(--muted);font-size:11px;padding:8px 10px;opacity:.5">Drag ideas here to start</div>'}
-          </div>
           <div class="vid-drop-zone" data-drop-status="up_next" ondragover="event.preventDefault()" ondrop="_vidDashDrop(event,'up_next')" style="min-height:40px;padding-bottom:8px">
-            <div style="font-size:9px;font-weight:600;color:var(--muted);padding:8px 10px 2px;letter-spacing:.03em;border-top:1px solid rgba(210,205,228,.15);margin-top:4px">Up Next</div>
+            <div style="font-size:9px;font-weight:600;color:var(--muted);padding:6px 10px 2px;letter-spacing:.03em">Up Next</div>
             ${upNext.length?_vidDashList(upNext,false):'<div style="color:var(--muted);font-size:11px;padding:8px 10px;opacity:.5">Drag ideas here</div>'}
+          </div>
+          <div class="vid-drop-zone" data-drop-status="in_progress" ondragover="event.preventDefault()" ondrop="_vidDashDrop(event,'in_progress')" style="min-height:40px;padding-bottom:8px">
+            <div style="font-size:9px;font-weight:600;color:var(--muted);padding:8px 10px 2px;letter-spacing:.03em;border-top:1px solid rgba(210,205,228,.15);margin-top:4px">In Progress</div>
+            ${inProgress.length?_vidDashList(inProgress,false):'<div style="color:var(--muted);font-size:11px;padding:8px 10px;opacity:.5">Drag up next here to start</div>'}
           </div>
         </div>
       </div>
@@ -507,8 +507,8 @@ function _vidRenderBoard(){
   const vids=_vidFiltered();
   const cols=[
     {key:'idea',label:'Ideas',color:'#8b5cf6'},
-    {key:'in_progress',label:'In Progress',color:'#f59e0b'},
     {key:'up_next',label:'Up Next',color:'#0ea5e9'},
+    {key:'in_progress',label:'In Progress',color:'#f59e0b'},
     {key:'published',label:'Complete',color:'#10b981'},
     {key:'backup',label:'Backup',color:'#94a3b8'}
   ];
@@ -705,7 +705,7 @@ function vidCellEdit(td,id,field){
   let el;
   if(field==='status'){
     el=document.createElement('select');
-    ['idea','in_progress','up_next','published','backup'].forEach(s=>{const o=document.createElement('option');o.value=s;o.textContent=s;if(v.status===s)o.selected=true;el.appendChild(o);});
+    ['idea','up_next','in_progress','published','backup'].forEach(s=>{const o=document.createElement('option');o.value=s;o.textContent=s;if(v.status===s)o.selected=true;el.appendChild(o);});
   }else if(field==='duration_minutes'){
     el=document.createElement('input');el.type='number';el.step='0.01';el.value=v.duration_minutes||'';
   }else if(field==='post_date'){
