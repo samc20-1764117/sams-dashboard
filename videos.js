@@ -23,10 +23,14 @@ function _ytFormatNum(n){
   return String(n);
 }
 function _ytEsc(s){return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function _ytToggle(){_ytExpanded=!_ytExpanded;if(_ytExpanded&&!_ytStats){_ytFailed=false;_ytFetch();}else{renderVideosPageKeepScroll();}}
 function _ytRender(){
-  if(!_ytStats)return _ytLoading?'<div style="font-size:12px;color:var(--muted);padding:8px 0">Loading YouTube stats...</div>':'';
+  var toggleBtn='<button onclick="_ytToggle()" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);font-family:inherit;padding:0">'+(_ytExpanded?'&#9660; Hide':'&#9654; YouTube Analytics')+'</button>';
+  if(!_ytStats){
+    if(!_ytExpanded)return'<div style="padding:4px 0">'+toggleBtn+'</div>';
+    return'<div style="padding:4px 0">'+toggleBtn+'</div><div style="font-size:12px;color:var(--muted);padding:4px 0">'+(_ytLoading?'Loading...':'Could not load YouTube stats. <button onclick="_ytFailed=false;_ytFetch()" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--muted);text-decoration:underline;font-family:inherit;padding:0">Retry</button>')+'</div>';
+  }
   const c=_ytStats.channelStats;
-  const toggleBtn='<button onclick="_ytExpanded=!_ytExpanded;renderVideosPageKeepScroll()" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);font-family:inherit;padding:0">'+(_ytExpanded?'&#9660; Hide':'&#9654; YouTube Analytics')+'</button>';
   if(!_ytExpanded)return'<div style="padding:4px 0">'+toggleBtn+'</div>';
   var html='<div style="padding:4px 0">'+toggleBtn+'</div>';
   html+='<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:12px">';
