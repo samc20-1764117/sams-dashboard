@@ -27,7 +27,7 @@ export async function onRequest(context) {
     const chanRes = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=statistics,snippet&id=${CHANNEL_ID}&key=${API_KEY}`);
     const chanData = await chanRes.json();
     const chan = chanData.items?.[0];
-    if (!chan) return new Response(JSON.stringify({ error: 'Channel not found', ytError: chanData.error || null, channelId: CHANNEL_ID ? CHANNEL_ID.slice(0,5)+'...' : 'missing', keyPresent: !!API_KEY }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    if (!chan) return new Response(JSON.stringify({ error: 'YouTube API unavailable' }), { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
     const channelStats = {
       name: chan.snippet.title,
