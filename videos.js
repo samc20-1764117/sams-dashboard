@@ -191,7 +191,7 @@ function renderVideosPage(){
   if(ytSlot&&!ytSlot._loaded){
     ytSlot._loaded=true;
     fetch('/api/yt?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
-      if(d.error){ytSlot.innerHTML='<div style="color:red;font-size:12px;padding:6px 0">YT: '+JSON.stringify(d)+'</div>';return;}
+      if(d.error){ytSlot.innerHTML='';return;}
       _ytData=d;
       var c=d.channelStats;
       var h='<div style="display:flex;gap:12px;flex-wrap:wrap;margin:8px 0">';
