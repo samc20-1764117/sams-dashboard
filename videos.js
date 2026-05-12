@@ -799,7 +799,7 @@ function openVidModal(type){
   document.getElementById('vmPostDate').value='';
   document.getElementById('vmDuration').value='';
 
-  document.getElementById('vmBigVideoWrap').style.display=(type||'B')==='B'?'none':'';
+  document.getElementById('vmBigVideoWrap').style.display='';
   _vidPopulateBigVideoSelect('');
   const defaults={};
   if(type==='L'){defaults.step_tableau_public='na';defaults.step_upload_tableau='na';}
@@ -819,7 +819,7 @@ function openVidEdit(id){
   document.getElementById('vmPostDate').value=v.post_date||'';
   document.getElementById('vmDuration').value=v.duration_minutes||'';
 
-  document.getElementById('vmBigVideoWrap').style.display=v.video_type==='B'?'none':'';
+  document.getElementById('vmBigVideoWrap').style.display='';
   _vidPopulateBigVideoSelect(v.big_video_id||'');
   const stepVals={};VID_STEPS.forEach(s=>{stepVals[s]=v[s]||'not_started';});
   _vidRenderSteps(stepVals);
@@ -858,7 +858,7 @@ function _vidNaModalStep(e,el){
   _vidUpdateModalStep(el,next);
 }
 function _vidTypeChanged(type){
-  document.getElementById('vmBigVideoWrap').style.display=type==='B'?'none':'';
+  document.getElementById('vmBigVideoWrap').style.display='';
   if(type==='B'){document.getElementById('vmBigVideo').value='';}
   if(_vidMode!=='add')return;
   const els=document.querySelectorAll('#vmSteps [data-step]');
@@ -883,7 +883,6 @@ async function saveVidModal(){
   const data={
     title,
     topic:document.getElementById('vmTopic').value.trim()||null,
-    video_type:document.getElementById('vmType').value||null,
     status:document.getElementById('vmStatus').value||'idea',
     post_date:document.getElementById('vmPostDate').value||null,
     duration_minutes:parseFloat(document.getElementById('vmDuration').value)||null,
@@ -891,6 +890,7 @@ async function saveVidModal(){
     big_video_id:_vidGetBigVideoId(),
     playlist:null  // kept for DB compat, not shown in UI
   };
+  data.video_type=data.big_video_id?'L':'B';
   document.querySelectorAll('#vmSteps [data-step]').forEach(el=>{data[el.dataset.step]=el.dataset.val||'not_started';});
   // Default Tab Pub + Upload to na for L-type videos with a parent group (not standalone)
   if(_vidMode==='add'&&data.video_type==='L'&&data.big_video_id){
