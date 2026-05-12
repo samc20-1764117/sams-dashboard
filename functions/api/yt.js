@@ -8,17 +8,6 @@ export async function onRequest(context) {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Verify caller is logged into the dashboard via Supabase JWT
-  const jwt = context.request.headers.get('X-YT-Auth');
-  if (!jwt) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-  }
-  const userRes = await fetch('https://gtirvyrqfuuuxkkqaeap.supabase.co/auth/v1/user', {
-    headers: { 'Authorization': 'Bearer ' + jwt, 'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0aXJ2eXJxZnV1dXhra3FhZWFwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwODY3NjAsImV4cCI6MjA4ODY2Mjc2MH0.6rtA0WeUUAcuV_sNVrxAbaaviPxPwNakh_bk7uylAOo' }
-  });
-  if (!userRes.ok) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-  }
 
   const API_KEY = context.env.YOUTUBE_API_KEY;
   const CHANNEL_ID = context.env.YOUTUBE_CHANNEL_ID;
