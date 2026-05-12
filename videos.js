@@ -151,6 +151,10 @@ function renderVideosPage(){
       const del=e.target.closest('.vid-del');
       if(del){e.stopPropagation();const vid=del.dataset.vid;if(vid)delVideo(vid);return;}
     });
+    el.addEventListener('contextmenu',function(e){
+      const dot=e.target.closest('.vid-step-dot');
+      if(dot){e.preventDefault();e.stopPropagation();const vid=dot.dataset.vid;const step=dot.dataset.step;if(vid&&step)_vidToggleStepNa(vid,step);return;}
+    });
   }
   const _rvpSe2=_vidScrollEl();if(_rvpSe2)_rvpSe2.scrollTop=_rvpTop;
 }
@@ -1102,6 +1106,16 @@ async function _vidDuplicate(id){
 }
 
 // ── Cycle Step ────────────────────────────────────────────────────────────────
+async function _vidToggleStepNa(id,step){
+  const v=(st.videos||[]).find(x=>String(x.id)===String(id));if(!v)return;
+  const cur=v[step]||'not_started';
+  const next=cur==='na'?'not_started':'na';
+  const prev=cur;
+  v[step]=next;
+  save();renderVideosPageKeepScroll();
+  pushUndo(async()=>{v[step]=prev;save();renderVideosPageKeepScroll();await sbReqSilent('PATCH','videos',{[step]:prev},`?id=eq.${id}`);},'Toggle n/a');
+  await sbReqSilent('PATCH','videos',{[step]:next},`?id=eq.${id}`);
+}
 async function cycleVidStep(id,step){
   const v=(st.videos||[]).find(x=>String(x.id)===String(id));if(!v)return;
   const cur=v[step]||'not_started';
