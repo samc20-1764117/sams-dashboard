@@ -303,7 +303,7 @@ function _vidDashRow(v,isChild,simple){
   const isBig=v.video_type==='B';
   const indent=isChild?'padding-left:20px;':'';
   const childMark=isChild?'<span style="color:var(--muted);font-size:10px;margin-right:4px">└</span>':'';
-  const titleStyle=isSmall?'color:var(--muted)':'';
+  const titleStyle='';
   const bigRowStyle=isBig?'background:rgba(255,255,255,.55);':'';
   const postNum=_vidDashPostMap[sid];
   const numHtml=postNum?`<span style="color:var(--muted);font-size:10px;margin-right:6px;min-width:18px;display:inline-block">${postNum}</span>`:'';
