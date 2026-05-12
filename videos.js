@@ -127,6 +127,7 @@ function renderVideosPage(){
           <button class="${viewBtnS('monthly')}" onclick="_vidSetView('monthly')">Monthly</button>
         </div>
         <input id="vidSearchInput" type="text" placeholder="Search videos..." value="${_vidSearch.replace(/"/g,'&quot;')}" oninput="_vidSetSearch(this.value)" style="padding:5px 10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:12px;background:var(--bg);color:var(--text);outline:none;width:180px">
+        <div style="flex:1"></div>
         <div style="display:flex;gap:10px;align-items:center;font-size:12px;font-weight:500">
           <span style="color:#8b5cf6">${stats.idea} ideas</span>
           <span style="color:#f59e0b">${stats.up_next+stats.in_progress} current</span>
@@ -136,7 +137,7 @@ function renderVideosPage(){
       </div>
     </div>
     <div class="card" style="overflow:hidden;flex:1;min-height:0">
-      <div style="flex:1;min-height:0;display:flex;flex-direction:column;overflow:${_vidView==='dashboard'?'hidden':'auto'}">
+      <div style="flex:1;min-height:0;display:flex;flex-direction:column;overflow:${_vidView==='dashboard'?'hidden':'auto'};position:relative">
         ${bodyHtml}
       </div>
     </div>`;
@@ -179,7 +180,7 @@ function _vidRenderDashboard(){
             <button class="vid-del" style="visibility:hidden">✕</button>
           </div>`;
   return`
-    <div style="display:flex;gap:0;padding:0;flex:1;min-height:0;width:100%">
+    <div style="display:flex;gap:0;padding:0;position:absolute;inset:0">
       <div style="flex:2;min-width:0;display:flex;flex-direction:column;border-right:1px solid var(--border)">
         <div style="flex:1;min-height:0;overflow-y:auto;overflow-x:hidden">
           <div class="vid-dash-header" style="display:flex;align-items:center;gap:8px;position:sticky;top:0;z-index:2;background:var(--bg)">
