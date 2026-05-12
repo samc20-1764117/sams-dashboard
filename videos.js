@@ -1,48 +1,8 @@
 // ── YouTube Analytics ────────────────────────────────────────────────────────
 let _ytData=null,_ytMatch=null;
-var _YT_KEY='PLACEHOLDER',_YT_CHAN='UCAzenLudT0voc1zsZUOFfAw';
 function _ytEsc(s){return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function _ytDur(iso){var m=iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);if(!m)return'0:00';var h=m[1]?parseInt(m[1]):0,min=m[2]?parseInt(m[2]):0,s=m[3]?parseInt(m[3]):0;if(h)return h+':'+String(min).padStart(2,'0')+':'+String(s).padStart(2,'0');return min+':'+String(s).padStart(2,'0');}
 function _ytNum(n){if(n>=1000000)return(n/1000000).toFixed(1)+'M';if(n>=1000)return(n/1000).toFixed(1)+'K';return String(n);}
-async function _ytFetchDirect(ytSlot){
-  try{
-    var base='https://www.googleapis.com/youtube/v3';
-    var chanR=await fetch(base+'/channels?part=statistics,snippet&id='+_YT_CHAN+'&key='+_YT_KEY);
-    var chanD=await chanR.json();
-    if(!chanD.items||!chanD.items[0]){ytSlot.innerHTML='';return;}
-    var ch=chanD.items[0];
-    var channelStats={name:ch.snippet.title,subscribers:Number(ch.statistics.subscriberCount),totalViews:Number(ch.statistics.viewCount),totalVideos:Number(ch.statistics.videoCount)};
-    var allIds=[],npt='';
-    while(true){
-      var pp=npt?'&pageToken='+npt:'';
-      var sR=await fetch(base+'/search?part=id&channelId='+_YT_CHAN+'&order=date&maxResults=50&type=video&key='+_YT_KEY+pp);
-      var sD=await sR.json();
-      var ids=(sD.items||[]).map(function(i){return i.id.videoId;}).filter(Boolean);
-      allIds=allIds.concat(ids);
-      if(!sD.nextPageToken)break;
-      npt=sD.nextPageToken;
-    }
-    var videos=[];
-    for(var i=0;i<allIds.length;i+=50){
-      var batch=allIds.slice(i,i+50).join(',');
-      var vR=await fetch(base+'/videos?part=snippet,statistics,contentDetails&id='+batch+'&key='+_YT_KEY);
-      var vD=await vR.json();
-      (vD.items||[]).forEach(function(v){
-        videos.push({id:v.id,title:v.snippet.title,publishedAt:v.snippet.publishedAt,thumbnail:(v.snippet.thumbnails&&v.snippet.thumbnails.medium)?v.snippet.thumbnails.medium.url:'',views:Number(v.statistics.viewCount||0),likes:Number(v.statistics.likeCount||0),comments:Number(v.statistics.commentCount||0),duration:v.contentDetails.duration});
-      });
-    }
-    _ytData={channelStats:channelStats,videos:videos};
-    var c=channelStats;
-    var h='<div style="display:flex;gap:12px;flex-wrap:wrap;margin:8px 0">';
-    h+='<div style="background:var(--glass);border:1px solid var(--border);border-radius:10px;padding:8px 14px"><div style="font-size:10px;color:var(--muted)">Subscribers</div><div style="font-size:16px;font-weight:600">'+_ytNum(c.subscribers)+'</div></div>';
-    h+='<div style="background:var(--glass);border:1px solid var(--border);border-radius:10px;padding:8px 14px"><div style="font-size:10px;color:var(--muted)">Total Views</div><div style="font-size:16px;font-weight:600">'+_ytNum(c.totalViews)+'</div></div>';
-    h+='<div style="background:var(--glass);border:1px solid var(--border);border-radius:10px;padding:8px 14px"><div style="font-size:10px;color:var(--muted)">Published on YT</div><div style="font-size:16px;font-weight:600">'+c.totalVideos+'</div></div>';
-    h+='</div>';
-    ytSlot.innerHTML=h;
-    _ytBuildMatch();
-    renderVideosPageKeepScroll();
-  }catch(e){ytSlot.innerHTML='';}
-}
 function _ytBuildMatch(){
   if(!_ytData||!_ytData.videos||!st.videos)return;
   _ytMatch={};
@@ -230,7 +190,19 @@ function renderVideosPage(){
   var ytSlot=document.getElementById('yt-analytics-slot');
   if(ytSlot&&!ytSlot._loaded){
     ytSlot._loaded=true;
-    _ytFetchDirect(ytSlot);
+    fetch('/api/yt?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
+      if(d.error){ytSlot.innerHTML='<div style="color:red;font-size:12px;padding:6px 0">YT: '+JSON.stringify(d)+'</div>';return;}
+      _ytData=d;
+      var c=d.channelStats;
+      var h='<div style="display:flex;gap:12px;flex-wrap:wrap;margin:8px 0">';
+      h+='<div style="background:var(--glass);border:1px solid var(--border);border-radius:10px;padding:8px 14px"><div style="font-size:10px;color:var(--muted)">Subscribers</div><div style="font-size:16px;font-weight:600">'+_ytNum(c.subscribers)+'</div></div>';
+      h+='<div style="background:var(--glass);border:1px solid var(--border);border-radius:10px;padding:8px 14px"><div style="font-size:10px;color:var(--muted)">Total Views</div><div style="font-size:16px;font-weight:600">'+_ytNum(c.totalViews)+'</div></div>';
+      h+='<div style="background:var(--glass);border:1px solid var(--border);border-radius:10px;padding:8px 14px"><div style="font-size:10px;color:var(--muted)">Published on YT</div><div style="font-size:16px;font-weight:600">'+c.totalVideos+'</div></div>';
+      h+='</div>';
+      ytSlot.innerHTML=h;
+      _ytBuildMatch();
+      renderVideosPageKeepScroll();
+    }).catch(function(e){ytSlot.innerHTML='<div style="color:red;font-size:12px;padding:6px 0">YT fetch failed: '+e+'</div>';});
   }
 }
 
