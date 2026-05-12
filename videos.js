@@ -179,7 +179,7 @@ function _vidRenderDashboard(){
           </div>`;
   return`
     <div style="display:flex;gap:0;padding:0;flex:1;min-height:0;width:100%">
-      <div style="flex:2;min-width:0;display:flex;flex-direction:column;border-right:1px solid var(--border)">
+      <div style="flex:3;min-width:0;display:flex;flex-direction:column;border-right:1px solid var(--border)">
         <div style="flex:1;min-height:0;overflow-y:auto;overflow-x:hidden">
           <div class="vid-dash-header">
             <div style="flex:1;min-width:0;padding-left:10px">Current <span class="vid-count">${upNext.length+inProgress.length}</span></div>
