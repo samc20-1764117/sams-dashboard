@@ -337,8 +337,8 @@ function _vidDashRow(v,isChild,simple){
       <span data-field="post_date" style="width:52px;text-align:right;font-size:11px;color:${_vidDateColor(v.post_date,v)};cursor:pointer;min-height:16px;display:inline-block">${postStr||''}</span>
       <span data-field="duration_minutes" style="width:36px;text-align:right;font-size:11px;color:var(--muted);cursor:pointer;min-height:16px;display:inline-block">${durStr||''}</span>
       ${(()=>{const ym=_ytForVid(sid);return ym?'<span style="width:42px;text-align:right;font-size:10px;color:#8b5cf6;display:inline-block" title="'+ym.views+' views / '+ym.likes+' likes">'+_ytNum(ym.views)+'</span>':'<span style="width:42px;display:inline-block"></span>';})()}
-      <button class="vid-del" data-vid="${sid}">✕</button>
       ${_pctHtml}
+      <button class="vid-del" data-vid="${sid}">✕</button>
     </div>
   </div>`;
 }
