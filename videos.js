@@ -757,10 +757,10 @@ function _vidDashInlineEdit(span,id,field){
   if(field==='post_date'){
     el=document.createElement('input');el.type='text';el.placeholder='m/d';
     el.value=v.post_date?_vidPostStr(v.post_date,true):'';
-    el.style.cssText='width:56px;font-size:10px;border:1px solid var(--border);border-radius:4px;padding:1px 2px;background:var(--bg);color:var(--text);outline:none;font-family:inherit;box-sizing:border-box';
+    el.style.cssText='width:52px;font-size:10px;border:1px solid var(--border);border-radius:4px;padding:1px 2px;background:var(--bg);color:var(--text);outline:none;font-family:inherit;box-sizing:border-box;text-align:right';
   }else if(field==='duration_minutes'){
     el=document.createElement('input');el.type='number';el.step='0.01';el.value=v.duration_minutes||'';
-    el.style.cssText='width:36px;font-size:10px;border:1px solid var(--border);border-radius:4px;padding:1px 2px;background:var(--bg);color:var(--text);outline:none;font-family:inherit;box-sizing:border-box';
+    el.style.cssText='width:36px;font-size:10px;border:1px solid var(--border);border-radius:4px;padding:1px 2px;background:var(--bg);color:var(--text);outline:none;font-family:inherit;box-sizing:border-box;text-align:right';
   }else return;
   const orig=span.innerHTML;
   span.textContent='';span.appendChild(el);el.focus();el.select();
