@@ -188,9 +188,9 @@ function renderVideosPage(){
   }
   const _rvpSe2=_vidScrollEl();if(_rvpSe2)_rvpSe2.scrollTop=_rvpTop;
   var ytSlot=document.getElementById('yt-analytics-slot');
-  if(ytSlot&&!ytSlot._loaded){
+  if(ytSlot&&!ytSlot._loaded&&_authToken){
     ytSlot._loaded=true;
-    fetch(location.origin+'/api/yt?_='+Date.now(),{cache:'no-store',headers:{'X-YT-Auth':_getAuthToken()}}).then(function(r){
+    fetch(location.origin+'/api/yt?_='+Date.now(),{cache:'no-store',headers:{'X-YT-Auth':_authToken}}).then(function(r){
       if(!r.ok){ytSlot.innerHTML='<div style="color:red;font-size:12px;padding:6px 0">YT API error: '+r.status+'</div>';return Promise.reject(r.status);}
       return r.json();
     }).then(function(d){
