@@ -115,7 +115,7 @@ function renderVideosPage(){
   if(_vidView==='groups'){_vidView='dashboard';bodyHtml=_vidRenderDashboard();}
 
   // Use the exact same pattern as recipes page (features.js line 2130-2139)
-  el.style.cssText='padding:41px clamp(12px,3vw,56px) clamp(12px,3vw,56px) clamp(12px,3vw,56px);display:flex;flex-direction:column;height:100vh;box-sizing:border-box;width:100%';
+  el.style.cssText='padding:41px clamp(12px,3vw,56px) 14px clamp(12px,3vw,56px);display:flex;flex-direction:column;height:100vh;box-sizing:border-box;width:100%';
   el.innerHTML=`
     <div class="ov-topbar"><div class="ov-topbar-left"><span class="ov-topbar-label">Videos</span><span class="ov-topbar-dot"></span></div><span class="ov-topbar-date topbar-date"></span><div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div></div>
     <div style="padding-top:4px;position:relative;z-index:10">
