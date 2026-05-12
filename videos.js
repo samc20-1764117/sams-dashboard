@@ -192,8 +192,8 @@ function renderVideosPage(){
         <button onclick="openVidModal()" style="width:22px;height:22px;border-radius:50%;border:1.5px solid var(--border);background:rgba(255,255,255,.9);color:var(--muted);font-size:14px;font-weight:700;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;margin-right:45px" title="Add video">+</button>
       </div>
     </div>
-    <div id="yt-analytics-slot"></div>
-    <div class="card" style="overflow:${_vidView==='dashboard'?'hidden':'auto'};flex:1;min-height:0">
+    <div class="card" style="overflow-y:auto;flex:1;min-height:0">
+        <div id="yt-analytics-slot" style="padding:0 12px"></div>
         ${bodyHtml}
     </div>`;
   const now=new Date();
