@@ -190,7 +190,7 @@ function renderVideosPage(){
   var ytSlot=document.getElementById('yt-analytics-slot');
   if(ytSlot&&!ytSlot._loaded){
     ytSlot._loaded=true;
-    fetch('/api/yt?_='+Date.now(),{cache:'no-store',headers:{'X-YT-Auth':_getAuthToken()}}).then(function(r){
+    fetch(location.origin+'/api/yt?_='+Date.now(),{cache:'no-store',headers:{'X-YT-Auth':_getAuthToken()}}).then(function(r){
       if(!r.ok){ytSlot.innerHTML='<div style="color:red;font-size:12px;padding:6px 0">YT API error: '+r.status+'</div>';return Promise.reject(r.status);}
       return r.json();
     }).then(function(d){
