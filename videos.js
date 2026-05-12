@@ -159,7 +159,7 @@ function renderVideosPage(){
   el.style.cssText='padding:41px clamp(12px,3vw,56px) 24px clamp(12px,3vw,56px);display:flex;flex-direction:column;height:100vh;box-sizing:border-box;width:100%';
   el.innerHTML=`
     <div class="ov-topbar"><div class="ov-topbar-left"><span class="ov-topbar-label">Videos</span><span class="ov-topbar-dot"></span></div><span class="ov-topbar-date topbar-date"></span><div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div></div>
-    <div style="padding-top:4px;position:relative;z-index:10">
+    <div style="padding-top:4px;position:relative;z-index:1">
       <div style="display:flex;gap:10px;align-items:center;margin-bottom:4px;flex-wrap:wrap">
         <div style="display:flex;gap:2px;background:var(--glass);border:1px solid var(--border);border-radius:8px;padding:2px">
           <button class="${viewBtnS('dashboard')}" onclick="_vidSetView('dashboard')">Current</button>
