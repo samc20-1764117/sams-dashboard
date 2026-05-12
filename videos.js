@@ -302,11 +302,13 @@ let _vidDashDragId=null;
 function _vidDashDragStart(e,id){_vidDashDragId=id;e.dataTransfer.effectAllowed='move';}
 
 // Push a local-only video (l-xxx id) to Supabase and replace the temp id
+const _VID_DB_COLS=['title','topic','status','post_date','duration_minutes','video_type','big_video_id',...VID_STEPS];
 async function _vidEnsureSynced(v){
   if(!String(v.id).startsWith('l-'))return;
-  const{id:_,created_at:__,...payload}=v;
-  delete payload.is_deleted;
+  const payload={};
+  _VID_DB_COLS.forEach(k=>{if(v[k]!==undefined)payload[k]=v[k];});
   const sv=await sbReqSilent('POST','videos',payload);
+  console.log('[vidSync] POST local→DB',v.id,sv);
   if(sv&&sv[0]){
     Object.assign(v,sv[0]);
     save();
@@ -1097,8 +1099,8 @@ document.addEventListener('keydown',e=>{
   if(e.key==='ArrowRight'&&!e.metaKey&&!e.ctrlKey&&_vidSelected.size===0){e.preventDefault();const tabs=['dashboard','table','board','monthly'];const i=tabs.indexOf(_vidView);if(i<tabs.length-1)_vidSetView(tabs[i+1]);return;}
   if(e.key==='ArrowUp'&&!e.metaKey&&!e.ctrlKey){e.preventDefault();const se=_vidScrollEl();if(se)se.scrollTop=0;return;}
   if(e.key==='ArrowDown'&&!e.metaKey&&!e.ctrlKey){e.preventDefault();const se=_vidScrollEl();if(se)se.scrollTop=se.scrollHeight;return;}
-  if(e.key==='e'&&!e.metaKey&&!e.ctrlKey&&_vidView==='table'){e.preventDefault();if(!_vidShowCompleted){_vidShowCompleted=true;renderVideosPageKeepScroll();}return;}
-  if(e.key==='c'&&!e.metaKey&&!e.ctrlKey&&_vidView==='table'){e.preventDefault();if(_vidShowCompleted){_vidShowCompleted=false;renderVideosPageKeepScroll();}return;}
+  if(e.key==='e'&&!e.metaKey&&!e.ctrlKey&&_vidView==='table'){e.preventDefault();_vidShowCompleted=!_vidShowCompleted;renderVideosPageKeepScroll();return;}
+  if(e.key==='c'&&!e.metaKey&&!e.ctrlKey&&_vidView==='table'){e.preventDefault();_vidShowCompleted=!_vidShowCompleted;renderVideosPageKeepScroll();return;}
 });
 
 // ── Close context menu on click elsewhere ─────────────────────────────────────
