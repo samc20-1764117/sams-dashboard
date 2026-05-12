@@ -4,12 +4,17 @@ function _ytEsc(s){return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;')
 function _ytDur(iso){var m=iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);if(!m)return'0:00';var h=m[1]?parseInt(m[1]):0,min=m[2]?parseInt(m[2]):0,s=m[3]?parseInt(m[3]):0;if(h)return h+':'+String(min).padStart(2,'0')+':'+String(s).padStart(2,'0');return min+':'+String(s).padStart(2,'0');}
 function _ytNum(n){if(n>=1000000)return(n/1000000).toFixed(1)+'M';if(n>=1000)return(n/1000).toFixed(1)+'K';return String(n);}
 function _ytBuildMatch(){
-  if(!_ytData||!_ytData.videos||!st.videos)return;
+  if(!_ytData||!_ytData.videos||!st.videos){console.log('[YT] _ytBuildMatch bail:',!_ytData,!_ytData?.videos,!st.videos);return;}
   _ytMatch={};
   var ytVids=_ytData.videos;
   var dbVids=(st.videos||[]).filter(function(v){return!v.is_deleted;});
   var usedYt=new Set();
+  console.log('[YT] Matching',dbVids.length,'db videos against',ytVids.length,'yt videos');
+  // Log first 3 of each for date format check
+  console.log('[YT] Sample DB dates:',dbVids.slice(0,3).map(v=>v.post_date));
+  console.log('[YT] Sample YT dates:',ytVids.slice(0,3).map(v=>v.publishedAt));
   // Pass 1: match by post_date = publishedAt date
+  var matched=0;
   for(var i=0;i<dbVids.length;i++){
     var dv=dbVids[i];
     if(!dv.post_date)continue;
@@ -20,9 +25,16 @@ function _ytBuildMatch(){
       if(dv.post_date===ytDate){
         _ytMatch[String(dv.id)]={views:yt.views,likes:yt.likes,comments:yt.comments,ytId:yt.id};
         usedYt.add(j);
+        matched++;
         break;
       }
     }
+  }
+  console.log('[YT] Matched',matched,'videos. _ytMatch keys:',Object.keys(_ytMatch).length);
+  if(matched===0&&dbVids.length>0&&ytVids.length>0){
+    // Debug: show why first db video didn't match
+    var first=dbVids.find(v=>v.post_date);
+    if(first)console.log('[YT] No match debug - DB:',first.post_date,'(type:'+typeof first.post_date+') vs YT dates:',ytVids.slice(0,5).map(v=>v.publishedAt.slice(0,10)));
   }
 }
 function _ytForVid(id){return _ytMatch?_ytMatch[String(id)]:null;}
