@@ -399,7 +399,7 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 .wkc-dn{font-size:8px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);line-height:1}
 .wkc-dd{font-size:10px;font-weight:700;color:var(--text);width:22px;height:22px;min-width:22px;min-height:22px;max-width:22px;max-height:22px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:transparent;flex-shrink:0;box-sizing:border-box}
 .wkc-dd.tn2{background:var(--accent);color:#fff}
-.wkc-day-sel .wkc-dd{background:#fff;color:var(--text);box-shadow:none}
+.wkc-day-sel .wkc-dd{background:transparent;color:var(--text);box-shadow:0 0 0 1.5px var(--accent)}
 .wkc-col-sel{background:rgba(255,255,255,.04)}
 .wkc-cols{flex:1;display:flex;overflow:hidden}
 /* drag zone at edges for week navigation */
