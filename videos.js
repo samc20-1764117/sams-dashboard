@@ -1019,6 +1019,11 @@ async function saveVidModal(){
     if(!data.step_tableau_public||data.step_tableau_public==='not_started')data.step_tableau_public='na';
     if(!data.step_upload_tableau||data.step_upload_tableau==='not_started')data.step_upload_tableau='na';
   }
+  // Match parent status when assigned to a big video
+  if(data.big_video_id){
+    const parent=(st.videos||[]).find(x=>String(x.id)===String(data.big_video_id));
+    if(parent&&parent.status!=='idea'&&data.status==='idea')data.status=parent.status;
+  }
   closeMod('vidModal');
 
   if(_vidMode==='edit'&&_vidEditId){
