@@ -305,12 +305,27 @@ function _vidDashDragStart(e,id){_vidDashDragId=id;e.dataTransfer.effectAllowed=
 const _VID_DB_COLS=['title','topic','status','post_date','duration_minutes','video_type','big_video_id',...VID_STEPS];
 async function _vidEnsureSynced(v){
   if(!String(v.id).startsWith('l-'))return;
+  // If parent is also local, sync parent first
+  if(v.big_video_id&&String(v.big_video_id).startsWith('l-')){
+    const parent=(st.videos||[]).find(x=>String(x.id)===String(v.big_video_id));
+    if(parent)await _vidEnsureSynced(parent);
+    // Update reference to real ID
+    if(parent&&!String(parent.id).startsWith('l-'))v.big_video_id=parent.id;
+  }
   const payload={};
-  _VID_DB_COLS.forEach(k=>{if(v[k]!==undefined)payload[k]=v[k];});
+  _VID_DB_COLS.forEach(k=>{
+    if(v[k]===undefined)return;
+    // Skip big_video_id if it's still a local ID
+    if(k==='big_video_id'&&v[k]&&String(v[k]).startsWith('l-'))return;
+    payload[k]=v[k];
+  });
   const sv=await sbReqSilent('POST','videos',payload);
-  console.log('[vidSync] POST local→DB',v.id,sv);
+  console.log('[vidSync] POST local→DB',v.id,JSON.stringify(payload),sv);
   if(sv&&sv[0]){
+    const oldId=v.id;
     Object.assign(v,sv[0]);
+    // Update any children pointing to old local ID
+    (st.videos||[]).filter(c=>String(c.big_video_id)===String(oldId)).forEach(c=>{c.big_video_id=v.id;});
     save();
   }
 }
@@ -318,8 +333,12 @@ let _vidSyncRan=false;
 async function _vidSyncLocalVideos(){
   if(_vidSyncRan||!cfg.url||!cfg.key)return;
   _vidSyncRan=true;
+  // Sync B types first so children get real parent IDs
   const locals=(st.videos||[]).filter(v=>String(v.id).startsWith('l-')&&!v.is_deleted);
-  for(const v of locals)await _vidEnsureSynced(v);
+  const bFirst=locals.filter(v=>v.video_type==='B');
+  const rest=locals.filter(v=>v.video_type!=='B');
+  for(const v of bFirst)await _vidEnsureSynced(v);
+  for(const v of rest)await _vidEnsureSynced(v);
   if(locals.length)renderVideosPageKeepScroll();
 }
 async function _vidDashDrop(e,newStatus){
