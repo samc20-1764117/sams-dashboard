@@ -943,6 +943,16 @@ async function saveVidModal(){
     const v=(st.videos||[]).find(x=>String(x.id)===String(_vidEditId));
     if(v){
       const prev={...v};
+      // If changing from B to L, unparent all children (they stay as standalone L videos)
+      const wasB=prev.video_type==='B';
+      const nowL=data.video_type==='L';
+      const orphans=[];
+      if(wasB&&nowL){
+        (st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(v.id)).forEach(c=>{
+          orphans.push({id:c.id,prevBigId:c.big_video_id});
+          c.big_video_id=null;
+        });
+      }
       Object.assign(v,data);
       const coreSteps=VID_STEPS.filter(s=>s!=='step_tableau_public'&&s!=='step_upload_tableau');
       const coreDone=coreSteps.every(s=>v[s]==='done'||v[s]==='na');
@@ -950,8 +960,15 @@ async function saveVidModal(){
       else if((!coreDone||!v.post_date||!v.duration_minutes)&&v.status==='published'){v.status='in_progress';data.status='in_progress';}
       save();renderVideosPageKeepScroll();
       if(v.video_type==='B'&&v.status!==prev.status&&(v.status==='in_progress'||v.status==='up_next'))_vidPromoteChildren(v.id,v.status);
-      pushUndo(async()=>{Object.assign(v,prev);save();renderVideosPageKeepScroll();await sbReqSilent('PATCH','videos',prev,`?id=eq.${_vidEditId}`);},'Edited video');
+      pushUndo(async()=>{
+        Object.assign(v,prev);
+        orphans.forEach(o=>{const c=(st.videos||[]).find(x=>String(x.id)===String(o.id));if(c)c.big_video_id=o.prevBigId;});
+        save();renderVideosPageKeepScroll();
+        await sbReqSilent('PATCH','videos',prev,`?id=eq.${_vidEditId}`);
+        for(const o of orphans)await sbReqSilent('PATCH','videos',{big_video_id:o.prevBigId},`?id=eq.${o.id}`);
+      },'Edited video');
       await sbReqSilent('PATCH','videos',data,`?id=eq.${_vidEditId}`);
+      for(const o of orphans)await sbReqSilent('PATCH','videos',{big_video_id:null},`?id=eq.${o.id}`);
     }
   }else{
     const tmp='l-'+Date.now();
