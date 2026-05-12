@@ -243,9 +243,9 @@ function _vidRenderDashboard(){
     const singleIdeas=ideas.filter(v=>v.video_type!=='B');
     let h='';
     if(groupIdeas.length||singleIdeas.length){
-      h+=`<div style="font-size:9px;font-weight:600;color:var(--muted);padding:6px 10px 2px;letter-spacing:.03em;background:rgba(255,255,255,.7)">Group</div>`;
+      h+=`<div style="font-size:9px;font-weight:600;color:var(--muted);padding:6px 6px 6px 16px;letter-spacing:.03em;background:rgba(245,243,250,.65);display:flex;align-items:center">Group</div>`;
       h+=groupIdeas.length?groupIdeas.map(v=>_vidDashRow(v,false,true)).join(''):'<div style="color:var(--muted);font-size:11px;padding:4px 10px;opacity:.5">None</div>';
-      h+=`<div style="font-size:9px;font-weight:600;color:var(--muted);padding:8px 10px 2px;letter-spacing:.03em;border-top:1px solid rgba(210,205,228,.15);margin-top:4px;background:rgba(255,255,255,.7)">Single</div>`;
+      h+=`<div style="font-size:9px;font-weight:600;color:var(--muted);padding:6px 6px 6px 16px;letter-spacing:.03em;border-top:1px solid rgba(210,205,228,.15);margin-top:4px;background:rgba(245,243,250,.65);display:flex;align-items:center">Single</div>`;
       h+=singleIdeas.length?singleIdeas.map(v=>_vidDashRow(v,false,true)).join(''):'<div style="color:var(--muted);font-size:11px;padding:4px 10px;opacity:.5">None</div>';
     }else{
       h='<div style="color:var(--muted);font-size:12px;padding:16px 10px">No ideas yet</div>';
@@ -254,7 +254,7 @@ function _vidRenderDashboard(){
   })();
   return`
     <div style="display:flex;flex-direction:column;position:absolute;top:0;left:0;right:0;bottom:0">
-      <div style="display:flex;border-bottom:2px solid var(--border)">
+      <div style="display:flex;border-bottom:1px solid var(--border)">
         <div class="vid-dash-header" style="flex:2;border-bottom:none;border-right:1px solid var(--border)">
           <div style="flex:1;min-width:0;padding-left:10px">Current</div>
           ${(upNext.length||inProgress.length)?_colHdr:''}
@@ -303,7 +303,7 @@ function _vidDashRow(v,isChild,simple){
   const sel=_vidSelected.has(sid);
   const isSmall=v.video_type==='L'&&v.big_video_id;
   const indent=isChild?'padding-left:20px;':'';
-  const childMark=isChild?'<span style="color:#ddd;font-size:10px;margin-right:4px">└</span>':'';
+  const childMark=isChild?'<span style="color:#fff;font-size:10px;margin-right:4px;-webkit-text-stroke:.5px #ccc;text-stroke:.5px #ccc">└</span>':'';
   const titleStyle=isSmall?'color:var(--muted)':'';
   const postNum=_vidDashPostMap[sid];
   const numHtml=postNum?`<span style="color:var(--muted);font-size:10px;margin-right:6px;min-width:18px;display:inline-block">${postNum}</span>`:'';
@@ -318,7 +318,7 @@ function _vidDashRow(v,isChild,simple){
   const _tHtml=showTopicTitle?'<span class="'+titleCls+'">'+_esc(topic)+'</span><span style="font-size:10px;color:var(--muted);margin-left:4px;font-weight:400">'+_titleSuffix+'</span>':'<span class="'+titleCls+'">'+_esc(primary)+'</span>';
   if(simple){
     return`<div class="vid-dash-row${sel?' vid-sel':''}" draggable="true" ondragstart="_vidDashDragStart(event,'${sid}')" data-vid="${sid}" onclick="vidRowClick(event,'${sid}')" ondblclick="openVidEdit('${sid}')" oncontextmenu="showVidCtx(event,'${sid}')">
-      <div style="flex:1;min-width:0;padding-left:10px;${indent}${!isChild?'font-weight:600;':''}${titleStyle}"><span style="color:#ddd;font-size:8px;margin-right:6px">●</span>${_addBtn}${childMark}${numHtml}${_tHtml}</div>
+      <div style="flex:1;min-width:0;padding-left:10px;${indent}${!isChild?'font-weight:600;':''}${titleStyle}"><span style="color:#fff;font-size:8px;margin-right:6px;-webkit-text-stroke:.5px #ccc;text-stroke:.5px #ccc">●</span>${_addBtn}${childMark}${numHtml}${_tHtml}</div>
       <button class="vid-del" data-vid="${sid}">✕</button>
     </div>`;
   }
@@ -605,7 +605,7 @@ function _vidRow(v,isChild,postMap){
   const durStr=v.duration_minutes?v.duration_minutes.toFixed(2):'';
   const isSmall=v.video_type==='L'&&v.big_video_id;
   const indent=isChild?'padding-left:32px;':'padding-left:16px;';
-  const childMark=isChild?'<span style="color:#ddd;font-size:10px;margin-right:4px">└</span>':'';
+  const childMark=isChild?'<span style="color:#fff;font-size:10px;margin-right:4px;-webkit-text-stroke:.5px #ccc;text-stroke:.5px #ccc">└</span>':'';
   const titleColor=isSmall?'color:var(--muted);':'';
   const postNum=postMap&&postMap[sid];
   const numHtml=postNum?`<span style="color:var(--muted);font-size:10px;margin-right:6px;min-width:18px;display:inline-block">${postNum}</span>`:'';
