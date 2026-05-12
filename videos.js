@@ -267,8 +267,8 @@ function _vidDashRow(v,isChild,simple){
     </div>
     <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
       <div style="display:flex;gap:0">${VID_STEPS.map(s=>`<div style="width:28px;text-align:center"><div class="vid-step-dot${v[s]==='done'?' done':v[s]==='na'?' na':''}" data-vid="${sid}" data-step="${s}" title="${VID_STEP_LABELS[s]}"></div></div>`).join('')}</div>
-      <span data-field="post_date" style="width:52px;text-align:right;font-size:11px;color:${_vidDateColor(v.post_date,v)};cursor:pointer;min-height:16px;display:inline-block">${postStr||'&middot;'}</span>
-      <span data-field="duration_minutes" style="width:36px;text-align:right;font-size:11px;color:var(--muted);cursor:pointer;min-height:16px;display:inline-block">${durStr||'&middot;'}</span>
+      <span data-field="post_date" style="width:52px;text-align:right;font-size:11px;color:${_vidDateColor(v.post_date,v)};cursor:pointer;min-height:16px;display:inline-block">${postStr||''}</span>
+      <span data-field="duration_minutes" style="width:36px;text-align:right;font-size:11px;color:var(--muted);cursor:pointer;min-height:16px;display:inline-block">${durStr||''}</span>
       <button class="vid-del" data-vid="${sid}">✕</button>
     </div>
   </div>`;
@@ -730,6 +730,16 @@ function vidRowClick(e,id){
   _vidUpdateChildSel();
   _applyVidSel();
 }
+function _vidParseDate(str){
+  if(!str||!str.trim())return null;
+  const parts=str.trim().split('/');
+  if(parts.length<2)return null;
+  const m=parseInt(parts[0]),d=parseInt(parts[1]);
+  if(!m||!d)return null;
+  let y=parts[2]?parseInt(parts[2]):new Date().getFullYear();
+  if(y<100)y+=2000;
+  return y+'-'+String(m).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+}
 function _vidDashDblClick(e,id){
   const span=e.target.closest('[data-field]');
   if(span&&_vidView==='dashboard'){
@@ -745,18 +755,19 @@ function _vidDashInlineEdit(span,id,field){
   span._editing=true;
   let el;
   if(field==='post_date'){
-    el=document.createElement('input');el.type='date';el.value=v.post_date||'';
-    el.style.cssText='width:52px;font-size:10px;border:1px solid var(--border);border-radius:4px;padding:1px 2px;background:var(--bg);color:var(--text);outline:none;font-family:inherit;box-sizing:border-box';
+    el=document.createElement('input');el.type='text';el.placeholder='m/d';
+    el.value=v.post_date?_vidPostStr(v.post_date,true):'';
+    el.style.cssText='width:56px;font-size:10px;border:1px solid var(--border);border-radius:4px;padding:1px 2px;background:var(--bg);color:var(--text);outline:none;font-family:inherit;box-sizing:border-box';
   }else if(field==='duration_minutes'){
     el=document.createElement('input');el.type='number';el.step='0.01';el.value=v.duration_minutes||'';
     el.style.cssText='width:36px;font-size:10px;border:1px solid var(--border);border-radius:4px;padding:1px 2px;background:var(--bg);color:var(--text);outline:none;font-family:inherit;box-sizing:border-box';
   }else return;
   const orig=span.innerHTML;
-  span.textContent='';span.appendChild(el);el.focus();
+  span.textContent='';span.appendChild(el);el.focus();el.select();
   const commit=()=>{
     if(!span._editing)return;span._editing=false;
     const prev={[field]:v[field]};
-    if(field==='post_date')v.post_date=el.value||null;
+    if(field==='post_date')v.post_date=_vidParseDate(el.value);
     else if(field==='duration_minutes')v.duration_minutes=parseFloat(el.value)||null;
     save();renderVideosPageKeepScroll();
     pushUndo(async()=>{Object.assign(v,prev);save();renderVideosPageKeepScroll();await sbReqSilent('PATCH','videos',prev,`?id=eq.${v.id}`);},'Inline edit');
@@ -977,6 +988,11 @@ function _vidNaModalStep(e,el){
   const next=cur==='na'?'not_started':'na';
   el.dataset.val=next;
   _vidUpdateModalStep(el,next);
+  const linked=_vidLinkedStep(el.dataset.step);
+  if(linked){
+    const lEl=document.querySelector(`[data-step="${linked}"]`);
+    if(lEl){lEl.dataset.val=next;_vidUpdateModalStep(lEl,next);}
+  }
 }
 function _vidSetType(type){
   document.getElementById('vmType').value=type;
@@ -1114,10 +1130,21 @@ async function _vidToggleStepNa(id,step){
   const cur=v[step]||'not_started';
   const next=cur==='na'?'not_started':'na';
   const prev=cur;
+  // Sync TA and Up — they always match na/required state
+  const linked=_vidLinkedStep(step);
+  const linkedPrev=linked?v[linked]:null;
   v[step]=next;
+  if(linked)v[linked]=next;
+  const patch={[step]:next};
+  if(linked)patch[linked]=next;
   save();renderVideosPageKeepScroll();
-  pushUndo(async()=>{v[step]=prev;save();renderVideosPageKeepScroll();await sbReqSilent('PATCH','videos',{[step]:prev},`?id=eq.${id}`);},'Toggle n/a');
-  await sbReqSilent('PATCH','videos',{[step]:next},`?id=eq.${id}`);
+  pushUndo(async()=>{v[step]=prev;if(linked)v[linked]=linkedPrev;save();renderVideosPageKeepScroll();const up={[step]:prev};if(linked)up[linked]=linkedPrev;await sbReqSilent('PATCH','videos',up,`?id=eq.${id}`);},'Toggle n/a');
+  await sbReqSilent('PATCH','videos',patch,`?id=eq.${id}`);
+}
+function _vidLinkedStep(step){
+  if(step==='step_tableau_public')return'step_upload_tableau';
+  if(step==='step_upload_tableau')return'step_tableau_public';
+  return null;
 }
 async function cycleVidStep(id,step){
   const v=(st.videos||[]).find(x=>String(x.id)===String(id));if(!v)return;
