@@ -243,6 +243,13 @@ function _vidDashRow(v,isChild,simple){
   </div>`;
 }
 
+async function _vidPromoteChildren(parentId,newStatus){
+  if(newStatus!=='in_progress')return;
+  const children=(st.videos||[]).filter(v=>!v.is_deleted&&String(v.big_video_id)===String(parentId)&&v.status==='idea');
+  children.forEach(c=>{c.status='in_progress';});
+  if(children.length){save();for(const c of children)await sbReqSilent('PATCH','videos',{status:'in_progress'},`?id=eq.${c.id}`);}
+}
+
 let _vidDashDragId=null;
 function _vidDashDragStart(e,id){_vidDashDragId=id;e.dataTransfer.effectAllowed='move';}
 async function _vidDashDrop(e,newStatus){
@@ -252,6 +259,7 @@ async function _vidDashDrop(e,newStatus){
   const prev=v.status;
   if(prev===newStatus){_vidDashDragId=null;return;}
   pushUndo();v.status=newStatus;save();renderVideosPageKeepScroll();
+  if(v.video_type==='B')await _vidPromoteChildren(v.id,newStatus);
   await sbReqSilent('PATCH','videos',{status:newStatus},`?id=eq.${v.id}`);
   _vidDashDragId=null;
 }
@@ -485,6 +493,7 @@ async function _vidBoardDrop(e,newStatus){
   const patch={status:newStatus};
   if(newStatus==='published'&&v.post_date)patch.post_date=v.post_date;
   pushUndo(async()=>{v.status=prev;save();renderVideosPageKeepScroll();await sbReqSilent('PATCH','videos',{status:prev},`?id=eq.${_vidDragId}`);},'Status change');
+  if(v.video_type==='B')await _vidPromoteChildren(v.id,newStatus);
   await sbReqSilent('PATCH','videos',patch,`?id=eq.${_vidDragId}`);
   _vidDragId=null;
 }
@@ -854,6 +863,7 @@ async function saveVidModal(){
       if(coreDone&&v.post_date&&v.duration_minutes&&v.status!=='published'){v.status='published';data.status='published';}
       else if((!coreDone||!v.post_date||!v.duration_minutes)&&v.status==='published'){v.status='in_progress';data.status='in_progress';}
       save();renderVideosPageKeepScroll();
+      if(v.video_type==='B'&&v.status==='in_progress'&&prev.status!=='in_progress')_vidPromoteChildren(v.id,'in_progress');
       pushUndo(async()=>{Object.assign(v,prev);save();renderVideosPageKeepScroll();await sbReqSilent('PATCH','videos',prev,`?id=eq.${_vidEditId}`);},'Edited video');
       await sbReqSilent('PATCH','videos',data,`?id=eq.${_vidEditId}`);
     }
