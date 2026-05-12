@@ -267,8 +267,8 @@ function _vidDashRow(v,isChild,simple){
     </div>
     <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
       <div style="display:flex;gap:0">${VID_STEPS.map(s=>`<div style="width:28px;text-align:center"><div class="vid-step-dot${v[s]==='done'?' done':v[s]==='na'?' na':''}" data-vid="${sid}" data-step="${s}" title="${VID_STEP_LABELS[s]}"></div></div>`).join('')}</div>
-      <span data-field="post_date" style="width:52px;text-align:right;font-size:11px;color:${_vidDateColor(v.post_date,v)};cursor:pointer">${postStr||''}</span>
-      <span data-field="duration_minutes" style="width:36px;text-align:right;font-size:11px;color:var(--muted);cursor:pointer">${durStr}</span>
+      <span data-field="post_date" style="width:52px;text-align:right;font-size:11px;color:${_vidDateColor(v.post_date,v)};cursor:pointer;min-height:16px;display:inline-block">${postStr||'&middot;'}</span>
+      <span data-field="duration_minutes" style="width:36px;text-align:right;font-size:11px;color:var(--muted);cursor:pointer;min-height:16px;display:inline-block">${durStr||'&middot;'}</span>
       <button class="vid-del" data-vid="${sid}">✕</button>
     </div>
   </div>`;
@@ -835,6 +835,9 @@ function _applyVidSel(){
 
 // ── Context Menu ──────────────────────────────────────────────────────────────
 function showVidCtx(e,id){
+  // Let step dot right-click handle na toggle instead of context menu
+  const dot=e.target.closest('.vid-step-dot');
+  if(dot){e.preventDefault();e.stopPropagation();const vid=dot.dataset.vid;const step=dot.dataset.step;if(vid&&step)_vidToggleStepNa(vid,step);return;}
   e.preventDefault();e.stopPropagation();
   _vidCtxId=String(id);
   if(!_vidSelected.has(_vidCtxId)){_vidSelected.clear();_vidSelected.add(_vidCtxId);_applyVidSel();}
