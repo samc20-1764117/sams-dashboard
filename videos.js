@@ -261,17 +261,17 @@ function _vidRenderDashboard(){
             ${(upNext.length||inProgress.length)?_colHdr:''}
           </div>
           <div class="vid-drop-zone" data-drop-status="up_next" ondragover="event.preventDefault()" ondrop="_vidDashDrop(event,'up_next')" style="min-height:40px;padding-bottom:8px">
-            <div style="font-size:9px;font-weight:600;color:var(--muted);padding:6px 6px 6px 10px;letter-spacing:.03em;background:#fff;display:flex;align-items:center">Up Next</div>
+            <div style="font-size:9px;font-weight:600;color:var(--muted);padding:6px 6px 6px 10px;letter-spacing:.03em;background:#f5f3fa;display:flex;align-items:center">Up Next</div>
             ${upNext.length?_vidDashList(upNext,false):'<div style="color:var(--muted);font-size:11px;padding:8px 10px;opacity:.5">Drag ideas here</div>'}
           </div>
           <div class="vid-drop-zone" data-drop-status="in_progress" ondragover="event.preventDefault()" ondrop="_vidDashDrop(event,'in_progress')" style="min-height:40px;padding-bottom:8px">
-            <div style="font-size:9px;font-weight:600;color:var(--muted);padding:6px 6px 6px 10px;letter-spacing:.03em;border-top:1px solid rgba(210,205,228,.15);margin-top:4px;background:#fff;display:flex;align-items:center">In Progress</div>
+            <div style="font-size:9px;font-weight:600;color:var(--muted);padding:6px 6px 6px 10px;letter-spacing:.03em;border-top:1px solid rgba(210,205,228,.15);margin-top:4px;background:#f5f3fa;display:flex;align-items:center">In Progress</div>
             ${inProgress.length?_vidDashList(inProgress,false):'<div style="color:var(--muted);font-size:11px;padding:8px 10px;opacity:.5">Drag up next here to start</div>'}
           </div>
         </div>
       </div>
       <div style="flex:1;min-width:0;display:flex;flex-direction:column" ondragover="event.preventDefault()" ondrop="_vidDashDrop(event,'idea')">
-        <div class="vid-dash-header">Ideas <span class="vid-count">${ideas.length}</span></div>
+        <div class="vid-dash-header"><div style="padding-left:10px">Ideas <span class="vid-count">${ideas.length}</span></div></div>
         <div style="flex:1;min-height:0;overflow-y:auto">
           ${ideasHtml}
         </div>
@@ -301,7 +301,7 @@ function _vidDashRow(v,isChild,simple){
   const sel=_vidSelected.has(sid);
   const isSmall=v.video_type==='L'&&v.big_video_id;
   const indent=isChild?'padding-left:20px;':'';
-  const childMark=isChild?'<span style="color:#ccc;font-size:10px;margin-right:4px">└</span>':'';
+  const childMark=isChild?'<span style="color:#fff;font-size:10px;margin-right:4px">└</span>':'';
   const titleStyle=isSmall?'color:var(--muted)':'';
   const postNum=_vidDashPostMap[sid];
   const numHtml=postNum?`<span style="color:var(--muted);font-size:10px;margin-right:6px;min-width:18px;display:inline-block">${postNum}</span>`:'';
@@ -316,7 +316,7 @@ function _vidDashRow(v,isChild,simple){
   const _tHtml=showTopicTitle?'<span class="'+titleCls+'">'+_esc(topic)+'</span><span style="font-size:10px;color:var(--muted);margin-left:4px;font-weight:400">'+_titleSuffix+'</span>':'<span class="'+titleCls+'">'+_esc(primary)+'</span>';
   if(simple){
     return`<div class="vid-dash-row${sel?' vid-sel':''}" draggable="true" ondragstart="_vidDashDragStart(event,'${sid}')" data-vid="${sid}" onclick="vidRowClick(event,'${sid}')" ondblclick="openVidEdit('${sid}')" oncontextmenu="showVidCtx(event,'${sid}')">
-      <div style="flex:1;min-width:0;padding-left:10px;${indent}${!isChild?'font-weight:600;':''}${titleStyle}"><span style="color:#ccc;font-size:8px;margin-right:6px">●</span>${_addBtn}${childMark}${numHtml}${_tHtml}</div>
+      <div style="flex:1;min-width:0;padding-left:10px;${indent}${!isChild?'font-weight:600;':''}${titleStyle}"><span style="color:#fff;font-size:8px;margin-right:6px">●</span>${_addBtn}${childMark}${numHtml}${_tHtml}</div>
       <button class="vid-del" data-vid="${sid}">✕</button>
     </div>`;
   }
@@ -603,7 +603,7 @@ function _vidRow(v,isChild,postMap){
   const durStr=v.duration_minutes?v.duration_minutes.toFixed(2):'';
   const isSmall=v.video_type==='L'&&v.big_video_id;
   const indent=isChild?'padding-left:32px;':'padding-left:16px;';
-  const childMark=isChild?'<span style="color:#ccc;font-size:10px;margin-right:4px">└</span>':'';
+  const childMark=isChild?'<span style="color:#fff;font-size:10px;margin-right:4px">└</span>':'';
   const titleColor=isSmall?'color:var(--muted);':'';
   const postNum=postMap&&postMap[sid];
   const numHtml=postNum?`<span style="color:var(--muted);font-size:10px;margin-right:6px;min-width:18px;display:inline-block">${postNum}</span>`:'';

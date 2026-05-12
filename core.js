@@ -675,7 +675,8 @@ function _stateSnap(){
     wrOverrides:JSON.parse(JSON.stringify(st.wrOverrides||[])),
     autoTBOverrides:JSON.parse(JSON.stringify(st.autoTBOverrides||[])),
     pupSessions:JSON.parse(JSON.stringify(st.pupSessions||[])),
-    pup_skills:JSON.parse(JSON.stringify(st.pup_skills||[]))
+    pup_skills:JSON.parse(JSON.stringify(st.pup_skills||[])),
+    videos:JSON.parse(JSON.stringify(st.videos||[]))
   };
 }
 
@@ -691,11 +692,13 @@ function _stateRestore(snap){
   if(snap.autoTBOverrides)st.autoTBOverrides=snap.autoTBOverrides;
   if(snap.pupSessions)st.pupSessions=snap.pupSessions;
   if(snap.pup_skills)st.pup_skills=snap.pup_skills;
+  if(snap.videos)st.videos=snap.videos;
   save();
   renderAll();
   renderPupSkillsHighlight();
   if(document.getElementById('tbGrid'))renderDayTB();
   renderWkCal();renderRecOv();renderWeeklyPage();
+  if(typeof renderVideosPage==='function'&&document.getElementById('videosContent'))renderVideosPage();
 }
 
 function pushUndo(fn,msg,onExpire){
@@ -824,6 +827,15 @@ function _syncRedoDiff(before,after){
     const fields=['skill','pup','category','level','stage','focus','next_step','word','signal','comments','skill_order'];
     fields.forEach(f=>{if(String(s[f]??'')!==String(p[f]??''))ch[f]=s[f]??null;});
     if(Object.keys(ch).length)ps.push(sbReqSilent('PATCH','pup_skills',ch,`?id=eq.${s.id}`));
+  }
+  const bV2=before.videos||[],aV2=after.videos||[];
+  const vidFields=['title','topic','status','post_date','duration_minutes','video_type','big_video_id',
+    'step_build','step_record','step_film','step_cut','step_thumbnail','step_description','step_tableau_public','step_upload_tableau'];
+  for(const v of aV2){
+    const p=bV2.find(x=>String(x.id)===String(v.id));if(!p)continue;
+    const ch={};
+    vidFields.forEach(f=>{if(String(v[f]??'')!==String(p[f]??''))ch[f]=v[f]??null;});
+    if(Object.keys(ch).length)ps.push(sbReqSilent('PATCH','videos',ch,`?id=eq.${v.id}`));
   }
   return Promise.all(ps);
 }
