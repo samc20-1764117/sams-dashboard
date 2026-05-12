@@ -236,6 +236,7 @@ function _vidRenderDashboard(){
             <span style="width:36px;text-align:right;font-size:9px;display:inline-block">Dur</span>
             <span style="width:42px;display:inline-block"></span>
             <button class="vid-del" style="visibility:hidden">✕</button>
+            <span style="width:28px;text-align:right;font-size:9px;display:inline-block">%</span>
           </div>`;
   const ideasHtml=(()=>{
     const groupIdeas=ideas.filter(v=>v.video_type==='B');
@@ -253,7 +254,7 @@ function _vidRenderDashboard(){
   })();
   return`
     <div style="display:flex;gap:0;padding:0;position:absolute;top:0;left:0;right:0;bottom:0">
-      <div style="flex:2;min-width:0;display:flex;flex-direction:column;border-right:1px solid var(--border)">
+      <div style="flex:3;min-width:0;display:flex;flex-direction:column;border-right:1px solid var(--border)">
         <div style="flex:1;min-height:0;overflow-y:auto;overflow-x:hidden">
           <div class="vid-dash-header">
             <div style="flex:1;min-width:0;padding-left:10px">Current <span class="vid-count">${upNext.length+inProgress.length}</span></div>
@@ -326,11 +327,11 @@ function _vidDashRow(v,isChild,simple){
   const _applicable=VID_STEPS.filter(s=>v[s]!=='na');
   const _done=_applicable.filter(s=>v[s]==='done').length;
   const _pct=_applicable.length?Math.round((_done/_applicable.length)*100):0;
-  const _pctHtml=(v.status==='in_progress'||v.status==='up_next')?`<span style="font-size:9px;color:${_pct===100?'#10b981':'var(--muted)'};margin-left:6px;font-weight:500;white-space:nowrap">${_pct}%</span>`:'';
+  const _pctHtml=(v.status==='in_progress'||v.status==='up_next')?`<span style="width:28px;text-align:right;font-size:9px;color:${_pct===100?'#10b981':'var(--muted)'};font-weight:500;display:inline-block">${_pct}%</span>`:`<span style="width:28px;display:inline-block"></span>`;
   const dropAttrs=v.video_type==='B'?'ondragover="_vidGroupDragOver(event)" ondragleave="_vidGroupDragLeave(event)" ondrop="_vidGroupDrop(event,\''+sid+'\')"':'';
   return`<div class="vid-dash-row${sel?' vid-sel':''}${_vidChildSelected.has(sid)?' vid-child-sel':''}" draggable="true" ondragstart="_vidDashDragStart(event,'${sid}')" ${dropAttrs} data-vid="${sid}" onclick="vidRowClick(event,'${sid}')" ondblclick="_vidDashDblClick(event,'${sid}')" oncontextmenu="showVidCtx(event,'${sid}')" style="${bigRowStyle}">
     <div style="flex:1;min-width:0;padding-left:10px;${indent}${!isChild?'font-weight:600;':''}${titleStyle}">
-      ${_addBtn}${childMark}${numHtml}${_tHtml}${_pctHtml}
+      ${_addBtn}${childMark}${numHtml}${_tHtml}
     </div>
     <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
       <div style="display:flex;gap:0">${VID_STEPS.map(s=>`<div style="width:28px;text-align:center"><div class="vid-step-dot${v[s]==='done'?' done':v[s]==='na'?' na':''}" data-vid="${sid}" data-step="${s}" title="${VID_STEP_LABELS[s]}"></div></div>`).join('')}</div>
@@ -338,6 +339,7 @@ function _vidDashRow(v,isChild,simple){
       <span data-field="duration_minutes" style="width:36px;text-align:right;font-size:11px;color:var(--muted);cursor:pointer;min-height:16px;display:inline-block">${durStr||''}</span>
       ${(()=>{const ym=_ytForVid(sid);return ym?'<span style="width:42px;text-align:right;font-size:10px;color:#8b5cf6;display:inline-block" title="'+ym.views+' views / '+ym.likes+' likes">'+_ytNum(ym.views)+'</span>':'<span style="width:42px;display:inline-block"></span>';})()}
       <button class="vid-del" data-vid="${sid}">✕</button>
+      ${_pctHtml}
     </div>
   </div>`;
 }
@@ -545,6 +547,7 @@ function _vidRenderTable(){
         ${VID_STEPS.map(s=>`<th style="width:28px;text-align:center;font-size:9px" title="${VID_STEP_LABELS[s]}">${VID_STEP_LABELS[s].slice(0,2)}</th>`).join('')}
         <th style="width:52px;text-align:right;${thStyle}" onclick="vidTblSort('posted')">Posted${_vidSortArrow('posted')}</th>
         <th style="width:36px;text-align:right;${thStyle}" onclick="vidTblSort('duration')">Dur${_vidSortArrow('duration')}</th>
+        <th style="width:28px;text-align:right;font-size:9px">%</th>
         <th style="width:85px;${thStyle}" onclick="vidTblSort('status')">Status${_vidSortArrow('status')}</th>
         ${_ytMatch?'<th style="width:80px;text-align:right;font-size:9px">Views</th><th style="width:50px;text-align:right;font-size:9px">Likes</th>':''}
         <th style="width:36px"><button onclick="_vidToggleCompleted()" style="font-size:14px;font-weight:700;width:24px;height:24px;line-height:22px;text-align:center;border-radius:6px;border:1.5px solid var(--border);background:${_vidShowCompleted?'rgba(14,165,233,.12)':'var(--bg)'};color:${_vidShowCompleted?'#0ea5e9':'var(--muted)'};cursor:pointer" title="${_vidShowCompleted?'Hide':'Show'} Completed">${_vidShowCompleted?'−':'+'}</button></th>
@@ -608,10 +611,11 @@ function _vidRow(v,isChild,postMap){
   const _tblPct=_tblApplicable.length?Math.round((_tblDone/_tblApplicable.length)*100):0;
   const _tblPctHtml=(v.status==='in_progress'||v.status==='up_next')?`<span style="font-size:9px;color:${_tblPct===100?'#10b981':'var(--muted)'};margin-left:6px;font-weight:500">${_tblPct}%</span>`:'';
   return`<tr class="vid-row${sel?' vid-sel':''}" data-vid="${sid}" onclick="vidCellClick(event,'${sid}')" ondblclick="openVidEdit('${sid}')" oncontextmenu="showVidCtx(event,'${sid}')" style="${isBig?'background:rgba(255,255,255,.55)':''}">
-    <td data-field="title" style="${indent}${!isChild?'font-weight:600;':''}${titleColor}overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${addBtn}${childMark}${numHtml}${(v.status==='in_progress'||v.status==='up_next')&&v.topic?`<span class="vid-title-text">${_esc(v.topic)}</span><span style="font-size:10px;color:var(--muted);margin-left:4px;font-weight:400">${_titleSuffix}</span>`:`<span class="vid-title-text">${_esc(v.title)}</span>`}${_tblPctHtml}</td>
+    <td data-field="title" style="${indent}${!isChild?'font-weight:600;':''}${titleColor}overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${addBtn}${childMark}${numHtml}${(v.status==='in_progress'||v.status==='up_next')&&v.topic?`<span class="vid-title-text">${_esc(v.topic)}</span><span style="font-size:10px;color:var(--muted);margin-left:4px;font-weight:400">${_titleSuffix}</span>`:`<span class="vid-title-text">${_esc(v.title)}</span>`}</td>
     ${VID_STEPS.map(s=>`<td style="text-align:center"><div class="vid-step-dot${v[s]==='done'?' done':v[s]==='na'?' na':''}" data-vid="${sid}" data-step="${s}" title="${VID_STEP_LABELS[s]}"></div></td>`).join('')}
     <td data-field="post_date" style="text-align:right;font-size:11px;color:${_vidDateColor(v.post_date,v)}">${postStr}</td>
     <td data-field="duration_minutes" style="text-align:right;font-size:11px;color:var(--muted)">${durStr}</td>
+    <td style="text-align:right;font-size:9px;color:${_tblPct===100?'#10b981':'var(--muted)'};font-weight:500">${(v.status==='in_progress'||v.status==='up_next')?_tblPct+'%':''}</td>
     <td data-field="status"><span class="vid-status-pill" style="background:${sc}12;color:${sc}">${VID_STATUS_LABELS[v.status]||v.status}</span></td>
     ${_ytMatch?(()=>{const ym=_ytForVid(sid);return ym?'<td style="text-align:right;font-size:11px;color:var(--muted)">'+_ytNum(ym.views)+'</td><td style="text-align:right;font-size:11px;color:var(--muted)">'+_ytNum(ym.likes)+'</td>':'<td></td><td></td>';})():''}
     <td><button class="vid-del" data-vid="${sid}">✕</button></td>
