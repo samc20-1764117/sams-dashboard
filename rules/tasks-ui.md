@@ -35,7 +35,7 @@
 - **Global Cmd+C/V**: copies `selectedTasks`. Paste: `wrrule-{id}`→POST `wr_recurring_rules`; task ID→POST `tasks`.
 
 ## Indicator Placement
-All indicators at far right, swap to X on hover. From right: `tb-arrow` (rightmost) → `cat-dot`. `chip-del` inside relative chip. `wr-cad-badge` hidden on row hover to reveal X. `cpill` pointer-events:none.
+All indicators at far right, swap to X on hover. From right: `tb-arrow` (rightmost) → `cat-dot`. `chip-del` inside relative chip. `wr-cad-badge` hidden on row hover to reveal X. `cpill` pointer-events:none. `heb-cnt` absolute right:22px — shows count of unchecked HEB shopping items on any recurring task matching `/\bheb\b/i`.
 - **Overdue rows**: no `cat-dot`. Show single DOW letter (`S/M/T/W/T/F/S`) in `.dlbl.ov` instead of full date. `.dlbl.ov` has `margin-right:-4px`.
 
 ## Chip & UI Notes
