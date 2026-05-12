@@ -1,8 +1,27 @@
 // ── YouTube Analytics ────────────────────────────────────────────────────────
-let _ytData=null;
+let _ytData=null,_ytMatch=null;
 function _ytEsc(s){return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function _ytDur(iso){var m=iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);if(!m)return'0:00';var h=m[1]?parseInt(m[1]):0,min=m[2]?parseInt(m[2]):0,s=m[3]?parseInt(m[3]):0;if(h)return h+':'+String(min).padStart(2,'0')+':'+String(s).padStart(2,'0');return min+':'+String(s).padStart(2,'0');}
 function _ytNum(n){if(n>=1000000)return(n/1000000).toFixed(1)+'M';if(n>=1000)return(n/1000).toFixed(1)+'K';return String(n);}
+function _ytBuildMatch(){
+  if(!_ytData||!_ytData.videos||!st.videos)return;
+  _ytMatch={};
+  var ytVids=_ytData.videos;
+  var dbVids=(st.videos||[]).filter(function(v){return!v.is_deleted;});
+  for(var i=0;i<dbVids.length;i++){
+    var dv=dbVids[i];
+    var dt=(dv.title||'').toLowerCase().trim();
+    for(var j=0;j<ytVids.length;j++){
+      var yt=ytVids[j];
+      var yt_t=(yt.title||'').toLowerCase().trim();
+      if(dt===yt_t||yt_t.indexOf(dt)!==-1||dt.indexOf(yt_t)!==-1){
+        _ytMatch[String(dv.id)]={views:yt.views,likes:yt.likes,comments:yt.comments,ytId:yt.id};
+        break;
+      }
+    }
+  }
+}
+function _ytForVid(id){return _ytMatch?_ytMatch[String(id)]:null;}
 
 // ── Videos Page ─────────────────────────────────────────────────────────────
 let _vidMode='add',_vidEditId=null;
@@ -187,6 +206,8 @@ function renderVideosPage(){
       }
       h+='</div>';
       ytSlot.innerHTML=h;
+      _ytBuildMatch();
+      renderVideosPageKeepScroll();
     }).catch(function(){});
   }
 }
@@ -302,6 +323,7 @@ function _vidDashRow(v,isChild,simple){
       <div style="display:flex;gap:0">${VID_STEPS.map(s=>`<div style="width:28px;text-align:center"><div class="vid-step-dot${v[s]==='done'?' done':v[s]==='na'?' na':''}" data-vid="${sid}" data-step="${s}" title="${VID_STEP_LABELS[s]}"></div></div>`).join('')}</div>
       <span data-field="post_date" style="width:52px;text-align:right;font-size:11px;color:${_vidDateColor(v.post_date,v)};cursor:pointer;min-height:16px;display:inline-block">${postStr||''}</span>
       <span data-field="duration_minutes" style="width:36px;text-align:right;font-size:11px;color:var(--muted);cursor:pointer;min-height:16px;display:inline-block">${durStr||''}</span>
+      ${(()=>{const ym=_ytForVid(sid);return ym?'<span style="width:42px;text-align:right;font-size:10px;color:#8b5cf6;display:inline-block" title="'+ym.views+' views / '+ym.likes+' likes">'+_ytNum(ym.views)+'</span>':'<span style="width:42px;display:inline-block"></span>';})()}
       <button class="vid-del" data-vid="${sid}">✕</button>
     </div>
   </div>`;
@@ -511,6 +533,7 @@ function _vidRenderTable(){
         <th style="width:62px;text-align:right;${thStyle}" onclick="vidTblSort('posted')">Posted${_vidSortArrow('posted')}</th>
         <th style="width:50px;text-align:right;${thStyle}" onclick="vidTblSort('duration')">Dur${_vidSortArrow('duration')}</th>
         <th style="width:70px;${thStyle}" onclick="vidTblSort('status')">Status${_vidSortArrow('status')}</th>
+        ${_ytMatch?'<th style="width:80px;text-align:right;font-size:9px">Views</th><th style="width:50px;text-align:right;font-size:9px">Likes</th>':''}
         <th style="width:36px"><button onclick="_vidToggleCompleted()" style="font-size:14px;font-weight:700;width:24px;height:24px;line-height:22px;text-align:center;border-radius:6px;border:1.5px solid var(--border);background:${_vidShowCompleted?'rgba(14,165,233,.12)':'var(--bg)'};color:${_vidShowCompleted?'#0ea5e9':'var(--muted)'};cursor:pointer" title="${_vidShowCompleted?'Hide':'Show'} Completed">${_vidShowCompleted?'−':'+'}</button></th>
       </tr></thead>
       <tbody>${groupedHtml}</tbody>
@@ -572,6 +595,7 @@ function _vidRow(v,isChild,postMap){
     <td data-field="post_date" style="text-align:right;font-size:11px;color:${_vidDateColor(v.post_date,v)}">${postStr}</td>
     <td data-field="duration_minutes" style="text-align:right;font-size:11px;color:var(--muted)">${durStr}</td>
     <td data-field="status"><span class="vid-status-pill" style="background:${sc}12;color:${sc}">${VID_STATUS_LABELS[v.status]||v.status}</span></td>
+    ${_ytMatch?(()=>{const ym=_ytForVid(sid);return ym?'<td style="text-align:right;font-size:11px;color:var(--muted)">'+_ytNum(ym.views)+'</td><td style="text-align:right;font-size:11px;color:var(--muted)">'+_ytNum(ym.likes)+'</td>':'<td></td><td></td>';})():''}
     <td><button class="vid-del" data-vid="${sid}">✕</button></td>
   </tr>`;
 }
