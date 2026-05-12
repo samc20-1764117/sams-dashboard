@@ -178,7 +178,7 @@ function renderVideosPage(){
       </div>
     </div>
     <div id="yt-analytics-slot"></div>
-    <div class="card" style="overflow:${_vidView==='dashboard'?'hidden':'auto'};flex:1;min-height:0;background:rgba(255,255,255,0.42);backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px)">
+    <div class="card" style="overflow:${_vidView==='dashboard'?'hidden':'auto'};flex:1;min-height:0;background:rgba(255,255,255,0.32);backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px)">
         ${bodyHtml}
     </div>`;
   const now=new Date();
@@ -303,7 +303,7 @@ function _vidDashRow(v,isChild,simple){
   const sel=_vidSelected.has(sid);
   const isSmall=v.video_type==='L'&&v.big_video_id;
   const indent=isChild?'padding-left:20px;':'';
-  const childMark=isChild?'<span style="color:#fff;font-size:10px;margin-right:4px;-webkit-text-stroke:.5px #ccc;text-stroke:.5px #ccc">└</span>':'';
+  const childMark=isChild?'<span style="color:#fff;font-size:10px;margin-right:4px">└</span>':'';
   const titleStyle=isSmall?'color:var(--muted)':'';
   const postNum=_vidDashPostMap[sid];
   const numHtml=postNum?`<span style="color:var(--muted);font-size:10px;margin-right:6px;min-width:18px;display:inline-block">${postNum}</span>`:'';
@@ -318,7 +318,7 @@ function _vidDashRow(v,isChild,simple){
   const _tHtml=showTopicTitle?'<span class="'+titleCls+'">'+_esc(topic)+'</span><span style="font-size:10px;color:var(--muted);margin-left:4px;font-weight:400">'+_titleSuffix+'</span>':'<span class="'+titleCls+'">'+_esc(primary)+'</span>';
   if(simple){
     return`<div class="vid-dash-row${sel?' vid-sel':''}" draggable="true" ondragstart="_vidDashDragStart(event,'${sid}')" data-vid="${sid}" onclick="vidRowClick(event,'${sid}')" ondblclick="openVidEdit('${sid}')" oncontextmenu="showVidCtx(event,'${sid}')">
-      <div style="flex:1;min-width:0;padding-left:10px;${indent}${!isChild?'font-weight:600;':''}${titleStyle}"><span style="color:#fff;font-size:8px;margin-right:6px;-webkit-text-stroke:.5px #ccc;text-stroke:.5px #ccc">●</span>${_addBtn}${childMark}${numHtml}${_tHtml}</div>
+      <div style="flex:1;min-width:0;padding-left:10px;${indent}${!isChild?'font-weight:600;':''}${titleStyle}"><span style="color:#fff;font-size:8px;margin-right:6px">●</span>${_addBtn}${childMark}${numHtml}${_tHtml}</div>
       <button class="vid-del" data-vid="${sid}">✕</button>
     </div>`;
   }
@@ -605,7 +605,7 @@ function _vidRow(v,isChild,postMap){
   const durStr=v.duration_minutes?v.duration_minutes.toFixed(2):'';
   const isSmall=v.video_type==='L'&&v.big_video_id;
   const indent=isChild?'padding-left:32px;':'padding-left:16px;';
-  const childMark=isChild?'<span style="color:#fff;font-size:10px;margin-right:4px;-webkit-text-stroke:.5px #ccc;text-stroke:.5px #ccc">└</span>':'';
+  const childMark=isChild?'<span style="color:#fff;font-size:10px;margin-right:4px">└</span>':'';
   const titleColor=isSmall?'color:var(--muted);':'';
   const postNum=postMap&&postMap[sid];
   const numHtml=postNum?`<span style="color:var(--muted);font-size:10px;margin-right:6px;min-width:18px;display:inline-block">${postNum}</span>`:'';
