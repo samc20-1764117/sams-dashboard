@@ -931,14 +931,6 @@ function _vidCelebrate(id){
   // Glow pulse (inset so it stays within the row)
   row.style.transition='box-shadow .4s';
   row.style.boxShadow='inset 0 0 12px rgba(16,185,129,.35)';
-  // Shimmer sweep
-  const shimmer=document.createElement('div');
-  shimmer.style.cssText='position:absolute;top:0;left:-100%;width:60%;height:100%;background:linear-gradient(90deg,transparent,rgba(16,185,129,.15),transparent);pointer-events:none;border-radius:inherit;z-index:5';
-  const prevPos=row.style.position;const prevOvf=row.style.overflow;
-  row.style.position='relative';row.style.overflow='hidden';
-  row.appendChild(shimmer);
-  shimmer.style.transition='left 1s ease-in-out';
-  requestAnimationFrame(()=>requestAnimationFrame(()=>shimmer.style.left='140%'));
   // Green confetti around (not inside) the row
   const colors=['#10b981','#4ade80','#bbf7d0','#16a34a','#a7f3d0'];
   const cx=rect.left+rect.width/2,cy=rect.top+rect.height/2;
@@ -966,7 +958,6 @@ function _vidCelebrate(id){
   // Reset
   setTimeout(()=>{
     row.style.boxShadow='';
-    shimmer.remove();row.style.position=prevPos;row.style.overflow=prevOvf;
     setTimeout(()=>row.style.transition='',300);
   },1800);
 }

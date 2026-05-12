@@ -202,6 +202,7 @@ function renderTodDonut(done,total){
   const isNow100=pct>=1;
   if(!_donutInited){
     _donutInited=true;
+    if(isNow100)_donutWas100=true;
     arc.style.transition='none';
     arc.setAttribute('stroke-dasharray',`0 ${C}`);
     const svg=arc.closest('svg');if(svg)svg.classList.remove('donut-glow');
