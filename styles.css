@@ -282,6 +282,7 @@ body.dark .inline-date-picker input[type="date"]{background:rgba(255,255,255,.08
 .wr-cad-badge.changed{background:rgba(59,130,246,.18);color:#1e40af}
 .wr-dot{position:absolute;right:5px;top:50%;transform:translateY(-50%);width:6px;height:6px;border-radius:50%;background:#93c5fd;pointer-events:none;flex-shrink:0}
 .ti:hover .wr-cad-badge,.ti.sel-row .wr-cad-badge,.ti:hover .wr-dot,.ti.sel-row .wr-dot{display:none}
+.heb-cnt{display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:16px;font-size:10px;font-weight:700;padding:0 4px;margin-left:5px;border-radius:8px;background:rgba(239,68,68,.15);color:#dc2626;line-height:1;vertical-align:middle}
 .arow{padding:4px 8px;border-top:1px solid rgba(210,205,228,.22);display:flex;gap:3px;background:rgba(255,255,255,.18);flex-shrink:0}
 .ov-banner{display:none;align-items:center;gap:8px;padding:6px 16px;background:rgba(254,242,242,.9);border-bottom:1px solid rgba(239,68,68,.15);font-size:11px;font-weight:500;color:#b91c1c;flex-shrink:0}
 body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.2);color:#fca5a5;}
@@ -398,7 +399,9 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 .wkc-dn{font-size:8px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);line-height:1}
 .wkc-dd{font-size:10px;font-weight:700;color:var(--text);width:22px;height:22px;min-width:22px;min-height:22px;max-width:22px;max-height:22px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:transparent;flex-shrink:0;box-sizing:border-box}
 .wkc-dd.tn2{background:var(--accent);color:#fff}
-.wkc-day-sel .wkc-dd{background:#fff;color:var(--text);box-shadow:0 0 0 2px rgba(255,255,255,.9),0 0 8px rgba(255,255,255,.7),0 0 16px rgba(255,255,255,.3)}
+.wkc-day-sel .wkc-dd{background:#fff;color:var(--text);box-shadow:0 0 0 2px var(--accent),0 0 8px rgba(255,255,255,.7)}
+.wkc-day-sel .wkc-dn{color:var(--accent)}
+.wkc-col-sel{background:rgba(99,102,241,.04)}
 .wkc-cols{flex:1;display:flex;overflow:hidden}
 /* drag zone at edges for week navigation */
 .wkc-edge{position:absolute;top:0;bottom:0;width:32px;z-index:10;display:flex;align-items:center;justify-content:center;pointer-events:none;transition:background .15s;opacity:0}

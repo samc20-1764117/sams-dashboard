@@ -1,6 +1,8 @@
 // ── Render all ─────────────────────────────────────────────────────────────────
 function renderAll(){renderOv();renderWeeklyPage();renderShopFull();renderTravelPage();renderBdayPage();if(typeof renderPupsPage==='function')renderPupsPage();if(typeof renderRecipesPage==='function')renderRecipesPage();if(typeof renderVideosPage==='function'&&activePg==='videos')renderVideosPage();if(document.getElementById('mModal')?.classList.contains('open'))renderMoCal();if(document.getElementById('recMoModal')?.classList.contains('open'))renderRecMoCal();if(document.getElementById('woModal')?.classList.contains('open'))renderWOModal();save();requestAnimationFrame(applySelHighlight);const m=document.getElementById('main');if(m&&m.style.opacity==='0')m.style.opacity='1';}
 
+function _hebBadge(name){if(!/\bheb\b/i.test(name||''))return'';const c=st.shopping.filter(s=>!s.done&&s.store&&s.store.toLowerCase()==='heb').length;return c?`<span class="heb-cnt">${c}</span>`:''}
+
 function renderOv(){
   const n=new Date();
   // ovTitle is updated by renderToday() to reflect the selected day
@@ -517,7 +519,7 @@ function tRowTodayVirt(t,tbArrow=false,noColor=false){
 
   return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''}" style="${!ov&&!noColor?`background:${s.bg}`:''}" id="ti-${t.id}" draggable="true" ondragstart="dragId='${_dragId}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);" ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false);" onclick="selTask(event,'${t.id}')" ondblclick="${_dblClick}" oncontextmenu="${_ctxMenu}">
     <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="${_chk}"></label>
-    <span class="tn">${t.name}</span>
+    <span class="tn">${t.name}${_hebBadge(t.name)}</span>
     ${!ov?`<svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3" fill="${ps.bg}" stroke="${ps.d}" stroke-opacity="0.4" stroke-width="1"/></svg>`:''}
     ${tbArrow?'<span class="tb-arrow">›</span>':''}
     <button class="delbtn" onclick="event.stopPropagation();${_xBtn}">✕</button>
@@ -749,7 +751,7 @@ function renderWkCal(){
   const cols=document.getElementById('wkcCols');cols.innerHTML='';
   dates.forEach((date,di)=>{
     const ds=d2s(date);
-    const col=document.createElement('div');col.className='wkc-col';
+    const col=document.createElement('div');col.className='wkc-col'+(ds===d2s(getDayDate(dayOff))&&!isDateToday(date)?' wkc-col-sel':'');
     col.dataset.ds=ds;
     col.style.paddingTop=_colPaddingPre[di];
 
@@ -1027,7 +1029,7 @@ function renderWkCal(){
         else if(t._virtual){togRecVirt(t._recId,chk.checked,t._wkKey||getWkKey(wkOff));}
         else{toggleTask(t.id,chk.checked,'week');}
       });
-      const nm=document.createElement('span');nm.className='chip-name';nm.innerHTML=tmIcon(t)+escHtml(t._type==='pup'?_pupDisplayName(t):t.name);
+      const nm=document.createElement('span');nm.className='chip-name';nm.innerHTML=tmIcon(t)+escHtml(t._type==='pup'?_pupDisplayName(t):t.name)+_hebBadge(t.name);
       // name click handled by chip click→selTask, dblclick→openEditTask
       chip.appendChild(chk);chip.appendChild(nm);
       chip.addEventListener('contextmenu',e=>{
@@ -2008,7 +2010,8 @@ function renderRecOv(){
     }
     const nm=document.createElement('span');nm.className='tn';
     if(isDone)nm.style.cssText='text-decoration:line-through;color:var(--muted)';
-    nm.textContent=r._displayName;
+    const _hb=_hebBadge(r._displayName);
+    if(_hb){nm.innerHTML=escHtml(r._displayName)+_hb;}else{nm.textContent=r._displayName;}
     row.appendChild(nm);
     const hasDot=r._edited;
     const del=document.createElement('button');
@@ -2679,7 +2682,7 @@ function tRowWk(t){
       :`showWrScopePicker(event,'⊘  Skip this week only','✕  Delete recurring task',()=>skipRecVirtThisWk('${t._recId}','${t._wkKey||getWkKey(wkOff)}'),()=>delRec('${t._recId}'))`;
     return`<div class="ti ${t.done?'done':''}" style="background:${s.bg}" id="ti-${t.id}" onclick="selTask(event,'${t.id}')" ondblclick="${t._isWrRule?`event.stopPropagation();openWrEditModal('${t._ruleId}','${t._wkKey||getWkKey(wkOff)}','all')`:`tiDblRec(event,'${t._recId}')`}" oncontextmenu="${_wkCtxMenu}">
       <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="${t._isWrec?`togRec('${t._recId}',this.checked)`:`togRecVirt('${t._recId}',this.checked,'${t._wkKey||getWkKey(wkOff)}')`}"></label>
-      <span class="tn">${t.name}</span>
+      <span class="tn">${t.name}${_hebBadge(t.name)}</span>
       <span class="cpill" style="background:${s.bg};color:${s.t};border-color:${s.b}">Recurring</span>
       <span class="dlbl">${fmtD(t.due_date)}</span>
       <button class="delbtn" onclick="event.stopPropagation();${_wkXBtn}">✕</button>
