@@ -225,7 +225,7 @@ async function syncAll(silent=false){
       sbReqSilent('GET','pup_skills',null,'?order=pup.asc,skill_order.asc,skill.asc&select=*'),
       sbReqSilent('GET','pup_skill_sessions',null,'?order=day_date.asc&select=*'),
       sbReqSilent('GET','recipes',null,'?order=name.asc&select=*'),
-      sbReqSilent('GET','videos',null,'?order=created_at.asc&select=*')
+      sbReqSilent('GET','videos',null,'?is_deleted=neq.true&order=created_at.asc&select=*')
     ]);
     if(pupSessionsDb)st.pupSessions=pupSessionsDb.filter(s=>!deletedPupSessIds.has(String(s.id)));
     // Fetch time_blocks separately so a failure doesn't break the whole sync

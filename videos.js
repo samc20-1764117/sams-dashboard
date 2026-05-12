@@ -985,11 +985,17 @@ async function delVideo(id){
   const sid=String(id);
   const v=(st.videos||[]).find(x=>String(x.id)===sid);if(!v)return;
   const copy={...v};
-  st.videos=st.videos.filter(x=>String(x.id)!==sid);
+  v.is_deleted=true;
   _vidSelected.delete(sid);
   save();renderVideosPageKeepScroll();
-  pushUndo(async()=>{st.videos.push(copy);save();renderVideosPageKeepScroll();await sbReqSilent('POST','videos',copy);},'Deleted video');
-  if(!sid.startsWith('l-'))await sbReqSilent('DELETE','videos',null,`?id=eq.${sid}`);
+  pushUndo(async()=>{v.is_deleted=false;save();renderVideosPageKeepScroll();if(!sid.startsWith('l-'))await sbReqSilent('PATCH','videos',{is_deleted:false},`?id=eq.${sid}`);},'Deleted video');
+  if(!sid.startsWith('l-')){
+    const res=await sbReqSilent('PATCH','videos',{is_deleted:true},`?id=eq.${sid}`);
+    if(!res){
+      // Fallback: try hard delete
+      await sbReqSilent('DELETE','videos',null,`?id=eq.${sid}`);
+    }
+  }
 }
 
 // ── Duplicate ─────────────────────────────────────────────────────────────────
