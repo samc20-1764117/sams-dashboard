@@ -192,7 +192,20 @@ function _vidRenderDashboard(){
       <div style="flex:1;min-width:0;display:flex;flex-direction:column" ondragover="event.preventDefault()" ondrop="_vidDashDrop(event,'idea')">
         <div class="vid-dash-header">Ideas <span class="vid-count">${ideas.length}</span></div>
         <div style="flex:1;min-height:0;overflow-y:auto">
-          ${ideas.length?_vidDashList(ideas,true):'<div style="color:var(--muted);font-size:12px;padding:16px 10px">No ideas yet</div>'}
+          ${(()=>{
+            const groupIdeas=ideas.filter(v=>v.video_type==='B');
+            const singleIdeas=ideas.filter(v=>v.video_type!=='B');
+            let h='';
+            if(groupIdeas.length||singleIdeas.length){
+              h+=`<div style="font-size:9px;font-weight:600;color:var(--muted);padding:6px 10px 2px;letter-spacing:.03em">Group</div>`;
+              h+=groupIdeas.length?groupIdeas.map(v=>_vidDashRow(v,false,true)).join(''):'<div style="color:var(--muted);font-size:11px;padding:4px 10px;opacity:.5">None</div>';
+              h+=`<div style="font-size:9px;font-weight:600;color:var(--muted);padding:8px 10px 2px;letter-spacing:.03em;border-top:1px solid rgba(210,205,228,.15);margin-top:4px">Single</div>`;
+              h+=singleIdeas.length?singleIdeas.map(v=>_vidDashRow(v,false,true)).join(''):'<div style="color:var(--muted);font-size:11px;padding:4px 10px;opacity:.5">None</div>';
+            }else{
+              h='<div style="color:var(--muted);font-size:12px;padding:16px 10px">No ideas yet</div>';
+            }
+            return h;
+          })()}
         </div>
       </div>
     </div>`;
@@ -240,7 +253,8 @@ function _vidDashRow(v,isChild,simple){
   const durStr=v.duration_minutes?v.duration_minutes.toFixed(2):'';
   const cls=_vidClassification(v);
   const clsBadge=!isChild?`<span style="font-size:8px;font-weight:500;color:${cls==='series'?'#8b5cf6':'var(--muted)'};margin-left:6px;letter-spacing:.03em">${cls}</span>`:'';
-  return`<div class="vid-dash-row${sel?' vid-sel':''}" draggable="true" ondragstart="_vidDashDragStart(event,'${sid}')" data-vid="${sid}" onclick="vidRowClick(event,'${sid}')" ondblclick="openVidEdit('${sid}')" oncontextmenu="showVidCtx(event,'${sid}')">
+  const dropAttrs=v.video_type==='B'?`ondragover="_vidGroupDragOver(event)" ondragleave="_vidGroupDragLeave(event)" ondrop="_vidGroupDrop(event,'${sid}')"`:'';
+  return`<div class="vid-dash-row${sel?' vid-sel':''}" draggable="true" ondragstart="_vidDashDragStart(event,'${sid}')" ${dropAttrs} data-vid="${sid}" onclick="vidRowClick(event,'${sid}')" ondblclick="openVidEdit('${sid}')" oncontextmenu="showVidCtx(event,'${sid}')">
     <div style="flex:1;min-width:0;padding-left:10px;${indent}${!isChild?'font-weight:600;':''}${titleStyle}">
       ${v.video_type==='B'?`<button onclick="event.stopPropagation();openVidModalForBig('${sid}')" style="font-size:10px;font-weight:700;width:16px;height:16px;line-height:14px;text-align:center;border-radius:3px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;margin-right:4px" title="Add child video">+</button>`:(!isChild?'<button style="font-size:10px;font-weight:700;width:16px;height:16px;line-height:14px;text-align:center;border-radius:3px;border:1px solid transparent;background:transparent;color:transparent;margin-right:4px;pointer-events:none">+</button>':'')}${childMark}${numHtml}${showTopicTitle?`<span class="${titleCls}">${_esc(topic)}</span><span style="font-size:10px;color:var(--muted);margin-left:4px;font-weight:400">- ${_esc(v.title)}</span>`:`<span class="${titleCls}">${_esc(primary)}</span>`}${clsBadge}
     </div>
@@ -258,6 +272,26 @@ async function _vidPromoteChildren(parentId,newStatus){
   const children=(st.videos||[]).filter(v=>!v.is_deleted&&String(v.big_video_id)===String(parentId)&&v.status==='idea');
   children.forEach(c=>{c.status='in_progress';});
   if(children.length){save();for(const c of children)await sbReqSilent('PATCH','videos',{status:'in_progress'},`?id=eq.${c.id}`);}
+}
+
+function _vidGroupDragOver(e){e.preventDefault();e.stopPropagation();const row=e.currentTarget;row.style.boxShadow='inset 0 0 8px rgba(139,92,246,.3)';row.style.borderColor='rgba(139,92,246,.4)';}
+function _vidGroupDragLeave(e){const row=e.currentTarget;row.style.boxShadow='';row.style.borderColor='';}
+async function _vidGroupDrop(e,parentId){
+  e.preventDefault();e.stopPropagation();
+  const row=e.currentTarget;row.style.boxShadow='';row.style.borderColor='';
+  const dragId=_vidDashDragId;if(!dragId||dragId===parentId)return;
+  const v=(st.videos||[]).find(x=>String(x.id)===dragId);if(!v)return;
+  const parent=(st.videos||[]).find(x=>String(x.id)===parentId);if(!parent||parent.video_type!=='B')return;
+  if(v.video_type==='B')return;// don't nest groups
+  const prevParent=v.big_video_id;const prevStatus=v.status;
+  pushUndo();
+  v.big_video_id=parseInt(parentId)||parentId;
+  if(v.status==='idea')v.status='in_progress';
+  save();renderVideosPageKeepScroll();
+  const patch={big_video_id:v.big_video_id};
+  if(v.status!==prevStatus)patch.status=v.status;
+  await sbReqSilent('PATCH','videos',patch,`?id=eq.${v.id}`);
+  _vidDashDragId=null;
 }
 
 let _vidDashDragId=null;
