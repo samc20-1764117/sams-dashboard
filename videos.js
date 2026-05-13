@@ -354,27 +354,31 @@ function _vidGroupDragLeave(e){const row=e.currentTarget;row.style.boxShadow='';
 async function _vidGroupDrop(e,parentId){
   e.preventDefault();
   const row=e.currentTarget;row.style.boxShadow='';row.style.borderColor='';row.style.borderBottom='';
-  const dragId=_vidDashDragId;if(!dragId)return;
-  const v=(st.videos||[]).find(x=>String(x.id)===dragId);if(!v)return;
+  if(!_vidDashDragId)return;
   const parent=(st.videos||[]).find(x=>String(x.id)===parentId);if(!parent||parent.video_type!=='B')return;
-  // B videos and standalone videos can't nest under B — let event bubble to zone handler for status change
-  if(v.video_type==='B'||dragId===parentId||!v.big_video_id)return;
+  const ids=_vidDashDragIds.length?[..._vidDashDragIds]:[_vidDashDragId];
+  // Filter to videos that can nest (not B, not self)
+  const toNest=ids.map(id=>(st.videos||[]).find(x=>String(x.id)===String(id))).filter(v=>v&&v.video_type!=='B'&&String(v.id)!==String(parentId));
+  if(!toNest.length)return;
   e.stopPropagation();
-  const prevParent=v.big_video_id;const prevStatus=v.status;const prevType=v.video_type;
-  v.big_video_id=parseInt(parentId)||parentId;
-  v.video_type='L';
-  if(v.status!==parent.status)v.status=parent.status;
+  const undoData=toNest.map(v=>({v,prevParent:v.big_video_id,prevStatus:v.status,prevType:v.video_type}));
+  toNest.forEach(v=>{
+    v.big_video_id=parseInt(parentId)||parentId;
+    v.video_type='L';
+    if(v.status!==parent.status)v.status=parent.status;
+  });
   save();renderVideosPageKeepScroll();
   pushUndo(async()=>{
-    v.big_video_id=prevParent;v.video_type=prevType;v.status=prevStatus;
+    undoData.forEach(d=>{d.v.big_video_id=d.prevParent;d.v.video_type=d.prevType;d.v.status=d.prevStatus;});
     save();renderVideosPageKeepScroll();
-    await sbReqSilent('PATCH','videos',{big_video_id:prevParent,video_type:prevType,status:prevStatus},`?id=eq.${v.id}`);
+    for(const d of undoData)await sbReqSilent('PATCH','videos',{big_video_id:d.prevParent,video_type:d.prevType,status:d.prevStatus},`?id=eq.${d.v.id}`);
   },'Group change');
-  await _vidEnsureSynced(v);
-  const patch={big_video_id:v.big_video_id,video_type:'L'};
-  if(v.status!==prevStatus)patch.status=v.status;
-  await sbReqSilent('PATCH','videos',patch,`?id=eq.${v.id}`);
-  _vidDashDragId=null;
+  for(const v of toNest){
+    await _vidEnsureSynced(v);
+    const patch={big_video_id:v.big_video_id,video_type:'L',status:v.status};
+    await sbReqSilent('PATCH','videos',patch,`?id=eq.${v.id}`);
+  }
+  _vidDashDragId=null;_vidDashDragIds=[];
 }
 
 let _vidDashDragId=null;
@@ -436,9 +440,9 @@ async function _vidSyncLocalVideos(){
 }
 async function _vidDashDrop(e,newStatus){
   e.preventDefault();e.currentTarget.style.background='';
-  if(!_vidDashDragId)return;
-  _vidDashDragId=null;
-  const ids=_vidDashDragIds;_vidDashDragIds=[];
+  const ids=_vidDashDragIds.length?[..._vidDashDragIds]:(_vidDashDragId?[String(_vidDashDragId)]:[]);
+  _vidDashDragId=null;_vidDashDragIds=[];
+  if(!ids.length)return;
   // Collect all videos to move and their previous states
   const undoData=[];
   const toMove=[];
