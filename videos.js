@@ -251,7 +251,7 @@ function _vidRenderDashboard(){
     return h;
   })();
   return`
-    <div style="display:grid;grid-template-columns:2fr 1fr;grid-template-rows:auto 1fr;position:absolute;top:0;left:0;right:0;bottom:0">
+    <div onclick="_vidClearSel(event)" style="display:grid;grid-template-columns:2fr 1fr;grid-template-rows:auto 1fr;position:absolute;top:0;left:0;right:0;bottom:0">
       <div class="vid-dash-header" style="grid-column:1;grid-row:1;border-right:1px solid var(--border)">
         <div style="flex:1;min-width:0;padding-left:10px">Current</div>
         ${(upNext.length||inProgress.length)?_colHdr:''}
@@ -935,6 +935,10 @@ function _vidSetSearch(q){_vidSearch=q;renderVideosPage();
 }
 
 // ── Selection ─────────────────────────────────────────────────────────────────
+function _vidClearSel(e){
+  if(e.target.closest('.vid-dash-row,.vid-row,.vid-board-card,.vid-dash-header,.vid-del,.vid-step-dot'))return;
+  if(_vidSelected.size){_vidSelected.clear();_vidChildSelected.clear();_applyVidSel();}
+}
 function vidRowClick(e,id){
   if(e.target.closest('.vid-del')||e.target.closest('.vid-step-dot'))return;
   const sid=String(id);
@@ -947,7 +951,8 @@ function vidRowClick(e,id){
     const a=ids.indexOf(_vidLastSel),b=ids.indexOf(sid);
     if(a>-1&&b>-1){const[lo,hi]=[Math.min(a,b),Math.max(a,b)];for(let i=lo;i<=hi;i++)_vidSelected.add(ids[i]);}
   }else{
-    _vidSelected.clear();_vidSelected.add(sid);
+    if(_vidSelected.size===1&&_vidSelected.has(sid)){_vidSelected.clear();}
+    else{_vidSelected.clear();_vidSelected.add(sid);}
   }
   _vidLastSel=sid;
   _vidUpdateChildSel();
