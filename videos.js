@@ -1225,6 +1225,10 @@ function _vidGetBigVideoId(){
 const _VID_STATUS_OPTIONS=[
   {value:'idea',label:'1. Idea'},{value:'up_next',label:'2. Up Next'},{value:'in_progress',label:'3. In Progress'},{value:'published',label:'4. Complete'},{value:'backup',label:'4. Backup'}
 ];
+function _vidModalKey(event){
+  if(event.key==='Escape'){event.stopPropagation();closeMod('vidModal');}
+  else if(event.key==='Enter'&&(event.metaKey||event.target.tagName!=='TEXTAREA')&&!event.target.closest('#vmStatusDrop')&&!event.target.closest('#vmBigVideoDrop')){event.preventDefault();saveVidModal();}
+}
 function _vidShowDropdown(type){_vidFilterDropdown(type);}
 function _vidToggleDropdown(type){
   const drop=document.getElementById('vm'+type+'Drop');
@@ -1234,25 +1238,67 @@ function _vidToggleDropdown(type){
 function _vidFilterDropdown(type){
   const drop=document.getElementById('vm'+type+'Drop');
   const itemStyle='padding:6px 10px;cursor:pointer;font-size:12px;border-bottom:1px solid rgba(210,205,228,.1)';
-  const hoverIn="this.style.background='rgba(139,92,246,.08)'";
-  const hoverOut="this.style.background='transparent'";
   let html='';
   if(type==='Status'){
-    html=_VID_STATUS_OPTIONS.map(o=>`<div onclick="_vidPickDropdown('Status','${o.value}')" onmouseenter="${hoverIn}" onmouseleave="${hoverOut}" style="${itemStyle}">${o.label}</div>`).join('');
+    html=_VID_STATUS_OPTIONS.map((o,i)=>`<div class="vm-drop-item" tabindex="-1" data-idx="${i}" onclick="_vidPickDropdown('Status','${o.value}')" onkeydown="_vidDropItemKey(event,'Status',${i})" style="${itemStyle}">${o.label}</div>`).join('');
   }else if(type==='BigVideo'){
     const inp=document.getElementById('vmBigVideo');
     const q=(inp.value||'').toLowerCase();
     const words=q.split(/\s+/).filter(Boolean);
+    // Filter by view: current tab only shows non-complete big videos
+    const onCurrent=_vidView==='dashboard';
     const items=_vidDropdownData.BigVideo.filter(v=>{
+      if(onCurrent){const bv=(st.videos||[]).find(x=>String(x.id)===String(v.id));if(bv&&bv.status==='published')return false;}
       if(!words.length)return true;
       const l=v.label.toLowerCase();
       return words.every(w=>l.includes(w));
     });
-    html=`<div onclick="_vidPickDropdown('BigVideo','')" onmouseenter="${hoverIn}" onmouseleave="${hoverOut}" style="${itemStyle};color:var(--muted);font-style:italic">None</div>`;
-    html+=items.map(v=>`<div onclick="_vidPickDropdown('BigVideo','${_esc(v.label)}')" onmouseenter="${hoverIn}" onmouseleave="${hoverOut}" style="${itemStyle}">${_esc(v.label)}</div>`).join('');
+    html=`<div class="vm-drop-item" tabindex="-1" data-idx="0" onclick="_vidPickDropdown('BigVideo','')" onkeydown="_vidDropItemKey(event,'BigVideo',0)" style="${itemStyle};color:var(--muted);font-style:italic">None</div>`;
+    html+=items.map((v,i)=>`<div class="vm-drop-item" tabindex="-1" data-idx="${i+1}" onclick="_vidPickDropdown('BigVideo','${_esc(v.label)}')" onkeydown="_vidDropItemKey(event,'BigVideo',${i+1})" style="${itemStyle}">${_esc(v.label)}</div>`).join('');
   }
   drop.innerHTML=html;
   drop.style.display='block';
+  // Add hover styles
+  drop.querySelectorAll('.vm-drop-item').forEach(el=>{
+    el.addEventListener('mouseenter',()=>el.style.background='rgba(139,92,246,.08)');
+    el.addEventListener('mouseleave',()=>el.style.background='transparent');
+  });
+}
+function _vidDropKey(event,type){
+  const drop=document.getElementById('vm'+type+'Drop');
+  if(event.key==='ArrowDown'){
+    event.preventDefault();
+    if(drop.style.display!=='block')_vidFilterDropdown(type);
+    const first=drop.querySelector('.vm-drop-item');
+    if(first)first.focus();
+  }else if(event.key==='ArrowUp'){
+    event.preventDefault();
+    if(drop.style.display!=='block')_vidFilterDropdown(type);
+    const items=drop.querySelectorAll('.vm-drop-item');
+    if(items.length)items[items.length-1].focus();
+  }else if(event.key==='Escape'){
+    drop.style.display='none';
+  }
+}
+function _vidDropItemKey(event,type,idx){
+  const drop=document.getElementById('vm'+type+'Drop');
+  const items=drop.querySelectorAll('.vm-drop-item');
+  if(event.key==='ArrowDown'){
+    event.preventDefault();event.stopPropagation();
+    const next=items[idx+1]||items[0];
+    if(next)next.focus();
+  }else if(event.key==='ArrowUp'){
+    event.preventDefault();event.stopPropagation();
+    const prev=items[idx-1]||items[items.length-1];
+    if(prev)prev.focus();
+  }else if(event.key==='Enter'){
+    event.preventDefault();event.stopPropagation();
+    items[idx].click();
+  }else if(event.key==='Escape'){
+    event.stopPropagation();
+    drop.style.display='none';
+    document.getElementById(type==='Status'?'vmStatusDisplay':'vmBigVideo').focus();
+  }
 }
 function _vidPickDropdown(type,val){
   if(type==='Status'){
@@ -1350,7 +1396,7 @@ function _vidRenderSteps(vals){
   }).join('');
 }
 function _vidModalStepCSS(val){
-  const base='width:100%;height:18px;border-radius:3px;cursor:pointer;display:flex;align-items:center;justify-content:center;user-select:none;transition:transform .1s;';
+  const base='width:22px;height:22px;border-radius:3px;cursor:pointer;display:flex;align-items:center;justify-content:center;user-select:none;transition:transform .1s;';
   if(val==='done')return base+'border:1.5px solid #10b981;background:#10b981';
   if(val==='na')return base+'border:1.5px solid var(--border);background:var(--border);opacity:.35';
   return base+'border:1.5px solid rgba(210,205,228,.4);background:transparent';
@@ -1435,7 +1481,15 @@ async function saveVidModal(){
   // Match parent status when assigned to a big video
   if(data.big_video_id){
     const parent=(st.videos||[]).find(x=>String(x.id)===String(data.big_video_id));
-    if(parent&&parent.status!=='idea'&&data.status==='idea')data.status=parent.status;
+    if(parent){
+      // Inherit parent's status (idea parents → idea, active parents → their status)
+      if(parent.status==='idea')data.status='idea';
+      else if(data.status==='idea')data.status=parent.status;
+    }
+    // Place at bottom of new group
+    const siblings=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(data.big_video_id));
+    const maxOrder=Math.max(0,...siblings.map(c=>c.vid_order??0));
+    data.vid_order=maxOrder+1;
   }
   // L videos without a big parent can't be in_progress/up_next
   if(data.video_type==='L'&&!data.big_video_id&&(data.status==='in_progress'||data.status==='up_next'))data.status='idea';
