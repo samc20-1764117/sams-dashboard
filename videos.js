@@ -1632,12 +1632,34 @@ async function cycleVidStep(id,step){
   }else if((!selfComplete||!kidsComplete)&&v.status==='published'&&prevStatus==='published'){
     v.status='in_progress';
   }
+  // Big video build toggle → cascade to all children
+  const childUpdates=[];
+  if(step==='step_build'&&v.video_type==='B'){
+    (st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(v.id)).forEach(c=>{
+      const cPrev=c.step_build||'not_started';
+      if(cPrev===next)return;
+      const cPrevStatus=c.status;
+      childUpdates.push({c,cPrev,cPrevStatus});
+      c.step_build=next;
+      const cAllDone=VID_STEPS.every(s=>c[s]==='done'||c[s]==='na');
+      const cHasFields=c.post_date&&c.duration_minutes&&c.topic&&c.title;
+      if(cAllDone&&cHasFields&&c.status!=='published')c.status='published';
+      else if((!cAllDone||!cHasFields)&&c.status==='published')c.status='in_progress';
+    });
+  }
   const patch={[step]:next};
   if(v.status!==prevStatus)patch.status=v.status;
   save();renderVideosPageKeepScroll();
   if(selfComplete&&kidsComplete&&!wasDone)_vidCelebrate(id);
-  pushUndo(async()=>{v[step]=prev;v.status=prevStatus;save();renderVideosPageKeepScroll();await sbReqSilent('PATCH','videos',{[step]:prev,status:prevStatus},`?id=eq.${id}`);},'Step change');
+  pushUndo(async()=>{
+    v[step]=prev;v.status=prevStatus;
+    childUpdates.forEach(d=>{d.c.step_build=d.cPrev;d.c.status=d.cPrevStatus;});
+    save();renderVideosPageKeepScroll();
+    await sbReqSilent('PATCH','videos',{[step]:prev,status:prevStatus},`?id=eq.${id}`);
+    for(const d of childUpdates)await sbReqSilent('PATCH','videos',{step_build:d.cPrev,status:d.cPrevStatus},`?id=eq.${d.c.id}`);
+  },'Step change');
   await sbReqSilent('PATCH','videos',patch,`?id=eq.${id}`);
+  for(const d of childUpdates)await sbReqSilent('PATCH','videos',{step_build:d.c.step_build,status:d.c.status},`?id=eq.${d.c.id}`);
 }
 
 function _vidCelebrate(id){
