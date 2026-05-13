@@ -378,7 +378,17 @@ async function _vidGroupDrop(e,parentId){
 }
 
 let _vidDashDragId=null;
-function _vidDashDragStart(e,id){_vidDashDragId=id;e.dataTransfer.effectAllowed='move';}
+function _vidDashDragStart(e,id){
+  _vidDashDragId=id;
+  // If dragging a selected video, drag all selected; otherwise just drag this one
+  if(_vidSelected.has(String(id))&&_vidSelected.size>1){
+    _vidDashDragIds=[..._vidSelected,..._vidChildSelected];
+  }else{
+    _vidDashDragIds=[String(id)];
+  }
+  e.dataTransfer.effectAllowed='move';
+}
+let _vidDashDragIds=[];
 
 // Push a local-only video (l-xxx id) to Supabase and replace the temp id
 const _VID_DB_COLS=['title','topic','status','post_date','duration_minutes','video_type','big_video_id',...VID_STEPS];
@@ -423,26 +433,41 @@ async function _vidSyncLocalVideos(){
 async function _vidDashDrop(e,newStatus){
   e.preventDefault();e.currentTarget.style.background='';
   if(!_vidDashDragId)return;
-  const dragId=_vidDashDragId;_vidDashDragId=null;
-  const v=(st.videos||[]).find(x=>String(x.id)===dragId);if(!v)return;
-  const prev=v.status;
-  if(prev===newStatus)return;
-  // Capture children states for undo
-  const childPrevs=[];
-  if(v.video_type==='B'){
-    (st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(v.id)).forEach(c=>childPrevs.push({id:c.id,status:c.status}));
+  _vidDashDragId=null;
+  const ids=_vidDashDragIds;_vidDashDragIds=[];
+  // Collect all videos to move and their previous states
+  const undoData=[];
+  const toMove=[];
+  for(const dragId of ids){
+    const v=(st.videos||[]).find(x=>String(x.id)===String(dragId));
+    if(!v||v.status===newStatus)continue;
+    const prev=v.status;
+    const childPrevs=[];
+    if(v.video_type==='B'){
+      (st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(v.id)).forEach(c=>childPrevs.push({id:c.id,status:c.status}));
+    }
+    undoData.push({v,prev,childPrevs});
+    toMove.push(v);
   }
-  v.status=newStatus;save();renderVideosPageKeepScroll();
-  if(v.video_type==='B')await _vidPromoteChildren(v.id,newStatus);
-  await _vidEnsureSynced(v);
+  if(!toMove.length)return;
+  toMove.forEach(v=>{v.status=newStatus;});
+  save();renderVideosPageKeepScroll();
+  for(const d of undoData){
+    if(d.v.video_type==='B')await _vidPromoteChildren(d.v.id,newStatus);
+    await _vidEnsureSynced(d.v);
+  }
   pushUndo(async()=>{
-    v.status=prev;
-    childPrevs.forEach(cp=>{const c=(st.videos||[]).find(x=>String(x.id)===String(cp.id));if(c)c.status=cp.status;});
+    undoData.forEach(d=>{
+      d.v.status=d.prev;
+      d.childPrevs.forEach(cp=>{const c=(st.videos||[]).find(x=>String(x.id)===String(cp.id));if(c)c.status=cp.status;});
+    });
     save();renderVideosPageKeepScroll();
-    await sbReqSilent('PATCH','videos',{status:prev},`?id=eq.${v.id}`);
-    for(const cp of childPrevs)await sbReqSilent('PATCH','videos',{status:cp.status},`?id=eq.${cp.id}`);
+    for(const d of undoData){
+      await sbReqSilent('PATCH','videos',{status:d.prev},`?id=eq.${d.v.id}`);
+      for(const cp of d.childPrevs)await sbReqSilent('PATCH','videos',{status:cp.status},`?id=eq.${cp.id}`);
+    }
   },'Status change');
-  await sbReqSilent('PATCH','videos',{status:newStatus},`?id=eq.${v.id}`);
+  for(const d of undoData)await sbReqSilent('PATCH','videos',{status:newStatus},`?id=eq.${d.v.id}`);
 }
 
 // ── TABLE VIEW (All Details) ─────────────────────────────────────────────────
