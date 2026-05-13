@@ -147,6 +147,12 @@ function renderVideosPage(){
       if(parent)v.big_video_id=parent.id;
     }
   });
+  // Enforce: L videos without big parent can't be in_progress/up_next
+  const _fixedIds=[];
+  st.videos.forEach(v=>{
+    if(!v.is_deleted&&v.video_type==='L'&&!v.big_video_id&&(v.status==='in_progress'||v.status==='up_next')){v.status='idea';_fixedIds.push(v.id);}
+  });
+  if(_fixedIds.length){save();_fixedIds.forEach(id=>{if(!String(id).startsWith('l-'))sbReqSilent('PATCH','videos',{status:'idea'},`?id=eq.${id}`);});}
   // Push any local-only videos to Supabase
   _vidSyncLocalVideos();
   _vidDashVids=null;_vidDashPostMap=null;
