@@ -253,30 +253,26 @@ function _vidRenderDashboard(){
     return h;
   })();
   return`
-    <div style="display:flex;position:absolute;top:0;left:0;right:0;bottom:0">
-      <div style="flex:2;min-width:0;display:flex;flex-direction:column;border-right:1px solid var(--border)">
-        <div class="vid-dash-header">
-          <div style="flex:1;min-width:0;padding-left:10px">Current</div>
-          ${(upNext.length||inProgress.length)?_colHdr:''}
+    <div style="display:grid;grid-template-columns:2fr 1fr;grid-template-rows:auto 1fr;position:absolute;top:0;left:0;right:0;bottom:0">
+      <div class="vid-dash-header" style="grid-column:1;grid-row:1;border-right:1px solid var(--border)">
+        <div style="flex:1;min-width:0;padding-left:10px">Current</div>
+        ${(upNext.length||inProgress.length)?_colHdr:''}
+      </div>
+      <div class="vid-dash-header" style="grid-column:2;grid-row:1">
+        <div style="padding-left:10px">Ideas <span class="vid-count">${ideas.length}</span></div>
+      </div>
+      <div style="grid-column:1;grid-row:2;min-height:0;overflow-y:auto;overflow-x:hidden;border-right:1px solid var(--border)">
+        <div class="vid-drop-zone" data-drop-status="up_next" ondragover="event.preventDefault()" ondrop="_vidDashDrop(event,'up_next')" style="min-height:40px;padding-bottom:8px">
+          <div style="font-size:9px;font-weight:600;color:var(--muted);padding:6px 6px 6px 16px;letter-spacing:.03em;background:#fff;display:flex;align-items:center">Up Next</div>
+          ${upNext.length?_vidDashList(upNext,false):'<div style="color:var(--muted);font-size:11px;padding:8px 10px;opacity:.5">Drag ideas here</div>'}
         </div>
-        <div style="flex:1;min-height:0;overflow-y:auto;overflow-x:hidden">
-          <div class="vid-drop-zone" data-drop-status="up_next" ondragover="event.preventDefault()" ondrop="_vidDashDrop(event,'up_next')" style="min-height:40px;padding-bottom:8px">
-            <div style="font-size:9px;font-weight:600;color:var(--muted);padding:6px 6px 6px 16px;letter-spacing:.03em;background:#fff;display:flex;align-items:center">Up Next</div>
-            ${upNext.length?_vidDashList(upNext,false):'<div style="color:var(--muted);font-size:11px;padding:8px 10px;opacity:.5">Drag ideas here</div>'}
-          </div>
-          <div class="vid-drop-zone" data-drop-status="in_progress" ondragover="event.preventDefault()" ondrop="_vidDashDrop(event,'in_progress')" style="min-height:40px;padding-bottom:8px">
-            <div style="font-size:9px;font-weight:600;color:var(--muted);padding:6px 6px 6px 16px;letter-spacing:.03em;border-top:1px solid rgba(210,205,228,.15);margin-top:4px;background:#fff;display:flex;align-items:center">In Progress</div>
-            ${inProgress.length?_vidDashList(inProgress,false):'<div style="color:var(--muted);font-size:11px;padding:8px 10px;opacity:.5">Drag up next here to start</div>'}
-          </div>
+        <div class="vid-drop-zone" data-drop-status="in_progress" ondragover="event.preventDefault()" ondrop="_vidDashDrop(event,'in_progress')" style="min-height:40px;padding-bottom:8px">
+          <div style="font-size:9px;font-weight:600;color:var(--muted);padding:6px 6px 6px 16px;letter-spacing:.03em;border-top:1px solid rgba(210,205,228,.15);margin-top:4px;background:#fff;display:flex;align-items:center">In Progress</div>
+          ${inProgress.length?_vidDashList(inProgress,false):'<div style="color:var(--muted);font-size:11px;padding:8px 10px;opacity:.5">Drag up next here to start</div>'}
         </div>
       </div>
-      <div style="flex:1;min-width:0;display:flex;flex-direction:column" ondragover="event.preventDefault()" ondrop="_vidDashDrop(event,'idea')">
-        <div class="vid-dash-header">
-          <div style="padding-left:10px">Ideas <span class="vid-count">${ideas.length}</span></div>
-        </div>
-        <div style="flex:1;min-height:0;overflow-y:auto">
-          ${ideasHtml}
-        </div>
+      <div style="grid-column:2;grid-row:2;min-height:0;overflow-y:auto" ondragover="event.preventDefault()" ondrop="_vidDashDrop(event,'idea')">
+        ${ideasHtml}
       </div>
     </div>`;
 }
