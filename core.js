@@ -830,7 +830,7 @@ function _syncRedoDiff(before,after){
   }
   const bV2=before.videos||[],aV2=after.videos||[];
   const vidFields=['title','topic','status','post_date','duration_minutes','video_type','big_video_id',
-    'step_build','step_record','step_film','step_cut','step_thumbnail','step_description','step_tableau_public','step_upload_tableau'];
+    'step_build','step_vo','step_film','step_cut','step_thumbnail','step_description','step_tableau_public','step_upload_tableau'];
   for(const v of aV2){
     const p=bV2.find(x=>String(x.id)===String(v.id));if(!p)continue;
     const ch={};
