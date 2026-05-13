@@ -1,5 +1,5 @@
 {
-  "exported_at": "2026-05-11T13:00:00.991Z",
+  "exported_at": "2026-05-13T13:00:01.357Z",
   "mode": "auto",
   "tables": {
     "tasks": [
@@ -549,6 +549,17 @@
         "done": true,
         "importance": null,
         "id": "da1ddf20-94ca-44e3-9c47-9d08477bff86",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Mochi dog food",
+        "category": "Home",
+        "due_date": "2026-05-12",
+        "done": true,
+        "importance": null,
+        "id": "9b16fa12-0f7f-474b-9d86-752b481409a2",
         "important": false,
         "notes": null,
         "goal_order": null
@@ -1203,17 +1214,6 @@
         "goal_order": null
       },
       {
-        "name": "Write linkedin post",
-        "category": "My work",
-        "due_date": "2026-05-11",
-        "done": false,
-        "importance": null,
-        "id": "a64a9176-2303-4ed3-8fe3-6b67ef432123",
-        "important": false,
-        "notes": null,
-        "goal_order": null
-      },
-      {
         "name": "Breakdown box",
         "category": "Home",
         "due_date": "2026-03-30",
@@ -1291,6 +1291,17 @@
         "goal_order": null
       },
       {
+        "name": "Write linkedin post",
+        "category": "My work",
+        "due_date": "2026-05-11",
+        "done": true,
+        "importance": null,
+        "id": "a64a9176-2303-4ed3-8fe3-6b67ef432123",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
         "name": "Sunny meds",
         "category": "Home",
         "due_date": "2026-03-26",
@@ -1330,6 +1341,17 @@
         "done": true,
         "importance": null,
         "id": "699339d9-240a-41c7-8f43-f696168df2b8",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Stretch",
+        "category": "Home",
+        "due_date": "2026-05-13",
+        "done": false,
+        "importance": null,
+        "id": "e0b54e7f-e011-438d-b39d-68f07ffd3b5e",
         "important": false,
         "notes": null,
         "goal_order": null
@@ -1907,12 +1929,12 @@
         "goal_order": null
       },
       {
-        "name": "VO drill down",
-        "category": "My work",
-        "due_date": "2026-05-11",
-        "done": false,
+        "name": "Respond comments",
+        "category": "Home",
+        "due_date": "2026-05-12",
+        "done": true,
         "importance": null,
-        "id": "d687cd58-082d-493b-a334-45e8017f3e88",
+        "id": "8cac8584-7f0b-4393-bb92-e56037d47faa",
         "important": false,
         "notes": null,
         "goal_order": null
@@ -2160,17 +2182,6 @@
         "goal_order": 0
       },
       {
-        "name": "Tab license issue",
-        "category": "My work",
-        "due_date": "2026-05-11",
-        "done": false,
-        "importance": null,
-        "id": "0229bedc-773f-4ab3-8332-cab3d894dd67",
-        "important": true,
-        "notes": null,
-        "goal_order": null
-      },
-      {
         "name": "Unapplied Cash Doc",
         "category": "Work",
         "due_date": "2026-04-14",
@@ -2193,24 +2204,24 @@
         "goal_order": null
       },
       {
-        "name": "Respond comments",
+        "name": "Necklace untangle",
         "category": "Home",
-        "due_date": "2026-05-11",
+        "due_date": "2026-05-13",
         "done": false,
         "importance": null,
-        "id": "8cac8584-7f0b-4393-bb92-e56037d47faa",
+        "id": "59aefcb0-bd6e-4150-af09-f62aa73f2520",
         "important": false,
         "notes": null,
         "goal_order": null
       },
       {
-        "name": "Icons",
-        "category": "Work",
-        "due_date": "2026-05-11",
+        "name": "Tab license issue",
+        "category": "My work",
+        "due_date": "2026-05-14",
         "done": false,
         "importance": null,
-        "id": "73e63302-bd4d-4a7b-93f4-f460b98c30ab",
-        "important": false,
+        "id": "0229bedc-773f-4ab3-8332-cab3d894dd67",
+        "important": true,
         "notes": null,
         "goal_order": null
       },
@@ -2233,6 +2244,28 @@
         "importance": null,
         "id": "e1e65482-c567-4119-b0dc-7e48a3a84c57",
         "important": true,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "VO drill down",
+        "category": "My work",
+        "due_date": "2026-05-13",
+        "done": false,
+        "importance": null,
+        "id": "d687cd58-082d-493b-a334-45e8017f3e88",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Icons",
+        "category": "Work",
+        "due_date": "2026-05-13",
+        "done": false,
+        "importance": null,
+        "id": "73e63302-bd4d-4a7b-93f4-f460b98c30ab",
+        "important": false,
         "notes": null,
         "goal_order": null
       },
@@ -2776,12 +2809,12 @@
         "goal_order": null
       },
       {
-        "name": "Write Sindis martini card",
-        "category": "Social",
+        "name": "Figure out UX videos",
+        "category": "My work",
         "due_date": "2026-05-11",
-        "done": false,
+        "done": true,
         "importance": null,
-        "id": "f082efee-e20f-480f-b88d-853c1cdedbd6",
+        "id": "030fcae4-8dda-4684-a687-96f852a782a7",
         "important": false,
         "notes": null,
         "goal_order": null
@@ -3073,12 +3106,12 @@
         "goal_order": null
       },
       {
-        "name": "Figure out UX videos",
-        "category": "My work",
-        "due_date": "2026-05-11",
+        "name": "ACL",
+        "category": "Social",
+        "due_date": "2026-10-02",
         "done": false,
         "importance": null,
-        "id": "030fcae4-8dda-4684-a687-96f852a782a7",
+        "id": "53f31c56-704e-42dc-be44-79e847869fef",
         "important": false,
         "notes": null,
         "goal_order": null
@@ -3157,6 +3190,17 @@
         "importance": null,
         "id": "36953d43-6cc6-4fc4-8cd0-4d82686cb14a",
         "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Post linkedin",
+        "category": "My work",
+        "due_date": "2026-05-11",
+        "done": true,
+        "importance": null,
+        "id": "14927330-d96d-4621-a51e-7fcca7864ea4",
+        "important": true,
         "notes": null,
         "goal_order": null
       },
@@ -3249,17 +3293,6 @@
         "goal_order": null
       },
       {
-        "name": "Post linkedin",
-        "category": "My work",
-        "due_date": "2026-05-11",
-        "done": false,
-        "importance": null,
-        "id": "14927330-d96d-4621-a51e-7fcca7864ea4",
-        "important": true,
-        "notes": null,
-        "goal_order": null
-      },
-      {
         "name": "TC: method + demo 1",
         "category": "My work",
         "due_date": "2026-04-26",
@@ -3279,6 +3312,17 @@
         "id": "7029683a-d06b-4a7b-9de1-13897e3d235f",
         "important": true,
         "notes": "- create video snippets for 3 demos \nzoom in fade background (figma) show interaction.",
+        "goal_order": null
+      },
+      {
+        "name": "Write Sindis martini card",
+        "category": "Social",
+        "due_date": "2026-05-11",
+        "done": true,
+        "importance": null,
+        "id": "f082efee-e20f-480f-b88d-853c1cdedbd6",
+        "important": false,
+        "notes": null,
         "goal_order": null
       },
       {
@@ -3610,18 +3654,20 @@
         "important": false,
         "notes": null,
         "goal_order": null
+      },
+      {
+        "name": "Film modern UX",
+        "category": "My work",
+        "due_date": "2026-05-16",
+        "done": false,
+        "importance": null,
+        "id": "6e886ef3-a3d1-43a7-9da7-b5ce6999ddb0",
+        "important": false,
+        "notes": null,
+        "goal_order": null
       }
     ],
     "shopping_list": [
-      {
-        "id": "4f56c0a3-c7bd-4f96-94f7-ae33347fb853",
-        "name": "Seaweed",
-        "store": "HEB",
-        "done": false,
-        "created_at": "2026-04-26T02:15:36.632293+00:00",
-        "due_date": null,
-        "shop_order": null
-      },
       {
         "id": "0ee083d7-85d0-424b-82e3-2a7f84c3723f",
         "name": "Grippy socks",
@@ -3650,15 +3696,6 @@
         "shop_order": null
       },
       {
-        "id": "c694f1b7-4325-4b72-aa6c-2538bbc3779e",
-        "name": "Pizza rolls",
-        "store": "HEB",
-        "done": false,
-        "created_at": "2026-05-01T13:58:19.969555+00:00",
-        "due_date": null,
-        "shop_order": null
-      },
-      {
         "id": "8a4c2056-807a-464d-9a3e-db4c290d5cc2",
         "name": "Outdoor throw pillows",
         "store": "Home goods",
@@ -3666,24 +3703,6 @@
         "created_at": "2026-03-26T14:45:18.837297+00:00",
         "due_date": null,
         "shop_order": 6
-      },
-      {
-        "id": "5230f851-04d2-4eab-afc1-e2576f4f1150",
-        "name": "Breadsticks",
-        "store": "Other",
-        "done": false,
-        "created_at": "2026-05-03T01:23:31.976185+00:00",
-        "due_date": null,
-        "shop_order": null
-      },
-      {
-        "id": "1cb304cf-ca49-4ec4-a5ab-58ba06433243",
-        "name": "Pepcid",
-        "store": "HEB",
-        "done": false,
-        "created_at": "2026-05-07T21:14:01.818559+00:00",
-        "due_date": null,
-        "shop_order": null
       },
       {
         "id": "63d4a10b-e42d-43dd-9771-728f5e6cabfb",
@@ -3803,6 +3822,15 @@
         "shop_order": null
       },
       {
+        "id": "4f56c0a3-c7bd-4f96-94f7-ae33347fb853",
+        "name": "Seaweed",
+        "store": "HEB",
+        "done": true,
+        "created_at": "2026-04-26T02:15:36.632293+00:00",
+        "due_date": null,
+        "shop_order": 10
+      },
+      {
         "id": "5060e587-8c21-4ce5-8bc3-ec6d43be311e",
         "name": "Garlic squeeze",
         "store": "HEB",
@@ -3812,20 +3840,20 @@
         "shop_order": 6
       },
       {
-        "id": "2fc1a3c7-0cbc-4d49-a19a-48f20e289721",
-        "name": "Bowls",
-        "store": "Ikea",
-        "done": false,
-        "created_at": "2026-03-18T17:50:33.110344+00:00",
-        "due_date": null,
-        "shop_order": 5
-      },
-      {
         "id": "8d195c44-9915-4513-812e-e30725a386b2",
         "name": "Donut lamp",
         "store": "Ikea",
         "done": false,
         "created_at": "2026-03-10T14:18:17.412058+00:00",
+        "due_date": null,
+        "shop_order": 9
+      },
+      {
+        "id": "5230f851-04d2-4eab-afc1-e2576f4f1150",
+        "name": "Breadsticks",
+        "store": "HEB",
+        "done": false,
+        "created_at": "2026-05-03T01:23:31.976185+00:00",
         "due_date": null,
         "shop_order": 1
       },
@@ -3836,16 +3864,25 @@
         "done": false,
         "created_at": "2026-03-26T14:44:45.457788+00:00",
         "due_date": null,
-        "shop_order": 0
+        "shop_order": 10
       },
       {
-        "id": "75b03e08-a4d3-4775-894e-baf6426de22d",
-        "name": "Mochi carrier",
-        "store": "Other",
+        "id": "1cb304cf-ca49-4ec4-a5ab-58ba06433243",
+        "name": "Pepcid",
+        "store": "HEB",
         "done": false,
-        "created_at": "2026-04-16T12:46:32.121703+00:00",
+        "created_at": "2026-05-07T21:14:01.818559+00:00",
         "due_date": null,
-        "shop_order": 3
+        "shop_order": 4
+      },
+      {
+        "id": "2fc1a3c7-0cbc-4d49-a19a-48f20e289721",
+        "name": "Bowls",
+        "store": "Ikea",
+        "done": false,
+        "created_at": "2026-03-18T17:50:33.110344+00:00",
+        "due_date": null,
+        "shop_order": 8
       },
       {
         "id": "9eeb0d0c-283a-4e0d-9f29-b1bc965db522",
@@ -3854,7 +3891,52 @@
         "done": false,
         "created_at": "2026-03-10T14:18:17.412058+00:00",
         "due_date": null,
-        "shop_order": 4
+        "shop_order": 11
+      },
+      {
+        "id": "2371baad-c5c7-4812-9bf7-bd4e38be036f",
+        "name": "Cajun seasoning",
+        "store": "HEB",
+        "done": false,
+        "created_at": "2026-05-11T22:54:20.712832+00:00",
+        "due_date": null,
+        "shop_order": 3
+      },
+      {
+        "id": "dbf2f383-9767-4dfd-8b11-1bb55e2ef291",
+        "name": "Mapo tofu",
+        "store": "HEB",
+        "done": false,
+        "created_at": "2026-05-12T01:35:04.516692+00:00",
+        "due_date": null,
+        "shop_order": 6
+      },
+      {
+        "id": "75b03e08-a4d3-4775-894e-baf6426de22d",
+        "name": "Mochi carrier",
+        "store": "Online",
+        "done": false,
+        "created_at": "2026-04-16T12:46:32.121703+00:00",
+        "due_date": null,
+        "shop_order": 7
+      },
+      {
+        "id": "c694f1b7-4325-4b72-aa6c-2538bbc3779e",
+        "name": "Pizza rolls",
+        "store": "HEB",
+        "done": false,
+        "created_at": "2026-05-01T13:58:19.969555+00:00",
+        "due_date": null,
+        "shop_order": 5
+      },
+      {
+        "id": "801262fd-2885-4438-a026-def289aa565d",
+        "name": "Liners",
+        "store": "HEB",
+        "done": false,
+        "created_at": "2026-05-11T22:53:36.720688+00:00",
+        "due_date": null,
+        "shop_order": 2
       }
     ],
     "travel": [
@@ -5476,20 +5558,6 @@
         "done": false
       },
       {
-        "id": "f2bb8652-9975-4050-9d71-11b03566fcac",
-        "title": "Write Sindis martini card",
-        "day_date": "2026-05-03",
-        "start_time": "17:00:00",
-        "duration_minutes": 30,
-        "category": "Social",
-        "created_at": "2026-05-02T21:21:47.275612+00:00",
-        "start_minutes": 1020,
-        "task_id": "f082efee-e20f-480f-b88d-853c1cdedbd6",
-        "rec_id": null,
-        "shop_id": null,
-        "done": false
-      },
-      {
         "id": "4854327e-06db-413c-9869-8b4ec45e04de",
         "title": "Unapplied Cash",
         "day_date": "2026-04-09",
@@ -6479,6 +6547,20 @@
         "created_at": "2026-03-22T03:04:22.460845+00:00",
         "start_minutes": 600,
         "task_id": "d888ef3f-c764-4ec2-8118-7c82c94087a8",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
+        "id": "f2bb8652-9975-4050-9d71-11b03566fcac",
+        "title": "Write Sindis martini card",
+        "day_date": "2026-05-03",
+        "start_time": "17:00:00",
+        "duration_minutes": 30,
+        "category": "Social",
+        "created_at": "2026-05-02T21:21:47.275612+00:00",
+        "start_minutes": 1020,
+        "task_id": "f082efee-e20f-480f-b88d-853c1cdedbd6",
         "rec_id": null,
         "shop_id": null,
         "done": true
@@ -7713,7 +7795,7 @@
         "task_id": "14927330-d96d-4621-a51e-7fcca7864ea4",
         "rec_id": null,
         "shop_id": null,
-        "done": false
+        "done": true
       },
       {
         "id": "47ed3a57-7639-4c5a-9843-fd78fa8245c4",
@@ -7814,6 +7896,34 @@
         "done": true
       },
       {
+        "id": "50939130-0b03-4117-b02e-f68c60a24562",
+        "title": "Tab license issue",
+        "day_date": "2026-05-14",
+        "start_time": "13:00:00",
+        "duration_minutes": 60,
+        "category": "My work",
+        "created_at": "2026-05-11T14:59:12.920755+00:00",
+        "start_minutes": 780,
+        "task_id": "0229bedc-773f-4ab3-8332-cab3d894dd67",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "7b25cb5d-ff3a-499b-bdba-a8a94027155e",
+        "title": "Film modern UX",
+        "day_date": "2026-05-16",
+        "start_time": "13:15:00",
+        "duration_minutes": 60,
+        "category": "My work",
+        "created_at": "2026-05-11T14:13:21.651075+00:00",
+        "start_minutes": 585,
+        "task_id": "6e886ef3-a3d1-43a7-9da7-b5ce6999ddb0",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
         "id": "2de6da76-2e6d-48c4-826e-1d55a7149f76",
         "title": "Book london → iceland",
         "day_date": "2026-04-20",
@@ -7898,6 +8008,20 @@
         "done": true
       },
       {
+        "id": "dec9b274-62ca-4052-85b6-94cbea50c04c",
+        "title": "Pups teeth",
+        "day_date": "2026-05-12",
+        "start_time": "17:30:00",
+        "duration_minutes": 30,
+        "category": "Recurring",
+        "created_at": "2026-05-12T16:09:43.427497+00:00",
+        "start_minutes": 1110,
+        "task_id": null,
+        "rec_id": "10",
+        "shop_id": null,
+        "done": false
+      },
+      {
         "id": "0988ea26-3538-44d2-928b-36a54ab8316d",
         "title": "TC: film and add snippets",
         "day_date": "2026-04-26",
@@ -7910,6 +8034,34 @@
         "rec_id": null,
         "shop_id": null,
         "done": true
+      },
+      {
+        "id": "11463a85-a6ef-4274-9228-b8020891a960",
+        "title": "Icons",
+        "day_date": "2026-05-13",
+        "start_time": "12:00:00",
+        "duration_minutes": 60,
+        "category": "Work",
+        "created_at": "2026-05-13T01:01:36.341297+00:00",
+        "start_minutes": 720,
+        "task_id": "73e63302-bd4d-4a7b-93f4-f460b98c30ab",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "69cd1c32-860c-49be-a96c-be84d45d1b8d",
+        "title": "Stretch",
+        "day_date": "2026-05-13",
+        "start_time": "19:00:00",
+        "duration_minutes": 30,
+        "category": "Home",
+        "created_at": "2026-05-13T02:37:07.799874+00:00",
+        "start_minutes": 1140,
+        "task_id": "e0b54e7f-e011-438d-b39d-68f07ffd3b5e",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
       },
       {
         "id": "f60e6791-c0e5-46af-b555-fb3589f867b1",
@@ -9396,20 +9548,6 @@
         "done": true
       },
       {
-        "id": "56087af7-30b4-4eed-b509-5cbd0b60505c",
-        "title": "Write Sindis martini card",
-        "day_date": "2026-04-30",
-        "start_time": "12:45:00",
-        "duration_minutes": 30,
-        "category": "Social",
-        "created_at": "2026-04-30T02:02:33.12529+00:00",
-        "start_minutes": 1110,
-        "task_id": "f082efee-e20f-480f-b88d-853c1cdedbd6",
-        "rec_id": null,
-        "shop_id": null,
-        "done": false
-      },
-      {
         "id": "7950acee-d302-44aa-870c-6203fa4ff8aa",
         "title": "Submit 6 sigma",
         "day_date": "2026-04-29",
@@ -9494,6 +9632,20 @@
         "done": true
       },
       {
+        "id": "b1dfb9c1-01f2-4980-8949-511165b3dbec",
+        "title": "Sindi b day present",
+        "day_date": "2026-04-30",
+        "start_time": "16:30:00",
+        "duration_minutes": 30,
+        "category": "Home",
+        "created_at": "2026-04-30T02:02:51.228628+00:00",
+        "start_minutes": 1140,
+        "task_id": "f10a3358-af34-4a2d-a211-b8664ec26bb2",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
         "id": "c3188853-3e24-4a5c-a524-ff6f8433e247",
         "title": "Figure out UX videos",
         "day_date": "2026-05-10",
@@ -9505,18 +9657,32 @@
         "task_id": "030fcae4-8dda-4684-a687-96f852a782a7",
         "rec_id": null,
         "shop_id": null,
-        "done": false
+        "done": true
       },
       {
-        "id": "b1dfb9c1-01f2-4980-8949-511165b3dbec",
-        "title": "Sindi b day present",
-        "day_date": "2026-04-30",
-        "start_time": "16:30:00",
+        "id": "4970454a-d36f-4657-8268-c145c283dead",
+        "title": "Figure out UX videos",
+        "day_date": "2026-05-11",
+        "start_time": "09:15:00",
+        "duration_minutes": 60,
+        "category": "My work",
+        "created_at": "2026-05-11T13:28:56.274983+00:00",
+        "start_minutes": 540,
+        "task_id": "030fcae4-8dda-4684-a687-96f852a782a7",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
+        "id": "c541879c-ed55-47bf-95f6-92e4cf435d66",
+        "title": "Write Sindis martini card",
+        "day_date": "2026-05-11",
+        "start_time": "11:45:00",
         "duration_minutes": 30,
-        "category": "Home",
-        "created_at": "2026-04-30T02:02:51.228628+00:00",
-        "start_minutes": 1140,
-        "task_id": "f10a3358-af34-4a2d-a211-b8664ec26bb2",
+        "category": "Social",
+        "created_at": "2026-05-11T13:29:16.656121+00:00",
+        "start_minutes": 990,
+        "task_id": "f082efee-e20f-480f-b88d-853c1cdedbd6",
         "rec_id": null,
         "shop_id": null,
         "done": true
@@ -9534,6 +9700,20 @@
         "rec_id": null,
         "shop_id": null,
         "done": true
+      },
+      {
+        "id": "d8a4373c-2113-462e-a508-fcd1450be19f",
+        "title": "Pool party Olivia b day",
+        "day_date": "2026-05-16",
+        "start_time": "11:00:00",
+        "duration_minutes": 405,
+        "category": "Social",
+        "created_at": "2026-05-11T14:13:26.00683+00:00",
+        "start_minutes": 645,
+        "task_id": "503d5aa3-fe54-4f73-b674-861dcc027718",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
       },
       {
         "id": "2a428be6-196e-48ec-a6c9-ad629b5b2793",
@@ -9562,6 +9742,34 @@
         "rec_id": null,
         "shop_id": null,
         "done": true
+      },
+      {
+        "id": "5dd8cbf2-960c-4e6c-acd2-82bfbc35363a",
+        "title": "VO drill down",
+        "day_date": "2026-05-13",
+        "start_time": "13:00:00",
+        "duration_minutes": 60,
+        "category": "My work",
+        "created_at": "2026-05-13T01:01:36.340488+00:00",
+        "start_minutes": 780,
+        "task_id": "d687cd58-082d-493b-a334-45e8017f3e88",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "b28edbc0-26ff-4dc1-82a4-80caf2e22422",
+        "title": "Necklace untangle",
+        "day_date": "2026-05-13",
+        "start_time": "15:00:00",
+        "duration_minutes": 30,
+        "category": "Home",
+        "created_at": "2026-05-13T02:37:05.956638+00:00",
+        "start_minutes": 900,
+        "task_id": "59aefcb0-bd6e-4150-af09-f62aa73f2520",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
       },
       {
         "id": "aa3b42a5-ae34-479c-9bd9-9aa188383312",
@@ -9604,20 +9812,6 @@
         "rec_id": null,
         "shop_id": null,
         "done": true
-      },
-      {
-        "id": "a56d8334-439b-49e8-9e81-242417e86f3f",
-        "title": "Write Sindis martini card",
-        "day_date": "2026-05-10",
-        "start_time": "10:15:00",
-        "duration_minutes": 60,
-        "category": "Social",
-        "created_at": "2026-05-10T22:00:43.876304+00:00",
-        "start_minutes": 615,
-        "task_id": "f082efee-e20f-480f-b88d-853c1cdedbd6",
-        "rec_id": null,
-        "shop_id": null,
-        "done": false
       },
       {
         "id": "3cb3ac17-7b7f-491d-a44e-a509e8ce9d68",
@@ -9690,6 +9884,20 @@
         "done": true
       },
       {
+        "id": "a56d8334-439b-49e8-9e81-242417e86f3f",
+        "title": "Write Sindis martini card",
+        "day_date": "2026-05-10",
+        "start_time": "10:15:00",
+        "duration_minutes": 60,
+        "category": "Social",
+        "created_at": "2026-05-10T22:00:43.876304+00:00",
+        "start_minutes": 615,
+        "task_id": "f082efee-e20f-480f-b88d-853c1cdedbd6",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
         "id": "81bbb32e-15e0-4d0b-a16a-bdc7df007d4b",
         "title": "Practice presentation",
         "day_date": "2026-05-04",
@@ -9727,6 +9935,34 @@
         "created_at": "2026-05-01T18:38:43.120394+00:00",
         "start_minutes": 435,
         "task_id": "b7609adf-3057-4e6c-ba05-fdbbf15db8ae",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
+        "id": "56087af7-30b4-4eed-b509-5cbd0b60505c",
+        "title": "Write Sindis martini card",
+        "day_date": "2026-04-30",
+        "start_time": "12:45:00",
+        "duration_minutes": 30,
+        "category": "Social",
+        "created_at": "2026-04-30T02:02:33.12529+00:00",
+        "start_minutes": 1110,
+        "task_id": "f082efee-e20f-480f-b88d-853c1cdedbd6",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
+        "id": "49b1ed14-a44d-4832-a23e-e2000bbd83fe",
+        "title": "Respond comments",
+        "day_date": "2026-05-12",
+        "start_time": "11:00:00",
+        "duration_minutes": 60,
+        "category": "Home",
+        "created_at": "2026-05-11T22:55:13.219722+00:00",
+        "start_minutes": 525,
+        "task_id": "8cac8584-7f0b-4393-bb92-e56037d47faa",
         "rec_id": null,
         "shop_id": null,
         "done": true
