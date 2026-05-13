@@ -1459,7 +1459,7 @@ function _vidTypeChanged(type){
 }
 function _vidUpdateModalStep(el,val){
   el.style.cssText=_vidModalStepCSS(val);
-  el.textContent=val==='done'?'✓':'';
+  el.textContent='';
   el.tabIndex=val==='na'?-1:0;
   el.parentElement.querySelector('span').style.color=val==='na'?'var(--border)':'var(--muted)';
 }
