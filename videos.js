@@ -1050,10 +1050,10 @@ function _vidRenderSteps(vals){
   }).join('');
 }
 function _vidModalStepCSS(val){
-  const base='width:24px;height:24px;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;user-select:none;';
-  if(val==='done')return base+'border:2px solid #10b981;background:#10b981;color:#fff';
-  if(val==='na')return base+'border:none;background:transparent;color:transparent';
-  return base+'border:2px solid var(--border);background:transparent;color:transparent';
+  const base='width:18px;height:18px;border-radius:3px;cursor:pointer;display:flex;align-items:center;justify-content:center;user-select:none;transition:transform .1s;';
+  if(val==='done')return base+'border:1.5px solid #10b981;background:#10b981';
+  if(val==='na')return base+'border:1.5px solid var(--border);background:var(--border);opacity:.35';
+  return base+'border:1.5px solid rgba(210,205,228,.4);background:transparent';
 }
 function _vidToggleModalStep(el){
   const cur=el.dataset.val;
