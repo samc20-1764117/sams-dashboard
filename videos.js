@@ -1393,9 +1393,10 @@ function _vidRenderSteps(vals){
   const el=document.getElementById('vmSteps');
   el.innerHTML=VID_STEPS.map(s=>{
     const cur=vals[s]||'not_started';
+    const tab=cur==='na'?-1:0;
     return`<div style="display:flex;flex-direction:column;gap:2px;align-items:center">
       <span style="font-size:9px;color:${cur==='na'?'var(--border)':'var(--muted)'}">${VID_STEP_LABELS[s]}</span>
-      <div data-step="${s}" data-val="${cur}" onclick="_vidToggleModalStep(this)" oncontextmenu="_vidNaModalStep(event,this);return false" style="${_vidModalStepCSS(cur)}"></div>
+      <div data-step="${s}" data-val="${cur}" tabindex="${tab}" onclick="_vidToggleModalStep(this)" oncontextmenu="_vidNaModalStep(event,this);return false" onkeydown="_vidStepKey(event,this)" style="${_vidModalStepCSS(cur)}"></div>
     </div>`;
   }).join('');
 }
@@ -1404,6 +1405,12 @@ function _vidModalStepCSS(val){
   if(val==='done')return base+'border:1.5px solid #10b981;background:#10b981';
   if(val==='na')return base+'border:1.5px solid var(--border);background:var(--border);opacity:.35';
   return base+'border:1.5px solid rgba(210,205,228,.4);background:transparent';
+}
+function _vidStepKey(event,el){
+  if(event.key==='c'||event.key==='C'){
+    event.preventDefault();
+    _vidToggleModalStep(el);
+  }
 }
 function _vidToggleModalStep(el){
   const cur=el.dataset.val;
@@ -1453,6 +1460,7 @@ function _vidTypeChanged(type){
 function _vidUpdateModalStep(el,val){
   el.style.cssText=_vidModalStepCSS(val);
   el.textContent=val==='done'?'✓':'';
+  el.tabIndex=val==='na'?-1:0;
   el.parentElement.querySelector('span').style.color=val==='na'?'var(--border)':'var(--muted)';
 }
 
