@@ -147,10 +147,13 @@ function renderVideosPage(){
       if(parent)v.big_video_id=parent.id;
     }
   });
-  // Enforce: L videos without big parent can't be in_progress/up_next
+  // Enforce: L videos without a valid big parent can't be in_progress/up_next
+  const _activeBigIds=new Set(bVids.map(v=>String(v.id)));
   const _fixedIds=[];
   st.videos.forEach(v=>{
-    if(!v.is_deleted&&v.video_type==='L'&&!v.big_video_id&&(v.status==='in_progress'||v.status==='up_next')){v.status='idea';_fixedIds.push(v.id);}
+    if(v.is_deleted||v.video_type==='B')return;
+    const hasValidParent=v.big_video_id&&_activeBigIds.has(String(v.big_video_id));
+    if(!hasValidParent&&(v.status==='in_progress'||v.status==='up_next')){v.status='idea';_fixedIds.push(v.id);}
   });
   if(_fixedIds.length){save();_fixedIds.forEach(id=>{if(!String(id).startsWith('l-'))sbReqSilent('PATCH','videos',{status:'idea'},`?id=eq.${id}`);});}
   // Push any local-only videos to Supabase
