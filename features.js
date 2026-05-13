@@ -3338,10 +3338,7 @@ document.addEventListener('click',function(e){
 document.addEventListener('keydown',function(e){
   if(!_qnOpen||e.key!=='Enter')return;
   if(e.target.closest('.qn-text[contenteditable="true"]'))return;
-  const inp=document.getElementById('qnInput');
-  if(!inp)return;
-  const txt=(inp.value||'').trim();
-  if(txt)return;
+  if(document.activeElement&&document.activeElement.id==='qnInput')return;
   e.preventDefault();_qnOpen=false;document.getElementById('qnPanel').classList.remove('open');
 });
 
