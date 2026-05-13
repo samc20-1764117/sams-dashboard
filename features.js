@@ -3196,7 +3196,7 @@ function copyShopList(){
 let _qnOpen=false,_qnNotes=[],_qnLoaded=false;
 async function _qnFetch(){
   if(_qnLoaded)return;
-  const rows=await sbReqSilent('GET','quick_notes',null,'?is_visible=is.true&order=created_at.asc');
+  const rows=await sbReqSilent('GET','quick_notes',null,'?is_visible=is.true&order=sort_order.asc.nullslast,created_at.asc');
   if(rows&&Array.isArray(rows)){_qnNotes=rows;_qnLoaded=true;}
 }
 function toggleQN(){
@@ -3208,9 +3208,9 @@ function renderQN(){
   const el=document.getElementById('qnList');
   if(!el)return;
   if(!_qnNotes.length){el.innerHTML='<div class="qn-empty">No notes yet</div>';return;}
-  el.innerHTML=_qnNotes.map(n=>`
-    <div class="qn-item">
-      <div class="qn-bullet"></div>
+  el.innerHTML=_qnNotes.map((n,i)=>`
+    <div class="qn-item" data-qnid="${n.id}" data-qnidx="${i}">
+      <div class="qn-drag" onmousedown="_qnDragStart(event,${i})" title="Drag to reorder">⠿</div>
       <span class="qn-text" ondblclick="editQN(this,'${n.id}')">${escHtml(n.note_text)}</span>
       <button class="qn-del" onclick="event.stopPropagation();deleteQN('${n.id}')" title="Remove">✕</button>
     </div>`).join('');
@@ -3221,10 +3221,11 @@ async function addQN(){
   const txt=(inp?.value||'').trim();
   if(!txt){_qnOpen=false;document.getElementById('qnPanel').classList.remove('open');return;}
   inp.value='';inp.focus();
-  const tmp={id:'qn-'+Date.now(),note_text:txt,is_visible:true};
+  const maxSort=_qnNotes.reduce((m,n)=>Math.max(m,n.sort_order||0),0);
+  const tmp={id:'qn-'+Date.now(),note_text:txt,is_visible:true,sort_order:maxSort+1};
   _qnNotes.push(tmp);renderQN();
   const list=document.getElementById('qnList');if(list)list.scrollTop=9999;
-  const sv=await sbReqSilent('POST','quick_notes',{note_text:txt});
+  const sv=await sbReqSilent('POST','quick_notes',{note_text:txt,sort_order:maxSort+1});
   if(sv&&sv[0]){const ix=_qnNotes.findIndex(n=>n.id===tmp.id);if(ix>-1)_qnNotes[ix]=sv[0];}
 }
 function editQN(span,id){
@@ -3241,6 +3242,44 @@ function editQN(span,id){
   };
   span.onblur=done;
   span.onkeydown=e=>{e.stopPropagation();if(e.key==='Enter'){e.preventDefault();span.blur();}if(e.key==='Escape'){span.textContent=orig;span.blur();}};
+}
+function _qnDragStart(e,idx){
+  e.preventDefault();
+  const list=document.getElementById('qnList');
+  const items=[...list.querySelectorAll('.qn-item')];
+  const dragged=items[idx];
+  dragged.classList.add('qn-dragging');
+  const startY=e.clientY;
+  let curIdx=idx;
+  const onMove=ev=>{
+    const dy=ev.clientY-startY;
+    dragged.style.transform=`translateY(${dy}px)`;
+    dragged.style.zIndex='10';
+    const midY=dragged.getBoundingClientRect().top+dragged.offsetHeight/2;
+    for(let i=0;i<items.length;i++){
+      if(i===curIdx)continue;
+      const r=items[i].getBoundingClientRect();
+      const itemMid=r.top+r.height/2;
+      if(curIdx<i&&midY>itemMid){list.insertBefore(dragged,items[i].nextSibling);items.splice(curIdx,1);items.splice(i,0,dragged);curIdx=i;break;}
+      if(curIdx>i&&midY<itemMid){list.insertBefore(dragged,items[i]);items.splice(curIdx,1);items.splice(i,0,dragged);curIdx=i;break;}
+    }
+  };
+  const onUp=()=>{
+    document.removeEventListener('mousemove',onMove);
+    document.removeEventListener('mouseup',onUp);
+    dragged.classList.remove('qn-dragging');
+    dragged.style.transform='';dragged.style.zIndex='';
+    if(curIdx===idx)return;
+    // Rebuild _qnNotes order from DOM
+    const newOrder=[...list.querySelectorAll('.qn-item')].map(el=>_qnNotes.find(n=>String(n.id)===el.dataset.qnid)).filter(Boolean);
+    _qnNotes=newOrder;
+    _qnNotes.forEach((n,i)=>{n.sort_order=i;});
+    renderQN();
+    // Persist all sort_orders
+    _qnNotes.forEach(n=>{if(!String(n.id).startsWith('qn-'))sbReqSilent('PATCH','quick_notes',{sort_order:n.sort_order},`?id=eq.${n.id}`);});
+  };
+  document.addEventListener('mousemove',onMove);
+  document.addEventListener('mouseup',onUp);
 }
 async function deleteQN(id){
   _qnNotes=_qnNotes.filter(n=>String(n.id)!==String(id));

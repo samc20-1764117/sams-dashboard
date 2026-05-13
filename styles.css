@@ -601,7 +601,11 @@ body.dark .qn-coil{border-color:rgba(194,107,79,.3);background:rgba(40,22,14,.8)
 .qn-list{flex:1;overflow-y:auto;padding:6px 12px;scrollbar-width:thin;scrollbar-color:rgba(180,160,140,.2) transparent;background-image:repeating-linear-gradient(transparent,transparent 27px,rgba(180,150,100,.1) 27px,rgba(180,150,100,.1) 28px);background-size:100% 28px;background-position:0 6px}
 body.dark .qn-list{background-image:repeating-linear-gradient(transparent,transparent 27px,rgba(255,180,80,.06) 27px,rgba(255,180,80,.06) 28px)}
 .qn-list::-webkit-scrollbar{width:3px}.qn-list::-webkit-scrollbar-thumb{background:rgba(180,160,140,.2);border-radius:2px}
-.qn-item{display:flex;align-items:flex-start;gap:7px;padding:5px 4px;min-height:31px;border-radius:6px;transition:background .1s}
+.qn-item{display:flex;align-items:flex-start;gap:7px;padding:5px 4px;min-height:31px;border-radius:6px;transition:background .1s;position:relative}
+.qn-dragging{opacity:.7;background:rgba(194,107,79,.1);box-shadow:0 2px 8px rgba(0,0,0,.12);border-radius:6px}
+.qn-drag{cursor:grab;color:var(--subtle);font-size:10px;flex-shrink:0;margin-top:3px;opacity:0;transition:opacity .12s;user-select:none;letter-spacing:-1px}
+.qn-item:hover .qn-drag{opacity:.6}
+.qn-drag:hover{opacity:1!important;color:var(--accent)}
 .qn-item:hover{background:rgba(255,237,213,.55)}
 body.dark .qn-item:hover{background:rgba(255,255,255,.07)}
 .qn-bullet{width:5px;height:5px;border-radius:50%;background:var(--accent);opacity:.6;flex-shrink:0;margin-top:5px}
