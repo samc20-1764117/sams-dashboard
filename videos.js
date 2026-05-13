@@ -209,7 +209,7 @@ function renderVideosPage(){
             <span style="font-weight:600;color:#10b981">${stats.published}</span>
           </div>
         </div>
-        <button onclick="openVidModal()" style="background:rgba(255,255,255,.18);border:1.5px solid rgba(255,255,255,.45);border-radius:20px;padding:4px 8px;display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer;margin-right:90px" title="Add video">
+        <button onclick="openVidModal()" style="background:transparent;border:none;padding:4px;display:flex;align-items:center;cursor:pointer;margin-right:90px" title="Add video">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         </button>
       </div>
