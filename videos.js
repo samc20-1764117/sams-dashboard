@@ -50,8 +50,8 @@ let _vidView='dashboard'; // dashboard | table | board | groups
 let _vidSortCol=null,_vidSortDir=1,_vidShowCompleted=false;
 let _vidMonthOffset=0; // 0=current month, -1=last month, etc
 
-const VID_STEPS=['step_build','step_vo','step_film','step_cut','step_thumbnail','step_description','step_tableau_public','step_upload_tableau'];
-const VID_STEP_LABELS={step_build:'Build',step_vo:'Vo',step_film:'Film',step_cut:'Cut',step_thumbnail:'Thumb',step_description:'Desc',step_tableau_public:'Tab Pub',step_upload_tableau:'Upload'};
+const VID_STEPS=['step_build','step_vo','step_film','step_thumbnail','step_description','step_tableau_public','step_upload_tableau'];
+const VID_STEP_LABELS={step_build:'Build',step_vo:'Vo',step_film:'Fi/Cu',step_cut:'Cut',step_thumbnail:'Thumb',step_description:'Desc',step_tableau_public:'Tab Pub',step_upload_tableau:'Upload'};
 const VID_STATUS_COLORS={published:'#10b981',in_progress:'#f59e0b',up_next:'#0ea5e9',idea:'#8b5cf6',backup:'#94a3b8'};
 const VID_STATUS_LABELS={published:'Complete',in_progress:'In Progress',up_next:'Up Next',idea:'Idea',backup:'Backup'};
 const VID_STATUS_ORDER={published:0,up_next:1,in_progress:2,backup:3,idea:4};
@@ -231,7 +231,7 @@ function _vidRenderDashboard(){
   }
   _vidDashVids=all.filter(v=>v.status!=='idea');
   const _colHdr=`<div style="display:flex;align-items:center;gap:6px;flex-shrink:0;padding-right:0">
-            <div style="display:flex;gap:0">${VID_STEPS.map(s=>`<div style="width:28px;text-align:center;font-size:9px" title="${VID_STEP_LABELS[s]}">${VID_STEP_LABELS[s].slice(0,2)}</div>`).join('')}</div>
+            <div style="display:flex;gap:0">${VID_STEPS.map(s=>`<div style="width:28px;text-align:center;font-size:9px" title="${VID_STEP_LABELS[s]}">${VID_STEP_LABELS[s].length<=5?VID_STEP_LABELS[s]:VID_STEP_LABELS[s].slice(0,2)}</div>`).join('')}</div>
             <span style="width:52px;text-align:right;font-size:9px;display:inline-block">Posted</span>
             <span style="width:36px;text-align:right;font-size:9px;display:inline-block">Dur</span>
             <span style="width:42px;display:inline-block"></span>
@@ -546,7 +546,7 @@ function _vidRenderTable(){
     <table class="vid-tbl" style="table-layout:fixed;width:100%">
       <thead><tr>
         <th style="width:450px;${thStyle}" onclick="vidTblSort('title')">Title${_vidSortArrow('title')}</th>
-        ${VID_STEPS.map(s=>`<th style="width:22px;text-align:center;font-size:9px" title="${VID_STEP_LABELS[s]}">${VID_STEP_LABELS[s].slice(0,2)}</th>`).join('')}
+        ${VID_STEPS.map(s=>`<th style="width:22px;text-align:center;font-size:9px" title="${VID_STEP_LABELS[s]}">${VID_STEP_LABELS[s].length<=5?VID_STEP_LABELS[s]:VID_STEP_LABELS[s].slice(0,2)}</th>`).join('')}
         <th style="width:62px;text-align:right;${thStyle}" onclick="vidTblSort('posted')">Posted${_vidSortArrow('posted')}</th>
         <th style="width:50px;text-align:right;${thStyle}" onclick="vidTblSort('duration')">Dur${_vidSortArrow('duration')}</th>
         <th style="width:28px"></th>
