@@ -3341,8 +3341,8 @@ document.addEventListener('keydown',function(e){
   const inp=document.getElementById('qnInput');
   if(!inp)return;
   const txt=(inp.value||'').trim();
-  if(!txt){e.preventDefault();_qnOpen=false;document.getElementById('qnPanel').classList.remove('open');}
-  else{e.preventDefault();addQN();}
+  if(txt)return;// let the input's own onkeydown handle saving
+  e.preventDefault();_qnOpen=false;document.getElementById('qnPanel').classList.remove('open');
 });
 
 
