@@ -88,11 +88,16 @@
 ### YouTube Analytics Integration
 - **Endpoint**: `/api/yt` — Cloudflare Pages Function at `functions/api/yt.js`.
 - **Secrets** (set in Cloudflare dashboard, both production + preview): `YOUTUBE_API_KEY`, `YOUTUBE_CHANNEL_ID`.
-- **KV cache**: namespace `YT_CACHE`, key `yt-stats`. Successful responses cached 4 hours (14400s). Errors cached 15 min (900s). Reload as much as you want — only hits YouTube API when cache expires.
-- **Quota**: YouTube Data API v3 gives 10,000 units/day, resets midnight Pacific. One full fetch ≈ 200-400 units. With 4-hour cache = ~4 calls/day = ~1,600 units max.
+- **QUOTA CRITICAL**: YouTube Data API v3 gives 10,000 units/day, resets midnight Pacific. NEVER use `search.list` (100 units/call). Use `playlistItems.list` (1 unit/call). One full fetch ≈ 15 units. NEVER write code that can re-fetch on re-render — a single re-render loop can burn the entire daily quota in minutes.
+- **Client safeguards**: `_ytFetched` global flag — set `true` before fetch, only resets on full page reload. One fetch per page load, period. Also caches to `localStorage._ytCache` as offline fallback.
+- **Server KV cache (3 keys)**:
+  - `yt-fresh` (12hr TTL) — serves cached data, prevents API calls. This is the primary cache.
+  - `yt-good` (no TTL) — permanent copy of last successful response. Fallback when API is down.
+  - `yt-cooldown` (1hr for quota, 5min for other errors) — prevents retrying a failed API call.
+- **RSS fallback**: If API fails and no `yt-good` data exists, fetches YouTube RSS feed (`/feeds/videos.xml`) which costs zero quota. Returns 15 most recent videos.
+- **`?refresh=1`** param busts `yt-fresh` and `yt-cooldown` cache. POST with JSON body seeds KV directly.
 - **Matching**: YouTube videos matched to Supabase videos by date (`post_date` === `publishedAt.slice(0,10)`). Stored in `_ytMatch` map (Supabase ID → `{views, likes, comments, ytId}`).
 - **Display**: Channel stats bar (subscribers, total views, video count) at top of page. Views & Likes columns in All Details table. Purple view count in Current dashboard rows.
-- **Data flow**: `fetch('/api/yt')` → `_ytData` → `_ytBuildMatch()` → `_ytMatch` → `renderVideosPageKeepScroll()`.
-- **Only fetches on Videos page** — `ytSlot._loaded` flag prevents re-fetch on re-render.
+- **Data flow**: `fetch('/api/yt')` → `_ytData` + `localStorage` → `_ytBuildMatch()` → `_ytMatch` → `renderVideosPageKeepScroll()`.
 - **Key functions**: `_ytBuildMatch()`, `_ytForVid(id)`, `_ytNum(n)`, `_ytEsc(s)`, `_ytDur(iso)`.
 - **Errors**: silently hidden in UI (no red text). Console shows `[YT]` debug logs for troubleshooting.
