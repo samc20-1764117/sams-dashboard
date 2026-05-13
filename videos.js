@@ -325,7 +325,7 @@ function _vidDashRow(v,isChild,simple){
   const postStr=_vidPostStr(v.post_date);
   const durStr=v.duration_minutes?v.duration_minutes.toFixed(2):'';
   const isBig=v.video_type==='B';
-  const bigRowStyle=isBig?'background:rgba(255,255,255,.65);':'';
+  const bigRowStyle=isBig?'background:rgba(255,255,255,.55);':'';
   const _applicable=VID_STEPS.filter(s=>v[s]!=='na');
   const _done=_applicable.filter(s=>v[s]==='done').length;
   const _pct=_applicable.length?Math.round((_done/_applicable.length)*100):0;
