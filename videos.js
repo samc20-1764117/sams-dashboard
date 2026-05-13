@@ -50,8 +50,8 @@ let _vidView='dashboard'; // dashboard | table | board | groups
 let _vidSortCol=null,_vidSortDir=1,_vidShowCompleted=false;
 let _vidMonthOffset=0; // 0=current month, -1=last month, etc
 
-const VID_STEPS=['step_build','step_vo','step_film','step_thumbnail','step_description','step_tableau_public','step_upload_tableau'];
-const VID_STEP_LABELS={step_build:'Build',step_vo:'Vo',step_film:'Fi/Cu',step_cut:'Cut',step_thumbnail:'Thumb',step_description:'Desc',step_tableau_public:'Tab Pub',step_upload_tableau:'Upload'};
+const VID_STEPS=['step_build','step_vo','step_cut','step_thumbnail','step_description','step_tableau_public','step_upload_tableau'];
+const VID_STEP_LABELS={step_build:'Build',step_vo:'Vo',step_film:'Film',step_cut:'Cut',step_thumbnail:'Thumb',step_description:'Desc',step_tableau_public:'Tab Pub',step_upload_tableau:'Upload'};
 const VID_STATUS_COLORS={published:'#10b981',in_progress:'#f59e0b',up_next:'#0ea5e9',idea:'#8b5cf6',backup:'#94a3b8'};
 const VID_STATUS_LABELS={published:'Complete',in_progress:'In Progress',up_next:'Up Next',idea:'Idea',backup:'Backup'};
 const VID_STATUS_ORDER={published:0,up_next:1,in_progress:2,backup:3,idea:4};
