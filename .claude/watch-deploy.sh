@@ -6,9 +6,9 @@ for i in $(seq 1 30); do
   STATUS=$(cd /Users/samanthacohn/Documents/sams-dashboard && npx wrangler pages deployment list --project-name sams-dashboard 2>/dev/null | grep "$COMMIT")
   if [ -n "$STATUS" ]; then
     if ! echo "$STATUS" | grep -q 'Building'; then
-      osascript -e 'display notification "" with title "deployed"'
+      osascript -e 'display alert "Deployed"'
       exit 0
     fi
   fi
 done
-osascript -e 'display notification "" with title "deploy failed"'
+osascript -e 'display alert "Deploy failed"'
