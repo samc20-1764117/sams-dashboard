@@ -597,6 +597,10 @@ async function _vidDashDrop(e,newStatus){
     }
     undoData.push({v,prev,prevOrder,childPrevs});
     if(v.status!==newStatus&&v.status!=='published')v.status=newStatus;
+    // When moving a B to ideas, move its children to ideas too
+    if(v.video_type==='B'&&newStatus==='idea'){
+      childPrevs.forEach(cp=>{const c=(st.videos||[]).find(x=>String(x.id)===String(cp.id));if(c&&c.status!=='published')c.status='idea';});
+    }
   }
 
   // Build final order: zoneIds with dragIds spliced in at insertIdx
@@ -622,8 +626,12 @@ async function _vidDashDrop(e,newStatus){
   save();renderVideosPageKeepScroll();
 
   for(const d of undoData){
-    if(d.v.video_type==='B'&&d.prev!==newStatus)await _vidPromoteChildren(d.v.id,newStatus);
+    if(d.v.video_type==='B'&&d.prev!==newStatus&&newStatus!=='idea')await _vidPromoteChildren(d.v.id,newStatus);
     await _vidEnsureSynced(d.v);
+    // Sync children moved to ideas
+    if(d.v.video_type==='B'&&newStatus==='idea'){
+      for(const cp of d.childPrevs){const c=(st.videos||[]).find(x=>String(x.id)===String(cp.id));if(c&&c.status==='idea')await sbReqSilent('PATCH','videos',{status:'idea'},`?id=eq.${cp.id}`);}
+    }
   }
 
   // Save vid_order + status to DB
