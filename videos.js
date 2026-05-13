@@ -405,7 +405,7 @@ function _vidDashDragStart(e,id){
   }
   e.dataTransfer.effectAllowed='move';
   e.target.style.opacity='.4';
-  const _dragEnd=()=>{e.target.style.opacity='';e.target.removeEventListener('dragend',_dragEnd);document.querySelectorAll('.vid-reorder-ph').forEach(p=>p.remove());};
+  const _dragEnd=()=>{e.target.style.opacity='';e.target.removeEventListener('dragend',_dragEnd);document.querySelectorAll('.vid-reorder-ph').forEach(p=>p.remove());document.querySelectorAll('.vid-dash-row[data-vid]').forEach(r=>r.style.opacity='');};
   e.target.addEventListener('dragend',_dragEnd);
 }
 let _vidDashDragIds=[];
@@ -414,10 +414,13 @@ function _vidDashDragOver(e){
   if(!_vidDashDragId)return;
   e.preventDefault();
   const zone=e.currentTarget;
+  const dragSet=new Set(_vidDashDragIds);
   let ph=zone.querySelector('.vid-reorder-ph');
   if(!ph){ph=document.createElement('div');ph.className='vid-reorder-ph';ph.style.cssText='height:2px;margin:2px 10px;border-radius:99px;background:#fff;pointer-events:none;flex-shrink:0';zone.appendChild(ph);}
-  // Find top-level rows only (not children of B groups — they move with parent)
-  const rows=[...zone.querySelectorAll('.vid-dash-row[data-vid]')];
+  // Dim dragged rows
+  zone.querySelectorAll('.vid-dash-row[data-vid]').forEach(r=>{r.style.opacity=dragSet.has(r.dataset.vid)?'.3':'';});
+  // Skip dragged rows for placeholder positioning
+  const rows=[...zone.querySelectorAll('.vid-dash-row[data-vid]')].filter(r=>!dragSet.has(r.dataset.vid));
   let inserted=false;
   for(const r of rows){
     const rc=r.getBoundingClientRect();
