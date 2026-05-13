@@ -1,5 +1,5 @@
 // ── YouTube Analytics ────────────────────────────────────────────────────────
-let _ytData=null,_ytMatch=null,_ytFetched=false;
+let _ytData=null,_ytMatch=null,_ytFetched=false,_ytRetries=0;
 function _ytEsc(s){return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function _ytDur(iso){var m=iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);if(!m)return'0:00';var h=m[1]?parseInt(m[1]):0,min=m[2]?parseInt(m[2]):0,s=m[3]?parseInt(m[3]):0;if(h)return h+':'+String(min).padStart(2,'0')+':'+String(s).padStart(2,'0');return min+':'+String(s).padStart(2,'0');}
 function _ytNum(n){if(n>=1000000)return(n/1000000).toFixed(1)+'M';if(n>=1000)return(n/1000).toFixed(1)+'K';return String(n);}
@@ -231,7 +231,7 @@ function renderVideosPage(){
         s.innerHTML=h;
         _ytBuildMatch();
         renderVideosPageKeepScroll();
-      }).catch(function(){_ytFetched=true;});
+      }).catch(function(){if(++_ytRetries<3){_ytFetched=false;setTimeout(function(){if(!_ytData)renderVideosPageKeepScroll();},30000);}});
     }
   }else if(_ytData){
     var ytSlot=document.getElementById('yt-analytics-slot');
