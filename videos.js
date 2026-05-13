@@ -1354,7 +1354,12 @@ async function saveVidModal(){
 
     big_video_id:_vidGetBigVideoId()
   };
-  data.video_type=data.big_video_id?'L':(document.getElementById('vmType').value||'L');
+  if(_vidMode==='edit'&&_vidEditId){
+    const _ev=(st.videos||[]).find(x=>String(x.id)===String(_vidEditId));
+    data.video_type=document.getElementById('vmType').value||(_ev?_ev.video_type:'L');
+  }else{
+    data.video_type=data.big_video_id?'L':(document.getElementById('vmType').value||'L');
+  }
   document.querySelectorAll('#vmSteps [data-step]').forEach(el=>{data[el.dataset.step]=el.dataset.val||'not_started';});
   // Default Tab Pub + Upload to na for L-type videos with a parent group (not standalone)
   if(_vidMode==='add'&&data.video_type==='L'&&data.big_video_id){
