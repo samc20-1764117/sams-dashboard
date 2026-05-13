@@ -127,9 +127,13 @@ function _vidScrollEl(){
 function renderVideosPageKeepScroll(){
   const se=_vidScrollEl();const top=se?se.scrollTop:0;
   const dl=document.getElementById('vidDashLeft');const dlTop=dl?dl.scrollTop:0;
+  const dr=document.getElementById('vidDashRight');const drTop=dr?dr.scrollTop:0;
   renderVideosPage();
   const se2=_vidScrollEl();if(se2)se2.scrollTop=top;
-  const dl2=document.getElementById('vidDashLeft');if(dl2){dl2.scrollTop=dlTop;requestAnimationFrame(()=>{dl2.scrollTop=dlTop;});}
+  requestAnimationFrame(()=>{
+    const dl2=document.getElementById('vidDashLeft');if(dl2)dl2.scrollTop=dlTop;
+    const dr2=document.getElementById('vidDashRight');if(dr2)dr2.scrollTop=drTop;
+  });
 }
 function renderVideosPage(){
   const _rvpSe=_vidScrollEl();const _rvpTop=_rvpSe?_rvpSe.scrollTop:0;
@@ -275,7 +279,7 @@ function _vidRenderDashboard(){
           ${inProgress.length?_vidDashList(inProgress,false):'<div style="color:var(--muted);font-size:11px;padding:8px 10px;opacity:.5">Drag up next here to start</div>'}
         </div>
       </div>
-      <div style="grid-column:2;grid-row:2;min-height:0;overflow-y:auto" ondragover="_vidDashDragOver(event)" ondragleave="_vidDashDragLeave(event)" ondrop="_vidDashDrop(event,'idea')">
+      <div id="vidDashRight" style="grid-column:2;grid-row:2;min-height:0;overflow-y:auto" ondragover="_vidDashDragOver(event)" ondragleave="_vidDashDragLeave(event)" ondrop="_vidDashDrop(event,'idea')">
         ${ideasHtml}
       </div>
     </div>`;
