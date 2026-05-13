@@ -3196,7 +3196,7 @@ function copyShopList(){
 let _qnOpen=false,_qnNotes=[],_qnLoaded=false;
 async function _qnFetch(){
   if(_qnLoaded)return;
-  const rows=await sbReqSilent('GET','quick_notes',null,'?is_deleted=is.false&order=created_at.asc');
+  const rows=await sbReqSilent('GET','quick_notes',null,'?is_visible=is.true&order=created_at.asc');
   if(rows&&Array.isArray(rows)){_qnNotes=rows;_qnLoaded=true;}
 }
 function toggleQN(){
@@ -3221,7 +3221,7 @@ async function addQN(){
   const txt=(inp?.value||'').trim();
   if(!txt){_qnOpen=false;document.getElementById('qnPanel').classList.remove('open');return;}
   inp.value='';inp.focus();
-  const tmp={id:'qn-'+Date.now(),note_text:txt,is_deleted:false};
+  const tmp={id:'qn-'+Date.now(),note_text:txt,is_visible:true};
   _qnNotes.push(tmp);renderQN();
   const list=document.getElementById('qnList');if(list)list.scrollTop=9999;
   const sv=await sbReqSilent('POST','quick_notes',{note_text:txt});
@@ -3245,7 +3245,7 @@ function editQN(span,id){
 async function deleteQN(id){
   _qnNotes=_qnNotes.filter(n=>String(n.id)!==String(id));
   renderQN();
-  if(!String(id).startsWith('qn-'))await sbReqSilent('PATCH','quick_notes',{is_deleted:true},`?id=eq.${id}`);
+  if(!String(id).startsWith('qn-'))await sbReqSilent('PATCH','quick_notes',{is_visible:false,hidden_at:new Date().toISOString()},`?id=eq.${id}`);
 }
 // Close panel on outside click
 document.addEventListener('click',function(e){
