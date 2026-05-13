@@ -288,7 +288,7 @@ function _vidDashList(vids,simple){
     if(v.video_type==='B'){
       seen.add(String(v.id));
       html+=_vidDashRow(v,false,simple);
-      const children=lVids.filter(l=>l.big_video_id&&String(l.big_video_id)===String(v.id));
+      const children=lVids.filter(l=>l.big_video_id&&String(l.big_video_id)===String(v.id)).sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
       children.forEach(l=>{seen.add(String(l.id));html+=_vidDashRow(l,true,simple);});
     }else if(!v.big_video_id||!bVids.find(b=>String(b.id)===String(v.big_video_id))){
       // Standalone L (no parent in this list)
@@ -389,7 +389,7 @@ async function _vidGroupDrop(e,parentId){
     const kidsAfter=kidRows.filter(r=>zoneChildren.indexOf(r)>phIdx);
     if(kidsAfter.length){
       const afterVid=(st.videos||[]).find(x=>String(x.id)===kidsAfter[0].dataset.vid);
-      if(afterVid)insertOrder=(afterVid.vid_order??0)-0.001;
+      if(afterVid)insertOrder=(afterVid.vid_order??0)-0.01;
     }else if(existingKids.length){
       insertOrder=(existingKids[existingKids.length-1].vid_order??0)+0.01;
     }
@@ -403,7 +403,7 @@ async function _vidGroupDrop(e,parentId){
     v.big_video_id=parseInt(parentId)||parentId;
     v.video_type='L';
     if(v.status!==parent.status)v.status=parent.status;
-    v.vid_order=insertOrder+(i*0.001);
+    v.vid_order=insertOrder+(i*0.01);
   });
   save();renderVideosPageKeepScroll();
   pushUndo(async()=>{
