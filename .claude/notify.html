@@ -1,0 +1,8 @@
+<script>
+Notification.requestPermission().then(p => {
+  if (p === 'granted') {
+    new Notification(new URLSearchParams(location.search).get('t') || 'Deployed');
+  }
+  setTimeout(() => window.close(), 1000);
+});
+</script>
