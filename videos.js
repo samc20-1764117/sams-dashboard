@@ -1211,10 +1211,20 @@ function _vidPopulateBigVideoSelect(selectedId){
 function _vidGetBigVideoId(){
   const val=document.getElementById('vmBigVideo').value.trim();
   if(!val)return null;
-  const match=(st.videos||[]).find(v=>!v.is_deleted&&v.video_type==='B'&&(v.topic===val||v.title===val));
-  return match?match.id:null;
+  const exact=(st.videos||[]).find(v=>!v.is_deleted&&v.video_type==='B'&&(v.topic===val||v.title===val));
+  if(exact)return exact.id;
+  const words=val.toLowerCase().split(/\s+/).filter(Boolean);
+  const fuzzy=(st.videos||[]).find(v=>{
+    if(v.is_deleted||v.video_type!=='B')return false;
+    const l=((v.topic||'')+' '+(v.title||'')).toLowerCase();
+    return words.every(w=>l.includes(w));
+  });
+  return fuzzy?fuzzy.id:null;
 }
 
+const _VID_STATUS_OPTIONS=[
+  {value:'idea',label:'1. Idea'},{value:'up_next',label:'2. Up Next'},{value:'in_progress',label:'3. In Progress'},{value:'published',label:'4. Complete'},{value:'backup',label:'4. Backup'}
+];
 function _vidShowDropdown(type){_vidFilterDropdown(type);}
 function _vidToggleDropdown(type){
   const drop=document.getElementById('vm'+type+'Drop');
@@ -1222,15 +1232,22 @@ function _vidToggleDropdown(type){
   _vidFilterDropdown(type);
 }
 function _vidFilterDropdown(type){
-  const inp=document.getElementById('vm'+type);
   const drop=document.getElementById('vm'+type+'Drop');
-  const q=(inp.value||'').toLowerCase();
   const itemStyle='padding:6px 10px;cursor:pointer;font-size:12px;border-bottom:1px solid rgba(210,205,228,.1)';
   const hoverIn="this.style.background='rgba(139,92,246,.08)'";
   const hoverOut="this.style.background='transparent'";
   let html='';
-  if(type==='BigVideo'){
-    const items=_vidDropdownData.BigVideo.filter(v=>!q||v.label.toLowerCase().includes(q));
+  if(type==='Status'){
+    html=_VID_STATUS_OPTIONS.map(o=>`<div onclick="_vidPickDropdown('Status','${o.value}')" onmouseenter="${hoverIn}" onmouseleave="${hoverOut}" style="${itemStyle}">${o.label}</div>`).join('');
+  }else if(type==='BigVideo'){
+    const inp=document.getElementById('vmBigVideo');
+    const q=(inp.value||'').toLowerCase();
+    const words=q.split(/\s+/).filter(Boolean);
+    const items=_vidDropdownData.BigVideo.filter(v=>{
+      if(!words.length)return true;
+      const l=v.label.toLowerCase();
+      return words.every(w=>l.includes(w));
+    });
     html=`<div onclick="_vidPickDropdown('BigVideo','')" onmouseenter="${hoverIn}" onmouseleave="${hoverOut}" style="${itemStyle};color:var(--muted);font-style:italic">None</div>`;
     html+=items.map(v=>`<div onclick="_vidPickDropdown('BigVideo','${_esc(v.label)}')" onmouseenter="${hoverIn}" onmouseleave="${hoverOut}" style="${itemStyle}">${_esc(v.label)}</div>`).join('');
   }
@@ -1238,12 +1255,25 @@ function _vidFilterDropdown(type){
   drop.style.display='block';
 }
 function _vidPickDropdown(type,val){
-  document.getElementById('vm'+type).value=val;
+  if(type==='Status'){
+    document.getElementById('vmStatus').value=val;
+    const opt=_VID_STATUS_OPTIONS.find(o=>o.value===val);
+    document.getElementById('vmStatusDisplay').value=opt?opt.label:val;
+  }else{
+    document.getElementById('vm'+type).value=val;
+  }
   document.getElementById('vm'+type+'Drop').style.display='none';
+}
+function _vidSetStatusDisplay(val){
+  const opt=_VID_STATUS_OPTIONS.find(o=>o.value===val);
+  document.getElementById('vmStatusDisplay').value=opt?opt.label:val;
 }
 document.addEventListener('click',e=>{
   if(!e.target.closest('#vmBigVideo')&&!e.target.closest('#vmBigVideoDrop')&&!e.target.closest('[onclick*="BigVideo"]')){
     const d=document.getElementById('vmBigVideoDrop');if(d)d.style.display='none';
+  }
+  if(!e.target.closest('#vmStatusDisplay')&&!e.target.closest('#vmStatusDrop')&&!e.target.closest('[onclick*="Status"]')){
+    const d=document.getElementById('vmStatusDrop');if(d)d.style.display='none';
   }
 });
 
@@ -1260,7 +1290,7 @@ function openVidModalBetween(bigId,orderBefore,orderAfter){
   document.getElementById('vmType').value='L';
   _vidPopulateBigVideoSelect(bigId);
   const parent=(st.videos||[]).find(v=>String(v.id)===String(bigId));
-  if(parent&&parent.status!=='idea')document.getElementById('vmStatus').value=parent.status;
+  if(parent&&parent.status!=='idea'){document.getElementById('vmStatus').value=parent.status;_vidSetStatusDisplay(parent.status);}
 }
 
 function openVidModal(type){
@@ -1272,6 +1302,7 @@ function openVidModal(type){
   document.getElementById('vmType').value=t;
   _vidSetType(t);
   document.getElementById('vmStatus').value='idea';
+  _vidSetStatusDisplay('idea');
   document.getElementById('vmPostDate').value='';
   document.getElementById('vmDuration').value='';
 
@@ -1294,7 +1325,9 @@ function openVidEdit(id){
   document.getElementById('vmType').value=v.video_type||'L';
   _vidSetType(v.video_type||'L');
   document.getElementById('vmStatus').value=v.status||'idea';
-  document.getElementById('vmPostDate').value=v.post_date||'';
+  _vidSetStatusDisplay(v.status||'idea');
+  const _pd=v.post_date;
+  document.getElementById('vmPostDate').value=_pd?parseInt(_pd.slice(5,7))+'/'+parseInt(_pd.slice(8,10))+(_pd.slice(0,4)!==String(new Date().getFullYear())?'/'+_pd.slice(2,4):''):'';
   document.getElementById('vmDuration').value=v.duration_minutes||'';
   document.getElementById('vmComment').value=v.comment||'';
 
@@ -1317,7 +1350,7 @@ function _vidRenderSteps(vals){
   }).join('');
 }
 function _vidModalStepCSS(val){
-  const base='width:18px;height:18px;border-radius:3px;cursor:pointer;display:flex;align-items:center;justify-content:center;user-select:none;transition:transform .1s;';
+  const base='width:100%;height:18px;border-radius:3px;cursor:pointer;display:flex;align-items:center;justify-content:center;user-select:none;transition:transform .1s;';
   if(val==='done')return base+'border:1.5px solid #10b981;background:#10b981';
   if(val==='na')return base+'border:1.5px solid var(--border);background:var(--border);opacity:.35';
   return base+'border:1.5px solid rgba(210,205,228,.4);background:transparent';
@@ -1381,7 +1414,7 @@ async function saveVidModal(){
     title:title||'',
     topic,
     status:document.getElementById('vmStatus').value||'idea',
-    post_date:document.getElementById('vmPostDate').value||null,
+    post_date:_vidParseDate(document.getElementById('vmPostDate').value)||null,
     duration_minutes:parseFloat(document.getElementById('vmDuration').value)||null,
 
     big_video_id:_vidGetBigVideoId(),
