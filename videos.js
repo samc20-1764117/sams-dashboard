@@ -1381,7 +1381,7 @@ function openVidModal(type){
   document.getElementById('vmDuration').value='';
 
   document.getElementById('vmComment').value='';
-  document.getElementById('vmBigVideoWrap').style.display='';
+  document.getElementById('vmBigVideoWrap').style.display=t==='B'?'none':'';
   _vidPopulateBigVideoSelect('');
   const defaults={};
   if(t==='L'){defaults.step_tableau_public='na';defaults.step_upload_tableau='na';}
@@ -1405,7 +1405,7 @@ function openVidEdit(id){
   document.getElementById('vmDuration').value=v.duration_minutes||'';
   document.getElementById('vmComment').value=v.comment||'';
 
-  document.getElementById('vmBigVideoWrap').style.display='';
+  document.getElementById('vmBigVideoWrap').style.display=(v.video_type||'L')==='B'?'none':'';
   _vidPopulateBigVideoSelect(v.big_video_id||'');
   const stepVals={};VID_STEPS.forEach(s=>{stepVals[s]=v[s]||'not_started';});
   _vidRenderSteps(stepVals);
