@@ -438,9 +438,24 @@ function _vidDashDragStart(e,id){
 }
 let _vidDashDragIds=[];
 
+let _vidDragScrollRAF=null,_vidDragScrollSpeed=0,_vidDragScrollEl=null;
+function _vidDragAutoScroll(e){
+  const scrollEl=e.currentTarget.closest('[style*="overflow-y"]')||e.currentTarget;
+  if(scrollEl.scrollHeight<=scrollEl.clientHeight){_vidDragScrollSpeed=0;return;}
+  const rect=scrollEl.getBoundingClientRect();
+  const edge=40;
+  const y=e.clientY;
+  _vidDragScrollSpeed=0;_vidDragScrollEl=scrollEl;
+  if(y>rect.bottom-edge)_vidDragScrollSpeed=Math.min(12,(y-(rect.bottom-edge))/edge*12);
+  else if(y<rect.top+edge)_vidDragScrollSpeed=-Math.min(12,((rect.top+edge)-y)/edge*12);
+  if(_vidDragScrollSpeed!==0&&!_vidDragScrollRAF){
+    (function scroll(){if(!_vidDragScrollSpeed||!_vidDragScrollEl){_vidDragScrollRAF=null;return;}_vidDragScrollEl.scrollTop+=_vidDragScrollSpeed;_vidDragScrollRAF=requestAnimationFrame(scroll);})();
+  }
+}
 function _vidDashDragOver(e){
   if(!_vidDashDragId)return;
   e.preventDefault();
+  _vidDragAutoScroll(e);
   const zone=e.currentTarget;
   const dragSet=new Set(_vidDashDragIds);
   let ph=zone.querySelector('.vid-reorder-ph');
@@ -458,7 +473,7 @@ function _vidDashDragOver(e){
   else if(!rows.length){const hdr=zone.querySelector('[style*="font-size:9px"]');if(hdr)hdr.after(ph);}
 }
 function _vidDashDragLeave(e){
-  if(!e.currentTarget.contains(e.relatedTarget)){const ph=e.currentTarget.querySelector('.vid-reorder-ph');if(ph)ph.remove();}
+  if(!e.currentTarget.contains(e.relatedTarget)){const ph=e.currentTarget.querySelector('.vid-reorder-ph');if(ph)ph.remove();if(_vidDragScrollRAF){cancelAnimationFrame(_vidDragScrollRAF);_vidDragScrollRAF=null;}}
 }
 
 // Push a local-only video (l-xxx id) to Supabase and replace the temp id
@@ -503,6 +518,7 @@ async function _vidSyncLocalVideos(){
 }
 async function _vidDashDrop(e,newStatus){
   e.preventDefault();e.currentTarget.style.background='';
+  if(_vidDragScrollRAF){cancelAnimationFrame(_vidDragScrollRAF);_vidDragScrollRAF=null;}
   const zone=e.currentTarget;
   const ph=zone.querySelector('.vid-reorder-ph');
   const dragIds=_vidDashDragIds.length?[..._vidDashDragIds]:(_vidDashDragId?[String(_vidDashDragId)]:[]);
