@@ -300,7 +300,7 @@ function _vidDashList(vids,simple){
       seen.add(String(v.id));
       html+=_vidDashRow(v,false,simple);
       const children=lVids.filter(l=>l.big_video_id&&String(l.big_video_id)===String(v.id)).sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
-      children.forEach((l,ci)=>{seen.add(String(l.id));html+=_vidDashRow(l,true,simple);if(!simple&&ci<children.length-1){const oA=l.vid_order??ci;const oB=children[ci+1].vid_order??(ci+1);html+=`<div class="vid-insert-zone" onclick="event.stopPropagation();openVidModalBetween('${String(v.id)}',${oA},${oB})" title="Insert video here"><button class="vid-insert-btn">+</button></div>`;}});
+      children.forEach((l,ci)=>{seen.add(String(l.id));html+=_vidDashRow(l,true,simple);if(!simple&&ci<children.length-1){const oA=l.vid_order??ci;const oB=children[ci+1].vid_order??(ci+1);html+=`<div class="vid-insert-zone" onclick="event.stopPropagation();openVidModalBetween('${String(v.id)}',${oA},${oB})"><button class="vid-insert-btn">+</button></div>`;}});
     }else if(!v.big_video_id||!bVids.find(b=>String(b.id)===String(v.big_video_id))){
       // Standalone L (no parent in this list)
       seen.add(String(v.id));
@@ -784,7 +784,7 @@ function _vidBuildRows(vids){
     seen.add(String(b.id));
     html+=_vidRow(b,false);
     const children=lVids.filter(l=>l.big_video_id&&String(l.big_video_id)===String(b.id)).sort(_vidChildSort);
-    children.forEach((l,ci)=>{seen.add(String(l.id));html+=_vidRow(l,true);if(ci<children.length-1){const oA=l.vid_order??ci;const oB=children[ci+1].vid_order??(ci+1);html+=`<tr class="vid-insert-zone" onclick="event.stopPropagation();openVidModalBetween('${String(b.id)}',${oA},${oB})" title="Insert video here"><td colspan="99" style="padding:0;border:none"><button class="vid-insert-btn">+</button></td></tr>`;}});
+    children.forEach((l,ci)=>{seen.add(String(l.id));html+=_vidRow(l,true);if(ci<children.length-1){const oA=l.vid_order??ci;const oB=children[ci+1].vid_order??(ci+1);html+=`<tr class="vid-insert-zone" onclick="event.stopPropagation();openVidModalBetween('${String(b.id)}',${oA},${oB})"><td colspan="99" style="padding:0;border:none"><button class="vid-insert-btn">+</button></td></tr>`;}});
   });
   lVids.filter(l=>!seen.has(String(l.id))).sort(_vidChildSort).forEach(l=>{html+=_vidRow(l,false);});
   return html;
