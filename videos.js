@@ -596,7 +596,11 @@ async function _vidDashDrop(e,newStatus){
       (st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(v.id)).forEach(c=>childPrevs.push({id:c.id,status:c.status,vid_order:c.vid_order}));
     }
     undoData.push({v,prev,prevOrder,childPrevs});
-    if(v.status!==newStatus&&v.status!=='published')v.status=newStatus;
+    if(v.status!==newStatus&&v.status!=='published'){
+      // L videos without a big parent can't be in_progress/up_next
+      if(v.video_type==='L'&&!v.big_video_id&&(newStatus==='in_progress'||newStatus==='up_next'))v.status='idea';
+      else v.status=newStatus;
+    }
     // When moving a B to ideas, move its children to ideas too
     if(v.video_type==='B'&&newStatus==='idea'){
       childPrevs.forEach(cp=>{const c=(st.videos||[]).find(x=>String(x.id)===String(cp.id));if(c&&c.status!=='published')c.status='idea';});
@@ -1353,6 +1357,8 @@ async function saveVidModal(){
     const parent=(st.videos||[]).find(x=>String(x.id)===String(data.big_video_id));
     if(parent&&parent.status!=='idea'&&data.status==='idea')data.status=parent.status;
   }
+  // L videos without a big parent can't be in_progress/up_next
+  if(data.video_type==='L'&&!data.big_video_id&&(data.status==='in_progress'||data.status==='up_next'))data.status='idea';
   closeMod('vidModal');
 
   if(_vidMode==='edit'&&_vidEditId){
