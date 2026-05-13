@@ -1,5 +1,5 @@
 // ── YouTube Analytics ────────────────────────────────────────────────────────
-let _ytData=null,_ytMatch=null;
+let _ytData=null,_ytMatch=null,_ytFetched=false;
 function _ytEsc(s){return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function _ytDur(iso){var m=iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);if(!m)return'0:00';var h=m[1]?parseInt(m[1]):0,min=m[2]?parseInt(m[2]):0,s=m[3]?parseInt(m[3]):0;if(h)return h+':'+String(min).padStart(2,'0')+':'+String(s).padStart(2,'0');return min+':'+String(s).padStart(2,'0');}
 function _ytNum(n){if(n>=1000000)return(n/1000000).toFixed(1)+'M';if(n>=1000)return(n/1000).toFixed(1)+'K';return String(n);}
@@ -214,22 +214,36 @@ function renderVideosPage(){
     });
   }
   const _rvpSe2=_vidScrollEl();if(_rvpSe2)_rvpSe2.scrollTop=_rvpTop;
-  var ytSlot=document.getElementById('yt-analytics-slot');
-  if(ytSlot&&!ytSlot._loaded){
-    ytSlot._loaded=true;
-    fetch('/api/yt?_='+Date.now(),{cache:'no-store'}).then(function(r){if(!r.ok)throw new Error(r.status);return r.json();}).then(function(d){
-      if(d.error){ytSlot.innerHTML='';return;}
-      _ytData=d;
-      var c=d.channelStats;
+  if(!_ytFetched){
+    _ytFetched=true;
+    var ytSlot=document.getElementById('yt-analytics-slot');
+    if(ytSlot){
+      fetch('/api/yt?_='+Date.now(),{cache:'no-store'}).then(function(r){if(!r.ok)throw new Error(r.status);return r.json();}).then(function(d){
+        if(d.error)return;
+        _ytData=d;
+        var c=d.channelStats;
+        var s=document.getElementById('yt-analytics-slot');if(!s)return;
+        var h='<div style="display:flex;gap:12px;flex-wrap:wrap;margin:8px 0">';
+        h+='<div style="background:var(--glass);border:1px solid var(--border);border-radius:10px;padding:8px 14px"><div style="font-size:10px;color:var(--muted)">Subscribers</div><div style="font-size:16px;font-weight:600">'+_ytNum(c.subscribers)+'</div></div>';
+        h+='<div style="background:var(--glass);border:1px solid var(--border);border-radius:10px;padding:8px 14px"><div style="font-size:10px;color:var(--muted)">Total Views</div><div style="font-size:16px;font-weight:600">'+_ytNum(c.totalViews)+'</div></div>';
+        h+='<div style="background:var(--glass);border:1px solid var(--border);border-radius:10px;padding:8px 14px"><div style="font-size:10px;color:var(--muted)">Published on YT</div><div style="font-size:16px;font-weight:600">'+c.totalVideos+'</div></div>';
+        h+='</div>';
+        s.innerHTML=h;
+        _ytBuildMatch();
+        renderVideosPageKeepScroll();
+      }).catch(function(){_ytFetched=true;});
+    }
+  }else if(_ytData){
+    var ytSlot=document.getElementById('yt-analytics-slot');
+    if(ytSlot&&!ytSlot.innerHTML){
+      var c=_ytData.channelStats;
       var h='<div style="display:flex;gap:12px;flex-wrap:wrap;margin:8px 0">';
       h+='<div style="background:var(--glass);border:1px solid var(--border);border-radius:10px;padding:8px 14px"><div style="font-size:10px;color:var(--muted)">Subscribers</div><div style="font-size:16px;font-weight:600">'+_ytNum(c.subscribers)+'</div></div>';
       h+='<div style="background:var(--glass);border:1px solid var(--border);border-radius:10px;padding:8px 14px"><div style="font-size:10px;color:var(--muted)">Total Views</div><div style="font-size:16px;font-weight:600">'+_ytNum(c.totalViews)+'</div></div>';
       h+='<div style="background:var(--glass);border:1px solid var(--border);border-radius:10px;padding:8px 14px"><div style="font-size:10px;color:var(--muted)">Published on YT</div><div style="font-size:16px;font-weight:600">'+c.totalVideos+'</div></div>';
       h+='</div>';
       ytSlot.innerHTML=h;
-      _ytBuildMatch();
-      renderVideosPageKeepScroll();
-    }).catch(function(){ytSlot.innerHTML='';});
+    }
   }
 }
 
