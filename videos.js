@@ -214,26 +214,20 @@ function renderVideosPage(){
     });
   }
   const _rvpSe2=_vidScrollEl();if(_rvpSe2)_rvpSe2.scrollTop=_rvpTop;
+  // Load cached YT data from localStorage on first run
+  if(!_ytData){try{var _lsc=JSON.parse(localStorage.getItem('_ytCache')||'null');if(_lsc&&_lsc.channelStats){_ytData=_lsc;_ytBuildMatch();}}catch(e){}}
   if(!_ytFetched){
     _ytFetched=true;
-    var ytSlot=document.getElementById('yt-analytics-slot');
-    if(ytSlot){
-      fetch('/api/yt?_='+Date.now(),{cache:'no-store'}).then(function(r){if(!r.ok)throw new Error(r.status);return r.json();}).then(function(d){
-        if(d.error)return;
-        _ytData=d;
-        var c=d.channelStats;
-        var s=document.getElementById('yt-analytics-slot');if(!s)return;
-        var h='<div style="display:flex;gap:12px;flex-wrap:wrap;margin:8px 0">';
-        h+='<div style="background:var(--glass);border:1px solid var(--border);border-radius:10px;padding:8px 14px"><div style="font-size:10px;color:var(--muted)">Subscribers</div><div style="font-size:16px;font-weight:600">'+_ytNum(c.subscribers)+'</div></div>';
-        h+='<div style="background:var(--glass);border:1px solid var(--border);border-radius:10px;padding:8px 14px"><div style="font-size:10px;color:var(--muted)">Total Views</div><div style="font-size:16px;font-weight:600">'+_ytNum(c.totalViews)+'</div></div>';
-        h+='<div style="background:var(--glass);border:1px solid var(--border);border-radius:10px;padding:8px 14px"><div style="font-size:10px;color:var(--muted)">Published on YT</div><div style="font-size:16px;font-weight:600">'+c.totalVideos+'</div></div>';
-        h+='</div>';
-        s.innerHTML=h;
-        _ytBuildMatch();
-        renderVideosPageKeepScroll();
-      }).catch(function(){});
-    }
-  }else if(_ytData){
+    fetch('/api/yt?_='+Date.now(),{cache:'no-store'}).then(function(r){if(!r.ok)throw new Error(r.status);return r.json();}).then(function(d){
+      if(d.error)return;
+      _ytData=d;
+      try{localStorage.setItem('_ytCache',JSON.stringify(d));}catch(e){}
+      _ytBuildMatch();
+      renderVideosPageKeepScroll();
+    }).catch(function(){});
+  }
+  // Render YT stats from _ytData (either fresh or cached)
+  if(_ytData){
     var ytSlot=document.getElementById('yt-analytics-slot');
     if(ytSlot&&!ytSlot.innerHTML){
       var c=_ytData.channelStats;
