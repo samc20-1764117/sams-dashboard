@@ -3192,15 +3192,18 @@ function copyShopList(){
   });
 }
 
-// ── Quick Notes ──
-const _QN_KEY='samdash_qn';
-let _qnOpen=false,_qnNotes=[];
-function _qnLoad(){try{return JSON.parse(localStorage.getItem(_QN_KEY)||'[]');}catch(e){return[];}}
-function _qnSave(){try{localStorage.setItem(_QN_KEY,JSON.stringify(_qnNotes));}catch(e){}}
+// ── Quick Notes (Supabase-backed) ──
+let _qnOpen=false,_qnNotes=[],_qnLoaded=false;
+async function _qnFetch(){
+  if(_qnLoaded)return;
+  _qnLoaded=true;
+  const rows=await sbReqSilent('GET','quick_notes',null,'?is_deleted=is.false&order=created_at.asc');
+  if(rows&&Array.isArray(rows))_qnNotes=rows;
+}
 function toggleQN(){
   _qnOpen=!_qnOpen;
   document.getElementById('qnPanel').classList.toggle('open',_qnOpen);
-  if(_qnOpen){_qnNotes=_qnLoad();renderQN();requestAnimationFrame(()=>{const inp=document.getElementById('qnInput');if(inp)inp.focus();});}
+  if(_qnOpen){_qnFetch().then(()=>{renderQN();});requestAnimationFrame(()=>{const inp=document.getElementById('qnInput');if(inp)inp.focus();});}
 }
 function renderQN(){
   const el=document.getElementById('qnList');
@@ -3214,18 +3217,21 @@ function renderQN(){
     </div>`).join('');
 }
 function escHtml(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
-function addQN(){
+async function addQN(){
   const inp=document.getElementById('qnInput');
   const txt=(inp?.value||'').trim();
   if(!txt){_qnOpen=false;document.getElementById('qnPanel').classList.remove('open');return;}
   inp.value='';inp.focus();
-  _qnNotes.push({id:Date.now().toString(),note_text:txt});
-  _qnSave();renderQN();
+  const tmp={id:'qn-'+Date.now(),note_text:txt,is_deleted:false};
+  _qnNotes.push(tmp);renderQN();
   const list=document.getElementById('qnList');if(list)list.scrollTop=9999;
+  const sv=await sbReqSilent('POST','quick_notes',{note_text:txt});
+  if(sv&&sv[0]){const ix=_qnNotes.findIndex(n=>n.id===tmp.id);if(ix>-1)_qnNotes[ix]=sv[0];}
 }
-function deleteQN(id){
-  _qnNotes=_qnNotes.filter(n=>n.id!==String(id));
-  _qnSave();renderQN();
+async function deleteQN(id){
+  _qnNotes=_qnNotes.filter(n=>String(n.id)!==String(id));
+  renderQN();
+  if(!String(id).startsWith('qn-'))await sbReqSilent('PATCH','quick_notes',{is_deleted:true},`?id=eq.${id}`);
 }
 // Close panel on outside click
 document.addEventListener('click',function(e){
