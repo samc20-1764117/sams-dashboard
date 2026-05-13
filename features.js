@@ -3209,8 +3209,8 @@ function renderQN(){
   if(!el)return;
   if(!_qnNotes.length){el.innerHTML='<div class="qn-empty">No notes yet</div>';return;}
   el.innerHTML=_qnNotes.map((n,i)=>`
-    <div class="qn-item" data-qnid="${n.id}" data-qnidx="${i}">
-      <div class="qn-drag" onmousedown="_qnDragStart(event,${i})" title="Drag to reorder">⠿</div>
+    <div class="qn-item" data-qnid="${n.id}" data-qnidx="${i}" onmousedown="_qnDragStart(event,${i})">
+      <div class="qn-bullet"></div>
       <span class="qn-text" ondblclick="editQN(this,'${n.id}')">${escHtml(n.note_text)}</span>
       <button class="qn-del" onclick="event.stopPropagation();deleteQN('${n.id}')" title="Remove">✕</button>
     </div>`).join('');
@@ -3226,7 +3226,10 @@ async function addQN(){
   _qnNotes.push(tmp);renderQN();
   const list=document.getElementById('qnList');if(list)list.scrollTop=9999;
   const sv=await sbReqSilent('POST','quick_notes',{note_text:txt,sort_order:maxSort+1});
-  if(sv&&sv[0]){const ix=_qnNotes.findIndex(n=>n.id===tmp.id);if(ix>-1)_qnNotes[ix]=sv[0];}
+  if(sv&&sv[0]){const ix=_qnNotes.findIndex(n=>n.id===tmp.id);if(ix>-1)_qnNotes[ix]=sv[0];
+    const realId=sv[0].id;
+    pushUndo(()=>{_qnNotes=_qnNotes.filter(n=>String(n.id)!==String(realId));renderQN();sbReqSilent('PATCH','quick_notes',{is_visible:false},`?id=eq.${realId}`);},'Add note');
+  }
 }
 function editQN(span,id){
   const orig=span.textContent;
@@ -3238,53 +3241,61 @@ function editQN(span,id){
     if(!txt||txt===orig){span.textContent=orig;return;}
     const n=_qnNotes.find(n=>String(n.id)===String(id));
     if(n)n.note_text=txt;
-    if(!String(id).startsWith('qn-'))sbReqSilent('PATCH','quick_notes',{note_text:txt},`?id=eq.${id}`);
+    if(!String(id).startsWith('qn-')){sbReqSilent('PATCH','quick_notes',{note_text:txt},`?id=eq.${id}`);
+      pushUndo(()=>{const n2=_qnNotes.find(x=>String(x.id)===String(id));if(n2)n2.note_text=orig;renderQN();sbReqSilent('PATCH','quick_notes',{note_text:orig},`?id=eq.${id}`);},'Edit note');
+    }
   };
   span.onblur=done;
   span.onkeydown=e=>{e.stopPropagation();if(e.key==='Enter'){e.preventDefault();span.blur();}if(e.key==='Escape'){span.textContent=orig;span.blur();}};
 }
 function _qnDragStart(e,idx){
+  if(e.target.closest('.qn-del,.qn-text[contenteditable="true"]'))return;
   e.preventDefault();
   const list=document.getElementById('qnList');
   const items=[...list.querySelectorAll('.qn-item')];
   const dragged=items[idx];
-  dragged.classList.add('qn-dragging');
+  let moved=false,dropIdx=idx;
   const startY=e.clientY;
-  let curIdx=idx;
   const onMove=ev=>{
-    const dy=ev.clientY-startY;
-    dragged.style.transform=`translateY(${dy}px)`;
-    dragged.style.zIndex='10';
-    const midY=dragged.getBoundingClientRect().top+dragged.offsetHeight/2;
-    for(let i=0;i<items.length;i++){
-      if(i===curIdx)continue;
-      const r=items[i].getBoundingClientRect();
-      const itemMid=r.top+r.height/2;
-      if(curIdx<i&&midY>itemMid){list.insertBefore(dragged,items[i].nextSibling);items.splice(curIdx,1);items.splice(i,0,dragged);curIdx=i;break;}
-      if(curIdx>i&&midY<itemMid){list.insertBefore(dragged,items[i]);items.splice(curIdx,1);items.splice(i,0,dragged);curIdx=i;break;}
+    if(!moved&&Math.abs(ev.clientY-startY)<4)return;
+    if(!moved){moved=true;dragged.classList.add('qn-dragging');}
+    let ph=list.querySelector('.qn-drop-line');
+    if(!ph){ph=document.createElement('div');ph.className='qn-drop-line';list.appendChild(ph);}
+    const rows=[...list.querySelectorAll('.qn-item')];
+    let inserted=false;dropIdx=rows.length;
+    for(let i=0;i<rows.length;i++){
+      const rc=rows[i].getBoundingClientRect();
+      if(ev.clientY<rc.top+rc.height/2){list.insertBefore(ph,rows[i]);dropIdx=i;inserted=true;break;}
     }
+    if(!inserted&&rows.length)rows[rows.length-1].after(ph);
   };
   const onUp=()=>{
     document.removeEventListener('mousemove',onMove);
     document.removeEventListener('mouseup',onUp);
     dragged.classList.remove('qn-dragging');
-    dragged.style.transform='';dragged.style.zIndex='';
-    if(curIdx===idx)return;
-    // Rebuild _qnNotes order from DOM
-    const newOrder=[...list.querySelectorAll('.qn-item')].map(el=>_qnNotes.find(n=>String(n.id)===el.dataset.qnid)).filter(Boolean);
-    _qnNotes=newOrder;
+    const ph=list.querySelector('.qn-drop-line');if(ph)ph.remove();
+    if(!moved||dropIdx===idx)return;
+    const prevOrder=_qnNotes.map(n=>({id:n.id,sort_order:n.sort_order}));
+    const note=_qnNotes.splice(idx,1)[0];
+    const ins=dropIdx>idx?dropIdx-1:dropIdx;
+    _qnNotes.splice(ins,0,note);
     _qnNotes.forEach((n,i)=>{n.sort_order=i;});
     renderQN();
-    // Persist all sort_orders
     _qnNotes.forEach(n=>{if(!String(n.id).startsWith('qn-'))sbReqSilent('PATCH','quick_notes',{sort_order:n.sort_order},`?id=eq.${n.id}`);});
+    pushUndo(()=>{prevOrder.forEach(p=>{const n=_qnNotes.find(x=>String(x.id)===String(p.id));if(n)n.sort_order=p.sort_order;});_qnNotes.sort((a,b)=>(a.sort_order??0)-(b.sort_order??0));renderQN();_qnNotes.forEach(n=>{if(!String(n.id).startsWith('qn-'))sbReqSilent('PATCH','quick_notes',{sort_order:n.sort_order},`?id=eq.${n.id}`);});},'Reorder note');
   };
   document.addEventListener('mousemove',onMove);
   document.addEventListener('mouseup',onUp);
 }
 async function deleteQN(id){
+  const removed=_qnNotes.find(n=>String(n.id)===String(id));
+  const removedIdx=_qnNotes.indexOf(removed);
   _qnNotes=_qnNotes.filter(n=>String(n.id)!==String(id));
   renderQN();
-  if(!String(id).startsWith('qn-'))await sbReqSilent('PATCH','quick_notes',{is_visible:false,hidden_at:new Date().toISOString()},`?id=eq.${id}`);
+  if(!String(id).startsWith('qn-')){
+    await sbReqSilent('PATCH','quick_notes',{is_visible:false,hidden_at:new Date().toISOString()},`?id=eq.${id}`);
+    if(removed)pushUndo(()=>{_qnNotes.splice(removedIdx,0,removed);renderQN();sbReqSilent('PATCH','quick_notes',{is_visible:true,hidden_at:null},`?id=eq.${id}`);},'Delete note');
+  }
 }
 // Close panel on outside click
 document.addEventListener('click',function(e){
