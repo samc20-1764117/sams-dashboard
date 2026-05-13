@@ -3341,7 +3341,7 @@ document.addEventListener('keydown',function(e){
   const inp=document.getElementById('qnInput');
   if(!inp)return;
   const txt=(inp.value||'').trim();
-  if(txt||document.activeElement===inp)return;
+  if(txt)return;
   e.preventDefault();_qnOpen=false;document.getElementById('qnPanel').classList.remove('open');
 });
 
