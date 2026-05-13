@@ -937,7 +937,7 @@ tickClock();_updateOvTopDate();setInterval(tickClock,1000);init();
   </div>
   <div class="qn-list" id="qnList"></div>
   <div class="qn-input-row">
-    <input class="qn-input" id="qnInput" type="text" placeholder="Jot something down…" onkeydown="if(event.key==='Enter')addQN()">
+    <input class="qn-input" id="qnInput" type="text" placeholder="Jot something down…" autocapitalize="sentences" onkeydown="if(event.key==='Enter')addQN()" oninput="if(this.value.length===1)this.value=this.value.toUpperCase()">
     <button class="qn-add-btn" onclick="addQN()">+</button>
   </div>
 </div>

@@ -3212,7 +3212,7 @@ function renderQN(){
   el.innerHTML=_qnNotes.map(n=>`
     <div class="qn-item">
       <div class="qn-bullet"></div>
-      <span class="qn-text">${escHtml(n.note_text)}</span>
+      <span class="qn-text" ondblclick="editQN(this,'${n.id}')">${escHtml(n.note_text)}</span>
       <button class="qn-del" onclick="event.stopPropagation();deleteQN('${n.id}')" title="Remove">✕</button>
     </div>`).join('');
 }
@@ -3227,6 +3227,21 @@ async function addQN(){
   const list=document.getElementById('qnList');if(list)list.scrollTop=9999;
   const sv=await sbReqSilent('POST','quick_notes',{note_text:txt});
   if(sv&&sv[0]){const ix=_qnNotes.findIndex(n=>n.id===tmp.id);if(ix>-1)_qnNotes[ix]=sv[0];}
+}
+function editQN(span,id){
+  const orig=span.textContent;
+  span.contentEditable='true';span.focus();
+  const sel=window.getSelection();sel.selectAllChildren(span);sel.collapseToEnd();
+  const done=()=>{
+    span.contentEditable='false';
+    const txt=span.textContent.trim();
+    if(!txt||txt===orig){span.textContent=orig;return;}
+    const n=_qnNotes.find(n=>String(n.id)===String(id));
+    if(n)n.note_text=txt;
+    if(!String(id).startsWith('qn-'))sbReqSilent('PATCH','quick_notes',{note_text:txt},`?id=eq.${id}`);
+  };
+  span.onblur=done;
+  span.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();span.blur();}if(e.key==='Escape'){span.textContent=orig;span.blur();}};
 }
 async function deleteQN(id){
   _qnNotes=_qnNotes.filter(n=>String(n.id)!==String(id));
