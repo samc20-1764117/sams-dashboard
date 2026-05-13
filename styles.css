@@ -591,7 +591,7 @@ body.dark #qnPanel{background:rgba(40,22,14,.75);border-color:rgba(255,220,200,.
 /* Spiral binding — left strip */
 /* Header — matches .ch style */
 .qn-header{display:flex;align-items:center;gap:6px;padding:5px 13px;border-bottom:1px solid rgba(210,205,228,.22);flex-shrink:0;min-height:28px}
-.qn-title{font-size:13px;font-weight:700;letter-spacing:.01em;color:var(--text);flex:1}
+.qn-title{font-size:13px;font-weight:700;letter-spacing:.01em;color:var(--muted);flex:1;margin-top:2px}
 .qn-close-btn{background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:2px 4px;border-radius:5px;transition:all .12s;line-height:1}
 .qn-close-btn:hover{background:rgba(0,0,0,.06);color:var(--text)}
 /* Lined paper area */
@@ -614,7 +614,7 @@ body.dark .qn-hist-item:hover{background:rgba(255,255,255,.07)}
 .qn-item:hover{background:rgba(255,237,213,.55)}
 body.dark .qn-item:hover{background:rgba(255,255,255,.07)}
 .qn-bullet{width:5px;height:5px;border-radius:50%;background:var(--accent);opacity:.6;flex-shrink:0;margin-top:5px}
-.qn-text{flex:1;font-size:12px;font-weight:500;color:var(--text);line-height:1.5;word-break:break-word}
+.qn-text{flex:1;font-size:12px;font-weight:500;color:var(--muted);line-height:1.5;word-break:break-word}
 .qn-del{background:none;border:none;cursor:pointer;color:var(--subtle);font-size:11px;padding:1px 3px;border-radius:4px;opacity:0;transition:opacity .12s,background .12s,color .12s;flex-shrink:0;line-height:1;margin-top:3px}
 .qn-item:hover .qn-del{opacity:1}
 .qn-del:hover{background:rgba(239,68,68,.1);color:#ef4444}

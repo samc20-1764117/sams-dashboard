@@ -3334,6 +3334,16 @@ async function restoreQN(id){
 document.addEventListener('click',function(e){
   if(_qnOpen&&!e.target.closest('#qnPanel')&&!e.target.closest('#qnBtn')){_qnOpen=false;document.getElementById('qnPanel').classList.remove('open');}
 });
+// Enter closes quick notes when input is empty (even if focus left the input)
+document.addEventListener('keydown',function(e){
+  if(!_qnOpen||e.key!=='Enter')return;
+  if(e.target.closest('.qn-text[contenteditable="true"]'))return;
+  const inp=document.getElementById('qnInput');
+  if(!inp)return;
+  const txt=(inp.value||'').trim();
+  if(!txt){e.preventDefault();_qnOpen=false;document.getElementById('qnPanel').classList.remove('open');}
+  else{e.preventDefault();addQN();}
+});
 
 
 // ── Monthly Cal Search ──────────────────────────────────────────────
