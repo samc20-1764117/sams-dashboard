@@ -239,14 +239,18 @@ function _vidRenderDashboard(){
             <button class="vid-del" style="visibility:hidden">✕</button>
           </div>`;
   const ideasHtml=(()=>{
-    const groupIdeas=ideas.filter(v=>v.video_type==='B').sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
-    const singleIdeas=ideas.filter(v=>v.video_type!=='B').sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
+    const bigIdeas=ideas.filter(v=>v.video_type==='B').sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
+    const littleIdeas=ideas.filter(v=>v.video_type!=='B').sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
     let h='';
-    if(groupIdeas.length||singleIdeas.length){
-      h+=`<div style="font-size:9px;font-weight:600;color:var(--muted);padding:6px 6px 6px 16px;letter-spacing:.03em;background:#fff;display:flex;align-items:center">Group</div>`;
-      h+=groupIdeas.length?groupIdeas.map(v=>_vidDashRow(v,false,true)).join(''):'<div style="color:var(--muted);font-size:11px;padding:4px 10px;opacity:.5">None</div>';
-      h+=`<div style="font-size:9px;font-weight:600;color:var(--muted);padding:6px 6px 6px 16px;letter-spacing:.03em;border-top:1px solid rgba(210,205,228,.15);margin-top:4px;background:#fff;display:flex;align-items:center">Single</div>`;
-      h+=singleIdeas.length?singleIdeas.map(v=>_vidDashRow(v,false,true)).join(''):'<div style="color:var(--muted);font-size:11px;padding:4px 10px;opacity:.5">None</div>';
+    if(bigIdeas.length||littleIdeas.length){
+      h+=`<div class="vid-idea-section" data-idea-type="B" ondragover="_vidIdeaTypeDragOver(event)" ondragleave="_vidDashDragLeave(event)" ondrop="_vidIdeaTypeDrop(event,'B')">`;
+      h+=`<div style="font-size:9px;font-weight:600;color:var(--muted);padding:6px 6px 6px 16px;letter-spacing:.03em;background:#fff;display:flex;align-items:center">Big</div>`;
+      h+=bigIdeas.length?bigIdeas.map(v=>_vidDashRow(v,false,true)).join(''):'<div style="color:var(--muted);font-size:11px;padding:4px 10px;opacity:.5">None</div>';
+      h+=`</div>`;
+      h+=`<div class="vid-idea-section" data-idea-type="L" ondragover="_vidIdeaTypeDragOver(event)" ondragleave="_vidDashDragLeave(event)" ondrop="_vidIdeaTypeDrop(event,'L')">`;
+      h+=`<div style="font-size:9px;font-weight:600;color:var(--muted);padding:6px 6px 6px 16px;letter-spacing:.03em;border-top:1px solid rgba(210,205,228,.15);margin-top:4px;background:#fff;display:flex;align-items:center">Little</div>`;
+      h+=littleIdeas.length?littleIdeas.map(v=>_vidDashRow(v,false,true)).join(''):'<div style="color:var(--muted);font-size:11px;padding:4px 10px;opacity:.5">None</div>';
+      h+=`</div>`;
     }else{
       h='<div style="color:var(--muted);font-size:12px;padding:16px 10px">No ideas yet</div>';
     }
@@ -476,6 +480,35 @@ function _vidDashDragOver(e){
 }
 function _vidDashDragLeave(e){
   if(!e.currentTarget.contains(e.relatedTarget)){const ph=e.currentTarget.querySelector('.vid-reorder-ph');if(ph)ph.remove();if(_vidDragScrollRAF){cancelAnimationFrame(_vidDragScrollRAF);_vidDragScrollRAF=null;}}
+}
+function _vidIdeaTypeDragOver(e){
+  if(!_vidDashDragId)return;
+  e.preventDefault();e.stopPropagation();
+  const zone=e.currentTarget;
+  zone.style.background='rgba(14,165,233,.04)';
+}
+async function _vidIdeaTypeDrop(e,newType){
+  e.preventDefault();e.stopPropagation();
+  e.currentTarget.style.background='';
+  if(_vidDragScrollRAF){cancelAnimationFrame(_vidDragScrollRAF);_vidDragScrollRAF=null;}
+  const dragIds=_vidDashDragIds.length?[..._vidDashDragIds]:(_vidDashDragId?[String(_vidDashDragId)]:[]);
+  _vidDashDragId=null;_vidDashDragIds=[];
+  if(!dragIds.length)return;
+  const undos=[];
+  for(const sid of dragIds){
+    const v=(st.videos||[]).find(x=>String(x.id)===sid);if(!v)continue;
+    const prev={video_type:v.video_type,big_video_id:v.big_video_id,status:v.status};
+    v.video_type=newType;v.status='idea';
+    if(newType==='B')v.big_video_id=null;
+    undos.push({sid,prev});
+  }
+  save();renderVideosPageKeepScroll();
+  pushUndo(async()=>{
+    undos.forEach(u=>{const v=(st.videos||[]).find(x=>String(x.id)===u.sid);if(v)Object.assign(v,u.prev);});
+    save();renderVideosPageKeepScroll();
+    for(const u of undos)await sbReqSilent('PATCH','videos',u.prev,`?id=eq.${u.sid}`);
+  },'Changed video type');
+  for(const u of undos)await sbReqSilent('PATCH','videos',{video_type:newType,status:'idea',big_video_id:newType==='B'?null:undefined},`?id=eq.${u.sid}`);
 }
 
 // Push a local-only video (l-xxx id) to Supabase and replace the temp id
