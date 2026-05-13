@@ -31,7 +31,7 @@ async function _rssFallback(channelId) {
 export async function onRequest(context) {
   const corsHeaders = {
     'Access-Control-Allow-Origin': context.request.headers.get('Origin') || 'https://dev.sams-dashboard.pages.dev',
-    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, X-YT-Auth',
   };
   if (context.request.method === 'OPTIONS') {
