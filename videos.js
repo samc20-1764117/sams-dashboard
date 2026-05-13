@@ -1173,10 +1173,10 @@ async function saveVidModal(){
         });
       }
       Object.assign(v,data);
-      const coreSteps=VID_STEPS.filter(s=>s!=='step_tableau_public'&&s!=='step_upload_tableau');
-      const coreDone=coreSteps.every(s=>v[s]==='done'||v[s]==='na');
-      if(coreDone&&v.post_date&&v.duration_minutes&&v.status!=='published'){v.status='published';data.status='published';}
-      else if((!coreDone||!v.post_date||!v.duration_minutes)&&v.status==='published'){v.status='in_progress';data.status='in_progress';}
+      const allStepsDone=VID_STEPS.every(s=>v[s]==='done'||v[s]==='na');
+      const hasFields=v.post_date&&v.duration_minutes&&v.topic&&v.title;
+      if(allStepsDone&&hasFields&&v.status!=='published'){v.status='published';data.status='published';}
+      else if((!allStepsDone||!hasFields)&&v.status==='published'){v.status='in_progress';data.status='in_progress';}
       save();renderVideosPageKeepScroll();
       if(v.video_type==='B'&&v.status!==prev.status&&(v.status==='in_progress'||v.status==='up_next'))_vidPromoteChildren(v.id,v.status);
       pushUndo(async()=>{
@@ -1258,19 +1258,19 @@ async function cycleVidStep(id,step){
   const prev=cur;
   const prevStatus=v.status;
   v[step]=next;
-  // Auto-complete: core steps done + has date → published (Tab Pub & Upload excluded)
-  const coreSteps=VID_STEPS.filter(s=>s!=='step_tableau_public'&&s!=='step_upload_tableau');
-  const coreDone=coreSteps.every(s=>v[s]==='done'||v[s]==='na');
-  const wasDone=coreSteps.every(s=>(s===step?cur:v[s]||'not_started')==='done'||(s===step?cur:v[s]||'not_started')==='na');
-  if(coreDone&&v.post_date&&v.duration_minutes&&v.status!=='published'){
+  // Auto-complete: all required steps done/na + post_date + duration + topic + title → published
+  const allDone=VID_STEPS.every(s=>v[s]==='done'||v[s]==='na');
+  const wasDone=VID_STEPS.every(s=>(s===step?cur:v[s]||'not_started')==='done'||(s===step?cur:v[s]||'not_started')==='na');
+  const hasFields=v.post_date&&v.duration_minutes&&v.topic&&v.title;
+  if(allDone&&hasFields&&v.status!=='published'){
     v.status='published';
-  }else if((!coreDone||!v.post_date||!v.duration_minutes)&&v.status==='published'&&prevStatus==='published'){
+  }else if((!allDone||!hasFields)&&v.status==='published'&&prevStatus==='published'){
     v.status='in_progress';
   }
   const patch={[step]:next};
   if(v.status!==prevStatus)patch.status=v.status;
   save();renderVideosPageKeepScroll();
-  if(coreDone&&v.post_date&&v.duration_minutes&&!wasDone)_vidCelebrate(id);
+  if(allDone&&hasFields&&!wasDone)_vidCelebrate(id);
   pushUndo(async()=>{v[step]=prev;v.status=prevStatus;save();renderVideosPageKeepScroll();await sbReqSilent('PATCH','videos',{[step]:prev,status:prevStatus},`?id=eq.${id}`);},'Step change');
   await sbReqSilent('PATCH','videos',patch,`?id=eq.${id}`);
 }
