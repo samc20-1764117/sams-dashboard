@@ -1212,7 +1212,7 @@ function openVidEdit(id){
   const stepVals={};VID_STEPS.forEach(s=>{stepVals[s]=v[s]||'not_started';});
   _vidRenderSteps(stepVals);
   document.getElementById('vidModal').classList.add('open');
-  setTimeout(()=>{const inp=document.getElementById('vmTitle');inp.focus();const len=inp.value.length;inp.setSelectionRange(len,len);},80);
+  setTimeout(()=>{const inp=document.getElementById('vmTopic');inp.focus();const len=inp.value.length;inp.setSelectionRange(len,len);},80);
 }
 
 function _vidRenderSteps(vals){
