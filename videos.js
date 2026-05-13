@@ -260,32 +260,43 @@ function _vidRenderDashboard(){
         <div style="padding-left:10px">Ideas <span class="vid-count">${ideas.length}</span></div>
       </div>
       <div style="grid-column:1;grid-row:2;min-height:0;overflow-y:auto;overflow-x:hidden;border-right:1px solid var(--border)">
-        <div class="vid-drop-zone" data-drop-status="up_next" ondragover="event.preventDefault()" ondrop="_vidDashDrop(event,'up_next')" style="min-height:40px;padding-bottom:8px">
+        <div class="vid-drop-zone" data-drop-status="up_next" ondragover="_vidDashDragOver(event)" ondragleave="_vidDashDragLeave(event)" ondrop="_vidDashDrop(event,'up_next')" style="min-height:40px;padding-bottom:8px">
           <div style="font-size:9px;font-weight:600;color:var(--muted);padding:6px 6px 6px 16px;letter-spacing:.03em;background:#fff;display:flex;align-items:center">Up Next</div>
           ${upNext.length?_vidDashList(upNext,false):'<div style="color:var(--muted);font-size:11px;padding:8px 10px;opacity:.5">Drag ideas here</div>'}
         </div>
-        <div class="vid-drop-zone" data-drop-status="in_progress" ondragover="event.preventDefault()" ondrop="_vidDashDrop(event,'in_progress')" style="min-height:40px;padding-bottom:8px">
+        <div class="vid-drop-zone" data-drop-status="in_progress" ondragover="_vidDashDragOver(event)" ondragleave="_vidDashDragLeave(event)" ondrop="_vidDashDrop(event,'in_progress')" style="min-height:40px;padding-bottom:8px">
           <div style="font-size:9px;font-weight:600;color:var(--muted);padding:6px 6px 6px 16px;letter-spacing:.03em;border-top:1px solid rgba(210,205,228,.15);margin-top:4px;background:#fff;display:flex;align-items:center">In Progress</div>
           ${inProgress.length?_vidDashList(inProgress,false):'<div style="color:var(--muted);font-size:11px;padding:8px 10px;opacity:.5">Drag up next here to start</div>'}
         </div>
       </div>
-      <div style="grid-column:2;grid-row:2;min-height:0;overflow-y:auto" ondragover="event.preventDefault()" ondrop="_vidDashDrop(event,'idea')">
+      <div style="grid-column:2;grid-row:2;min-height:0;overflow-y:auto" ondragover="_vidDashDragOver(event)" ondragleave="_vidDashDragLeave(event)" ondrop="_vidDashDrop(event,'idea')">
         ${ideasHtml}
       </div>
     </div>`;
 }
 
 function _vidDashList(vids,simple){
+  // Sort by vid_order, then group B→L
+  const sorted=[...vids].sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
   const seen=new Set();
   let html='';
-  const bVids=vids.filter(v=>v.video_type==='B');
-  const lVids=vids.filter(v=>v.video_type!=='B');
-  bVids.forEach(b=>{
-    seen.add(String(b.id));
-    html+=_vidDashRow(b,false,simple);
-    const children=lVids.filter(l=>l.big_video_id&&String(l.big_video_id)===String(b.id));
-    children.forEach(l=>{seen.add(String(l.id));html+=_vidDashRow(l,true,simple);});
+  const bVids=sorted.filter(v=>v.video_type==='B');
+  const lVids=sorted.filter(v=>v.video_type!=='B');
+  // Interleave: B videos and standalone L in vid_order, children under their B
+  sorted.forEach(v=>{
+    if(seen.has(String(v.id)))return;
+    if(v.video_type==='B'){
+      seen.add(String(v.id));
+      html+=_vidDashRow(v,false,simple);
+      const children=lVids.filter(l=>l.big_video_id&&String(l.big_video_id)===String(v.id));
+      children.forEach(l=>{seen.add(String(l.id));html+=_vidDashRow(l,true,simple);});
+    }else if(!v.big_video_id||!bVids.find(b=>String(b.id)===String(v.big_video_id))){
+      // Standalone L (no parent in this list)
+      seen.add(String(v.id));
+      html+=_vidDashRow(v,false,simple);
+    }
   });
+  // Any remaining children whose B parent wasn't in this status
   lVids.filter(l=>!seen.has(String(l.id))).forEach(l=>{html+=_vidDashRow(l,false,simple);});
   return html;
 }
@@ -393,11 +404,34 @@ function _vidDashDragStart(e,id){
     _vidDashDragIds=[sid,..._vidChildSelected];
   }
   e.dataTransfer.effectAllowed='move';
+  e.target.style.opacity='.4';
+  const _dragEnd=()=>{e.target.style.opacity='';e.target.removeEventListener('dragend',_dragEnd);document.querySelectorAll('.vid-reorder-ph').forEach(p=>p.remove());};
+  e.target.addEventListener('dragend',_dragEnd);
 }
 let _vidDashDragIds=[];
 
+function _vidDashDragOver(e){
+  if(!_vidDashDragId)return;
+  e.preventDefault();
+  const zone=e.currentTarget;
+  let ph=zone.querySelector('.vid-reorder-ph');
+  if(!ph){ph=document.createElement('div');ph.className='vid-reorder-ph';ph.style.cssText='height:2px;margin:2px 10px;border-radius:99px;background:rgba(150,150,160,.5);pointer-events:none;flex-shrink:0';zone.appendChild(ph);}
+  // Find top-level rows only (not children of B groups — they move with parent)
+  const rows=[...zone.querySelectorAll('.vid-dash-row[data-vid]')];
+  let inserted=false;
+  for(const r of rows){
+    const rc=r.getBoundingClientRect();
+    if(e.clientY<rc.top+rc.height/2){zone.insertBefore(ph,r);inserted=true;break;}
+  }
+  if(!inserted&&rows.length)rows[rows.length-1].after(ph);
+  else if(!rows.length){const hdr=zone.querySelector('[style*="font-size:9px"]');if(hdr)hdr.after(ph);}
+}
+function _vidDashDragLeave(e){
+  if(!e.currentTarget.contains(e.relatedTarget)){const ph=e.currentTarget.querySelector('.vid-reorder-ph');if(ph)ph.remove();}
+}
+
 // Push a local-only video (l-xxx id) to Supabase and replace the temp id
-const _VID_DB_COLS=['title','topic','status','post_date','duration_minutes','video_type','big_video_id',...VID_STEPS];
+const _VID_DB_COLS=['title','topic','status','post_date','duration_minutes','video_type','big_video_id','vid_order',...VID_STEPS];
 async function _vidEnsureSynced(v){
   if(!String(v.id).startsWith('l-'))return;
   // If parent is also local, sync parent first
@@ -438,42 +472,87 @@ async function _vidSyncLocalVideos(){
 }
 async function _vidDashDrop(e,newStatus){
   e.preventDefault();e.currentTarget.style.background='';
-  const ids=_vidDashDragIds.length?[..._vidDashDragIds]:(_vidDashDragId?[String(_vidDashDragId)]:[]);
+  const zone=e.currentTarget;
+  const ph=zone.querySelector('.vid-reorder-ph');
+  const dragIds=_vidDashDragIds.length?[..._vidDashDragIds]:(_vidDashDragId?[String(_vidDashDragId)]:[]);
   _vidDashDragId=null;_vidDashDragIds=[];
-  if(!ids.length)return;
-  // Collect all videos to move and their previous states
+  if(!dragIds.length){if(ph)ph.remove();return;}
+
+  // Build reorder from placeholder position
+  const rows=[...zone.querySelectorAll('.vid-dash-row[data-vid]')];
+  const children=zone.children?[...zone.children]:[];
+  const phIdx=ph?children.indexOf(ph):-1;
+  if(ph)ph.remove();
+
+  // Determine insert position from DOM order
+  const dragSet=new Set(dragIds);
+  const zoneIds=rows.map(r=>r.dataset.vid).filter(id=>!dragSet.has(id));
+  let insertIdx=zoneIds.length;// default: end
+  if(phIdx>-1){
+    // Find which row comes after the placeholder
+    const rowsAfterPh=rows.filter(r=>children.indexOf(r)>=phIdx&&!dragSet.has(r.dataset.vid));
+    if(rowsAfterPh.length){
+      const afterId=rowsAfterPh[0].dataset.vid;
+      insertIdx=zoneIds.indexOf(afterId);
+      if(insertIdx<0)insertIdx=zoneIds.length;
+    }
+  }
+
+  // Collect undo data for status changes
   const undoData=[];
-  const toMove=[];
-  for(const dragId of ids){
+  for(const dragId of dragIds){
     const v=(st.videos||[]).find(x=>String(x.id)===String(dragId));
-    if(!v||v.status===newStatus)continue;
-    const prev=v.status;
+    if(!v)continue;
+    const prev=v.status;const prevOrder=v.vid_order;
     const childPrevs=[];
     if(v.video_type==='B'){
-      (st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(v.id)).forEach(c=>childPrevs.push({id:c.id,status:c.status}));
+      (st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(v.id)).forEach(c=>childPrevs.push({id:c.id,status:c.status,vid_order:c.vid_order}));
     }
-    undoData.push({v,prev,childPrevs});
-    toMove.push(v);
+    undoData.push({v,prev,prevOrder,childPrevs});
+    if(v.status!==newStatus)v.status=newStatus;
   }
-  if(!toMove.length)return;
-  toMove.forEach(v=>{v.status=newStatus;});
+
+  // Build final order: zoneIds with dragIds spliced in at insertIdx
+  // Only top-level (B or standalone) — children follow their parent
+  const topDragIds=dragIds.filter(id=>{const v=(st.videos||[]).find(x=>String(x.id)===id);return v&&(v.video_type==='B'||!v.big_video_id||!dragSet.has(String(v.big_video_id)));});
+  const finalOrder=[...zoneIds];
+  finalOrder.splice(insertIdx,0,...topDragIds);
+
+  // Assign vid_order to all videos in this status
+  const allInStatus=(st.videos||[]).filter(v=>!v.is_deleted&&v.status===newStatus);
+  finalOrder.forEach((id,i)=>{
+    const v=allInStatus.find(x=>String(x.id)===id);
+    if(v)v.vid_order=i;
+    // Children get parent's order + fraction
+    if(v&&v.video_type==='B'){
+      const kids=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===id&&c.status===newStatus);
+      kids.forEach((k,ki)=>{k.vid_order=i+((ki+1)*0.01);});
+    }
+  });
+  // Standalone L not in finalOrder
+  allInStatus.filter(v=>!finalOrder.includes(String(v.id))&&v.vid_order==null).forEach((v,i)=>{v.vid_order=finalOrder.length+i;});
+
   save();renderVideosPageKeepScroll();
+
   for(const d of undoData){
-    if(d.v.video_type==='B')await _vidPromoteChildren(d.v.id,newStatus);
+    if(d.v.video_type==='B'&&d.prev!==newStatus)await _vidPromoteChildren(d.v.id,newStatus);
     await _vidEnsureSynced(d.v);
   }
+
+  // Save vid_order + status to DB
+  const prevOrders=allInStatus.map(v=>({id:v.id,order:v.vid_order}));
   pushUndo(async()=>{
     undoData.forEach(d=>{
-      d.v.status=d.prev;
-      d.childPrevs.forEach(cp=>{const c=(st.videos||[]).find(x=>String(x.id)===String(cp.id));if(c)c.status=cp.status;});
+      d.v.status=d.prev;d.v.vid_order=d.prevOrder;
+      d.childPrevs.forEach(cp=>{const c=(st.videos||[]).find(x=>String(x.id)===String(cp.id));if(c){c.status=cp.status;c.vid_order=cp.vid_order;}});
     });
     save();renderVideosPageKeepScroll();
     for(const d of undoData){
-      await sbReqSilent('PATCH','videos',{status:d.prev},`?id=eq.${d.v.id}`);
-      for(const cp of d.childPrevs)await sbReqSilent('PATCH','videos',{status:cp.status},`?id=eq.${cp.id}`);
+      await sbReqSilent('PATCH','videos',{status:d.prev,vid_order:d.prevOrder??null},`?id=eq.${d.v.id}`);
+      for(const cp of d.childPrevs)await sbReqSilent('PATCH','videos',{status:cp.status,vid_order:cp.vid_order??null},`?id=eq.${cp.id}`);
     }
-  },'Status change');
-  for(const d of undoData)await sbReqSilent('PATCH','videos',{status:newStatus},`?id=eq.${d.v.id}`);
+  },'Reorder/move');
+  for(const v of allInStatus)await sbReqSilent('PATCH','videos',{status:v.status,vid_order:v.vid_order},`?id=eq.${v.id}`);
 }
 
 // ── TABLE VIEW (All Details) ─────────────────────────────────────────────────

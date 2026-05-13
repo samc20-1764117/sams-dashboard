@@ -829,7 +829,7 @@ function _syncRedoDiff(before,after){
     if(Object.keys(ch).length)ps.push(sbReqSilent('PATCH','pup_skills',ch,`?id=eq.${s.id}`));
   }
   const bV2=before.videos||[],aV2=after.videos||[];
-  const vidFields=['title','topic','status','post_date','duration_minutes','video_type','big_video_id',
+  const vidFields=['title','topic','status','post_date','duration_minutes','video_type','big_video_id','vid_order',
     'step_build','step_vo','step_film','step_cut','step_thumbnail','step_description','step_tableau_public','step_upload_tableau'];
   for(const v of aV2){
     const p=bV2.find(x=>String(x.id)===String(v.id));if(!p)continue;
