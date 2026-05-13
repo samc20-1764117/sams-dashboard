@@ -3353,7 +3353,15 @@ async function toggleQNHist(){
 async function restoreQN(id){
   await sbReqSilent('PATCH','quick_notes',{is_visible:true,hidden_at:null},`?id=eq.${id}`);
   const rows=await sbReqSilent('GET','quick_notes',null,'?id=eq.'+id);
-  if(rows&&rows[0]){_qnNotes.push(rows[0]);_qnNotes.sort((a,b)=>(a.sort_order??0)-(b.sort_order??0));renderQN();}
+  if(rows&&rows[0]){
+    const restored=rows[0];
+    _qnNotes.push(restored);_qnNotes.sort((a,b)=>(a.sort_order??0)-(b.sort_order??0));renderQN();
+    pushUndo(()=>{
+      _qnNotes=_qnNotes.filter(n=>String(n.id)!==String(id));renderQN();
+      sbReqSilent('PATCH','quick_notes',{is_visible:false,hidden_at:new Date().toISOString()},`?id=eq.${id}`);
+      if(_qnHistOpen)toggleQNHist().then(()=>toggleQNHist());
+    },'Restore note');
+  }
   // Remove from history list
   const el=document.querySelector(`.qn-hist-item[onclick="restoreQN(${id})"]`);
   if(el)el.remove();
