@@ -3219,7 +3219,7 @@ function escHtml(s){const d=document.createElement('div');d.textContent=s;return
 async function addQN(){
   const inp=document.getElementById('qnInput');
   const txt=(inp?.value||'').trim();
-  if(!txt){_qnOpen=false;document.getElementById('qnPanel').classList.remove('open');return;}
+  if(!txt)return;
   inp.value='';inp.focus();
   const maxSort=_qnNotes.reduce((m,n)=>Math.max(m,n.sort_order||0),0);
   const tmp={id:'qn-'+Date.now(),note_text:txt,is_visible:true,sort_order:maxSort+1};
@@ -3341,7 +3341,7 @@ document.addEventListener('keydown',function(e){
   const inp=document.getElementById('qnInput');
   if(!inp)return;
   const txt=(inp.value||'').trim();
-  if(txt)return;// let the input's own onkeydown handle saving
+  if(txt||document.activeElement===inp)return;
   e.preventDefault();_qnOpen=false;document.getElementById('qnPanel').classList.remove('open');
 });
 
