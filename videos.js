@@ -379,12 +379,16 @@ async function _vidGroupDrop(e,parentId){
 
 let _vidDashDragId=null;
 function _vidDashDragStart(e,id){
-  _vidDashDragId=id;
-  // If dragging a selected video, drag all selected; otherwise just drag this one
-  if(_vidSelected.has(String(id))&&_vidSelected.size>1){
+  const sid=String(id);
+  _vidDashDragId=sid;
+  // If dragging a selected video, include all selected; otherwise just this one
+  if(_vidSelected.has(sid)){
     _vidDashDragIds=[..._vidSelected,..._vidChildSelected];
   }else{
-    _vidDashDragIds=[String(id)];
+    // Not selected — clear selection, select this one, drag just it
+    _vidSelected.clear();_vidSelected.add(sid);
+    _vidUpdateChildSel();_applyVidSel();
+    _vidDashDragIds=[sid,..._vidChildSelected];
   }
   e.dataTransfer.effectAllowed='move';
 }
@@ -825,7 +829,9 @@ function vidRowClick(e,id){
   if(e.metaKey||e.ctrlKey){
     if(_vidSelected.has(sid))_vidSelected.delete(sid);else _vidSelected.add(sid);
   }else if(e.shiftKey&&_vidLastSel){
-    const vids=_vidFiltered();const ids=vids.map(v=>String(v.id));
+    // Use visible DOM rows for range select (works across all views)
+    const rows=[...document.querySelectorAll('.vid-dash-row[data-vid],.vid-row[data-vid],.vid-board-card[data-vid]')];
+    const ids=rows.map(r=>r.dataset.vid);
     const a=ids.indexOf(_vidLastSel),b=ids.indexOf(sid);
     if(a>-1&&b>-1){const[lo,hi]=[Math.min(a,b),Math.max(a,b)];for(let i=lo;i<=hi;i++)_vidSelected.add(ids[i]);}
   }else{
