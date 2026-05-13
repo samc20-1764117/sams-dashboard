@@ -1094,17 +1094,17 @@ let _vidDropdownData={BigVideo:[]};
 
 function _vidPopulateBigVideoSelect(selectedId){
   const inp=document.getElementById('vmBigVideo');
-  const bVids=(st.videos||[]).filter(v=>!v.is_deleted&&v.video_type==='B').sort((a,b)=>(a.title||'').localeCompare(b.title||''));
-  _vidDropdownData.BigVideo=bVids.map(v=>({id:v.id,label:v.title}));
+  const bVids=(st.videos||[]).filter(v=>!v.is_deleted&&v.video_type==='B').sort((a,b)=>(a.topic||'').localeCompare(b.topic||''));
+  _vidDropdownData.BigVideo=bVids.map(v=>({id:v.id,label:v.topic||v.title}));
   if(selectedId){
     const match=bVids.find(v=>String(v.id)===String(selectedId));
-    inp.value=match?match.title:'';
+    inp.value=match?(match.topic||match.title):'';
   }else{inp.value='';}
 }
 function _vidGetBigVideoId(){
-  const title=document.getElementById('vmBigVideo').value.trim();
-  if(!title)return null;
-  const match=(st.videos||[]).find(v=>!v.is_deleted&&v.video_type==='B'&&v.title===title);
+  const val=document.getElementById('vmBigVideo').value.trim();
+  if(!val)return null;
+  const match=(st.videos||[]).find(v=>!v.is_deleted&&v.video_type==='B'&&(v.topic===val||v.title===val));
   return match?match.id:null;
 }
 
