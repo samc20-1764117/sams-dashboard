@@ -1,14 +1,15 @@
 #!/bin/bash
 COMMIT=$1
+LABEL=${2:-"deploy"}
 if [ -z "$COMMIT" ]; then exit 1; fi
 for i in $(seq 1 30); do
   sleep 10
   STATUS=$(cd /Users/samanthacohn/Documents/sams-dashboard && npx wrangler pages deployment list --project-name sams-dashboard 2>/dev/null | grep "$COMMIT")
   if [ -n "$STATUS" ]; then
     if ! echo "$STATUS" | grep -q 'Building'; then
-      osascript -e 'display notification "deployed" with title "sams-dashboard"'
+      osascript -e "display notification \"deployed\" with title \"$LABEL\""
       exit 0
     fi
   fi
 done
-osascript -e 'display notification "deploy failed" with title "sams-dashboard"'
+osascript -e "display notification \"deploy failed\" with title \"$LABEL\""
