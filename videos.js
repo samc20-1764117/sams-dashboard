@@ -643,13 +643,13 @@ function _vidRenderTable(){
   let vids=_vidFiltered().filter(v=>v.status!=='idea');
   const today=d2s(new Date());
   if(!_vidShowCompleted){
-    // Find B groups that have L children with future/today post dates
-    const keepGroups=new Set();
-    vids.forEach(v=>{if(v.video_type==='L'&&v.big_video_id&&v.post_date&&v.post_date>=today)keepGroups.add(String(v.big_video_id));});
     vids=vids.filter(v=>{
-      // Hide published with past date
+      // Hide published with past date; for B videos, only hide if ALL children also have past dates
       if(v.status==='published'&&v.post_date&&v.post_date<today){
-        if(v.video_type==='B'&&keepGroups.has(String(v.id)))return true;
+        if(v.video_type==='B'){
+          const kids=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(v.id));
+          if(kids.some(k=>!k.post_date||k.post_date>=today))return true;
+        }
         return false;
       }
       // Hide backup if all steps done
@@ -1374,6 +1374,11 @@ function _vidLinkedStep(step){
   if(step==='step_upload_tableau')return'step_tableau_public';
   return null;
 }
+function _vidIsComplete(v){return VID_STEPS.every(s=>v[s]==='done'||v[s]==='na')&&v.post_date&&v.duration_minutes&&v.topic&&v.title;}
+function _vidAllChildrenComplete(bigId){
+  const kids=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(bigId));
+  return kids.every(k=>_vidIsComplete(k));
+}
 async function cycleVidStep(id,step){
   const v=(st.videos||[]).find(x=>String(x.id)===String(id));if(!v)return;
   const cur=v[step]||'not_started';
@@ -1382,18 +1387,21 @@ async function cycleVidStep(id,step){
   const prevStatus=v.status;
   v[step]=next;
   // Auto-complete: all required steps done/na + post_date + duration + topic + title → published
+  // For B videos: all children must also be complete
   const allDone=VID_STEPS.every(s=>v[s]==='done'||v[s]==='na');
   const wasDone=VID_STEPS.every(s=>(s===step?cur:v[s]||'not_started')==='done'||(s===step?cur:v[s]||'not_started')==='na');
   const hasFields=v.post_date&&v.duration_minutes&&v.topic&&v.title;
-  if(allDone&&hasFields&&v.status!=='published'){
+  const selfComplete=allDone&&hasFields;
+  const kidsComplete=v.video_type!=='B'||_vidAllChildrenComplete(v.id);
+  if(selfComplete&&kidsComplete&&v.status!=='published'){
     v.status='published';
-  }else if((!allDone||!hasFields)&&v.status==='published'&&prevStatus==='published'){
+  }else if((!selfComplete||!kidsComplete)&&v.status==='published'&&prevStatus==='published'){
     v.status='in_progress';
   }
   const patch={[step]:next};
   if(v.status!==prevStatus)patch.status=v.status;
   save();renderVideosPageKeepScroll();
-  if(allDone&&hasFields&&!wasDone)_vidCelebrate(id);
+  if(selfComplete&&kidsComplete&&!wasDone)_vidCelebrate(id);
   pushUndo(async()=>{v[step]=prev;v.status=prevStatus;save();renderVideosPageKeepScroll();await sbReqSilent('PATCH','videos',{[step]:prev,status:prevStatus},`?id=eq.${id}`);},'Step change');
   await sbReqSilent('PATCH','videos',patch,`?id=eq.${id}`);
 }
