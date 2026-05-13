@@ -1384,9 +1384,12 @@ async function saveVidModal(){
       const nowL=data.video_type==='L';
       const orphans=[];
       if(wasB&&nowL){
-        (st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(v.id)).forEach(c=>{
-          orphans.push({id:c.id,prevBigId:c.big_video_id});
+        const maxOrder=Math.max(0,...(st.videos||[]).filter(x=>!x.is_deleted&&x.status==='idea').map(x=>x.vid_order??0));
+        (st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(v.id)).forEach((c,i)=>{
+          orphans.push({id:c.id,prevBigId:c.big_video_id,prevStatus:c.status,prevOrder:c.vid_order});
           c.big_video_id=null;
+          c.status='idea';
+          c.vid_order=maxOrder+1+i;
         });
       }
       Object.assign(v,data);
@@ -1398,13 +1401,13 @@ async function saveVidModal(){
       if(v.video_type==='B'&&v.status!==prev.status&&(v.status==='in_progress'||v.status==='up_next'))_vidPromoteChildren(v.id,v.status);
       pushUndo(async()=>{
         Object.assign(v,prev);
-        orphans.forEach(o=>{const c=(st.videos||[]).find(x=>String(x.id)===String(o.id));if(c)c.big_video_id=o.prevBigId;});
+        orphans.forEach(o=>{const c=(st.videos||[]).find(x=>String(x.id)===String(o.id));if(c){c.big_video_id=o.prevBigId;c.status=o.prevStatus;c.vid_order=o.prevOrder;}});
         save();renderVideosPageKeepScroll();
         await sbReqSilent('PATCH','videos',prev,`?id=eq.${_vidEditId}`);
-        for(const o of orphans)await sbReqSilent('PATCH','videos',{big_video_id:o.prevBigId},`?id=eq.${o.id}`);
+        for(const o of orphans)await sbReqSilent('PATCH','videos',{big_video_id:o.prevBigId,status:o.prevStatus,vid_order:o.prevOrder??null},`?id=eq.${o.id}`);
       },'Edited video');
       await sbReqSilent('PATCH','videos',data,`?id=eq.${_vidEditId}`);
-      for(const o of orphans)await sbReqSilent('PATCH','videos',{big_video_id:null},`?id=eq.${o.id}`);
+      for(const o of orphans){const c=(st.videos||[]).find(x=>String(x.id)===String(o.id));await sbReqSilent('PATCH','videos',{big_video_id:null,status:'idea',vid_order:c?c.vid_order:null},`?id=eq.${o.id}`);}
     }
   }else{
     if(_vidInsertOrder!=null){data.vid_order=_vidInsertOrder;_vidInsertOrder=null;}
