@@ -287,11 +287,11 @@ function _vidRenderDashboard(){
     const littleIdeas=ideas.filter(v=>v.video_type!=='B').sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
     let h='';
     if(bigIdeas.length||littleIdeas.length){
-      h+=`<div class="vid-idea-section" data-idea-type="B" ondragover="_vidIdeaTypeDragOver(event)" ondragleave="_vidDashDragLeave(event)" ondrop="_vidIdeaTypeDrop(event,'B')">`;
+      h+=`<div class="vid-idea-section" data-idea-type="B" ondragover="_vidIdeaTypeDragOver(event)" ondragleave="_vidIdeaTypeDragLeave(event)" ondrop="_vidIdeaTypeDrop(event,'B')">`;
       h+=`<div style="font-size:9px;font-weight:600;color:var(--muted);padding:6px 6px 6px 16px;letter-spacing:.03em;background:#fff;display:flex;align-items:center">Big</div>`;
       h+=bigIdeas.length?bigIdeas.map(v=>_vidDashRow(v,false,true)).join(''):'<div style="color:var(--muted);font-size:11px;padding:4px 10px;opacity:.5">None</div>';
       h+=`</div>`;
-      h+=`<div class="vid-idea-section" data-idea-type="L" ondragover="_vidIdeaTypeDragOver(event)" ondragleave="_vidDashDragLeave(event)" ondrop="_vidIdeaTypeDrop(event,'L')">`;
+      h+=`<div class="vid-idea-section" data-idea-type="L" ondragover="_vidIdeaTypeDragOver(event)" ondragleave="_vidIdeaTypeDragLeave(event)" ondrop="_vidIdeaTypeDrop(event,'L')">`;
       h+=`<div style="font-size:9px;font-weight:600;color:var(--muted);padding:6px 6px 6px 16px;letter-spacing:.03em;border-top:1px solid rgba(210,205,228,.15);margin-top:4px;background:#fff;display:flex;align-items:center">Little</div>`;
       h+=littleIdeas.length?littleIdeas.map(v=>_vidDashRow(v,false,true)).join(''):'<div style="color:var(--muted);font-size:11px;padding:4px 10px;opacity:.5">None</div>';
       h+=`</div>`;
@@ -372,18 +372,17 @@ function _vidDashRow(v,isChild,simple){
   const _addBtn=simple?'':v.video_type==='B'?'<button onclick="event.stopPropagation();openVidModalForBig(\''+sid+'\')" style="font-size:10px;font-weight:700;width:16px;height:16px;line-height:14px;text-align:center;border-radius:3px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;margin-right:4px" title="Add child video">+</button>':(!isChild?'<button style="font-size:10px;font-weight:700;width:16px;height:16px;line-height:14px;text-align:center;border-radius:3px;border:1px solid transparent;background:transparent;color:transparent;margin-right:4px;pointer-events:none">+</button>':'');
   const _tHtml=showTopicTitle?'<span class="'+titleCls+'">'+_esc(topic)+'</span><span style="font-size:10px;color:var(--muted);margin-left:4px;font-weight:400">'+_titleSuffix+'</span>':'<span class="'+titleCls+'">'+_esc(primary)+'</span>';
   if(simple){
-    let hasGroup=false,bulletTip='';
+    let hasGroup=false;
     if(v.video_type==='B'){
       const kids=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===sid);
-      if(kids.length){hasGroup=true;bulletTip=kids.map(c=>_esc(c.topic||c.title)).join('\n');}
+      if(kids.length)hasGroup=true;
     }else if(v.big_video_id){
-      const parent=(st.videos||[]).find(x=>!x.is_deleted&&String(x.id)===String(v.big_video_id));
-      if(parent){hasGroup=true;bulletTip='Part of: '+_esc(parent.topic||parent.title);}
+      hasGroup=true;
     }
     const bulletColor=hasGroup?'rgba(139,92,246,.45)':'#fff';
-    const bulletTitle=bulletTip?` title="${bulletTip.replace(/"/g,'&quot;')}" style="cursor:help;color:${bulletColor};font-size:8px;margin-right:6px"`:`style="color:${bulletColor};font-size:8px;margin-right:6px"`;
-    return`<div class="vid-dash-row${sel?' vid-sel':''}" draggable="true" ondragstart="_vidDashDragStart(event,'${sid}')" data-vid="${sid}" onclick="vidRowClick(event,'${sid}')" ondblclick="openVidEdit('${sid}')" oncontextmenu="showVidCtx(event,'${sid}')">
-      <div style="flex:1;min-width:0;padding-left:10px;${indent}${!isChild?'font-weight:600;':''}${titleStyle}"><span ${bulletTitle}>●</span>${_addBtn}${childMark}${numHtml}${_tHtml}</div>
+    const bulletAttr=hasGroup?`onmouseenter="_vidBulletTipShow(event,'${sid}')" onmouseleave="_vidBulletTipHide()"`:''
+    return`<div class="vid-dash-row${sel?' vid-sel':''}" draggable="true" ondragstart="_vidDashDragStart(event,'${sid}')" data-vid="${sid}" onclick="vidRowClick(event,'${sid}')" ondblclick="openVidEdit('${sid}')" oncontextmenu="showVidCtx(event,'${sid}')" onmouseenter="_vidIdeaRowEnter('${sid}')" onmouseleave="_vidIdeaRowLeave()">
+      <div style="flex:1;min-width:0;padding-left:10px;${indent}${!isChild?'font-weight:600;':''}${titleStyle}"><span style="color:${bulletColor};font-size:8px;margin-right:6px;cursor:default" ${bulletAttr}>●</span>${_addBtn}${childMark}${numHtml}${_tHtml}</div>
       <button class="vid-del" data-vid="${sid}">✕</button>
     </div>`;
   }
@@ -518,18 +517,44 @@ function _vidDashDragOver(e){
   _vidDragAutoScroll(e);
   const zone=e.currentTarget;
   const dragSet=new Set(_vidDashDragIds);
+  const dragV=(st.videos||[]).find(x=>String(x.id)===_vidDashDragId);
+  const dragIsB=dragV&&dragV.video_type==='B';
   let ph=zone.querySelector('.vid-reorder-ph');
   if(!ph){ph=document.createElement('div');ph.className='vid-reorder-ph';ph.style.cssText='height:2px;margin:2px 10px;border-radius:99px;background:#fff;pointer-events:none;flex-shrink:0';zone.appendChild(ph);}
-  // Dim dragged rows
   zone.querySelectorAll('.vid-dash-row[data-vid]').forEach(r=>{r.style.opacity=dragSet.has(r.dataset.vid)?'.3':'';});
-  // Skip dragged rows for placeholder positioning
-  const rows=[...zone.querySelectorAll('.vid-dash-row[data-vid]')].filter(r=>!dragSet.has(r.dataset.vid));
+  let rows=[...zone.querySelectorAll('.vid-dash-row[data-vid]')].filter(r=>!dragSet.has(r.dataset.vid));
+  // If dragging B, only allow placement at B-level boundaries (not between children)
+  if(dragIsB){
+    rows=rows.filter(r=>{
+      const rv=(st.videos||[]).find(x=>String(x.id)===r.dataset.vid);
+      return rv&&(rv.video_type==='B'||!rv.big_video_id);
+    });
+  }
   let inserted=false;
   for(const r of rows){
     const rc=r.getBoundingClientRect();
-    if(e.clientY<rc.top+rc.height/2){zone.insertBefore(ph,r);inserted=true;break;}
+    if(e.clientY<rc.top+rc.height/2){
+      // If dragging B before a B row, place before the B row
+      zone.insertBefore(ph,r);inserted=true;break;
+    }
   }
-  if(!inserted&&rows.length)rows[rows.length-1].after(ph);
+  if(!inserted&&rows.length){
+    // Place after last valid row's children
+    const lastRow=rows[rows.length-1];
+    const lastV=(st.videos||[]).find(x=>String(x.id)===lastRow.dataset.vid);
+    if(dragIsB&&lastV&&lastV.video_type==='B'){
+      // Find last child of this B in the DOM
+      const allRows=[...zone.querySelectorAll('.vid-dash-row[data-vid]')];
+      let lastChild=lastRow;
+      for(const ar of allRows){
+        const arv=(st.videos||[]).find(x=>String(x.id)===ar.dataset.vid);
+        if(arv&&String(arv.big_video_id)===lastRow.dataset.vid&&!dragSet.has(ar.dataset.vid))lastChild=ar;
+      }
+      lastChild.after(ph);
+    }else{
+      lastRow.after(ph);
+    }
+  }
   else if(!rows.length){const hdr=zone.querySelector('[style*="font-size:9px"]');if(hdr)hdr.after(ph);}
 }
 function _vidDashDragLeave(e){
@@ -551,6 +576,12 @@ function _vidIdeaTypeDragOver(e){
   }
   if(!inserted&&rows.length)rows[rows.length-1].after(ph);
   else if(!rows.length){const hdr=zone.querySelector('[style*="font-size:9px"]');if(hdr)hdr.after(ph);}
+}
+function _vidIdeaTypeDragLeave(e){
+  if(!e.currentTarget.contains(e.relatedTarget)){
+    const ph=e.currentTarget.querySelector('.vid-reorder-ph');if(ph)ph.remove();
+    e.currentTarget.querySelectorAll('.vid-dash-row[data-vid]').forEach(r=>r.style.opacity='');
+  }
 }
 async function _vidIdeaTypeDrop(e,newType){
   e.preventDefault();e.stopPropagation();
@@ -607,8 +638,18 @@ async function _vidIdeaTypeDrop(e,newType){
       undos.push({sid:String(c.id),prev});
     });
   }
-  // Assign vid_order from finalOrder
-  finalOrder.forEach((id,i)=>{const v=(st.videos||[]).find(x=>String(x.id)===id);if(v)v.vid_order=i;});
+  // Assign vid_order from finalOrder and track all order changes
+  const orderChanges=[];
+  finalOrder.forEach((id,i)=>{
+    const v=(st.videos||[]).find(x=>String(x.id)===id);
+    if(v&&v.vid_order!==i){
+      const prevOrder=v.vid_order;
+      // Add to undos if not already there
+      if(!undos.find(u=>u.sid===id))undos.push({sid:id,prev:{vid_order:prevOrder,video_type:v.video_type,big_video_id:v.big_video_id,status:v.status}});
+      v.vid_order=i;
+      orderChanges.push({id,order:i});
+    }else if(v){v.vid_order=i;}
+  });
 
   save();renderVideosPageKeepScroll();
   pushUndo(async()=>{
@@ -1135,6 +1176,58 @@ function vidRowClick(e,id){
   _vidUpdateChildSel();
   _applyVidSel();
 }
+// Bullet tooltip (liquid glass)
+let _vidBulletTimer=null;
+function _vidBulletTipShow(e,sid){
+  _vidBulletTipHide();
+  _vidBulletTimer=setTimeout(()=>{
+    const v=(st.videos||[]).find(x=>String(x.id)===sid);if(!v)return;
+    let html='';
+    if(v.video_type==='B'){
+      const kids=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===sid);
+      html=kids.map(c=>'<div style="padding:2px 0;font-size:11px;white-space:nowrap">└ '+_esc(c.topic||c.title)+'</div>').join('');
+    }else if(v.big_video_id){
+      const parent=(st.videos||[]).find(x=>!x.is_deleted&&String(x.id)===String(v.big_video_id));
+      if(parent)html='<div style="padding:2px 0;font-size:11px;white-space:nowrap;font-weight:600">'+_esc(parent.topic||parent.title)+'</div>';
+    }
+    if(!html)return;
+    const tip=document.createElement('div');
+    tip.id='vidBulletTip';
+    tip.style.cssText='position:fixed;z-index:9999;padding:6px 10px;border-radius:10px;background:rgba(255,255,255,.85);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(210,205,228,.3);box-shadow:0 4px 16px rgba(0,0,0,.1);pointer-events:none;max-width:240px';
+    tip.innerHTML=html;
+    document.body.appendChild(tip);
+    const rect=e.target.getBoundingClientRect();
+    tip.style.left=rect.right+6+'px';
+    tip.style.top=rect.top-4+'px';
+    // Keep in viewport
+    const tr=tip.getBoundingClientRect();
+    if(tr.right>window.innerWidth)tip.style.left=rect.left-tr.width-6+'px';
+    if(tr.bottom>window.innerHeight)tip.style.top=window.innerHeight-tr.height-4+'px';
+  },300);
+}
+function _vidBulletTipHide(){
+  clearTimeout(_vidBulletTimer);_vidBulletTimer=null;
+  const t=document.getElementById('vidBulletTip');if(t)t.remove();
+}
+
+// Row hover: highlight related ideas
+function _vidIdeaRowEnter(sid){
+  const v=(st.videos||[]).find(x=>String(x.id)===sid);if(!v)return;
+  let relatedIds=[];
+  if(v.video_type==='B'){
+    relatedIds=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===sid&&c.status==='idea').map(c=>String(c.id));
+  }else if(v.big_video_id){
+    relatedIds=[String(v.big_video_id)];
+  }
+  relatedIds.forEach(id=>{
+    const row=document.querySelector('.vid-dash-row[data-vid="'+id+'"]');
+    if(row)row.style.boxShadow='inset 0 0 8px rgba(139,92,246,.2)';
+  });
+}
+function _vidIdeaRowLeave(){
+  document.querySelectorAll('.vid-dash-row[data-vid]').forEach(r=>r.style.boxShadow='');
+}
+
 function _vidParseDate(str){
   if(!str||!str.trim())return null;
   const parts=str.trim().split('/');

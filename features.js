@@ -3250,6 +3250,7 @@ function editQN(span,id){
 }
 function _qnSelect(e,id){
   if(e.target.closest('.qn-del,.qn-text[contenteditable="true"]'))return;
+  const inp=document.getElementById('qnInput');if(inp&&document.activeElement===inp)inp.blur();
   const sid=String(id);
   if(e.metaKey||e.ctrlKey){
     if(_qnSel.has(sid))_qnSel.delete(sid);else _qnSel.add(sid);
