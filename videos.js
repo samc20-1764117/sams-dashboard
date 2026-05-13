@@ -1233,9 +1233,10 @@ function _vidShowDropdown(type){_vidFilterDropdown(type);}
 function _vidToggleDropdown(type){
   const drop=document.getElementById('vm'+type+'Drop');
   if(drop.style.display==='block'){drop.style.display='none';return;}
-  _vidFilterDropdown(type);
+  _vidRenderDropdown(type,false);
 }
-function _vidFilterDropdown(type){
+function _vidFilterDropdown(type){_vidRenderDropdown(type,true);}
+function _vidRenderDropdown(type,useFilter){
   const drop=document.getElementById('vm'+type+'Drop');
   const itemStyle='padding:6px 10px;cursor:pointer;font-size:12px;border-bottom:1px solid rgba(210,205,228,.1)';
   let html='';
@@ -1243,9 +1244,8 @@ function _vidFilterDropdown(type){
     html=_VID_STATUS_OPTIONS.map((o,i)=>`<div class="vm-drop-item" tabindex="-1" data-idx="${i}" onclick="_vidPickDropdown('Status','${o.value}')" onkeydown="_vidDropItemKey(event,'Status',${i})" style="${itemStyle}">${o.label}</div>`).join('');
   }else if(type==='BigVideo'){
     const inp=document.getElementById('vmBigVideo');
-    const q=(inp.value||'').toLowerCase();
+    const q=useFilter?(inp.value||'').toLowerCase():'';
     const words=q.split(/\s+/).filter(Boolean);
-    // Filter by view: current tab only shows non-complete big videos (ideas + up_next + in_progress)
     const onCurrent=_vidView==='dashboard';
     const items=_vidDropdownData.BigVideo.filter(v=>{
       if(onCurrent){const bv=(st.videos||[]).find(x=>String(x.id)===String(v.id));if(bv&&(bv.status==='published'||bv.status==='backup'))return false;}
@@ -1268,12 +1268,12 @@ function _vidDropKey(event,type){
   const drop=document.getElementById('vm'+type+'Drop');
   if(event.key==='ArrowDown'){
     event.preventDefault();
-    if(drop.style.display!=='block')_vidFilterDropdown(type);
+    if(drop.style.display!=='block')_vidRenderDropdown(type,false);
     const first=drop.querySelector('.vm-drop-item');
     if(first)first.focus();
   }else if(event.key==='ArrowUp'){
     event.preventDefault();
-    if(drop.style.display!=='block')_vidFilterDropdown(type);
+    if(drop.style.display!=='block')_vidRenderDropdown(type,false);
     const items=drop.querySelectorAll('.vm-drop-item');
     if(items.length)items[items.length-1].focus();
   }else if(event.key==='Escape'){

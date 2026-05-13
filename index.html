@@ -738,7 +738,7 @@
 <div class="overlay" id="vidModal" onclick="closeMod('vidModal',event)" onkeydown="_vidModalKey(event)">
   <div class="modal task-modal" style="width:480px;box-sizing:border-box;padding:10px 16px 16px">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-      <div id="vidMTitle" style="font-size:14px;font-weight:700;letter-spacing:-.3px;margin:0">Add Video</div>
+      <div id="vidMTitle" style="font-size:14px;font-weight:700;letter-spacing:-.3px;margin:0;padding-left:2px">Add Video</div>
       <div id="vmTypeToggle" style="display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;flex-shrink:0">
         <button type="button" onclick="_vidSetType('B')" id="vmTypeB" style="padding:5px 10px;font-family:inherit;font-size:11px;font-weight:600;border:none;cursor:pointer;background:transparent;color:var(--muted)">Big</button>
         <button type="button" onclick="_vidSetType('L')" id="vmTypeL" style="padding:5px 10px;font-family:inherit;font-size:11px;font-weight:600;border:none;cursor:pointer;background:var(--accent);color:#fff">Little</button>
@@ -755,17 +755,14 @@
         <div id="vmStatusDrop" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--bg);border:1px solid var(--border);border-radius:8px;margin-top:2px;z-index:10;box-shadow:0 4px 12px rgba(0,0,0,.12);overflow:hidden"></div>
       </div>
       <div id="vmBigVideoWrap" style="flex:1;min-width:0;position:relative">
-        <input id="vmBigVideo" placeholder="Big Video (none)" autocomplete="off" style="width:100%;padding:8px 28px 8px 10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box" onfocus="_vidShowDropdown('BigVideo')" oninput="_vidFilterDropdown('BigVideo')" onkeydown="_vidDropKey(event,'BigVideo')">
+        <input id="vmBigVideo" placeholder="Big Video (none)" autocomplete="off" style="width:100%;padding:8px 28px 8px 10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box" onclick="_vidToggleDropdown('BigVideo')" oninput="_vidFilterDropdown('BigVideo')" onkeydown="_vidDropKey(event,'BigVideo')">
         <span onclick="_vidToggleDropdown('BigVideo')" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--muted);font-size:10px;user-select:none">▼</span>
         <div id="vmBigVideoDrop" style="display:none;position:absolute;top:100%;left:0;right:0;max-height:180px;overflow-y:auto;background:var(--bg);border:1px solid var(--border);border-radius:8px;margin-top:2px;z-index:10;box-shadow:0 4px 12px rgba(0,0,0,.12)"></div>
       </div>
     </div>
-    <div style="margin-top:8px;padding:10px;border-radius:10px;background:rgba(255,255,255,.7);border:1px solid rgba(210,205,228,.3);box-shadow:1px 1px 3px rgba(0,0,0,.06), inset 0 1px 0 rgba(255,255,255,.8)">
-      <div style="display:flex;align-items:flex-end;gap:8px">
-        <div style="flex:1">
-          <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">Stages</div>
-          <div style="display:flex;gap:3px" id="vmSteps"></div>
-        </div>
+    <div style="margin-top:8px;padding:12px 10px;border-radius:10px;background:rgba(255,255,255,.7);border:1px solid rgba(210,205,228,.3);box-shadow:1px 1px 3px rgba(0,0,0,.06), inset 0 1px 0 rgba(255,255,255,.8)">
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="flex:1;display:flex;gap:3px" id="vmSteps"></div>
         <input id="vmPostDate" type="text" placeholder="Posted" style="width:80px;padding:6px 6px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:12px;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box">
         <input id="vmDuration" type="number" step="0.01" placeholder="Duration" style="width:80px;padding:6px 6px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:12px;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box">
       </div>
