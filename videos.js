@@ -1345,8 +1345,12 @@ async function saveVidModal(){
     const tmp='l-'+Date.now();
     const rec={id:tmp,...data};
     st.videos.push(rec);save();renderVideosPageKeepScroll();
+    pushUndo(async()=>{
+      const v=(st.videos||[]).find(x=>x.id===tmp||x.id===rec.id);
+      if(v){v.is_deleted=true;save();renderVideosPageKeepScroll();const sid=String(v.id);if(!sid.startsWith('l-'))await sbReqSilent('PATCH','videos',{is_deleted:true},`?id=eq.${sid}`);}
+    },'Added video');
     const sv=await sbReqSilent('POST','videos',data);
-    if(sv&&sv[0]){const ix=st.videos.findIndex(x=>x.id===tmp);if(ix>-1)st.videos[ix]=sv[0];}
+    if(sv&&sv[0]){rec.id=sv[0].id;const ix=st.videos.findIndex(x=>x.id===tmp);if(ix>-1)st.videos[ix]=sv[0];}
     save();renderVideosPageKeepScroll();
   }
 }
