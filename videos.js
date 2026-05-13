@@ -402,7 +402,7 @@ async function _vidGroupDrop(e,parentId){
   toNest.forEach((v,i)=>{
     v.big_video_id=parseInt(parentId)||parentId;
     v.video_type='L';
-    if(v.status!==parent.status)v.status=parent.status;
+    if(v.status!==parent.status&&v.status!=='published')v.status=parent.status;
     v.vid_order=insertOrder+(i*0.01);
   });
   save();renderVideosPageKeepScroll();
@@ -540,7 +540,7 @@ async function _vidDashDrop(e,newStatus){
       (st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(v.id)).forEach(c=>childPrevs.push({id:c.id,status:c.status,vid_order:c.vid_order}));
     }
     undoData.push({v,prev,prevOrder,childPrevs});
-    if(v.status!==newStatus)v.status=newStatus;
+    if(v.status!==newStatus&&v.status!=='published')v.status=newStatus;
   }
 
   // Build final order: zoneIds with dragIds spliced in at insertIdx
