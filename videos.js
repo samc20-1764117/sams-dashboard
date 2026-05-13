@@ -540,13 +540,29 @@ async function _vidIdeaTypeDrop(e,newType){
   const dragIds=_vidDashDragIds.length?[..._vidDashDragIds]:(_vidDashDragId?[String(_vidDashDragId)]:[]);
   _vidDashDragId=null;_vidDashDragIds=[];
   if(!dragIds.length)return;
+  const dragSet=new Set(dragIds);
+  // Find B videos being dragged — their children should keep type L
+  const draggedBIds=new Set(dragIds.filter(id=>{const v=(st.videos||[]).find(x=>String(x.id)===id);return v&&v.video_type==='B';}));
   const undos=[];
   for(const sid of dragIds){
     const v=(st.videos||[]).find(x=>String(x.id)===sid);if(!v)continue;
-    const prev={video_type:v.video_type,big_video_id:v.big_video_id,status:v.status};
-    v.video_type=newType;v.status='idea';
-    if(newType==='B')v.big_video_id=null;
+    const prev={video_type:v.video_type,big_video_id:v.big_video_id,status:v.status,vid_order:v.vid_order};
+    // If this is a child of a dragged B, keep its type as L and move to idea
+    const isChildOfDraggedB=v.big_video_id&&draggedBIds.has(String(v.big_video_id));
+    if(!isChildOfDraggedB){
+      v.video_type=newType;
+      if(newType==='B')v.big_video_id=null;
+    }
+    v.status='idea';
     undos.push({sid,prev});
+  }
+  // Also move children of dragged B videos to ideas (even if not in dragIds)
+  for(const bId of draggedBIds){
+    (st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===bId&&!dragSet.has(String(c.id))).forEach(c=>{
+      const prev={video_type:c.video_type,big_video_id:c.big_video_id,status:c.status,vid_order:c.vid_order};
+      if(c.status!=='published')c.status='idea';
+      undos.push({sid:String(c.id),prev});
+    });
   }
   save();renderVideosPageKeepScroll();
   pushUndo(async()=>{
@@ -554,7 +570,10 @@ async function _vidIdeaTypeDrop(e,newType){
     save();renderVideosPageKeepScroll();
     for(const u of undos)await sbReqSilent('PATCH','videos',u.prev,`?id=eq.${u.sid}`);
   },'Changed video type');
-  for(const u of undos)await sbReqSilent('PATCH','videos',{video_type:newType,status:'idea',big_video_id:newType==='B'?null:undefined},`?id=eq.${u.sid}`);
+  for(const u of undos){
+    const v=(st.videos||[]).find(x=>String(x.id)===u.sid);
+    if(v)await sbReqSilent('PATCH','videos',{video_type:v.video_type,status:v.status,big_video_id:v.big_video_id??null},`?id=eq.${u.sid}`);
+  }
 }
 
 // Push a local-only video (l-xxx id) to Supabase and replace the temp id
