@@ -14,8 +14,8 @@
 - **Date colors**: no date=muted, published+future/today=green, published+past=black, all core done=green, has date=yellow.
 
 ### Views (4 tabs)
-- **Current** (`_vidView='dashboard'`): two-pane flex — Current (flex:2, Up Next + In Progress sections) + Ideas (flex:1). Shows stage dots, posted, duration, YT views, +/x buttons, % complete. B→L grouping with indent. Drag between zones changes status. Tab named "Current" with combined up_next+in_progress count. Up Next and In Progress have white section headers. B (Big) videos have white background (`rgba(255,255,255,.55)`) to distinguish from small videos. Header includes 42px spacer for YT views column alignment.
-- **All Details** (`_vidView='table'`): full table with sortable headers (click asc, click desc, click reset). `table-layout:fixed`. Sticky thead. Default sort: post_date asc with B→L grouping. Ideas excluded from this view. Column order: Title (450px) → Stages (22px each) → Posted → Dur → % → Status (80px). Status pills use `VID_STATUS_LABELS` with lighter color backgrounds. B videos have white background. Stage columns are narrower than Current tab (22px vs 28px).
+- **Current** (`_vidView='dashboard'`): CSS grid layout (`2fr 1fr`) — Current + Ideas sharing same column tracks for aligned divider. Up Next/In Progress/Group/Single have solid white (`#fff`) sub-headers with `display:flex;align-items:center`. No count next to "Current" header. Ideas side has Group/Single sub-sections with white bullets (`●`). No `+` button on idea rows. B→L grouping with white `└` connector. Drag between zones changes status. Standalone videos (no `big_video_id`) cannot be dragged into groups. Container uses liquid glass style (`rgba(255,255,255,.32)` with `backdrop-filter:blur(28px)`). B videos at `rgba(255,255,255,.50)`. Header includes 28px spacer for % column + 42px for YT views.
+- **All Details** (`_vidView='table'`): full table with sortable headers (click asc, click desc, click reset). `table-layout:fixed`. Sticky thead. Default sort: post_date asc with B→L grouping. Ideas excluded from this view. Column order: Title (450px) → Stages (22px each) → Posted → Dur → % → Status (80px). Status pills use `VID_STATUS_LABELS` with lighter color backgrounds. B videos at `rgba(255,255,255,.50)`. Stage columns are narrower than Current tab (22px vs 28px).
 - **Videos by Progress** (`_vidView='board'`): kanban by status. Drag between columns.
 - **Monthly** (`_vidView='monthly'`): calendar grid by `post_date`. Nav with `_vidMonthOffset`.
 
@@ -29,8 +29,9 @@
 ### Display Rules
 - **In progress videos**: show "Topic - Title" where topic is normal color, title is muted. For small (L) videos, both topic and title are muted/grey.
 - **Completed videos**: show title only.
-- **Big videos** (B): white background (`rgba(255,255,255,.55)`) on both Current and All Details tabs.
-- **Small videos** (L with big_video_id): muted/grey text in All Details, normal text in Current tab. `└` indent mark when shown as child.
+- **Big videos** (B): translucent white background (`rgba(255,255,255,.50)`) on both Current and All Details tabs.
+- **Small videos** (L with big_video_id): muted/grey text in All Details, normal text in Current tab. White `└` indent mark when shown as child.
+- **Standalone videos**: videos without `big_video_id` are standalone — cannot be dragged into B groups (`_vidGroupDrop` rejects).
 - **% complete**: shown for `up_next`/`in_progress` videos between 1-99% (hidden at 0% and 100%). Calculated from done/applicable stages (excludes `na`). Far right on Current tab, between Dur and Status on All Details.
 - **Hide by default** (`_vidShowCompleted=false`): published with past date hidden (unless B video has L children with future dates). Completed backup hidden. Toggle with +/- button or keyboard E/C.
 
@@ -78,6 +79,7 @@
 - `_vidLinkedStep(step)` — returns linked step (TA↔Up) or null
 - `_vidToggleStepNa(id,step)` — right-click toggle na/required with linked TA+Up sync
 - `_vidDashInlineEdit(span,id,field)` — inline editing for posted/duration on current tab
+- Undo/redo: `_stateSnap`/`_stateRestore` include `videos`. `_syncRedoDiff` syncs video field changes to Supabase. `_vidGroupDrop` and `_vidDashDrop` both have proper undo callbacks.
 - `cycleVidStep(id,step)` — toggles step with auto-publish logic
 - `vidCellEdit(td,id,field)` — inline cell editing
 - `vidCellClick(e,id)` — routes to inline edit (table) or selection (other views)
