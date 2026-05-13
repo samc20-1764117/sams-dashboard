@@ -1450,7 +1450,7 @@ function _vidSetType(type){
   _vidTypeChanged(type);
 }
 function _vidTypeChanged(type){
-  document.getElementById('vmBigVideoWrap').style.display='';
+  document.getElementById('vmBigVideoWrap').style.display=type==='B'?'none':'';
   if(type==='B'){document.getElementById('vmBigVideo').value='';}
   const els=document.querySelectorAll('#vmSteps [data-step]');
   els.forEach(el=>{
