@@ -335,7 +335,8 @@ function _vidDashRow(v,isChild,simple){
   const _done=_applicable.filter(s=>v[s]==='done').length;
   const _pct=_applicable.length?Math.round((_done/_applicable.length)*100):0;
   const _pctVal=(v.status==='in_progress'||v.status==='up_next')&&_pct>0&&_pct<100?_pct+'%':'';
-  const dropAttrs=v.video_type==='B'?'ondragover="_vidGroupDragOver(event)" ondragleave="_vidGroupDragLeave(event)" ondrop="_vidGroupDrop(event,\''+sid+'\')"':'';
+  const _dropParent=v.video_type==='B'?sid:(v.big_video_id?String(v.big_video_id):null);
+  const dropAttrs=_dropParent?'ondragover="_vidGroupDragOver(event)" ondragleave="_vidGroupDragLeave(event)" ondrop="_vidGroupDrop(event,\''+_dropParent+'\')"':'';
   return`<div class="vid-dash-row${sel?' vid-sel':''}${_vidChildSelected.has(sid)?' vid-child-sel':''}" draggable="true" ondragstart="_vidDashDragStart(event,'${sid}')" ${dropAttrs} data-vid="${sid}" onclick="vidRowClick(event,'${sid}')" ondblclick="_vidDashDblClick(event,'${sid}')" oncontextmenu="showVidCtx(event,'${sid}')" style="${bigRowStyle}">
     <div style="flex:1;min-width:0;padding-left:10px;${indent}${!isChild?'font-weight:600;':''}${titleStyle}">
       ${_addBtn}${childMark}${numHtml}${_tHtml}
