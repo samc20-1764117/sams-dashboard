@@ -32,8 +32,11 @@ export async function onRequest(context) {
     const chanData = await chanRes.json();
     const chan = chanData.items?.[0];
     if (!chan) {
-      if (KV) await KV.put('yt-stats', JSON.stringify({ error: 'quota_or_api_error', fetchedAt: new Date().toISOString() }), { expirationTtl: 3600 });
-      return new Response(JSON.stringify({ error: 'YouTube API unavailable' }), { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      const detail = chanData.error ? chanData.error.message || JSON.stringify(chanData.error) : 'no items';
+      // Only cache quota errors for 1hr, other errors for 5min
+      const ttl = (chanData.error?.errors?.[0]?.reason === 'quotaExceeded') ? 3600 : 300;
+      if (KV) await KV.put('yt-stats', JSON.stringify({ error: detail, fetchedAt: new Date().toISOString() }), { expirationTtl: ttl });
+      return new Response(JSON.stringify({ error: detail }), { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     const channelStats = {
