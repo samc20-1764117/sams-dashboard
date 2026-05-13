@@ -2397,7 +2397,7 @@ document.addEventListener('keydown',async e=>{
   // t key: jump to today on overview
   if(e.key==='t'&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&activePg==='overview'&&!document.querySelector('.overlay.open')){goToday();return;}
   // Arrow left/right: shift day on overview when nothing selected
-  if((e.key==='ArrowLeft'||e.key==='ArrowRight')&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&activePg==='overview'&&!document.querySelector('.overlay.open')){
+  if((e.key==='ArrowLeft'||e.key==='ArrowRight')&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&activePg==='overview'&&!document.querySelector('.overlay.open')&&!_qnOpen){
     if(!selectedTasks.size){e.preventDefault();shiftDay(e.key==='ArrowLeft'?-1:1);return;}
     // Move selected tasks ±1 day on weekly cal
     if(!document.querySelector('.tb-col')||document.querySelector('.tb-col')){
