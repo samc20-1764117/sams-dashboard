@@ -233,7 +233,7 @@ function _vidRenderDashboard(){
   const _colHdr=`<div style="display:flex;align-items:center;gap:6px;flex-shrink:0;padding-right:0">
             <div style="display:flex;gap:0">${VID_STEPS.map(s=>`<div style="width:28px;text-align:center;font-size:9px" title="${VID_STEP_LABELS[s]}">${VID_STEP_LABELS[s].length<=5?VID_STEP_LABELS[s]:VID_STEP_LABELS[s].slice(0,2)}</div>`).join('')}</div>
             <span style="width:52px;text-align:right;font-size:9px;display:inline-block">Posted</span>
-            <span style="width:36px;text-align:right;font-size:9px;display:inline-block">Dur</span>
+            <span style="width:36px;text-align:right;font-size:9px;display:inline-block">Duration</span>
             <span style="width:42px;display:inline-block"></span>
             <span style="width:28px;display:inline-block"></span>
             <button class="vid-del" style="visibility:hidden">✕</button>
