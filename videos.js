@@ -126,8 +126,10 @@ function _vidScrollEl(){
 }
 function renderVideosPageKeepScroll(){
   const se=_vidScrollEl();const top=se?se.scrollTop:0;
+  const dl=document.getElementById('vidDashLeft');const dlTop=dl?dl.scrollTop:0;
   renderVideosPage();
   const se2=_vidScrollEl();if(se2)se2.scrollTop=top;
+  const dl2=document.getElementById('vidDashLeft');if(dl2)dl2.scrollTop=dlTop;
 }
 function renderVideosPage(){
   const _rvpSe=_vidScrollEl();const _rvpTop=_rvpSe?_rvpSe.scrollTop:0;
@@ -259,7 +261,7 @@ function _vidRenderDashboard(){
       <div class="vid-dash-header" style="grid-column:2;grid-row:1">
         <div style="padding-left:10px">Ideas <span class="vid-count">${ideas.length}</span></div>
       </div>
-      <div style="grid-column:1;grid-row:2;min-height:0;overflow-y:auto;overflow-x:hidden;border-right:1px solid var(--border)">
+      <div id="vidDashLeft" style="grid-column:1;grid-row:2;min-height:0;overflow-y:auto;overflow-x:hidden;border-right:1px solid var(--border)">
         <div class="vid-drop-zone" data-drop-status="up_next" ondragover="_vidDashDragOver(event)" ondragleave="_vidDashDragLeave(event)" ondrop="_vidDashDrop(event,'up_next')" style="min-height:40px;padding-bottom:8px">
           <div style="font-size:9px;font-weight:600;color:var(--muted);padding:6px 6px 6px 16px;letter-spacing:.03em;background:#fff;display:flex;align-items:center">Up Next</div>
           ${upNext.length?_vidDashList(upNext,false):'<div style="color:var(--muted);font-size:11px;padding:8px 10px;opacity:.5">Drag ideas here</div>'}
