@@ -16,7 +16,9 @@ export async function onRequest(context) {
 
   // Check KV cache
   const KV = context.env.YT_CACHE;
-  if (KV) {
+  const url = new URL(context.request.url);
+  const forceRefresh = url.searchParams.get('refresh') === '1';
+  if (KV && !forceRefresh) {
     const cached = await KV.get('yt-stats', 'json');
     if (cached) {
       if (cached.error) return new Response(JSON.stringify({ error: cached.error }), { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
