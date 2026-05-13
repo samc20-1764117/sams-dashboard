@@ -372,10 +372,18 @@ function _vidDashRow(v,isChild,simple){
   const _addBtn=simple?'':v.video_type==='B'?'<button onclick="event.stopPropagation();openVidModalForBig(\''+sid+'\')" style="font-size:10px;font-weight:700;width:16px;height:16px;line-height:14px;text-align:center;border-radius:3px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;margin-right:4px" title="Add child video">+</button>':(!isChild?'<button style="font-size:10px;font-weight:700;width:16px;height:16px;line-height:14px;text-align:center;border-radius:3px;border:1px solid transparent;background:transparent;color:transparent;margin-right:4px;pointer-events:none">+</button>':'');
   const _tHtml=showTopicTitle?'<span class="'+titleCls+'">'+_esc(topic)+'</span><span style="font-size:10px;color:var(--muted);margin-left:4px;font-weight:400">'+_titleSuffix+'</span>':'<span class="'+titleCls+'">'+_esc(primary)+'</span>';
   if(simple){
-    const hasGroup=v.video_type==='B'?(st.videos||[]).some(c=>!c.is_deleted&&String(c.big_video_id)===sid):!!v.big_video_id;
+    let hasGroup=false,bulletTip='';
+    if(v.video_type==='B'){
+      const kids=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===sid);
+      if(kids.length){hasGroup=true;bulletTip=kids.map(c=>_esc(c.topic||c.title)).join('\n');}
+    }else if(v.big_video_id){
+      const parent=(st.videos||[]).find(x=>!x.is_deleted&&String(x.id)===String(v.big_video_id));
+      if(parent){hasGroup=true;bulletTip='Part of: '+_esc(parent.topic||parent.title);}
+    }
     const bulletColor=hasGroup?'rgba(139,92,246,.45)':'#fff';
+    const bulletTitle=bulletTip?` title="${bulletTip.replace(/"/g,'&quot;')}" style="cursor:help;color:${bulletColor};font-size:8px;margin-right:6px"`:`style="color:${bulletColor};font-size:8px;margin-right:6px"`;
     return`<div class="vid-dash-row${sel?' vid-sel':''}" draggable="true" ondragstart="_vidDashDragStart(event,'${sid}')" data-vid="${sid}" onclick="vidRowClick(event,'${sid}')" ondblclick="openVidEdit('${sid}')" oncontextmenu="showVidCtx(event,'${sid}')">
-      <div style="flex:1;min-width:0;padding-left:10px;${indent}${!isChild?'font-weight:600;':''}${titleStyle}"><span style="color:${bulletColor};font-size:8px;margin-right:6px">●</span>${_addBtn}${childMark}${numHtml}${_tHtml}</div>
+      <div style="flex:1;min-width:0;padding-left:10px;${indent}${!isChild?'font-weight:600;':''}${titleStyle}"><span ${bulletTitle}>●</span>${_addBtn}${childMark}${numHtml}${_tHtml}</div>
       <button class="vid-del" data-vid="${sid}">✕</button>
     </div>`;
   }
@@ -411,7 +419,7 @@ async function _vidPromoteChildren(parentId,newStatus){
   if(children.length){save();renderVideosPageKeepScroll();for(const c of children)await sbReqSilent('PATCH','videos',{status:newStatus},`?id=eq.${c.id}`);}
 }
 
-function _vidGroupDragOver(e){e.preventDefault();const row=e.currentTarget;row.style.boxShadow='inset 0 0 8px rgba(139,92,246,.3)';row.style.borderColor='rgba(139,92,246,.4)';}
+function _vidGroupDragOver(e){e.preventDefault();}
 function _vidGroupDragLeave(e){const row=e.currentTarget;row.style.boxShadow='';row.style.borderColor='';}
 async function _vidGroupDrop(e,parentId){
   e.preventDefault();
@@ -531,23 +539,58 @@ function _vidIdeaTypeDragOver(e){
   if(!_vidDashDragId)return;
   e.preventDefault();e.stopPropagation();
   const zone=e.currentTarget;
-  zone.style.background='rgba(14,165,233,.04)';
+  const dragSet=new Set(_vidDashDragIds);
+  let ph=zone.querySelector('.vid-reorder-ph');
+  if(!ph){ph=document.createElement('div');ph.className='vid-reorder-ph';ph.style.cssText='height:2px;margin:2px 10px;border-radius:99px;background:#fff;pointer-events:none;flex-shrink:0';zone.appendChild(ph);}
+  zone.querySelectorAll('.vid-dash-row[data-vid]').forEach(r=>{r.style.opacity=dragSet.has(r.dataset.vid)?'.3':'';});
+  const rows=[...zone.querySelectorAll('.vid-dash-row[data-vid]')].filter(r=>!dragSet.has(r.dataset.vid));
+  let inserted=false;
+  for(const r of rows){
+    const rc=r.getBoundingClientRect();
+    if(e.clientY<rc.top+rc.height/2){zone.insertBefore(ph,r);inserted=true;break;}
+  }
+  if(!inserted&&rows.length)rows[rows.length-1].after(ph);
+  else if(!rows.length){const hdr=zone.querySelector('[style*="font-size:9px"]');if(hdr)hdr.after(ph);}
 }
 async function _vidIdeaTypeDrop(e,newType){
   e.preventDefault();e.stopPropagation();
   e.currentTarget.style.background='';
   if(_vidDragScrollRAF){cancelAnimationFrame(_vidDragScrollRAF);_vidDragScrollRAF=null;}
+  const zone=e.currentTarget;
+  const ph=zone.querySelector('.vid-reorder-ph');
   const dragIds=_vidDashDragIds.length?[..._vidDashDragIds]:(_vidDashDragId?[String(_vidDashDragId)]:[]);
   _vidDashDragId=null;_vidDashDragIds=[];
-  if(!dragIds.length)return;
+  if(!dragIds.length){if(ph)ph.remove();return;}
   const dragSet=new Set(dragIds);
+
+  // Build insert order from placeholder position
+  const rows=[...zone.querySelectorAll('.vid-dash-row[data-vid]')];
+  const children=zone.children?[...zone.children]:[];
+  const phIdx=ph?children.indexOf(ph):-1;
+  if(ph)ph.remove();
+  const zoneIds=rows.map(r=>r.dataset.vid).filter(id=>!dragSet.has(id));
+  let insertIdx=zoneIds.length;
+  if(phIdx>-1){
+    const rowsAfterPh=rows.filter(r=>children.indexOf(r)>=phIdx&&!dragSet.has(r.dataset.vid));
+    if(rowsAfterPh.length){const afterId=rowsAfterPh[0].dataset.vid;insertIdx=zoneIds.indexOf(afterId);if(insertIdx<0)insertIdx=zoneIds.length;}
+  }
+
   // Find B videos being dragged — their children should keep type L
   const draggedBIds=new Set(dragIds.filter(id=>{const v=(st.videos||[]).find(x=>String(x.id)===id);return v&&v.video_type==='B';}));
   const undos=[];
+  // Only insert top-level dragged items (matching newType) into order
+  const topDragIds=dragIds.filter(id=>{
+    const v=(st.videos||[]).find(x=>String(x.id)===id);
+    if(!v)return false;
+    const isChildOfDraggedB=v.big_video_id&&draggedBIds.has(String(v.big_video_id));
+    return isChildOfDraggedB?false:(v.video_type===newType||(!isChildOfDraggedB));
+  });
+  const finalOrder=[...zoneIds];
+  finalOrder.splice(insertIdx,0,...topDragIds);
+
   for(const sid of dragIds){
     const v=(st.videos||[]).find(x=>String(x.id)===sid);if(!v)continue;
     const prev={video_type:v.video_type,big_video_id:v.big_video_id,status:v.status,vid_order:v.vid_order};
-    // If this is a child of a dragged B, keep its type as L and move to idea
     const isChildOfDraggedB=v.big_video_id&&draggedBIds.has(String(v.big_video_id));
     if(!isChildOfDraggedB){
       v.video_type=newType;
@@ -564,6 +607,9 @@ async function _vidIdeaTypeDrop(e,newType){
       undos.push({sid:String(c.id),prev});
     });
   }
+  // Assign vid_order from finalOrder
+  finalOrder.forEach((id,i)=>{const v=(st.videos||[]).find(x=>String(x.id)===id);if(v)v.vid_order=i;});
+
   save();renderVideosPageKeepScroll();
   pushUndo(async()=>{
     undos.forEach(u=>{const v=(st.videos||[]).find(x=>String(x.id)===u.sid);if(v)Object.assign(v,u.prev);});
@@ -572,7 +618,7 @@ async function _vidIdeaTypeDrop(e,newType){
   },'Changed video type');
   for(const u of undos){
     const v=(st.videos||[]).find(x=>String(x.id)===u.sid);
-    if(v)await sbReqSilent('PATCH','videos',{video_type:v.video_type,status:v.status,big_video_id:v.big_video_id??null},`?id=eq.${u.sid}`);
+    if(v)await sbReqSilent('PATCH','videos',{video_type:v.video_type,status:v.status,big_video_id:v.big_video_id??null,vid_order:v.vid_order??null},`?id=eq.${u.sid}`);
   }
 }
 
@@ -1520,7 +1566,7 @@ async function saveVidModal(){
     if(parent){
       // Inherit parent's status (idea parents → idea, active parents → their status)
       if(parent.status==='idea')data.status='idea';
-      else if(data.status==='idea')data.status=parent.status;
+      else if(parent.status!=='published'&&parent.status!=='backup')data.status=parent.status;
     }
     // Place at bottom of new group
     const siblings=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(data.big_video_id));
