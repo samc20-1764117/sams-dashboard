@@ -3202,7 +3202,7 @@ async function _qnFetch(){
 function toggleQN(){
   _qnOpen=!_qnOpen;
   document.getElementById('qnPanel').classList.toggle('open',_qnOpen);
-  if(_qnOpen){_qnFetch().then(()=>{renderQN();});requestAnimationFrame(()=>{const inp=document.getElementById('qnInput');if(inp)inp.focus();});}
+  if(_qnOpen){_qnHistOpen=false;const hl=document.getElementById('qnHistList');if(hl)hl.style.display='none';const ql=document.getElementById('qnList');if(ql)ql.style.display='';const hb=document.querySelector('.qn-hist-btn');if(hb)hb.classList.remove('active');_qnFetch().then(()=>{renderQN();});requestAnimationFrame(()=>{const inp=document.getElementById('qnInput');if(inp)inp.focus();});}
 }
 function renderQN(){
   const el=document.getElementById('qnList');
@@ -3296,6 +3296,39 @@ async function deleteQN(id){
     await sbReqSilent('PATCH','quick_notes',{is_visible:false,hidden_at:new Date().toISOString()},`?id=eq.${id}`);
     if(removed)pushUndo(()=>{_qnNotes.splice(removedIdx,0,removed);renderQN();sbReqSilent('PATCH','quick_notes',{is_visible:true,hidden_at:null},`?id=eq.${id}`);},'Delete note');
   }
+}
+let _qnHistOpen=false;
+async function toggleQNHist(){
+  _qnHistOpen=!_qnHistOpen;
+  const list=document.getElementById('qnList');
+  const hist=document.getElementById('qnHistList');
+  const btn=document.querySelector('.qn-hist-btn');
+  if(btn)btn.classList.toggle('active',_qnHistOpen);
+  if(_qnHistOpen){
+    list.style.display='none';hist.style.display='';
+    const rows=await sbReqSilent('GET','quick_notes',null,'?is_visible=is.false&order=hidden_at.desc.nullslast&limit=50');
+    if(!rows||!rows.length){hist.innerHTML='<div class="qn-empty">No history</div>';return;}
+    hist.innerHTML=rows.map(n=>`
+      <div class="qn-hist-item" onclick="restoreQN(${n.id})">
+        <div class="qn-bullet"></div>
+        <span class="qn-hist-text">${escHtml(n.note_text)}</span>
+        <button class="qn-hist-restore" title="Restore">+ Add</button>
+      </div>`).join('');
+  }else{
+    list.style.display='';hist.style.display='none';
+  }
+}
+async function restoreQN(id){
+  await sbReqSilent('PATCH','quick_notes',{is_visible:true,hidden_at:null},`?id=eq.${id}`);
+  const rows=await sbReqSilent('GET','quick_notes',null,'?id=eq.'+id);
+  if(rows&&rows[0]){_qnNotes.push(rows[0]);_qnNotes.sort((a,b)=>(a.sort_order??0)-(b.sort_order??0));renderQN();}
+  // Remove from history list
+  const el=document.querySelector(`.qn-hist-item[onclick="restoreQN(${id})"]`);
+  if(el)el.remove();
+  if(!document.querySelectorAll('.qn-hist-item').length){
+    const hist=document.getElementById('qnHistList');if(hist)hist.innerHTML='<div class="qn-empty">No history</div>';
+  }
+  showToast('Note restored','var(--accent)',1500);
 }
 // Close panel on outside click
 document.addEventListener('click',function(e){
