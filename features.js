@@ -3193,7 +3193,7 @@ function copyShopList(){
 }
 
 // ── Quick Notes (Supabase-backed) ──
-let _qnOpen=false,_qnNotes=[],_qnLoaded=false;
+let _qnOpen=false,_qnNotes=[],_qnLoaded=false,_qnSel=new Set(),_qnLastSel=null;
 async function _qnFetch(){
   if(_qnLoaded)return;
   const rows=await sbReqSilent('GET','quick_notes',null,'?is_visible=is.true&order=sort_order.asc.nullslast,created_at.asc');
@@ -3209,7 +3209,7 @@ function renderQN(){
   if(!el)return;
   if(!_qnNotes.length){el.innerHTML='<div class="qn-empty">No notes yet</div>';return;}
   el.innerHTML=_qnNotes.map((n,i)=>`
-    <div class="qn-item" data-qnid="${n.id}" data-qnidx="${i}" onmousedown="_qnDragStart(event,${i})">
+    <div class="qn-item${_qnSel.has(String(n.id))?' qn-selected':''}" data-qnid="${n.id}" data-qnidx="${i}" onmousedown="_qnDragStart(event,${i})" onclick="_qnSelect(event,'${n.id}')">
       <div class="qn-bullet"></div>
       <span class="qn-text" ondblclick="editQN(this,'${n.id}')">${escHtml(n.note_text)}</span>
       <button class="qn-del" onclick="event.stopPropagation();deleteQN('${n.id}')" title="Remove">✕</button>
@@ -3247,6 +3247,37 @@ function editQN(span,id){
   };
   span.onblur=done;
   span.onkeydown=e=>{e.stopPropagation();if(e.key==='Enter'){e.preventDefault();span.blur();}if(e.key==='Escape'){span.textContent=orig;span.blur();}};
+}
+function _qnSelect(e,id){
+  if(e.target.closest('.qn-del,.qn-text[contenteditable="true"]'))return;
+  const sid=String(id);
+  if(e.metaKey||e.ctrlKey){
+    if(_qnSel.has(sid))_qnSel.delete(sid);else _qnSel.add(sid);
+    _qnLastSel=sid;
+  }else if(e.shiftKey&&_qnLastSel){
+    const ids=_qnNotes.map(n=>String(n.id));
+    const a=ids.indexOf(_qnLastSel),b=ids.indexOf(sid);
+    if(a>-1&&b>-1){const lo=Math.min(a,b),hi=Math.max(a,b);ids.slice(lo,hi+1).forEach(x=>_qnSel.add(x));}
+  }else{
+    _qnSel.clear();_qnSel.add(sid);_qnLastSel=sid;
+  }
+  _qnApplySelHighlight();
+}
+function _qnApplySelHighlight(){
+  document.querySelectorAll('.qn-item').forEach(el=>{
+    el.classList.toggle('qn-selected',_qnSel.has(el.dataset.qnid));
+  });
+}
+function _qnDeleteSelected(){
+  if(!_qnSel.size)return;
+  const removed=[];
+  _qnSel.forEach(sid=>{
+    const idx=_qnNotes.findIndex(n=>String(n.id)===sid);
+    if(idx>-1){removed.push({note:_qnNotes[idx],idx});_qnNotes.splice(idx,1);}
+    if(!sid.startsWith('qn-'))sbReqSilent('PATCH','quick_notes',{is_visible:false,hidden_at:new Date().toISOString()},`?id=eq.${sid}`);
+  });
+  _qnSel.clear();_qnLastSel=null;renderQN();
+  if(removed.length)pushUndo(()=>{removed.sort((a,b)=>a.idx-b.idx).forEach(({note,idx})=>{_qnNotes.splice(idx,0,note);if(!String(note.id).startsWith('qn-'))sbReqSilent('PATCH','quick_notes',{is_visible:true,hidden_at:null},`?id=eq.${note.id}`);});renderQN();},'Delete notes');
 }
 function _qnDragStart(e,idx){
   if(e.target.closest('.qn-del,.qn-text[contenteditable="true"]'))return;
@@ -3330,16 +3361,29 @@ async function restoreQN(id){
   }
   showToast('Note restored','var(--accent)',1500);
 }
-// Close panel on outside click
+// Close panel on outside click; clear selection on click outside notes
 document.addEventListener('click',function(e){
-  if(_qnOpen&&!e.target.closest('#qnPanel')&&!e.target.closest('#qnBtn')){_qnOpen=false;document.getElementById('qnPanel').classList.remove('open');}
+  if(_qnOpen&&!e.target.closest('#qnPanel')&&!e.target.closest('#qnBtn')){_qnOpen=false;_qnSel.clear();document.getElementById('qnPanel').classList.remove('open');}
+  if(_qnOpen&&_qnSel.size&&e.target.closest('#qnPanel')&&!e.target.closest('.qn-item')){_qnSel.clear();_qnApplySelHighlight();}
 });
-// Enter closes quick notes when input is empty (even if focus left the input)
+// Quick notes keyboard handlers
 document.addEventListener('keydown',function(e){
-  if(!_qnOpen||e.key!=='Enter')return;
+  if(!_qnOpen)return;
   if(e.target.closest('.qn-text[contenteditable="true"]'))return;
-  if(document.activeElement&&document.activeElement.id==='qnInput')return;
-  e.preventDefault();_qnOpen=false;document.getElementById('qnPanel').classList.remove('open');
+  // Delete/Backspace: archive selected notes
+  if((e.key==='Delete'||e.key==='Backspace')&&_qnSel.size&&document.activeElement?.id!=='qnInput'){e.preventDefault();_qnDeleteSelected();return;}
+  // Cmd+C: copy selected notes
+  if((e.metaKey||e.ctrlKey)&&e.key==='c'&&_qnSel.size){
+    const txt=[..._qnSel].map(id=>{const n=_qnNotes.find(x=>String(x.id)===id);return n?n.note_text:'';}).filter(Boolean).join('\n');
+    if(txt)navigator.clipboard.writeText(txt);return;
+  }
+  // Cmd+A: select all notes
+  if((e.metaKey||e.ctrlKey)&&e.key==='a'&&document.activeElement?.id!=='qnInput'){e.preventDefault();_qnSel.clear();_qnNotes.forEach(n=>_qnSel.add(String(n.id)));_qnApplySelHighlight();return;}
+  // Enter: close when input empty and not focused on input
+  if(e.key==='Enter'){
+    if(document.activeElement&&document.activeElement.id==='qnInput')return;
+    e.preventDefault();_qnOpen=false;document.getElementById('qnPanel').classList.remove('open');
+  }
 });
 
 

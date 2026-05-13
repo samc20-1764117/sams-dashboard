@@ -610,6 +610,8 @@ body.dark .qn-hist-item:hover{background:rgba(255,255,255,.07)}
 .qn-list::-webkit-scrollbar{width:3px}.qn-list::-webkit-scrollbar-thumb{background:rgba(180,160,140,.2);border-radius:2px}
 .qn-item{display:flex;align-items:center;gap:7px;padding:5px 4px;min-height:31px;border-radius:6px;transition:background .1s;position:relative;cursor:grab}
 .qn-item.qn-dragging{opacity:.4}
+.qn-item.qn-selected{background:rgba(255,237,213,.55)}
+body.dark .qn-item.qn-selected{background:rgba(255,255,255,.07)}
 .qn-drop-line{height:2px;margin:1px 8px;border-radius:99px;background:rgba(255,255,255,.85);pointer-events:none;flex-shrink:0;box-shadow:0 0 4px rgba(255,255,255,.4)}
 .qn-item:hover{background:rgba(255,237,213,.55)}
 body.dark .qn-item:hover{background:rgba(255,255,255,.07)}
