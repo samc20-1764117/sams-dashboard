@@ -237,8 +237,8 @@ function _vidRenderDashboard(){
             <button class="vid-del" style="visibility:hidden">✕</button>
           </div>`;
   const ideasHtml=(()=>{
-    const groupIdeas=ideas.filter(v=>v.video_type==='B');
-    const singleIdeas=ideas.filter(v=>v.video_type!=='B');
+    const groupIdeas=ideas.filter(v=>v.video_type==='B').sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
+    const singleIdeas=ideas.filter(v=>v.video_type!=='B').sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
     let h='';
     if(groupIdeas.length||singleIdeas.length){
       h+=`<div style="font-size:9px;font-weight:600;color:var(--muted);padding:6px 6px 6px 16px;letter-spacing:.03em;background:#fff;display:flex;align-items:center">Group</div>`;
@@ -415,7 +415,7 @@ function _vidDashDragOver(e){
   e.preventDefault();
   const zone=e.currentTarget;
   let ph=zone.querySelector('.vid-reorder-ph');
-  if(!ph){ph=document.createElement('div');ph.className='vid-reorder-ph';ph.style.cssText='height:2px;margin:2px 10px;border-radius:99px;background:rgba(150,150,160,.5);pointer-events:none;flex-shrink:0';zone.appendChild(ph);}
+  if(!ph){ph=document.createElement('div');ph.className='vid-reorder-ph';ph.style.cssText='height:2px;margin:2px 10px;border-radius:99px;background:#fff;pointer-events:none;flex-shrink:0';zone.appendChild(ph);}
   // Find top-level rows only (not children of B groups — they move with parent)
   const rows=[...zone.querySelectorAll('.vid-dash-row[data-vid]')];
   let inserted=false;

@@ -339,7 +339,10 @@ async function syncAll(silent=false){
     }
     if(videosDb){
       const localOnly=(st.videos||[]).filter(v=>String(v.id).startsWith('l-'));
+      // Preserve local vid_order if DB doesn't have it yet
+      const localOrders={};(st.videos||[]).forEach(v=>{if(v.vid_order!=null)localOrders[String(v.id)]=v.vid_order;});
       st.videos=[...videosDb,...localOnly.filter(lv=>!videosDb.find(dv=>String(dv.id)===String(lv.id)))];
+      st.videos.forEach(v=>{if(v.vid_order==null&&localOrders[String(v.id)]!=null)v.vid_order=localOrders[String(v.id)];});
     }
     if(blocks){
       const dbIds=new Set(blocks.map(b=>String(b.id)));
