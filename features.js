@@ -3196,9 +3196,8 @@ function copyShopList(){
 let _qnOpen=false,_qnNotes=[],_qnLoaded=false;
 async function _qnFetch(){
   if(_qnLoaded)return;
-  _qnLoaded=true;
   const rows=await sbReqSilent('GET','quick_notes',null,'?is_deleted=is.false&order=created_at.asc');
-  if(rows&&Array.isArray(rows))_qnNotes=rows;
+  if(rows&&Array.isArray(rows)){_qnNotes=rows;_qnLoaded=true;}
 }
 function toggleQN(){
   _qnOpen=!_qnOpen;
