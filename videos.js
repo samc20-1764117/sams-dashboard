@@ -192,7 +192,7 @@ function renderVideosPage(){
         <button onclick="openVidModal()" style="width:22px;height:22px;border-radius:50%;border:1.5px solid var(--border);background:rgba(255,255,255,.9);color:var(--muted);font-size:14px;font-weight:700;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;margin-right:90px" title="Add video">+</button>
       </div>
     </div>
-    <div id="yt-analytics-slot"></div>
+    <div id="yt-analytics-slot" style="${_vidView==='dashboard'?'display:none':''}"></div>
     <div class="card" style="overflow:${_vidView==='dashboard'?'hidden':'auto'};flex:1;min-height:0;background:rgba(255,255,255,0.32);backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px)">
         ${bodyHtml}
     </div>`;
@@ -278,10 +278,17 @@ function _vidRenderDashboard(){
     }
     return h;
   })();
+  const _ytKpis=(()=>{
+    if(!_ytData||!_ytData.channelStats)return '';
+    const c=_ytData.channelStats;
+    const kpi=(label,val)=>`<div style="background:var(--glass);border:1px solid var(--border);border-radius:8px;padding:4px 10px"><div style="font-size:9px;color:var(--muted)">${label}</div><div style="font-size:14px;font-weight:600">${_ytNum(val)}</div></div>`;
+    return kpi('Subscribers',c.subscribers)+kpi('Total Views',c.totalViews);
+  })();
   return`
     <div onclick="_vidClearSel(event)" style="display:grid;grid-template-columns:3fr 1fr;grid-template-rows:auto 1fr;position:absolute;top:0;left:0;right:0;bottom:0">
       <div class="vid-dash-header" style="grid-column:1;grid-row:1;border-right:1px solid var(--border)">
-        <div style="flex:1;min-width:0;padding-left:10px">Current</div>
+        <div style="display:flex;align-items:center;gap:8px;padding-left:10px">${_ytKpis}<span style="margin-left:4px">Current</span></div>
+        <div style="flex:1"></div>
         ${(upNext.length||inProgress.length)?_colHdr:''}
       </div>
       <div class="vid-dash-header" style="grid-column:2;grid-row:1">
