@@ -929,13 +929,13 @@ tickClock();_updateOvTopDate();setInterval(tickClock,1000);init();
 <div id="qnPanel">
   <div class="qn-header">
     <span class="qn-title">Quick Notes</span>
-    <button class="qn-hist-btn" onclick="toggleQNHist()" title="History">⟲</button>
+    <button class="qn-hist-btn" onclick="toggleQNHist()" title="Archive">📦</button>
     <button class="qn-close-btn" onclick="toggleQN()" title="Close">✕</button>
   </div>
   <div class="qn-list" id="qnList"></div>
   <div class="qn-hist-list" id="qnHistList" style="display:none"></div>
   <div class="qn-input-row">
-    <input class="qn-input" id="qnInput" type="text" placeholder="Big brain moment…" autocapitalize="sentences" onkeydown="if(event.key==='Enter')addQN()" oninput="if(this.value.length===1)this.value=this.value.toUpperCase()">
+    <input class="qn-input" id="qnInput" type="text" placeholder="Future you will thank you for writing this down…" autocapitalize="sentences" onkeydown="if(event.key==='Enter')addQN()" oninput="if(this.value.length===1)this.value=this.value.toUpperCase()">
   </div>
 </div>
 
