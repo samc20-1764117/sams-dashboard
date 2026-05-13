@@ -3229,10 +3229,10 @@ async function addQN(){
 }
 function editQN(span,id){
   const orig=span.textContent;
-  span.contentEditable='true';span.focus();
+  span.style.display='block';span.contentEditable='true';span.focus();
   const sel=window.getSelection();sel.selectAllChildren(span);sel.collapseToEnd();
   const done=()=>{
-    span.contentEditable='false';
+    span.contentEditable='false';span.style.display='';
     const txt=span.textContent.trim();
     if(!txt||txt===orig){span.textContent=orig;return;}
     const n=_qnNotes.find(n=>String(n.id)===String(id));
@@ -3240,7 +3240,7 @@ function editQN(span,id){
     if(!String(id).startsWith('qn-'))sbReqSilent('PATCH','quick_notes',{note_text:txt},`?id=eq.${id}`);
   };
   span.onblur=done;
-  span.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();span.blur();}if(e.key==='Escape'){span.textContent=orig;span.blur();}};
+  span.onkeydown=e=>{e.stopPropagation();if(e.key==='Enter'){e.preventDefault();span.blur();}if(e.key==='Escape'){span.textContent=orig;span.blur();}};
 }
 async function deleteQN(id){
   _qnNotes=_qnNotes.filter(n=>String(n.id)!==String(id));
