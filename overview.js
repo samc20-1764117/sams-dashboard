@@ -3246,7 +3246,7 @@ function renderDayTB(){
   grid.appendChild(col);renderTBSum(ds);requestAnimationFrame(applySelHighlight);
   // Default scroll to current time minus 1 hour; reset when day changes but preserve position mid-session
   const tbSc2=document.getElementById('tbScroll');
-  if(tbSc2&&tbSc2._scrollDay!==ds){tbSc2._scrollDay=ds;const _scrollVal=Math.round((6.5-HOURS[0])*60*PX);tbSc2.scrollTop=_scrollVal;requestAnimationFrame(()=>{tbSc2.scrollTop=_scrollVal;});}
+  if(tbSc2&&tbSc2._scrollDay!==ds){const _scrollVal=Math.round((6.5-HOURS[0])*60*PX);tbSc2.scrollTop=_scrollVal;if(tbSc2.scrollTop===_scrollVal){tbSc2._scrollDay=ds;}else{tbSc2._scrollDay=null;requestAnimationFrame(()=>{tbSc2.scrollTop=_scrollVal;tbSc2._scrollDay=ds;});}}
 }
 function getVisibleBlocks(ds){
   const isViewingToday=(ds===d2s(getDayDate(0)));
