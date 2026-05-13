@@ -129,7 +129,7 @@ function renderVideosPageKeepScroll(){
   const dl=document.getElementById('vidDashLeft');const dlTop=dl?dl.scrollTop:0;
   renderVideosPage();
   const se2=_vidScrollEl();if(se2)se2.scrollTop=top;
-  const dl2=document.getElementById('vidDashLeft');if(dl2)dl2.scrollTop=dlTop;
+  const dl2=document.getElementById('vidDashLeft');if(dl2){dl2.scrollTop=dlTop;requestAnimationFrame(()=>{dl2.scrollTop=dlTop;});}
 }
 function renderVideosPage(){
   const _rvpSe=_vidScrollEl();const _rvpTop=_rvpSe?_rvpSe.scrollTop:0;
