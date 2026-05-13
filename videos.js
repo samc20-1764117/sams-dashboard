@@ -251,7 +251,7 @@ function _vidRenderDashboard(){
     return h;
   })();
   return`
-    <div onclick="_vidClearSel(event)" style="display:grid;grid-template-columns:2fr 1fr;grid-template-rows:auto 1fr;position:absolute;top:0;left:0;right:0;bottom:0">
+    <div onclick="_vidClearSel(event)" style="display:grid;grid-template-columns:3fr 1fr;grid-template-rows:auto 1fr;position:absolute;top:0;left:0;right:0;bottom:0">
       <div class="vid-dash-header" style="grid-column:1;grid-row:1;border-right:1px solid var(--border)">
         <div style="flex:1;min-width:0;padding-left:10px">Current</div>
         ${(upNext.length||inProgress.length)?_colHdr:''}
