@@ -184,13 +184,34 @@ function renderVideosPage(){
         </div>
         <input id="vidSearchInput" type="text" placeholder="Search videos..." value="${_vidSearch.replace(/"/g,'&quot;')}" oninput="_vidSetSearch(this.value)" style="padding:5px 10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:12px;background:var(--bg);color:var(--text);outline:none;width:180px">
         <div style="flex:1"></div>
-        <div style="display:flex;gap:10px;align-items:center;font-size:12px;font-weight:500">
-          ${_ytData&&_ytData.channelStats?`<span style="color:var(--muted)">${_ytNum(_ytData.channelStats.subscribers)} subs</span><span style="color:var(--muted)">${_ytNum(_ytData.channelStats.totalViews)} views</span><span style="color:var(--border)">|</span>`:''}
-          <span style="color:#8b5cf6">${stats.idea} ideas</span>
-          <span style="color:#f59e0b">${stats.up_next+stats.in_progress} current</span>
-          <span style="color:#10b981">${stats.published} complete</span>
+        <div style="display:flex;gap:6px;align-items:center">
+          ${_ytData&&_ytData.channelStats?`
+          <div style="background:rgba(120,113,145,.06);border-radius:20px;padding:4px 10px 4px 8px;display:flex;align-items:center;gap:4px;font-size:12px">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            <span style="font-weight:600;color:#555">${_ytNum(_ytData.channelStats.subscribers)}</span>
+          </div>
+          <div style="background:rgba(120,113,145,.06);border-radius:20px;padding:4px 10px 4px 8px;display:flex;align-items:center;gap:4px;font-size:12px">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            <span style="font-weight:600;color:#555">${_ytNum(_ytData.channelStats.totalViews)}</span>
+          </div>
+          <div style="width:1px;height:16px;background:rgba(210,205,228,.4);margin:0 2px"></div>
+          `:''}
+          <div style="background:rgba(139,92,246,.06);border-radius:20px;padding:4px 10px 4px 8px;display:flex;align-items:center;gap:4px;font-size:12px">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a1 1 0 0 1-1 1h-6a1 1 0 0 1-1-1v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z"/></svg>
+            <span style="font-weight:600;color:#8b5cf6">${stats.idea}</span>
+          </div>
+          <div style="background:rgba(245,158,11,.06);border-radius:20px;padding:4px 10px 4px 8px;display:flex;align-items:center;gap:4px;font-size:12px">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            <span style="font-weight:600;color:#f59e0b">${stats.up_next+stats.in_progress}</span>
+          </div>
+          <div style="background:rgba(16,185,129,.06);border-radius:20px;padding:4px 10px 4px 8px;display:flex;align-items:center;gap:4px;font-size:12px">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+            <span style="font-weight:600;color:#10b981">${stats.published}</span>
+          </div>
         </div>
-        <button onclick="openVidModal()" style="width:22px;height:22px;border-radius:50%;border:1.5px solid var(--border);background:rgba(255,255,255,.9);color:var(--muted);font-size:14px;font-weight:700;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;margin-right:90px" title="Add video">+</button>
+        <button onclick="openVidModal()" style="background:rgba(139,92,246,.06);border-radius:20px;padding:4px 8px;display:flex;align-items:center;gap:4px;font-size:12px;border:none;cursor:pointer;margin-right:90px" title="Add video">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
       </div>
     </div>
     <div id="yt-analytics-slot" style="display:none"></div>
