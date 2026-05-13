@@ -372,8 +372,10 @@ function _vidDashRow(v,isChild,simple){
   const _addBtn=simple?'':v.video_type==='B'?'<button onclick="event.stopPropagation();openVidModalForBig(\''+sid+'\')" style="font-size:10px;font-weight:700;width:16px;height:16px;line-height:14px;text-align:center;border-radius:3px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;margin-right:4px" title="Add child video">+</button>':(!isChild?'<button style="font-size:10px;font-weight:700;width:16px;height:16px;line-height:14px;text-align:center;border-radius:3px;border:1px solid transparent;background:transparent;color:transparent;margin-right:4px;pointer-events:none">+</button>':'');
   const _tHtml=showTopicTitle?'<span class="'+titleCls+'">'+_esc(topic)+'</span><span style="font-size:10px;color:var(--muted);margin-left:4px;font-weight:400">'+_titleSuffix+'</span>':'<span class="'+titleCls+'">'+_esc(primary)+'</span>';
   if(simple){
+    const hasGroup=v.video_type==='B'?(st.videos||[]).some(c=>!c.is_deleted&&String(c.big_video_id)===sid):!!v.big_video_id;
+    const bulletColor=hasGroup?'rgba(139,92,246,.45)':'#fff';
     return`<div class="vid-dash-row${sel?' vid-sel':''}" draggable="true" ondragstart="_vidDashDragStart(event,'${sid}')" data-vid="${sid}" onclick="vidRowClick(event,'${sid}')" ondblclick="openVidEdit('${sid}')" oncontextmenu="showVidCtx(event,'${sid}')">
-      <div style="flex:1;min-width:0;padding-left:10px;${indent}${!isChild?'font-weight:600;':''}${titleStyle}"><span style="color:#fff;font-size:8px;margin-right:6px">●</span>${_addBtn}${childMark}${numHtml}${_tHtml}</div>
+      <div style="flex:1;min-width:0;padding-left:10px;${indent}${!isChild?'font-weight:600;':''}${titleStyle}"><span style="color:${bulletColor};font-size:8px;margin-right:6px">●</span>${_addBtn}${childMark}${numHtml}${_tHtml}</div>
       <button class="vid-del" data-vid="${sid}">✕</button>
     </div>`;
   }
@@ -644,6 +646,10 @@ async function _vidDashDrop(e,newStatus){
     if(v.video_type==='B'&&newStatus==='idea'){
       childPrevs.forEach(cp=>{const c=(st.videos||[]).find(x=>String(x.id)===String(cp.id));if(c&&c.status!=='published')c.status='idea';});
     }
+    // When moving a B from ideas to current, promote its children too
+    if(v.video_type==='B'&&newStatus!=='idea'&&newStatus!=='published'){
+      childPrevs.forEach(cp=>{const c=(st.videos||[]).find(x=>String(x.id)===String(cp.id));if(c&&c.status==='idea')c.status=newStatus;});
+    }
   }
 
   // Build final order: zoneIds with dragIds spliced in at insertIdx
@@ -669,11 +675,10 @@ async function _vidDashDrop(e,newStatus){
   save();renderVideosPageKeepScroll();
 
   for(const d of undoData){
-    if(d.v.video_type==='B'&&d.prev!==newStatus&&newStatus!=='idea')await _vidPromoteChildren(d.v.id,newStatus);
     await _vidEnsureSynced(d.v);
-    // Sync children moved to ideas
-    if(d.v.video_type==='B'&&newStatus==='idea'){
-      for(const cp of d.childPrevs){const c=(st.videos||[]).find(x=>String(x.id)===String(cp.id));if(c&&c.status==='idea')await sbReqSilent('PATCH','videos',{status:'idea'},`?id=eq.${cp.id}`);}
+    // Sync children status changes to DB
+    if(d.v.video_type==='B'){
+      for(const cp of d.childPrevs){const c=(st.videos||[]).find(x=>String(x.id)===String(cp.id));if(c&&c.status!==cp.status)await sbReqSilent('PATCH','videos',{status:c.status,vid_order:c.vid_order??null},`?id=eq.${cp.id}`);}
     }
   }
 
