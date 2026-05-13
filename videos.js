@@ -1245,10 +1245,10 @@ function _vidFilterDropdown(type){
     const inp=document.getElementById('vmBigVideo');
     const q=(inp.value||'').toLowerCase();
     const words=q.split(/\s+/).filter(Boolean);
-    // Filter by view: current tab only shows non-complete big videos
+    // Filter by view: current tab only shows non-complete big videos (ideas + up_next + in_progress)
     const onCurrent=_vidView==='dashboard';
     const items=_vidDropdownData.BigVideo.filter(v=>{
-      if(onCurrent){const bv=(st.videos||[]).find(x=>String(x.id)===String(v.id));if(bv&&bv.status==='published')return false;}
+      if(onCurrent){const bv=(st.videos||[]).find(x=>String(x.id)===String(v.id));if(bv&&(bv.status==='published'||bv.status==='backup'))return false;}
       if(!words.length)return true;
       const l=v.label.toLowerCase();
       return words.every(w=>l.includes(w));
