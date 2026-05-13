@@ -359,34 +359,61 @@ async function _vidPromoteChildren(parentId,newStatus){
   if(children.length){save();renderVideosPageKeepScroll();for(const c of children)await sbReqSilent('PATCH','videos',{status:newStatus},`?id=eq.${c.id}`);}
 }
 
-function _vidGroupDragOver(e){e.preventDefault();e.stopPropagation();const row=e.currentTarget;row.style.boxShadow='inset 0 0 8px rgba(139,92,246,.3)';row.style.borderColor='rgba(139,92,246,.4)';row.style.borderBottom='2px solid rgba(139,92,246,.6)';}
-function _vidGroupDragLeave(e){const row=e.currentTarget;row.style.boxShadow='';row.style.borderColor='';row.style.borderBottom='';}
+function _vidGroupDragOver(e){e.preventDefault();const row=e.currentTarget;row.style.boxShadow='inset 0 0 8px rgba(139,92,246,.3)';row.style.borderColor='rgba(139,92,246,.4)';}
+function _vidGroupDragLeave(e){const row=e.currentTarget;row.style.boxShadow='';row.style.borderColor='';}
 async function _vidGroupDrop(e,parentId){
   e.preventDefault();
-  const row=e.currentTarget;row.style.boxShadow='';row.style.borderColor='';row.style.borderBottom='';
+  const row=e.currentTarget;row.style.boxShadow='';row.style.borderColor='';
   if(!_vidDashDragId)return;
   const parent=(st.videos||[]).find(x=>String(x.id)===parentId);if(!parent||parent.video_type!=='B')return;
   const ids=_vidDashDragIds.length?[..._vidDashDragIds]:[_vidDashDragId];
-  // Filter to videos that can nest (not B, not self)
+  // Filter to videos that can nest (not B, not self, not already child of this parent)
   const toNest=ids.map(id=>(st.videos||[]).find(x=>String(x.id)===String(id))).filter(v=>v&&v.video_type!=='B'&&String(v.id)!==String(parentId));
   if(!toNest.length)return;
   e.stopPropagation();
-  const undoData=toNest.map(v=>({v,prevParent:v.big_video_id,prevStatus:v.status,prevType:v.video_type}));
-  toNest.forEach(v=>{
+
+  // Find drop position among existing children using zone placeholder
+  const zone=row.closest('.vid-drop-zone')||row.closest('[ondrop]');
+  const ph=zone?zone.querySelector('.vid-reorder-ph'):null;
+  const existingKids=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===parentId&&c.status===parent.status).sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
+
+  // Determine insert position from placeholder
+  let insertOrder=parent.vid_order!=null?(parent.vid_order+0.01):0.01;
+  if(ph&&zone){
+    const kidRows=[...zone.querySelectorAll('.vid-dash-row[data-vid]')].filter(r=>{
+      const v=(st.videos||[]).find(x=>String(x.id)===r.dataset.vid);
+      return v&&String(v.big_video_id)===parentId;
+    });
+    const zoneChildren=[...zone.children];
+    const phIdx=zoneChildren.indexOf(ph);
+    const kidsAfter=kidRows.filter(r=>zoneChildren.indexOf(r)>phIdx);
+    if(kidsAfter.length){
+      const afterVid=(st.videos||[]).find(x=>String(x.id)===kidsAfter[0].dataset.vid);
+      if(afterVid)insertOrder=(afterVid.vid_order??0)-0.001;
+    }else if(existingKids.length){
+      insertOrder=(existingKids[existingKids.length-1].vid_order??0)+0.01;
+    }
+  }else if(existingKids.length){
+    insertOrder=(existingKids[existingKids.length-1].vid_order??0)+0.01;
+  }
+  if(ph)ph.remove();
+
+  const undoData=toNest.map(v=>({v,prevParent:v.big_video_id,prevStatus:v.status,prevType:v.video_type,prevOrder:v.vid_order}));
+  toNest.forEach((v,i)=>{
     v.big_video_id=parseInt(parentId)||parentId;
     v.video_type='L';
     if(v.status!==parent.status)v.status=parent.status;
+    v.vid_order=insertOrder+(i*0.001);
   });
   save();renderVideosPageKeepScroll();
   pushUndo(async()=>{
-    undoData.forEach(d=>{d.v.big_video_id=d.prevParent;d.v.video_type=d.prevType;d.v.status=d.prevStatus;});
+    undoData.forEach(d=>{d.v.big_video_id=d.prevParent;d.v.video_type=d.prevType;d.v.status=d.prevStatus;d.v.vid_order=d.prevOrder;});
     save();renderVideosPageKeepScroll();
-    for(const d of undoData)await sbReqSilent('PATCH','videos',{big_video_id:d.prevParent,video_type:d.prevType,status:d.prevStatus},`?id=eq.${d.v.id}`);
+    for(const d of undoData)await sbReqSilent('PATCH','videos',{big_video_id:d.prevParent,video_type:d.prevType,status:d.prevStatus,vid_order:d.prevOrder??null},`?id=eq.${d.v.id}`);
   },'Group change');
   for(const v of toNest){
     await _vidEnsureSynced(v);
-    const patch={big_video_id:v.big_video_id,video_type:'L',status:v.status};
-    await sbReqSilent('PATCH','videos',patch,`?id=eq.${v.id}`);
+    await sbReqSilent('PATCH','videos',{big_video_id:v.big_video_id,video_type:'L',status:v.status,vid_order:v.vid_order},`?id=eq.${v.id}`);
   }
   _vidDashDragId=null;_vidDashDragIds=[];
 }
