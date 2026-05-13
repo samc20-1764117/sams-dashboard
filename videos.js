@@ -556,7 +556,7 @@ async function _vidIdeaTypeDrop(e,newType){
 }
 
 // Push a local-only video (l-xxx id) to Supabase and replace the temp id
-const _VID_DB_COLS=['title','topic','status','post_date','duration_minutes','video_type','big_video_id','vid_order',...VID_STEPS];
+const _VID_DB_COLS=['title','topic','status','post_date','duration_minutes','video_type','big_video_id','vid_order','comment',...VID_STEPS];
 async function _vidEnsureSynced(v){
   if(!String(v.id).startsWith('l-'))return;
   // If parent is also local, sync parent first
@@ -1275,6 +1275,7 @@ function openVidModal(type){
   document.getElementById('vmPostDate').value='';
   document.getElementById('vmDuration').value='';
 
+  document.getElementById('vmComment').value='';
   document.getElementById('vmBigVideoWrap').style.display='';
   _vidPopulateBigVideoSelect('');
   const defaults={};
@@ -1295,6 +1296,7 @@ function openVidEdit(id){
   document.getElementById('vmStatus').value=v.status||'idea';
   document.getElementById('vmPostDate').value=v.post_date||'';
   document.getElementById('vmDuration').value=v.duration_minutes||'';
+  document.getElementById('vmComment').value=v.comment||'';
 
   document.getElementById('vmBigVideoWrap').style.display='';
   _vidPopulateBigVideoSelect(v.big_video_id||'');
@@ -1382,7 +1384,8 @@ async function saveVidModal(){
     post_date:document.getElementById('vmPostDate').value||null,
     duration_minutes:parseFloat(document.getElementById('vmDuration').value)||null,
 
-    big_video_id:_vidGetBigVideoId()
+    big_video_id:_vidGetBigVideoId(),
+    comment:document.getElementById('vmComment').value.trim()||null
   };
   if(_vidMode==='edit'&&_vidEditId){
     const _ev=(st.videos||[]).find(x=>String(x.id)===String(_vidEditId));
