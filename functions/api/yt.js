@@ -1,3 +1,33 @@
+// RSS fallback — works even when API quota is exceeded
+async function _rssFallback(channelId) {
+  const res = await fetch(`https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`);
+  if (!res.ok) return null;
+  const xml = await res.text();
+  // Parse entries from RSS
+  const entries = [...xml.matchAll(/<entry>([\s\S]*?)<\/entry>/g)];
+  if (!entries.length) return null;
+  const videos = entries.map(m => {
+    const block = m[1];
+    const get = tag => { const r = block.match(new RegExp(`<${tag}>([^<]*)</${tag}>`)); return r ? r[1] : ''; };
+    const getAttr = (tag, attr) => { const r = block.match(new RegExp(`<${tag}[^>]*${attr}="([^"]*)"`)); return r ? r[1] : ''; };
+    return {
+      id: get('yt:videoId'),
+      title: get('title'),
+      publishedAt: get('published'),
+      thumbnail: getAttr('media:thumbnail', 'url') || `https://i.ytimg.com/vi/${get('yt:videoId')}/mqdefault.jpg`,
+      views: Number(getAttr('media:community media:statistics', 'views') || 0),
+      likes: 0, comments: 0, duration: '',
+    };
+  }).filter(v => v.id);
+  // RSS only has ~15 most recent videos, channel stats are approximate
+  return {
+    channelStats: { name: '', subscribers: 0, totalViews: 0, totalVideos: videos.length },
+    videos,
+    fetchedAt: new Date().toISOString(),
+    partial: true,
+  };
+}
+
 export async function onRequest(context) {
   const corsHeaders = {
     'Access-Control-Allow-Origin': context.request.headers.get('Origin') || 'https://dev.sams-dashboard.pages.dev',
@@ -6,6 +36,20 @@ export async function onRequest(context) {
   };
   if (context.request.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  // POST: seed KV cache with provided data
+  if (context.request.method === 'POST') {
+    const KV = context.env.YT_CACHE;
+    if (!KV) return new Response('no KV', { status: 500, headers: corsHeaders });
+    const body = await context.request.json();
+    if (body && body.channelStats) {
+      await KV.put('yt-fresh', JSON.stringify(body), { expirationTtl: 43200 });
+      await KV.put('yt-good', JSON.stringify(body));
+      await KV.delete('yt-cooldown');
+      return new Response(JSON.stringify({ ok: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+    return new Response('invalid', { status: 400, headers: corsHeaders });
   }
 
   const API_KEY = context.env.YOUTUBE_API_KEY;
@@ -51,6 +95,15 @@ export async function onRequest(context) {
         const lastGood = await KV.get('yt-good', 'json') || await KV.get('yt-stats', 'json');
         if (lastGood && !lastGood.error) return new Response(JSON.stringify(lastGood), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
+      // RSS fallback — no quota needed
+      try {
+        const rssData = await _rssFallback(CHANNEL_ID);
+        if (rssData && KV) {
+          await KV.put('yt-fresh', JSON.stringify(rssData), { expirationTtl: 43200 });
+          await KV.put('yt-good', JSON.stringify(rssData));
+        }
+        if (rssData) return new Response(JSON.stringify(rssData), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      } catch (e) {}
       const detail = chanData.error ? chanData.error.message || JSON.stringify(chanData.error) : 'no items';
       return new Response(JSON.stringify({ error: detail }), { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
