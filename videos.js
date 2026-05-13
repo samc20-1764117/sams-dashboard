@@ -1278,6 +1278,8 @@ function _vidDropKey(event,type){
     if(items.length)items[items.length-1].focus();
   }else if(event.key==='Escape'){
     drop.style.display='none';
+  }else if(event.key==='Tab'){
+    drop.style.display='none';
   }
 }
 function _vidDropItemKey(event,type,idx){
@@ -1298,6 +1300,8 @@ function _vidDropItemKey(event,type,idx){
     event.stopPropagation();
     drop.style.display='none';
     document.getElementById(type==='Status'?'vmStatusDisplay':'vmBigVideo').focus();
+  }else if(event.key==='Tab'){
+    drop.style.display='none';
   }
 }
 function _vidPickDropdown(type,val){
