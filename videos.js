@@ -1437,7 +1437,8 @@ function _vidRenderAnalytics(){
   });
   const _kpiSorted=Object.entries(_kpiMonths).sort((a,b)=>a[0].localeCompare(b[0]));
   const _kpiLast6=_kpiSorted.slice(-6);
-  const _thisMonth=new Date().toISOString().slice(0,7);
+  const now=new Date();
+  const _thisMonth=now.toISOString().slice(0,7);
   const _tm=_kpiMonths[_thisMonth]||{views:0,likes:0,comments:0,count:0};
   const _spViews=_kpiLast6.map(([,d])=>d.views);
   const _spAvg=_kpiLast6.map(([,d])=>d.count?Math.round(d.views/d.count):0);
@@ -1528,7 +1529,6 @@ function _vidRenderAnalytics(){
   const topics=Object.entries(topicMap).map(([t,d])=>({topic:t,avgViews:Math.round(d.views/d.count),avgEng:d.views>0?((d.likes+d.comments)/d.views*100):0,count:d.count})).sort((a,b)=>b.avgViews-a.avgViews);
 
   // Engagement by recency (first 30 days vs lifetime)
-  const now=new Date();
   const recent90=merged.filter(v=>{const d=Math.round((now-new Date(v.post_date+'T12:00:00'))/86400000);return d<=90;});
   const older=merged.filter(v=>{const d=Math.round((now-new Date(v.post_date+'T12:00:00'))/86400000);return d>90;});
   const recentAvg=recent90.length?Math.round(recent90.reduce((s,v)=>s+v.views,0)/recent90.length):0;
