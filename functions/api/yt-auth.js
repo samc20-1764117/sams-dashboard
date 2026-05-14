@@ -1,39 +1,51 @@
 // YouTube Analytics API — OAuth 2.0 flow
-// Handles both initiating auth and receiving callback
+// Handles setup, initiating auth, and receiving callback
+// OAuth credentials stored in KV (workaround for Cloudflare env var issues)
 export async function onRequest(context) {
   const corsHeaders = {
     'Access-Control-Allow-Origin': context.request.headers.get('Origin') || '*',
-    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
   };
   if (context.request.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const CLIENT_ID = context.env.GCP_CLIENT_ID;
-  const CLIENT_SECRET = context.env.GCP_CLIENT_SECRET;
+  const json = (data, status) => new Response(JSON.stringify(data), {
+    status: status || 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
 
-  // Debug: show available env keys when checking status
-  const url0 = new URL(context.request.url);
-  if (url0.searchParams.get('action') === 'status') {
-    const envKeys = Object.keys(context.env).filter(k => !k.startsWith('__'));
-    const KV = context.env.YT_CACHE;
-    const hasRefresh = KV ? !!(await KV.get('yt-oauth-refresh')) : false;
-    return new Response(JSON.stringify({ configured: !!CLIENT_ID && !!CLIENT_SECRET, authorized: hasRefresh, hasClientId: !!CLIENT_ID, hasClientSecret: !!CLIENT_SECRET, envKeys }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
-  }
+  const KV = context.env.YT_CACHE;
+  if (!KV) return json({ error: 'KV not configured' }, 500);
 
-  if (!CLIENT_ID || !CLIENT_SECRET) {
-    return new Response(JSON.stringify({ error: 'OAuth not configured. Set GCP_CLIENT_ID and GCP_CLIENT_SECRET.' }), {
-      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
-  }
+  // Read OAuth credentials from env vars OR KV (KV as fallback)
+  const CLIENT_ID = context.env.GCP_CLIENT_ID || await KV.get('oauth-client-id');
+  const CLIENT_SECRET = context.env.GCP_CLIENT_SECRET || await KV.get('oauth-client-secret');
 
   const url = new URL(context.request.url);
   const action = url.searchParams.get('action');
 
-  // Determine redirect URI from the request URL (works for both dev and prod)
+  // One-time setup: store OAuth credentials in KV via POST
+  if (context.request.method === 'POST' && action === 'setup') {
+    const body = await context.request.json();
+    if (!body.clientId || !body.clientSecret) {
+      return json({ error: 'Send { clientId, clientSecret }' }, 400);
+    }
+    await KV.put('oauth-client-id', body.clientId);
+    await KV.put('oauth-client-secret', body.clientSecret);
+    return json({ ok: true });
+  }
+
+  // Status check
+  if (action === 'status') {
+    const hasRefresh = !!(await KV.get('yt-oauth-refresh'));
+    return json({ configured: !!CLIENT_ID && !!CLIENT_SECRET, authorized: hasRefresh });
+  }
+
+  if (!CLIENT_ID || !CLIENT_SECRET) {
+    return json({ error: 'OAuth not configured. POST credentials to /api/yt-auth?action=setup first.' }, 500);
+  }
+
   const redirectUri = `${url.origin}/api/yt-auth?action=callback`;
 
   // Step 1: Start OAuth — redirect to Google consent screen
@@ -84,13 +96,10 @@ export async function onRequest(context) {
       });
     }
 
-    // Store refresh token in KV (persists across deploys)
-    const KV = context.env.YT_CACHE;
-    if (KV && tokenData.refresh_token) {
+    if (tokenData.refresh_token) {
       await KV.put('yt-oauth-refresh', tokenData.refresh_token);
     }
-    // Also store the current access token with its expiry
-    if (KV && tokenData.access_token) {
+    if (tokenData.access_token) {
       await KV.put('yt-oauth-access', tokenData.access_token, {
         expirationTtl: tokenData.expires_in || 3600,
       });
@@ -98,17 +107,6 @@ export async function onRequest(context) {
 
     return new Response(`<h2>Connected!</h2><p>YouTube Analytics API is now authorized. You can close this tab.</p><script>setTimeout(()=>window.close(),2000)</script>`, {
       headers: { 'Content-Type': 'text/html' },
-    });
-  }
-
-  // Status check — is OAuth configured and authorized?
-  if (action === 'status') {
-    const KV = context.env.YT_CACHE;
-    const hasRefresh = KV ? !!(await KV.get('yt-oauth-refresh')) : false;
-    // Debug: list available env var keys (values hidden)
-    const envKeys = Object.keys(context.env).filter(k => !k.startsWith('__'));
-    return new Response(JSON.stringify({ configured: true, authorized: hasRefresh, envKeys }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 

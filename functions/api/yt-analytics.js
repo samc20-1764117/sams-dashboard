@@ -44,8 +44,8 @@ export async function onRequest(context) {
     return json({ error: 'not_authorized', authUrl: '/api/yt-auth?action=start' }, 401);
   }
 
-  const CLIENT_ID = context.env.GCP_CLIENT_ID;
-  const CLIENT_SECRET = context.env.GCP_CLIENT_SECRET;
+  const CLIENT_ID = context.env.GCP_CLIENT_ID || await KV.get('oauth-client-id');
+  const CLIENT_SECRET = context.env.GCP_CLIENT_SECRET || await KV.get('oauth-client-secret');
   if (!CLIENT_ID || !CLIENT_SECRET) {
     return json({ error: 'OAuth not configured' }, 500);
   }
