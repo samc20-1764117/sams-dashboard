@@ -41,22 +41,27 @@ export async function onRequest(context) {
   const _url = new URL(context.request.url);
   const _mode = _url.searchParams.get('mode');
 
-  // ── Helper: get OAuth credentials from env vars (like YOUTUBE_API_KEY) ──
-  const _oauthCid = () => context.env.GCP_CLIENT_ID;
-  const _oauthSec = () => context.env.GCP_CLIENT_SECRET;
+  // ── Helper: get OAuth credentials — env vars first, KV fallback (dev reads from KV) ──
+  const _oauthCreds = async () => {
+    const KV = context.env.YT_CACHE;
+    const cid = context.env.GCP_CLIENT_ID || (KV && await KV.get('oauth-client-id'));
+    const csec = context.env.GCP_CLIENT_SECRET || (KV && await KV.get('oauth-client-secret'));
+    return { cid, csec };
+  };
 
   // ── OAuth status ──
   if (_mode === 'auth-status') {
     const KV = context.env.YT_CACHE;
+    const { cid } = await _oauthCreds();
     const hasRefresh = KV ? !!(await KV.get('yt-oauth-refresh')) : false;
-    return new Response(JSON.stringify({ configured: !!_oauthCid(), authorized: hasRefresh }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    return new Response(JSON.stringify({ configured: !!cid, authorized: hasRefresh }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   }
 
-  // ── OAuth start: redirect to Google consent ──
+  // ── OAuth start: redirect to Google consent (always via production) ──
   if (_mode === 'auth-start') {
-    const cid = _oauthCid();
-    if (!cid) return new Response(JSON.stringify({ error: 'GCP_CLIENT_ID env var not set in Cloudflare' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-    const redirectUri = `${_url.origin}/api/yt?mode=auth-callback`;
+    const { cid } = await _oauthCreds();
+    if (!cid) return new Response(JSON.stringify({ error: 'OAuth not configured' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    const redirectUri = 'https://sams-dashboard.pages.dev/api/yt?mode=auth-callback';
     const authUrl = 'https://accounts.google.com/o/oauth2/v2/auth?' + new URLSearchParams({
       client_id: cid, redirect_uri: redirectUri, response_type: 'code',
       scope: 'https://www.googleapis.com/auth/yt-analytics.readonly https://www.googleapis.com/auth/yt-analytics-monetary.readonly',
@@ -65,7 +70,7 @@ export async function onRequest(context) {
     return Response.redirect(authUrl, 302);
   }
 
-  // ── OAuth callback: exchange code for tokens ──
+  // ── OAuth callback: exchange code for tokens (runs on production) ──
   if (_mode === 'auth-callback') {
     const KV = context.env.YT_CACHE;
     if (!KV) return new Response('KV not bound', { status: 500, headers: corsHeaders });
@@ -73,9 +78,9 @@ export async function onRequest(context) {
     const error = _url.searchParams.get('error');
     if (error) return new Response(`<h2>Auth denied</h2><p>${error}</p>`, { headers: { 'Content-Type': 'text/html' } });
     if (!code) return new Response('Missing code', { status: 400 });
-    const cid = _oauthCid(); const csec = _oauthSec();
-    if (!cid || !csec) return new Response('GCP_CLIENT_ID / GCP_CLIENT_SECRET env vars not set', { status: 500, headers: corsHeaders });
-    const redirectUri = `${_url.origin}/api/yt?mode=auth-callback`;
+    const { cid, csec } = await _oauthCreds();
+    if (!cid || !csec) return new Response('OAuth credentials not found', { status: 500, headers: corsHeaders });
+    const redirectUri = 'https://sams-dashboard.pages.dev/api/yt?mode=auth-callback';
     const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({ code, client_id: cid, client_secret: csec, redirect_uri: redirectUri, grant_type: 'authorization_code' }).toString(),
@@ -84,6 +89,9 @@ export async function onRequest(context) {
     if (td.error) return new Response(`<h2>Token error</h2><pre>${JSON.stringify(td, null, 2)}</pre>`, { headers: { 'Content-Type': 'text/html' } });
     if (td.refresh_token) await KV.put('yt-oauth-refresh', td.refresh_token);
     if (td.access_token) await KV.put('yt-oauth-access', td.access_token, { expirationTtl: td.expires_in || 3600 });
+    // Store credentials in KV so dev/preview can use them for token refresh
+    await KV.put('oauth-client-id', cid);
+    await KV.put('oauth-client-secret', csec);
     return new Response(`<h2>Connected!</h2><p>YouTube Analytics API authorized. You can close this tab.</p><script>setTimeout(()=>window.close(),2000)</script>`, { headers: { 'Content-Type': 'text/html' } });
   }
 
@@ -103,7 +111,7 @@ export async function onRequest(context) {
     let at = await KV.get('yt-oauth-access');
     if (!at) {
       try {
-        const cid = _oauthCid(); const csec = _oauthSec();
+        const { cid, csec } = await _oauthCreds();
         if (!cid || !csec) { await KV.put('yta-cooldown', '1', { expirationTtl: 3600 }); const lg = await KV.get('yta-good', 'json'); return lg ? new Response(JSON.stringify(lg), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }) : new Response(JSON.stringify({ error: 'GCP env vars not set' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }); }
         const tr = await fetch('https://oauth2.googleapis.com/token', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ refresh_token: refreshToken, client_id: cid, client_secret: csec, grant_type: 'refresh_token' }).toString() });
         const ttd = await tr.json();
