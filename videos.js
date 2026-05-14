@@ -1647,14 +1647,14 @@ function _vidRenderAnalytics(){
     const hoverTitle=isCur&&forecast>m.val?m.key+': '+m.fmt+' actual\\nProjected: '+fmtFn(forecast):m.key+': '+m.fmt;
     if(isCur&&forecast>m.val){
       const forecastPct=Math.max(Math.round(forecast/maxMetric*70),2);
-      const actualH=pct;
-      const forecastH=forecastPct-actualH;
+      const actualFlex=pct;
+      const forecastFlex=forecastPct-actualFlex;
       trendHtml+=`<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:2px;height:100%">
         <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;width:100%">
           <span style="font-size:9px;color:var(--muted);white-space:nowrap;margin-bottom:3px">${fmtFn(forecast)}</span>
-          <div style="width:55%;display:flex;flex-direction:column;align-items:stretch" title="${hoverTitle}">
-            <div style="height:${forecastH}%;background:repeating-linear-gradient(135deg,${trendColorCur},${trendColorCur} 2px,transparent 2px,transparent 5px);border-radius:4px 4px 0 0;min-height:2px;opacity:.5"></div>
-            <div style="height:${actualH}%;background:${trendColorCur};border-radius:0 0 4px 4px;min-height:3px;box-shadow:0 0 0 1.5px rgba(120,113,145,.3)"></div>
+          <div style="width:55%;height:${forecastPct}%;display:flex;flex-direction:column;align-items:stretch" title="${hoverTitle}">
+            <div style="flex:${forecastFlex};background:repeating-linear-gradient(135deg,${trendColorCur},${trendColorCur} 2px,transparent 2px,transparent 5px);border-radius:4px 4px 0 0;min-height:2px;opacity:.5"></div>
+            <div style="flex:${actualFlex};background:${trendColorCur};border-radius:0 0 4px 4px;min-height:3px;box-shadow:0 0 0 1.5px rgba(120,113,145,.3)"></div>
           </div>
         </div>
         <span style="font-size:9px;margin-top:4px;font-weight:700;color:var(--text)">${label}</span>
@@ -1814,22 +1814,19 @@ function _vidRenderAnalytics(){
   h+=`${_kc2("_anKpiModal('videos')")}${_kStat2('Videos',String(merged.length),sparkline(_spVids))}</div>`;
   h+=`${_kc2("_anKpiModal('revenue')")}${_kStat2(_revLabel,_revValue,sparkline(_spRevReal))}</div>`;
   h+=`${_kc2("_anKpiModal('subscribers')")}${_kStat2('Subscribers',cs?_ytNum(cs.subscribers):'-')}</div>`;
+  // Topic filter — right side of KPI row
+  h+=`<div style="position:relative;display:flex;align-items:center;flex-shrink:0">
+    <input id="anTopicInput" type="text" placeholder="Filter topic" value="${_anTopicFilter==='all'?'':_esc(_anTopicFilter)}" oninput="_anTopicInputChange(this.value)" onfocus="_anTopicShowList()" style="width:130px;padding:6px 8px;border:1px solid ${_anTopicFilter!=='all'?'rgba(139,92,246,.4)':'var(--border)'};border-radius:8px;font-family:inherit;font-size:11px;background:${_anTopicFilter!=='all'?'rgba(139,92,246,.04)':'var(--bg)'};color:var(--text);outline:none">
+    ${_anTopicFilter!=='all'?'<button onclick="_anTopicFilter=\'all\';renderVideosPageKeepScroll()" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);line-height:1">✕</button>':''}
+    <div id="anTopicList" style="display:none;position:absolute;top:100%;right:0;width:200px;margin-top:2px;background:var(--bg);border:1px solid var(--border);border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,.1);z-index:100;max-height:150px;overflow-y:auto"></div>
+  </div>`;
   h+='</div>';
-  // 2-col: chart (left) | topic filter + insights (right)
+  // 2-col: chart (left) | insights (right)
   h+=`<div style="display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:12px;align-items:stretch">`;
   h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column">${trendHtml}</div>`;
-  h+=`<div style="display:flex;flex-direction:column;gap:12px">`;
-  // Topic filter
-  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:10px;padding:10px 14px;position:relative">
-    <div style="font-size:10px;color:var(--muted);margin-bottom:4px">Filter by topic</div>
-    <input id="anTopicInput" type="text" placeholder="All topics" value="${_anTopicFilter==='all'?'':_esc(_anTopicFilter)}" oninput="_anTopicInputChange(this.value)" onfocus="_anTopicShowList()" style="width:100%;padding:5px 8px;border:1px solid ${_anTopicFilter!=='all'?'rgba(139,92,246,.4)':'var(--border)'};border-radius:6px;font-family:inherit;font-size:11px;background:${_anTopicFilter!=='all'?'rgba(139,92,246,.04)':'var(--bg)'};color:var(--text);outline:none;box-sizing:border-box">
-    ${_anTopicFilter!=='all'?'<button onclick="_anTopicFilter=\'all\';renderVideosPageKeepScroll()" style="position:absolute;right:20px;bottom:14px;background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);line-height:1">✕</button>':''}
-    <div id="anTopicList" style="display:none;position:absolute;top:100%;left:0;right:0;margin-top:2px;background:var(--bg);border:1px solid var(--border);border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,.1);z-index:100;max-height:150px;overflow-y:auto"></div>
-  </div>`;
   // Strategy insights
-  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:16px 18px;overflow-y:auto;flex:1">
+  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:16px 18px;overflow-y:auto">
     <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:8px">Insights</div>${stratHtml}</div>`;
-  h+='</div>'; // close right column
   h+='</div>'; // close 2-col grid
   // Do More Like This + Try Next — full width below
   h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">';
@@ -2041,12 +2038,11 @@ function _vidShowSuggestions(q){
 }
 function _vidGoToVideo(id){
   const sg=document.getElementById('vidSearchSuggestions');if(sg)sg.style.display='none';
-  _vidSearch='';document.getElementById('vidSearchInput').value='';
-  renderVideosPage();
+  const v=(st.videos||[]).find(x=>String(x.id)===String(id));
+  if(v){const inp=document.getElementById('vidSearchInput');if(inp)inp.value=v.title||'';_vidSetSearch(v.title||'');}
   requestAnimationFrame(()=>{
     const row=document.querySelector('.vid-dash-row[data-vid="'+id+'"]')||document.querySelector('.vid-row[data-vid="'+id+'"]');
     if(row){row.scrollIntoView({block:'center',behavior:'smooth'});row.style.transition='background .2s';row.style.background='rgba(139,92,246,.12)';setTimeout(()=>row.style.background='',1200);}
-    else openVidEdit(id);
   });
 }
 function _vidPickSuggestion(text){
