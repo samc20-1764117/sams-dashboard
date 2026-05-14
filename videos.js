@@ -198,7 +198,7 @@ function _vidFiltered(){
   let vids=(st.videos||[]).filter(v=>!v.is_deleted);
   if(_vidFilter!=='all')vids=vids.filter(v=>v.status===_vidFilter);
   if(_vidGroupFilter!=='all')vids=vids.filter(v=>String(v.big_video_id)===String(_vidGroupFilter)||String(v.id)===String(_vidGroupFilter));
-  if(_vidSearch){const q=_vidSearch.toLowerCase();vids=vids.filter(v=>(v.title||'').toLowerCase().includes(q)||(v.topic||'').toLowerCase().includes(q));}
+  if(_vidSearch){const q=_vidSearch.toLowerCase();vids=vids.filter(v=>_vidSearchMatch(v,q));}
   return vids;
 }
 
@@ -333,7 +333,7 @@ function renderVideosPage(){
             <span style="font-weight:600;color:#10b981">${stats.published}</span>
           </div>
         </div>
-        <button onclick="openVidModal()" style="background:rgba(255,255,255,.85);border:1px solid var(--border);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.08);margin-right:72px" title="Add video">
+        <button onclick="openVidModal()" style="background:rgba(255,255,255,.85);border:1px solid var(--border);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.08);margin-right:64px" title="Add video">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         </button>
       </div>
@@ -418,7 +418,7 @@ function _vidRenderDashboard(){
   let ideas=all.filter(v=>v.status==='idea');
   if(_vidSearch){
     const q=_vidSearch.toLowerCase();
-    const match=v=>(v.title||'').toLowerCase().includes(q)||(v.topic||'').toLowerCase().includes(q);
+    const match=v=>_vidSearchMatch(v,q);
     upNext=upNext.filter(match);inProgress=inProgress.filter(match);ideas=ideas.filter(match);
   }
   _vidDashVids=all.filter(v=>v.status!=='idea');
@@ -1833,12 +1833,12 @@ function _vidSetSearch(q){
     if(_vidMatchIds.length)_vidScrollToMatch();
   });
 }
+function _vidSearchMatch(v,q){return(v.title||'').toLowerCase().includes(q)||(v.topic||'').toLowerCase().includes(q)||(v.status||'').replace('_',' ').toLowerCase().includes(q)||(v.playlist||'').toLowerCase().includes(q);}
 function _vidBuildMatches(){
   _vidMatchIds=[];
   if(!_vidSearch)return;
   const q=_vidSearch.toLowerCase();
-  const vids=(st.videos||[]).filter(v=>!v.is_deleted);
-  vids.forEach(v=>{if((v.title||'').toLowerCase().includes(q)||(v.topic||'').toLowerCase().includes(q))_vidMatchIds.push(String(v.id));});
+  (st.videos||[]).filter(v=>!v.is_deleted).forEach(v=>{if(_vidSearchMatch(v,q))_vidMatchIds.push(String(v.id));});
 }
 function _vidSearchNav(dir){
   if(!_vidMatchIds.length)return;
@@ -1864,19 +1864,33 @@ function _vidShowSuggestions(q){
   if(!q||q.length<2){sg.style.display='none';return;}
   const lq=q.toLowerCase();
   const vids=(st.videos||[]).filter(v=>!v.is_deleted);
-  const topics=new Set(),titles=[];
-  vids.forEach(v=>{
-    if(v.topic&&v.topic.toLowerCase().includes(lq))topics.add(v.topic);
-    if(v.title&&v.title.toLowerCase().includes(lq))titles.push(v.title);
-  });
-  const suggestions=[...topics].slice(0,3).map(t=>({type:'topic',text:t}));
-  titles.slice(0,5).forEach(t=>{if(!suggestions.find(s=>s.text===t))suggestions.push({type:'title',text:t});});
+  // Collect unique values by category
+  const seen=new Set();
+  const suggestions=[];
+  const add=(type,text)=>{const k=type+':'+text;if(seen.has(k))return;seen.add(k);suggestions.push({type,text});};
+  // Statuses first (exact-ish matches are most useful)
+  const statuses=['idea','up_next','in_progress','published','backup'];
+  statuses.forEach(s=>{if(s.includes(lq)||s.replace('_',' ').includes(lq))add('status',s.replace('_',' '));});
+  // Topics (deduplicated, sorted by frequency)
+  const topicCounts={};
+  vids.forEach(v=>{if(v.topic&&v.topic.toLowerCase().includes(lq)){topicCounts[v.topic]=(topicCounts[v.topic]||0)+1;}});
+  Object.entries(topicCounts).sort((a,b)=>b[1]-a[1]).slice(0,4).forEach(([t])=>add('topic',t));
+  // Playlists
+  const playlists=new Set();
+  vids.forEach(v=>{if(v.playlist&&v.playlist.toLowerCase().includes(lq))playlists.add(v.playlist);});
+  [...playlists].slice(0,3).forEach(p=>add('playlist',p));
+  // Titles (starts-with first, then contains)
+  const starts=[],contains=[];
+  vids.forEach(v=>{if(!v.title)return;const lt=v.title.toLowerCase();if(lt.startsWith(lq))starts.push(v.title);else if(lt.includes(lq))contains.push(v.title);});
+  [...starts,...contains].slice(0,4).forEach(t=>add('title',t));
   if(!suggestions.length){sg.style.display='none';return;}
+  const badgeColors={status:'#8b5cf6',topic:'#f59e0b',playlist:'#10b981',title:'var(--muted)'};
   sg.style.display='block';
-  sg.innerHTML=suggestions.slice(0,6).map(s=>{
+  sg.innerHTML=suggestions.slice(0,8).map(s=>{
     const hl=_vidHighlight(s.text,lq);
-    const badge=s.type==='topic'?'<span style="font-size:9px;color:var(--muted);margin-right:6px">topic</span>':'';
-    return'<div class="vid-sg-item" onmousedown="_vidPickSuggestion(\''+_esc(s.text.replace(/'/g,"\\'"))+'\')" style="padding:6px 10px;font-size:12px;cursor:pointer;display:flex;align-items:center">'+badge+hl+'</div>';
+    const badge='<span style="font-size:9px;color:'+badgeColors[s.type]+';margin-right:6px;min-width:38px;display:inline-block">'+s.type+'</span>';
+    const safe=s.text.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    return'<div class="vid-sg-item" onmousedown="_vidPickSuggestion(\''+safe+'\')" style="padding:5px 10px;font-size:12px;cursor:pointer;display:flex;align-items:center">'+badge+hl+'</div>';
   }).join('');
 }
 function _vidPickSuggestion(text){
