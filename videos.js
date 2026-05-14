@@ -945,13 +945,13 @@ function _vidRenderTable(){
   return`<div>
     <table class="vid-tbl" style="table-layout:fixed;width:100%">
       <thead><tr>
-        <th style="width:450px;${thStyle}" onclick="vidTblSort('title')">Title${_vidSortArrow('title')}</th>
+        <th style="width:500px;${thStyle}" onclick="vidTblSort('title')">Title${_vidSortArrow('title')}</th>
         ${VID_STEPS.map(s=>`<th style="width:22px;text-align:center;font-size:9px" title="${VID_STEP_LABELS[s]}">${VID_STEP_LABELS[s].length<=5?VID_STEP_LABELS[s]:VID_STEP_LABELS[s].slice(0,2)}</th>`).join('')}
         <th style="width:62px;text-align:right;${thStyle}" onclick="vidTblSort('posted')">Posted${_vidSortArrow('posted')}</th>
         <th style="width:50px;text-align:right;${thStyle}" onclick="vidTblSort('duration')">Dur${_vidSortArrow('duration')}</th>
         <th style="width:28px"></th>
         <th style="width:80px;${thStyle}" onclick="vidTblSort('status')">Status${_vidSortArrow('status')}</th>
-        ${_ytMatch?'<th style="width:80px;text-align:right;font-size:9px">Views</th><th style="width:50px;text-align:right;font-size:9px">Likes</th>':''}
+        ${_ytMatch?'<th style="width:70px;text-align:right;font-size:9px">Views</th><th style="width:50px;text-align:right;font-size:9px">Likes</th><th style="width:50px;text-align:right;font-size:9px">Comments</th>':''}
         <th style="width:30px"><button onclick="_vidToggleCompleted()" style="font-size:12px;font-weight:700;width:20px;height:20px;line-height:18px;text-align:center;border-radius:5px;border:1.5px solid var(--border);background:${_vidShowCompleted?'rgba(14,165,233,.12)':'var(--bg)'};color:${_vidShowCompleted?'#0ea5e9':'var(--muted)'};cursor:pointer;vertical-align:middle" title="${_vidShowCompleted?'Hide':'Show'} Completed">${_vidShowCompleted?'−':'+'}</button></th>
       </tr></thead>
       <tbody>${groupedHtml}</tbody>
@@ -1018,7 +1018,7 @@ function _vidRow(v,isChild,postMap){
     <td data-field="duration_minutes" style="text-align:right;font-size:11px;color:var(--muted)">${durStr}</td>
     <td style="text-align:right;font-size:9px;color:var(--muted);font-weight:500">${(v.status==='in_progress'||v.status==='up_next')&&_tblPct>0&&_tblPct<100?_tblPct+'%':''}</td>
     <td data-field="status"><span class="vid-status-pill" style="background:${sc}12;color:${sc}">${VID_STATUS_LABELS[v.status]||v.status}</span></td>
-    ${_ytMatch?(()=>{const ym=_ytForVid(sid);return ym?'<td style="text-align:right;font-size:11px;color:var(--muted)">'+_ytNum(ym.views)+'</td><td style="text-align:right;font-size:11px;color:var(--muted)">'+_ytNum(ym.likes)+'</td>':'<td></td><td></td>';})():''}
+    ${_ytMatch?(()=>{const ym=_ytForVid(sid);return ym?'<td style="text-align:right;font-size:11px;color:var(--muted)">'+_ytNum(ym.views)+'</td><td style="text-align:right;font-size:11px;color:var(--muted)">'+_ytNum(ym.likes)+'</td><td style="text-align:right;font-size:11px;color:var(--muted)">'+_ytNum(ym.comments)+'</td>':'<td></td><td></td><td></td>';})():''}
     <td><button class="vid-del" data-vid="${sid}">✕</button></td>
   </tr>`;
 }
