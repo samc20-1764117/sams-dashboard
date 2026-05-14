@@ -3784,44 +3784,125 @@ function dropOnTB(e,ds,h,row,smOverride){
   }
   if(dragId.startsWith('wrrule::')){
     const ruleId=dragId.split('::')[1];
-    const r=st.wrRules.find(x=>String(x.id)===String(ruleId));
-    if(!r){dragId=null;return;}
-    if(st.blocks.some(b=>b.ds===ds&&(String(b.ruleId)===String(ruleId)||String(b.recId)===String(ruleId)))){dragId=null;showToast('Already in time block','#6b7280',2000);return;}
+    const _wrSid='wrrule-'+ruleId;
+    const _isMultiWR=selectedTasks.has(_wrSid)&&selectedTasks.size>1;
     const wkKey=wkKeyFromDs(ds);
-    const prevDateOv=r._dateOverrides?{...r._dateOverrides}:{};
-    if(!r._dateOverrides)r._dateOverrides={};
-    r._dateOverrides[wkKey]=ds;
-    const blk={id:crypto.randomUUID(),title:r.name,ds,sm,dur:30,cat:'Recurring',ruleId:String(r.id),recId:String(r.id)};
-    st.blocks.push(blk);dragId=null;save();renderAll();renderRecOv();
-    sbSaveBlock(blk);
-    sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));
+    const _addedBlks=[];const _undoOps=[];
+    let _curSm=sm;
+    // Collect all selected items to add
+    const _allSids=_isMultiWR?[...selectedTasks]:[_wrSid];
+    for(const sid of _allSids){
+      if(sid.startsWith('wrrule-')||sid.startsWith('wrrule-virt-')){
+        const rid=sid.replace('wrrule-virt-','').replace('wrrule-','');
+        const r=st.wrRules.find(x=>String(x.id)===String(rid));
+        if(!r)continue;
+        if(st.blocks.some(b=>b.ds===ds&&(String(b.ruleId)===String(rid)||String(b.recId)===String(rid))))continue;
+        const prevDateOv=r._dateOverrides?{...r._dateOverrides}:{};
+        if(!r._dateOverrides)r._dateOverrides={};
+        r._dateOverrides[wkKey]=ds;
+        const blk={id:crypto.randomUUID(),title:r.name,ds,sm:_curSm,dur:30,cat:'Recurring',ruleId:String(r.id),recId:String(r.id)};
+        st.blocks.push(blk);_addedBlks.push(blk);sbSaveBlock(blk);
+        sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},`?id=eq.${rid}`);
+        _undoOps.push(()=>{r._dateOverrides=prevDateOv;sbReq('PATCH','wr_recurring_rules',{date_overrides:prevDateOv},`?id=eq.${rid}`);});
+        _curSm+=30;
+      } else if(sid.startsWith('wrec-')){
+        const rid=sid.replace('wrec-','');
+        const r=st.recurring.find(x=>String(x.id)===String(rid));
+        if(!r)continue;
+        if(st.blocks.some(b=>b.ds===ds&&String(b.recId)===String(rid)))continue;
+        const prevDateOv=r._dateOverrides?{...r._dateOverrides}:{};
+        if(!r._dateOverrides)r._dateOverrides={};
+        r._dateOverrides[wkKey]=ds;
+        const _dur=autoDur(r.name,'Recurring');
+        const blk={id:crypto.randomUUID(),title:r.name,ds,sm:_curSm,dur:_dur,cat:'Recurring',recId:String(r.id)};
+        st.blocks.push(blk);_addedBlks.push(blk);sbSaveBlock(blk);
+        sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));
+        _undoOps.push(()=>{r._dateOverrides=prevDateOv;sbReq('PATCH','wr_recurring_rules',{date_overrides:prevDateOv},recQs(r.id));});
+        _curSm+=_dur;
+      } else {
+        const t=st.tasks.find(x=>String(x.id)===sid);
+        if(!t||t._virtual)continue;
+        const _tid=String(t.id);
+        if(st.blocks.find(b=>b.taskId===_tid&&b.ds===ds))continue;
+        const _dur=autoDur(t.name,t.category||'Home');
+        const prevDate=t.due_date;
+        const blk={id:crypto.randomUUID(),title:t.name,ds,sm:_curSm,dur:_dur,cat:t.category||'Home',taskId:_tid};
+        if((t.due_date||'').split('T')[0]!==ds){t.due_date=ds;sbReq('PATCH','tasks',{due_date:ds},`?id=eq.${t.id}`);}
+        st.blocks.push(blk);_addedBlks.push(blk);sbSaveBlock(blk);
+        _undoOps.push(()=>{t.due_date=prevDate||null;sbReq('PATCH','tasks',{due_date:prevDate||null},`?id=eq.${t.id}`);});
+        _curSm+=_dur;
+      }
+    }
+    if(!_addedBlks.length){dragId=null;showToast('Already in time block','#6b7280',2000);return;}
+    dragId=null;selectedTasks.clear();save();renderAll();renderRecOv();
+    const _blkIds=_addedBlks.map(b=>b.id);
     pushUndo(()=>{
-      st.blocks=st.blocks.filter(b=>b.id!==blk.id);
-      r._dateOverrides=prevDateOv;
-      sbDeleteBlock(blk.id);save();renderAll();renderRecOv();
-      sbReq('PATCH','wr_recurring_rules',{date_overrides:prevDateOv},recQs(r.id));
-    },'Added to time block');
+      st.blocks=st.blocks.filter(b=>!_blkIds.includes(b.id));
+      _blkIds.forEach(id=>sbDeleteBlock(id));
+      _undoOps.forEach(fn=>fn());
+      save();renderAll();renderRecOv();
+    },_addedBlks.length>1?`Added ${_addedBlks.length} to time block`:'Added to time block');
     return;
   }
   if(dragId.startsWith('wrec::')){
     const recId=dragId.split('::')[1];
-    const r=st.recurring.find(x=>String(x.id)===String(recId));
-    if(!r){dragId=null;return;}
-    if(st.blocks.some(b=>b.ds===ds&&String(b.recId)===String(recId))){dragId=null;showToast('Already in time block','#6b7280',2000);return;}
+    const _wrecSid='wrec-'+recId;
+    const _isMultiWrec=selectedTasks.has(_wrecSid)&&selectedTasks.size>1;
     const wkKey=wkKeyFromDs(ds);
-    const prevDateOv=r._dateOverrides?{...r._dateOverrides}:{};
-    if(!r._dateOverrides)r._dateOverrides={};
-    r._dateOverrides[wkKey]=ds;
-    const blk={id:crypto.randomUUID(),title:r.name,ds,sm,dur:autoDur(r.name,'Recurring'),cat:'Recurring',recId:String(r.id)};
-    st.blocks.push(blk);dragId=null;save();renderAll();renderRecOv();renderWeeklyPage();
-    sbSaveBlock(blk);
-    sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));
+    const _addedBlks=[];const _undoOps=[];
+    let _curSm=sm;
+    const _allSids=_isMultiWrec?[...selectedTasks]:[_wrecSid];
+    for(const sid of _allSids){
+      if(sid.startsWith('wrec-')){
+        const rid=sid.replace('wrec-','');
+        const r=st.recurring.find(x=>String(x.id)===String(rid));
+        if(!r)continue;
+        if(st.blocks.some(b=>b.ds===ds&&String(b.recId)===String(rid)))continue;
+        const prevDateOv=r._dateOverrides?{...r._dateOverrides}:{};
+        if(!r._dateOverrides)r._dateOverrides={};
+        r._dateOverrides[wkKey]=ds;
+        const _dur=autoDur(r.name,'Recurring');
+        const blk={id:crypto.randomUUID(),title:r.name,ds,sm:_curSm,dur:_dur,cat:'Recurring',recId:String(r.id)};
+        st.blocks.push(blk);_addedBlks.push(blk);sbSaveBlock(blk);
+        sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));
+        _undoOps.push(()=>{r._dateOverrides=prevDateOv;sbReq('PATCH','wr_recurring_rules',{date_overrides:prevDateOv},recQs(r.id));});
+        _curSm+=_dur;
+      } else if(sid.startsWith('wrrule-')||sid.startsWith('wrrule-virt-')){
+        const rid=sid.replace('wrrule-virt-','').replace('wrrule-','');
+        const r=st.wrRules.find(x=>String(x.id)===String(rid));
+        if(!r)continue;
+        if(st.blocks.some(b=>b.ds===ds&&(String(b.ruleId)===String(rid)||String(b.recId)===String(rid))))continue;
+        const prevDateOv=r._dateOverrides?{...r._dateOverrides}:{};
+        if(!r._dateOverrides)r._dateOverrides={};
+        r._dateOverrides[wkKey]=ds;
+        const blk={id:crypto.randomUUID(),title:r.name,ds,sm:_curSm,dur:30,cat:'Recurring',ruleId:String(r.id),recId:String(r.id)};
+        st.blocks.push(blk);_addedBlks.push(blk);sbSaveBlock(blk);
+        sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},`?id=eq.${rid}`);
+        _undoOps.push(()=>{r._dateOverrides=prevDateOv;sbReq('PATCH','wr_recurring_rules',{date_overrides:prevDateOv},`?id=eq.${rid}`);});
+        _curSm+=30;
+      } else {
+        const t=st.tasks.find(x=>String(x.id)===sid);
+        if(!t||t._virtual)continue;
+        const _tid=String(t.id);
+        if(st.blocks.find(b=>b.taskId===_tid&&b.ds===ds))continue;
+        const _dur=autoDur(t.name,t.category||'Home');
+        const prevDate=t.due_date;
+        const blk={id:crypto.randomUUID(),title:t.name,ds,sm:_curSm,dur:_dur,cat:t.category||'Home',taskId:_tid};
+        if((t.due_date||'').split('T')[0]!==ds){t.due_date=ds;sbReq('PATCH','tasks',{due_date:ds},`?id=eq.${t.id}`);}
+        st.blocks.push(blk);_addedBlks.push(blk);sbSaveBlock(blk);
+        _undoOps.push(()=>{t.due_date=prevDate||null;sbReq('PATCH','tasks',{due_date:prevDate||null},`?id=eq.${t.id}`);});
+        _curSm+=_dur;
+      }
+    }
+    if(!_addedBlks.length){dragId=null;showToast('Already in time block','#6b7280',2000);return;}
+    dragId=null;selectedTasks.clear();save();renderAll();renderRecOv();renderWeeklyPage();
+    const _blkIds=_addedBlks.map(b=>b.id);
     pushUndo(()=>{
-      st.blocks=st.blocks.filter(b=>b.id!==blk.id);
-      r._dateOverrides=prevDateOv;
-      sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));
-      sbDeleteBlock(blk.id);save();renderAll();renderRecOv();renderWeeklyPage();
-    },'Added to time block');
+      st.blocks=st.blocks.filter(b=>!_blkIds.includes(b.id));
+      _blkIds.forEach(id=>sbDeleteBlock(id));
+      _undoOps.forEach(fn=>fn());
+      save();renderAll();renderRecOv();renderWeeklyPage();
+    },_addedBlks.length>1?`Added ${_addedBlks.length} to time block`:'Added to time block');
     return;
   } else if(dragId.startsWith('shop::')){
     const shopId=dragId.split('::')[1];
