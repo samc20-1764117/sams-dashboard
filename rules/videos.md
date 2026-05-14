@@ -122,6 +122,11 @@
 - **Endpoints**: `/api/yt-auth` (OAuth flow), `/api/yt-analytics` (data fetch).
 - **Auth**: OAuth 2.0 with `yt-analytics.readonly` + `yt-analytics-monetary.readonly` scopes. Refresh token stored in KV (`yt-oauth-refresh`), access token cached with TTL (`yt-oauth-access`).
 - **Secrets**: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` (in Cloudflare dashboard).
-- **Data**: `_ytAnalytics` global. Monthly: views, actual revenue, likes, comments, subscribersGained, avgViewDuration. Top 50 videos by revenue. Cached in KV for 24hr (`yt-analytics-data`). Also cached in `localStorage._ytAnalyticsCache`.
+- **Data**: `_ytAnalytics` global. Monthly: views, actual revenue, likes, comments, subscribersGained, avgViewDuration. Top 50 videos by revenue.
+- **Server KV cache (3 keys, mirrors yt.js pattern)**:
+  - `yta-fresh` (24hr TTL) — serves cached data, prevents API calls. Only 1 fetch per day.
+  - `yta-good` (no TTL) — permanent copy of last successful response. Fallback when API is down.
+  - `yta-cooldown` (2hr for quota, 10min for other errors, 1hr for token errors) — prevents retrying failed calls.
+- **Client safeguards**: `_ytAnalyticsFetched` flag set BEFORE fetch — one fetch per page load, period. Also caches in `localStorage._ytAnalyticsCache` as offline fallback. Errors silently caught, never retried.
 - **Revenue note**: Unlike the Data API view-based estimates, this gives **actual monthly channel earnings** — real "how much I earned in January" data, not per-video lifetime attribution.
-- **Quota**: YouTube Analytics API has separate quota from Data API. ~200 queries/day default. We use 2 queries per page load (monthly + top videos), cached 24hr. No risk of quota issues.
+- **Quota**: YouTube Analytics API has separate quota from Data API. ~200 queries/day default. We use 2 queries per fetch, cached 24hr in KV. Max 1 actual API call per day. If quota hit, cooldown + permanent fallback ensures dashboard always shows data.
