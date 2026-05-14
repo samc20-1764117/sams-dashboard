@@ -155,6 +155,17 @@ export async function onRequest(context) {
       videos = videos.concat(mapped);
     }
 
+    // Build set of long-form video IDs (>60s) to filter out shorts/posts
+    const longFormIds = new Set();
+    videos.forEach(v => {
+      const dur = v.duration || '';
+      const m = dur.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+      if (m) {
+        const secs = (Number(m[1] || 0) * 3600) + (Number(m[2] || 0) * 60) + Number(m[3] || 0);
+        if (secs > 60) longFormIds.add(v.id);
+      }
+    });
+
     // Fetch all comment threads to find unreplied (1 unit per call, 100 per page, max 20 pages = 20 units)
     let unrepliedComments = [];
     let commentPageToken = '';
@@ -169,6 +180,7 @@ export async function onRequest(context) {
         (ctData.items || []).forEach(t => {
           if (t.snippet.totalReplyCount === 0) {
             const c = t.snippet.topLevelComment.snippet;
+            if (!longFormIds.has(c.videoId)) return; // skip shorts/posts
             unrepliedComments.push({
               id: t.id,
               videoId: c.videoId,
