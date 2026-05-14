@@ -1587,7 +1587,7 @@ function _vidRenderAnalytics(){
   // Date perspective toggle — "By Month" (actual calendar month activity) vs "By Video" (attributed to post date)
   // Available for all metrics except "videos" (count is inherently by post date), requires Analytics API data
   const _showDateToggle=_hasRealRev&&_anTrendMetric!=='videos';
-  const _dateToggle=_showDateToggle?`<div style="width:1px;height:18px;background:rgba(120,113,145,.3);margin:0 4px;flex-shrink:0"></div><div style="display:flex;gap:3px;align-items:center"><button onclick="_anToggleRevMode()" style="padding:3px 8px;border:1px solid ${_anRevMode==='earned'?'rgba(120,113,145,.4)':'var(--border)'};border-radius:5px;background:${_anRevMode==='earned'?'rgba(120,113,145,.15)':'transparent'};color:${_anRevMode==='earned'?'var(--text)':'var(--muted)'};font-size:10px;font-family:inherit;font-weight:${_anRevMode==='earned'?'600':'400'};cursor:pointer">By Month</button><button onclick="_anToggleRevMode()" style="padding:3px 8px;border:1px solid ${_anRevMode==='posted'?'rgba(120,113,145,.4)':'var(--border)'};border-radius:5px;background:${_anRevMode==='posted'?'rgba(120,113,145,.15)':'transparent'};color:${_anRevMode==='posted'?'var(--text)':'var(--muted)'};font-size:10px;font-family:inherit;font-weight:${_anRevMode==='posted'?'600':'400'};cursor:pointer">By Video</button></div>`:'';
+  const _dateToggle=_showDateToggle?`<div style="width:1px;height:18px;background:rgba(120,113,145,.3);margin:0 4px;flex-shrink:0"></div><div style="display:flex;gap:3px;align-items:center"><button onclick="_anToggleRevMode()" style="padding:3px 8px;border:1px solid ${_anRevMode==='earned'?'rgba(120,113,145,.4)':'var(--border)'};border-radius:5px;background:${_anRevMode==='earned'?'rgba(120,113,145,.15)':'transparent'};color:${_anRevMode==='earned'?'var(--text)':'var(--muted)'};font-size:10px;font-family:inherit;font-weight:${_anRevMode==='earned'?'600':'400'};cursor:pointer">Actual</button><button onclick="_anToggleRevMode()" style="padding:3px 8px;border:1px solid ${_anRevMode==='posted'?'rgba(120,113,145,.4)':'var(--border)'};border-radius:5px;background:${_anRevMode==='posted'?'rgba(120,113,145,.15)':'transparent'};color:${_anRevMode==='posted'?'var(--text)':'var(--muted)'};font-size:10px;font-family:inherit;font-weight:${_anRevMode==='posted'?'600':'400'};cursor:pointer">By Video</button></div>`:'';
   let trendHtml=`<div style="display:flex;align-items:center;gap:6px;margin-bottom:12px">
     <div style="display:flex;gap:3px;align-items:center">${tBtn('revenue','Revenue','metric')}${tBtn('views','Views','metric')}${tBtn('likes','Likes','metric')}${tBtn('engagement','Engagement','metric')}${tBtn('videos','Videos','metric')}</div>
     <div style="width:1px;height:18px;background:rgba(120,113,145,.3);margin:0 4px;flex-shrink:0"></div>
@@ -1596,17 +1596,17 @@ function _vidRenderAnalytics(){
     <div style="flex:1"></div>
     <span style="font-size:10px;color:var(--muted);white-space:nowrap;line-height:1">${summaryText}</span>
   </div>`;
-  trendHtml+='<div style="display:flex;align-items:flex-end;gap:4px;flex:1;min-height:0">';
+  trendHtml+='<div style="display:flex;align-items:flex-end;gap:8px;flex:1;min-height:0;padding:0 4px">';
   metricVals.forEach(m=>{
-    const pct=Math.max(Math.round(m.val/maxMetric*100),3);
+    const pct=Math.max(Math.round(m.val/maxMetric*75),2);
     const isCur=m.key===_curPeriod;
     const label=_anTrendPeriod==='yearly'?m.key:(_moAbbr[parseInt(m.key.slice(5))]||m.key.slice(5));
-    trendHtml+=`<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:2px;height:100%">
+    trendHtml+=`<div style="flex:1;max-width:48px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:2px;height:100%">
       <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;width:100%">
-        <span style="font-size:9px;color:var(--muted);white-space:nowrap;margin-bottom:2px">${m.fmt}</span>
-        <div style="width:100%;height:${pct}%;background:${isCur?trendColorCur:trendColor};border-radius:3px;min-height:3px${isCur?';box-shadow:0 0 0 1.5px rgba(120,113,145,.3)':''}" title="${m.key}: ${m.fmt}"></div>
+        <span style="font-size:9px;color:var(--muted);white-space:nowrap;margin-bottom:3px">${m.fmt}</span>
+        <div style="width:70%;height:${pct}%;background:${isCur?trendColorCur:trendColor};border-radius:4px;min-height:3px${isCur?';box-shadow:0 0 0 1.5px rgba(120,113,145,.3)':''}" title="${m.key}: ${m.fmt}"></div>
       </div>
-      <span style="font-size:9px;${isCur?'font-weight:700;color:var(--text)':'color:var(--muted)'}">${label}</span>
+      <span style="font-size:9px;margin-top:4px;${isCur?'font-weight:700;color:var(--text)':'color:var(--muted)'}">${label}</span>
     </div>`;
   });
   trendHtml+='</div>';
