@@ -14,11 +14,12 @@
 - **Helper functions**: `_vidIsComplete(v)` checks single video completeness. `_vidAllChildrenComplete(bigId)` checks all children of a B video.
 - **Date colors**: no date=muted, published+future/today=green, published+past=black, all core done=green, has date=yellow.
 
-### Views (4 tabs)
+### Views (4 tabs: Current → All Details → Analytics → Monthly)
 - **Current** (`_vidView='dashboard'`): CSS grid layout (`2fr 1fr`) — Current + Ideas sharing same column tracks for aligned divider. Up Next/In Progress/Group/Single have solid white (`#fff`) sub-headers with `display:flex;align-items:center`. No count next to "Current" header. Ideas side has Group/Single sub-sections with white bullets (`●`). No `+` button on idea rows. B→L grouping with white `└` connector. Drag between zones changes status. Standalone videos (no `big_video_id`) cannot be dragged into groups. Container uses liquid glass style (`rgba(255,255,255,.32)` with `backdrop-filter:blur(28px)`). B videos at `rgba(255,255,255,.50)`. Header includes 28px spacer for % column + 42px for YT views.
 - **All Details** (`_vidView='table'`): full table with sortable headers (click asc, click desc, click reset). `table-layout:fixed`. Sticky thead. Default sort: post_date asc with B→L grouping. Ideas excluded from this view. Column order: Title (450px) → Stages (22px each) → Posted → Dur → % → Status (80px). Status pills use `VID_STATUS_LABELS` with lighter color backgrounds. B videos at `rgba(255,255,255,.50)`. Stage columns are narrower than Current tab (22px vs 28px).
-- **Videos by Progress** (`_vidView='board'`): kanban by status. Drag between columns.
+- **Analytics** (`_vidView='analytics'`): see Analytics Tab section below.
 - **Monthly** (`_vidView='monthly'`): calendar grid by `post_date`. Nav with `_vidMonthOffset`.
+- **Board** (`_vidView='board'`): kanban by status — function still exists but tab removed from UI.
 
 ### Numbering & Sorting
 - **Numbering** (`_vidSeqMap` + `_vidOrderedIds`): only videos with `post_date` get a number. No date = no number. Ideas and in-progress without a posted date have no number.
@@ -59,6 +60,7 @@
 - `n` — open add modal
 - `e` — expand (show completed, table view only)
 - `c` — collapse (hide completed, table view only)
+- `ArrowLeft/Right` — cycle tabs (dashboard → table → analytics → monthly)
 - `ArrowUp` — scroll to top
 - `ArrowDown` — scroll to bottom
 - `Delete/Backspace` — delete selected
@@ -84,6 +86,18 @@
 - `cycleVidStep(id,step)` — toggles step with auto-publish logic
 - `vidCellEdit(td,id,field)` — inline cell editing
 - `vidCellClick(e,id)` — routes to inline edit (table) or selection (other views)
+
+### Analytics Tab (`_vidView='analytics'`)
+- **Data**: merges Supabase `st.videos` (published + post_date) with `_ytMatch` YT stats. Filters out shorts/posts using `_ytDurSec()` (only videos >60s). All computation is client-side from already-fetched data — zero additional API calls.
+- **State**: `_anTrendMetric` (revenue|views|likes|engagement|videos), `_anTrendPeriod` (monthly|yearly). Toggled via `_anSetTrend(metric,period)`.
+- **Layout** (top → bottom by importance):
+  1. **KPIs** (6 cols): Total Views, Avg Views/Video, Engagement, Videos, Est. Revenue, Subscribers. Each has inline sparkline (left of value, 44x16 SVG) colored green/red based on trend direction. Sub-text shows this-month value where applicable. All values use `var(--text)` — no competing colors.
+  2. **Trend Chart (2/3) + Strategy Insights (1/3)**: Bar chart with metric/period toggle buttons (subtle grey highlight, not solid fill). Strategy panel ("What Makes Your Videos Win") shows: best duration, best publish day, big vs small multiplier, best title length, top topic, most engaging topic, momentum (90-day vs older), winner profile.
+  3. **Money Makers + Do More Like This** (2 cols): Top earners by est. revenue. Do More Like This scored by views × engagement rate.
+  4. **Fastest Growing + Stars & Sleepers + Most Engaged** (3 cols): Velocity (views/day), over/underperformers vs avg, highest engagement rate.
+- **Color philosophy**: minimal. Sparklines use green/red as directional indicators only. Stars & Sleepers keeps green/red for over/under. All other values use default text color. Strategy panel uses emoji icons, no colored text.
+- **Revenue**: estimated at `$4 RPM` (configurable via `rpm` const). Applied to total and per-video.
+- **Key functions**: `_vidRenderAnalytics()`, `_anSetTrend()`, `_ytDurSec(iso)`, `sparkline(vals)`, `stat()`, `card()`, `bar()`.
 
 ### YouTube Analytics Integration
 - **Endpoint**: `/api/yt` — Cloudflare Pages Function at `functions/api/yt.js`.
