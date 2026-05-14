@@ -306,7 +306,7 @@ function renderVideosPage(){
           </div>
           <div style="background:rgba(120,113,145,.06);border-radius:20px;padding:4px 10px 4px 8px;display:flex;align-items:center;gap:4px;font-size:12px">
             <span style="font-weight:700;color:#999;font-size:13px">$</span>
-            <span style="font-weight:600;color:#555">~${_ytNum(Math.round(_ytData.channelStats.totalViews/1000*4))}</span>
+            <span style="font-weight:600;color:#555">${_ytAnalytics&&_ytAnalytics.monthly?_ytNum(Math.round(_ytAnalytics.monthly.reduce((s,m)=>s+m.revenue,0))):'~'+_ytNum(Math.round(_ytData.channelStats.totalViews/1000*4))}</span>
           </div>
           <div style="width:1px;height:16px;background:rgba(210,205,228,.4);margin:0 2px"></div>
           `:''}
@@ -1387,7 +1387,8 @@ function _anKpiModal(metric){
   html+='</table>';
   // Top contributors
   let topContrib=[];
-  if(metric==='revenue')topContrib=merged.slice(0,5).map(v=>({...v,_fmt:'~$'+_ytNum(Math.round(v.views/1000*rpm))}));
+  const _vidRevMap={};if(_ytAnalytics&&_ytAnalytics.topVideos)_ytAnalytics.topVideos.forEach(v=>{_vidRevMap[v.videoId]=v.revenue;});
+  if(metric==='revenue')topContrib=merged.map(v=>{const r=v.ytId&&_vidRevMap[v.ytId]!=null?_vidRevMap[v.ytId]:Math.round(v.views/1000*rpm);return{...v,_rev:r};}).sort((a,b)=>b._rev-a._rev).slice(0,5).map(v=>({...v,_fmt:(_hasReal?'':'~')+'$'+_ytNum(v._rev)}));
   else if(metric==='avg'||metric==='views'||metric==='subscribers')topContrib=merged.slice(0,5).map(v=>({...v,_fmt:_ytNum(v.views)+' views'}));
   else if(metric==='videos')topContrib=[];
   if(topContrib.length){
@@ -1491,6 +1492,11 @@ function _vidRenderAnalytics(){
     _ytAnalytics.monthly.forEach(m=>{_realRevByMonth[m.month]=m.revenue;_realRevTotal+=m.revenue;});
   }
   const _realRevThisMonth=_hasRealRev?(_realRevByMonth[_thisMonth]||0):null;
+  // Per-video real revenue map (ytId → revenue) from Analytics API topVideos
+  const _vidRev={};
+  if(_ytAnalytics&&_ytAnalytics.topVideos)_ytAnalytics.topVideos.forEach(v=>{_vidRev[v.videoId]=v.revenue;});
+  // Attach real revenue to merged videos
+  if(Object.keys(_vidRev).length) merged.forEach(v=>{if(v.ytId&&_vidRev[v.ytId]!=null)v.realRev=_vidRev[v.ytId];});
   const _spViews=_kpiLast6.map(([,d])=>d.views);
   const _spAvg=_kpiLast6.map(([,d])=>d.count?Math.round(d.views/d.count):0);
   const _spRev=_kpiLast6.map(([,d])=>Math.round(d.views/1000*rpm));
@@ -1632,28 +1638,32 @@ function _vidRenderAnalytics(){
   const _secHead=(text)=>`<div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-top:8px;margin-bottom:2px">${text}</div>`;
   let stratHtml='';
 
+  // ── Revenue helper: real per-video revenue or RPM estimate ──
+  const _vRev=(v)=>v.realRev!=null?v.realRev:Math.round(v.views/1000*rpm);
+  const _revPfx=_hasRealRev?'':'~';
+
   // ── WHAT TO MAKE (topic + format) ──
   stratHtml+=_secHead('What to make');
   // Top earning topic
   if(topics.length){
-    const topicsByRev=topics.map(t=>({...t,estRev:Math.round(t.avgViews*t.count/1000*rpm),revPerVid:Math.round(t.avgViews/1000*rpm)})).sort((a,b)=>b.estRev-a.estRev);
-    _anTipStore['topicRev']={title:'Revenue by topic (total est.)',html:_miniBar(topicsByRev.slice(0,8),'estRev','topic',v=>'$'+_ytNum(v))};
-    if(topicsByRev[0]) stratHtml+=_row('<b>'+_ytEsc(topicsByRev[0].topic)+'</b> earns most (~$'+_ytNum(topicsByRev[0].estRev)+' total from '+topicsByRev[0].count+' vids)','topicRev');
+    const topicsByRev=topics.map(t=>{const vids=merged.filter(v=>v.topic===t.topic);const totalRev=vids.reduce((s,v)=>s+_vRev(v),0);return{...t,estRev:totalRev,revPerVid:Math.round(totalRev/t.count)};}).sort((a,b)=>b.estRev-a.estRev);
+    _anTipStore['topicRev']={title:(_hasRealRev?'':'Est. ')+'Revenue by topic (total)',html:_miniBar(topicsByRev.slice(0,8),'estRev','topic',v=>'$'+_ytNum(v))};
+    if(topicsByRev[0]) stratHtml+=_row('<b>'+_ytEsc(topicsByRev[0].topic)+'</b> earns most ('+_revPfx+'$'+_ytNum(topicsByRev[0].estRev)+' total from '+topicsByRev[0].count+' vids)','topicRev');
     // Best per-video topic if different
-    const topicsByPerVid=topics.filter(t=>t.count>=2).map(t=>({...t,revPerVid:Math.round(t.avgViews/1000*rpm)})).sort((a,b)=>b.revPerVid-a.revPerVid);
-    _anTipStore['topicPerVid']={title:'Est. revenue per video by topic',html:_miniBar(topicsByPerVid.slice(0,8),'revPerVid','topic',v=>'$'+_ytNum(v))};
-    if(topicsByPerVid[0]&&topicsByPerVid[0].topic!==topicsByRev[0].topic) stratHtml+=_row('<b>'+_ytEsc(topicsByPerVid[0].topic)+'</b> best per video (~$'+_ytNum(topicsByPerVid[0].revPerVid)+'/video)','topicPerVid');
+    const topicsByPerVid=topicsByRev.filter(t=>t.count>=2).sort((a,b)=>b.revPerVid-a.revPerVid);
+    _anTipStore['topicPerVid']={title:(_hasRealRev?'':'Est. ')+'Revenue per video by topic',html:_miniBar(topicsByPerVid.slice(0,8),'revPerVid','topic',v=>'$'+_ytNum(v))};
+    if(topicsByPerVid[0]&&topicsByPerVid[0].topic!==topicsByRev[0].topic) stratHtml+=_row('<b>'+_ytEsc(topicsByPerVid[0].topic)+'</b> best per video ('+_revPfx+'$'+_ytNum(topicsByPerVid[0].revPerVid)+'/video)','topicPerVid');
   }
   if(bigAvg&&smallAvg){
-    const bigRev=Math.round(bigAvg/1000*rpm);const smallRev=Math.round(smallAvg/1000*rpm);
+    const bigRevAvg=Math.round(bigVids.reduce((s,v)=>s+_vRev(v),0)/bigVids.length);const smallRevAvg=Math.round(smallVids.reduce((s,v)=>s+_vRev(v),0)/smallVids.length);
     const r=(bigAvg/smallAvg).toFixed(1);
-    _anTipStore['bigSmall']={title:'Big vs Small comparison',html:_miniBar([{label:'Big ('+bigVids.length+')',val:bigAvg},{label:'Small ('+smallVids.length+')',val:smallAvg}],'val','label',v=>_ytNum(v)+' avg')};
-    stratHtml+=_row('Big videos: <b>'+r+'x</b> more views, ~$'+_ytNum(bigRev)+'/vid vs ~$'+_ytNum(smallRev),'bigSmall');
+    _anTipStore['bigSmall']={title:'Big vs Small comparison',html:_miniBar([{label:'Big ('+bigVids.length+')',val:bigRevAvg},{label:'Small ('+smallVids.length+')',val:smallRevAvg}],'val','label',v=>'$'+_ytNum(v)+'/vid')};
+    stratHtml+=_row('Big videos: <b>'+r+'x</b> more views, '+_revPfx+'$'+_ytNum(bigRevAvg)+'/vid vs '+_revPfx+'$'+_ytNum(smallRevAvg),'bigSmall');
   }
   // Best combo
   if(bestDur&&topics.length){
     const comboVids=merged.filter(v=>{if(!v.duration_minutes)return false;const mins=parseInt(String(v.duration_minutes).split('.')[0])||0;return mins>=durBuckets[bestDur.label].min&&mins<durBuckets[bestDur.label].max&&v.topic===topics[0].topic;});
-    if(comboVids.length>=2){const comboRev=Math.round(comboVids.reduce((s,v)=>s+v.views,0)/comboVids.length/1000*rpm);stratHtml+=_row('Best combo: <b>'+_ytEsc(topics[0].topic)+' + '+bestDur.label+'</b> (~$'+_ytNum(comboRev)+'/vid)');}
+    if(comboVids.length>=2){const comboRev=Math.round(comboVids.reduce((s,v)=>s+_vRev(v),0)/comboVids.length);stratHtml+=_row('Best combo: <b>'+_ytEsc(topics[0].topic)+' + '+bestDur.label+'</b> ('+_revPfx+'$'+_ytNum(comboRev)+'/vid)');}
   }
 
   // ── HOW TO MAKE IT (duration + format) ──
@@ -1661,9 +1671,9 @@ function _vidRenderAnalytics(){
   _anTipStore['duration']={title:'Avg views by duration (n = video count)',html:_miniBar(durArr.map(d=>({...d,label:d.label+' ('+d.count+')'})),'avgViews','label')};
   if(bestDur) stratHtml+=_row('Best length: <b>'+bestDur.label+'</b> ('+_ytNum(bestDur.avgViews)+' avg views)','duration');
   if(durArr.length){
-    const durByRev=durArr.map(d=>({...d,revPerVid:Math.round(d.avgViews/1000*rpm)})).sort((a,b)=>b.revPerVid-a.revPerVid);
-    _anTipStore['durRev']={title:'Est. revenue per video by duration',html:_miniBar(durByRev,'revPerVid','label',v=>'$'+_ytNum(v))};
-    if(durByRev[0]&&durByRev[0].label!==bestDur?.label) stratHtml+=_row('Best length for $: <b>'+durByRev[0].label+'</b> (~$'+_ytNum(durByRev[0].revPerVid)+'/vid)','durRev');
+    const durByRev=durArr.map(d=>{const vids=merged.filter(v=>{if(!v.duration_minutes)return false;const mins=parseInt(String(v.duration_minutes).split('.')[0])||0;return mins>=durBuckets[d.label].min&&mins<durBuckets[d.label].max;});const revPer=vids.length?Math.round(vids.reduce((s,v)=>s+_vRev(v),0)/vids.length):0;return{...d,revPerVid:revPer};}).sort((a,b)=>b.revPerVid-a.revPerVid);
+    _anTipStore['durRev']={title:(_hasRealRev?'':'Est. ')+'Revenue per video by duration',html:_miniBar(durByRev,'revPerVid','label',v=>'$'+_ytNum(v))};
+    if(durByRev[0]&&durByRev[0].label!==bestDur?.label) stratHtml+=_row('Best length for $: <b>'+durByRev[0].label+'</b> ('+_revPfx+'$'+_ytNum(durByRev[0].revPerVid)+'/vid)','durRev');
   }
   // Engagement sweet spot — do high-engagement videos earn more?
   const engSorted=engagements.filter(v=>v.views>=100).sort((a,b)=>b.engRate-a.engRate);
