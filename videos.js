@@ -161,7 +161,7 @@ let _vidGroupFilter='all';
 let _vidSearch='';
 let _vidMatchIds=[],_vidMatchIdx=0;
 let _vidView=localStorage.getItem('_vidView')||'dashboard'; // dashboard | table | board | groups
-let _vidSortCol=null,_vidSortDir=1,_vidShowCompleted=false;
+let _vidSortCol=null,_vidSortDir=1,_vidShowCompleted=true,_vidTableScrolledOnce=false;
 let _anTopicFilter='all',_anScatterX='views',_anScatterY='likes';
 let _vidMonthOffset=0; // 0=current month, -1=last month, etc
 
@@ -363,6 +363,18 @@ function renderVideosPage(){
     });
   }
   const _rvpSe2=_vidScrollEl();if(_rvpSe2)_rvpSe2.scrollTop=_rvpTop;
+  // On first table view render, scroll to recent published videos
+  if(_vidView==='table'&&!_vidTableScrolledOnce&&_rvpTop===0){
+    _vidTableScrolledOnce=true;
+    requestAnimationFrame(()=>{
+      const rows=document.querySelectorAll('.vid-row[data-vid]');
+      const published=(st.videos||[]).filter(v=>!v.is_deleted&&v.status==='published'&&v.post_date).sort((a,b)=>b.post_date.localeCompare(a.post_date));
+      if(published.length>=3){
+        const target=document.querySelector('.vid-row[data-vid="'+published[2].id+'"]');
+        if(target)target.scrollIntoView({block:'center'});
+      }
+    });
+  }
   if(_vidSearch)requestAnimationFrame(()=>_vidPostRenderMatches());
   // Load cached YT data from localStorage on first run
   if(!_ytData){try{var _lsc=JSON.parse(localStorage.getItem('_ytCache')||'null');if(_lsc&&_lsc.channelStats){_ytData=_lsc;_ytBuildMatch();}}catch(e){}}
@@ -1644,7 +1656,6 @@ function _vidRenderAnalytics(){
     const pct=Math.max(Math.round(m.val/maxMetric*70),2);
     const label=_anTrendPeriod==='yearly'?m.key:(_moAbbr[parseInt(m.key.slice(5))]||m.key.slice(5));
     const fmtFn=(v)=>_anTrendMetric==='revenue'?'$'+_ytNum(v):_anTrendMetric==='engagement'?v.toFixed(1)+'%':_ytNum(v);
-    const hoverTitle=isCur&&forecast>m.val?m.key+': '+m.fmt+' actual\\nProjected: '+fmtFn(forecast):m.key+': '+m.fmt;
     if(isCur&&forecast>m.val){
       const forecastPct=Math.max(Math.round(forecast/maxMetric*70),2);
       const actualFlex=pct;
@@ -1652,9 +1663,11 @@ function _vidRenderAnalytics(){
       trendHtml+=`<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:2px;height:100%">
         <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;width:100%">
           <span style="font-size:9px;color:var(--muted);white-space:nowrap;margin-bottom:3px">${fmtFn(forecast)}</span>
-          <div style="width:55%;height:${forecastPct}%;display:flex;flex-direction:column;align-items:stretch" title="${hoverTitle}">
+          <div style="width:55%;height:${forecastPct}%;display:flex;flex-direction:column;align-items:stretch">
             <div style="flex:${forecastFlex};background:repeating-linear-gradient(135deg,${trendColorCur},${trendColorCur} 2px,transparent 2px,transparent 5px);border-radius:4px 4px 0 0;min-height:2px;opacity:.5"></div>
-            <div style="flex:${actualFlex};background:${trendColorCur};border-radius:0 0 4px 4px;min-height:3px;box-shadow:0 0 0 1.5px rgba(120,113,145,.3)"></div>
+            <div style="flex:${actualFlex};background:${trendColorCur};border-radius:0 0 4px 4px;min-height:3px;box-shadow:0 0 0 1.5px rgba(120,113,145,.3);display:flex;align-items:flex-start;justify-content:center;overflow:visible;position:relative">
+              <span style="font-size:8px;color:var(--text);font-weight:600;white-space:nowrap;position:absolute;top:2px">${m.fmt}</span>
+            </div>
           </div>
         </div>
         <span style="font-size:9px;margin-top:4px;font-weight:700;color:var(--text)">${label}</span>
@@ -1663,7 +1676,7 @@ function _vidRenderAnalytics(){
       trendHtml+=`<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:2px;height:100%">
         <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;width:100%">
           <span style="font-size:9px;color:var(--muted);white-space:nowrap;margin-bottom:3px">${m.fmt}</span>
-          <div style="width:55%;height:${pct}%;background:${isCur?trendColorCur:trendColor};border-radius:4px;min-height:3px${isCur?';box-shadow:0 0 0 1.5px rgba(120,113,145,.3)':''}" title="${hoverTitle}"></div>
+          <div style="width:55%;height:${pct}%;background:${isCur?trendColorCur:trendColor};border-radius:4px;min-height:3px${isCur?';box-shadow:0 0 0 1.5px rgba(120,113,145,.3)':''}" title="${m.key+': '+m.fmt}"></div>
         </div>
         <span style="font-size:9px;margin-top:4px;${isCur?'font-weight:700;color:var(--text)':'color:var(--muted)'}">${label}</span>
       </div>`;
@@ -1807,20 +1820,24 @@ function _vidRenderAnalytics(){
 
   // KPIs full width
   const _kStat2=(label,val,spark)=>`${spark||''}<div style="min-width:0;text-align:center;flex:1"><div style="font-size:9px;color:var(--muted);white-space:nowrap">${label}</div><div style="font-size:15px;font-weight:700;color:var(--text);white-space:nowrap">${val}</div></div>`;
-  h+='<div style="display:flex;gap:8px;align-items:stretch;margin-bottom:12px">';
+  // KPIs (left, aligned with chart) + Topic filter (right, aligned with insights)
+  h+=`<div style="display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:12px;align-items:stretch">`;
+  h+='<div style="display:flex;gap:8px;align-items:stretch">';
   h+=`<div style="background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:12px 14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;flex:1" onclick="_ytShowUnreplied()"><div style="font-size:15px;font-weight:700;color:#ef4444">${_unrepliedN}</div><div style="font-size:9px;color:var(--muted)">Unreplied</div></div>`;
   h+=`${_kc2("_anKpiModal('views')")}${_kStat2('Views',_ytNum(totalViews),sparkline(_spViews))}</div>`;
   h+=`${_kc2("_anKpiModal('avg')")}${_kStat2('Avg/Video',_ytNum(avgViews),sparkline(_spAvg))}</div>`;
   h+=`${_kc2("_anKpiModal('videos')")}${_kStat2('Videos',String(merged.length),sparkline(_spVids))}</div>`;
   h+=`${_kc2("_anKpiModal('revenue')")}${_kStat2(_revLabel,_revValue,sparkline(_spRevReal))}</div>`;
   h+=`${_kc2("_anKpiModal('subscribers')")}${_kStat2('Subscribers',cs?_ytNum(cs.subscribers):'-')}</div>`;
-  // Topic filter — right side of KPI row
-  h+=`<div style="position:relative;display:flex;align-items:center;flex-shrink:0">
-    <input id="anTopicInput" type="text" placeholder="Filter topic" value="${_anTopicFilter==='all'?'':_esc(_anTopicFilter)}" oninput="_anTopicInputChange(this.value)" onfocus="_anTopicShowList()" style="width:130px;padding:6px 8px;border:1px solid ${_anTopicFilter!=='all'?'rgba(139,92,246,.4)':'var(--border)'};border-radius:8px;font-family:inherit;font-size:11px;background:${_anTopicFilter!=='all'?'rgba(139,92,246,.04)':'var(--bg)'};color:var(--text);outline:none">
-    ${_anTopicFilter!=='all'?'<button onclick="_anTopicFilter=\'all\';renderVideosPageKeepScroll()" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);line-height:1">✕</button>':''}
-    <div id="anTopicList" style="display:none;position:absolute;top:100%;right:0;width:200px;margin-top:2px;background:var(--bg);border:1px solid var(--border);border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,.1);z-index:100;max-height:150px;overflow-y:auto"></div>
-  </div>`;
   h+='</div>';
+  // Topic filter — aligned with insights column
+  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:10px;padding:10px 14px;position:relative;display:flex;flex-direction:column;justify-content:center">
+    <div style="font-size:10px;color:var(--muted);margin-bottom:4px">Filter by topic</div>
+    <input id="anTopicInput" type="text" placeholder="All topics" value="${_anTopicFilter==='all'?'':_esc(_anTopicFilter)}" oninput="_anTopicInputChange(this.value)" onfocus="_anTopicShowList()" style="width:100%;padding:5px 8px;border:1px solid ${_anTopicFilter!=='all'?'rgba(139,92,246,.4)':'var(--border)'};border-radius:6px;font-family:inherit;font-size:11px;background:${_anTopicFilter!=='all'?'rgba(139,92,246,.04)':'var(--bg)'};color:var(--text);outline:none;box-sizing:border-box">
+    ${_anTopicFilter!=='all'?'<button onclick="_anTopicFilter=\'all\';renderVideosPageKeepScroll()" style="position:absolute;right:20px;bottom:14px;background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);line-height:1">✕</button>':''}
+    <div id="anTopicList" style="display:none;position:absolute;top:100%;left:0;right:0;margin-top:2px;background:var(--bg);border:1px solid var(--border);border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,.1);z-index:100;max-height:150px;overflow-y:auto"></div>
+  </div>`;
+  h+='</div>'; // close KPI + topic grid row
   // 2-col: chart (left) | insights (right)
   h+=`<div style="display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:12px;align-items:stretch">`;
   h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column">${trendHtml}</div>`;
@@ -1989,7 +2006,7 @@ function _vidSearchKey(e){
   const sg=document.getElementById('vidSearchSuggestions');
   const sgOpen=sg&&sg.style.display!=='none';
   if(e.key==='Escape'){_vidSearch='';_vidMatchIds=[];document.getElementById('vidSearchInput').value='';if(sg)sg.style.display='none';renderVideosPage();return;}
-  if(e.key==='Enter'){e.preventDefault();if(sgOpen)sg.style.display='none';_vidSearchNav(e.shiftKey?-1:1);return;}
+  if(e.key==='Enter'){e.preventDefault();if(sgOpen){const act=sg.querySelector('.vid-sg-active');if(act){act.dispatchEvent(new MouseEvent('mousedown',{bubbles:true}));return;}sg.style.display='none';}_vidSearchNav(e.shiftKey?-1:1);return;}
   if(e.key==='ArrowDown'){e.preventDefault();if(sgOpen){const items=sg.querySelectorAll('.vid-sg-item');const act=sg.querySelector('.vid-sg-active');let idx=0;items.forEach((it,i)=>{if(it===act)idx=i+1;});if(idx>=items.length)idx=0;items.forEach(it=>it.classList.remove('vid-sg-active'));if(items[idx])items[idx].classList.add('vid-sg-active');}else{_vidSearchNav(1);}return;}
   if(e.key==='ArrowUp'){e.preventDefault();if(sgOpen){const items=sg.querySelectorAll('.vid-sg-item');const act=sg.querySelector('.vid-sg-active');let idx=items.length-1;items.forEach((it,i)=>{if(it===act)idx=i-1;});if(idx<0)idx=items.length-1;items.forEach(it=>it.classList.remove('vid-sg-active'));if(items[idx])items[idx].classList.add('vid-sg-active');}else{_vidSearchNav(-1);}return;}
 }
@@ -2033,17 +2050,13 @@ function _vidShowSuggestions(q){
     const hl=_vidHighlight(s.text,lq);
     const safe=s.text.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
     const action=s.id?'_vidGoToVideo(\''+s.id+'\')':'_vidPickSuggestion(\''+safe+'\')';
-    return'<div class="vid-sg-item" onmousedown="'+action+'" style="padding:5px 10px;font-size:12px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><span style="font-size:9px;color:'+badgeColors[s.type]+';margin-right:6px">'+s.type+'</span>'+hl+'</div>';
+    return'<div class="vid-sg-item" data-action="'+s.type+'" '+(s.id?'data-vid-id="'+s.id+'"':'')+' onmousedown="event.preventDefault();'+action+'" style="padding:5px 10px;font-size:12px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><span style="font-size:9px;color:'+badgeColors[s.type]+';margin-right:6px">'+s.type+'</span>'+hl+'</div>';
   }).join('');
 }
 function _vidGoToVideo(id){
   const sg=document.getElementById('vidSearchSuggestions');if(sg)sg.style.display='none';
-  const v=(st.videos||[]).find(x=>String(x.id)===String(id));
-  if(v){const inp=document.getElementById('vidSearchInput');if(inp)inp.value=v.title||'';_vidSetSearch(v.title||'');}
-  requestAnimationFrame(()=>{
-    const row=document.querySelector('.vid-dash-row[data-vid="'+id+'"]')||document.querySelector('.vid-row[data-vid="'+id+'"]');
-    if(row){row.scrollIntoView({block:'center',behavior:'smooth'});row.style.transition='background .2s';row.style.background='rgba(139,92,246,.12)';setTimeout(()=>row.style.background='',1200);}
-  });
+  const row=document.querySelector('.vid-dash-row[data-vid="'+id+'"]')||document.querySelector('.vid-row[data-vid="'+id+'"]');
+  if(row){row.scrollIntoView({block:'center',behavior:'smooth'});row.style.transition='background .2s';row.style.background='rgba(139,92,246,.12)';setTimeout(()=>row.style.background='',1200);}
 }
 function _vidPickSuggestion(text){
   const inp=document.getElementById('vidSearchInput');if(inp)inp.value=text;
@@ -2794,6 +2807,7 @@ function _vidCelebrate(id){
 document.addEventListener('keydown',e=>{
   if(activePg!=='videos')return;
   if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'||e.target.tagName==='SELECT'||e.target.isContentEditable)return;
+  if(_vidSearch){const si=document.getElementById('vidSearchInput');if(si){si.focus();return;}}
   if((e.key==='Delete'||e.key==='Backspace')&&_vidSelected.size>0){e.preventDefault();const all=new Set([..._vidSelected,..._vidChildSelected]);all.forEach(id=>delVideo(id));_vidSelected.clear();_vidChildSelected.clear();return;}
   if((e.metaKey||e.ctrlKey)&&e.key==='c'&&_vidSelected.size>0){e.preventDefault();_vidCopied=[];_vidSelected.forEach(id=>{const v=(st.videos||[]).find(x=>String(x.id)===String(id));if(v)_vidCopied.push({...v});});showToast('Copied '+_vidCopied.length+' video(s)','#0ea5e9',1500);return;}
   if((e.metaKey||e.ctrlKey)&&e.key==='v'&&_vidCopied.length>0){e.preventDefault();_vidCopied.forEach(v=>_vidDuplicate(v.id));return;}
