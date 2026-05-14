@@ -186,6 +186,7 @@ function renderVideosPage(){
   else if(_vidView==='table')bodyHtml=_vidRenderTable();
   else if(_vidView==='board')bodyHtml=_vidRenderBoard();
   else if(_vidView==='monthly')bodyHtml=_vidRenderMonthly();
+  else if(_vidView==='analytics')bodyHtml=_vidRenderAnalytics();
   if(_vidView==='groups'){_vidView='dashboard';bodyHtml=_vidRenderDashboard();}
 
   // Use the exact same pattern as recipes page (features.js line 2130-2139)
@@ -199,6 +200,7 @@ function renderVideosPage(){
           <button class="${viewBtnS('table')}" onclick="_vidSetView('table')">All Details</button>
           <button class="${viewBtnS('board')}" onclick="_vidSetView('board')">Videos by Progress</button>
           <button class="${viewBtnS('monthly')}" onclick="_vidSetView('monthly')">Monthly</button>
+          <button class="${viewBtnS('analytics')}" onclick="_vidSetView('analytics')" style="margin-left:4px;border-left:1px solid var(--border);padding-left:10px">Analytics</button>
         </div>
         <input id="vidSearchInput" type="text" placeholder="Search videos..." value="${_vidSearch.replace(/"/g,'&quot;')}" oninput="_vidSetSearch(this.value)" style="padding:5px 10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:12px;background:var(--bg);color:var(--text);outline:none;width:180px">
         <div style="flex:1"></div>
@@ -1493,7 +1495,7 @@ function _vidDropKey(event,type){
   }else if(event.key==='Tab'){
     drop.style.display='none';
   }else if(event.key==='Enter'){
-    drop.style.display='none';
+    event.preventDefault();drop.style.display='none';saveVidModal();
   }
 }
 function _vidDropItemKey(event,type,idx){
@@ -1923,8 +1925,8 @@ document.addEventListener('keydown',e=>{
   if((e.metaKey||e.ctrlKey)&&e.key==='c'&&_vidSelected.size>0){e.preventDefault();_vidCopied=[];_vidSelected.forEach(id=>{const v=(st.videos||[]).find(x=>String(x.id)===String(id));if(v)_vidCopied.push({...v});});showToast('Copied '+_vidCopied.length+' video(s)','#0ea5e9',1500);return;}
   if((e.metaKey||e.ctrlKey)&&e.key==='v'&&_vidCopied.length>0){e.preventDefault();_vidCopied.forEach(v=>_vidDuplicate(v.id));return;}
   if(e.key==='n'&&!e.metaKey&&!e.ctrlKey){e.preventDefault();openVidModal();return;}
-  if(e.key==='ArrowLeft'&&!e.metaKey&&!e.ctrlKey&&_vidSelected.size===0){e.preventDefault();const tabs=['dashboard','table','board','monthly'];const i=tabs.indexOf(_vidView);if(i>0)_vidSetView(tabs[i-1]);return;}
-  if(e.key==='ArrowRight'&&!e.metaKey&&!e.ctrlKey&&_vidSelected.size===0){e.preventDefault();const tabs=['dashboard','table','board','monthly'];const i=tabs.indexOf(_vidView);if(i<tabs.length-1)_vidSetView(tabs[i+1]);return;}
+  if(e.key==='ArrowLeft'&&!e.metaKey&&!e.ctrlKey&&_vidSelected.size===0){e.preventDefault();const tabs=['dashboard','table','board','monthly','analytics'];const i=tabs.indexOf(_vidView);if(i>0)_vidSetView(tabs[i-1]);return;}
+  if(e.key==='ArrowRight'&&!e.metaKey&&!e.ctrlKey&&_vidSelected.size===0){e.preventDefault();const tabs=['dashboard','table','board','monthly','analytics'];const i=tabs.indexOf(_vidView);if(i<tabs.length-1)_vidSetView(tabs[i+1]);return;}
   if(e.key==='ArrowUp'&&!e.metaKey&&!e.ctrlKey){e.preventDefault();const se=_vidScrollEl();if(se)se.scrollTop=0;return;}
   if(e.key==='ArrowDown'&&!e.metaKey&&!e.ctrlKey){e.preventDefault();const se=_vidScrollEl();if(se)se.scrollTop=se.scrollHeight;return;}
   if(e.key==='e'&&!e.metaKey&&!e.ctrlKey&&_vidView==='table'){e.preventDefault();_vidShowCompleted=!_vidShowCompleted;renderVideosPageKeepScroll();return;}
