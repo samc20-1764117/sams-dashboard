@@ -3223,7 +3223,7 @@ function renderDayTB(){
     e.preventDefault();
     const colRect=col.getBoundingClientRect();
     const startRelY=Math.max(0,e.clientY-colRect.top);
-    const startClientY=e.clientY;
+    const startClientY=e.clientY,startClientX=e.clientX;
     const snap=y=>Math.round((HOURS[0]*60+y/PX)/15)*15;
     let mode=null; // null until threshold, then 'create' or 'select'
     let preview=null,selBox=null;
@@ -3252,8 +3252,8 @@ function renderDayTB(){
         preview.style.top=snappedTop+'px';preview.style.height=Math.max(15*PX,snappedBot-snappedTop)+'px';
       } else {
         const y1=Math.min(startClientY,curClientY),y2=Math.max(startClientY,curClientY);
-        const cr=col.getBoundingClientRect();
-        selBox.style.left=cr.left+'px';selBox.style.width=cr.width+'px';
+        const x1=Math.min(startClientX,ev.clientX),x2=Math.max(startClientX,ev.clientX);
+        selBox.style.left=x1+'px';selBox.style.width=(x2-x1)+'px';
         selBox.style.top=y1+'px';selBox.style.height=(y2-y1)+'px';
       }
     };
@@ -3277,8 +3277,9 @@ function renderDayTB(){
           pushUndo(()=>{st.blocks=st.blocks.filter(b=>b.id!==blk.id);save();renderDayTB();},'Added block');
         });
       } else {
-        // Select blocks in range
+        // Select blocks in range (check both X and Y overlap with actual element bounds)
         const y1=Math.min(startClientY,ev.clientY),y2=Math.max(startClientY,ev.clientY);
+        const x1=Math.min(startClientX,ev.clientX),x2=Math.max(startClientX,ev.clientX);
         const colRect2=col.getBoundingClientRect();
         const selTop=y1-colRect2.top,selBot=y2-colRect2.top;
         _lastTBRbRange={selTop,selBot};
@@ -3286,13 +3287,18 @@ function renderDayTB(){
         col.querySelectorAll('.tb-block[data-bid]').forEach(be=>{
           const bl=st.blocks.find(x=>String(x.id)===String(be.dataset.bid));
           if(!bl)return;
-          const blTop=(bl.sm-HOURS[0]*60)*PX,blBot=blTop+bl.dur*PX;
-          if(blBot>selTop&&blTop<selBot){const sid=_getTBBlockSelId(bl);if(sid){selectedTasks.add(sid);lastSelectedId=sid;}}
+          const br=be.getBoundingClientRect();
+          if(br.bottom>y1&&br.top<y2&&br.right>x1&&br.left<x2){const sid=_getTBBlockSelId(bl);if(sid){selectedTasks.add(sid);lastSelectedId=sid;}}
         });
         // Also select auto-blocks in range
-        const minSm=HOURS[0]*60+selTop/PX,maxSm=HOURS[0]*60+selBot/PX;
-        getAutoTBForDate(ds).filter(a=>a.sm+a.dur>minSm&&a.sm<maxSm).forEach(a=>selectedTasks.add('atb::'+a._atbId));
-        getRecAutoTBForDate(ds).filter(a=>a.sm+a.dur>minSm&&a.sm<maxSm).forEach(a=>selectedTasks.add('rec-virt-'+a._recId));
+        col.querySelectorAll('.atb-block[data-atb-id]').forEach(ae=>{
+          const ar=ae.getBoundingClientRect();
+          if(ar.bottom>y1&&ar.top<y2&&ar.right>x1&&ar.left<x2)selectedTasks.add('atb::'+ae.dataset.atbId);
+        });
+        col.querySelectorAll('.ratb-block[data-rec-id]').forEach(re=>{
+          const rr=re.getBoundingClientRect();
+          if(rr.bottom>y1&&rr.top<y2&&rr.right>x1&&rr.left<x2)selectedTasks.add('rec-virt-'+re.dataset.recId);
+        });
         applySelHighlight();
       }
     };
