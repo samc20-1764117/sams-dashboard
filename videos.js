@@ -1435,9 +1435,9 @@ const _VID_STATUS_OPTIONS=[
 function _vidModalKey(event){
   if(event.key==='Escape'){event.stopPropagation();closeMod('vidModal');}
   else if(event.key==='Enter'&&(event.metaKey||event.target.tagName!=='TEXTAREA')){
-    const sDrop=document.getElementById('vmStatusDrop');
-    const bDrop=document.getElementById('vmBigVideoDrop');
-    if((sDrop&&sDrop.style.display==='block')||(bDrop&&bDrop.style.display==='block'))return;
+    // Close any open dropdowns first
+    var sDrop=document.getElementById('vmStatusDrop');if(sDrop)sDrop.style.display='none';
+    var bDrop=document.getElementById('vmBigVideoDrop');if(bDrop)bDrop.style.display='none';
     event.preventDefault();saveVidModal();
   }
 }
