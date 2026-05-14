@@ -841,34 +841,69 @@ function renderWkCal(){
       if(dragId.startsWith('wrrule::')){
         const ruleId=dragId.split('::')[1];
         const wkKey=getWkKey(wkOff);
-        const _isMultiWR=selectedTasks.has('wrrule-'+ruleId)&&selectedTasks.size>1;
-        const _wrMoveIds=_isMultiWR?[...selectedTasks].filter(sid=>sid.startsWith('wrrule-')).map(sid=>sid.replace('wrrule-','')):[ruleId];
+        const _wrRuleSid='wrrule-'+ruleId;
+        const _isMultiWR=selectedTasks.has(_wrRuleSid)&&selectedTasks.size>1;
+        const _wrMoveIds=_isMultiWR?[...selectedTasks].filter(sid=>sid.startsWith('wrrule-')||sid.startsWith('wrrule-virt-')).map(sid=>sid.replace('wrrule-virt-','').replace('wrrule-','')):[ruleId];
         const _wrMoves=_wrMoveIds.map(rid=>{const r=st.wrRules.find(x=>String(x.id)===String(rid));return r?{r,rid,prev:r._dateOverrides?.[wkKey]}:null;}).filter(Boolean);
         _wrMoves.forEach(({r})=>{if(!r._dateOverrides)r._dateOverrides={};r._dateOverrides[wkKey]=ds;});
-        save();dragId=null;renderAll();
+        const _wrUndos=[()=>{_wrMoves.forEach(({r,rid,prev})=>{if(!r._dateOverrides)r._dateOverrides={};if(prev)r._dateOverrides[wkKey]=prev;else delete r._dateOverrides[wkKey];sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},`?id=eq.${rid}`);});}];
+        // Multi-select: also move regular tasks + wrec items
+        if(_isMultiWR){
+          [...selectedTasks].forEach(sid=>{
+            if(sid.startsWith('wrrule'))return;
+            if(sid.startsWith('wrec-')){
+              const rid=sid.replace('wrec-','');const r2=st.recurring.find(x=>String(x.id)===String(rid));
+              if(r2){if(!r2._dateOverrides)r2._dateOverrides={};const p=r2._dateOverrides[wkKey];r2._dateOverrides[wkKey]=ds;sbReq('PATCH','wr_recurring_rules',{date_overrides:r2._dateOverrides},recQs(r2.id));
+                _wrUndos.push(()=>{if(p)r2._dateOverrides[wkKey]=p;else delete r2._dateOverrides[wkKey];sbReq('PATCH','wr_recurring_rules',{date_overrides:r2._dateOverrides},recQs(r2.id));});}
+            }else{
+              const t=st.tasks.find(x=>String(x.id)===sid);
+              if(t&&!t._virtual){const prev=t.due_date;t.due_date=ds;localOverrides[sid]={due_date:ds};pendingLocal.add(sid);sbReqNullable('PATCH','tasks',{due_date:ds},`?id=eq.${t.id}`);
+                _wrUndos.push(()=>{t.due_date=prev;localOverrides[sid]={due_date:prev};pendingLocal.add(sid);sbReqNullable('PATCH','tasks',{due_date:prev},`?id=eq.${t.id}`);});}
+            }
+          });
+        }
+        save();dragId=null;renderAll();if(document.getElementById('tbGrid'))renderDayTB();
         _wrMoves.forEach(({r,rid})=>sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},`?id=eq.${rid}`));
-        pushUndo(()=>{_wrMoves.forEach(({r,rid,prev})=>{if(!r._dateOverrides)r._dateOverrides={};if(prev)r._dateOverrides[wkKey]=prev;else delete r._dateOverrides[wkKey];sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},`?id=eq.${rid}`);});save();renderAll();},'Pinned WR task to '+ds);
+        pushUndo(()=>{_wrUndos.forEach(fn=>fn());save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();},'Moved tasks to '+ds);
         dragId=null;return;
       }
       // Weekly reset task dragged onto calendar
       if(dragId.startsWith('wrec::')){
         const recId=dragId.split('::')[1];
         const r=st.recurring.find(x=>String(x.id)===String(recId));
+        const wkKey=getWkKey(wkOff);
+        const _wrecSid='wrec-'+recId;
+        const _isMultiWrec=selectedTasks.has(_wrecSid)&&selectedTasks.size>1;
+        const _wrecUndos=[];
         if(r){
           if(!r._dateOverrides)r._dateOverrides={};
-          const wkKey=getWkKey(wkOff);
           const prev=r._dateOverrides[wkKey];
           r._dateOverrides[wkKey]=ds;
           removeTBBlocksForDate(ds,{recId:r.id});
-          save();dragId=null;renderAll();renderWkCal();
           sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));
-          pushUndo(()=>{
-            if(prev)r._dateOverrides[wkKey]=prev;
-            else delete r._dateOverrides[wkKey];
-            save();renderAll();renderWkCal();
-            sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));
-          },'Pinned weekly task to '+ds);
+          _wrecUndos.push(()=>{if(prev)r._dateOverrides[wkKey]=prev;else delete r._dateOverrides[wkKey];sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));});
         }
+        // Multi-select: also move regular tasks + other wrec/wrrule
+        if(_isMultiWrec){
+          [...selectedTasks].forEach(sid=>{
+            if(sid===_wrecSid)return;
+            if(sid.startsWith('wrec-')){
+              const rid=sid.replace('wrec-','');const r2=st.recurring.find(x=>String(x.id)===String(rid));
+              if(r2){if(!r2._dateOverrides)r2._dateOverrides={};const p=r2._dateOverrides[wkKey];r2._dateOverrides[wkKey]=ds;sbReq('PATCH','wr_recurring_rules',{date_overrides:r2._dateOverrides},recQs(r2.id));
+                _wrecUndos.push(()=>{if(p)r2._dateOverrides[wkKey]=p;else delete r2._dateOverrides[wkKey];sbReq('PATCH','wr_recurring_rules',{date_overrides:r2._dateOverrides},recQs(r2.id));});}
+            }else if(sid.startsWith('wrrule-virt-')||sid.startsWith('wrrule-')){
+              const rid=sid.replace('wrrule-virt-','').replace('wrrule-','');const r2=st.wrRules.find(x=>String(x.id)===String(rid));
+              if(r2){if(!r2._dateOverrides)r2._dateOverrides={};const p=r2._dateOverrides[wkKey];r2._dateOverrides[wkKey]=ds;sbReq('PATCH','wr_recurring_rules',{date_overrides:r2._dateOverrides},`?id=eq.${rid}`);
+                _wrecUndos.push(()=>{if(p)r2._dateOverrides[wkKey]=p;else delete r2._dateOverrides[wkKey];sbReq('PATCH','wr_recurring_rules',{date_overrides:r2._dateOverrides},`?id=eq.${rid}`);});}
+            }else{
+              const t=st.tasks.find(x=>String(x.id)===sid);
+              if(t&&!t._virtual){const prev=t.due_date;t.due_date=ds;localOverrides[sid]={due_date:ds};pendingLocal.add(sid);sbReqNullable('PATCH','tasks',{due_date:ds},`?id=eq.${t.id}`);
+                _wrecUndos.push(()=>{t.due_date=prev;localOverrides[sid]={due_date:prev};pendingLocal.add(sid);sbReqNullable('PATCH','tasks',{due_date:prev},`?id=eq.${t.id}`);});}
+            }
+          });
+        }
+        save();dragId=null;renderAll();renderWkCal();if(document.getElementById('tbGrid'))renderDayTB();
+        pushUndo(()=>{_wrecUndos.forEach(fn=>fn());save();renderAll();renderWkCal();if(document.getElementById('tbGrid'))renderDayTB();},'Moved tasks to '+ds);
         dragId=null;return;
       }
       // Pup session chip dragged to a new day — move the session
