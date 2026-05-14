@@ -1311,6 +1311,20 @@ let _anTrendPeriod='monthly';
 let _anRevMode='earned'; // 'earned' = by month earned (real), 'posted' = by video post_date
 function _anSetTrend(metric,period){if(metric)_anTrendMetric=metric;if(period)_anTrendPeriod=period;renderVideosPageKeepScroll();}
 function _anToggleRevMode(){_anRevMode=_anRevMode==='earned'?'posted':'earned';renderVideosPageKeepScroll();}
+function _anTopicInputChange(q){
+  const list=document.getElementById('anTopicList');if(!list)return;
+  const lq=q.toLowerCase();
+  const all=(st.videos||[]).filter(v=>!v.is_deleted&&v.status==='published'&&v.topic);
+  const topicCounts={};
+  all.forEach(v=>{const t=v.topic;topicCounts[t]=(topicCounts[t]||0)+1;});
+  const filtered=Object.entries(topicCounts).filter(([t])=>t.toLowerCase().includes(lq)).sort((a,b)=>b[1]-a[1]);
+  if(!q){list.innerHTML='<div class="vid-sg-item" onmousedown="_anPickTopic(\'all\')" style="padding:5px 8px;font-size:11px;cursor:pointer;color:var(--muted)">All topics</div>'+filtered.map(([t,c])=>'<div class="vid-sg-item" onmousedown="_anPickTopic(\''+_esc(t.replace(/'/g,"\\'"))+'\')" style="padding:5px 8px;font-size:11px;cursor:pointer">'+_esc(t)+' <span style="color:var(--muted)">('+c+')</span></div>').join('');list.style.display='block';return;}
+  if(!filtered.length){list.style.display='none';return;}
+  list.style.display='block';
+  list.innerHTML=filtered.map(([t,c])=>'<div class="vid-sg-item" onmousedown="_anPickTopic(\''+_esc(t.replace(/'/g,"\\'"))+'\')" style="padding:5px 8px;font-size:11px;cursor:pointer">'+_vidHighlight(t,lq)+' <span style="color:var(--muted)">('+c+')</span></div>').join('');
+}
+function _anTopicShowList(){_anTopicInputChange(document.getElementById('anTopicInput')?.value||'');}
+function _anPickTopic(t){_anTopicFilter=t;const list=document.getElementById('anTopicList');if(list)list.style.display='none';renderVideosPageKeepScroll();}
 let _anTipStore={};
 function _anShowTip(e,key){
   _anHideTip();
@@ -1530,16 +1544,8 @@ function _vidRenderAnalytics(){
     h+='<div style="display:flex;align-items:center;gap:8px;padding:8px 14px;margin-bottom:12px;background:rgba(139,92,246,.04);border:1px solid rgba(139,92,246,.15);border-radius:10px;font-size:11px;color:var(--muted)"><span>Revenue shown is estimated (~$4 RPM).</span><a href="/api/yt?mode=auth-start" target="_blank" style="color:#8b5cf6;font-weight:600;text-decoration:none">Connect YouTube Analytics</a><span>for actual revenue data.</span></div>';
   }
 
-  // ── Topic filter ──
-  const _allTopics=[...new Set(_mergedAll.map(v=>v.topic).filter(Boolean))].sort();
-  h+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">';
-  h+='<span style="font-size:10px;color:var(--muted)">Filter by topic:</span>';
-  h+=`<select onchange="_anTopicFilter=this.value;renderVideosPageKeepScroll()" style="font-size:11px;font-family:inherit;border:1px solid var(--border);border-radius:6px;padding:3px 8px;background:var(--bg);color:var(--text);outline:none">`;
-  h+=`<option value="all"${_anTopicFilter==='all'?' selected':''}>All topics</option>`;
-  _allTopics.forEach(t=>h+=`<option value="${_esc(t)}"${_anTopicFilter===t?' selected':''}>${_esc(t)}</option>`);
-  h+='</select></div>';
-
   // ── KPIs (compact inline) ──
+  const _allTopics=[...new Set(_mergedAll.map(v=>v.topic).filter(Boolean))].sort();
   const _dismissed=_ytGetDismissed();
   const _unrepliedAll=_ytData.unrepliedComments||[];
   const _unrepliedN=_unrepliedAll.filter(c=>!_dismissed.includes(c.id)).length;
@@ -1547,7 +1553,7 @@ function _vidRenderAnalytics(){
   const _revValue=_hasRealRev?'$'+_ytNum(Math.round(_realRevTotal)):'$'+_ytNum(estRevenue);
   const _revSub=_hasRealRev?'$'+_ytNum(Math.round(_realRevThisMonth||0))+' this mo':'@ $'+rpm+' RPM';
   const _spRevReal=_hasRealRev?_kpiLast6.map(([k])=>Math.round(_realRevByMonth[k]||0)):_spRev;
-  const _kc2=(fn,bg)=>`<div style="background:${bg||'var(--glass)'};border:1px solid var(--border);border-radius:10px;padding:14px 10px;cursor:pointer;display:flex;align-items:center;gap:8px;min-width:0;flex:1" onclick="${fn}">`;
+  const _kc2=(fn,bg)=>`<div style="background:${bg||'var(--glass)'};border:1px solid var(--border);border-radius:10px;padding:18px 10px;cursor:pointer;display:flex;align-items:center;gap:8px;min-width:0;flex:1" onclick="${fn}">`;
   const _kStat=(label,val,spark)=>`${spark||''}<div style="min-width:0"><div style="font-size:9px;color:var(--muted);white-space:nowrap">${label}</div><div style="font-size:15px;font-weight:700;color:var(--text);white-space:nowrap">${val}</div></div>`;
   // ── TREND CHART + Strategy Insights ──
   const periodMap={};
@@ -1614,7 +1620,7 @@ function _vidRenderAnalytics(){
     <div style="flex:1"></div>
     <span style="font-size:10px;color:var(--muted);white-space:nowrap;line-height:1">${summaryText}</span>
   </div>`;
-  trendHtml+='<div style="display:flex;align-items:flex-end;gap:2px;flex:1;min-height:250px;padding:0 8px">';
+  trendHtml+='<div style="display:flex;align-items:flex-end;gap:2px;flex:1;min-height:280px;padding:0 8px">';
   metricVals.forEach(m=>{
     const pct=Math.max(Math.round(m.val/maxMetric*70),2);
     const isCur=m.key===_curPeriod;
@@ -1768,7 +1774,7 @@ function _vidRenderAnalytics(){
   h+=`<div style="display:flex;flex-direction:column;gap:12px">`;
   // KPIs row
   h+='<div style="display:flex;gap:8px;align-items:stretch">';
-  h+=`<div style="background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:14px 10px;cursor:pointer;display:flex;align-items:center;gap:6px;flex:1" onclick="_ytShowUnreplied()"><div style="font-size:15px;font-weight:700;color:#ef4444">${_unrepliedN}</div><div style="font-size:9px;color:var(--muted)">Unreplied</div></div>`;
+  h+=`<div style="background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:18px 10px;cursor:pointer;display:flex;align-items:center;gap:6px;flex:1" onclick="_ytShowUnreplied()"><div style="font-size:15px;font-weight:700;color:#ef4444">${_unrepliedN}</div><div style="font-size:9px;color:var(--muted)">Unreplied</div></div>`;
   h+=`${_kc2("_anKpiModal('views')")}${_kStat('Views',_ytNum(totalViews),sparkline(_spViews))}</div>`;
   h+=`${_kc2("_anKpiModal('avg')")}${_kStat('Avg/Video',_ytNum(avgViews),sparkline(_spAvg))}</div>`;
   h+=`${_kc2("_anKpiModal('videos')")}${_kStat('Videos',String(merged.length),sparkline(_spVids))}</div>`;
@@ -1777,7 +1783,12 @@ function _vidRenderAnalytics(){
   h+='</div>';
   h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;flex:1">${trendHtml}</div>`;
   h+='</div>'; // close left column
-  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:16px 18px;overflow-y:auto">
+  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:16px 18px;overflow-y:auto;display:flex;flex-direction:column">
+    <div style="position:relative;margin-bottom:8px">
+      <input id="anTopicInput" type="text" placeholder="Filter by topic..." value="${_anTopicFilter==='all'?'':_esc(_anTopicFilter)}" oninput="_anTopicInputChange(this.value)" onfocus="_anTopicShowList()" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:11px;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box">
+      ${_anTopicFilter!=='all'?'<button onclick="_anTopicFilter=\'all\';renderVideosPageKeepScroll()" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);line-height:1">✕</button>':''}
+      <div id="anTopicList" style="display:none;position:absolute;top:100%;left:0;right:0;margin-top:2px;background:var(--bg);border:1px solid var(--border);border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,.1);z-index:100;max-height:150px;overflow-y:auto"></div>
+    </div>
     <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:8px">What Makes Your Videos Win</div>${stratHtml}</div>`;
   h+='</div>'; // close 2-col grid
   // Do More Like This + Try Next — full width below
@@ -1900,8 +1911,8 @@ function _vidSearchMatch(v,q){return(v.title||'').toLowerCase().includes(q)||(v.
 function _vidBuildMatches(){
   _vidMatchIds=[];
   if(!_vidSearch)return;
-  const q=_vidSearch.toLowerCase();
-  (st.videos||[]).filter(v=>!v.is_deleted).forEach(v=>{if(_vidSearchMatch(v,q))_vidMatchIds.push(String(v.id));});
+  // Use _vidFiltered which already applies search + status/group filters
+  _vidFiltered().forEach(v=>_vidMatchIds.push(String(v.id)));
 }
 function _vidSearchNav(dir){
   if(!_vidMatchIds.length)return;
@@ -1917,10 +1928,11 @@ function _vidScrollToMatch(){
 }
 function _vidSearchKey(e){
   const sg=document.getElementById('vidSearchSuggestions');
+  const sgOpen=sg&&sg.style.display!=='none';
   if(e.key==='Escape'){_vidSearch='';_vidMatchIds=[];document.getElementById('vidSearchInput').value='';if(sg)sg.style.display='none';renderVideosPage();return;}
-  if(e.key==='Enter'){e.preventDefault();if(sg&&sg.style.display!=='none')sg.style.display='none';_vidSearchNav(e.shiftKey?-1:1);return;}
-  if(e.key==='ArrowDown'&&sg&&sg.style.display!=='none'){e.preventDefault();const items=sg.querySelectorAll('.vid-sg-item');const act=sg.querySelector('.vid-sg-active');let idx=0;items.forEach((it,i)=>{if(it===act)idx=i+1;});if(idx>=items.length)idx=0;items.forEach(it=>it.classList.remove('vid-sg-active'));if(items[idx])items[idx].classList.add('vid-sg-active');return;}
-  if(e.key==='ArrowUp'&&sg&&sg.style.display!=='none'){e.preventDefault();const items=sg.querySelectorAll('.vid-sg-item');const act=sg.querySelector('.vid-sg-active');let idx=items.length-1;items.forEach((it,i)=>{if(it===act)idx=i-1;});if(idx<0)idx=items.length-1;items.forEach(it=>it.classList.remove('vid-sg-active'));if(items[idx])items[idx].classList.add('vid-sg-active');return;}
+  if(e.key==='Enter'){e.preventDefault();if(sgOpen)sg.style.display='none';_vidSearchNav(e.shiftKey?-1:1);return;}
+  if(e.key==='ArrowDown'){e.preventDefault();if(sgOpen){const items=sg.querySelectorAll('.vid-sg-item');const act=sg.querySelector('.vid-sg-active');let idx=0;items.forEach((it,i)=>{if(it===act)idx=i+1;});if(idx>=items.length)idx=0;items.forEach(it=>it.classList.remove('vid-sg-active'));if(items[idx])items[idx].classList.add('vid-sg-active');}else{_vidSearchNav(1);}return;}
+  if(e.key==='ArrowUp'){e.preventDefault();if(sgOpen){const items=sg.querySelectorAll('.vid-sg-item');const act=sg.querySelector('.vid-sg-active');let idx=items.length-1;items.forEach((it,i)=>{if(it===act)idx=i-1;});if(idx<0)idx=items.length-1;items.forEach(it=>it.classList.remove('vid-sg-active'));if(items[idx])items[idx].classList.add('vid-sg-active');}else{_vidSearchNav(-1);}return;}
 }
 function _vidShowSuggestions(q){
   const sg=document.getElementById('vidSearchSuggestions');if(!sg)return;
@@ -2320,6 +2332,9 @@ document.addEventListener('click',e=>{
   }
   if(!e.target.closest('#vidSearchInput')&&!e.target.closest('#vidSearchSuggestions')){
     const sg=document.getElementById('vidSearchSuggestions');if(sg)sg.style.display='none';
+  }
+  if(!e.target.closest('#anTopicInput')&&!e.target.closest('#anTopicList')){
+    const tl=document.getElementById('anTopicList');if(tl)tl.style.display='none';
   }
 });
 
