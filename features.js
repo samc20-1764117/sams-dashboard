@@ -2291,10 +2291,12 @@ function applySelHighlight(){
     else if(id.startsWith('wrrule-'))selWrRuleIds.add(id.replace('wrrule-',''));
   });
   // Resolve selected timeblocks to their underlying task/shop/rec IDs for cross-view highlight
+  const selTaskIds=new Set();
   selectedTasks.forEach(id=>{
     if(!id.startsWith('blk-'))return;
     const b=st.blocks.find(x=>String(x.id)===id.replace('blk-',''));
     if(!b)return;
+    if(b.taskId)selTaskIds.add(String(b.taskId));
     if(b.shopId)selShopIds.add(String(b.shopId));
     if(b.ruleId)selWrRuleIds.add(String(b.ruleId));
     if(b.recId){const _isWrR=!b.ruleId&&(st.wrRules||[]).some(x=>String(x.id)===String(b.recId));if(_isWrR)selWrRuleIds.add(String(b.recId));else selRecIds.add(String(b.recId));}
@@ -2328,6 +2330,7 @@ function applySelHighlight(){
     const id=el.id.replace('ti-','');
     let sel=selectedTasks.has(id);
     let csId=id;
+    if(!sel)sel=selTaskIds.has(id);
     if(!sel&&id.startsWith('rec-virt-')){sel=selRecIds.has(id.replace('rec-virt-',''));}
     if(!sel&&id.startsWith('shop-cal-')){sel=selShopIds.has(id.replace('shop-cal-',''));}
     if(!sel&&id.startsWith('wrrule-virt-')){sel=selWrRuleIds.has(id.replace('wrrule-virt-',''));}
@@ -2361,7 +2364,7 @@ function applySelHighlight(){
     if(!b){el.classList.remove('sel-row');clearSelVars(el);return;}
     let sel=false,csId=null;
     if(b.cat==='pup_session'&&b._pupSessId){const psid='pup-sess-'+String(b._pupSessId);sel=selectedTasks.has(psid);csId=psid;}
-    else if(b.taskId){sel=selectedTasks.has(String(b.taskId));csId=String(b.taskId);}
+    else if(b.taskId){const blkId='blk-'+String(b.id);sel=selectedTasks.has(blkId)||selectedTasks.has(String(b.taskId));csId=String(b.taskId);}
     else if(b.recId){const rid=String(b.recId);const _r=st.recurring.find(x=>String(x.id)===rid);const _isWrRule=!_r&&(st.wrRules||[]).some(x=>String(x.id)===rid);const _isWr=_r&&(_r.is_weekly_reset===true||_r.is_weekly_reset==='true');if(_isWrRule||b.ruleId){const blkId='blk-'+String(b.id);sel=selectedTasks.has(blkId)||selWrRuleIds.has(rid);csId='wrrule-'+rid;}else{sel=selectedTasks.has('rec-virt-'+rid)||selRecIds.has(rid)||selectedTasks.has('wrec-'+rid);csId=(_isWr?'wrec-':'rec-virt-')+rid;}}
     else if(b.ruleId){const blkId='blk-'+String(b.id);const rid=String(b.ruleId);sel=selectedTasks.has(blkId)||selWrRuleIds.has(rid);csId='wrrule-'+rid;}
     else if(b.shopId){const sid=String(b.shopId);const blkId='blk-'+String(b.id);sel=selectedTasks.has(blkId)||selectedTasks.has('shop-cal-'+sid)||selShopIds.has(sid);csId='shop-cal-'+sid;}
