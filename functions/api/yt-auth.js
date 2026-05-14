@@ -12,6 +12,18 @@ export async function onRequest(context) {
 
   const CLIENT_ID = context.env.GOOGLE_CLIENT_ID;
   const CLIENT_SECRET = context.env.GOOGLE_CLIENT_SECRET;
+
+  // Debug: show available env keys when checking status
+  const url0 = new URL(context.request.url);
+  if (url0.searchParams.get('action') === 'status') {
+    const envKeys = Object.keys(context.env).filter(k => !k.startsWith('__'));
+    const KV = context.env.YT_CACHE;
+    const hasRefresh = KV ? !!(await KV.get('yt-oauth-refresh')) : false;
+    return new Response(JSON.stringify({ configured: !!CLIENT_ID && !!CLIENT_SECRET, authorized: hasRefresh, hasClientId: !!CLIENT_ID, hasClientSecret: !!CLIENT_SECRET, envKeys }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
   if (!CLIENT_ID || !CLIENT_SECRET) {
     return new Response(JSON.stringify({ error: 'OAuth not configured. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET.' }), {
       status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
