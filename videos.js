@@ -1544,8 +1544,19 @@ function _vidRenderAnalytics(){
     h+='<div style="display:flex;align-items:center;gap:8px;padding:8px 14px;margin-bottom:12px;background:rgba(139,92,246,.04);border:1px solid rgba(139,92,246,.15);border-radius:10px;font-size:11px;color:var(--muted)"><span>Revenue shown is estimated (~$4 RPM).</span><a href="/api/yt?mode=auth-start" target="_blank" style="color:#8b5cf6;font-weight:600;text-decoration:none">Connect YouTube Analytics</a><span>for actual revenue data.</span></div>';
   }
 
-  // ── KPIs (compact inline) ──
+  // ── Topic filter bar ──
   const _allTopics=[...new Set(_mergedAll.map(v=>v.topic).filter(Boolean))].sort();
+  h+=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;position:relative">
+    <span style="font-size:10px;color:var(--muted);flex-shrink:0">Topic:</span>
+    <div style="position:relative;flex:1;max-width:260px">
+      <input id="anTopicInput" type="text" placeholder="All topics" value="${_anTopicFilter==='all'?'':_esc(_anTopicFilter)}" oninput="_anTopicInputChange(this.value)" onfocus="_anTopicShowList()" style="width:100%;padding:5px 8px;border:1px solid ${_anTopicFilter!=='all'?'rgba(139,92,246,.4)':'var(--border)'};border-radius:6px;font-family:inherit;font-size:11px;background:${_anTopicFilter!=='all'?'rgba(139,92,246,.04)':'var(--bg)'};color:var(--text);outline:none;box-sizing:border-box">
+      ${_anTopicFilter!=='all'?'<button onclick="_anTopicFilter=\'all\';renderVideosPageKeepScroll()" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);line-height:1">✕</button>':''}
+      <div id="anTopicList" style="display:none;position:absolute;top:100%;left:0;right:0;margin-top:2px;background:var(--bg);border:1px solid var(--border);border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,.1);z-index:100;max-height:150px;overflow-y:auto"></div>
+    </div>
+    ${_anTopicFilter!=='all'?'<span style="font-size:10px;color:var(--muted)">('+merged.length+' video'+(merged.length!==1?'s':'')+')</span>':''}
+  </div>`;
+
+  // ── KPIs (compact inline) ──
   const _dismissed=_ytGetDismissed();
   const _unrepliedAll=_ytData.unrepliedComments||[];
   const _unrepliedN=_unrepliedAll.filter(c=>!_dismissed.includes(c.id)).length;
@@ -1783,12 +1794,7 @@ function _vidRenderAnalytics(){
   h+='</div>';
   h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;flex:1">${trendHtml}</div>`;
   h+='</div>'; // close left column
-  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:16px 18px;overflow-y:auto;display:flex;flex-direction:column">
-    <div style="position:relative;margin-bottom:8px">
-      <input id="anTopicInput" type="text" placeholder="Filter by topic..." value="${_anTopicFilter==='all'?'':_esc(_anTopicFilter)}" oninput="_anTopicInputChange(this.value)" onfocus="_anTopicShowList()" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:11px;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box">
-      ${_anTopicFilter!=='all'?'<button onclick="_anTopicFilter=\'all\';renderVideosPageKeepScroll()" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);line-height:1">✕</button>':''}
-      <div id="anTopicList" style="display:none;position:absolute;top:100%;left:0;right:0;margin-top:2px;background:var(--bg);border:1px solid var(--border);border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,.1);z-index:100;max-height:150px;overflow-y:auto"></div>
-    </div>
+  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:16px 18px;overflow-y:auto">
     <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:8px">What Makes Your Videos Win</div>${stratHtml}</div>`;
   h+='</div>'; // close 2-col grid
   // Do More Like This + Try Next — full width below
