@@ -308,7 +308,7 @@ function renderVideosPage(){
           <div id="vidSearchSuggestions" style="display:none;position:absolute;top:100%;left:0;margin-top:4px;background:var(--bg);border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.1);z-index:100;max-height:200px;overflow-y:auto;min-width:240px"></div>
         </div>
         <div style="flex:1"></div>
-        <div style="display:flex;gap:6px;align-items:center">
+        <div style="display:flex;gap:6px;align-items:center;margin-right:-8px">
           ${_ytData&&_ytData.channelStats?`
           <div style="background:rgba(120,113,145,.06);border-radius:20px;padding:4px 10px 4px 8px;display:flex;align-items:center;gap:4px;font-size:12px">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
@@ -1534,15 +1534,6 @@ function _vidRenderAnalytics(){
   const _spRevReal=_hasRealRev?_kpiLast6.map(([k])=>Math.round(_realRevByMonth[k]||0)):_spRev;
   const _kc2=(fn,bg)=>`<div style="background:${bg||'var(--glass)'};border:1px solid var(--border);border-radius:10px;padding:6px 10px;cursor:pointer;display:flex;align-items:center;gap:8px;min-width:0" onclick="${fn}">`;
   const _kStat=(label,val,spark)=>`${spark||''}<div style="min-width:0"><div style="font-size:9px;color:var(--muted);white-space:nowrap">${label}</div><div style="font-size:15px;font-weight:700;color:var(--text);white-space:nowrap">${val}</div></div>`;
-  h+='<div style="display:flex;gap:8px;margin-bottom:12px;margin-left:8px;flex-wrap:wrap;align-items:stretch">';
-  h+=`<div style="background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:6px 10px;cursor:pointer;display:flex;align-items:center;gap:6px" onclick="_ytShowUnreplied()"><div style="font-size:15px;font-weight:700;color:#ef4444">${_unrepliedN}</div><div style="font-size:9px;color:var(--muted)">Unreplied</div></div>`;
-  h+=`${_kc2("_anKpiModal('views')")}${_kStat('Views',_ytNum(totalViews),sparkline(_spViews))}</div>`;
-  h+=`${_kc2("_anKpiModal('avg')")}${_kStat('Avg/Video',_ytNum(avgViews),sparkline(_spAvg))}</div>`;
-  h+=`${_kc2("_anKpiModal('videos')")}${_kStat('Videos',String(merged.length),sparkline(_spVids))}</div>`;
-  h+=`${_kc2("_anKpiModal('revenue')")}${_kStat(_revLabel,_revValue,sparkline(_spRevReal))}</div>`;
-  h+=`${_kc2("_anKpiModal('subscribers')")}${_kStat('Subscribers',cs?_ytNum(cs.subscribers):'-')}</div>`;
-  h+='</div>';
-
   // ── TREND CHART + Strategy Insights ──
   const periodMap={};
   merged.forEach(v=>{
@@ -1757,10 +1748,18 @@ function _vidRenderAnalytics(){
     }
   }
 
-  // Strategy panel + chart + recommendations in a 2-column layout
-  // Left: chart + Do More / Try Next stacked. Right: strategy panel spanning full height.
-  h+=`<div style="display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:16px;align-items:start">`;
+  // Main 2-col layout: left (KPIs + chart + recs) | right (strategy, full height)
+  h+=`<div style="display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:16px;align-items:stretch">`;
   h+=`<div style="display:flex;flex-direction:column;gap:12px">`;
+  // KPIs row
+  h+='<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:stretch">';
+  h+=`<div style="background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:6px 10px;cursor:pointer;display:flex;align-items:center;gap:6px" onclick="_ytShowUnreplied()"><div style="font-size:15px;font-weight:700;color:#ef4444">${_unrepliedN}</div><div style="font-size:9px;color:var(--muted)">Unreplied</div></div>`;
+  h+=`${_kc2("_anKpiModal('views')")}${_kStat('Views',_ytNum(totalViews),sparkline(_spViews))}</div>`;
+  h+=`${_kc2("_anKpiModal('avg')")}${_kStat('Avg/Video',_ytNum(avgViews),sparkline(_spAvg))}</div>`;
+  h+=`${_kc2("_anKpiModal('videos')")}${_kStat('Videos',String(merged.length),sparkline(_spVids))}</div>`;
+  h+=`${_kc2("_anKpiModal('revenue')")}${_kStat(_revLabel,_revValue,sparkline(_spRevReal))}</div>`;
+  h+=`${_kc2("_anKpiModal('subscribers')")}${_kStat('Subscribers',cs?_ytNum(cs.subscribers):'-')}</div>`;
+  h+='</div>';
   h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column">${trendHtml}</div>`;
   // Do More Like This + Try Next side by side under chart
   h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">';
