@@ -1185,6 +1185,239 @@ function _vidRenderMonthly(){
   </div>`;
 }
 
+// ── Analytics View ───────────────────────────────────────────────────────────
+function _vidRenderAnalytics(){
+  const all=(st.videos||[]).filter(v=>!v.is_deleted);
+  const published=all.filter(v=>v.status==='published'&&v.post_date);
+  const cs=_ytData?_ytData.channelStats:null;
+
+  const merged=published.map(v=>{
+    const yt=_ytForVid(v.id);
+    return{...v,views:yt?yt.views:0,likes:yt?yt.likes:0,comments:yt?yt.comments:0,ytId:yt?yt.ytId:null};
+  }).filter(v=>v.views>0).sort((a,b)=>b.views-a.views);
+
+  if(!merged.length) return '<div style="padding:40px;text-align:center;color:var(--muted)">No YouTube data available yet. Publish videos and check back!</div>';
+
+  const totalViews=merged.reduce((s,v)=>s+v.views,0);
+  const totalLikes=merged.reduce((s,v)=>s+v.likes,0);
+  const totalComments=merged.reduce((s,v)=>s+v.comments,0);
+  const avgViews=Math.round(totalViews/merged.length);
+
+  const rpmLow=2,rpmHigh=7;
+  const estLow=Math.round(totalViews/1000*rpmLow);
+  const estHigh=Math.round(totalViews/1000*rpmHigh);
+
+  const engagements=merged.map(v=>({...v,engRate:v.views>0?((v.likes+v.comments)/v.views*100):0}));
+  const avgEng=(engagements.reduce((s,v)=>s+v.engRate,0)/engagements.length);
+
+  // Topic performance
+  const topicMap={};
+  merged.forEach(v=>{
+    const t=v.topic||'Untitled';
+    if(!topicMap[t])topicMap[t]={views:0,likes:0,comments:0,count:0};
+    topicMap[t].views+=v.views;topicMap[t].likes+=v.likes;topicMap[t].comments+=v.comments;topicMap[t].count++;
+  });
+  const topics=Object.entries(topicMap).map(([t,d])=>({topic:t,avgViews:Math.round(d.views/d.count),totalViews:d.views,avgEng:d.count>0?((d.likes+d.comments)/d.views*100):0,count:d.count})).sort((a,b)=>b.avgViews-a.avgViews);
+
+  // Duration sweet spot
+  const durBuckets={'0-5 min':{min:0,max:5},'5-10 min':{min:5,max:10},'10-20 min':{min:10,max:20},'20-40 min':{min:20,max:40},'40+ min':{min:40,max:9999}};
+  const durData={};
+  merged.forEach(v=>{
+    if(!v.duration_minutes)return;
+    const mins=parseInt(String(v.duration_minutes).split('.')[0])||0;
+    for(const[label,range] of Object.entries(durBuckets)){
+      if(mins>=range.min&&mins<range.max){if(!durData[label])durData[label]={views:0,likes:0,count:0};durData[label].views+=v.views;durData[label].likes+=v.likes;durData[label].count++;break;}
+    }
+  });
+  const durArr=Object.entries(durBuckets).map(([label])=>{const d=durData[label]||{views:0,count:0,likes:0};return{label,avgViews:d.count?Math.round(d.views/d.count):0,count:d.count};}).filter(d=>d.count>0);
+  const bestDur=durArr.length?durArr.reduce((a,b)=>a.avgViews>b.avgViews?a:b):null;
+
+  // Best publish day
+  const dayNames=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const dayData=Array(7).fill(null).map(()=>({views:0,count:0}));
+  merged.forEach(v=>{if(!v.post_date)return;const d=new Date(v.post_date+'T12:00:00');dayData[d.getDay()].views+=v.views;dayData[d.getDay()].count++;});
+  const dayArr=dayData.map((d,i)=>({day:dayNames[i],avgViews:d.count?Math.round(d.views/d.count):0,count:d.count})).filter(d=>d.count>0);
+  const bestDay=dayArr.length?dayArr.reduce((a,b)=>a.avgViews>b.avgViews?a:b):null;
+
+  // Big vs Small
+  const bigVids=merged.filter(v=>v.video_type==='B');
+  const smallVids=merged.filter(v=>v.video_type!=='B');
+  const bigAvg=bigVids.length?Math.round(bigVids.reduce((s,v)=>s+v.views,0)/bigVids.length):0;
+  const smallAvg=smallVids.length?Math.round(smallVids.reduce((s,v)=>s+v.views,0)/smallVids.length):0;
+
+  // Monthly trend
+  const monthMap={};
+  merged.forEach(v=>{if(!v.post_date)return;const key=v.post_date.slice(0,7);if(!monthMap[key])monthMap[key]={views:0,count:0,likes:0};monthMap[key].views+=v.views;monthMap[key].count++;monthMap[key].likes+=v.likes;});
+  const months=Object.entries(monthMap).sort((a,b)=>a[0].localeCompare(b[0])).slice(-12);
+  const maxMonthViews=Math.max(...months.map(([,d])=>d.views),1);
+
+  // Views velocity
+  const now=new Date();
+  const velocity=merged.map(v=>{const days=Math.max(1,Math.round((now-new Date(v.post_date+'T12:00:00'))/(86400000)));return{...v,vpd:Math.round(v.views/days),days};}).sort((a,b)=>b.vpd-a.vpd);
+
+  // Outliers
+  const overperformers=merged.filter(v=>v.views>avgViews*1.5).slice(0,5);
+  const underperformers=merged.filter(v=>v.views<avgViews*0.5).sort((a,b)=>a.views-b.views).slice(0,5);
+
+  // Title length
+  const titleBuckets={'Short (<40)':{min:0,max:40},'Medium (40-70)':{min:40,max:70},'Long (70+)':{min:70,max:999}};
+  const titleData={};
+  merged.forEach(v=>{const len=(v.title||'').length;for(const[label,range] of Object.entries(titleBuckets)){if(len>=range.min&&len<range.max){if(!titleData[label])titleData[label]={views:0,count:0};titleData[label].views+=v.views;titleData[label].count++;break;}}});
+  const titleArr=Object.entries(titleBuckets).map(([label])=>{const d=titleData[label]||{views:0,count:0};return{label,avgViews:d.count?Math.round(d.views/d.count):0,count:d.count};}).filter(d=>d.count>0);
+
+  // Helpers
+  function bar(val,max,color,label,sub,w){
+    const pct=max?Math.round(val/max*100):0;
+    return`<div style="display:flex;align-items:center;gap:8px;margin:3px 0">
+      <span style="font-size:11px;color:var(--muted);width:${w||'80px'};text-align:right;flex-shrink:0">${label}</span>
+      <div style="flex:1;height:18px;background:rgba(120,113,145,.08);border-radius:4px;overflow:hidden">
+        <div style="width:${Math.max(pct,2)}%;height:100%;background:${color};border-radius:4px"></div>
+      </div>
+      <span style="font-size:11px;font-weight:600;width:70px;flex-shrink:0">${sub}</span>
+    </div>`;
+  }
+  function card(title,content,span){return`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:16px 18px;${span?'grid-column:span '+span:''}">
+    <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:10px">${title}</div>${content}</div>`;}
+  function stat(label,value,color,sub){return`<div style="text-align:center;padding:8px 0">
+    <div style="font-size:10px;color:var(--muted);margin-bottom:2px">${label}</div>
+    <div style="font-size:20px;font-weight:700;color:${color||'var(--text)'}">${value}</div>
+    ${sub?'<div style="font-size:10px;color:var(--muted);margin-top:1px">'+sub+'</div>':''}</div>`;}
+
+  let h='<div style="padding:16px 0;overflow-y:auto">';
+
+  // ROW 1: Key metrics
+  h+='<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:16px">';
+  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:10px">${stat('Total Views',_ytNum(totalViews),'#0ea5e9')}</div>`;
+  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:10px">${stat('Avg Views/Video',_ytNum(avgViews),'#8b5cf6')}</div>`;
+  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:10px">${stat('Engagement',avgEng.toFixed(1)+'%','#10b981','likes+comments/views')}</div>`;
+  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:10px">${stat('Published',merged.length,'#f59e0b')}</div>`;
+  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:10px">${stat('Est. Revenue','$'+_ytNum(estLow)+'-$'+_ytNum(estHigh),'#22c55e','$'+rpmLow+'-$'+rpmHigh+' RPM')}</div>`;
+  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:10px">${stat('Subscribers',cs?_ytNum(cs.subscribers):'-','#f43f5e')}</div>`;
+  h+='</div>';
+
+  // ROW 2: Money + Topics + Velocity
+  h+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px">';
+
+  let moneyHtml='<div style="font-size:10px;color:var(--muted);margin-bottom:6px">Your biggest earners (estimated)</div>';
+  merged.slice(0,7).forEach((v,i)=>{
+    const est=Math.round(v.views/1000*((rpmLow+rpmHigh)/2));
+    moneyHtml+=`<div style="display:flex;align-items:center;gap:6px;padding:3px 0;font-size:11px;${i===0?'font-weight:600':''}">
+      <span style="color:var(--muted);width:14px;flex-shrink:0">${i+1}</span>
+      <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${_ytEsc(v.title||'')}">${_ytEsc(v.title||'Untitled')}</span>
+      <span style="color:#22c55e;font-weight:600;flex-shrink:0">~$${_ytNum(est)}</span>
+    </div>`;
+  });
+  h+=card('Money Makers',moneyHtml);
+
+  let topicHtml='<div style="font-size:10px;color:var(--muted);margin-bottom:6px">Which topics get the most views?</div>';
+  const maxTopicViews=topics.length?topics[0].avgViews:1;
+  topics.slice(0,8).forEach(t=>{topicHtml+=bar(t.avgViews,maxTopicViews,'#8b5cf6',t.topic.length>18?t.topic.slice(0,16)+'..':t.topic,_ytNum(t.avgViews)+' ('+t.count+')','100px');});
+  h+=card('Topic Performance',topicHtml);
+
+  let velHtml='<div style="font-size:10px;color:var(--muted);margin-bottom:6px">Views per day since publish</div>';
+  velocity.slice(0,7).forEach((v,i)=>{
+    velHtml+=`<div style="display:flex;align-items:center;gap:6px;padding:3px 0;font-size:11px;${i===0?'font-weight:600':''}">
+      <span style="color:var(--muted);width:14px;flex-shrink:0">${i+1}</span>
+      <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${_ytEsc(v.title||'')}">${_ytEsc(v.title||'Untitled')}</span>
+      <span style="color:#0ea5e9;font-weight:600;flex-shrink:0">${_ytNum(v.vpd)}/day</span>
+    </div>`;
+  });
+  h+=card('Fastest Growing',velHtml);
+  h+='</div>';
+
+  // ROW 3: Strategy
+  h+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin-bottom:16px">';
+
+  let durHtml='<div style="font-size:10px;color:var(--muted);margin-bottom:6px">Avg views by video length</div>';
+  const maxDurViews=durArr.length?Math.max(...durArr.map(d=>d.avgViews)):1;
+  durArr.forEach(d=>{durHtml+=bar(d.avgViews,maxDurViews,bestDur&&d.label===bestDur.label?'#22c55e':'#64748b',d.label,_ytNum(d.avgViews)+' ('+d.count+')','80px');});
+  if(bestDur) durHtml+=`<div style="margin-top:8px;padding:6px 10px;background:rgba(34,197,94,.08);border-radius:6px;font-size:11px;color:#16a34a">Sweet spot: <b>${bestDur.label}</b></div>`;
+  h+=card('Duration Sweet Spot',durHtml);
+
+  let dayHtml='<div style="font-size:10px;color:var(--muted);margin-bottom:6px">Avg views by day of week</div>';
+  const maxDayViews=dayArr.length?Math.max(...dayArr.map(d=>d.avgViews)):1;
+  dayArr.sort((a,b)=>dayNames.indexOf(a.day)-dayNames.indexOf(b.day)).forEach(d=>{dayHtml+=bar(d.avgViews,maxDayViews,bestDay&&d.day===bestDay.day?'#f59e0b':'#64748b',d.day,_ytNum(d.avgViews)+' ('+d.count+')','40px');});
+  if(bestDay) dayHtml+=`<div style="margin-top:8px;padding:6px 10px;background:rgba(245,158,11,.08);border-radius:6px;font-size:11px;color:#d97706">Best day: <b>${bestDay.day}</b></div>`;
+  h+=card('Best Publish Day',dayHtml);
+
+  let bvlHtml='<div style="font-size:10px;color:var(--muted);margin-bottom:6px">How do your formats compare?</div>';
+  const maxBvl=Math.max(bigAvg,smallAvg,1);
+  bvlHtml+=bar(bigAvg,maxBvl,'#0ea5e9','Big (B)',_ytNum(bigAvg)+' avg ('+bigVids.length+')','60px');
+  bvlHtml+=bar(smallAvg,maxBvl,'#f43f5e','Small (L)',_ytNum(smallAvg)+' avg ('+smallVids.length+')','60px');
+  const roi=bigAvg&&smallAvg?(bigAvg/smallAvg).toFixed(1)+'x':'-';
+  bvlHtml+=`<div style="margin-top:10px;padding:6px 10px;background:rgba(14,165,233,.08);border-radius:6px;font-size:11px;color:#0284c7">Big videos get <b>${roi}</b> the views on average</div>`;
+  h+=card('Big vs Small',bvlHtml);
+
+  let titleHtml='<div style="font-size:10px;color:var(--muted);margin-bottom:6px">Does title length matter?</div>';
+  const maxTitleViews=titleArr.length?Math.max(...titleArr.map(d=>d.avgViews)):1;
+  titleArr.forEach(d=>{titleHtml+=bar(d.avgViews,maxTitleViews,'#8b5cf6',d.label,_ytNum(d.avgViews)+' ('+d.count+')','100px');});
+  const bestTitle=titleArr.length?titleArr.reduce((a,b)=>a.avgViews>b.avgViews?a:b):null;
+  if(bestTitle) titleHtml+=`<div style="margin-top:8px;padding:6px 10px;background:rgba(139,92,246,.08);border-radius:6px;font-size:11px;color:#7c3aed">Best: <b>${bestTitle.label}</b></div>`;
+  h+=card('Title Length Impact',titleHtml);
+  h+='</div>';
+
+  // ROW 4: Monthly trend + Stars/Sleepers
+  h+='<div style="display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:16px">';
+
+  let monthHtml='<div style="font-size:10px;color:var(--muted);margin-bottom:8px">Upload cadence & views over time</div>';
+  monthHtml+='<div style="display:flex;align-items:flex-end;gap:4px;height:120px">';
+  months.forEach(([key,d])=>{
+    const pct=Math.max(Math.round(d.views/maxMonthViews*100),3);
+    monthHtml+=`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px">
+      <span style="font-size:9px;color:var(--muted)">${_ytNum(d.views)}</span>
+      <div style="width:100%;height:${pct}px;background:linear-gradient(180deg,#0ea5e9,#8b5cf6);border-radius:3px;min-height:3px" title="${key}: ${_ytNum(d.views)} views, ${d.count} videos"></div>
+      <span style="font-size:9px;color:var(--muted)">${key.slice(5)}</span>
+      <span style="font-size:8px;color:#8b5cf6">${d.count}v</span>
+    </div>`;
+  });
+  monthHtml+='</div>';
+  const avgUploads=months.length?Math.round(months.reduce((s,[,d])=>s+d.count,0)/months.length*10)/10:0;
+  monthHtml+=`<div style="margin-top:8px;font-size:11px;color:var(--muted)">Avg: <b>${avgUploads}</b> videos/month</div>`;
+  h+=card('Monthly Trend',monthHtml);
+
+  let engHtml='';
+  if(overperformers.length){
+    engHtml+='<div style="font-size:10px;color:#16a34a;font-weight:600;margin-bottom:4px">Overperformers (&gt;1.5x avg)</div>';
+    overperformers.forEach(v=>{engHtml+=`<div style="display:flex;gap:6px;padding:2px 0;font-size:11px"><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${_ytEsc(v.title||'')}">${_ytEsc(v.title||'Untitled')}</span><span style="color:#16a34a;flex-shrink:0;font-weight:600">${_ytNum(v.views)}</span></div>`;});
+  }
+  if(underperformers.length){
+    engHtml+=`<div style="font-size:10px;color:#dc2626;font-weight:600;margin:${overperformers.length?'8':'0'}px 0 4px">Underperformers (&lt;0.5x avg)</div>`;
+    underperformers.forEach(v=>{engHtml+=`<div style="display:flex;gap:6px;padding:2px 0;font-size:11px"><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${_ytEsc(v.title||'')}">${_ytEsc(v.title||'Untitled')}</span><span style="color:#dc2626;flex-shrink:0">${_ytNum(v.views)}</span></div>`;});
+  }
+  engHtml+=`<div style="margin-top:8px;padding:6px 10px;background:rgba(139,92,246,.06);border-radius:6px;font-size:11px;color:var(--muted)">Avg baseline: <b>${_ytNum(avgViews)}</b> views</div>`;
+  h+=card('Stars & Sleepers',engHtml);
+  h+='</div>';
+
+  // ROW 5: Engagement + Do More Like This
+  h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">';
+
+  let engRHtml='<div style="font-size:10px;color:var(--muted);margin-bottom:6px">Highest likes+comments per view</div>';
+  const topEng=engagements.filter(v=>v.views>=100).sort((a,b)=>b.engRate-a.engRate).slice(0,8);
+  topEng.forEach((v,i)=>{engRHtml+=`<div style="display:flex;align-items:center;gap:6px;padding:3px 0;font-size:11px"><span style="color:var(--muted);width:14px;flex-shrink:0">${i+1}</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${_ytEsc(v.title||'')}">${_ytEsc(v.title||'Untitled')}</span><span style="color:#10b981;font-weight:600;flex-shrink:0">${v.engRate.toFixed(1)}%</span><span style="color:var(--muted);font-size:10px;flex-shrink:0">(${_ytNum(v.views)})</span></div>`;});
+  h+=card('Most Engaged',engRHtml);
+
+  let recHtml='<div style="font-size:10px;color:var(--muted);margin-bottom:6px">Scored by views x engagement — your winning formula</div>';
+  const scored=engagements.filter(v=>v.views>=100).map(v=>({...v,score:v.views*(1+v.engRate/100)})).sort((a,b)=>b.score-a.score).slice(0,8);
+  scored.forEach((v,i)=>{
+    const t=v.topic||'';
+    const dur=v.duration_minutes?String(v.duration_minutes).split('.')[0]+'m':'';
+    recHtml+=`<div style="display:flex;align-items:center;gap:6px;padding:3px 0;font-size:11px;${i<3?'font-weight:600':''}">
+      <span style="color:${i<3?'#f59e0b':'var(--muted)'};width:14px;flex-shrink:0">${i+1}</span>
+      <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${_ytEsc(v.title||'')}">${_ytEsc(v.title||'Untitled')}</span>
+      ${t?'<span style="background:rgba(139,92,246,.1);border-radius:10px;padding:1px 6px;font-size:9px;color:#8b5cf6;flex-shrink:0">'+_ytEsc(t)+'</span>':''}
+      ${dur?'<span style="color:var(--muted);font-size:10px;flex-shrink:0">'+dur+'</span>':''}
+    </div>`;
+  });
+  if(scored.length>=3){
+    const topTopics={};scored.slice(0,5).forEach(v=>{const t=v.topic||'Other';topTopics[t]=(topTopics[t]||0)+1;});
+    const bt=Object.entries(topTopics).sort((a,b)=>b[1]-a[1])[0];
+    if(bt) recHtml+=`<div style="margin-top:8px;padding:6px 10px;background:rgba(245,158,11,.08);border-radius:6px;font-size:11px;color:#d97706">Make more about: <b>${_ytEsc(bt[0])}</b></div>`;
+  }
+  h+=card('Do More Like This',recHtml);
+  h+='</div></div>';
+  return h;
+}
+
 // ── View / Filter ────────────────────────────────────────────────────────────
 function _vidSetView(v){_vidView=v;renderVideosPage();}
 function _vidSetFilter(f){_vidFilter=f;renderVideosPage();}
