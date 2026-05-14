@@ -2044,7 +2044,7 @@ function renderRecOv(){
     wrap.className='chk-wrap';
     wrap.style.cssText='cursor:pointer;flex-shrink:0';
     wrap.title='Toggle';
-    wrap.innerHTML=`<svg viewBox="0 0 24 24" width="14" height="14" xmlns="http://www.w3.org/2000/svg" style="display:block" fill="none" stroke="${str}" stroke-width="1.8"><rect x="8" y="10" width="8" height="4" rx="1.5" fill="${col}"/><circle cx="6.5" cy="8.5" r="2.8" fill="${col}"/><circle cx="6.5" cy="15.5" r="2.8" fill="${col}"/><circle cx="17.5" cy="8.5" r="2.8" fill="${col}"/><circle cx="17.5" cy="15.5" r="2.8" fill="${col}"/></svg>`;
+    wrap.innerHTML=`<svg viewBox="0 0 24 24" width="14" height="14" xmlns="http://www.w3.org/2000/svg" style="display:block;margin-left:-1px" fill="none" stroke="${str}" stroke-width="1.8"><rect x="8" y="10" width="8" height="4" rx="1.5" fill="${col}"/><circle cx="6.5" cy="8.5" r="2.8" fill="${col}"/><circle cx="6.5" cy="15.5" r="2.8" fill="${col}"/><circle cx="17.5" cy="8.5" r="2.8" fill="${col}"/><circle cx="17.5" cy="15.5" r="2.8" fill="${col}"/></svg>`;
     wrap.addEventListener('click',e=>{e.stopPropagation();togWrRule(ruleId,!isDone,wkKey);});
     wrap.addEventListener('mousedown',e=>e.stopPropagation());
     return wrap;
