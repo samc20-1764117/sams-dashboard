@@ -1434,7 +1434,12 @@ const _VID_STATUS_OPTIONS=[
 ];
 function _vidModalKey(event){
   if(event.key==='Escape'){event.stopPropagation();closeMod('vidModal');}
-  else if(event.key==='Enter'&&(event.metaKey||event.target.tagName!=='TEXTAREA')&&!event.target.closest('#vmStatusDrop')&&!event.target.closest('#vmBigVideoDrop')){event.preventDefault();saveVidModal();}
+  else if(event.key==='Enter'&&(event.metaKey||event.target.tagName!=='TEXTAREA')){
+    const sDrop=document.getElementById('vmStatusDrop');
+    const bDrop=document.getElementById('vmBigVideoDrop');
+    if((sDrop&&sDrop.style.display==='block')||(bDrop&&bDrop.style.display==='block'))return;
+    event.preventDefault();saveVidModal();
+  }
 }
 function _vidShowDropdown(type){_vidFilterDropdown(type);}
 function _vidToggleDropdown(type){
