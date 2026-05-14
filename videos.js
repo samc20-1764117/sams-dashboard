@@ -1318,21 +1318,40 @@ function _vidRenderAnalytics(){
 
   let h='<div style="padding:16px 20px;overflow-y:auto">';
 
+  // ── Build monthly buckets for KPI sparklines + this-month values ──
+  const _kpiMonths={};
+  merged.forEach(v=>{
+    if(!v.post_date)return;
+    const k=v.post_date.slice(0,7);
+    if(!_kpiMonths[k])_kpiMonths[k]={views:0,likes:0,comments:0,count:0};
+    _kpiMonths[k].views+=v.views;_kpiMonths[k].likes+=v.likes;_kpiMonths[k].comments+=v.comments;_kpiMonths[k].count++;
+  });
+  const _kpiSorted=Object.entries(_kpiMonths).sort((a,b)=>a[0].localeCompare(b[0]));
+  const _kpiLast6=_kpiSorted.slice(-6);
+  const _thisMonth=new Date().toISOString().slice(0,7);
+  const _tm=_kpiMonths[_thisMonth]||{views:0,likes:0,comments:0,count:0};
+  const _spViews=_kpiLast6.map(([,d])=>d.views);
+  const _spAvg=_kpiLast6.map(([,d])=>d.count?Math.round(d.views/d.count):0);
+  const _spRev=_kpiLast6.map(([,d])=>Math.round(d.views/1000*rpm));
+  const _spVids=_kpiLast6.map(([,d])=>d.count);
+  const _spEng=_kpiLast6.map(([,d])=>d.views>0?((d.likes+d.comments)/d.views*100):0);
+  const _sub=(t)=>'<div style="font-size:10px;color:var(--muted);margin-top:1px">'+t+'</div>';
+
   // ── KPIs ──
   const _dismissed=JSON.parse(localStorage.getItem('_ytDismissed')||'[]');
   const _unrepliedAll=_ytData.unrepliedComments||[];
   const _unrepliedFiltered=_unrepliedAll.filter(c=>!_dismissed.includes(c.id));
   const _unrepliedN=_unrepliedFiltered.length;
   h+='<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:16px">';
-  h+=`<div style="background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);border-radius:12px;padding:10px;cursor:pointer" ondblclick="_ytShowUnreplied()">${stat('Unreplied Comments',String(_unrepliedN),'','#ef4444')}</div>`;
-  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:10px">${stat('Total Views',_ytNum(totalViews))}</div>`;
-  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:10px">${stat('Avg Views/Video',_ytNum(avgViews))}</div>`;
-  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:10px">${stat('Videos',String(merged.length),'long-form only')}</div>`;
-  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:10px">${stat('Est. Revenue','$'+_ytNum(estRevenue),'@ $'+rpm+' RPM')}</div>`;
-  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:10px">${stat('Subscribers',cs?_ytNum(cs.subscribers):'-')}</div>`;
+  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:10px">${stat('Total Views',_ytNum(totalViews),_sub(_ytNum(_tm.views)+' this month')+sparkline(_spViews,'#0ea5e9'))}</div>`;
+  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:10px">${stat('Avg Views/Video',_ytNum(avgViews),_sub(_ytNum(_tm.count?Math.round(_tm.views/_tm.count):0)+' avg this mo')+sparkline(_spAvg,'#8b5cf6'))}</div>`;
+  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:10px">${stat('Engagement',avgEng.toFixed(1)+'%',_sub('(likes + comments) / views')+sparkline(_spEng,'#10b981'))}</div>`;
+  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:10px">${stat('Videos',String(merged.length),_sub(_tm.count+' this month')+sparkline(_spVids,'#f59e0b'))}</div>`;
+  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:10px">${stat('Est. Revenue','$'+_ytNum(estRevenue),_sub('@ $'+rpm+' RPM')+sparkline(_spRev,'#22c55e'))}</div>`;
+  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:10px">${stat('Subscribers',cs?_ytNum(cs.subscribers):'-',_sub(_unrepliedN+' unreplied comments'))}</div>`;
   h+='</div>';
 
-  // ── TREND CHART (full width — most important visual) ──
+  // ── TREND CHART (2/3 width) + Do More Like This (1/3) ──
   const periodMap={};
   merged.forEach(v=>{
     if(!v.post_date)return;
@@ -1375,12 +1394,7 @@ function _vidRenderAnalytics(){
   if(_anTrendMetric==='engagement') trendHtml+=`<div style="margin-top:8px;font-size:11px;color:var(--muted)">Avg: <b>${avgMetricVal.toFixed(1)}%</b> per ${perLabel}</div>`;
   else if(_anTrendMetric==='revenue') trendHtml+=`<div style="margin-top:8px;font-size:11px;color:var(--muted)">Total: <b>$${_ytNum(totalMetric)}</b> &middot; Avg: <b>$${_ytNum(Math.round(avgMetricVal))}</b>/${perLabel}</div>`;
   else trendHtml+=`<div style="margin-top:8px;font-size:11px;color:var(--muted)">Total: <b>${_ytNum(totalMetric)}</b> &middot; Avg: <b>${_ytNum(Math.round(avgMetricVal))}</b>/${perLabel}</div>`;
-  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:16px">
-    <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:10px">${metricLabels[_anTrendMetric]} Over Time</div>${trendHtml}</div>`;
-
-  // ── ROW 2: Do More Like This + Money Makers + Topic Performance ──
-  h+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px">';
-
+  // ── TREND (2/3) + Do More Like This (1/3) ──
   let recHtml='<div style="font-size:10px;color:var(--muted);margin-bottom:6px">Scored by views x engagement — your winning formula</div>';
   const scored=engagements.filter(v=>v.views>=100).map(v=>({...v,score:v.views*(1+v.engRate/100)})).sort((a,b)=>b.score-a.score).slice(0,8);
   scored.forEach((v,i)=>{
@@ -1398,7 +1412,14 @@ function _vidRenderAnalytics(){
     const bt=Object.entries(topTopics).sort((a,b)=>b[1]-a[1])[0];
     if(bt) recHtml+=`<div style="margin-top:8px;padding:6px 10px;background:rgba(245,158,11,.08);border-radius:6px;font-size:11px;color:#d97706">Make more about: <b>${_ytEsc(bt[0])}</b></div>`;
   }
+  h+=`<div style="display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:16px">`;
+  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:16px 18px">
+    <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:10px">${metricLabels[_anTrendMetric]} Over Time</div>${trendHtml}</div>`;
   h+=card('Do More Like This',recHtml);
+  h+='</div>';
+
+  // ── ROW 2: Money Makers + Topic Performance ──
+  h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">';
 
   let moneyHtml='<div style="font-size:10px;color:var(--muted);margin-bottom:6px">Your biggest earners (estimated)</div>';
   merged.slice(0,7).forEach((v,i)=>{
