@@ -290,22 +290,23 @@ function renderVideosPage(){
   el.innerHTML=`
     <div class="ov-topbar"><div class="ov-topbar-left"><span class="ov-topbar-label">Videos</span><span class="ov-topbar-dot"></span></div><span class="ov-topbar-date topbar-date"></span><div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div></div>
     <div style="padding-top:4px">
-      <div style="display:flex;gap:10px;align-items:center;margin-bottom:4px;flex-wrap:wrap">
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:4px;flex-wrap:wrap;position:relative;z-index:1000">
         <div style="display:flex;gap:2px;background:var(--glass);border:1px solid var(--border);border-radius:8px;padding:2px">
           <button class="${viewBtnS('dashboard')}" onclick="_vidSetView('dashboard')">Current</button>
           <button class="${viewBtnS('table')}" onclick="_vidSetView('table')">All Details</button>
           <button class="${viewBtnS('analytics')}" onclick="_vidSetView('analytics')">Analytics</button>
           <button class="${viewBtnS('monthly')}" onclick="_vidSetView('monthly')">Monthly</button>
         </div>
-        <div style="position:relative;display:inline-block">
-          <div style="display:flex;align-items:center;border:1px solid var(--border);border-radius:8px;background:var(--bg);padding:0 4px">
-            <input id="vidSearchInput" type="text" placeholder="Search videos..." value="${_vidSearch.replace(/"/g,'&quot;')}" oninput="_vidSetSearch(this.value)" onkeydown="_vidSearchKey(event)" onfocus="_vidSearchFocus()" style="padding:5px 6px;border:none;border-radius:8px;font-family:inherit;font-size:12px;background:transparent;color:var(--text);outline:none;width:160px">
-            ${_vidSearch?`<span id="vidSearchCount" style="font-size:10px;color:var(--muted);white-space:nowrap;margin-right:2px">${_vidMatchIdx+1}/${_vidMatchIds.length}</span>
-            <button onclick="_vidSearchNav(-1)" style="background:none;border:none;cursor:pointer;padding:1px 3px;font-size:13px;color:var(--muted);line-height:1" title="Previous (Shift+Enter)">▲</button>
-            <button onclick="_vidSearchNav(1)" style="background:none;border:none;cursor:pointer;padding:1px 3px;font-size:13px;color:var(--muted);line-height:1" title="Next (Enter)">▼</button>
-            <button onclick="_vidSetSearch('');document.getElementById('vidSearchInput').value=''" style="background:none;border:none;cursor:pointer;padding:1px 3px;font-size:13px;color:var(--muted);line-height:1" title="Clear">✕</button>`:''}
+        <div style="position:relative">
+          <div style="display:flex;align-items:center;border:1px solid var(--border);border-radius:8px;background:var(--bg);padding:0 6px;gap:2px">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" style="flex-shrink:0;opacity:.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input id="vidSearchInput" type="text" placeholder="Search videos..." value="${_vidSearch.replace(/"/g,'&quot;')}" oninput="_vidSetSearch(this.value)" onkeydown="_vidSearchKey(event)" onfocus="_vidSearchFocus()" style="padding:5px 4px;border:none;font-family:inherit;font-size:12px;background:transparent;color:var(--text);outline:none;width:140px;min-width:0">
+            ${_vidSearch?`<span id="vidSearchCount" style="font-size:10px;color:var(--muted);white-space:nowrap">${_vidMatchIdx+1}/${_vidMatchIds.length}</span>
+            <button onclick="_vidSearchNav(-1)" style="background:none;border:none;cursor:pointer;padding:0 2px;font-size:11px;color:var(--muted);line-height:1" title="Previous (Shift+Enter)">▲</button>
+            <button onclick="_vidSearchNav(1)" style="background:none;border:none;cursor:pointer;padding:0 2px;font-size:11px;color:var(--muted);line-height:1" title="Next (Enter)">▼</button>
+            <button onclick="_vidSetSearch('');document.getElementById('vidSearchInput').value=''" style="background:none;border:none;cursor:pointer;padding:0 2px;font-size:11px;color:var(--muted);line-height:1" title="Clear (Esc)">✕</button>`:''}
           </div>
-          <div id="vidSearchSuggestions" style="display:none;position:absolute;top:100%;left:0;margin-top:4px;background:var(--bg);border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.1);z-index:100;max-height:200px;overflow-y:auto;min-width:240px"></div>
+          <div id="vidSearchSuggestions" style="display:none;position:absolute;top:100%;left:0;margin-top:4px;background:var(--bg);border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.1);z-index:1001;max-height:200px;overflow-y:auto;min-width:240px"></div>
         </div>
         <div style="flex:1"></div>
         <div style="display:flex;gap:6px;align-items:center">
@@ -333,7 +334,7 @@ function renderVideosPage(){
             <span style="font-weight:600;color:#10b981">${stats.published}</span>
           </div>
         </div>
-        <button onclick="openVidModal()" style="background:rgba(255,255,255,.85);border:1px solid var(--border);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.08);margin-right:64px" title="Add video">
+        <button onclick="openVidModal()" style="background:rgba(255,255,255,.85);border:1px solid var(--border);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.08);margin-right:72px" title="Add video">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         </button>
       </div>
@@ -1599,7 +1600,7 @@ function _vidRenderAnalytics(){
     <div style="flex:1"></div>
     <span style="font-size:10px;color:var(--muted);white-space:nowrap;line-height:1">${summaryText}</span>
   </div>`;
-  trendHtml+='<div style="display:flex;align-items:flex-end;gap:2px;flex:1;min-height:180px;padding:0 8px">';
+  trendHtml+='<div style="display:flex;align-items:flex-end;gap:2px;flex:1;min-height:220px;padding:0 8px">';
   metricVals.forEach(m=>{
     const pct=Math.max(Math.round(m.val/maxMetric*70),2);
     const isCur=m.key===_curPeriod;
@@ -1748,8 +1749,8 @@ function _vidRenderAnalytics(){
     }
   }
 
-  // Main 2-col layout: left (KPIs + chart + recs) | right (strategy, full height)
-  h+=`<div style="display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:16px;align-items:stretch">`;
+  // 2-col: left (KPIs + chart) | right (strategy spanning full height)
+  h+=`<div style="display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:12px;align-items:stretch">`;
   h+=`<div style="display:flex;flex-direction:column;gap:12px">`;
   // KPIs row
   h+='<div style="display:flex;gap:8px;align-items:stretch">';
@@ -1760,9 +1761,13 @@ function _vidRenderAnalytics(){
   h+=`${_kc2("_anKpiModal('revenue')")}${_kStat(_revLabel,_revValue,sparkline(_spRevReal))}</div>`;
   h+=`${_kc2("_anKpiModal('subscribers')")}${_kStat('Subscribers',cs?_ytNum(cs.subscribers):'-')}</div>`;
   h+='</div>';
-  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column">${trendHtml}</div>`;
-  // Do More Like This + Try Next side by side under chart
-  h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">';
+  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;flex:1">${trendHtml}</div>`;
+  h+='</div>'; // close left column
+  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:16px 18px;overflow-y:auto">
+    <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:8px">What Makes Your Videos Win</div>${stratHtml}</div>`;
+  h+='</div>'; // close 2-col grid
+  // Do More Like This + Try Next — full width below
+  h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">';
 
   const scored=engagements.filter(v=>v.views>=100).map(v=>({...v,score:v.views*(1+v.engRate/100)})).sort((a,b)=>b.score-a.score).slice(0,8);
   let recHtml='<div style="font-size:10px;color:var(--muted);margin-bottom:6px">Scored by views x engagement</div>';
@@ -1809,10 +1814,6 @@ function _vidRenderAnalytics(){
   if(!ideaNum) tryHtml+='<div style="font-size:11px;color:var(--muted)">Not enough data yet for suggestions</div>';
   h+=card('Try Next',tryHtml);
   h+='</div>'; // close Do More / Try Next grid
-  h+='</div>'; // close left column
-  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:16px 18px;overflow-y:auto">
-    <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:8px">What Makes Your Videos Win</div>${stratHtml}</div>`;
-  h+='</div>'; // close main 2-col grid
 
   h+='</div>';
   return h;
