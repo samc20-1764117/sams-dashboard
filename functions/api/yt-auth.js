@@ -10,8 +10,8 @@ export async function onRequest(context) {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const CLIENT_ID = context.env.GOOGLE_CLIENT_ID;
-  const CLIENT_SECRET = context.env.GOOGLE_CLIENT_SECRET;
+  const CLIENT_ID = context.env.GCP_CLIENT_ID;
+  const CLIENT_SECRET = context.env.GCP_CLIENT_SECRET;
 
   // Debug: show available env keys when checking status
   const url0 = new URL(context.request.url);
@@ -25,7 +25,7 @@ export async function onRequest(context) {
   }
 
   if (!CLIENT_ID || !CLIENT_SECRET) {
-    return new Response(JSON.stringify({ error: 'OAuth not configured. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET.' }), {
+    return new Response(JSON.stringify({ error: 'OAuth not configured. Set GCP_CLIENT_ID and GCP_CLIENT_SECRET.' }), {
       status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
