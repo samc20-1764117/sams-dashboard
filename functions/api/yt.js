@@ -41,32 +41,21 @@ export async function onRequest(context) {
   const _url = new URL(context.request.url);
   const _mode = _url.searchParams.get('mode');
 
-  // ── OAuth setup: store credentials in KV ──
-  if (_mode === 'auth-setup' && context.request.method === 'POST') {
-    const KV = context.env.YT_CACHE;
-    if (!KV) return new Response('no KV', { status: 500, headers: corsHeaders });
-    const body = await context.request.json();
-    if (!body.clientId || !body.clientSecret) return new Response(JSON.stringify({ error: 'Send { clientId, clientSecret }' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-    await KV.put('oauth-client-id', body.clientId);
-    await KV.put('oauth-client-secret', body.clientSecret);
-    return new Response(JSON.stringify({ ok: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-  }
+  // ── Helper: get OAuth credentials from env vars (like YOUTUBE_API_KEY) ──
+  const _oauthCid = () => context.env.GCP_CLIENT_ID;
+  const _oauthSec = () => context.env.GCP_CLIENT_SECRET;
 
   // ── OAuth status ──
   if (_mode === 'auth-status') {
     const KV = context.env.YT_CACHE;
-    if (!KV) return new Response(JSON.stringify({ error: 'no KV' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-    const cid = await KV.get('oauth-client-id');
-    const hasRefresh = !!(await KV.get('yt-oauth-refresh'));
-    return new Response(JSON.stringify({ configured: !!cid, authorized: hasRefresh }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    const hasRefresh = KV ? !!(await KV.get('yt-oauth-refresh')) : false;
+    return new Response(JSON.stringify({ configured: !!_oauthCid(), authorized: hasRefresh }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   }
 
   // ── OAuth start: redirect to Google consent ──
   if (_mode === 'auth-start') {
-    const KV = context.env.YT_CACHE;
-    if (!KV) return new Response('no KV', { status: 500, headers: corsHeaders });
-    const cid = await KV.get('oauth-client-id');
-    if (!cid) return new Response(JSON.stringify({ error: 'Run setup first' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    const cid = _oauthCid();
+    if (!cid) return new Response(JSON.stringify({ error: 'GCP_CLIENT_ID env var not set in Cloudflare' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     const redirectUri = `${_url.origin}/api/yt?mode=auth-callback`;
     const authUrl = 'https://accounts.google.com/o/oauth2/v2/auth?' + new URLSearchParams({
       client_id: cid, redirect_uri: redirectUri, response_type: 'code',
@@ -79,13 +68,13 @@ export async function onRequest(context) {
   // ── OAuth callback: exchange code for tokens ──
   if (_mode === 'auth-callback') {
     const KV = context.env.YT_CACHE;
-    if (!KV) return new Response('no KV', { status: 500, headers: corsHeaders });
+    if (!KV) return new Response('KV not bound', { status: 500, headers: corsHeaders });
     const code = _url.searchParams.get('code');
     const error = _url.searchParams.get('error');
     if (error) return new Response(`<h2>Auth denied</h2><p>${error}</p>`, { headers: { 'Content-Type': 'text/html' } });
     if (!code) return new Response('Missing code', { status: 400 });
-    const cid = await KV.get('oauth-client-id');
-    const csec = await KV.get('oauth-client-secret');
+    const cid = _oauthCid(); const csec = _oauthSec();
+    if (!cid || !csec) return new Response('GCP_CLIENT_ID / GCP_CLIENT_SECRET env vars not set', { status: 500, headers: corsHeaders });
     const redirectUri = `${_url.origin}/api/yt?mode=auth-callback`;
     const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -114,8 +103,8 @@ export async function onRequest(context) {
     let at = await KV.get('yt-oauth-access');
     if (!at) {
       try {
-        const cid = await KV.get('oauth-client-id'); const csec = await KV.get('oauth-client-secret');
-        if (!cid || !csec) { await KV.put('yta-cooldown', '1', { expirationTtl: 3600 }); const lg = await KV.get('yta-good', 'json'); return lg ? new Response(JSON.stringify(lg), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }) : new Response(JSON.stringify({ error: 'no credentials' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }); }
+        const cid = _oauthCid(); const csec = _oauthSec();
+        if (!cid || !csec) { await KV.put('yta-cooldown', '1', { expirationTtl: 3600 }); const lg = await KV.get('yta-good', 'json'); return lg ? new Response(JSON.stringify(lg), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }) : new Response(JSON.stringify({ error: 'GCP env vars not set' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }); }
         const tr = await fetch('https://oauth2.googleapis.com/token', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ refresh_token: refreshToken, client_id: cid, client_secret: csec, grant_type: 'refresh_token' }).toString() });
         const ttd = await tr.json();
         if (ttd.error) { if (ttd.error === 'invalid_grant') await KV.delete('yt-oauth-refresh'); await KV.put('yta-cooldown', '1', { expirationTtl: 3600 }); const lg = await KV.get('yta-good', 'json'); return lg ? new Response(JSON.stringify(lg), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }) : new Response(JSON.stringify({ error: 'token_refresh_failed' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }); }
