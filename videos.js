@@ -1369,11 +1369,14 @@ function _vidRenderAnalytics(){
   const _spEng=_kpiLast6.map(([,d])=>d.views>0?((d.likes+d.comments)/d.views*100):0);
 
   // ── KPIs ──
+  const _dismissed=_ytGetDismissed();
+  const _unrepliedAll=_ytData.unrepliedComments||[];
+  const _unrepliedN=_unrepliedAll.filter(c=>!_dismissed.includes(c.id)).length;
   const _kc='<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:10px">';
   h+='<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:16px">';
+  h+=`<div style="background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);border-radius:12px;padding:10px;cursor:pointer" ondblclick="_ytShowUnreplied()"><div style="text-align:center;padding:6px 0"><div style="font-size:10px;color:var(--muted);margin-bottom:2px">Unreplied Comments</div><div style="font-size:20px;font-weight:700;color:#ef4444">${_unrepliedN}</div></div></div>`;
   h+=`${_kc}${stat('Total Views',_ytNum(totalViews),_ytNum(_tm.views)+' this month',sparkline(_spViews))}</div>`;
   h+=`${_kc}${stat('Avg Views/Video',_ytNum(avgViews),_ytNum(_tm.count?Math.round(_tm.views/_tm.count):0)+' avg this mo',sparkline(_spAvg))}</div>`;
-  h+=`${_kc}${stat('Engagement',avgEng.toFixed(1)+'%','(likes + comments) / views',sparkline(_spEng))}</div>`;
   h+=`${_kc}${stat('Videos',String(merged.length),_tm.count+' this month',sparkline(_spVids))}</div>`;
   h+=`${_kc}${stat('Est. Revenue','$'+_ytNum(estRevenue),'@ $'+rpm+' RPM',sparkline(_spRev))}</div>`;
   h+=`${_kc}${stat('Subscribers',cs?_ytNum(cs.subscribers):'-')}</div>`;
