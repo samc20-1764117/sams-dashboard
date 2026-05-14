@@ -3220,6 +3220,7 @@ function renderDayTB(){
   // Drag on empty space: DOWN = create new block, UP = select multiple blocks
   col.addEventListener('mousedown',e=>{
     if(e.button!==0||e.target.closest('.tb-block,.atb-block'))return;
+    if(window._tbEditing){const ei=col.querySelector('.tb-edit');if(ei)ei.blur();return;}
     e.preventDefault();
     const colRect=col.getBoundingClientRect();
     const startRelY=Math.max(0,e.clientY-colRect.top);
