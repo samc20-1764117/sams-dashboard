@@ -1,5 +1,6 @@
 // ── YouTube Analytics ────────────────────────────────────────────────────────
 let _ytData=null,_ytMatch=null,_ytFetched=false;
+let _ytAnalytics=null,_ytAnalyticsFetched=false;
 function _ytEsc(s){return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function _ytDur(iso){var m=iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);if(!m)return'0:00';var h=m[1]?parseInt(m[1]):0,min=m[2]?parseInt(m[2]):0,s=m[3]?parseInt(m[3]):0;if(h)return h+':'+String(min).padStart(2,'0')+':'+String(s).padStart(2,'0');return min+':'+String(s).padStart(2,'0');}
 function _ytNum(n){if(n>=1000000)return(n/1000000).toFixed(1)+'M';if(n>=1000)return(n/1000).toFixed(1)+'K';return String(n);}
@@ -359,6 +360,17 @@ function renderVideosPage(){
       try{localStorage.setItem('_ytCache',JSON.stringify(d));}catch(e){}
       _ytBuildMatch();
       renderVideosPageKeepScroll();
+    }).catch(function(){});
+  }
+  // Fetch YouTube Analytics API data (actual revenue) — once per page load
+  if(!_ytAnalyticsFetched){
+    _ytAnalyticsFetched=true;
+    try{var _lac=JSON.parse(localStorage.getItem('_ytAnalyticsCache')||'null');if(_lac&&_lac.monthly)_ytAnalytics=_lac;}catch(e){}
+    fetch('/api/yt-analytics?_='+Date.now(),{cache:'no-store'}).then(function(r){if(!r.ok)throw new Error(r.status);return r.json();}).then(function(d){
+      if(d.error)return;
+      _ytAnalytics=d;
+      try{localStorage.setItem('_ytAnalyticsCache',JSON.stringify(d));}catch(e){}
+      if(_vidView==='analytics')renderVideosPageKeepScroll();
     }).catch(function(){});
   }
   // Render YT stats from _ytData (either fresh or cached)
@@ -1316,22 +1328,33 @@ function _anKpiModal(metric){
   const rpm=4;
   const _moAbbr=['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const now=new Date();const _thisMonth=now.toISOString().slice(0,7);
+  // Use real revenue from Analytics API if available
+  const _hasReal=_ytAnalytics&&_ytAnalytics.monthly&&_ytAnalytics.monthly.length>0;
+  const _realByMo={};if(_hasReal)_ytAnalytics.monthly.forEach(m=>{_realByMo[m.month]=m;});
   const months={};
   merged.forEach(v=>{
     if(!v.post_date)return;const k=v.post_date.slice(0,7);
     if(!months[k])months[k]={views:0,likes:0,comments:0,count:0,revenue:0};
     months[k].views+=v.views;months[k].likes+=v.likes;months[k].comments+=v.comments;months[k].count++;months[k].revenue+=Math.round(v.views/1000*rpm);
   });
+  // For revenue drilldown, prefer real monthly revenue data
+  if(_hasReal&&metric==='revenue'){
+    // Replace with actual revenue by calendar month (real earnings per month)
+    _ytAnalytics.monthly.forEach(m=>{
+      if(!months[m.month])months[m.month]={views:0,likes:0,comments:0,count:0,revenue:0};
+      months[m.month].realRevenue=Math.round(m.revenue);
+    });
+  }
   const sorted=Object.entries(months).sort((a,b)=>b[0].localeCompare(a[0]));
   const getVal=(d)=>{
     if(metric==='views')return{val:d.views,fmt:_ytNum(d.views)};
     if(metric==='avg')return{val:d.count?Math.round(d.views/d.count):0,fmt:_ytNum(d.count?Math.round(d.views/d.count):0)};
     if(metric==='videos')return{val:d.count,fmt:String(d.count)};
-    if(metric==='revenue')return{val:d.revenue,fmt:'$'+_ytNum(d.revenue)};
+    if(metric==='revenue'){const v=d.realRevenue!=null?d.realRevenue:d.revenue;return{val:v,fmt:'$'+_ytNum(v)};}
     if(metric==='subscribers')return{val:d.views,fmt:_ytNum(d.views)};
     return{val:0,fmt:'0'};
   };
-  const labels={views:'Total Views',avg:'Avg Views/Video',videos:'Videos Published',revenue:'Est. Revenue',subscribers:'Subscriber Growth'};
+  const labels={views:'Total Views',avg:'Avg Views/Video',videos:'Videos Published',revenue:_hasReal?'Revenue (actual)':'Est. Revenue',subscribers:'Subscriber Growth'};
   const monthVals=sorted.map(([k,d])=>({key:k,...getVal(d)}));
   const best=monthVals.length?monthVals.reduce((a,b)=>a.val>b.val?a:b):null;
   const worst=monthVals.length>1?monthVals.reduce((a,b)=>a.val<b.val?a:b):null;
@@ -1460,6 +1483,14 @@ function _vidRenderAnalytics(){
   const now=new Date();
   const _thisMonth=now.toISOString().slice(0,7);
   const _tm=_kpiMonths[_thisMonth]||{views:0,likes:0,comments:0,count:0};
+  // Real revenue from YouTube Analytics API (if available)
+  const _hasRealRev=_ytAnalytics&&_ytAnalytics.monthly&&_ytAnalytics.monthly.length>0;
+  const _realRevByMonth={};
+  let _realRevTotal=0;
+  if(_hasRealRev){
+    _ytAnalytics.monthly.forEach(m=>{_realRevByMonth[m.month]=m.revenue;_realRevTotal+=m.revenue;});
+  }
+  const _realRevThisMonth=_hasRealRev?(_realRevByMonth[_thisMonth]||0):null;
   const _spViews=_kpiLast6.map(([,d])=>d.views);
   const _spAvg=_kpiLast6.map(([,d])=>d.count?Math.round(d.views/d.count):0);
   const _spRev=_kpiLast6.map(([,d])=>Math.round(d.views/1000*rpm));
@@ -1476,7 +1507,11 @@ function _vidRenderAnalytics(){
   h+=`${_kc("_anKpiModal('views')")}${stat('Total Views',_ytNum(totalViews),_ytNum(_tm.views)+' this month',sparkline(_spViews))}</div>`;
   h+=`${_kc("_anKpiModal('avg')")}${stat('Avg Views/Video',_ytNum(avgViews),_ytNum(_tm.count?Math.round(_tm.views/_tm.count):0)+' avg this mo',sparkline(_spAvg))}</div>`;
   h+=`${_kc("_anKpiModal('videos')")}${stat('Videos',String(merged.length),_tm.count+' this month',sparkline(_spVids))}</div>`;
-  h+=`${_kc("_anKpiModal('revenue')")}${stat('Est. Revenue','$'+_ytNum(estRevenue),'@ $'+rpm+' RPM',sparkline(_spRev))}</div>`;
+  const _revLabel=_hasRealRev?'Revenue':'Est. Revenue';
+  const _revValue=_hasRealRev?'$'+_ytNum(Math.round(_realRevTotal)):'$'+_ytNum(estRevenue);
+  const _revSub=_hasRealRev?'$'+_ytNum(Math.round(_realRevThisMonth||0))+' this month':'@ $'+rpm+' RPM';
+  const _spRevReal=_hasRealRev?_kpiLast6.map(([k])=>Math.round(_realRevByMonth[k]||0)):_spRev;
+  h+=`${_kc("_anKpiModal('revenue')")}${stat(_revLabel,_revValue,_revSub,sparkline(_spRevReal))}</div>`;
   h+=`${_kc("_anKpiModal('subscribers')")}${stat('Subscribers',cs?_ytNum(cs.subscribers):'-')}</div>`;
   h+='</div>';
 
@@ -1491,7 +1526,17 @@ function _vidRenderAnalytics(){
   const periods=Object.entries(periodMap).sort((a,b)=>a[0].localeCompare(b[0]));
   const sliced=_anTrendPeriod==='yearly'?periods:periods.slice(-12);
   const metricVals=sliced.map(([key,d])=>{
-    if(_anTrendMetric==='revenue'){const v=Math.round(d.views/1000*rpm);return{key,val:v,fmt:'$'+_ytNum(v)};}
+    if(_anTrendMetric==='revenue'){
+      // Use real revenue if available, otherwise estimate
+      if(_hasRealRev){
+        // For monthly, key is "2025-01"; for yearly, key is "2025" — sum matching months
+        let rv=0;
+        if(_anTrendPeriod==='yearly'){_ytAnalytics.monthly.forEach(m=>{if(m.month.startsWith(key))rv+=m.revenue;});}
+        else{rv=_realRevByMonth[key]||0;}
+        rv=Math.round(rv);return{key,val:rv,fmt:'$'+_ytNum(rv)};
+      }
+      const v=Math.round(d.views/1000*rpm);return{key,val:v,fmt:'$'+_ytNum(v)};
+    }
     if(_anTrendMetric==='views')return{key,val:d.views,fmt:_ytNum(d.views)};
     if(_anTrendMetric==='likes')return{key,val:d.likes,fmt:_ytNum(d.likes)};
     if(_anTrendMetric==='engagement'){const r=d.views>0?((d.likes+d.comments)/d.views*100):0;return{key,val:r,fmt:r.toFixed(1)+'%'};}
