@@ -3472,8 +3472,8 @@ function drawTBBlock(col,b){
     document.addEventListener('mousemove',onRM);document.addEventListener('mouseup',onRU);
   });
   let tbDragging=false,tbOnMove=null,tbOnUp=null;
-  function _tbSelId(){if(b.cat==='pup_session'&&b._pupSessId)return'pup-sess-'+String(b._pupSessId);if(b.ruleId)return'blk-'+b.id;if(b.recId&&(st.wrRules||[]).some(x=>String(x.id)===String(b.recId)))return'blk-'+b.id;const _r2=b.recId?st.recurring.find(x=>String(x.id)===String(b.recId)):null;const _isWr2=_r2&&(_r2.is_weekly_reset===true||_r2.is_weekly_reset==='true');return b.taskId?String(b.taskId):b.recId?(_isWr2?'wrec-':'rec-virt-')+b.recId:b.shopId?'blk-'+b.id:null;}
-  function _tbBlockSelId(bl){if(bl.ruleId)return'blk-'+bl.id;if(bl.recId&&(st.wrRules||[]).some(x=>String(x.id)===String(bl.recId)))return'blk-'+bl.id;const r3=bl.recId?st.recurring.find(x=>String(x.id)===String(bl.recId)):null;const iw=r3&&(r3.is_weekly_reset===true||r3.is_weekly_reset==='true');return bl.taskId?String(bl.taskId):bl.recId?(iw?'wrec-':'rec-virt-')+bl.recId:bl.shopId?'blk-'+bl.id:null;}
+  function _tbSelId(){return _getTBBlockSelId(b);}
+  function _tbBlockSelId(bl){return _getTBBlockSelId(bl);}
   el.addEventListener('click',e=>{
     if(e.target.classList.contains('tb-resize')||e.target.classList.contains('tb-bdel')||e.target.classList.contains('tb-chk'))return;
     if(tbDragging)return;
