@@ -3729,7 +3729,7 @@ function drawAutoTBBlock(col,atb,ds){
           if(curOv2){curOv2.start_time=ns2;curOv2.end_time=ne2;sbReqSilent('PATCH','auto_timeblock_overrides',{start_time:ns2,end_time:ne2},`?id=eq.${curOv2.id}`);}
           else{const pl={base_id:aa._atbId,date:ds,start_time:ns2,end_time:ne2};const tid='atbov-tmp-'+Date.now();st.autoTBOverrides.push({...pl,id:tid});sbReqSilent('POST','auto_timeblock_overrides',pl,'').then(res=>{if(res&&res[0]){const i=st.autoTBOverrides.findIndex(o=>String(o.id)===tid);if(i>-1){st.autoTBOverrides[i]=res[0];aa._ovId=String(res[0].id);}}save();});}
         });
-        save();
+        save();if(document.getElementById('tbGrid'))renderDayTB();
       }
     };
     document.addEventListener('mousemove',atbOnMove);

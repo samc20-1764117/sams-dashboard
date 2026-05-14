@@ -1,5 +1,5 @@
 {
-  "exported_at": "2026-05-13T13:00:01.357Z",
+  "exported_at": "2026-05-14T13:00:00.681Z",
   "mode": "auto",
   "tables": {
     "tasks": [
@@ -604,6 +604,17 @@
         "done": false,
         "importance": "Normal",
         "id": "579d278b-67d4-466f-9452-30bb3c46c773",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "AI youtube",
+        "category": "My work",
+        "due_date": "2026-05-13",
+        "done": true,
+        "importance": null,
+        "id": "71b85013-24e8-43af-b476-7b4200a4ef1f",
         "important": false,
         "notes": null,
         "goal_order": null
@@ -1346,17 +1357,6 @@
         "goal_order": null
       },
       {
-        "name": "Stretch",
-        "category": "Home",
-        "due_date": "2026-05-13",
-        "done": false,
-        "importance": null,
-        "id": "e0b54e7f-e011-438d-b39d-68f07ffd3b5e",
-        "important": false,
-        "notes": null,
-        "goal_order": null
-      },
-      {
         "name": "Neuo Dash - build",
         "category": "My work",
         "due_date": null,
@@ -1463,6 +1463,28 @@
         "importance": null,
         "id": "6c0e9d3a-663e-41cc-ba90-5e1c99b8bba5",
         "important": true,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Pup training",
+        "category": "Home",
+        "due_date": "2026-05-13",
+        "done": true,
+        "importance": null,
+        "id": "5e1b08db-f6dc-45ef-bc9a-c376523df976",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Stretch",
+        "category": "Home",
+        "due_date": "2026-05-14",
+        "done": false,
+        "importance": null,
+        "id": "e0b54e7f-e011-438d-b39d-68f07ffd3b5e",
+        "important": false,
         "notes": null,
         "goal_order": null
       },
@@ -2207,7 +2229,7 @@
         "name": "Necklace untangle",
         "category": "Home",
         "due_date": "2026-05-13",
-        "done": false,
+        "done": true,
         "importance": null,
         "id": "59aefcb0-bd6e-4150-af09-f62aa73f2520",
         "important": false,
@@ -2217,7 +2239,7 @@
       {
         "name": "Tab license issue",
         "category": "My work",
-        "due_date": "2026-05-14",
+        "due_date": "2026-05-17",
         "done": false,
         "importance": null,
         "id": "0229bedc-773f-4ab3-8332-cab3d894dd67",
@@ -2248,23 +2270,23 @@
         "goal_order": null
       },
       {
-        "name": "VO drill down",
-        "category": "My work",
-        "due_date": "2026-05-13",
+        "name": "Icons",
+        "category": "Work",
+        "due_date": "2026-05-14",
         "done": false,
         "importance": null,
-        "id": "d687cd58-082d-493b-a334-45e8017f3e88",
+        "id": "73e63302-bd4d-4a7b-93f4-f460b98c30ab",
         "important": false,
         "notes": null,
         "goal_order": null
       },
       {
-        "name": "Icons",
-        "category": "Work",
-        "due_date": "2026-05-13",
+        "name": "Journal",
+        "category": "Home",
+        "due_date": "2026-05-14",
         "done": false,
         "importance": null,
-        "id": "73e63302-bd4d-4a7b-93f4-f460b98c30ab",
+        "id": "8c1de9f4-a360-413c-adfb-8c04bafbe9c1",
         "important": false,
         "notes": null,
         "goal_order": null
@@ -2276,6 +2298,17 @@
         "done": true,
         "importance": null,
         "id": "e4bc8163-d045-43b6-96e8-be5f3535e9f5",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "VO drill down",
+        "category": "My work",
+        "due_date": "2026-05-14",
+        "done": false,
+        "importance": null,
+        "id": "d687cd58-082d-493b-a334-45e8017f3e88",
         "important": false,
         "notes": null,
         "goal_order": null
@@ -3326,6 +3359,17 @@
         "goal_order": null
       },
       {
+        "name": "Engagement survey",
+        "category": "Work",
+        "due_date": "2026-05-13",
+        "done": true,
+        "importance": null,
+        "id": "d31e639e-ac72-4001-8c2b-db1cbd8a01a5",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
         "name": "Check mail",
         "category": "Home",
         "due_date": "2026-04-26",
@@ -3665,6 +3709,17 @@
         "important": false,
         "notes": null,
         "goal_order": null
+      },
+      {
+        "name": "Pool party @5pm",
+        "category": "Social",
+        "due_date": "2026-05-14",
+        "done": false,
+        "importance": null,
+        "id": "9efb95de-5f88-4e2d-9f17-b32b2495fe95",
+        "important": false,
+        "notes": null,
+        "goal_order": null
       }
     ],
     "shopping_list": [
@@ -3989,6 +4044,16 @@
         "notes": null,
         "created_at": "2026-04-20T01:10:46.982668+00:00",
         "travel_mode": null
+      },
+      {
+        "id": "fb227aa6-8239-46e4-b26b-ed43b7f162b1",
+        "name": "Okloahoma",
+        "start_date": "2026-05-22",
+        "end_date": "2026-05-25",
+        "destination": null,
+        "notes": null,
+        "created_at": "2026-05-13T14:46:21.549131+00:00",
+        "travel_mode": "drive"
       }
     ],
     "birthdays": [
@@ -7896,20 +7961,6 @@
         "done": true
       },
       {
-        "id": "50939130-0b03-4117-b02e-f68c60a24562",
-        "title": "Tab license issue",
-        "day_date": "2026-05-14",
-        "start_time": "13:00:00",
-        "duration_minutes": 60,
-        "category": "My work",
-        "created_at": "2026-05-11T14:59:12.920755+00:00",
-        "start_minutes": 780,
-        "task_id": "0229bedc-773f-4ab3-8332-cab3d894dd67",
-        "rec_id": null,
-        "shop_id": null,
-        "done": false
-      },
-      {
         "id": "7b25cb5d-ff3a-499b-bdba-a8a94027155e",
         "title": "Film modern UX",
         "day_date": "2026-05-16",
@@ -8036,34 +8087,6 @@
         "done": true
       },
       {
-        "id": "11463a85-a6ef-4274-9228-b8020891a960",
-        "title": "Icons",
-        "day_date": "2026-05-13",
-        "start_time": "12:00:00",
-        "duration_minutes": 60,
-        "category": "Work",
-        "created_at": "2026-05-13T01:01:36.341297+00:00",
-        "start_minutes": 720,
-        "task_id": "73e63302-bd4d-4a7b-93f4-f460b98c30ab",
-        "rec_id": null,
-        "shop_id": null,
-        "done": false
-      },
-      {
-        "id": "69cd1c32-860c-49be-a96c-be84d45d1b8d",
-        "title": "Stretch",
-        "day_date": "2026-05-13",
-        "start_time": "19:00:00",
-        "duration_minutes": 30,
-        "category": "Home",
-        "created_at": "2026-05-13T02:37:07.799874+00:00",
-        "start_minutes": 1140,
-        "task_id": "e0b54e7f-e011-438d-b39d-68f07ffd3b5e",
-        "rec_id": null,
-        "shop_id": null,
-        "done": false
-      },
-      {
         "id": "f60e6791-c0e5-46af-b555-fb3589f867b1",
         "title": "Make dentist apt",
         "day_date": "2026-04-19",
@@ -8090,6 +8113,20 @@
         "rec_id": "59",
         "shop_id": null,
         "done": false
+      },
+      {
+        "id": "436bd430-f484-4b41-8acb-69855d0a6c84",
+        "title": "AI youtube",
+        "day_date": "2026-05-13",
+        "start_time": "09:00:00",
+        "duration_minutes": 120,
+        "category": "My work",
+        "created_at": "2026-05-13T13:40:40.331506+00:00",
+        "start_minutes": 540,
+        "task_id": "71b85013-24e8-43af-b476-7b4200a4ef1f",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
       },
       {
         "id": "56cc240d-f526-4bb3-86fe-3daa54a4f590",
@@ -9744,30 +9781,30 @@
         "done": true
       },
       {
-        "id": "5dd8cbf2-960c-4e6c-acd2-82bfbc35363a",
-        "title": "VO drill down",
-        "day_date": "2026-05-13",
-        "start_time": "13:00:00",
-        "duration_minutes": 60,
-        "category": "My work",
-        "created_at": "2026-05-13T01:01:36.340488+00:00",
-        "start_minutes": 780,
-        "task_id": "d687cd58-082d-493b-a334-45e8017f3e88",
+        "id": "390d8f37-f37b-42af-8623-573662e88677",
+        "title": "Pool party @5pm",
+        "day_date": "2026-05-14",
+        "start_time": "17:00:00",
+        "duration_minutes": 180,
+        "category": "Social",
+        "created_at": "2026-05-13T13:30:02.919624+00:00",
+        "start_minutes": 1020,
+        "task_id": "9efb95de-5f88-4e2d-9f17-b32b2495fe95",
         "rec_id": null,
         "shop_id": null,
         "done": false
       },
       {
-        "id": "b28edbc0-26ff-4dc1-82a4-80caf2e22422",
-        "title": "Necklace untangle",
+        "id": "e3109f52-cdff-4803-802c-b7b6f64148c0",
+        "title": "Pups teeth",
         "day_date": "2026-05-13",
-        "start_time": "15:00:00",
+        "start_time": "16:45:00",
         "duration_minutes": 30,
-        "category": "Home",
-        "created_at": "2026-05-13T02:37:05.956638+00:00",
-        "start_minutes": 900,
-        "task_id": "59aefcb0-bd6e-4150-af09-f62aa73f2520",
-        "rec_id": null,
+        "category": "Recurring",
+        "created_at": "2026-05-13T13:40:45.778977+00:00",
+        "start_minutes": 660,
+        "task_id": null,
+        "rec_id": "10",
         "shop_id": null,
         "done": false
       },
@@ -9800,6 +9837,20 @@
         "done": true
       },
       {
+        "id": "b28edbc0-26ff-4dc1-82a4-80caf2e22422",
+        "title": "Necklace untangle",
+        "day_date": "2026-05-13",
+        "start_time": "15:00:00",
+        "duration_minutes": 30,
+        "category": "Home",
+        "created_at": "2026-05-13T02:37:05.956638+00:00",
+        "start_minutes": 450,
+        "task_id": "59aefcb0-bd6e-4150-af09-f62aa73f2520",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
         "id": "2ed573ef-2fba-4e37-8e0e-12c8ed529e2b",
         "title": "Practice presentation",
         "day_date": "2026-05-03",
@@ -9812,6 +9863,34 @@
         "rec_id": null,
         "shop_id": null,
         "done": true
+      },
+      {
+        "id": "eee22b38-86a4-4a84-900f-94370993fc18",
+        "title": "Pup training",
+        "day_date": "2026-05-13",
+        "start_time": "11:30:00",
+        "duration_minutes": 30,
+        "category": "Home",
+        "created_at": "2026-05-13T13:40:52.109129+00:00",
+        "start_minutes": 690,
+        "task_id": "5e1b08db-f6dc-45ef-bc9a-c376523df976",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
+        "id": "84961875-dd65-4df3-bcf6-9a0b67fd10ec",
+        "title": "VO drill down",
+        "day_date": "2026-05-14",
+        "start_time": "13:30:00",
+        "duration_minutes": 60,
+        "category": "My work",
+        "created_at": "2026-05-14T12:27:53.560227+00:00",
+        "start_minutes": 810,
+        "task_id": "d687cd58-082d-493b-a334-45e8017f3e88",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
       },
       {
         "id": "3cb3ac17-7b7f-491d-a44e-a509e8ce9d68",
@@ -9966,6 +10045,48 @@
         "rec_id": null,
         "shop_id": null,
         "done": true
+      },
+      {
+        "id": "69cd1c32-860c-49be-a96c-be84d45d1b8d",
+        "title": "Stretch",
+        "day_date": "2026-05-13",
+        "start_time": "12:00:00",
+        "duration_minutes": 30,
+        "category": "Home",
+        "created_at": "2026-05-14T12:48:43.532665+00:00",
+        "start_minutes": 720,
+        "task_id": "e0b54e7f-e011-438d-b39d-68f07ffd3b5e",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "11463a85-a6ef-4274-9228-b8020891a960",
+        "title": "Icons",
+        "day_date": "2026-05-13",
+        "start_time": "12:30:00",
+        "duration_minutes": 60,
+        "category": "Work",
+        "created_at": "2026-05-14T12:48:43.537333+00:00",
+        "start_minutes": 750,
+        "task_id": "73e63302-bd4d-4a7b-93f4-f460b98c30ab",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "55d10639-edc8-4ff0-b718-81992b976b83",
+        "title": "Tab license issue",
+        "day_date": "2026-05-17",
+        "start_time": "13:00:00",
+        "duration_minutes": 60,
+        "category": "My work",
+        "created_at": "2026-05-14T12:48:59.912985+00:00",
+        "start_minutes": 780,
+        "task_id": "0229bedc-773f-4ab3-8332-cab3d894dd67",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
       }
     ],
     "auto_timeblocks": [
@@ -10527,6 +10648,27 @@
         "date": "2026-05-01",
         "start_time": "08:00:00",
         "end_time": "08:30:00"
+      },
+      {
+        "id": 101,
+        "base_id": 4,
+        "date": "2026-05-14",
+        "start_time": "15:30:00",
+        "end_time": "16:00:00"
+      },
+      {
+        "id": 102,
+        "base_id": 5,
+        "date": "2026-05-14",
+        "start_time": "16:00:00",
+        "end_time": "16:30:00"
+      },
+      {
+        "id": 103,
+        "base_id": 6,
+        "date": "2026-05-14",
+        "start_time": "16:30:00",
+        "end_time": "17:00:00"
       }
     ]
   }

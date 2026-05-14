@@ -372,7 +372,9 @@ function _vidDashRow(v,isChild,simple){
   const primary=isComplete?v.title:(topic||v.title);
   const secondary=showTopicTitle?v.title:'';
   const _addBtn=simple?'':v.video_type==='B'?'<button onclick="event.stopPropagation();openVidModalForBig(\''+sid+'\')" style="font-size:10px;font-weight:700;width:16px;height:16px;line-height:14px;text-align:center;border-radius:3px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;margin-right:4px" title="Add child video">+</button>':(!isChild?'<button style="font-size:10px;font-weight:700;width:16px;height:16px;line-height:14px;text-align:center;border-radius:3px;border:1px solid transparent;background:transparent;color:transparent;margin-right:4px;pointer-events:none">+</button>':'');
-  const _tHtml=showTopicTitle?'<span class="'+titleCls+'">'+_esc(topic)+'</span><span style="font-size:10px;color:var(--muted);margin-left:4px;font-weight:400">'+_titleSuffix+'</span>':'<span class="'+titleCls+'">'+_esc(primary)+'</span>';
+  const _kidCount=v.video_type==='B'?(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===sid).length:0;
+  const _kidBadge=_kidCount?'<span style="font-size:9px;color:var(--muted);font-weight:400;margin-left:4px">'+_kidCount+'</span>':'';
+  const _tHtml=(showTopicTitle?'<span class="'+titleCls+'">'+_esc(topic)+'</span><span style="font-size:10px;color:var(--muted);margin-left:4px;font-weight:400">'+_titleSuffix+'</span>':'<span class="'+titleCls+'">'+_esc(primary)+'</span>')+_kidBadge;
   if(simple){
     let hasGroup=false;
     if(v.video_type==='B'){
@@ -737,7 +739,7 @@ async function _vidDashDrop(e,newStatus){
     }
   }
 
-  // Collect undo data for status changes
+  // Capture all prev states BEFORE any modifications
   const undoData=[];
   for(const dragId of dragIds){
     const v=(st.videos||[]).find(x=>String(x.id)===String(dragId));
@@ -748,18 +750,21 @@ async function _vidDashDrop(e,newStatus){
       (st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(v.id)).forEach(c=>childPrevs.push({id:c.id,status:c.status,vid_order:c.vid_order}));
     }
     undoData.push({v,prev,prevOrder,childPrevs});
+  }
+  // Now apply status changes
+  for(const d of undoData){
+    const v=d.v;
     if(v.status!==newStatus&&v.status!=='published'){
-      // L videos without a big parent can't be in_progress/up_next
       if(v.video_type==='L'&&!v.big_video_id&&(newStatus==='in_progress'||newStatus==='up_next'))v.status='idea';
       else v.status=newStatus;
     }
     // When moving a B to ideas, move its children to ideas too
     if(v.video_type==='B'&&newStatus==='idea'){
-      childPrevs.forEach(cp=>{const c=(st.videos||[]).find(x=>String(x.id)===String(cp.id));if(c&&c.status!=='published')c.status='idea';});
+      d.childPrevs.forEach(cp=>{const c=(st.videos||[]).find(x=>String(x.id)===String(cp.id));if(c&&c.status!=='published')c.status='idea';});
     }
     // When moving a B from ideas to current, promote its children too
     if(v.video_type==='B'&&newStatus!=='idea'&&newStatus!=='published'){
-      childPrevs.forEach(cp=>{const c=(st.videos||[]).find(x=>String(x.id)===String(cp.id));if(c&&c.status==='idea')c.status=newStatus;});
+      d.childPrevs.forEach(cp=>{const c=(st.videos||[]).find(x=>String(x.id)===String(cp.id));if(c&&c.status==='idea')c.status=newStatus;});
     }
   }
 
@@ -976,7 +981,7 @@ function _vidRow(v,isChild,postMap){
   const _tblDone=_tblApplicable.filter(s=>v[s]==='done').length;
   const _tblPct=_tblApplicable.length?Math.round((_tblDone/_tblApplicable.length)*100):0;
   return`<tr class="vid-row${sel?' vid-sel':''}" data-vid="${sid}" onclick="vidCellClick(event,'${sid}')" ondblclick="openVidEdit('${sid}')" oncontextmenu="showVidCtx(event,'${sid}')" style="${isBig?'background:rgba(255,255,255,.50)':''}">
-    <td data-field="title" style="${indent}${!isChild?'font-weight:600;':''}${titleColor}overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${addBtn}${childMark}${numHtml}${(v.status==='in_progress'||v.status==='up_next')&&v.topic?`<span class="vid-title-text">${_esc(v.topic)}</span><span style="font-size:10px;color:var(--muted);margin-left:4px;font-weight:400">${_titleSuffix}</span>`:`<span class="vid-title-text">${_esc(v.title)}</span>`}</td>
+    <td data-field="title" style="${indent}${!isChild?'font-weight:600;':''}${titleColor}overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${addBtn}${childMark}${numHtml}${(v.status==='in_progress'||v.status==='up_next')&&v.topic?`<span class="vid-title-text">${_esc(v.topic)}</span><span style="font-size:10px;color:var(--muted);margin-left:4px;font-weight:400">${_titleSuffix}</span>`:`<span class="vid-title-text">${_esc(v.title)}</span>`}${isBig?`<span style="font-size:9px;color:var(--muted);font-weight:400;margin-left:4px">${(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===sid).length}</span>`:''}</td>
     ${VID_STEPS.map(s=>`<td style="text-align:center"><div class="vid-step-dot${v[s]==='done'?' done':v[s]==='na'?' na':''}" data-vid="${sid}" data-step="${s}" title="${VID_STEP_LABELS[s]}"></div></td>`).join('')}
     <td data-field="post_date" style="text-align:right;font-size:11px;color:${_vidDateColor(v.post_date,v)}">${postStr}</td>
     <td data-field="duration_minutes" style="text-align:right;font-size:11px;color:var(--muted)">${durStr}</td>
@@ -1190,21 +1195,29 @@ function _vidBulletTipShow(e,sid){
     let html='';
     if(v.video_type==='B'){
       const kids=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===sid);
-      html=kids.map(c=>'<div style="padding:2px 0;font-size:11px;white-space:nowrap">└ '+_esc(c.topic||c.title)+'</div>').join('');
+      const done=kids.filter(c=>VID_STEPS.every(s=>c[s]==='done'||c[s]==='na')&&c.post_date&&c.duration_minutes).length;
+      html='<div style="font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.03em;margin-bottom:4px">'+kids.length+' Small Video'+(kids.length!==1?'s':'')+'</div>';
+      html+='<div style="font-size:10px;color:var(--muted);margin-bottom:6px">'+done+' complete</div>';
+      html+=kids.map(c=>{
+        const cDone=VID_STEPS.every(s=>c[s]==='done'||c[s]==='na')&&c.post_date&&c.duration_minutes;
+        return'<div style="padding:2px 0;font-size:11px;white-space:nowrap;display:flex;align-items:center;gap:4px"><span style="color:'+(cDone?'#10b981':'rgba(139,92,246,.4)')+'">●</span>'+_esc(c.topic||c.title)+'</div>';
+      }).join('');
     }else if(v.big_video_id){
       const parent=(st.videos||[]).find(x=>!x.is_deleted&&String(x.id)===String(v.big_video_id));
-      if(parent)html='<div style="padding:2px 0;font-size:11px;white-space:nowrap;font-weight:600">'+_esc(parent.topic||parent.title)+'</div>';
+      if(parent){
+        html='<div style="font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.03em;margin-bottom:4px">Part of</div>';
+        html+='<div style="padding:2px 0;font-size:11px;white-space:nowrap;font-weight:600">'+_esc(parent.topic||parent.title)+'</div>';
+      }
     }
     if(!html)return;
     const tip=document.createElement('div');
     tip.id='vidBulletTip';
-    tip.style.cssText='position:fixed;z-index:9999;padding:6px 10px;border-radius:10px;background:rgba(255,255,255,.85);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(210,205,228,.3);box-shadow:0 4px 16px rgba(0,0,0,.1);pointer-events:none;max-width:240px';
+    tip.style.cssText='position:fixed;z-index:9999;padding:8px 12px;border-radius:12px;background:rgba(255,252,248,.92);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid rgba(210,205,228,.3);box-shadow:0 8px 24px rgba(0,0,0,.1),inset 0 1px 0 rgba(255,255,255,.7);pointer-events:none;max-width:260px';
     tip.innerHTML=html;
     document.body.appendChild(tip);
     const rect=e.target.getBoundingClientRect();
     tip.style.left=rect.right+6+'px';
     tip.style.top=rect.top-4+'px';
-    // Keep in viewport
     const tr=tip.getBoundingClientRect();
     if(tr.right>window.innerWidth)tip.style.left=rect.left-tr.width-6+'px';
     if(tr.bottom>window.innerHeight)tip.style.top=window.innerHeight-tr.height-4+'px';
