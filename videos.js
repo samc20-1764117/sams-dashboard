@@ -22,6 +22,15 @@ function _ytBuildMatch(){
     if(!byDate[ytDate])byDate[ytDate]=[];
     byDate[ytDate].push(j);
   }
+  function _ytTitleScore(dv,ytIdx){
+    var words=((dv.title||'')+'  '+(dv.topic||'')).toLowerCase().split(/\s+/).filter(Boolean);
+    if(!words.length)return 0;
+    var ytT=(ytVids[ytIdx].title||'').toLowerCase();
+    var score=0;
+    for(var w=0;w<words.length;w++){if(words[w].length>2&&ytT.indexOf(words[w])>=0)score++;}
+    return score;
+  }
+  // Pass 1: exact date match
   for(var i=0;i<dbVids.length;i++){
     var dv=dbVids[i];
     if(!dv.post_date)continue;
@@ -30,15 +39,11 @@ function _ytBuildMatch(){
     var avail=candidates.filter(function(j){return!usedYt.has(j);});
     if(!avail.length)continue;
     var bestJ=avail[0];
-    if(avail.length>1&&dv.title){
-      // Multiple YT videos on same date — pick best title match
-      var dbWords=dv.title.toLowerCase().split(/\s+/);
+    if(avail.length>1){
       var bestScore=-1;
       for(var k=0;k<avail.length;k++){
-        var ytTitle=(ytVids[avail[k]].title||'').toLowerCase();
-        var score=0;
-        for(var w=0;w<dbWords.length;w++){if(ytTitle.indexOf(dbWords[w])>=0)score++;}
-        if(score>bestScore){bestScore=score;bestJ=avail[k];}
+        var sc=_ytTitleScore(dv,avail[k]);
+        if(sc>bestScore){bestScore=sc;bestJ=avail[k];}
       }
     }
     var yt=ytVids[bestJ];
@@ -46,14 +51,74 @@ function _ytBuildMatch(){
     usedYt.add(bestJ);
     matched++;
   }
-  console.log('[YT] Matched',matched,'videos. _ytMatch keys:',Object.keys(_ytMatch).length);
-  if(matched===0&&dbVids.length>0&&ytVids.length>0){
-    // Debug: show why first db video didn't match
-    var first=dbVids.find(v=>v.post_date);
-    if(first)console.log('[YT] No match debug - DB:',first.post_date,'(type:'+typeof first.post_date+') vs YT dates:',ytVids.slice(0,5).map(v=>v.publishedAt.slice(0,10)));
+  // Pass 2: off-by-one date (UTC timezone shift) + title match
+  for(var i2=0;i2<dbVids.length;i2++){
+    var dv2=dbVids[i2];
+    if(!dv2.post_date||_ytMatch[String(dv2.id)])continue;
+    var d=new Date(dv2.post_date+'T12:00:00Z');
+    var prev=new Date(d.getTime()-86400000).toISOString().slice(0,10);
+    var next=new Date(d.getTime()+86400000).toISOString().slice(0,10);
+    var nearby=(byDate[prev]||[]).concat(byDate[next]||[]).filter(function(j){return!usedYt.has(j);});
+    if(!nearby.length)continue;
+    var bestJ2=nearby[0],bestScore2=-1;
+    for(var k2=0;k2<nearby.length;k2++){
+      var sc2=_ytTitleScore(dv2,nearby[k2]);
+      if(sc2>bestScore2){bestScore2=sc2;bestJ2=nearby[k2];}
+    }
+    if(bestScore2>0){
+      var yt2=ytVids[bestJ2];
+      _ytMatch[String(dv2.id)]={views:yt2.views,likes:yt2.likes,comments:yt2.comments,ytId:yt2.id};
+      usedYt.add(bestJ2);
+      matched++;
+    }
   }
+  console.log('[YT] Matched',matched,'of',dbVids.filter(v=>v.post_date).length,'videos with dates.');
+  var unmatched=dbVids.filter(v=>v.post_date&&v.status==='published'&&!_ytMatch[String(v.id)]);
+  if(unmatched.length)console.log('[YT] Unmatched published:',unmatched.map(v=>v.post_date+' '+v.title));
 }
 function _ytForVid(id){return _ytMatch?_ytMatch[String(id)]:null;}
+
+function _ytShowUnreplied(){
+  const dismissed=JSON.parse(localStorage.getItem('_ytDismissed')||'[]');
+  const all=(_ytData&&_ytData.unrepliedComments)||[];
+  const items=all.filter(c=>!dismissed.includes(c.id));
+  const vidMap={};
+  if(_ytMatch){Object.entries(_ytMatch).forEach(([dbId,m])=>{if(m.ytId)vidMap[m.ytId]=dbId;});}
+  let html='<div style="font-size:14px;font-weight:700;margin-bottom:12px">Unreplied Comments ('+items.length+')</div>';
+  if(!items.length)html+='<div style="color:var(--muted);font-size:12px">All caught up!</div>';
+  html+='<div style="max-height:60vh;overflow-y:auto">';
+  items.sort((a,b)=>(b.publishedAt||'').localeCompare(a.publishedAt||''));
+  items.forEach(c=>{
+    const dbId=vidMap[c.videoId];
+    const dbVid=dbId?(st.videos||[]).find(v=>String(v.id)===dbId):null;
+    const vidTitle=dbVid?(dbVid.topic||dbVid.title):'';
+    const date=c.publishedAt?c.publishedAt.slice(0,10):'';
+    html+=`<div style="display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:1px solid rgba(210,205,228,.12)">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:10px;color:var(--muted);margin-bottom:2px">${_esc(vidTitle)} · ${date}</div>
+        <div style="font-size:11px;font-weight:600;margin-bottom:2px">${_esc(c.author)}</div>
+        <div style="font-size:12px;color:var(--text)">${c.text}</div>
+      </div>
+      <button onclick="_ytDismissComment('${c.id}')" style="flex-shrink:0;padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--muted);font-size:10px;cursor:pointer;font-family:inherit">Dismiss</button>
+    </div>`;
+  });
+  html+='</div>';
+  let ov=document.getElementById('ytUnrepliedModal');
+  if(!ov){
+    ov=document.createElement('div');ov.id='ytUnrepliedModal';
+    ov.style.cssText='position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.3)';
+    ov.onclick=function(e){if(e.target===ov)ov.remove();};
+    document.body.appendChild(ov);
+  }
+  ov.innerHTML='<div style="background:var(--bg);border-radius:14px;padding:20px;max-width:520px;width:90%;box-shadow:0 12px 40px rgba(0,0,0,.15);max-height:80vh;overflow:hidden;display:flex;flex-direction:column">'+html+'</div>';
+}
+function _ytDismissComment(id){
+  const dismissed=JSON.parse(localStorage.getItem('_ytDismissed')||'[]');
+  if(!dismissed.includes(id))dismissed.push(id);
+  localStorage.setItem('_ytDismissed',JSON.stringify(dismissed));
+  _ytShowUnreplied();
+  renderVideosPageKeepScroll();
+}
 
 // ── Videos Page ─────────────────────────────────────────────────────────────
 let _vidMode='add',_vidEditId=null;
@@ -1234,21 +1299,32 @@ function _vidRenderAnalytics(){
   }
   function card(title,content){return`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:16px 18px">
     <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:10px">${title}</div>${content}</div>`;}
-  function stat(label,value,sub,color){return`<div style="text-align:center;padding:8px 0">
+  function sparkline(vals,color,w,h2){
+    if(!vals||vals.length<2)return'';
+    const max=Math.max(...vals,1),min=Math.min(...vals,0);
+    const range=max-min||1;
+    const sw=w||60,sh=h2||20;
+    const pts=vals.map((v,i)=>{const x=(i/(vals.length-1))*sw;const y=sh-((v-min)/range)*sh;return`${x.toFixed(1)},${y.toFixed(1)}`;}).join(' ');
+    return`<svg width="${sw}" height="${sh}" style="display:block;margin:4px auto 0"><polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  }
+  function stat(label,value,sub){return`<div style="text-align:center;padding:6px 0">
     <div style="font-size:10px;color:var(--muted);margin-bottom:2px">${label}</div>
-    <div style="font-size:20px;font-weight:700;color:${color||'var(--text)'}">${value}</div>
-    ${sub?'<div style="font-size:10px;color:var(--muted);margin-top:1px">'+sub+'</div>':''}</div>`;}
+    <div style="font-size:20px;font-weight:700;color:var(--text)">${value}</div>
+    ${sub||''}</div>`;}
   const tBtn=(val,label,type)=>{
     const active=type==='metric'?_anTrendMetric===val:_anTrendPeriod===val;
-    return`<button onclick="_anSetTrend(${type==='metric'?"'"+val+"',null":"null,'"+val+"'"})" style="padding:3px 8px;border:1px solid ${active?'var(--text)':'var(--border)'};border-radius:5px;background:${active?'var(--text)':'transparent'};color:${active?'var(--bg)':'var(--muted)'};font-size:10px;font-family:inherit;cursor:pointer">${label}</button>`;
+    return`<button onclick="_anSetTrend(${type==='metric'?"'"+val+"',null":"null,'"+val+"'"})" style="padding:3px 8px;border:1px solid ${active?'rgba(120,113,145,.4)':'var(--border)'};border-radius:5px;background:${active?'rgba(120,113,145,.15)':'transparent'};color:${active?'var(--text)':'var(--muted)'};font-size:10px;font-family:inherit;font-weight:${active?'600':'400'};cursor:pointer">${label}</button>`;
   };
 
   let h='<div style="padding:16px 20px;overflow-y:auto">';
 
   // ── KPIs ──
-  const _unreplied=_ytData.unrepliedCount!=null?_ytData.unrepliedCount:null;
+  const _dismissed=JSON.parse(localStorage.getItem('_ytDismissed')||'[]');
+  const _unrepliedAll=_ytData.unrepliedComments||[];
+  const _unrepliedFiltered=_unrepliedAll.filter(c=>!_dismissed.includes(c.id));
+  const _unrepliedN=_unrepliedFiltered.length;
   h+='<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:16px">';
-  h+=`<div style="background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);border-radius:12px;padding:10px">${stat('Unreplied Comments',_unreplied!=null?String(_unreplied):'-','','#ef4444')}</div>`;
+  h+=`<div style="background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);border-radius:12px;padding:10px;cursor:pointer" ondblclick="_ytShowUnreplied()">${stat('Unreplied Comments',String(_unrepliedN),'','#ef4444')}</div>`;
   h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:10px">${stat('Total Views',_ytNum(totalViews))}</div>`;
   h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:10px">${stat('Avg Views/Video',_ytNum(avgViews))}</div>`;
   h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:10px">${stat('Videos',String(merged.length),'long-form only')}</div>`;

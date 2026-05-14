@@ -155,24 +155,36 @@ export async function onRequest(context) {
       videos = videos.concat(mapped);
     }
 
-    // Fetch all comment threads to count unreplied (1 unit per call, 100 per page)
-    let unrepliedCount = 0;
+    // Fetch all comment threads to find unreplied (1 unit per call, 100 per page, max 20 pages = 20 units)
+    let unrepliedComments = [];
     let commentPageToken = '';
+    let commentPages = 0;
     try {
-      while (true) {
+      while (commentPages < 20) {
         const ctParam = commentPageToken ? `&pageToken=${commentPageToken}` : '';
         const ctRes = await fetch(`https://www.googleapis.com/youtube/v3/commentThreads?part=snippet&allThreadsRelatedToChannelId=${CHANNEL_ID}&maxResults=100&key=${API_KEY}${ctParam}`);
         const ctData = await ctRes.json();
         if (ctData.error) break;
+        commentPages++;
         (ctData.items || []).forEach(t => {
-          if (t.snippet.totalReplyCount === 0) unrepliedCount++;
+          if (t.snippet.totalReplyCount === 0) {
+            const c = t.snippet.topLevelComment.snippet;
+            unrepliedComments.push({
+              id: t.id,
+              videoId: c.videoId,
+              author: c.authorDisplayName,
+              text: (c.textDisplay || '').slice(0, 200),
+              publishedAt: c.publishedAt,
+              likeCount: c.likeCount || 0
+            });
+          }
         });
         if (!ctData.nextPageToken) break;
         commentPageToken = ctData.nextPageToken;
       }
     } catch (e) { /* silently skip if comment fetch fails */ }
 
-    const result = { channelStats, videos, unrepliedCount, fetchedAt: new Date().toISOString() };
+    const result = { channelStats, videos, unrepliedComments, fetchedAt: new Date().toISOString() };
 
     if (KV) {
       // Fresh cache: 12 hours (controls when we re-fetch)
