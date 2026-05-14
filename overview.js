@@ -841,13 +841,13 @@ function renderWkCal(){
       // New-style WR rule dragged onto weekly calendar
       if(dragId.startsWith('wrrule::')){
         const ruleId=dragId.split('::')[1];
-        const wkKey=getWkKey(wkOff);
+        const newWkKey=dsToWkKey(ds);
         const _wrRuleSid='wrrule-'+ruleId;
         const _isMultiWR=selectedTasks.has(_wrRuleSid)&&selectedTasks.size>1;
         const _wrMoveIds=_isMultiWR?[...selectedTasks].filter(sid=>sid.startsWith('wrrule-')||sid.startsWith('wrrule-virt-')).map(sid=>sid.replace('wrrule-virt-','').replace('wrrule-','')):[ruleId];
-        const _wrMoves=_wrMoveIds.map(rid=>{const r=st.wrRules.find(x=>String(x.id)===String(rid));return r?{r,rid,prev:r._dateOverrides?.[wkKey]}:null;}).filter(Boolean);
-        _wrMoves.forEach(({r})=>{if(!r._dateOverrides)r._dateOverrides={};r._dateOverrides[wkKey]=ds;});
-        const _wrUndos=[()=>{_wrMoves.forEach(({r,rid,prev})=>{if(!r._dateOverrides)r._dateOverrides={};if(prev)r._dateOverrides[wkKey]=prev;else delete r._dateOverrides[wkKey];sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},`?id=eq.${rid}`);});}];
+        const _wrMoves=_wrMoveIds.map(rid=>{const r=st.wrRules.find(x=>String(x.id)===String(rid));if(!r)return null;const oldWk=r._dateOverrides?Object.keys(r._dateOverrides).find(k=>r._dateOverrides[k]!=='__skip__'&&dsToWkKey(r._dateOverrides[k])!==newWkKey&&r._dateOverrides[k]!=='__skip__'):null;return{r,rid,oldWk,prevOld:oldWk?r._dateOverrides[oldWk]:undefined,prevNew:r._dateOverrides?.[newWkKey]};}).filter(Boolean);
+        _wrMoves.forEach(({r,oldWk})=>{if(!r._dateOverrides)r._dateOverrides={};if(oldWk&&oldWk!==newWkKey)delete r._dateOverrides[oldWk];r._dateOverrides[newWkKey]=ds;});
+        const _wrUndos=[()=>{_wrMoves.forEach(({r,rid,oldWk,prevOld,prevNew})=>{if(!r._dateOverrides)r._dateOverrides={};if(oldWk&&prevOld!==undefined)r._dateOverrides[oldWk]=prevOld;if(prevNew!==undefined)r._dateOverrides[newWkKey]=prevNew;else delete r._dateOverrides[newWkKey];sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},`?id=eq.${rid}`);});}];
         // Multi-select: also move regular tasks + wrec items
         if(_isMultiWR){
           [...selectedTasks].forEach(sid=>{
@@ -872,30 +872,33 @@ function renderWkCal(){
       if(dragId.startsWith('wrec::')){
         const recId=dragId.split('::')[1];
         const r=st.recurring.find(x=>String(x.id)===String(recId));
-        const wkKey=getWkKey(wkOff);
+        const newWkKey=dsToWkKey(ds);
         const _wrecSid='wrec-'+recId;
         const _isMultiWrec=selectedTasks.has(_wrecSid)&&selectedTasks.size>1;
         const _wrecUndos=[];
-        if(r){
-          if(!r._dateOverrides)r._dateOverrides={};
-          const prev=r._dateOverrides[wkKey];
-          r._dateOverrides[wkKey]=ds;
-          removeTBBlocksForDate(ds,{recId:r.id});
-          sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));
-          _wrecUndos.push(()=>{if(prev)r._dateOverrides[wkKey]=prev;else delete r._dateOverrides[wkKey];sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));});
-        }
+        // Helper: move a recurring rule's override from old week to new week
+        const _moveRecOv=(rec,qs)=>{
+          if(!rec._dateOverrides)rec._dateOverrides={};
+          const oldWk=Object.keys(rec._dateOverrides).find(k=>rec._dateOverrides[k]!=='__skip__'&&dsToWkKey(rec._dateOverrides[k])!==newWkKey);
+          const prevOld=oldWk?rec._dateOverrides[oldWk]:undefined;
+          const prevNew=rec._dateOverrides[newWkKey];
+          if(oldWk&&oldWk!==newWkKey)delete rec._dateOverrides[oldWk];
+          rec._dateOverrides[newWkKey]=ds;
+          removeTBBlocksForDate(ds,{recId:rec.id});
+          sbReq('PATCH','wr_recurring_rules',{date_overrides:rec._dateOverrides},qs);
+          _wrecUndos.push(()=>{if(oldWk&&prevOld!==undefined)rec._dateOverrides[oldWk]=prevOld;if(prevNew!==undefined)rec._dateOverrides[newWkKey]=prevNew;else delete rec._dateOverrides[newWkKey];sbReq('PATCH','wr_recurring_rules',{date_overrides:rec._dateOverrides},qs);});
+        };
+        if(r)_moveRecOv(r,recQs(r.id));
         // Multi-select: also move regular tasks + other wrec/wrrule
         if(_isMultiWrec){
           [...selectedTasks].forEach(sid=>{
             if(sid===_wrecSid)return;
             if(sid.startsWith('wrec-')){
               const rid=sid.replace('wrec-','');const r2=st.recurring.find(x=>String(x.id)===String(rid));
-              if(r2){if(!r2._dateOverrides)r2._dateOverrides={};const p=r2._dateOverrides[wkKey];r2._dateOverrides[wkKey]=ds;sbReq('PATCH','wr_recurring_rules',{date_overrides:r2._dateOverrides},recQs(r2.id));
-                _wrecUndos.push(()=>{if(p)r2._dateOverrides[wkKey]=p;else delete r2._dateOverrides[wkKey];sbReq('PATCH','wr_recurring_rules',{date_overrides:r2._dateOverrides},recQs(r2.id));});}
+              if(r2)_moveRecOv(r2,recQs(r2.id));
             }else if(sid.startsWith('wrrule-virt-')||sid.startsWith('wrrule-')){
               const rid=sid.replace('wrrule-virt-','').replace('wrrule-','');const r2=st.wrRules.find(x=>String(x.id)===String(rid));
-              if(r2){if(!r2._dateOverrides)r2._dateOverrides={};const p=r2._dateOverrides[wkKey];r2._dateOverrides[wkKey]=ds;sbReq('PATCH','wr_recurring_rules',{date_overrides:r2._dateOverrides},`?id=eq.${rid}`);
-                _wrecUndos.push(()=>{if(p)r2._dateOverrides[wkKey]=p;else delete r2._dateOverrides[wkKey];sbReq('PATCH','wr_recurring_rules',{date_overrides:r2._dateOverrides},`?id=eq.${rid}`);});}
+              if(r2)_moveRecOv(r2,`?id=eq.${rid}`);
             }else{
               const t=st.tasks.find(x=>String(x.id)===sid);
               if(t&&!t._virtual){const prev=t.due_date;t.due_date=ds;localOverrides[sid]={due_date:ds};pendingLocal.add(sid);sbReqNullable('PATCH','tasks',{due_date:ds},`?id=eq.${t.id}`);
