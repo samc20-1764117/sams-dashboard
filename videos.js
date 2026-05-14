@@ -116,6 +116,8 @@ function _ytShowUnreplied(){
     document.body.appendChild(ov);
   }
   ov.innerHTML='<div style="background:var(--bg);border-radius:14px;padding:20px;max-width:520px;width:90%;box-shadow:0 12px 40px rgba(0,0,0,.15);max-height:80vh;overflow:hidden;display:flex;flex-direction:column">'+html+'</div>';
+  const _urKey=(e)=>{if((e.key==='Enter'&&!_ytDismissedSel.size)||e.key==='Escape'){const m=document.getElementById('ytUnrepliedModal');if(m)m.remove();document.removeEventListener('keydown',_urKey);}};
+  document.addEventListener('keydown',_urKey);
 }
 function _ytToggleSel(id,idx,e){
   if(e.shiftKey&&_ytLastSelIdx!=null){
@@ -1450,14 +1452,14 @@ function _vidRenderAnalytics(){
   const _dismissed=_ytGetDismissed();
   const _unrepliedAll=_ytData.unrepliedComments||[];
   const _unrepliedN=_unrepliedAll.filter(c=>!_dismissed.includes(c.id)).length;
-  const _kc=(dbl)=>'<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:10px;cursor:pointer" ondblclick="_anKpiModal(\''+dbl+'\')">';
+  const _kc=(fn)=>'<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:10px;cursor:pointer" onclick="'+fn+'">';
   h+='<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:16px">';
-  h+=`<div style="background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);border-radius:12px;padding:10px;cursor:pointer" ondblclick="_ytShowUnreplied()"><div style="text-align:center;padding:6px 0"><div style="font-size:10px;color:var(--muted);margin-bottom:2px">Unreplied Comments</div><div style="font-size:20px;font-weight:700;color:#ef4444">${_unrepliedN}</div></div></div>`;
-  h+=`${_kc('views')}${stat('Total Views',_ytNum(totalViews),_ytNum(_tm.views)+' this month',sparkline(_spViews))}</div>`;
-  h+=`${_kc('avg')}${stat('Avg Views/Video',_ytNum(avgViews),_ytNum(_tm.count?Math.round(_tm.views/_tm.count):0)+' avg this mo',sparkline(_spAvg))}</div>`;
-  h+=`${_kc('videos')}${stat('Videos',String(merged.length),_tm.count+' this month',sparkline(_spVids))}</div>`;
-  h+=`${_kc('revenue')}${stat('Est. Revenue','$'+_ytNum(estRevenue),'@ $'+rpm+' RPM',sparkline(_spRev))}</div>`;
-  h+=`${_kc('subscribers')}${stat('Subscribers',cs?_ytNum(cs.subscribers):'-')}</div>`;
+  h+=`<div style="background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);border-radius:12px;padding:10px;cursor:pointer" onclick="_ytShowUnreplied()"><div style="text-align:center;padding:6px 0"><div style="font-size:10px;color:var(--muted);margin-bottom:2px">Unreplied Comments</div><div style="font-size:20px;font-weight:700;color:#ef4444">${_unrepliedN}</div></div></div>`;
+  h+=`${_kc("_anKpiModal('views')")}${stat('Total Views',_ytNum(totalViews),_ytNum(_tm.views)+' this month',sparkline(_spViews))}</div>`;
+  h+=`${_kc("_anKpiModal('avg')")}${stat('Avg Views/Video',_ytNum(avgViews),_ytNum(_tm.count?Math.round(_tm.views/_tm.count):0)+' avg this mo',sparkline(_spAvg))}</div>`;
+  h+=`${_kc("_anKpiModal('videos')")}${stat('Videos',String(merged.length),_tm.count+' this month',sparkline(_spVids))}</div>`;
+  h+=`${_kc("_anKpiModal('revenue')")}${stat('Est. Revenue','$'+_ytNum(estRevenue),'@ $'+rpm+' RPM',sparkline(_spRev))}</div>`;
+  h+=`${_kc("_anKpiModal('subscribers')")}${stat('Subscribers',cs?_ytNum(cs.subscribers):'-')}</div>`;
   h+='</div>';
 
   // ── TREND CHART + Strategy Insights ──
@@ -1483,19 +1485,28 @@ function _vidRenderAnalytics(){
   const _curPeriod=_anTrendPeriod==='yearly'?String(now.getFullYear()):_thisMonth;
   const trendColor='rgba(120,113,145,.45)';
   const trendColorCur='rgba(120,113,145,.85)';
+  const totalMetric=metricVals.reduce((s,m)=>s+m.val,0);
+  const avgMetricVal=metricVals.length?totalMetric/metricVals.length:0;
+  const perLabel=_anTrendPeriod==='yearly'?'yr':'mo';
+  let summaryText='';
+  if(_anTrendMetric==='engagement') summaryText='Avg: '+avgMetricVal.toFixed(1)+'%/'+perLabel;
+  else if(_anTrendMetric==='revenue') summaryText='$'+_ytNum(totalMetric)+' total · $'+_ytNum(Math.round(avgMetricVal))+'/'+perLabel;
+  else summaryText=_ytNum(totalMetric)+' total · '+_ytNum(Math.round(avgMetricVal))+'/'+perLabel;
   let trendHtml=`<div style="display:flex;align-items:center;gap:6px;margin-bottom:12px;flex-wrap:wrap">
     <div style="display:flex;gap:3px">${tBtn('revenue','Revenue','metric')}${tBtn('views','Views','metric')}${tBtn('likes','Likes','metric')}${tBtn('engagement','Engagement','metric')}${tBtn('videos','Videos','metric')}</div>
-    <div style="width:1px;height:14px;background:var(--border)"></div>
+    <div style="width:1px;height:14px;background:var(--border);margin:0 2px"></div>
     <div style="display:flex;gap:3px">${tBtn('monthly','Monthly','period')}${tBtn('yearly','Yearly','period')}</div>
+    <div style="flex:1"></div>
+    <span style="font-size:10px;color:var(--muted)">${summaryText}</span>
   </div>`;
   trendHtml+='<div style="display:flex;align-items:flex-end;gap:4px;flex:1;min-height:0">';
   metricVals.forEach(m=>{
     const pct=Math.max(Math.round(m.val/maxMetric*100),3);
     const isCur=m.key===_curPeriod;
     const label=_anTrendPeriod==='yearly'?m.key:(_moAbbr[parseInt(m.key.slice(5))]||m.key.slice(5));
-    trendHtml+=`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;height:100%">
-      <span style="font-size:9px;color:var(--muted);white-space:nowrap">${m.fmt}</span>
-      <div style="flex:1;display:flex;align-items:flex-end;width:100%">
+    trendHtml+=`<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:2px;height:100%">
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;width:100%">
+        <span style="font-size:9px;color:var(--muted);white-space:nowrap;margin-bottom:2px">${m.fmt}</span>
         <div style="width:100%;height:${pct}%;background:${isCur?trendColorCur:trendColor};border-radius:3px;min-height:3px${isCur?';box-shadow:0 0 0 1.5px rgba(120,113,145,.3)':''}" title="${m.key}: ${m.fmt}"></div>
       </div>
       <span style="font-size:9px;${isCur?'font-weight:700;color:var(--text)':'color:var(--muted)'}">${label}</span>
@@ -1541,6 +1552,24 @@ function _vidRenderAnalytics(){
   if(bestDay) stratHtml+=_insight('&#128197;','<b>Best day:</b> '+bestDay.day+' ('+_ytNum(bestDay.avgViews)+' avg views)');
   if(bigAvg&&smallAvg){const r=(bigAvg/smallAvg).toFixed(1);stratHtml+=_insight('&#128200;','<b>Big vs Small:</b> Big gets <b>'+r+'x</b> more views');}
   if(topics.length) stratHtml+=_insight('&#127775;','<b>Top topic:</b> '+_ytEsc(topics[0].topic)+' ('+_ytNum(topics[0].avgViews)+' avg, '+topics[0].count+' vids)');
+  // Revenue per video by type
+  if(bigVids.length&&smallVids.length){
+    const bigRev=Math.round(bigAvg/1000*rpm);const smallRev=Math.round(smallAvg/1000*rpm);
+    stratHtml+=_insight('&#128176;','<b>Revenue/video:</b> Big ~$'+_ytNum(bigRev)+' vs Small ~$'+_ytNum(smallRev));
+  }
+  // Highest-earning topic
+  if(topics.length){
+    const topicsByRev=topics.map(t=>({...t,estRev:Math.round(t.avgViews*t.count/1000*rpm)})).sort((a,b)=>b.estRev-a.estRev);
+    if(topicsByRev[0]) stratHtml+=_insight('&#128178;','<b>Top earner:</b> '+_ytEsc(topicsByRev[0].topic)+' (~$'+_ytNum(topicsByRev[0].estRev)+' total, '+topicsByRev[0].count+' vids)');
+    // Best RPM topic (most revenue per video)
+    const topicsByPerVid=topics.filter(t=>t.count>=2).map(t=>({...t,revPerVid:Math.round(t.avgViews/1000*rpm)})).sort((a,b)=>b.revPerVid-a.revPerVid);
+    if(topicsByPerVid[0]&&topicsByPerVid[0].topic!==topicsByRev[0].topic) stratHtml+=_insight('&#128181;','<b>Best $/video:</b> '+_ytEsc(topicsByPerVid[0].topic)+' (~$'+_ytNum(topicsByPerVid[0].revPerVid)+'/video)');
+  }
+  // Best duration for revenue
+  if(durArr.length){
+    const durByRev=durArr.map(d=>({...d,revPerVid:Math.round(d.avgViews/1000*rpm)})).sort((a,b)=>b.revPerVid-a.revPerVid);
+    if(durByRev[0]) stratHtml+=_insight('&#9201;','<b>Best length for $:</b> '+durByRev[0].label+' (~$'+_ytNum(durByRev[0].revPerVid)+'/video)');
+  }
   // Publishing pace
   const pubMonths=Object.keys(_kpiMonths).length;
   if(pubMonths>=2){const rate=(merged.length/pubMonths).toFixed(1);stratHtml+=_insight('&#128197;','<b>Pace:</b> ~'+rate+' videos/month over '+pubMonths+' months');}
