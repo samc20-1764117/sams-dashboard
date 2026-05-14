@@ -60,7 +60,8 @@ export async function onRequest(context) {
   // ── OAuth start: redirect to Google consent (always via production) ──
   if (_mode === 'auth-start') {
     const { cid } = await _oauthCreds();
-    if (!cid) return new Response(JSON.stringify({ error: 'OAuth not configured' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    // If no credentials locally (e.g. dev/preview), redirect to production
+    if (!cid) return Response.redirect('https://sams-dashboard.pages.dev/api/yt?mode=auth-start', 302);
     const redirectUri = 'https://sams-dashboard.pages.dev/api/yt?mode=auth-callback';
     const authUrl = 'https://accounts.google.com/o/oauth2/v2/auth?' + new URLSearchParams({
       client_id: cid, redirect_uri: redirectUri, response_type: 'code',
