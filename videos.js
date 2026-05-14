@@ -1,5 +1,6 @@
 // ── YouTube Analytics ────────────────────────────────────────────────────────
-let _ytData=null,_ytMatch=null;
+let _ytData=null,_ytMatch=null,_ytFetched=false;
+let _ytAnalytics=null,_ytAnalyticsFetched=false;
 function _ytEsc(s){return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function _ytDur(iso){var m=iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);if(!m)return'0:00';var h=m[1]?parseInt(m[1]):0,min=m[2]?parseInt(m[2]):0,s=m[3]?parseInt(m[3]):0;if(h)return h+':'+String(min).padStart(2,'0')+':'+String(s).padStart(2,'0');return min+':'+String(s).padStart(2,'0');}
 function _ytNum(n){if(n>=1000000)return(n/1000000).toFixed(1)+'M';if(n>=1000)return(n/1000).toFixed(1)+'K';return String(n);}
@@ -14,30 +15,140 @@ function _ytBuildMatch(){
   console.log('[YT] Sample DB dates:',dbVids.slice(0,3).map(v=>v.post_date));
   console.log('[YT] Sample YT dates:',ytVids.slice(0,3).map(v=>v.publishedAt));
   // Pass 1: match by post_date = publishedAt date
+  // Group by date to handle same-day videos via title similarity
   var matched=0;
+  var byDate={};
+  for(var j=0;j<ytVids.length;j++){
+    var ytDate=ytVids[j].publishedAt.slice(0,10);
+    if(!byDate[ytDate])byDate[ytDate]=[];
+    byDate[ytDate].push(j);
+  }
+  function _ytTitleScore(dv,ytIdx){
+    var words=((dv.title||'')+'  '+(dv.topic||'')).toLowerCase().split(/\s+/).filter(Boolean);
+    if(!words.length)return 0;
+    var ytT=(ytVids[ytIdx].title||'').toLowerCase();
+    var score=0;
+    for(var w=0;w<words.length;w++){if(words[w].length>2&&ytT.indexOf(words[w])>=0)score++;}
+    return score;
+  }
+  // Pass 1: exact date match
   for(var i=0;i<dbVids.length;i++){
     var dv=dbVids[i];
     if(!dv.post_date)continue;
-    for(var j=0;j<ytVids.length;j++){
-      if(usedYt.has(j))continue;
-      var yt=ytVids[j];
-      var ytDate=yt.publishedAt.slice(0,10);
-      if(dv.post_date===ytDate){
-        _ytMatch[String(dv.id)]={views:yt.views,likes:yt.likes,comments:yt.comments,ytId:yt.id};
-        usedYt.add(j);
-        matched++;
-        break;
+    var candidates=byDate[dv.post_date];
+    if(!candidates)continue;
+    var avail=candidates.filter(function(j){return!usedYt.has(j);});
+    if(!avail.length)continue;
+    var bestJ=avail[0];
+    if(avail.length>1){
+      var bestScore=-1;
+      for(var k=0;k<avail.length;k++){
+        var sc=_ytTitleScore(dv,avail[k]);
+        if(sc>bestScore){bestScore=sc;bestJ=avail[k];}
       }
     }
+    var yt=ytVids[bestJ];
+    _ytMatch[String(dv.id)]={views:yt.views,likes:yt.likes,comments:yt.comments,ytId:yt.id};
+    usedYt.add(bestJ);
+    matched++;
   }
-  console.log('[YT] Matched',matched,'videos. _ytMatch keys:',Object.keys(_ytMatch).length);
-  if(matched===0&&dbVids.length>0&&ytVids.length>0){
-    // Debug: show why first db video didn't match
-    var first=dbVids.find(v=>v.post_date);
-    if(first)console.log('[YT] No match debug - DB:',first.post_date,'(type:'+typeof first.post_date+') vs YT dates:',ytVids.slice(0,5).map(v=>v.publishedAt.slice(0,10)));
+  // Pass 2: off-by-one date (UTC timezone shift) + title match
+  for(var i2=0;i2<dbVids.length;i2++){
+    var dv2=dbVids[i2];
+    if(!dv2.post_date||_ytMatch[String(dv2.id)])continue;
+    var d=new Date(dv2.post_date+'T12:00:00Z');
+    var prev=new Date(d.getTime()-86400000).toISOString().slice(0,10);
+    var next=new Date(d.getTime()+86400000).toISOString().slice(0,10);
+    var nearby=(byDate[prev]||[]).concat(byDate[next]||[]).filter(function(j){return!usedYt.has(j);});
+    if(!nearby.length)continue;
+    var bestJ2=nearby[0],bestScore2=-1;
+    for(var k2=0;k2<nearby.length;k2++){
+      var sc2=_ytTitleScore(dv2,nearby[k2]);
+      if(sc2>bestScore2){bestScore2=sc2;bestJ2=nearby[k2];}
+    }
+    if(bestScore2>0){
+      var yt2=ytVids[bestJ2];
+      _ytMatch[String(dv2.id)]={views:yt2.views,likes:yt2.likes,comments:yt2.comments,ytId:yt2.id};
+      usedYt.add(bestJ2);
+      matched++;
+    }
   }
+  console.log('[YT] Matched',matched,'of',dbVids.filter(v=>v.post_date).length,'videos with dates.');
+  var unmatched=dbVids.filter(v=>v.post_date&&v.status==='published'&&!_ytMatch[String(v.id)]);
+  if(unmatched.length)console.log('[YT] Unmatched published:',unmatched.map(v=>v.post_date+' '+v.title));
 }
 function _ytForVid(id){return _ytMatch?_ytMatch[String(id)]:null;}
+
+let _ytDismissedSel=new Set();
+let _ytCommentItems=[];  // current filtered list for shift-select
+let _ytLastSelIdx=null;
+function _ytGetDismissed(){return st._ytDismissed||[];}
+function _ytSaveDismissed(arr){st._ytDismissed=arr;save();}
+
+function _ytShowUnreplied(){
+  _ytDismissedSel.clear();_ytLastSelIdx=null;
+  const dismissed=_ytGetDismissed();
+  const all=(_ytData&&_ytData.unrepliedComments)||[];
+  const items=all.filter(c=>!dismissed.includes(c.id));
+  items.sort((a,b)=>(b.publishedAt||'').localeCompare(a.publishedAt||''));
+  _ytCommentItems=items;
+  let html='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">';
+  html+='<div style="font-size:14px;font-weight:700">Unreplied Comments ('+items.length+')</div>';
+  html+='<button id="ytDismissSelBtn" onclick="_ytDismissSelected()" style="display:none;padding:4px 10px;border:1px solid rgba(239,68,68,.3);border-radius:6px;background:rgba(239,68,68,.06);color:#ef4444;font-size:11px;cursor:pointer;font-family:inherit;font-weight:600">Dismiss Selected</button>';
+  html+='</div>';
+  if(!items.length)html+='<div style="color:var(--muted);font-size:12px">All caught up!</div>';
+  html+='<div style="max-height:60vh;overflow-y:auto">';
+  items.forEach((c,idx)=>{
+    const vidTitle=c.videoTitle||'';
+    const date=c.publishedAt?c.publishedAt.slice(0,10):'';
+    html+=`<div id="ytc-${c.id}" data-idx="${idx}" style="display:flex;align-items:flex-start;gap:8px;padding:6px 4px;border-bottom:1px solid rgba(210,205,228,.12);cursor:pointer;border-radius:6px" onclick="_ytToggleSel('${c.id}',${idx},event)">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:10px;color:var(--muted);margin-bottom:2px">${_esc(vidTitle)}${date?' · '+date:''}</div>
+        <div style="font-size:12px;color:var(--text)">${c.text}</div>
+      </div>
+    </div>`;
+  });
+  html+='</div>';
+  let ov=document.getElementById('ytUnrepliedModal');
+  if(!ov){
+    ov=document.createElement('div');ov.id='ytUnrepliedModal';
+    ov.style.cssText='position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.3)';
+    ov.onclick=function(e){if(e.target===ov)ov.remove();};
+    document.body.appendChild(ov);
+  }
+  ov.innerHTML='<div style="background:var(--bg);border-radius:14px;padding:20px;max-width:520px;width:90%;box-shadow:0 12px 40px rgba(0,0,0,.15);max-height:80vh;overflow:hidden;display:flex;flex-direction:column">'+html+'</div>';
+  const _urKey=(e)=>{if((e.key==='Enter'&&!_ytDismissedSel.size)||e.key==='Escape'){const m=document.getElementById('ytUnrepliedModal');if(m)m.remove();document.removeEventListener('keydown',_urKey);}};
+  document.addEventListener('keydown',_urKey);
+}
+function _ytToggleSel(id,idx,e){
+  if(e.shiftKey&&_ytLastSelIdx!=null){
+    // Shift: range select
+    const lo=Math.min(_ytLastSelIdx,idx),hi=Math.max(_ytLastSelIdx,idx);
+    for(let i=lo;i<=hi;i++)_ytDismissedSel.add(_ytCommentItems[i].id);
+  }else if(e.metaKey||e.ctrlKey){
+    // Cmd/Ctrl: toggle individual
+    if(_ytDismissedSel.has(id))_ytDismissedSel.delete(id);else _ytDismissedSel.add(id);
+  }else{
+    // Plain click: select only this one
+    _ytDismissedSel.clear();
+    _ytDismissedSel.add(id);
+  }
+  _ytLastSelIdx=idx;
+  // Update all row styles
+  _ytCommentItems.forEach(c=>{
+    const row=document.getElementById('ytc-'+c.id);
+    if(row)row.style.background=_ytDismissedSel.has(c.id)?'rgba(239,68,68,.06)':'';
+  });
+  const btn=document.getElementById('ytDismissSelBtn');
+  if(btn)btn.style.display=_ytDismissedSel.size?'block':'none';
+}
+function _ytDismissSelected(){
+  const dismissed=_ytGetDismissed();
+  _ytDismissedSel.forEach(id=>{if(!dismissed.includes(id))dismissed.push(id);});
+  _ytSaveDismissed(dismissed);
+  _ytShowUnreplied();
+  renderVideosPageKeepScroll();
+}
 
 // ── Videos Page ─────────────────────────────────────────────────────────────
 let _vidMode='add',_vidEditId=null;
@@ -50,8 +161,8 @@ let _vidView='dashboard'; // dashboard | table | board | groups
 let _vidSortCol=null,_vidSortDir=1,_vidShowCompleted=false;
 let _vidMonthOffset=0; // 0=current month, -1=last month, etc
 
-const VID_STEPS=['step_build','step_record','step_film','step_cut','step_thumbnail','step_description','step_tableau_public','step_upload_tableau'];
-const VID_STEP_LABELS={step_build:'Build',step_record:'Rec',step_film:'Film',step_cut:'Cut',step_thumbnail:'Thumb',step_description:'Desc',step_tableau_public:'Tab Pub',step_upload_tableau:'Upload'};
+const VID_STEPS=['step_build','step_vo','step_cut','step_thumbnail','step_description','step_tableau_public','step_upload_tableau'];
+const VID_STEP_LABELS={step_build:'Build',step_vo:'Vo',step_film:'Film',step_cut:'Cut',step_thumbnail:'Th',step_description:'Des',step_tableau_public:'Tab',step_upload_tableau:'Up'};
 const VID_STATUS_COLORS={published:'#10b981',in_progress:'#f59e0b',up_next:'#0ea5e9',idea:'#8b5cf6',backup:'#94a3b8'};
 const VID_STATUS_LABELS={published:'Complete',in_progress:'In Progress',up_next:'Up Next',idea:'Idea',backup:'Backup'};
 const VID_STATUS_ORDER={published:0,up_next:1,in_progress:2,backup:3,idea:4};
@@ -126,8 +237,14 @@ function _vidScrollEl(){
 }
 function renderVideosPageKeepScroll(){
   const se=_vidScrollEl();const top=se?se.scrollTop:0;
+  const dl=document.getElementById('vidDashLeft');const dlTop=dl?dl.scrollTop:0;
+  const dr=document.getElementById('vidDashRight');const drTop=dr?dr.scrollTop:0;
   renderVideosPage();
   const se2=_vidScrollEl();if(se2)se2.scrollTop=top;
+  requestAnimationFrame(()=>{
+    const dl2=document.getElementById('vidDashLeft');if(dl2)dl2.scrollTop=dlTop;
+    const dr2=document.getElementById('vidDashRight');if(dr2)dr2.scrollTop=drTop;
+  });
 }
 function renderVideosPage(){
   const _rvpSe=_vidScrollEl();const _rvpTop=_rvpSe?_rvpSe.scrollTop:0;
@@ -141,6 +258,17 @@ function renderVideosPage(){
       if(parent)v.big_video_id=parent.id;
     }
   });
+  // Enforce: B videos cannot have big_video_id
+  bVids.forEach(v=>{if(v.big_video_id){v.big_video_id=null;if(!String(v.id).startsWith('l-'))sbReqSilent('PATCH','videos',{big_video_id:null},`?id=eq.${v.id}`);}});
+  // Enforce: L videos without a valid big parent can't be in_progress/up_next
+  const _activeBigIds=new Set(bVids.map(v=>String(v.id)));
+  const _fixedIds=[];
+  st.videos.forEach(v=>{
+    if(v.is_deleted||v.video_type==='B')return;
+    const hasValidParent=v.big_video_id&&_activeBigIds.has(String(v.big_video_id));
+    if(!hasValidParent&&(v.status==='in_progress'||v.status==='up_next')){v.status='idea';_fixedIds.push(v.id);}
+  });
+  if(_fixedIds.length){save();_fixedIds.forEach(id=>{if(!String(id).startsWith('l-'))sbReqSilent('PATCH','videos',{status:'idea'},`?id=eq.${id}`);});}
   // Push any local-only videos to Supabase
   _vidSyncLocalVideos();
   _vidDashVids=null;_vidDashPostMap=null;
@@ -151,34 +279,57 @@ function renderVideosPage(){
   let bodyHtml='';
   if(_vidView==='dashboard')bodyHtml=_vidRenderDashboard();
   else if(_vidView==='table')bodyHtml=_vidRenderTable();
-  else if(_vidView==='board')bodyHtml=_vidRenderBoard();
+  else if(_vidView==='analytics')bodyHtml=_vidRenderAnalytics();
   else if(_vidView==='monthly')bodyHtml=_vidRenderMonthly();
+  else if(_vidView==='board')bodyHtml=_vidRenderBoard();
   if(_vidView==='groups'){_vidView='dashboard';bodyHtml=_vidRenderDashboard();}
 
   // Use the exact same pattern as recipes page (features.js line 2130-2139)
   el.style.cssText='padding:41px clamp(12px,3vw,56px) 24px clamp(12px,3vw,56px);display:flex;flex-direction:column;height:100vh;box-sizing:border-box;width:100%';
   el.innerHTML=`
     <div class="ov-topbar"><div class="ov-topbar-left"><span class="ov-topbar-label">Videos</span><span class="ov-topbar-dot"></span></div><span class="ov-topbar-date topbar-date"></span><div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div></div>
-    <div style="padding-top:4px;position:relative;z-index:10">
+    <div style="padding-top:4px">
       <div style="display:flex;gap:10px;align-items:center;margin-bottom:4px;flex-wrap:wrap">
         <div style="display:flex;gap:2px;background:var(--glass);border:1px solid var(--border);border-radius:8px;padding:2px">
           <button class="${viewBtnS('dashboard')}" onclick="_vidSetView('dashboard')">Current</button>
           <button class="${viewBtnS('table')}" onclick="_vidSetView('table')">All Details</button>
-          <button class="${viewBtnS('board')}" onclick="_vidSetView('board')">Videos by Progress</button>
+          <button class="${viewBtnS('analytics')}" onclick="_vidSetView('analytics')">Analytics</button>
           <button class="${viewBtnS('monthly')}" onclick="_vidSetView('monthly')">Monthly</button>
         </div>
         <input id="vidSearchInput" type="text" placeholder="Search videos..." value="${_vidSearch.replace(/"/g,'&quot;')}" oninput="_vidSetSearch(this.value)" style="padding:5px 10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:12px;background:var(--bg);color:var(--text);outline:none;width:180px">
         <div style="flex:1"></div>
-        <div style="display:flex;gap:10px;align-items:center;font-size:12px;font-weight:500">
-          <span style="color:#8b5cf6">${stats.idea} ideas</span>
-          <span style="color:#f59e0b">${stats.up_next+stats.in_progress} current</span>
-          <span style="color:#10b981">${stats.published} complete</span>
+        <div style="display:flex;gap:6px;align-items:center">
+          ${_ytData&&_ytData.channelStats?`
+          <div style="background:rgba(120,113,145,.06);border-radius:20px;padding:4px 10px 4px 8px;display:flex;align-items:center;gap:4px;font-size:12px">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            <span style="font-weight:600;color:#555">${_ytNum(_ytData.channelStats.subscribers)}</span>
+          </div>
+          <div style="background:rgba(120,113,145,.06);border-radius:20px;padding:4px 10px 4px 8px;display:flex;align-items:center;gap:4px;font-size:12px">
+            <span style="font-weight:700;color:#999;font-size:13px">$</span>
+            <span style="font-weight:600;color:#555">~${_ytNum(Math.round(_ytData.channelStats.totalViews/1000*4))}</span>
+          </div>
+          <div style="width:1px;height:16px;background:rgba(210,205,228,.4);margin:0 2px"></div>
+          `:''}
+          <div style="background:rgba(139,92,246,.06);border-radius:20px;padding:4px 10px 4px 8px;display:flex;align-items:center;gap:4px;font-size:12px">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a1 1 0 0 1-1 1h-6a1 1 0 0 1-1-1v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z"/></svg>
+            <span style="font-weight:600;color:#8b5cf6">${stats.idea}</span>
+          </div>
+          <div style="background:rgba(245,158,11,.06);border-radius:20px;padding:4px 10px 4px 8px;display:flex;align-items:center;gap:4px;font-size:12px">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            <span style="font-weight:600;color:#f59e0b">${stats.up_next+stats.in_progress}</span>
+          </div>
+          <div style="background:rgba(16,185,129,.06);border-radius:20px;padding:4px 10px 4px 8px;display:flex;align-items:center;gap:4px;font-size:12px">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+            <span style="font-weight:600;color:#10b981">${stats.published}</span>
+          </div>
         </div>
-        <button onclick="openVidModal()" style="width:22px;height:22px;border-radius:50%;border:1.5px solid var(--border);background:rgba(255,255,255,.9);color:var(--muted);font-size:14px;font-weight:700;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;margin-right:45px" title="Add video">+</button>
+        <button onclick="openVidModal()" style="background:rgba(255,255,255,.85);border:1px solid var(--border);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.08)" title="Add video">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
       </div>
     </div>
-    <div id="yt-analytics-slot"></div>
-    <div class="card" style="overflow:${_vidView==='dashboard'?'hidden':'auto'};flex:1;min-height:0">
+    <div id="yt-analytics-slot" style="display:none"></div>
+    <div class="card" style="overflow:${_vidView==='dashboard'?'hidden':'auto'};flex:1;min-height:0;background:rgba(255,255,255,0.32);backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px)">
         ${bodyHtml}
     </div>`;
   const now=new Date();
@@ -199,28 +350,59 @@ function renderVideosPage(){
     });
   }
   const _rvpSe2=_vidScrollEl();if(_rvpSe2)_rvpSe2.scrollTop=_rvpTop;
-  var ytSlot=document.getElementById('yt-analytics-slot');
-  if(ytSlot&&!ytSlot._loaded){
-    ytSlot._loaded=true;
-    fetch('/api/yt?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
-      if(d.error){ytSlot.innerHTML='';return;}
+  // Load cached YT data from localStorage on first run
+  if(!_ytData){try{var _lsc=JSON.parse(localStorage.getItem('_ytCache')||'null');if(_lsc&&_lsc.channelStats){_ytData=_lsc;_ytBuildMatch();}}catch(e){}}
+  if(!_ytFetched){
+    _ytFetched=true;
+    fetch('/api/yt?_='+Date.now(),{cache:'no-store'}).then(function(r){if(!r.ok)throw new Error(r.status);return r.json();}).then(function(d){
+      if(d.error)return;
       _ytData=d;
-      var c=d.channelStats;
+      try{localStorage.setItem('_ytCache',JSON.stringify(d));}catch(e){}
+      _ytBuildMatch();
+      renderVideosPageKeepScroll();
+    }).catch(function(){});
+  }
+  // Fetch YouTube Analytics API data (actual revenue) — once per page load
+  if(!_ytAnalyticsFetched){
+    _ytAnalyticsFetched=true;
+    try{var _lac=JSON.parse(localStorage.getItem('_ytAnalyticsCache')||'null');if(_lac&&_lac.monthly)_ytAnalytics=_lac;}catch(e){}
+    fetch('/api/yt?mode=analytics&_='+Date.now(),{cache:'no-store'}).then(function(r){if(!r.ok)throw new Error(r.status);return r.json();}).then(function(d){
+      if(d.error)return;
+      _ytAnalytics=d;
+      try{localStorage.setItem('_ytAnalyticsCache',JSON.stringify(d));}catch(e){}
+      if(_vidView==='analytics')renderVideosPageKeepScroll();
+    }).catch(function(){});
+  }
+  // Render YT stats from _ytData (either fresh or cached)
+  if(_ytData){
+    var ytSlot=document.getElementById('yt-analytics-slot');
+    if(ytSlot&&!ytSlot.innerHTML){
+      var c=_ytData.channelStats;
       var h='<div style="display:flex;gap:12px;flex-wrap:wrap;margin:8px 0">';
       h+='<div style="background:var(--glass);border:1px solid var(--border);border-radius:10px;padding:8px 14px"><div style="font-size:10px;color:var(--muted)">Subscribers</div><div style="font-size:16px;font-weight:600">'+_ytNum(c.subscribers)+'</div></div>';
       h+='<div style="background:var(--glass);border:1px solid var(--border);border-radius:10px;padding:8px 14px"><div style="font-size:10px;color:var(--muted)">Total Views</div><div style="font-size:16px;font-weight:600">'+_ytNum(c.totalViews)+'</div></div>';
       h+='<div style="background:var(--glass);border:1px solid var(--border);border-radius:10px;padding:8px 14px"><div style="font-size:10px;color:var(--muted)">Published on YT</div><div style="font-size:16px;font-weight:600">'+c.totalVideos+'</div></div>';
       h+='</div>';
       ytSlot.innerHTML=h;
-      _ytBuildMatch();
-      renderVideosPageKeepScroll();
-    }).catch(function(e){ytSlot.innerHTML='<div style="color:red;font-size:12px;padding:6px 0">YT fetch failed: '+e+'</div>';});
+    }
   }
 }
 
 // ── DASHBOARD VIEW (default — In Progress + Ideas) ───────────────────────────
 function _vidRenderDashboard(){
   const all=(st.videos||[]).filter(v=>!v.is_deleted);
+  // Auto-promote idea children whose parent B is active
+  const _promoteQ=[];
+  all.forEach(v=>{
+    if(v.status==='idea'&&v.big_video_id){
+      const par=all.find(p=>String(p.id)===String(v.big_video_id));
+      if(par&&(par.status==='up_next'||par.status==='in_progress')){
+        v.status=par.status;
+        _promoteQ.push({id:v.id,status:par.status});
+      }
+    }
+  });
+  if(_promoteQ.length){save();for(const p of _promoteQ)sbReqSilent('PATCH','videos',{status:p.status},`?id=eq.${p.id}`);}
   let upNext=all.filter(v=>v.status==='up_next');
   let inProgress=all.filter(v=>v.status==='in_progress');
   let ideas=all.filter(v=>v.status==='idea');
@@ -231,63 +413,77 @@ function _vidRenderDashboard(){
   }
   _vidDashVids=all.filter(v=>v.status!=='idea');
   const _colHdr=`<div style="display:flex;align-items:center;gap:6px;flex-shrink:0;padding-right:0">
-            <div style="display:flex;gap:0">${VID_STEPS.map(s=>`<div style="width:28px;text-align:center;font-size:9px" title="${VID_STEP_LABELS[s]}">${VID_STEP_LABELS[s].slice(0,2)}</div>`).join('')}</div>
+            <div style="display:flex;gap:0">${VID_STEPS.map(s=>`<div style="width:28px;text-align:center;font-size:9px" title="${VID_STEP_LABELS[s]}">${VID_STEP_LABELS[s].length<=5?VID_STEP_LABELS[s]:VID_STEP_LABELS[s].slice(0,2)}</div>`).join('')}</div>
             <span style="width:52px;text-align:right;font-size:9px;display:inline-block">Posted</span>
-            <span style="width:36px;text-align:right;font-size:9px;display:inline-block">Dur</span>
+            <span style="width:36px;text-align:right;font-size:9px;display:inline-block">Duration</span>
+            <span style="width:28px;display:inline-block"></span>
             <button class="vid-del" style="visibility:hidden">✕</button>
           </div>`;
   const ideasHtml=(()=>{
-    const groupIdeas=ideas.filter(v=>v.video_type==='B');
-    const singleIdeas=ideas.filter(v=>v.video_type!=='B');
+    const bigIdeas=ideas.filter(v=>v.video_type==='B').sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
+    const littleIdeas=ideas.filter(v=>v.video_type!=='B').sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
     let h='';
-    if(groupIdeas.length||singleIdeas.length){
-      h+=`<div style="font-size:9px;font-weight:600;color:var(--muted);padding:6px 10px 2px;letter-spacing:.03em">Group</div>`;
-      h+=groupIdeas.length?groupIdeas.map(v=>_vidDashRow(v,false,true)).join(''):'<div style="color:var(--muted);font-size:11px;padding:4px 10px;opacity:.5">None</div>';
-      h+=`<div style="font-size:9px;font-weight:600;color:var(--muted);padding:8px 10px 2px;letter-spacing:.03em;border-top:1px solid rgba(210,205,228,.15);margin-top:4px">Single</div>`;
-      h+=singleIdeas.length?singleIdeas.map(v=>_vidDashRow(v,false,true)).join(''):'<div style="color:var(--muted);font-size:11px;padding:4px 10px;opacity:.5">None</div>';
+    if(bigIdeas.length||littleIdeas.length){
+      h+=`<div class="vid-idea-section" data-idea-type="B" ondragover="_vidIdeaTypeDragOver(event)" ondragleave="_vidIdeaTypeDragLeave(event)" ondrop="_vidIdeaTypeDrop(event,'B')">`;
+      h+=`<div style="font-size:9px;font-weight:600;color:var(--muted);padding:6px 6px 6px 16px;letter-spacing:.03em;background:#fff;display:flex;align-items:center">Big</div>`;
+      h+=bigIdeas.length?bigIdeas.map(v=>_vidDashRow(v,false,true)).join(''):'<div style="color:var(--muted);font-size:11px;padding:4px 10px;opacity:.5">None</div>';
+      h+=`</div>`;
+      h+=`<div class="vid-idea-section" data-idea-type="L" ondragover="_vidIdeaTypeDragOver(event)" ondragleave="_vidIdeaTypeDragLeave(event)" ondrop="_vidIdeaTypeDrop(event,'L')">`;
+      h+=`<div style="font-size:9px;font-weight:600;color:var(--muted);padding:6px 6px 6px 16px;letter-spacing:.03em;border-top:1px solid rgba(210,205,228,.15);margin-top:4px;background:#fff;display:flex;align-items:center">Little</div>`;
+      h+=littleIdeas.length?littleIdeas.map(v=>_vidDashRow(v,false,true)).join(''):'<div style="color:var(--muted);font-size:11px;padding:4px 10px;opacity:.5">None</div>';
+      h+=`</div>`;
     }else{
       h='<div style="color:var(--muted);font-size:12px;padding:16px 10px">No ideas yet</div>';
     }
     return h;
   })();
   return`
-    <div style="display:flex;gap:0;padding:0;position:absolute;top:0;left:0;right:0;bottom:0">
-      <div style="flex:2;min-width:0;display:flex;flex-direction:column;border-right:1px solid var(--border)">
-        <div style="flex:1;min-height:0;overflow-y:auto;overflow-x:hidden">
-          <div class="vid-dash-header">
-            <div style="flex:1;min-width:0;padding-left:10px">Current <span class="vid-count">${upNext.length+inProgress.length}</span></div>
-            ${(upNext.length||inProgress.length)?_colHdr:''}
-          </div>
-          <div class="vid-drop-zone" data-drop-status="up_next" ondragover="event.preventDefault()" ondrop="_vidDashDrop(event,'up_next')" style="min-height:40px;padding-bottom:8px">
-            <div style="font-size:9px;font-weight:600;color:var(--muted);padding:6px 10px 6px 10px;letter-spacing:.03em;background:rgba(255,255,255,.85);display:flex;align-items:center">Up Next</div>
-            ${upNext.length?_vidDashList(upNext,false):'<div style="color:var(--muted);font-size:11px;padding:8px 10px;opacity:.5">Drag ideas here</div>'}
-          </div>
-          <div class="vid-drop-zone" data-drop-status="in_progress" ondragover="event.preventDefault()" ondrop="_vidDashDrop(event,'in_progress')" style="min-height:40px;padding-bottom:8px">
-            <div style="font-size:9px;font-weight:600;color:var(--muted);padding:6px 10px 6px 10px;letter-spacing:.03em;border-top:1px solid rgba(210,205,228,.15);margin-top:4px;background:rgba(255,255,255,.85);display:flex;align-items:center">In Progress</div>
-            ${inProgress.length?_vidDashList(inProgress,false):'<div style="color:var(--muted);font-size:11px;padding:8px 10px;opacity:.5">Drag up next here to start</div>'}
-          </div>
+    <div onclick="_vidClearSel(event)" style="display:grid;grid-template-columns:3fr 1fr;grid-template-rows:auto 1fr;position:absolute;top:0;left:0;right:0;bottom:0">
+      <div class="vid-dash-header" style="grid-column:1;grid-row:1;border-right:1px solid var(--border)">
+        <div style="flex:1;min-width:0;padding-left:10px">Current</div>
+        ${(upNext.length||inProgress.length)?_colHdr:''}
+      </div>
+      <div class="vid-dash-header" style="grid-column:2;grid-row:1">
+        <div style="padding-left:10px">Ideas <span class="vid-count">${ideas.length}</span></div>
+      </div>
+      <div id="vidDashLeft" style="grid-column:1;grid-row:2;min-height:0;overflow-y:auto;overflow-x:hidden;border-right:1px solid var(--border)">
+        <div class="vid-drop-zone" data-drop-status="up_next" ondragover="_vidDashDragOver(event)" ondragleave="_vidDashDragLeave(event)" ondrop="_vidDashDrop(event,'up_next')" style="min-height:40px;padding-bottom:8px">
+          <div style="font-size:9px;font-weight:600;color:var(--muted);padding:6px 6px 6px 16px;letter-spacing:.03em;background:#fff;display:flex;align-items:center">Up Next</div>
+          ${upNext.length?_vidDashList(upNext,false):'<div style="color:var(--muted);font-size:11px;padding:8px 10px;opacity:.5">Drag ideas here</div>'}
+        </div>
+        <div class="vid-drop-zone" data-drop-status="in_progress" ondragover="_vidDashDragOver(event)" ondragleave="_vidDashDragLeave(event)" ondrop="_vidDashDrop(event,'in_progress')" style="min-height:40px;padding-bottom:8px">
+          <div style="font-size:9px;font-weight:600;color:var(--muted);padding:6px 6px 6px 16px;letter-spacing:.03em;border-top:1px solid rgba(210,205,228,.15);margin-top:4px;background:#fff;display:flex;align-items:center">In Progress</div>
+          ${inProgress.length?_vidDashList(inProgress,false):'<div style="color:var(--muted);font-size:11px;padding:8px 10px;opacity:.5">Drag up next here to start</div>'}
         </div>
       </div>
-      <div style="flex:1;min-width:0;display:flex;flex-direction:column" ondragover="event.preventDefault()" ondrop="_vidDashDrop(event,'idea')">
-        <div class="vid-dash-header">Ideas <span class="vid-count">${ideas.length}</span></div>
-        <div style="flex:1;min-height:0;overflow-y:auto">
-          ${ideasHtml}
-        </div>
+      <div id="vidDashRight" style="grid-column:2;grid-row:2;min-height:0;overflow-y:auto" ondragover="_vidDashDragOver(event)" ondragleave="_vidDashDragLeave(event)" ondrop="_vidDashDrop(event,'idea')">
+        ${ideasHtml}
       </div>
     </div>`;
 }
 
 function _vidDashList(vids,simple){
+  // Sort by vid_order, then group B→L
+  const sorted=[...vids].sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
   const seen=new Set();
   let html='';
-  const bVids=vids.filter(v=>v.video_type==='B');
-  const lVids=vids.filter(v=>v.video_type!=='B');
-  bVids.forEach(b=>{
-    seen.add(String(b.id));
-    html+=_vidDashRow(b,false,simple);
-    const children=lVids.filter(l=>l.big_video_id&&String(l.big_video_id)===String(b.id));
-    children.forEach(l=>{seen.add(String(l.id));html+=_vidDashRow(l,true,simple);});
+  const bVids=sorted.filter(v=>v.video_type==='B');
+  const lVids=sorted.filter(v=>v.video_type!=='B');
+  // Interleave: B videos and standalone L in vid_order, children under their B
+  sorted.forEach(v=>{
+    if(seen.has(String(v.id)))return;
+    if(v.video_type==='B'){
+      seen.add(String(v.id));
+      html+=_vidDashRow(v,false,simple);
+      const children=lVids.filter(l=>l.big_video_id&&String(l.big_video_id)===String(v.id)).sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
+      children.forEach((l,ci)=>{seen.add(String(l.id));html+=_vidDashRow(l,true,simple);if(!simple&&ci<children.length-1){const oA=l.vid_order??ci;const oB=children[ci+1].vid_order??(ci+1);html+=`<div class="vid-insert-zone" onclick="event.stopPropagation();openVidModalBetween('${String(v.id)}',${oA},${oB})"><button class="vid-insert-btn">+</button></div>`;}});
+    }else if(!v.big_video_id||!bVids.find(b=>String(b.id)===String(v.big_video_id))){
+      // Standalone L (no parent in this list)
+      seen.add(String(v.id));
+      html+=_vidDashRow(v,false,simple);
+    }
   });
+  // Any remaining children whose B parent wasn't in this status
   lVids.filter(l=>!seen.has(String(l.id))).forEach(l=>{html+=_vidDashRow(l,false,simple);});
   return html;
 }
@@ -299,7 +495,7 @@ function _vidDashRow(v,isChild,simple){
   const sel=_vidSelected.has(sid);
   const isSmall=v.video_type==='L'&&v.big_video_id;
   const indent=isChild?'padding-left:20px;':'';
-  const childMark=isChild?'<span style="color:var(--muted);font-size:10px;margin-right:4px">└</span>':'';
+  const childMark=isChild?'<span style="color:#fff;font-size:10px;margin-right:4px">└</span>':'';
   const titleStyle=isSmall?'color:var(--muted)':'';
   const postNum=_vidDashPostMap[sid];
   const numHtml=postNum?`<span style="color:var(--muted);font-size:10px;margin-right:6px;min-width:18px;display:inline-block">${postNum}</span>`:'';
@@ -310,18 +506,37 @@ function _vidDashRow(v,isChild,simple){
   const _titleSuffix=v.title?'- '+_esc(v.title):'';
   const primary=isComplete?v.title:(topic||v.title);
   const secondary=showTopicTitle?v.title:'';
-  const _addBtn=v.video_type==='B'?'<button onclick="event.stopPropagation();openVidModalForBig(\''+sid+'\')" style="font-size:10px;font-weight:700;width:16px;height:16px;line-height:14px;text-align:center;border-radius:3px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;margin-right:4px" title="Add child video">+</button>':(!isChild?'<button style="font-size:10px;font-weight:700;width:16px;height:16px;line-height:14px;text-align:center;border-radius:3px;border:1px solid transparent;background:transparent;color:transparent;margin-right:4px;pointer-events:none">+</button>':'');
-  const _tHtml=showTopicTitle?'<span class="'+titleCls+'">'+_esc(topic)+'</span><span style="font-size:10px;color:var(--muted);margin-left:4px;font-weight:400">'+_titleSuffix+'</span>':'<span class="'+titleCls+'">'+_esc(primary)+'</span>';
+  const _addBtn=simple?'':v.video_type==='B'?'<button onclick="event.stopPropagation();openVidModalForBig(\''+sid+'\')" style="font-size:10px;font-weight:700;width:16px;height:16px;line-height:14px;text-align:center;border-radius:3px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;margin-right:4px" title="Add child video">+</button>':(!isChild?'<button style="font-size:10px;font-weight:700;width:16px;height:16px;line-height:14px;text-align:center;border-radius:3px;border:1px solid transparent;background:transparent;color:transparent;margin-right:4px;pointer-events:none">+</button>':'');
+  const _kidCount=v.video_type==='B'?(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===sid).length:0;
+  const _kidBadge=_kidCount?'<span style="font-size:9px;color:var(--muted);font-weight:400;margin-left:4px">'+_kidCount+'</span>':'';
+  const _tHtml=(showTopicTitle?'<span class="'+titleCls+'">'+_esc(topic)+'</span><span style="font-size:10px;color:var(--muted);margin-left:4px;font-weight:400">'+_titleSuffix+'</span>':'<span class="'+titleCls+'">'+_esc(primary)+'</span>')+_kidBadge;
   if(simple){
-    return`<div class="vid-dash-row${sel?' vid-sel':''}" draggable="true" ondragstart="_vidDashDragStart(event,'${sid}')" data-vid="${sid}" onclick="vidRowClick(event,'${sid}')" ondblclick="openVidEdit('${sid}')" oncontextmenu="showVidCtx(event,'${sid}')">
-      <div style="flex:1;min-width:0;padding-left:10px;${indent}${!isChild?'font-weight:600;':''}${titleStyle}">${_addBtn}${childMark}${numHtml}${_tHtml}</div>
+    let hasGroup=false;
+    if(v.video_type==='B'){
+      const kids=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===sid);
+      if(kids.length)hasGroup=true;
+    }else if(v.big_video_id&&String(v.big_video_id)!==sid){
+      const _par=(st.videos||[]).find(x=>!x.is_deleted&&String(x.id)===String(v.big_video_id));
+      if(_par)hasGroup=true;
+    }
+    const bulletColor=hasGroup?'rgba(139,92,246,.45)':'#fff';
+    const tipAttr=hasGroup?`onmouseenter="_vidBulletTipShow(event,'${sid}')" onmouseleave="_vidBulletTipHide()"`:'';
+    return`<div class="vid-dash-row${sel?' vid-sel':''}" draggable="true" ondragstart="_vidDashDragStart(event,'${sid}')" data-vid="${sid}" onclick="vidRowClick(event,'${sid}')" ondblclick="openVidEdit('${sid}')" oncontextmenu="showVidCtx(event,'${sid}')" onmouseenter="_vidIdeaRowEnter('${sid}')" onmouseleave="_vidIdeaRowLeave()">
+      <div style="flex:1;min-width:0;padding-left:10px;${indent}${!isChild?'font-weight:600;':''}${titleStyle}" ${tipAttr}><span style="color:${bulletColor};font-size:8px;margin-right:6px;cursor:default">●</span>${_addBtn}${childMark}${numHtml}${_tHtml}</div>
       <button class="vid-del" data-vid="${sid}">✕</button>
     </div>`;
   }
   const postStr=_vidPostStr(v.post_date);
   const durStr=v.duration_minutes?v.duration_minutes.toFixed(2):'';
-  const dropAttrs=v.video_type==='B'?'ondragover="_vidGroupDragOver(event)" ondragleave="_vidGroupDragLeave(event)" ondrop="_vidGroupDrop(event,\''+sid+'\')"':'';
-  return`<div class="vid-dash-row${sel?' vid-sel':''}${_vidChildSelected.has(sid)?' vid-child-sel':''}" draggable="true" ondragstart="_vidDashDragStart(event,'${sid}')" ${dropAttrs} data-vid="${sid}" onclick="vidRowClick(event,'${sid}')" ondblclick="_vidDashDblClick(event,'${sid}')" oncontextmenu="showVidCtx(event,'${sid}')">
+  const isBig=v.video_type==='B';
+  const bigRowStyle=isBig?'background:rgba(255,255,255,.50);':'';
+  const _applicable=VID_STEPS.filter(s=>v[s]!=='na');
+  const _done=_applicable.filter(s=>v[s]==='done').length;
+  const _pct=_applicable.length?Math.round((_done/_applicable.length)*100):0;
+  const _pctVal=(v.status==='in_progress'||v.status==='up_next')&&_pct>0&&_pct<100?_pct+'%':'';
+  const _dropParent=v.video_type==='B'?sid:(v.big_video_id?String(v.big_video_id):null);
+  const dropAttrs=_dropParent?'ondragover="_vidGroupDragOver(event)" ondragleave="_vidGroupDragLeave(event)" ondrop="_vidGroupDrop(event,\''+_dropParent+'\')"':'';
+  return`<div class="vid-dash-row${sel?' vid-sel':''}${_vidChildSelected.has(sid)?' vid-child-sel':''}" draggable="true" ondragstart="_vidDashDragStart(event,'${sid}')" ${dropAttrs} data-vid="${sid}" onclick="vidRowClick(event,'${sid}')" ondblclick="_vidDashDblClick(event,'${sid}')" oncontextmenu="showVidCtx(event,'${sid}')" style="${bigRowStyle}">
     <div style="flex:1;min-width:0;padding-left:10px;${indent}${!isChild?'font-weight:600;':''}${titleStyle}">
       ${_addBtn}${childMark}${numHtml}${_tHtml}
     </div>
@@ -329,7 +544,8 @@ function _vidDashRow(v,isChild,simple){
       <div style="display:flex;gap:0">${VID_STEPS.map(s=>`<div style="width:28px;text-align:center"><div class="vid-step-dot${v[s]==='done'?' done':v[s]==='na'?' na':''}" data-vid="${sid}" data-step="${s}" title="${VID_STEP_LABELS[s]}"></div></div>`).join('')}</div>
       <span data-field="post_date" style="width:52px;text-align:right;font-size:11px;color:${_vidDateColor(v.post_date,v)};cursor:pointer;min-height:16px;display:inline-block">${postStr||''}</span>
       <span data-field="duration_minutes" style="width:36px;text-align:right;font-size:11px;color:var(--muted);cursor:pointer;min-height:16px;display:inline-block">${durStr||''}</span>
-      ${(()=>{const ym=_ytForVid(sid);return ym?'<span style="width:42px;text-align:right;font-size:10px;color:#8b5cf6;display:inline-block" title="'+ym.views+' views / '+ym.likes+' likes">'+_ytNum(ym.views)+'</span>':'<span style="width:42px;display:inline-block"></span>';})()}
+      ${(()=>{const ym=_ytForVid(sid);return ym?'<span style="width:42px;text-align:right;font-size:10px;color:#8b5cf6;display:inline-block" title="'+ym.views+' views / '+ym.likes+' likes">'+_ytNum(ym.views)+'</span>':'';})()}
+      <span style="width:28px;text-align:right;font-size:9px;color:var(--muted);font-weight:500;display:inline-block">${_pctVal}</span>
       <button class="vid-del" data-vid="${sid}">✕</button>
     </div>
   </div>`;
@@ -342,35 +558,256 @@ async function _vidPromoteChildren(parentId,newStatus){
   if(children.length){save();renderVideosPageKeepScroll();for(const c of children)await sbReqSilent('PATCH','videos',{status:newStatus},`?id=eq.${c.id}`);}
 }
 
-function _vidGroupDragOver(e){e.preventDefault();e.stopPropagation();const row=e.currentTarget;row.style.boxShadow='inset 0 0 8px rgba(139,92,246,.3)';row.style.borderColor='rgba(139,92,246,.4)';row.style.borderBottom='2px solid rgba(139,92,246,.6)';}
-function _vidGroupDragLeave(e){const row=e.currentTarget;row.style.boxShadow='';row.style.borderColor='';row.style.borderBottom='';}
+function _vidGroupDragOver(e){e.preventDefault();}
+function _vidGroupDragLeave(e){const row=e.currentTarget;row.style.boxShadow='';row.style.borderColor='';}
 async function _vidGroupDrop(e,parentId){
   e.preventDefault();
-  const row=e.currentTarget;row.style.boxShadow='';row.style.borderColor='';row.style.borderBottom='';
-  const dragId=_vidDashDragId;if(!dragId)return;
-  const v=(st.videos||[]).find(x=>String(x.id)===dragId);if(!v)return;
+  const row=e.currentTarget;row.style.boxShadow='';row.style.borderColor='';
+  if(!_vidDashDragId)return;
   const parent=(st.videos||[]).find(x=>String(x.id)===parentId);if(!parent||parent.video_type!=='B')return;
-  // B videos can't nest under B — let event bubble to zone handler for status change
-  if(v.video_type==='B'||dragId===parentId)return;
+  const ids=_vidDashDragIds.length?[..._vidDashDragIds]:[_vidDashDragId];
+  // If dragging a B video (with children), don't intercept — let _vidDashDrop handle it
+  const hasBDrag=ids.some(id=>{const v=(st.videos||[]).find(x=>String(x.id)===String(id));return v&&v.video_type==='B';});
+  if(hasBDrag)return;
+  // Filter to videos that can nest (not B, not self, not already child of this parent)
+  const toNest=ids.map(id=>(st.videos||[]).find(x=>String(x.id)===String(id))).filter(v=>v&&v.video_type!=='B'&&String(v.id)!==String(parentId));
+  if(!toNest.length)return;
   e.stopPropagation();
-  const prevParent=v.big_video_id;const prevStatus=v.status;const prevType=v.video_type;
-  pushUndo();
-  v.big_video_id=parseInt(parentId)||parentId;
-  v.video_type='L';
-  if(v.status!==parent.status)v.status=parent.status;
+
+  // Find drop position among existing children using zone placeholder
+  const zone=row.closest('.vid-drop-zone')||row.closest('[ondrop]');
+  const ph=zone?zone.querySelector('.vid-reorder-ph'):null;
+  const existingKids=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===parentId&&c.status===parent.status).sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
+
+  // Determine insert position from placeholder
+  let insertOrder=parent.vid_order!=null?(parent.vid_order+0.01):0.01;
+  if(ph&&zone){
+    const kidRows=[...zone.querySelectorAll('.vid-dash-row[data-vid]')].filter(r=>{
+      const v=(st.videos||[]).find(x=>String(x.id)===r.dataset.vid);
+      return v&&String(v.big_video_id)===parentId;
+    });
+    const zoneChildren=[...zone.children];
+    const phIdx=zoneChildren.indexOf(ph);
+    const kidsAfter=kidRows.filter(r=>zoneChildren.indexOf(r)>phIdx);
+    if(kidsAfter.length){
+      const afterVid=(st.videos||[]).find(x=>String(x.id)===kidsAfter[0].dataset.vid);
+      if(afterVid)insertOrder=(afterVid.vid_order??0)-0.01;
+    }else if(existingKids.length){
+      insertOrder=(existingKids[existingKids.length-1].vid_order??0)+0.01;
+    }
+  }else if(existingKids.length){
+    insertOrder=(existingKids[existingKids.length-1].vid_order??0)+0.01;
+  }
+  if(ph)ph.remove();
+
+  const undoData=toNest.map(v=>({v,prevParent:v.big_video_id,prevStatus:v.status,prevType:v.video_type,prevOrder:v.vid_order}));
+  toNest.forEach((v,i)=>{
+    v.big_video_id=parseInt(parentId)||parentId;
+    v.video_type='L';
+    if(v.status!==parent.status&&v.status!=='published')v.status=parent.status;
+    v.vid_order=insertOrder+(i*0.01);
+  });
   save();renderVideosPageKeepScroll();
-  await _vidEnsureSynced(v);
-  const patch={big_video_id:v.big_video_id,video_type:'L'};
-  if(v.status!==prevStatus)patch.status=v.status;
-  await sbReqSilent('PATCH','videos',patch,`?id=eq.${v.id}`);
-  _vidDashDragId=null;
+  pushUndo(async()=>{
+    undoData.forEach(d=>{d.v.big_video_id=d.prevParent;d.v.video_type=d.prevType;d.v.status=d.prevStatus;d.v.vid_order=d.prevOrder;});
+    save();renderVideosPageKeepScroll();
+    for(const d of undoData)await sbReqSilent('PATCH','videos',{big_video_id:d.prevParent,video_type:d.prevType,status:d.prevStatus,vid_order:d.prevOrder??null},`?id=eq.${d.v.id}`);
+  },'Group change');
+  for(const v of toNest){
+    await _vidEnsureSynced(v);
+    await sbReqSilent('PATCH','videos',{big_video_id:v.big_video_id,video_type:'L',status:v.status,vid_order:v.vid_order},`?id=eq.${v.id}`);
+  }
+  _vidDashDragId=null;_vidDashDragIds=[];
 }
 
 let _vidDashDragId=null;
-function _vidDashDragStart(e,id){_vidDashDragId=id;e.dataTransfer.effectAllowed='move';}
+function _vidDashDragStart(e,id){
+  const sid=String(id);
+  _vidDashDragId=sid;
+  // If dragging a selected video, include all selected; otherwise just this one
+  if(_vidSelected.has(sid)){
+    _vidDashDragIds=[..._vidSelected,..._vidChildSelected];
+  }else{
+    // Not selected — clear selection, select this one, drag just it
+    _vidSelected.clear();_vidSelected.add(sid);
+    _vidUpdateChildSel();_applyVidSel();
+    _vidDashDragIds=[sid,..._vidChildSelected];
+  }
+  e.dataTransfer.effectAllowed='move';
+  e.target.style.opacity='.4';
+  const _dragEnd=()=>{e.target.style.opacity='';e.target.removeEventListener('dragend',_dragEnd);document.querySelectorAll('.vid-reorder-ph').forEach(p=>p.remove());document.querySelectorAll('.vid-dash-row[data-vid]').forEach(r=>r.style.opacity='');};
+  e.target.addEventListener('dragend',_dragEnd);
+}
+let _vidDashDragIds=[];
+
+let _vidDragScrollRAF=null,_vidDragScrollSpeed=0,_vidDragScrollEl=null;
+function _vidDragAutoScroll(e){
+  const scrollEl=e.currentTarget.closest('[style*="overflow-y"]')||e.currentTarget;
+  if(scrollEl.scrollHeight<=scrollEl.clientHeight){_vidDragScrollSpeed=0;return;}
+  const rect=scrollEl.getBoundingClientRect();
+  const edge=40;
+  const y=e.clientY;
+  _vidDragScrollSpeed=0;_vidDragScrollEl=scrollEl;
+  if(y>rect.bottom-edge)_vidDragScrollSpeed=Math.min(12,(y-(rect.bottom-edge))/edge*12);
+  else if(y<rect.top+edge)_vidDragScrollSpeed=-Math.min(12,((rect.top+edge)-y)/edge*12);
+  if(_vidDragScrollSpeed!==0&&!_vidDragScrollRAF){
+    (function scroll(){if(!_vidDragScrollSpeed||!_vidDragScrollEl){_vidDragScrollRAF=null;return;}_vidDragScrollEl.scrollTop+=_vidDragScrollSpeed;_vidDragScrollRAF=requestAnimationFrame(scroll);})();
+  }
+}
+function _vidDashDragOver(e){
+  if(!_vidDashDragId)return;
+  e.preventDefault();
+  _vidDragAutoScroll(e);
+  const zone=e.currentTarget;
+  const dragSet=new Set(_vidDashDragIds);
+  const dragV=(st.videos||[]).find(x=>String(x.id)===_vidDashDragId);
+  const dragIsB=dragV&&dragV.video_type==='B';
+  let ph=zone.querySelector('.vid-reorder-ph');
+  if(!ph){ph=document.createElement('div');ph.className='vid-reorder-ph';ph.style.cssText='height:2px;margin:2px 10px;border-radius:99px;background:#fff;pointer-events:none;flex-shrink:0';zone.appendChild(ph);}
+  zone.querySelectorAll('.vid-dash-row[data-vid]').forEach(r=>{r.style.opacity=dragSet.has(r.dataset.vid)?'.3':'';});
+  let rows=[...zone.querySelectorAll('.vid-dash-row[data-vid]')].filter(r=>!dragSet.has(r.dataset.vid));
+  // If dragging B, only allow placement at B-level boundaries (not between children)
+  if(dragIsB){
+    rows=rows.filter(r=>{
+      const rv=(st.videos||[]).find(x=>String(x.id)===r.dataset.vid);
+      return rv&&(rv.video_type==='B'||!rv.big_video_id);
+    });
+  }
+  let inserted=false;
+  for(const r of rows){
+    const rc=r.getBoundingClientRect();
+    if(e.clientY<rc.top+rc.height/2){
+      // If dragging B before a B row, place before the B row
+      zone.insertBefore(ph,r);inserted=true;break;
+    }
+  }
+  if(!inserted&&rows.length){
+    // Place after last valid row's children
+    const lastRow=rows[rows.length-1];
+    const lastV=(st.videos||[]).find(x=>String(x.id)===lastRow.dataset.vid);
+    if(dragIsB&&lastV&&lastV.video_type==='B'){
+      // Find last child of this B in the DOM
+      const allRows=[...zone.querySelectorAll('.vid-dash-row[data-vid]')];
+      let lastChild=lastRow;
+      for(const ar of allRows){
+        const arv=(st.videos||[]).find(x=>String(x.id)===ar.dataset.vid);
+        if(arv&&String(arv.big_video_id)===lastRow.dataset.vid&&!dragSet.has(ar.dataset.vid))lastChild=ar;
+      }
+      lastChild.after(ph);
+    }else{
+      lastRow.after(ph);
+    }
+  }
+  else if(!rows.length){const hdr=zone.querySelector('[style*="font-size:9px"]');if(hdr)hdr.after(ph);}
+}
+function _vidDashDragLeave(e){
+  if(!e.currentTarget.contains(e.relatedTarget)){const ph=e.currentTarget.querySelector('.vid-reorder-ph');if(ph)ph.remove();if(_vidDragScrollRAF){cancelAnimationFrame(_vidDragScrollRAF);_vidDragScrollRAF=null;}}
+}
+function _vidIdeaTypeDragOver(e){
+  if(!_vidDashDragId)return;
+  e.preventDefault();e.stopPropagation();
+  const zone=e.currentTarget;
+  const dragSet=new Set(_vidDashDragIds);
+  let ph=zone.querySelector('.vid-reorder-ph');
+  if(!ph){ph=document.createElement('div');ph.className='vid-reorder-ph';ph.style.cssText='height:2px;margin:2px 10px;border-radius:99px;background:#fff;pointer-events:none;flex-shrink:0';zone.appendChild(ph);}
+  zone.querySelectorAll('.vid-dash-row[data-vid]').forEach(r=>{r.style.opacity=dragSet.has(r.dataset.vid)?'.3':'';});
+  const rows=[...zone.querySelectorAll('.vid-dash-row[data-vid]')].filter(r=>!dragSet.has(r.dataset.vid));
+  let inserted=false;
+  for(const r of rows){
+    const rc=r.getBoundingClientRect();
+    if(e.clientY<rc.top+rc.height/2){zone.insertBefore(ph,r);inserted=true;break;}
+  }
+  if(!inserted&&rows.length)rows[rows.length-1].after(ph);
+  else if(!rows.length){const hdr=zone.querySelector('[style*="font-size:9px"]');if(hdr)hdr.after(ph);}
+}
+function _vidIdeaTypeDragLeave(e){
+  if(!e.currentTarget.contains(e.relatedTarget)){
+    const ph=e.currentTarget.querySelector('.vid-reorder-ph');if(ph)ph.remove();
+    e.currentTarget.querySelectorAll('.vid-dash-row[data-vid]').forEach(r=>r.style.opacity='');
+  }
+}
+async function _vidIdeaTypeDrop(e,newType){
+  e.preventDefault();e.stopPropagation();
+  e.currentTarget.style.background='';
+  if(_vidDragScrollRAF){cancelAnimationFrame(_vidDragScrollRAF);_vidDragScrollRAF=null;}
+  const zone=e.currentTarget;
+  const ph=zone.querySelector('.vid-reorder-ph');
+  const dragIds=_vidDashDragIds.length?[..._vidDashDragIds]:(_vidDashDragId?[String(_vidDashDragId)]:[]);
+  _vidDashDragId=null;_vidDashDragIds=[];
+  if(!dragIds.length){if(ph)ph.remove();return;}
+  const dragSet=new Set(dragIds);
+
+  // Build insert order from placeholder position
+  const rows=[...zone.querySelectorAll('.vid-dash-row[data-vid]')];
+  const children=zone.children?[...zone.children]:[];
+  const phIdx=ph?children.indexOf(ph):-1;
+  if(ph)ph.remove();
+  const zoneIds=rows.map(r=>r.dataset.vid).filter(id=>!dragSet.has(id));
+  let insertIdx=zoneIds.length;
+  if(phIdx>-1){
+    const rowsAfterPh=rows.filter(r=>children.indexOf(r)>=phIdx&&!dragSet.has(r.dataset.vid));
+    if(rowsAfterPh.length){const afterId=rowsAfterPh[0].dataset.vid;insertIdx=zoneIds.indexOf(afterId);if(insertIdx<0)insertIdx=zoneIds.length;}
+  }
+
+  // Find B videos being dragged — their children should keep type L
+  const draggedBIds=new Set(dragIds.filter(id=>{const v=(st.videos||[]).find(x=>String(x.id)===id);return v&&v.video_type==='B';}));
+  const undos=[];
+  // Only insert top-level dragged items (matching newType) into order
+  const topDragIds=dragIds.filter(id=>{
+    const v=(st.videos||[]).find(x=>String(x.id)===id);
+    if(!v)return false;
+    const isChildOfDraggedB=v.big_video_id&&draggedBIds.has(String(v.big_video_id));
+    return isChildOfDraggedB?false:(v.video_type===newType||(!isChildOfDraggedB));
+  });
+  const finalOrder=[...zoneIds];
+  finalOrder.splice(insertIdx,0,...topDragIds);
+
+  for(const sid of dragIds){
+    const v=(st.videos||[]).find(x=>String(x.id)===sid);if(!v)continue;
+    const prev={video_type:v.video_type,big_video_id:v.big_video_id,status:v.status,vid_order:v.vid_order};
+    const isChildOfDraggedB=v.big_video_id&&draggedBIds.has(String(v.big_video_id));
+    if(!isChildOfDraggedB){
+      v.video_type=newType;
+      if(newType==='B')v.big_video_id=null;
+    }
+    v.status='idea';
+    undos.push({sid,prev});
+  }
+  // Also move children of dragged B videos to ideas (even if not in dragIds)
+  for(const bId of draggedBIds){
+    (st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===bId&&!dragSet.has(String(c.id))).forEach(c=>{
+      const prev={video_type:c.video_type,big_video_id:c.big_video_id,status:c.status,vid_order:c.vid_order};
+      if(c.status!=='published')c.status='idea';
+      undos.push({sid:String(c.id),prev});
+    });
+  }
+  // Assign vid_order from finalOrder and track all order changes
+  const orderChanges=[];
+  finalOrder.forEach((id,i)=>{
+    const v=(st.videos||[]).find(x=>String(x.id)===id);
+    if(v&&v.vid_order!==i){
+      const prevOrder=v.vid_order;
+      // Add to undos if not already there
+      if(!undos.find(u=>u.sid===id))undos.push({sid:id,prev:{vid_order:prevOrder,video_type:v.video_type,big_video_id:v.big_video_id,status:v.status}});
+      v.vid_order=i;
+      orderChanges.push({id,order:i});
+    }else if(v){v.vid_order=i;}
+  });
+
+  save();renderVideosPageKeepScroll();
+  pushUndo(async()=>{
+    undos.forEach(u=>{const v=(st.videos||[]).find(x=>String(x.id)===u.sid);if(v)Object.assign(v,u.prev);});
+    save();renderVideosPageKeepScroll();
+    for(const u of undos)await sbReqSilent('PATCH','videos',u.prev,`?id=eq.${u.sid}`);
+  },'Changed video type');
+  for(const u of undos){
+    const v=(st.videos||[]).find(x=>String(x.id)===u.sid);
+    if(v)await sbReqSilent('PATCH','videos',{video_type:v.video_type,status:v.status,big_video_id:v.big_video_id??null,vid_order:v.vid_order??null},`?id=eq.${u.sid}`);
+  }
+}
 
 // Push a local-only video (l-xxx id) to Supabase and replace the temp id
-const _VID_DB_COLS=['title','topic','status','post_date','duration_minutes','video_type','big_video_id',...VID_STEPS];
+const _VID_DB_COLS=['title','topic','status','post_date','duration_minutes','video_type','big_video_id','vid_order','comment',...VID_STEPS];
 async function _vidEnsureSynced(v){
   if(!String(v.id).startsWith('l-'))return;
   // If parent is also local, sync parent first
@@ -411,27 +848,106 @@ async function _vidSyncLocalVideos(){
 }
 async function _vidDashDrop(e,newStatus){
   e.preventDefault();e.currentTarget.style.background='';
-  if(!_vidDashDragId)return;
-  const dragId=_vidDashDragId;_vidDashDragId=null;
-  const v=(st.videos||[]).find(x=>String(x.id)===dragId);if(!v)return;
-  const prev=v.status;
-  if(prev===newStatus)return;
-  // Capture children states for undo
-  const childPrevs=[];
-  if(v.video_type==='B'){
-    (st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(v.id)).forEach(c=>childPrevs.push({id:c.id,status:c.status}));
+  if(_vidDragScrollRAF){cancelAnimationFrame(_vidDragScrollRAF);_vidDragScrollRAF=null;}
+  const zone=e.currentTarget;
+  const ph=zone.querySelector('.vid-reorder-ph');
+  const dragIds=_vidDashDragIds.length?[..._vidDashDragIds]:(_vidDashDragId?[String(_vidDashDragId)]:[]);
+  _vidDashDragId=null;_vidDashDragIds=[];
+  if(!dragIds.length){if(ph)ph.remove();return;}
+
+  // Build reorder from placeholder position
+  const rows=[...zone.querySelectorAll('.vid-dash-row[data-vid]')];
+  const children=zone.children?[...zone.children]:[];
+  const phIdx=ph?children.indexOf(ph):-1;
+  if(ph)ph.remove();
+
+  // Determine insert position from DOM order
+  const dragSet=new Set(dragIds);
+  const zoneIds=rows.map(r=>r.dataset.vid).filter(id=>!dragSet.has(id));
+  let insertIdx=zoneIds.length;// default: end
+  if(phIdx>-1){
+    // Find which row comes after the placeholder
+    const rowsAfterPh=rows.filter(r=>children.indexOf(r)>=phIdx&&!dragSet.has(r.dataset.vid));
+    if(rowsAfterPh.length){
+      const afterId=rowsAfterPh[0].dataset.vid;
+      insertIdx=zoneIds.indexOf(afterId);
+      if(insertIdx<0)insertIdx=zoneIds.length;
+    }
   }
-  v.status=newStatus;save();renderVideosPageKeepScroll();
-  if(v.video_type==='B')await _vidPromoteChildren(v.id,newStatus);
-  await _vidEnsureSynced(v);
+
+  // Capture all prev states BEFORE any modifications
+  const undoData=[];
+  for(const dragId of dragIds){
+    const v=(st.videos||[]).find(x=>String(x.id)===String(dragId));
+    if(!v)continue;
+    const prev=v.status;const prevOrder=v.vid_order;
+    const childPrevs=[];
+    if(v.video_type==='B'){
+      (st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(v.id)).forEach(c=>childPrevs.push({id:c.id,status:c.status,vid_order:c.vid_order}));
+    }
+    undoData.push({v,prev,prevOrder,childPrevs});
+  }
+  // Now apply status changes
+  for(const d of undoData){
+    const v=d.v;
+    if(v.status!==newStatus&&v.status!=='published'){
+      if(v.video_type==='L'&&!v.big_video_id&&(newStatus==='in_progress'||newStatus==='up_next'))v.status='idea';
+      else v.status=newStatus;
+    }
+    // When moving a B to ideas, move its children to ideas too
+    if(v.video_type==='B'&&newStatus==='idea'){
+      d.childPrevs.forEach(cp=>{const c=(st.videos||[]).find(x=>String(x.id)===String(cp.id));if(c&&c.status!=='published')c.status='idea';});
+    }
+    // When moving a B from ideas to current, promote its children too
+    if(v.video_type==='B'&&newStatus!=='idea'&&newStatus!=='published'){
+      d.childPrevs.forEach(cp=>{const c=(st.videos||[]).find(x=>String(x.id)===String(cp.id));if(c&&c.status==='idea')c.status=newStatus;});
+    }
+  }
+
+  // Build final order: zoneIds with dragIds spliced in at insertIdx
+  // Only top-level (B or standalone) — children follow their parent
+  const topDragIds=dragIds.filter(id=>{const v=(st.videos||[]).find(x=>String(x.id)===id);return v&&(v.video_type==='B'||!v.big_video_id||!dragSet.has(String(v.big_video_id)));});
+  const finalOrder=[...zoneIds];
+  finalOrder.splice(insertIdx,0,...topDragIds);
+
+  // Assign vid_order to all videos in this status
+  const allInStatus=(st.videos||[]).filter(v=>!v.is_deleted&&v.status===newStatus);
+  finalOrder.forEach((id,i)=>{
+    const v=allInStatus.find(x=>String(x.id)===id);
+    if(v)v.vid_order=i;
+    // Children get parent's order + fraction
+    if(v&&v.video_type==='B'){
+      const kids=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===id&&c.status===newStatus);
+      kids.forEach((k,ki)=>{k.vid_order=i+((ki+1)*0.01);});
+    }
+  });
+  // Standalone L not in finalOrder
+  allInStatus.filter(v=>!finalOrder.includes(String(v.id))&&v.vid_order==null).forEach((v,i)=>{v.vid_order=finalOrder.length+i;});
+
+  save();renderVideosPageKeepScroll();
+
+  for(const d of undoData){
+    await _vidEnsureSynced(d.v);
+    // Sync children status changes to DB
+    if(d.v.video_type==='B'){
+      for(const cp of d.childPrevs){const c=(st.videos||[]).find(x=>String(x.id)===String(cp.id));if(c&&c.status!==cp.status)await sbReqSilent('PATCH','videos',{status:c.status,vid_order:c.vid_order??null},`?id=eq.${cp.id}`);}
+    }
+  }
+
+  // Save vid_order + status to DB
+  const prevOrders=allInStatus.map(v=>({id:v.id,order:v.vid_order}));
   pushUndo(async()=>{
-    v.status=prev;
-    childPrevs.forEach(cp=>{const c=(st.videos||[]).find(x=>String(x.id)===String(cp.id));if(c)c.status=cp.status;});
+    undoData.forEach(d=>{
+      d.v.status=d.prev;d.v.vid_order=d.prevOrder;
+      d.childPrevs.forEach(cp=>{const c=(st.videos||[]).find(x=>String(x.id)===String(cp.id));if(c){c.status=cp.status;c.vid_order=cp.vid_order;}});
+    });
     save();renderVideosPageKeepScroll();
-    await sbReqSilent('PATCH','videos',{status:prev},`?id=eq.${v.id}`);
-    for(const cp of childPrevs)await sbReqSilent('PATCH','videos',{status:cp.status},`?id=eq.${cp.id}`);
-  },'Status change');
-  await sbReqSilent('PATCH','videos',{status:newStatus},`?id=eq.${v.id}`);
+    for(const d of undoData){
+      await sbReqSilent('PATCH','videos',{status:d.prev,vid_order:d.prevOrder??null},`?id=eq.${d.v.id}`);
+      for(const cp of d.childPrevs)await sbReqSilent('PATCH','videos',{status:cp.status,vid_order:cp.vid_order??null},`?id=eq.${cp.id}`);
+    }
+  },'Reorder/move');
+  for(const v of allInStatus)await sbReqSilent('PATCH','videos',{status:v.status,vid_order:v.vid_order},`?id=eq.${v.id}`);
 }
 
 // ── TABLE VIEW (All Details) ─────────────────────────────────────────────────
@@ -491,13 +1007,13 @@ function _vidRenderTable(){
   let vids=_vidFiltered().filter(v=>v.status!=='idea');
   const today=d2s(new Date());
   if(!_vidShowCompleted){
-    // Find B groups that have L children with future/today post dates
-    const keepGroups=new Set();
-    vids.forEach(v=>{if(v.video_type==='L'&&v.big_video_id&&v.post_date&&v.post_date>=today)keepGroups.add(String(v.big_video_id));});
     vids=vids.filter(v=>{
-      // Hide published with past date
+      // Hide published with past date; for B videos, only hide if ALL children also have past dates
       if(v.status==='published'&&v.post_date&&v.post_date<today){
-        if(v.video_type==='B'&&keepGroups.has(String(v.id)))return true;
+        if(v.video_type==='B'){
+          const kids=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(v.id));
+          if(kids.some(k=>!k.post_date||k.post_date>=today))return true;
+        }
         return false;
       }
       // Hide backup if all steps done
@@ -534,13 +1050,14 @@ function _vidRenderTable(){
   return`<div>
     <table class="vid-tbl" style="table-layout:fixed;width:100%">
       <thead><tr>
-        <th style="${thStyle}" onclick="vidTblSort('title')">Title${_vidSortArrow('title')}</th>
-        ${VID_STEPS.map(s=>`<th style="width:28px;text-align:center;font-size:9px" title="${VID_STEP_LABELS[s]}">${VID_STEP_LABELS[s].slice(0,2)}</th>`).join('')}
+        <th style="width:525px;${thStyle}" onclick="vidTblSort('title')">Title${_vidSortArrow('title')}</th>
+        ${VID_STEPS.map(s=>`<th style="width:22px;text-align:center;font-size:9px" title="${VID_STEP_LABELS[s]}">${VID_STEP_LABELS[s].length<=5?VID_STEP_LABELS[s]:VID_STEP_LABELS[s].slice(0,2)}</th>`).join('')}
         <th style="width:62px;text-align:right;${thStyle}" onclick="vidTblSort('posted')">Posted${_vidSortArrow('posted')}</th>
         <th style="width:50px;text-align:right;${thStyle}" onclick="vidTblSort('duration')">Dur${_vidSortArrow('duration')}</th>
-        <th style="width:70px;${thStyle}" onclick="vidTblSort('status')">Status${_vidSortArrow('status')}</th>
-        ${_ytMatch?'<th style="width:80px;text-align:right;font-size:9px">Views</th><th style="width:50px;text-align:right;font-size:9px">Likes</th>':''}
-        <th style="width:36px"><button onclick="_vidToggleCompleted()" style="font-size:14px;font-weight:700;width:24px;height:24px;line-height:22px;text-align:center;border-radius:6px;border:1.5px solid var(--border);background:${_vidShowCompleted?'rgba(14,165,233,.12)':'var(--bg)'};color:${_vidShowCompleted?'#0ea5e9':'var(--muted)'};cursor:pointer" title="${_vidShowCompleted?'Hide':'Show'} Completed">${_vidShowCompleted?'−':'+'}</button></th>
+        <th style="width:28px"></th>
+        <th style="width:80px;${thStyle}" onclick="vidTblSort('status')">Status${_vidSortArrow('status')}</th>
+        ${_ytMatch?'<th style="width:45px;text-align:right;font-size:9px">Views</th><th style="width:50px;text-align:right;font-size:9px">Likes</th><th style="width:50px;text-align:right;font-size:9px">Comments</th>':''}
+        <th style="width:30px"><button onclick="_vidToggleCompleted()" style="font-size:12px;font-weight:700;width:20px;height:20px;line-height:18px;text-align:center;border-radius:5px;border:1.5px solid var(--border);background:${_vidShowCompleted?'rgba(14,165,233,.12)':'var(--bg)'};color:${_vidShowCompleted?'#0ea5e9':'var(--muted)'};cursor:pointer;vertical-align:middle" title="${_vidShowCompleted?'Hide':'Show'} Completed">${_vidShowCompleted?'−':'+'}</button></th>
       </tr></thead>
       <tbody>${groupedHtml}</tbody>
     </table>
@@ -575,7 +1092,7 @@ function _vidBuildRows(vids){
     seen.add(String(b.id));
     html+=_vidRow(b,false);
     const children=lVids.filter(l=>l.big_video_id&&String(l.big_video_id)===String(b.id)).sort(_vidChildSort);
-    children.forEach(l=>{seen.add(String(l.id));html+=_vidRow(l,true);});
+    children.forEach((l,ci)=>{seen.add(String(l.id));html+=_vidRow(l,true);if(ci<children.length-1){const oA=l.vid_order??ci;const oB=children[ci+1].vid_order??(ci+1);html+=`<tr class="vid-insert-zone" onclick="event.stopPropagation();openVidModalBetween('${String(b.id)}',${oA},${oB})"><td colspan="99" style="padding:0;border:none"><button class="vid-insert-btn">+</button></td></tr>`;}});
   });
   lVids.filter(l=>!seen.has(String(l.id))).sort(_vidChildSort).forEach(l=>{html+=_vidRow(l,false);});
   return html;
@@ -589,19 +1106,24 @@ function _vidRow(v,isChild,postMap){
   const durStr=v.duration_minutes?v.duration_minutes.toFixed(2):'';
   const isSmall=v.video_type==='L'&&v.big_video_id;
   const indent=isChild?'padding-left:32px;':'padding-left:16px;';
-  const childMark=isChild?'<span style="color:var(--muted);font-size:10px;margin-right:4px">└</span>':'';
+  const childMark=isChild?'<span style="color:#fff;font-size:10px;margin-right:4px">└</span>':'';
   const titleColor=isSmall?'color:var(--muted);':'';
   const postNum=postMap&&postMap[sid];
   const numHtml=postNum?`<span style="color:var(--muted);font-size:10px;margin-right:6px;min-width:18px;display:inline-block">${postNum}</span>`:'';
   const addBtn=v.video_type==='B'?`<button onclick="event.stopPropagation();openVidModalForBig('${sid}')" style="font-size:10px;font-weight:700;width:16px;height:16px;line-height:14px;text-align:center;border-radius:3px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;margin-right:4px;flex-shrink:0" title="Add child video">+</button>`:(!isChild?'<button style="font-size:10px;font-weight:700;width:16px;height:16px;line-height:14px;text-align:center;border-radius:3px;border:1px solid transparent;background:transparent;color:transparent;margin-right:4px;pointer-events:none;flex-shrink:0">+</button>':'');
   const _titleSuffix=v.title?'- '+_esc(v.title):'';
-  return`<tr class="vid-row${sel?' vid-sel':''}" data-vid="${sid}" onclick="vidCellClick(event,'${sid}')" ondblclick="openVidEdit('${sid}')" oncontextmenu="showVidCtx(event,'${sid}')">
-    <td data-field="title" style="${indent}${!isChild?'font-weight:600;':''}${titleColor}overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${addBtn}${childMark}${numHtml}${(v.status==='in_progress'||v.status==='up_next')&&v.topic?`<span class="vid-title-text">${_esc(v.topic)}</span><span style="font-size:10px;color:var(--muted);margin-left:4px;font-weight:400">${_titleSuffix}</span>`:`<span class="vid-title-text">${_esc(v.title)}</span>`}</td>
+  const isBig=v.video_type==='B';
+  const _tblApplicable=VID_STEPS.filter(s=>v[s]!=='na');
+  const _tblDone=_tblApplicable.filter(s=>v[s]==='done').length;
+  const _tblPct=_tblApplicable.length?Math.round((_tblDone/_tblApplicable.length)*100):0;
+  return`<tr class="vid-row${sel?' vid-sel':''}" data-vid="${sid}" onclick="vidCellClick(event,'${sid}')" ondblclick="openVidEdit('${sid}')" oncontextmenu="showVidCtx(event,'${sid}')" style="${isBig?'background:rgba(255,255,255,.50)':''}">
+    <td data-field="title" style="${indent}${!isChild?'font-weight:600;':''}${titleColor}overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${addBtn}${childMark}${numHtml}${(v.status==='in_progress'||v.status==='up_next')&&v.topic?`<span class="vid-title-text">${_esc(v.topic)}</span><span style="font-size:10px;color:var(--muted);margin-left:4px;font-weight:400">${_titleSuffix}</span>`:`<span class="vid-title-text">${_esc(v.title)}</span>`}${isBig?(()=>{const _kc=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===sid).length;return _kc?`<span style="font-size:9px;color:var(--muted);font-weight:400;margin-left:4px">${_kc}</span>`:''})():''}</td>
     ${VID_STEPS.map(s=>`<td style="text-align:center"><div class="vid-step-dot${v[s]==='done'?' done':v[s]==='na'?' na':''}" data-vid="${sid}" data-step="${s}" title="${VID_STEP_LABELS[s]}"></div></td>`).join('')}
     <td data-field="post_date" style="text-align:right;font-size:11px;color:${_vidDateColor(v.post_date,v)}">${postStr}</td>
     <td data-field="duration_minutes" style="text-align:right;font-size:11px;color:var(--muted)">${durStr}</td>
+    <td style="text-align:right;font-size:9px;color:var(--muted);font-weight:500">${(v.status==='in_progress'||v.status==='up_next')&&_tblPct>0&&_tblPct<100?_tblPct+'%':''}</td>
     <td data-field="status"><span class="vid-status-pill" style="background:${sc}12;color:${sc}">${VID_STATUS_LABELS[v.status]||v.status}</span></td>
-    ${_ytMatch?(()=>{const ym=_ytForVid(sid);return ym?'<td style="text-align:right;font-size:11px;color:var(--muted)">'+_ytNum(ym.views)+'</td><td style="text-align:right;font-size:11px;color:var(--muted)">'+_ytNum(ym.likes)+'</td>':'<td></td><td></td>';})():''}
+    ${_ytMatch?(()=>{const ym=_ytForVid(sid);return ym?'<td style="text-align:right;font-size:11px;color:var(--muted)">'+_ytNum(ym.views)+'</td><td style="text-align:right;font-size:11px;color:var(--muted)">'+_ytNum(ym.likes)+'</td><td style="text-align:right;font-size:11px;color:var(--muted)">'+_ytNum(ym.comments)+'</td>':'<td></td><td></td><td></td>';})():''}
     <td><button class="vid-del" data-vid="${sid}">✕</button></td>
   </tr>`;
 }
@@ -768,6 +1290,491 @@ function _vidRenderMonthly(){
   </div>`;
 }
 
+// ── Analytics View ───────────────────────────────────────────────────────────
+function _ytDurSec(iso){if(!iso)return 0;var m=iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);if(!m)return 0;return(parseInt(m[1])||0)*3600+(parseInt(m[2])||0)*60+(parseInt(m[3])||0);}
+let _anTrendMetric='revenue';
+let _anTrendPeriod='monthly';
+function _anSetTrend(metric,period){if(metric)_anTrendMetric=metric;if(period)_anTrendPeriod=period;renderVideosPageKeepScroll();}
+let _anTipStore={};
+function _anShowTip(e,key){
+  _anHideTip();
+  const data=_anTipStore[key];if(!data)return;
+  const tip=document.createElement('div');tip.id='anStratTip';
+  tip.style.cssText='position:fixed;z-index:9999;padding:10px 14px;border-radius:12px;background:rgba(255,252,248,.95);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(210,205,228,.3);box-shadow:0 8px 24px rgba(0,0,0,.12);max-width:300px;min-width:200px;pointer-events:none';
+  tip.innerHTML='<div style="font-size:10px;font-weight:600;margin-bottom:6px;color:#333">'+data.title+'</div>'+data.html;
+  document.body.appendChild(tip);
+  const rect=e.currentTarget.getBoundingClientRect();
+  const tr=tip.getBoundingClientRect();
+  // Position to the left of the strategy panel (since it's on the right side)
+  let left=rect.left-tr.width-8;
+  if(left<8)left=rect.right+8;
+  let top=rect.top;
+  if(top+tr.height>window.innerHeight)top=window.innerHeight-tr.height-4;
+  tip.style.left=left+'px';tip.style.top=top+'px';
+}
+function _anHideTip(){const t=document.getElementById('anStratTip');if(t)t.remove();}
+
+function _anKpiModal(metric){
+  const all=(st.videos||[]).filter(v=>!v.is_deleted);
+  const published=all.filter(v=>v.status==='published'&&v.post_date);
+  const ytVideoIds=new Set();
+  if(_ytData&&_ytData.videos) _ytData.videos.forEach(v=>{if(_ytDurSec(v.duration)>60)ytVideoIds.add(v.id);});
+  const merged=published.map(v=>{
+    const yt=_ytForVid(v.id);if(!yt)return null;
+    if(yt.ytId&&!ytVideoIds.has(yt.ytId))return null;
+    return{...v,views:yt.views,likes:yt.likes,comments:yt.comments,ytId:yt.ytId};
+  }).filter(v=>v&&v.views>0).sort((a,b)=>b.views-a.views);
+  if(!merged.length)return;
+  const rpm=4;
+  const _moAbbr=['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const now=new Date();const _thisMonth=now.toISOString().slice(0,7);
+  // Use real revenue from Analytics API if available
+  const _hasReal=_ytAnalytics&&_ytAnalytics.monthly&&_ytAnalytics.monthly.length>0;
+  const _realByMo={};if(_hasReal)_ytAnalytics.monthly.forEach(m=>{_realByMo[m.month]=m;});
+  const months={};
+  merged.forEach(v=>{
+    if(!v.post_date)return;const k=v.post_date.slice(0,7);
+    if(!months[k])months[k]={views:0,likes:0,comments:0,count:0,revenue:0};
+    months[k].views+=v.views;months[k].likes+=v.likes;months[k].comments+=v.comments;months[k].count++;months[k].revenue+=Math.round(v.views/1000*rpm);
+  });
+  // For revenue drilldown, prefer real monthly revenue data
+  if(_hasReal&&metric==='revenue'){
+    // Replace with actual revenue by calendar month (real earnings per month)
+    _ytAnalytics.monthly.forEach(m=>{
+      if(!months[m.month])months[m.month]={views:0,likes:0,comments:0,count:0,revenue:0};
+      months[m.month].realRevenue=Math.round(m.revenue);
+    });
+  }
+  const sorted=Object.entries(months).sort((a,b)=>b[0].localeCompare(a[0]));
+  const getVal=(d)=>{
+    if(metric==='views')return{val:d.views,fmt:_ytNum(d.views)};
+    if(metric==='avg')return{val:d.count?Math.round(d.views/d.count):0,fmt:_ytNum(d.count?Math.round(d.views/d.count):0)};
+    if(metric==='videos')return{val:d.count,fmt:String(d.count)};
+    if(metric==='revenue'){const v=d.realRevenue!=null?d.realRevenue:d.revenue;return{val:v,fmt:'$'+_ytNum(v)};}
+    if(metric==='subscribers')return{val:d.views,fmt:_ytNum(d.views)};
+    return{val:0,fmt:'0'};
+  };
+  const labels={views:'Total Views',avg:'Avg Views/Video',videos:'Videos Published',revenue:_hasReal?'Revenue (actual)':'Est. Revenue',subscribers:'Subscriber Growth'};
+  const monthVals=sorted.map(([k,d])=>({key:k,...getVal(d)}));
+  const best=monthVals.length?monthVals.reduce((a,b)=>a.val>b.val?a:b):null;
+  const worst=monthVals.length>1?monthVals.reduce((a,b)=>a.val<b.val?a:b):null;
+  let narrative='';
+  if(sorted.length>=3){
+    const recent3=sorted.slice(0,3).map(([,d])=>getVal(d).val);
+    const older3=sorted.slice(3,6).map(([,d])=>getVal(d).val);
+    if(recent3.length&&older3.length){
+      const rAvg=recent3.reduce((s,v)=>s+v,0)/recent3.length;
+      const oAvg=older3.reduce((s,v)=>s+v,0)/older3.length;
+      if(oAvg>0){const pct=Math.round((rAvg-oAvg)/oAvg*100);narrative=pct>0?'Trending up '+pct+'% over last 3 months':'Down '+Math.abs(pct)+'% over last 3 months';}
+    }
+  }
+  let html='<div style="padding:20px;max-height:70vh;overflow-y:auto">';
+  html+='<div style="font-size:16px;font-weight:700;margin-bottom:4px">'+(labels[metric]||metric)+'</div>';
+  if(narrative) html+='<div style="font-size:12px;color:var(--muted);margin-bottom:16px">'+narrative+'</div>';
+  html+='<table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:16px"><tr style="border-bottom:1px solid var(--border)"><th style="text-align:left;padding:4px 8px;font-weight:600">Month</th><th style="text-align:right;padding:4px 8px;font-weight:600">Value</th><th style="text-align:right;padding:4px 8px;font-weight:600">Change</th></tr>';
+  sorted.forEach(([k,d],i)=>{
+    const v=getVal(d);
+    const prev=sorted[i+1]?getVal(sorted[i+1][1]):null;
+    const pctChange=prev&&prev.val>0?Math.round((v.val-prev.val)/prev.val*100):null;
+    const mo=parseInt(k.slice(5));const yr=k.slice(0,4);
+    const label=_moAbbr[mo]+' '+yr;
+    const isBest=best&&k===best.key;const isWorst=worst&&k===worst.key;const isCur=k===_thisMonth;
+    html+='<tr style="border-bottom:1px solid var(--border);'+(isCur?'font-weight:600;':'')+(isBest?'background:rgba(22,163,74,.06);':'')+(isWorst?'background:rgba(220,38,38,.06);':'')+'">';
+    html+='<td style="padding:4px 8px">'+label+(isBest?' (best)':'')+(isWorst?' (lowest)':'')+'</td>';
+    html+='<td style="text-align:right;padding:4px 8px">'+v.fmt+'</td>';
+    html+='<td style="text-align:right;padding:4px 8px;color:'+(pctChange>0?'#16a34a':pctChange<0?'#dc2626':'var(--muted)')+'">'+(pctChange!==null?(pctChange>0?'+':'')+pctChange+'%':'-')+'</td></tr>';
+  });
+  html+='</table>';
+  // Top contributors
+  let topContrib=[];
+  if(metric==='revenue')topContrib=merged.slice(0,5).map(v=>({...v,_fmt:'~$'+_ytNum(Math.round(v.views/1000*rpm))}));
+  else if(metric==='avg'||metric==='views'||metric==='subscribers')topContrib=merged.slice(0,5).map(v=>({...v,_fmt:_ytNum(v.views)+' views'}));
+  else if(metric==='videos')topContrib=[];
+  if(topContrib.length){
+    html+='<div style="font-size:12px;font-weight:600;margin-bottom:8px">Top Contributors</div>';
+    topContrib.forEach((v,i)=>{html+='<div style="display:flex;gap:6px;padding:3px 0;font-size:11px"><span style="color:var(--muted);width:14px">'+String(i+1)+'</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+_ytEsc(v.title||'Untitled')+'</span><span style="color:var(--muted);flex-shrink:0">'+v._fmt+'</span></div>';});
+  }
+  html+='</div>';
+  let ov=document.getElementById('kpiDrillModal');
+  if(!ov){ov=document.createElement('div');ov.id='kpiDrillModal';ov.style.cssText='position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.3)';ov.onclick=function(e){if(e.target===ov)ov.remove();};document.body.appendChild(ov);}
+  ov.innerHTML='<div style="background:var(--bg);border-radius:14px;padding:0;max-width:520px;width:90%;box-shadow:0 12px 40px rgba(0,0,0,.15);max-height:80vh;overflow:hidden;display:flex;flex-direction:column"><div style="display:flex;justify-content:flex-end;padding:10px 14px 0"><button onclick="document.getElementById(\'kpiDrillModal\').remove()" style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--muted);padding:0;line-height:1">&times;</button></div>'+html+'</div>';
+  const _kpiKey=(e)=>{if(e.key==='Enter'||e.key==='Escape'){const m=document.getElementById('kpiDrillModal');if(m)m.remove();document.removeEventListener('keydown',_kpiKey);}};
+  document.addEventListener('keydown',_kpiKey);
+}
+
+function _vidRenderAnalytics(){
+  const all=(st.videos||[]).filter(v=>!v.is_deleted);
+  const published=all.filter(v=>v.status==='published'&&v.post_date);
+  const cs=_ytData?_ytData.channelStats:null;
+
+  // Build a set of YT video IDs that are actual videos (>60s), not shorts/posts
+  const ytVideoIds=new Set();
+  if(_ytData&&_ytData.videos) _ytData.videos.forEach(v=>{if(_ytDurSec(v.duration)>60)ytVideoIds.add(v.id);});
+
+  const merged=published.map(v=>{
+    const yt=_ytForVid(v.id);
+    if(!yt)return null;
+    // Skip if the matched YT video is a short (<= 60s) or not in our long-form set
+    if(yt.ytId&&!ytVideoIds.has(yt.ytId))return null;
+    return{...v,views:yt.views,likes:yt.likes,comments:yt.comments,ytId:yt.ytId};
+  }).filter(v=>v&&v.views>0).sort((a,b)=>b.views-a.views);
+
+  if(!merged.length) return '<div style="padding:40px;text-align:center;color:var(--muted)">No YouTube data available yet. Publish videos and check back!</div>';
+
+  const totalViews=merged.reduce((s,v)=>s+v.views,0);
+  const totalLikes=merged.reduce((s,v)=>s+v.likes,0);
+  const totalComments=merged.reduce((s,v)=>s+v.comments,0);
+  const avgViews=Math.round(totalViews/merged.length);
+
+  // Revenue estimate using $4 RPM midpoint
+  const rpm=4;
+  const estRevenue=Math.round(totalViews/1000*rpm);
+
+  const engagements=merged.map(v=>({...v,engRate:v.views>0?((v.likes+v.comments)/v.views*100):0}));
+  const avgEng=(engagements.reduce((s,v)=>s+v.engRate,0)/engagements.length);
+
+  // Helpers
+  function bar(val,max,color,label,sub,w){
+    const pct=max?Math.round(val/max*100):0;
+    return`<div style="display:flex;align-items:center;gap:8px;margin:3px 0">
+      <span style="font-size:11px;color:var(--muted);width:${w||'80px'};text-align:right;flex-shrink:0">${label}</span>
+      <div style="flex:1;height:18px;background:rgba(120,113,145,.08);border-radius:4px;overflow:hidden">
+        <div style="width:${Math.max(pct,2)}%;height:100%;background:${color};border-radius:4px"></div>
+      </div>
+      <span style="font-size:11px;font-weight:600;width:70px;flex-shrink:0">${sub}</span>
+    </div>`;
+  }
+  function card(title,content){return`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:16px 18px">
+    <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:10px">${title}</div>${content}</div>`;}
+  function sparkline(vals){
+    if(!vals||vals.length<2)return'';
+    const max=Math.max(...vals),min=Math.min(...vals);
+    const range=max-min||1;
+    const up=vals[vals.length-1]>=vals[0];
+    const c=up?'#16a34a':'#dc2626';
+    const sw=44,sh=16;
+    const pts=vals.map((v,i)=>`${(i/(vals.length-1)*sw).toFixed(1)},${(sh-((v-min)/range)*sh).toFixed(1)}`).join(' ');
+    return`<svg width="${sw}" height="${sh}" style="flex-shrink:0"><polyline points="${pts}" fill="none" stroke="${c}" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" opacity=".7"/></svg>`;
+  }
+  function stat(label,value,sub,spark){return`<div style="text-align:center;padding:6px 0">
+    <div style="font-size:10px;color:var(--muted);margin-bottom:2px">${label}</div>
+    <div style="display:flex;align-items:center;justify-content:center;gap:6px">
+      ${spark||''}<div style="font-size:20px;font-weight:700;color:var(--text)">${value}</div>
+    </div>
+    ${sub?'<div style="font-size:10px;color:var(--muted);margin-top:1px">'+sub+'</div>':''}</div>`;}
+
+  const tBtn=(val,label,type)=>{
+    const active=type==='metric'?_anTrendMetric===val:_anTrendPeriod===val;
+    return`<button onclick="_anSetTrend(${type==='metric'?"'"+val+"',null":"null,'"+val+"'"})" style="padding:3px 8px;border:1px solid ${active?'rgba(120,113,145,.4)':'var(--border)'};border-radius:5px;background:${active?'rgba(120,113,145,.15)':'transparent'};color:${active?'var(--text)':'var(--muted)'};font-size:10px;font-family:inherit;font-weight:${active?'600':'400'};cursor:pointer">${label}</button>`;
+  };
+
+  let h='<div style="padding:16px 20px;overflow-y:auto">';
+
+  // ── Build monthly buckets for KPI sparklines + this-month values ──
+  const _kpiMonths={};
+  merged.forEach(v=>{
+    if(!v.post_date)return;
+    const k=v.post_date.slice(0,7);
+    if(!_kpiMonths[k])_kpiMonths[k]={views:0,likes:0,comments:0,count:0};
+    _kpiMonths[k].views+=v.views;_kpiMonths[k].likes+=v.likes;_kpiMonths[k].comments+=v.comments;_kpiMonths[k].count++;
+  });
+  const _kpiSorted=Object.entries(_kpiMonths).sort((a,b)=>a[0].localeCompare(b[0]));
+  const _kpiLast6=_kpiSorted.slice(-6);
+  const now=new Date();
+  const _thisMonth=now.toISOString().slice(0,7);
+  const _tm=_kpiMonths[_thisMonth]||{views:0,likes:0,comments:0,count:0};
+  // Real revenue from YouTube Analytics API (if available)
+  const _hasRealRev=_ytAnalytics&&_ytAnalytics.monthly&&_ytAnalytics.monthly.length>0;
+  const _realRevByMonth={};
+  let _realRevTotal=0;
+  if(_hasRealRev){
+    _ytAnalytics.monthly.forEach(m=>{_realRevByMonth[m.month]=m.revenue;_realRevTotal+=m.revenue;});
+  }
+  const _realRevThisMonth=_hasRealRev?(_realRevByMonth[_thisMonth]||0):null;
+  const _spViews=_kpiLast6.map(([,d])=>d.views);
+  const _spAvg=_kpiLast6.map(([,d])=>d.count?Math.round(d.views/d.count):0);
+  const _spRev=_kpiLast6.map(([,d])=>Math.round(d.views/1000*rpm));
+  const _spVids=_kpiLast6.map(([,d])=>d.count);
+  const _spEng=_kpiLast6.map(([,d])=>d.views>0?((d.likes+d.comments)/d.views*100):0);
+
+  // Show connect prompt if Analytics API not yet authorized
+  if(!_ytAnalytics&&!_hasRealRev){
+    h+='<div style="display:flex;align-items:center;gap:8px;padding:8px 14px;margin-bottom:12px;background:rgba(139,92,246,.04);border:1px solid rgba(139,92,246,.15);border-radius:10px;font-size:11px;color:var(--muted)"><span>Revenue shown is estimated (~$4 RPM).</span><a href="/api/yt?mode=auth-start" target="_blank" style="color:#8b5cf6;font-weight:600;text-decoration:none">Connect YouTube Analytics</a><span>for actual revenue data.</span></div>';
+  }
+
+  // ── KPIs ──
+  const _dismissed=_ytGetDismissed();
+  const _unrepliedAll=_ytData.unrepliedComments||[];
+  const _unrepliedN=_unrepliedAll.filter(c=>!_dismissed.includes(c.id)).length;
+  const _kc=(fn)=>'<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:10px;cursor:pointer" onclick="'+fn+'">';
+  h+='<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:16px">';
+  h+=`<div style="background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);border-radius:12px;padding:10px;cursor:pointer" onclick="_ytShowUnreplied()"><div style="text-align:center;padding:6px 0"><div style="font-size:10px;color:var(--muted);margin-bottom:2px">Unreplied Comments</div><div style="font-size:20px;font-weight:700;color:#ef4444">${_unrepliedN}</div></div></div>`;
+  h+=`${_kc("_anKpiModal('views')")}${stat('Total Views',_ytNum(totalViews),_ytNum(_tm.views)+' this month',sparkline(_spViews))}</div>`;
+  h+=`${_kc("_anKpiModal('avg')")}${stat('Avg Views/Video',_ytNum(avgViews),_ytNum(_tm.count?Math.round(_tm.views/_tm.count):0)+' avg this mo',sparkline(_spAvg))}</div>`;
+  h+=`${_kc("_anKpiModal('videos')")}${stat('Videos',String(merged.length),_tm.count+' this month',sparkline(_spVids))}</div>`;
+  const _revLabel=_hasRealRev?'Revenue':'Est. Revenue';
+  const _revValue=_hasRealRev?'$'+_ytNum(Math.round(_realRevTotal)):'$'+_ytNum(estRevenue);
+  const _revSub=_hasRealRev?'$'+_ytNum(Math.round(_realRevThisMonth||0))+' this month':'@ $'+rpm+' RPM';
+  const _spRevReal=_hasRealRev?_kpiLast6.map(([k])=>Math.round(_realRevByMonth[k]||0)):_spRev;
+  h+=`${_kc("_anKpiModal('revenue')")}${stat(_revLabel,_revValue,_revSub,sparkline(_spRevReal))}</div>`;
+  h+=`${_kc("_anKpiModal('subscribers')")}${stat('Subscribers',cs?_ytNum(cs.subscribers):'-')}</div>`;
+  h+='</div>';
+
+  // ── TREND CHART + Strategy Insights ──
+  const periodMap={};
+  merged.forEach(v=>{
+    if(!v.post_date)return;
+    const key=_anTrendPeriod==='yearly'?v.post_date.slice(0,4):v.post_date.slice(0,7);
+    if(!periodMap[key])periodMap[key]={views:0,likes:0,comments:0,count:0};
+    periodMap[key].views+=v.views;periodMap[key].likes+=v.likes;periodMap[key].comments+=v.comments;periodMap[key].count++;
+  });
+  const periods=Object.entries(periodMap).sort((a,b)=>a[0].localeCompare(b[0]));
+  const sliced=_anTrendPeriod==='yearly'?periods:periods.slice(-12);
+  const metricVals=sliced.map(([key,d])=>{
+    if(_anTrendMetric==='revenue'){
+      // Use real revenue if available, otherwise estimate
+      if(_hasRealRev){
+        // For monthly, key is "2025-01"; for yearly, key is "2025" — sum matching months
+        let rv=0;
+        if(_anTrendPeriod==='yearly'){_ytAnalytics.monthly.forEach(m=>{if(m.month.startsWith(key))rv+=m.revenue;});}
+        else{rv=_realRevByMonth[key]||0;}
+        rv=Math.round(rv);return{key,val:rv,fmt:'$'+_ytNum(rv)};
+      }
+      const v=Math.round(d.views/1000*rpm);return{key,val:v,fmt:'$'+_ytNum(v)};
+    }
+    if(_anTrendMetric==='views')return{key,val:d.views,fmt:_ytNum(d.views)};
+    if(_anTrendMetric==='likes')return{key,val:d.likes,fmt:_ytNum(d.likes)};
+    if(_anTrendMetric==='engagement'){const r=d.views>0?((d.likes+d.comments)/d.views*100):0;return{key,val:r,fmt:r.toFixed(1)+'%'};}
+    if(_anTrendMetric==='videos')return{key,val:d.count,fmt:String(d.count)};
+    return{key,val:0,fmt:'0'};
+  });
+  const maxMetric=Math.max(...metricVals.map(m=>m.val),1);
+  const _moAbbr=['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const _curPeriod=_anTrendPeriod==='yearly'?String(now.getFullYear()):_thisMonth;
+  const trendColor='rgba(120,113,145,.45)';
+  const trendColorCur='rgba(120,113,145,.85)';
+  const totalMetric=metricVals.reduce((s,m)=>s+m.val,0);
+  const avgMetricVal=metricVals.length?totalMetric/metricVals.length:0;
+  const perLabel=_anTrendPeriod==='yearly'?'yr':'mo';
+  let summaryText='';
+  if(_anTrendMetric==='engagement') summaryText='Avg: '+avgMetricVal.toFixed(1)+'%/'+perLabel;
+  else if(_anTrendMetric==='revenue') summaryText='$'+_ytNum(totalMetric)+' total · $'+_ytNum(Math.round(avgMetricVal))+'/'+perLabel;
+  else summaryText=_ytNum(totalMetric)+' total · '+_ytNum(Math.round(avgMetricVal))+'/'+perLabel;
+  let trendHtml=`<div style="display:flex;align-items:center;gap:6px;margin-bottom:12px">
+    <div style="display:flex;gap:3px;align-items:center">${tBtn('revenue','Revenue','metric')}${tBtn('views','Views','metric')}${tBtn('likes','Likes','metric')}${tBtn('engagement','Engagement','metric')}${tBtn('videos','Videos','metric')}</div>
+    <div style="width:1px;height:18px;background:rgba(120,113,145,.3);margin:0 4px;flex-shrink:0"></div>
+    <div style="display:flex;gap:3px;align-items:center">${tBtn('monthly','Monthly','period')}${tBtn('yearly','Yearly','period')}</div>
+    <div style="flex:1"></div>
+    <span style="font-size:10px;color:var(--muted);white-space:nowrap;line-height:1">${summaryText}</span>
+  </div>`;
+  trendHtml+='<div style="display:flex;align-items:flex-end;gap:4px;flex:1;min-height:0">';
+  metricVals.forEach(m=>{
+    const pct=Math.max(Math.round(m.val/maxMetric*100),3);
+    const isCur=m.key===_curPeriod;
+    const label=_anTrendPeriod==='yearly'?m.key:(_moAbbr[parseInt(m.key.slice(5))]||m.key.slice(5));
+    trendHtml+=`<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:2px;height:100%">
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;width:100%">
+        <span style="font-size:9px;color:var(--muted);white-space:nowrap;margin-bottom:2px">${m.fmt}</span>
+        <div style="width:100%;height:${pct}%;background:${isCur?trendColorCur:trendColor};border-radius:3px;min-height:3px${isCur?';box-shadow:0 0 0 1.5px rgba(120,113,145,.3)':''}" title="${m.key}: ${m.fmt}"></div>
+      </div>
+      <span style="font-size:9px;${isCur?'font-weight:700;color:var(--text)':'color:var(--muted)'}">${label}</span>
+    </div>`;
+  });
+  trendHtml+='</div>';
+  // ── TREND (2/3) + Strategy Insights (1/3) ──
+  // Duration sweet spot
+  const durBuckets={'0-5 min':{min:0,max:5},'5-10 min':{min:5,max:10},'10-20 min':{min:10,max:20},'20-40 min':{min:20,max:40},'40+ min':{min:40,max:9999}};
+  const durData={};
+  merged.forEach(v=>{if(!v.duration_minutes)return;const mins=parseInt(String(v.duration_minutes).split('.')[0])||0;for(const[label,range] of Object.entries(durBuckets)){if(mins>=range.min&&mins<range.max){if(!durData[label])durData[label]={views:0,eng:0,count:0};durData[label].views+=v.views;durData[label].count++;break;}}});
+  const durArr=Object.entries(durBuckets).map(([label])=>{const d=durData[label]||{views:0,count:0};return{label,avgViews:d.count?Math.round(d.views/d.count):0,count:d.count};}).filter(d=>d.count>0);
+  const bestDur=durArr.length?durArr.reduce((a,b)=>a.avgViews>b.avgViews?a:b):null;
+
+  // Best publish day
+  const dayNames=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const dayData=Array(7).fill(null).map(()=>({views:0,count:0}));
+  merged.forEach(v=>{if(!v.post_date)return;const d=new Date(v.post_date+'T12:00:00');dayData[d.getDay()].views+=v.views;dayData[d.getDay()].count++;});
+  const dayArr=dayData.map((d,i)=>({day:dayNames[i],avgViews:d.count?Math.round(d.views/d.count):0,count:d.count})).filter(d=>d.count>0);
+  const bestDay=dayArr.length?dayArr.reduce((a,b)=>a.avgViews>b.avgViews?a:b):null;
+
+  // Big vs Small
+  const bigVids=merged.filter(v=>v.video_type==='B');
+  const smallVids=merged.filter(v=>v.video_type!=='B');
+  const bigAvg=bigVids.length?Math.round(bigVids.reduce((s,v)=>s+v.views,0)/bigVids.length):0;
+  const smallAvg=smallVids.length?Math.round(smallVids.reduce((s,v)=>s+v.views,0)/smallVids.length):0;
+
+  // Topic performance
+  const topicMap={};
+  merged.forEach(v=>{const t=v.topic||'Untitled';if(!topicMap[t])topicMap[t]={views:0,likes:0,comments:0,count:0};topicMap[t].views+=v.views;topicMap[t].likes+=v.likes;topicMap[t].comments+=v.comments;topicMap[t].count++;});
+  const topics=Object.entries(topicMap).map(([t,d])=>({topic:t,avgViews:Math.round(d.views/d.count),avgEng:d.views>0?((d.likes+d.comments)/d.views*100):0,count:d.count})).sort((a,b)=>b.avgViews-a.avgViews);
+
+  // Engagement by recency (first 30 days vs lifetime)
+  const recent90=merged.filter(v=>{const d=Math.round((now-new Date(v.post_date+'T12:00:00'))/86400000);return d<=90;});
+  const older=merged.filter(v=>{const d=Math.round((now-new Date(v.post_date+'T12:00:00'))/86400000);return d>90;});
+  const recentAvg=recent90.length?Math.round(recent90.reduce((s,v)=>s+v.views,0)/recent90.length):0;
+  const olderAvg=older.length?Math.round(older.reduce((s,v)=>s+v.views,0)/older.length):0;
+
+  // Build strategy panel — organized by decision: what to make, when, how
+  // Tooltip data store — each insight gets a key with bar chart data
+  _anTipStore={};
+  let _tipIdx=0;
+  const _miniBar=(items,valKey,labelKey,fmt)=>{
+    const max=Math.max(...items.map(i=>i[valKey]),1);
+    return items.map(i=>{
+      const pct=Math.max(Math.round(i[valKey]/max*100),2);
+      const isBest=i[valKey]===max;
+      return'<div style="display:flex;align-items:center;gap:6px;margin:2px 0"><span style="font-size:10px;width:70px;text-align:right;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis'+(isBest?';font-weight:700':'')+'">'+_ytEsc(String(i[labelKey]))+'</span><div style="flex:1;height:14px;background:rgba(120,113,145,.08);border-radius:3px;overflow:hidden"><div style="width:'+pct+'%;height:100%;background:rgba(120,113,145,'+(isBest?'.7':'.35')+');border-radius:3px"></div></div><span style="font-size:10px;width:55px;flex-shrink:0;text-align:right'+(isBest?';font-weight:700':'')+'">'+(fmt?fmt(i[valKey]):_ytNum(i[valKey]))+'</span></div>';
+    }).join('');
+  };
+  const _row=(text,tipKey)=>{
+    const tid='_anTip'+(_tipIdx++);
+    return`<div id="${tid}" style="padding:5px 0;font-size:11px;border-bottom:1px solid var(--border);cursor:default" ${tipKey?'onmouseenter="_anShowTip(event,\''+tipKey+'\')" onmouseleave="_anHideTip()"':''}>${text}</div>`;
+  };
+  const _secHead=(text)=>`<div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-top:8px;margin-bottom:2px">${text}</div>`;
+  let stratHtml='';
+
+  // ── WHAT TO MAKE (topic + format) ──
+  stratHtml+=_secHead('What to make');
+  // Top earning topic
+  if(topics.length){
+    const topicsByRev=topics.map(t=>({...t,estRev:Math.round(t.avgViews*t.count/1000*rpm),revPerVid:Math.round(t.avgViews/1000*rpm)})).sort((a,b)=>b.estRev-a.estRev);
+    _anTipStore['topicRev']={title:'Revenue by topic (total est.)',html:_miniBar(topicsByRev.slice(0,8),'estRev','topic',v=>'$'+_ytNum(v))};
+    if(topicsByRev[0]) stratHtml+=_row('<b>'+_ytEsc(topicsByRev[0].topic)+'</b> earns most (~$'+_ytNum(topicsByRev[0].estRev)+' total from '+topicsByRev[0].count+' vids)','topicRev');
+    // Best per-video topic if different
+    const topicsByPerVid=topics.filter(t=>t.count>=2).map(t=>({...t,revPerVid:Math.round(t.avgViews/1000*rpm)})).sort((a,b)=>b.revPerVid-a.revPerVid);
+    _anTipStore['topicPerVid']={title:'Est. revenue per video by topic',html:_miniBar(topicsByPerVid.slice(0,8),'revPerVid','topic',v=>'$'+_ytNum(v))};
+    if(topicsByPerVid[0]&&topicsByPerVid[0].topic!==topicsByRev[0].topic) stratHtml+=_row('<b>'+_ytEsc(topicsByPerVid[0].topic)+'</b> best per video (~$'+_ytNum(topicsByPerVid[0].revPerVid)+'/video)','topicPerVid');
+  }
+  if(bigAvg&&smallAvg){
+    const bigRev=Math.round(bigAvg/1000*rpm);const smallRev=Math.round(smallAvg/1000*rpm);
+    const r=(bigAvg/smallAvg).toFixed(1);
+    _anTipStore['bigSmall']={title:'Big vs Small comparison',html:_miniBar([{label:'Big ('+bigVids.length+')',val:bigAvg},{label:'Small ('+smallVids.length+')',val:smallAvg}],'val','label',v=>_ytNum(v)+' avg')};
+    stratHtml+=_row('Big videos: <b>'+r+'x</b> more views, ~$'+_ytNum(bigRev)+'/vid vs ~$'+_ytNum(smallRev),'bigSmall');
+  }
+  // Best combo
+  if(bestDur&&topics.length){
+    const comboVids=merged.filter(v=>{if(!v.duration_minutes)return false;const mins=parseInt(String(v.duration_minutes).split('.')[0])||0;return mins>=durBuckets[bestDur.label].min&&mins<durBuckets[bestDur.label].max&&v.topic===topics[0].topic;});
+    if(comboVids.length>=2){const comboRev=Math.round(comboVids.reduce((s,v)=>s+v.views,0)/comboVids.length/1000*rpm);stratHtml+=_row('Best combo: <b>'+_ytEsc(topics[0].topic)+' + '+bestDur.label+'</b> (~$'+_ytNum(comboRev)+'/vid)');}
+  }
+
+  // ── HOW TO MAKE IT (duration + format) ──
+  stratHtml+=_secHead('How to make it');
+  _anTipStore['duration']={title:'Avg views by duration (n = video count)',html:_miniBar(durArr.map(d=>({...d,label:d.label+' ('+d.count+')'})),'avgViews','label')};
+  if(bestDur) stratHtml+=_row('Best length: <b>'+bestDur.label+'</b> ('+_ytNum(bestDur.avgViews)+' avg views)','duration');
+  if(durArr.length){
+    const durByRev=durArr.map(d=>({...d,revPerVid:Math.round(d.avgViews/1000*rpm)})).sort((a,b)=>b.revPerVid-a.revPerVid);
+    _anTipStore['durRev']={title:'Est. revenue per video by duration',html:_miniBar(durByRev,'revPerVid','label',v=>'$'+_ytNum(v))};
+    if(durByRev[0]&&durByRev[0].label!==bestDur?.label) stratHtml+=_row('Best length for $: <b>'+durByRev[0].label+'</b> (~$'+_ytNum(durByRev[0].revPerVid)+'/vid)','durRev');
+  }
+  // Engagement sweet spot — do high-engagement videos earn more?
+  const engSorted=engagements.filter(v=>v.views>=100).sort((a,b)=>b.engRate-a.engRate);
+  if(engSorted.length>=6){
+    const topHalf=engSorted.slice(0,Math.floor(engSorted.length/2));
+    const botHalf=engSorted.slice(Math.floor(engSorted.length/2));
+    const topAvg=Math.round(topHalf.reduce((s,v)=>s+v.views,0)/topHalf.length);
+    const botAvg=Math.round(botHalf.reduce((s,v)=>s+v.views,0)/botHalf.length);
+    _anTipStore['engCorr']={title:'Views by engagement half',html:_miniBar([{label:'High eng (top 50%)',val:topAvg},{label:'Low eng (bottom 50%)',val:botAvg}],'val','label')};
+    if(topAvg>botAvg) stratHtml+=_row('High-engagement vids get <b>'+((topAvg/botAvg).toFixed(1))+'x</b> more views','engCorr');
+    else stratHtml+=_row('Engagement doesn\'t correlate with views — focus on topics','engCorr');
+  }
+
+  // ── WHEN TO POST ──
+  stratHtml+=_secHead('When to post');
+  _anTipStore['dayOfWeek']={title:'Avg views by day of week (n = video count)',html:_miniBar(dayArr.map(d=>({...d,label:d.day+' ('+d.count+')'})),'avgViews','label')};
+  if(bestDay) stratHtml+=_row('Best day: <b>'+bestDay.day+'</b> ('+_ytNum(bestDay.avgViews)+' avg views)','dayOfWeek');
+  const pubMonths=Object.keys(_kpiMonths).length;
+  if(pubMonths>=2){
+    _anTipStore['pace']={title:'Videos published per month',html:_miniBar(_kpiSorted.slice(-12).map(([k,d])=>({label:_moAbbr[parseInt(k.slice(5))]+' '+k.slice(2,4),val:d.count})),'val','label')};
+    const rate=(merged.length/pubMonths).toFixed(1);stratHtml+=_row('Your pace: <b>~'+rate+' videos/month</b> over '+pubMonths+' months','pace');
+  }
+
+  // ── MOMENTUM ──
+  stratHtml+=_secHead('Channel health');
+  if(recentAvg&&olderAvg){
+    const dir=recentAvg>olderAvg?'up':'down';
+    const pctChange=Math.round(Math.abs(recentAvg-olderAvg)/olderAvg*100);
+    _anTipStore['momentum']={title:'Avg views: last 90 days vs older',html:_miniBar([{label:'Last 90 days ('+recent90.length+')',val:recentAvg},{label:'Older ('+older.length+')',val:olderAvg}],'val','label')};
+    stratHtml+=_row('Momentum: <b>'+dir+' '+pctChange+'%</b> (last 90d: '+_ytNum(recentAvg)+' avg vs older: '+_ytNum(olderAvg)+')','momentum');
+  }
+  // Consistency — standard deviation of monthly output
+  if(_kpiSorted.length>=3){
+    const counts=_kpiSorted.map(([,d])=>d.count);
+    const cAvg=counts.reduce((s,v)=>s+v,0)/counts.length;
+    const cStd=Math.sqrt(counts.reduce((s,v)=>s+Math.pow(v-cAvg,2),0)/counts.length);
+    const cv=cAvg>0?(cStd/cAvg*100):0;
+    _anTipStore['consistency']={title:'Monthly video output',html:_miniBar(_kpiSorted.slice(-12).map(([k,d])=>({label:_moAbbr[parseInt(k.slice(5))]+' '+k.slice(2,4),val:d.count})),'val','label')};
+    stratHtml+=_row('Consistency: '+(cv<30?'<b>Steady</b> — keep it up':'<b>Variable</b> — more regular posting helps growth')+' ('+cv.toFixed(0)+'% variation)','consistency');
+  }
+  // Engagement trend
+  if(_kpiSorted.length>=4){
+    const recent2=_kpiSorted.slice(-2);const older2=_kpiSorted.slice(-4,-2);
+    const rEng=recent2.reduce((s,[,d])=>s+(d.views>0?((d.likes+d.comments)/d.views*100):0),0)/recent2.length;
+    const oEng=older2.reduce((s,[,d])=>s+(d.views>0?((d.likes+d.comments)/d.views*100):0),0)/older2.length;
+    if(oEng>0){
+      const ePct=Math.round((rEng-oEng)/oEng*100);
+      _anTipStore['engTrend']={title:'Engagement rate by month',html:_miniBar(_kpiSorted.slice(-6).map(([k,d])=>({label:_moAbbr[parseInt(k.slice(5))]+' '+k.slice(2,4),val:d.views>0?parseFloat(((d.likes+d.comments)/d.views*100).toFixed(1)):0})),'val','label',v=>v.toFixed(1)+'%')};
+      stratHtml+=_row('Engagement: <b>'+(ePct>0?'up':'down')+' '+Math.abs(ePct)+'%</b> recent vs prior ('+rEng.toFixed(1)+'% vs '+oEng.toFixed(1)+'%)','engTrend');
+    }
+  }
+
+  h+=`<div style="display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:16px">`;
+  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column">${trendHtml}</div>`;
+  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:16px 18px">
+    <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:8px">What Makes Your Videos Win</div>${stratHtml}</div>`;
+  h+='</div>';
+
+  // ── ROW 2: Do More Like This + Try Next ──
+  h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">';
+
+  const scored=engagements.filter(v=>v.views>=100).map(v=>({...v,score:v.views*(1+v.engRate/100)})).sort((a,b)=>b.score-a.score).slice(0,8);
+  let recHtml='<div style="font-size:10px;color:var(--muted);margin-bottom:6px">Scored by views x engagement</div>';
+  scored.forEach((v,i)=>{
+    const t=v.topic||'';
+    const dur=v.duration_minutes?String(v.duration_minutes).split('.')[0]+'m':'';
+    recHtml+=`<div style="display:flex;align-items:center;gap:6px;padding:3px 0;font-size:11px;${i<3?'font-weight:600':''}">
+      <span style="color:var(--muted);width:14px;flex-shrink:0">${i+1}</span>
+      <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${_ytEsc(v.title||'')}">${_ytEsc(v.title||'Untitled')}</span>
+      ${t?'<span style="background:rgba(120,113,145,.1);border-radius:10px;padding:1px 6px;font-size:9px;color:var(--muted);flex-shrink:0">'+_ytEsc(t)+'</span>':''}
+      ${dur?'<span style="color:var(--muted);font-size:10px;flex-shrink:0">'+dur+'</span>':''}
+    </div>`;
+  });
+  h+=card('Do More Like This',recHtml);
+
+  // Try Next — video ideas based on what works
+  let tryHtml='<div style="font-size:10px;color:var(--muted);margin-bottom:6px">Based on your top-performing patterns</div>';
+  const topicsSorted=topics.filter(t=>t.count>=2&&t.avgViews>=avgViews).sort((a,b)=>b.avgViews-a.avgViews);
+  const topicLastPost={};
+  merged.forEach(v=>{const t=v.topic||'Untitled';if(!topicLastPost[t]||v.post_date>topicLastPost[t])topicLastPost[t]=v.post_date;});
+  const staleTopics=topicsSorted.filter(t=>{const lp=topicLastPost[t.topic];if(!lp)return false;const days=Math.round((now-new Date(lp+'T12:00:00'))/86400000);return days>60;});
+  const underexplored=topics.filter(t=>t.count>=1&&t.count<=3&&t.avgViews>=avgViews*0.8).sort((a,b)=>b.avgViews-a.avgViews).slice(0,3);
+  let ideaNum=0;
+  staleTopics.slice(0,3).forEach(t=>{
+    ideaNum++;
+    const dayRec=bestDay?' on '+bestDay.day:'';
+    const durRec=bestDur?' ('+bestDur.label+')':'';
+    const daysSince=Math.round((now-new Date(topicLastPost[t.topic]+'T12:00:00'))/86400000);
+    tryHtml+=`<div style="padding:4px 0;font-size:11px;border-bottom:1px solid var(--border)"><b>${ideaNum}.</b> Another <b>${_ytEsc(t.topic)}</b> video${durRec}${dayRec}<div style="font-size:10px;color:var(--muted);margin-top:1px">${_ytNum(t.avgViews)} avg views, ${t.count} vids — last posted ${daysSince}d ago</div></div>`;
+  });
+  underexplored.forEach(t=>{
+    if(ideaNum>=5)return;
+    if(staleTopics.find(s=>s.topic===t.topic))return;
+    ideaNum++;
+    tryHtml+=`<div style="padding:4px 0;font-size:11px;border-bottom:1px solid var(--border)"><b>${ideaNum}.</b> Explore more <b>${_ytEsc(t.topic)}</b><div style="font-size:10px;color:var(--muted);margin-top:1px">${_ytNum(t.avgViews)} avg from just ${t.count} video${t.count>1?'s':''} — underexplored</div></div>`;
+  });
+  if(ideaNum<3&&topicsSorted.length){
+    topicsSorted.slice(0,3-ideaNum).forEach(t=>{
+      ideaNum++;
+      const durRec=bestDur?' ('+bestDur.label+')':'';
+      tryHtml+=`<div style="padding:4px 0;font-size:11px;border-bottom:1px solid var(--border)"><b>${ideaNum}.</b> More <b>${_ytEsc(t.topic)}</b>${durRec}<div style="font-size:10px;color:var(--muted);margin-top:1px">${_ytNum(t.avgViews)} avg views across ${t.count} videos</div></div>`;
+    });
+  }
+  if(!ideaNum) tryHtml+='<div style="font-size:11px;color:var(--muted)">Not enough data yet for suggestions</div>';
+  h+=card('Try Next',tryHtml);
+  h+='</div>';
+
+  h+='</div>';
+  return h;
+}
+
 // ── View / Filter ────────────────────────────────────────────────────────────
 function _vidSetView(v){_vidView=v;renderVideosPage();}
 function _vidSetFilter(f){_vidFilter=f;renderVideosPage();}
@@ -777,22 +1784,86 @@ function _vidSetSearch(q){_vidSearch=q;renderVideosPage();
 }
 
 // ── Selection ─────────────────────────────────────────────────────────────────
+function _vidClearSel(e){
+  if(e.target.closest('.vid-dash-row,.vid-row,.vid-board-card,.vid-dash-header,.vid-del,.vid-step-dot'))return;
+  if(_vidSelected.size){_vidSelected.clear();_vidChildSelected.clear();_applyVidSel();}
+}
 function vidRowClick(e,id){
   if(e.target.closest('.vid-del')||e.target.closest('.vid-step-dot'))return;
   const sid=String(id);
   if(e.metaKey||e.ctrlKey){
     if(_vidSelected.has(sid))_vidSelected.delete(sid);else _vidSelected.add(sid);
   }else if(e.shiftKey&&_vidLastSel){
-    const vids=_vidFiltered();const ids=vids.map(v=>String(v.id));
+    // Use visible DOM rows for range select (works across all views)
+    const rows=[...document.querySelectorAll('.vid-dash-row[data-vid],.vid-row[data-vid],.vid-board-card[data-vid]')];
+    const ids=rows.map(r=>r.dataset.vid);
     const a=ids.indexOf(_vidLastSel),b=ids.indexOf(sid);
     if(a>-1&&b>-1){const[lo,hi]=[Math.min(a,b),Math.max(a,b)];for(let i=lo;i<=hi;i++)_vidSelected.add(ids[i]);}
   }else{
-    _vidSelected.clear();_vidSelected.add(sid);
+    if(_vidSelected.size===1&&_vidSelected.has(sid)){_vidSelected.clear();}
+    else{_vidSelected.clear();_vidSelected.add(sid);}
   }
   _vidLastSel=sid;
   _vidUpdateChildSel();
   _applyVidSel();
 }
+// Bullet tooltip (liquid glass)
+let _vidBulletTimer=null;
+function _vidBulletTipShow(e,sid){
+  _vidBulletTipHide();
+  const _tipTarget=e.currentTarget;
+  _vidBulletTimer=setTimeout(()=>{
+    const v=(st.videos||[]).find(x=>String(x.id)===sid);if(!v)return;
+    let html='';
+    if(v.video_type==='B'){
+      const kids=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===sid);
+      html='<div style="font-size:10px;font-weight:600;margin-bottom:4px">'+kids.length+' Small Video'+(kids.length!==1?'s':'')+'</div>';
+      html+=kids.map(c=>{
+        return'<div style="padding:1px 0;font-size:11px;white-space:nowrap">• '+_esc(c.topic||c.title)+'</div>';
+      }).join('');
+    }else if(v.big_video_id&&String(v.big_video_id)!==sid){
+      const parent=(st.videos||[]).find(x=>!x.is_deleted&&String(x.id)===String(v.big_video_id));
+      if(parent){
+        html='<div style="font-size:11px;white-space:nowrap">'+_esc(parent.topic||parent.title)+'</div>';
+      }
+    }
+    if(!html)return;
+    const tip=document.createElement('div');
+    tip.id='vidBulletTip';
+    tip.style.cssText='position:fixed;z-index:9999;padding:8px 12px;border-radius:12px;background:rgba(255,252,248,.92);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid rgba(210,205,228,.3);box-shadow:0 8px 24px rgba(0,0,0,.1),inset 0 1px 0 rgba(255,255,255,.7);pointer-events:none;max-width:260px';
+    tip.innerHTML=html;
+    document.body.appendChild(tip);
+    const rect=_tipTarget.getBoundingClientRect();
+    tip.style.left=rect.right+8+'px';
+    tip.style.top=rect.top+'px';
+    const tr=tip.getBoundingClientRect();
+    if(tr.right>window.innerWidth)tip.style.left=rect.left-tr.width-6+'px';
+    if(tr.bottom>window.innerHeight)tip.style.top=window.innerHeight-tr.height-4+'px';
+  },300);
+}
+function _vidBulletTipHide(){
+  clearTimeout(_vidBulletTimer);_vidBulletTimer=null;
+  const t=document.getElementById('vidBulletTip');if(t)t.remove();
+}
+
+// Row hover: highlight related ideas
+function _vidIdeaRowEnter(sid){
+  const v=(st.videos||[]).find(x=>String(x.id)===sid);if(!v)return;
+  let relatedIds=[];
+  if(v.video_type==='B'){
+    relatedIds=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===sid&&c.status==='idea').map(c=>String(c.id));
+  }else if(v.big_video_id){
+    relatedIds=[String(v.big_video_id)];
+  }
+  relatedIds.forEach(id=>{
+    const row=document.querySelector('.vid-dash-row[data-vid="'+id+'"]');
+    if(row)row.style.boxShadow='inset 0 0 8px rgba(139,92,246,.2)';
+  });
+}
+function _vidIdeaRowLeave(){
+  document.querySelectorAll('.vid-dash-row[data-vid]').forEach(r=>r.style.boxShadow='');
+}
+
 function _vidParseDate(str){
   if(!str||!str.trim())return null;
   const parts=str.trim().split('/');
@@ -929,60 +2000,159 @@ let _vidDropdownData={BigVideo:[]};
 
 function _vidPopulateBigVideoSelect(selectedId){
   const inp=document.getElementById('vmBigVideo');
-  const bVids=(st.videos||[]).filter(v=>!v.is_deleted&&v.video_type==='B').sort((a,b)=>(a.title||'').localeCompare(b.title||''));
-  _vidDropdownData.BigVideo=bVids.map(v=>({id:v.id,label:v.title}));
+  const bVids=(st.videos||[]).filter(v=>!v.is_deleted&&v.video_type==='B').sort((a,b)=>(a.topic||'').localeCompare(b.topic||''));
+  _vidDropdownData.BigVideo=bVids.map(v=>({id:v.id,label:v.topic||v.title}));
   if(selectedId){
     const match=bVids.find(v=>String(v.id)===String(selectedId));
-    inp.value=match?match.title:'';
+    inp.value=match?(match.topic||match.title):'';
   }else{inp.value='';}
 }
 function _vidGetBigVideoId(){
-  const title=document.getElementById('vmBigVideo').value.trim();
-  if(!title)return null;
-  const match=(st.videos||[]).find(v=>!v.is_deleted&&v.video_type==='B'&&v.title===title);
-  return match?match.id:null;
+  const val=document.getElementById('vmBigVideo').value.trim();
+  if(!val)return null;
+  const exact=(st.videos||[]).find(v=>!v.is_deleted&&v.video_type==='B'&&(v.topic===val||v.title===val));
+  if(exact)return exact.id;
+  const words=val.toLowerCase().split(/\s+/).filter(Boolean);
+  const fuzzy=(st.videos||[]).find(v=>{
+    if(v.is_deleted||v.video_type!=='B')return false;
+    const l=((v.topic||'')+' '+(v.title||'')).toLowerCase();
+    return words.every(w=>l.includes(w));
+  });
+  return fuzzy?fuzzy.id:null;
 }
 
+const _VID_STATUS_OPTIONS=[
+  {value:'idea',label:'1. Idea'},{value:'up_next',label:'2. Up Next'},{value:'in_progress',label:'3. In Progress'},{value:'published',label:'4. Complete'},{value:'backup',label:'4. Backup'}
+];
+function _vidModalKey(event){
+  if(event.key==='Escape'){event.stopPropagation();closeMod('vidModal');}
+  else if(event.key==='Enter'&&(event.metaKey||event.target.tagName!=='TEXTAREA')){
+    // Close any open dropdowns first
+    var sDrop=document.getElementById('vmStatusDrop');if(sDrop)sDrop.style.display='none';
+    var bDrop=document.getElementById('vmBigVideoDrop');if(bDrop)bDrop.style.display='none';
+    event.preventDefault();saveVidModal();
+  }
+}
 function _vidShowDropdown(type){_vidFilterDropdown(type);}
 function _vidToggleDropdown(type){
   const drop=document.getElementById('vm'+type+'Drop');
   if(drop.style.display==='block'){drop.style.display='none';return;}
-  _vidFilterDropdown(type);
+  _vidRenderDropdown(type,false);
 }
-function _vidFilterDropdown(type){
-  const inp=document.getElementById('vm'+type);
+function _vidFilterDropdown(type){_vidRenderDropdown(type,true);}
+function _vidRenderDropdown(type,useFilter){
   const drop=document.getElementById('vm'+type+'Drop');
-  const q=(inp.value||'').toLowerCase();
   const itemStyle='padding:6px 10px;cursor:pointer;font-size:12px;border-bottom:1px solid rgba(210,205,228,.1)';
-  const hoverIn="this.style.background='rgba(139,92,246,.08)'";
-  const hoverOut="this.style.background='transparent'";
   let html='';
-  if(type==='BigVideo'){
-    const items=_vidDropdownData.BigVideo.filter(v=>!q||v.label.toLowerCase().includes(q));
-    html=`<div onclick="_vidPickDropdown('BigVideo','')" onmouseenter="${hoverIn}" onmouseleave="${hoverOut}" style="${itemStyle};color:var(--muted);font-style:italic">None</div>`;
-    html+=items.map(v=>`<div onclick="_vidPickDropdown('BigVideo','${_esc(v.label)}')" onmouseenter="${hoverIn}" onmouseleave="${hoverOut}" style="${itemStyle}">${_esc(v.label)}</div>`).join('');
+  if(type==='Status'){
+    html=_VID_STATUS_OPTIONS.map((o,i)=>`<div class="vm-drop-item" tabindex="-1" data-idx="${i}" onclick="_vidPickDropdown('Status','${o.value}')" onkeydown="_vidDropItemKey(event,'Status',${i})" style="${itemStyle}">${o.label}</div>`).join('');
+  }else if(type==='BigVideo'){
+    const inp=document.getElementById('vmBigVideo');
+    const q=useFilter?(inp.value||'').toLowerCase():'';
+    const words=q.split(/\s+/).filter(Boolean);
+    const onCurrent=_vidView==='dashboard';
+    const items=_vidDropdownData.BigVideo.filter(v=>{
+      if(onCurrent){const bv=(st.videos||[]).find(x=>String(x.id)===String(v.id));if(bv&&(bv.status==='published'||bv.status==='backup'))return false;}
+      if(!words.length)return true;
+      const l=v.label.toLowerCase();
+      return words.every(w=>l.includes(w));
+    });
+    html=`<div class="vm-drop-item" tabindex="-1" data-idx="0" onclick="_vidPickDropdown('BigVideo','')" onkeydown="_vidDropItemKey(event,'BigVideo',0)" style="${itemStyle};color:var(--muted);font-style:italic">None</div>`;
+    html+=items.map((v,i)=>`<div class="vm-drop-item" tabindex="-1" data-idx="${i+1}" onclick="_vidPickDropdown('BigVideo','${_esc(v.label)}')" onkeydown="_vidDropItemKey(event,'BigVideo',${i+1})" style="${itemStyle}">${_esc(v.label)}</div>`).join('');
   }
   drop.innerHTML=html;
   drop.style.display='block';
+  // Add hover styles
+  drop.querySelectorAll('.vm-drop-item').forEach(el=>{
+    el.addEventListener('mouseenter',()=>el.style.background='rgba(139,92,246,.08)');
+    el.addEventListener('mouseleave',()=>el.style.background='transparent');
+  });
+}
+function _vidDropKey(event,type){
+  const drop=document.getElementById('vm'+type+'Drop');
+  if(event.key==='ArrowDown'){
+    event.preventDefault();
+    if(drop.style.display!=='block')_vidRenderDropdown(type,false);
+    const first=drop.querySelector('.vm-drop-item');
+    if(first)first.focus();
+  }else if(event.key==='ArrowUp'){
+    event.preventDefault();
+    if(drop.style.display!=='block')_vidRenderDropdown(type,false);
+    const items=drop.querySelectorAll('.vm-drop-item');
+    if(items.length)items[items.length-1].focus();
+  }else if(event.key==='Escape'){
+    drop.style.display='none';
+  }else if(event.key==='Tab'){
+    drop.style.display='none';
+  }else if(event.key==='Enter'){
+    event.preventDefault();drop.style.display='none';saveVidModal();
+  }
+}
+function _vidDropItemKey(event,type,idx){
+  const drop=document.getElementById('vm'+type+'Drop');
+  const items=drop.querySelectorAll('.vm-drop-item');
+  if(event.key==='ArrowDown'){
+    event.preventDefault();event.stopPropagation();
+    const next=items[idx+1]||items[0];
+    if(next)next.focus();
+  }else if(event.key==='ArrowUp'){
+    event.preventDefault();event.stopPropagation();
+    const prev=items[idx-1]||items[items.length-1];
+    if(prev)prev.focus();
+  }else if(event.key==='Enter'){
+    event.preventDefault();event.stopPropagation();
+    items[idx].click();
+  }else if(event.key==='Escape'){
+    event.stopPropagation();
+    drop.style.display='none';
+    document.getElementById(type==='Status'?'vmStatusDisplay':'vmBigVideo').focus();
+  }else if(event.key==='Tab'){
+    drop.style.display='none';
+  }
 }
 function _vidPickDropdown(type,val){
-  document.getElementById('vm'+type).value=val;
+  if(type==='Status'){
+    document.getElementById('vmStatus').value=val;
+    const opt=_VID_STATUS_OPTIONS.find(o=>o.value===val);
+    document.getElementById('vmStatusDisplay').value=opt?opt.label:val;
+  }else{
+    document.getElementById('vm'+type).value=val;
+  }
   document.getElementById('vm'+type+'Drop').style.display='none';
+  var inp=document.getElementById(type==='Status'?'vmStatusDisplay':'vm'+type);
+  if(inp)inp.focus();
+}
+function _vidSetStatusDisplay(val){
+  const opt=_VID_STATUS_OPTIONS.find(o=>o.value===val);
+  document.getElementById('vmStatusDisplay').value=opt?opt.label:val;
 }
 document.addEventListener('click',e=>{
   if(!e.target.closest('#vmBigVideo')&&!e.target.closest('#vmBigVideoDrop')&&!e.target.closest('[onclick*="BigVideo"]')){
     const d=document.getElementById('vmBigVideoDrop');if(d)d.style.display='none';
   }
+  if(!e.target.closest('#vmStatusDisplay')&&!e.target.closest('#vmStatusDrop')&&!e.target.closest('[onclick*="Status"]')){
+    const d=document.getElementById('vmStatusDrop');if(d)d.style.display='none';
+  }
 });
 
+let _vidInsertOrder=null;
 function openVidModalForBig(bigId){
+  _vidInsertOrder=null;
   openVidModal('L');
   document.getElementById('vmType').value='L';
   _vidPopulateBigVideoSelect(bigId);
 }
+function openVidModalBetween(bigId,orderBefore,orderAfter){
+  openVidModal('L');
+  _vidInsertOrder=(orderBefore+orderAfter)/2;
+  document.getElementById('vmType').value='L';
+  _vidPopulateBigVideoSelect(bigId);
+  const parent=(st.videos||[]).find(v=>String(v.id)===String(bigId));
+  if(parent&&parent.status!=='idea'){document.getElementById('vmStatus').value=parent.status;_vidSetStatusDisplay(parent.status);}
+}
 
 function openVidModal(type){
-  _vidMode='add';_vidEditId=null;
+  _vidMode='add';_vidEditId=null;_vidInsertOrder=null;
   document.getElementById('vidMTitle').textContent='Add Video';
   document.getElementById('vmTitle').value='';
   document.getElementById('vmTopic').value='';
@@ -990,10 +2160,12 @@ function openVidModal(type){
   document.getElementById('vmType').value=t;
   _vidSetType(t);
   document.getElementById('vmStatus').value='idea';
+  _vidSetStatusDisplay('idea');
   document.getElementById('vmPostDate').value='';
   document.getElementById('vmDuration').value='';
 
-  document.getElementById('vmBigVideoWrap').style.display='';
+  document.getElementById('vmComment').value='';
+  document.getElementById('vmBigVideoWrap').style.display=t==='B'?'none':'';
   _vidPopulateBigVideoSelect('');
   const defaults={};
   if(t==='L'){defaults.step_tableau_public='na';defaults.step_upload_tableau='na';}
@@ -1011,32 +2183,42 @@ function openVidEdit(id){
   document.getElementById('vmType').value=v.video_type||'L';
   _vidSetType(v.video_type||'L');
   document.getElementById('vmStatus').value=v.status||'idea';
-  document.getElementById('vmPostDate').value=v.post_date||'';
+  _vidSetStatusDisplay(v.status||'idea');
+  const _pd=v.post_date;
+  document.getElementById('vmPostDate').value=_pd?parseInt(_pd.slice(5,7))+'/'+parseInt(_pd.slice(8,10))+(_pd.slice(0,4)!==String(new Date().getFullYear())?'/'+_pd.slice(2,4):''):'';
   document.getElementById('vmDuration').value=v.duration_minutes||'';
+  document.getElementById('vmComment').value=v.comment||'';
 
-  document.getElementById('vmBigVideoWrap').style.display='';
+  document.getElementById('vmBigVideoWrap').style.display=(v.video_type||'L')==='B'?'none':'';
   _vidPopulateBigVideoSelect(v.big_video_id||'');
   const stepVals={};VID_STEPS.forEach(s=>{stepVals[s]=v[s]||'not_started';});
   _vidRenderSteps(stepVals);
   document.getElementById('vidModal').classList.add('open');
-  setTimeout(()=>{const inp=document.getElementById('vmTitle');inp.focus();const len=inp.value.length;inp.setSelectionRange(len,len);},80);
+  setTimeout(()=>{const inp=document.getElementById('vmTopic');inp.focus();const len=inp.value.length;inp.setSelectionRange(len,len);},80);
 }
 
 function _vidRenderSteps(vals){
   const el=document.getElementById('vmSteps');
   el.innerHTML=VID_STEPS.map(s=>{
     const cur=vals[s]||'not_started';
+    const tab=cur==='na'?-1:0;
     return`<div style="display:flex;flex-direction:column;gap:2px;align-items:center">
       <span style="font-size:9px;color:${cur==='na'?'var(--border)':'var(--muted)'}">${VID_STEP_LABELS[s]}</span>
-      <div data-step="${s}" data-val="${cur}" onclick="_vidToggleModalStep(this)" oncontextmenu="_vidNaModalStep(event,this);return false" style="${_vidModalStepCSS(cur)}"></div>
+      <div data-step="${s}" data-val="${cur}" tabindex="${tab}" onclick="_vidToggleModalStep(this)" oncontextmenu="_vidNaModalStep(event,this);return false" onkeydown="_vidStepKey(event,this)" style="${_vidModalStepCSS(cur)}"></div>
     </div>`;
   }).join('');
 }
 function _vidModalStepCSS(val){
-  const base='width:24px;height:24px;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;user-select:none;';
-  if(val==='done')return base+'border:2px solid #10b981;background:#10b981;color:#fff';
-  if(val==='na')return base+'border:none;background:transparent;color:transparent';
-  return base+'border:2px solid var(--border);background:transparent;color:transparent';
+  const base='width:22px;height:22px;border-radius:3px;cursor:pointer;display:flex;align-items:center;justify-content:center;user-select:none;transition:transform .1s;';
+  if(val==='done')return base+'border:1.5px solid #10b981;background:#10b981';
+  if(val==='na')return base+'border:1.5px solid var(--border);background:var(--border);opacity:.35';
+  return base+'border:1.5px solid rgba(210,205,228,.4);background:transparent';
+}
+function _vidStepKey(event,el){
+  if(event.key==='c'||event.key==='C'){
+    event.preventDefault();
+    _vidToggleModalStep(el);
+  }
 }
 function _vidToggleModalStep(el){
   const cur=el.dataset.val;
@@ -1071,7 +2253,7 @@ function _vidSetType(type){
   _vidTypeChanged(type);
 }
 function _vidTypeChanged(type){
-  document.getElementById('vmBigVideoWrap').style.display='';
+  document.getElementById('vmBigVideoWrap').style.display=type==='B'?'none':'';
   if(type==='B'){document.getElementById('vmBigVideo').value='';}
   const els=document.querySelectorAll('#vmSteps [data-step]');
   els.forEach(el=>{
@@ -1085,7 +2267,8 @@ function _vidTypeChanged(type){
 }
 function _vidUpdateModalStep(el,val){
   el.style.cssText=_vidModalStepCSS(val);
-  el.textContent=val==='done'?'✓':'';
+  el.textContent='';
+  el.tabIndex=val==='na'?-1:0;
   el.parentElement.querySelector('span').style.color=val==='na'?'var(--border)':'var(--muted)';
 }
 
@@ -1097,12 +2280,20 @@ async function saveVidModal(){
     title:title||'',
     topic,
     status:document.getElementById('vmStatus').value||'idea',
-    post_date:document.getElementById('vmPostDate').value||null,
+    post_date:_vidParseDate(document.getElementById('vmPostDate').value)||null,
     duration_minutes:parseFloat(document.getElementById('vmDuration').value)||null,
 
-    big_video_id:_vidGetBigVideoId()
+    big_video_id:_vidGetBigVideoId(),
+    comment:document.getElementById('vmComment').value.trim()||null
   };
-  data.video_type=data.big_video_id?'L':(document.getElementById('vmType').value||'L');
+  if(_vidMode==='edit'&&_vidEditId){
+    const _ev=(st.videos||[]).find(x=>String(x.id)===String(_vidEditId));
+    data.video_type=document.getElementById('vmType').value||(_ev?_ev.video_type:'L');
+  }else{
+    data.video_type=data.big_video_id?'L':(document.getElementById('vmType').value||'L');
+  }
+  // B videos cannot have a parent
+  if(data.video_type==='B')data.big_video_id=null;
   document.querySelectorAll('#vmSteps [data-step]').forEach(el=>{data[el.dataset.step]=el.dataset.val||'not_started';});
   // Default Tab Pub + Upload to na for L-type videos with a parent group (not standalone)
   if(_vidMode==='add'&&data.video_type==='L'&&data.big_video_id){
@@ -1112,8 +2303,18 @@ async function saveVidModal(){
   // Match parent status when assigned to a big video
   if(data.big_video_id){
     const parent=(st.videos||[]).find(x=>String(x.id)===String(data.big_video_id));
-    if(parent&&parent.status!=='idea'&&data.status==='idea')data.status=parent.status;
+    if(parent){
+      // Inherit parent's status (idea parents → idea, active parents → their status)
+      if(parent.status==='idea')data.status='idea';
+      else if(parent.status!=='published'&&parent.status!=='backup')data.status=parent.status;
+    }
+    // Place at bottom of new group
+    const siblings=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(data.big_video_id));
+    const maxOrder=Math.max(0,...siblings.map(c=>c.vid_order??0));
+    data.vid_order=maxOrder+1;
   }
+  // L videos without a big parent can't be in_progress/up_next
+  if(data.video_type==='L'&&!data.big_video_id&&(data.status==='in_progress'||data.status==='up_next'))data.status='idea';
   closeMod('vidModal');
 
   if(_vidMode==='edit'&&_vidEditId){
@@ -1125,34 +2326,42 @@ async function saveVidModal(){
       const nowL=data.video_type==='L';
       const orphans=[];
       if(wasB&&nowL){
-        (st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(v.id)).forEach(c=>{
-          orphans.push({id:c.id,prevBigId:c.big_video_id});
+        const maxOrder=Math.max(0,...(st.videos||[]).filter(x=>!x.is_deleted&&x.status==='idea').map(x=>x.vid_order??0));
+        (st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(v.id)).forEach((c,i)=>{
+          orphans.push({id:c.id,prevBigId:c.big_video_id,prevStatus:c.status,prevOrder:c.vid_order});
           c.big_video_id=null;
+          c.status='idea';
+          c.vid_order=maxOrder+1+i;
         });
       }
       Object.assign(v,data);
-      const coreSteps=VID_STEPS.filter(s=>s!=='step_tableau_public'&&s!=='step_upload_tableau');
-      const coreDone=coreSteps.every(s=>v[s]==='done'||v[s]==='na');
-      if(coreDone&&v.post_date&&v.duration_minutes&&v.status!=='published'){v.status='published';data.status='published';}
-      else if((!coreDone||!v.post_date||!v.duration_minutes)&&v.status==='published'){v.status='in_progress';data.status='in_progress';}
+      const allStepsDone=VID_STEPS.every(s=>v[s]==='done'||v[s]==='na');
+      const hasFields=v.post_date&&v.duration_minutes&&v.topic&&v.title;
+      if(allStepsDone&&hasFields&&v.status!=='published'){v.status='published';data.status='published';}
+      else if((!allStepsDone||!hasFields)&&v.status==='published'){v.status='in_progress';data.status='in_progress';}
       save();renderVideosPageKeepScroll();
       if(v.video_type==='B'&&v.status!==prev.status&&(v.status==='in_progress'||v.status==='up_next'))_vidPromoteChildren(v.id,v.status);
       pushUndo(async()=>{
         Object.assign(v,prev);
-        orphans.forEach(o=>{const c=(st.videos||[]).find(x=>String(x.id)===String(o.id));if(c)c.big_video_id=o.prevBigId;});
+        orphans.forEach(o=>{const c=(st.videos||[]).find(x=>String(x.id)===String(o.id));if(c){c.big_video_id=o.prevBigId;c.status=o.prevStatus;c.vid_order=o.prevOrder;}});
         save();renderVideosPageKeepScroll();
         await sbReqSilent('PATCH','videos',prev,`?id=eq.${_vidEditId}`);
-        for(const o of orphans)await sbReqSilent('PATCH','videos',{big_video_id:o.prevBigId},`?id=eq.${o.id}`);
+        for(const o of orphans)await sbReqSilent('PATCH','videos',{big_video_id:o.prevBigId,status:o.prevStatus,vid_order:o.prevOrder??null},`?id=eq.${o.id}`);
       },'Edited video');
       await sbReqSilent('PATCH','videos',data,`?id=eq.${_vidEditId}`);
-      for(const o of orphans)await sbReqSilent('PATCH','videos',{big_video_id:null},`?id=eq.${o.id}`);
+      for(const o of orphans){const c=(st.videos||[]).find(x=>String(x.id)===String(o.id));await sbReqSilent('PATCH','videos',{big_video_id:null,status:'idea',vid_order:c?c.vid_order:null},`?id=eq.${o.id}`);}
     }
   }else{
+    if(_vidInsertOrder!=null){data.vid_order=_vidInsertOrder;_vidInsertOrder=null;}
     const tmp='l-'+Date.now();
     const rec={id:tmp,...data};
     st.videos.push(rec);save();renderVideosPageKeepScroll();
+    pushUndo(async()=>{
+      const v=(st.videos||[]).find(x=>x.id===tmp||x.id===rec.id);
+      if(v){v.is_deleted=true;save();renderVideosPageKeepScroll();const sid=String(v.id);if(!sid.startsWith('l-'))await sbReqSilent('PATCH','videos',{is_deleted:true},`?id=eq.${sid}`);}
+    },'Added video');
     const sv=await sbReqSilent('POST','videos',data);
-    if(sv&&sv[0]){const ix=st.videos.findIndex(x=>x.id===tmp);if(ix>-1)st.videos[ix]=sv[0];}
+    if(sv&&sv[0]){rec.id=sv[0].id;const ix=st.videos.findIndex(x=>x.id===tmp);if(ix>-1)st.videos[ix]=sv[0];}
     save();renderVideosPageKeepScroll();
   }
 }
@@ -1209,6 +2418,11 @@ function _vidLinkedStep(step){
   if(step==='step_upload_tableau')return'step_tableau_public';
   return null;
 }
+function _vidIsComplete(v){return VID_STEPS.every(s=>v[s]==='done'||v[s]==='na')&&v.post_date&&v.duration_minutes&&v.topic&&v.title;}
+function _vidAllChildrenComplete(bigId){
+  const kids=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(bigId));
+  return kids.every(k=>_vidIsComplete(k));
+}
 async function cycleVidStep(id,step){
   const v=(st.videos||[]).find(x=>String(x.id)===String(id));if(!v)return;
   const cur=v[step]||'not_started';
@@ -1216,21 +2430,46 @@ async function cycleVidStep(id,step){
   const prev=cur;
   const prevStatus=v.status;
   v[step]=next;
-  // Auto-complete: core steps done + has date → published (Tab Pub & Upload excluded)
-  const coreSteps=VID_STEPS.filter(s=>s!=='step_tableau_public'&&s!=='step_upload_tableau');
-  const coreDone=coreSteps.every(s=>v[s]==='done'||v[s]==='na');
-  const wasDone=coreSteps.every(s=>(s===step?cur:v[s]||'not_started')==='done'||(s===step?cur:v[s]||'not_started')==='na');
-  if(coreDone&&v.post_date&&v.duration_minutes&&v.status!=='published'){
+  // Auto-complete: all required steps done/na + post_date + duration + topic + title → published
+  // For B videos: all children must also be complete
+  const allDone=VID_STEPS.every(s=>v[s]==='done'||v[s]==='na');
+  const wasDone=VID_STEPS.every(s=>(s===step?cur:v[s]||'not_started')==='done'||(s===step?cur:v[s]||'not_started')==='na');
+  const hasFields=v.post_date&&v.duration_minutes&&v.topic&&v.title;
+  const selfComplete=allDone&&hasFields;
+  const kidsComplete=v.video_type!=='B'||_vidAllChildrenComplete(v.id);
+  if(selfComplete&&kidsComplete&&v.status!=='published'){
     v.status='published';
-  }else if((!coreDone||!v.post_date||!v.duration_minutes)&&v.status==='published'&&prevStatus==='published'){
+  }else if((!selfComplete||!kidsComplete)&&v.status==='published'&&prevStatus==='published'){
     v.status='in_progress';
+  }
+  // Big video build toggle → cascade to all children
+  const childUpdates=[];
+  if(step==='step_build'&&v.video_type==='B'){
+    (st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(v.id)).forEach(c=>{
+      const cPrev=c.step_build||'not_started';
+      if(cPrev===next)return;
+      const cPrevStatus=c.status;
+      childUpdates.push({c,cPrev,cPrevStatus});
+      c.step_build=next;
+      const cAllDone=VID_STEPS.every(s=>c[s]==='done'||c[s]==='na');
+      const cHasFields=c.post_date&&c.duration_minutes&&c.topic&&c.title;
+      if(cAllDone&&cHasFields&&c.status!=='published')c.status='published';
+      else if((!cAllDone||!cHasFields)&&c.status==='published')c.status='in_progress';
+    });
   }
   const patch={[step]:next};
   if(v.status!==prevStatus)patch.status=v.status;
   save();renderVideosPageKeepScroll();
-  if(coreDone&&v.post_date&&v.duration_minutes&&!wasDone)_vidCelebrate(id);
-  pushUndo(async()=>{v[step]=prev;v.status=prevStatus;save();renderVideosPageKeepScroll();await sbReqSilent('PATCH','videos',{[step]:prev,status:prevStatus},`?id=eq.${id}`);},'Step change');
+  if(selfComplete&&kidsComplete&&!wasDone)_vidCelebrate(id);
+  pushUndo(async()=>{
+    v[step]=prev;v.status=prevStatus;
+    childUpdates.forEach(d=>{d.c.step_build=d.cPrev;d.c.status=d.cPrevStatus;});
+    save();renderVideosPageKeepScroll();
+    await sbReqSilent('PATCH','videos',{[step]:prev,status:prevStatus},`?id=eq.${id}`);
+    for(const d of childUpdates)await sbReqSilent('PATCH','videos',{step_build:d.cPrev,status:d.cPrevStatus},`?id=eq.${d.c.id}`);
+  },'Step change');
   await sbReqSilent('PATCH','videos',patch,`?id=eq.${id}`);
+  for(const d of childUpdates)await sbReqSilent('PATCH','videos',{step_build:d.c.step_build,status:d.c.status},`?id=eq.${d.c.id}`);
 }
 
 function _vidCelebrate(id){
@@ -1278,8 +2517,8 @@ document.addEventListener('keydown',e=>{
   if((e.metaKey||e.ctrlKey)&&e.key==='c'&&_vidSelected.size>0){e.preventDefault();_vidCopied=[];_vidSelected.forEach(id=>{const v=(st.videos||[]).find(x=>String(x.id)===String(id));if(v)_vidCopied.push({...v});});showToast('Copied '+_vidCopied.length+' video(s)','#0ea5e9',1500);return;}
   if((e.metaKey||e.ctrlKey)&&e.key==='v'&&_vidCopied.length>0){e.preventDefault();_vidCopied.forEach(v=>_vidDuplicate(v.id));return;}
   if(e.key==='n'&&!e.metaKey&&!e.ctrlKey){e.preventDefault();openVidModal();return;}
-  if(e.key==='ArrowLeft'&&!e.metaKey&&!e.ctrlKey&&_vidSelected.size===0){e.preventDefault();const tabs=['dashboard','table','board','monthly'];const i=tabs.indexOf(_vidView);if(i>0)_vidSetView(tabs[i-1]);return;}
-  if(e.key==='ArrowRight'&&!e.metaKey&&!e.ctrlKey&&_vidSelected.size===0){e.preventDefault();const tabs=['dashboard','table','board','monthly'];const i=tabs.indexOf(_vidView);if(i<tabs.length-1)_vidSetView(tabs[i+1]);return;}
+  if(e.key==='ArrowLeft'&&!e.metaKey&&!e.ctrlKey&&_vidSelected.size===0){e.preventDefault();const tabs=['dashboard','table','analytics','monthly'];const i=tabs.indexOf(_vidView);if(i>0)_vidSetView(tabs[i-1]);return;}
+  if(e.key==='ArrowRight'&&!e.metaKey&&!e.ctrlKey&&_vidSelected.size===0){e.preventDefault();const tabs=['dashboard','table','analytics','monthly'];const i=tabs.indexOf(_vidView);if(i<tabs.length-1)_vidSetView(tabs[i+1]);return;}
   if(e.key==='ArrowUp'&&!e.metaKey&&!e.ctrlKey){e.preventDefault();const se=_vidScrollEl();if(se)se.scrollTop=0;return;}
   if(e.key==='ArrowDown'&&!e.metaKey&&!e.ctrlKey){e.preventDefault();const se=_vidScrollEl();if(se)se.scrollTop=se.scrollHeight;return;}
   if(e.key==='e'&&!e.metaKey&&!e.ctrlKey&&_vidView==='table'){e.preventDefault();_vidShowCompleted=!_vidShowCompleted;renderVideosPageKeepScroll();return;}

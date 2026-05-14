@@ -62,6 +62,8 @@
   </nav>
 </div>
 
+<button id="backToOv" onclick="showPage('overview')">← Overview</button>
+
 <!-- Main -->
 <div id="main" style="position:fixed;left:0;top:0;right:0;bottom:0;overflow-y:auto;overflow-x:hidden;transition:left .25s cubic-bezier(.4,0,.2,1),opacity .15s;opacity:0">
 
@@ -75,7 +77,6 @@
     <button class="settings-btn" id="settingsBtn" onclick="toggleSettingsPopup()" data-tip="Settings" style="padding:0;width:20px;height:20px"><svg style="width:10px;height:10px;display:block;flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg></button>
   </div>
 </div>
-<button id="backToOv" onclick="showPage('overview')">← Overview</button>
 
 <!-- OVERVIEW -->
 <div class="page active" id="page-overview">
@@ -734,38 +735,40 @@
 <script src="videos.js"></script>
 
 <!-- Video Modal -->
-<div class="overlay" id="vidModal" onclick="closeMod('vidModal',event)" onkeydown="if(event.key==='Escape'){event.stopPropagation();closeMod('vidModal');}else if(event.key==='Enter'&&event.target.tagName!=='TEXTAREA'){event.preventDefault();saveVidModal();}">
-  <div class="modal task-modal" style="width:480px;box-sizing:border-box">
-    <div style="display:flex;align-items:center;justify-content:space-between">
-      <div class="mt" id="vidMTitle" style="margin:0">Add Video</div>
+<div class="overlay" id="vidModal" onclick="closeMod('vidModal',event)" onkeydown="_vidModalKey(event)">
+  <div class="modal task-modal" style="width:480px;box-sizing:border-box;padding:10px 16px 16px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <div id="vidMTitle" style="font-size:14px;font-weight:700;letter-spacing:-.3px;margin:0;padding-left:3px">Add Video</div>
       <div id="vmTypeToggle" style="display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;flex-shrink:0">
         <button type="button" onclick="_vidSetType('B')" id="vmTypeB" style="padding:5px 10px;font-family:inherit;font-size:11px;font-weight:600;border:none;cursor:pointer;background:transparent;color:var(--muted)">Big</button>
         <button type="button" onclick="_vidSetType('L')" id="vmTypeL" style="padding:5px 10px;font-family:inherit;font-size:11px;font-weight:600;border:none;cursor:pointer;background:var(--accent);color:#fff">Little</button>
       </div>
     </div>
     <input id="vmType" type="hidden" value="L">
-    <input id="vmTopic" placeholder="Topic" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box;margin-top:8px">
+    <input id="vmTopic" placeholder="Topic *" style="width:100%;padding:8px 10px;border-radius:8px;font-family:inherit;font-size:13px;background:#fff;color:var(--text);outline:none;box-sizing:border-box;border:1px solid rgba(210,205,228,.3);box-shadow:1px 1px 3px rgba(0,0,0,.06), inset 0 1px 0 rgba(255,255,255,.8)">
     <input id="vmTitle" placeholder="Video title" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box;margin-top:8px">
     <div style="display:flex;gap:8px;margin-top:8px">
-      <select id="vmStatus" style="flex:1;min-width:0;padding:8px 6px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box">
-        <option value="idea">1. Idea</option><option value="up_next">2. Up Next</option><option value="in_progress">3. In Progress</option><option value="published">4. Complete</option><option value="backup">4. Backup</option>
-      </select>
-    </div>
-    <div style="display:flex;gap:8px;margin-top:8px">
+      <div style="flex:1;min-width:0;position:relative">
+        <input id="vmStatusDisplay" readonly autocomplete="off" tabindex="0" style="width:100%;padding:8px 28px 8px 10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box;cursor:pointer" onclick="_vidToggleDropdown('Status')" onkeydown="_vidDropKey(event,'Status')" value="1. Idea">
+        <span onclick="_vidToggleDropdown('Status')" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--muted);font-size:10px;user-select:none">▼</span>
+        <input id="vmStatus" type="hidden" value="idea">
+        <div id="vmStatusDrop" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--bg);border:1px solid var(--border);border-radius:8px;margin-top:2px;z-index:10;box-shadow:0 4px 12px rgba(0,0,0,.12);overflow:hidden"></div>
+      </div>
       <div id="vmBigVideoWrap" style="flex:1;min-width:0;position:relative">
-        <input id="vmBigVideo" placeholder="Big Video (none)" autocomplete="off" style="width:100%;padding:8px 28px 8px 10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box" onfocus="_vidShowDropdown('BigVideo')" oninput="_vidFilterDropdown('BigVideo')">
+        <input id="vmBigVideo" placeholder="Big Video (none)" autocomplete="off" style="width:100%;padding:8px 28px 8px 10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box" onclick="_vidToggleDropdown('BigVideo')" oninput="_vidFilterDropdown('BigVideo')" onkeydown="_vidDropKey(event,'BigVideo')">
         <span onclick="_vidToggleDropdown('BigVideo')" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--muted);font-size:10px;user-select:none">▼</span>
         <div id="vmBigVideoDrop" style="display:none;position:absolute;top:100%;left:0;right:0;max-height:180px;overflow-y:auto;background:var(--bg);border:1px solid var(--border);border-radius:8px;margin-top:2px;z-index:10;box-shadow:0 4px 12px rgba(0,0,0,.12)"></div>
       </div>
     </div>
-    <div style="margin-top:12px;padding:10px;border-radius:10px;background:rgba(255,255,255,.7);border:1px solid rgba(210,205,228,.3);box-shadow:1px 1px 3px rgba(0,0,0,.06), inset 0 1px 0 rgba(255,255,255,.8)">
-      <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">Stages <span style="font-weight:400;text-transform:none;letter-spacing:0">(click = toggle, right-click = n/a)</span></div>
-      <div style="display:grid;grid-template-columns:repeat(8,1fr);gap:4px;margin-top:4px" id="vmSteps"></div>
-      <div style="display:flex;gap:8px;margin-top:10px;border-top:1px solid rgba(210,205,228,.2);padding-top:8px">
-        <input id="vmPostDate" type="date" placeholder="Post date" style="flex:1;min-width:0;padding:8px 6px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box">
-        <input id="vmDuration" type="number" step="0.01" placeholder="Duration (min.sec)" style="flex:1;min-width:0;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box">
+    <div style="margin-top:8px;padding:12px 19px;border-radius:10px;background:rgba(255,255,255,.7);border:1px solid rgba(210,205,228,.3);box-shadow:1px 1px 3px rgba(0,0,0,.06), inset 0 1px 0 rgba(255,255,255,.8)">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="display:flex;gap:10px" id="vmSteps"></div>
+        <div style="flex:1"></div>
+        <input id="vmPostDate" type="text" placeholder="Posted" style="width:80px;padding:6px 6px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:12px;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box">
+        <input id="vmDuration" type="number" step="0.01" placeholder="Duration" style="width:80px;padding:6px 6px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:12px;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box">
       </div>
     </div>
+    <textarea id="vmComment" placeholder="Comment" rows="2" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box;margin-top:8px;resize:vertical"></textarea>
     <div class="mact" style="margin-top:12px"><button class="btn btn-ghost" onclick="closeMod('vidModal')">Cancel</button><button class="btn btn-dark" onclick="saveVidModal()">Save</button></div>
   </div>
 </div>
@@ -924,20 +927,15 @@ tickClock();_updateOvTopDate();setInterval(tickClock,1000);init();
 <!-- Quick Notes -->
 <button id="qnBtn" onclick="toggleQN()" title="Quick Notes">📝</button>
 <div id="qnPanel">
-  <div class="qn-binding">
-    <div class="qn-coil"></div><div class="qn-coil"></div><div class="qn-coil"></div>
-    <div class="qn-coil"></div><div class="qn-coil"></div><div class="qn-coil"></div>
-    <div class="qn-coil"></div><div class="qn-coil"></div><div class="qn-coil"></div>
-  </div>
   <div class="qn-header">
-    <span style="font-size:13px;margin-right:2px">📝</span>
     <span class="qn-title">Quick Notes</span>
+    <button class="qn-hist-btn" onclick="toggleQNHist()" title="Archive"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="5" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg></button>
     <button class="qn-close-btn" onclick="toggleQN()" title="Close">✕</button>
   </div>
   <div class="qn-list" id="qnList"></div>
+  <div class="qn-hist-list" id="qnHistList" style="display:none"></div>
   <div class="qn-input-row">
-    <input class="qn-input" id="qnInput" type="text" placeholder="Jot something down…" onkeydown="if(event.key==='Enter')addQN()">
-    <button class="qn-add-btn" onclick="addQN()">+</button>
+    <input class="qn-input" id="qnInput" type="text" placeholder="Future you will thank you for writing this down…" autocapitalize="sentences" onkeydown="if(event.key==='Enter'){if(!this.value.trim()){_qnOpen=false;document.getElementById('qnPanel').classList.remove('open');}else{addQN();}}" oninput="if(this.value.length===1)this.value=this.value.toUpperCase()">
   </div>
 </div>
 

@@ -36,8 +36,8 @@ let undoStack=[];let undoTimer=null;
 let shopSortMode='store'; // 'store' or 'alpha'
 
 // ── Storage ────────────────────────────────────────────────────────────────────
-function load(){try{const s=JSON.parse(localStorage.getItem(KEY)||'{}');if(s.cfg)cfg={...cfg,...s.cfg};if(s.blocks)st.blocks=s.blocks.map(b=>{const{_col,_ncols,...rest}=b;return rest;});if(s.sb!==undefined)sbOpen=s.sb;if(s.overrides)localOverrides=s.overrides;if(s.delRec)deletedRecIds=new Set(s.delRec);if(s.delPupSess)deletedPupSessIds=new Set(s.delPupSess);if(s.tasks)st.tasks=s.tasks;if(s.recurring)st.recurring=s.recurring.map(r=>({...r,_doneByWk:r._doneByWk||{}}));if(s.shopping)st.shopping=s.shopping;if(s.travel)st.travel=s.travel;if(s.birthdays)st.birthdays=s.birthdays;if(s.pup_skills)st.pup_skills=s.pup_skills;if(s.pupSessions)st.pupSessions=s.pupSessions;if(s.recipes)st.recipes=s.recipes;if(s.videos)st.videos=s.videos;if(s.autoTimeblocks)st.autoTimeblocks=s.autoTimeblocks;if(s.autoTBOverrides)st.autoTBOverrides=s.autoTBOverrides;if(s.wrRules)st.wrRules=s.wrRules;if(s.wrOverrides)st.wrOverrides=s.wrOverrides;}catch(e){}}
-function save(){try{localStorage.setItem(KEY,JSON.stringify({cfg,blocks:st.blocks,sb:sbOpen,overrides:localOverrides,delRec:[...deletedRecIds],delPupSess:[...deletedPupSessIds],tasks:st.tasks,recurring:st.recurring,shopping:st.shopping,travel:st.travel,birthdays:st.birthdays,pup_skills:st.pup_skills,pupSessions:st.pupSessions,recipes:st.recipes,videos:st.videos,autoTimeblocks:st.autoTimeblocks,autoTBOverrides:st.autoTBOverrides,wrRules:st.wrRules,wrOverrides:st.wrOverrides}));}catch(e){}}
+function load(){try{const s=JSON.parse(localStorage.getItem(KEY)||'{}');if(s.cfg)cfg={...cfg,...s.cfg};if(s.blocks)st.blocks=s.blocks.map(b=>{const{_col,_ncols,...rest}=b;return rest;});if(s.sb!==undefined)sbOpen=s.sb;if(s.overrides)localOverrides=s.overrides;if(s.delRec)deletedRecIds=new Set(s.delRec);if(s.delPupSess)deletedPupSessIds=new Set(s.delPupSess);if(s.tasks)st.tasks=s.tasks;if(s.recurring)st.recurring=s.recurring.map(r=>({...r,_doneByWk:r._doneByWk||{}}));if(s.shopping)st.shopping=s.shopping;if(s.travel)st.travel=s.travel;if(s.birthdays)st.birthdays=s.birthdays;if(s.pup_skills)st.pup_skills=s.pup_skills;if(s.pupSessions)st.pupSessions=s.pupSessions;if(s.recipes)st.recipes=s.recipes;if(s.videos)st.videos=s.videos;if(s.autoTimeblocks)st.autoTimeblocks=s.autoTimeblocks;if(s.autoTBOverrides)st.autoTBOverrides=s.autoTBOverrides;if(s.wrRules)st.wrRules=s.wrRules;if(s.wrOverrides)st.wrOverrides=s.wrOverrides;if(s._ytDismissed)st._ytDismissed=s._ytDismissed;}catch(e){}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify({cfg,blocks:st.blocks,sb:sbOpen,overrides:localOverrides,delRec:[...deletedRecIds],delPupSess:[...deletedPupSessIds],tasks:st.tasks,recurring:st.recurring,shopping:st.shopping,travel:st.travel,birthdays:st.birthdays,pup_skills:st.pup_skills,pupSessions:st.pupSessions,recipes:st.recipes,videos:st.videos,autoTimeblocks:st.autoTimeblocks,autoTBOverrides:st.autoTBOverrides,wrRules:st.wrRules,wrOverrides:st.wrOverrides,_ytDismissed:st._ytDismissed}));}catch(e){}}
 
 // ── Auth ───────────────────────────────────────────────────────────────────────
 let _sbClient=null;
@@ -339,7 +339,10 @@ async function syncAll(silent=false){
     }
     if(videosDb){
       const localOnly=(st.videos||[]).filter(v=>String(v.id).startsWith('l-'));
+      // Preserve local vid_order if DB doesn't have it yet
+      const localOrders={};(st.videos||[]).forEach(v=>{if(v.vid_order!=null)localOrders[String(v.id)]=v.vid_order;});
       st.videos=[...videosDb,...localOnly.filter(lv=>!videosDb.find(dv=>String(dv.id)===String(lv.id)))];
+      st.videos.forEach(v=>{if(v.vid_order==null&&localOrders[String(v.id)]!=null)v.vid_order=localOrders[String(v.id)];});
     }
     if(blocks){
       const dbIds=new Set(blocks.map(b=>String(b.id)));
@@ -675,7 +678,8 @@ function _stateSnap(){
     wrOverrides:JSON.parse(JSON.stringify(st.wrOverrides||[])),
     autoTBOverrides:JSON.parse(JSON.stringify(st.autoTBOverrides||[])),
     pupSessions:JSON.parse(JSON.stringify(st.pupSessions||[])),
-    pup_skills:JSON.parse(JSON.stringify(st.pup_skills||[]))
+    pup_skills:JSON.parse(JSON.stringify(st.pup_skills||[])),
+    videos:JSON.parse(JSON.stringify(st.videos||[]))
   };
 }
 
@@ -691,11 +695,13 @@ function _stateRestore(snap){
   if(snap.autoTBOverrides)st.autoTBOverrides=snap.autoTBOverrides;
   if(snap.pupSessions)st.pupSessions=snap.pupSessions;
   if(snap.pup_skills)st.pup_skills=snap.pup_skills;
+  if(snap.videos)st.videos=snap.videos;
   save();
   renderAll();
   renderPupSkillsHighlight();
   if(document.getElementById('tbGrid'))renderDayTB();
   renderWkCal();renderRecOv();renderWeeklyPage();
+  if(typeof renderVideosPage==='function'&&document.getElementById('videosContent'))renderVideosPage();
 }
 
 function pushUndo(fn,msg,onExpire){
@@ -824,6 +830,15 @@ function _syncRedoDiff(before,after){
     const fields=['skill','pup','category','level','stage','focus','next_step','word','signal','comments','skill_order'];
     fields.forEach(f=>{if(String(s[f]??'')!==String(p[f]??''))ch[f]=s[f]??null;});
     if(Object.keys(ch).length)ps.push(sbReqSilent('PATCH','pup_skills',ch,`?id=eq.${s.id}`));
+  }
+  const bV2=before.videos||[],aV2=after.videos||[];
+  const vidFields=['title','topic','status','post_date','duration_minutes','video_type','big_video_id','vid_order',
+    'step_build','step_vo','step_film','step_cut','step_thumbnail','step_description','step_tableau_public','step_upload_tableau'];
+  for(const v of aV2){
+    const p=bV2.find(x=>String(x.id)===String(v.id));if(!p)continue;
+    const ch={};
+    vidFields.forEach(f=>{if(String(v[f]??'')!==String(p[f]??''))ch[f]=v[f]??null;});
+    if(Object.keys(ch).length)ps.push(sbReqSilent('PATCH','videos',ch,`?id=eq.${v.id}`));
   }
   return Promise.all(ps);
 }

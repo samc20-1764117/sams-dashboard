@@ -522,6 +522,7 @@ function tRowTodayVirt(t,tbArrow=false,noColor=false){
     <span class="tn">${t.name}</span>
     ${_hebBadge(t.name)}
     ${!ov?`<svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3" fill="${ps.bg}" stroke="${ps.d}" stroke-opacity="0.4" stroke-width="1"/></svg>`:''}
+    ${ov&&t.due_date?`<span class="dlbl ov">${['S','M','T','W','T','F','S'][new Date(t.due_date.split('T')[0]+'T12:00').getDay()]}</span>`:''}
     ${tbArrow?'<span class="tb-arrow">›</span>':''}
     <button class="delbtn" onclick="event.stopPropagation();${_xBtn}">✕</button>
   </div>`;
@@ -841,34 +842,69 @@ function renderWkCal(){
       if(dragId.startsWith('wrrule::')){
         const ruleId=dragId.split('::')[1];
         const wkKey=getWkKey(wkOff);
-        const _isMultiWR=selectedTasks.has('wrrule-'+ruleId)&&selectedTasks.size>1;
-        const _wrMoveIds=_isMultiWR?[...selectedTasks].filter(sid=>sid.startsWith('wrrule-')).map(sid=>sid.replace('wrrule-','')):[ruleId];
+        const _wrRuleSid='wrrule-'+ruleId;
+        const _isMultiWR=selectedTasks.has(_wrRuleSid)&&selectedTasks.size>1;
+        const _wrMoveIds=_isMultiWR?[...selectedTasks].filter(sid=>sid.startsWith('wrrule-')||sid.startsWith('wrrule-virt-')).map(sid=>sid.replace('wrrule-virt-','').replace('wrrule-','')):[ruleId];
         const _wrMoves=_wrMoveIds.map(rid=>{const r=st.wrRules.find(x=>String(x.id)===String(rid));return r?{r,rid,prev:r._dateOverrides?.[wkKey]}:null;}).filter(Boolean);
         _wrMoves.forEach(({r})=>{if(!r._dateOverrides)r._dateOverrides={};r._dateOverrides[wkKey]=ds;});
-        save();dragId=null;renderAll();
+        const _wrUndos=[()=>{_wrMoves.forEach(({r,rid,prev})=>{if(!r._dateOverrides)r._dateOverrides={};if(prev)r._dateOverrides[wkKey]=prev;else delete r._dateOverrides[wkKey];sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},`?id=eq.${rid}`);});}];
+        // Multi-select: also move regular tasks + wrec items
+        if(_isMultiWR){
+          [...selectedTasks].forEach(sid=>{
+            if(sid.startsWith('wrrule'))return;
+            if(sid.startsWith('wrec-')){
+              const rid=sid.replace('wrec-','');const r2=st.recurring.find(x=>String(x.id)===String(rid));
+              if(r2){if(!r2._dateOverrides)r2._dateOverrides={};const p=r2._dateOverrides[wkKey];r2._dateOverrides[wkKey]=ds;sbReq('PATCH','wr_recurring_rules',{date_overrides:r2._dateOverrides},recQs(r2.id));
+                _wrUndos.push(()=>{if(p)r2._dateOverrides[wkKey]=p;else delete r2._dateOverrides[wkKey];sbReq('PATCH','wr_recurring_rules',{date_overrides:r2._dateOverrides},recQs(r2.id));});}
+            }else{
+              const t=st.tasks.find(x=>String(x.id)===sid);
+              if(t&&!t._virtual){const prev=t.due_date;t.due_date=ds;localOverrides[sid]={due_date:ds};pendingLocal.add(sid);sbReqNullable('PATCH','tasks',{due_date:ds},`?id=eq.${t.id}`);
+                _wrUndos.push(()=>{t.due_date=prev;localOverrides[sid]={due_date:prev};pendingLocal.add(sid);sbReqNullable('PATCH','tasks',{due_date:prev},`?id=eq.${t.id}`);});}
+            }
+          });
+        }
+        save();dragId=null;renderAll();if(document.getElementById('tbGrid'))renderDayTB();
         _wrMoves.forEach(({r,rid})=>sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},`?id=eq.${rid}`));
-        pushUndo(()=>{_wrMoves.forEach(({r,rid,prev})=>{if(!r._dateOverrides)r._dateOverrides={};if(prev)r._dateOverrides[wkKey]=prev;else delete r._dateOverrides[wkKey];sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},`?id=eq.${rid}`);});save();renderAll();},'Pinned WR task to '+ds);
+        pushUndo(()=>{_wrUndos.forEach(fn=>fn());save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();},'Moved tasks to '+ds);
         dragId=null;return;
       }
       // Weekly reset task dragged onto calendar
       if(dragId.startsWith('wrec::')){
         const recId=dragId.split('::')[1];
         const r=st.recurring.find(x=>String(x.id)===String(recId));
+        const wkKey=getWkKey(wkOff);
+        const _wrecSid='wrec-'+recId;
+        const _isMultiWrec=selectedTasks.has(_wrecSid)&&selectedTasks.size>1;
+        const _wrecUndos=[];
         if(r){
           if(!r._dateOverrides)r._dateOverrides={};
-          const wkKey=getWkKey(wkOff);
           const prev=r._dateOverrides[wkKey];
           r._dateOverrides[wkKey]=ds;
           removeTBBlocksForDate(ds,{recId:r.id});
-          save();dragId=null;renderAll();renderWkCal();
           sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));
-          pushUndo(()=>{
-            if(prev)r._dateOverrides[wkKey]=prev;
-            else delete r._dateOverrides[wkKey];
-            save();renderAll();renderWkCal();
-            sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));
-          },'Pinned weekly task to '+ds);
+          _wrecUndos.push(()=>{if(prev)r._dateOverrides[wkKey]=prev;else delete r._dateOverrides[wkKey];sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));});
         }
+        // Multi-select: also move regular tasks + other wrec/wrrule
+        if(_isMultiWrec){
+          [...selectedTasks].forEach(sid=>{
+            if(sid===_wrecSid)return;
+            if(sid.startsWith('wrec-')){
+              const rid=sid.replace('wrec-','');const r2=st.recurring.find(x=>String(x.id)===String(rid));
+              if(r2){if(!r2._dateOverrides)r2._dateOverrides={};const p=r2._dateOverrides[wkKey];r2._dateOverrides[wkKey]=ds;sbReq('PATCH','wr_recurring_rules',{date_overrides:r2._dateOverrides},recQs(r2.id));
+                _wrecUndos.push(()=>{if(p)r2._dateOverrides[wkKey]=p;else delete r2._dateOverrides[wkKey];sbReq('PATCH','wr_recurring_rules',{date_overrides:r2._dateOverrides},recQs(r2.id));});}
+            }else if(sid.startsWith('wrrule-virt-')||sid.startsWith('wrrule-')){
+              const rid=sid.replace('wrrule-virt-','').replace('wrrule-','');const r2=st.wrRules.find(x=>String(x.id)===String(rid));
+              if(r2){if(!r2._dateOverrides)r2._dateOverrides={};const p=r2._dateOverrides[wkKey];r2._dateOverrides[wkKey]=ds;sbReq('PATCH','wr_recurring_rules',{date_overrides:r2._dateOverrides},`?id=eq.${rid}`);
+                _wrecUndos.push(()=>{if(p)r2._dateOverrides[wkKey]=p;else delete r2._dateOverrides[wkKey];sbReq('PATCH','wr_recurring_rules',{date_overrides:r2._dateOverrides},`?id=eq.${rid}`);});}
+            }else{
+              const t=st.tasks.find(x=>String(x.id)===sid);
+              if(t&&!t._virtual){const prev=t.due_date;t.due_date=ds;localOverrides[sid]={due_date:ds};pendingLocal.add(sid);sbReqNullable('PATCH','tasks',{due_date:ds},`?id=eq.${t.id}`);
+                _wrecUndos.push(()=>{t.due_date=prev;localOverrides[sid]={due_date:prev};pendingLocal.add(sid);sbReqNullable('PATCH','tasks',{due_date:prev},`?id=eq.${t.id}`);});}
+            }
+          });
+        }
+        save();dragId=null;renderAll();renderWkCal();if(document.getElementById('tbGrid'))renderDayTB();
+        pushUndo(()=>{_wrecUndos.forEach(fn=>fn());save();renderAll();renderWkCal();if(document.getElementById('tbGrid'))renderDayTB();},'Moved tasks to '+ds);
         dragId=null;return;
       }
       // Pup session chip dragged to a new day — move the session
@@ -925,6 +961,24 @@ function renderWkCal(){
       }
       const _dragSid=String(dragId);
       const _isMulti=selectedTasks.has(_dragSid)&&selectedTasks.size>1;
+      // Also move selected wrec/wrrule items when multi-dragging
+      const _mixedUndos=[];
+      if(_isMulti){
+        const wkKey=getWkKey(wkOff);
+        [...selectedTasks].forEach(sid=>{
+          if(sid.startsWith('wrec-')){
+            const recId=sid.replace('wrec-','');
+            const r=st.recurring.find(x=>String(x.id)===String(recId));
+            if(r){if(!r._dateOverrides)r._dateOverrides={};const prev=r._dateOverrides[wkKey];r._dateOverrides[wkKey]=ds;sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));
+              _mixedUndos.push(()=>{if(prev)r._dateOverrides[wkKey]=prev;else delete r._dateOverrides[wkKey];sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));});}
+          }else if(sid.startsWith('wrrule-virt-')||sid.startsWith('wrrule-')){
+            const ruleId=sid.replace('wrrule-virt-','').replace('wrrule-','');
+            const r=st.wrRules.find(x=>String(x.id)===String(ruleId));
+            if(r){if(!r._dateOverrides)r._dateOverrides={};const prev=r._dateOverrides[wkKey];r._dateOverrides[wkKey]=ds;sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},`?id=eq.${ruleId}`);
+              _mixedUndos.push(()=>{if(prev)r._dateOverrides[wkKey]=prev;else delete r._dateOverrides[wkKey];sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},`?id=eq.${ruleId}`);});}
+          }
+        });
+      }
       const _taskSids=_isMulti?[...selectedTasks].filter(sid=>{const _t=st.tasks.find(x=>String(x.id)===sid);return _t&&!_t._virtual;}):[_dragSid];
       const _moved=_taskSids.map(sid=>({t:st.tasks.find(x=>String(x.id)===sid),prev:null})).filter(x=>x.t);
       if(_moved.length){
@@ -946,6 +1000,7 @@ function renderWkCal(){
         dragId=null;save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
         pushUndo(()=>{
           _moved.forEach(x=>{x.t.due_date=x.prev;localOverrides[String(x.t.id)]={due_date:x.prev};pendingLocal.add(String(x.t.id));const _newBlks=st.blocks.filter(b=>String(b.taskId)===String(x.t.id)&&b.ds===ds);_newBlks.forEach(b=>sbDeleteBlock(b.id));st.blocks=st.blocks.filter(b=>!(String(b.taskId)===String(x.t.id)&&b.ds===ds));x.savedTBs.forEach(b=>{if(!st.blocks.find(y=>y.id===b.id))st.blocks.push(b);sbSaveBlock(b);});sbReqNullable('PATCH','tasks',{due_date:x.prev},`?id=eq.${x.t.id}`).then(()=>{delete localOverrides[String(x.t.id)];pendingLocal.delete(String(x.t.id));});});
+          _mixedUndos.forEach(fn=>fn());
           save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
         },'Moved task'+(_moved.length>1?'s':''));
         await Promise.all(_moved.map(x=>sbReqNullable('PATCH','tasks',{due_date:ds},`?id=eq.${x.t.id}`).then(()=>pendingLocal.delete(String(x.t.id)))));
@@ -2921,10 +2976,9 @@ function _attachTBEdgeRubberBand(){
         document.body.appendChild(selBox);
       }
       if(selBox){
-        const tbCol2=document.querySelector('.tb-col');
-        const cr=tbCol2?tbCol2.getBoundingClientRect():{left:0,width:window.innerWidth};
         const y1=Math.min(startY,ev.clientY),y2=Math.max(startY,ev.clientY);
-        selBox.style.left=cr.left+'px';selBox.style.width=cr.width+'px';
+        const x1=Math.min(e.clientX,ev.clientX),x2=Math.max(e.clientX,ev.clientX);
+        selBox.style.left=x1+'px';selBox.style.width=(x2-x1)+'px';
         selBox.style.top=y1+'px';selBox.style.height=(y2-y1)+'px';
       }
     };
@@ -2934,23 +2988,25 @@ function _attachTBEdgeRubberBand(){
       if(selBox)selBox.remove();
       if(!rbMoved)return;
       const y1=Math.min(startY,ev.clientY),y2=Math.max(startY,ev.clientY);
+      const x1=Math.min(e.clientX,ev.clientX),x2=Math.max(e.clientX,ev.clientX);
       const tbCol=document.querySelector('.tb-col');
       if(!tbCol)return;
       const colRect=tbCol.getBoundingClientRect();
-      // Same coordinate system as internal rubber band: Y relative to col viewport top (no scrollTop needed)
       const selTop=y1-colRect.top,selBot=y2-colRect.top;
       _lastTBRbRange={selTop,selBot};
       if(!ev.shiftKey)selectedTasks.clear();
       tbCol.querySelectorAll('.tb-block[data-bid]').forEach(be=>{
         const bl=st.blocks.find(x=>String(x.id)===String(be.dataset.bid));
         if(!bl)return;
-        const blTop=(bl.sm-HOURS[0]*60)*PX,blBot=blTop+bl.dur*PX;
-        if(blBot>selTop&&blTop<selBot){const sid=_getTBBlockSelId(bl);if(sid){selectedTasks.add(sid);lastSelectedId=sid;}}
+        const br=be.getBoundingClientRect();
+        if(br.bottom>y1&&br.top<y2&&br.right>x1&&br.left<x2){const sid=_getTBBlockSelId(bl);if(sid){selectedTasks.add(sid);lastSelectedId=sid;}}
       });
       // Auto-select auto-blocks in range when no regular blocks were selected
       if(![...selectedTasks].some(id=>!id.startsWith('atb::'))){
-        const minSm=HOURS[0]*60+selTop/PX,maxSm=HOURS[0]*60+selBot/PX;
-        getAutoTBForDate(d2s(getDayDate(dayOff))).filter(a=>a.sm+a.dur>minSm&&a.sm<maxSm).forEach(a=>selectedTasks.add('atb::'+a._atbId));
+        tbCol.querySelectorAll('.atb-block[data-atb-id]').forEach(ae=>{
+          const ar=ae.getBoundingClientRect();
+          if(ar.bottom>y1&&ar.top<y2&&ar.right>x1&&ar.left<x2)selectedTasks.add('atb::'+ae.dataset.atbId);
+        });
       }
       applySelHighlight();
     };
@@ -3164,10 +3220,11 @@ function renderDayTB(){
   // Drag on empty space: DOWN = create new block, UP = select multiple blocks
   col.addEventListener('mousedown',e=>{
     if(e.button!==0||e.target.closest('.tb-block,.atb-block'))return;
+    if(window._tbEditing){const ei=col.querySelector('.tb-edit');if(ei)ei.blur();return;}
     e.preventDefault();
     const colRect=col.getBoundingClientRect();
     const startRelY=Math.max(0,e.clientY-colRect.top);
-    const startClientY=e.clientY;
+    const startClientY=e.clientY,startClientX=e.clientX;
     const snap=y=>Math.round((HOURS[0]*60+y/PX)/15)*15;
     let mode=null; // null until threshold, then 'create' or 'select'
     let preview=null,selBox=null;
@@ -3196,8 +3253,8 @@ function renderDayTB(){
         preview.style.top=snappedTop+'px';preview.style.height=Math.max(15*PX,snappedBot-snappedTop)+'px';
       } else {
         const y1=Math.min(startClientY,curClientY),y2=Math.max(startClientY,curClientY);
-        const cr=col.getBoundingClientRect();
-        selBox.style.left=cr.left+'px';selBox.style.width=cr.width+'px';
+        const x1=Math.min(startClientX,ev.clientX),x2=Math.max(startClientX,ev.clientX);
+        selBox.style.left=x1+'px';selBox.style.width=(x2-x1)+'px';
         selBox.style.top=y1+'px';selBox.style.height=(y2-y1)+'px';
       }
     };
@@ -3221,8 +3278,9 @@ function renderDayTB(){
           pushUndo(()=>{st.blocks=st.blocks.filter(b=>b.id!==blk.id);save();renderDayTB();},'Added block');
         });
       } else {
-        // Select blocks in range
+        // Select blocks in range (check both X and Y overlap with actual element bounds)
         const y1=Math.min(startClientY,ev.clientY),y2=Math.max(startClientY,ev.clientY);
+        const x1=Math.min(startClientX,ev.clientX),x2=Math.max(startClientX,ev.clientX);
         const colRect2=col.getBoundingClientRect();
         const selTop=y1-colRect2.top,selBot=y2-colRect2.top;
         _lastTBRbRange={selTop,selBot};
@@ -3230,13 +3288,18 @@ function renderDayTB(){
         col.querySelectorAll('.tb-block[data-bid]').forEach(be=>{
           const bl=st.blocks.find(x=>String(x.id)===String(be.dataset.bid));
           if(!bl)return;
-          const blTop=(bl.sm-HOURS[0]*60)*PX,blBot=blTop+bl.dur*PX;
-          if(blBot>selTop&&blTop<selBot){const sid=_getTBBlockSelId(bl);if(sid){selectedTasks.add(sid);lastSelectedId=sid;}}
+          const br=be.getBoundingClientRect();
+          if(br.bottom>y1&&br.top<y2&&br.right>x1&&br.left<x2){const sid=_getTBBlockSelId(bl);if(sid){selectedTasks.add(sid);lastSelectedId=sid;}}
         });
         // Also select auto-blocks in range
-        const minSm=HOURS[0]*60+selTop/PX,maxSm=HOURS[0]*60+selBot/PX;
-        getAutoTBForDate(ds).filter(a=>a.sm+a.dur>minSm&&a.sm<maxSm).forEach(a=>selectedTasks.add('atb::'+a._atbId));
-        getRecAutoTBForDate(ds).filter(a=>a.sm+a.dur>minSm&&a.sm<maxSm).forEach(a=>selectedTasks.add('rec-virt-'+a._recId));
+        col.querySelectorAll('.atb-block[data-atb-id]').forEach(ae=>{
+          const ar=ae.getBoundingClientRect();
+          if(ar.bottom>y1&&ar.top<y2&&ar.right>x1&&ar.left<x2)selectedTasks.add('atb::'+ae.dataset.atbId);
+        });
+        col.querySelectorAll('.ratb-block[data-rec-id]').forEach(re=>{
+          const rr=re.getBoundingClientRect();
+          if(rr.bottom>y1&&rr.top<y2&&rr.right>x1&&rr.left<x2)selectedTasks.add('rec-virt-'+re.dataset.recId);
+        });
         applySelHighlight();
       }
     };
@@ -3246,7 +3309,7 @@ function renderDayTB(){
   grid.appendChild(col);renderTBSum(ds);requestAnimationFrame(applySelHighlight);
   // Default scroll to current time minus 1 hour; reset when day changes but preserve position mid-session
   const tbSc2=document.getElementById('tbScroll');
-  if(tbSc2&&tbSc2._scrollDay!==ds){tbSc2._scrollDay=ds;tbSc2.scrollTop=Math.round((6.5-HOURS[0])*60*PX);}
+  if(tbSc2&&tbSc2._scrollDay!==ds){const _scrollVal=Math.round((6.5-HOURS[0])*60*PX);tbSc2.scrollTop=_scrollVal;if(tbSc2.scrollTop===_scrollVal){tbSc2._scrollDay=ds;}else{tbSc2._scrollDay=null;}}
 }
 function getVisibleBlocks(ds){
   const isViewingToday=(ds===d2s(getDayDate(0)));
@@ -3667,7 +3730,7 @@ function drawAutoTBBlock(col,atb,ds){
           if(curOv2){curOv2.start_time=ns2;curOv2.end_time=ne2;sbReqSilent('PATCH','auto_timeblock_overrides',{start_time:ns2,end_time:ne2},`?id=eq.${curOv2.id}`);}
           else{const pl={base_id:aa._atbId,date:ds,start_time:ns2,end_time:ne2};const tid='atbov-tmp-'+Date.now();st.autoTBOverrides.push({...pl,id:tid});sbReqSilent('POST','auto_timeblock_overrides',pl,'').then(res=>{if(res&&res[0]){const i=st.autoTBOverrides.findIndex(o=>String(o.id)===tid);if(i>-1){st.autoTBOverrides[i]=res[0];aa._ovId=String(res[0].id);}}save();});}
         });
-        save();
+        save();if(document.getElementById('tbGrid'))renderDayTB();
       }
     };
     document.addEventListener('mousemove',atbOnMove);

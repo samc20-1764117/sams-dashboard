@@ -2180,7 +2180,7 @@ function showPage(id){
   const pageEl=document.getElementById('page-'+id);if(pageEl)pageEl.classList.add('active');
   const idx=PAGES.indexOf(id);if(idx>-1&&document.querySelectorAll('.nav-item')[idx])document.querySelectorAll('.nav-item')[idx].classList.add('active');
   const mainEl=document.getElementById('main');if(mainEl){mainEl.scrollTop=0;}
-  if(id==='weekly'){renderWeeklyPage();}if(id==='travel')renderTravelPage();if(id==='birthdays')renderBdayPage();if(id==='pups')renderPupsPage();if(id==='recipes')renderRecipesPage();if(id==='videos')renderVideosPage();if(id==='overview'){renderShopOv();renderRecOv();}else{const _tbSc=document.getElementById('tbScroll');if(_tbSc)_tbSc._scrollDay=null;}
+  if(id==='weekly'){renderWeeklyPage();}if(id==='travel')renderTravelPage();if(id==='birthdays')renderBdayPage();if(id==='pups')renderPupsPage();if(id==='recipes')renderRecipesPage();if(id==='videos')renderVideosPage();if(id==='overview'){renderShopOv();renderRecOv();if(document.getElementById('tbGrid'))renderDayTB();}else{const _tbSc=document.getElementById('tbScroll');if(_tbSc)_tbSc._scrollDay=null;}
   const backBtn=document.getElementById('backToOv');if(backBtn)backBtn.style.display=id==='overview'?'none':'flex';
   renderUnassigned();
   history.replaceState(null,'','#'+id);
@@ -2397,7 +2397,7 @@ document.addEventListener('keydown',async e=>{
   // t key: jump to today on overview
   if(e.key==='t'&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&activePg==='overview'&&!document.querySelector('.overlay.open')){goToday();return;}
   // Arrow left/right: shift day on overview when nothing selected
-  if((e.key==='ArrowLeft'||e.key==='ArrowRight')&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&activePg==='overview'&&!document.querySelector('.overlay.open')){
+  if((e.key==='ArrowLeft'||e.key==='ArrowRight')&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&activePg==='overview'&&!document.querySelector('.overlay.open')&&!_qnOpen){
     if(!selectedTasks.size){e.preventDefault();shiftDay(e.key==='ArrowLeft'?-1:1);return;}
     // Move selected tasks ±1 day on weekly cal
     if(!document.querySelector('.tb-col')||document.querySelector('.tb-col')){
@@ -3192,44 +3192,207 @@ function copyShopList(){
   });
 }
 
-// ── Quick Notes ──
-const _QN_KEY='samdash_qn';
-let _qnOpen=false,_qnNotes=[];
-function _qnLoad(){try{return JSON.parse(localStorage.getItem(_QN_KEY)||'[]');}catch(e){return[];}}
-function _qnSave(){try{localStorage.setItem(_QN_KEY,JSON.stringify(_qnNotes));}catch(e){}}
+// ── Quick Notes (Supabase-backed) ──
+let _qnOpen=false,_qnNotes=[],_qnLoaded=false,_qnSel=new Set(),_qnLastSel=null;
+async function _qnFetch(){
+  if(_qnLoaded)return;
+  const rows=await sbReqSilent('GET','quick_notes',null,'?is_visible=is.true&order=sort_order.asc.nullslast,created_at.asc');
+  if(rows&&Array.isArray(rows)){_qnNotes=rows;_qnLoaded=true;}
+}
 function toggleQN(){
   _qnOpen=!_qnOpen;
   document.getElementById('qnPanel').classList.toggle('open',_qnOpen);
-  if(_qnOpen){_qnNotes=_qnLoad();renderQN();requestAnimationFrame(()=>{const inp=document.getElementById('qnInput');if(inp)inp.focus();});}
+  if(_qnOpen){_qnHistOpen=false;const hl=document.getElementById('qnHistList');if(hl)hl.style.display='none';const ql=document.getElementById('qnList');if(ql)ql.style.display='';const hb=document.querySelector('.qn-hist-btn');if(hb)hb.classList.remove('active');_qnFetch().then(()=>{renderQN();});requestAnimationFrame(()=>{const inp=document.getElementById('qnInput');if(inp)inp.focus();});}
 }
 function renderQN(){
   const el=document.getElementById('qnList');
   if(!el)return;
   if(!_qnNotes.length){el.innerHTML='<div class="qn-empty">No notes yet</div>';return;}
-  el.innerHTML=_qnNotes.map(n=>`
-    <div class="qn-item">
+  el.innerHTML=_qnNotes.map((n,i)=>`
+    <div class="qn-item${_qnSel.has(String(n.id))?' qn-selected':''}" data-qnid="${n.id}" data-qnidx="${i}" onmousedown="_qnDragStart(event,${i})" onclick="_qnSelect(event,'${n.id}')">
       <div class="qn-bullet"></div>
-      <span class="qn-text">${escHtml(n.note_text)}</span>
+      <span class="qn-text" ondblclick="editQN(this,'${n.id}')">${escHtml(n.note_text)}</span>
       <button class="qn-del" onclick="event.stopPropagation();deleteQN('${n.id}')" title="Remove">✕</button>
     </div>`).join('');
 }
 function escHtml(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
-function addQN(){
+async function addQN(){
   const inp=document.getElementById('qnInput');
   const txt=(inp?.value||'').trim();
-  if(!txt){_qnOpen=false;document.getElementById('qnPanel').classList.remove('open');return;}
+  if(!txt)return;
   inp.value='';inp.focus();
-  _qnNotes.push({id:Date.now().toString(),note_text:txt});
-  _qnSave();renderQN();
+  const maxSort=_qnNotes.reduce((m,n)=>Math.max(m,n.sort_order||0),0);
+  const tmp={id:'qn-'+Date.now(),note_text:txt,is_visible:true,sort_order:maxSort+1};
+  _qnNotes.push(tmp);renderQN();
   const list=document.getElementById('qnList');if(list)list.scrollTop=9999;
+  const sv=await sbReqSilent('POST','quick_notes',{note_text:txt,sort_order:maxSort+1});
+  if(sv&&sv[0]){const ix=_qnNotes.findIndex(n=>n.id===tmp.id);if(ix>-1)_qnNotes[ix]=sv[0];
+    const realId=sv[0].id;
+    pushUndo(()=>{_qnNotes=_qnNotes.filter(n=>String(n.id)!==String(realId));renderQN();sbReqSilent('PATCH','quick_notes',{is_visible:false},`?id=eq.${realId}`);},'Add note');
+  }
 }
-function deleteQN(id){
-  _qnNotes=_qnNotes.filter(n=>n.id!==String(id));
-  _qnSave();renderQN();
+function editQN(span,id){
+  const orig=span.textContent;
+  span.style.display='block';span.contentEditable='true';span.focus();
+  const sel=window.getSelection();sel.selectAllChildren(span);sel.collapseToEnd();
+  const done=()=>{
+    span.contentEditable='false';span.style.display='';
+    const txt=span.textContent.trim();
+    if(!txt||txt===orig){span.textContent=orig;return;}
+    const n=_qnNotes.find(n=>String(n.id)===String(id));
+    if(n)n.note_text=txt;
+    if(!String(id).startsWith('qn-')){sbReqSilent('PATCH','quick_notes',{note_text:txt},`?id=eq.${id}`);
+      pushUndo(()=>{const n2=_qnNotes.find(x=>String(x.id)===String(id));if(n2)n2.note_text=orig;renderQN();sbReqSilent('PATCH','quick_notes',{note_text:orig},`?id=eq.${id}`);},'Edit note');
+    }
+  };
+  span.onblur=done;
+  span.onkeydown=e=>{e.stopPropagation();if(e.key==='Enter'){e.preventDefault();span.blur();}if(e.key==='Escape'){span.textContent=orig;span.blur();}};
 }
-// Close panel on outside click
+function _qnSelect(e,id){
+  if(e.target.closest('.qn-del,.qn-text[contenteditable="true"]'))return;
+  const inp=document.getElementById('qnInput');if(inp&&document.activeElement===inp)inp.blur();
+  const sid=String(id);
+  if(e.metaKey||e.ctrlKey){
+    if(_qnSel.has(sid))_qnSel.delete(sid);else _qnSel.add(sid);
+    _qnLastSel=sid;
+  }else if(e.shiftKey&&_qnLastSel){
+    const ids=_qnNotes.map(n=>String(n.id));
+    const a=ids.indexOf(_qnLastSel),b=ids.indexOf(sid);
+    if(a>-1&&b>-1){const lo=Math.min(a,b),hi=Math.max(a,b);ids.slice(lo,hi+1).forEach(x=>_qnSel.add(x));}
+  }else{
+    _qnSel.clear();_qnSel.add(sid);_qnLastSel=sid;
+  }
+  _qnApplySelHighlight();
+}
+function _qnApplySelHighlight(){
+  document.querySelectorAll('.qn-item').forEach(el=>{
+    el.classList.toggle('qn-selected',_qnSel.has(el.dataset.qnid));
+  });
+}
+function _qnDeleteSelected(){
+  if(!_qnSel.size)return;
+  const removed=[];
+  _qnSel.forEach(sid=>{
+    const idx=_qnNotes.findIndex(n=>String(n.id)===sid);
+    if(idx>-1){removed.push({note:_qnNotes[idx],idx});_qnNotes.splice(idx,1);}
+    if(!sid.startsWith('qn-'))sbReqSilent('PATCH','quick_notes',{is_visible:false,hidden_at:new Date().toISOString()},`?id=eq.${sid}`);
+  });
+  _qnSel.clear();_qnLastSel=null;renderQN();
+  if(removed.length)pushUndo(()=>{removed.sort((a,b)=>a.idx-b.idx).forEach(({note,idx})=>{_qnNotes.splice(idx,0,note);if(!String(note.id).startsWith('qn-'))sbReqSilent('PATCH','quick_notes',{is_visible:true,hidden_at:null},`?id=eq.${note.id}`);});renderQN();},'Delete notes');
+}
+function _qnDragStart(e,idx){
+  if(e.target.closest('.qn-del,.qn-text[contenteditable="true"]'))return;
+  e.preventDefault();
+  const list=document.getElementById('qnList');
+  const items=[...list.querySelectorAll('.qn-item')];
+  const dragged=items[idx];
+  let moved=false,dropIdx=idx;
+  const startY=e.clientY;
+  const onMove=ev=>{
+    if(!moved&&Math.abs(ev.clientY-startY)<4)return;
+    if(!moved){moved=true;dragged.classList.add('qn-dragging');}
+    let ph=list.querySelector('.qn-drop-line');
+    if(!ph){ph=document.createElement('div');ph.className='qn-drop-line';list.appendChild(ph);}
+    const rows=[...list.querySelectorAll('.qn-item')];
+    let inserted=false;dropIdx=rows.length;
+    for(let i=0;i<rows.length;i++){
+      const rc=rows[i].getBoundingClientRect();
+      if(ev.clientY<rc.top+rc.height/2){list.insertBefore(ph,rows[i]);dropIdx=i;inserted=true;break;}
+    }
+    if(!inserted&&rows.length)rows[rows.length-1].after(ph);
+  };
+  const onUp=()=>{
+    document.removeEventListener('mousemove',onMove);
+    document.removeEventListener('mouseup',onUp);
+    dragged.classList.remove('qn-dragging');
+    const ph=list.querySelector('.qn-drop-line');if(ph)ph.remove();
+    if(!moved||dropIdx===idx)return;
+    const prevOrder=_qnNotes.map(n=>({id:n.id,sort_order:n.sort_order}));
+    const note=_qnNotes.splice(idx,1)[0];
+    const ins=dropIdx>idx?dropIdx-1:dropIdx;
+    _qnNotes.splice(ins,0,note);
+    _qnNotes.forEach((n,i)=>{n.sort_order=i;});
+    renderQN();
+    _qnNotes.forEach(n=>{if(!String(n.id).startsWith('qn-'))sbReqSilent('PATCH','quick_notes',{sort_order:n.sort_order},`?id=eq.${n.id}`);});
+    pushUndo(()=>{prevOrder.forEach(p=>{const n=_qnNotes.find(x=>String(x.id)===String(p.id));if(n)n.sort_order=p.sort_order;});_qnNotes.sort((a,b)=>(a.sort_order??0)-(b.sort_order??0));renderQN();_qnNotes.forEach(n=>{if(!String(n.id).startsWith('qn-'))sbReqSilent('PATCH','quick_notes',{sort_order:n.sort_order},`?id=eq.${n.id}`);});},'Reorder note');
+  };
+  document.addEventListener('mousemove',onMove);
+  document.addEventListener('mouseup',onUp);
+}
+async function deleteQN(id){
+  const removed=_qnNotes.find(n=>String(n.id)===String(id));
+  const removedIdx=_qnNotes.indexOf(removed);
+  _qnNotes=_qnNotes.filter(n=>String(n.id)!==String(id));
+  renderQN();
+  if(!String(id).startsWith('qn-')){
+    await sbReqSilent('PATCH','quick_notes',{is_visible:false,hidden_at:new Date().toISOString()},`?id=eq.${id}`);
+    if(removed)pushUndo(()=>{_qnNotes.splice(removedIdx,0,removed);renderQN();sbReqSilent('PATCH','quick_notes',{is_visible:true,hidden_at:null},`?id=eq.${id}`);},'Delete note');
+  }
+}
+let _qnHistOpen=false;
+async function toggleQNHist(){
+  _qnHistOpen=!_qnHistOpen;
+  const list=document.getElementById('qnList');
+  const hist=document.getElementById('qnHistList');
+  const btn=document.querySelector('.qn-hist-btn');
+  if(btn)btn.classList.toggle('active',_qnHistOpen);
+  if(_qnHistOpen){
+    list.style.display='none';hist.style.display='';
+    const rows=await sbReqSilent('GET','quick_notes',null,'?is_visible=is.false&order=hidden_at.desc.nullslast&limit=50');
+    if(!rows||!rows.length){hist.innerHTML='<div class="qn-empty">No history</div>';return;}
+    hist.innerHTML=rows.map(n=>`
+      <div class="qn-hist-item" onclick="restoreQN(${n.id})">
+        <div class="qn-bullet"></div>
+        <span class="qn-hist-text">${escHtml(n.note_text)}</span>
+        <button class="qn-hist-restore" title="Restore">+ Add</button>
+      </div>`).join('');
+  }else{
+    list.style.display='';hist.style.display='none';
+  }
+}
+async function restoreQN(id){
+  await sbReqSilent('PATCH','quick_notes',{is_visible:true,hidden_at:null},`?id=eq.${id}`);
+  const rows=await sbReqSilent('GET','quick_notes',null,'?id=eq.'+id);
+  if(rows&&rows[0]){
+    const restored=rows[0];
+    _qnNotes.push(restored);_qnNotes.sort((a,b)=>(a.sort_order??0)-(b.sort_order??0));renderQN();
+    pushUndo(()=>{
+      _qnNotes=_qnNotes.filter(n=>String(n.id)!==String(id));renderQN();
+      sbReqSilent('PATCH','quick_notes',{is_visible:false,hidden_at:new Date().toISOString()},`?id=eq.${id}`);
+      if(_qnHistOpen)toggleQNHist().then(()=>toggleQNHist());
+    },'Restore note');
+  }
+  // Remove from history list
+  const el=document.querySelector(`.qn-hist-item[onclick="restoreQN(${id})"]`);
+  if(el)el.remove();
+  if(!document.querySelectorAll('.qn-hist-item').length){
+    const hist=document.getElementById('qnHistList');if(hist)hist.innerHTML='<div class="qn-empty">No history</div>';
+  }
+  showToast('Note restored','var(--accent)',1500);
+}
+// Close panel on outside click; clear selection on click outside notes
 document.addEventListener('click',function(e){
-  if(_qnOpen&&!e.target.closest('#qnPanel')&&!e.target.closest('#qnBtn')){_qnOpen=false;document.getElementById('qnPanel').classList.remove('open');}
+  if(_qnOpen&&!e.target.closest('#qnPanel')&&!e.target.closest('#qnBtn')){_qnOpen=false;_qnSel.clear();document.getElementById('qnPanel').classList.remove('open');}
+  if(_qnOpen&&_qnSel.size&&e.target.closest('#qnPanel')&&!e.target.closest('.qn-item')){_qnSel.clear();_qnApplySelHighlight();}
+});
+// Quick notes keyboard handlers
+document.addEventListener('keydown',function(e){
+  if(!_qnOpen)return;
+  if(e.target.closest('.qn-text[contenteditable="true"]'))return;
+  // Delete/Backspace: archive selected notes
+  if((e.key==='Delete'||e.key==='Backspace')&&_qnSel.size&&document.activeElement?.id!=='qnInput'){e.preventDefault();_qnDeleteSelected();return;}
+  // Cmd+C: copy selected notes
+  if((e.metaKey||e.ctrlKey)&&e.key==='c'&&_qnSel.size){
+    const txt=[..._qnSel].map(id=>{const n=_qnNotes.find(x=>String(x.id)===id);return n?n.note_text:'';}).filter(Boolean).join('\n');
+    if(txt)navigator.clipboard.writeText(txt);return;
+  }
+  // Cmd+A: select all notes
+  if((e.metaKey||e.ctrlKey)&&e.key==='a'&&document.activeElement?.id!=='qnInput'){e.preventDefault();_qnSel.clear();_qnNotes.forEach(n=>_qnSel.add(String(n.id)));_qnApplySelHighlight();return;}
+  // Enter: close when input empty and not focused on input
+  if(e.key==='Enter'){
+    if(document.activeElement&&document.activeElement.id==='qnInput')return;
+    e.preventDefault();_qnOpen=false;document.getElementById('qnPanel').classList.remove('open');
+  }
 });
 
 

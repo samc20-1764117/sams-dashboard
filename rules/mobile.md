@@ -12,7 +12,7 @@
 ### File roles
 | File | Purpose |
 |------|---------|
-| `mobile.html` | Shell: login, app wrapper, all three tab pages, all bottom sheets, hidden undo scaffold |
+| `mobile.html` | Shell: login, app wrapper, all four tab pages, all bottom sheets, hidden undo scaffold |
 | `mobile.css` | All mobile styles. CSS vars match desktop (`--accent:#7c6af7`, `--bg`, `--glass`, etc.) |
 | `mobile-overview.js` | All mobile logic. Loaded after `core.js` + `features.js`. Sets `window._mobileMode = true` |
 | `mobile-manifest.json` | PWA manifest with `start_url: /mobile.html` (separate from desktop `manifest.json`) |
@@ -27,8 +27,10 @@ supabase CDN → core.js → features.js → mobile-overview.js
 ### Desktop stubs (top of mobile-overview.js)
 All desktop render functions are no-ops or redirect to mobile equivalents:
 ```js
-function renderAll()   { mRenderToday(); if (_mCurTab==='tb') mRenderTB(); if (_mCurTab==='week') mRenderWeek(); }
+function renderAll()   { mRenderToday(); if (_mCurTab==='tb') mRenderTB(); if (_mCurTab==='week') mRenderWeek(); if (_mCurTab==='shop') mRenderShop(); }
 function renderToday() { mRenderToday(); }
+function renderShopOv(){ if (_mCurTab==='shop') mRenderShop(); }
+function renderShopFull(){ if (_mCurTab==='shop') mRenderShop(); }
 function renderWkCal() {}   // no-op
 function renderDayTB() {}   // no-op
 // ... all other desktop render fns are no-ops
@@ -135,19 +137,20 @@ let _mFullAddCat  = 'Home';  // full add sheet (today)
 
 ### State
 ```js
-let _mCurTab = 'tb'; // 'today' | 'tb' | 'week'  (default: tb)
+let _mCurTab = 'tb'; // 'today' | 'tb' | 'week' | 'shop'  (default: tb)
 ```
 
 ### `mShowTab(tab)`
-- Shows/hides `#mTodayPage`, `#mTBPage`, `#mWeekPage`
-- Hides `#mAddBar` on non-today tabs
+- Shows/hides `#mTodayPage`, `#mTBPage`, `#mWeekPage`, `#mShopPage`
+- Shows `#mAddBar` on today only, `#mShopAddBar` on shop only
 - Sets `#mApp` padding-bottom:
-  - today: `calc(162px + env(safe-area-inset-bottom))` (nav 52 + add bar ~110)
+  - today/shop: `calc(162px + env(safe-area-inset-bottom))` (nav 52 + add bar ~110)
   - tb/week: `calc(52px + env(safe-area-inset-bottom))` (nav only)
 - Updates `#mHeaderTitle`, hides `#mProgress` on non-today tabs
-- Sets `#mMain` padding: `12px 16px` on today, `0` on others
+- Sets `#mMain` padding: `12px 16px` on today/shop, `0` on others
 - On tb: resets `_mTBOffset=0`, calls `mRenderTB()`, `_mScrollNow()`
 - On week: resets `_mWeekOffset=0`, calls `mRenderWeek()`
+- On shop: calls `mRenderShop()`
 
 ### Bottom nav
 ```html
@@ -155,6 +158,7 @@ let _mCurTab = 'tb'; // 'today' | 'tb' | 'week'  (default: tb)
   <button class="m-nav-btn" onclick="mShowTab('today')">Today</button>
   <button class="m-nav-btn active" onclick="mShowTab('tb')">Timeblock</button>
   <button class="m-nav-btn" onclick="mShowTab('week')">Week</button>
+  <button class="m-nav-btn" onclick="mShowTab('shop')">Shop</button>
 </nav>
 ```
 Fixed at bottom, `height: calc(52px + env(safe-area-inset-bottom))`.
@@ -240,9 +244,10 @@ let _mTBOffset   = 0;        // day offset (0=today, ±N days)
 ### Timeline rendering (`mRenderTimeline()`)
 - Hour lines: absolutely positioned in `#mTLLabels` (and extend across `#mTLCol`)
 - Regular blocks: absolutely positioned in `#mTLCol` by `top = (sm - M_TB_START) * M_PX`
-- Done blocks: `opacity:.45`, name gets `text-decoration:line-through`
-- Auto blocks: rendered when `cfg.showAutoTB` + weekday; dashed purple border, from `st.autoTimeblocks` with `st.autoTBOverrides`
-- Recurring auto blocks: recurring tasks with `default_start_time` not manually placed; dashed purple, lighter than auto blocks
+- Done blocks: `.m-done-block` — `opacity:.45`, name gets `text-decoration:line-through`
+- Checkbox: `.m-tb-chk` on each regular block — circular, green when checked (matches desktop `tb-chk`). Derives done state from linked task/rec/shop. Toggle logic mirrors desktop (`toggleTask`, `togWrRule`, `togRec`, `togRecVirt`, `togShop`)
+- Auto blocks: rendered when `cfg.showAutoTB` + weekday; grey background (`rgba(245,244,250,.28)`), grey text (`#b0aec0`) — matches desktop `atb-block`. From `st.autoTimeblocks` with `st.autoTBOverrides`
+- Recurring auto blocks: recurring tasks with `default_start_time` not manually placed; teal background (`rgba(221,244,240,.45)`), teal text (`#0f6b7a`) — matches desktop `rec-atb-block`
 - Block height: `Math.max(dur * M_PX, 28)`
 - Time format: `_mTStr()` outputs `h:mmam/pm` (matches desktop `tStr()`)
 - Now line: `.m-tl-now` with `::before` dot, only rendered when `_mTBOffset === 0`
@@ -325,6 +330,42 @@ Each `.m-wk-day` has `data-ds="YYYY-MM-DD"` and contains:
 - `mWkAddTask(ds)` → opens `#mWkAddSheet` with title "Add — Day, Mon D"
 - `mSaveWkTask()` → `sbReq POST tasks` with `due_date: _mWkAddDs`
 - Uses `_mWkAddCat` / `'wkadd'` picker type
+
+---
+
+## Tab 4: Shopping
+
+### Layout
+```
+#mShopPage
+  .m-shop-header    ← count label ("Shopping (X left)" / "Shopping ✓ All done!")
+  #mShopList        ← store groups with items
+```
+
+### Key functions
+- `mRenderShop()` — groups undone `st.shopping` items by store (alpha sorted), items within store sorted by `shop_order`
+- `mAddShopItem()` — adds item with name + store from `#mShopAddBar` → `sbReq POST shopping_list`
+- `mOpenShopEdit(id)` / `mSaveShopEdit()` / `mDeleteShopItem()` / `mCloseShopEdit()` — edit sheet with name, store, due_date, time
+- `mDeleteShopDirect(id)` — X button inline delete
+
+### Shop add bar (`#mShopAddBar`)
+- Fixed above nav (same position as `#mAddBar`), visible only on shop tab
+- Name input + store `<select>` (HEB/Ikea/Online/Other) + Add button
+
+### Shop edit sheet (`#mShopEditSheet`)
+- Bottom slide-up sheet (same pattern as `#mEditSheet`)
+- Fields: name, store (select), due_date (date), time (time input)
+- Tap any item row to open edit
+- `mSaveShopEdit()` → `sbReq PATCH shopping_list` (name, store, due_date, default_start_time)
+
+### Touch drag reorder
+- `_mShopTouchDrag(row, store)` — drag reorder within a store group
+- Updates `shop_order` for all items in group → `sbReqSilent PATCH shopping_list`
+- 12px threshold; cancelled if scroll detected
+
+### Desktop stubs wired up
+- `renderShopOv()` / `renderShopFull()` → call `mRenderShop()` when on shop tab
+- `tiDblShop(e, id)` → `mOpenShopEdit(id)` (works from Today/Week tabs too)
 
 ---
 
