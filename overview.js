@@ -874,6 +874,7 @@ function renderWkCal(){
         const wkKey=getWkKey(wkOff);
         const _wrecSid='wrec-'+recId;
         const _isMultiWrec=selectedTasks.has(_wrecSid)&&selectedTasks.size>1;
+        console.log('wrec drop debug',{_wrecSid,_isMultiWrec,selectedTasks:[...selectedTasks],size:selectedTasks.size});
         const _wrecUndos=[];
         if(r){
           if(!r._dateOverrides)r._dateOverrides={};
