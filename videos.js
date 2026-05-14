@@ -304,8 +304,8 @@ function renderVideosPage(){
             <span style="font-weight:600;color:#555">${_ytNum(_ytData.channelStats.subscribers)}</span>
           </div>
           <div style="background:rgba(120,113,145,.06);border-radius:20px;padding:4px 10px 4px 8px;display:flex;align-items:center;gap:4px;font-size:12px">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-            <span style="font-weight:600;color:#555">${_ytNum(_ytData.channelStats.totalViews)}</span>
+            <span style="font-weight:700;color:#999;font-size:13px">$</span>
+            <span style="font-weight:600;color:#555">~${_ytNum(Math.round(_ytData.channelStats.totalViews/1000*4))}</span>
           </div>
           <div style="width:1px;height:16px;background:rgba(210,205,228,.4);margin:0 2px"></div>
           `:''}
@@ -322,8 +322,8 @@ function renderVideosPage(){
             <span style="font-weight:600;color:#10b981">${stats.published}</span>
           </div>
         </div>
-        <button onclick="openVidModal()" style="background:transparent;border:1.5px solid rgba(255,255,255,.45);border-radius:20px;padding:4px 8px;display:flex;align-items:center;cursor:pointer;margin-right:90px" title="Add video">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        <button onclick="openVidModal()" style="background:rgba(255,255,255,.85);border:1px solid var(--border);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.08)" title="Add video">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         </button>
       </div>
     </div>
