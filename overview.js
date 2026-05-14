@@ -2044,7 +2044,7 @@ function renderRecOv(){
     wrap.className='chk-wrap';
     wrap.style.cssText='cursor:pointer;flex-shrink:0';
     wrap.title='Toggle';
-    wrap.innerHTML=`<svg viewBox="0 0 100 100" width="10" height="10" xmlns="http://www.w3.org/2000/svg" style="display:block"><ellipse cx="22" cy="18" rx="10" ry="12" fill="${col}" stroke="${str}" stroke-width="8"/><ellipse cx="46" cy="11" rx="10" ry="12" fill="${col}" stroke="${str}" stroke-width="8"/><ellipse cx="70" cy="14" rx="10" ry="12" fill="${col}" stroke="${str}" stroke-width="8"/><ellipse cx="85" cy="36" rx="9" ry="11" fill="${col}" stroke="${str}" stroke-width="8"/><path d="M18 58 Q14 42 28 36 Q46 28 68 34 Q82 40 82 56 Q80 76 50 82 Q20 76 18 58Z" fill="${col}" stroke="${str}" stroke-width="8"/></svg>`;
+    wrap.innerHTML=`<svg viewBox="0 0 24 24" width="11" height="11" xmlns="http://www.w3.org/2000/svg" style="display:block" fill="none" stroke="${str}" stroke-width="2"><rect x="8" y="10" width="8" height="4" rx="1"/><circle cx="7" cy="9" r="2.5" fill="${col}"/><circle cx="7" cy="15" r="2.5" fill="${col}"/><circle cx="17" cy="9" r="2.5" fill="${col}"/><circle cx="17" cy="15" r="2.5" fill="${col}"/></svg>`;
     wrap.addEventListener('click',e=>{e.stopPropagation();togWrRule(ruleId,!isDone,wkKey);});
     wrap.addEventListener('mousedown',e=>e.stopPropagation());
     return wrap;
