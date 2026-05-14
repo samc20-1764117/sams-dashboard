@@ -1762,6 +1762,8 @@ function _vidPickDropdown(type,val){
     document.getElementById('vm'+type).value=val;
   }
   document.getElementById('vm'+type+'Drop').style.display='none';
+  var inp=document.getElementById(type==='Status'?'vmStatusDisplay':'vm'+type);
+  if(inp)inp.focus();
 }
 function _vidSetStatusDisplay(val){
   const opt=_VID_STATUS_OPTIONS.find(o=>o.value===val);
