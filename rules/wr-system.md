@@ -62,6 +62,12 @@
 
 **WR rule drag-to-day**: must PATCH `wr_recurring_rules` with updated `date_overrides` after `_dateOverrides` change. Undo must also PATCH to restore.
 
+**WR cross-week move**: when moving WR task to different week (calendar drop, edge drop), must delete `_dateOverrides[currentWkKey]` AND set `_dateOverrides[newWkKey]=ds`. Use `dsToWkKey(ds)` for target week, `getWkKey(wkOff)` for current. Undo restores both keys.
+
+**Pup-related checkbox**: `makePawEl` renders bone SVG icon (14×14px, `margin-left:-2px`) instead of regular checkbox. Fill/stroke colors change on done state.
+
+**Unassigned indicator**: WR rules not yet assigned to a day (`!_dateOverrides[wkKey]`) show `›` via `.wr-unassigned` class, matching today list's `tb-arrow` style.
+
 **`getVisibleBlocks(ds)`**: WR rule block visible only if `r._dateOverrides[dsToWkKey(ds)]===ds`.
 
 **Undo for task-move-to-day**: snapshot `savedTBs` BEFORE `removeTBBlocksForDate`. Undo restores blocks in state + DB.

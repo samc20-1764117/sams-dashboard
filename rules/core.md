@@ -44,7 +44,10 @@ Supabase Auth (email+password), RLS on all tables. `init()`→`checkAuth()`→`d
 - **Undo/redo**: `pushUndo` on every mutating op (create, edit, delete, move, toggle); undo fn patches DB; `doRedo` undo entry also patches DB via `_syncRedoDiff(snap, beforeRedo)`
 - **Today list**: render row, sort priority, overdue logic, drag ID prefix, drag-to-timeblock, `_hasTBToday` check
 - **Weekly cal**: chip render (color, text, dragstart ID), chip click→`selTask`, dblclick→edit modal, X→remove, checkbox→toggle, dragover drop handler
-- **Timeblock**: `dropOnTB` handler for dragId prefix, `drawTBBlock` color/done derivation, dblclick→edit, `delBlock` removes linked item, checkbox syncs linked item
+- **Timeblock**: `dropOnTB` handler for dragId prefix, `drawTBBlock` color/done derivation, dblclick→edit, `delBlock` removes block only (never deletes underlying task), checkbox syncs linked item
+- **Multi-select → timeblock**: cmd/shift select tasks+WR items, drag to timeblock — all create consecutive blocks. `dropOnTB` `else` branch handles wrec/wrrule/rec-virt/task sids. Single undo reverts all.
+- **TB block selection**: `_getTBBlockSelId` returns `'blk-'+bl.id` for task-backed and shop blocks. Delete/Backspace on selected TB blocks only removes blocks. `applySelHighlight` cross-highlights via `selTaskIds` set.
+- **WR move across weeks**: calendar/edge drop handlers delete `_dateOverrides[currentWkKey]` when moving to different week, preventing ghost appearances in VOP.
 - **Selection**: `applySelHighlight` — `.ti` id match, `.chip`/`.mcell-t` dataset.tid, `.tb-block` bid→selId, `csForId` color, `applySelVars` CSS vars
 - **Monthly cal**: chip render, drag drop, unassigned panel
 - **Database**: POST all required fields, PATCH on edit/toggle, DELETE on remove; `sbSaveBlock` category field for TB link type detection

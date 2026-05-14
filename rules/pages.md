@@ -72,6 +72,11 @@ Table: `birthdays(id,name,birthday,present_ideas)`. `present_ideas` JSON array. 
 ### Recipes (`features.js`)
 Table: `recipes`. Do NOT reference: protein,prep_time,cook_time,difficulty,last_made_date. `#recSidePanel` 400px. Ingredients: JSON `[{name,amount}]`.
 
+### Quick Links (overview, `index.html`)
+- Grid order: Videos → Finance → Pups → Birthdays → Recipes.
+- Icons: outline SVGs with `opacity:.45` via `.ql-icon`. Pups uses actual dog headshots (Sunny left, Mochi right) at full opacity (`:has(img)` override). Text color: `var(--muted)`.
+- Quick Notes button (`#qnBtn`): 34×34px circle, pencil outline SVG, layered glow shadow.
+
 ### Quick Notes (`features.js`)
 - **Supabase table**: `quick_notes` — columns: `id` (int8), `note_text`, `is_visible` (bool), `created_at`, `hidden_at`, `sort_order` (int4).
 - **Fetch**: `GET ?is_visible=is.true&order=sort_order.asc.nullslast,created_at.asc`. Only marks `_qnLoaded=true` on success (retries on failure).

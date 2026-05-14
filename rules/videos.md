@@ -14,7 +14,14 @@
 - **Helper functions**: `_vidIsComplete(v)` checks single video completeness. `_vidAllChildrenComplete(bigId)` checks all children of a B video.
 - **Date colors**: no date=muted, published+future/today=green, published+past=black, all core done=green, has date=yellow.
 
+### Header
+- Layout: tabs → search → flex spacer → KPI pills → plus button. `margin-right:80px` on plus to clear overview button.
+- **KPI pills**: Subscribers, $ Revenue (real from Analytics API, falls back to `~$` estimate at $4 RPM), divider, Ideas count, Active count, Published count.
+- **Plus button**: white circle (`rgba(255,255,255,.85)`) with grey `+` icon, `border-radius:50%`, subtle shadow.
+- **Overview button** (`#backToOv`): `position:fixed;top:46px;right:20px` — same on all non-overview pages.
+
 ### Views (4 tabs: Current → All Details → Analytics → Monthly)
+- **Tab navigation**: navigating to videos from another page always resets to Current tab. Refresh preserves current tab via `localStorage._vidView`. Flag `_vidPageInit` prevents reset on page-load navigation.
 - **Current** (`_vidView='dashboard'`): CSS grid layout (`2fr 1fr`) — Current + Ideas sharing same column tracks for aligned divider. Up Next/In Progress/Group/Single have solid white (`#fff`) sub-headers with `display:flex;align-items:center`. No count next to "Current" header. Ideas side has Group/Single sub-sections with white bullets (`●`). No `+` button on idea rows. B→L grouping with white `└` connector. Drag between zones changes status. Standalone videos (no `big_video_id`) cannot be dragged into groups. Container uses liquid glass style (`rgba(255,255,255,.32)` with `backdrop-filter:blur(28px)`). B videos at `rgba(255,255,255,.50)`. Header includes 28px spacer for % column + 42px for YT views.
 - **All Details** (`_vidView='table'`): full table with sortable headers (click asc, click desc, click reset). `table-layout:fixed`. Sticky thead. Default sort: post_date asc with B→L grouping. Ideas excluded from this view. Column order: Title (450px) → Stages (22px each) → Posted → Dur → % → Status (80px). Status pills use `VID_STATUS_LABELS` with lighter color backgrounds. B videos at `rgba(255,255,255,.50)`. Stage columns are narrower than Current tab (22px vs 28px).
 - **Analytics** (`_vidView='analytics'`): see Analytics Tab section below.
