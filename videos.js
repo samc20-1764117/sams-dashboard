@@ -1492,6 +1492,8 @@ function _vidDropKey(event,type){
     drop.style.display='none';
   }else if(event.key==='Tab'){
     drop.style.display='none';
+  }else if(event.key==='Enter'){
+    drop.style.display='none';
   }
 }
 function _vidDropItemKey(event,type,idx){
