@@ -91,7 +91,7 @@
 - **Data**: merges Supabase `st.videos` (published + post_date) with `_ytMatch` YT stats. Filters out shorts/posts using `_ytDurSec()` (only videos >60s). All computation is client-side from already-fetched data — zero additional API calls.
 - **State**: `_anTrendMetric` (revenue|views|likes|engagement|videos), `_anTrendPeriod` (monthly|yearly). Toggled via `_anSetTrend(metric,period)`.
 - **Layout** (top → bottom by importance):
-  1. **KPIs** (6 cols): Total Views, Avg Views/Video, Engagement, Videos, Est. Revenue, Subscribers. Each has inline sparkline (left of value, 44x16 SVG) colored green/red based on trend direction. Sub-text shows this-month value where applicable. All values use `var(--text)` — no competing colors.
+  1. **KPIs** (6 cols): Unreplied Comments (red, first, dblclick opens modal), Total Views, Avg Views/Video, Videos, Est. Revenue, Subscribers. Each (except Unreplied) has inline sparkline (left of value, 44x16 SVG) colored green/red based on trend direction. Sub-text shows this-month value where applicable. All values use `var(--text)` except Unreplied which uses `#ef4444`.
   2. **Trend Chart (2/3) + Strategy Insights (1/3)**: Bar chart with metric/period toggle buttons (subtle grey highlight, not solid fill). Strategy panel ("What Makes Your Videos Win") shows: best duration, best publish day, big vs small multiplier, best title length, top topic, most engaging topic, momentum (90-day vs older), winner profile.
   3. **Money Makers + Do More Like This** (2 cols): Top earners by est. revenue. Do More Like This scored by views × engagement rate.
   4. **Fastest Growing + Stars & Sleepers + Most Engaged** (3 cols): Velocity (views/day), over/underperformers vs avg, highest engagement rate.
