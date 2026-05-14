@@ -88,21 +88,22 @@
 - `vidCellClick(e,id)` — routes to inline edit (table) or selection (other views)
 
 ### Analytics Tab (`_vidView='analytics'`)
-- **Data**: merges Supabase `st.videos` (published + post_date) with `_ytMatch` YT stats. Filters out shorts/posts using `_ytDurSec()` (only videos >60s). All computation is client-side from already-fetched data — zero additional API calls.
-- **State**: `_anTrendMetric` (revenue|views|likes|engagement|videos), `_anTrendPeriod` (monthly|yearly). Toggled via `_anSetTrend(metric,period)`.
+- **Data**: merges Supabase `st.videos` (published + post_date) with `_ytMatch` YT stats + `_ytAnalytics` real revenue. Filters out shorts/posts using `_ytDurSec()` (only videos >60s). All computation is client-side from already-fetched data — zero additional API calls.
+- **State**: `_anTrendMetric` (revenue|views|likes|engagement|videos), `_anTrendPeriod` (monthly|yearly), `_anRevMode` (earned|posted). Tab persisted in `localStorage._vidView`.
 - **Layout** (top → bottom by importance):
-  1. **KPIs** (6 cols): Unreplied Comments (red, click opens unreplied modal w/ Enter-to-close when nothing selected), Total Views, Avg Views/Video, Videos, Est. Revenue, Subscribers. Each (except Unreplied) has inline sparkline + single-click opens `_anKpiModal(metric)` with monthly breakdown table (best/worst highlighted, % change, trend narrative, top contributors). Enter/Escape closes modal.
-  2. **Trend Chart (2/3) + Strategy Insights (1/3)**: Single neutral color for all metrics (`rgba(120,113,145)`), current month/year highlighted (darker + bold label). No chart header — toggles with divider between metrics and timeframe. Summary line (total + avg) right-aligned inline with toggles. Taller divider (`rgba(120,113,145,.3)`, 18px) between metric/timeframe toggles. Bar values directly above their bar. Bars fill full container height via flex. Month labels use abbreviations (Jan, Feb...). Strategy panel organized into 4 sections with uppercase headers: **What to make** (top earner topic, best $/video topic, big vs small with $, best combo), **How to make it** (best duration, best duration for $, engagement-views correlation), **When to post** (best day, publishing pace), **Channel health** (momentum, consistency score via CV%, engagement trend).
-  3. **Do More Like This + Try Next** (2 cols): Do More Like This scored by views × engagement. Try Next suggests specific topics based on stale high-performers (>60d since last post), underexplored topics (few videos but good avg), and top-performing patterns.
+  1. **KPIs** (6 cols): Unreplied Comments (red, click opens unreplied modal w/ Enter-to-close when nothing selected), Total Views, Avg Views/Video, Videos, Revenue, Subscribers. Each (except Unreplied) has inline sparkline + single-click opens `_anKpiModal(metric)` with monthly breakdown table (best/worst highlighted, % change, trend narrative, top contributors). Enter/Escape closes modal.
+  2. **Trend Chart (2/3) + Strategy Insights (1/3)**: Single neutral color for all metrics (`rgba(120,113,145)`), current month/year highlighted (darker + bold label). No chart header — toggles with divider between metrics and timeframe. **Actual/By Video toggle** (3rd toggle group, divider-separated) for all metrics except Videos — switches between real calendar-month data (YouTube Analytics API) and per-video attribution by post_date. Summary line (total + avg) right-aligned inline with toggles. Bars thin (55% width), height capped at 70%, values above each bar. Month labels use abbreviations (Jan, Feb...). Strategy panel organized into 4 sections with uppercase headers: **What to make** (top earner topic, best $/video topic, big vs small with $, best combo), **How to make it** (best duration, best duration for $, engagement-views correlation), **When to post** (best day, publishing pace), **Channel health** (momentum, consistency score via CV%, engagement trend).
+  3. **Do More Like This + Try Next** (2 cols): Do More Like This scored by views x engagement. Try Next suggests specific topics based on stale high-performers (>60d since last post), underexplored topics (few videos but good avg), and top-performing patterns.
 - **Color philosophy**: minimal. Sparklines use green/red for direction. Trend bars use single neutral color, current period highlighted darker. Strategy panel uses emoji icons, no colored text.
-- **Revenue**: estimated at `$4 RPM` unless YouTube Analytics API is connected (real revenue via OAuth). When `_ytAnalytics` is available, KPI shows "Revenue" (not "Est."), trend chart uses actual monthly revenue, drilldown shows real per-month earnings. Connect prompt shown when not authorized.
+- **Revenue data**: Real revenue from YouTube Analytics API (OAuth). `_hasRealRev` flag. `_vRev(v)` helper returns real per-video revenue (`v.realRev` from `_ytAnalytics.topVideos`) or falls back to $4 RPM estimate. `_revPfx` is empty when real data, `~` when estimated. Header, KPIs, trend, strategy, and KPI modals all use `_vRev()` for consistent real/estimated revenue. Banner prompting to connect only shows when `!_ytAnalytics`.
+- **Actual vs By Video toggle** (`_anRevMode`): "Actual" = real activity per calendar month from YouTube Analytics API. "By Video" = stats attributed to video's post_date month. Available for revenue, views, likes, engagement. Not for video count (inherently by post date). Toggle via `_anToggleRevMode()`.
 - **Strategy tooltips**: hover any insight row to see underlying bar chart data (e.g. avg views by day of week). Data stored in `_anTipStore`, rendered via `_anShowTip(e,key)`/`_anHideTip()`. Tooltip positioned left of strategy panel.
-- **Key functions**: `_vidRenderAnalytics()`, `_anSetTrend()`, `_anKpiModal(metric)`, `_anShowTip()`, `_anHideTip()`, `_ytDurSec(iso)`, `sparkline(vals)`, `stat()`, `card()`.
+- **Key functions**: `_vidRenderAnalytics()`, `_anSetTrend()`, `_anToggleRevMode()`, `_anKpiModal(metric)`, `_anShowTip()`, `_anHideTip()`, `_vRev(v)`, `_ytDurSec(iso)`, `sparkline(vals)`, `stat()`, `card()`.
 
-### YouTube Analytics Integration
-- **Endpoint**: `/api/yt` — Cloudflare Pages Function at `functions/api/yt.js`.
-- **Secrets** (set in Cloudflare dashboard, both production + preview): `YOUTUBE_API_KEY`, `YOUTUBE_CHANNEL_ID`.
-- **QUOTA CRITICAL**: YouTube Data API v3 gives 10,000 units/day, resets midnight Pacific. NEVER use `search.list` (100 units/call). Use `playlistItems.list` (1 unit/call). One full fetch ≈ 35 units (15 videos + 20 comment threads). NEVER write code that can re-fetch on re-render — a single re-render loop can burn the entire daily quota in minutes.
+### YouTube Data API Integration
+- **Endpoint**: `/api/yt` — Cloudflare Pages Function at `functions/api/yt.js`. All YouTube routes (data, OAuth, analytics) are in this single file.
+- **Secrets** (Cloudflare dashboard, Production env vars): `YOUTUBE_API_KEY`, `YOUTUBE_CHANNEL_ID`.
+- **QUOTA CRITICAL**: YouTube Data API v3 gives 10,000 units/day, resets midnight Pacific. NEVER use `search.list` (100 units/call). Use `playlistItems.list` (1 unit/call). One full fetch ~ 35 units (15 videos + 20 comment threads). NEVER write code that can re-fetch on re-render — a single re-render loop can burn the entire daily quota in minutes.
 - **Client safeguards**: `_ytFetched` global flag — set `true` before fetch, only resets on full page reload. One fetch per page load, period. Also caches to `localStorage._ytCache` as offline fallback.
 - **Server KV cache (3 keys)**:
   - `yt-fresh` (12hr TTL) — serves cached data, prevents API calls. This is the primary cache.
@@ -110,23 +111,30 @@
   - `yt-cooldown` (1hr for quota, 5min for other errors) — prevents retrying a failed API call.
 - **RSS fallback**: If API fails and no `yt-good` data exists, fetches YouTube RSS feed (`/feeds/videos.xml`) which costs zero quota. Returns 15 most recent videos.
 - **`?refresh=1`** param busts `yt-fresh` and `yt-cooldown` cache. POST with JSON body seeds KV directly.
-- **Matching**: Two-pass: (1) exact date match `post_date === publishedAt.slice(0,10)`, (2) ±1 day with title similarity for UTC timezone offsets. Uses both `title` and `topic` for scoring. Stored in `_ytMatch` map (Supabase ID → `{views, likes, comments, ytId}`).
-- **Display**: Channel stats bar (subscribers, total views, video count) at top of page. Views, Likes & Comments columns in All Details table. Purple view count in Current dashboard rows.
-- **Data flow**: `fetch('/api/yt')` → `_ytData` + `localStorage` → `_ytBuildMatch()` → `_ytMatch` → `renderVideosPageKeepScroll()`.
+- **Matching**: Two-pass: (1) exact date match `post_date === publishedAt.slice(0,10)`, (2) +/-1 day with title similarity for UTC timezone offsets. Uses both `title` and `topic` for scoring. Stored in `_ytMatch` map (Supabase ID -> `{views, likes, comments, ytId}`).
+- **Display**: Channel stats bar (subscribers, real total revenue or estimated, video count) at top of page. Views, Likes & Comments columns in All Details table. Purple view count in Current dashboard rows.
+- **Data flow**: `fetch('/api/yt')` -> `_ytData` + `localStorage` -> `_ytBuildMatch()` -> `_ytMatch` -> `renderVideosPageKeepScroll()`.
 - **Unreplied Comments**: API fetches `commentThreads.list` with `allThreadsRelatedToChannelId`, filtered to long-form videos only (>60s duration). Returns `unrepliedComments` array (comments with `totalReplyCount === 0`). Max 20 pages = 20 units. Each comment has `{id, videoId, videoTitle, text, publishedAt}`.
 - **Unreplied KPI**: First KPI on Analytics tab, red styling to stand out. Single-click opens modal with full list. Enter closes when nothing selected. Selection uses shift/cmd like tasks. "Dismiss Selected" removes from count. Dismissed IDs stored in `st._ytDismissed` (persisted via `save()`/`load()` in core.js).
 - **Key functions**: `_ytBuildMatch()`, `_ytForVid(id)`, `_ytNum(n)`, `_ytEsc(s)`, `_ytDur(iso)`, `_ytShowUnreplied()`, `_ytToggleSel()`, `_ytDismissSelected()`, `_ytGetDismissed()`, `_ytSaveDismissed()`.
 - **Errors**: silently hidden in UI (no red text). Console shows `[YT]` debug logs for troubleshooting.
 
-### YouTube Analytics API (Revenue)
-- **Endpoints**: `/api/yt-auth` (OAuth flow), `/api/yt-analytics` (data fetch).
-- **Auth**: OAuth 2.0 with `yt-analytics.readonly` + `yt-analytics-monetary.readonly` scopes. Refresh token stored in KV (`yt-oauth-refresh`), access token cached with TTL (`yt-oauth-access`).
-- **Secrets**: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` (in Cloudflare dashboard).
-- **Data**: `_ytAnalytics` global. Monthly: views, actual revenue, likes, comments, subscribersGained, avgViewDuration. Top 50 videos by revenue.
-- **Server KV cache (3 keys, mirrors yt.js pattern)**:
+### YouTube Analytics API (Revenue + Real Monthly Data)
+- **SECURITY & AVAILABILITY — TOP PRIORITIES**: All API integrations use multi-layer caching to guarantee the dashboard always shows data, even when APIs are down or quota is exhausted. Never bypass these safeguards.
+- **Routes**: All in `functions/api/yt.js` via `?mode=` param: `auth-status`, `auth-start`, `auth-callback`, `analytics`.
+- **Auth**: OAuth 2.0 with `yt-analytics.readonly` + `yt-analytics-monetary.readonly` scopes.
+  - **Credentials**: `GCP_CLIENT_ID` + `GCP_CLIENT_SECRET` env vars (Production only). Also stored in KV (`oauth-client-id`, `oauth-client-secret`) during callback so dev/preview can read them.
+  - **Tokens**: refresh token in KV (`yt-oauth-refresh`), access token cached with TTL (`yt-oauth-access`).
+  - **OAuth flow always routes through production** (`sams-dashboard.pages.dev`). Dev/preview redirect to production for `auth-start` if credentials not found locally. Callback redirect URI is hardcoded to production.
+  - **Credential fallback chain**: `context.env.GCP_CLIENT_ID` (env var) -> `KV.get('oauth-client-id')` (stored during callback). This lets dev read credentials from shared KV without needing its own env vars.
+  - **Google Cloud Console**: OAuth consent screen has user added as test user (app is unverified, personal use only). Redirect URI: `https://sams-dashboard.pages.dev/api/yt?mode=auth-callback`.
+- **Data**: `_ytAnalytics` global. `monthly[]`: month, views, revenue, likes, comments, subscribersGained, avgViewDuration. `topVideos[]` (top 50 by revenue): videoId, views, revenue, likes, comments, avgViewDuration.
+- **Date alignment**: YouTube Analytics API with `dimensions: 'month'` requires BOTH startDate and endDate to be 1st of a month. Start = 1st of month 2 years ago, end = 1st of current month.
+- **Server KV cache (3 keys, mirrors Data API pattern)**:
   - `yta-fresh` (24hr TTL) — serves cached data, prevents API calls. Only 1 fetch per day.
-  - `yta-good` (no TTL) — permanent copy of last successful response. Fallback when API is down.
+  - `yta-good` (no TTL) — permanent fallback. Dashboard ALWAYS shows data even if API is completely down.
   - `yta-cooldown` (2hr for quota, 10min for other errors, 1hr for token errors) — prevents retrying failed calls.
 - **Client safeguards**: `_ytAnalyticsFetched` flag set BEFORE fetch — one fetch per page load, period. Also caches in `localStorage._ytAnalyticsCache` as offline fallback. Errors silently caught, never retried.
-- **Revenue note**: Unlike the Data API view-based estimates, this gives **actual monthly channel earnings** — real "how much I earned in January" data, not per-video lifetime attribution.
-- **Quota**: YouTube Analytics API has separate quota from Data API. ~200 queries/day default. We use 2 queries per fetch, cached 24hr in KV. Max 1 actual API call per day. If quota hit, cooldown + permanent fallback ensures dashboard always shows data.
+- **Quota**: YouTube Analytics API has SEPARATE quota from Data API. ~200 queries/day default. We use 2 queries per fetch, cached 24hr in KV. Max 1 actual API call per day. If quota hit, cooldown + permanent fallback ensures dashboard always shows data.
+- **KV namespace**: `YT_CACHE` (ID: `6787fe5f65e142638da5625d3b333b18`). Bound to BOTH Production and Preview deployments (Preview binding was added via Cloudflare API — dashboard UI only shows Production by default).
+- **NEVER**: add retry loops, remove cooldown checks, reduce cache TTLs, add `search.list` calls, or make any change that could increase API call frequency. The dashboard must always be accessible.
