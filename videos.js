@@ -157,7 +157,7 @@ let _vidCtxId=null;
 let _vidFilter='all';
 let _vidGroupFilter='all';
 let _vidSearch='';
-let _vidView='dashboard'; // dashboard | table | board | groups
+let _vidView=localStorage.getItem('_vidView')||'dashboard'; // dashboard | table | board | groups
 let _vidSortCol=null,_vidSortDir=1,_vidShowCompleted=false;
 let _vidMonthOffset=0; // 0=current month, -1=last month, etc
 
@@ -1596,15 +1596,15 @@ function _vidRenderAnalytics(){
     <div style="flex:1"></div>
     <span style="font-size:10px;color:var(--muted);white-space:nowrap;line-height:1">${summaryText}</span>
   </div>`;
-  trendHtml+='<div style="display:flex;align-items:flex-end;gap:8px;flex:1;min-height:0;padding:0 4px">';
+  trendHtml+='<div style="display:flex;align-items:flex-end;gap:2px;flex:1;min-height:0;padding:0 8px">';
   metricVals.forEach(m=>{
-    const pct=Math.max(Math.round(m.val/maxMetric*75),2);
+    const pct=Math.max(Math.round(m.val/maxMetric*70),2);
     const isCur=m.key===_curPeriod;
     const label=_anTrendPeriod==='yearly'?m.key:(_moAbbr[parseInt(m.key.slice(5))]||m.key.slice(5));
-    trendHtml+=`<div style="flex:1;max-width:48px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:2px;height:100%">
+    trendHtml+=`<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:2px;height:100%">
       <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;width:100%">
         <span style="font-size:9px;color:var(--muted);white-space:nowrap;margin-bottom:3px">${m.fmt}</span>
-        <div style="width:70%;height:${pct}%;background:${isCur?trendColorCur:trendColor};border-radius:4px;min-height:3px${isCur?';box-shadow:0 0 0 1.5px rgba(120,113,145,.3)':''}" title="${m.key}: ${m.fmt}"></div>
+        <div style="width:55%;height:${pct}%;background:${isCur?trendColorCur:trendColor};border-radius:4px;min-height:3px${isCur?';box-shadow:0 0 0 1.5px rgba(120,113,145,.3)':''}" title="${m.key}: ${m.fmt}"></div>
       </div>
       <span style="font-size:9px;margin-top:4px;${isCur?'font-weight:700;color:var(--text)':'color:var(--muted)'}">${label}</span>
     </div>`;
@@ -1805,7 +1805,7 @@ function _vidRenderAnalytics(){
 }
 
 // ── View / Filter ────────────────────────────────────────────────────────────
-function _vidSetView(v){_vidView=v;renderVideosPage();}
+function _vidSetView(v){_vidView=v;localStorage.setItem('_vidView',v);renderVideosPage();}
 function _vidSetFilter(f){_vidFilter=f;renderVideosPage();}
 function _vidSetGroup(g){_vidGroupFilter=g;renderVideosPage();}
 function _vidSetSearch(q){_vidSearch=q;renderVideosPage();
