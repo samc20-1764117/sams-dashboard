@@ -308,7 +308,7 @@ function renderVideosPage(){
             <button onclick="_vidSearchNav(1)" style="background:none;border:none;cursor:pointer;padding:0 2px;font-size:10px;color:var(--muted);line-height:1" title="Next (Enter)">▼</button>
             <button onclick="_vidSetSearch('');document.getElementById('vidSearchInput').value=''" style="background:none;border:none;cursor:pointer;padding:0 2px;font-size:10px;color:var(--muted);line-height:1" title="Clear (Esc)">✕</button>
           </div>`:''}
-          <div id="vidSearchSuggestions" style="display:none;position:absolute;top:100%;left:0;margin-top:4px;background:var(--bg);border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.1);z-index:1001;max-height:200px;overflow-y:auto;width:320px"></div>
+          <div id="vidSearchSuggestions" style="display:none;position:absolute;top:100%;left:0;margin-top:4px;background:var(--bg);border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.1);z-index:1001;max-height:200px;overflow-y:auto;width:420px"></div>
         </div>
         <div style="flex:1"></div>
         <div style="display:flex;gap:6px;align-items:center">
@@ -1545,17 +1545,7 @@ function _vidRenderAnalytics(){
     h+='<div style="display:flex;align-items:center;gap:8px;padding:8px 14px;margin-bottom:12px;background:rgba(139,92,246,.04);border:1px solid rgba(139,92,246,.15);border-radius:10px;font-size:11px;color:var(--muted)"><span>Revenue shown is estimated (~$4 RPM).</span><a href="/api/yt?mode=auth-start" target="_blank" style="color:#8b5cf6;font-weight:600;text-decoration:none">Connect YouTube Analytics</a><span>for actual revenue data.</span></div>';
   }
 
-  // ── Topic filter bar ──
   const _allTopics=[...new Set(_mergedAll.map(v=>v.topic).filter(Boolean))].sort();
-  h+=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;position:relative">
-    <span style="font-size:10px;color:var(--muted);flex-shrink:0">Topic:</span>
-    <div style="position:relative;flex:1;max-width:260px">
-      <input id="anTopicInput" type="text" placeholder="All topics" value="${_anTopicFilter==='all'?'':_esc(_anTopicFilter)}" oninput="_anTopicInputChange(this.value)" onfocus="_anTopicShowList()" style="width:100%;padding:5px 8px;border:1px solid ${_anTopicFilter!=='all'?'rgba(139,92,246,.4)':'var(--border)'};border-radius:6px;font-family:inherit;font-size:11px;background:${_anTopicFilter!=='all'?'rgba(139,92,246,.04)':'var(--bg)'};color:var(--text);outline:none;box-sizing:border-box">
-      ${_anTopicFilter!=='all'?'<button onclick="_anTopicFilter=\'all\';renderVideosPageKeepScroll()" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);line-height:1">✕</button>':''}
-      <div id="anTopicList" style="display:none;position:absolute;top:100%;left:0;right:0;margin-top:2px;background:var(--bg);border:1px solid var(--border);border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,.1);z-index:100;max-height:150px;overflow-y:auto"></div>
-    </div>
-    ${_anTopicFilter!=='all'?'<span style="font-size:10px;color:var(--muted)">('+merged.length+' video'+(merged.length!==1?'s':'')+')</span>':''}
-  </div>`;
 
   // ── KPIs (compact inline) ──
   const _dismissed=_ytGetDismissed();
@@ -1632,18 +1622,52 @@ function _vidRenderAnalytics(){
     <div style="flex:1"></div>
     <span style="font-size:10px;color:var(--muted);white-space:nowrap;line-height:1">${summaryText}</span>
   </div>`;
+  // Forecast for current month: blend current pace with historical avg
+  const _daysInMonth=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
+  const _dayOfMonth=now.getDate();
+  const _monthProgress=Math.max(_dayOfMonth/_daysInMonth,0.05);
+  // Historical avg of completed months (exclude current)
+  const _completedVals=metricVals.filter(m=>m.key!==_curPeriod);
+  const _histAvg=_completedVals.length?_completedVals.reduce((s,m)=>s+m.val,0)/_completedVals.length:0;
+
   trendHtml+='<div style="display:flex;align-items:flex-end;gap:2px;flex:1;min-height:280px;padding:0 8px">';
   metricVals.forEach(m=>{
+    const isCur=m.key===_curPeriod&&_anTrendPeriod==='monthly';
+    let forecast=0,totalPct;
+    if(isCur&&_monthProgress<0.95){
+      // Projected: weighted blend — 60% current pace, 40% historical
+      const paceProj=m.val/_monthProgress;
+      forecast=Math.round(paceProj*0.6+_histAvg*0.4);
+      if(forecast<m.val)forecast=m.val;
+      totalPct=Math.max(Math.round(forecast/maxMetric*70),2);
+    }
     const pct=Math.max(Math.round(m.val/maxMetric*70),2);
-    const isCur=m.key===_curPeriod;
     const label=_anTrendPeriod==='yearly'?m.key:(_moAbbr[parseInt(m.key.slice(5))]||m.key.slice(5));
-    trendHtml+=`<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:2px;height:100%">
-      <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;width:100%">
-        <span style="font-size:9px;color:var(--muted);white-space:nowrap;margin-bottom:3px">${m.fmt}</span>
-        <div style="width:55%;height:${pct}%;background:${isCur?trendColorCur:trendColor};border-radius:4px;min-height:3px${isCur?';box-shadow:0 0 0 1.5px rgba(120,113,145,.3)':''}" title="${m.key}: ${m.fmt}"></div>
-      </div>
-      <span style="font-size:9px;margin-top:4px;${isCur?'font-weight:700;color:var(--text)':'color:var(--muted)'}">${label}</span>
-    </div>`;
+    const fmtFn=(v)=>_anTrendMetric==='revenue'?'$'+_ytNum(v):_anTrendMetric==='engagement'?v.toFixed(1)+'%':_ytNum(v);
+    const hoverTitle=isCur&&forecast>m.val?m.key+': '+m.fmt+' actual\\nProjected: '+fmtFn(forecast):m.key+': '+m.fmt;
+    if(isCur&&forecast>m.val){
+      const forecastPct=Math.max(Math.round(forecast/maxMetric*70),2);
+      const actualH=pct;
+      const forecastH=forecastPct-actualH;
+      trendHtml+=`<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:2px;height:100%">
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;width:100%">
+          <span style="font-size:9px;color:var(--muted);white-space:nowrap;margin-bottom:3px">${fmtFn(forecast)}</span>
+          <div style="width:55%;display:flex;flex-direction:column;align-items:stretch" title="${hoverTitle}">
+            <div style="height:${forecastH}%;background:repeating-linear-gradient(135deg,${trendColorCur},${trendColorCur} 2px,transparent 2px,transparent 5px);border-radius:4px 4px 0 0;min-height:2px;opacity:.5"></div>
+            <div style="height:${actualH}%;background:${trendColorCur};border-radius:0 0 4px 4px;min-height:3px;box-shadow:0 0 0 1.5px rgba(120,113,145,.3)"></div>
+          </div>
+        </div>
+        <span style="font-size:9px;margin-top:4px;font-weight:700;color:var(--text)">${label}</span>
+      </div>`;
+    } else {
+      trendHtml+=`<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:2px;height:100%">
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;width:100%">
+          <span style="font-size:9px;color:var(--muted);white-space:nowrap;margin-bottom:3px">${m.fmt}</span>
+          <div style="width:55%;height:${pct}%;background:${isCur?trendColorCur:trendColor};border-radius:4px;min-height:3px${isCur?';box-shadow:0 0 0 1.5px rgba(120,113,145,.3)':''}" title="${hoverTitle}"></div>
+        </div>
+        <span style="font-size:9px;margin-top:4px;${isCur?'font-weight:700;color:var(--text)':'color:var(--muted)'}">${label}</span>
+      </div>`;
+    }
   });
   trendHtml+='</div>';
   // ── TREND (2/3) + Strategy Insights (1/3) ──
@@ -1781,22 +1805,31 @@ function _vidRenderAnalytics(){
     }
   }
 
-  // 2-col: left (KPIs + chart) | right (strategy spanning full height)
-  h+=`<div style="display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:12px;align-items:stretch">`;
-  h+=`<div style="display:flex;flex-direction:column;gap:12px">`;
-  // KPIs row
-  h+='<div style="display:flex;gap:8px;align-items:stretch">';
-  h+=`<div style="background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:18px 10px;cursor:pointer;display:flex;align-items:center;gap:6px;flex:1" onclick="_ytShowUnreplied()"><div style="font-size:15px;font-weight:700;color:#ef4444">${_unrepliedN}</div><div style="font-size:9px;color:var(--muted)">Unreplied</div></div>`;
-  h+=`${_kc2("_anKpiModal('views')")}${_kStat('Views',_ytNum(totalViews),sparkline(_spViews))}</div>`;
-  h+=`${_kc2("_anKpiModal('avg')")}${_kStat('Avg/Video',_ytNum(avgViews),sparkline(_spAvg))}</div>`;
-  h+=`${_kc2("_anKpiModal('videos')")}${_kStat('Videos',String(merged.length),sparkline(_spVids))}</div>`;
-  h+=`${_kc2("_anKpiModal('revenue')")}${_kStat(_revLabel,_revValue,sparkline(_spRevReal))}</div>`;
-  h+=`${_kc2("_anKpiModal('subscribers')")}${_kStat('Subscribers',cs?_ytNum(cs.subscribers):'-')}</div>`;
+  // KPIs full width
+  const _kStat2=(label,val,spark)=>`${spark||''}<div style="min-width:0;text-align:center;flex:1"><div style="font-size:9px;color:var(--muted);white-space:nowrap">${label}</div><div style="font-size:15px;font-weight:700;color:var(--text);white-space:nowrap">${val}</div></div>`;
+  h+='<div style="display:flex;gap:8px;align-items:stretch;margin-bottom:12px">';
+  h+=`<div style="background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:12px 14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;flex:1" onclick="_ytShowUnreplied()"><div style="font-size:15px;font-weight:700;color:#ef4444">${_unrepliedN}</div><div style="font-size:9px;color:var(--muted)">Unreplied</div></div>`;
+  h+=`${_kc2("_anKpiModal('views')")}${_kStat2('Views',_ytNum(totalViews),sparkline(_spViews))}</div>`;
+  h+=`${_kc2("_anKpiModal('avg')")}${_kStat2('Avg/Video',_ytNum(avgViews),sparkline(_spAvg))}</div>`;
+  h+=`${_kc2("_anKpiModal('videos')")}${_kStat2('Videos',String(merged.length),sparkline(_spVids))}</div>`;
+  h+=`${_kc2("_anKpiModal('revenue')")}${_kStat2(_revLabel,_revValue,sparkline(_spRevReal))}</div>`;
+  h+=`${_kc2("_anKpiModal('subscribers')")}${_kStat2('Subscribers',cs?_ytNum(cs.subscribers):'-')}</div>`;
   h+='</div>';
-  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;flex:1">${trendHtml}</div>`;
-  h+='</div>'; // close left column
-  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:16px 18px;overflow-y:auto">
-    <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:8px">What Makes Your Videos Win</div>${stratHtml}</div>`;
+  // 2-col: chart (left) | topic filter + insights (right)
+  h+=`<div style="display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:12px;align-items:stretch">`;
+  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column">${trendHtml}</div>`;
+  h+=`<div style="display:flex;flex-direction:column;gap:12px">`;
+  // Topic filter
+  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:10px;padding:10px 14px;position:relative">
+    <div style="font-size:10px;color:var(--muted);margin-bottom:4px">Filter by topic</div>
+    <input id="anTopicInput" type="text" placeholder="All topics" value="${_anTopicFilter==='all'?'':_esc(_anTopicFilter)}" oninput="_anTopicInputChange(this.value)" onfocus="_anTopicShowList()" style="width:100%;padding:5px 8px;border:1px solid ${_anTopicFilter!=='all'?'rgba(139,92,246,.4)':'var(--border)'};border-radius:6px;font-family:inherit;font-size:11px;background:${_anTopicFilter!=='all'?'rgba(139,92,246,.04)':'var(--bg)'};color:var(--text);outline:none;box-sizing:border-box">
+    ${_anTopicFilter!=='all'?'<button onclick="_anTopicFilter=\'all\';renderVideosPageKeepScroll()" style="position:absolute;right:20px;bottom:14px;background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);line-height:1">✕</button>':''}
+    <div id="anTopicList" style="display:none;position:absolute;top:100%;left:0;right:0;margin-top:2px;background:var(--bg);border:1px solid var(--border);border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,.1);z-index:100;max-height:150px;overflow-y:auto"></div>
+  </div>`;
+  // Strategy insights
+  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:16px 18px;overflow-y:auto;flex:1">
+    <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:8px">Insights</div>${stratHtml}</div>`;
+  h+='</div>'; // close right column
   h+='</div>'; // close 2-col grid
   // Do More Like This + Try Next — full width below
   h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">';
@@ -1922,8 +1955,19 @@ function _vidBuildMatches(){
 function _vidPostRenderMatches(){
   if(!_vidSearch){_vidMatchIds=[];return;}
   _vidMatchIds=[];
-  document.querySelectorAll('.vid-dash-row[data-vid], .vid-row[data-vid]').forEach(r=>{
-    if(!_vidMatchIds.includes(r.dataset.vid))_vidMatchIds.push(r.dataset.vid);
+  const q=_vidSearch.toLowerCase();
+  // Count all matching non-deleted B videos (skip L children to avoid duplicates)
+  (st.videos||[]).filter(v=>!v.is_deleted&&v.video_type!=='L').forEach(v=>{
+    if(_vidSearchMatch(v,q))_vidMatchIds.push(String(v.id));
+  });
+  // Also add L videos that match but whose B parent doesn't match
+  (st.videos||[]).filter(v=>!v.is_deleted&&v.video_type==='L').forEach(v=>{
+    if(!_vidSearchMatch(v,q))return;
+    if(v.big_video_id){
+      const par=(st.videos||[]).find(p=>String(p.id)===String(v.big_video_id)&&!p.is_deleted);
+      if(par&&_vidSearchMatch(par,q))return; // parent already matches, skip child
+    }
+    _vidMatchIds.push(String(v.id));
   });
   if(_vidMatchIdx>=_vidMatchIds.length)_vidMatchIdx=0;
   const cnt=document.getElementById('vidSearchCount');
@@ -1942,6 +1986,7 @@ function _vidScrollToMatch(){
   document.querySelectorAll('.vid-dash-row,.vid-row').forEach(r=>{if(r._vidHl)r.style.background='';r._vidHl=false;});
   const row=document.querySelector('.vid-dash-row[data-vid="'+id+'"]')||document.querySelector('.vid-row[data-vid="'+id+'"]');
   if(row){row.scrollIntoView({block:'center',behavior:'smooth'});row.style.transition='background .2s';row.style.background='rgba(139,92,246,.12)';row._vidHl=true;setTimeout(()=>{if(row._vidHl){row.style.background='';row._vidHl=false;}},1200);}
+  else{openVidEdit(id);}
 }
 function _vidSearchKey(e){
   const sg=document.getElementById('vidSearchSuggestions');
@@ -1959,7 +2004,7 @@ function _vidShowSuggestions(q){
   // Collect unique values by category
   const seen=new Set();
   const suggestions=[];
-  const add=(type,text)=>{const k=type+':'+text;if(seen.has(k))return;seen.add(k);suggestions.push({type,text});};
+  const add=(type,text,id)=>{const k=type+':'+text;if(seen.has(k))return;seen.add(k);suggestions.push({type,text,id});};
   // Statuses first (exact-ish matches are most useful)
   const statuses=['idea','up_next','in_progress','published','backup'];
   statuses.forEach(s=>{if(s.includes(lq)||s.replace('_',' ').includes(lq))add('status',s.replace('_',' '));});
@@ -1971,18 +2016,38 @@ function _vidShowSuggestions(q){
   const playlists=new Set();
   vids.forEach(v=>{if(v.playlist&&v.playlist.toLowerCase().includes(lq))playlists.add(v.playlist);});
   [...playlists].slice(0,3).forEach(p=>add('playlist',p));
-  // Titles (starts-with first, then contains)
+  // Titles (starts-with first, then contains) — deduplicate and exclude L children that duplicate B parent titles
+  const titleSeen=new Set();
   const starts=[],contains=[];
-  vids.forEach(v=>{if(!v.title)return;const lt=v.title.toLowerCase();if(lt.startsWith(lq))starts.push(v.title);else if(lt.includes(lq))contains.push(v.title);});
-  [...starts,...contains].slice(0,4).forEach(t=>add('title',t));
+  vids.forEach(v=>{
+    if(!v.title||titleSeen.has(v.title))return;
+    // Skip L children whose title matches their B parent
+    if(v.video_type==='L'&&v.big_video_id){const par=vids.find(p=>String(p.id)===String(v.big_video_id));if(par&&par.title===v.title)return;}
+    titleSeen.add(v.title);
+    const lt=v.title.toLowerCase();
+    if(lt.startsWith(lq))starts.push({title:v.title,id:v.id});
+    else if(lt.includes(lq))contains.push({title:v.title,id:v.id});
+  });
+  [...starts,...contains].slice(0,5).forEach(t=>add('title',t.title,t.id));
   if(!suggestions.length){sg.style.display='none';return;}
   const badgeColors={status:'#8b5cf6',topic:'#f59e0b',playlist:'#10b981',title:'var(--muted)'};
   sg.style.display='block';
   sg.innerHTML=suggestions.slice(0,8).map(s=>{
     const hl=_vidHighlight(s.text,lq);
     const safe=s.text.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-    return'<div class="vid-sg-item" onmousedown="_vidPickSuggestion(\''+safe+'\')" style="padding:5px 10px;font-size:12px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><span style="font-size:9px;color:'+badgeColors[s.type]+';margin-right:6px">'+s.type+'</span>'+hl+'</div>';
+    const action=s.id?'_vidGoToVideo(\''+s.id+'\')':'_vidPickSuggestion(\''+safe+'\')';
+    return'<div class="vid-sg-item" onmousedown="'+action+'" style="padding:5px 10px;font-size:12px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><span style="font-size:9px;color:'+badgeColors[s.type]+';margin-right:6px">'+s.type+'</span>'+hl+'</div>';
   }).join('');
+}
+function _vidGoToVideo(id){
+  const sg=document.getElementById('vidSearchSuggestions');if(sg)sg.style.display='none';
+  _vidSearch='';document.getElementById('vidSearchInput').value='';
+  renderVideosPage();
+  requestAnimationFrame(()=>{
+    const row=document.querySelector('.vid-dash-row[data-vid="'+id+'"]')||document.querySelector('.vid-row[data-vid="'+id+'"]');
+    if(row){row.scrollIntoView({block:'center',behavior:'smooth'});row.style.transition='background .2s';row.style.background='rgba(139,92,246,.12)';setTimeout(()=>row.style.background='',1200);}
+    else openVidEdit(id);
+  });
 }
 function _vidPickSuggestion(text){
   const inp=document.getElementById('vidSearchInput');if(inp)inp.value=text;
