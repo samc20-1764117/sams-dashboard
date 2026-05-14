@@ -162,6 +162,7 @@ let _vidSearch='';
 let _vidMatchIds=[],_vidMatchIdx=0;
 let _vidView=localStorage.getItem('_vidView')||'dashboard'; // dashboard | table | board | groups
 let _vidSortCol=null,_vidSortDir=1,_vidShowCompleted=false;
+let _anTopicFilter='all',_anScatterX='views',_anScatterY='likes';
 let _vidMonthOffset=0; // 0=current month, -1=last month, etc
 
 const VID_STEPS=['step_build','step_vo','step_cut','step_thumbnail','step_description','step_tableau_public','step_upload_tableau'];
@@ -307,7 +308,7 @@ function renderVideosPage(){
             <button onclick="_vidSearchNav(1)" style="background:none;border:none;cursor:pointer;padding:0 2px;font-size:10px;color:var(--muted);line-height:1" title="Next (Enter)">▼</button>
             <button onclick="_vidSetSearch('');document.getElementById('vidSearchInput').value=''" style="background:none;border:none;cursor:pointer;padding:0 2px;font-size:10px;color:var(--muted);line-height:1" title="Clear (Esc)">✕</button>
           </div>`:''}
-          <div id="vidSearchSuggestions" style="display:none;position:absolute;top:100%;left:0;margin-top:4px;background:var(--bg);border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.1);z-index:1001;max-height:200px;overflow-y:auto;min-width:240px"></div>
+          <div id="vidSearchSuggestions" style="display:none;position:absolute;top:100%;left:0;margin-top:4px;background:var(--bg);border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.1);z-index:1001;max-height:200px;overflow-y:auto;width:320px"></div>
         </div>
         <div style="flex:1"></div>
         <div style="display:flex;gap:6px;align-items:center">
@@ -1437,6 +1438,9 @@ function _vidRenderAnalytics(){
 
   if(!merged.length) return '<div style="padding:40px;text-align:center;color:var(--muted)">No YouTube data available yet. Publish videos and check back!</div>';
 
+  const _mergedAll=merged; // keep unfiltered for topic list
+  if(_anTopicFilter!=='all') merged=merged.filter(v=>v.topic===_anTopicFilter);
+
   const totalViews=merged.reduce((s,v)=>s+v.views,0);
   const totalLikes=merged.reduce((s,v)=>s+v.likes,0);
   const totalComments=merged.reduce((s,v)=>s+v.comments,0);
@@ -1526,6 +1530,15 @@ function _vidRenderAnalytics(){
     h+='<div style="display:flex;align-items:center;gap:8px;padding:8px 14px;margin-bottom:12px;background:rgba(139,92,246,.04);border:1px solid rgba(139,92,246,.15);border-radius:10px;font-size:11px;color:var(--muted)"><span>Revenue shown is estimated (~$4 RPM).</span><a href="/api/yt?mode=auth-start" target="_blank" style="color:#8b5cf6;font-weight:600;text-decoration:none">Connect YouTube Analytics</a><span>for actual revenue data.</span></div>';
   }
 
+  // ── Topic filter ──
+  const _allTopics=[...new Set(_mergedAll.map(v=>v.topic).filter(Boolean))].sort();
+  h+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">';
+  h+='<span style="font-size:10px;color:var(--muted)">Filter by topic:</span>';
+  h+=`<select onchange="_anTopicFilter=this.value;renderVideosPageKeepScroll()" style="font-size:11px;font-family:inherit;border:1px solid var(--border);border-radius:6px;padding:3px 8px;background:var(--bg);color:var(--text);outline:none">`;
+  h+=`<option value="all"${_anTopicFilter==='all'?' selected':''}>All topics</option>`;
+  _allTopics.forEach(t=>h+=`<option value="${_esc(t)}"${_anTopicFilter===t?' selected':''}>${_esc(t)}</option>`);
+  h+='</select></div>';
+
   // ── KPIs (compact inline) ──
   const _dismissed=_ytGetDismissed();
   const _unrepliedAll=_ytData.unrepliedComments||[];
@@ -1534,7 +1547,7 @@ function _vidRenderAnalytics(){
   const _revValue=_hasRealRev?'$'+_ytNum(Math.round(_realRevTotal)):'$'+_ytNum(estRevenue);
   const _revSub=_hasRealRev?'$'+_ytNum(Math.round(_realRevThisMonth||0))+' this mo':'@ $'+rpm+' RPM';
   const _spRevReal=_hasRealRev?_kpiLast6.map(([k])=>Math.round(_realRevByMonth[k]||0)):_spRev;
-  const _kc2=(fn,bg)=>`<div style="background:${bg||'var(--glass)'};border:1px solid var(--border);border-radius:10px;padding:10px 10px;cursor:pointer;display:flex;align-items:center;gap:8px;min-width:0;flex:1" onclick="${fn}">`;
+  const _kc2=(fn,bg)=>`<div style="background:${bg||'var(--glass)'};border:1px solid var(--border);border-radius:10px;padding:14px 10px;cursor:pointer;display:flex;align-items:center;gap:8px;min-width:0;flex:1" onclick="${fn}">`;
   const _kStat=(label,val,spark)=>`${spark||''}<div style="min-width:0"><div style="font-size:9px;color:var(--muted);white-space:nowrap">${label}</div><div style="font-size:15px;font-weight:700;color:var(--text);white-space:nowrap">${val}</div></div>`;
   // ── TREND CHART + Strategy Insights ──
   const periodMap={};
@@ -1601,7 +1614,7 @@ function _vidRenderAnalytics(){
     <div style="flex:1"></div>
     <span style="font-size:10px;color:var(--muted);white-space:nowrap;line-height:1">${summaryText}</span>
   </div>`;
-  trendHtml+='<div style="display:flex;align-items:flex-end;gap:2px;flex:1;min-height:230px;padding:0 8px">';
+  trendHtml+='<div style="display:flex;align-items:flex-end;gap:2px;flex:1;min-height:250px;padding:0 8px">';
   metricVals.forEach(m=>{
     const pct=Math.max(Math.round(m.val/maxMetric*70),2);
     const isCur=m.key===_curPeriod;
@@ -1755,7 +1768,7 @@ function _vidRenderAnalytics(){
   h+=`<div style="display:flex;flex-direction:column;gap:12px">`;
   // KPIs row
   h+='<div style="display:flex;gap:8px;align-items:stretch">';
-  h+=`<div style="background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:10px 10px;cursor:pointer;display:flex;align-items:center;gap:6px;flex:1" onclick="_ytShowUnreplied()"><div style="font-size:15px;font-weight:700;color:#ef4444">${_unrepliedN}</div><div style="font-size:9px;color:var(--muted)">Unreplied</div></div>`;
+  h+=`<div style="background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:14px 10px;cursor:pointer;display:flex;align-items:center;gap:6px;flex:1" onclick="_ytShowUnreplied()"><div style="font-size:15px;font-weight:700;color:#ef4444">${_unrepliedN}</div><div style="font-size:9px;color:var(--muted)">Unreplied</div></div>`;
   h+=`${_kc2("_anKpiModal('views')")}${_kStat('Views',_ytNum(totalViews),sparkline(_spViews))}</div>`;
   h+=`${_kc2("_anKpiModal('avg')")}${_kStat('Avg/Video',_ytNum(avgViews),sparkline(_spAvg))}</div>`;
   h+=`${_kc2("_anKpiModal('videos')")}${_kStat('Videos',String(merged.length),sparkline(_spVids))}</div>`;
@@ -1815,6 +1828,54 @@ function _vidRenderAnalytics(){
   if(!ideaNum) tryHtml+='<div style="font-size:11px;color:var(--muted)">Not enough data yet for suggestions</div>';
   h+=card('Try Next',tryHtml);
   h+='</div>'; // close Do More / Try Next grid
+
+  // ── Scatterplot ──
+  const _axOpts={views:'Views',likes:'Likes',comments:'Comments',engagement:'Engagement %',duration:'Duration (min)',revenue:(_hasRealRev?'':'Est. ')+'Revenue'};
+  const _axSel=(id,cur)=>Object.entries(_axOpts).map(([k,l])=>`<option value="${k}"${k===cur?' selected':''}>${l}</option>`).join('');
+  const _axVal=(v,ax)=>{
+    if(ax==='views')return v.views;if(ax==='likes')return v.likes;if(ax==='comments')return v.comments;
+    if(ax==='engagement')return v.views>0?((v.likes+v.comments)/v.views*100):0;
+    if(ax==='duration')return v.duration_minutes||0;
+    if(ax==='revenue')return _vRev(v);return 0;
+  };
+  const _scW=600,_scH=300,_scPad=40;
+  const xVals=merged.map(v=>_axVal(v,_anScatterX)),yVals=merged.map(v=>_axVal(v,_anScatterY));
+  const xMin=Math.min(...xVals,0),xMax=Math.max(...xVals,1),yMin=Math.min(...yVals,0),yMax=Math.max(...yVals,1);
+  const xScale=v=>(v-xMin)/(xMax-xMin)*(_scW-_scPad*2)+_scPad;
+  const yScale=v=>_scH-_scPad-(v-yMin)/(yMax-yMin)*(_scH-_scPad*2);
+  const _fmtAx=(v,ax)=>ax==='engagement'?v.toFixed(1)+'%':ax==='revenue'?'$'+_ytNum(Math.round(v)):ax==='duration'?v.toFixed(1)+'m':_ytNum(Math.round(v));
+  let scSvg=`<svg width="100%" viewBox="0 0 ${_scW} ${_scH}" style="display:block">`;
+  // Grid lines
+  for(let i=0;i<=4;i++){
+    const y=_scPad+(_scH-_scPad*2)*i/4;
+    const yv=yMax-(yMax-yMin)*i/4;
+    scSvg+=`<line x1="${_scPad}" y1="${y}" x2="${_scW-_scPad}" y2="${y}" stroke="rgba(120,113,145,.1)" stroke-width="1"/>`;
+    scSvg+=`<text x="${_scPad-4}" y="${y+3}" text-anchor="end" fill="var(--muted)" font-size="9">${_fmtAx(yv,_anScatterY)}</text>`;
+  }
+  for(let i=0;i<=4;i++){
+    const x=_scPad+(_scW-_scPad*2)*i/4;
+    const xv=xMin+(xMax-xMin)*i/4;
+    scSvg+=`<line x1="${x}" y1="${_scPad}" x2="${x}" y2="${_scH-_scPad}" stroke="rgba(120,113,145,.1)" stroke-width="1"/>`;
+    scSvg+=`<text x="${x}" y="${_scH-_scPad+14}" text-anchor="middle" fill="var(--muted)" font-size="9">${_fmtAx(xv,_anScatterX)}</text>`;
+  }
+  // Dots
+  const topicColors=['#8b5cf6','#f59e0b','#10b981','#ef4444','#0ea5e9','#ec4899','#6366f1','#14b8a6','#f97316','#84cc16'];
+  const topicList=[...new Set(merged.map(v=>v.topic||'Other'))];
+  merged.forEach(v=>{
+    const cx=xScale(_axVal(v,_anScatterX)),cy=yScale(_axVal(v,_anScatterY));
+    const ti=topicList.indexOf(v.topic||'Other')%topicColors.length;
+    scSvg+=`<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="5" fill="${topicColors[ti]}" opacity=".7" stroke="#fff" stroke-width="1"><title>${_ytEsc(v.title||'')}\n${_axOpts[_anScatterX]}: ${_fmtAx(_axVal(v,_anScatterX),_anScatterX)}\n${_axOpts[_anScatterY]}: ${_fmtAx(_axVal(v,_anScatterY),_anScatterY)}</title></circle>`;
+  });
+  scSvg+='</svg>';
+  // Legend
+  let legHtml=topicList.slice(0,8).map((t,i)=>`<span style="display:inline-flex;align-items:center;gap:3px;font-size:10px;color:var(--muted);margin-right:10px"><span style="width:8px;height:8px;border-radius:50%;background:${topicColors[i%topicColors.length]};flex-shrink:0"></span>${_ytEsc(t)}</span>`).join('');
+  let scHtml=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+    <span style="font-size:10px;color:var(--muted)">X:</span>
+    <select onchange="_anScatterX=this.value;renderVideosPageKeepScroll()" style="font-size:10px;font-family:inherit;border:1px solid var(--border);border-radius:5px;padding:2px 6px;background:var(--bg);color:var(--text);outline:none">${_axSel('_scX',_anScatterX)}</select>
+    <span style="font-size:10px;color:var(--muted)">Y:</span>
+    <select onchange="_anScatterY=this.value;renderVideosPageKeepScroll()" style="font-size:10px;font-family:inherit;border:1px solid var(--border);border-radius:5px;padding:2px 6px;background:var(--bg);color:var(--text);outline:none">${_axSel('_scY',_anScatterY)}</select>
+  </div>${scSvg}<div style="margin-top:6px">${legHtml}</div>`;
+  h+=card('Video Explorer',scHtml);
 
   h+='</div>';
   return h;
@@ -1890,9 +1951,8 @@ function _vidShowSuggestions(q){
   sg.style.display='block';
   sg.innerHTML=suggestions.slice(0,8).map(s=>{
     const hl=_vidHighlight(s.text,lq);
-    const badge='<span style="font-size:9px;color:'+badgeColors[s.type]+';margin-right:6px;min-width:38px;display:inline-block">'+s.type+'</span>';
     const safe=s.text.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-    return'<div class="vid-sg-item" onmousedown="_vidPickSuggestion(\''+safe+'\')" style="padding:5px 10px;font-size:12px;cursor:pointer;display:flex;align-items:center">'+badge+hl+'</div>';
+    return'<div class="vid-sg-item" onmousedown="_vidPickSuggestion(\''+safe+'\')" style="padding:5px 10px;font-size:12px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><span style="font-size:9px;color:'+badgeColors[s.type]+';margin-right:6px">'+s.type+'</span>'+hl+'</div>';
   }).join('');
 }
 function _vidPickSuggestion(text){
