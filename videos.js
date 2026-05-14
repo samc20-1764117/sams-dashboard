@@ -284,6 +284,18 @@ function renderVideosPage(){
 // ── DASHBOARD VIEW (default — In Progress + Ideas) ───────────────────────────
 function _vidRenderDashboard(){
   const all=(st.videos||[]).filter(v=>!v.is_deleted);
+  // Auto-promote idea children whose parent B is active
+  const _promoteQ=[];
+  all.forEach(v=>{
+    if(v.status==='idea'&&v.big_video_id){
+      const par=all.find(p=>String(p.id)===String(v.big_video_id));
+      if(par&&(par.status==='up_next'||par.status==='in_progress')){
+        v.status=par.status;
+        _promoteQ.push({id:v.id,status:par.status});
+      }
+    }
+  });
+  if(_promoteQ.length){save();for(const p of _promoteQ)sbReqSilent('PATCH','videos',{status:p.status},`?id=eq.${p.id}`);}
   let upNext=all.filter(v=>v.status==='up_next');
   let inProgress=all.filter(v=>v.status==='in_progress');
   let ideas=all.filter(v=>v.status==='idea');
@@ -397,7 +409,8 @@ function _vidDashRow(v,isChild,simple){
       const kids=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===sid);
       if(kids.length)hasGroup=true;
     }else if(v.big_video_id&&String(v.big_video_id)!==sid){
-      hasGroup=true;
+      const _par=(st.videos||[]).find(x=>!x.is_deleted&&String(x.id)===String(v.big_video_id));
+      if(_par)hasGroup=true;
     }
     const bulletColor=hasGroup?'rgba(139,92,246,.45)':'#fff';
     const tipAttr=hasGroup?`onmouseenter="_vidBulletTipShow(event,'${sid}')" onmouseleave="_vidBulletTipHide()"`:'';
