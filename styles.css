@@ -148,7 +148,7 @@ body{font-family:'DM Sans',sans-serif;background:#fef6f0;background-attachment:f
 
 /* Undo toast */
 .back-btn{display:none}
-#backToOv{display:none;position:fixed;top:52px;right:20px;z-index:999;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--muted);background:none;border:none;cursor:pointer;padding:6px 10px;opacity:.7;transition:opacity .15s;font-family:'DM Sans',sans-serif}
+#backToOv{display:none;position:fixed;top:44px;right:20px;z-index:999;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--muted);background:none;border:none;cursor:pointer;padding:6px 10px;opacity:.7;transition:opacity .15s;font-family:'DM Sans',sans-serif}
 #backToOv:hover{opacity:1}
 /* Pup Page */
 .pup-section-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px}

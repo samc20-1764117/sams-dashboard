@@ -3870,31 +3870,37 @@ function dropOnTB(e,ds,h,row,smOverride){
     pushUndo(()=>{st.blocks=st.blocks.filter(b=>b.id!==blk.id);sbDeleteBlock(blk.id);save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();},'Added birthday to time block');
     return;
   } else {
-    const t=st.tasks.find(x=>String(x.id)===String(dragId));
-    if(!t){dragId=null;return;}
-    title=t.name;cat=t.category||'Home';taskId=String(t.id);
-    // Prevent pulling same task into timeblock twice on same day
-    if(st.blocks.find(b=>b.taskId===taskId&&b.ds===ds)){
-      dragId=null;
-      showToast('Already in time block','#6b7280',2000);
-      return;
+    // Multi-select: if dragged task is in selectedTasks with others, add all selected tasks
+    const _isMultiTB=selectedTasks.has(String(dragId))&&selectedTasks.size>1;
+    const _taskIds=_isMultiTB?[...selectedTasks].filter(sid=>{const _t=st.tasks.find(x=>String(x.id)===sid);return _t&&!_t._virtual;}):dragId?[String(dragId)]:[];
+    if(!_taskIds.length){dragId=null;return;}
+    const _addedBlks=[];const _prevDates=[];
+    let _curSm=sm;
+    for(const tid of _taskIds){
+      const t=st.tasks.find(x=>String(x.id)===tid);
+      if(!t)continue;
+      const _tid=String(t.id);
+      if(st.blocks.find(b=>b.taskId===_tid&&b.ds===ds))continue;
+      const _dur=autoDur(t.name,t.category||'Home');
+      const blk={id:crypto.randomUUID(),title:t.name,ds,sm:_curSm,dur:_dur,cat:t.category||'Home',taskId:_tid};
+      _prevDates.push({t,prev:t.due_date});
+      if((t.due_date||'').split('T')[0]!==ds){
+        t.due_date=ds;
+        sbReq('PATCH','tasks',{due_date:ds},`?id=eq.${t.id}`);
+      }
+      st.blocks.push(blk);_addedBlks.push(blk);
+      sbSaveBlock(blk);
+      _curSm+=_dur;
     }
-    // Set task due_date to this day so it appears in Today/This Week/Calendar
-    const prevDate=t.due_date;
-    const blk={id:crypto.randomUUID(),title,ds,sm,dur:autoDur(title,cat),cat,taskId};
-    if((t.due_date||'').split('T')[0]!==ds){
-      t.due_date=ds;
-      sbReq('PATCH','tasks',{due_date:ds},`?id=eq.${t.id}`);
-    }
-    st.blocks.push(blk);dragId=null;save();renderAll();
-    sbSaveBlock(blk);
+    if(!_addedBlks.length){dragId=null;showToast('Already in time block','#6b7280',2000);return;}
+    dragId=null;selectedTasks.clear();save();renderAll();
+    const _blkIds=_addedBlks.map(b=>b.id);
     pushUndo(()=>{
-      st.blocks=st.blocks.filter(b=>b.id!==blk.id);
-      t.due_date=prevDate||null;
-      sbReq('PATCH','tasks',{due_date:prevDate||null},`?id=eq.${t.id}`);
-      sbDeleteBlock(blk.id);
+      st.blocks=st.blocks.filter(b=>!_blkIds.includes(b.id));
+      _prevDates.forEach(({t,prev})=>{t.due_date=prev||null;sbReq('PATCH','tasks',{due_date:prev||null},`?id=eq.${t.id}`);});
+      _blkIds.forEach(id=>sbDeleteBlock(id));
       save();renderAll();
-    },'Added to time block');
+    },_addedBlks.length>1?`Added ${_addedBlks.length} tasks to time block`:'Added to time block');
     return;
   }
   const blk={id:crypto.randomUUID(),title,ds,sm,dur:30,cat,taskId};
