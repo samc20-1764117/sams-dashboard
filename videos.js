@@ -161,7 +161,7 @@ let _vidGroupFilter='all';
 let _vidSearch='';
 let _vidMatchIds=[],_vidMatchIdx=0;
 let _vidView=localStorage.getItem('_vidView')||'dashboard'; // dashboard | table | board | groups
-let _vidSortCol=null,_vidSortDir=1,_vidShowCompleted=true,_vidTableScrolledOnce=false;
+let _vidSortCol=null,_vidSortDir=1,_vidShowCompleted=true,_vidTableScrolledOnce=false,_vidSearchTs=0;
 let _anTopicFilter='all',_anScatterX='views',_anScatterY='likes';
 let _vidMonthOffset=0; // 0=current month, -1=last month, etc
 
@@ -1666,7 +1666,7 @@ function _vidRenderAnalytics(){
           <div style="width:55%;height:${forecastPct}%;display:flex;flex-direction:column;align-items:stretch">
             <div style="flex:${forecastFlex};background:repeating-linear-gradient(135deg,${trendColorCur},${trendColorCur} 2px,transparent 2px,transparent 5px);border-radius:4px 4px 0 0;min-height:2px;opacity:.5"></div>
             <div style="flex:${actualFlex};background:${trendColorCur};border-radius:0 0 4px 4px;min-height:3px;box-shadow:0 0 0 1.5px rgba(120,113,145,.3);display:flex;align-items:flex-start;justify-content:center;overflow:visible;position:relative">
-              <span style="font-size:8px;color:var(--text);font-weight:600;white-space:nowrap;position:absolute;top:2px">${m.fmt}</span>
+              <span style="font-size:8px;color:#fff;font-weight:600;white-space:nowrap;position:absolute;top:2px">${m.fmt}</span>
             </div>
           </div>
         </div>
@@ -1820,9 +1820,8 @@ function _vidRenderAnalytics(){
 
   // KPIs full width
   const _kStat2=(label,val,spark)=>`${spark||''}<div style="min-width:0;text-align:center;flex:1"><div style="font-size:9px;color:var(--muted);white-space:nowrap">${label}</div><div style="font-size:15px;font-weight:700;color:var(--text);white-space:nowrap">${val}</div></div>`;
-  // KPIs (left, aligned with chart) + Topic filter (right, aligned with insights)
-  h+=`<div style="display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:12px;align-items:stretch">`;
-  h+='<div style="display:flex;gap:8px;align-items:stretch">';
+  // KPIs full width
+  h+='<div style="display:flex;gap:8px;align-items:stretch;margin-bottom:12px">';
   h+=`<div style="background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:12px 14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;flex:1" onclick="_ytShowUnreplied()"><div style="font-size:15px;font-weight:700;color:#ef4444">${_unrepliedN}</div><div style="font-size:9px;color:var(--muted)">Unreplied</div></div>`;
   h+=`${_kc2("_anKpiModal('views')")}${_kStat2('Views',_ytNum(totalViews),sparkline(_spViews))}</div>`;
   h+=`${_kc2("_anKpiModal('avg')")}${_kStat2('Avg/Video',_ytNum(avgViews),sparkline(_spAvg))}</div>`;
@@ -1830,20 +1829,21 @@ function _vidRenderAnalytics(){
   h+=`${_kc2("_anKpiModal('revenue')")}${_kStat2(_revLabel,_revValue,sparkline(_spRevReal))}</div>`;
   h+=`${_kc2("_anKpiModal('subscribers')")}${_kStat2('Subscribers',cs?_ytNum(cs.subscribers):'-')}</div>`;
   h+='</div>';
-  // Topic filter — aligned with insights column
-  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:10px;padding:10px 14px;position:relative;display:flex;flex-direction:column;justify-content:center">
-    <div style="font-size:10px;color:var(--muted);margin-bottom:4px">Filter by topic</div>
-    <input id="anTopicInput" type="text" placeholder="All topics" value="${_anTopicFilter==='all'?'':_esc(_anTopicFilter)}" oninput="_anTopicInputChange(this.value)" onfocus="_anTopicShowList()" style="width:100%;padding:5px 8px;border:1px solid ${_anTopicFilter!=='all'?'rgba(139,92,246,.4)':'var(--border)'};border-radius:6px;font-family:inherit;font-size:11px;background:${_anTopicFilter!=='all'?'rgba(139,92,246,.04)':'var(--bg)'};color:var(--text);outline:none;box-sizing:border-box">
-    ${_anTopicFilter!=='all'?'<button onclick="_anTopicFilter=\'all\';renderVideosPageKeepScroll()" style="position:absolute;right:20px;bottom:14px;background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);line-height:1">✕</button>':''}
-    <div id="anTopicList" style="display:none;position:absolute;top:100%;left:0;right:0;margin-top:2px;background:var(--bg);border:1px solid var(--border);border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,.1);z-index:100;max-height:150px;overflow-y:auto"></div>
-  </div>`;
-  h+='</div>'; // close KPI + topic grid row
-  // 2-col: chart (left) | insights (right)
+  // 2-col: chart (left) | topic filter + insights (right)
   h+=`<div style="display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:12px;align-items:stretch">`;
   h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column">${trendHtml}</div>`;
-  // Strategy insights
-  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:16px 18px;overflow-y:auto">
+  h+=`<div style="display:flex;flex-direction:column;gap:12px">`;
+  // Topic filter — compact
+  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:10px;padding:8px 14px;position:relative;flex-shrink:0">
+    <div style="font-size:10px;color:var(--muted);margin-bottom:3px">Filter by topic</div>
+    <input id="anTopicInput" type="text" placeholder="All topics" value="${_anTopicFilter==='all'?'':_esc(_anTopicFilter)}" oninput="_anTopicInputChange(this.value)" onfocus="_anTopicShowList()" style="width:100%;padding:4px 8px;border:1px solid ${_anTopicFilter!=='all'?'rgba(139,92,246,.4)':'var(--border)'};border-radius:6px;font-family:inherit;font-size:11px;background:${_anTopicFilter!=='all'?'rgba(139,92,246,.04)':'var(--bg)'};color:var(--text);outline:none;box-sizing:border-box">
+    ${_anTopicFilter!=='all'?'<button onclick="_anTopicFilter=\'all\';renderVideosPageKeepScroll()" style="position:absolute;right:20px;bottom:10px;background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);line-height:1">✕</button>':''}
+    <div id="anTopicList" style="display:none;position:absolute;top:100%;left:0;right:0;margin-top:2px;background:var(--bg);border:1px solid var(--border);border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,.1);z-index:100;max-height:150px;overflow-y:auto"></div>
+  </div>`;
+  // Strategy insights — fills remaining height
+  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:16px 18px;overflow-y:auto;flex:1">
     <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:8px">Insights</div>${stratHtml}</div>`;
+  h+='</div>'; // close right column
   h+='</div>'; // close 2-col grid
   // Do More Like This + Try Next — full width below
   h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">';
@@ -1951,7 +1951,7 @@ function _vidSetView(v){_vidView=v;localStorage.setItem('_vidView',v);renderVide
 function _vidSetFilter(f){_vidFilter=f;renderVideosPage();}
 function _vidSetGroup(g){_vidGroupFilter=g;renderVideosPage();}
 function _vidSetSearch(q){
-  _vidSearch=q;_vidMatchIdx=0;
+  _vidSearch=q;_vidMatchIdx=0;_vidSearchTs=Date.now();
   renderVideosPage();
   requestAnimationFrame(()=>{
     _vidPostRenderMatches();
@@ -2057,11 +2057,20 @@ function _vidGoToVideo(id){
   const sg=document.getElementById('vidSearchSuggestions');if(sg)sg.style.display='none';
   const row=document.querySelector('.vid-dash-row[data-vid="'+id+'"]')||document.querySelector('.vid-row[data-vid="'+id+'"]');
   if(row){row.scrollIntoView({block:'center',behavior:'smooth'});row.style.transition='background .2s';row.style.background='rgba(139,92,246,.12)';setTimeout(()=>row.style.background='',1200);}
+  const inp=document.getElementById('vidSearchInput');if(inp)inp.focus();
 }
 function _vidPickSuggestion(text){
-  const inp=document.getElementById('vidSearchInput');if(inp)inp.value=text;
-  _vidSetSearch(text);
+  const inp=document.getElementById('vidSearchInput');if(inp){inp.value=text;inp.focus();}
   const sg=document.getElementById('vidSearchSuggestions');if(sg)sg.style.display='none';
+  // Scroll to first matching visible row
+  const lq=text.toLowerCase();
+  const rows=document.querySelectorAll('.vid-dash-row[data-vid],.vid-row[data-vid]');
+  for(const row of rows){
+    const title=row.querySelector('[title]');
+    if(title&&(title.getAttribute('title')||'').toLowerCase().includes(lq)){
+      row.scrollIntoView({block:'center',behavior:'smooth'});row.style.transition='background .2s';row.style.background='rgba(139,92,246,.12)';setTimeout(()=>row.style.background='',1200);break;
+    }
+  }
 }
 function _vidSearchFocus(){if(_vidSearch&&_vidSearch.length>=2)_vidShowSuggestions(_vidSearch);}
 function _vidHighlight(text,q){
@@ -2807,7 +2816,7 @@ function _vidCelebrate(id){
 document.addEventListener('keydown',e=>{
   if(activePg!=='videos')return;
   if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'||e.target.tagName==='SELECT'||e.target.isContentEditable)return;
-  if(_vidSearch){const si=document.getElementById('vidSearchInput');if(si){si.focus();return;}}
+  if(_vidSearch||Date.now()-_vidSearchTs<300){const si=document.getElementById('vidSearchInput');if(si){si.focus();return;}}
   if((e.key==='Delete'||e.key==='Backspace')&&_vidSelected.size>0){e.preventDefault();const all=new Set([..._vidSelected,..._vidChildSelected]);all.forEach(id=>delVideo(id));_vidSelected.clear();_vidChildSelected.clear();return;}
   if((e.metaKey||e.ctrlKey)&&e.key==='c'&&_vidSelected.size>0){e.preventDefault();_vidCopied=[];_vidSelected.forEach(id=>{const v=(st.videos||[]).find(x=>String(x.id)===String(id));if(v)_vidCopied.push({...v});});showToast('Copied '+_vidCopied.length+' video(s)','#0ea5e9',1500);return;}
   if((e.metaKey||e.ctrlKey)&&e.key==='v'&&_vidCopied.length>0){e.preventDefault();_vidCopied.forEach(v=>_vidDuplicate(v.id));return;}
