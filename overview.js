@@ -925,6 +925,21 @@ function renderWkCal(){
       }
       const _dragSid=String(dragId);
       const _isMulti=selectedTasks.has(_dragSid)&&selectedTasks.size>1;
+      // Also move selected wrec/wrrule items when multi-dragging
+      if(_isMulti){
+        const wkKey=getWkKey(wkOff);
+        [...selectedTasks].forEach(sid=>{
+          if(sid.startsWith('wrec-')){
+            const recId=sid.replace('wrec-','');
+            const r=st.recurring.find(x=>String(x.id)===String(recId));
+            if(r){if(!r._dateOverrides)r._dateOverrides={};r._dateOverrides[wkKey]=ds;sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));}
+          }else if(sid.startsWith('wrrule-virt-')||sid.startsWith('wrrule-')){
+            const ruleId=sid.replace('wrrule-virt-','').replace('wrrule-','');
+            const r=st.wrRules.find(x=>String(x.id)===String(ruleId));
+            if(r){if(!r._dateOverrides)r._dateOverrides={};r._dateOverrides[wkKey]=ds;sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},`?id=eq.${ruleId}`);}
+          }
+        });
+      }
       const _taskSids=_isMulti?[...selectedTasks].filter(sid=>{const _t=st.tasks.find(x=>String(x.id)===sid);return _t&&!_t._virtual;}):[_dragSid];
       const _moved=_taskSids.map(sid=>({t:st.tasks.find(x=>String(x.id)===sid),prev:null})).filter(x=>x.t);
       if(_moved.length){
