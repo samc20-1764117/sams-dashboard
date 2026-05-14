@@ -3784,7 +3784,7 @@ function dropOnTB(e,ds,h,row,smOverride){
   }
   if(dragId.startsWith('wrrule::')){
     const ruleId=dragId.split('::')[1];
-    const _wrSid='wrrule-'+ruleId;
+    const _wrSid=selectedTasks.has('wrrule-'+ruleId)?'wrrule-'+ruleId:selectedTasks.has('wrrule-virt-'+ruleId)?'wrrule-virt-'+ruleId:'wrrule-'+ruleId;
     const _isMultiWR=selectedTasks.has(_wrSid)&&selectedTasks.size>1;
     const wkKey=wkKeyFromDs(ds);
     const _addedBlks=[];const _undoOps=[];
