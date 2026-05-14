@@ -93,7 +93,9 @@ export async function onRequest(context) {
   if (action === 'status') {
     const KV = context.env.YT_CACHE;
     const hasRefresh = KV ? !!(await KV.get('yt-oauth-refresh')) : false;
-    return new Response(JSON.stringify({ configured: true, authorized: hasRefresh }), {
+    // Debug: list available env var keys (values hidden)
+    const envKeys = Object.keys(context.env).filter(k => !k.startsWith('__'));
+    return new Response(JSON.stringify({ configured: true, authorized: hasRefresh, envKeys }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
