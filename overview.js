@@ -1372,12 +1372,15 @@ function setupWkcEdgeDrop(){
       const rec=st.recurring.find(x=>String(x.id)===String(recId));
       if(rec){
         if(!rec._dateOverrides)rec._dateOverrides={};
-        const wkKey=getWkKey(targetWkOff);
-        const prev=rec._dateOverrides[wkKey];
-        rec._dateOverrides[wkKey]=newDs;
+        const curWkKey=getWkKey(wkOff);
+        const tgtWkKey=getWkKey(targetWkOff);
+        const prevCur=rec._dateOverrides[curWkKey];
+        const prevTgt=rec._dateOverrides[tgtWkKey];
+        if(curWkKey!==tgtWkKey&&prevCur!==undefined)delete rec._dateOverrides[curWkKey];
+        rec._dateOverrides[tgtWkKey]=newDs;
         dragId=null;shiftWk(dir);save();renderAll();
         sbReq('PATCH','wr_recurring_rules',{date_overrides:rec._dateOverrides},recQs(rec.id));
-        pushUndo(()=>{if(prev)rec._dateOverrides[wkKey]=prev;else delete rec._dateOverrides[wkKey];save();renderAll();sbReq('PATCH','wr_recurring_rules',{date_overrides:rec._dateOverrides},recQs(rec.id));},'Moved to other week');
+        pushUndo(()=>{if(curWkKey!==tgtWkKey&&prevCur!==undefined)rec._dateOverrides[curWkKey]=prevCur;if(prevTgt!==undefined)rec._dateOverrides[tgtWkKey]=prevTgt;else delete rec._dateOverrides[tgtWkKey];save();renderAll();sbReq('PATCH','wr_recurring_rules',{date_overrides:rec._dateOverrides},recQs(rec.id));},'Moved to other week');
       }
       dragId=null;return;
     }
@@ -1461,12 +1464,15 @@ function setupEdge(id,dir){
       const r=st.recurring.find(x=>String(x.id)===String(recId));
       if(r){
         if(!r._dateOverrides)r._dateOverrides={};
-        const wkKey=getWkKey(targetWkOff);
-        const prev=r._dateOverrides[wkKey];
-        r._dateOverrides[wkKey]=newDs;
+        const curWkKey=getWkKey(wkOff);
+        const tgtWkKey=getWkKey(targetWkOff);
+        const prevCur=r._dateOverrides[curWkKey];
+        const prevTgt=r._dateOverrides[tgtWkKey];
+        if(curWkKey!==tgtWkKey&&prevCur!==undefined)delete r._dateOverrides[curWkKey];
+        r._dateOverrides[tgtWkKey]=newDs;
         dragId=null;shiftWk(dir);save();renderAll();
         sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));
-        pushUndo(()=>{if(prev)r._dateOverrides[wkKey]=prev;else delete r._dateOverrides[wkKey];save();renderAll();sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));},'Moved to other week');
+        pushUndo(()=>{if(curWkKey!==tgtWkKey&&prevCur!==undefined)r._dateOverrides[curWkKey]=prevCur;if(prevTgt!==undefined)r._dateOverrides[tgtWkKey]=prevTgt;else delete r._dateOverrides[tgtWkKey];save();renderAll();sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));},'Moved to other week');
       }
       dragId=null;return;
     }
