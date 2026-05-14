@@ -396,7 +396,7 @@ function _vidDashRow(v,isChild,simple){
     if(v.video_type==='B'){
       const kids=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===sid);
       if(kids.length)hasGroup=true;
-    }else if(v.big_video_id){
+    }else if(v.big_video_id&&String(v.big_video_id)!==sid){
       hasGroup=true;
     }
     const bulletColor=hasGroup?'rgba(139,92,246,.45)':'#fff';
@@ -1216,7 +1216,7 @@ function _vidBulletTipShow(e,sid){
       html+=kids.map(c=>{
         return'<div style="padding:1px 0;font-size:11px;white-space:nowrap">• '+_esc(c.topic||c.title)+'</div>';
       }).join('');
-    }else if(v.big_video_id){
+    }else if(v.big_video_id&&String(v.big_video_id)!==sid){
       const parent=(st.videos||[]).find(x=>!x.is_deleted&&String(x.id)===String(v.big_video_id));
       if(parent){
         html='<div style="font-size:11px;white-space:nowrap">'+_esc(parent.topic||parent.title)+'</div>';
