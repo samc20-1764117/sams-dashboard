@@ -303,7 +303,7 @@ function renderVideosPage(){
         <div style="position:relative">
           <input id="vidSearchInput" type="text" placeholder="Search videos..." value="${_vidSearch.replace(/"/g,'&quot;')}" oninput="_vidSetSearch(this.value)" onkeydown="_vidSearchKey(event)" onfocus="_vidSearchFocus()" style="padding:5px 10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:12px;background:var(--bg);color:var(--text);outline:none;width:180px">
           ${_vidSearch?`<div style="display:flex;align-items:center;gap:1px;position:absolute;right:6px;top:50%;transform:translateY(-50%)">
-            <span id="vidSearchCount" style="font-size:10px;color:var(--muted);white-space:nowrap;margin-right:2px">${_vidMatchIdx+1}/${_vidMatchIds.length}</span>
+            <span id="vidSearchCount" style="font-size:10px;color:var(--muted);white-space:nowrap;margin-right:2px">...</span>
             <button onclick="_vidSearchNav(-1)" style="background:none;border:none;cursor:pointer;padding:0 2px;font-size:10px;color:var(--muted);line-height:1" title="Previous (Shift+Enter)">▲</button>
             <button onclick="_vidSearchNav(1)" style="background:none;border:none;cursor:pointer;padding:0 2px;font-size:10px;color:var(--muted);line-height:1" title="Next (Enter)">▼</button>
             <button onclick="_vidSetSearch('');document.getElementById('vidSearchInput').value=''" style="background:none;border:none;cursor:pointer;padding:0 2px;font-size:10px;color:var(--muted);line-height:1" title="Clear (Esc)">✕</button>
@@ -363,6 +363,7 @@ function renderVideosPage(){
     });
   }
   const _rvpSe2=_vidScrollEl();if(_rvpSe2)_rvpSe2.scrollTop=_rvpTop;
+  if(_vidSearch)requestAnimationFrame(()=>_vidPostRenderMatches());
   // Load cached YT data from localStorage on first run
   if(!_ytData){try{var _lsc=JSON.parse(localStorage.getItem('_ytCache')||'null');if(_lsc&&_lsc.channelStats){_ytData=_lsc;_ytBuildMatch();}}catch(e){}}
   if(!_ytFetched){
@@ -1904,9 +1905,9 @@ function _vidSetFilter(f){_vidFilter=f;renderVideosPage();}
 function _vidSetGroup(g){_vidGroupFilter=g;renderVideosPage();}
 function _vidSetSearch(q){
   _vidSearch=q;_vidMatchIdx=0;
-  _vidBuildMatches();
   renderVideosPage();
   requestAnimationFrame(()=>{
+    _vidPostRenderMatches();
     const inp=document.getElementById('vidSearchInput');
     if(inp){inp.focus();inp.setSelectionRange(inp.value.length,inp.value.length);}
     _vidShowSuggestions(q);
@@ -1916,9 +1917,17 @@ function _vidSetSearch(q){
 function _vidSearchMatch(v,q){return(v.title||'').toLowerCase().includes(q)||(v.topic||'').toLowerCase().includes(q)||(v.status||'').replace('_',' ').toLowerCase().includes(q)||(v.playlist||'').toLowerCase().includes(q);}
 function _vidBuildMatches(){
   _vidMatchIds=[];
-  if(!_vidSearch)return;
-  // Use _vidFiltered which already applies search + status/group filters
-  _vidFiltered().forEach(v=>_vidMatchIds.push(String(v.id)));
+  // Will be rebuilt from DOM after render
+}
+function _vidPostRenderMatches(){
+  if(!_vidSearch){_vidMatchIds=[];return;}
+  _vidMatchIds=[];
+  document.querySelectorAll('.vid-dash-row[data-vid], .vid-row[data-vid]').forEach(r=>{
+    if(!_vidMatchIds.includes(r.dataset.vid))_vidMatchIds.push(r.dataset.vid);
+  });
+  if(_vidMatchIdx>=_vidMatchIds.length)_vidMatchIdx=0;
+  const cnt=document.getElementById('vidSearchCount');
+  if(cnt)cnt.textContent=(_vidMatchIds.length?(_vidMatchIdx+1):0)+'/'+_vidMatchIds.length;
 }
 function _vidSearchNav(dir){
   if(!_vidMatchIds.length)return;
@@ -1929,8 +1938,10 @@ function _vidSearchNav(dir){
 }
 function _vidScrollToMatch(){
   const id=_vidMatchIds[_vidMatchIdx];if(!id)return;
-  const row=document.querySelector('.vid-dash-row[data-vid="'+id+'"]');
-  if(row){row.scrollIntoView({block:'center',behavior:'smooth'});row.style.transition='background .2s';row.style.background='rgba(139,92,246,.1)';setTimeout(()=>row.style.background='',800);}
+  // Clear previous highlights
+  document.querySelectorAll('.vid-dash-row,.vid-row').forEach(r=>{if(r._vidHl)r.style.background='';r._vidHl=false;});
+  const row=document.querySelector('.vid-dash-row[data-vid="'+id+'"]')||document.querySelector('.vid-row[data-vid="'+id+'"]');
+  if(row){row.scrollIntoView({block:'center',behavior:'smooth'});row.style.transition='background .2s';row.style.background='rgba(139,92,246,.12)';row._vidHl=true;setTimeout(()=>{if(row._vidHl){row.style.background='';row._vidHl=false;}},1200);}
 }
 function _vidSearchKey(e){
   const sg=document.getElementById('vidSearchSuggestions');
