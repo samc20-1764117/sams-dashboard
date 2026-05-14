@@ -2173,14 +2173,14 @@ function renderRecipesPage(){
 function showPage(id){
   if(id==='tasks')return;
   if(id==='shopping')id='weekly';// shopping merged into weekly page
-  activePg=id;
+  const _prevPg=activePg;activePg=id;
   document.querySelectorAll('.page').forEach(p=>{p.classList.remove('active');});
   const vidPage=document.getElementById('page-videos');if(vidPage)vidPage.removeAttribute('style');
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   const pageEl=document.getElementById('page-'+id);if(pageEl)pageEl.classList.add('active');
   const idx=PAGES.indexOf(id);if(idx>-1&&document.querySelectorAll('.nav-item')[idx])document.querySelectorAll('.nav-item')[idx].classList.add('active');
   const mainEl=document.getElementById('main');if(mainEl){mainEl.scrollTop=0;}
-  if(id==='weekly'){renderWeeklyPage();}if(id==='travel')renderTravelPage();if(id==='birthdays')renderBdayPage();if(id==='pups')renderPupsPage();if(id==='recipes')renderRecipesPage();if(id==='videos'){_vidView='dashboard';localStorage.setItem('_vidView','dashboard');renderVideosPage();}if(id==='overview'){renderShopOv();renderRecOv();if(document.getElementById('tbGrid'))renderDayTB();}else{const _tbSc=document.getElementById('tbScroll');if(_tbSc)_tbSc._scrollDay=null;}
+  if(id==='weekly'){renderWeeklyPage();}if(id==='travel')renderTravelPage();if(id==='birthdays')renderBdayPage();if(id==='pups')renderPupsPage();if(id==='recipes')renderRecipesPage();if(id==='videos'){if(_prevPg!=='videos'){_vidView='dashboard';localStorage.setItem('_vidView','dashboard');}renderVideosPage();}if(id==='overview'){renderShopOv();renderRecOv();if(document.getElementById('tbGrid'))renderDayTB();}else{const _tbSc=document.getElementById('tbScroll');if(_tbSc)_tbSc._scrollDay=null;}
   const backBtn=document.getElementById('backToOv');if(backBtn)backBtn.style.display=id==='overview'?'none':'flex';
   renderUnassigned();
   history.replaceState(null,'','#'+id);
