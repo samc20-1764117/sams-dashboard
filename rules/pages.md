@@ -73,4 +73,16 @@ Table: `birthdays(id,name,birthday,present_ideas)`. `present_ideas` JSON array. 
 Table: `recipes`. Do NOT reference: protein,prep_time,cook_time,difficulty,last_made_date. `#recSidePanel` 400px. Ingredients: JSON `[{name,amount}]`.
 
 ### Quick Notes (`features.js`)
-`deleteQN`: PATCH `{is_visible:false}` — soft delete only.
+- **Supabase table**: `quick_notes` — columns: `id` (int8), `note_text`, `is_visible` (bool), `created_at`, `hidden_at`, `sort_order` (int4).
+- **Fetch**: `GET ?is_visible=is.true&order=sort_order.asc.nullslast,created_at.asc`. Only marks `_qnLoaded=true` on success (retries on failure).
+- **Add**: POST with `note_text` + `sort_order` (max+1). Enter saves; Enter on empty input closes panel. Auto-capitalize first letter via `oninput`.
+- **Delete**: PATCH `{is_visible:false, hidden_at:now}` — soft delete. Delete/Backspace key archives selected notes.
+- **Edit**: double-click makes text contentEditable. `e.stopPropagation()` on keydown for cursor nav. Enter commits, Escape reverts. PATCH `note_text` to Supabase.
+- **Selection**: click=select, Cmd+click=toggle, Shift+click=range, Cmd+A=all. `_qnSel` Set + `_qnLastSel`. Clicking a note blurs input so Delete key works. `.qn-selected` class for highlight.
+- **Copy**: Cmd+C copies selected note texts joined by newlines.
+- **Drag reorder**: mousedown anywhere on note (except delete btn / contentEditable). White divider line (`.qn-drop-line`) shows drop position. Updates `sort_order` for all notes on drop. PATCH each to Supabase.
+- **Undo**: all actions (add, edit, delete, reorder, restore) push to undo stack via `pushUndo`.
+- **Archive/History**: archive button (SVG box icon) in header toggles `_qnHistOpen`. Fetches `?is_visible=is.false&order=hidden_at.desc.nullslast&limit=50`. Click item or "+ Add" button to restore (PATCH `is_visible:true, hidden_at:null`). Restore has undo.
+- **Enter to close**: global keydown closes panel on Enter when input is empty AND input not focused. When input focused: Enter+text=save, Enter+empty=close.
+- **Arrow keys**: `_qnOpen` flag suppresses day-shift arrow keys on overview.
+- **UI**: no binding/coils, no grid lines, no add button. Header: 13px bold `var(--muted)` title. Notes: `var(--muted)` text color. Placeholder: "Future you will thank you for writing this down…"
