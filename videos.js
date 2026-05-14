@@ -79,36 +79,32 @@ function _ytBuildMatch(){
 function _ytForVid(id){return _ytMatch?_ytMatch[String(id)]:null;}
 
 let _ytDismissedSel=new Set();
+let _ytCommentItems=[];  // current filtered list for shift-select
+let _ytLastSelIdx=null;
 function _ytGetDismissed(){return st._ytDismissed||[];}
 function _ytSaveDismissed(arr){st._ytDismissed=arr;save();}
 
 function _ytShowUnreplied(){
-  _ytDismissedSel.clear();
+  _ytDismissedSel.clear();_ytLastSelIdx=null;
   const dismissed=_ytGetDismissed();
   const all=(_ytData&&_ytData.unrepliedComments)||[];
   const items=all.filter(c=>!dismissed.includes(c.id));
-  const vidMap={};
-  if(_ytMatch){Object.entries(_ytMatch).forEach(([dbId,m])=>{if(m.ytId)vidMap[m.ytId]=dbId;});}
+  items.sort((a,b)=>(b.publishedAt||'').localeCompare(a.publishedAt||''));
+  _ytCommentItems=items;
   let html='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">';
   html+='<div style="font-size:14px;font-weight:700">Unreplied Comments ('+items.length+')</div>';
   html+='<button id="ytDismissSelBtn" onclick="_ytDismissSelected()" style="display:none;padding:4px 10px;border:1px solid rgba(239,68,68,.3);border-radius:6px;background:rgba(239,68,68,.06);color:#ef4444;font-size:11px;cursor:pointer;font-family:inherit;font-weight:600">Dismiss Selected</button>';
   html+='</div>';
   if(!items.length)html+='<div style="color:var(--muted);font-size:12px">All caught up!</div>';
   html+='<div style="max-height:60vh;overflow-y:auto">';
-  items.sort((a,b)=>(b.publishedAt||'').localeCompare(a.publishedAt||''));
-  items.forEach(c=>{
-    const dbId=vidMap[c.videoId];
-    const dbVid=dbId?(st.videos||[]).find(v=>String(v.id)===dbId):null;
-    const vidTitle=dbVid?(dbVid.topic||dbVid.title):'';
+  items.forEach((c,idx)=>{
+    const vidTitle=c.videoTitle||'';
     const date=c.publishedAt?c.publishedAt.slice(0,10):'';
-    html+=`<div id="ytc-${c.id}" style="display:flex;align-items:flex-start;gap:8px;padding:8px 4px;border-bottom:1px solid rgba(210,205,228,.12);cursor:pointer;border-radius:6px" onclick="_ytToggleSel('${c.id}',event)">
-      <input type="checkbox" data-cid="${c.id}" style="margin-top:3px;flex-shrink:0;cursor:pointer" onclick="event.stopPropagation();_ytToggleSel('${c.id}',event)">
+    html+=`<div id="ytc-${c.id}" data-idx="${idx}" style="display:flex;align-items:flex-start;gap:8px;padding:6px 4px;border-bottom:1px solid rgba(210,205,228,.12);cursor:pointer;border-radius:6px" onclick="_ytToggleSel('${c.id}',${idx},event)">
       <div style="flex:1;min-width:0">
-        <div style="font-size:10px;color:var(--muted);margin-bottom:2px">${_esc(vidTitle)} · ${date}</div>
-        <div style="font-size:11px;font-weight:600;margin-bottom:2px">${_esc(c.author)}</div>
+        <div style="font-size:10px;color:var(--muted);margin-bottom:2px">${_esc(vidTitle)}${date?' · '+date:''}</div>
         <div style="font-size:12px;color:var(--text)">${c.text}</div>
       </div>
-      <button onclick="event.stopPropagation();_ytDismissComment('${c.id}')" style="flex-shrink:0;padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--muted);font-size:10px;cursor:pointer;font-family:inherit">Dismiss</button>
     </div>`;
   });
   html+='</div>';
@@ -121,22 +117,27 @@ function _ytShowUnreplied(){
   }
   ov.innerHTML='<div style="background:var(--bg);border-radius:14px;padding:20px;max-width:520px;width:90%;box-shadow:0 12px 40px rgba(0,0,0,.15);max-height:80vh;overflow:hidden;display:flex;flex-direction:column">'+html+'</div>';
 }
-function _ytToggleSel(id,e){
-  if(_ytDismissedSel.has(id))_ytDismissedSel.delete(id);else _ytDismissedSel.add(id);
-  const row=document.getElementById('ytc-'+id);
-  if(row){
-    row.style.background=_ytDismissedSel.has(id)?'rgba(239,68,68,.04)':'';
-    const cb=row.querySelector('input[type=checkbox]');if(cb)cb.checked=_ytDismissedSel.has(id);
+function _ytToggleSel(id,idx,e){
+  if(e.shiftKey&&_ytLastSelIdx!=null){
+    // Shift: range select
+    const lo=Math.min(_ytLastSelIdx,idx),hi=Math.max(_ytLastSelIdx,idx);
+    for(let i=lo;i<=hi;i++)_ytDismissedSel.add(_ytCommentItems[i].id);
+  }else if(e.metaKey||e.ctrlKey){
+    // Cmd/Ctrl: toggle individual
+    if(_ytDismissedSel.has(id))_ytDismissedSel.delete(id);else _ytDismissedSel.add(id);
+  }else{
+    // Plain click: select only this one
+    _ytDismissedSel.clear();
+    _ytDismissedSel.add(id);
   }
+  _ytLastSelIdx=idx;
+  // Update all row styles
+  _ytCommentItems.forEach(c=>{
+    const row=document.getElementById('ytc-'+c.id);
+    if(row)row.style.background=_ytDismissedSel.has(c.id)?'rgba(239,68,68,.06)':'';
+  });
   const btn=document.getElementById('ytDismissSelBtn');
   if(btn)btn.style.display=_ytDismissedSel.size?'block':'none';
-}
-function _ytDismissComment(id){
-  const dismissed=_ytGetDismissed();
-  if(!dismissed.includes(id))dismissed.push(id);
-  _ytSaveDismissed(dismissed);
-  _ytShowUnreplied();
-  renderVideosPageKeepScroll();
 }
 function _ytDismissSelected(){
   const dismissed=_ytGetDismissed();
