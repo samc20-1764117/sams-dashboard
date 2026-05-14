@@ -122,7 +122,7 @@ export async function onRequest(context) {
     }
     // Fetch analytics
     try {
-      const now = new Date(); const yd = new Date(now); yd.setDate(yd.getDate() - 1); const sd = new Date(now); sd.setFullYear(sd.getFullYear() - 2);
+      const now = new Date(); const yd = new Date(now); yd.setDate(yd.getDate() - 1); const sd = new Date(now); sd.setFullYear(sd.getFullYear() - 2); sd.setDate(1);
       const fmt = d => d.toISOString().slice(0, 10);
       const mr = await fetch('https://youtubeanalytics.googleapis.com/v2/reports?' + new URLSearchParams({ ids: 'channel==MINE', startDate: fmt(sd), endDate: fmt(yd), metrics: 'views,estimatedRevenue,likes,comments,subscribersGained,averageViewDuration', dimensions: 'month', sort: 'month' }).toString(), { headers: { Authorization: 'Bearer ' + at } });
       const md = await mr.json();
