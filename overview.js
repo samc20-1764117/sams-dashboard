@@ -2044,7 +2044,7 @@ function renderRecOv(){
     wrap.className='chk-wrap';
     wrap.style.cssText='cursor:pointer;flex-shrink:0';
     wrap.title='Toggle';
-    wrap.innerHTML=`<svg viewBox="0 0 24 24" width="11" height="11" xmlns="http://www.w3.org/2000/svg" style="display:block" fill="none" stroke="${str}" stroke-width="2"><rect x="8" y="10" width="8" height="4" rx="1"/><circle cx="7" cy="9" r="2.5" fill="${col}"/><circle cx="7" cy="15" r="2.5" fill="${col}"/><circle cx="17" cy="9" r="2.5" fill="${col}"/><circle cx="17" cy="15" r="2.5" fill="${col}"/></svg>`;
+    wrap.innerHTML=`<svg viewBox="0 0 24 24" width="14" height="14" xmlns="http://www.w3.org/2000/svg" style="display:block" fill="none" stroke="${str}" stroke-width="1.8"><rect x="8" y="10" width="8" height="4" rx="1.5" fill="${col}"/><circle cx="6.5" cy="8.5" r="2.8" fill="${col}"/><circle cx="6.5" cy="15.5" r="2.8" fill="${col}"/><circle cx="17.5" cy="8.5" r="2.8" fill="${col}"/><circle cx="17.5" cy="15.5" r="2.8" fill="${col}"/></svg>`;
     wrap.addEventListener('click',e=>{e.stopPropagation();togWrRule(ruleId,!isDone,wkKey);});
     wrap.addEventListener('mousedown',e=>e.stopPropagation());
     return wrap;
@@ -3395,7 +3395,7 @@ function _relayoutTBCol(col,ds){
     el.style.left=`calc(${left}% + 2px)`;el.style.right=`calc(${100-left-colW}% + 2px)`;
   });
 }
-function _getTBBlockSelId(bl){if(bl.cat==='pup_session'&&bl._pupSessId)return'pup-sess-'+String(bl._pupSessId);if(bl.ruleId)return'blk-'+bl.id;if(bl.recId&&(st.wrRules||[]).some(x=>String(x.id)===String(bl.recId)))return'blk-'+bl.id;const r=bl.recId?st.recurring.find(x=>String(x.id)===String(bl.recId)):null;const iw=r&&(r.is_weekly_reset===true||r.is_weekly_reset==='true');return bl.taskId?String(bl.taskId):bl.recId?(iw?'wrec-':'rec-virt-')+bl.recId:bl.shopId?'blk-'+bl.id:null;}
+function _getTBBlockSelId(bl){if(bl.cat==='pup_session'&&bl._pupSessId)return'pup-sess-'+String(bl._pupSessId);if(bl.ruleId)return'blk-'+bl.id;if(bl.recId&&(st.wrRules||[]).some(x=>String(x.id)===String(bl.recId)))return'blk-'+bl.id;const r=bl.recId?st.recurring.find(x=>String(x.id)===String(bl.recId)):null;const iw=r&&(r.is_weekly_reset===true||r.is_weekly_reset==='true');return bl.taskId?'blk-'+bl.id:bl.recId?(iw?'wrec-':'rec-virt-')+bl.recId:bl.shopId?'blk-'+bl.id:null;}
 function drawTBBlock(col,b){
   const top=(b.sm-HOURS[0]*60)*PX,ht=Math.max(b.dur*PX,16);
   const linkedTask=b.taskId?st.tasks.find(x=>String(x.id)===String(b.taskId)):null;
