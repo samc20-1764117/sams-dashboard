@@ -157,6 +157,7 @@ let _vidCtxId=null;
 let _vidFilter='all';
 let _vidGroupFilter='all';
 let _vidSearch='';
+let _vidMatchIds=[],_vidMatchIdx=0;
 let _vidView=localStorage.getItem('_vidView')||'dashboard'; // dashboard | table | board | groups
 let _vidSortCol=null,_vidSortDir=1,_vidShowCompleted=false;
 let _vidMonthOffset=0; // 0=current month, -1=last month, etc
@@ -296,7 +297,16 @@ function renderVideosPage(){
           <button class="${viewBtnS('analytics')}" onclick="_vidSetView('analytics')">Analytics</button>
           <button class="${viewBtnS('monthly')}" onclick="_vidSetView('monthly')">Monthly</button>
         </div>
-        <input id="vidSearchInput" type="text" placeholder="Search videos..." value="${_vidSearch.replace(/"/g,'&quot;')}" oninput="_vidSetSearch(this.value)" style="padding:5px 10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:12px;background:var(--bg);color:var(--text);outline:none;width:180px">
+        <div style="position:relative;display:inline-block">
+          <div style="display:flex;align-items:center;border:1px solid var(--border);border-radius:8px;background:var(--bg);padding:0 4px">
+            <input id="vidSearchInput" type="text" placeholder="Search videos..." value="${_vidSearch.replace(/"/g,'&quot;')}" oninput="_vidSetSearch(this.value)" onkeydown="_vidSearchKey(event)" onfocus="_vidSearchFocus()" style="padding:5px 6px;border:none;border-radius:8px;font-family:inherit;font-size:12px;background:transparent;color:var(--text);outline:none;width:160px">
+            ${_vidSearch?`<span id="vidSearchCount" style="font-size:10px;color:var(--muted);white-space:nowrap;margin-right:2px">${_vidMatchIdx+1}/${_vidMatchIds.length}</span>
+            <button onclick="_vidSearchNav(-1)" style="background:none;border:none;cursor:pointer;padding:1px 3px;font-size:13px;color:var(--muted);line-height:1" title="Previous (Shift+Enter)">▲</button>
+            <button onclick="_vidSearchNav(1)" style="background:none;border:none;cursor:pointer;padding:1px 3px;font-size:13px;color:var(--muted);line-height:1" title="Next (Enter)">▼</button>
+            <button onclick="_vidSetSearch('');document.getElementById('vidSearchInput').value=''" style="background:none;border:none;cursor:pointer;padding:1px 3px;font-size:13px;color:var(--muted);line-height:1" title="Clear">✕</button>`:''}
+          </div>
+          <div id="vidSearchSuggestions" style="display:none;position:absolute;top:100%;left:0;margin-top:4px;background:var(--bg);border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.1);z-index:100;max-height:200px;overflow-y:auto;min-width:240px"></div>
+        </div>
         <div style="flex:1"></div>
         <div style="display:flex;gap:6px;align-items:center">
           ${_ytData&&_ytData.channelStats?`
@@ -503,13 +513,14 @@ function _vidDashRow(v,isChild,simple){
   const isComplete=v.status==='published';
   const topic=v.topic||'';
   const showTopicTitle=(v.status==='in_progress'||v.status==='up_next')&&topic;
-  const _titleSuffix=v.title?'- '+_esc(v.title):'';
+  const _escOrHl=t=>_vidSearch?_vidHighlight(t,_vidSearch):_esc(t);
+  const _titleSuffix=v.title?'- '+_escOrHl(v.title):'';
   const primary=isComplete?v.title:(topic||v.title);
   const secondary=showTopicTitle?v.title:'';
   const _addBtn=simple?'':v.video_type==='B'?'<button onclick="event.stopPropagation();openVidModalForBig(\''+sid+'\')" style="font-size:10px;font-weight:700;width:16px;height:16px;line-height:14px;text-align:center;border-radius:3px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;margin-right:4px" title="Add child video">+</button>':(!isChild?'<button style="font-size:10px;font-weight:700;width:16px;height:16px;line-height:14px;text-align:center;border-radius:3px;border:1px solid transparent;background:transparent;color:transparent;margin-right:4px;pointer-events:none">+</button>':'');
   const _kidCount=v.video_type==='B'?(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===sid).length:0;
   const _kidBadge=_kidCount?'<span style="font-size:9px;color:var(--muted);font-weight:400;margin-left:4px">'+_kidCount+'</span>':'';
-  const _tHtml=(showTopicTitle?'<span class="'+titleCls+'">'+_esc(topic)+'</span><span style="font-size:10px;color:var(--muted);margin-left:4px;font-weight:400">'+_titleSuffix+'</span>':'<span class="'+titleCls+'">'+_esc(primary)+'</span>')+_kidBadge;
+  const _tHtml=(showTopicTitle?'<span class="'+titleCls+'">'+_escOrHl(topic)+'</span><span style="font-size:10px;color:var(--muted);margin-left:4px;font-weight:400">'+_titleSuffix+'</span>':'<span class="'+titleCls+'">'+_escOrHl(primary)+'</span>')+_kidBadge;
   if(simple){
     let hasGroup=false;
     if(v.video_type==='B'){
@@ -1513,22 +1524,23 @@ function _vidRenderAnalytics(){
     h+='<div style="display:flex;align-items:center;gap:8px;padding:8px 14px;margin-bottom:12px;background:rgba(139,92,246,.04);border:1px solid rgba(139,92,246,.15);border-radius:10px;font-size:11px;color:var(--muted)"><span>Revenue shown is estimated (~$4 RPM).</span><a href="/api/yt?mode=auth-start" target="_blank" style="color:#8b5cf6;font-weight:600;text-decoration:none">Connect YouTube Analytics</a><span>for actual revenue data.</span></div>';
   }
 
-  // ── KPIs ──
+  // ── KPIs (compact inline) ──
   const _dismissed=_ytGetDismissed();
   const _unrepliedAll=_ytData.unrepliedComments||[];
   const _unrepliedN=_unrepliedAll.filter(c=>!_dismissed.includes(c.id)).length;
-  const _kc=(fn)=>'<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:10px;cursor:pointer" onclick="'+fn+'">';
-  h+='<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:16px">';
-  h+=`<div style="background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);border-radius:12px;padding:10px;cursor:pointer" onclick="_ytShowUnreplied()"><div style="text-align:center;padding:6px 0"><div style="font-size:10px;color:var(--muted);margin-bottom:2px">Unreplied Comments</div><div style="font-size:20px;font-weight:700;color:#ef4444">${_unrepliedN}</div></div></div>`;
-  h+=`${_kc("_anKpiModal('views')")}${stat('Total Views',_ytNum(totalViews),_ytNum(_tm.views)+' this month',sparkline(_spViews))}</div>`;
-  h+=`${_kc("_anKpiModal('avg')")}${stat('Avg Views/Video',_ytNum(avgViews),_ytNum(_tm.count?Math.round(_tm.views/_tm.count):0)+' avg this mo',sparkline(_spAvg))}</div>`;
-  h+=`${_kc("_anKpiModal('videos')")}${stat('Videos',String(merged.length),_tm.count+' this month',sparkline(_spVids))}</div>`;
   const _revLabel=_hasRealRev?'Revenue':'Est. Revenue';
   const _revValue=_hasRealRev?'$'+_ytNum(Math.round(_realRevTotal)):'$'+_ytNum(estRevenue);
-  const _revSub=_hasRealRev?'$'+_ytNum(Math.round(_realRevThisMonth||0))+' this month':'@ $'+rpm+' RPM';
+  const _revSub=_hasRealRev?'$'+_ytNum(Math.round(_realRevThisMonth||0))+' this mo':'@ $'+rpm+' RPM';
   const _spRevReal=_hasRealRev?_kpiLast6.map(([k])=>Math.round(_realRevByMonth[k]||0)):_spRev;
-  h+=`${_kc("_anKpiModal('revenue')")}${stat(_revLabel,_revValue,_revSub,sparkline(_spRevReal))}</div>`;
-  h+=`${_kc("_anKpiModal('subscribers')")}${stat('Subscribers',cs?_ytNum(cs.subscribers):'-')}</div>`;
+  const _kc2=(fn,bg)=>`<div style="background:${bg||'var(--glass)'};border:1px solid var(--border);border-radius:10px;padding:6px 10px;cursor:pointer;display:flex;align-items:center;gap:8px;min-width:0" onclick="${fn}">`;
+  const _kStat=(label,val,spark)=>`${spark||''}<div style="min-width:0"><div style="font-size:9px;color:var(--muted);white-space:nowrap">${label}</div><div style="font-size:15px;font-weight:700;color:var(--text);white-space:nowrap">${val}</div></div>`;
+  h+='<div style="display:flex;gap:8px;margin-bottom:12px;margin-left:8px;flex-wrap:wrap;align-items:stretch">';
+  h+=`<div style="background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:6px 10px;cursor:pointer;display:flex;align-items:center;gap:6px" onclick="_ytShowUnreplied()"><div style="font-size:15px;font-weight:700;color:#ef4444">${_unrepliedN}</div><div style="font-size:9px;color:var(--muted)">Unreplied</div></div>`;
+  h+=`${_kc2("_anKpiModal('views')")}${_kStat('Views',_ytNum(totalViews),sparkline(_spViews))}</div>`;
+  h+=`${_kc2("_anKpiModal('avg')")}${_kStat('Avg/Video',_ytNum(avgViews),sparkline(_spAvg))}</div>`;
+  h+=`${_kc2("_anKpiModal('videos')")}${_kStat('Videos',String(merged.length),sparkline(_spVids))}</div>`;
+  h+=`${_kc2("_anKpiModal('revenue')")}${_kStat(_revLabel,_revValue,sparkline(_spRevReal))}</div>`;
+  h+=`${_kc2("_anKpiModal('subscribers')")}${_kStat('Subscribers',cs?_ytNum(cs.subscribers):'-')}</div>`;
   h+='</div>';
 
   // ── TREND CHART + Strategy Insights ──
@@ -1745,14 +1757,13 @@ function _vidRenderAnalytics(){
     }
   }
 
-  h+=`<div style="display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:16px">`;
+  // Strategy panel + chart + recommendations in a 2-column layout
+  // Left: chart + Do More / Try Next stacked. Right: strategy panel spanning full height.
+  h+=`<div style="display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:16px;align-items:start">`;
+  h+=`<div style="display:flex;flex-direction:column;gap:12px">`;
   h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column">${trendHtml}</div>`;
-  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:16px 18px">
-    <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:8px">What Makes Your Videos Win</div>${stratHtml}</div>`;
-  h+='</div>';
-
-  // ── ROW 2: Do More Like This + Try Next ──
-  h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">';
+  // Do More Like This + Try Next side by side under chart
+  h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">';
 
   const scored=engagements.filter(v=>v.views>=100).map(v=>({...v,score:v.views*(1+v.engRate/100)})).sort((a,b)=>b.score-a.score).slice(0,8);
   let recHtml='<div style="font-size:10px;color:var(--muted);margin-bottom:6px">Scored by views x engagement</div>';
@@ -1798,7 +1809,11 @@ function _vidRenderAnalytics(){
   }
   if(!ideaNum) tryHtml+='<div style="font-size:11px;color:var(--muted)">Not enough data yet for suggestions</div>';
   h+=card('Try Next',tryHtml);
-  h+='</div>';
+  h+='</div>'; // close Do More / Try Next grid
+  h+='</div>'; // close left column
+  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:16px 18px;overflow-y:auto">
+    <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:8px">What Makes Your Videos Win</div>${stratHtml}</div>`;
+  h+='</div>'; // close main 2-col grid
 
   h+='</div>';
   return h;
@@ -1808,8 +1823,74 @@ function _vidRenderAnalytics(){
 function _vidSetView(v){_vidView=v;localStorage.setItem('_vidView',v);renderVideosPage();}
 function _vidSetFilter(f){_vidFilter=f;renderVideosPage();}
 function _vidSetGroup(g){_vidGroupFilter=g;renderVideosPage();}
-function _vidSetSearch(q){_vidSearch=q;renderVideosPage();
-  requestAnimationFrame(()=>{const inp=document.getElementById('vidSearchInput');if(inp){inp.focus();inp.setSelectionRange(inp.value.length,inp.value.length);}});
+function _vidSetSearch(q){
+  _vidSearch=q;_vidMatchIdx=0;
+  _vidBuildMatches();
+  renderVideosPage();
+  requestAnimationFrame(()=>{
+    const inp=document.getElementById('vidSearchInput');
+    if(inp){inp.focus();inp.setSelectionRange(inp.value.length,inp.value.length);}
+    _vidShowSuggestions(q);
+    if(_vidMatchIds.length)_vidScrollToMatch();
+  });
+}
+function _vidBuildMatches(){
+  _vidMatchIds=[];
+  if(!_vidSearch)return;
+  const q=_vidSearch.toLowerCase();
+  const vids=(st.videos||[]).filter(v=>!v.is_deleted);
+  vids.forEach(v=>{if((v.title||'').toLowerCase().includes(q)||(v.topic||'').toLowerCase().includes(q))_vidMatchIds.push(String(v.id));});
+}
+function _vidSearchNav(dir){
+  if(!_vidMatchIds.length)return;
+  _vidMatchIdx=(_vidMatchIdx+dir+_vidMatchIds.length)%_vidMatchIds.length;
+  _vidScrollToMatch();
+  const cnt=document.getElementById('vidSearchCount');
+  if(cnt)cnt.textContent=(_vidMatchIdx+1)+'/'+_vidMatchIds.length;
+}
+function _vidScrollToMatch(){
+  const id=_vidMatchIds[_vidMatchIdx];if(!id)return;
+  const row=document.querySelector('.vid-dash-row[data-vid="'+id+'"]');
+  if(row){row.scrollIntoView({block:'center',behavior:'smooth'});row.style.transition='background .2s';row.style.background='rgba(139,92,246,.1)';setTimeout(()=>row.style.background='',800);}
+}
+function _vidSearchKey(e){
+  const sg=document.getElementById('vidSearchSuggestions');
+  if(e.key==='Escape'){_vidSearch='';_vidMatchIds=[];document.getElementById('vidSearchInput').value='';if(sg)sg.style.display='none';renderVideosPage();return;}
+  if(e.key==='Enter'){e.preventDefault();if(sg&&sg.style.display!=='none')sg.style.display='none';_vidSearchNav(e.shiftKey?-1:1);return;}
+  if(e.key==='ArrowDown'&&sg&&sg.style.display!=='none'){e.preventDefault();const items=sg.querySelectorAll('.vid-sg-item');const act=sg.querySelector('.vid-sg-active');let idx=0;items.forEach((it,i)=>{if(it===act)idx=i+1;});if(idx>=items.length)idx=0;items.forEach(it=>it.classList.remove('vid-sg-active'));if(items[idx])items[idx].classList.add('vid-sg-active');return;}
+  if(e.key==='ArrowUp'&&sg&&sg.style.display!=='none'){e.preventDefault();const items=sg.querySelectorAll('.vid-sg-item');const act=sg.querySelector('.vid-sg-active');let idx=items.length-1;items.forEach((it,i)=>{if(it===act)idx=i-1;});if(idx<0)idx=items.length-1;items.forEach(it=>it.classList.remove('vid-sg-active'));if(items[idx])items[idx].classList.add('vid-sg-active');return;}
+}
+function _vidShowSuggestions(q){
+  const sg=document.getElementById('vidSearchSuggestions');if(!sg)return;
+  if(!q||q.length<2){sg.style.display='none';return;}
+  const lq=q.toLowerCase();
+  const vids=(st.videos||[]).filter(v=>!v.is_deleted);
+  const topics=new Set(),titles=[];
+  vids.forEach(v=>{
+    if(v.topic&&v.topic.toLowerCase().includes(lq))topics.add(v.topic);
+    if(v.title&&v.title.toLowerCase().includes(lq))titles.push(v.title);
+  });
+  const suggestions=[...topics].slice(0,3).map(t=>({type:'topic',text:t}));
+  titles.slice(0,5).forEach(t=>{if(!suggestions.find(s=>s.text===t))suggestions.push({type:'title',text:t});});
+  if(!suggestions.length){sg.style.display='none';return;}
+  sg.style.display='block';
+  sg.innerHTML=suggestions.slice(0,6).map(s=>{
+    const hl=_vidHighlight(s.text,lq);
+    const badge=s.type==='topic'?'<span style="font-size:9px;color:var(--muted);margin-right:6px">topic</span>':'';
+    return'<div class="vid-sg-item" onmousedown="_vidPickSuggestion(\''+_esc(s.text.replace(/'/g,"\\'"))+'\')" style="padding:6px 10px;font-size:12px;cursor:pointer;display:flex;align-items:center">'+badge+hl+'</div>';
+  }).join('');
+}
+function _vidPickSuggestion(text){
+  const inp=document.getElementById('vidSearchInput');if(inp)inp.value=text;
+  _vidSetSearch(text);
+  const sg=document.getElementById('vidSearchSuggestions');if(sg)sg.style.display='none';
+}
+function _vidSearchFocus(){if(_vidSearch&&_vidSearch.length>=2)_vidShowSuggestions(_vidSearch);}
+function _vidHighlight(text,q){
+  if(!q)return _esc(text);
+  const idx=text.toLowerCase().indexOf(q.toLowerCase());
+  if(idx===-1)return _esc(text);
+  return _esc(text.slice(0,idx))+'<mark style="background:rgba(250,204,21,.4);padding:0 1px;border-radius:2px">'+_esc(text.slice(idx,idx+q.length))+'</mark>'+_esc(text.slice(idx+q.length));
 }
 
 // ── Selection ─────────────────────────────────────────────────────────────────
@@ -2161,6 +2242,9 @@ document.addEventListener('click',e=>{
   }
   if(!e.target.closest('#vmStatusDisplay')&&!e.target.closest('#vmStatusDrop')&&!e.target.closest('[onclick*="Status"]')){
     const d=document.getElementById('vmStatusDrop');if(d)d.style.display='none';
+  }
+  if(!e.target.closest('#vidSearchInput')&&!e.target.closest('#vidSearchSuggestions')){
+    const sg=document.getElementById('vidSearchSuggestions');if(sg)sg.style.display='none';
   }
 });
 
