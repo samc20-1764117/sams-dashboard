@@ -1325,18 +1325,23 @@ function _vidRenderAnalytics(){
   }
   function card(title,content){return`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:16px 18px">
     <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:10px">${title}</div>${content}</div>`;}
-  function sparkline(vals,color,w,h2){
+  function sparkline(vals){
     if(!vals||vals.length<2)return'';
-    const max=Math.max(...vals,1),min=Math.min(...vals,0);
+    const max=Math.max(...vals),min=Math.min(...vals);
     const range=max-min||1;
-    const sw=w||60,sh=h2||20;
-    const pts=vals.map((v,i)=>{const x=(i/(vals.length-1))*sw;const y=sh-((v-min)/range)*sh;return`${x.toFixed(1)},${y.toFixed(1)}`;}).join(' ');
-    return`<svg width="${sw}" height="${sh}" style="display:block;margin:4px auto 0"><polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+    const up=vals[vals.length-1]>=vals[0];
+    const c=up?'#16a34a':'#dc2626';
+    const sw=44,sh=16;
+    const pts=vals.map((v,i)=>`${(i/(vals.length-1)*sw).toFixed(1)},${(sh-((v-min)/range)*sh).toFixed(1)}`).join(' ');
+    return`<svg width="${sw}" height="${sh}" style="flex-shrink:0"><polyline points="${pts}" fill="none" stroke="${c}" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" opacity=".7"/></svg>`;
   }
-  function stat(label,value,sub){return`<div style="text-align:center;padding:6px 0">
+  function stat(label,value,sub,spark){return`<div style="text-align:center;padding:6px 0">
     <div style="font-size:10px;color:var(--muted);margin-bottom:2px">${label}</div>
-    <div style="font-size:20px;font-weight:700;color:var(--text)">${value}</div>
-    ${sub||''}</div>`;}
+    <div style="display:flex;align-items:center;justify-content:center;gap:6px">
+      ${spark||''}<div style="font-size:20px;font-weight:700;color:var(--text)">${value}</div>
+    </div>
+    ${sub?'<div style="font-size:10px;color:var(--muted);margin-top:1px">'+sub+'</div>':''}</div>`;}
+
   const tBtn=(val,label,type)=>{
     const active=type==='metric'?_anTrendMetric===val:_anTrendPeriod===val;
     return`<button onclick="_anSetTrend(${type==='metric'?"'"+val+"',null":"null,'"+val+"'"})" style="padding:3px 8px;border:1px solid ${active?'rgba(120,113,145,.4)':'var(--border)'};border-radius:5px;background:${active?'rgba(120,113,145,.15)':'transparent'};color:${active?'var(--text)':'var(--muted)'};font-size:10px;font-family:inherit;font-weight:${active?'600':'400'};cursor:pointer">${label}</button>`;
@@ -1361,23 +1366,19 @@ function _vidRenderAnalytics(){
   const _spRev=_kpiLast6.map(([,d])=>Math.round(d.views/1000*rpm));
   const _spVids=_kpiLast6.map(([,d])=>d.count);
   const _spEng=_kpiLast6.map(([,d])=>d.views>0?((d.likes+d.comments)/d.views*100):0);
-  const _sub=(t)=>'<div style="font-size:10px;color:var(--muted);margin-top:1px">'+t+'</div>';
 
   // ── KPIs ──
-  const _dismissed=_ytGetDismissed();
-  const _unrepliedAll=_ytData.unrepliedComments||[];
-  const _unrepliedFiltered=_unrepliedAll.filter(c=>!_dismissed.includes(c.id));
-  const _unrepliedN=_unrepliedFiltered.length;
+  const _kc='<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:10px">';
   h+='<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:16px">';
-  h+=`<div style="background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);border-radius:12px;padding:10px;cursor:pointer" ondblclick="_ytShowUnreplied()">${stat('Unreplied Comments',String(_unrepliedN),'','#ef4444')}</div>`;
-  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:10px">${stat('Total Views',_ytNum(totalViews),_sub(_ytNum(_tm.views)+' this month')+sparkline(_spViews,'#0ea5e9'))}</div>`;
-  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:10px">${stat('Avg Views/Video',_ytNum(avgViews),_sub(_ytNum(_tm.count?Math.round(_tm.views/_tm.count):0)+' avg this mo')+sparkline(_spAvg,'#8b5cf6'))}</div>`;
-  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:10px">${stat('Videos',String(merged.length),_sub(_tm.count+' this month')+sparkline(_spVids,'#f59e0b'))}</div>`;
-  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:10px">${stat('Est. Revenue','$'+_ytNum(estRevenue),_sub('@ $'+rpm+' RPM')+sparkline(_spRev,'#22c55e'))}</div>`;
-  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:10px">${stat('Subscribers',cs?_ytNum(cs.subscribers):'-')}</div>`;
+  h+=`${_kc}${stat('Total Views',_ytNum(totalViews),_ytNum(_tm.views)+' this month',sparkline(_spViews))}</div>`;
+  h+=`${_kc}${stat('Avg Views/Video',_ytNum(avgViews),_ytNum(_tm.count?Math.round(_tm.views/_tm.count):0)+' avg this mo',sparkline(_spAvg))}</div>`;
+  h+=`${_kc}${stat('Engagement',avgEng.toFixed(1)+'%','(likes + comments) / views',sparkline(_spEng))}</div>`;
+  h+=`${_kc}${stat('Videos',String(merged.length),_tm.count+' this month',sparkline(_spVids))}</div>`;
+  h+=`${_kc}${stat('Est. Revenue','$'+_ytNum(estRevenue),'@ $'+rpm+' RPM',sparkline(_spRev))}</div>`;
+  h+=`${_kc}${stat('Subscribers',cs?_ytNum(cs.subscribers):'-')}</div>`;
   h+='</div>';
 
-  // ── TREND CHART (2/3 width) + Do More Like This (1/3) ──
+  // ── TREND CHART + Strategy Insights ──
   const periodMap={};
   merged.forEach(v=>{
     if(!v.post_date)return;
@@ -1420,31 +1421,79 @@ function _vidRenderAnalytics(){
   if(_anTrendMetric==='engagement') trendHtml+=`<div style="margin-top:8px;font-size:11px;color:var(--muted)">Avg: <b>${avgMetricVal.toFixed(1)}%</b> per ${perLabel}</div>`;
   else if(_anTrendMetric==='revenue') trendHtml+=`<div style="margin-top:8px;font-size:11px;color:var(--muted)">Total: <b>$${_ytNum(totalMetric)}</b> &middot; Avg: <b>$${_ytNum(Math.round(avgMetricVal))}</b>/${perLabel}</div>`;
   else trendHtml+=`<div style="margin-top:8px;font-size:11px;color:var(--muted)">Total: <b>${_ytNum(totalMetric)}</b> &middot; Avg: <b>${_ytNum(Math.round(avgMetricVal))}</b>/${perLabel}</div>`;
-  // ── TREND (2/3) + Do More Like This (1/3) ──
-  let recHtml='<div style="font-size:10px;color:var(--muted);margin-bottom:6px">Scored by views x engagement — your winning formula</div>';
-  const scored=engagements.filter(v=>v.views>=100).map(v=>({...v,score:v.views*(1+v.engRate/100)})).sort((a,b)=>b.score-a.score).slice(0,8);
-  scored.forEach((v,i)=>{
-    const t=v.topic||'';
-    const dur=v.duration_minutes?String(v.duration_minutes).split('.')[0]+'m':'';
-    recHtml+=`<div style="display:flex;align-items:center;gap:6px;padding:3px 0;font-size:11px;${i<3?'font-weight:600':''}">
-      <span style="color:${i<3?'#f59e0b':'var(--muted)'};width:14px;flex-shrink:0">${i+1}</span>
-      <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${_ytEsc(v.title||'')}">${_ytEsc(v.title||'Untitled')}</span>
-      ${t?'<span style="background:rgba(139,92,246,.1);border-radius:10px;padding:1px 6px;font-size:9px;color:#8b5cf6;flex-shrink:0">'+_ytEsc(t)+'</span>':''}
-      ${dur?'<span style="color:var(--muted);font-size:10px;flex-shrink:0">'+dur+'</span>':''}
-    </div>`;
-  });
-  if(scored.length>=3){
-    const topTopics={};scored.slice(0,5).forEach(v=>{const t=v.topic||'Other';topTopics[t]=(topTopics[t]||0)+1;});
-    const bt=Object.entries(topTopics).sort((a,b)=>b[1]-a[1])[0];
-    if(bt) recHtml+=`<div style="margin-top:8px;padding:6px 10px;background:rgba(245,158,11,.08);border-radius:6px;font-size:11px;color:#d97706">Make more about: <b>${_ytEsc(bt[0])}</b></div>`;
+  // ── TREND (2/3) + Strategy Insights (1/3) ──
+  // Duration sweet spot
+  const durBuckets={'0-5 min':{min:0,max:5},'5-10 min':{min:5,max:10},'10-20 min':{min:10,max:20},'20-40 min':{min:20,max:40},'40+ min':{min:40,max:9999}};
+  const durData={};
+  merged.forEach(v=>{if(!v.duration_minutes)return;const mins=parseInt(String(v.duration_minutes).split('.')[0])||0;for(const[label,range] of Object.entries(durBuckets)){if(mins>=range.min&&mins<range.max){if(!durData[label])durData[label]={views:0,eng:0,count:0};durData[label].views+=v.views;durData[label].count++;break;}}});
+  const durArr=Object.entries(durBuckets).map(([label])=>{const d=durData[label]||{views:0,count:0};return{label,avgViews:d.count?Math.round(d.views/d.count):0,count:d.count};}).filter(d=>d.count>0);
+  const bestDur=durArr.length?durArr.reduce((a,b)=>a.avgViews>b.avgViews?a:b):null;
+
+  // Best publish day
+  const dayNames=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const dayData=Array(7).fill(null).map(()=>({views:0,count:0}));
+  merged.forEach(v=>{if(!v.post_date)return;const d=new Date(v.post_date+'T12:00:00');dayData[d.getDay()].views+=v.views;dayData[d.getDay()].count++;});
+  const dayArr=dayData.map((d,i)=>({day:dayNames[i],avgViews:d.count?Math.round(d.views/d.count):0,count:d.count})).filter(d=>d.count>0);
+  const bestDay=dayArr.length?dayArr.reduce((a,b)=>a.avgViews>b.avgViews?a:b):null;
+
+  // Big vs Small
+  const bigVids=merged.filter(v=>v.video_type==='B');
+  const smallVids=merged.filter(v=>v.video_type!=='B');
+  const bigAvg=bigVids.length?Math.round(bigVids.reduce((s,v)=>s+v.views,0)/bigVids.length):0;
+  const smallAvg=smallVids.length?Math.round(smallVids.reduce((s,v)=>s+v.views,0)/smallVids.length):0;
+
+  // Title length
+  const titleBuckets={'Short (<40)':{min:0,max:40},'Medium (40-70)':{min:40,max:70},'Long (70+)':{min:70,max:999}};
+  const titleData={};
+  merged.forEach(v=>{const len=(v.title||'').length;for(const[label,range] of Object.entries(titleBuckets)){if(len>=range.min&&len<range.max){if(!titleData[label])titleData[label]={views:0,count:0};titleData[label].views+=v.views;titleData[label].count++;break;}}});
+  const titleArr=Object.entries(titleBuckets).map(([label])=>{const d=titleData[label]||{views:0,count:0};return{label,avgViews:d.count?Math.round(d.views/d.count):0,count:d.count};}).filter(d=>d.count>0);
+  const bestTitle=titleArr.length?titleArr.reduce((a,b)=>a.avgViews>b.avgViews?a:b):null;
+
+  // Topic performance
+  const topicMap={};
+  merged.forEach(v=>{const t=v.topic||'Untitled';if(!topicMap[t])topicMap[t]={views:0,likes:0,comments:0,count:0};topicMap[t].views+=v.views;topicMap[t].likes+=v.likes;topicMap[t].comments+=v.comments;topicMap[t].count++;});
+  const topics=Object.entries(topicMap).map(([t,d])=>({topic:t,avgViews:Math.round(d.views/d.count),avgEng:d.views>0?((d.likes+d.comments)/d.views*100):0,count:d.count})).sort((a,b)=>b.avgViews-a.avgViews);
+
+  // Engagement by recency (first 30 days vs lifetime)
+  const now=new Date();
+  const recent90=merged.filter(v=>{const d=Math.round((now-new Date(v.post_date+'T12:00:00'))/86400000);return d<=90;});
+  const older=merged.filter(v=>{const d=Math.round((now-new Date(v.post_date+'T12:00:00'))/86400000);return d>90;});
+  const recentAvg=recent90.length?Math.round(recent90.reduce((s,v)=>s+v.views,0)/recent90.length):0;
+  const olderAvg=older.length?Math.round(older.reduce((s,v)=>s+v.views,0)/older.length):0;
+
+  // Build strategy panel
+  const _insight=(icon,text)=>`<div style="display:flex;gap:8px;padding:6px 0;font-size:11px;border-bottom:1px solid var(--border)"><span style="flex-shrink:0;opacity:.5">${icon}</span><span>${text}</span></div>`;
+  let stratHtml='';
+  if(bestDur) stratHtml+=_insight('&#9201;','<b>Best length:</b> '+bestDur.label+' ('+_ytNum(bestDur.avgViews)+' avg views)');
+  if(bestDay) stratHtml+=_insight('&#128197;','<b>Best day:</b> '+bestDay.day+' ('+_ytNum(bestDay.avgViews)+' avg views)');
+  if(bigAvg&&smallAvg){const r=(bigAvg/smallAvg).toFixed(1);stratHtml+=_insight('&#128200;','<b>Big vs Small:</b> Big gets <b>'+r+'x</b> more views');}
+  if(bestTitle) stratHtml+=_insight('&#9999;','<b>Title length:</b> '+bestTitle.label+' performs best ('+_ytNum(bestTitle.avgViews)+' avg)');
+  if(topics.length) stratHtml+=_insight('&#127775;','<b>Top topic:</b> '+_ytEsc(topics[0].topic)+' ('+_ytNum(topics[0].avgViews)+' avg, '+topics[0].count+' vids)');
+  if(topics.length>1&&topics[0].avgEng>0){
+    const bestEngTopic=topics.filter(t=>t.count>=2).sort((a,b)=>b.avgEng-a.avgEng)[0];
+    if(bestEngTopic&&bestEngTopic.topic!==topics[0].topic) stratHtml+=_insight('&#128172;','<b>Most engaging topic:</b> '+_ytEsc(bestEngTopic.topic)+' ('+bestEngTopic.avgEng.toFixed(1)+'% eng)');
   }
+  if(recentAvg&&olderAvg){
+    const dir=recentAvg>olderAvg?'up':'down';
+    const pctChange=Math.round(Math.abs(recentAvg-olderAvg)/olderAvg*100);
+    stratHtml+=_insight(dir==='up'?'&#9650;':'&#9660;','<b>Momentum:</b> Last 90 days avg <b>'+dir+' '+pctChange+'%</b> vs older');
+  }
+  // Likes-to-views sweet spot
+  const highEngHighView=engagements.filter(v=>v.views>=avgViews&&v.engRate>=avgEng).sort((a,b)=>b.score||0-a.score||0);
+  if(highEngHighView.length>=2){
+    const commonDurs={};highEngHighView.slice(0,5).forEach(v=>{if(!v.duration_minutes)return;const m=parseInt(String(v.duration_minutes).split('.')[0])||0;const bucket=m<10?'under 10m':m<20?'10-20m':'20m+';commonDurs[bucket]=(commonDurs[bucket]||0)+1;});
+    const topDur=Object.entries(commonDurs).sort((a,b)=>b[1]-a[1])[0];
+    if(topDur) stratHtml+=_insight('&#127942;','<b>Winner profile:</b> High-view + high-engagement videos tend to be <b>'+topDur[0]+'</b>');
+  }
+
   h+=`<div style="display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:16px">`;
   h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:16px 18px">
     <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:10px">${metricLabels[_anTrendMetric]} Over Time</div>${trendHtml}</div>`;
-  h+=card('Do More Like This',recHtml);
+  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:16px 18px">
+    <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:8px">What Makes Your Videos Win</div>${stratHtml}</div>`;
   h+='</div>';
 
-  // ── ROW 2: Money Makers + Topic Performance ──
+  // ── ROW 2: Money Makers + Do More Like This ──
   h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">';
 
   let moneyHtml='<div style="font-size:10px;color:var(--muted);margin-bottom:6px">Your biggest earners (estimated)</div>';
@@ -1453,31 +1502,41 @@ function _vidRenderAnalytics(){
     moneyHtml+=`<div style="display:flex;align-items:center;gap:6px;padding:3px 0;font-size:11px;${i===0?'font-weight:600':''}">
       <span style="color:var(--muted);width:14px;flex-shrink:0">${i+1}</span>
       <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${_ytEsc(v.title||'')}">${_ytEsc(v.title||'Untitled')}</span>
-      <span style="color:#22c55e;font-weight:600;flex-shrink:0">~$${_ytNum(est)}</span>
+      <span style="color:var(--muted);font-weight:600;flex-shrink:0">~$${_ytNum(est)}</span>
     </div>`;
   });
   h+=card('Money Makers',moneyHtml);
 
-  const topicMap={};
-  merged.forEach(v=>{const t=v.topic||'Untitled';if(!topicMap[t])topicMap[t]={views:0,likes:0,comments:0,count:0};topicMap[t].views+=v.views;topicMap[t].likes+=v.likes;topicMap[t].comments+=v.comments;topicMap[t].count++;});
-  const topics=Object.entries(topicMap).map(([t,d])=>({topic:t,avgViews:Math.round(d.views/d.count),count:d.count})).sort((a,b)=>b.avgViews-a.avgViews);
-  let topicHtml='<div style="font-size:10px;color:var(--muted);margin-bottom:6px">Which topics get the most views?</div>';
-  const maxTopicViews=topics.length?topics[0].avgViews:1;
-  topics.slice(0,8).forEach(t=>{topicHtml+=bar(t.avgViews,maxTopicViews,'#8b5cf6',t.topic.length>18?t.topic.slice(0,16)+'..':t.topic,_ytNum(t.avgViews)+' ('+t.count+')','100px');});
-  h+=card('Topic Performance',topicHtml);
+  const scored=engagements.filter(v=>v.views>=100).map(v=>({...v,score:v.views*(1+v.engRate/100)})).sort((a,b)=>b.score-a.score).slice(0,8);
+  let recHtml='<div style="font-size:10px;color:var(--muted);margin-bottom:6px">Scored by views x engagement — your winning formula</div>';
+  scored.forEach((v,i)=>{
+    const t=v.topic||'';
+    const dur=v.duration_minutes?String(v.duration_minutes).split('.')[0]+'m':'';
+    recHtml+=`<div style="display:flex;align-items:center;gap:6px;padding:3px 0;font-size:11px;${i<3?'font-weight:600':''}">
+      <span style="color:var(--muted);width:14px;flex-shrink:0">${i+1}</span>
+      <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${_ytEsc(v.title||'')}">${_ytEsc(v.title||'Untitled')}</span>
+      ${t?'<span style="background:rgba(120,113,145,.1);border-radius:10px;padding:1px 6px;font-size:9px;color:var(--muted);flex-shrink:0">'+_ytEsc(t)+'</span>':''}
+      ${dur?'<span style="color:var(--muted);font-size:10px;flex-shrink:0">'+dur+'</span>':''}
+    </div>`;
+  });
+  if(scored.length>=3){
+    const topTopics={};scored.slice(0,5).forEach(v=>{const t=v.topic||'Other';topTopics[t]=(topTopics[t]||0)+1;});
+    const bt=Object.entries(topTopics).sort((a,b)=>b[1]-a[1])[0];
+    if(bt) recHtml+=`<div style="margin-top:8px;padding:6px 10px;background:rgba(120,113,145,.06);border-radius:6px;font-size:11px;color:var(--muted)">Make more about: <b>${_ytEsc(bt[0])}</b></div>`;
+  }
+  h+=card('Do More Like This',recHtml);
   h+='</div>';
 
   // ── ROW 3: Fastest Growing + Stars/Sleepers + Most Engaged ──
   h+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px">';
 
-  const now=new Date();
   const velocity=merged.map(v=>{const days=Math.max(1,Math.round((now-new Date(v.post_date+'T12:00:00'))/(86400000)));return{...v,vpd:Math.round(v.views/days),days};}).sort((a,b)=>b.vpd-a.vpd);
   let velHtml='<div style="font-size:10px;color:var(--muted);margin-bottom:6px">Views per day since publish</div>';
   velocity.slice(0,7).forEach((v,i)=>{
     velHtml+=`<div style="display:flex;align-items:center;gap:6px;padding:3px 0;font-size:11px;${i===0?'font-weight:600':''}">
       <span style="color:var(--muted);width:14px;flex-shrink:0">${i+1}</span>
       <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${_ytEsc(v.title||'')}">${_ytEsc(v.title||'Untitled')}</span>
-      <span style="color:#0ea5e9;font-weight:600;flex-shrink:0">${_ytNum(v.vpd)}/day</span>
+      <span style="font-weight:600;flex-shrink:0">${_ytNum(v.vpd)}/day</span>
     </div>`;
   });
   h+=card('Fastest Growing',velHtml);
@@ -1498,58 +1557,11 @@ function _vidRenderAnalytics(){
 
   let engRHtml='<div style="font-size:10px;color:var(--muted);margin-bottom:6px">Highest likes+comments per view</div>';
   const topEng=engagements.filter(v=>v.views>=100).sort((a,b)=>b.engRate-a.engRate).slice(0,8);
-  topEng.forEach((v,i)=>{engRHtml+=`<div style="display:flex;align-items:center;gap:6px;padding:3px 0;font-size:11px"><span style="color:var(--muted);width:14px;flex-shrink:0">${i+1}</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${_ytEsc(v.title||'')}">${_ytEsc(v.title||'Untitled')}</span><span style="color:#10b981;font-weight:600;flex-shrink:0">${v.engRate.toFixed(1)}%</span><span style="color:var(--muted);font-size:10px;flex-shrink:0">(${_ytNum(v.views)})</span></div>`;});
+  topEng.forEach((v,i)=>{engRHtml+=`<div style="display:flex;align-items:center;gap:6px;padding:3px 0;font-size:11px"><span style="color:var(--muted);width:14px;flex-shrink:0">${i+1}</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${_ytEsc(v.title||'')}">${_ytEsc(v.title||'Untitled')}</span><span style="font-weight:600;flex-shrink:0">${v.engRate.toFixed(1)}%</span><span style="color:var(--muted);font-size:10px;flex-shrink:0">(${_ytNum(v.views)})</span></div>`;});
   h+=card('Most Engaged',engRHtml);
   h+='</div>';
 
-  // ── ROW 4: Strategy — Duration, Best Day, Big vs Small, Title Length ──
-  h+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin-bottom:16px">';
-
-  const durBuckets={'0-5 min':{min:0,max:5},'5-10 min':{min:5,max:10},'10-20 min':{min:10,max:20},'20-40 min':{min:20,max:40},'40+ min':{min:40,max:9999}};
-  const durData={};
-  merged.forEach(v=>{if(!v.duration_minutes)return;const mins=parseInt(String(v.duration_minutes).split('.')[0])||0;for(const[label,range] of Object.entries(durBuckets)){if(mins>=range.min&&mins<range.max){if(!durData[label])durData[label]={views:0,count:0};durData[label].views+=v.views;durData[label].count++;break;}}});
-  const durArr=Object.entries(durBuckets).map(([label])=>{const d=durData[label]||{views:0,count:0};return{label,avgViews:d.count?Math.round(d.views/d.count):0,count:d.count};}).filter(d=>d.count>0);
-  const bestDur=durArr.length?durArr.reduce((a,b)=>a.avgViews>b.avgViews?a:b):null;
-  let durHtml='<div style="font-size:10px;color:var(--muted);margin-bottom:6px">Avg views by video length</div>';
-  const maxDurViews=durArr.length?Math.max(...durArr.map(d=>d.avgViews)):1;
-  durArr.forEach(d=>{durHtml+=bar(d.avgViews,maxDurViews,bestDur&&d.label===bestDur.label?'#22c55e':'#64748b',d.label,_ytNum(d.avgViews)+' ('+d.count+')','80px');});
-  if(bestDur) durHtml+=`<div style="margin-top:8px;padding:6px 10px;background:rgba(34,197,94,.08);border-radius:6px;font-size:11px;color:#16a34a">Sweet spot: <b>${bestDur.label}</b></div>`;
-  h+=card('Duration Sweet Spot',durHtml);
-
-  const dayNames=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-  const dayData=Array(7).fill(null).map(()=>({views:0,count:0}));
-  merged.forEach(v=>{if(!v.post_date)return;const d=new Date(v.post_date+'T12:00:00');dayData[d.getDay()].views+=v.views;dayData[d.getDay()].count++;});
-  const dayArr=dayData.map((d,i)=>({day:dayNames[i],avgViews:d.count?Math.round(d.views/d.count):0,count:d.count})).filter(d=>d.count>0);
-  const bestDay=dayArr.length?dayArr.reduce((a,b)=>a.avgViews>b.avgViews?a:b):null;
-  let dayHtml='<div style="font-size:10px;color:var(--muted);margin-bottom:6px">Avg views by day of week</div>';
-  const maxDayViews=dayArr.length?Math.max(...dayArr.map(d=>d.avgViews)):1;
-  dayArr.sort((a,b)=>dayNames.indexOf(a.day)-dayNames.indexOf(b.day)).forEach(d=>{dayHtml+=bar(d.avgViews,maxDayViews,bestDay&&d.day===bestDay.day?'#f59e0b':'#64748b',d.day,_ytNum(d.avgViews)+' ('+d.count+')','40px');});
-  if(bestDay) dayHtml+=`<div style="margin-top:8px;padding:6px 10px;background:rgba(245,158,11,.08);border-radius:6px;font-size:11px;color:#d97706">Best day: <b>${bestDay.day}</b></div>`;
-  h+=card('Best Publish Day',dayHtml);
-
-  const bigVids=merged.filter(v=>v.video_type==='B');
-  const smallVids=merged.filter(v=>v.video_type!=='B');
-  const bigAvg=bigVids.length?Math.round(bigVids.reduce((s,v)=>s+v.views,0)/bigVids.length):0;
-  const smallAvg=smallVids.length?Math.round(smallVids.reduce((s,v)=>s+v.views,0)/smallVids.length):0;
-  let bvlHtml='<div style="font-size:10px;color:var(--muted);margin-bottom:6px">How do your formats compare?</div>';
-  const maxBvl=Math.max(bigAvg,smallAvg,1);
-  bvlHtml+=bar(bigAvg,maxBvl,'#0ea5e9','Big (B)',_ytNum(bigAvg)+' avg ('+bigVids.length+')','60px');
-  bvlHtml+=bar(smallAvg,maxBvl,'#f43f5e','Small (L)',_ytNum(smallAvg)+' avg ('+smallVids.length+')','60px');
-  const roi=bigAvg&&smallAvg?(bigAvg/smallAvg).toFixed(1)+'x':'-';
-  bvlHtml+=`<div style="margin-top:10px;padding:6px 10px;background:rgba(14,165,233,.08);border-radius:6px;font-size:11px;color:#0284c7">Big videos get <b>${roi}</b> the views on average</div>`;
-  h+=card('Big vs Small',bvlHtml);
-
-  const titleBuckets={'Short (<40)':{min:0,max:40},'Medium (40-70)':{min:40,max:70},'Long (70+)':{min:70,max:999}};
-  const titleData={};
-  merged.forEach(v=>{const len=(v.title||'').length;for(const[label,range] of Object.entries(titleBuckets)){if(len>=range.min&&len<range.max){if(!titleData[label])titleData[label]={views:0,count:0};titleData[label].views+=v.views;titleData[label].count++;break;}}});
-  const titleArr=Object.entries(titleBuckets).map(([label])=>{const d=titleData[label]||{views:0,count:0};return{label,avgViews:d.count?Math.round(d.views/d.count):0,count:d.count};}).filter(d=>d.count>0);
-  const bestTitle=titleArr.length?titleArr.reduce((a,b)=>a.avgViews>b.avgViews?a:b):null;
-  let titleHtml='<div style="font-size:10px;color:var(--muted);margin-bottom:6px">Does title length matter?</div>';
-  const maxTitleViews=titleArr.length?Math.max(...titleArr.map(d=>d.avgViews)):1;
-  titleArr.forEach(d=>{titleHtml+=bar(d.avgViews,maxTitleViews,'#8b5cf6',d.label,_ytNum(d.avgViews)+' ('+d.count+')','100px');});
-  if(bestTitle) titleHtml+=`<div style="margin-top:8px;padding:6px 10px;background:rgba(139,92,246,.08);border-radius:6px;font-size:11px;color:#7c3aed">Best: <b>${bestTitle.label}</b></div>`;
-  h+=card('Title Length Impact',titleHtml);
-  h+='</div></div>';
+  h+='</div>';
   return h;
 }
 
