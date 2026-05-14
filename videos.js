@@ -1492,12 +1492,12 @@ function _vidRenderAnalytics(){
   if(_anTrendMetric==='engagement') summaryText='Avg: '+avgMetricVal.toFixed(1)+'%/'+perLabel;
   else if(_anTrendMetric==='revenue') summaryText='$'+_ytNum(totalMetric)+' total · $'+_ytNum(Math.round(avgMetricVal))+'/'+perLabel;
   else summaryText=_ytNum(totalMetric)+' total · '+_ytNum(Math.round(avgMetricVal))+'/'+perLabel;
-  let trendHtml=`<div style="display:flex;align-items:center;gap:6px;margin-bottom:12px;flex-wrap:wrap">
-    <div style="display:flex;gap:3px">${tBtn('revenue','Revenue','metric')}${tBtn('views','Views','metric')}${tBtn('likes','Likes','metric')}${tBtn('engagement','Engagement','metric')}${tBtn('videos','Videos','metric')}</div>
-    <div style="width:1px;height:14px;background:var(--border);margin:0 2px"></div>
-    <div style="display:flex;gap:3px">${tBtn('monthly','Monthly','period')}${tBtn('yearly','Yearly','period')}</div>
+  let trendHtml=`<div style="display:flex;align-items:center;gap:6px;margin-bottom:12px">
+    <div style="display:flex;gap:3px;align-items:center">${tBtn('revenue','Revenue','metric')}${tBtn('views','Views','metric')}${tBtn('likes','Likes','metric')}${tBtn('engagement','Engagement','metric')}${tBtn('videos','Videos','metric')}</div>
+    <div style="width:1px;height:18px;background:rgba(120,113,145,.3);margin:0 4px;flex-shrink:0"></div>
+    <div style="display:flex;gap:3px;align-items:center">${tBtn('monthly','Monthly','period')}${tBtn('yearly','Yearly','period')}</div>
     <div style="flex:1"></div>
-    <span style="font-size:10px;color:var(--muted)">${summaryText}</span>
+    <span style="font-size:10px;color:var(--muted);white-space:nowrap;line-height:1">${summaryText}</span>
   </div>`;
   trendHtml+='<div style="display:flex;align-items:flex-end;gap:4px;flex:1;min-height:0">';
   metricVals.forEach(m=>{
@@ -1545,43 +1545,77 @@ function _vidRenderAnalytics(){
   const recentAvg=recent90.length?Math.round(recent90.reduce((s,v)=>s+v.views,0)/recent90.length):0;
   const olderAvg=older.length?Math.round(older.reduce((s,v)=>s+v.views,0)/older.length):0;
 
-  // Build strategy panel
-  const _insight=(icon,text)=>`<div style="display:flex;gap:8px;padding:6px 0;font-size:11px;border-bottom:1px solid var(--border)"><span style="flex-shrink:0;opacity:.5">${icon}</span><span>${text}</span></div>`;
+  // Build strategy panel — organized by decision: what to make, when, how
+  const _row=(text)=>`<div style="padding:5px 0;font-size:11px;border-bottom:1px solid var(--border)">${text}</div>`;
+  const _secHead=(text)=>`<div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-top:8px;margin-bottom:2px">${text}</div>`;
   let stratHtml='';
-  if(bestDur) stratHtml+=_insight('&#9201;','<b>Best length:</b> '+bestDur.label+' ('+_ytNum(bestDur.avgViews)+' avg views)');
-  if(bestDay) stratHtml+=_insight('&#128197;','<b>Best day:</b> '+bestDay.day+' ('+_ytNum(bestDay.avgViews)+' avg views)');
-  if(bigAvg&&smallAvg){const r=(bigAvg/smallAvg).toFixed(1);stratHtml+=_insight('&#128200;','<b>Big vs Small:</b> Big gets <b>'+r+'x</b> more views');}
-  if(topics.length) stratHtml+=_insight('&#127775;','<b>Top topic:</b> '+_ytEsc(topics[0].topic)+' ('+_ytNum(topics[0].avgViews)+' avg, '+topics[0].count+' vids)');
-  // Revenue per video by type
-  if(bigVids.length&&smallVids.length){
-    const bigRev=Math.round(bigAvg/1000*rpm);const smallRev=Math.round(smallAvg/1000*rpm);
-    stratHtml+=_insight('&#128176;','<b>Revenue/video:</b> Big ~$'+_ytNum(bigRev)+' vs Small ~$'+_ytNum(smallRev));
-  }
-  // Highest-earning topic
+
+  // ── WHAT TO MAKE (topic + format) ──
+  stratHtml+=_secHead('What to make');
+  // Top earning topic
   if(topics.length){
-    const topicsByRev=topics.map(t=>({...t,estRev:Math.round(t.avgViews*t.count/1000*rpm)})).sort((a,b)=>b.estRev-a.estRev);
-    if(topicsByRev[0]) stratHtml+=_insight('&#128178;','<b>Top earner:</b> '+_ytEsc(topicsByRev[0].topic)+' (~$'+_ytNum(topicsByRev[0].estRev)+' total, '+topicsByRev[0].count+' vids)');
-    // Best RPM topic (most revenue per video)
+    const topicsByRev=topics.map(t=>({...t,estRev:Math.round(t.avgViews*t.count/1000*rpm),revPerVid:Math.round(t.avgViews/1000*rpm)})).sort((a,b)=>b.estRev-a.estRev);
+    if(topicsByRev[0]) stratHtml+=_row('<b>'+_ytEsc(topicsByRev[0].topic)+'</b> earns most (~$'+_ytNum(topicsByRev[0].estRev)+' total from '+topicsByRev[0].count+' vids)');
+    // Best per-video topic if different
     const topicsByPerVid=topics.filter(t=>t.count>=2).map(t=>({...t,revPerVid:Math.round(t.avgViews/1000*rpm)})).sort((a,b)=>b.revPerVid-a.revPerVid);
-    if(topicsByPerVid[0]&&topicsByPerVid[0].topic!==topicsByRev[0].topic) stratHtml+=_insight('&#128181;','<b>Best $/video:</b> '+_ytEsc(topicsByPerVid[0].topic)+' (~$'+_ytNum(topicsByPerVid[0].revPerVid)+'/video)');
+    if(topicsByPerVid[0]&&topicsByPerVid[0].topic!==topicsByRev[0].topic) stratHtml+=_row('<b>'+_ytEsc(topicsByPerVid[0].topic)+'</b> best per video (~$'+_ytNum(topicsByPerVid[0].revPerVid)+'/video)');
   }
-  // Best duration for revenue
+  if(bigAvg&&smallAvg){
+    const bigRev=Math.round(bigAvg/1000*rpm);const smallRev=Math.round(smallAvg/1000*rpm);
+    const r=(bigAvg/smallAvg).toFixed(1);
+    stratHtml+=_row('Big videos: <b>'+r+'x</b> more views, ~$'+_ytNum(bigRev)+'/vid vs ~$'+_ytNum(smallRev));
+  }
+  // Best combo
+  if(bestDur&&topics.length){
+    const comboVids=merged.filter(v=>{if(!v.duration_minutes)return false;const mins=parseInt(String(v.duration_minutes).split('.')[0])||0;return mins>=durBuckets[bestDur.label].min&&mins<durBuckets[bestDur.label].max&&v.topic===topics[0].topic;});
+    if(comboVids.length>=2){const comboRev=Math.round(comboVids.reduce((s,v)=>s+v.views,0)/comboVids.length/1000*rpm);stratHtml+=_row('Best combo: <b>'+_ytEsc(topics[0].topic)+' + '+bestDur.label+'</b> (~$'+_ytNum(comboRev)+'/vid)');}
+  }
+
+  // ── HOW TO MAKE IT (duration + format) ──
+  stratHtml+=_secHead('How to make it');
+  if(bestDur) stratHtml+=_row('Best length: <b>'+bestDur.label+'</b> ('+_ytNum(bestDur.avgViews)+' avg views)');
   if(durArr.length){
     const durByRev=durArr.map(d=>({...d,revPerVid:Math.round(d.avgViews/1000*rpm)})).sort((a,b)=>b.revPerVid-a.revPerVid);
-    if(durByRev[0]) stratHtml+=_insight('&#9201;','<b>Best length for $:</b> '+durByRev[0].label+' (~$'+_ytNum(durByRev[0].revPerVid)+'/video)');
+    if(durByRev[0]&&durByRev[0].label!==bestDur?.label) stratHtml+=_row('Best length for $: <b>'+durByRev[0].label+'</b> (~$'+_ytNum(durByRev[0].revPerVid)+'/vid)');
   }
-  // Publishing pace
+  // Engagement sweet spot — do high-engagement videos earn more?
+  const engSorted=engagements.filter(v=>v.views>=100).sort((a,b)=>b.engRate-a.engRate);
+  if(engSorted.length>=6){
+    const topHalf=engSorted.slice(0,Math.floor(engSorted.length/2));
+    const botHalf=engSorted.slice(Math.floor(engSorted.length/2));
+    const topAvg=Math.round(topHalf.reduce((s,v)=>s+v.views,0)/topHalf.length);
+    const botAvg=Math.round(botHalf.reduce((s,v)=>s+v.views,0)/botHalf.length);
+    if(topAvg>botAvg) stratHtml+=_row('High-engagement vids get <b>'+((topAvg/botAvg).toFixed(1))+'x</b> more views');
+    else stratHtml+=_row('Engagement doesn\'t correlate with views — focus on topics');
+  }
+
+  // ── WHEN TO POST ──
+  stratHtml+=_secHead('When to post');
+  if(bestDay) stratHtml+=_row('Best day: <b>'+bestDay.day+'</b> ('+_ytNum(bestDay.avgViews)+' avg views)');
   const pubMonths=Object.keys(_kpiMonths).length;
-  if(pubMonths>=2){const rate=(merged.length/pubMonths).toFixed(1);stratHtml+=_insight('&#128197;','<b>Pace:</b> ~'+rate+' videos/month over '+pubMonths+' months');}
+  if(pubMonths>=2){const rate=(merged.length/pubMonths).toFixed(1);stratHtml+=_row('Your pace: <b>~'+rate+' videos/month</b> over '+pubMonths+' months');}
+
+  // ── MOMENTUM ──
+  stratHtml+=_secHead('Channel health');
   if(recentAvg&&olderAvg){
     const dir=recentAvg>olderAvg?'up':'down';
     const pctChange=Math.round(Math.abs(recentAvg-olderAvg)/olderAvg*100);
-    stratHtml+=_insight(dir==='up'?'&#9650;':'&#9660;','<b>Momentum:</b> Last 90 days avg <b>'+dir+' '+pctChange+'%</b> vs older ('+_ytNum(recentAvg)+' vs '+_ytNum(olderAvg)+')');
+    stratHtml+=_row('Momentum: <b>'+dir+' '+pctChange+'%</b> (last 90d: '+_ytNum(recentAvg)+' avg vs older: '+_ytNum(olderAvg)+')');
   }
-  // Best topic+duration combo
-  if(bestDur&&topics.length){
-    const comboVids=merged.filter(v=>{if(!v.duration_minutes)return false;const mins=parseInt(String(v.duration_minutes).split('.')[0])||0;return mins>=durBuckets[bestDur.label].min&&mins<durBuckets[bestDur.label].max&&v.topic===topics[0].topic;});
-    if(comboVids.length>=2){const comboAvg=Math.round(comboVids.reduce((s,v)=>s+v.views,0)/comboVids.length);stratHtml+=_insight('&#127942;','<b>Best combo:</b> '+_ytEsc(topics[0].topic)+' + '+bestDur.label+' = '+_ytNum(comboAvg)+' avg views');}
+  // Consistency — standard deviation of monthly output
+  if(_kpiSorted.length>=3){
+    const counts=_kpiSorted.map(([,d])=>d.count);
+    const cAvg=counts.reduce((s,v)=>s+v,0)/counts.length;
+    const cStd=Math.sqrt(counts.reduce((s,v)=>s+Math.pow(v-cAvg,2),0)/counts.length);
+    const cv=cAvg>0?(cStd/cAvg*100):0;
+    stratHtml+=_row('Consistency: '+(cv<30?'<b>Steady</b> — keep it up':'<b>Variable</b> — more regular posting helps growth')+' ('+cv.toFixed(0)+'% variation)');
+  }
+  // Engagement trend
+  if(_kpiSorted.length>=4){
+    const recent2=_kpiSorted.slice(-2);const older2=_kpiSorted.slice(-4,-2);
+    const rEng=recent2.reduce((s,[,d])=>s+(d.views>0?((d.likes+d.comments)/d.views*100):0),0)/recent2.length;
+    const oEng=older2.reduce((s,[,d])=>s+(d.views>0?((d.likes+d.comments)/d.views*100):0),0)/older2.length;
+    if(oEng>0){const ePct=Math.round((rEng-oEng)/oEng*100);stratHtml+=_row('Engagement: <b>'+(ePct>0?'up':'down')+' '+Math.abs(ePct)+'%</b> recent vs prior ('+rEng.toFixed(1)+'% vs '+oEng.toFixed(1)+'%)');}
   }
 
   h+=`<div style="display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:16px">`;
