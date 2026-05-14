@@ -400,9 +400,9 @@ function _vidDashRow(v,isChild,simple){
       hasGroup=true;
     }
     const bulletColor=hasGroup?'rgba(139,92,246,.45)':'#fff';
-    const bulletAttr=hasGroup?`onmouseenter="_vidBulletTipShow(event,'${sid}')" onmouseleave="_vidBulletTipHide()"`:''
+    const tipAttr=hasGroup?`onmouseenter="_vidBulletTipShow(event,'${sid}')" onmouseleave="_vidBulletTipHide()"`:'';
     return`<div class="vid-dash-row${sel?' vid-sel':''}" draggable="true" ondragstart="_vidDashDragStart(event,'${sid}')" data-vid="${sid}" onclick="vidRowClick(event,'${sid}')" ondblclick="openVidEdit('${sid}')" oncontextmenu="showVidCtx(event,'${sid}')" onmouseenter="_vidIdeaRowEnter('${sid}')" onmouseleave="_vidIdeaRowLeave()">
-      <div style="flex:1;min-width:0;padding-left:10px;${indent}${!isChild?'font-weight:600;':''}${titleStyle}"><span style="color:${bulletColor};font-size:8px;margin-right:6px;cursor:default" ${bulletAttr}>●</span>${_addBtn}${childMark}${numHtml}${_tHtml}</div>
+      <div style="flex:1;min-width:0;padding-left:10px;${indent}${!isChild?'font-weight:600;':''}${titleStyle}" ${tipAttr}><span style="color:${bulletColor};font-size:8px;margin-right:6px;cursor:default">●</span>${_addBtn}${childMark}${numHtml}${_tHtml}</div>
       <button class="vid-del" data-vid="${sid}">✕</button>
     </div>`;
   }
@@ -1206,23 +1206,20 @@ function vidRowClick(e,id){
 let _vidBulletTimer=null;
 function _vidBulletTipShow(e,sid){
   _vidBulletTipHide();
+  const _tipTarget=e.currentTarget;
   _vidBulletTimer=setTimeout(()=>{
     const v=(st.videos||[]).find(x=>String(x.id)===sid);if(!v)return;
     let html='';
     if(v.video_type==='B'){
       const kids=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===sid);
-      const done=kids.filter(c=>VID_STEPS.every(s=>c[s]==='done'||c[s]==='na')&&c.post_date&&c.duration_minutes).length;
-      html='<div style="font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.03em;margin-bottom:4px">'+kids.length+' Small Video'+(kids.length!==1?'s':'')+'</div>';
-      html+='<div style="font-size:10px;color:var(--muted);margin-bottom:6px">'+done+' complete</div>';
+      html='<div style="font-size:10px;font-weight:600;margin-bottom:4px">'+kids.length+' Small Video'+(kids.length!==1?'s':'')+'</div>';
       html+=kids.map(c=>{
-        const cDone=VID_STEPS.every(s=>c[s]==='done'||c[s]==='na')&&c.post_date&&c.duration_minutes;
-        return'<div style="padding:2px 0;font-size:11px;white-space:nowrap;display:flex;align-items:center;gap:4px"><span style="color:'+(cDone?'#10b981':'rgba(139,92,246,.4)')+'">●</span>'+_esc(c.topic||c.title)+'</div>';
+        return'<div style="padding:1px 0;font-size:11px;white-space:nowrap">• '+_esc(c.topic||c.title)+'</div>';
       }).join('');
     }else if(v.big_video_id){
       const parent=(st.videos||[]).find(x=>!x.is_deleted&&String(x.id)===String(v.big_video_id));
       if(parent){
-        html='<div style="font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.03em;margin-bottom:4px">Part of</div>';
-        html+='<div style="padding:2px 0;font-size:11px;white-space:nowrap;font-weight:600">'+_esc(parent.topic||parent.title)+'</div>';
+        html='<div style="font-size:11px;white-space:nowrap">'+_esc(parent.topic||parent.title)+'</div>';
       }
     }
     if(!html)return;
@@ -1231,9 +1228,9 @@ function _vidBulletTipShow(e,sid){
     tip.style.cssText='position:fixed;z-index:9999;padding:8px 12px;border-radius:12px;background:rgba(255,252,248,.92);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid rgba(210,205,228,.3);box-shadow:0 8px 24px rgba(0,0,0,.1),inset 0 1px 0 rgba(255,255,255,.7);pointer-events:none;max-width:260px';
     tip.innerHTML=html;
     document.body.appendChild(tip);
-    const rect=e.target.getBoundingClientRect();
-    tip.style.left=rect.right+6+'px';
-    tip.style.top=rect.top-4+'px';
+    const rect=_tipTarget.getBoundingClientRect();
+    tip.style.left=rect.right+8+'px';
+    tip.style.top=rect.top+'px';
     const tr=tip.getBoundingClientRect();
     if(tr.right>window.innerWidth)tip.style.left=rect.left-tr.width-6+'px';
     if(tr.bottom>window.innerHeight)tip.style.top=window.innerHeight-tr.height-4+'px';
