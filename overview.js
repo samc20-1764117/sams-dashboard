@@ -3970,35 +3970,75 @@ function dropOnTB(e,ds,h,row,smOverride){
     pushUndo(()=>{st.blocks=st.blocks.filter(b=>b.id!==blk.id);sbDeleteBlock(blk.id);save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();},'Added birthday to time block');
     return;
   } else {
-    // Multi-select: if dragged task is in selectedTasks with others, add all selected tasks
+    // Multi-select: if dragged task is in selectedTasks with others, add all selected items
     const _isMultiTB=selectedTasks.has(String(dragId))&&selectedTasks.size>1;
-    const _taskIds=_isMultiTB?[...selectedTasks].filter(sid=>{const _t=st.tasks.find(x=>String(x.id)===sid);return _t&&!_t._virtual;}):dragId?[String(dragId)]:[];
-    if(!_taskIds.length){dragId=null;return;}
-    const _addedBlks=[];const _prevDates=[];
+    const _allSids=_isMultiTB?[...selectedTasks]:[String(dragId)];
+    const _addedBlks=[];const _undoOps=[];
     let _curSm=sm;
-    for(const tid of _taskIds){
-      const t=st.tasks.find(x=>String(x.id)===tid);
-      if(!t)continue;
-      const _tid=String(t.id);
-      if(st.blocks.find(b=>b.taskId===_tid&&b.ds===ds))continue;
-      const _dur=autoDur(t.name,t.category||'Home');
-      const blk={id:crypto.randomUUID(),title:t.name,ds,sm:_curSm,dur:_dur,cat:t.category||'Home',taskId:_tid};
-      _prevDates.push({t,prev:t.due_date});
-      if((t.due_date||'').split('T')[0]!==ds){
-        t.due_date=ds;
-        sbReq('PATCH','tasks',{due_date:ds},`?id=eq.${t.id}`);
+    const wkKey=wkKeyFromDs(ds);
+    for(const sid of _allSids){
+      if(sid.startsWith('wrec-')){
+        const rid=sid.replace('wrec-','');
+        const r=st.recurring.find(x=>String(x.id)===String(rid));
+        if(!r)continue;
+        if(st.blocks.some(b=>b.ds===ds&&String(b.recId)===String(rid)))continue;
+        const prevDateOv=r._dateOverrides?{...r._dateOverrides}:{};
+        if(!r._dateOverrides)r._dateOverrides={};
+        r._dateOverrides[wkKey]=ds;
+        const _dur=autoDur(r.name,'Recurring');
+        const blk={id:crypto.randomUUID(),title:r.name,ds,sm:_curSm,dur:_dur,cat:'Recurring',recId:String(r.id)};
+        st.blocks.push(blk);_addedBlks.push(blk);sbSaveBlock(blk);
+        sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));
+        _undoOps.push(()=>{r._dateOverrides=prevDateOv;sbReq('PATCH','wr_recurring_rules',{date_overrides:prevDateOv},recQs(r.id));});
+        _curSm+=_dur;
+      } else if(sid.startsWith('wrrule-virt-')||sid.startsWith('wrrule-')){
+        const rid=sid.replace('wrrule-virt-','').replace('wrrule-','');
+        const r=st.wrRules.find(x=>String(x.id)===String(rid));
+        if(!r)continue;
+        if(st.blocks.some(b=>b.ds===ds&&(String(b.ruleId)===String(rid)||String(b.recId)===String(rid))))continue;
+        const prevDateOv=r._dateOverrides?{...r._dateOverrides}:{};
+        if(!r._dateOverrides)r._dateOverrides={};
+        r._dateOverrides[wkKey]=ds;
+        const blk={id:crypto.randomUUID(),title:r.name,ds,sm:_curSm,dur:30,cat:'Recurring',ruleId:String(r.id),recId:String(r.id)};
+        st.blocks.push(blk);_addedBlks.push(blk);sbSaveBlock(blk);
+        sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},`?id=eq.${rid}`);
+        _undoOps.push(()=>{r._dateOverrides=prevDateOv;sbReq('PATCH','wr_recurring_rules',{date_overrides:prevDateOv},`?id=eq.${rid}`);});
+        _curSm+=30;
+      } else if(sid.startsWith('rec-virt-')){
+        const rid=sid.replace('rec-virt-','');
+        const r=st.recurring.find(x=>String(x.id)===String(rid));
+        if(!r)continue;
+        if(st.blocks.some(b=>b.ds===ds&&String(b.recId)===String(rid)))continue;
+        const prevDateOv=r._dateOverrides?{...r._dateOverrides}:{};
+        if(!r._dateOverrides)r._dateOverrides={};
+        r._dateOverrides[wkKey]=ds;
+        const _dur=autoDur(r.name,'Recurring');
+        const blk={id:crypto.randomUUID(),title:r.name,ds,sm:_curSm,dur:_dur,cat:'Recurring',recId:String(r.id)};
+        st.blocks.push(blk);_addedBlks.push(blk);sbSaveBlock(blk);
+        sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));
+        _undoOps.push(()=>{r._dateOverrides=prevDateOv;sbReq('PATCH','wr_recurring_rules',{date_overrides:prevDateOv},recQs(r.id));});
+        _curSm+=_dur;
+      } else {
+        const t=st.tasks.find(x=>String(x.id)===sid);
+        if(!t||t._virtual)continue;
+        const _tid=String(t.id);
+        if(st.blocks.find(b=>b.taskId===_tid&&b.ds===ds))continue;
+        const _dur=autoDur(t.name,t.category||'Home');
+        const prevDate=t.due_date;
+        const blk={id:crypto.randomUUID(),title:t.name,ds,sm:_curSm,dur:_dur,cat:t.category||'Home',taskId:_tid};
+        if((t.due_date||'').split('T')[0]!==ds){t.due_date=ds;sbReq('PATCH','tasks',{due_date:ds},`?id=eq.${t.id}`);}
+        st.blocks.push(blk);_addedBlks.push(blk);sbSaveBlock(blk);
+        _undoOps.push(()=>{t.due_date=prevDate||null;sbReq('PATCH','tasks',{due_date:prevDate||null},`?id=eq.${t.id}`);});
+        _curSm+=_dur;
       }
-      st.blocks.push(blk);_addedBlks.push(blk);
-      sbSaveBlock(blk);
-      _curSm+=_dur;
     }
     if(!_addedBlks.length){dragId=null;showToast('Already in time block','#6b7280',2000);return;}
     dragId=null;selectedTasks.clear();save();renderAll();
     const _blkIds=_addedBlks.map(b=>b.id);
     pushUndo(()=>{
       st.blocks=st.blocks.filter(b=>!_blkIds.includes(b.id));
-      _prevDates.forEach(({t,prev})=>{t.due_date=prev||null;sbReq('PATCH','tasks',{due_date:prev||null},`?id=eq.${t.id}`);});
       _blkIds.forEach(id=>sbDeleteBlock(id));
+      _undoOps.forEach(fn=>fn());
       save();renderAll();
     },_addedBlks.length>1?`Added ${_addedBlks.length} tasks to time block`:'Added to time block');
     return;

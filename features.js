@@ -2515,9 +2515,23 @@ document.addEventListener('keydown',async e=>{
     // Auto-timeblock blocks: delete for that day
     const atbDelIds=ids.filter(id=>id.startsWith('atb::'));
     if(atbDelIds.length){const ds=d2s(getDayDate(dayOff));atbDelIds.forEach(id=>{const atbId=id.replace('atb::','');const atb=getAutoTBForDate(ds).find(a=>a._atbId===atbId);if(atb)delAutoTBForDay(atbId,ds,atb._ovId||null);});clearSelection();return;}
-    // Timeblock-only blocks (shop/WR rule): just remove from timeblock
+    // Timeblock-only blocks (shop/WR rule/task): just remove from timeblock
     const blkOnlyIds=ids.filter(id=>id.startsWith('blk-'));
-    if(blkOnlyIds.length){blkOnlyIds.forEach(id=>delBlock(id.replace('blk-','')));clearSelection();return;}
+    if(blkOnlyIds.length){
+      const _removed=blkOnlyIds.map(id=>{const bid=id.replace('blk-','');const b=st.blocks.find(x=>x.id===bid);return b?{...b}:null;}).filter(Boolean);
+      const _removedPupSess=[];
+      _removed.forEach(copy=>{
+        if(copy.cat==='pup_session'&&copy._pupSessId){const s=st.pupSessions.find(x=>String(x.id)===String(copy._pupSessId));if(s){_removedPupSess.push({...s});st.pupSessions=st.pupSessions.filter(x=>String(x.id)!==String(copy._pupSessId));sbReqSilent('DELETE','pup_skill_sessions',null,`?id=eq.${copy._pupSessId}`);}}
+        st.blocks=st.blocks.filter(x=>x.id!==copy.id);sbDeleteBlock(copy.id);
+      });
+      save();renderAll();renderPupSkillsHighlight();renderToday();renderWkCal();if(document.getElementById('tbGrid'))renderDayTB();
+      pushUndo(()=>{
+        _removed.forEach(copy=>{st.blocks.push(copy);sbSaveBlock(copy);});
+        _removedPupSess.forEach(s=>{st.pupSessions.push(s);sbReqSilent('POST','pup_skill_sessions',{skill_id:s.skill_id,day_date:s.day_date,done:s.done},'');});
+        save();renderAll();renderPupSkillsHighlight();renderToday();renderWkCal();if(document.getElementById('tbGrid'))renderDayTB();
+      },_removed.length>1?`Removed ${_removed.length} from time block`:'Removed from time block');
+      clearSelection();return;
+    }
     // WR rule rows: skip this week instead of permanent delete
     const wrRuleIds=ids.filter(id=>id.startsWith('wrrule-'));
     if(wrRuleIds.length){
