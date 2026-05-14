@@ -1186,15 +1186,25 @@ function _vidRenderMonthly(){
 }
 
 // ── Analytics View ───────────────────────────────────────────────────────────
+// Helper: parse YT ISO duration to total seconds (used to filter out shorts)
+function _ytDurSec(iso){if(!iso)return 0;var m=iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);if(!m)return 0;return(parseInt(m[1])||0)*3600+(parseInt(m[2])||0)*60+(parseInt(m[3])||0);}
+
 function _vidRenderAnalytics(){
   const all=(st.videos||[]).filter(v=>!v.is_deleted);
   const published=all.filter(v=>v.status==='published'&&v.post_date);
   const cs=_ytData?_ytData.channelStats:null;
 
+  // Build a set of YT video IDs that are actual videos (>60s), not shorts/posts
+  const ytVideoIds=new Set();
+  if(_ytData&&_ytData.videos) _ytData.videos.forEach(v=>{if(_ytDurSec(v.duration)>60)ytVideoIds.add(v.id);});
+
   const merged=published.map(v=>{
     const yt=_ytForVid(v.id);
-    return{...v,views:yt?yt.views:0,likes:yt?yt.likes:0,comments:yt?yt.comments:0,ytId:yt?yt.ytId:null};
-  }).filter(v=>v.views>0).sort((a,b)=>b.views-a.views);
+    if(!yt)return null;
+    // Skip if the matched YT video is a short (<= 60s) or not in our long-form set
+    if(yt.ytId&&!ytVideoIds.has(yt.ytId))return null;
+    return{...v,views:yt.views,likes:yt.likes,comments:yt.comments,ytId:yt.ytId};
+  }).filter(v=>v&&v.views>0).sort((a,b)=>b.views-a.views);
 
   if(!merged.length) return '<div style="padding:40px;text-align:center;color:var(--muted)">No YouTube data available yet. Publish videos and check back!</div>';
 
@@ -1203,9 +1213,9 @@ function _vidRenderAnalytics(){
   const totalComments=merged.reduce((s,v)=>s+v.comments,0);
   const avgViews=Math.round(totalViews/merged.length);
 
-  const rpmLow=2,rpmHigh=7;
-  const estLow=Math.round(totalViews/1000*rpmLow);
-  const estHigh=Math.round(totalViews/1000*rpmHigh);
+  // Revenue estimate using $4 RPM midpoint
+  const rpm=4;
+  const estRevenue=Math.round(totalViews/1000*rpm);
 
   const engagements=merged.map(v=>({...v,engRate:v.views>0?((v.likes+v.comments)/v.views*100):0}));
   const avgEng=(engagements.reduce((s,v)=>s+v.engRate,0)/engagements.length);
@@ -1283,16 +1293,17 @@ function _vidRenderAnalytics(){
     <div style="font-size:20px;font-weight:700;color:${color||'var(--text)'}">${value}</div>
     ${sub?'<div style="font-size:10px;color:var(--muted);margin-top:1px">'+sub+'</div>':''}</div>`;}
 
-  let h='<div style="padding:16px 0;overflow-y:auto">';
+  const kpiColor='var(--text)';
+  let h='<div style="padding:16px 20px;overflow-y:auto">';
 
-  // ROW 1: Key metrics
+  // ROW 1: KPIs — consistent muted style, data speaks for itself
   h+='<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:16px">';
-  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:10px">${stat('Total Views',_ytNum(totalViews),'#0ea5e9')}</div>`;
-  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:10px">${stat('Avg Views/Video',_ytNum(avgViews),'#8b5cf6')}</div>`;
-  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:10px">${stat('Engagement',avgEng.toFixed(1)+'%','#10b981','likes+comments/views')}</div>`;
-  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:10px">${stat('Published',merged.length,'#f59e0b')}</div>`;
-  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:10px">${stat('Est. Revenue','$'+_ytNum(estLow)+'-$'+_ytNum(estHigh),'#22c55e','$'+rpmLow+'-$'+rpmHigh+' RPM')}</div>`;
-  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:10px">${stat('Subscribers',cs?_ytNum(cs.subscribers):'-','#f43f5e')}</div>`;
+  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:10px">${stat('Total Views',_ytNum(totalViews),kpiColor)}</div>`;
+  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:10px">${stat('Avg Views/Video',_ytNum(avgViews),kpiColor)}</div>`;
+  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:10px">${stat('Engagement',avgEng.toFixed(1)+'%',kpiColor,'(likes + comments) / views')}</div>`;
+  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:10px">${stat('Videos Published',String(merged.length),kpiColor)}</div>`;
+  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:10px">${stat('Est. Total Revenue','$'+_ytNum(estRevenue),kpiColor,'@ $'+rpm+' RPM')}</div>`;
+  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:10px">${stat('Subscribers',cs?_ytNum(cs.subscribers):'-',kpiColor)}</div>`;
   h+='</div>';
 
   // ROW 2: Money + Topics + Velocity
@@ -1300,7 +1311,7 @@ function _vidRenderAnalytics(){
 
   let moneyHtml='<div style="font-size:10px;color:var(--muted);margin-bottom:6px">Your biggest earners (estimated)</div>';
   merged.slice(0,7).forEach((v,i)=>{
-    const est=Math.round(v.views/1000*((rpmLow+rpmHigh)/2));
+    const est=Math.round(v.views/1000*rpm);
     moneyHtml+=`<div style="display:flex;align-items:center;gap:6px;padding:3px 0;font-size:11px;${i===0?'font-weight:600':''}">
       <span style="color:var(--muted);width:14px;flex-shrink:0">${i+1}</span>
       <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${_ytEsc(v.title||'')}">${_ytEsc(v.title||'Untitled')}</span>
