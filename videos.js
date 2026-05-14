@@ -14,21 +14,37 @@ function _ytBuildMatch(){
   console.log('[YT] Sample DB dates:',dbVids.slice(0,3).map(v=>v.post_date));
   console.log('[YT] Sample YT dates:',ytVids.slice(0,3).map(v=>v.publishedAt));
   // Pass 1: match by post_date = publishedAt date
+  // Group by date to handle same-day videos via title similarity
   var matched=0;
+  var byDate={};
+  for(var j=0;j<ytVids.length;j++){
+    var ytDate=ytVids[j].publishedAt.slice(0,10);
+    if(!byDate[ytDate])byDate[ytDate]=[];
+    byDate[ytDate].push(j);
+  }
   for(var i=0;i<dbVids.length;i++){
     var dv=dbVids[i];
     if(!dv.post_date)continue;
-    for(var j=0;j<ytVids.length;j++){
-      if(usedYt.has(j))continue;
-      var yt=ytVids[j];
-      var ytDate=yt.publishedAt.slice(0,10);
-      if(dv.post_date===ytDate){
-        _ytMatch[String(dv.id)]={views:yt.views,likes:yt.likes,comments:yt.comments,ytId:yt.id};
-        usedYt.add(j);
-        matched++;
-        break;
+    var candidates=byDate[dv.post_date];
+    if(!candidates)continue;
+    var avail=candidates.filter(function(j){return!usedYt.has(j);});
+    if(!avail.length)continue;
+    var bestJ=avail[0];
+    if(avail.length>1&&dv.title){
+      // Multiple YT videos on same date — pick best title match
+      var dbWords=dv.title.toLowerCase().split(/\s+/);
+      var bestScore=-1;
+      for(var k=0;k<avail.length;k++){
+        var ytTitle=(ytVids[avail[k]].title||'').toLowerCase();
+        var score=0;
+        for(var w=0;w<dbWords.length;w++){if(ytTitle.indexOf(dbWords[w])>=0)score++;}
+        if(score>bestScore){bestScore=score;bestJ=avail[k];}
       }
     }
+    var yt=ytVids[bestJ];
+    _ytMatch[String(dv.id)]={views:yt.views,likes:yt.likes,comments:yt.comments,ytId:yt.id};
+    usedYt.add(bestJ);
+    matched++;
   }
   console.log('[YT] Matched',matched,'videos. _ytMatch keys:',Object.keys(_ytMatch).length);
   if(matched===0&&dbVids.length>0&&ytVids.length>0){
