@@ -91,13 +91,12 @@
 - **Data**: merges Supabase `st.videos` (published + post_date) with `_ytMatch` YT stats. Filters out shorts/posts using `_ytDurSec()` (only videos >60s). All computation is client-side from already-fetched data — zero additional API calls.
 - **State**: `_anTrendMetric` (revenue|views|likes|engagement|videos), `_anTrendPeriod` (monthly|yearly). Toggled via `_anSetTrend(metric,period)`.
 - **Layout** (top → bottom by importance):
-  1. **KPIs** (6 cols): Unreplied Comments (red, first, dblclick opens modal), Total Views, Avg Views/Video, Videos, Est. Revenue, Subscribers. Each (except Unreplied) has inline sparkline (left of value, 44x16 SVG) colored green/red based on trend direction. Sub-text shows this-month value where applicable. All values use `var(--text)` except Unreplied which uses `#ef4444`.
-  2. **Trend Chart (2/3) + Strategy Insights (1/3)**: Bar chart with metric/period toggle buttons (subtle grey highlight, not solid fill). Strategy panel ("What Makes Your Videos Win") shows: best duration, best publish day, big vs small multiplier, best title length, top topic, most engaging topic, momentum (90-day vs older), winner profile.
-  3. **Money Makers + Do More Like This** (2 cols): Top earners by est. revenue. Do More Like This scored by views × engagement rate.
-  4. **Fastest Growing + Stars & Sleepers + Most Engaged** (3 cols): Velocity (views/day), over/underperformers vs avg, highest engagement rate.
-- **Color philosophy**: minimal. Sparklines use green/red as directional indicators only. Stars & Sleepers keeps green/red for over/under. All other values use default text color. Strategy panel uses emoji icons, no colored text.
+  1. **KPIs** (6 cols): Unreplied Comments (red, dblclick opens unreplied modal), Total Views, Avg Views/Video, Videos, Est. Revenue, Subscribers. Each (except Unreplied) has inline sparkline + dblclick opens `_anKpiModal(metric)` with monthly breakdown table (best/worst highlighted, % change, trend narrative, top contributors). Enter/Escape closes modal.
+  2. **Trend Chart (2/3) + Strategy Insights (1/3)**: Single neutral color for all metrics (`rgba(120,113,145)`), current month/year highlighted (darker + bold label). No chart header — toggles are self-explanatory. Bars fill full container height via flex. Month labels use abbreviations (Jan, Feb...). Strategy panel: best duration, best day, big vs small, top topic, publishing pace, momentum, best combo (topic+duration).
+  3. **Do More Like This + Try Next** (2 cols): Do More Like This scored by views × engagement. Try Next suggests specific topics based on stale high-performers (>60d since last post), underexplored topics (few videos but good avg), and top-performing patterns.
+- **Color philosophy**: minimal. Sparklines use green/red for direction. Trend bars use single neutral color, current period highlighted darker. Strategy panel uses emoji icons, no colored text.
 - **Revenue**: estimated at `$4 RPM` (configurable via `rpm` const). Applied to total and per-video.
-- **Key functions**: `_vidRenderAnalytics()`, `_anSetTrend()`, `_ytDurSec(iso)`, `sparkline(vals)`, `stat()`, `card()`, `bar()`.
+- **Key functions**: `_vidRenderAnalytics()`, `_anSetTrend()`, `_anKpiModal(metric)`, `_ytDurSec(iso)`, `sparkline(vals)`, `stat()`, `card()`.
 
 ### YouTube Analytics Integration
 - **Endpoint**: `/api/yt` — Cloudflare Pages Function at `functions/api/yt.js`.
