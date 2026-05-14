@@ -1294,7 +1294,9 @@ function _vidRenderMonthly(){
 function _ytDurSec(iso){if(!iso)return 0;var m=iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);if(!m)return 0;return(parseInt(m[1])||0)*3600+(parseInt(m[2])||0)*60+(parseInt(m[3])||0);}
 let _anTrendMetric='revenue';
 let _anTrendPeriod='monthly';
+let _anRevMode='earned'; // 'earned' = by month earned (real), 'posted' = by video post_date
 function _anSetTrend(metric,period){if(metric)_anTrendMetric=metric;if(period)_anTrendPeriod=period;renderVideosPageKeepScroll();}
+function _anToggleRevMode(){_anRevMode=_anRevMode==='earned'?'posted':'earned';renderVideosPageKeepScroll();}
 let _anTipStore={};
 function _anShowTip(e,key){
   _anHideTip();
@@ -1531,29 +1533,36 @@ function _vidRenderAnalytics(){
   merged.forEach(v=>{
     if(!v.post_date)return;
     const key=_anTrendPeriod==='yearly'?v.post_date.slice(0,4):v.post_date.slice(0,7);
-    if(!periodMap[key])periodMap[key]={views:0,likes:0,comments:0,count:0};
+    if(!periodMap[key])periodMap[key]={views:0,likes:0,comments:0,count:0,vidRev:0};
     periodMap[key].views+=v.views;periodMap[key].likes+=v.likes;periodMap[key].comments+=v.comments;periodMap[key].count++;
+    periodMap[key].vidRev+=_vRev(v);
   });
-  const periods=Object.entries(periodMap).sort((a,b)=>a[0].localeCompare(b[0]));
-  const sliced=_anTrendPeriod==='yearly'?periods:periods.slice(-12);
-  const metricVals=sliced.map(([key,d])=>{
-    if(_anTrendMetric==='revenue'){
-      // Use real revenue if available, otherwise estimate
-      if(_hasRealRev){
-        // For monthly, key is "2025-01"; for yearly, key is "2025" — sum matching months
-        let rv=0;
-        if(_anTrendPeriod==='yearly'){_ytAnalytics.monthly.forEach(m=>{if(m.month.startsWith(key))rv+=m.revenue;});}
-        else{rv=_realRevByMonth[key]||0;}
-        rv=Math.round(rv);return{key,val:rv,fmt:'$'+_ytNum(rv)};
+  // For "earned" mode, build periods from real Analytics monthly data
+  let metricVals;
+  if(_anTrendMetric==='revenue'&&_hasRealRev&&_anRevMode==='earned'){
+    const earnedMap={};
+    _ytAnalytics.monthly.forEach(m=>{
+      const key=_anTrendPeriod==='yearly'?m.month.slice(0,4):m.month;
+      if(!earnedMap[key])earnedMap[key]=0;
+      earnedMap[key]+=m.revenue;
+    });
+    const earnedPeriods=Object.entries(earnedMap).sort((a,b)=>a[0].localeCompare(b[0]));
+    const earnedSliced=_anTrendPeriod==='yearly'?earnedPeriods:earnedPeriods.slice(-12);
+    metricVals=earnedSliced.map(([key,rv])=>{rv=Math.round(rv);return{key,val:rv,fmt:'$'+_ytNum(rv)};});
+  } else {
+    const periods=Object.entries(periodMap).sort((a,b)=>a[0].localeCompare(b[0]));
+    const sliced=_anTrendPeriod==='yearly'?periods:periods.slice(-12);
+    metricVals=sliced.map(([key,d])=>{
+      if(_anTrendMetric==='revenue'){
+        const v=Math.round(d.vidRev);return{key,val:v,fmt:'$'+_ytNum(v)};
       }
-      const v=Math.round(d.views/1000*rpm);return{key,val:v,fmt:'$'+_ytNum(v)};
-    }
-    if(_anTrendMetric==='views')return{key,val:d.views,fmt:_ytNum(d.views)};
-    if(_anTrendMetric==='likes')return{key,val:d.likes,fmt:_ytNum(d.likes)};
-    if(_anTrendMetric==='engagement'){const r=d.views>0?((d.likes+d.comments)/d.views*100):0;return{key,val:r,fmt:r.toFixed(1)+'%'};}
-    if(_anTrendMetric==='videos')return{key,val:d.count,fmt:String(d.count)};
-    return{key,val:0,fmt:'0'};
-  });
+      if(_anTrendMetric==='views')return{key,val:d.views,fmt:_ytNum(d.views)};
+      if(_anTrendMetric==='likes')return{key,val:d.likes,fmt:_ytNum(d.likes)};
+      if(_anTrendMetric==='engagement'){const r=d.views>0?((d.likes+d.comments)/d.views*100):0;return{key,val:r,fmt:r.toFixed(1)+'%'};}
+      if(_anTrendMetric==='videos')return{key,val:d.count,fmt:String(d.count)};
+      return{key,val:0,fmt:'0'};
+    });
+  }
   const maxMetric=Math.max(...metricVals.map(m=>m.val),1);
   const _moAbbr=['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const _curPeriod=_anTrendPeriod==='yearly'?String(now.getFullYear()):_thisMonth;
@@ -1566,10 +1575,13 @@ function _vidRenderAnalytics(){
   if(_anTrendMetric==='engagement') summaryText='Avg: '+avgMetricVal.toFixed(1)+'%/'+perLabel;
   else if(_anTrendMetric==='revenue') summaryText='$'+_ytNum(totalMetric)+' total · $'+_ytNum(Math.round(avgMetricVal))+'/'+perLabel;
   else summaryText=_ytNum(totalMetric)+' total · '+_ytNum(Math.round(avgMetricVal))+'/'+perLabel;
+  // Revenue mode toggle (earned vs posted) — only when revenue selected + real data available
+  const _revToggle=_anTrendMetric==='revenue'&&_hasRealRev?`<div style="width:1px;height:18px;background:rgba(120,113,145,.3);margin:0 4px;flex-shrink:0"></div><div style="display:flex;gap:3px;align-items:center"><button onclick="_anToggleRevMode()" style="padding:3px 8px;border:1px solid ${_anRevMode==='earned'?'rgba(120,113,145,.4)':'var(--border)'};border-radius:5px;background:${_anRevMode==='earned'?'rgba(120,113,145,.15)':'transparent'};color:${_anRevMode==='earned'?'var(--text)':'var(--muted)'};font-size:10px;font-family:inherit;font-weight:${_anRevMode==='earned'?'600':'400'};cursor:pointer">Earned</button><button onclick="_anToggleRevMode()" style="padding:3px 8px;border:1px solid ${_anRevMode==='posted'?'rgba(120,113,145,.4)':'var(--border)'};border-radius:5px;background:${_anRevMode==='posted'?'rgba(120,113,145,.15)':'transparent'};color:${_anRevMode==='posted'?'var(--text)':'var(--muted)'};font-size:10px;font-family:inherit;font-weight:${_anRevMode==='posted'?'600':'400'};cursor:pointer">By Video</button></div>`:'';
   let trendHtml=`<div style="display:flex;align-items:center;gap:6px;margin-bottom:12px">
     <div style="display:flex;gap:3px;align-items:center">${tBtn('revenue','Revenue','metric')}${tBtn('views','Views','metric')}${tBtn('likes','Likes','metric')}${tBtn('engagement','Engagement','metric')}${tBtn('videos','Videos','metric')}</div>
     <div style="width:1px;height:18px;background:rgba(120,113,145,.3);margin:0 4px;flex-shrink:0"></div>
     <div style="display:flex;gap:3px;align-items:center">${tBtn('monthly','Monthly','period')}${tBtn('yearly','Yearly','period')}</div>
+    ${_revToggle}
     <div style="flex:1"></div>
     <span style="font-size:10px;color:var(--muted);white-space:nowrap;line-height:1">${summaryText}</span>
   </div>`;
