@@ -100,7 +100,9 @@ function _ytShowUnreplied(){
   html+='<div style="max-height:60vh;overflow-y:auto">';
   items.forEach((c,idx)=>{
     const vidTitle=c.videoTitle||'';
-    const date=c.publishedAt?c.publishedAt.slice(0,10):'';
+    const _cd=c.publishedAt?new Date(c.publishedAt):null;
+    const _cAgo=_cd?Math.max(0,Math.round((Date.now()-_cd)/86400000)):null;
+    const date=_cAgo!==null?(_cAgo===0?'today':_cAgo===1?'yesterday':_cAgo+'d ago'):'';
     html+=`<div id="ytc-${c.id}" data-idx="${idx}" style="display:flex;align-items:flex-start;gap:8px;padding:6px 4px;border-bottom:1px solid rgba(210,205,228,.12);cursor:pointer;border-radius:6px" onclick="_ytToggleSel('${c.id}',${idx},event)">
       <div style="flex:1;min-width:0">
         <div style="font-size:10px;color:var(--muted);margin-bottom:2px">${_esc(vidTitle)}${date?' · '+date:''}</div>
@@ -298,14 +300,13 @@ function renderVideosPage(){
           <button class="${viewBtnS('monthly')}" onclick="_vidSetView('monthly')">Monthly</button>
         </div>
         <div style="position:relative">
-          <div style="display:flex;align-items:center;border:1px solid var(--border);border-radius:8px;background:var(--bg);padding:0 6px;gap:2px">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" style="flex-shrink:0;opacity:.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input id="vidSearchInput" type="text" placeholder="Search videos..." value="${_vidSearch.replace(/"/g,'&quot;')}" oninput="_vidSetSearch(this.value)" onkeydown="_vidSearchKey(event)" onfocus="_vidSearchFocus()" style="padding:5px 4px;border:none;font-family:inherit;font-size:12px;background:transparent;color:var(--text);outline:none;width:140px;min-width:0">
-            ${_vidSearch?`<span id="vidSearchCount" style="font-size:10px;color:var(--muted);white-space:nowrap">${_vidMatchIdx+1}/${_vidMatchIds.length}</span>
-            <button onclick="_vidSearchNav(-1)" style="background:none;border:none;cursor:pointer;padding:0 2px;font-size:11px;color:var(--muted);line-height:1" title="Previous (Shift+Enter)">▲</button>
-            <button onclick="_vidSearchNav(1)" style="background:none;border:none;cursor:pointer;padding:0 2px;font-size:11px;color:var(--muted);line-height:1" title="Next (Enter)">▼</button>
-            <button onclick="_vidSetSearch('');document.getElementById('vidSearchInput').value=''" style="background:none;border:none;cursor:pointer;padding:0 2px;font-size:11px;color:var(--muted);line-height:1" title="Clear (Esc)">✕</button>`:''}
-          </div>
+          <input id="vidSearchInput" type="text" placeholder="Search videos..." value="${_vidSearch.replace(/"/g,'&quot;')}" oninput="_vidSetSearch(this.value)" onkeydown="_vidSearchKey(event)" onfocus="_vidSearchFocus()" style="padding:5px 10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:12px;background:var(--bg);color:var(--text);outline:none;width:180px">
+          ${_vidSearch?`<div style="display:flex;align-items:center;gap:1px;position:absolute;right:6px;top:50%;transform:translateY(-50%)">
+            <span id="vidSearchCount" style="font-size:10px;color:var(--muted);white-space:nowrap;margin-right:2px">${_vidMatchIdx+1}/${_vidMatchIds.length}</span>
+            <button onclick="_vidSearchNav(-1)" style="background:none;border:none;cursor:pointer;padding:0 2px;font-size:10px;color:var(--muted);line-height:1" title="Previous (Shift+Enter)">▲</button>
+            <button onclick="_vidSearchNav(1)" style="background:none;border:none;cursor:pointer;padding:0 2px;font-size:10px;color:var(--muted);line-height:1" title="Next (Enter)">▼</button>
+            <button onclick="_vidSetSearch('');document.getElementById('vidSearchInput').value=''" style="background:none;border:none;cursor:pointer;padding:0 2px;font-size:10px;color:var(--muted);line-height:1" title="Clear (Esc)">✕</button>
+          </div>`:''}
           <div id="vidSearchSuggestions" style="display:none;position:absolute;top:100%;left:0;margin-top:4px;background:var(--bg);border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.1);z-index:1001;max-height:200px;overflow-y:auto;min-width:240px"></div>
         </div>
         <div style="flex:1"></div>
@@ -334,7 +335,7 @@ function renderVideosPage(){
             <span style="font-weight:600;color:#10b981">${stats.published}</span>
           </div>
         </div>
-        <button onclick="openVidModal()" style="background:rgba(255,255,255,.85);border:1px solid var(--border);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.08);margin-right:72px" title="Add video">
+        <button onclick="openVidModal()" style="background:rgba(255,255,255,.85);border:1px solid var(--border);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.08);margin-right:56px" title="Add video">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         </button>
       </div>
@@ -1533,7 +1534,7 @@ function _vidRenderAnalytics(){
   const _revValue=_hasRealRev?'$'+_ytNum(Math.round(_realRevTotal)):'$'+_ytNum(estRevenue);
   const _revSub=_hasRealRev?'$'+_ytNum(Math.round(_realRevThisMonth||0))+' this mo':'@ $'+rpm+' RPM';
   const _spRevReal=_hasRealRev?_kpiLast6.map(([k])=>Math.round(_realRevByMonth[k]||0)):_spRev;
-  const _kc2=(fn,bg)=>`<div style="background:${bg||'var(--glass)'};border:1px solid var(--border);border-radius:10px;padding:6px 10px;cursor:pointer;display:flex;align-items:center;gap:8px;min-width:0;flex:1" onclick="${fn}">`;
+  const _kc2=(fn,bg)=>`<div style="background:${bg||'var(--glass)'};border:1px solid var(--border);border-radius:10px;padding:10px 10px;cursor:pointer;display:flex;align-items:center;gap:8px;min-width:0;flex:1" onclick="${fn}">`;
   const _kStat=(label,val,spark)=>`${spark||''}<div style="min-width:0"><div style="font-size:9px;color:var(--muted);white-space:nowrap">${label}</div><div style="font-size:15px;font-weight:700;color:var(--text);white-space:nowrap">${val}</div></div>`;
   // ── TREND CHART + Strategy Insights ──
   const periodMap={};
@@ -1600,7 +1601,7 @@ function _vidRenderAnalytics(){
     <div style="flex:1"></div>
     <span style="font-size:10px;color:var(--muted);white-space:nowrap;line-height:1">${summaryText}</span>
   </div>`;
-  trendHtml+='<div style="display:flex;align-items:flex-end;gap:2px;flex:1;min-height:220px;padding:0 8px">';
+  trendHtml+='<div style="display:flex;align-items:flex-end;gap:2px;flex:1;min-height:230px;padding:0 8px">';
   metricVals.forEach(m=>{
     const pct=Math.max(Math.round(m.val/maxMetric*70),2);
     const isCur=m.key===_curPeriod;
@@ -1754,7 +1755,7 @@ function _vidRenderAnalytics(){
   h+=`<div style="display:flex;flex-direction:column;gap:12px">`;
   // KPIs row
   h+='<div style="display:flex;gap:8px;align-items:stretch">';
-  h+=`<div style="background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:6px 10px;cursor:pointer;display:flex;align-items:center;gap:6px;flex:1" onclick="_ytShowUnreplied()"><div style="font-size:15px;font-weight:700;color:#ef4444">${_unrepliedN}</div><div style="font-size:9px;color:var(--muted)">Unreplied</div></div>`;
+  h+=`<div style="background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:10px 10px;cursor:pointer;display:flex;align-items:center;gap:6px;flex:1" onclick="_ytShowUnreplied()"><div style="font-size:15px;font-weight:700;color:#ef4444">${_unrepliedN}</div><div style="font-size:9px;color:var(--muted)">Unreplied</div></div>`;
   h+=`${_kc2("_anKpiModal('views')")}${_kStat('Views',_ytNum(totalViews),sparkline(_spViews))}</div>`;
   h+=`${_kc2("_anKpiModal('avg')")}${_kStat('Avg/Video',_ytNum(avgViews),sparkline(_spAvg))}</div>`;
   h+=`${_kc2("_anKpiModal('videos')")}${_kStat('Videos',String(merged.length),sparkline(_spVids))}</div>`;
