@@ -2976,10 +2976,9 @@ function _attachTBEdgeRubberBand(){
         document.body.appendChild(selBox);
       }
       if(selBox){
-        const tbCol2=document.querySelector('.tb-col');
-        const cr=tbCol2?tbCol2.getBoundingClientRect():{left:0,width:window.innerWidth};
         const y1=Math.min(startY,ev.clientY),y2=Math.max(startY,ev.clientY);
-        selBox.style.left=cr.left+'px';selBox.style.width=cr.width+'px';
+        const x1=Math.min(e.clientX,ev.clientX),x2=Math.max(e.clientX,ev.clientX);
+        selBox.style.left=x1+'px';selBox.style.width=(x2-x1)+'px';
         selBox.style.top=y1+'px';selBox.style.height=(y2-y1)+'px';
       }
     };
@@ -2989,23 +2988,25 @@ function _attachTBEdgeRubberBand(){
       if(selBox)selBox.remove();
       if(!rbMoved)return;
       const y1=Math.min(startY,ev.clientY),y2=Math.max(startY,ev.clientY);
+      const x1=Math.min(e.clientX,ev.clientX),x2=Math.max(e.clientX,ev.clientX);
       const tbCol=document.querySelector('.tb-col');
       if(!tbCol)return;
       const colRect=tbCol.getBoundingClientRect();
-      // Same coordinate system as internal rubber band: Y relative to col viewport top (no scrollTop needed)
       const selTop=y1-colRect.top,selBot=y2-colRect.top;
       _lastTBRbRange={selTop,selBot};
       if(!ev.shiftKey)selectedTasks.clear();
       tbCol.querySelectorAll('.tb-block[data-bid]').forEach(be=>{
         const bl=st.blocks.find(x=>String(x.id)===String(be.dataset.bid));
         if(!bl)return;
-        const blTop=(bl.sm-HOURS[0]*60)*PX,blBot=blTop+bl.dur*PX;
-        if(blBot>selTop&&blTop<selBot){const sid=_getTBBlockSelId(bl);if(sid){selectedTasks.add(sid);lastSelectedId=sid;}}
+        const br=be.getBoundingClientRect();
+        if(br.bottom>y1&&br.top<y2&&br.right>x1&&br.left<x2){const sid=_getTBBlockSelId(bl);if(sid){selectedTasks.add(sid);lastSelectedId=sid;}}
       });
       // Auto-select auto-blocks in range when no regular blocks were selected
       if(![...selectedTasks].some(id=>!id.startsWith('atb::'))){
-        const minSm=HOURS[0]*60+selTop/PX,maxSm=HOURS[0]*60+selBot/PX;
-        getAutoTBForDate(d2s(getDayDate(dayOff))).filter(a=>a.sm+a.dur>minSm&&a.sm<maxSm).forEach(a=>selectedTasks.add('atb::'+a._atbId));
+        tbCol.querySelectorAll('.atb-block[data-atb-id]').forEach(ae=>{
+          const ar=ae.getBoundingClientRect();
+          if(ar.bottom>y1&&ar.top<y2&&ar.right>x1&&ar.left<x2)selectedTasks.add('atb::'+ae.dataset.atbId);
+        });
       }
       applySelHighlight();
     };

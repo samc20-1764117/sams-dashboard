@@ -147,6 +147,8 @@ function renderVideosPage(){
       if(parent)v.big_video_id=parent.id;
     }
   });
+  // Enforce: B videos cannot have big_video_id
+  bVids.forEach(v=>{if(v.big_video_id){v.big_video_id=null;if(!String(v.id).startsWith('l-'))sbReqSilent('PATCH','videos',{big_video_id:null},`?id=eq.${v.id}`);}});
   // Enforce: L videos without a valid big parent can't be in_progress/up_next
   const _activeBigIds=new Set(bVids.map(v=>String(v.id)));
   const _fixedIds=[];
@@ -426,6 +428,9 @@ async function _vidGroupDrop(e,parentId){
   if(!_vidDashDragId)return;
   const parent=(st.videos||[]).find(x=>String(x.id)===parentId);if(!parent||parent.video_type!=='B')return;
   const ids=_vidDashDragIds.length?[..._vidDashDragIds]:[_vidDashDragId];
+  // If dragging a B video (with children), don't intercept — let _vidDashDrop handle it
+  const hasBDrag=ids.some(id=>{const v=(st.videos||[]).find(x=>String(x.id)===String(id));return v&&v.video_type==='B';});
+  if(hasBDrag)return;
   // Filter to videos that can nest (not B, not self, not already child of this parent)
   const toNest=ids.map(id=>(st.videos||[]).find(x=>String(x.id)===String(id))).filter(v=>v&&v.video_type!=='B'&&String(v.id)!==String(parentId));
   if(!toNest.length)return;
@@ -1647,6 +1652,8 @@ async function saveVidModal(){
   }else{
     data.video_type=data.big_video_id?'L':(document.getElementById('vmType').value||'L');
   }
+  // B videos cannot have a parent
+  if(data.video_type==='B')data.big_video_id=null;
   document.querySelectorAll('#vmSteps [data-step]').forEach(el=>{data[el.dataset.step]=el.dataset.val||'not_started';});
   // Default Tab Pub + Upload to na for L-type videos with a parent group (not standalone)
   if(_vidMode==='add'&&data.video_type==='L'&&data.big_video_id){
