@@ -522,6 +522,7 @@ function tRowTodayVirt(t,tbArrow=false,noColor=false){
     <span class="tn">${t.name}</span>
     ${_hebBadge(t.name)}
     ${!ov?`<svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3" fill="${ps.bg}" stroke="${ps.d}" stroke-opacity="0.4" stroke-width="1"/></svg>`:''}
+    ${ov&&t.due_date?`<span class="dlbl ov">${['S','M','T','W','T','F','S'][new Date(t.due_date.split('T')[0]+'T12:00').getDay()]}</span>`:''}
     ${tbArrow?'<span class="tb-arrow">›</span>':''}
     <button class="delbtn" onclick="event.stopPropagation();${_xBtn}">✕</button>
   </div>`;
@@ -874,7 +875,6 @@ function renderWkCal(){
         const wkKey=getWkKey(wkOff);
         const _wrecSid='wrec-'+recId;
         const _isMultiWrec=selectedTasks.has(_wrecSid)&&selectedTasks.size>1;
-        console.log('wrec drop debug',{_wrecSid,_isMultiWrec,selectedTasks:[...selectedTasks],size:selectedTasks.size});
         const _wrecUndos=[];
         if(r){
           if(!r._dateOverrides)r._dateOverrides={};
@@ -962,17 +962,20 @@ function renderWkCal(){
       const _dragSid=String(dragId);
       const _isMulti=selectedTasks.has(_dragSid)&&selectedTasks.size>1;
       // Also move selected wrec/wrrule items when multi-dragging
+      const _mixedUndos=[];
       if(_isMulti){
         const wkKey=getWkKey(wkOff);
         [...selectedTasks].forEach(sid=>{
           if(sid.startsWith('wrec-')){
             const recId=sid.replace('wrec-','');
             const r=st.recurring.find(x=>String(x.id)===String(recId));
-            if(r){if(!r._dateOverrides)r._dateOverrides={};r._dateOverrides[wkKey]=ds;sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));}
+            if(r){if(!r._dateOverrides)r._dateOverrides={};const prev=r._dateOverrides[wkKey];r._dateOverrides[wkKey]=ds;sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));
+              _mixedUndos.push(()=>{if(prev)r._dateOverrides[wkKey]=prev;else delete r._dateOverrides[wkKey];sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));});}
           }else if(sid.startsWith('wrrule-virt-')||sid.startsWith('wrrule-')){
             const ruleId=sid.replace('wrrule-virt-','').replace('wrrule-','');
             const r=st.wrRules.find(x=>String(x.id)===String(ruleId));
-            if(r){if(!r._dateOverrides)r._dateOverrides={};r._dateOverrides[wkKey]=ds;sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},`?id=eq.${ruleId}`);}
+            if(r){if(!r._dateOverrides)r._dateOverrides={};const prev=r._dateOverrides[wkKey];r._dateOverrides[wkKey]=ds;sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},`?id=eq.${ruleId}`);
+              _mixedUndos.push(()=>{if(prev)r._dateOverrides[wkKey]=prev;else delete r._dateOverrides[wkKey];sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},`?id=eq.${ruleId}`);});}
           }
         });
       }
@@ -997,6 +1000,7 @@ function renderWkCal(){
         dragId=null;save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
         pushUndo(()=>{
           _moved.forEach(x=>{x.t.due_date=x.prev;localOverrides[String(x.t.id)]={due_date:x.prev};pendingLocal.add(String(x.t.id));const _newBlks=st.blocks.filter(b=>String(b.taskId)===String(x.t.id)&&b.ds===ds);_newBlks.forEach(b=>sbDeleteBlock(b.id));st.blocks=st.blocks.filter(b=>!(String(b.taskId)===String(x.t.id)&&b.ds===ds));x.savedTBs.forEach(b=>{if(!st.blocks.find(y=>y.id===b.id))st.blocks.push(b);sbSaveBlock(b);});sbReqNullable('PATCH','tasks',{due_date:x.prev},`?id=eq.${x.t.id}`).then(()=>{delete localOverrides[String(x.t.id)];pendingLocal.delete(String(x.t.id));});});
+          _mixedUndos.forEach(fn=>fn());
           save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
         },'Moved task'+(_moved.length>1?'s':''));
         await Promise.all(_moved.map(x=>sbReqNullable('PATCH','tasks',{due_date:ds},`?id=eq.${x.t.id}`).then(()=>pendingLocal.delete(String(x.t.id)))));
