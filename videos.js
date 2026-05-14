@@ -1499,6 +1499,9 @@ function _vidRenderAnalytics(){
   if(_ytAnalytics&&_ytAnalytics.topVideos)_ytAnalytics.topVideos.forEach(v=>{_vidRev[v.videoId]=v.revenue;});
   // Attach real revenue to merged videos
   if(Object.keys(_vidRev).length) merged.forEach(v=>{if(v.ytId&&_vidRev[v.ytId]!=null)v.realRev=_vidRev[v.ytId];});
+  // Revenue helper: real per-video revenue or RPM estimate
+  const _vRev=(v)=>v.realRev!=null?v.realRev:Math.round(v.views/1000*rpm);
+  const _revPfx=_hasRealRev?'':'~';
   const _spViews=_kpiLast6.map(([,d])=>d.views);
   const _spAvg=_kpiLast6.map(([,d])=>d.count?Math.round(d.views/d.count):0);
   const _spRev=_kpiLast6.map(([,d])=>Math.round(d.views/1000*rpm));
@@ -1649,10 +1652,6 @@ function _vidRenderAnalytics(){
   };
   const _secHead=(text)=>`<div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-top:8px;margin-bottom:2px">${text}</div>`;
   let stratHtml='';
-
-  // ── Revenue helper: real per-video revenue or RPM estimate ──
-  const _vRev=(v)=>v.realRev!=null?v.realRev:Math.round(v.views/1000*rpm);
-  const _revPfx=_hasRealRev?'':'~';
 
   // ── WHAT TO MAKE (topic + format) ──
   stratHtml+=_secHead('What to make');
