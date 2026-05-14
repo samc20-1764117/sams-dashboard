@@ -1234,9 +1234,9 @@ function _vidRenderAnalytics(){
   }
   function card(title,content){return`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:16px 18px">
     <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:10px">${title}</div>${content}</div>`;}
-  function stat(label,value,sub){return`<div style="text-align:center;padding:8px 0">
+  function stat(label,value,sub,color){return`<div style="text-align:center;padding:8px 0">
     <div style="font-size:10px;color:var(--muted);margin-bottom:2px">${label}</div>
-    <div style="font-size:20px;font-weight:700;color:var(--text)">${value}</div>
+    <div style="font-size:20px;font-weight:700;color:${color||'var(--text)'}">${value}</div>
     ${sub?'<div style="font-size:10px;color:var(--muted);margin-top:1px">'+sub+'</div>':''}</div>`;}
   const tBtn=(val,label,type)=>{
     const active=type==='metric'?_anTrendMetric===val:_anTrendPeriod===val;
@@ -1246,10 +1246,11 @@ function _vidRenderAnalytics(){
   let h='<div style="padding:16px 20px;overflow-y:auto">';
 
   // ── KPIs ──
+  const _unreplied=_ytData.unrepliedCount!=null?_ytData.unrepliedCount:null;
   h+='<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:16px">';
+  h+=`<div style="background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);border-radius:12px;padding:10px">${stat('Unreplied Comments',_unreplied!=null?String(_unreplied):'-','','#ef4444')}</div>`;
   h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:10px">${stat('Total Views',_ytNum(totalViews))}</div>`;
   h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:10px">${stat('Avg Views/Video',_ytNum(avgViews))}</div>`;
-  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:10px">${stat('Engagement',avgEng.toFixed(1)+'%','(likes + comments) / views')}</div>`;
   h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:10px">${stat('Videos',String(merged.length),'long-form only')}</div>`;
   h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:10px">${stat('Est. Revenue','$'+_ytNum(estRevenue),'@ $'+rpm+' RPM')}</div>`;
   h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:10px">${stat('Subscribers',cs?_ytNum(cs.subscribers):'-')}</div>`;

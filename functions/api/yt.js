@@ -155,7 +155,24 @@ export async function onRequest(context) {
       videos = videos.concat(mapped);
     }
 
-    const result = { channelStats, videos, fetchedAt: new Date().toISOString() };
+    // Fetch all comment threads to count unreplied (1 unit per call, 100 per page)
+    let unrepliedCount = 0;
+    let commentPageToken = '';
+    try {
+      while (true) {
+        const ctParam = commentPageToken ? `&pageToken=${commentPageToken}` : '';
+        const ctRes = await fetch(`https://www.googleapis.com/youtube/v3/commentThreads?part=snippet&allThreadsRelatedToChannelId=${CHANNEL_ID}&maxResults=100&key=${API_KEY}${ctParam}`);
+        const ctData = await ctRes.json();
+        if (ctData.error) break;
+        (ctData.items || []).forEach(t => {
+          if (t.snippet.totalReplyCount === 0) unrepliedCount++;
+        });
+        if (!ctData.nextPageToken) break;
+        commentPageToken = ctData.nextPageToken;
+      }
+    } catch (e) { /* silently skip if comment fetch fails */ }
+
+    const result = { channelStats, videos, unrepliedCount, fetchedAt: new Date().toISOString() };
 
     if (KV) {
       // Fresh cache: 12 hours (controls when we re-fetch)
