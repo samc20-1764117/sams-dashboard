@@ -95,8 +95,9 @@
   2. **Trend Chart (2/3) + Strategy Insights (1/3)**: Single neutral color for all metrics (`rgba(120,113,145)`), current month/year highlighted (darker + bold label). No chart header — toggles with divider between metrics and timeframe. Summary line (total + avg) right-aligned inline with toggles. Taller divider (`rgba(120,113,145,.3)`, 18px) between metric/timeframe toggles. Bar values directly above their bar. Bars fill full container height via flex. Month labels use abbreviations (Jan, Feb...). Strategy panel organized into 4 sections with uppercase headers: **What to make** (top earner topic, best $/video topic, big vs small with $, best combo), **How to make it** (best duration, best duration for $, engagement-views correlation), **When to post** (best day, publishing pace), **Channel health** (momentum, consistency score via CV%, engagement trend).
   3. **Do More Like This + Try Next** (2 cols): Do More Like This scored by views × engagement. Try Next suggests specific topics based on stale high-performers (>60d since last post), underexplored topics (few videos but good avg), and top-performing patterns.
 - **Color philosophy**: minimal. Sparklines use green/red for direction. Trend bars use single neutral color, current period highlighted darker. Strategy panel uses emoji icons, no colored text.
-- **Revenue**: estimated at `$4 RPM` (configurable via `rpm` const). Applied to total and per-video.
-- **Key functions**: `_vidRenderAnalytics()`, `_anSetTrend()`, `_anKpiModal(metric)`, `_ytDurSec(iso)`, `sparkline(vals)`, `stat()`, `card()`.
+- **Revenue**: estimated at `$4 RPM` unless YouTube Analytics API is connected (real revenue via OAuth). When `_ytAnalytics` is available, KPI shows "Revenue" (not "Est."), trend chart uses actual monthly revenue, drilldown shows real per-month earnings. Connect prompt shown when not authorized.
+- **Strategy tooltips**: hover any insight row to see underlying bar chart data (e.g. avg views by day of week). Data stored in `_anTipStore`, rendered via `_anShowTip(e,key)`/`_anHideTip()`. Tooltip positioned left of strategy panel.
+- **Key functions**: `_vidRenderAnalytics()`, `_anSetTrend()`, `_anKpiModal(metric)`, `_anShowTip()`, `_anHideTip()`, `_ytDurSec(iso)`, `sparkline(vals)`, `stat()`, `card()`.
 
 ### YouTube Analytics Integration
 - **Endpoint**: `/api/yt` — Cloudflare Pages Function at `functions/api/yt.js`.
@@ -113,6 +114,14 @@
 - **Display**: Channel stats bar (subscribers, total views, video count) at top of page. Views, Likes & Comments columns in All Details table. Purple view count in Current dashboard rows.
 - **Data flow**: `fetch('/api/yt')` → `_ytData` + `localStorage` → `_ytBuildMatch()` → `_ytMatch` → `renderVideosPageKeepScroll()`.
 - **Unreplied Comments**: API fetches `commentThreads.list` with `allThreadsRelatedToChannelId`, filtered to long-form videos only (>60s duration). Returns `unrepliedComments` array (comments with `totalReplyCount === 0`). Max 20 pages = 20 units. Each comment has `{id, videoId, videoTitle, text, publishedAt}`.
-- **Unreplied KPI**: First KPI on Analytics tab, red styling to stand out. Double-click opens modal with full list. Selection uses shift/cmd like tasks. "Dismiss Selected" removes from count. Dismissed IDs stored in `st._ytDismissed` (persisted via `save()`/`load()` in core.js).
+- **Unreplied KPI**: First KPI on Analytics tab, red styling to stand out. Single-click opens modal with full list. Enter closes when nothing selected. Selection uses shift/cmd like tasks. "Dismiss Selected" removes from count. Dismissed IDs stored in `st._ytDismissed` (persisted via `save()`/`load()` in core.js).
 - **Key functions**: `_ytBuildMatch()`, `_ytForVid(id)`, `_ytNum(n)`, `_ytEsc(s)`, `_ytDur(iso)`, `_ytShowUnreplied()`, `_ytToggleSel()`, `_ytDismissSelected()`, `_ytGetDismissed()`, `_ytSaveDismissed()`.
 - **Errors**: silently hidden in UI (no red text). Console shows `[YT]` debug logs for troubleshooting.
+
+### YouTube Analytics API (Revenue)
+- **Endpoints**: `/api/yt-auth` (OAuth flow), `/api/yt-analytics` (data fetch).
+- **Auth**: OAuth 2.0 with `yt-analytics.readonly` + `yt-analytics-monetary.readonly` scopes. Refresh token stored in KV (`yt-oauth-refresh`), access token cached with TTL (`yt-oauth-access`).
+- **Secrets**: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` (in Cloudflare dashboard).
+- **Data**: `_ytAnalytics` global. Monthly: views, actual revenue, likes, comments, subscribersGained, avgViewDuration. Top 50 videos by revenue. Cached in KV for 24hr (`yt-analytics-data`). Also cached in `localStorage._ytAnalyticsCache`.
+- **Revenue note**: Unlike the Data API view-based estimates, this gives **actual monthly channel earnings** — real "how much I earned in January" data, not per-video lifetime attribution.
+- **Quota**: YouTube Analytics API has separate quota from Data API. ~200 queries/day default. We use 2 queries per page load (monthly + top videos), cached 24hr. No risk of quota issues.

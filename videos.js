@@ -1497,6 +1497,11 @@ function _vidRenderAnalytics(){
   const _spVids=_kpiLast6.map(([,d])=>d.count);
   const _spEng=_kpiLast6.map(([,d])=>d.views>0?((d.likes+d.comments)/d.views*100):0);
 
+  // Show connect prompt if Analytics API not yet authorized
+  if(!_ytAnalytics&&!_hasRealRev){
+    h+='<div style="display:flex;align-items:center;gap:8px;padding:8px 14px;margin-bottom:12px;background:rgba(139,92,246,.04);border:1px solid rgba(139,92,246,.15);border-radius:10px;font-size:11px;color:var(--muted)"><span>Revenue shown is estimated (~$4 RPM).</span><a href="/api/yt-auth?action=start" target="_blank" style="color:#8b5cf6;font-weight:600;text-decoration:none">Connect YouTube Analytics</a><span>for actual revenue data.</span></div>';
+  }
+
   // ── KPIs ──
   const _dismissed=_ytGetDismissed();
   const _unrepliedAll=_ytData.unrepliedComments||[];
