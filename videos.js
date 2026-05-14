@@ -366,7 +366,7 @@ function renderVideosPage(){
   if(!_ytAnalyticsFetched){
     _ytAnalyticsFetched=true;
     try{var _lac=JSON.parse(localStorage.getItem('_ytAnalyticsCache')||'null');if(_lac&&_lac.monthly)_ytAnalytics=_lac;}catch(e){}
-    fetch('/api/yt-analytics?_='+Date.now(),{cache:'no-store'}).then(function(r){if(!r.ok)throw new Error(r.status);return r.json();}).then(function(d){
+    fetch('/api/yt?mode=analytics&_='+Date.now(),{cache:'no-store'}).then(function(r){if(!r.ok)throw new Error(r.status);return r.json();}).then(function(d){
       if(d.error)return;
       _ytAnalytics=d;
       try{localStorage.setItem('_ytAnalyticsCache',JSON.stringify(d));}catch(e){}
@@ -1499,7 +1499,7 @@ function _vidRenderAnalytics(){
 
   // Show connect prompt if Analytics API not yet authorized
   if(!_ytAnalytics&&!_hasRealRev){
-    h+='<div style="display:flex;align-items:center;gap:8px;padding:8px 14px;margin-bottom:12px;background:rgba(139,92,246,.04);border:1px solid rgba(139,92,246,.15);border-radius:10px;font-size:11px;color:var(--muted)"><span>Revenue shown is estimated (~$4 RPM).</span><a href="/api/yt-auth?action=start" target="_blank" style="color:#8b5cf6;font-weight:600;text-decoration:none">Connect YouTube Analytics</a><span>for actual revenue data.</span></div>';
+    h+='<div style="display:flex;align-items:center;gap:8px;padding:8px 14px;margin-bottom:12px;background:rgba(139,92,246,.04);border:1px solid rgba(139,92,246,.15);border-radius:10px;font-size:11px;color:var(--muted)"><span>Revenue shown is estimated (~$4 RPM).</span><a href="/api/yt?mode=auth-start" target="_blank" style="color:#8b5cf6;font-weight:600;text-decoration:none">Connect YouTube Analytics</a><span>for actual revenue data.</span></div>';
   }
 
   // ── KPIs ──

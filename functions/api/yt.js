@@ -38,6 +38,110 @@ export async function onRequest(context) {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const _url = new URL(context.request.url);
+  const _mode = _url.searchParams.get('mode');
+
+  // ── OAuth setup: store credentials in KV ──
+  if (_mode === 'auth-setup' && context.request.method === 'POST') {
+    const KV = context.env.YT_CACHE;
+    if (!KV) return new Response('no KV', { status: 500, headers: corsHeaders });
+    const body = await context.request.json();
+    if (!body.clientId || !body.clientSecret) return new Response(JSON.stringify({ error: 'Send { clientId, clientSecret }' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    await KV.put('oauth-client-id', body.clientId);
+    await KV.put('oauth-client-secret', body.clientSecret);
+    return new Response(JSON.stringify({ ok: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+  }
+
+  // ── OAuth status ──
+  if (_mode === 'auth-status') {
+    const KV = context.env.YT_CACHE;
+    if (!KV) return new Response(JSON.stringify({ error: 'no KV' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    const cid = await KV.get('oauth-client-id');
+    const hasRefresh = !!(await KV.get('yt-oauth-refresh'));
+    return new Response(JSON.stringify({ configured: !!cid, authorized: hasRefresh }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+  }
+
+  // ── OAuth start: redirect to Google consent ──
+  if (_mode === 'auth-start') {
+    const KV = context.env.YT_CACHE;
+    if (!KV) return new Response('no KV', { status: 500, headers: corsHeaders });
+    const cid = await KV.get('oauth-client-id');
+    if (!cid) return new Response(JSON.stringify({ error: 'Run setup first' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    const redirectUri = `${_url.origin}/api/yt?mode=auth-callback`;
+    const authUrl = 'https://accounts.google.com/o/oauth2/v2/auth?' + new URLSearchParams({
+      client_id: cid, redirect_uri: redirectUri, response_type: 'code',
+      scope: 'https://www.googleapis.com/auth/yt-analytics.readonly https://www.googleapis.com/auth/yt-analytics-monetary.readonly',
+      access_type: 'offline', prompt: 'consent',
+    }).toString();
+    return Response.redirect(authUrl, 302);
+  }
+
+  // ── OAuth callback: exchange code for tokens ──
+  if (_mode === 'auth-callback') {
+    const KV = context.env.YT_CACHE;
+    if (!KV) return new Response('no KV', { status: 500, headers: corsHeaders });
+    const code = _url.searchParams.get('code');
+    const error = _url.searchParams.get('error');
+    if (error) return new Response(`<h2>Auth denied</h2><p>${error}</p>`, { headers: { 'Content-Type': 'text/html' } });
+    if (!code) return new Response('Missing code', { status: 400 });
+    const cid = await KV.get('oauth-client-id');
+    const csec = await KV.get('oauth-client-secret');
+    const redirectUri = `${_url.origin}/api/yt?mode=auth-callback`;
+    const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ code, client_id: cid, client_secret: csec, redirect_uri: redirectUri, grant_type: 'authorization_code' }).toString(),
+    });
+    const td = await tokenRes.json();
+    if (td.error) return new Response(`<h2>Token error</h2><pre>${JSON.stringify(td, null, 2)}</pre>`, { headers: { 'Content-Type': 'text/html' } });
+    if (td.refresh_token) await KV.put('yt-oauth-refresh', td.refresh_token);
+    if (td.access_token) await KV.put('yt-oauth-access', td.access_token, { expirationTtl: td.expires_in || 3600 });
+    return new Response(`<h2>Connected!</h2><p>YouTube Analytics API authorized. You can close this tab.</p><script>setTimeout(()=>window.close(),2000)</script>`, { headers: { 'Content-Type': 'text/html' } });
+  }
+
+  // ── Analytics data fetch (with 3-key cache like main endpoint) ──
+  if (_mode === 'analytics') {
+    const KV = context.env.YT_CACHE;
+    if (!KV) return new Response(JSON.stringify({ error: 'no KV' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    const forceRefresh = _url.searchParams.get('refresh') === '1';
+    // Layer 1: fresh cache (24hr)
+    if (!forceRefresh) { const fresh = await KV.get('yta-fresh', 'json'); if (fresh) return new Response(JSON.stringify(fresh), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }); }
+    // Layer 2: cooldown
+    if (!forceRefresh) { const cd = await KV.get('yta-cooldown'); if (cd) { const lg = await KV.get('yta-good', 'json'); if (lg) return new Response(JSON.stringify(lg), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }); return new Response(JSON.stringify({ error: 'cooldown' }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }); } }
+    // Check auth
+    const refreshToken = await KV.get('yt-oauth-refresh');
+    if (!refreshToken) return new Response(JSON.stringify({ error: 'not_authorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    // Get access token
+    let at = await KV.get('yt-oauth-access');
+    if (!at) {
+      try {
+        const cid = await KV.get('oauth-client-id'); const csec = await KV.get('oauth-client-secret');
+        if (!cid || !csec) { await KV.put('yta-cooldown', '1', { expirationTtl: 3600 }); const lg = await KV.get('yta-good', 'json'); return lg ? new Response(JSON.stringify(lg), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }) : new Response(JSON.stringify({ error: 'no credentials' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }); }
+        const tr = await fetch('https://oauth2.googleapis.com/token', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ refresh_token: refreshToken, client_id: cid, client_secret: csec, grant_type: 'refresh_token' }).toString() });
+        const ttd = await tr.json();
+        if (ttd.error) { if (ttd.error === 'invalid_grant') await KV.delete('yt-oauth-refresh'); await KV.put('yta-cooldown', '1', { expirationTtl: 3600 }); const lg = await KV.get('yta-good', 'json'); return lg ? new Response(JSON.stringify(lg), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }) : new Response(JSON.stringify({ error: 'token_refresh_failed' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }); }
+        at = ttd.access_token; await KV.put('yt-oauth-access', at, { expirationTtl: ttd.expires_in || 3600 });
+      } catch (e) { await KV.put('yta-cooldown', '1', { expirationTtl: 300 }); const lg = await KV.get('yta-good', 'json'); return lg ? new Response(JSON.stringify(lg), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }) : new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }); }
+    }
+    // Fetch analytics
+    try {
+      const now = new Date(); const yd = new Date(now); yd.setDate(yd.getDate() - 1); const sd = new Date(now); sd.setFullYear(sd.getFullYear() - 2);
+      const fmt = d => d.toISOString().slice(0, 10);
+      const mr = await fetch('https://youtubeanalytics.googleapis.com/v2/reports?' + new URLSearchParams({ ids: 'channel==MINE', startDate: fmt(sd), endDate: fmt(yd), metrics: 'views,estimatedRevenue,likes,comments,subscribersGained,averageViewDuration', dimensions: 'month', sort: 'month' }).toString(), { headers: { Authorization: 'Bearer ' + at } });
+      const md = await mr.json();
+      if (md.error) { const isQ = md.error.errors?.[0]?.reason === 'quotaExceeded'; await KV.put('yta-cooldown', '1', { expirationTtl: isQ ? 7200 : 600 }); const lg = await KV.get('yta-good', 'json'); return lg ? new Response(JSON.stringify(lg), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }) : new Response(JSON.stringify({ error: md.error.message }), { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }); }
+      const monthly = (md.rows || []).map(r => ({ month: r[0], views: r[1], revenue: Math.round(r[2] * 100) / 100, likes: r[3], comments: r[4], subscribersGained: r[5], avgViewDuration: r[6] }));
+      // Top videos by revenue
+      const vr = await fetch('https://youtubeanalytics.googleapis.com/v2/reports?' + new URLSearchParams({ ids: 'channel==MINE', startDate: fmt(sd), endDate: fmt(yd), metrics: 'views,estimatedRevenue,likes,comments,averageViewDuration', dimensions: 'video', sort: '-estimatedRevenue', maxResults: '50' }).toString(), { headers: { Authorization: 'Bearer ' + at } });
+      const vd = await vr.json();
+      let topVideos = [];
+      if (!vd.error) topVideos = (vd.rows || []).map(r => ({ videoId: r[0], views: r[1], revenue: Math.round(r[2] * 100) / 100, likes: r[3], comments: r[4], avgViewDuration: r[5] }));
+      const result = { monthly, topVideos, fetchedAt: new Date().toISOString() };
+      await KV.put('yta-fresh', JSON.stringify(result), { expirationTtl: 86400 });
+      await KV.put('yta-good', JSON.stringify(result));
+      return new Response(JSON.stringify(result), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    } catch (e) { await KV.put('yta-cooldown', '1', { expirationTtl: 300 }); const lg = await KV.get('yta-good', 'json'); return lg ? new Response(JSON.stringify(lg), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }) : new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }); }
+  }
+
   // POST: seed KV cache with provided data
   if (context.request.method === 'POST') {
     const KV = context.env.YT_CACHE;
