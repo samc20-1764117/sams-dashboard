@@ -980,41 +980,38 @@ document.addEventListener('keydown',e=>{
     if(ov){ov.remove();return;}
     ov=document.createElement('div');ov.id='_dbgGrid';
     ov.style.cssText='position:fixed;inset:0;z-index:99999;pointer-events:none;font-family:monospace;font-size:9px;';
-    // Find the active page via .active class
     const activePage=document.querySelector('.page.active');
     if(!activePage){document.body.appendChild(ov);return;}
-    // Find all visible cards in the active page
+    const winW=window.innerWidth,winH=window.innerHeight;
+    // Find all visible cards
     const allCards=[...activePage.querySelectorAll('.card')].filter(c=>c.offsetParent!==null&&c.getBoundingClientRect().height>0);
-    // Draw boxes around each card with dimensions
+    // Draw subtle boxes around each card (no dimension labels)
     allCards.forEach(c=>{
       const r=c.getBoundingClientRect();
       const box=document.createElement('div');
-      box.style.cssText=`position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;border:1px solid rgba(255,0,0,.5);`;
-      // Card dimensions label
-      const dim=document.createElement('div');
-      dim.style.cssText=`position:fixed;left:${r.left+2}px;top:${r.top+2}px;color:rgba(255,0,0,.7);font-weight:700;font-size:7px;background:rgba(255,255,255,.8);padding:0 2px;`;
-      dim.textContent=`${Math.round(r.width)}×${Math.round(r.height)}`;
-      ov.appendChild(box);ov.appendChild(dim);
+      box.style.cssText=`position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;border:1px solid rgba(255,0,0,.4);`;
+      ov.appendChild(box);
     });
     // Measure gaps between adjacent cards
     for(let i=0;i<allCards.length;i++){
       for(let j=i+1;j<allCards.length;j++){
         const a=allCards[i].getBoundingClientRect(),b=allCards[j].getBoundingClientRect();
         // Horizontal gap
-        if(Math.abs(a.top-b.top)<5&&a.right<b.left){
+        if(Math.abs(a.top-b.top)<10&&a.right<b.left&&(b.left-a.right)<60){
           const gap=Math.round(b.left-a.right);
+          const midY=Math.max(a.top,b.top)+Math.min(a.height,b.height)/2;
           const lbl=document.createElement('div');
-          lbl.style.cssText=`position:fixed;left:${a.right}px;top:${a.top-12}px;width:${gap}px;text-align:center;color:#e00;font-weight:700;background:rgba(255,200,200,.7);padding:1px 0;font-size:8px;`;
+          lbl.style.cssText=`position:fixed;left:${a.right}px;top:${midY-8}px;width:${gap}px;text-align:center;color:#e00;font-weight:700;background:rgba(255,200,200,.8);padding:1px 0;font-size:8px;`;
           lbl.textContent=gap+'px';
           const line=document.createElement('div');
-          line.style.cssText=`position:fixed;left:${a.right}px;top:${a.top}px;width:${gap}px;height:${a.height}px;background:rgba(255,0,0,.06);border-left:1px dashed rgba(255,0,0,.3);border-right:1px dashed rgba(255,0,0,.3);`;
+          line.style.cssText=`position:fixed;left:${a.right}px;top:${Math.max(a.top,b.top)}px;width:${gap}px;height:${Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)}px;background:rgba(255,0,0,.05);border-left:1px dashed rgba(255,0,0,.3);border-right:1px dashed rgba(255,0,0,.3);`;
           ov.appendChild(line);ov.appendChild(lbl);
         }
         // Vertical gap
-        if(Math.abs(a.left-b.left)<5&&a.bottom<b.top&&(b.top-a.bottom)<40){
+        if(Math.abs(a.left-b.left)<10&&a.bottom<b.top&&(b.top-a.bottom)<50){
           const gap=Math.round(b.top-a.bottom);
           const lbl=document.createElement('div');
-          lbl.style.cssText=`position:fixed;left:${a.left-28}px;top:${a.bottom}px;height:${gap}px;display:flex;align-items:center;color:#00c;font-weight:700;font-size:8px;background:rgba(200,200,255,.7);padding:0 3px;`;
+          lbl.style.cssText=`position:fixed;left:${a.left-28}px;top:${a.bottom+(gap/2)-6}px;color:#00c;font-weight:700;font-size:8px;background:rgba(200,200,255,.8);padding:1px 3px;`;
           lbl.textContent=gap+'px';
           const line=document.createElement('div');
           line.style.cssText=`position:fixed;left:${a.left}px;top:${a.bottom}px;width:${a.width}px;height:${gap}px;background:rgba(0,0,255,.04);border-top:1px dashed rgba(0,0,255,.3);border-bottom:1px dashed rgba(0,0,255,.3);`;
@@ -1022,45 +1019,64 @@ document.addEventListener('keydown',e=>{
         }
       }
     }
-    // Dashboard edge margins — measure from content to window edges
-    const mainEl=document.getElementById('main');
-    const contentEl=mainEl||activePage;
-    const cr=contentEl.getBoundingClientRect();
-    const winW=window.innerWidth,winH=window.innerHeight;
-    // Left edge margin
-    const mL=Math.round(cr.left);
-    if(mL>0){
-      const ml=document.createElement('div');ml.style.cssText=`position:fixed;left:0;top:${cr.top+20}px;width:${mL}px;height:24px;background:rgba(0,180,0,.12);border-right:2px solid rgba(0,180,0,.6);display:flex;align-items:center;justify-content:center;color:#090;font-weight:700;font-size:9px;`;
-      ml.textContent=mL+'px';
-      // Left edge line full height
-      const ll=document.createElement('div');ll.style.cssText=`position:fixed;left:${mL}px;top:${cr.top}px;width:0;height:${cr.height}px;border-left:1px dashed rgba(0,180,0,.3);`;
-      ov.appendChild(ml);ov.appendChild(ll);
-    }
-    // Right edge margin
-    const mR=Math.round(winW-cr.right);
-    if(mR>0){
-      const mr=document.createElement('div');mr.style.cssText=`position:fixed;right:0;top:${cr.top+20}px;width:${mR}px;height:24px;background:rgba(0,180,0,.12);border-left:2px solid rgba(0,180,0,.6);display:flex;align-items:center;justify-content:center;color:#090;font-weight:700;font-size:9px;`;
-      mr.textContent=mR+'px';
-      const rl=document.createElement('div');rl.style.cssText=`position:fixed;left:${cr.right}px;top:${cr.top}px;width:0;height:${cr.height}px;border-left:1px dashed rgba(0,180,0,.3);`;
-      ov.appendChild(mr);ov.appendChild(rl);
-    }
-    // Top edge margin
-    const mT=Math.round(cr.top);
+    // ── Dashboard edge margins (green) ──
+    // Find the first visible child of the page to get the real content top
+    const firstChild=[...activePage.children].find(c=>c.offsetParent!==null&&c.getBoundingClientRect().height>0);
+    const pageR=activePage.getBoundingClientRect();
+    const contentTop=firstChild?firstChild.getBoundingClientRect().top:pageR.top;
+    // Also check padding of the page itself
+    const pagePad=getComputedStyle(activePage);
+    // Content left edge = first card's left or page padding
+    const contentLeft=allCards.length?Math.min(...allCards.map(c=>c.getBoundingClientRect().left)):pageR.left+parseFloat(pagePad.paddingLeft||0);
+    const contentRight=allCards.length?Math.max(...allCards.map(c=>c.getBoundingClientRect().right)):pageR.right-parseFloat(pagePad.paddingRight||0);
+    // Top margin: from window top (0) to the very first content element
+    const mT=Math.round(contentTop);
     if(mT>0){
-      const mt=document.createElement('div');mt.style.cssText=`position:fixed;left:${cr.left+20}px;top:0;width:60px;height:${mT}px;background:rgba(0,180,0,.12);border-bottom:2px solid rgba(0,180,0,.6);display:flex;align-items:flex-end;justify-content:center;color:#090;font-weight:700;font-size:9px;padding-bottom:2px;`;
-      mt.textContent=mT+'px';
-      const tl=document.createElement('div');tl.style.cssText=`position:fixed;left:${cr.left}px;top:${mT}px;width:${cr.width}px;height:0;border-top:1px dashed rgba(0,180,0,.3);`;
-      ov.appendChild(mt);ov.appendChild(tl);
+      // Green shaded band across full width at top
+      const topBand=document.createElement('div');
+      topBand.style.cssText=`position:fixed;left:0;top:0;width:${winW}px;height:${mT}px;background:rgba(0,200,0,.06);border-bottom:2px solid rgba(0,180,0,.5);`;
+      ov.appendChild(topBand);
+      const topLbl=document.createElement('div');
+      topLbl.style.cssText=`position:fixed;left:${winW/2-20}px;top:${mT/2-6}px;color:#090;font-weight:700;font-size:10px;background:rgba(200,255,200,.85);padding:1px 6px;border-radius:2px;`;
+      topLbl.textContent=mT+'px';
+      ov.appendChild(topLbl);
     }
-    // Show grid/flex gaps for layout containers
-    activePage.querySelectorAll('.overview-cols,.row1-right-panel,.row1-right-top,[style*="grid"],[style*="flex"]').forEach(el=>{
-      if(el.offsetParent===null||!el.classList.length)return;
-      const g=getComputedStyle(el).gap;if(!g||g==='normal'||g==='0px')return;
-      const r=el.getBoundingClientRect();if(r.height<1)return;
-      const lbl=document.createElement('div');
-      lbl.style.cssText=`position:fixed;left:${r.left}px;top:${r.top-14}px;color:#909;font-weight:700;font-size:8px;background:rgba(255,200,255,.7);padding:1px 4px;`;
-      lbl.textContent=`gap: ${g}`;ov.appendChild(lbl);
-    });
+    // Left margin: from window left to content left
+    const mL=Math.round(contentLeft);
+    if(mL>2){
+      const leftBand=document.createElement('div');
+      leftBand.style.cssText=`position:fixed;left:0;top:${contentTop}px;width:${mL}px;height:${Math.min(winH-contentTop,400)}px;background:rgba(0,200,0,.06);border-right:2px solid rgba(0,180,0,.5);`;
+      ov.appendChild(leftBand);
+      const leftLbl=document.createElement('div');
+      leftLbl.style.cssText=`position:fixed;left:${mL/2-12}px;top:${contentTop+30}px;color:#090;font-weight:700;font-size:10px;background:rgba(200,255,200,.85);padding:1px 6px;border-radius:2px;`;
+      leftLbl.textContent=mL+'px';
+      ov.appendChild(leftLbl);
+    }
+    // Right margin: from content right to window right
+    const mR=Math.round(winW-contentRight);
+    if(mR>2){
+      const rightBand=document.createElement('div');
+      rightBand.style.cssText=`position:fixed;right:0;top:${contentTop}px;width:${mR}px;height:${Math.min(winH-contentTop,400)}px;background:rgba(0,200,0,.06);border-left:2px solid rgba(0,180,0,.5);`;
+      ov.appendChild(rightBand);
+      const rightLbl=document.createElement('div');
+      rightLbl.style.cssText=`position:fixed;right:${mR/2-12}px;top:${contentTop+30}px;color:#090;font-weight:700;font-size:10px;background:rgba(200,255,200,.85);padding:1px 6px;border-radius:2px;`;
+      rightLbl.textContent=mR+'px';
+      ov.appendChild(rightLbl);
+    }
+    // Space from header to first card (content top to first card top)
+    if(allCards.length&&firstChild){
+      const headerBottom=firstChild.getBoundingClientRect().bottom;
+      const firstCardTop=Math.min(...allCards.map(c=>c.getBoundingClientRect().top));
+      const hGap=Math.round(firstCardTop-headerBottom);
+      if(hGap>0&&hGap<100){
+        const hLbl=document.createElement('div');
+        hLbl.style.cssText=`position:fixed;left:${contentLeft}px;top:${headerBottom+(hGap/2)-6}px;color:#c60;font-weight:700;font-size:9px;background:rgba(255,230,200,.85);padding:1px 5px;border-radius:2px;`;
+        hLbl.textContent=`header→cards: ${hGap}px`;
+        const hLine=document.createElement('div');
+        hLine.style.cssText=`position:fixed;left:${contentLeft}px;top:${headerBottom}px;width:${contentRight-contentLeft}px;height:${hGap}px;border-top:1px dashed rgba(200,100,0,.3);border-bottom:1px dashed rgba(200,100,0,.3);background:rgba(200,100,0,.03);`;
+        ov.appendChild(hLine);ov.appendChild(hLbl);
+      }
+    }
     document.body.appendChild(ov);
   }
 });
