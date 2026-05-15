@@ -680,7 +680,8 @@ function renderWkCal(){
     if(sd)_preAddBanner(sd,ed);
   });
   bdayThisWk.forEach(b=>_preAddBanner(b.due_date,b.due_date));
-  const _colPaddingPre=_preLanes.map(lanes=>lanes.size?`${(Math.max(...lanes)+1)*22}px`:'0');
+  const _maxLanePre=Math.max(0,..._preLanes.map(lanes=>lanes.size?Math.max(...lanes)+1:0));
+  const _colPaddingPre=_preLanes.map(()=>_maxLanePre?`${_maxLanePre*22}px`:'0');
   setTimeout(()=>{
     const wrap=document.getElementById('wkcWrap');
     if(!wrap)return;
@@ -3192,13 +3193,22 @@ function delRecAutoTBForDay(recId,ds){
 }
 function drawRecAutoTBBlock(col,ratb,ds){
   const top=(ratb.sm-HOURS[0]*60)*PX,ht=Math.max(ratb.dur*PX,16);
+  const _rec=st.recurring.find(x=>String(x.id)===String(ratb._recId));
+  const _wkKey=dsToWkKey(ds);
+  const _isDone=!!(_rec&&_rec._doneByWk&&_rec._doneByWk[_wkKey]);
   const el=document.createElement('div');
-  el.className='atb-block rec-atb-block';
+  el.className='atb-block rec-atb-block'+(_isDone?' done-block':'');
   el.dataset.recAutoId=ratb._recAutoId;
+  el.dataset.recId=String(ratb._recId);
   const ncols=ratb._ncols||1,col_i=ratb._col||0,colW=100/ncols,left2=col_i*colW;
   el.style.cssText=`top:${top}px;height:${ht}px;left:calc(${left2}% + 2px);right:calc(${100-left2-colW}% + 2px);width:auto`;
   const _showTime=ncols<=1;
-  el.innerHTML=`<div class="tb-row"><span class="tb-bt${ratb.dur>=30?' wrap':''}">${ratb.label}</span><div class="tb-right">${_showTime?`<span class="tb-btime">${tStr(ratb.sm)}-${tStr(ratb.sm+ratb.dur)}</span>`:''}<button class="tb-bdel atb-del" onclick="event.stopPropagation();delRecAutoTBForDay('${ratb._recAutoId}','${ds}')">✕</button></div></div><div class="tb-resize atb-resize"></div>`;
+  el.innerHTML=`<div class="tb-row"><input type="checkbox" class="tb-chk" ${_isDone?'checked':''}><span class="tb-bt${ratb.dur>=30?' wrap':''}">${ratb.label}</span><div class="tb-right">${_showTime?`<span class="tb-btime">${tStr(ratb.sm)}-${tStr(ratb.sm+ratb.dur)}</span>`:''}<button class="tb-bdel atb-del" onclick="event.stopPropagation();delRecAutoTBForDay('${ratb._recAutoId}','${ds}')">✕</button></div></div><div class="tb-resize atb-resize"></div>`;
+  const _ratbChk=el.querySelector('.tb-chk');
+  if(_ratbChk)_ratbChk.addEventListener('change',function(e2){
+    e2.stopPropagation();
+    togRecVirt(String(ratb._recId),this.checked,_wkKey);
+  });
   // Resize
   const resH=el.querySelector('.atb-resize');
   if(resH)resH.addEventListener('mousedown',e=>{
@@ -3210,7 +3220,7 @@ function drawRecAutoTBBlock(col,ratb,ds){
   });
   // Drag to move
   el.addEventListener('mousedown',e=>{
-    if(e.target.classList.contains('atb-del')||e.target.classList.contains('atb-resize'))return;
+    if(e.target.classList.contains('atb-del')||e.target.classList.contains('atb-resize')||e.target.classList.contains('tb-chk'))return;
     if(e.detail>=2){e.stopPropagation();openRecEditModal(ratb._recId);return;}
     e.preventDefault();e.stopPropagation();
     const startY=e.clientY,startSm=ratb.sm;
