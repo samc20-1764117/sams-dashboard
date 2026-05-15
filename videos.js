@@ -551,7 +551,7 @@ function _vidDashRow(v,isChild,simple){
     const bulletColor=hasGroup?'rgba(139,92,246,.45)':'#fff';
     const tipAttr=hasGroup?`onmouseenter="_vidBulletTipShow(event,'${sid}')" onmouseleave="_vidBulletTipHide()"`:'';
     return`<div class="vid-dash-row${sel?' vid-sel':''}" draggable="true" ondragstart="_vidDashDragStart(event,'${sid}')" data-vid="${sid}" onclick="vidRowClick(event,'${sid}')" ondblclick="openVidEdit('${sid}')" oncontextmenu="showVidCtx(event,'${sid}')" onmouseenter="_vidIdeaRowEnter('${sid}')" onmouseleave="_vidIdeaRowLeave()">
-      <div style="flex:1;min-width:0;padding-left:10px;${indent}${!isChild?'font-weight:600;':''}${titleStyle}" ${tipAttr}><span style="color:${bulletColor};font-size:8px;margin-right:6px;cursor:default">●</span>${_addBtn}${childMark}${numHtml}${_tHtml}</div>
+      <div style="flex:1;min-width:0;padding-left:10px;display:flex;align-items:center;${indent}${!isChild?'font-weight:600;':''}${titleStyle}" ${tipAttr}><span style="color:${bulletColor};font-size:8px;margin-right:6px;cursor:default">●</span>${_addBtn}${childMark}${numHtml}${_tHtml}</div>
       <button class="vid-del" data-vid="${sid}">✕</button>
     </div>`;
   }
@@ -566,11 +566,11 @@ function _vidDashRow(v,isChild,simple){
   const _dropParent=v.video_type==='B'?sid:(v.big_video_id?String(v.big_video_id):null);
   const dropAttrs=_dropParent?'ondragover="_vidGroupDragOver(event)" ondragleave="_vidGroupDragLeave(event)" ondrop="_vidGroupDrop(event,\''+_dropParent+'\')"':'';
   return`<div class="vid-dash-row${sel?' vid-sel':''}${_vidChildSelected.has(sid)?' vid-child-sel':''}" draggable="true" ondragstart="_vidDashDragStart(event,'${sid}')" ${dropAttrs} data-vid="${sid}" onclick="vidRowClick(event,'${sid}')" ondblclick="_vidDashDblClick(event,'${sid}')" oncontextmenu="showVidCtx(event,'${sid}')" style="${bigRowStyle}">
-    <div style="flex:1;min-width:0;padding-left:10px;${indent}${!isChild?'font-weight:600;':''}${titleStyle}">
+    <div style="flex:1;min-width:0;padding-left:10px;display:flex;align-items:center;${indent}${!isChild?'font-weight:600;':''}${titleStyle}">
       ${_addBtn}${childMark}${numHtml}${_tHtml}
     </div>
     <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
-      <div style="display:flex;gap:0">${VID_STEPS.map(s=>`<div style="width:28px;text-align:center"><div class="vid-step-dot${v[s]==='done'?' done':v[s]==='na'?' na':''}" data-vid="${sid}" data-step="${s}" title="${VID_STEP_LABELS[s]}"></div></div>`).join('')}</div>
+      <div style="display:flex;align-items:center;gap:0">${VID_STEPS.map(s=>`<div style="width:28px;text-align:center;display:flex;align-items:center;justify-content:center"><div class="vid-step-dot${v[s]==='done'?' done':v[s]==='na'?' na':''}" data-vid="${sid}" data-step="${s}" title="${VID_STEP_LABELS[s]}"></div></div>`).join('')}</div>
       <span data-field="post_date" style="width:52px;text-align:right;font-size:11px;color:${_vidDateColor(v.post_date,v)};cursor:pointer;min-height:16px;display:inline-block">${postStr||''}</span>
       <span data-field="duration_minutes" style="width:36px;text-align:right;font-size:11px;color:var(--muted);cursor:pointer;min-height:16px;display:inline-block">${durStr||''}</span>
       ${(()=>{const ym=_ytForVid(sid);return ym?'<span style="width:42px;text-align:right;font-size:10px;color:#8b5cf6;display:inline-block" title="'+ym.views+' views / '+ym.likes+' likes">'+_ytNum(ym.views)+'</span>':(_ytMatch?'<span style="width:42px;display:inline-block"></span>':'');})()}
@@ -1147,7 +1147,7 @@ function _vidRow(v,isChild,postMap){
   const _tblPct=_tblApplicable.length?Math.round((_tblDone/_tblApplicable.length)*100):0;
   return`<tr class="vid-row${sel?' vid-sel':''}" data-vid="${sid}" onclick="vidCellClick(event,'${sid}')" ondblclick="openVidEdit('${sid}')" oncontextmenu="showVidCtx(event,'${sid}')" style="${isBig?'background:rgba(255,255,255,.50)':''}">
     <td data-field="title" style="${indent}${!isChild?'font-weight:600;':''}${titleColor}overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${addBtn}${childMark}${numHtml}${(v.status==='in_progress'||v.status==='up_next')&&v.topic?`<span class="vid-title-text">${_esc(v.topic)}</span><span style="font-size:10px;color:var(--muted);margin-left:4px;font-weight:400">${_titleSuffix}</span>`:`<span class="vid-title-text">${_esc(v.title)}</span>`}${isBig?(()=>{const _kc=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===sid).length;return _kc?`<span style="font-size:9px;color:var(--muted);font-weight:400;margin-left:4px">${_kc}</span>`:''})():''}</td>
-    <td style="padding:3px 0"><div style="display:flex;gap:0">${VID_STEPS.map(s=>`<div style="width:28px;text-align:center"><div class="vid-step-dot${v[s]==='done'?' done':v[s]==='na'?' na':''}" data-vid="${sid}" data-step="${s}" title="${VID_STEP_LABELS[s]}"></div></div>`).join('')}</div></td>
+    <td style="padding:3px 0"><div style="display:flex;align-items:center;gap:0">${VID_STEPS.map(s=>`<div style="width:28px;text-align:center;display:flex;align-items:center;justify-content:center"><div class="vid-step-dot${v[s]==='done'?' done':v[s]==='na'?' na':''}" data-vid="${sid}" data-step="${s}" title="${VID_STEP_LABELS[s]}"></div></div>`).join('')}</div></td>
     <td data-field="post_date" style="text-align:right;font-size:11px;color:${_vidDateColor(v.post_date,v)}">${postStr}</td>
     <td data-field="duration_minutes" style="text-align:right;font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums">${durStr}</td>
     <td style="text-align:right;font-size:9px;color:var(--muted);font-weight:500">${(v.status==='in_progress'||v.status==='up_next')&&_tblPct>0&&_tblPct<100?_tblPct+'%':''}</td>
@@ -2931,7 +2931,7 @@ document.addEventListener('keydown',e=>{
       e.preventDefault();
       // Order: up_next → in_progress → idea. Left=toward up_next, Right=toward idea
       const map=e.key==='ArrowLeft'
-        ?{in_progress:'up_next'}
+        ?{idea:'in_progress',in_progress:'up_next'}
         :{up_next:'in_progress',in_progress:'idea'};
       const allIds=new Set([..._vidSelected,..._vidChildSelected]);
       const vids=[...allIds].map(id=>(st.videos||[]).find(x=>String(x.id)===id)).filter(Boolean);
