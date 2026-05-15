@@ -2299,7 +2299,7 @@ function vidCellEdit(td,id,field){
   }else if(field==='duration_minutes'){
     el=document.createElement('input');el.type='number';el.step='0.01';el.value=v.duration_minutes||'';
   }else if(field==='post_date'){
-    el=document.createElement('input');el.type='date';el.value=v.post_date||'';
+    el=document.createElement('input');el.type='text';el.placeholder='m/d or m/d/yy';el.value=v.post_date?_vidPostStr(v.post_date,true):'';
   }else if(field==='title'){
     el=document.createElement('input');el.value=v.title||'';
   }else{return;}
@@ -2312,7 +2312,7 @@ function vidCellEdit(td,id,field){
     if(saved)return;saved=true;td._editing=false;
     let val=el.value;
     if(field==='duration_minutes')val=val?parseFloat(val):null;
-    if(field==='post_date')val=val||null;
+    if(field==='post_date')val=_vidParseDate(val);
     const prev=v[field]??null;
     if(val===prev){td.innerHTML=origHtml;return;}
     v[field]=val;save();
@@ -2882,7 +2882,7 @@ document.addEventListener('keydown',e=>{
   if(e.key==='n'&&!e.metaKey&&!e.ctrlKey){e.preventDefault();openVidModal();return;}
   if(e.key==='ArrowLeft'&&!e.metaKey&&!e.ctrlKey&&_vidSelected.size===0){e.preventDefault();const tabs=['dashboard','table','analytics','monthly'];const i=tabs.indexOf(_vidView);if(i>0)_vidSetView(tabs[i-1]);return;}
   if(e.key==='ArrowRight'&&!e.metaKey&&!e.ctrlKey&&_vidSelected.size===0){e.preventDefault();const tabs=['dashboard','table','analytics','monthly'];const i=tabs.indexOf(_vidView);if(i<tabs.length-1)_vidSetView(tabs[i+1]);return;}
-  if(e.key==='ArrowUp'&&!e.metaKey&&!e.ctrlKey){e.preventDefault();const se=_vidScrollEl();if(se)se.scrollTop=0;return;}
+  if(e.key==='ArrowUp'&&!e.metaKey&&!e.ctrlKey){e.preventDefault();const se=_vidScrollEl();if(se){se.scrollTop=0;}else{const row=document.querySelector('.vid-dash-row,.vid-row');if(row)row.scrollIntoView({block:'start'});}return;}
   if(e.key==='ArrowDown'&&!e.metaKey&&!e.ctrlKey){e.preventDefault();_vidScrollToDefault();return;}
   if(e.key==='e'&&!e.metaKey&&!e.ctrlKey&&_vidView==='table'){e.preventDefault();_vidShowCompleted=!_vidShowCompleted;renderVideosPageKeepScroll();return;}
   if(e.key==='c'&&!e.metaKey&&!e.ctrlKey&&_vidView==='table'){e.preventDefault();_vidShowCompleted=!_vidShowCompleted;renderVideosPageKeepScroll();return;}
