@@ -74,6 +74,19 @@ function _ytBuildMatch(){
       matched++;
     }
   }
+  // Pass 3: exact title match for remaining unmatched published videos
+  for(var i3=0;i3<dbVids.length;i3++){
+    var dv3=dbVids[i3];
+    if(!dv3.post_date||!dv3.title||_ytMatch[String(dv3.id)])continue;
+    var dbTitle=dv3.title.trim().toLowerCase();
+    for(var j3=0;j3<ytVids.length;j3++){
+      if(usedYt.has(j3))continue;
+      if((ytVids[j3].title||'').trim().toLowerCase()===dbTitle){
+        _ytMatch[String(dv3.id)]={views:ytVids[j3].views,likes:ytVids[j3].likes,comments:ytVids[j3].comments,ytId:ytVids[j3].id,publishedAt:ytVids[j3].publishedAt,duration:ytVids[j3].duration};
+        usedYt.add(j3);matched++;break;
+      }
+    }
+  }
   console.log('[YT] Matched',matched,'of',dbVids.filter(v=>v.post_date).length,'videos with dates.');
   var unmatched=dbVids.filter(v=>v.post_date&&v.status==='published'&&!_ytMatch[String(v.id)]);
   if(unmatched.length)console.log('[YT] Unmatched published:',unmatched.map(v=>v.post_date+' '+v.title));
@@ -476,11 +489,11 @@ function _vidRenderDashboard(){
         <div style="padding-left:10px">Ideas</div>
       </div>
       <div id="vidDashLeft" style="grid-column:1;grid-row:2;min-height:0;overflow-y:auto;overflow-x:hidden;border-right:1px solid var(--border)">
-        <div class="vid-drop-zone" data-drop-status="up_next" ondragover="_vidDashDragOver(event)" ondragleave="_vidDashDragLeave(event)" ondrop="_vidDashDrop(event,'up_next')" style="min-height:40px;background:rgba(14,165,233,.03)">
+        <div class="vid-drop-zone" data-drop-status="up_next" ondragover="_vidDashDragOver(event)" ondragleave="_vidDashDragLeave(event)" ondrop="_vidDashDrop(event,'up_next')" style="min-height:40px;background:rgba(14,165,233,.03);border-bottom:3px solid #fff">
           <div style="font-size:9px;font-weight:600;color:#0ea5e9;padding:6px 6px 6px 16px;letter-spacing:.03em;background:rgba(14,165,233,.06);display:flex;align-items:center;border-left:3px solid rgba(14,165,233,.4)">Up Next</div>
           ${upNext.length?_vidDashList(upNext,false):'<div style="color:var(--muted);font-size:11px;padding:8px 10px;opacity:.5">Drag ideas here</div>'}
         </div>
-        <div class="vid-drop-zone" data-drop-status="in_progress" ondragover="_vidDashDragOver(event)" ondragleave="_vidDashDragLeave(event)" ondrop="_vidDashDrop(event,'in_progress')" style="min-height:40px;background:rgba(245,158,11,.03)">
+        <div class="vid-drop-zone" data-drop-status="in_progress" ondragover="_vidDashDragOver(event)" ondragleave="_vidDashDragLeave(event)" ondrop="_vidDashDrop(event,'in_progress')" style="min-height:40px;background:rgba(245,158,11,.03);border-top:3px solid #fff">
           <div style="font-size:9px;font-weight:600;color:#d97706;padding:6px 6px 6px 16px;letter-spacing:.03em;background:rgba(245,158,11,.06);display:flex;align-items:center;border-left:3px solid rgba(245,158,11,.4)">In Progress</div>
           ${inProgress.length?_vidDashList(inProgress,false):'<div style="color:var(--muted);font-size:11px;padding:8px 10px;opacity:.5">Drag up next here to start</div>'}
         </div>
