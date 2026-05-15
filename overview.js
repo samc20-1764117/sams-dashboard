@@ -680,7 +680,7 @@ function renderWkCal(){
     if(sd)_preAddBanner(sd,ed);
   });
   bdayThisWk.forEach(b=>_preAddBanner(b.due_date,b.due_date));
-  const _colPaddingPre=_preLanes.map(lanes=>lanes.size?`${(Math.max(...lanes)+1)*22}px`:'0');
+  const _colPaddingPre=_preLanes.map(lanes=>lanes.size?`${(Math.max(...lanes)+1)*20}px`:'0');
   setTimeout(()=>{
     const wrap=document.getElementById('wkcWrap');
     if(!wrap)return;
@@ -707,7 +707,7 @@ function renderWkCal(){
       const lane=pickLane(si,ei);
       for(let i=si;i<=ei;i++)colLanes[i].add(lane);
       const ban=document.createElement('div');ban.className='wkc-banner';
-      ban.style.cssText=`left:${left+2}px;top:${headH+lane*22}px;width:${right-left-4}px;background:${s.bg};color:${s.t};border-color:${s.b}${isPast?';opacity:.35':''}`;
+      ban.style.cssText=`left:${left+2}px;top:${headH+lane*20}px;width:${right-left-4}px;background:${s.bg};color:${s.t};border-color:${s.b}${isPast?';opacity:.35':''}`;
       ban.innerHTML=label;
       if(onClick)ban.addEventListener('click',onClick);
       bannerEl.appendChild(ban);
@@ -761,7 +761,7 @@ function renderWkCal(){
     // Set banner container height based on lanes used (paddingTop already set synchronously)
     let maxLane=-1;
     colLanes.forEach(lanes=>{const ml=lanes.size?Math.max(...lanes):-1;if(ml>maxLane)maxLane=ml;});
-    if(maxLane>=0)bannerEl.style.height=`${headH+(maxLane+1)*22}px`;
+    if(maxLane>=0)bannerEl.style.height=`${headH+(maxLane+1)*20}px`;
   },10);
 
   // ── Render per-day columns ───────────────────────────────────────────────────

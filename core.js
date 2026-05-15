@@ -978,6 +978,9 @@ document.addEventListener('keydown',e=>{
   if(e.key==='o'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus')&&!document.querySelector('.overlay.open')){
     e.preventDefault();showPage('overview');
   }
+  if(e.key==='v'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus')&&!document.querySelector('.overlay.open')){
+    e.preventDefault();showPage('videos');
+  }
 });
 
 // ── UI Tooltip ────────────────────────────────────────────────────────────────
