@@ -1084,8 +1084,7 @@ function _vidRenderTable(){
         <th style="width:${VID_STEPS.length*28}px;padding:0"><div style="display:flex;gap:0">${VID_STEPS.map(s=>`<div style="width:28px;text-align:center;font-size:10px" title="${VID_STEP_LABELS[s]}">${VID_STEP_LABELS[s].length<=5?VID_STEP_LABELS[s]:VID_STEP_LABELS[s].slice(0,2)}</div>`).join('')}</div></th>
         <th style="width:52px;text-align:center;${thStyle}" onclick="vidTblSort('posted')">Posted${_vidSortArrow('posted')}</th>
         <th style="width:36px;text-align:center;${thStyle}" onclick="vidTblSort('duration')">Dur${_vidSortArrow('duration')}</th>
-        <th style="width:28px"></th>
-        <th style="width:70px;background:var(--bg);${thStyle}" onclick="vidTblSort('status')">Status${_vidSortArrow('status')}</th>
+        <th style="width:90px;background:var(--bg);${thStyle}" onclick="vidTblSort('status')">Status${_vidSortArrow('status')}</th>
         ${_ytMatch?'<th style="width:38px;text-align:right;background:var(--bg)">Views</th><th style="width:38px;text-align:right;background:var(--bg)">Likes</th><th style="width:42px;text-align:right;background:var(--bg)">Cmts</th>':''}
         <th style="width:30px"></th>
       </tr></thead>
@@ -1151,8 +1150,7 @@ function _vidRow(v,isChild,postMap){
     <td style="padding:3px 0"><div style="display:flex;align-items:center;gap:0">${VID_STEPS.map(s=>`<div style="width:28px;text-align:center;display:flex;align-items:center;justify-content:center"><div class="vid-step-dot${v[s]==='done'?' done':v[s]==='na'?' na':''}" data-vid="${sid}" data-step="${s}" title="${VID_STEP_LABELS[s]}"></div></div>`).join('')}</div></td>
     <td class="vid-num" data-field="post_date" style="text-align:right;font-size:11px;color:${_vidDateColor(v.post_date,v)}">${postStr}</td>
     <td class="vid-num" data-field="duration_minutes" style="text-align:right;font-size:11px;color:var(--muted)">${durStr}</td>
-    <td class="vid-num" style="text-align:right;font-size:11px;color:var(--muted);font-weight:500">${(v.status==='in_progress'||v.status==='up_next')&&_tblPct>0&&_tblPct<100?_tblPct+'%':''}</td>
-    <td data-field="status"><span class="vid-status-pill" style="background:${sc}12;color:${sc}">${VID_STATUS_LABELS[v.status]||v.status}</span></td>
+    <td data-field="status"><span class="vid-status-pill" style="background:${sc}12;color:${sc}">${VID_STATUS_LABELS[v.status]||v.status}${(v.status==='in_progress'||v.status==='up_next')&&_tblPct>0&&_tblPct<100?' · '+_tblPct+'%':''}</span></td>
     ${_ytMatch?(()=>{const ym=_ytForVid(sid);return ym?'<td class="vid-num" style="text-align:right;font-size:11px;color:var(--muted)">'+_ytNum(ym.views)+'</td><td class="vid-num" style="text-align:right;font-size:11px;color:var(--muted)">'+_ytNum(ym.likes)+'</td><td class="vid-num" style="text-align:right;font-size:11px;color:var(--muted)">'+_ytNum(ym.comments)+'</td>':'<td></td><td></td><td></td>';})():''}
     <td><button class="vid-del" data-vid="${sid}">✕</button></td>
   </tr>`;
