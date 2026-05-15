@@ -2017,16 +2017,11 @@ function _vidSearchNav(dir){
   if(cnt)cnt.textContent=(_vidMatchIdx+1)+'/'+_vidMatchIds.length;
 }
 function _vidScrollToDefault(){
-  console.warn('[SCROLL-DEFAULT] called, view=',_vidView);
   requestAnimationFrame(()=>{
     const today=new Date().toISOString().slice(0,10);
-    const allPub=(st.videos||[]).filter(v=>!v.is_deleted&&v.status==='published');
-    const allPubBig=allPub.filter(v=>v.video_type==='B');
-    const withDate=allPubBig.filter(v=>v.post_date);
-    const pastBig=withDate.filter(v=>v.post_date<today).sort((a,b)=>b.post_date.localeCompare(a.post_date));
-    console.warn('[SCROLL-DEFAULT]','today=',today,'allPublished=',allPub.length,'publishedBigs=',allPubBig.length,'withDate=',withDate.length,'pastBigs=',pastBig.length);
-    console.table(pastBig.map(v=>({title:v.title,post_date:v.post_date,type:v.video_type})));
-    const target=pastBig[2]||pastBig[pastBig.length-1];
+    // 3 most recent completed videos with past post_dates (Big or standalone)
+    const pastCompleted=(st.videos||[]).filter(v=>!v.is_deleted&&v.status==='published'&&v.post_date&&v.post_date<today&&(v.video_type==='B'||!v.big_video_id)).sort((a,b)=>b.post_date.localeCompare(a.post_date));
+    const target=pastCompleted[2]||pastCompleted[pastCompleted.length-1];
     if(!target)return;
     const tid=String(target.id);
     const row=document.querySelector('.vid-dash-row[data-vid="'+tid+'"]')||document.querySelector('.vid-row[data-vid="'+tid+'"]');
@@ -2927,22 +2922,43 @@ document.addEventListener('keydown',e=>{
   if(_vidView==='dashboard'&&_vidSelected.size>0&&!e.metaKey&&!e.ctrlKey&&(e.key==='ArrowUp'||e.key==='ArrowDown')){
     e.preventDefault();
     const dir=e.key==='ArrowUp'?-1:1;
-    const selIds=[..._vidSelected];
-    // Get all visible rows in column order, find selected, swap with neighbor
-    const rows=[...document.querySelectorAll('.vid-dash-row[data-vid]')].map(r=>r.dataset.vid);
-    // For each selected video, find its position and swap vid_order with neighbor
+    const selIds=new Set([..._vidSelected]);
+    // Group selected by status+type, move each group as a block
+    const groups={};
     selIds.forEach(sid=>{
       const v=(st.videos||[]).find(x=>String(x.id)===sid);if(!v)return;
-      // Find siblings with same status
-      const siblings=(st.videos||[]).filter(x=>!x.is_deleted&&x.status===v.status&&x.video_type===v.video_type).sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
-      const idx=siblings.findIndex(x=>String(x.id)===sid);
-      const swapIdx=idx+dir;
-      if(swapIdx<0||swapIdx>=siblings.length)return;
-      const other=siblings[swapIdx];
-      const tmpOrd=v.vid_order??idx;const otherOrd=other.vid_order??swapIdx;
-      v.vid_order=otherOrd;other.vid_order=tmpOrd;
-      sbReqSilent('PATCH','videos',{vid_order:v.vid_order},`?id=eq.${v.id}`);
-      sbReqSilent('PATCH','videos',{vid_order:other.vid_order},`?id=eq.${other.id}`);
+      const key=v.status+'|'+v.video_type;
+      if(!groups[key])groups[key]=[];
+      groups[key].push(v);
+    });
+    Object.values(groups).forEach(selVids=>{
+      const sample=selVids[0];
+      const siblings=(st.videos||[]).filter(x=>!x.is_deleted&&x.status===sample.status&&x.video_type===sample.video_type).sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
+      // Ensure all have vid_order
+      siblings.forEach((s,i)=>{if(s.vid_order==null)s.vid_order=i;});
+      const selSet=new Set(selVids.map(v=>String(v.id)));
+      const selIdxs=siblings.map((s,i)=>selSet.has(String(s.id))?i:-1).filter(i=>i>=0).sort((a,b)=>a-b);
+      if(!selIdxs.length)return;
+      // Check boundary
+      if(dir===-1&&selIdxs[0]===0)return;
+      if(dir===1&&selIdxs[selIdxs.length-1]===siblings.length-1)return;
+      // Move: swap the block with the adjacent non-selected item
+      if(dir===-1){
+        const aboveIdx=selIdxs[0]-1;
+        const above=siblings[aboveIdx];
+        const aboveOrd=above.vid_order;
+        // Shift selected items down by 1 in order, put above item after them
+        selIdxs.forEach(i=>{siblings[i].vid_order=siblings[i].vid_order-1;});
+        above.vid_order=siblings[selIdxs[selIdxs.length-1]].vid_order+1;
+      }else{
+        const belowIdx=selIdxs[selIdxs.length-1]+1;
+        const below=siblings[belowIdx];
+        const belowOrd=below.vid_order;
+        selIdxs.forEach(i=>{siblings[i].vid_order=siblings[i].vid_order+1;});
+        below.vid_order=siblings[selIdxs[0]].vid_order-1;
+      }
+      // Persist all changed
+      siblings.forEach(s=>sbReqSilent('PATCH','videos',{vid_order:s.vid_order},`?id=eq.${s.id}`));
     });
     save();renderVideosPageKeepScroll();
     return;
