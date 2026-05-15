@@ -4,6 +4,7 @@ let _ytAnalytics=null,_ytAnalyticsFetched=false;
 function _ytEsc(s){return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function _ytDur(iso){var m=iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);if(!m)return'0:00';var h=m[1]?parseInt(m[1]):0,min=m[2]?parseInt(m[2]):0,s=m[3]?parseInt(m[3]):0;if(h)return h+':'+String(min).padStart(2,'0')+':'+String(s).padStart(2,'0');return min+':'+String(s).padStart(2,'0');}
 function _ytNum(n){if(n>=1000000)return(n/1000000).toFixed(1)+'M';if(n>=1000)return(n/1000).toFixed(1)+'K';return String(n);}
+function _fmtDur(m){const s=m.toFixed(2);return s.padStart(5,'\u2007');}
 function _ytBuildMatch(){
   if(!_ytData||!_ytData.videos||!st.videos){console.log('[YT] _ytBuildMatch bail:',!_ytData,!_ytData?.videos,!st.videos);return;}
   _ytMatch={};
@@ -556,7 +557,7 @@ function _vidDashRow(v,isChild,simple){
     </div>`;
   }
   const postStr=_vidPostStr(v.post_date);
-  const durStr=v.duration_minutes?v.duration_minutes.toFixed(2):'';
+  const durStr=v.duration_minutes?_fmtDur(v.duration_minutes):'';
   const isBig=v.video_type==='B';
   const bigRowStyle=isBig?'background:rgba(255,255,255,.50);':'';
   const _applicable=VID_STEPS.filter(s=>v[s]!=='na');
@@ -572,8 +573,8 @@ function _vidDashRow(v,isChild,simple){
     <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
       <div style="display:flex;align-items:center;gap:0">${VID_STEPS.map(s=>`<div style="width:28px;text-align:center;display:flex;align-items:center;justify-content:center"><div class="vid-step-dot${v[s]==='done'?' done':v[s]==='na'?' na':''}" data-vid="${sid}" data-step="${s}" title="${VID_STEP_LABELS[s]}"></div></div>`).join('')}</div>
       <span data-field="post_date" style="width:52px;text-align:right;font-size:11px;color:${_vidDateColor(v.post_date,v)};cursor:pointer;min-height:16px;display:inline-block">${postStr||''}</span>
-      <span data-field="duration_minutes" style="width:36px;text-align:right;font-size:11px;color:var(--muted);cursor:pointer;min-height:16px;display:inline-block">${durStr||''}</span>
-      ${(()=>{const ym=_ytForVid(sid);return ym?'<span style="width:42px;text-align:right;font-size:10px;color:#8b5cf6;display:inline-block" title="'+ym.views+' views / '+ym.likes+' likes">'+_ytNum(ym.views)+'</span>':(_ytMatch?'<span style="width:42px;display:inline-block"></span>':'');})()}
+      <span data-field="duration_minutes" style="width:36px;text-align:right;font-size:11px;color:var(--muted);cursor:pointer;min-height:16px;display:inline-block;font-variant-numeric:tabular-nums">${durStr||''}</span>
+      ${(()=>{const ym=_ytForVid(sid);return ym?'<span style="width:42px;text-align:right;font-size:11px;color:var(--muted);display:inline-block;font-variant-numeric:tabular-nums" title="'+ym.views+' views / '+ym.likes+' likes">'+_ytNum(ym.views)+'</span>':(_ytMatch?'<span style="width:42px;display:inline-block"></span>':'');})()}
       <span style="width:28px;text-align:right;font-size:9px;color:var(--muted);font-weight:500;display:inline-block">${_pctVal}</span>
       <button class="vid-del" data-vid="${sid}">✕</button>
     </div>
@@ -1132,7 +1133,7 @@ function _vidRow(v,isChild,postMap){
   const sel=_vidSelected.has(sid);
   const sc=VID_STATUS_COLORS[v.status]||'#94a3b8';
   const postStr=_vidPostStr(v.post_date,true);
-  const durStr=v.duration_minutes?v.duration_minutes.toFixed(2):'';
+  const durStr=v.duration_minutes?_fmtDur(v.duration_minutes):'';
   const isSmall=v.video_type==='L'&&v.big_video_id;
   const indent=isChild?'padding-left:30px;':'padding-left:16px;';
   const childMark=isChild?'<span style="color:#fff;font-size:10px;margin-right:4px">└</span>':'';
@@ -1152,7 +1153,7 @@ function _vidRow(v,isChild,postMap){
     <td data-field="duration_minutes" style="text-align:right;font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums">${durStr}</td>
     <td style="text-align:right;font-size:9px;color:var(--muted);font-weight:500">${(v.status==='in_progress'||v.status==='up_next')&&_tblPct>0&&_tblPct<100?_tblPct+'%':''}</td>
     <td data-field="status"><span class="vid-status-pill" style="background:${sc}12;color:${sc}">${VID_STATUS_LABELS[v.status]||v.status}</span></td>
-    ${_ytMatch?(()=>{const ym=_ytForVid(sid);return ym?'<td style="text-align:right;font-size:11px;color:var(--muted)">'+_ytNum(ym.views)+'</td><td style="text-align:right;font-size:11px;color:var(--muted)">'+_ytNum(ym.likes)+'</td><td style="text-align:right;font-size:11px;color:var(--muted)">'+_ytNum(ym.comments)+'</td>':'<td></td><td></td><td></td>';})():''}
+    ${_ytMatch?(()=>{const ym=_ytForVid(sid);return ym?'<td style="text-align:right;font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums">'+_ytNum(ym.views)+'</td><td style="text-align:right;font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums">'+_ytNum(ym.likes)+'</td><td style="text-align:right;font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums">'+_ytNum(ym.comments)+'</td>':'<td></td><td></td><td></td>';})():''}
     <td><button class="vid-del" data-vid="${sid}">✕</button></td>
   </tr>`;
 }
