@@ -442,11 +442,10 @@ function _vidRenderDashboard(){
   }
   _vidDashVids=all.filter(v=>v.status!=='idea');
   const _hasYt=!!_ytMatch;
-  const _colHdr=`<div style="display:flex;align-items:center;gap:6px;flex-shrink:0;padding-right:0">
-            <div style="display:flex;gap:0">${VID_STEPS.map(s=>`<div style="width:28px;text-align:center" title="${VID_STEP_LABELS[s]}">${VID_STEP_LABELS[s].length<=5?VID_STEP_LABELS[s]:VID_STEP_LABELS[s].slice(0,2)}</div>`).join('')}</div>
+  const _colHdr=`<div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+            <div style="display:flex;align-items:center;gap:0">${VID_STEPS.map(s=>`<div style="width:28px;text-align:center" title="${VID_STEP_LABELS[s]}">${VID_STEP_LABELS[s].length<=5?VID_STEP_LABELS[s]:VID_STEP_LABELS[s].slice(0,2)}</div>`).join('')}</div>
             <span style="width:52px;text-align:center;display:inline-block;font-size:10px;color:var(--muted);font-weight:600">Posted</span>
-            <span style="width:36px;text-align:center;display:inline-block;font-size:10px;color:var(--muted);font-weight:600">Dur</span>
-            ${_hasYt?'<span style="width:42px;display:inline-block"></span>':''}
+            ${_hasYt?'<span style="width:42px;text-align:center;display:inline-block;font-size:10px;color:var(--muted);font-weight:600">Views</span>':''}
             <span style="width:28px;display:inline-block"></span>
             <button class="vid-del" style="visibility:hidden">✕</button>
           </div>`;
@@ -999,8 +998,8 @@ function _vidSortVids(vids){
       else if(col==='group'){av=a.big_video_id||0;bv=b.big_video_id||0;}
       else if(col==='playlist'){av=(a.playlist||'').toLowerCase();bv=(b.playlist||'').toLowerCase();}
       else if(col==='status'){av=VID_STATUS_ORDER[a.status]??99;bv=VID_STATUS_ORDER[b.status]??99;}
-      else if(col==='duration'){av=a.duration_minutes||0;bv=b.duration_minutes||0;}
-      else if(col==='posted'){av=a.post_date||'';bv=b.post_date||'';}
+      else if(col==='duration'){av=_ytDurMin(String(a.id))||a.duration_minutes||0;bv=_ytDurMin(String(b.id))||b.duration_minutes||0;}
+      else if(col==='posted'){av=_ytPostDate(String(a.id))||a.post_date||'';bv=_ytPostDate(String(b.id))||b.post_date||'';}
       else{av='';bv='';}
       if(!av&&!bv)return 0;if(!av)return 1;if(!bv)return-1;
       return av<bv?-dir:av>bv?dir:0;
@@ -1083,6 +1082,7 @@ function _vidRenderTable(){
       <thead><tr>
         <th style="padding-left:16px;${thStyle}" onclick="vidTblSort('title')">Title${_vidSortArrow('title')}</th>
         <th style="width:${VID_STEPS.length*28}px;padding:0"><div style="display:flex;gap:0">${VID_STEPS.map(s=>`<div style="width:28px;text-align:center;font-size:10px" title="${VID_STEP_LABELS[s]}">${VID_STEP_LABELS[s].length<=5?VID_STEP_LABELS[s]:VID_STEP_LABELS[s].slice(0,2)}</div>`).join('')}</div></th>
+        <th style="width:12px"></th>
         <th style="width:90px;${thStyle}" onclick="vidTblSort('status')">Status${_vidSortArrow('status')}</th>
         <th style="width:52px;text-align:right;${thStyle}" onclick="vidTblSort('posted')">Posted${_vidSortArrow('posted')}</th>
         <th style="width:46px;text-align:right;${thStyle}" onclick="vidTblSort('duration')">Length${_vidSortArrow('duration')}</th>
@@ -1151,6 +1151,7 @@ function _vidRow(v,isChild,postMap){
   return`<tr class="vid-row${sel?' vid-sel':''}" data-vid="${sid}" onclick="vidCellClick(event,'${sid}')" ondblclick="openVidEdit('${sid}')" oncontextmenu="showVidCtx(event,'${sid}')" style="${isBig?'background:rgba(255,255,255,.50)':''}">
     <td data-field="title" style="${indent}${!isChild?'font-weight:600;':''}${titleColor}overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${addBtn}${childMark}${numHtml}${(v.status==='in_progress'||v.status==='up_next')&&v.topic?`<span class="vid-title-text">${_esc(v.topic)}</span><span style="font-size:10px;color:var(--muted);margin-left:4px;font-weight:400">${_titleSuffix}</span>`:`<span class="vid-title-text">${_esc(v.title)}</span>`}${isBig?(()=>{const _kc=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===sid).length;return _kc?`<span style="font-size:9px;color:rgba(140,135,160,.7);font-weight:400;margin-left:4px;position:relative;top:0.5px">(${_kc})</span>`:''})():''}</td>
     <td style="padding:3px 0"><div style="display:flex;align-items:center;gap:0">${VID_STEPS.map(s=>`<div style="width:28px;text-align:center;display:flex;align-items:center;justify-content:center"><div class="vid-step-dot${v[s]==='done'?' done':v[s]==='na'?' na':''}" data-vid="${sid}" data-step="${s}" title="${VID_STEP_LABELS[s]}"></div></div>`).join('')}</div></td>
+    <td></td>
     <td data-field="status"><span class="vid-status-pill" style="background:${sc}12;color:${sc}">${VID_STATUS_LABELS[v.status]||v.status}${(v.status==='in_progress'||v.status==='up_next')&&_tblPct>0&&_tblPct<100?' · '+_tblPct+'%':''}</span></td>
     <td class="vid-num" style="text-align:right;font-size:11px;color:${_vidDateColor(_postSrc2,v)}">${postStr}</td>
     <td class="vid-num" style="text-align:right;font-size:11px;color:var(--muted)">${durStr}</td>
