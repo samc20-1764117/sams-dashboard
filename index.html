@@ -994,31 +994,36 @@ document.addEventListener('keydown',e=>{
     function mkLbl(x,y,txt,col,bg){const l=document.createElement('div');l.style.cssText=`position:fixed;left:${x}px;top:${y}px;color:${col};font-weight:700;font-size:9px;background:${bg};padding:1px 5px;border-radius:2px;white-space:nowrap;`;l.textContent=txt;ov.appendChild(l);return l;}
     function mkBand(x,y,w,h,border){const b=document.createElement('div');b.style.cssText=`position:fixed;left:${x}px;top:${y}px;width:${w}px;height:${h}px;background:rgba(0,200,0,.06);${border}`;ov.appendChild(b);}
     // ── Edge margins (green) — from CSS padding, not card edges ──
-    // Top: from top of #main to content area
+    // Visible area = from top of main to bottom of viewport
+    const visTop=Math.max(mainR.top,0);
+    const visBot=winH;
+    const contentStartY=pageR.top+padT;// where content starts (below top padding)
+    // Top: from top of #main to where content begins
     const edgeTop=Math.round(pageR.top-mainR.top+padT);
-    if(edgeTop>0){
-      mkBand(mainR.left,mainR.top,winW-mainR.left,pageR.top-mainR.top+padT,'border-bottom:2px solid rgba(0,180,0,.5);');
-      mkLbl(winW/2-20,mainR.top+(pageR.top-mainR.top+padT)/2-6,edgeTop+'px','#090','rgba(200,255,200,.9)');
+    if(edgeTop>0&&contentStartY>visTop){
+      const bandH=Math.min(contentStartY-visTop,contentStartY);
+      mkBand(0,visTop,winW,bandH,'border-bottom:2px solid rgba(0,180,0,.5);');
+      mkLbl(winW/2-20,visTop+bandH/2-6,edgeTop+'px','#090','rgba(200,255,200,.9)');
     }
-    // Left
+    // Left — full visible height
     const edgeLeft=Math.round(padL);
     if(edgeLeft>0){
-      const cTop=pageR.top+padT;
-      mkBand(pageR.left,cTop,padL,Math.min(300,winH-cTop),'border-right:2px solid rgba(0,180,0,.5);');
-      mkLbl(pageR.left+padL/2-12,cTop+40,edgeLeft+'px','#090','rgba(200,255,200,.9)');
+      const bTop=Math.max(contentStartY,visTop);
+      mkBand(pageR.left,bTop,padL,visBot-bTop,'border-right:2px solid rgba(0,180,0,.5);');
+      mkLbl(pageR.left+padL/2-12,bTop+60,edgeLeft+'px','#090','rgba(200,255,200,.9)');
     }
-    // Right
+    // Right — full visible height
     const edgeRight=Math.round(padR);
     if(edgeRight>0){
-      const cTop=pageR.top+padT;
-      mkBand(pageR.right-padR,cTop,padR,Math.min(300,winH-cTop),'border-left:2px solid rgba(0,180,0,.5);');
-      mkLbl(pageR.right-padR/2-12,cTop+40,edgeRight+'px','#090','rgba(200,255,200,.9)');
+      const bTop=Math.max(contentStartY,visTop);
+      mkBand(pageR.right-padR,bTop,padR,visBot-bTop,'border-left:2px solid rgba(0,180,0,.5);');
+      mkLbl(pageR.right-padR/2-12,bTop+60,edgeRight+'px','#090','rgba(200,255,200,.9)');
     }
-    // Bottom
-    if(padB>0){
-      const cBot=pageR.bottom-padB;
-      mkBand(pageR.left+padL,cBot,pageR.width-padL-padR,padB,'border-top:2px solid rgba(0,180,0,.5);');
-      mkLbl(winW/2-20,cBot+padB/2-6,Math.round(padB)+'px','#090','rgba(200,255,200,.9)');
+    // Bottom — show CSS padding-bottom value as label pinned at bottom of viewport
+    const edgeBot=Math.round(padB);
+    if(edgeBot>0){
+      mkBand(pageR.left+padL,visBot-30,pageR.width-padL-padR,30,'border-top:2px solid rgba(0,180,0,.5);');
+      mkLbl(winW/2-20,visBot-20,'bottom: '+edgeBot+'px','#090','rgba(200,255,200,.9)');
     }
     // ── Find ALL visible block elements (headers, containers, cards) ──
     const els=[...activePage.querySelectorAll(':scope > *, .card, .overview-cols, .overview-left, .overview-right, .row1-right-panel, .row1-right-top, .ch, .tod-tb-header, .ov-topbar, .topbar, .vid-tabs, .vid-header, .vid-content, .wk-header, .bday-header, .pup-header, .recipe-header')].filter(el=>{
