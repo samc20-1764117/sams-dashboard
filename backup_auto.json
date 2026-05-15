@@ -1,5 +1,5 @@
 {
-  "exported_at": "2026-05-14T13:00:00.681Z",
+  "exported_at": "2026-05-15T13:01:56.929Z",
   "mode": "auto",
   "tables": {
     "tasks": [
@@ -1478,23 +1478,23 @@
         "goal_order": null
       },
       {
-        "name": "Stretch",
-        "category": "Home",
-        "due_date": "2026-05-14",
-        "done": false,
-        "importance": null,
-        "id": "e0b54e7f-e011-438d-b39d-68f07ffd3b5e",
-        "important": false,
-        "notes": null,
-        "goal_order": null
-      },
-      {
         "name": "Drill down icons",
         "category": "My work",
         "due_date": "2026-04-01",
         "done": true,
         "importance": null,
         "id": "3a9283db-1179-4b96-b56c-206e5e88d91c",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Respond kats post",
+        "category": "Home",
+        "due_date": "2026-05-14",
+        "done": true,
+        "importance": null,
+        "id": "913e628e-3bc1-4d7b-8c92-d39ae47b311a",
         "important": false,
         "notes": null,
         "goal_order": null
@@ -2237,6 +2237,17 @@
         "goal_order": null
       },
       {
+        "name": "VO drill down",
+        "category": "My work",
+        "due_date": "2026-05-15",
+        "done": false,
+        "importance": null,
+        "id": "d687cd58-082d-493b-a334-45e8017f3e88",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
         "name": "Tab license issue",
         "category": "My work",
         "due_date": "2026-05-17",
@@ -2270,45 +2281,12 @@
         "goal_order": null
       },
       {
-        "name": "Icons",
-        "category": "Work",
-        "due_date": "2026-05-14",
-        "done": false,
-        "importance": null,
-        "id": "73e63302-bd4d-4a7b-93f4-f460b98c30ab",
-        "important": false,
-        "notes": null,
-        "goal_order": null
-      },
-      {
-        "name": "Journal",
-        "category": "Home",
-        "due_date": "2026-05-14",
-        "done": false,
-        "importance": null,
-        "id": "8c1de9f4-a360-413c-adfb-8c04bafbe9c1",
-        "important": false,
-        "notes": null,
-        "goal_order": null
-      },
-      {
         "name": "Native rounded corners",
         "category": "My work",
         "due_date": "2026-04-10",
         "done": true,
         "importance": null,
         "id": "e4bc8163-d045-43b6-96e8-be5f3535e9f5",
-        "important": false,
-        "notes": null,
-        "goal_order": null
-      },
-      {
-        "name": "VO drill down",
-        "category": "My work",
-        "due_date": "2026-05-14",
-        "done": false,
-        "importance": null,
-        "id": "d687cd58-082d-493b-a334-45e8017f3e88",
         "important": false,
         "notes": null,
         "goal_order": null
@@ -2353,6 +2331,17 @@
         "done": true,
         "importance": null,
         "id": "4c52811c-53dd-42d4-ad56-b9b5f5ab961c",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Journal",
+        "category": "Home",
+        "due_date": "2026-05-16",
+        "done": false,
+        "importance": null,
+        "id": "bc719aa2-04f9-467c-b272-ddf8f003c0f1",
         "important": false,
         "notes": null,
         "goal_order": null
@@ -3403,6 +3392,17 @@
         "goal_order": null
       },
       {
+        "name": "Check GI emails",
+        "category": "Home",
+        "due_date": "2026-05-15",
+        "done": false,
+        "importance": null,
+        "id": "8825bd72-1b4a-4f23-b270-78837a7733bd",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
         "name": "Tab post ready",
         "category": "My work",
         "due_date": "2026-04-26",
@@ -3524,12 +3524,34 @@
         "goal_order": null
       },
       {
+        "name": "Stretch",
+        "category": "Home",
+        "due_date": "2026-05-15",
+        "done": false,
+        "importance": null,
+        "id": "77c89174-0a63-4fd3-800f-21adb5f297b8",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
         "name": "Gum",
         "category": "Home",
         "due_date": "2026-05-01",
         "done": true,
         "importance": null,
         "id": "b3da4e87-13f1-4fe7-81b7-f24192d54751",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Pool party @5pm",
+        "category": "Social",
+        "due_date": "2026-05-14",
+        "done": true,
+        "importance": null,
+        "id": "9efb95de-5f88-4e2d-9f17-b32b2495fe95",
         "important": false,
         "notes": null,
         "goal_order": null
@@ -3711,12 +3733,23 @@
         "goal_order": null
       },
       {
-        "name": "Pool party @5pm",
-        "category": "Social",
-        "due_date": "2026-05-14",
+        "name": "Icons",
+        "category": "Work",
+        "due_date": "2026-05-15",
         "done": false,
         "importance": null,
-        "id": "9efb95de-5f88-4e2d-9f17-b32b2495fe95",
+        "id": "73e63302-bd4d-4a7b-93f4-f460b98c30ab",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Respond linkedin",
+        "category": "Home",
+        "due_date": "2026-05-14",
+        "done": true,
+        "importance": null,
+        "id": "9dddea10-5c33-49e5-a489-54e38bacc597",
         "important": false,
         "notes": null,
         "goal_order": null
@@ -5131,6 +5164,20 @@
         "rec_id": null,
         "shop_id": "63d4a10b-e42d-43dd-9771-728f5e6cabfb",
         "done": true
+      },
+      {
+        "id": "26cad03b-7602-487a-8a09-9e0a8e9a7182",
+        "title": "Check GI emails",
+        "day_date": "2026-05-15",
+        "start_time": "12:30:00",
+        "duration_minutes": 30,
+        "category": "Home",
+        "created_at": "2026-05-14T22:00:06.946859+00:00",
+        "start_minutes": 750,
+        "task_id": "8825bd72-1b4a-4f23-b270-78837a7733bd",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
       },
       {
         "id": "fc66fcf6-6116-425e-a927-ca9dcf4f78f8",
@@ -6995,6 +7042,20 @@
         "done": true
       },
       {
+        "id": "993eefb4-95e5-4db9-84ac-6aeb5337eb71",
+        "title": "Journal",
+        "day_date": "2026-05-16",
+        "start_time": "13:00:00",
+        "duration_minutes": 30,
+        "category": "Home",
+        "created_at": "2026-05-14T22:00:23.025952+00:00",
+        "start_minutes": 780,
+        "task_id": "bc719aa2-04f9-467c-b272-ddf8f003c0f1",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
         "id": "5cbaab31-7840-4211-babe-ec7db87362bb",
         "title": "Waterbottles",
         "day_date": "2026-04-19",
@@ -7819,6 +7880,20 @@
         "rec_id": null,
         "shop_id": null,
         "done": true
+      },
+      {
+        "id": "870d79e9-f3e2-4b18-a777-4395ccc9d967",
+        "title": "Stretch",
+        "day_date": "2026-05-15",
+        "start_time": "14:30:00",
+        "duration_minutes": 30,
+        "category": "Home",
+        "created_at": "2026-05-14T22:00:29.700484+00:00",
+        "start_minutes": 870,
+        "task_id": "77c89174-0a63-4fd3-800f-21adb5f297b8",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
       },
       {
         "id": "34f655d1-970b-4231-8f9f-0a3ad748937e",
@@ -9781,18 +9856,32 @@
         "done": true
       },
       {
-        "id": "390d8f37-f37b-42af-8623-573662e88677",
-        "title": "Pool party @5pm",
+        "id": "90543625-e4ba-4f88-b398-23b23b05e987",
+        "title": "Respond kats post",
         "day_date": "2026-05-14",
-        "start_time": "17:00:00",
-        "duration_minutes": 180,
-        "category": "Social",
-        "created_at": "2026-05-13T13:30:02.919624+00:00",
-        "start_minutes": 1020,
-        "task_id": "9efb95de-5f88-4e2d-9f17-b32b2495fe95",
+        "start_time": "10:30:00",
+        "duration_minutes": 30,
+        "category": "Home",
+        "created_at": "2026-05-14T19:45:42.340476+00:00",
+        "start_minutes": 810,
+        "task_id": "913e628e-3bc1-4d7b-8c92-d39ae47b311a",
         "rec_id": null,
         "shop_id": null,
-        "done": false
+        "done": true
+      },
+      {
+        "id": "4ca242a5-8728-4ecf-9540-13e1937f06df",
+        "title": "Respond linkedin",
+        "day_date": "2026-05-14",
+        "start_time": "11:00:00",
+        "duration_minutes": 30,
+        "category": "Home",
+        "created_at": "2026-05-14T19:45:42.3456+00:00",
+        "start_minutes": 840,
+        "task_id": "9dddea10-5c33-49e5-a489-54e38bacc597",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
       },
       {
         "id": "e3109f52-cdff-4803-802c-b7b6f64148c0",
@@ -9807,6 +9896,20 @@
         "rec_id": "10",
         "shop_id": null,
         "done": false
+      },
+      {
+        "id": "390d8f37-f37b-42af-8623-573662e88677",
+        "title": "Pool party @5pm",
+        "day_date": "2026-05-14",
+        "start_time": "17:00:00",
+        "duration_minutes": 180,
+        "category": "Social",
+        "created_at": "2026-05-13T13:30:02.919624+00:00",
+        "start_minutes": 1020,
+        "task_id": "9efb95de-5f88-4e2d-9f17-b32b2495fe95",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
       },
       {
         "id": "aa3b42a5-ae34-479c-9bd9-9aa188383312",
@@ -9877,20 +9980,6 @@
         "rec_id": null,
         "shop_id": null,
         "done": true
-      },
-      {
-        "id": "84961875-dd65-4df3-bcf6-9a0b67fd10ec",
-        "title": "VO drill down",
-        "day_date": "2026-05-14",
-        "start_time": "13:30:00",
-        "duration_minutes": 60,
-        "category": "My work",
-        "created_at": "2026-05-14T12:27:53.560227+00:00",
-        "start_minutes": 810,
-        "task_id": "d687cd58-082d-493b-a334-45e8017f3e88",
-        "rec_id": null,
-        "shop_id": null,
-        "done": false
       },
       {
         "id": "3cb3ac17-7b7f-491d-a44e-a509e8ce9d68",
@@ -10047,20 +10136,6 @@
         "done": true
       },
       {
-        "id": "69cd1c32-860c-49be-a96c-be84d45d1b8d",
-        "title": "Stretch",
-        "day_date": "2026-05-13",
-        "start_time": "12:00:00",
-        "duration_minutes": 30,
-        "category": "Home",
-        "created_at": "2026-05-14T12:48:43.532665+00:00",
-        "start_minutes": 720,
-        "task_id": "e0b54e7f-e011-438d-b39d-68f07ffd3b5e",
-        "rec_id": null,
-        "shop_id": null,
-        "done": false
-      },
-      {
         "id": "11463a85-a6ef-4274-9228-b8020891a960",
         "title": "Icons",
         "day_date": "2026-05-13",
@@ -10085,6 +10160,48 @@
         "start_minutes": 780,
         "task_id": "0229bedc-773f-4ab3-8332-cab3d894dd67",
         "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "08ef7283-0d74-4117-97a7-3dccf79cc5ec",
+        "title": "VO drill down",
+        "day_date": "2026-05-15",
+        "start_time": "13:30:00",
+        "duration_minutes": 60,
+        "category": "My work",
+        "created_at": "2026-05-14T19:17:29.974778+00:00",
+        "start_minutes": 810,
+        "task_id": "d687cd58-082d-493b-a334-45e8017f3e88",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "69cd1c32-860c-49be-a96c-be84d45d1b8d",
+        "title": "Stretch",
+        "day_date": "2026-05-13",
+        "start_time": "12:00:00",
+        "duration_minutes": 30,
+        "category": "Home",
+        "created_at": "2026-05-14T12:48:43.532665+00:00",
+        "start_minutes": 720,
+        "task_id": "77c89174-0a63-4fd3-800f-21adb5f297b8",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "a9d91bff-cbd2-4d67-a95f-519c4e31d1bd",
+        "title": "Pups teeth",
+        "day_date": "2026-05-14",
+        "start_time": "12:00:00",
+        "duration_minutes": 30,
+        "category": "Recurring",
+        "created_at": "2026-05-14T19:45:42.336808+00:00",
+        "start_minutes": 900,
+        "task_id": null,
+        "rec_id": "10",
         "shop_id": null,
         "done": false
       }

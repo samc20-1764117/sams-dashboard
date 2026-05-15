@@ -1632,7 +1632,7 @@ function _vidRenderAnalytics(){
     <div style="display:flex;gap:3px;align-items:center">${tBtn('monthly','Monthly','period')}${tBtn('yearly','Yearly','period')}</div>
     ${_dateToggle}
     <div style="flex:1"></div>
-    <span style="font-size:10px;color:var(--muted);white-space:nowrap;line-height:1">${summaryText}</span>
+    <span style="font-size:11px;color:var(--muted);white-space:nowrap;line-height:1">${summaryText}</span>
   </div>`;
   // Forecast for current month: blend current pace with historical avg
   const _daysInMonth=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
@@ -1662,23 +1662,23 @@ function _vidRenderAnalytics(){
       const forecastFlex=forecastPct-actualFlex;
       trendHtml+=`<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:2px;height:100%">
         <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;width:100%">
-          <span style="font-size:9px;color:var(--muted);white-space:nowrap;margin-bottom:3px">${fmtFn(forecast)}</span>
+          <span style="font-size:11px;color:var(--muted);white-space:nowrap;margin-bottom:3px">${fmtFn(forecast)}</span>
           <div style="width:55%;height:${forecastPct}%;display:flex;flex-direction:column;align-items:stretch">
             <div style="flex:${forecastFlex};background:repeating-linear-gradient(135deg,${trendColorCur},${trendColorCur} 2px,transparent 2px,transparent 5px);border-radius:4px 4px 0 0;min-height:2px;opacity:.5"></div>
             <div style="flex:${actualFlex};background:${trendColorCur};border-radius:0 0 4px 4px;min-height:3px;box-shadow:0 0 0 1.5px rgba(120,113,145,.3);display:flex;align-items:flex-start;justify-content:center;overflow:visible;position:relative">
-              <span style="font-size:8px;color:#fff;font-weight:600;white-space:nowrap;position:absolute;top:2px">${m.fmt}</span>
+              <span style="font-size:10px;color:#fff;font-weight:600;white-space:nowrap;position:absolute;top:2px">${m.fmt}</span>
             </div>
           </div>
         </div>
-        <span style="font-size:9px;margin-top:4px;font-weight:700;color:var(--text)">${label}</span>
+        <span style="font-size:11px;margin-top:4px;font-weight:700;color:var(--text)">${label}</span>
       </div>`;
     } else {
       trendHtml+=`<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:2px;height:100%">
         <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;width:100%">
-          <span style="font-size:9px;color:var(--muted);white-space:nowrap;margin-bottom:3px">${m.fmt}</span>
+          <span style="font-size:11px;color:var(--muted);white-space:nowrap;margin-bottom:3px">${m.fmt}</span>
           <div style="width:55%;height:${pct}%;background:${isCur?trendColorCur:trendColor};border-radius:4px;min-height:3px${isCur?';box-shadow:0 0 0 1.5px rgba(120,113,145,.3)':''}" title="${m.key+': '+m.fmt}"></div>
         </div>
-        <span style="font-size:9px;margin-top:4px;${isCur?'font-weight:700;color:var(--text)':'color:var(--muted)'}">${label}</span>
+        <span style="font-size:11px;margin-top:4px;${isCur?'font-weight:700;color:var(--text)':'color:var(--muted)'}">${label}</span>
       </div>`;
     }
   });
@@ -1820,31 +1820,31 @@ function _vidRenderAnalytics(){
 
   // KPIs full width
   const _kStat2=(label,val,spark)=>`${spark||''}<div style="min-width:0;text-align:center;flex:1"><div style="font-size:9px;color:var(--muted);white-space:nowrap">${label}</div><div style="font-size:15px;font-weight:700;color:var(--text);white-space:nowrap">${val}</div></div>`;
-  // KPIs full width
-  h+='<div style="display:flex;gap:8px;align-items:stretch;margin-bottom:12px">';
-  h+=`<div style="background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:12px 14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;flex:1" onclick="_ytShowUnreplied()"><div style="font-size:15px;font-weight:700;color:#ef4444">${_unrepliedN}</div><div style="font-size:9px;color:var(--muted)">Unreplied</div></div>`;
-  h+=`${_kc2("_anKpiModal('views')")}${_kStat2('Views',_ytNum(totalViews),sparkline(_spViews))}</div>`;
-  h+=`${_kc2("_anKpiModal('avg')")}${_kStat2('Avg/Video',_ytNum(avgViews),sparkline(_spAvg))}</div>`;
-  h+=`${_kc2("_anKpiModal('videos')")}${_kStat2('Videos',String(merged.length),sparkline(_spVids))}</div>`;
-  h+=`${_kc2("_anKpiModal('revenue')")}${_kStat2(_revLabel,_revValue,sparkline(_spRevReal))}</div>`;
-  h+=`${_kc2("_anKpiModal('subscribers')")}${_kStat2('Subscribers',cs?_ytNum(cs.subscribers):'-')}</div>`;
-  h+='</div>';
-  // 2-col: chart (left) | topic filter + insights (right)
-  h+=`<div style="display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:12px;align-items:stretch">`;
-  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column">${trendHtml}</div>`;
-  h+=`<div style="display:flex;flex-direction:column;gap:12px">`;
-  // Topic filter — compact
+  // Top row: topic filter + insights (left) | KPIs (right)
+  h+=`<div style="display:grid;grid-template-columns:1fr 2fr;gap:12px;margin-bottom:12px;align-items:start">`;
+  // Left column: topic filter + insights
+  h+=`<div style="display:flex;flex-direction:column;gap:10px">`;
   h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:10px;padding:8px 14px;position:relative;flex-shrink:0">
     <div style="font-size:10px;color:var(--muted);margin-bottom:3px">Filter by topic</div>
     <input id="anTopicInput" type="text" placeholder="All topics" value="${_anTopicFilter==='all'?'':_esc(_anTopicFilter)}" oninput="_anTopicInputChange(this.value)" onfocus="_anTopicShowList()" style="width:100%;padding:4px 8px;border:1px solid ${_anTopicFilter!=='all'?'rgba(139,92,246,.4)':'var(--border)'};border-radius:6px;font-family:inherit;font-size:11px;background:${_anTopicFilter!=='all'?'rgba(139,92,246,.04)':'var(--bg)'};color:var(--text);outline:none;box-sizing:border-box">
     ${_anTopicFilter!=='all'?'<button onclick="_anTopicFilter=\'all\';renderVideosPageKeepScroll()" style="position:absolute;right:20px;bottom:10px;background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);line-height:1">✕</button>':''}
     <div id="anTopicList" style="display:none;position:absolute;top:100%;left:0;right:0;margin-top:2px;background:var(--bg);border:1px solid var(--border);border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,.1);z-index:100;max-height:150px;overflow-y:auto"></div>
   </div>`;
-  // Strategy insights — fills remaining height
-  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:16px 18px;overflow-y:auto;flex:1">
+  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:14px 16px;overflow-y:auto">
     <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:8px">Insights</div>${stratHtml}</div>`;
-  h+='</div>'; // close right column
-  h+='</div>'; // close 2-col grid
+  h+='</div>';
+  // Right column: KPIs grid
+  h+='<div style="display:flex;gap:8px;align-items:stretch;flex-wrap:wrap">';
+  h+=`<div style="background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:12px 14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;flex:1;min-width:80px" onclick="_ytShowUnreplied()"><div style="font-size:15px;font-weight:700;color:#ef4444">${_unrepliedN}</div><div style="font-size:9px;color:var(--muted)">Unreplied</div></div>`;
+  h+=`${_kc2("_anKpiModal('views')")}${_kStat2('Views',_ytNum(totalViews),sparkline(_spViews))}</div>`;
+  h+=`${_kc2("_anKpiModal('avg')")}${_kStat2('Avg/Video',_ytNum(avgViews),sparkline(_spAvg))}</div>`;
+  h+=`${_kc2("_anKpiModal('videos')")}${_kStat2('Videos',String(merged.length),sparkline(_spVids))}</div>`;
+  h+=`${_kc2("_anKpiModal('revenue')")}${_kStat2(_revLabel,_revValue,sparkline(_spRevReal))}</div>`;
+  h+=`${_kc2("_anKpiModal('subscribers')")}${_kStat2('Subscribers',cs?_ytNum(cs.subscribers):'-')}</div>`;
+  h+='</div>';
+  h+='</div>'; // close top row grid
+  // Bar chart — full width
+  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;margin-bottom:12px">${trendHtml}</div>`;
   // Do More Like This + Try Next — full width below
   h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">';
 
@@ -2007,8 +2007,16 @@ function _vidSearchKey(e){
   const sgOpen=sg&&sg.style.display!=='none';
   if(e.key==='Escape'){_vidSearch='';_vidMatchIds=[];document.getElementById('vidSearchInput').value='';if(sg)sg.style.display='none';renderVideosPage();return;}
   if(e.key==='Enter'){e.preventDefault();if(sgOpen){const act=sg.querySelector('.vid-sg-active');if(act){act.dispatchEvent(new MouseEvent('mousedown',{bubbles:true}));return;}sg.style.display='none';}_vidSearchNav(e.shiftKey?-1:1);return;}
-  if(e.key==='ArrowDown'){e.preventDefault();if(sgOpen){const items=sg.querySelectorAll('.vid-sg-item');const act=sg.querySelector('.vid-sg-active');let idx=0;items.forEach((it,i)=>{if(it===act)idx=i+1;});if(idx>=items.length)idx=0;items.forEach(it=>it.classList.remove('vid-sg-active'));if(items[idx])items[idx].classList.add('vid-sg-active');}else{_vidSearchNav(1);}return;}
-  if(e.key==='ArrowUp'){e.preventDefault();if(sgOpen){const items=sg.querySelectorAll('.vid-sg-item');const act=sg.querySelector('.vid-sg-active');let idx=items.length-1;items.forEach((it,i)=>{if(it===act)idx=i-1;});if(idx<0)idx=items.length-1;items.forEach(it=>it.classList.remove('vid-sg-active'));if(items[idx])items[idx].classList.add('vid-sg-active');}else{_vidSearchNav(-1);}return;}
+  if(e.key==='ArrowDown'){e.preventDefault();if(sgOpen){const items=sg.querySelectorAll('.vid-sg-item');const act=sg.querySelector('.vid-sg-active');let idx=0;items.forEach((it,i)=>{if(it===act)idx=i+1;});if(idx>=items.length)idx=0;items.forEach(it=>it.classList.remove('vid-sg-active'));if(items[idx]){items[idx].classList.add('vid-sg-active');_vidScrollToSuggestion(items[idx]);}}else{_vidSearchNav(1);}return;}
+  if(e.key==='ArrowUp'){e.preventDefault();if(sgOpen){const items=sg.querySelectorAll('.vid-sg-item');const act=sg.querySelector('.vid-sg-active');let idx=items.length-1;items.forEach((it,i)=>{if(it===act)idx=i-1;});if(idx<0)idx=items.length-1;items.forEach(it=>it.classList.remove('vid-sg-active'));if(items[idx]){items[idx].classList.add('vid-sg-active');_vidScrollToSuggestion(items[idx]);}}else{_vidSearchNav(-1);}return;}
+}
+function _vidScrollToSuggestion(item){
+  if(!item)return;
+  const id=item.dataset.vidId;
+  if(id){
+    const row=document.querySelector('.vid-dash-row[data-vid="'+id+'"]')||document.querySelector('.vid-row[data-vid="'+id+'"]');
+    if(row){document.querySelectorAll('.vid-dash-row,.vid-row').forEach(r=>{if(r._vidHl){r.style.background='';r._vidHl=false;}});row.scrollIntoView({block:'center',behavior:'smooth'});row.style.transition='background .2s';row.style.background='rgba(139,92,246,.12)';row._vidHl=true;}
+  }
 }
 function _vidShowSuggestions(q){
   const sg=document.getElementById('vidSearchSuggestions');if(!sg)return;
@@ -2026,10 +2034,6 @@ function _vidShowSuggestions(q){
   const topicCounts={};
   vids.forEach(v=>{if(v.topic&&v.topic.toLowerCase().includes(lq)){topicCounts[v.topic]=(topicCounts[v.topic]||0)+1;}});
   Object.entries(topicCounts).sort((a,b)=>b[1]-a[1]).slice(0,4).forEach(([t])=>add('topic',t));
-  // Playlists
-  const playlists=new Set();
-  vids.forEach(v=>{if(v.playlist&&v.playlist.toLowerCase().includes(lq))playlists.add(v.playlist);});
-  [...playlists].slice(0,3).forEach(p=>add('playlist',p));
   // Titles (starts-with first, then contains) — deduplicate and exclude L children that duplicate B parent titles
   const titleSeen=new Set();
   const starts=[],contains=[];
