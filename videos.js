@@ -4,7 +4,7 @@ let _ytAnalytics=null,_ytAnalyticsFetched=false;
 function _ytEsc(s){return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function _ytDur(iso){var m=iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);if(!m)return'0:00';var h=m[1]?parseInt(m[1]):0,min=m[2]?parseInt(m[2]):0,s=m[3]?parseInt(m[3]):0;if(h)return h+':'+String(min).padStart(2,'0')+':'+String(s).padStart(2,'0');return min+':'+String(s).padStart(2,'0');}
 function _ytNum(n){if(n>=1000000)return(n/1000000).toFixed(1)+'M';if(n>=1000)return(n/1000).toFixed(1)+'K';return String(n);}
-function _fmtDur(m){const s=m.toFixed(2);return s.padStart(5,'\u2007');}
+function _fmtDur(m){return m.toFixed(2);}
 function _ytBuildMatch(){
   if(!_ytData||!_ytData.videos||!st.videos){console.log('[YT] _ytBuildMatch bail:',!_ytData,!_ytData?.videos,!st.videos);return;}
   _ytMatch={};
@@ -572,10 +572,10 @@ function _vidDashRow(v,isChild,simple){
     </div>
     <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
       <div style="display:flex;align-items:center;gap:0">${VID_STEPS.map(s=>`<div style="width:28px;text-align:center;display:flex;align-items:center;justify-content:center"><div class="vid-step-dot${v[s]==='done'?' done':v[s]==='na'?' na':''}" data-vid="${sid}" data-step="${s}" title="${VID_STEP_LABELS[s]}"></div></div>`).join('')}</div>
-      <span data-field="post_date" style="width:52px;text-align:right;font-size:11px;color:${_vidDateColor(v.post_date,v)};cursor:pointer;min-height:16px;display:inline-block">${postStr||''}</span>
-      <span data-field="duration_minutes" style="width:36px;text-align:right;font-size:11px;color:var(--muted);cursor:pointer;min-height:16px;display:inline-block;font-variant-numeric:tabular-nums">${durStr||''}</span>
-      ${(()=>{const ym=_ytForVid(sid);return ym?'<span style="width:42px;text-align:right;font-size:11px;color:var(--muted);display:inline-block;font-variant-numeric:tabular-nums" title="'+ym.views+' views / '+ym.likes+' likes">'+_ytNum(ym.views)+'</span>':(_ytMatch?'<span style="width:42px;display:inline-block"></span>':'');})()}
-      <span style="width:28px;text-align:right;font-size:9px;color:var(--muted);font-weight:500;display:inline-block">${_pctVal}</span>
+      <span class="vid-num" data-field="post_date" style="width:52px;text-align:right;font-size:11px;color:${_vidDateColor(v.post_date,v)};cursor:pointer;min-height:16px;display:inline-block">${postStr||''}</span>
+      <span class="vid-num" data-field="duration_minutes" style="width:36px;text-align:right;font-size:11px;color:var(--muted);cursor:pointer;min-height:16px;display:inline-block">${durStr||''}</span>
+      ${(()=>{const ym=_ytForVid(sid);return ym?'<span class="vid-num" style="width:42px;text-align:right;font-size:11px;color:var(--muted);display:inline-block" title="'+ym.views+' views / '+ym.likes+' likes">'+_ytNum(ym.views)+'</span>':(_ytMatch?'<span style="width:42px;display:inline-block"></span>':'');})()}
+      <span class="vid-num" style="width:28px;text-align:right;font-size:11px;color:var(--muted);font-weight:500;display:inline-block">${_pctVal}</span>
       <button class="vid-del" data-vid="${sid}">✕</button>
     </div>
   </div>`;
@@ -1086,7 +1086,7 @@ function _vidRenderTable(){
         <th style="width:36px;text-align:center;${thStyle}" onclick="vidTblSort('duration')">Dur${_vidSortArrow('duration')}</th>
         <th style="width:28px"></th>
         <th style="width:70px;background:var(--bg);${thStyle}" onclick="vidTblSort('status')">Status${_vidSortArrow('status')}</th>
-        ${_ytMatch?'<th style="width:38px;text-align:right;font-size:9px;background:var(--bg)">Views</th><th style="width:38px;text-align:right;font-size:9px;background:var(--bg)">Likes</th><th style="width:42px;text-align:right;font-size:9px;background:var(--bg)">Comments</th>':''}
+        ${_ytMatch?'<th style="width:38px;text-align:right;background:var(--bg)">Views</th><th style="width:38px;text-align:right;background:var(--bg)">Likes</th><th style="width:42px;text-align:right;background:var(--bg)">Cmts</th>':''}
         <th style="width:30px"></th>
       </tr></thead>
       <tbody>${groupedHtml}</tbody>
@@ -1149,11 +1149,11 @@ function _vidRow(v,isChild,postMap){
   return`<tr class="vid-row${sel?' vid-sel':''}" data-vid="${sid}" onclick="vidCellClick(event,'${sid}')" ondblclick="openVidEdit('${sid}')" oncontextmenu="showVidCtx(event,'${sid}')" style="${isBig?'background:rgba(255,255,255,.50)':''}">
     <td data-field="title" style="${indent}${!isChild?'font-weight:600;':''}${titleColor}overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${addBtn}${childMark}${numHtml}${(v.status==='in_progress'||v.status==='up_next')&&v.topic?`<span class="vid-title-text">${_esc(v.topic)}</span><span style="font-size:10px;color:var(--muted);margin-left:4px;font-weight:400">${_titleSuffix}</span>`:`<span class="vid-title-text">${_esc(v.title)}</span>`}${isBig?(()=>{const _kc=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===sid).length;return _kc?`<span style="font-size:9px;color:rgba(140,135,160,.7);font-weight:400;margin-left:4px;position:relative;top:0.5px">(${_kc})</span>`:''})():''}</td>
     <td style="padding:3px 0"><div style="display:flex;align-items:center;gap:0">${VID_STEPS.map(s=>`<div style="width:28px;text-align:center;display:flex;align-items:center;justify-content:center"><div class="vid-step-dot${v[s]==='done'?' done':v[s]==='na'?' na':''}" data-vid="${sid}" data-step="${s}" title="${VID_STEP_LABELS[s]}"></div></div>`).join('')}</div></td>
-    <td data-field="post_date" style="text-align:right;font-size:11px;color:${_vidDateColor(v.post_date,v)}">${postStr}</td>
-    <td data-field="duration_minutes" style="text-align:right;font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums">${durStr}</td>
-    <td style="text-align:right;font-size:9px;color:var(--muted);font-weight:500">${(v.status==='in_progress'||v.status==='up_next')&&_tblPct>0&&_tblPct<100?_tblPct+'%':''}</td>
+    <td class="vid-num" data-field="post_date" style="text-align:right;font-size:11px;color:${_vidDateColor(v.post_date,v)}">${postStr}</td>
+    <td class="vid-num" data-field="duration_minutes" style="text-align:right;font-size:11px;color:var(--muted)">${durStr}</td>
+    <td class="vid-num" style="text-align:right;font-size:11px;color:var(--muted);font-weight:500">${(v.status==='in_progress'||v.status==='up_next')&&_tblPct>0&&_tblPct<100?_tblPct+'%':''}</td>
     <td data-field="status"><span class="vid-status-pill" style="background:${sc}12;color:${sc}">${VID_STATUS_LABELS[v.status]||v.status}</span></td>
-    ${_ytMatch?(()=>{const ym=_ytForVid(sid);return ym?'<td style="text-align:right;font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums">'+_ytNum(ym.views)+'</td><td style="text-align:right;font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums">'+_ytNum(ym.likes)+'</td><td style="text-align:right;font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums">'+_ytNum(ym.comments)+'</td>':'<td></td><td></td><td></td>';})():''}
+    ${_ytMatch?(()=>{const ym=_ytForVid(sid);return ym?'<td class="vid-num" style="text-align:right;font-size:11px;color:var(--muted)">'+_ytNum(ym.views)+'</td><td class="vid-num" style="text-align:right;font-size:11px;color:var(--muted)">'+_ytNum(ym.likes)+'</td><td class="vid-num" style="text-align:right;font-size:11px;color:var(--muted)">'+_ytNum(ym.comments)+'</td>':'<td></td><td></td><td></td>';})():''}
     <td><button class="vid-del" data-vid="${sid}">✕</button></td>
   </tr>`;
 }
@@ -1195,11 +1195,11 @@ function _vidBoardCard(v){
     <div style="font-size:12px;font-weight:${v.video_type==='B'||!v.big_video_id?'500':'400'};color:${v.video_type==='L'&&v.big_video_id?'var(--muted)':'var(--text)'};line-height:1.35;margin-bottom:4px">${_esc(v.title)}</div>
     <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:var(--muted)">
       ${postStr?`<span>${postStr}</span>`:''}
-      ${v.duration_minutes?`<span>${v.duration_minutes.toFixed(2)}</span>`:''}
+      ${v.duration_minutes?`<span class="vid-num">${_fmtDur(v.duration_minutes)}</span>`:''}
       <div style="flex:1"></div>
       <div style="display:flex;align-items:center;gap:3px">
         <div style="width:36px;height:4px;background:var(--border);border-radius:2px;overflow:hidden"><div style="width:${pct}%;height:100%;background:#10b981;border-radius:2px"></div></div>
-        <span style="font-size:9px">${pct}%</span>
+        <span class="vid-num" style="font-size:9px">${pct}%</span>
       </div>
     </div>
   </div>`;
