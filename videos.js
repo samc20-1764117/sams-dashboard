@@ -1074,9 +1074,6 @@ function _vidRenderTable(){
   }
   const thStyle='cursor:pointer;user-select:none';
   return`<div>
-    <div class="vid-dash-header">
-      <div style="flex:1;min-width:0;padding-left:10px">All Details</div>
-    </div>
     <table class="vid-tbl" style="table-layout:fixed;width:100%">
       <thead><tr>
         <th style="width:525px;${thStyle}" onclick="vidTblSort('title')">Title${_vidSortArrow('title')}</th>
@@ -1084,8 +1081,8 @@ function _vidRenderTable(){
         <th style="width:62px;text-align:right;${thStyle}" onclick="vidTblSort('posted')">Posted${_vidSortArrow('posted')}</th>
         <th style="width:50px;text-align:right;${thStyle}" onclick="vidTblSort('duration')">Dur${_vidSortArrow('duration')}</th>
         <th style="width:28px"></th>
-        <th style="width:80px;${thStyle}" onclick="vidTblSort('status')">Status${_vidSortArrow('status')}</th>
-        ${_ytMatch?'<th style="width:45px;text-align:right;font-size:9px">Views</th><th style="width:50px;text-align:right;font-size:9px">Likes</th><th style="width:50px;text-align:right;font-size:9px">Comments</th>':''}
+        <th style="width:80px;background:var(--bg);${thStyle}" onclick="vidTblSort('status')">Status${_vidSortArrow('status')}</th>
+        ${_ytMatch?'<th style="width:45px;text-align:right;font-size:9px;background:var(--bg)">Views</th><th style="width:50px;text-align:right;font-size:9px;background:var(--bg)">Likes</th><th style="width:50px;text-align:right;font-size:9px;background:var(--bg)">Comments</th>':''}
         <th style="width:30px"><button onclick="_vidToggleCompleted()" style="font-size:12px;font-weight:700;width:20px;height:20px;line-height:18px;text-align:center;border-radius:5px;border:1.5px solid var(--border);background:${_vidShowCompleted?'rgba(14,165,233,.12)':'var(--bg)'};color:${_vidShowCompleted?'#0ea5e9':'var(--muted)'};cursor:pointer;vertical-align:middle" title="${_vidShowCompleted?'Hide':'Show'} Completed">${_vidShowCompleted?'−':'+'}</button></th>
       </tr></thead>
       <tbody>${groupedHtml}</tbody>
