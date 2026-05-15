@@ -83,7 +83,7 @@ function _ytBuildMatch(){
     var foundUsed=false,foundFree=false;
     for(var j3=0;j3<ytVids.length;j3++){
       if((ytVids[j3].title||'').trim().toLowerCase()===dbTitle){
-        if(usedYt.has(j3)){foundUsed=true;console.log('[YT] Pass3: "'+dv3.title+'" matches YT "'+ytVids[j3].title+'" but YT already used by another DB video');}
+        if(usedYt.has(j3)){foundUsed=true;var stolenBy=dbVids.find(function(x){return _ytMatch[String(x.id)]&&_ytMatch[String(x.id)].ytId===ytVids[j3].id;});console.log('[YT] Pass3: "'+dv3.title+'" (id:'+dv3.id+', date:'+dv3.post_date+') — YT already used by: "'+(stolenBy?stolenBy.title:'')+'" (id:'+(stolenBy?stolenBy.id:'')+', date:'+(stolenBy?stolenBy.post_date:'')+')');}
         else{
           _ytMatch[String(dv3.id)]={views:ytVids[j3].views,likes:ytVids[j3].likes,comments:ytVids[j3].comments,ytId:ytVids[j3].id,publishedAt:ytVids[j3].publishedAt,duration:ytVids[j3].duration};
           usedYt.add(j3);matched++;foundFree=true;break;
@@ -494,11 +494,11 @@ function _vidRenderDashboard(){
         <div style="padding-left:10px">Ideas</div>
       </div>
       <div id="vidDashLeft" style="grid-column:1;grid-row:2;min-height:0;overflow-y:auto;overflow-x:hidden;border-right:1px solid var(--border)">
-        <div class="vid-drop-zone" data-drop-status="up_next" ondragover="_vidDashDragOver(event)" ondragleave="_vidDashDragLeave(event)" ondrop="_vidDashDrop(event,'up_next')" style="min-height:40px;background:rgba(14,165,233,.03);margin-bottom:2px">
+        <div class="vid-drop-zone" data-drop-status="up_next" ondragover="_vidDashDragOver(event)" ondragleave="_vidDashDragLeave(event)" ondrop="_vidDashDrop(event,'up_next')" style="min-height:40px;background:rgba(14,165,233,.03);border-bottom:2px solid rgba(255,255,255,.9)">
           <div style="font-size:9px;font-weight:600;color:#0ea5e9;padding:6px 6px 6px 16px;letter-spacing:.03em;background:rgba(14,165,233,.06);display:flex;align-items:center;border-left:3px solid rgba(14,165,233,.4)">Up Next</div>
           ${upNext.length?_vidDashList(upNext,false):'<div style="color:var(--muted);font-size:11px;padding:8px 10px;opacity:.5">Drag ideas here</div>'}
         </div>
-        <div class="vid-drop-zone" data-drop-status="in_progress" ondragover="_vidDashDragOver(event)" ondragleave="_vidDashDragLeave(event)" ondrop="_vidDashDrop(event,'in_progress')" style="min-height:40px;background:rgba(245,158,11,.03)">
+        <div class="vid-drop-zone" data-drop-status="in_progress" ondragover="_vidDashDragOver(event)" ondragleave="_vidDashDragLeave(event)" ondrop="_vidDashDrop(event,'in_progress')" style="min-height:40px;background:rgba(245,158,11,.03);border-bottom:2px solid rgba(255,255,255,.9)">
           <div style="font-size:9px;font-weight:600;color:#d97706;padding:6px 6px 6px 16px;letter-spacing:.03em;background:rgba(245,158,11,.06);display:flex;align-items:center;border-left:3px solid rgba(245,158,11,.4)">In Progress</div>
           ${inProgress.length?_vidDashList(inProgress,false):'<div style="color:var(--muted);font-size:11px;padding:8px 10px;opacity:.5">Drag up next here to start</div>'}
         </div>
