@@ -32,26 +32,38 @@ function _ytBuildMatch(){
     for(var w=0;w<words.length;w++){if(words[w].length>2&&ytT.indexOf(words[w])>=0)score++;}
     return score;
   }
-  // Pass 1: exact date match
+  // Pass 1a: exact date + exact title (case-insensitive)
   for(var i=0;i<dbVids.length;i++){
     var dv=dbVids[i];
-    if(!dv.post_date)continue;
+    if(!dv.post_date||!dv.title)continue;
+    var candidates=byDate[dv.post_date];
+    if(!candidates)continue;
+    var dbT=dv.title.trim().toLowerCase();
+    var exactJ=candidates.find(function(j){return!usedYt.has(j)&&(ytVids[j].title||'').trim().toLowerCase()===dbT;});
+    if(exactJ!=null){
+      var yt=ytVids[exactJ];
+      _ytMatch[String(dv.id)]={views:yt.views,likes:yt.likes,comments:yt.comments,ytId:yt.id,publishedAt:yt.publishedAt,duration:yt.duration};
+      usedYt.add(exactJ);matched++;
+    }
+  }
+  // Pass 1b: exact date + best title score (must have score >= 2)
+  for(var i=0;i<dbVids.length;i++){
+    var dv=dbVids[i];
+    if(!dv.post_date||_ytMatch[String(dv.id)])continue;
     var candidates=byDate[dv.post_date];
     if(!candidates)continue;
     var avail=candidates.filter(function(j){return!usedYt.has(j);});
     if(!avail.length)continue;
-    var bestJ=avail[0];
-    if(avail.length>1){
-      var bestScore=-1;
-      for(var k=0;k<avail.length;k++){
-        var sc=_ytTitleScore(dv,avail[k]);
-        if(sc>bestScore){bestScore=sc;bestJ=avail[k];}
-      }
+    var bestJ=avail[0],bestScore=-1;
+    for(var k=0;k<avail.length;k++){
+      var sc=_ytTitleScore(dv,avail[k]);
+      if(sc>bestScore){bestScore=sc;bestJ=avail[k];}
     }
-    var yt=ytVids[bestJ];
-    _ytMatch[String(dv.id)]={views:yt.views,likes:yt.likes,comments:yt.comments,ytId:yt.id,publishedAt:yt.publishedAt,duration:yt.duration};
-    usedYt.add(bestJ);
-    matched++;
+    if(bestScore>=2||(avail.length===1&&bestScore>=1)){
+      var yt=ytVids[bestJ];
+      _ytMatch[String(dv.id)]={views:yt.views,likes:yt.likes,comments:yt.comments,ytId:yt.id,publishedAt:yt.publishedAt,duration:yt.duration};
+      usedYt.add(bestJ);matched++;
+    }
   }
   // Pass 2: off-by-one date (UTC timezone shift) + title match
   for(var i2=0;i2<dbVids.length;i2++){
