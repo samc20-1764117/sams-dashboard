@@ -439,9 +439,9 @@ function _vidRenderDashboard(){
   }
   _vidDashVids=all.filter(v=>v.status!=='idea');
   const _colHdr=`<div style="display:flex;align-items:center;gap:6px;flex-shrink:0;padding-right:0">
-            <div style="display:flex;gap:0">${VID_STEPS.map(s=>`<div style="width:28px;text-align:center;font-size:9px" title="${VID_STEP_LABELS[s]}">${VID_STEP_LABELS[s].length<=5?VID_STEP_LABELS[s]:VID_STEP_LABELS[s].slice(0,2)}</div>`).join('')}</div>
-            <span style="width:52px;text-align:right;font-size:9px;display:inline-block">Posted</span>
-            <span style="width:36px;text-align:right;font-size:9px;display:inline-block">Duration</span>
+            <div style="display:flex;gap:0">${VID_STEPS.map(s=>`<div style="width:28px;text-align:center" title="${VID_STEP_LABELS[s]}">${VID_STEP_LABELS[s].length<=5?VID_STEP_LABELS[s]:VID_STEP_LABELS[s].slice(0,2)}</div>`).join('')}</div>
+            <span style="width:52px;text-align:right;display:inline-block">Posted</span>
+            <span style="width:36px;text-align:right;display:inline-block">Duration</span>
             <span style="width:28px;display:inline-block"></span>
             <button class="vid-del" style="visibility:hidden">✕</button>
           </div>`;
@@ -470,7 +470,7 @@ function _vidRenderDashboard(){
         ${(upNext.length||inProgress.length)?_colHdr:''}
       </div>
       <div class="vid-dash-header" style="grid-column:2;grid-row:1">
-        <div style="padding-left:10px">Ideas <span class="vid-count">${ideas.length}</span></div>
+        <div style="padding-left:10px">Ideas</div>
       </div>
       <div id="vidDashLeft" style="grid-column:1;grid-row:2;min-height:0;overflow-y:auto;overflow-x:hidden;border-right:1px solid var(--border)">
         <div class="vid-drop-zone" data-drop-status="up_next" ondragover="_vidDashDragOver(event)" ondragleave="_vidDashDragLeave(event)" ondrop="_vidDashDrop(event,'up_next')" style="min-height:40px;padding-bottom:8px">
@@ -1078,7 +1078,7 @@ function _vidRenderTable(){
     <table class="vid-tbl" style="table-layout:fixed;width:100%">
       <thead><tr>
         <th style="width:525px;padding-left:16px;${thStyle}" onclick="vidTblSort('title')">Title${_vidSortArrow('title')}</th>
-        <th style="width:${VID_STEPS.length*28}px;padding:3px 0"><div style="display:flex;gap:0">${VID_STEPS.map(s=>`<div style="width:28px;text-align:center;font-size:9px" title="${VID_STEP_LABELS[s]}">${VID_STEP_LABELS[s].length<=5?VID_STEP_LABELS[s]:VID_STEP_LABELS[s].slice(0,2)}</div>`).join('')}</div></th>
+        <th style="width:${VID_STEPS.length*28}px;padding:0"><div style="display:flex;gap:0">${VID_STEPS.map(s=>`<div style="width:28px;text-align:center;font-size:10px" title="${VID_STEP_LABELS[s]}">${VID_STEP_LABELS[s].length<=5?VID_STEP_LABELS[s]:VID_STEP_LABELS[s].slice(0,2)}</div>`).join('')}</div></th>
         <th style="width:52px;text-align:right;${thStyle}" onclick="vidTblSort('posted')">Posted${_vidSortArrow('posted')}</th>
         <th style="width:36px;text-align:right;${thStyle}" onclick="vidTblSort('duration')">Duration${_vidSortArrow('duration')}</th>
         <th style="width:28px"></th>
