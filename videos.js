@@ -135,10 +135,7 @@ function _ytBuildMatch(){
     }
   });
   var unmatched=dbVids.filter(v=>v.status==='published'&&!_ytMatch[String(v.id)]);
-  if(unmatched.length)console.log('[YT] Unmatched published:',unmatched.map(v=>'('+v.status+') '+v.post_date+' '+v.title));
-  // Debug: check specific video
-  var roundedBars=dbVids.find(v=>v.title&&v.title.toLowerCase().includes('rounded bars bigger'));
-  if(roundedBars)console.log('[YT] Debug rounded bars: status='+roundedBars.status+', matched='+!!_ytMatch[String(roundedBars.id)]+', id='+roundedBars.id);
+  if(unmatched.length)console.log('[YT] Unmatched published:',unmatched.map(v=>v.title));
 }
 function _ytForVid(id){return _ytMatch?_ytMatch[String(id)]:null;}
 function _ytDurMin(id){const m=_ytForVid(id);return m&&m.duration?Math.round(_ytDurSec(m.duration)/60*100)/100:null;}
@@ -451,6 +448,7 @@ function renderVideosPage(){
       try{localStorage.setItem('_ytCache',JSON.stringify(d));}catch(e){}
       _ytBuildMatch();
       renderVideosPageKeepScroll();
+      _vidScrollToDefault();
     }).catch(function(){});
   }
   // Fetch YouTube Analytics API data (actual revenue) — once per page load
@@ -2076,7 +2074,6 @@ function _vidScrollToDefault(){
     // 3 most recent completed B videos with past post dates (prefer YT date)
     const publishedBigs=(st.videos||[]).filter(v=>!v.is_deleted&&v.status==='published'&&v.video_type==='B');
     const withDates=publishedBigs.map(v=>{const d=_ytPostDate(String(v.id))||v.post_date;return{v,date:d};}).filter(x=>x.date&&x.date<today).sort((a,b)=>b.date.localeCompare(a.date));
-    console.log('[YT] ScrollDefault: '+withDates.length+' published bigs with dates, top3='+withDates.slice(0,3).map(x=>x.date+' '+x.v.title).join(' | '));
     const target=withDates[2]||withDates[withDates.length-1];
     if(!target)return;
     const tid=String(target.v.id);
