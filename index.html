@@ -979,102 +979,96 @@ document.addEventListener('keydown',e=>{
     let ov=document.getElementById('_dbgGrid');
     if(ov){ov.remove();return;}
     ov=document.createElement('div');ov.id='_dbgGrid';
-    ov.style.cssText='position:fixed;inset:0;z-index:99999;pointer-events:none;font-family:monospace;font-size:9px;';
+    ov.style.cssText='position:fixed;inset:0;z-index:99999;pointer-events:none;font-family:monospace;font-size:9px;overflow:visible;';
     const activePage=document.querySelector('.page.active');
     if(!activePage){document.body.appendChild(ov);return;}
     const winW=window.innerWidth,winH=window.innerHeight;
-    // Find all visible cards
-    const allCards=[...activePage.querySelectorAll('.card')].filter(c=>c.offsetParent!==null&&c.getBoundingClientRect().height>0);
-    // Draw subtle boxes around each card (no dimension labels)
-    allCards.forEach(c=>{
+    const mainEl=document.getElementById('main');
+    const mainR=mainEl?mainEl.getBoundingClientRect():{left:0,top:0,right:winW,bottom:winH};
+    // Use CSS computed padding for true edge margins (not card-edge math)
+    const ps=getComputedStyle(activePage);
+    const padT=parseFloat(ps.paddingTop)||0,padL=parseFloat(ps.paddingLeft)||0;
+    const padR=parseFloat(ps.paddingRight)||0,padB=parseFloat(ps.paddingBottom)||0;
+    const pageR=activePage.getBoundingClientRect();
+    // Helper: make a label
+    function mkLbl(x,y,txt,col,bg){const l=document.createElement('div');l.style.cssText=`position:fixed;left:${x}px;top:${y}px;color:${col};font-weight:700;font-size:9px;background:${bg};padding:1px 5px;border-radius:2px;white-space:nowrap;`;l.textContent=txt;ov.appendChild(l);return l;}
+    function mkBand(x,y,w,h,border){const b=document.createElement('div');b.style.cssText=`position:fixed;left:${x}px;top:${y}px;width:${w}px;height:${h}px;background:rgba(0,200,0,.06);${border}`;ov.appendChild(b);}
+    // ── Edge margins (green) — from CSS padding, not card edges ──
+    // Top: from top of #main to content area
+    const edgeTop=Math.round(pageR.top-mainR.top+padT);
+    if(edgeTop>0){
+      mkBand(mainR.left,mainR.top,winW-mainR.left,pageR.top-mainR.top+padT,'border-bottom:2px solid rgba(0,180,0,.5);');
+      mkLbl(winW/2-20,mainR.top+(pageR.top-mainR.top+padT)/2-6,edgeTop+'px','#090','rgba(200,255,200,.9)');
+    }
+    // Left
+    const edgeLeft=Math.round(padL);
+    if(edgeLeft>0){
+      const cTop=pageR.top+padT;
+      mkBand(pageR.left,cTop,padL,Math.min(300,winH-cTop),'border-right:2px solid rgba(0,180,0,.5);');
+      mkLbl(pageR.left+padL/2-12,cTop+40,edgeLeft+'px','#090','rgba(200,255,200,.9)');
+    }
+    // Right
+    const edgeRight=Math.round(padR);
+    if(edgeRight>0){
+      const cTop=pageR.top+padT;
+      mkBand(pageR.right-padR,cTop,padR,Math.min(300,winH-cTop),'border-left:2px solid rgba(0,180,0,.5);');
+      mkLbl(pageR.right-padR/2-12,cTop+40,edgeRight+'px','#090','rgba(200,255,200,.9)');
+    }
+    // Bottom
+    if(padB>0){
+      const cBot=pageR.bottom-padB;
+      mkBand(pageR.left+padL,cBot,pageR.width-padL-padR,padB,'border-top:2px solid rgba(0,180,0,.5);');
+      mkLbl(winW/2-20,cBot+padB/2-6,Math.round(padB)+'px','#090','rgba(200,255,200,.9)');
+    }
+    // ── Find ALL visible block elements (headers, containers, cards) ──
+    const els=[...activePage.querySelectorAll(':scope > *, .card, .overview-cols, .overview-left, .overview-right, .row1-right-panel, .row1-right-top, .ch, .tod-tb-header, .ov-topbar, .topbar, .vid-tabs, .vid-header, .vid-content, .wk-header, .bday-header, .pup-header, .recipe-header')].filter(el=>{
+      if(!el.offsetParent&&el.offsetParent!==document.body)return false;
+      const r=el.getBoundingClientRect();
+      return r.height>0&&r.width>20&&r.top<winH&&r.bottom>0;
+    });
+    // Dedupe by element reference
+    const seen=new Set();const uniq=[];els.forEach(el=>{if(!seen.has(el)){seen.add(el);uniq.push(el);}});
+    // Draw outlines on cards
+    uniq.filter(c=>c.classList.contains('card')).forEach(c=>{
       const r=c.getBoundingClientRect();
       const box=document.createElement('div');
-      box.style.cssText=`position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;border:1px solid rgba(255,0,0,.4);`;
+      box.style.cssText=`position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;border:1px solid rgba(255,0,0,.35);`;
       ov.appendChild(box);
     });
-    // Measure gaps between adjacent cards
-    for(let i=0;i<allCards.length;i++){
-      for(let j=i+1;j<allCards.length;j++){
-        const a=allCards[i].getBoundingClientRect(),b=allCards[j].getBoundingClientRect();
-        // Horizontal gap
-        if(Math.abs(a.top-b.top)<10&&a.right<b.left&&(b.left-a.right)<60){
-          const gap=Math.round(b.left-a.right);
-          const midY=Math.max(a.top,b.top)+Math.min(a.height,b.height)/2;
-          const lbl=document.createElement('div');
-          lbl.style.cssText=`position:fixed;left:${a.right}px;top:${midY-8}px;width:${gap}px;text-align:center;color:#e00;font-weight:700;background:rgba(255,200,200,.8);padding:1px 0;font-size:8px;`;
-          lbl.textContent=gap+'px';
-          const line=document.createElement('div');
-          line.style.cssText=`position:fixed;left:${a.right}px;top:${Math.max(a.top,b.top)}px;width:${gap}px;height:${Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)}px;background:rgba(255,0,0,.05);border-left:1px dashed rgba(255,0,0,.3);border-right:1px dashed rgba(255,0,0,.3);`;
-          ov.appendChild(line);ov.appendChild(lbl);
-        }
-        // Vertical gap
-        if(Math.abs(a.left-b.left)<10&&a.bottom<b.top&&(b.top-a.bottom)<50){
-          const gap=Math.round(b.top-a.bottom);
-          const lbl=document.createElement('div');
-          lbl.style.cssText=`position:fixed;left:${a.left-28}px;top:${a.bottom+(gap/2)-6}px;color:#00c;font-weight:700;font-size:8px;background:rgba(200,200,255,.8);padding:1px 3px;`;
-          lbl.textContent=gap+'px';
-          const line=document.createElement('div');
-          line.style.cssText=`position:fixed;left:${a.left}px;top:${a.bottom}px;width:${a.width}px;height:${gap}px;background:rgba(0,0,255,.04);border-top:1px dashed rgba(0,0,255,.3);border-bottom:1px dashed rgba(0,0,255,.3);`;
-          ov.appendChild(line);ov.appendChild(lbl);
-        }
+    // Sort elements by vertical position then horizontal
+    uniq.sort((a,b)=>{const ar=a.getBoundingClientRect(),br=b.getBoundingClientRect();return(ar.top-br.top)||ar.left-br.left;});
+    // Measure vertical gaps between sequential elements
+    for(let i=0;i<uniq.length;i++){
+      const a=uniq[i].getBoundingClientRect();
+      // Find the next element below this one (overlapping x range)
+      for(let j=i+1;j<uniq.length;j++){
+        const b=uniq[j].getBoundingClientRect();
+        if(b.top<a.bottom-2)continue;// overlapping or above
+        const xOverlap=Math.min(a.right,b.right)-Math.max(a.left,b.left);
+        if(xOverlap<20)continue;// not aligned horizontally
+        const gap=Math.round(b.top-a.bottom);
+        if(gap<1||gap>80)continue;
+        // Don't show if parent-child relationship
+        if(uniq[i].contains(uniq[j])||uniq[j].contains(uniq[i]))continue;
+        const line=document.createElement('div');
+        line.style.cssText=`position:fixed;left:${Math.max(a.left,b.left)}px;top:${a.bottom}px;width:${Math.min(a.right,b.right)-Math.max(a.left,b.left)}px;height:${gap}px;background:rgba(0,0,255,.04);border-top:1px dashed rgba(0,0,255,.25);border-bottom:1px dashed rgba(0,0,255,.25);`;
+        ov.appendChild(line);
+        mkLbl(Math.max(a.left,b.left)-28,a.bottom+(gap/2)-6,gap+'px','#00c','rgba(200,200,255,.85)');
+        break;// only measure to nearest below
       }
-    }
-    // ── Dashboard edge margins (green) ──
-    // Find the first visible child of the page to get the real content top
-    const firstChild=[...activePage.children].find(c=>c.offsetParent!==null&&c.getBoundingClientRect().height>0);
-    const pageR=activePage.getBoundingClientRect();
-    const contentTop=firstChild?firstChild.getBoundingClientRect().top:pageR.top;
-    // Also check padding of the page itself
-    const pagePad=getComputedStyle(activePage);
-    // Content left edge = first card's left or page padding
-    const contentLeft=allCards.length?Math.min(...allCards.map(c=>c.getBoundingClientRect().left)):pageR.left+parseFloat(pagePad.paddingLeft||0);
-    const contentRight=allCards.length?Math.max(...allCards.map(c=>c.getBoundingClientRect().right)):pageR.right-parseFloat(pagePad.paddingRight||0);
-    // Top margin: from window top (0) to the very first content element
-    const mT=Math.round(contentTop);
-    if(mT>0){
-      // Green shaded band across full width at top
-      const topBand=document.createElement('div');
-      topBand.style.cssText=`position:fixed;left:0;top:0;width:${winW}px;height:${mT}px;background:rgba(0,200,0,.06);border-bottom:2px solid rgba(0,180,0,.5);`;
-      ov.appendChild(topBand);
-      const topLbl=document.createElement('div');
-      topLbl.style.cssText=`position:fixed;left:${winW/2-20}px;top:${mT/2-6}px;color:#090;font-weight:700;font-size:10px;background:rgba(200,255,200,.85);padding:1px 6px;border-radius:2px;`;
-      topLbl.textContent=mT+'px';
-      ov.appendChild(topLbl);
-    }
-    // Left margin: from window left to content left
-    const mL=Math.round(contentLeft);
-    if(mL>2){
-      const leftBand=document.createElement('div');
-      leftBand.style.cssText=`position:fixed;left:0;top:${contentTop}px;width:${mL}px;height:${Math.min(winH-contentTop,400)}px;background:rgba(0,200,0,.06);border-right:2px solid rgba(0,180,0,.5);`;
-      ov.appendChild(leftBand);
-      const leftLbl=document.createElement('div');
-      leftLbl.style.cssText=`position:fixed;left:${mL/2-12}px;top:${contentTop+30}px;color:#090;font-weight:700;font-size:10px;background:rgba(200,255,200,.85);padding:1px 6px;border-radius:2px;`;
-      leftLbl.textContent=mL+'px';
-      ov.appendChild(leftLbl);
-    }
-    // Right margin: from content right to window right
-    const mR=Math.round(winW-contentRight);
-    if(mR>2){
-      const rightBand=document.createElement('div');
-      rightBand.style.cssText=`position:fixed;right:0;top:${contentTop}px;width:${mR}px;height:${Math.min(winH-contentTop,400)}px;background:rgba(0,200,0,.06);border-left:2px solid rgba(0,180,0,.5);`;
-      ov.appendChild(rightBand);
-      const rightLbl=document.createElement('div');
-      rightLbl.style.cssText=`position:fixed;right:${mR/2-12}px;top:${contentTop+30}px;color:#090;font-weight:700;font-size:10px;background:rgba(200,255,200,.85);padding:1px 6px;border-radius:2px;`;
-      rightLbl.textContent=mR+'px';
-      ov.appendChild(rightLbl);
-    }
-    // Space from header to first card (content top to first card top)
-    if(allCards.length&&firstChild){
-      const headerBottom=firstChild.getBoundingClientRect().bottom;
-      const firstCardTop=Math.min(...allCards.map(c=>c.getBoundingClientRect().top));
-      const hGap=Math.round(firstCardTop-headerBottom);
-      if(hGap>0&&hGap<100){
-        const hLbl=document.createElement('div');
-        hLbl.style.cssText=`position:fixed;left:${contentLeft}px;top:${headerBottom+(hGap/2)-6}px;color:#c60;font-weight:700;font-size:9px;background:rgba(255,230,200,.85);padding:1px 5px;border-radius:2px;`;
-        hLbl.textContent=`header→cards: ${hGap}px`;
-        const hLine=document.createElement('div');
-        hLine.style.cssText=`position:fixed;left:${contentLeft}px;top:${headerBottom}px;width:${contentRight-contentLeft}px;height:${hGap}px;border-top:1px dashed rgba(200,100,0,.3);border-bottom:1px dashed rgba(200,100,0,.3);background:rgba(200,100,0,.03);`;
-        ov.appendChild(hLine);ov.appendChild(hLbl);
+      // Horizontal gaps (side by side, similar top)
+      for(let j=i+1;j<uniq.length;j++){
+        const b=uniq[j].getBoundingClientRect();
+        if(Math.abs(a.top-b.top)>15)continue;
+        if(a.right>=b.left||b.left-a.right>60)continue;
+        if(uniq[i].contains(uniq[j])||uniq[j].contains(uniq[i]))continue;
+        const gap=Math.round(b.left-a.right);
+        if(gap<1)continue;
+        const midY=Math.max(a.top,b.top)+Math.min(a.height,b.height)/2;
+        const line=document.createElement('div');
+        line.style.cssText=`position:fixed;left:${a.right}px;top:${Math.max(a.top,b.top)}px;width:${gap}px;height:${Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)}px;background:rgba(255,0,0,.04);border-left:1px dashed rgba(255,0,0,.25);border-right:1px dashed rgba(255,0,0,.25);`;
+        ov.appendChild(line);
+        mkLbl(a.right+(gap/2)-10,midY-6,gap+'px','#e00','rgba(255,200,200,.85)');
       }
     }
     document.body.appendChild(ov);
