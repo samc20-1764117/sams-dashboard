@@ -79,8 +79,8 @@
 #### Current tab with selection:
 - `Up/Down` — navigate selection (single select, moves to next/prev row, scrolls into view)
 - `Shift+Up/Down` — extend selection (multi-select adjacent rows)
-- `Cmd+Left` — promote status: idea → up_next → in_progress
-- `Cmd+Right` — demote status: in_progress → up_next → idea
+- `Cmd+Right` — promote status: idea → up_next → in_progress
+- `Cmd+Left` — demote status: in_progress → up_next → idea
 - `Cmd+Up/Down` — reorder/sort within column (block move for multi-select)
 - `Escape` — clear selection
 - `Click outside` rows — clear selection

@@ -2929,7 +2929,7 @@ document.addEventListener('keydown',e=>{
     // Promote: idea → up_next → in_progress. Demote: in_progress → up_next → idea
     if(isLeftRight&&(e.metaKey||e.ctrlKey)&&!e.shiftKey&&_vidSelected.size>0){
       e.preventDefault();
-      const map=e.key==='ArrowLeft'
+      const map=e.key==='ArrowRight'
         ?{idea:'up_next',up_next:'in_progress'}
         :{in_progress:'up_next',up_next:'idea'};
       const allIds=new Set([..._vidSelected,..._vidChildSelected]);
