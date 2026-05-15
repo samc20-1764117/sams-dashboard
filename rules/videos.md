@@ -67,12 +67,22 @@
 - `n` — open add modal
 - `e` — expand (show completed, table view only)
 - `c` — collapse (hide completed, table view only)
-- `ArrowLeft/Right` — cycle tabs (dashboard → table → analytics → monthly)
-- `ArrowUp` — scroll to top
-- `ArrowDown` — scroll to bottom
 - `Delete/Backspace` — delete selected
 - `Cmd+C` — copy selected
 - `Cmd+V` — paste/duplicate copied
+
+#### No selection:
+- `ArrowLeft/Right` — cycle tabs (dashboard → table → analytics → monthly)
+- `ArrowUp` — scroll to top
+- `ArrowDown` — scroll to default position
+
+#### Current tab with selection:
+- `Up/Down` — move selection (navigate between rows, single select)
+- `Shift+Up/Down` — extend selection (multi-select adjacent rows)
+- `Cmd+Up/Down` — move between statuses: in_progress ↔ up_next
+- `Cmd+Left/Right` — move between statuses: current (in_progress/up_next) ↔ idea
+- `Option+Up/Down` — reorder/sort within column (swap position)
+- All status moves bring Big video's children along. Works with multi-select.
 
 ### Client-Side Migration
 - `renderVideosPage()` auto-migrates `group_name` → `big_video_id` by matching B video's `group_name` field. Safety net until all data uses `big_video_id`.
