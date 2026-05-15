@@ -438,10 +438,12 @@ function _vidRenderDashboard(){
     upNext=upNext.filter(match);inProgress=inProgress.filter(match);ideas=ideas.filter(match);
   }
   _vidDashVids=all.filter(v=>v.status!=='idea');
+  const _hasYt=!!_ytMatch;
   const _colHdr=`<div style="display:flex;align-items:center;gap:6px;flex-shrink:0;padding-right:0">
             <div style="display:flex;gap:0">${VID_STEPS.map(s=>`<div style="width:28px;text-align:center" title="${VID_STEP_LABELS[s]}">${VID_STEP_LABELS[s].length<=5?VID_STEP_LABELS[s]:VID_STEP_LABELS[s].slice(0,2)}</div>`).join('')}</div>
-            <span style="width:52px;text-align:right;display:inline-block">Posted</span>
-            <span style="width:36px;text-align:right;display:inline-block">Duration</span>
+            <span style="width:52px;text-align:center;display:inline-block;font-size:10px;color:var(--muted);font-weight:600">Posted</span>
+            <span style="width:36px;text-align:center;display:inline-block;font-size:10px;color:var(--muted);font-weight:600">Dur</span>
+            ${_hasYt?'<span style="width:42px;display:inline-block"></span>':''}
             <span style="width:28px;display:inline-block"></span>
             <button class="vid-del" style="visibility:hidden">✕</button>
           </div>`;
@@ -1077,10 +1079,10 @@ function _vidRenderTable(){
   return`<div>
     <table class="vid-tbl" style="table-layout:fixed;width:100%">
       <thead><tr>
-        <th style="width:525px;padding-left:16px;${thStyle}" onclick="vidTblSort('title')">Title${_vidSortArrow('title')}</th>
+        <th style="padding-left:16px;${thStyle}" onclick="vidTblSort('title')">Title${_vidSortArrow('title')}</th>
         <th style="width:${VID_STEPS.length*28}px;padding:0"><div style="display:flex;gap:0">${VID_STEPS.map(s=>`<div style="width:28px;text-align:center;font-size:10px" title="${VID_STEP_LABELS[s]}">${VID_STEP_LABELS[s].length<=5?VID_STEP_LABELS[s]:VID_STEP_LABELS[s].slice(0,2)}</div>`).join('')}</div></th>
         <th style="width:52px;text-align:center;${thStyle}" onclick="vidTblSort('posted')">Posted${_vidSortArrow('posted')}</th>
-        <th style="width:42px;text-align:center;${thStyle}" onclick="vidTblSort('duration')">Dur${_vidSortArrow('duration')}</th>
+        <th style="width:36px;text-align:center;${thStyle}" onclick="vidTblSort('duration')">Dur${_vidSortArrow('duration')}</th>
         <th style="width:28px"></th>
         <th style="width:70px;background:var(--bg);${thStyle}" onclick="vidTblSort('status')">Status${_vidSortArrow('status')}</th>
         ${_ytMatch?'<th style="width:38px;text-align:right;font-size:9px;background:var(--bg)">Views</th><th style="width:38px;text-align:right;font-size:9px;background:var(--bg)">Likes</th><th style="width:42px;text-align:right;font-size:9px;background:var(--bg)">Comments</th>':''}
@@ -2017,15 +2019,11 @@ function _vidSearchNav(dir){
 function _vidScrollToDefault(){
   requestAnimationFrame(()=>{
     const today=new Date().toISOString().slice(0,10);
-    const allBig=(st.videos||[]).filter(v=>!v.is_deleted&&v.status==='published'&&v.video_type==='B');
-    const pastBig=allBig.filter(v=>v.post_date&&v.post_date<today).sort((a,b)=>b.post_date.localeCompare(a.post_date));
-    console.log('[DEFAULT SCROLL] today=',today,'allPublishedBigs=',allBig.map(v=>({id:v.id,title:v.title,post_date:v.post_date})),'pastBig=',pastBig.map(v=>({id:v.id,title:v.title,post_date:v.post_date})));
+    const pastBig=(st.videos||[]).filter(v=>!v.is_deleted&&v.status==='published'&&v.video_type==='B'&&v.post_date&&v.post_date<today).sort((a,b)=>b.post_date.localeCompare(a.post_date));
     const target=pastBig[2]||pastBig[pastBig.length-1];
-    console.log('[DEFAULT SCROLL] target=',target?{id:target.id,title:target.title,post_date:target.post_date}:'none','pastBig.length=',pastBig.length);
     if(!target)return;
     const tid=String(target.id);
     const row=document.querySelector('.vid-dash-row[data-vid="'+tid+'"]')||document.querySelector('.vid-row[data-vid="'+tid+'"]');
-    console.log('[DEFAULT SCROLL] row found=',!!row,'tid=',tid);
     if(row)row.scrollIntoView({block:'start'});
   });
 }
@@ -2895,6 +2893,31 @@ document.addEventListener('keydown',e=>{
   if((e.metaKey||e.ctrlKey)&&e.key==='c'&&_vidSelected.size>0){e.preventDefault();_vidCopied=[];_vidSelected.forEach(id=>{const v=(st.videos||[]).find(x=>String(x.id)===String(id));if(v)_vidCopied.push({...v});});showToast('Copied '+_vidCopied.length+' video(s)','#0ea5e9',1500);return;}
   if((e.metaKey||e.ctrlKey)&&e.key==='v'&&_vidCopied.length>0){e.preventDefault();_vidCopied.forEach(v=>_vidDuplicate(v.id));return;}
   if(e.key==='n'&&!e.metaKey&&!e.ctrlKey){e.preventDefault();openVidModal();return;}
+  // Arrow keys with selection on dashboard: move videos between statuses
+  if(_vidView==='dashboard'&&_vidSelected.size>0&&!e.metaKey&&!e.ctrlKey&&['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)){
+    e.preventDefault();
+    const statusMap={ArrowRight:{in_progress:'idea',up_next:'idea'},ArrowLeft:{idea:'in_progress'},ArrowUp:{in_progress:'up_next'},ArrowDown:{up_next:'in_progress'}};
+    const map=statusMap[e.key]||{};
+    const allIds=new Set([..._vidSelected,..._vidChildSelected]);
+    const vids=[...allIds].map(id=>(st.videos||[]).find(x=>String(x.id)===id)).filter(Boolean);
+    const toMove=vids.filter(v=>map[v.status]);
+    if(!toMove.length)return;
+    const undos=toMove.map(v=>({id:v.id,prev:v.status}));
+    toMove.forEach(v=>{v.status=map[v.status];});
+    // Also move children of Big videos
+    const bigIds=toMove.filter(v=>v.video_type==='B').map(v=>String(v.id));
+    const childrenMoved=[];
+    bigIds.forEach(bid=>{
+      (st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===bid&&!allIds.has(String(c.id))).forEach(c=>{
+        const newSt=map[c.status];if(newSt){childrenMoved.push({id:c.id,prev:c.status});c.status=newSt;}
+      });
+    });
+    save();renderVideosPageKeepScroll();
+    pushUndo(async()=>{[...undos,...childrenMoved].forEach(u=>{const v2=(st.videos||[]).find(x=>String(x.id)===u.id);if(v2)v2.status=u.prev;});save();renderVideosPageKeepScroll();for(const u of[...undos,...childrenMoved])await sbReqSilent('PATCH','videos',{status:u.prev},`?id=eq.${u.id}`);},'Move status');
+    (async()=>{for(const v of[...toMove,...childrenMoved.map(u=>(st.videos||[]).find(x=>String(x.id)===u.id)).filter(Boolean)])await sbReqSilent('PATCH','videos',{status:v.status},`?id=eq.${v.id}`);})();
+    _vidSelected.clear();_vidChildSelected.clear();_applyVidSel();
+    return;
+  }
   if(e.key==='ArrowLeft'&&!e.metaKey&&!e.ctrlKey&&_vidSelected.size===0){e.preventDefault();const tabs=['dashboard','table','analytics','monthly'];const i=tabs.indexOf(_vidView);if(i>0)_vidSetView(tabs[i-1]);return;}
   if(e.key==='ArrowRight'&&!e.metaKey&&!e.ctrlKey&&_vidSelected.size===0){e.preventDefault();const tabs=['dashboard','table','analytics','monthly'];const i=tabs.indexOf(_vidView);if(i<tabs.length-1)_vidSetView(tabs[i+1]);return;}
   if(e.key==='ArrowUp'&&!e.metaKey&&!e.ctrlKey){e.preventDefault();const se=_vidScrollEl();if(se){se.scrollTop=0;}else{const row=document.querySelector('.vid-dash-row,.vid-row');if(row)row.scrollIntoView({block:'start'});}return;}
