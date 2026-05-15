@@ -158,7 +158,7 @@ let _vidSelected=new Set(),_vidChildSelected=new Set(),_vidLastSel=null,_vidCopi
 let _vidCtxId=null;
 let _vidFilter='all';
 let _vidGroupFilter='all';
-let _vidSearch='';
+let _vidSearch='',_vidSearchFilterFn=null;
 let _vidMatchIds=[],_vidMatchIdx=0;
 let _vidView=localStorage.getItem('_vidView')||'dashboard'; // dashboard | table | board | groups
 let _vidSortCol=null,_vidSortDir=1,_vidShowCompleted=true,_vidTableScrolledOnce=false,_vidSearchTs=0;
@@ -201,6 +201,7 @@ function _vidFiltered(){
   let vids=(st.videos||[]).filter(v=>!v.is_deleted);
   if(_vidFilter!=='all')vids=vids.filter(v=>v.status===_vidFilter);
   if(_vidGroupFilter!=='all')vids=vids.filter(v=>String(v.big_video_id)===String(_vidGroupFilter)||String(v.id)===String(_vidGroupFilter));
+  if(_vidSearchFilterFn)vids=vids.filter(_vidSearchFilterFn);
   return vids;
 }
 
@@ -305,7 +306,7 @@ function renderVideosPage(){
             <span id="vidSearchCount" style="font-size:10px;color:var(--muted);white-space:nowrap;margin-right:2px">...</span>
             <button onclick="_vidSearchNav(-1)" style="background:none;border:none;cursor:pointer;padding:0 2px;font-size:10px;color:var(--muted);line-height:1" title="Previous (Shift+Enter)">▲</button>
             <button onclick="_vidSearchNav(1)" style="background:none;border:none;cursor:pointer;padding:0 2px;font-size:10px;color:var(--muted);line-height:1" title="Next (Enter)">▼</button>
-            <button onclick="_vidSearch='';_vidMatchIds=[];document.getElementById('vidSearchInput').value='';document.getElementById('vidSearchSuggestions').style.display='none';renderVideosPage();_vidScrollToDefault()" style="background:none;border:none;cursor:pointer;padding:0 2px;font-size:10px;color:var(--muted);line-height:1" title="Clear (Esc)">✕</button>
+            <button onclick="_vidSearch='';_vidMatchIds=[];_vidSearchFilterFn=null;_vidFilter='all';document.getElementById('vidSearchInput').value='';document.getElementById('vidSearchSuggestions').style.display='none';renderVideosPage();_vidScrollToDefault()" style="background:none;border:none;cursor:pointer;padding:0 2px;font-size:10px;color:var(--muted);line-height:1" title="Clear (Esc)">✕</button>
           </div>`:''}
           <div id="vidSearchSuggestions" style="display:none;position:absolute;top:100%;left:0;margin-top:4px;background:var(--bg);border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.1);z-index:1001;max-height:200px;overflow-y:auto;width:520px"></div>
         </div>
@@ -1956,8 +1957,13 @@ function _vidSetGroup(g){_vidGroupFilter=g;renderVideosPage();}
 function _vidSetSearch(q){
   _vidSearch=q;_vidMatchIdx=0;_vidSearchTs=Date.now();
   // If search cleared, reset any active filter
-  if(!q&&_vidFilter!=='all'){_vidSetFilter('all');return;}
-  if(!q&&_anTopicFilter!=='all'){_anTopicFilter='all';renderVideosPageKeepScroll();return;}
+  if(!q){
+    const hadFilter=_vidFilter!=='all'||_anTopicFilter!=='all'||_vidSearchFilterFn;
+    _vidSearchFilterFn=null;
+    if(_vidFilter!=='all'){_vidSetFilter('all');return;}
+    if(_anTopicFilter!=='all'){_anTopicFilter='all';renderVideosPageKeepScroll();return;}
+    if(hadFilter){renderVideosPageKeepScroll();return;}
+  }
   _vidPostRenderMatches();
   _vidShowSuggestions(q);
   const cnt=document.getElementById('vidSearchCount');
@@ -2025,7 +2031,7 @@ function _vidScrollToMatch(){
 function _vidSearchKey(e){
   const sg=document.getElementById('vidSearchSuggestions');
   const sgOpen=sg&&sg.style.display!=='none';
-  if(e.key==='Escape'){_vidSearch='';_vidMatchIds=[];document.getElementById('vidSearchInput').value='';if(sg)sg.style.display='none';renderVideosPage();_vidScrollToDefault();return;}
+  if(e.key==='Escape'){_vidSearch='';_vidMatchIds=[];_vidSearchFilterFn=null;_vidFilter='all';document.getElementById('vidSearchInput').value='';if(sg)sg.style.display='none';renderVideosPage();_vidScrollToDefault();return;}
   if(e.key==='Enter'){e.preventDefault();if(sgOpen){const act=sg.querySelector('.vid-sg-active');if(act){act.dispatchEvent(new MouseEvent('mousedown',{bubbles:true}));return;}sg.style.display='none';}_vidSearchNav(e.shiftKey?-1:1);return;}
   if(e.key==='ArrowDown'){e.preventDefault();if(sgOpen){const items=sg.querySelectorAll('.vid-sg-item');const act=sg.querySelector('.vid-sg-active');let idx=0;items.forEach((it,i)=>{if(it===act)idx=i+1;});if(idx>=items.length)idx=0;items.forEach(it=>it.classList.remove('vid-sg-active'));if(items[idx]){items[idx].classList.add('vid-sg-active');_vidScrollToSuggestion(items[idx]);}}else{_vidSearchNav(1);}return;}
   if(e.key==='ArrowUp'){e.preventDefault();if(sgOpen){const items=sg.querySelectorAll('.vid-sg-item');const act=sg.querySelector('.vid-sg-active');let idx=items.length-1;items.forEach((it,i)=>{if(it===act)idx=i-1;});if(idx<0)idx=items.length-1;items.forEach(it=>it.classList.remove('vid-sg-active'));if(items[idx]){items[idx].classList.add('vid-sg-active');_vidScrollToSuggestion(items[idx]);}}else{_vidSearchNav(-1);}return;}
@@ -2101,10 +2107,18 @@ function _vidPickSuggestion(text,type){
     _vidSetFilter(st2);
     return;
   }
-  if(type==='topic'&&_vidView==='analytics'){
+  if(type==='topic'){
     _vidSearch=text;_vidMatchIds=[];_vidSearchTs=Date.now();
     const inp2=document.getElementById('vidSearchInput');if(inp2)inp2.value=text;
-    _anTopicFilter=text;renderVideosPageKeepScroll();return;
+    if(_vidView==='analytics'){_anTopicFilter=text;}
+    else{_vidSearchFilterFn=v=>(v.topic||'').toLowerCase()===text.toLowerCase();}
+    renderVideosPageKeepScroll();return;
+  }
+  if(type==='date'){
+    _vidSearch=text;_vidMatchIds=[];_vidSearchTs=Date.now();
+    const inp2=document.getElementById('vidSearchInput');if(inp2)inp2.value=text;
+    _vidSearchFilterFn=v=>_vidDateMatch(v.post_date,text);
+    renderVideosPageKeepScroll();return;
   }
   // Default: scroll to first match
   const inp=document.getElementById('vidSearchInput');if(inp){inp.value=text;inp.focus();}
