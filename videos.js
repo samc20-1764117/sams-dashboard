@@ -20,10 +20,11 @@ function _ytBuildMatch(){
     if(!byDate[ytDate])byDate[ytDate]=[];
     byDate[ytDate].push(j);
   }
+  function _ytNorm(s){return(s||'').toLowerCase().replace(/[\u2018\u2019\u201C\u201D]/g,function(c){return c==='\u2018'||c==='\u2019'?"'":'"';}).replace(/[^\w\s]/g,'').trim();}
   function _ytTitleScore(dv,ytIdx){
-    var words=((dv.title||'')+'  '+(dv.topic||'')).toLowerCase().split(/\s+/).filter(Boolean);
+    var words=_ytNorm((dv.title||'')+'  '+(dv.topic||'')).split(/\s+/).filter(Boolean);
     if(!words.length)return 0;
-    var ytT=(ytVids[ytIdx].title||'').toLowerCase();
+    var ytT=_ytNorm(ytVids[ytIdx].title||'');
     var score=0;
     for(var w=0;w<words.length;w++){if(words[w].length>2&&ytT.indexOf(words[w])>=0)score++;}
     return score;
@@ -34,8 +35,8 @@ function _ytBuildMatch(){
     if(!dv.post_date||!dv.title)continue;
     var candidates=byDate[dv.post_date];
     if(!candidates)continue;
-    var dbT=dv.title.trim().toLowerCase();
-    var exactJ=candidates.find(function(j){return!usedYt.has(j)&&(ytVids[j].title||'').trim().toLowerCase()===dbT;});
+    var dbT=_ytNorm(dv.title);
+    var exactJ=candidates.find(function(j){return!usedYt.has(j)&&_ytNorm(ytVids[j].title)===dbT;});
     if(exactJ!=null){
       var yt=ytVids[exactJ];
       _ytMatch[String(dv.id)]={views:yt.views,likes:yt.likes,comments:yt.comments,ytId:yt.id,publishedAt:yt.publishedAt,duration:yt.duration};
@@ -85,10 +86,10 @@ function _ytBuildMatch(){
   // Pass 3: exact title match — steal back from wrong matches if needed
   var unmatchedBefore=dbVids.filter(v=>v.post_date&&v.status==='published'&&!_ytMatch[String(v.id)]);
   unmatchedBefore.forEach(function(dv3){
-    var dbTitle=dv3.title?dv3.title.trim().toLowerCase():'';
+    var dbTitle=dv3.title?_ytNorm(dv3.title):'';
     if(!dbTitle)return;
     for(var j3=0;j3<ytVids.length;j3++){
-      if((ytVids[j3].title||'').trim().toLowerCase()!==dbTitle)continue;
+      if(_ytNorm(ytVids[j3].title)!==dbTitle)continue;
       if(!usedYt.has(j3)){
         _ytMatch[String(dv3.id)]={views:ytVids[j3].views,likes:ytVids[j3].likes,comments:ytVids[j3].comments,ytId:ytVids[j3].id,publishedAt:ytVids[j3].publishedAt,duration:ytVids[j3].duration};
         usedYt.add(j3);matched++;break;
@@ -98,7 +99,7 @@ function _ytBuildMatch(){
       for(var d=0;d<dbVids.length;d++){var m=_ytMatch[String(dbVids[d].id)];if(m&&m.ytId===ytVids[j3].id){thiefId=String(dbVids[d].id);break;}}
       if(thiefId){
         var thiefV=dbVids.find(function(x){return String(x.id)===thiefId;});
-        var thiefTitle=(thiefV&&thiefV.title||'').trim().toLowerCase();
+        var thiefTitle=_ytNorm(thiefV&&thiefV.title||'');
         if(thiefTitle!==dbTitle){
           // Thief didn't have exact title — reassign to rightful owner
           delete _ytMatch[thiefId];
@@ -2079,7 +2080,7 @@ function _vidScrollToDefault(){
       targets.push(v.big_video_id?(st.videos||[]).find(x=>String(x.id)===key)||v:v);
       if(targets.length>=3)break;
     }
-    const target=targets[targets.length-1];
+    const target=targets[0];
     if(!target)return;
     const tid=String(target.id);
     const row=document.querySelector('.vid-dash-row[data-vid="'+tid+'"]')||document.querySelector('.vid-row[data-vid="'+tid+'"]');
@@ -2736,7 +2737,7 @@ async function saveVidModal(){
       }
       Object.assign(v,data);
       const allStepsDone=VID_STEPS.every(s=>v[s]==='done'||v[s]==='na');
-      const hasFields=v.post_date&&v.duration_minutes&&v.topic&&v.title;
+      const hasFields=v.topic&&v.title;
       if(allStepsDone&&hasFields&&v.status!=='published'){v.status='published';data.status='published';}
       else if((!allStepsDone||!hasFields)&&v.status==='published'){v.status='in_progress';data.status='in_progress';}
       save();renderVideosPageKeepScroll();
@@ -2834,7 +2835,7 @@ async function cycleVidStep(id,step){
   // For B videos: all children must also be complete
   const allDone=VID_STEPS.every(s=>v[s]==='done'||v[s]==='na');
   const wasDone=VID_STEPS.every(s=>(s===step?cur:v[s]||'not_started')==='done'||(s===step?cur:v[s]||'not_started')==='na');
-  const hasFields=v.post_date&&v.duration_minutes&&v.topic&&v.title;
+  const hasFields=v.topic&&v.title;
   const selfComplete=allDone&&hasFields;
   const kidsComplete=v.video_type!=='B'||_vidAllChildrenComplete(v.id);
   if(selfComplete&&kidsComplete&&v.status!=='published'){
