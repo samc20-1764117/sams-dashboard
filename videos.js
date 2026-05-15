@@ -201,7 +201,6 @@ function _vidFiltered(){
   let vids=(st.videos||[]).filter(v=>!v.is_deleted);
   if(_vidFilter!=='all')vids=vids.filter(v=>v.status===_vidFilter);
   if(_vidGroupFilter!=='all')vids=vids.filter(v=>String(v.big_video_id)===String(_vidGroupFilter)||String(v.id)===String(_vidGroupFilter));
-  if(_vidSearch){const q=_vidSearch.toLowerCase();vids=vids.filter(v=>_vidSearchMatch(v,q));}
   return vids;
 }
 
@@ -306,7 +305,7 @@ function renderVideosPage(){
             <span id="vidSearchCount" style="font-size:10px;color:var(--muted);white-space:nowrap;margin-right:2px">...</span>
             <button onclick="_vidSearchNav(-1)" style="background:none;border:none;cursor:pointer;padding:0 2px;font-size:10px;color:var(--muted);line-height:1" title="Previous (Shift+Enter)">▲</button>
             <button onclick="_vidSearchNav(1)" style="background:none;border:none;cursor:pointer;padding:0 2px;font-size:10px;color:var(--muted);line-height:1" title="Next (Enter)">▼</button>
-            <button onclick="_vidSetSearch('');document.getElementById('vidSearchInput').value=''" style="background:none;border:none;cursor:pointer;padding:0 2px;font-size:10px;color:var(--muted);line-height:1" title="Clear (Esc)">✕</button>
+            <button onclick="_vidSearch='';_vidMatchIds=[];document.getElementById('vidSearchInput').value='';document.getElementById('vidSearchSuggestions').style.display='none';renderVideosPage()" style="background:none;border:none;cursor:pointer;padding:0 2px;font-size:10px;color:var(--muted);line-height:1" title="Clear (Esc)">✕</button>
           </div>`:''}
           <div id="vidSearchSuggestions" style="display:none;position:absolute;top:100%;left:0;margin-top:4px;background:var(--bg);border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.1);z-index:1001;max-height:200px;overflow-y:auto;width:420px"></div>
         </div>
@@ -1821,10 +1820,9 @@ function _vidRenderAnalytics(){
     }
   }
 
-  // KPIs full width
   const _kStat2=(label,val,spark)=>`${spark||''}<div style="min-width:0;text-align:center;flex:1"><div style="font-size:9px;color:var(--muted);white-space:nowrap">${label}</div><div style="font-size:15px;font-weight:700;color:var(--text);white-space:nowrap">${val}</div></div>`;
-  // Top row: topic filter + insights (left) | KPIs (right)
-  h+=`<div style="display:grid;grid-template-columns:1fr 2fr;gap:12px;margin-bottom:12px;align-items:start">`;
+  // 2-col: left = topic filter + insights | right = KPIs + bar chart
+  h+=`<div style="display:grid;grid-template-columns:1fr 2.5fr;gap:12px;margin-bottom:12px;align-items:start">`;
   // Left column: topic filter + insights
   h+=`<div style="display:flex;flex-direction:column;gap:10px">`;
   h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:10px;padding:8px 14px;position:relative;flex-shrink:0">
@@ -1833,21 +1831,22 @@ function _vidRenderAnalytics(){
     ${_anTopicFilter!=='all'?'<button onclick="_anTopicFilter=\'all\';renderVideosPageKeepScroll()" style="position:absolute;right:20px;bottom:10px;background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);line-height:1">✕</button>':''}
     <div id="anTopicList" style="display:none;position:absolute;top:100%;left:0;right:0;margin-top:2px;background:var(--bg);border:1px solid var(--border);border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,.1);z-index:100;max-height:150px;overflow-y:auto"></div>
   </div>`;
-  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:14px 16px;overflow-y:auto">
+  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:14px 16px;overflow-y:auto;flex:1">
     <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:8px">Insights</div>${stratHtml}</div>`;
   h+='</div>';
-  // Right column: KPIs grid
-  h+='<div style="display:flex;gap:8px;align-items:stretch;flex-wrap:wrap">';
-  h+=`<div style="background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:12px 14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;flex:1;min-width:80px" onclick="_ytShowUnreplied()"><div style="font-size:15px;font-weight:700;color:#ef4444">${_unrepliedN}</div><div style="font-size:9px;color:var(--muted)">Unreplied</div></div>`;
+  // Right column: KPIs then bar chart
+  h+=`<div style="display:flex;flex-direction:column;gap:10px">`;
+  h+='<div style="display:flex;gap:8px;align-items:stretch">';
+  h+=`<div style="background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:12px 14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;flex:1" onclick="_ytShowUnreplied()"><div style="font-size:15px;font-weight:700;color:#ef4444">${_unrepliedN}</div><div style="font-size:9px;color:var(--muted)">Unreplied</div></div>`;
   h+=`${_kc2("_anKpiModal('views')")}${_kStat2('Views',_ytNum(totalViews),sparkline(_spViews))}</div>`;
   h+=`${_kc2("_anKpiModal('avg')")}${_kStat2('Avg/Video',_ytNum(avgViews),sparkline(_spAvg))}</div>`;
   h+=`${_kc2("_anKpiModal('videos')")}${_kStat2('Videos',String(merged.length),sparkline(_spVids))}</div>`;
   h+=`${_kc2("_anKpiModal('revenue')")}${_kStat2(_revLabel,_revValue,sparkline(_spRevReal))}</div>`;
   h+=`${_kc2("_anKpiModal('subscribers')")}${_kStat2('Subscribers',cs?_ytNum(cs.subscribers):'-')}</div>`;
   h+='</div>';
-  h+='</div>'; // close top row grid
-  // Bar chart — full width
-  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;margin-bottom:12px">${trendHtml}</div>`;
+  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column">${trendHtml}</div>`;
+  h+='</div>';
+  h+='</div>'; // close 2-col grid
   // Do More Like This + Try Next — full width below
   h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">';
 
@@ -1955,14 +1954,12 @@ function _vidSetFilter(f){_vidFilter=f;renderVideosPage();}
 function _vidSetGroup(g){_vidGroupFilter=g;renderVideosPage();}
 function _vidSetSearch(q){
   _vidSearch=q;_vidMatchIdx=0;_vidSearchTs=Date.now();
-  renderVideosPage();
-  requestAnimationFrame(()=>{
-    _vidPostRenderMatches();
-    const inp=document.getElementById('vidSearchInput');
-    if(inp){inp.focus();inp.setSelectionRange(inp.value.length,inp.value.length);}
-    _vidShowSuggestions(q);
-    if(_vidMatchIds.length)_vidScrollToMatch();
-  });
+  _vidPostRenderMatches();
+  _vidShowSuggestions(q);
+  // Update count display
+  const cnt=document.getElementById('vidSearchCount');
+  if(cnt)cnt.textContent=(_vidMatchIds.length?(_vidMatchIdx+1):0)+'/'+_vidMatchIds.length;
+  if(_vidMatchIds.length)_vidScrollToMatch();
 }
 function _vidSearchMatch(v,q){return(v.title||'').toLowerCase().includes(q)||(v.topic||'').toLowerCase().includes(q)||(v.status||'').replace('_',' ').toLowerCase().includes(q)||(v.playlist||'').toLowerCase().includes(q);}
 function _vidBuildMatches(){
