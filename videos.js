@@ -1986,18 +1986,13 @@ function _vidPostRenderMatches(){
   if(!_vidSearch){_vidMatchIds=[];return;}
   _vidMatchIds=[];
   const q=_vidSearch.toLowerCase();
-  // Count all matching non-deleted B videos (skip L children to avoid duplicates)
-  (st.videos||[]).filter(v=>!v.is_deleted&&v.video_type!=='L').forEach(v=>{
+  // Count only videos visible on current view/filter using DOM rows
+  const rows=document.querySelectorAll('.vid-dash-row[data-vid],.vid-row[data-vid]');
+  const visibleIds=new Set();
+  rows.forEach(r=>visibleIds.add(r.dataset.vid));
+  // Match visible videos
+  (st.videos||[]).filter(v=>!v.is_deleted&&visibleIds.has(String(v.id))).forEach(v=>{
     if(_vidSearchMatch(v,q))_vidMatchIds.push(String(v.id));
-  });
-  // Also add L videos that match but whose B parent doesn't match
-  (st.videos||[]).filter(v=>!v.is_deleted&&v.video_type==='L').forEach(v=>{
-    if(!_vidSearchMatch(v,q))return;
-    if(v.big_video_id){
-      const par=(st.videos||[]).find(p=>String(p.id)===String(v.big_video_id)&&!p.is_deleted);
-      if(par&&_vidSearchMatch(par,q))return; // parent already matches, skip child
-    }
-    _vidMatchIds.push(String(v.id));
   });
   if(_vidMatchIdx>=_vidMatchIds.length)_vidMatchIdx=0;
   const cnt=document.getElementById('vidSearchCount');
@@ -2059,6 +2054,14 @@ function _vidShowSuggestions(q){
   const topicCounts={};
   vids.forEach(v=>{if(v.topic&&v.topic.toLowerCase().includes(lq)){topicCounts[v.topic]=(topicCounts[v.topic]||0)+1;}});
   Object.entries(topicCounts).sort((a,b)=>b[1]-a[1]).slice(0,4).forEach(([t])=>add('topic',t));
+  // Dates — collect unique post_dates that match, format as M/D/YYYY
+  const dateCounts={};
+  vids.forEach(v=>{if(v.post_date&&_vidDateMatch(v.post_date,q)){dateCounts[v.post_date]=(dateCounts[v.post_date]||0)+1;}});
+  Object.entries(dateCounts).sort((a,b)=>b[0].localeCompare(a[0])).slice(0,5).forEach(([d,n])=>{
+    const [y,m,dy]=d.split('-');
+    const label=parseInt(m)+'/'+parseInt(dy)+'/'+y;
+    add('date',label);
+  });
   // Titles (starts-with first, then contains) — deduplicate and exclude L children that duplicate B parent titles
   const titleSeen=new Set();
   const starts=[],contains=[];
@@ -2073,7 +2076,7 @@ function _vidShowSuggestions(q){
   });
   [...starts,...contains].slice(0,5).forEach(t=>add('title',t.title,t.id));
   if(!suggestions.length){sg.style.display='none';return;}
-  const badgeColors={status:'#8b5cf6',topic:'#f59e0b',playlist:'#10b981',title:'var(--muted)'};
+  const badgeColors={status:'#8b5cf6',topic:'#f59e0b',date:'#0ea5e9',title:'var(--muted)'};
   sg.style.display='block';
   sg.innerHTML=suggestions.slice(0,8).map(s=>{
     const hl=_vidHighlight(s.text,lq);
