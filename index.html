@@ -979,115 +979,113 @@ document.addEventListener('keydown',e=>{
     let ov=document.getElementById('_dbgGrid');
     if(ov){ov.remove();return;}
     ov=document.createElement('div');ov.id='_dbgGrid';
-    ov.style.cssText='position:fixed;inset:0;z-index:99999;pointer-events:none;font-family:monospace;font-size:9px;overflow:visible;';
-    const activePage=document.querySelector('.page.active');
-    if(!activePage){document.body.appendChild(ov);return;}
-    const winW=window.innerWidth,winH=window.innerHeight;
-    const mainEl=document.getElementById('main');
-    const scrollTop=mainEl?mainEl.scrollTop:0;
-    // Use CSS computed padding for true edge margins
-    const ps=getComputedStyle(activePage);
-    const padT=parseFloat(ps.paddingTop)||0,padL=parseFloat(ps.paddingLeft)||0;
-    const padR=parseFloat(ps.paddingRight)||0,padB=parseFloat(ps.paddingBottom)||0;
-    const pageR=activePage.getBoundingClientRect();
-    // Helpers
-    function mkLbl(x,y,txt,col,bg){const l=document.createElement('div');l.style.cssText=`position:fixed;left:${x}px;top:${y}px;color:${col};font-weight:700;font-size:9px;background:${bg};padding:1px 5px;border-radius:2px;white-space:nowrap;`;l.textContent=txt;ov.appendChild(l);}
-    function mkBand(x,y,w,h,border){const b=document.createElement('div');b.style.cssText=`position:fixed;left:${x}px;top:${y}px;width:${w}px;height:${h}px;background:rgba(0,200,0,.06);${border}`;ov.appendChild(b);}
-    // ── Edge margins (green) ──
-    const contentStartY=pageR.top+padT;
-    // Top
-    const edgeTop=Math.round(padT+Math.max(0,pageR.top));
-    if(edgeTop>0&&contentStartY>0){
-      mkBand(0,0,winW,Math.max(0,contentStartY),'border-bottom:2px solid rgba(0,180,0,.5);');
-      mkLbl(winW/2-20,Math.max(0,contentStartY)/2-6,edgeTop+'px','#090','rgba(200,255,200,.9)');
-    }
-    // Left — full viewport height below content start
-    const edgeLeft=Math.round(padL);
-    if(edgeLeft>0){
-      mkBand(pageR.left,0,padL,winH,'border-right:2px solid rgba(0,180,0,.5);');
-      mkLbl(pageR.left+padL/2-12,winH/2-6,edgeLeft+'px','#090','rgba(200,255,200,.9)');
-    }
-    // Right — full viewport height
-    const edgeRight=Math.round(padR);
-    if(edgeRight>0){
-      mkBand(pageR.right-padR,0,padR,winH,'border-left:2px solid rgba(0,180,0,.5);');
-      mkLbl(pageR.right-padR/2-12,winH/2-6,edgeRight+'px','#090','rgba(200,255,200,.9)');
-    }
-    // Bottom — band at very bottom of viewport showing padding-bottom value
-    const edgeBot=Math.round(padB);
-    if(edgeBot>0){
-      mkBand(pageR.left+padL,winH-edgeBot,pageR.width-padL-padR,edgeBot,'border-top:2px solid rgba(0,180,0,.5);');
-      mkLbl(winW/2-20,winH-edgeBot/2-6,edgeBot+'px','#090','rgba(200,255,200,.9)');
-    } else {
-      // Even if padB is 0, show "0px" so user knows
-      mkLbl(winW/2-20,winH-16,'bottom: 0px','#090','rgba(200,255,200,.9)');
-    }
-    // ── Find ALL visible elements: direct children + their direct children ──
-    const els=new Set();
-    [...activePage.children].forEach(child=>{
-      if(child.nodeType!==1)return;
-      const r=child.getBoundingClientRect();
-      if(r.height>0&&r.width>20&&r.top<winH&&r.bottom>0)els.add(child);
-      // Also add direct children of each top-level child (catches tab bars, search rows, content areas)
-      [...child.children].forEach(gc=>{
-        if(gc.nodeType!==1)return;
-        const r2=gc.getBoundingClientRect();
-        if(r2.height>0&&r2.width>20&&r2.top<winH&&r2.bottom>0)els.add(gc);
+    ov.style.cssText='position:fixed;inset:0;z-index:99999;pointer-events:none;font-family:monospace;font-size:9px;';
+    const pg=document.querySelector('.page.active');
+    if(!pg){document.body.appendChild(ov);return;}
+    const W=window.innerWidth,H=window.innerHeight;
+    const ps=getComputedStyle(pg);
+    const pT=parseFloat(ps.paddingTop)||0,pL=parseFloat(ps.paddingLeft)||0;
+    const pR=parseFloat(ps.paddingRight)||0,pB=parseFloat(ps.paddingBottom)||0;
+    const pr=pg.getBoundingClientRect();
+    // content box edges (inside padding)
+    const cL=pr.left+pL,cR=pr.right-pR,cT=pr.top+pT;
+    // ── Helpers ──
+    function lbl(x,y,txt,col,bg){const l=document.createElement('div');l.style.cssText=`position:fixed;left:${x}px;top:${y}px;color:${col};font-weight:700;font-size:9px;background:${bg};padding:1px 5px;border-radius:2px;white-space:nowrap;`;l.textContent=txt;ov.appendChild(l);}
+    function band(x,y,w,h,bdr){const b=document.createElement('div');b.style.cssText=`position:fixed;left:${x}px;top:${y}px;width:${w}px;height:${h}px;background:rgba(0,200,0,.07);${bdr}`;ov.appendChild(b);}
+    // ── GREEN: Edge margins (CSS padding values) ──
+    // Top — from viewport top to where content starts
+    const topPx=Math.round(cT);
+    if(topPx>0){band(0,0,W,cT,'border-bottom:2px solid rgba(0,160,0,.5);');lbl(W/2-16,cT/2-6,topPx+'px','#080','rgba(200,255,200,.92)');}
+    // Bottom — scroll to see, so show the CSS value pinned at bottom
+    const botPx=Math.round(pB);
+    band(cL,H-24,cR-cL,24,'border-top:2px solid rgba(0,160,0,.5);');
+    lbl(W/2-24,H-18,'↓ '+botPx+'px','#080','rgba(200,255,200,.92)');
+    // Left — full height
+    if(pL>0){band(pr.left,0,pL,H,'border-right:2px solid rgba(0,160,0,.5);');lbl(pr.left+pL/2-10,H/2,Math.round(pL)+'px','#080','rgba(200,255,200,.92)');}
+    // Right — full height
+    if(pR>0){band(pr.right-pR,0,pR,H,'border-left:2px solid rgba(0,160,0,.5);');lbl(pr.right-pR/2-10,H/2,Math.round(pR)+'px','#080','rgba(200,255,200,.92)');}
+    // ── Collect elements: only direct children of page (top-level sections) ──
+    const topEls=[...pg.children].filter(c=>c.nodeType===1&&c.getBoundingClientRect().height>0&&c.getBoundingClientRect().top<H&&c.getBoundingClientRect().bottom>0);
+    // For each top-level element, also get ITS direct children (catches sub-sections like tab bars, content areas)
+    const allEls=[];const added=new Set();
+    topEls.forEach(el=>{
+      const r=el.getBoundingClientRect();
+      if(!added.has(el)){added.add(el);allEls.push(el);}
+      [...el.children].forEach(ch=>{
+        if(ch.nodeType!==1||added.has(ch))return;
+        const cr=ch.getBoundingClientRect();
+        if(cr.height>0&&cr.width>30&&cr.top<H&&cr.bottom>0){added.add(ch);allEls.push(ch);}
       });
     });
-    // Also add .card elements specifically
-    [...activePage.querySelectorAll('.card')].forEach(c=>{
-      const r=c.getBoundingClientRect();
-      if(r.height>0&&c.offsetParent!==null&&r.top<winH&&r.bottom>0)els.add(c);
-    });
-    const uniq=[...els];
-    // ── Draw container outlines with dimensions (greyed out) ──
-    uniq.forEach(c=>{
-      const r=c.getBoundingClientRect();
-      const box=document.createElement('div');
-      box.style.cssText=`position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;border:1px solid rgba(150,150,150,.25);`;
-      ov.appendChild(box);
-      // Dimension label inside container (greyed out to reduce noise)
-      const dim=document.createElement('div');
-      dim.style.cssText=`position:fixed;left:${r.right-50}px;top:${r.top+2}px;color:rgba(120,120,120,.5);font-size:7px;white-space:nowrap;`;
-      dim.textContent=`${Math.round(r.width)}×${Math.round(r.height)}`;
-      ov.appendChild(dim);
-    });
-    // Sort by vertical then horizontal
-    uniq.sort((a,b)=>{const ar=a.getBoundingClientRect(),br=b.getBoundingClientRect();return(ar.top-br.top)||ar.left-br.left;});
-    // ── Measure gaps between elements ──
-    for(let i=0;i<uniq.length;i++){
-      const a=uniq[i].getBoundingClientRect();
-      // Vertical: find nearest element below
-      for(let j=i+1;j<uniq.length;j++){
-        const b=uniq[j].getBoundingClientRect();
-        if(b.top<a.bottom-2)continue;
-        const xOverlap=Math.min(a.right,b.right)-Math.max(a.left,b.left);
-        if(xOverlap<20)continue;
-        const gap=Math.round(b.top-a.bottom);
-        if(gap<1||gap>80)continue;
-        if(uniq[i].contains(uniq[j])||uniq[j].contains(uniq[i]))continue;
-        const line=document.createElement('div');
-        line.style.cssText=`position:fixed;left:${Math.max(a.left,b.left)}px;top:${a.bottom}px;width:${Math.min(a.right,b.right)-Math.max(a.left,b.left)}px;height:${gap}px;background:rgba(0,0,255,.04);border-top:1px dashed rgba(0,0,255,.25);border-bottom:1px dashed rgba(0,0,255,.25);`;
-        ov.appendChild(line);
-        mkLbl(Math.max(a.left,b.left)-28,a.bottom+(gap/2)-6,gap+'px','#00c','rgba(200,200,255,.85)');
-        break;
+    // Also grab .card elements
+    [...pg.querySelectorAll('.card')].forEach(c=>{if(!added.has(c)){const cr=c.getBoundingClientRect();if(cr.height>0&&cr.top<H&&cr.bottom>0){added.add(c);allEls.push(c);}}});
+    // ── PURPLE: Container overlays with dimensions ──
+    // Grey-out containers so content fades, show W/H with arrows
+    allEls.forEach(el=>{
+      const r=el.getBoundingClientRect();
+      if(r.width<30||r.height<10)return;
+      // Semi-transparent overlay to grey out content
+      const shade=document.createElement('div');
+      shade.style.cssText=`position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;background:rgba(140,130,170,.08);border:1px solid rgba(140,100,200,.3);border-radius:2px;`;
+      ov.appendChild(shade);
+      // Width label — centered horizontally at top, with arrows
+      const wTxt=Math.round(r.width);
+      const wLbl=document.createElement('div');
+      wLbl.style.cssText=`position:fixed;left:${r.left+r.width/2-22}px;top:${r.top+3}px;color:rgba(120,80,180,.8);font-weight:700;font-size:8px;background:rgba(240,235,255,.9);padding:1px 4px;border-radius:2px;white-space:nowrap;`;
+      wLbl.textContent=`← ${wTxt} →`;
+      ov.appendChild(wLbl);
+      // Height label — centered vertically on left edge, with arrows
+      if(r.height>40){
+        const hTxt=Math.round(r.height);
+        const hLbl=document.createElement('div');
+        hLbl.style.cssText=`position:fixed;left:${r.left+3}px;top:${r.top+r.height/2-6}px;color:rgba(120,80,180,.8);font-weight:700;font-size:8px;background:rgba(240,235,255,.9);padding:1px 4px;border-radius:2px;white-space:nowrap;`;
+        hLbl.textContent=`↑ ${hTxt} ↓`;
+        ov.appendChild(hLbl);
       }
-      // Horizontal: side by side
-      for(let j=i+1;j<uniq.length;j++){
-        const b=uniq[j].getBoundingClientRect();
-        if(Math.abs(a.top-b.top)>15)continue;
-        if(a.right>=b.left||b.left-a.right>80)continue;
-        if(uniq[i].contains(uniq[j])||uniq[j].contains(uniq[i]))continue;
-        const gap=Math.round(b.left-a.right);
-        if(gap<1)continue;
-        const midY=Math.max(a.top,b.top)+Math.min(a.height,b.height)/2;
-        const line=document.createElement('div');
-        line.style.cssText=`position:fixed;left:${a.right}px;top:${Math.max(a.top,b.top)}px;width:${gap}px;height:${Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)}px;background:rgba(255,0,0,.04);border-left:1px dashed rgba(255,0,0,.25);border-right:1px dashed rgba(255,0,0,.25);`;
-        ov.appendChild(line);
-        mkLbl(a.right+(gap/2)-10,midY-6,gap+'px','#e00','rgba(255,200,200,.85)');
-      }
-    }
+    });
+    // ── BLUE/RED: Gaps between sibling elements ──
+    // Only measure between siblings (same parent) to avoid duplicates
+    const gapsDone=new Set();
+    allEls.forEach(el=>{
+      const parent=el.parentElement;if(!parent)return;
+      const siblings=[...parent.children].filter(s=>s.nodeType===1&&added.has(s)&&s!==el);
+      const a=el.getBoundingClientRect();
+      siblings.forEach(sib=>{
+        const b=sib.getBoundingClientRect();
+        const key=[el,sib].sort((x,y)=>x.getBoundingClientRect().top-y.getBoundingClientRect().top||x.getBoundingClientRect().left-y.getBoundingClientRect().left).map(x=>allEls.indexOf(x)).join('-');
+        if(gapsDone.has(key))return;
+        // Vertical gap
+        if(a.bottom<=b.top+2){
+          const xOv=Math.min(a.right,b.right)-Math.max(a.left,b.left);
+          if(xOv>20){
+            const gap=Math.round(b.top-a.bottom);
+            if(gap>=0&&gap<100){
+              gapsDone.add(key);
+              if(gap>0){
+                const ln=document.createElement('div');
+                ln.style.cssText=`position:fixed;left:${Math.max(a.left,b.left)}px;top:${a.bottom}px;width:${xOv}px;height:${gap}px;background:rgba(0,80,255,.05);border-top:1px dashed rgba(0,80,255,.3);border-bottom:1px dashed rgba(0,80,255,.3);`;
+                ov.appendChild(ln);
+              }
+              lbl(Math.max(a.left,b.left)-28,a.bottom+Math.max(0,gap)/2-6,(gap||0)+'px','#0055cc','rgba(210,220,255,.92)');
+            }
+          }
+        }
+        // Horizontal gap
+        if(Math.abs(a.top-b.top)<20&&a.right<=b.left+2){
+          const gap=Math.round(b.left-a.right);
+          if(gap>=0&&gap<100){
+            const k2=key+'h';if(gapsDone.has(k2))return;gapsDone.add(k2);
+            const midY=Math.max(a.top,b.top)+Math.min(a.height,b.height)/2;
+            if(gap>0){
+              const ln=document.createElement('div');
+              ln.style.cssText=`position:fixed;left:${a.right}px;top:${Math.max(a.top,b.top)}px;width:${gap}px;height:${Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)}px;background:rgba(255,40,0,.05);border-left:1px dashed rgba(255,40,0,.3);border-right:1px dashed rgba(255,40,0,.3);`;
+              ov.appendChild(ln);
+            }
+            lbl(a.right+Math.max(0,gap)/2-10,midY-6,(gap||0)+'px','#cc2200','rgba(255,220,210,.92)');
+          }
+        }
+      });
+    });
     document.body.appendChild(ov);
   }
 });
