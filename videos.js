@@ -567,8 +567,8 @@ function _vidDashRow(v,isChild,simple){
     </div>
     <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
       <div style="display:flex;gap:0">${VID_STEPS.map(s=>`<div style="width:28px;text-align:center"><div class="vid-step-dot${v[s]==='done'?' done':v[s]==='na'?' na':''}" data-vid="${sid}" data-step="${s}" title="${VID_STEP_LABELS[s]}"></div></div>`).join('')}</div>
-      <span data-field="post_date" style="width:52px;text-align:right;font-size:11px;color:${_vidDateColor(v.post_date,v)};cursor:pointer;min-height:16px;display:inline-block">${postStr||''}</span>
-      <span data-field="duration_minutes" style="width:36px;text-align:right;font-size:11px;color:var(--muted);cursor:pointer;min-height:16px;display:inline-block">${durStr||''}</span>
+      <span data-field="post_date" onclick="event.stopPropagation();_vidDashInlineEdit(this,'${sid}','post_date')" style="width:52px;text-align:right;font-size:11px;color:${_vidDateColor(v.post_date,v)};cursor:pointer;min-height:16px;display:inline-block">${postStr||''}</span>
+      <span data-field="duration_minutes" onclick="event.stopPropagation();_vidDashInlineEdit(this,'${sid}','duration_minutes')" style="width:36px;text-align:right;font-size:11px;color:var(--muted);cursor:pointer;min-height:16px;display:inline-block">${durStr||''}</span>
       ${(()=>{const ym=_ytForVid(sid);return ym?'<span style="width:42px;text-align:right;font-size:10px;color:#8b5cf6;display:inline-block" title="'+ym.views+' views / '+ym.likes+' likes">'+_ytNum(ym.views)+'</span>':'';})()}
       <span style="width:28px;text-align:right;font-size:9px;color:var(--muted);font-weight:500;display:inline-block">${_pctVal}</span>
       <button class="vid-del" data-vid="${sid}">✕</button>
@@ -2022,7 +2022,7 @@ function _vidScrollToDefault(){
     if(!target)return;
     const tid=String(target.id);
     const row=document.querySelector('.vid-dash-row[data-vid="'+tid+'"]')||document.querySelector('.vid-row[data-vid="'+tid+'"]');
-    if(row)row.scrollIntoView({block:'end'});
+    if(row)row.scrollIntoView({block:'start'});
   });
 }
 function _vidScrollToMatch(){
@@ -2249,11 +2249,11 @@ function _vidDashInlineEdit(span,id,field){
   span._editing=true;
   let el;
   if(field==='post_date'){
-    el=document.createElement('input');el.type='text';el.placeholder='m/d';
+    el=document.createElement('input');el.type='text';
     el.value=v.post_date?_vidPostStr(v.post_date,true):'';
     el.style.cssText='width:52px;font-size:10px;border:1px solid var(--border);border-radius:4px;padding:1px 2px;background:var(--bg);color:var(--text);outline:none;font-family:inherit;box-sizing:border-box;text-align:right';
   }else if(field==='duration_minutes'){
-    el=document.createElement('input');el.type='number';el.step='0.01';el.value=v.duration_minutes||'';
+    el=document.createElement('input');el.type='text';el.inputMode='decimal';el.value=v.duration_minutes||'';
     el.style.cssText='width:36px;font-size:10px;border:1px solid var(--border);border-radius:4px;padding:1px 2px;background:var(--bg);color:var(--text);outline:none;font-family:inherit;box-sizing:border-box;text-align:right';
   }else return;
   const orig=span.innerHTML;
@@ -2301,9 +2301,9 @@ function vidCellEdit(td,id,field){
     el=document.createElement('select');
     ['idea','up_next','in_progress','published','backup'].forEach(s=>{const o=document.createElement('option');o.value=s;o.textContent=s;if(v.status===s)o.selected=true;el.appendChild(o);});
   }else if(field==='duration_minutes'){
-    el=document.createElement('input');el.type='number';el.step='0.01';el.value=v.duration_minutes||'';
+    el=document.createElement('input');el.type='text';el.inputMode='decimal';el.value=v.duration_minutes||'';
   }else if(field==='post_date'){
-    el=document.createElement('input');el.type='text';el.placeholder='m/d or m/d/yy';el.value=v.post_date?_vidPostStr(v.post_date,true):'';
+    el=document.createElement('input');el.type='text';el.value=v.post_date?_vidPostStr(v.post_date,true):'';
   }else if(field==='title'){
     el=document.createElement('input');el.value=v.title||'';
   }else{return;}
