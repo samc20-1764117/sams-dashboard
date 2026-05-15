@@ -1004,76 +1004,90 @@ document.addEventListener('keydown',e=>{
     if(pL>0){band(pr.left,0,pL,H,'border-right:2px solid rgba(0,160,0,.5);');lbl(pr.left+pL/2-10,H/2,Math.round(pL)+'px','#080','rgba(200,255,200,.92)');}
     // Right — full height
     if(pR>0){band(pr.right-pR,0,pR,H,'border-left:2px solid rgba(0,160,0,.5);');lbl(pr.right-pR/2-10,H/2,Math.round(pR)+'px','#080','rgba(200,255,200,.92)');}
-    // ── Collect ONLY .card containers (the real content containers) ──
+    // ── Collect .card containers (purple overlays) ──
     const cards=[...pg.querySelectorAll('.card')].filter(c=>{
       const r=c.getBoundingClientRect();
       return r.height>0&&r.top<H&&r.bottom>0;
     });
-    // For non-overview pages with no .card elements, use direct children (skip topbars)
-    if(!cards.length){
-      [...pg.children].forEach(el=>{
-        if(el.nodeType!==1)return;
-        if(el.classList.contains('ov-topbar')||el.classList.contains('topbar'))return;
-        const r=el.getBoundingClientRect();
-        if(r.height>20&&r.width>50&&r.top<H&&r.bottom>0){
-          // Check children too
-          let found=false;
-          [...el.children].forEach(ch=>{
-            if(ch.nodeType!==1)return;
-            const cr=ch.getBoundingClientRect();
-            if(cr.height>20&&cr.width>50&&cr.top<H&&cr.bottom>0){cards.push(ch);found=true;}
-          });
-          if(!found)cards.push(el);
+    // ── Collect ALL measurable elements for gap calculation (cards + sections) ──
+    const gapEls=new Set(cards);
+    // Walk up to 3 levels deep to catch tab bars, search rows, content areas, KPIs
+    function addVisible(parent,depth){
+      if(depth>3)return;
+      [...parent.children].forEach(ch=>{
+        if(ch.nodeType!==1)return;
+        if(ch.classList.contains('ov-topbar')||ch.classList.contains('topbar'))return;
+        const r=ch.getBoundingClientRect();
+        if(r.height>8&&r.width>30&&r.top<H&&r.bottom>0){
+          // Don't add if it's a card (already in cards list) or inside a card
+          let inCard=false;cards.forEach(c=>{if(c.contains(ch))inCard=true;});
+          if(!inCard)gapEls.add(ch);
+          // Go deeper for wrapper divs
+          if(r.height>30)addVisible(ch,depth+1);
         }
       });
     }
-    // ── PURPLE: Card overlays — blur content + dimensions at top-left ──
+    addVisible(pg,0);
+    // For pages with no cards, promote visible sections to cards for purple overlay
+    if(!cards.length){
+      [...pg.children].forEach(el=>{
+        if(el.nodeType!==1||el.classList.contains('ov-topbar')||el.classList.contains('topbar'))return;
+        const r=el.getBoundingClientRect();
+        if(r.height>30&&r.width>50&&r.top<H&&r.bottom>0)cards.push(el);
+      });
+    }
+    // ── PURPLE: Card overlays — frosted blur + dimensions at top-left ──
     cards.forEach(el=>{
       const r=el.getBoundingClientRect();
-      // Heavy frosted overlay to blur out content
       const shade=document.createElement('div');
-      shade.style.cssText=`position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;background:rgba(200,195,220,.35);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);border:1.5px solid rgba(120,80,200,.4);border-radius:6px;`;
+      shade.style.cssText=`position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;background:rgba(200,195,220,.3);backdrop-filter:blur(1px);-webkit-backdrop-filter:blur(1px);border:1.5px solid rgba(120,80,200,.4);border-radius:6px;`;
       ov.appendChild(shade);
-      // Dimensions at top-left inside card
       const dLbl=document.createElement('div');
-      dLbl.style.cssText=`position:fixed;left:${r.left+6}px;top:${r.top+6}px;color:rgba(90,50,170,.95);font-weight:700;font-size:9px;background:rgba(240,235,255,.95);padding:3px 7px;border-radius:4px;white-space:nowrap;line-height:1.4;`;
-      dLbl.innerHTML=`← ${Math.round(r.width)} →<br>↑ ${Math.round(r.height)} ↓`;
+      dLbl.style.cssText=`position:fixed;left:${r.left+6}px;top:${r.top+6}px;color:rgba(90,50,170,.95);font-weight:700;font-size:9px;background:rgba(240,235,255,.95);padding:3px 7px;border-radius:4px;white-space:nowrap;line-height:1.5;`;
+      dLbl.innerHTML=`${Math.round(r.width)} →<br>${Math.round(r.height)} ↓`;
       ov.appendChild(dLbl);
     });
-    // ── BLUE/RED: Gaps between ALL cards (not just siblings) ──
-    // Sort all cards by position
-    const sorted=[...cards].map(c=>({el:c,r:c.getBoundingClientRect()}));
-    sorted.sort((a,b)=>(a.r.top-b.r.top)||a.r.left-b.r.left);
+    // ── BLUE/RED: Gaps between ALL measurable elements ──
+    const allMeasurable=[...gapEls].map(c=>({el:c,r:c.getBoundingClientRect()}));
+    allMeasurable.sort((a,b)=>(a.r.top-b.r.top)||a.r.left-b.r.left);
     const gapsDone=new Set();
-    for(let i=0;i<sorted.length;i++){
-      const a=sorted[i].r;
-      for(let j=i+1;j<sorted.length;j++){
-        const b=sorted[j].r;
-        // Vertical gap — b is below a, overlapping x range
-        if(a.bottom<=b.top+2){
-          const xOv=Math.min(a.right,b.right)-Math.max(a.left,b.left);
-          if(xOv>20){
-            const gap=Math.round(b.top-a.bottom);
-            if(gap>=0&&gap<150){
-              const k='v'+i+'-'+j;if(gapsDone.has(k))continue;gapsDone.add(k);
-              if(gap>0){const ln=document.createElement('div');ln.style.cssText=`position:fixed;left:${Math.max(a.left,b.left)}px;top:${a.bottom}px;width:${xOv}px;height:${gap}px;background:rgba(0,80,255,.06);border-top:1px dashed rgba(0,80,255,.35);border-bottom:1px dashed rgba(0,80,255,.35);`;ov.appendChild(ln);}
-              lbl(Math.max(a.left,b.left)-28,a.bottom+Math.max(0,gap)/2-6,gap+'px','#0055cc','rgba(210,220,255,.92)');
-            }
-          }
-        }
-        // Horizontal gap — b is right of a, overlapping y range
-        if(a.right<=b.left+2){
-          const yOv=Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top);
-          if(yOv>20){
-            const gap=Math.round(b.left-a.right);
-            if(gap>=0&&gap<150){
-              const k='h'+i+'-'+j;if(gapsDone.has(k))continue;gapsDone.add(k);
-              const midY=Math.max(a.top,b.top)+yOv/2;
-              if(gap>0){const ln=document.createElement('div');ln.style.cssText=`position:fixed;left:${a.right}px;top:${Math.max(a.top,b.top)}px;width:${gap}px;height:${yOv}px;background:rgba(255,40,0,.06);border-left:1px dashed rgba(255,40,0,.35);border-right:1px dashed rgba(255,40,0,.35);`;ov.appendChild(ln);}
-              lbl(a.right+Math.max(0,gap)/2-10,midY-6,gap+'px','#cc2200','rgba(255,220,210,.92)');
-            }
-          }
-        }
+    // Dedupe: skip element if a parent is already in the list
+    const filtered=allMeasurable.filter((item,idx)=>{
+      for(let k=0;k<allMeasurable.length;k++){
+        if(k===idx)continue;
+        if(allMeasurable[k].el.contains(item.el))return false;
+      }
+      return true;
+    });
+    for(let i=0;i<filtered.length;i++){
+      const a=filtered[i].r;
+      // Vertical: find nearest below with overlapping x
+      let foundV=false;
+      for(let j=i+1;j<filtered.length&&!foundV;j++){
+        const b=filtered[j].r;
+        if(a.bottom>b.top-1)continue;
+        const xOv=Math.min(a.right,b.right)-Math.max(a.left,b.left);
+        if(xOv<15)continue;
+        const gap=Math.round(b.top-a.bottom);
+        if(gap<0||gap>150)continue;
+        const k='v'+i+'-'+j;if(gapsDone.has(k))continue;gapsDone.add(k);
+        if(gap>0){const ln=document.createElement('div');ln.style.cssText=`position:fixed;left:${Math.max(a.left,b.left)}px;top:${a.bottom}px;width:${xOv}px;height:${gap}px;background:rgba(0,80,255,.06);border-top:1px dashed rgba(0,80,255,.35);border-bottom:1px dashed rgba(0,80,255,.35);`;ov.appendChild(ln);}
+        lbl(Math.max(a.left,b.left)-28,a.bottom+Math.max(0,gap)/2-6,gap+'px','#0055cc','rgba(210,220,255,.92)');
+        foundV=true;
+      }
+      // Horizontal: find nearest right with overlapping y
+      for(let j=i+1;j<filtered.length;j++){
+        const b=filtered[j].r;
+        if(a.right>b.left-1)continue;
+        const yOv=Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top);
+        if(yOv<15)continue;
+        const gap=Math.round(b.left-a.right);
+        if(gap<0||gap>150)continue;
+        const k='h'+i+'-'+j;if(gapsDone.has(k))continue;gapsDone.add(k);
+        const midY=Math.max(a.top,b.top)+yOv/2;
+        if(gap>0){const ln=document.createElement('div');ln.style.cssText=`position:fixed;left:${a.right}px;top:${Math.max(a.top,b.top)}px;width:${gap}px;height:${yOv}px;background:rgba(255,40,0,.06);border-left:1px dashed rgba(255,40,0,.35);border-right:1px dashed rgba(255,40,0,.35);`;ov.appendChild(ln);}
+        lbl(a.right+Math.max(0,gap)/2-10,midY-6,gap+'px','#cc2200','rgba(255,220,210,.92)');
+        break;
       }
     }
     document.body.appendChild(ov);
