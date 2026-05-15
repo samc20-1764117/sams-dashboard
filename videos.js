@@ -368,8 +368,8 @@ function renderVideosPage(){
     });
   }
   const _rvpSe2=_vidScrollEl();if(_rvpSe2)_rvpSe2.scrollTop=_rvpTop;
-  // On first table view render, scroll to default position
-  if(_vidView==='table'&&!_vidTableScrolledOnce&&_rvpTop===0){
+  // On first render of any view, scroll to default position
+  if(!_vidTableScrolledOnce&&_rvpTop===0){
     _vidTableScrolledOnce=true;
     _vidScrollToDefault();
   }
@@ -2017,12 +2017,12 @@ function _vidScrollToDefault(){
     const today=new Date().toISOString().slice(0,10);
     // Published Big videos with past post_dates, sorted most recent first
     const pastBig=(st.videos||[]).filter(v=>!v.is_deleted&&v.status==='published'&&v.video_type==='B'&&v.post_date&&v.post_date<today).sort((a,b)=>b.post_date.localeCompare(a.post_date));
-    // Scroll target: 3rd most recent past Big
+    // Scroll so 3rd most recent past Big is visible at bottom — all 3 show
     const target=pastBig[2]||pastBig[pastBig.length-1];
     if(!target)return;
     const tid=String(target.id);
     const row=document.querySelector('.vid-dash-row[data-vid="'+tid+'"]')||document.querySelector('.vid-row[data-vid="'+tid+'"]');
-    if(row)row.scrollIntoView({block:'start'});
+    if(row)row.scrollIntoView({block:'end'});
   });
 }
 function _vidScrollToMatch(){
