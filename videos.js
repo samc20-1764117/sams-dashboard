@@ -2167,6 +2167,7 @@ function _vidGoToVideo(id){
 }
 function _vidPickSuggestion(text,type){
   const sg=document.getElementById('vidSearchSuggestions');if(sg)sg.style.display='none';
+  _vidSearchFilterFn=null;_vidFilter='all';_anTopicFilter='all';
   if(type==='status'){
     const statusMap={'idea':'idea','up next':'up_next','in progress':'in_progress','complete':'published','published':'published','backup':'backup'};
     const st2=statusMap[text.toLowerCase()]||text;
