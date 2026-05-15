@@ -305,7 +305,7 @@ function renderVideosPage(){
             <span id="vidSearchCount" style="font-size:10px;color:var(--muted);white-space:nowrap;margin-right:2px">...</span>
             <button onclick="_vidSearchNav(-1)" style="background:none;border:none;cursor:pointer;padding:0 2px;font-size:10px;color:var(--muted);line-height:1" title="Previous (Shift+Enter)">▲</button>
             <button onclick="_vidSearchNav(1)" style="background:none;border:none;cursor:pointer;padding:0 2px;font-size:10px;color:var(--muted);line-height:1" title="Next (Enter)">▼</button>
-            <button onclick="_vidSearch='';_vidMatchIds=[];document.getElementById('vidSearchInput').value='';document.getElementById('vidSearchSuggestions').style.display='none';renderVideosPage()" style="background:none;border:none;cursor:pointer;padding:0 2px;font-size:10px;color:var(--muted);line-height:1" title="Clear (Esc)">✕</button>
+            <button onclick="_vidSearch='';_vidMatchIds=[];document.getElementById('vidSearchInput').value='';document.getElementById('vidSearchSuggestions').style.display='none';renderVideosPage();_vidScrollToDefault()" style="background:none;border:none;cursor:pointer;padding:0 2px;font-size:10px;color:var(--muted);line-height:1" title="Clear (Esc)">✕</button>
           </div>`:''}
           <div id="vidSearchSuggestions" style="display:none;position:absolute;top:100%;left:0;margin-top:4px;background:var(--bg);border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.1);z-index:1001;max-height:200px;overflow-y:auto;width:520px"></div>
         </div>
@@ -1641,42 +1641,36 @@ function _vidRenderAnalytics(){
   const _completedVals=metricVals.filter(m=>m.key!==_curPeriod);
   const _histAvg=_completedVals.length?_completedVals.reduce((s,m)=>s+m.val,0)/_completedVals.length:0;
 
-  trendHtml+='<div style="display:flex;align-items:flex-end;gap:2px;flex:1;min-height:340px;padding:0 8px">';
+  const _barH=300; // bar area height in px
+  trendHtml+='<div style="display:flex;align-items:flex-end;gap:2px;height:'+(_barH+40)+'px;padding:0 8px">';
   metricVals.forEach(m=>{
     const isCur=m.key===_curPeriod&&_anTrendPeriod==='monthly';
-    let forecast=0,totalPct;
+    let forecast=0;
     if(isCur&&_monthProgress<0.95){
-      // Projected: weighted blend — 60% current pace, 40% historical
       const paceProj=m.val/_monthProgress;
       forecast=Math.round(paceProj*0.6+_histAvg*0.4);
       if(forecast<m.val)forecast=m.val;
-      totalPct=Math.max(Math.round(forecast/maxMetric*88),2);
     }
-    const pct=Math.max(Math.round(m.val/maxMetric*88),2);
+    const barPx=Math.max(Math.round(m.val/maxMetric*_barH),3);
     const label=_anTrendPeriod==='yearly'?m.key:(_moAbbr[parseInt(m.key.slice(5))]||m.key.slice(5));
     const fmtFn=(v)=>_anTrendMetric==='revenue'?'$'+_ytNum(v):_anTrendMetric==='engagement'?v.toFixed(1)+'%':_ytNum(v);
     if(isCur&&forecast>m.val){
-      const forecastPct=Math.max(Math.round(forecast/maxMetric*88),2);
-      const actualFlex=pct;
-      const forecastFlex=forecastPct-actualFlex;
-      trendHtml+=`<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:2px;height:100%">
-        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;width:100%">
+      const forecastPx=Math.max(Math.round(forecast/maxMetric*_barH),3);
+      const stripePx=forecastPx-barPx;
+      trendHtml+=`<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end">
           <span style="font-size:11px;color:var(--muted);white-space:nowrap;margin-bottom:3px">${fmtFn(forecast)}</span>
-          <div style="width:55%;height:${forecastPct}%;display:flex;flex-direction:column;align-items:stretch">
-            <div style="flex:${forecastFlex};background:repeating-linear-gradient(135deg,${trendColorCur},${trendColorCur} 2px,transparent 2px,transparent 5px);border-radius:4px 4px 0 0;min-height:2px;opacity:.5"></div>
-            <div style="flex:${actualFlex};background:${trendColorCur};border-radius:0 0 4px 4px;min-height:3px;box-shadow:0 0 0 1.5px rgba(120,113,145,.3);display:flex;align-items:flex-start;justify-content:center;overflow:visible;position:relative">
+          <div style="width:55%;display:flex;flex-direction:column;align-items:stretch">
+            <div style="height:${stripePx}px;background:repeating-linear-gradient(135deg,${trendColorCur},${trendColorCur} 2px,transparent 2px,transparent 5px);border-radius:4px 4px 0 0;opacity:.5"></div>
+            <div style="height:${barPx}px;background:${trendColorCur};border-radius:0 0 4px 4px;box-shadow:0 0 0 1.5px rgba(120,113,145,.3);display:flex;align-items:flex-start;justify-content:center;overflow:visible;position:relative">
               <span style="font-size:10px;color:#fff;font-weight:600;white-space:nowrap;position:absolute;top:2px">${m.fmt}</span>
             </div>
           </div>
-        </div>
         <span style="font-size:11px;margin-top:4px;font-weight:700;color:var(--text)">${label}</span>
       </div>`;
     } else {
-      trendHtml+=`<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:2px;height:100%">
-        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;width:100%">
+      trendHtml+=`<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end">
           <span style="font-size:11px;color:var(--muted);white-space:nowrap;margin-bottom:3px">${m.fmt}</span>
-          <div style="width:55%;height:${pct}%;background:${isCur?trendColorCur:trendColor};border-radius:4px;min-height:3px${isCur?';box-shadow:0 0 0 1.5px rgba(120,113,145,.3)':''}" title="${m.key+': '+m.fmt}"></div>
-        </div>
+          <div style="width:55%;height:${barPx}px;background:${isCur?trendColorCur:trendColor};border-radius:4px${isCur?';box-shadow:0 0 0 1.5px rgba(120,113,145,.3)':''}" title="${m.key+': '+m.fmt}"></div>
         <span style="font-size:11px;margin-top:4px;${isCur?'font-weight:700;color:var(--text)':'color:var(--muted)'}">${label}</span>
       </div>`;
     }
@@ -1830,7 +1824,7 @@ function _vidRenderAnalytics(){
     </div>`;
   };
   // 2-col: KPIs + bar chart (left) | topic filter + insights (right)
-  h+=`<div style="display:grid;grid-template-columns:2.5fr 1fr;gap:12px;margin-bottom:12px;align-items:start">`;
+  h+=`<div style="display:grid;grid-template-columns:2.5fr 1fr;gap:12px;margin-bottom:12px;align-items:stretch">`;
   // Left column: KPIs (single row) then bar chart
   h+=`<div style="display:flex;flex-direction:column;gap:10px">`;
   h+='<div style="display:flex;gap:8px;align-items:stretch">';
@@ -1968,7 +1962,7 @@ function _vidSetSearch(q){
   if(cnt)cnt.textContent=(_vidMatchIds.length?(_vidMatchIdx+1):0)+'/'+_vidMatchIds.length;
   if(_vidMatchIds.length)_vidScrollToMatch();
 }
-function _vidSearchMatch(v,q){return(v.title||'').toLowerCase().includes(q)||(v.topic||'').toLowerCase().includes(q)||(v.status||'').replace('_',' ').toLowerCase().includes(q)||(v.playlist||'').toLowerCase().includes(q);}
+function _vidSearchMatch(v,q){return(v.title||'').toLowerCase().includes(q)||(v.topic||'').toLowerCase().includes(q)||(v.status||'').replace('_',' ').toLowerCase().includes(q)||(v.post_date||'').includes(q);}
 function _vidBuildMatches(){
   _vidMatchIds=[];
   // Will be rebuilt from DOM after render
@@ -2001,6 +1995,16 @@ function _vidSearchNav(dir){
   const cnt=document.getElementById('vidSearchCount');
   if(cnt)cnt.textContent=(_vidMatchIdx+1)+'/'+_vidMatchIds.length;
 }
+function _vidScrollToDefault(){
+  if(_vidView!=='table')return;
+  requestAnimationFrame(()=>{
+    const published=(st.videos||[]).filter(v=>!v.is_deleted&&v.status==='published'&&v.post_date).sort((a,b)=>b.post_date.localeCompare(a.post_date));
+    if(published.length>=3){
+      const target=document.querySelector('.vid-row[data-vid="'+published[2].id+'"]');
+      if(target)target.scrollIntoView({block:'center'});
+    }
+  });
+}
 function _vidScrollToMatch(){
   const id=_vidMatchIds[_vidMatchIdx];if(!id)return;
   // Clear previous highlights
@@ -2011,7 +2015,7 @@ function _vidScrollToMatch(){
 function _vidSearchKey(e){
   const sg=document.getElementById('vidSearchSuggestions');
   const sgOpen=sg&&sg.style.display!=='none';
-  if(e.key==='Escape'){_vidSearch='';_vidMatchIds=[];document.getElementById('vidSearchInput').value='';if(sg)sg.style.display='none';renderVideosPage();return;}
+  if(e.key==='Escape'){_vidSearch='';_vidMatchIds=[];document.getElementById('vidSearchInput').value='';if(sg)sg.style.display='none';renderVideosPage();_vidScrollToDefault();return;}
   if(e.key==='Enter'){e.preventDefault();if(sgOpen){const act=sg.querySelector('.vid-sg-active');if(act){act.dispatchEvent(new MouseEvent('mousedown',{bubbles:true}));return;}sg.style.display='none';}_vidSearchNav(e.shiftKey?-1:1);return;}
   if(e.key==='ArrowDown'){e.preventDefault();if(sgOpen){const items=sg.querySelectorAll('.vid-sg-item');const act=sg.querySelector('.vid-sg-active');let idx=0;items.forEach((it,i)=>{if(it===act)idx=i+1;});if(idx>=items.length)idx=0;items.forEach(it=>it.classList.remove('vid-sg-active'));if(items[idx]){items[idx].classList.add('vid-sg-active');_vidScrollToSuggestion(items[idx]);}}else{_vidSearchNav(1);}return;}
   if(e.key==='ArrowUp'){e.preventDefault();if(sgOpen){const items=sg.querySelectorAll('.vid-sg-item');const act=sg.querySelector('.vid-sg-active');let idx=items.length-1;items.forEach((it,i)=>{if(it===act)idx=i-1;});if(idx<0)idx=items.length-1;items.forEach(it=>it.classList.remove('vid-sg-active'));if(items[idx]){items[idx].classList.add('vid-sg-active');_vidScrollToSuggestion(items[idx]);}}else{_vidSearchNav(-1);}return;}
@@ -2072,14 +2076,16 @@ function _vidGoToVideo(id){
 function _vidPickSuggestion(text,type){
   const sg=document.getElementById('vidSearchSuggestions');if(sg)sg.style.display='none';
   if(type==='status'){
-    // Filter to that status
     const statusMap={'idea':'idea','up next':'up_next','in progress':'in_progress','complete':'published','published':'published','backup':'backup'};
     const st2=statusMap[text.toLowerCase()]||text;
+    _vidSearch='';_vidMatchIds=[];
+    const inp2=document.getElementById('vidSearchInput');if(inp2)inp2.value='';
     _vidSetFilter(st2);
     return;
   }
-  // For topic — filter by topic on analytics tab
   if(type==='topic'&&_vidView==='analytics'){
+    _vidSearch='';_vidMatchIds=[];
+    const inp2=document.getElementById('vidSearchInput');if(inp2)inp2.value='';
     _anTopicFilter=text;renderVideosPageKeepScroll();return;
   }
   // Default: scroll to first match
