@@ -38,10 +38,11 @@
 ### Display Rules
 - **In progress videos**: show "Topic - Title" where topic is normal color, title is muted. For small (L) videos, both topic and title are muted/grey.
 - **Completed videos**: show title only.
-- **Big videos** (B): translucent white background (`rgba(255,255,255,.50)`) on both Current and All Details tabs.
+- **Big videos** (B): translucent white background (`rgba(255,255,255,.50)`) on both Current and All Details tabs. `+` button to add child (8px margin-right for breathing room). Child count shown in parentheses after title — 9px, `rgba(140,135,160,.7)`, nudged `top:0.5px` for vertical alignment.
 - **Small videos** (L with big_video_id): muted/grey text in All Details, normal text in Current tab. White `└` indent mark when shown as child.
 - **Standalone videos**: videos without `big_video_id` are standalone — cannot be dragged into B groups (`_vidGroupDrop` rejects).
 - **% complete**: shown for `up_next`/`in_progress` videos between 1-99% (hidden at 0% and 100%). Calculated from done/applicable stages (excludes `na`). Far right on Current tab, between Dur and Status on All Details.
+- **Vertical centering**: Row content uses `display:flex;align-items:center` on title divs and step dot wrappers (both tabs). Step dot containers use flex centering. Prevents content from appearing lifted.
 - **Hide by default** (`_vidShowCompleted=false`): published with past date hidden. For B videos, only hidden if ALL children also have past post_dates. Completed backup hidden. Toggle with +/- button or keyboard E/C.
 
 ### Inline Editing
