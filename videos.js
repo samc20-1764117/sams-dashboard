@@ -84,7 +84,7 @@ function _ytBuildMatch(){
     }
   }
   // Pass 3: exact title match — steal back from wrong matches if needed
-  var unmatchedBefore=dbVids.filter(v=>v.title&&!_ytMatch[String(v.id)]);
+  var unmatchedBefore=dbVids.filter(v=>v.title&&v.status==='published'&&!_ytMatch[String(v.id)]);
   unmatchedBefore.forEach(function(dv3){
     var dbTitle=dv3.title?_ytNorm(dv3.title):'';
     if(!dbTitle)return;
@@ -111,7 +111,7 @@ function _ytBuildMatch(){
   });
   // Pass 4: re-match any videos that lost their match — try date±1 then best title across all
   dbVids.forEach(function(v){
-    if(_ytMatch[String(v.id)])return;
+    if(_ytMatch[String(v.id)]||v.status!=='published')return;
     // Try date-based first
     var candidates=v.post_date?(byDate[v.post_date]||[]).concat(byDate[new Date(new Date(v.post_date+'T12:00:00Z').getTime()-86400000).toISOString().slice(0,10)]||[]).concat(byDate[new Date(new Date(v.post_date+'T12:00:00Z').getTime()+86400000).toISOString().slice(0,10)]||[]).filter(function(j){return!usedYt.has(j);}):[];
     if(candidates.length){
