@@ -86,23 +86,44 @@ function _ytBuildMatch(){
       matched++;
     }
   }
-  // Pass 3: exact title match for remaining unmatched published videos
+  // Pass 3: exact title match — steal back from wrong matches if needed
   var unmatchedBefore=dbVids.filter(v=>v.post_date&&v.status==='published'&&!_ytMatch[String(v.id)]);
   unmatchedBefore.forEach(function(dv3){
     var dbTitle=dv3.title?dv3.title.trim().toLowerCase():'';
     if(!dbTitle)return;
-    // Check if any YT video has this exact title (even if already used)
-    var foundUsed=false,foundFree=false;
     for(var j3=0;j3<ytVids.length;j3++){
-      if((ytVids[j3].title||'').trim().toLowerCase()===dbTitle){
-        if(usedYt.has(j3)){foundUsed=true;var stolenBy=dbVids.find(function(x){return _ytMatch[String(x.id)]&&_ytMatch[String(x.id)].ytId===ytVids[j3].id;});console.log('[YT] Pass3: "'+dv3.title+'" (id:'+dv3.id+', date:'+dv3.post_date+') — YT already used by: "'+(stolenBy?stolenBy.title:'')+'" (id:'+(stolenBy?stolenBy.id:'')+', date:'+(stolenBy?stolenBy.post_date:'')+')');}
-        else{
+      if((ytVids[j3].title||'').trim().toLowerCase()!==dbTitle)continue;
+      if(!usedYt.has(j3)){
+        _ytMatch[String(dv3.id)]={views:ytVids[j3].views,likes:ytVids[j3].likes,comments:ytVids[j3].comments,ytId:ytVids[j3].id,publishedAt:ytVids[j3].publishedAt,duration:ytVids[j3].duration};
+        usedYt.add(j3);matched++;break;
+      }
+      // Steal back: the thief doesn't have an exact title match, so we take it
+      var thiefId=null;
+      for(var d=0;d<dbVids.length;d++){var m=_ytMatch[String(dbVids[d].id)];if(m&&m.ytId===ytVids[j3].id){thiefId=String(dbVids[d].id);break;}}
+      if(thiefId){
+        var thiefV=dbVids.find(function(x){return String(x.id)===thiefId;});
+        var thiefTitle=(thiefV&&thiefV.title||'').trim().toLowerCase();
+        if(thiefTitle!==dbTitle){
+          // Thief didn't have exact title — reassign to rightful owner
+          console.log('[YT] Pass3: Reassigning "'+ytVids[j3].title+'" from id:'+thiefId+' to id:'+dv3.id);
+          delete _ytMatch[thiefId];
           _ytMatch[String(dv3.id)]={views:ytVids[j3].views,likes:ytVids[j3].likes,comments:ytVids[j3].comments,ytId:ytVids[j3].id,publishedAt:ytVids[j3].publishedAt,duration:ytVids[j3].duration};
-          usedYt.add(j3);matched++;foundFree=true;break;
+          break;
         }
       }
     }
-    if(!foundUsed&&!foundFree)console.log('[YT] Pass3: "'+dv3.title+'" — NO matching YT title found. DB has '+dbTitle.length+' chars');
+  });
+  // Pass 4: re-match any videos that lost their match in Pass 3
+  dbVids.forEach(function(v){
+    if(!v.post_date||_ytMatch[String(v.id)])return;
+    var candidates=(byDate[v.post_date]||[]).concat(byDate[new Date(new Date(v.post_date+'T12:00:00Z').getTime()-86400000).toISOString().slice(0,10)]||[]).concat(byDate[new Date(new Date(v.post_date+'T12:00:00Z').getTime()+86400000).toISOString().slice(0,10)]||[]).filter(function(j){return!usedYt.has(j);});
+    if(!candidates.length)return;
+    var bestJ=candidates[0],bestSc=-1;
+    for(var k=0;k<candidates.length;k++){var s=_ytTitleScore(v,candidates[k]);if(s>bestSc){bestSc=s;bestJ=candidates[k];}}
+    if(bestSc>=2){
+      _ytMatch[String(v.id)]={views:ytVids[bestJ].views,likes:ytVids[bestJ].likes,comments:ytVids[bestJ].comments,ytId:ytVids[bestJ].id,publishedAt:ytVids[bestJ].publishedAt,duration:ytVids[bestJ].duration};
+      usedYt.add(bestJ);matched++;
+    }
   });
   console.log('[YT] Matched',matched,'of',dbVids.filter(v=>v.post_date).length,'videos with dates.');
   var unmatched=dbVids.filter(v=>v.post_date&&v.status==='published'&&!_ytMatch[String(v.id)]);
