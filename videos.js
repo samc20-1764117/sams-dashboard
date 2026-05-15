@@ -363,17 +363,10 @@ function renderVideosPage(){
     });
   }
   const _rvpSe2=_vidScrollEl();if(_rvpSe2)_rvpSe2.scrollTop=_rvpTop;
-  // On first table view render, scroll to recent published videos
+  // On first table view render, scroll to default position
   if(_vidView==='table'&&!_vidTableScrolledOnce&&_rvpTop===0){
     _vidTableScrolledOnce=true;
-    requestAnimationFrame(()=>{
-      const rows=document.querySelectorAll('.vid-row[data-vid]');
-      const published=(st.videos||[]).filter(v=>!v.is_deleted&&v.status==='published'&&v.post_date).sort((a,b)=>b.post_date.localeCompare(a.post_date));
-      if(published.length>=3){
-        const target=document.querySelector('.vid-row[data-vid="'+published[2].id+'"]');
-        if(target)target.scrollIntoView({block:'center'});
-      }
-    });
+    _vidScrollToDefault();
   }
   if(_vidSearch)requestAnimationFrame(()=>_vidPostRenderMatches());
   // Load cached YT data from localStorage on first run
@@ -1951,7 +1944,7 @@ function _vidRenderAnalytics(){
 }
 
 // ── View / Filter ────────────────────────────────────────────────────────────
-function _vidSetView(v){_vidView=v;localStorage.setItem('_vidView',v);renderVideosPage();}
+function _vidSetView(v){_vidView=v;localStorage.setItem('_vidView',v);renderVideosPage();_vidScrollToDefault();}
 function _vidSetFilter(f){_vidFilter=f;renderVideosPage();}
 function _vidSetGroup(g){_vidGroupFilter=g;renderVideosPage();}
 function _vidSetSearch(q){
@@ -1960,9 +1953,9 @@ function _vidSetSearch(q){
   if(!q){
     const hadFilter=_vidFilter!=='all'||_anTopicFilter!=='all'||_vidSearchFilterFn;
     _vidSearchFilterFn=null;
-    if(_vidFilter!=='all'){_vidSetFilter('all');return;}
-    if(_anTopicFilter!=='all'){_anTopicFilter='all';renderVideosPageKeepScroll();return;}
-    if(hadFilter){renderVideosPageKeepScroll();return;}
+    if(_vidFilter!=='all'){_vidFilter='all';renderVideosPage();_vidScrollToDefault();return;}
+    if(_anTopicFilter!=='all'){_anTopicFilter='all';renderVideosPage();_vidScrollToDefault();return;}
+    if(hadFilter){renderVideosPage();_vidScrollToDefault();return;}
   }
   _vidPostRenderMatches();
   _vidShowSuggestions(q);
@@ -1983,7 +1976,10 @@ function _vidDateMatch(d,q){
   }
   return d.slice(5)===mo+'-'+dy;
 }
-function _vidSearchMatch(v,q){return(v.title||'').toLowerCase().includes(q)||(v.topic||'').toLowerCase().includes(q)||(v.status||'').replace('_',' ').toLowerCase().includes(q)||_vidDateMatch(v.post_date,q);}
+function _vidSearchMatch(v,q){
+  const statusLabel=(v.status==='published'?'complete':v.status||'').replace('_',' ').toLowerCase();
+  return(v.title||'').toLowerCase().includes(q)||(v.topic||'').toLowerCase().includes(q)||statusLabel.includes(q)||_vidDateMatch(v.post_date,q);
+}
 function _vidBuildMatches(){
   _vidMatchIds=[];
   // Will be rebuilt from DOM after render
@@ -2012,12 +2008,17 @@ function _vidSearchNav(dir){
   if(cnt)cnt.textContent=(_vidMatchIdx+1)+'/'+_vidMatchIds.length;
 }
 function _vidScrollToDefault(){
-  if(_vidView!=='table')return;
   requestAnimationFrame(()=>{
-    const published=(st.videos||[]).filter(v=>!v.is_deleted&&v.status==='published'&&v.post_date).sort((a,b)=>b.post_date.localeCompare(a.post_date));
-    if(published.length>=3){
-      const target=document.querySelector('.vid-row[data-vid="'+published[2].id+'"]');
-      if(target)target.scrollIntoView({block:'center'});
+    if(_vidView==='table'){
+      // Scroll to 3rd most recent published video
+      const published=(st.videos||[]).filter(v=>!v.is_deleted&&v.status==='published'&&v.post_date).sort((a,b)=>b.post_date.localeCompare(a.post_date));
+      if(published.length>=3){
+        const target=document.querySelector('.vid-row[data-vid="'+published[2].id+'"]');
+        if(target)target.scrollIntoView({block:'center'});
+      }
+    } else {
+      // All other views: scroll to top
+      const se=_vidScrollEl();if(se)se.scrollTop=0;
     }
   });
 }
