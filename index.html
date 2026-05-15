@@ -1047,42 +1047,45 @@ document.addEventListener('keydown',e=>{
       dLbl.innerHTML=`${Math.round(r.width)} →<br>${Math.round(r.height)} ↓`;
       ov.appendChild(dLbl);
     });
-    // ── BLUE/RED: Gaps between ALL measurable elements ──
-    const allMeasurable=[...gapEls].map(c=>({el:c,r:c.getBoundingClientRect()}));
-    allMeasurable.sort((a,b)=>(a.r.top-b.r.top)||a.r.left-b.r.left);
-    const gapsDone=new Set();
-    // Dedupe: skip element if a parent is already in the list
-    const filtered=allMeasurable.filter((item,idx)=>{
-      for(let k=0;k<allMeasurable.length;k++){
-        if(k===idx)continue;
-        if(allMeasurable[k].el.contains(item.el))return false;
-      }
-      return true;
+    // ── BLUE/RED: Gaps — use cards for overview, gapEls for other pages ──
+    // Build final list: cards + non-card gapEls that aren't inside any card
+    const finalEls=[];const finalSet=new Set();
+    cards.forEach(c=>{finalEls.push(c);finalSet.add(c);});
+    gapEls.forEach(el=>{
+      if(finalSet.has(el))return;
+      // Skip if inside a card or if it contains a card
+      let dominated=false;
+      cards.forEach(c=>{if(c.contains(el)||el.contains(c))dominated=true;});
+      if(!dominated){finalEls.push(el);finalSet.add(el);}
     });
-    for(let i=0;i<filtered.length;i++){
-      const a=filtered[i].r;
+    const sorted=finalEls.map(c=>({el:c,r:c.getBoundingClientRect()}));
+    sorted.sort((a,b)=>(a.r.top-b.r.top)||a.r.left-b.r.left);
+    const gapsDone=new Set();
+    for(let i=0;i<sorted.length;i++){
+      const a=sorted[i].r;
       // Vertical: find nearest below with overlapping x
-      let foundV=false;
-      for(let j=i+1;j<filtered.length&&!foundV;j++){
-        const b=filtered[j].r;
+      for(let j=i+1;j<sorted.length;j++){
+        const b=sorted[j].r;
         if(a.bottom>b.top-1)continue;
         const xOv=Math.min(a.right,b.right)-Math.max(a.left,b.left);
         if(xOv<15)continue;
         const gap=Math.round(b.top-a.bottom);
         if(gap<0||gap>150)continue;
+        if(sorted[i].el.contains(sorted[j].el)||sorted[j].el.contains(sorted[i].el))continue;
         const k='v'+i+'-'+j;if(gapsDone.has(k))continue;gapsDone.add(k);
         if(gap>0){const ln=document.createElement('div');ln.style.cssText=`position:fixed;left:${Math.max(a.left,b.left)}px;top:${a.bottom}px;width:${xOv}px;height:${gap}px;background:rgba(0,80,255,.06);border-top:1px dashed rgba(0,80,255,.35);border-bottom:1px dashed rgba(0,80,255,.35);`;ov.appendChild(ln);}
         lbl(Math.max(a.left,b.left)-28,a.bottom+Math.max(0,gap)/2-6,gap+'px','#0055cc','rgba(210,220,255,.92)');
-        foundV=true;
+        break;
       }
       // Horizontal: find nearest right with overlapping y
-      for(let j=i+1;j<filtered.length;j++){
-        const b=filtered[j].r;
+      for(let j=i+1;j<sorted.length;j++){
+        const b=sorted[j].r;
         if(a.right>b.left-1)continue;
         const yOv=Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top);
         if(yOv<15)continue;
         const gap=Math.round(b.left-a.right);
         if(gap<0||gap>150)continue;
+        if(sorted[i].el.contains(sorted[j].el)||sorted[j].el.contains(sorted[i].el))continue;
         const k='h'+i+'-'+j;if(gapsDone.has(k))continue;gapsDone.add(k);
         const midY=Math.max(a.top,b.top)+yOv/2;
         if(gap>0){const ln=document.createElement('div');ln.style.cssText=`position:fixed;left:${a.right}px;top:${Math.max(a.top,b.top)}px;width:${gap}px;height:${yOv}px;background:rgba(255,40,0,.06);border-left:1px dashed rgba(255,40,0,.35);border-right:1px dashed rgba(255,40,0,.35);`;ov.appendChild(ln);}
