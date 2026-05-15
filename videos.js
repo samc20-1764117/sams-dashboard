@@ -2019,9 +2019,17 @@ function _vidSearchNav(dir){
 function _vidScrollToDefault(){
   requestAnimationFrame(()=>{
     const today=new Date().toISOString().slice(0,10);
-    // 3 most recent completed videos with past post_dates (Big or standalone)
-    const pastCompleted=(st.videos||[]).filter(v=>!v.is_deleted&&v.status==='published'&&v.post_date&&v.post_date<today&&(v.video_type==='B'||!v.big_video_id)).sort((a,b)=>b.post_date.localeCompare(a.post_date));
-    const target=pastCompleted[2]||pastCompleted[pastCompleted.length-1];
+    // 3 most recent completed videos with past post_dates
+    const pastCompleted=(st.videos||[]).filter(v=>!v.is_deleted&&v.status==='published'&&v.post_date&&v.post_date<today).sort((a,b)=>b.post_date.localeCompare(a.post_date));
+    // Use parent B videos where possible so scroll lands on group headers
+    const seen=new Set();const targets=[];
+    for(const v of pastCompleted){
+      const key=v.big_video_id?String(v.big_video_id):String(v.id);
+      if(seen.has(key))continue;seen.add(key);
+      targets.push(v.big_video_id?(st.videos||[]).find(x=>String(x.id)===key)||v:v);
+      if(targets.length>=3)break;
+    }
+    const target=targets[targets.length-1];
     if(!target)return;
     const tid=String(target.id);
     const row=document.querySelector('.vid-dash-row[data-vid="'+tid+'"]')||document.querySelector('.vid-row[data-vid="'+tid+'"]');
@@ -2894,8 +2902,30 @@ document.addEventListener('keydown',e=>{
   if((e.metaKey||e.ctrlKey)&&e.key==='c'&&_vidSelected.size>0){e.preventDefault();_vidCopied=[];_vidSelected.forEach(id=>{const v=(st.videos||[]).find(x=>String(x.id)===String(id));if(v)_vidCopied.push({...v});});showToast('Copied '+_vidCopied.length+' video(s)','#0ea5e9',1500);return;}
   if((e.metaKey||e.ctrlKey)&&e.key==='v'&&_vidCopied.length>0){e.preventDefault();_vidCopied.forEach(v=>_vidDuplicate(v.id));return;}
   if(e.key==='n'&&!e.metaKey&&!e.ctrlKey){e.preventDefault();openVidModal();return;}
+  // Shift+Up/Down: extend selection to adjacent row
+  if(_vidView==='dashboard'&&e.shiftKey&&(e.key==='ArrowUp'||e.key==='ArrowDown')){
+    e.preventDefault();
+    const rows=[...document.querySelectorAll('.vid-dash-row[data-vid]')].map(r=>r.dataset.vid);
+    if(!rows.length)return;
+    const dir=e.key==='ArrowUp'?-1:1;
+    if(!_vidSelected.size){
+      // Nothing selected — select first/last row
+      const id=dir===-1?rows[rows.length-1]:rows[0];
+      _vidSelected.add(id);_vidLastSel=id;
+    }else{
+      // Extend from last selected
+      const lastIdx=rows.indexOf(_vidLastSel);
+      if(lastIdx===-1)return;
+      const nextIdx=lastIdx+dir;
+      if(nextIdx<0||nextIdx>=rows.length)return;
+      const nid=rows[nextIdx];
+      _vidSelected.add(nid);_vidLastSel=nid;
+    }
+    _vidUpdateChildSel();_applyVidSel();
+    return;
+  }
   // Cmd+Arrow with selection on dashboard: move videos between statuses
-  if(_vidView==='dashboard'&&_vidSelected.size>0&&(e.metaKey||e.ctrlKey)&&['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)){
+  if(_vidView==='dashboard'&&_vidSelected.size>0&&(e.metaKey||e.ctrlKey)&&!e.shiftKey&&['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)){
     e.preventDefault();
     // Cmd+Right: current→idea, Cmd+Left: idea→in_progress, Cmd+Up: in_progress→up_next, Cmd+Down: up_next→in_progress
     const statusMap={ArrowRight:{in_progress:'idea',up_next:'idea'},ArrowLeft:{idea:'in_progress'},ArrowUp:{in_progress:'up_next'},ArrowDown:{up_next:'in_progress'}};

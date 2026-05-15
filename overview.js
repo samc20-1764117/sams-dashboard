@@ -3624,7 +3624,7 @@ function renderTBSum(ds){
   const dayMins=(HOURS[HOURS.length-1]-HOURS[0]+1)*60;
   const free=Math.max(0,dayMins-tot);
   const freeStr=free>=60?`${Math.floor(free/60)}h${free%60?` ${free%60}m`:''}`:` ${free}m`;
-  document.getElementById('tbSum').innerHTML=`<div class="si"><span>Blocked:</span><span class="sv">${Math.floor(tot/60)}h ${tot%60}m</span><span class="sf">(${freeStr} free)</span></div>`;
+  document.getElementById('tbSum').innerHTML=`<div class="si"><span>Blocked:</span><span class="sv">${Math.floor(tot/60)}h ${tot%60}m</span><span class="tb-free">(${freeStr} free)</span></div><button class="btn btn-ghost btn-xs" id="autoTBToggle" onclick="toggleAutoTB()" title="Toggle auto time blocks" style="margin-left:auto;font-size:8px;flex-shrink:0;opacity:${cfg.showAutoTB?'1':'.4'}">Auto</button>`;
 }
 // ── Auto Timeblocks ────────────────────────────────────────────────────────────
 function getAutoTBForDate(ds){
