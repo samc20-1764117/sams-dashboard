@@ -237,19 +237,23 @@ function _vidDateColor(d,v){
 function _vidScrollEl(){
   const pg=document.getElementById('page-videos');if(!pg)return null;
   const card=pg.querySelector('.card');if(!card)return null;
-  return card.querySelector('div')||null;
+  // Dashboard: card overflow=hidden, scroll happens in child divs
+  // Table/other: card itself scrolls (overflow=auto)
+  if(_vidView==='dashboard')return card.querySelector('div')||null;
+  return card;
 }
 function renderVideosPageKeepScroll(){
   const se=_vidScrollEl();const top=se?se.scrollTop:0;
   const dl=document.getElementById('vidDashLeft');const dlTop=dl?dl.scrollTop:0;
   const dr=document.getElementById('vidDashRight');const drTop=dr?dr.scrollTop:0;
   renderVideosPage();
-  const se2=_vidScrollEl();if(se2)se2.scrollTop=top;
-  requestAnimationFrame(()=>{
-    const se3=_vidScrollEl();if(se3&&se3.scrollTop!==top)se3.scrollTop=top;
+  const restore=()=>{
+    const se2=_vidScrollEl();if(se2)se2.scrollTop=top;
     const dl2=document.getElementById('vidDashLeft');if(dl2)dl2.scrollTop=dlTop;
     const dr2=document.getElementById('vidDashRight');if(dr2)dr2.scrollTop=drTop;
-  });
+  };
+  restore();
+  requestAnimationFrame(()=>{restore();requestAnimationFrame(restore);});
 }
 function renderVideosPage(){
   const _rvpSe=_vidScrollEl();const _rvpTop=_rvpSe?_rvpSe.scrollTop:0;
