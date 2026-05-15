@@ -84,7 +84,7 @@ function _ytBuildMatch(){
     }
   }
   // Pass 3: exact title match — steal back from wrong matches if needed
-  var unmatchedBefore=dbVids.filter(v=>v.post_date&&v.status==='published'&&!_ytMatch[String(v.id)]);
+  var unmatchedBefore=dbVids.filter(v=>v.title&&!_ytMatch[String(v.id)]);
   unmatchedBefore.forEach(function(dv3){
     var dbTitle=dv3.title?_ytNorm(dv3.title):'';
     if(!dbTitle)return;
@@ -111,9 +111,9 @@ function _ytBuildMatch(){
   });
   // Pass 4: re-match any videos that lost their match — try date±1 then best title across all
   dbVids.forEach(function(v){
-    if(!v.post_date||_ytMatch[String(v.id)])return;
+    if(_ytMatch[String(v.id)])return;
     // Try date-based first
-    var candidates=(byDate[v.post_date]||[]).concat(byDate[new Date(new Date(v.post_date+'T12:00:00Z').getTime()-86400000).toISOString().slice(0,10)]||[]).concat(byDate[new Date(new Date(v.post_date+'T12:00:00Z').getTime()+86400000).toISOString().slice(0,10)]||[]).filter(function(j){return!usedYt.has(j);});
+    var candidates=v.post_date?(byDate[v.post_date]||[]).concat(byDate[new Date(new Date(v.post_date+'T12:00:00Z').getTime()-86400000).toISOString().slice(0,10)]||[]).concat(byDate[new Date(new Date(v.post_date+'T12:00:00Z').getTime()+86400000).toISOString().slice(0,10)]||[]).filter(function(j){return!usedYt.has(j);}):[];
     if(candidates.length){
       var bestJ=candidates[0],bestSc=-1;
       for(var k=0;k<candidates.length;k++){var s=_ytTitleScore(v,candidates[k]);if(s>bestSc){bestSc=s;bestJ=candidates[k];}}
@@ -134,7 +134,7 @@ function _ytBuildMatch(){
       usedYt.add(bestAllJ);matched++;
     }
   });
-  var unmatched=dbVids.filter(v=>v.post_date&&v.status==='published'&&!_ytMatch[String(v.id)]);
+  var unmatched=dbVids.filter(v=>v.status==='published'&&!_ytMatch[String(v.id)]);
   if(unmatched.length)console.log('[YT] Unmatched published:',unmatched.map(v=>v.post_date+' '+v.title));
 }
 function _ytForVid(id){return _ytMatch?_ytMatch[String(id)]:null;}
@@ -2070,19 +2070,12 @@ function _vidSearchNav(dir){
 function _vidScrollToDefault(){
   requestAnimationFrame(()=>{
     const today=new Date().toISOString().slice(0,10);
-    // 3 most recent completed videos with past post_dates
-    const pastCompleted=(st.videos||[]).filter(v=>!v.is_deleted&&v.status==='published'&&v.post_date&&v.post_date<today).sort((a,b)=>b.post_date.localeCompare(a.post_date));
-    // Use parent B videos where possible so scroll lands on group headers
-    const seen=new Set();const targets=[];
-    for(const v of pastCompleted){
-      const key=v.big_video_id?String(v.big_video_id):String(v.id);
-      if(seen.has(key))continue;seen.add(key);
-      targets.push(v.big_video_id?(st.videos||[]).find(x=>String(x.id)===key)||v:v);
-      if(targets.length>=3)break;
-    }
-    const target=targets[0];
+    // 3 most recent completed B videos with past post dates (prefer YT date)
+    const publishedBigs=(st.videos||[]).filter(v=>!v.is_deleted&&v.status==='published'&&v.video_type==='B');
+    const withDates=publishedBigs.map(v=>{const d=_ytPostDate(String(v.id))||v.post_date;return{v,date:d};}).filter(x=>x.date&&x.date<today).sort((a,b)=>b.date.localeCompare(a.date));
+    const target=withDates[2]||withDates[withDates.length-1];
     if(!target)return;
-    const tid=String(target.id);
+    const tid=String(target.v.id);
     const row=document.querySelector('.vid-dash-row[data-vid="'+tid+'"]')||document.querySelector('.vid-row[data-vid="'+tid+'"]');
     if(row)row.scrollIntoView({block:'start'});
   });
