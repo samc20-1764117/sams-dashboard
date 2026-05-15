@@ -1641,7 +1641,7 @@ function _vidRenderAnalytics(){
   const _completedVals=metricVals.filter(m=>m.key!==_curPeriod);
   const _histAvg=_completedVals.length?_completedVals.reduce((s,m)=>s+m.val,0)/_completedVals.length:0;
 
-  const _barH=300; // bar area height in px
+  const _barH=350; // bar area height in px
   trendHtml+='<div style="display:flex;align-items:flex-end;gap:2px;height:'+(_barH+40)+'px;padding:0 8px">';
   metricVals.forEach(m=>{
     const isCur=m.key===_curPeriod&&_anTrendPeriod==='monthly';
@@ -1815,8 +1815,8 @@ function _vidRenderAnalytics(){
   const _kCard=(fn,label,val,spark,accent)=>{
     const bg=accent?accent+'08':'var(--glass)';
     const bdr=accent?accent+'30':'var(--border)';
-    return`<div style="background:${bg};border:1px solid ${bdr};border-radius:10px;padding:10px 12px;cursor:pointer;min-width:0;flex:1;text-align:center" onclick="${fn}">
-      <div style="font-size:9px;color:var(--muted);margin-bottom:2px">${label}</div>
+    return`<div style="background:${bg};border:1px solid ${bdr};border-radius:10px;padding:16px 12px;cursor:pointer;min-width:0;flex:1;text-align:center" onclick="${fn}">
+      <div style="font-size:10px;color:var(--muted);margin-bottom:3px">${label}</div>
       <div style="display:flex;align-items:center;justify-content:center;gap:5px">
         <div style="font-size:16px;font-weight:700;color:${accent||'var(--text)'};white-space:nowrap">${val}</div>
         ${spark||''}
@@ -1955,14 +1955,29 @@ function _vidSetFilter(f){_vidFilter=f;renderVideosPage();}
 function _vidSetGroup(g){_vidGroupFilter=g;renderVideosPage();}
 function _vidSetSearch(q){
   _vidSearch=q;_vidMatchIdx=0;_vidSearchTs=Date.now();
+  // If search cleared, reset any active filter
+  if(!q&&_vidFilter!=='all'){_vidSetFilter('all');return;}
+  if(!q&&_anTopicFilter!=='all'){_anTopicFilter='all';renderVideosPageKeepScroll();return;}
   _vidPostRenderMatches();
   _vidShowSuggestions(q);
-  // Update count display
   const cnt=document.getElementById('vidSearchCount');
   if(cnt)cnt.textContent=(_vidMatchIds.length?(_vidMatchIdx+1):0)+'/'+_vidMatchIds.length;
   if(_vidMatchIds.length)_vidScrollToMatch();
 }
-function _vidSearchMatch(v,q){return(v.title||'').toLowerCase().includes(q)||(v.topic||'').toLowerCase().includes(q)||(v.status||'').replace('_',' ').toLowerCase().includes(q)||(v.post_date||'').includes(q);}
+function _vidDateMatch(d,q){
+  if(!d)return false;
+  // d is YYYY-MM-DD, q could be 4/20, 4/20/26, 4-20, 4.20, 4/20/2025, 2025-04, etc.
+  if(d.includes(q))return true;
+  const m=q.match(/^(\d{1,2})[\/\-\.](\d{1,2})(?:[\/\-\.](\d{2,4}))?$/);
+  if(!m)return false;
+  const mo=m[1].padStart(2,'0'),dy=m[2].padStart(2,'0');
+  if(m[3]){
+    const yr=m[3].length===2?'20'+m[3]:m[3];
+    return d===yr+'-'+mo+'-'+dy;
+  }
+  return d.slice(5)===mo+'-'+dy;
+}
+function _vidSearchMatch(v,q){return(v.title||'').toLowerCase().includes(q)||(v.topic||'').toLowerCase().includes(q)||(v.status||'').replace('_',' ').toLowerCase().includes(q)||_vidDateMatch(v.post_date,q);}
 function _vidBuildMatches(){
   _vidMatchIds=[];
   // Will be rebuilt from DOM after render
@@ -2078,14 +2093,14 @@ function _vidPickSuggestion(text,type){
   if(type==='status'){
     const statusMap={'idea':'idea','up next':'up_next','in progress':'in_progress','complete':'published','published':'published','backup':'backup'};
     const st2=statusMap[text.toLowerCase()]||text;
-    _vidSearch='';_vidMatchIds=[];
-    const inp2=document.getElementById('vidSearchInput');if(inp2)inp2.value='';
+    _vidSearch=text;_vidMatchIds=[];_vidSearchTs=Date.now();
+    const inp2=document.getElementById('vidSearchInput');if(inp2)inp2.value=text;
     _vidSetFilter(st2);
     return;
   }
   if(type==='topic'&&_vidView==='analytics'){
-    _vidSearch='';_vidMatchIds=[];
-    const inp2=document.getElementById('vidSearchInput');if(inp2)inp2.value='';
+    _vidSearch=text;_vidMatchIds=[];_vidSearchTs=Date.now();
+    const inp2=document.getElementById('vidSearchInput');if(inp2)inp2.value=text;
     _anTopicFilter=text;renderVideosPageKeepScroll();return;
   }
   // Default: scroll to first match
