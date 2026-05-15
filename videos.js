@@ -113,16 +113,29 @@ function _ytBuildMatch(){
       }
     }
   });
-  // Pass 4: re-match any videos that lost their match in Pass 3
+  // Pass 4: re-match any videos that lost their match — try date±1 then best title across all
   dbVids.forEach(function(v){
     if(!v.post_date||_ytMatch[String(v.id)])return;
+    // Try date-based first
     var candidates=(byDate[v.post_date]||[]).concat(byDate[new Date(new Date(v.post_date+'T12:00:00Z').getTime()-86400000).toISOString().slice(0,10)]||[]).concat(byDate[new Date(new Date(v.post_date+'T12:00:00Z').getTime()+86400000).toISOString().slice(0,10)]||[]).filter(function(j){return!usedYt.has(j);});
-    if(!candidates.length)return;
-    var bestJ=candidates[0],bestSc=-1;
-    for(var k=0;k<candidates.length;k++){var s=_ytTitleScore(v,candidates[k]);if(s>bestSc){bestSc=s;bestJ=candidates[k];}}
-    if(bestSc>=2){
-      _ytMatch[String(v.id)]={views:ytVids[bestJ].views,likes:ytVids[bestJ].likes,comments:ytVids[bestJ].comments,ytId:ytVids[bestJ].id,publishedAt:ytVids[bestJ].publishedAt,duration:ytVids[bestJ].duration};
-      usedYt.add(bestJ);matched++;
+    if(candidates.length){
+      var bestJ=candidates[0],bestSc=-1;
+      for(var k=0;k<candidates.length;k++){var s=_ytTitleScore(v,candidates[k]);if(s>bestSc){bestSc=s;bestJ=candidates[k];}}
+      if(bestSc>=1){
+        _ytMatch[String(v.id)]={views:ytVids[bestJ].views,likes:ytVids[bestJ].likes,comments:ytVids[bestJ].comments,ytId:ytVids[bestJ].id,publishedAt:ytVids[bestJ].publishedAt,duration:ytVids[bestJ].duration};
+        usedYt.add(bestJ);matched++;return;
+      }
+    }
+    // Try best title match across all unused YT videos
+    var bestAll=-1,bestAllJ=-1;
+    for(var j=0;j<ytVids.length;j++){
+      if(usedYt.has(j))continue;
+      var s2=_ytTitleScore(v,j);
+      if(s2>bestAll){bestAll=s2;bestAllJ=j;}
+    }
+    if(bestAll>=3){
+      _ytMatch[String(v.id)]={views:ytVids[bestAllJ].views,likes:ytVids[bestAllJ].likes,comments:ytVids[bestAllJ].comments,ytId:ytVids[bestAllJ].id,publishedAt:ytVids[bestAllJ].publishedAt,duration:ytVids[bestAllJ].duration};
+      usedYt.add(bestAllJ);matched++;
     }
   });
   console.log('[YT] Matched',matched,'of',dbVids.filter(v=>v.post_date).length,'videos with dates.');
