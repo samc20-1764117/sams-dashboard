@@ -2069,17 +2069,20 @@ function _vidSearchNav(dir){
   if(cnt)cnt.textContent=(_vidMatchIdx+1)+'/'+_vidMatchIds.length;
 }
 function _vidScrollToDefault(){
-  requestAnimationFrame(()=>{
+  const _doScroll=()=>{
     const today=new Date().toISOString().slice(0,10);
-    // 3 most recent completed B videos with past post dates (prefer YT date)
     const publishedBigs=(st.videos||[]).filter(v=>!v.is_deleted&&v.status==='published'&&v.video_type==='B');
     const withDates=publishedBigs.map(v=>{const d=_ytPostDate(String(v.id))||v.post_date;return{v,date:d};}).filter(x=>x.date&&x.date<today).sort((a,b)=>b.date.localeCompare(a.date));
+    if(!withDates.length)return false;
     const target=withDates[2]||withDates[withDates.length-1];
-    if(!target)return;
+    if(!target)return false;
     const tid=String(target.v.id);
     const row=document.querySelector('.vid-dash-row[data-vid="'+tid+'"]')||document.querySelector('.vid-row[data-vid="'+tid+'"]');
-    if(row)row.scrollIntoView({block:'start'});
-  });
+    if(!row)return false;
+    row.scrollIntoView({block:'start'});
+    return true;
+  };
+  requestAnimationFrame(()=>{if(!_doScroll())setTimeout(()=>{if(!_doScroll())setTimeout(_doScroll,500);},100);});
 }
 function _vidScrollToMatch(){
   const id=_vidMatchIds[_vidMatchIdx];if(!id)return;
