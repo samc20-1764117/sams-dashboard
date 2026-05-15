@@ -2929,9 +2929,10 @@ document.addEventListener('keydown',e=>{
     // Promote: idea → up_next → in_progress. Demote: in_progress → up_next → idea
     if(isLeftRight&&(e.metaKey||e.ctrlKey)&&!e.shiftKey&&_vidSelected.size>0){
       e.preventDefault();
-      const map=e.key==='ArrowRight'
-        ?{idea:'up_next',up_next:'in_progress'}
-        :{in_progress:'up_next',up_next:'idea'};
+      // Order: up_next → in_progress → idea. Left=toward up_next, Right=toward idea
+      const map=e.key==='ArrowLeft'
+        ?{in_progress:'up_next'}
+        :{up_next:'in_progress',in_progress:'idea'};
       const allIds=new Set([..._vidSelected,..._vidChildSelected]);
       const vids=[...allIds].map(id=>(st.videos||[]).find(x=>String(x.id)===id)).filter(Boolean);
       const toMove=vids.filter(v=>map[v.status]);
