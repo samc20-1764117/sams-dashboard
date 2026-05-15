@@ -3617,9 +3617,14 @@ function drawTBBlock(col,b){
   col.appendChild(el);
 }
 function renderTBSum(ds){
-  const c={};st.blocks.filter(b=>b.ds===ds).forEach(b=>c[b.cat]=(c[b.cat]||0)+b.dur);
+  const c={};getVisibleBlocks(ds).forEach(b=>c[b.cat]=(c[b.cat]||0)+b.dur);
+  getAutoTBForDate(ds).forEach(a=>c['Auto']=(c['Auto']||0)+a.dur);
+  getRecAutoTBForDate(ds).forEach(a=>c['Recurring']=(c['Recurring']||0)+a.dur);
   const tot=Object.values(c).reduce((a,v)=>a+v,0);
-  document.getElementById('tbSum').innerHTML=`<div class="si"><span>Blocked:</span><span class="sv">${Math.floor(tot/60)}h ${tot%60}m</span></div>`+Object.entries(c).map(([cat,min])=>{const s=gc(cat);return`<div class="si"><div class="sdotc" style="background:${s.d}"></div><span>${cat}</span><span class="sv">${Math.floor(min/60)}h${min%60?` ${min%60}m`:''}</span></div>`;}).join('');
+  const dayMins=(HOURS[HOURS.length-1]-HOURS[0]+1)*60;
+  const free=Math.max(0,dayMins-tot);
+  const freeStr=free>=60?`${Math.floor(free/60)}h${free%60?` ${free%60}m`:''}`:` ${free}m`;
+  document.getElementById('tbSum').innerHTML=`<div class="si"><span>Blocked:</span><span class="sv">${Math.floor(tot/60)}h ${tot%60}m</span><span class="sf">(${freeStr} free)</span></div>`;
 }
 // ── Auto Timeblocks ────────────────────────────────────────────────────────────
 function getAutoTBForDate(ds){
