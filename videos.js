@@ -75,18 +75,23 @@ function _ytBuildMatch(){
     }
   }
   // Pass 3: exact title match for remaining unmatched published videos
-  for(var i3=0;i3<dbVids.length;i3++){
-    var dv3=dbVids[i3];
-    if(!dv3.post_date||!dv3.title||_ytMatch[String(dv3.id)])continue;
-    var dbTitle=dv3.title.trim().toLowerCase();
+  var unmatchedBefore=dbVids.filter(v=>v.post_date&&v.status==='published'&&!_ytMatch[String(v.id)]);
+  unmatchedBefore.forEach(function(dv3){
+    var dbTitle=dv3.title?dv3.title.trim().toLowerCase():'';
+    if(!dbTitle)return;
+    // Check if any YT video has this exact title (even if already used)
+    var foundUsed=false,foundFree=false;
     for(var j3=0;j3<ytVids.length;j3++){
-      if(usedYt.has(j3))continue;
       if((ytVids[j3].title||'').trim().toLowerCase()===dbTitle){
-        _ytMatch[String(dv3.id)]={views:ytVids[j3].views,likes:ytVids[j3].likes,comments:ytVids[j3].comments,ytId:ytVids[j3].id,publishedAt:ytVids[j3].publishedAt,duration:ytVids[j3].duration};
-        usedYt.add(j3);matched++;break;
+        if(usedYt.has(j3)){foundUsed=true;console.log('[YT] Pass3: "'+dv3.title+'" matches YT "'+ytVids[j3].title+'" but YT already used by another DB video');}
+        else{
+          _ytMatch[String(dv3.id)]={views:ytVids[j3].views,likes:ytVids[j3].likes,comments:ytVids[j3].comments,ytId:ytVids[j3].id,publishedAt:ytVids[j3].publishedAt,duration:ytVids[j3].duration};
+          usedYt.add(j3);matched++;foundFree=true;break;
+        }
       }
     }
-  }
+    if(!foundUsed&&!foundFree)console.log('[YT] Pass3: "'+dv3.title+'" — NO matching YT title found. DB has '+dbTitle.length+' chars');
+  });
   console.log('[YT] Matched',matched,'of',dbVids.filter(v=>v.post_date).length,'videos with dates.');
   var unmatched=dbVids.filter(v=>v.post_date&&v.status==='published'&&!_ytMatch[String(v.id)]);
   if(unmatched.length)console.log('[YT] Unmatched published:',unmatched.map(v=>v.post_date+' '+v.title));
