@@ -701,7 +701,7 @@ function _stateRestore(snap){
   renderPupSkillsHighlight();
   if(document.getElementById('tbGrid'))renderDayTB();
   renderWkCal();renderRecOv();renderWeeklyPage();
-  if(typeof renderVideosPage==='function'&&document.getElementById('videosContent'))renderVideosPage();
+  if(typeof renderVideosPageKeepScroll==='function'&&document.getElementById('videosContent'))renderVideosPageKeepScroll();
 }
 
 function pushUndo(fn,msg,onExpire){

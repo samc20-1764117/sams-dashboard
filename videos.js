@@ -976,7 +976,7 @@ function vidTblSort(col){
   if(_vidSortCol!==col){_vidSortCol=col;_vidSortDir=1;}
   else if(_vidSortDir===1){_vidSortDir=-1;}
   else{_vidSortCol=null;_vidSortDir=1;}
-  renderVideosPage();
+  renderVideosPageKeepScroll();
 }
 function _vidSortVids(vids){
   const sorted=[...vids];
@@ -1252,7 +1252,7 @@ function _vidRenderGroups(){
 }
 
 // ── MONTHLY VIEW ─────────────────────────────────────────────────────────────
-function _vidMonthNav(dir){_vidMonthOffset+=dir;renderVideosPage();}
+function _vidMonthNav(dir){_vidMonthOffset+=dir;renderVideosPageKeepScroll();}
 function _vidRenderMonthly(){
   const now=new Date();
   const viewDate=new Date(now.getFullYear(),now.getMonth()+_vidMonthOffset,1);
@@ -1945,17 +1945,17 @@ function _vidRenderAnalytics(){
 
 // ── View / Filter ────────────────────────────────────────────────────────────
 function _vidSetView(v){_vidView=v;localStorage.setItem('_vidView',v);renderVideosPage();_vidScrollToDefault();}
-function _vidSetFilter(f){_vidFilter=f;renderVideosPage();}
-function _vidSetGroup(g){_vidGroupFilter=g;renderVideosPage();}
+function _vidSetFilter(f){_vidFilter=f;renderVideosPageKeepScroll();}
+function _vidSetGroup(g){_vidGroupFilter=g;renderVideosPageKeepScroll();}
 function _vidSetSearch(q){
   _vidSearch=q;_vidMatchIdx=0;_vidSearchTs=Date.now();
   // If search cleared, reset any active filter
   if(!q){
     const hadFilter=_vidFilter!=='all'||_anTopicFilter!=='all'||_vidSearchFilterFn;
     _vidSearchFilterFn=null;
-    if(_vidFilter!=='all'){_vidFilter='all';renderVideosPage();_vidScrollToDefault();return;}
-    if(_anTopicFilter!=='all'){_anTopicFilter='all';renderVideosPage();_vidScrollToDefault();return;}
-    if(hadFilter){renderVideosPage();_vidScrollToDefault();return;}
+    if(_vidFilter!=='all'){_vidFilter='all';renderVideosPageKeepScroll();_vidScrollToDefault();return;}
+    if(_anTopicFilter!=='all'){_anTopicFilter='all';renderVideosPageKeepScroll();_vidScrollToDefault();return;}
+    if(hadFilter){renderVideosPageKeepScroll();_vidScrollToDefault();return;}
   }
   _vidPostRenderMatches();
   _vidShowSuggestions(q);
@@ -2009,17 +2009,13 @@ function _vidSearchNav(dir){
 }
 function _vidScrollToDefault(){
   requestAnimationFrame(()=>{
-    if(_vidView==='table'){
-      // Scroll to 3rd most recent published video
-      const published=(st.videos||[]).filter(v=>!v.is_deleted&&v.status==='published'&&v.post_date).sort((a,b)=>b.post_date.localeCompare(a.post_date));
-      if(published.length>=3){
-        const target=document.querySelector('.vid-row[data-vid="'+published[2].id+'"]');
-        if(target)target.scrollIntoView({block:'center'});
-      }
-    } else {
-      // All other views: scroll to top
-      const se=_vidScrollEl();if(se)se.scrollTop=0;
-    }
+    // Find 3rd most recent published Big video
+    const pubBig=(st.videos||[]).filter(v=>!v.is_deleted&&v.status==='published'&&v.video_type==='B'&&v.post_date).sort((a,b)=>b.post_date.localeCompare(a.post_date));
+    const target=pubBig[2]||pubBig[pubBig.length-1];
+    if(!target)return;
+    const tid=String(target.id);
+    const row=document.querySelector('.vid-dash-row[data-vid="'+tid+'"]')||document.querySelector('.vid-row[data-vid="'+tid+'"]');
+    if(row)row.scrollIntoView({block:'start'});
   });
 }
 function _vidScrollToMatch(){
