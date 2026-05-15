@@ -96,7 +96,7 @@
       <div class="tod-tb-header" style="display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:4px">
         <div style="display:flex;align-items:center;gap:2px;flex-shrink:0">
           <button class="btn btn-ghost btn-xs" onclick="shiftDay(-1)">←</button>
-          <button class="btn btn-ghost btn-xs" id="todPlusBtn" onclick="openQA('today',this)">+</button>
+          <button class="btn-plus" id="todPlusBtn" onclick="openQA('today',this)">+</button>
         </div>
         <div style="display:flex;align-items:center;justify-content:center;gap:5px">
           <span style="font-size:12px;font-weight:700;color:var(--text);letter-spacing:-.1px" id="ovTitle">Thursday, March 12</span>
@@ -213,7 +213,7 @@
     </div>
     </div><!-- row1-right-top -->
     <!-- Week Cal -->
-    <div class="card" style="flex:1;min-height:0;overflow:hidden;margin-top:4px">
+    <div class="card" style="flex:1;min-height:0;overflow:hidden">
       <div class="wkc-outer">
         <div class="wkc-nav">
           <button class="btn btn-ghost btn-xs" onclick="shiftWk(-1)">←</button>
@@ -966,5 +966,67 @@ tickClock();_updateOvTopDate();setInterval(tickClock,1000);init();
     </div>
   </div>
 </div>
+<script>
+// Debug grid overlay — press G to toggle
+document.addEventListener('keydown',e=>{
+  if(e.key==='g'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,.overlay.open')){
+    e.preventDefault();
+    let ov=document.getElementById('_dbgGrid');
+    if(ov){ov.remove();return;}
+    ov=document.createElement('div');ov.id='_dbgGrid';
+    ov.style.cssText='position:fixed;inset:0;z-index:99999;pointer-events:none;font-family:monospace;font-size:9px;';
+    const cards=document.querySelectorAll('#page-overview .card, #page-overview .overview-cols, #page-overview .row1-right-top, #page-overview .row1-right-panel, #page-overview .overview-left');
+    const ovCols=document.querySelector('#page-overview .overview-cols');
+    if(!ovCols){return;}
+    const allCards=[...document.querySelectorAll('#page-overview .card')].filter(c=>c.offsetParent!==null);
+    // Draw boxes around each card with measurements
+    allCards.forEach((c,i)=>{
+      const r=c.getBoundingClientRect();
+      const box=document.createElement('div');
+      box.style.cssText=`position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;border:1px solid rgba(255,0,0,.5);`;
+      ov.appendChild(box);
+    });
+    // Measure gaps between adjacent cards
+    for(let i=0;i<allCards.length;i++){
+      for(let j=i+1;j<allCards.length;j++){
+        const a=allCards[i].getBoundingClientRect(),b=allCards[j].getBoundingClientRect();
+        // Horizontal gap (cards side by side)
+        if(Math.abs(a.top-b.top)<5&&a.right<b.left){
+          const gap=Math.round(b.left-a.right);
+          const lbl=document.createElement('div');
+          lbl.style.cssText=`position:fixed;left:${a.right}px;top:${a.top-12}px;width:${gap}px;text-align:center;color:#e00;font-weight:700;background:rgba(255,200,200,.7);padding:1px 0;font-size:8px;`;
+          lbl.textContent=gap+'px';
+          const line=document.createElement('div');
+          line.style.cssText=`position:fixed;left:${a.right}px;top:${a.top}px;width:${gap}px;height:${a.height}px;background:rgba(255,0,0,.06);border-left:1px dashed rgba(255,0,0,.3);border-right:1px dashed rgba(255,0,0,.3);`;
+          ov.appendChild(line);ov.appendChild(lbl);
+        }
+        // Vertical gap (cards stacked)
+        if(Math.abs(a.left-b.left)<5&&a.bottom<b.top&&(b.top-a.bottom)<40){
+          const gap=Math.round(b.top-a.bottom);
+          const lbl=document.createElement('div');
+          lbl.style.cssText=`position:fixed;left:${a.left-28}px;top:${a.bottom}px;height:${gap}px;display:flex;align-items:center;color:#00c;font-weight:700;font-size:8px;background:rgba(200,200,255,.7);padding:0 3px;writing-mode:horizontal-tb;`;
+          lbl.textContent=gap+'px';
+          const line=document.createElement('div');
+          line.style.cssText=`position:fixed;left:${a.left}px;top:${a.bottom}px;width:${a.width}px;height:${gap}px;background:rgba(0,0,255,.04);border-top:1px dashed rgba(0,0,255,.3);border-bottom:1px dashed rgba(0,0,255,.3);`;
+          ov.appendChild(line);ov.appendChild(lbl);
+        }
+      }
+    }
+    // Show outer margins from overview-cols
+    const ocr=ovCols.getBoundingClientRect();
+    const marginLbl=document.createElement('div');
+    marginLbl.style.cssText=`position:fixed;left:${ocr.left}px;top:${ocr.top-14}px;color:#090;font-weight:700;font-size:8px;background:rgba(200,255,200,.7);padding:1px 4px;`;
+    marginLbl.textContent=`grid gap: ${getComputedStyle(ovCols).gap}`;
+    ov.appendChild(marginLbl);
+    // Show row1-right-panel gap
+    const r1rp=document.querySelector('#page-overview .row1-right-panel');
+    if(r1rp){const rl=document.createElement('div');rl.style.cssText=`position:fixed;left:${r1rp.getBoundingClientRect().left}px;top:${r1rp.getBoundingClientRect().top-14}px;color:#909;font-weight:700;font-size:8px;background:rgba(255,200,255,.7);padding:1px 4px;`;rl.textContent=`right-panel gap: ${getComputedStyle(r1rp).gap}`;ov.appendChild(rl);}
+    // Show row1-right-top gap
+    const r1rt=document.querySelector('#page-overview .row1-right-top');
+    if(r1rt){const rl2=document.createElement('div');rl2.style.cssText=`position:fixed;left:${r1rt.getBoundingClientRect().right-120}px;top:${r1rt.getBoundingClientRect().top-14}px;color:#960;font-weight:700;font-size:8px;background:rgba(255,240,200,.7);padding:1px 4px;`;rl2.textContent=`top-row gap: ${getComputedStyle(r1rt).gap}`;ov.appendChild(rl2);}
+    document.body.appendChild(ov);
+  }
+});
+</script>
 <div id="uiTip" style="position:fixed;pointer-events:none;z-index:9999;background:rgba(255,250,246,.92);color:var(--muted);font-size:10px;font-weight:600;padding:3px 8px;border-radius:5px;white-space:nowrap;opacity:0;transition:opacity .1s;font-family:'DM Sans',sans-serif;box-shadow:0 2px 8px rgba(0,0,0,.1),0 1px 2px rgba(0,0,0,.06);border:1px solid rgba(210,195,185,.4);letter-spacing:.01em;top:0;left:0"></div>
 </body></html>
