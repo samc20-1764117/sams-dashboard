@@ -476,12 +476,12 @@ function _vidRenderDashboard(){
         <div style="padding-left:10px">Ideas</div>
       </div>
       <div id="vidDashLeft" style="grid-column:1;grid-row:2;min-height:0;overflow-y:auto;overflow-x:hidden;border-right:1px solid var(--border)">
-        <div class="vid-drop-zone" data-drop-status="up_next" ondragover="_vidDashDragOver(event)" ondragleave="_vidDashDragLeave(event)" ondrop="_vidDashDrop(event,'up_next')" style="min-height:40px">
-          <div style="font-size:9px;font-weight:600;color:var(--muted);padding:6px 6px 6px 16px;letter-spacing:.03em;background:#fff;display:flex;align-items:center">Up Next</div>
+        <div class="vid-drop-zone" data-drop-status="up_next" ondragover="_vidDashDragOver(event)" ondragleave="_vidDashDragLeave(event)" ondrop="_vidDashDrop(event,'up_next')" style="min-height:40px;background:rgba(14,165,233,.03)">
+          <div style="font-size:9px;font-weight:600;color:#0ea5e9;padding:6px 6px 6px 16px;letter-spacing:.03em;background:rgba(14,165,233,.06);display:flex;align-items:center;border-left:3px solid rgba(14,165,233,.4)">Up Next</div>
           ${upNext.length?_vidDashList(upNext,false):'<div style="color:var(--muted);font-size:11px;padding:8px 10px;opacity:.5">Drag ideas here</div>'}
         </div>
-        <div class="vid-drop-zone" data-drop-status="in_progress" ondragover="_vidDashDragOver(event)" ondragleave="_vidDashDragLeave(event)" ondrop="_vidDashDrop(event,'in_progress')" style="min-height:40px">
-          <div style="font-size:9px;font-weight:600;color:var(--muted);padding:6px 6px 6px 16px;letter-spacing:.03em;border-top:1px solid rgba(210,205,228,.15);background:#fff;display:flex;align-items:center">In Progress</div>
+        <div class="vid-drop-zone" data-drop-status="in_progress" ondragover="_vidDashDragOver(event)" ondragleave="_vidDashDragLeave(event)" ondrop="_vidDashDrop(event,'in_progress')" style="min-height:40px;background:rgba(245,158,11,.03)">
+          <div style="font-size:9px;font-weight:600;color:#d97706;padding:6px 6px 6px 16px;letter-spacing:.03em;background:rgba(245,158,11,.06);display:flex;align-items:center;border-left:3px solid rgba(245,158,11,.4)">In Progress</div>
           ${inProgress.length?_vidDashList(inProgress,false):'<div style="color:var(--muted);font-size:11px;padding:8px 10px;opacity:.5">Drag up next here to start</div>'}
         </div>
       </div>
@@ -2064,6 +2064,8 @@ function _vidShowSuggestions(q){
   // Statuses first (exact-ish matches are most useful)
   const statusLabels=[{val:'idea',label:'idea'},{val:'up_next',label:'up next'},{val:'in_progress',label:'in progress'},{val:'published',label:'complete'},{val:'backup',label:'backup'}];
   statusLabels.forEach(s=>{if(s.label.includes(lq)||s.val.includes(lq))add('status',s.label);});
+  // Mismatch filter
+  if('mismatch'.includes(lq)||'unmatched'.includes(lq)||'no match'.includes(lq))add('filter','mismatch');
   // Topics (deduplicated, sorted by frequency)
   const topicCounts={};
   vids.forEach(v=>{if(v.topic&&v.topic.toLowerCase().includes(lq)){topicCounts[v.topic]=(topicCounts[v.topic]||0)+1;}});
@@ -2090,7 +2092,7 @@ function _vidShowSuggestions(q){
   });
   [...starts,...contains].slice(0,5).forEach(t=>add('title',t.title,t.id));
   if(!suggestions.length){sg.style.display='none';return;}
-  const badgeColors={status:'#8b5cf6',topic:'#f59e0b',date:'#0ea5e9',title:'var(--muted)'};
+  const badgeColors={status:'#8b5cf6',topic:'#f59e0b',date:'#0ea5e9',title:'var(--muted)',filter:'#ef4444'};
   sg.style.display='block';
   sg.innerHTML=suggestions.slice(0,8).map(s=>{
     const hl=_vidHighlight(s.text,lq);
@@ -2126,6 +2128,12 @@ function _vidPickSuggestion(text,type){
     _vidSearch=text;_vidMatchIds=[];_vidSearchTs=Date.now();
     const inp2=document.getElementById('vidSearchInput');if(inp2)inp2.value=text;
     _vidSearchFilterFn=v=>_vidDateMatch(v.post_date,text);
+    renderVideosPageKeepScroll();return;
+  }
+  if(type==='filter'&&text==='mismatch'){
+    _vidSearch=text;_vidMatchIds=[];_vidSearchTs=Date.now();
+    const inp2=document.getElementById('vidSearchInput');if(inp2)inp2.value=text;
+    _vidSearchFilterFn=v=>v.post_date&&v.status==='published'&&!_ytForVid(String(v.id));
     renderVideosPageKeepScroll();return;
   }
   // Default: scroll to first match
