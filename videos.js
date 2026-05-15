@@ -11,10 +11,6 @@ function _ytBuildMatch(){
   var ytVids=_ytData.videos;
   var dbVids=(st.videos||[]).filter(function(v){return!v.is_deleted;});
   var usedYt=new Set();
-  console.log('[YT] Matching',dbVids.length,'db videos against',ytVids.length,'yt videos');
-  // Log first 3 of each for date format check
-  console.log('[YT] Sample DB dates:',dbVids.slice(0,3).map(v=>v.post_date));
-  console.log('[YT] Sample YT dates:',ytVids.slice(0,3).map(v=>v.publishedAt));
   // Pass 1: match by post_date = publishedAt date
   // Group by date to handle same-day videos via title similarity
   var matched=0;
@@ -105,7 +101,6 @@ function _ytBuildMatch(){
         var thiefTitle=(thiefV&&thiefV.title||'').trim().toLowerCase();
         if(thiefTitle!==dbTitle){
           // Thief didn't have exact title — reassign to rightful owner
-          console.log('[YT] Pass3: Reassigning "'+ytVids[j3].title+'" from id:'+thiefId+' to id:'+dv3.id);
           delete _ytMatch[thiefId];
           _ytMatch[String(dv3.id)]={views:ytVids[j3].views,likes:ytVids[j3].likes,comments:ytVids[j3].comments,ytId:ytVids[j3].id,publishedAt:ytVids[j3].publishedAt,duration:ytVids[j3].duration};
           break;
