@@ -1083,10 +1083,8 @@ function _vidRenderTable(){
         <th style="padding-left:16px;${thStyle}" onclick="vidTblSort('title')">Title${_vidSortArrow('title')}</th>
         <th style="width:${VID_STEPS.length*28}px;padding:0"><div style="display:flex;gap:0">${VID_STEPS.map(s=>`<div style="width:28px;text-align:center;font-size:10px" title="${VID_STEP_LABELS[s]}">${VID_STEP_LABELS[s].length<=5?VID_STEP_LABELS[s]:VID_STEP_LABELS[s].slice(0,2)}</div>`).join('')}</div></th>
         <th style="width:12px"></th>
-        <th style="width:90px;${thStyle}" onclick="vidTblSort('status')">Status${_vidSortArrow('status')}</th>
-        <th style="width:52px;text-align:right;${thStyle}" onclick="vidTblSort('posted')">Posted${_vidSortArrow('posted')}</th>
-        <th style="width:46px;text-align:right;${thStyle}" onclick="vidTblSort('duration')">Length${_vidSortArrow('duration')}</th>
-        ${_ytMatch?'<th style="width:44px;text-align:right">Views</th><th style="width:38px;text-align:right">Likes</th><th style="width:42px;text-align:right">Cmts</th>':''}
+        <th style="width:120px;${thStyle}" onclick="vidTblSort('status')">Status${_vidSortArrow('status')}</th>
+        ${_ytMatch?'<th style="width:52px;text-align:right;'+thStyle+'" onclick="vidTblSort(\'posted\')">Posted'+_vidSortArrow('posted')+'</th><th style="width:46px;text-align:right;'+thStyle+'" onclick="vidTblSort(\'duration\')">Length'+_vidSortArrow('duration')+'</th><th style="width:44px;text-align:right">Views</th><th style="width:38px;text-align:right">Likes</th><th style="width:42px;text-align:right">Cmts</th>':''}
         <th style="width:30px"></th>
       </tr></thead>
       <tbody>${groupedHtml}</tbody>
@@ -1132,10 +1130,6 @@ function _vidRow(v,isChild,postMap){
   const sid=String(v.id);
   const sel=_vidSelected.has(sid);
   const sc=VID_STATUS_COLORS[v.status]||'#94a3b8';
-  const _postSrc2=_ytPostDate(sid)||v.post_date;
-  const postStr=_vidPostStr(_postSrc2,true);
-  const _durVal2=_ytDurMin(sid)||v.duration_minutes;
-  const durStr=_durVal2?_fmtDur(_durVal2):'';
   const isSmall=v.video_type==='L'&&v.big_video_id;
   const indent=isChild?'padding-left:30px;':'padding-left:16px;';
   const childMark=isChild?'<span style="color:#fff;font-size:10px;margin-right:4px">└</span>':'';
@@ -1152,10 +1146,8 @@ function _vidRow(v,isChild,postMap){
     <td data-field="title" style="${indent}${!isChild?'font-weight:600;':''}${titleColor}overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${addBtn}${childMark}${numHtml}${(v.status==='in_progress'||v.status==='up_next')&&v.topic?`<span class="vid-title-text">${_esc(v.topic)}</span><span style="font-size:10px;color:var(--muted);margin-left:4px;font-weight:400">${_titleSuffix}</span>`:`<span class="vid-title-text">${_esc(v.title)}</span>`}${isBig?(()=>{const _kc=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===sid).length;return _kc?`<span style="font-size:9px;color:rgba(140,135,160,.7);font-weight:400;margin-left:4px;position:relative;top:0.5px">(${_kc})</span>`:''})():''}</td>
     <td style="padding:3px 0"><div style="display:flex;align-items:center;gap:0">${VID_STEPS.map(s=>`<div style="width:28px;text-align:center;display:flex;align-items:center;justify-content:center"><div class="vid-step-dot${v[s]==='done'?' done':v[s]==='na'?' na':''}" data-vid="${sid}" data-step="${s}" title="${VID_STEP_LABELS[s]}"></div></div>`).join('')}</div></td>
     <td></td>
-    <td data-field="status"><span class="vid-status-pill" style="background:${sc}12;color:${sc}">${VID_STATUS_LABELS[v.status]||v.status}${(v.status==='in_progress'||v.status==='up_next')&&_tblPct>0&&_tblPct<100?' · '+_tblPct+'%':''}</span></td>
-    <td class="vid-num" style="text-align:right;font-size:11px;color:${_vidDateColor(_postSrc2,v)}">${postStr}</td>
-    <td class="vid-num" style="text-align:right;font-size:11px;color:var(--muted)">${durStr}</td>
-    ${_ytMatch?(()=>{const ym=_ytForVid(sid);return ym?'<td class="vid-num" style="text-align:right;font-size:11px;color:var(--muted)">'+_ytNum(ym.views)+'</td><td class="vid-num" style="text-align:right;font-size:11px;color:var(--muted)">'+_ytNum(ym.likes)+'</td><td class="vid-num" style="text-align:right;font-size:11px;color:var(--muted)">'+_ytNum(ym.comments)+'</td>':'<td></td><td></td><td></td>';})():''}
+    <td data-field="status" style="white-space:nowrap"><span class="vid-status-pill" style="background:${sc}12;color:${sc}">${VID_STATUS_LABELS[v.status]||v.status}${(v.status==='in_progress'||v.status==='up_next')&&_tblPct>0&&_tblPct<100?' · '+_tblPct+'%':''}</span></td>
+    ${_ytMatch?(()=>{const ym=_ytForVid(sid);if(ym){const _ytPost=ym.publishedAt?_vidPostStr(ym.publishedAt.slice(0,10),true):'';const _ytLen=ym.duration?_fmtDur(Math.round(_ytDurSec(ym.duration)/60*100)/100):'';return'<td class="vid-num" style="text-align:right;font-size:11px;color:'+_vidDateColor(ym.publishedAt?ym.publishedAt.slice(0,10):null,v)+'">'+_ytPost+'</td><td class="vid-num" style="text-align:right;font-size:11px;color:var(--muted)">'+_ytLen+'</td><td class="vid-num" style="text-align:right;font-size:11px;color:var(--muted)">'+_ytNum(ym.views)+'</td><td class="vid-num" style="text-align:right;font-size:11px;color:var(--muted)">'+_ytNum(ym.likes)+'</td><td class="vid-num" style="text-align:right;font-size:11px;color:var(--muted)">'+_ytNum(ym.comments)+'</td>';}return'<td></td><td></td><td></td><td></td><td></td>';})():''}
     <td><button class="vid-del" data-vid="${sid}">✕</button></td>
   </tr>`;
 }
