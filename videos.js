@@ -307,7 +307,7 @@ function renderVideosPage(){
             <button onclick="_vidSearchNav(1)" style="background:none;border:none;cursor:pointer;padding:0 2px;font-size:10px;color:var(--muted);line-height:1" title="Next (Enter)">▼</button>
             <button onclick="_vidSearch='';_vidMatchIds=[];document.getElementById('vidSearchInput').value='';document.getElementById('vidSearchSuggestions').style.display='none';renderVideosPage()" style="background:none;border:none;cursor:pointer;padding:0 2px;font-size:10px;color:var(--muted);line-height:1" title="Clear (Esc)">✕</button>
           </div>`:''}
-          <div id="vidSearchSuggestions" style="display:none;position:absolute;top:100%;left:0;margin-top:4px;background:var(--bg);border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.1);z-index:1001;max-height:200px;overflow-y:auto;width:420px"></div>
+          <div id="vidSearchSuggestions" style="display:none;position:absolute;top:100%;left:0;margin-top:4px;background:var(--bg);border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.1);z-index:1001;max-height:200px;overflow-y:auto;width:520px"></div>
         </div>
         <div style="flex:1"></div>
         <div style="display:flex;gap:6px;align-items:center">
@@ -1083,7 +1083,7 @@ function _vidRenderTable(){
         <th style="width:28px"></th>
         <th style="width:70px;background:var(--bg);${thStyle}" onclick="vidTblSort('status')">Status${_vidSortArrow('status')}</th>
         ${_ytMatch?'<th style="width:38px;text-align:right;font-size:9px;background:var(--bg)">Views</th><th style="width:38px;text-align:right;font-size:9px;background:var(--bg)">Likes</th><th style="width:42px;text-align:right;font-size:9px;background:var(--bg)">Comments</th>':''}
-        <th style="width:30px"><button onclick="_vidToggleCompleted()" style="font-size:12px;font-weight:700;width:20px;height:20px;line-height:18px;text-align:center;border-radius:5px;border:1.5px solid var(--border);background:${_vidShowCompleted?'rgba(14,165,233,.12)':'var(--bg)'};color:${_vidShowCompleted?'#0ea5e9':'var(--muted)'};cursor:pointer;vertical-align:middle" title="${_vidShowCompleted?'Hide':'Show'} Completed">${_vidShowCompleted?'−':'+'}</button></th>
+        <th style="width:30px"></th>
       </tr></thead>
       <tbody>${groupedHtml}</tbody>
     </table>
@@ -1641,7 +1641,7 @@ function _vidRenderAnalytics(){
   const _completedVals=metricVals.filter(m=>m.key!==_curPeriod);
   const _histAvg=_completedVals.length?_completedVals.reduce((s,m)=>s+m.val,0)/_completedVals.length:0;
 
-  trendHtml+='<div style="display:flex;align-items:flex-end;gap:2px;flex:1;min-height:280px;padding:0 8px">';
+  trendHtml+='<div style="display:flex;align-items:flex-end;gap:2px;flex:1;min-height:340px;padding:0 8px">';
   metricVals.forEach(m=>{
     const isCur=m.key===_curPeriod&&_anTrendPeriod==='monthly';
     let forecast=0,totalPct;
@@ -1817,29 +1817,29 @@ function _vidRenderAnalytics(){
     }
   }
 
-  // KPI card helper — label top, big number, sparkline right-aligned
+  // KPI card helper — compact, label left, value right, sparkline
   const _kCard=(fn,label,val,spark,accent)=>{
     const bg=accent?accent+'08':'var(--glass)';
     const bdr=accent?accent+'30':'var(--border)';
-    return`<div style="background:${bg};border:1px solid ${bdr};border-radius:10px;padding:10px 12px;cursor:pointer;min-width:0;flex:1" onclick="${fn}">
-      <div style="font-size:10px;color:var(--muted);margin-bottom:4px">${label}</div>
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:6px">
-        <div style="font-size:18px;font-weight:700;color:${accent||'var(--text)'};white-space:nowrap">${val}</div>
+    return`<div style="background:${bg};border:1px solid ${bdr};border-radius:10px;padding:10px 12px;cursor:pointer;min-width:0;flex:1;text-align:center" onclick="${fn}">
+      <div style="font-size:9px;color:var(--muted);margin-bottom:2px">${label}</div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:5px">
+        <div style="font-size:16px;font-weight:700;color:${accent||'var(--text)'};white-space:nowrap">${val}</div>
         ${spark||''}
       </div>
     </div>`;
   };
   // 2-col: KPIs + bar chart (left) | topic filter + insights (right)
   h+=`<div style="display:grid;grid-template-columns:2.5fr 1fr;gap:12px;margin-bottom:12px;align-items:start">`;
-  // Left column: KPIs then bar chart
+  // Left column: KPIs (single row) then bar chart
   h+=`<div style="display:flex;flex-direction:column;gap:10px">`;
-  h+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">';
+  h+='<div style="display:flex;gap:8px;align-items:stretch">';
   h+=_kCard("_ytShowUnreplied()",'Unreplied',String(_unrepliedN),'','#ef4444');
   h+=_kCard("_anKpiModal('views')",'Views',_ytNum(totalViews),sparkline(_spViews));
-  h+=_kCard("_anKpiModal('avg')",'Avg / Video',_ytNum(avgViews),sparkline(_spAvg));
+  h+=_kCard("_anKpiModal('avg')",'Avg/Vid',_ytNum(avgViews),sparkline(_spAvg));
   h+=_kCard("_anKpiModal('videos')",'Videos',String(merged.length),sparkline(_spVids));
   h+=_kCard("_anKpiModal('revenue')",_revLabel,_revValue,sparkline(_spRevReal));
-  h+=_kCard("_anKpiModal('subscribers')",'Subscribers',cs?_ytNum(cs.subscribers):'-');
+  h+=_kCard("_anKpiModal('subscribers')",'Subs',cs?_ytNum(cs.subscribers):'-');
   h+='</div>';
   h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column">${trendHtml}</div>`;
   h+='</div>';
@@ -2007,7 +2007,6 @@ function _vidScrollToMatch(){
   document.querySelectorAll('.vid-dash-row,.vid-row').forEach(r=>{if(r._vidHl)r.style.background='';r._vidHl=false;});
   const row=document.querySelector('.vid-dash-row[data-vid="'+id+'"]')||document.querySelector('.vid-row[data-vid="'+id+'"]');
   if(row){row.scrollIntoView({block:'center',behavior:'smooth'});row.style.transition='background .2s';row.style.background='rgba(139,92,246,.12)';row._vidHl=true;setTimeout(()=>{if(row._vidHl){row.style.background='';row._vidHl=false;}},1200);}
-  else{openVidEdit(id);}
 }
 function _vidSearchKey(e){
   const sg=document.getElementById('vidSearchSuggestions');
@@ -2035,8 +2034,8 @@ function _vidShowSuggestions(q){
   const suggestions=[];
   const add=(type,text,id)=>{const k=type+':'+text;if(seen.has(k))return;seen.add(k);suggestions.push({type,text,id});};
   // Statuses first (exact-ish matches are most useful)
-  const statuses=['idea','up_next','in_progress','published','backup'];
-  statuses.forEach(s=>{if(s.includes(lq)||s.replace('_',' ').includes(lq))add('status',s.replace('_',' '));});
+  const statusLabels=[{val:'idea',label:'idea'},{val:'up_next',label:'up next'},{val:'in_progress',label:'in progress'},{val:'published',label:'complete'},{val:'backup',label:'backup'}];
+  statusLabels.forEach(s=>{if(s.label.includes(lq)||s.val.includes(lq))add('status',s.label);});
   // Topics (deduplicated, sorted by frequency)
   const topicCounts={};
   vids.forEach(v=>{if(v.topic&&v.topic.toLowerCase().includes(lq)){topicCounts[v.topic]=(topicCounts[v.topic]||0)+1;}});
@@ -2074,7 +2073,7 @@ function _vidPickSuggestion(text,type){
   const sg=document.getElementById('vidSearchSuggestions');if(sg)sg.style.display='none';
   if(type==='status'){
     // Filter to that status
-    const statusMap={'idea':'idea','up next':'up_next','in progress':'in_progress','published':'published','backup':'backup'};
+    const statusMap={'idea':'idea','up next':'up_next','in progress':'in_progress','complete':'published','published':'published','backup':'backup'};
     const st2=statusMap[text.toLowerCase()]||text;
     _vidSetFilter(st2);
     return;
@@ -2834,10 +2833,6 @@ function _vidCelebrate(id){
   },1800);
 }
 
-// ── Capture-phase guard: block ALL keydown propagation when search input focused ──
-document.addEventListener('keydown',e=>{
-  if(e.target.id==='vidSearchInput'||e.target.id==='anTopicInput')e.stopImmediatePropagation();
-},true);
 // ── Keyboard ──────────────────────────────────────────────────────────────────
 document.addEventListener('keydown',e=>{
   if(activePg!=='videos')return;
