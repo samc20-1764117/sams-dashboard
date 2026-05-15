@@ -246,7 +246,9 @@ function renderVideosPageKeepScroll(){
   const se=_vidScrollEl();const top=se?se.scrollTop:0;
   const dl=document.getElementById('vidDashLeft');const dlTop=dl?dl.scrollTop:0;
   const dr=document.getElementById('vidDashRight');const drTop=dr?dr.scrollTop:0;
+  const wasScrolled=top>0||dlTop>0||drTop>0;
   renderVideosPage();
+  if(!wasScrolled)return; // let _vidScrollToDefault handle initial position
   const restore=()=>{
     const se2=_vidScrollEl();if(se2)se2.scrollTop=top;
     const dl2=document.getElementById('vidDashLeft');if(dl2)dl2.scrollTop=dlTop;
@@ -567,8 +569,8 @@ function _vidDashRow(v,isChild,simple){
     </div>
     <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
       <div style="display:flex;gap:0">${VID_STEPS.map(s=>`<div style="width:28px;text-align:center"><div class="vid-step-dot${v[s]==='done'?' done':v[s]==='na'?' na':''}" data-vid="${sid}" data-step="${s}" title="${VID_STEP_LABELS[s]}"></div></div>`).join('')}</div>
-      <span data-field="post_date" onclick="event.stopPropagation();_vidDashInlineEdit(this,'${sid}','post_date')" style="width:52px;text-align:right;font-size:11px;color:${_vidDateColor(v.post_date,v)};cursor:pointer;min-height:16px;display:inline-block">${postStr||''}</span>
-      <span data-field="duration_minutes" onclick="event.stopPropagation();_vidDashInlineEdit(this,'${sid}','duration_minutes')" style="width:36px;text-align:right;font-size:11px;color:var(--muted);cursor:pointer;min-height:16px;display:inline-block">${durStr||''}</span>
+      <span data-field="post_date" style="width:52px;text-align:right;font-size:11px;color:${_vidDateColor(v.post_date,v)};cursor:pointer;min-height:16px;display:inline-block">${postStr||''}</span>
+      <span data-field="duration_minutes" style="width:36px;text-align:right;font-size:11px;color:var(--muted);cursor:pointer;min-height:16px;display:inline-block">${durStr||''}</span>
       ${(()=>{const ym=_ytForVid(sid);return ym?'<span style="width:42px;text-align:right;font-size:10px;color:#8b5cf6;display:inline-block" title="'+ym.views+' views / '+ym.likes+' likes">'+_ytNum(ym.views)+'</span>':'';})()}
       <span style="width:28px;text-align:right;font-size:9px;color:var(--muted);font-weight:500;display:inline-block">${_pctVal}</span>
       <button class="vid-del" data-vid="${sid}">✕</button>
@@ -2295,7 +2297,7 @@ function vidCellEdit(td,id,field){
   if(td._editing)return;
   const v=(st.videos||[]).find(x=>String(x.id)===String(id));if(!v)return;
   td._editing=true;
-  const elStyle='width:100%;font-size:11px;border:1px solid var(--border);border-radius:4px;padding:2px 4px;background:var(--bg);color:var(--text);outline:none;font-family:inherit;box-sizing:border-box';
+  const elStyle='width:100%;font-size:11px;border:none;border-bottom:1px solid var(--border);border-radius:0;padding:0;margin:0;background:transparent;color:var(--text);outline:none;font-family:inherit;box-sizing:border-box;line-height:inherit;text-align:inherit;height:100%';
   let el;
   if(field==='status'){
     el=document.createElement('select');
