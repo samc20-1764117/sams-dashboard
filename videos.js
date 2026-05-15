@@ -445,7 +445,6 @@ function _vidRenderDashboard(){
   const _colHdr=`<div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
             <div style="display:flex;align-items:center;gap:0">${VID_STEPS.map(s=>`<div style="width:28px;text-align:center" title="${VID_STEP_LABELS[s]}">${VID_STEP_LABELS[s].length<=5?VID_STEP_LABELS[s]:VID_STEP_LABELS[s].slice(0,2)}</div>`).join('')}</div>
             <span style="width:52px;text-align:center;display:inline-block;font-size:10px;color:var(--muted);font-weight:600">Posted</span>
-            ${_hasYt?'<span style="width:42px;text-align:center;display:inline-block;font-size:10px;color:var(--muted);font-weight:600">Views</span>':''}
             <span style="width:28px;display:inline-block"></span>
             <button class="vid-del" style="visibility:hidden">✕</button>
           </div>`;
@@ -574,7 +573,6 @@ function _vidDashRow(v,isChild,simple){
     <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
       <div style="display:flex;align-items:center;gap:0">${VID_STEPS.map(s=>`<div style="width:28px;text-align:center;display:flex;align-items:center;justify-content:center"><div class="vid-step-dot${v[s]==='done'?' done':v[s]==='na'?' na':''}" data-vid="${sid}" data-step="${s}" title="${VID_STEP_LABELS[s]}"></div></div>`).join('')}</div>
       <span class="vid-num" style="width:52px;text-align:right;font-size:11px;color:${_vidDateColor(_postSrc,v)};min-height:16px;display:inline-block">${postStr||''}</span>
-      ${(()=>{const ym=_ytForVid(sid);return ym?'<span class="vid-num" style="width:42px;text-align:right;font-size:11px;color:var(--muted);display:inline-block" title="'+ym.views+' views / '+ym.likes+' likes">'+_ytNum(ym.views)+'</span>':(_ytMatch?'<span style="width:42px;display:inline-block"></span>':'');})()}
       <span class="vid-num" style="width:28px;text-align:right;font-size:9px;color:var(--muted);font-weight:500;display:inline-block">${_pctVal}</span>
       <button class="vid-del" data-vid="${sid}">✕</button>
     </div>
