@@ -1650,13 +1650,13 @@ function _vidRenderAnalytics(){
       const paceProj=m.val/_monthProgress;
       forecast=Math.round(paceProj*0.6+_histAvg*0.4);
       if(forecast<m.val)forecast=m.val;
-      totalPct=Math.max(Math.round(forecast/maxMetric*70),2);
+      totalPct=Math.max(Math.round(forecast/maxMetric*88),2);
     }
-    const pct=Math.max(Math.round(m.val/maxMetric*70),2);
+    const pct=Math.max(Math.round(m.val/maxMetric*88),2);
     const label=_anTrendPeriod==='yearly'?m.key:(_moAbbr[parseInt(m.key.slice(5))]||m.key.slice(5));
     const fmtFn=(v)=>_anTrendMetric==='revenue'?'$'+_ytNum(v):_anTrendMetric==='engagement'?v.toFixed(1)+'%':_ytNum(v);
     if(isCur&&forecast>m.val){
-      const forecastPct=Math.max(Math.round(forecast/maxMetric*70),2);
+      const forecastPct=Math.max(Math.round(forecast/maxMetric*88),2);
       const actualFlex=pct;
       const forecastFlex=forecastPct-actualFlex;
       trendHtml+=`<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:2px;height:100%">
@@ -1817,27 +1817,36 @@ function _vidRenderAnalytics(){
     }
   }
 
-  const _kStat2=(label,val,spark)=>`${spark||''}<div style="min-width:0;text-align:center;flex:1"><div style="font-size:9px;color:var(--muted);white-space:nowrap">${label}</div><div style="font-size:15px;font-weight:700;color:var(--text);white-space:nowrap">${val}</div></div>`;
-  // 2-col: left = topic filter + insights | right = KPIs + bar chart
+  // KPI card helper — label top, big number, sparkline right-aligned
+  const _kCard=(fn,label,val,spark,accent)=>{
+    const bg=accent?accent+'08':'var(--glass)';
+    const bdr=accent?accent+'30':'var(--border)';
+    return`<div style="background:${bg};border:1px solid ${bdr};border-radius:10px;padding:10px 12px;cursor:pointer;min-width:0;flex:1" onclick="${fn}">
+      <div style="font-size:10px;color:var(--muted);margin-bottom:4px">${label}</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:6px">
+        <div style="font-size:18px;font-weight:700;color:${accent||'var(--text)'};white-space:nowrap">${val}</div>
+        ${spark||''}
+      </div>
+    </div>`;
+  };
   // 2-col: KPIs + bar chart (left) | topic filter + insights (right)
   h+=`<div style="display:grid;grid-template-columns:2.5fr 1fr;gap:12px;margin-bottom:12px;align-items:start">`;
   // Left column: KPIs then bar chart
   h+=`<div style="display:flex;flex-direction:column;gap:10px">`;
-  h+='<div style="display:flex;gap:8px;align-items:stretch">';
-  h+=`<div style="background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:12px 14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;flex:1" onclick="_ytShowUnreplied()"><div style="font-size:15px;font-weight:700;color:#ef4444">${_unrepliedN}</div><div style="font-size:9px;color:var(--muted)">Unreplied</div></div>`;
-  h+=`${_kc2("_anKpiModal('views')")}${_kStat2('Views',_ytNum(totalViews),sparkline(_spViews))}</div>`;
-  h+=`${_kc2("_anKpiModal('avg')")}${_kStat2('Avg/Video',_ytNum(avgViews),sparkline(_spAvg))}</div>`;
-  h+=`${_kc2("_anKpiModal('videos')")}${_kStat2('Videos',String(merged.length),sparkline(_spVids))}</div>`;
-  h+=`${_kc2("_anKpiModal('revenue')")}${_kStat2(_revLabel,_revValue,sparkline(_spRevReal))}</div>`;
-  h+=`${_kc2("_anKpiModal('subscribers')")}${_kStat2('Subscribers',cs?_ytNum(cs.subscribers):'-')}</div>`;
+  h+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">';
+  h+=_kCard("_ytShowUnreplied()",'Unreplied',String(_unrepliedN),'','#ef4444');
+  h+=_kCard("_anKpiModal('views')",'Views',_ytNum(totalViews),sparkline(_spViews));
+  h+=_kCard("_anKpiModal('avg')",'Avg / Video',_ytNum(avgViews),sparkline(_spAvg));
+  h+=_kCard("_anKpiModal('videos')",'Videos',String(merged.length),sparkline(_spVids));
+  h+=_kCard("_anKpiModal('revenue')",_revLabel,_revValue,sparkline(_spRevReal));
+  h+=_kCard("_anKpiModal('subscribers')",'Subscribers',cs?_ytNum(cs.subscribers):'-');
   h+='</div>';
   h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column">${trendHtml}</div>`;
   h+='</div>';
   // Right column: topic filter + insights
   h+=`<div style="display:flex;flex-direction:column;gap:10px">`;
   h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:10px;padding:8px 14px;position:relative;flex-shrink:0">
-    <div style="font-size:10px;color:var(--muted);margin-bottom:3px">Filter by topic</div>
-    <input id="anTopicInput" type="text" placeholder="All topics" value="${_anTopicFilter==='all'?'':_esc(_anTopicFilter)}" oninput="_anTopicInputChange(this.value)" onfocus="_anTopicShowList()" style="width:100%;padding:4px 8px;border:1px solid ${_anTopicFilter!=='all'?'rgba(139,92,246,.4)':'var(--border)'};border-radius:6px;font-family:inherit;font-size:11px;background:${_anTopicFilter!=='all'?'rgba(139,92,246,.04)':'var(--bg)'};color:var(--text);outline:none;box-sizing:border-box">
+    <input id="anTopicInput" type="text" placeholder="Filter by topic..." value="${_anTopicFilter==='all'?'':_esc(_anTopicFilter)}" oninput="_anTopicInputChange(this.value)" onfocus="_anTopicShowList()" style="width:100%;padding:4px 8px;border:1px solid ${_anTopicFilter!=='all'?'rgba(139,92,246,.4)':'var(--border)'};border-radius:6px;font-family:inherit;font-size:11px;background:${_anTopicFilter!=='all'?'rgba(139,92,246,.04)':'var(--bg)'};color:var(--text);outline:none;box-sizing:border-box">
     ${_anTopicFilter!=='all'?'<button onclick="_anTopicFilter=\'all\';renderVideosPageKeepScroll()" style="position:absolute;right:20px;bottom:10px;background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);line-height:1">✕</button>':''}
     <div id="anTopicList" style="display:none;position:absolute;top:100%;left:0;right:0;margin-top:2px;background:var(--bg);border:1px solid var(--border);border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,.1);z-index:100;max-height:150px;overflow-y:auto"></div>
   </div>`;
@@ -2825,6 +2834,10 @@ function _vidCelebrate(id){
   },1800);
 }
 
+// ── Capture-phase guard: block ALL keydown propagation when search input focused ──
+document.addEventListener('keydown',e=>{
+  if(e.target.id==='vidSearchInput'||e.target.id==='anTopicInput')e.stopImmediatePropagation();
+},true);
 // ── Keyboard ──────────────────────────────────────────────────────────────────
 document.addEventListener('keydown',e=>{
   if(activePg!=='videos')return;
