@@ -1079,8 +1079,8 @@ function _vidRenderTable(){
       <thead><tr>
         <th style="width:525px;padding-left:16px;${thStyle}" onclick="vidTblSort('title')">Title${_vidSortArrow('title')}</th>
         <th style="width:${VID_STEPS.length*28}px;padding:0"><div style="display:flex;gap:0">${VID_STEPS.map(s=>`<div style="width:28px;text-align:center;font-size:10px" title="${VID_STEP_LABELS[s]}">${VID_STEP_LABELS[s].length<=5?VID_STEP_LABELS[s]:VID_STEP_LABELS[s].slice(0,2)}</div>`).join('')}</div></th>
-        <th style="width:52px;text-align:right;${thStyle}" onclick="vidTblSort('posted')">Posted${_vidSortArrow('posted')}</th>
-        <th style="width:36px;text-align:right;${thStyle}" onclick="vidTblSort('duration')">Duration${_vidSortArrow('duration')}</th>
+        <th style="width:52px;text-align:center;${thStyle}" onclick="vidTblSort('posted')">Posted${_vidSortArrow('posted')}</th>
+        <th style="width:42px;text-align:center;${thStyle}" onclick="vidTblSort('duration')">Dur${_vidSortArrow('duration')}</th>
         <th style="width:28px"></th>
         <th style="width:70px;background:var(--bg);${thStyle}" onclick="vidTblSort('status')">Status${_vidSortArrow('status')}</th>
         ${_ytMatch?'<th style="width:38px;text-align:right;font-size:9px;background:var(--bg)">Views</th><th style="width:38px;text-align:right;font-size:9px;background:var(--bg)">Likes</th><th style="width:42px;text-align:right;font-size:9px;background:var(--bg)">Comments</th>':''}
@@ -2017,13 +2017,15 @@ function _vidSearchNav(dir){
 function _vidScrollToDefault(){
   requestAnimationFrame(()=>{
     const today=new Date().toISOString().slice(0,10);
-    // Published Big videos with past post_dates, sorted most recent first
-    const pastBig=(st.videos||[]).filter(v=>!v.is_deleted&&v.status==='published'&&v.video_type==='B'&&v.post_date&&v.post_date<today).sort((a,b)=>b.post_date.localeCompare(a.post_date));
-    // Scroll so 3rd most recent past Big is visible at bottom — all 3 show
+    const allBig=(st.videos||[]).filter(v=>!v.is_deleted&&v.status==='published'&&v.video_type==='B');
+    const pastBig=allBig.filter(v=>v.post_date&&v.post_date<today).sort((a,b)=>b.post_date.localeCompare(a.post_date));
+    console.log('[DEFAULT SCROLL] today=',today,'allPublishedBigs=',allBig.map(v=>({id:v.id,title:v.title,post_date:v.post_date})),'pastBig=',pastBig.map(v=>({id:v.id,title:v.title,post_date:v.post_date})));
     const target=pastBig[2]||pastBig[pastBig.length-1];
+    console.log('[DEFAULT SCROLL] target=',target?{id:target.id,title:target.title,post_date:target.post_date}:'none','pastBig.length=',pastBig.length);
     if(!target)return;
     const tid=String(target.id);
     const row=document.querySelector('.vid-dash-row[data-vid="'+tid+'"]')||document.querySelector('.vid-row[data-vid="'+tid+'"]');
+    console.log('[DEFAULT SCROLL] row found=',!!row,'tid=',tid);
     if(row)row.scrollIntoView({block:'start'});
   });
 }
@@ -2876,6 +2878,13 @@ function _vidCelebrate(id){
     setTimeout(()=>row.style.transition='',300);
   },1800);
 }
+
+// ── Click outside to deselect ─────────────────────────────────────────────────
+document.addEventListener('click',e=>{
+  if(activePg!=='videos'||!_vidSelected.size)return;
+  if(e.target.closest('.vid-dash-row,.vid-row,.vid-board-card,.vid-dash-header,.vid-del,.vid-step-dot,[data-field],.vm-overlay'))return;
+  _vidSelected.clear();_vidChildSelected.clear();_applyVidSel();
+});
 
 // ── Keyboard ──────────────────────────────────────────────────────────────────
 document.addEventListener('keydown',e=>{
