@@ -1009,29 +1009,37 @@ document.addEventListener('keydown',e=>{
       const r=c.getBoundingClientRect();
       return r.height>0&&r.top<H&&r.bottom>0;
     });
-    // ── Collect ALL measurable elements for gap calculation (cards + sections) ──
+    // ── Collect measurable elements for gap calculation ──
     const gapEls=new Set(cards);
-    // Walk up to 4 levels deep to catch tab bars, search rows, content areas, KPIs
-    function addVisible(parent,depth){
+    // Only collect "section-level" elements — direct children of flex/grid rows
+    // Not their internal children (e.g., individual tabs within tab bar)
+    function addSections(parent,depth){
       if(depth>4)return;
-      [...parent.children].forEach(ch=>{
-        if(ch.nodeType!==1)return;
+      const kids=[...parent.children].filter(ch=>ch.nodeType===1);
+      kids.forEach(ch=>{
         if(ch.classList.contains('ov-topbar')||ch.classList.contains('topbar'))return;
         const r=ch.getBoundingClientRect();
         if(r.height<5||r.width<10||r.top>=H||r.bottom<=0)return;
-        // Don't add if inside a card
         let inCard=false;cards.forEach(c=>{if(c.contains(ch))inCard=true;});
-        if(!inCard){
-          // Skip spacer divs (flex:1 with no real content) and very narrow elements
+        if(inCard)return;
+        // Check if parent is a flex/grid row (meaning these children are sections)
+        const parentDisplay=getComputedStyle(parent).display;
+        const isInFlexRow=parentDisplay.includes('flex')&&getComputedStyle(parent).flexDirection!=='column';
+        if(isInFlexRow){
+          // This is a section-level item (tabs group, search, KPIs, etc.)
+          // Skip spacer divs
           const cs=getComputedStyle(ch);
-          if(cs.flex==='1'&&r.width>200&&ch.children.length===0)return;// spacer
+          if(cs.flex==='1 1 0%'||cs.flex==='1'||(cs.flexGrow==='1'&&ch.children.length===0))return;
           gapEls.add(ch);
+          // Don't recurse into these — they're leaf sections
+        } else {
+          // Wrapper div — recurse into it
+          gapEls.add(ch);
+          addSections(ch,depth+1);
         }
-        // Go deeper
-        addVisible(ch,depth+1);
       });
     }
-    addVisible(pg,0);
+    addSections(pg,0);
     // For pages with no cards, promote visible sections to cards for purple overlay
     if(!cards.length){
       [...pg.children].forEach(el=>{
