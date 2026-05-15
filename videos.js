@@ -246,6 +246,7 @@ function renderVideosPageKeepScroll(){
   renderVideosPage();
   const se2=_vidScrollEl();if(se2)se2.scrollTop=top;
   requestAnimationFrame(()=>{
+    const se3=_vidScrollEl();if(se3&&se3.scrollTop!==top)se3.scrollTop=top;
     const dl2=document.getElementById('vidDashLeft');if(dl2)dl2.scrollTop=dlTop;
     const dr2=document.getElementById('vidDashRight');if(dr2)dr2.scrollTop=drTop;
   });
@@ -2009,9 +2010,11 @@ function _vidSearchNav(dir){
 }
 function _vidScrollToDefault(){
   requestAnimationFrame(()=>{
-    // Find 3rd most recent published Big video
-    const pubBig=(st.videos||[]).filter(v=>!v.is_deleted&&v.status==='published'&&v.video_type==='B'&&v.post_date).sort((a,b)=>b.post_date.localeCompare(a.post_date));
-    const target=pubBig[2]||pubBig[pubBig.length-1];
+    const today=new Date().toISOString().slice(0,10);
+    // Published Big videos with past post_dates, sorted most recent first
+    const pastBig=(st.videos||[]).filter(v=>!v.is_deleted&&v.status==='published'&&v.video_type==='B'&&v.post_date&&v.post_date<today).sort((a,b)=>b.post_date.localeCompare(a.post_date));
+    // Scroll target: 3rd most recent past Big
+    const target=pastBig[2]||pastBig[pastBig.length-1];
     if(!target)return;
     const tid=String(target.id);
     const row=document.querySelector('.vid-dash-row[data-vid="'+tid+'"]')||document.querySelector('.vid-row[data-vid="'+tid+'"]');
@@ -2880,7 +2883,7 @@ document.addEventListener('keydown',e=>{
   if(e.key==='ArrowLeft'&&!e.metaKey&&!e.ctrlKey&&_vidSelected.size===0){e.preventDefault();const tabs=['dashboard','table','analytics','monthly'];const i=tabs.indexOf(_vidView);if(i>0)_vidSetView(tabs[i-1]);return;}
   if(e.key==='ArrowRight'&&!e.metaKey&&!e.ctrlKey&&_vidSelected.size===0){e.preventDefault();const tabs=['dashboard','table','analytics','monthly'];const i=tabs.indexOf(_vidView);if(i<tabs.length-1)_vidSetView(tabs[i+1]);return;}
   if(e.key==='ArrowUp'&&!e.metaKey&&!e.ctrlKey){e.preventDefault();const se=_vidScrollEl();if(se)se.scrollTop=0;return;}
-  if(e.key==='ArrowDown'&&!e.metaKey&&!e.ctrlKey){e.preventDefault();const se=_vidScrollEl();if(se)se.scrollTop=se.scrollHeight;return;}
+  if(e.key==='ArrowDown'&&!e.metaKey&&!e.ctrlKey){e.preventDefault();_vidScrollToDefault();return;}
   if(e.key==='e'&&!e.metaKey&&!e.ctrlKey&&_vidView==='table'){e.preventDefault();_vidShowCompleted=!_vidShowCompleted;renderVideosPageKeepScroll();return;}
   if(e.key==='c'&&!e.metaKey&&!e.ctrlKey&&_vidView==='table'){e.preventDefault();_vidShowCompleted=!_vidShowCompleted;renderVideosPageKeepScroll();return;}
 });
