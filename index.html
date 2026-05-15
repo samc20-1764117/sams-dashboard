@@ -1004,101 +1004,78 @@ document.addEventListener('keydown',e=>{
     if(pL>0){band(pr.left,0,pL,H,'border-right:2px solid rgba(0,160,0,.5);');lbl(pr.left+pL/2-10,H/2,Math.round(pL)+'px','#080','rgba(200,255,200,.92)');}
     // Right — full height
     if(pR>0){band(pr.right-pR,0,pR,H,'border-left:2px solid rgba(0,160,0,.5);');lbl(pr.right-pR/2-10,H/2,Math.round(pR)+'px','#080','rgba(200,255,200,.92)');}
-    // ── Collect containers: .card elements + direct page children that aren't topbars ──
-    const containers=[];const cSet=new Set();
-    // Cards first (primary containers)
-    [...pg.querySelectorAll('.card')].forEach(c=>{
+    // ── Collect ONLY .card containers (the real content containers) ──
+    const cards=[...pg.querySelectorAll('.card')].filter(c=>{
       const r=c.getBoundingClientRect();
-      if(r.height>0&&r.top<H&&r.bottom>0&&!cSet.has(c)){cSet.add(c);containers.push(c);}
+      return r.height>0&&r.top<H&&r.bottom>0;
     });
-    // Direct page children that aren't topbars or tiny elements
-    [...pg.children].forEach(el=>{
-      if(el.nodeType!==1||cSet.has(el))return;
-      if(el.classList.contains('ov-topbar')||el.classList.contains('topbar'))return;
-      const r=el.getBoundingClientRect();
-      if(r.height>20&&r.width>50&&r.top<H&&r.bottom>0){
-        // Skip if a card already covers this area (parent/child)
-        let dominated=false;
-        containers.forEach(c=>{if(c.contains(el)||el.contains(c))dominated=true;});
-        if(!dominated){cSet.add(el);containers.push(el);}
-      }
-    });
-    // For non-overview pages: also grab level-2 children (tab bars, content wrappers)
-    // but only if they aren't inside an existing container
-    [...pg.children].forEach(el=>{
-      if(el.nodeType!==1)return;
-      [...el.children].forEach(ch=>{
-        if(ch.nodeType!==1||cSet.has(ch))return;
-        const r=ch.getBoundingClientRect();
+    // For non-overview pages with no .card elements, use direct children (skip topbars)
+    if(!cards.length){
+      [...pg.children].forEach(el=>{
+        if(el.nodeType!==1)return;
+        if(el.classList.contains('ov-topbar')||el.classList.contains('topbar'))return;
+        const r=el.getBoundingClientRect();
         if(r.height>20&&r.width>50&&r.top<H&&r.bottom>0){
-          let dominated=false;
-          containers.forEach(c=>{if(c.contains(ch)||ch.contains(c))dominated=true;});
-          if(!dominated){cSet.add(ch);containers.push(ch);}
+          // Check children too
+          let found=false;
+          [...el.children].forEach(ch=>{
+            if(ch.nodeType!==1)return;
+            const cr=ch.getBoundingClientRect();
+            if(cr.height>20&&cr.width>50&&cr.top<H&&cr.bottom>0){cards.push(ch);found=true;}
+          });
+          if(!found)cards.push(el);
         }
       });
-    });
-    // ── PURPLE: Container overlays — heavy blue-out + dimensions ──
-    containers.forEach(el=>{
+    }
+    // ── PURPLE: Card overlays — blur content + dimensions at top-left ──
+    cards.forEach(el=>{
       const r=el.getBoundingClientRect();
-      // Strong overlay to obscure content
+      // Heavy frosted overlay to blur out content
       const shade=document.createElement('div');
-      shade.style.cssText=`position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;background:rgba(120,115,160,.22);border:1.5px solid rgba(120,80,200,.4);border-radius:4px;`;
+      shade.style.cssText=`position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;background:rgba(200,195,220,.35);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);border:1.5px solid rgba(120,80,200,.4);border-radius:6px;`;
       ov.appendChild(shade);
-      // Width: centered at top
-      const wLbl=document.createElement('div');
-      wLbl.style.cssText=`position:fixed;left:${r.left+r.width/2-24}px;top:${r.top+r.height/2-16}px;color:rgba(100,60,180,.9);font-weight:700;font-size:9px;background:rgba(240,235,255,.95);padding:2px 6px;border-radius:3px;white-space:nowrap;`;
-      wLbl.textContent=`← ${Math.round(r.width)}`;
-      ov.appendChild(wLbl);
-      // Height: below width label
-      if(r.height>30){
-        const hLbl=document.createElement('div');
-        hLbl.style.cssText=`position:fixed;left:${r.left+r.width/2-20}px;top:${r.top+r.height/2+2}px;color:rgba(100,60,180,.9);font-weight:700;font-size:9px;background:rgba(240,235,255,.95);padding:2px 6px;border-radius:3px;white-space:nowrap;`;
-        hLbl.textContent=`↕ ${Math.round(r.height)}`;
-        ov.appendChild(hLbl);
-      }
+      // Dimensions at top-left inside card
+      const dLbl=document.createElement('div');
+      dLbl.style.cssText=`position:fixed;left:${r.left+6}px;top:${r.top+6}px;color:rgba(90,50,170,.95);font-weight:700;font-size:9px;background:rgba(240,235,255,.95);padding:3px 7px;border-radius:4px;white-space:nowrap;line-height:1.4;`;
+      dLbl.innerHTML=`← ${Math.round(r.width)} →<br>↑ ${Math.round(r.height)} ↓`;
+      ov.appendChild(dLbl);
     });
-    // ── BLUE: Vertical gaps / RED: Horizontal gaps — between sibling containers only ──
+    // ── BLUE/RED: Gaps between ALL cards (not just siblings) ──
+    // Sort all cards by position
+    const sorted=[...cards].map(c=>({el:c,r:c.getBoundingClientRect()}));
+    sorted.sort((a,b)=>(a.r.top-b.r.top)||a.r.left-b.r.left);
     const gapsDone=new Set();
-    // Group containers by parent
-    const byParent=new Map();
-    containers.forEach(el=>{
-      const p=el.parentElement;if(!p)return;
-      if(!byParent.has(p))byParent.set(p,[]);
-      byParent.get(p).push(el);
-    });
-    byParent.forEach(siblings=>{
-      // Sort by position
-      siblings.sort((a,b)=>{const ar=a.getBoundingClientRect(),br=b.getBoundingClientRect();return(ar.top-br.top)||ar.left-br.left;});
-      for(let i=0;i<siblings.length;i++){
-        const a=siblings[i].getBoundingClientRect();
-        for(let j=i+1;j<siblings.length;j++){
-          const b=siblings[j].getBoundingClientRect();
-          const key=i+'-'+j;
-          // Vertical gap
-          if(a.bottom<=b.top+2){
-            const xOv=Math.min(a.right,b.right)-Math.max(a.left,b.left);
-            if(xOv>20){
-              const gap=Math.round(b.top-a.bottom);
-              if(gap>=0&&gap<120&&!gapsDone.has('v'+key)){
-                gapsDone.add('v'+key);
-                if(gap>0){const ln=document.createElement('div');ln.style.cssText=`position:fixed;left:${Math.max(a.left,b.left)}px;top:${a.bottom}px;width:${xOv}px;height:${gap}px;background:rgba(0,80,255,.06);border-top:1px dashed rgba(0,80,255,.35);border-bottom:1px dashed rgba(0,80,255,.35);`;ov.appendChild(ln);}
-                lbl(Math.max(a.left,b.left)-28,a.bottom+Math.max(0,gap)/2-6,gap+'px','#0055cc','rgba(210,220,255,.92)');
-              }
+    for(let i=0;i<sorted.length;i++){
+      const a=sorted[i].r;
+      for(let j=i+1;j<sorted.length;j++){
+        const b=sorted[j].r;
+        // Vertical gap — b is below a, overlapping x range
+        if(a.bottom<=b.top+2){
+          const xOv=Math.min(a.right,b.right)-Math.max(a.left,b.left);
+          if(xOv>20){
+            const gap=Math.round(b.top-a.bottom);
+            if(gap>=0&&gap<150){
+              const k='v'+i+'-'+j;if(gapsDone.has(k))continue;gapsDone.add(k);
+              if(gap>0){const ln=document.createElement('div');ln.style.cssText=`position:fixed;left:${Math.max(a.left,b.left)}px;top:${a.bottom}px;width:${xOv}px;height:${gap}px;background:rgba(0,80,255,.06);border-top:1px dashed rgba(0,80,255,.35);border-bottom:1px dashed rgba(0,80,255,.35);`;ov.appendChild(ln);}
+              lbl(Math.max(a.left,b.left)-28,a.bottom+Math.max(0,gap)/2-6,gap+'px','#0055cc','rgba(210,220,255,.92)');
             }
           }
-          // Horizontal gap
-          if(Math.abs(a.top-b.top)<25&&a.right<=b.left+2){
+        }
+        // Horizontal gap — b is right of a, overlapping y range
+        if(a.right<=b.left+2){
+          const yOv=Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top);
+          if(yOv>20){
             const gap=Math.round(b.left-a.right);
-            if(gap>=0&&gap<120&&!gapsDone.has('h'+key)){
-              gapsDone.add('h'+key);
-              const midY=Math.max(a.top,b.top)+Math.min(a.height,b.height)/2;
-              if(gap>0){const ln=document.createElement('div');ln.style.cssText=`position:fixed;left:${a.right}px;top:${Math.max(a.top,b.top)}px;width:${gap}px;height:${Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)}px;background:rgba(255,40,0,.06);border-left:1px dashed rgba(255,40,0,.35);border-right:1px dashed rgba(255,40,0,.35);`;ov.appendChild(ln);}
+            if(gap>=0&&gap<150){
+              const k='h'+i+'-'+j;if(gapsDone.has(k))continue;gapsDone.add(k);
+              const midY=Math.max(a.top,b.top)+yOv/2;
+              if(gap>0){const ln=document.createElement('div');ln.style.cssText=`position:fixed;left:${a.right}px;top:${Math.max(a.top,b.top)}px;width:${gap}px;height:${yOv}px;background:rgba(255,40,0,.06);border-left:1px dashed rgba(255,40,0,.35);border-right:1px dashed rgba(255,40,0,.35);`;ov.appendChild(ln);}
               lbl(a.right+Math.max(0,gap)/2-10,midY-6,gap+'px','#cc2200','rgba(255,220,210,.92)');
             }
           }
         }
       }
-    });
+    }
     document.body.appendChild(ov);
   }
 });
