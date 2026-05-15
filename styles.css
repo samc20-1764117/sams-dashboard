@@ -800,7 +800,7 @@ body.dark .bday-add-menu{background:rgba(38,20,10,.97);border-color:rgba(255,220
 .vid-type-badge{display:inline-block;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:.02em}
 .vid-status-pill{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600}
 .vid-step-dot{width:14px;height:14px;border-radius:3px;border:1.5px solid rgba(210,205,228,.4);cursor:pointer;display:inline-block;transition:transform .1s;background:transparent}.vid-step-dot:hover{transform:scale(1.2);border-color:rgba(16,185,129,.5)}.vid-step-dot.done{background:#10b981;border-color:#10b981}.vid-step-dot.na{background:var(--border);border-color:var(--border);opacity:.35}
-.vid-num{font-family:'SF Mono','Menlo','Consolas',ui-monospace,monospace;letter-spacing:-.03em}
+.vid-num{font-family:system-ui,-apple-system,sans-serif;font-variant-numeric:tabular-nums}
 .vid-del{background:none;border:none;cursor:pointer;color:var(--muted);font-size:12px;opacity:0;transition:opacity .12s;padding:2px 4px}.vid-row:hover .vid-del,.vid-dash-row:hover .vid-del{opacity:1}.vid-del:hover{color:#ef4444}
 .vid-tbl thead th{background:transparent;border-bottom:2px solid var(--border);padding:0 6px;height:25px;box-sizing:border-box}
 .vid-title-text{font-weight:500;color:var(--text)}
