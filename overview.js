@@ -113,6 +113,21 @@ function renderToday(){
   _attachListRubberBand(document.getElementById('todList'));
   _attachTBEdgeRubberBand();
   _attachWkcRubberBand();
+  requestAnimationFrame(()=>_updateOverflowBadge(document.getElementById('todList')));
+}
+function _updateOverflowBadge(el){
+  if(!el)return;
+  const existing=el.querySelector('.wkc-more-badge');
+  if(existing)existing.remove();
+  if(el.scrollHeight<=el.clientHeight+1)return;
+  const items=el.querySelectorAll('.ti,.chip');
+  let hidden=0;
+  const bottom=el.scrollTop+el.clientHeight;
+  items.forEach(c=>{if(c.offsetTop+c.offsetHeight/2>bottom)hidden++;});
+  if(hidden<=0)return;
+  const badge=document.createElement('div');badge.className='wkc-more-badge';badge.textContent='+'+hidden+' more';
+  el.appendChild(badge);
+  if(!el._overflowBound){el._overflowBound=true;el.addEventListener('scroll',()=>_updateOverflowBadge(el));}
 }
 // ── Pup Skills Highlight ───────────────────────────────────────────────────────
 let _donutInited=false;
@@ -1252,6 +1267,7 @@ function renderWkCal(){
     goalsCol.appendChild(chip);
   });
   cols.appendChild(goalsCol);
+  requestAnimationFrame(()=>{document.querySelectorAll('#wkcCols .wkc-col').forEach(c=>_updateOverflowBadge(c));});
 }
 
 function highlightTvDrag(dates){
@@ -2141,6 +2157,7 @@ function renderRecOv(){
   });
   if(document.getElementById('recMoModal')?.classList.contains('open'))renderRecMoCal();
   _attachListRubberBand(document.getElementById('recList'));
+  requestAnimationFrame(()=>_updateOverflowBadge(document.getElementById('recList')));
 }
 
 // Upsert a wr_recurring_override — patches if one exists for (ruleId,wkKey), posts if not.
@@ -2362,14 +2379,9 @@ function _wrShiftAnchor(delta){
   }
   if(!_wrCtxRuleId)return;
   const rule=st.wrRules.find(r=>String(r.id)===_wrCtxRuleId);if(!rule)return;
-  const prev=rule.starting_date;
-  const base=rule.starting_date?new Date(rule.starting_date+'T12:00'):new Date();
-  base.setDate(base.getDate()+delta);
-  const next=d2s(base);
-  rule.starting_date=next;
-  sbReqSilent('PATCH','wr_recurring_rules',{starting_date:next},`?id=eq.${_wrCtxRuleId}`);
-  save();renderAll();renderWkCal();
-  pushUndo(()=>{rule.starting_date=prev;sbReqSilent('PATCH','wr_recurring_rules',{starting_date:prev},`?id=eq.${_wrCtxRuleId}`);save();renderAll();renderWkCal();},'Moved WR start');
+  const dir=delta>0?1:-1;
+  const targetWkKey=getWkKey(wkOff+dir);
+  writeWrOverride(_wrCtxRuleId,_wrCtxWkKey||getWkKey(wkOff),{override_type:'move',moved_to_wk_key:targetWkKey},{undoLabel:'Moved WR task to '+(delta>0?'next':'prev')+' week'});
 }
 function wrCtxMovePrevWeek(){_wrShiftAnchor(-7);}
 function wrCtxMoveNextWeek(){_wrShiftAnchor(7);}

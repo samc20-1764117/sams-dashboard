@@ -1076,13 +1076,13 @@ function _vidRenderTable(){
   return`<div>
     <table class="vid-tbl" style="table-layout:fixed;width:100%">
       <thead><tr>
-        <th style="width:525px;${thStyle}" onclick="vidTblSort('title')">Title${_vidSortArrow('title')}</th>
-        ${VID_STEPS.map(s=>`<th style="width:22px;text-align:center;font-size:9px" title="${VID_STEP_LABELS[s]}">${VID_STEP_LABELS[s].length<=5?VID_STEP_LABELS[s]:VID_STEP_LABELS[s].slice(0,2)}</th>`).join('')}
-        <th style="width:62px;text-align:right;${thStyle}" onclick="vidTblSort('posted')">Posted${_vidSortArrow('posted')}</th>
-        <th style="width:50px;text-align:right;${thStyle}" onclick="vidTblSort('duration')">Dur${_vidSortArrow('duration')}</th>
+        <th style="width:525px;padding-left:10px;${thStyle}" onclick="vidTblSort('title')">Title${_vidSortArrow('title')}</th>
+        ${VID_STEPS.map(s=>`<th style="width:28px;text-align:center;font-size:9px" title="${VID_STEP_LABELS[s]}">${VID_STEP_LABELS[s].length<=5?VID_STEP_LABELS[s]:VID_STEP_LABELS[s].slice(0,2)}</th>`).join('')}
+        <th style="width:52px;text-align:right;${thStyle}" onclick="vidTblSort('posted')">Posted${_vidSortArrow('posted')}</th>
+        <th style="width:36px;text-align:right;${thStyle}" onclick="vidTblSort('duration')">Dur${_vidSortArrow('duration')}</th>
         <th style="width:28px"></th>
-        <th style="width:80px;background:var(--bg);${thStyle}" onclick="vidTblSort('status')">Status${_vidSortArrow('status')}</th>
-        ${_ytMatch?'<th style="width:45px;text-align:right;font-size:9px;background:var(--bg)">Views</th><th style="width:50px;text-align:right;font-size:9px;background:var(--bg)">Likes</th><th style="width:50px;text-align:right;font-size:9px;background:var(--bg)">Comments</th>':''}
+        <th style="width:70px;background:var(--bg);${thStyle}" onclick="vidTblSort('status')">Status${_vidSortArrow('status')}</th>
+        ${_ytMatch?'<th style="width:38px;text-align:right;font-size:9px;background:var(--bg)">Views</th><th style="width:38px;text-align:right;font-size:9px;background:var(--bg)">Likes</th><th style="width:42px;text-align:right;font-size:9px;background:var(--bg)">Comments</th>':''}
         <th style="width:30px"><button onclick="_vidToggleCompleted()" style="font-size:12px;font-weight:700;width:20px;height:20px;line-height:18px;text-align:center;border-radius:5px;border:1.5px solid var(--border);background:${_vidShowCompleted?'rgba(14,165,233,.12)':'var(--bg)'};color:${_vidShowCompleted?'#0ea5e9':'var(--muted)'};cursor:pointer;vertical-align:middle" title="${_vidShowCompleted?'Hide':'Show'} Completed">${_vidShowCompleted?'−':'+'}</button></th>
       </tr></thead>
       <tbody>${groupedHtml}</tbody>
@@ -1131,7 +1131,7 @@ function _vidRow(v,isChild,postMap){
   const postStr=_vidPostStr(v.post_date,true);
   const durStr=v.duration_minutes?v.duration_minutes.toFixed(2):'';
   const isSmall=v.video_type==='L'&&v.big_video_id;
-  const indent=isChild?'padding-left:32px;':'padding-left:16px;';
+  const indent=isChild?'padding-left:24px;':'padding-left:10px;';
   const childMark=isChild?'<span style="color:#fff;font-size:10px;margin-right:4px">└</span>':'';
   const titleColor=isSmall?'color:var(--muted);':'';
   const postNum=postMap&&postMap[sid];
