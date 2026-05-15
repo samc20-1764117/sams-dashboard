@@ -79,6 +79,7 @@ function _ytBuildMatch(){
   if(unmatched.length)console.log('[YT] Unmatched published:',unmatched.map(v=>v.post_date+' '+v.title));
 }
 function _ytForVid(id){return _ytMatch?_ytMatch[String(id)]:null;}
+function _ytDurMin(id){const m=_ytForVid(id);if(!m||!m.ytId||!_ytData||!_ytData.videos)return null;const yv=_ytData.videos.find(v=>v.id===m.ytId);return yv&&yv.duration?Math.round(_ytDurSec(yv.duration)/60*100)/100:null;}
 
 let _ytDismissedSel=new Set();
 let _ytCommentItems=[];  // current filtered list for shift-select
@@ -557,7 +558,8 @@ function _vidDashRow(v,isChild,simple){
     </div>`;
   }
   const postStr=_vidPostStr(v.post_date);
-  const durStr=v.duration_minutes?_fmtDur(v.duration_minutes):'';
+  const _durVal=v.duration_minutes||_ytDurMin(sid);
+  const durStr=_durVal?_fmtDur(_durVal):'';
   const isBig=v.video_type==='B';
   const bigRowStyle=isBig?'background:rgba(255,255,255,.50);':'';
   const _applicable=VID_STEPS.filter(s=>v[s]!=='na');
@@ -575,7 +577,7 @@ function _vidDashRow(v,isChild,simple){
       <span class="vid-num" data-field="post_date" style="width:52px;text-align:right;font-size:11px;color:${_vidDateColor(v.post_date,v)};cursor:pointer;min-height:16px;display:inline-block">${postStr||''}</span>
       <span class="vid-num" data-field="duration_minutes" style="width:36px;text-align:right;font-size:11px;color:var(--muted);cursor:pointer;min-height:16px;display:inline-block">${durStr||''}</span>
       ${(()=>{const ym=_ytForVid(sid);return ym?'<span class="vid-num" style="width:42px;text-align:right;font-size:11px;color:var(--muted);display:inline-block" title="'+ym.views+' views / '+ym.likes+' likes">'+_ytNum(ym.views)+'</span>':(_ytMatch?'<span style="width:42px;display:inline-block"></span>':'');})()}
-      <span class="vid-num" style="width:28px;text-align:right;font-size:11px;color:var(--muted);font-weight:500;display:inline-block">${_pctVal}</span>
+      <span class="vid-num" style="width:28px;text-align:right;font-size:9px;color:var(--muted);font-weight:500;display:inline-block">${_pctVal}</span>
       <button class="vid-del" data-vid="${sid}">✕</button>
     </div>
   </div>`;
@@ -1078,12 +1080,12 @@ function _vidRenderTable(){
   }
   const thStyle='cursor:pointer;user-select:none';
   return`<div>
-    <table class="vid-tbl" style="table-layout:fixed;width:100%">
+    <table class="vid-tbl" style="table-layout:fixed">
       <thead><tr>
         <th style="width:525px;padding-left:16px;${thStyle}" onclick="vidTblSort('title')">Title${_vidSortArrow('title')}</th>
         <th style="width:${VID_STEPS.length*28}px;padding:0"><div style="display:flex;gap:0">${VID_STEPS.map(s=>`<div style="width:28px;text-align:center;font-size:10px" title="${VID_STEP_LABELS[s]}">${VID_STEP_LABELS[s].length<=5?VID_STEP_LABELS[s]:VID_STEP_LABELS[s].slice(0,2)}</div>`).join('')}</div></th>
         <th style="width:52px;text-align:center;${thStyle}" onclick="vidTblSort('posted')">Posted${_vidSortArrow('posted')}</th>
-        <th style="width:36px;text-align:center;${thStyle}" onclick="vidTblSort('duration')">Dur${_vidSortArrow('duration')}</th>
+        <th style="width:36px;text-align:center;${thStyle}" onclick="vidTblSort('duration')">Len${_vidSortArrow('duration')}</th>
         <th style="width:90px;background:var(--bg);${thStyle}" onclick="vidTblSort('status')">Status${_vidSortArrow('status')}</th>
         ${_ytMatch?'<th style="width:38px;text-align:right;background:var(--bg)">Views</th><th style="width:38px;text-align:right;background:var(--bg)">Likes</th><th style="width:42px;text-align:right;background:var(--bg)">Cmts</th>':''}
         <th style="width:30px"></th>
@@ -1132,7 +1134,8 @@ function _vidRow(v,isChild,postMap){
   const sel=_vidSelected.has(sid);
   const sc=VID_STATUS_COLORS[v.status]||'#94a3b8';
   const postStr=_vidPostStr(v.post_date,true);
-  const durStr=v.duration_minutes?_fmtDur(v.duration_minutes):'';
+  const _durVal2=v.duration_minutes||_ytDurMin(sid);
+  const durStr=_durVal2?_fmtDur(_durVal2):'';
   const isSmall=v.video_type==='L'&&v.big_video_id;
   const indent=isChild?'padding-left:30px;':'padding-left:16px;';
   const childMark=isChild?'<span style="color:#fff;font-size:10px;margin-right:4px">└</span>':'';
@@ -1193,7 +1196,7 @@ function _vidBoardCard(v){
     <div style="font-size:12px;font-weight:${v.video_type==='B'||!v.big_video_id?'500':'400'};color:${v.video_type==='L'&&v.big_video_id?'var(--muted)':'var(--text)'};line-height:1.35;margin-bottom:4px">${_esc(v.title)}</div>
     <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:var(--muted)">
       ${postStr?`<span>${postStr}</span>`:''}
-      ${v.duration_minutes?`<span class="vid-num">${_fmtDur(v.duration_minutes)}</span>`:''}
+      ${(()=>{const _d=v.duration_minutes||_ytDurMin(String(v.id));return _d?`<span class="vid-num">${_fmtDur(_d)}</span>`:'';})()}
       <div style="flex:1"></div>
       <div style="display:flex;align-items:center;gap:3px">
         <div style="width:36px;height:4px;background:var(--border);border-radius:2px;overflow:hidden"><div style="width:${pct}%;height:100%;background:#10b981;border-radius:2px"></div></div>
