@@ -2925,14 +2925,13 @@ document.addEventListener('keydown',e=>{
       _vidUpdateChildSel();_applyVidSel();return;
     }
 
-    // Cmd+Up/Down: move status in_progress ↔ up_next
-    // Cmd+Left/Right: move status current ↔ ideas
-    if((e.metaKey||e.ctrlKey)&&!e.shiftKey&&!e.altKey&&_vidSelected.size>0){
+    // Cmd+Left/Right: move between statuses (Left=promote, Right=demote)
+    // Promote: idea → up_next → in_progress. Demote: in_progress → up_next → idea
+    if(isLeftRight&&(e.metaKey||e.ctrlKey)&&!e.shiftKey&&_vidSelected.size>0){
       e.preventDefault();
-      const statusMap=isUpDown
-        ?{ArrowUp:{in_progress:'up_next'},ArrowDown:{up_next:'in_progress'}}
-        :{ArrowRight:{in_progress:'idea',up_next:'idea'},ArrowLeft:{idea:'in_progress'}};
-      const map=statusMap[e.key]||{};
+      const map=e.key==='ArrowLeft'
+        ?{idea:'up_next',up_next:'in_progress'}
+        :{in_progress:'up_next',up_next:'idea'};
       const allIds=new Set([..._vidSelected,..._vidChildSelected]);
       const vids=[...allIds].map(id=>(st.videos||[]).find(x=>String(x.id)===id)).filter(Boolean);
       const toMove=vids.filter(v=>map[v.status]);
@@ -2952,8 +2951,8 @@ document.addEventListener('keydown',e=>{
       return;
     }
 
-    // Option+Up/Down: reorder within column
-    if(isUpDown&&e.altKey&&!e.metaKey&&!e.ctrlKey&&_vidSelected.size>0){
+    // Cmd+Up/Down: reorder within column
+    if(isUpDown&&(e.metaKey||e.ctrlKey)&&!e.shiftKey&&_vidSelected.size>0){
       e.preventDefault();
       const selIds=new Set([..._vidSelected]);
       const groups={};

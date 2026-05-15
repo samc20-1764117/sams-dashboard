@@ -22,7 +22,7 @@
 
 ### Views (4 tabs: Current → All Details → Analytics → Monthly)
 - **Tab navigation**: navigating to videos from another page always resets to Current tab. Refresh preserves current tab via `localStorage._vidView`. Flag `_vidPageInit` prevents reset on page-load navigation.
-- **Current** (`_vidView='dashboard'`): CSS grid layout (`2fr 1fr`) — Current + Ideas sharing same column tracks for aligned divider. Up Next/In Progress/Group/Single have solid white (`#fff`) sub-headers with `display:flex;align-items:center`. No count next to "Current" header. Ideas side has Group/Single sub-sections with white bullets (`●`). No `+` button on idea rows. B→L grouping with white `└` connector. Drag between zones changes status. Standalone videos (no `big_video_id`) cannot be dragged into groups. Container uses liquid glass style (`rgba(255,255,255,.32)` with `backdrop-filter:blur(28px)`). B videos at `rgba(255,255,255,.50)`. Header includes 28px spacer for % column + 42px for YT views.
+- **Current** (`_vidView='dashboard'`): CSS grid layout (`3fr 1fr`) — Current + Ideas sharing same column tracks for aligned divider. Up Next and In Progress sections with no gap between them. Solid white (`#fff`) sub-headers with `display:flex;align-items:center`. No count next to "Current" header. Ideas side has Group/Single sub-sections with white bullets (`●`). No `+` button on idea rows. B→L grouping with white `└` connector. Drag between zones changes status. Standalone videos (no `big_video_id`) cannot be dragged into groups. Container uses liquid glass style (`rgba(255,255,255,.32)` with `backdrop-filter:blur(28px)`). B videos at `rgba(255,255,255,.50)`. Header columns: stages + Posted (centered, 52px) + Dur (centered, 36px) + views (42px, if YT data) + % (28px) + delete. Views column always rendered (empty if no data) to keep alignment.
 - **All Details** (`_vidView='table'`): full table with sortable headers (click asc, click desc, click reset). `table-layout:fixed`. Sticky thead. Default sort: post_date asc with B→L grouping. Ideas excluded from this view. Column order: Title (450px) → Stages (22px each) → Posted → Dur → % → Status (80px). Status pills use `VID_STATUS_LABELS` with lighter color backgrounds. B videos at `rgba(255,255,255,.50)`. Stage columns are narrower than Current tab (22px vs 28px).
 - **Analytics** (`_vidView='analytics'`): see Analytics Tab section below.
 - **Monthly** (`_vidView='monthly'`): calendar grid by `post_date`. Nav with `_vidMonthOffset`.
@@ -45,8 +45,8 @@
 - **Hide by default** (`_vidShowCompleted=false`): published with past date hidden. For B videos, only hidden if ALL children also have past post_dates. Completed backup hidden. Toggle with +/- button or keyboard E/C.
 
 ### Inline Editing
-- **All Details**: Single click on td with `data-field` → `vidCellEdit()`: inline input for title/playlist/duration/post_date, dropdown for status. Save on blur/Enter, cancel on Escape. Double click → `openVidEdit(id)` full edit modal.
-- **Current tab**: Double-click on posted/duration spans → `_vidDashInlineEdit()`: text input for post_date (m/d format, auto-fills year via `_vidParseDate()`), number input for duration. Save on blur/Enter, cancel on Escape.
+- **All Details**: Single click on td with `data-field` → `vidCellEdit()`: inline text input for title/post_date/duration, dropdown for status. Post_date uses `m/d` or `m/d/yy` format via `_vidParseDate()`. Duration uses `type=text inputMode=decimal` (no spinner arrows). Inputs are borderless (`border:none; border-bottom:1px solid`) with transparent bg to prevent row height shift. Save on blur/Enter, cancel on Escape. Double click → `openVidEdit(id)` full edit modal.
+- **Current tab**: Double-click on posted/duration spans → `_vidDashInlineEdit()`: text input for post_date (m/d format, auto-fills year via `_vidParseDate()`), text input with `inputMode=decimal` for duration (no arrows/placeholder). Save on blur/Enter, cancel on Escape.
 - **Step dots**: click cycles `not_started→done→not_started`. If `na`, click cycles `na→not_started`. Right-click toggles na/required via `_vidToggleStepNa()`.
 - **TA+Up linking**: `step_tableau_public` and `step_upload_tableau` always stay in sync — toggling na/required on one toggles the other. Applies in inline right-click (`_vidToggleStepNa`), modal right-click (`_vidNaModalStep`), and type change (`_vidTypeChanged`).
 - All edits use `renderVideosPageKeepScroll()` to preserve scroll position.
@@ -77,18 +77,41 @@
 - `ArrowDown` — scroll to default position
 
 #### Current tab with selection:
-- `Up/Down` — move selection (navigate between rows, single select)
+- `Up/Down` — navigate selection (single select, moves to next/prev row, scrolls into view)
 - `Shift+Up/Down` — extend selection (multi-select adjacent rows)
-- `Cmd+Up/Down` — move between statuses: in_progress ↔ up_next
-- `Cmd+Left/Right` — move between statuses: current (in_progress/up_next) ↔ idea
-- `Option+Up/Down` — reorder/sort within column (swap position)
-- All status moves bring Big video's children along. Works with multi-select.
+- `Cmd+Left` — promote status: idea → up_next → in_progress
+- `Cmd+Right` — demote status: in_progress → up_next → idea
+- `Cmd+Up/Down` — reorder/sort within column (block move for multi-select)
+- `Escape` — clear selection
+- `Click outside` rows — clear selection
+- All status moves bring Big video's children along. Works with multi-select. Undoable.
+- Selection persists after status moves and reorders.
+
+### Default Scroll Position (`_vidScrollToDefault`)
+- Fires on: first render (refresh), tab switch, clear search/filter, Escape, ArrowDown (no selection).
+- Finds 3 most recent completed (`published`) videos with past `post_date` (before today). Deduplicates by parent Big so L children under same B don't count separately.
+- Scrolls 3rd most recent to `block:'start'` — all 3 visible at top of viewport.
+- If fewer than 3 qualify, scrolls to the oldest qualifying one.
+- `renderVideosPageKeepScroll()` skips scroll restore when `wasScrolled=false` (scroll at 0) so it doesn't overwrite the default scroll on initial render.
+- `renderAll()` (30s sync) uses `renderVideosPageKeepScroll` to preserve scroll, not `renderVideosPage`.
+
+### Selection
+- Click: single select (click again to deselect). Cmd+click: toggle add/remove. Shift+click: range select.
+- Click outside rows/headers: clears selection (document-level listener).
+- Big video selection auto-selects children via `_vidUpdateChildSel()` → `_vidChildSelected` set.
+- Selection persists across renders, status moves, and reorders.
+- `_applyVidSel()` applies `.vid-sel`/`.vid-child-sel` CSS classes.
+
+### Scroll Behavior
+- `_vidScrollEl()` returns correct scroll container per view: dashboard → first div inside card, table/other → card itself (which has `overflow:auto`).
+- `renderVideosPageKeepScroll()` captures scroll before render, restores after with triple restore (immediate + rAF + double rAF). Skips restore when scroll was 0 to allow default scroll.
+- Editing on All Details never resets scroll — `core.js save()` and all edit paths use `renderVideosPageKeepScroll`.
 
 ### Client-Side Migration
 - `renderVideosPage()` auto-migrates `group_name` → `big_video_id` by matching B video's `group_name` field. Safety net until all data uses `big_video_id`.
 
 ### Key Functions
-- `_vidScrollEl()` — finds scroll container for keep-scroll renders
+- `_vidScrollEl()` — returns scroll container: card div for dashboard, card itself for table/other views
 - `_vidSeqMap(orderedIds)` — maps ordered ID array to sequential numbers (1, 2, 3...)
 - `_vidOrderedIds(vids)` — builds display-order ID list from videos with `post_date`, B→children grouped
 - `_vidDateColor(d,v)` — returns CSS color for post_date display
