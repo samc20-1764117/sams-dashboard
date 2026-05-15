@@ -967,7 +967,7 @@ tickClock();_updateOvTopDate();setInterval(tickClock,1000);init();
   </div>
 </div>
 <script>
-// Debug grid overlay — press G to toggle
+// Debug grid overlay — press G to toggle (works on ALL pages)
 document.addEventListener('keydown',e=>{
   if(e.key==='g'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,.overlay.open')){
     e.preventDefault();
@@ -975,12 +975,13 @@ document.addEventListener('keydown',e=>{
     if(ov){ov.remove();return;}
     ov=document.createElement('div');ov.id='_dbgGrid';
     ov.style.cssText='position:fixed;inset:0;z-index:99999;pointer-events:none;font-family:monospace;font-size:9px;';
-    const cards=document.querySelectorAll('#page-overview .card, #page-overview .overview-cols, #page-overview .row1-right-top, #page-overview .row1-right-panel, #page-overview .overview-left');
-    const ovCols=document.querySelector('#page-overview .overview-cols');
-    if(!ovCols){return;}
-    const allCards=[...document.querySelectorAll('#page-overview .card')].filter(c=>c.offsetParent!==null);
-    // Draw boxes around each card with measurements
-    allCards.forEach((c,i)=>{
+    // Find the active page
+    const activePage=[...document.querySelectorAll('[id^="page-"]')].find(p=>p.style.display!=='none'&&p.offsetParent!==null);
+    if(!activePage){document.body.appendChild(ov);return;}
+    // Find all visible cards/panels in the active page
+    const allCards=[...activePage.querySelectorAll('.card')].filter(c=>c.offsetParent!==null&&c.getBoundingClientRect().height>0);
+    // Draw boxes around each card
+    allCards.forEach(c=>{
       const r=c.getBoundingClientRect();
       const box=document.createElement('div');
       box.style.cssText=`position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;border:1px solid rgba(255,0,0,.5);`;
@@ -990,7 +991,6 @@ document.addEventListener('keydown',e=>{
     for(let i=0;i<allCards.length;i++){
       for(let j=i+1;j<allCards.length;j++){
         const a=allCards[i].getBoundingClientRect(),b=allCards[j].getBoundingClientRect();
-        // Horizontal gap (cards side by side)
         if(Math.abs(a.top-b.top)<5&&a.right<b.left){
           const gap=Math.round(b.left-a.right);
           const lbl=document.createElement('div');
@@ -1000,11 +1000,10 @@ document.addEventListener('keydown',e=>{
           line.style.cssText=`position:fixed;left:${a.right}px;top:${a.top}px;width:${gap}px;height:${a.height}px;background:rgba(255,0,0,.06);border-left:1px dashed rgba(255,0,0,.3);border-right:1px dashed rgba(255,0,0,.3);`;
           ov.appendChild(line);ov.appendChild(lbl);
         }
-        // Vertical gap (cards stacked)
         if(Math.abs(a.left-b.left)<5&&a.bottom<b.top&&(b.top-a.bottom)<40){
           const gap=Math.round(b.top-a.bottom);
           const lbl=document.createElement('div');
-          lbl.style.cssText=`position:fixed;left:${a.left-28}px;top:${a.bottom}px;height:${gap}px;display:flex;align-items:center;color:#00c;font-weight:700;font-size:8px;background:rgba(200,200,255,.7);padding:0 3px;writing-mode:horizontal-tb;`;
+          lbl.style.cssText=`position:fixed;left:${a.left-28}px;top:${a.bottom}px;height:${gap}px;display:flex;align-items:center;color:#00c;font-weight:700;font-size:8px;background:rgba(200,200,255,.7);padding:0 3px;`;
           lbl.textContent=gap+'px';
           const line=document.createElement('div');
           line.style.cssText=`position:fixed;left:${a.left}px;top:${a.bottom}px;width:${a.width}px;height:${gap}px;background:rgba(0,0,255,.04);border-top:1px dashed rgba(0,0,255,.3);border-bottom:1px dashed rgba(0,0,255,.3);`;
@@ -1012,18 +1011,25 @@ document.addEventListener('keydown',e=>{
         }
       }
     }
-    // Show outer margins from overview-cols
-    const ocr=ovCols.getBoundingClientRect();
-    const marginLbl=document.createElement('div');
-    marginLbl.style.cssText=`position:fixed;left:${ocr.left}px;top:${ocr.top-14}px;color:#090;font-weight:700;font-size:8px;background:rgba(200,255,200,.7);padding:1px 4px;`;
-    marginLbl.textContent=`grid gap: ${getComputedStyle(ovCols).gap}`;
-    ov.appendChild(marginLbl);
-    // Show row1-right-panel gap
-    const r1rp=document.querySelector('#page-overview .row1-right-panel');
-    if(r1rp){const rl=document.createElement('div');rl.style.cssText=`position:fixed;left:${r1rp.getBoundingClientRect().left}px;top:${r1rp.getBoundingClientRect().top-14}px;color:#909;font-weight:700;font-size:8px;background:rgba(255,200,255,.7);padding:1px 4px;`;rl.textContent=`right-panel gap: ${getComputedStyle(r1rp).gap}`;ov.appendChild(rl);}
-    // Show row1-right-top gap
-    const r1rt=document.querySelector('#page-overview .row1-right-top');
-    if(r1rt){const rl2=document.createElement('div');rl2.style.cssText=`position:fixed;left:${r1rt.getBoundingClientRect().right-120}px;top:${r1rt.getBoundingClientRect().top-14}px;color:#960;font-weight:700;font-size:8px;background:rgba(255,240,200,.7);padding:1px 4px;`;rl2.textContent=`top-row gap: ${getComputedStyle(r1rt).gap}`;ov.appendChild(rl2);}
+    // Dashboard edge margins
+    const pageR=activePage.getBoundingClientRect();
+    const winW=window.innerWidth,winH=window.innerHeight;
+    const mL=Math.round(pageR.left),mR=Math.round(winW-pageR.right),mT=Math.round(pageR.top),mB=Math.round(winH-pageR.bottom);
+    // Left margin
+    if(mL>0){const ml=document.createElement('div');ml.style.cssText=`position:fixed;left:0;top:${pageR.top}px;width:${mL}px;height:40px;background:rgba(0,180,0,.08);border-right:1px dashed rgba(0,180,0,.4);display:flex;align-items:center;justify-content:center;color:#090;font-weight:700;font-size:8px;`;ml.textContent=mL+'px';ov.appendChild(ml);}
+    // Right margin
+    if(mR>0){const mr=document.createElement('div');mr.style.cssText=`position:fixed;right:0;top:${pageR.top}px;width:${mR}px;height:40px;background:rgba(0,180,0,.08);border-left:1px dashed rgba(0,180,0,.4);display:flex;align-items:center;justify-content:center;color:#090;font-weight:700;font-size:8px;`;mr.textContent=mR+'px';ov.appendChild(mr);}
+    // Top margin
+    if(mT>0){const mt=document.createElement('div');mt.style.cssText=`position:fixed;left:${pageR.left}px;top:0;width:80px;height:${mT}px;background:rgba(0,180,0,.08);border-bottom:1px dashed rgba(0,180,0,.4);display:flex;align-items:center;justify-content:center;color:#090;font-weight:700;font-size:8px;`;mt.textContent=mT+'px';ov.appendChild(mt);}
+    // Show grid/flex gaps for layout containers in active page
+    activePage.querySelectorAll('.overview-cols,.row1-right-panel,.row1-right-top').forEach(el=>{
+      if(el.offsetParent===null)return;
+      const g=getComputedStyle(el).gap;if(!g||g==='normal')return;
+      const r=el.getBoundingClientRect();
+      const lbl=document.createElement('div');
+      lbl.style.cssText=`position:fixed;left:${r.left}px;top:${r.top-14}px;color:#909;font-weight:700;font-size:8px;background:rgba(255,200,255,.7);padding:1px 4px;`;
+      lbl.textContent=`gap: ${g}`;ov.appendChild(lbl);
+    });
     document.body.appendChild(ov);
   }
 });

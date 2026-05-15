@@ -2787,7 +2787,7 @@ function renderShopOv(){
     el.innerHTML=
       `<label class="chk-wrap"><input type="checkbox" class="chk" style="width:11px;height:11px"${s.done?' checked':''}></label>`+
       `<span class="tn">${escHtml(s.name)}</span>`+
-      `<span class="cpill" style="background:none;color:#94a3b8;border:none;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;padding:0;flex-shrink:0">${escHtml(s.store||'')}</span>`+
+      `<span class="cpill" style="background:none;color:var(--subtle);border:none;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;padding:0;flex-shrink:0">${escHtml(s.store||'')}</span>`+
       `<button class="delbtn">✕</button>`;
     el.addEventListener('click',e=>tiClickShop(e,s.id));
     el.addEventListener('dblclick',e=>tiDblShop(e,s.id));
