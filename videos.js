@@ -1075,6 +1075,9 @@ function _vidRenderTable(){
   }
   const thStyle='cursor:pointer;user-select:none';
   return`<div>
+    <div class="vid-dash-header">
+      <div style="flex:1;min-width:0;padding-left:10px">All Details</div>
+    </div>
     <table class="vid-tbl" style="table-layout:fixed;width:100%">
       <thead><tr>
         <th style="width:525px;${thStyle}" onclick="vidTblSort('title')">Title${_vidSortArrow('title')}</th>
