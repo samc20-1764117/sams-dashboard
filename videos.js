@@ -573,7 +573,7 @@ function _vidDashRow(v,isChild,simple){
       <div style="display:flex;gap:0">${VID_STEPS.map(s=>`<div style="width:28px;text-align:center"><div class="vid-step-dot${v[s]==='done'?' done':v[s]==='na'?' na':''}" data-vid="${sid}" data-step="${s}" title="${VID_STEP_LABELS[s]}"></div></div>`).join('')}</div>
       <span data-field="post_date" style="width:52px;text-align:right;font-size:11px;color:${_vidDateColor(v.post_date,v)};cursor:pointer;min-height:16px;display:inline-block">${postStr||''}</span>
       <span data-field="duration_minutes" style="width:36px;text-align:right;font-size:11px;color:var(--muted);cursor:pointer;min-height:16px;display:inline-block">${durStr||''}</span>
-      ${(()=>{const ym=_ytForVid(sid);return ym?'<span style="width:42px;text-align:right;font-size:10px;color:#8b5cf6;display:inline-block" title="'+ym.views+' views / '+ym.likes+' likes">'+_ytNum(ym.views)+'</span>':'';})()}
+      ${_ytMatch?(()=>{const ym=_ytForVid(sid);return'<span style="width:42px;text-align:right;font-size:10px;color:#8b5cf6;display:inline-block"'+(ym?' title="'+ym.views+' views / '+ym.likes+' likes">'+_ytNum(ym.views):'>')+' </span>';})():''}
       <span style="width:28px;text-align:right;font-size:9px;color:var(--muted);font-weight:500;display:inline-block">${_pctVal}</span>
       <button class="vid-del" data-vid="${sid}">✕</button>
     </div>
@@ -1079,7 +1079,7 @@ function _vidRenderTable(){
   return`<div>
     <table class="vid-tbl" style="table-layout:fixed;width:100%">
       <thead><tr>
-        <th style="padding-left:16px;${thStyle}" onclick="vidTblSort('title')">Title${_vidSortArrow('title')}</th>
+        <th style="width:525px;padding-left:16px;${thStyle}" onclick="vidTblSort('title')">Title${_vidSortArrow('title')}</th>
         <th style="width:${VID_STEPS.length*28}px;padding:0"><div style="display:flex;gap:0">${VID_STEPS.map(s=>`<div style="width:28px;text-align:center;font-size:10px" title="${VID_STEP_LABELS[s]}">${VID_STEP_LABELS[s].length<=5?VID_STEP_LABELS[s]:VID_STEP_LABELS[s].slice(0,2)}</div>`).join('')}</div></th>
         <th style="width:52px;text-align:center;${thStyle}" onclick="vidTblSort('posted')">Posted${_vidSortArrow('posted')}</th>
         <th style="width:36px;text-align:center;${thStyle}" onclick="vidTblSort('duration')">Dur${_vidSortArrow('duration')}</th>
@@ -2019,7 +2019,11 @@ function _vidSearchNav(dir){
 function _vidScrollToDefault(){
   requestAnimationFrame(()=>{
     const today=new Date().toISOString().slice(0,10);
-    const pastBig=(st.videos||[]).filter(v=>!v.is_deleted&&v.status==='published'&&v.video_type==='B'&&v.post_date&&v.post_date<today).sort((a,b)=>b.post_date.localeCompare(a.post_date));
+    const allPub=(st.videos||[]).filter(v=>!v.is_deleted&&v.status==='published');
+    const allPubBig=allPub.filter(v=>v.video_type==='B');
+    const withDate=allPubBig.filter(v=>v.post_date);
+    const pastBig=withDate.filter(v=>v.post_date<today).sort((a,b)=>b.post_date.localeCompare(a.post_date));
+    console.log('[SCROLL]','today=',today,'published=',allPub.length,'pubBig=',allPubBig.map(v=>v.title+' type='+v.video_type+' date='+v.post_date),'withDate=',withDate.length,'pastBig=',pastBig.map(v=>v.title+' '+v.post_date));
     const target=pastBig[2]||pastBig[pastBig.length-1];
     if(!target)return;
     const tid=String(target.id);
@@ -2915,7 +2919,6 @@ document.addEventListener('keydown',e=>{
     save();renderVideosPageKeepScroll();
     pushUndo(async()=>{[...undos,...childrenMoved].forEach(u=>{const v2=(st.videos||[]).find(x=>String(x.id)===u.id);if(v2)v2.status=u.prev;});save();renderVideosPageKeepScroll();for(const u of[...undos,...childrenMoved])await sbReqSilent('PATCH','videos',{status:u.prev},`?id=eq.${u.id}`);},'Move status');
     (async()=>{for(const v of[...toMove,...childrenMoved.map(u=>(st.videos||[]).find(x=>String(x.id)===u.id)).filter(Boolean)])await sbReqSilent('PATCH','videos',{status:v.status},`?id=eq.${v.id}`);})();
-    _vidSelected.clear();_vidChildSelected.clear();_applyVidSel();
     return;
   }
   if(e.key==='ArrowLeft'&&!e.metaKey&&!e.ctrlKey&&_vidSelected.size===0){e.preventDefault();const tabs=['dashboard','table','analytics','monthly'];const i=tabs.indexOf(_vidView);if(i>0)_vidSetView(tabs[i-1]);return;}
