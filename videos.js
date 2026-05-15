@@ -2027,7 +2027,6 @@ function _vidSetSearch(q){
   _vidShowSuggestions(q);
   const cnt=document.getElementById('vidSearchCount');
   if(cnt)cnt.textContent=(_vidMatchIds.length?(_vidMatchIdx+1):0)+'/'+_vidMatchIds.length;
-  if(_vidMatchIds.length)_vidScrollToMatch();
 }
 function _vidDateMatch(d,q){
   if(!d)return false;
