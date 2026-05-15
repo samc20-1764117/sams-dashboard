@@ -2017,13 +2017,15 @@ function _vidSearchNav(dir){
   if(cnt)cnt.textContent=(_vidMatchIdx+1)+'/'+_vidMatchIds.length;
 }
 function _vidScrollToDefault(){
+  console.warn('[SCROLL-DEFAULT] called, view=',_vidView);
   requestAnimationFrame(()=>{
     const today=new Date().toISOString().slice(0,10);
     const allPub=(st.videos||[]).filter(v=>!v.is_deleted&&v.status==='published');
     const allPubBig=allPub.filter(v=>v.video_type==='B');
     const withDate=allPubBig.filter(v=>v.post_date);
     const pastBig=withDate.filter(v=>v.post_date<today).sort((a,b)=>b.post_date.localeCompare(a.post_date));
-    console.log('[SCROLL]','today=',today,'published=',allPub.length,'pubBig=',allPubBig.map(v=>v.title+' type='+v.video_type+' date='+v.post_date),'withDate=',withDate.length,'pastBig=',pastBig.map(v=>v.title+' '+v.post_date));
+    console.warn('[SCROLL-DEFAULT]','today=',today,'allPublished=',allPub.length,'publishedBigs=',allPubBig.length,'withDate=',withDate.length,'pastBigs=',pastBig.length);
+    console.table(pastBig.map(v=>({title:v.title,post_date:v.post_date,type:v.video_type})));
     const target=pastBig[2]||pastBig[pastBig.length-1];
     if(!target)return;
     const tid=String(target.id);
@@ -2897,9 +2899,10 @@ document.addEventListener('keydown',e=>{
   if((e.metaKey||e.ctrlKey)&&e.key==='c'&&_vidSelected.size>0){e.preventDefault();_vidCopied=[];_vidSelected.forEach(id=>{const v=(st.videos||[]).find(x=>String(x.id)===String(id));if(v)_vidCopied.push({...v});});showToast('Copied '+_vidCopied.length+' video(s)','#0ea5e9',1500);return;}
   if((e.metaKey||e.ctrlKey)&&e.key==='v'&&_vidCopied.length>0){e.preventDefault();_vidCopied.forEach(v=>_vidDuplicate(v.id));return;}
   if(e.key==='n'&&!e.metaKey&&!e.ctrlKey){e.preventDefault();openVidModal();return;}
-  // Arrow keys with selection on dashboard: move videos between statuses
-  if(_vidView==='dashboard'&&_vidSelected.size>0&&!e.metaKey&&!e.ctrlKey&&['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)){
+  // Cmd+Arrow with selection on dashboard: move videos between statuses
+  if(_vidView==='dashboard'&&_vidSelected.size>0&&(e.metaKey||e.ctrlKey)&&['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)){
     e.preventDefault();
+    // Cmd+Right: current→idea, Cmd+Left: idea→in_progress, Cmd+Up: in_progress→up_next, Cmd+Down: up_next→in_progress
     const statusMap={ArrowRight:{in_progress:'idea',up_next:'idea'},ArrowLeft:{idea:'in_progress'},ArrowUp:{in_progress:'up_next'},ArrowDown:{up_next:'in_progress'}};
     const map=statusMap[e.key]||{};
     const allIds=new Set([..._vidSelected,..._vidChildSelected]);
@@ -2908,7 +2911,6 @@ document.addEventListener('keydown',e=>{
     if(!toMove.length)return;
     const undos=toMove.map(v=>({id:v.id,prev:v.status}));
     toMove.forEach(v=>{v.status=map[v.status];});
-    // Also move children of Big videos
     const bigIds=toMove.filter(v=>v.video_type==='B').map(v=>String(v.id));
     const childrenMoved=[];
     bigIds.forEach(bid=>{
@@ -2921,10 +2923,34 @@ document.addEventListener('keydown',e=>{
     (async()=>{for(const v of[...toMove,...childrenMoved.map(u=>(st.videos||[]).find(x=>String(x.id)===u.id)).filter(Boolean)])await sbReqSilent('PATCH','videos',{status:v.status},`?id=eq.${v.id}`);})();
     return;
   }
+  // Up/Down with selection on dashboard: reorder within column
+  if(_vidView==='dashboard'&&_vidSelected.size>0&&!e.metaKey&&!e.ctrlKey&&(e.key==='ArrowUp'||e.key==='ArrowDown')){
+    e.preventDefault();
+    const dir=e.key==='ArrowUp'?-1:1;
+    const selIds=[..._vidSelected];
+    // Get all visible rows in column order, find selected, swap with neighbor
+    const rows=[...document.querySelectorAll('.vid-dash-row[data-vid]')].map(r=>r.dataset.vid);
+    // For each selected video, find its position and swap vid_order with neighbor
+    selIds.forEach(sid=>{
+      const v=(st.videos||[]).find(x=>String(x.id)===sid);if(!v)return;
+      // Find siblings with same status
+      const siblings=(st.videos||[]).filter(x=>!x.is_deleted&&x.status===v.status&&x.video_type===v.video_type).sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
+      const idx=siblings.findIndex(x=>String(x.id)===sid);
+      const swapIdx=idx+dir;
+      if(swapIdx<0||swapIdx>=siblings.length)return;
+      const other=siblings[swapIdx];
+      const tmpOrd=v.vid_order??idx;const otherOrd=other.vid_order??swapIdx;
+      v.vid_order=otherOrd;other.vid_order=tmpOrd;
+      sbReqSilent('PATCH','videos',{vid_order:v.vid_order},`?id=eq.${v.id}`);
+      sbReqSilent('PATCH','videos',{vid_order:other.vid_order},`?id=eq.${other.id}`);
+    });
+    save();renderVideosPageKeepScroll();
+    return;
+  }
   if(e.key==='ArrowLeft'&&!e.metaKey&&!e.ctrlKey&&_vidSelected.size===0){e.preventDefault();const tabs=['dashboard','table','analytics','monthly'];const i=tabs.indexOf(_vidView);if(i>0)_vidSetView(tabs[i-1]);return;}
   if(e.key==='ArrowRight'&&!e.metaKey&&!e.ctrlKey&&_vidSelected.size===0){e.preventDefault();const tabs=['dashboard','table','analytics','monthly'];const i=tabs.indexOf(_vidView);if(i<tabs.length-1)_vidSetView(tabs[i+1]);return;}
-  if(e.key==='ArrowUp'&&!e.metaKey&&!e.ctrlKey){e.preventDefault();const se=_vidScrollEl();if(se){se.scrollTop=0;}else{const row=document.querySelector('.vid-dash-row,.vid-row');if(row)row.scrollIntoView({block:'start'});}return;}
-  if(e.key==='ArrowDown'&&!e.metaKey&&!e.ctrlKey){e.preventDefault();_vidScrollToDefault();return;}
+  if(e.key==='ArrowUp'&&!e.metaKey&&!e.ctrlKey&&_vidSelected.size===0){e.preventDefault();const se=_vidScrollEl();if(se){se.scrollTop=0;}else{const row=document.querySelector('.vid-dash-row,.vid-row');if(row)row.scrollIntoView({block:'start'});}return;}
+  if(e.key==='ArrowDown'&&!e.metaKey&&!e.ctrlKey&&_vidSelected.size===0){e.preventDefault();_vidScrollToDefault();return;}
   if(e.key==='e'&&!e.metaKey&&!e.ctrlKey&&_vidView==='table'){e.preventDefault();_vidShowCompleted=!_vidShowCompleted;renderVideosPageKeepScroll();return;}
   if(e.key==='c'&&!e.metaKey&&!e.ctrlKey&&_vidView==='table'){e.preventDefault();_vidShowCompleted=!_vidShowCompleted;renderVideosPageKeepScroll();return;}
 });
