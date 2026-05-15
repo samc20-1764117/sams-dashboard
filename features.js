@@ -2400,7 +2400,7 @@ document.addEventListener('keydown',async e=>{
   const tag=document.activeElement?.tagName;
   if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT')return;
   // t key: jump to today on overview
-  if(e.key==='t'&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&activePg==='overview'&&!document.querySelector('.overlay.open')){goToday();return;}
+  if(e.key==='t'&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&activePg==='overview'&&!document.querySelector('.overlay.open')){e.preventDefault();document.activeElement?.blur();goToday();return;}
   // Arrow left/right: shift day on overview when nothing selected
   if((e.key==='ArrowLeft'||e.key==='ArrowRight')&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&activePg==='overview'&&!document.querySelector('.overlay.open')&&!_qnOpen){
     if(!selectedTasks.size){e.preventDefault();shiftDay(e.key==='ArrowLeft'?-1:1);return;}
