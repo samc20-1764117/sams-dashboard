@@ -1051,12 +1051,23 @@ function _showHelpOverlay(){
       ['Arrow keys (board)','Navigate video cards'],
     ],
     pups:[
-      ['Delete / ⌫','Delete selected skill'],
+      ['↑/↓ (selected)','Reorder selected skills'],
+      ['Delete / ⌫','Delete selected skill group'],
       ['⌘C / ⌘V','Copy / paste skills'],
+      ['Click','Select skill row'],
+      ['Shift+Click','Multi-select range'],
     ],
-    recipes:[],
+    recipes:[
+      ['Delete / ⌫','Delete selected recipes'],
+      ['⌘C / ⌘V','Copy / paste recipes'],
+      ['Click','Select recipe row'],
+    ],
     finance:[],
-    birthdays:[],
+    birthdays:[
+      ['Delete / ⌫','Delete selected birthdays'],
+      ['⌘C / ⌘V','Copy / paste birthdays'],
+      ['Click','Select birthday row'],
+    ],
   };
   const pg=activePg||'overview';
   const pgShortcuts=_pages[pg]||[];
