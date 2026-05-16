@@ -1112,4 +1112,5 @@ document.addEventListener('keydown',e=>{
 });
 </script>
 <div id="uiTip" style="position:fixed;pointer-events:none;z-index:9999;background:rgba(255,250,246,.92);color:var(--muted);font-size:10px;font-weight:600;padding:3px 8px;border-radius:5px;white-space:nowrap;opacity:0;transition:opacity .1s;font-family:'DM Sans',sans-serif;box-shadow:0 2px 8px rgba(0,0,0,.1),0 1px 2px rgba(0,0,0,.06);border:1px solid rgba(210,195,185,.4);letter-spacing:.01em;top:0;left:0"></div>
+<div class="overlay" id="helpOverlay" onclick="closeMod('helpOverlay',event)"><div class="modal" style="width:420px;max-height:80vh;overflow-y:auto;padding:24px 28px" id="helpContent"></div></div>
 </body></html>

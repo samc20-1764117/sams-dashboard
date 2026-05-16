@@ -990,7 +990,75 @@ document.addEventListener('keydown',e=>{
       if(_ni>=0&&_ni<_pgOrder.length){e.preventDefault();showPage(_pgOrder[_ni]);}
     }
   }
+  // Help overlay: press "i" when nothing focused/selected
+  if(e.key==='i'&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')){
+    e.preventDefault();_showHelpOverlay();
+  }
 });
+
+// ── Help Overlay ─────────────────────────────────────────────────────────────
+function _showHelpOverlay(){
+  const _global=[
+    ['⌘ ←/→','Switch between pages'],
+    ['O','Go to Overview'],
+    ['V','Go to Videos'],
+    ['N','Quick Add task'],
+    ['R','Reload'],
+    ['S','Sync all'],
+    ['I','Show this help'],
+    ['Esc','Close any modal/overlay'],
+    ['⌘Z','Undo'],
+  ];
+  const _pages={
+    overview:[
+      ['T','Jump to Today'],
+      ['←/→','Previous / next day'],
+      ['Click task','Select task'],
+      ['←/→ (selected)','Move task ±1 day'],
+      ['Space (WR rule)','Toggle skip'],
+      ['Delete/⌫','Delete selected tasks'],
+      ['⌘C / ⌘V','Copy / paste tasks'],
+      ['⌘I','Toggle importance mode'],
+      ['↑/↓ (time blocks)','Move block ±30 min'],
+    ],
+    videos:[
+      ['N','New video'],
+      ['E / C','Toggle completed videos'],
+      ['←/→','Switch video tabs'],
+      ['⌘C / ⌘V','Copy / paste videos'],
+    ],
+    pups:[
+      ['Delete/⌫','Delete selected skill'],
+      ['⌘C / ⌘V','Copy / paste skills'],
+    ],
+    recipes:[],
+    finance:[],
+    birthdays:[],
+  };
+  const pg=activePg||'overview';
+  const pgShortcuts=_pages[pg]||[];
+  let html='<div style="font-family:DM Sans,sans-serif">';
+  html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><h3 style="margin:0;font-size:15px;color:var(--text)">Keyboard Shortcuts</h3><span style="font-size:11px;background:rgba(109,95,230,.1);color:#6d5fe6;padding:2px 8px;border-radius:6px;font-weight:600">'+pg+'</span></div>';
+  if(pgShortcuts.length){
+    html+='<div style="margin-bottom:14px"><div style="font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:8px;font-weight:600">This Page</div>';
+    html+=_helpRows(pgShortcuts);
+    html+='</div>';
+  }
+  html+='<div><div style="font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:8px;font-weight:600">Global</div>';
+  html+=_helpRows(_global);
+  html+='</div></div>';
+  document.getElementById('helpContent').innerHTML=html;
+  document.getElementById('helpOverlay').classList.add('open');
+}
+function _helpRows(arr){
+  let h='<div style="display:grid;grid-template-columns:auto 1fr;gap:4px 12px">';
+  arr.forEach(([key,desc])=>{
+    h+='<div style="text-align:right"><kbd style="background:rgba(109,95,230,.08);border:1px solid rgba(109,95,230,.15);border-radius:4px;padding:1px 6px;font-size:11px;font-family:SF Mono,monospace;color:#6d5fe6;font-weight:500">'+key+'</kbd></div>';
+    h+='<div style="font-size:12px;color:var(--text);line-height:1.8">'+desc+'</div>';
+  });
+  h+='</div>';
+  return h;
+}
 
 // ── UI Tooltip ────────────────────────────────────────────────────────────────
 (function(){
