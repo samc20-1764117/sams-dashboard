@@ -2054,8 +2054,8 @@ function renderRecOv(){
     return recOvOrder(a)-recOvOrder(b);
   });
   function makePawEl(ruleId,isDone){
-    const col=isDone?'#a3c41a':'rgba(255,255,255,.8)';
-    const str=isDone?'#a3c41a':'rgba(180,170,210,.5)';
+    const col=isDone?'rgba(200,195,210,.35)':'rgba(255,255,255,.8)';
+    const str=isDone?'rgba(200,195,210,.35)':'rgba(180,170,210,.5)';
     const wrap=document.createElement('label');
     wrap.className='chk-wrap';
     wrap.style.cssText='cursor:pointer;flex-shrink:0';
