@@ -64,7 +64,7 @@
 
 **WR cross-week move**: when moving WR task to different week (calendar drop, edge drop), must delete `_dateOverrides[currentWkKey]` AND set `_dateOverrides[newWkKey]=ds`. Use `dsToWkKey(ds)` for target week, `getWkKey(wkOff)` for current. Undo restores both keys.
 
-**Pup-related checkbox**: `makePawEl` renders bone SVG icon (14×14px, `margin-left:-2px`) instead of regular checkbox. Fill/stroke colors change on done state.
+**Pup-related checkbox**: `makePawEl` renders bone SVG icon (14×14px, `margin-left:-2px`) instead of regular checkbox. Done state: grey `rgba(200,195,210,.35)` fill/stroke (matches grey checkbox style). Undone: white fill, muted stroke.
 
 **Unassigned indicator**: WR rules not yet assigned to a day (`!_dateOverrides[wkKey]`) show `›` via `.wr-unassigned` class, matching today list's `tb-arrow` style.
 

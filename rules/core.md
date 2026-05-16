@@ -59,14 +59,16 @@ Supabase Auth (email+password), RLS on all tables. `init()`→`checkAuth()`→`d
   - **Left/Right**: `clamp(12px, 3vw, 56px)` — responsive, min 12px, max 56px.
   - **Bottom**: `24px` — fixed, matches overview page bottom gap.
   - **Top**: varies per page (typically 41–60px depending on topbar/toolbar height).
-- **Videos page** sets padding via JS (`el.style.cssText`); all other pages set it inline on the `.page` div in `index.html`.
+- **Videos page** sets padding via JS (`el.style.cssText`): `padding:45px clamp(12px,3vw,56px) 24px clamp(12px,3vw,56px)`.
 - **New pages**: always use these exact side/bottom values. Copy-paste: `style="padding:60px clamp(12px,3vw,56px) 24px clamp(12px,3vw,56px)"`.
-- **Overview page** uses `#page-overview{padding:clamp(12px,3vw,56px);padding-top:60px}` in CSS — sides/bottom match the standard.
+- **Overview page** uses `#page-overview{padding:clamp(12px,3vw,56px);padding-top:60px;padding-bottom:24px}` in CSS — all pages now have 24px bottom.
 - **Quick links** (overview grid): Shopping removed (redirected to weekly reset), Notes removed. Current: Birthdays, Pups, Finance, Recipes, Videos. One slot open.
 
 ## Keyboard Shortcuts (global, `core.js` keydown handler)
 - `Cmd/Ctrl+Z`: undo (page-aware: pups/recipes/birthdays use their own stacks).
 - `o`: `showPage('overview')` — only when no input/textarea/select focused and no modal open.
+- `v`: `showPage('videos')`.
+- `g`: debug grid overlay (toggle). Shows: green edge margins (CSS padding), purple card overlays with dimensions (blur content), blue vertical gaps, red horizontal gaps. Works on all pages. Auto-dismisses on page switch. Script in `index.html` before `</body>`.
 
 ## Undo / Redo
 - `pushUndo(fn,msg)`: snapshots state AFTER action (called post-mutation). `doUndo()`: pops, captures current snap for redo, calls fn. `doRedo()` (async): restores snap, `await _syncRedoDiff(before,after)`, pushes undo entry whose fn calls both `_stateRestore(beforeRedo)` AND `_syncRedoDiff(snap,beforeRedo)` to keep DB in sync on undo-after-redo.

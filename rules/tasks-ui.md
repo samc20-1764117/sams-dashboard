@@ -40,7 +40,7 @@ All indicators at far right, swap to X on hover. From right: `tb-arrow` (rightmo
 
 ## Chip & UI Notes
 - **Hover-X**: `.chip-del` last flex child. X removes from ALL views + linked blocks. Exception: X on TB block itself → `delBlock` only.
-- **Chip checkboxes**: Done: `opacity:.5` + `text-decoration:line-through`.
+- **Chip checkboxes**: Done: `opacity:.5` + `text-decoration:line-through`. All done checkboxes/bones use grey `rgba(200,195,210,.35)` (not green). Green preserved in comment for reference: `/* #a3c41a */`.
 - **Chip indicator dot**: Regular recurring: when `_dateOverrides[wkKey]` exists + not `'__skip__'`. WR rules: `wrOverrides` has `override_type:'edit'` with `custom_name` or `custom_notes`. WR tasks: NO dot.
 - **Cadence badge**: `{biweekly:'B',monthly:'M',quarterly:'Q',biannual:'BA',annual:'A'}`.
 - **Virtual task objects**: `_isWrRule:true,_isWrec:true,_type:'shop'`. Source: `_ruleId,_recId,_shopId`. WR rules use `_wkKey`.
