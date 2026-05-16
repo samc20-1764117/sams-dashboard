@@ -10,7 +10,7 @@
 ### Status & Published Logic
 - Statuses: `idea`, `up_next`, `in_progress`, `published`, `backup`. Order: 1. Idea → 2. Up Next → 3. In Progress → 4. Complete → 4. Backup (two 4s intentional).
 - `VID_STATUS_LABELS` maps internal names to display names (e.g. `published`→"Complete", `up_next`→"Up Next"). `VID_STATUS_ORDER` defines sort order.
-- **Auto-publish**: ALL steps done/na + `post_date` + `duration_minutes` + `topic` + `title` → auto-set `published`. For B videos, all children must also meet these criteria. Un-completing any requirement on published → `in_progress`. Published videos cannot have status changed via drag (protected in `_vidDashDrop`/`_vidGroupDrop`).
+- **Auto-publish**: Two paths: (1) `cycleVidStep` — ALL steps done/na + `topic` + `title` → auto-set `published`. For B videos, all children must also meet criteria. (2) `_vidAutoPublishFromYt` — YT match exists + all steps done → auto-set `published` (runs after YT data load). Un-completing any requirement on published → `in_progress`. Published videos cannot have status changed via drag (protected in `_vidDashDrop`/`_vidGroupDrop`).
 - **Helper functions**: `_vidIsComplete(v)` checks single video completeness. `_vidAllChildrenComplete(bigId)` checks all children of a B video.
 - **Date colors**: no date=muted, published+future/today=green, published+past=black, all core done=green, has date=yellow.
 
@@ -22,8 +22,8 @@
 
 ### Views (4 tabs: Current → All Details → Analytics → Monthly)
 - **Tab navigation**: navigating to videos from another page always resets to Current tab. Refresh preserves current tab via `localStorage._vidView`. Flag `_vidPageInit` prevents reset on page-load navigation.
-- **Current** (`_vidView='dashboard'`): CSS grid layout (`3fr 1fr`) — Current + Ideas sharing same column tracks for aligned divider. Up Next and In Progress sections with no gap between them. Solid white (`#fff`) sub-headers with `display:flex;align-items:center`. No count next to "Current" header. Ideas side has Group/Single sub-sections with white bullets (`●`). No `+` button on idea rows. B→L grouping with white `└` connector. Drag between zones changes status. Standalone videos (no `big_video_id`) cannot be dragged into groups. Container uses liquid glass style (`rgba(255,255,255,.32)` with `backdrop-filter:blur(28px)`). B videos at `rgba(255,255,255,.50)`. Header columns: stages + Posted (centered, 52px) + Dur (centered, 36px) + views (42px, if YT data) + % (28px) + delete. Views column always rendered (empty if no data) to keep alignment.
-- **All Details** (`_vidView='table'`): full table with sortable headers (click asc, click desc, click reset). `table-layout:fixed`. Sticky thead. Default sort: post_date asc with B→L grouping. Ideas excluded from this view. Column order: Title (450px) → Stages (22px each) → Posted → Dur → % → Status (80px). Status pills use `VID_STATUS_LABELS` with lighter color backgrounds. B videos at `rgba(255,255,255,.50)`. Stage columns are narrower than Current tab (22px vs 28px).
+- **Current** (`_vidView='dashboard'`): CSS grid layout (`3fr 1fr`) — Current + Ideas sharing same column tracks for aligned divider. Up Next (blue tint, `rgba(14,165,233,.06)` header + `.03` bg) and In Progress (amber tint, `rgba(245,158,11,.06)` header + `.03` bg) sections with subtle white divider between them (`rgba(255,255,255,.15)`). Solid white (`#fff`) sub-headers with `display:flex;align-items:center`. No count next to "Current" header. Ideas side has Group/Single sub-sections with white bullets (`●`). No `+` button on idea rows. B→L grouping with white `└` connector. Drag between zones changes status. Standalone videos (no `big_video_id`) cannot be dragged into groups. Container uses liquid glass style (`rgba(255,255,255,.32)` with `backdrop-filter:blur(28px)`). B videos at `rgba(255,255,255,.50)`. Header columns: stages + Posted (centered, 52px, YT-sourced) + % (28px) + delete. No duration or views on Current tab.
+- **All Details** (`_vidView='table'`): full table with sortable headers (click asc, click desc, click reset). `table-layout:fixed`. Sticky thead. Default sort: post_date asc with B→L grouping. Ideas excluded from this view. Column order: Title → Stages (22px each) → spacer → Status (120px, with inline %) → Posted → Length → Views → Likes → Cmts. Posted/Length/Views/Likes/Cmts are YT-only (no Supabase fallback). Status pills use `VID_STATUS_LABELS` with lighter color backgrounds. B videos at `rgba(255,255,255,.50)`. Stage columns are narrower than Current tab (22px vs 28px).
 - **Analytics** (`_vidView='analytics'`): see Analytics Tab section below.
 - **Monthly** (`_vidView='monthly'`): calendar grid by `post_date`. Nav with `_vidMonthOffset`.
 - **Board** (`_vidView='board'`): kanban by status — function still exists but tab removed from UI.
@@ -46,8 +46,8 @@
 - **Hide by default** (`_vidShowCompleted=false`): published with past date hidden. For B videos, only hidden if ALL children also have past post_dates. Completed backup hidden. Toggle with +/- button or keyboard E/C.
 
 ### Inline Editing
-- **All Details**: Single click on td with `data-field` → `vidCellEdit()`: inline text input for title/post_date/duration, dropdown for status. Post_date uses `m/d` or `m/d/yy` format via `_vidParseDate()`. Duration uses `type=text inputMode=decimal` (no spinner arrows). Inputs are borderless (`border:none; border-bottom:1px solid`) with transparent bg to prevent row height shift. Save on blur/Enter, cancel on Escape. Double click → `openVidEdit(id)` full edit modal.
-- **Current tab**: Double-click on posted/duration spans → `_vidDashInlineEdit()`: text input for post_date (m/d format, auto-fills year via `_vidParseDate()`), text input with `inputMode=decimal` for duration (no arrows/placeholder). Save on blur/Enter, cancel on Escape.
+- **All Details**: Single click on td with `data-field` → `vidCellEdit()`: inline text input for title, dropdown for status. Inputs are borderless (`border:none; border-bottom:1px solid`) with transparent bg to prevent row height shift. Save on blur/Enter, cancel on Escape. Double click → `openVidEdit(id)` full edit modal. Posted/Length are YT-sourced, not inline-editable.
+- **Current tab**: Double-click on any row → opens full edit modal (`openVidEdit(id)`). No inline editing for posted/duration (YT-sourced).
 - **Step dots**: click cycles `not_started→done→not_started`. If `na`, click cycles `na→not_started`. Right-click toggles na/required via `_vidToggleStepNa()`.
 - **TA+Up linking**: `step_tableau_public` and `step_upload_tableau` always stay in sync — toggling na/required on one toggles the other. Applies in inline right-click (`_vidToggleStepNa`), modal right-click (`_vidNaModalStep`), and type change (`_vidTypeChanged`).
 - All edits use `renderVideosPageKeepScroll()` to preserve scroll position.
@@ -89,10 +89,10 @@
 - Selection persists after status moves and reorders.
 
 ### Default Scroll Position (`_vidScrollToDefault`)
+- **Config**: `publishedBigs[2]` — change the index to show more/fewer bigs at top (0-based: `[2]` = top 3 visible).
 - Fires on: first render (refresh), tab switch, clear search/filter, Escape, ArrowDown (no selection).
-- Finds 3 most recent completed (`published`) videos with past `post_date` (before today). Deduplicates by parent Big so L children under same B don't count separately.
-- Scrolls 3rd most recent to `block:'start'` — all 3 visible at top of viewport.
-- If fewer than 3 qualify, scrolls to the oldest qualifying one.
+- Finds most recent published B videos with past `post_date` (Supabase, not YT). Scrolls nth to `block:'start'`.
+- Also re-fires after localStorage YT cache load and after YT API fetch (in case `_vidAutoPublishFromYt` changes statuses).
 - `renderVideosPageKeepScroll()` skips scroll restore when `wasScrolled=false` (scroll at 0) so it doesn't overwrite the default scroll on initial render.
 - `renderAll()` (30s sync) uses `renderVideosPageKeepScroll` to preserve scroll, not `renderVideosPage`.
 
@@ -125,6 +125,7 @@
 - `_vidDashInlineEdit(span,id,field)` — inline editing for posted/duration on current tab
 - Undo/redo: `_stateSnap`/`_stateRestore` include `videos`. `_syncRedoDiff` syncs video field changes to Supabase. `_vidGroupDrop` and `_vidDashDrop` both have proper undo callbacks.
 - `cycleVidStep(id,step)` — toggles step with auto-publish logic
+- `_vidAutoPublishFromYt()` — auto-sets status to `published` for any non-published/non-backup video that has a YT match + all steps done. Runs after YT API fetch AND localStorage cache load.
 - `vidCellEdit(td,id,field)` — inline cell editing
 - `vidCellClick(e,id)` — routes to inline edit (table) or selection (other views)
 
@@ -152,8 +153,9 @@
   - `yt-cooldown` (1hr for quota, 5min for other errors) — prevents retrying a failed API call.
 - **RSS fallback**: If API fails and no `yt-good` data exists, fetches YouTube RSS feed (`/feeds/videos.xml`) which costs zero quota. Returns 15 most recent videos.
 - **`?refresh=1`** param busts `yt-fresh` and `yt-cooldown` cache. POST with JSON body seeds KV directly.
-- **Matching**: Two-pass: (1) exact date match `post_date === publishedAt.slice(0,10)`, (2) +/-1 day with title similarity for UTC timezone offsets. Uses both `title` and `topic` for scoring. Stored in `_ytMatch` map (Supabase ID -> `{views, likes, comments, ytId}`).
-- **Display**: Channel stats bar (subscribers, real total revenue or estimated, video count) at top of page. Views, Likes & Comments columns in All Details table. Purple view count in Current dashboard rows.
+- **Matching**: Multi-pass via `_ytBuildMatch()`: Pass 1a (exact title+date), 1b (date+score≥2), Pass 2 (±1day+score), Pass 3 (exact title steal-back, all statuses), Pass 4 (re-match stolen, published only). Title normalization via `_ytNorm()` (strips curly quotes, punctuation, lowercases). Stored in `_ytMatch` map (Supabase ID -> `{views, likes, comments, ytId, publishedAt, duration}`).
+- **YT-sourced fields**: Posted (`publishedAt`) and Length (`duration`) pulled from YT match, not Supabase. Helpers: `_ytPostDate(id)`, `_ytDurMin(id)`, `_fmtDur(m)`. Mismatch search filter available to find unmatched published videos.
+- **Display**: Channel stats bar at top. Views/Likes/Cmts in All Details. `.vid-num` class (`system-ui` + `tabular-nums`) for equal-width digit alignment on all numeric columns.
 - **Data flow**: `fetch('/api/yt')` -> `_ytData` + `localStorage` -> `_ytBuildMatch()` -> `_ytMatch` -> `renderVideosPageKeepScroll()`.
 - **Unreplied Comments**: API fetches `commentThreads.list` with `allThreadsRelatedToChannelId`, filtered to long-form videos only (>60s duration). Returns `unrepliedComments` array (comments with `totalReplyCount === 0`). Max 20 pages = 20 units. Each comment has `{id, videoId, videoTitle, text, publishedAt}`.
 - **Unreplied KPI**: First KPI on Analytics tab, red styling to stand out. Single-click opens modal with full list. Enter closes when nothing selected. Selection uses shift/cmd like tasks. "Dismiss Selected" removes from count. Dismissed IDs stored in `st._ytDismissed` (persisted via `save()`/`load()` in core.js).
