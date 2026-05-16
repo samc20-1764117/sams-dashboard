@@ -84,7 +84,7 @@ function _ytBuildMatch(){
     }
   }
   // Pass 3: exact title match — steal back from wrong matches if needed
-  var unmatchedBefore=dbVids.filter(v=>v.title&&v.status==='published'&&!_ytMatch[String(v.id)]);
+  var unmatchedBefore=dbVids.filter(v=>v.title&&!_ytMatch[String(v.id)]);
   unmatchedBefore.forEach(function(dv3){
     var dbTitle=dv3.title?_ytNorm(dv3.title):'';
     if(!dbTitle)return;
