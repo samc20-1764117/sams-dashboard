@@ -2961,6 +2961,7 @@ document.addEventListener('keydown',e=>{
       const smallMap=isRight?{up_next:'idea',in_progress:'idea'}:{idea:'in_progress',in_progress:'up_next'};
       const allIds=new Set([..._vidSelected,..._vidChildSelected]);
       const vids=[...allIds].map(id=>(st.videos||[]).find(x=>String(x.id)===id)).filter(Boolean);
+      console.log('[CMD]',isRight?'RIGHT':'LEFT','sel:',[..._vidSelected],'childSel:',[..._vidChildSelected],'vids:',vids.map(v=>v.title+' ('+v.video_type+' '+v.status+')'));
       const toMove=vids.filter(v=>(v.video_type==='B'?bigMap:smallMap)[v.status]);
       if(!toMove.length)return;
       const undos=toMove.map(v=>({id:v.id,prev:v.status,prevBig:v.big_video_id}));
