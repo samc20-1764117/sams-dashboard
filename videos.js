@@ -336,9 +336,9 @@ function renderVideosPage(){
   // Auto-migrate group_name → big_video_id (client-side, until DB migration runs)
   const bVids=(st.videos||[]).filter(v=>v.video_type==='B'&&!v.is_deleted);
   st.videos.forEach(v=>{
-    if(v.group_name&&!v.big_video_id){
+    if(v.group_name&&!v.big_video_id&&v.status!=='idea'){
       const parent=bVids.find(b=>(b.title||'')===v.group_name||(b.group_name||'')===v.group_name);
-      if(parent){console.log('[MIGRATE] restoring big_video_id for',v.title,'status='+v.status);v.big_video_id=parent.id;}
+      if(parent)v.big_video_id=parent.id;
     }
   });
   // Enforce: B videos cannot have big_video_id
@@ -2961,15 +2961,12 @@ document.addEventListener('keydown',e=>{
       const smallMap=isRight?{up_next:'idea',in_progress:'idea'}:{idea:'in_progress',in_progress:'up_next'};
       const allIds=new Set([..._vidSelected,..._vidChildSelected]);
       const vids=[...allIds].map(id=>(st.videos||[]).find(x=>String(x.id)===id)).filter(Boolean);
-      console.log('[CMD]',isRight?'RIGHT':'LEFT','sel:',[..._vidSelected],'childSel:',[..._vidChildSelected],'vids:',vids.map(v=>v.title+' (type='+v.video_type+' status='+v.status+' big='+v.big_video_id+')'));
       const toMove=vids.filter(v=>(v.video_type==='B'?bigMap:smallMap)[v.status]);
-      console.log('[CMD] toMove:',toMove.map(v=>v.title+' → '+(v.video_type==='B'?bigMap:smallMap)[v.status]));
       if(!toMove.length)return;
       const undos=toMove.map(v=>({id:v.id,prev:v.status,prevBig:v.big_video_id}));
       toMove.forEach(v=>{v.status=(v.video_type==='B'?bigMap:smallMap)[v.status];});
       // When L videos move to idea, clear big_video_id (ungroup)
       toMove.forEach(v=>{if(v.video_type!=='B'&&v.status==='idea'&&v.big_video_id){v.big_video_id=null;v.group_name=null;}});
-      toMove.forEach(v=>console.log('[CMD] AFTER MOVE:',v.title,'status='+v.status,'big='+v.big_video_id));
       // Move children of B videos that are moving
       const bigIds=toMove.filter(v=>v.video_type==='B').map(v=>String(v.id));
       const childrenMoved=[];
@@ -2979,9 +2976,8 @@ document.addEventListener('keydown',e=>{
         });
       });
       save();renderVideosPageKeepScroll();
-      toMove.forEach(v=>{const v2=(st.videos||[]).find(x=>String(x.id)===String(v.id));console.log('[CMD] POST-RENDER:',v2?.title,'status='+v2?.status,'big='+v2?.big_video_id);});
       pushUndo(async()=>{[...undos,...childrenMoved].forEach(u=>{const v2=(st.videos||[]).find(x=>String(x.id)===u.id);if(v2){v2.status=u.prev;v2.big_video_id=u.prevBig;}});save();renderVideosPageKeepScroll();for(const u of[...undos,...childrenMoved])await sbReqSilent('PATCH','videos',{status:u.prev,big_video_id:u.prevBig??null},`?id=eq.${u.id}`);},'Move status');
-      (async()=>{for(const v of toMove)await sbReqSilent('PATCH','videos',{status:v.status,big_video_id:v.big_video_id??null},`?id=eq.${v.id}`);for(const cm of childrenMoved){const c=(st.videos||[]).find(x=>String(x.id)===cm.id);if(c)await sbReqSilent('PATCH','videos',{status:c.status,big_video_id:c.big_video_id??null},`?id=eq.${c.id}`);}})();
+      (async()=>{for(const v of toMove)await sbReqSilent('PATCH','videos',{status:v.status,big_video_id:v.big_video_id??null,group_name:v.group_name??null},`?id=eq.${v.id}`);for(const cm of childrenMoved){const c=(st.videos||[]).find(x=>String(x.id)===cm.id);if(c)await sbReqSilent('PATCH','videos',{status:c.status,big_video_id:c.big_video_id??null,group_name:c.group_name??null},`?id=eq.${c.id}`);}})();
       return;
     }
 
