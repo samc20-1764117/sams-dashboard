@@ -1680,13 +1680,13 @@ function recRedo(){if(!_recRedoStack.length){showToast('Nothing to redo','#888')
 // ── Ingredient list helpers ────────────────────────────────────────────────
 function _parseIngredients(str){
   if(!str||!str.trim())return[];
-  if(str.trim().startsWith('[')){try{const a=JSON.parse(str);if(Array.isArray(a))return a.map(x=>typeof x==='string'?{name:x,amount:''}:{name:x.name||'',amount:x.amount||''});}catch(e){}}
+  if(str.trim().startsWith('[')){try{const a=JSON.parse(str);if(Array.isArray(a))return a.map(x=>typeof x==='string'?{name:x,amount:''}:{name:x.name||'',amount:x.amount||'',is_pantry:!!x.is_pantry});}catch(e){}}
   return str.split('\n').map(s=>s.trim()).filter(Boolean).map(s=>({name:s,amount:''}));
 }
 function _serializeIngredients(arr){
   const clean=(arr||[]).filter(x=>(x.name||'').trim()||(x.amount||'').trim());
   if(!clean.length)return null;
-  return JSON.stringify(clean.map(x=>({name:x.name.trim(),amount:(x.amount||'').trim()})));
+  return JSON.stringify(clean.map(x=>{const o={name:x.name.trim(),amount:(x.amount||'').trim()};if(x.is_pantry)o.is_pantry=true;return o;}));
 }
 function _flushIngInputs(){
   document.querySelectorAll('#rmIngList .rm-ing-row').forEach((row,i)=>{
@@ -1699,7 +1699,7 @@ function _flushIngInputs(){
 function renderIngList(){
   const el=document.getElementById('rmIngList');if(!el)return;
   const _e=v=>(v||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;');
-  el.innerHTML=_rmIngredients.map((ing,i)=>`<div class="rm-ing-row" id="rmIngRow${i}"><div class="rm-ing-dot"></div><input class="rm-ing-amt" placeholder="amount" value="${_e(ing.amount)}" oninput="_rmIngredients[${i}].amount=this.value" onkeydown="rmIngKey(event,${i},'amt')"><input class="rm-ing-name" placeholder="ingredient" value="${_e(ing.name)}" oninput="_rmIngredients[${i}].name=this.value" onkeydown="rmIngKey(event,${i},'name')"><button type="button" class="rm-ing-del" onclick="rmIngDel(${i})" title="Remove">✕</button></div>`).join('');
+  el.innerHTML=_rmIngredients.map((ing,i)=>`<div class="rm-ing-row" id="rmIngRow${i}"><div class="rm-ing-dot"></div><input class="rm-ing-amt" placeholder="amount" value="${_e(ing.amount)}" oninput="_rmIngredients[${i}].amount=this.value" onkeydown="rmIngKey(event,${i},'amt')"><input class="rm-ing-name" placeholder="ingredient" value="${_e(ing.name)}" oninput="_rmIngredients[${i}].name=this.value" onkeydown="rmIngKey(event,${i},'name')"><button type="button" class="rm-ing-pantry${ing.is_pantry?' active':''}" onclick="_rmIngredients[${i}].is_pantry=!_rmIngredients[${i}].is_pantry;this.classList.toggle('active')" title="Pantry staple (won't add to grocery list)">🏠</button><button type="button" class="rm-ing-del" onclick="rmIngDel(${i})" title="Remove">✕</button></div>`).join('');
 }
 function rmIngAdd(focusName){
   _flushIngInputs();_rmIngredients.push({name:'',amount:''});renderIngList();
@@ -1934,7 +1934,7 @@ function _flushPanelIngInputs(){
 function renderPanelIngList(){
   const el=document.getElementById('panIngList');if(!el)return;
   const _e=v=>(v||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;');
-  el.innerHTML=_panelIngredients.map((ing,i)=>`<div class="rm-ing-row" id="panIngRow${i}"><div class="rm-ing-dot"></div><input class="rm-ing-amt" placeholder="amount" value="${_e(ing.amount)}" oninput="_panelIngredients[${i}].amount=this.value" onkeydown="panIngKey(event,${i},'amt')" onblur="_savePanelIngredients()"><input class="rm-ing-name" placeholder="ingredient" value="${_e(ing.name)}" oninput="_panelIngredients[${i}].name=this.value" onkeydown="panIngKey(event,${i},'name')" onblur="_savePanelIngredients()"><button type="button" class="rm-ing-del" onclick="panIngDel(${i})" title="Remove">✕</button></div>`).join('');
+  el.innerHTML=_panelIngredients.map((ing,i)=>`<div class="rm-ing-row" id="panIngRow${i}"><div class="rm-ing-dot"></div><input class="rm-ing-amt" placeholder="amount" value="${_e(ing.amount)}" oninput="_panelIngredients[${i}].amount=this.value" onkeydown="panIngKey(event,${i},'amt')" onblur="_savePanelIngredients()"><input class="rm-ing-name" placeholder="ingredient" value="${_e(ing.name)}" oninput="_panelIngredients[${i}].name=this.value" onkeydown="panIngKey(event,${i},'name')" onblur="_savePanelIngredients()"><button type="button" class="rm-ing-pantry${ing.is_pantry?' active':''}" onclick="_panelIngredients[${i}].is_pantry=!_panelIngredients[${i}].is_pantry;this.classList.toggle('active');_savePanelIngredients()" title="Pantry staple (won't add to grocery list)">🏠</button><button type="button" class="rm-ing-del" onclick="panIngDel(${i})" title="Remove">✕</button></div>`).join('');
 }
 function panIngAdd(){
   _flushPanelIngInputs();_panelIngredients.push({name:'',amount:''});renderPanelIngList();
@@ -2025,6 +2025,7 @@ function renderRecSidePanel(id){
       <div class="rec-sp-section">
         <div class="rec-sp-section-title">Ingredients</div>
         <div class="rm-ing-wrap"><div id="panIngList"></div><button type="button" class="rm-ing-add-btn" onclick="panIngAdd()">+ Add ingredient</button></div>
+        <button type="button" class="rm-ing-add-btn" style="border-top:none;color:var(--accent)" onclick="addRecipeToGrocery('${sid}');showToast('Added to grocery list','var(--accent)')">🛒 Add to Grocery List</button>
       </div>
       <div class="rec-sp-section">
         <div class="rec-sp-section-title">Instructions</div>
@@ -2170,6 +2171,153 @@ function renderRecipesPage(){
   }
 }
 // ── END RECIPES PAGE ──────────────────────────────────────────────────────────
+
+// ── GROCERY LIST ──────────────────────────────────────────────────────────────
+function _groceryWeekOf(){const d=new Date();const dow=(d.getDay()+6)%7;d.setDate(d.getDate()-dow);return d.toISOString().split('T')[0];}
+
+function _groceryForWeek(){const wk=_groceryWeekOf();return(st.groceryList||[]).filter(g=>g.week_of===wk);}
+
+function _groceryCount(){return _groceryForWeek().filter(g=>!g.checked).length;}
+
+async function generateGroceryStaples(){
+  const wk=_groceryWeekOf();
+  const existing=_groceryForWeek().filter(g=>g.source==='staple');
+  const staples=(st.groceryStaples||[]).filter(s=>s.active!==false);
+  const toAdd=staples.filter(s=>!existing.find(e=>e.source_id===s.id));
+  for(const s of toAdd){
+    const item={name:s.name,amount:s.amount||null,source:'staple',source_id:s.id,aisle:s.aisle||null,checked:false,week_of:wk};
+    const sv=await sbReqSilent('POST','grocery_list',item);
+    if(sv&&sv[0])st.groceryList.push(sv[0]);
+  }
+  save();
+}
+
+async function addRecipeToGrocery(recipeId){
+  const r=(st.recipes||[]).find(x=>String(x.id)===String(recipeId));if(!r)return;
+  const ings=_parseIngredients(r.ingredients).filter(i=>!i.is_pantry);
+  const wk=_groceryWeekOf();
+  for(const ing of ings){
+    const dup=(st.groceryList||[]).find(g=>g.week_of===wk&&g.source==='recipe'&&g.source_id===r.id&&g.name.toLowerCase()===ing.name.toLowerCase());
+    if(dup)continue;
+    const item={name:ing.name,amount:ing.amount||null,source:'recipe',source_id:r.id,recipe_name:r.name,aisle:null,checked:false,week_of:wk};
+    const sv=await sbReqSilent('POST','grocery_list',item);
+    if(sv&&sv[0])st.groceryList.push(sv[0]);
+  }
+  save();renderGroceryModal();
+}
+
+async function addGroceryManual(name,amount){
+  if(!name)return;
+  const wk=_groceryWeekOf();
+  const item={name,amount:amount||null,source:'manual',source_id:null,recipe_name:null,aisle:null,checked:false,week_of:wk};
+  const sv=await sbReqSilent('POST','grocery_list',item);
+  if(sv&&sv[0])st.groceryList.push(sv[0]);
+  else{item.id='l-'+Date.now();st.groceryList.push(item);}
+  save();renderGroceryModal();
+}
+
+async function togGroceryItem(id,checked){
+  const item=(st.groceryList||[]).find(g=>String(g.id)===String(id));if(!item)return;
+  item.checked=checked;save();renderGroceryModal();
+  sbReqSilent('PATCH','grocery_list',{checked},`?id=eq.${id}`);
+}
+
+async function delGroceryItem(id){
+  st.groceryList=st.groceryList.filter(g=>String(g.id)!==String(id));save();renderGroceryModal();
+  sbReqSilent('DELETE','grocery_list',null,`?id=eq.${id}`);
+}
+
+function openGroceryModal(){
+  generateGroceryStaples().then(()=>renderGroceryModal());
+  let modal=document.getElementById('groceryModal');
+  if(!modal){
+    modal=document.createElement('dialog');modal.id='groceryModal';modal.className='overlay grocery-modal';
+    document.body.appendChild(modal);
+    modal.addEventListener('click',e=>{if(e.target===modal)modal.close();});
+    modal.addEventListener('close',()=>modal.classList.remove('open'));
+  }
+  modal.classList.add('open');modal.showModal();
+  renderGroceryModal();
+}
+
+function renderGroceryModal(){
+  const modal=document.getElementById('groceryModal');if(!modal)return;
+  const items=_groceryForWeek();
+  const unchecked=items.filter(g=>!g.checked);
+  const checked=items.filter(g=>g.checked);
+  // Group unchecked by source
+  const staples=unchecked.filter(g=>g.source==='staple');
+  const recipes={};unchecked.filter(g=>g.source==='recipe').forEach(g=>{const k=g.recipe_name||'Recipe';if(!recipes[k])recipes[k]=[];recipes[k].push(g);});
+  const manual=unchecked.filter(g=>g.source==='manual');
+
+  function itemRow(g){
+    return`<div class="groc-item${g.checked?' groc-done':''}" data-id="${g.id}">
+      <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk"${g.checked?' checked':''} onchange="togGroceryItem('${g.id}',this.checked)"></label>
+      <span class="groc-name">${escHtml(g.name)}</span>
+      ${g.amount?`<span class="groc-amt">${escHtml(g.amount)}</span>`:''}
+      <button class="groc-del" onclick="delGroceryItem('${g.id}')">✕</button>
+    </div>`;}
+
+  let html=`<div class="groc-header"><h3>HEB Grocery List</h3><button class="groc-close" onclick="document.getElementById('groceryModal').close()">✕</button></div>`;
+  html+=`<div class="groc-add"><input type="text" id="grocAddName" placeholder="Add item…"><input type="text" id="grocAddAmt" placeholder="Qty" style="width:60px"><button onclick="addGroceryManual(document.getElementById('grocAddName').value.trim(),document.getElementById('grocAddAmt').value.trim());document.getElementById('grocAddName').value='';document.getElementById('grocAddAmt').value='';">+</button></div>`;
+  if(staples.length){html+=`<div class="groc-section"><div class="groc-section-title">Weekly Staples</div>${staples.map(itemRow).join('')}</div>`;}
+  Object.entries(recipes).forEach(([name,items])=>{html+=`<div class="groc-section"><div class="groc-section-title">${escHtml(name)}</div>${items.map(itemRow).join('')}</div>`;});
+  if(manual.length){html+=`<div class="groc-section"><div class="groc-section-title">Other</div>${manual.map(itemRow).join('')}</div>`;}
+  if(checked.length){html+=`<div class="groc-section groc-checked-section"><div class="groc-section-title">Done (${checked.length})</div>${checked.map(itemRow).join('')}</div>`;}
+  // Recipe picker
+  html+=`<div class="groc-recipe-picker"><button onclick="toggleGrocRecipePicker()">+ Add from Recipe</button><div id="grocRecipeList" style="display:none"></div></div>`;
+  modal.innerHTML=html;
+  // Enter key on add input
+  const inp=document.getElementById('grocAddName');
+  if(inp)inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();addGroceryManual(inp.value.trim(),document.getElementById('grocAddAmt').value.trim());inp.value='';document.getElementById('grocAddAmt').value='';}});
+}
+
+function toggleGrocRecipePicker(){
+  const el=document.getElementById('grocRecipeList');if(!el)return;
+  if(el.style.display==='none'){
+    el.style.display='block';
+    el.innerHTML=(st.recipes||[]).map(r=>`<div class="groc-recipe-row" onclick="addRecipeToGrocery('${r.id}')">${escHtml(r.name)}</div>`).join('');
+  }else{el.style.display='none';}
+}
+
+// ── Grocery staples management ────────────────────────────────────────────────
+function openGroceryStaplesEditor(){
+  let modal=document.getElementById('grocStaplesModal');
+  if(!modal){
+    modal=document.createElement('dialog');modal.id='grocStaplesModal';modal.className='overlay grocery-modal';
+    document.body.appendChild(modal);
+    modal.addEventListener('click',e=>{if(e.target===modal)modal.close();});
+  }
+  modal.classList.add('open');modal.showModal();
+  renderGroceryStaples();
+}
+
+function renderGroceryStaples(){
+  const modal=document.getElementById('grocStaplesModal');if(!modal)return;
+  const staples=(st.groceryStaples||[]).filter(s=>s.active!==false);
+  let html=`<div class="groc-header"><h3>Weekly Staples</h3><button class="groc-close" onclick="document.getElementById('grocStaplesModal').close()">✕</button></div>`;
+  html+=`<div class="groc-add"><input type="text" id="stapleAddName" placeholder="Item name…"><input type="text" id="stapleAddAmt" placeholder="Qty" style="width:60px"><button onclick="addGroceryStaple()">+</button></div>`;
+  html+=staples.map(s=>`<div class="groc-item" data-id="${s.id}"><span class="groc-name">${escHtml(s.name)}</span>${s.amount?`<span class="groc-amt">${escHtml(s.amount)}</span>`:''}<button class="groc-del" onclick="delGroceryStaple('${s.id}')">✕</button></div>`).join('');
+  modal.innerHTML=html;
+  const inp=document.getElementById('stapleAddName');
+  if(inp)inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();addGroceryStaple();}});
+}
+
+async function addGroceryStaple(){
+  const name=(document.getElementById('stapleAddName')?.value||'').trim();if(!name)return;
+  const amount=(document.getElementById('stapleAddAmt')?.value||'').trim()||null;
+  const item={name,amount,active:true,sort_order:(st.groceryStaples||[]).length};
+  const sv=await sbReqSilent('POST','grocery_staples',item);
+  if(sv&&sv[0])st.groceryStaples.push(sv[0]);
+  else{item.id='l-'+Date.now();st.groceryStaples.push(item);}
+  save();renderGroceryStaples();
+}
+
+async function delGroceryStaple(id){
+  st.groceryStaples=st.groceryStaples.filter(s=>String(s.id)!==String(id));save();renderGroceryStaples();
+  sbReqSilent('DELETE','grocery_staples',null,`?id=eq.${id}`);
+}
+// ── END GROCERY LIST ──────────────────────────────────────────────────────────
 
 function showPage(id){
   if(id==='tasks')return;

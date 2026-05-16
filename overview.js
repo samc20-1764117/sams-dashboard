@@ -1,7 +1,7 @@
 // ── Render all ─────────────────────────────────────────────────────────────────
 function renderAll(){renderOv();renderWeeklyPage();renderShopFull();renderTravelPage();renderBdayPage();if(typeof renderPupsPage==='function')renderPupsPage();if(typeof renderRecipesPage==='function')renderRecipesPage();if(typeof renderVideosPageKeepScroll==='function'&&activePg==='videos')renderVideosPageKeepScroll();if(document.getElementById('mModal')?.classList.contains('open'))renderMoCal();if(document.getElementById('recMoModal')?.classList.contains('open'))renderRecMoCal();if(document.getElementById('woModal')?.classList.contains('open'))renderWOModal();save();requestAnimationFrame(applySelHighlight);const m=document.getElementById('main');if(m&&m.style.opacity==='0')m.style.opacity='1';}
 
-function _hebBadge(name){if(!/\bheb\b/i.test(name||''))return'';const c=st.shopping.filter(s=>!s.done&&s.store&&s.store.toLowerCase()==='heb').length;return c?`<span class="heb-cnt">${c}</span>`:''}
+function _hebBadge(name){if(!/\bheb\b/i.test(name||''))return'';const c=typeof _groceryCount==='function'?_groceryCount():st.shopping.filter(s=>!s.done&&s.store&&s.store.toLowerCase()==='heb').length;return c?`<span class="heb-cnt" onclick="event.stopPropagation();openGroceryModal();">${c}</span>`:''}
 
 function renderOv(){
   const n=new Date();
@@ -1105,8 +1105,8 @@ function renderWkCal(){
         else if(t._virtual){togRecVirt(t._recId,chk.checked,t._wkKey||getWkKey(wkOff));}
         else{toggleTask(t.id,chk.checked,'week');}
       });
-      const _chipHeb=/\bheb\b/i.test(t.name||'')?st.shopping.filter(s=>!s.done&&s.store&&s.store.toLowerCase()==='heb').length:0;
-      const nm=document.createElement('span');nm.className='chip-name';nm.innerHTML=tmIcon(t)+escHtml(t._type==='pup'?_pupDisplayName(t):t.name)+(_chipHeb?`<span style="color:rgba(160,150,180,.85);margin-left:3px;font-weight:700">${_chipHeb}</span>`:'');
+      const _chipHeb=/\bheb\b/i.test(t.name||'')?(typeof _groceryCount==='function'?_groceryCount():st.shopping.filter(s=>!s.done&&s.store&&s.store.toLowerCase()==='heb').length):0;
+      const nm=document.createElement('span');nm.className='chip-name';nm.innerHTML=tmIcon(t)+escHtml(t._type==='pup'?_pupDisplayName(t):t.name)+(_chipHeb?`<span class="heb-cnt" style="position:static;transform:none;margin-left:3px" onclick="event.stopPropagation();openGroceryModal();">${_chipHeb}</span>`:'');
       // name click handled by chip click→selTask, dblclick→openEditTask
       chip.appendChild(chk);chip.appendChild(nm);
       chip.addEventListener('contextmenu',e=>{
@@ -2097,7 +2097,7 @@ function renderRecOv(){
     nm.textContent=r._displayName;
     row.appendChild(nm);
     const _hb=_hebBadge(r._displayName);
-    if(_hb){const _hel=document.createElement('span');_hel.className='heb-cnt';_hel.textContent=st.shopping.filter(s=>!s.done&&s.store&&s.store.toLowerCase()==='heb').length;row.appendChild(_hel);}
+    if(_hb){const _hw=document.createElement('span');_hw.innerHTML=_hb;const _hel=_hw.firstChild;if(_hel){_hel.style.position='static';_hel.style.transform='none';row.appendChild(_hel);}}
     const hasDot=r._edited;
     const del=document.createElement('button');
     del.className='delbtn';del.textContent='✕';del.title='Remove…';
