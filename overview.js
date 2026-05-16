@@ -857,7 +857,7 @@ function renderWkCal(){
       if(dragId.startsWith('wrrule::')){
         const ruleId=dragId.split('::')[1];
         const newWkKey=dsToWkKey(ds);
-        const _wrRuleSid='wrrule-'+ruleId;
+        const _wrRuleSid=selectedTasks.has('wrrule-virt-'+ruleId)?'wrrule-virt-'+ruleId:'wrrule-'+ruleId;
         const _isMultiWR=selectedTasks.has(_wrRuleSid)&&selectedTasks.size>1;
         const _curWkKey=getWkKey(wkOff);
         const _wrMoveIds=_isMultiWR?[...selectedTasks].filter(sid=>sid.startsWith('wrrule-')||sid.startsWith('wrrule-virt-')).map(sid=>sid.replace('wrrule-virt-','').replace('wrrule-','')):[ruleId];
@@ -2682,8 +2682,8 @@ function dropOnTodayList(e){
   if(dragId.startsWith('wrrule::')){
     const ruleId=dragId.split('::')[1];
     const wkKey=getWkKey(wkOff);
-    const _isMultiWR=selectedTasks.has('wrrule-'+ruleId)&&selectedTasks.size>1;
-    const _wrMoveIds=_isMultiWR?[...selectedTasks].filter(sid=>sid.startsWith('wrrule-')).map(sid=>sid.replace('wrrule-','')):[ruleId];
+    const _isMultiWR=(selectedTasks.has('wrrule-'+ruleId)||selectedTasks.has('wrrule-virt-'+ruleId))&&selectedTasks.size>1;
+    const _wrMoveIds=_isMultiWR?[...selectedTasks].filter(sid=>sid.startsWith('wrrule-')||sid.startsWith('wrrule-virt-')).map(sid=>sid.replace('wrrule-virt-','').replace('wrrule-','')):[ruleId];
     const _wrMoves=_wrMoveIds.map(rid=>{const r=st.wrRules.find(x=>String(x.id)===String(rid));return r?{r,rid,prev:r._dateOverrides?.[wkKey]}:null;}).filter(Boolean);
     _wrMoves.forEach(({r})=>{if(!r._dateOverrides)r._dateOverrides={};r._dateOverrides[wkKey]=ds;});
     dragId=null;save();renderAll();
