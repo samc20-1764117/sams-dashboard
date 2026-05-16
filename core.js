@@ -981,6 +981,11 @@ document.addEventListener('keydown',e=>{
   if(e.key==='v'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus')&&!document.querySelector('.overlay.open')){
     e.preventDefault();showPage('videos');
   }
+  // M to toggle month view on overview
+  if(e.key==='m'&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')){
+    if(document.getElementById('mModal').classList.contains('open')){e.preventDefault();closeMod('mModal');return;}
+    if(activePg==='overview'&&!document.querySelector('.overlay.open')){e.preventDefault();openMModal();return;}
+  }
   // Cmd+Left/Right to switch between pages
   if((e.metaKey||e.ctrlKey)&&(e.key==='ArrowLeft'||e.key==='ArrowRight')&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')){
     const _pgOrder=['overview','videos','pups','recipes','finance','birthdays'];
@@ -1018,6 +1023,7 @@ function _showHelpOverlay(){
   const _pages={
     overview:[
       ['T','Jump to Today'],
+      ['M','Open / close month view'],
       ['←/→','Previous / next day'],
       ['←/→ (selected)','Move selected task ±1 day'],
       ['↑/↓ (time block selected)','Move block ±30 min'],
