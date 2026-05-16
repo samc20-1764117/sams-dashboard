@@ -6,7 +6,7 @@ function _ytDur(iso){var m=iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);if(!
 function _ytNum(n){if(n>=1000000)return(n/1000000).toFixed(1)+'M';if(n>=1000)return(n/1000).toFixed(1)+'K';return String(n);}
 function _fmtDur(m){return m.toFixed(2);}
 function _ytBuildMatch(){
-  if(!_ytData||!_ytData.videos||!st.videos){console.log('[YT] _ytBuildMatch bail:',!_ytData,!_ytData?.videos,!st.videos);return;}
+  if(!_ytData||!_ytData.videos||!st.videos)return;
   _ytMatch={};
   var ytVids=_ytData.videos;
   var dbVids=(st.videos||[]).filter(function(v){return!v.is_deleted;});
@@ -140,6 +140,16 @@ function _ytBuildMatch(){
 function _ytForVid(id){return _ytMatch?_ytMatch[String(id)]:null;}
 function _ytDurMin(id){const m=_ytForVid(id);return m&&m.duration?Math.round(_ytDurSec(m.duration)/60*100)/100:null;}
 function _ytPostDate(id){const m=_ytForVid(id);return m&&m.publishedAt?m.publishedAt.slice(0,10):null;}
+function _vidAutoPublishFromYt(){
+  let changed=false;
+  (st.videos||[]).forEach(v=>{
+    if(v.is_deleted||v.status==='published'||v.status==='backup')return;
+    const ym=_ytForVid(String(v.id));if(!ym)return;
+    const allDone=VID_STEPS.every(s=>v[s]==='done'||v[s]==='na');
+    if(allDone&&v.title){v.status='published';changed=true;sbReqSilent('PATCH','videos',{status:'published'},`?id=eq.${v.id}`);}
+  });
+  if(changed)save();
+}
 
 let _ytDismissedSel=new Set();
 let _ytCommentItems=[];  // current filtered list for shift-select
@@ -243,7 +253,7 @@ function _vidSeqMap(orderedIds){
 // Build display-order ID list: videos with post_date get numbers
 function _vidOrderedIds(vids){
   const ids=[];
-  const dated=vids.filter(v=>v.post_date);
+  const dated=vids.filter(v=>v.post_date||_ytPostDate(String(v.id)));
   const sorted=_vidSortVids([...dated]);
   const seen=new Set();
   const lVids=sorted.filter(v=>v.video_type!=='B');
@@ -439,7 +449,7 @@ function renderVideosPage(){
   }
   if(_vidSearch)requestAnimationFrame(()=>_vidPostRenderMatches());
   // Load cached YT data from localStorage on first run
-  if(!_ytData){try{var _lsc=JSON.parse(localStorage.getItem('_ytCache')||'null');if(_lsc&&_lsc.channelStats){_ytData=_lsc;_ytBuildMatch();}}catch(e){}}
+  if(!_ytData){try{var _lsc=JSON.parse(localStorage.getItem('_ytCache')||'null');if(_lsc&&_lsc.channelStats){_ytData=_lsc;_ytBuildMatch();_vidAutoPublishFromYt();renderVideosPageKeepScroll();_vidScrollToDefault();}}catch(e){}}
   if(!_ytFetched){
     _ytFetched=true;
     fetch('/api/yt?_='+Date.now(),{cache:'no-store'}).then(function(r){if(!r.ok)throw new Error(r.status);return r.json();}).then(function(d){
@@ -447,6 +457,7 @@ function renderVideosPage(){
       _ytData=d;
       try{localStorage.setItem('_ytCache',JSON.stringify(d));}catch(e){}
       _ytBuildMatch();
+      _vidAutoPublishFromYt();
       renderVideosPageKeepScroll();
       if(_vidTableScrolledOnce)_vidScrollToDefault();
     }).catch(function(){});
@@ -536,11 +547,11 @@ function _vidRenderDashboard(){
         <div style="padding-left:10px">Ideas</div>
       </div>
       <div id="vidDashLeft" style="grid-column:1;grid-row:2;min-height:0;overflow-y:auto;overflow-x:hidden;border-right:1px solid var(--border)">
-        <div class="vid-drop-zone" data-drop-status="up_next" ondragover="_vidDashDragOver(event)" ondragleave="_vidDashDragLeave(event)" ondrop="_vidDashDrop(event,'up_next')" style="min-height:40px;background:rgba(14,165,233,.03);border-bottom:2px solid rgba(255,255,255,.9)">
+        <div class="vid-drop-zone" data-drop-status="up_next" ondragover="_vidDashDragOver(event)" ondragleave="_vidDashDragLeave(event)" ondrop="_vidDashDrop(event,'up_next')" style="min-height:40px;background:rgba(14,165,233,.03);border-bottom:1px solid rgba(255,255,255,.15)">
           <div style="font-size:9px;font-weight:600;color:#0ea5e9;padding:6px 6px 6px 16px;letter-spacing:.03em;background:rgba(14,165,233,.06);display:flex;align-items:center;border-left:3px solid rgba(14,165,233,.4)">Up Next</div>
           ${upNext.length?_vidDashList(upNext,false):'<div style="color:var(--muted);font-size:11px;padding:8px 10px;opacity:.5">Drag ideas here</div>'}
         </div>
-        <div class="vid-drop-zone" data-drop-status="in_progress" ondragover="_vidDashDragOver(event)" ondragleave="_vidDashDragLeave(event)" ondrop="_vidDashDrop(event,'in_progress')" style="min-height:40px;background:rgba(245,158,11,.03);border-bottom:2px solid rgba(255,255,255,.9)">
+        <div class="vid-drop-zone" data-drop-status="in_progress" ondragover="_vidDashDragOver(event)" ondragleave="_vidDashDragLeave(event)" ondrop="_vidDashDrop(event,'in_progress')" style="min-height:40px;background:rgba(245,158,11,.03);border-bottom:1px solid rgba(255,255,255,.15)">
           <div style="font-size:9px;font-weight:600;color:#d97706;padding:6px 6px 6px 16px;letter-spacing:.03em;background:rgba(245,158,11,.06);display:flex;align-items:center;border-left:3px solid rgba(245,158,11,.4)">In Progress</div>
           ${inProgress.length?_vidDashList(inProgress,false):'<div style="color:var(--muted);font-size:11px;padding:8px 10px;opacity:.5">Drag up next here to start</div>'}
         </div>
@@ -913,7 +924,6 @@ async function _vidEnsureSynced(v){
   });
   if(!payload.title)payload.title='';
   const sv=await sbReqSilent('POST','videos',payload);
-  console.log('[vidSync] POST local→DB',v.id,JSON.stringify(payload),sv);
   if(sv&&sv[0]){
     const oldId=v.id;
     Object.assign(v,sv[0]);
