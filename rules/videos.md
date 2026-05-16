@@ -4,7 +4,8 @@
 - Table: `videos`. Key columns: `id`, `title`, `topic`, `video_type` (B=Big, L=Small), `big_video_id` (FK to parent B video's id), `playlist`, `status`, `post_date`, `duration_minutes` (min.sec format like 9.26), `is_deleted`.
 - **Grouping**: L videos link to B videos via `big_video_id`. B videos don't have `big_video_id` set. Standalone L videos have `big_video_id=null`.
 - **Stages** (step columns): `step_build`, `step_record`, `step_film`, `step_cut`, `step_thumbnail`, `step_description`, `step_tableau_public`, `step_upload_tableau`. Values: `done`, `not_started`, `na`.
-- **Dropped columns** (do not reference): `number`, `build_hours`, `step_answer_comments`, `step_short`, `group_name` (migrated to `big_video_id`).
+- **Dropped columns** (do not reference): `number`, `build_hours`, `step_answer_comments`, `step_short`.
+- **`group_name`**: legacy field migrated to `big_video_id`. Client-side migration in `renderVideosPage()` re-assigns `big_video_id` from `group_name` if missing — but ONLY for non-`idea` status videos. When ungrouping L videos (Cmd+Right to idea), MUST clear both `big_video_id` AND `group_name` (local + Supabase PATCH) or the migration will restore the parent link.
 - `VID_STEPS` array and `VID_STEP_LABELS` map define the 8 stages.
 
 ### Status & Published Logic
@@ -40,7 +41,7 @@
 - **Completed videos**: show title only.
 - **Big videos** (B): translucent white background (`rgba(255,255,255,.50)`) on both Current and All Details tabs. `+` button to add child (8px margin-right for breathing room). Child count shown in parentheses after title — 9px, `rgba(140,135,160,.7)`, nudged `top:0.5px` for vertical alignment.
 - **Small videos** (L with big_video_id): muted/grey text in All Details, normal text in Current tab. White `└` indent mark when shown as child.
-- **Standalone videos**: videos without `big_video_id` are standalone — cannot be dragged into B groups (`_vidGroupDrop` rejects).
+- **Standalone videos**: videos without `big_video_id` are standalone — cannot be dragged into B groups (`_vidGroupDrop` rejects). L videos without a valid B parent are forced to `idea` status by guard in `renderVideosPage()` (line ~352).
 - **% complete**: shown for `up_next`/`in_progress` videos between 1-99% (hidden at 0% and 100%). Calculated from done/applicable stages (excludes `na`). Far right on Current tab, between Dur and Status on All Details.
 - **Vertical centering**: Row content uses `display:flex;align-items:center` on title divs and step dot wrappers (both tabs). Step dot containers use flex centering. Prevents content from appearing lifted.
 - **Header height**: Current (`.vid-dash-header`) and All Details (`.vid-tbl th`) must match — both `32px` in `styles.css`. Change both together.
@@ -81,12 +82,12 @@
 #### Current tab with selection:
 - `Up/Down` — navigate selection (single select, moves to next/prev row, scrolls into view)
 - `Shift+Up/Down` — extend selection (multi-select adjacent rows)
-- `Cmd+Right` — B videos: up_next→in_progress→idea (one step). L videos: up_next/in_progress→idea (direct jump, clears `big_video_id`). Works with multi-select.
+- `Cmd+Right` — **B videos**: up_next→in_progress→idea (one step at a time). **L videos**: up_next OR in_progress→idea (direct jump, clears `big_video_id` AND `group_name` in local state + Supabase PATCH). Children of moving B videos use L map. Works with multi-select. Fully undoable.
 - `Cmd+Left` — idea→in_progress→up_next (one step, same for B and L).
 - `Cmd+Up/Down` — reorder/sort within column (block move for multi-select)
 - `Escape` — clear selection
 - `Click outside` rows — clear selection
-- All status moves bring Big video's children along. Works with multi-select. Undoable.
+- All status moves bring Big video's children along (children use L/small map — direct to idea on Cmd+Right). Works with multi-select. Undoable.
 - Selection persists after status moves and reorders.
 
 ### Default Scroll Position (`_vidScrollToDefault`)
@@ -110,7 +111,8 @@
 - Editing on All Details never resets scroll — `core.js save()` and all edit paths use `renderVideosPageKeepScroll`.
 
 ### Client-Side Migration
-- `renderVideosPage()` auto-migrates `group_name` → `big_video_id` by matching B video's `group_name` field. Safety net until all data uses `big_video_id`.
+- `renderVideosPage()` auto-migrates `group_name` → `big_video_id` by matching B video's `group_name` field. **Skips videos with `status==='idea'`** to prevent re-grouping ungrouped L videos. Safety net until all data uses `big_video_id`.
+- **CRITICAL**: When clearing `big_video_id` for ungrouping, ALWAYS also clear `group_name` (both locally and via Supabase PATCH). Otherwise: (1) the migration restores `big_video_id` on next render, (2) the 30s Supabase sync brings back `group_name` from DB, re-triggering the migration.
 
 ### Key Functions
 - `_vidScrollEl()` — returns scroll container: card div for dashboard, card itself for table/other views
