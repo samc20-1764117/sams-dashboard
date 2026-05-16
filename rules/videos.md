@@ -43,6 +43,7 @@
 - **Standalone videos**: videos without `big_video_id` are standalone — cannot be dragged into B groups (`_vidGroupDrop` rejects).
 - **% complete**: shown for `up_next`/`in_progress` videos between 1-99% (hidden at 0% and 100%). Calculated from done/applicable stages (excludes `na`). Far right on Current tab, between Dur and Status on All Details.
 - **Vertical centering**: Row content uses `display:flex;align-items:center` on title divs and step dot wrappers (both tabs). Step dot containers use flex centering. Prevents content from appearing lifted.
+- **Header height**: Current (`.vid-dash-header`) and All Details (`.vid-tbl th`) must match — both `32px` in `styles.css`. Change both together.
 - **Hide by default** (`_vidShowCompleted=false`): published with past date hidden. For B videos, only hidden if ALL children also have past post_dates. Completed backup hidden. Toggle with +/- button or keyboard E/C.
 
 ### Inline Editing
