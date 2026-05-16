@@ -81,8 +81,8 @@
 #### Current tab with selection:
 - `Up/Down` — navigate selection (single select, moves to next/prev row, scrolls into view)
 - `Shift+Up/Down` — extend selection (multi-select adjacent rows)
-- `Cmd+Right` — demote status: up_next → in_progress → idea. L videos moving to idea auto-clear `big_video_id` (ungroup). Works with multi-select.
-- `Cmd+Left` — promote status: idea → in_progress → up_next (caps at up_next)
+- `Cmd+Right` — demote to idea (direct jump from up_next or in_progress). L videos auto-clear `big_video_id` (ungroup). Works with multi-select.
+- `Cmd+Left` — promote to up_next (direct jump from idea or in_progress).
 - `Cmd+Up/Down` — reorder/sort within column (block move for multi-select)
 - `Escape` — clear selection
 - `Click outside` rows — clear selection
