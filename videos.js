@@ -2969,6 +2969,7 @@ document.addEventListener('keydown',e=>{
       toMove.forEach(v=>{v.status=(v.video_type==='B'?bigMap:smallMap)[v.status];});
       // When L videos move to idea, clear big_video_id (ungroup)
       toMove.forEach(v=>{if(v.video_type!=='B'&&v.status==='idea'&&v.big_video_id)v.big_video_id=null;});
+      toMove.forEach(v=>console.log('[CMD] AFTER MOVE:',v.title,'status='+v.status,'big='+v.big_video_id));
       // Move children of B videos that are moving
       const bigIds=toMove.filter(v=>v.video_type==='B').map(v=>String(v.id));
       const childrenMoved=[];
@@ -2978,6 +2979,7 @@ document.addEventListener('keydown',e=>{
         });
       });
       save();renderVideosPageKeepScroll();
+      toMove.forEach(v=>{const v2=(st.videos||[]).find(x=>String(x.id)===String(v.id));console.log('[CMD] POST-RENDER:',v2?.title,'status='+v2?.status,'big='+v2?.big_video_id);});
       pushUndo(async()=>{[...undos,...childrenMoved].forEach(u=>{const v2=(st.videos||[]).find(x=>String(x.id)===u.id);if(v2){v2.status=u.prev;v2.big_video_id=u.prevBig;}});save();renderVideosPageKeepScroll();for(const u of[...undos,...childrenMoved])await sbReqSilent('PATCH','videos',{status:u.prev,big_video_id:u.prevBig??null},`?id=eq.${u.id}`);},'Move status');
       (async()=>{for(const v of toMove)await sbReqSilent('PATCH','videos',{status:v.status,big_video_id:v.big_video_id??null},`?id=eq.${v.id}`);for(const cm of childrenMoved){const c=(st.videos||[]).find(x=>String(x.id)===cm.id);if(c)await sbReqSilent('PATCH','videos',{status:c.status,big_video_id:c.big_video_id??null},`?id=eq.${c.id}`);}})();
       return;
