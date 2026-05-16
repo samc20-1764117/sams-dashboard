@@ -136,15 +136,6 @@ function _ytBuildMatch(){
   });
   var unmatched=dbVids.filter(v=>v.status==='published'&&!_ytMatch[String(v.id)]);
   if(unmatched.length)console.log('[YT] Unmatched published:',unmatched.map(v=>v.title));
-  // Debug rounded bars
-  var rb=dbVids.find(v=>v.title&&v.title.includes('rounded bars bigger'));
-  if(rb){
-    var rbNorm=_ytNorm(rb.title);
-    var ytMatch2=ytVids.find(function(y){return _ytNorm(y.title)===rbNorm;});
-    console.log('[YT] RoundedBars: status='+rb.status+', id='+rb.id+', norm="'+rbNorm+'"');
-    console.log('[YT] RoundedBars YT match:',ytMatch2?ytMatch2.title+' ('+ytMatch2.id+')':'NOT FOUND');
-    if(ytMatch2){var idx=ytVids.indexOf(ytMatch2);console.log('[YT] RoundedBars usedYt:',usedYt.has(idx));}
-  }
 }
 function _ytForVid(id){return _ytMatch?_ytMatch[String(id)]:null;}
 function _ytDurMin(id){const m=_ytForVid(id);return m&&m.duration?Math.round(_ytDurSec(m.duration)/60*100)/100:null;}
@@ -457,6 +448,7 @@ function renderVideosPage(){
       try{localStorage.setItem('_ytCache',JSON.stringify(d));}catch(e){}
       _ytBuildMatch();
       renderVideosPageKeepScroll();
+      if(_vidTableScrolledOnce)_vidScrollToDefault();
     }).catch(function(){});
   }
   // Fetch YouTube Analytics API data (actual revenue) — once per page load
@@ -2081,11 +2073,9 @@ function _vidScrollToDefault(){
     const today=new Date().toISOString().slice(0,10);
     const publishedBigs=(st.videos||[]).filter(v=>!v.is_deleted&&v.status==='published'&&v.video_type==='B'&&v.post_date&&v.post_date<today);
     publishedBigs.sort((a,b)=>b.post_date.localeCompare(a.post_date));
-    console.log('[scroll] bigs:',publishedBigs.length,'top3:',publishedBigs.slice(0,3).map(v=>v.post_date+' id:'+v.id+' '+v.title));
     const target=publishedBigs[2]||publishedBigs[publishedBigs.length-1];
-    if(!target){console.log('[scroll] no target');return;}
+    if(!target)return;
     const row=document.querySelector('.vid-dash-row[data-vid="'+target.id+'"]')||document.querySelector('.vid-row[data-vid="'+target.id+'"]');
-    console.log('[scroll] target:',target.id,target.title,'row found:',!!row);
     if(row)row.scrollIntoView({block:'start'});
   },50);
 }
