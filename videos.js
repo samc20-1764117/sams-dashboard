@@ -338,7 +338,7 @@ function renderVideosPage(){
   st.videos.forEach(v=>{
     if(v.group_name&&!v.big_video_id){
       const parent=bVids.find(b=>(b.title||'')===v.group_name||(b.group_name||'')===v.group_name);
-      if(parent)v.big_video_id=parent.id;
+      if(parent){console.log('[MIGRATE] restoring big_video_id for',v.title,'status='+v.status);v.big_video_id=parent.id;}
     }
   });
   // Enforce: B videos cannot have big_video_id
@@ -2968,14 +2968,14 @@ document.addEventListener('keydown',e=>{
       const undos=toMove.map(v=>({id:v.id,prev:v.status,prevBig:v.big_video_id}));
       toMove.forEach(v=>{v.status=(v.video_type==='B'?bigMap:smallMap)[v.status];});
       // When L videos move to idea, clear big_video_id (ungroup)
-      toMove.forEach(v=>{if(v.video_type!=='B'&&v.status==='idea'&&v.big_video_id)v.big_video_id=null;});
+      toMove.forEach(v=>{if(v.video_type!=='B'&&v.status==='idea'&&v.big_video_id){v.big_video_id=null;v.group_name=null;}});
       toMove.forEach(v=>console.log('[CMD] AFTER MOVE:',v.title,'status='+v.status,'big='+v.big_video_id));
       // Move children of B videos that are moving
       const bigIds=toMove.filter(v=>v.video_type==='B').map(v=>String(v.id));
       const childrenMoved=[];
       bigIds.forEach(bid=>{
         (st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===bid&&!allIds.has(String(c.id))).forEach(c=>{
-          const newSt=smallMap[c.status];if(newSt){childrenMoved.push({id:c.id,prev:c.status,prevBig:c.big_video_id});c.status=newSt;if(newSt==='idea')c.big_video_id=null;}
+          const newSt=smallMap[c.status];if(newSt){childrenMoved.push({id:c.id,prev:c.status,prevBig:c.big_video_id});c.status=newSt;if(newSt==='idea'){c.big_video_id=null;c.group_name=null;}}
         });
       });
       save();renderVideosPageKeepScroll();
