@@ -2954,7 +2954,6 @@ document.addEventListener('keydown',e=>{
     // Cmd+Left/Right: move between statuses (Left=promote to up_next, Right=demote to idea)
     if(isLeftRight&&(e.metaKey||e.ctrlKey)&&!e.shiftKey&&_vidSelected.size>0){
       e.preventDefault();
-      // Order: up_next → in_progress → idea. Left=toward up_next, Right=toward idea
       const map=e.key==='ArrowLeft'
         ?{idea:'up_next',in_progress:'up_next'}
         :{up_next:'idea',in_progress:'idea'};
