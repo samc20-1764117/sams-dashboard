@@ -981,6 +981,15 @@ document.addEventListener('keydown',e=>{
   if(e.key==='v'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus')&&!document.querySelector('.overlay.open')){
     e.preventDefault();showPage('videos');
   }
+  // Cmd+Left/Right to switch between pages
+  if((e.metaKey||e.ctrlKey)&&(e.key==='ArrowLeft'||e.key==='ArrowRight')&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')){
+    const _pgOrder=['overview','videos','pups','recipes','finance','birthdays'];
+    const _ci=_pgOrder.indexOf(activePg);
+    if(_ci!==-1){
+      const _ni=e.key==='ArrowLeft'?_ci-1:_ci+1;
+      if(_ni>=0&&_ni<_pgOrder.length){e.preventDefault();showPage(_pgOrder[_ni]);}
+    }
+  }
 });
 
 // ── UI Tooltip ────────────────────────────────────────────────────────────────
