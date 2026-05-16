@@ -991,8 +991,13 @@ document.addEventListener('keydown',e=>{
     }
   }
   // Help overlay: press "i" when nothing focused/selected
-  if(e.key==='i'&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')){
-    e.preventDefault();_showHelpOverlay();
+  if(e.key==='i'&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')){
+    if(document.getElementById('helpOverlay').classList.contains('open')){e.preventDefault();closeMod('helpOverlay');return;}
+    if(!document.querySelector('.overlay.open')){e.preventDefault();_showHelpOverlay();return;}
+  }
+  // Close help overlay with Enter
+  if((e.key==='Enter')&&document.getElementById('helpOverlay').classList.contains('open')){
+    e.preventDefault();closeMod('helpOverlay');
   }
 });
 
@@ -1002,33 +1007,41 @@ function _showHelpOverlay(){
     ['⌘ ←/→','Switch between pages'],
     ['O','Go to Overview'],
     ['V','Go to Videos'],
-    ['N','Quick Add task'],
-    ['R','Reload'],
-    ['S','Sync all'],
+    ['N','Quick Add task (to current day)'],
+    ['R','Reload page'],
+    ['S','Sync all data'],
     ['I','Show this help'],
-    ['Esc','Close any modal/overlay'],
-    ['⌘Z','Undo'],
+    ['Esc','Close any modal / deselect all'],
+    ['⌘Z','Undo last action'],
+    ['⌘S','Prevented (no-op)'],
   ];
   const _pages={
     overview:[
       ['T','Jump to Today'],
       ['←/→','Previous / next day'],
-      ['Click task','Select task'],
-      ['←/→ (selected)','Move task ±1 day'],
-      ['Space (WR rule)','Toggle skip'],
-      ['Delete/⌫','Delete selected tasks'],
+      ['←/→ (selected)','Move selected task ±1 day'],
+      ['↑/↓ (time block selected)','Move block ±30 min'],
+      ['Space','Toggle skip on WR rule'],
+      ['Delete / ⌫','Delete selected tasks'],
       ['⌘C / ⌘V','Copy / paste tasks'],
-      ['⌘I','Toggle importance mode'],
-      ['↑/↓ (time blocks)','Move block ±30 min'],
+      ['⌘I','Toggle importance highlight'],
+      ['⌘A','Select all (when not in input)'],
+      ['Click','Select task or time block'],
+      ['Shift+Click','Multi-select range'],
+      ['Drag','Reorder / reschedule tasks'],
     ],
     videos:[
       ['N','New video'],
-      ['E / C','Toggle completed videos'],
-      ['←/→','Switch video tabs'],
+      ['E / C','Toggle completed (table view)'],
+      ['←/→','Switch tabs (Current → All → Analytics → Monthly)'],
+      ['↑','Scroll to top'],
+      ['↓','Scroll to current section'],
+      ['Delete / ⌫','Delete selected videos'],
       ['⌘C / ⌘V','Copy / paste videos'],
+      ['Arrow keys (board)','Navigate video cards'],
     ],
     pups:[
-      ['Delete/⌫','Delete selected skill'],
+      ['Delete / ⌫','Delete selected skill'],
       ['⌘C / ⌘V','Copy / paste skills'],
     ],
     recipes:[],
