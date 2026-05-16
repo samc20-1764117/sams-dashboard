@@ -793,7 +793,7 @@ body.dark .bday-add-menu{background:rgba(38,20,10,.97);border-color:rgba(255,220
 /* ── Videos Page ──────────────────────────────────────────────────────────── */
 .vid-tbl{width:100%;border-collapse:separate;border-spacing:0;font-size:12px;font-family:inherit}
 .vid-tbl thead{position:sticky;top:0;background:var(--bg);z-index:3}
-.vid-tbl th{padding:0 6px;height:32px;box-sizing:border-box;text-align:left;font-size:10px;font-weight:600;color:var(--muted);letter-spacing:.04em;border-bottom:2px solid var(--border);white-space:nowrap;background:transparent}
+.vid-tbl th{padding:8px 6px;height:32px;box-sizing:border-box;text-align:left;font-size:10px;font-weight:600;color:var(--muted);letter-spacing:.04em;border-bottom:2px solid var(--border);white-space:nowrap;background:transparent;vertical-align:middle}
 .vid-tbl td{padding:3px 6px;border-bottom:1px solid rgba(210,205,228,.12);vertical-align:middle}
 .vid-row{cursor:pointer;transition:background .12s}.vid-row:hover{background:rgba(14,165,233,.04)}
 .vid-sel{background:rgba(14,165,233,.08)!important}
@@ -802,7 +802,7 @@ body.dark .bday-add-menu{background:rgba(38,20,10,.97);border-color:rgba(255,220
 .vid-step-dot{width:14px;height:14px;border-radius:3px;border:1.5px solid rgba(210,205,228,.4);cursor:pointer;display:inline-block;transition:transform .1s;background:transparent}.vid-step-dot:hover{transform:scale(1.2);border-color:rgba(16,185,129,.5)}.vid-step-dot.done{background:#10b981;border-color:#10b981}.vid-step-dot.na{background:var(--border);border-color:var(--border);opacity:.35}
 .vid-num{font-family:system-ui,-apple-system,sans-serif;font-variant-numeric:tabular-nums}
 .vid-del{background:none;border:none;cursor:pointer;color:var(--muted);font-size:12px;opacity:0;transition:opacity .12s;padding:2px 4px}.vid-row:hover .vid-del,.vid-dash-row:hover .vid-del{opacity:1}.vid-del:hover{color:#ef4444}
-.vid-tbl thead th{background:transparent;border-bottom:2px solid var(--border);padding:0 6px;height:32px;box-sizing:border-box}
+.vid-tbl thead th{background:transparent;border-bottom:2px solid var(--border);padding:8px 6px;height:32px;box-sizing:border-box;vertical-align:middle}
 .vid-title-text{font-weight:500;color:var(--text)}
 .vid-filter-btn{padding:4px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--muted);font-family:inherit;font-size:11px;font-weight:500;cursor:pointer;transition:all .12s}
 .vid-filter-btn.active{background:rgba(14,165,233,.12);color:#0ea5e9;border-color:rgba(14,165,233,.3)}

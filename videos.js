@@ -2965,16 +2965,19 @@ document.addEventListener('keydown',e=>{
       if(!toMove.length)return;
       const undos=toMove.map(v=>({id:v.id,prev:v.status}));
       toMove.forEach(v=>{v.status=map[v.status];});
+      // When L videos move to idea, clear big_video_id (ungroup)
+      const ungrouped=[];
+      toMove.forEach(v=>{if(v.video_type==='L'&&v.status==='idea'&&v.big_video_id){ungrouped.push({id:v.id,prevBig:v.big_video_id});v.big_video_id=null;}});
       const bigIds=toMove.filter(v=>v.video_type==='B').map(v=>String(v.id));
       const childrenMoved=[];
       bigIds.forEach(bid=>{
         (st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===bid&&!allIds.has(String(c.id))).forEach(c=>{
-          const newSt=map[c.status];if(newSt){childrenMoved.push({id:c.id,prev:c.status});c.status=newSt;}
+          const newSt=map[c.status];if(newSt){childrenMoved.push({id:c.id,prev:c.status,prevBig:c.big_video_id});c.status=newSt;if(newSt==='idea'){c.big_video_id=null;}}
         });
       });
       save();renderVideosPageKeepScroll();
-      pushUndo(async()=>{[...undos,...childrenMoved].forEach(u=>{const v2=(st.videos||[]).find(x=>String(x.id)===u.id);if(v2)v2.status=u.prev;});save();renderVideosPageKeepScroll();for(const u of[...undos,...childrenMoved])await sbReqSilent('PATCH','videos',{status:u.prev},`?id=eq.${u.id}`);},'Move status');
-      (async()=>{for(const v of[...toMove,...childrenMoved.map(u=>(st.videos||[]).find(x=>String(x.id)===u.id)).filter(Boolean)])await sbReqSilent('PATCH','videos',{status:v.status},`?id=eq.${v.id}`);})();
+      pushUndo(async()=>{[...undos,...childrenMoved].forEach(u=>{const v2=(st.videos||[]).find(x=>String(x.id)===u.id);if(v2){v2.status=u.prev;if(u.prevBig)v2.big_video_id=u.prevBig;}});ungrouped.forEach(u=>{const v2=(st.videos||[]).find(x=>String(x.id)===u.id);if(v2)v2.big_video_id=u.prevBig;});save();renderVideosPageKeepScroll();for(const u of[...undos,...childrenMoved])await sbReqSilent('PATCH','videos',{status:u.prev,big_video_id:u.prevBig||null},`?id=eq.${u.id}`);for(const u of ungrouped)await sbReqSilent('PATCH','videos',{big_video_id:u.prevBig},`?id=eq.${u.id}`);},'Move status');
+      (async()=>{for(const v of toMove)await sbReqSilent('PATCH','videos',{status:v.status,big_video_id:v.big_video_id},`?id=eq.${v.id}`);for(const cm of childrenMoved){const c=(st.videos||[]).find(x=>String(x.id)===cm.id);if(c)await sbReqSilent('PATCH','videos',{status:c.status,big_video_id:c.big_video_id},`?id=eq.${c.id}`);}})();
       return;
     }
 
