@@ -30,7 +30,8 @@
 - **Modal outside-click drag fix**: `_modMousedownInside` flag prevents `closeMod` if mousedown was inside `.modal`.
 - **`#tNotes` textarea**: auto-expands, capped at `max-height:160px`. Reset on add open; pre-expanded on edit open. Newlines rendered via `.replace(/\n/g,'<br>')`.
 - **Cmd+Z in modals**: `_isInput && !_ael.closest('.overlay:not(.open)')` → return early.
-- **Global shortcuts**: `n`=new task, `r`=reload, `s`=sync. Skip if INPUT/TEXTAREA/contentEditable or meta held.
+- **Global shortcuts**: `n`=new task, `r`=reload, `s`=toggle HEB grocery modal. Skip if INPUT/TEXTAREA/contentEditable or meta held.
+- **Keyboard shortcut pattern**: when adding a shortcut that opens a modal/popup, always make the same key close it (toggle), and `Enter` should also close it (when not in input/textarea/button). Add handler both globally and inside the modal's keydown listener.
 - **Text selection**: `user-select:none` on `html,body`. `Ctrl/Cmd+A` blocked globally (allowed in INPUT/TEXTAREA).
 - **Global Cmd+C/V**: copies `selectedTasks`. Paste: `wrrule-{id}`→POST `wr_recurring_rules`; task ID→POST `tasks`.
 

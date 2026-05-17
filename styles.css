@@ -872,7 +872,7 @@ body.dark .bday-add-menu{background:rgba(38,20,10,.97);border-color:rgba(255,220
 .vid-board-card.vid-sel{border-color:rgba(14,165,233,.4);background:rgba(14,165,233,.05)}
 .vid-board-dragover{background:rgba(14,165,233,.06)!important}
 /* ── Grocery Modal ──────────────────────────────────────────────────────── */
-.grocery-modal{border:none;border-radius:16px;padding:0;width:min(960px,96vw);height:min(720px,88vh);background:rgba(255,252,248,.98);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);box-shadow:0 20px 60px rgba(0,0,0,.15),0 4px 16px rgba(0,0,0,.08);overflow:hidden;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);margin:0;display:flex;flex-direction:column}
+.grocery-modal{border:none;border-radius:16px;padding:0;width:min(960px,96vw);height:min(720px,88vh);background:rgba(255,252,248,.98);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);box-shadow:0 20px 60px rgba(0,0,0,.15),0 4px 16px rgba(0,0,0,.08);overflow:hidden;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);margin:0;display:flex;flex-direction:column;outline:none}
 .grocery-modal::backdrop{background:rgba(0,0,0,.3)}
 body.dark .grocery-modal{background:rgba(28,16,10,.97);box-shadow:0 20px 60px rgba(0,0,0,.4)}
 .groc-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px 10px;border-bottom:1px solid rgba(210,205,228,.2);background:inherit;z-index:2;flex-shrink:0}
