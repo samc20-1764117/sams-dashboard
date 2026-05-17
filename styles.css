@@ -824,18 +824,18 @@ body.dark .bday-add-menu{background:rgba(38,20,10,.97);border-color:rgba(255,220
 .vid-board-card.vid-sel{border-color:rgba(14,165,233,.4);background:rgba(14,165,233,.05)}
 .vid-board-dragover{background:rgba(14,165,233,.06)!important}
 /* ── Grocery Modal ──────────────────────────────────────────────────────── */
-.grocery-modal{border:none;border-radius:16px;padding:0;width:min(820px,94vw);height:min(680px,85vh);background:rgba(255,252,248,.98);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);box-shadow:0 20px 60px rgba(0,0,0,.15),0 4px 16px rgba(0,0,0,.08);overflow:hidden;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);margin:0;display:flex;flex-direction:column}
+.grocery-modal{border:none;border-radius:16px;padding:0;width:min(960px,96vw);height:min(720px,88vh);background:rgba(255,252,248,.98);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);box-shadow:0 20px 60px rgba(0,0,0,.15),0 4px 16px rgba(0,0,0,.08);overflow:hidden;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);margin:0;display:flex;flex-direction:column}
 .grocery-modal::backdrop{background:rgba(0,0,0,.3)}
 body.dark .grocery-modal{background:rgba(28,16,10,.97);box-shadow:0 20px 60px rgba(0,0,0,.4)}
 .groc-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 10px;border-bottom:1px solid rgba(210,205,228,.2);position:sticky;top:0;background:inherit;z-index:2}
 .groc-header h3{margin:0;font-size:15px;font-weight:700;color:var(--text)}
 .groc-close{background:none;border:none;cursor:pointer;color:var(--muted);font-size:16px;padding:2px 6px;border-radius:5px}
 .groc-close:hover{color:var(--text)}
-.groc-add{display:flex;gap:6px;padding:10px 16px;border-bottom:1px solid rgba(210,205,228,.12)}
-.groc-add input{flex:1;padding:6px 10px;border-radius:var(--rs);border:1px solid var(--gb);font-family:inherit;font-size:12px;background:rgba(255,255,255,.7);color:var(--text);outline:none}
+.groc-add{display:flex;gap:6px;padding:8px 0;border-bottom:1px solid rgba(210,205,228,.12);flex-shrink:0}
+.groc-add input{flex:1;padding:6px 10px;border-radius:var(--rs);border:1px solid var(--gb);font-family:inherit;font-size:12px;background:rgba(255,255,255,.7);color:var(--text);outline:none;min-width:0;box-sizing:border-box}
 .groc-add input:focus{border-color:var(--accent)}
 body.dark .groc-add input{background:rgba(255,255,255,.06);border-color:rgba(255,220,200,.12)}
-.groc-add button{padding:4px 10px;border-radius:var(--rs);border:1px solid var(--accent);background:var(--accent);color:#fff;font-weight:700;cursor:pointer;font-size:14px}
+.groc-add button{padding:4px 12px;border-radius:var(--rs);border:1px solid var(--accent);background:var(--accent);color:#fff;font-weight:700;cursor:pointer;font-size:14px;flex-shrink:0}
 .groc-section{padding:8px 16px;box-sizing:border-box;max-width:100%}
 .groc-section-title{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
 .groc-item{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(210,205,228,.08);min-width:0}
@@ -853,10 +853,11 @@ body.dark .groc-add input{background:rgba(255,255,255,.06);border-color:rgba(255
 .groc-recipe-row{padding:6px 10px;font-size:12px;color:var(--text);cursor:pointer;border-radius:6px}
 .groc-recipe-row:hover{background:rgba(124,106,247,.08)}
 /* Split layout */
-.groc-split{display:flex;flex:1;min-height:0;overflow:hidden}
-.groc-panel{flex:1;overflow-y:auto;padding:12px 16px;min-width:0}
-.groc-panel-meals{border-right:1px solid rgba(210,205,228,.2)}
-.groc-panel-title{font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px;letter-spacing:-.2px}
+.groc-split{display:grid;grid-template-columns:1fr 1fr 1fr;flex:1;min-height:0;overflow:hidden}
+.groc-panel{overflow-y:auto;padding:14px 16px;min-width:0;display:flex;flex-direction:column}
+.groc-panel+.groc-panel{border-left:1px solid rgba(210,205,228,.2)}
+.groc-panel-title{font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px;letter-spacing:-.2px;flex-shrink:0}
+.groc-panel-subtitle{font-size:10px;color:var(--muted);margin-bottom:8px;flex-shrink:0}
 .groc-meal-grid{display:flex;flex-direction:column;gap:2px}
 .groc-day-row{display:flex;align-items:center;gap:6px;padding:4px 6px;border-radius:6px;min-height:28px}
 .groc-day-row:hover{background:rgba(210,205,228,.08)}
@@ -878,7 +879,6 @@ body.dark .groc-meal-tag{background:rgba(249,115,22,.15);color:#fb923c;border-co
 .groc-recipe-type{font-size:10px;color:var(--muted);flex-shrink:0}
 .groc-nav-btn{background:none;border:1px solid var(--border);border-radius:5px;cursor:pointer;font-size:12px;color:var(--text);padding:2px 8px;font-weight:600}
 .groc-nav-btn:hover{background:rgba(124,106,247,.08);border-color:var(--accent)}
-.groc-panel-meals{display:flex;flex-direction:column}
 .meal-add-inline{background:none;border:1px dashed var(--border);border-radius:var(--rs);padding:5px 10px;font-size:11px;color:var(--muted);cursor:pointer;width:100%;margin-top:4px}
 .meal-add-inline:hover{border-color:var(--accent);color:var(--accent)}
 /* ── Meal Row (below weekly cal) ─────────────────────────────────────────── */

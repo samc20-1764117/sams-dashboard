@@ -2240,24 +2240,30 @@ function openGroceryModal(){
   renderGroceryModal();
 }
 
-let _grocWkOff=0; // 0=this week, 1=next week, etc.
-function _grocViewWeekOf(off){const d=new Date();const dow=(d.getDay()+6)%7;d.setDate(d.getDate()-dow+(off||0)*7);return d.toISOString().split('T')[0];}
-function _grocViewWeekDates(off){const mon=new Date(_grocViewWeekOf(off)+'T12:00:00');return Array.from({length:7},(_,i)=>{const x=new Date(mon);x.setDate(mon.getDate()+i);return x.toISOString().split('T')[0];});}
-function _grocViewWeekLabel(off){const dates=_grocViewWeekDates(off);const m1=new Date(dates[0]+'T12:00:00');const m2=new Date(dates[6]+'T12:00:00');return`${m1.toLocaleDateString('en-US',{month:'short',day:'numeric'})} – ${m2.toLocaleDateString('en-US',{month:'short',day:'numeric'})}`;}
+let _grocWkOff=0;
+function _grocWeekMonday(off){const d=new Date();const dow=(d.getDay()+6)%7;d.setDate(d.getDate()-dow+(off||0)*7);return d.toISOString().split('T')[0];}
+function _grocWeekDatesFor(mon){const m=new Date(mon+'T12:00:00');return Array.from({length:7},(_,i)=>{const x=new Date(m);x.setDate(m.getDate()+i);return x.toISOString().split('T')[0];});}
+function _grocWeekLabel(mon){const dates=_grocWeekDatesFor(mon);const m1=new Date(dates[0]+'T12:00:00');const m2=new Date(dates[6]+'T12:00:00');return`${m1.toLocaleDateString('en-US',{month:'short',day:'numeric'})} – ${m2.toLocaleDateString('en-US',{month:'short',day:'numeric'})}`;}
+
+let _grocRecSearch='';
 
 function renderGroceryModal(){
   const modal=document.getElementById('groceryModal');if(!modal)return;
-  const off=_grocWkOff;
-  const wkMon=_grocViewWeekOf(off);
-  const wkDates=_grocViewWeekDates(off);
   const dayNames=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 
-  // Meals planned for this viewed week
-  const mealsThisWk=(st.mealPlan||[]).filter(m=>wkDates.includes(m.meal_date));
-  const plannedRecipeIds=new Set(mealsThisWk.map(m=>String(m.recipe_id)));
+  // "This week" = current week (what I'm eating, based on last week's shopping)
+  const thisWkMon=_grocWeekMonday(0);
+  const thisWkDates=_grocWeekDatesFor(thisWkMon);
+  const thisWkMeals=(st.mealPlan||[]).filter(m=>thisWkDates.includes(m.meal_date));
 
-  // Grocery items for this viewed week
-  const items=(st.groceryList||[]).filter(g=>g.week_of===wkMon);
+  // "Planning week" = navigable week for selecting meals & generating grocery list
+  const planMon=_grocWeekMonday(_grocWkOff+1); // default to next week
+  const planDates=_grocWeekDatesFor(planMon);
+  const planMeals=(st.mealPlan||[]).filter(m=>planDates.includes(m.meal_date));
+  const plannedRecipeIds=new Set(planMeals.map(m=>String(m.recipe_id)));
+
+  // Grocery list tied to planning week
+  const items=(st.groceryList||[]).filter(g=>g.week_of===planMon);
   const unchecked=items.filter(g=>!g.checked);
   const checked=items.filter(g=>g.checked);
   const recipeGroups={};unchecked.filter(g=>g.source==='recipe').forEach(g=>{const k=g.recipe_name||'Recipe';if(!recipeGroups[k])recipeGroups[k]=[];recipeGroups[k].push(g);});
@@ -2271,49 +2277,67 @@ function renderGroceryModal(){
       <button class="groc-del" onclick="delGroceryItem('${g.id}')">✕</button>
     </div>`;}
 
-  // ── HEADER with week nav ──
+  // ── HEADER ──
   let html=`<div class="groc-header">
-    <div style="display:flex;align-items:center;gap:8px">
-      <button class="groc-nav-btn" onclick="_grocWkOff--;renderGroceryModal()">←</button>
-      <h3 style="margin:0;font-size:14px">${_grocViewWeekLabel(off)}</h3>
-      <button class="groc-nav-btn" onclick="_grocWkOff++;renderGroceryModal()">→</button>
-      ${off!==0?`<button class="groc-nav-btn" onclick="_grocWkOff=0;renderGroceryModal()" style="font-size:10px">Today</button>`:''}
-    </div>
+    <h3 style="margin:0;font-size:15px">HEB Meal Planner</h3>
     <div style="display:flex;gap:6px">
-      <button class="groc-close" onclick="openGroceryStaplesEditor()" title="Manage staples" style="font-size:13px">⚙</button>
+      <button class="groc-close" onclick="openGroceryStaplesEditor()" title="Manage weekly staples" style="font-size:13px">⚙</button>
       <button class="groc-close" onclick="document.getElementById('groceryModal').close()">✕</button>
     </div>
   </div>`;
 
   html+=`<div class="groc-split">`;
 
-  // ── LEFT: Meal Selector ──
-  html+=`<div class="groc-panel groc-panel-meals">`;
-  // Show planned meals by day
-  html+=`<div class="groc-panel-title">Meals This Week</div>`;
+  // ── PANEL 1: This Week's Menu (what I'm cooking from last week's shop) ──
+  html+=`<div class="groc-panel">`;
+  html+=`<div class="groc-panel-title">This Week's Menu</div>`;
+  html+=`<div class="groc-panel-subtitle">${_grocWeekLabel(thisWkMon)}</div>`;
   html+=`<div class="groc-meal-grid">`;
-  wkDates.forEach((ds,i)=>{
+  thisWkDates.forEach((ds,i)=>{
     const meals=(st.mealPlan||[]).filter(m=>m.meal_date===ds);
     html+=`<div class="groc-day-row" data-ds="${ds}" ondragover="event.preventDefault();this.classList.add('groc-day-drop')" ondragleave="this.classList.remove('groc-day-drop')" ondrop="dropMeal(event,'${ds}');this.classList.remove('groc-day-drop');renderGroceryModal();">`;
     html+=`<span class="groc-day-label">${dayNames[i]}</span>`;
     html+=`<div class="groc-day-meals">`;
     meals.forEach(m=>{
-      html+=`<span class="groc-meal-tag" draggable="true" ondragstart="event.dataTransfer.setData('text/plain','meal::${m.id}')">${escHtml(m.recipe_name)}<button onclick="event.stopPropagation();removeMealFromWeek('${m.id}','${wkMon}')">✕</button></span>`;
+      html+=`<span class="groc-meal-tag" draggable="true" ondragstart="event.dataTransfer.setData('text/plain','meal::${m.id}')">${escHtml(m.recipe_name)}<button onclick="event.stopPropagation();removeMealFromWeek('${m.id}','${thisWkMon}')">✕</button></span>`;
     });
+    if(!meals.length)html+=`<span style="color:var(--muted);font-size:10px;opacity:.5">—</span>`;
     html+=`</div>`;
     html+=`</div>`;
   });
   html+=`</div>`;
+  html+=`</div>`;
 
-  // Recipe picker with checkboxes
-  html+=`<div class="groc-panel-title" style="margin-top:12px;display:flex;align-items:center;justify-content:space-between">Select Meals <input type="text" id="grocRecipeSearch" placeholder="Search…" oninput="_grocRecSearch=this.value;renderGroceryModal()" value="${escHtml(_grocRecSearch||'')}" style="width:120px;padding:3px 8px;border-radius:5px;border:1px solid var(--gb);font-size:11px;font-family:inherit;color:var(--text);background:var(--glass);outline:none"></div>`;
+  // ── PANEL 2: Plan Next Week's Meals (select recipes) ──
+  html+=`<div class="groc-panel">`;
+  html+=`<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;flex-shrink:0">
+    <button class="groc-nav-btn" onclick="_grocWkOff--;renderGroceryModal()">←</button>
+    <div class="groc-panel-title" style="margin:0;flex:1;text-align:center">Plan: ${_grocWeekLabel(planMon)}</div>
+    <button class="groc-nav-btn" onclick="_grocWkOff++;renderGroceryModal()">→</button>
+  </div>`;
+  // Show what's planned for that week by day
+  html+=`<div class="groc-meal-grid" style="margin-bottom:8px">`;
+  planDates.forEach((ds,i)=>{
+    const meals=(st.mealPlan||[]).filter(m=>m.meal_date===ds);
+    if(!meals.length)return;
+    html+=`<div class="groc-day-row">`;
+    html+=`<span class="groc-day-label">${dayNames[i]}</span>`;
+    html+=`<div class="groc-day-meals">`;
+    meals.forEach(m=>{
+      html+=`<span class="groc-meal-tag">${escHtml(m.recipe_name)}<button onclick="event.stopPropagation();removeMealFromWeek('${m.id}','${planMon}')">✕</button></span>`;
+    });
+    html+=`</div></div>`;
+  });
+  html+=`</div>`;
+  // Search + checkboxes
+  html+=`<div style="margin-bottom:6px;flex-shrink:0"><input type="text" id="grocRecipeSearch" placeholder="Search recipes…" oninput="_grocRecSearch=this.value;renderGroceryModal()" value="${escHtml(_grocRecSearch||'')}" style="width:100%;padding:6px 10px;border-radius:var(--rs);border:1px solid var(--gb);font-size:12px;font-family:inherit;color:var(--text);background:var(--glass);outline:none;box-sizing:border-box"></div>`;
   html+=`<div class="groc-recipe-list">`;
   let filteredRecipes=(st.recipes||[]);
   if(_grocRecSearch)filteredRecipes=filteredRecipes.filter(r=>r.name.toLowerCase().includes(_grocRecSearch.toLowerCase()));
   filteredRecipes.forEach(r=>{
     const isPlanned=plannedRecipeIds.has(String(r.id));
     html+=`<label class="groc-recipe-check${isPlanned?' active':''}">
-      <input type="checkbox"${isPlanned?' checked':''} onchange="toggleMealForWeek('${r.id}','${wkMon}',this.checked)">
+      <input type="checkbox"${isPlanned?' checked':''} onchange="toggleMealForWeek('${r.id}','${planMon}',this.checked)">
       <span>${escHtml(r.name)}</span>
       ${r.meal_type?`<span class="groc-recipe-type">${escHtml(r.meal_type)}</span>`:''}
     </label>`;
@@ -2321,29 +2345,32 @@ function renderGroceryModal(){
   html+=`</div>`;
   html+=`</div>`;
 
-  // ── RIGHT: Grocery List ──
-  html+=`<div class="groc-panel groc-panel-list">`;
-  html+=`<div class="groc-panel-title">Grocery List <span style="font-weight:400;color:var(--muted);font-size:10px">(${unchecked.length} items)</span></div>`;
-  html+=`<div class="groc-add"><input type="text" id="grocAddName" placeholder="Add item…"><input type="text" id="grocAddAmt" placeholder="Qty" style="width:50px"><button onclick="addGroceryManualForWeek('${wkMon}')">+</button></div>`;
+  // ── PANEL 3: Grocery List (for the planning week — what to buy Sunday) ──
+  html+=`<div class="groc-panel">`;
+  html+=`<div class="groc-panel-title">Sunday Shopping List <span style="font-weight:400;color:var(--muted);font-size:10px">(${unchecked.length})</span></div>`;
+  html+=`<div class="groc-panel-subtitle">For ${_grocWeekLabel(planMon)}</div>`;
+  html+=`<div class="groc-add"><input type="text" id="grocAddName" placeholder="Add item…"><input type="text" id="grocAddAmt" placeholder="Qty" style="width:50px"><button onclick="addGroceryManualForWeek('${planMon}')">+</button></div>`;
   Object.entries(recipeGroups).forEach(([name,gItems])=>{html+=`<div class="groc-section"><div class="groc-section-title">${escHtml(name)}</div>${gItems.map(itemRow).join('')}</div>`;});
   if(manual.length){html+=`<div class="groc-section"><div class="groc-section-title">Other</div>${manual.map(itemRow).join('')}</div>`;}
-  if(checked.length){html+=`<div class="groc-section groc-checked-section"><div class="groc-section-title">Done (${checked.length})</div>${checked.map(itemRow).join('')}</div>`;}
+  if(checked.length){html+=`<div class="groc-section groc-checked-section"><div class="groc-section-title">Checked off (${checked.length})</div>${checked.map(itemRow).join('')}</div>`;}
+  if(!unchecked.length&&!checked.length){html+=`<div style="color:var(--muted);font-size:12px;padding:16px 0;text-align:center">Select meals to generate list</div>`;}
   html+=`</div>`;
 
   html+=`</div>`; // end groc-split
   modal.innerHTML=html;
   const inp=document.getElementById('grocAddName');
-  if(inp)inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();addGroceryManualForWeek(wkMon);}});
+  if(inp)inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();addGroceryManualForWeek(planMon);}});
+  // Keep search focused
+  const sInp=document.getElementById('grocRecipeSearch');
+  if(sInp&&_grocRecSearch)setTimeout(()=>{sInp.focus();sInp.setSelectionRange(sInp.value.length,sInp.value.length);},10);
 }
-
-let _grocRecSearch='';
 
 // Toggle a recipe on/off for a week
 async function toggleMealForWeek(recipeId,weekMon,checked){
   const r=(st.recipes||[]).find(x=>String(x.id)===String(recipeId));if(!r)return;
   if(checked){
     // Add meal to first empty day
-    const dates=_grocViewWeekDates(_grocWkOff);
+    const dates=_grocWeekDatesFor(weekMon);
     let ds=dates[0];
     for(const d of dates){if(!(st.mealPlan||[]).find(m=>m.meal_date===d)){ds=d;break;}}
     const item={recipe_id:r.id,recipe_name:r.name,meal_date:ds,servings:1,meal_type:r.meal_type||null};
@@ -2362,7 +2389,7 @@ async function toggleMealForWeek(recipeId,weekMon,checked){
     }
   } else {
     // Remove all meals for this recipe this week
-    const dates=_grocViewWeekDates(_grocWkOff);
+    const dates=_grocWeekDatesFor(weekMon);
     const toRemove=(st.mealPlan||[]).filter(m=>String(m.recipe_id)===String(recipeId)&&dates.includes(m.meal_date));
     toRemove.forEach(m=>{
       st.mealPlan=st.mealPlan.filter(x=>String(x.id)!==String(m.id));
@@ -2385,7 +2412,7 @@ async function removeMealFromWeek(mealId,weekMon){
   st.mealPlan=st.mealPlan.filter(m=>String(m.id)!==String(mealId));
   sbReqSilent('DELETE','meal_plan',null,`?id=eq.${mealId}`);
   // If no other meals with same recipe this week, remove grocery items
-  const dates=_grocViewWeekDates(_grocWkOff);
+  const dates=_grocWeekDatesFor(weekMon);
   const otherSameRecipe=(st.mealPlan||[]).filter(m=>String(m.recipe_id)===String(meal.recipe_id)&&dates.includes(m.meal_date));
   if(!otherSameRecipe.length){
     const grocToRemove=(st.groceryList||[]).filter(g=>g.week_of===weekMon&&g.source==='recipe'&&String(g.source_id)===String(meal.recipe_id));
