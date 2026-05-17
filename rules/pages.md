@@ -72,6 +72,9 @@ Table: `birthdays(id,name,birthday,present_ideas)`. `present_ideas` JSON array. 
 ### Recipes (`features.js`)
 Table: `recipes`. Do NOT reference: protein,prep_time,cook_time,difficulty,last_made_date. `#recSidePanel` 400px. Ingredients: JSON `[{name,amount}]`.
 
+### HEB (`features.js` — grocery modal)
+"HEB" = the meal planning + grocery modal opened via 🛒 icon on HEB tasks. Layout: header (nav arrows, date, This Week btn, close ✕), horizontal weekly menu strip (top), 3-column bottom (Recipes | Planned Meals | Shopping List). Staples drawer slides from right inside modal. `_grocWkOff` shifts all panels. Opens to current week always. Enter/Escape/backdrop closes. Tables: `meal_plan`, `grocery_list`, `grocery_staples`. Shopping list combines: recipe ingredients (non-pantry, non-staple), overview items with `store='HEB'`, and weekly staples. Sorted by auto-inferred aisle (`_inferAisle`). Staples: skip-this-week via `st._grocStapleSkips[weekMon]` or remove permanently.
+
 ### Quick Links (overview, `index.html`)
 - Grid order: Videos → Finance → Pups → Birthdays → Recipes.
 - Icons: outline SVGs with `opacity:.45` via `.ql-icon`. Pups uses actual dog headshots (Sunny left, Mochi right) at full opacity (`:has(img)` override). Text color: `var(--muted)`.

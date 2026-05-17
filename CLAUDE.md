@@ -27,7 +27,7 @@ Grep the relevant file only — do not read files not needed for the task:
 - `rules/core.md` — architecture, auth, data/persistence, undo/redo
 - `rules/tasks-ui.md` — overdue logic, task modals, interaction patterns, UI notes
 - `rules/wr-system.md` — WR rules, non-WR recurring, X menus, skip behavior, drag IDs
-- `rules/pages.md` — per-page rules (overview, shopping, travel, pup skills, birthdays, recipes, etc.)
+- `rules/pages.md` — per-page rules (overview, shopping, travel, pup skills, birthdays, recipes, HEB/grocery, etc.)
 - `rules/videos.md` — videos page (data model, views, stages, inline editing, grouping, keyboard shortcuts)
 - `rules/deploy.md` — push to production steps
 - `rules/mobile.md` — **mobile PWA only** (mobile.html/css/mobile-overview.js). Architecture, tab system, all interaction patterns, iOS rules, init flow. Read this before any mobile work. Do NOT read for desktop tasks.

@@ -2183,7 +2183,7 @@ async function generateGroceryStaples(){
   const wk=_groceryWeekOf();
   const existing=_groceryForWeek().filter(g=>g.source==='staple');
   const staples=(st.groceryStaples||[]).filter(s=>s.active!==false);
-  const toAdd=staples.filter(s=>!existing.find(e=>e.source_id===s.id));
+  const toAdd=staples.filter(s=>!existing.find(e=>String(e.source_id)===String(s.id)));
   for(const s of toAdd){
     const item={name:s.name,amount:s.amount||null,source:'staple',source_id:s.id,aisle:s.aisle||null,checked:false,week_of:wk};
     const sv=await sbReqSilent('POST','grocery_list',item);
@@ -2306,7 +2306,7 @@ function renderGroceryModal(){
   hebShopItems.forEach(s=>allItems.push({id:'heb-'+s.id,name:s.name,amount:null,aisle:s.aisle||_inferAisle(s.name),checked:false,_src:'overview',_shopId:s.id}));
   // Staples
   activeStaples.forEach(s=>{
-    const alreadyInList=grocItems.find(g=>g.source==='staple'&&g.source_id===String(s.id));
+    const alreadyInList=grocItems.find(g=>g.source==='staple'&&String(g.source_id)===String(s.id));
     if(!alreadyInList)allItems.push({id:'staple-'+s.id,name:s.name,amount:s.amount||null,aisle:s.aisle||_inferAisle(s.name),checked:false,_src:'staple',_stapleId:s.id});
     else if(!alreadyInList.checked)allItems.push({...alreadyInList,_src:'staple',_stapleId:s.id});
   });
@@ -2395,9 +2395,9 @@ function renderGroceryModal(){
   html+=`<div class="groc-panel-title" style="display:flex;align-items:center;justify-content:space-between">Shopping List <span style="font-weight:400;color:var(--muted);font-size:10px">(${allItems.length})</span><button class="groc-nav-btn" onclick="openGroceryStaplesEditor()" style="font-size:10px">Staples</button></div>`;
   html+=`<div class="groc-add"><input type="text" id="grocAddName" placeholder="Add item…"><input type="text" id="grocAddAmt" placeholder="Qty" style="width:50px"><button onclick="addGroceryManualForWeek('${planMon}')">+</button></div>`;
   Object.entries(byAisle).forEach(([aisle,items])=>{
-    html+=`<div class="groc-section"><div class="groc-section-title">${escHtml(aisle)}</div>${items.map(itemRow).join('')}</div>`;
+    html+=`<div class="groc-section"><div class="groc-section-title">${escHtml(aisle)}</div><div class="groc-section-grid">${items.map(itemRow).join('')}</div></div>`;
   });
-  if(checkedItems.length){html+=`<div class="groc-section groc-checked-section"><div class="groc-section-title">Done (${checkedItems.length})</div>${checkedItems.map(g=>itemRow({...g,_src:'done'})).join('')}</div>`;}
+  if(checkedItems.length){html+=`<div class="groc-section groc-checked-section"><div class="groc-section-title">Done (${checkedItems.length})</div><div class="groc-section-grid">${checkedItems.map(g=>itemRow({...g,_src:'done'})).join('')}</div></div>`;}
   if(!allItems.length&&!checkedItems.length){html+=`<div style="color:var(--muted);font-size:12px;padding:16px 0;text-align:center">Select meals to generate list</div>`;}
   html+=`</div>`;
 
