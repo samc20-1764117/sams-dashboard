@@ -1265,6 +1265,13 @@ function renderWkCal(){
     });
     goalsCol.appendChild(chip);
   });
+  // Unassigned badge at bottom of goals column
+  const uaSpacer=document.createElement('div');uaSpacer.style.cssText='flex:1';
+  goalsCol.appendChild(uaSpacer);
+  const uaBadge=document.createElement('div');uaBadge.id='unAssignedBadge';
+  uaBadge.style.cssText='display:none;width:18px;height:18px;border-radius:50%;background:rgba(180,170,210,.3);color:var(--muted);font-size:9px;font-weight:600;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;margin:4px auto';
+  uaBadge.onclick=toggleUnMenu;
+  goalsCol.appendChild(uaBadge);
   cols.appendChild(goalsCol);
   requestAnimationFrame(()=>{document.querySelectorAll('#wkcCols .wkc-col').forEach(c=>_updateOverflowBadge(c));});
   if(typeof renderMealRow==='function')renderMealRow();
