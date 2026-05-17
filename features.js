@@ -4182,7 +4182,7 @@ document.addEventListener('keydown',e=>{
   if(e.metaKey||e.ctrlKey||e.altKey)return;
   if(e.key==='n'){e.preventDefault();openQA('today',null,d2s(getDayDate(dayOff)));}
   if(e.key==='r'){e.preventDefault();location.reload();}
-  if(e.key==='s'){e.preventDefault();syncAll(false);}
+  if(e.key==='s'){e.preventDefault();openGroceryModal();}
 });
 // Arrow keys: move selected TB blocks ±30 min
 window.addEventListener('keydown',e=>{
