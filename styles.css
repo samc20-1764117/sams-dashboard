@@ -883,10 +883,10 @@ body.dark .groc-meal-tag{background:rgba(249,115,22,.15);color:#fb923c;border-co
 .groc-selected-meal button{background:none;border:none;cursor:pointer;color:var(--muted);font-size:11px;padding:0 4px}
 .groc-selected-meal button:hover{color:#ef4444}
 .groc-src{font-size:9px;color:var(--muted);background:rgba(210,205,228,.12);padding:1px 5px;border-radius:3px;flex-shrink:0}
-/* Staples slide-out drawer */
-.groc-staples-drawer{position:fixed;top:0;left:0;width:280px;height:100vh;background:rgba(255,252,248,.98);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:4px 0 20px rgba(0,0,0,.1);transform:translateX(-100%);transition:transform .2s ease;z-index:10001;display:flex;flex-direction:column;padding:0}
+/* Staples slide-out drawer (inside modal, from right) */
+.groc-staples-drawer{position:absolute;top:0;right:0;width:260px;height:100%;background:rgba(255,252,248,.99);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:-4px 0 16px rgba(0,0,0,.08);transform:translateX(100%);transition:transform .2s ease;z-index:5;display:flex;flex-direction:column;border-left:1px solid rgba(210,205,228,.2);border-radius:0 16px 16px 0}
 .groc-staples-drawer.open{transform:translateX(0)}
-body.dark .groc-staples-drawer{background:rgba(28,16,10,.97);box-shadow:4px 0 20px rgba(0,0,0,.3)}
+body.dark .groc-staples-drawer{background:rgba(28,16,10,.98);box-shadow:-4px 0 16px rgba(0,0,0,.2)}
 .groc-staples-hdr{display:flex;align-items:center;justify-content:space-between;padding:16px;border-bottom:1px solid rgba(210,205,228,.2);font-size:13px;font-weight:700;color:var(--text)}
 .groc-staples-hdr button{background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px}
 .groc-staples-hdr button:hover{color:var(--text)}

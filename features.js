@@ -2340,7 +2340,7 @@ function renderGroceryModal(){
 
   // ── TOP: Horizontal weekly menu ──
   html+=`<div class="groc-menu-strip">`;
-  html+=`<div class="groc-menu-label">Menu This Week</div>`;
+  html+=`<div class="groc-menu-label">This Week</div>`;
   html+=`<div class="groc-menu-cols">`;
   menuDates.forEach((ds,i)=>{
     const meals=(st.mealPlan||[]).filter(m=>m.meal_date===ds);
@@ -2524,17 +2524,19 @@ function openMealPickerFromGrocery(){
 
 // ── Grocery staples management ────────────────────────────────────────────────
 function openGroceryStaplesEditor(){
-  let panel=document.getElementById('grocStaplesPanel');
+  const modal=document.getElementById('groceryModal');if(!modal)return;
+  let panel=modal.querySelector('.groc-staples-drawer');
   if(!panel){
-    panel=document.createElement('div');panel.id='grocStaplesPanel';panel.className='groc-staples-drawer';
-    document.body.appendChild(panel);
+    panel=document.createElement('div');panel.className='groc-staples-drawer';
+    modal.appendChild(panel);
   }
   panel.classList.toggle('open');
   if(panel.classList.contains('open'))renderGroceryStaples();
 }
 
 function renderGroceryStaples(){
-  const panel=document.getElementById('grocStaplesPanel');if(!panel)return;
+  const modal=document.getElementById('groceryModal');if(!modal)return;
+  const panel=modal.querySelector('.groc-staples-drawer');if(!panel)return;
   const planMon=_grocWeekMonday(_grocWkOff+1);
   const skipped=(st._grocStapleSkips||{})[planMon]||[];
   const staples=(st.groceryStaples||[]).filter(s=>s.active!==false);
