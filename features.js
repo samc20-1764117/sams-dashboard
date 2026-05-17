@@ -2256,9 +2256,7 @@ function renderGroceryModal(){
   const modal=document.getElementById('groceryModal');if(!modal)return;
   const dayNames=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 
-  // Both panels use the same offset — arrows shift everything together
-  // Menu week = what you're eating (offset)
-  // Plan week = what you're planning for NEXT (offset+1)
+  // Menu week = what you're eating (offset), Plan week = next (offset+1)
   const menuMon=_grocWeekMonday(_grocWkOff);
   const menuDates=_grocWeekDatesFor(menuMon);
 
@@ -2282,42 +2280,39 @@ function renderGroceryModal(){
       <button class="groc-del" onclick="delGroceryItem('${g.id}')">✕</button>
     </div>`;}
 
-  // ── HEADER with unified week nav ──
+  // ── HEADER ──
   let html=`<div class="groc-header">
-    <div style="display:flex;align-items:center;gap:10px">
+    <div style="display:flex;align-items:center;gap:8px">
       <button class="groc-nav-btn" onclick="_grocWkOff--;renderGroceryModal()">←</button>
       <span style="font-size:12px;color:var(--muted)">${_grocWeekLabel(menuMon)}</span>
       <button class="groc-nav-btn" onclick="_grocWkOff++;renderGroceryModal()">→</button>
-      ${_grocWkOff!==0?`<button class="groc-nav-btn" onclick="_grocWkOff=0;renderGroceryModal()" style="font-size:10px">This Week</button>`:''}
     </div>
+    <button class="groc-nav-btn" onclick="_grocWkOff=0;renderGroceryModal()"${_grocWkOff===0?' disabled style="opacity:.4;pointer-events:none"':''}>This Week</button>
     <button class="groc-close" onclick="document.getElementById('groceryModal').close()">✕</button>
   </div>`;
 
-  html+=`<div class="groc-split">`;
-
-  // ── PANEL 1: This Week's Menu (what I'm eating based on previous plan) ──
-  html+=`<div class="groc-panel">`;
-  html+=`<div class="groc-panel-title">Menu This Week</div>`;
-  html+=`<div class="groc-meal-grid">`;
+  // ── TOP: Horizontal weekly menu (like overview weekly view) ──
+  html+=`<div class="groc-menu-strip">`;
+  html+=`<div class="groc-menu-label">Menu This Week</div>`;
+  html+=`<div class="groc-menu-cols">`;
   menuDates.forEach((ds,i)=>{
     const meals=(st.mealPlan||[]).filter(m=>m.meal_date===ds);
-    html+=`<div class="groc-day-row" data-ds="${ds}" ondragover="event.preventDefault();this.classList.add('groc-day-drop')" ondragleave="this.classList.remove('groc-day-drop')" ondrop="dropMeal(event,'${ds}');this.classList.remove('groc-day-drop');renderGroceryModal();">`;
-    html+=`<span class="groc-day-label">${dayNames[i]}</span>`;
-    html+=`<div class="groc-day-meals">`;
+    const today=new Date().toISOString().split('T')[0];
+    html+=`<div class="groc-menu-col${ds===today?' groc-col-today':''}" data-ds="${ds}" ondragover="event.preventDefault();this.classList.add('groc-day-drop')" ondragleave="this.classList.remove('groc-day-drop')" ondrop="dropMeal(event,'${ds}');this.classList.remove('groc-day-drop');renderGroceryModal();">`;
+    html+=`<div class="groc-col-hdr">${dayNames[i]}</div>`;
     meals.forEach(m=>{
       html+=`<span class="groc-meal-tag" draggable="true" ondragstart="event.dataTransfer.setData('text/plain','meal::${m.id}')">${escHtml(m.recipe_name)}<button onclick="event.stopPropagation();removeMealFromWeek('${m.id}','${menuMon}')">✕</button></span>`;
     });
-    if(!meals.length)html+=`<span style="color:var(--muted);font-size:10px;opacity:.5">—</span>`;
-    html+=`</div>`;
     html+=`</div>`;
   });
-  html+=`</div>`;
-  html+=`</div>`;
+  html+=`</div></div>`;
 
-  // ── PANEL 2: Select Meals for Next Week ──
+  // ── BOTTOM: Two-column — Plan left, Shopping List right ──
+  html+=`<div class="groc-bottom">`;
+
+  // Left: Plan for Next Week
   html+=`<div class="groc-panel">`;
-  html+=`<div class="groc-panel-title">Plan for Next Week</div>`;
-  // Show selected meals as tags
+  html+=`<div class="groc-panel-title">Plan for Next Week <span style="font-weight:400;color:var(--muted);font-size:10px">${_grocWeekLabel(planMon)}</span></div>`;
   if(planMeals.length){
     html+=`<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px;flex-shrink:0">`;
     planMeals.forEach(m=>{
@@ -2325,7 +2320,6 @@ function renderGroceryModal(){
     });
     html+=`</div>`;
   }
-  // Search + checkboxes
   html+=`<div style="margin-bottom:6px;flex-shrink:0"><input type="text" id="grocRecipeSearch" placeholder="Search recipes…" oninput="_grocRecSearch=this.value;renderGroceryModal()" value="${escHtml(_grocRecSearch||'')}" style="width:100%;padding:6px 10px;border-radius:var(--rs);border:1px solid var(--gb);font-size:12px;font-family:inherit;color:var(--text);background:var(--glass);outline:none;box-sizing:border-box"></div>`;
   html+=`<div class="groc-recipe-list">`;
   let filteredRecipes=(st.recipes||[]);
@@ -2341,7 +2335,7 @@ function renderGroceryModal(){
   html+=`</div>`;
   html+=`</div>`;
 
-  // ── PANEL 3: Grocery List (for the planning week — what to buy Sunday) ──
+  // Right: Shopping List
   html+=`<div class="groc-panel">`;
   html+=`<div class="groc-panel-title">Shopping List <span style="font-weight:400;color:var(--muted);font-size:10px">(${unchecked.length})</span></div>`;
   html+=`<div class="groc-add"><input type="text" id="grocAddName" placeholder="Add item…"><input type="text" id="grocAddAmt" placeholder="Qty" style="width:50px"><button onclick="addGroceryManualForWeek('${planMon}')">+</button></div>`;
@@ -2351,11 +2345,10 @@ function renderGroceryModal(){
   if(!unchecked.length&&!checked.length){html+=`<div style="color:var(--muted);font-size:12px;padding:16px 0;text-align:center">Select meals to generate list</div>`;}
   html+=`</div>`;
 
-  html+=`</div>`; // end groc-split
+  html+=`</div>`; // end groc-bottom
   modal.innerHTML=html;
   const inp=document.getElementById('grocAddName');
   if(inp)inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();addGroceryManualForWeek(planMon);}});
-  // Keep search focused
   const sInp=document.getElementById('grocRecipeSearch');
   if(sInp&&_grocRecSearch)setTimeout(()=>{sInp.focus();sInp.setSelectionRange(sInp.value.length,sInp.value.length);},10);
 }
