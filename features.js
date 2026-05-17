@@ -2099,7 +2099,6 @@ function renderRecipeTable(){
     <th data-reccol="meal_type" onclick="recHdrClick('meal_type')" ondblclick="recHdrDbl(event,'meal_type')" style="${ths};width:80px">Meal${arr('meal_type')}${fdot('meal_type')}</th>
     <th data-reccol="time" onclick="recHdrClick('time')" ondblclick="recHdrDbl(event,'time')" style="${ths};width:70px">Time${arr('time')}${fdot('time')}</th>
     <th data-reccol="servings" onclick="recHdrClick('servings')" ondblclick="recHdrDbl(event,'servings')" style="${ths};width:60px">Serves${arr('servings')}${fdot('servings')}</th>
-    <th data-reccol="notes" onclick="recHdrClick('notes')" ondblclick="recHdrDbl(event,'notes')" style="${ths}">Notes${arr('notes')}${fdot('notes')}</th>
     <th style="width:28px"></th>
   </tr>`;
   const rowsHtml=rows.map(r=>{
@@ -2112,11 +2111,10 @@ function renderRecipeTable(){
       <td style="padding:5px 8px">${r.meal_type?`<span class="rec-meal-pill">${esc(r.meal_type)}</span>`:''}</td>
       <td class="rec-time-lbl" style="padding:5px 8px">${fmtMin(r.time)}</td>
       <td style="padding:5px 8px;color:var(--muted);font-size:11px">${r.servings||''}</td>
-      <td style="padding:5px 8px;font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px">${esc(r.notes||'')}</td>
       <td style="width:28px;padding:2px 4px;text-align:right"><button class="rec-del-btn" onclick="event.stopPropagation();_recCtxId='${sid}';_selRecIds.clear();_selRecIds.add('${sid}');recCtxDelete()" title="Delete">✕</button></td>
     </tr>`;
   });
-  tbody.innerHTML=rowsHtml.join('')||`<tr><td colspan="7" style="padding:28px;text-align:center;color:var(--subtle);font-size:12px">No recipes yet — double click or press + to add</td></tr>`;
+  tbody.innerHTML=rowsHtml.join('')||`<tr><td colspan="6" style="padding:28px;text-align:center;color:var(--subtle);font-size:12px">No recipes yet — double click or press + to add</td></tr>`;
   applyRecSelHighlight();
 }
 
