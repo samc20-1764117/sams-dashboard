@@ -1822,23 +1822,11 @@ let _recClickTimer=null;
 function selRecRow(e,sid){
   if(e.target.closest('button,input'))return;
   e.stopPropagation();
-  if(e.detail===2){clearTimeout(_recClickTimer);return;}// double click — let ondblclick handle it
+  if(e.detail===2){clearTimeout(_recClickTimer);return;}
   clearTimeout(_recClickTimer);
   _recClickTimer=setTimeout(()=>{
-    if(e.metaKey||e.ctrlKey){
-      if(_selRecIds.has(sid))_selRecIds.delete(sid);else _selRecIds.add(sid);
-      _lastSelRecId=sid;
-    } else if(e.shiftKey&&_lastSelRecId){
-      const rows=[...document.querySelectorAll('#recTblBody tr[data-rid]')].map(r=>r.dataset.rid);
-      const a=rows.indexOf(_lastSelRecId),b=rows.indexOf(sid);
-      if(a>-1&&b>-1){const lo=Math.min(a,b),hi=Math.max(a,b);rows.slice(lo,hi+1).forEach(id=>_selRecIds.add(id));}
-      else _selRecIds.add(sid);
-      _lastSelRecId=sid;
-    } else {
-      if(_selRecIds.size===1&&_selRecIds.has(sid)){_selRecIds.clear();_lastSelRecId=null;closeRecSidePanel();}
-      else{_selRecIds.clear();_selRecIds.add(sid);_lastSelRecId=sid;openRecSidePanel(sid);}
-    }
-    applyRecSelHighlight();
+    _recPanelId=sid;
+    renderRecipeDetail(sid);
   },200);
 }
 function applyRecSelHighlight(){
@@ -1991,16 +1979,12 @@ function _applyRecFilterUI(){
 
 function openRecSidePanel(id){
   _recPanelId=String(id);
-  renderRecSidePanel(id);
-  document.getElementById('recSidePanel').classList.add('open');
-  document.getElementById('recTableWrap').style.marginRight='400px';
+  renderRecipeDetail(id);
 }
 function closeRecSidePanel(){
   _recPanelId=null;
-  const panel=document.getElementById('recSidePanel');
-  if(panel)panel.classList.remove('open');
-  const wrap=document.getElementById('recTableWrap');
-  if(wrap)wrap.style.marginRight='0';
+  const panel=document.getElementById('recDetailPanel');
+  if(panel)panel.innerHTML=`<div class="rec-detail-empty">Select a recipe to view</div>`;
 }
 function renderRecSidePanel(id){
   const panel=document.getElementById('recSidePanel');if(!panel)return;
@@ -2067,60 +2051,88 @@ function _recCtxDeletePanel(){
   recCtxDelete();
 }
 
-function renderRecipeTable(){
-  const thead=document.getElementById('recTblHead');
-  const tbody=document.getElementById('recTblBody');if(!thead||!tbody)return;
-  function esc(v){return(v||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function renderRecipeTable(){renderRecipeList();if(_recPanelId)renderRecipeDetail(_recPanelId);}
+
+function _getFilteredRecipes(){
   let rows=[...st.recipes||[]];
-  // Apply search
-  if(_recSearch){const sv=_recSearch.toLowerCase();rows=rows.filter(r=>{const ingText=_parseIngredients(r.ingredients).map(x=>x.name+' '+x.amount).join(' ');return[r.name,r.meal_type,r.cuisine,r.notes,r.instructions,ingText].some(f=>f&&f.toLowerCase().includes(sv));});}
-  // Apply filter chips
+  if(_recSearch){const sv=_recSearch.toLowerCase();rows=rows.filter(r=>{const ingText=_parseIngredients(r.ingredients).map(x=>x.name+' '+x.amount).join(' ');return[r.name,r.meal_type,r.cuisine,r.instructions,ingText].some(f=>f&&f.toLowerCase().includes(sv));});}
   if(_recMealFilter)rows=rows.filter(r=>r.meal_type===_recMealFilter);
   if(_recCuisineFilter)rows=rows.filter(r=>(r.cuisine||'').toLowerCase().includes(_recCuisineFilter.toLowerCase()));
   if(_recFavFilter)rows=rows.filter(r=>r.favorite);
   if(_recTimeFilter){const max=parseInt(_recTimeFilter);rows=rows.filter(r=>r.time&&r.time<=max);}
-  // Apply column filter
-  if(_recFilter){
-    if(_recFilter.type==='text'){const fv=_recFilter.text.toLowerCase();rows=rows.filter(r=>String(r[_recFilter.col]||'').toLowerCase().includes(fv));}
-    else if(_recFilter.type==='set'){rows=rows.filter(r=>_recFilter.vals.has(String(r[_recFilter.col]||'—')));}
-  }
-  // Sort
   if(_recSortCol){
     rows.sort((a,b)=>{
-      if(_recSortCol==='time'||_recSortCol==='servings'){return _recSortDir*((a[_recSortCol]||9999)-(b[_recSortCol]||9999));}
+      if(_recSortCol==='time'||_recSortCol==='servings')return _recSortDir*((a[_recSortCol]||9999)-(b[_recSortCol]||9999));
       if(_recSortCol==='favorite')return _recSortDir*((b.favorite?1:0)-(a.favorite?1:0));
       return _recSortDir*String(a[_recSortCol]||'').toLowerCase().localeCompare(String(b[_recSortCol]||'').toLowerCase());
     });
   } else {
     rows.sort((a,b)=>{if(a.favorite&&!b.favorite)return -1;if(!a.favorite&&b.favorite)return 1;return String(a.name||'').toLowerCase().localeCompare(String(b.name||'').toLowerCase());});
   }
+  return rows;
+}
+
+function renderRecipeList(){
+  const container=document.getElementById('recListScroll');if(!container)return;
+  const filterBar=document.getElementById('recFilterBar');
+  if(filterBar)filterBar.innerHTML=_buildRecFilterBar();
+  const rows=_getFilteredRecipes();
   function fmtMin(m){if(!m)return'';return m>=60?`${Math.floor(m/60)}h${m%60?' '+m%60+'m':''}`:m+'m';}
-  const arr=c=>_recSortCol===c?(_recSortDir>0?' ↑':' ↓'):'';
-  const fdot=c=>(_recFilter&&_recFilter.col===c)?'<span style="color:#f97316;font-size:9px;margin-left:2px">▼</span>':'';
-  const ths='cursor:pointer;user-select:none;white-space:nowrap;padding:6px 8px';
-  thead.innerHTML=`<tr>
-    <th style="width:28px;padding:6px 6px;text-align:center" title="Favorite">♥</th>
-    <th data-reccol="name" onclick="recHdrClick('name')" ondblclick="recHdrDbl(event,'name')" style="${ths}">Name${arr('name')}${fdot('name')}</th>
-    <th data-reccol="meal_type" onclick="recHdrClick('meal_type')" ondblclick="recHdrDbl(event,'meal_type')" style="${ths};width:80px">Meal${arr('meal_type')}${fdot('meal_type')}</th>
-    <th data-reccol="time" onclick="recHdrClick('time')" ondblclick="recHdrDbl(event,'time')" style="${ths};width:70px">Time${arr('time')}${fdot('time')}</th>
-    <th data-reccol="servings" onclick="recHdrClick('servings')" ondblclick="recHdrDbl(event,'servings')" style="${ths};width:60px">Serves${arr('servings')}${fdot('servings')}</th>
-    <th style="width:28px"></th>
-  </tr>`;
-  const rowsHtml=rows.map(r=>{
+  function esc(v){return(v||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;');}
+  container.innerHTML=rows.map(r=>{
     const sid=String(r.id);
-    const isSel=_selRecIds.has(sid);
-    const favStyle=r.favorite?'color:#ef4444;opacity:1':'';
-    return`<tr data-rid="${sid}" class="${isSel?'rec-sel':''}" onclick="selRecRow(event,'${sid}')" ondblclick="openRecipeEditModal('${sid}')" oncontextmenu="showRecCtx(event,'${sid}')">
-      <td style="text-align:center;width:28px;padding:4px 4px"><button class="rec-fav${r.favorite?' active':''}" style="${favStyle}" onclick="toggleRecFavorite('${sid}',event)" title="${r.favorite?'Remove from favorites':'Add to favorites'}">♥</button></td>
-      <td style="padding:5px 8px;font-weight:600;font-size:12px">${esc(r.name)}</td>
-      <td style="padding:5px 8px">${r.meal_type?`<span class="rec-meal-pill">${esc(r.meal_type)}</span>`:''}</td>
-      <td class="rec-time-lbl" style="padding:5px 8px">${fmtMin(r.time)}</td>
-      <td style="padding:5px 8px;color:var(--muted);font-size:11px">${r.servings||''}</td>
-      <td style="width:28px;padding:2px 4px;text-align:right"><button class="rec-del-btn" onclick="event.stopPropagation();_recCtxId='${sid}';_selRecIds.clear();_selRecIds.add('${sid}');recCtxDelete()" title="Delete">✕</button></td>
-    </tr>`;
-  });
-  tbody.innerHTML=rowsHtml.join('')||`<tr><td colspan="6" style="padding:28px;text-align:center;color:var(--subtle);font-size:12px">No recipes yet — double click or press + to add</td></tr>`;
-  applyRecSelHighlight();
+    const isSel=_recPanelId===sid;
+    return`<div class="rec-list-item${isSel?' active':''}" data-rid="${sid}" onclick="selRecRow(event,'${sid}')" ondblclick="openRecipeEditModal('${sid}')">
+      <div class="rec-list-main">
+        <span class="rec-list-fav${r.favorite?' on':''}" onclick="event.stopPropagation();toggleRecFavorite('${sid}',event)">♥</span>
+        <span class="rec-list-name">${esc(r.name)}</span>
+        <button class="rec-list-del" onclick="event.stopPropagation();_recCtxId='${sid}';_selRecIds.clear();_selRecIds.add('${sid}');recCtxDelete()">✕</button>
+      </div>
+      <div class="rec-list-meta">
+        ${r.meal_type?`<span class="rec-meal-pill">${esc(r.meal_type)}</span>`:''}
+        ${r.cuisine?`<span class="rec-list-cuisine">${esc(r.cuisine)}</span>`:''}
+        ${r.time?`<span class="rec-list-time">${fmtMin(r.time)}</span>`:''}
+      </div>
+    </div>`;
+  }).join('')||`<div style="padding:28px;text-align:center;color:var(--muted);font-size:12px">No recipes yet</div>`;
+  const cnt=document.getElementById('recCount');if(cnt)cnt.textContent=`${rows.length}`;
+}
+
+function renderRecipeDetail(id){
+  const panel=document.getElementById('recDetailPanel');if(!panel)return;
+  if(!id){panel.innerHTML=`<div class="rec-detail-empty">Select a recipe to view</div>`;return;}
+  const r=st.recipes.find(x=>String(x.id)===String(id));
+  if(!r){panel.innerHTML=`<div class="rec-detail-empty">Recipe not found</div>`;return;}
+  _recPanelId=String(r.id);
+  const esc=v=>(v||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const ings=_parseIngredients(r.ingredients);
+  function fmtMin(m){if(!m)return'';return m>=60?`${Math.floor(m/60)}h${m%60?' '+m%60+'m':''}`:m+'m';}
+  let html=`<div class="rec-detail-header">
+    <h2 class="rec-detail-title">${esc(r.name)}</h2>
+    <div class="rec-detail-meta">
+      ${r.meal_type?`<span class="rec-meal-pill">${esc(r.meal_type)}</span>`:''}
+      ${r.cuisine?`<span class="rec-detail-tag">${esc(r.cuisine)}</span>`:''}
+      ${r.time?`<span class="rec-detail-tag">${fmtMin(r.time)}</span>`:''}
+      ${r.servings?`<span class="rec-detail-tag">${r.servings} servings</span>`:''}
+      <span class="rec-detail-fav${r.favorite?' on':''}" onclick="toggleRecFavorite('${r.id}');renderRecipeDetail('${r.id}');renderRecipeList()">♥</span>
+    </div>
+  </div>`;
+  html+=`<div class="rec-detail-body">`;
+  html+=`<div class="rec-detail-ings">`;
+  html+=`<div class="rec-detail-section-title">Ingredients</div>`;
+  if(ings.length){
+    html+=ings.map(ing=>`<div class="rec-detail-ing">${ing.amount?`<span class="rec-detail-ing-amt">${esc(ing.amount)}</span>`:''}<span>${esc(ing.name)}</span>${ing.is_pantry?'<span class="rec-detail-pantry">pantry</span>':''}</div>`).join('');
+  } else {
+    html+=`<div style="color:var(--muted);font-size:11px">No ingredients added</div>`;
+  }
+  html+=`</div>`;
+  html+=`<div class="rec-detail-inst">`;
+  html+=`<div class="rec-detail-section-title">Instructions</div>`;
+  html+=`<div class="rec-detail-inst-text">${r.instructions?esc(r.instructions).replace(/\n/g,'<br>'):'<span style="color:var(--muted)">No instructions added</span>'}</div>`;
+  html+=`</div>`;
+  html+=`</div>`;
+  html+=`<div class="rec-detail-actions"><button class="btn btn-ghost" onclick="openRecipeEditModal('${r.id}')">Edit</button><button class="btn btn-ghost" style="color:var(--accent)" onclick="addRecipeToGrocery('${r.id}');showToast('Added to grocery list')">🛒 Add to List</button></div>`;
+  panel.innerHTML=html;
 }
 
 function _buildRecFilterBar(){
@@ -2141,38 +2153,23 @@ function renderRecipesPage(){
   const page=document.getElementById('page-recipes');if(!page)return;
   if(!page._recInit){
     page._recInit=true;
-    const mealChips=['Breakfast','Lunch','Dinner','Snack','Dessert','Drink','Side'].map(m=>`<button class="rec-filter-chip" data-recmeal="${m}" onclick="recToggleMealFilter('${m}')">${m}</button>`).join('');
     page.innerHTML=`<div class="ov-topbar"><div class="ov-topbar-left"><span class="ov-topbar-label">🍳 Recipes</span><span class="ov-topbar-dot"></span></div><span class="ov-topbar-date topbar-date"></span><div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div></div>
-    <div style="padding-top:26px;position:relative;z-index:10"><div class="rec-filter-bar"><input class="rec-search" id="recSearchInp" placeholder="🔍 Search recipes…" oninput="recSearchChange(this.value)">${mealChips}<button class="rec-filter-chip" data-recfav="1" onclick="recToggleFavFilter()">♥ Favs</button><button class="rec-filter-chip" data-rectime="30" onclick="recToggleTimeFilter('30')">≤30m</button><button class="rec-filter-chip" data-rectime="60" onclick="recToggleTimeFilter('60')">≤1h</button></div></div>
-    <div id="recTableWrap" style="transition:margin-right .22s cubic-bezier(.4,0,.2,1)">
-      <div class="card" style="overflow:hidden">
-        <div class="ch" style="gap:8px">
-          <span style="font-weight:700;font-size:13px;color:var(--text)">Recipes</span>
-          <span id="recCount" style="font-size:10px;color:var(--muted)"></span>
-          <button class="btn-plus" onclick="openRecipeAddModal()" style="margin-left:auto;padding:2px 8px;font-size:13px;border-radius:8px;border:1px solid var(--border);background:transparent;cursor:pointer;color:var(--text)">+</button>
-        </div>
-        <div style="overflow-y:auto;flex:1;min-height:0;max-height:calc(100vh - 180px)">
-          <table class="rec-tbl"><thead id="recTblHead"></thead><tbody id="recTblBody"></tbody></table>
-        </div>
+    <div class="rec-book">
+      <div class="rec-book-left">
+        <div class="rec-filter-bar" id="recFilterBar"></div>
+        <div class="rec-list-scroll" id="recListScroll"></div>
+        <button class="rec-add-btn" onclick="openRecipeAddModal()">+ Add Recipe</button>
       </div>
-    </div>
-    <div id="recSidePanel" class="rec-side-panel"></div>`;
-    // Attach search listener once
-    document.getElementById('recSearchInp').addEventListener('input',e=>{_recSearch=e.target.value;renderRecipeTable();_applyRecFilterUI();});
-    // double-click empty area to add
+      <div class="rec-book-right" id="recDetailPanel">
+        <div class="rec-detail-empty">Select a recipe to view</div>
+      </div>
+    </div>`;
     page.addEventListener('dblclick',e=>{
-      if(!e.target.closest('#recTblBody tr,button,input,textarea,select,.rec-side-panel'))openRecipeAddModal();
+      if(!e.target.closest('.rec-list-item,button,input,textarea,select,.rec-book-right'))openRecipeAddModal();
     });
-    // outside click clears selection
-    if(window._recOutsideClick)document.removeEventListener('click',window._recOutsideClick);
-    window._recOutsideClick=e=>{
-      if(!document.getElementById('page-recipes')?.classList.contains('active'))return;
-      if(!e.target.closest('#recTblBody,#recSidePanel,[data-recmeal],[data-recfav],[data-rectime],#recSearchInp,.rec-filter-bar')){_selRecIds.clear();_lastSelRecId=null;closeRecSidePanel();applyRecSelHighlight();}
-    };
-    document.addEventListener('click',window._recOutsideClick);
   }
   _applyRecFilterUI();
-  renderRecipeTable();
+  renderRecipeList();
   const cnt=document.getElementById('recCount');if(cnt)cnt.textContent=`${st.recipes.length} recipe${st.recipes.length!==1?'s':''}`;
   const now=new Date();
   document.querySelectorAll('#page-recipes .topbar-date').forEach(e=>e.textContent=now.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}));
