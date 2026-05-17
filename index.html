@@ -703,7 +703,7 @@
 </div>
 
 <!-- Recipe Edit Modal -->
-<div class="overlay" id="recipeModal" onclick="closeMod('recipeModal',event)" onkeydown="if(event.key==='Escape'){event.stopPropagation();closeMod('recipeModal');return;}if(event.key==='Enter'&&event.target.tagName!=='TEXTAREA'&&!event.target.closest('.rm-ing-row')){event.preventDefault();const n=document.getElementById('rmName').value.trim();if(n)saveRecipeModal();else closeMod('recipeModal');}">
+<div class="overlay" id="recipeModal" onclick="closeMod('recipeModal',event)" onkeydown="if(event.key==='Escape'){event.stopPropagation();closeMod('recipeModal');return;}">
   <div class="modal" style="width:min(96vw,780px);padding:18px;max-height:90vh;min-height:520px;overflow-y:auto;display:flex;flex-direction:column">
     <div class="mt" id="recipeMTitle">Add Recipe</div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px">

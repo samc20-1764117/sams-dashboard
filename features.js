@@ -1743,7 +1743,7 @@ function _recModalKeyBind(){
   _recModalKeyFn=e=>{
     const modal=document.getElementById('recipeModal');
     if(!modal||!modal.classList.contains('open'))return;
-    if(e.key==='Enter'&&e.target.tagName!=='TEXTAREA'&&!e.target.closest('.rm-ing-row')){
+    if(e.key==='Enter'&&e.target.tagName!=='TEXTAREA'&&e.target.tagName!=='BUTTON'&&!e.target.closest('.rm-ing-row,.rm-ing-add-btn')){
       e.preventDefault();const n=document.getElementById('rmName').value.trim();
       if(n)saveRecipeModal();else closeMod('recipeModal');
     }
@@ -1773,7 +1773,7 @@ async function saveRecipeModal(){
   const data={
     name,
     meal_type:document.getElementById('rmMealType').value||null,
-    cuisine:document.getElementById('rmCuisine').value.trim()||null,
+    cuisine:document.getElementById('rmCuisine').value||null,
     time:parseInt(document.getElementById('rmTime').value)||null,
     servings:parseInt(document.getElementById('rmServings').value)||null,
     notes:null,
@@ -1869,7 +1869,10 @@ async function recCtxDelete(){
   const ids=_selRecIds.size?[..._selRecIds]:[_recCtxId].filter(Boolean);
   st.recipes=st.recipes.filter(x=>!ids.includes(String(x.id)));
   _selRecIds.clear();_recCtxId=null;
-  if(ids.includes(_recPanelId))closeRecSidePanel();
+  if(ids.includes(_recPanelId)){
+    _recPanelId=st.recipes.length?String(st.recipes[0].id):null;
+    if(_recPanelId)renderRecipeDetail(_recPanelId);else closeRecSidePanel();
+  }
   save();renderRecipeTable();
   for(const id of ids)if(!id.startsWith('l-'))sbReqSilent('DELETE','recipes',null,`?id=eq.${id}`);
 }
@@ -2170,6 +2173,11 @@ function renderRecipesPage(){
   }
   _applyRecFilterUI();
   renderRecipeList();
+  // Auto-select first recipe if none selected
+  if(!_recPanelId&&st.recipes&&st.recipes.length){
+    _recPanelId=String(st.recipes[0].id);
+    renderRecipeDetail(_recPanelId);
+  }
   const cnt=document.getElementById('recCount');if(cnt)cnt.textContent=`${st.recipes.length} recipe${st.recipes.length!==1?'s':''}`;
   const now=new Date();
   document.querySelectorAll('#page-recipes .topbar-date').forEach(e=>e.textContent=now.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}));
@@ -3806,6 +3814,46 @@ function renderQN(){
     </div>`).join('');
 }
 function escHtml(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+
+// Auto-capitalize first letter + bullet formatting
+document.addEventListener('input',e=>{
+  const el=e.target;
+  if(!el.matches('input[type="text"],input:not([type]),textarea'))return;
+  // Skip search/filter inputs
+  if(el.classList.contains('rec-search')||el.id==='grocRecipeSearch')return;
+  const val=el.value;
+  // Auto-capitalize: first char, after ". ", after newline
+  if(val.length===1&&/[a-z]/.test(val)){el.value=val.toUpperCase();return;}
+  if(el.tagName==='TEXTAREA'){
+    const pos=el.selectionStart;
+    // After newline — capitalize
+    if(pos>=2&&val[pos-2]==='\n'&&/[a-z]/.test(val[pos-1])){
+      el.value=val.slice(0,pos-1)+val[pos-1].toUpperCase()+val.slice(pos);
+      el.setSelectionRange(pos,pos);
+    }
+    // After ". " — capitalize
+    if(pos>=3&&val[pos-3]==='.'&&val[pos-2]===' '&&/[a-z]/.test(val[pos-1])){
+      el.value=val.slice(0,pos-1)+val[pos-1].toUpperCase()+val.slice(pos);
+      el.setSelectionRange(pos,pos);
+    }
+  }
+},{capture:true});
+
+// Bullet: "- " at start of line → "• "
+document.addEventListener('input',e=>{
+  const el=e.target;
+  if(el.tagName!=='TEXTAREA')return;
+  const pos=el.selectionStart;
+  const val=el.value;
+  // Check if "- " was just typed at start of line
+  if(pos>=2&&val[pos-2]==='-'&&val[pos-1]===' '){
+    const lineStart=val.lastIndexOf('\n',pos-3)+1;
+    if(pos-2===lineStart){
+      el.value=val.slice(0,pos-2)+'• '+val.slice(pos);
+      el.setSelectionRange(pos,pos);
+    }
+  }
+},{capture:true});
 async function addQN(){
   const inp=document.getElementById('qnInput');
   const txt=(inp?.value||'').trim();
