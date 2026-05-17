@@ -70,6 +70,15 @@ Supabase Auth (email+password), RLS on all tables. `init()`→`checkAuth()`→`d
 - `v`: `showPage('videos')`.
 - `s`: toggle HEB grocery modal (open/close). Also closes via `Enter` when not in input.
 - `g`: debug grid overlay (toggle). Shows: green edge margins (CSS padding), purple card overlays with dimensions (blur content), blue vertical gaps, red horizontal gaps. Works on all pages. Auto-dismisses on page switch. Script in `index.html` before `</body>`.
+- **Adding new shortcuts**: see full pattern in `rules/tasks-ui.md` → "Keyboard shortcut pattern". MUST follow all 5 steps (toggle, Enter close, stopPropagation, outline:none, dual handler).
+
+## Render After Mutation
+- After creating/modifying tasks or blocks, always call the relevant render functions. `renderAll()` does NOT include `renderDayTB()` — call it separately when timeblock grid is visible: `if(document.getElementById('tbGrid'))renderDayTB()`.
+- After async DB save returns (e.g. POST returns real ID), re-render affected views to swap temp→real IDs.
+
+## Selection IDs
+- Items can have different selection IDs depending on where they appear. Weekly calendar chips use `wrrule-virt-{id}`, WR panel uses `wrrule-{id}`. Drag/drop handlers must check BOTH prefixes when testing `selectedTasks.has()`. Use pattern: `selectedTasks.has('wrrule-'+id)||selectedTasks.has('wrrule-virt-'+id)`.
+- Multi-select drag: always filter `selectedTasks` for ALL relevant prefixes, strip prefixes to get real IDs.
 
 ## Undo / Redo
 - `pushUndo(fn,msg)`: snapshots state AFTER action (called post-mutation). `doUndo()`: pops, captures current snap for redo, calls fn. `doRedo()` (async): restores snap, `await _syncRedoDiff(before,after)`, pushes undo entry whose fn calls both `_stateRestore(beforeRedo)` AND `_syncRedoDiff(snap,beforeRedo)` to keep DB in sync on undo-after-redo.

@@ -31,12 +31,17 @@
 - **`#tNotes` textarea**: auto-expands, capped at `max-height:160px`. Reset on add open; pre-expanded on edit open. Newlines rendered via `.replace(/\n/g,'<br>')`.
 - **Cmd+Z in modals**: `_isInput && !_ael.closest('.overlay:not(.open)')` → return early.
 - **Global shortcuts**: `n`=new task, `r`=reload, `s`=toggle HEB grocery modal. Skip if INPUT/TEXTAREA/contentEditable or meta held.
-- **Keyboard shortcut pattern**: when adding a shortcut that opens a modal/popup, always make the same key close it (toggle), and `Enter` should also close it (when not in input/textarea/button). Add handler both globally and inside the modal's keydown listener.
+- **Keyboard shortcut pattern** (MUST follow every time):
+  1. Same key toggles open/close (check if modal is already `.open` before opening).
+  2. `Enter` also closes (when not in input/textarea/button).
+  3. Add `e.stopPropagation()` on ALL modal keydown handlers — prevents global handler from catching the same key and reopening.
+  4. Add `outline:none` to modal CSS to prevent browser focus ring.
+  5. Both global handler AND modal's own `keydown` listener must handle the key.
 - **Text selection**: `user-select:none` on `html,body`. `Ctrl/Cmd+A` blocked globally (allowed in INPUT/TEXTAREA).
 - **Global Cmd+C/V**: copies `selectedTasks`. Paste: `wrrule-{id}`→POST `wr_recurring_rules`; task ID→POST `tasks`.
 
 ## Indicator Placement
-All indicators at far right, swap to X on hover. From right: `tb-arrow` (rightmost) → `cat-dot`. `chip-del` inside relative chip. `wr-cad-badge` hidden on row hover to reveal X. `cpill` pointer-events:none. `heb-cnt` absolute right:22px — shows count of unchecked HEB shopping items on any recurring task matching `/\bheb\b/i`.
+All indicators at far right, swap to X on hover. From right: `tb-arrow` (rightmost) → `cat-dot`. `chip-del` inside relative chip. `wr-cad-badge` hidden on row hover to reveal X. `cpill` pointer-events:none. `heb-cnt` icon only (no count) on today-list HEB tasks — opens grocery modal on click.
 - **Overdue rows**: no `cat-dot`. Show single DOW letter (`S/M/T/W/T/F/S`) in `.dlbl.ov` instead of full date. `.dlbl.ov` has `margin-right:-4px`.
 
 ## Chip & UI Notes
