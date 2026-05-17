@@ -2171,7 +2171,7 @@ function renderRecipesPage(){
   const page=document.getElementById('page-recipes');if(!page)return;
   if(!page._recInit){
     page._recInit=true;
-    page.innerHTML=`<div class="ov-topbar"><div class="ov-topbar-left"><span class="ov-topbar-label">🍳 Recipes</span><span class="ov-topbar-dot"></span></div><span class="ov-topbar-date topbar-date"></span><div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div></div>
+    page.innerHTML=`<div class="ov-topbar"><div class="ov-topbar-left"><span class="ov-topbar-label">Recipes</span><span class="ov-topbar-dot"></span></div><span class="ov-topbar-date topbar-date"></span><div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div></div>
     <div class="rec-book">
       <div class="rec-book-left">
         <div class="rec-filter-bar" id="recFilterBar"></div>
