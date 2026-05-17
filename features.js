@@ -1776,10 +1776,8 @@ async function saveRecipeModal(){
     cuisine:document.getElementById('rmCuisine').value||null,
     time:parseInt(document.getElementById('rmTime').value)||null,
     servings:parseInt(document.getElementById('rmServings').value)||null,
-    notes:null,
     ingredients:_serializeIngredients(_rmIngredients),
     instructions:document.getElementById('rmInstructions').value.trim()||null,
-    source:null,
   };
   recSnapshot();
   closeMod('recipeModal');
