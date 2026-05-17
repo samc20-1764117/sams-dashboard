@@ -1716,6 +1716,8 @@ function rmIngKey(e,i,field){
     e.preventDefault();e.stopPropagation();
     if(field==='amt'){const n=document.querySelector(`#rmIngRow${i} .rm-ing-name`);if(n)n.focus();}
     else{_rmIngredients[i].name=e.target.value;rmIngAdd(false);}
+  } else if(e.key==='Tab'&&!e.shiftKey&&field==='name'&&i===_rmIngredients.length-1){
+    e.preventDefault();_rmIngredients[i].name=e.target.value;rmIngAdd(false);
   } else if(e.key==='Backspace'&&!e.target.value&&_rmIngredients.length>0){
     rmIngDel(i);
   } else if(e.key==='ArrowUp'&&i>0){
@@ -1964,6 +1966,8 @@ function panIngKey(e,i,field){
     e.preventDefault();e.stopPropagation();
     if(field==='amt'){const n=document.querySelector(`#panIngRow${i} .rm-ing-name`);if(n)n.focus();}
     else{_panelIngredients[i].name=e.target.value;panIngAdd();}
+  } else if(e.key==='Tab'&&!e.shiftKey&&field==='name'&&i===_panelIngredients.length-1){
+    e.preventDefault();_panelIngredients[i].name=e.target.value;panIngAdd();
   } else if(e.key==='Backspace'&&!e.target.value&&_panelIngredients.length>0){
     panIngDel(i);
   } else if(e.key==='ArrowUp'&&i>0){
@@ -2016,9 +2020,7 @@ function renderRecSidePanel(id){
       </div>
       <div style="display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap">
         <select class="rec-sp-sel" onchange="_saveSpField('${sid}','meal_type',this.value||null)">${mealOpts}</select>
-        <input class="rec-sp-inp" value="${escV(r.cuisine)}" placeholder="Cuisine"
-          onblur="_saveSpField('${sid}','cuisine',this.value.trim()||null)"
-          onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">
+        <select class="rec-sp-sel" onchange="_saveSpField('${sid}','cuisine',this.value||null)">${['','American','Mexican','Italian','Chinese','Japanese','Korean','Thai','Indian','Mediterranean','French','Vietnamese','Greek','Southern','Tex-Mex','Other'].map(c=>`<option value="${c}"${(r.cuisine||'')===c?' selected':''}>${c||'— Cuisine'}</option>`).join('')}</select>
       </div>
       <div style="display:flex;gap:12px;margin-top:8px">
         <div style="display:flex;align-items:center;gap:5px">
