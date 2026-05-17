@@ -2279,8 +2279,8 @@ function openGroceryModal(){
     modal.addEventListener('close',()=>modal.classList.remove('open'));
     modal.addEventListener('keydown',e=>{
       if(e.key==='Escape'){e.preventDefault();modal.close();}
-      if(e.key==='Enter'&&!e.target.matches('input,textarea,button')){e.preventDefault();modal.close();}
-      if(e.key==='s'&&!e.target.matches('input,textarea')){e.preventDefault();modal.close();}
+      if(e.key==='Enter'&&!e.target.matches('input,textarea,button')){e.preventDefault();e.stopPropagation();modal.close();}
+      if(e.key==='s'&&!e.target.matches('input,textarea')){e.preventDefault();e.stopPropagation();modal.close();}
     });
   }
   modal.classList.add('open');modal.showModal();
