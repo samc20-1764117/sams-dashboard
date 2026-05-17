@@ -284,8 +284,9 @@ body.dark .inline-date-picker input[type="date"]{background:rgba(255,255,255,.08
 .wr-cad-badge.changed{background:rgba(59,130,246,.18);color:#1e40af}
 .wr-dot{position:absolute;right:5px;top:50%;transform:translateY(-50%);width:6px;height:6px;border-radius:50%;background:#93c5fd;pointer-events:none;flex-shrink:0}
 .ti:hover .wr-cad-badge,.ti.sel-row .wr-cad-badge,.ti:hover .wr-dot,.ti.sel-row .wr-dot{display:none}
-.heb-cnt{position:absolute;right:22px;top:50%;transform:translateY(-50%);font-size:10px;font-weight:700;color:rgba(160,150,180,.85);pointer-events:auto;cursor:pointer;z-index:2}
+.heb-cnt{position:absolute;right:22px;top:50%;transform:translateY(-50%);font-size:10px;font-weight:700;color:rgba(160,150,180,.85);pointer-events:auto;cursor:pointer;z-index:2;outline:none;-webkit-tap-highlight-color:transparent}
 .heb-cnt:hover{color:var(--accent)}
+.heb-cnt:focus,.heb-cnt:focus-visible{outline:none;box-shadow:none}
 .arow{padding:4px 8px;border-top:1px solid rgba(210,205,228,.22);display:flex;gap:3px;background:rgba(255,255,255,.18);flex-shrink:0}
 .ov-banner{display:none;align-items:center;gap:8px;padding:6px 16px;background:rgba(254,242,242,.9);border-bottom:1px solid rgba(239,68,68,.15);font-size:11px;font-weight:500;color:#b91c1c;flex-shrink:0}
 body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.2);color:#fca5a5;}
@@ -953,6 +954,9 @@ body.dark .groc-staples-drawer{background:rgba(28,16,10,.98);box-shadow:-4px 0 1
 .groc-staple-actions button:hover{color:var(--accent)}
 .groc-nav-btn{background:none;border:1px solid var(--border);border-radius:5px;cursor:pointer;font-size:12px;color:var(--text);padding:2px 8px;font-weight:600}
 .groc-nav-btn:hover{background:rgba(124,106,247,.08);border-color:var(--accent)}
+.groc-people-toggle{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--muted)}
+.groc-people-toggle button{background:none;border:1px solid var(--border);border-radius:4px;padding:1px 7px;font-size:11px;font-weight:600;cursor:pointer;color:var(--muted);font-family:inherit}
+.groc-people-toggle button.active{background:var(--accent);color:#fff;border-color:var(--accent)}
 .meal-add-inline{background:none;border:1px dashed var(--border);border-radius:var(--rs);padding:5px 10px;font-size:11px;color:var(--muted);cursor:pointer;width:100%;margin-top:4px}
 .meal-add-inline:hover{border-color:var(--accent);color:var(--accent)}
 /* ── Meal Row (below weekly cal) ─────────────────────────────────────────── */

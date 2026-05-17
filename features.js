@@ -2288,6 +2288,8 @@ function openGroceryModal(){
 }
 
 let _grocWkOff=0;
+let _grocPeople=parseInt(localStorage._grocPeople)||2;
+function setGrocPeople(n){_grocPeople=n;localStorage._grocPeople=n;renderGroceryModal();}
 function _grocWeekMonday(off){const d=new Date();const dow=(d.getDay()+6)%7;d.setDate(d.getDate()-dow+(off||0)*7);return d.toISOString().split('T')[0];}
 function _grocWeekDatesFor(mon){const m=new Date(mon+'T12:00:00');return Array.from({length:7},(_,i)=>{const x=new Date(m);x.setDate(m.getDate()+i);return x.toISOString().split('T')[0];});}
 function _grocWeekLabel(mon){const dates=_grocWeekDatesFor(mon);const m1=new Date(dates[0]+'T12:00:00');const m2=new Date(dates[6]+'T12:00:00');return`${m1.toLocaleDateString('en-US',{month:'short',day:'numeric'})} – ${m2.toLocaleDateString('en-US',{month:'short',day:'numeric'})}`;}
@@ -2377,6 +2379,7 @@ function renderGroceryModal(){
       <button class="groc-nav-btn" onclick="_grocWkOff++;renderGroceryModal()">→</button>
     </div>
     <button class="groc-nav-btn" onclick="_grocWkOff=0;renderGroceryModal()"${_grocWkOff===0?' disabled style="opacity:.4;pointer-events:none"':''}>This Week</button>
+    <span class="groc-people-toggle">People: <button onclick="setGrocPeople(1)"${_grocPeople===1?' class="active"':''}>1</button><button onclick="setGrocPeople(2)"${_grocPeople===2?' class="active"':''}>2</button></span>
     <button class="groc-close" onclick="document.getElementById('groceryModal').close()">✕</button>
   </div>`;
 
@@ -2409,10 +2412,13 @@ function renderGroceryModal(){
   if(_grocRecSearch)filteredRecipes=filteredRecipes.filter(r=>r.name.toLowerCase().includes(_grocRecSearch.toLowerCase()));
   filteredRecipes.forEach(r=>{
     const isPlanned=plannedRecipeIds.has(String(r.id));
+    const srv=r.servings||2;
+    const slots=Math.ceil(srv/_grocPeople);
     html+=`<label class="groc-recipe-check${isPlanned?' active':''}">
       <input type="checkbox"${isPlanned?' checked':''} onchange="toggleMealForWeek('${r.id}','${planMon}',this.checked)">
       <span>${escHtml(r.name)}</span>
       ${r.meal_type?`<span class="groc-recipe-type">${escHtml(r.meal_type)}</span>`:''}
+      <span class="groc-recipe-type">${srv}srv→${slots}meal${slots>1?'s':''}</span>
     </label>`;
   });
   html+=`</div>`;
@@ -2455,14 +2461,21 @@ function renderGroceryModal(){
 async function toggleMealForWeek(recipeId,weekMon,checked){
   const r=(st.recipes||[]).find(x=>String(x.id)===String(recipeId));if(!r)return;
   if(checked){
-    // Add meal to first empty day
+    // Calculate how many meal slots: ceil(servings / people)
+    const recipeServings=r.servings||2;
+    const mealSlots=Math.ceil(recipeServings/_grocPeople);
     const dates=_grocWeekDatesFor(weekMon);
-    let ds=dates[0];
-    for(const d of dates){if(!(st.mealPlan||[]).find(m=>m.meal_date===d)){ds=d;break;}}
-    const item={recipe_id:r.id,recipe_name:r.name,meal_date:ds,servings:1,meal_type:r.meal_type||null};
-    const sv=await sbReqSilent('POST','meal_plan',item);
-    if(sv&&sv[0])st.mealPlan.push(sv[0]);
-    else{item.id='l-'+Date.now();st.mealPlan.push(item);}
+    // Find empty days for each slot
+    const usedDays=new Set();
+    for(let s=0;s<mealSlots;s++){
+      let ds=dates[0];
+      for(const d of dates){if(!usedDays.has(d)&&!(st.mealPlan||[]).find(m=>m.meal_date===d)){ds=d;break;}}
+      usedDays.add(ds);
+      const item={recipe_id:r.id,recipe_name:r.name,meal_date:ds,servings:recipeServings,meal_type:r.meal_type||null};
+      const sv=await sbReqSilent('POST','meal_plan',item);
+      if(sv&&sv[0])st.mealPlan.push(sv[0]);
+      else{item.id='l-'+(Date.now()+s);st.mealPlan.push(item);}
+    }
     // Add ingredients to grocery list (exclude pantry + staples)
     const stapleNames=new Set((st.groceryStaples||[]).filter(s=>s.active!==false).map(s=>s.name.toLowerCase()));
     const ings=_parseIngredients(r.ingredients).filter(i=>!i.is_pantry&&!stapleNames.has(i.name.toLowerCase()));
