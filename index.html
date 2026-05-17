@@ -703,8 +703,8 @@
 </div>
 
 <!-- Recipe Edit Modal -->
-<div class="overlay" id="recipeModal" onclick="closeMod('recipeModal',event)" onkeydown="if(event.key==='Escape'){event.stopPropagation();closeMod('recipeModal');return;}if(event.key==='Enter'&&event.target.tagName!=='TEXTAREA'&&!event.target.closest('.rm-ing-row')){event.preventDefault();saveRecipeModal();}">
-  <div class="modal" style="width:min(96vw,600px);padding:18px;max-height:90vh;overflow-y:auto">
+<div class="overlay" id="recipeModal" onclick="closeMod('recipeModal',event)" onkeydown="if(event.key==='Escape'){event.stopPropagation();closeMod('recipeModal');return;}if(event.key==='Enter'&&event.target.tagName!=='TEXTAREA'&&!event.target.closest('.rm-ing-row')){event.preventDefault();const n=document.getElementById('rmName').value.trim();if(n)saveRecipeModal();else closeMod('recipeModal');}">
+  <div class="modal" style="width:min(96vw,780px);padding:18px;max-height:90vh;overflow-y:auto">
     <div class="mt" id="recipeMTitle">Add Recipe</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
       <div class="mfield" style="grid-column:1/-1"><label>Recipe Name *</label><input id="rmName" placeholder="e.g. Chicken Tikka Masala"></div>
@@ -713,12 +713,13 @@
       <div class="mfield"><label>Time (min)</label><input id="rmTime" type="number" min="0" placeholder="45"></div>
       <div class="mfield"><label>Servings</label><input id="rmServings" type="number" min="1" placeholder="4"></div>
     </div>
-    <div class="mfield" style="margin-top:4px">
-      <label>Ingredients</label>
-      <div class="rm-ing-wrap"><div id="rmIngList"></div><button type="button" class="rm-ing-add-btn" onclick="rmIngAdd()">+ Add ingredient</button></div>
+    <div style="display:grid;grid-template-columns:1fr 1.3fr;gap:12px;margin-top:8px">
+      <div class="mfield" style="margin:0">
+        <label>Ingredients</label>
+        <div class="rm-ing-wrap rm-ing-compact"><div id="rmIngList"></div><button type="button" class="rm-ing-add-btn" onclick="rmIngAdd()">+ Add</button></div>
+      </div>
+      <div class="mfield" style="margin:0"><label>Instructions</label><textarea id="rmInstructions" placeholder="Step-by-step instructions…" style="resize:vertical;min-height:140px;width:100%;font-family:inherit;font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,.6);color:var(--text);outline:none"></textarea></div>
     </div>
-    <div class="mfield"><label>Instructions</label><textarea id="rmInstructions" placeholder="Step-by-step instructions…" style="resize:vertical;min-height:88px;width:100%;font-family:inherit;font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,.6);color:var(--text);outline:none"></textarea></div>
-    <div class="mfield" style="margin-top:2px"><label style="color:var(--muted)">Notes</label><textarea id="rmNotes" placeholder="Brief description or tips…" style="resize:vertical;min-height:40px;width:100%;font-family:inherit;font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,.6);color:var(--text);outline:none"></textarea></div>
     <div class="mact"><button class="btn btn-ghost" onclick="closeMod('recipeModal')">Cancel</button><button class="btn btn-dark" onclick="saveRecipeModal()">Save</button></div>
   </div>
 </div>

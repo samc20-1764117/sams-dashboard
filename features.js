@@ -1730,7 +1730,7 @@ function rmIngKey(e,i,field){
 function openRecipeAddModal(){
   _recipeEditId=null;
   document.getElementById('recipeMTitle').textContent='Add Recipe';
-  ['rmName','rmMealType','rmCuisine','rmTime','rmServings','rmNotes','rmInstructions'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['rmName','rmMealType','rmCuisine','rmTime','rmServings','rmInstructions'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   _rmIngredients=[];renderIngList();
   document.getElementById('recipeModal').classList.add('open');
   setTimeout(()=>document.getElementById('rmName').focus(),80);
@@ -1744,7 +1744,6 @@ function openRecipeEditModal(id){
   document.getElementById('rmCuisine').value=r.cuisine||'';
   document.getElementById('rmTime').value=r.time||'';
   document.getElementById('rmServings').value=r.servings||'';
-  document.getElementById('rmNotes').value=r.notes||'';
   document.getElementById('rmInstructions').value=r.instructions||'';
   _rmIngredients=_parseIngredients(r.ingredients);renderIngList();
   document.getElementById('recipeModal').classList.add('open');
@@ -1760,7 +1759,7 @@ async function saveRecipeModal(){
     cuisine:document.getElementById('rmCuisine').value.trim()||null,
     time:parseInt(document.getElementById('rmTime').value)||null,
     servings:parseInt(document.getElementById('rmServings').value)||null,
-    notes:document.getElementById('rmNotes').value.trim()||null,
+    notes:null,
     ingredients:_serializeIngredients(_rmIngredients),
     instructions:document.getElementById('rmInstructions').value.trim()||null,
     source:null,
