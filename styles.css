@@ -674,7 +674,8 @@ body.dark .rec-side-panel{background:rgba(28,16,10,.97);border-color:rgba(255,22
 .rec-sp-body::-webkit-scrollbar{width:3px}
 .rec-sp-cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 .rec-sp-col-left{min-width:0}
-.rec-sp-col-right{min-width:0}
+.rec-sp-col-right{min-width:0;display:flex;flex-direction:column}
+.rec-sp-col-right .rec-sp-ta{flex:1;min-height:120px;resize:vertical}
 .rec-sp-section{margin-bottom:14px}
 .rec-sp-section-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:5px}
 .rm-ing-compact .rm-ing-row{padding:2px 0;gap:4px;flex-wrap:nowrap}

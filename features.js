@@ -1818,23 +1818,28 @@ async function toggleRecFavorite(id,e){
 }
 
 
+let _recClickTimer=null;
 function selRecRow(e,sid){
   if(e.target.closest('button,input'))return;
   e.stopPropagation();
-  if(e.metaKey||e.ctrlKey){
-    if(_selRecIds.has(sid))_selRecIds.delete(sid);else _selRecIds.add(sid);
-    _lastSelRecId=sid;
-  } else if(e.shiftKey&&_lastSelRecId){
-    const rows=[...document.querySelectorAll('#recTblBody tr[data-rid]')].map(r=>r.dataset.rid);
-    const a=rows.indexOf(_lastSelRecId),b=rows.indexOf(sid);
-    if(a>-1&&b>-1){const lo=Math.min(a,b),hi=Math.max(a,b);rows.slice(lo,hi+1).forEach(id=>_selRecIds.add(id));}
-    else _selRecIds.add(sid);
-    _lastSelRecId=sid;
-  } else {
-    if(_selRecIds.size===1&&_selRecIds.has(sid)){_selRecIds.clear();_lastSelRecId=null;closeRecSidePanel();}
-    else{_selRecIds.clear();_selRecIds.add(sid);_lastSelRecId=sid;openRecSidePanel(sid);}
-  }
-  applyRecSelHighlight();
+  if(e.detail===2){clearTimeout(_recClickTimer);return;}// double click — let ondblclick handle it
+  clearTimeout(_recClickTimer);
+  _recClickTimer=setTimeout(()=>{
+    if(e.metaKey||e.ctrlKey){
+      if(_selRecIds.has(sid))_selRecIds.delete(sid);else _selRecIds.add(sid);
+      _lastSelRecId=sid;
+    } else if(e.shiftKey&&_lastSelRecId){
+      const rows=[...document.querySelectorAll('#recTblBody tr[data-rid]')].map(r=>r.dataset.rid);
+      const a=rows.indexOf(_lastSelRecId),b=rows.indexOf(sid);
+      if(a>-1&&b>-1){const lo=Math.min(a,b),hi=Math.max(a,b);rows.slice(lo,hi+1).forEach(id=>_selRecIds.add(id));}
+      else _selRecIds.add(sid);
+      _lastSelRecId=sid;
+    } else {
+      if(_selRecIds.size===1&&_selRecIds.has(sid)){_selRecIds.clear();_lastSelRecId=null;closeRecSidePanel();}
+      else{_selRecIds.clear();_selRecIds.add(sid);_lastSelRecId=sid;openRecSidePanel(sid);}
+    }
+    applyRecSelHighlight();
+  },200);
 }
 function applyRecSelHighlight(){
   document.querySelectorAll('#recTblBody tr[data-rid]').forEach(tr=>{

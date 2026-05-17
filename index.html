@@ -714,11 +714,11 @@
       <div class="mfield"><label>Servings</label><input id="rmServings" type="number" min="1" placeholder="4"></div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px;flex:1">
-      <div class="mfield" style="margin:0">
+      <div class="mfield" style="margin:0;display:flex;flex-direction:column">
         <label>Ingredients</label>
-        <div class="rm-ing-wrap rm-ing-compact"><div id="rmIngList"></div><button type="button" class="rm-ing-add-btn" onclick="rmIngAdd()">+ Add</button></div>
+        <div class="rm-ing-wrap rm-ing-compact" style="flex:1;overflow-y:auto"><div id="rmIngList"></div><button type="button" class="rm-ing-add-btn" onclick="rmIngAdd()">+ Add</button></div>
       </div>
-      <div class="mfield" style="margin:0"><label>Instructions</label><textarea id="rmInstructions" placeholder="Step-by-step instructions…" style="resize:vertical;min-height:140px;width:100%;font-family:inherit;font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,.6);color:var(--text);outline:none"></textarea></div>
+      <div class="mfield" style="margin:0;display:flex;flex-direction:column"><label>Instructions</label><textarea id="rmInstructions" placeholder="Step-by-step instructions…" style="resize:vertical;flex:1;min-height:140px;width:100%;font-family:inherit;font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,.6);color:var(--text);outline:none;box-sizing:border-box"></textarea></div>
     </div>
     <div class="mact"><button class="btn btn-ghost" onclick="closeMod('recipeModal')">Cancel</button><button class="btn btn-dark" onclick="saveRecipeModal()">Save</button></div>
   </div>
