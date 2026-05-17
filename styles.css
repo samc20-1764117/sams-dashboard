@@ -671,8 +671,13 @@ body.dark .rec-side-panel{background:rgba(28,16,10,.97);border-color:rgba(255,22
 .rec-sp-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:8px}
 .rec-sp-body{flex:1;overflow-y:auto;padding:12px 16px 16px}
 .rec-sp-body::-webkit-scrollbar{width:3px}
+.rec-sp-cols{display:grid;grid-template-columns:1fr 1.2fr;gap:12px}
+.rec-sp-col-left{min-width:0}
+.rec-sp-col-right{min-width:0}
 .rec-sp-section{margin-bottom:14px}
 .rec-sp-section-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:5px}
+.rm-ing-compact .rm-ing-row{padding:2px 0;gap:4px}
+.rm-ing-compact .rm-ing-row input{font-size:11px;padding:3px 6px}
 .rec-sp-text{font-size:12px;color:var(--text);line-height:1.6;white-space:pre-wrap;word-break:break-word}
 .rec-sp-detail-row{display:flex;gap:14px;flex-wrap:wrap;padding:8px 0;border-bottom:1px solid rgba(210,205,228,.15);margin-bottom:10px}
 .rec-sp-detail{display:flex;flex-direction:column;gap:2px;flex:1;min-width:60px}

@@ -2021,23 +2021,17 @@ function renderRecSidePanel(id){
         </div>
       </div>
     </div>
-    <div class="rec-sp-body">
-      <div class="rec-sp-section">
+    <div class="rec-sp-body rec-sp-cols">
+      <div class="rec-sp-section rec-sp-col-left">
         <div class="rec-sp-section-title">Ingredients</div>
-        <div class="rm-ing-wrap"><div id="panIngList"></div><button type="button" class="rm-ing-add-btn" onclick="panIngAdd()">+ Add ingredient</button></div>
-        <button type="button" class="rm-ing-add-btn" style="border-top:none;color:var(--accent)" onclick="addRecipeToGrocery('${sid}');showToast('Added to grocery list','var(--accent)')">🛒 Add to Grocery List</button>
+        <div class="rm-ing-wrap rm-ing-compact"><div id="panIngList"></div><button type="button" class="rm-ing-add-btn" onclick="panIngAdd()">+ Add</button></div>
+        <button type="button" class="rm-ing-add-btn" style="border-top:none;color:var(--accent);font-size:10px" onclick="addRecipeToGrocery('${sid}');showToast('Added to grocery list','var(--accent)')">🛒 Add to Grocery List</button>
       </div>
-      <div class="rec-sp-section">
+      <div class="rec-sp-section rec-sp-col-right">
         <div class="rec-sp-section-title">Instructions</div>
-        <textarea class="rec-sp-ta" placeholder="Step-by-step instructions…" rows="3"
+        <textarea class="rec-sp-ta" placeholder="Step-by-step instructions…" rows="6"
           onblur="_saveSpField('${sid}','instructions',this.value.trim()||null)"
           oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'">${esc(r.instructions||'')}</textarea>
-      </div>
-      <div class="rec-sp-section">
-        <div class="rec-sp-section-title" style="color:var(--muted)">Notes</div>
-        <textarea class="rec-sp-ta" placeholder="Notes or tips…" rows="2"
-          onblur="_saveSpField('${sid}','notes',this.value.trim()||null)"
-          oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'">${esc(r.notes||'')}</textarea>
       </div>
     </div>
     <div class="rec-sp-actions">
@@ -2259,7 +2253,7 @@ function _inferAisle(name){
     ['Meat',/chicken|beef|pork|steak|ground|turkey|bacon|sausage|shrimp|salmon|fish|tilapia|lamb|ribs/],
     ['Dairy',/milk|cheese|yogurt|butter|cream|egg|sour cream|cottage|half.*half/],
     ['Bakery',/bread|tortilla|bun|roll|bagel|croissant|pita|naan/],
-    ['Frozen',/frozen|ice cream|pizza.*frozen/],
+    ['Frozen',/frozen|ice cream|popsicle|tater tot|french fries|waffle|dumpling|pizza roll|hot pocket|eggo/],
     ['Beverages',/water|juice|soda|coffee|tea|beer|wine|sparkling|kombucha|creamer/],
     ['Snacks',/chip|cracker|cookie|granola|bar|pretzel|popcorn|nut|trail mix/],
     ['Pantry',/rice|pasta|flour|sugar|oil|vinegar|sauce|broth|stock|can|bean|lentil|spice|seasoning|salt|pepper|soy|sriracha|mayo|mustard|ketchup|honey|syrup|cereal|oat/],
