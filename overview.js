@@ -1,7 +1,7 @@
 // ── Render all ─────────────────────────────────────────────────────────────────
 function renderAll(){renderOv();renderWeeklyPage();renderShopFull();renderTravelPage();renderBdayPage();if(typeof renderPupsPage==='function')renderPupsPage();if(typeof renderRecipesPage==='function')renderRecipesPage();if(typeof renderVideosPageKeepScroll==='function'&&activePg==='videos')renderVideosPageKeepScroll();if(document.getElementById('mModal')?.classList.contains('open'))renderMoCal();if(document.getElementById('recMoModal')?.classList.contains('open'))renderRecMoCal();if(document.getElementById('woModal')?.classList.contains('open'))renderWOModal();save();requestAnimationFrame(applySelHighlight);const m=document.getElementById('main');if(m&&m.style.opacity==='0')m.style.opacity='1';}
 
-function _hebBadge(name){if(!/\bheb\b/i.test(name||''))return'';const c=typeof _groceryCount==='function'?_groceryCount():st.shopping.filter(s=>!s.done&&s.store&&s.store.toLowerCase()==='heb').length;return c?`<span class="heb-cnt" onclick="event.stopPropagation();openGroceryModal();">${c}</span>`:''}
+function _hebBadge(name){if(!/\bheb\b/i.test(name||''))return'';const c=typeof _groceryCount==='function'?_groceryCount():0;return`<span class="heb-cnt" onclick="event.stopPropagation();openGroceryModal();">🛒${c?` ${c}`:''}</span>`}
 
 function renderOv(){
   const n=new Date();
@@ -1268,6 +1268,7 @@ function renderWkCal(){
   });
   cols.appendChild(goalsCol);
   requestAnimationFrame(()=>{document.querySelectorAll('#wkcCols .wkc-col').forEach(c=>_updateOverflowBadge(c));});
+  if(typeof renderMealRow==='function')renderMealRow();
 }
 
 function highlightTvDrag(dates){

@@ -1642,6 +1642,15 @@ function mRenderGroc() {
   if (countEl) countEl.textContent = unchecked.length ? `${unchecked.length} items` : 'All done!';
 
   let html = '';
+  // Planned meals section
+  const plannedMeals = typeof _mealsForWeek === 'function' ? _mealsForWeek() : [];
+  const uniqueMeals = [...new Map(plannedMeals.map(m => [String(m.recipe_id), m])).values()];
+  if (uniqueMeals.length) {
+    html += `<div class="m-groc-section-title">This Week's Meals</div>`;
+    uniqueMeals.forEach(m => {
+      html += `<div class="m-groc-row"><span class="m-groc-name" style="font-weight:600">🍽 ${(m.recipe_name||'').replace(/&/g,'&amp;')}</span>${(m.servings||1)>1?`<span class="m-groc-amt">${m.servings}d</span>`:''}  <button class="m-groc-del" onclick="mRemoveMealAndGroceries('${m.recipe_id}')">✕</button></div>`;
+    });
+  }
   // Group by source
   const staples = unchecked.filter(g => g.source === 'staple');
   const recipeGroups = {};
@@ -1708,6 +1717,13 @@ async function mAddGrocItem() {
   else { item.id = 'l-' + Date.now(); st.groceryList.push(item); }
   save(); mRenderGroc();
   nameEl.value = '';
+}
+
+function mRemoveMealAndGroceries(recipeId) {
+  if (typeof removeMealAndGroceries === 'function') {
+    removeMealAndGroceries(recipeId);
+    mRenderGroc();
+  }
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────

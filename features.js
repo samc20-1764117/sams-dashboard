@@ -2258,14 +2258,24 @@ function renderGroceryModal(){
       <button class="groc-del" onclick="delGroceryItem('${g.id}')">✕</button>
     </div>`;}
 
-  let html=`<div class="groc-header"><h3>HEB Grocery List</h3><button class="groc-close" onclick="document.getElementById('groceryModal').close()">✕</button></div>`;
+  // Planned meals this week
+  const plannedMeals=_mealsForWeek();
+  const uniqueRecipes=[...new Map(plannedMeals.map(m=>[String(m.recipe_id),m])).values()];
+
+  let html=`<div class="groc-header"><h3>HEB Grocery List</h3><div style="display:flex;gap:6px"><button class="groc-close" onclick="openGroceryStaplesEditor()" title="Manage staples" style="font-size:13px">⚙</button><button class="groc-close" onclick="document.getElementById('groceryModal').close()">✕</button></div></div>`;
+  // Meals section
+  if(uniqueRecipes.length||true){
+    html+=`<div class="groc-section"><div class="groc-section-title">This Week's Meals</div>`;
+    uniqueRecipes.forEach(m=>{
+      html+=`<div class="groc-item"><span class="groc-name" style="font-weight:600">🍽 ${escHtml(m.recipe_name)}</span>${(m.servings||1)>1?`<span class="groc-amt">${m.servings} days</span>`:''}<button class="groc-del" onclick="removeMealAndGroceries('${m.recipe_id}')">✕</button></div>`;
+    });
+    html+=`<button class="meal-add-inline" onclick="openMealPickerFromGrocery()">+ Add Meal</button></div>`;
+  }
   html+=`<div class="groc-add"><input type="text" id="grocAddName" placeholder="Add item…"><input type="text" id="grocAddAmt" placeholder="Qty" style="width:60px"><button onclick="addGroceryManual(document.getElementById('grocAddName').value.trim(),document.getElementById('grocAddAmt').value.trim());document.getElementById('grocAddName').value='';document.getElementById('grocAddAmt').value='';">+</button></div>`;
   if(staples.length){html+=`<div class="groc-section"><div class="groc-section-title">Weekly Staples</div>${staples.map(itemRow).join('')}</div>`;}
   Object.entries(recipes).forEach(([name,items])=>{html+=`<div class="groc-section"><div class="groc-section-title">${escHtml(name)}</div>${items.map(itemRow).join('')}</div>`;});
   if(manual.length){html+=`<div class="groc-section"><div class="groc-section-title">Other</div>${manual.map(itemRow).join('')}</div>`;}
   if(checked.length){html+=`<div class="groc-section groc-checked-section"><div class="groc-section-title">Done (${checked.length})</div>${checked.map(itemRow).join('')}</div>`;}
-  // Recipe picker
-  html+=`<div class="groc-recipe-picker"><button onclick="toggleGrocRecipePicker()">+ Add from Recipe</button><div id="grocRecipeList" style="display:none"></div></div>`;
   modal.innerHTML=html;
   // Enter key on add input
   const inp=document.getElementById('grocAddName');
@@ -2278,6 +2288,37 @@ function toggleGrocRecipePicker(){
     el.style.display='block';
     el.innerHTML=(st.recipes||[]).map(r=>`<div class="groc-recipe-row" onclick="addRecipeToGrocery('${r.id}')">${escHtml(r.name)}</div>`).join('');
   }else{el.style.display='none';}
+}
+
+function removeMealAndGroceries(recipeId){
+  // Remove all meals for this recipe this week and their grocery items
+  const dates=_mealWeekDates();
+  const mealsToRemove=(st.mealPlan||[]).filter(m=>String(m.recipe_id)===String(recipeId)&&dates.includes(m.meal_date));
+  mealsToRemove.forEach(m=>{
+    st.mealPlan=st.mealPlan.filter(x=>String(x.id)!==String(m.id));
+    sbReqSilent('DELETE','meal_plan',null,`?id=eq.${m.id}`);
+  });
+  // Remove grocery items
+  const wk=_groceryWeekOf();
+  const toRemove=(st.groceryList||[]).filter(g=>g.week_of===wk&&g.source==='recipe'&&String(g.source_id)===String(recipeId));
+  toRemove.forEach(g=>{
+    st.groceryList=st.groceryList.filter(x=>String(x.id)!==String(g.id));
+    sbReqSilent('DELETE','grocery_list',null,`?id=eq.${g.id}`);
+  });
+  save();renderGroceryModal();if(typeof renderMealRow==='function')renderMealRow();
+}
+
+function openMealPickerFromGrocery(){
+  // Use today as default date
+  _mealPickerDs=_groceryWeekOf();
+  let modal=document.getElementById('mealPickerModal');
+  if(!modal){
+    modal=document.createElement('dialog');modal.id='mealPickerModal';modal.className='overlay grocery-modal';
+    document.body.appendChild(modal);
+    modal.addEventListener('click',e=>{if(e.target===modal)modal.close();});
+  }
+  modal.classList.add('open');modal.showModal();
+  renderMealPicker();
 }
 
 // ── Grocery staples management ────────────────────────────────────────────────
@@ -2317,7 +2358,155 @@ async function delGroceryStaple(id){
   st.groceryStaples=st.groceryStaples.filter(s=>String(s.id)!==String(id));save();renderGroceryStaples();
   sbReqSilent('DELETE','grocery_staples',null,`?id=eq.${id}`);
 }
-// ── END GROCERY LIST ──────────────────────────────────────────────────────────
+// ── MEAL PLANNING ─────────────────────────────────────────────────────────────
+function _mealWeekDates(off){
+  if(typeof getWkDates==='function')return getWkDates(off||wkOff||0).map(d=>d2s(d));
+  const d=new Date();const dow=(d.getDay()+6)%7;d.setDate(d.getDate()-dow);
+  return Array.from({length:7},(_,i)=>{const x=new Date(d);x.setDate(d.getDate()+i);return x.toISOString().split('T')[0];});
+}
+
+function _mealsForWeek(){
+  const dates=_mealWeekDates();
+  return(st.mealPlan||[]).filter(m=>dates.includes(m.meal_date));
+}
+
+function renderMealRow(){
+  const el=document.getElementById('mealRow');if(!el)return;
+  const dates=_mealWeekDates();
+  let html='';
+  dates.forEach(ds=>{
+    const meals=(st.mealPlan||[]).filter(m=>m.meal_date===ds);
+    // Also show leftover meals from previous days
+    const leftovers=(st.mealPlan||[]).filter(m=>{
+      if((m.servings||1)<=1)return false;
+      const mDate=new Date(m.meal_date+'T12:00:00');
+      const thisDate=new Date(ds+'T12:00:00');
+      const diff=Math.round((thisDate-mDate)/86400000);
+      return diff>0&&diff<(m.servings||1);
+    });
+    html+=`<div class="meal-cell" data-ds="${ds}" ondragover="event.preventDefault();this.classList.add('meal-drop')" ondragleave="this.classList.remove('meal-drop')" ondrop="dropMeal(event,'${ds}');this.classList.remove('meal-drop')">`;
+    meals.forEach(m=>{
+      html+=`<div class="meal-chip" draggable="true" ondragstart="event.dataTransfer.setData('text/plain','meal::${m.id}')" ondblclick="openMealEdit('${m.id}')"><span class="meal-chip-name">${escHtml(m.recipe_name)}</span>${(m.servings||1)>1?`<span class="meal-chip-srv">${m.servings}d</span>`:''}<button class="meal-chip-x" onclick="event.stopPropagation();removeMeal('${m.id}')">✕</button></div>`;
+    });
+    leftovers.forEach(m=>{
+      html+=`<div class="meal-chip meal-leftover"><span class="meal-chip-name">${escHtml(m.recipe_name)}</span><span class="meal-chip-srv">🍲</span></div>`;
+    });
+    html+=`<button class="meal-add-btn" onclick="openMealPicker('${ds}')">+</button>`;
+    html+=`</div>`;
+  });
+  // 8th column (goals column placeholder)
+  html+=`<div class="meal-cell meal-cell-empty"></div>`;
+  el.innerHTML=html;
+}
+
+let _mealPickerDs=null;
+function openMealPicker(ds){
+  _mealPickerDs=ds;
+  let modal=document.getElementById('mealPickerModal');
+  if(!modal){
+    modal=document.createElement('dialog');modal.id='mealPickerModal';modal.className='overlay grocery-modal';
+    document.body.appendChild(modal);
+    modal.addEventListener('click',e=>{if(e.target===modal)modal.close();});
+  }
+  modal.classList.add('open');modal.showModal();
+  renderMealPicker();
+}
+
+let _mealPickerSearch='';
+function renderMealPicker(){
+  const modal=document.getElementById('mealPickerModal');if(!modal)return;
+  const recipes=(st.recipes||[]).filter(r=>{
+    if(!_mealPickerSearch)return true;
+    return r.name.toLowerCase().includes(_mealPickerSearch.toLowerCase());
+  });
+  let html=`<div class="groc-header"><h3>Pick a Recipe</h3><button class="groc-close" onclick="document.getElementById('mealPickerModal').close()">✕</button></div>`;
+  html+=`<div class="groc-add"><input type="text" id="mealPickerSearch" placeholder="Search recipes…" value="${escHtml(_mealPickerSearch)}" oninput="_mealPickerSearch=this.value;renderMealPicker()"></div>`;
+  html+=`<div style="padding:8px 16px;max-height:50vh;overflow-y:auto">`;
+  recipes.forEach(r=>{
+    html+=`<div class="groc-recipe-row" onclick="addMealFromPicker('${r.id}')">${escHtml(r.name)}${r.meal_type?` <span style="color:var(--muted);font-size:10px">${escHtml(r.meal_type)}</span>`:''}</div>`;
+  });
+  if(!recipes.length)html+=`<div style="color:var(--muted);font-size:12px;padding:12px">No recipes found</div>`;
+  html+=`</div>`;
+  modal.innerHTML=html;
+  const inp=document.getElementById('mealPickerSearch');
+  if(inp)setTimeout(()=>inp.focus(),50);
+}
+
+async function addMealFromPicker(recipeId){
+  const r=(st.recipes||[]).find(x=>String(x.id)===String(recipeId));if(!r)return;
+  const ds=_mealPickerDs;if(!ds)return;
+  const item={recipe_id:r.id,recipe_name:r.name,meal_date:ds,servings:1,meal_type:r.meal_type||null};
+  const sv=await sbReqSilent('POST','meal_plan',item);
+  if(sv&&sv[0])st.mealPlan.push(sv[0]);
+  else{item.id='l-'+Date.now();st.mealPlan.push(item);}
+  save();renderMealRow();
+  // Auto-add ingredients to grocery list
+  addRecipeToGrocery(recipeId);
+  document.getElementById('mealPickerModal')?.close();
+  _mealPickerSearch='';
+  if(document.getElementById('groceryModal')?.open)renderGroceryModal();
+}
+
+async function removeMeal(id){
+  const meal=(st.mealPlan||[]).find(m=>String(m.id)===String(id));
+  st.mealPlan=(st.mealPlan||[]).filter(m=>String(m.id)!==String(id));
+  save();renderMealRow();
+  sbReqSilent('DELETE','meal_plan',null,`?id=eq.${id}`);
+  // Remove associated grocery items
+  if(meal&&meal.recipe_id){
+    const wk=_groceryWeekOf();
+    const toRemove=(st.groceryList||[]).filter(g=>g.week_of===wk&&g.source==='recipe'&&String(g.source_id)===String(meal.recipe_id));
+    // Only remove if no other meal this week uses same recipe
+    const otherMeals=(st.mealPlan||[]).filter(m=>String(m.recipe_id)===String(meal.recipe_id));
+    if(!otherMeals.length){
+      toRemove.forEach(g=>{
+        st.groceryList=st.groceryList.filter(x=>String(x.id)!==String(g.id));
+        sbReqSilent('DELETE','grocery_list',null,`?id=eq.${g.id}`);
+      });
+      save();
+    }
+  }
+}
+
+function dropMeal(event,ds){
+  event.preventDefault();
+  const data=event.dataTransfer.getData('text/plain');
+  if(!data.startsWith('meal::'))return;
+  const id=data.replace('meal::','');
+  const meal=(st.mealPlan||[]).find(m=>String(m.id)===String(id));if(!meal)return;
+  meal.meal_date=ds;save();renderMealRow();
+  sbReqSilent('PATCH','meal_plan',{meal_date:ds},`?id=eq.${id}`);
+}
+
+function openMealEdit(id){
+  const meal=(st.mealPlan||[]).find(m=>String(m.id)===String(id));if(!meal)return;
+  let modal=document.getElementById('mealEditModal');
+  if(!modal){
+    modal=document.createElement('dialog');modal.id='mealEditModal';modal.className='overlay grocery-modal';
+    document.body.appendChild(modal);
+    modal.addEventListener('click',e=>{if(e.target===modal)modal.close();});
+  }
+  modal.classList.add('open');modal.showModal();
+  modal.innerHTML=`
+    <div class="groc-header"><h3>${escHtml(meal.recipe_name)}</h3><button class="groc-close" onclick="document.getElementById('mealEditModal').close()">✕</button></div>
+    <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
+      <label style="font-size:12px;color:var(--muted)">Servings (days of food)</label>
+      <input type="number" id="mealEditServings" min="1" max="7" value="${meal.servings||1}" style="padding:8px;border-radius:var(--rs);border:1px solid var(--gb);font-size:14px;width:80px">
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button onclick="saveMealEdit('${id}')" style="padding:8px 16px;border-radius:var(--rs);border:none;background:var(--accent);color:#fff;font-weight:600;cursor:pointer">Save</button>
+        <button onclick="removeMeal('${id}');document.getElementById('mealEditModal').close()" style="padding:8px 16px;border-radius:var(--rs);border:1px solid #ef4444;background:none;color:#ef4444;font-weight:600;cursor:pointer">Remove</button>
+      </div>
+    </div>`;
+}
+
+async function saveMealEdit(id){
+  const meal=(st.mealPlan||[]).find(m=>String(m.id)===String(id));if(!meal)return;
+  const servings=parseInt(document.getElementById('mealEditServings').value)||1;
+  meal.servings=servings;save();renderMealRow();
+  document.getElementById('mealEditModal')?.close();
+  sbReqSilent('PATCH','meal_plan',{servings},`?id=eq.${id}`);
+}
+// ── END GROCERY & MEAL PLANNING ───────────────────────────────────────────────
 
 function showPage(id){
   if(id==='tasks')return;

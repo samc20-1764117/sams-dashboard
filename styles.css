@@ -852,6 +852,25 @@ body.dark .groc-add input{background:rgba(255,255,255,.06);border-color:rgba(255
 .groc-recipe-picker>button:hover{border-color:var(--accent);color:var(--accent)}
 .groc-recipe-row{padding:6px 10px;font-size:12px;color:var(--text);cursor:pointer;border-radius:6px}
 .groc-recipe-row:hover{background:rgba(124,106,247,.08)}
+.meal-add-inline{background:none;border:1px dashed var(--border);border-radius:var(--rs);padding:5px 10px;font-size:11px;color:var(--muted);cursor:pointer;width:100%;margin-top:4px}
+.meal-add-inline:hover{border-color:var(--accent);color:var(--accent)}
+/* ── Meal Row (below weekly cal) ─────────────────────────────────────────── */
+.meal-row{display:grid;grid-template-columns:repeat(8,1fr);gap:1px;border-top:1px solid rgba(210,205,228,.15);min-height:28px}
+.meal-cell{padding:3px 2px;display:flex;flex-wrap:wrap;gap:3px;align-items:flex-start;align-content:flex-start;min-height:24px;position:relative}
+.meal-cell.meal-drop{background:rgba(124,106,247,.08)}
+.meal-cell-empty{pointer-events:none}
+.meal-chip{display:inline-flex;align-items:center;gap:3px;padding:2px 6px;border-radius:6px;background:rgba(249,115,22,.1);border:1px solid rgba(249,115,22,.2);font-size:9px;font-weight:600;color:#c2410c;cursor:grab;max-width:100%;position:relative}
+.meal-chip:hover{background:rgba(249,115,22,.18)}
+body.dark .meal-chip{background:rgba(249,115,22,.15);color:#fb923c;border-color:rgba(249,115,22,.3)}
+.meal-chip-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:70px}
+.meal-chip-srv{font-size:8px;color:rgba(194,107,79,.7);flex-shrink:0}
+.meal-chip-x{background:none;border:none;cursor:pointer;font-size:8px;color:rgba(194,107,79,.5);padding:0 1px;opacity:0;transition:opacity .1s}
+.meal-chip:hover .meal-chip-x{opacity:1}
+.meal-chip-x:hover{color:#ef4444}
+.meal-leftover{opacity:.55;cursor:default;border-style:dashed}
+.meal-add-btn{background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);padding:1px 4px;border-radius:4px;opacity:0;transition:opacity .12s}
+.meal-cell:hover .meal-add-btn{opacity:1}
+.meal-add-btn:hover{color:var(--accent)}
 .vid-groups-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-top:8px}
 .vid-group-card{background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:14px 16px;cursor:pointer;transition:box-shadow .15s,transform .15s}
 .vid-group-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.08);transform:translateY(-2px)}
