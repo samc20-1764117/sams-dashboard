@@ -2252,6 +2252,22 @@ function _grocWeekLabel(mon){const dates=_grocWeekDatesFor(mon);const m1=new Dat
 
 let _grocRecSearch='';
 
+function _inferAisle(name){
+  const n=name.toLowerCase();
+  const map=[
+    ['Produce',/apple|banana|avocado|tomato|lettuce|onion|garlic|pepper|potato|carrot|celery|cucumber|spinach|kale|broccoli|mushroom|lemon|lime|orange|berr|grape|mango|cilantro|parsley|basil|ginger|jalape|zucchini|squash|corn|green bean|asparagus/],
+    ['Meat',/chicken|beef|pork|steak|ground|turkey|bacon|sausage|shrimp|salmon|fish|tilapia|lamb|ribs/],
+    ['Dairy',/milk|cheese|yogurt|butter|cream|egg|sour cream|cottage|half.*half/],
+    ['Bakery',/bread|tortilla|bun|roll|bagel|croissant|pita|naan/],
+    ['Frozen',/frozen|ice cream|pizza.*frozen/],
+    ['Beverages',/water|juice|soda|coffee|tea|beer|wine|sparkling|kombucha|creamer/],
+    ['Snacks',/chip|cracker|cookie|granola|bar|pretzel|popcorn|nut|trail mix/],
+    ['Pantry',/rice|pasta|flour|sugar|oil|vinegar|sauce|broth|stock|can|bean|lentil|spice|seasoning|salt|pepper|soy|sriracha|mayo|mustard|ketchup|honey|syrup|cereal|oat/],
+  ];
+  for(const[aisle,rx]of map)if(rx.test(n))return aisle;
+  return'Other';
+}
+
 function renderGroceryModal(){
   const modal=document.getElementById('groceryModal');if(!modal)return;
   const dayNames=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
@@ -2287,11 +2303,11 @@ function renderGroceryModal(){
   // Manual items
   grocItems.filter(g=>!g.checked&&g.source==='manual').forEach(g=>allItems.push({...g,_src:'manual'}));
   // HEB overview items
-  hebShopItems.forEach(s=>allItems.push({id:'heb-'+s.id,name:s.name,amount:null,aisle:s.aisle||'Other',checked:false,_src:'overview',_shopId:s.id}));
+  hebShopItems.forEach(s=>allItems.push({id:'heb-'+s.id,name:s.name,amount:null,aisle:s.aisle||_inferAisle(s.name),checked:false,_src:'overview',_shopId:s.id}));
   // Staples
   activeStaples.forEach(s=>{
     const alreadyInList=grocItems.find(g=>g.source==='staple'&&g.source_id===String(s.id));
-    if(!alreadyInList)allItems.push({id:'staple-'+s.id,name:s.name,amount:s.amount||null,aisle:s.aisle||'Other',checked:false,_src:'staple',_stapleId:s.id});
+    if(!alreadyInList)allItems.push({id:'staple-'+s.id,name:s.name,amount:s.amount||null,aisle:s.aisle||_inferAisle(s.name),checked:false,_src:'staple',_stapleId:s.id});
     else if(!alreadyInList.checked)allItems.push({...alreadyInList,_src:'staple',_stapleId:s.id});
   });
   const checkedItems=grocItems.filter(g=>g.checked);
@@ -2411,7 +2427,7 @@ async function toggleMealForWeek(recipeId,weekMon,checked){
     for(const ing of ings){
       const dup=(st.groceryList||[]).find(g=>g.week_of===weekMon&&g.source==='recipe'&&String(g.source_id)===String(r.id)&&g.name.toLowerCase()===ing.name.toLowerCase());
       if(dup)continue;
-      const gi={name:ing.name,amount:ing.amount||null,source:'recipe',source_id:r.id,recipe_name:r.name,aisle:ing.aisle||null,checked:false,week_of:weekMon};
+      const gi={name:ing.name,amount:ing.amount||null,source:'recipe',source_id:r.id,recipe_name:r.name,aisle:ing.aisle||_inferAisle(ing.name),checked:false,week_of:weekMon};
       const gsv=await sbReqSilent('POST','grocery_list',gi);
       if(gsv&&gsv[0])st.groceryList.push(gsv[0]);
       else{gi.id='l-'+Date.now();st.groceryList.push(gi);}
@@ -2508,45 +2524,43 @@ function openMealPickerFromGrocery(){
 
 // ── Grocery staples management ────────────────────────────────────────────────
 function openGroceryStaplesEditor(){
-  let modal=document.getElementById('grocStaplesModal');
-  if(!modal){
-    modal=document.createElement('dialog');modal.id='grocStaplesModal';modal.className='overlay grocery-modal';
-    document.body.appendChild(modal);
-    modal.addEventListener('click',e=>{if(e.target===modal)modal.close();});
+  let panel=document.getElementById('grocStaplesPanel');
+  if(!panel){
+    panel=document.createElement('div');panel.id='grocStaplesPanel';panel.className='groc-staples-drawer';
+    document.body.appendChild(panel);
   }
-  modal.classList.add('open');modal.showModal();
-  renderGroceryStaples();
+  panel.classList.toggle('open');
+  if(panel.classList.contains('open'))renderGroceryStaples();
 }
 
 function renderGroceryStaples(){
-  const modal=document.getElementById('grocStaplesModal');if(!modal)return;
+  const panel=document.getElementById('grocStaplesPanel');if(!panel)return;
   const planMon=_grocWeekMonday(_grocWkOff+1);
   const skipped=(st._grocStapleSkips||{})[planMon]||[];
   const staples=(st.groceryStaples||[]).filter(s=>s.active!==false);
-  let html=`<div class="groc-header"><span style="font-size:13px;font-weight:700">Weekly Staples</span><button class="groc-close" onclick="document.getElementById('grocStaplesModal').close()">✕</button></div>`;
-  html+=`<div style="padding:10px 16px">`;
-  html+=`<div class="groc-add"><input type="text" id="stapleAddName" placeholder="Item name…"><input type="text" id="stapleAddAisle" placeholder="Aisle" style="width:70px"><input type="text" id="stapleAddAmt" placeholder="Qty" style="width:50px"><button onclick="addGroceryStaple()">+</button></div>`;
+  let html=`<div class="groc-staples-hdr"><span>Weekly Staples</span><button onclick="openGroceryStaplesEditor()">✕</button></div>`;
+  html+=`<div class="groc-staples-add"><input type="text" id="stapleAddName" placeholder="Add staple…"><button onclick="addGroceryStaple()">+</button></div>`;
+  html+=`<div class="groc-staples-list">`;
   html+=staples.map(s=>{
     const isSkipped=skipped.includes(String(s.id));
-    return`<div class="groc-item${isSkipped?' groc-done':''}" data-id="${s.id}">
-      <span class="groc-name">${escHtml(s.name)}</span>
-      ${s.aisle?`<span class="groc-src">${escHtml(s.aisle)}</span>`:''}
-      ${s.amount?`<span class="groc-amt">${escHtml(s.amount)}</span>`:''}
-      <button class="groc-skip-btn" onclick="toggleStapleSkip('${s.id}','${planMon}')" title="${isSkipped?'Include this week':'Skip this week'}">${isSkipped?'＋':'−'}</button>
-      <button class="groc-del" onclick="delGroceryStaple('${s.id}')" title="Remove permanently">✕</button>
+    return`<div class="groc-staple-row${isSkipped?' skipped':''}">
+      <span>${escHtml(s.name)}${s.amount?' <em>'+escHtml(s.amount)+'</em>':''}</span>
+      <div class="groc-staple-actions">
+        <button onclick="toggleStapleSkip('${s.id}','${planMon}')" title="${isSkipped?'Include this week':'Skip this week'}">${isSkipped?'+':'−'}</button>
+        <button onclick="delGroceryStaple('${s.id}')" title="Remove permanently">✕</button>
+      </div>
     </div>`;
   }).join('');
   html+=`</div>`;
-  modal.innerHTML=html;
+  panel.innerHTML=html;
   const inp=document.getElementById('stapleAddName');
   if(inp)inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();addGroceryStaple();}});
 }
 
 async function addGroceryStaple(){
   const name=(document.getElementById('stapleAddName')?.value||'').trim();if(!name)return;
-  const amount=(document.getElementById('stapleAddAmt')?.value||'').trim()||null;
-  const aisle=(document.getElementById('stapleAddAisle')?.value||'').trim()||null;
-  const item={name,amount,aisle,active:true,sort_order:(st.groceryStaples||[]).length};
+  const aisle=_inferAisle(name);
+  const item={name,amount:null,aisle,active:true,sort_order:(st.groceryStaples||[]).length};
   const sv=await sbReqSilent('POST','grocery_staples',item);
   if(sv&&sv[0])st.groceryStaples.push(sv[0]);
   else{item.id='l-'+Date.now();st.groceryStaples.push(item);}
