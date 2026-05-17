@@ -2240,14 +2240,17 @@ function openGroceryModal(){
   renderGroceryModal();
 }
 
+function _nextWeekOf(){const d=new Date();const dow=(d.getDay()+6)%7;d.setDate(d.getDate()-dow+7);return d.toISOString().split('T')[0];}
+function _nextWeekDates(){const mon=new Date(_nextWeekOf()+'T12:00:00');return Array.from({length:7},(_,i)=>{const x=new Date(mon);x.setDate(mon.getDate()+i);return x.toISOString().split('T')[0];});}
+function _mealsForNextWeek(){const dates=_nextWeekDates();return(st.mealPlan||[]).filter(m=>dates.includes(m.meal_date));}
+
 function renderGroceryModal(){
   const modal=document.getElementById('groceryModal');if(!modal)return;
   const items=_groceryForWeek();
   const unchecked=items.filter(g=>!g.checked);
   const checked=items.filter(g=>g.checked);
-  // Group unchecked by source
   const staples=unchecked.filter(g=>g.source==='staple');
-  const recipes={};unchecked.filter(g=>g.source==='recipe').forEach(g=>{const k=g.recipe_name||'Recipe';if(!recipes[k])recipes[k]=[];recipes[k].push(g);});
+  const recipeGroups={};unchecked.filter(g=>g.source==='recipe').forEach(g=>{const k=g.recipe_name||'Recipe';if(!recipeGroups[k])recipeGroups[k]=[];recipeGroups[k].push(g);});
   const manual=unchecked.filter(g=>g.source==='manual');
 
   function itemRow(g){
@@ -2258,28 +2261,73 @@ function renderGroceryModal(){
       <button class="groc-del" onclick="delGroceryItem('${g.id}')">✕</button>
     </div>`;}
 
-  // Planned meals this week
-  const plannedMeals=_mealsForWeek();
-  const uniqueRecipes=[...new Map(plannedMeals.map(m=>[String(m.recipe_id),m])).values()];
+  // Next week's planned meals
+  const nextDates=_nextWeekDates();
+  const dayNames=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 
-  let html=`<div class="groc-header"><h3>HEB Grocery List</h3><div style="display:flex;gap:6px"><button class="groc-close" onclick="openGroceryStaplesEditor()" title="Manage staples" style="font-size:13px">⚙</button><button class="groc-close" onclick="document.getElementById('groceryModal').close()">✕</button></div></div>`;
-  // Meals section
-  if(uniqueRecipes.length||true){
-    html+=`<div class="groc-section"><div class="groc-section-title">This Week's Meals</div>`;
-    uniqueRecipes.forEach(m=>{
-      html+=`<div class="groc-item"><span class="groc-name" style="font-weight:600">🍽 ${escHtml(m.recipe_name)}</span>${(m.servings||1)>1?`<span class="groc-amt">${m.servings} days</span>`:''}<button class="groc-del" onclick="removeMealAndGroceries('${m.recipe_id}')">✕</button></div>`;
+  let html=`<div class="groc-header"><h3>HEB Weekly Planner</h3><div style="display:flex;gap:6px"><button class="groc-close" onclick="openGroceryStaplesEditor()" title="Manage staples" style="font-size:13px">⚙</button><button class="groc-close" onclick="document.getElementById('groceryModal').close()">✕</button></div></div>`;
+  html+=`<div class="groc-split">`;
+
+  // ── LEFT: Meal Planner ──
+  html+=`<div class="groc-panel groc-panel-meals">`;
+  html+=`<div class="groc-panel-title">Next Week's Meals</div>`;
+  html+=`<div class="groc-meal-grid">`;
+  nextDates.forEach((ds,i)=>{
+    const meals=(st.mealPlan||[]).filter(m=>m.meal_date===ds);
+    html+=`<div class="groc-day-row" data-ds="${ds}" ondragover="event.preventDefault();this.classList.add('groc-day-drop')" ondragleave="this.classList.remove('groc-day-drop')" ondrop="dropMeal(event,'${ds}');this.classList.remove('groc-day-drop');renderGroceryModal();">`;
+    html+=`<span class="groc-day-label">${dayNames[i]}</span>`;
+    html+=`<div class="groc-day-meals">`;
+    meals.forEach(m=>{
+      html+=`<span class="groc-meal-tag" draggable="true" ondragstart="event.dataTransfer.setData('text/plain','meal::${m.id}')">${escHtml(m.recipe_name)}${(m.servings||1)>1?' <small>'+m.servings+'d</small>':''}<button onclick="event.stopPropagation();removeMeal('${m.id}');renderGroceryModal()">✕</button></span>`;
     });
-    html+=`<button class="meal-add-inline" onclick="openMealPickerFromGrocery()">+ Add Meal</button></div>`;
-  }
-  html+=`<div class="groc-add"><input type="text" id="grocAddName" placeholder="Add item…"><input type="text" id="grocAddAmt" placeholder="Qty" style="width:60px"><button onclick="addGroceryManual(document.getElementById('grocAddName').value.trim(),document.getElementById('grocAddAmt').value.trim());document.getElementById('grocAddName').value='';document.getElementById('grocAddAmt').value='';">+</button></div>`;
+    html+=`</div>`;
+    html+=`<button class="groc-day-add" onclick="openMealPicker('${ds}')">+</button>`;
+    html+=`</div>`;
+  });
+  html+=`</div>`;
+  // Recipe list to pick from
+  html+=`<div class="groc-panel-title" style="margin-top:12px">All Recipes</div>`;
+  html+=`<div class="groc-recipe-list">`;
+  (st.recipes||[]).forEach(r=>{
+    html+=`<div class="groc-recipe-row" onclick="addMealToNextWeek('${r.id}')">${escHtml(r.name)}${r.meal_type?` <span style="color:var(--muted);font-size:10px">${escHtml(r.meal_type)}</span>`:''}</div>`;
+  });
+  html+=`</div>`;
+  html+=`</div>`;
+
+  // ── RIGHT: Grocery List ──
+  html+=`<div class="groc-panel groc-panel-list">`;
+  html+=`<div class="groc-panel-title">Grocery List</div>`;
+  html+=`<div class="groc-add"><input type="text" id="grocAddName" placeholder="Add item…"><input type="text" id="grocAddAmt" placeholder="Qty" style="width:50px"><button onclick="addGroceryManual(document.getElementById('grocAddName').value.trim(),document.getElementById('grocAddAmt').value.trim());document.getElementById('grocAddName').value='';document.getElementById('grocAddAmt').value='';">+</button></div>`;
   if(staples.length){html+=`<div class="groc-section"><div class="groc-section-title">Weekly Staples</div>${staples.map(itemRow).join('')}</div>`;}
-  Object.entries(recipes).forEach(([name,items])=>{html+=`<div class="groc-section"><div class="groc-section-title">${escHtml(name)}</div>${items.map(itemRow).join('')}</div>`;});
+  Object.entries(recipeGroups).forEach(([name,items])=>{html+=`<div class="groc-section"><div class="groc-section-title">${escHtml(name)}</div>${items.map(itemRow).join('')}</div>`;});
   if(manual.length){html+=`<div class="groc-section"><div class="groc-section-title">Other</div>${manual.map(itemRow).join('')}</div>`;}
   if(checked.length){html+=`<div class="groc-section groc-checked-section"><div class="groc-section-title">Done (${checked.length})</div>${checked.map(itemRow).join('')}</div>`;}
+  html+=`</div>`;
+
+  html+=`</div>`; // end groc-split
   modal.innerHTML=html;
-  // Enter key on add input
   const inp=document.getElementById('grocAddName');
   if(inp)inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();addGroceryManual(inp.value.trim(),document.getElementById('grocAddAmt').value.trim());inp.value='';document.getElementById('grocAddAmt').value='';}});
+}
+
+// Add a meal to next available day in next week
+async function addMealToNextWeek(recipeId){
+  const r=(st.recipes||[]).find(x=>String(x.id)===String(recipeId));if(!r)return;
+  const nextDates=_nextWeekDates();
+  // Find first day without too many meals
+  let ds=nextDates[0];
+  for(const d of nextDates){
+    const count=(st.mealPlan||[]).filter(m=>m.meal_date===d).length;
+    if(count===0){ds=d;break;}
+  }
+  const item={recipe_id:r.id,recipe_name:r.name,meal_date:ds,servings:1,meal_type:r.meal_type||null};
+  const sv=await sbReqSilent('POST','meal_plan',item);
+  if(sv&&sv[0])st.mealPlan.push(sv[0]);
+  else{item.id='l-'+Date.now();st.mealPlan.push(item);}
+  save();
+  addRecipeToGrocery(recipeId);
+  renderGroceryModal();
+  if(typeof renderMealRow==='function')renderMealRow();
 }
 
 function toggleGrocRecipePicker(){
