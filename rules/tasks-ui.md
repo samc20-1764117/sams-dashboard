@@ -37,6 +37,7 @@
   3. Add `e.stopPropagation()` on ALL modal keydown handlers — prevents global handler from catching the same key and reopening.
   4. Add `outline:none` to modal CSS to prevent browser focus ring.
   5. Both global handler AND modal's own `keydown` listener must handle the key.
+  6. On modal `close` event: call `modal.blur();document.activeElement?.blur()` — focus must return to `<body>` so global shortcuts keep working. Without this, the closed dialog retains focus and its `stopPropagation` blocks all future keypresses from reaching the global handler.
 - **Text selection**: `user-select:none` on `html,body`. `Ctrl/Cmd+A` blocked globally (allowed in INPUT/TEXTAREA).
 - **Global Cmd+C/V**: copies `selectedTasks`. Paste: `wrrule-{id}`→POST `wr_recurring_rules`; task ID→POST `tasks`.
 

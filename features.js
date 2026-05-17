@@ -2276,7 +2276,7 @@ function openGroceryModal(){
     modal=document.createElement('dialog');modal.id='groceryModal';modal.className='overlay grocery-modal';
     document.body.appendChild(modal);
     modal.addEventListener('click',e=>{if(e.target===modal)modal.close();});
-    modal.addEventListener('close',()=>modal.classList.remove('open'));
+    modal.addEventListener('close',()=>{modal.classList.remove('open');modal.blur();document.activeElement?.blur();});
     modal.addEventListener('keydown',e=>{
       if(e.key==='Escape'){e.preventDefault();modal.close();}
       if(e.key==='Enter'&&!e.target.matches('input,textarea,button')){e.preventDefault();e.stopPropagation();modal.close();}
