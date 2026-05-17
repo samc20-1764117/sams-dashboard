@@ -2281,6 +2281,7 @@ function openGroceryModal(){
       if(e.key==='Escape'){e.preventDefault();modal.close();}
       if(e.key==='Enter'&&!e.target.matches('input,textarea,button')){e.preventDefault();e.stopPropagation();modal.close();}
       if(e.key==='s'&&!e.target.matches('input,textarea')){e.preventDefault();e.stopPropagation();modal.close();}
+      if(e.key==='t'&&!e.target.matches('input,textarea')){e.preventDefault();e.stopPropagation();_grocWkOff=0;renderGroceryModal();}
     });
   }
   modal.classList.add('open');modal.showModal();
@@ -2288,8 +2289,10 @@ function openGroceryModal(){
 }
 
 let _grocWkOff=0;
-let _grocPeople=parseInt(localStorage._grocPeople)||2;
-function setGrocPeople(n){_grocPeople=n;localStorage._grocPeople=n;renderGroceryModal();}
+let _grocPeople=2;
+function _grocPeopleKey(weekMon){return'_grocPeople_'+weekMon;}
+function _getGrocPeople(weekMon){const v=localStorage.getItem(_grocPeopleKey(weekMon));return v?parseInt(v):2;}
+function setGrocPeople(n,weekMon){localStorage.setItem(_grocPeopleKey(weekMon),n);renderGroceryModal();}
 function _grocWeekMonday(off){const d=new Date();const dow=(d.getDay()+6)%7;d.setDate(d.getDate()-dow+(off||0)*7);return d.toISOString().split('T')[0];}
 function _grocWeekDatesFor(mon){const m=new Date(mon+'T12:00:00');return Array.from({length:7},(_,i)=>{const x=new Date(m);x.setDate(m.getDate()+i);return x.toISOString().split('T')[0];});}
 function _grocWeekLabel(mon){const dates=_grocWeekDatesFor(mon);const m1=new Date(dates[0]+'T12:00:00');const m2=new Date(dates[6]+'T12:00:00');return`${m1.toLocaleDateString('en-US',{month:'short',day:'numeric'})} – ${m2.toLocaleDateString('en-US',{month:'short',day:'numeric'})}`;}
@@ -2360,9 +2363,9 @@ function renderGroceryModal(){
   const byAisle={};allItems.forEach(it=>{const a=getAisle(it);if(!byAisle[a])byAisle[a]=[];byAisle[a].push(it);});
 
   function itemRow(g){
+    const display=g.amount?`${escHtml(g.amount)} ${escHtml(g.name)}`:escHtml(g.name);
     return`<div class="groc-item" data-id="${g.id}">
-      <span class="groc-name">${escHtml(g.name)}</span>
-      ${g.amount?`<span class="groc-amt">${escHtml(g.amount)}</span>`:''}
+      <span class="groc-name">${display}</span>
       <button class="groc-del" onclick="delGroceryItem('${g.id}')">✕</button>
     </div>`;}
 
@@ -2374,7 +2377,7 @@ function renderGroceryModal(){
       <button class="groc-nav-btn" onclick="_grocWkOff++;renderGroceryModal()">→</button>
     </div>
     <button class="groc-nav-btn" onclick="_grocWkOff=0;renderGroceryModal()"${_grocWkOff===0?' disabled style="opacity:.4;pointer-events:none"':''}>This Week</button>
-    <span class="groc-people-toggle">People: <button onclick="setGrocPeople(1)"${_grocPeople===1?' class="active"':''}>1</button><button onclick="setGrocPeople(2)"${_grocPeople===2?' class="active"':''}>2</button></span>
+    <span class="groc-people-toggle">People: <button onclick="setGrocPeople(1,'${planMon}')"${_getGrocPeople(planMon)===1?' class="active"':''}>1</button><button onclick="setGrocPeople(2,'${planMon}')"${_getGrocPeople(planMon)===2?' class="active"':''}>2</button></span>
     <button class="groc-close" onclick="document.getElementById('groceryModal').close()">✕</button>
   </div>`;
 
@@ -2407,13 +2410,11 @@ function renderGroceryModal(){
   if(_grocRecSearch)filteredRecipes=filteredRecipes.filter(r=>r.name.toLowerCase().includes(_grocRecSearch.toLowerCase()));
   filteredRecipes.forEach(r=>{
     const isPlanned=plannedRecipeIds.has(String(r.id));
-    const srv=r.servings||2;
-    const slots=Math.ceil(srv/_grocPeople);
     html+=`<label class="groc-recipe-check${isPlanned?' active':''}">
       <input type="checkbox"${isPlanned?' checked':''} onchange="toggleMealForWeek('${r.id}','${planMon}',this.checked)">
       <span>${escHtml(r.name)}</span>
       ${r.meal_type?`<span class="groc-recipe-type">${escHtml(r.meal_type)}</span>`:''}
-      <span class="groc-recipe-type">${srv}srv→${slots}meal${slots>1?'s':''}</span>
+      ${r.servings?`<span class="groc-recipe-type">${r.servings} srv</span>`:''}
     </label>`;
   });
   html+=`</div>`;
@@ -2457,7 +2458,7 @@ async function toggleMealForWeek(recipeId,weekMon,checked){
   if(checked){
     // Calculate how many meal slots: ceil(servings / people)
     const recipeServings=r.servings||2;
-    const mealSlots=Math.ceil(recipeServings/_grocPeople);
+    const mealSlots=Math.ceil(recipeServings/_getGrocPeople(weekMon));
     const dates=_grocWeekDatesFor(weekMon);
     // Find empty days for each slot
     const usedDays=new Set();
