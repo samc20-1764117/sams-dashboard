@@ -1733,8 +1733,22 @@ function openRecipeAddModal(){
   ['rmName','rmMealType','rmCuisine','rmTime','rmServings','rmInstructions'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   _rmIngredients=[];renderIngList();
   document.getElementById('recipeModal').classList.add('open');
+  _recModalKeyBind();
   setTimeout(()=>document.getElementById('rmName').focus(),80);
 }
+function _recModalKeyBind(){
+  if(_recModalKeyFn)return;
+  _recModalKeyFn=e=>{
+    const modal=document.getElementById('recipeModal');
+    if(!modal||!modal.classList.contains('open'))return;
+    if(e.key==='Enter'&&e.target.tagName!=='TEXTAREA'&&!e.target.closest('.rm-ing-row')){
+      e.preventDefault();const n=document.getElementById('rmName').value.trim();
+      if(n)saveRecipeModal();else closeMod('recipeModal');
+    }
+  };
+  document.addEventListener('keydown',_recModalKeyFn);
+}
+let _recModalKeyFn=null;
 function openRecipeEditModal(id){
   const r=st.recipes.find(x=>String(x.id)===String(id));if(!r)return;
   _recipeEditId=id;
@@ -1747,6 +1761,7 @@ function openRecipeEditModal(id){
   document.getElementById('rmInstructions').value=r.instructions||'';
   _rmIngredients=_parseIngredients(r.ingredients);renderIngList();
   document.getElementById('recipeModal').classList.add('open');
+  _recModalKeyBind();
   setTimeout(()=>{const _el=document.getElementById('rmName');if(_el){_el.focus();const _l=_el.value.length;_el.setSelectionRange(_l,_l);}},80);
 }
 async function saveRecipeModal(){
@@ -2744,7 +2759,7 @@ function showPage(id){
 // ── Modals ─────────────────────────────────────────────────────────────────────
 let _modMousedownInside=false;
 document.addEventListener('mousedown',e=>{_modMousedownInside=!!e.target.closest('.modal');});
-function closeMod(id,e){if(e&&e.target!==document.getElementById(id))return;if(e&&_modMousedownInside)return;document.getElementById(id).classList.remove('open');if(id==='mModal'||id==='recMoModal'){const bg=document.querySelector('.bg-canvas');if(bg)bg.classList.remove('orbs-paused');}}
+function closeMod(id,e){if(e&&e.target!==document.getElementById(id))return;if(e&&_modMousedownInside)return;document.getElementById(id).classList.remove('open');if(id==='mModal'||id==='recMoModal'){const bg=document.querySelector('.bg-canvas');if(bg)bg.classList.remove('orbs-paused');}if(id==='recipeModal'&&_recModalKeyFn){document.removeEventListener('keydown',_recModalKeyFn);_recModalKeyFn=null;}}
 
 // ── Init ───────────────────────────────────────────────────────────────────────
 let _firstSyncDone=false;
