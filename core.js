@@ -25,7 +25,7 @@ function slug(c){return(c||'other').toLowerCase().replace(/\s+/g,'-');}
 
 // ── State ──────────────────────────────────────────────────────────────────────
 let cfg={url:'https://gtirvyrqfuuuxkkqaeap.supabase.co',key:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0aXJ2eXJxZnV1dXhra3FhZWFwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwODY3NjAsImV4cCI6MjA4ODY2Mjc2MH0.6rtA0WeUUAcuV_sNVrxAbaaviPxPwNakh_bk7uylAOo',showAutoTB:true};
-let st={tasks:[],recurring:[],shopping:[],blocks:[],travel:[],birthdays:[],pup_skills:[],pupSessions:[],recipes:[],videos:[],autoTimeblocks:[],autoTBOverrides:[],wrRules:[],wrOverrides:[],groceryStaples:[],groceryList:[],mealPlan:[]};
+let st={tasks:[],recurring:[],shopping:[],blocks:[],travel:[],birthdays:[],pup_skills:[],pupSessions:[],recipes:[],videos:[],autoTimeblocks:[],autoTBOverrides:[],wrRules:[],wrOverrides:[],groceryStaples:[],groceryList:[],mealPlan:[],_grocStapleSkips:{}};
 let dayOff=0,wkOff=0,moOff=0,wrRecOff=0,sbOpen=true,activePg='overview';
 let dragId=null,resizing=null,tMode='add',tId=null,tPreDate=null;
 let qaCtx='today',qaDsTarget=null,qaKCat='';
