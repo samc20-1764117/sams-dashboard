@@ -2354,20 +2354,15 @@ function renderGroceryModal(){
     if(!alreadyInList)allItems.push({id:'staple-'+s.id,name:s.name,amount:s.amount||null,aisle:s.aisle||_inferAisle(s.name),checked:false,_src:'staple',_stapleId:s.id});
     else if(!alreadyInList.checked)allItems.push({...alreadyInList,_src:'staple',_stapleId:s.id});
   });
-  const checkedItems=grocItems.filter(g=>g.checked);
-
   // Sort by aisle
   allItems.sort((a,b)=>{const ai=aisleOrder.indexOf(getAisle(a)),bi=aisleOrder.indexOf(getAisle(b));return(ai===-1?99:ai)-(bi===-1?99:bi);});
   // Group by aisle
   const byAisle={};allItems.forEach(it=>{const a=getAisle(it);if(!byAisle[a])byAisle[a]=[];byAisle[a].push(it);});
 
   function itemRow(g){
-    const srcLabel=g._src==='overview'?'<span class="groc-src">shop</span>':g._src==='staple'?'<span class="groc-src">weekly</span>':'';
-    return`<div class="groc-item${g.checked?' groc-done':''}" data-id="${g.id}">
-      <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk"${g.checked?' checked':''} onchange="togGroceryItem('${g.id}',this.checked)"></label>
+    return`<div class="groc-item" data-id="${g.id}">
       <span class="groc-name">${escHtml(g.name)}</span>
       ${g.amount?`<span class="groc-amt">${escHtml(g.amount)}</span>`:''}
-      ${srcLabel}
       <button class="groc-del" onclick="delGroceryItem('${g.id}')">✕</button>
     </div>`;}
 
@@ -2441,12 +2436,11 @@ function renderGroceryModal(){
   // Col 3: Complete shopping list sorted by aisle
   html+=`<div class="groc-panel">`;
   html+=`<div class="groc-panel-title" style="display:flex;align-items:center;justify-content:space-between">Shopping List <span style="font-weight:400;color:var(--muted);font-size:10px">(${allItems.length})</span><button class="groc-nav-btn" onclick="openGroceryStaplesEditor()" style="font-size:10px">Staples</button></div>`;
-  html+=`<div class="groc-add"><input type="text" id="grocAddName" placeholder="Add item…"><input type="text" id="grocAddAmt" placeholder="Qty" style="width:50px"><button onclick="addGroceryManualForWeek('${planMon}')">+</button></div>`;
+  html+=`<div class="groc-add"><input type="text" id="grocAddName" placeholder="Add item…" style="flex:1"><button onclick="addGroceryManualForWeek('${planMon}')">+</button></div>`;
   Object.entries(byAisle).forEach(([aisle,items])=>{
     html+=`<div class="groc-section"><div class="groc-section-title">${escHtml(aisle)}</div><div class="groc-section-grid">${items.map(itemRow).join('')}</div></div>`;
   });
-  if(checkedItems.length){html+=`<div class="groc-section groc-checked-section"><div class="groc-section-title">Done (${checkedItems.length})</div><div class="groc-section-grid">${checkedItems.map(g=>itemRow({...g,_src:'done'})).join('')}</div></div>`;}
-  if(!allItems.length&&!checkedItems.length){html+=`<div style="color:var(--muted);font-size:12px;padding:16px 0;text-align:center">Select meals to generate list</div>`;}
+  if(!allItems.length){html+=`<div style="color:var(--muted);font-size:12px;padding:16px 0;text-align:center">Select meals to generate list</div>`;}
   html+=`</div>`;
 
   html+=`</div>`; // end groc-bottom
@@ -2528,13 +2522,14 @@ async function removeMealFromWeek(mealId,weekMon){
 // Add manual grocery item for specific week
 function addGroceryManualForWeek(weekMon){
   const name=(document.getElementById('grocAddName')?.value||'').trim();
-  const amount=(document.getElementById('grocAddAmt')?.value||'').trim();
   if(!name)return;
-  const item={name,amount:amount||null,source:'manual',source_id:null,recipe_name:null,aisle:null,checked:false,week_of:weekMon};
-  sbReqSilent('POST','grocery_list',item).then(sv=>{
-    if(sv&&sv[0])st.groceryList.push(sv[0]);
-    else{item.id='l-'+Date.now();st.groceryList.push(item);}
+  const item={name,store:'HEB',done:false};
+  sbReqSilent('POST','shopping_list',item).then(sv=>{
+    if(sv&&sv[0])st.shopping.push(sv[0]);
+    else{item.id='l-'+Date.now();st.shopping.push(item);}
     save();renderGroceryModal();
+    if(typeof renderShopOv==='function')renderShopOv();
+    if(typeof renderShoppingPage==='function')renderShoppingPage();
   });
 }
 
