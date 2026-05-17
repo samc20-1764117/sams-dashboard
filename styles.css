@@ -665,8 +665,8 @@ body.dark .rec-search{background:rgba(255,255,255,.06);border-color:rgba(255,220
 body.dark .rec-filter-chip{background:rgba(255,255,255,.06);border-color:rgba(255,220,200,.12);color:var(--text)}
 body.dark .rec-filter-chip.active{background:var(--accent);color:#fff}
 /* Book layout */
-#page-recipes{padding:60px 40px 24px;box-sizing:border-box}
-.rec-book{display:grid;grid-template-columns:280px 1fr;height:calc(100vh - 120px);margin-top:10px;gap:0;border-radius:12px;overflow:hidden;border:1px solid rgba(210,205,228,.2);background:rgba(255,252,248,.6);width:100%;box-sizing:border-box}
+#page-recipes.active{display:flex!important;flex-direction:column;padding:60px 40px 24px;box-sizing:border-box;height:100vh}
+.rec-book{display:grid;grid-template-columns:280px 1fr;flex:1;min-height:0;border-radius:12px;overflow:hidden;border:1px solid rgba(210,205,228,.2);background:rgba(255,252,248,.6);box-sizing:border-box}
 body.dark .rec-book{background:rgba(28,16,10,.5);border-color:rgba(255,220,200,.1)}
 .rec-book-left{display:flex;flex-direction:column;border-right:1px solid rgba(210,205,228,.2);overflow:hidden;padding:12px}
 .rec-book-left .rec-filter-bar{padding:0 0 8px;gap:4px}
