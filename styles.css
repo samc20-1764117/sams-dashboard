@@ -643,8 +643,9 @@ body.dark .rec-tbl th{background:rgba(40,22,14,.97)}
 .rec-tbl td{padding:5px 8px;border-bottom:1px solid rgba(210,205,228,.1);vertical-align:middle}
 .rec-tbl tr:hover td{background:rgba(255,255,255,.4)}
 .rec-tbl tr.rec-sel td{background:var(--sel-bg,rgba(130,115,100,.1))!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.7)}
-.rec-tbl .rec-dots{opacity:0;padding:0 4px;cursor:pointer;font-size:13px;color:var(--muted);background:none;border:none;line-height:1}
-.rec-tbl tr:hover .rec-dots,.rec-tbl tr.rec-sel .rec-dots{opacity:1}
+.rec-tbl .rec-del-btn{opacity:0;padding:0 4px;cursor:pointer;font-size:12px;color:var(--muted);background:none;border:none;line-height:1;transition:opacity .1s}
+.rec-tbl tr:hover .rec-del-btn,.rec-tbl tr.rec-sel .rec-del-btn{opacity:1}
+.rec-tbl .rec-del-btn:hover{color:#ef4444}
 .rec-fav{font-size:13px;cursor:pointer;opacity:.35;transition:opacity .12s,transform .12s;line-height:1;background:none;border:none;padding:1px 2px;border-radius:3px}
 .rec-fav.active{opacity:1}
 .rec-fav:hover{opacity:.7;transform:scale(1.2)}

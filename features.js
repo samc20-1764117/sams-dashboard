@@ -1832,7 +1832,7 @@ function selRecRow(e,sid){
     _lastSelRecId=sid;
   } else {
     if(_selRecIds.size===1&&_selRecIds.has(sid)){_selRecIds.clear();_lastSelRecId=null;closeRecSidePanel();}
-    else{_selRecIds.clear();_selRecIds.add(sid);_lastSelRecId=sid;}
+    else{_selRecIds.clear();_selRecIds.add(sid);_lastSelRecId=sid;openRecSidePanel(sid);}
   }
   applyRecSelHighlight();
 }
@@ -2106,14 +2106,14 @@ function renderRecipeTable(){
     const sid=String(r.id);
     const isSel=_selRecIds.has(sid);
     const favStyle=r.favorite?'color:#ef4444;opacity:1':'';
-    return`<tr data-rid="${sid}" class="${isSel?'rec-sel':''}" onclick="selRecRow(event,'${sid}')" ondblclick="openRecSidePanel('${sid}')" oncontextmenu="showRecCtx(event,'${sid}')">
+    return`<tr data-rid="${sid}" class="${isSel?'rec-sel':''}" onclick="selRecRow(event,'${sid}')" ondblclick="openRecipeEditModal('${sid}')" oncontextmenu="showRecCtx(event,'${sid}')">
       <td style="text-align:center;width:28px;padding:4px 4px"><button class="rec-fav${r.favorite?' active':''}" style="${favStyle}" onclick="toggleRecFavorite('${sid}',event)" title="${r.favorite?'Remove from favorites':'Add to favorites'}">♥</button></td>
       <td style="padding:5px 8px;font-weight:600;font-size:12px">${esc(r.name)}</td>
       <td style="padding:5px 8px">${r.meal_type?`<span class="rec-meal-pill">${esc(r.meal_type)}</span>`:''}</td>
       <td class="rec-time-lbl" style="padding:5px 8px">${fmtMin(r.time)}</td>
       <td style="padding:5px 8px;color:var(--muted);font-size:11px">${r.servings||''}</td>
       <td style="padding:5px 8px;font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px">${esc(r.notes||'')}</td>
-      <td style="width:28px;padding:2px 4px;text-align:right"><button class="rec-dots" onclick="event.stopPropagation();openRecSidePanel('${sid}')" title="View">···</button></td>
+      <td style="width:28px;padding:2px 4px;text-align:right"><button class="rec-del-btn" onclick="event.stopPropagation();_recCtxId='${sid}';_selRecIds.clear();_selRecIds.add('${sid}');recCtxDelete()" title="Delete">✕</button></td>
     </tr>`;
   });
   tbody.innerHTML=rowsHtml.join('')||`<tr><td colspan="7" style="padding:28px;text-align:center;color:var(--subtle);font-size:12px">No recipes yet — double click or press + to add</td></tr>`;
