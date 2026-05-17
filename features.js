@@ -2280,6 +2280,7 @@ function openGroceryModal(){
     modal.addEventListener('keydown',e=>{
       if(e.key==='Escape'){e.preventDefault();modal.close();}
       if(e.key==='Enter'&&!e.target.matches('input,textarea,button')){e.preventDefault();modal.close();}
+      if(e.key==='s'&&!e.target.matches('input,textarea')){e.preventDefault();modal.close();}
     });
   }
   modal.classList.add('open');modal.showModal();
@@ -4182,7 +4183,7 @@ document.addEventListener('keydown',e=>{
   if(e.metaKey||e.ctrlKey||e.altKey)return;
   if(e.key==='n'){e.preventDefault();openQA('today',null,d2s(getDayDate(dayOff)));}
   if(e.key==='r'){e.preventDefault();location.reload();}
-  if(e.key==='s'){e.preventDefault();openGroceryModal();}
+  if(e.key==='s'){e.preventDefault();const gm=document.getElementById('groceryModal');if(gm&&gm.open)gm.close();else openGroceryModal();}
 });
 // Arrow keys: move selected TB blocks ±30 min
 window.addEventListener('keydown',e=>{
