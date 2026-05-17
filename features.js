@@ -1818,6 +1818,21 @@ async function toggleRecFavorite(id,e){
 }
 
 
+function _recNavOffset(dir){
+  const rows=_getFilteredRecipes();
+  if(!rows.length)return;
+  const curIdx=rows.findIndex(r=>String(r.id)===_recPanelId);
+  let next=curIdx+dir;
+  if(next<0)next=rows.length-1;
+  if(next>=rows.length)next=0;
+  _recPanelId=String(rows[next].id);
+  renderRecipeDetail(_recPanelId);
+  renderRecipeList();
+  // Scroll into view
+  const el=document.querySelector(`.rec-list-item[data-rid="${_recPanelId}"]`);
+  if(el)el.scrollIntoView({block:'nearest'});
+}
+
 let _recClickTimer=null;
 function selRecRow(e,sid){
   if(e.target.closest('button,input'))return;
@@ -2169,6 +2184,16 @@ function renderRecipesPage(){
     </div>`;
     page.addEventListener('dblclick',e=>{
       if(!e.target.closest('.rec-list-item,button,input,textarea,select,.rec-book-right'))openRecipeAddModal();
+    });
+    document.addEventListener('keydown',e=>{
+      if(!document.getElementById('page-recipes')?.classList.contains('active'))return;
+      if(e.target.matches('input,textarea,select'))return;
+      if(document.getElementById('recipeModal')?.classList.contains('open'))return;
+      if(e.key==='ArrowDown'||e.key==='ArrowRight'){
+        e.preventDefault();_recNavOffset(1);
+      } else if(e.key==='ArrowUp'||e.key==='ArrowLeft'){
+        e.preventDefault();_recNavOffset(-1);
+      }
     });
   }
   _applyRecFilterUI();
@@ -3839,19 +3864,26 @@ document.addEventListener('input',e=>{
   }
 },{capture:true});
 
-// Bullet: "- " at start of line → "• "
+// Bullet: "- " at start of line → "• " + auto-cap after bullet
 document.addEventListener('input',e=>{
   const el=e.target;
   if(el.tagName!=='TEXTAREA')return;
   const pos=el.selectionStart;
-  const val=el.value;
+  let val=el.value;
   // Check if "- " was just typed at start of line
   if(pos>=2&&val[pos-2]==='-'&&val[pos-1]===' '){
     const lineStart=val.lastIndexOf('\n',pos-3)+1;
     if(pos-2===lineStart){
       el.value=val.slice(0,pos-2)+'• '+val.slice(pos);
       el.setSelectionRange(pos,pos);
+      return;
     }
+  }
+  // Auto-capitalize after "• "
+  val=el.value;
+  if(pos>=3&&val[pos-3]==='•'&&val[pos-2]===' '&&/[a-z]/.test(val[pos-1])){
+    el.value=val.slice(0,pos-1)+val[pos-1].toUpperCase()+val.slice(pos);
+    el.setSelectionRange(pos,pos);
   }
 },{capture:true});
 async function addQN(){
