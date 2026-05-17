@@ -1105,9 +1105,7 @@ function renderWkCal(){
         else if(t._virtual){togRecVirt(t._recId,chk.checked,t._wkKey||getWkKey(wkOff));}
         else{toggleTask(t.id,chk.checked,'week');}
       });
-      const _isHeb=/\bheb\b/i.test(t.name||'');
-      const _chipHebC=_isHeb?(typeof _groceryCount==='function'?_groceryCount():0):0;
-      const nm=document.createElement('span');nm.className='chip-name';nm.innerHTML=tmIcon(t)+escHtml(t._type==='pup'?_pupDisplayName(t):t.name)+(_isHeb?`<span class="heb-cnt" style="position:static;transform:none;margin-left:3px" onclick="event.stopPropagation();openGroceryModal();">🛒${_chipHebC?' '+_chipHebC:''}</span>`:'');
+      const nm=document.createElement('span');nm.className='chip-name';nm.innerHTML=tmIcon(t)+escHtml(t._type==='pup'?_pupDisplayName(t):t.name);
       // name click handled by chip click→selTask, dblclick→openEditTask
       chip.appendChild(chk);chip.appendChild(nm);
       chip.addEventListener('contextmenu',e=>{
@@ -2098,8 +2096,6 @@ function renderRecOv(){
     if(isDone)nm.style.cssText='text-decoration:line-through;color:var(--muted)';
     nm.textContent=r._displayName;
     row.appendChild(nm);
-    const _hb=_hebBadge(r._displayName);
-    if(_hb){const _hw=document.createElement('span');_hw.innerHTML=_hb;const _hel=_hw.firstChild;if(_hel){_hel.style.position='static';_hel.style.transform='none';row.appendChild(_hel);}}
     const hasDot=r._edited;
     const del=document.createElement('button');
     del.className='delbtn';del.textContent='✕';del.title='Remove…';
@@ -2646,6 +2642,8 @@ function renderUnassigned(){
   if(!badge)return;
   if(ts.length>0){badge.textContent=ts.length;badge.style.display='flex';}
   else{badge.style.display='none';closeUnMenu();}
+  const hebBtn=document.getElementById('hebFootBtn');
+  if(hebBtn){const c=typeof _groceryCount==='function'?_groceryCount():0;hebBtn.textContent='🛒'+(c?' '+c:'');}
   const menu=document.getElementById('unMenu');
   if(menu&&menu.style.display==='block'){
     menu.innerHTML=ts.length?ts.map(t=>tRow(t,{cat:true,drag:true,noColor:true})).join('')
@@ -2813,7 +2811,6 @@ function tRowWk(t){
     return`<div class="ti ${t.done?'done':''}" style="background:${s.bg}" id="ti-${t.id}" onclick="selTask(event,'${t.id}')" ondblclick="${t._isWrRule?`event.stopPropagation();openWrEditModal('${t._ruleId}','${t._wkKey||getWkKey(wkOff)}','all')`:`tiDblRec(event,'${t._recId}')`}" oncontextmenu="${_wkCtxMenu}">
       <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="${t._isWrec?`togRec('${t._recId}',this.checked)`:`togRecVirt('${t._recId}',this.checked,'${t._wkKey||getWkKey(wkOff)}')`}"></label>
       <span class="tn">${t.name}</span>
-      ${_hebBadge(t.name)}
       <span class="cpill" style="background:${s.bg};color:${s.t};border-color:${s.b}">Recurring</span>
       <span class="dlbl">${fmtD(t.due_date)}</span>
       <button class="delbtn" onclick="event.stopPropagation();${_wkXBtn}">✕</button>
@@ -4160,9 +4157,9 @@ function startTBInlineEdit(blockId,col,onCommit){
       const newTask={id:'t-'+Date.now(),name:val,category:chosenCat,due_date:b.ds,done:false,important:_tbImp};
       st.tasks.push(newTask);b.taskId=String(newTask.id);
       if(onCommit)onCommit();
-      save();renderAll();
+      save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
       const sv=await sbReq('POST','tasks',{name:val,category:chosenCat,due_date:b.ds,done:false,important:_tbImp});
-      if(sv&&sv[0]){const ti=st.tasks.findIndex(x=>x.id===newTask.id);if(ti>-1)st.tasks[ti]={...sv[0]};b.taskId=String(sv[0].id);save();renderToday();renderWkSummary();renderWkCal();}
+      if(sv&&sv[0]){const ti=st.tasks.findIndex(x=>x.id===newTask.id);if(ti>-1)st.tasks[ti]={...sv[0]};b.taskId=String(sv[0].id);save();renderToday();renderWkSummary();renderWkCal();if(document.getElementById('tbGrid'))renderDayTB();}
       sbSaveBlock(b);
     } else {
       const lt=st.tasks.find(x=>String(x.id)===String(b.taskId));
