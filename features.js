@@ -2281,7 +2281,9 @@ function openGroceryModal(){
       if(e.key==='Escape'){e.preventDefault();modal.close();}
       if(e.key==='Enter'&&!e.target.matches('input,textarea,button')){e.preventDefault();e.stopPropagation();modal.close();}
       if(e.key==='s'&&!e.target.matches('input,textarea')){e.preventDefault();e.stopPropagation();modal.close();}
-      if(e.key==='t'&&!e.target.matches('input,textarea')){e.preventDefault();e.stopPropagation();_grocWkOff=0;renderGroceryModal();}
+      if(e.key==='t'&&!e.target.matches('input,textarea')){e.preventDefault();e.stopPropagation();_grocWkOff=0;renderGroceryModal();modal.focus();}
+      if(e.key==='ArrowLeft'&&!e.target.matches('input,textarea')){e.preventDefault();e.stopPropagation();_grocWkOff--;renderGroceryModal();modal.focus();}
+      if(e.key==='ArrowRight'&&!e.target.matches('input,textarea')){e.preventDefault();e.stopPropagation();_grocWkOff++;renderGroceryModal();modal.focus();}
     });
   }
   modal.classList.add('open');modal.showModal();
@@ -2372,11 +2374,11 @@ function renderGroceryModal(){
   // ── HEADER ──
   let html=`<div class="groc-header">
     <div style="display:flex;align-items:center;gap:8px">
-      <button class="groc-nav-btn" onclick="_grocWkOff--;renderGroceryModal()">←</button>
+      <button class="groc-nav-btn" onclick="_grocWkOff--;renderGroceryModal();this.closest('dialog').focus()">←</button>
       <span style="font-size:12px;color:var(--muted)">${_grocWeekLabel(menuMon)}</span>
-      <button class="groc-nav-btn" onclick="_grocWkOff++;renderGroceryModal()">→</button>
+      <button class="groc-nav-btn" onclick="_grocWkOff++;renderGroceryModal();this.closest('dialog').focus()">→</button>
     </div>
-    <button class="groc-nav-btn" onclick="_grocWkOff=0;renderGroceryModal()"${_grocWkOff===0?' disabled style="opacity:.4;pointer-events:none"':''}>This Week</button>
+    <button class="groc-nav-btn" onclick="_grocWkOff=0;renderGroceryModal();this.closest('dialog').focus()"${_grocWkOff===0?' disabled style="opacity:.4;pointer-events:none"':''}>This Week</button>
     <span class="groc-people-toggle">People: <button onclick="setGrocPeople(1,'${planMon}')"${_getGrocPeople(planMon)===1?' class="active"':''}>1</button><button onclick="setGrocPeople(2,'${planMon}')"${_getGrocPeople(planMon)===2?' class="active"':''}>2</button></span>
     <button class="groc-close" onclick="document.getElementById('groceryModal').close()">✕</button>
   </div>`;

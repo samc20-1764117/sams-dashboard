@@ -913,7 +913,7 @@ body.dark .groc-add input{background:rgba(255,255,255,.06);border-color:rgba(255
 .groc-menu-col.groc-col-past .groc-meal-tag{opacity:.7}
 .groc-col-hdr{font-size:10px;font-weight:600;color:var(--muted);text-align:center;padding-bottom:3px;border-bottom:1px solid rgba(210,205,228,.1);margin-bottom:2px}
 /* Bottom three-column layout */
-.groc-bottom{display:grid;grid-template-columns:1fr 1fr 1.2fr;flex:1;min-height:0;overflow:hidden}
+.groc-bottom{display:grid;grid-template-columns:.8fr .7fr 1.5fr;flex:1;min-height:0;overflow:hidden}
 .groc-panel{overflow-y:auto;padding:14px 16px;min-width:0;display:flex;flex-direction:column}
 .groc-panel+.groc-panel{border-left:1px solid rgba(210,205,228,.2)}
 .groc-panel-title{font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px;letter-spacing:-.2px;flex-shrink:0}
