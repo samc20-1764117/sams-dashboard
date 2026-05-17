@@ -1105,8 +1105,9 @@ function renderWkCal(){
         else if(t._virtual){togRecVirt(t._recId,chk.checked,t._wkKey||getWkKey(wkOff));}
         else{toggleTask(t.id,chk.checked,'week');}
       });
-      const _chipHeb=/\bheb\b/i.test(t.name||'')?(typeof _groceryCount==='function'?_groceryCount():st.shopping.filter(s=>!s.done&&s.store&&s.store.toLowerCase()==='heb').length):0;
-      const nm=document.createElement('span');nm.className='chip-name';nm.innerHTML=tmIcon(t)+escHtml(t._type==='pup'?_pupDisplayName(t):t.name)+(_chipHeb?`<span class="heb-cnt" style="position:static;transform:none;margin-left:3px" onclick="event.stopPropagation();openGroceryModal();">${_chipHeb}</span>`:'');
+      const _isHeb=/\bheb\b/i.test(t.name||'');
+      const _chipHebC=_isHeb?(typeof _groceryCount==='function'?_groceryCount():0):0;
+      const nm=document.createElement('span');nm.className='chip-name';nm.innerHTML=tmIcon(t)+escHtml(t._type==='pup'?_pupDisplayName(t):t.name)+(_isHeb?`<span class="heb-cnt" style="position:static;transform:none;margin-left:3px" onclick="event.stopPropagation();openGroceryModal();">🛒${_chipHebC?' '+_chipHebC:''}</span>`:'');
       // name click handled by chip click→selTask, dblclick→openEditTask
       chip.appendChild(chk);chip.appendChild(nm);
       chip.addEventListener('contextmenu',e=>{

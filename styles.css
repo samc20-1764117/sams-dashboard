@@ -824,7 +824,7 @@ body.dark .bday-add-menu{background:rgba(38,20,10,.97);border-color:rgba(255,220
 .vid-board-card.vid-sel{border-color:rgba(14,165,233,.4);background:rgba(14,165,233,.05)}
 .vid-board-dragover{background:rgba(14,165,233,.06)!important}
 /* ── Grocery Modal ──────────────────────────────────────────────────────── */
-.grocery-modal{border:none;border-radius:16px;padding:0;width:min(420px,92vw);max-height:80vh;background:rgba(255,252,248,.98);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);box-shadow:0 20px 60px rgba(0,0,0,.12),0 4px 16px rgba(0,0,0,.06);overflow-y:auto}
+.grocery-modal{border:none;border-radius:16px;padding:0;width:min(480px,92vw);max-height:80vh;background:rgba(255,252,248,.98);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);box-shadow:0 20px 60px rgba(0,0,0,.12),0 4px 16px rgba(0,0,0,.06);overflow-y:auto;overflow-x:hidden}
 .grocery-modal::backdrop{background:rgba(0,0,0,.3)}
 body.dark .grocery-modal{background:rgba(28,16,10,.97);box-shadow:0 20px 60px rgba(0,0,0,.4)}
 .groc-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 10px;border-bottom:1px solid rgba(210,205,228,.2);position:sticky;top:0;background:inherit;z-index:2}
@@ -836,11 +836,11 @@ body.dark .grocery-modal{background:rgba(28,16,10,.97);box-shadow:0 20px 60px rg
 .groc-add input:focus{border-color:var(--accent)}
 body.dark .groc-add input{background:rgba(255,255,255,.06);border-color:rgba(255,220,200,.12)}
 .groc-add button{padding:4px 10px;border-radius:var(--rs);border:1px solid var(--accent);background:var(--accent);color:#fff;font-weight:700;cursor:pointer;font-size:14px}
-.groc-section{padding:8px 16px}
+.groc-section{padding:8px 16px;box-sizing:border-box;max-width:100%}
 .groc-section-title{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
-.groc-item{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(210,205,228,.08)}
+.groc-item{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(210,205,228,.08);min-width:0}
 .groc-item:last-child{border-bottom:none}
-.groc-name{flex:1;font-size:13px;color:var(--text)}
+.groc-name{flex:1;font-size:13px;color:var(--text);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .groc-amt{font-size:11px;color:var(--muted);flex-shrink:0}
 .groc-done .groc-name{text-decoration:line-through;opacity:.5}
 .groc-del{background:none;border:none;cursor:pointer;color:var(--muted);font-size:11px;opacity:0;transition:opacity .12s}
