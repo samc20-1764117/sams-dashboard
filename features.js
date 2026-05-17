@@ -2228,6 +2228,7 @@ async function delGroceryItem(id){
 }
 
 function openGroceryModal(){
+  _grocWkOff=0;_grocRecSearch='';
   generateGroceryStaples().then(()=>renderGroceryModal());
   let modal=document.getElementById('groceryModal');
   if(!modal){
@@ -2235,6 +2236,10 @@ function openGroceryModal(){
     document.body.appendChild(modal);
     modal.addEventListener('click',e=>{if(e.target===modal)modal.close();});
     modal.addEventListener('close',()=>modal.classList.remove('open'));
+    modal.addEventListener('keydown',e=>{
+      if(e.key==='Escape'){e.preventDefault();modal.close();}
+      if(e.key==='Enter'&&!e.target.matches('input,textarea,button')){e.preventDefault();modal.close();}
+    });
   }
   modal.classList.add('open');modal.showModal();
   renderGroceryModal();
@@ -2281,21 +2286,18 @@ function renderGroceryModal(){
   let html=`<div class="groc-header">
     <div style="display:flex;align-items:center;gap:10px">
       <button class="groc-nav-btn" onclick="_grocWkOff--;renderGroceryModal()">←</button>
-      <h3 style="margin:0;font-size:14px">HEB Meal Planner</h3>
+      <span style="font-size:12px;color:var(--muted)">${_grocWeekLabel(menuMon)}</span>
       <button class="groc-nav-btn" onclick="_grocWkOff++;renderGroceryModal()">→</button>
-      ${_grocWkOff!==0?`<button class="groc-nav-btn" onclick="_grocWkOff=0;renderGroceryModal()" style="font-size:10px">Reset</button>`:''}
+      ${_grocWkOff!==0?`<button class="groc-nav-btn" onclick="_grocWkOff=0;renderGroceryModal()" style="font-size:10px">This Week</button>`:''}
     </div>
-    <div style="display:flex;gap:6px">
-      <button class="groc-close" onclick="openGroceryStaplesEditor()" title="Manage weekly staples" style="font-size:13px">⚙</button>
-      <button class="groc-close" onclick="document.getElementById('groceryModal').close()">✕</button>
-    </div>
+    <button class="groc-close" onclick="document.getElementById('groceryModal').close()">✕</button>
   </div>`;
 
   html+=`<div class="groc-split">`;
 
   // ── PANEL 1: This Week's Menu (what I'm eating based on previous plan) ──
   html+=`<div class="groc-panel">`;
-  html+=`<div class="groc-panel-title">Menu: ${_grocWeekLabel(menuMon)}</div>`;
+  html+=`<div class="groc-panel-title">Menu This Week</div>`;
   html+=`<div class="groc-meal-grid">`;
   menuDates.forEach((ds,i)=>{
     const meals=(st.mealPlan||[]).filter(m=>m.meal_date===ds);
@@ -2314,7 +2316,7 @@ function renderGroceryModal(){
 
   // ── PANEL 2: Select Meals for Next Week ──
   html+=`<div class="groc-panel">`;
-  html+=`<div class="groc-panel-title">Plan: ${_grocWeekLabel(planMon)}</div>`;
+  html+=`<div class="groc-panel-title">Plan for Next Week</div>`;
   // Show selected meals as tags
   if(planMeals.length){
     html+=`<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px;flex-shrink:0">`;
@@ -2342,7 +2344,6 @@ function renderGroceryModal(){
   // ── PANEL 3: Grocery List (for the planning week — what to buy Sunday) ──
   html+=`<div class="groc-panel">`;
   html+=`<div class="groc-panel-title">Shopping List <span style="font-weight:400;color:var(--muted);font-size:10px">(${unchecked.length})</span></div>`;
-  html+=`<div class="groc-panel-subtitle">Buy Sunday for ${_grocWeekLabel(planMon)}</div>`;
   html+=`<div class="groc-add"><input type="text" id="grocAddName" placeholder="Add item…"><input type="text" id="grocAddAmt" placeholder="Qty" style="width:50px"><button onclick="addGroceryManualForWeek('${planMon}')">+</button></div>`;
   Object.entries(recipeGroups).forEach(([name,gItems])=>{html+=`<div class="groc-section"><div class="groc-section-title">${escHtml(name)}</div>${gItems.map(itemRow).join('')}</div>`;});
   if(manual.length){html+=`<div class="groc-section"><div class="groc-section-title">Other</div>${manual.map(itemRow).join('')}</div>`;}
