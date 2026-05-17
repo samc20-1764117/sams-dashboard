@@ -229,13 +229,12 @@
             <div class="wkc-edge right" id="wkcEdgeR">›</div>
             <div class="wkc-banners" id="wkcBanners"></div>
             <div class="wkc-cols" id="wkcCols" onwheel="onWkcWheel(event)"></div>
+            <div class="wkc-foot">
+              <div id="hebFootBtn" onclick="openGroceryModal()" style="width:18px;height:18px;border-radius:50%;background:rgba(180,170,210,.3);color:var(--muted);font-size:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0" title="HEB Grocery List">🛒</div>
+              <div id="unAssignedBadge" onclick="toggleUnMenu()" style="display:none;width:18px;height:18px;border-radius:50%;background:rgba(180,170,210,.3);color:var(--muted);font-size:9px;font-weight:600;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0"></div>
+            </div>
             <div class="meal-row" id="mealRow"></div>
           </div>
-        </div>
-        <div class="wkc-foot">
-          <div id="hebFootBtn" onclick="openGroceryModal()" style="width:18px;height:18px;border-radius:50%;background:rgba(180,170,210,.3);color:var(--muted);font-size:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0" title="HEB Grocery List">🛒</div>
-          <div id="unAssignedBadge" onclick="toggleUnMenu()" style="display:none;width:18px;height:18px;border-radius:50%;background:rgba(180,170,210,.3);color:var(--muted);font-size:9px;font-weight:600;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0"></div>
-          <div style="flex:1"></div>
         </div>
       </div>
     </div><!-- week cal -->

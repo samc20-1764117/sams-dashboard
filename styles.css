@@ -470,7 +470,7 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 .wkc-drag-ghost{position:absolute;top:2px;height:18px;border-radius:4px;pointer-events:none;z-index:20;opacity:.55;transition:none}
 .wkc-col.drag-sel{background:rgba(20,184,166,.07)}
 
-.wkc-foot{position:absolute;bottom:4px;left:8px;z-index:12;pointer-events:none;display:flex;align-items:center;gap:6px}
+.wkc-foot{position:absolute;bottom:34px;left:4px;z-index:12;pointer-events:none;display:flex;flex-direction:column;align-items:flex-start;gap:4px}
 .wkc-foot>*{pointer-events:auto}
 #unAssignedBadge:hover{opacity:.85}
 .month-btn{display:flex;align-items:center;gap:3px;font-size:11px;font-weight:600;color:var(--muted);cursor:pointer;padding:3px 5px;border-radius:var(--rxs);background:none;transition:all .15s}
