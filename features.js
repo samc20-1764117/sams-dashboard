@@ -2276,14 +2276,22 @@ function renderRecipesPage(){
   const page=document.getElementById('page-recipes');if(!page)return;
   if(!page._recInit){
     page._recInit=true;
-    page.innerHTML=`<div class="ov-topbar"><div class="ov-topbar-left"><span class="ov-topbar-label">Recipes</span><span class="ov-topbar-dot"></span><span id="recCount" style="font-size:11px;color:var(--muted)"></span></div><div style="position:relative;display:flex;align-items:center"><input id="recSearchInp" type="text" autocomplete="off" placeholder="Search recipes…" value="" oninput="_recSetSearch(this.value)" onkeydown="event.stopPropagation();_recSearchKey(event)" onfocus="_recSearchFocus()" style="padding:5px 10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:12px;background:var(--bg);color:var(--text);outline:none;width:200px">${_recSearch?`<div style="display:flex;align-items:center;gap:1px;position:absolute;right:6px;top:50%;transform:translateY(-50%)"><button onclick="_recClearSearch()" style="background:none;border:none;cursor:pointer;padding:0 2px;font-size:10px;color:var(--muted);line-height:1" title="Clear (Esc)">✕</button></div>`:''}<div id="recSearchSuggestions" style="display:none;position:absolute;top:100%;left:0;margin-top:4px;background:var(--bg);border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.1);z-index:1001;max-height:240px;overflow-y:auto;width:320px"></div></div><div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div></div>
-    <div class="rec-book">
-      <div class="rec-book-left">
-        <div class="rec-list-scroll" id="recListScroll"></div>
-        <button class="rec-add-btn" onclick="openRecipeAddModal()">+ Add Recipe</button>
+    page.innerHTML=`<div class="ov-topbar"><div class="ov-topbar-left"><span class="ov-topbar-label">Recipes</span><span class="ov-topbar-dot"></span><span id="recCount" style="font-size:11px;color:var(--muted)"></span></div><div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div></div>
+    <div class="rec-book-wrap">
+      <div class="rec-search-float">
+        <div style="position:relative;display:flex;align-items:center">
+          <input id="recSearchInp" type="text" autocomplete="off" placeholder="Search recipes…" value="" oninput="_recSetSearch(this.value)" onkeydown="event.stopPropagation();_recSearchKey(event)" onfocus="_recSearchFocus()" class="rec-search-inp">
+          <div id="recSearchSuggestions" class="rec-search-suggestions"></div>
+        </div>
       </div>
-      <div class="rec-book-right" id="recDetailPanel">
-        <div class="rec-detail-empty">Select a recipe to view</div>
+      <div class="rec-book">
+        <div class="rec-book-left">
+          <div class="rec-list-scroll" id="recListScroll"></div>
+          <button class="rec-add-btn" onclick="openRecipeAddModal()">+ Add Recipe</button>
+        </div>
+        <div class="rec-book-right" id="recDetailPanel">
+          <div class="rec-detail-empty">Select a recipe to view</div>
+        </div>
       </div>
     </div>`;
     page.addEventListener('dblclick',e=>{
