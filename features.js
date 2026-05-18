@@ -1824,7 +1824,7 @@ async function toggleRecFavorite(id,e){
   r.favorite=!r.favorite;save();
   sbReqSilent('PATCH','recipes',{favorite:r.favorite},`?id=eq.${id}`);
   renderRecipeTable();
-  if(_recPanelId===String(id))renderRecSidePanel(id);
+  if(_recPanelId===String(id))renderRecipeDetail(id);
 }
 
 
@@ -2097,7 +2097,6 @@ function renderRecipeList(){
   const container=document.getElementById('recListScroll');if(!container)return;
   const cnt=document.getElementById('recCount');
   const rows=_getFilteredRecipes();
-  function fmtMin(m){if(!m)return'';return m>=60?`${Math.floor(m/60)}h${m%60?' '+m%60+'m':''}`:m+'m';}
   function esc(v){return(v||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;');}
   container.innerHTML=rows.map(r=>{
     const sid=String(r.id);
@@ -2106,11 +2105,6 @@ function renderRecipeList(){
       <div class="rec-list-main">
         <span class="rec-list-fav${r.favorite?' on':''}" onclick="event.stopPropagation();toggleRecFavorite('${sid}',event)">♥</span>
         <span class="rec-list-name">${esc(r.name)}</span>
-        <div class="rec-list-meta">
-          ${r.meal_type?`<span class="rec-meal-pill">${esc(r.meal_type)}</span>`:''}
-          ${r.cuisine?`<span class="rec-list-cuisine">${esc(r.cuisine)}</span>`:''}
-          ${r.time?`<span class="rec-list-time">${fmtMin(r.time)}</span>`:''}
-        </div>
         <button class="rec-list-del" onclick="event.stopPropagation();_recCtxId='${sid}';_selRecIds.clear();_selRecIds.add('${sid}');recCtxDelete()">✕</button>
       </div>
     </div>`;
@@ -2128,13 +2122,15 @@ function renderRecipeDetail(id){
   const esc=v=>(v||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   const ings=_sortIngredients(_parseIngredients(r.ingredients));
   function fmtMin(m){if(!m)return'';return m>=60?`${Math.floor(m/60)}h${m%60?' '+m%60+'m':''}`:m+'m';}
+  const sid=String(r.id);
+  const escV=v=>(v||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;');
   let html=`<div class="rec-detail-header">
-    <h2 class="rec-detail-title">${esc(r.name)}</h2>
+    <h2 class="rec-detail-title" ondblclick="_recInlineEdit(this,'${sid}','name','text')">${esc(r.name)}</h2>
     <div class="rec-detail-meta">
-      ${r.meal_type?`<span class="rec-meal-pill">${esc(r.meal_type)}</span>`:''}
-      ${r.cuisine?`<span class="rec-detail-tag">${esc(r.cuisine)}</span>`:''}
-      ${r.time?`<span class="rec-detail-tag">${fmtMin(r.time)}</span>`:''}
-      ${r.servings?`<span class="rec-detail-tag">${r.servings} servings</span>`:''}
+      <span class="rec-meal-pill rec-detail-editable" ondblclick="_recInlineEdit(this,'${sid}','meal_type','select',['Breakfast','Lunch','Dinner','Snack','Dessert','Drink','Side'])">${r.meal_type?esc(r.meal_type):'+ meal'}</span>
+      <span class="rec-detail-tag rec-detail-editable" ondblclick="_recInlineEdit(this,'${sid}','cuisine','select',['American','Mexican','Italian','Chinese','Japanese','Korean','Thai','Indian','Mediterranean','French','Vietnamese','Greek','Southern','Tex-Mex','Other'])">${r.cuisine?esc(r.cuisine):'+ cuisine'}</span>
+      <span class="rec-detail-tag rec-detail-editable" ondblclick="_recInlineEdit(this,'${sid}','time','number')">${r.time?fmtMin(r.time):'+ time'}</span>
+      <span class="rec-detail-tag rec-detail-editable" ondblclick="_recInlineEdit(this,'${sid}','servings','number')">${r.servings?r.servings+' srv':'+ srv'}</span>
       <span class="rec-detail-fav${r.favorite?' on':''}" onclick="toggleRecFavorite('${r.id}');renderRecipeDetail('${r.id}');renderRecipeList()">♥</span>
     </div>
   </div>`;
@@ -2159,11 +2155,49 @@ function renderRecipeDetail(id){
   html+=`</div>`;
   html+=`<div class="rec-detail-inst">`;
   html+=`<div class="rec-detail-section-title">Instructions</div>`;
-  html+=`<div class="rec-detail-inst-text">${r.instructions?esc(r.instructions).replace(/\n/g,'<br>'):'<span style="color:var(--muted)">No instructions added</span>'}</div>`;
+  html+=`<div class="rec-detail-inst-text" ondblclick="_recInlineEdit(this,'${sid}','instructions','textarea')">${r.instructions?esc(r.instructions).replace(/\n/g,'<br>'):'<span style="color:var(--muted)">Double-click to add instructions</span>'}</div>`;
   html+=`</div>`;
   html+=`</div>`;
-  html+=`<div class="rec-detail-actions"><button class="btn btn-ghost" onclick="openRecipeEditModal('${r.id}')">Edit</button></div>`;
+  html+=`<div class="rec-detail-actions"></div>`;
   panel.innerHTML=html;
+}
+
+function _recInlineEdit(el,id,field,type,opts){
+  if(el.querySelector('input,select,textarea'))return;
+  const r=st.recipes.find(x=>String(x.id)===String(id));if(!r)return;
+  const val=r[field]||'';
+  const save=newVal=>{
+    let parsed=newVal;
+    if(type==='number')parsed=parseInt(newVal)||null;
+    else parsed=newVal.trim()||null;
+    setRecField(id,field,parsed);
+    renderRecipeDetail(id);renderRecipeList();
+  };
+  if(type==='textarea'){
+    const ta=document.createElement('textarea');
+    ta.value=val;ta.className='rec-inline-ta';
+    ta.style.cssText='width:100%;min-height:120px;font-family:inherit;font-size:13px;line-height:1.7;border:1px solid var(--accent);border-radius:6px;padding:6px 8px;background:var(--bg);color:var(--text);outline:none;resize:vertical;box-sizing:border-box';
+    el.innerHTML='';el.appendChild(ta);ta.focus();
+    ta.addEventListener('blur',()=>save(ta.value));
+    ta.addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();renderRecipeDetail(id);}});
+  } else if(type==='select'){
+    const sel=document.createElement('select');
+    sel.style.cssText='font-family:inherit;font-size:11px;border:1px solid var(--accent);border-radius:4px;padding:2px 4px;background:var(--bg);color:var(--text);outline:none';
+    sel.innerHTML='<option value="">—</option>'+opts.map(o=>`<option value="${o}"${val===o?' selected':''}>${o}</option>`).join('');
+    el.innerHTML='';el.appendChild(sel);sel.focus();
+    sel.addEventListener('change',()=>{save(sel.value);});
+    sel.addEventListener('blur',()=>{save(sel.value);});
+    sel.addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();renderRecipeDetail(id);}});
+  } else {
+    const inp=document.createElement('input');
+    inp.type=type==='number'?'number':'text';
+    inp.value=val;
+    inp.style.cssText='font-family:inherit;font-size:inherit;font-weight:inherit;border:none;border-bottom:1px solid var(--accent);background:transparent;color:var(--text);outline:none;width:100%;padding:0 0 2px';
+    if(type==='number'){inp.style.width='60px';inp.min='0';}
+    el.innerHTML='';el.appendChild(inp);inp.focus();inp.select();
+    inp.addEventListener('blur',()=>save(inp.value));
+    inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();inp.blur();}if(e.key==='Escape'){e.preventDefault();renderRecipeDetail(id);}});
+  }
 }
 
 let _recSearchFilterFn=null;
@@ -2301,13 +2335,14 @@ function renderRecipesPage(){
     });
     document.addEventListener('keydown',e=>{
       if(!document.getElementById('page-recipes')?.classList.contains('active'))return;
-      if(e.target.matches('textarea,select'))return;
-      if(e.target.matches('input')&&e.target.id==='recSearchInp')return;
+      if(e.target.matches('input,textarea,select'))return;
       if(document.getElementById('recipeModal')?.classList.contains('open'))return;
       if(e.key==='ArrowDown'||e.key==='ArrowRight'){
         e.preventDefault();_recNavOffset(1);
       } else if(e.key==='ArrowUp'||e.key==='ArrowLeft'){
         e.preventDefault();_recNavOffset(-1);
+      } else if(e.key==='f'&&_recPanelId){
+        e.preventDefault();toggleRecFavorite(_recPanelId);renderRecipeDetail(_recPanelId);renderRecipeList();
       }
     });
     document.addEventListener('click',e=>{
