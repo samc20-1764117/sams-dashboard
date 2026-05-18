@@ -2010,6 +2010,8 @@ function renderRecipeDetail(id){
   html+=`<textarea class="rec-detail-inst-ta" placeholder="Add step-by-step instructions…" onblur="_recSaveField('${sid}','instructions',this.value.trim()||null)" onkeydown="if(event.key==='Escape'){event.preventDefault();this.blur();}">${esc(r.instructions||'')}</textarea>`;
   html+=`</div>`;
   html+=`</div>`;
+  if(r.notes){html+=`<a class="rec-detail-source" href="${escV(r.notes)}" target="_blank" rel="noopener">Source ↗</a>`;}
+  else{html+=`<div class="rec-detail-source-add" onclick="this.innerHTML='<input class=\\'rec-detail-source-inp\\' placeholder=\\'Paste recipe URL…\\' onblur=\\'_recSaveField(&quot;${sid}&quot;,&quot;notes&quot;,this.value.trim()||null);renderRecipeDetail(&quot;${sid}&quot;)\\' onkeydown=\\'if(event.key===&quot;Enter&quot;){event.preventDefault();this.blur();}if(event.key===&quot;Escape&quot;){this.value=&quot;&quot;;this.blur();}\\'>';this.querySelector('input').focus()">+ Add source link</div>`;}
   html+=`<div class="rec-detail-nav"><button class="rec-detail-nav-btn" onclick="_recNavOffset(-1)" title="Previous recipe">←</button><button class="rec-detail-nav-btn" onclick="_recNavOffset(1)" title="Next recipe">→</button></div>`;
   panel.innerHTML=html;
   _diRender(sid);
