@@ -2194,7 +2194,7 @@ function renderRecipeDetail(id){
         if(lbl)html+=`<div class="rec-detail-ing-group">${lbl}</div>`;
       }
       lastGrp=grp;
-      html+=`<div class="rec-detail-ing" ondblclick="event.stopPropagation();event.preventDefault();_recIngInline(this,'${sid}',${i})"><span class="rec-detail-ing-sort"><button onclick="event.stopPropagation();_recIngMove('${sid}',${i},-1)" title="Move up">▲</button><button onclick="event.stopPropagation();_recIngMove('${sid}',${i},1)" title="Move down">▼</button></span><span class="rec-detail-ing-amt">${ing.amount?esc(ing.amount):''}</span><span class="rec-detail-ing-name">${esc(ing.name)}</span>${ing.is_pantry?'<span class="rec-detail-pantry">pantry</span>':''}<button class="rec-detail-ing-del" onclick="event.stopPropagation();_recIngDelete('${sid}',${i})">✕</button></div>`;
+      html+=`<div class="rec-detail-ing" data-ing-idx="${i}" onmousedown="_recIngDragStart(event,'${sid}',${i})" ondblclick="event.stopPropagation();event.preventDefault();_recIngInline(this,'${sid}',${i})"><span class="rec-detail-ing-grip">⠿</span><span class="rec-detail-ing-amt">${ing.amount?esc(ing.amount):''}</span><span class="rec-detail-ing-name">${esc(ing.name)}</span>${ing.is_pantry?'<span class="rec-detail-pantry">pantry</span>':''}<button class="rec-detail-ing-del" onclick="event.stopPropagation();_recIngDelete('${sid}',${i})">✕</button></div>`;
     });
   } else {
     html+=`<div style="color:var(--muted);font-size:11px">No ingredients yet</div>`;
@@ -2216,11 +2216,13 @@ function _recIngInline(el,id,idx){
   const r=st.recipes.find(x=>String(x.id)===String(id));if(!r)return;
   const ings=_groupIngredients(_parseIngredients(r.ingredients));
   const ing=ings[idx];if(!ing)return;
+  const h=el.offsetHeight;
+  el.style.height=h+'px';el.style.overflow='hidden';
   el.innerHTML=`<input class="rec-ing-edit-amt" value="${(ing.amount||'').replace(/"/g,'&quot;')}" placeholder="amt"><input class="rec-ing-edit-name" value="${(ing.name||'').replace(/"/g,'&quot;')}" placeholder="ingredient">`;
   const amtInp=el.querySelector('.rec-ing-edit-amt');
   const nameInp=el.querySelector('.rec-ing-edit-name');
-  amtInp.style.cssText='width:50px;font-size:11px;border:none;border-bottom:1px solid var(--accent);background:transparent;color:var(--accent);outline:none;font-family:inherit;padding:1px 0;font-weight:600';
-  nameInp.style.cssText='flex:1;font-size:12px;border:none;border-bottom:1px solid var(--accent);background:transparent;color:var(--text);outline:none;font-family:inherit;padding:1px 0';
+  amtInp.style.cssText='width:50px;font-size:11px;border:none;border-bottom:1px solid var(--accent);background:transparent;color:var(--accent);outline:none;font-family:inherit;padding:0;font-weight:600;height:'+(h-8)+'px;box-sizing:border-box';
+  nameInp.style.cssText='flex:1;font-size:12px;border:none;border-bottom:1px solid var(--accent);background:transparent;color:var(--text);outline:none;font-family:inherit;padding:0;height:'+(h-8)+'px;box-sizing:border-box';
   amtInp.focus();amtInp.select();
   const doSave=()=>{
     ing.amount=amtInp.value.trim();ing.name=nameInp.value.trim();
@@ -2252,27 +2254,44 @@ function _recIngAdd(id){
     if(row)_recIngInline(row,id,newIdx>=0?newIdx:rows.length-1);
   },30);
 }
-function _recIngMove(id,idx,dir){
-  const r=st.recipes.find(x=>String(x.id)===String(id));if(!r)return;
-  const ings=_groupIngredients(_parseIngredients(r.ingredients));
-  const ing=ings[idx];if(!ing)return;
-  const targetIdx=idx+dir;
-  if(targetIdx<0||targetIdx>=ings.length)return;
-  const target=ings[targetIdx];
-  // Determine groups
-  const ingGrp=_SPICE_RE.test((ing.name||'').trim())?2:ing.is_pantry?1:0;
-  const targetGrp=_SPICE_RE.test((target.name||'').trim())?2:target.is_pantry?1:0;
-  if(ingGrp!==targetGrp)return;// Don't cross group boundaries
-  // Swap
-  ings[idx]=target;ings[targetIdx]=ing;
-  setRecField(id,'ingredients',_serializeIngredients(ings));
-  renderRecipeDetail(id);
-  // Re-highlight the moved row
-  setTimeout(()=>{
-    const rows=document.querySelectorAll('#recDetailIngList .rec-detail-ing');
-    if(rows[targetIdx])rows[targetIdx].style.background='rgba(194,107,79,.08)';
-    setTimeout(()=>{if(rows[targetIdx])rows[targetIdx].style.background='';},400);
-  },30);
+function _recIngDragStart(e,id,idx){
+  if(e.target.closest('.rec-detail-ing-del')||e.target.closest('input'))return;
+  if(e.button!==0)return;
+  e.preventDefault();
+  const list=document.getElementById('recDetailIngList');if(!list)return;
+  const items=[...list.querySelectorAll('.rec-detail-ing')];
+  const dragged=items[idx];if(!dragged)return;
+  let moved=false,dropIdx=idx;
+  const startY=e.clientY;
+  const onMove=ev=>{
+    if(!moved&&Math.abs(ev.clientY-startY)<4)return;
+    if(!moved){moved=true;dragged.style.opacity='.4';}
+    let ph=list.querySelector('.rec-ing-drop-line');
+    if(!ph){ph=document.createElement('div');ph.className='rec-ing-drop-line';list.appendChild(ph);}
+    const rows=[...list.querySelectorAll('.rec-detail-ing')];
+    let inserted=false;dropIdx=rows.length;
+    for(let i=0;i<rows.length;i++){
+      const rc=rows[i].getBoundingClientRect();
+      if(ev.clientY<rc.top+rc.height/2){list.insertBefore(ph,rows[i]);dropIdx=i;inserted=true;break;}
+    }
+    if(!inserted&&rows.length)rows[rows.length-1].after(ph);
+  };
+  const onUp=()=>{
+    document.removeEventListener('mousemove',onMove);
+    document.removeEventListener('mouseup',onUp);
+    dragged.style.opacity='';
+    const ph=list.querySelector('.rec-ing-drop-line');if(ph)ph.remove();
+    if(!moved||dropIdx===idx)return;
+    const r=st.recipes.find(x=>String(x.id)===String(id));if(!r)return;
+    const ings=_groupIngredients(_parseIngredients(r.ingredients));
+    const ing=ings.splice(idx,1)[0];
+    const ins=dropIdx>idx?dropIdx-1:dropIdx;
+    ings.splice(ins,0,ing);
+    setRecField(id,'ingredients',_serializeIngredients(ings));
+    renderRecipeDetail(id);
+  };
+  document.addEventListener('mousemove',onMove);
+  document.addEventListener('mouseup',onUp);
 }
 function _recIngDelete(id,idx){
   const r=st.recipes.find(x=>String(x.id)===String(id));if(!r)return;
@@ -2297,9 +2316,10 @@ function _recInlineEdit(el,id,field,type,opts){
     renderRecipeDetail(id);renderRecipeList();
   };
   if(type==='textarea'){
+    const h=el.offsetHeight;
     const ta=document.createElement('textarea');
     ta.value=val;ta.className='rec-inline-ta';
-    ta.style.cssText='width:100%;min-height:120px;font-family:inherit;font-size:13px;line-height:1.7;border:1px solid var(--accent);border-radius:6px;padding:6px 8px;background:var(--bg);color:var(--text);outline:none;resize:vertical;box-sizing:border-box';
+    ta.style.cssText='width:100%;height:'+Math.max(h,120)+'px;font-family:inherit;font-size:13px;line-height:1.7;border:1px solid var(--accent);border-radius:6px;padding:6px 8px;background:var(--bg);color:var(--text);outline:none;resize:none;box-sizing:border-box';
     el.innerHTML='';el.appendChild(ta);ta.focus();
     ta.addEventListener('blur',()=>save(ta.value));
     ta.addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();renderRecipeDetail(id);}});
