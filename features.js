@@ -2027,10 +2027,42 @@ function _diFlush(){
     }
   });
 }
+const _COMMON_INGS=['salt','pepper','black pepper','olive oil','butter','garlic','onion','sugar','brown sugar','flour','eggs','milk','water','vegetable oil','soy sauce','lemon juice','lime juice','vinegar','baking powder','baking soda','vanilla extract','cinnamon','paprika','cumin','oregano','basil','thyme','rosemary','red pepper flakes','cayenne','nutmeg','honey','maple syrup','cream cheese','sour cream','heavy cream','parmesan','mozzarella','cheddar','chicken broth','beef broth','tomato paste','tomato sauce','rice','pasta','bread crumbs','cornstarch','sesame oil','ginger','green onion','cilantro','parsley','bay leaf','chili powder','garlic powder','onion powder','mustard','ketchup','worcestershire sauce','hot sauce','ranch','mayo','dijon mustard'];
+let _diSuggestIdx=-1,_diSuggestList=[];
 function _diRender(id){
   const el=document.getElementById('recDetailIngList');if(!el)return;
   const _e=v=>(v||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;');
-  el.innerHTML=_detailIngs.map((ing,i)=>`<div class="di-row" id="diRow${i}"><span class="rec-detail-ing-grip" onmousedown="_diDragStart(event,'${id}',${i})">⠿</span><input class="di-amt" placeholder="amt" value="${_e(ing.amount)}" oninput="_detailIngs[${i}].amount=this.value" onkeydown="_diKey(event,${i},'amt','${id}')" onblur="_diBlur('${id}')"><input class="di-name" placeholder="ingredient" value="${_e(ing.name)}" oninput="_detailIngs[${i}].name=this.value" onkeydown="_diKey(event,${i},'name','${id}')" onblur="_diBlur('${id}')"><button class="rec-detail-ing-del" onclick="_diDel(${i},'${id}')" title="Remove">✕</button></div>`).join('')||'<div style="color:var(--muted);font-size:11px;padding:4px 0">No ingredients yet</div>';
+  el.innerHTML=_detailIngs.map((ing,i)=>`<div class="di-row" id="diRow${i}" onmousedown="_diDragStart(event,'${id}',${i})"><span class="rec-detail-ing-grip">⠿</span><input class="di-amt" placeholder="amt" value="${_e(ing.amount)}" oninput="_detailIngs[${i}].amount=this.value" onkeydown="_diKey(event,${i},'amt','${id}')" onblur="_diBlur('${id}')" onmousedown="event.stopPropagation()"><input class="di-name" placeholder="ingredient" value="${_e(ing.name)}" oninput="_detailIngs[${i}].name=this.value;_diShowSuggest(this,${i},'${id}')" onkeydown="_diKey(event,${i},'name','${id}')" onblur="_diBlurName(this,${i},'${id}')" onfocus="_diShowSuggest(this,${i},'${id}')" onmousedown="event.stopPropagation()"><button class="di-del-btn" tabindex="-1" onmousedown="event.stopPropagation();event.preventDefault();_diDel(${i},'${id}')" title="Remove">✕</button></div>`).join('')||'<div style="color:var(--muted);font-size:11px;padding:4px 0">No ingredients yet</div>';
+}
+function _diShowSuggest(inp,i,id){
+  _diCloseSuggest();
+  const v=(inp.value||'').trim().toLowerCase();
+  // Gather used ingredient names from all recipes
+  const usedNames=new Set();
+  (st.recipes||[]).forEach(r=>{_parseIngredients(r.ingredients).forEach(x=>{if(x.name)usedNames.add(x.name.toLowerCase());});});
+  const allNames=[...new Set([..._COMMON_INGS,...usedNames])];
+  _diSuggestList=allNames.filter(n=>n.includes(v)&&n!==v).slice(0,8);
+  if(!_diSuggestList.length)return;
+  _diSuggestIdx=-1;
+  const drop=document.createElement('div');drop.className='di-suggest';drop.id='diSuggestDrop';
+  _diSuggestList.forEach((name,j)=>{
+    const d=document.createElement('div');d.className='di-suggest-item';d.textContent=name;
+    d.onmousedown=e=>{e.preventDefault();_diPickSuggest(i,name,id);};
+    drop.appendChild(d);
+  });
+  const row=document.getElementById('diRow'+i);
+  if(row)row.appendChild(drop);
+}
+function _diCloseSuggest(){const d=document.getElementById('diSuggestDrop');if(d)d.remove();_diSuggestIdx=-1;_diSuggestList=[];}
+function _diPickSuggest(i,name,id){
+  _detailIngs[i].name=name;_diCloseSuggest();_diRender(id);
+  // Focus next row's amount
+  const nextAmt=document.querySelector(`#diRow${i+1} .di-amt`);
+  if(nextAmt)setTimeout(()=>nextAmt.focus(),20);
+  else{_diAdd(id);}
+}
+function _diBlurName(inp,i,id){
+  setTimeout(()=>{_diCloseSuggest();_diBlur(id);},100);
 }
 function _diAdd(id){
   _diFlush();_detailIngs.push({name:'',amount:''});_diRender(id);
@@ -2043,15 +2075,22 @@ function _diDel(i,id){
   setTimeout(()=>{const inp=_detailIngs.length?document.querySelector(`#diRow${prev} .di-name`):null;if(inp)inp.focus();},20);
 }
 function _diKey(e,i,field,id){
+  // Autocomplete navigation for ingredient name
+  if(field==='name'&&_diSuggestList.length){
+    if(e.key==='ArrowDown'){e.preventDefault();_diSuggestIdx=Math.min(_diSuggestIdx+1,_diSuggestList.length-1);_diHighlightSuggest();return;}
+    if(e.key==='ArrowUp'){e.preventDefault();_diSuggestIdx=Math.max(_diSuggestIdx-1,0);_diHighlightSuggest();return;}
+    if(e.key==='Enter'&&_diSuggestIdx>=0){e.preventDefault();e.stopPropagation();_diPickSuggest(i,_diSuggestList[_diSuggestIdx],id);return;}
+    if(e.key==='Escape'){e.preventDefault();_diCloseSuggest();return;}
+  }
   if(e.key==='Enter'){
     e.preventDefault();e.stopPropagation();
     if(field==='amt'){const n=document.querySelector(`#diRow${i} .di-name`);if(n)n.focus();}
-    else{_detailIngs[i].name=e.target.value;_diAdd(id);}
+    else{_detailIngs[i].name=e.target.value;_diCloseSuggest();_diAdd(id);}
   } else if(e.key==='Tab'&&!e.shiftKey&&field==='amt'){
     e.preventDefault();_detailIngs[i].amount=e.target.value;
     const n=document.querySelector(`#diRow${i} .di-name`);if(n)n.focus();
   } else if(e.key==='Tab'&&!e.shiftKey&&field==='name'){
-    e.preventDefault();_detailIngs[i].name=e.target.value;
+    e.preventDefault();_detailIngs[i].name=e.target.value;_diCloseSuggest();
     if(i<_detailIngs.length-1){
       const a=document.querySelector(`#diRow${i+1} .di-amt`);if(a)a.focus();
     } else {
@@ -2068,6 +2107,11 @@ function _diKey(e,i,field,id){
   } else if(e.key==='Backspace'&&!e.target.value&&_detailIngs.length>0){
     _diDel(i,id);
   }
+}
+function _diHighlightSuggest(){
+  const drop=document.getElementById('diSuggestDrop');if(!drop)return;
+  drop.querySelectorAll('.di-suggest-item').forEach((el,j)=>{el.classList.toggle('active',j===_diSuggestIdx);});
+  const active=drop.querySelector('.di-suggest-item.active');if(active)active.scrollIntoView({block:'nearest'});
 }
 function _diSave(id){
   _diFlush();
@@ -2087,6 +2131,7 @@ function _diBlur(id){
 }
 function _diDragStart(e,id,idx){
   if(e.button!==0)return;
+  if(e.target.matches('input,button'))return;
   e.preventDefault();
   const list=document.getElementById('recDetailIngList');if(!list)return;
   const items=[...list.querySelectorAll('.di-row')];
