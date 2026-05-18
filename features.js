@@ -2121,7 +2121,7 @@ function _diDragStart(e,id,idx){
   document.addEventListener('mouseup',onUp);
 }
 let _recAddingNew=false;
-async function _recAddInline(){
+function _recAddInline(){
   const maxSort=Math.max(0,...(st.recipes||[]).map(r=>r.sort_order||0));
   const data={name:'',meal_type:null,cuisine:null,time:null,servings:null,ingredients:null,instructions:null,favorite:false,sort_order:maxSort+1};
   const local={id:'l-'+Date.now(),...data};
@@ -2129,36 +2129,32 @@ async function _recAddInline(){
   _recPanelId=String(local.id);
   _recAddingNew=true;
   renderRecipeList();renderRecipeDetail(_recPanelId);
-  _recFocusNewTitle();
-  const sv=await sbReq('POST','recipes',data);
-  if(sv&&sv[0]){
-    const i=st.recipes.findIndex(x=>x.id===local.id);
-    if(i>-1){st.recipes[i]=sv[0];_recPanelId=String(sv[0].id);save();renderRecipeList();}
-    // Don't re-render detail — user is typing in title
-  }
+  _recFocusNewTitle(local);
 }
-function _recFocusNewTitle(){
+function _recFocusNewTitle(local){
   setTimeout(()=>{
     const inp=document.querySelector('.rec-detail-title-inp');
     if(!inp)return;
     inp.focus();inp.select();
-    inp.onblur=function(){
+    inp.onblur=async function(){
       const name=this.value.trim();
       _recAddingNew=false;
       if(!name){
-        const i=st.recipes.findIndex(x=>String(x.id)===_recPanelId);
-        if(i>-1){
-          const realId=String(st.recipes[i].id);
-          st.recipes.splice(i,1);save();
-          if(!realId.startsWith('l-'))sbReqSilent('DELETE','recipes',null,`?id=eq.${realId}`);
-          _recPanelId=st.recipes.length?String(st.recipes[0].id):null;
-          renderRecipeList();
-          if(_recPanelId)renderRecipeDetail(_recPanelId);
-          else{const p=document.getElementById('recDetailPanel');if(p)p.innerHTML='<div class="rec-detail-empty">Select a recipe to view</div>';}
-        }
+        // Discard — never posted to Supabase
+        const i=st.recipes.findIndex(x=>x.id===local.id);
+        if(i>-1)st.recipes.splice(i,1);
+        save();
+        _recPanelId=st.recipes.length?String(st.recipes[0].id):null;
+        renderRecipeList();
+        if(_recPanelId)renderRecipeDetail(_recPanelId);
+        else{const p=document.getElementById('recDetailPanel');if(p)p.innerHTML='<div class="rec-detail-empty">Select a recipe to view</div>';}
         return;
       }
-      _recSaveField(_recPanelId,'name',name);
+      // Now POST to Supabase for the first time
+      local.name=name;save();
+      const data={name:local.name,meal_type:local.meal_type,cuisine:local.cuisine,time:local.time,servings:local.servings,ingredients:local.ingredients,instructions:local.instructions,favorite:local.favorite,sort_order:local.sort_order};
+      const sv=await sbReq('POST','recipes',data);
+      if(sv&&sv[0]){const i=st.recipes.findIndex(x=>x.id===local.id);if(i>-1){st.recipes[i]=sv[0];_recPanelId=String(sv[0].id);save();renderRecipeList();renderRecipeDetail(_recPanelId);}}
     };
   },30);
 }
