@@ -715,7 +715,7 @@ body.dark .rec-book-right{background:rgba(255,255,255,.02)}
 .rec-detail-title-inp{flex:1;font-size:22px;font-weight:800;color:var(--text);letter-spacing:-.3px;border:none;border-bottom:1px solid transparent;background:transparent;font-family:inherit;padding:2px 0;outline:none;min-width:0;transition:border-color .12s;line-height:1.2;height:32px;box-sizing:content-box}
 .rec-detail-title-inp:hover{border-bottom-color:rgba(210,205,228,.3)}
 .rec-detail-title-inp:focus{border-bottom-color:var(--accent)}
-.rec-detail-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.rec-detail-meta{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:4px}
 .rec-meta-sel{border:none;border-bottom:1px solid transparent;background:transparent;font-family:inherit;font-size:11px;font-weight:600;color:var(--accent);padding:3px 2px 3px 0;outline:none;cursor:pointer;-webkit-appearance:none;appearance:none;transition:border-color .12s;border-radius:0}
 .rec-meta-sel:hover,.rec-meta-sel:focus{border-bottom-color:var(--accent)}
 .rec-meta-sel option{color:var(--text);background:var(--bg)}

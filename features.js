@@ -1942,10 +1942,17 @@ function _recMetaTab(e){
   if(e.key==='Enter'){e.preventDefault();e.target.blur();return;}
   if(e.key!=='Tab')return;
   const panel=document.getElementById('recDetailPanel');if(!panel)return;
-  const fields=[...panel.querySelectorAll('.rec-detail-title-inp,.rec-meta-sel,.rec-meta-inp,.rec-detail-inst-ta')];
+  const fields=[...panel.querySelectorAll('.rec-detail-title-inp,.rec-meta-sel,.rec-meta-inp')];
   const idx=fields.indexOf(e.target);if(idx<0)return;
   const next=e.shiftKey?idx-1:idx+1;
   if(next>=0&&next<fields.length){e.preventDefault();fields[next].focus();}
+  else if(!e.shiftKey&&next>=fields.length){
+    e.preventDefault();e.target.blur();
+    const sid=_recPanelId;if(!sid)return;
+    const rows=panel.querySelectorAll('#recDetailIngList .rec-detail-ing');
+    if(rows.length)setTimeout(()=>_recIngInline(rows[0],sid,0),30);
+    else setTimeout(()=>_recIngAdd(sid),30);
+  }
 }
 function renderRecipeDetail(id){
   const panel=document.getElementById('recDetailPanel');if(!panel)return;
