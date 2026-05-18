@@ -1018,7 +1018,7 @@ body.dark .meal-chip{background:rgba(249,115,22,.15);color:#fb923c;border-color:
 .meal-chip:hover .meal-chip-x{opacity:1}
 .meal-chip-x:hover{color:#ef4444}
 .meal-leftover{opacity:.55;cursor:default;border-style:dashed}
-.meal-add-btn{background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);padding:1px 4px;border-radius:4px;opacity:0;transition:opacity .12s}
+.meal-add-btn{position:absolute;right:0;top:2px;background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);padding:1px 4px;border-radius:4px;opacity:0;transition:opacity .12s;z-index:1}
 .meal-cell:hover .meal-add-btn{opacity:1}
 .meal-add-btn:hover{color:var(--accent)}
 .vid-groups-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-top:8px}
