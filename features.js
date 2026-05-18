@@ -1936,6 +1936,21 @@ function renderRecipeList(){
       </div>
     </div>`;
   }).join('')||`<div style="padding:28px;text-align:center;color:var(--muted);font-size:12px">No recipes yet</div>`;
+  _recUpdateBridge();
+}
+function _recUpdateBridge(){
+  const book=document.querySelector('.rec-book');if(!book)return;
+  let bridge=book.querySelector('.rec-tab-bridge');
+  const active=document.querySelector('.rec-list-item.active');
+  if(!active){if(bridge)bridge.style.height='0';return;}
+  if(!bridge){bridge=document.createElement('div');bridge.className='rec-tab-bridge';book.appendChild(bridge);}
+  const bookRect=book.getBoundingClientRect();
+  const rightPanel=book.querySelector('.rec-book-right');
+  const activeRect=active.getBoundingClientRect();
+  const rpRect=rightPanel?rightPanel.getBoundingClientRect():null;
+  bridge.style.top=(activeRect.top-bookRect.top)+'px';
+  bridge.style.height=(activeRect.height+2)+'px';
+  bridge.style.left=rpRect?(rpRect.left-bookRect.left-1)+'px':'319px';
 }
 
 function _recMetaSave(el,sid){
@@ -2029,15 +2044,22 @@ function _diFlush(){
 }
 const _COMMON_INGS=['salt','pepper','black pepper','olive oil','butter','garlic','onion','sugar','brown sugar','flour','eggs','milk','water','vegetable oil','soy sauce','lemon juice','lime juice','vinegar','baking powder','baking soda','vanilla extract','cinnamon','paprika','cumin','oregano','basil','thyme','rosemary','red pepper flakes','cayenne','nutmeg','honey','maple syrup','cream cheese','sour cream','heavy cream','parmesan','mozzarella','cheddar','chicken broth','beef broth','tomato paste','tomato sauce','rice','pasta','bread crumbs','cornstarch','sesame oil','ginger','green onion','cilantro','parsley','bay leaf','chili powder','garlic powder','onion powder','mustard','ketchup','worcestershire sauce','hot sauce','ranch','mayo','dijon mustard'];
 let _diSuggestIdx=-1,_diSuggestList=[];
+function _ucFirst(s){return s?s.charAt(0).toUpperCase()+s.slice(1):s;}
 function _diRender(id){
   const el=document.getElementById('recDetailIngList');if(!el)return;
   const _e=v=>(v||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;');
-  el.innerHTML=_detailIngs.map((ing,i)=>`<div class="di-row" id="diRow${i}" onmousedown="_diDragStart(event,'${id}',${i})"><span class="rec-detail-ing-grip">⠿</span><input class="di-amt" placeholder="amt" value="${_e(ing.amount)}" oninput="_detailIngs[${i}].amount=this.value" onkeydown="_diKey(event,${i},'amt','${id}')" onblur="_diBlur('${id}')" onmousedown="event.stopPropagation()"><input class="di-name" placeholder="ingredient" value="${_e(ing.name)}" oninput="_detailIngs[${i}].name=this.value;_diShowSuggest(this,${i},'${id}')" onkeydown="_diKey(event,${i},'name','${id}')" onblur="_diBlurName(this,${i},'${id}')" onfocus="_diShowSuggest(this,${i},'${id}')" onmousedown="event.stopPropagation()"><button class="di-del-btn" tabindex="-1" onmousedown="event.stopPropagation();event.preventDefault();_diDel(${i},'${id}')" title="Remove">✕</button></div>`).join('')||'<div style="color:var(--muted);font-size:11px;padding:4px 0">No ingredients yet</div>';
+  el.innerHTML=_detailIngs.map((ing,i)=>{
+    const pantryOn=ing.is_pantry?'on':'';
+    return`<div class="di-row" id="diRow${i}" onmousedown="_diDragStart(event,'${id}',${i})"><span class="rec-detail-ing-grip">⠿</span><input class="di-amt" placeholder="" value="${_e(ing.amount)}" oninput="_detailIngs[${i}].amount=this.value" onkeydown="_diKey(event,${i},'amt','${id}')" onblur="_diBlur('${id}')" onmousedown="event.stopPropagation()"><input class="di-name" placeholder="ingredient" value="${_e(ing.name)}" oninput="_detailIngs[${i}].name=this.value;_diShowSuggest(this,${i},'${id}')" onkeydown="_diKey(event,${i},'name','${id}')" onblur="_diBlurName(this,${i},'${id}')" onfocus="_diShowSuggest(this,${i},'${id}')" onmousedown="event.stopPropagation()"><button class="di-staple-btn ${pantryOn}" tabindex="0" onmousedown="event.stopPropagation()" onclick="_diTogglePantry(${i},'${id}')" onkeydown="_diKey(event,${i},'staple','${id}')" title="Staple/pantry item"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></button><button class="di-del-btn" tabindex="-1" onmousedown="event.stopPropagation();event.preventDefault();_diDel(${i},'${id}')" title="Remove">✕</button></div>`;
+  }).join('')||'<div style="color:var(--muted);font-size:11px;padding:4px 0">No ingredients yet</div>';
+}
+function _diTogglePantry(i,id){
+  _diFlush();_detailIngs[i].is_pantry=!_detailIngs[i].is_pantry;_diRender(id);_diSave(id);
+  setTimeout(()=>{const btn=document.querySelector(`#diRow${i} .di-staple-btn`);if(btn)btn.focus();},20);
 }
 function _diShowSuggest(inp,i,id){
   _diCloseSuggest();
   const v=(inp.value||'').trim().toLowerCase();
-  // Gather used ingredient names from all recipes
   const usedNames=new Set();
   (st.recipes||[]).forEach(r=>{_parseIngredients(r.ingredients).forEach(x=>{if(x.name)usedNames.add(x.name.toLowerCase());});});
   const allNames=[...new Set([..._COMMON_INGS,...usedNames])];
@@ -2045,13 +2067,18 @@ function _diShowSuggest(inp,i,id){
   if(!_diSuggestList.length)return;
   _diSuggestIdx=-1;
   const drop=document.createElement('div');drop.className='di-suggest';drop.id='diSuggestDrop';
+  // Position fixed relative to input
+  const rect=inp.getBoundingClientRect();
+  drop.style.position='fixed';
+  drop.style.left=rect.left+'px';
+  drop.style.top=(rect.bottom+2)+'px';
+  drop.style.width=rect.width+'px';
   _diSuggestList.forEach((name,j)=>{
-    const d=document.createElement('div');d.className='di-suggest-item';d.textContent=name;
+    const d=document.createElement('div');d.className='di-suggest-item';d.textContent=_ucFirst(name);
     d.onmousedown=e=>{e.preventDefault();_diPickSuggest(i,name,id);};
     drop.appendChild(d);
   });
-  const row=document.getElementById('diRow'+i);
-  if(row)row.appendChild(drop);
+  document.body.appendChild(drop);
 }
 function _diCloseSuggest(){const d=document.getElementById('diSuggestDrop');if(d)d.remove();_diSuggestIdx=-1;_diSuggestList=[];}
 function _diPickSuggest(i,name,id){
@@ -2085,12 +2112,18 @@ function _diKey(e,i,field,id){
   if(e.key==='Enter'){
     e.preventDefault();e.stopPropagation();
     if(field==='amt'){const n=document.querySelector(`#diRow${i} .di-name`);if(n)n.focus();}
-    else{_detailIngs[i].name=e.target.value;_diCloseSuggest();_diAdd(id);}
+    else if(field==='name'){_detailIngs[i].name=e.target.value;_diCloseSuggest();_diAdd(id);}
+    else if(field==='staple'){_diTogglePantry(i,id);}
+  } else if(e.key===' '&&field==='staple'){
+    e.preventDefault();_diTogglePantry(i,id);
   } else if(e.key==='Tab'&&!e.shiftKey&&field==='amt'){
     e.preventDefault();_detailIngs[i].amount=e.target.value;
     const n=document.querySelector(`#diRow${i} .di-name`);if(n)n.focus();
   } else if(e.key==='Tab'&&!e.shiftKey&&field==='name'){
     e.preventDefault();_detailIngs[i].name=e.target.value;_diCloseSuggest();
+    const s=document.querySelector(`#diRow${i} .di-staple-btn`);if(s)s.focus();
+  } else if(e.key==='Tab'&&!e.shiftKey&&field==='staple'){
+    e.preventDefault();
     if(i<_detailIngs.length-1){
       const a=document.querySelector(`#diRow${i+1} .di-amt`);if(a)a.focus();
     } else {
@@ -2102,9 +2135,13 @@ function _diKey(e,i,field,id){
         _diAdd(id);
       }
     }
+  } else if(e.key==='Tab'&&e.shiftKey&&field==='staple'){
+    e.preventDefault();const n=document.querySelector(`#diRow${i} .di-name`);if(n)n.focus();
+  } else if(e.key==='Tab'&&e.shiftKey&&field==='name'){
+    e.preventDefault();const a=document.querySelector(`#diRow${i} .di-amt`);if(a)a.focus();
   } else if(e.key==='Tab'&&e.shiftKey&&field==='amt'&&i>0){
-    e.preventDefault();const p=document.querySelector(`#diRow${i-1} .di-name`);if(p)p.focus();
-  } else if(e.key==='Backspace'&&!e.target.value&&_detailIngs.length>0){
+    e.preventDefault();const p=document.querySelector(`#diRow${i-1} .di-staple-btn`);if(p)p.focus();
+  } else if(e.key==='Backspace'&&!e.target.value&&field!=='staple'&&_detailIngs.length>0){
     _diDel(i,id);
   }
 }
@@ -2380,6 +2417,8 @@ function renderRecipesPage(){
     page.addEventListener('dblclick',e=>{
       if(!e.target.closest('.rec-list-item,button,input,textarea,select,.rec-book-right'))_recAddInline();
     });
+    const scrollEl=document.getElementById('recListScroll');
+    if(scrollEl)scrollEl.addEventListener('scroll',_recUpdateBridge);
     document.addEventListener('keydown',e=>{
       if(!document.getElementById('page-recipes')?.classList.contains('active'))return;
       if(e.target.matches('input,textarea,select'))return;
