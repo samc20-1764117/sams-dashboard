@@ -736,6 +736,9 @@ body.dark .rec-detail-ings{background:rgba(0,0,0,.1);border-color:rgba(255,220,2
 .rec-detail-inst-ta:hover{border-color:rgba(210,205,228,.15)}
 .rec-detail-inst-ta:focus{border-color:var(--accent);background:rgba(255,255,255,.5)}
 body.dark .rec-detail-inst-ta:focus{background:rgba(255,255,255,.04)}
+.rec-detail-nav{display:flex;justify-content:space-between;padding:10px 16px;border-top:1px solid rgba(210,205,228,.1)}
+.rec-detail-nav-btn{background:none;border:1px solid rgba(210,205,228,.15);border-radius:6px;padding:4px 14px;font-family:inherit;font-size:11px;color:var(--muted);cursor:pointer;transition:color .12s,border-color .12s}
+.rec-detail-nav-btn:hover{color:var(--accent);border-color:var(--accent)}
 .rec-detail-section-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--accent);margin-bottom:10px;opacity:.7}
 .rec-detail-ing{display:flex;align-items:baseline;gap:6px;padding:4px 2px;font-size:12px;color:var(--text);border-bottom:1px solid rgba(210,205,228,.06);cursor:text;border-radius:4px;transition:background .1s;position:relative}
 .rec-detail-ing:hover{background:rgba(210,205,228,.06)}

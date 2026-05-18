@@ -2016,6 +2016,7 @@ function renderRecipeDetail(id){
   html+=`<textarea class="rec-detail-inst-ta" placeholder="Add step-by-step instructions…" onblur="_recSaveField('${sid}','instructions',this.value.trim()||null)" onkeydown="if(event.key==='Escape'){event.preventDefault();this.blur();}">${esc(r.instructions||'')}</textarea>`;
   html+=`</div>`;
   html+=`</div>`;
+  html+=`<div class="rec-detail-nav"><button class="rec-detail-nav-btn" onclick="_recNavOffset(-1)" title="Previous recipe">← Prev</button><button class="rec-detail-nav-btn" onclick="_recNavOffset(1)" title="Next recipe">Next →</button></div>`;
   panel.innerHTML=html;
 }
 
