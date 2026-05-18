@@ -1694,6 +1694,17 @@ function _sortIngredients(ings){
     return(a.name||'').toLowerCase().localeCompare((b.name||'').toLowerCase());
   });
 }
+function _groupIngredients(ings){
+  // Group by type but preserve order within each group
+  const regular=[],pantry=[],spices=[];
+  ings.forEach(ing=>{
+    const isSpice=_SPICE_RE.test((ing.name||'').trim());
+    if(isSpice)spices.push(ing);
+    else if(ing.is_pantry)pantry.push(ing);
+    else regular.push(ing);
+  });
+  return[...regular,...pantry,...spices];
+}
 function _serializeIngredients(arr){
   const clean=(arr||[]).filter(x=>(x.name||'').trim()||(x.amount||'').trim());
   if(!clean.length)return null;
@@ -2149,7 +2160,7 @@ function renderRecipeDetail(id){
   if(!r){panel.innerHTML=`<div class="rec-detail-empty">Recipe not found</div>`;return;}
   _recPanelId=String(r.id);
   const esc=v=>(v||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  const ings=_sortIngredients(_parseIngredients(r.ingredients));
+  const ings=_groupIngredients(_parseIngredients(r.ingredients));
   function fmtMin(m){if(!m)return'';return m>=60?`${Math.floor(m/60)}h${m%60?' '+m%60+'m':''}`:m+'m';}
   const sid=String(r.id);
   const escV=v=>(v||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;');
@@ -2183,7 +2194,7 @@ function renderRecipeDetail(id){
         if(lbl)html+=`<div class="rec-detail-ing-group">${lbl}</div>`;
       }
       lastGrp=grp;
-      html+=`<div class="rec-detail-ing" ondblclick="_recIngInline(this,'${sid}',${i})"><span class="rec-detail-ing-amt">${ing.amount?esc(ing.amount):''}</span><span class="rec-detail-ing-name">${esc(ing.name)}</span>${ing.is_pantry?'<span class="rec-detail-pantry">pantry</span>':''}<button class="rec-detail-ing-del" onclick="event.stopPropagation();_recIngDelete('${sid}',${i})">✕</button></div>`;
+      html+=`<div class="rec-detail-ing" ondblclick="event.stopPropagation();event.preventDefault();_recIngInline(this,'${sid}',${i})"><span class="rec-detail-ing-sort"><button onclick="event.stopPropagation();_recIngMove('${sid}',${i},-1)" title="Move up">▲</button><button onclick="event.stopPropagation();_recIngMove('${sid}',${i},1)" title="Move down">▼</button></span><span class="rec-detail-ing-amt">${ing.amount?esc(ing.amount):''}</span><span class="rec-detail-ing-name">${esc(ing.name)}</span>${ing.is_pantry?'<span class="rec-detail-pantry">pantry</span>':''}<button class="rec-detail-ing-del" onclick="event.stopPropagation();_recIngDelete('${sid}',${i})">✕</button></div>`;
     });
   } else {
     html+=`<div style="color:var(--muted);font-size:11px">No ingredients yet</div>`;
@@ -2203,7 +2214,7 @@ function renderRecipeDetail(id){
 function _recIngInline(el,id,idx){
   if(el.querySelector('input'))return;
   const r=st.recipes.find(x=>String(x.id)===String(id));if(!r)return;
-  const ings=_sortIngredients(_parseIngredients(r.ingredients));
+  const ings=_groupIngredients(_parseIngredients(r.ingredients));
   const ing=ings[idx];if(!ing)return;
   el.innerHTML=`<input class="rec-ing-edit-amt" value="${(ing.amount||'').replace(/"/g,'&quot;')}" placeholder="amt"><input class="rec-ing-edit-name" value="${(ing.name||'').replace(/"/g,'&quot;')}" placeholder="ingredient">`;
   const amtInp=el.querySelector('.rec-ing-edit-amt');
@@ -2230,19 +2241,42 @@ function _recIngInline(el,id,idx){
 function _recIngAdd(id){
   const r=st.recipes.find(x=>String(x.id)===String(id));if(!r)return;
   const ings=_parseIngredients(r.ingredients);
-  ings.push({name:'',amount:''});
+  ings.push({name:' ',amount:''});// space placeholder so serializer keeps it
+  r.ingredients=_serializeIngredients(ings);
+  save();renderRecipeDetail(id);
+  setTimeout(()=>{
+    const sorted=_groupIngredients(ings);
+    const newIdx=sorted.findIndex(x=>x.name===' ');
+    const rows=document.querySelectorAll('#recDetailIngList .rec-detail-ing');
+    const row=rows[newIdx>=0?newIdx:rows.length-1];
+    if(row)_recIngInline(row,id,newIdx>=0?newIdx:rows.length-1);
+  },30);
+}
+function _recIngMove(id,idx,dir){
+  const r=st.recipes.find(x=>String(x.id)===String(id));if(!r)return;
+  const ings=_groupIngredients(_parseIngredients(r.ingredients));
+  const ing=ings[idx];if(!ing)return;
+  const targetIdx=idx+dir;
+  if(targetIdx<0||targetIdx>=ings.length)return;
+  const target=ings[targetIdx];
+  // Determine groups
+  const ingGrp=_SPICE_RE.test((ing.name||'').trim())?2:ing.is_pantry?1:0;
+  const targetGrp=_SPICE_RE.test((target.name||'').trim())?2:target.is_pantry?1:0;
+  if(ingGrp!==targetGrp)return;// Don't cross group boundaries
+  // Swap
+  ings[idx]=target;ings[targetIdx]=ing;
   setRecField(id,'ingredients',_serializeIngredients(ings));
   renderRecipeDetail(id);
-  // Focus the new row
+  // Re-highlight the moved row
   setTimeout(()=>{
     const rows=document.querySelectorAll('#recDetailIngList .rec-detail-ing');
-    const last=rows[rows.length-1];
-    if(last)_recIngInline(last,id,rows.length-1);
+    if(rows[targetIdx])rows[targetIdx].style.background='rgba(194,107,79,.08)';
+    setTimeout(()=>{if(rows[targetIdx])rows[targetIdx].style.background='';},400);
   },30);
 }
 function _recIngDelete(id,idx){
   const r=st.recipes.find(x=>String(x.id)===String(id));if(!r)return;
-  const ings=_sortIngredients(_parseIngredients(r.ingredients));
+  const ings=_groupIngredients(_parseIngredients(r.ingredients));
   ings.splice(idx,1);
   setRecField(id,'ingredients',_serializeIngredients(ings));
   renderRecipeDetail(id);
