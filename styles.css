@@ -689,21 +689,24 @@ body.dark .rec-book{background:rgba(28,16,10,.35);border-color:rgba(255,220,200,
 body.dark .rec-book::before{display:none}
 .rec-book::after{display:none}
 body.dark .rec-book::after{display:none}
-.rec-book-left{display:flex;flex-direction:column;overflow:hidden;padding:12px 0 12px 12px;background:transparent;position:relative;z-index:5}
-body.dark .rec-book-left{background:transparent}
+.rec-book-left{display:flex;flex-direction:column;overflow:visible;padding:12px 0 12px 12px;background:rgba(245,240,235,.3);position:relative;z-index:5}
+body.dark .rec-book-left{background:rgba(0,0,0,.1)}
 .rec-book-left .rec-filter-bar{padding:0 0 8px;gap:4px}
 .rec-book-left .rec-search{flex:1 1 auto;min-width:0;font-size:11px;padding:4px 8px}
 .rec-book-left .rec-filter-chip{padding:2px 7px;font-size:10px}
-.rec-list-scroll{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:1px;padding:2px 0 2px 0}
+.rec-list-scroll{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:1px;padding:2px 12px 2px 0}
 .rec-list-scroll::-webkit-scrollbar{width:3px}
 .rec-add-btn{display:none}
 .rec-list-item{padding:5px 10px;border-radius:6px;cursor:pointer;transition:all .18s;border:1px solid transparent;position:relative}
 .rec-list-item:hover{background:rgba(210,205,228,.1);box-shadow:0 1px 2px rgba(0,0,0,.03)}
-.rec-list-item.active{background:rgba(255,255,255,.45);border:1px solid rgba(210,205,228,.2);border-right:none;border-radius:8px 0 0 8px;margin-right:0;padding:5px 10px 5px 10px;z-index:12;position:relative}
-body.dark .rec-list-item.active{background:rgba(255,255,255,.06);border-color:rgba(255,220,200,.12)}
-/* Bridge element covers the divider line at active item position */
-.rec-tab-bridge{position:absolute;width:3px;background:rgba(255,255,255,.45);z-index:15;pointer-events:none;top:0;height:0}
-body.dark .rec-tab-bridge{background:rgba(255,255,255,.06)}
+.rec-list-item.active{background:rgba(255,255,255,.45);border:none;border-radius:0;margin-right:-12px;padding:8px 12px;z-index:12;position:relative}
+body.dark .rec-list-item.active{background:rgba(255,255,255,.06)}
+/* Inverse rounded corner — top scoop */
+.rec-list-item.active::before{content:'';position:absolute;bottom:100%;right:0;width:12px;height:12px;background:radial-gradient(circle at 0 0,transparent 11px,rgba(255,255,255,.45) 11px);pointer-events:none}
+body.dark .rec-list-item.active::before{background:radial-gradient(circle at 0 0,transparent 11px,rgba(255,255,255,.06) 11px)}
+/* Inverse rounded corner — bottom scoop */
+.rec-list-item.active::after{content:'';position:absolute;top:100%;right:0;width:12px;height:12px;background:radial-gradient(circle at 0 100%,transparent 11px,rgba(255,255,255,.45) 11px);pointer-events:none}
+body.dark .rec-list-item.active::after{background:radial-gradient(circle at 0 100%,transparent 11px,rgba(255,255,255,.06) 11px)}
 .rec-list-main{display:flex;align-items:center;gap:6px}
 .rec-list-fav{font-size:12px;color:var(--muted);opacity:.3;cursor:pointer;flex-shrink:0}
 .rec-list-fav.on{color:#ef4444;opacity:1}

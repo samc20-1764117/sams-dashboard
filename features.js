@@ -1936,21 +1936,6 @@ function renderRecipeList(){
       </div>
     </div>`;
   }).join('')||`<div style="padding:28px;text-align:center;color:var(--muted);font-size:12px">No recipes yet</div>`;
-  _recUpdateBridge();
-}
-function _recUpdateBridge(){
-  const book=document.querySelector('.rec-book');if(!book)return;
-  let bridge=book.querySelector('.rec-tab-bridge');
-  const active=document.querySelector('.rec-list-item.active');
-  if(!active){if(bridge)bridge.style.height='0';return;}
-  if(!bridge){bridge=document.createElement('div');bridge.className='rec-tab-bridge';book.appendChild(bridge);}
-  const bookRect=book.getBoundingClientRect();
-  const rightPanel=book.querySelector('.rec-book-right');
-  const activeRect=active.getBoundingClientRect();
-  const rpRect=rightPanel?rightPanel.getBoundingClientRect():null;
-  bridge.style.top=(activeRect.top-bookRect.top)+'px';
-  bridge.style.height=(activeRect.height+2)+'px';
-  bridge.style.left=rpRect?(rpRect.left-bookRect.left-1)+'px':'319px';
 }
 
 function _recMetaSave(el,sid){
@@ -2434,8 +2419,6 @@ function renderRecipesPage(){
     page.addEventListener('dblclick',e=>{
       if(!e.target.closest('.rec-list-item,button,input,textarea,select,.rec-book-right'))_recAddInline();
     });
-    const scrollEl=document.getElementById('recListScroll');
-    if(scrollEl)scrollEl.addEventListener('scroll',_recUpdateBridge);
     document.addEventListener('keydown',e=>{
       if(!document.getElementById('page-recipes')?.classList.contains('active'))return;
       if(e.target.matches('input,textarea,select'))return;
