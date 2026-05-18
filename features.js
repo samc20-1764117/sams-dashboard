@@ -1683,6 +1683,17 @@ function _parseIngredients(str){
   if(str.trim().startsWith('[')){try{const a=JSON.parse(str);if(Array.isArray(a))return a.map(x=>typeof x==='string'?{name:x,amount:''}:{name:x.name||'',amount:x.amount||'',is_pantry:!!x.is_pantry});}catch(e){}}
   return str.split('\n').map(s=>s.trim()).filter(Boolean).map(s=>({name:s,amount:''}));
 }
+const _SPICE_RE=/^(salt|pepper|paprika|cumin|cinnamon|oregano|thyme|rosemary|basil|parsley|cilantro|cayenne|chili powder|garlic powder|onion powder|turmeric|nutmeg|coriander|dill|bay leaf|bay leaves|red pepper flakes|italian seasoning|everything bagel seasoning|tajin|msg|seasoning salt|black pepper|white pepper|crushed red pepper|garam masala|curry powder|smoked paprika|chipotle|cloves|allspice|cardamom|fennel seed|mustard powder|sage|tarragon|chives)$/i;
+function _sortIngredients(ings){
+  return[...ings].sort((a,b)=>{
+    const aSpice=_SPICE_RE.test((a.name||'').trim());
+    const bSpice=_SPICE_RE.test((b.name||'').trim());
+    const aPantry=!!a.is_pantry&&!aSpice;const bPantry=!!b.is_pantry&&!bSpice;
+    const aGrp=aSpice?2:aPantry?1:0;const bGrp=bSpice?2:bPantry?1:0;
+    if(aGrp!==bGrp)return aGrp-bGrp;
+    return(a.name||'').toLowerCase().localeCompare((b.name||'').toLowerCase());
+  });
+}
 function _serializeIngredients(arr){
   const clean=(arr||[]).filter(x=>(x.name||'').trim()||(x.amount||'').trim());
   if(!clean.length)return null;
@@ -1770,6 +1781,7 @@ async function saveRecipeModal(){
   const name=document.getElementById('rmName').value.trim();
   if(!name){showToast('Recipe name required');return;}
   _flushIngInputs();
+  _rmIngredients=_rmIngredients.filter(x=>(x.name||'').trim()||(x.amount||'').trim());
   const data={
     name,
     meal_type:document.getElementById('rmMealType').value||null,
@@ -2121,7 +2133,7 @@ function renderRecipeDetail(id){
   if(!r){panel.innerHTML=`<div class="rec-detail-empty">Recipe not found</div>`;return;}
   _recPanelId=String(r.id);
   const esc=v=>(v||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  const ings=_parseIngredients(r.ingredients);
+  const ings=_sortIngredients(_parseIngredients(r.ingredients));
   function fmtMin(m){if(!m)return'';return m>=60?`${Math.floor(m/60)}h${m%60?' '+m%60+'m':''}`:m+'m';}
   let html=`<div class="rec-detail-header">
     <h2 class="rec-detail-title">${esc(r.name)}</h2>
@@ -2137,7 +2149,17 @@ function renderRecipeDetail(id){
   html+=`<div class="rec-detail-ings">`;
   html+=`<div class="rec-detail-section-title">Ingredients</div>`;
   if(ings.length){
-    html+=ings.map(ing=>`<div class="rec-detail-ing">${ing.amount?`<span class="rec-detail-ing-amt">${esc(ing.amount)}</span>`:''}<span>${esc(ing.name)}</span>${ing.is_pantry?'<span class="rec-detail-pantry">pantry</span>':''}</div>`).join('');
+    let lastGrp=-1;
+    ings.forEach(ing=>{
+      const isSpice=_SPICE_RE.test((ing.name||'').trim());
+      const grp=isSpice?2:ing.is_pantry?1:0;
+      if(grp!==lastGrp&&lastGrp!==-1){
+        const lbl=grp===1?'Pantry Staples':grp===2?'Spices & Seasonings':'';
+        if(lbl)html+=`<div class="rec-detail-ing-group">${lbl}</div>`;
+      }
+      lastGrp=grp;
+      html+=`<div class="rec-detail-ing">${ing.amount?`<span class="rec-detail-ing-amt">${esc(ing.amount)}</span>`:''}<span>${esc(ing.name)}</span>${ing.is_pantry?'<span class="rec-detail-pantry">pantry</span>':''}</div>`;
+    });
   } else {
     html+=`<div style="color:var(--muted);font-size:11px">No ingredients added</div>`;
   }
