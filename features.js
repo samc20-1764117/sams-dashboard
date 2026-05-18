@@ -2033,8 +2033,8 @@ function _recIngInline(el,id,idx,focusField){
   if(el.querySelector('input'))return;
   const r=st.recipes.find(x=>String(x.id)===String(id));if(!r)return;
   const ings=_groupIngredients(_parseIngredients(r.ingredients));
-  const ing=ings[idx];if(!ing)return;
-  const h=el.offsetHeight;
+  const ing=ings[idx]||{name:'',amount:''};
+  const h=Math.max(el.offsetHeight,28);
   el.style.height=h+'px';el.style.overflow='hidden';
   el.innerHTML=`<input class="rec-ing-edit-amt" value="${(ing.amount||'').replace(/"/g,'&quot;')}" placeholder="amt"><input class="rec-ing-edit-name" value="${(ing.name||'').replace(/"/g,'&quot;')}" placeholder="ingredient">`;
   const amtInp=el.querySelector('.rec-ing-edit-amt');
@@ -2044,31 +2044,51 @@ function _recIngInline(el,id,idx,focusField){
   const focus=focusField==='name'?nameInp:amtInp;
   focus.focus();focus.select();
   let _saved=false;
-  const doSave=()=>{
-    if(_saved)return;_saved=true;
+  const _quickSave=()=>{
+    // Save data without re-rendering (for tab transitions)
     ing.amount=amtInp.value.trim();ing.name=nameInp.value.trim();
     const clean=ings.filter(x=>(x.name||'').trim());
-    setRecField(id,'ingredients',_serializeIngredients(clean));
-    renderRecipeDetail(id);
+    const r2=st.recipes.find(x=>String(x.id)===String(id));
+    if(r2){r2.ingredients=_serializeIngredients(clean);save();sbReqSilent('PATCH','recipes',{ingredients:r2.ingredients},`?id=eq.${id}`);}
+  };
+  const doSave=()=>{
+    if(_saved)return;_saved=true;
+    _quickSave();
+    renderRecipeDetail(id);renderRecipeList();
   };
   const onKey=e=>{
     if(e.key==='Enter'){e.preventDefault();doSave();}
     if(e.key==='Escape'){e.preventDefault();_saved=true;renderRecipeDetail(id);}
-    if(e.key==='Tab'&&!e.shiftKey&&e.target===amtInp){e.preventDefault();nameInp.focus();nameInp.select();}
+    if(e.key==='Tab'&&!e.shiftKey&&e.target===amtInp){e.preventDefault();nameInp.focus();nameInp.select();return;}
     if(e.key==='Tab'&&!e.shiftKey&&e.target===nameInp){
-      e.preventDefault();
+      e.preventDefault();_saved=true;
       const hasNext=document.querySelectorAll('#recDetailIngList .rec-detail-ing').length>idx+1;
       const isEmpty=!amtInp.value.trim()&&!nameInp.value.trim();
-      doSave();
-      setTimeout(()=>{
-        if(hasNext){const rows=document.querySelectorAll('#recDetailIngList .rec-detail-ing');const next=rows[idx+1];if(next)_recIngInline(next,id,idx+1);}
-        else if(isEmpty){const ta=document.querySelector('.rec-detail-inst-ta');if(ta){ta.focus();ta.setSelectionRange(0,0);}}
-        else{_recIngAdd(id);}
-      },50);
+      _quickSave();
+      if(hasNext){
+        // Restore the current row to display mode, then open next
+        el.innerHTML=`<span class="rec-detail-ing-grip">⠿</span><span class="rec-detail-ing-amt">${amtInp.value.trim()}</span><span class="rec-detail-ing-name">${nameInp.value.trim()}</span>`;
+        el.style.height='';el.style.overflow='';
+        const rows=document.querySelectorAll('#recDetailIngList .rec-detail-ing');
+        if(rows[idx+1])_recIngInline(rows[idx+1],id,idx+1);
+      } else if(isEmpty){
+        renderRecipeDetail(id);renderRecipeList();
+        setTimeout(()=>{const ta=document.querySelector('.rec-detail-inst-ta');if(ta)ta.focus();},30);
+      } else {
+        renderRecipeDetail(id);renderRecipeList();
+        setTimeout(()=>_recIngAdd(id),30);
+      }
+      return;
     }
     if(e.key==='Tab'&&e.shiftKey&&e.target===amtInp){
-      e.preventDefault();doSave();
-      if(idx>0)setTimeout(()=>{const rows=document.querySelectorAll('#recDetailIngList .rec-detail-ing');const prev=rows[idx-1];if(prev)_recIngInline(prev,id,idx-1,'name');},30);
+      e.preventDefault();_saved=true;_quickSave();
+      if(idx>0){
+        el.innerHTML=`<span class="rec-detail-ing-grip">⠿</span><span class="rec-detail-ing-amt">${amtInp.value.trim()}</span><span class="rec-detail-ing-name">${nameInp.value.trim()}</span>`;
+        el.style.height='';el.style.overflow='';
+        const rows=document.querySelectorAll('#recDetailIngList .rec-detail-ing');
+        if(rows[idx-1])_recIngInline(rows[idx-1],id,idx-1,'name');
+      }
+      return;
     }
   };
   amtInp.addEventListener('keydown',onKey);
@@ -2078,22 +2098,23 @@ function _recIngInline(el,id,idx,focusField){
   amtInp.addEventListener('blur',onBlur);
 }
 function _recIngAdd(id){
-  const r=st.recipes.find(x=>String(x.id)===String(id));if(!r)return;
-  // Directly inject a new empty row into the DOM without re-rendering
-  const list=document.getElementById('recDetailIngList');if(!list)return;
-  const ings=_groupIngredients(_parseIngredients(r.ingredients));
-  const newIdx=ings.length;
-  ings.push({name:'',amount:''});
-  // Update data to include empty row
-  r.ingredients=JSON.stringify(ings.map(x=>({name:x.name||'',amount:x.amount||'',...(x.is_pantry?{is_pantry:true}:{})})));
-  save();
-  const row=document.createElement('div');
-  row.className='rec-detail-ing';
-  row.setAttribute('data-ing-idx',newIdx);
-  row.setAttribute('onmousedown',`_recIngDragStart(event,'${id}',${newIdx})`);
-  row.innerHTML=`<span class="rec-detail-ing-grip">⠿</span><span class="rec-detail-ing-amt"></span><span class="rec-detail-ing-name"></span><button class="rec-detail-ing-del" onclick="event.stopPropagation();_recIngDelete('${id}',${newIdx})">✕</button>`;
-  list.appendChild(row);
-  _recIngInline(row,id,newIdx,'name');
+  // Wait a tick for any blur-triggered re-render to finish
+  setTimeout(()=>{
+    const r=st.recipes.find(x=>String(x.id)===String(id));if(!r)return;
+    const list=document.getElementById('recDetailIngList');if(!list)return;
+    const ings=_groupIngredients(_parseIngredients(r.ingredients));
+    const newIdx=ings.length;
+    ings.push({name:'',amount:''});
+    r.ingredients=JSON.stringify(ings.map(x=>({name:x.name||'',amount:x.amount||'',...(x.is_pantry?{is_pantry:true}:{})})));
+    save();
+    const row=document.createElement('div');
+    row.className='rec-detail-ing';
+    row.setAttribute('data-ing-idx',String(newIdx));
+    row.setAttribute('onmousedown',`_recIngDragStart(event,'${id}',${newIdx})`);
+    row.innerHTML=`<span class="rec-detail-ing-grip">⠿</span><span class="rec-detail-ing-amt"></span><span class="rec-detail-ing-name"></span><button class="rec-detail-ing-del" onclick="event.stopPropagation();_recIngDelete('${id}',${newIdx})">✕</button>`;
+    list.appendChild(row);
+    _recIngInline(row,id,newIdx,'name');
+  },20);
 }
 function _recIngDragStart(e,id,idx){
   if(e.target.closest('.rec-detail-ing-del')||e.target.closest('input'))return;
