@@ -1037,7 +1037,7 @@ body.dark .groc-staples-drawer{background:rgba(28,16,10,.98);box-shadow:-4px 0 1
 .meal-add-inline:hover{border-color:var(--accent);color:var(--accent)}
 /* ── Meal Row (below weekly cal) ─────────────────────────────────────────── */
 .meal-row{display:grid;grid-template-columns:repeat(8,1fr);gap:1px}
-.meal-cell{padding:3px 2px;display:flex;flex-wrap:wrap;gap:3px;align-items:flex-start;align-content:flex-start;position:relative;border-top:2px solid rgba(255,255,255,.88)}
+.meal-cell{padding:3px 2px;display:flex;flex-direction:column;gap:2px;position:relative;border-top:2px solid rgba(255,255,255,.88)}
 .meal-cell.meal-drop{background:rgba(124,106,247,.08)}
 .meal-cell-empty{pointer-events:none;border-top:none}
 .meal-chip{display:inline-flex;align-items:center;gap:3px;padding:2px 6px;border-radius:6px;background:rgba(249,115,22,.1);border:1px solid rgba(249,115,22,.2);font-size:9px;font-weight:600;color:#c2410c;cursor:grab;max-width:100%;position:relative}
@@ -1048,7 +1048,9 @@ body.dark .meal-chip{background:rgba(249,115,22,.15);color:#fb923c;border-color:
 .meal-chip-x{background:none;border:none;cursor:pointer;font-size:8px;color:rgba(194,107,79,.5);padding:0 1px;opacity:0;transition:opacity .1s}
 .meal-chip:hover .meal-chip-x{opacity:1}
 .meal-chip-x:hover{color:#ef4444}
-.meal-leftover{opacity:.55;cursor:default;border-style:dashed}
+.meal-chip.meal-dragging{opacity:.4}
+.meal-chip.meal-drop-above{box-shadow:0 -2px 0 0 #f97316}
+.meal-chip.meal-drop-below{box-shadow:0 2px 0 0 #f97316}
 .meal-add-btn{position:absolute;right:0;top:2px;background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);padding:1px 4px;border-radius:4px;opacity:0;transition:opacity .12s;z-index:1}
 .meal-cell:hover .meal-add-btn{opacity:1}
 .meal-add-btn:hover{color:var(--accent)}

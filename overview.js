@@ -3096,7 +3096,7 @@ function _attachWkcRubberBand(){
   wrap._wkcRbSetup=true;
   wrap.addEventListener('mousedown',e=>{
     if(e.button!==0)return;
-    if(e.target.closest('.chip,.ti,.tb-block,.wkc-banner,.wkc-goals-col'))return;
+    if(e.target.closest('.chip,.ti,.tb-block,.wkc-banner,.wkc-goals-col,.meal-chip,.meal-cell'))return;
     if(e.target.closest('button,a,input,textarea,select'))return;
     const colsEl=document.getElementById('wkcCols');
     if(!colsEl)return;

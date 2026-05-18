@@ -2857,19 +2857,59 @@ function renderMealRow(){
   let html='';
   dates.forEach(ds=>{
     const meals=(st.mealPlan||[]).filter(m=>m.meal_date===ds);
-    html+=`<div class="meal-cell" data-ds="${ds}" ondragover="event.preventDefault();this.classList.add('meal-drop')" ondragleave="this.classList.remove('meal-drop')" ondrop="dropMeal(event,'${ds}');this.classList.remove('meal-drop')">`;
+    // Sort by sort_order for vertical positioning
+    meals.sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+    html+=`<div class="meal-cell" data-ds="${ds}">`;
     meals.forEach(m=>{
       const sid='meal-'+m.id;
-      html+=`<div class="meal-chip" data-tid="${sid}" data-mealid="${m.id}" draggable="true" ondragstart="event.dataTransfer.setData('text/plain','meal::${m.id}')"><span class="meal-chip-name">${escHtml(m.recipe_name)}</span>${(m.servings||1)>1?`<span class="meal-chip-srv">${m.servings}d</span>`:''}<button class="meal-chip-x" onclick="event.stopPropagation();removeMeal('${m.id}')">✕</button></div>`;
+      html+=`<div class="meal-chip" data-tid="${sid}" data-mealid="${m.id}" draggable="true"><span class="meal-chip-name">${escHtml(m.recipe_name)}</span>${(m.servings||1)>1?`<span class="meal-chip-srv">${m.servings}d</span>`:''}<button class="meal-chip-x" onclick="event.stopPropagation();removeMeal('${m.id}')">✕</button></div>`;
     });
     html+=`<button class="meal-add-btn" onclick="openMealPicker('${ds}')">+</button>`;
     html+=`</div>`;
   });
-  // 8th column (goals column placeholder)
   html+=`<div class="meal-cell meal-cell-empty"></div>`;
   el.innerHTML=html;
-  // Bind click/dblclick for selection & recipe detail
+  // Bind drag/drop on cells for cross-day moves
+  el.querySelectorAll('.meal-cell[data-ds]').forEach(cell=>{
+    cell.addEventListener('dragover',e=>{e.preventDefault();cell.classList.add('meal-drop');});
+    cell.addEventListener('dragleave',()=>cell.classList.remove('meal-drop'));
+    cell.addEventListener('drop',e=>{cell.classList.remove('meal-drop');dropMeal(e,cell.dataset.ds);});
+    // Double-click empty area to add custom meal
+    cell.addEventListener('dblclick',e=>{
+      if(e.target.closest('.meal-chip'))return;
+      e.stopPropagation();
+      _inlineMealAdd(cell,cell.dataset.ds);
+    });
+  });
+  // Bind click/dblclick/drag on chips
   el.querySelectorAll('.meal-chip[data-tid]').forEach(chip=>{
+    // Vertical drag reorder within cell
+    chip.addEventListener('dragstart',e=>{
+      e.dataTransfer.setData('text/plain','meal::'+chip.dataset.mealid);
+      e.dataTransfer.effectAllowed='move';
+      chip.classList.add('meal-dragging');
+    });
+    chip.addEventListener('dragend',()=>chip.classList.remove('meal-dragging'));
+    chip.addEventListener('dragover',e=>{
+      e.preventDefault();e.stopPropagation();
+      const rect=chip.getBoundingClientRect();
+      const after=e.clientY>rect.top+rect.height/2;
+      chip.classList.toggle('meal-drop-above',!after);
+      chip.classList.toggle('meal-drop-below',after);
+    });
+    chip.addEventListener('dragleave',()=>{chip.classList.remove('meal-drop-above','meal-drop-below');});
+    chip.addEventListener('drop',e=>{
+      e.preventDefault();e.stopPropagation();
+      chip.classList.remove('meal-drop-above','meal-drop-below');
+      chip.closest('.meal-cell')?.classList.remove('meal-drop');
+      const data=e.dataTransfer.getData('text/plain');
+      if(!data.startsWith('meal::'))return;
+      const draggedId=data.replace('meal::','');
+      const targetId=chip.dataset.mealid;
+      if(draggedId===targetId)return;
+      const ds=chip.closest('.meal-cell').dataset.ds;
+      _reorderMeal(draggedId,targetId,ds,e.clientY<chip.getBoundingClientRect().top+chip.getBoundingClientRect().height/2);
+    });
     chip.addEventListener('click',e=>{
       if(e.target.closest('.meal-chip-x'))return;
       const sid=chip.dataset.tid;
@@ -2896,6 +2936,50 @@ function renderMealRow(){
       if(meal&&meal.recipe_id)openMealRecipeModal(meal.recipe_id);
       else openMealEdit(mealId);
     });
+  });
+}
+
+function _reorderMeal(draggedId,targetId,ds,before){
+  const dragged=(st.mealPlan||[]).find(m=>String(m.id)===String(draggedId));
+  if(!dragged)return;
+  // Move to this day if different
+  dragged.meal_date=ds;
+  // Get all meals for this day sorted
+  const dayMeals=(st.mealPlan||[]).filter(m=>m.meal_date===ds).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+  // Remove dragged from list, insert at target position
+  const filtered=dayMeals.filter(m=>String(m.id)!==String(draggedId));
+  const targetIdx=filtered.findIndex(m=>String(m.id)===String(targetId));
+  const insertIdx=before?targetIdx:targetIdx+1;
+  filtered.splice(insertIdx,0,dragged);
+  // Assign sort_order
+  filtered.forEach((m,i)=>{m.sort_order=i;sbReqSilent('PATCH','meal_plan',{sort_order:i,meal_date:m.meal_date},`?id=eq.${m.id}`);});
+  save();renderMealRow();
+}
+
+function _inlineMealAdd(cell,ds){
+  const inp=document.createElement('input');
+  inp.className='meal-inline-inp';
+  inp.placeholder='Add meal…';
+  inp.style.cssText='width:100%;font-size:9px;padding:2px 6px;border:1px solid var(--accent);border-radius:6px;outline:none;font-family:inherit;background:var(--glass);color:var(--text);box-sizing:border-box';
+  cell.insertBefore(inp,cell.querySelector('.meal-add-btn'));
+  inp.focus();
+  const commit=async()=>{
+    const name=inp.value.trim();
+    inp.remove();
+    if(!name)return;
+    // Check if it matches an existing recipe
+    const match=(st.recipes||[]).find(r=>r.name.toLowerCase()===name.toLowerCase());
+    const item={recipe_id:match?match.id:null,recipe_name:match?match.name:name,meal_date:ds,servings:1,meal_type:match?match.meal_type:null,sort_order:(st.mealPlan||[]).filter(m=>m.meal_date===ds).length};
+    const sv=await sbReqSilent('POST','meal_plan',item);
+    if(sv&&sv[0])st.mealPlan.push(sv[0]);
+    else{item.id='l-'+Date.now();st.mealPlan.push(item);}
+    save();renderMealRow();
+  };
+  inp.addEventListener('blur',commit);
+  inp.addEventListener('keydown',e=>{
+    e.stopPropagation();
+    if(e.key==='Enter'){e.preventDefault();inp.blur();}
+    if(e.key==='Escape'){inp.value='';inp.blur();}
   });
 }
 
