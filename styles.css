@@ -287,6 +287,7 @@ body.dark .inline-date-picker input[type="date"]{background:rgba(255,255,255,.08
 .heb-cnt{position:absolute;right:22px;top:50%;transform:translateY(-50%);font-size:10px;font-weight:700;color:rgba(160,150,180,.85);pointer-events:auto;cursor:pointer;z-index:2;outline:none;-webkit-tap-highlight-color:transparent}
 .heb-cnt:hover{color:rgba(160,150,180,.85);background:none;text-decoration:none}
 .heb-cnt:focus,.heb-cnt:focus-visible,.heb-cnt:active{outline:none;box-shadow:none;background:none;-webkit-tap-highlight-color:transparent}
+.ti:has(.heb-cnt) .delbtn{display:none}
 .arow{padding:4px 8px;border-top:1px solid rgba(210,205,228,.22);display:flex;gap:3px;background:rgba(255,255,255,.18);flex-shrink:0}
 .ov-banner{display:none;align-items:center;gap:8px;padding:6px 16px;background:rgba(254,242,242,.9);border-bottom:1px solid rgba(239,68,68,.15);font-size:11px;font-weight:500;color:#b91c1c;flex-shrink:0}
 body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.2);color:#fca5a5;}
@@ -913,8 +914,8 @@ body.dark .groc-add input{background:rgba(255,255,255,.06);border-color:rgba(255
 .groc-menu-col.groc-col-past .groc-meal-tag{opacity:.7}
 .groc-col-hdr{font-size:10px;font-weight:600;color:var(--muted);text-align:center;padding-bottom:3px;border-bottom:1px solid rgba(210,205,228,.1);margin-bottom:2px}
 /* Bottom three-column layout */
-.groc-bottom{display:grid;grid-template-columns:.8fr .7fr 1.5fr;flex:1;min-height:0;overflow:hidden}
-.groc-panel{overflow-y:auto;padding:14px 16px;min-width:0;display:flex;flex-direction:column}
+.groc-bottom{display:grid;grid-template-columns:.8fr .7fr 1.5fr;flex:1;min-height:0;overflow:hidden;width:100%}
+.groc-panel{overflow-y:auto;padding:10px 12px;min-width:0;display:flex;flex-direction:column}
 .groc-panel+.groc-panel{border-left:1px solid rgba(210,205,228,.2)}
 .groc-panel-title{font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px;letter-spacing:-.2px;flex-shrink:0}
 .groc-meal-tag{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:5px;background:rgba(249,115,22,.1);border:1px solid rgba(249,115,22,.2);font-size:11px;font-weight:500;color:#c2410c;cursor:grab;white-space:nowrap}
