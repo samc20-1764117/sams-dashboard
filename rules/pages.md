@@ -70,14 +70,19 @@ See `rules/videos.md` for full rules. Table: `videos`. 4 views: Dashboard, All D
 Table: `birthdays(id,name,birthday,present_ideas)`. `present_ideas` JSON array. `saveBdayModal` does NOT include `present_ideas`.
 
 ### Recipes (`features.js`)
-Table: `recipes`. Do NOT reference: protein,prep_time,cook_time,difficulty,last_made_date,notes. Ingredients: JSON `[{name,amount}]`.
-- **Book layout**: `.rec-book` two-panel grid (`280px 1fr`), height `calc(100vh - 84px)`. Left: scrollable recipe list + filter bar + "+ Add Recipe" btn. Right: `#recDetailPanel` always-visible detail view.
-- **Page**: inline style `padding:60px 40px 24px 40px;width:100%;box-sizing:border-box` on `#page-recipes` (matches other pages).
-- **Single click** → view detail on right (`selRecRow`, 200ms timer). **Double click** → open edit modal (`e.detail===2` cancels single-click timer). First recipe auto-selected on load; after delete selects next.
-- **Arrow keys**: up/down/left/right navigate recipes. Document keydown listener (skips when modal open or input focused).
-- **Delete**: ✕ button on far right of list items (hover-visible). No ··· dots menu.
-- **Detail panel**: title, meta tags (meal/cuisine/time/servings/fav), 2-col grid (ingredients left, instructions right), Edit + Add to List buttons.
-- **Add/Edit modal**: 780px wide, min-height 520px. Ingredients + instructions side-by-side (`1fr 1fr` grid). Cuisine is dropdown (not text input). No notes field. Tab on last ingredient row auto-adds new row. `_recModalKeyFn` document listener for Enter-to-save (excludes textareas/buttons/ingredient rows).
+Table: `recipes` (columns include `sort_order int4`). Do NOT reference: protein,prep_time,cook_time,difficulty,last_made_date,notes. Ingredients: JSON `[{name,amount,is_pantry?}]`.
+- **Book layout**: `.rec-book` two-panel grid (`320px 1fr`), `border-radius:24px`. Left: scrollable recipe list. Right: `#recDetailPanel` always-visible detail view.
+- **Floating search**: `.rec-search-float` with cutout effect, straddling book top. Videos-style categorized suggestions (meal, cuisine, time, favorites, names, ingredients). `+` button next to search adds recipe inline.
+- **Single click** → view detail (`selRecRow`). No double-click or edit modal — all editing is inline.
+- **Arrow keys**: left/right navigate recipes, up/down reorder selected recipe (`_recMoveSelected`), `f` toggles favorite. Skips when input/textarea/select focused.
+- **Sort order**: `sort_order` column, fetched `?order=sort_order.asc.nullslast,name.asc`. `_recEnsureSortOrder()` backfills missing values.
+- **Delete**: ✕ button on list items (hover-visible).
+- **Add inline** (`_recAddInline`): creates recipe with empty name, focuses title input. Blur with empty name deletes the recipe. No modal.
+- **Detail panel**: always-visible title input, select dropdowns (meal/cuisine), number inputs (time/servings), ingredient list, instructions textarea. Nav arrows (← →) at bottom.
+- **Tab flow**: title → meal type → cuisine → time → serves → first ingredient (or adds one). `_recMetaTab` saves without re-rendering to preserve focus. `_recMetaSave` patches Supabase directly.
+- **Ingredients** (`_detailIngs` array, modal-style): in-memory array rendered as always-visible input rows (`_diRender`). No click-to-edit — inputs always shown. Tab: amt → name → next amt → name. Tab from last empty row removes it and focuses instructions (cursor at end). `_diAdd` adds new row focusing amt. `_diSave` persists on blur-away. `_diDragStart` for grip-drag reorder. `_diKey` handles Tab/Enter/Backspace.
+- **Ingredient grouping**: `_groupIngredients` (regular → pantry → spices). `_SPICE_RE` regex. Preserves manual order within groups.
+- **Modal code archived**: `recipe-modal-archive.js` (not loaded, kept for reference).
 - **Auto-capitalize**: global `input` listener capitalizes first char, after newlines, after ". ", after "• ". Typing `- ` at line start → `• `.
 
 ### HEB (`features.js` — grocery modal)
