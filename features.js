@@ -2334,8 +2334,8 @@ function renderGroceryModal(){
   // ── Build combined shopping list ──
   // 1) Recipe ingredients from grocery_list
   const grocItems=(st.groceryList||[]).filter(g=>g.week_of===planMon);
-  // 2) HEB-tagged overview shopping items (not done)
-  const hebShopItems=(st.shopping||[]).filter(s=>s.store&&s.store.toLowerCase()==='heb'&&!s.done);
+  // 2) HEB-tagged overview shopping items
+  const hebShopItems=(st.shopping||[]).filter(s=>s.store&&s.store.toLowerCase()==='heb');
   // 3) Weekly staples (active, not skipped this week)
   const staples=(st.groceryStaples||[]).filter(s=>s.active!==false);
   const skippedThisWeek=(st._grocStapleSkips||{})[planMon]||[];
@@ -2352,21 +2352,23 @@ function renderGroceryModal(){
   // Manual items
   grocItems.filter(g=>!g.checked&&g.source==='manual').forEach(g=>allItems.push({...g,_src:'manual'}));
   // HEB overview items
-  hebShopItems.forEach(s=>allItems.push({id:'heb-'+s.id,name:s.name,amount:null,aisle:s.aisle||_inferAisle(s.name),checked:false,_src:'overview',_shopId:s.id}));
+  hebShopItems.forEach(s=>allItems.push({id:'heb-'+s.id,name:s.name,amount:null,aisle:s.aisle||_inferAisle(s.name),checked:false,_src:'overview',_shopId:s.id,_shopDone:!!s.done}));
   // Staples
   activeStaples.forEach(s=>{
     const alreadyInList=grocItems.find(g=>g.source==='staple'&&String(g.source_id)===String(s.id));
     if(!alreadyInList)allItems.push({id:'staple-'+s.id,name:s.name,amount:s.amount||null,aisle:s.aisle||_inferAisle(s.name),checked:false,_src:'staple',_stapleId:s.id});
     else if(!alreadyInList.checked)allItems.push({...alreadyInList,_src:'staple',_stapleId:s.id});
   });
-  // Sort by aisle
-  allItems.sort((a,b)=>{const ai=aisleOrder.indexOf(getAisle(a)),bi=aisleOrder.indexOf(getAisle(b));return(ai===-1?99:ai)-(bi===-1?99:bi);});
+  // Sort: undone first, then by aisle
+  allItems.sort((a,b)=>{const da=(a._shopDone?1:0),db=(b._shopDone?1:0);if(da!==db)return da-db;const ai=aisleOrder.indexOf(getAisle(a)),bi=aisleOrder.indexOf(getAisle(b));return(ai===-1?99:ai)-(bi===-1?99:bi);});
   // Group by aisle
   const byAisle={};allItems.forEach(it=>{const a=getAisle(it);if(!byAisle[a])byAisle[a]=[];byAisle[a].push(it);});
 
   function itemRow(g){
     const display=g.amount?`${escHtml(g.amount)} ${escHtml(g.name)}`:escHtml(g.name);
-    return`<div class="groc-item" data-id="${g.id}">
+    const chk=g._shopId?`<label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk"${g._shopDone?' checked':''} onchange="togShop('${g._shopId}',this.checked);renderGroceryModal()"></label>`:'';
+    return`<div class="groc-item${g._shopDone?' groc-done':''}" data-id="${g.id}">
+      ${chk}
       <span class="groc-name">${display}</span>
       <button class="groc-del" onclick="delGroceryItem('${g.id}')">✕</button>
     </div>`;}
