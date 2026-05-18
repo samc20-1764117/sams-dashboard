@@ -2890,30 +2890,31 @@ function _mealsForWeek(){
   return(st.mealPlan||[]).filter(m=>dates.includes(m.meal_date));
 }
 
+let _removedMeals=[];// session-only: [{id,recipe_id,recipe_name,meal_date,servings,meal_type,sort_order}]
 function renderMealRow(){
   const el=document.getElementById('mealRow');if(!el)return;
   const dates=_mealWeekDates();
   let html='';
   dates.forEach(ds=>{
     const meals=(st.mealPlan||[]).filter(m=>m.meal_date===ds);
-    // Sort by sort_order for vertical positioning
     meals.sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
     html+=`<div class="meal-cell" data-ds="${ds}">`;
     meals.forEach(m=>{
       const sid='meal-'+m.id;
-      html+=`<div class="meal-chip" data-tid="${sid}" data-mealid="${m.id}" draggable="true"><span class="meal-chip-name">${escHtml(m.recipe_name)}</span>${(m.servings||1)>1?`<span class="meal-chip-srv">${m.servings}d</span>`:''}<button class="meal-chip-x" onclick="event.stopPropagation();removeMeal('${m.id}')">✕</button></div>`;
+      const srv=(m.servings||1);
+      html+=`<div class="meal-chip" data-tid="${sid}" data-mealid="${m.id}" draggable="true"><span class="meal-chip-name">${escHtml(m.recipe_name)}</span>${srv>1?`<span class="meal-chip-days">${srv}d</span>`:''}<button class="meal-chip-x" onclick="event.stopPropagation();removeMeal('${m.id}')">✕</button></div>`;
     });
-    html+=`<button class="meal-add-btn" onclick="openMealPicker('${ds}')">+</button>`;
     html+=`</div>`;
   });
-  html+=`<div class="meal-cell meal-cell-empty"></div>`;
+  // 8th column: removed meals badge
+  const removedThisWk=_removedMeals.filter(m=>dates.includes(m.meal_date)&&m.recipe_id);
+  html+=`<div class="meal-cell meal-cell-restore">${removedThisWk.length?`<button class="meal-restore-btn" onclick="_openRemovedMeals(event)">↩ ${removedThisWk.length}</button>`:''}</div>`;
   el.innerHTML=html;
-  // Bind drag/drop on cells for cross-day moves
+  // Bind drag/drop on cells
   el.querySelectorAll('.meal-cell[data-ds]').forEach(cell=>{
     cell.addEventListener('dragover',e=>{e.preventDefault();cell.classList.add('meal-drop');});
     cell.addEventListener('dragleave',()=>cell.classList.remove('meal-drop'));
     cell.addEventListener('drop',e=>{cell.classList.remove('meal-drop');dropMeal(e,cell.dataset.ds);});
-    // Double-click empty area to add custom meal
     cell.addEventListener('dblclick',e=>{
       if(e.target.closest('.meal-chip'))return;
       e.stopPropagation();
@@ -2921,8 +2922,10 @@ function renderMealRow(){
     });
   });
   // Bind click/dblclick/drag on chips
+  _bindMealChips(el);
+}
+function _bindMealChips(el){
   el.querySelectorAll('.meal-chip[data-tid]').forEach(chip=>{
-    // Vertical drag reorder within cell
     chip.addEventListener('dragstart',e=>{
       e.dataTransfer.setData('text/plain','meal::'+chip.dataset.mealid);
       e.dataTransfer.effectAllowed='move';
@@ -2978,6 +2981,44 @@ function renderMealRow(){
   });
 }
 
+function _openRemovedMeals(e){
+  e.stopPropagation();
+  const dates=_mealWeekDates();
+  const removed=_removedMeals.filter(m=>dates.includes(m.meal_date)&&m.recipe_id);
+  if(!removed.length)return;
+  let picker=document.getElementById('mealRemovedPicker');
+  if(!picker){
+    picker=document.createElement('div');picker.id='mealRemovedPicker';
+    picker.style.cssText='position:fixed;z-index:9999;background:var(--glass);backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 32px rgba(0,0,0,.12);min-width:160px;padding:4px 0';
+    document.body.appendChild(picker);
+    document.addEventListener('mousedown',ev=>{if(!ev.target.closest('#mealRemovedPicker,.meal-restore-btn'))picker.style.display='none';},{capture:true,passive:true});
+  }
+  picker.innerHTML='';
+  const hdr=document.createElement('div');
+  hdr.style.cssText='padding:4px 10px;font-size:10px;color:var(--muted);font-weight:600;letter-spacing:.05em;border-bottom:1px solid rgba(210,205,228,.25);margin-bottom:2px';
+  hdr.textContent='REMOVED THIS WEEK';picker.appendChild(hdr);
+  removed.forEach(m=>{
+    const itm=document.createElement('div');itm.className='ctx-item';itm.textContent='↩  '+m.recipe_name;
+    itm.style.cssText='padding:5px 12px;font-size:12px;cursor:pointer';
+    itm.addEventListener('click',()=>{picker.style.display='none';_restoreMeal(m);});
+    picker.appendChild(itm);
+  });
+  const rect=e.currentTarget.getBoundingClientRect();
+  picker.style.left=Math.min(rect.left,window.innerWidth-200)+'px';
+  picker.style.top='-9999px';picker.style.display='block';
+  requestAnimationFrame(()=>{picker.style.top=Math.max(rect.top-picker.offsetHeight-6,8)+'px';});
+}
+
+async function _restoreMeal(removed){
+  const item={recipe_id:removed.recipe_id,recipe_name:removed.recipe_name,meal_date:removed.meal_date,servings:removed.servings||1,meal_type:removed.meal_type||null,sort_order:removed.sort_order||0};
+  const sv=await sbReqSilent('POST','meal_plan',item);
+  if(sv&&sv[0])st.mealPlan.push(sv[0]);
+  else{item.id='l-'+Date.now();st.mealPlan.push(item);}
+  _removedMeals=_removedMeals.filter(m=>m!==removed);
+  save();renderMealRow();
+  if(removed.recipe_id)addRecipeToGrocery(removed.recipe_id);
+}
+
 function _reorderMeal(draggedId,targetId,ds,before){
   const dragged=(st.mealPlan||[]).find(m=>String(m.id)===String(draggedId));
   if(!dragged)return;
@@ -3000,7 +3041,7 @@ function _inlineMealAdd(cell,ds){
   inp.className='meal-inline-inp';
   inp.placeholder='Add meal…';
   inp.style.cssText='width:100%;font-size:9px;padding:2px 6px;border:1px solid var(--accent);border-radius:6px;outline:none;font-family:inherit;background:var(--glass);color:var(--text);box-sizing:border-box';
-  cell.insertBefore(inp,cell.querySelector('.meal-add-btn'));
+  cell.appendChild(inp);
   inp.focus();
   const commit=async()=>{
     const name=inp.value.trim();
@@ -3127,13 +3168,15 @@ async function addMealFromPicker(recipeId){
 async function removeMeal(id){
   const meal=(st.mealPlan||[]).find(m=>String(m.id)===String(id));
   st.mealPlan=(st.mealPlan||[]).filter(m=>String(m.id)!==String(id));
+  // Track removed recipe-linked meals for restore
+  if(meal&&meal.recipe_id){
+    _removedMeals.push({id:meal.id,recipe_id:meal.recipe_id,recipe_name:meal.recipe_name,meal_date:meal.meal_date,servings:meal.servings,meal_type:meal.meal_type,sort_order:meal.sort_order});
+  }
   save();renderMealRow();
   sbReqSilent('DELETE','meal_plan',null,`?id=eq.${id}`);
-  // Remove associated grocery items
   if(meal&&meal.recipe_id){
     const wk=_groceryWeekOf();
     const toRemove=(st.groceryList||[]).filter(g=>g.week_of===wk&&g.source==='recipe'&&String(g.source_id)===String(meal.recipe_id));
-    // Only remove if no other meal this week uses same recipe
     const otherMeals=(st.mealPlan||[]).filter(m=>String(m.recipe_id)===String(meal.recipe_id));
     if(!otherMeals.length){
       toRemove.forEach(g=>{
