@@ -1931,7 +1931,7 @@ function renderRecipeList(){
     return`<div class="rec-list-item${isSel?' active':''}" data-rid="${sid}" onclick="selRecRow(event,'${sid}')">
       <div class="rec-list-main">
         <span class="rec-list-fav${r.favorite?' on':''}" onclick="event.stopPropagation();toggleRecFavorite('${sid}',event)">♥</span>
-        <span class="rec-list-name">${esc(r.name)}</span>
+        <span class="rec-list-name">${r.name?esc(r.name):'<em style="color:var(--muted)">New Recipe…</em>'}</span>
         <button class="rec-list-del" onclick="event.stopPropagation();_recCtxId='${sid}';_selRecIds.clear();_selRecIds.add('${sid}');recCtxDelete()">✕</button>
       </div>
     </div>`;
@@ -2099,24 +2099,33 @@ function _recIngDelete(id,idx){
   setRecField(id,'ingredients',_serializeIngredients(ings));
   renderRecipeDetail(id);
 }
+let _recAddingNew=false;
 async function _recAddInline(){
   const maxSort=Math.max(0,...(st.recipes||[]).map(r=>r.sort_order||0));
   const data={name:'',meal_type:null,cuisine:null,time:null,servings:null,ingredients:null,instructions:null,favorite:false,sort_order:maxSort+1};
   const local={id:'l-'+Date.now(),...data};
   st.recipes.push(local);save();
   _recPanelId=String(local.id);
+  _recAddingNew=true;
   renderRecipeList();renderRecipeDetail(_recPanelId);
+  _recFocusNewTitle();
+  const sv=await sbReq('POST','recipes',data);
+  if(sv&&sv[0]){
+    const i=st.recipes.findIndex(x=>x.id===local.id);
+    if(i>-1){st.recipes[i]=sv[0];_recPanelId=String(sv[0].id);save();renderRecipeList();}
+    // Don't re-render detail — user is typing in title
+  }
+}
+function _recFocusNewTitle(){
   setTimeout(()=>{
     const inp=document.querySelector('.rec-detail-title-inp');
     if(!inp)return;
-    inp.focus();inp.placeholder='Recipe name…';
-    const lid=String(local.id);
-    const origBlur=inp.onblur;
+    inp.focus();inp.select();
     inp.onblur=function(){
       const name=this.value.trim();
+      _recAddingNew=false;
       if(!name){
-        // Delete unsaved empty recipe
-        const i=st.recipes.findIndex(x=>String(x.id)===lid||String(x.id)===_recPanelId);
+        const i=st.recipes.findIndex(x=>String(x.id)===_recPanelId);
         if(i>-1){
           const realId=String(st.recipes[i].id);
           st.recipes.splice(i,1);save();
@@ -2128,11 +2137,9 @@ async function _recAddInline(){
         }
         return;
       }
-      _recSaveField(lid.startsWith('l-')?_recPanelId:lid,'name',name);
+      _recSaveField(_recPanelId,'name',name);
     };
-  },50);
-  const sv=await sbReq('POST','recipes',data);
-  if(sv&&sv[0]){const i=st.recipes.findIndex(x=>x.id===local.id);if(i>-1){st.recipes[i]=sv[0];_recPanelId=String(sv[0].id);save();renderRecipeList();renderRecipeDetail(_recPanelId);}}
+  },30);
 }
 function _recSaveField(id,field,val){
   setRecField(id,field,val);
