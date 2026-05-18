@@ -2106,12 +2106,12 @@ function renderRecipeList(){
       <div class="rec-list-main">
         <span class="rec-list-fav${r.favorite?' on':''}" onclick="event.stopPropagation();toggleRecFavorite('${sid}',event)">♥</span>
         <span class="rec-list-name">${esc(r.name)}</span>
+        <div class="rec-list-meta">
+          ${r.meal_type?`<span class="rec-meal-pill">${esc(r.meal_type)}</span>`:''}
+          ${r.cuisine?`<span class="rec-list-cuisine">${esc(r.cuisine)}</span>`:''}
+          ${r.time?`<span class="rec-list-time">${fmtMin(r.time)}</span>`:''}
+        </div>
         <button class="rec-list-del" onclick="event.stopPropagation();_recCtxId='${sid}';_selRecIds.clear();_selRecIds.add('${sid}');recCtxDelete()">✕</button>
-      </div>
-      <div class="rec-list-meta">
-        ${r.meal_type?`<span class="rec-meal-pill">${esc(r.meal_type)}</span>`:''}
-        ${r.cuisine?`<span class="rec-list-cuisine">${esc(r.cuisine)}</span>`:''}
-        ${r.time?`<span class="rec-list-time">${fmtMin(r.time)}</span>`:''}
       </div>
     </div>`;
   }).join('')||`<div style="padding:28px;text-align:center;color:var(--muted);font-size:12px">No recipes yet</div>`;
@@ -2162,7 +2162,7 @@ function renderRecipeDetail(id){
   html+=`<div class="rec-detail-inst-text">${r.instructions?esc(r.instructions).replace(/\n/g,'<br>'):'<span style="color:var(--muted)">No instructions added</span>'}</div>`;
   html+=`</div>`;
   html+=`</div>`;
-  html+=`<div class="rec-detail-actions"><button class="btn btn-ghost" onclick="openRecipeEditModal('${r.id}')">Edit</button><button class="btn btn-ghost" style="color:var(--accent)" onclick="addRecipeToGrocery('${r.id}');showToast('Added to grocery list')">🛒 Add to List</button></div>`;
+  html+=`<div class="rec-detail-actions"><button class="btn btn-ghost" onclick="openRecipeEditModal('${r.id}')">Edit</button></div>`;
   panel.innerHTML=html;
 }
 
@@ -2174,10 +2174,9 @@ function _recSetSearch(q){
   _recShowSuggestions(q);
   const inp=document.getElementById('recSearchInp');
   // show/hide clear button
-  const wrap=inp?.parentElement;
-  if(wrap){
-    let clr=wrap.querySelector('.rec-search-clear');
-    if(q&&!clr){clr=document.createElement('div');clr.className='rec-search-clear';clr.style.cssText='display:flex;align-items:center;position:absolute;right:6px;top:50%;transform:translateY(-50%)';clr.innerHTML='<button onclick="_recClearSearch()" style="background:none;border:none;cursor:pointer;padding:0 2px;font-size:10px;color:var(--muted);line-height:1" title="Clear (Esc)">✕</button>';wrap.appendChild(clr);}
+  if(inp){
+    let clr=inp.parentElement.querySelector('.rec-search-clear');
+    if(q&&!clr){clr=document.createElement('button');clr.className='rec-search-clear';clr.style.cssText='position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:0 2px;font-size:10px;color:var(--muted);line-height:1;z-index:2';clr.title='Clear (Esc)';clr.textContent='✕';clr.onclick=_recClearSearch;inp.parentElement.appendChild(clr);}
     else if(!q&&clr)clr.remove();
   }
 }
@@ -2276,18 +2275,21 @@ function renderRecipesPage(){
   const page=document.getElementById('page-recipes');if(!page)return;
   if(!page._recInit){
     page._recInit=true;
-    page.innerHTML=`<div class="ov-topbar"><div class="ov-topbar-left"><span class="ov-topbar-label">Recipes</span><span class="ov-topbar-dot"></span><span id="recCount" style="font-size:11px;color:var(--muted)"></span></div><div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div></div>
+    page.innerHTML=`<div class="ov-topbar"><div class="ov-topbar-left"><span class="ov-topbar-label">Recipes</span><span class="ov-topbar-dot"></span><span id="recCount" style="font-size:11px;color:var(--muted)"></span></div><span class="ov-topbar-date topbar-date"></span><div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div></div>
     <div class="rec-book-wrap">
       <div class="rec-search-float">
-        <div style="position:relative;display:flex;align-items:center">
-          <input id="recSearchInp" type="text" autocomplete="off" placeholder="Search recipes…" value="" oninput="_recSetSearch(this.value)" onkeydown="event.stopPropagation();_recSearchKey(event)" onfocus="_recSearchFocus()" class="rec-search-inp">
-          <div id="recSearchSuggestions" class="rec-search-suggestions"></div>
+        <div class="rec-search-cutout"></div>
+        <div class="rec-search-inner">
+          <div style="position:relative;display:flex;align-items:center">
+            <input id="recSearchInp" type="text" autocomplete="off" placeholder="Search recipes…" value="" oninput="_recSetSearch(this.value)" onkeydown="event.stopPropagation();_recSearchKey(event)" onfocus="_recSearchFocus()" class="rec-search-inp">
+          </div>
+          <button class="rec-search-plus" onclick="openRecipeAddModal()" title="Add Recipe">+</button>
         </div>
+        <div id="recSearchSuggestions" class="rec-search-suggestions"></div>
       </div>
       <div class="rec-book">
         <div class="rec-book-left">
           <div class="rec-list-scroll" id="recListScroll"></div>
-          <button class="rec-add-btn" onclick="openRecipeAddModal()">+ Add Recipe</button>
         </div>
         <div class="rec-book-right" id="recDetailPanel">
           <div class="rec-detail-empty">Select a recipe to view</div>
@@ -2320,7 +2322,9 @@ function renderRecipesPage(){
     _recPanelId=String(st.recipes[0].id);
     renderRecipeDetail(_recPanelId);
   }
-  document.querySelectorAll('#page-recipes .topbar-time').forEach(e=>e.textContent=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}));
+  const now=new Date();
+  document.querySelectorAll('#page-recipes .topbar-date').forEach(e=>e.textContent=now.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}));
+  document.querySelectorAll('#page-recipes .topbar-time').forEach(e=>e.textContent=now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}));
 }
 // ── END RECIPES PAGE ──────────────────────────────────────────────────────────
 
