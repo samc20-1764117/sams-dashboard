@@ -68,6 +68,9 @@ Supabase Auth (email+password), RLS on all tables. `init()`→`checkAuth()`→`d
 - `Cmd/Ctrl+Z`: undo (page-aware: pups/recipes/birthdays use their own stacks).
 - `o`: `showPage('overview')` — only when no input/textarea/select focused and no modal open.
 - `v`: `showPage('videos')`.
+- `m`: toggle month view (`mModal`) on overview. Press again or Enter to close.
+- `i`: help overlay — shows all shortcuts (page-specific + global). Toggle with `i` again or Enter.
+- `⌘←/→`: switch pages in order: overview→videos→pups→recipes→finance→birthdays.
 - `s`: toggle HEB grocery modal (open/close). Also closes via `Enter` when not in input.
 - `g`: debug grid overlay (toggle). Shows: green edge margins (CSS padding), purple card overlays with dimensions (blur content), blue vertical gaps, red horizontal gaps. Works on all pages. Auto-dismisses on page switch. Script in `index.html` before `</body>`.
 - **Adding new shortcuts**: see full pattern in `rules/tasks-ui.md` → "Keyboard shortcut pattern". MUST follow all 5 steps (toggle, Enter close, stopPropagation, outline:none, dual handler).
