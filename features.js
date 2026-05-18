@@ -2153,22 +2153,29 @@ function renderRecipeDetail(id){
   function fmtMin(m){if(!m)return'';return m>=60?`${Math.floor(m/60)}h${m%60?' '+m%60+'m':''}`:m+'m';}
   const sid=String(r.id);
   const escV=v=>(v||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+  const mealOpts=['','Breakfast','Lunch','Dinner','Snack','Dessert','Drink','Side'];
+  const cuisineOpts=['','American','Mexican','Italian','Chinese','Japanese','Korean','Thai','Indian','Mediterranean','French','Vietnamese','Greek','Southern','Tex-Mex','Other'];
   let html=`<div class="rec-detail-header">
-    <h2 class="rec-detail-title" ondblclick="_recInlineEdit(this,'${sid}','name','text')">${esc(r.name)}</h2>
-    <div class="rec-detail-meta">
-      <span class="rec-meal-pill rec-detail-editable" ondblclick="_recInlineEdit(this,'${sid}','meal_type','select',['Breakfast','Lunch','Dinner','Snack','Dessert','Drink','Side'])">${r.meal_type?esc(r.meal_type):'+ meal'}</span>
-      <span class="rec-detail-tag rec-detail-editable" ondblclick="_recInlineEdit(this,'${sid}','cuisine','select',['American','Mexican','Italian','Chinese','Japanese','Korean','Thai','Indian','Mediterranean','French','Vietnamese','Greek','Southern','Tex-Mex','Other'])">${r.cuisine?esc(r.cuisine):'+ cuisine'}</span>
-      <span class="rec-detail-tag rec-detail-editable" ondblclick="_recInlineEdit(this,'${sid}','time','number')">${r.time?fmtMin(r.time):'+ time'}</span>
-      <span class="rec-detail-tag rec-detail-editable" ondblclick="_recInlineEdit(this,'${sid}','servings','number')">${r.servings?r.servings+' srv':'+ srv'}</span>
+    <div class="rec-detail-title-wrap">
+      <input class="rec-detail-title-inp" value="${escV(r.name)}" placeholder="Recipe name"
+        onblur="_recSaveField('${sid}','name',this.value.trim())"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">
       <span class="rec-detail-fav${r.favorite?' on':''}" onclick="toggleRecFavorite('${r.id}');renderRecipeDetail('${r.id}');renderRecipeList()">♥</span>
+    </div>
+    <div class="rec-detail-meta">
+      <select class="rec-meta-sel rec-meta-meal" onchange="_recSaveField('${sid}','meal_type',this.value||null)">${mealOpts.map(m=>`<option value="${m}"${(r.meal_type||'')===m?' selected':''}>${m||'Meal type'}</option>`).join('')}</select>
+      <select class="rec-meta-sel" onchange="_recSaveField('${sid}','cuisine',this.value||null)">${cuisineOpts.map(c=>`<option value="${c}"${(r.cuisine||'')===c?' selected':''}>${c||'Cuisine'}</option>`).join('')}</select>
+      <div class="rec-meta-field"><span class="rec-meta-label">Time</span><input class="rec-meta-inp" type="number" min="0" value="${r.time||''}" placeholder="min" onblur="_recSaveField('${sid}','time',parseInt(this.value)||null)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}"></div>
+      <div class="rec-meta-field"><span class="rec-meta-label">Serves</span><input class="rec-meta-inp" type="number" min="1" value="${r.servings||''}" placeholder="–" onblur="_recSaveField('${sid}','servings',parseInt(this.value)||null)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}"></div>
     </div>
   </div>`;
   html+=`<div class="rec-detail-body">`;
   html+=`<div class="rec-detail-ings">`;
   html+=`<div class="rec-detail-section-title">Ingredients</div>`;
+  html+=`<div id="recDetailIngList">`;
   if(ings.length){
     let lastGrp=-1;
-    ings.forEach(ing=>{
+    ings.forEach((ing,i)=>{
       const isSpice=_SPICE_RE.test((ing.name||'').trim());
       const grp=isSpice?2:ing.is_pantry?1:0;
       if(grp!==lastGrp&&lastGrp!==-1){
@@ -2176,11 +2183,13 @@ function renderRecipeDetail(id){
         if(lbl)html+=`<div class="rec-detail-ing-group">${lbl}</div>`;
       }
       lastGrp=grp;
-      html+=`<div class="rec-detail-ing">${ing.amount?`<span class="rec-detail-ing-amt">${esc(ing.amount)}</span>`:''}<span>${esc(ing.name)}</span>${ing.is_pantry?'<span class="rec-detail-pantry">pantry</span>':''}</div>`;
+      html+=`<div class="rec-detail-ing" ondblclick="_recIngInline(this,'${sid}',${i})"><span class="rec-detail-ing-amt">${ing.amount?esc(ing.amount):''}</span><span class="rec-detail-ing-name">${esc(ing.name)}</span>${ing.is_pantry?'<span class="rec-detail-pantry">pantry</span>':''}<button class="rec-detail-ing-del" onclick="event.stopPropagation();_recIngDelete('${sid}',${i})">✕</button></div>`;
     });
   } else {
-    html+=`<div style="color:var(--muted);font-size:11px">No ingredients added</div>`;
+    html+=`<div style="color:var(--muted);font-size:11px">No ingredients yet</div>`;
   }
+  html+=`</div>`;
+  html+=`<button class="rec-detail-ing-add" onclick="_recIngAdd('${sid}')">+ Add ingredient</button>`;
   html+=`</div>`;
   html+=`<div class="rec-detail-inst">`;
   html+=`<div class="rec-detail-section-title">Instructions</div>`;
@@ -2191,6 +2200,57 @@ function renderRecipeDetail(id){
   panel.innerHTML=html;
 }
 
+function _recIngInline(el,id,idx){
+  if(el.querySelector('input'))return;
+  const r=st.recipes.find(x=>String(x.id)===String(id));if(!r)return;
+  const ings=_sortIngredients(_parseIngredients(r.ingredients));
+  const ing=ings[idx];if(!ing)return;
+  el.innerHTML=`<input class="rec-ing-edit-amt" value="${(ing.amount||'').replace(/"/g,'&quot;')}" placeholder="amt"><input class="rec-ing-edit-name" value="${(ing.name||'').replace(/"/g,'&quot;')}" placeholder="ingredient">`;
+  const amtInp=el.querySelector('.rec-ing-edit-amt');
+  const nameInp=el.querySelector('.rec-ing-edit-name');
+  amtInp.style.cssText='width:50px;font-size:11px;border:none;border-bottom:1px solid var(--accent);background:transparent;color:var(--accent);outline:none;font-family:inherit;padding:1px 0;font-weight:600';
+  nameInp.style.cssText='flex:1;font-size:12px;border:none;border-bottom:1px solid var(--accent);background:transparent;color:var(--text);outline:none;font-family:inherit;padding:1px 0';
+  amtInp.focus();amtInp.select();
+  const doSave=()=>{
+    ing.amount=amtInp.value.trim();ing.name=nameInp.value.trim();
+    const clean=ings.filter(x=>(x.name||'').trim());
+    setRecField(id,'ingredients',_serializeIngredients(clean));
+    renderRecipeDetail(id);
+  };
+  const onKey=e=>{
+    if(e.key==='Enter'){e.preventDefault();doSave();}
+    if(e.key==='Escape'){e.preventDefault();renderRecipeDetail(id);}
+    if(e.key==='Tab'&&!e.shiftKey&&e.target===amtInp){e.preventDefault();nameInp.focus();nameInp.select();}
+  };
+  amtInp.addEventListener('keydown',onKey);
+  nameInp.addEventListener('keydown',onKey);
+  nameInp.addEventListener('blur',e=>{if(!el.contains(e.relatedTarget))doSave();});
+  amtInp.addEventListener('blur',e=>{if(!el.contains(e.relatedTarget))doSave();});
+}
+function _recIngAdd(id){
+  const r=st.recipes.find(x=>String(x.id)===String(id));if(!r)return;
+  const ings=_parseIngredients(r.ingredients);
+  ings.push({name:'',amount:''});
+  setRecField(id,'ingredients',_serializeIngredients(ings));
+  renderRecipeDetail(id);
+  // Focus the new row
+  setTimeout(()=>{
+    const rows=document.querySelectorAll('#recDetailIngList .rec-detail-ing');
+    const last=rows[rows.length-1];
+    if(last)_recIngInline(last,id,rows.length-1);
+  },30);
+}
+function _recIngDelete(id,idx){
+  const r=st.recipes.find(x=>String(x.id)===String(id));if(!r)return;
+  const ings=_sortIngredients(_parseIngredients(r.ingredients));
+  ings.splice(idx,1);
+  setRecField(id,'ingredients',_serializeIngredients(ings));
+  renderRecipeDetail(id);
+}
+function _recSaveField(id,field,val){
+  setRecField(id,field,val);
+  renderRecipeList();
+}
 function _recInlineEdit(el,id,field,type,opts){
   if(el.querySelector('input,select,textarea'))return;
   const r=st.recipes.find(x=>String(x.id)===String(id));if(!r)return;
