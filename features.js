@@ -1938,6 +1938,15 @@ function renderRecipeList(){
   }).join('')||`<div style="padding:28px;text-align:center;color:var(--muted);font-size:12px">No recipes yet</div>`;
 }
 
+function _recMetaTab(e){
+  if(e.key==='Enter'){e.preventDefault();e.target.blur();return;}
+  if(e.key!=='Tab')return;
+  const panel=document.getElementById('recDetailPanel');if(!panel)return;
+  const fields=[...panel.querySelectorAll('.rec-detail-title-inp,.rec-meta-sel,.rec-meta-inp,.rec-detail-inst-ta')];
+  const idx=fields.indexOf(e.target);if(idx<0)return;
+  const next=e.shiftKey?idx-1:idx+1;
+  if(next>=0&&next<fields.length){e.preventDefault();fields[next].focus();}
+}
 function renderRecipeDetail(id){
   const panel=document.getElementById('recDetailPanel');if(!panel)return;
   if(!id){panel.innerHTML=`<div class="rec-detail-empty">Select a recipe to view</div>`;return;}
@@ -1955,14 +1964,14 @@ function renderRecipeDetail(id){
     <div class="rec-detail-title-wrap">
       <input class="rec-detail-title-inp" value="${escV(r.name)}" placeholder="Recipe name"
         onblur="_recSaveField('${sid}','name',this.value.trim())"
-        onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">
+        onkeydown="_recMetaTab(event)">
       <span class="rec-detail-fav${r.favorite?' on':''}" onclick="toggleRecFavorite('${r.id}');renderRecipeDetail('${r.id}');renderRecipeList()">♥</span>
     </div>
     <div class="rec-detail-meta">
-      <select class="rec-meta-sel rec-meta-meal" onchange="_recSaveField('${sid}','meal_type',this.value||null)">${mealOpts.map(m=>`<option value="${m}"${(r.meal_type||'')===m?' selected':''}>${m||'Meal type'}</option>`).join('')}</select>
-      <select class="rec-meta-sel" onchange="_recSaveField('${sid}','cuisine',this.value||null)">${cuisineOpts.map(c=>`<option value="${c}"${(r.cuisine||'')===c?' selected':''}>${c||'Cuisine'}</option>`).join('')}</select>
-      <div class="rec-meta-field"><span class="rec-meta-label">Time</span><input class="rec-meta-inp" type="number" min="0" value="${r.time||''}" placeholder="min" onblur="_recSaveField('${sid}','time',parseInt(this.value)||null)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}"></div>
-      <div class="rec-meta-field"><span class="rec-meta-label">Serves</span><input class="rec-meta-inp" type="number" min="1" value="${r.servings||''}" placeholder="–" onblur="_recSaveField('${sid}','servings',parseInt(this.value)||null)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}"></div>
+      <select class="rec-meta-sel rec-meta-meal" onchange="_recSaveField('${sid}','meal_type',this.value||null)" onkeydown="_recMetaTab(event)">${mealOpts.map(m=>`<option value="${m}"${(r.meal_type||'')===m?' selected':''}>${m||'Meal type'}</option>`).join('')}</select>
+      <select class="rec-meta-sel" onchange="_recSaveField('${sid}','cuisine',this.value||null)" onkeydown="_recMetaTab(event)">${cuisineOpts.map(c=>`<option value="${c}"${(r.cuisine||'')===c?' selected':''}>${c||'Cuisine'}</option>`).join('')}</select>
+      <div class="rec-meta-field"><span class="rec-meta-label">Time</span><input class="rec-meta-inp" type="number" min="0" value="${r.time||''}" placeholder="min" onblur="_recSaveField('${sid}','time',parseInt(this.value)||null)" onkeydown="_recMetaTab(event)"></div>
+      <div class="rec-meta-field"><span class="rec-meta-label">Serves</span><input class="rec-meta-inp" type="number" min="1" value="${r.servings||''}" placeholder="–" onblur="_recSaveField('${sid}','servings',parseInt(this.value)||null)" onkeydown="_recMetaTab(event)"></div>
     </div>
   </div>`;
   html+=`<div class="rec-detail-body">`;
