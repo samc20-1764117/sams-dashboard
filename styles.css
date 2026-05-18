@@ -742,10 +742,10 @@ body.dark .rec-detail-inst-ta:focus{background:rgba(255,255,255,.04)}
 .rec-detail-section-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--accent);margin-bottom:10px;opacity:.7}
 .di-row{display:flex;align-items:center;gap:6px;padding:3px 2px;font-size:12px;border-bottom:1px solid rgba(210,205,228,.06);border-radius:4px}
 .di-row:hover .rec-detail-ing-grip{opacity:.5}
-.di-amt{width:50px;font-size:11px;border:none;border-bottom:1px solid transparent;background:transparent;color:var(--accent);outline:none;font-family:inherit;padding:2px 0;font-weight:600}
-.di-amt:focus{border-bottom-color:var(--accent)}
 .di-name{flex:1;font-size:12px;border:none;border-bottom:1px solid transparent;background:transparent;color:var(--text);outline:none;font-family:inherit;padding:2px 0}
 .di-name:focus{border-bottom-color:var(--accent)}
+.di-amt{width:50px;font-size:11px;border:none;border-bottom:1px solid transparent;background:transparent;color:var(--accent);outline:none;font-family:inherit;padding:2px 0;font-weight:600}
+.di-amt:focus{border-bottom-color:var(--accent)}
 .rec-detail-ing{display:flex;align-items:baseline;gap:6px;padding:4px 2px;font-size:12px;color:var(--text);border-bottom:1px solid rgba(210,205,228,.06);cursor:text;border-radius:4px;transition:background .1s;position:relative}
 .rec-detail-ing:hover{background:rgba(210,205,228,.06)}
 .rec-detail-ing-amt{color:var(--accent);font-size:11px;min-width:44px;font-weight:600;opacity:.8}
