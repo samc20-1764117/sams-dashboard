@@ -1995,7 +1995,7 @@ function renderRecipeDetail(id){
   panel.innerHTML=html;
 }
 
-function _recIngInline(el,id,idx){
+function _recIngInline(el,id,idx,focusField){
   if(el.querySelector('input'))return;
   const r=st.recipes.find(x=>String(x.id)===String(id));if(!r)return;
   const ings=_groupIngredients(_parseIngredients(r.ingredients));
@@ -2007,7 +2007,8 @@ function _recIngInline(el,id,idx){
   const nameInp=el.querySelector('.rec-ing-edit-name');
   amtInp.style.cssText='width:50px;font-size:11px;border:none;border-bottom:1px solid var(--accent);background:transparent;color:var(--accent);outline:none;font-family:inherit;padding:0;font-weight:600;height:'+(h-8)+'px;box-sizing:border-box';
   nameInp.style.cssText='flex:1;font-size:12px;border:none;border-bottom:1px solid var(--accent);background:transparent;color:var(--text);outline:none;font-family:inherit;padding:0;height:'+(h-8)+'px;box-sizing:border-box';
-  amtInp.focus();amtInp.select();
+  const focus=focusField==='name'?nameInp:amtInp;
+  focus.focus();focus.select();
   let _saved=false;
   const doSave=()=>{
     if(_saved)return;_saved=true;
@@ -2020,6 +2021,14 @@ function _recIngInline(el,id,idx){
     if(e.key==='Enter'){e.preventDefault();doSave();}
     if(e.key==='Escape'){e.preventDefault();_saved=true;renderRecipeDetail(id);}
     if(e.key==='Tab'&&!e.shiftKey&&e.target===amtInp){e.preventDefault();nameInp.focus();nameInp.select();}
+    if(e.key==='Tab'&&!e.shiftKey&&e.target===nameInp){
+      e.preventDefault();doSave();
+      setTimeout(()=>{const rows=document.querySelectorAll('#recDetailIngList .rec-detail-ing');const next=rows[idx+1];if(next)_recIngInline(next,id,idx+1);},30);
+    }
+    if(e.key==='Tab'&&e.shiftKey&&e.target===amtInp){
+      e.preventDefault();doSave();
+      if(idx>0)setTimeout(()=>{const rows=document.querySelectorAll('#recDetailIngList .rec-detail-ing');const prev=rows[idx-1];if(prev)_recIngInline(prev,id,idx-1,'name');},30);
+    }
   };
   amtInp.addEventListener('keydown',onKey);
   nameInp.addEventListener('keydown',onKey);
@@ -2038,7 +2047,7 @@ function _recIngAdd(id){
     const newIdx=sorted.findIndex(x=>x.name===' ');
     const rows=document.querySelectorAll('#recDetailIngList .rec-detail-ing');
     const row=rows[newIdx>=0?newIdx:rows.length-1];
-    if(row)_recIngInline(row,id,newIdx>=0?newIdx:rows.length-1);
+    if(row)_recIngInline(row,id,newIdx>=0?newIdx:rows.length-1,'name');
   },30);
 }
 function _recIngDragStart(e,id,idx){
@@ -2070,7 +2079,7 @@ function _recIngDragStart(e,id,idx){
     document.removeEventListener('mouseup',onUp);
     dragged.style.opacity='';
     const ph=list.querySelector('.rec-ing-drop-line');if(ph)ph.remove();
-    if(!moved){_recIngInline(dragged,id,idx);return;}
+    if(!moved){const clickedName=!!e.target.closest('.rec-detail-ing-name');_recIngInline(dragged,id,idx,clickedName?'name':undefined);return;}
     if(dropIdx===idx)return;
     const r=st.recipes.find(x=>String(x.id)===String(id));if(!r)return;
     const ings=_groupIngredients(_parseIngredients(r.ingredients));
@@ -2092,13 +2101,36 @@ function _recIngDelete(id,idx){
 }
 async function _recAddInline(){
   const maxSort=Math.max(0,...(st.recipes||[]).map(r=>r.sort_order||0));
-  const data={name:'New Recipe',meal_type:null,cuisine:null,time:null,servings:null,ingredients:null,instructions:null,favorite:false,sort_order:maxSort+1};
+  const data={name:'',meal_type:null,cuisine:null,time:null,servings:null,ingredients:null,instructions:null,favorite:false,sort_order:maxSort+1};
   const local={id:'l-'+Date.now(),...data};
   st.recipes.push(local);save();
   _recPanelId=String(local.id);
   renderRecipeList();renderRecipeDetail(_recPanelId);
-  // Focus the title input
-  setTimeout(()=>{const inp=document.querySelector('.rec-detail-title-inp');if(inp){inp.focus();inp.select();}},50);
+  setTimeout(()=>{
+    const inp=document.querySelector('.rec-detail-title-inp');
+    if(!inp)return;
+    inp.focus();inp.placeholder='Recipe name…';
+    const lid=String(local.id);
+    const origBlur=inp.onblur;
+    inp.onblur=function(){
+      const name=this.value.trim();
+      if(!name){
+        // Delete unsaved empty recipe
+        const i=st.recipes.findIndex(x=>String(x.id)===lid||String(x.id)===_recPanelId);
+        if(i>-1){
+          const realId=String(st.recipes[i].id);
+          st.recipes.splice(i,1);save();
+          if(!realId.startsWith('l-'))sbReqSilent('DELETE','recipes',null,`?id=eq.${realId}`);
+          _recPanelId=st.recipes.length?String(st.recipes[0].id):null;
+          renderRecipeList();
+          if(_recPanelId)renderRecipeDetail(_recPanelId);
+          else{const p=document.getElementById('recDetailPanel');if(p)p.innerHTML='<div class="rec-detail-empty">Select a recipe to view</div>';}
+        }
+        return;
+      }
+      _recSaveField(lid.startsWith('l-')?_recPanelId:lid,'name',name);
+    };
+  },50);
   const sv=await sbReq('POST','recipes',data);
   if(sv&&sv[0]){const i=st.recipes.findIndex(x=>x.id===local.id);if(i>-1){st.recipes[i]=sv[0];_recPanelId=String(sv[0].id);save();renderRecipeList();renderRecipeDetail(_recPanelId);}}
 }
