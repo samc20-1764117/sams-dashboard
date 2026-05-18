@@ -1941,18 +1941,26 @@ function renderRecipeList(){
 function _recMetaTab(e){
   if(e.key==='Enter'){e.preventDefault();e.target.blur();return;}
   if(e.key!=='Tab')return;
+  e.preventDefault();
   const panel=document.getElementById('recDetailPanel');if(!panel)return;
-  const fields=[...panel.querySelectorAll('.rec-detail-title-inp,.rec-meta-sel,.rec-meta-inp')];
+  const selectors='.rec-detail-title-inp,.rec-meta-sel,.rec-meta-inp';
+  const fields=[...panel.querySelectorAll(selectors)];
   const idx=fields.indexOf(e.target);if(idx<0)return;
   const next=e.shiftKey?idx-1:idx+1;
-  if(next>=0&&next<fields.length){e.preventDefault();fields[next].focus();}
-  else if(!e.shiftKey&&next>=fields.length){
-    e.preventDefault();e.target.blur();
-    const sid=_recPanelId;if(!sid)return;
-    const rows=panel.querySelectorAll('#recDetailIngList .rec-detail-ing');
-    if(rows.length)setTimeout(()=>_recIngInline(rows[0],sid,0),30);
-    else setTimeout(()=>_recIngAdd(sid),30);
-  }
+  // Blur triggers save+re-render, so re-query after
+  e.target.blur();
+  const sid=_recPanelId;if(!sid)return;
+  setTimeout(()=>{
+    const p=document.getElementById('recDetailPanel');if(!p)return;
+    if(next>=0&&next<fields.length){
+      const f=[...p.querySelectorAll(selectors)];
+      if(f[next])f[next].focus();
+    } else if(!e.shiftKey&&next>=fields.length){
+      const rows=p.querySelectorAll('#recDetailIngList .rec-detail-ing');
+      if(rows.length)_recIngInline(rows[0],sid,0);
+      else _recIngAdd(sid);
+    }
+  },50);
 }
 function renderRecipeDetail(id){
   const panel=document.getElementById('recDetailPanel');if(!panel)return;
@@ -2055,12 +2063,13 @@ function _recIngInline(el,id,idx,focusField){
 function _recIngAdd(id){
   const r=st.recipes.find(x=>String(x.id)===String(id));if(!r)return;
   const ings=_parseIngredients(r.ingredients);
-  ings.push({name:' ',amount:''});// space placeholder so serializer keeps it
-  r.ingredients=_serializeIngredients(ings);
+  const placeholder={name:'_new',amount:''};
+  ings.push(placeholder);
+  r.ingredients=JSON.stringify(ings);// bypass _serializeIngredients filter
   save();renderRecipeDetail(id);
   setTimeout(()=>{
     const sorted=_groupIngredients(ings);
-    const newIdx=sorted.findIndex(x=>x.name===' ');
+    const newIdx=sorted.findIndex(x=>x===placeholder);
     const rows=document.querySelectorAll('#recDetailIngList .rec-detail-ing');
     const row=rows[newIdx>=0?newIdx:rows.length-1];
     if(row)_recIngInline(row,id,newIdx>=0?newIdx:rows.length-1,'name');
