@@ -668,7 +668,7 @@ body.dark .rec-search{background:rgba(255,255,255,.06);border-color:rgba(255,220
 body.dark .rec-filter-chip{background:rgba(255,255,255,.06);border-color:rgba(255,220,200,.12);color:var(--text)}
 body.dark .rec-filter-chip.active{background:var(--accent);color:#fff}
 /* Book layout */
-.rec-book-wrap{position:relative;margin-top:18px;height:calc(100vh - 118px)}
+.rec-book-wrap{position:relative;margin-top:18px;height:calc(100vh - 102px)}
 .rec-search-float{position:absolute;top:-18px;left:50%;transform:translateX(-50%);z-index:10;display:flex;flex-direction:column;align-items:center}
 .rec-search-cutout{position:absolute;top:4px;left:-16px;right:-16px;bottom:-10px;background:var(--bg);border-radius:20px;z-index:0}
 body.dark .rec-search-cutout{background:var(--bg)}
