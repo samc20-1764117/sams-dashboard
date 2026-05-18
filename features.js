@@ -1772,7 +1772,7 @@ function openRecipeEditModal(id){
   document.getElementById('rmTime').value=r.time||'';
   document.getElementById('rmServings').value=r.servings||'';
   document.getElementById('rmInstructions').value=r.instructions||'';
-  _rmIngredients=_parseIngredients(r.ingredients);renderIngList();
+  _rmIngredients=_sortIngredients(_parseIngredients(r.ingredients));renderIngList();
   document.getElementById('recipeModal').classList.add('open');
   _recModalKeyBind();
   setTimeout(()=>{const _el=document.getElementById('rmName');if(_el){_el.focus();const _l=_el.value.length;_el.setSelectionRange(_l,_l);}},80);
@@ -2023,7 +2023,7 @@ function renderRecSidePanel(id){
   const favStyle=r.favorite?'color:#ef4444;opacity:1':'color:var(--muted)';
   const fav=r.favorite?'♥':'♡';
   const mealOpts=['','Breakfast','Lunch','Dinner','Snack','Dessert','Drink','Side'].map(m=>`<option value="${m}"${(r.meal_type||'')=== m?' selected':''}>${m||'— Meal type'}</option>`).join('');
-  _panelIngredients=_parseIngredients(r.ingredients);
+  _panelIngredients=_sortIngredients(_parseIngredients(r.ingredients));
   panel.innerHTML=`
     <div class="rec-sp-header">
       <div style="display:flex;align-items:flex-start;gap:8px">
