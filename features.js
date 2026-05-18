@@ -2029,10 +2029,10 @@ function _diRender(id){
   const _e=v=>(v||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;');
   el.innerHTML=_detailIngs.map((ing,i)=>`<div class="di-row" id="diRow${i}"><span class="rec-detail-ing-grip" onmousedown="_diDragStart(event,'${id}',${i})">⠿</span><input class="di-amt" placeholder="amt" value="${_e(ing.amount)}" oninput="_detailIngs[${i}].amount=this.value" onkeydown="_diKey(event,${i},'amt','${id}')" onblur="_diBlur('${id}')"><input class="di-name" placeholder="ingredient" value="${_e(ing.name)}" oninput="_detailIngs[${i}].name=this.value" onkeydown="_diKey(event,${i},'name','${id}')" onblur="_diBlur('${id}')"><button class="rec-detail-ing-del" onclick="_diDel(${i},'${id}')" title="Remove">✕</button></div>`).join('')||'<div style="color:var(--muted);font-size:11px;padding:4px 0">No ingredients yet</div>';
 }
-function _diAdd(id,focusName){
+function _diAdd(id){
   _diFlush();_detailIngs.push({name:'',amount:''});_diRender(id);
   const i=_detailIngs.length-1;
-  setTimeout(()=>{const inp=document.querySelector(focusName!==false?`#diRow${i} .di-name`:`#diRow${i} .di-amt`);if(inp)inp.focus();},20);
+  setTimeout(()=>{const inp=document.querySelector(`#diRow${i} .di-amt`);if(inp)inp.focus();},20);
 }
 function _diDel(i,id){
   _diFlush();_detailIngs.splice(i,1);_diRender(id);_diSave(id);
