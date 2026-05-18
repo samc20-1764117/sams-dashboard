@@ -1928,22 +1928,12 @@ function renderRecipeList(){
   container.innerHTML=rows.map(r=>{
     const sid=String(r.id);
     const isSel=_recPanelId===sid;
-    let preview='';
-    if(isSel){
-      const tags=[];
-      if(r.meal_type)tags.push(r.meal_type);
-      if(r.cuisine)tags.push(r.cuisine);
-      if(r.time)tags.push((r.time>=60?Math.floor(r.time/60)+'h'+(r.time%60?' '+r.time%60+'m':''):r.time+'m'));
-      if(r.servings)tags.push('Serves '+r.servings);
-      const ings=_parseIngredients(r.ingredients).slice(0,4).map(x=>x.name).filter(Boolean);
-      preview=`<div class="rec-list-preview">${tags.length?`<div class="rec-list-preview-tags">${tags.map(t=>`<span class="rec-list-preview-tag">${esc(t)}</span>`).join('')}</div>`:''}${ings.length?`<div class="rec-list-preview-ings">${ings.map(n=>esc(n)).join(' · ')}</div>`:''}</div>`;
-    }
     return`<div class="rec-list-item${isSel?' active':''}" data-rid="${sid}" onclick="selRecRow(event,'${sid}')">
       <div class="rec-list-main">
         <span class="rec-list-fav${r.favorite?' on':''}" onclick="event.stopPropagation();toggleRecFavorite('${sid}',event)">♥</span>
         <span class="rec-list-name">${r.name?esc(r.name):'<em style="color:var(--muted)">New Recipe…</em>'}</span>
         <button class="rec-list-del" onclick="event.stopPropagation();_recCtxId='${sid}';_selRecIds.clear();_selRecIds.add('${sid}');recCtxDelete()">✕</button>
-      </div>${preview}
+      </div>
     </div>`;
   }).join('')||`<div style="padding:28px;text-align:center;color:var(--muted);font-size:12px">No recipes yet</div>`;
 }
@@ -2003,9 +1993,9 @@ function renderRecipeDetail(id){
     </div>
     <div class="rec-detail-flourish"></div>
     <div class="rec-detail-meta">
-      <select class="rec-meta-sel rec-meta-meal" onchange="_recSaveField('${sid}','meal_type',this.value||null)" onkeydown="_recMetaTab(event)">${mealOpts.map(m=>`<option value="${m}"${(r.meal_type||'')===m?' selected':''}>${m||'Meal type'}</option>`).join('')}</select>
-      <select class="rec-meta-sel" onchange="_recSaveField('${sid}','cuisine',this.value||null)" onkeydown="_recMetaTab(event)">${cuisineOpts.map(c=>`<option value="${c}"${(r.cuisine||'')===c?' selected':''}>${c||'Cuisine'}</option>`).join('')}</select>
-      <div class="rec-meta-field"><span class="rec-meta-label">Time</span><input class="rec-meta-inp" type="number" min="0" value="${r.time||''}" placeholder="min" onblur="_recSaveField('${sid}','time',parseInt(this.value)||null)" onkeydown="_recMetaTab(event)"></div>
+      <div class="rec-meta-field"><span class="rec-meta-label">Meal</span><select class="rec-meta-sel rec-meta-meal" onchange="_recSaveField('${sid}','meal_type',this.value||null)" onkeydown="_recMetaTab(event)">${mealOpts.map(m=>`<option value="${m}"${(r.meal_type||'')===m?' selected':''}>${m||'–'}</option>`).join('')}</select></div>
+      <div class="rec-meta-field"><span class="rec-meta-label">Cuisine</span><select class="rec-meta-sel" onchange="_recSaveField('${sid}','cuisine',this.value||null)" onkeydown="_recMetaTab(event)">${cuisineOpts.map(c=>`<option value="${c}"${(r.cuisine||'')===c?' selected':''}>${c||'–'}</option>`).join('')}</select></div>
+      <div class="rec-meta-field"><span class="rec-meta-label">Time</span><input class="rec-meta-inp" type="number" min="0" value="${r.time||''}" placeholder="–" onblur="_recSaveField('${sid}','time',parseInt(this.value)||null)" onkeydown="_recMetaTab(event)"></div>
       <div class="rec-meta-field"><span class="rec-meta-label">Serves</span><input class="rec-meta-inp" type="number" min="1" value="${r.servings||''}" placeholder="–" onblur="_recSaveField('${sid}','servings',parseInt(this.value)||null)" onkeydown="_recMetaTab(event)"></div>
     </div>
   </div>`;
