@@ -2093,29 +2093,72 @@ function _recIngInline(el,id,idx,focusField){
   };
   amtInp.addEventListener('keydown',onKey);
   nameInp.addEventListener('keydown',onKey);
-  const onBlur=()=>setTimeout(()=>{if(!_saved&&!el.contains(document.activeElement))doSave();},10);
+  const onBlur=()=>setTimeout(()=>{if(!_saved&&!_recIngAdding&&!el.contains(document.activeElement))doSave();},15);
   nameInp.addEventListener('blur',onBlur);
   amtInp.addEventListener('blur',onBlur);
 }
 function _recIngAdd(id){
-  // Wait a tick for any blur-triggered re-render to finish
+  _recIngAdding=true;
+  // Delay to let any blur-triggered re-render finish first
   setTimeout(()=>{
+    _recIngAdding=false;
     const r=st.recipes.find(x=>String(x.id)===String(id));if(!r)return;
     const list=document.getElementById('recDetailIngList');if(!list)return;
-    const ings=_groupIngredients(_parseIngredients(r.ingredients));
-    const newIdx=ings.length;
+    const ings=_parseIngredients(r.ingredients);
     ings.push({name:'',amount:''});
-    r.ingredients=JSON.stringify(ings.map(x=>({name:x.name||'',amount:x.amount||'',...(x.is_pantry?{is_pantry:true}:{})})));
-    save();
-    const row=document.createElement('div');
-    row.className='rec-detail-ing';
-    row.setAttribute('data-ing-idx',String(newIdx));
-    row.setAttribute('onmousedown',`_recIngDragStart(event,'${id}',${newIdx})`);
-    row.innerHTML=`<span class="rec-detail-ing-grip">⠿</span><span class="rec-detail-ing-amt"></span><span class="rec-detail-ing-name"></span><button class="rec-detail-ing-del" onclick="event.stopPropagation();_recIngDelete('${id}',${newIdx})">✕</button>`;
-    list.appendChild(row);
-    _recIngInline(row,id,newIdx,'name');
-  },20);
+    r.ingredients=JSON.stringify(ings);save();
+    renderRecipeDetail(id);
+    setTimeout(()=>{
+      const rows=document.querySelectorAll('#recDetailIngList .rec-detail-ing');
+      if(!rows.length)return;
+      const row=rows[rows.length-1];
+      // Force inline edit - bypass _recIngInline's ings[idx] check
+      const h=Math.max(row.offsetHeight,28);
+      row.style.height=h+'px';row.style.overflow='hidden';
+      row.innerHTML=`<input class="rec-ing-edit-amt" value="" placeholder="amt" style="width:50px;font-size:11px;border:none;border-bottom:1px solid var(--accent);background:transparent;color:var(--accent);outline:none;font-family:inherit;padding:0;font-weight:600;height:${h-8}px;box-sizing:border-box"><input class="rec-ing-edit-name" value="" placeholder="ingredient" style="flex:1;font-size:12px;border:none;border-bottom:1px solid var(--accent);background:transparent;color:var(--text);outline:none;font-family:inherit;padding:0;height:${h-8}px;box-sizing:border-box">`;
+      const amtInp=row.querySelector('.rec-ing-edit-amt');
+      const nameInp=row.querySelector('.rec-ing-edit-name');
+      nameInp.focus();
+      let _saved=false;
+      const doSave=()=>{
+        if(_saved)return;_saved=true;
+        const r2=st.recipes.find(x=>String(x.id)===String(id));if(!r2)return;
+        const all=_parseIngredients(r2.ingredients);
+        const last=all[all.length-1];
+        if(last){last.amount=amtInp.value.trim();last.name=nameInp.value.trim();}
+        const clean=all.filter(x=>(x.name||'').trim());
+        r2.ingredients=_serializeIngredients(clean);save();
+        sbReqSilent('PATCH','recipes',{ingredients:r2.ingredients},`?id=eq.${id}`);
+        renderRecipeDetail(id);renderRecipeList();
+      };
+      const onKey=ev=>{
+        if(ev.key==='Enter'){ev.preventDefault();doSave();}
+        if(ev.key==='Escape'){ev.preventDefault();_saved=true;renderRecipeDetail(id);}
+        if(ev.key==='Tab'&&!ev.shiftKey&&ev.target===amtInp){ev.preventDefault();nameInp.focus();}
+        if(ev.key==='Tab'&&!ev.shiftKey&&ev.target===nameInp){
+          ev.preventDefault();
+          const isEmpty=!amtInp.value.trim()&&!nameInp.value.trim();
+          _saved=true;
+          const r2=st.recipes.find(x=>String(x.id)===String(id));if(!r2)return;
+          const all=_parseIngredients(r2.ingredients);
+          const last=all[all.length-1];
+          if(last){last.amount=amtInp.value.trim();last.name=nameInp.value.trim();}
+          const clean=all.filter(x=>(x.name||'').trim());
+          r2.ingredients=_serializeIngredients(clean);save();
+          sbReqSilent('PATCH','recipes',{ingredients:r2.ingredients},`?id=eq.${id}`);
+          if(isEmpty){renderRecipeDetail(id);renderRecipeList();setTimeout(()=>{const ta=document.querySelector('.rec-detail-inst-ta');if(ta)ta.focus();},30);}
+          else{renderRecipeDetail(id);renderRecipeList();setTimeout(()=>_recIngAdd(id),30);}
+        }
+      };
+      amtInp.addEventListener('keydown',onKey);
+      nameInp.addEventListener('keydown',onKey);
+      const onBlur=()=>setTimeout(()=>{if(!_saved&&!row.contains(document.activeElement))doSave();},10);
+      amtInp.addEventListener('blur',onBlur);
+      nameInp.addEventListener('blur',onBlur);
+    },30);
+  },50);
 }
+let _recIngAdding=false;
 function _recIngDragStart(e,id,idx){
   if(e.target.closest('.rec-detail-ing-del')||e.target.closest('input'))return;
   if(e.button!==0)return;
