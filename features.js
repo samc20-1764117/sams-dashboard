@@ -2062,9 +2062,9 @@ function _recIngInline(el,id,idx,focusField){
       doSave();
       setTimeout(()=>{
         if(hasNext){const rows=document.querySelectorAll('#recDetailIngList .rec-detail-ing');const next=rows[idx+1];if(next)_recIngInline(next,id,idx+1);}
-        else if(isEmpty){const ta=document.querySelector('.rec-detail-inst-ta');if(ta)ta.focus();}
-        else _recIngAdd(id);
-      },30);
+        else if(isEmpty){const ta=document.querySelector('.rec-detail-inst-ta');if(ta){ta.focus();ta.setSelectionRange(0,0);}}
+        else{_recIngAdd(id);}
+      },50);
     }
     if(e.key==='Tab'&&e.shiftKey&&e.target===amtInp){
       e.preventDefault();doSave();
@@ -2079,16 +2079,21 @@ function _recIngInline(el,id,idx,focusField){
 }
 function _recIngAdd(id){
   const r=st.recipes.find(x=>String(x.id)===String(id));if(!r)return;
-  const ings=_parseIngredients(r.ingredients);
-  ings.push({name:'',amount:'',_placeholder:true});
-  // Manually serialize keeping empty placeholder
-  const toSave=ings.map(x=>{const o={name:x.name||'',amount:x.amount||''};if(x.is_pantry)o.is_pantry=true;return o;});
-  r.ingredients=JSON.stringify(toSave);
-  save();renderRecipeDetail(id);
-  setTimeout(()=>{
-    const rows=document.querySelectorAll('#recDetailIngList .rec-detail-ing');
-    if(rows.length){const row=rows[rows.length-1];_recIngInline(row,id,rows.length-1,'name');}
-  },30);
+  // Directly inject a new empty row into the DOM without re-rendering
+  const list=document.getElementById('recDetailIngList');if(!list)return;
+  const ings=_groupIngredients(_parseIngredients(r.ingredients));
+  const newIdx=ings.length;
+  ings.push({name:'',amount:''});
+  // Update data to include empty row
+  r.ingredients=JSON.stringify(ings.map(x=>({name:x.name||'',amount:x.amount||'',...(x.is_pantry?{is_pantry:true}:{})})));
+  save();
+  const row=document.createElement('div');
+  row.className='rec-detail-ing';
+  row.setAttribute('data-ing-idx',newIdx);
+  row.setAttribute('onmousedown',`_recIngDragStart(event,'${id}',${newIdx})`);
+  row.innerHTML=`<span class="rec-detail-ing-grip">⠿</span><span class="rec-detail-ing-amt"></span><span class="rec-detail-ing-name"></span><button class="rec-detail-ing-del" onclick="event.stopPropagation();_recIngDelete('${id}',${newIdx})">✕</button>`;
+  list.appendChild(row);
+  _recIngInline(row,id,newIdx,'name');
 }
 function _recIngDragStart(e,id,idx){
   if(e.target.closest('.rec-detail-ing-del')||e.target.closest('input'))return;
