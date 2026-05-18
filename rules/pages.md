@@ -81,7 +81,15 @@ Table: `recipes`. Do NOT reference: protein,prep_time,cook_time,difficulty,last_
 - **Auto-capitalize**: global `input` listener capitalizes first char, after newlines, after ". ", after "• ". Typing `- ` at line start → `• `.
 
 ### HEB (`features.js` — grocery modal)
-"HEB" = the meal planning + grocery modal opened via 🛒 icon on HEB tasks. Layout: header (nav arrows, date, This Week btn, close ✕), horizontal weekly menu strip (top), 3-column bottom (Recipes | Planned Meals | Shopping List). Staples drawer slides from right inside modal. `_grocWkOff` shifts all panels. Opens to current week always. Enter/Escape/backdrop closes. Tables: `meal_plan`, `grocery_list`, `grocery_staples`. Shopping list combines: recipe ingredients (non-pantry, non-staple), overview items with `store='HEB'`, and weekly staples. Sorted by auto-inferred aisle (`_inferAisle`). Staples: skip-this-week via `st._grocStapleSkips[weekMon]` or remove permanently.
+"HEB" = the meal planning + grocery modal opened via cart SVG icon on HEB tasks. Layout: header (nav arrows, date, This Week btn, people toggle, close ✕), horizontal weekly menu strip (top), 3-column bottom (Recipes | Planned Meals | Shopping List). Grid: `.8fr .7fr 1.5fr` (shopping list widest). Staples drawer slides from right inside modal. `_grocWkOff` shifts all panels. Opens to current week always. Enter/Escape/backdrop closes. Tables: `meal_plan`, `grocery_list`, `grocery_staples`.
+- **Cart icon**: SVG (not emoji). No hover color change, no focus outline. Delete button hidden on HEB task rows (`.ti:has(.heb-cnt) .delbtn{display:none}`).
+- **People toggle**: per-week, stored in `localStorage` as `_grocPeople_<weekMon>`, default 2. Controls meal slot calculation: `Math.ceil(servings / people)`.
+- **Keyboard**: `s` closes, `t` jumps to current week, left/right arrows navigate weeks. All refocus modal after nav.
+- **Recipe list**: shows servings badge (`X srv`). Checking adds `ceil(servings/people)` meal entries to empty days.
+- **Shopping list**: combines recipe ingredients, HEB overview items, and weekly staples. Sorted: undone first, then by aisle (`_inferAisle`). Items show quantity before name (e.g. "1/2 onion"). No checkmarks on recipe/staple items.
+- **Shopping list checkboxes**: only on HEB-tagged overview items (`_shopId`). Uses `togShop()` — syncs with overview shopping list. Done items sort to bottom with strikethrough.
+- **Add item**: creates `shopping_list` entry with `store='HEB'` (not `grocery_list`). Appears on overview shopping tab immediately.
+- Staples: skip-this-week via `st._grocStapleSkips[weekMon]` or remove permanently.
 
 ### Quick Links (overview, `index.html`)
 - Grid order: Videos → Finance → Pups → Birthdays → Recipes.
