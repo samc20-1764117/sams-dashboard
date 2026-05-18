@@ -2029,6 +2029,7 @@ function renderRecipeDetail(id){
   panel.innerHTML=html;
 }
 
+let _recIngAdding=false;
 function _recIngInline(el,id,idx,focusField){
   if(el.querySelector('input'))return;
   const r=st.recipes.find(x=>String(x.id)===String(id));if(!r)return;
@@ -2158,7 +2159,6 @@ function _recIngAdd(id){
     },30);
   },50);
 }
-let _recIngAdding=false;
 function _recIngDragStart(e,id,idx){
   if(e.target.closest('.rec-detail-ing-del')||e.target.closest('input'))return;
   if(e.button!==0)return;
