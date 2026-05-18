@@ -1938,6 +1938,18 @@ function renderRecipeList(){
   }).join('')||`<div style="padding:28px;text-align:center;color:var(--muted);font-size:12px">No recipes yet</div>`;
 }
 
+function _recMetaSave(el,sid){
+  const r=st.recipes.find(x=>String(x.id)===String(sid));if(!r)return;
+  if(el.classList.contains('rec-detail-title-inp')){
+    const v=el.value.trim();if(v&&v!==r.name){r.name=v;save();sbReqSilent('PATCH','recipes',{name:v},`?id=eq.${sid}`);renderRecipeList();}
+  } else if(el.classList.contains('rec-meta-sel')){
+    // selects save via onchange already
+  } else if(el.classList.contains('rec-meta-inp')){
+    const isTime=el.closest('.rec-meta-field')&&el.previousElementSibling&&el.previousElementSibling.textContent==='Time';
+    const field=isTime?'time':'servings';
+    const v=parseInt(el.value)||null;if(v!==r[field]){r[field]=v;save();sbReqSilent('PATCH','recipes',{[field]:v},`?id=eq.${sid}`);}
+  }
+}
 function _recMetaTab(e){
   if(e.key==='Enter'){e.preventDefault();e.target.blur();return;}
   if(e.key!=='Tab')return;
@@ -1948,19 +1960,9 @@ function _recMetaTab(e){
   const idx=fields.indexOf(e.target);if(idx<0)return;
   const next=e.shiftKey?idx-1:idx+1;
   const sid=_recPanelId;if(!sid)return;
-  // Remove onblur temporarily so it doesn't re-render and steal focus
-  const origBlur=e.target.onblur;
+  // Save without re-rendering so we don't lose focus
   e.target.onblur=null;
-  // Fire the save manually without re-rendering detail
-  if(e.target.classList.contains('rec-detail-title-inp')){
-    const v=e.target.value.trim();if(v)setRecField(sid,'name',v,true);renderRecipeList();
-  } else if(e.target.classList.contains('rec-meta-sel')){
-    // selects save on change, already saved
-  } else if(e.target.classList.contains('rec-meta-inp')){
-    const isTime=!!e.target.closest('.rec-meta-field')&&e.target.previousElementSibling&&e.target.previousElementSibling.textContent==='Time';
-    const field=isTime?'time':'servings';
-    setRecField(sid,field,parseInt(e.target.value)||null,true);
-  }
+  _recMetaSave(e.target,sid);
   if(next>=0&&next<fields.length){
     fields[next].focus();
   } else if(!e.shiftKey&&next>=fields.length){
@@ -2054,8 +2056,15 @@ function _recIngInline(el,id,idx,focusField){
     if(e.key==='Escape'){e.preventDefault();_saved=true;renderRecipeDetail(id);}
     if(e.key==='Tab'&&!e.shiftKey&&e.target===amtInp){e.preventDefault();nameInp.focus();nameInp.select();}
     if(e.key==='Tab'&&!e.shiftKey&&e.target===nameInp){
-      e.preventDefault();doSave();
-      setTimeout(()=>{const rows=document.querySelectorAll('#recDetailIngList .rec-detail-ing');const next=rows[idx+1];if(next)_recIngInline(next,id,idx+1);},30);
+      e.preventDefault();
+      const hasNext=document.querySelectorAll('#recDetailIngList .rec-detail-ing').length>idx+1;
+      const isEmpty=!amtInp.value.trim()&&!nameInp.value.trim();
+      doSave();
+      setTimeout(()=>{
+        if(hasNext){const rows=document.querySelectorAll('#recDetailIngList .rec-detail-ing');const next=rows[idx+1];if(next)_recIngInline(next,id,idx+1);}
+        else if(isEmpty){const ta=document.querySelector('.rec-detail-inst-ta');if(ta)ta.focus();}
+        else _recIngAdd(id);
+      },30);
     }
     if(e.key==='Tab'&&e.shiftKey&&e.target===amtInp){
       e.preventDefault();doSave();
@@ -2071,16 +2080,14 @@ function _recIngInline(el,id,idx,focusField){
 function _recIngAdd(id){
   const r=st.recipes.find(x=>String(x.id)===String(id));if(!r)return;
   const ings=_parseIngredients(r.ingredients);
-  ings.push({name:'_new',amount:''});
-  r.ingredients=JSON.stringify(ings);
+  ings.push({name:'',amount:'',_placeholder:true});
+  // Manually serialize keeping empty placeholder
+  const toSave=ings.map(x=>{const o={name:x.name||'',amount:x.amount||''};if(x.is_pantry)o.is_pantry=true;return o;});
+  r.ingredients=JSON.stringify(toSave);
   save();renderRecipeDetail(id);
   setTimeout(()=>{
     const rows=document.querySelectorAll('#recDetailIngList .rec-detail-ing');
-    // _new goes into regular group, find it by text
-    let target=rows.length-1;
-    rows.forEach((row,i)=>{const n=row.querySelector('.rec-detail-ing-name');if(n&&n.textContent==='_new')target=i;});
-    const row=rows[target];
-    if(row)_recIngInline(row,id,target,'name');
+    if(rows.length){const row=rows[rows.length-1];_recIngInline(row,id,rows.length-1,'name');}
   },30);
 }
 function _recIngDragStart(e,id,idx){
