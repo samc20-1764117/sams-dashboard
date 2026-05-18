@@ -224,7 +224,7 @@ async function syncAll(silent=false){
       sbReq('GET','birthdays',null,'?order=birthday.asc&select=*'),
       sbReqSilent('GET','pup_skills',null,'?order=pup.asc,skill_order.asc,skill.asc&select=*'),
       sbReqSilent('GET','pup_skill_sessions',null,'?order=day_date.asc&select=*'),
-      sbReqSilent('GET','recipes',null,'?order=name.asc&select=*'),
+      sbReqSilent('GET','recipes',null,'?order=sort_order.asc.nullslast,name.asc&select=*'),
       sbReqSilent('GET','videos',null,'?is_deleted=neq.true&order=created_at.asc&select=*'),
       sbReqSilent('GET','grocery_staples',null,'?order=sort_order.asc.nullslast,name.asc&select=*'),
       sbReqSilent('GET','grocery_list',null,'?order=sort_order.asc.nullslast,name.asc&select=*'),

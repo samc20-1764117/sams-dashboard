@@ -1838,9 +1838,36 @@ function _recNavOffset(dir){
   _recPanelId=String(rows[next].id);
   renderRecipeDetail(_recPanelId);
   renderRecipeList();
-  // Scroll into view
   const el=document.querySelector(`.rec-list-item[data-rid="${_recPanelId}"]`);
   if(el)el.scrollIntoView({block:'nearest'});
+}
+function _recMoveSelected(dir){
+  if(!_recPanelId)return;
+  const rows=_getFilteredRecipes();
+  const curIdx=rows.findIndex(r=>String(r.id)===_recPanelId);
+  if(curIdx<0)return;
+  const swapIdx=curIdx+dir;
+  if(swapIdx<0||swapIdx>=rows.length)return;
+  // Swap sort_order values
+  recSnapshot();
+  const a=rows[curIdx],b=rows[swapIdx];
+  const aOrder=a.sort_order!=null?a.sort_order:curIdx;
+  const bOrder=b.sort_order!=null?b.sort_order:swapIdx;
+  a.sort_order=bOrder;b.sort_order=aOrder;
+  save();renderRecipeList();
+  // Persist both
+  sbReqSilent('PATCH','recipes',{sort_order:a.sort_order},`?id=eq.${a.id}`);
+  sbReqSilent('PATCH','recipes',{sort_order:b.sort_order},`?id=eq.${b.id}`);
+  const el=document.querySelector(`.rec-list-item[data-rid="${_recPanelId}"]`);
+  if(el)el.scrollIntoView({block:'nearest'});
+}
+function _recEnsureSortOrder(){
+  // Assign sort_order to any recipes missing it
+  const need=(st.recipes||[]).filter(r=>r.sort_order==null);
+  if(!need.length)return;
+  const sorted=[...(st.recipes||[])].sort((a,b)=>String(a.name||'').toLowerCase().localeCompare(String(b.name||'').toLowerCase()));
+  sorted.forEach((r,i)=>{if(r.sort_order==null){r.sort_order=i;sbReqSilent('PATCH','recipes',{sort_order:i},`?id=eq.${r.id}`);}});
+  save();
 }
 
 let _recClickTimer=null;
@@ -2088,14 +2115,18 @@ function _getFilteredRecipes(){
       return _recSortDir*String(a[_recSortCol]||'').toLowerCase().localeCompare(String(b[_recSortCol]||'').toLowerCase());
     });
   } else {
-    rows.sort((a,b)=>{if(a.favorite&&!b.favorite)return -1;if(!a.favorite&&b.favorite)return 1;return String(a.name||'').toLowerCase().localeCompare(String(b.name||'').toLowerCase());});
+    rows.sort((a,b)=>{
+      const sa=(a.sort_order!=null)?a.sort_order:99999;
+      const sb2=(b.sort_order!=null)?b.sort_order:99999;
+      if(sa!==sb2)return sa-sb2;
+      return String(a.name||'').toLowerCase().localeCompare(String(b.name||'').toLowerCase());
+    });
   }
   return rows;
 }
 
 function renderRecipeList(){
   const container=document.getElementById('recListScroll');if(!container)return;
-  const cnt=document.getElementById('recCount');
   const rows=_getFilteredRecipes();
   function esc(v){return(v||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;');}
   container.innerHTML=rows.map(r=>{
@@ -2109,8 +2140,6 @@ function renderRecipeList(){
       </div>
     </div>`;
   }).join('')||`<div style="padding:28px;text-align:center;color:var(--muted);font-size:12px">No recipes yet</div>`;
-  const total=(st.recipes||[]).length;
-  if(cnt)cnt.textContent=rows.length<total?`${rows.length}/${total}`:`${total}`;
 }
 
 function renderRecipeDetail(id){
@@ -2309,7 +2338,7 @@ function renderRecipesPage(){
   const page=document.getElementById('page-recipes');if(!page)return;
   if(!page._recInit){
     page._recInit=true;
-    page.innerHTML=`<div class="ov-topbar"><div class="ov-topbar-left"><span class="ov-topbar-label">Recipes</span><span class="ov-topbar-dot"></span><span id="recCount" style="font-size:11px;color:var(--muted)"></span></div><span class="ov-topbar-date topbar-date"></span><div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div></div>
+    page.innerHTML=`<div class="ov-topbar"><div class="ov-topbar-left"><span class="ov-topbar-label">Recipes</span><span class="ov-topbar-dot"></span></div><span class="ov-topbar-date topbar-date"></span><div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div></div>
     <div class="rec-book-wrap">
       <div class="rec-search-float">
         <div class="rec-search-cutout"></div>
@@ -2337,10 +2366,14 @@ function renderRecipesPage(){
       if(!document.getElementById('page-recipes')?.classList.contains('active'))return;
       if(e.target.matches('input,textarea,select'))return;
       if(document.getElementById('recipeModal')?.classList.contains('open'))return;
-      if(e.key==='ArrowDown'||e.key==='ArrowRight'){
+      if(e.key==='ArrowRight'){
         e.preventDefault();_recNavOffset(1);
-      } else if(e.key==='ArrowUp'||e.key==='ArrowLeft'){
+      } else if(e.key==='ArrowLeft'){
         e.preventDefault();_recNavOffset(-1);
+      } else if(e.key==='ArrowDown'){
+        e.preventDefault();_recMoveSelected(1);
+      } else if(e.key==='ArrowUp'){
+        e.preventDefault();_recMoveSelected(-1);
       } else if(e.key==='f'&&_recPanelId){
         e.preventDefault();toggleRecFavorite(_recPanelId);renderRecipeDetail(_recPanelId);renderRecipeList();
       }
@@ -2351,6 +2384,7 @@ function renderRecipesPage(){
       }
     });
   }
+  _recEnsureSortOrder();
   renderRecipeList();
   // Auto-select first recipe if none selected
   if(!_recPanelId&&st.recipes&&st.recipes.length){
