@@ -2027,7 +2027,7 @@ function _diFlush(){
 function _diRender(id){
   const el=document.getElementById('recDetailIngList');if(!el)return;
   const _e=v=>(v||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;');
-  el.innerHTML=_detailIngs.map((ing,i)=>`<div class="di-row" id="diRow${i}"><span class="rec-detail-ing-grip" onmousedown="_diDragStart(event,'${id}',${i})">⠿</span><input class="di-name" placeholder="ingredient" value="${_e(ing.name)}" oninput="_detailIngs[${i}].name=this.value" onkeydown="_diKey(event,${i},'name','${id}')" onblur="_diBlur('${id}')"><input class="di-amt" placeholder="amt" value="${_e(ing.amount)}" oninput="_detailIngs[${i}].amount=this.value" onkeydown="_diKey(event,${i},'amt','${id}')" onblur="_diBlur('${id}')"><button class="rec-detail-ing-del" onclick="_diDel(${i},'${id}')" title="Remove">✕</button></div>`).join('')||'<div style="color:var(--muted);font-size:11px;padding:4px 0">No ingredients yet</div>';
+  el.innerHTML=_detailIngs.map((ing,i)=>`<div class="di-row" id="diRow${i}"><span class="rec-detail-ing-grip" onmousedown="_diDragStart(event,'${id}',${i})">⠿</span><input class="di-amt" placeholder="amt" value="${_e(ing.amount)}" oninput="_detailIngs[${i}].amount=this.value" onkeydown="_diKey(event,${i},'amt','${id}')" onblur="_diBlur('${id}')"><input class="di-name" placeholder="ingredient" value="${_e(ing.name)}" oninput="_detailIngs[${i}].name=this.value" onkeydown="_diKey(event,${i},'name','${id}')" onblur="_diBlur('${id}')"><button class="rec-detail-ing-del" onclick="_diDel(${i},'${id}')" title="Remove">✕</button></div>`).join('')||'<div style="color:var(--muted);font-size:11px;padding:4px 0">No ingredients yet</div>';
 }
 function _diAdd(id,focusName){
   _diFlush();_detailIngs.push({name:'',amount:''});_diRender(id);
@@ -2042,15 +2042,15 @@ function _diDel(i,id){
 function _diKey(e,i,field,id){
   if(e.key==='Enter'){
     e.preventDefault();e.stopPropagation();
-    if(field==='name'){const a=document.querySelector(`#diRow${i} .di-amt`);if(a)a.focus();}
-    else{_detailIngs[i].amount=e.target.value;_diAdd(id);}
-  } else if(e.key==='Tab'&&!e.shiftKey&&field==='name'){
-    e.preventDefault();_detailIngs[i].name=e.target.value;
-    const a=document.querySelector(`#diRow${i} .di-amt`);if(a)a.focus();
+    if(field==='amt'){const n=document.querySelector(`#diRow${i} .di-name`);if(n)n.focus();}
+    else{_detailIngs[i].name=e.target.value;_diAdd(id);}
   } else if(e.key==='Tab'&&!e.shiftKey&&field==='amt'){
     e.preventDefault();_detailIngs[i].amount=e.target.value;
+    const n=document.querySelector(`#diRow${i} .di-name`);if(n)n.focus();
+  } else if(e.key==='Tab'&&!e.shiftKey&&field==='name'){
+    e.preventDefault();_detailIngs[i].name=e.target.value;
     if(i<_detailIngs.length-1){
-      const n=document.querySelector(`#diRow${i+1} .di-name`);if(n)n.focus();
+      const a=document.querySelector(`#diRow${i+1} .di-amt`);if(a)a.focus();
     } else {
       const isEmpty=!(_detailIngs[i].amount||'').trim()&&!(_detailIngs[i].name||'').trim();
       if(isEmpty){
@@ -2060,8 +2060,8 @@ function _diKey(e,i,field,id){
         _diAdd(id);
       }
     }
-  } else if(e.key==='Tab'&&e.shiftKey&&field==='name'&&i>0){
-    e.preventDefault();const p=document.querySelector(`#diRow${i-1} .di-amt`);if(p)p.focus();
+  } else if(e.key==='Tab'&&e.shiftKey&&field==='amt'&&i>0){
+    e.preventDefault();const p=document.querySelector(`#diRow${i-1} .di-name`);if(p)p.focus();
   } else if(e.key==='Backspace'&&!e.target.value&&_detailIngs.length>0){
     _diDel(i,id);
   }
