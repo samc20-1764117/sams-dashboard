@@ -2812,20 +2812,10 @@ function renderMealRow(){
   let html='';
   dates.forEach(ds=>{
     const meals=(st.mealPlan||[]).filter(m=>m.meal_date===ds);
-    // Also show leftover meals from previous days
-    const leftovers=(st.mealPlan||[]).filter(m=>{
-      if((m.servings||1)<=1)return false;
-      const mDate=new Date(m.meal_date+'T12:00:00');
-      const thisDate=new Date(ds+'T12:00:00');
-      const diff=Math.round((thisDate-mDate)/86400000);
-      return diff>0&&diff<(m.servings||1);
-    });
     html+=`<div class="meal-cell" data-ds="${ds}" ondragover="event.preventDefault();this.classList.add('meal-drop')" ondragleave="this.classList.remove('meal-drop')" ondrop="dropMeal(event,'${ds}');this.classList.remove('meal-drop')">`;
     meals.forEach(m=>{
-      html+=`<div class="meal-chip" draggable="true" ondragstart="event.dataTransfer.setData('text/plain','meal::${m.id}')" ondblclick="openMealEdit('${m.id}')"><span class="meal-chip-name">${escHtml(m.recipe_name)}</span>${(m.servings||1)>1?`<span class="meal-chip-srv">${m.servings}d</span>`:''}<button class="meal-chip-x" onclick="event.stopPropagation();removeMeal('${m.id}')">✕</button></div>`;
-    });
-    leftovers.forEach(m=>{
-      html+=`<div class="meal-chip meal-leftover"><span class="meal-chip-name">${escHtml(m.recipe_name)}</span><span class="meal-chip-srv">🍲</span></div>`;
+      const sid='meal-'+m.id;
+      html+=`<div class="meal-chip" data-tid="${sid}" data-mealid="${m.id}" draggable="true" ondragstart="event.dataTransfer.setData('text/plain','meal::${m.id}')"><span class="meal-chip-name">${escHtml(m.recipe_name)}</span>${(m.servings||1)>1?`<span class="meal-chip-srv">${m.servings}d</span>`:''}<button class="meal-chip-x" onclick="event.stopPropagation();removeMeal('${m.id}')">✕</button></div>`;
     });
     html+=`<button class="meal-add-btn" onclick="openMealPicker('${ds}')">+</button>`;
     html+=`</div>`;
@@ -2833,6 +2823,89 @@ function renderMealRow(){
   // 8th column (goals column placeholder)
   html+=`<div class="meal-cell meal-cell-empty"></div>`;
   el.innerHTML=html;
+  // Bind click/dblclick for selection & recipe detail
+  el.querySelectorAll('.meal-chip[data-tid]').forEach(chip=>{
+    chip.addEventListener('click',e=>{
+      if(e.target.closest('.meal-chip-x'))return;
+      const sid=chip.dataset.tid;
+      e.stopPropagation();
+      if(e.metaKey||e.ctrlKey){
+        if(selectedTasks.has(sid))selectedTasks.delete(sid);else selectedTasks.add(sid);
+        lastSelectedId=sid;
+      } else if(e.shiftKey&&lastSelectedId){
+        const allC=[...el.querySelectorAll('.meal-chip[data-tid]')];
+        const ids=allC.map(c=>c.dataset.tid);
+        const a=ids.indexOf(lastSelectedId),b=ids.indexOf(sid);
+        if(a>-1&&b>-1){const lo=Math.min(a,b),hi=Math.max(a,b);ids.slice(lo,hi+1).forEach(x=>selectedTasks.add(x));}
+        else selectedTasks.add(sid);
+        lastSelectedId=sid;
+      } else {
+        selectedTasks.clear();selectedTasks.add(sid);lastSelectedId=sid;
+      }
+      applySelHighlight();
+    });
+    chip.addEventListener('dblclick',e=>{
+      e.stopPropagation();
+      const mealId=chip.dataset.mealid;
+      const meal=(st.mealPlan||[]).find(m=>String(m.id)===String(mealId));
+      if(meal&&meal.recipe_id)openMealRecipeModal(meal.recipe_id);
+      else openMealEdit(mealId);
+    });
+  });
+}
+
+function openMealRecipeModal(recipeId){
+  const r=(st.recipes||[]).find(x=>String(x.id)===String(recipeId));
+  if(!r){openMealEdit(recipeId);return;}
+  let modal=document.getElementById('mealRecipeModal');
+  if(!modal){
+    modal=document.createElement('dialog');modal.id='mealRecipeModal';modal.className='overlay';
+    modal.style.cssText='max-width:520px;width:90vw;border-radius:16px;padding:0;border:1px solid var(--border);background:var(--glass);backdrop-filter:blur(20px);box-shadow:0 24px 80px rgba(0,0,0,.18)';
+    document.body.appendChild(modal);
+    modal.addEventListener('click',e=>{if(e.target===modal)modal.close();});
+  }
+  modal.showModal();
+  _mealRecipeModalId=String(r.id);
+  _renderMealRecipeModal();
+}
+let _mealRecipeModalId=null;
+function _renderMealRecipeModal(){
+  const modal=document.getElementById('mealRecipeModal');if(!modal)return;
+  const r=st.recipes.find(x=>String(x.id)===String(_mealRecipeModalId));
+  if(!r){modal.close();return;}
+  const esc=v=>(v||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const escV=v=>(v||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+  const sid=String(r.id);
+  const mealOpts=['','Breakfast','Lunch','Dinner','Snack','Dessert','Drink','Side'];
+  const cuisineOpts=['','American','Mexican','Italian','Chinese','Japanese','Korean','Thai','Indian','Mediterranean','French','Vietnamese','Greek','Southern','Tex-Mex','Other'];
+  const ings=_parseIngredients(r.ingredients);
+  let html=`<div style="padding:20px 24px 0;display:flex;justify-content:space-between;align-items:flex-start">
+    <input class="rec-detail-title-inp" value="${escV(r.name)}" placeholder="Recipe name" style="font-size:18px;font-weight:700;border:none;background:none;color:var(--text);width:100%;outline:none;font-family:inherit"
+      onblur="_mealRecSave('${sid}','name',this.value.trim())">
+    <button onclick="document.getElementById('mealRecipeModal').close()" style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--muted);padding:0 0 0 8px">✕</button>
+  </div>`;
+  html+=`<div style="padding:8px 24px;display:flex;gap:12px;flex-wrap:wrap">
+    <div class="rec-meta-field"><span class="rec-meta-label">Meal</span><select class="rec-meta-sel" onchange="_mealRecSave('${sid}','meal_type',this.value||null)">${mealOpts.map(m=>`<option value="${m}"${(r.meal_type||'')===m?' selected':''}>${m||'--'}</option>`).join('')}</select></div>
+    <div class="rec-meta-field"><span class="rec-meta-label">Cuisine</span><select class="rec-meta-sel" onchange="_mealRecSave('${sid}','cuisine',this.value||null)">${cuisineOpts.map(c=>`<option value="${c}"${(r.cuisine||'')===c?' selected':''}>${c||'--'}</option>`).join('')}</select></div>
+    <div class="rec-meta-field"><span class="rec-meta-label">Time</span><input class="rec-meta-inp" type="number" min="0" value="${r.time||''}" placeholder="--" onblur="_mealRecSave('${sid}','time',parseInt(this.value)||null)" style="width:50px"></div>
+    <div class="rec-meta-field"><span class="rec-meta-label">Serves</span><input class="rec-meta-inp" type="number" min="1" value="${r.servings||''}" placeholder="--" onblur="_mealRecSave('${sid}','servings',parseInt(this.value)||null)" style="width:50px"></div>
+  </div>`;
+  html+=`<div style="padding:8px 24px"><div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:6px">Ingredients</div>`;
+  if(ings.length){html+=`<div style="display:flex;flex-direction:column;gap:2px">`;ings.forEach(ing=>{html+=`<div style="font-size:12px;color:var(--text)">${ing.amount?esc(ing.amount)+' ':''}${esc(ing.name)}</div>`;});html+=`</div>`;}
+  else html+=`<div style="font-size:11px;color:var(--muted)">No ingredients</div>`;
+  html+=`</div>`;
+  html+=`<div style="padding:8px 24px 20px"><div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:6px">Instructions</div>`;
+  html+=`<textarea style="width:100%;min-height:100px;border:1px solid var(--border);border-radius:8px;padding:8px;font-size:12px;font-family:inherit;color:var(--text);background:transparent;resize:vertical;box-sizing:border-box" onblur="_mealRecSave('${sid}','instructions',this.value.trim()||null)">${esc(r.instructions||'')}</textarea>`;
+  html+=`</div>`;
+  if(r.source)html+=`<div style="padding:0 24px 16px"><a href="${escV(r.source)}" target="_blank" rel="noopener" style="font-size:11px;color:var(--accent)">Source ↗</a></div>`;
+  modal.innerHTML=html;
+}
+function _mealRecSave(id,field,val){
+  const r=st.recipes.find(x=>String(x.id)===String(id));if(!r)return;
+  r[field]=val;save();
+  sbReqSilent('PATCH','recipes',{[field]:val},`?id=eq.${id}`);
+  _renderMealRecipeModal();
+  renderMealRow();
 }
 
 let _mealPickerDs=null;
@@ -3127,6 +3200,13 @@ function applySelHighlight(){
     if(sel)applySelVars(el,csForId(id));
     else clearSelVars(el);
   });
+  document.querySelectorAll('.meal-chip[data-tid]').forEach(el=>{
+    const id=el.dataset.tid;
+    const sel=selectedTasks.has(id);
+    el.classList.toggle('sel-row',sel);
+    if(sel){el.style.outline='2px solid #f97316';el.style.outlineOffset='-1px';el.style.background='rgba(249,115,22,.25)';}
+    else{el.style.outline='';el.style.outlineOffset='';el.style.background='';}
+  });
   document.querySelectorAll('tr[id^="ti-rt-"]').forEach(el=>{
     const rid=el.id.replace('ti-rt-','');
     const sel=selectedTasks.has('rec-virt-'+rid)||selRecIds.has(rid);
@@ -3287,6 +3367,12 @@ document.addEventListener('keydown',async e=>{
   if((e.key==='Delete'||e.key==='Backspace')&&selectedTasks.size>0){
     e.preventDefault();
     const ids=[...selectedTasks];
+    // Meal chips: remove meals
+    const mealIds=ids.filter(id=>id.startsWith('meal-'));
+    if(mealIds.length){
+      mealIds.forEach(id=>{const mid=id.replace('meal-','');removeMeal(mid);});
+      clearSelection();return;
+    }
     // Auto-timeblock blocks: delete for that day
     const atbDelIds=ids.filter(id=>id.startsWith('atb::'));
     if(atbDelIds.length){const ds=d2s(getDayDate(dayOff));atbDelIds.forEach(id=>{const atbId=id.replace('atb::','');const atb=getAutoTBForDate(ds).find(a=>a._atbId===atbId);if(atb)delAutoTBForDay(atbId,ds,atb._ovId||null);});clearSelection();return;}
