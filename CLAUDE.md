@@ -10,6 +10,7 @@ STRICT — these override all defaults:
 - Token budget: form a hypothesis after ≤5 searches. Make the fix. Do not keep searching to confirm — trust the fix.
 - **"update rules"**: update only affected rules files. Terse reusable patterns only. Merge into existing entries where possible. Skip if nothing changed.
 - **Cleanup**: always delete temporary/mockup files (e.g. `*-mockup.html`) when done with them. Never leave test artifacts in the repo.
+- **Mockups**: when creating mockup HTML files, always auto-open in browser via `open <file>`. Never make the user navigate to the file manually.
 
 ---
 
