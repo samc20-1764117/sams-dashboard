@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Recipe Tab Selection Mockup</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'DM Sans',sans-serif; background:linear-gradient(135deg,#fef3ee 0%,#fffbf2 50%,#fdf0fb 100%); min-height:100vh; padding:40px; color:#2c1810; }
+  h2 { font-size:14px; font-weight:700; color:#c26b4f; margin-bottom:16px; letter-spacing:.04em; text-transform:uppercase; }
+  .options { display:flex; flex-direction:column; gap:48px; max-width:900px; margin:0 auto; }
+  .option-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:#8c7b6e; margin-bottom:10px; }
+
+  /* Shared base for all options */
+  .demo { display:grid; grid-template-columns:240px 1fr; height:340px; position:relative; }
+  .demo-left { display:flex; flex-direction:column; gap:2px; padding:12px 0 12px 12px; }
+  .demo-item { padding:6px 12px; border-radius:6px; cursor:pointer; font-size:12px; font-weight:600; color:#2c1810; transition:all .15s; border:1px solid transparent; }
+  .demo-item:hover { background:rgba(210,205,228,.1); }
+  .demo-right { padding:28px 32px; display:flex; flex-direction:column; gap:10px; }
+  .demo-right h3 { font-size:20px; font-weight:800; letter-spacing:-.3px; }
+  .demo-right p { font-size:12px; color:#8c7b6e; line-height:1.6; }
+  .demo-flourish { width:50px; height:2px; background:linear-gradient(90deg,#c26b4f,transparent); border-radius:2px; opacity:.5; }
+  .demo-meta { display:flex; gap:16px; font-size:10px; color:#8c7b6e; }
+  .demo-meta span { display:flex; flex-direction:column; gap:2px; }
+  .demo-meta .label { font-size:8px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:#8c7b6e; opacity:.6; }
+
+  /* ═══════════════════════════════════════════════════════
+     OPTION A — Inverse Rounded Corners (clip-path cutout)
+     The active tab has scooped-out corners that connect
+     seamlessly to the detail panel. True "opening" effect.
+     ═══════════════════════════════════════════════════════ */
+  .opt-a .demo {
+    border-radius:12px;
+    overflow:hidden;
+    border:1px solid rgba(210,205,228,.15);
+    background:rgba(255,252,248,.35);
+    backdrop-filter:blur(12px);
+    box-shadow:0 8px 32px rgba(80,50,20,.08);
+  }
+  .opt-a .demo-left {
+    background:rgba(245,240,235,.3);
+  }
+  .opt-a .demo-right {
+    background:rgba(255,255,255,.45);
+    border-left:1px solid rgba(210,205,228,.12);
+  }
+  .opt-a .demo-item.active {
+    background:rgba(255,255,255,.45);
+    border:none;
+    border-radius:0;
+    margin-right:-1px;
+    padding:8px 13px;
+    position:relative;
+    z-index:2;
+  }
+  /* Top scooped corner */
+  .opt-a .demo-item.active::before {
+    content:'';
+    position:absolute;
+    bottom:100%;
+    right:0;
+    width:12px;
+    height:12px;
+    background:radial-gradient(circle at 0 0, transparent 11px, rgba(255,255,255,.45) 11px);
+  }
+  /* Bottom scooped corner */
+  .opt-a .demo-item.active::after {
+    content:'';
+    position:absolute;
+    top:100%;
+    right:0;
+    width:12px;
+    height:12px;
+    background:radial-gradient(circle at 0 100%, transparent 11px, rgba(255,255,255,.45) 11px);
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     OPTION B — Flush Tab with Accent Edge
+     Active item has a left accent bar and its background
+     extends flush into the right panel (no border between).
+     Clean, modern, Material-inspired.
+     ═══════════════════════════════════════════════════════ */
+  .opt-b .demo {
+    border-radius:12px;
+    overflow:hidden;
+    border:1px solid rgba(210,205,228,.15);
+    background:rgba(255,252,248,.35);
+    backdrop-filter:blur(12px);
+    box-shadow:0 8px 32px rgba(80,50,20,.08);
+  }
+  .opt-b .demo-left {
+    background:rgba(245,240,235,.3);
+  }
+  .opt-b .demo-right {
+    background:rgba(255,255,255,.45);
+    border-left:1px solid rgba(210,205,228,.12);
+  }
+  .opt-b .demo-item.active {
+    background:rgba(255,255,255,.45);
+    border:none;
+    border-radius:0;
+    margin-right:-1px;
+    padding:8px 12px 8px 9px;
+    border-left:3px solid #c26b4f;
+    position:relative;
+    z-index:2;
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     OPTION C — Rounded Tab with Inverse Corners (full)
+     Active tab has left rounded corners AND scooped corners
+     on right that curve INTO the panel. The premium version.
+     Uses radial-gradient pseudo-elements for the scoop.
+     ═══════════════════════════════════════════════════════ */
+  .opt-c .demo {
+    border-radius:12px;
+    overflow:hidden;
+    border:1px solid rgba(210,205,228,.15);
+    background:rgba(255,252,248,.35);
+    backdrop-filter:blur(12px);
+    box-shadow:0 8px 32px rgba(80,50,20,.08);
+  }
+  .opt-c .demo-left {
+    background:rgba(245,240,235,.3);
+  }
+  .opt-c .demo-right {
+    background:rgba(255,255,255,.45);
+    border-left:1px solid rgba(210,205,228,.12);
+  }
+  .opt-c .demo-item.active {
+    background:rgba(255,255,255,.45);
+    border:none;
+    border-radius:10px 0 0 10px;
+    margin-right:-1px;
+    padding:8px 13px;
+    position:relative;
+    z-index:2;
+  }
+  /* Top scoop — inverse rounded corner connecting tab to panel */
+  .opt-c .demo-item.active::before {
+    content:'';
+    position:absolute;
+    bottom:100%;
+    right:0;
+    width:10px;
+    height:10px;
+    background:radial-gradient(circle at 0 0, transparent 9px, rgba(255,255,255,.45) 9px);
+  }
+  /* Bottom scoop */
+  .opt-c .demo-item.active::after {
+    content:'';
+    position:absolute;
+    top:100%;
+    right:0;
+    width:10px;
+    height:10px;
+    background:radial-gradient(circle at 0 100%, transparent 9px, rgba(255,255,255,.45) 9px);
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     OPTION D — Soft Glow Tab
+     Active tab has subtle glow/highlight and blends into
+     the panel via matching background + no divider at that
+     row. Minimal, relies on color matching, not shapes.
+     ═══════════════════════════════════════════════════════ */
+  .opt-d .demo {
+    border-radius:12px;
+    overflow:hidden;
+    border:1px solid rgba(210,205,228,.15);
+    background:rgba(255,252,248,.35);
+    backdrop-filter:blur(12px);
+    box-shadow:0 8px 32px rgba(80,50,20,.08);
+  }
+  .opt-d .demo-left {
+    background:rgba(245,240,235,.3);
+    border-right:1px solid rgba(210,205,228,.12);
+  }
+  .opt-d .demo-right {
+    background:rgba(255,255,255,.45);
+  }
+  .opt-d .demo-item.active {
+    background:rgba(255,255,255,.45);
+    border-radius:8px 0 0 8px;
+    margin-right:-2px;
+    padding:8px 14px;
+    border:1px solid rgba(210,205,228,.15);
+    border-right:none;
+    position:relative;
+    z-index:2;
+    box-shadow:0 1px 6px rgba(80,50,20,.04);
+  }
+</style>
+</head>
+<body>
+<div class="options">
+
+  <!-- OPTION A -->
+  <div class="opt-a">
+    <div class="option-label">Option A — Inverse Rounded Corners (scooped cutout into panel)</div>
+    <div class="demo">
+      <div class="demo-left">
+        <div class="demo-item">Chicken Tikka Masala</div>
+        <div class="demo-item">Pasta Carbonara</div>
+        <div class="demo-item active">Thai Green Curry</div>
+        <div class="demo-item">Beef Tacos</div>
+        <div class="demo-item">Caesar Salad</div>
+        <div class="demo-item">Banana Bread</div>
+      </div>
+      <div class="demo-right">
+        <h3>Thai Green Curry</h3>
+        <div class="demo-flourish"></div>
+        <div class="demo-meta">
+          <span><span class="label">Meal</span>Dinner</span>
+          <span><span class="label">Cuisine</span>Thai</span>
+          <span><span class="label">Time</span>35m</span>
+          <span><span class="label">Serves</span>4</span>
+        </div>
+        <p>A fragrant and creamy coconut curry with fresh vegetables, Thai basil, and jasmine rice. Perfect for weeknight dinners.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- OPTION B -->
+  <div class="opt-b">
+    <div class="option-label">Option B — Flush Tab with Accent Edge (left border accent)</div>
+    <div class="demo">
+      <div class="demo-left">
+        <div class="demo-item">Chicken Tikka Masala</div>
+        <div class="demo-item">Pasta Carbonara</div>
+        <div class="demo-item active">Thai Green Curry</div>
+        <div class="demo-item">Beef Tacos</div>
+        <div class="demo-item">Caesar Salad</div>
+        <div class="demo-item">Banana Bread</div>
+      </div>
+      <div class="demo-right">
+        <h3>Thai Green Curry</h3>
+        <div class="demo-flourish"></div>
+        <div class="demo-meta">
+          <span><span class="label">Meal</span>Dinner</span>
+          <span><span class="label">Cuisine</span>Thai</span>
+          <span><span class="label">Time</span>35m</span>
+          <span><span class="label">Serves</span>4</span>
+        </div>
+        <p>A fragrant and creamy coconut curry with fresh vegetables, Thai basil, and jasmine rice. Perfect for weeknight dinners.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- OPTION C -->
+  <div class="opt-c">
+    <div class="option-label">Option C — Rounded Left + Inverse Scooped Right (premium feel)</div>
+    <div class="demo">
+      <div class="demo-left">
+        <div class="demo-item">Chicken Tikka Masala</div>
+        <div class="demo-item">Pasta Carbonara</div>
+        <div class="demo-item active">Thai Green Curry</div>
+        <div class="demo-item">Beef Tacos</div>
+        <div class="demo-item">Caesar Salad</div>
+        <div class="demo-item">Banana Bread</div>
+      </div>
+      <div class="demo-right">
+        <h3>Thai Green Curry</h3>
+        <div class="demo-flourish"></div>
+        <div class="demo-meta">
+          <span><span class="label">Meal</span>Dinner</span>
+          <span><span class="label">Cuisine</span>Thai</span>
+          <span><span class="label">Time</span>35m</span>
+          <span><span class="label">Serves</span>4</span>
+        </div>
+        <p>A fragrant and creamy coconut curry with fresh vegetables, Thai basil, and jasmine rice. Perfect for weeknight dinners.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- OPTION D -->
+  <div class="opt-d">
+    <div class="option-label">Option D — Soft Border Tab (outlined left, blends right)</div>
+    <div class="demo">
+      <div class="demo-left">
+        <div class="demo-item">Chicken Tikka Masala</div>
+        <div class="demo-item">Pasta Carbonara</div>
+        <div class="demo-item active">Thai Green Curry</div>
+        <div class="demo-item">Beef Tacos</div>
+        <div class="demo-item">Caesar Salad</div>
+        <div class="demo-item">Banana Bread</div>
+      </div>
+      <div class="demo-right">
+        <h3>Thai Green Curry</h3>
+        <div class="demo-flourish"></div>
+        <div class="demo-meta">
+          <span><span class="label">Meal</span>Dinner</span>
+          <span><span class="label">Cuisine</span>Thai</span>
+          <span><span class="label">Time</span>35m</span>
+          <span><span class="label">Serves</span>4</span>
+        </div>
+        <p>A fragrant and creamy coconut curry with fresh vegetables, Thai basil, and jasmine rice. Perfect for weeknight dinners.</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

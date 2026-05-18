@@ -2054,8 +2054,25 @@ function _diRender(id){
   }).join('')||'<div style="color:var(--muted);font-size:11px;padding:4px 0">No ingredients yet</div>';
 }
 function _diTogglePantry(i,id){
-  _diFlush();_detailIngs[i].is_pantry=!_detailIngs[i].is_pantry;_diRender(id);_diSave(id);
-  setTimeout(()=>{const btn=document.querySelector(`#diRow${i} .di-staple-btn`);if(btn)btn.focus();},20);
+  _diFlush();
+  const ing=_detailIngs[i];
+  ing.is_pantry=!ing.is_pantry;
+  _diSortStaples();
+  const newIdx=_detailIngs.indexOf(ing);
+  _diRender(id);_diSave(id);
+  setTimeout(()=>{const btn=document.querySelector(`#diRow${newIdx} .di-staple-btn`);if(btn)btn.focus();},20);
+}
+function _diSortStaples(){
+  // Sort: non-staple items first (preserve order), then staples (preserve order), empty rows last
+  const regular=[],staples=[],empty=[];
+  _detailIngs.forEach(ing=>{
+    const hasContent=(ing.name||'').trim()||(ing.amount||'').trim();
+    if(!hasContent)empty.push(ing);
+    else if(ing.is_pantry)staples.push(ing);
+    else regular.push(ing);
+  });
+  _detailIngs.length=0;
+  _detailIngs.push(...regular,...staples,...empty);
 }
 function _diShowSuggest(inp,i,id){
   _diCloseSuggest();
@@ -2082,7 +2099,7 @@ function _diShowSuggest(inp,i,id){
 }
 function _diCloseSuggest(){const d=document.getElementById('diSuggestDrop');if(d)d.remove();_diSuggestIdx=-1;_diSuggestList=[];}
 function _diPickSuggest(i,name,id){
-  _detailIngs[i].name=name;_diCloseSuggest();_diRender(id);
+  _detailIngs[i].name=_ucFirst(name);_diCloseSuggest();_diRender(id);
   // Focus next row's amount
   const nextAmt=document.querySelector(`#diRow${i+1} .di-amt`);
   if(nextAmt)setTimeout(()=>nextAmt.focus(),20);
@@ -2151,7 +2168,7 @@ function _diHighlightSuggest(){
   const active=drop.querySelector('.di-suggest-item.active');if(active)active.scrollIntoView({block:'nearest'});
 }
 function _diSave(id){
-  _diFlush();
+  _diFlush();_diSortStaples();
   const clean=_detailIngs.filter(x=>(x.name||'').trim()||(x.amount||'').trim());
   const r=st.recipes.find(x=>String(x.id)===String(id));if(!r)return;
   r.ingredients=_serializeIngredients(clean);save();
