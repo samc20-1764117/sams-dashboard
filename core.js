@@ -1,3 +1,4 @@
+let _pgNavLock=false;
 // ── Categories ─────────────────────────────────────────────────────────────────
 const CATS={
   'home':     {bg:'#eff6ff',t:'#1e40af',d:'#3b82f6',dot:'#bfdbfe',b:'rgba(59,130,246,.2)'},
@@ -994,11 +995,13 @@ document.addEventListener('keydown',e=>{
   }
   // Cmd+Left/Right to switch between pages
   if((e.metaKey||e.ctrlKey)&&(e.key==='ArrowLeft'||e.key==='ArrowRight')&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')){
+    e.preventDefault();
+    if(_pgNavLock)return;_pgNavLock=true;setTimeout(()=>{_pgNavLock=false;},150);
     const _pgOrder=['overview','videos','pups','recipes','finance','birthdays'];
     const _ci=_pgOrder.indexOf(activePg);
     if(_ci!==-1){
       const _ni=e.key==='ArrowLeft'?_ci-1:_ci+1;
-      if(_ni>=0&&_ni<_pgOrder.length){e.preventDefault();showPage(_pgOrder[_ni]);}
+      if(_ni>=0&&_ni<_pgOrder.length){showPage(_pgOrder[_ni]);}
     }
   }
   // Help overlay: press "i" when nothing focused/selected
