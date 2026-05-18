@@ -71,7 +71,7 @@ Table: `birthdays(id,name,birthday,present_ideas)`. `present_ideas` JSON array. 
 
 ### Recipes (`features.js`)
 Table: `recipes` (columns include `sort_order int4`). Do NOT reference: protein,prep_time,cook_time,difficulty,last_made_date,notes. Ingredients: JSON `[{name,amount,is_pantry?}]`.
-- **Book layout**: `.rec-book` two-panel grid (`320px 1fr`), `border-radius:24px`. Left: scrollable recipe list. Right: `#recDetailPanel` always-visible detail view.
+- **Book layout**: `.rec-book` two-panel grid (`320px 1fr`), `border-radius:12px`, spine shadow + stitching via `::before`/`::after`. Left: scrollable recipe list. Right: `#recDetailPanel` always-visible detail view. Page padding matches all other pages (`clamp(12px,3vw,56px)`).
 - **Floating search**: `.rec-search-float` with cutout effect, straddling book top. Videos-style categorized suggestions (meal, cuisine, time, favorites, names, ingredients). `+` button next to search adds recipe inline.
 - **Single click** → view detail (`selRecRow`). No double-click or edit modal — all editing is inline.
 - **Arrow keys**: left/right navigate recipes, up/down reorder selected recipe (`_recMoveSelected`), `f` toggles favorite. Skips when input/textarea/select focused.
