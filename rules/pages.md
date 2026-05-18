@@ -70,7 +70,15 @@ See `rules/videos.md` for full rules. Table: `videos`. 4 views: Dashboard, All D
 Table: `birthdays(id,name,birthday,present_ideas)`. `present_ideas` JSON array. `saveBdayModal` does NOT include `present_ideas`.
 
 ### Recipes (`features.js`)
-Table: `recipes`. Do NOT reference: protein,prep_time,cook_time,difficulty,last_made_date. `#recSidePanel` 400px. Ingredients: JSON `[{name,amount}]`.
+Table: `recipes`. Do NOT reference: protein,prep_time,cook_time,difficulty,last_made_date,notes. Ingredients: JSON `[{name,amount}]`.
+- **Book layout**: `.rec-book` two-panel grid (`280px 1fr`), height `calc(100vh - 84px)`. Left: scrollable recipe list + filter bar + "+ Add Recipe" btn. Right: `#recDetailPanel` always-visible detail view.
+- **Page**: inline style `padding:60px 40px 24px 40px;width:100%;box-sizing:border-box` on `#page-recipes` (matches other pages).
+- **Single click** → view detail on right (`selRecRow`, 200ms timer). **Double click** → open edit modal (`e.detail===2` cancels single-click timer). First recipe auto-selected on load; after delete selects next.
+- **Arrow keys**: up/down/left/right navigate recipes. Document keydown listener (skips when modal open or input focused).
+- **Delete**: ✕ button on far right of list items (hover-visible). No ··· dots menu.
+- **Detail panel**: title, meta tags (meal/cuisine/time/servings/fav), 2-col grid (ingredients left, instructions right), Edit + Add to List buttons.
+- **Add/Edit modal**: 780px wide, min-height 520px. Ingredients + instructions side-by-side (`1fr 1fr` grid). Cuisine is dropdown (not text input). No notes field. Tab on last ingredient row auto-adds new row. `_recModalKeyFn` document listener for Enter-to-save (excludes textareas/buttons/ingredient rows).
+- **Auto-capitalize**: global `input` listener capitalizes first char, after newlines, after ". ", after "• ". Typing `- ` at line start → `• `.
 
 ### HEB (`features.js` — grocery modal)
 "HEB" = the meal planning + grocery modal opened via 🛒 icon on HEB tasks. Layout: header (nav arrows, date, This Week btn, close ✕), horizontal weekly menu strip (top), 3-column bottom (Recipes | Planned Meals | Shopping List). Staples drawer slides from right inside modal. `_grocWkOff` shifts all panels. Opens to current week always. Enter/Escape/backdrop closes. Tables: `meal_plan`, `grocery_list`, `grocery_staples`. Shopping list combines: recipe ingredients (non-pantry, non-staple), overview items with `store='HEB'`, and weekly staples. Sorted by auto-inferred aisle (`_inferAisle`). Staples: skip-this-week via `st._grocStapleSkips[weekMon]` or remove permanently.
