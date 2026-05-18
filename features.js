@@ -2891,10 +2891,24 @@ function _mealsForWeek(){
 }
 
 function _getRemovedMeals(){
-  // Recipes in grocery list for this week that have no current meal entry
-  const wk=_groceryWeekOf();
-  const grocRecipeIds=[...new Set((st.groceryList||[]).filter(g=>g.week_of===wk&&g.source==='recipe'&&g.source_id).map(g=>String(g.source_id)))];
+  // Recipes in grocery list for any week that overlap the displayed meal week but have no current meal entry
   const dates=_mealWeekDates();
+  // Find all grocery week_of values that overlap the displayed dates
+  const allWeekOfs=[...new Set((st.groceryList||[]).map(g=>g.week_of).filter(Boolean))];
+  const relevantWeekOfs=allWeekOfs.filter(wk=>{
+    const wkDates=_grocWeekDatesFor(wk);
+    return wkDates.some(d=>dates.includes(d));
+  });
+  if(!relevantWeekOfs.length){
+    // Fallback: check all grocery recipe items
+    const allGrocRecipeIds=[...new Set((st.groceryList||[]).filter(g=>g.source==='recipe'&&g.source_id).map(g=>String(g.source_id)))];
+    const currentRecipeIds=new Set((st.mealPlan||[]).filter(m=>dates.includes(m.meal_date)).map(m=>String(m.recipe_id)));
+    return allGrocRecipeIds.filter(rid=>!currentRecipeIds.has(rid)).map(rid=>{
+      const r=(st.recipes||[]).find(x=>String(x.id)===rid);
+      return r?{recipe_id:rid,recipe_name:r.name,meal_type:r.meal_type,servings:r.servings||1}:null;
+    }).filter(Boolean);
+  }
+  const grocRecipeIds=[...new Set((st.groceryList||[]).filter(g=>relevantWeekOfs.includes(g.week_of)&&g.source==='recipe'&&g.source_id).map(g=>String(g.source_id)))];
   const currentRecipeIds=new Set((st.mealPlan||[]).filter(m=>dates.includes(m.meal_date)).map(m=>String(m.recipe_id)));
   return grocRecipeIds.filter(rid=>!currentRecipeIds.has(rid)).map(rid=>{
     const r=(st.recipes||[]).find(x=>String(x.id)===rid);
