@@ -561,6 +561,9 @@ function getExtrasForWeek(off=0){
     return{id:'tv-'+tv.id,name:label,category:'Travel',due_date:sd,end_date:ed,done:false,travel_mode:tv.travel_mode||null,_virtual:true,_type:'travel'};
   });
   const bdayItems=dates.flatMap(d=>getBirthdayTasks(d2s(d)));
+  // Also include birthdays from the 3 days before the week start so recent ones don't vanish on week rollover
+  const bdayIds=new Set(bdayItems.map(b=>b.id));
+  for(let i=1;i<=3;i++){const d=new Date(dates[0]);d.setDate(d.getDate()-i);const extras=getBirthdayTasks(d2s(d));extras.forEach(b=>{if(!bdayIds.has(b.id)){bdayIds.add(b.id);bdayItems.push(b);}});}
   return[...travelItems,...bdayItems];
 }
 

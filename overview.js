@@ -582,7 +582,6 @@ function tRowPupSess(t,noColor=false){
 function renderWkSummary(){
   const virtRec=getRecurringWeekTasks(wkOff);
   const virtExtras=getExtrasForWeek(wkOff);
-  console.log('[WK-BDAY]','wkOff=',wkOff,'virtExtras=',virtExtras.filter(t=>t._type==='birthday'),'allExtras=',virtExtras.length,'birthdays=',st.birthdays.map(b=>({id:b.id,name:b.name,birthday:b.birthday})));
   const _wrecWkk=getWkKey(wkOff);
   const wrecThisWk=st.recurring
     .filter(r=>(r.is_weekly_reset===true||r.is_weekly_reset==='true')&&r._dateOverrides&&r._dateOverrides[_wrecWkk]&&r._dateOverrides[_wrecWkk]!=='__skip__')
