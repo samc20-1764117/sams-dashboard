@@ -2532,8 +2532,12 @@ function openGroceryModal(){
 }
 
 let _grocWkOff=0;
-function _getGrocPeople(){const v=localStorage.getItem('_grocPeople');return v?parseInt(v):2;}
-function setGrocPeople(n){const prev=_getGrocPeople();localStorage.setItem('_grocPeople',n);if(prev!==n)_adjustMealsForPeople(prev,n);renderGroceryModal();if(typeof renderMealRow==='function')renderMealRow();}
+function _grocPeopleKey(weekMon){return'_grocPeople_'+weekMon;}
+function _getGrocPeople(weekMon){const v=localStorage.getItem(_grocPeopleKey(weekMon));return v?parseInt(v):2;}
+function setGrocPeople(n,weekMon){const prev=_getGrocPeople(weekMon);localStorage.setItem(_grocPeopleKey(weekMon),n);
+  const nextMon=new Date(new Date(weekMon+'T12:00:00').getTime()+7*864e5).toISOString().split('T')[0];
+  localStorage.setItem(_grocPeopleKey(nextMon),n);
+  if(prev!==n)_adjustMealsForPeople(prev,n);renderGroceryModal();if(typeof renderMealRow==='function')renderMealRow();}
 async function _adjustMealsForPeople(oldP,newP){
   // Adjust both menu week (this week) and plan week (next week)
   const menuMon=_grocWeekMonday(_grocWkOff);
@@ -2652,7 +2656,7 @@ function renderGroceryModal(){
       <button class="groc-nav-btn" onclick="_grocWkOff++;renderGroceryModal();this.closest('dialog').focus()">→</button>
     </div>
     <button class="groc-nav-btn" onclick="_grocWkOff=0;renderGroceryModal();this.closest('dialog').focus()"${_grocWkOff===0?' disabled style="opacity:.4;pointer-events:none"':''}>This Week</button>
-    <span class="groc-people-toggle">People: <button onclick="setGrocPeople(1)"${_getGrocPeople()===1?' class="active"':''}>1</button><button onclick="setGrocPeople(2)"${_getGrocPeople()===2?' class="active"':''}>2</button></span>
+    <span class="groc-people-toggle">People: <button onclick="setGrocPeople(1,'${menuMon}')"${_getGrocPeople(menuMon)===1?' class="active"':''}>1</button><button onclick="setGrocPeople(2,'${menuMon}')"${_getGrocPeople(menuMon)===2?' class="active"':''}>2</button></span>
     <button class="groc-close" onclick="document.getElementById('groceryModal').close()">✕</button>
   </div>`;
 
@@ -2664,7 +2668,7 @@ function renderGroceryModal(){
   const unplacedMenu=[];
   menuGrocIds.forEach(rid=>{
     const r=(st.recipes||[]).find(x=>String(x.id)===rid);if(!r)return;
-    const expected=Math.ceil((r.servings||2)/_getGrocPeople());
+    const expected=Math.ceil((r.servings||2)/_getGrocPeople(menuMon));
     const actual=menuMeals.filter(m=>String(m.recipe_id)===rid).length;
     const missing=expected-actual;
     if(actual===0)return;
@@ -2711,7 +2715,7 @@ function renderGroceryModal(){
       <input type="checkbox"${isPlanned?' checked':''} onchange="toggleMealForWeek('${r.id}','${planMon}',this.checked)">
       <span>${escHtml(r.name)}</span>
       ${r.meal_type?`<span class="groc-recipe-type">${escHtml(r.meal_type)}</span>`:''}
-      ${r.servings?`<span class="groc-recipe-type">${Math.ceil(r.servings/_getGrocPeople())} meals</span>`:''}
+      ${r.servings?`<span class="groc-recipe-type">${Math.ceil(r.servings/_getGrocPeople(menuMon))} meals</span>`:''}
     </label>`;
   });
   html+=`</div>`;
@@ -2794,7 +2798,7 @@ async function toggleMealForWeek(recipeId,weekMon,checked){
   if(checked){
     // Calculate how many meal slots: ceil(servings / people)
     const recipeServings=r.servings||2;
-    const mealSlots=Math.ceil(recipeServings/_getGrocPeople());
+    const mealSlots=Math.ceil(recipeServings/_getGrocPeople(weekMon));
     const dates=_grocWeekDatesFor(weekMon);
     // Find empty days for each slot
     const usedDays=new Set();
@@ -2988,7 +2992,7 @@ function _getRemovedMeals(){
   const result=[];
   grocRecipeIds.forEach(rid=>{
     const r=(st.recipes||[]).find(x=>String(x.id)===rid);if(!r)return;
-    const expected=Math.ceil((r.servings||2)/_getGrocPeople());
+    const expected=Math.ceil((r.servings||2)/_getGrocPeople(displayedMon));
     const actual=onCal.filter(m=>String(m.recipe_id)===rid).length;
     const missing=expected-actual;
     if(actual===0)return; // not on calendar at all — don't show as unassigned
