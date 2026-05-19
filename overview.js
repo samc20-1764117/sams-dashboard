@@ -2023,12 +2023,10 @@ function renderRecOv(){
   const baseItems=st.wrRules.filter(r=>isWRRuleDueThisWeek(r,wrRecOff));
   // 2. Classify overrides for this wk_key
   const ovThisWk=st.wrOverrides.filter(o=>o.wk_key===wkKey);
-  console.log('[WR-debug] wkKey=',wkKey,'ovThisWk=',JSON.stringify(ovThisWk.map(o=>({rid:o.rule_id,type:o.override_type,wk:o.wk_key}))),'baseItems=',baseItems.map(r=>r.name));
   const skipIds=new Set(ovThisWk.filter(o=>o.override_type==='skip').map(o=>String(o.rule_id)));
   const movedAwayIds=new Set(ovThisWk.filter(o=>o.override_type==='move').map(o=>String(o.rule_id)));
   // 3. Remove skipped + moved-away items
   const filtered=baseItems.filter(r=>!skipIds.has(String(r.id))&&!movedAwayIds.has(String(r.id)));
-  console.log('[WR-debug] skipIds=',[...skipIds],'movedAwayIds=',[...movedAwayIds],'filtered=',filtered.map(r=>r.name));
   // 4. Add rules moved INTO this week from another week
   const movedIn=st.wrOverrides
     .filter(o=>o.override_type==='move'&&o.moved_to_wk_key===wkKey)
@@ -2174,7 +2172,6 @@ function renderRecOv(){
 // Upsert a wr_recurring_override — patches if one exists for (ruleId,wkKey), posts if not.
 // payload should include override_type + any relevant fields. Nulls out unrelated fields.
 function writeWrOverride(ruleId,wkKey,payload,{onDone,undoLabel='Changed WR task'}={}){
-  console.log('[WR] writeWrOverride',{ruleId,wkKey,payload,overrideCount:st.wrOverrides.length});
   const full={rule_id:ruleId,wk_key:wkKey,done:null,moved_to_wk_key:null,custom_name:null,custom_notes:null,...payload};
   const isSkip=payload.override_type==='skip';
   // Capture and remove timeblocks for this rule in the target week (skip only)
@@ -2259,7 +2256,7 @@ function showWrScopePicker(e,thisLabel,allLabel,onThis,onAll,removeLabel,onRemov
 }
 function hideWrScopePicker(){const m=document.getElementById('wrScopePicker');if(m)m.style.display='none';}
 function wrScopeDoRemove(){hideWrScopePicker();if(_wrScopeCbRemove)_wrScopeCbRemove();}
-function wrScopeDoThis(){console.log('[WR] wrScopeDoThis',typeof _wrScopeCbThis);hideWrScopePicker();if(_wrScopeCbThis)_wrScopeCbThis();}
+function wrScopeDoThis(){hideWrScopePicker();if(_wrScopeCbThis)_wrScopeCbThis();}
 function wrScopeDoAll(){hideWrScopePicker();if(_wrScopeCbAll)_wrScopeCbAll();}
 document.addEventListener('mousedown',e=>{if(!e.target.closest('#wrScopePicker'))hideWrScopePicker();},{capture:true,passive:true});
 
@@ -2353,7 +2350,6 @@ function showWrXPicker(e,rid,wkKey){
 }
 
 function wrCtxSkipThisWeek(){
-  console.log('[WR] wrCtxSkipThisWeek',{_wrCtxRuleId,_wrCtxRecId,_wrCtxWkKey});
   hideWrRuleCtx();if(!_wrCtxWkKey)return;
   if(_wrCtxRecId){
     const r=st.recurring.find(x=>String(x.id)===_wrCtxRecId);if(!r)return;
