@@ -2535,7 +2535,33 @@ let _grocWkOff=0;
 let _grocPeople=2;
 function _grocPeopleKey(weekMon){return'_grocPeople_'+weekMon;}
 function _getGrocPeople(weekMon){const v=localStorage.getItem(_grocPeopleKey(weekMon));return v?parseInt(v):2;}
-function setGrocPeople(n,weekMon){localStorage.setItem(_grocPeopleKey(weekMon),n);renderGroceryModal();}
+function setGrocPeople(n,weekMon){const prev=_getGrocPeople(weekMon);localStorage.setItem(_grocPeopleKey(weekMon),n);if(prev!==n)_adjustMealsForPeople(weekMon,prev,n);renderGroceryModal();if(typeof renderMealRow==='function')renderMealRow();}
+async function _adjustMealsForPeople(weekMon,oldP,newP){
+  const dates=_grocWeekDatesFor(weekMon);
+  const weekMeals=(st.mealPlan||[]).filter(m=>dates.includes(m.meal_date));
+  const byRecipe={};
+  weekMeals.forEach(m=>{if(!m.recipe_id)return;const k=String(m.recipe_id);(byRecipe[k]=byRecipe[k]||[]).push(m);});
+  for(const[rid,meals] of Object.entries(byRecipe)){
+    const r=(st.recipes||[]).find(x=>String(x.id)===rid);if(!r)continue;
+    const want=Math.ceil((r.servings||2)/newP);
+    const have=meals.length;
+    if(have>want){
+      const remove=meals.slice(want);
+      remove.forEach(m=>{st.mealPlan=st.mealPlan.filter(x=>String(x.id)!==String(m.id));sbReqSilent('DELETE','meal_plan',null,`?id=eq.${m.id}`);});
+    } else if(have<want){
+      const usedDays=new Set(meals.map(m=>m.meal_date));
+      for(let i=0;i<want-have;i++){
+        let ds=dates[0];
+        for(const d of dates){if(!usedDays.has(d)&&!(st.mealPlan||[]).find(m=>m.meal_date===d)){ds=d;break;}}
+        usedDays.add(ds);
+        const item={recipe_id:r.id,recipe_name:r.name,meal_date:ds,servings:r.servings||2,meal_type:r.meal_type||null};
+        const sv=await sbReqSilent('POST','meal_plan',item);
+        if(sv&&sv[0])st.mealPlan.push(sv[0]);else{item.id='l-'+(Date.now()+i);st.mealPlan.push(item);}
+      }
+    }
+  }
+  save();
+}
 function _grocWeekMonday(off){const d=new Date();const dow=(d.getDay()+6)%7;d.setDate(d.getDate()-dow+(off||0)*7);return d.toISOString().split('T')[0];}
 function _grocWeekDatesFor(mon){const m=new Date(mon+'T12:00:00');return Array.from({length:7},(_,i)=>{const x=new Date(m);x.setDate(m.getDate()+i);return x.toISOString().split('T')[0];});}
 function _grocWeekLabel(mon){const dates=_grocWeekDatesFor(mon);const m1=new Date(dates[0]+'T12:00:00');const m2=new Date(dates[6]+'T12:00:00');return`${m1.toLocaleDateString('en-US',{month:'short',day:'numeric'})} – ${m2.toLocaleDateString('en-US',{month:'short',day:'numeric'})}`;}
@@ -2681,7 +2707,7 @@ function renderGroceryModal(){
       <input type="checkbox"${isPlanned?' checked':''} onchange="toggleMealForWeek('${r.id}','${planMon}',this.checked)">
       <span>${escHtml(r.name)}</span>
       ${r.meal_type?`<span class="groc-recipe-type">${escHtml(r.meal_type)}</span>`:''}
-      ${r.servings?`<span class="groc-recipe-type">${r.servings} srv</span>`:''}
+      ${r.servings?`<span class="groc-recipe-type">${Math.ceil(r.servings/_getGrocPeople(planMon))} meals</span>`:''}
     </label>`;
   });
   html+=`</div>`;
