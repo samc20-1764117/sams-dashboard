@@ -2870,7 +2870,7 @@ function tRowExtra(t){
   const bdDrag=isBd?`draggable="true" ondragstart="dStart(event,'bday::${t._srcId}::${t.due_date}')" ondragend="dEnd(event)"`:'';
   const _bdDone=isBd&&t.done;
   return`<div class="ti ti-${sl}${_bdDone?' done':''}" style="background:${s.bg}${_bdDone?';opacity:.45':''}" id="ti-${t.id}" ${bdDrag} onclick="selTask(event,'${t.id}')">
-    <span class="tn" style="color:${s.t};font-weight:600${_bdDone?';text-decoration:line-through':''}">${modeIcon}${t.name}</span>
+    <span class="tn" style="color:${s.t};font-weight:600${_bdDone?';text-decoration:line-through':''}">${modeIcon}${isBd?t.name.replace('🎂','<span class="bday-emoji">🎂</span>'):t.name}</span>
     ${isTv||isBd?'':`<svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3" fill="${s.bg}" stroke="${s.d}" stroke-opacity="0.4" stroke-width="1"/></svg>`}
     ${isBd?'':`<span class="dlbl">${fmtD(t.due_date)}${sub}</span>`}
     ${isTv?`<button class="delbtn" onclick="event.stopPropagation();delTravel('${t._srcId}')">✕</button>`:''}
@@ -3554,7 +3554,7 @@ function drawTBBlock(col,b){
       togShop(String(b.shopId),checked);
     } else {
       if(b.cat==='Birthday'){
-        b._done=checked;sbUpdateBlock(b.id,{done:checked});save();renderToday();renderWkSummary();
+        b._done=checked;sbUpdateBlock(b.id,{done:checked});save();renderToday();renderWkSummary();renderWkCal();
       } else {
         const mT=st.tasks.find(x=>x.name===b.title);
         const mR=st.recurring.find(x=>x.name===b.title);
