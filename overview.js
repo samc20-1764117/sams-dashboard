@@ -2023,10 +2023,12 @@ function renderRecOv(){
   const baseItems=st.wrRules.filter(r=>isWRRuleDueThisWeek(r,wrRecOff));
   // 2. Classify overrides for this wk_key
   const ovThisWk=st.wrOverrides.filter(o=>o.wk_key===wkKey);
+  console.log('[WR-debug] wkKey=',wkKey,'ovThisWk=',JSON.stringify(ovThisWk.map(o=>({rid:o.rule_id,type:o.override_type,wk:o.wk_key}))),'baseItems=',baseItems.map(r=>r.name));
   const skipIds=new Set(ovThisWk.filter(o=>o.override_type==='skip').map(o=>String(o.rule_id)));
   const movedAwayIds=new Set(ovThisWk.filter(o=>o.override_type==='move').map(o=>String(o.rule_id)));
   // 3. Remove skipped + moved-away items
   const filtered=baseItems.filter(r=>!skipIds.has(String(r.id))&&!movedAwayIds.has(String(r.id)));
+  console.log('[WR-debug] skipIds=',[...skipIds],'movedAwayIds=',[...movedAwayIds],'filtered=',filtered.map(r=>r.name));
   // 4. Add rules moved INTO this week from another week
   const movedIn=st.wrOverrides
     .filter(o=>o.override_type==='move'&&o.moved_to_wk_key===wkKey)
