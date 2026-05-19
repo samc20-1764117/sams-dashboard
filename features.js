@@ -2626,31 +2626,38 @@ function renderGroceryModal(){
     <button class="groc-close" onclick="document.getElementById('groceryModal').close()">✕</button>
   </div>`;
 
-  // ── TOP: Planned meals for next week (planMon) ──
+  // ── TOP: This week's meals (menuMon) — driven by last week's recipe picks ──
+  const menuMeals=(st.mealPlan||[]).filter(m=>menuDates.includes(m.meal_date));
+  const menuRecipeIds=new Set(menuMeals.map(m=>String(m.recipe_id)));
+  // Unplaced: recipes in grocery list (week_of=menuMon) with fewer entries on cal than expected
+  const menuGrocIds=[...new Set((st.groceryList||[]).filter(g=>g.week_of===menuMon&&g.source==='recipe'&&g.source_id).map(g=>String(g.source_id)))];
+  const unplacedMenu=[];
+  menuGrocIds.forEach(rid=>{
+    const r=(st.recipes||[]).find(x=>String(x.id)===rid);if(!r)return;
+    const expected=Math.ceil((r.servings||2)/_getGrocPeople(menuMon));
+    const actual=menuMeals.filter(m=>String(m.recipe_id)===rid).length;
+    const missing=expected-actual;
+    for(let i=0;i<missing;i++) unplacedMenu.push({recipe_id:rid,recipe_name:r.name});
+  });
   html+=`<div class="groc-menu-strip">`;
-  html+=`<div class="groc-menu-label">Meals <span style="font-size:9px;color:var(--muted);font-weight:400">${_grocWeekLabel(planMon)}</span></div>`;
+  html+=`<div class="groc-menu-label">This Week <span style="font-size:9px;color:var(--muted);font-weight:400">${_grocWeekLabel(menuMon)}</span></div>`;
   html+=`<div class="groc-menu-cols">`;
-  planDates.forEach((ds,i)=>{
+  menuDates.forEach((ds,i)=>{
     const meals=(st.mealPlan||[]).filter(m=>m.meal_date===ds);
     meals.sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
-    html+=`<div class="groc-menu-col" data-ds="${ds}">`;
+    const isPast=ds<today;
+    const isToday=ds===today;
+    html+=`<div class="groc-menu-col${isToday?' groc-col-today':''}${isPast?' groc-col-past':''}" data-ds="${ds}">`;
     html+=`<div class="groc-col-hdr">${dayNames[i]}</div>`;
     meals.forEach(m=>{
       html+=`<span class="groc-meal-tag" draggable="true" data-mealid="${m.id}">${escHtml(m.recipe_name)}<button onclick="event.stopPropagation();removeMeal('${m.id}')">✕</button></span>`;
     });
     html+=`</div>`;
   });
-  // Unassigned: recipes checked but not on any planDate
-  const planRecipeIds=new Set(planMeals.map(m=>String(m.recipe_id)));
-  const grocPlannedIds=[...new Set(grocItems.filter(g=>g.source==='recipe'&&g.source_id).map(g=>String(g.source_id)))];
-  const unplacedInModal=grocPlannedIds.filter(rid=>!planRecipeIds.has(rid)).map(rid=>{
-    const r=(st.recipes||[]).find(x=>String(x.id)===rid);
-    return r?{recipe_id:rid,recipe_name:r.name}:null;
-  }).filter(Boolean);
-  if(unplacedInModal.length){
+  if(unplacedMenu.length){
     html+=`<div class="groc-menu-col groc-col-unassigned">`;
     html+=`<div class="groc-col-hdr" style="font-size:8px">Unplaced</div>`;
-    unplacedInModal.forEach(m=>{
+    unplacedMenu.forEach(m=>{
       html+=`<span class="groc-meal-tag groc-meal-unassigned" draggable="true" data-recipeid="${m.recipe_id}">${escHtml(m.recipe_name)}</span>`;
     });
     html+=`</div>`;
@@ -2944,16 +2951,19 @@ function _mealsForWeek(){
 }
 
 function _getRemovedMeals(){
-  // Grocery week_of is stored as planMon (the week meals are FOR).
-  // So match week_of === displayed week's Monday.
   const dates=_mealWeekDates();
   const displayedMon=dates[0];
-  const currentRecipeIds=new Set((st.mealPlan||[]).filter(m=>dates.includes(m.meal_date)).map(m=>String(m.recipe_id)));
+  const onCal=(st.mealPlan||[]).filter(m=>dates.includes(m.meal_date));
   const grocRecipeIds=[...new Set((st.groceryList||[]).filter(g=>g.week_of===displayedMon&&g.source==='recipe'&&g.source_id).map(g=>String(g.source_id)))];
-  return grocRecipeIds.filter(rid=>!currentRecipeIds.has(rid)).map(rid=>{
-    const r=(st.recipes||[]).find(x=>String(x.id)===rid);
-    return r?{recipe_id:rid,recipe_name:r.name,meal_type:r.meal_type,servings:r.servings||1}:null;
-  }).filter(Boolean);
+  const result=[];
+  grocRecipeIds.forEach(rid=>{
+    const r=(st.recipes||[]).find(x=>String(x.id)===rid);if(!r)return;
+    const expected=Math.ceil((r.servings||2)/_getGrocPeople(displayedMon));
+    const actual=onCal.filter(m=>String(m.recipe_id)===rid).length;
+    const missing=expected-actual;
+    for(let i=0;i<missing;i++) result.push({recipe_id:rid,recipe_name:r.name,meal_type:r.meal_type,servings:r.servings||1});
+  });
+  return result;
 }
 function renderMealRow(){
   const el=document.getElementById('mealRow');if(!el)return;
