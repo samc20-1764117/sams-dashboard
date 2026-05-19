@@ -73,13 +73,13 @@ function renderToday(){
     ...shopToday,
     ...pupSessToday,
     ...getExtrasForDate(ds).map(t=>{
-      if(t._type==='birthday'){const blk=st.blocks.find(b=>b.ds===ds&&b.cat==='Birthday'&&b.title===t.name);if(blk&&blk._done)return{...t,done:true};}
+      // Birthday done state: never grey out in today list
       return t;
     })
   ];
   const allToday=[...ts,...virtToday];
   const sorted=sortTasksToday(allToday);
-  const doneCount=sorted.filter(t=>t.done).length;
+  const doneCount=sorted.filter(t=>t.done&&t._type!=='birthday').length+sorted.filter(t=>t._type==='birthday'&&st.blocks.some(b=>b.cat==='Birthday'&&b.title===t.name&&b._done)).length;
   // todBadge removed
   document.getElementById('todPL').textContent=`${doneCount}/${sorted.length}`;const _todP=document.getElementById('todPct');if(_todP)_todP.textContent=(sorted.length?Math.round(doneCount/sorted.length*100):0)+'%';
   document.getElementById('todPB').style.width=sorted.length?`${doneCount/sorted.length*100}%`:'0%';
@@ -610,7 +610,7 @@ function renderWkSummary(){
       ...wrRulesThisWk,
       ...shopThisWk,
       ...virtExtras.map(t=>{
-        if(t._type==='birthday'){const blk=st.blocks.find(b=>b.ds===t.due_date&&b.cat==='Birthday'&&b.title===t.name);if(blk&&blk._done)return{...t,done:true};}
+        if(t._type==='birthday'){const blk=st.blocks.find(b=>b.cat==='Birthday'&&b.title===t.name);if(blk&&blk._done)return{...t,done:true};}
         return t;
       })
     ]),
@@ -619,7 +619,7 @@ function renderWkSummary(){
   const allReal=st.tasks.filter(t=>isInWk(t.due_date,wkOff));
   const doneReal=allReal.filter(t=>t.done).length;
   const doneVirt=virtRec.filter(v=>v.done).length;
-  const bdayDone=virtExtras.filter(t=>t._type==='birthday'&&st.blocks.some(b=>b.ds===t.due_date&&b.cat==='Birthday'&&b.title===t.name&&b._done)).length;
+  const bdayDone=virtExtras.filter(t=>t._type==='birthday'&&st.blocks.some(b=>b.cat==='Birthday'&&b.title===t.name&&b._done)).length;
   const totalAll=allReal.length+virtRec.length+virtExtras.length;
   const totalDone=doneReal+doneVirt+bdayDone;
   // wkBadge removed

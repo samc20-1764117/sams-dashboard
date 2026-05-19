@@ -530,6 +530,22 @@ function getBirthdayTasks(filterDate){
   });
   return filterDate?out:out.sort((a,b2)=>a.due_date.localeCompare(b2.due_date));
 }
+// Get birthdays in a date range [startDs, endDs] inclusive
+function getBirthdaysInRange(startDs,endDs){
+  const curYear=new Date().getFullYear();
+  const out=[],seen=new Set();
+  st.birthdays.forEach(b=>{
+    if(!b.birthday)return;
+    const parts=b.birthday.split('-');
+    const mo=String(parts.length===2?parts[0]:parts[1]).padStart(2,'0');
+    const day=String(parts.length===2?parts[1]:parts[2]).padStart(2,'0');
+    [curYear,curYear+1].forEach(yr=>{
+      const ds=`${yr}-${mo}-${day}`;
+      if(ds>=startDs&&ds<=endDs){const key=b.id+'-'+ds;if(!seen.has(key)){seen.add(key);out.push(mkBdayTask(b,ds));}}
+    });
+  });
+  return out;
+}
 function mkBdayTask(b,ds){
   return{
     id:`bd-${b.id}-${ds}`,
@@ -541,7 +557,10 @@ function mkBdayTask(b,ds){
 }
 // Get all virtual extras for a given date string
 function getExtrasForDate(ds){
-  return[...getTravelTasks(ds),...getBirthdayTasks(ds)];
+  const d=new Date(ds+'T00:00:00');
+  const d1=new Date(d);d1.setDate(d.getDate()-3);
+  const d2=new Date(d);d2.setDate(d.getDate()+3);
+  return[...getTravelTasks(ds),...getBirthdaysInRange(d2s(d1),d2s(d2))];
 }
 // Get all virtual extras for a week (used in week summary list)
 // Travel shown ONCE (on start date), birthdays once on their day
@@ -560,10 +579,10 @@ function getExtrasForWeek(off=0){
     const label=tv.destination?`${tv.name} → ${tv.destination}`:tv.name;
     return{id:'tv-'+tv.id,name:label,category:'Travel',due_date:sd,end_date:ed,done:false,travel_mode:tv.travel_mode||null,_virtual:true,_type:'travel'};
   });
-  const bdayItems=dates.flatMap(d=>getBirthdayTasks(d2s(d)));
-  // Also include birthdays from the 3 days before the week start so recent ones don't vanish on week rollover
-  const bdayIds=new Set(bdayItems.map(b=>b.id));
-  for(let i=1;i<=3;i++){const d=new Date(dates[0]);d.setDate(d.getDate()-i);const extras=getBirthdayTasks(d2s(d));extras.forEach(b=>{if(!bdayIds.has(b.id)){bdayIds.add(b.id);bdayItems.push(b);}});}
+  // Include birthdays from 3 days before week start through 3 days after week end
+  const bStart=new Date(dates[0]);bStart.setDate(bStart.getDate()-3);
+  const bEnd=new Date(dates[6]);bEnd.setDate(bEnd.getDate()+3);
+  const bdayItems=getBirthdaysInRange(d2s(bStart),d2s(bEnd));
   return[...travelItems,...bdayItems];
 }
 
