@@ -1051,12 +1051,12 @@ body.dark .groc-staples-drawer{background:rgba(28,16,10,.98);box-shadow:-4px 0 1
 .meal-cell.meal-drop{background:rgba(124,106,247,.08)}
 .meal-cell-unassigned{border-top:none;border-left:2px solid rgba(255,255,255,.88);background:rgba(255,255,255,.18);overflow-y:auto;scrollbar-width:none}
 .meal-cell-unassigned::-webkit-scrollbar{display:none}
-.meal-chip{display:flex;align-items:center;padding:2px 6px;border-radius:6px;background:rgba(249,115,22,.1);border:1px solid rgba(249,115,22,.2);font-size:9px;font-weight:600;color:#c2410c;cursor:grab;max-width:100%;position:relative}
-.meal-chip:hover{background:rgba(249,115,22,.18)}
-body.dark .meal-chip{background:rgba(249,115,22,.15);color:#fb923c;border-color:rgba(249,115,22,.3)}
+.meal-chip{display:flex;align-items:center;padding:2px 6px;border-radius:6px;background:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.6);font-size:9px;font-weight:500;color:var(--text);cursor:grab;max-width:100%;position:relative;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:inset 0 1px 0 rgba(255,255,255,.75)}
+.meal-chip:hover{background:rgba(255,255,255,.7)}
+body.dark .meal-chip{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.12);box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
 .meal-chip-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0}
 .meal-chip-days{font-size:8px;color:rgba(194,107,79,.7);flex-shrink:0;margin-left:auto;padding-left:4px}
-.meal-chip-x{background:none;border:none;cursor:pointer;font-size:8px;color:rgba(194,107,79,.5);padding:0 1px;opacity:0;transition:opacity .1s;flex-shrink:0;margin-left:2px}
+.meal-chip-x{background:none;border:none;cursor:pointer;font-size:8px;color:var(--muted);padding:0 1px;opacity:0;transition:opacity .1s;flex-shrink:0;margin-left:2px}
 .meal-chip:hover .meal-chip-x{opacity:1}
 .meal-chip-x:hover{color:#ef4444}
 .meal-chip.meal-dragging{opacity:.4}

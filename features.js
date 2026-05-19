@@ -2891,10 +2891,15 @@ function _mealsForWeek(){
 }
 
 function _getRemovedMeals(){
-  // All recipes from grocery plan that don't have a meal entry on the displayed week
+  // Last week's shopping list plans this week's meals.
+  // Grocery modal: shopping week = _grocWeekMonday(off), planned meals week = _grocWeekMonday(off+1).
+  // So for displayed week's dates, the grocery week_of that planned them is one week earlier.
   const dates=_mealWeekDates();
+  const displayedMon=dates[0];// Monday of displayed week
+  // The grocery week_of that planned this week = displayedMon - 7 days
+  const prevMon=d2s(new Date(new Date(displayedMon+'T12:00:00').getTime()-7*86400000));
   const currentRecipeIds=new Set((st.mealPlan||[]).filter(m=>dates.includes(m.meal_date)).map(m=>String(m.recipe_id)));
-  const grocRecipeIds=[...new Set((st.groceryList||[]).filter(g=>g.source==='recipe'&&g.source_id).map(g=>String(g.source_id)))];
+  const grocRecipeIds=[...new Set((st.groceryList||[]).filter(g=>g.week_of===prevMon&&g.source==='recipe'&&g.source_id).map(g=>String(g.source_id)))];
   return grocRecipeIds.filter(rid=>!currentRecipeIds.has(rid)).map(rid=>{
     const r=(st.recipes||[]).find(x=>String(x.id)===rid);
     return r?{recipe_id:rid,recipe_name:r.name,meal_type:r.meal_type,servings:r.servings||1}:null;
@@ -3403,8 +3408,8 @@ function applySelHighlight(){
     const id=el.dataset.tid;
     const sel=selectedTasks.has(id);
     el.classList.toggle('sel-row',sel);
-    if(sel){el.style.outline='2px solid #f97316';el.style.outlineOffset='-1px';el.style.background='rgba(249,115,22,.25)';}
-    else{el.style.outline='';el.style.outlineOffset='';el.style.background='';}
+    if(sel){el.style.outline='1px solid rgba(200,196,218,.7)';el.style.outlineOffset='-1px';el.style.boxShadow='0 3px 10px rgba(180,175,205,.28)';}
+    else{el.style.outline='';el.style.outlineOffset='';el.style.boxShadow='';}
   });
   document.querySelectorAll('tr[id^="ti-rt-"]').forEach(el=>{
     const rid=el.id.replace('ti-rt-','');
