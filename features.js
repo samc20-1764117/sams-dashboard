@@ -2561,7 +2561,7 @@ async function _adjustMealsForPeopleWeek(weekMon,newP){
       const usedDays=new Set(meals.map(m=>m.meal_date));
       for(let i=0;i<want-have;i++){
         let ds=dates[0];
-        for(const d of dates){if(!usedDays.has(d)&&!(st.mealPlan||[]).find(m=>m.meal_date===d)){ds=d;break;}}
+        for(const d of dates){if(!usedDays.has(d)&&(st.mealPlan||[]).filter(m=>m.meal_date===d).length<2){ds=d;break;}}
         usedDays.add(ds);
         const item={recipe_id:r.id,recipe_name:r.name,meal_date:ds,servings:r.servings||2,meal_type:r.meal_type||null};
         const sv=await sbReqSilent('POST','meal_plan',item);
@@ -2804,7 +2804,7 @@ async function toggleMealForWeek(recipeId,weekMon,checked){
     const usedDays=new Set();
     for(let s=0;s<mealSlots;s++){
       let ds=dates[0];
-      for(const d of dates){if(!usedDays.has(d)&&!(st.mealPlan||[]).find(m=>m.meal_date===d)){ds=d;break;}}
+      for(const d of dates){if(!usedDays.has(d)&&(st.mealPlan||[]).filter(m=>m.meal_date===d).length<2){ds=d;break;}}
       usedDays.add(ds);
       const item={recipe_id:r.id,recipe_name:r.name,meal_date:ds,servings:recipeServings,meal_type:r.meal_type||null};
       const sv=await sbReqSilent('POST','meal_plan',item);
@@ -3011,6 +3011,8 @@ function renderMealRow(){
   dates.forEach(ds=>{
     const meals=(st.mealPlan||[]).filter(m=>m.meal_date===ds);
     meals.sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+    // Enforce max 2 per day — remove extras from data
+    if(meals.length>2){meals.slice(2).forEach(m=>{st.mealPlan=st.mealPlan.filter(x=>String(x.id)!==String(m.id));sbReqSilent('DELETE','meal_plan',null,`?id=eq.${m.id}`);});}
     html+=`<div class="meal-cell" data-ds="${ds}">`;
     meals.slice(0,2).forEach(m=>{
       const sid='meal-'+m.id;
