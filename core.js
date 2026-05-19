@@ -544,6 +544,7 @@ function getBirthdaysInRange(startDs,endDs){
       if(ds>=startDs&&ds<=endDs){const key=b.id+'-'+ds;if(!seen.has(key)){seen.add(key);out.push(mkBdayTask(b,ds));}}
     });
   });
+  console.log('[BDAY-RANGE]',startDs,'to',endDs,'birthdays:',st.birthdays.map(b=>b.birthday),'found:',out.length,out.map(x=>x.name+' '+x.due_date));
   return out;
 }
 function mkBdayTask(b,ds){
@@ -557,10 +558,7 @@ function mkBdayTask(b,ds){
 }
 // Get all virtual extras for a given date string
 function getExtrasForDate(ds){
-  const d=new Date(ds+'T00:00:00');
-  const d1=new Date(d);d1.setDate(d.getDate()-3);
-  const d2=new Date(d);d2.setDate(d.getDate()+3);
-  return[...getTravelTasks(ds),...getBirthdaysInRange(d2s(d1),d2s(d2))];
+  return[...getTravelTasks(ds),...getBirthdayTasks(ds)];
 }
 // Get all virtual extras for a week (used in week summary list)
 // Travel shown ONCE (on start date), birthdays once on their day
