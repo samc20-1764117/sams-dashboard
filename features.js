@@ -3020,29 +3020,24 @@ function renderMealRow(){
     });
     html+=`</div>`;
   });
-  html+=`</div><div class="meal-days-spacer"></div>`;
+  const unassigned=_getRemovedMeals();
+  html+=`</div><div class="meal-days-spacer">`;
+  unassigned.forEach(m=>{
+    html+=`<div class="meal-chip meal-chip-unassigned" draggable="true" data-recipeid="${m.recipe_id}"><span class="meal-chip-name">${escHtml(m.recipe_name)}</span></div>`;
+  });
+  html+=`</div>`;
   el.innerHTML=html;
-  // Render unassigned into goals column (truly independent height)
-  const goalsCol=document.querySelector('.wkc-goals-col');
-  let uaEl=document.getElementById('mealUnassigned');
-  if(goalsCol){
-    if(!uaEl){uaEl=document.createElement('div');uaEl.id='mealUnassigned';uaEl.className='meal-unassigned';goalsCol.appendChild(uaEl);}
-    const unassigned=_getRemovedMeals();
-    let uaHtml='';
-    unassigned.forEach(m=>{
-      uaHtml+=`<div class="meal-chip meal-chip-unassigned" draggable="true" data-recipeid="${m.recipe_id}"><span class="meal-chip-name">${escHtml(m.recipe_name)}</span></div>`;
+  // Remove old goals-column unassigned if it exists
+  const oldUa=document.getElementById('mealUnassigned');if(oldUa)oldUa.remove();
+  // Bind unassigned chip drag
+  el.querySelectorAll('.meal-chip-unassigned').forEach(chip=>{
+    chip.addEventListener('dragstart',e=>{
+      e.dataTransfer.setData('text/plain','meal-new::'+chip.dataset.recipeid);
+      e.dataTransfer.effectAllowed='move';
+      chip.classList.add('meal-dragging');
     });
-    uaEl.innerHTML=uaHtml;
-    // Bind unassigned chip drag
-    uaEl.querySelectorAll('.meal-chip-unassigned').forEach(chip=>{
-      chip.addEventListener('dragstart',e=>{
-        e.dataTransfer.setData('text/plain','meal-new::'+chip.dataset.recipeid);
-        e.dataTransfer.effectAllowed='move';
-        chip.classList.add('meal-dragging');
-      });
-      chip.addEventListener('dragend',()=>chip.classList.remove('meal-dragging'));
-    });
-  }
+    chip.addEventListener('dragend',()=>chip.classList.remove('meal-dragging'));
+  });
   // Bind drag/drop on day cells
   el.querySelectorAll('.meal-cell[data-ds]').forEach(cell=>{
     cell.addEventListener('dragover',e=>{e.preventDefault();cell.classList.add('meal-drop');});
