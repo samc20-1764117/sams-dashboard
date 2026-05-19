@@ -2350,14 +2350,18 @@ function showWrXPicker(e,rid,wkKey){
 }
 
 function wrCtxSkipThisWeek(){
-  hideWrRuleCtx();if(!_wrCtxWkKey)return;
+  console.log('[SKIP] enter',{ruleId:_wrCtxRuleId,recId:_wrCtxRecId,wkKey:_wrCtxWkKey});
+  hideWrRuleCtx();if(!_wrCtxWkKey){console.log('[SKIP] bail: no wkKey');return;}
   if(_wrCtxRecId){
-    const r=st.recurring.find(x=>String(x.id)===_wrCtxRecId);if(!r)return;
+    const r=st.recurring.find(x=>String(x.id)===_wrCtxRecId);
+    console.log('[SKIP] recId path, found=',!!r,r?.is_weekly_reset);
+    if(!r)return;
     if(r.is_weekly_reset===true||r.is_weekly_reset==='true')skipWRec(_wrCtxRecId,_wrCtxWkKey);
     else skipRecVirtThisWk(_wrCtxRecId,_wrCtxWkKey);
     return;
   }
-  if(!_wrCtxRuleId)return;
+  if(!_wrCtxRuleId){console.log('[SKIP] bail: no ruleId');return;}
+  console.log('[SKIP] writeWrOverride path');
   writeWrOverride(_wrCtxRuleId,_wrCtxWkKey,{override_type:'skip'},{undoLabel:'Skipped WR task this week'});
 }
 function _wrShiftAnchor(delta){
