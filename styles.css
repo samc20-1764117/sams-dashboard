@@ -238,7 +238,7 @@ body.dark .pup-dog-btn.active{background:rgba(194,107,79,.5);color:#fff}
 #todList .ti{margin:1px 4px;padding-left:7px;padding-right:7px}
 #todList .ti-birthday{justify-content:center;align-items:center}
 #todList .ti-birthday .tn{flex:none;display:flex;align-items:center;line-height:1}
-#todList .bday-emoji{font-size:8px;vertical-align:middle;line-height:1}
+#todList .bday-emoji{font-size:8px;vertical-align:middle;line-height:1;margin-left:3px}
 #shopOv .ti,#recList .ti{margin:0 6px;padding:3px 22px 3px 10px}
 #shopOv .cpill{position:absolute;right:3px;top:50%;transform:translateY(-50%);padding:1px 4px;line-height:1;margin:0;transition:opacity .1s;pointer-events:none}
 #shopOv .ti:hover .cpill,#shopOv .ti.sel-row .cpill{opacity:0}
