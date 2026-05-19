@@ -3083,13 +3083,11 @@ function _attachTBEdgeRubberBand(){
         const br=be.getBoundingClientRect();
         if(br.bottom>y1&&br.top<y2&&br.right>x1&&br.left<x2){const sid=_getTBBlockSelId(bl);if(sid){selectedTasks.add(sid);lastSelectedId=sid;}}
       });
-      // Auto-select auto-blocks in range when no regular blocks were selected
-      if(![...selectedTasks].some(id=>!id.startsWith('atb::'))){
-        tbCol.querySelectorAll('.atb-block[data-atb-id]').forEach(ae=>{
-          const ar=ae.getBoundingClientRect();
-          if(ar.bottom>y1&&ar.top<y2&&ar.right>x1&&ar.left<x2)selectedTasks.add('atb::'+ae.dataset.atbId);
-        });
-      }
+      // Also select auto-blocks in range
+      tbCol.querySelectorAll('.atb-block[data-atb-id]').forEach(ae=>{
+        const ar=ae.getBoundingClientRect();
+        if(ar.bottom>y1&&ar.top<y2&&ar.right>x1&&ar.left<x2)selectedTasks.add('atb::'+ae.dataset.atbId);
+      });
       applySelHighlight();
     };
     document.addEventListener('mousemove',onMove);
@@ -3217,7 +3215,7 @@ function drawRecAutoTBBlock(col,ratb,ds){
   el.innerHTML=`<div class="tb-row"><input type="checkbox" class="tb-chk" ${_isDone?'checked':''}><span class="tb-bt${ratb.dur>=30?' wrap':''}">${ratb.label}</span><div class="tb-right">${_showTime?`<span class="tb-btime">${tStr(ratb.sm)}-${tStr(ratb.sm+ratb.dur)}</span>`:''}<button class="tb-bdel atb-del" onclick="event.stopPropagation();delRecAutoTBForDay('${ratb._recAutoId}','${ds}')">✕</button></div></div><div class="tb-resize atb-resize"></div>`;
   const _ratbChk=el.querySelector('.tb-chk');
   if(_ratbChk)_ratbChk.addEventListener('change',function(e2){
-    e2.stopPropagation();
+    e2.stopPropagation();this.blur();
     togRecVirt(String(ratb._recId),this.checked,_wkKey);
   });
   // Resize
@@ -3229,14 +3227,26 @@ function drawRecAutoTBBlock(col,ratb,ds){
     const onResUp=()=>{document.removeEventListener('mousemove',onResMove);document.removeEventListener('mouseup',onResUp);if(ratb.dur===startDur)return;_saveRecAutoTBOv(ratb,ds,startDur,ratb.sm);};
     document.addEventListener('mousemove',onResMove);document.addEventListener('mouseup',onResUp);
   });
+  // Click for selection (shift/cmd)
+  let _ratbDragged=false;
+  el.addEventListener('click',e=>{
+    if(e.target.classList.contains('atb-del')||e.target.classList.contains('atb-resize')||e.target.classList.contains('tb-chk'))return;
+    if(_ratbDragged)return;
+    e.stopPropagation();
+    const ratbSid='rec-virt-'+ratb._recId;
+    if(e.metaKey||e.ctrlKey){if(selectedTasks.has(ratbSid))selectedTasks.delete(ratbSid);else selectedTasks.add(ratbSid);lastSelectedId=ratbSid;}
+    else if(e.shiftKey&&lastSelectedId){const col2=el.closest('.tb-col');if(col2){const ids=[];col2.querySelectorAll('.tb-block[data-bid]').forEach(be=>{const bl=st.blocks.find(x=>String(x.id)===String(be.dataset.bid));if(bl){const sid=_getTBBlockSelId(bl);if(sid)ids.push(sid);}});col2.querySelectorAll('.atb-block[data-atb-id]').forEach(ae=>ids.push('atb::'+ae.dataset.atbId));col2.querySelectorAll('.ratb-block[data-rec-id]').forEach(re=>ids.push('rec-virt-'+re.dataset.recId));const ai=ids.indexOf(lastSelectedId),bi2=ids.indexOf(ratbSid);if(ai>-1&&bi2>-1){const lo=Math.min(ai,bi2),hi=Math.max(ai,bi2);ids.slice(lo,hi+1).forEach(x=>selectedTasks.add(x));}else selectedTasks.add(ratbSid);}lastSelectedId=ratbSid;}
+    else{selectedTasks.clear();selectedTasks.add(ratbSid);lastSelectedId=ratbSid;}
+    applySelHighlight();
+  });
   // Drag to move
   el.addEventListener('mousedown',e=>{
     if(e.target.classList.contains('atb-del')||e.target.classList.contains('atb-resize')||e.target.classList.contains('tb-chk'))return;
     if(e.detail>=2){e.stopPropagation();openRecEditModal(ratb._recId);return;}
     e.preventDefault();e.stopPropagation();
     const startY=e.clientY,startSm=ratb.sm;
-    let dragging=false;
-    const onMove=ev=>{const dy=ev.clientY-startY;if(!dragging&&Math.abs(dy)<5)return;dragging=true;ratb.sm=Math.max(HOURS[0]*60,Math.round((startSm+dy/PX)/15)*15);el.style.top=(ratb.sm-HOURS[0]*60)*PX+'px';const bt=el.querySelector('.tb-btime');if(bt)bt.textContent=tStr(ratb.sm)+'-'+tStr(ratb.sm+ratb.dur);const _c=el.closest('.tb-col');if(_c)_relayoutTBCol(_c,ds);};
+    _ratbDragged=false;let dragging=false;
+    const onMove=ev=>{const dy=ev.clientY-startY;if(!dragging&&Math.abs(dy)<5)return;dragging=true;_ratbDragged=true;ratb.sm=Math.max(HOURS[0]*60,Math.round((startSm+dy/PX)/15)*15);el.style.top=(ratb.sm-HOURS[0]*60)*PX+'px';const bt=el.querySelector('.tb-btime');if(bt)bt.textContent=tStr(ratb.sm)+'-'+tStr(ratb.sm+ratb.dur);const _c=el.closest('.tb-col');if(_c)_relayoutTBCol(_c,ds);};
     const onUp=()=>{document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);if(!dragging||ratb.sm===startSm)return;_saveRecAutoTBOv(ratb,ds,ratb.dur,startSm);};
     document.addEventListener('mousemove',onMove);document.addEventListener('mouseup',onUp);
   });
@@ -3517,6 +3527,7 @@ function drawTBBlock(col,b){
   const tbChk=el.querySelector('.tb-chk');
   if(tbChk)tbChk.addEventListener('change',function(e){
     e.stopPropagation();
+    this.blur();
     const checked=this.checked;
     b._done=checked;
     el.classList.toggle('done-block',b._done);
@@ -3562,7 +3573,7 @@ function drawTBBlock(col,b){
     e.stopPropagation();
     const tbSelId=_tbSelId();if(!tbSelId)return;
     if(e.metaKey||e.ctrlKey){if(selectedTasks.has(tbSelId))selectedTasks.delete(tbSelId);else selectedTasks.add(tbSelId);lastSelectedId=tbSelId;}
-    else if(e.shiftKey&&lastSelectedId){const col2=el.closest('.tb-col')||document.getElementById('tbScroll');const ids=col2?[...col2.querySelectorAll('.tb-block[data-bid]')].map(be=>{const bl=st.blocks.find(x=>String(x.id)===String(be.dataset.bid));return bl?_tbBlockSelId(bl):null;}).filter(Boolean):[];const ai=ids.indexOf(lastSelectedId),bi2=ids.indexOf(tbSelId);if(ai>-1&&bi2>-1){const lo=Math.min(ai,bi2),hi=Math.max(ai,bi2);ids.slice(lo,hi+1).forEach(x=>selectedTasks.add(x));}else selectedTasks.add(tbSelId);lastSelectedId=tbSelId;}
+    else if(e.shiftKey&&lastSelectedId){const col2=el.closest('.tb-col')||document.getElementById('tbScroll');const ids=[];if(col2){col2.querySelectorAll('.tb-block[data-bid],.atb-block[data-atb-id]').forEach(be=>{if(be.dataset.bid){const bl=st.blocks.find(x=>String(x.id)===String(be.dataset.bid));if(bl){const sid=_tbBlockSelId(bl);if(sid)ids.push(sid);}}else if(be.dataset.atbId){ids.push('atb::'+be.dataset.atbId);}});}const ai=ids.indexOf(lastSelectedId),bi2=ids.indexOf(tbSelId);if(ai>-1&&bi2>-1){const lo=Math.min(ai,bi2),hi=Math.max(ai,bi2);ids.slice(lo,hi+1).forEach(x=>selectedTasks.add(x));}else selectedTasks.add(tbSelId);lastSelectedId=tbSelId;}
     else{selectedTasks.clear();selectedTasks.add(tbSelId);lastSelectedId=tbSelId;}
     applySelHighlight();
   });
@@ -3750,6 +3761,16 @@ function drawAutoTBBlock(col,atb,ds){
       save();if(document.getElementById('tbGrid'))renderDayTB();
     };
     document.addEventListener('mousemove',onResMove);document.addEventListener('mouseup',onResUp);
+  });
+  el.addEventListener('click',e=>{
+    if(e.target.classList.contains('atb-del')||e.target.classList.contains('atb-resize'))return;
+    if(atbDragging)return;
+    e.stopPropagation();
+    const atbSid='atb::'+atb._atbId;
+    if(e.metaKey||e.ctrlKey){if(selectedTasks.has(atbSid))selectedTasks.delete(atbSid);else selectedTasks.add(atbSid);lastSelectedId=atbSid;}
+    else if(e.shiftKey&&lastSelectedId){const col2=el.closest('.tb-col');if(col2){const ids=[];col2.querySelectorAll('.tb-block[data-bid]').forEach(be=>{const bl=st.blocks.find(x=>String(x.id)===String(be.dataset.bid));if(bl){const sid=_getTBBlockSelId(bl);if(sid)ids.push(sid);}});col2.querySelectorAll('.atb-block[data-atb-id]').forEach(ae=>ids.push('atb::'+ae.dataset.atbId));const ai=ids.indexOf(lastSelectedId),bi2=ids.indexOf(atbSid);if(ai>-1&&bi2>-1){const lo=Math.min(ai,bi2),hi=Math.max(ai,bi2);ids.slice(lo,hi+1).forEach(x=>selectedTasks.add(x));}else selectedTasks.add(atbSid);}lastSelectedId=atbSid;}
+    else{selectedTasks.clear();selectedTasks.add(atbSid);lastSelectedId=atbSid;}
+    applySelHighlight();
   });
   let atbDragging=false,atbOnMove=null,atbOnUp=null;
   el.addEventListener('mousedown',e=>{
