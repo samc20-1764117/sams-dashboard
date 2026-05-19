@@ -2952,7 +2952,8 @@ function _mealsForWeek(){
 
 function _getRemovedMeals(){
   const dates=_mealWeekDates();
-  const displayedMon=dates[0];
+  // Use _grocWeekMonday for consistent format with grocery_list.week_of
+  const displayedMon=_grocWeekMonday(wkOff||0);
   const onCal=(st.mealPlan||[]).filter(m=>dates.includes(m.meal_date));
   const grocRecipeIds=[...new Set((st.groceryList||[]).filter(g=>g.week_of===displayedMon&&g.source==='recipe'&&g.source_id).map(g=>String(g.source_id)))];
   const result=[];
