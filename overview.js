@@ -765,7 +765,8 @@ function renderWkCal(){
     });
     bdayThisWk.forEach(b=>{
       const s=gc('birthday');
-      addBanner(b.name,b.due_date,b.due_date,s,null,b.due_date<today2);
+      const bdDone=st.blocks.some(bl=>bl.cat==='Birthday'&&bl.title===b.name&&bl._done);
+      addBanner(b.name,b.due_date,b.due_date,s,null,bdDone);
     });
 
     // Set banner container height based on lanes used (paddingTop already set synchronously)
