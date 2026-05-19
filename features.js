@@ -2940,9 +2940,7 @@ async function delGroceryStaple(id){
 }
 // ── MEAL PLANNING ─────────────────────────────────────────────────────────────
 function _mealWeekDates(off){
-  if(typeof getWkDates==='function')return getWkDates(off||wkOff||0).map(d=>d2s(d));
-  const d=new Date();const dow=(d.getDay()+6)%7;d.setDate(d.getDate()-dow);
-  return Array.from({length:7},(_,i)=>{const x=new Date(d);x.setDate(d.getDate()+i);return x.toISOString().split('T')[0];});
+  return _grocWeekDatesFor(_grocWeekMonday(off||wkOff||0));
 }
 
 function _mealsForWeek(){
