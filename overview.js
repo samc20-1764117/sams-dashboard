@@ -672,7 +672,7 @@ function renderWkCal(){
     if(!s)return false;
     return s<=wkDss[6]&&(e||s)>=wkDss[0];
   });
-  const bdayThisWk=getBirthdayTasks(null).filter(b=>wkDss.includes(b.due_date));
+  const bdayThisWk=getBirthdaysInRange(wkDss[0],wkDss[6]);
   // Pre-compute banner lane counts (no DOM needed) so paddingTop is set before chips render
   const _preLanes=Array.from({length:7},()=>new Set());
   function _prePickLane(si,ei){for(let lane=0;;lane++){let ok=true;for(let i=si;i<=ei;i++){if(_preLanes[i].has(lane)){ok=false;break;}}if(ok)return lane;}}
