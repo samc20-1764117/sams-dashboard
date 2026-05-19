@@ -2058,6 +2058,10 @@ function renderRecOv(){
   const sorted=[...items].sort((a,b)=>{
     const aDone=isDoneWR(a.id),bDone=isDoneWR(b.id);
     if(aDone&&!bDone)return 1;if(!aDone&&bDone)return -1;
+    // Unassigned (no day pinned) items first
+    const aAsgn=!aDone&&a._dateOverrides&&a._dateOverrides[wkKey]&&a._dateOverrides[wkKey]!=='__skip__';
+    const bAsgn=!bDone&&b._dateOverrides&&b._dateOverrides[wkKey]&&b._dateOverrides[wkKey]!=='__skip__';
+    if(!aAsgn&&bAsgn)return -1;if(aAsgn&&!bAsgn)return 1;
     return recOvOrder(a)-recOvOrder(b);
   });
   function makePawEl(ruleId,isDone){
