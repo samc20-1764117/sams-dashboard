@@ -2637,6 +2637,7 @@ function renderGroceryModal(){
     const expected=Math.ceil((r.servings||2)/_getGrocPeople(menuMon));
     const actual=menuMeals.filter(m=>String(m.recipe_id)===rid).length;
     const missing=expected-actual;
+    if(actual===0)return;
     for(let i=0;i<missing;i++) unplacedMenu.push({recipe_id:rid,recipe_name:r.name});
   });
   html+=`<div class="groc-menu-strip">`;
@@ -2960,6 +2961,7 @@ function _getRemovedMeals(){
     const expected=Math.ceil((r.servings||2)/_getGrocPeople(displayedMon));
     const actual=onCal.filter(m=>String(m.recipe_id)===rid).length;
     const missing=expected-actual;
+    if(actual===0)return; // not on calendar at all — don't show as unassigned
     for(let i=0;i<missing;i++) result.push({recipe_id:rid,recipe_name:r.name,meal_type:r.meal_type,servings:r.servings||1});
   });
   return result;
