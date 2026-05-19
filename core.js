@@ -517,8 +517,8 @@ function getBirthdayTasks(filterDate){
     if(!b.birthday)return;
     const parts=b.birthday.split('-');
     // Support MM-DD (2 parts) and YYYY-MM-DD (3 parts)
-    const mo=parts.length===2?parts[0]:parts[1];
-    const day=parts.length===2?parts[1]:parts[2];
+    const mo=String(parts.length===2?parts[0]:parts[1]).padStart(2,'0');
+    const day=String(parts.length===2?parts[1]:parts[2]).padStart(2,'0');
     [curYear,curYear+1].forEach(yr=>{
       const ds=`${yr}-${mo}-${day}`;
       // If filtering for a specific date, only return exact match
