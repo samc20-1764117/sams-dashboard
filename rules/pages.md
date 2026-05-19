@@ -25,6 +25,12 @@
 - **Weekly cal Goals column**: 8th col (`.wkc-goals-col`). Click header → `openWOModal()`.
 - Cross-column/cross-week drops call `renderWOModal()` immediately so important items snap to top.
 - **`openQA` default**: `ctx==='wkc'` + `kcat` provided → uses `kcat`, not 'Home'.
+- **Meal row** (`#mealRow`, `features.js`): grid row below weekly cal inside `#wkcWrap`. 8 columns: 7 days + unassigned (far right). Dynamic height based on meal count. White/glass chips matching weekly objectives style. Moves with `shiftWk`/`goThisWk` (tied to `wkOff`). No rubber-band selection on meal area.
+  - **Date alignment**: `_mealWeekDates()` delegates to `_grocWeekDatesFor(_grocWeekMonday(wkOff))` — same functions as grocery system. Prevents local-vs-UTC mismatch.
+  - **Week alignment**: HEB top strip = `menuMon = _grocWeekMonday(_grocWkOff)` = this week's meals. `grocery_list.week_of` is stored as `planMon` (week meals are FOR). Weekly cal meal row matches same week.
+  - **Unassigned column**: shows recipes partially removed from calendar. Uses `expected = ceil(servings/people)` vs `actual` on cal. Only shows if `actual > 0` (recipe has at least 1 entry on cal). Dashed chips, draggable back onto days.
+  - **Interactions**: click to select (`meal-{id}` prefix in `selectedTasks`), shift/cmd multi-select, Delete key removes. Dblclick empty cell opens HEB modal. Drag between days, drag to reorder vertically within day (sort_order). `removeMeal` only deletes from `meal_plan` (doesn't touch grocery items).
+  - **Inline add**: dblclick empty cell opens HEB modal (`openGroceryModal()`).
 
 ### Weekly Objectives Modal (`#woModal`, `overview.js`)
 - 5 columns side by side (`.wo-col`), each one week. Current week: `.wo-col-current`. Past: `.wo-col-past`. `z-index:490` (task edit modal at 500 renders on top).
@@ -88,6 +94,7 @@ Table: `recipes` (columns include `sort_order int4`). Do NOT reference: protein,
 
 ### HEB (`features.js` — grocery modal)
 "HEB" = the meal planning + grocery modal opened via cart SVG icon on HEB tasks. Layout: header (nav arrows, date, This Week btn, people toggle, close ✕), horizontal weekly menu strip (top), 3-column bottom (Recipes | Planned Meals | Shopping List). Grid: `.8fr .7fr 1.5fr` (shopping list widest). Staples drawer slides from right inside modal. `_grocWkOff` shifts all panels. Opens to current week always. Enter/Escape/backdrop closes. Tables: `meal_plan`, `grocery_list`, `grocery_staples`.
+- **Week alignment**: TOP strip = "This Week's Meals" = `menuMon = _grocWeekMonday(_grocWkOff)` — meals you're eating this week, driven by recipes picked LAST week. BOTTOM = recipe picker + shopping list for NEXT week = `planMon = _grocWeekMonday(_grocWkOff+1)`. `grocery_list.week_of` stored as `planMon` (the week meals are FOR, not the shopping week). Top strip unplaced column uses same `actual > 0` check as weekly cal meal row.
 - **Cart icon**: SVG (not emoji). No hover color change, no focus outline. Delete button hidden on HEB task rows (`.ti:has(.heb-cnt) .delbtn{display:none}`).
 - **People toggle**: per-week, stored in `localStorage` as `_grocPeople_<weekMon>`, default 2. Controls meal slot calculation: `Math.ceil(servings / people)`.
 - **Keyboard**: `s` closes, `t` jumps to current week, left/right arrows navigate weeks. All refocus modal after nav.
