@@ -1054,7 +1054,7 @@ body.dark .groc-staples-drawer{background:rgba(28,16,10,.98);box-shadow:-4px 0 1
 .meal-add-inline{background:none;border:1px dashed var(--border);border-radius:var(--rs);padding:5px 10px;font-size:11px;color:var(--muted);cursor:pointer;width:100%;margin-top:4px}
 .meal-add-inline:hover{border-color:var(--accent);color:var(--accent)}
 /* ── Meal Row (below weekly cal) ─────────────────────────────────────────── */
-.meal-row{display:grid;grid-template-columns:repeat(8,1fr);gap:0}
+.meal-row{display:grid;grid-template-columns:repeat(8,1fr);gap:0;border-top:1px solid var(--border)}
 .meal-cell{padding:3px 2px;display:flex;flex-direction:column;gap:1px;position:relative}
 .meal-cell.meal-drop{background:rgba(124,106,247,.06)}
 .meal-cell-unassigned{overflow-y:auto;scrollbar-width:none}
