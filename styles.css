@@ -235,7 +235,7 @@ body.dark .pup-dog-btn.active{background:rgba(194,107,79,.5);color:#fff}
 .ql-icon:has(img){opacity:1}
 /* Task items — tighter */
 .tlist{overflow-y:auto;padding:2px 0;position:relative}
-#todList .ti{margin:1px 0;padding-left:7px;padding-right:7px}
+#todList .ti{margin:1px 4px;padding-left:7px;padding-right:7px}
 #todList .ti-birthday{justify-content:center}
 #todList .ti-birthday .tn{flex:none;display:flex;align-items:center}
 #shopOv .ti,#recList .ti{margin:0 6px;padding:3px 22px 3px 10px}
