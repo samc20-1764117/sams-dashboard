@@ -662,7 +662,7 @@ function renderWkCal(){
   head.appendChild(goalsH);
 
   // ── Render travel banners ────────────────────────────────────────────────────
-  const bannerEl=document.getElementById('wkcBanners');bannerEl.innerHTML='';
+  const bannerEl=document.getElementById('wkcBanners');
   // Wait for cols to lay out, then position
   const wkDss=dates.map(d=>d2s(d));
   // Get travel trips that overlap this week
@@ -692,6 +692,7 @@ function renderWkCal(){
   bdayThisWk.forEach(b=>_preAddBanner(b.due_date,b.due_date));
   const _colPaddingPre=_preLanes.map(lanes=>lanes.size?`${(Math.max(...lanes)+1)*20}px`:'0');
   setTimeout(()=>{
+    bannerEl.innerHTML='';
     const wrap=document.getElementById('wkcWrap');
     if(!wrap)return;
     const colEls=[...document.querySelectorAll('#wkcCols .wkc-col')];
