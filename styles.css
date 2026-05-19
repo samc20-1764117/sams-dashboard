@@ -1012,6 +1012,8 @@ body.dark .groc-add input{background:rgba(255,255,255,.06);border-color:rgba(255
 .groc-meal-tag button{background:none;border:none;cursor:pointer;color:rgba(194,107,79,.5);font-size:9px;padding:0 2px}
 .groc-meal-tag button:hover{color:#ef4444}
 body.dark .groc-meal-tag{background:rgba(249,115,22,.15);color:#fb923c;border-color:rgba(249,115,22,.3)}
+.groc-meal-unassigned{opacity:.5;border-style:dashed}.groc-meal-unassigned:hover{opacity:.8}
+.groc-col-unassigned{border-left:1px dashed rgba(210,205,228,.3);min-width:70px}
 .groc-recipe-list{flex:1;overflow-y:auto;border:1px solid rgba(210,205,228,.15);border-radius:8px;padding:4px;min-height:0}
 .groc-recipe-check{display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:6px;font-size:12px;color:var(--text);cursor:pointer;transition:background .1s}
 .groc-recipe-check:hover{background:rgba(124,106,247,.06)}

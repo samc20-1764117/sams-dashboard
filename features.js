@@ -2626,21 +2626,33 @@ function renderGroceryModal(){
     <button class="groc-close" onclick="document.getElementById('groceryModal').close()">✕</button>
   </div>`;
 
-  // ── TOP: Horizontal weekly menu ──
+  // ── TOP: Weekly meal calendar (synced with overview weekly cal) ──
+  const mealDates=_mealWeekDates();
   html+=`<div class="groc-menu-strip">`;
-  html+=`<div class="groc-menu-label">This Week</div>`;
+  html+=`<div class="groc-menu-label">Meals</div>`;
   html+=`<div class="groc-menu-cols">`;
-  menuDates.forEach((ds,i)=>{
+  mealDates.forEach((ds,i)=>{
     const meals=(st.mealPlan||[]).filter(m=>m.meal_date===ds);
+    meals.sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
     const isPast=ds<today;
     const isToday=ds===today;
-    html+=`<div class="groc-menu-col${isToday?' groc-col-today':''}${isPast?' groc-col-past':''}" data-ds="${ds}" ondragover="event.preventDefault();this.classList.add('groc-day-drop')" ondragleave="this.classList.remove('groc-day-drop')" ondrop="dropMeal(event,'${ds}');this.classList.remove('groc-day-drop');renderGroceryModal();">`;
+    html+=`<div class="groc-menu-col${isToday?' groc-col-today':''}${isPast?' groc-col-past':''}" data-ds="${ds}">`;
     html+=`<div class="groc-col-hdr">${dayNames[i]}</div>`;
     meals.forEach(m=>{
-      html+=`<span class="groc-meal-tag" draggable="true" ondragstart="event.dataTransfer.setData('text/plain','meal::${m.id}')">${escHtml(m.recipe_name)}<button onclick="event.stopPropagation();removeMealFromWeek('${m.id}','${menuMon}')">✕</button></span>`;
+      html+=`<span class="groc-meal-tag" draggable="true" data-mealid="${m.id}">${escHtml(m.recipe_name)}<button onclick="event.stopPropagation();removeMeal('${m.id}')">✕</button></span>`;
     });
     html+=`</div>`;
   });
+  // Unassigned column
+  const unassigned=_getRemovedMeals();
+  if(unassigned.length){
+    html+=`<div class="groc-menu-col groc-col-unassigned">`;
+    html+=`<div class="groc-col-hdr" style="font-size:8px">Unplaced</div>`;
+    unassigned.forEach(m=>{
+      html+=`<span class="groc-meal-tag groc-meal-unassigned" draggable="true" data-recipeid="${m.recipe_id}">${escHtml(m.recipe_name)}</span>`;
+    });
+    html+=`</div>`;
+  }
   html+=`</div></div>`;
 
   // ��─ BOTTOM: Three columns ──
@@ -2695,6 +2707,45 @@ function renderGroceryModal(){
   if(inp)inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();addGroceryManualForWeek(planMon);}});
   const sInp=document.getElementById('grocRecipeSearch');
   if(sInp&&_grocRecSearch)setTimeout(()=>{sInp.focus();sInp.setSelectionRange(sInp.value.length,sInp.value.length);},10);
+  // Bind drag/drop on meal columns in the top strip
+  modal.querySelectorAll('.groc-menu-col[data-ds]').forEach(col=>{
+    col.addEventListener('dragover',e=>{e.preventDefault();col.classList.add('groc-day-drop');});
+    col.addEventListener('dragleave',()=>col.classList.remove('groc-day-drop'));
+    col.addEventListener('drop',e=>{
+      e.preventDefault();col.classList.remove('groc-day-drop');
+      const data=e.dataTransfer.getData('text/plain');
+      const ds=col.dataset.ds;
+      if(data.startsWith('meal-new::')){
+        const recipeId=data.replace('meal-new::','');
+        const r=(st.recipes||[]).find(x=>String(x.id)===String(recipeId));if(!r)return;
+        const item={recipe_id:r.id,recipe_name:r.name,meal_date:ds,servings:r.servings||1,meal_type:r.meal_type||null,sort_order:(st.mealPlan||[]).filter(m=>m.meal_date===ds).length};
+        sbReqSilent('POST','meal_plan',item).then(sv=>{
+          if(sv&&sv[0])st.mealPlan.push(sv[0]);
+          else{item.id='l-'+Date.now();st.mealPlan.push(item);}
+          save();renderGroceryModal();renderMealRow();
+        });
+      } else if(data.startsWith('meal::')){
+        const id=data.replace('meal::','');
+        const meal=(st.mealPlan||[]).find(m=>String(m.id)===String(id));if(!meal)return;
+        meal.meal_date=ds;save();renderGroceryModal();renderMealRow();
+        sbReqSilent('PATCH','meal_plan',{meal_date:ds},`?id=eq.${id}`);
+      }
+    });
+  });
+  // Bind drag on meal tags
+  modal.querySelectorAll('.groc-meal-tag[data-mealid]').forEach(tag=>{
+    tag.addEventListener('dragstart',e=>{
+      e.dataTransfer.setData('text/plain','meal::'+tag.dataset.mealid);
+      e.dataTransfer.effectAllowed='move';
+    });
+  });
+  // Bind drag on unassigned tags
+  modal.querySelectorAll('.groc-meal-unassigned[data-recipeid]').forEach(tag=>{
+    tag.addEventListener('dragstart',e=>{
+      e.dataTransfer.setData('text/plain','meal-new::'+tag.dataset.recipeid);
+      e.dataTransfer.effectAllowed='move';
+    });
+  });
 }
 
 // Toggle a recipe on/off for a week
@@ -3155,6 +3206,7 @@ async function removeMeal(id){
   const meal=(st.mealPlan||[]).find(m=>String(m.id)===String(id));
   st.mealPlan=(st.mealPlan||[]).filter(m=>String(m.id)!==String(id));
   save();renderMealRow();
+  if(document.getElementById('groceryModal')?.open)renderGroceryModal();
   sbReqSilent('DELETE','meal_plan',null,`?id=eq.${id}`);
   if(meal&&meal.recipe_id){
     const wk=_groceryWeekOf();
@@ -3181,6 +3233,7 @@ function dropMeal(event,ds){
       if(sv&&sv[0])st.mealPlan.push(sv[0]);
       else{item.id='l-'+Date.now();st.mealPlan.push(item);}
       save();renderMealRow();
+      if(document.getElementById('groceryModal')?.open)renderGroceryModal();
     });
     return;
   }
@@ -3188,6 +3241,7 @@ function dropMeal(event,ds){
   const id=data.replace('meal::','');
   const meal=(st.mealPlan||[]).find(m=>String(m.id)===String(id));if(!meal)return;
   meal.meal_date=ds;save();renderMealRow();
+  if(document.getElementById('groceryModal')?.open)renderGroceryModal();
   sbReqSilent('PATCH','meal_plan',{meal_date:ds},`?id=eq.${id}`);
 }
 
