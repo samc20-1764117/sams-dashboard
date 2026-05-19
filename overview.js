@@ -2027,12 +2027,12 @@ function renderRecOv(){
   const movedAwayIds=new Set(ovThisWk.filter(o=>o.override_type==='move').map(o=>String(o.rule_id)));
   // 3. Remove skipped + moved-away items
   const filtered=baseItems.filter(r=>!skipIds.has(String(r.id))&&!movedAwayIds.has(String(r.id)));
-  // 4. Add rules moved INTO this week from another week
+  // 4. Add rules moved INTO this week from another week (but not if skipped)
   const movedIn=st.wrOverrides
     .filter(o=>o.override_type==='move'&&o.moved_to_wk_key===wkKey)
     .map(o=>{const rule=st.wrRules.find(r=>String(r.id)===String(o.rule_id));return rule?{...rule,_movedIn:true}:null;})
     .filter(Boolean)
-    .filter(r=>!filtered.some(x=>String(x.id)===String(r.id)));
+    .filter(r=>!filtered.some(x=>String(x.id)===String(r.id))&&!skipIds.has(String(r.id)));
   // 5. Apply edit overrides (custom name for this week only)
   const items=[...filtered,...movedIn].map(r=>{
     const editOv=ovThisWk.find(o=>o.override_type==='edit'&&String(o.rule_id)===String(r.id));
@@ -2180,9 +2180,8 @@ function writeWrOverride(ruleId,wkKey,payload,{onDone,undoLabel='Changed WR task
   const linkedBlocks=isSkip&&st.blocks?st.blocks.filter(b=>dsToWkKey(b.ds)===wkKey&&(String(b.ruleId)===String(ruleId)||String(b.recId)===String(ruleId)||(!b.ruleId&&!b.recId&&_pinnedDs&&b.ds===_pinnedDs&&!b.taskId&&!b.shopId))):[];
   if(isSkip&&linkedBlocks.length){st.blocks=st.blocks.filter(b=>!linkedBlocks.some(lb=>lb.id===b.id));linkedBlocks.forEach(b=>sbDeleteBlock(b.id));}
   const _syncBlockDone=(isDone)=>{if(st.blocks)st.blocks.filter(b=>dsToWkKey(b.ds)===wkKey&&(String(b.ruleId)===String(ruleId)||String(b.recId)===String(ruleId))).forEach(b=>{b._done=isDone;});};
-  const _rerender=()=>{console.log('[WR-OV] rerender, overrides=',st.wrOverrides.filter(o=>o.wk_key===wkKey).map(o=>({rid:o.rule_id,type:o.override_type})));renderRecOv();renderWkCal();renderWeeklyPage();renderToday();if(document.getElementById('tbGrid'))renderDayTB();};
+  const _rerender=()=>{renderRecOv();renderWkCal();renderWeeklyPage();renderToday();if(document.getElementById('tbGrid'))renderDayTB();};
   const existing=st.wrOverrides.find(o=>String(o.rule_id)===String(ruleId)&&o.wk_key===wkKey);
-  console.log('[WR-OV] writeWrOverride',{ruleId,wkKey,type:payload.override_type,existing:existing?{id:existing.id,type:existing.override_type}:null});
   if(existing){
     const prev={...existing};
     Object.assign(existing,full);
@@ -2351,18 +2350,14 @@ function showWrXPicker(e,rid,wkKey){
 }
 
 function wrCtxSkipThisWeek(){
-  console.log('[SKIP] enter',{ruleId:_wrCtxRuleId,recId:_wrCtxRecId,wkKey:_wrCtxWkKey});
-  hideWrRuleCtx();if(!_wrCtxWkKey){console.log('[SKIP] bail: no wkKey');return;}
+  hideWrRuleCtx();if(!_wrCtxWkKey)return;
   if(_wrCtxRecId){
-    const r=st.recurring.find(x=>String(x.id)===_wrCtxRecId);
-    console.log('[SKIP] recId path, found=',!!r,r?.is_weekly_reset);
-    if(!r)return;
+    const r=st.recurring.find(x=>String(x.id)===_wrCtxRecId);if(!r)return;
     if(r.is_weekly_reset===true||r.is_weekly_reset==='true')skipWRec(_wrCtxRecId,_wrCtxWkKey);
     else skipRecVirtThisWk(_wrCtxRecId,_wrCtxWkKey);
     return;
   }
-  if(!_wrCtxRuleId){console.log('[SKIP] bail: no ruleId');return;}
-  console.log('[SKIP] writeWrOverride path');
+  if(!_wrCtxRuleId)return;
   writeWrOverride(_wrCtxRuleId,_wrCtxWkKey,{override_type:'skip'},{undoLabel:'Skipped WR task this week'});
 }
 function _wrShiftAnchor(delta){

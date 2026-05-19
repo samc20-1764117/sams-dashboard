@@ -260,7 +260,7 @@ body.dark .pup-dog-btn.active{background:rgba(194,107,79,.5);color:#fff}
 .tn:hover{color:var(--accent)}
 .cpill{font-size:9px;font-weight:600;padding:2px 7px;border-radius:5px;flex-shrink:0;border:1px solid rgba(255,255,255,0.6);white-space:nowrap;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:inset 0 1px 0 rgba(255,255,255,0.7)}
 .cat-dot{position:absolute;right:11px;top:50%;transform:translateY(-50%);display:block;overflow:visible;transition:opacity .1s}
-#todList .cat-dot{right:4px}
+#todList .cat-dot{right:7px}
 .ti:hover .cat-dot,.ti.sel-row .cat-dot{opacity:0}
 .dlbl{font-family:'DM Sans',sans-serif;font-size:10px;color:var(--subtle);flex-shrink:0;min-width:44px;text-align:right;white-space:nowrap;margin-left:auto}
 .date-clr{opacity:0;font-size:9px;color:var(--muted);transition:opacity .12s;margin-left:1px}
@@ -281,7 +281,7 @@ body.dark .inline-date-picker input[type="date"]{background:rgba(255,255,255,.08
 .flag-u{font-size:8px;font-weight:600;padding:0px 4px;border-radius:4px;background:rgba(148,163,184,.12);color:var(--muted);border:1px solid rgba(148,163,184,.2);flex-shrink:0}
 .imp-star{font-size:11px;flex-shrink:0;line-height:1}
 .delbtn{opacity:0;background:none;border:none;cursor:pointer;color:var(--subtle);font-size:10px;padding:1px 2px;border-radius:3px;flex-shrink:0;transition:opacity .1s;position:absolute;right:3px;top:50%;transform:translateY(-50%)}
-#todList .delbtn{right:0px;width:17px;height:17px;display:flex;align-items:center;justify-content:center;padding:0}
+#todList .delbtn{right:3px;width:17px;height:17px;display:flex;align-items:center;justify-content:center;padding:0}
 .ti:hover .delbtn,.ti.sel-row .delbtn{opacity:1;color:var(--subtle)}.delbtn:hover{color:#ef4444!important}
 .wr-has-cad{font-size:10.5px}
 .wr-cad-badge{position:absolute;right:3px;top:50%;transform:translateY(-50%);font-size:9px;font-weight:700;letter-spacing:.3px;padding:1px 3px;border-radius:3px;background:rgba(180,160,140,.1);color:var(--subtle);pointer-events:none}
@@ -463,7 +463,7 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 .chip .wchk:checked{background:rgba(200,195,210,.35);border-color:rgba(200,195,210,.35);background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M3.5 8l3 3 6-6' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")}
 .chip.done-chip{opacity:.25}
 .tb-arrow{position:absolute;right:3px;top:50%;transform:translateY(-50%);font-size:9px;font-weight:600;opacity:.75;color:var(--accent);pointer-events:none;transition:opacity .1s}
-#todList .tb-arrow{right:4px}
+#todList .tb-arrow{right:7px}
 .ti:hover .tb-arrow{opacity:0}
 .wr-unassigned{position:absolute;right:22px;top:50%;transform:translateY(-50%);font-size:9px;font-weight:600;opacity:.75;color:var(--accent);pointer-events:none}
 .chip-name{flex:1;overflow:hidden;text-overflow:ellipsis;font-size:9px}
