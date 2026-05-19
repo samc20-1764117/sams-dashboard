@@ -2353,7 +2353,7 @@ function wrCtxSkipThisWeek(){
   hideWrRuleCtx();if(!_wrCtxWkKey)return;
   if(_wrCtxRecId){
     const r=st.recurring.find(x=>String(x.id)===_wrCtxRecId);if(!r)return;
-    if(r.is_weekly_reset===true||r.is_weekly_reset==='true')unscheduleWRec(_wrCtxRecId,_wrCtxWkKey);
+    if(r.is_weekly_reset===true||r.is_weekly_reset==='true')skipWRec(_wrCtxRecId,_wrCtxWkKey);
     else skipRecVirtThisWk(_wrCtxRecId,_wrCtxWkKey);
     return;
   }
