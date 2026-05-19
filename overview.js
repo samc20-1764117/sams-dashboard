@@ -2172,6 +2172,7 @@ function renderRecOv(){
 // Upsert a wr_recurring_override — patches if one exists for (ruleId,wkKey), posts if not.
 // payload should include override_type + any relevant fields. Nulls out unrelated fields.
 function writeWrOverride(ruleId,wkKey,payload,{onDone,undoLabel='Changed WR task'}={}){
+  console.log('[WR] writeWrOverride',{ruleId,wkKey,payload,overrideCount:st.wrOverrides.length});
   const full={rule_id:ruleId,wk_key:wkKey,done:null,moved_to_wk_key:null,custom_name:null,custom_notes:null,...payload};
   const isSkip=payload.override_type==='skip';
   // Capture and remove timeblocks for this rule in the target week (skip only)
@@ -2256,7 +2257,7 @@ function showWrScopePicker(e,thisLabel,allLabel,onThis,onAll,removeLabel,onRemov
 }
 function hideWrScopePicker(){const m=document.getElementById('wrScopePicker');if(m)m.style.display='none';}
 function wrScopeDoRemove(){hideWrScopePicker();if(_wrScopeCbRemove)_wrScopeCbRemove();}
-function wrScopeDoThis(){hideWrScopePicker();if(_wrScopeCbThis)_wrScopeCbThis();}
+function wrScopeDoThis(){console.log('[WR] wrScopeDoThis',typeof _wrScopeCbThis);hideWrScopePicker();if(_wrScopeCbThis)_wrScopeCbThis();}
 function wrScopeDoAll(){hideWrScopePicker();if(_wrScopeCbAll)_wrScopeCbAll();}
 document.addEventListener('mousedown',e=>{if(!e.target.closest('#wrScopePicker'))hideWrScopePicker();},{capture:true,passive:true});
 
@@ -2350,6 +2351,7 @@ function showWrXPicker(e,rid,wkKey){
 }
 
 function wrCtxSkipThisWeek(){
+  console.log('[WR] wrCtxSkipThisWeek',{_wrCtxRuleId,_wrCtxRecId,_wrCtxWkKey});
   hideWrRuleCtx();if(!_wrCtxWkKey)return;
   if(_wrCtxRecId){
     const r=st.recurring.find(x=>String(x.id)===_wrCtxRecId);if(!r)return;
