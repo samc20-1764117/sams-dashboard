@@ -2891,25 +2891,10 @@ function _mealsForWeek(){
 }
 
 function _getRemovedMeals(){
-  // Recipes in grocery list for any week that overlap the displayed meal week but have no current meal entry
+  // All recipes from grocery plan that don't have a meal entry on the displayed week
   const dates=_mealWeekDates();
-  // Find all grocery week_of values that overlap the displayed dates
-  const allWeekOfs=[...new Set((st.groceryList||[]).map(g=>g.week_of).filter(Boolean))];
-  const relevantWeekOfs=allWeekOfs.filter(wk=>{
-    const wkDates=_grocWeekDatesFor(wk);
-    return wkDates.some(d=>dates.includes(d));
-  });
-  if(!relevantWeekOfs.length){
-    // Fallback: check all grocery recipe items
-    const allGrocRecipeIds=[...new Set((st.groceryList||[]).filter(g=>g.source==='recipe'&&g.source_id).map(g=>String(g.source_id)))];
-    const currentRecipeIds=new Set((st.mealPlan||[]).filter(m=>dates.includes(m.meal_date)).map(m=>String(m.recipe_id)));
-    return allGrocRecipeIds.filter(rid=>!currentRecipeIds.has(rid)).map(rid=>{
-      const r=(st.recipes||[]).find(x=>String(x.id)===rid);
-      return r?{recipe_id:rid,recipe_name:r.name,meal_type:r.meal_type,servings:r.servings||1}:null;
-    }).filter(Boolean);
-  }
-  const grocRecipeIds=[...new Set((st.groceryList||[]).filter(g=>relevantWeekOfs.includes(g.week_of)&&g.source==='recipe'&&g.source_id).map(g=>String(g.source_id)))];
   const currentRecipeIds=new Set((st.mealPlan||[]).filter(m=>dates.includes(m.meal_date)).map(m=>String(m.recipe_id)));
+  const grocRecipeIds=[...new Set((st.groceryList||[]).filter(g=>g.source==='recipe'&&g.source_id).map(g=>String(g.source_id)))];
   return grocRecipeIds.filter(rid=>!currentRecipeIds.has(rid)).map(rid=>{
     const r=(st.recipes||[]).find(x=>String(x.id)===rid);
     return r?{recipe_id:rid,recipe_name:r.name,meal_type:r.meal_type,servings:r.servings||1}:null;
@@ -2929,11 +2914,15 @@ function renderMealRow(){
     });
     html+=`</div>`;
   });
-  // 8th column: removed meals badge
-  const removedThisWk=_getRemovedMeals();
-  html+=`<div class="meal-cell meal-cell-restore">${removedThisWk.length?`<button class="meal-restore-btn" onclick="_openRemovedMeals(event)">↩ ${removedThisWk.length}</button>`:''}</div>`;
+  // 8th column: unassigned meals from grocery plan
+  const unassigned=_getRemovedMeals();
+  html+=`<div class="meal-cell meal-cell-unassigned">`;
+  unassigned.forEach(m=>{
+    html+=`<div class="meal-chip meal-chip-unassigned" draggable="true" data-recipeid="${m.recipe_id}"><span class="meal-chip-name">${escHtml(m.recipe_name)}</span></div>`;
+  });
+  html+=`</div>`;
   el.innerHTML=html;
-  // Bind drag/drop on cells
+  // Bind drag/drop on day cells
   el.querySelectorAll('.meal-cell[data-ds]').forEach(cell=>{
     cell.addEventListener('dragover',e=>{e.preventDefault();cell.classList.add('meal-drop');});
     cell.addEventListener('dragleave',()=>cell.classList.remove('meal-drop'));
@@ -2941,10 +2930,19 @@ function renderMealRow(){
     cell.addEventListener('dblclick',e=>{
       if(e.target.closest('.meal-chip'))return;
       e.stopPropagation();
-      _inlineMealAdd(cell,cell.dataset.ds);
+      openGroceryModal();
     });
   });
-  // Bind click/dblclick/drag on chips
+  // Bind unassigned chip drag
+  el.querySelectorAll('.meal-chip-unassigned').forEach(chip=>{
+    chip.addEventListener('dragstart',e=>{
+      e.dataTransfer.setData('text/plain','meal-new::'+chip.dataset.recipeid);
+      e.dataTransfer.effectAllowed='move';
+      chip.classList.add('meal-dragging');
+    });
+    chip.addEventListener('dragend',()=>chip.classList.remove('meal-dragging'));
+  });
+  // Bind click/dblclick/drag on placed chips
   _bindMealChips(el);
 }
 function _bindMealChips(el){
@@ -2996,52 +2994,11 @@ function _bindMealChips(el){
     });
     chip.addEventListener('dblclick',e=>{
       e.stopPropagation();
-      const mealId=chip.dataset.mealid;
-      const meal=(st.mealPlan||[]).find(m=>String(m.id)===String(mealId));
-      if(meal&&meal.recipe_id)openMealRecipeModal(meal.recipe_id);
-      else openMealEdit(mealId);
+      openGroceryModal();
     });
   });
 }
 
-function _openRemovedMeals(e){
-  e.stopPropagation();
-  const removed=_getRemovedMeals();
-  if(!removed.length)return;
-  let picker=document.getElementById('mealRemovedPicker');
-  if(!picker){
-    picker=document.createElement('div');picker.id='mealRemovedPicker';
-    picker.style.cssText='position:fixed;z-index:9999;background:var(--glass);backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 32px rgba(0,0,0,.12);min-width:160px;padding:4px 0';
-    document.body.appendChild(picker);
-    document.addEventListener('mousedown',ev=>{if(!ev.target.closest('#mealRemovedPicker,.meal-restore-btn'))picker.style.display='none';},{capture:true,passive:true});
-  }
-  picker.innerHTML='';
-  const hdr=document.createElement('div');
-  hdr.style.cssText='padding:4px 10px;font-size:10px;color:var(--muted);font-weight:600;letter-spacing:.05em;border-bottom:1px solid rgba(210,205,228,.25);margin-bottom:2px';
-  hdr.textContent='REMOVED THIS WEEK';picker.appendChild(hdr);
-  removed.forEach(m=>{
-    const itm=document.createElement('div');itm.className='ctx-item';itm.textContent='↩  '+m.recipe_name;
-    itm.style.cssText='padding:5px 12px;font-size:12px;cursor:pointer';
-    itm.addEventListener('click',()=>{picker.style.display='none';_restoreMeal(m);});
-    picker.appendChild(itm);
-  });
-  const rect=e.currentTarget.getBoundingClientRect();
-  picker.style.left=Math.min(rect.left,window.innerWidth-200)+'px';
-  picker.style.top='-9999px';picker.style.display='block';
-  requestAnimationFrame(()=>{picker.style.top=Math.max(rect.top-picker.offsetHeight-6,8)+'px';});
-}
-
-async function _restoreMeal(removed){
-  const dates=_mealWeekDates();
-  // Find first empty day
-  const usedDays=new Set((st.mealPlan||[]).filter(m=>dates.includes(m.meal_date)).map(m=>m.meal_date));
-  const ds=dates.find(d=>!usedDays.has(d))||dates[0];
-  const item={recipe_id:removed.recipe_id,recipe_name:removed.recipe_name,meal_date:ds,servings:removed.servings||1,meal_type:removed.meal_type||null,sort_order:0};
-  const sv=await sbReqSilent('POST','meal_plan',item);
-  if(sv&&sv[0])st.mealPlan.push(sv[0]);
-  else{item.id='l-'+Date.now();st.mealPlan.push(item);}
-  save();renderMealRow();
-}
 
 function _reorderMeal(draggedId,targetId,ds,before){
   const dragged=(st.mealPlan||[]).find(m=>String(m.id)===String(draggedId));
@@ -3211,6 +3168,17 @@ async function removeMeal(id){
 function dropMeal(event,ds){
   event.preventDefault();
   const data=event.dataTransfer.getData('text/plain');
+  if(data.startsWith('meal-new::')){
+    const recipeId=data.replace('meal-new::','');
+    const r=(st.recipes||[]).find(x=>String(x.id)===String(recipeId));if(!r)return;
+    const item={recipe_id:r.id,recipe_name:r.name,meal_date:ds,servings:r.servings||1,meal_type:r.meal_type||null,sort_order:(st.mealPlan||[]).filter(m=>m.meal_date===ds).length};
+    sbReqSilent('POST','meal_plan',item).then(sv=>{
+      if(sv&&sv[0])st.mealPlan.push(sv[0]);
+      else{item.id='l-'+Date.now();st.mealPlan.push(item);}
+      save();renderMealRow();
+    });
+    return;
+  }
   if(!data.startsWith('meal::'))return;
   const id=data.replace('meal::','');
   const meal=(st.mealPlan||[]).find(m=>String(m.id)===String(id));if(!meal)return;
