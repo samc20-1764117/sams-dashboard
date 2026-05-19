@@ -1058,8 +1058,7 @@ body.dark .groc-staples-drawer{background:rgba(28,16,10,.98);box-shadow:-4px 0 1
 .meal-days{width:87.5%;display:grid;grid-template-columns:repeat(7,1fr);gap:0;border-top:2px solid rgba(255,255,255,.88)}
 .meal-cell{padding:2px 2px;display:flex;flex-direction:column;gap:1px;position:relative;min-height:0;overflow:hidden}
 .meal-cell.meal-drop{background:rgba(124,106,247,.06)}
-.meal-cell-unassigned{position:absolute;top:0;right:0;bottom:0;width:12.5%;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;padding:2px 2px;display:flex;flex-direction:column;gap:1px;box-sizing:border-box}
-.meal-cell-unassigned::-webkit-scrollbar{display:none}
+.meal-cell-unassigned{position:absolute;top:0;right:0;width:12.5%;overflow:visible;padding:2px 2px;display:flex;flex-direction:column;gap:1px;box-sizing:border-box}
 .meal-chip{display:flex;align-items:center;padding:1px 5px;border-radius:4px;background:none;border:none;font-size:8px;font-weight:400;color:var(--muted);cursor:grab;max-width:100%;position:relative;box-shadow:none;opacity:.7}
 .meal-chip:hover{background:rgba(0,0,0,.04);opacity:1;color:var(--text)}
 body.dark .meal-chip:hover{background:rgba(255,255,255,.05)}
