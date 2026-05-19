@@ -3003,18 +3003,23 @@ function _getRemovedMeals(){
 function renderMealRow(){
   const el=document.getElementById('mealRow');if(!el)return;
   const dates=_mealWeekDates();
-  let html='';
+  // Determine max meals across weekdays (cap at 2)
+  let maxMeals=0;
+  dates.forEach(ds=>{const c=(st.mealPlan||[]).filter(m=>m.meal_date===ds).length;if(c>maxMeals)maxMeals=c;});
+  maxMeals=Math.max(1,Math.min(maxMeals,2));
+  let html=`<div class="meal-days" style="grid-template-rows:repeat(${maxMeals},auto)">`;
   dates.forEach(ds=>{
     const meals=(st.mealPlan||[]).filter(m=>m.meal_date===ds);
     meals.sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
     html+=`<div class="meal-cell" data-ds="${ds}">`;
-    meals.forEach(m=>{
+    meals.slice(0,2).forEach(m=>{
       const sid='meal-'+m.id;
       html+=`<div class="meal-chip" data-tid="${sid}" data-mealid="${m.id}" draggable="true"><span class="meal-chip-name">${escHtml(m.recipe_name)}</span><button class="meal-chip-x" onclick="event.stopPropagation();removeMeal('${m.id}')">✕</button></div>`;
     });
     html+=`</div>`;
   });
-  // 8th column: unassigned meals from grocery plan
+  html+=`</div>`;
+  // Unassigned — independent section in 8th column
   const unassigned=_getRemovedMeals();
   html+=`<div class="meal-cell meal-cell-unassigned">`;
   unassigned.forEach(m=>{
