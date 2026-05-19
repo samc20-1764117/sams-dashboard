@@ -83,7 +83,8 @@ function renderToday(){
   renderTodDonut(doneCount,sorted.length);
   const _todDs=ds;
   function _hasTBToday(t){
-    if(t._type==='travel'||t._type==='birthday')return true;
+    if(t._type==='travel')return true;
+    if(t._type==='birthday')return st.blocks.some(b=>b.ds===_todDs&&b.cat==='Birthday'&&b.title===t.name);
     const isOvToday=dayOff===0&&isOv(t.due_date)&&!t.done;
     if(t._shopId)return st.blocks.some(b=>(b.ds===_todDs||isOvToday)&&String(b.shopId)===String(t._shopId));
     if(t._ruleId){
@@ -3295,6 +3296,12 @@ function renderDayTB(){
     });
     col.appendChild(row);
   });
+  // Auto-create birthday blocks at 7:30am if not already placed
+  getBirthdayTasks(ds).forEach(bt=>{
+    if(st.blocks.some(b=>b.ds===ds&&b.cat==='Birthday'&&b.title===bt.name))return;
+    const blk={id:'bday-auto-'+bt._srcId+'-'+ds,title:bt.name,ds,sm:450,dur:30,cat:'Birthday'};
+    st.blocks.push(blk);sbSaveBlock(blk);save();
+  });
   // Compute layout then draw (auto blocks participate in overlap calc)
   const autoBlocks=getAutoTBForDate(ds);
   const recAutoBlocks=getRecAutoTBForDate(ds);
@@ -4037,7 +4044,7 @@ function dropOnTB(e,ds,h,row,smOverride){
   } else if(dragId.startsWith('bday::')){
     const parts=dragId.split('::');const bdayId=parts[1],bdayName=st.birthdays.find(x=>String(x.id)===String(bdayId));
     if(!bdayName){dragId=null;return;}
-    const blk={id:crypto.randomUUID(),title:`${bdayName.name}'s Birthday 🎂`,ds,sm,dur:60,cat:'Birthday'};
+    const blk={id:crypto.randomUUID(),title:`${bdayName.name}'s Birthday 🎂`,ds,sm,dur:60,cat:'Birthday',_bdayId:bdayId};
     st.blocks.push(blk);dragId=null;save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
     sbSaveBlock(blk);
     pushUndo(()=>{st.blocks=st.blocks.filter(b=>b.id!==blk.id);sbDeleteBlock(blk.id);save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();},'Added birthday to time block');
