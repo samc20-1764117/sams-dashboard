@@ -1,5 +1,5 @@
 {
-  "exported_at": "2026-05-18T13:00:01.157Z",
+  "exported_at": "2026-05-19T13:00:00.334Z",
   "mode": "auto",
   "tables": {
     "tasks": [
@@ -2083,17 +2083,6 @@
         "goal_order": null
       },
       {
-        "name": "Arrows wo/ union",
-        "category": "Weekly Goals",
-        "due_date": "2026-05-11",
-        "done": false,
-        "importance": null,
-        "id": "683aa6e4-c63d-438f-be66-05a17809e6f4",
-        "important": false,
-        "notes": null,
-        "goal_order": 0
-      },
-      {
         "name": "Pups showers",
         "category": "Home",
         "due_date": "2026-04-09",
@@ -2202,17 +2191,6 @@
         "important": false,
         "notes": null,
         "goal_order": null
-      },
-      {
-        "name": "PM",
-        "category": "Weekly Goals",
-        "due_date": "2026-05-18",
-        "done": false,
-        "importance": null,
-        "id": "27bc6923-df79-4676-9f18-c3e4963a1d57",
-        "important": false,
-        "notes": null,
-        "goal_order": 0
       },
       {
         "name": "Unapplied Cash Doc",
@@ -2490,15 +2468,15 @@
         "goal_order": null
       },
       {
-        "name": "Nai nai",
-        "category": "Home",
+        "name": "PM",
+        "category": "Weekly Goals",
         "due_date": "2026-05-18",
         "done": false,
         "importance": null,
-        "id": "31d2f237-0d13-45b6-a1de-d24a2b63f1b2",
+        "id": "27bc6923-df79-4676-9f18-c3e4963a1d57",
         "important": false,
         "notes": null,
-        "goal_order": null
+        "goal_order": 1
       },
       {
         "name": "WFH with friends",
@@ -2562,6 +2540,17 @@
         "done": true,
         "importance": null,
         "id": "d687cd58-082d-493b-a334-45e8017f3e88",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Nai nai",
+        "category": "Home",
+        "due_date": "2026-05-19",
+        "done": false,
+        "importance": null,
+        "id": "31d2f237-0d13-45b6-a1de-d24a2b63f1b2",
         "important": false,
         "notes": null,
         "goal_order": null
@@ -2999,7 +2988,7 @@
         "name": "Figure out UX videos",
         "category": "Weekly Goals",
         "due_date": "2026-05-11",
-        "done": false,
+        "done": true,
         "importance": null,
         "id": "e0a57087-bc89-410d-9274-a0ff8125d1d7",
         "important": false,
@@ -3071,17 +3060,6 @@
         "important": false,
         "notes": null,
         "goal_order": null
-      },
-      {
-        "name": "Drill down",
-        "category": "Weekly Goals",
-        "due_date": "2026-05-11",
-        "done": false,
-        "importance": null,
-        "id": "2318cebf-cdff-4e64-874c-97e769d0e273",
-        "important": false,
-        "notes": null,
-        "goal_order": 2
       },
       {
         "name": "Keynote slides",
@@ -3271,6 +3249,17 @@
         "goal_order": null
       },
       {
+        "name": "Check GI emails",
+        "category": "Home",
+        "due_date": "2026-05-19",
+        "done": false,
+        "importance": null,
+        "id": "8825bd72-1b4a-4f23-b270-78837a7733bd",
+        "important": true,
+        "notes": null,
+        "goal_order": null
+      },
+      {
         "name": "Cancel doggie lawn",
         "category": "Home",
         "due_date": "2026-04-25",
@@ -3425,15 +3414,15 @@
         "goal_order": null
       },
       {
-        "name": "Check GI emails",
-        "category": "Home",
+        "name": "Drill down",
+        "category": "Weekly Goals",
         "due_date": "2026-05-18",
         "done": false,
         "importance": null,
-        "id": "8825bd72-1b4a-4f23-b270-78837a7733bd",
-        "important": true,
+        "id": "2318cebf-cdff-4e64-874c-97e769d0e273",
+        "important": false,
         "notes": null,
-        "goal_order": null
+        "goal_order": 0
       },
       {
         "name": "Add snipets to youtube and test",
@@ -3568,6 +3557,17 @@
         "goal_order": null
       },
       {
+        "name": "Arrows wo/ union",
+        "category": "Weekly Goals",
+        "due_date": "2026-05-25",
+        "done": false,
+        "importance": null,
+        "id": "683aa6e4-c63d-438f-be66-05a17809e6f4",
+        "important": false,
+        "notes": null,
+        "goal_order": 0
+      },
+      {
         "name": "Gum",
         "category": "Home",
         "due_date": "2026-05-01",
@@ -3590,12 +3590,23 @@
         "goal_order": null
       },
       {
-        "name": "Icons",
-        "category": "Work",
-        "due_date": "2026-05-18",
+        "name": "UX video",
+        "category": "My work",
+        "due_date": "2026-05-26",
         "done": false,
         "importance": null,
-        "id": "73e63302-bd4d-4a7b-93f4-f460b98c30ab",
+        "id": "7ccee493-4ff8-4522-97b2-d05ef27b7ec6",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "UX video",
+        "category": "Weekly Goals",
+        "due_date": "2026-05-25",
+        "done": false,
+        "importance": null,
+        "id": "537fa239-75ac-42e2-bfd9-029880c9efc3",
         "important": false,
         "notes": null,
         "goal_order": null
@@ -3645,6 +3656,17 @@
         "goal_order": null
       },
       {
+        "name": "Work expense trip",
+        "category": "Work",
+        "due_date": "2026-05-18",
+        "done": true,
+        "importance": null,
+        "id": "f3ca8f53-df1c-4a59-ab6f-c6c806a5eaa2",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
         "name": "Hmart",
         "category": "Home",
         "due_date": "2026-05-17",
@@ -3689,6 +3711,17 @@
         "goal_order": null
       },
       {
+        "name": "Kong",
+        "category": "Home",
+        "due_date": "2026-05-19",
+        "done": false,
+        "importance": null,
+        "id": "a62a6b47-6da4-426e-a47a-e3bad0a30f46",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
         "name": "Neckalce fixed",
         "category": "Home",
         "due_date": "2026-05-17",
@@ -3719,17 +3752,6 @@
         "id": "56594fa2-88b5-42cd-b9e9-f3db95ef3290",
         "important": false,
         "notes": "Arrive by 9:15am and look for Britt and Pooja holding Visionary/Ambassador lollipop signs. \nWalk in 9:30am\nStarts @ 10am",
-        "goal_order": null
-      },
-      {
-        "name": "VO drill down",
-        "category": "My work",
-        "due_date": "2026-05-18",
-        "done": false,
-        "importance": null,
-        "id": "88920a85-8df3-4989-b746-dbea90d30fe5",
-        "important": false,
-        "notes": null,
         "goal_order": null
       },
       {
@@ -3810,17 +3832,6 @@
         "goal_order": null
       },
       {
-        "name": "Migration tables",
-        "category": "Work",
-        "due_date": "2026-05-18",
-        "done": false,
-        "importance": null,
-        "id": "79d45c63-bb54-4ef2-94f4-b85a66f86817",
-        "important": false,
-        "notes": null,
-        "goal_order": null
-      },
-      {
         "name": "Flight @10:20am",
         "category": "Home",
         "due_date": "2026-05-08",
@@ -3829,6 +3840,17 @@
         "id": "efb6eca0-7411-4922-9aa2-b4b46bf6205d",
         "important": false,
         "notes": "10:20am-3:05pm",
+        "goal_order": null
+      },
+      {
+        "name": "VO drill down",
+        "category": "My work",
+        "due_date": "2026-05-19",
+        "done": false,
+        "importance": null,
+        "id": "6c202c21-734f-4dbf-a912-0d5ee9c65c51",
+        "important": false,
+        "notes": null,
         "goal_order": null
       },
       {
@@ -3849,17 +3871,6 @@
         "done": true,
         "importance": null,
         "id": "3e8b8e85-d9c3-422d-8821-68431d3be01a",
-        "important": false,
-        "notes": null,
-        "goal_order": null
-      },
-      {
-        "name": "VO drill down",
-        "category": "My work",
-        "due_date": "2026-05-18",
-        "done": false,
-        "importance": null,
-        "id": "9c9f55e4-2eb1-4e47-bc94-1fb75c0711e4",
         "important": false,
         "notes": null,
         "goal_order": null
@@ -3896,6 +3907,83 @@
         "important": false,
         "notes": null,
         "goal_order": null
+      },
+      {
+        "name": "VO drill down",
+        "category": "My work",
+        "due_date": "2026-05-18",
+        "done": true,
+        "importance": null,
+        "id": "88920a85-8df3-4989-b746-dbea90d30fe5",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Migration tables",
+        "category": "Work",
+        "due_date": "2026-05-19",
+        "done": false,
+        "importance": null,
+        "id": "79d45c63-bb54-4ef2-94f4-b85a66f86817",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "VO drill down",
+        "category": "My work",
+        "due_date": "2026-05-18",
+        "done": true,
+        "importance": null,
+        "id": "9c9f55e4-2eb1-4e47-bc94-1fb75c0711e4",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "VO drill down",
+        "category": "My work",
+        "due_date": "2026-05-19",
+        "done": false,
+        "importance": null,
+        "id": "3715dcfe-88f7-4ffe-ad0e-5504eb9c2554",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Icons",
+        "category": "Work",
+        "due_date": "2026-05-20",
+        "done": false,
+        "importance": null,
+        "id": "73e63302-bd4d-4a7b-93f4-f460b98c30ab",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "VO drill down",
+        "category": "My work",
+        "due_date": "2026-05-20",
+        "done": false,
+        "importance": null,
+        "id": "e2d3851e-af96-43fa-ab92-9bf68b268dcd",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Post VO drill down",
+        "category": "My work",
+        "due_date": "2026-05-21",
+        "done": false,
+        "importance": null,
+        "id": "24fea989-7676-45c5-baa0-8943646b805e",
+        "important": false,
+        "notes": null,
+        "goal_order": null
       }
     ],
     "shopping_list": [
@@ -3916,6 +4004,15 @@
         "created_at": "2026-03-26T14:45:23.617245+00:00",
         "due_date": null,
         "shop_order": 8
+      },
+      {
+        "id": "1dc4a79a-cfae-4f01-9d83-f5a2b1dc4ad9",
+        "name": "Seaweed",
+        "store": "HEB",
+        "done": true,
+        "created_at": "2026-05-15T13:47:54.813184+00:00",
+        "due_date": null,
+        "shop_order": null
       },
       {
         "id": "e1aa0f3c-8b72-4200-b4e5-d35ad2d1f74c",
@@ -4089,15 +4186,6 @@
         "shop_order": 10
       },
       {
-        "id": "1cb304cf-ca49-4ec4-a5ab-58ba06433243",
-        "name": "Pepcid",
-        "store": "HEB",
-        "done": false,
-        "created_at": "2026-05-07T21:14:01.818559+00:00",
-        "due_date": null,
-        "shop_order": 4
-      },
-      {
         "id": "2fc1a3c7-0cbc-4d49-a19a-48f20e289721",
         "name": "Bowls",
         "store": "Ikea",
@@ -4116,24 +4204,6 @@
         "shop_order": 11
       },
       {
-        "id": "2371baad-c5c7-4812-9bf7-bd4e38be036f",
-        "name": "Cajun seasoning",
-        "store": "HEB",
-        "done": false,
-        "created_at": "2026-05-11T22:54:20.712832+00:00",
-        "due_date": null,
-        "shop_order": 3
-      },
-      {
-        "id": "dbf2f383-9767-4dfd-8b11-1bb55e2ef291",
-        "name": "Mapo tofu",
-        "store": "HEB",
-        "done": false,
-        "created_at": "2026-05-12T01:35:04.516692+00:00",
-        "due_date": null,
-        "shop_order": 6
-      },
-      {
         "id": "75b03e08-a4d3-4775-894e-baf6426de22d",
         "name": "Mochi carrier",
         "store": "Online",
@@ -4141,33 +4211,6 @@
         "created_at": "2026-04-16T12:46:32.121703+00:00",
         "due_date": null,
         "shop_order": 7
-      },
-      {
-        "id": "801262fd-2885-4438-a026-def289aa565d",
-        "name": "Liners",
-        "store": "HEB",
-        "done": false,
-        "created_at": "2026-05-11T22:53:36.720688+00:00",
-        "due_date": null,
-        "shop_order": 2
-      },
-      {
-        "id": "1dc4a79a-cfae-4f01-9d83-f5a2b1dc4ad9",
-        "name": "Seaweed",
-        "store": "HEB",
-        "done": false,
-        "created_at": "2026-05-15T13:47:54.813184+00:00",
-        "due_date": null,
-        "shop_order": null
-      },
-      {
-        "id": "0bc68389-c36f-4274-8604-b34178d25efe",
-        "name": "Brown sugar",
-        "store": "HEB",
-        "done": false,
-        "created_at": "2026-05-16T15:55:29.887192+00:00",
-        "due_date": null,
-        "shop_order": null
       },
       {
         "id": "a731b959-c63f-461c-8e09-825e6ecb2902",
@@ -4188,15 +4231,6 @@
         "shop_order": null
       },
       {
-        "id": "f23772b1-427f-4828-8adc-af5ad2da903e",
-        "name": "Frozen breadsticks",
-        "store": "HEB",
-        "done": false,
-        "created_at": "2026-05-17T02:22:42.492225+00:00",
-        "due_date": null,
-        "shop_order": null
-      },
-      {
         "id": "97b77928-da0e-410b-89d8-4ab5aa10fe1b",
         "name": "Airtight continainer",
         "store": "HEB",
@@ -4206,11 +4240,56 @@
         "shop_order": null
       },
       {
-        "id": "e07bafed-1cfa-478e-9bc2-2a483d765f19",
-        "name": "Test",
+        "id": "801262fd-2885-4438-a026-def289aa565d",
+        "name": "Liners",
         "store": "HEB",
-        "done": false,
-        "created_at": "2026-05-17T21:41:24.280567+00:00",
+        "done": true,
+        "created_at": "2026-05-11T22:53:36.720688+00:00",
+        "due_date": null,
+        "shop_order": 2
+      },
+      {
+        "id": "2371baad-c5c7-4812-9bf7-bd4e38be036f",
+        "name": "Cajun seasoning",
+        "store": "HEB",
+        "done": true,
+        "created_at": "2026-05-11T22:54:20.712832+00:00",
+        "due_date": null,
+        "shop_order": 3
+      },
+      {
+        "id": "1cb304cf-ca49-4ec4-a5ab-58ba06433243",
+        "name": "Pepcid",
+        "store": "HEB",
+        "done": true,
+        "created_at": "2026-05-07T21:14:01.818559+00:00",
+        "due_date": null,
+        "shop_order": 4
+      },
+      {
+        "id": "dbf2f383-9767-4dfd-8b11-1bb55e2ef291",
+        "name": "Mapo tofu",
+        "store": "HEB",
+        "done": true,
+        "created_at": "2026-05-12T01:35:04.516692+00:00",
+        "due_date": null,
+        "shop_order": 6
+      },
+      {
+        "id": "0bc68389-c36f-4274-8604-b34178d25efe",
+        "name": "Brown sugar",
+        "store": "HEB",
+        "done": true,
+        "created_at": "2026-05-16T15:55:29.887192+00:00",
+        "due_date": null,
+        "shop_order": null
+      },
+      {
+        "id": "f23772b1-427f-4828-8adc-af5ad2da903e",
+        "name": "Frozen breadsticks",
+        "store": "HEB",
+        "done": true,
+        "created_at": "2026-05-17T02:22:42.492225+00:00",
         "due_date": null,
         "shop_order": null
       }
@@ -10268,15 +10347,15 @@
         "done": false
       },
       {
-        "id": "68b910c6-006c-43c5-834c-2d7d2008cd63",
-        "title": "Icons",
-        "day_date": "2026-05-18",
-        "start_time": "12:30:00",
+        "id": "53b9fc84-db13-42c7-8956-a72eaed5e576",
+        "title": "Nai nai",
+        "day_date": "2026-05-19",
+        "start_time": "11:00:00",
         "duration_minutes": 60,
-        "category": "Work",
-        "created_at": "2026-05-17T21:43:15.551864+00:00",
-        "start_minutes": 720,
-        "task_id": "73e63302-bd4d-4a7b-93f4-f460b98c30ab",
+        "category": "Home",
+        "created_at": "2026-05-19T00:49:12.874453+00:00",
+        "start_minutes": 660,
+        "task_id": "31d2f237-0d13-45b6-a1de-d24a2b63f1b2",
         "rec_id": null,
         "shop_id": null,
         "done": false
@@ -10492,20 +10571,6 @@
         "done": true
       },
       {
-        "id": "773f62c6-5a76-454e-9afe-10ee9cda8683",
-        "title": "Nai nai",
-        "day_date": "2026-05-18",
-        "start_time": "11:00:00",
-        "duration_minutes": 60,
-        "category": "Home",
-        "created_at": "2026-05-18T02:42:06.734194+00:00",
-        "start_minutes": 660,
-        "task_id": "31d2f237-0d13-45b6-a1de-d24a2b63f1b2",
-        "rec_id": null,
-        "shop_id": null,
-        "done": false
-      },
-      {
         "id": "c2b57558-bf61-49c8-937e-5aaa5dffc3d7",
         "title": "Nai nai",
         "day_date": "2026-05-17",
@@ -10532,20 +10597,6 @@
         "rec_id": null,
         "shop_id": null,
         "done": true
-      },
-      {
-        "id": "1cc0af60-11c0-41cd-98c4-8d6c66d07b69",
-        "title": "Check GI emails",
-        "day_date": "2026-05-18",
-        "start_time": "07:00:00",
-        "duration_minutes": 30,
-        "category": "Home",
-        "created_at": "2026-05-18T02:42:11.632462+00:00",
-        "start_minutes": 420,
-        "task_id": "8825bd72-1b4a-4f23-b270-78837a7733bd",
-        "rec_id": null,
-        "shop_id": null,
-        "done": false
       },
       {
         "id": "44915f04-14f9-4a5b-ae01-532b7bfc1f71",
@@ -10604,20 +10655,6 @@
         "done": true
       },
       {
-        "id": "cbb3b744-3301-46df-a68f-3eee67518bcd",
-        "title": "Migration tables",
-        "day_date": "2026-05-18",
-        "start_time": "07:45:00",
-        "duration_minutes": 90,
-        "category": "Work",
-        "created_at": "2026-05-17T21:43:06.456036+00:00",
-        "start_minutes": 450,
-        "task_id": "79d45c63-bb54-4ef2-94f4-b85a66f86817",
-        "rec_id": null,
-        "shop_id": null,
-        "done": false
-      },
-      {
         "id": "13b85425-8eb8-4ce5-b016-a4d1e8d68bad",
         "title": "VO drill down",
         "day_date": "2026-05-18",
@@ -10629,7 +10666,7 @@
         "task_id": "88920a85-8df3-4989-b746-dbea90d30fe5",
         "rec_id": null,
         "shop_id": null,
-        "done": false
+        "done": true
       },
       {
         "id": "3d7030d6-fb76-47b8-a7b0-1e0e0abdebf9",
@@ -10674,15 +10711,99 @@
         "done": true
       },
       {
+        "id": "e1a79253-7775-414c-8e49-7ac7ad6292f4",
+        "title": "Check GI emails",
+        "day_date": "2026-05-19",
+        "start_time": "13:00:00",
+        "duration_minutes": 30,
+        "category": "Home",
+        "created_at": "2026-05-19T00:49:14.220566+00:00",
+        "start_minutes": 450,
+        "task_id": "8825bd72-1b4a-4f23-b270-78837a7733bd",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
         "id": "7cb9f881-2378-4e03-8b98-ce74839fb58e",
         "title": "VO drill down",
         "day_date": "2026-05-18",
         "start_time": "13:00:00",
-        "duration_minutes": 240,
+        "duration_minutes": 210,
         "category": "My work",
         "created_at": "2026-05-18T02:42:19.089071+00:00",
-        "start_minutes": 780,
+        "start_minutes": 810,
         "task_id": "9c9f55e4-2eb1-4e47-bc94-1fb75c0711e4",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
+        "id": "18d5f70f-1567-4bd4-8765-a17afd194bc6",
+        "title": "Work expense trip",
+        "day_date": "2026-05-18",
+        "start_time": "08:15:00",
+        "duration_minutes": 45,
+        "category": "Work",
+        "created_at": "2026-05-18T13:03:22.812165+00:00",
+        "start_minutes": 495,
+        "task_id": "f3ca8f53-df1c-4a59-ab6f-c6c806a5eaa2",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
+        "id": "8d3d3c94-1040-4b76-a5de-63021f1671a3",
+        "title": "Icons",
+        "day_date": "2026-05-20",
+        "start_time": "12:00:00",
+        "duration_minutes": 60,
+        "category": "Work",
+        "created_at": "2026-05-18T21:29:31.479798+00:00",
+        "start_minutes": 720,
+        "task_id": "73e63302-bd4d-4a7b-93f4-f460b98c30ab",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "b1918e17-6f08-4bcc-900d-6e728519df66",
+        "title": "Migration tables",
+        "day_date": "2026-05-19",
+        "start_time": "09:00:00",
+        "duration_minutes": 90,
+        "category": "Work",
+        "created_at": "2026-05-18T21:29:19.073935+00:00",
+        "start_minutes": 480,
+        "task_id": "79d45c63-bb54-4ef2-94f4-b85a66f86817",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "433c4508-a69d-4de9-85b7-edc8065b20fa",
+        "title": "Pilates",
+        "day_date": "2026-05-19",
+        "start_time": "17:00:00",
+        "duration_minutes": 60,
+        "category": "Recurring",
+        "created_at": "2026-05-19T12:48:35.72547+00:00",
+        "start_minutes": 1020,
+        "task_id": null,
+        "rec_id": "26",
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "15f58763-5020-4f88-a8e6-ecf307e33bd2",
+        "title": "VO drill down",
+        "day_date": "2026-05-19",
+        "start_time": "07:45:00",
+        "duration_minutes": 90,
+        "category": "My work",
+        "created_at": "2026-05-19T00:49:21.303954+00:00",
+        "start_minutes": 570,
+        "task_id": "3715dcfe-88f7-4ffe-ad0e-5504eb9c2554",
         "rec_id": null,
         "shop_id": null,
         "done": false
@@ -10698,6 +10819,20 @@
         "start_minutes": 900,
         "task_id": null,
         "rec_id": "10",
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "a6e27c98-a194-4e30-85b9-7cb8a381e396",
+        "title": "VO drill down",
+        "day_date": "2026-05-19",
+        "start_time": "12:00:00",
+        "duration_minutes": 300,
+        "category": "My work",
+        "created_at": "2026-05-19T12:52:37.271498+00:00",
+        "start_minutes": 720,
+        "task_id": "6c202c21-734f-4dbf-a912-0d5ee9c65c51",
+        "rec_id": null,
         "shop_id": null,
         "done": false
       }

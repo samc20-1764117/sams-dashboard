@@ -609,15 +609,19 @@ function renderWkSummary(){
       ...wrecThisWk,
       ...wrRulesThisWk,
       ...shopThisWk,
-      ...virtExtras
+      ...virtExtras.map(t=>{
+        if(t._type==='birthday'){const blk=st.blocks.find(b=>b.ds===t.due_date&&b.cat==='Birthday'&&b.title===t.name);if(blk&&blk._done)return{...t,done:true};}
+        return t;
+      })
     ]),
     ...doneThisWk
   ];
   const allReal=st.tasks.filter(t=>isInWk(t.due_date,wkOff));
   const doneReal=allReal.filter(t=>t.done).length;
   const doneVirt=virtRec.filter(v=>v.done).length;
+  const bdayDone=virtExtras.filter(t=>t._type==='birthday'&&st.blocks.some(b=>b.ds===t.due_date&&b.cat==='Birthday'&&b.title===t.name&&b._done)).length;
   const totalAll=allReal.length+virtRec.length+virtExtras.length;
-  const totalDone=doneReal+doneVirt;
+  const totalDone=doneReal+doneVirt+bdayDone;
   // wkBadge removed
   document.getElementById('wkPL').textContent=`${totalDone}/${totalAll}`;const _wkP=document.getElementById('wkPct');if(_wkP)_wkP.textContent=(totalAll?Math.round(totalDone/totalAll*100):0)+'%';
   document.getElementById('wkPB').style.width=totalAll?`${totalDone/totalAll*100}%`:'0%';
@@ -2861,8 +2865,9 @@ function tRowExtra(t){
   const sub=isTv&&t.end_date?` – ${fmtD(t.end_date)}`:'';
   const modeIcon=isTv?(t.travel_mode==='plane'?_PLANE_SVG:t.travel_mode==='drive'?_CAR_SVG:''):'';
   const bdDrag=isBd?`draggable="true" ondragstart="dStart(event,'bday::${t._srcId}::${t.due_date}')" ondragend="dEnd(event)"`:'';
-  return`<div class="ti ti-${sl}" style="background:${s.bg}" id="ti-${t.id}" ${bdDrag} onclick="selTask(event,'${t.id}')">
-    <span class="tn" style="color:${s.t};font-weight:600">${modeIcon}${t.name}</span>
+  const _bdDone=isBd&&t.done;
+  return`<div class="ti ti-${sl}${_bdDone?' done':''}" style="background:${s.bg}${_bdDone?';opacity:.45':''}" id="ti-${t.id}" ${bdDrag} onclick="selTask(event,'${t.id}')">
+    <span class="tn" style="color:${s.t};font-weight:600${_bdDone?';text-decoration:line-through':''}">${modeIcon}${t.name}</span>
     ${isTv||isBd?'':`<svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3" fill="${s.bg}" stroke="${s.d}" stroke-opacity="0.4" stroke-width="1"/></svg>`}
     ${isBd?'':`<span class="dlbl">${fmtD(t.due_date)}${sub}</span>`}
     ${isTv?`<button class="delbtn" onclick="event.stopPropagation();delTravel('${t._srcId}')">✕</button>`:''}
@@ -3546,7 +3551,7 @@ function drawTBBlock(col,b){
       togShop(String(b.shopId),checked);
     } else {
       if(b.cat==='Birthday'){
-        b._done=checked;sbUpdateBlock(b.id,{done:checked});save();renderToday();
+        b._done=checked;sbUpdateBlock(b.id,{done:checked});save();renderToday();renderWkSummary();
       } else {
         const mT=st.tasks.find(x=>x.name===b.title);
         const mR=st.recurring.find(x=>x.name===b.title);
