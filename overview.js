@@ -2180,8 +2180,9 @@ function writeWrOverride(ruleId,wkKey,payload,{onDone,undoLabel='Changed WR task
   const linkedBlocks=isSkip&&st.blocks?st.blocks.filter(b=>dsToWkKey(b.ds)===wkKey&&(String(b.ruleId)===String(ruleId)||String(b.recId)===String(ruleId)||(!b.ruleId&&!b.recId&&_pinnedDs&&b.ds===_pinnedDs&&!b.taskId&&!b.shopId))):[];
   if(isSkip&&linkedBlocks.length){st.blocks=st.blocks.filter(b=>!linkedBlocks.some(lb=>lb.id===b.id));linkedBlocks.forEach(b=>sbDeleteBlock(b.id));}
   const _syncBlockDone=(isDone)=>{if(st.blocks)st.blocks.filter(b=>dsToWkKey(b.ds)===wkKey&&(String(b.ruleId)===String(ruleId)||String(b.recId)===String(ruleId))).forEach(b=>{b._done=isDone;});};
-  const _rerender=()=>{renderRecOv();renderWkCal();renderWeeklyPage();renderToday();if(document.getElementById('tbGrid'))renderDayTB();};
+  const _rerender=()=>{console.log('[WR-OV] rerender, overrides=',st.wrOverrides.filter(o=>o.wk_key===wkKey).map(o=>({rid:o.rule_id,type:o.override_type})));renderRecOv();renderWkCal();renderWeeklyPage();renderToday();if(document.getElementById('tbGrid'))renderDayTB();};
   const existing=st.wrOverrides.find(o=>String(o.rule_id)===String(ruleId)&&o.wk_key===wkKey);
+  console.log('[WR-OV] writeWrOverride',{ruleId,wkKey,type:payload.override_type,existing:existing?{id:existing.id,type:existing.override_type}:null});
   if(existing){
     const prev={...existing};
     Object.assign(existing,full);
