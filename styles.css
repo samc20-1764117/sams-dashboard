@@ -404,7 +404,7 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 .wkc-outer{flex:1;overflow:hidden;display:flex;flex-direction:column;position:relative}
 .wkc-nav{display:flex;align-items:center;gap:6px;padding:0 10px;border-bottom:1px solid rgba(210,205,228,.25);background:rgba(255,255,255,.1);flex-shrink:0;min-height:31px;box-sizing:border-box}
 .wkc-lbl{flex:1;text-align:center;font-size:10px;font-weight:700;color:var(--text);letter-spacing:-.1px}
-.wkc-inner{flex:1;overflow:hidden;display:flex;flex-direction:column}
+.wkc-inner{flex:1;overflow:hidden;display:flex;flex-direction:column;position:relative}
 .wkc-head{display:flex;flex-shrink:0;background:rgba(255,255,255,.18);padding:6px 0 3px;border-bottom:1px solid rgba(210,205,228,.12)}
 .wkc-day-h{flex:1;min-width:0;padding:0 2px;text-align:center;border-left:1px solid rgba(210,205,228,.18);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
 .wkc-day-h:first-child{border-left:none}
@@ -1054,9 +1054,9 @@ body.dark .groc-staples-drawer{background:rgba(28,16,10,.98);box-shadow:-4px 0 1
 .meal-add-inline{background:none;border:1px dashed var(--border);border-radius:var(--rs);padding:5px 10px;font-size:11px;color:var(--muted);cursor:pointer;width:100%;margin-top:4px}
 .meal-add-inline:hover{border-color:var(--accent);color:var(--accent)}
 /* ── Meal Row (below weekly cal) ─────────────────────────────────────────── */
-.meal-row{display:flex}
-.meal-days{flex:7;display:grid;grid-template-columns:repeat(7,1fr);gap:0;border-top:2px solid rgba(255,255,255,.88)}
-.meal-days-spacer{flex:1;padding:2px 2px;display:flex;flex-direction:column;gap:1px}
+.meal-row{display:block}
+.meal-days{width:87.5%;display:grid;grid-template-columns:repeat(7,1fr);gap:0;border-top:2px solid rgba(255,255,255,.88)}
+.meal-unassigned-wrap{position:absolute;bottom:0;right:0;width:12.5%;padding:2px 2px;display:flex;flex-direction:column;gap:1px;box-sizing:border-box;pointer-events:auto}
 .meal-cell{padding:2px 2px;display:flex;flex-direction:column;gap:1px;position:relative;min-height:0;overflow:hidden}
 .meal-cell.meal-drop{background:rgba(124,106,247,.06)}
 .meal-chip{display:flex;align-items:center;padding:1px 5px;border-radius:4px;background:none;border:none;font-size:8px;font-weight:400;color:var(--muted);cursor:grab;max-width:100%;position:relative;box-shadow:none;opacity:.7}

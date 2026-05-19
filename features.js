@@ -3020,24 +3020,26 @@ function renderMealRow(){
     });
     html+=`</div>`;
   });
-  const unassigned=_getRemovedMeals();
-  html+=`</div><div class="meal-days-spacer">`;
-  unassigned.forEach(m=>{
-    html+=`<div class="meal-chip meal-chip-unassigned" draggable="true" data-recipeid="${m.recipe_id}"><span class="meal-chip-name">${escHtml(m.recipe_name)}</span></div>`;
-  });
   html+=`</div>`;
   el.innerHTML=html;
-  // Remove old goals-column unassigned if it exists
-  const oldUa=document.getElementById('mealUnassigned');if(oldUa)oldUa.remove();
-  // Bind unassigned chip drag
-  el.querySelectorAll('.meal-chip-unassigned').forEach(chip=>{
-    chip.addEventListener('dragstart',e=>{
-      e.dataTransfer.setData('text/plain','meal-new::'+chip.dataset.recipeid);
-      e.dataTransfer.effectAllowed='move';
-      chip.classList.add('meal-dragging');
+  // Render unassigned into separate wrapper (outside overflow:hidden)
+  const uaWrap=document.getElementById('mealUnassignedWrap');
+  if(uaWrap){
+    const unassigned=_getRemovedMeals();
+    let uaHtml='';
+    unassigned.forEach(m=>{
+      uaHtml+=`<div class="meal-chip meal-chip-unassigned" draggable="true" data-recipeid="${m.recipe_id}"><span class="meal-chip-name">${escHtml(m.recipe_name)}</span></div>`;
     });
-    chip.addEventListener('dragend',()=>chip.classList.remove('meal-dragging'));
-  });
+    uaWrap.innerHTML=uaHtml;
+    uaWrap.querySelectorAll('.meal-chip-unassigned').forEach(chip=>{
+      chip.addEventListener('dragstart',e=>{
+        e.dataTransfer.setData('text/plain','meal-new::'+chip.dataset.recipeid);
+        e.dataTransfer.effectAllowed='move';
+        chip.classList.add('meal-dragging');
+      });
+      chip.addEventListener('dragend',()=>chip.classList.remove('meal-dragging'));
+    });
+  }
   // Bind drag/drop on day cells
   el.querySelectorAll('.meal-cell[data-ds]').forEach(cell=>{
     cell.addEventListener('dragover',e=>{e.preventDefault();cell.classList.add('meal-drop');});
