@@ -1054,14 +1054,14 @@ body.dark .groc-staples-drawer{background:rgba(28,16,10,.98);box-shadow:-4px 0 1
 .meal-add-inline{background:none;border:1px dashed var(--border);border-radius:var(--rs);padding:5px 10px;font-size:11px;color:var(--muted);cursor:pointer;width:100%;margin-top:4px}
 .meal-add-inline:hover{border-color:var(--accent);color:var(--accent)}
 /* ── Meal Row (below weekly cal) ─────────────────────────────────────────── */
-.meal-row{display:grid;grid-template-columns:repeat(8,1fr);gap:1px}
-.meal-cell{padding:3px 2px;display:flex;flex-direction:column;gap:2px;position:relative;border-top:2px solid rgba(255,255,255,.88);background:rgba(255,255,255,.18)}
-.meal-cell.meal-drop{background:rgba(124,106,247,.08)}
-.meal-cell-unassigned{border-top:none;border-left:2px solid rgba(255,255,255,.88);background:rgba(255,255,255,.18);overflow-y:auto;scrollbar-width:none}
+.meal-row{display:grid;grid-template-columns:repeat(8,1fr);gap:0}
+.meal-cell{padding:3px 2px;display:flex;flex-direction:column;gap:1px;position:relative}
+.meal-cell.meal-drop{background:rgba(124,106,247,.06)}
+.meal-cell-unassigned{overflow-y:auto;scrollbar-width:none}
 .meal-cell-unassigned::-webkit-scrollbar{display:none}
-.meal-chip{display:flex;align-items:center;padding:2px 6px;border-radius:6px;background:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.6);font-size:9px;font-weight:500;color:var(--text);cursor:grab;max-width:100%;position:relative;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:inset 0 1px 0 rgba(255,255,255,.75)}
-.meal-chip:hover{background:rgba(255,255,255,.7)}
-body.dark .meal-chip{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.12);box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
+.meal-chip{display:flex;align-items:center;padding:1px 5px;border-radius:4px;background:none;border:none;font-size:8px;font-weight:400;color:var(--muted);cursor:grab;max-width:100%;position:relative;box-shadow:none;opacity:.7}
+.meal-chip:hover{background:rgba(0,0,0,.04);opacity:1;color:var(--text)}
+body.dark .meal-chip:hover{background:rgba(255,255,255,.05)}
 .meal-chip-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0}
 .meal-chip-days{font-size:8px;color:rgba(194,107,79,.7);flex-shrink:0;margin-left:auto;padding-left:4px}
 .meal-chip-x{background:none;border:none;cursor:pointer;font-size:8px;color:var(--muted);padding:0 1px;opacity:0;transition:opacity .1s;flex-shrink:0;margin-left:2px}
@@ -1070,8 +1070,8 @@ body.dark .meal-chip{background:rgba(255,255,255,.08);border-color:rgba(255,255,
 .meal-chip.meal-dragging{opacity:.4}
 .meal-chip.meal-drop-above{box-shadow:0 -2px 0 0 #f97316}
 .meal-chip.meal-drop-below{box-shadow:0 2px 0 0 #f97316}
-.meal-chip-unassigned{opacity:.5;border-style:dashed;cursor:grab}
-.meal-chip-unassigned:hover{opacity:.8}
+.meal-chip-unassigned{opacity:.4;border:1px dashed var(--muted);cursor:grab}
+.meal-chip-unassigned:hover{opacity:.7}
 .vid-groups-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-top:8px}
 .vid-group-card{background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:14px 16px;cursor:pointer;transition:box-shadow .15s,transform .15s}
 .vid-group-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.08);transform:translateY(-2px)}
