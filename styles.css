@@ -1070,8 +1070,8 @@ body.dark .meal-chip:hover{background:rgba(255,255,255,.05)}
 .meal-chip.meal-dragging{opacity:.4}
 .meal-chip.meal-drop-above{box-shadow:0 -2px 0 0 #f97316}
 .meal-chip.meal-drop-below{box-shadow:0 2px 0 0 #f97316}
-.meal-chip-unassigned{opacity:.8;border:1px dashed rgba(180,170,210,.25);color:var(--text);cursor:grab}
-.meal-chip-unassigned:hover{opacity:1}
+.meal-chip-unassigned{opacity:.6;border:1px dashed rgba(180,170,210,.25);color:var(--text);cursor:grab}
+.meal-chip-unassigned:hover{opacity:.85}
 .vid-groups-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-top:8px}
 .vid-group-card{background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:14px 16px;cursor:pointer;transition:box-shadow .15s,transform .15s}
 .vid-group-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.08);transform:translateY(-2px)}
