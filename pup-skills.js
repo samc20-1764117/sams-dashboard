@@ -10,7 +10,7 @@ function _pupAllSess(skillId){return(st.pupSessions||[]).filter(s=>String(s.skil
 function _pupAllDone(skillId){return _pupAllSess(skillId).filter(s=>s.done).length;}
 function _pupAllTotal(skillId){return _pupAllSess(skillId).length;}
 function _pupLastPracticed(skillId){const done=_pupAllSess(skillId).filter(s=>s.done).map(s=>s.day_date).sort();return done.length?done[done.length-1]:null;}
-function _pupCountBadge(skill){const total=_pupAllTotal(skill.id);if(!total)return'';return`<span style="font-size:10px;font-weight:600;color:var(--muted)">${total}</span>`;}
+function _pupCountBadge(skill){const total=_pupAllTotal(skill.id);if(!total)return'';return`<span class="vid-num" style="font-size:10px;font-weight:600;color:var(--muted)">${total}</span>`;}
 async function setPupWkDone(skillId,newDone){
   if(newDone<0)newDone=0;
   const{mon,sun}=getWkBounds(0);const monDs=d2s(mon),sunDs=d2s(sun);
@@ -41,7 +41,7 @@ function openPupCountEdit(skillId,anchorEl){
   const lastStr=last?new Date(last+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}):'never';
   const rowS='display:flex;align-items:center;justify-content:space-between;gap:12px;padding:2px 0';
   const labelS='color:var(--muted);font-size:11px';
-  const valS='font-weight:600;font-size:11px;color:var(--text)';
+  const valS='font-weight:600;font-size:11px;color:var(--text);font-variant-numeric:tabular-nums';
   const divS='border-top:1px solid var(--border);margin:6px 0';
   const inpS='width:44px;padding:2px 5px;border:1px solid var(--border);border-radius:5px;font-family:inherit;font-size:11px;background:var(--bg);color:var(--text);outline:none;text-align:center';
   pop.innerHTML=`<div style="font-size:10px;font-weight:700;color:var(--muted);margin-bottom:7px;text-transform:uppercase;letter-spacing:.05em">${skill.skill}</div><div style="${rowS}"><span style="${labelS}">Total done</span><span style="${valS}">${allDone}</span></div><div style="${rowS}"><span style="${labelS}">Total sessions</span><span style="${valS}">${allTotal}</span></div><div style="${rowS}"><span style="${labelS}">Last practiced</span><span style="${valS}">${lastStr}</span></div><div style="${divS}"></div><div style="${rowS}"><span style="${labelS}">This week</span><span style="${valS}">${wkDone}/${wkTotal}</span></div><div style="${divS}"></div><div style="${rowS}"><span style="${labelS}">Edit this wk done</span><input id="_pcDone" type="number" min="0" value="${wkDone}" style="${inpS}" onkeydown="if(event.key==='Enter'){event.preventDefault();_savePupCountEdit('${skillId}');}if(event.key==='Escape'){event.preventDefault();document.getElementById('_pupCountPop').style.display='none';}"></div><div style="display:flex;gap:5px;margin-top:7px"><button onclick="_savePupCountEdit('${skillId}')" style="flex:1;padding:3px 0;border-radius:6px;border:1px solid var(--border);background:rgba(139,92,246,.12);cursor:pointer;font-size:11px;color:var(--text)">Save</button><button onclick="document.getElementById('_pupCountPop').style.display='none'" style="flex:1;padding:3px 0;border-radius:6px;border:1px solid var(--border);background:transparent;cursor:pointer;font-size:11px;color:var(--muted)">Close</button></div>`;
@@ -565,7 +565,7 @@ function renderPupTable(){
         stageWidget=`<div style="height:100%;display:flex;align-items:center;justify-content:center"><input type="checkbox" onclick="event.stopPropagation();pupStageCheck('${sid}',this.checked)" style="width:12px;height:12px;cursor:pointer;accent-color:${col}" title="Mark mastered"></div>`;
       } else {
         const mTotal=_pupAllTotal(s.id);
-        stageWidget=`<div onclick="event.stopPropagation();pupStageCheck('${sid}',false)" style="height:100%;display:flex;align-items:center;justify-content:center;cursor:pointer" title="Mastered — click to revert"><span style="font-size:10px;font-weight:700;color:#22c55e;background:rgba(34,197,94,.12);border-radius:4px;padding:1px 5px;line-height:1.4">${mTotal||'✓'}</span></div>`;
+        stageWidget=`<div onclick="event.stopPropagation();pupStageCheck('${sid}',false)" style="height:100%;display:flex;align-items:center;justify-content:center;cursor:pointer" title="Mastered — click to revert"><span class="vid-num" style="font-size:10px;font-weight:700;color:#22c55e;background:rgba(34,197,94,.12);border-radius:4px;padding:1px 5px;line-height:1.4">${mTotal||'✓'}</span></div>`;
       }
       const nextHover=comment?`onmouseenter="showPupTip(event,'${comment}')" onmouseleave="hidePupTip()" style="cursor:help;padding:0 6px;font-size:11px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:var(--text)"`:`style="padding:0 6px;font-size:11px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:var(--text)"`;
       const nextDiv=`<div ondblclick="event.stopPropagation();pupCellEdit(this.closest('td'),'${sid}','next_step')" ${nextHover}>${nextStep}</div>`;
@@ -653,7 +653,7 @@ function renderPupsPage(){
           <input type="checkbox" ${isMastered?'checked':''} onclick="event.stopPropagation();togglePupMastered('${sid}',this.checked)" title="Mark mastered" style="width:13px;height:13px;cursor:pointer;accent-color:#8b5cf6;flex-shrink:0">
           <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;${isMastered?'opacity:.5;text-decoration:line-through':''}"><span class="pup-skill-name">${s.skill}</span>${wd?`<span style="font-size:10px;color:var(--muted);margin-left:4px">"${wd}"</span>`:''}</span>${sig?`<span style="font-size:9px;color:var(--muted);opacity:.6;flex-shrink:0;margin-left:2px">☞</span>`:''}
         </div>
-        <div style="display:flex;align-items:center;gap:5px;flex-shrink:0">${ns?`<span style="font-size:10px;color:var(--muted);white-space:nowrap">${ns}</span>`:''}${!isMastered?`<span onclick="event.stopPropagation();openPupCountEdit('${sid}',this)" title="Click for session details" style="font-size:10px;font-weight:600;color:var(--muted);cursor:pointer;padding:1px 4px;border-radius:4px;background:rgba(0,0,0,.04)">${_pupAllDone(sid)}/${_pupAllTotal(sid)}</span>`:''}</div>
+        <div style="display:flex;align-items:center;gap:5px;flex-shrink:0">${ns?`<span style="font-size:10px;color:var(--muted);white-space:nowrap">${ns}</span>`:''}${!isMastered?`<span class="vid-num" onclick="event.stopPropagation();openPupCountEdit('${sid}',this)" title="Click for session details" style="font-size:10px;font-weight:600;color:var(--muted);cursor:pointer;padding:1px 4px;border-radius:4px;background:rgba(0,0,0,.04)">${_pupAllDone(sid)}/${_pupAllTotal(sid)}</span>`:''}</div>
       </div>
       ${cm?`<div style="font-size:10px;color:var(--subtle);margin-top:2px;padding-left:18px">${esc(cm)}</div>`:''}
     </div>`;

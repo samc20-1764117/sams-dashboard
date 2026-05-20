@@ -315,14 +315,14 @@ function renderPupSkillsHighlight(){
       const hasDoneThisWk=doneC>0;
       return`<div class="ti" draggable="true" style="${hasDoneThisWk?'opacity:.35':''}" ondragstart="dragId='pupskill::${s.id}';event.dataTransfer.effectAllowed='copy';this.style.opacity='.4';document.body.classList.add('body-dragging');showWkcEdges(true);" ondragend="this.style.opacity='';document.body.classList.remove('body-dragging');showWkcEdges(false);" ondblclick="openPupEditModal('${s.id}')" onmouseenter="showPupSkillTip(this,'${s.id}')" onmouseleave="hidePupSkillTip()">
         <span class="tn" style="color:var(--muted);font-size:9px;font-weight:500">${escHtml(s.skill)}</span>
-        <span onclick="event.stopPropagation();openPupCountEdit('${s.id}',this)" title="Session details" style="font-size:8px;font-weight:600;color:var(--muted);flex-shrink:0;cursor:pointer;margin-left:auto">${doneC}/${total}</span>
+        <span class="vid-num" onclick="event.stopPropagation();openPupCountEdit('${s.id}',this)" title="Session details" style="font-size:8px;font-weight:600;color:var(--muted);flex-shrink:0;cursor:pointer;margin-left:auto">${doneC}/${total}</span>
       </div>`;
     }).join('');
-    const progressBar=`<div style="height:3px;background:rgba(0,0,0,.06);margin:0 5px;border-radius:2px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${accentColor};border-radius:2px;transition:width .3s"></div></div>`;
+    const progressBar=`<div style="height:3px;background:rgba(0,0,0,.06);margin:0 5px;border-radius:2px;overflow:hidden"><div style="height:100%;width:${pct}%;background:#10b981;border-radius:2px;transition:width .3s"></div></div>`;
     return`<div style="flex:1;display:flex;flex-direction:column;background:rgba(255,255,255,.55);border:1px solid rgba(210,205,228,.3);border-radius:12px;padding:6px 0 5px;overflow:hidden;box-shadow:inset 0 1px 3px rgba(0,0,0,.04)">
       <div style="display:flex;align-items:center;justify-content:space-between;padding:0 6px 2px">
         <span style="font-size:9px;font-weight:700;color:var(--muted);letter-spacing:.03em">${pup}</span>
-        <span style="font-size:9px;color:var(--muted);font-weight:600">${wkDoneTotal}/${wkSessTotal}</span>
+        <span class="vid-num" style="font-size:9px;color:var(--muted);font-weight:600">${wkDoneTotal}/${wkSessTotal}</span>
       </div>
       ${rows}
       <div style="flex:1"></div>
@@ -419,7 +419,7 @@ function showPupSkillTip(el,id){
   const nextLine=s.next_step?`<div style="line-height:1.4;margin-bottom:2px;font-size:11px;font-weight:500;color:rgba(44,24,16,.55)">${escHtml(s.next_step)}</div>`:'';
   const notesLine=s.comments?`<div style="line-height:1.4;font-size:10px;color:var(--subtle)">${escHtml(s.comments)}</div>`:'';
   const totalDone=_pupAllDone(id);const totalSess=_pupAllTotal(id);
-  const totalLine=totalSess?`<div style="line-height:1.4;margin-top:3px;font-size:9px;color:var(--muted);border-top:1px solid rgba(210,205,228,.25);padding-top:3px">${totalDone} done · ${totalSess} total sessions</div>`:'';
+  const totalLine=totalSess?`<div style="line-height:1.4;margin-top:3px;font-size:9px;color:var(--muted);border-top:1px solid rgba(210,205,228,.25);padding-top:3px;font-variant-numeric:tabular-nums">${totalDone} done · ${totalSess} total sessions</div>`:'';
   tip.innerHTML=skillLine+nextLine+notesLine+totalLine;
   const r=el.getBoundingClientRect();
   const tw=tip.offsetWidth||200;
