@@ -4450,6 +4450,7 @@ async function addQN(){
   const list=document.getElementById('qnList');if(list)list.scrollTop=9999;
   const sv=await sbReqSilent('POST','quick_notes',{note_text:txt,sort_order:maxSort+1});
   if(sv&&sv[0]){const ix=_qnNotes.findIndex(n=>n.id===tmp.id);if(ix>-1)_qnNotes[ix]=sv[0];
+    renderQN();
     const realId=sv[0].id;
     pushUndo(()=>{_qnNotes=_qnNotes.filter(n=>String(n.id)!==String(realId));renderQN();sbReqSilent('PATCH','quick_notes',{is_visible:false},`?id=eq.${realId}`);},'Add note');
   }
