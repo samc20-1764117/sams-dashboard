@@ -299,24 +299,29 @@ function renderPupSkillsHighlight(){
   const mochiSkills=_pupWkFocusSkills('Mochi');
   const sunnySkills=_pupWkFocusSkills('Sunny');
   if(!mochiSkills.length&&!sunnySkills.length){wrap.innerHTML='';wrap.style.cssText='display:none';return;}
-  wrap.style.cssText='display:flex;gap:5px;margin:3px 4px 0;flex-shrink:0';
+  wrap.style.cssText='display:flex;gap:4px;margin:2px 1px 0;flex-shrink:0';
   const mkTile=(pup,skills,accentColor)=>{
     const wkDoneTotal=skills.reduce((a,s)=>a+_pupWkDone(s.id),0);
     const wkSessTotal=skills.reduce((a,s)=>a+_pupWkSessTotal(s.id),0);
     const pct=wkSessTotal?Math.round(wkDoneTotal/wkSessTotal*100):0;
-    const rows=skills.map(s=>{
+    const sorted=[...skills].sort((a,b)=>{
+      const aHasDone=_pupWkDone(a.id)>0?1:0;
+      const bHasDone=_pupWkDone(b.id)>0?1:0;
+      return aHasDone-bHasDone;
+    });
+    const rows=sorted.map(s=>{
       const doneC=_pupWkDone(s.id);
       const total=_pupWkSessTotal(s.id);
-      const allDone=total>0&&doneC===total;
-      return`<div class="ti${allDone?' done':''}" draggable="true" style="padding:1px 6px;${allDone?'opacity:.4':''}" ondragstart="dragId='pupskill::${s.id}';event.dataTransfer.effectAllowed='copy';this.style.opacity='.4';document.body.classList.add('body-dragging');showWkcEdges(true);" ondragend="this.style.opacity='';document.body.classList.remove('body-dragging');showWkcEdges(false);" ondblclick="openPupEditModal('${s.id}')" onmouseenter="showPupSkillTip(this,'${s.id}')" onmouseleave="hidePupSkillTip()">
+      const hasDoneThisWk=doneC>0;
+      return`<div class="ti" draggable="true" style="padding:1px 5px;${hasDoneThisWk?'opacity:.35':''}" ondragstart="dragId='pupskill::${s.id}';event.dataTransfer.effectAllowed='copy';this.style.opacity='.4';document.body.classList.add('body-dragging');showWkcEdges(true);" ondragend="this.style.opacity='';document.body.classList.remove('body-dragging');showWkcEdges(false);" ondblclick="openPupEditModal('${s.id}')" onmouseenter="showPupSkillTip(this,'${s.id}')" onmouseleave="hidePupSkillTip()">
         <span class="tn" style="color:var(--text);font-size:10px;font-weight:500">${escHtml(s.skill)}</span>
         <span onclick="event.stopPropagation();openPupCountEdit('${s.id}',this)" title="Session details" style="font-size:9px;font-weight:600;color:var(--muted);flex-shrink:0;cursor:pointer;margin-left:auto">${doneC}/${total}</span>
       </div>`;
     }).join('');
-    const progressBar=`<div style="height:3px;border-radius:2px;background:rgba(0,0,0,.06);margin:3px 7px 0;overflow:hidden"><div style="height:100%;width:${pct}%;background:${accentColor};border-radius:2px;transition:width .3s"></div></div>`;
-    return`<div style="flex:1;background:rgba(255,255,255,.55);border:1px solid rgba(210,205,228,.3);border-radius:8px;padding:4px 0 4px;overflow:hidden;box-shadow:inset 0 1px 3px rgba(0,0,0,.04)">
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:0 7px 2px">
-        <span style="font-size:9px;font-weight:700;color:var(--muted);letter-spacing:.04em;text-transform:uppercase">${pup}</span>
+    const progressBar=`<div style="height:3px;border-radius:2px;background:rgba(0,0,0,.06);margin:3px 5px 0;overflow:hidden"><div style="height:100%;width:${pct}%;background:${accentColor};border-radius:2px;transition:width .3s"></div></div>`;
+    return`<div style="flex:1;background:rgba(255,255,255,.55);border:1px solid rgba(210,205,228,.3);border-radius:8px;padding:3px 0 3px;overflow:hidden;box-shadow:inset 0 1px 3px rgba(0,0,0,.04)">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:0 5px 1px">
+        <span style="font-size:9px;font-weight:700;color:var(--muted);letter-spacing:.03em">${pup}</span>
         <span style="font-size:9px;color:var(--muted);font-weight:600">${wkDoneTotal}/${wkSessTotal}</span>
       </div>
       ${rows}
