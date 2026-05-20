@@ -66,12 +66,16 @@ function renderToday(){
   const pupSessToday=(st.pupSessions||[])
     .filter(s=>s.day_date===ds||(dayOff===0&&isOv(s.day_date)&&!s.done))
     .map(s=>{const skill=(st.pup_skills||[]).find(x=>String(x.id)===String(s.skill_id));if(!skill)return null;return{id:'pup-sess-'+s.id,name:skill.skill,category:'Recurring',due_date:s.day_date,done:s.done,_pupSessId:s.id,_skillId:s.skill_id,_pup:skill.pup,_virtual:true,_type:'pup'};}).filter(Boolean);
+  // Videos assigned to today
+  const _vdmToday=_vidDayMap();
+  const vidToday=(st.videos||[]).filter(v=>!v.is_deleted&&_vdmToday[String(v.id)]===ds&&v.status!=='published').map(v=>({id:'vid-ov-'+v.id,name:v.title,category:'Videos',due_date:ds,done:false,_vidId:v.id,_virtual:true,_type:'vid'}));
   const virtToday=[
     ...allRecVirt.filter(v=>v.due_date===ds||(dayOff===0&&isOv(v.due_date)&&!v.done)),
     ...wrecToday,
     ...wrRulesToday,
     ...shopToday,
     ...pupSessToday,
+    ...vidToday,
     ...getExtrasForDate(ds).map(t=>{
       // Birthday done state: never grey out in today list
       return t;
@@ -109,7 +113,7 @@ function renderToday(){
   }
   document.getElementById('todList').innerHTML=sorted.map(t=>{
     const arr=!t.done&&!_hasTBToday(t);
-    return t._type==='travel'||t._type==='birthday'?tRowExtra(t):t._type==='shop'?tRowShopVirt(t,true,arr,true):t._type==='pup'?tRowPupSess(t,true):t._virtual?tRowTodayVirt(t,arr,true):tRow(t,{cat:true,catDot:true,drag:true,noDate:true,tbArrow:arr,noColor:true});
+    return t._type==='travel'||t._type==='birthday'?tRowExtra(t):t._type==='vid'?tRowVidVirt(t):t._type==='shop'?tRowShopVirt(t,true,arr,true):t._type==='pup'?tRowPupSess(t,true):t._virtual?tRowTodayVirt(t,arr,true):tRow(t,{cat:true,catDot:true,drag:true,noDate:true,tbArrow:arr,noColor:true});
   }).join('');
   updateOvBanner();
   renderPupSkillsHighlight();
@@ -498,6 +502,7 @@ function taskTypePri(t){
   if(cat==='my work')return 3;
   if(cat==='work')return 4;
   if(cat==='social')return 5;
+  if(t._type==='vid')return 5.5;
   if(t._type==='shop')return 7;
   if(t._type==='pup')return 8;
   if(t._virtual)return 6; // recurring (WR + non-WR), checked after shop/pup
@@ -612,6 +617,18 @@ function tRowShopVirt(t,noDate=false,tbArrow=false,noColor=false){
     ${!noDate&&t.due_date?`<span class="dlbl ${ov?'ov':''}">${ov?['S','M','T','W','T','F','S'][new Date(t.due_date.split('T')[0]+'T12:00').getDay()]:fmtD(t.due_date)}</span>`:''}
     ${tbArrow?'<span class="tb-arrow">›</span>':''}
     <button class="delbtn" onclick="event.stopPropagation();unscheduleShop('${t._shopId}')">✕</button>
+  </div>`;
+}
+function tRowVidVirt(t){
+  const s=gc('videos');const vid=String(t._vidId);
+  return`<div class="ti" style="background:${s.bg}" id="ti-${t.id}" draggable="true"
+    ondragstart="dragId='vid::${vid}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true)"
+    ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false)"
+    onclick="selTask(event,'${t.id}')" ondblclick="if(typeof openVidEdit==='function')openVidEdit('${vid}')">
+    <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" onchange="if(this.checked)_vidCompleteFromOv('${vid}');else _vidUncompleteFromOv('${vid}')"></label>
+    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="${s.t}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;opacity:.6"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+    <span class="tn">${escHtml(t.name)}</span>
+    <button class="delbtn" onclick="event.stopPropagation();_vidUnassignDay('${vid}')">✕</button>
   </div>`;
 }
 function _pupSessStyle(){
@@ -1042,6 +1059,12 @@ function renderWkCal(){
         }
         dragId=null;return;
       }
+      // Video dragged onto calendar
+      if(dragId.startsWith('vid::')){
+        const vidId=dragId.split('::')[1];
+        _vidAssignToDay(vidId,ds);
+        dragId=null;return;
+      }
       const _dragSid=String(dragId);
       const _isMulti=selectedTasks.has(_dragSid)&&selectedTasks.size>1;
       // Also move selected wrec/wrrule items when multi-dragging
@@ -1117,13 +1140,17 @@ function renderWkCal(){
     const _mkPupSessItem=(s,done)=>{const skill=(st.pup_skills||[]).find(x=>String(x.id)===String(s.skill_id));if(!skill)return null;return{id:'pup-sess-'+(done?'done-':'')+s.id,name:skill.skill,category:'Recurring',due_date:ds,done,_pupSessId:s.id,_skillId:s.skill_id,_pup:skill.pup,_virtual:true,_type:'pup'};};
     const pupSessForDay=(st.pupSessions||[]).filter(s=>s.day_date===ds&&!s.done).map(s=>_mkPupSessItem(s,false)).filter(Boolean);
     const pupSessForDayDone=(st.pupSessions||[]).filter(s=>s.day_date===ds&&s.done).map(s=>_mkPupSessItem(s,true)).filter(Boolean);
+    // Add videos assigned to this date
+    const _vdm=_vidDayMap();
+    const vidForDay=(st.videos||[]).filter(v=>!v.is_deleted&&_vdm[String(v.id)]===ds&&v.status!=='published').map(v=>({id:'vid-ov-'+v.id,name:v.title,category:'Videos',due_date:ds,done:false,_vidId:v.id,_virtual:true,_type:'vid'}));
     const undoneDay=sortTasksForDay([
       ...st.tasks.filter(t=>t.due_date&&t.due_date.split('T')[0]===ds&&!t.done&&t.category!=='Weekly Goals'),
       ...virtForDay,
       ...wrecForDay,
       ...wrRulesForDay,
       ...shopForDay,
-      ...pupSessForDay
+      ...pupSessForDay,
+      ...vidForDay
     ],ds);
     const doneDay=sortTasksForDay([
       ...st.tasks.filter(t=>t.due_date&&t.due_date.split('T')[0]===ds&&t.done&&t.category!=='Weekly Goals'),
@@ -1145,10 +1172,12 @@ function renderWkCal(){
       else if(t._isWrRule)chip.dataset.tid='wrrule-virt-'+t._ruleId;
       else if(t._isWrec)chip.dataset.tid='wrec-'+t._recId;
       else if(t._recId)chip.dataset.tid='rec-virt-'+t._recId;
+      else if(t._type==='vid')chip.dataset.tid='vid-ov-'+t._vidId;
       else if(t._type==='pup')chip.dataset.tid='pup-sess-'+t._pupSessId;
       chip.draggable=true;
       chip.addEventListener('dragstart',e2=>{
-        if(t._type==='pup'){dragId='pupsess::'+t._pupSessId+'::'+ds;}
+        if(t._type==='vid'){dragId='vid::'+t._vidId;}
+        else if(t._type==='pup'){dragId='pupsess::'+t._pupSessId+'::'+ds;}
         else if(t._type==='shop'){dragId='shop::'+t._shopId;}
         else if(t._isWrRule){dragId='wrrule::'+t._ruleId;}
         else if(t._isWrec){dragId='wrec::'+t._recId;}
@@ -1161,14 +1190,16 @@ function renderWkCal(){
       const chk=document.createElement('input');chk.type='checkbox';chk.className='wchk';chk.checked=t.done;
       chk.addEventListener('change',e2=>{
         e2.stopPropagation();
-        if(t._type==='pup'){togPupSessionDone(t._pupSessId,chk.checked);}
+        if(t._type==='vid'){if(chk.checked)_vidCompleteFromOv(t._vidId);else _vidUncompleteFromOv(t._vidId);}
+        else if(t._type==='pup'){togPupSessionDone(t._pupSessId,chk.checked);}
         else if(t._type==='shop'){togShop(t._shopId,chk.checked);}
         else if(t._isWrRule){togWrRule(String(t._ruleId),chk.checked,t._wkKey||getWkKey(wkOff));}
         else if(t._isWrec){togRec(t._recId,chk.checked);}
         else if(t._virtual){togRecVirt(t._recId,chk.checked,t._wkKey||getWkKey(wkOff));}
         else{toggleTask(t.id,chk.checked,'week');}
       });
-      const nm=document.createElement('span');nm.className='chip-name';nm.innerHTML=tmIcon(t)+escHtml(t._type==='pup'?_pupDisplayName(t):t.name);
+      const _vidIcon=t._type==='vid'?'<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:3px;vertical-align:-1px;flex-shrink:0"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>':'';
+      const nm=document.createElement('span');nm.className='chip-name';nm.innerHTML=_vidIcon+tmIcon(t)+escHtml(t._type==='pup'?_pupDisplayName(t):t.name);
       // name click handled by chip click→selTask, dblclick→openEditTask
       chip.appendChild(chk);chip.appendChild(nm);
       chip.addEventListener('contextmenu',e=>{
@@ -1198,11 +1229,12 @@ function renderWkCal(){
         }
         applySelHighlight();
       });
-      chip.addEventListener('dblclick',e=>{e.stopPropagation();if(t._type==='pup'){openPupEditModal(t._skillId);}else if(t._type==='shop')tiDblShop(e,t._shopId);else if(!t._virtual)tiDbl(e,t.id);else tiDblRec(e,t._recId);});
+      chip.addEventListener('dblclick',e=>{e.stopPropagation();if(t._type==='vid'){if(typeof openVidEdit==='function')openVidEdit(t._vidId);}else if(t._type==='pup'){openPupEditModal(t._skillId);}else if(t._type==='shop')tiDblShop(e,t._shopId);else if(!t._virtual)tiDbl(e,t.id);else tiDblRec(e,t._recId);});
       const dx=document.createElement('button');dx.className='chip-del';dx.textContent='✕';
-      dx.title=(t._type==='shop'||t._isWrec||t._isWrRule)?'Remove from calendar':t._virtual?'Delete recurring task':'Delete task';
+      dx.title=(t._type==='vid'||t._type==='shop'||t._isWrec||t._isWrRule)?'Remove from calendar':t._virtual?'Delete recurring task':'Delete task';
       dx.addEventListener('click',e2=>{
         e2.stopPropagation();
+        if(t._type==='vid'){_vidUnassignDay(t._vidId);return;}
         if(t._type==='pup'){removePupSession(t._pupSessId);return;}
         if(t._type==='shop'){
           const s=st.shopping.find(x=>String(x.id)===String(t._shopId));
@@ -2788,6 +2820,12 @@ function dropOnTodayList(e){
     }
     dragId=null;return;
   }
+  // Video dragged onto today
+  if(dragId.startsWith('vid::')){
+    const vidId=dragId.split('::')[1];
+    _vidAssignToDay(vidId,ds);
+    dragId=null;return;
+  }
 }
 
 // ── Shop overview ──────────────────────────────────────────────────────────────
@@ -2800,6 +2838,102 @@ function _shopOvSort(arr){
     return(x.shop_order??9999)-(y.shop_order??9999);
   });
 }
+// ── Videos on Overview ────────────────────────────────────────────────────────
+function _vidDayMap(){try{return JSON.parse(localStorage._vidDayMap||'{}');}catch(e){return{};}}
+function _vidDayMapSet(m){localStorage._vidDayMap=JSON.stringify(m);}
+
+function toggleVidOvMenu(){
+  const menu=document.getElementById('vidOvMenu');
+  const back=document.getElementById('vidOvMenuBack');
+  if(!menu)return;
+  if(menu.style.display==='block'){closeVidOvMenu();return;}
+  _renderVidOvMenu();
+  menu.style.display='block';
+  back.style.display='block';
+}
+function closeVidOvMenu(){
+  const menu=document.getElementById('vidOvMenu');
+  const back=document.getElementById('vidOvMenuBack');
+  if(menu)menu.style.display='none';
+  if(back)back.style.display='none';
+}
+function _renderVidOvMenu(){
+  const menu=document.getElementById('vidOvMenu');if(!menu)return;
+  const vids=(st.videos||[]).filter(v=>!v.is_deleted&&v.video_type==='B'&&(v.status==='up_next'||v.status==='in_progress'));
+  const map=_vidDayMap();
+  const assigned=new Set(Object.keys(map));
+  const unassigned=vids.filter(v=>!assigned.has(String(v.id)));
+  const inProg=unassigned.filter(v=>v.status==='in_progress');
+  const upNext=unassigned.filter(v=>v.status==='up_next');
+  if(!inProg.length&&!upNext.length){
+    menu.innerHTML='<div style="padding:10px;font-size:10px;color:var(--subtle);text-align:center">No videos to add</div>';
+    return;
+  }
+  let html='';
+  if(inProg.length){
+    html+='<div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);padding:4px 6px 2px">In Progress</div>';
+    inProg.forEach(v=>{html+=_vidOvMenuItem(v);});
+  }
+  if(upNext.length){
+    html+='<div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);padding:4px 6px 2px">Up Next</div>';
+    upNext.forEach(v=>{html+=_vidOvMenuItem(v);});
+  }
+  menu.innerHTML=html;
+}
+function _vidOvMenuItem(v){
+  const sid=String(v.id);
+  const steps=typeof VID_STEPS!=='undefined'?VID_STEPS:[];
+  const applicable=steps.filter(s=>v[s]!=='na');
+  const done=applicable.filter(s=>v[s]==='done').length;
+  const pct=applicable.length?Math.round(done/applicable.length*100):0;
+  const pctStr=pct>0&&pct<100?' <span style="opacity:.5;font-size:9px">'+pct+'%</span>':'';
+  return`<div class="vid-ov-item" draggable="true" ondragstart="dragId='vid::${sid}';event.dataTransfer.effectAllowed='move';document.body.classList.add('body-dragging');showWkcEdges(true)" ondragend="document.body.classList.remove('body-dragging');showWkcEdges(false)" style="padding:4px 6px;border-radius:6px;font-size:11px;font-weight:500;color:var(--text);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s" onmouseenter="this.style.background='rgba(0,0,0,.04)'" onmouseleave="this.style.background='none'"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;opacity:.4"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(v.title)}${pctStr}</span></div>`;
+}
+
+function _vidAssignToDay(vidId,ds){
+  const map=_vidDayMap();
+  map[String(vidId)]=ds;
+  _vidDayMapSet(map);
+  closeVidOvMenu();
+  renderAll();
+}
+function _vidUnassignDay(vidId){
+  const map=_vidDayMap();
+  delete map[String(vidId)];
+  _vidDayMapSet(map);
+  renderAll();
+}
+function _vidCompleteFromOv(vidId){
+  const v=(st.videos||[]).find(x=>String(x.id)===String(vidId));
+  if(!v)return;
+  const steps=typeof VID_STEPS!=='undefined'?VID_STEPS:[];
+  const patch={};
+  steps.forEach(s=>{if(v[s]!=='na'){v[s]='done';patch[s]='done';}});
+  v.status='published';patch.status='published';
+  // Also complete all small videos in the group
+  (st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(v.id)).forEach(c=>{
+    steps.forEach(s=>{if(c[s]!=='na'){c[s]='done';if(!patch._children)patch._children=[];patch._children.push({id:c.id,s,val:'done'});}});
+    c.status='published';
+    sbReqSilent('PATCH','videos',{status:'published',...Object.fromEntries(steps.filter(s=>c[s]==='done').map(s=>[s,'done']))},`?id=eq.${c.id}`);
+  });
+  sbReqSilent('PATCH','videos',{status:'published',...Object.fromEntries(steps.filter(s=>v[s]==='done').map(s=>[s,'done']))},`?id=eq.${v.id}`);
+  // Remove from day map
+  const map=_vidDayMap();delete map[String(vidId)];_vidDayMapSet(map);
+  save();renderAll();
+  if(typeof renderVideosPageKeepScroll==='function')renderVideosPageKeepScroll();
+}
+function _vidUncompleteFromOv(vidId){
+  // Undo: set back to in_progress, clear steps
+  const v=(st.videos||[]).find(x=>String(x.id)===String(vidId));
+  if(!v)return;
+  const steps=typeof VID_STEPS!=='undefined'?VID_STEPS:[];
+  steps.forEach(s=>{if(v[s]==='done'){v[s]='not_started';}});
+  v.status='in_progress';
+  sbReqSilent('PATCH','videos',{status:'in_progress',...Object.fromEntries(steps.filter(s=>v[s]!=='na').map(s=>[s,'not_started']))},`?id=eq.${v.id}`);
+  save();renderAll();
+  if(typeof renderVideosPageKeepScroll==='function')renderVideosPageKeepScroll();
+}
+
 function renderShopOv(){
   const shopSorted=_shopOvSort(st.shopping.filter(s=>!s.done));
   const container=document.getElementById('shopOv');
