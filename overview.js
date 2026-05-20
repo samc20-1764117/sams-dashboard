@@ -260,9 +260,9 @@ async function addPupWeeklyFocus(skillId,off=0){
   const wkStart=_pupWkMonday(off);
   if((st.pupWeeklyFocus||[]).some(f=>String(f.skill_id)===String(skillId)&&f.week_start===wkStart))return;
   const tmp='pwf-tmp-'+Date.now();
-  st.pupWeeklyFocus.push({id:tmp,skill_id:parseInt(skillId),week_start:wkStart});
+  st.pupWeeklyFocus.push({id:tmp,skill_id:String(skillId),week_start:wkStart});
   save();renderPupSkillsHighlight();renderToday();renderWkCal();
-  const sv=await sbReqSilent('POST','pup_weekly_focus',{skill_id:parseInt(skillId),week_start:wkStart});
+  const sv=await sbReqSilent('POST','pup_weekly_focus',{skill_id:String(skillId),week_start:wkStart});
   if(sv&&sv[0]){const i=st.pupWeeklyFocus.findIndex(f=>f.id===tmp);if(i>-1)st.pupWeeklyFocus[i]=sv[0];}
   save();
 }
@@ -284,8 +284,8 @@ async function seedPupWeeklyFocus(off=0){
   const focusSkills=(st.pup_skills||[]).filter(s=>(s.focus===true||s.focus==='true')&&s.stage!=='Mastered');
   for(const s of focusSkills){
     const tmp='pwf-tmp-'+Date.now()+'-'+s.id;
-    st.pupWeeklyFocus.push({id:tmp,skill_id:parseInt(s.id),week_start:wkStart});
-    sbReqSilent('POST','pup_weekly_focus',{skill_id:parseInt(s.id),week_start:wkStart}).then(sv=>{
+    st.pupWeeklyFocus.push({id:tmp,skill_id:String(s.id),week_start:wkStart});
+    sbReqSilent('POST','pup_weekly_focus',{skill_id:String(s.id),week_start:wkStart}).then(sv=>{
       if(sv&&sv[0]){const i=st.pupWeeklyFocus.findIndex(f=>f.id===tmp);if(i>-1)st.pupWeeklyFocus[i]=sv[0];}
       save();
     });
