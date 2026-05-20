@@ -4379,6 +4379,7 @@ function toggleQN(){
   _qnOpen=!_qnOpen;
   document.getElementById('qnPanel').classList.toggle('open',_qnOpen);
   if(_qnOpen){_qnHistOpen=false;const hl=document.getElementById('qnHistList');if(hl)hl.style.display='none';const ql=document.getElementById('qnList');if(ql)ql.style.display='';const hb=document.querySelector('.qn-hist-btn');if(hb)hb.classList.remove('active');_qnFetch().then(()=>{renderQN();});requestAnimationFrame(()=>{const inp=document.getElementById('qnInput');if(inp)inp.focus();});}
+  else{const inp=document.getElementById('qnInput');if(inp)inp.blur();}
 }
 function renderQN(){
   const el=document.getElementById('qnList');
@@ -4459,8 +4460,10 @@ function editQN(span,id){
   const orig=span.textContent;
   span.style.display='block';span.contentEditable='true';span.focus();
   const sel=window.getSelection();sel.selectAllChildren(span);sel.collapseToEnd();
+  let saved=false;
   const done=()=>{
-    span.contentEditable='false';span.style.display='';
+    if(saved)return;saved=true;
+    span.contentEditable='false';span.style.display='';span.onblur=null;span.onkeydown=null;
     const txt=span.textContent.trim();
     if(!txt||txt===orig){span.textContent=orig;return;}
     const n=_qnNotes.find(n=>String(n.id)===String(id));

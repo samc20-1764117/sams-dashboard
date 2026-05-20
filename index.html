@@ -933,7 +933,7 @@ tickClock();_updateOvTopDate();setInterval(tickClock,1000);init();
   <div class="qn-list" id="qnList"></div>
   <div class="qn-hist-list" id="qnHistList" style="display:none"></div>
   <div class="qn-input-row">
-    <input class="qn-input" id="qnInput" type="text" placeholder="Future you will thank you for writing this down…" autocapitalize="sentences" onkeydown="if(event.key==='Enter'){if(!this.value.trim()){_qnOpen=false;document.getElementById('qnPanel').classList.remove('open');}else{addQN();}}" oninput="if(this.value.length===1)this.value=this.value.toUpperCase()">
+    <input class="qn-input" id="qnInput" type="text" placeholder="Future you will thank you for writing this down…" autocapitalize="sentences" onkeydown="if(event.key==='Enter'){if(!this.value.trim()){_qnOpen=false;document.getElementById('qnPanel').classList.remove('open');this.blur();}else{addQN();}}if(event.key==='Escape'){_qnOpen=false;document.getElementById('qnPanel').classList.remove('open');this.blur();}" oninput="if(this.value.length===1)this.value=this.value.toUpperCase()">
   </div>
 </div>
 
