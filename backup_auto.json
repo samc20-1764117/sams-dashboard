@@ -1,5 +1,5 @@
 {
-  "exported_at": "2026-05-19T13:00:00.334Z",
+  "exported_at": "2026-05-20T13:00:00.723Z",
   "mode": "auto",
   "tables": {
     "tasks": [
@@ -972,17 +972,6 @@
         "goal_order": null
       },
       {
-        "name": "Start VO PM dash",
-        "category": "My work",
-        "due_date": "2026-05-22",
-        "done": false,
-        "importance": null,
-        "id": "4143707c-d83e-47ce-a8cf-e3571586d772",
-        "important": false,
-        "notes": null,
-        "goal_order": null
-      },
-      {
         "name": "Drive to SA",
         "category": "Home",
         "due_date": "2026-03-27",
@@ -1599,6 +1588,17 @@
         "goal_order": null
       },
       {
+        "name": "Start VO PM dash",
+        "category": "My work",
+        "due_date": "2026-05-25",
+        "done": false,
+        "importance": null,
+        "id": "4143707c-d83e-47ce-a8cf-e3571586d772",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
         "name": "Update dashboard",
         "category": "My work",
         "due_date": "2026-04-01",
@@ -2083,6 +2083,17 @@
         "goal_order": null
       },
       {
+        "name": "Nai nai",
+        "category": "Home",
+        "due_date": "2026-05-20",
+        "done": false,
+        "importance": null,
+        "id": "31d2f237-0d13-45b6-a1de-d24a2b63f1b2",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
         "name": "Pups showers",
         "category": "Home",
         "due_date": "2026-04-09",
@@ -2239,7 +2250,7 @@
       {
         "name": "Tab license issue",
         "category": "My work",
-        "due_date": "2026-05-21",
+        "due_date": "2026-05-26",
         "done": false,
         "importance": null,
         "id": "0229bedc-773f-4ab3-8332-cab3d894dd67",
@@ -2545,17 +2556,6 @@
         "goal_order": null
       },
       {
-        "name": "Nai nai",
-        "category": "Home",
-        "due_date": "2026-05-19",
-        "done": false,
-        "importance": null,
-        "id": "31d2f237-0d13-45b6-a1de-d24a2b63f1b2",
-        "important": false,
-        "notes": null,
-        "goal_order": null
-      },
-      {
         "name": "Claude setup cvs",
         "category": "Work",
         "due_date": "2026-04-21",
@@ -2782,17 +2782,6 @@
         "done": true,
         "importance": null,
         "id": "fb484dbc-46a5-428e-8d45-518b24075623",
-        "important": false,
-        "notes": null,
-        "goal_order": null
-      },
-      {
-        "name": "OBGYN apt @11:15am",
-        "category": "Home",
-        "due_date": "2026-05-21",
-        "done": false,
-        "importance": null,
-        "id": "29a7baa2-cd4a-4efe-a4c2-ebc1d79bc51a",
         "important": false,
         "notes": null,
         "goal_order": null
@@ -3062,6 +3051,17 @@
         "goal_order": null
       },
       {
+        "name": "Cancel apple subs keynote",
+        "category": "Home",
+        "due_date": "2026-05-24",
+        "done": false,
+        "importance": null,
+        "id": "fb37c19c-9ea0-4aea-8ad5-09fe159ffeb4",
+        "important": true,
+        "notes": null,
+        "goal_order": null
+      },
+      {
         "name": "Keynote slides",
         "category": "My work",
         "due_date": "2026-04-29",
@@ -3244,17 +3244,6 @@
         "done": true,
         "importance": null,
         "id": "14927330-d96d-4621-a51e-7fcca7864ea4",
-        "important": true,
-        "notes": null,
-        "goal_order": null
-      },
-      {
-        "name": "Check GI emails",
-        "category": "Home",
-        "due_date": "2026-05-19",
-        "done": false,
-        "importance": null,
-        "id": "8825bd72-1b4a-4f23-b270-78837a7733bd",
         "important": true,
         "notes": null,
         "goal_order": null
@@ -3513,23 +3502,12 @@
         "goal_order": null
       },
       {
-        "name": "Cancel keynote apple subscription",
+        "name": "Check GI emails",
         "category": "Home",
-        "due_date": "2026-05-25",
+        "due_date": "2026-05-20",
         "done": false,
         "importance": null,
-        "id": "a2195c7f-4645-4eb9-93e6-704f4609c996",
-        "important": false,
-        "notes": null,
-        "goal_order": null
-      },
-      {
-        "name": "Cancel apple subs keynote",
-        "category": "Home",
-        "due_date": "2026-05-25",
-        "done": false,
-        "importance": null,
-        "id": "fb37c19c-9ea0-4aea-8ad5-09fe159ffeb4",
+        "id": "8825bd72-1b4a-4f23-b270-78837a7733bd",
         "important": true,
         "notes": null,
         "goal_order": null
@@ -3590,6 +3568,17 @@
         "goal_order": null
       },
       {
+        "name": "Kong",
+        "category": "Home",
+        "due_date": "2026-05-20",
+        "done": false,
+        "importance": null,
+        "id": "a62a6b47-6da4-426e-a47a-e3bad0a30f46",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
         "name": "UX video",
         "category": "My work",
         "due_date": "2026-05-26",
@@ -3645,28 +3634,6 @@
         "goal_order": null
       },
       {
-        "name": "Film modern UX",
-        "category": "My work",
-        "due_date": "2026-05-19",
-        "done": false,
-        "importance": null,
-        "id": "6e886ef3-a3d1-43a7-9da7-b5ce6999ddb0",
-        "important": false,
-        "notes": null,
-        "goal_order": null
-      },
-      {
-        "name": "Work expense trip",
-        "category": "Work",
-        "due_date": "2026-05-18",
-        "done": true,
-        "importance": null,
-        "id": "f3ca8f53-df1c-4a59-ab6f-c6c806a5eaa2",
-        "important": false,
-        "notes": null,
-        "goal_order": null
-      },
-      {
         "name": "Hmart",
         "category": "Home",
         "due_date": "2026-05-17",
@@ -3706,17 +3673,6 @@
         "done": true,
         "importance": null,
         "id": "d406bd57-ce89-44b1-9ced-b5dfa36e001d",
-        "important": false,
-        "notes": null,
-        "goal_order": null
-      },
-      {
-        "name": "Kong",
-        "category": "Home",
-        "due_date": "2026-05-19",
-        "done": false,
-        "importance": null,
-        "id": "a62a6b47-6da4-426e-a47a-e3bad0a30f46",
         "important": false,
         "notes": null,
         "goal_order": null
@@ -3843,17 +3799,6 @@
         "goal_order": null
       },
       {
-        "name": "VO drill down",
-        "category": "My work",
-        "due_date": "2026-05-19",
-        "done": false,
-        "importance": null,
-        "id": "6c202c21-734f-4dbf-a912-0d5ee9c65c51",
-        "important": false,
-        "notes": null,
-        "goal_order": null
-      },
-      {
         "name": "Stretch",
         "category": "Home",
         "due_date": "2026-05-17",
@@ -3876,17 +3821,6 @@
         "goal_order": null
       },
       {
-        "name": "Nails",
-        "category": "Home",
-        "due_date": "2026-05-21",
-        "done": false,
-        "importance": null,
-        "id": "0f51d828-1835-484a-a758-cc18e579ab23",
-        "important": false,
-        "notes": null,
-        "goal_order": null
-      },
-      {
         "name": "Pack for OK",
         "category": "Home",
         "due_date": "2026-05-21",
@@ -3895,6 +3829,39 @@
         "id": "256177b2-992c-484b-b3d4-f99eb8ebf2d8",
         "important": false,
         "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Bring olivias gift",
+        "category": "Home",
+        "due_date": "2026-05-22",
+        "done": false,
+        "importance": null,
+        "id": "79ed5195-9966-40dc-9ce0-beb0fa9f2257",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "If needed cancel pilates",
+        "category": "Home",
+        "due_date": "2026-06-04",
+        "done": false,
+        "importance": null,
+        "id": "b8e624f0-60d7-4ec9-b4e8-38cfe8ad048b",
+        "important": true,
+        "notes": "Contract automatically renews each month until cancelled in writing 14 days prior to the payment date by emailing howdy@purepilatesaustin.com.",
+        "goal_order": null
+      },
+      {
+        "name": "OBGYN apt @11:15am",
+        "category": "Home",
+        "due_date": "2026-05-21",
+        "done": false,
+        "importance": null,
+        "id": "29a7baa2-cd4a-4efe-a4c2-ebc1d79bc51a",
+        "important": false,
+        "notes": "UT Medicine Women's Health Clinic\n1601 Trinity Street Bldg. A, 9th Floor\nAustin TX 78712\n‪833-882-2737‬",
         "goal_order": null
       },
       {
@@ -3920,34 +3887,12 @@
         "goal_order": null
       },
       {
-        "name": "Migration tables",
-        "category": "Work",
-        "due_date": "2026-05-19",
-        "done": false,
-        "importance": null,
-        "id": "79d45c63-bb54-4ef2-94f4-b85a66f86817",
-        "important": false,
-        "notes": null,
-        "goal_order": null
-      },
-      {
         "name": "VO drill down",
         "category": "My work",
         "due_date": "2026-05-18",
         "done": true,
         "importance": null,
         "id": "9c9f55e4-2eb1-4e47-bc94-1fb75c0711e4",
-        "important": false,
-        "notes": null,
-        "goal_order": null
-      },
-      {
-        "name": "VO drill down",
-        "category": "My work",
-        "due_date": "2026-05-19",
-        "done": false,
-        "importance": null,
-        "id": "3715dcfe-88f7-4ffe-ad0e-5504eb9c2554",
         "important": false,
         "notes": null,
         "goal_order": null
@@ -3981,6 +3926,138 @@
         "done": false,
         "importance": null,
         "id": "24fea989-7676-45c5-baa0-8943646b805e",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "VO drill down",
+        "category": "My work",
+        "due_date": "2026-05-19",
+        "done": true,
+        "importance": null,
+        "id": "3715dcfe-88f7-4ffe-ad0e-5504eb9c2554",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "VO drill down",
+        "category": "My work",
+        "due_date": "2026-05-19",
+        "done": true,
+        "importance": null,
+        "id": "6c202c21-734f-4dbf-a912-0d5ee9c65c51",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Drive",
+        "category": "Home",
+        "due_date": "2026-05-22",
+        "done": false,
+        "importance": null,
+        "id": "ce099e93-84a5-456a-a00b-ddae20c07da3",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Film modern UX",
+        "category": "My work",
+        "due_date": "2026-05-22",
+        "done": false,
+        "importance": null,
+        "id": "6e886ef3-a3d1-43a7-9da7-b5ce6999ddb0",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Work expense trip",
+        "category": "Work",
+        "due_date": "2026-05-18",
+        "done": true,
+        "importance": null,
+        "id": "f3ca8f53-df1c-4a59-ab6f-c6c806a5eaa2",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Read resubmission project",
+        "category": "Work",
+        "due_date": "2026-05-20",
+        "done": false,
+        "importance": null,
+        "id": "f270be98-677d-455f-8780-aeb6df559675",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "TC 26 learnings",
+        "category": "Work",
+        "due_date": "2026-05-19",
+        "done": true,
+        "importance": null,
+        "id": "7e2da686-8a60-4ceb-8978-c47e3ae164c9",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Migration tables",
+        "category": "Work",
+        "due_date": "2026-05-20",
+        "done": false,
+        "importance": null,
+        "id": "5d6799d2-0c70-43d4-91ae-5832cccf765e",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Migration tables",
+        "category": "Work",
+        "due_date": "2026-05-19",
+        "done": true,
+        "importance": null,
+        "id": "79d45c63-bb54-4ef2-94f4-b85a66f86817",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "VO drill down",
+        "category": "My work",
+        "due_date": "2026-05-20",
+        "done": false,
+        "importance": null,
+        "id": "10346c65-df81-45eb-800c-5559a99cd852",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Nails",
+        "category": "Home",
+        "due_date": "2026-05-20",
+        "done": false,
+        "importance": null,
+        "id": "0f51d828-1835-484a-a758-cc18e579ab23",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Oil change - Josh",
+        "category": "Home",
+        "due_date": "2026-05-21",
+        "done": false,
+        "importance": null,
+        "id": "ff1b910b-49fe-47d7-abe0-38f20e9a9f3c",
         "important": false,
         "notes": null,
         "goal_order": null
@@ -4031,6 +4108,15 @@
         "created_at": "2026-03-26T14:45:18.837297+00:00",
         "due_date": null,
         "shop_order": 6
+      },
+      {
+        "id": "75b03e08-a4d3-4775-894e-baf6426de22d",
+        "name": "Mochi carrier",
+        "store": "Online",
+        "done": true,
+        "created_at": "2026-04-16T12:46:32.121703+00:00",
+        "due_date": null,
+        "shop_order": 7
       },
       {
         "id": "63d4a10b-e42d-43dd-9771-728f5e6cabfb",
@@ -4204,15 +4290,6 @@
         "shop_order": 11
       },
       {
-        "id": "75b03e08-a4d3-4775-894e-baf6426de22d",
-        "name": "Mochi carrier",
-        "store": "Online",
-        "done": false,
-        "created_at": "2026-04-16T12:46:32.121703+00:00",
-        "due_date": null,
-        "shop_order": 7
-      },
-      {
         "id": "a731b959-c63f-461c-8e09-825e6ecb2902",
         "name": "Air purifier",
         "store": "Other",
@@ -4347,7 +4424,7 @@
       },
       {
         "id": "fb227aa6-8239-46e4-b26b-ed43b7f162b1",
-        "name": "Okloahoma",
+        "name": "Oklahoma",
         "start_date": "2026-05-22",
         "end_date": "2026-05-25",
         "destination": null,
@@ -4367,15 +4444,6 @@
         "present_ideas": null
       },
       {
-        "id": "c35d115f-ac02-40e0-8c3e-c0c6a37c7fbf",
-        "name": "Josh",
-        "birthday": "1990-11-08",
-        "notes": null,
-        "created_at": "2026-03-10T11:44:52.322534+00:00",
-        "present": null,
-        "present_ideas": null
-      },
-      {
         "id": "5e2d715f-42fa-4978-b29d-8e09ae19192d",
         "name": "Mochi",
         "birthday": "2025-12-07",
@@ -4390,15 +4458,6 @@
         "birthday": "1973-10-05",
         "notes": null,
         "created_at": "2026-03-23T13:17:03.576582+00:00",
-        "present": null,
-        "present_ideas": null
-      },
-      {
-        "id": "5097e00e-d977-4fb9-a056-2ccb4c69f9a5",
-        "name": "Sindi",
-        "birthday": "1900-05-05",
-        "notes": null,
-        "created_at": "2026-03-23T02:49:53.316063+00:00",
         "present": null,
         "present_ideas": null
       },
@@ -4455,6 +4514,24 @@
         "created_at": "2026-03-24T01:13:47.807217+00:00",
         "present": null,
         "present_ideas": null
+      },
+      {
+        "id": "5097e00e-d977-4fb9-a056-2ccb4c69f9a5",
+        "name": "Sindi",
+        "birthday": "1997-05-05",
+        "notes": null,
+        "created_at": "2026-03-23T02:49:53.316063+00:00",
+        "present": null,
+        "present_ideas": null
+      },
+      {
+        "id": "c35d115f-ac02-40e0-8c3e-c0c6a37c7fbf",
+        "name": "Josh",
+        "birthday": "1990-11-08",
+        "notes": null,
+        "created_at": "2026-03-10T11:44:52.322534+00:00",
+        "present": null,
+        "present_ideas": "[\"Golf simulator\"]"
       }
     ],
     "pup_skills": [
@@ -4539,26 +4616,6 @@
         "skip": false
       },
       {
-        "id": "ba49764c-aec1-466e-a08d-550184e397a8",
-        "pup": "Mochi",
-        "skill": "Sit",
-        "level": "Easy",
-        "skill_order": 22,
-        "stage": "Mastered",
-        "word": null,
-        "signal": null,
-        "currently_working_on": false,
-        "trainer_tip": null,
-        "comments": null,
-        "created_at": "2026-03-22T17:41:51.056182+00:00",
-        "updated_at": "2026-03-22T17:41:51.056182+00:00",
-        "focus": true,
-        "category": "commands",
-        "next_step": null,
-        "times_per_week": null,
-        "skip": false
-      },
-      {
         "id": "1f09d51a-c1d1-4790-b6ec-95e5bdd13c47",
         "pup": "Sunny",
         "skill": "Loose leash",
@@ -4594,26 +4651,6 @@
         "updated_at": "2026-03-12T14:03:48.056131+00:00",
         "focus": false,
         "category": "manners",
-        "next_step": null,
-        "times_per_week": null,
-        "skip": false
-      },
-      {
-        "id": "f89a4a8f-d94e-4383-a1d0-fcb40f137a8c",
-        "pup": "Sunny",
-        "skill": "Play dead",
-        "level": "Hard",
-        "skill_order": 17,
-        "stage": "In Progress",
-        "word": "Bang",
-        "signal": "Bang gun",
-        "currently_working_on": false,
-        "trainer_tip": null,
-        "comments": null,
-        "created_at": "2026-03-12T14:03:48.056131+00:00",
-        "updated_at": "2026-03-12T14:03:48.056131+00:00",
-        "focus": true,
-        "category": "fun",
         "next_step": null,
         "times_per_week": null,
         "skip": false
@@ -4879,6 +4916,26 @@
         "skip": false
       },
       {
+        "id": "ba49764c-aec1-466e-a08d-550184e397a8",
+        "pup": "Mochi",
+        "skill": "Sit",
+        "level": "Easy",
+        "skill_order": 22,
+        "stage": "In Progress",
+        "word": null,
+        "signal": null,
+        "currently_working_on": false,
+        "trainer_tip": null,
+        "comments": null,
+        "created_at": "2026-03-22T17:41:51.056182+00:00",
+        "updated_at": "2026-03-22T17:41:51.056182+00:00",
+        "focus": true,
+        "category": "commands",
+        "next_step": null,
+        "times_per_week": null,
+        "skip": false
+      },
+      {
         "id": "84e549c4-3d24-4428-beac-77ba50f06c68",
         "pup": "Sunny",
         "skill": "In",
@@ -4894,6 +4951,26 @@
         "updated_at": "2026-03-12T14:03:48.056131+00:00",
         "focus": false,
         "category": null,
+        "next_step": null,
+        "times_per_week": null,
+        "skip": false
+      },
+      {
+        "id": "f89a4a8f-d94e-4383-a1d0-fcb40f137a8c",
+        "pup": "Sunny",
+        "skill": "Play dead",
+        "level": "Hard",
+        "skill_order": 17,
+        "stage": "In Progress",
+        "word": "Bang",
+        "signal": "Bang gun",
+        "currently_working_on": false,
+        "trainer_tip": null,
+        "comments": null,
+        "created_at": "2026-03-12T14:03:48.056131+00:00",
+        "updated_at": "2026-03-12T14:03:48.056131+00:00",
+        "focus": false,
+        "category": "fun",
         "next_step": null,
         "times_per_week": null,
         "skip": false
@@ -7869,20 +7946,6 @@
         "done": true
       },
       {
-        "id": "6b22697c-49e9-4298-8b1b-e7b2cebc008b",
-        "title": "Bathroom",
-        "day_date": "2026-04-10",
-        "start_time": "10:45:00",
-        "duration_minutes": 30,
-        "category": "Recurring",
-        "created_at": "2026-04-10T17:44:34.538048+00:00",
-        "start_minutes": 615,
-        "task_id": null,
-        "rec_id": "43",
-        "shop_id": null,
-        "done": false
-      },
-      {
         "id": "afcd89a6-1d2b-45b9-b158-d7e542b9be90",
         "title": "TC 26 -complete all vizzes",
         "day_date": "2026-04-10",
@@ -10347,20 +10410,6 @@
         "done": false
       },
       {
-        "id": "53b9fc84-db13-42c7-8956-a72eaed5e576",
-        "title": "Nai nai",
-        "day_date": "2026-05-19",
-        "start_time": "11:00:00",
-        "duration_minutes": 60,
-        "category": "Home",
-        "created_at": "2026-05-19T00:49:12.874453+00:00",
-        "start_minutes": 660,
-        "task_id": "31d2f237-0d13-45b6-a1de-d24a2b63f1b2",
-        "rec_id": null,
-        "shop_id": null,
-        "done": false
-      },
-      {
         "id": "7700a879-3ea5-4be7-8d55-99f8f94b33d3",
         "title": "Change all for phone views on tab pub",
         "day_date": "2026-05-04",
@@ -10711,20 +10760,6 @@
         "done": true
       },
       {
-        "id": "e1a79253-7775-414c-8e49-7ac7ad6292f4",
-        "title": "Check GI emails",
-        "day_date": "2026-05-19",
-        "start_time": "13:00:00",
-        "duration_minutes": 30,
-        "category": "Home",
-        "created_at": "2026-05-19T00:49:14.220566+00:00",
-        "start_minutes": 450,
-        "task_id": "8825bd72-1b4a-4f23-b270-78837a7733bd",
-        "rec_id": null,
-        "shop_id": null,
-        "done": false
-      },
-      {
         "id": "7cb9f881-2378-4e03-8b98-ce74839fb58e",
         "title": "VO drill down",
         "day_date": "2026-05-18",
@@ -10774,11 +10809,11 @@
         "duration_minutes": 90,
         "category": "Work",
         "created_at": "2026-05-18T21:29:19.073935+00:00",
-        "start_minutes": 480,
+        "start_minutes": 780,
         "task_id": "79d45c63-bb54-4ef2-94f4-b85a66f86817",
         "rec_id": null,
         "shop_id": null,
-        "done": false
+        "done": true
       },
       {
         "id": "433c4508-a69d-4de9-85b7-edc8065b20fa",
@@ -10788,7 +10823,7 @@
         "duration_minutes": 60,
         "category": "Recurring",
         "created_at": "2026-05-19T12:48:35.72547+00:00",
-        "start_minutes": 1020,
+        "start_minutes": 960,
         "task_id": null,
         "rec_id": "26",
         "shop_id": null,
@@ -10799,14 +10834,14 @@
         "title": "VO drill down",
         "day_date": "2026-05-19",
         "start_time": "07:45:00",
-        "duration_minutes": 90,
+        "duration_minutes": 180,
         "category": "My work",
         "created_at": "2026-05-19T00:49:21.303954+00:00",
-        "start_minutes": 570,
+        "start_minutes": 480,
         "task_id": "3715dcfe-88f7-4ffe-ad0e-5504eb9c2554",
         "rec_id": null,
         "shop_id": null,
-        "done": false
+        "done": true
       },
       {
         "id": "a9d91bff-cbd2-4d67-a95f-519c4e31d1bd",
@@ -10823,18 +10858,228 @@
         "done": false
       },
       {
+        "id": "65b83461-ddab-4fc6-b450-5153f21f2f38",
+        "title": "Read resubmission project",
+        "day_date": "2026-05-20",
+        "start_time": "07:45:00",
+        "duration_minutes": 60,
+        "category": "Work",
+        "created_at": "2026-05-19T20:18:02.653548+00:00",
+        "start_minutes": 450,
+        "task_id": "f270be98-677d-455f-8780-aeb6df559675",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "4e5bdea3-2ed0-4f4b-8a2a-9e6f9c8f17aa",
+        "title": "Migration tables",
+        "day_date": "2026-05-20",
+        "start_time": "08:45:00",
+        "duration_minutes": 60,
+        "category": "Work",
+        "created_at": "2026-05-19T20:18:06.216573+00:00",
+        "start_minutes": 510,
+        "task_id": "5d6799d2-0c70-43d4-91ae-5832cccf765e",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "ac9543e5-9f97-4f62-8aa6-0097522c4284",
+        "title": "VO drill down",
+        "day_date": "2026-05-20",
+        "start_time": "09:45:00",
+        "duration_minutes": 90,
+        "category": "My work",
+        "created_at": "2026-05-19T20:18:09.334439+00:00",
+        "start_minutes": 570,
+        "task_id": "e2d3851e-af96-43fa-ab92-9bf68b268dcd",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "69f2e15b-e5bc-4846-bbab-bd34700c5da7",
+        "title": "OBGYN apt @11:15am",
+        "day_date": "2026-05-21",
+        "start_time": "11:15:00",
+        "duration_minutes": 135,
+        "category": "Home",
+        "created_at": "2026-05-19T17:02:02.683741+00:00",
+        "start_minutes": 660,
+        "task_id": "29a7baa2-cd4a-4efe-a4c2-ebc1d79bc51a",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "d9d271c1-eec2-4a67-be51-1332608c6a64",
+        "title": "VO drill down",
+        "day_date": "2026-05-20",
+        "start_time": "13:45:00",
+        "duration_minutes": 210,
+        "category": "My work",
+        "created_at": "2026-05-19T20:18:15.586348+00:00",
+        "start_minutes": 810,
+        "task_id": "10346c65-df81-45eb-800c-5559a99cd852",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "6ced6cfe-0593-43c5-8e5e-f3c2440a340a",
+        "title": "Nails",
+        "day_date": "2026-05-20",
+        "start_time": "11:00:00",
+        "duration_minutes": 60,
+        "category": "Home",
+        "created_at": "2026-05-19T20:18:42.335757+00:00",
+        "start_minutes": 660,
+        "task_id": "0f51d828-1835-484a-a758-cc18e579ab23",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
         "id": "a6e27c98-a194-4e30-85b9-7cb8a381e396",
         "title": "VO drill down",
         "day_date": "2026-05-19",
         "start_time": "12:00:00",
-        "duration_minutes": 300,
+        "duration_minutes": 90,
         "category": "My work",
         "created_at": "2026-05-19T12:52:37.271498+00:00",
-        "start_minutes": 720,
+        "start_minutes": 870,
         "task_id": "6c202c21-734f-4dbf-a912-0d5ee9c65c51",
         "rec_id": null,
         "shop_id": null,
+        "done": true
+      },
+      {
+        "id": "5c282db8-dba6-4e68-99f9-c4dade440085",
+        "title": "Trash",
+        "day_date": "2026-05-20",
+        "start_time": "18:30:00",
+        "duration_minutes": 30,
+        "category": "Recurring",
+        "created_at": "2026-05-19T20:19:06.596605+00:00",
+        "start_minutes": 1110,
+        "task_id": null,
+        "rec_id": "19",
+        "shop_id": null,
         "done": false
+      },
+      {
+        "id": "23ed2e3c-e1e5-412c-acd8-cd3ee6f67fcf",
+        "title": "Vacuum",
+        "day_date": "2026-05-20",
+        "start_time": "19:00:00",
+        "duration_minutes": 30,
+        "category": "Recurring",
+        "created_at": "2026-05-19T20:19:38.950724+00:00",
+        "start_minutes": 1140,
+        "task_id": null,
+        "rec_id": "12",
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "b5f6e92a-9f98-4347-89d3-cfc0656b8bfe",
+        "title": "Oil change - Josh",
+        "day_date": "2026-05-21",
+        "start_time": "17:00:00",
+        "duration_minutes": 60,
+        "category": "Home",
+        "created_at": "2026-05-19T22:22:15.054636+00:00",
+        "start_minutes": 1020,
+        "task_id": "ff1b910b-49fe-47d7-abe0-38f20e9a9f3c",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "15eca889-c609-4127-9215-be68341ca213",
+        "title": "Nai nai",
+        "day_date": "2026-05-20",
+        "start_time": "17:00:00",
+        "duration_minutes": 60,
+        "category": "Home",
+        "created_at": "2026-05-19T23:54:08.252063+00:00",
+        "start_minutes": 1020,
+        "task_id": "31d2f237-0d13-45b6-a1de-d24a2b63f1b2",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "4f1b7bcd-047e-4240-8769-8bc17c771f77",
+        "title": "Check GI emails",
+        "day_date": "2026-05-20",
+        "start_time": "18:30:00",
+        "duration_minutes": 30,
+        "category": "Home",
+        "created_at": "2026-05-20T01:43:49.665398+00:00",
+        "start_minutes": 1110,
+        "task_id": "8825bd72-1b4a-4f23-b270-78837a7733bd",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "731447ae-378e-4401-8f0e-9b30319255c2",
+        "title": "Drive",
+        "day_date": "2026-05-22",
+        "start_time": "11:45:00",
+        "duration_minutes": 390,
+        "category": "Home",
+        "created_at": "2026-05-19T18:17:43.551726+00:00",
+        "start_minutes": 690,
+        "task_id": "ce099e93-84a5-456a-a00b-ddae20c07da3",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "f4ec762d-0d32-4441-8733-593b4399431a",
+        "title": "Bring olivias gift",
+        "day_date": "2026-05-22",
+        "start_time": "10:00:00",
+        "duration_minutes": 30,
+        "category": "Home",
+        "created_at": "2026-05-19T18:17:25.873846+00:00",
+        "start_minutes": 660,
+        "task_id": "79ed5195-9966-40dc-9ce0-beb0fa9f2257",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "1dfba666-7502-4a1d-affa-bad7d2281955",
+        "title": "Kong",
+        "day_date": "2026-05-19",
+        "start_time": "18:00:00",
+        "duration_minutes": 30,
+        "category": "Home",
+        "created_at": "2026-05-19T18:21:12.137307+00:00",
+        "start_minutes": 1080,
+        "task_id": "a62a6b47-6da4-426e-a47a-e3bad0a30f46",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "4282b6f3-305a-4759-b92e-69bef4b52e29",
+        "title": "TC 26 learnings",
+        "day_date": "2026-05-19",
+        "start_time": "10:45:00",
+        "duration_minutes": 30,
+        "category": "Work",
+        "created_at": "2026-05-19T13:29:40.624989+00:00",
+        "start_minutes": 720,
+        "task_id": "7e2da686-8a60-4ceb-8978-c47e3ae164c9",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
       }
     ],
     "auto_timeblocks": [
@@ -11429,6 +11674,55 @@
         "id": 106,
         "base_id": 6,
         "date": "2026-05-15",
+        "start_time": null,
+        "end_time": null
+      },
+      {
+        "id": 107,
+        "base_id": 3,
+        "date": "2026-05-21",
+        "start_time": null,
+        "end_time": null
+      },
+      {
+        "id": 110,
+        "base_id": 4,
+        "date": "2026-05-19",
+        "start_time": null,
+        "end_time": null
+      },
+      {
+        "id": 111,
+        "base_id": 5,
+        "date": "2026-05-19",
+        "start_time": null,
+        "end_time": null
+      },
+      {
+        "id": 112,
+        "base_id": 5,
+        "date": "2026-05-22",
+        "start_time": null,
+        "end_time": null
+      },
+      {
+        "id": 113,
+        "base_id": 6,
+        "date": "2026-05-22",
+        "start_time": null,
+        "end_time": null
+      },
+      {
+        "id": 114,
+        "base_id": 4,
+        "date": "2026-05-22",
+        "start_time": null,
+        "end_time": null
+      },
+      {
+        "id": 115,
+        "base_id": 3,
+        "date": "2026-05-22",
         "start_time": null,
         "end_time": null
       }

@@ -2071,7 +2071,7 @@ function renderRecOv(){
   const{mon,sun}=getWkBounds(wrRecOff);
   const lbl=document.getElementById('wrRecWkLbl');
   if(lbl){
-    const _lnk=`<a href="#weekly" onclick="event.preventDefault();showPage('weekly')" class="btn btn-ghost btn-xs" style="text-decoration:none;align-self:center;background:rgba(255,255,255,.9);color:var(--text);border-color:rgba(210,205,228,.6)">`;
+    const _lnk=`<a href="#weekly" onclick="event.preventDefault();showPage('weekly')" class="wo-hdr-btn" style="text-decoration:none;width:auto;padding:4px 10px;font-size:10px">`;
     if(wrRecOff===0){lbl.innerHTML=_lnk+'Weekly Reset</a>';}
     else{const fmt=d=>d.toLocaleDateString('en-US',{month:'short',day:'numeric'});lbl.innerHTML=_lnk+fmt(mon)+' – '+fmt(sun)+'</a>';}
   }
