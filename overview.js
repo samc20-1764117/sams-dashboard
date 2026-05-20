@@ -299,31 +299,33 @@ function renderPupSkillsHighlight(){
   const mochiSkills=_pupWkFocusSkills('Mochi');
   const sunnySkills=_pupWkFocusSkills('Sunny');
   if(!mochiSkills.length&&!sunnySkills.length){wrap.innerHTML='';wrap.style.cssText='display:none';return;}
-  wrap.style.cssText='display:flex;gap:6px;margin:4px 8px 2px;flex-shrink:0';
-  const mkTile=(pup,skills,color,bgLight,borderColor)=>{
+  wrap.style.cssText='display:flex;gap:5px;margin:3px 4px 0;flex-shrink:0';
+  const mkTile=(pup,skills,accentColor)=>{
     const wkDoneTotal=skills.reduce((a,s)=>a+_pupWkDone(s.id),0);
     const wkSessTotal=skills.reduce((a,s)=>a+_pupWkSessTotal(s.id),0);
-    const allDoneTotal=skills.reduce((a,s)=>a+_pupAllDone(s.id),0);
+    const pct=wkSessTotal?Math.round(wkDoneTotal/wkSessTotal*100):0;
     const rows=skills.map(s=>{
       const doneC=_pupWkDone(s.id);
       const total=_pupWkSessTotal(s.id);
       const allDone=total>0&&doneC===total;
-      return`<div class="ti${allDone?' done':''}" draggable="true" style="padding:1px 6px;${allDone?'opacity:.45':''}" ondragstart="dragId='pupskill::${s.id}';event.dataTransfer.effectAllowed='copy';this.style.opacity='.4';document.body.classList.add('body-dragging');showWkcEdges(true);" ondragend="this.style.opacity='';document.body.classList.remove('body-dragging');showWkcEdges(false);" ondblclick="openPupEditModal('${s.id}')" onmouseenter="showPupSkillTip(this,'${s.id}')" onmouseleave="hidePupSkillTip()">
-        <span onclick="event.stopPropagation();openPupCountEdit('${s.id}',this)" title="Session details" style="font-size:9px;font-weight:600;color:var(--muted);margin-left:auto;flex-shrink:0;cursor:pointer;width:22px;text-align:right">${doneC}/${total}</span>
+      return`<div class="ti${allDone?' done':''}" draggable="true" style="padding:1px 6px;${allDone?'opacity:.4':''}" ondragstart="dragId='pupskill::${s.id}';event.dataTransfer.effectAllowed='copy';this.style.opacity='.4';document.body.classList.add('body-dragging');showWkcEdges(true);" ondragend="this.style.opacity='';document.body.classList.remove('body-dragging');showWkcEdges(false);" ondblclick="openPupEditModal('${s.id}')" onmouseenter="showPupSkillTip(this,'${s.id}')" onmouseleave="hidePupSkillTip()">
         <span class="tn" style="color:var(--text);font-size:10px;font-weight:500">${escHtml(s.skill)}</span>
+        <span onclick="event.stopPropagation();openPupCountEdit('${s.id}',this)" title="Session details" style="font-size:9px;font-weight:600;color:var(--muted);flex-shrink:0;cursor:pointer;margin-left:auto">${doneC}/${total}</span>
       </div>`;
     }).join('');
-    return`<div style="flex:1;background:${bgLight};border:1px solid ${borderColor};border-radius:10px;padding:5px 0 3px;overflow:hidden">
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:0 8px 3px">
-        <span style="font-size:10px;font-weight:700;color:${color};letter-spacing:.03em">${pup}</span>
-        <span style="font-size:9px;color:var(--muted);font-weight:600">${wkDoneTotal}/${wkSessTotal} <span style="opacity:.5">· ${allDoneTotal} total</span></span>
+    const progressBar=`<div style="height:3px;border-radius:2px;background:rgba(0,0,0,.06);margin:3px 7px 0;overflow:hidden"><div style="height:100%;width:${pct}%;background:${accentColor};border-radius:2px;transition:width .3s"></div></div>`;
+    return`<div style="flex:1;background:rgba(255,255,255,.55);border:1px solid rgba(210,205,228,.3);border-radius:8px;padding:4px 0 4px;overflow:hidden;box-shadow:inset 0 1px 3px rgba(0,0,0,.04)">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:0 7px 2px">
+        <span style="font-size:9px;font-weight:700;color:var(--muted);letter-spacing:.04em;text-transform:uppercase">${pup}</span>
+        <span style="font-size:9px;color:var(--muted);font-weight:600">${wkDoneTotal}/${wkSessTotal}</span>
       </div>
       ${rows}
+      ${progressBar}
     </div>`;
   };
   let html='';
-  if(mochiSkills.length)html+=mkTile('Mochi',mochiSkills,'#8b5cf6','rgba(237,233,254,.35)','rgba(196,181,253,.35)');
-  if(sunnySkills.length)html+=mkTile('Sunny',sunnySkills,'#ca8a04','rgba(254,252,232,.45)','rgba(251,191,36,.25)');
+  if(mochiSkills.length)html+=mkTile('Mochi',mochiSkills,'#a78bfa');
+  if(sunnySkills.length)html+=mkTile('Sunny',sunnySkills,'#d4a017');
   wrap.innerHTML=html;
 }
 async function togPupSkillTrained(id,checked){
@@ -410,7 +412,9 @@ function showPupSkillTip(el,id){
   const skillLine=s.skill?`<div style="display:flex;justify-content:space-between;align-items:baseline;line-height:1.4;margin-bottom:3px"><span style="color:var(--text);font-weight:700;font-size:12px">${escHtml(s.skill)}</span><span style="font-weight:700;font-size:11px;color:${pupColor};margin-left:10px">${pupLetter}</span></div>`:'';
   const nextLine=s.next_step?`<div style="line-height:1.4;margin-bottom:2px;font-size:11px;font-weight:500;color:rgba(44,24,16,.55)">${escHtml(s.next_step)}</div>`:'';
   const notesLine=s.comments?`<div style="line-height:1.4;font-size:10px;color:var(--subtle)">${escHtml(s.comments)}</div>`:'';
-  tip.innerHTML=skillLine+nextLine+notesLine;
+  const totalDone=_pupAllDone(id);const totalSess=_pupAllTotal(id);
+  const totalLine=totalSess?`<div style="line-height:1.4;margin-top:3px;font-size:9px;color:var(--muted);border-top:1px solid rgba(210,205,228,.25);padding-top:3px">${totalDone} done · ${totalSess} total sessions</div>`:'';
+  tip.innerHTML=skillLine+nextLine+notesLine+totalLine;
   const r=el.getBoundingClientRect();
   const tw=tip.offsetWidth||200;
   let left=r.right+6;if(left+tw>window.innerWidth-8)left=r.left-tw-6;
