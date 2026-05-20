@@ -314,7 +314,7 @@ function renderPupSkillsHighlight(){
       const total=_pupWkSessTotal(s.id);
       const hasDoneThisWk=doneC>0;
       return`<div class="ti" draggable="true" style="${hasDoneThisWk?'opacity:.35':''}" ondragstart="dragId='pupskill::${s.id}';event.dataTransfer.effectAllowed='copy';this.style.opacity='.4';document.body.classList.add('body-dragging');showWkcEdges(true);" ondragend="this.style.opacity='';document.body.classList.remove('body-dragging');showWkcEdges(false);" ondblclick="openPupEditModal('${s.id}')" onmouseenter="showPupSkillTip(this,'${s.id}')" onmouseleave="hidePupSkillTip()">
-        <span class="tn" style="color:var(--text);font-size:9px;font-weight:500">${escHtml(s.skill)}</span>
+        <span class="tn" style="color:var(--muted);font-size:9px;font-weight:500">${escHtml(s.skill)}</span>
         <span onclick="event.stopPropagation();openPupCountEdit('${s.id}',this)" title="Session details" style="font-size:8px;font-weight:600;color:var(--muted);flex-shrink:0;cursor:pointer;margin-left:auto">${doneC}/${total}</span>
       </div>`;
     }).join('');
