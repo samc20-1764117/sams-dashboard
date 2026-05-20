@@ -314,8 +314,8 @@ function renderPupSkillsHighlight(){
       const total=_pupWkSessTotal(s.id);
       const hasDoneThisWk=doneC>0;
       return`<div class="ti" draggable="true" style="${hasDoneThisWk?'opacity:.35':''}" ondragstart="dragId='pupskill::${s.id}';event.dataTransfer.effectAllowed='copy';this.style.opacity='.4';document.body.classList.add('body-dragging');showWkcEdges(true);" ondragend="this.style.opacity='';document.body.classList.remove('body-dragging');showWkcEdges(false);" ondblclick="openPupEditModal('${s.id}')" onmouseenter="showPupSkillTip(this,'${s.id}')" onmouseleave="hidePupSkillTip()">
-        <span class="tn" style="color:var(--text);font-size:10px;font-weight:500">${escHtml(s.skill)}</span>
-        <span onclick="event.stopPropagation();openPupCountEdit('${s.id}',this)" title="Session details" style="font-size:9px;font-weight:600;color:var(--muted);flex-shrink:0;cursor:pointer;margin-left:auto">${doneC}/${total}</span>
+        <span class="tn" style="color:var(--text);font-size:9px;font-weight:500">${escHtml(s.skill)}</span>
+        <span onclick="event.stopPropagation();openPupCountEdit('${s.id}',this)" title="Session details" style="font-size:8px;font-weight:600;color:var(--muted);flex-shrink:0;cursor:pointer;margin-left:auto">${doneC}/${total}</span>
       </div>`;
     }).join('');
     const progressBar=`<div style="height:3px;background:rgba(0,0,0,.06);margin:0 5px;border-radius:2px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${accentColor};border-radius:2px;transition:width .3s"></div></div>`;
