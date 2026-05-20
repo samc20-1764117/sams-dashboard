@@ -319,7 +319,7 @@ function renderPupSkillsHighlight(){
       </div>`;
     }).join('');
     const progressBar=`<div style="height:3px;background:rgba(0,0,0,.06);margin:0 5px;border-radius:2px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${accentColor};border-radius:2px;transition:width .3s"></div></div>`;
-    return`<div style="flex:1;display:flex;flex-direction:column;background:rgba(255,255,255,.55);border:1px solid rgba(210,205,228,.3);border-radius:8px;padding:6px 0 5px;overflow:hidden;box-shadow:inset 0 1px 3px rgba(0,0,0,.04)">
+    return`<div style="flex:1;display:flex;flex-direction:column;background:rgba(255,255,255,.55);border:1px solid rgba(210,205,228,.3);border-radius:12px;padding:6px 0 5px;overflow:hidden;box-shadow:inset 0 1px 3px rgba(0,0,0,.04)">
       <div style="display:flex;align-items:center;justify-content:space-between;padding:0 6px 2px">
         <span style="font-size:9px;font-weight:700;color:var(--muted);letter-spacing:.03em">${pup}</span>
         <span style="font-size:9px;color:var(--muted);font-weight:600">${wkDoneTotal}/${wkSessTotal}</span>
