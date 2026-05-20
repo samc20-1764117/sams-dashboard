@@ -3053,7 +3053,7 @@ function tRowExtra(t){
     <span class="tn" style="color:${s.t};font-weight:600${_bdDone?';text-decoration:line-through':''}">${modeIcon}${isBd?t.name.replace('🎂','<span class="bday-emoji">🎂</span>'):t.name}</span>
     ${isTv||isBd?'':`<svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3" fill="${s.bg}" stroke="${s.d}" stroke-opacity="0.4" stroke-width="1"/></svg>`}
     ${isBd?'':`<span class="dlbl">${fmtD(t.due_date)}${sub}</span>`}
-    ${isTv?`<button class="delbtn" onclick="event.stopPropagation();delTravel('${t._srcId}')">✕</button>`:''}
+    ${isTv?`<button class="pack-icon-btn" onclick="event.stopPropagation();openPackingModal('${t._srcId}')" title="Packing list">🧳</button><button class="delbtn" onclick="event.stopPropagation();delTravel('${t._srcId}')">✕</button>`:''}
   </div>`;
 }
 
@@ -3110,6 +3110,7 @@ function renderKanban(){
           if(isTv){
             const nm=document.createElement('span');nm.className='kn';nm.style.color=s.t;nm.textContent='✈ '+t.name;nm.addEventListener('click',()=>openTravelModal(t._srcId));row.appendChild(nm);
             if(t.due_date){const dl=document.createElement('span');dl.className='dlbl';dl.textContent=fmtD(t.due_date)+(t.end_date?' – '+fmtD(t.end_date):'');row.appendChild(dl);}
+            const packBtn=document.createElement('button');packBtn.className='pack-icon-btn';packBtn.textContent='🧳';packBtn.title='Packing list';packBtn.addEventListener('click',ev=>{ev.stopPropagation();openPackingModal(t._srcId);});row.appendChild(packBtn);
             const del=document.createElement('button');del.className='delbtn';del.textContent='✕';del.addEventListener('click',ev=>{ev.stopPropagation();delTravel(t._srcId);});row.appendChild(del);
           } else {
             row.dataset.tid=String(t.id);row.draggable=true;row.addEventListener('dragstart',e=>dStart(e,t.id));row.addEventListener('dragend',()=>row.classList.remove('dragging'));row.addEventListener('contextmenu',e=>showCtx(e,t.id));row.addEventListener('click',e=>selTask(e,t.id));row.addEventListener('dblclick',e=>tiDbl(e,t.id));

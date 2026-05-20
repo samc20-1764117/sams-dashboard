@@ -58,6 +58,7 @@
     <a class="nav-item" href="#recipes" onclick="event.preventDefault();showPage('recipes')"><div class="ndot" style="background:#f59e0b"></div>🍳 Recipes</a>
     <a class="nav-item" href="#notes" onclick="event.preventDefault();showPage('notes')"><div class="ndot" style="background:#8b5cf6"></div>📝 Notes</a>
     <a class="nav-item" href="#videos" onclick="event.preventDefault();showPage('videos')"><div class="ndot" style="background:#0ea5e9"></div>🎬 Videos</a>
+    <a class="nav-item" href="#packing" onclick="event.preventDefault();showPage('packing')"><div class="ndot" style="background:#22c55e"></div>🧳 Packing</a>
   </nav>
 </div>
 
@@ -368,6 +369,16 @@
 
 <!-- OTHER PAGES (empty) -->
 <div class="page" id="page-travel" style="display:none!important"><div id="travelList" style="display:none"></div></div>
+<div class="page" id="page-packing" style="padding:60px clamp(12px,3vw,56px) 24px clamp(12px,3vw,56px)">
+  <div class="ov-topbar">
+    <div class="ov-topbar-left"><span class="ov-topbar-label">Packing Lists</span><span class="ov-topbar-dot"></span></div>
+    <span class="ov-topbar-date topbar-date"></span>
+    <div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div>
+  </div>
+  <div class="card" style="flex:1;width:100%;display:flex;flex-direction:column;min-height:0;overflow:hidden;position:relative;margin-top:20px">
+    <div id="packingPageContent" style="flex:1;width:100%;min-height:0;overflow:hidden;padding:16px;display:flex;flex-direction:column"></div>
+  </div>
+</div>
 <div class="page" id="page-birthdays" style="padding:60px clamp(12px,3vw,56px) 24px clamp(12px,3vw,56px)">
   <div class="ov-topbar">
     <div class="ov-topbar-left"><span class="ov-topbar-label">Birthdays</span><span class="ov-topbar-dot"></span></div>
@@ -429,6 +440,15 @@
     <div class="mfield"><label>Travel mode</label><select id="tvTravelMode" onkeydown="if(event.key==='Enter')setTimeout(saveTravelModal,0)"><option value="">None</option><option value="plane">✈️ Plane</option><option value="drive">🚗 Drive</option></select></div>
     <div class="mfield"><label>Notes <span style="opacity:.45;font-weight:400">(optional)</span></label><input id="tvNotes" placeholder="flights, hotels…"></div>
     <div class="mact"><button class="btn btn-ghost" onclick="closeMod(&#39;travelModal&#39;)">Cancel</button><button class="btn btn-dark" onclick="saveTravelModal()">Save</button></div>
+  </div>
+</div>
+
+<!-- Packing Modal -->
+<div class="overlay" id="packingModal" onclick="closeMod('packingModal',event)" onkeydown="if(event.key==='Escape'){event.stopPropagation();closeMod('packingModal');}">
+  <div class="modal task-modal" style="width:420px;max-height:80vh;display:flex;flex-direction:column">
+    <div class="mt" id="packingModalTitle">Packing List</div>
+    <div id="packingModalBody" style="flex:1;overflow-y:auto;padding:0 4px"></div>
+    <div class="mact"><button class="btn btn-ghost" onclick="closeMod('packingModal')">Close</button></div>
   </div>
 </div>
 

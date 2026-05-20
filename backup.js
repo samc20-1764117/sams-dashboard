@@ -17,7 +17,9 @@ const TABLES = [
   'pup_skills',
   'time_blocks',
   'auto_timeblocks',
-  'auto_timeblock_overrides'
+  'auto_timeblock_overrides',
+  'packing_templates',
+  'packing_items'
 ];
 
 const MODE = process.argv[2] === 'manual' ? 'manual' : 'auto';

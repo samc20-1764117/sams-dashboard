@@ -1092,6 +1092,24 @@ body.dark .vid-board-card{background:rgba(40,30,50,.6)}
 body.dark .vid-group-card,body.dark .vid-board-col{background:rgba(40,30,50,.4)}
 body.dark .vid-stat-card{background:rgba(40,30,50,.4)}
 
+/* Packing */
+.pack-tpl-row{display:flex;align-items:center;gap:6px;padding:3px 6px;border-radius:4px;position:relative;font-size:12px}
+.pack-tpl-row:hover{background:rgba(100,100,140,.06)}
+.pack-tpl-row:hover .delbtn{opacity:1}
+.pack-tpl-row .delbtn{position:static;transform:none;opacity:0;flex-shrink:0}
+.pack-tpl-name{flex:1;outline:none;cursor:text;min-width:0}
+.pack-add-row{padding:2px 6px}
+.pack-add-inp{width:100%;border:none;border-bottom:1px solid rgba(200,200,215,.25);background:transparent;font-size:11px;padding:4px 0;outline:none;color:var(--text-primary,#334155);font-family:inherit}
+.pack-add-inp::placeholder{color:var(--text-secondary,#94a3b8)}
+.pack-item-row{display:flex;align-items:center;gap:6px;padding:4px 6px;border-radius:4px;position:relative;cursor:grab}
+.pack-item-row:hover{background:rgba(100,100,140,.06)}
+.pack-item-row:hover .delbtn{opacity:1}
+.pack-item-row .delbtn{position:static;transform:none;opacity:0;flex-shrink:0}
+.pack-icon-btn{background:none;border:none;cursor:pointer;font-size:12px;padding:1px 3px;opacity:.5;transition:opacity .15s;flex-shrink:0}
+.pack-icon-btn:hover{opacity:1}
+.ti:hover .pack-icon-btn{opacity:.7}
+.kol-item .pack-icon-btn{font-size:11px;padding:0 2px}
+
 /* Anti-FOUC: applied before first paint via html classes set in head script */
 html.init-dark body{background:#1a100a!important;background-attachment:fixed!important;}
 html.init-sb #main{left:186px!important;}

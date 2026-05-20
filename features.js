@@ -1650,7 +1650,7 @@ function closeSB(){sbOpen=false;document.getElementById('sidebar').classList.add
 function openSB(){sbOpen=true;document.getElementById('sidebar').classList.remove('closed');document.getElementById('main').style.left='186px';document.getElementById('menuOpen').classList.remove('visible');document.querySelectorAll('.ov-topbar').forEach(el=>el.style.left='186px');save();}
 
 // ── Pages ──────────────────────────────────────────────────────────────────────
-const PAGES=['overview','weekly','shopping','travel','birthdays','settings','pups','finance','recipes','notes','videos'];
+const PAGES=['overview','weekly','shopping','travel','birthdays','settings','pups','finance','recipes','notes','videos','packing'];
 // ══════════════════════════════════════════════════════════════════════════════
 // ── RECIPES PAGE ──────────────────────────────────────────────────────────────
 // ══════════════════════════════════════════════════════════════════════════════
@@ -3325,7 +3325,7 @@ function showPage(id){
   const pageEl=document.getElementById('page-'+id);if(pageEl)pageEl.classList.add('active');
   const idx=PAGES.indexOf(id);if(idx>-1&&document.querySelectorAll('.nav-item')[idx])document.querySelectorAll('.nav-item')[idx].classList.add('active');
   const mainEl=document.getElementById('main');if(mainEl){mainEl.scrollTop=0;}
-  if(id==='weekly'){renderWeeklyPage();}if(id==='travel')renderTravelPage();if(id==='birthdays')renderBdayPage();if(id==='pups')renderPupsPage();if(id==='recipes')renderRecipesPage();if(id==='videos'){if(!_vidPageInit&&_prevPg!=='videos'){_vidView='dashboard';localStorage.setItem('_vidView','dashboard');}_vidPageInit=false;renderVideosPage();}if(id==='overview'){renderShopOv();renderRecOv();renderWkCal();if(document.getElementById('tbGrid'))renderDayTB();}else{const _tbSc=document.getElementById('tbScroll');if(_tbSc)_tbSc._scrollDay=null;}
+  if(id==='weekly'){renderWeeklyPage();}if(id==='travel')renderTravelPage();if(id==='birthdays')renderBdayPage();if(id==='pups')renderPupsPage();if(id==='recipes')renderRecipesPage();if(id==='packing')renderPackingPage();if(id==='videos'){if(!_vidPageInit&&_prevPg!=='videos'){_vidView='dashboard';localStorage.setItem('_vidView','dashboard');}_vidPageInit=false;renderVideosPage();}if(id==='overview'){renderShopOv();renderRecOv();renderWkCal();if(document.getElementById('tbGrid'))renderDayTB();}else{const _tbSc=document.getElementById('tbScroll');if(_tbSc)_tbSc._scrollDay=null;}
   const backBtn=document.getElementById('backToOv');if(backBtn)backBtn.style.display=id==='overview'?'none':'flex';
   renderUnassigned();
   history.replaceState(null,'','#'+id);
@@ -3335,6 +3335,170 @@ function showPage(id){
 let _modMousedownInside=false;
 document.addEventListener('mousedown',e=>{_modMousedownInside=!!e.target.closest('.modal');});
 function closeMod(id,e){if(e&&e.target!==document.getElementById(id))return;if(e&&_modMousedownInside)return;document.getElementById(id).classList.remove('open');if(id==='mModal'||id==='recMoModal'){const bg=document.querySelector('.bg-canvas');if(bg)bg.classList.remove('orbs-paused');}if(id==='recipeModal'&&_recModalKeyFn){document.removeEventListener('keydown',_recModalKeyFn);_recModalKeyFn=null;}}
+
+// ── Packing ────────────────────────────────────────────────────────────────────
+const PACK_CATS=['Clothes','Toiletries','Electronics','Documents','Misc'];
+let _packDragId=null;
+
+function renderPackingPage(){save();
+  const pg=document.getElementById('packingPageContent');if(!pg)return;
+  // Templates (left) + Ad-hoc pool (right)
+  const tpls=st.packTemplates.sort((a,b)=>(a.category||'').localeCompare(b.category||'')||(a.sort_order||0)-(b.sort_order||0));
+  const grouped={};PACK_CATS.forEach(c=>grouped[c]=[]);
+  tpls.forEach(t=>{const c=PACK_CATS.includes(t.category)?t.category:'Misc';(grouped[c]=grouped[c]||[]).push(t);});
+
+  let html=`<div style="display:flex;gap:24px;flex:1;min-height:0;overflow:hidden">`;
+  // Left: Standard templates
+  html+=`<div style="flex:1;overflow-y:auto;padding-right:8px">
+    <h3 style="margin:0 0 12px;font-size:13px;font-weight:600;color:var(--text-primary,#334155)">Standard Packing Items</h3>`;
+  PACK_CATS.forEach(cat=>{
+    const items=grouped[cat]||[];
+    html+=`<div style="margin-bottom:16px">
+      <div style="font-size:11px;font-weight:600;color:var(--text-secondary,#64748b);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">${cat}</div>`;
+    items.forEach(t=>{
+      html+=`<div class="pack-tpl-row" data-ptid="${t.id}">
+        <span class="pack-tpl-name" contenteditable="true" onblur="renamePackTpl('${t.id}',this.textContent.trim())">${t.name}</span>
+        <button class="delbtn" onclick="delPackTpl('${t.id}')">✕</button>
+      </div>`;
+    });
+    html+=`<div class="pack-add-row"><input class="pack-add-inp" placeholder="+ Add ${cat.toLowerCase()} item…" onkeydown="if(event.key==='Enter'){addPackTpl('${cat}',this.value.trim());this.value='';event.preventDefault();}"></div>`;
+    html+=`</div>`;
+  });
+  html+=`</div>`;
+  // Right: Ad-hoc items (not tied to a trip — a pool of reusable extras)
+  const adhoc=st.packTemplates.filter(t=>t.category==='Ad-hoc').sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+  html+=`<div style="flex:1;overflow-y:auto;padding-left:8px;border-left:1px solid rgba(200,200,215,.2)">
+    <h3 style="margin:0 0 12px;font-size:13px;font-weight:600;color:var(--text-primary,#334155)">Ad-hoc Items</h3>
+    <p style="font-size:11px;color:var(--text-secondary,#64748b);margin:0 0 12px">Extra items you sometimes need. Add to trips individually.</p>`;
+  adhoc.forEach(t=>{
+    html+=`<div class="pack-tpl-row" data-ptid="${t.id}">
+      <span class="pack-tpl-name" contenteditable="true" onblur="renamePackTpl('${t.id}',this.textContent.trim())">${t.name}</span>
+      <button class="delbtn" onclick="delPackTpl('${t.id}')">✕</button>
+    </div>`;
+  });
+  html+=`<div class="pack-add-row"><input class="pack-add-inp" placeholder="+ Add ad-hoc item…" onkeydown="if(event.key==='Enter'){addPackTpl('Ad-hoc',this.value.trim());this.value='';event.preventDefault();}"></div>`;
+  html+=`</div></div>`;
+  pg.innerHTML=html;
+}
+
+async function addPackTpl(category,name){
+  if(!name)return;
+  const t={id:'l-'+Date.now(),name,category,sort_order:st.packTemplates.filter(x=>x.category===category).length};
+  st.packTemplates.push(t);renderPackingPage();
+  const sv=await sbReqSilent('POST','packing_templates',{name,category,sort_order:t.sort_order});
+  if(sv&&sv[0]){const i=st.packTemplates.findIndex(x=>x.id===t.id);if(i>-1)st.packTemplates[i]=sv[0];}
+  save();
+}
+
+async function renamePackTpl(id,name){
+  if(!name)return;
+  const t=st.packTemplates.find(x=>String(x.id)===String(id));if(!t||t.name===name)return;
+  t.name=name;save();
+  if(!String(id).startsWith('l-'))await sbReqSilent('PATCH','packing_templates',{name},`?id=eq.${id}`);
+}
+
+async function delPackTpl(id){
+  st.packTemplates=st.packTemplates.filter(x=>String(x.id)!==String(id));renderPackingPage();save();
+  if(!String(id).startsWith('l-'))await sbReqSilent('DELETE','packing_templates',null,`?id=eq.${id}`);
+}
+
+// ── Trip Packing Modal (popup from overview) ───────────────────────────────────
+function openPackingModal(travelId){
+  const tv=st.travel.find(x=>String(x.id)===String(travelId));if(!tv)return;
+  const modal=document.getElementById('packingModal');if(!modal)return;
+  modal.dataset.travelId=travelId;
+  modal.classList.add('open');
+  renderPackingModal(travelId);
+}
+
+function renderPackingModal(travelId){
+  const tv=st.travel.find(x=>String(x.id)===String(travelId));if(!tv)return;
+  const body=document.getElementById('packingModalBody');if(!body)return;
+  const title=document.getElementById('packingModalTitle');if(title)title.textContent=`Packing: ${tv.name}${tv.destination?' → '+tv.destination:''}`;
+
+  const items=st.packItems.filter(x=>String(x.travel_id)===String(travelId));
+  const unchecked=items.filter(x=>!x.checked).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+  const checked=items.filter(x=>x.checked).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+  const sorted=[...unchecked,...checked];
+
+  let html=`<div class="pack-modal-add" style="display:flex;gap:6px;margin-bottom:12px">
+    <input id="packModalInp" class="pack-add-inp" placeholder="Add item…" style="flex:1" onkeydown="if(event.key==='Enter'){addPackItem('${travelId}',this.value.trim());this.value='';}">
+    <button class="btn btn-xs" onclick="loadStandardItems('${travelId}')">+ Standard</button>
+    <button class="btn btn-xs" onclick="loadAdhocItems('${travelId}')">+ Ad-hoc</button>
+  </div>`;
+
+  if(!sorted.length){
+    html+=`<p style="font-size:12px;color:var(--text-secondary,#94a3b8);text-align:center;padding:24px 0">No items yet. Add items or load standard packing list.</p>`;
+  } else {
+    sorted.forEach(item=>{
+      const ck=item.checked?'checked':'';
+      const sty=item.checked?'opacity:.45;text-decoration:line-through':'';
+      html+=`<div class="pack-item-row" draggable="true" data-piid="${item.id}" ondragstart="_packDragId='${item.id}'" ondragover="event.preventDefault()" ondrop="dropPackItem(event,'${item.id}','${travelId}')">
+        <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${ck} onchange="togglePackItem('${item.id}','${travelId}',this.checked)"></label>
+        <span style="flex:1;font-size:12px;${sty}">${item.name}</span>
+        <span style="font-size:9px;color:var(--text-secondary,#94a3b8);margin-right:4px">${item.source==='adhoc'?'ad-hoc':item.category||''}</span>
+        <button class="delbtn" onclick="delPackItem('${item.id}','${travelId}')">✕</button>
+      </div>`;
+    });
+  }
+  body.innerHTML=html;
+}
+
+async function addPackItem(travelId,name,category,source){
+  if(!name)return;
+  const item={id:'l-'+Date.now(),travel_id:travelId,name,category:category||'Misc',source:source||'manual',checked:false,sort_order:st.packItems.filter(x=>String(x.travel_id)===String(travelId)).length};
+  st.packItems.push(item);renderPackingModal(travelId);save();
+  const sv=await sbReqSilent('POST','packing_items',{travel_id:travelId,name:item.name,category:item.category,source:item.source,checked:false,sort_order:item.sort_order});
+  if(sv&&sv[0]){const i=st.packItems.findIndex(x=>x.id===item.id);if(i>-1)st.packItems[i]=sv[0];}
+  save();
+}
+
+async function togglePackItem(id,travelId,checked){
+  const item=st.packItems.find(x=>String(x.id)===String(id));if(!item)return;
+  item.checked=checked;renderPackingModal(travelId);save();
+  if(!String(id).startsWith('l-'))await sbReqSilent('PATCH','packing_items',{checked},`?id=eq.${id}`);
+}
+
+async function delPackItem(id,travelId){
+  st.packItems=st.packItems.filter(x=>String(x.id)!==String(id));renderPackingModal(travelId);save();
+  if(!String(id).startsWith('l-'))await sbReqSilent('DELETE','packing_items',null,`?id=eq.${id}`);
+}
+
+function dropPackItem(e,targetId,travelId){
+  e.preventDefault();if(!_packDragId||_packDragId===targetId)return;
+  const items=st.packItems.filter(x=>String(x.travel_id)===String(travelId));
+  const dragIdx=items.findIndex(x=>String(x.id)===String(_packDragId));
+  const dropIdx=items.findIndex(x=>String(x.id)===String(targetId));
+  if(dragIdx<0||dropIdx<0)return;
+  const [moved]=items.splice(dragIdx,1);items.splice(dropIdx,0,moved);
+  items.forEach((it,i)=>it.sort_order=i);
+  _packDragId=null;renderPackingModal(travelId);save();
+  items.forEach(it=>{if(!String(it.id).startsWith('l-'))sbReqSilent('PATCH','packing_items',{sort_order:it.sort_order},`?id=eq.${it.id}`);});
+}
+
+async function loadStandardItems(travelId){
+  const existing=st.packItems.filter(x=>String(x.travel_id)===String(travelId));
+  const existingNames=new Set(existing.map(x=>x.name.toLowerCase()));
+  const templates=st.packTemplates.filter(t=>t.category!=='Ad-hoc');
+  let added=0;
+  for(const tpl of templates){
+    if(existingNames.has(tpl.name.toLowerCase()))continue;
+    await addPackItem(travelId,tpl.name,tpl.category,'standard');
+    added++;
+  }
+  renderPackingModal(travelId);
+}
+
+async function loadAdhocItems(travelId){
+  const existing=st.packItems.filter(x=>String(x.travel_id)===String(travelId));
+  const existingNames=new Set(existing.map(x=>x.name.toLowerCase()));
+  const adhocs=st.packTemplates.filter(t=>t.category==='Ad-hoc');
+  for(const tpl of adhocs){
+    if(existingNames.has(tpl.name.toLowerCase()))continue;
+    await addPackItem(travelId,tpl.name,'Ad-hoc','adhoc');
+  }
+  renderPackingModal(travelId);
+}
 
 // ── Init ───────────────────────────────────────────────────────────────────────
 let _firstSyncDone=false;
