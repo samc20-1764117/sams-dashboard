@@ -4454,7 +4454,7 @@ async function addQN(){
     renderQN();
     const realId=sv[0].id;
     pushUndo(()=>{_qnNotes=_qnNotes.filter(n=>String(n.id)!==String(realId));renderQN();sbReqSilent('PATCH','quick_notes',{is_visible:false},`?id=eq.${realId}`);},'Add note');
-  }
+  } else {showToast('Note failed to save!','#ef4444',3000);}
 }
 function editQN(span,id){
   const orig=span.textContent;
@@ -4468,9 +4468,9 @@ function editQN(span,id){
     if(!txt||txt===orig){span.textContent=orig;return;}
     const n=_qnNotes.find(n=>String(n.id)===String(id));
     if(n)n.note_text=txt;
-    if(!String(id).startsWith('qn-')){sbReqSilent('PATCH','quick_notes',{note_text:txt},`?id=eq.${id}`);
+    if(!String(id).startsWith('qn-')){sbReqSilent('PATCH','quick_notes',{note_text:txt},`?id=eq.${id}`).then(r=>{if(!r)showToast('Edit failed to save!','#ef4444',3000);});
       pushUndo(()=>{const n2=_qnNotes.find(x=>String(x.id)===String(id));if(n2)n2.note_text=orig;renderQN();sbReqSilent('PATCH','quick_notes',{note_text:orig},`?id=eq.${id}`);},'Edit note');
-    }
+    } else {showToast('Note not saved yet — try again','#f59e0b',3000);}
   };
   span.onblur=done;
   span.onkeydown=e=>{e.stopPropagation();if(e.key==='Enter'){e.preventDefault();span.blur();}if(e.key==='Escape'){span.textContent=orig;span.blur();}};
@@ -4599,7 +4599,7 @@ async function restoreQN(id){
 }
 // Close panel on outside click; clear selection on click outside notes
 document.addEventListener('click',function(e){
-  if(_qnOpen&&!e.target.closest('#qnPanel')&&!e.target.closest('#qnBtn')){_qnOpen=false;_qnSel.clear();document.getElementById('qnPanel').classList.remove('open');}
+  if(_qnOpen&&!e.target.closest('#qnPanel')&&!e.target.closest('#qnBtn')){_qnOpen=false;_qnSel.clear();document.getElementById('qnPanel').classList.remove('open');const inp=document.getElementById('qnInput');if(inp)inp.blur();}
   if(_qnOpen&&_qnSel.size&&e.target.closest('#qnPanel')&&!e.target.closest('.qn-item')){_qnSel.clear();_qnApplySelHighlight();}
 });
 // Quick notes keyboard handlers
