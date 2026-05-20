@@ -341,7 +341,8 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 .tod-section{flex:0.95;min-width:0;display:flex;flex-direction:column;overflow:hidden}
 .tb-section{flex:1.05;min-width:0;display:flex;flex-direction:column;overflow:hidden}
 .tod-tb-divider{flex-shrink:0;border-left:1px solid rgba(210,205,228,.3);margin:0}
-.pup-skills-highlight{flex-shrink:0;margin:4px 6px 2px;border-radius:10px;background:rgba(237,233,254,.38);border:1px solid rgba(196,181,253,.4);box-shadow:0 2px 8px rgba(109,95,230,.06),inset 0 1px 0 rgba(255,255,255,.7);overflow:hidden}
+#pupSkillsHighlight{flex-shrink:0}
+#pupSkillsHighlight .ti{display:flex;align-items:center;gap:4px;cursor:grab}
 .row2{display:flex;flex-direction:column;gap:12px;margin-bottom:14px}
 .row3{margin-top:20px;margin-bottom:14px;padding-bottom:2px}
 

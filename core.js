@@ -26,7 +26,7 @@ function slug(c){return(c||'other').toLowerCase().replace(/\s+/g,'-');}
 
 // ── State ──────────────────────────────────────────────────────────────────────
 let cfg={url:'https://gtirvyrqfuuuxkkqaeap.supabase.co',key:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0aXJ2eXJxZnV1dXhra3FhZWFwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwODY3NjAsImV4cCI6MjA4ODY2Mjc2MH0.6rtA0WeUUAcuV_sNVrxAbaaviPxPwNakh_bk7uylAOo',showAutoTB:true};
-let st={tasks:[],recurring:[],shopping:[],blocks:[],travel:[],birthdays:[],pup_skills:[],pupSessions:[],recipes:[],videos:[],autoTimeblocks:[],autoTBOverrides:[],wrRules:[],wrOverrides:[],groceryStaples:[],groceryList:[],mealPlan:[],_grocStapleSkips:{}};
+let st={tasks:[],recurring:[],shopping:[],blocks:[],travel:[],birthdays:[],pup_skills:[],pupSessions:[],pupWeeklyFocus:[],recipes:[],videos:[],autoTimeblocks:[],autoTBOverrides:[],wrRules:[],wrOverrides:[],groceryStaples:[],groceryList:[],mealPlan:[],_grocStapleSkips:{}};
 let dayOff=0,wkOff=0,moOff=0,wrRecOff=0,sbOpen=true,activePg='overview';
 let dragId=null,resizing=null,tMode='add',tId=null,tPreDate=null;
 let qaCtx='today',qaDsTarget=null,qaKCat='';
@@ -37,8 +37,8 @@ let undoStack=[];let undoTimer=null;
 let shopSortMode='store'; // 'store' or 'alpha'
 
 // ── Storage ────────────────────────────────────────────────────────────────────
-function load(){try{const s=JSON.parse(localStorage.getItem(KEY)||'{}');if(s.cfg)cfg={...cfg,...s.cfg};if(s.blocks)st.blocks=s.blocks.map(b=>{const{_col,_ncols,...rest}=b;return rest;});if(s.sb!==undefined)sbOpen=s.sb;if(s.overrides)localOverrides=s.overrides;if(s.delRec)deletedRecIds=new Set(s.delRec);if(s.delPupSess)deletedPupSessIds=new Set(s.delPupSess);if(s.tasks)st.tasks=s.tasks;if(s.recurring)st.recurring=s.recurring.map(r=>({...r,_doneByWk:r._doneByWk||{}}));if(s.shopping)st.shopping=s.shopping;if(s.travel)st.travel=s.travel;if(s.birthdays)st.birthdays=s.birthdays;if(s.pup_skills)st.pup_skills=s.pup_skills;if(s.pupSessions)st.pupSessions=s.pupSessions;if(s.recipes)st.recipes=s.recipes;if(s.videos)st.videos=s.videos;if(s.autoTimeblocks)st.autoTimeblocks=s.autoTimeblocks;if(s.autoTBOverrides)st.autoTBOverrides=s.autoTBOverrides;if(s.wrRules)st.wrRules=s.wrRules;if(s.wrOverrides)st.wrOverrides=s.wrOverrides;if(s._ytDismissed)st._ytDismissed=s._ytDismissed;if(s.groceryStaples)st.groceryStaples=s.groceryStaples;if(s.groceryList)st.groceryList=s.groceryList;if(s.mealPlan)st.mealPlan=s.mealPlan;}catch(e){}}
-function save(){try{localStorage.setItem(KEY,JSON.stringify({cfg,blocks:st.blocks,sb:sbOpen,overrides:localOverrides,delRec:[...deletedRecIds],delPupSess:[...deletedPupSessIds],tasks:st.tasks,recurring:st.recurring,shopping:st.shopping,travel:st.travel,birthdays:st.birthdays,pup_skills:st.pup_skills,pupSessions:st.pupSessions,recipes:st.recipes,videos:st.videos,autoTimeblocks:st.autoTimeblocks,autoTBOverrides:st.autoTBOverrides,wrRules:st.wrRules,wrOverrides:st.wrOverrides,_ytDismissed:st._ytDismissed,groceryStaples:st.groceryStaples,groceryList:st.groceryList,mealPlan:st.mealPlan}));}catch(e){}}
+function load(){try{const s=JSON.parse(localStorage.getItem(KEY)||'{}');if(s.cfg)cfg={...cfg,...s.cfg};if(s.blocks)st.blocks=s.blocks.map(b=>{const{_col,_ncols,...rest}=b;return rest;});if(s.sb!==undefined)sbOpen=s.sb;if(s.overrides)localOverrides=s.overrides;if(s.delRec)deletedRecIds=new Set(s.delRec);if(s.delPupSess)deletedPupSessIds=new Set(s.delPupSess);if(s.tasks)st.tasks=s.tasks;if(s.recurring)st.recurring=s.recurring.map(r=>({...r,_doneByWk:r._doneByWk||{}}));if(s.shopping)st.shopping=s.shopping;if(s.travel)st.travel=s.travel;if(s.birthdays)st.birthdays=s.birthdays;if(s.pup_skills)st.pup_skills=s.pup_skills;if(s.pupSessions)st.pupSessions=s.pupSessions;if(s.pupWeeklyFocus)st.pupWeeklyFocus=s.pupWeeklyFocus;if(s.recipes)st.recipes=s.recipes;if(s.videos)st.videos=s.videos;if(s.autoTimeblocks)st.autoTimeblocks=s.autoTimeblocks;if(s.autoTBOverrides)st.autoTBOverrides=s.autoTBOverrides;if(s.wrRules)st.wrRules=s.wrRules;if(s.wrOverrides)st.wrOverrides=s.wrOverrides;if(s._ytDismissed)st._ytDismissed=s._ytDismissed;if(s.groceryStaples)st.groceryStaples=s.groceryStaples;if(s.groceryList)st.groceryList=s.groceryList;if(s.mealPlan)st.mealPlan=s.mealPlan;}catch(e){}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify({cfg,blocks:st.blocks,sb:sbOpen,overrides:localOverrides,delRec:[...deletedRecIds],delPupSess:[...deletedPupSessIds],tasks:st.tasks,recurring:st.recurring,shopping:st.shopping,travel:st.travel,birthdays:st.birthdays,pup_skills:st.pup_skills,pupSessions:st.pupSessions,pupWeeklyFocus:st.pupWeeklyFocus,recipes:st.recipes,videos:st.videos,autoTimeblocks:st.autoTimeblocks,autoTBOverrides:st.autoTBOverrides,wrRules:st.wrRules,wrOverrides:st.wrOverrides,_ytDismissed:st._ytDismissed,groceryStaples:st.groceryStaples,groceryList:st.groceryList,mealPlan:st.mealPlan}));}catch(e){}}
 
 // ── Auth ───────────────────────────────────────────────────────────────────────
 let _sbClient=null;
@@ -218,13 +218,14 @@ async function syncAll(silent=false){
   if(_sbClient){const{data:{session}}=await _sbClient.auth.getSession();if(session)_authToken=session.access_token;}
   if(!silent)setBadge('loading','Syncing…');
   try{
-    const[tasks,shop,trav,bdays,pupSkills,pupSessionsDb,recipes,videosDb,gStaples,gList,mealPlanDb]=await Promise.all([
+    const[tasks,shop,trav,bdays,pupSkills,pupSessionsDb,pupWkFocusDb,recipes,videosDb,gStaples,gList,mealPlanDb]=await Promise.all([
       sbReq('GET','tasks',null,'?order=due_date.asc.nullslast&select=*'),
       sbReq('GET','shopping_list',null,'?order=shop_order.asc.nullslast,store.asc,name.asc&select=*'),
       sbReq('GET','travel',null,'?order=start_date.asc&select=*'),
       sbReq('GET','birthdays',null,'?order=birthday.asc&select=*'),
       sbReqSilent('GET','pup_skills',null,'?order=pup.asc,skill_order.asc,skill.asc&select=*'),
       sbReqSilent('GET','pup_skill_sessions',null,'?order=day_date.asc&select=*'),
+      sbReqSilent('GET','pup_weekly_focus',null,'?select=*'),
       sbReqSilent('GET','recipes',null,'?order=sort_order.asc.nullslast,name.asc&select=*'),
       sbReqSilent('GET','videos',null,'?is_deleted=neq.true&order=created_at.asc&select=*'),
       sbReqSilent('GET','grocery_staples',null,'?order=sort_order.asc.nullslast,name.asc&select=*'),
@@ -232,6 +233,7 @@ async function syncAll(silent=false){
       sbReqSilent('GET','meal_plan',null,'?order=meal_date.asc,sort_order.asc.nullslast&select=*')
     ]);
     if(pupSessionsDb)st.pupSessions=pupSessionsDb.filter(s=>!deletedPupSessIds.has(String(s.id)));
+    if(pupWkFocusDb)st.pupWeeklyFocus=pupWkFocusDb;
     if(gStaples)st.groceryStaples=gStaples;
     if(gList)st.groceryList=gList;
     if(mealPlanDb)st.mealPlan=mealPlanDb;
@@ -367,6 +369,7 @@ async function syncAll(silent=false){
     save();
     const n=new Date();setBadge('',`Synced ${n.getHours()}:${String(n.getMinutes()).padStart(2,'0')}`);
     renderAll();
+    if(typeof seedPupReviewTask==='function')seedPupReviewTask();
   }catch(e){console.error('syncAll error',e);setBadge('err','Error');}
 }
 function setBadge(t,x){
@@ -706,6 +709,7 @@ function _stateSnap(){
     autoTBOverrides:JSON.parse(JSON.stringify(st.autoTBOverrides||[])),
     pupSessions:JSON.parse(JSON.stringify(st.pupSessions||[])),
     pup_skills:JSON.parse(JSON.stringify(st.pup_skills||[])),
+    pupWeeklyFocus:JSON.parse(JSON.stringify(st.pupWeeklyFocus||[])),
     videos:JSON.parse(JSON.stringify(st.videos||[]))
   };
 }
@@ -722,6 +726,7 @@ function _stateRestore(snap){
   if(snap.autoTBOverrides)st.autoTBOverrides=snap.autoTBOverrides;
   if(snap.pupSessions)st.pupSessions=snap.pupSessions;
   if(snap.pup_skills)st.pup_skills=snap.pup_skills;
+  if(snap.pupWeeklyFocus)st.pupWeeklyFocus=snap.pupWeeklyFocus;
   if(snap.videos)st.videos=snap.videos;
   save();
   renderAll();
