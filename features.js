@@ -1179,12 +1179,14 @@ function openTravelModal(id,preStart,preEnd){
     document.getElementById('tvEnd').value=tv.end_date||'';
     document.getElementById('tvTravelMode').value=tv.travel_mode||'';
     document.getElementById('tvNotes').value=tv.notes||'';
+    const pb=document.getElementById('tvPackBtn');if(pb)pb.style.display='';
   } else {
     document.getElementById('travelMTitle').textContent='Add Trip';
     document.getElementById('tvName').value='';document.getElementById('tvDest').value='';
     document.getElementById('tvStart').value=preStart||'';document.getElementById('tvEnd').value=preEnd||'';
     document.getElementById('tvTravelMode').value='';
     document.getElementById('tvNotes').value='';
+    const pb=document.getElementById('tvPackBtn');if(pb)pb.style.display='none';
   }
   document.getElementById('travelModal').classList.add('open');
   setTimeout(()=>{const _el=document.getElementById('tvName');if(_el){_el.focus();const _l=_el.value.length;_el.setSelectionRange(_l,_l);}},60);

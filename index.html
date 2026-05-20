@@ -439,7 +439,7 @@
     <div class="mfield"><label>End date</label><input id="tvEnd" type="date"></div>
     <div class="mfield"><label>Travel mode</label><select id="tvTravelMode" onkeydown="if(event.key==='Enter')setTimeout(saveTravelModal,0)"><option value="">None</option><option value="plane">✈️ Plane</option><option value="drive">🚗 Drive</option></select></div>
     <div class="mfield"><label>Notes <span style="opacity:.45;font-weight:400">(optional)</span></label><input id="tvNotes" placeholder="flights, hotels…"></div>
-    <div class="mact"><button class="btn btn-ghost" onclick="closeMod(&#39;travelModal&#39;)">Cancel</button><button class="btn btn-dark" onclick="saveTravelModal()">Save</button></div>
+    <div class="mact"><button class="btn btn-ghost" onclick="closeMod(&#39;travelModal&#39;)">Cancel</button><button id="tvPackBtn" class="btn btn-ghost" style="display:none;font-size:11px" onclick="closeMod('travelModal');openPackingModal(travelEditId)">🧳 Packing List</button><button class="btn btn-dark" onclick="saveTravelModal()">Save</button></div>
   </div>
 </div>
 

@@ -3086,9 +3086,9 @@ function renderKanban(){
   const kb=document.getElementById('kanban');kb.innerHTML='';
   KCATS.forEach(cat=>{
     if(cat==='Social+Travel'){
-      // Stacked column: Social on top, Travel below
+      // Stacked column: Travel on top, Social below
       const wrapper=document.createElement('div');wrapper.className='kol';const soc=gc('Social');wrapper.style.cssText=`flex:1;min-width:200px;max-width:300px`;
-      ['Social','Travel'].forEach((subCat,si)=>{
+      ['Travel','Social'].forEach((subCat,si)=>{
         const isTv=subCat==='Travel';
         const s=gc(subCat);
         const tasks=isTv
@@ -3098,7 +3098,7 @@ function renderKanban(){
               done:false,_srcId:tv.id,_type:'travel'
             }))
           :sortTasks(st.tasks.filter(t=>t.category===subCat&&!t.done));
-        const sub=document.createElement('div');sub.style.cssText=`flex:1;display:flex;flex-direction:column;overflow:hidden;background:color-mix(in srgb,${s.bg} 35%,rgba(255,255,255,.92))${isTv?';border-top:1px solid rgba(210,205,228,.18)':''}`;
+        const sub=document.createElement('div');sub.style.cssText=`flex:1;display:flex;flex-direction:column;overflow:hidden;background:color-mix(in srgb,${s.bg} 35%,rgba(255,255,255,.92))${!isTv?';border-top:1px solid rgba(210,205,228,.18)':''}`;
         const head=document.createElement('div');head.className='kol-head';head.style.cssText='border-bottom:1px solid rgba(210,205,228,.2);background:transparent';
         head.innerHTML=`<div class="kol-title" style="color:${s.t}">${subCat}</div><div class="kol-cnt">${tasks.length}</div>`;
         if(!isTv){const hp=document.createElement('button');hp.className='btn-plus';hp.textContent='+';hp.addEventListener('click',()=>openQA('kanban',hp,'',subCat));head.appendChild(hp);}
@@ -3127,6 +3127,8 @@ function renderKanban(){
         if(isTv){
           const tvBtn=document.createElement('button');tvBtn.className='btn btn-ghost btn-xs';tvBtn.style.cssText='flex:1;font-size:9px';tvBtn.textContent='+ Add Trip';
           tvBtn.addEventListener('click',()=>openTravelModal());addRow.appendChild(tvBtn);
+          const plBtn=document.createElement('button');plBtn.className='btn btn-ghost btn-xs';plBtn.style.cssText='flex:1;font-size:9px';plBtn.textContent='🧳 Packing Lists';
+          plBtn.addEventListener('click',()=>showPage('packing'));addRow.appendChild(plBtn);
         } else {
           const kinp=document.createElement('input');kinp.className='kol-input';kinp.placeholder='Add…';
           kinp.addEventListener('keydown',e=>{if(e.key==='Enter')addKanban(subCat,kinp);});
