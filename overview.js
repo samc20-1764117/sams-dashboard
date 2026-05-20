@@ -3598,6 +3598,8 @@ function drawTBBlock(col,b){
       else togRecVirt(String(b.recId),checked,_bwk);
     } else if(b.shopId){
       togShop(String(b.shopId),checked);
+    } else if(b.cat==='pup_session'&&b._pupSessId){
+      togPupSessionDone(String(b._pupSessId),checked);
     } else {
       if(b.cat==='Birthday'){
         b._done=checked;sbUpdateBlock(b.id,{done:checked});save();renderToday();renderWkSummary();renderWkCal();
