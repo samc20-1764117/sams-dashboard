@@ -4,8 +4,8 @@ function isPupSkip(id){return _skipMap()[String(id)]===true}
 function _saveSkip(id,val){const m=_skipMap();if(val)m[String(id)]=true;else delete m[String(id)];localStorage.setItem('pup_skip',JSON.stringify(m))}
 // ─────────────────────────────────────────────────────────────────────────────
 let _pupEditId=null,_pupModalMochiId=null,_pupModalSunnyId=null;
-function _pupWkDone(skillId){const{mon,sun}=getWkBounds(0);const monDs=d2s(mon),sunDs=d2s(sun);return(st.pupSessions||[]).filter(s=>String(s.skill_id)===String(skillId)&&s.day_date>=monDs&&s.day_date<=sunDs&&s.done).length;}
-function _pupWkSessTotal(skillId){const{mon,sun}=getWkBounds(0);const monDs=d2s(mon),sunDs=d2s(sun);return(st.pupSessions||[]).filter(s=>String(s.skill_id)===String(skillId)&&s.day_date>=monDs&&s.day_date<=sunDs).length;}
+function _pupWkDone(skillId,off){const{mon,sun}=getWkBounds(off??wkOff);const monDs=d2s(mon),sunDs=d2s(sun);return(st.pupSessions||[]).filter(s=>String(s.skill_id)===String(skillId)&&s.day_date>=monDs&&s.day_date<=sunDs&&s.done).length;}
+function _pupWkSessTotal(skillId,off){const{mon,sun}=getWkBounds(off??wkOff);const monDs=d2s(mon),sunDs=d2s(sun);return(st.pupSessions||[]).filter(s=>String(s.skill_id)===String(skillId)&&s.day_date>=monDs&&s.day_date<=sunDs).length;}
 function _pupAllSess(skillId){return(st.pupSessions||[]).filter(s=>String(s.skill_id)===String(skillId));}
 function _pupAllDone(skillId){return _pupAllSess(skillId).filter(s=>s.done).length;}
 function _pupAllTotal(skillId){return _pupAllSess(skillId).length;}

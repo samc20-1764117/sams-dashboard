@@ -258,7 +258,7 @@ function _pupWkFocusSkills(pup,off=0){
   return ids.map(sid=>(st.pup_skills||[]).find(x=>String(x.id)===sid)).filter(Boolean);
 }
 function _pupWkSessions(skillId){
-  const{mon,sun}=getWkBounds(0);
+  const{mon,sun}=getWkBounds(wkOff);
   const monDs=d2s(mon),sunDs=d2s(sun);
   return(st.pupSessions||[]).filter(s=>String(s.skill_id)===String(skillId)&&s.day_date>=monDs&&s.day_date<=sunDs);
 }
@@ -280,30 +280,35 @@ async function removePupWeeklyFocus(skillId,off=0){
   save();renderPupSkillsHighlight();renderToday();renderWkCal();
   if(!String(rec.id).startsWith('pwf-tmp-'))sbReqSilent('DELETE','pup_weekly_focus',null,`?id=eq.${rec.id}`);
 }
-let _pupWkFocusSeeding=false;
+let _pupWkFocusSeeding=new Set();
 async function seedPupWeeklyFocus(off=0){
-  if(_pupWkFocusSeeding)return;
   const wkStart=_pupWkMonday(off);
+  if(_pupWkFocusSeeding.has(wkStart))return;
   const existing=(st.pupWeeklyFocus||[]).filter(f=>f.week_start===wkStart);
   if(existing.length)return;
-  _pupWkFocusSeeding=true;
-  const focusSkills=(st.pup_skills||[]).filter(s=>(s.focus===true||s.focus==='true')&&s.stage!=='Mastered');
-  for(const s of focusSkills){
-    const tmp='pwf-tmp-'+Date.now()+'-'+s.id;
-    st.pupWeeklyFocus.push({id:tmp,skill_id:String(s.id),week_start:wkStart});
-    sbReqSilent('POST','pup_weekly_focus',{skill_id:String(s.id),week_start:wkStart}).then(sv=>{
+  _pupWkFocusSeeding.add(wkStart);
+  // Inherit from previous week; fall back to focus skills if no previous week
+  const prevWkStart=_pupWkMonday(off-1);
+  const prevFocus=(st.pupWeeklyFocus||[]).filter(f=>f.week_start===prevWkStart);
+  const skillIds=prevFocus.length
+    ?prevFocus.map(f=>String(f.skill_id)).filter(sid=>{const sk=(st.pup_skills||[]).find(x=>String(x.id)===sid);return sk&&sk.stage!=='Mastered';})
+    :(st.pup_skills||[]).filter(s=>(s.focus===true||s.focus==='true')&&s.stage!=='Mastered').map(s=>String(s.id));
+  for(const sid of skillIds){
+    const tmp='pwf-tmp-'+Date.now()+'-'+sid;
+    st.pupWeeklyFocus.push({id:tmp,skill_id:sid,week_start:wkStart});
+    sbReqSilent('POST','pup_weekly_focus',{skill_id:sid,week_start:wkStart}).then(sv=>{
       if(sv&&sv[0]){const i=st.pupWeeklyFocus.findIndex(f=>f.id===tmp);if(i>-1)st.pupWeeklyFocus[i]=sv[0];}
       save();
     });
   }
   save();
-  _pupWkFocusSeeding=false;
+  _pupWkFocusSeeding.delete(wkStart);
 }
 function renderPupSkillsHighlight(){
   const wrap=document.getElementById('pupSkillsHighlight');if(!wrap)return;
-  seedPupWeeklyFocus(0);
-  const mochiSkills=_pupWkFocusSkills('Mochi');
-  const sunnySkills=_pupWkFocusSkills('Sunny');
+  seedPupWeeklyFocus(wkOff);
+  const mochiSkills=_pupWkFocusSkills('Mochi',wkOff);
+  const sunnySkills=_pupWkFocusSkills('Sunny',wkOff);
   if(!mochiSkills.length&&!sunnySkills.length){wrap.innerHTML='';wrap.style.cssText='display:none';return;}
   wrap.style.cssText='display:flex;gap:4px;margin:6px 4px 4px;flex-shrink:0';
   const mkTile=(pup,skills,accentColor)=>{
@@ -328,7 +333,10 @@ function renderPupSkillsHighlight(){
     return`<div style="flex:1;display:flex;flex-direction:column;background:rgba(255,255,255,.55);border:1px solid rgba(210,205,228,.3);border-radius:12px;padding:6px 0 5px;overflow:hidden;box-shadow:inset 0 1px 3px rgba(0,0,0,.04)">
       <div style="display:flex;align-items:center;justify-content:space-between;padding:0 6px 2px">
         <span style="font-size:9px;font-weight:700;color:var(--muted);letter-spacing:.03em">${pup}</span>
-        <span class="vid-num" style="font-size:9px;color:var(--muted);font-weight:600">${wkDoneTotal}/${wkSessTotal}</span>
+        <div style="display:flex;align-items:center;gap:4px">
+          <span class="vid-num" style="font-size:9px;color:var(--muted);font-weight:600">${wkDoneTotal}/${wkSessTotal}</span>
+          <span onclick="openPupFocusPicker('${pup}')" style="cursor:pointer;font-size:10px;color:var(--muted);opacity:.6;line-height:1" title="Edit skills for this week">✎</span>
+        </div>
       </div>
       ${rows}
       <div style="flex:1"></div>
@@ -339,6 +347,63 @@ function renderPupSkillsHighlight(){
   if(mochiSkills.length)html+=mkTile('Mochi',mochiSkills,'#a78bfa');
   if(sunnySkills.length)html+=mkTile('Sunny',sunnySkills,'#d4a017');
   wrap.innerHTML=html;
+}
+function openPupFocusPicker(pup){
+  let old=document.getElementById('_pupFocusPicker');if(old)old.remove();
+  const wkStart=_pupWkMonday(wkOff);
+  const allSkills=(st.pup_skills||[]).filter(s=>s.pup===pup&&s.stage!=='Mastered').sort((a,b)=>(a.skill||'').localeCompare(b.skill||''));
+  const focusIds=_pupWkFocusIds(pup,wkOff);
+  const overlay=document.createElement('div');overlay.id='_pupFocusPicker';
+  overlay.style.cssText='position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.35)';
+  overlay.onclick=e=>{if(e.target===overlay)overlay.remove();};
+  const modal=document.createElement('div');
+  modal.style.cssText='background:var(--card);border-radius:14px;padding:16px 18px;min-width:260px;max-width:340px;max-height:70vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.18)';
+  const wkLabel=wkOff===0?'This Week':(wkOff>0?`+${wkOff} wks`:`${Math.abs(wkOff)}w ago`);
+  modal.innerHTML=`<div style="font-size:13px;font-weight:700;margin-bottom:10px;color:var(--text)">${pup} — ${wkLabel}</div>
+    <div style="font-size:10px;color:var(--muted);margin-bottom:8px">Toggle skills for this week:</div>
+    <div id="_pfpList"></div>
+    <div style="margin-top:10px;border-top:1px solid var(--subtle);padding-top:8px">
+      <input id="_pfpNewSkill" type="text" placeholder="Add new skill…" style="width:100%;padding:5px 8px;border:1px solid var(--subtle);border-radius:6px;font-size:11px;background:var(--bg);color:var(--text);box-sizing:border-box">
+    </div>`;
+  overlay.appendChild(modal);document.body.appendChild(overlay);
+  const listEl=modal.querySelector('#_pfpList');
+  function renderList(){
+    const curIds=_pupWkFocusIds(pup,wkOff);
+    listEl.innerHTML=allSkills.map(s=>{
+      const checked=curIds.includes(String(s.id));
+      return`<label style="display:flex;align-items:center;gap:8px;padding:4px 2px;cursor:pointer;font-size:12px;color:var(--text)">
+        <input type="checkbox" ${checked?'checked':''} onchange="togglePupFocusFromPicker('${s.id}',this.checked);document.querySelector('#_pfpList')._rerender()">
+        <span>${escHtml(s.skill)}</span>
+      </label>`;
+    }).join('');
+    listEl._rerender=renderList;
+  }
+  renderList();
+  const inp=modal.querySelector('#_pfpNewSkill');
+  inp.addEventListener('keydown',async e=>{
+    if(e.key!=='Enter')return;
+    const val=inp.value.trim();if(!val)return;
+    inp.value='';
+    // Check if skill already exists for this pup
+    let skill=(st.pup_skills||[]).find(s=>s.pup===pup&&s.skill.toLowerCase()===val.toLowerCase());
+    if(!skill){
+      const tmp='ps-tmp-'+Date.now();
+      skill={id:tmp,pup,skill:val,stage:'Learning',focus:false};
+      st.pup_skills.push(skill);
+      save();
+      const sv=await sbReqSilent('POST','pup_skills',{pup,skill:val,stage:'Learning',focus:false});
+      if(sv&&sv[0]){const i=st.pup_skills.findIndex(s=>s.id===tmp);if(i>-1)st.pup_skills[i]=sv[0];skill=st.pup_skills[i];}
+      save();
+      allSkills.push(skill);allSkills.sort((a,b)=>(a.skill||'').localeCompare(b.skill||''));
+    }
+    await addPupWeeklyFocus(skill.id,wkOff);
+    renderList();renderPupSkillsHighlight();renderToday();renderWkCal();
+  });
+}
+async function togglePupFocusFromPicker(skillId,checked){
+  if(checked)await addPupWeeklyFocus(skillId,wkOff);
+  else await removePupWeeklyFocus(skillId,wkOff);
+  renderPupSkillsHighlight();renderToday();renderWkCal();
 }
 async function togPupSkillTrained(id,checked){
   const today=d2s(new Date());
@@ -4489,8 +4554,8 @@ function onTBWheel(e){
 }
 function shiftDay(n){const fl=document.getElementById('dayFlash');fl.textContent=n>0?'→':'←';fl.classList.add('show');setTimeout(()=>fl.classList.remove('show'),300);dayOff+=n;const _newDs=d2s(getDayDate(dayOff));const _newWkKey=dsToWkKey(_newDs);const _curWkKey=getWkKey(wkOff);if(_newWkKey!==_curWkKey){const _newWkOff=Math.round((new Date(_newWkKey+'T00:00:00')-new Date(getWkKey(0)+'T00:00:00'))/(7*86400000));wkOff=_newWkOff;renderWkSummary();}renderWkCal();renderDayTB();renderToday();}
 function goToday(){dayOff=0;if(wkOff!==0){wkOff=0;renderWkSummary();}renderWkCal();renderDayTB();renderToday();}
-function shiftWk(n){wkOff+=n;renderWkSummary();renderWkCal();if(typeof renderMealRow==='function')renderMealRow();}
-function goThisWk(){wkOff=0;renderWkSummary();renderWkCal();if(typeof renderMealRow==='function')renderMealRow();}
+function shiftWk(n){wkOff+=n;renderWkSummary();renderWkCal();renderPupSkillsHighlight();if(typeof renderMealRow==='function')renderMealRow();}
+function goThisWk(){wkOff=0;renderWkSummary();renderWkCal();renderPupSkillsHighlight();if(typeof renderMealRow==='function')renderMealRow();}
 
 // ── Notes expand on hover ────────────────────────────────────────────────────
 (function(){
