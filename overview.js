@@ -3002,21 +3002,19 @@ function toggleVidOvMenu(){
   if(panel.style.display==='block'){closeVidOvMenu();return;}
   _renderVidOvMenu();
   panel.style.display='block';
-  requestAnimationFrame(()=>panel.style.opacity='1');
+  requestAnimationFrame(()=>{requestAnimationFrame(()=>{panel.style.opacity='1';panel.style.transform='translateX(0)';});});
 }
 function closeVidOvMenu(){
   const panel=document.getElementById('vidOvPanel');
   if(!panel||panel.style.display==='none')return;
-  panel.style.opacity='0';
-  setTimeout(()=>{panel.style.display='none';},200);
+  panel.style.opacity='0';panel.style.transform='translateX(-12px)';
+  setTimeout(()=>{panel.style.display='none';},250);
 }
 function _renderVidOvMenu(){
   const menu=document.getElementById('vidOvPanel');if(!menu)return;
   const vids=(st.videos||[]).filter(v=>!v.is_deleted&&v.video_type==='B'&&v.status==='up_next');
-  const map=_vidDayMap();
-  const assigned=new Set(Object.keys(map));
-  const unassigned=vids.filter(v=>!assigned.has(String(v.id)));
-  const _hdr=`<div class="tod-tb-header" style="display:flex;align-items:center;justify-content:center;position:relative;padding:8px 10px"><span style="font-size:12px;font-weight:700;color:var(--text);letter-spacing:-.1px">Videos</span><button onclick="closeVidOvMenu()" style="position:absolute;right:10px;background:none;border:none;cursor:pointer;font-size:14px;color:var(--muted);padding:0 2px;line-height:1" title="Close">✕</button></div>`;
+  const unassigned=vids;
+  const _hdr=`<div class="tod-tb-header" style="display:flex;align-items:center;justify-content:center;position:relative;padding:8px 10px"><span onclick="closeVidOvMenu();showPage('videos')" style="font-size:12px;font-weight:700;color:var(--text);letter-spacing:-.1px;cursor:pointer" onmouseenter="this.style.color='var(--accent)'" onmouseleave="this.style.color='var(--text)'"title="Go to Videos page">Videos</span><button onclick="closeVidOvMenu()" style="position:absolute;right:10px;background:none;border:none;cursor:pointer;font-size:14px;color:var(--muted);padding:0 2px;line-height:1" title="Close">✕</button></div>`;
   if(!unassigned.length){
     menu.innerHTML=_hdr+'<div style="padding:30px;font-size:12px;color:var(--subtle);text-align:center">No videos to add</div>';
     return;
@@ -3024,7 +3022,7 @@ function _renderVidOvMenu(){
   const steps=typeof VID_STEPS!=='undefined'?VID_STEPS:[];
   const labels=typeof VID_STEP_LABELS!=='undefined'?VID_STEP_LABELS:{};
   let html=_hdr;
-  html+='<div style="padding:6px 10px 0"><div style="display:flex;align-items:center;padding:0 6px 4px;gap:4px"><span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);flex:1">Up Next</span><div style="display:flex;gap:0">';
+  html+='<div style="padding:4px 10px 0"><div style="display:flex;align-items:center;padding:0 6px 4px;gap:5px"><span style="flex:1"></span><div style="display:flex;gap:0">';
   html+=steps.map(s=>`<div style="width:22px;text-align:center;font-size:8px;color:var(--muted);font-weight:600">${(labels[s]||s).slice(0,3)}</div>`).join('');
   html+='<div style="width:34px"></div></div></div>';
   unassigned.forEach(v=>{html+=_vidOvMenuItem(v,steps);});
@@ -3033,7 +3031,7 @@ function _renderVidOvMenu(){
 }
 function _vidOvMenuItem(v,steps){
   const sid=String(v.id);
-  const _dragAttr=`draggable="true" ondragstart="dragId='vid::${sid}';event.dataTransfer.effectAllowed='move';document.body.classList.add('body-dragging');showWkcEdges(true);setTimeout(function(){closeVidOvMenu()},0)" ondragend="document.body.classList.remove('body-dragging');showWkcEdges(false)"`;
+  const _dragAttr=`draggable="true" ondragstart="dragId='vid::${sid}';event.dataTransfer.effectAllowed='move';document.body.classList.add('body-dragging');showWkcEdges(true)" ondragend="document.body.classList.remove('body-dragging');showWkcEdges(false)"`;
   const _dblAttr=`ondblclick="event.stopPropagation();closeVidOvMenu();if(typeof openVidEdit==='function')openVidEdit('${sid}')"`;
   const _hoverAttr=`onmouseenter="this.style.background='rgba(0,0,0,.04)'" onmouseleave="this.style.background='none'"`;
   function _stepDots(vid){
@@ -3044,28 +3042,38 @@ function _vidOvMenuItem(v,steps){
     }).join('');
   }
   function _pct(vid){const app=steps.filter(s=>vid[s]!=='na');const dn=app.filter(s=>vid[s]==='done').length;return app.length?Math.round(dn/app.length*100):0;}
-  let html=`<div ${_dragAttr} ${_dblAttr} ${_hoverAttr} style="padding:5px 6px;border-radius:6px;font-size:13px;font-weight:600;color:var(--text);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;opacity:.4"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(v.topic||v.title)}</span><div style="display:flex;gap:0">${_stepDots(v)}</div><span style="font-size:10px;opacity:.5;width:34px;text-align:right;flex-shrink:0">${_pct(v)}%</span></div>`;
+  const _map=_vidDayMap();const _onCal=!!_map[sid];
+  const _calBadge=_onCal?`<span style="font-size:8px;color:#f59e0b;opacity:.7;flex-shrink:0" title="On calendar">●</span>`:'';
+  let html=`<div ${_dragAttr} ${_dblAttr} ${_hoverAttr} style="padding:5px 6px;border-radius:6px;font-size:13px;font-weight:600;color:var(--text);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s${_onCal?';opacity:.55':''}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;opacity:.4"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>${_calBadge}<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(v.topic||v.title)}</span><div style="display:flex;gap:0;flex-shrink:0">${_stepDots(v)}</div><span style="font-size:10px;opacity:.5;width:34px;text-align:right;flex-shrink:0">${_pct(v)}%</span></div>`;
   // Children (S/L videos)
   const children=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(v.id)&&c.status!=='published');
   children.forEach(c=>{
     const csid=String(c.id);
-    html+=`<div ${_hoverAttr} ondblclick="event.stopPropagation();closeVidOvMenu();if(typeof openVidEdit==='function')openVidEdit('${csid}')" style="padding:3px 6px 3px 26px;border-radius:6px;font-size:11px;font-weight:500;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:4px;transition:background .1s"><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(c.topic||c.title)}</span><div style="display:flex;gap:0">${_stepDots(c)}</div><span style="font-size:9px;opacity:.4;width:34px;text-align:right;flex-shrink:0">${_pct(c)}%</span></div>`;
+    html+=`<div ${_hoverAttr} ondblclick="event.stopPropagation();closeVidOvMenu();if(typeof openVidEdit==='function')openVidEdit('${csid}')" style="padding:3px 6px 3px 26px;border-radius:6px;font-size:11px;font-weight:500;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:5px;transition:background .1s"><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(c.topic||c.title)}</span><div style="display:flex;gap:0;flex-shrink:0">${_stepDots(c)}</div><span style="font-size:9px;opacity:.4;width:34px;text-align:right;flex-shrink:0">${_pct(c)}%</span></div>`;
   });
   return html;
 }
 
 function _vidAssignToDay(vidId,ds){
   const map=_vidDayMap();
+  const prev=map[String(vidId)]||null;
   map[String(vidId)]=ds;
   _vidDayMapSet(map);
-  closeVidOvMenu();
   renderAll();
+  // Re-render panel if open
+  const panel=document.getElementById('vidOvPanel');
+  if(panel&&panel.style.display==='block')_renderVidOvMenu();
+  pushUndo(()=>{const m2=_vidDayMap();if(prev)m2[String(vidId)]=prev;else delete m2[String(vidId)];_vidDayMapSet(m2);renderAll();const p2=document.getElementById('vidOvPanel');if(p2&&p2.style.display==='block')_renderVidOvMenu();},'Added video to calendar');
 }
 function _vidUnassignDay(vidId){
   const map=_vidDayMap();
+  const prev=map[String(vidId)]||null;
   delete map[String(vidId)];
   _vidDayMapSet(map);
   renderAll();
+  const panel=document.getElementById('vidOvPanel');
+  if(panel&&panel.style.display==='block')_renderVidOvMenu();
+  if(prev)pushUndo(()=>{const m2=_vidDayMap();m2[String(vidId)]=prev;_vidDayMapSet(m2);renderAll();const p2=document.getElementById('vidOvPanel');if(p2&&p2.style.display==='block')_renderVidOvMenu();},'Removed video from calendar');
 }
 function _vidCompleteFromOv(vidId,anchorEl){
   const v=(st.videos||[]).find(x=>String(x.id)===String(vidId));
