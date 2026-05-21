@@ -331,7 +331,7 @@ function renderPupSkillsHighlight(){
     }).join('');
     const progressBar=`<div style="height:3px;background:rgba(0,0,0,.06);margin:4px 10px 3px;border-radius:2px;overflow:hidden"><div style="height:100%;width:${pct}%;background:rgba(16,185,129,.7);border-radius:2px;transition:width .3s"></div></div>`;
     return`<div style="flex:1;display:flex;flex-direction:column;background:rgba(255,255,255,.55);border:1px solid rgba(210,205,228,.3);border-radius:12px;padding:6px 0 5px;overflow:hidden;box-shadow:inset 0 1px 3px rgba(0,0,0,.04)">
-      <div style="display:flex;align-items:center;padding:0 6px 2px;gap:4px">
+      <div style="display:flex;align-items:center;padding:0 10px 2px;gap:4px">
         <span style="font-size:9px;font-weight:700;color:var(--muted);letter-spacing:.03em">${pup}</span>
         <span onclick="event.stopPropagation();openPupFocusPicker('${pup}')" style="cursor:pointer;font-size:7px;color:var(--muted);opacity:.4;line-height:1;margin-left:1px" title="Edit ${pup}'s skills for this week">✎</span>
         <span class="vid-num" style="font-size:8px;font-weight:600;color:var(--muted);margin-left:auto">${wkDoneTotal}/${wkSessTotal}</span>
