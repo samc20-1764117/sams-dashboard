@@ -3732,6 +3732,8 @@ document.addEventListener('keydown',async e=>{
   if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT')return;
   // t key: jump to today on overview
   if(e.key==='t'&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&activePg==='overview'&&!document.querySelector('.overlay.open')){e.preventDefault();document.activeElement?.blur();goToday();return;}
+  // Video panel keyboard nav (arrow up/down, delete, enter)
+  if(activePg==='overview'&&typeof _vidOvKeyNav==='function'&&_vidOvKeyNav(e))return;
   // w + Arrow: shift week on overview
   if((e.key==='ArrowLeft'||e.key==='ArrowRight')&&_wKeyHeld&&activePg==='overview'){e.preventDefault();shiftWk(e.key==='ArrowLeft'?-1:1);return;}
   // Arrow left/right: shift day on overview when nothing selected

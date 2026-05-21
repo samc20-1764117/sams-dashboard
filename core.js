@@ -1075,6 +1075,9 @@ function _showHelpOverlay(){
       ['Click','Select task or time block'],
       ['Shift+Click','Multi-select range'],
       ['Drag','Reorder / reschedule tasks'],
+      ['↑/↓ (vid panel)','Navigate videos'],
+      ['Delete (vid panel)','Remove video from calendar'],
+      ['Enter (vid panel)','Edit selected video'],
     ],
     videos:[
       ['N','New video'],
