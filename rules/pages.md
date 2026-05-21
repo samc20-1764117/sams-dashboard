@@ -78,6 +78,10 @@ See `rules/videos.md` for full rules. Table: `videos`. 4 views: Dashboard, All D
 
 ### Birthdays (`features.js`)
 Table: `birthdays(id,name,birthday,present_ideas)`. `present_ideas` JSON array. `saveBdayModal` does NOT include `present_ideas`.
+- **Weekly calendar banners**: grey out based on timeblock done status (`b._done`), NOT past date. Toggling birthday timeblock checkbox calls `renderWkCal()` for instant sync.
+- **Weekly list**: birthdays get `done:true` from timeblock done state → `tRowExtra` applies greyed/strikethrough.
+- **Today list**: birthdays never greyed out regardless of timeblock state. Emoji wrapped in `.bday-emoji` span (8px, `margin-left:3px`, today-list only via `#todList` scope).
+- **`getBirthdaysInRange`** used for weekly calendar (supports past weeks); `getBirthdayTasks(null)` skips past dates — don't use for calendar.
 
 ### Recipes (`features.js`)
 Table: `recipes` (columns include `sort_order int4`). Do NOT reference: protein,prep_time,cook_time,difficulty,last_made_date,notes. Ingredients: JSON `[{name,amount,is_pantry?}]`.
