@@ -1105,13 +1105,14 @@ body.dark .vid-stat-card{background:rgba(40,30,50,.4)}
 .pack-item-row:hover{background:rgba(100,100,140,.06)}
 .pack-item-row:hover .delbtn{opacity:1}
 .pack-item-row .delbtn{position:static;transform:none;opacity:0;flex-shrink:0}
-.pack-icon-btn{background:none;border:none;cursor:pointer;font-size:12px;padding:1px 3px;opacity:0;transition:opacity .15s;flex-shrink:0;display:inline-flex;align-items:center}
+.pack-icon-btn{background:rgba(255,255,255,.5);border:none;cursor:pointer;font-size:12px;padding:2px 3px;opacity:0;transition:opacity .15s,background .1s,box-shadow .1s;flex-shrink:0;display:inline-flex;align-items:center;border-radius:3px;box-shadow:0 0.5px 1px rgba(0,0,0,.1)}
+.pack-icon-btn:hover{opacity:1;background:rgba(255,255,255,.85);box-shadow:0 1px 2px rgba(0,0,0,.18)}
 .tvpack-btn{font-size:11px;align-items:center;gap:3px}
-.pack-icon-btn:hover{opacity:1}
 .ti:hover .pack-icon-btn,.mcell-t:hover .pack-icon-btn,.kol-item:hover .pack-icon-btn{opacity:.7}
 .kol-item .pack-icon-btn{font-size:11px;padding:0 2px}
 .mcell-t .pack-icon-btn{font-size:10px;padding:0 1px}
-.ban-pack-inline:hover{opacity:1!important}
+.ban-pack-inline{background:rgba(255,255,255,.55);border-radius:3px;padding:1px 2px;box-shadow:0 0.5px 1px rgba(0,0,0,.12);transition:background .1s,box-shadow .1s}
+.ban-pack-inline:hover{opacity:1!important;background:rgba(255,255,255,.85);box-shadow:0 1px 2px rgba(0,0,0,.18)}
 
 /* Anti-FOUC: applied before first paint via html classes set in head script */
 html.init-dark body{background:#1a100a!important;background-attachment:fixed!important;}
