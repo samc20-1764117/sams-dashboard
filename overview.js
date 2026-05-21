@@ -310,7 +310,7 @@ function renderPupSkillsHighlight(){
   const mochiSkills=_pupWkFocusSkills('Mochi',wkOff);
   const sunnySkills=_pupWkFocusSkills('Sunny',wkOff);
   if(!mochiSkills.length&&!sunnySkills.length){wrap.innerHTML='';wrap.style.cssText='display:none';return;}
-  wrap.style.cssText='display:flex;gap:4px;margin:6px 5px 5px;flex-shrink:0';
+  wrap.style.cssText='display:flex;gap:4px;margin:6px 7px 7px;flex-shrink:0';
   const mkTile=(pup,skills,accentColor)=>{
     const wkDoneTotal=skills.reduce((a,s)=>a+_pupWkDone(s.id),0);
     const wkSessTotal=skills.reduce((a,s)=>a+_pupWkSessTotal(s.id),0);
