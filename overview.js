@@ -756,16 +756,16 @@ function tRowShopVirt(t,noDate=false,tbArrow=false,noColor=false){
   </div>`;
 }
 function tRowVidVirt(t){
-  const s=gc('videos');const vid=String(t._vidId);
+  const _vs={bg:'rgba(251,191,36,.18)',t:'#92400e',d:'#f59e0b',b:'rgba(245,158,11,.25)'};const vid=String(t._vidId);
   const _v3=(st.videos||[]).find(x=>String(x.id)===String(vid));
   let _pct3='';
   if(_v3){const _steps3=typeof VID_STEPS!=='undefined'?VID_STEPS:[];const _app3=_steps3.filter(ss=>_v3[ss]!=='na');const _dn3=_app3.filter(ss=>_v3[ss]==='done').length;_pct3=_app3.length?Math.round(_dn3/_app3.length*100):0;}
-  return`<div class="ti" style="background:${s.bg}" id="ti-${t.id}" draggable="true"
+  return`<div class="ti" style="background:${_vs.bg}" id="ti-${t.id}" draggable="true"
     ondragstart="dragId='vid::${vid}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true)"
     ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false)"
     onclick="selTask(event,'${t.id}')" ondblclick="if(typeof openVidEdit==='function')openVidEdit('${vid}')">
-    <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" onchange="if(this.checked)_vidCompleteFromOv('${vid}');else _vidUncompleteFromOv('${vid}')"></label>
-    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="${s.t}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;opacity:.6"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+    <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" onchange="if(this.checked)_vidCompleteFromOv('${vid}',this);else _vidUncompleteFromOv('${vid}')"></label>
+    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="${_vs.t}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;opacity:.6"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
     <span class="tn">${escHtml(t.name)}</span>
     <span style="font-size:9px;opacity:.5;margin-left:auto;flex-shrink:0">${_pct3}%</span>
     <button class="delbtn" onclick="event.stopPropagation();_vidUnassignDay('${vid}')">✕</button>
@@ -1313,7 +1313,7 @@ function renderWkCal(){
     dayTasks.forEach(t=>{
       const ov=isOv(t.due_date)&&!t.done,imp=t.important&&!ov&&!t.done;
       const _chipCat=(t._isWrec||t._isWrRule)?'weekly_reset':(t._virtual&&t._recId?'recurring':t.category);
-      const s=ov?OV:imp?IMP:t._type==='pup'?_pupSessStyle():gc(_chipCat);
+      const s=ov?OV:imp?IMP:t._type==='vid'?{bg:'rgba(251,191,36,.18)',t:'#92400e',d:'#f59e0b',b:'rgba(245,158,11,.25)',dot:'rgba(251,191,36,.3)'}:t._type==='pup'?_pupSessStyle():gc(_chipCat);
       const chip=document.createElement('div');chip.className='chip'+(t.done?' done-chip':'');
       chip.style.cssText=`background:${s.bg};color:${s.t};border-color:${s.b}`;
       if(!t._virtual)chip.dataset.tid=String(t.id);
@@ -1339,7 +1339,7 @@ function renderWkCal(){
       const chk=document.createElement('input');chk.type='checkbox';chk.className='wchk';chk.checked=t.done;
       chk.addEventListener('change',e2=>{
         e2.stopPropagation();
-        if(t._type==='vid'){if(chk.checked)_vidCompleteFromOv(t._vidId);else _vidUncompleteFromOv(t._vidId);}
+        if(t._type==='vid'){if(chk.checked)_vidCompleteFromOv(t._vidId,chk);else _vidUncompleteFromOv(t._vidId);}
         else if(t._type==='pup'){togPupSessionDone(t._pupSessId,chk.checked);}
         else if(t._type==='shop'){togShop(t._shopId,chk.checked);}
         else if(t._isWrRule){togWrRule(String(t._ruleId),chk.checked,t._wkKey||getWkKey(wkOff));}
@@ -3002,11 +3002,19 @@ function toggleVidOvMenu(){
   if(!menu)return;
   if(menu.style.display==='block'){closeVidOvMenu();return;}
   _renderVidOvMenu();
-  // Position just above weekly calendar columns
-  const wkcWrap=document.getElementById('wkcWrap');
-  if(wkcWrap){const r=wkcWrap.getBoundingClientRect();menu.style.top=(r.top-4)+'px';menu.style.transform='translateX(-50%) translateY(-100%)';}
   menu.style.display='block';
   back.style.display='block';
+  // Position above weekly calendar so all days are visible for drag
+  const wkcWrap=document.getElementById('wkcWrap');
+  if(wkcWrap){
+    const wr=wkcWrap.getBoundingClientRect();
+    const mh=menu.offsetHeight;
+    // Place bottom edge of menu at top of weekly calendar
+    const topPos=Math.max(4,wr.top-mh-4);
+    menu.style.top=topPos+'px';
+    menu.style.transform='translateX(-50%)';
+    menu.style.maxHeight=(wr.top-12)+'px';
+  }
 }
 function closeVidOvMenu(){
   const menu=document.getElementById('vidOvMenu');
@@ -3068,7 +3076,7 @@ function _vidUnassignDay(vidId){
   _vidDayMapSet(map);
   renderAll();
 }
-function _vidCompleteFromOv(vidId){
+function _vidCompleteFromOv(vidId,anchorEl){
   const v=(st.videos||[]).find(x=>String(x.id)===String(vidId));
   if(!v)return;
   const steps=typeof VID_STEPS!=='undefined'?VID_STEPS:[];
@@ -3089,7 +3097,7 @@ function _vidCompleteFromOv(vidId){
     vidPatch.status=v.status;
     sbReqSilent('PATCH','videos',vidPatch,`?id=eq.${v.id}`);
     // Prompt for post date then create the tab/up task
-    _vidPromptPostDate(vidId);
+    _vidPromptPostDate(vidId,anchorEl);
   } else {
     // All done — publish
     v.status='published';vidPatch.status='published';
@@ -3105,32 +3113,40 @@ function _vidCompleteFromOv(vidId){
   if(typeof renderVideosPageKeepScroll==='function')renderVideosPageKeepScroll();
 }
 
-function _vidPromptPostDate(vidId){
+function _vidPromptPostDate(vidId,anchorEl){
   const v=(st.videos||[]).find(x=>String(x.id)===String(vidId));if(!v)return;
   // If post_date already set, use it directly
   if(v.post_date){_vidCreateTabUpTask(vidId,v.post_date);return;}
-  // Prompt with a small inline date picker
+  // Prompt with a small popover near the anchor
   const ds=d2s(getDayDate(0));
-  const overlay=document.createElement('div');overlay.className='overlay open';overlay.style.zIndex='600';
-  overlay.innerHTML=`<div class="modal task-modal" style="width:280px;padding:16px">
-    <div class="mt">Post Date for "${escHtml(v.topic||v.title)}"</div>
-    <p style="font-size:11px;color:var(--muted);margin:0 0 12px">When will this video be posted? A tab & upload task will be created for that date.</p>
-    <div class="mfield"><input id="_vidPostDateInp" type="date" value="${ds}" style="width:100%"></div>
-    <div class="mact"><button class="btn btn-ghost" id="_vidPostCancel">Cancel</button><button class="btn btn-dark" id="_vidPostSave">Set Date</button></div>
-  </div>`;
-  document.body.appendChild(overlay);
-  overlay.addEventListener('click',e=>{if(e.target===overlay){overlay.remove();}});
-  document.getElementById('_vidPostCancel').addEventListener('click',()=>overlay.remove());
+  const overlay=document.createElement('div');overlay.style.cssText='position:fixed;inset:0;z-index:600';
+  const pop=document.createElement('div');
+  pop.style.cssText='position:fixed;width:260px;padding:14px;background:rgba(255,255,255,.98);border:1px solid rgba(210,205,228,.4);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.15);backdrop-filter:blur(12px);z-index:601';
+  if(anchorEl){
+    const r=anchorEl.getBoundingClientRect();
+    pop.style.top=Math.min(r.bottom+6,window.innerHeight-200)+'px';
+    pop.style.left=Math.max(8,Math.min(r.left,window.innerWidth-280))+'px';
+  }else{pop.style.top='50%';pop.style.left='50%';pop.style.transform='translate(-50%,-50%)';}
+  pop.innerHTML=`
+    <div style="font-size:12px;font-weight:600;margin-bottom:6px">Post Date — ${escHtml(v.topic||v.title)}</div>
+    <p style="font-size:10px;color:var(--muted);margin:0 0 10px">A tab & upload task will be created for this date.</p>
+    <div style="margin-bottom:10px"><input id="_vidPostDateInp" type="date" value="${ds}" style="width:100%;font-size:12px;padding:4px 6px;border:1px solid var(--border);border-radius:6px"></div>
+    <div style="display:flex;justify-content:flex-end;gap:6px"><button class="btn btn-ghost btn-xs" id="_vidPostCancel">Cancel</button><button class="btn btn-dark btn-xs" id="_vidPostSave">Set Date</button></div>`;
+  document.body.appendChild(overlay);document.body.appendChild(pop);
+  const _cleanup=()=>{overlay.remove();pop.remove();};
+  overlay.addEventListener('click',_cleanup);
+  document.getElementById('_vidPostCancel').addEventListener('click',_cleanup);
   document.getElementById('_vidPostSave').addEventListener('click',async()=>{
     const postDate=document.getElementById('_vidPostDateInp').value;
-    if(!postDate){overlay.remove();return;}
+    if(!postDate){_cleanup();return;}
     v.post_date=postDate;
     await sbReqSilent('PATCH','videos',{post_date:postDate},`?id=eq.${v.id}`);
-    overlay.remove();
+    _cleanup();
     _vidCreateTabUpTask(vidId,postDate);
     save();renderAll();
     if(typeof renderVideosPageKeepScroll==='function')renderVideosPageKeepScroll();
   });
+  pop.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();document.getElementById('_vidPostSave').click();}if(e.key==='Escape')_cleanup();});
   setTimeout(()=>document.getElementById('_vidPostDateInp')?.focus(),60);
 }
 
