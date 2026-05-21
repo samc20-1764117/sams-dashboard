@@ -853,13 +853,18 @@ function renderWkCal(){
     const h=document.createElement('div');h.className='wkc-day-h'+(isViewed&&!isDateToday(d)?' wkc-day-sel':'');
     h.style.cursor='pointer';
     h.innerHTML=`<div class="wkc-dn">${DNAMES[d.getDay()===0?6:d.getDay()-1].slice(0,3)}</div><div class="wkc-dd ${isDateToday(d)?'tn2':''}">${d.getDate()}</div>`;
+    let _wkcHClk=null;
     h.addEventListener('click',()=>{
-      const todayDs=d2s(new Date());
-      const diff=Math.round((new Date(ds+'T00:00:00')-new Date(todayDs+'T00:00:00'))/86400000);
-      dayOff=diff;
-      renderToday();renderDayTB();renderWkCal();
+      if(_wkcHClk){clearTimeout(_wkcHClk);_wkcHClk=null;return;}
+      _wkcHClk=setTimeout(()=>{
+        _wkcHClk=null;
+        const todayDs=d2s(new Date());
+        const diff=Math.round((new Date(ds+'T00:00:00')-new Date(todayDs+'T00:00:00'))/86400000);
+        dayOff=diff;
+        renderToday();renderDayTB();renderWkCal();
+      },250);
     });
-    h.addEventListener('dblclick',e=>{e.stopPropagation();openQA('wkc',null,ds);});
+    h.addEventListener('dblclick',e=>{e.stopPropagation();if(_wkcHClk){clearTimeout(_wkcHClk);_wkcHClk=null;}openQA('wkc',null,ds);});
     head.appendChild(h);
   });
   const goalsH=document.createElement('div');goalsH.className='wkc-day-h wkc-goals-h';
