@@ -31,6 +31,7 @@
 - **`#tNotes` textarea**: auto-expands, capped at `max-height:160px`. Reset on add open; pre-expanded on edit open. Newlines rendered via `.replace(/\n/g,'<br>')`.
 - **Cmd+Z in modals**: `_isInput && !_ael.closest('.overlay:not(.open)')` → return early.
 - **Global shortcuts**: `n`=new task, `r`=reload, `s`=sync all, `o`=overview, `v`=videos, `i`=help overlay, `m`=month view (overview). `⌘←/→`=switch pages (overview→videos→pups→recipes→finance→birthdays). Skip if INPUT/TEXTAREA/contentEditable or meta held.
+- **Overview shortcuts**: `←/→`=shift day, `w+←/→`=shift week (hold `w` then press arrow; works even with video panel open). `t`=jump to today. `_wKeyHeld` flag tracked via keydown/keyup/blur.
 - **Keyboard shortcut pattern** (MUST follow every time):
   1. Same key toggles open/close (check if modal is already `.open` before opening).
   2. `Enter` also closes (when not in input/textarea/button).
@@ -39,6 +40,7 @@
   5. Both global handler AND modal's own `keydown` listener must handle the key.
   6. On modal `close` event: call `modal.blur();document.activeElement?.blur()` — focus must return to `<body>` so global shortcuts keep working. Without this, the closed dialog retains focus and its `stopPropagation` blocks all future keypresses from reaching the global handler.
 - **Help overlay** (`i` key): shows all shortcuts for current page + global. Toggle with `i` again or `Enter`. Uses `#helpOverlay` (standard `.overlay`+`.modal`). Page-specific content via `_pages[activePg]` map in `_showHelpOverlay()`.
+- **RULE: When adding ANY new keyboard shortcut**, you MUST also update `_showHelpOverlay()` in `core.js` to include it in the correct page's `_pages[pageName]` array (or `_global` if global). Audit existing entries to ensure nothing is missing or stale.
 - **Month view toggle** (`m` key): opens `mModal` on overview, closes if already open. Enter/Esc also close.
 - **Text selection**: `user-select:none` on `html,body`. `Ctrl/Cmd+A` blocked globally (allowed in INPUT/TEXTAREA).
 - **Global Cmd+C/V**: copies `selectedTasks`. Paste: `wrrule-{id}`→POST `wr_recurring_rules`; task ID→POST `tasks`.

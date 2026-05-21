@@ -315,10 +315,14 @@ function _vidScrollEl(){
   return card;
 }
 function renderVideosPageKeepScroll(){
+  // Refresh overview vid panel if open
+  if(typeof _renderVidOvMenu==='function'){const p=document.getElementById('vidOvPanel');if(p&&p.style.display==='block')_renderVidOvMenu();}
+  if(typeof renderAll==='function'&&activePg==='overview')renderAll();
   const se=_vidScrollEl();const top=se?se.scrollTop:0;
   const dl=document.getElementById('vidDashLeft');const dlTop=dl?dl.scrollTop:0;
   const dr=document.getElementById('vidDashRight');const drTop=dr?dr.scrollTop:0;
   const wasScrolled=top>0||dlTop>0||drTop>0;
+  if(activePg!=='videos')return;
   renderVideosPage();
   if(!wasScrolled)return; // let _vidScrollToDefault handle initial position
   const restore=()=>{
@@ -2719,6 +2723,7 @@ async function saveVidModal(){
   // L videos without a big parent can't be in_progress/up_next
   if(data.video_type==='L'&&!data.big_video_id&&(data.status==='in_progress'||data.status==='up_next'))data.status='idea';
   closeMod('vidModal');
+  const _fromOv=activePg==='overview';
 
   if(_vidMode==='edit'&&_vidEditId){
     const v=(st.videos||[]).find(x=>String(x.id)===String(_vidEditId));

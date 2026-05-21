@@ -1064,6 +1064,7 @@ function _showHelpOverlay(){
       ['T','Jump to Today'],
       ['M','Open / close month view'],
       ['←/→','Previous / next day'],
+      ['W + ←/→','Previous / next week'],
       ['←/→ (selected)','Move selected task ±1 day'],
       ['↑/↓ (time block selected)','Move block ±30 min'],
       ['Space','Toggle skip on WR rule'],

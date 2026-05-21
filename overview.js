@@ -3022,34 +3022,36 @@ function _renderVidOvMenu(){
   const steps=typeof VID_STEPS!=='undefined'?VID_STEPS:[];
   const labels=typeof VID_STEP_LABELS!=='undefined'?VID_STEP_LABELS:{};
   let html=_hdr;
-  html+='<div style="padding:4px 10px 0"><div style="display:flex;align-items:center;padding:0 6px 4px;gap:5px"><span style="flex:1"></span><div style="display:flex;gap:0">';
-  html+=steps.map(s=>`<div style="width:22px;text-align:center;font-size:8px;color:var(--muted);font-weight:600">${(labels[s]||s).slice(0,3)}</div>`).join('');
-  html+='<div style="width:34px"></div></div></div>';
+  html+='<div style="padding:4px 10px 0"><div style="display:flex;align-items:center;padding:0 6px 4px;gap:5px"><span style="flex:1"></span><div style="display:flex;gap:0;flex-shrink:0">';
+  html+=steps.map(s=>`<div style="width:22px;text-align:center;font-size:8px;color:var(--muted);font-weight:600;flex-shrink:0">${(labels[s]||s).slice(0,3)}</div>`).join('');
+  html+='</div><span style="width:34px;flex-shrink:0"></span></div></div>';
   unassigned.forEach(v=>{html+=_vidOvMenuItem(v,steps);});
   html+='</div>';
   menu.innerHTML=html;
 }
+function _vidOvStepDots(vid,steps){
+  return steps.map(s=>{
+    const val=vid[s]||'not_started';
+    const cls=val==='done'?'done':val==='na'?'na':'';
+    return`<div style="width:22px;display:flex;align-items:center;justify-content:center;flex-shrink:0"><div class="vid-step-dot${cls?' '+cls:''}" style="width:12px;height:12px;border-radius:2px;pointer-events:none"></div></div>`;
+  }).join('');
+}
+function _vidOvPct(vid,steps){const app=steps.filter(s=>vid[s]!=='na');const dn=app.filter(s=>vid[s]==='done').length;return app.length?Math.round(dn/app.length*100):0;}
 function _vidOvMenuItem(v,steps){
   const sid=String(v.id);
   const _dragAttr=`draggable="true" ondragstart="dragId='vid::${sid}';event.dataTransfer.effectAllowed='move';document.body.classList.add('body-dragging');showWkcEdges(true)" ondragend="document.body.classList.remove('body-dragging');showWkcEdges(false)"`;
-  const _dblAttr=`ondblclick="event.stopPropagation();closeVidOvMenu();if(typeof openVidEdit==='function')openVidEdit('${sid}')"`;
-  const _hoverAttr=`onmouseenter="this.style.background='rgba(0,0,0,.04)'" onmouseleave="this.style.background='none'"`;
-  function _stepDots(vid){
-    return steps.map(s=>{
-      const val=vid[s]||'not_started';
-      const cls=val==='done'?'done':val==='na'?'na':'';
-      return`<div style="width:22px;display:flex;align-items:center;justify-content:center"><div class="vid-step-dot${cls?' '+cls:''}" style="width:12px;height:12px;border-radius:2px;pointer-events:none"></div></div>`;
-    }).join('');
-  }
-  function _pct(vid){const app=steps.filter(s=>vid[s]!=='na');const dn=app.filter(s=>vid[s]==='done').length;return app.length?Math.round(dn/app.length*100):0;}
+  const _dblAttr=`ondblclick="event.stopPropagation();if(typeof openVidEdit==='function')openVidEdit('${sid}')"`;
+  const _hov=`onmouseenter="this.style.background='rgba(0,0,0,.04)'" onmouseleave="this.style.background='none'"`;
   const _map=_vidDayMap();const _onCal=!!_map[sid];
   const _calBadge=_onCal?`<span style="font-size:8px;color:#f59e0b;opacity:.7;flex-shrink:0" title="On calendar">●</span>`:'';
-  let html=`<div ${_dragAttr} ${_dblAttr} ${_hoverAttr} style="padding:5px 6px;border-radius:6px;font-size:13px;font-weight:600;color:var(--text);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s${_onCal?';opacity:.55':''}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;opacity:.4"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>${_calBadge}<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(v.topic||v.title)}</span><div style="display:flex;gap:0;flex-shrink:0">${_stepDots(v)}</div><span style="font-size:10px;opacity:.5;width:34px;text-align:right;flex-shrink:0">${_pct(v)}%</span></div>`;
+  const _addBtn=`<button onclick="event.stopPropagation();if(typeof openVidModalForBig==='function')openVidModalForBig('${sid}')" style="font-size:10px;font-weight:700;width:16px;height:16px;line-height:16px;text-align:center;border-radius:3px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;padding:0;flex-shrink:0" title="Add small video">+</button>`;
+  let html=`<div ${_dragAttr} ${_dblAttr} ${_hov} style="padding:5px 6px;border-radius:6px;font-size:13px;font-weight:600;color:var(--text);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s${_onCal?';opacity:.55':''}">${_addBtn}${_calBadge}<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(v.topic||v.title)}</span><div style="display:flex;gap:0;flex-shrink:0">${_vidOvStepDots(v,steps)}</div><span style="font-size:10px;opacity:.5;width:34px;text-align:right;flex-shrink:0">${_vidOvPct(v,steps)}%</span></div>`;
   // Children (S/L videos)
-  const children=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(v.id)&&c.status!=='published');
-  children.forEach(c=>{
+  const children=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(v.id)&&c.status!=='published').sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
+  children.forEach((c,ci)=>{
     const csid=String(c.id);
-    html+=`<div ${_hoverAttr} ondblclick="event.stopPropagation();closeVidOvMenu();if(typeof openVidEdit==='function')openVidEdit('${csid}')" style="padding:3px 6px 3px 26px;border-radius:6px;font-size:11px;font-weight:500;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:5px;transition:background .1s"><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(c.topic||c.title)}</span><div style="display:flex;gap:0;flex-shrink:0">${_stepDots(c)}</div><span style="font-size:9px;opacity:.4;width:34px;text-align:right;flex-shrink:0">${_pct(c)}%</span></div>`;
+    html+=`<div ${_hov} ondblclick="event.stopPropagation();if(typeof openVidEdit==='function')openVidEdit('${csid}')" style="padding:3px 6px 3px 28px;border-radius:6px;font-size:11px;font-weight:500;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:5px;transition:background .1s"><span style="color:var(--muted);font-size:10px;margin-right:2px">└</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(c.topic||c.title)}</span><div style="display:flex;gap:0;flex-shrink:0">${_vidOvStepDots(c,steps)}</div><span style="font-size:9px;opacity:.4;width:34px;text-align:right;flex-shrink:0">${_vidOvPct(c,steps)}%</span></div>`;
+    if(ci<children.length-1){const oA=c.vid_order??ci;const oB=children[ci+1].vid_order??(ci+1);html+=`<div class="vid-insert-zone" onclick="event.stopPropagation();if(typeof openVidModalBetween==='function')openVidModalBetween('${sid}',${oA},${oB})"><button class="vid-insert-btn">+</button></div>`;}
   });
   return html;
 }
