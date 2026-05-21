@@ -223,6 +223,8 @@ function renderTodDonut(done,total){
   const pct=done/total;
   if(pEl)pEl.textContent=Math.round(pct*100)+'%';
   if(fEl)fEl.textContent=`${done}/${total}`;
+  const lbEl=document.getElementById('_donutLabel');
+  if(lbEl){const dd=getDayDate(dayOff);lbEl.textContent=isDateToday(dd)?'done today':'done '+dd.toLocaleDateString('en-US',{month:'short',day:'numeric'});}
   if(!arc)return;
   const isNow100=pct>=1;
   if(!_donutInited){
