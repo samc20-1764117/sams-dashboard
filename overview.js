@@ -333,7 +333,7 @@ function renderPupSkillsHighlight(){
     return`<div style="flex:1;display:flex;flex-direction:column;background:rgba(255,255,255,.55);border:1px solid rgba(210,205,228,.3);border-radius:12px;padding:6px 0 5px;overflow:hidden;box-shadow:inset 0 1px 3px rgba(0,0,0,.04)">
       <div style="display:flex;align-items:center;padding:0 6px 2px;gap:4px">
         <span style="font-size:9px;font-weight:700;color:var(--muted);letter-spacing:.03em">${pup}</span>
-        <span onclick="openPupFocusPicker('${pup}')" style="cursor:pointer;font-size:10px;color:var(--muted);opacity:.5;line-height:1;margin-left:2px" title="Edit skills for this week">✎</span>
+        <span onclick="event.stopPropagation();openPupFocusPicker('${pup}')" style="cursor:pointer;font-size:7px;color:var(--muted);opacity:.4;line-height:1;margin-left:1px" title="Edit ${pup}'s skills for this week">✎</span>
         <span class="vid-num" style="font-size:8px;font-weight:600;color:var(--muted);margin-left:auto">${wkDoneTotal}/${wkSessTotal}</span>
       </div>
       ${rows}
@@ -345,62 +345,96 @@ function renderPupSkillsHighlight(){
   if(mochiSkills.length)html+=mkTile('Mochi',mochiSkills,'#a78bfa');
   if(sunnySkills.length)html+=mkTile('Sunny',sunnySkills,'#d4a017');
   wrap.innerHTML=html;
+  if(!wrap._dblBound){wrap._dblBound=true;wrap.addEventListener('dblclick',e=>{if(!e.target.closest('.ti'))_openPupFocusModal(null);});}
 }
-function openPupFocusPicker(pup){
+function openPupFocusPicker(pup){_openPupFocusModal(pup);}
+function _openPupFocusModal(onlyPup){
   let old=document.getElementById('_pupFocusPicker');if(old)old.remove();
-  const wkStart=_pupWkMonday(wkOff);
-  const allSkills=(st.pup_skills||[]).filter(s=>s.pup===pup&&s.stage!=='Mastered').sort((a,b)=>(a.skill||'').localeCompare(b.skill||''));
-  const focusIds=_pupWkFocusIds(pup,wkOff);
+  const pups=onlyPup?[onlyPup]:['Mochi','Sunny'];
   const overlay=document.createElement('div');overlay.id='_pupFocusPicker';
   overlay.style.cssText='position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.35)';
   overlay.onclick=e=>{if(e.target===overlay)overlay.remove();};
   const modal=document.createElement('div');
-  modal.style.cssText='background:var(--card);border-radius:14px;padding:16px 18px;min-width:260px;max-width:340px;max-height:70vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.18)';
+  const wide=pups.length>1;
+  modal.style.cssText=`background:var(--card);border-radius:16px;padding:14px 16px 12px;${wide?'min-width:480px;max-width:580px':'min-width:260px;max-width:320px'};max-height:75vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.18)`;
   const wkLabel=wkOff===0?'This Week':(wkOff>0?`+${wkOff} wks`:`${Math.abs(wkOff)}w ago`);
-  modal.innerHTML=`<div style="font-size:13px;font-weight:700;margin-bottom:10px;color:var(--text)">${pup} — ${wkLabel}</div>
-    <div style="font-size:10px;color:var(--muted);margin-bottom:8px">Toggle skills for this week:</div>
-    <div id="_pfpList"></div>
-    <div style="margin-top:10px;border-top:1px solid var(--subtle);padding-top:8px">
-      <input id="_pfpNewSkill" type="text" placeholder="Add new skill…" style="width:100%;padding:5px 8px;border:1px solid var(--subtle);border-radius:6px;font-size:11px;background:var(--bg);color:var(--text);box-sizing:border-box">
-    </div>`;
+  const wkMon=new Date(_pupWkMonday(wkOff)+'T12:00:00');
+  const wkDateRange=wkMon.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' – '+(new Date(wkMon.getTime()+6*86400000)).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  modal.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+    <div><div style="font-size:13px;font-weight:700;color:var(--text)">Weekly Skills</div><div style="font-size:10px;color:var(--muted)">${wkLabel} · ${wkDateRange}</div></div>
+    <span onclick="document.getElementById('_pupFocusPicker').remove()" style="cursor:pointer;font-size:16px;color:var(--muted);padding:2px 4px;line-height:1">✕</span>
+  </div>
+  <div style="display:${wide?'grid':'block'};grid-template-columns:1fr 1fr;gap:10px" id="_pfpCols"></div>`;
   overlay.appendChild(modal);document.body.appendChild(overlay);
-  const listEl=modal.querySelector('#_pfpList');
-  function renderList(){
+  const colsEl=modal.querySelector('#_pfpCols');
+  pups.forEach(pup=>{
+    const col=document.createElement('div');
+    col.dataset.pup=pup;
+    const themeBg=pup==='Mochi'?'rgba(139,92,246,0.06)':'rgba(251,191,36,0.07)';
+    const themeBorder=pup==='Mochi'?'rgba(139,92,246,0.15)':'rgba(251,191,36,0.2)';
+    const accentColor=pup==='Mochi'?'#8b5cf6':'#d97706';
+    col.style.cssText=`background:${themeBg};border:1px solid ${themeBorder};border-radius:12px;padding:8px 10px;display:flex;flex-direction:column;gap:2px`;
+    col.innerHTML=`<div style="font-size:10px;font-weight:700;color:${accentColor};letter-spacing:.04em;margin-bottom:4px">${pup}</div>
+      <div class="_pfpSkills"></div>
+      <div style="margin-top:6px;border-top:1px solid ${themeBorder};padding-top:6px">
+        <input type="text" placeholder="Add new skill…" class="_pfpNewInput" data-pup="${pup}" style="width:100%;padding:4px 7px;border:1px solid var(--subtle);border-radius:6px;font-size:10px;background:var(--bg);color:var(--text);box-sizing:border-box">
+      </div>`;
+    colsEl.appendChild(col);
+  });
+  function renderCol(pup){
+    const col=colsEl.querySelector(`[data-pup="${pup}"]`);if(!col)return;
+    const listEl=col.querySelector('._pfpSkills');
+    const allSkills=(st.pup_skills||[]).filter(s=>s.pup===pup&&s.stage!=='Mastered').sort((a,b)=>(a.skill||'').localeCompare(b.skill||''));
     const curIds=_pupWkFocusIds(pup,wkOff);
-    listEl.innerHTML=allSkills.map(s=>{
-      const checked=curIds.includes(String(s.id));
-      return`<label style="display:flex;align-items:center;gap:8px;padding:4px 2px;cursor:pointer;font-size:12px;color:var(--text)">
-        <input type="checkbox" ${checked?'checked':''} onchange="togglePupFocusFromPicker('${s.id}',this.checked);document.querySelector('#_pfpList')._rerender()">
-        <span>${escHtml(s.skill)}</span>
-      </label>`;
-    }).join('');
-    listEl._rerender=renderList;
-  }
-  renderList();
-  const inp=modal.querySelector('#_pfpNewSkill');
-  inp.addEventListener('keydown',async e=>{
-    if(e.key!=='Enter')return;
-    const val=inp.value.trim();if(!val)return;
-    inp.value='';
-    // Check if skill already exists for this pup
-    let skill=(st.pup_skills||[]).find(s=>s.pup===pup&&s.skill.toLowerCase()===val.toLowerCase());
-    if(!skill){
-      const tmp='ps-tmp-'+Date.now();
-      skill={id:tmp,pup,skill:val,stage:'Learning',focus:false};
-      st.pup_skills.push(skill);
-      save();
-      const sv=await sbReqSilent('POST','pup_skills',{pup,skill:val,stage:'Learning',focus:false});
-      if(sv&&sv[0]){const i=st.pup_skills.findIndex(s=>s.id===tmp);if(i>-1)st.pup_skills[i]=sv[0];skill=st.pup_skills[i];}
-      save();
-      allSkills.push(skill);allSkills.sort((a,b)=>(a.skill||'').localeCompare(b.skill||''));
+    // Active (checked) on top, then unchecked
+    const active=allSkills.filter(s=>curIds.includes(String(s.id)));
+    const inactive=allSkills.filter(s=>!curIds.includes(String(s.id)));
+    const renderSkill=(s,checked)=>{
+      const sid=String(s.id);
+      const done=_pupWkDone(sid);const total=_pupWkSessTotal(sid);
+      const countStr=checked&&(done||total)?`<span class="vid-num" style="font-size:8px;font-weight:600;color:var(--muted);margin-left:auto;flex-shrink:0">${done}/${total}</span>`:'';
+      return`<div style="display:flex;align-items:center;gap:6px;padding:3px 4px;border-radius:6px;${checked?'background:rgba(255,255,255,.7);border:1px solid rgba(210,205,228,.2);margin-bottom:2px':'opacity:.55;margin-bottom:1px'}" ondblclick="event.stopPropagation();openPupEditModal('${sid}')">
+        <input type="checkbox" ${checked?'checked':''} onchange="_pfpToggle('${sid}','${pup}',this.checked)" style="width:12px;height:12px;accent-color:${pup==='Mochi'?'#8b5cf6':'#d97706'};cursor:pointer;flex-shrink:0">
+        <span style="font-size:10px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(s.skill)}</span>
+        ${countStr}
+      </div>`;
+    };
+    let html='';
+    if(active.length){html+=active.map(s=>renderSkill(s,true)).join('');}
+    if(inactive.length){
+      html+=`<div style="font-size:8px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:5px 0 3px;padding-left:2px">Available</div>`;
+      html+=inactive.map(s=>renderSkill(s,false)).join('');
     }
-    await addPupWeeklyFocus(skill.id,wkOff);
-    renderList();renderPupSkillsHighlight();renderToday();renderWkCal();
+    if(!allSkills.length)html='<div style="font-size:10px;color:var(--muted);padding:8px 0;text-align:center">No skills yet</div>';
+    listEl.innerHTML=html;
+  }
+  pups.forEach(renderCol);
+  window._pfpRenderCol=renderCol;
+  // New skill inputs
+  colsEl.querySelectorAll('._pfpNewInput').forEach(inp=>{
+    inp.addEventListener('keydown',async e=>{
+      if(e.key!=='Enter')return;
+      const val=inp.value.trim();if(!val)return;
+      const pup=inp.dataset.pup;
+      inp.value='';
+      let skill=(st.pup_skills||[]).find(s=>s.pup===pup&&s.skill.toLowerCase()===val.toLowerCase());
+      if(!skill){
+        const tmp='ps-tmp-'+Date.now();
+        skill={id:tmp,pup,skill:val,stage:'Learning',focus:false};
+        st.pup_skills.push(skill);save();
+        const sv=await sbReqSilent('POST','pup_skills',{pup,skill:val,stage:'Learning',focus:false});
+        if(sv&&sv[0]){const i=st.pup_skills.findIndex(s=>s.id===tmp);if(i>-1)st.pup_skills[i]=sv[0];skill=st.pup_skills[i];}
+        save();
+      }
+      await addPupWeeklyFocus(skill.id,wkOff);
+      renderCol(pup);renderPupSkillsHighlight();renderToday();renderWkCal();
+    });
   });
 }
-async function togglePupFocusFromPicker(skillId,checked){
+async function _pfpToggle(skillId,pup,checked){
   if(checked)await addPupWeeklyFocus(skillId,wkOff);
   else await removePupWeeklyFocus(skillId,wkOff);
+  if(window._pfpRenderCol)window._pfpRenderCol(pup);
   renderPupSkillsHighlight();renderToday();renderWkCal();
 }
 async function togPupSkillTrained(id,checked){
