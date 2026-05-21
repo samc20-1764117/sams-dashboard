@@ -310,7 +310,7 @@ function renderPupSkillsHighlight(){
   const mochiSkills=_pupWkFocusSkills('Mochi',wkOff);
   const sunnySkills=_pupWkFocusSkills('Sunny',wkOff);
   if(!mochiSkills.length&&!sunnySkills.length){wrap.innerHTML='';wrap.style.cssText='display:none';return;}
-  wrap.style.cssText='display:flex;gap:4px;margin:6px 4px 4px;flex-shrink:0';
+  wrap.style.cssText='display:flex;gap:4px;margin:6px 5px 5px;flex-shrink:0';
   const mkTile=(pup,skills,accentColor)=>{
     const wkDoneTotal=skills.reduce((a,s)=>a+_pupWkDone(s.id),0);
     const wkSessTotal=skills.reduce((a,s)=>a+_pupWkSessTotal(s.id),0);
@@ -384,6 +384,7 @@ function _openPupFocusModal(onlyPup){
     if(e.key==='Enter'&&!inInput){e.preventDefault();_pfpClose();return;}
     if(e.key==='ArrowLeft'&&!inInput){e.preventDefault();_pfpShiftWk(-1);return;}
     if(e.key==='ArrowRight'&&!inInput){e.preventDefault();_pfpShiftWk(1);return;}
+    if(e.key==='t'&&!inInput){e.preventDefault();_pfpWkOff=0;const ov=document.getElementById('_pupFocusPicker');if(ov)_pfpRenderContent(ov.querySelector('.modal'));return;}
   };
   document.addEventListener('keydown',window._pfpKeyFn);
 }
