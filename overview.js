@@ -935,15 +935,15 @@ function renderWkCal(){
       const ed=tv.end_date?tv.end_date.split('T')[0]:sd;
       const isPast=!!(ed&&ed<today2);
       const modeIconHtml=tv.travel_mode==='plane'?_PLANE_SVG:tv.travel_mode==='drive'?_CAR_SVG:'';
-      const label=tv.destination?`${modeIconHtml}${escHtml(tv.name)} → ${escHtml(tv.destination)}`:`${modeIconHtml}${escHtml(tv.name)}`;
+      const packIcon=`<span class="ban-pack-inline" style="display:inline-flex;align-items:center;margin-right:3px;cursor:pointer;opacity:.65" title="Packing list">${_PACK_SVG}</span>`;
+      const label=tv.destination?`${packIcon}${modeIconHtml}${escHtml(tv.name)} → ${escHtml(tv.destination)}`:`${packIcon}${modeIconHtml}${escHtml(tv.name)}`;
       const tripsEndsThisWeek=!ed||ed<=wkDss[6];
       const ban=addBanner(label,sd,ed,s,null,isPast);
       if(!ban)return;
       const tvSid='tv-'+tv.id;
       ban.dataset.tvid=String(tv.id);
-      const pk=document.createElement('button');pk.className='pack-icon-btn ban-pack';pk.innerHTML=_PACK_SVG;pk.title='Packing list';
-      pk.addEventListener('click',e=>{e.stopPropagation();openPackingModal(tv.id);});
-      ban.appendChild(pk);
+      const pkEl=ban.querySelector('.ban-pack-inline');
+      if(pkEl)pkEl.addEventListener('click',e=>{e.stopPropagation();openPackingModal(tv.id);});
       const del=document.createElement('button');del.className='ban-del';del.textContent='✕';
       del.addEventListener('click',e=>{e.stopPropagation();delTravel(tv.id);});
       ban.appendChild(del);
@@ -3189,7 +3189,7 @@ function tRowExtra(t){
   const _bdDone=isBd&&t.done;
   return`<div class="ti ti-${sl}${_bdDone?' done':''}" style="background:${s.bg}${_bdDone?';opacity:.45':''}" id="ti-${t.id}" ${bdDrag} onclick="selTask(event,'${t.id}')">
     ${isTv?`<button class="pack-icon-btn" onclick="event.stopPropagation();openPackingModal('${t._srcId}')" title="Packing list" style="opacity:.6;padding:0;margin:-1px -4px -1px 0">${_PACK_SVG}</button>`:''}
-    <span class="tn" style="color:${isTv?'var(--text-primary,#1a1a1a)':s.t};font-weight:600${_bdDone?';text-decoration:line-through':''}">${modeIcon}${isBd?t.name.replace('🎂','<span class="bday-emoji">🎂</span>'):t.name}</span>
+    <span class="tn" style="color:${s.t}${_bdDone?';text-decoration:line-through':''}">${modeIcon}${isBd?t.name.replace('🎂','<span class="bday-emoji">🎂</span>'):t.name}</span>
     ${isTv||isBd?'':`<svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3" fill="${s.bg}" stroke="${s.d}" stroke-opacity="0.4" stroke-width="1"/></svg>`}
     ${isBd?'':`<span class="dlbl" style="${isTv?'margin-left:auto;color:#475569':''}">${fmtD(t.due_date)}${sub}</span>`}
     ${isTv?`<button class="delbtn" onclick="event.stopPropagation();delTravel('${t._srcId}')">✕</button>`:''}
