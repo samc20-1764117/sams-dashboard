@@ -859,6 +859,7 @@ function renderWkCal(){
       dayOff=diff;
       renderToday();renderDayTB();renderWkCal();
     });
+    h.addEventListener('dblclick',e=>{e.stopPropagation();openQA('wkc',null,ds);});
     head.appendChild(h);
   });
   const goalsH=document.createElement('div');goalsH.className='wkc-day-h wkc-goals-h';
