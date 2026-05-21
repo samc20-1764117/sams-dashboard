@@ -108,7 +108,7 @@
           <button class="btn btn-ghost btn-xs" onclick="shiftDay(1)" style="flex-shrink:0">→</button>
         </div>
       </div>
-      <div id="vidOvPanel" style="display:none;position:absolute;inset:0;top:36px;z-index:50;background:rgba(255,255,255,.98);backdrop-filter:blur(12px);overflow-y:auto;padding:8px 10px;opacity:0;transition:opacity .2s ease"></div>
+      <div id="vidOvPanel" style="display:none;position:absolute;inset:0;z-index:50;background:rgba(255,255,255,.98);backdrop-filter:blur(12px);overflow-y:auto;padding:0;opacity:0;transition:opacity .2s ease;border-radius:inherit"></div>
       <div class="tod-tb-body">
       <div class="tod-section" onwheel="onTodWheel(event)">
       <div id="ovBanner" class="ov-banner"><span id="ovBannerTxt">1 overdue task — move to today?</span><button class="ov-banner-btn" onclick="rolloverOverdue()">Move all to today</button></div><div class="tlist" id="todList" style="flex:1" ondblclick="if(!event.target.closest('.ti'))openQA('today',null)" ondragover="event.preventDefault();this.classList.add('drop-here')" ondragleave="this.classList.remove('drop-here')" ondrop="dropOnTodayList(event)"><div class="ti  ov-row " id="ti-t-1773193938936" draggable="true" ondragstart="dStart(event,&#39;t-1773193938936&#39;)" ondragend="this.classList.remove(&#39;dragging&#39;)" onclick="selTask(event,&#39;t-1773193938936&#39;)" ondblclick="tiDbl(event,&#39;t-1773193938936&#39;)" oncontextmenu="showCtx(event,&#39;t-1773193938936&#39;)">

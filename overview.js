@@ -3016,17 +3016,19 @@ function _renderVidOvMenu(){
   const map=_vidDayMap();
   const assigned=new Set(Object.keys(map));
   const unassigned=vids.filter(v=>!assigned.has(String(v.id)));
+  const _hdr=`<div class="tod-tb-header" style="display:flex;align-items:center;justify-content:center;position:relative;padding:8px 10px"><span style="font-size:12px;font-weight:700;color:var(--text);letter-spacing:-.1px">Videos</span><button onclick="closeVidOvMenu()" style="position:absolute;right:10px;background:none;border:none;cursor:pointer;font-size:14px;color:var(--muted);padding:0 2px;line-height:1" title="Close">✕</button></div>`;
   if(!unassigned.length){
-    menu.innerHTML='<div style="display:flex;align-items:center;padding:2px 6px 6px"><span style="font-size:10px;font-weight:700;color:var(--text)">Videos — Up Next</span><button onclick="closeVidOvMenu()" style="margin-left:auto;background:none;border:none;cursor:pointer;font-size:14px;color:var(--muted);padding:0 2px;line-height:1">✕</button></div><div style="padding:20px;font-size:11px;color:var(--subtle);text-align:center">No videos to add</div>';
+    menu.innerHTML=_hdr+'<div style="padding:30px;font-size:12px;color:var(--subtle);text-align:center">No videos to add</div>';
     return;
   }
   const steps=typeof VID_STEPS!=='undefined'?VID_STEPS:[];
   const labels=typeof VID_STEP_LABELS!=='undefined'?VID_STEP_LABELS:{};
-  let html='<div style="display:flex;align-items:center;padding:2px 6px 6px;gap:4px"><span style="font-size:10px;font-weight:700;letter-spacing:-.01em;color:var(--text)">Videos — Up Next</span><button onclick="closeVidOvMenu()" style="margin-left:auto;background:none;border:none;cursor:pointer;font-size:14px;color:var(--muted);padding:0 2px;line-height:1" title="Close">✕</button></div>';
-  html+='<div style="display:flex;align-items:center;padding:0 6px 3px;gap:4px"><span style="flex:1"></span><div style="display:flex;gap:0">';
-  html+=steps.map(s=>`<div style="width:20px;text-align:center;font-size:7px;color:var(--muted);font-weight:600">${(labels[s]||s).slice(0,2).toUpperCase()}</div>`).join('');
-  html+='<div style="width:30px"></div></div></div>';
+  let html=_hdr;
+  html+='<div style="padding:6px 10px 0"><div style="display:flex;align-items:center;padding:0 6px 4px;gap:4px"><span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);flex:1">Up Next</span><div style="display:flex;gap:0">';
+  html+=steps.map(s=>`<div style="width:22px;text-align:center;font-size:8px;color:var(--muted);font-weight:600">${(labels[s]||s).slice(0,3)}</div>`).join('');
+  html+='<div style="width:34px"></div></div></div>';
   unassigned.forEach(v=>{html+=_vidOvMenuItem(v,steps);});
+  html+='</div>';
   menu.innerHTML=html;
 }
 function _vidOvMenuItem(v,steps){
@@ -3038,16 +3040,16 @@ function _vidOvMenuItem(v,steps){
     return steps.map(s=>{
       const val=vid[s]||'not_started';
       const cls=val==='done'?'done':val==='na'?'na':'';
-      return`<div style="width:20px;display:flex;align-items:center;justify-content:center"><div class="vid-step-dot${cls?' '+cls:''}" style="width:10px;height:10px;border-radius:2px;pointer-events:none"></div></div>`;
+      return`<div style="width:22px;display:flex;align-items:center;justify-content:center"><div class="vid-step-dot${cls?' '+cls:''}" style="width:12px;height:12px;border-radius:2px;pointer-events:none"></div></div>`;
     }).join('');
   }
   function _pct(vid){const app=steps.filter(s=>vid[s]!=='na');const dn=app.filter(s=>vid[s]==='done').length;return app.length?Math.round(dn/app.length*100):0;}
-  let html=`<div ${_dragAttr} ${_dblAttr} ${_hoverAttr} style="padding:3px 6px;border-radius:6px;font-size:11px;font-weight:600;color:var(--text);cursor:grab;display:flex;align-items:center;gap:4px;transition:background .1s"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;opacity:.4"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(v.topic||v.title)}</span><div style="display:flex;gap:0">${_stepDots(v)}</div><span style="font-size:9px;opacity:.5;width:30px;text-align:right;flex-shrink:0">${_pct(v)}%</span></div>`;
+  let html=`<div ${_dragAttr} ${_dblAttr} ${_hoverAttr} style="padding:5px 6px;border-radius:6px;font-size:13px;font-weight:600;color:var(--text);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;opacity:.4"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(v.topic||v.title)}</span><div style="display:flex;gap:0">${_stepDots(v)}</div><span style="font-size:10px;opacity:.5;width:34px;text-align:right;flex-shrink:0">${_pct(v)}%</span></div>`;
   // Children (S/L videos)
   const children=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(v.id)&&c.status!=='published');
   children.forEach(c=>{
     const csid=String(c.id);
-    html+=`<div ${_hoverAttr} ondblclick="event.stopPropagation();closeVidOvMenu();if(typeof openVidEdit==='function')openVidEdit('${csid}')" style="padding:2px 6px 2px 22px;border-radius:6px;font-size:9px;font-weight:500;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:4px;transition:background .1s"><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(c.topic||c.title)}</span><div style="display:flex;gap:0">${_stepDots(c)}</div><span style="font-size:8px;opacity:.4;width:30px;text-align:right;flex-shrink:0">${_pct(c)}%</span></div>`;
+    html+=`<div ${_hoverAttr} ondblclick="event.stopPropagation();closeVidOvMenu();if(typeof openVidEdit==='function')openVidEdit('${csid}')" style="padding:3px 6px 3px 26px;border-radius:6px;font-size:11px;font-weight:500;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:4px;transition:background .1s"><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(c.topic||c.title)}</span><div style="display:flex;gap:0">${_stepDots(c)}</div><span style="font-size:9px;opacity:.4;width:34px;text-align:right;flex-shrink:0">${_pct(c)}%</span></div>`;
   });
   return html;
 }
