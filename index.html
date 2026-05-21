@@ -58,7 +58,7 @@
     <a class="nav-item" href="#recipes" onclick="event.preventDefault();showPage('recipes')"><div class="ndot" style="background:#f59e0b"></div>🍳 Recipes</a>
     <a class="nav-item" href="#notes" onclick="event.preventDefault();showPage('notes')"><div class="ndot" style="background:#8b5cf6"></div>📝 Notes</a>
     <a class="nav-item" href="#videos" onclick="event.preventDefault();showPage('videos')"><div class="ndot" style="background:#0ea5e9"></div>🎬 Videos</a>
-    <a class="nav-item" href="#packing" onclick="event.preventDefault();showPage('packing')"><div class="ndot" style="background:#22c55e"></div>🧳 Packing</a>
+    <a class="nav-item" href="#packing" onclick="event.preventDefault();showPage('packing')"><div class="ndot" style="background:#22c55e"></div>Packing</a>
   </nav>
 </div>
 
@@ -439,7 +439,7 @@
     <div class="mfield"><label>End date</label><input id="tvEnd" type="date"></div>
     <div class="mfield"><label>Travel mode</label><select id="tvTravelMode" onkeydown="if(event.key==='Enter')setTimeout(saveTravelModal,0)"><option value="">None</option><option value="plane">✈️ Plane</option><option value="drive">🚗 Drive</option></select></div>
     <div class="mfield"><label>Notes <span style="opacity:.45;font-weight:400">(optional)</span></label><input id="tvNotes" placeholder="flights, hotels…"></div>
-    <div class="mact"><button class="btn btn-ghost" onclick="closeMod(&#39;travelModal&#39;)">Cancel</button><button id="tvPackBtn" class="btn btn-ghost" style="display:none;font-size:11px" onclick="closeMod('travelModal');openPackingModal(travelEditId)">🧳 Packing List</button><button class="btn btn-dark" onclick="saveTravelModal()">Save</button></div>
+    <div class="mact"><button class="btn btn-ghost" onclick="closeMod(&#39;travelModal&#39;)">Cancel</button><button id="tvPackBtn" class="btn btn-ghost tvpack-btn" style="display:none" onclick="closeMod('travelModal');openPackingModal(travelEditId)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"/><line x1="12" y1="11" x2="12" y2="16"/><line x1="9.5" y1="13.5" x2="14.5" y2="13.5"/></svg> Packing List</button><button class="btn btn-dark" onclick="saveTravelModal()">Save</button></div>
   </div>
 </div>
 

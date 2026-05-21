@@ -1105,7 +1105,8 @@ body.dark .vid-stat-card{background:rgba(40,30,50,.4)}
 .pack-item-row:hover{background:rgba(100,100,140,.06)}
 .pack-item-row:hover .delbtn{opacity:1}
 .pack-item-row .delbtn{position:static;transform:none;opacity:0;flex-shrink:0}
-.pack-icon-btn{background:none;border:none;cursor:pointer;font-size:12px;padding:1px 3px;opacity:.5;transition:opacity .15s;flex-shrink:0}
+.pack-icon-btn{background:none;border:none;cursor:pointer;font-size:12px;padding:1px 3px;opacity:.5;transition:opacity .15s;flex-shrink:0;display:inline-flex;align-items:center}
+.tvpack-btn{font-size:11px;align-items:center;gap:3px}
 .pack-icon-btn:hover{opacity:1}
 .ti:hover .pack-icon-btn{opacity:.7}
 .kol-item .pack-icon-btn{font-size:11px;padding:0 2px}

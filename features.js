@@ -1034,6 +1034,9 @@ function mkMCell(date,om,today){
       }
     }
     if(isTravel){
+      const pk=document.createElement('button');pk.className='pack-icon-btn';pk.innerHTML=_PACK_SVG;pk.title='Packing list';pk.style.cssText='margin-right:2px';
+      pk.addEventListener('click',e2=>{e2.stopPropagation();openPackingModal(t._srcId);});
+      chip.appendChild(pk);
       const dx=document.createElement('button');dx.className='chip-del';dx.textContent='✕';
       dx.style.cssText='margin-right:2px';
       dx.addEventListener('click',e2=>{e2.stopPropagation();delTravel(t._srcId);});
@@ -1179,7 +1182,7 @@ function openTravelModal(id,preStart,preEnd){
     document.getElementById('tvEnd').value=tv.end_date||'';
     document.getElementById('tvTravelMode').value=tv.travel_mode||'';
     document.getElementById('tvNotes').value=tv.notes||'';
-    const pb=document.getElementById('tvPackBtn');if(pb)pb.style.display='';
+    const pb=document.getElementById('tvPackBtn');if(pb)pb.style.display='inline-flex';
   } else {
     document.getElementById('travelMTitle').textContent='Add Trip';
     document.getElementById('tvName').value='';document.getElementById('tvDest').value='';
@@ -3339,6 +3342,7 @@ document.addEventListener('mousedown',e=>{_modMousedownInside=!!e.target.closest
 function closeMod(id,e){if(e&&e.target!==document.getElementById(id))return;if(e&&_modMousedownInside)return;document.getElementById(id).classList.remove('open');if(id==='mModal'||id==='recMoModal'){const bg=document.querySelector('.bg-canvas');if(bg)bg.classList.remove('orbs-paused');}if(id==='recipeModal'&&_recModalKeyFn){document.removeEventListener('keydown',_recModalKeyFn);_recModalKeyFn=null;}}
 
 // ── Packing ────────────────────────────────────────────────────────────────────
+const _PACK_SVG=`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"/><line x1="12" y1="11" x2="12" y2="16"/><line x1="9.5" y1="13.5" x2="14.5" y2="13.5"/></svg>`;
 const PACK_CATS=['Clothes','Toiletries','Electronics','Documents','Misc'];
 let _packDragId=null;
 
