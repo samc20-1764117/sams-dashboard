@@ -1112,8 +1112,7 @@ body.dark .vid-stat-card{background:rgba(40,30,50,.4)}
 .ti:hover .pack-icon-btn,.mcell-t:hover .pack-icon-btn,.kol-item:hover .pack-icon-btn{opacity:.7}
 .kol-item .pack-icon-btn{font-size:11px;padding:0 2px}
 .mcell-t .pack-icon-btn{font-size:10px;padding:0 1px}
-.ban-pack{margin-left:auto;opacity:0}
-.wkc-banner:hover .ban-pack{opacity:.65}
+.ban-pack{margin-left:auto;opacity:.65;flex-shrink:0}
 .wkc-banner .ban-pack:hover{opacity:1!important}
 
 /* Anti-FOUC: applied before first paint via html classes set in head script */
