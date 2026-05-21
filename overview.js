@@ -871,6 +871,9 @@ function renderWkCal(){
       if(!ban)return;
       const tvSid='tv-'+tv.id;
       ban.dataset.tvid=String(tv.id);
+      const pk=document.createElement('button');pk.className='pack-icon-btn ban-pack';pk.innerHTML=_PACK_SVG;pk.title='Packing list';
+      pk.addEventListener('click',e=>{e.stopPropagation();openPackingModal(tv.id);});
+      ban.appendChild(pk);
       const del=document.createElement('button');del.className='ban-del';del.textContent='✕';
       del.addEventListener('click',e=>{e.stopPropagation();delTravel(tv.id);});
       ban.appendChild(del);
@@ -3115,7 +3118,7 @@ function tRowExtra(t){
   const bdDrag=isBd?`draggable="true" ondragstart="dStart(event,'bday::${t._srcId}::${t.due_date}')" ondragend="dEnd(event)"`:'';
   const _bdDone=isBd&&t.done;
   return`<div class="ti ti-${sl}${_bdDone?' done':''}" style="background:${s.bg}${_bdDone?';opacity:.45':''}" id="ti-${t.id}" ${bdDrag} onclick="selTask(event,'${t.id}')">
-    ${isTv?`<button class="pack-icon-btn" onclick="event.stopPropagation();openPackingModal('${t._srcId}')" title="Packing list" style="opacity:.6;margin-right:2px">${_PACK_SVG}</button>`:''}
+    ${isTv?`<button class="pack-icon-btn" onclick="event.stopPropagation();openPackingModal('${t._srcId}')" title="Packing list" style="opacity:.6;padding:0;margin:0 2px 0 -2px">${_PACK_SVG}</button>`:''}
     <span class="tn" style="color:${isTv?'var(--text-primary,#1a1a1a)':s.t};font-weight:600${_bdDone?';text-decoration:line-through':''}">${modeIcon}${isBd?t.name.replace('🎂','<span class="bday-emoji">🎂</span>'):t.name}</span>
     ${isTv||isBd?'':`<svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3" fill="${s.bg}" stroke="${s.d}" stroke-opacity="0.4" stroke-width="1"/></svg>`}
     ${isBd?'':`<span class="dlbl" style="${isTv?'margin-left:auto;color:#475569':''}">${fmtD(t.due_date)}${sub}</span>`}
