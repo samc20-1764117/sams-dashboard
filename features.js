@@ -120,6 +120,11 @@ async function toggleTask(id,done,mode=''){
   await sbReq('PATCH','tasks',{done},`?id=eq.${id}`);
   pendingLocal.delete(sid);
   linkedBlocks.forEach(b=>sbUpdateBlock(b.id,{done}));
+  // If this is a vid tab/up task, complete those stages on the video
+  if(done&&t.notes&&t.notes.startsWith('_vid:')){
+    const vidId=t.notes.replace('_vid:','');
+    if(typeof _vidCompleteTabUp==='function')_vidCompleteTabUp(vidId);
+  }
 }
 async function clearTaskDate(id,e){
   e&&e.stopPropagation();

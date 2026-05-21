@@ -3052,18 +3052,100 @@ function _vidCompleteFromOv(vidId){
   const v=(st.videos||[]).find(x=>String(x.id)===String(vidId));
   if(!v)return;
   const steps=typeof VID_STEPS!=='undefined'?VID_STEPS:[];
-  const patch={};
-  steps.forEach(s=>{if(v[s]!=='na'){v[s]='done';patch[s]='done';}});
-  v.status='published';patch.status='published';
-  // Also complete all small videos in the group
-  (st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(v.id)).forEach(c=>{
-    steps.forEach(s=>{if(c[s]!=='na'){c[s]='done';if(!patch._children)patch._children=[];patch._children.push({id:c.id,s,val:'done'});}});
-    c.status='published';
-    sbReqSilent('PATCH','videos',{status:'published',...Object.fromEntries(steps.filter(s=>c[s]==='done').map(s=>[s,'done']))},`?id=eq.${c.id}`);
+  const tabUpSteps=['step_tableau_public','step_upload_tableau'];
+  const needsTabUp=tabUpSteps.some(s=>v[s]&&v[s]!=='na'&&v[s]!=='done');
+
+  // Mark all stages done EXCEPT tab/up if they're required
+  const vidPatch={};
+  steps.forEach(s=>{
+    if(v[s]==='na')return;
+    if(needsTabUp&&tabUpSteps.includes(s))return;
+    v[s]='done';vidPatch[s]='done';
   });
-  sbReqSilent('PATCH','videos',{status:'published',...Object.fromEntries(steps.filter(s=>v[s]==='done').map(s=>[s,'done']))},`?id=eq.${v.id}`);
-  // Remove from day map
-  const map=_vidDayMap();delete map[String(vidId)];_vidDayMapSet(map);
+
+  if(needsTabUp){
+    // Don't set published yet — tab/up still pending
+    if(v.status==='idea'||v.status==='up_next')v.status='in_progress';
+    vidPatch.status=v.status;
+    sbReqSilent('PATCH','videos',vidPatch,`?id=eq.${v.id}`);
+    // Prompt for post date then create the tab/up task
+    _vidPromptPostDate(vidId);
+  } else {
+    // All done — publish
+    v.status='published';vidPatch.status='published';
+    (st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(v.id)).forEach(c=>{
+      steps.forEach(s=>{if(c[s]!=='na'){c[s]='done';}});
+      c.status='published';
+      sbReqSilent('PATCH','videos',{status:'published',...Object.fromEntries(steps.filter(s=>c[s]==='done').map(s=>[s,'done']))},`?id=eq.${c.id}`);
+    });
+    sbReqSilent('PATCH','videos',vidPatch,`?id=eq.${v.id}`);
+    const map=_vidDayMap();delete map[String(vidId)];_vidDayMapSet(map);
+  }
+  save();renderAll();
+  if(typeof renderVideosPageKeepScroll==='function')renderVideosPageKeepScroll();
+}
+
+function _vidPromptPostDate(vidId){
+  const v=(st.videos||[]).find(x=>String(x.id)===String(vidId));if(!v)return;
+  // If post_date already set, use it directly
+  if(v.post_date){_vidCreateTabUpTask(vidId,v.post_date);return;}
+  // Prompt with a small inline date picker
+  const ds=d2s(getDayDate(0));
+  const overlay=document.createElement('div');overlay.className='overlay open';overlay.style.zIndex='600';
+  overlay.innerHTML=`<div class="modal task-modal" style="width:280px;padding:16px">
+    <div class="mt">Post Date for "${escHtml(v.topic||v.title)}"</div>
+    <p style="font-size:11px;color:var(--muted);margin:0 0 12px">When will this video be posted? A tab & upload task will be created for that date.</p>
+    <div class="mfield"><input id="_vidPostDateInp" type="date" value="${ds}" style="width:100%"></div>
+    <div class="mact"><button class="btn btn-ghost" id="_vidPostCancel">Cancel</button><button class="btn btn-dark" id="_vidPostSave">Set Date</button></div>
+  </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click',e=>{if(e.target===overlay){overlay.remove();}});
+  document.getElementById('_vidPostCancel').addEventListener('click',()=>overlay.remove());
+  document.getElementById('_vidPostSave').addEventListener('click',async()=>{
+    const postDate=document.getElementById('_vidPostDateInp').value;
+    if(!postDate){overlay.remove();return;}
+    v.post_date=postDate;
+    await sbReqSilent('PATCH','videos',{post_date:postDate},`?id=eq.${v.id}`);
+    overlay.remove();
+    _vidCreateTabUpTask(vidId,postDate);
+    save();renderAll();
+    if(typeof renderVideosPageKeepScroll==='function')renderVideosPageKeepScroll();
+  });
+  setTimeout(()=>document.getElementById('_vidPostDateInp')?.focus(),60);
+}
+
+async function _vidCreateTabUpTask(vidId,postDate){
+  const v=(st.videos||[]).find(x=>String(x.id)===String(vidId));if(!v)return;
+  // Check if task already exists
+  const marker='_vid:'+vidId;
+  const existing=st.tasks.find(t=>t.notes&&t.notes.includes(marker));
+  if(existing)return;
+  const name=(v.topic||v.title)+' - post tab and update';
+  const t={id:'l-'+Date.now(),name,category:'My work',due_date:postDate,done:false,important:false,notes:marker};
+  st.tasks.push(t);save();renderAll();
+  const sv=await sbReq('POST','tasks',{name,category:'My work',due_date:postDate,done:false,important:false,notes:marker});
+  if(sv&&sv[0]){const i=st.tasks.findIndex(x=>x.id===t.id);if(i>-1)st.tasks[i]=sv[0];}
+}
+function _vidCompleteTabUp(vidId){
+  const v=(st.videos||[]).find(x=>String(x.id)===String(vidId));
+  if(!v)return;
+  const tabUpSteps=['step_tableau_public','step_upload_tableau'];
+  const vidPatch={};
+  tabUpSteps.forEach(s=>{if(v[s]&&v[s]!=='na'&&v[s]!=='done'){v[s]='done';vidPatch[s]='done';}});
+  // Check if ALL stages are now done
+  const steps=typeof VID_STEPS!=='undefined'?VID_STEPS:[];
+  const allDone=steps.every(s=>v[s]==='done'||v[s]==='na');
+  if(allDone){
+    v.status='published';vidPatch.status='published';
+    // Also complete children (L videos under a B)
+    (st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(v.id)).forEach(c=>{
+      steps.forEach(s=>{if(c[s]!=='na'){c[s]='done';}});
+      c.status='published';
+      sbReqSilent('PATCH','videos',{status:'published',...Object.fromEntries(steps.filter(s=>c[s]==='done').map(s=>[s,'done']))},`?id=eq.${c.id}`);
+    });
+    const map=_vidDayMap();delete map[String(vidId)];_vidDayMapSet(map);
+  }
+  sbReqSilent('PATCH','videos',vidPatch,`?id=eq.${v.id}`);
   save();renderAll();
   if(typeof renderVideosPageKeepScroll==='function')renderVideosPageKeepScroll();
 }
@@ -3075,6 +3157,14 @@ function _vidUncompleteFromOv(vidId){
   steps.forEach(s=>{if(v[s]==='done'){v[s]='not_started';}});
   v.status='in_progress';
   sbReqSilent('PATCH','videos',{status:'in_progress',...Object.fromEntries(steps.filter(s=>v[s]!=='na').map(s=>[s,'not_started']))},`?id=eq.${v.id}`);
+  // Delete auto-created tab/up task if it exists
+  const marker='_vid:'+vidId;
+  const taskIdx=st.tasks.findIndex(t=>t.notes&&t.notes.includes(marker));
+  if(taskIdx>-1){
+    const task=st.tasks[taskIdx];
+    st.tasks.splice(taskIdx,1);
+    if(String(task.id).startsWith('l-')){}else{sbReqSilent('DELETE','tasks',null,`?id=eq.${task.id}`);}
+  }
   save();renderAll();
   if(typeof renderVideosPageKeepScroll==='function')renderVideosPageKeepScroll();
 }
