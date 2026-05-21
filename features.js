@@ -3723,11 +3723,17 @@ function clearSelection(){
 // Keyboard shortcuts
 let _copiedTasks=[];
 document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key==='s'){e.preventDefault();}},{capture:true});
+let _wKeyHeld=false;
+document.addEventListener('keydown',e=>{if(e.key==='w'&&!e.metaKey&&!e.ctrlKey)_wKeyHeld=true;});
+document.addEventListener('keyup',e=>{if(e.key==='w')_wKeyHeld=false;});
+window.addEventListener('blur',()=>{_wKeyHeld=false;});
 document.addEventListener('keydown',async e=>{
   const tag=document.activeElement?.tagName;
   if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT')return;
   // t key: jump to today on overview
   if(e.key==='t'&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&activePg==='overview'&&!document.querySelector('.overlay.open')){e.preventDefault();document.activeElement?.blur();goToday();return;}
+  // w + Arrow: shift week on overview
+  if((e.key==='ArrowLeft'||e.key==='ArrowRight')&&_wKeyHeld&&activePg==='overview'){e.preventDefault();shiftWk(e.key==='ArrowLeft'?-1:1);return;}
   // Arrow left/right: shift day on overview when nothing selected
   if((e.key==='ArrowLeft'||e.key==='ArrowRight')&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&activePg==='overview'&&!document.querySelector('.overlay.open')&&!_qnOpen){
     if(!selectedTasks.size){e.preventDefault();shiftDay(e.key==='ArrowLeft'?-1:1);return;}
