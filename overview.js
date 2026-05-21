@@ -756,7 +756,7 @@ function tRowShopVirt(t,noDate=false,tbArrow=false,noColor=false){
   </div>`;
 }
 function tRowVidVirt(t){
-  const _vs={bg:'rgba(251,191,36,.18)',t:'#92400e',d:'#f59e0b',b:'rgba(245,158,11,.25)'};const vid=String(t._vidId);
+  const _vs={bg:'rgba(139,92,246,.12)',t:'#5b21b6',d:'#8b5cf6',b:'rgba(139,92,246,.2)'};const vid=String(t._vidId);
   const _v3=(st.videos||[]).find(x=>String(x.id)===String(vid));
   let _pct3='';
   if(_v3){const _steps3=typeof VID_STEPS!=='undefined'?VID_STEPS:[];const _app3=_steps3.filter(ss=>_v3[ss]!=='na');const _dn3=_app3.filter(ss=>_v3[ss]==='done').length;_pct3=_app3.length?Math.round(_dn3/_app3.length*100):0;}
@@ -872,7 +872,7 @@ function renderWkCal(){
     head.appendChild(h);
   });
   const goalsH=document.createElement('div');goalsH.className='wkc-day-h wkc-goals-h';
-  goalsH.innerHTML=`<button class="wo-hdr-btn" onclick="openWOModal()">Weekly<br>Objectives</button>`;
+  goalsH.innerHTML=`<div style="display:flex;flex-direction:column;align-items:center;gap:2px"><button class="wo-hdr-btn" onclick="openWOModal()" style="font-size:9px">Objectives</button><div style="display:flex;align-items:center;gap:3px"><button class="wo-hdr-btn" onclick="toggleVidOvMenu()" id="vidOvBtn2" style="font-size:8px;padding:2px 5px;display:flex;align-items:center;gap:2px"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>Vid</button><div id="unBadge2" style="display:none;width:16px;height:16px;border-radius:50%;background:rgba(180,170,210,.3);color:var(--muted);font-size:8px;font-weight:600;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0" onclick="toggleUnMenu()"></div></div></div>`;
   head.appendChild(goalsH);
 
   // ── Render travel banners ────────────────────────────────────────────────────
@@ -1313,7 +1313,7 @@ function renderWkCal(){
     dayTasks.forEach(t=>{
       const ov=isOv(t.due_date)&&!t.done,imp=t.important&&!ov&&!t.done;
       const _chipCat=(t._isWrec||t._isWrRule)?'weekly_reset':(t._virtual&&t._recId?'recurring':t.category);
-      const s=ov?OV:imp?IMP:t._type==='vid'?{bg:'rgba(251,191,36,.18)',t:'#92400e',d:'#f59e0b',b:'rgba(245,158,11,.25)',dot:'rgba(251,191,36,.3)'}:t._type==='pup'?_pupSessStyle():gc(_chipCat);
+      const s=ov?OV:imp?IMP:t._type==='vid'?{bg:'rgba(139,92,246,.12)',t:'#5b21b6',d:'#8b5cf6',b:'rgba(139,92,246,.2)',dot:'rgba(139,92,246,.25)'}:t._type==='pup'?_pupSessStyle():gc(_chipCat);
       const chip=document.createElement('div');chip.className='chip'+(t.done?' done-chip':'');
       chip.style.cssText=`background:${s.bg};color:${s.t};border-color:${s.b}`;
       if(!t._virtual)chip.dataset.tid=String(t.id);
@@ -2896,6 +2896,8 @@ function renderUnassigned(){
   if(!badge)return;
   if(ts.length>0){badge.textContent=ts.length;badge.style.display='flex';}
   else{badge.style.display='none';closeUnMenu();}
+  const b2=document.getElementById('unBadge2');
+  if(b2){if(ts.length>0){b2.textContent=ts.length;b2.style.display='flex';}else{b2.style.display='none';}}
   const menu=document.getElementById('unMenu');
   if(menu&&menu.style.display==='block'){
     menu.innerHTML=ts.length?ts.map(t=>tRow(t,{cat:true,drag:true,noColor:true})).join('')
@@ -3022,7 +3024,7 @@ function _renderVidOvMenu(){
   const steps=typeof VID_STEPS!=='undefined'?VID_STEPS:[];
   const labels=typeof VID_STEP_LABELS!=='undefined'?VID_STEP_LABELS:{};
   let html=_hdr;
-  html+='<div style="padding:4px 10px 0"><div style="display:flex;align-items:center;padding:0 6px 4px;gap:5px"><span style="flex:1"></span><div style="display:flex;gap:0;flex-shrink:0">';
+  html+='<div style="padding:4px 10px 0"><div style="display:flex;align-items:center;padding:0 6px 4px;gap:5px"><div style="width:16px;flex-shrink:0"></div><span style="flex:1"></span><div style="display:flex;gap:0;flex-shrink:0">';
   html+=steps.map(s=>`<div style="width:22px;text-align:center;font-size:8px;color:var(--muted);font-weight:600;flex-shrink:0">${(labels[s]||s).slice(0,3)}</div>`).join('');
   html+='</div><span style="width:34px;flex-shrink:0"></span></div></div>';
   unassigned.forEach(v=>{html+=_vidOvMenuItem(v,steps);});
@@ -3043,19 +3045,34 @@ function _vidOvMenuItem(v,steps){
   const _dblAttr=`ondblclick="event.stopPropagation();if(typeof openVidEdit==='function')openVidEdit('${sid}')"`;
   const _hov=`onmouseenter="this.style.background='rgba(0,0,0,.04)'" onmouseleave="this.style.background='none'"`;
   const _map=_vidDayMap();const _onCal=!!_map[sid];
-  const _calBadge=_onCal?`<span style="font-size:8px;color:#f59e0b;opacity:.7;flex-shrink:0" title="On calendar">●</span>`:'';
   const _addBtn=`<button onclick="event.stopPropagation();if(typeof openVidModalForBig==='function')openVidModalForBig('${sid}')" style="font-size:10px;font-weight:700;width:16px;height:16px;line-height:16px;text-align:center;border-radius:3px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;padding:0;flex-shrink:0" title="Add small video">+</button>`;
-  let html=`<div ${_dragAttr} ${_dblAttr} ${_hov} style="padding:5px 6px;border-radius:6px;font-size:13px;font-weight:600;color:var(--text);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s${_onCal?';opacity:.55':''}">${_addBtn}${_calBadge}<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(v.topic||v.title)}</span><div style="display:flex;gap:0;flex-shrink:0">${_vidOvStepDots(v,steps)}</div><span style="font-size:10px;opacity:.5;width:34px;text-align:right;flex-shrink:0">${_vidOvPct(v,steps)}%</span></div>`;
+  let html=`<div ${_dragAttr} ${_dblAttr} ${_hov} style="padding:5px 6px;border-radius:6px;font-size:13px;font-weight:600;color:${_onCal?'var(--muted)':'var(--text)'};cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s${_onCal?';opacity:.4':''}">${_addBtn}<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(v.topic||v.title)}</span><div style="display:flex;gap:0;flex-shrink:0">${_vidOvStepDots(v,steps)}</div><span style="font-size:10px;opacity:.5;width:34px;text-align:right;flex-shrink:0">${_vidOvPct(v,steps)}%</span></div>`;
   // Children (S/L videos)
   const children=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(v.id)&&c.status!=='published').sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
   children.forEach((c,ci)=>{
     const csid=String(c.id);
-    html+=`<div ${_hov} ondblclick="event.stopPropagation();if(typeof openVidEdit==='function')openVidEdit('${csid}')" style="padding:3px 6px 3px 28px;border-radius:6px;font-size:11px;font-weight:500;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:5px;transition:background .1s"><span style="color:var(--muted);font-size:10px;margin-right:2px">└</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(c.topic||c.title)}</span><div style="display:flex;gap:0;flex-shrink:0">${_vidOvStepDots(c,steps)}</div><span style="font-size:9px;opacity:.4;width:34px;text-align:right;flex-shrink:0">${_vidOvPct(c,steps)}%</span></div>`;
+    html+=`<div draggable="true" ondragstart="_vidOvChildDrag=event.currentTarget;event.dataTransfer.effectAllowed='move';event.currentTarget.style.opacity='.4'" ondragend="event.currentTarget.style.opacity='1';_vidOvChildDrag=null" ondragover="event.preventDefault();this.style.borderTop='2px solid var(--accent)'" ondragleave="this.style.borderTop=''" ondrop="_vidOvReorder(event,'${sid}','${csid}')" ${_hov} ondblclick="event.stopPropagation();if(typeof openVidEdit==='function')openVidEdit('${csid}')" data-cvid="${csid}" style="padding:3px 6px 3px 28px;border-radius:6px;font-size:11px;font-weight:500;color:var(--muted);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s"><span style="color:rgba(140,135,160,.4);font-size:10px;margin-right:2px">└</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(c.topic||c.title)}</span><div style="display:flex;gap:0;flex-shrink:0">${_vidOvStepDots(c,steps)}</div><span style="font-size:9px;opacity:.4;width:34px;text-align:right;flex-shrink:0">${_vidOvPct(c,steps)}%</span></div>`;
     if(ci<children.length-1){const oA=c.vid_order??ci;const oB=children[ci+1].vid_order??(ci+1);html+=`<div class="vid-insert-zone" onclick="event.stopPropagation();if(typeof openVidModalBetween==='function')openVidModalBetween('${sid}',${oA},${oB})"><button class="vid-insert-btn">+</button></div>`;}
   });
   return html;
 }
 
+let _vidOvChildDrag=null;
+function _vidOvReorder(event,bigId,targetId){
+  event.preventDefault();event.currentTarget.style.borderTop='';
+  if(!_vidOvChildDrag)return;
+  const dragId2=_vidOvChildDrag.dataset.cvid;
+  if(!dragId2||dragId2===targetId)return;
+  const children=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(bigId)).sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
+  const fromIdx=children.findIndex(c=>String(c.id)===dragId2);
+  const toIdx=children.findIndex(c=>String(c.id)===targetId);
+  if(fromIdx<0||toIdx<0)return;
+  const [moved]=children.splice(fromIdx,1);
+  children.splice(toIdx,0,moved);
+  children.forEach((c,i)=>{c.vid_order=i;sbReqSilent('PATCH','videos',{vid_order:i},`?id=eq.${c.id}`);});
+  save();_renderVidOvMenu();
+  pushUndo(()=>{children.splice(toIdx,1);children.splice(fromIdx,0,moved);children.sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));children.forEach((c,i)=>{c.vid_order=i;sbReqSilent('PATCH','videos',{vid_order:i},`?id=eq.${c.id}`);});save();_renderVidOvMenu();},'Reordered video');
+}
 function _vidAssignToDay(vidId,ds){
   const map=_vidDayMap();
   const prev=map[String(vidId)]||null;
