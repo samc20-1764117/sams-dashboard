@@ -2997,44 +2997,33 @@ function _vidDayMap(){try{return JSON.parse(localStorage._vidDayMap||'{}');}catc
 function _vidDayMapSet(m){localStorage._vidDayMap=JSON.stringify(m);}
 
 function toggleVidOvMenu(){
-  const menu=document.getElementById('vidOvMenu');
-  const back=document.getElementById('vidOvMenuBack');
-  if(!menu)return;
-  if(menu.style.display==='block'){closeVidOvMenu();return;}
+  const panel=document.getElementById('vidOvPanel');
+  if(!panel)return;
+  if(panel.style.display==='block'){closeVidOvMenu();return;}
   _renderVidOvMenu();
-  menu.style.display='block';
-  back.style.display='block';
-  // Position above weekly calendar so all days are visible for drag
-  const wkcWrap=document.getElementById('wkcWrap');
-  if(wkcWrap){
-    const wr=wkcWrap.getBoundingClientRect();
-    const mh=menu.offsetHeight;
-    // Place bottom edge of menu at top of weekly calendar
-    const topPos=Math.max(4,wr.top-mh-4);
-    menu.style.top=topPos+'px';
-    menu.style.transform='translateX(-50%)';
-    menu.style.maxHeight=(wr.top-12)+'px';
-  }
+  panel.style.display='block';
+  requestAnimationFrame(()=>panel.style.opacity='1');
 }
 function closeVidOvMenu(){
-  const menu=document.getElementById('vidOvMenu');
-  const back=document.getElementById('vidOvMenuBack');
-  if(menu)menu.style.display='none';
-  if(back)back.style.display='none';
+  const panel=document.getElementById('vidOvPanel');
+  if(!panel||panel.style.display==='none')return;
+  panel.style.opacity='0';
+  setTimeout(()=>{panel.style.display='none';},200);
 }
 function _renderVidOvMenu(){
-  const menu=document.getElementById('vidOvMenu');if(!menu)return;
+  const menu=document.getElementById('vidOvPanel');if(!menu)return;
   const vids=(st.videos||[]).filter(v=>!v.is_deleted&&v.video_type==='B'&&v.status==='up_next');
   const map=_vidDayMap();
   const assigned=new Set(Object.keys(map));
   const unassigned=vids.filter(v=>!assigned.has(String(v.id)));
   if(!unassigned.length){
-    menu.innerHTML='<div style="padding:10px;font-size:10px;color:var(--subtle);text-align:center">No videos to add</div>';
+    menu.innerHTML='<div style="display:flex;align-items:center;padding:2px 6px 6px"><span style="font-size:10px;font-weight:700;color:var(--text)">Videos — Up Next</span><button onclick="closeVidOvMenu()" style="margin-left:auto;background:none;border:none;cursor:pointer;font-size:14px;color:var(--muted);padding:0 2px;line-height:1">✕</button></div><div style="padding:20px;font-size:11px;color:var(--subtle);text-align:center">No videos to add</div>';
     return;
   }
   const steps=typeof VID_STEPS!=='undefined'?VID_STEPS:[];
   const labels=typeof VID_STEP_LABELS!=='undefined'?VID_STEP_LABELS:{};
-  let html='<div style="display:flex;align-items:center;padding:2px 6px 4px;gap:4px"><span style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);flex:1">Up Next</span><div style="display:flex;gap:0">';
+  let html='<div style="display:flex;align-items:center;padding:2px 6px 6px;gap:4px"><span style="font-size:10px;font-weight:700;letter-spacing:-.01em;color:var(--text)">Videos — Up Next</span><button onclick="closeVidOvMenu()" style="margin-left:auto;background:none;border:none;cursor:pointer;font-size:14px;color:var(--muted);padding:0 2px;line-height:1" title="Close">✕</button></div>';
+  html+='<div style="display:flex;align-items:center;padding:0 6px 3px;gap:4px"><span style="flex:1"></span><div style="display:flex;gap:0">';
   html+=steps.map(s=>`<div style="width:20px;text-align:center;font-size:7px;color:var(--muted);font-weight:600">${(labels[s]||s).slice(0,2).toUpperCase()}</div>`).join('');
   html+='<div style="width:30px"></div></div></div>';
   unassigned.forEach(v=>{html+=_vidOvMenuItem(v,steps);});
@@ -3042,7 +3031,7 @@ function _renderVidOvMenu(){
 }
 function _vidOvMenuItem(v,steps){
   const sid=String(v.id);
-  const _dragAttr=`draggable="true" ondragstart="dragId='vid::${sid}';event.dataTransfer.effectAllowed='move';document.body.classList.add('body-dragging');showWkcEdges(true);setTimeout(function(){var b=document.getElementById('vidOvMenuBack');if(b)b.style.display='none';var m=document.getElementById('vidOvMenu');if(m)m.style.display='none'},0)" ondragend="document.body.classList.remove('body-dragging');showWkcEdges(false);closeVidOvMenu()"`;
+  const _dragAttr=`draggable="true" ondragstart="dragId='vid::${sid}';event.dataTransfer.effectAllowed='move';document.body.classList.add('body-dragging');showWkcEdges(true);setTimeout(function(){closeVidOvMenu()},0)" ondragend="document.body.classList.remove('body-dragging');showWkcEdges(false)"`;
   const _dblAttr=`ondblclick="event.stopPropagation();closeVidOvMenu();if(typeof openVidEdit==='function')openVidEdit('${sid}')"`;
   const _hoverAttr=`onmouseenter="this.style.background='rgba(0,0,0,.04)'" onmouseleave="this.style.background='none'"`;
   function _stepDots(vid){
