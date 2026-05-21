@@ -348,28 +348,63 @@ function renderPupSkillsHighlight(){
   if(!wrap._dblBound){wrap._dblBound=true;wrap.addEventListener('dblclick',e=>{if(!e.target.closest('.ti'))_openPupFocusModal(null);});}
 }
 function openPupFocusPicker(pup){_openPupFocusModal(pup);}
+let _pfpWkOff=0;
+function _pfpClose(){const ov=document.getElementById('_pupFocusPicker');if(ov)ov.classList.remove('open');if(window._pfpKeyFn){document.removeEventListener('keydown',window._pfpKeyFn);window._pfpKeyFn=null;}}
+function _pfpShiftWk(dir){
+  _pfpWkOff+=dir;
+  const ov=document.getElementById('_pupFocusPicker');if(!ov)return;
+  _pfpRenderContent(ov.querySelector('.modal'));
+}
+function _pfpWkLabel(){return _pfpWkOff===0?'This Week':(_pfpWkOff>0?`+${_pfpWkOff} wks`:`${Math.abs(_pfpWkOff)}w ago`);}
+function _pfpWkRange(){const m=new Date(_pupWkMonday(_pfpWkOff)+'T12:00:00');return m.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' – '+(new Date(m.getTime()+6*86400000)).toLocaleDateString('en-US',{month:'short',day:'numeric'});}
 function _openPupFocusModal(onlyPup){
-  let old=document.getElementById('_pupFocusPicker');if(old)old.remove();
+  _pfpWkOff=wkOff;
+  let ov=document.getElementById('_pupFocusPicker');
+  if(!ov){
+    ov=document.createElement('div');ov.id='_pupFocusPicker';ov.className='overlay';
+    ov.onclick=e=>{if(e.target===ov)_pfpClose();};
+    const modal=document.createElement('div');modal.className='modal';
+    modal.style.cssText='padding:14px 16px 12px;min-width:480px;max-width:580px;max-height:75vh;overflow-y:auto';
+    if(onlyPup)modal.style.cssText='padding:14px 16px 12px;min-width:260px;max-width:320px;max-height:75vh;overflow-y:auto';
+    modal.dataset.onlyPup=onlyPup||'';
+    ov.appendChild(modal);document.body.appendChild(ov);
+  }
+  const modal=ov.querySelector('.modal');
+  modal.dataset.onlyPup=onlyPup||'';
+  if(onlyPup){modal.style.minWidth='260px';modal.style.maxWidth='320px';}
+  else{modal.style.minWidth='480px';modal.style.maxWidth='580px';}
+  _pfpRenderContent(modal);
+  requestAnimationFrame(()=>ov.classList.add('open'));
+  // Keyboard handler
+  if(window._pfpKeyFn)document.removeEventListener('keydown',window._pfpKeyFn);
+  window._pfpKeyFn=e=>{
+    if(!document.getElementById('_pupFocusPicker')?.classList.contains('open'))return;
+    const inInput=e.target.matches('input,textarea,select,[contenteditable]');
+    if(e.key==='Escape'){e.preventDefault();_pfpClose();return;}
+    if(e.key==='Enter'&&!inInput){e.preventDefault();_pfpClose();return;}
+    if(e.key==='ArrowLeft'&&!inInput){e.preventDefault();_pfpShiftWk(-1);return;}
+    if(e.key==='ArrowRight'&&!inInput){e.preventDefault();_pfpShiftWk(1);return;}
+  };
+  document.addEventListener('keydown',window._pfpKeyFn);
+}
+function _pfpRenderContent(modal){
+  const onlyPup=modal.dataset.onlyPup||null;
   const pups=onlyPup?[onlyPup]:['Mochi','Sunny'];
-  const overlay=document.createElement('div');overlay.id='_pupFocusPicker';
-  overlay.style.cssText='position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.35)';
-  overlay.onclick=e=>{if(e.target===overlay)overlay.remove();};
-  const modal=document.createElement('div');
+  seedPupWeeklyFocus(_pfpWkOff);
   const wide=pups.length>1;
-  modal.style.cssText=`background:var(--card);border-radius:16px;padding:14px 16px 12px;${wide?'min-width:480px;max-width:580px':'min-width:260px;max-width:320px'};max-height:75vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.18)`;
-  const wkLabel=wkOff===0?'This Week':(wkOff>0?`+${wkOff} wks`:`${Math.abs(wkOff)}w ago`);
-  const wkMon=new Date(_pupWkMonday(wkOff)+'T12:00:00');
-  const wkDateRange=wkMon.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' – '+(new Date(wkMon.getTime()+6*86400000)).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  const arrowBtn='cursor:pointer;font-size:14px;color:var(--muted);padding:2px 6px;border-radius:6px;user-select:none;line-height:1';
   modal.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-    <div><div style="font-size:13px;font-weight:700;color:var(--text)">Weekly Skills</div><div style="font-size:10px;color:var(--muted)">${wkLabel} · ${wkDateRange}</div></div>
-    <span onclick="document.getElementById('_pupFocusPicker').remove()" style="cursor:pointer;font-size:16px;color:var(--muted);padding:2px 4px;line-height:1">✕</span>
+    <span onclick="_pfpShiftWk(-1)" style="${arrowBtn}" title="Previous week (←)">‹</span>
+    <div style="text-align:center;flex:1">
+      <div style="font-size:13px;font-weight:700;color:var(--text)">Weekly Skills</div>
+      <div style="font-size:10px;color:var(--muted)">${_pfpWkLabel()} · ${_pfpWkRange()}</div>
+    </div>
+    <span onclick="_pfpShiftWk(1)" style="${arrowBtn}" title="Next week (→)">›</span>
   </div>
   <div style="display:${wide?'grid':'block'};grid-template-columns:1fr 1fr;gap:10px" id="_pfpCols"></div>`;
-  overlay.appendChild(modal);document.body.appendChild(overlay);
   const colsEl=modal.querySelector('#_pfpCols');
   pups.forEach(pup=>{
-    const col=document.createElement('div');
-    col.dataset.pup=pup;
+    const col=document.createElement('div');col.dataset.pup=pup;
     const themeBg=pup==='Mochi'?'rgba(139,92,246,0.06)':'rgba(251,191,36,0.07)';
     const themeBorder=pup==='Mochi'?'rgba(139,92,246,0.15)':'rgba(251,191,36,0.2)';
     const accentColor=pup==='Mochi'?'#8b5cf6':'#d97706';
@@ -380,43 +415,15 @@ function _openPupFocusModal(onlyPup){
         <input type="text" placeholder="Add new skill…" class="_pfpNewInput" data-pup="${pup}" style="width:100%;padding:4px 7px;border:1px solid var(--subtle);border-radius:6px;font-size:10px;background:var(--bg);color:var(--text);box-sizing:border-box">
       </div>`;
     colsEl.appendChild(col);
+    _pfpRenderCol(pup,col);
   });
-  function renderCol(pup){
-    const col=colsEl.querySelector(`[data-pup="${pup}"]`);if(!col)return;
-    const listEl=col.querySelector('._pfpSkills');
-    const allSkills=(st.pup_skills||[]).filter(s=>s.pup===pup&&s.stage!=='Mastered').sort((a,b)=>(a.skill||'').localeCompare(b.skill||''));
-    const curIds=_pupWkFocusIds(pup,wkOff);
-    // Active (checked) on top, then unchecked
-    const active=allSkills.filter(s=>curIds.includes(String(s.id)));
-    const inactive=allSkills.filter(s=>!curIds.includes(String(s.id)));
-    const renderSkill=(s,checked)=>{
-      const sid=String(s.id);
-      const done=_pupWkDone(sid);const total=_pupWkSessTotal(sid);
-      const countStr=checked&&(done||total)?`<span class="vid-num" style="font-size:8px;font-weight:600;color:var(--muted);margin-left:auto;flex-shrink:0">${done}/${total}</span>`:'';
-      return`<div style="display:flex;align-items:center;gap:6px;padding:3px 4px;border-radius:6px;${checked?'background:rgba(255,255,255,.7);border:1px solid rgba(210,205,228,.2);margin-bottom:2px':'opacity:.55;margin-bottom:1px'}" ondblclick="event.stopPropagation();openPupEditModal('${sid}')">
-        <input type="checkbox" ${checked?'checked':''} onchange="_pfpToggle('${sid}','${pup}',this.checked)" style="width:12px;height:12px;accent-color:${pup==='Mochi'?'#8b5cf6':'#d97706'};cursor:pointer;flex-shrink:0">
-        <span style="font-size:10px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(s.skill)}</span>
-        ${countStr}
-      </div>`;
-    };
-    let html='';
-    if(active.length){html+=active.map(s=>renderSkill(s,true)).join('');}
-    if(inactive.length){
-      html+=`<div style="font-size:8px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:5px 0 3px;padding-left:2px">Available</div>`;
-      html+=inactive.map(s=>renderSkill(s,false)).join('');
-    }
-    if(!allSkills.length)html='<div style="font-size:10px;color:var(--muted);padding:8px 0;text-align:center">No skills yet</div>';
-    listEl.innerHTML=html;
-  }
-  pups.forEach(renderCol);
-  window._pfpRenderCol=renderCol;
   // New skill inputs
   colsEl.querySelectorAll('._pfpNewInput').forEach(inp=>{
     inp.addEventListener('keydown',async e=>{
       if(e.key!=='Enter')return;
+      e.stopPropagation();
       const val=inp.value.trim();if(!val)return;
-      const pup=inp.dataset.pup;
-      inp.value='';
+      const pup=inp.dataset.pup;inp.value='';
       let skill=(st.pup_skills||[]).find(s=>s.pup===pup&&s.skill.toLowerCase()===val.toLowerCase());
       if(!skill){
         const tmp='ps-tmp-'+Date.now();
@@ -426,15 +433,44 @@ function _openPupFocusModal(onlyPup){
         if(sv&&sv[0]){const i=st.pup_skills.findIndex(s=>s.id===tmp);if(i>-1)st.pup_skills[i]=sv[0];skill=st.pup_skills[i];}
         save();
       }
-      await addPupWeeklyFocus(skill.id,wkOff);
-      renderCol(pup);renderPupSkillsHighlight();renderToday();renderWkCal();
+      await addPupWeeklyFocus(skill.id,_pfpWkOff);
+      const col=colsEl.querySelector(`[data-pup="${pup}"]`);
+      if(col)_pfpRenderCol(pup,col);
+      renderPupSkillsHighlight();renderToday();renderWkCal();
     });
   });
 }
+function _pfpRenderCol(pup,col){
+  if(!col)col=document.querySelector(`#_pfpCols [data-pup="${pup}"]`);if(!col)return;
+  const listEl=col.querySelector('._pfpSkills');
+  const allSkills=(st.pup_skills||[]).filter(s=>s.pup===pup&&s.stage!=='Mastered').sort((a,b)=>(a.skill||'').localeCompare(b.skill||''));
+  const curIds=_pupWkFocusIds(pup,_pfpWkOff);
+  const active=allSkills.filter(s=>curIds.includes(String(s.id)));
+  const inactive=allSkills.filter(s=>!curIds.includes(String(s.id)));
+  const accentHex=pup==='Mochi'?'#8b5cf6':'#d97706';
+  const renderSkill=(s,checked)=>{
+    const sid=String(s.id);
+    const done=_pupWkDone(sid,_pfpWkOff);const total=_pupWkSessTotal(sid,_pfpWkOff);
+    const countStr=checked&&(done||total)?`<span class="vid-num" style="font-size:8px;font-weight:600;color:var(--muted);margin-left:auto;flex-shrink:0">${done}/${total}</span>`:'';
+    return`<div style="display:flex;align-items:center;gap:6px;padding:3px 4px;border-radius:6px;${checked?'background:rgba(255,255,255,.7);border:1px solid rgba(210,205,228,.2);margin-bottom:2px':'opacity:.55;margin-bottom:1px'}" ondblclick="event.stopPropagation();openPupEditModal('${sid}')">
+      <input type="checkbox" ${checked?'checked':''} onchange="_pfpToggle('${sid}','${pup}',this.checked)" style="width:12px;height:12px;accent-color:${accentHex};cursor:pointer;flex-shrink:0">
+      <span style="font-size:10px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(s.skill)}</span>
+      ${countStr}
+    </div>`;
+  };
+  let html='';
+  if(active.length)html+=active.map(s=>renderSkill(s,true)).join('');
+  if(inactive.length){
+    html+=`<div style="font-size:8px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:5px 0 3px;padding-left:2px">Available</div>`;
+    html+=inactive.map(s=>renderSkill(s,false)).join('');
+  }
+  if(!allSkills.length)html='<div style="font-size:10px;color:var(--muted);padding:8px 0;text-align:center">No skills yet</div>';
+  listEl.innerHTML=html;
+}
 async function _pfpToggle(skillId,pup,checked){
-  if(checked)await addPupWeeklyFocus(skillId,wkOff);
-  else await removePupWeeklyFocus(skillId,wkOff);
-  if(window._pfpRenderCol)window._pfpRenderCol(pup);
+  if(checked)await addPupWeeklyFocus(skillId,_pfpWkOff);
+  else await removePupWeeklyFocus(skillId,_pfpWkOff);
+  _pfpRenderCol(pup);
   renderPupSkillsHighlight();renderToday();renderWkCal();
 }
 async function togPupSkillTrained(id,checked){
