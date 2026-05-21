@@ -936,7 +936,7 @@ function renderWkCal(){
       const ed=tv.end_date?tv.end_date.split('T')[0]:sd;
       const isPast=!!(ed&&ed<today2);
       const modeIconHtml=tv.travel_mode==='plane'?_PLANE_SVG:tv.travel_mode==='drive'?_CAR_SVG:'';
-      const packIcon=`<span class="ban-pack-inline" style="display:inline-flex;align-items:center;margin-right:3px;cursor:pointer;opacity:.65" title="Packing list">${_PACK_SVG}</span>`;
+      const packIcon=`<span class="ban-pack-inline" title="Packing list">${_PACK_SVG}</span>`;
       const label=tv.destination?`${packIcon}${modeIconHtml}${escHtml(tv.name)} → ${escHtml(tv.destination)}`:`${packIcon}${modeIconHtml}${escHtml(tv.name)}`;
       const tripsEndsThisWeek=!ed||ed<=wkDss[6];
       const ban=addBanner(label,sd,ed,s,null,isPast);
