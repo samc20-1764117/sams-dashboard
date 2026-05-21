@@ -756,7 +756,7 @@ function tRowShopVirt(t,noDate=false,tbArrow=false,noColor=false){
   </div>`;
 }
 function tRowVidVirt(t){
-  const _vs={bg:'rgba(139,92,246,.12)',t:'#5b21b6',d:'#8b5cf6',b:'rgba(139,92,246,.2)'};const vid=String(t._vidId);
+  const _vs={bg:'rgba(13,148,136,.1)',t:'#0f766e',d:'#14b8a6',b:'rgba(20,184,166,.2)'};const vid=String(t._vidId);
   const _v3=(st.videos||[]).find(x=>String(x.id)===String(vid));
   let _pct3='';
   if(_v3){const _steps3=typeof VID_STEPS!=='undefined'?VID_STEPS:[];const _app3=_steps3.filter(ss=>_v3[ss]!=='na');const _dn3=_app3.filter(ss=>_v3[ss]==='done').length;_pct3=_app3.length?Math.round(_dn3/_app3.length*100):0;}
@@ -941,7 +941,7 @@ function renderWkCal(){
 
     travelThisWk.sort((a,b)=>(a.start_date||'').localeCompare(b.start_date||''));
     travelThisWk.forEach(tv=>{
-      const s=gc('travel');
+      const s={bg:'#e0f2fe',t:'#0369a1',d:'#38bdf8',dot:'#bae6fd',b:'rgba(56,189,248,.25)'};
       const sd=tv.start_date?tv.start_date.split('T')[0]:null;
       const ed=tv.end_date?tv.end_date.split('T')[0]:sd;
       const isPast=!!(ed&&ed<today2);
@@ -1313,7 +1313,7 @@ function renderWkCal(){
     dayTasks.forEach(t=>{
       const ov=isOv(t.due_date)&&!t.done,imp=t.important&&!ov&&!t.done;
       const _chipCat=(t._isWrec||t._isWrRule)?'weekly_reset':(t._virtual&&t._recId?'recurring':t.category);
-      const s=ov?OV:imp?IMP:t._type==='vid'?{bg:'rgba(139,92,246,.12)',t:'#5b21b6',d:'#8b5cf6',b:'rgba(139,92,246,.2)',dot:'rgba(139,92,246,.25)'}:t._type==='pup'?_pupSessStyle():gc(_chipCat);
+      const s=ov?OV:imp?IMP:t._type==='vid'?{bg:'rgba(13,148,136,.1)',t:'#0f766e',d:'#14b8a6',b:'rgba(20,184,166,.2)',dot:'rgba(20,184,166,.25)'}:t._type==='pup'?_pupSessStyle():gc(_chipCat);
       const chip=document.createElement('div');chip.className='chip'+(t.done?' done-chip':'');
       chip.style.cssText=`background:${s.bg};color:${s.t};border-color:${s.b}`;
       if(!t._virtual)chip.dataset.tid=String(t.id);
@@ -1680,6 +1680,11 @@ function setupWkcEdgeDrop(){
       }
       dragId=null;return;
     }
+    if(dragId.startsWith('vid::')){
+      const vidId=dragId.split('::')[1];
+      _vidAssignToDay(vidId,newDs);
+      dragId=null;shiftWk(dir);return;
+    }
     if(dragId.startsWith('travel::')){
       const parts=dragId.split('::');const tvId=parts[1],offsetDays=parseInt(parts[2])||0;
       const tv2=st.travel.find(x=>String(x.id)===String(tvId));
@@ -1769,6 +1774,11 @@ function setupEdge(id,dir){
         },'Moved to other week');
       }
       dragId=null;return;
+    }
+    if(dragId.startsWith('vid::')){
+      const vidId=dragId.split('::')[1];
+      _vidAssignToDay(vidId,newDs);
+      dragId=null;shiftWk(dir);return;
     }
     if(dragId.startsWith('travel::')){
       const parts=dragId.split('::');const tvId=parts[1],offsetDays=parseInt(parts[2])||0;
@@ -2907,16 +2917,16 @@ function renderUnassigned(){
 function toggleUnMenu(){
   const menu=document.getElementById('unMenu');
   const back=document.getElementById('unMenuBack');
-  const badge=document.getElementById('unAssignedBadge');
-  if(!menu||!badge)return;
+  const btn=document.getElementById('unBadge2')||document.getElementById('unAssignedBadge');
+  if(!menu||!btn)return;
   if(menu.style.display==='block'){closeUnMenu();return;}
   const ts=sortTasks(st.tasks.filter(t=>!t.due_date&&!t.done&&t.category!=='Long term'&&t.category!=='Weekly Goals'));
   menu.innerHTML=ts.length?ts.map(t=>tRow(t,{cat:true,drag:true,noColor:true})).join('')
     :`<div style="padding:12px;font-size:10px;color:var(--subtle);text-align:center">All assigned ✓</div>`;
-  const r=badge.getBoundingClientRect();
+  const r=btn.getBoundingClientRect();
   menu.style.left=Math.max(8,r.left-140)+'px';
-  menu.style.top=(r.bottom+6)+'px';
-  menu.style.bottom='auto';
+  menu.style.bottom=(window.innerHeight-r.top+6)+'px';
+  menu.style.top='auto';
   menu.style.display='block';
   back.style.display='block';
 }
@@ -3000,6 +3010,7 @@ function _vidDayMapSet(m){localStorage._vidDayMap=JSON.stringify(m);}
 
 let _vidOvSelIdx=-1;
 function _vidOvGetRows(){const p=document.getElementById('vidOvPanel');return p?Array.from(p.querySelectorAll('[data-vidrow]')):[]}
+function _vidOvClickSelect(el){const rows=_vidOvGetRows();const idx=rows.indexOf(el);if(idx>=0){_vidOvSelIdx=idx;_vidOvHighlight();}}
 function _vidOvHighlight(){const rows=_vidOvGetRows();rows.forEach((r,i)=>{r.style.outline=i===_vidOvSelIdx?'2px solid var(--accent)':'';r.style.outlineOffset=i===_vidOvSelIdx?'-2px':'';})}
 function _vidOvKeyNav(e){
   const panel=document.getElementById('vidOvPanel');
@@ -3044,7 +3055,7 @@ function _renderVidOvMenu(){
   const steps=typeof VID_STEPS!=='undefined'?VID_STEPS:[];
   const labels=typeof VID_STEP_LABELS!=='undefined'?VID_STEP_LABELS:{};
   let html=_hdr;
-  html+='<div style="padding:4px 18px 0"><div style="display:flex;align-items:center;padding:0 6px 4px;gap:5px"><div style="width:16px;flex-shrink:0;box-sizing:content-box;border:1px solid transparent"></div><span style="flex:1"></span><div style="display:flex;gap:0;flex-shrink:0">';
+  html+='<div style="padding:4px 14px 0"><div style="display:flex;align-items:center;padding:0 6px 4px;gap:5px"><div style="width:16px;flex-shrink:0;box-sizing:content-box;border:1px solid transparent"></div><span style="flex:1"></span><div style="display:flex;gap:0;flex-shrink:0">';
   html+=steps.map(s=>`<div style="width:22px;text-align:center;font-size:8px;color:var(--muted);font-weight:600;flex-shrink:0">${(labels[s]||s).slice(0,3)}</div>`).join('');
   html+='</div><span style="width:34px;flex-shrink:0"></span></div>';
   unassigned.forEach(v=>{html+=_vidOvMenuItem(v,steps);});
@@ -3065,16 +3076,16 @@ function _vidOvMenuItem(v,steps){
   const _dragAttr=`draggable="true" ondragstart="dragId='vid::${sid}';event.dataTransfer.effectAllowed='move';document.body.classList.add('body-dragging');showWkcEdges(true)" ondragend="document.body.classList.remove('body-dragging');showWkcEdges(false)"`;
   const _dblAttr=`ondblclick="event.stopPropagation();if(typeof openVidEdit==='function')openVidEdit('${sid}')"`;
   const _ctxAttr=`oncontextmenu="if(typeof showVidCtx==='function')showVidCtx(event,'${sid}')"`;
-  const _hov=`onmouseenter="this.style.background='rgba(0,0,0,.04)'" onmouseleave="this.style.background='none'"`;
+  const _hov=`onmouseenter="this.style.background='rgba(0,0,0,.04)'" onmouseleave="this.style.background='none'" onclick="_vidOvClickSelect(this)"`;
   const _map=_vidDayMap();const _onCal=!!_map[sid];
-  const _addBtn=`<button onclick="event.stopPropagation();if(typeof openVidModalForBig==='function')openVidModalForBig('${sid}')" style="font-size:10px;font-weight:700;width:16px;height:16px;line-height:16px;text-align:center;border-radius:3px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;padding:0;flex-shrink:0" title="Add small video">+</button>`;
-  let html=`<div data-vidrow="${sid}" ${_dragAttr} ${_dblAttr} ${_ctxAttr} ${_hov} style="padding:5px 6px;border-radius:6px;font-size:13px;font-weight:600;color:var(--text);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s${_onCal?';border-left:3px solid var(--accent);padding-left:3px':''}">${_addBtn}<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(v.topic||v.title)}</span><div style="display:flex;gap:0;flex-shrink:0">${_vidOvStepDots(v,steps)}</div><span style="font-size:10px;opacity:.5;width:34px;text-align:right;flex-shrink:0">${_vidOvPct(v,steps)}%</span></div>`;
+  const _addBtn=`<button onclick="event.stopPropagation();if(typeof openVidModalForBig==='function')openVidModalForBig('${sid}')" style="font-size:10px;font-weight:700;width:16px;height:16px;line-height:16px;text-align:center;border-radius:3px;border:1px solid ${_onCal?'var(--accent)':'var(--border)'};background:var(--bg);color:${_onCal?'var(--accent)':'var(--muted)'};cursor:pointer;padding:0;flex-shrink:0" title="Add small video">+</button>`;
+  let html=`<div data-vidrow="${sid}" ${_dragAttr} ${_dblAttr} ${_ctxAttr} ${_hov} style="padding:5px 6px;border-radius:6px;font-size:13px;font-weight:600;color:var(--text);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s">${_addBtn}<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(v.topic||v.title)}</span><div style="display:flex;gap:0;flex-shrink:0">${_vidOvStepDots(v,steps)}</div><span style="font-size:10px;opacity:.5;width:34px;text-align:right;flex-shrink:0">${_vidOvPct(v,steps)}%</span></div>`;
   // Children (S/L videos)
   const children=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(v.id)&&c.status!=='published').sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
   children.forEach((c,ci)=>{
     const csid=String(c.id);
     const _cOnCal=!!_map[csid];
-    html+=`<div draggable="true" ondragstart="_vidOvChildDrag=event.currentTarget;dragId='vid::${csid}';event.dataTransfer.effectAllowed='move';document.body.classList.add('body-dragging');showWkcEdges(true);event.currentTarget.style.opacity='.4'" ondragend="event.currentTarget.style.opacity='1';_vidOvChildDrag=null;document.body.classList.remove('body-dragging');showWkcEdges(false)" ondragover="event.preventDefault();if(_vidOvChildDrag)this.style.borderTop='2px solid var(--border)'" ondragleave="this.style.borderTop=''" ondrop="_vidOvReorder(event,'${sid}','${csid}')" ${_hov} ondblclick="event.stopPropagation();if(typeof openVidEdit==='function')openVidEdit('${csid}')" oncontextmenu="if(typeof showVidCtx==='function')showVidCtx(event,'${csid}')" data-vidrow="${csid}" data-cvid="${csid}" style="padding:3px 6px;border-radius:6px;font-size:11px;font-weight:500;color:var(--muted);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s${_cOnCal?';border-left:3px solid var(--accent);padding-left:3px':''}"><div style="width:16px;flex-shrink:0;box-sizing:content-box;border:1px solid transparent;text-align:center;color:rgba(140,135,160,.4);font-size:10px">└</div><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(c.topic||c.title)}</span><div style="display:flex;gap:0;flex-shrink:0">${_vidOvStepDots(c,steps)}</div><span style="font-size:9px;opacity:.4;width:34px;text-align:right;flex-shrink:0">${_vidOvPct(c,steps)}%</span></div>`;
+    html+=`<div draggable="true" ondragstart="_vidOvChildDrag=event.currentTarget;dragId='vid::${csid}';event.dataTransfer.effectAllowed='move';document.body.classList.add('body-dragging');showWkcEdges(true);event.currentTarget.style.opacity='.4'" ondragend="event.currentTarget.style.opacity='1';_vidOvChildDrag=null;document.body.classList.remove('body-dragging');showWkcEdges(false)" ondragover="event.preventDefault();if(_vidOvChildDrag)this.style.borderTop='2px solid rgba(0,0,0,.12)'" ondragleave="this.style.borderTop=''" ondrop="_vidOvReorder(event,'${sid}','${csid}')" ${_hov} ondblclick="event.stopPropagation();if(typeof openVidEdit==='function')openVidEdit('${csid}')" oncontextmenu="if(typeof showVidCtx==='function')showVidCtx(event,'${csid}')" data-vidrow="${csid}" data-cvid="${csid}" style="padding:3px 6px;border-radius:6px;font-size:11px;font-weight:500;color:var(--muted);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s"><div style="width:16px;flex-shrink:0;box-sizing:content-box;border:1px solid transparent;text-align:center;color:${_cOnCal?'var(--accent)':'rgba(140,135,160,.4)'};font-size:10px;font-weight:${_cOnCal?'700':'400'}">└</div><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(c.topic||c.title)}</span><div style="display:flex;gap:0;flex-shrink:0">${_vidOvStepDots(c,steps)}</div><span style="font-size:9px;opacity:.4;width:34px;text-align:right;flex-shrink:0">${_vidOvPct(c,steps)}%</span></div>`;
     if(ci<children.length-1){const oA=c.vid_order??ci;const oB=children[ci+1].vid_order??(ci+1);html+=`<div class="vid-insert-zone" onclick="event.stopPropagation();if(typeof openVidModalBetween==='function')openVidModalBetween('${sid}',${oA},${oB})"><button class="vid-insert-btn">+</button></div>`;}
   });
   return html;
