@@ -3002,6 +3002,9 @@ function toggleVidOvMenu(){
   if(!menu)return;
   if(menu.style.display==='block'){closeVidOvMenu();return;}
   _renderVidOvMenu();
+  // Position just above weekly calendar columns
+  const wkcWrap=document.getElementById('wkcWrap');
+  if(wkcWrap){const r=wkcWrap.getBoundingClientRect();menu.style.top=(r.top-4)+'px';menu.style.transform='translateX(-50%) translateY(-100%)';}
   menu.style.display='block';
   back.style.display='block';
 }
@@ -3021,21 +3024,35 @@ function _renderVidOvMenu(){
     menu.innerHTML='<div style="padding:10px;font-size:10px;color:var(--subtle);text-align:center">No videos to add</div>';
     return;
   }
-  let html='<div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);padding:4px 6px 2px">Up Next</div>';
-  unassigned.forEach(v=>{html+=_vidOvMenuItem(v);});
+  const steps=typeof VID_STEPS!=='undefined'?VID_STEPS:[];
+  const labels=typeof VID_STEP_LABELS!=='undefined'?VID_STEP_LABELS:{};
+  let html='<div style="display:flex;align-items:center;padding:2px 6px 4px;gap:4px"><span style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);flex:1">Up Next</span><div style="display:flex;gap:0">';
+  html+=steps.map(s=>`<div style="width:20px;text-align:center;font-size:7px;color:var(--muted);font-weight:600">${(labels[s]||s).slice(0,2).toUpperCase()}</div>`).join('');
+  html+='<div style="width:30px"></div></div></div>';
+  unassigned.forEach(v=>{html+=_vidOvMenuItem(v,steps);});
   menu.innerHTML=html;
 }
-function _vidOvMenuItem(v){
+function _vidOvMenuItem(v,steps){
   const sid=String(v.id);
-  const steps=typeof VID_STEPS!=='undefined'?VID_STEPS:[];
-  const applicable=steps.filter(s=>v[s]!=='na');
-  const done=applicable.filter(s=>v[s]==='done').length;
-  const pct=applicable.length?Math.round(done/applicable.length*100):0;
-  const pctStr=pct>0&&pct<100?' <span style="opacity:.5;font-size:9px">'+pct+'%</span>':'';
-  const smalls=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(v.id)&&(c.status==='up_next'||c.status==='in_progress'));
-  let smallsHtml='';
-  if(smalls.length){smallsHtml=smalls.map(s=>escHtml(s.topic||s.title)).join(', ');smallsHtml=`<div style="font-size:9px;color:var(--muted);padding:0 6px 2px 21px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${smallsHtml}</div>`;}
-  return`<div class="vid-ov-item" draggable="true" ondragstart="dragId='vid::${sid}';event.dataTransfer.effectAllowed='move';document.body.classList.add('body-dragging');showWkcEdges(true);setTimeout(function(){var b=document.getElementById('vidOvMenuBack');if(b)b.style.display='none';var m=document.getElementById('vidOvMenu');if(m)m.style.display='none'},0)" ondragend="document.body.classList.remove('body-dragging');showWkcEdges(false);closeVidOvMenu()" style="padding:4px 6px;border-radius:6px;font-size:11px;font-weight:500;color:var(--text);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s" onmouseenter="this.style.background='rgba(0,0,0,.04)'" onmouseleave="this.style.background='none'" ondblclick="event.stopPropagation();closeVidOvMenu();if(typeof openVidEdit==='function')openVidEdit('${sid}')"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;opacity:.4"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(v.topic||v.title)}</span><span style="font-size:9px;opacity:.5;flex-shrink:0">${pct}%</span></div>${smallsHtml}`;
+  const _dragAttr=`draggable="true" ondragstart="dragId='vid::${sid}';event.dataTransfer.effectAllowed='move';document.body.classList.add('body-dragging');showWkcEdges(true);setTimeout(function(){var b=document.getElementById('vidOvMenuBack');if(b)b.style.display='none';var m=document.getElementById('vidOvMenu');if(m)m.style.display='none'},0)" ondragend="document.body.classList.remove('body-dragging');showWkcEdges(false);closeVidOvMenu()"`;
+  const _dblAttr=`ondblclick="event.stopPropagation();closeVidOvMenu();if(typeof openVidEdit==='function')openVidEdit('${sid}')"`;
+  const _hoverAttr=`onmouseenter="this.style.background='rgba(0,0,0,.04)'" onmouseleave="this.style.background='none'"`;
+  function _stepDots(vid){
+    return steps.map(s=>{
+      const val=vid[s]||'not_started';
+      const cls=val==='done'?'done':val==='na'?'na':'';
+      return`<div style="width:20px;display:flex;align-items:center;justify-content:center"><div class="vid-step-dot${cls?' '+cls:''}" style="width:10px;height:10px;border-radius:2px;pointer-events:none"></div></div>`;
+    }).join('');
+  }
+  function _pct(vid){const app=steps.filter(s=>vid[s]!=='na');const dn=app.filter(s=>vid[s]==='done').length;return app.length?Math.round(dn/app.length*100):0;}
+  let html=`<div ${_dragAttr} ${_dblAttr} ${_hoverAttr} style="padding:3px 6px;border-radius:6px;font-size:11px;font-weight:600;color:var(--text);cursor:grab;display:flex;align-items:center;gap:4px;transition:background .1s"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;opacity:.4"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(v.topic||v.title)}</span><div style="display:flex;gap:0">${_stepDots(v)}</div><span style="font-size:9px;opacity:.5;width:30px;text-align:right;flex-shrink:0">${_pct(v)}%</span></div>`;
+  // Children (S/L videos)
+  const children=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(v.id)&&c.status!=='published');
+  children.forEach(c=>{
+    const csid=String(c.id);
+    html+=`<div ${_hoverAttr} ondblclick="event.stopPropagation();closeVidOvMenu();if(typeof openVidEdit==='function')openVidEdit('${csid}')" style="padding:2px 6px 2px 22px;border-radius:6px;font-size:9px;font-weight:500;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:4px;transition:background .1s"><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(c.topic||c.title)}</span><div style="display:flex;gap:0">${_stepDots(c)}</div><span style="font-size:8px;opacity:.4;width:30px;text-align:right;flex-shrink:0">${_pct(c)}%</span></div>`;
+  });
+  return html;
 }
 
 function _vidAssignToDay(vidId,ds){

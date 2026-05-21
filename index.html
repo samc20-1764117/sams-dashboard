@@ -223,7 +223,7 @@
           <button class="btn btn-ghost btn-xs" onclick="shiftWk(1)">→</button>
           <div style="position:relative;margin-left:2px">
             <button class="btn btn-ghost btn-xs" id="vidOvBtn" onclick="toggleVidOvMenu()" title="Videos" style="display:flex;align-items:center;padding:2px 5px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg></button>
-            <div id="vidOvMenu" style="display:none;position:absolute;top:100%;right:0;margin-top:4px;width:220px;max-height:260px;overflow-y:auto;background:rgba(255,255,255,.98);border:1px solid rgba(210,205,228,.4);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.12);padding:6px;z-index:100;backdrop-filter:blur(12px)"></div>
+            <div id="vidOvMenu" style="display:none;position:fixed;left:50%;transform:translateX(-50%);margin-top:4px;width:520px;max-height:320px;overflow-y:auto;background:rgba(255,255,255,.98);border:1px solid rgba(210,205,228,.4);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.12);padding:6px;z-index:100;backdrop-filter:blur(12px)"></div>
             <div id="vidOvMenuBack" style="display:none;position:fixed;inset:0;z-index:99" onclick="closeVidOvMenu()"></div>
           </div>
         </div>
