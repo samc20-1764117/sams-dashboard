@@ -55,8 +55,8 @@
 - All edits use `renderVideosPageKeepScroll()` to preserve scroll position.
 
 ### Edit Modal (`#vidModal`)
-- Layout: topic first, title second, B/L toggle top-right, status+big video row, then outset container with stages + posted/duration side by side.
-- Fields: title, topic, type (Big/Small toggle), status, post_date, duration (min.sec), big video (searchable input+datalist).
+- Layout: topic first, title second, B/L toggle top-right, status+big video row, then outset container with stages only (posted/duration hidden — YT-sourced).
+- Fields: title, topic, type (Big/Small toggle), status, big video (searchable input+datalist). `vmPostDate`/`vmDuration` are hidden inputs (data preserved on save, not visible).
 - **Stages**: toggle buttons — click=done/not done, right-click=na (invisible). Na stages can't be clicked, only right-click to restore.
 - **Defaults for new**: Big → all stages required. Small → Tab Pub & Upload default to `na`. Changing type dropdown updates stages.
 - **Big Video field**: searchable via datalist of all B video titles. `_vidGetBigVideoId()` resolves title→id on save.
@@ -125,7 +125,7 @@
 - `_vidParseDate(str)` — parses "m/d" or "m/d/yy" to ISO date with auto current year
 - `_vidLinkedStep(step)` — returns linked step (TA↔Up) or null
 - `_vidToggleStepNa(id,step)` — right-click toggle na/required with linked TA+Up sync
-- `_vidDashInlineEdit(span,id,field)` — inline editing for posted/duration on current tab
+- `_vidDashInlineEdit(span,id,field)` — no-op (posted/duration not inline-editable, YT-sourced)
 - Undo/redo: `_stateSnap`/`_stateRestore` include `videos`. `_syncRedoDiff` syncs video field changes to Supabase. `_vidGroupDrop` and `_vidDashDrop` both have proper undo callbacks.
 - `cycleVidStep(id,step)` — toggles step with auto-publish logic
 - `_vidAutoPublishFromYt()` — auto-sets status to `published` for any non-published/non-backup video that has a YT match + all steps done. Runs after YT API fetch AND localStorage cache load.
