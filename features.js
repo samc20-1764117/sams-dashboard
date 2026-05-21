@@ -3509,7 +3509,7 @@ async function loadAdhocItems(travelId){
 // ── Init ───────────────────────────────────────────────────────────────────────
 let _firstSyncDone=false;
 async function init(){
-  document.querySelectorAll('.overlay input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),.qa-panel input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"])').forEach(el=>{if(!el.getAttribute('autocomplete'))el.setAttribute('autocomplete','off');});
+  document.querySelectorAll('input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="email"]):not([type="password"])').forEach(el=>{el.setAttribute('autocomplete','nope-'+el.id);});
   history.scrollRestoration='manual';
   load();
   // Apply dark mode and sidebar state immediately — before checkAuth await — to prevent flash

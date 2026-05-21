@@ -332,3 +332,15 @@ Saved to /Users/samanthacohn/Documents/sams-dashboard/backup_auto.json
 ✓ auto_timeblock_overrides (83 rows)
 
 Saved to /Users/samanthacohn/Documents/sams-dashboard/backup_auto.json
+✓ tasks (380 rows)
+✓ shopping_list (34 rows)
+✓ travel (6 rows)
+✓ birthdays (11 rows)
+✓ pup_skills (36 rows)
+✓ time_blocks (429 rows)
+✓ auto_timeblocks (6 rows)
+✓ auto_timeblock_overrides (83 rows)
+✓ packing_templates (0 rows)
+✓ packing_items (0 rows)
+
+Saved to /Users/samanthacohn/Documents/sams-dashboard/backup_auto.json

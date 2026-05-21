@@ -1,5 +1,5 @@
 {
-  "exported_at": "2026-05-20T13:00:00.723Z",
+  "exported_at": "2026-05-21T13:00:00.602Z",
   "mode": "auto",
   "tables": {
     "tasks": [
@@ -2083,17 +2083,6 @@
         "goal_order": null
       },
       {
-        "name": "Nai nai",
-        "category": "Home",
-        "due_date": "2026-05-20",
-        "done": false,
-        "importance": null,
-        "id": "31d2f237-0d13-45b6-a1de-d24a2b63f1b2",
-        "important": false,
-        "notes": null,
-        "goal_order": null
-      },
-      {
         "name": "Pups showers",
         "category": "Home",
         "due_date": "2026-04-09",
@@ -2204,6 +2193,17 @@
         "goal_order": null
       },
       {
+        "name": "Tab license issue",
+        "category": "My work",
+        "due_date": "2026-05-27",
+        "done": false,
+        "importance": null,
+        "id": "0229bedc-773f-4ab3-8332-cab3d894dd67",
+        "important": true,
+        "notes": null,
+        "goal_order": null
+      },
+      {
         "name": "Unapplied Cash Doc",
         "category": "Work",
         "due_date": "2026-04-14",
@@ -2248,13 +2248,13 @@
         "goal_order": null
       },
       {
-        "name": "Tab license issue",
-        "category": "My work",
-        "due_date": "2026-05-26",
+        "name": "Nai nai",
+        "category": "Home",
+        "due_date": "2026-05-21",
         "done": false,
         "importance": null,
-        "id": "0229bedc-773f-4ab3-8332-cab3d894dd67",
-        "important": true,
+        "id": "31d2f237-0d13-45b6-a1de-d24a2b63f1b2",
+        "important": false,
         "notes": null,
         "goal_order": null
       },
@@ -2536,7 +2536,7 @@
       {
         "name": "Update banner",
         "category": "My work",
-        "due_date": "2026-05-21",
+        "due_date": "2026-05-30",
         "done": false,
         "importance": null,
         "id": "a01458f6-237e-4242-a1ec-1595baee6950",
@@ -3249,6 +3249,17 @@
         "goal_order": null
       },
       {
+        "name": "Check GI emails",
+        "category": "Home",
+        "due_date": "2026-05-21",
+        "done": false,
+        "importance": null,
+        "id": "8825bd72-1b4a-4f23-b270-78837a7733bd",
+        "important": true,
+        "notes": null,
+        "goal_order": null
+      },
+      {
         "name": "Cancel doggie lawn",
         "category": "Home",
         "due_date": "2026-04-25",
@@ -3502,17 +3513,6 @@
         "goal_order": null
       },
       {
-        "name": "Check GI emails",
-        "category": "Home",
-        "due_date": "2026-05-20",
-        "done": false,
-        "importance": null,
-        "id": "8825bd72-1b4a-4f23-b270-78837a7733bd",
-        "important": true,
-        "notes": null,
-        "goal_order": null
-      },
-      {
         "name": "Respond",
         "category": "Home",
         "due_date": "2026-04-30",
@@ -3568,23 +3568,12 @@
         "goal_order": null
       },
       {
-        "name": "Kong",
+        "name": "Pack",
         "category": "Home",
-        "due_date": "2026-05-20",
+        "due_date": "2026-05-21",
         "done": false,
         "importance": null,
-        "id": "a62a6b47-6da4-426e-a47a-e3bad0a30f46",
-        "important": false,
-        "notes": null,
-        "goal_order": null
-      },
-      {
-        "name": "UX video",
-        "category": "My work",
-        "due_date": "2026-05-26",
-        "done": false,
-        "importance": null,
-        "id": "7ccee493-4ff8-4522-97b2-d05ef27b7ec6",
+        "id": "0efa18dd-a505-4719-b451-e38dd5e61946",
         "important": false,
         "notes": null,
         "goal_order": null
@@ -3623,12 +3612,56 @@
         "goal_order": null
       },
       {
+        "name": "VO drill down",
+        "category": "My work",
+        "due_date": "2026-05-20",
+        "done": true,
+        "importance": null,
+        "id": "e2d3851e-af96-43fa-ab92-9bf68b268dcd",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Read resubmission project",
+        "category": "Work",
+        "due_date": "2026-05-20",
+        "done": true,
+        "importance": null,
+        "id": "f270be98-677d-455f-8780-aeb6df559675",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
         "name": "Check in @10:40am APEXN7",
         "category": "Home",
         "due_date": "2026-05-03",
         "done": true,
         "importance": null,
         "id": "c6089d91-616a-4c23-b936-c58fc7b17343",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Oil change - Josh",
+        "category": "Home",
+        "due_date": "2026-05-22",
+        "done": false,
+        "importance": null,
+        "id": "ff1b910b-49fe-47d7-abe0-38f20e9a9f3c",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Subscriptions page",
+        "category": "Home",
+        "due_date": "2026-05-23",
+        "done": false,
+        "importance": null,
+        "id": "054586d1-9ac1-40fc-a2dc-d6185cb68d97",
         "important": false,
         "notes": null,
         "goal_order": null
@@ -3821,17 +3854,6 @@
         "goal_order": null
       },
       {
-        "name": "Pack for OK",
-        "category": "Home",
-        "due_date": "2026-05-21",
-        "done": false,
-        "importance": null,
-        "id": "256177b2-992c-484b-b3d4-f99eb8ebf2d8",
-        "important": false,
-        "notes": null,
-        "goal_order": null
-      },
-      {
         "name": "Bring olivias gift",
         "category": "Home",
         "due_date": "2026-05-22",
@@ -3887,6 +3909,17 @@
         "goal_order": null
       },
       {
+        "name": "Sunny bath",
+        "category": "Home",
+        "due_date": "2026-05-21",
+        "done": false,
+        "importance": null,
+        "id": "7e932df6-2ce8-4e53-895c-ee0ac578ea13",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
         "name": "VO drill down",
         "category": "My work",
         "due_date": "2026-05-18",
@@ -3898,23 +3931,12 @@
         "goal_order": null
       },
       {
-        "name": "Icons",
-        "category": "Work",
-        "due_date": "2026-05-20",
+        "name": "Packing page",
+        "category": "Home",
+        "due_date": "2026-05-23",
         "done": false,
         "importance": null,
-        "id": "73e63302-bd4d-4a7b-93f4-f460b98c30ab",
-        "important": false,
-        "notes": null,
-        "goal_order": null
-      },
-      {
-        "name": "VO drill down",
-        "category": "My work",
-        "due_date": "2026-05-20",
-        "done": false,
-        "importance": null,
-        "id": "e2d3851e-af96-43fa-ab92-9bf68b268dcd",
+        "id": "87ec4401-b9c2-4aac-858b-143748e3c284",
         "important": false,
         "notes": null,
         "goal_order": null
@@ -3942,6 +3964,17 @@
         "goal_order": null
       },
       {
+        "name": "Sunny + Mochi Pic",
+        "category": "Home",
+        "due_date": "2026-05-30",
+        "done": false,
+        "importance": null,
+        "id": "e0c6c262-f8d3-46db-bbbf-ea2e1e88ebfd",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
         "name": "VO drill down",
         "category": "My work",
         "due_date": "2026-05-19",
@@ -3964,12 +3997,45 @@
         "goal_order": null
       },
       {
-        "name": "Film modern UX",
-        "category": "My work",
-        "due_date": "2026-05-22",
+        "name": "Change anthropic card info",
+        "category": "Home",
+        "due_date": "2026-05-23",
         "done": false,
         "importance": null,
-        "id": "6e886ef3-a3d1-43a7-9da7-b5ce6999ddb0",
+        "id": "f2f4c6c5-0c98-4dc4-b5c7-a50def27a9e2",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Call vet - dramimine",
+        "category": "Home",
+        "due_date": "2026-05-21",
+        "done": false,
+        "importance": null,
+        "id": "fc122625-64a8-408b-85d4-39bbddeaf09e",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Check mail - new CC",
+        "category": "Home",
+        "due_date": "2026-05-29",
+        "done": false,
+        "importance": null,
+        "id": "755b447a-3aa4-41b8-887e-45efee43dc3f",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "VO drill down",
+        "category": "My work",
+        "due_date": "2026-05-21",
+        "done": false,
+        "importance": null,
+        "id": "8ac12dfd-d444-4499-a1a0-cf4bdafd53b3",
         "important": false,
         "notes": null,
         "goal_order": null
@@ -3986,12 +4052,12 @@
         "goal_order": null
       },
       {
-        "name": "Read resubmission project",
+        "name": "Icons",
         "category": "Work",
-        "due_date": "2026-05-20",
+        "due_date": "2026-05-22",
         "done": false,
         "importance": null,
-        "id": "f270be98-677d-455f-8780-aeb6df559675",
+        "id": "73e63302-bd4d-4a7b-93f4-f460b98c30ab",
         "important": false,
         "notes": null,
         "goal_order": null
@@ -4008,12 +4074,23 @@
         "goal_order": null
       },
       {
-        "name": "Migration tables",
-        "category": "Work",
-        "due_date": "2026-05-20",
+        "name": "Tab Ambass 11-12pm",
+        "category": "My work",
+        "due_date": "2026-06-09",
         "done": false,
         "importance": null,
-        "id": "5d6799d2-0c70-43d4-91ae-5832cccf765e",
+        "id": "7129c53d-4c72-4a6b-b409-e76f8a668345",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Fix necklace",
+        "category": "Home",
+        "due_date": "2026-05-21",
+        "done": false,
+        "importance": null,
+        "id": "0919915f-3324-49a5-a7f2-06e90f4e7039",
         "important": false,
         "notes": null,
         "goal_order": null
@@ -4030,20 +4107,9 @@
         "goal_order": null
       },
       {
-        "name": "VO drill down",
-        "category": "My work",
-        "due_date": "2026-05-20",
-        "done": false,
-        "importance": null,
-        "id": "10346c65-df81-45eb-800c-5559a99cd852",
-        "important": false,
-        "notes": null,
-        "goal_order": null
-      },
-      {
         "name": "Nails",
         "category": "Home",
-        "due_date": "2026-05-20",
+        "due_date": "2026-05-23",
         "done": false,
         "importance": null,
         "id": "0f51d828-1835-484a-a758-cc18e579ab23",
@@ -4052,12 +4118,67 @@
         "goal_order": null
       },
       {
-        "name": "Oil change - Josh",
+        "name": "VO drill down",
+        "category": "My work",
+        "due_date": "2026-05-20",
+        "done": true,
+        "importance": null,
+        "id": "10346c65-df81-45eb-800c-5559a99cd852",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Migration tables",
+        "category": "Work",
+        "due_date": "2026-05-21",
+        "done": false,
+        "importance": null,
+        "id": "5d6799d2-0c70-43d4-91ae-5832cccf765e",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Dog harness",
         "category": "Home",
         "due_date": "2026-05-21",
         "done": false,
         "importance": null,
-        "id": "ff1b910b-49fe-47d7-abe0-38f20e9a9f3c",
+        "id": "2a59f8aa-45c8-4735-a5a4-c76e360eafd1",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Film modern UX",
+        "category": "My work",
+        "due_date": "2026-05-26",
+        "done": false,
+        "importance": null,
+        "id": "6e886ef3-a3d1-43a7-9da7-b5ce6999ddb0",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Better card",
+        "category": "Home",
+        "due_date": "2026-05-23",
+        "done": false,
+        "importance": null,
+        "id": "75c22449-8b85-4fb2-8baf-6886545bee8f",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Kong",
+        "category": "Home",
+        "due_date": "2026-05-20",
+        "done": true,
+        "importance": null,
+        "id": "a62a6b47-6da4-426e-a47a-e3bad0a30f46",
         "important": false,
         "notes": null,
         "goal_order": null
@@ -4423,14 +4544,14 @@
         "travel_mode": null
       },
       {
-        "id": "fb227aa6-8239-46e4-b26b-ed43b7f162b1",
+        "id": "c1c24ceb-74dd-4b04-9ba9-a3236129f9fa",
         "name": "Oklahoma",
         "start_date": "2026-05-22",
         "end_date": "2026-05-25",
         "destination": null,
         "notes": null,
-        "created_at": "2026-05-13T14:46:21.549131+00:00",
-        "travel_mode": "drive"
+        "created_at": "2026-05-21T00:27:02.644812+00:00",
+        "travel_mode": null
       }
     ],
     "birthdays": [
@@ -10788,20 +10909,6 @@
         "done": true
       },
       {
-        "id": "8d3d3c94-1040-4b76-a5de-63021f1671a3",
-        "title": "Icons",
-        "day_date": "2026-05-20",
-        "start_time": "12:00:00",
-        "duration_minutes": 60,
-        "category": "Work",
-        "created_at": "2026-05-18T21:29:31.479798+00:00",
-        "start_minutes": 720,
-        "task_id": "73e63302-bd4d-4a7b-93f4-f460b98c30ab",
-        "rec_id": null,
-        "shop_id": null,
-        "done": false
-      },
-      {
         "id": "b1918e17-6f08-4bcc-900d-6e728519df66",
         "title": "Migration tables",
         "day_date": "2026-05-19",
@@ -10858,27 +10965,27 @@
         "done": false
       },
       {
-        "id": "65b83461-ddab-4fc6-b450-5153f21f2f38",
-        "title": "Read resubmission project",
-        "day_date": "2026-05-20",
-        "start_time": "07:45:00",
-        "duration_minutes": 60,
-        "category": "Work",
-        "created_at": "2026-05-19T20:18:02.653548+00:00",
-        "start_minutes": 450,
-        "task_id": "f270be98-677d-455f-8780-aeb6df559675",
-        "rec_id": null,
+        "id": "da904bac-af67-40b6-b69f-3214c4397171",
+        "title": "Waterbottles",
+        "day_date": "2026-05-21",
+        "start_time": "16:30:00",
+        "duration_minutes": 30,
+        "category": "Recurring",
+        "created_at": "2026-05-20T18:43:40.093512+00:00",
+        "start_minutes": 1110,
+        "task_id": null,
+        "rec_id": "55",
         "shop_id": null,
         "done": false
       },
       {
-        "id": "4e5bdea3-2ed0-4f4b-8a2a-9e6f9c8f17aa",
+        "id": "3607f521-529a-4701-bdbd-7efff90ad892",
         "title": "Migration tables",
-        "day_date": "2026-05-20",
-        "start_time": "08:45:00",
-        "duration_minutes": 60,
+        "day_date": "2026-05-21",
+        "start_time": "10:00:00",
+        "duration_minutes": 90,
         "category": "Work",
-        "created_at": "2026-05-19T20:18:06.216573+00:00",
+        "created_at": "2026-05-21T00:25:11.499287+00:00",
         "start_minutes": 510,
         "task_id": "5d6799d2-0c70-43d4-91ae-5832cccf765e",
         "rec_id": null,
@@ -10886,16 +10993,30 @@
         "done": false
       },
       {
-        "id": "ac9543e5-9f97-4f62-8aa6-0097522c4284",
-        "title": "VO drill down",
-        "day_date": "2026-05-20",
-        "start_time": "09:45:00",
-        "duration_minutes": 90,
-        "category": "My work",
-        "created_at": "2026-05-19T20:18:09.334439+00:00",
-        "start_minutes": 570,
-        "task_id": "e2d3851e-af96-43fa-ab92-9bf68b268dcd",
-        "rec_id": null,
+        "id": "2b8529c5-c544-4c5c-9e26-aaf9ff78f486",
+        "title": "Bedding",
+        "day_date": "2026-05-21",
+        "start_time": "07:45:00",
+        "duration_minutes": 105,
+        "category": "Recurring",
+        "created_at": "2026-05-20T18:43:43.773022+00:00",
+        "start_minutes": 450,
+        "task_id": null,
+        "rec_id": "14",
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "e49e74a4-fa5f-462d-a882-d5b1b46238aa",
+        "title": "Clean car",
+        "day_date": "2026-05-21",
+        "start_time": "17:00:00",
+        "duration_minutes": 60,
+        "category": "Recurring",
+        "created_at": "2026-05-20T18:43:52.648823+00:00",
+        "start_minutes": 1020,
+        "task_id": null,
+        "rec_id": "53",
         "shop_id": null,
         "done": false
       },
@@ -10914,29 +11035,15 @@
         "done": false
       },
       {
-        "id": "d9d271c1-eec2-4a67-be51-1332608c6a64",
+        "id": "4e9452cf-065a-4559-aaab-9bfd3697b204",
         "title": "VO drill down",
-        "day_date": "2026-05-20",
-        "start_time": "13:45:00",
-        "duration_minutes": 210,
+        "day_date": "2026-05-21",
+        "start_time": "09:30:00",
+        "duration_minutes": 30,
         "category": "My work",
-        "created_at": "2026-05-19T20:18:15.586348+00:00",
-        "start_minutes": 810,
-        "task_id": "10346c65-df81-45eb-800c-5559a99cd852",
-        "rec_id": null,
-        "shop_id": null,
-        "done": false
-      },
-      {
-        "id": "6ced6cfe-0593-43c5-8e5e-f3c2440a340a",
-        "title": "Nails",
-        "day_date": "2026-05-20",
-        "start_time": "11:00:00",
-        "duration_minutes": 60,
-        "category": "Home",
-        "created_at": "2026-05-19T20:18:42.335757+00:00",
-        "start_minutes": 660,
-        "task_id": "0f51d828-1835-484a-a758-cc18e579ab23",
+        "created_at": "2026-05-20T18:44:28.262976+00:00",
+        "start_minutes": 600,
+        "task_id": "8ac12dfd-d444-4499-a1a0-cf4bdafd53b3",
         "rec_id": null,
         "shop_id": null,
         "done": false
@@ -10984,20 +11091,6 @@
         "done": false
       },
       {
-        "id": "b5f6e92a-9f98-4347-89d3-cfc0656b8bfe",
-        "title": "Oil change - Josh",
-        "day_date": "2026-05-21",
-        "start_time": "17:00:00",
-        "duration_minutes": 60,
-        "category": "Home",
-        "created_at": "2026-05-19T22:22:15.054636+00:00",
-        "start_minutes": 1020,
-        "task_id": "ff1b910b-49fe-47d7-abe0-38f20e9a9f3c",
-        "rec_id": null,
-        "shop_id": null,
-        "done": false
-      },
-      {
         "id": "15eca889-c609-4127-9215-be68341ca213",
         "title": "Nai nai",
         "day_date": "2026-05-20",
@@ -11012,18 +11105,18 @@
         "done": false
       },
       {
-        "id": "4f1b7bcd-047e-4240-8769-8bc17c771f77",
-        "title": "Check GI emails",
-        "day_date": "2026-05-20",
-        "start_time": "18:30:00",
+        "id": "1dfba666-7502-4a1d-affa-bad7d2281955",
+        "title": "Kong",
+        "day_date": "2026-05-19",
+        "start_time": "18:00:00",
         "duration_minutes": 30,
         "category": "Home",
-        "created_at": "2026-05-20T01:43:49.665398+00:00",
-        "start_minutes": 1110,
-        "task_id": "8825bd72-1b4a-4f23-b270-78837a7733bd",
+        "created_at": "2026-05-19T18:21:12.137307+00:00",
+        "start_minutes": 1080,
+        "task_id": "a62a6b47-6da4-426e-a47a-e3bad0a30f46",
         "rec_id": null,
         "shop_id": null,
-        "done": false
+        "done": true
       },
       {
         "id": "731447ae-378e-4401-8f0e-9b30319255c2",
@@ -11054,15 +11147,15 @@
         "done": false
       },
       {
-        "id": "1dfba666-7502-4a1d-affa-bad7d2281955",
-        "title": "Kong",
-        "day_date": "2026-05-19",
-        "start_time": "18:00:00",
+        "id": "997d72a5-f927-4684-af2e-0fd27869b7d8",
+        "title": "Dog harness",
+        "day_date": "2026-05-21",
+        "start_time": "07:30:00",
         "duration_minutes": 30,
         "category": "Home",
-        "created_at": "2026-05-19T18:21:12.137307+00:00",
-        "start_minutes": 1080,
-        "task_id": "a62a6b47-6da4-426e-a47a-e3bad0a30f46",
+        "created_at": "2026-05-21T12:39:02.017804+00:00",
+        "start_minutes": 450,
+        "task_id": "2a59f8aa-45c8-4735-a5a4-c76e360eafd1",
         "rec_id": null,
         "shop_id": null,
         "done": false
@@ -11080,6 +11173,216 @@
         "rec_id": null,
         "shop_id": null,
         "done": true
+      },
+      {
+        "id": "ac9543e5-9f97-4f62-8aa6-0097522c4284",
+        "title": "VO drill down",
+        "day_date": "2026-05-20",
+        "start_time": "09:45:00",
+        "duration_minutes": 90,
+        "category": "My work",
+        "created_at": "2026-05-19T20:18:09.334439+00:00",
+        "start_minutes": 450,
+        "task_id": "e2d3851e-af96-43fa-ab92-9bf68b268dcd",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
+        "id": "7ce81b32-b621-4a24-89a5-7ce77ca8ab13",
+        "title": "Nai nai",
+        "day_date": "2026-05-21",
+        "start_time": "15:30:00",
+        "duration_minutes": 60,
+        "category": "Home",
+        "created_at": "2026-05-21T12:39:20.698786+00:00",
+        "start_minutes": 930,
+        "task_id": "31d2f237-0d13-45b6-a1de-d24a2b63f1b2",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "81fb6ab4-d9c5-4ae3-9e9e-8079b498a8d6",
+        "title": "Pups teeth",
+        "day_date": "2026-05-21",
+        "start_time": "16:15:00",
+        "duration_minutes": 30,
+        "category": "Recurring",
+        "created_at": "2026-05-20T18:43:35.08706+00:00",
+        "start_minutes": 1110,
+        "task_id": null,
+        "rec_id": "10",
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "65b83461-ddab-4fc6-b450-5153f21f2f38",
+        "title": "Read resubmission project",
+        "day_date": "2026-05-20",
+        "start_time": "07:45:00",
+        "duration_minutes": 60,
+        "category": "Work",
+        "created_at": "2026-05-19T20:18:02.653548+00:00",
+        "start_minutes": 540,
+        "task_id": "f270be98-677d-455f-8780-aeb6df559675",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
+        "id": "08ce9bb0-b4fd-4b4a-ae2c-452a129cd544",
+        "title": "Icons",
+        "day_date": "2026-05-22",
+        "start_time": "12:00:00",
+        "duration_minutes": 60,
+        "category": "Work",
+        "created_at": "2026-05-20T18:45:01.017784+00:00",
+        "start_minutes": 720,
+        "task_id": "73e63302-bd4d-4a7b-93f4-f460b98c30ab",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "5c411872-f6a7-4f1c-88fe-08dd4011d212",
+        "title": "Oil change - Josh",
+        "day_date": "2026-05-22",
+        "start_time": "08:30:00",
+        "duration_minutes": 60,
+        "category": "Home",
+        "created_at": "2026-05-20T17:06:59.208537+00:00",
+        "start_minutes": 450,
+        "task_id": "ff1b910b-49fe-47d7-abe0-38f20e9a9f3c",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "5640dd29-0cee-4916-8505-afd12a0792be",
+        "title": "Sunny bath",
+        "day_date": "2026-05-21",
+        "start_time": "19:00:00",
+        "duration_minutes": 30,
+        "category": "Home",
+        "created_at": "2026-05-20T18:44:35.793968+00:00",
+        "start_minutes": 1110,
+        "task_id": "7e932df6-2ce8-4e53-895c-ee0ac578ea13",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "96930eb0-9bcf-462b-8531-12727208f9e6",
+        "title": "Nails",
+        "day_date": "2026-05-23",
+        "start_time": "16:00:00",
+        "duration_minutes": 60,
+        "category": "Home",
+        "created_at": "2026-05-21T00:25:05.112747+00:00",
+        "start_minutes": 960,
+        "task_id": "0f51d828-1835-484a-a758-cc18e579ab23",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "311b8b40-2e9b-4291-8964-d83cf0518ec3",
+        "title": "VO drill down",
+        "day_date": "2026-05-20",
+        "start_time": "13:30:00",
+        "duration_minutes": 150,
+        "category": "My work",
+        "created_at": "2026-05-20T18:44:14.430205+00:00",
+        "start_minutes": 810,
+        "task_id": "10346c65-df81-45eb-800c-5559a99cd852",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
+        "id": "7c471b04-285d-4314-9e21-0e7fd47b1c29",
+        "title": "Pack",
+        "day_date": "2026-05-21",
+        "start_time": "19:00:00",
+        "duration_minutes": 180,
+        "category": "Home",
+        "created_at": "2026-05-21T12:39:32.943964+00:00",
+        "start_minutes": 1140,
+        "task_id": "0efa18dd-a505-4719-b451-e38dd5e61946",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "202168cd-7ce9-4dfc-a9d5-3a6caf7dc331",
+        "title": "Laundry",
+        "day_date": "2026-05-21",
+        "start_time": "19:45:00",
+        "duration_minutes": 60,
+        "category": "Recurring",
+        "created_at": "2026-05-20T18:44:38.296737+00:00",
+        "start_minutes": 450,
+        "task_id": null,
+        "rec_id": "18",
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "ce7ff4a6-f1ae-4389-89e2-5f4962775f9e",
+        "title": "Check GI emails",
+        "day_date": "2026-05-21",
+        "start_time": "13:00:00",
+        "duration_minutes": 30,
+        "category": "Home",
+        "created_at": "2026-05-21T00:24:48.598702+00:00",
+        "start_minutes": 795,
+        "task_id": "8825bd72-1b4a-4f23-b270-78837a7733bd",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "32c65303-5abb-4156-a46b-ac17fe7e4a73",
+        "title": "Vacuum",
+        "day_date": "2026-05-21",
+        "start_time": "13:30:00",
+        "duration_minutes": 30,
+        "category": "Recurring",
+        "created_at": "2026-05-21T12:39:58.492715+00:00",
+        "start_minutes": 825,
+        "task_id": null,
+        "rec_id": "12",
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "66d74b8f-6f4e-4620-800e-554afed5118b",
+        "title": "Post VO drill down",
+        "day_date": "2026-05-21",
+        "start_time": "13:30:00",
+        "duration_minutes": 60,
+        "category": "My work",
+        "created_at": "2026-05-20T18:43:57.39244+00:00",
+        "start_minutes": 855,
+        "task_id": "24fea989-7676-45c5-baa0-8943646b805e",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "f4f144e7-dd72-4caa-b437-b761a3659743",
+        "title": "Call vet - dramimine",
+        "day_date": "2026-05-21",
+        "start_time": "08:00:00",
+        "duration_minutes": 30,
+        "category": "Home",
+        "created_at": "2026-05-21T12:41:23.710457+00:00",
+        "start_minutes": 480,
+        "task_id": "fc122625-64a8-408b-85d4-39bbddeaf09e",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
       }
     ],
     "auto_timeblocks": [
@@ -11726,6 +12029,8 @@
         "start_time": null,
         "end_time": null
       }
-    ]
+    ],
+    "packing_templates": [],
+    "packing_items": []
   }
 }
