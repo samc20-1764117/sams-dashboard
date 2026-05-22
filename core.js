@@ -12,7 +12,7 @@ const CATS={
   'travel':   {bg:'#e0f2fe',t:'#0369a1',d:'#38bdf8',dot:'#bae6fd',b:'rgba(56,189,248,.25)'},
   'birthday': {bg:'#ffedd5',t:'#c2410c',d:'#f97316',dot:'#fed7aa',b:'rgba(249,115,22,.3)'},
   'shopping': {bg:'#fff7ed',t:'#9a3412',d:'#ea580c',dot:'#fed7aa',b:'rgba(234,88,12,.25)'},
-  'videos':   {bg:'#fce4ec',t:'#880e4f',d:'#e91e63',dot:'#f8bbd0',b:'rgba(233,30,99,.2)'},
+  'videos':   {bg:'rgba(34,197,94,.1)',t:'#15803d',d:'#22c55e',dot:'#bbf7d0',b:'rgba(34,197,94,.2)'},
   'weekly goals':{bg:'#ffffff',t:'rgba(80,80,95,.85)',d:'rgba(200,200,215,.8)',dot:'#e8e8f0',b:'rgba(200,200,215,.4)'},
 };
 const IMP={bg:'#fef9c3',t:'#854d0e',d:'#eab308',dot:'#fef08a',b:'rgba(234,179,8,.35)'};
