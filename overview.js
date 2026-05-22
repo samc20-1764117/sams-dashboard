@@ -3101,9 +3101,9 @@ function _vidOvToggleStep(vidId,step){
   const prevStatus=v.status;
   if(allDone&&v.topic&&v.title)v.status='published';
   else if(v.status==='published')v.status='in_progress';
-  save();_renderVidOvMenu();renderAll();
+  save();_renderVidOvMenu();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
   sbReqSilent('PATCH','videos',{[step]:next,status:v.status},`?id=eq.${vidId}`);
-  pushUndo(()=>{v[step]=prev;v.status=prevStatus;save();_renderVidOvMenu();renderAll();sbReqSilent('PATCH','videos',{[step]:prev,status:prevStatus},`?id=eq.${vidId}`);},'Toggle step');
+  pushUndo(()=>{v[step]=prev;v.status=prevStatus;save();_renderVidOvMenu();renderAll();if(document.getElementById('tbGrid'))renderDayTB();sbReqSilent('PATCH','videos',{[step]:prev,status:prevStatus},`?id=eq.${vidId}`);},'Toggle step');
 }
 function _vidOvNaStep(vidId,step){
   const v=(st.videos||[]).find(x=>String(x.id)===String(vidId));if(!v)return;
@@ -4129,7 +4129,7 @@ function drawTBBlock(col,b){
   function _tbSelId(){return _getTBBlockSelId(b);}
   function _tbBlockSelId(bl){return _getTBBlockSelId(bl);}
   el.addEventListener('click',e=>{
-    if(e.target.classList.contains('tb-resize')||e.target.classList.contains('tb-bdel')||e.target.classList.contains('tb-chk'))return;
+    if(e.target.classList.contains('tb-resize')||e.target.classList.contains('tb-bdel')||e.target.classList.contains('tb-chk')||e.target.classList.contains('vid-step-dot'))return;
     if(tbDragging)return;
     e.stopPropagation();
     const tbSelId=_tbSelId();if(!tbSelId)return;
@@ -4139,7 +4139,7 @@ function drawTBBlock(col,b){
     applySelHighlight();
   });
   el.addEventListener('dblclick',e=>{
-    if(e.target.classList.contains('tb-resize')||e.target.classList.contains('tb-bdel')||e.target.classList.contains('tb-chk'))return;
+    if(e.target.classList.contains('tb-resize')||e.target.classList.contains('tb-bdel')||e.target.classList.contains('tb-chk')||e.target.classList.contains('vid-step-dot'))return;
     e.stopPropagation();
     clearSelection();
     if(b.cat==='pup_session'){const _ps=b._pupSessId?(st.pupSessions||[]).find(s=>String(s.id)===String(b._pupSessId)):null;const _sk=_ps?(st.pup_skills||[]).find(x=>String(x.id)===String(_ps.skill_id)):((st.pup_skills||[]).find(x=>x.skill===b.title));if(_sk)openPupEditModal(_sk.id);}
@@ -4150,7 +4150,7 @@ function drawTBBlock(col,b){
     else{startTBInlineEdit(b.id,el.closest('.tb-col'));}
   });
   el.addEventListener('mousedown',e=>{
-    if(e.target.classList.contains('tb-resize')||e.target.classList.contains('tb-bdel')||e.target.classList.contains('tb-chk'))return;
+    if(e.target.classList.contains('tb-resize')||e.target.classList.contains('tb-bdel')||e.target.classList.contains('tb-chk')||e.target.classList.contains('vid-step-dot'))return;
     if(e.detail>=2)return;
     e.stopPropagation();
     const startY=e.clientY,startSm=b.sm;
