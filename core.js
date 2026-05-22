@@ -158,6 +158,7 @@ async function sbSaveBlock(b){
     start_time:startTime,start_minutes:smVal,
     duration_minutes:b.dur,category:b.cat||'Home',
     task_id:b.taskId||null,rec_id:b.recId||null,shop_id:b.shopId||null,
+    vid_id:b._vidId||null,
     done:b._done||false
   };
   try{
@@ -368,7 +369,7 @@ async function syncAll(silent=false){
         if(b.category==='pup_session'){const _sk=(st.pup_skills||[]).find(x=>x.skill===b.title);if(_sk){const _ss=(st.pupSessions||[]).find(s=>String(s.skill_id)===String(_sk.id)&&s.day_date===b.day_date);if(_ss)_pupSessId=_ss.id;}}
         return{id:b.id,title:b.title||'',ds:b.day_date,sm:sm||0,
           dur:b.duration_minutes||30,cat:b.category||'Home',
-          taskId:b.task_id||null,recId:b.rec_id||null,shopId:b.shop_id||null,ruleId:null,_done:b.done||false,_pupSessId};
+          taskId:b.task_id||null,recId:b.rec_id||null,shopId:b.shop_id||null,_vidId:b.vid_id||null,ruleId:null,_done:b.done||false,_pupSessId};
       }),...localOnly];
     }
     save();

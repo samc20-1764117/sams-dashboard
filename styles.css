@@ -1061,7 +1061,7 @@ body.dark .groc-staples-drawer{background:rgba(28,16,10,.98);box-shadow:-4px 0 1
 .meal-unassigned-wrap{position:absolute;bottom:0;right:0;width:12.5%;padding:2px 2px;display:flex;flex-direction:column;gap:1px;box-sizing:border-box;pointer-events:auto}
 .meal-cell{padding:2px 2px;display:flex;flex-direction:column;gap:1px;position:relative;min-height:0;overflow:hidden}
 .meal-cell.meal-drop{background:rgba(124,106,247,.06)}
-.meal-chip{display:flex;align-items:center;padding:1px 5px;border-radius:4px;background:none;border:none;font-size:9.5px;font-weight:400;color:var(--text);cursor:grab;max-width:100%;position:relative;box-shadow:none;opacity:.6}
+.meal-chip{display:flex;align-items:center;padding:1px 5px;border-radius:4px;background:none;border:none;font-size:9px;font-weight:400;color:var(--text);cursor:grab;max-width:100%;position:relative;box-shadow:none;opacity:.6}
 .meal-chip:hover{background:rgba(0,0,0,.04);opacity:.85;color:var(--text)}
 body.dark .meal-chip:hover{background:rgba(255,255,255,.05)}
 .meal-chip-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0}

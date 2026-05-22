@@ -3875,6 +3875,8 @@ function clearSelection(){
 
 // Keyboard shortcuts
 let _copiedTasks=[];
+let _copiedBlocks=[];
+let _tbPasteSm=null; // set by clicking empty TB area
 document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key==='s'){e.preventDefault();}},{capture:true});
 let _wKeyHeld=false;
 document.addEventListener('keydown',e=>{if(e.key==='w'&&!e.metaKey&&!e.ctrlKey)_wKeyHeld=true;});
@@ -4117,9 +4119,23 @@ document.addEventListener('keydown',async e=>{
     clearSelection();
     return;
   }
-  // Cmd+C: copy selected tasks
+  // Cmd+C: copy selected tasks or blocks
   if((e.metaKey||e.ctrlKey)&&e.key==='c'&&selectedTasks.size>0){
-    _copiedTasks=[];
+    // Check if any are TB blocks
+    const blkIds=[...selectedTasks].filter(id=>id.startsWith('blk-'));
+    if(blkIds.length){
+      _copiedBlocks=[];
+      const ds=d2s(getDayDate(dayOff));
+      blkIds.forEach(sid=>{
+        const bid=sid.replace('blk-','');
+        const b=st.blocks.find(x=>String(x.id)===bid);
+        if(b)_copiedBlocks.push({...b});
+      });
+      _copiedTasks=[];
+      showToast(`Copied ${_copiedBlocks.length} block${_copiedBlocks.length>1?'s':''}`,'#6d5fe6',1500);
+      return;
+    }
+    _copiedTasks=[];_copiedBlocks=[];
     selectedTasks.forEach(id=>{
       if(id.startsWith('rec-virt-')){
         const recId=id.replace('rec-virt-','');
@@ -4134,6 +4150,26 @@ document.addEventListener('keydown',async e=>{
         if(t)_copiedTasks.push({...t});
       }
     });
+    return;
+  }
+  // Cmd+V: paste copied blocks
+  if((e.metaKey||e.ctrlKey)&&e.key==='v'&&_copiedBlocks.length>0){
+    e.preventDefault();
+    const ds=d2s(getDayDate(dayOff));
+    const sorted=[..._copiedBlocks].sort((a,b)=>a.sm-b.sm);
+    let baseSm=_tbPasteSm!=null?_tbPasteSm:(sorted[0].sm+sorted[0].dur);
+    const newBlks=[];
+    sorted.forEach(ob=>{
+      const nb={id:crypto.randomUUID(),title:ob.title,ds,sm:baseSm,dur:ob.dur,cat:ob.cat||'Home',
+        taskId:ob.taskId||null,recId:ob.recId||null,shopId:ob.shopId||null,_vidId:ob._vidId||null,_done:false};
+      st.blocks.push(nb);newBlks.push(nb);sbSaveBlock(nb);
+      baseSm+=ob.dur;
+    });
+    _tbPasteSm=null;
+    save();if(document.getElementById('tbGrid'))renderDayTB();renderToday();renderWkCal();
+    const ids=newBlks.map(b=>b.id);
+    pushUndo(()=>{st.blocks=st.blocks.filter(b=>!ids.includes(b.id));ids.forEach(id=>sbDeleteBlock(id));save();if(document.getElementById('tbGrid'))renderDayTB();renderToday();renderWkCal();},'Pasted blocks');
+    showToast(`Pasted ${newBlks.length} block${newBlks.length>1?'s':''}`,'#6d5fe6',1500);
     return;
   }
   // Cmd+V: paste (duplicate) copied tasks

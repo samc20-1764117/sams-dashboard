@@ -3912,7 +3912,7 @@ function renderDayTB(){
       document.removeEventListener('mouseup',onUp);
       if(preview)preview.remove();
       if(selBox)selBox.remove();
-      if(!mode)return;
+      if(!mode){_tbPasteSm=snap(startRelY);return;}
       if(mode==='create'){
         const curRelY=Math.max(0,ev.clientY-col.getBoundingClientRect().top);
         const top2=Math.min(startRelY,curRelY),bot2=Math.max(startRelY,curRelY);
@@ -4096,6 +4096,8 @@ function drawTBBlock(col,b){
       else togRecVirt(String(b.recId),checked,_bwk);
     } else if(b.shopId){
       togShop(String(b.shopId),checked);
+    } else if(b._vidId){
+      b._done=checked;sbUpdateBlock(b.id,{done:checked});save();renderToday();renderWkSummary();renderWkCal();
     } else if(b.cat==='pup_session'&&b._pupSessId){
       togPupSessionDone(String(b._pupSessId),checked);
     } else {
