@@ -3087,6 +3087,10 @@ function _bindMealChips(el){
       chip.classList.remove('meal-drop-above','meal-drop-below');
       chip.closest('.meal-cell')?.classList.remove('meal-drop');
       const data=e.dataTransfer.getData('text/plain');
+      if(data.startsWith('meal-new::')){
+        const ds=chip.closest('.meal-cell').dataset.ds;
+        dropMeal(e,ds);return;
+      }
       if(!data.startsWith('meal::'))return;
       const draggedId=data.replace('meal::','');
       const targetId=chip.dataset.mealid;
