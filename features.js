@@ -1659,6 +1659,175 @@ function saveSettings(){cfg.url=document.getElementById('cfgUrl').value.trim();c
 function closeSB(){sbOpen=false;document.getElementById('sidebar').classList.add('closed');document.getElementById('main').style.left='0';document.getElementById('menuOpen').classList.add('visible');document.querySelectorAll('.ov-topbar').forEach(el=>el.style.left='0');save();}
 function openSB(){sbOpen=true;document.getElementById('sidebar').classList.remove('closed');document.getElementById('main').style.left='186px';document.getElementById('menuOpen').classList.remove('visible');document.querySelectorAll('.ov-topbar').forEach(el=>el.style.left='186px');save();}
 
+// ══════════════════════════════════════════════════════════════════════════════
+// ── FINANCE PAGE ─────────────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════════════
+let _finTab='accounts'; // accounts | vti | subs
+
+function _finFmt(n){return n<0?'-$'+Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):'$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function _finFmtPct(n){return(n>=0?'+':'')+n.toFixed(2)+'%';}
+
+function renderFinancePage(){
+  const el=document.getElementById('finPageContent');if(!el)return;
+  const tabs=[{id:'accounts',label:'Where\'s My Money'},{id:'vti',label:'VTI Tracker'},{id:'subs',label:'Subscriptions'}];
+  let html=`<div class="fin-tabs">${tabs.map(t=>`<button class="fin-tab${_finTab===t.id?' active':''}" onclick="_finTab='${t.id}';renderFinancePage()">${t.label}</button>`).join('')}</div>`;
+  if(_finTab==='accounts')html+=_finRenderAccounts();
+  else if(_finTab==='vti')html+=_finRenderVTI();
+  else html+=_finRenderSubs();
+  el.innerHTML=html;
+}
+
+// ── Accounts (Where's My Money) ──────────────────────────────────────────────
+function _finRenderAccounts(){
+  const accs=st.finAccounts.sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+  const netWorth=accs.reduce((s,a)=>s+(a.adjustment||a.amount||0),0);
+  const k401=accs.find(a=>a.name==='401K');
+  const netWith401k=netWorth+(k401?(k401.amount||0)-(k401.adjustment||0):0);
+  let html=`<div class="fin-summary-row">
+    <div class="fin-summary-card fin-nw"><div class="fin-summary-label">Net Worth</div><div class="fin-summary-val">${_finFmt(netWorth)}</div></div>
+    <div class="fin-summary-card"><div class="fin-summary-label">Net Worth (w/401k)</div><div class="fin-summary-val">${_finFmt(netWith401k)}</div></div>
+  </div>`;
+  html+=`<div class="card fin-card"><div class="fin-card-hdr"><span class="fin-card-title">Accounts</span><button class="btn-plus" onclick="openFinAccModal()">+</button></div>`;
+  html+=`<table class="fin-tbl"><thead><tr><th>Source</th><th style="text-align:right">Amount</th><th style="text-align:right">Adjusted</th></tr></thead><tbody>`;
+  accs.forEach(a=>{
+    html+=`<tr class="fin-row" ondblclick="openFinAccModal('${a.id}')">
+      <td class="fin-name">${escHtml(a.name)}</td>
+      <td class="fin-amt">${_finFmt(a.amount||0)}</td>
+      <td class="fin-amt">${_finFmt(a.adjustment||0)}</td>
+    </tr>`;
+  });
+  html+=`</tbody></table></div>`;
+  return html;
+}
+
+async function openFinAccModal(id){
+  const existing=id?st.finAccounts.find(a=>String(a.id)===String(id)):null;
+  const name=prompt('Account name:',existing?existing.name:'');if(!name)return;
+  const amount=parseFloat(prompt('Amount:',existing?existing.amount:'0'));if(isNaN(amount))return;
+  const adjustment=parseFloat(prompt('Adjusted value:',existing?existing.adjustment:amount));if(isNaN(adjustment))return;
+  if(existing){
+    Object.assign(existing,{name,amount,adjustment});renderFinancePage();
+    await sbReqNullable('PATCH','finance_accounts',{name,amount,adjustment},`?id=eq.${id}`);
+  }else{
+    const acc={id:'l-'+Date.now(),name,amount,adjustment,sort_order:st.finAccounts.length};
+    st.finAccounts.push(acc);renderFinancePage();
+    const sv=await sbReq('POST','finance_accounts',{name,amount,adjustment,sort_order:acc.sort_order});
+    if(sv&&sv[0]){const i=st.finAccounts.findIndex(x=>x.id===acc.id);if(i>-1)st.finAccounts[i]=sv[0];}
+  }
+}
+
+async function delFinAcc(id){
+  st.finAccounts=st.finAccounts.filter(a=>String(a.id)!==String(id));renderFinancePage();
+  if(!String(id).startsWith('l-'))await sbReq('DELETE','finance_accounts',null,`?id=eq.${id}`);
+}
+
+// ── VTI Tracker ──────────────────────────────────────────────────────────────
+function _finRenderVTI(){
+  const purchases=st.finVTI.sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+  const totalBought=purchases.reduce((s,p)=>s+Math.abs(p.amount||0),0);
+  const costBasisAcc=st.finAccounts.find(a=>a.name==='VTI');
+  const costBasis=costBasisAcc?costBasisAcc.amount||0:0;
+  const currentVal=costBasisAcc?costBasisAcc.adjustment||0:0;
+  const costGain=currentVal-costBasis;
+  const costPct=costBasis?((costGain/costBasis)*100):0;
+  const actualGain=currentVal-totalBought;
+  const actualPct=totalBought?((actualGain/totalBought)*100):0;
+
+  let html=`<div class="fin-summary-row">
+    <div class="fin-summary-card"><div class="fin-summary-label">VTI Bought</div><div class="fin-summary-val">${_finFmt(totalBought)}</div></div>
+    <div class="fin-summary-card"><div class="fin-summary-label">Cost Basis</div><div class="fin-summary-val">${_finFmt(costBasis)}</div></div>
+    <div class="fin-summary-card"><div class="fin-summary-label">Current Value</div><div class="fin-summary-val">${_finFmt(currentVal)}</div></div>
+  </div>`;
+  html+=`<div class="fin-summary-row">
+    <div class="fin-summary-card ${costGain>=0?'fin-gain':'fin-loss'}"><div class="fin-summary-label">Cost Basis Gain</div><div class="fin-summary-val">${_finFmt(costGain)} <span class="fin-pct">${_finFmtPct(costPct)}</span></div></div>
+    <div class="fin-summary-card ${actualGain>=0?'fin-gain':'fin-loss'}"><div class="fin-summary-label">Actual Gain</div><div class="fin-summary-val">${_finFmt(actualGain)} <span class="fin-pct">${_finFmtPct(actualPct)}</span></div></div>
+  </div>`;
+  html+=`<div class="card fin-card"><div class="fin-card-hdr"><span class="fin-card-title">Purchase History</span><button class="btn-plus" onclick="openFinVTIModal()">+</button></div>`;
+  html+=`<table class="fin-tbl"><thead><tr><th>Date</th><th style="text-align:right">Amount</th></tr></thead><tbody>`;
+  purchases.forEach(p=>{
+    html+=`<tr class="fin-row" ondblclick="openFinVTIModal('${p.id}')">
+      <td>${p.date||''}</td>
+      <td class="fin-amt ${(p.amount||0)<0?'fin-neg':''}">${_finFmt(p.amount||0)}</td>
+    </tr>`;
+  });
+  html+=`</tbody></table></div>`;
+  return html;
+}
+
+async function openFinVTIModal(id){
+  const existing=id?st.finVTI.find(p=>String(p.id)===String(id)):null;
+  const date=prompt('Date (YYYY-MM-DD):',existing?existing.date:tod());if(!date)return;
+  const amount=parseFloat(prompt('Amount (negative for purchases):',existing?existing.amount:''));if(isNaN(amount))return;
+  if(existing){
+    Object.assign(existing,{date,amount});renderFinancePage();
+    await sbReqNullable('PATCH','finance_vti',{date,amount},`?id=eq.${id}`);
+  }else{
+    const p={id:'l-'+Date.now(),date,amount};
+    st.finVTI.push(p);renderFinancePage();
+    const sv=await sbReq('POST','finance_vti',{date,amount});
+    if(sv&&sv[0]){const i=st.finVTI.findIndex(x=>x.id===p.id);if(i>-1)st.finVTI[i]=sv[0];}
+  }
+}
+
+// ── Subscriptions ────────────────────────────────────────────────────────────
+function _finRenderSubs(){
+  const subs=st.finSubs.sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+  const monthlyTotal=subs.reduce((s,sub)=>{
+    const amt=sub.amount||0;
+    if(sub.frequency==='yearly')return s+amt/12;
+    if(sub.frequency==='weekly')return s+amt*4.33;
+    return s+amt;
+  },0);
+  const yearlyTotal=monthlyTotal*12;
+
+  let html=`<div class="fin-summary-row">
+    <div class="fin-summary-card"><div class="fin-summary-label">Monthly Total</div><div class="fin-summary-val">${_finFmt(monthlyTotal)}</div></div>
+    <div class="fin-summary-card"><div class="fin-summary-label">Yearly Total</div><div class="fin-summary-val">${_finFmt(yearlyTotal)}</div></div>
+  </div>`;
+  html+=`<div class="card fin-card"><div class="fin-card-hdr"><span class="fin-card-title">Subscriptions & Bills</span><button class="btn-plus" onclick="openFinSubModal()">+</button></div>`;
+  html+=`<table class="fin-tbl"><thead><tr><th>Name</th><th style="text-align:right">Amount</th><th>Freq</th><th>Next Due</th><th></th></tr></thead><tbody>`;
+  subs.forEach(sub=>{
+    const dueSoon=sub.next_due&&_finDueSoon(sub.next_due);
+    html+=`<tr class="fin-row${dueSoon?' fin-due-soon':''}" ondblclick="openFinSubModal('${sub.id}')">
+      <td class="fin-name">${escHtml(sub.name)}</td>
+      <td class="fin-amt">${_finFmt(sub.amount||0)}</td>
+      <td class="fin-freq">${sub.frequency||'monthly'}</td>
+      <td class="fin-due">${sub.next_due||''}</td>
+      <td><button class="delbtn" onclick="delFinSub('${sub.id}')">✕</button></td>
+    </tr>`;
+  });
+  html+=`</tbody></table></div>`;
+  return html;
+}
+
+function _finDueSoon(dateStr){
+  if(!dateStr)return false;
+  const diff=(new Date(dateStr+'T12:00')-new Date(tod()+'T12:00'))/(1000*60*60*24);
+  return diff>=0&&diff<=7;
+}
+
+async function openFinSubModal(id){
+  const existing=id?st.finSubs.find(s=>String(s.id)===String(id)):null;
+  const name=prompt('Subscription name:',existing?existing.name:'');if(!name)return;
+  const amount=parseFloat(prompt('Amount:',existing?existing.amount:''));if(isNaN(amount))return;
+  const frequency=prompt('Frequency (monthly/yearly/weekly):',existing?existing.frequency:'monthly')||'monthly';
+  const next_due=prompt('Next due date (YYYY-MM-DD or blank):',existing?existing.next_due||'':'')||null;
+  if(existing){
+    Object.assign(existing,{name,amount,frequency,next_due});renderFinancePage();
+    await sbReqNullable('PATCH','finance_subs',{name,amount,frequency,next_due},`?id=eq.${id}`);
+  }else{
+    const sub={id:'l-'+Date.now(),name,amount,frequency,next_due,sort_order:st.finSubs.length};
+    st.finSubs.push(sub);renderFinancePage();
+    const sv=await sbReq('POST','finance_subs',{name,amount,frequency,next_due,sort_order:sub.sort_order});
+    if(sv&&sv[0]){const i=st.finSubs.findIndex(x=>x.id===sub.id);if(i>-1)st.finSubs[i]=sv[0];}
+  }
+}
+
+async function delFinSub(id){
+  st.finSubs=st.finSubs.filter(s=>String(s.id)!==String(id));renderFinancePage();
+  if(!String(id).startsWith('l-'))await sbReq('DELETE','finance_subs',null,`?id=eq.${id}`);
+}
+
 // ── Pages ──────────────────────────────────────────────────────────────────────
 const PAGES=['overview','weekly','shopping','travel','birthdays','settings','pups','finance','recipes','notes','videos','packing'];
 // ══════════════════════════════════════════════════════════════════════════════
@@ -3362,7 +3531,7 @@ function showPage(id){
   const pageEl=document.getElementById('page-'+id);if(pageEl)pageEl.classList.add('active');
   const idx=PAGES.indexOf(id);if(idx>-1&&document.querySelectorAll('.nav-item')[idx])document.querySelectorAll('.nav-item')[idx].classList.add('active');
   const mainEl=document.getElementById('main');if(mainEl){mainEl.scrollTop=0;}
-  if(id==='weekly'){renderWeeklyPage();}if(id==='travel')renderTravelPage();if(id==='birthdays')renderBdayPage();if(id==='pups')renderPupsPage();if(id==='recipes')renderRecipesPage();if(id==='packing')renderPackingPage();if(id==='videos'){if(!_vidPageInit&&_prevPg!=='videos'){_vidView='dashboard';localStorage.setItem('_vidView','dashboard');}_vidPageInit=false;renderVideosPage();}if(id==='overview'){renderShopOv();renderRecOv();renderWkCal();if(document.getElementById('tbGrid'))renderDayTB();}else{const _tbSc=document.getElementById('tbScroll');if(_tbSc)_tbSc._scrollDay=null;}
+  if(id==='weekly'){renderWeeklyPage();}if(id==='travel')renderTravelPage();if(id==='birthdays')renderBdayPage();if(id==='pups')renderPupsPage();if(id==='recipes')renderRecipesPage();if(id==='packing')renderPackingPage();if(id==='finance')renderFinancePage();if(id==='videos'){if(!_vidPageInit&&_prevPg!=='videos'){_vidView='dashboard';localStorage.setItem('_vidView','dashboard');}_vidPageInit=false;renderVideosPage();}if(id==='overview'){renderShopOv();renderRecOv();renderWkCal();if(document.getElementById('tbGrid'))renderDayTB();}else{const _tbSc=document.getElementById('tbScroll');if(_tbSc)_tbSc._scrollDay=null;}
   const backBtn=document.getElementById('backToOv');if(backBtn)backBtn.style.display=id==='overview'?'none':'flex';
   renderUnassigned();
   history.replaceState(null,'','#'+id);
