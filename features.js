@@ -3528,15 +3528,13 @@ function renderPackingModal(travelId){
       const sorted=[...unchecked,...checked];
       const catDone=checked.length,catTotal=catItems.length;
       const allChecked=catItems.every(x=>x.checked);
-      html+=`<div style="margin-bottom:14px;position:relative;padding:4px 6px;border-radius:6px;transition:background .15s" onmouseenter="this.style.background='rgba(0,0,0,.02)';this.querySelector('.pack-cat-del').style.opacity='1'" onmouseleave="this.style.background='';this.querySelector('.pack-cat-del').style.opacity='0'"><div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:3px;display:flex;align-items:center;gap:6px"><label class="chk-wrap" style="margin:0" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${allChecked?'checked':''} onchange="_packCheckAllCat('${travelId}','${cat}',this.checked)"></label>${escHtml(cat)}<button class="pack-cat-del" onclick="event.stopPropagation();_delPackCat('${travelId}','${cat}')" style="opacity:0;margin-left:auto;background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);padding:0 2px;transition:opacity .15s" title="Remove all ${cat} items from this trip">&#10005;</button></div>`;
+      html+=`<div style="margin-bottom:14px;position:relative;padding:4px 6px;border-radius:6px;transition:background .15s" onmouseenter="this.style.background='rgba(0,0,0,.02)';this.querySelector('.pack-cat-del').style.opacity='1';this.querySelector('.pack-cat-chk').style.opacity='1'" onmouseleave="this.style.background='';this.querySelector('.pack-cat-del').style.opacity='0';this.querySelector('.pack-cat-chk').style.opacity='0'"><div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:3px;display:flex;align-items:center;gap:6px">${escHtml(cat)}<label class="chk-wrap pack-cat-chk" style="margin:0;opacity:0;transition:opacity .15s" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${allChecked?'checked':''} onchange="_packCheckAllCat('${travelId}','${cat}',this.checked)"></label><button class="pack-cat-del" onclick="event.stopPropagation();_delPackCat('${travelId}','${cat}')" style="opacity:0;margin-left:auto;background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);padding:0 2px;transition:opacity .15s" title="Remove all ${cat} items from this trip">&#10005;</button></div>`;
       sorted.forEach((item,idx)=>{
         const ck=item.checked?'checked':'';
         const sty=item.checked?'opacity:.15;text-decoration:line-through;color:var(--muted)':'';
-        const rowBg=idx%2===0?'':'background:rgba(0,0,0,.02)';
-        const rlBg=idx%2===0?'':'rgba(0,0,0,.02)';
         const isManual=item.source==='manual';
         const saveBtn=isManual&&!item.checked?`<button class="delbtn" onclick="event.stopPropagation();_savePackToStandard('${item.id}','${travelId}')" title="Save to standard list" style="font-size:10px;opacity:.4">&#9733;</button>`:'';
-        html+=`<div class="pack-item-row" style="${rowBg};border-radius:3px;transition:background .1s" draggable="true" data-piid="${item.id}" ondragstart="_packDragId='${item.id}'" ondragover="event.preventDefault()" ondrop="dropPackItem(event,'${item.id}','${travelId}')" onmouseenter="this.style.background='rgba(0,0,0,.04)'" onmouseleave="this.style.background='${rlBg}'" >
+        html+=`<div class="pack-item-row" draggable="true" data-piid="${item.id}" ondragstart="_packDragId='${item.id}'" ondragover="event.preventDefault()" ondrop="dropPackItem(event,'${item.id}','${travelId}')" >
           <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${ck} onchange="togglePackItem('${item.id}','${travelId}',this.checked)"></label>
           <span style="flex:1;font-size:12px;${sty}">${escHtml(item.name)}</span>
           ${saveBtn}
@@ -3564,9 +3562,7 @@ function _renderPackStandardView(body,travelId){
       const items=grouped[cat]||[];
       html+=`<div style="margin-bottom:14px;padding:4px 6px"><div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:3px">${cat}</div>`;
       items.forEach((t,idx)=>{
-        const rowBg=idx%2===0?'':'background:rgba(0,0,0,.02)';
-        const rlBg=idx%2===0?'':'rgba(0,0,0,.02)';
-        html+=`<div class="pack-item-row" style="padding:3px 4px;${rowBg};border-radius:3px;transition:background .1s" onmouseenter="this.style.background='rgba(0,0,0,.04)'" onmouseleave="this.style.background='${rlBg}'"><span class="pack-tpl-name" contenteditable="true" style="flex:1;font-size:12px" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" onblur="renamePackTpl('${t.id}',this.textContent.trim())">${escHtml(t.name)}</span><button class="delbtn" onclick="delPackTpl('${t.id}');_renderPackStandardView(document.getElementById('packingModalBody'),'${travelId}')">&#10005;</button></div>`;
+        html+=`<div class="pack-item-row" style="padding:3px 4px"><span class="pack-tpl-name" contenteditable="true" style="flex:1;font-size:12px" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" onblur="renamePackTpl('${t.id}',this.textContent.trim())">${escHtml(t.name)}</span><button class="delbtn" onclick="delPackTpl('${t.id}');_renderPackStandardView(document.getElementById('packingModalBody'),'${travelId}')">&#10005;</button></div>`;
       });
       html+=`<div style="padding:2px 4px"><input class="pack-add-inp" style="width:100%;font-size:11px" placeholder="+ Add ${cat.toLowerCase()} item\u2026" onkeydown="if(event.key==='Enter'){addPackTpl('${cat}',this.value.trim());this.value='';event.preventDefault();setTimeout(()=>{_renderPackHeader('${travelId}');_renderPackStandardView(document.getElementById('packingModalBody'),'${travelId}');},50);}"></div></div>`;
     });
