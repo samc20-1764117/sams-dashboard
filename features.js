@@ -3348,7 +3348,7 @@ function closeMod(id,e){if(e&&e.target!==document.getElementById(id))return;if(e
 
 // ── Packing ────────────────────────────────────────────────────────────────────
 const _PACK_SVG=`<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M8 8V6a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>`;
-const PACK_CATS=['Clothes','Toiletries','Must Haves','Pups'];
+const PACK_CATS=['Clothes','Toiletries','Must Haves','Pups','Other'];
 let _packDragId=null;
 
 function renderPackingPage(){save();
@@ -3356,7 +3356,7 @@ function renderPackingPage(){save();
   // Templates (left) + Ad-hoc pool (right)
   const tpls=st.packTemplates.sort((a,b)=>(a.category||'').localeCompare(b.category||'')||(a.sort_order||0)-(b.sort_order||0));
   const grouped={};PACK_CATS.forEach(c=>grouped[c]=[]);
-  tpls.forEach(t=>{const c=PACK_CATS.includes(t.category)?t.category:'Misc';(grouped[c]=grouped[c]||[]).push(t);});
+  tpls.forEach(t=>{const c=PACK_CATS.includes(t.category)?t.category:'Other';(grouped[c]=grouped[c]||[]).push(t);});
 
   let html=`<div style="display:flex;gap:24px;flex:1;min-height:0;overflow:hidden">`;
   // Left: Standard templates
@@ -3440,7 +3440,7 @@ function _packInpKeydown(e,travelId){
   if(e.key==='Enter'){
     e.preventDefault();
     const cat=document.getElementById('packModalCat');
-    const catVal=cat?cat.value:'Misc';
+    const catVal=cat?cat.value:'Other';
     addPackItem(travelId,inp.value.trim(),catVal);
     inp.value='';
   }
@@ -3483,7 +3483,7 @@ function _renderPackHeader(travelId){
   if(isTrip){
     html+=`<div style="display:flex;gap:6px;margin-bottom:8px;align-items:center">
       <input id="packModalInp" class="pack-add-inp" placeholder="Add item\u2026" style="flex:1" onkeydown="_packInpKeydown(event,'${travelId}')">
-      <select id="packModalCat" onkeydown="_packCatKeydown(event,'${travelId}')" style="font-size:11px;padding:4px 6px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text)"><option>Misc</option>`;
+      <select id="packModalCat" onkeydown="_packCatKeydown(event,'${travelId}')" style="font-size:11px;padding:4px 6px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text)"><option>Other</option>`;
     PACK_CATS.forEach(c=>{html+=`<option>${c}</option>`;});
     html+=`</select>
       <button class="btn btn-xs" onclick="loadStandardItems('${travelId}')" title="Add all standard items not yet in list">+ Load Standard</button>
@@ -3509,19 +3509,19 @@ function renderPackingModal(travelId){
   if(_packModalView==='standard'){_renderPackStandardView(body,travelId);return;}
 
   const items=st.packItems.filter(x=>String(x.travel_id)===String(travelId));
-  const extraCats=[...new Set(items.map(x=>x.category||'Misc'))].filter(c=>!PACK_CATS.includes(c));
+  const extraCats=[...new Set(items.map(x=>x.category||'Other'))].filter(c=>!PACK_CATS.includes(c));
   const allCats=[...PACK_CATS,...extraCats];
 
   if(!items.length){
     body.innerHTML=`<p style="font-size:12px;color:var(--muted);text-align:center;padding:24px 0">No items yet. Add items or load standard packing list.</p>`;
     return;
   }
-  const _cols=[['Must Haves'],['Clothes','Toiletries'],['Pups']];
+  const _cols=[['Must Haves'],['Clothes','Toiletries'],['Pups','Other']];
   let html=`<div style="display:flex;gap:12px">`;
   _cols.forEach(colCats=>{
     html+=`<div style="flex:1;min-width:0">`;
     colCats.forEach(cat=>{
-      const catItems=items.filter(x=>(x.category||'Misc')===cat);
+      const catItems=items.filter(x=>(x.category||'Other')===cat);
       if(!catItems.length)return;
       const unchecked=catItems.filter(x=>!x.checked).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
       const checked=catItems.filter(x=>x.checked).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
@@ -3548,9 +3548,9 @@ function renderPackingModal(travelId){
 function _renderPackStandardView(body,travelId){
   const tpls=st.packTemplates.sort((a,b)=>(a.category||'').localeCompare(b.category||'')||(a.sort_order||0)-(b.sort_order||0));
   const grouped={};PACK_CATS.forEach(c=>grouped[c]=[]);
-  tpls.forEach(t=>{if(t.category==='Ad-hoc')return;const c=PACK_CATS.includes(t.category)?t.category:'Misc';(grouped[c]=grouped[c]||[]).push(t);});
+  tpls.forEach(t=>{if(t.category==='Ad-hoc')return;const c=PACK_CATS.includes(t.category)?t.category:'Other';(grouped[c]=grouped[c]||[]).push(t);});
 
-  const _cols=[['Must Haves'],['Clothes','Toiletries'],['Pups']];
+  const _cols=[['Must Haves'],['Clothes','Toiletries'],['Pups','Other']];
   let html=`<div style="display:flex;gap:12px">`;
   _cols.forEach(colCats=>{
     html+=`<div style="flex:1;min-width:0">`;
@@ -3569,7 +3569,7 @@ function _renderPackStandardView(body,travelId){
 }
 
 async function _delPackCat(travelId,cat){
-  const toDelete=st.packItems.filter(x=>String(x.travel_id)===String(travelId)&&(x.category||'Misc')===cat);
+  const toDelete=st.packItems.filter(x=>String(x.travel_id)===String(travelId)&&(x.category||'Other')===cat);
   if(!toDelete.length)return;
   toDelete.forEach(item=>{
     st.packItems=st.packItems.filter(x=>x.id!==item.id);
@@ -3579,7 +3579,7 @@ async function _delPackCat(travelId,cat){
 }
 async function addPackItem(travelId,name,category,source){
   if(!name)return;
-  const item={id:'l-'+Date.now(),travel_id:travelId,name,category:category||'Misc',source:source||'manual',checked:false,sort_order:st.packItems.filter(x=>String(x.travel_id)===String(travelId)).length};
+  const item={id:'l-'+Date.now(),travel_id:travelId,name,category:category||'Other',source:source||'manual',checked:false,sort_order:st.packItems.filter(x=>String(x.travel_id)===String(travelId)).length};
   st.packItems.push(item);renderPackingModal(travelId);save();
   const sv=await sbReqSilent('POST','packing_items',{travel_id:travelId,name:item.name,category:item.category,source:item.source,checked:false,sort_order:item.sort_order});
   if(sv&&sv[0]){const i=st.packItems.findIndex(x=>x.id===item.id);if(i>-1)st.packItems[i]=sv[0];}
