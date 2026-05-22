@@ -3017,13 +3017,15 @@ function renderMealRow(){
   let maxMeals=0;
   dates.forEach(ds=>{const c=(st.mealPlan||[]).filter(m=>m.meal_date===ds).length;if(c>maxMeals)maxMeals=c;});
   maxMeals=Math.max(1,Math.min(maxMeals,2));
+  const _mealToday=d2s(new Date());
   let html=`<div class="meal-days" style="grid-template-rows:repeat(${maxMeals},auto)">`;
   dates.forEach(ds=>{
     const meals=(st.mealPlan||[]).filter(m=>m.meal_date===ds);
     meals.sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
     // Enforce max 2 per day — remove extras from data
     if(meals.length>2){meals.slice(2).forEach(m=>{st.mealPlan=st.mealPlan.filter(x=>String(x.id)!==String(m.id));sbReqSilent('DELETE','meal_plan',null,`?id=eq.${m.id}`);});}
-    html+=`<div class="meal-cell" data-ds="${ds}">`;
+    const _isPast=ds<_mealToday;
+    html+=`<div class="meal-cell${_isPast?' meal-past':''}" data-ds="${ds}">`;
     meals.slice(0,2).forEach(m=>{
       const sid='meal-'+m.id;
       html+=`<div class="meal-chip" data-tid="${sid}" data-mealid="${m.id}" draggable="true"><span class="meal-chip-name">${escHtml(m.recipe_name)}</span><button class="meal-chip-x" onclick="event.stopPropagation();removeMeal('${m.id}')">✕</button></div>`;

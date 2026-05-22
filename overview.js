@@ -4025,7 +4025,7 @@ function _relayoutTBCol(col,ds){
     el.style.left=`calc(${left}% + 2px)`;el.style.right=`calc(${100-left-colW}% + 2px)`;
   });
 }
-function _getTBBlockSelId(bl){if(bl.cat==='pup_session'&&bl._pupSessId)return'pup-sess-'+String(bl._pupSessId);if(bl.cat==='Birthday')return'blk-'+bl.id;if(bl.ruleId)return'blk-'+bl.id;if(bl.recId&&(st.wrRules||[]).some(x=>String(x.id)===String(bl.recId)))return'blk-'+bl.id;const r=bl.recId?st.recurring.find(x=>String(x.id)===String(bl.recId)):null;const iw=r&&(r.is_weekly_reset===true||r.is_weekly_reset==='true');return bl.taskId?'blk-'+bl.id:bl.recId?(iw?'wrec-':'rec-virt-')+bl.recId:bl.shopId?'blk-'+bl.id:null;}
+function _getTBBlockSelId(bl){if(bl.cat==='pup_session'&&bl._pupSessId)return'pup-sess-'+String(bl._pupSessId);if(bl._vidId)return'blk-'+bl.id;if(bl.cat==='Birthday')return'blk-'+bl.id;if(bl.ruleId)return'blk-'+bl.id;if(bl.recId&&(st.wrRules||[]).some(x=>String(x.id)===String(bl.recId)))return'blk-'+bl.id;const r=bl.recId?st.recurring.find(x=>String(x.id)===String(bl.recId)):null;const iw=r&&(r.is_weekly_reset===true||r.is_weekly_reset==='true');return bl.taskId?'blk-'+bl.id:bl.recId?(iw?'wrec-':'rec-virt-')+bl.recId:bl.shopId?'blk-'+bl.id:null;}
 function drawTBBlock(col,b){
   const top=(b.sm-HOURS[0]*60)*PX,ht=Math.max(b.dur*PX,16);
   const linkedTask=b.taskId?st.tasks.find(x=>String(x.id)===String(b.taskId)):null;
@@ -4126,6 +4126,7 @@ function drawTBBlock(col,b){
     e.stopPropagation();
     clearSelection();
     if(b.cat==='pup_session'){const _ps=b._pupSessId?(st.pupSessions||[]).find(s=>String(s.id)===String(b._pupSessId)):null;const _sk=_ps?(st.pup_skills||[]).find(x=>String(x.id)===String(_ps.skill_id)):((st.pup_skills||[]).find(x=>x.skill===b.title));if(_sk)openPupEditModal(_sk.id);}
+    else if(b._vidId){if(typeof openVidEdit==='function')openVidEdit(b._vidId);}
     else if(b.taskId){openEditTask(b.taskId);}
     else if(b.recId){openRecEditModal(String(b.recId));}
     else{startTBInlineEdit(b.id,el.closest('.tb-col'));}
@@ -4620,6 +4621,23 @@ function dropOnTB(e,ds,h,row,smOverride){
     st.blocks.push(blk);dragId=null;save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
     sbSaveBlock(blk);
     pushUndo(()=>{st.blocks=st.blocks.filter(b=>b.id!==blk.id);sbDeleteBlock(blk.id);save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();},'Added birthday to time block');
+    return;
+  } else if(dragId.startsWith('vid::')){
+    const vidId=dragId.split('::')[1];
+    const v=(st.videos||[]).find(x=>String(x.id)===String(vidId));
+    if(!v){dragId=null;return;}
+    if(st.blocks.some(b=>b.ds===ds&&String(b._vidId)===String(vidId))){dragId=null;showToast('Already in time block','#6b7280',2000);return;}
+    const blk={id:crypto.randomUUID(),title:v.topic||v.title||'Video',ds,sm,dur:60,cat:'Videos',_vidId:String(vidId)};
+    // Assign video to this day if not already
+    const _vdm=_vidDayMap();const prevDay=_vdm[String(vidId)];
+    if(prevDay!==ds){_vdm[String(vidId)]=ds;_vidDayMapSet(_vdm);}
+    st.blocks.push(blk);dragId=null;save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
+    sbSaveBlock(blk);
+    pushUndo(()=>{
+      st.blocks=st.blocks.filter(b=>b.id!==blk.id);sbDeleteBlock(blk.id);
+      if(prevDay!==ds){const m2=_vidDayMap();if(prevDay)m2[String(vidId)]=prevDay;else delete m2[String(vidId)];_vidDayMapSet(m2);}
+      save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
+    },'Added video to time block');
     return;
   } else {
     // Multi-select: if dragged task is in selectedTasks with others, add all selected items
