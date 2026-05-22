@@ -3488,7 +3488,7 @@ function _renderPackHeader(travelId){
     html+=`</select>
       <button class="btn btn-xs" onclick="loadStandardItems('${travelId}')" title="Add all standard items not yet in list">+ Load Standard</button>
     </div>`;
-    html+=`<div style="margin-bottom:8px">${_packProgressBar(pct)}</div>`;
+    // progress bar rendered at bottom
   }
   hdr.innerHTML=html;
 }
@@ -3497,6 +3497,15 @@ function renderPackingModal(travelId){
   const body=document.getElementById('packingModalBody');if(!body)return;
   const modal=document.getElementById('packingModal');if(modal)modal.dataset.travelId=travelId;
   _renderPackHeader(travelId);
+  // Footer progress bar
+  const _ft=document.getElementById('packingModalFooter');
+  if(_ft){
+    const _fitems=st.packItems.filter(x=>String(x.travel_id)===String(travelId));
+    const _fchk=_fitems.filter(x=>x.checked).length;
+    const _fpct=_fitems.length?Math.round(_fchk/_fitems.length*100):0;
+    _ft.innerHTML=_packModalView==='trip'&&_fitems.length?_packProgressBar(_fpct):'';
+    _ft.style.display=_packModalView==='trip'&&_fitems.length?'':'none';
+  }
   if(_packModalView==='standard'){_renderPackStandardView(body,travelId);return;}
 
   const items=st.packItems.filter(x=>String(x.travel_id)===String(travelId));
@@ -3507,18 +3516,19 @@ function renderPackingModal(travelId){
     body.innerHTML=`<p style="font-size:12px;color:var(--muted);text-align:center;padding:24px 0">No items yet. Add items or load standard packing list.</p>`;
     return;
   }
-  let html=`<div style="columns:3;column-gap:12px">`;
-  allCats.forEach(cat=>{
+  let html=`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 12px">`;
+  allCats.forEach((cat,ci)=>{
     const catItems=items.filter(x=>(x.category||'Misc')===cat);
     if(!catItems.length)return;
     const unchecked=catItems.filter(x=>!x.checked).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
     const checked=catItems.filter(x=>x.checked).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
     const sorted=[...unchecked,...checked];
     const catDone=checked.length,catTotal=catItems.length;
-    html+=`<div style="break-inside:avoid;margin-bottom:14px"><div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:3px;display:flex;align-items:center;gap:6px">${escHtml(cat)}<span style="font-weight:400;font-size:9px;opacity:.6">${catDone}/${catTotal}</span></div>`;
+    const col=(ci%3)+1;
+    html+=`<div style="grid-column:${col};margin-bottom:14px"><div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:3px;display:flex;align-items:center;gap:6px">${escHtml(cat)}<span style="font-weight:400;font-size:9px;opacity:.6">${catDone}/${catTotal}</span></div>`;
     sorted.forEach(item=>{
       const ck=item.checked?'checked':'';
-      const sty=item.checked?'opacity:.45;text-decoration:line-through':'';
+      const sty=item.checked?'opacity:.25;text-decoration:line-through':'';
       html+=`<div class="pack-item-row" draggable="true" data-piid="${item.id}" ondragstart="_packDragId='${item.id}'" ondragover="event.preventDefault()" ondrop="dropPackItem(event,'${item.id}','${travelId}')">
         <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${ck} onchange="togglePackItem('${item.id}','${travelId}',this.checked)"></label>
         <span style="flex:1;font-size:12px;${sty}">${escHtml(item.name)}</span>
@@ -3535,12 +3545,13 @@ function _renderPackStandardView(body,travelId){
   const grouped={};PACK_CATS.forEach(c=>grouped[c]=[]);
   tpls.forEach(t=>{if(t.category==='Ad-hoc')return;const c=PACK_CATS.includes(t.category)?t.category:'Misc';(grouped[c]=grouped[c]||[]).push(t);});
 
-  let html=`<div style="columns:3;column-gap:12px">`;
-  PACK_CATS.forEach(cat=>{
+  let html=`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 12px">`;
+  PACK_CATS.forEach((cat,ci)=>{
     const items=grouped[cat]||[];
-    html+=`<div style="break-inside:avoid;margin-bottom:14px"><div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:3px">${cat} <span style="font-weight:400;opacity:.6">(${items.length})</span></div>`;
+    const col=(ci%3)+1;
+    html+=`<div style="grid-column:${col};margin-bottom:14px"><div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:3px">${cat} <span style="font-weight:400;opacity:.6">(${items.length})</span></div>`;
     items.forEach(t=>{
-      html+=`<div class="pack-item-row" style="padding:3px 4px"><span class="pack-tpl-name" contenteditable="true" style="flex:1;font-size:12px" onblur="renamePackTpl('${t.id}',this.textContent.trim())">${escHtml(t.name)}</span><button class="delbtn" onclick="delPackTpl('${t.id}');_renderPackStandardView(document.getElementById('packingModalBody'),'${travelId}')">&#10005;</button></div>`;
+      html+=`<div class="pack-item-row" style="padding:3px 4px"><span class="pack-tpl-name" contenteditable="true" style="flex:1;font-size:12px" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" onblur="renamePackTpl('${t.id}',this.textContent.trim())">${escHtml(t.name)}</span><button class="delbtn" onclick="delPackTpl('${t.id}');_renderPackStandardView(document.getElementById('packingModalBody'),'${travelId}')">&#10005;</button></div>`;
     });
     html+=`<div style="padding:2px 4px"><input class="pack-add-inp" style="width:100%;font-size:11px" placeholder="+ Add ${cat.toLowerCase()} item\u2026" onkeydown="if(event.key==='Enter'){addPackTpl('${cat}',this.value.trim());this.value='';event.preventDefault();setTimeout(()=>{_renderPackHeader('${travelId}');_renderPackStandardView(document.getElementById('packingModalBody'),'${travelId}');},50);}"></div></div>`;
   });
