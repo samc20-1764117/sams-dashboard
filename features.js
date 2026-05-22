@@ -3427,7 +3427,7 @@ function openPackingModal(travelId){
 let _packModalView='trip'; // 'trip' or 'standard'
 function _packProgressBar(pct){
   const c='#22c55e';
-  return`<div style="display:flex;align-items:center;gap:8px;flex:1"><div style="flex:1;height:6px;border-radius:3px;background:var(--border);overflow:hidden"><div style="width:${pct}%;height:100%;border-radius:3px;background:${c};transition:width .3s"></div></div><span style="font-size:10px;color:var(--muted);white-space:nowrap">${pct}%</span></div>`;
+  return`<div style="display:flex;align-items:center;gap:8px;flex:1"><div style="flex:1;height:8px;border-radius:4px;background:rgba(0,0,0,.06);overflow:hidden"><div style="width:${pct}%;height:100%;border-radius:4px;background:${c};transition:width .3s"></div></div><span style="font-size:11px;font-weight:600;color:${c};white-space:nowrap">${pct}%</span></div>`;
 }
 function _packInpKeydown(e,travelId){
   const inp=e.target;
