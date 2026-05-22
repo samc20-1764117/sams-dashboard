@@ -1724,6 +1724,7 @@ function _finRenderPersonal(accs){
   if(vti){
     html+=`<tr class="fin-row" style="opacity:.6"><td class="fin-name">VTI</td><td class="fin-amt">${_finFmt(vti.amount||0)}</td><td class="fin-amt">${_finFmt(vti.adjustment||0)}</td><td></td></tr>`;
   }
+  html+=`<tr class="fin-add-row"><td colspan="4"><button class="fin-add-btn" onclick="addFinRow('account')">+ Add Account</button></td></tr>`;
   html+=`<tr style="font-weight:700;border-top:2px solid rgba(200,200,215,.2)"><td style="padding:8px 16px">Net Worth</td><td></td><td class="fin-amt" style="padding:8px 16px">${_finFmt(netWorth)}</td><td></td></tr>`;
   html+=`</tbody></table></div></div>`;
   return html;
@@ -1761,6 +1762,7 @@ function _finRenderInvestments(){
       <td><button class="delbtn" onclick="delFin('${p.id}')">✕</button></td>
     </tr>`;
   });
+  html+=`<tr class="fin-add-row"><td colspan="3"><button class="fin-add-btn" onclick="addFinRow('vti')">+ Add Purchase</button></td></tr>`;
   html+=`</tbody></table></div></div>`;
   return html;
 }
@@ -1797,6 +1799,7 @@ function _finRenderSubs(){
       <td><button class="delbtn" onclick="delFinSub('${sub.id}')">&#x2715;</button></td>
     </tr>`;
   });
+  html+=`<tr class="fin-add-row"><td colspan="5"><button class="fin-add-btn" onclick="addFinSub()">+ Add Subscription</button></td></tr>`;
   html+=`</tbody></table></div></div>`;
   return html;
 }
