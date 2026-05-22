@@ -70,6 +70,16 @@ Fixed range Jan 1 (curYr-3) → Dec 31 (curYr+2). `scrollMoToday()` BEFORE `.ope
 Table: `travel(id,name,destination,start_date,end_date,travel_mode,notes)`. Drag-to-create: `calDrag{active,startDs,endDs,moved}`. Week boundary: `ei` clamped. **Drag-to-navigate**: mousemove during `calDrag` detects cursor within 30px of `wkcCols` left/right edge → calls `shiftWk(±1)` and clears drag (300ms lock prevents rapid fire).
 - **mModal stays open when travelModal opens**: `travelModal` (z-index:500) can open on top of `mModal` (z-index:490). Global Escape handler (`core.js:856`) must not close `mModal` when a foreground overlay is still open — checks `.overlay.open:not(#mModal):not(#recMoModal)` first. `travelModal`'s `onkeydown` calls `event.stopPropagation()` on Enter/Escape so keys don't bubble to the document handler that would close `mModal`.
 
+### Packing List (Travel)
+Tables: `packing_items(id,travel_id,name,category,source,checked,sort_order)`, `packing_templates(id,name,category,sort_order)`. Templates = standard list; items = trip-specific.
+- **Modal**: `packingModal` overlay, 720px wide, `tabindex="0"` for keyboard. ←/→ arrows switch trip/standard views. `_packModalView` flag.
+- **Categories**: `PACK_CATS=['Clothes','Toiletries','Must Haves','Pups','Other']`. 3 columns: `[['Must Haves'],['Clothes','Toiletries'],['Pups','Other']]`.
+- **Trip view**: per-category sections with hover-reveal ✕ (delete all in cat) + checkbox (check-all). Checkbox slides in aligned with item checkboxes, `position:absolute`→`static` on hover. Items: drag-to-reorder, checkbox, ★ on manual items to save to standard. Checked items: `opacity:.15`, line-through. Progress bar in footer (`#10b981` matching donut).
+- **Standard view**: same column layout, `contenteditable` names (Enter→blur saves), per-category add inputs. No checkboxes.
+- **Input flow**: Enter adds item (default category: Other). Tab→category dropdown, Enter in dropdown saves with selected category.
+- **Load Standard**: adds all template items not already in trip. Confetti via `launchDonutConfetti()` at 100%.
+- **Close**: click overlay background or Escape. `_modMousedownInside` flag resets on mouseup.
+
 ### Pup Skills (`pup-skills.js`)
 Table: `pup_skills`. Sort: mastered last→category→focus→pup→level→skill_order. Inline edit: `pupCellEdit(td,id,field)`. Add modal: `openPupAddModal()`. Edit modal: `openPupEditModal(id)`. Enter in modal: closes if skill empty, saves otherwise. `savePupModal` POSTs/PATCHes Supabase and calls both `renderPupsPage()` and `renderPupSkillsHighlight()`. **Session counts**: table has a "Sessions" column and card rows (non-mastered) show a count badge — both display lifetime `done/total` from `st.pupSessions`. Clicking either opens `openPupCountEdit(skillId, anchorEl)`: a popover showing total done (lifetime), total sessions (lifetime), last practiced date, this week done/total, and an editable "done this wk" field (Enter saves, Escape closes). `setPupWkDone(skillId, newDone)` creates/removes `pup_skill_sessions` rows to match the desired done count. Count color: `var(--muted)` always. Key helpers defined at top of file: `_pupWkDone`, `_pupWkSessTotal`, `_pupAllSess`, `_pupAllDone`, `_pupAllTotal`, `_pupLastPracticed`, `_pupCountBadge`.
 
