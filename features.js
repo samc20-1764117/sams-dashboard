@@ -1662,10 +1662,13 @@ function openSB(){sbOpen=true;document.getElementById('sidebar').classList.remov
 // ══════════════════════════════════════════════════════════════════════════════
 // ── FINANCE PAGE ─────────────────────────────────────────────────────────────
 // ══════════════════════════════════════════════════════════════════════════════
+const _FIN_COLORS=['#3b82f6','#10b981','#8b5cf6','#f59e0b','#ec4899','#0ea5e9','#ef4444','#06b6d4'];
 function _finOf(type){return st.finance.filter(r=>r.type===type);}
 function _finFmt(n){return n<0?'-$'+Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):'$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function _finFmtPct(n){return(n>=0?'+':'')+n.toFixed(2)+'%';}
 function _finParseNum(s){return parseFloat((s||'').replace(/[$,\s]/g,''))||0;}
+function _finSnap(){return{finance:JSON.parse(JSON.stringify(st.finance)),finSubs:JSON.parse(JSON.stringify(st.finSubs))};}
+function _finRestore(snap){st.finance=snap.finance;st.finSubs=snap.finSubs;renderFinancePage();}
 
 function renderFinancePage(){
   const el=document.getElementById('finPageContent');if(!el)return;
@@ -1678,7 +1681,6 @@ function renderFinancePage(){
   const gain=currentVal-totalBought;
   const gainPct=totalBought?((gain/totalBought)*100):0;
 
-  // Top KPIs
   let html=`<div class="fin-kpi-row">
     <div class="fin-kpi fin-kpi-primary"><div class="fin-kpi-label">Net Worth</div><div class="fin-kpi-val">${_finFmt(netWorth)}</div></div>
     <div class="fin-kpi fin-kpi-primary"><div class="fin-kpi-label">VTI Current Value</div><div class="fin-kpi-val">${vtiAcc?_finEditable(vtiAcc.id,'amount',currentVal,''):`${_finFmt(currentVal)}`}</div></div>
@@ -1694,11 +1696,13 @@ function renderFinancePage(){
 
 // ── Inline edit helpers ──────────────────────────────────────────────────────
 async function _finEditField(id,field,el){
+  const snap=_finSnap();
   const row=st.finance.find(r=>String(r.id)===String(id));if(!row)return;
   const val=field==='name'||field==='date'?el.textContent.trim():_finParseNum(el.textContent);
   if(row[field]===val){el.textContent=typeof val==='number'?_finFmt(val):val;return;}
-  row[field]=val;
+  const old=row[field];row[field]=val;
   renderFinancePage();
+  pushUndo(()=>{row[field]=old;renderFinancePage();if(!String(id).startsWith('l-'))sbReqNullable('PATCH','finance',{[field]:old},`?id=eq.${id}`);},'Edited '+field);
   if(!String(id).startsWith('l-'))await sbReqNullable('PATCH','finance',{[field]:val},`?id=eq.${id}`);
 }
 
@@ -1711,22 +1715,20 @@ function _finEditable(id,field,val,cls){
 // ── Column 1: Personal Finances ──────────────────────────────────────────────
 function _finRenderPersonal(accs){
   const vti=accs.find(a=>(a.name||'')==='VTI');
-  const others=accs.filter(a=>(a.name||'')!=='VTI');
-
-  // Donut — sorted highest to lowest
+  // Sort by amount descending (match donut order)
+  const others=[...accs.filter(a=>(a.name||'')!=='VTI')].sort((a,b)=>(b.amount||0)-(a.amount||0));
   const chartItems=[...accs.filter(a=>(a.amount||0)>0)].sort((a,b)=>(b.amount||0)-(a.amount||0));
   const total=chartItems.reduce((s,a)=>s+(a.amount||0),0);
-  const colors=['#6d5fe6','#10b981','#3b82f6','#f59e0b','#8b5cf6','#06b6d4','#f43f5e','#ec4899'];
 
   let html=`<div class="fin-col"><div class="card fin-card">
     <div class="fin-card-hdr"><span class="fin-card-title">Personal Finances</span></div>`;
   if(total>0){
     let cum=0;
-    const segs=chartItems.map((a,i)=>{const pct=(a.amount||0)/total;const start=cum;cum+=pct;return{name:a.name,pct,start,color:colors[i%colors.length]};});
+    const segs=chartItems.map((a,i)=>{const pct=(a.amount||0)/total;const start=cum;cum+=pct;return{name:a.name,amt:a.amount,pct,start,color:_FIN_COLORS[i%_FIN_COLORS.length]};});
     html+=`<div class="fin-chart-wrap"><svg class="fin-donut" viewBox="0 0 42 42">`;
     segs.forEach(seg=>{
       const dashLen=seg.pct*100;const dashOff=100-(seg.start*100)+25;
-      html+=`<circle cx="21" cy="21" r="15.9" fill="none" stroke="${seg.color}" stroke-width="4.5" stroke-dasharray="${dashLen} ${100-dashLen}" stroke-dashoffset="${dashOff}"/>`;
+      html+=`<circle cx="21" cy="21" r="15.9" fill="none" stroke="${seg.color}" stroke-width="4.5" stroke-dasharray="${dashLen} ${100-dashLen}" stroke-dashoffset="${dashOff}"><title>${seg.name}: ${_finFmt(seg.amt)} (${(seg.pct*100).toFixed(1)}%)</title></circle>`;
     });
     html+=`</svg><div class="fin-chart-legend">`;
     segs.forEach(seg=>{
@@ -1735,6 +1737,7 @@ function _finRenderPersonal(accs){
     html+=`</div></div>`;
   }
   html+=`<table class="fin-tbl"><thead><tr><th>Source</th><th style="text-align:right">Amount</th><th></th></tr></thead><tbody>`;
+  html+=`<tr class="fin-add-row"><td colspan="3"><button class="fin-add-btn" onclick="addFinRow('account')">+ Add Account</button></td></tr>`;
   others.forEach(a=>{
     html+=`<tr class="fin-row">
       <td>${_finEditable(a.id,'name',a.name,'fin-name')}</td>
@@ -1745,16 +1748,13 @@ function _finRenderPersonal(accs){
   if(vti){
     html+=`<tr class="fin-row fin-row-muted"><td class="fin-name">VTI</td><td class="fin-amt">${_finFmt(vti.amount||0)}</td><td></td></tr>`;
   }
-  html+=`<tr class="fin-add-row"><td colspan="3"><button class="fin-add-btn" onclick="addFinRow('account')">+ Add Account</button></td></tr>`;
   html+=`</tbody></table></div></div>`;
   return html;
 }
 
 // ── Column 2: Investments (VTI) ──────────────────────────────────────────────
 function _finRenderInvestments(purchases,totalBought){
-  // Sort newest first for display
   const sorted=[...purchases].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
-  // Sort oldest first for cumulative trend
   const chronological=[...purchases].sort((a,b)=>(a.date||'').localeCompare(b.date||''));
 
   let html=`<div class="fin-col"><div class="card fin-card">
@@ -1762,26 +1762,37 @@ function _finRenderInvestments(purchases,totalBought){
   html+=`<div class="fin-stats">
     <div class="fin-stat-row"><span class="fin-stat-label fin-muted">Cost Basis</span><span class="fin-stat-val fin-muted">${_finFmt(totalBought)}</span></div>
   </div>`;
-  // Cumulative investment trend
+  // Cumulative investment trend with year axis + tooltips
   if(chronological.length>1){
     let cum=0;
-    const pts=chronological.map(p=>{cum+=Math.abs(p.amount||0);return cum;});
-    const max=Math.max(...pts);
-    const w=200,h=50;
-    const polyPts=pts.map((v,i)=>`${(i/(pts.length-1))*w},${h-(v/max)*h}`).join(' ');
-    html+=`<div style="padding:4px 16px 8px"><svg viewBox="0 0 ${w} ${h}" style="width:100%;height:50px" preserveAspectRatio="none">
-      <polyline points="${polyPts}" fill="none" stroke="#10b981" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
-      <polyline points="0,${h} ${polyPts} ${w},${h}" fill="rgba(16,185,129,.08)" stroke="none"/>
-    </svg></div>`;
+    const dataPoints=chronological.map(p=>{cum+=Math.abs(p.amount||0);return{date:p.date,cum};});
+    const max=Math.max(...dataPoints.map(d=>d.cum));
+    const w=200,h=60,padB=14;
+    const ch=h-padB;
+    const polyPts=dataPoints.map((d,i)=>`${(i/(dataPoints.length-1))*w},${ch-(d.cum/max)*ch}`).join(' ');
+    // Year labels
+    const years=new Set();const yearLabels=[];
+    dataPoints.forEach((d,i)=>{const y=(d.date||'').slice(0,4);if(y&&!years.has(y)){years.add(y);yearLabels.push({x:(i/(dataPoints.length-1))*w,y:y});}});
+    html+=`<div style="padding:4px 16px 4px"><svg viewBox="0 0 ${w} ${h}" style="width:100%;height:70px" preserveAspectRatio="none">
+      <polyline points="0,${ch} ${polyPts} ${w},${ch}" fill="rgba(16,185,129,.06)" stroke="none"/>
+      <polyline points="${polyPts}" fill="none" stroke="#10b981" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>`;
+    dataPoints.forEach((d,i)=>{
+      const x=(i/(dataPoints.length-1))*w;const y=ch-(d.cum/max)*ch;
+      html+=`<circle cx="${x}" cy="${y}" r="3" fill="#10b981" opacity="0"><title>${d.date}: ${_finFmt(d.cum)}</title></circle>`;
+      html+=`<circle cx="${x}" cy="${y}" r="8" fill="transparent"><title>${d.date}: ${_finFmt(d.cum)}</title></circle>`;
+    });
+    yearLabels.forEach(yl=>{
+      html+=`<text x="${yl.x}" y="${h-1}" fill="var(--text-secondary,#94a3b8)" font-size="3.5" font-family="system-ui">${yl.y}</text>`;
+    });
+    html+=`</svg></div>`;
   }
-  // Purchase history
   html+=`<div class="fin-card-sub">Purchase History</div>
     <table class="fin-tbl"><thead><tr><th>Date</th><th style="text-align:right">Amount</th><th></th></tr></thead><tbody>`;
   html+=`<tr class="fin-add-row"><td colspan="3"><button class="fin-add-btn" onclick="addFinRow('vti')">+ Add Purchase</button></td></tr>`;
   sorted.forEach(p=>{
     html+=`<tr class="fin-row">
       <td class="fin-ph-cell">${p.date||''}</td>
-      <td class="fin-amt fin-ph-cell">${_finFmt(Math.abs(p.amount||0))}</td>
+      <td class="fin-amt fin-ph-cell fin-num">${_finFmt(Math.abs(p.amount||0))}</td>
       <td><button class="delbtn" onclick="delFin('${p.id}')">&#x2715;</button></td>
     </tr>`;
   });
@@ -1791,7 +1802,7 @@ function _finRenderInvestments(purchases,totalBought){
 
 // ── Column 3: Subscriptions (finance_subs table) ─────────────────────────────
 function _finRenderSubs(){
-  const subs=st.finSubs.sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+  const subs=[...st.finSubs].sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
   const monthlyTotal=subs.filter(s=>!s.cancel).reduce((s,sub)=>{
     const amt=sub.amount||0;
     if(sub.frequency==='yearly')return s+amt/12;
@@ -1802,26 +1813,26 @@ function _finRenderSubs(){
   const yearlyTotal=monthlyTotal*12;
 
   let html=`<div class="fin-col"><div class="card fin-card">
-    <div class="fin-card-hdr"><span class="fin-card-title">Subscriptions</span><button class="btn-plus" onclick="addFinSub()">+</button></div>
+    <div class="fin-card-hdr"><span class="fin-card-title">Subscriptions</span></div>
     <div class="fin-stats">
       <div class="fin-stat-row"><span class="fin-stat-label">Monthly</span><span class="fin-stat-val">${_finFmt(monthlyTotal)}</span></div>
       <div class="fin-stat-row"><span class="fin-stat-label">Yearly</span><span class="fin-stat-val">${_finFmt(yearlyTotal)}</span></div>
     </div>
     <table class="fin-tbl"><thead><tr><th>Name</th><th style="text-align:right">Amount</th><th>Freq</th><th>Due</th><th></th></tr></thead><tbody>`;
+  html+=`<tr class="fin-add-row"><td colspan="5"><button class="fin-add-btn" onclick="addFinSub()">+ Add Subscription</button></td></tr>`;
   subs.forEach(sub=>{
     const dayStr=sub.due_day?_finOrdinal(sub.due_day):'—';
     html+=`<tr class="fin-row${sub.cancel?' fin-cancel':''}">
       <td class="fin-sub-name-cell">
-        <button class="fin-cancel-btn ${sub.cancel?'active':''}" onclick="toggleFinSubCancel('${sub.id}')" title="${sub.cancel?'Unmark cancel':'Mark to cancel'}">&#x2715;</button>
+        <button class="fin-cancel-btn ${sub.cancel?'active':''}" onclick="toggleFinSubCancel('${sub.id}')" title="${sub.cancel?'Unmark cancel':'Flag to cancel'}">&#x2715;</button>
         ${_finSubEditable(sub.id,'name',sub.name,'fin-name')}
       </td>
-      <td class="fin-amt">${_finSubEditable(sub.id,'amount',sub.amount||0)}</td>
+      <td class="fin-amt fin-num">${_finSubEditable(sub.id,'amount',sub.amount||0)}</td>
       <td>${_finFreqSelect(sub.id,sub.frequency||'monthly')}</td>
       <td><span class="fin-edit fin-due-edit" contenteditable="true" onfocus="this.textContent='${sub.due_day||''}';" onblur="_finSubEditDay('${sub.id}',this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">${dayStr}</span></td>
       <td><button class="delbtn" onclick="delFinSub('${sub.id}')">&#x2715;</button></td>
     </tr>`;
   });
-  html+=`<tr class="fin-add-row"><td colspan="5"><button class="fin-add-btn" onclick="addFinSub()">+ Add Subscription</button></td></tr>`;
   html+=`</tbody></table></div></div>`;
   return html;
 }
@@ -1838,8 +1849,9 @@ async function _finSubEditField(id,field,el){
   const row=st.finSubs.find(r=>String(r.id)===String(id));if(!row)return;
   const val=field==='name'?el.textContent.trim():_finParseNum(el.textContent);
   if(row[field]===val){el.textContent=typeof val==='number'?_finFmt(val):val;return;}
-  row[field]=val;
+  const old=row[field];row[field]=val;
   renderFinancePage();
+  pushUndo(()=>{row[field]=old;renderFinancePage();if(!String(id).startsWith('l-'))sbReqNullable('PATCH','finance_subs',{[field]:old},`?id=eq.${id}`);},'Edited '+field);
   if(!String(id).startsWith('l-'))await sbReqNullable('PATCH','finance_subs',{[field]:val},`?id=eq.${id}`);
 }
 
@@ -1847,9 +1859,10 @@ async function _finSubEditDay(id,el){
   const row=st.finSubs.find(r=>String(r.id)===String(id));if(!row)return;
   const raw=el.textContent.trim();
   const val=raw?parseInt(raw,10)||null:null;
-  if(row.due_day===val)return;
-  row.due_day=val;
+  if(row.due_day===val){renderFinancePage();return;}
+  const old=row.due_day;row.due_day=val;
   renderFinancePage();
+  pushUndo(()=>{row.due_day=old;renderFinancePage();if(!String(id).startsWith('l-'))sbReqNullable('PATCH','finance_subs',{due_day:old},`?id=eq.${id}`);},'Edited due day');
   if(!String(id).startsWith('l-'))await sbReqNullable('PATCH','finance_subs',{due_day:val},`?id=eq.${id}`);
 }
 
@@ -1864,8 +1877,9 @@ function _finFreqSelect(id,val){
 
 async function _finSubEditFreq(id,val){
   const row=st.finSubs.find(r=>String(r.id)===String(id));if(!row)return;
-  row.frequency=val;
+  const old=row.frequency;row.frequency=val;
   renderFinancePage();
+  pushUndo(()=>{row.frequency=old;renderFinancePage();if(!String(id).startsWith('l-'))sbReqNullable('PATCH','finance_subs',{frequency:old},`?id=eq.${id}`);},'Changed frequency');
   if(!String(id).startsWith('l-'))await sbReqNullable('PATCH','finance_subs',{frequency:val},`?id=eq.${id}`);
 }
 
@@ -1873,35 +1887,44 @@ async function toggleFinSubCancel(id){
   const row=st.finSubs.find(r=>String(r.id)===String(id));if(!row)return;
   row.cancel=!row.cancel;
   renderFinancePage();
+  pushUndo(()=>{row.cancel=!row.cancel;renderFinancePage();if(!String(id).startsWith('l-'))sbReqNullable('PATCH','finance_subs',{cancel:row.cancel},`?id=eq.${id}`);},'Toggled cancel');
   if(!String(id).startsWith('l-'))await sbReqNullable('PATCH','finance_subs',{cancel:row.cancel},`?id=eq.${id}`);
 }
 
 async function addFinSub(){
-  const row={id:'l-'+Date.now(),name:'New Sub',amount:0,frequency:'monthly',due_day:null,cancel:false,sort_order:st.finSubs.length};
-  st.finSubs.push(row);renderFinancePage();
+  const snap=_finSnap();
+  const row={id:'l-'+Date.now(),name:'New Sub',amount:0,frequency:'monthly',due_day:null,cancel:false,sort_order:0};
+  st.finSubs.unshift(row);renderFinancePage();
+  pushUndo(()=>{st.finSubs=st.finSubs.filter(r=>r.id!==row.id);renderFinancePage();},'Added subscription');
   const{id,...fields}=row;
   const sv=await sbReq('POST','finance_subs',fields);
   if(sv&&sv[0]){const i=st.finSubs.findIndex(x=>x.id===row.id);if(i>-1)st.finSubs[i]=sv[0];}
 }
 
 async function delFinSub(id){
+  const snap=_finSnap();
+  const old=st.finSubs.find(r=>String(r.id)===String(id));
   st.finSubs=st.finSubs.filter(r=>String(r.id)!==String(id));renderFinancePage();
+  pushUndo(()=>{if(old)st.finSubs.push(old);renderFinancePage();if(!String(id).startsWith('l-'))sbReq('POST','finance_subs',old);},'Deleted subscription');
   if(!String(id).startsWith('l-'))await sbReq('DELETE','finance_subs',null,`?id=eq.${id}`);
 }
 
 // ── Finance account Add / Delete ─────────────────────────────────────────────
 async function addFinRow(type){
   let fields={type};
-  if(type==='account')Object.assign(fields,{name:'New Account',amount:0,adjustment:0});
+  if(type==='account')Object.assign(fields,{name:'New Account',amount:0});
   else Object.assign(fields,{name:'VTI Purchase',date:tod(),amount:0});
-  const row={id:'l-'+Date.now(),sort_order:_finOf(type).length,...fields};
-  st.finance.push(row);renderFinancePage();
+  const row={id:'l-'+Date.now(),sort_order:0,...fields};
+  st.finance.unshift(row);renderFinancePage();
+  pushUndo(()=>{st.finance=st.finance.filter(r=>r.id!==row.id);renderFinancePage();},'Added '+(type==='vti'?'purchase':'account'));
   const sv=await sbReq('POST','finance',{...fields,sort_order:row.sort_order});
   if(sv&&sv[0]){const i=st.finance.findIndex(x=>x.id===row.id);if(i>-1)st.finance[i]=sv[0];}
 }
 
 async function delFin(id){
+  const old=st.finance.find(r=>String(r.id)===String(id));
   st.finance=st.finance.filter(r=>String(r.id)!==String(id));renderFinancePage();
+  pushUndo(()=>{if(old)st.finance.push(old);renderFinancePage();if(!String(id).startsWith('l-'))sbReq('POST','finance',old);},'Deleted item');
   if(!String(id).startsWith('l-'))await sbReq('DELETE','finance',null,`?id=eq.${id}`);
 }
 

@@ -1182,6 +1182,7 @@ body.dark .vid-stat-card{background:rgba(40,30,50,.4)}
 .fin-legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 .fin-legend-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-primary,#334155)}
 .fin-legend-pct{color:var(--text-secondary,#64748b);font-weight:600;font-variant-numeric:tabular-nums}
+.fin-num{font-family:system-ui,-apple-system,sans-serif;font-variant-numeric:tabular-nums}
 
 /* Anti-FOUC: applied before first paint via html classes set in head script */
 html.init-dark body{background:#1a100a!important;background-attachment:fixed!important;}
