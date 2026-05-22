@@ -1669,15 +1669,12 @@ function _finParseNum(s){return parseFloat((s||'').replace(/[$,\s]/g,''))||0;}
 
 function renderFinancePage(){
   const el=document.getElementById('finPageContent');if(!el)return;
-  // Net worth summary
+  // Net worth = sum of adjusted values for all accounts except GI Income
   const accs=_finOf('account').sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
-  const netWorth=accs.reduce((s,a)=>s+(a.adjustment||a.amount||0),0);
-  const k401=accs.find(a=>(a.name||'').includes('401'));
-  const netWith401k=netWorth+(k401?(k401.amount||0)-(k401.adjustment||0):0);
+  const netWorth=accs.filter(a=>!(a.name||'').toLowerCase().includes('gi income')).reduce((s,a)=>s+(a.adjustment||a.amount||0),0);
 
   let html=`<div class="fin-summary-row">
     <div class="fin-summary-card fin-nw"><div class="fin-summary-label">Net Worth</div><div class="fin-summary-val">${_finFmt(netWorth)}</div></div>
-    <div class="fin-summary-card"><div class="fin-summary-label">Net Worth (w/401k)</div><div class="fin-summary-val">${_finFmt(netWith401k)}</div></div>
   </div>`;
   html+=`<div class="fin-cols">`;
   html+=_finRenderPersonal(accs);
@@ -1705,18 +1702,29 @@ function _finEditable(id,field,val,cls){
 
 // ── Column 1: Personal Finances ──────────────────────────────────────────────
 function _finRenderPersonal(accs){
-  const personal=accs.filter(a=>!(a.name||'').includes('VTI'));
+  // Separate VTI (shown in investments col) from other accounts
+  const monies=accs.filter(a=>(a.name||'')!=='VTI');
+  const vti=accs.find(a=>(a.name||'')==='VTI');
+  // Build full monies list including VTI (read-only here, pulled from investments)
+  const allForNW=[...monies];
+  if(vti)allForNW.push(vti);
+  const netWorth=allForNW.reduce((s,a)=>s+(a.adjustment||a.amount||0),0);
+
   let html=`<div class="fin-col"><div class="card fin-card">
     <div class="fin-card-hdr"><span class="fin-card-title">Personal Finances</span><button class="btn-plus" onclick="addFinRow('account')">+</button></div>
     <table class="fin-tbl"><thead><tr><th>Source</th><th style="text-align:right">Amount</th><th style="text-align:right">Adjusted</th><th></th></tr></thead><tbody>`;
-  personal.forEach(a=>{
+  monies.forEach(a=>{
     html+=`<tr class="fin-row">
       <td>${_finEditable(a.id,'name',a.name,'fin-name')}</td>
       <td class="fin-amt">${_finEditable(a.id,'amount',a.amount||0)}</td>
       <td class="fin-amt">${_finEditable(a.id,'adjustment',a.adjustment||0)}</td>
-      <td><button class="delbtn" onclick="delFin('${a.id}')">✕</button></td>
+      <td><button class="delbtn" onclick="delFin('${a.id}')">&#x2715;</button></td>
     </tr>`;
   });
+  if(vti){
+    html+=`<tr class="fin-row" style="opacity:.6"><td class="fin-name">VTI</td><td class="fin-amt">${_finFmt(vti.amount||0)}</td><td class="fin-amt">${_finFmt(vti.adjustment||0)}</td><td></td></tr>`;
+  }
+  html+=`<tr style="font-weight:700;border-top:2px solid rgba(200,200,215,.2)"><td style="padding:8px 16px">Net Worth</td><td></td><td class="fin-amt" style="padding:8px 16px">${_finFmt(netWorth)}</td><td></td></tr>`;
   html+=`</tbody></table></div></div>`;
   return html;
 }
