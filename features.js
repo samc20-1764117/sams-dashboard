@@ -3348,7 +3348,7 @@ function closeMod(id,e){if(e&&e.target!==document.getElementById(id))return;if(e
 
 // ── Packing ────────────────────────────────────────────────────────────────────
 const _PACK_SVG=`<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M8 8V6a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>`;
-const PACK_CATS=['Must Haves','Clothes','Toiletries','Pups'];
+const PACK_CATS=['Clothes','Toiletries','Must Haves','Pups'];
 let _packDragId=null;
 
 function renderPackingPage(){save();
@@ -3516,26 +3516,30 @@ function renderPackingModal(travelId){
     body.innerHTML=`<p style="font-size:12px;color:var(--muted);text-align:center;padding:24px 0">No items yet. Add items or load standard packing list.</p>`;
     return;
   }
-  const _colMap={'Must Haves':1,'Toiletries':2,'Clothes':2,'Pups':3};
-  let html=`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 12px">`;
-  allCats.forEach(cat=>{
-    const catItems=items.filter(x=>(x.category||'Misc')===cat);
-    if(!catItems.length)return;
-    const unchecked=catItems.filter(x=>!x.checked).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
-    const checked=catItems.filter(x=>x.checked).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
-    const sorted=[...unchecked,...checked];
-    const catDone=checked.length,catTotal=catItems.length;
-    const col=_colMap[cat]||1;
-    html+=`<div style="grid-column:${col};margin-bottom:14px;position:relative;padding:4px 6px;border-radius:6px;transition:background .15s" onmouseenter="this.style.background='rgba(0,0,0,.02)';this.querySelector('.pack-cat-del').style.opacity='1'" onmouseleave="this.style.background='';this.querySelector('.pack-cat-del').style.opacity='0'"><div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:3px;display:flex;align-items:center;gap:6px">${escHtml(cat)}<span style="font-weight:400;font-size:9px;opacity:.6">${catDone}/${catTotal}</span><button class="pack-cat-del" onclick="event.stopPropagation();_delPackCat('${travelId}','${cat}')" style="opacity:0;margin-left:auto;background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);padding:0 2px;transition:opacity .15s" title="Remove all ${cat} items from this trip">&#10005;</button></div>`;
-    sorted.forEach(item=>{
-      const ck=item.checked?'checked':'';
-      const sty=item.checked?'opacity:.25;text-decoration:line-through':'';
-      html+=`<div class="pack-item-row" draggable="true" data-piid="${item.id}" ondragstart="_packDragId='${item.id}'" ondragover="event.preventDefault()" ondrop="dropPackItem(event,'${item.id}','${travelId}')">
-        <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${ck} onchange="togglePackItem('${item.id}','${travelId}',this.checked)"></label>
-        <span style="flex:1;font-size:12px;${sty}">${escHtml(item.name)}</span>
-        <button class="delbtn" onclick="delPackItem('${item.id}','${travelId}')">&#10005;</button>
-      </div>`;
+  const _cols=[['Must Haves'],['Clothes','Toiletries'],['Pups']];
+  let html=`<div style="display:flex;gap:12px">`;
+  _cols.forEach(colCats=>{
+    html+=`<div style="flex:1;min-width:0">`;
+    colCats.forEach(cat=>{
+      const catItems=items.filter(x=>(x.category||'Misc')===cat);
+      if(!catItems.length)return;
+      const unchecked=catItems.filter(x=>!x.checked).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+      const checked=catItems.filter(x=>x.checked).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+      const sorted=[...unchecked,...checked];
+      const catDone=checked.length,catTotal=catItems.length;
+      html+=`<div style="margin-bottom:14px;position:relative;padding:4px 6px;border-radius:6px;transition:background .15s" onmouseenter="this.style.background='rgba(0,0,0,.02)';this.querySelector('.pack-cat-del').style.opacity='1'" onmouseleave="this.style.background='';this.querySelector('.pack-cat-del').style.opacity='0'"><div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:3px;display:flex;align-items:center;gap:6px">${escHtml(cat)}<span style="font-weight:400;font-size:9px;opacity:.6">${catDone}/${catTotal}</span><button class="pack-cat-del" onclick="event.stopPropagation();_delPackCat('${travelId}','${cat}')" style="opacity:0;margin-left:auto;background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);padding:0 2px;transition:opacity .15s" title="Remove all ${cat} items from this trip">&#10005;</button></div>`;
+      sorted.forEach(item=>{
+        const ck=item.checked?'checked':'';
+        const sty=item.checked?'opacity:.25;text-decoration:line-through':'';
+        html+=`<div class="pack-item-row" draggable="true" data-piid="${item.id}" ondragstart="_packDragId='${item.id}'" ondragover="event.preventDefault()" ondrop="dropPackItem(event,'${item.id}','${travelId}')">
+          <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${ck} onchange="togglePackItem('${item.id}','${travelId}',this.checked)"></label>
+          <span style="flex:1;font-size:12px;${sty}">${escHtml(item.name)}</span>
+          <button class="delbtn" onclick="delPackItem('${item.id}','${travelId}')">&#10005;</button>
+        </div>`;
+      });
+      html+=`</div>`;
     });
+    // Any extra cats in first available column
     html+=`</div>`;
   });
   html+=`</div>`;
@@ -3546,16 +3550,19 @@ function _renderPackStandardView(body,travelId){
   const grouped={};PACK_CATS.forEach(c=>grouped[c]=[]);
   tpls.forEach(t=>{if(t.category==='Ad-hoc')return;const c=PACK_CATS.includes(t.category)?t.category:'Misc';(grouped[c]=grouped[c]||[]).push(t);});
 
-  const _colMap={'Must Haves':1,'Toiletries':2,'Clothes':2,'Pups':3};
-  let html=`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 12px">`;
-  PACK_CATS.forEach(cat=>{
-    const items=grouped[cat]||[];
-    const col=_colMap[cat]||1;
-    html+=`<div style="grid-column:${col};margin-bottom:14px;padding:4px 6px"><div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:3px">${cat} <span style="font-weight:400;opacity:.6">(${items.length})</span></div>`;
-    items.forEach(t=>{
-      html+=`<div class="pack-item-row" style="padding:3px 4px"><span class="pack-tpl-name" contenteditable="true" style="flex:1;font-size:12px" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" onblur="renamePackTpl('${t.id}',this.textContent.trim())">${escHtml(t.name)}</span><button class="delbtn" onclick="delPackTpl('${t.id}');_renderPackStandardView(document.getElementById('packingModalBody'),'${travelId}')">&#10005;</button></div>`;
+  const _cols=[['Must Haves'],['Clothes','Toiletries'],['Pups']];
+  let html=`<div style="display:flex;gap:12px">`;
+  _cols.forEach(colCats=>{
+    html+=`<div style="flex:1;min-width:0">`;
+    colCats.forEach(cat=>{
+      const items=grouped[cat]||[];
+      html+=`<div style="margin-bottom:14px;padding:4px 6px"><div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:3px">${cat} <span style="font-weight:400;opacity:.6">(${items.length})</span></div>`;
+      items.forEach(t=>{
+        html+=`<div class="pack-item-row" style="padding:3px 4px"><span class="pack-tpl-name" contenteditable="true" style="flex:1;font-size:12px" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" onblur="renamePackTpl('${t.id}',this.textContent.trim())">${escHtml(t.name)}</span><button class="delbtn" onclick="delPackTpl('${t.id}');_renderPackStandardView(document.getElementById('packingModalBody'),'${travelId}')">&#10005;</button></div>`;
+      });
+      html+=`<div style="padding:2px 4px"><input class="pack-add-inp" style="width:100%;font-size:11px" placeholder="+ Add ${cat.toLowerCase()} item\u2026" onkeydown="if(event.key==='Enter'){addPackTpl('${cat}',this.value.trim());this.value='';event.preventDefault();setTimeout(()=>{_renderPackHeader('${travelId}');_renderPackStandardView(document.getElementById('packingModalBody'),'${travelId}');},50);}"></div></div>`;
     });
-    html+=`<div style="padding:2px 4px"><input class="pack-add-inp" style="width:100%;font-size:11px" placeholder="+ Add ${cat.toLowerCase()} item\u2026" onkeydown="if(event.key==='Enter'){addPackTpl('${cat}',this.value.trim());this.value='';event.preventDefault();setTimeout(()=>{_renderPackHeader('${travelId}');_renderPackStandardView(document.getElementById('packingModalBody'),'${travelId}');},50);}"></div></div>`;
+    html+=`</div>`;
   });
   html+=`</div>`;
   body.innerHTML=html;
