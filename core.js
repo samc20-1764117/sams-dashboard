@@ -9,7 +9,7 @@ const CATS={
   'recurring':{bg:'#ddf4f0',t:'#0f6b7a',d:'#2a9db5',dot:'#99f6e4',b:'rgba(42,157,181,.25)'},
   'weekly_reset':{bg:'#eff6ff',t:'#1e40af',d:'#3b82f6',dot:'#bfdbfe',b:'rgba(59,130,246,.2)'},
   'buy':      {bg:'#fef9c3',t:'#713f12',d:'#eab308',dot:'#fef08a',b:'rgba(234,179,8,.25)'},
-  'travel':   {bg:'#dcfce7',t:'#15803d',d:'#22c55e',dot:'#bbf7d0',b:'rgba(34,197,94,.3)'},
+  'travel':   {bg:'#e0f2fe',t:'#0369a1',d:'#38bdf8',dot:'#bae6fd',b:'rgba(56,189,248,.25)'},
   'birthday': {bg:'#ffedd5',t:'#c2410c',d:'#f97316',dot:'#fed7aa',b:'rgba(249,115,22,.3)'},
   'shopping': {bg:'#fff7ed',t:'#9a3412',d:'#ea580c',dot:'#fed7aa',b:'rgba(234,88,12,.25)'},
   'videos':   {bg:'#fce4ec',t:'#880e4f',d:'#e91e63',dot:'#f8bbd0',b:'rgba(233,30,99,.2)'},
