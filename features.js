@@ -3344,6 +3344,7 @@ function showPage(id){
 // ── Modals ─────────────────────────────────────────────────────────────────────
 let _modMousedownInside=false;
 document.addEventListener('mousedown',e=>{_modMousedownInside=!!e.target.closest('.modal');});
+document.addEventListener('mouseup',()=>{setTimeout(()=>{_modMousedownInside=false;},0);});
 function closeMod(id,e){if(e&&e.target!==document.getElementById(id))return;if(e&&_modMousedownInside)return;document.getElementById(id).classList.remove('open');if(id==='mModal'||id==='recMoModal'){const bg=document.querySelector('.bg-canvas');if(bg)bg.classList.remove('orbs-paused');}if(id==='recipeModal'&&_recModalKeyFn){document.removeEventListener('keydown',_recModalKeyFn);_recModalKeyFn=null;}}
 
 // ── Packing ────────────────────────────────────────────────────────────────────
