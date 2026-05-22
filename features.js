@@ -3425,7 +3425,7 @@ function openPackingModal(travelId){
 
 let _packModalView='trip'; // 'trip' or 'standard'
 function _packProgressBar(pct){
-  const c=pct>=100?'#22c55e':pct>=50?'#22c55e':'#f59e0b';
+  const c='#22c55e';
   return`<div style="display:flex;align-items:center;gap:8px;flex:1"><div style="flex:1;height:6px;border-radius:3px;background:var(--border);overflow:hidden"><div style="width:${pct}%;height:100%;border-radius:3px;background:${c};transition:width .3s"></div></div><span style="font-size:10px;color:var(--muted);white-space:nowrap">${pct}%</span></div>`;
 }
 function _packInpKeydown(e,travelId){
@@ -3479,7 +3479,7 @@ function renderPackingModal(travelId){
   if(!items.length){
     html+=`<p style="font-size:12px;color:var(--muted);text-align:center;padding:24px 0">No items yet. Add items or load standard packing list.</p>`;
   } else {
-    html+=`<div style="columns:2;column-gap:20px">`;
+    html+=`<div style="columns:3;column-gap:12px">`;
     cats.forEach(cat=>{
       const catItems=items.filter(x=>(x.category||'Misc')===cat);
       const unchecked=catItems.filter(x=>!x.checked).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
@@ -3509,7 +3509,7 @@ function _renderPackStandardView(body,title,travelId){
   tpls.forEach(t=>{if(t.category==='Ad-hoc')return;const c=PACK_CATS.includes(t.category)?t.category:'Misc';(grouped[c]=grouped[c]||[]).push(t);});
 
   let html=`<div style="margin-bottom:10px"><button class="btn btn-xs" onclick="_packModalView='trip';renderPackingModal('${travelId}')">\u2190 Back to trip</button></div>`;
-  html+=`<div style="columns:2;column-gap:20px">`;
+  html+=`<div style="columns:3;column-gap:12px">`;
   PACK_CATS.forEach(cat=>{
     const items=grouped[cat]||[];
     html+=`<div style="break-inside:avoid;margin-bottom:14px"><div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:3px">${cat} <span style="font-weight:400;opacity:.6">(${items.length})</span></div>`;
