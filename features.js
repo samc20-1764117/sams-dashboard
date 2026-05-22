@@ -3368,7 +3368,7 @@ function renderPackingPage(){save();
       <div style="font-size:11px;font-weight:600;color:var(--text-secondary,#64748b);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">${cat}</div>`;
     items.forEach(t=>{
       html+=`<div class="pack-tpl-row" data-ptid="${t.id}">
-        <span class="pack-tpl-name" contenteditable="true" onblur="renamePackTpl('${t.id}',this.textContent.trim())">${t.name}</span>
+        <span class="pack-tpl-name" contenteditable="true" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" onblur="renamePackTpl('${t.id}',this.textContent.trim())">${t.name}</span>
         <button class="delbtn" onclick="delPackTpl('${t.id}')">✕</button>
       </div>`;
     });
@@ -3383,7 +3383,7 @@ function renderPackingPage(){save();
     <p style="font-size:11px;color:var(--text-secondary,#64748b);margin:0 0 12px">Extra items you sometimes need. Add to trips individually.</p>`;
   adhoc.forEach(t=>{
     html+=`<div class="pack-tpl-row" data-ptid="${t.id}">
-      <span class="pack-tpl-name" contenteditable="true" onblur="renamePackTpl('${t.id}',this.textContent.trim())">${t.name}</span>
+      <span class="pack-tpl-name" contenteditable="true" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" onblur="renamePackTpl('${t.id}',this.textContent.trim())">${t.name}</span>
       <button class="delbtn" onclick="delPackTpl('${t.id}')">✕</button>
     </div>`;
   });
