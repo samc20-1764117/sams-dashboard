@@ -1124,12 +1124,15 @@ body.dark .vid-stat-card{background:rgba(40,30,50,.4)}
 .ban-pack-inline:hover{background:rgba(255,255,255,.95)}
 
 /* ── Finance Page ─────────────────────────────────────────────────────────── */
-.fin-summary-row{display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap}
-.fin-summary-card{flex:1;min-width:140px;padding:14px 16px;border-radius:12px;background:rgba(100,100,140,.06);border:1px solid rgba(200,200,215,.15)}
-.fin-summary-label{font-size:11px;font-weight:600;color:var(--text-secondary,#64748b);letter-spacing:.2px;margin-bottom:4px}
-.fin-summary-val{font-size:18px;font-weight:700;color:var(--text-primary,#334155);font-variant-numeric:tabular-nums}
-.fin-nw{background:rgba(109,95,230,.1);border-color:rgba(109,95,230,.2)}
-.fin-nw .fin-summary-val{color:#6d5fe6}
+.fin-kpi-row{display:flex;gap:14px;margin-bottom:18px}
+.fin-kpi{flex:1;padding:16px 18px;border-radius:12px;background:rgba(100,100,140,.05);border:1px solid rgba(200,200,215,.12)}
+.fin-kpi-label{font-size:11px;font-weight:500;color:var(--text-secondary,#94a3b8);margin-bottom:4px}
+.fin-kpi-val{font-size:22px;font-weight:700;color:var(--text-primary,#334155);font-variant-numeric:tabular-nums}
+.fin-kpi-primary{background:rgba(100,100,140,.06)}
+.fin-kpi-primary .fin-kpi-val{color:var(--text-primary,#1e293b)}
+.fin-kpi-gain{background:rgba(16,185,129,.06);border-color:rgba(16,185,129,.15)}
+.fin-kpi-gain .fin-kpi-val{color:#10b981;text-align:right}
+.fin-kpi-sub{font-size:12px;font-weight:600;color:#10b981;opacity:.8;text-align:right;margin-top:2px}
 .fin-cols{display:flex;gap:16px;align-items:flex-start}
 .fin-col{flex:1;min-width:0}
 .fin-card{margin-bottom:0}
@@ -1152,6 +1155,8 @@ body.dark .vid-stat-card{background:rgba(40,30,50,.4)}
 .fin-stat-label{color:var(--text-secondary,#64748b);font-weight:500}
 .fin-stat-val{font-weight:600;font-variant-numeric:tabular-nums;color:var(--text-primary,#334155)}
 .fin-stat-val small{font-size:10px;opacity:.7}
+.fin-muted{color:var(--text-secondary,#94a3b8)!important;font-weight:500!important}
+.fin-row-muted{opacity:.45}
 .fin-edit{outline:none;border-radius:4px;padding:1px 4px;transition:all .15s;cursor:text;display:inline-block;min-width:40px;border-bottom:1.5px dashed rgba(109,95,230,.3);color:var(--text-primary,#334155)}
 .fin-edit:hover{background:rgba(109,95,230,.08);border-bottom-color:rgba(109,95,230,.5)}
 .fin-edit:focus{background:rgba(109,95,230,.1);box-shadow:0 0 0 1.5px rgba(109,95,230,.3);border-bottom-color:transparent}

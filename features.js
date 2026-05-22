@@ -1671,13 +1671,22 @@ function renderFinancePage(){
   const el=document.getElementById('finPageContent');if(!el)return;
   const accs=_finOf('account').sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
   const netWorth=accs.reduce((s,a)=>s+(a.amount||0),0);
+  const vtiAcc=accs.find(a=>(a.name||'')==='VTI');
+  const purchases=_finOf('vti');
+  const totalBought=purchases.reduce((s,p)=>s+Math.abs(p.amount||0),0);
+  const currentVal=vtiAcc?vtiAcc.amount||0:0;
+  const gain=currentVal-totalBought;
+  const gainPct=totalBought?((gain/totalBought)*100):0;
 
-  let html=`<div class="fin-summary-row">
-    <div class="fin-summary-card fin-nw"><div class="fin-summary-label">Net Worth</div><div class="fin-summary-val">${_finFmt(netWorth)}</div></div>
+  // Top KPIs
+  let html=`<div class="fin-kpi-row">
+    <div class="fin-kpi fin-kpi-primary"><div class="fin-kpi-label">Net Worth</div><div class="fin-kpi-val">${_finFmt(netWorth)}</div></div>
+    <div class="fin-kpi fin-kpi-primary"><div class="fin-kpi-label">VTI Current Value</div><div class="fin-kpi-val">${vtiAcc?_finEditable(vtiAcc.id,'amount',currentVal,''):`${_finFmt(currentVal)}`}</div></div>
+    <div class="fin-kpi fin-kpi-gain"><div class="fin-kpi-label">VTI Gain</div><div class="fin-kpi-val">${_finFmt(gain)}</div><div class="fin-kpi-sub">${_finFmtPct(gainPct)}</div></div>
   </div>`;
   html+=`<div class="fin-cols">`;
-  html+=_finRenderPersonal(accs,netWorth);
-  html+=_finRenderInvestments();
+  html+=_finRenderPersonal(accs);
+  html+=_finRenderInvestments(purchases,totalBought);
   html+=_finRenderSubs();
   html+=`</div>`;
   el.innerHTML=html;
@@ -1700,25 +1709,24 @@ function _finEditable(id,field,val,cls){
 }
 
 // ── Column 1: Personal Finances ──────────────────────────────────────────────
-function _finRenderPersonal(accs,netWorth){
+function _finRenderPersonal(accs){
   const vti=accs.find(a=>(a.name||'')==='VTI');
   const others=accs.filter(a=>(a.name||'')!=='VTI');
 
-  // Pie chart data
-  const chartItems=accs.filter(a=>(a.amount||0)>0);
+  // Donut — sorted highest to lowest
+  const chartItems=[...accs.filter(a=>(a.amount||0)>0)].sort((a,b)=>(b.amount||0)-(a.amount||0));
   const total=chartItems.reduce((s,a)=>s+(a.amount||0),0);
-  const colors=['#6d5fe6','#22c55e','#f59e0b','#3b82f6','#f43f5e','#8b5cf6','#06b6d4','#ec4899'];
+  const colors=['#6d5fe6','#10b981','#3b82f6','#f59e0b','#8b5cf6','#06b6d4','#f43f5e','#ec4899'];
 
   let html=`<div class="fin-col"><div class="card fin-card">
     <div class="fin-card-hdr"><span class="fin-card-title">Personal Finances</span></div>`;
-  // Donut chart
   if(total>0){
     let cum=0;
     const segs=chartItems.map((a,i)=>{const pct=(a.amount||0)/total;const start=cum;cum+=pct;return{name:a.name,pct,start,color:colors[i%colors.length]};});
     html+=`<div class="fin-chart-wrap"><svg class="fin-donut" viewBox="0 0 42 42">`;
     segs.forEach(seg=>{
       const dashLen=seg.pct*100;const dashOff=100-(seg.start*100)+25;
-      html+=`<circle cx="21" cy="21" r="15.9" fill="none" stroke="${seg.color}" stroke-width="5" stroke-dasharray="${dashLen} ${100-dashLen}" stroke-dashoffset="${dashOff}"/>`;
+      html+=`<circle cx="21" cy="21" r="15.9" fill="none" stroke="${seg.color}" stroke-width="4.5" stroke-dasharray="${dashLen} ${100-dashLen}" stroke-dashoffset="${dashOff}"/>`;
     });
     html+=`</svg><div class="fin-chart-legend">`;
     segs.forEach(seg=>{
@@ -1726,7 +1734,6 @@ function _finRenderPersonal(accs,netWorth){
     });
     html+=`</div></div>`;
   }
-  // Table
   html+=`<table class="fin-tbl"><thead><tr><th>Source</th><th style="text-align:right">Amount</th><th></th></tr></thead><tbody>`;
   others.forEach(a=>{
     html+=`<tr class="fin-row">
@@ -1736,40 +1743,48 @@ function _finRenderPersonal(accs,netWorth){
     </tr>`;
   });
   if(vti){
-    html+=`<tr class="fin-row" style="opacity:.5"><td class="fin-name">VTI</td><td class="fin-amt">${_finFmt(vti.amount||0)}</td><td></td></tr>`;
+    html+=`<tr class="fin-row fin-row-muted"><td class="fin-name">VTI</td><td class="fin-amt">${_finFmt(vti.amount||0)}</td><td></td></tr>`;
   }
   html+=`<tr class="fin-add-row"><td colspan="3"><button class="fin-add-btn" onclick="addFinRow('account')">+ Add Account</button></td></tr>`;
-  html+=`<tr style="font-weight:700;border-top:2px solid rgba(200,200,215,.2)"><td style="padding:8px 16px">Net Worth</td><td class="fin-amt" style="padding:8px 16px">${_finFmt(netWorth)}</td><td></td></tr>`;
   html+=`</tbody></table></div></div>`;
   return html;
 }
 
 // ── Column 2: Investments (VTI) ──────────────────────────────────────────────
-function _finRenderInvestments(){
-  const purchases=_finOf('vti').sort((a,b)=>(a.date||'').localeCompare(b.date||''));
-  const totalBought=purchases.reduce((s,p)=>s+Math.abs(p.amount||0),0);
-  const vtiAcc=_finOf('account').find(a=>(a.name||'')==='VTI');
-  const currentVal=vtiAcc?vtiAcc.amount||0:0;
-  const actualGain=currentVal-totalBought;
-  const actualPct=totalBought?((actualGain/totalBought)*100):0;
+function _finRenderInvestments(purchases,totalBought){
+  // Sort newest first for display
+  const sorted=[...purchases].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  // Sort oldest first for cumulative trend
+  const chronological=[...purchases].sort((a,b)=>(a.date||'').localeCompare(b.date||''));
 
   let html=`<div class="fin-col"><div class="card fin-card">
     <div class="fin-card-hdr"><span class="fin-card-title">Investments</span></div>`;
   html+=`<div class="fin-stats">
-    <div class="fin-stat-row"><span class="fin-stat-label">VTI Current Value</span>${vtiAcc?_finEditable(vtiAcc.id,'amount',currentVal,'fin-stat-val'):`<span class="fin-stat-val">${_finFmt(currentVal)}</span>`}</div>
-    <div class="fin-stat-row"><span class="fin-stat-label">Total Invested</span><span class="fin-stat-val">${_finFmt(totalBought)}</span></div>
-    <div class="fin-stat-row"><span class="fin-stat-label">Total Gain</span><span class="fin-stat-val ${actualGain>=0?'fin-pos':'fin-neg'}">${_finFmt(actualGain)} <small>${_finFmtPct(actualPct)}</small></span></div>
+    <div class="fin-stat-row"><span class="fin-stat-label fin-muted">Cost Basis</span><span class="fin-stat-val fin-muted">${_finFmt(totalBought)}</span></div>
   </div>`;
+  // Cumulative investment trend
+  if(chronological.length>1){
+    let cum=0;
+    const pts=chronological.map(p=>{cum+=Math.abs(p.amount||0);return cum;});
+    const max=Math.max(...pts);
+    const w=200,h=50;
+    const polyPts=pts.map((v,i)=>`${(i/(pts.length-1))*w},${h-(v/max)*h}`).join(' ');
+    html+=`<div style="padding:4px 16px 8px"><svg viewBox="0 0 ${w} ${h}" style="width:100%;height:50px" preserveAspectRatio="none">
+      <polyline points="${polyPts}" fill="none" stroke="#10b981" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+      <polyline points="0,${h} ${polyPts} ${w},${h}" fill="rgba(16,185,129,.08)" stroke="none"/>
+    </svg></div>`;
+  }
+  // Purchase history
   html+=`<div class="fin-card-sub">Purchase History</div>
     <table class="fin-tbl"><thead><tr><th>Date</th><th style="text-align:right">Amount</th><th></th></tr></thead><tbody>`;
-  purchases.forEach(p=>{
+  html+=`<tr class="fin-add-row"><td colspan="3"><button class="fin-add-btn" onclick="addFinRow('vti')">+ Add Purchase</button></td></tr>`;
+  sorted.forEach(p=>{
     html+=`<tr class="fin-row">
       <td class="fin-ph-cell">${p.date||''}</td>
-      <td class="fin-amt fin-ph-cell">${_finFmt(p.amount||0)}</td>
+      <td class="fin-amt fin-ph-cell">${_finFmt(Math.abs(p.amount||0))}</td>
       <td><button class="delbtn" onclick="delFin('${p.id}')">&#x2715;</button></td>
     </tr>`;
   });
-  html+=`<tr class="fin-add-row"><td colspan="3"><button class="fin-add-btn" onclick="addFinRow('vti')">+ Add Purchase</button></td></tr>`;
   html+=`</tbody></table></div></div>`;
   return html;
 }
