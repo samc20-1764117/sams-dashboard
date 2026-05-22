@@ -725,7 +725,7 @@ function tRowTodayVirt(t,tbArrow=false,noColor=false){
     :`showWrScopePicker(event,'⊘  Skip this week only','✕  Delete recurring task',()=>skipRecVirtThisWk('${t._recId}','${t._wkKey||getWkKey(wkOff)}'),()=>delRec('${t._recId}'))`;
   const _recIdAttr=t._isWrRule?t._ruleId:t._recId;
   const _wkKeyAttr=t._wkKey||getWkKey(wkOff);
-  const _dblClick=t._isWrRule?`event.stopPropagation();openWrEditModal('${t._ruleId}','${_wkKeyAttr}','all')`:`tiDblRec(event,'${_recIdAttr}')`;
+  const _dblClick=t._isWrRule?`event.stopPropagation();openWrEditModal('${t._ruleId}','${_wkKeyAttr}','this')`:`tiDblRec(event,'${_recIdAttr}')`;
   const _ctxMenu=t._isWrRule?`showWrRuleCtx(event,'${t._ruleId}','${_wkKeyAttr}')`:t._isWrec||t._virtual?`showWrRuleCtx(event,'${_recIdAttr}','${_wkKeyAttr}')`:`showCtx(event,'${t.id}',true,'${_recIdAttr}')`;
 
   return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''}" style="${!ov&&!noColor?`background:${s.bg}`:''}" id="ti-${t.id}" draggable="true" ondragstart="dragId='${_dragId}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);" ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false);" onclick="selTask(event,'${t.id}')" ondblclick="${_dblClick}" oncontextmenu="${_ctxMenu}">
@@ -3358,7 +3358,7 @@ function tRowWk(t){
     const _wkXBtn=t._isWrRule?`showWrScopePicker(event,'⊘  Skip this week only','✕  Delete rule (all future)',()=>writeWrOverride('${t._ruleId}','${t._wkKey||getWkKey(wkOff)}',{override_type:'skip'},{undoLabel:'Skipped WR task this week'}),()=>wrCtxDeleteRule('${t._ruleId}'),'⊠  Remove from views',()=>unscheduleWrRule('${t._ruleId}','${t._wkKey||getWkKey(wkOff)}'))`
       :t._isWrec?`showWrScopePicker(event,'⊘  Skip this week only','✕  Delete recurring task',()=>skipWRec('${t._recId}','${t._wkKey||getWkKey(wkOff)}'),()=>delRec('${t._recId}'),'⊠  Remove from views',()=>unscheduleWRec('${t._recId}','${t._wkKey||getWkKey(wkOff)}'))`
       :`showWrScopePicker(event,'⊘  Skip this week only','✕  Delete recurring task',()=>skipRecVirtThisWk('${t._recId}','${t._wkKey||getWkKey(wkOff)}'),()=>delRec('${t._recId}'))`;
-    return`<div class="ti ${t.done?'done':''}" style="background:${s.bg}" id="ti-${t.id}" onclick="selTask(event,'${t.id}')" ondblclick="${t._isWrRule?`event.stopPropagation();openWrEditModal('${t._ruleId}','${t._wkKey||getWkKey(wkOff)}','all')`:`tiDblRec(event,'${t._recId}')`}" oncontextmenu="${_wkCtxMenu}">
+    return`<div class="ti ${t.done?'done':''}" style="background:${s.bg}" id="ti-${t.id}" onclick="selTask(event,'${t.id}')" ondblclick="${t._isWrRule?`event.stopPropagation();openWrEditModal('${t._ruleId}','${t._wkKey||getWkKey(wkOff)}','this')`:`tiDblRec(event,'${t._recId}')`}" oncontextmenu="${_wkCtxMenu}">
       <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="${t._isWrec?`togRec('${t._recId}',this.checked)`:`togRecVirt('${t._recId}',this.checked,'${t._wkKey||getWkKey(wkOff)}')`}"></label>
       <span class="tn">${t.name}</span>
       <span class="cpill" style="background:${s.bg};color:${s.t};border-color:${s.b}">Recurring</span>
@@ -4025,7 +4025,7 @@ function _relayoutTBCol(col,ds){
     el.style.left=`calc(${left}% + 2px)`;el.style.right=`calc(${100-left-colW}% + 2px)`;
   });
 }
-function _getTBBlockSelId(bl){if(bl.cat==='pup_session'&&bl._pupSessId)return'pup-sess-'+String(bl._pupSessId);if(bl._vidId)return'blk-'+bl.id;if(bl.cat==='Birthday')return'blk-'+bl.id;if(bl.ruleId)return'blk-'+bl.id;if(bl.recId&&(st.wrRules||[]).some(x=>String(x.id)===String(bl.recId)))return'blk-'+bl.id;const r=bl.recId?st.recurring.find(x=>String(x.id)===String(bl.recId)):null;const iw=r&&(r.is_weekly_reset===true||r.is_weekly_reset==='true');return bl.taskId?'blk-'+bl.id:bl.recId?(iw?'wrec-':'rec-virt-')+bl.recId:bl.shopId?'blk-'+bl.id:null;}
+function _getTBBlockSelId(bl){if(bl.cat==='pup_session'&&bl._pupSessId)return'pup-sess-'+String(bl._pupSessId);if(bl._vidId)return'blk-'+bl.id;if(bl.cat==='Birthday')return'blk-'+bl.id;if(bl.ruleId)return'blk-'+bl.id;if(bl.recId&&(st.wrRules||[]).some(x=>String(x.id)===String(bl.recId)))return'blk-'+bl.id;const r=bl.recId?st.recurring.find(x=>String(x.id)===String(bl.recId)):null;const iw=r&&(r.is_weekly_reset===true||r.is_weekly_reset==='true');return bl.taskId?'blk-'+bl.id:bl.recId?(iw?'wrec-':'rec-virt-')+bl.recId:bl.shopId?'blk-'+bl.id:'blk-'+bl.id;}
 function drawTBBlock(col,b){
   const top=(b.sm-HOURS[0]*60)*PX,ht=Math.max(b.dur*PX,16);
   const linkedTask=b.taskId?st.tasks.find(x=>String(x.id)===String(b.taskId)):null;
@@ -4069,7 +4069,7 @@ function drawTBBlock(col,b){
   if(b._vidId&&b.dur>=60){
     const _vb=(st.videos||[]).find(x=>String(x.id)===String(b._vidId));
     if(_vb){const _steps=typeof VID_STEPS!=='undefined'?VID_STEPS:[];const _app=_steps.filter(s=>_vb[s]!=='na');
-      _vidStepsHtml=`<div style="display:flex;align-items:center;gap:2px;padding:2px 4px 0;flex-wrap:wrap">${_app.map(s=>`<div class="vid-step-dot${_vb[s]==='done'?' done':''}" data-vid="${b._vidId}" data-step="${s}" title="${(typeof VID_STEP_LABELS!=='undefined'?VID_STEP_LABELS[s]:s)}" style="width:8px;height:8px;cursor:pointer"></div>`).join('')}</div>`;
+      _vidStepsHtml=`<div style="display:flex;align-items:center;gap:4px;padding:4px 6px;flex-wrap:wrap;flex:1">${_app.map(s=>`<div class="vid-step-dot${_vb[s]==='done'?' done':''}" data-vid="${b._vidId}" data-step="${s}" title="${(typeof VID_STEP_LABELS!=='undefined'?VID_STEP_LABELS[s]:s)}" style="width:10px;height:10px;cursor:pointer"></div>`).join('')}</div>`;
     }
   }
   el.innerHTML=`<div class="tb-row"><input type="checkbox" class="tb-chk" ${b._done?'checked':''}><span class="tb-bt${b.dur>=30?' wrap':''}">${_displayTitle}</span><div class="tb-right">${_showTime?`<span class="tb-btime">${tStr(b.sm)}-${tStr(b.sm+b.dur)}</span>`:''}<button class="tb-bdel" onclick="delBlock('${b.id}',event)">✕</button></div></div>${_vidStepsHtml}${_notesHtml}<div class="tb-resize" data-id="${b.id}"></div>`;
@@ -4140,6 +4140,7 @@ function drawTBBlock(col,b){
     if(b.cat==='pup_session'){const _ps=b._pupSessId?(st.pupSessions||[]).find(s=>String(s.id)===String(b._pupSessId)):null;const _sk=_ps?(st.pup_skills||[]).find(x=>String(x.id)===String(_ps.skill_id)):((st.pup_skills||[]).find(x=>x.skill===b.title));if(_sk)openPupEditModal(_sk.id);}
     else if(b._vidId){if(typeof openVidEdit==='function')openVidEdit(b._vidId);}
     else if(b.taskId){openEditTask(b.taskId);}
+    else if(b.ruleId){openWrEditModal(String(b.ruleId),dsToWkKey(b.ds),'this');}
     else if(b.recId){openRecEditModal(String(b.recId));}
     else{startTBInlineEdit(b.id,el.closest('.tb-col'));}
   });
