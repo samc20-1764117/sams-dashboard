@@ -3165,22 +3165,31 @@ function renderMealRow(){
   // Determine max meals across weekdays (cap at 2)
   let maxMeals=0;
   dates.forEach(ds=>{const c=(st.mealPlan||[]).filter(m=>m.meal_date===ds).length;if(c>maxMeals)maxMeals=c;});
-  maxMeals=Math.max(1,Math.min(maxMeals,2));
+  maxMeals=Math.min(maxMeals,2);
   const _mealToday=d2s(new Date());
-  let html=`<div class="meal-days" style="grid-template-rows:repeat(${maxMeals},auto)">`;
+  // No meals at all — hide meal row entirely
+  if(maxMeals===0){el.innerHTML='';el.style.display='none';return;}
+  el.style.display='';
+  const showDivider=maxMeals>=2;
+  let html=`<div class="meal-days${showDivider?' meal-two-rows':''}" style="grid-template-rows:repeat(${maxMeals},auto)">`;
   dates.forEach(ds=>{
     const meals=(st.mealPlan||[]).filter(m=>m.meal_date===ds);
     meals.sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
-    // Enforce max 2 per day — remove extras from data
     if(meals.length>2){meals.slice(2).forEach(m=>{st.mealPlan=st.mealPlan.filter(x=>String(x.id)!==String(m.id));sbReqSilent('DELETE','meal_plan',null,`?id=eq.${m.id}`);});}
     const _isPast=ds<_mealToday;
     html+=`<div class="meal-cell${_isPast?' meal-past':''}" data-ds="${ds}">`;
-    const slotMeals=[null,null];
-    meals.slice(0,2).forEach(m=>{const idx=Math.min(m.sort_order||0,1);if(!slotMeals[idx])slotMeals[idx]=m;else slotMeals[slotMeals[0]?1:0]=m;});
-    for(let si=0;si<2;si++){
-      const m=slotMeals[si];
-      if(m){const sid='meal-'+m.id;html+=`<div class="meal-chip" data-tid="${sid}" data-mealid="${m.id}" data-slot="${si}" draggable="true"><span class="meal-chip-name">${escHtml(m.recipe_name)}</span><button class="meal-chip-x" onclick="event.stopPropagation();removeMeal('${m.id}')">✕</button></div>`;}
-      else{html+=`<div class="meal-slot-empty" data-ds="${ds}" data-slot="${si}"></div>`;}
+    if(maxMeals>=2){
+      const slotMeals=[null,null];
+      meals.slice(0,2).forEach(m=>{const idx=Math.min(m.sort_order||0,1);if(!slotMeals[idx])slotMeals[idx]=m;else slotMeals[slotMeals[0]?1:0]=m;});
+      for(let si=0;si<2;si++){
+        const m=slotMeals[si];
+        if(m){const sid='meal-'+m.id;html+=`<div class="meal-chip" data-tid="${sid}" data-mealid="${m.id}" data-slot="${si}" draggable="true"><span class="meal-chip-name">${escHtml(m.recipe_name)}</span><button class="meal-chip-x" onclick="event.stopPropagation();removeMeal('${m.id}')">✕</button></div>`;}
+        else{html+=`<div class="meal-slot-empty" data-ds="${ds}" data-slot="${si}"></div>`;}
+      }
+    } else {
+      const m=meals[0];
+      if(m){const sid='meal-'+m.id;html+=`<div class="meal-chip" data-tid="${sid}" data-mealid="${m.id}" data-slot="0" draggable="true"><span class="meal-chip-name">${escHtml(m.recipe_name)}</span><button class="meal-chip-x" onclick="event.stopPropagation();removeMeal('${m.id}')">✕</button></div>`;}
+      else{html+=`<div class="meal-slot-empty" data-ds="${ds}" data-slot="0"></div>`;}
     }
     html+=`</div>`;
   });
@@ -4329,9 +4338,20 @@ document.addEventListener('keydown',async e=>{
     const sorted=[..._copiedBlocks].sort((a,b)=>a.sm-b.sm);
     let baseSm=_tbPasteSm!=null?_tbPasteSm:(sorted[0].sm+sorted[0].dur);
     const newBlks=[];
+    const _pastePromises=[];
     sorted.forEach(ob=>{
       const nb={id:crypto.randomUUID(),title:ob.title,ds,sm:baseSm,dur:ob.dur,cat:ob.cat||'Home',
         taskId:null,recId:null,shopId:null,_vidId:ob._vidId||null,_done:false};
+      // Duplicate linked task so dblclick opens edit modal for the new copy
+      if(ob.taskId){
+        const orig=st.tasks.find(t=>String(t.id)===String(ob.taskId));
+        if(orig){
+          const dup={name:orig.name,category:orig.category||'Home',due_date:ds,done:false,notes:orig.notes||null,important:false};
+          const tmpId='t-'+Date.now()+'-'+Math.random().toString(36).slice(2,6);
+          st.tasks.push({...dup,id:tmpId});nb.taskId=tmpId;
+          _pastePromises.push(sbReq('POST','tasks',dup).then(sv=>{if(sv&&sv[0]){const idx=st.tasks.findIndex(x=>x.id===tmpId);if(idx>-1)st.tasks[idx]={...st.tasks[idx],...sv[0]};nb.taskId=String(sv[0].id);sbSaveBlock(nb);}}));
+        }
+      }
       st.blocks.push(nb);newBlks.push(nb);sbSaveBlock(nb);
       baseSm+=ob.dur;
     });

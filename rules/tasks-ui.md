@@ -46,7 +46,7 @@
 - **Global Cmd+C/V**: copies `selectedTasks`. Paste: `wrrule-{id}`→POST `wr_recurring_rules`; task ID→POST `tasks`.
 
 ## Indicator Placement
-All indicators at far right, swap to X on hover. From right: `tb-arrow` (rightmost) → `cat-dot`. `chip-del` inside relative chip. `wr-cad-badge` hidden on row hover to reveal X. `cpill` pointer-events:none. `heb-cnt` icon only (no count) on today-list HEB tasks — opens grocery modal on click.
+All indicators at far right, swap to X on hover. `cat-dot` stroke changes to accent color (stroke-width 1.5, opacity 0.7) for tasks not on timeblock. `chip-del` inside relative chip. `wr-cad-badge` hidden on row hover to reveal X. `cpill` pointer-events:none. `heb-cnt` icon only (no count) on today-list HEB tasks — opens grocery modal on click.
 - **Overdue rows**: no `cat-dot`. Show single DOW letter (`S/M/T/W/T/F/S`) in `.dlbl.ov` instead of full date. `.dlbl.ov` has `margin-right:-4px`.
 
 ## Chip & UI Notes
