@@ -3421,6 +3421,7 @@ function openPackingModal(travelId){
   _packModalView='trip';
   modal.classList.add('open');
   renderPackingModal(travelId);
+  modal.focus();
 }
 
 let _packModalView='trip'; // 'trip' or 'standard'
@@ -3499,16 +3500,17 @@ function renderPackingModal(travelId){
   if(_packModalView==='standard'){_renderPackStandardView(body,travelId);return;}
 
   const items=st.packItems.filter(x=>String(x.travel_id)===String(travelId));
-  const catOrder=[...PACK_CATS,'Misc'];
-  const cats=[...new Set(items.map(x=>x.category||'Misc'))].sort((a,b)=>{const ai=catOrder.indexOf(a),bi=catOrder.indexOf(b);return(ai<0?99:ai)-(bi<0?99:bi);});
+  const extraCats=[...new Set(items.map(x=>x.category||'Misc'))].filter(c=>!PACK_CATS.includes(c));
+  const allCats=[...PACK_CATS,...extraCats];
 
   if(!items.length){
     body.innerHTML=`<p style="font-size:12px;color:var(--muted);text-align:center;padding:24px 0">No items yet. Add items or load standard packing list.</p>`;
     return;
   }
   let html=`<div style="columns:3;column-gap:12px">`;
-  cats.forEach(cat=>{
+  allCats.forEach(cat=>{
     const catItems=items.filter(x=>(x.category||'Misc')===cat);
+    if(!catItems.length)return;
     const unchecked=catItems.filter(x=>!x.checked).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
     const checked=catItems.filter(x=>x.checked).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
     const sorted=[...unchecked,...checked];
