@@ -3026,10 +3026,13 @@ function renderMealRow(){
     if(meals.length>2){meals.slice(2).forEach(m=>{st.mealPlan=st.mealPlan.filter(x=>String(x.id)!==String(m.id));sbReqSilent('DELETE','meal_plan',null,`?id=eq.${m.id}`);});}
     const _isPast=ds<_mealToday;
     html+=`<div class="meal-cell${_isPast?' meal-past':''}" data-ds="${ds}">`;
-    meals.slice(0,2).forEach(m=>{
-      const sid='meal-'+m.id;
-      html+=`<div class="meal-chip" data-tid="${sid}" data-mealid="${m.id}" draggable="true"><span class="meal-chip-name">${escHtml(m.recipe_name)}</span><button class="meal-chip-x" onclick="event.stopPropagation();removeMeal('${m.id}')">✕</button></div>`;
-    });
+    const slotMeals=[null,null];
+    meals.slice(0,2).forEach(m=>{const idx=Math.min(m.sort_order||0,1);if(!slotMeals[idx])slotMeals[idx]=m;else slotMeals[slotMeals[0]?1:0]=m;});
+    for(let si=0;si<2;si++){
+      const m=slotMeals[si];
+      if(m){const sid='meal-'+m.id;html+=`<div class="meal-chip" data-tid="${sid}" data-mealid="${m.id}" data-slot="${si}" draggable="true"><span class="meal-chip-name">${escHtml(m.recipe_name)}</span><button class="meal-chip-x" onclick="event.stopPropagation();removeMeal('${m.id}')">✕</button></div>`;}
+      else{html+=`<div class="meal-slot-empty" data-ds="${ds}" data-slot="${si}"></div>`;}
+    }
     html+=`</div>`;
   });
   html+=`</div>`;
@@ -3061,6 +3064,23 @@ function renderMealRow(){
       if(e.target.closest('.meal-chip'))return;
       e.stopPropagation();
       openGroceryModal();
+    });
+  });
+  // Bind drop on empty meal slots
+  el.querySelectorAll('.meal-slot-empty').forEach(slot=>{
+    slot.addEventListener('dragover',e=>{e.preventDefault();slot.classList.add('meal-drop');});
+    slot.addEventListener('dragleave',()=>slot.classList.remove('meal-drop'));
+    slot.addEventListener('drop',e=>{
+      e.preventDefault();e.stopPropagation();slot.classList.remove('meal-drop');
+      const data=e.dataTransfer.getData('text/plain');
+      const ds=slot.dataset.ds;const si=parseInt(slot.dataset.slot);
+      if(data.startsWith('meal::')){
+        const mealId=data.replace('meal::','');
+        const m=(st.mealPlan||[]).find(x=>String(x.id)===String(mealId));
+        if(m){m.meal_date=ds;m.sort_order=si;sbReqSilent('PATCH','meal_plan',{sort_order:si,meal_date:ds},`?id=eq.${m.id}`);save();renderMealRow();}
+      } else if(data.startsWith('meal-new::')){
+        dropMeal(e,ds,si);
+      } else {dropMeal(e,ds,si);}
     });
   });
   // Bind click/dblclick/drag on placed chips
@@ -3278,13 +3298,14 @@ async function removeMeal(id){
   sbReqSilent('DELETE','meal_plan',null,`?id=eq.${id}`);
 }
 
-function dropMeal(event,ds){
+function dropMeal(event,ds,slotIdx){
   event.preventDefault();
   const data=event.dataTransfer.getData('text/plain');
+  const sortOrd=slotIdx!=null?slotIdx:(st.mealPlan||[]).filter(m=>m.meal_date===ds).length;
   if(data.startsWith('meal-new::')){
     const recipeId=data.replace('meal-new::','');
     const r=(st.recipes||[]).find(x=>String(x.id)===String(recipeId));if(!r)return;
-    const item={recipe_id:r.id,recipe_name:r.name,meal_date:ds,servings:r.servings||1,meal_type:r.meal_type||null,sort_order:(st.mealPlan||[]).filter(m=>m.meal_date===ds).length};
+    const item={recipe_id:r.id,recipe_name:r.name,meal_date:ds,servings:r.servings||1,meal_type:r.meal_type||null,sort_order:sortOrd};
     sbReqSilent('POST','meal_plan',item).then(sv=>{
       if(sv&&sv[0])st.mealPlan.push(sv[0]);
       else{item.id='l-'+Date.now();st.mealPlan.push(item);}
@@ -3296,9 +3317,9 @@ function dropMeal(event,ds){
   if(!data.startsWith('meal::'))return;
   const id=data.replace('meal::','');
   const meal=(st.mealPlan||[]).find(m=>String(m.id)===String(id));if(!meal)return;
-  meal.meal_date=ds;save();renderMealRow();
+  meal.meal_date=ds;meal.sort_order=sortOrd;save();renderMealRow();
   if(document.getElementById('groceryModal')?.open)renderGroceryModal();
-  sbReqSilent('PATCH','meal_plan',{meal_date:ds},`?id=eq.${id}`);
+  sbReqSilent('PATCH','meal_plan',{meal_date:ds,sort_order:sortOrd},`?id=eq.${id}`);
 }
 
 function openMealEdit(id){
@@ -4161,7 +4182,7 @@ document.addEventListener('keydown',async e=>{
     const newBlks=[];
     sorted.forEach(ob=>{
       const nb={id:crypto.randomUUID(),title:ob.title,ds,sm:baseSm,dur:ob.dur,cat:ob.cat||'Home',
-        taskId:ob.taskId||null,recId:ob.recId||null,shopId:ob.shopId||null,_vidId:ob._vidId||null,_done:false};
+        taskId:null,recId:null,shopId:null,_vidId:ob._vidId||null,_done:false};
       st.blocks.push(nb);newBlks.push(nb);sbSaveBlock(nb);
       baseSm+=ob.dur;
     });
