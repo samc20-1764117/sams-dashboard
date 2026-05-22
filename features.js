@@ -3516,16 +3516,17 @@ function renderPackingModal(travelId){
     body.innerHTML=`<p style="font-size:12px;color:var(--muted);text-align:center;padding:24px 0">No items yet. Add items or load standard packing list.</p>`;
     return;
   }
+  const _colMap={'Must Haves':1,'Toiletries':2,'Clothes':2,'Pups':3};
   let html=`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 12px">`;
-  allCats.forEach((cat,ci)=>{
+  allCats.forEach(cat=>{
     const catItems=items.filter(x=>(x.category||'Misc')===cat);
     if(!catItems.length)return;
     const unchecked=catItems.filter(x=>!x.checked).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
     const checked=catItems.filter(x=>x.checked).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
     const sorted=[...unchecked,...checked];
     const catDone=checked.length,catTotal=catItems.length;
-    const col=(ci%3)+1;
-    html+=`<div style="grid-column:${col};margin-bottom:14px"><div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:3px;display:flex;align-items:center;gap:6px">${escHtml(cat)}<span style="font-weight:400;font-size:9px;opacity:.6">${catDone}/${catTotal}</span></div>`;
+    const col=_colMap[cat]||1;
+    html+=`<div style="grid-column:${col};margin-bottom:14px;position:relative;padding:4px 6px;border-radius:6px;transition:background .15s" onmouseenter="this.style.background='rgba(0,0,0,.02)';this.querySelector('.pack-cat-del').style.opacity='1'" onmouseleave="this.style.background='';this.querySelector('.pack-cat-del').style.opacity='0'"><div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:3px;display:flex;align-items:center;gap:6px">${escHtml(cat)}<span style="font-weight:400;font-size:9px;opacity:.6">${catDone}/${catTotal}</span><button class="pack-cat-del" onclick="event.stopPropagation();_delPackCat('${travelId}','${cat}')" style="opacity:0;margin-left:auto;background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);padding:0 2px;transition:opacity .15s" title="Remove all ${cat} items from this trip">&#10005;</button></div>`;
     sorted.forEach(item=>{
       const ck=item.checked?'checked':'';
       const sty=item.checked?'opacity:.25;text-decoration:line-through':'';
@@ -3545,11 +3546,12 @@ function _renderPackStandardView(body,travelId){
   const grouped={};PACK_CATS.forEach(c=>grouped[c]=[]);
   tpls.forEach(t=>{if(t.category==='Ad-hoc')return;const c=PACK_CATS.includes(t.category)?t.category:'Misc';(grouped[c]=grouped[c]||[]).push(t);});
 
+  const _colMap={'Must Haves':1,'Toiletries':2,'Clothes':2,'Pups':3};
   let html=`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 12px">`;
-  PACK_CATS.forEach((cat,ci)=>{
+  PACK_CATS.forEach(cat=>{
     const items=grouped[cat]||[];
-    const col=(ci%3)+1;
-    html+=`<div style="grid-column:${col};margin-bottom:14px"><div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:3px">${cat} <span style="font-weight:400;opacity:.6">(${items.length})</span></div>`;
+    const col=_colMap[cat]||1;
+    html+=`<div style="grid-column:${col};margin-bottom:14px;padding:4px 6px"><div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:3px">${cat} <span style="font-weight:400;opacity:.6">(${items.length})</span></div>`;
     items.forEach(t=>{
       html+=`<div class="pack-item-row" style="padding:3px 4px"><span class="pack-tpl-name" contenteditable="true" style="flex:1;font-size:12px" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" onblur="renamePackTpl('${t.id}',this.textContent.trim())">${escHtml(t.name)}</span><button class="delbtn" onclick="delPackTpl('${t.id}');_renderPackStandardView(document.getElementById('packingModalBody'),'${travelId}')">&#10005;</button></div>`;
     });
@@ -3559,6 +3561,15 @@ function _renderPackStandardView(body,travelId){
   body.innerHTML=html;
 }
 
+async function _delPackCat(travelId,cat){
+  const toDelete=st.packItems.filter(x=>String(x.travel_id)===String(travelId)&&(x.category||'Misc')===cat);
+  if(!toDelete.length)return;
+  toDelete.forEach(item=>{
+    st.packItems=st.packItems.filter(x=>x.id!==item.id);
+    if(!String(item.id).startsWith('l-'))sbReqSilent('DELETE','packing_items',null,`?id=eq.${item.id}`);
+  });
+  renderPackingModal(travelId);save();
+}
 async function addPackItem(travelId,name,category,source){
   if(!name)return;
   const item={id:'l-'+Date.now(),travel_id:travelId,name,category:category||'Misc',source:source||'manual',checked:false,sort_order:st.packItems.filter(x=>String(x.travel_id)===String(travelId)).length};
