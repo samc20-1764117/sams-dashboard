@@ -1126,7 +1126,7 @@ body.dark .vid-stat-card{background:rgba(40,30,50,.4)}
 /* ── Finance Page ─────────────────────────────────────────────────────────── */
 .fin-summary-row{display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap}
 .fin-summary-card{flex:1;min-width:140px;padding:14px 16px;border-radius:12px;background:rgba(100,100,140,.06);border:1px solid rgba(200,200,215,.15)}
-.fin-summary-label{font-size:11px;font-weight:600;color:var(--text-secondary,#64748b);text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px}
+.fin-summary-label{font-size:11px;font-weight:600;color:var(--text-secondary,#64748b);letter-spacing:.2px;margin-bottom:4px}
 .fin-summary-val{font-size:18px;font-weight:700;color:var(--text-primary,#334155);font-variant-numeric:tabular-nums}
 .fin-nw{background:rgba(109,95,230,.1);border-color:rgba(109,95,230,.2)}
 .fin-nw .fin-summary-val{color:#6d5fe6}
@@ -1135,9 +1135,9 @@ body.dark .vid-stat-card{background:rgba(40,30,50,.4)}
 .fin-card{margin-bottom:0}
 .fin-card-hdr{display:flex;align-items:center;justify-content:space-between;padding:12px 16px 8px}
 .fin-card-title{font-size:13px;font-weight:600;color:var(--text-primary,#334155)}
-.fin-card-sub{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;color:var(--text-secondary,#64748b);padding:10px 16px 4px;border-top:1px solid rgba(200,200,215,.1)}
+.fin-card-sub{font-size:11px;font-weight:600;color:var(--text-secondary,#64748b);padding:10px 16px 4px;border-top:1px solid rgba(200,200,215,.1)}
 .fin-tbl{width:100%;border-collapse:collapse;font-size:12px}
-.fin-tbl thead th{text-align:left;padding:6px 16px;font-size:10px;text-transform:uppercase;letter-spacing:.4px;color:var(--text-secondary,#64748b);font-weight:600;border-bottom:1px solid rgba(200,200,215,.15)}
+.fin-tbl thead th{text-align:left;padding:6px 16px;font-size:10px;color:var(--text-secondary,#64748b);font-weight:600;border-bottom:1px solid rgba(200,200,215,.15)}
 .fin-tbl tbody tr{border-bottom:1px solid rgba(200,200,215,.08);transition:background .1s}
 .fin-tbl tbody tr:hover{background:rgba(100,100,140,.04)}
 .fin-tbl td{padding:6px 16px;color:var(--text-primary,#334155)}
@@ -1155,6 +1155,7 @@ body.dark .vid-stat-card{background:rgba(40,30,50,.4)}
 .fin-edit{outline:none;border-radius:4px;padding:1px 4px;transition:all .15s;cursor:text;display:inline-block;min-width:40px;border-bottom:1.5px dashed rgba(109,95,230,.3);color:var(--text-primary,#334155)}
 .fin-edit:hover{background:rgba(109,95,230,.08);border-bottom-color:rgba(109,95,230,.5)}
 .fin-edit:focus{background:rgba(109,95,230,.1);box-shadow:0 0 0 1.5px rgba(109,95,230,.3);border-bottom-color:transparent}
+.fin-ph-cell{border-bottom:none!important}
 .fin-add-row td{padding:4px 16px!important}
 .fin-add-btn{border:none;background:none;color:var(--text-secondary,#94a3b8);font-size:11px;cursor:pointer;padding:4px 0;font-weight:500;transition:color .15s}
 .fin-add-btn:hover{color:#6d5fe6}
@@ -1169,6 +1170,13 @@ body.dark .vid-stat-card{background:rgba(40,30,50,.4)}
 .fin-cancel .fin-name{text-decoration:line-through;opacity:.5}
 .fin-cancel .fin-amt,.fin-cancel .fin-freq-sel{opacity:.5}
 .fin-due-edit{min-width:24px;text-align:center;font-size:11px;color:var(--text-secondary,#64748b)}
+.fin-chart-wrap{display:flex;align-items:center;gap:12px;padding:8px 16px 12px}
+.fin-donut{width:90px;height:90px;flex-shrink:0;transform:rotate(-90deg)}
+.fin-chart-legend{flex:1;min-width:0}
+.fin-legend-item{display:flex;align-items:center;gap:6px;font-size:11px;padding:2px 0}
+.fin-legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.fin-legend-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-primary,#334155)}
+.fin-legend-pct{color:var(--text-secondary,#64748b);font-weight:600;font-variant-numeric:tabular-nums}
 
 /* Anti-FOUC: applied before first paint via html classes set in head script */
 html.init-dark body{background:#1a100a!important;background-attachment:fixed!important;}

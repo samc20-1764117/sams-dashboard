@@ -1669,15 +1669,14 @@ function _finParseNum(s){return parseFloat((s||'').replace(/[$,\s]/g,''))||0;}
 
 function renderFinancePage(){
   const el=document.getElementById('finPageContent');if(!el)return;
-  // Net worth = sum of adjusted values for all accounts except GI Income
   const accs=_finOf('account').sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
-  const netWorth=accs.filter(a=>!(a.name||'').toLowerCase().includes('gi income')).reduce((s,a)=>s+(a.adjustment||a.amount||0),0);
+  const netWorth=accs.reduce((s,a)=>s+(a.amount||0),0);
 
   let html=`<div class="fin-summary-row">
     <div class="fin-summary-card fin-nw"><div class="fin-summary-label">Net Worth</div><div class="fin-summary-val">${_finFmt(netWorth)}</div></div>
   </div>`;
   html+=`<div class="fin-cols">`;
-  html+=_finRenderPersonal(accs);
+  html+=_finRenderPersonal(accs,netWorth);
   html+=_finRenderInvestments();
   html+=_finRenderSubs();
   html+=`</div>`;
@@ -1687,8 +1686,8 @@ function renderFinancePage(){
 // ── Inline edit helpers ──────────────────────────────────────────────────────
 async function _finEditField(id,field,el){
   const row=st.finance.find(r=>String(r.id)===String(id));if(!row)return;
-  const val=field==='name'?el.textContent.trim():_finParseNum(el.textContent);
-  if(row[field]===val)return;
+  const val=field==='name'||field==='date'?el.textContent.trim():_finParseNum(el.textContent);
+  if(row[field]===val){el.textContent=typeof val==='number'?_finFmt(val):val;return;}
   row[field]=val;
   renderFinancePage();
   if(!String(id).startsWith('l-'))await sbReqNullable('PATCH','finance',{[field]:val},`?id=eq.${id}`);
@@ -1701,31 +1700,46 @@ function _finEditable(id,field,val,cls){
 }
 
 // ── Column 1: Personal Finances ──────────────────────────────────────────────
-function _finRenderPersonal(accs){
-  // Separate VTI (shown in investments col) from other accounts
-  const monies=accs.filter(a=>(a.name||'')!=='VTI');
+function _finRenderPersonal(accs,netWorth){
   const vti=accs.find(a=>(a.name||'')==='VTI');
-  // Build full monies list including VTI (read-only here, pulled from investments)
-  const allForNW=[...monies];
-  if(vti)allForNW.push(vti);
-  const netWorth=allForNW.reduce((s,a)=>s+(a.adjustment||a.amount||0),0);
+  const others=accs.filter(a=>(a.name||'')!=='VTI');
+
+  // Pie chart data
+  const chartItems=accs.filter(a=>(a.amount||0)>0);
+  const total=chartItems.reduce((s,a)=>s+(a.amount||0),0);
+  const colors=['#6d5fe6','#22c55e','#f59e0b','#3b82f6','#f43f5e','#8b5cf6','#06b6d4','#ec4899'];
 
   let html=`<div class="fin-col"><div class="card fin-card">
-    <div class="fin-card-hdr"><span class="fin-card-title">Personal Finances</span><button class="btn-plus" onclick="addFinRow('account')">+</button></div>
-    <table class="fin-tbl"><thead><tr><th>Source</th><th style="text-align:right">Amount</th><th style="text-align:right">Adjusted</th><th></th></tr></thead><tbody>`;
-  monies.forEach(a=>{
+    <div class="fin-card-hdr"><span class="fin-card-title">Personal Finances</span></div>`;
+  // Donut chart
+  if(total>0){
+    let cum=0;
+    const segs=chartItems.map((a,i)=>{const pct=(a.amount||0)/total;const start=cum;cum+=pct;return{name:a.name,pct,start,color:colors[i%colors.length]};});
+    html+=`<div class="fin-chart-wrap"><svg class="fin-donut" viewBox="0 0 42 42">`;
+    segs.forEach(seg=>{
+      const dashLen=seg.pct*100;const dashOff=100-(seg.start*100)+25;
+      html+=`<circle cx="21" cy="21" r="15.9" fill="none" stroke="${seg.color}" stroke-width="5" stroke-dasharray="${dashLen} ${100-dashLen}" stroke-dashoffset="${dashOff}"/>`;
+    });
+    html+=`</svg><div class="fin-chart-legend">`;
+    segs.forEach(seg=>{
+      html+=`<div class="fin-legend-item"><span class="fin-legend-dot" style="background:${seg.color}"></span><span class="fin-legend-name">${escHtml(seg.name)}</span><span class="fin-legend-pct">${(seg.pct*100).toFixed(0)}%</span></div>`;
+    });
+    html+=`</div></div>`;
+  }
+  // Table
+  html+=`<table class="fin-tbl"><thead><tr><th>Source</th><th style="text-align:right">Amount</th><th></th></tr></thead><tbody>`;
+  others.forEach(a=>{
     html+=`<tr class="fin-row">
       <td>${_finEditable(a.id,'name',a.name,'fin-name')}</td>
       <td class="fin-amt">${_finEditable(a.id,'amount',a.amount||0)}</td>
-      <td class="fin-amt">${_finEditable(a.id,'adjustment',a.adjustment||0)}</td>
       <td><button class="delbtn" onclick="delFin('${a.id}')">&#x2715;</button></td>
     </tr>`;
   });
   if(vti){
-    html+=`<tr class="fin-row" style="opacity:.6"><td class="fin-name">VTI</td><td class="fin-amt">${_finFmt(vti.amount||0)}</td><td class="fin-amt">${_finFmt(vti.adjustment||0)}</td><td></td></tr>`;
+    html+=`<tr class="fin-row" style="opacity:.5"><td class="fin-name">VTI</td><td class="fin-amt">${_finFmt(vti.amount||0)}</td><td></td></tr>`;
   }
-  html+=`<tr class="fin-add-row"><td colspan="4"><button class="fin-add-btn" onclick="addFinRow('account')">+ Add Account</button></td></tr>`;
-  html+=`<tr style="font-weight:700;border-top:2px solid rgba(200,200,215,.2)"><td style="padding:8px 16px">Net Worth</td><td></td><td class="fin-amt" style="padding:8px 16px">${_finFmt(netWorth)}</td><td></td></tr>`;
+  html+=`<tr class="fin-add-row"><td colspan="3"><button class="fin-add-btn" onclick="addFinRow('account')">+ Add Account</button></td></tr>`;
+  html+=`<tr style="font-weight:700;border-top:2px solid rgba(200,200,215,.2)"><td style="padding:8px 16px">Net Worth</td><td class="fin-amt" style="padding:8px 16px">${_finFmt(netWorth)}</td><td></td></tr>`;
   html+=`</tbody></table></div></div>`;
   return html;
 }
@@ -1735,31 +1749,24 @@ function _finRenderInvestments(){
   const purchases=_finOf('vti').sort((a,b)=>(a.date||'').localeCompare(b.date||''));
   const totalBought=purchases.reduce((s,p)=>s+Math.abs(p.amount||0),0);
   const vtiAcc=_finOf('account').find(a=>(a.name||'')==='VTI');
-  const costBasis=vtiAcc?vtiAcc.amount||0:0;
-  const currentVal=vtiAcc?vtiAcc.adjustment||0:0;
-  const costGain=currentVal-costBasis;
-  const costPct=costBasis?((costGain/costBasis)*100):0;
+  const currentVal=vtiAcc?vtiAcc.amount||0:0;
   const actualGain=currentVal-totalBought;
   const actualPct=totalBought?((actualGain/totalBought)*100):0;
 
   let html=`<div class="fin-col"><div class="card fin-card">
-    <div class="fin-card-hdr"><span class="fin-card-title">Investments</span><button class="btn-plus" onclick="addFinRow('vti')">+</button></div>`;
-  // VTI summary stats
+    <div class="fin-card-hdr"><span class="fin-card-title">Investments</span></div>`;
   html+=`<div class="fin-stats">
-    <div class="fin-stat-row"><span class="fin-stat-label">VTI Current Value</span>${vtiAcc?_finEditable(vtiAcc.id,'adjustment',currentVal,'fin-stat-val'):`<span class="fin-stat-val">${_finFmt(currentVal)}</span>`}</div>
-    <div class="fin-stat-row"><span class="fin-stat-label">Cost Basis</span>${vtiAcc?_finEditable(vtiAcc.id,'amount',costBasis,'fin-stat-val'):`<span class="fin-stat-val">${_finFmt(costBasis)}</span>`}</div>
-    <div class="fin-stat-row"><span class="fin-stat-label">Total Bought</span><span class="fin-stat-val">${_finFmt(totalBought)}</span></div>
-    <div class="fin-stat-row"><span class="fin-stat-label">Cost Basis Gain</span><span class="fin-stat-val ${costGain>=0?'fin-pos':'fin-neg'}">${_finFmt(costGain)} <small>${_finFmtPct(costPct)}</small></span></div>
-    <div class="fin-stat-row"><span class="fin-stat-label">Actual Gain</span><span class="fin-stat-val ${actualGain>=0?'fin-pos':'fin-neg'}">${_finFmt(actualGain)} <small>${_finFmtPct(actualPct)}</small></span></div>
+    <div class="fin-stat-row"><span class="fin-stat-label">VTI Current Value</span>${vtiAcc?_finEditable(vtiAcc.id,'amount',currentVal,'fin-stat-val'):`<span class="fin-stat-val">${_finFmt(currentVal)}</span>`}</div>
+    <div class="fin-stat-row"><span class="fin-stat-label">Total Invested</span><span class="fin-stat-val">${_finFmt(totalBought)}</span></div>
+    <div class="fin-stat-row"><span class="fin-stat-label">Total Gain</span><span class="fin-stat-val ${actualGain>=0?'fin-pos':'fin-neg'}">${_finFmt(actualGain)} <small>${_finFmtPct(actualPct)}</small></span></div>
   </div>`;
-  // Purchase history
   html+=`<div class="fin-card-sub">Purchase History</div>
     <table class="fin-tbl"><thead><tr><th>Date</th><th style="text-align:right">Amount</th><th></th></tr></thead><tbody>`;
   purchases.forEach(p=>{
     html+=`<tr class="fin-row">
-      <td>${_finEditable(p.id,'date',p.date||'')}</td>
-      <td class="fin-amt">${_finEditable(p.id,'amount',p.amount||0,((p.amount||0)<0?'fin-neg':''))}</td>
-      <td><button class="delbtn" onclick="delFin('${p.id}')">✕</button></td>
+      <td class="fin-ph-cell">${p.date||''}</td>
+      <td class="fin-amt fin-ph-cell">${_finFmt(p.amount||0)}</td>
+      <td><button class="delbtn" onclick="delFin('${p.id}')">&#x2715;</button></td>
     </tr>`;
   });
   html+=`<tr class="fin-add-row"><td colspan="3"><button class="fin-add-btn" onclick="addFinRow('vti')">+ Add Purchase</button></td></tr>`;
@@ -1815,7 +1822,7 @@ function _finSubEditable(id,field,val,cls){
 async function _finSubEditField(id,field,el){
   const row=st.finSubs.find(r=>String(r.id)===String(id));if(!row)return;
   const val=field==='name'?el.textContent.trim():_finParseNum(el.textContent);
-  if(row[field]===val)return;
+  if(row[field]===val){el.textContent=typeof val==='number'?_finFmt(val):val;return;}
   row[field]=val;
   renderFinancePage();
   if(!String(id).startsWith('l-'))await sbReqNullable('PATCH','finance_subs',{[field]:val},`?id=eq.${id}`);
