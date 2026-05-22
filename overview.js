@@ -3010,7 +3010,7 @@ function _vidDayMapSet(m){localStorage._vidDayMap=JSON.stringify(m);}
 let _vidOvSelIdx=-1;
 function _vidOvGetRows(){const p=document.getElementById('vidOvPanel');return p?Array.from(p.querySelectorAll('[data-vidrow]')):[]}
 function _vidOvClickSelect(el){const rows=_vidOvGetRows();const idx=rows.indexOf(el);if(idx>=0){_vidOvSelIdx=idx;_vidOvHighlight();}}
-function _vidOvHighlight(){const rows=_vidOvGetRows();rows.forEach((r,i)=>{r.style.background=i===_vidOvSelIdx?'rgba(14,165,233,.08)':'';})}
+function _vidOvHighlight(){const rows=_vidOvGetRows();rows.forEach((r,i)=>{r.classList.toggle('vid-sel',i===_vidOvSelIdx);})}
 function _vidOvKeyNav(e){
   const panel=document.getElementById('vidOvPanel');
   if(!panel||panel.style.display!=='block')return false;
