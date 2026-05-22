@@ -732,7 +732,7 @@ function tRowTodayVirt(t,tbArrow=false,noColor=false){
     <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="${_chk}"></label>
     <span class="tn">${t.name}</span>
     ${_hebBadge(t.name)}
-    ${!ov?`<svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3" fill="${ps.bg}" stroke="${tbArrow?'var(--accent)':ps.d}" stroke-opacity="${tbArrow?'0.7':'0.4'}" stroke-width="${tbArrow?'1.5':'1'}"/></svg>`:''}
+    ${!ov?`<svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3" fill="${ps.bg}" stroke="${tbArrow?'var(--muted)':ps.d}" stroke-opacity="${tbArrow?'0.8':'0.4'}" stroke-width="${tbArrow?'1.5':'1'}"/></svg>`:''}
     ${ov&&t.due_date?`<span class="dlbl ov">${['S','M','T','W','T','F','S'][new Date(t.due_date.split('T')[0]+'T12:00').getDay()]}</span>`:''}
     <button class="delbtn" onclick="event.stopPropagation();${_xBtn}">✕</button>
   </div>`;
@@ -748,7 +748,7 @@ function tRowShopVirt(t,noDate=false,tbArrow=false,noColor=false){
     onclick="selTask(event,'${t.id}')" ondblclick="tiDblShop(event,'${t._shopId}')" oncontextmenu="showCtxShop(event,'${t._shopId}')">
     <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="togShop('${t._shopId}',this.checked)"></label>
     <span class="tn">${t.name}</span>
-    ${!ov?`<svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3" fill="${ps.bg}" stroke="${tbArrow?'var(--accent)':ps.d}" stroke-opacity="${tbArrow?'0.7':'0.4'}" stroke-width="${tbArrow?'1.5':'1'}"/></svg>`:''}
+    ${!ov?`<svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3" fill="${ps.bg}" stroke="${tbArrow?'var(--muted)':ps.d}" stroke-opacity="${tbArrow?'0.8':'0.4'}" stroke-width="${tbArrow?'1.5':'1'}"/></svg>`:''}
     ${!noDate&&t.due_date?`<span class="dlbl ${ov?'ov':''}">${ov?['S','M','T','W','T','F','S'][new Date(t.due_date.split('T')[0]+'T12:00').getDay()]:fmtD(t.due_date)}</span>`:''}
     <button class="delbtn" onclick="event.stopPropagation();unscheduleShop('${t._shopId}')">✕</button>
   </div>`;
@@ -3419,7 +3419,7 @@ function tRow(t,o={}){
   return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''} ${imp&&!ov?'imp-row':''}" style="${!ov&&!imp&&!o.noColor?`background:${s.bg}`:''}" id="ti-${t.id}" ${o.drag?`draggable="true" ondragstart="dStart(event,'${t.id}')" ondragend="dEnd(event)"`:''} onclick="selTask(event,'${t.id}')" ondblclick="tiDbl(event,'${t.id}')" oncontextmenu="showCtx(event,'${t.id}')">
     <label class="chk-wrap" onclick="event.stopPropagation()" onmousedown="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="toggleTask('${t.id}',this.checked,'${o.drag?'wk':''}')"></label>
     <span class="tn">${tmIcon(t)}${t.name}</span>
-    ${o.cat?(o.catDot&&!ov?`<svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3" fill="${s.bg}" stroke="${o.tbArrow?'var(--accent)':s.d}" stroke-opacity="${o.tbArrow?'0.7':'0.4'}" stroke-width="${o.tbArrow?'1.5':'1'}"/></svg>`:(!o.catDot?`<span class="cpill" style="background:${s.bg};color:${s.t};border-color:${s.b}">${t.category||'?'}</span>`:'')):''}
+    ${o.cat?(o.catDot&&!ov?`<svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3" fill="${s.bg}" stroke="${o.tbArrow?'var(--muted)':s.d}" stroke-opacity="${o.tbArrow?'0.8':'0.4'}" stroke-width="${o.tbArrow?'1.5':'1'}"/></svg>`:(!o.catDot?`<span class="cpill" style="background:${s.bg};color:${s.t};border-color:${s.b}">${t.category||'?'}</span>`:'')):''}
     ${o.flag?'<span class="flag-u">📅</span>':''}
     ${!o.flag&&(!o.noDate||ov)&&t.due_date?ov?`<span class="dlbl ov">${['S','M','T','W','T','F','S'][new Date(t.due_date.split('T')[0]+'T12:00').getDay()]}</span>`:`<span class="dlbl" style="cursor:pointer" onclick="openInlineDatePicker(event,'${t.id}','${t.due_date}')">${fmtD(t.due_date)} <span class="date-clr" title="Clear date" onclick="event.stopPropagation();clearTaskDate('${t.id}',event)">×</span></span>`:''}
     <button class="delbtn" onclick="delTask('${t.id}',event)">✕</button>
@@ -4066,7 +4066,7 @@ function drawTBBlock(col,b){
   if(b._vidId&&b.dur>=60){
     const _vb=(st.videos||[]).find(x=>String(x.id)===String(b._vidId));
     if(_vb){const _steps=typeof VID_STEPS!=='undefined'?VID_STEPS:[];const _app=_steps.filter(s=>_vb[s]!=='na');
-      _vidStepsHtml=`<div style="display:flex;align-items:flex-end;gap:6px;padding:4px 8px 6px;flex-wrap:wrap;flex:1">${_app.map(s=>`<div class="vid-step-dot${_vb[s]==='done'?' done':''}" data-vid="${b._vidId}" data-step="${s}" title="${(typeof VID_STEP_LABELS!=='undefined'?VID_STEP_LABELS[s]:s)}" style="width:10px;height:10px;cursor:pointer"></div>`).join('')}</div>`;
+      _vidStepsHtml=`<div class="tb-vid-steps" style="display:flex;align-items:flex-end;gap:6px;padding:4px 8px 6px;flex-wrap:wrap;flex:1">${_app.map(s=>`<div class="vid-step-dot tb-vsd${_vb[s]==='done'?' done':''}" data-vid="${b._vidId}" data-step="${s}" title="${(typeof VID_STEP_LABELS!=='undefined'?VID_STEP_LABELS[s]:s)}" style="width:10px;height:10px;cursor:pointer"></div>`).join('')}</div>`;
     }
   }
   el.innerHTML=`<div class="tb-row"><input type="checkbox" class="tb-chk" ${b._done?'checked':''}><span class="tb-bt${b.dur>=30?' wrap':''}">${_displayTitle}</span><div class="tb-right">${_showTime?`<span class="tb-btime">${tStr(b.sm)}-${tStr(b.sm+b.dur)}</span>`:''}<button class="tb-bdel" onclick="delBlock('${b.id}',event)">✕</button></div></div>${_vidStepsHtml}${_notesHtml}<div class="tb-resize" data-id="${b.id}"></div>`;
@@ -4114,7 +4114,10 @@ function drawTBBlock(col,b){
   const tbRes=el.querySelector('.tb-resize');
   if(tbRes)tbRes.addEventListener('mousedown',e=>{
     e.stopPropagation();e.preventDefault();
-    resizing={id:b.id,sy:e.clientY,sd:b.dur};
+    const tbSelId=_getTBBlockSelId(b);
+    const multiIds=tbSelId&&selectedTasks.has(tbSelId)&&selectedTasks.size>1?[...selectedTasks].filter(s=>s.startsWith('blk-')).map(s=>s.replace('blk-','')):[];
+    const others=multiIds.filter(id=>id!==b.id).map(id=>{const bl=st.blocks.find(x=>String(x.id)===id);return bl?{id,sd:bl.dur}:null;}).filter(Boolean);
+    resizing={id:b.id,sy:e.clientY,sd:b.dur,others};
     document.addEventListener('mousemove',onRM);document.addEventListener('mouseup',onRU);
   });
   let tbDragging=false,tbOnMove=null,tbOnUp=null;
@@ -4814,8 +4817,8 @@ function updateNowLine(){
   l.innerHTML='<div class="nowdot"></div>';
 }
 if(!window._nowLineInterval)window._nowLineInterval=setInterval(updateNowLine,60000);
-function onRM(e){if(!resizing)return;const b=st.blocks.find(x=>x.id===resizing.id);if(!b)return;b.dur=Math.max(15,Math.round((resizing.sd+(e.clientY-resizing.sy)/PX)/15)*15);renderDayTB();}
-function onRU(){if(!resizing)return;const bid=resizing.id;const prevDur=resizing.sd;resizing=null;document.removeEventListener('mousemove',onRM);document.removeEventListener('mouseup',onRU);const b=st.blocks.find(x=>x.id===bid);if(!b)return;const newDur=b.dur;pushUndo(()=>{b.dur=prevDur;save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();sbUpdateBlock(bid,{duration_minutes:prevDur});},'Resized block');save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();sbUpdateBlock(bid,{duration_minutes:newDur});}
+function onRM(e){if(!resizing)return;const b=st.blocks.find(x=>x.id===resizing.id);if(!b)return;const delta=Math.round((e.clientY-resizing.sy)/PX/15)*15;b.dur=Math.max(15,resizing.sd+delta);if(resizing.others)resizing.others.forEach(o=>{const ob=st.blocks.find(x=>String(x.id)===o.id);if(ob)ob.dur=Math.max(15,o.sd+delta);});renderDayTB();}
+function onRU(){if(!resizing)return;const bid=resizing.id;const prevDur=resizing.sd;const others=(resizing.others||[]).slice();resizing=null;document.removeEventListener('mousemove',onRM);document.removeEventListener('mouseup',onRU);const b=st.blocks.find(x=>x.id===bid);if(!b)return;const newDur=b.dur;const otherNewDurs=others.map(o=>{const ob=st.blocks.find(x=>String(x.id)===o.id);return{id:o.id,prev:o.sd,cur:ob?ob.dur:o.sd};});pushUndo(()=>{b.dur=prevDur;sbUpdateBlock(bid,{duration_minutes:prevDur});otherNewDurs.forEach(o=>{const ob=st.blocks.find(x=>String(x.id)===o.id);if(ob){ob.dur=o.prev;sbUpdateBlock(o.id,{duration_minutes:o.prev});}});save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();},'Resized block'+(others.length?'s':''));save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();sbUpdateBlock(bid,{duration_minutes:newDur});otherNewDurs.forEach(o=>sbUpdateBlock(o.id,{duration_minutes:o.cur}));}
 function delBlock(id,e){
   e&&e.stopPropagation();
   const b=st.blocks.find(x=>x.id===id);if(!b)return;

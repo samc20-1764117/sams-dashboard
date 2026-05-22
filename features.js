@@ -1662,18 +1662,13 @@ function openSB(){sbOpen=true;document.getElementById('sidebar').classList.remov
 // ══════════════════════════════════════════════════════════════════════════════
 // ── FINANCE PAGE ─────────────────────────────────────────────────────────────
 // ══════════════════════════════════════════════════════════════════════════════
-let _finTab='accounts'; // accounts | vti | subs
 function _finOf(type){return st.finance.filter(r=>r.type===type);}
 function _finFmt(n){return n<0?'-$'+Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):'$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function _finFmtPct(n){return(n>=0?'+':'')+n.toFixed(2)+'%';}
 
 function renderFinancePage(){
   const el=document.getElementById('finPageContent');if(!el)return;
-  const tabs=[{id:'accounts',label:'Where\'s My Money'},{id:'vti',label:'VTI Tracker'},{id:'subs',label:'Subscriptions'}];
-  let html=`<div class="fin-tabs">${tabs.map(t=>`<button class="fin-tab${_finTab===t.id?' active':''}" onclick="_finTab='${t.id}';renderFinancePage()">${t.label}</button>`).join('')}</div>`;
-  if(_finTab==='accounts')html+=_finRenderAccounts();
-  else if(_finTab==='vti')html+=_finRenderVTI();
-  else html+=_finRenderSubs();
+  let html=_finRenderAccounts()+_finRenderVTI()+_finRenderSubs();
   el.innerHTML=html;
 }
 
