@@ -27,7 +27,7 @@ function slug(c){return(c||'other').toLowerCase().replace(/\s+/g,'-');}
 
 // ── State ──────────────────────────────────────────────────────────────────────
 let cfg={url:'https://gtirvyrqfuuuxkkqaeap.supabase.co',key:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0aXJ2eXJxZnV1dXhra3FhZWFwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwODY3NjAsImV4cCI6MjA4ODY2Mjc2MH0.6rtA0WeUUAcuV_sNVrxAbaaviPxPwNakh_bk7uylAOo',showAutoTB:true};
-let st={tasks:[],recurring:[],shopping:[],blocks:[],travel:[],birthdays:[],pup_skills:[],pupSessions:[],pupWeeklyFocus:[],recipes:[],videos:[],autoTimeblocks:[],autoTBOverrides:[],wrRules:[],wrOverrides:[],groceryStaples:[],groceryList:[],mealPlan:[],packTemplates:[],packItems:[],finance:[],_grocStapleSkips:{}};
+let st={tasks:[],recurring:[],shopping:[],blocks:[],travel:[],birthdays:[],pup_skills:[],pupSessions:[],pupWeeklyFocus:[],recipes:[],videos:[],autoTimeblocks:[],autoTBOverrides:[],wrRules:[],wrOverrides:[],groceryStaples:[],groceryList:[],mealPlan:[],packTemplates:[],packItems:[],finance:[],finSubs:[],_grocStapleSkips:{}};
 let dayOff=0,wkOff=0,moOff=0,wrRecOff=0,sbOpen=true,activePg='overview';
 let dragId=null,resizing=null,tMode='add',tId=null,tPreDate=null;
 let qaCtx='today',qaDsTarget=null,qaKCat='';
@@ -220,7 +220,7 @@ async function syncAll(silent=false){
   if(_sbClient){const{data:{session}}=await _sbClient.auth.getSession();if(session)_authToken=session.access_token;}
   if(!silent)setBadge('loading','Syncing…');
   try{
-    const[tasks,shop,trav,bdays,pupSkills,pupSessionsDb,pupWkFocusDb,recipes,videosDb,gStaples,gList,mealPlanDb,packTplDb,packItemDb,finDb]=await Promise.all([
+    const[tasks,shop,trav,bdays,pupSkills,pupSessionsDb,pupWkFocusDb,recipes,videosDb,gStaples,gList,mealPlanDb,packTplDb,packItemDb,finDb,finSubDb]=await Promise.all([
       sbReq('GET','tasks',null,'?order=due_date.asc.nullslast&select=*'),
       sbReq('GET','shopping_list',null,'?order=shop_order.asc.nullslast,store.asc,name.asc&select=*'),
       sbReq('GET','travel',null,'?order=start_date.asc&select=*'),
@@ -235,7 +235,8 @@ async function syncAll(silent=false){
       sbReqSilent('GET','meal_plan',null,'?order=meal_date.asc,sort_order.asc.nullslast&select=*'),
       sbReqSilent('GET','packing_templates',null,'?order=category.asc,sort_order.asc.nullslast,name.asc&select=*'),
       sbReqSilent('GET','packing_items',null,'?order=sort_order.asc.nullslast,name.asc&select=*'),
-      sbReqSilent('GET','finance',null,'?order=sort_order.asc.nullslast,name.asc&select=*')
+      sbReqSilent('GET','finance',null,'?order=sort_order.asc.nullslast,name.asc&select=*'),
+      sbReqSilent('GET','finance_subs',null,'?order=sort_order.asc.nullslast,name.asc&select=*')
     ]);
     if(pupSessionsDb)st.pupSessions=pupSessionsDb.filter(s=>!deletedPupSessIds.has(String(s.id)));
     if(pupWkFocusDb)st.pupWeeklyFocus=pupWkFocusDb;
@@ -245,6 +246,7 @@ async function syncAll(silent=false){
     if(packTplDb){const localTpl=st.packTemplates.filter(t=>String(t.id).startsWith('l-'));st.packTemplates=[...packTplDb,...localTpl.filter(l=>!packTplDb.find(d=>d.id===l.id))];}
     if(packItemDb){const localPI=st.packItems.filter(t=>String(t.id).startsWith('l-'));st.packItems=[...packItemDb,...localPI.filter(l=>!packItemDb.find(d=>d.id===l.id))];}
     if(finDb)st.finance=finDb;
+    if(finSubDb)st.finSubs=finSubDb;
     // Fetch time_blocks separately so a failure doesn't break the whole sync
     const blocks=await sbReqSilent('GET','time_blocks',null,'?order=day_date.asc,start_minutes.asc&select=*');
     // Fetch auto timeblocks

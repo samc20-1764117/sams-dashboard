@@ -1757,56 +1757,110 @@ function _finRenderInvestments(){
   return html;
 }
 
-// ── Column 3: Subscriptions ──────────────────────────────────────────────────
+// ── Column 3: Subscriptions (finance_subs table) ─────────────────────────────
 function _finRenderSubs(){
-  const subs=_finOf('sub').sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
-  const monthlyTotal=subs.reduce((s,sub)=>{
+  const subs=st.finSubs.sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+  const monthlyTotal=subs.filter(s=>!s.cancel).reduce((s,sub)=>{
     const amt=sub.amount||0;
     if(sub.frequency==='yearly')return s+amt/12;
+    if(sub.frequency==='6-month')return s+amt/6;
     if(sub.frequency==='weekly')return s+amt*4.33;
     return s+amt;
   },0);
   const yearlyTotal=monthlyTotal*12;
 
   let html=`<div class="fin-col"><div class="card fin-card">
-    <div class="fin-card-hdr"><span class="fin-card-title">Subscriptions</span><button class="btn-plus" onclick="addFinRow('sub')">+</button></div>
+    <div class="fin-card-hdr"><span class="fin-card-title">Subscriptions</span><button class="btn-plus" onclick="addFinSub()">+</button></div>
     <div class="fin-stats">
       <div class="fin-stat-row"><span class="fin-stat-label">Monthly</span><span class="fin-stat-val">${_finFmt(monthlyTotal)}</span></div>
       <div class="fin-stat-row"><span class="fin-stat-label">Yearly</span><span class="fin-stat-val">${_finFmt(yearlyTotal)}</span></div>
     </div>
-    <table class="fin-tbl"><thead><tr><th>Name</th><th style="text-align:right">Amount</th><th>Freq</th><th></th></tr></thead><tbody>`;
+    <table class="fin-tbl"><thead><tr><th>Name</th><th style="text-align:right">Amount</th><th>Freq</th><th>Due</th><th></th></tr></thead><tbody>`;
   subs.forEach(sub=>{
-    html+=`<tr class="fin-row">
-      <td>${_finEditable(sub.id,'name',sub.name,'fin-name')}</td>
-      <td class="fin-amt">${_finEditable(sub.id,'amount',sub.amount||0)}</td>
+    const dayStr=sub.due_day?_finOrdinal(sub.due_day):'—';
+    html+=`<tr class="fin-row${sub.cancel?' fin-cancel':''}">
+      <td class="fin-sub-name-cell">
+        <button class="fin-cancel-btn ${sub.cancel?'active':''}" onclick="toggleFinSubCancel('${sub.id}')" title="${sub.cancel?'Unmark cancel':'Mark to cancel'}">&#x2715;</button>
+        ${_finSubEditable(sub.id,'name',sub.name,'fin-name')}
+      </td>
+      <td class="fin-amt">${_finSubEditable(sub.id,'amount',sub.amount||0)}</td>
       <td>${_finFreqSelect(sub.id,sub.frequency||'monthly')}</td>
-      <td><button class="delbtn" onclick="delFin('${sub.id}')">✕</button></td>
+      <td><span class="fin-edit fin-due-edit" contenteditable="true" onfocus="this.textContent='${sub.due_day||''}';" onblur="_finSubEditDay('${sub.id}',this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">${dayStr}</span></td>
+      <td><button class="delbtn" onclick="delFinSub('${sub.id}')">&#x2715;</button></td>
     </tr>`;
   });
   html+=`</tbody></table></div></div>`;
   return html;
 }
 
+function _finOrdinal(n){const s=['th','st','nd','rd'];const v=n%100;return n+(s[(v-20)%10]||s[v]||s[0]);}
+
+function _finSubEditable(id,field,val,cls){
+  const display=typeof val==='number'?_finFmt(val):escHtml(val||'');
+  const raw=typeof val==='number'?val.toFixed(2):(val||'');
+  return`<span class="fin-edit ${cls||''}" contenteditable="true" onfocus="if('${field}'!=='name'){this.textContent='${raw}';}" onblur="_finSubEditField('${id}','${field}',this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">${display}</span>`;
+}
+
+async function _finSubEditField(id,field,el){
+  const row=st.finSubs.find(r=>String(r.id)===String(id));if(!row)return;
+  const val=field==='name'?el.textContent.trim():_finParseNum(el.textContent);
+  if(row[field]===val)return;
+  row[field]=val;
+  renderFinancePage();
+  if(!String(id).startsWith('l-'))await sbReqNullable('PATCH','finance_subs',{[field]:val},`?id=eq.${id}`);
+}
+
+async function _finSubEditDay(id,el){
+  const row=st.finSubs.find(r=>String(r.id)===String(id));if(!row)return;
+  const raw=el.textContent.trim();
+  const val=raw?parseInt(raw,10)||null:null;
+  if(row.due_day===val)return;
+  row.due_day=val;
+  renderFinancePage();
+  if(!String(id).startsWith('l-'))await sbReqNullable('PATCH','finance_subs',{due_day:val},`?id=eq.${id}`);
+}
+
 function _finFreqSelect(id,val){
-  return`<select class="fin-freq-sel" onchange="_finEditField('${id}','frequency',{textContent:this.value})">
+  return`<select class="fin-freq-sel" onchange="_finSubEditFreq('${id}',this.value)">
     <option value="monthly"${val==='monthly'?' selected':''}>Monthly</option>
     <option value="yearly"${val==='yearly'?' selected':''}>Yearly</option>
+    <option value="6-month"${val==='6-month'?' selected':''}>6-Month</option>
     <option value="weekly"${val==='weekly'?' selected':''}>Weekly</option>
   </select>`;
 }
 
-function _finDueSoon(dateStr){
-  if(!dateStr)return false;
-  const diff=(new Date(dateStr+'T12:00')-new Date(tod()+'T12:00'))/(1000*60*60*24);
-  return diff>=0&&diff<=7;
+async function _finSubEditFreq(id,val){
+  const row=st.finSubs.find(r=>String(r.id)===String(id));if(!row)return;
+  row.frequency=val;
+  renderFinancePage();
+  if(!String(id).startsWith('l-'))await sbReqNullable('PATCH','finance_subs',{frequency:val},`?id=eq.${id}`);
 }
 
-// ── Add / Delete ─────────────────────────────────────────────────────────────
+async function toggleFinSubCancel(id){
+  const row=st.finSubs.find(r=>String(r.id)===String(id));if(!row)return;
+  row.cancel=!row.cancel;
+  renderFinancePage();
+  if(!String(id).startsWith('l-'))await sbReqNullable('PATCH','finance_subs',{cancel:row.cancel},`?id=eq.${id}`);
+}
+
+async function addFinSub(){
+  const row={id:'l-'+Date.now(),name:'New Sub',amount:0,frequency:'monthly',due_day:null,cancel:false,sort_order:st.finSubs.length};
+  st.finSubs.push(row);renderFinancePage();
+  const{id,...fields}=row;
+  const sv=await sbReq('POST','finance_subs',fields);
+  if(sv&&sv[0]){const i=st.finSubs.findIndex(x=>x.id===row.id);if(i>-1)st.finSubs[i]=sv[0];}
+}
+
+async function delFinSub(id){
+  st.finSubs=st.finSubs.filter(r=>String(r.id)!==String(id));renderFinancePage();
+  if(!String(id).startsWith('l-'))await sbReq('DELETE','finance_subs',null,`?id=eq.${id}`);
+}
+
+// ── Finance account Add / Delete ─────────────────────────────────────────────
 async function addFinRow(type){
   let fields={type};
   if(type==='account')Object.assign(fields,{name:'New Account',amount:0,adjustment:0});
-  else if(type==='vti')Object.assign(fields,{name:'VTI Purchase',date:tod(),amount:0});
-  else Object.assign(fields,{name:'New Sub',amount:0,frequency:'monthly'});
+  else Object.assign(fields,{name:'VTI Purchase',date:tod(),amount:0});
   const row={id:'l-'+Date.now(),sort_order:_finOf(type).length,...fields};
   st.finance.push(row);renderFinancePage();
   const sv=await sbReq('POST','finance',{...fields,sort_order:row.sort_order});

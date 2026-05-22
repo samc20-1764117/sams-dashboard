@@ -1158,6 +1158,14 @@ body.dark .vid-stat-card{background:rgba(40,30,50,.4)}
 .fin-freq-sel{border:none;background:transparent;font-size:11px;color:var(--text-secondary,#64748b);cursor:pointer;padding:2px;border-radius:4px;outline:none}
 .fin-freq-sel:hover{background:rgba(100,100,140,.08)}
 .fin-freq-sel:focus{box-shadow:0 0 0 1.5px rgba(109,95,230,.3)}
+.fin-sub-name-cell{display:flex;align-items:center;gap:4px}
+.fin-cancel-btn{border:none;background:none;cursor:pointer;font-size:10px;color:var(--text-secondary,#94a3b8);opacity:.3;padding:2px 4px;border-radius:4px;transition:all .15s;line-height:1;flex-shrink:0}
+.fin-cancel-btn:hover{opacity:.7;background:rgba(239,68,68,.1)}
+.fin-cancel-btn.active{opacity:1;color:#dc2626;background:rgba(239,68,68,.12)}
+.fin-cancel{background:rgba(239,68,68,.04)!important}
+.fin-cancel .fin-name{text-decoration:line-through;opacity:.5}
+.fin-cancel .fin-amt,.fin-cancel .fin-freq-sel{opacity:.5}
+.fin-due-edit{min-width:24px;text-align:center;font-size:11px;color:var(--text-secondary,#64748b)}
 
 /* Anti-FOUC: applied before first paint via html classes set in head script */
 html.init-dark body{background:#1a100a!important;background-attachment:fixed!important;}
