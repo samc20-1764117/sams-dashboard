@@ -1124,35 +1124,40 @@ body.dark .vid-stat-card{background:rgba(40,30,50,.4)}
 .ban-pack-inline:hover{background:rgba(255,255,255,.95)}
 
 /* ── Finance Page ─────────────────────────────────────────────────────────── */
-.fin-tabs{display:flex;gap:4px;margin-bottom:16px}
-.fin-summary-row{display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+.fin-summary-row{display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap}
 .fin-summary-card{flex:1;min-width:140px;padding:14px 16px;border-radius:12px;background:rgba(100,100,140,.06);border:1px solid rgba(200,200,215,.15)}
 .fin-summary-label{font-size:11px;font-weight:600;color:var(--text-secondary,#64748b);text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px}
 .fin-summary-val{font-size:18px;font-weight:700;color:var(--text-primary,#334155);font-variant-numeric:tabular-nums}
 .fin-nw{background:rgba(109,95,230,.1);border-color:rgba(109,95,230,.2)}
 .fin-nw .fin-summary-val{color:#6d5fe6}
-.fin-gain{background:rgba(34,197,94,.08);border-color:rgba(34,197,94,.2)}
-.fin-gain .fin-summary-val{color:#16a34a}
-.fin-loss{background:rgba(239,68,68,.08);border-color:rgba(239,68,68,.2)}
-.fin-loss .fin-summary-val{color:#dc2626}
-.fin-pct{font-size:13px;font-weight:600;opacity:.8}
-.fin-card{margin-bottom:16px}
+.fin-cols{display:flex;gap:16px;align-items:flex-start}
+.fin-col{flex:1;min-width:0}
+.fin-card{margin-bottom:0}
 .fin-card-hdr{display:flex;align-items:center;justify-content:space-between;padding:12px 16px 8px}
 .fin-card-title{font-size:13px;font-weight:600;color:var(--text-primary,#334155)}
+.fin-card-sub{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;color:var(--text-secondary,#64748b);padding:10px 16px 4px;border-top:1px solid rgba(200,200,215,.1)}
 .fin-tbl{width:100%;border-collapse:collapse;font-size:12px}
 .fin-tbl thead th{text-align:left;padding:6px 16px;font-size:10px;text-transform:uppercase;letter-spacing:.4px;color:var(--text-secondary,#64748b);font-weight:600;border-bottom:1px solid rgba(200,200,215,.15)}
 .fin-tbl tbody tr{border-bottom:1px solid rgba(200,200,215,.08);transition:background .1s}
 .fin-tbl tbody tr:hover{background:rgba(100,100,140,.04)}
-.fin-tbl td{padding:8px 16px;color:var(--text-primary,#334155)}
+.fin-tbl td{padding:6px 16px;color:var(--text-primary,#334155)}
 .fin-amt{text-align:right;font-variant-numeric:tabular-nums;font-weight:500}
 .fin-neg{color:#dc2626}
-.fin-freq{text-transform:capitalize;color:var(--text-secondary,#64748b);font-size:11px}
-.fin-due{font-size:11px;color:var(--text-secondary,#64748b)}
-.fin-due-soon{background:rgba(249,115,22,.06)!important}
-.fin-due-soon .fin-due{color:#ea580c;font-weight:600}
+.fin-pos{color:#16a34a}
 .fin-row .delbtn{opacity:0;transition:opacity .15s}
 .fin-row:hover .delbtn{opacity:1}
 .fin-name{font-weight:500}
+.fin-stats{padding:4px 16px 8px}
+.fin-stat-row{display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:12px;border-bottom:1px solid rgba(200,200,215,.06)}
+.fin-stat-label{color:var(--text-secondary,#64748b);font-weight:500}
+.fin-stat-val{font-weight:600;font-variant-numeric:tabular-nums;color:var(--text-primary,#334155)}
+.fin-stat-val small{font-size:10px;opacity:.7}
+.fin-edit{outline:none;border-radius:4px;padding:1px 4px;transition:background .15s;cursor:text;display:inline-block;min-width:40px}
+.fin-edit:hover{background:rgba(109,95,230,.06)}
+.fin-edit:focus{background:rgba(109,95,230,.1);box-shadow:0 0 0 1.5px rgba(109,95,230,.3)}
+.fin-freq-sel{border:none;background:transparent;font-size:11px;color:var(--text-secondary,#64748b);cursor:pointer;padding:2px;border-radius:4px;outline:none}
+.fin-freq-sel:hover{background:rgba(100,100,140,.08)}
+.fin-freq-sel:focus{box-shadow:0 0 0 1.5px rgba(109,95,230,.3)}
 
 /* Anti-FOUC: applied before first paint via html classes set in head script */
 html.init-dark body{background:#1a100a!important;background-attachment:fixed!important;}

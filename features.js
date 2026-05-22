@@ -1665,39 +1665,64 @@ function openSB(){sbOpen=true;document.getElementById('sidebar').classList.remov
 function _finOf(type){return st.finance.filter(r=>r.type===type);}
 function _finFmt(n){return n<0?'-$'+Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):'$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function _finFmtPct(n){return(n>=0?'+':'')+n.toFixed(2)+'%';}
+function _finParseNum(s){return parseFloat((s||'').replace(/[$,\s]/g,''))||0;}
 
 function renderFinancePage(){
   const el=document.getElementById('finPageContent');if(!el)return;
-  let html=_finRenderAccounts()+_finRenderVTI()+_finRenderSubs();
-  el.innerHTML=html;
-}
-
-// ── Accounts (Where's My Money) ──────────────────────────────────────────────
-function _finRenderAccounts(){
+  // Net worth summary
   const accs=_finOf('account').sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
   const netWorth=accs.reduce((s,a)=>s+(a.adjustment||a.amount||0),0);
   const k401=accs.find(a=>(a.name||'').includes('401'));
   const netWith401k=netWorth+(k401?(k401.amount||0)-(k401.adjustment||0):0);
+
   let html=`<div class="fin-summary-row">
     <div class="fin-summary-card fin-nw"><div class="fin-summary-label">Net Worth</div><div class="fin-summary-val">${_finFmt(netWorth)}</div></div>
     <div class="fin-summary-card"><div class="fin-summary-label">Net Worth (w/401k)</div><div class="fin-summary-val">${_finFmt(netWith401k)}</div></div>
   </div>`;
-  html+=`<div class="card fin-card"><div class="fin-card-hdr"><span class="fin-card-title">Accounts</span><button class="btn-plus" onclick="openFinModal('account')">+</button></div>`;
-  html+=`<table class="fin-tbl"><thead><tr><th>Source</th><th style="text-align:right">Amount</th><th style="text-align:right">Adjusted</th><th></th></tr></thead><tbody>`;
-  accs.forEach(a=>{
-    html+=`<tr class="fin-row" ondblclick="openFinModal('account','${a.id}')">
-      <td class="fin-name">${escHtml(a.name)}</td>
-      <td class="fin-amt">${_finFmt(a.amount||0)}</td>
-      <td class="fin-amt">${_finFmt(a.adjustment||0)}</td>
+  html+=`<div class="fin-cols">`;
+  html+=_finRenderPersonal(accs);
+  html+=_finRenderInvestments();
+  html+=_finRenderSubs();
+  html+=`</div>`;
+  el.innerHTML=html;
+}
+
+// ── Inline edit helpers ──────────────────────────────────────────────────────
+async function _finEditField(id,field,el){
+  const row=st.finance.find(r=>String(r.id)===String(id));if(!row)return;
+  const val=field==='name'?el.textContent.trim():_finParseNum(el.textContent);
+  if(row[field]===val)return;
+  row[field]=val;
+  renderFinancePage();
+  if(!String(id).startsWith('l-'))await sbReqNullable('PATCH','finance',{[field]:val},`?id=eq.${id}`);
+}
+
+function _finEditable(id,field,val,cls){
+  const display=typeof val==='number'?_finFmt(val):escHtml(val||'');
+  const raw=typeof val==='number'?val.toFixed(2):(val||'');
+  return`<span class="fin-edit ${cls||''}" contenteditable="true" data-fid="${id}" data-field="${field}" onfocus="if(this.dataset.field!=='name'){this.textContent='${raw}';}" onblur="_finEditField('${id}','${field}',this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">${display}</span>`;
+}
+
+// ── Column 1: Personal Finances ──────────────────────────────────────────────
+function _finRenderPersonal(accs){
+  const personal=accs.filter(a=>!(a.name||'').includes('VTI'));
+  let html=`<div class="fin-col"><div class="card fin-card">
+    <div class="fin-card-hdr"><span class="fin-card-title">Personal Finances</span><button class="btn-plus" onclick="addFinRow('account')">+</button></div>
+    <table class="fin-tbl"><thead><tr><th>Source</th><th style="text-align:right">Amount</th><th style="text-align:right">Adjusted</th><th></th></tr></thead><tbody>`;
+  personal.forEach(a=>{
+    html+=`<tr class="fin-row">
+      <td>${_finEditable(a.id,'name',a.name,'fin-name')}</td>
+      <td class="fin-amt">${_finEditable(a.id,'amount',a.amount||0)}</td>
+      <td class="fin-amt">${_finEditable(a.id,'adjustment',a.adjustment||0)}</td>
       <td><button class="delbtn" onclick="delFin('${a.id}')">✕</button></td>
     </tr>`;
   });
-  html+=`</tbody></table></div>`;
+  html+=`</tbody></table></div></div>`;
   return html;
 }
 
-// ── VTI Tracker ──────────────────────────────────────────────────────────────
-function _finRenderVTI(){
+// ── Column 2: Investments (VTI) ──────────────────────────────────────────────
+function _finRenderInvestments(){
   const purchases=_finOf('vti').sort((a,b)=>(a.date||'').localeCompare(b.date||''));
   const totalBought=purchases.reduce((s,p)=>s+Math.abs(p.amount||0),0);
   const vtiAcc=_finOf('account').find(a=>(a.name||'')==='VTI');
@@ -1708,29 +1733,31 @@ function _finRenderVTI(){
   const actualGain=currentVal-totalBought;
   const actualPct=totalBought?((actualGain/totalBought)*100):0;
 
-  let html=`<div class="fin-summary-row">
-    <div class="fin-summary-card"><div class="fin-summary-label">VTI Bought</div><div class="fin-summary-val">${_finFmt(totalBought)}</div></div>
-    <div class="fin-summary-card"><div class="fin-summary-label">Cost Basis</div><div class="fin-summary-val">${_finFmt(costBasis)}</div></div>
-    <div class="fin-summary-card"><div class="fin-summary-label">Current Value</div><div class="fin-summary-val">${_finFmt(currentVal)}</div></div>
+  let html=`<div class="fin-col"><div class="card fin-card">
+    <div class="fin-card-hdr"><span class="fin-card-title">Investments</span><button class="btn-plus" onclick="addFinRow('vti')">+</button></div>`;
+  // VTI summary stats
+  html+=`<div class="fin-stats">
+    <div class="fin-stat-row"><span class="fin-stat-label">VTI Current Value</span>${vtiAcc?_finEditable(vtiAcc.id,'adjustment',currentVal,'fin-stat-val'):`<span class="fin-stat-val">${_finFmt(currentVal)}</span>`}</div>
+    <div class="fin-stat-row"><span class="fin-stat-label">Cost Basis</span>${vtiAcc?_finEditable(vtiAcc.id,'amount',costBasis,'fin-stat-val'):`<span class="fin-stat-val">${_finFmt(costBasis)}</span>`}</div>
+    <div class="fin-stat-row"><span class="fin-stat-label">Total Bought</span><span class="fin-stat-val">${_finFmt(totalBought)}</span></div>
+    <div class="fin-stat-row"><span class="fin-stat-label">Cost Basis Gain</span><span class="fin-stat-val ${costGain>=0?'fin-pos':'fin-neg'}">${_finFmt(costGain)} <small>${_finFmtPct(costPct)}</small></span></div>
+    <div class="fin-stat-row"><span class="fin-stat-label">Actual Gain</span><span class="fin-stat-val ${actualGain>=0?'fin-pos':'fin-neg'}">${_finFmt(actualGain)} <small>${_finFmtPct(actualPct)}</small></span></div>
   </div>`;
-  html+=`<div class="fin-summary-row">
-    <div class="fin-summary-card ${costGain>=0?'fin-gain':'fin-loss'}"><div class="fin-summary-label">Cost Basis Gain</div><div class="fin-summary-val">${_finFmt(costGain)} <span class="fin-pct">${_finFmtPct(costPct)}</span></div></div>
-    <div class="fin-summary-card ${actualGain>=0?'fin-gain':'fin-loss'}"><div class="fin-summary-label">Actual Gain</div><div class="fin-summary-val">${_finFmt(actualGain)} <span class="fin-pct">${_finFmtPct(actualPct)}</span></div></div>
-  </div>`;
-  html+=`<div class="card fin-card"><div class="fin-card-hdr"><span class="fin-card-title">Purchase History</span><button class="btn-plus" onclick="openFinModal('vti')">+</button></div>`;
-  html+=`<table class="fin-tbl"><thead><tr><th>Date</th><th style="text-align:right">Amount</th><th></th></tr></thead><tbody>`;
+  // Purchase history
+  html+=`<div class="fin-card-sub">Purchase History</div>
+    <table class="fin-tbl"><thead><tr><th>Date</th><th style="text-align:right">Amount</th><th></th></tr></thead><tbody>`;
   purchases.forEach(p=>{
-    html+=`<tr class="fin-row" ondblclick="openFinModal('vti','${p.id}')">
-      <td>${p.date||''}</td>
-      <td class="fin-amt ${(p.amount||0)<0?'fin-neg':''}">${_finFmt(p.amount||0)}</td>
+    html+=`<tr class="fin-row">
+      <td>${_finEditable(p.id,'date',p.date||'')}</td>
+      <td class="fin-amt">${_finEditable(p.id,'amount',p.amount||0,((p.amount||0)<0?'fin-neg':''))}</td>
       <td><button class="delbtn" onclick="delFin('${p.id}')">✕</button></td>
     </tr>`;
   });
-  html+=`</tbody></table></div>`;
+  html+=`</tbody></table></div></div>`;
   return html;
 }
 
-// ── Subscriptions ────────────────────────────────────────────────────────────
+// ── Column 3: Subscriptions ──────────────────────────────────────────────────
 function _finRenderSubs(){
   const subs=_finOf('sub').sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
   const monthlyTotal=subs.reduce((s,sub)=>{
@@ -1741,24 +1768,31 @@ function _finRenderSubs(){
   },0);
   const yearlyTotal=monthlyTotal*12;
 
-  let html=`<div class="fin-summary-row">
-    <div class="fin-summary-card"><div class="fin-summary-label">Monthly Total</div><div class="fin-summary-val">${_finFmt(monthlyTotal)}</div></div>
-    <div class="fin-summary-card"><div class="fin-summary-label">Yearly Total</div><div class="fin-summary-val">${_finFmt(yearlyTotal)}</div></div>
-  </div>`;
-  html+=`<div class="card fin-card"><div class="fin-card-hdr"><span class="fin-card-title">Subscriptions & Bills</span><button class="btn-plus" onclick="openFinModal('sub')">+</button></div>`;
-  html+=`<table class="fin-tbl"><thead><tr><th>Name</th><th style="text-align:right">Amount</th><th>Freq</th><th>Next Due</th><th></th></tr></thead><tbody>`;
+  let html=`<div class="fin-col"><div class="card fin-card">
+    <div class="fin-card-hdr"><span class="fin-card-title">Subscriptions</span><button class="btn-plus" onclick="addFinRow('sub')">+</button></div>
+    <div class="fin-stats">
+      <div class="fin-stat-row"><span class="fin-stat-label">Monthly</span><span class="fin-stat-val">${_finFmt(monthlyTotal)}</span></div>
+      <div class="fin-stat-row"><span class="fin-stat-label">Yearly</span><span class="fin-stat-val">${_finFmt(yearlyTotal)}</span></div>
+    </div>
+    <table class="fin-tbl"><thead><tr><th>Name</th><th style="text-align:right">Amount</th><th>Freq</th><th></th></tr></thead><tbody>`;
   subs.forEach(sub=>{
-    const dueSoon=sub.date&&_finDueSoon(sub.date);
-    html+=`<tr class="fin-row${dueSoon?' fin-due-soon':''}" ondblclick="openFinModal('sub','${sub.id}')">
-      <td class="fin-name">${escHtml(sub.name)}</td>
-      <td class="fin-amt">${_finFmt(sub.amount||0)}</td>
-      <td class="fin-freq">${sub.frequency||'monthly'}</td>
-      <td class="fin-due">${sub.date||''}</td>
+    html+=`<tr class="fin-row">
+      <td>${_finEditable(sub.id,'name',sub.name,'fin-name')}</td>
+      <td class="fin-amt">${_finEditable(sub.id,'amount',sub.amount||0)}</td>
+      <td>${_finFreqSelect(sub.id,sub.frequency||'monthly')}</td>
       <td><button class="delbtn" onclick="delFin('${sub.id}')">✕</button></td>
     </tr>`;
   });
-  html+=`</tbody></table></div>`;
+  html+=`</tbody></table></div></div>`;
   return html;
+}
+
+function _finFreqSelect(id,val){
+  return`<select class="fin-freq-sel" onchange="_finEditField('${id}','frequency',{textContent:this.value})">
+    <option value="monthly"${val==='monthly'?' selected':''}>Monthly</option>
+    <option value="yearly"${val==='yearly'?' selected':''}>Yearly</option>
+    <option value="weekly"${val==='weekly'?' selected':''}>Weekly</option>
+  </select>`;
 }
 
 function _finDueSoon(dateStr){
@@ -1767,35 +1801,16 @@ function _finDueSoon(dateStr){
   return diff>=0&&diff<=7;
 }
 
-// ── Unified CRUD ─────────────────────────────────────────────────────────────
-async function openFinModal(type,id){
-  const existing=id?st.finance.find(r=>String(r.id)===String(id)):null;
+// ── Add / Delete ─────────────────────────────────────────────────────────────
+async function addFinRow(type){
   let fields={type};
-  if(type==='account'){
-    const name=prompt('Account name:',existing?existing.name:'');if(!name)return;
-    const amount=parseFloat(prompt('Amount:',existing?existing.amount:'0'));if(isNaN(amount))return;
-    const adjustment=parseFloat(prompt('Adjusted value:',existing?existing.adjustment:amount));if(isNaN(adjustment))return;
-    Object.assign(fields,{name,amount,adjustment});
-  }else if(type==='vti'){
-    const date=prompt('Date (YYYY-MM-DD):',existing?existing.date:tod());if(!date)return;
-    const amount=parseFloat(prompt('Amount (negative for purchases):',existing?existing.amount:''));if(isNaN(amount))return;
-    Object.assign(fields,{date,amount,name:'VTI Purchase'});
-  }else{
-    const name=prompt('Subscription name:',existing?existing.name:'');if(!name)return;
-    const amount=parseFloat(prompt('Amount:',existing?existing.amount:''));if(isNaN(amount))return;
-    const frequency=prompt('Frequency (monthly/yearly/weekly):',existing?existing.frequency:'monthly')||'monthly';
-    const date=prompt('Next due date (YYYY-MM-DD or blank):',existing?existing.date||'':'')||null;
-    Object.assign(fields,{name,amount,frequency,date});
-  }
-  if(existing){
-    Object.assign(existing,fields);renderFinancePage();
-    await sbReqNullable('PATCH','finance',fields,`?id=eq.${id}`);
-  }else{
-    const row={id:'l-'+Date.now(),sort_order:_finOf(type).length,...fields};
-    st.finance.push(row);renderFinancePage();
-    const sv=await sbReq('POST','finance',{...fields,sort_order:row.sort_order});
-    if(sv&&sv[0]){const i=st.finance.findIndex(x=>x.id===row.id);if(i>-1)st.finance[i]=sv[0];}
-  }
+  if(type==='account')Object.assign(fields,{name:'New Account',amount:0,adjustment:0});
+  else if(type==='vti')Object.assign(fields,{name:'VTI Purchase',date:tod(),amount:0});
+  else Object.assign(fields,{name:'New Sub',amount:0,frequency:'monthly'});
+  const row={id:'l-'+Date.now(),sort_order:_finOf(type).length,...fields};
+  st.finance.push(row);renderFinancePage();
+  const sv=await sbReq('POST','finance',{...fields,sort_order:row.sort_order});
+  if(sv&&sv[0]){const i=st.finance.findIndex(x=>x.id===row.id);if(i>-1)st.finance[i]=sv[0];}
 }
 
 async function delFin(id){
