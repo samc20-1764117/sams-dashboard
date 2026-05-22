@@ -3424,6 +3424,34 @@ function openPackingModal(travelId){
 }
 
 let _packModalView='trip'; // 'trip' or 'standard'
+function _packProgressBar(pct){
+  const c=pct>=100?'#22c55e':pct>=50?'#22c55e':'#f59e0b';
+  return`<div style="display:flex;align-items:center;gap:8px;flex:1"><div style="flex:1;height:6px;border-radius:3px;background:var(--border);overflow:hidden"><div style="width:${pct}%;height:100%;border-radius:3px;background:${c};transition:width .3s"></div></div><span style="font-size:10px;color:var(--muted);white-space:nowrap">${pct}%</span></div>`;
+}
+function _packInpKeydown(e,travelId){
+  const inp=e.target;
+  if(e.key==='Tab'&&inp.value.trim()){
+    e.preventDefault();
+    const sel=document.getElementById('packModalCat');
+    if(sel){sel.focus();sel.dataset.pendingName=inp.value.trim();}
+    return;
+  }
+  if(e.key==='Enter'){
+    e.preventDefault();
+    const cat=document.getElementById('packModalCat');
+    const catVal=cat?cat.value:'Misc';
+    addPackItem(travelId,inp.value.trim(),catVal);
+    inp.value='';
+  }
+}
+function _packCatKeydown(e,travelId){
+  if(e.key==='Enter'){
+    e.preventDefault();
+    const sel=e.target;
+    const name=sel.dataset.pendingName||'';
+    if(name){addPackItem(travelId,name,sel.value);sel.dataset.pendingName='';const inp=document.getElementById('packModalInp');if(inp){inp.value='';inp.focus();}}
+  }
+}
 function renderPackingModal(travelId){
   const tv=st.travel.find(x=>String(x.id)===String(travelId));if(!tv)return;
   const body=document.getElementById('packingModalBody');if(!body)return;
@@ -3432,34 +3460,33 @@ function renderPackingModal(travelId){
   if(title)title.textContent=`Packing: ${tv.name}${tv.destination?' \u2192 '+tv.destination:''}`;
 
   const items=st.packItems.filter(x=>String(x.travel_id)===String(travelId));
-  // Group by category
-  const cats=[...new Set(items.map(x=>x.category||'Misc'))].sort();
+  const catOrder=[...PACK_CATS,'Misc'];
+  const cats=[...new Set(items.map(x=>x.category||'Misc'))].sort((a,b)=>{const ai=catOrder.indexOf(a),bi=catOrder.indexOf(b);return(ai<0?99:ai)-(bi<0?99:bi);});
   const totalChecked=items.filter(x=>x.checked).length;
   const pct=items.length?Math.round(totalChecked/items.length*100):0;
 
   let html=`<div style="display:flex;gap:6px;margin-bottom:8px;align-items:center">
-    <input id="packModalInp" class="pack-add-inp" placeholder="Add item\u2026" style="flex:1" onkeydown="if(event.key==='Enter'){const _cat=document.getElementById('packModalCat');addPackItem('${travelId}',this.value.trim(),_cat?_cat.value:'Misc');this.value='';}">
-    <select id="packModalCat" style="font-size:11px;padding:4px 6px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text)">`;
+    <input id="packModalInp" class="pack-add-inp" placeholder="Add item\u2026" style="flex:1" onkeydown="_packInpKeydown(event,'${travelId}')">
+    <select id="packModalCat" onkeydown="_packCatKeydown(event,'${travelId}')" style="font-size:11px;padding:4px 6px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text)"><option>Misc</option>`;
   PACK_CATS.forEach(c=>{html+=`<option>${c}</option>`;});
   html+=`</select></div>`;
-  html+=`<div style="display:flex;gap:6px;margin-bottom:12px;align-items:center">
-    <button class="btn btn-xs" onclick="loadStandardItems('${travelId}')" title="Add all standard items not yet in list">+ Standard</button>
-    <button class="btn btn-xs" onclick="loadAdhocItems('${travelId}')" title="Add ad-hoc items">+ Ad-hoc</button>
-    <span style="flex:1"></span>
-    <span style="font-size:10px;color:var(--muted)">${totalChecked}/${items.length} packed${items.length?' ('+pct+'%)':''}</span>
+  html+=`<div style="display:flex;gap:8px;margin-bottom:12px;align-items:center">
+    <button class="btn btn-xs" onclick="loadStandardItems('${travelId}')" title="Add all standard items not yet in list">+ Load Standard</button>
+    ${_packProgressBar(pct)}
     <button class="btn btn-xs" onclick="_packModalView='standard';renderPackingModal('${travelId}')" style="font-size:10px" title="Manage standard packing list">Standard List \u2192</button>
   </div>`;
 
   if(!items.length){
     html+=`<p style="font-size:12px;color:var(--muted);text-align:center;padding:24px 0">No items yet. Add items or load standard packing list.</p>`;
   } else {
+    html+=`<div style="columns:2;column-gap:20px">`;
     cats.forEach(cat=>{
       const catItems=items.filter(x=>(x.category||'Misc')===cat);
       const unchecked=catItems.filter(x=>!x.checked).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
       const checked=catItems.filter(x=>x.checked).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
       const sorted=[...unchecked,...checked];
       const catDone=checked.length,catTotal=catItems.length;
-      html+=`<div style="margin-bottom:12px"><div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;display:flex;align-items:center;gap:6px">${escHtml(cat)}<span style="font-weight:400;font-size:9px;opacity:.7">${catDone}/${catTotal}</span></div>`;
+      html+=`<div style="break-inside:avoid;margin-bottom:14px"><div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:3px;display:flex;align-items:center;gap:6px">${escHtml(cat)}<span style="font-weight:400;font-size:9px;opacity:.6">${catDone}/${catTotal}</span></div>`;
       sorted.forEach(item=>{
         const ck=item.checked?'checked':'';
         const sty=item.checked?'opacity:.45;text-decoration:line-through':'';
@@ -3471,6 +3498,7 @@ function renderPackingModal(travelId){
       });
       html+=`</div>`;
     });
+    html+=`</div>`;
   }
   body.innerHTML=html;
 }
@@ -3478,25 +3506,19 @@ function _renderPackStandardView(body,title,travelId){
   if(title)title.textContent='Standard Packing List';
   const tpls=st.packTemplates.sort((a,b)=>(a.category||'').localeCompare(b.category||'')||(a.sort_order||0)-(b.sort_order||0));
   const grouped={};PACK_CATS.forEach(c=>grouped[c]=[]);
-  tpls.filter(t=>t.category!=='Ad-hoc').forEach(t=>{const c=PACK_CATS.includes(t.category)?t.category:'Misc';(grouped[c]=grouped[c]||[]).push(t);});
-  const adhoc=st.packTemplates.filter(t=>t.category==='Ad-hoc').sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+  tpls.forEach(t=>{if(t.category==='Ad-hoc')return;const c=PACK_CATS.includes(t.category)?t.category:'Misc';(grouped[c]=grouped[c]||[]).push(t);});
 
   let html=`<div style="margin-bottom:10px"><button class="btn btn-xs" onclick="_packModalView='trip';renderPackingModal('${travelId}')">\u2190 Back to trip</button></div>`;
+  html+=`<div style="columns:2;column-gap:20px">`;
   PACK_CATS.forEach(cat=>{
     const items=grouped[cat]||[];
-    html+=`<div style="margin-bottom:14px"><div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">${cat} <span style="font-weight:400;opacity:.6">(${items.length})</span></div>`;
+    html+=`<div style="break-inside:avoid;margin-bottom:14px"><div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:3px">${cat} <span style="font-weight:400;opacity:.6">(${items.length})</span></div>`;
     items.forEach(t=>{
       html+=`<div class="pack-item-row" style="padding:3px 4px"><span class="pack-tpl-name" contenteditable="true" style="flex:1;font-size:12px" onblur="renamePackTpl('${t.id}',this.textContent.trim())">${escHtml(t.name)}</span><button class="delbtn" onclick="delPackTpl('${t.id}');_renderPackStandardView(document.getElementById('packingModalBody'),document.getElementById('packingModalTitle'),'${travelId}')">&#10005;</button></div>`;
     });
     html+=`<div style="padding:2px 4px"><input class="pack-add-inp" style="width:100%;font-size:11px" placeholder="+ Add ${cat.toLowerCase()} item\u2026" onkeydown="if(event.key==='Enter'){addPackTpl('${cat}',this.value.trim());this.value='';event.preventDefault();setTimeout(()=>_renderPackStandardView(document.getElementById('packingModalBody'),document.getElementById('packingModalTitle'),'${travelId}'),50);}"></div></div>`;
   });
-  // Ad-hoc section
-  html+=`<div style="margin-bottom:14px;padding-top:8px;border-top:1px solid var(--border)"><div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Ad-hoc <span style="font-weight:400;opacity:.6">(${adhoc.length})</span></div>`;
-  html+=`<p style="font-size:10px;color:var(--muted);margin:0 0 6px">Extra items added to trips individually.</p>`;
-  adhoc.forEach(t=>{
-    html+=`<div class="pack-item-row" style="padding:3px 4px"><span class="pack-tpl-name" contenteditable="true" style="flex:1;font-size:12px" onblur="renamePackTpl('${t.id}',this.textContent.trim())">${escHtml(t.name)}</span><button class="delbtn" onclick="delPackTpl('${t.id}');_renderPackStandardView(document.getElementById('packingModalBody'),document.getElementById('packingModalTitle'),'${travelId}')">&#10005;</button></div>`;
-  });
-  html+=`<div style="padding:2px 4px"><input class="pack-add-inp" style="width:100%;font-size:11px" placeholder="+ Add ad-hoc item\u2026" onkeydown="if(event.key==='Enter'){addPackTpl('Ad-hoc',this.value.trim());this.value='';event.preventDefault();setTimeout(()=>_renderPackStandardView(document.getElementById('packingModalBody'),document.getElementById('packingModalTitle'),'${travelId}'),50);}"></div></div>`;
+  html+=`</div>`;
   body.innerHTML=html;
 }
 
