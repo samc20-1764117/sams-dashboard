@@ -1,5 +1,5 @@
 {
-  "exported_at": "2026-05-21T13:00:00.602Z",
+  "exported_at": "2026-05-22T13:00:01.131Z",
   "mode": "auto",
   "tables": {
     "tasks": [
@@ -2083,6 +2083,17 @@
         "goal_order": null
       },
       {
+        "name": "Nai nai",
+        "category": "Home",
+        "due_date": "2026-05-22",
+        "done": false,
+        "importance": null,
+        "id": "31d2f237-0d13-45b6-a1de-d24a2b63f1b2",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
         "name": "Pups showers",
         "category": "Home",
         "due_date": "2026-04-09",
@@ -2243,17 +2254,6 @@
         "done": true,
         "importance": null,
         "id": "8399a5f0-bccc-4999-a169-97fac82a6883",
-        "important": false,
-        "notes": null,
-        "goal_order": null
-      },
-      {
-        "name": "Nai nai",
-        "category": "Home",
-        "due_date": "2026-05-21",
-        "done": false,
-        "importance": null,
-        "id": "31d2f237-0d13-45b6-a1de-d24a2b63f1b2",
         "important": false,
         "notes": null,
         "goal_order": null
@@ -3249,17 +3249,6 @@
         "goal_order": null
       },
       {
-        "name": "Check GI emails",
-        "category": "Home",
-        "due_date": "2026-05-21",
-        "done": false,
-        "importance": null,
-        "id": "8825bd72-1b4a-4f23-b270-78837a7733bd",
-        "important": true,
-        "notes": null,
-        "goal_order": null
-      },
-      {
         "name": "Cancel doggie lawn",
         "category": "Home",
         "due_date": "2026-04-25",
@@ -3513,6 +3502,17 @@
         "goal_order": null
       },
       {
+        "name": "Check GI emails",
+        "category": "Home",
+        "due_date": "2026-05-22",
+        "done": false,
+        "importance": null,
+        "id": "8825bd72-1b4a-4f23-b270-78837a7733bd",
+        "important": true,
+        "notes": null,
+        "goal_order": null
+      },
+      {
         "name": "Respond",
         "category": "Home",
         "due_date": "2026-04-30",
@@ -3568,12 +3568,12 @@
         "goal_order": null
       },
       {
-        "name": "Pack",
-        "category": "Home",
+        "name": "Prep modern UX film",
+        "category": "My work",
         "due_date": "2026-05-21",
-        "done": false,
+        "done": true,
         "importance": null,
-        "id": "0efa18dd-a505-4719-b451-e38dd5e61946",
+        "id": "d8b33eef-b1b4-4f46-99f6-0da58ea89897",
         "important": false,
         "notes": null,
         "goal_order": null
@@ -3854,17 +3854,6 @@
         "goal_order": null
       },
       {
-        "name": "Bring olivias gift",
-        "category": "Home",
-        "due_date": "2026-05-22",
-        "done": false,
-        "importance": null,
-        "id": "79ed5195-9966-40dc-9ce0-beb0fa9f2257",
-        "important": false,
-        "notes": null,
-        "goal_order": null
-      },
-      {
         "name": "If needed cancel pilates",
         "category": "Home",
         "due_date": "2026-06-04",
@@ -3873,17 +3862,6 @@
         "id": "b8e624f0-60d7-4ec9-b4e8-38cfe8ad048b",
         "important": true,
         "notes": "Contract automatically renews each month until cancelled in writing 14 days prior to the payment date by emailing howdy@purepilatesaustin.com.",
-        "goal_order": null
-      },
-      {
-        "name": "OBGYN apt @11:15am",
-        "category": "Home",
-        "due_date": "2026-05-21",
-        "done": false,
-        "importance": null,
-        "id": "29a7baa2-cd4a-4efe-a4c2-ebc1d79bc51a",
-        "important": false,
-        "notes": "UT Medicine Women's Health Clinic\n1601 Trinity Street Bldg. A, 9th Floor\nAustin TX 78712\n‪833-882-2737‬",
         "goal_order": null
       },
       {
@@ -3909,17 +3887,6 @@
         "goal_order": null
       },
       {
-        "name": "Sunny bath",
-        "category": "Home",
-        "due_date": "2026-05-21",
-        "done": false,
-        "importance": null,
-        "id": "7e932df6-2ce8-4e53-895c-ee0ac578ea13",
-        "important": false,
-        "notes": null,
-        "goal_order": null
-      },
-      {
         "name": "VO drill down",
         "category": "My work",
         "due_date": "2026-05-18",
@@ -3937,17 +3904,6 @@
         "done": false,
         "importance": null,
         "id": "87ec4401-b9c2-4aac-858b-143748e3c284",
-        "important": false,
-        "notes": null,
-        "goal_order": null
-      },
-      {
-        "name": "Post VO drill down",
-        "category": "My work",
-        "due_date": "2026-05-21",
-        "done": false,
-        "importance": null,
-        "id": "24fea989-7676-45c5-baa0-8943646b805e",
         "important": false,
         "notes": null,
         "goal_order": null
@@ -4008,17 +3964,6 @@
         "goal_order": null
       },
       {
-        "name": "Call vet - dramimine",
-        "category": "Home",
-        "due_date": "2026-05-21",
-        "done": false,
-        "importance": null,
-        "id": "fc122625-64a8-408b-85d4-39bbddeaf09e",
-        "important": false,
-        "notes": null,
-        "goal_order": null
-      },
-      {
         "name": "Check mail - new CC",
         "category": "Home",
         "due_date": "2026-05-29",
@@ -4030,12 +3975,12 @@
         "goal_order": null
       },
       {
-        "name": "VO drill down",
-        "category": "My work",
-        "due_date": "2026-05-21",
+        "name": "Videos on overview page",
+        "category": "Home",
+        "due_date": "2026-05-23",
         "done": false,
         "importance": null,
-        "id": "8ac12dfd-d444-4499-a1a0-cf4bdafd53b3",
+        "id": "40aea1c3-0eb2-4bb7-987f-b4da4f903d48",
         "important": false,
         "notes": null,
         "goal_order": null
@@ -4085,23 +4030,23 @@
         "goal_order": null
       },
       {
-        "name": "Fix necklace",
-        "category": "Home",
-        "due_date": "2026-05-21",
-        "done": false,
-        "importance": null,
-        "id": "0919915f-3324-49a5-a7f2-06e90f4e7039",
-        "important": false,
-        "notes": null,
-        "goal_order": null
-      },
-      {
         "name": "Migration tables",
         "category": "Work",
         "due_date": "2026-05-19",
         "done": true,
         "importance": null,
         "id": "79d45c63-bb54-4ef2-94f4-b85a66f86817",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "VO drill down",
+        "category": "My work",
+        "due_date": "2026-05-21",
+        "done": true,
+        "importance": null,
+        "id": "8ac12dfd-d444-4499-a1a0-cf4bdafd53b3",
         "important": false,
         "notes": null,
         "goal_order": null
@@ -4129,40 +4074,18 @@
         "goal_order": null
       },
       {
-        "name": "Migration tables",
-        "category": "Work",
-        "due_date": "2026-05-21",
-        "done": false,
-        "importance": null,
-        "id": "5d6799d2-0c70-43d4-91ae-5832cccf765e",
-        "important": false,
-        "notes": null,
-        "goal_order": null
-      },
-      {
-        "name": "Dog harness",
+        "name": "Pack for sunny",
         "category": "Home",
         "due_date": "2026-05-21",
-        "done": false,
+        "done": true,
         "importance": null,
-        "id": "2a59f8aa-45c8-4735-a5a4-c76e360eafd1",
+        "id": "65e4dd99-06e1-4af6-8980-ef1f39c2aa8a",
         "important": false,
         "notes": null,
         "goal_order": null
       },
       {
-        "name": "Film modern UX",
-        "category": "My work",
-        "due_date": "2026-05-26",
-        "done": false,
-        "importance": null,
-        "id": "6e886ef3-a3d1-43a7-9da7-b5ce6999ddb0",
-        "important": false,
-        "notes": null,
-        "goal_order": null
-      },
-      {
-        "name": "Better card",
+        "name": "New CC review cards",
         "category": "Home",
         "due_date": "2026-05-23",
         "done": false,
@@ -4179,6 +4102,182 @@
         "done": true,
         "importance": null,
         "id": "a62a6b47-6da4-426e-a47a-e3bad0a30f46",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "OBGYN apt @11:15am",
+        "category": "Home",
+        "due_date": "2026-05-21",
+        "done": true,
+        "importance": null,
+        "id": "29a7baa2-cd4a-4efe-a4c2-ebc1d79bc51a",
+        "important": false,
+        "notes": "UT Medicine Women's Health Clinic\n1601 Trinity Street Bldg. A, 9th Floor\nAustin TX 78712\n‪833-882-2737‬",
+        "goal_order": null
+      },
+      {
+        "name": "Pack car",
+        "category": "Home",
+        "due_date": "2026-05-22",
+        "done": false,
+        "importance": null,
+        "id": "72cdcb64-a84a-4e86-b598-05129f4394f2",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Fix necklace",
+        "category": "Home",
+        "due_date": "2026-05-21",
+        "done": true,
+        "importance": null,
+        "id": "0919915f-3324-49a5-a7f2-06e90f4e7039",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Clean car",
+        "category": "Home",
+        "due_date": "2026-05-21",
+        "done": true,
+        "importance": null,
+        "id": "f95a5b1b-fa18-4ecd-8524-561408513acf",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Ashley @1:30",
+        "category": "Work",
+        "due_date": "2026-05-21",
+        "done": true,
+        "importance": null,
+        "id": "af00da76-b2fd-4d29-9c5f-f2fdcfde25d8",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Migration tables",
+        "category": "Work",
+        "due_date": "2026-05-22",
+        "done": false,
+        "importance": null,
+        "id": "5d6799d2-0c70-43d4-91ae-5832cccf765e",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Pack",
+        "category": "Home",
+        "due_date": "2026-05-21",
+        "done": true,
+        "importance": null,
+        "id": "0efa18dd-a505-4719-b451-e38dd5e61946",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Bring olivias gift",
+        "category": "Home",
+        "due_date": "2026-05-24",
+        "done": false,
+        "importance": null,
+        "id": "79ed5195-9966-40dc-9ce0-beb0fa9f2257",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Vet meds X2",
+        "category": "Home",
+        "due_date": "2026-05-22",
+        "done": false,
+        "importance": null,
+        "id": "3430416f-1dac-4f0d-9a82-8f87211573b0",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Shower + shave",
+        "category": "Home",
+        "due_date": "2026-05-22",
+        "done": false,
+        "importance": null,
+        "id": "aac89c8b-aded-44cd-b719-d3012bf392ba",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Post VO drill down",
+        "category": "My work",
+        "due_date": "2026-05-25",
+        "done": false,
+        "importance": null,
+        "id": "24fea989-7676-45c5-baa0-8943646b805e",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Film modern UX",
+        "category": "My work",
+        "due_date": "2026-05-25",
+        "done": false,
+        "importance": null,
+        "id": "6e886ef3-a3d1-43a7-9da7-b5ce6999ddb0",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Film drill down with Moch",
+        "category": "My work",
+        "due_date": "2026-05-25",
+        "done": false,
+        "importance": null,
+        "id": "b88ffcf7-4b59-4f3e-81d3-a9a0b413c8bb",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Dog harness",
+        "category": "Home",
+        "due_date": "2026-05-21",
+        "done": true,
+        "importance": null,
+        "id": "2a59f8aa-45c8-4735-a5a4-c76e360eafd1",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Call vet - dramimine",
+        "category": "Home",
+        "due_date": "2026-05-21",
+        "done": true,
+        "importance": null,
+        "id": "fc122625-64a8-408b-85d4-39bbddeaf09e",
+        "important": false,
+        "notes": null,
+        "goal_order": null
+      },
+      {
+        "name": "Sunny collar",
+        "category": "Home",
+        "due_date": "2026-05-22",
+        "done": false,
+        "importance": null,
+        "id": "6a3d0627-2841-433f-a064-e36e524c30e3",
         "important": false,
         "notes": null,
         "goal_order": null
@@ -4238,6 +4337,15 @@
         "created_at": "2026-04-16T12:46:32.121703+00:00",
         "due_date": null,
         "shop_order": 7
+      },
+      {
+        "id": "f98e8486-512c-4309-a0b1-881deda476a8",
+        "name": "Vibe Sunny",
+        "store": "Other",
+        "done": false,
+        "created_at": "2026-05-22T12:16:28.031685+00:00",
+        "due_date": null,
+        "shop_order": null
       },
       {
         "id": "63d4a10b-e42d-43dd-9771-728f5e6cabfb",
@@ -10965,6 +11073,20 @@
         "done": false
       },
       {
+        "id": "5c411872-f6a7-4f1c-88fe-08dd4011d212",
+        "title": "Oil change - Josh",
+        "day_date": "2026-05-22",
+        "start_time": "08:30:00",
+        "duration_minutes": 60,
+        "category": "Home",
+        "created_at": "2026-05-20T17:06:59.208537+00:00",
+        "start_minutes": 390,
+        "task_id": "ff1b910b-49fe-47d7-abe0-38f20e9a9f3c",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
         "id": "da904bac-af67-40b6-b69f-3214c4397171",
         "title": "Waterbottles",
         "day_date": "2026-05-21",
@@ -10979,16 +11101,16 @@
         "done": false
       },
       {
-        "id": "3607f521-529a-4701-bdbd-7efff90ad892",
-        "title": "Migration tables",
+        "id": "32c65303-5abb-4156-a46b-ac17fe7e4a73",
+        "title": "Vacuum",
         "day_date": "2026-05-21",
-        "start_time": "10:00:00",
-        "duration_minutes": 90,
-        "category": "Work",
-        "created_at": "2026-05-21T00:25:11.499287+00:00",
-        "start_minutes": 510,
-        "task_id": "5d6799d2-0c70-43d4-91ae-5832cccf765e",
-        "rec_id": null,
+        "start_time": "13:30:00",
+        "duration_minutes": 30,
+        "category": "Recurring",
+        "created_at": "2026-05-21T12:39:58.492715+00:00",
+        "start_minutes": 990,
+        "task_id": null,
+        "rec_id": "12",
         "shop_id": null,
         "done": false
       },
@@ -11025,28 +11147,14 @@
         "title": "OBGYN apt @11:15am",
         "day_date": "2026-05-21",
         "start_time": "11:15:00",
-        "duration_minutes": 135,
+        "duration_minutes": 150,
         "category": "Home",
         "created_at": "2026-05-19T17:02:02.683741+00:00",
-        "start_minutes": 660,
+        "start_minutes": 630,
         "task_id": "29a7baa2-cd4a-4efe-a4c2-ebc1d79bc51a",
         "rec_id": null,
         "shop_id": null,
-        "done": false
-      },
-      {
-        "id": "4e9452cf-065a-4559-aaab-9bfd3697b204",
-        "title": "VO drill down",
-        "day_date": "2026-05-21",
-        "start_time": "09:30:00",
-        "duration_minutes": 30,
-        "category": "My work",
-        "created_at": "2026-05-20T18:44:28.262976+00:00",
-        "start_minutes": 600,
-        "task_id": "8ac12dfd-d444-4499-a1a0-cf4bdafd53b3",
-        "rec_id": null,
-        "shop_id": null,
-        "done": false
+        "done": true
       },
       {
         "id": "a6e27c98-a194-4e30-85b9-7cb8a381e396",
@@ -11133,32 +11241,18 @@
         "done": false
       },
       {
-        "id": "f4ec762d-0d32-4441-8733-593b4399431a",
-        "title": "Bring olivias gift",
-        "day_date": "2026-05-22",
-        "start_time": "10:00:00",
-        "duration_minutes": 30,
-        "category": "Home",
-        "created_at": "2026-05-19T18:17:25.873846+00:00",
-        "start_minutes": 660,
-        "task_id": "79ed5195-9966-40dc-9ce0-beb0fa9f2257",
-        "rec_id": null,
-        "shop_id": null,
-        "done": false
-      },
-      {
-        "id": "997d72a5-f927-4684-af2e-0fd27869b7d8",
-        "title": "Dog harness",
+        "id": "202168cd-7ce9-4dfc-a9d5-3a6caf7dc331",
+        "title": "Laundry",
         "day_date": "2026-05-21",
-        "start_time": "07:30:00",
-        "duration_minutes": 30,
-        "category": "Home",
-        "created_at": "2026-05-21T12:39:02.017804+00:00",
-        "start_minutes": 450,
-        "task_id": "2a59f8aa-45c8-4735-a5a4-c76e360eafd1",
-        "rec_id": null,
+        "start_time": "19:45:00",
+        "duration_minutes": 60,
+        "category": "Recurring",
+        "created_at": "2026-05-20T18:44:38.296737+00:00",
+        "start_minutes": 930,
+        "task_id": null,
+        "rec_id": "18",
         "shop_id": null,
-        "done": false
+        "done": true
       },
       {
         "id": "4282b6f3-305a-4759-b92e-69bef4b52e29",
@@ -11189,34 +11283,6 @@
         "done": true
       },
       {
-        "id": "7ce81b32-b621-4a24-89a5-7ce77ca8ab13",
-        "title": "Nai nai",
-        "day_date": "2026-05-21",
-        "start_time": "15:30:00",
-        "duration_minutes": 60,
-        "category": "Home",
-        "created_at": "2026-05-21T12:39:20.698786+00:00",
-        "start_minutes": 930,
-        "task_id": "31d2f237-0d13-45b6-a1de-d24a2b63f1b2",
-        "rec_id": null,
-        "shop_id": null,
-        "done": false
-      },
-      {
-        "id": "81fb6ab4-d9c5-4ae3-9e9e-8079b498a8d6",
-        "title": "Pups teeth",
-        "day_date": "2026-05-21",
-        "start_time": "16:15:00",
-        "duration_minutes": 30,
-        "category": "Recurring",
-        "created_at": "2026-05-20T18:43:35.08706+00:00",
-        "start_minutes": 1110,
-        "task_id": null,
-        "rec_id": "10",
-        "shop_id": null,
-        "done": false
-      },
-      {
         "id": "65b83461-ddab-4fc6-b450-5153f21f2f38",
         "title": "Read resubmission project",
         "day_date": "2026-05-20",
@@ -11245,32 +11311,32 @@
         "done": false
       },
       {
-        "id": "5c411872-f6a7-4f1c-88fe-08dd4011d212",
-        "title": "Oil change - Josh",
+        "id": "4bcbe0eb-c917-4af2-9269-91159457f697",
+        "title": "Check GI emails",
         "day_date": "2026-05-22",
-        "start_time": "08:30:00",
-        "duration_minutes": 60,
+        "start_time": "13:00:00",
+        "duration_minutes": 30,
         "category": "Home",
-        "created_at": "2026-05-20T17:06:59.208537+00:00",
-        "start_minutes": 450,
-        "task_id": "ff1b910b-49fe-47d7-abe0-38f20e9a9f3c",
+        "created_at": "2026-05-21T20:06:07.006723+00:00",
+        "start_minutes": 690,
+        "task_id": "8825bd72-1b4a-4f23-b270-78837a7733bd",
         "rec_id": null,
         "shop_id": null,
         "done": false
       },
       {
-        "id": "5640dd29-0cee-4916-8505-afd12a0792be",
-        "title": "Sunny bath",
+        "id": "997d72a5-f927-4684-af2e-0fd27869b7d8",
+        "title": "Dog harness",
         "day_date": "2026-05-21",
-        "start_time": "19:00:00",
+        "start_time": "07:30:00",
         "duration_minutes": 30,
         "category": "Home",
-        "created_at": "2026-05-20T18:44:35.793968+00:00",
-        "start_minutes": 1110,
-        "task_id": "7e932df6-2ce8-4e53-895c-ee0ac578ea13",
+        "created_at": "2026-05-21T12:39:02.017804+00:00",
+        "start_minutes": 450,
+        "task_id": "2a59f8aa-45c8-4735-a5a4-c76e360eafd1",
         "rec_id": null,
         "shop_id": null,
-        "done": false
+        "done": true
       },
       {
         "id": "96930eb0-9bcf-462b-8531-12727208f9e6",
@@ -11301,6 +11367,62 @@
         "done": true
       },
       {
+        "id": "e5a9a28a-3ad6-408b-8fab-9e5398bd4a6d",
+        "title": "Ashley @1:30",
+        "day_date": "2026-05-21",
+        "start_time": "13:30:00",
+        "duration_minutes": 60,
+        "category": "Work",
+        "created_at": "2026-05-21T15:33:49.104722+00:00",
+        "start_minutes": 810,
+        "task_id": "af00da76-b2fd-4d29-9c5f-f2fdcfde25d8",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
+        "id": "0bbf781c-1df2-4c1e-bd9e-1df81dc2b32e",
+        "title": "Film modern UX",
+        "day_date": "2026-05-22",
+        "start_time": "08:45:00",
+        "duration_minutes": 60,
+        "category": "My work",
+        "created_at": "2026-05-21T15:08:18.800136+00:00",
+        "start_minutes": 480,
+        "task_id": "6e886ef3-a3d1-43a7-9da7-b5ce6999ddb0",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "f5112984-2fa4-4f9e-ad89-f325789a22ea",
+        "title": "Film drill down with Moch",
+        "day_date": "2026-05-22",
+        "start_time": "07:45:00",
+        "duration_minutes": 30,
+        "category": "My work",
+        "created_at": "2026-05-21T15:08:06.065929+00:00",
+        "start_minutes": 450,
+        "task_id": "b88ffcf7-4b59-4f3e-81d3-a9a0b413c8bb",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "16f368ad-18a7-4713-bb61-7451b9df3d06",
+        "title": "Pack for sunny",
+        "day_date": "2026-05-21",
+        "start_time": "16:30:00",
+        "duration_minutes": 30,
+        "category": "Home",
+        "created_at": "2026-05-21T17:15:45.502268+00:00",
+        "start_minutes": 990,
+        "task_id": "65e4dd99-06e1-4af6-8980-ef1f39c2aa8a",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
         "id": "7c471b04-285d-4314-9e21-0e7fd47b1c29",
         "title": "Pack",
         "day_date": "2026-05-21",
@@ -11312,60 +11434,18 @@
         "task_id": "0efa18dd-a505-4719-b451-e38dd5e61946",
         "rec_id": null,
         "shop_id": null,
-        "done": false
+        "done": true
       },
       {
-        "id": "202168cd-7ce9-4dfc-a9d5-3a6caf7dc331",
-        "title": "Laundry",
-        "day_date": "2026-05-21",
-        "start_time": "19:45:00",
-        "duration_minutes": 60,
-        "category": "Recurring",
-        "created_at": "2026-05-20T18:44:38.296737+00:00",
-        "start_minutes": 450,
-        "task_id": null,
-        "rec_id": "18",
-        "shop_id": null,
-        "done": false
-      },
-      {
-        "id": "ce7ff4a6-f1ae-4389-89e2-5f4962775f9e",
-        "title": "Check GI emails",
-        "day_date": "2026-05-21",
-        "start_time": "13:00:00",
-        "duration_minutes": 30,
-        "category": "Home",
-        "created_at": "2026-05-21T00:24:48.598702+00:00",
-        "start_minutes": 795,
-        "task_id": "8825bd72-1b4a-4f23-b270-78837a7733bd",
-        "rec_id": null,
-        "shop_id": null,
-        "done": false
-      },
-      {
-        "id": "32c65303-5abb-4156-a46b-ac17fe7e4a73",
-        "title": "Vacuum",
-        "day_date": "2026-05-21",
-        "start_time": "13:30:00",
-        "duration_minutes": 30,
-        "category": "Recurring",
-        "created_at": "2026-05-21T12:39:58.492715+00:00",
-        "start_minutes": 825,
-        "task_id": null,
-        "rec_id": "12",
-        "shop_id": null,
-        "done": false
-      },
-      {
-        "id": "66d74b8f-6f4e-4620-800e-554afed5118b",
-        "title": "Post VO drill down",
-        "day_date": "2026-05-21",
-        "start_time": "13:30:00",
-        "duration_minutes": 60,
-        "category": "My work",
-        "created_at": "2026-05-20T18:43:57.39244+00:00",
+        "id": "4c7460a7-b270-4606-9ca9-08287f73ed43",
+        "title": "Migration tables",
+        "day_date": "2026-05-22",
+        "start_time": "08:30:00",
+        "duration_minutes": 90,
+        "category": "Work",
+        "created_at": "2026-05-21T20:24:20.260478+00:00",
         "start_minutes": 855,
-        "task_id": "24fea989-7676-45c5-baa0-8943646b805e",
+        "task_id": "5d6799d2-0c70-43d4-91ae-5832cccf765e",
         "rec_id": null,
         "shop_id": null,
         "done": false
@@ -11380,6 +11460,132 @@
         "created_at": "2026-05-21T12:41:23.710457+00:00",
         "start_minutes": 480,
         "task_id": "fc122625-64a8-408b-85d4-39bbddeaf09e",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
+        "id": "428f49e7-fdcb-4a53-afc4-3c7f9f2a9f5d",
+        "title": "Sunny collar",
+        "day_date": "2026-05-22",
+        "start_time": "13:30:00",
+        "duration_minutes": 30,
+        "category": "Home",
+        "created_at": "2026-05-22T02:15:15.47305+00:00",
+        "start_minutes": 780,
+        "task_id": "6a3d0627-2841-433f-a064-e36e524c30e3",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "4e9452cf-065a-4559-aaab-9bfd3697b204",
+        "title": "VO drill down",
+        "day_date": "2026-05-21",
+        "start_time": "09:30:00",
+        "duration_minutes": 30,
+        "category": "My work",
+        "created_at": "2026-05-20T18:44:28.262976+00:00",
+        "start_minutes": 600,
+        "task_id": "8ac12dfd-d444-4499-a1a0-cf4bdafd53b3",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
+        "id": "a3082026-cdda-4e06-a05e-a4d87db0ee73",
+        "title": "Vet meds X2",
+        "day_date": "2026-05-22",
+        "start_time": "10:30:00",
+        "duration_minutes": 30,
+        "category": "Home",
+        "created_at": "2026-05-21T20:23:38.73051+00:00",
+        "start_minutes": 630,
+        "task_id": "3430416f-1dac-4f0d-9a82-8f87211573b0",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "d9f3022e-432f-44c9-a8c9-12fd8e26dc1e",
+        "title": "Pack car",
+        "day_date": "2026-05-22",
+        "start_time": "10:00:00",
+        "duration_minutes": 30,
+        "category": "Home",
+        "created_at": "2026-05-21T15:08:30.521455+00:00",
+        "start_minutes": 660,
+        "task_id": "72cdcb64-a84a-4e86-b598-05129f4394f2",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "a9fb9a2a-102c-4461-a7d6-505bb468cfa3",
+        "title": "Prep modern UX film",
+        "day_date": "2026-05-21",
+        "start_time": "14:15:00",
+        "duration_minutes": 60,
+        "category": "My work",
+        "created_at": "2026-05-21T15:28:51.133768+00:00",
+        "start_minutes": 870,
+        "task_id": "d8b33eef-b1b4-4f46-99f6-0da58ea89897",
+        "rec_id": null,
+        "shop_id": null,
+        "done": true
+      },
+      {
+        "id": "f2b15fce-692d-4b0a-a08e-712cb5fe1f68",
+        "title": "Post VO drill down",
+        "day_date": "2026-05-22",
+        "start_time": "14:15:00",
+        "duration_minutes": 75,
+        "category": "My work",
+        "created_at": "2026-05-21T15:07:39.514642+00:00",
+        "start_minutes": 780,
+        "task_id": "24fea989-7676-45c5-baa0-8943646b805e",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "f4ec762d-0d32-4441-8733-593b4399431a",
+        "title": "Bring olivias gift",
+        "day_date": "2026-05-22",
+        "start_time": "10:00:00",
+        "duration_minutes": 60,
+        "category": "Home",
+        "created_at": "2026-05-19T18:17:25.873846+00:00",
+        "start_minutes": 600,
+        "task_id": "79ed5195-9966-40dc-9ce0-beb0fa9f2257",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "7bade26c-5363-4684-ad75-786e7dea70e7",
+        "title": "Shower + shave",
+        "day_date": "2026-05-22",
+        "start_time": "08:45:00",
+        "duration_minutes": 30,
+        "category": "Home",
+        "created_at": "2026-05-22T12:21:05.305461+00:00",
+        "start_minutes": 600,
+        "task_id": "aac89c8b-aded-44cd-b719-d3012bf392ba",
+        "rec_id": null,
+        "shop_id": null,
+        "done": false
+      },
+      {
+        "id": "098f0370-a39f-4550-9d0d-558e9bcd0cec",
+        "title": "Nai nai",
+        "day_date": "2026-05-22",
+        "start_time": "15:30:00",
+        "duration_minutes": 30,
+        "category": "Home",
+        "created_at": "2026-05-22T02:09:52.989469+00:00",
+        "start_minutes": 570,
+        "task_id": "31d2f237-0d13-45b6-a1de-d24a2b63f1b2",
         "rec_id": null,
         "shop_id": null,
         "done": false
@@ -12030,7 +12236,464 @@
         "end_time": null
       }
     ],
-    "packing_templates": [],
-    "packing_items": []
+    "packing_templates": [
+      {
+        "id": 2,
+        "name": "Claw clip",
+        "category": "Must Haves",
+        "sort_order": 1,
+        "created_at": "2026-05-22T02:41:17.682906+00:00"
+      },
+      {
+        "id": 3,
+        "name": "Laptop",
+        "category": "Must Haves",
+        "sort_order": 2,
+        "created_at": "2026-05-22T02:41:17.682906+00:00"
+      },
+      {
+        "id": 4,
+        "name": "Chargers",
+        "category": "Must Haves",
+        "sort_order": 3,
+        "created_at": "2026-05-22T02:41:17.682906+00:00"
+      },
+      {
+        "id": 5,
+        "name": "Water bottles",
+        "category": "Must Haves",
+        "sort_order": 4,
+        "created_at": "2026-05-22T02:41:17.682906+00:00"
+      },
+      {
+        "id": 6,
+        "name": "Hat",
+        "category": "Must Haves",
+        "sort_order": 5,
+        "created_at": "2026-05-22T02:41:17.682906+00:00"
+      },
+      {
+        "id": 7,
+        "name": "Sunscreen",
+        "category": "Must Haves",
+        "sort_order": 6,
+        "created_at": "2026-05-22T02:41:17.682906+00:00"
+      },
+      {
+        "id": 8,
+        "name": "Caffeine packets",
+        "category": "Must Haves",
+        "sort_order": 7,
+        "created_at": "2026-05-22T02:41:17.682906+00:00"
+      },
+      {
+        "id": 9,
+        "name": "Airpods",
+        "category": "Must Haves",
+        "sort_order": 8,
+        "created_at": "2026-05-22T02:41:17.682906+00:00"
+      },
+      {
+        "id": 10,
+        "name": "Purse",
+        "category": "Must Haves",
+        "sort_order": 9,
+        "created_at": "2026-05-22T02:41:17.682906+00:00"
+      },
+      {
+        "id": 11,
+        "name": "Socks",
+        "category": "Clothes",
+        "sort_order": 0,
+        "created_at": "2026-05-22T02:41:17.682906+00:00"
+      },
+      {
+        "id": 12,
+        "name": "Underwear",
+        "category": "Clothes",
+        "sort_order": 1,
+        "created_at": "2026-05-22T02:41:17.682906+00:00"
+      },
+      {
+        "id": 13,
+        "name": "Bras",
+        "category": "Clothes",
+        "sort_order": 2,
+        "created_at": "2026-05-22T02:41:17.682906+00:00"
+      },
+      {
+        "id": 14,
+        "name": "Makeup",
+        "category": "Toiletries",
+        "sort_order": 0,
+        "created_at": "2026-05-22T02:41:17.682906+00:00"
+      },
+      {
+        "id": 15,
+        "name": "Curlers",
+        "category": "Toiletries",
+        "sort_order": 1,
+        "created_at": "2026-05-22T02:41:17.682906+00:00"
+      },
+      {
+        "id": 16,
+        "name": "Food",
+        "category": "Pups",
+        "sort_order": 0,
+        "created_at": "2026-05-22T02:41:17.682906+00:00"
+      },
+      {
+        "id": 17,
+        "name": "Toys",
+        "category": "Pups",
+        "sort_order": 1,
+        "created_at": "2026-05-22T02:41:17.682906+00:00"
+      },
+      {
+        "id": 18,
+        "name": "Blankets",
+        "category": "Pups",
+        "sort_order": 2,
+        "created_at": "2026-05-22T02:41:17.682906+00:00"
+      },
+      {
+        "id": 19,
+        "name": "Crate",
+        "category": "Pups",
+        "sort_order": 3,
+        "created_at": "2026-05-22T02:41:17.682906+00:00"
+      },
+      {
+        "id": 20,
+        "name": "Harness/Collar/Leash",
+        "category": "Pups",
+        "sort_order": 4,
+        "created_at": "2026-05-22T02:41:17.682906+00:00"
+      },
+      {
+        "id": 21,
+        "name": "Bag/Carrier",
+        "category": "Pups",
+        "sort_order": 5,
+        "created_at": "2026-05-22T02:41:17.682906+00:00"
+      },
+      {
+        "id": 22,
+        "name": "Bowl/Puzzle",
+        "category": "Pups",
+        "sort_order": 6,
+        "created_at": "2026-05-22T02:41:17.682906+00:00"
+      },
+      {
+        "id": 23,
+        "name": "Pee pads",
+        "category": "Pups",
+        "sort_order": 7,
+        "created_at": "2026-05-22T02:41:17.682906+00:00"
+      },
+      {
+        "id": 24,
+        "name": "Toiletry bag",
+        "category": "Toiletries",
+        "sort_order": 2,
+        "created_at": "2026-05-22T03:23:44.282834+00:00"
+      },
+      {
+        "id": 25,
+        "name": "Wipes",
+        "category": "Pups",
+        "sort_order": 8,
+        "created_at": "2026-05-22T03:23:52.192003+00:00"
+      },
+      {
+        "id": 1,
+        "name": "Dab pen",
+        "category": "Must Haves",
+        "sort_order": 0,
+        "created_at": "2026-05-22T02:41:17.682906+00:00"
+      }
+    ],
+    "packing_items": [
+      {
+        "id": 19,
+        "travel_id": "c1c24ceb-74dd-4b04-9ba9-a3236129f9fa",
+        "name": "Bag/Carrier",
+        "category": "Pups",
+        "source": "standard",
+        "checked": true,
+        "sort_order": 16,
+        "created_at": "2026-05-22T02:41:31.114654+00:00"
+      },
+      {
+        "id": 23,
+        "travel_id": "c1c24ceb-74dd-4b04-9ba9-a3236129f9fa",
+        "name": "Curlers",
+        "category": "Toiletries",
+        "source": "standard",
+        "checked": false,
+        "sort_order": 21,
+        "created_at": "2026-05-22T02:41:31.457229+00:00"
+      },
+      {
+        "id": 18,
+        "travel_id": "c1c24ceb-74dd-4b04-9ba9-a3236129f9fa",
+        "name": "Harness/Collar/Leash",
+        "category": "Pups",
+        "source": "standard",
+        "checked": false,
+        "sort_order": 15,
+        "created_at": "2026-05-22T02:41:31.025931+00:00"
+      },
+      {
+        "id": 21,
+        "travel_id": "c1c24ceb-74dd-4b04-9ba9-a3236129f9fa",
+        "name": "Pee pads",
+        "category": "Pups",
+        "source": "standard",
+        "checked": true,
+        "sort_order": 18,
+        "created_at": "2026-05-22T02:41:31.29649+00:00"
+      },
+      {
+        "id": 27,
+        "travel_id": "c1c24ceb-74dd-4b04-9ba9-a3236129f9fa",
+        "name": "Toiletry bag",
+        "category": "Toiletries",
+        "source": "standard",
+        "checked": true,
+        "sort_order": 23,
+        "created_at": "2026-05-22T03:24:08.39776+00:00"
+      },
+      {
+        "id": 22,
+        "travel_id": "c1c24ceb-74dd-4b04-9ba9-a3236129f9fa",
+        "name": "Makeup",
+        "category": "Toiletries",
+        "source": "standard",
+        "checked": true,
+        "sort_order": 19,
+        "created_at": "2026-05-22T02:41:31.375791+00:00"
+      },
+      {
+        "id": 11,
+        "travel_id": "c1c24ceb-74dd-4b04-9ba9-a3236129f9fa",
+        "name": "Caffeine packets",
+        "category": "Must Haves",
+        "source": "standard",
+        "checked": true,
+        "sort_order": 8,
+        "created_at": "2026-05-22T02:41:30.419865+00:00"
+      },
+      {
+        "id": 7,
+        "travel_id": "c1c24ceb-74dd-4b04-9ba9-a3236129f9fa",
+        "name": "Chargers",
+        "category": "Must Haves",
+        "source": "standard",
+        "checked": false,
+        "sort_order": 5,
+        "created_at": "2026-05-22T02:41:30.081489+00:00"
+      },
+      {
+        "id": 14,
+        "travel_id": "c1c24ceb-74dd-4b04-9ba9-a3236129f9fa",
+        "name": "Food",
+        "category": "Pups",
+        "source": "standard",
+        "checked": false,
+        "sort_order": 11,
+        "created_at": "2026-05-22T02:41:30.657941+00:00"
+      },
+      {
+        "id": 9,
+        "travel_id": "c1c24ceb-74dd-4b04-9ba9-a3236129f9fa",
+        "name": "Hat",
+        "category": "Must Haves",
+        "source": "standard",
+        "checked": true,
+        "sort_order": 6,
+        "created_at": "2026-05-22T02:41:30.249246+00:00"
+      },
+      {
+        "id": 2,
+        "travel_id": "c1c24ceb-74dd-4b04-9ba9-a3236129f9fa",
+        "name": "Underwear",
+        "category": "Clothes",
+        "source": "standard",
+        "checked": true,
+        "sort_order": 2,
+        "created_at": "2026-05-22T02:41:29.611188+00:00"
+      },
+      {
+        "id": 6,
+        "travel_id": "c1c24ceb-74dd-4b04-9ba9-a3236129f9fa",
+        "name": "Laptop",
+        "category": "Must Haves",
+        "source": "standard",
+        "checked": false,
+        "sort_order": 4,
+        "created_at": "2026-05-22T02:41:29.989211+00:00"
+      },
+      {
+        "id": 10,
+        "travel_id": "c1c24ceb-74dd-4b04-9ba9-a3236129f9fa",
+        "name": "Sunscreen",
+        "category": "Must Haves",
+        "source": "standard",
+        "checked": true,
+        "sort_order": 7,
+        "created_at": "2026-05-22T02:41:30.341012+00:00"
+      },
+      {
+        "id": 29,
+        "travel_id": "c1c24ceb-74dd-4b04-9ba9-a3236129f9fa",
+        "name": "Rain jacket",
+        "category": "Misc",
+        "source": "manual",
+        "checked": false,
+        "sort_order": 25,
+        "created_at": "2026-05-22T12:12:44.652767+00:00"
+      },
+      {
+        "id": 31,
+        "travel_id": "c1c24ceb-74dd-4b04-9ba9-a3236129f9fa",
+        "name": "Rain jacket",
+        "category": "Other",
+        "source": "manual",
+        "checked": false,
+        "sort_order": 27,
+        "created_at": "2026-05-22T12:16:39.997903+00:00"
+      },
+      {
+        "id": 15,
+        "travel_id": "c1c24ceb-74dd-4b04-9ba9-a3236129f9fa",
+        "name": "Toys",
+        "category": "Pups",
+        "source": "standard",
+        "checked": false,
+        "sort_order": 12,
+        "created_at": "2026-05-22T02:41:30.747553+00:00"
+      },
+      {
+        "id": 16,
+        "travel_id": "c1c24ceb-74dd-4b04-9ba9-a3236129f9fa",
+        "name": "Blankets",
+        "category": "Pups",
+        "source": "standard",
+        "checked": false,
+        "sort_order": 13,
+        "created_at": "2026-05-22T02:41:30.84246+00:00"
+      },
+      {
+        "id": 28,
+        "travel_id": "c1c24ceb-74dd-4b04-9ba9-a3236129f9fa",
+        "name": "Dab pen",
+        "category": "Must Haves",
+        "source": "standard",
+        "checked": true,
+        "sort_order": 24,
+        "created_at": "2026-05-22T03:25:05.534395+00:00"
+      },
+      {
+        "id": 26,
+        "travel_id": "c1c24ceb-74dd-4b04-9ba9-a3236129f9fa",
+        "name": "Wipes",
+        "category": "Pups",
+        "source": "standard",
+        "checked": true,
+        "sort_order": 22,
+        "created_at": "2026-05-22T03:24:08.313463+00:00"
+      },
+      {
+        "id": 20,
+        "travel_id": "c1c24ceb-74dd-4b04-9ba9-a3236129f9fa",
+        "name": "Bowl/Puzzle",
+        "category": "Pups",
+        "source": "standard",
+        "checked": false,
+        "sort_order": 17,
+        "created_at": "2026-05-22T02:41:31.195544+00:00"
+      },
+      {
+        "id": 1,
+        "travel_id": "c1c24ceb-74dd-4b04-9ba9-a3236129f9fa",
+        "name": "Socks",
+        "category": "Clothes",
+        "source": "standard",
+        "checked": true,
+        "sort_order": 0,
+        "created_at": "2026-05-22T02:41:29.499608+00:00"
+      },
+      {
+        "id": 12,
+        "travel_id": "c1c24ceb-74dd-4b04-9ba9-a3236129f9fa",
+        "name": "Airpods",
+        "category": "Must Haves",
+        "source": "standard",
+        "checked": true,
+        "sort_order": 9,
+        "created_at": "2026-05-22T02:41:30.490133+00:00"
+      },
+      {
+        "id": 13,
+        "travel_id": "c1c24ceb-74dd-4b04-9ba9-a3236129f9fa",
+        "name": "Purse",
+        "category": "Must Haves",
+        "source": "standard",
+        "checked": true,
+        "sort_order": 10,
+        "created_at": "2026-05-22T02:41:30.568311+00:00"
+      },
+      {
+        "id": 25,
+        "travel_id": "c1c24ceb-74dd-4b04-9ba9-a3236129f9fa",
+        "name": "Bras",
+        "category": "Clothes",
+        "source": "standard",
+        "checked": true,
+        "sort_order": 20,
+        "created_at": "2026-05-22T03:24:08.217413+00:00"
+      },
+      {
+        "id": 30,
+        "travel_id": "c1c24ceb-74dd-4b04-9ba9-a3236129f9fa",
+        "name": "Rain jacket",
+        "category": "Misc",
+        "source": "manual",
+        "checked": false,
+        "sort_order": 26,
+        "created_at": "2026-05-22T12:13:02.853662+00:00"
+      },
+      {
+        "id": 17,
+        "travel_id": "c1c24ceb-74dd-4b04-9ba9-a3236129f9fa",
+        "name": "Crate",
+        "category": "Pups",
+        "source": "standard",
+        "checked": false,
+        "sort_order": 14,
+        "created_at": "2026-05-22T02:41:30.942141+00:00"
+      },
+      {
+        "id": 8,
+        "travel_id": "c1c24ceb-74dd-4b04-9ba9-a3236129f9fa",
+        "name": "Water bottles",
+        "category": "Must Haves",
+        "source": "standard",
+        "checked": false,
+        "sort_order": 1,
+        "created_at": "2026-05-22T02:41:30.162982+00:00"
+      },
+      {
+        "id": 5,
+        "travel_id": "c1c24ceb-74dd-4b04-9ba9-a3236129f9fa",
+        "name": "Claw clip",
+        "category": "Must Haves",
+        "source": "standard",
+        "checked": true,
+        "sort_order": 3,
+        "created_at": "2026-05-22T02:41:29.905634+00:00"
+      }
+    ]
   }
 }
