@@ -1825,13 +1825,13 @@ function _finRenderSubs(){
   const yearlyTotal=monthlyTotal*12;
 
   let html=`<div class="card fin-card">
-    <div class="fin-card-hdr"><span class="fin-card-title">Subscriptions</span></div>
+    <div class="fin-card-hdr"><span class="fin-card-title">Subscriptions</span><button class="fin-add-btn" onclick="addFinSub()" style="font-size:16px;padding:0 4px;line-height:1">+</button></div>
     <div class="fin-stats">
       <div class="fin-stat-row"><span class="fin-stat-label">Monthly</span><span class="fin-stat-val">${_finFmt(monthlyTotal)}</span></div>
       <div class="fin-stat-row"><span class="fin-stat-label">Yearly</span><span class="fin-stat-val">${_finFmt(yearlyTotal)}</span></div>
     </div>
+    <div class="fin-sub-scroll">
     <table class="fin-tbl fin-sub-tbl"><thead><tr><th>Name</th><th style="text-align:right">Amount</th><th>Freq</th><th>Due</th><th></th></tr></thead><tbody>`;
-  html+=`<tr class="fin-add-row"><td colspan="5"><button class="fin-add-btn" onclick="addFinSub()">+ Add Subscription</button></td></tr>`;
   subs.forEach(sub=>{
     const dayStr=sub.due_day?_finOrdinal(sub.due_day):'—';
     html+=`<tr class="fin-row fin-sub-row${sub.cancel?' fin-cancel':''}">
@@ -1847,7 +1847,7 @@ function _finRenderSubs(){
       <td><button class="delbtn" onclick="delFinSub('${sub.id}')">&#x2715;</button></td>
     </tr>`;
   });
-  html+=`</tbody></table></div>`;
+  html+=`</tbody></table></div></div>`;
   return html;
 }
 

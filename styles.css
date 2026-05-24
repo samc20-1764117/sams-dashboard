@@ -1183,13 +1183,33 @@ body.dark .vid-stat-card{background:rgba(40,30,50,.4)}
 .fin-cancel .fin-name{text-decoration:line-through;opacity:.5}
 .fin-cancel .fin-amt,.fin-cancel .fin-freq-sel{opacity:.5}
 .fin-due-edit{min-width:24px;text-align:center;font-size:11px;color:var(--text-secondary,#64748b)}
-.fin-chart-wrap{display:flex;align-items:center;gap:12px;padding:8px 16px 12px}
-.fin-donut{width:90px;height:90px;flex-shrink:0;transform:rotate(-90deg)}
+.fin-chart-wrap{display:flex;align-items:flex-start;gap:16px;padding:8px 16px 12px}
+.fin-donut{width:100px;height:100px;flex-shrink:0;transform:rotate(-90deg)}
 .fin-chart-legend{flex:1;min-width:0}
-.fin-legend-item{display:flex;align-items:center;gap:6px;font-size:11px;padding:2px 0}
+.fin-legend-row{display:flex;align-items:center;gap:6px;font-size:11px;padding:3px 0;border-bottom:1px solid rgba(200,200,215,.06)}
+.fin-legend-row:last-child{border-bottom:none}
 .fin-legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-.fin-legend-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-primary,#334155)}
-.fin-legend-pct{color:var(--text-secondary,#64748b);font-weight:600;font-variant-numeric:tabular-nums}
+.fin-legend-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fin-legend-amt{font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--text-primary,#334155)}
+.fin-legend-pct{color:var(--text-secondary,#64748b);font-weight:600;font-variant-numeric:tabular-nums;font-size:10px;min-width:28px;text-align:right}
+.fin-legend-del{opacity:0;transition:opacity .15s;font-size:10px;flex-shrink:0}
+.fin-legend-row:hover .fin-legend-del{opacity:1}
+.fin-legend-edit-name{border-bottom:none!important;min-width:30px;font-weight:500;color:var(--text-primary,#334155)}
+.fin-legend-edit-amt{border-bottom:none!important;min-width:40px;text-align:right}
+.fin-legend-edit-name:hover,.fin-legend-edit-amt:hover{background:rgba(109,95,230,.08)}
+.fin-legend-edit-name:focus,.fin-legend-edit-amt:focus{background:rgba(109,95,230,.1);box-shadow:0 0 0 1.5px rgba(109,95,230,.3)}
+/* Investments split */
+.fin-inv-split{display:flex;gap:0;flex:1;min-height:0}
+.fin-inv-left{flex:1;min-width:0;border-right:1px solid rgba(200,200,215,.1);padding-bottom:8px}
+.fin-inv-right{flex:1;min-width:0;display:flex;flex-direction:column}
+.fin-inv-right-hdr{display:flex;align-items:center;justify-content:space-between;padding:6px 12px 4px;font-size:11px;font-weight:600;color:var(--text-secondary,#64748b)}
+.fin-inv-scroll{flex:1;overflow-y:auto;min-height:0}
+.fin-inv-scroll .fin-tbl td{padding:3px 12px;font-size:11px}
+/* Subscriptions compact + scroll */
+.fin-sub-scroll{flex:1;overflow-y:auto;min-height:0}
+.fin-sub-tbl td{padding:4px 12px!important;font-size:11px}
+.fin-sub-tbl th{padding:4px 12px!important}
+.fin-sub-row td{height:28px}
 .fin-num{font-family:system-ui,-apple-system,sans-serif;font-variant-numeric:tabular-nums}
 .fin-chart-hit{cursor:pointer}
 .fin-donut circle{cursor:pointer}
