@@ -1780,7 +1780,7 @@ function _finRenderInvestments(purchases,totalBought){
     const polyPts=dataPoints.map((d,i)=>`${(i/(dataPoints.length-1))*w},${ch-(d.cum/max)*ch}`).join(' ');
     const years=new Set();const yearLabels=[];
     dataPoints.forEach((d,i)=>{const y=(d.date||'').slice(0,4);if(y&&!years.has(y)){years.add(y);yearLabels.push({x:(i/(dataPoints.length-1))*w,y:y});}});
-    html+=`<div style="padding:4px 16px 4px"><svg viewBox="0 0 ${w} ${h}" style="width:100%;height:80px">
+    html+=`<div style="padding:4px 16px 4px"><svg viewBox="0 0 ${w} ${h}" style="width:100%;height:80px" preserveAspectRatio="xMidYMid meet">
       <polyline points="0,${ch} ${polyPts} ${w},${ch}" fill="rgba(34,197,94,.06)" stroke="none"/>
       <polyline points="${polyPts}" fill="none" stroke="#22c55e" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>`;
     dataPoints.forEach((d,i)=>{
@@ -1851,7 +1851,7 @@ function _finOrdinal(n){const s=['th','st','nd','rd'];const v=n%100;return n+(s[
 function _finSubEditable(id,field,val,cls){
   const display=typeof val==='number'?_finFmt(val):escHtml(val||'');
   const raw=typeof val==='number'?val.toFixed(2):(val||'');
-  return`<span class="fin-edit ${cls||''}" contenteditable="true" onfocus="if('${field}'!=='name'){this.textContent='${raw}';}" onblur="_finSubEditField('${id}','${field}',this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">${display}</span>`;
+  return`<span class="${cls||'fin-edit'}" contenteditable="true" onfocus="if('${field}'!=='name'){this.textContent='${raw}';}" onblur="_finSubEditField('${id}','${field}',this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">${display}</span>`;
 }
 
 async function _finSubEditField(id,field,el){

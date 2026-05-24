@@ -1125,7 +1125,11 @@ body.dark .vid-stat-card{background:rgba(40,30,50,.4)}
 .ban-pack-inline:hover{background:rgba(255,255,255,.95)}
 
 /* ── Finance Page ─────────────────────────────────────────────────────────── */
-.fin-kpi-row{display:flex;gap:14px;margin-bottom:18px}
+.fin-layout{display:flex;gap:16px;flex:1;min-height:0}
+.fin-left{flex:1;min-width:0;display:flex;flex-direction:column}
+.fin-right{flex:1;min-width:0;display:flex;flex-direction:column}
+.fin-right .fin-card{flex:1}
+.fin-kpi-row{display:flex;gap:14px;margin-bottom:16px}
 .fin-kpi{flex:1;padding:16px 18px;border-radius:12px;background:rgba(100,100,140,.05);border:1px solid rgba(200,200,215,.12)}
 .fin-kpi-label{font-size:11px;font-weight:500;color:var(--text-secondary,#94a3b8);margin-bottom:4px}
 .fin-kpi-val{font-size:22px;font-weight:700;color:var(--text-primary,#334155);font-variant-numeric:tabular-nums}
@@ -1134,9 +1138,7 @@ body.dark .vid-stat-card{background:rgba(40,30,50,.4)}
 .fin-kpi-gain{background:rgba(16,185,129,.06);border-color:rgba(16,185,129,.15)}
 .fin-kpi-gain .fin-kpi-val{color:#10b981;text-align:right}
 .fin-kpi-sub{font-size:12px;font-weight:600;color:#10b981;opacity:.8;text-align:right;margin-top:2px}
-.fin-cols{display:flex;gap:16px;align-items:stretch;flex:1;min-height:0}
-.fin-col{flex:1;min-width:0;display:flex;flex-direction:column}
-.fin-card{margin-bottom:0;flex:1;display:flex;flex-direction:column}
+.fin-card{margin-bottom:0;display:flex;flex-direction:column}
 .fin-card .fin-tbl{flex:1}
 .fin-card-hdr{display:flex;align-items:center;justify-content:space-between;padding:12px 16px 8px}
 .fin-card-title{font-size:13px;font-weight:600;color:var(--text-primary,#334155)}
@@ -1145,7 +1147,7 @@ body.dark .vid-stat-card{background:rgba(40,30,50,.4)}
 .fin-tbl thead th{text-align:left;padding:6px 16px;font-size:10px;color:var(--text-secondary,#64748b);font-weight:600;border-bottom:1px solid rgba(200,200,215,.15)}
 .fin-tbl tbody tr{border-bottom:1px solid rgba(200,200,215,.08);transition:background .1s}
 .fin-tbl tbody tr:hover{background:rgba(100,100,140,.04)}
-.fin-tbl td{padding:6px 16px;color:var(--text-primary,#334155)}
+.fin-tbl td{padding:6px 16px;color:var(--text-primary,#334155);vertical-align:middle}
 .fin-amt{text-align:right;font-variant-numeric:tabular-nums;font-weight:500}
 .fin-neg{color:#dc2626}
 .fin-pos{color:#16a34a}
@@ -1162,6 +1164,11 @@ body.dark .vid-stat-card{background:rgba(40,30,50,.4)}
 .fin-edit{outline:none;border-radius:4px;padding:1px 4px;transition:all .15s;cursor:text;display:inline-block;min-width:40px;border-bottom:1.5px dashed rgba(109,95,230,.3);color:var(--text-primary,#334155)}
 .fin-edit:hover{background:rgba(109,95,230,.08);border-bottom-color:rgba(109,95,230,.5)}
 .fin-edit:focus{background:rgba(109,95,230,.1);box-shadow:0 0 0 1.5px rgba(109,95,230,.3);border-bottom-color:transparent}
+.fin-sub-plain{outline:none;border-radius:4px;padding:1px 4px;transition:all .15s;cursor:text;display:inline-block;min-width:24px;border-bottom:none;color:var(--text-primary,#334155)}
+.fin-sub-plain:hover{background:rgba(109,95,230,.08)}
+.fin-sub-plain:focus{background:rgba(109,95,230,.1);box-shadow:0 0 0 1.5px rgba(109,95,230,.3)}
+.fin-sub-row td{vertical-align:middle}
+.fin-sub-name-wrap{display:inline-flex;align-items:center;gap:4px}
 .fin-ph-cell{border-bottom:none!important}
 .fin-add-row td{padding:4px 16px!important}
 .fin-add-btn{border:none;background:none;color:var(--text-secondary,#94a3b8);font-size:11px;cursor:pointer;padding:4px 0;font-weight:500;transition:color .15s}
@@ -1169,7 +1176,6 @@ body.dark .vid-stat-card{background:rgba(40,30,50,.4)}
 .fin-freq-sel{border:none;background:transparent;font-size:11px;color:var(--text-secondary,#64748b);cursor:pointer;padding:2px;border-radius:4px;outline:none}
 .fin-freq-sel:hover{background:rgba(100,100,140,.08)}
 .fin-freq-sel:focus{box-shadow:0 0 0 1.5px rgba(109,95,230,.3)}
-.fin-sub-name-cell{display:flex;align-items:center;gap:4px}
 .fin-cancel-btn{border:none;background:none;cursor:pointer;font-size:10px;color:var(--text-secondary,#94a3b8);opacity:.3;padding:2px 4px;border-radius:4px;transition:all .15s;line-height:1;flex-shrink:0}
 .fin-cancel-btn:hover{opacity:.7;background:rgba(239,68,68,.1)}
 .fin-cancel-btn.active{opacity:1;color:#dc2626;background:rgba(239,68,68,.12)}
