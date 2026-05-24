@@ -1662,7 +1662,7 @@ function openSB(){sbOpen=true;document.getElementById('sidebar').classList.remov
 // ══════════════════════════════════════════════════════════════════════════════
 // ── FINANCE PAGE ─────────────────────────────────────────────────────────────
 // ══════════════════════════════════════════════════════════════════════════════
-const _FIN_COLORS=['#3b82f6','#65a30d','#ec4899','#9333ea','#94a3b8','#2a9db5','#eab308','#f97316'];
+const _FIN_COLORS_PASTEL=['#93c5fd','#c4b5fd','#fbcfe8','#fde68a','#a5f3fc','#fed7aa','#d9f99d','#e9d5ff'];
 function _finOf(type){return st.finance.filter(r=>r.type===type);}
 function _finFmt(n){return n<0?'-$'+Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):'$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function _finFmtPct(n){return(n>=0?'+':'')+n.toFixed(2)+'%';}
