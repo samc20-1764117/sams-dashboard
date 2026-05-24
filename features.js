@@ -1681,15 +1681,20 @@ function renderFinancePage(){
   const gain=currentVal-totalBought;
   const gainPct=totalBought?((gain/totalBought)*100):0;
 
-  let html=`<div class="fin-kpi-row">
+  let html=`<div class="fin-layout">`;
+  // Left side
+  html+=`<div class="fin-left">`;
+  html+=`<div class="fin-kpi-row">
     <div class="fin-kpi fin-kpi-primary"><div class="fin-kpi-label">Net Worth</div><div class="fin-kpi-val">${_finFmt(netWorth)}</div></div>
-    <div class="fin-kpi fin-kpi-primary"><div class="fin-kpi-label">VTI Current Value</div><div class="fin-kpi-val">${vtiAcc?_finEditable(vtiAcc.id,'amount',currentVal,''):`${_finFmt(currentVal)}`}</div></div>
     <div class="fin-kpi fin-kpi-gain"><div class="fin-kpi-label">VTI Gain</div><div class="fin-kpi-val">${_finFmt(gain)}</div><div class="fin-kpi-sub">${_finFmtPct(gainPct)}</div></div>
   </div>`;
-  html+=`<div class="fin-cols">`;
-  html+=_finRenderPersonal(accs);
+  html+=_finRenderPersonal(accs,vtiAcc,currentVal);
   html+=_finRenderInvestments(purchases,totalBought);
+  html+=`</div>`;
+  // Right side
+  html+=`<div class="fin-right">`;
   html+=_finRenderSubs();
+  html+=`</div>`;
   html+=`</div>`;
   el.innerHTML=html;
 }
@@ -1712,19 +1717,23 @@ function _finEditable(id,field,val,cls){
   return`<span class="fin-edit ${cls||''}" contenteditable="true" data-fid="${id}" data-field="${field}" onfocus="if(this.dataset.field!=='name'){this.textContent='${raw}';}" onblur="_finEditField('${id}','${field}',this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">${display}</span>`;
 }
 
-// ── Column 1: Personal Finances ──────────────────────────────────────────────
-function _finRenderPersonal(accs){
+// ── Left Top: Personal Finances ──────────────────────────────────────────────
+function _finRenderPersonal(accs,vtiAcc,currentVal){
   const vti=accs.find(a=>(a.name||'')==='VTI');
-  // Sort by amount descending (match donut order)
   const others=[...accs.filter(a=>(a.name||'')!=='VTI')].sort((a,b)=>(b.amount||0)-(a.amount||0));
   const chartItems=[...accs.filter(a=>(a.amount||0)>0)].sort((a,b)=>(b.amount||0)-(a.amount||0));
   const total=chartItems.reduce((s,a)=>s+(a.amount||0),0);
 
-  let html=`<div class="fin-col"><div class="card fin-card">
+  let html=`<div class="card fin-card">
     <div class="fin-card-hdr"><span class="fin-card-title">Personal Finances</span></div>`;
   if(total>0){
     let cum=0;
-    const segs=chartItems.map((a,i)=>{const pct=(a.amount||0)/total;const start=cum;cum+=pct;return{name:a.name,amt:a.amount,pct,start,color:_FIN_COLORS[i%_FIN_COLORS.length]};});
+    const segs=chartItems.map((a,i)=>{
+      const isVTI=(a.name||'')==='VTI';
+      const pct=(a.amount||0)/total;const start=cum;cum+=pct;
+      const color=isVTI?'#22c55e':_FIN_COLORS_PASTEL[i%_FIN_COLORS_PASTEL.length];
+      return{name:a.name,amt:a.amount,pct,start,color};
+    });
     html+=`<div class="fin-chart-wrap"><svg class="fin-donut" viewBox="0 0 42 42">`;
     segs.forEach(seg=>{
       const dashLen=seg.pct*100;const dashOff=100-(seg.start*100)+25;
@@ -1745,44 +1754,42 @@ function _finRenderPersonal(accs){
       <td><button class="delbtn" onclick="delFin('${a.id}')">&#x2715;</button></td>
     </tr>`;
   });
-  if(vti){
-    html+=`<tr class="fin-row fin-row-muted"><td class="fin-name">VTI</td><td class="fin-amt">${_finFmt(vti.amount||0)}</td><td></td></tr>`;
+  if(vtiAcc){
+    html+=`<tr class="fin-row"><td class="fin-name">VTI</td><td class="fin-amt">${_finEditable(vtiAcc.id,'amount',currentVal)}</td><td></td></tr>`;
   }
-  html+=`</tbody></table></div></div>`;
+  html+=`</tbody></table></div>`;
   return html;
 }
 
-// ── Column 2: Investments (VTI) ──────────────────────────────────────────────
+// ── Left Bottom: Investments (VTI) ──────────────────────────────────────────
 function _finRenderInvestments(purchases,totalBought){
   const sorted=[...purchases].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
   const chronological=[...purchases].sort((a,b)=>(a.date||'').localeCompare(b.date||''));
 
-  let html=`<div class="fin-col"><div class="card fin-card">
+  let html=`<div class="card fin-card" style="margin-top:16px">
     <div class="fin-card-hdr"><span class="fin-card-title">Investments</span></div>`;
   html+=`<div class="fin-stats">
     <div class="fin-stat-row"><span class="fin-stat-label fin-muted">Cost Basis</span><span class="fin-stat-val fin-muted">${_finFmt(totalBought)}</span></div>
   </div>`;
-  // Cumulative investment trend with year axis + tooltips
   if(chronological.length>1){
     let cum=0;
     const dataPoints=chronological.map(p=>{cum+=Math.abs(p.amount||0);return{date:p.date,cum};});
     const max=Math.max(...dataPoints.map(d=>d.cum));
-    const w=200,h=60,padB=14;
+    const w=200,h=70,padB=18;
     const ch=h-padB;
     const polyPts=dataPoints.map((d,i)=>`${(i/(dataPoints.length-1))*w},${ch-(d.cum/max)*ch}`).join(' ');
-    // Year labels
     const years=new Set();const yearLabels=[];
     dataPoints.forEach((d,i)=>{const y=(d.date||'').slice(0,4);if(y&&!years.has(y)){years.add(y);yearLabels.push({x:(i/(dataPoints.length-1))*w,y:y});}});
-    html+=`<div style="padding:4px 16px 4px"><svg viewBox="0 0 ${w} ${h}" style="width:100%;height:70px" preserveAspectRatio="none">
-      <polyline points="0,${ch} ${polyPts} ${w},${ch}" fill="rgba(59,130,246,.06)" stroke="none"/>
-      <polyline points="${polyPts}" fill="none" stroke="#3b82f6" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>`;
+    html+=`<div style="padding:4px 16px 4px"><svg viewBox="0 0 ${w} ${h}" style="width:100%;height:80px">
+      <polyline points="0,${ch} ${polyPts} ${w},${ch}" fill="rgba(34,197,94,.06)" stroke="none"/>
+      <polyline points="${polyPts}" fill="none" stroke="#22c55e" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>`;
     dataPoints.forEach((d,i)=>{
       const x=(i/(dataPoints.length-1))*w;const y=ch-(d.cum/max)*ch;
-      html+=`<circle cx="${x}" cy="${y}" r="2.5" fill="#3b82f6" opacity="0" class="fin-chart-dot"><title>${d.date}: ${_finFmt(d.cum)}</title></circle>`;
+      html+=`<circle cx="${x}" cy="${y}" r="2.5" fill="#22c55e" opacity="0" class="fin-chart-dot"><title>${d.date}: ${_finFmt(d.cum)}</title></circle>`;
       html+=`<circle cx="${x}" cy="${y}" r="8" fill="transparent" class="fin-chart-hit" onmouseenter="this.previousElementSibling.setAttribute('opacity','1')" onmouseleave="this.previousElementSibling.setAttribute('opacity','0')"><title>${d.date}: ${_finFmt(d.cum)}</title></circle>`;
     });
     yearLabels.forEach(yl=>{
-      html+=`<text x="${yl.x}" y="${h-1}" fill="var(--text-secondary,#94a3b8)" font-size="5.5" font-weight="600" font-family="system-ui">${yl.y}</text>`;
+      html+=`<text x="${yl.x}" y="${h-2}" fill="var(--text-secondary,#94a3b8)" font-size="7" font-weight="600" font-family="system-ui">${yl.y}</text>`;
     });
     html+=`</svg></div>`;
   }
@@ -1796,7 +1803,7 @@ function _finRenderInvestments(purchases,totalBought){
       <td><button class="delbtn" onclick="delFin('${p.id}')">&#x2715;</button></td>
     </tr>`;
   });
-  html+=`</tbody></table></div></div>`;
+  html+=`</tbody></table></div>`;
   return html;
 }
 
@@ -1812,28 +1819,30 @@ function _finRenderSubs(){
   },0);
   const yearlyTotal=monthlyTotal*12;
 
-  let html=`<div class="fin-col"><div class="card fin-card">
+  let html=`<div class="card fin-card">
     <div class="fin-card-hdr"><span class="fin-card-title">Subscriptions</span></div>
     <div class="fin-stats">
       <div class="fin-stat-row"><span class="fin-stat-label">Monthly</span><span class="fin-stat-val">${_finFmt(monthlyTotal)}</span></div>
       <div class="fin-stat-row"><span class="fin-stat-label">Yearly</span><span class="fin-stat-val">${_finFmt(yearlyTotal)}</span></div>
     </div>
-    <table class="fin-tbl"><thead><tr><th>Name</th><th style="text-align:right">Amount</th><th>Freq</th><th>Due</th><th></th></tr></thead><tbody>`;
+    <table class="fin-tbl fin-sub-tbl"><thead><tr><th>Name</th><th style="text-align:right">Amount</th><th>Freq</th><th>Due</th><th></th></tr></thead><tbody>`;
   html+=`<tr class="fin-add-row"><td colspan="5"><button class="fin-add-btn" onclick="addFinSub()">+ Add Subscription</button></td></tr>`;
   subs.forEach(sub=>{
     const dayStr=sub.due_day?_finOrdinal(sub.due_day):'—';
-    html+=`<tr class="fin-row${sub.cancel?' fin-cancel':''}">
-      <td class="fin-sub-name-cell">
-        <button class="fin-cancel-btn ${sub.cancel?'active':''}" onclick="toggleFinSubCancel('${sub.id}')" title="${sub.cancel?'Unmark cancel':'Flag to cancel'}">&#x2715;</button>
-        ${_finSubEditable(sub.id,'name',sub.name,'fin-name')}
+    html+=`<tr class="fin-row fin-sub-row${sub.cancel?' fin-cancel':''}">
+      <td>
+        <span class="fin-sub-name-wrap">
+          <button class="fin-cancel-btn ${sub.cancel?'active':''}" onclick="toggleFinSubCancel('${sub.id}')" title="${sub.cancel?'Unmark cancel':'Flag to cancel'}">&#x2715;</button>
+          ${_finSubEditable(sub.id,'name',sub.name,'fin-name fin-sub-plain')}
+        </span>
       </td>
-      <td class="fin-amt fin-num">${_finSubEditable(sub.id,'amount',sub.amount||0)}</td>
+      <td class="fin-amt fin-num">${_finSubEditable(sub.id,'amount',sub.amount||0,'fin-sub-plain')}</td>
       <td>${_finFreqSelect(sub.id,sub.frequency||'monthly')}</td>
-      <td><span class="fin-edit fin-due-edit" contenteditable="true" onfocus="this.textContent='${sub.due_day||''}';" onblur="_finSubEditDay('${sub.id}',this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">${dayStr}</span></td>
+      <td><span class="fin-sub-plain fin-due-edit" contenteditable="true" onfocus="this.textContent='${sub.due_day||''}';" onblur="_finSubEditDay('${sub.id}',this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">${dayStr}</span></td>
       <td><button class="delbtn" onclick="delFinSub('${sub.id}')">&#x2715;</button></td>
     </tr>`;
   });
-  html+=`</tbody></table></div></div>`;
+  html+=`</tbody></table></div>`;
   return html;
 }
 
