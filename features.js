@@ -1717,60 +1717,61 @@ function _finEditable(id,field,val,cls){
   return`<span class="fin-edit ${cls||''}" contenteditable="true" data-fid="${id}" data-field="${field}" onfocus="if(this.dataset.field!=='name'){this.textContent='${raw}';}" onblur="_finEditField('${id}','${field}',this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">${display}</span>`;
 }
 
-// ── Left Top: Personal Finances ──────────────────────────────────────────────
+// ── Left Top: Personal Finances (donut + editable legend) ───────────────────
 function _finRenderPersonal(accs,vtiAcc,currentVal){
-  const vti=accs.find(a=>(a.name||'')==='VTI');
-  const others=[...accs.filter(a=>(a.name||'')!=='VTI')].sort((a,b)=>(b.amount||0)-(a.amount||0));
+  const allAccs=[...accs].sort((a,b)=>(b.amount||0)-(a.amount||0));
   const chartItems=[...accs.filter(a=>(a.amount||0)>0)].sort((a,b)=>(b.amount||0)-(a.amount||0));
   const total=chartItems.reduce((s,a)=>s+(a.amount||0),0);
 
   let html=`<div class="card fin-card">
-    <div class="fin-card-hdr"><span class="fin-card-title">Personal Finances</span></div>`;
-  if(total>0){
-    let cum=0;
-    const segs=chartItems.map((a,i)=>{
-      const isVTI=(a.name||'')==='VTI';
-      const pct=(a.amount||0)/total;const start=cum;cum+=pct;
-      const color=isVTI?'#22c55e':_FIN_COLORS_PASTEL[i%_FIN_COLORS_PASTEL.length];
-      return{name:a.name,amt:a.amount,pct,start,color};
-    });
-    html+=`<div class="fin-chart-wrap"><svg class="fin-donut" viewBox="0 0 42 42">`;
+    <div class="fin-card-hdr"><span class="fin-card-title">Personal Finances</span><button class="fin-add-btn" onclick="addFinRow('account')" style="font-size:16px;padding:0 4px;line-height:1">+</button></div>`;
+  // Donut + legend with inline editing
+  let cum=0;
+  const segs=total>0?chartItems.map((a,i)=>{
+    const isVTI=(a.name||'')==='VTI';
+    const pct=(a.amount||0)/total;const start=cum;cum+=pct;
+    const color=isVTI?'#22c55e':_FIN_COLORS_PASTEL[i%_FIN_COLORS_PASTEL.length];
+    return{id:a.id,name:a.name,amt:a.amount,pct,start,color,isVTI};
+  }):[];
+  html+=`<div class="fin-chart-wrap">`;
+  if(segs.length){
+    html+=`<svg class="fin-donut" viewBox="0 0 42 42">`;
     segs.forEach(seg=>{
       const dashLen=seg.pct*100;const dashOff=100-(seg.start*100)+25;
       html+=`<circle cx="21" cy="21" r="15.9" fill="none" stroke="${seg.color}" stroke-width="4.5" stroke-dasharray="${dashLen} ${100-dashLen}" stroke-dashoffset="${dashOff}"><title>${seg.name}: ${_finFmt(seg.amt)} (${(seg.pct*100).toFixed(1)}%)</title></circle>`;
     });
-    html+=`</svg><div class="fin-chart-legend">`;
-    segs.forEach(seg=>{
-      html+=`<div class="fin-legend-item"><span class="fin-legend-dot" style="background:${seg.color}"></span><span class="fin-legend-name">${escHtml(seg.name)}</span><span class="fin-legend-pct">${(seg.pct*100).toFixed(0)}%</span></div>`;
-    });
-    html+=`</div></div>`;
+    html+=`</svg>`;
   }
-  html+=`<table class="fin-tbl"><thead><tr><th>Source</th><th style="text-align:right">Amount</th><th></th></tr></thead><tbody>`;
-  html+=`<tr class="fin-add-row"><td colspan="3"><button class="fin-add-btn" onclick="addFinRow('account')">+ Add Account</button></td></tr>`;
-  others.forEach(a=>{
-    html+=`<tr class="fin-row">
-      <td>${_finEditable(a.id,'name',a.name,'fin-name')}</td>
-      <td class="fin-amt">${_finEditable(a.id,'amount',a.amount||0)}</td>
-      <td><button class="delbtn" onclick="delFin('${a.id}')">&#x2715;</button></td>
-    </tr>`;
+  html+=`<div class="fin-chart-legend">`;
+  allAccs.forEach(a=>{
+    const seg=segs.find(s=>s.id===a.id);
+    const color=seg?seg.color:'#cbd5e1';
+    const pctStr=seg?`${(seg.pct*100).toFixed(0)}%`:'';
+    html+=`<div class="fin-legend-row">
+      <span class="fin-legend-dot" style="background:${color}"></span>
+      <span class="fin-legend-name">${_finEditable(a.id,'name',a.name,'fin-legend-edit-name')}</span>
+      <span class="fin-legend-amt">${_finEditable(a.id,'amount',a.amount||0,'fin-legend-edit-amt')}</span>
+      <span class="fin-legend-pct">${pctStr}</span>
+      <button class="delbtn fin-legend-del" onclick="delFin('${a.id}')">&#x2715;</button>
+    </div>`;
   });
-  if(vtiAcc){
-    html+=`<tr class="fin-row"><td class="fin-name">VTI</td><td class="fin-amt">${_finEditable(vtiAcc.id,'amount',currentVal)}</td><td></td></tr>`;
-  }
-  html+=`</tbody></table></div>`;
+  html+=`</div></div></div>`;
   return html;
 }
 
-// ── Left Bottom: Investments (VTI) ──────────────────────────────────────────
+// ── Left Bottom: Investments (VTI) — split: metrics+chart | line items ──────
 function _finRenderInvestments(purchases,totalBought){
   const sorted=[...purchases].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
   const chronological=[...purchases].sort((a,b)=>(a.date||'').localeCompare(b.date||''));
 
   let html=`<div class="card fin-card" style="margin-top:16px">
-    <div class="fin-card-hdr"><span class="fin-card-title">Investments</span></div>`;
-  html+=`<div class="fin-stats">
-    <div class="fin-stat-row"><span class="fin-stat-label fin-muted">Cost Basis</span><span class="fin-stat-val fin-muted">${_finFmt(totalBought)}</span></div>
-  </div>`;
+    <div class="fin-card-hdr"><span class="fin-card-title">Investments</span></div>
+    <div class="fin-inv-split">`;
+  // Left: metrics + chart
+  html+=`<div class="fin-inv-left">
+    <div class="fin-stats">
+      <div class="fin-stat-row"><span class="fin-stat-label fin-muted">Cost Basis</span><span class="fin-stat-val fin-muted">${_finFmt(totalBought)}</span></div>
+    </div>`;
   if(chronological.length>1){
     let cum=0;
     const dataPoints=chronological.map(p=>{cum+=Math.abs(p.amount||0);return{date:p.date,cum};});
@@ -1780,7 +1781,7 @@ function _finRenderInvestments(purchases,totalBought){
     const polyPts=dataPoints.map((d,i)=>`${(i/(dataPoints.length-1))*w},${ch-(d.cum/max)*ch}`).join(' ');
     const years=new Set();const yearLabels=[];
     dataPoints.forEach((d,i)=>{const y=(d.date||'').slice(0,4);if(y&&!years.has(y)){years.add(y);yearLabels.push({x:(i/(dataPoints.length-1))*w,y:y});}});
-    html+=`<div style="padding:4px 16px 4px"><svg viewBox="0 0 ${w} ${h}" style="width:100%;height:80px" preserveAspectRatio="xMidYMid meet">
+    html+=`<div style="padding:4px 8px 4px"><svg viewBox="0 0 ${w} ${h}" style="width:100%;height:80px" preserveAspectRatio="xMidYMid meet">
       <polyline points="0,${ch} ${polyPts} ${w},${ch}" fill="rgba(34,197,94,.06)" stroke="none"/>
       <polyline points="${polyPts}" fill="none" stroke="#22c55e" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>`;
     dataPoints.forEach((d,i)=>{
@@ -1793,17 +1794,21 @@ function _finRenderInvestments(purchases,totalBought){
     });
     html+=`</svg></div>`;
   }
-  html+=`<div class="fin-card-sub">Purchase History</div>
-    <table class="fin-tbl"><thead><tr><th>Date</th><th style="text-align:right">Amount</th><th></th></tr></thead><tbody>`;
-  html+=`<tr class="fin-add-row"><td colspan="3"><button class="fin-add-btn" onclick="addFinRow('vti')">+ Add Purchase</button></td></tr>`;
+  html+=`</div>`;
+  // Right: purchase history line items
+  html+=`<div class="fin-inv-right">
+    <div class="fin-inv-right-hdr"><span>Purchase History</span><button class="fin-add-btn" onclick="addFinRow('vti')" style="font-size:14px;padding:0 4px;line-height:1">+</button></div>
+    <div class="fin-inv-scroll">
+    <table class="fin-tbl"><tbody>`;
   sorted.forEach(p=>{
     html+=`<tr class="fin-row">
-      <td class="fin-ph-cell">${p.date||''}</td>
-      <td class="fin-amt fin-ph-cell fin-num">${_finFmt(Math.abs(p.amount||0))}</td>
+      <td class="fin-ph-cell" style="font-size:11px">${p.date||''}</td>
+      <td class="fin-amt fin-ph-cell fin-num" style="font-size:11px">${_finFmt(Math.abs(p.amount||0))}</td>
       <td><button class="delbtn" onclick="delFin('${p.id}')">&#x2715;</button></td>
     </tr>`;
   });
-  html+=`</tbody></table></div>`;
+  html+=`</tbody></table></div></div>`;
+  html+=`</div></div>`;
   return html;
 }
 
