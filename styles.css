@@ -468,7 +468,7 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 .tb-arrow{position:absolute;right:3px;top:50%;transform:translateY(-50%);font-size:9px;font-weight:600;opacity:.75;color:var(--accent);pointer-events:none;transition:opacity .1s}
 #todList .tb-arrow{right:18px}
 .ti:hover .tb-arrow{opacity:0}
-.wr-unassigned{position:absolute;right:22px;top:50%;transform:translateY(-50%);font-size:9px;font-weight:600;opacity:.75;color:var(--accent);pointer-events:none}
+.wr-unassigned{position:absolute;right:2px;top:50%;transform:translateY(-50%);font-size:9px;font-weight:600;opacity:.75;color:var(--accent);pointer-events:none}
 .chip-name{flex:1;overflow:hidden;text-overflow:ellipsis;font-size:9px}
 /* Travel/birthday banner row spanning multiple days */
 .wkc-banners{height:20px;position:absolute;top:0;left:0;right:0;z-index:6;pointer-events:none}
