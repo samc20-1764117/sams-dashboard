@@ -7,6 +7,7 @@
 - **WR recurring** (`is_weekly_reset=true`): overdue if `_dateOverrides[wkKey] < today && !_doneByWk[wkKey]`. 4-week lookback. `wrRecHandled` set — only added when `_dateOverrides[wkKey] <= today` (future dates don't block older-week lookback).
 - **WR rules** (`st.wrRules`): overdue if `_dateOverrides[wkKey] < today && !isDoneWRRule`. Same 4-week lookback + `wrRuleHandled` set with same future-date exception.
 - **Pup sessions**: `day_date < today && !done`. Included in `updateOvBanner` count and `rolloverOverdue` (moves `day_date` to today, PATCHes `pup_skill_sessions`). Appear in today list when `dayOff===0`.
+- **Videos**: overdue if `_vidDayMap[id] < today && status !== 'published'`. Included in banner count and rollover (moves localStorage date to today). Appear in today list with red `OV` style + day letter.
 - Tasks/shopping/non-WR recurring only overdue if assigned to a date.
 - `updateOvBanner()` called from `renderToday()`.
 
@@ -60,7 +61,7 @@ All indicators at far right, swap to X on hover. `cat-dot` stroke changes to acc
 - **`@time` in task name**: `submitQA` auto-detects `@1:30pm` style, creates timeblock immediately with local task ID, updates `taskId` after server confirm. Name kept as-is. If no due date, defaults to today. `autoDur`: Social=180min, Work/My work/Recurring=60min, Home=30min. Same durations apply when dragging tasks onto timeblock grid. **Priority**: manually-set timeblock position (via drag) takes precedence over `@time` in name — editing a task (e.g. adding notes) never reverts a manually-placed block. `@time` only creates a NEW block if none exists.
 - **Task move to new day (weekly cal drop or Arrow Left/Right)**: if task had a timeblock on old day, auto-creates block on new day at same time/duration. If no old block but `@time` in name, creates block from parsed time. Undo removes new block and restores old. Arrow keys move all selected tasks ±1 day relative to each task's own date (works for regular, rec, wrec, wrrule, shop).
 - **Multi-select mixed-type drag**: dragging any selected item (task, wrec, wrrule) moves ALL selected items together. Each drag handler (task, `wrec::`, `wrrule::`) iterates `selectedTasks` and moves items of all types. Full undo for all moved items via `_mixedUndos`/`_wrecUndos`/`_wrUndos` arrays.
-- **Overdue weekly reset display**: overdue wrec/wrrule tasks in today list show day-of-week letter (`dlbl ov`) and use red `OV` style, same as regular overdue tasks.
+- **Overdue display**: all overdue tasks show red `OV` style + `ov-row` class + day-of-week letter (`dlbl ov`) positioned at `right:9px` (aligned with dot indicators). `.tb-arrow` and `.wr-unassigned` hidden on `ov-row`. `.tb-arrow` in todList at `right:3px` (right of dot, between dot and list edge). `.wr-unassigned` at `right:2px` (same position).
 - **Weekly Reset card header** (`#wrRecWkLbl`): "Weekly Reset" when `wrRecOff===0`, else date range.
 - **Weekly cal bounce fix**: banner lane counts pre-computed synchronously; `paddingTop` set before paint.
 
