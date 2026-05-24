@@ -4902,13 +4902,14 @@ function updateOvBanner(){
   const ovRec=getOvRecurring();
   const ovShop=getOvShopping();
   const ovPup=(st.pupSessions||[]).filter(s=>!s.done&&s.day_date&&s.day_date<today);
-  const total=ovTasks.length+ovRec.length+ovShop.length+ovPup.length;
+  const _ovVdm=_vidDayMap();const ovVid=(st.videos||[]).filter(v=>!v.is_deleted&&v.status!=='published'&&_ovVdm[String(v.id)]&&_ovVdm[String(v.id)]<today);
+  const total=ovTasks.length+ovRec.length+ovShop.length+ovPup.length+ovVid.length;
   const banner=document.getElementById('ovBanner');
   if(total>0){
     let bannerTxt;
     if(total===1){
-      const item=[...ovTasks,...ovRec,...ovShop,...ovPup][0];
-      const name=item.name||item.title||'task';
+      const item=[...ovTasks,...ovRec,...ovShop,...ovPup,...ovVid][0];
+      const name=item.name||item.topic||item.title||'task';
       bannerTxt=`1 overdue: "${name}" — move to today?`;
     } else {
       bannerTxt=`${total} overdue tasks — move all to today?`;
@@ -4925,7 +4926,8 @@ async function rolloverOverdue(){
   const ovRec=getOvRecurring();
   const ovShop=getOvShopping();
   const ovPup=(st.pupSessions||[]).filter(s=>!s.done&&s.day_date&&s.day_date<today);
-  if(!ovTasks.length&&!ovRec.length&&!ovShop.length&&!ovPup.length)return;
+  const _roVdm=_vidDayMap();const ovVid=(st.videos||[]).filter(v=>!v.is_deleted&&v.status!=='published'&&_roVdm[String(v.id)]&&_roVdm[String(v.id)]<today);
+  if(!ovTasks.length&&!ovRec.length&&!ovShop.length&&!ovPup.length&&!ovVid.length)return;
   const prevDates=ovTasks.map(t=>({id:String(t.id),date:t.due_date}));
   const prevRecWkKeys=ovRec.map(v=>{
     const prevDate=v._ruleId
@@ -4942,13 +4944,16 @@ async function rolloverOverdue(){
   });
   ovShop.forEach(s=>{s.due_date=today;});
   ovPup.forEach(s=>{s.day_date=today;});
+  const prevVidDates=ovVid.map(v=>({id:String(v.id),date:_roVdm[String(v.id)]}));
+  ovVid.forEach(v=>{_roVdm[String(v.id)]=today;});_vidDayMapSet(_roVdm);
   renderAll();
-  const total=ovTasks.length+ovRec.length+ovShop.length+ovPup.length;
+  const total=ovTasks.length+ovRec.length+ovShop.length+ovPup.length+ovVid.length;
   pushUndo(()=>{
     prevDates.forEach(({id,date})=>{const t=st.tasks.find(x=>String(x.id)===id);if(t)t.due_date=date;});
     prevRecWkKeys.forEach(({recId,ruleId,wkKey,prevDate})=>{if(ruleId){const r=st.wrRules.find(x=>String(x.id)===String(ruleId));if(r){if(!r._dateOverrides)r._dateOverrides={};if(prevDate)r._dateOverrides[wkKey]=prevDate;else delete r._dateOverrides[wkKey];}}else{const r=st.recurring.find(x=>String(x.id)===String(recId));if(r){if(!r._dateOverrides)r._dateOverrides={};if(prevDate)r._dateOverrides[wkKey]=prevDate;else delete r._dateOverrides[wkKey];}}});
     prevShopDates.forEach(({id,date})=>{const s=st.shopping.find(x=>String(x.id)===id);if(s)s.due_date=date;});
     prevPupDates.forEach(({id,date})=>{const s=(st.pupSessions||[]).find(x=>String(x.id)===id);if(s)s.day_date=date;});
+    prevVidDates.forEach(({id,date})=>{const m=_vidDayMap();if(date)m[id]=date;else delete m[id];_vidDayMapSet(m);});
     renderAll();
     prevDates.forEach(({id,date})=>sbReq('PATCH','tasks',{due_date:date},`?id=eq.${id}`));
     prevShopDates.forEach(({id,date})=>sbReqNullable('PATCH','shopping_list',{due_date:date||null},`?id=eq.${id}`));
