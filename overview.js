@@ -665,7 +665,8 @@ function sortTasksForDay(tasks,ds){
   if(!blks.length)return sortByTypeOrder(tasks);
   function tbSm(t){
     let b=null;
-    if(t._shopId)b=blks.find(x=>String(x.shopId)===String(t._shopId));
+    if(t._vidId)b=blks.find(x=>String(x._vidId)===String(t._vidId));
+    else if(t._shopId)b=blks.find(x=>String(x.shopId)===String(t._shopId));
     else if(t._ruleId)b=blks.find(x=>String(x.ruleId)===String(t._ruleId)||String(x.recId)===String(t._ruleId));
     else if(t._recId)b=blks.find(x=>String(x.recId)===String(t._recId));
     else if(!t._virtual)b=blks.find(x=>String(x.taskId)===String(t.id));
@@ -690,7 +691,8 @@ function sortTasksToday(tasks){return sortTasksForDay(tasks,d2s(getDayDate(dayOf
 function sortByTBWeek(tasks){
   function tbSmAny(t){
     let b=null;
-    if(t._shopId)b=st.blocks.find(x=>String(x.shopId)===String(t._shopId));
+    if(t._vidId)b=st.blocks.find(x=>String(x._vidId)===String(t._vidId));
+    else if(t._shopId)b=st.blocks.find(x=>String(x.shopId)===String(t._shopId));
     else if(t._ruleId)b=st.blocks.find(x=>String(x.ruleId)===String(t._ruleId)||String(x.recId)===String(t._ruleId));
     else if(t._recId)b=st.blocks.find(x=>String(x.recId)===String(t._recId));
     else if(!t._virtual)b=st.blocks.find(x=>String(x.taskId)===String(t.id));
@@ -3141,11 +3143,15 @@ function _vidAssignToDay(vidId,ds){
   const prev=map[String(vidId)]||null;
   map[String(vidId)]=ds;
   _vidDayMapSet(map);
-  renderAll();
+  // Move associated timeblock to new day
+  const _vidBlk=st.blocks.find(b=>String(b._vidId)===String(vidId));
+  const _vidBlkPrevDs=_vidBlk?_vidBlk.ds:null;
+  if(_vidBlk&&_vidBlk.ds!==ds){_vidBlk.ds=ds;sbSaveBlock(_vidBlk);}
+  renderAll();if(document.getElementById('tbGrid'))renderDayTB();
   // Re-render panel if open
   const panel=document.getElementById('vidOvPanel');
   if(panel&&panel.style.display==='block')_renderVidOvMenu();
-  pushUndo(()=>{const m2=_vidDayMap();if(prev)m2[String(vidId)]=prev;else delete m2[String(vidId)];_vidDayMapSet(m2);renderAll();const p2=document.getElementById('vidOvPanel');if(p2&&p2.style.display==='block')_renderVidOvMenu();},'Added video to calendar');
+  pushUndo(()=>{const m2=_vidDayMap();if(prev)m2[String(vidId)]=prev;else delete m2[String(vidId)];_vidDayMapSet(m2);if(_vidBlk&&_vidBlkPrevDs){_vidBlk.ds=_vidBlkPrevDs;sbSaveBlock(_vidBlk);}renderAll();if(document.getElementById('tbGrid'))renderDayTB();const p2=document.getElementById('vidOvPanel');if(p2&&p2.style.display==='block')_renderVidOvMenu();},'Added video to calendar');
 }
 function _vidUnassignDay(vidId){
   const map=_vidDayMap();
