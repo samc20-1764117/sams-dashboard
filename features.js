@@ -1669,6 +1669,7 @@ function _finFmtPct(n){return(n>=0?'+':'')+n.toFixed(2)+'%';}
 function _finParseNum(s){return parseFloat((s||'').replace(/[$,\s]/g,''))||0;}
 function _finSnap(){return{finance:JSON.parse(JSON.stringify(st.finance)),finSubs:JSON.parse(JSON.stringify(st.finSubs))};}
 function _finRestore(snap){st.finance=snap.finance;st.finSubs=snap.finSubs;renderFinancePage();}
+function _finFocusNew(id,field){requestAnimationFrame(()=>{const el=document.querySelector(`[data-fid="${id}"][data-field="${field}"]`)||document.querySelector(`.fin-sub-plain[onfocus*="${id}"]`);if(el){el.focus();if(el.textContent){const r=document.createRange();r.selectNodeContents(el);const s=window.getSelection();s.removeAllRanges();s.addRange(r);}}});}
 
 function renderFinancePage(){
   const el=document.getElementById('finPageContent');if(!el)return;
@@ -1764,7 +1765,7 @@ function _finRenderInvestments(purchases,totalBought){
   const sorted=[...purchases].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
   const chronological=[...purchases].sort((a,b)=>(a.date||'').localeCompare(b.date||''));
 
-  let html=`<div class="card fin-card" style="margin-top:16px">
+  let html=`<div class="card fin-card fin-inv-card">
     <div class="fin-card-hdr"><span class="fin-card-title">Investments</span></div>
     <div class="fin-inv-split">`;
   // Left: metrics + chart
@@ -1856,7 +1857,7 @@ function _finOrdinal(n){const s=['th','st','nd','rd'];const v=n%100;return n+(s[
 function _finSubEditable(id,field,val,cls){
   const display=typeof val==='number'?_finFmt(val):escHtml(val||'');
   const raw=typeof val==='number'?val.toFixed(2):(val||'');
-  return`<span class="${cls||'fin-edit'}" contenteditable="true" onfocus="if('${field}'!=='name'){this.textContent='${raw}';}" onblur="_finSubEditField('${id}','${field}',this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">${display}</span>`;
+  return`<span class="${cls||'fin-edit'}" contenteditable="true" data-fid="${id}" data-field="${field}" onfocus="if('${field}'!=='name'){this.textContent='${raw}';}" onblur="_finSubEditField('${id}','${field}',this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">${display}</span>`;
 }
 
 async function _finSubEditField(id,field,el){
@@ -1909,6 +1910,7 @@ async function addFinSub(){
   const snap=_finSnap();
   const row={id:'l-'+Date.now(),name:'New Sub',amount:0,frequency:'monthly',due_day:null,cancel:false,sort_order:0};
   st.finSubs.unshift(row);renderFinancePage();
+  _finFocusNew(row.id,'name');
   pushUndo(()=>{st.finSubs=st.finSubs.filter(r=>r.id!==row.id);renderFinancePage();},'Added subscription');
   const{id,...fields}=row;
   const sv=await sbReq('POST','finance_subs',fields);
@@ -1930,6 +1932,7 @@ async function addFinRow(type){
   else Object.assign(fields,{name:'VTI Purchase',date:tod(),amount:0});
   const row={id:'l-'+Date.now(),sort_order:0,...fields};
   st.finance.unshift(row);renderFinancePage();
+  _finFocusNew(row.id,'name');
   pushUndo(()=>{st.finance=st.finance.filter(r=>r.id!==row.id);renderFinancePage();},'Added '+(type==='vti'?'purchase':'account'));
   const sv=await sbReq('POST','finance',{...fields,sort_order:row.sort_order});
   if(sv&&sv[0]){const i=st.finance.findIndex(x=>x.id===row.id);if(i>-1)st.finance[i]=sv[0];}
