@@ -279,7 +279,8 @@ body.dark .inline-date-picker input[type="date"]{background:rgba(255,255,255,.08
 .idp-save{background:var(--accent);color:#fff}
 .idp-save:hover{opacity:.9}
 .dlbl:hover .date-clr{opacity:1}
-.dlbl.ov{color:#ef4444!important;margin-right:-4px}
+.dlbl.ov{color:#ef4444!important;position:absolute;right:5px;top:50%;transform:translateY(-50%);min-width:auto;margin:0;font-weight:700;font-size:9px}
+.ti.ov-row .wr-unassigned{display:none}
 .flag-u{font-size:8px;font-weight:600;padding:0px 4px;border-radius:4px;background:rgba(148,163,184,.12);color:var(--muted);border:1px solid rgba(148,163,184,.2);flex-shrink:0}
 .imp-star{font-size:11px;flex-shrink:0;line-height:1}
 .delbtn{opacity:0;background:none;border:none;cursor:pointer;color:var(--subtle);font-size:10px;padding:1px 2px;border-radius:3px;flex-shrink:0;transition:opacity .1s;position:absolute;right:3px;top:50%;transform:translateY(-50%)}
