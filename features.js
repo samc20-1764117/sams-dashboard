@@ -1662,7 +1662,7 @@ function openSB(){sbOpen=true;document.getElementById('sidebar').classList.remov
 // ══════════════════════════════════════════════════════════════════════════════
 // ── FINANCE PAGE ─────────────────────────────────────────────────────────────
 // ══════════════════════════════════════════════════════════════════════════════
-const _FIN_COLORS=['#3b82f6','#10b981','#8b5cf6','#f59e0b','#ec4899','#0ea5e9','#ef4444','#06b6d4'];
+const _FIN_COLORS=['#3b82f6','#65a30d','#ec4899','#9333ea','#94a3b8','#2a9db5','#eab308','#f97316'];
 function _finOf(type){return st.finance.filter(r=>r.type===type);}
 function _finFmt(n){return n<0?'-$'+Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):'$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function _finFmtPct(n){return(n>=0?'+':'')+n.toFixed(2)+'%';}
@@ -1774,15 +1774,15 @@ function _finRenderInvestments(purchases,totalBought){
     const years=new Set();const yearLabels=[];
     dataPoints.forEach((d,i)=>{const y=(d.date||'').slice(0,4);if(y&&!years.has(y)){years.add(y);yearLabels.push({x:(i/(dataPoints.length-1))*w,y:y});}});
     html+=`<div style="padding:4px 16px 4px"><svg viewBox="0 0 ${w} ${h}" style="width:100%;height:70px" preserveAspectRatio="none">
-      <polyline points="0,${ch} ${polyPts} ${w},${ch}" fill="rgba(16,185,129,.06)" stroke="none"/>
-      <polyline points="${polyPts}" fill="none" stroke="#10b981" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>`;
+      <polyline points="0,${ch} ${polyPts} ${w},${ch}" fill="rgba(59,130,246,.06)" stroke="none"/>
+      <polyline points="${polyPts}" fill="none" stroke="#3b82f6" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>`;
     dataPoints.forEach((d,i)=>{
       const x=(i/(dataPoints.length-1))*w;const y=ch-(d.cum/max)*ch;
-      html+=`<circle cx="${x}" cy="${y}" r="3" fill="#10b981" opacity="0"><title>${d.date}: ${_finFmt(d.cum)}</title></circle>`;
-      html+=`<circle cx="${x}" cy="${y}" r="8" fill="transparent"><title>${d.date}: ${_finFmt(d.cum)}</title></circle>`;
+      html+=`<circle cx="${x}" cy="${y}" r="2.5" fill="#3b82f6" opacity="0" class="fin-chart-dot"><title>${d.date}: ${_finFmt(d.cum)}</title></circle>`;
+      html+=`<circle cx="${x}" cy="${y}" r="8" fill="transparent" class="fin-chart-hit" onmouseenter="this.previousElementSibling.setAttribute('opacity','1')" onmouseleave="this.previousElementSibling.setAttribute('opacity','0')"><title>${d.date}: ${_finFmt(d.cum)}</title></circle>`;
     });
     yearLabels.forEach(yl=>{
-      html+=`<text x="${yl.x}" y="${h-1}" fill="var(--text-secondary,#94a3b8)" font-size="3.5" font-family="system-ui">${yl.y}</text>`;
+      html+=`<text x="${yl.x}" y="${h-1}" fill="var(--text-secondary,#94a3b8)" font-size="5.5" font-weight="600" font-family="system-ui">${yl.y}</text>`;
     });
     html+=`</svg></div>`;
   }
