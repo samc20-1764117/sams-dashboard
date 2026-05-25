@@ -108,12 +108,13 @@ function renderToday(){
       if(isOvToday){const ov=getRecAutoTBForDate(t.due_date);if(ov.some(a=>String(a._recId)===String(t._recId)))return true;}
       return false;
     }
+    if(t._vidId)return st.blocks.some(b=>(b.ds===_todDs||isOvToday)&&String(b._vidId)===String(t._vidId));
     if(!t._virtual)return st.blocks.some(b=>(b.ds===_todDs||isOvToday)&&String(b.taskId)===String(t.id));
     return true;
   }
   document.getElementById('todList').innerHTML=sorted.map(t=>{
     const arr=!t.done&&!_hasTBToday(t);
-    return t._type==='travel'||t._type==='birthday'?tRowExtra(t):t._type==='vid'?tRowVidVirt(t):t._type==='shop'?tRowShopVirt(t,true,arr,true):t._type==='pup'?tRowPupSess(t,true):t._virtual?tRowTodayVirt(t,arr,true):tRow(t,{cat:true,catDot:true,drag:true,noDate:true,tbArrow:arr,noColor:true});
+    return t._type==='travel'||t._type==='birthday'?tRowExtra(t):t._type==='vid'?tRowVidVirt(t,arr):t._type==='shop'?tRowShopVirt(t,true,arr,true):t._type==='pup'?tRowPupSess(t,true):t._virtual?tRowTodayVirt(t,arr,true):tRow(t,{cat:true,catDot:true,drag:true,noDate:true,tbArrow:arr,noColor:true});
   }).join('');
   updateOvBanner();
   renderPupSkillsHighlight();
@@ -757,7 +758,7 @@ function tRowShopVirt(t,noDate=false,tbArrow=false,noColor=false){
     <button class="delbtn" onclick="event.stopPropagation();unscheduleShop('${t._shopId}')">✕</button>
   </div>`;
 }
-function tRowVidVirt(t){
+function tRowVidVirt(t,arr){
   const ov=isOv(t.due_date)&&!t.done;
   const _vs=ov?OV:{bg:'rgba(34,197,94,.1)',t:'#15803d',d:'#22c55e',b:'rgba(34,197,94,.2)'};const vid=String(t._vidId);
   const _v3=(st.videos||[]).find(x=>String(x.id)===String(vid));
@@ -772,6 +773,7 @@ function tRowVidVirt(t){
     <span class="tn">${escHtml(t.name)}</span>
     ${ov&&t.due_date?`<span class="dlbl ov">${['S','M','T','W','T','F','S'][new Date(t.due_date.split('T')[0]+'T12:00').getDay()]}</span>`:''}
     ${!ov?`<span style="font-size:9px;opacity:.5;margin-left:auto;flex-shrink:0">${_pct3}%</span>`:''}
+    ${arr?'<span class="tb-arrow">›</span>':''}
     <button class="delbtn" onclick="event.stopPropagation();_vidUnassignDay('${vid}')">✕</button>
   </div>`;
 }
@@ -3158,10 +3160,14 @@ function _vidUnassignDay(vidId){
   const prev=map[String(vidId)]||null;
   delete map[String(vidId)];
   _vidDayMapSet(map);
-  renderAll();
+  // Remove linked timeblock
+  const _vidBlkIdx=st.blocks.findIndex(b=>String(b._vidId)===String(vidId));
+  const _vidBlkRemoved=_vidBlkIdx>=0?st.blocks.splice(_vidBlkIdx,1)[0]:null;
+  if(_vidBlkRemoved)sbDeleteBlock(_vidBlkRemoved.id);
+  save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
   const panel=document.getElementById('vidOvPanel');
   if(panel&&panel.style.display==='block')_renderVidOvMenu();
-  if(prev)pushUndo(()=>{const m2=_vidDayMap();m2[String(vidId)]=prev;_vidDayMapSet(m2);renderAll();const p2=document.getElementById('vidOvPanel');if(p2&&p2.style.display==='block')_renderVidOvMenu();},'Removed video from calendar');
+  if(prev)pushUndo(()=>{const m2=_vidDayMap();m2[String(vidId)]=prev;_vidDayMapSet(m2);if(_vidBlkRemoved){st.blocks.push(_vidBlkRemoved);sbSaveBlock(_vidBlkRemoved);}save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();const p2=document.getElementById('vidOvPanel');if(p2&&p2.style.display==='block')_renderVidOvMenu();},'Removed video from calendar');
 }
 function _vidCompleteFromOv(vidId,anchorEl){
   const v=(st.videos||[]).find(x=>String(x.id)===String(vidId));
@@ -4653,6 +4659,10 @@ function dropOnTB(e,ds,h,row,smOverride){
     const v=(st.videos||[]).find(x=>String(x.id)===String(vidId));
     if(!v){dragId=null;return;}
     if(st.blocks.some(b=>b.ds===ds&&String(b._vidId)===String(vidId))){dragId=null;showToast('Already in time block','#6b7280',2000);return;}
+    // Remove any existing block for this video on other days
+    const _oldVidBlkIdx=st.blocks.findIndex(b=>String(b._vidId)===String(vidId));
+    const _oldVidBlk=_oldVidBlkIdx>=0?st.blocks.splice(_oldVidBlkIdx,1)[0]:null;
+    if(_oldVidBlk)sbDeleteBlock(_oldVidBlk.id);
     const blk={id:crypto.randomUUID(),title:v.topic||v.title||'Video',ds,sm,dur:60,cat:'Videos',_vidId:String(vidId)};
     // Assign video to this day if not already
     const _vdm=_vidDayMap();const prevDay=_vdm[String(vidId)];
@@ -4661,6 +4671,7 @@ function dropOnTB(e,ds,h,row,smOverride){
     sbSaveBlock(blk);
     pushUndo(()=>{
       st.blocks=st.blocks.filter(b=>b.id!==blk.id);sbDeleteBlock(blk.id);
+      if(_oldVidBlk){st.blocks.push(_oldVidBlk);sbSaveBlock(_oldVidBlk);}
       if(prevDay!==ds){const m2=_vidDayMap();if(prevDay)m2[String(vidId)]=prevDay;else delete m2[String(vidId)];_vidDayMapSet(m2);}
       save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
     },'Added video to time block');

@@ -78,3 +78,18 @@ All indicators at far right, swap to X on hover. `cat-dot` stroke changes to acc
 - **Multi-auto-block drag**: when dragging an auto-block with other auto-blocks selected, `otherSelAtbs` collects them (by `data-atb-id` + `selectedTasks`). All move together. Persist via `base_id+date` lookup (PATCH if override exists, else POST). Undo via `_undoOtherAtbs()` included in both `pushUndo` paths.
 - **Cmd/Ctrl+I**: toggles important flag. In tModal toggles `#tImp`, in QA popup toggles `#qaImp`, otherwise toggles all selected tasks (regular, recurring, WR rules, shopping). Each flips independently. Full undo.
 - **Rubber-band on weekly cal** (`_attachWkcRubberBand`): column-aware X filtering — selBox snaps to column boundaries. Only activates when `dy>5 && dy>dx*2` (vertical drag). Left/right drag reserved for travel task creation.
+
+## Video Tasks on Overview (Calendar Integration)
+
+Video tasks assigned to days via `_vidDayMap` (localStorage) follow the SAME rules as all other task types:
+
+- **Timeblock integration**: `_vidId` checked in `tbSm()`/`tbSmAny()` for sort order. Videos with timeblocks sort by start time above unassigned tasks.
+- **`_hasTBToday`**: checks `b._vidId` match — controls `tb-arrow` visibility (arrow shown when NOT in timeblock).
+- **Move to new day** (`_vidAssignToDay`): removes existing timeblock from old day (deletes block + calls `sbDeleteBlock`). Does NOT move it — time slot wouldn't apply to new day.
+- **Drop on timeblock grid**: removes any existing block on other days before creating new one. Duplicate check prevents 2 blocks same day.
+- **One block per video**: at most one `st.blocks` entry per `_vidId` at any time. All code paths enforce this.
+- **Drag ID**: `'vid::'+vidId`. Used in weekly cal drop, today list drop, TB drop, edge drops.
+- **Sort priority**: `taskTypePri` returns 5.5 for `_type==='vid'` (between Social and Recurring).
+- **Overdue**: `_vidDayMap[id] < today` when `dayOff===0`. Shows OV style + day letter.
+- **Completion**: checkbox calls `_vidCompleteFromOv` (popup to mark steps done or whole video).
+- **Delete (✕)**: calls `_vidUnassignDay` — removes from `_vidDayMap` + deletes linked timeblock.
