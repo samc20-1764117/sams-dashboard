@@ -3143,15 +3143,15 @@ function _vidAssignToDay(vidId,ds){
   const prev=map[String(vidId)]||null;
   map[String(vidId)]=ds;
   _vidDayMapSet(map);
-  // Move associated timeblock to new day
-  const _vidBlk=st.blocks.find(b=>String(b._vidId)===String(vidId));
-  const _vidBlkPrevDs=_vidBlk?_vidBlk.ds:null;
-  if(_vidBlk&&_vidBlk.ds!==ds){_vidBlk.ds=ds;sbSaveBlock(_vidBlk);}
-  renderAll();if(document.getElementById('tbGrid'))renderDayTB();
+  // Remove timeblock from old day (time slot won't match new day)
+  const _vidBlkIdx=st.blocks.findIndex(b=>String(b._vidId)===String(vidId)&&b.ds!==ds);
+  const _vidBlkRemoved=_vidBlkIdx>=0?st.blocks.splice(_vidBlkIdx,1)[0]:null;
+  if(_vidBlkRemoved)sbDeleteBlock(_vidBlkRemoved.id);
+  save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
   // Re-render panel if open
   const panel=document.getElementById('vidOvPanel');
   if(panel&&panel.style.display==='block')_renderVidOvMenu();
-  pushUndo(()=>{const m2=_vidDayMap();if(prev)m2[String(vidId)]=prev;else delete m2[String(vidId)];_vidDayMapSet(m2);if(_vidBlk&&_vidBlkPrevDs){_vidBlk.ds=_vidBlkPrevDs;sbSaveBlock(_vidBlk);}renderAll();if(document.getElementById('tbGrid'))renderDayTB();const p2=document.getElementById('vidOvPanel');if(p2&&p2.style.display==='block')_renderVidOvMenu();},'Added video to calendar');
+  pushUndo(()=>{const m2=_vidDayMap();if(prev)m2[String(vidId)]=prev;else delete m2[String(vidId)];_vidDayMapSet(m2);if(_vidBlkRemoved){st.blocks.push(_vidBlkRemoved);sbSaveBlock(_vidBlkRemoved);}save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();const p2=document.getElementById('vidOvPanel');if(p2&&p2.style.display==='block')_renderVidOvMenu();},'Added video to calendar');
 }
 function _vidUnassignDay(vidId){
   const map=_vidDayMap();
