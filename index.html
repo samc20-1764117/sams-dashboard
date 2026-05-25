@@ -658,6 +658,15 @@
       <label>Default timeblock time <span style="opacity:.45;font-weight:400">(optional)</span></label>
       <div style="display:flex;gap:6px;align-items:center"><input id="recEditStartTime" type="time" style="flex:1"> <span style="color:var(--muted)">to</span> <input id="recEditEndTime" type="time" style="flex:1"><button type="button" class="btn btn-ghost btn-xs" onclick="document.getElementById('recEditStartTime').value='';document.getElementById('recEditEndTime').value=''" style="flex-shrink:0;padding:4px 7px;font-size:11px">&#10005;</button></div>
     </div>
+    <div class="mfield" id="recEditDurField" style="display:none">
+      <label>Default timeblock duration</label>
+      <select id="recEditDur" style="width:100%;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,.6);font-size:12px">
+        <option value="30">30 min</option>
+        <option value="60">1 hour</option>
+        <option value="90">1.5 hours</option>
+        <option value="120">2 hours</option>
+      </select>
+    </div>
     <div class="mfield"><label>Notes <span style="opacity:.45;font-weight:400">(optional)</span></label><textarea id="recEditNotes" placeholder="Add notes…" style="resize:vertical;min-height:52px;width:100%;font-family:inherit;font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,.6);color:var(--text);outline:none"></textarea></div>
     </div>
     <div class="mact"><button class="btn btn-ghost" onclick="closeMod(&#39;recEditModal&#39;)">Cancel</button><button class="btn btn-dark" onclick="saveRecEdit()">Save</button></div>

@@ -3739,10 +3739,10 @@ function getRecAutoTBForDate(ds){
     const startTime=tbOv&&tbOv.start?tbOv.start:r.default_start_time;
     const endTime=tbOv&&tbOv.end?tbOv.end:r.default_end_time;
     const [sh,sm2]=(startTime||'00:00').split(':');
-    const [eh,em]=(endTime||'00:30').split(':');
     const startMinutes=parseInt(sh)*60+parseInt(sm2||0);
-    const endMinutes=parseInt(eh)*60+parseInt(em||0);
-    const dur=Math.max(15,endMinutes-startMinutes);
+    let dur;
+    if(endTime){const [eh,em]=endTime.split(':');dur=Math.max(15,parseInt(eh)*60+parseInt(em||0)-startMinutes);}
+    else{dur=r.default_tb_duration||60;}
     return{_recAutoId:String(r.id),_recId:String(r.id),label:v.name,sm:startMinutes,dur,ds,_hasOv:!!tbOv};
   });
 }
@@ -4517,7 +4517,7 @@ function dropOnTB(e,ds,h,row,smOverride){
         const prevDateOv=r._dateOverrides?{...r._dateOverrides}:{};
         if(!r._dateOverrides)r._dateOverrides={};
         r._dateOverrides[wkKey]=ds;
-        const _dur=autoDur(r.name,'Recurring');
+        const _dur=r.default_tb_duration||autoDur(r.name,'Recurring');
         const blk={id:crypto.randomUUID(),title:r.name,ds,sm:_curSm,dur:_dur,cat:'Recurring',recId:String(r.id)};
         st.blocks.push(blk);_addedBlks.push(blk);sbSaveBlock(blk);
         sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));
@@ -4565,7 +4565,7 @@ function dropOnTB(e,ds,h,row,smOverride){
         const prevDateOv=r._dateOverrides?{...r._dateOverrides}:{};
         if(!r._dateOverrides)r._dateOverrides={};
         r._dateOverrides[wkKey]=ds;
-        const _dur=autoDur(r.name,'Recurring');
+        const _dur=r.default_tb_duration||autoDur(r.name,'Recurring');
         const blk={id:crypto.randomUUID(),title:r.name,ds,sm:_curSm,dur:_dur,cat:'Recurring',recId:String(r.id)};
         st.blocks.push(blk);_addedBlks.push(blk);sbSaveBlock(blk);
         sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));
@@ -4635,7 +4635,8 @@ function dropOnTB(e,ds,h,row,smOverride){
     const prevDateOv=r._dateOverrides?{...r._dateOverrides}:{};
     if(!r._dateOverrides)r._dateOverrides={};
     r._dateOverrides[wkKey]=ds;
-    const blk={id:crypto.randomUUID(),title:r.name,ds,sm,dur:autoDur(r.name,'Recurring'),cat:'Recurring',recId:String(r.id)};
+    const _recDur=r.default_tb_duration||autoDur(r.name,'Recurring');
+    const blk={id:crypto.randomUUID(),title:r.name,ds,sm,dur:_recDur,cat:'Recurring',recId:String(r.id)};
     st.blocks.push(blk);dragId=null;save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
     sbSaveBlock(blk);
     sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));
