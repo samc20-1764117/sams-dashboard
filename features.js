@@ -1682,7 +1682,8 @@ function openSB(){sbOpen=true;document.getElementById('sidebar').classList.remov
 // ══════════════════════════════════════════════════════════════════════════════
 // ── FINANCE PAGE ─────────────────────────────────────────────────────────────
 // ══════════════════════════════════════════════════════════════════════════════
-const _FIN_ACCT_COLORS={'VTI':['#10b981','rgba(16,185,129,.45)'],'Checking':['#60a5fa','rgba(96,165,250,.45)'],'RSUs':['#a78bfa','rgba(167,139,250,.45)'],'CC Points':['#ec4899','rgba(236,72,153,.45)']};
+const _FIN_ACCT_COLORS_MAP={'vti':['#10b981','rgba(16,185,129,.45)'],'checking':['#60a5fa','rgba(96,165,250,.45)'],'rsus':['#a78bfa','rgba(167,139,250,.45)'],'rsu':['#a78bfa','rgba(167,139,250,.45)'],'cc points':['#ec4899','rgba(236,72,153,.45)'],'credit card':['#ec4899','rgba(236,72,153,.45)']};
+function _finAcctColor(name){return _FIN_ACCT_COLORS_MAP[(name||'').toLowerCase()]||null;}
 const _FIN_COLORS_FALLBACK=[['#2a9db5','rgba(42,157,181,.45)'],['#eab308','rgba(234,179,8,.45)'],['#38bdf8','rgba(56,189,248,.45)'],['#f97316','rgba(249,115,22,.45)'],['#65a30d','rgba(101,163,13,.45)']];
 function _finOf(type){return st.finance.filter(r=>r.type===type);}
 function _finFmt(n){return n<0?'-$'+Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):'$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
@@ -1759,7 +1760,7 @@ function _finRenderPersonal(accs,vtiAcc,currentVal,netWorth,totalAll){
   let cum=0;let _fbIdx=0;
   const segs=total>0?chartItems.map((a,i)=>{
     const pct=(a.amount||0)/total;const start=cum;cum+=pct;
-    const named=_FIN_ACCT_COLORS[a.name||''];
+    const named=_finAcctColor(a.name);
     const fb=named?null:_FIN_COLORS_FALLBACK[_fbIdx++%_FIN_COLORS_FALLBACK.length];
     const color=named?named[0]:fb[0];
     const colorLight=named?named[1]:fb[1];
@@ -1780,27 +1781,22 @@ function _finRenderPersonal(accs,vtiAcc,currentVal,netWorth,totalAll){
         <feComposite in="dark" in2="botShadow" operator="in" result="innerShadow"/>
         <feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="innerHighlight"/><feMergeNode in="innerShadow"/></feMerge>
       </filter></defs>`;
-    // White gap ring underneath
+    // Rotate group so 0 starts at 12 o'clock
+    html+=`<g transform="rotate(-90 21 21)">`;
     html+=`<circle cx="21" cy="21" r="15.9" fill="none" stroke="white" stroke-width="5" />`;
     segs.forEach(seg=>{
       const dashLen=seg.pct*100;const gap=0.6;const dashOff=100-(seg.start*100);
       const adjLen=Math.max(dashLen-gap,0.1);
       const adjOff=dashOff-gap/2;
       html+=`<circle cx="21" cy="21" r="15.9" fill="none" stroke="${seg.colorLight}" stroke-width="4.2" stroke-dasharray="${adjLen} ${100-adjLen}" stroke-dashoffset="${adjOff}" filter="url(#finGlass)"/>`;
-    });
-    // Transparent hit circles on top for tooltips
-    segs.forEach(seg=>{
-      const dashLen=seg.pct*100;const gap=0.6;const dashOff=100-(seg.start*100);
-      const adjLen=Math.max(dashLen-gap,0.1);
-      const adjOff=dashOff-gap/2;
       html+=`<circle cx="21" cy="21" r="15.9" fill="none" stroke="transparent" stroke-width="5" stroke-dasharray="${adjLen} ${100-adjLen}" stroke-dashoffset="${adjOff}" style="pointer-events:stroke"><title>${seg.name}: ${_finFmtRound(seg.amt)} (${(seg.pct*100).toFixed(1)}%)</title></circle>`;
     });
-    html+=`</svg>`;
+    html+=`</g></svg>`;
   }
   html+=`<div class="fin-chart-legend">`;
   allAccs.forEach(a=>{
     const seg=segs.find(s=>s.id===a.id);
-    const named=_FIN_ACCT_COLORS[a.name||''];
+    const named=_finAcctColor(a.name);
     const color=a.exclude?'#cbd5e1':(seg?seg.color:(named?named[0]:'#cbd5e1'));
     const pctStr=seg?`${(seg.pct*100).toFixed(0)}%`:'';
     const excCls=a.exclude?' fin-legend-excluded':'';
@@ -1874,10 +1870,16 @@ function _finRenderInvestments(purchases,totalBought,gain,gainPct){
       <polyline points="${polyPts}" fill="none" stroke="#10b981" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>`;
     dataPoints.forEach((d,i)=>{
       const x=(i/(dataPoints.length-1))*w;const y=padT+ch-(d.cum/max)*ch;
-      html+=`<circle cx="${x}" cy="${y}" r="3" fill="#10b981" opacity=".7" vector-effect="non-scaling-stroke"><title>${d.date}: ${_finFmt(d.cum)}</title></circle>`;
-      html+=`<circle cx="${x}" cy="${y}" r="10" fill="transparent" style="pointer-events:all" onmouseenter="this.previousElementSibling.setAttribute('opacity','1');this.previousElementSibling.setAttribute('r','4.5')" onmouseleave="this.previousElementSibling.setAttribute('opacity','.7');this.previousElementSibling.setAttribute('r','3')"><title>${d.date}: ${_finFmt(d.cum)}</title></circle>`;
+      const pctX=(x/w*100).toFixed(2);const pctY=(y/h*100).toFixed(2);
+      html+=`<circle cx="${x}" cy="${y}" r="3" fill="#10b981" opacity=".7" vector-effect="non-scaling-stroke"></circle>`;
     });
     html+=`</svg>`;
+    // HTML dot overlays for reliable tooltips
+    dataPoints.forEach((d,i)=>{
+      const pctX=(i/(dataPoints.length-1)*100).toFixed(2);
+      const pctY=((padT+ch-(d.cum/max)*ch)/h*100).toFixed(2);
+      html+=`<span class="fin-chart-dot-hit" style="left:${pctX}%;top:${pctY}%" title="${d.date}: ${_finFmt(d.cum)}"></span>`;
+    });
     // Year labels as HTML overlay so they don't stretch
     yearLabels.forEach(yl=>{
       const pct=(yl.x/w*100).toFixed(1);
@@ -1908,7 +1910,7 @@ function _finRenderSubs(){
       <div class="fin-stat-row"><span class="fin-stat-label">Yearly</span><span class="fin-stat-val">${_finN(yearlyTotal,90)}</span></div>
     </div>
     <div class="fin-sub-scroll">
-    <table class="fin-tbl fin-sub-tbl"><thead><tr><th>Name</th><th>Freq</th><th>Due</th><th>Amount</th><th>/mo</th><th></th></tr></thead><tbody>`;
+    <table class="fin-tbl fin-sub-tbl"><colgroup><col class="fin-col-name"/><col class="fin-col-freq"/><col class="fin-col-due"/><col class="fin-col-amt"/><col class="fin-col-mo"/><col class="fin-col-del"/></colgroup><thead><tr><th>Name</th><th>Freq</th><th>Due</th><th>Amount</th><th>/mo</th><th></th></tr></thead><tbody>`;
   subs.forEach(sub=>{
     const dueDisplay=_finDueDisplay(sub.due_month,sub.due_day);
     const dueRaw=(sub.due_month&&sub.due_month>=1&&sub.due_month<=12?_FIN_MONTHS[sub.due_month-1]+' ':'')+(sub.due_day||'');

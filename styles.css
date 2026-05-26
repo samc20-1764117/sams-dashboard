@@ -1189,7 +1189,7 @@ body.dark .vid-stat-card{background:rgba(40,30,50,.4)}
 .fin-cancel .fin-amt,.fin-cancel .fin-freq-sel{opacity:.5}
 .fin-due-edit{min-width:36px;text-align:center;font-size:11px;color:var(--text-secondary,#64748b);white-space:nowrap}
 .fin-chart-legend{flex:1;min-width:0;padding:2px 0}
-.fin-donut{width:130px;height:130px;flex-shrink:0;transform:rotate(-90deg)}
+.fin-donut{width:130px;height:130px;flex-shrink:0}
 .fin-legend-row{display:flex;align-items:center;gap:6px;font-size:11px;padding:3px 0;border-bottom:1px solid rgba(200,200,215,.06)}
 .fin-legend-row:last-child{border-bottom:none}
 .fin-legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
@@ -1208,15 +1208,22 @@ body.dark .vid-stat-card{background:rgba(40,30,50,.4)}
 .fin-inv-right-hdr{display:flex;align-items:center;justify-content:space-between;padding:6px 12px 4px;font-size:11px;font-weight:600;color:var(--text-secondary,#64748b)}
 .fin-inv-scroll{flex:1;overflow-y:auto;min-height:0}
 .fin-inv-scroll .fin-tbl td{padding:3px 12px;font-size:11px}
-.fin-inv-chart{flex:1;padding:0;min-height:0;overflow:hidden;position:relative}
+.fin-inv-chart{flex:1;padding:0 12px;min-height:0;overflow:visible;position:relative}
 .fin-inv-chart svg{width:100%;height:100%;min-height:80px;display:block}
 .fin-chart-year{position:absolute;bottom:2px;font-size:9px;font-weight:600;color:var(--text-secondary,#94a3b8);font-family:system-ui,-apple-system,sans-serif;transform:translateX(-50%);pointer-events:none}
+.fin-chart-dot-hit{position:absolute;width:16px;height:16px;border-radius:50%;transform:translate(-50%,-50%);cursor:pointer;z-index:1}
 /* Subscriptions compact + scroll */
 .fin-sub-scroll{flex:1;overflow-y:auto;min-height:0}
-.fin-sub-tbl td{padding:4px 12px!important;font-size:12px}
-.fin-sub-tbl th{padding:4px 12px!important;font-size:10px}
-.fin-sub-tbl td:last-child,.fin-sub-tbl th:last-child{width:20px;padding:4px 4px!important}
-.fin-sub-tbl .fin-amt{font-size:12px}
+.fin-sub-tbl{table-layout:fixed}
+.fin-sub-tbl td{padding:4px 12px!important;font-size:12px;text-align:left}
+.fin-sub-tbl th{padding:4px 12px!important;font-size:10px;text-align:left}
+.fin-sub-tbl td:last-child,.fin-sub-tbl th:last-child{width:24px;padding:4px 4px!important}
+.fin-sub-tbl col.fin-col-name{width:auto}
+.fin-sub-tbl col.fin-col-freq{width:80px}
+.fin-sub-tbl col.fin-col-due{width:70px}
+.fin-sub-tbl col.fin-col-amt{width:80px}
+.fin-sub-tbl col.fin-col-mo{width:75px}
+.fin-sub-tbl col.fin-col-del{width:24px}
 .fin-mo-adj{font-size:11px;color:var(--text-secondary,#94a3b8);font-weight:500;white-space:nowrap;font-variant-numeric:tabular-nums}
 .fin-sub-row td{height:28px}
 /* Number alignment — fixed-width monospace numerals like videos page */
