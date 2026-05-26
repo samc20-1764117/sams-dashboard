@@ -1215,15 +1215,15 @@ body.dark .vid-stat-card{background:rgba(40,30,50,.4)}
 /* Subscriptions compact + scroll */
 .fin-sub-scroll{flex:1;overflow-y:auto;min-height:0}
 .fin-sub-tbl{table-layout:fixed}
-.fin-sub-tbl td{padding:4px 12px!important;font-size:12px;text-align:right}
+.fin-sub-tbl td{padding:4px 12px!important;font-size:12px;text-align:right;font-variant-numeric:tabular-nums}
 .fin-sub-tbl th{padding:4px 12px!important;font-size:10px;text-align:right}
 .fin-sub-tbl td:first-child,.fin-sub-tbl th:first-child{text-align:left}
 .fin-sub-tbl td:last-child,.fin-sub-tbl th:last-child{width:24px;padding:4px 4px!important}
 .fin-sub-tbl col.fin-col-name{width:auto}
 .fin-sub-tbl col.fin-col-freq{width:80px}
 .fin-sub-tbl col.fin-col-due{width:70px}
-.fin-sub-tbl col.fin-col-amt{width:80px}
-.fin-sub-tbl col.fin-col-mo{width:75px}
+.fin-sub-tbl col.fin-col-amt{width:90px}
+.fin-sub-tbl col.fin-col-mo{width:90px}
 .fin-sub-tbl col.fin-col-del{width:24px}
 .fin-mo-adj{font-size:11px;color:var(--text-secondary,#94a3b8);font-weight:500;white-space:nowrap;font-variant-numeric:tabular-nums}
 .fin-sub-row td{height:28px}
