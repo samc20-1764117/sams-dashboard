@@ -4,16 +4,13 @@ let _ytAnalytics=null,_ytAnalyticsFetched=false;
 function _ytEsc(s){return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function _ytDur(iso){var m=iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);if(!m)return'0:00';var h=m[1]?parseInt(m[1]):0,min=m[2]?parseInt(m[2]):0,s=m[3]?parseInt(m[3]):0;if(h)return h+':'+String(min).padStart(2,'0')+':'+String(s).padStart(2,'0');return min+':'+String(s).padStart(2,'0');}
 function _ytNum(n){if(n>=1000000)return(n/1000000).toFixed(1)+'M';if(n>=1000)return(n/1000).toFixed(1)+'K';return String(n);}
+function _fmtDur(m){return m.toFixed(2);}
 function _ytBuildMatch(){
-  if(!_ytData||!_ytData.videos||!st.videos){console.log('[YT] _ytBuildMatch bail:',!_ytData,!_ytData?.videos,!st.videos);return;}
+  if(!_ytData||!_ytData.videos||!st.videos)return;
   _ytMatch={};
   var ytVids=_ytData.videos;
   var dbVids=(st.videos||[]).filter(function(v){return!v.is_deleted;});
   var usedYt=new Set();
-  console.log('[YT] Matching',dbVids.length,'db videos against',ytVids.length,'yt videos');
-  // Log first 3 of each for date format check
-  console.log('[YT] Sample DB dates:',dbVids.slice(0,3).map(v=>v.post_date));
-  console.log('[YT] Sample YT dates:',ytVids.slice(0,3).map(v=>v.publishedAt));
   // Pass 1: match by post_date = publishedAt date
   // Group by date to handle same-day videos via title similarity
   var matched=0;
@@ -23,34 +20,47 @@ function _ytBuildMatch(){
     if(!byDate[ytDate])byDate[ytDate]=[];
     byDate[ytDate].push(j);
   }
+  function _ytNorm(s){return(s||'').toLowerCase().replace(/[\u2018\u2019\u201C\u201D]/g,function(c){return c==='\u2018'||c==='\u2019'?"'":'"';}).replace(/[^\w\s]/g,'').trim();}
   function _ytTitleScore(dv,ytIdx){
-    var words=((dv.title||'')+'  '+(dv.topic||'')).toLowerCase().split(/\s+/).filter(Boolean);
+    var words=_ytNorm((dv.title||'')+'  '+(dv.topic||'')).split(/\s+/).filter(Boolean);
     if(!words.length)return 0;
-    var ytT=(ytVids[ytIdx].title||'').toLowerCase();
+    var ytT=_ytNorm(ytVids[ytIdx].title||'');
     var score=0;
     for(var w=0;w<words.length;w++){if(words[w].length>2&&ytT.indexOf(words[w])>=0)score++;}
     return score;
   }
-  // Pass 1: exact date match
+  // Pass 1a: exact date + exact title (case-insensitive)
   for(var i=0;i<dbVids.length;i++){
     var dv=dbVids[i];
-    if(!dv.post_date)continue;
+    if(!dv.post_date||!dv.title)continue;
+    var candidates=byDate[dv.post_date];
+    if(!candidates)continue;
+    var dbT=_ytNorm(dv.title);
+    var exactJ=candidates.find(function(j){return!usedYt.has(j)&&_ytNorm(ytVids[j].title)===dbT;});
+    if(exactJ!=null){
+      var yt=ytVids[exactJ];
+      _ytMatch[String(dv.id)]={views:yt.views,likes:yt.likes,comments:yt.comments,ytId:yt.id,publishedAt:yt.publishedAt,duration:yt.duration};
+      usedYt.add(exactJ);matched++;
+    }
+  }
+  // Pass 1b: exact date + best title score (must have score >= 2)
+  for(var i=0;i<dbVids.length;i++){
+    var dv=dbVids[i];
+    if(!dv.post_date||_ytMatch[String(dv.id)])continue;
     var candidates=byDate[dv.post_date];
     if(!candidates)continue;
     var avail=candidates.filter(function(j){return!usedYt.has(j);});
     if(!avail.length)continue;
-    var bestJ=avail[0];
-    if(avail.length>1){
-      var bestScore=-1;
-      for(var k=0;k<avail.length;k++){
-        var sc=_ytTitleScore(dv,avail[k]);
-        if(sc>bestScore){bestScore=sc;bestJ=avail[k];}
-      }
+    var bestJ=avail[0],bestScore=-1;
+    for(var k=0;k<avail.length;k++){
+      var sc=_ytTitleScore(dv,avail[k]);
+      if(sc>bestScore){bestScore=sc;bestJ=avail[k];}
     }
-    var yt=ytVids[bestJ];
-    _ytMatch[String(dv.id)]={views:yt.views,likes:yt.likes,comments:yt.comments,ytId:yt.id};
-    usedYt.add(bestJ);
-    matched++;
+    if(bestScore>=2||(avail.length===1&&bestScore>=1)){
+      var yt=ytVids[bestJ];
+      _ytMatch[String(dv.id)]={views:yt.views,likes:yt.likes,comments:yt.comments,ytId:yt.id,publishedAt:yt.publishedAt,duration:yt.duration};
+      usedYt.add(bestJ);matched++;
+    }
   }
   // Pass 2: off-by-one date (UTC timezone shift) + title match
   for(var i2=0;i2<dbVids.length;i2++){
@@ -68,16 +78,78 @@ function _ytBuildMatch(){
     }
     if(bestScore2>0){
       var yt2=ytVids[bestJ2];
-      _ytMatch[String(dv2.id)]={views:yt2.views,likes:yt2.likes,comments:yt2.comments,ytId:yt2.id};
+      _ytMatch[String(dv2.id)]={views:yt2.views,likes:yt2.likes,comments:yt2.comments,ytId:yt2.id,publishedAt:yt2.publishedAt,duration:yt2.duration};
       usedYt.add(bestJ2);
       matched++;
     }
   }
-  console.log('[YT] Matched',matched,'of',dbVids.filter(v=>v.post_date).length,'videos with dates.');
-  var unmatched=dbVids.filter(v=>v.post_date&&v.status==='published'&&!_ytMatch[String(v.id)]);
-  if(unmatched.length)console.log('[YT] Unmatched published:',unmatched.map(v=>v.post_date+' '+v.title));
+  // Pass 3: exact title match — steal back from wrong matches if needed
+  var unmatchedBefore=dbVids.filter(v=>v.title&&!_ytMatch[String(v.id)]);
+  unmatchedBefore.forEach(function(dv3){
+    var dbTitle=dv3.title?_ytNorm(dv3.title):'';
+    if(!dbTitle)return;
+    for(var j3=0;j3<ytVids.length;j3++){
+      if(_ytNorm(ytVids[j3].title)!==dbTitle)continue;
+      if(!usedYt.has(j3)){
+        _ytMatch[String(dv3.id)]={views:ytVids[j3].views,likes:ytVids[j3].likes,comments:ytVids[j3].comments,ytId:ytVids[j3].id,publishedAt:ytVids[j3].publishedAt,duration:ytVids[j3].duration};
+        usedYt.add(j3);matched++;break;
+      }
+      // Steal back: the thief doesn't have an exact title match, so we take it
+      var thiefId=null;
+      for(var d=0;d<dbVids.length;d++){var m=_ytMatch[String(dbVids[d].id)];if(m&&m.ytId===ytVids[j3].id){thiefId=String(dbVids[d].id);break;}}
+      if(thiefId){
+        var thiefV=dbVids.find(function(x){return String(x.id)===thiefId;});
+        var thiefTitle=_ytNorm(thiefV&&thiefV.title||'');
+        if(thiefTitle!==dbTitle){
+          // Thief didn't have exact title — reassign to rightful owner
+          delete _ytMatch[thiefId];
+          _ytMatch[String(dv3.id)]={views:ytVids[j3].views,likes:ytVids[j3].likes,comments:ytVids[j3].comments,ytId:ytVids[j3].id,publishedAt:ytVids[j3].publishedAt,duration:ytVids[j3].duration};
+          break;
+        }
+      }
+    }
+  });
+  // Pass 4: re-match any videos that lost their match — try date±1 then best title across all
+  dbVids.forEach(function(v){
+    if(_ytMatch[String(v.id)]||v.status!=='published')return;
+    // Try date-based first
+    var candidates=v.post_date?(byDate[v.post_date]||[]).concat(byDate[new Date(new Date(v.post_date+'T12:00:00Z').getTime()-86400000).toISOString().slice(0,10)]||[]).concat(byDate[new Date(new Date(v.post_date+'T12:00:00Z').getTime()+86400000).toISOString().slice(0,10)]||[]).filter(function(j){return!usedYt.has(j);}):[];
+    if(candidates.length){
+      var bestJ=candidates[0],bestSc=-1;
+      for(var k=0;k<candidates.length;k++){var s=_ytTitleScore(v,candidates[k]);if(s>bestSc){bestSc=s;bestJ=candidates[k];}}
+      if(bestSc>=1){
+        _ytMatch[String(v.id)]={views:ytVids[bestJ].views,likes:ytVids[bestJ].likes,comments:ytVids[bestJ].comments,ytId:ytVids[bestJ].id,publishedAt:ytVids[bestJ].publishedAt,duration:ytVids[bestJ].duration};
+        usedYt.add(bestJ);matched++;return;
+      }
+    }
+    // Try best title match across all unused YT videos
+    var bestAll=-1,bestAllJ=-1;
+    for(var j=0;j<ytVids.length;j++){
+      if(usedYt.has(j))continue;
+      var s2=_ytTitleScore(v,j);
+      if(s2>bestAll){bestAll=s2;bestAllJ=j;}
+    }
+    if(bestAll>=3){
+      _ytMatch[String(v.id)]={views:ytVids[bestAllJ].views,likes:ytVids[bestAllJ].likes,comments:ytVids[bestAllJ].comments,ytId:ytVids[bestAllJ].id,publishedAt:ytVids[bestAllJ].publishedAt,duration:ytVids[bestAllJ].duration};
+      usedYt.add(bestAllJ);matched++;
+    }
+  });
+  var unmatched=dbVids.filter(v=>v.status==='published'&&!_ytMatch[String(v.id)]);
+  if(unmatched.length)console.log('[YT] Unmatched published:',unmatched.map(v=>v.title));
 }
 function _ytForVid(id){return _ytMatch?_ytMatch[String(id)]:null;}
+function _ytDurMin(id){const m=_ytForVid(id);return m&&m.duration?Math.round(_ytDurSec(m.duration)/60*100)/100:null;}
+function _ytPostDate(id){const m=_ytForVid(id);return m&&m.publishedAt?m.publishedAt.slice(0,10):null;}
+function _vidAutoPublishFromYt(){
+  let changed=false;
+  (st.videos||[]).forEach(v=>{
+    if(v.is_deleted||v.status==='published'||v.status==='backup')return;
+    const ym=_ytForVid(String(v.id));if(!ym)return;
+    const allDone=VID_STEPS.every(s=>v[s]==='done'||v[s]==='na');
+    if(allDone&&v.title){v.status='published';changed=true;sbReqSilent('PATCH','videos',{status:'published'},`?id=eq.${v.id}`);}
+  });
+  if(changed)save();
+}
 
 let _ytDismissedSel=new Set();
 let _ytCommentItems=[];  // current filtered list for shift-select
@@ -100,7 +172,9 @@ function _ytShowUnreplied(){
   html+='<div style="max-height:60vh;overflow-y:auto">';
   items.forEach((c,idx)=>{
     const vidTitle=c.videoTitle||'';
-    const date=c.publishedAt?c.publishedAt.slice(0,10):'';
+    const _cd=c.publishedAt?new Date(c.publishedAt):null;
+    const _cAgo=_cd?Math.max(0,Math.round((Date.now()-_cd)/86400000)):null;
+    const date=_cAgo!==null?(_cAgo===0?'today':_cAgo===1?'yesterday':_cAgo+'d ago'):'';
     html+=`<div id="ytc-${c.id}" data-idx="${idx}" style="display:flex;align-items:flex-start;gap:8px;padding:6px 4px;border-bottom:1px solid rgba(210,205,228,.12);cursor:pointer;border-radius:6px" onclick="_ytToggleSel('${c.id}',${idx},event)">
       <div style="flex:1;min-width:0">
         <div style="font-size:10px;color:var(--muted);margin-bottom:2px">${_esc(vidTitle)}${date?' · '+date:''}</div>
@@ -156,9 +230,11 @@ let _vidSelected=new Set(),_vidChildSelected=new Set(),_vidLastSel=null,_vidCopi
 let _vidCtxId=null;
 let _vidFilter='all';
 let _vidGroupFilter='all';
-let _vidSearch='';
-let _vidView='dashboard'; // dashboard | table | board | groups
-let _vidSortCol=null,_vidSortDir=1,_vidShowCompleted=false;
+let _vidSearch='',_vidSearchFilterFn=null;
+let _vidMatchIds=[],_vidMatchIdx=0;
+let _vidView=localStorage.getItem('_vidView')||'dashboard'; // dashboard | table | board | groups
+let _vidSortCol=null,_vidSortDir=1,_vidShowCompleted=true,_vidTableScrolledOnce=false,_vidSearchTs=0;
+let _anTopicFilter='all',_anScatterX='views',_anScatterY='likes';
 let _vidMonthOffset=0; // 0=current month, -1=last month, etc
 
 const VID_STEPS=['step_build','step_vo','step_cut','step_thumbnail','step_description','step_tableau_public','step_upload_tableau'];
@@ -177,7 +253,7 @@ function _vidSeqMap(orderedIds){
 // Build display-order ID list: videos with post_date get numbers
 function _vidOrderedIds(vids){
   const ids=[];
-  const dated=vids.filter(v=>v.post_date);
+  const dated=vids.filter(v=>v.post_date||_ytPostDate(String(v.id)));
   const sorted=_vidSortVids([...dated]);
   const seen=new Set();
   const lVids=sorted.filter(v=>v.video_type!=='B');
@@ -197,7 +273,7 @@ function _vidFiltered(){
   let vids=(st.videos||[]).filter(v=>!v.is_deleted);
   if(_vidFilter!=='all')vids=vids.filter(v=>v.status===_vidFilter);
   if(_vidGroupFilter!=='all')vids=vids.filter(v=>String(v.big_video_id)===String(_vidGroupFilter)||String(v.id)===String(_vidGroupFilter));
-  if(_vidSearch){const q=_vidSearch.toLowerCase();vids=vids.filter(v=>(v.title||'').toLowerCase().includes(q)||(v.topic||'').toLowerCase().includes(q));}
+  if(_vidSearchFilterFn)vids=vids.filter(_vidSearchFilterFn);
   return vids;
 }
 
@@ -233,18 +309,29 @@ function _vidDateColor(d,v){
 function _vidScrollEl(){
   const pg=document.getElementById('page-videos');if(!pg)return null;
   const card=pg.querySelector('.card');if(!card)return null;
-  return card.querySelector('div')||null;
+  // Dashboard: card overflow=hidden, scroll happens in child divs
+  // Table/other: card itself scrolls (overflow=auto)
+  if(_vidView==='dashboard')return card.querySelector('div')||null;
+  return card;
 }
 function renderVideosPageKeepScroll(){
+  // Refresh overview vid panel if open
+  if(typeof _renderVidOvMenu==='function'){const p=document.getElementById('vidOvPanel');if(p&&p.style.display==='block')_renderVidOvMenu();}
+  if(typeof renderAll==='function'&&activePg==='overview')renderAll();
   const se=_vidScrollEl();const top=se?se.scrollTop:0;
   const dl=document.getElementById('vidDashLeft');const dlTop=dl?dl.scrollTop:0;
   const dr=document.getElementById('vidDashRight');const drTop=dr?dr.scrollTop:0;
+  const wasScrolled=top>0||dlTop>0||drTop>0;
+  if(activePg!=='videos')return;
   renderVideosPage();
-  const se2=_vidScrollEl();if(se2)se2.scrollTop=top;
-  requestAnimationFrame(()=>{
+  if(!wasScrolled)return; // let _vidScrollToDefault handle initial position
+  const restore=()=>{
+    const se2=_vidScrollEl();if(se2)se2.scrollTop=top;
     const dl2=document.getElementById('vidDashLeft');if(dl2)dl2.scrollTop=dlTop;
     const dr2=document.getElementById('vidDashRight');if(dr2)dr2.scrollTop=drTop;
-  });
+  };
+  restore();
+  requestAnimationFrame(()=>{restore();requestAnimationFrame(restore);});
 }
 function renderVideosPage(){
   const _rvpSe=_vidScrollEl();const _rvpTop=_rvpSe?_rvpSe.scrollTop:0;
@@ -253,7 +340,7 @@ function renderVideosPage(){
   // Auto-migrate group_name → big_video_id (client-side, until DB migration runs)
   const bVids=(st.videos||[]).filter(v=>v.video_type==='B'&&!v.is_deleted);
   st.videos.forEach(v=>{
-    if(v.group_name&&!v.big_video_id){
+    if(v.group_name&&!v.big_video_id&&v.status!=='idea'){
       const parent=bVids.find(b=>(b.title||'')===v.group_name||(b.group_name||'')===v.group_name);
       if(parent)v.big_video_id=parent.id;
     }
@@ -285,18 +372,27 @@ function renderVideosPage(){
   if(_vidView==='groups'){_vidView='dashboard';bodyHtml=_vidRenderDashboard();}
 
   // Use the exact same pattern as recipes page (features.js line 2130-2139)
-  el.style.cssText='padding:41px clamp(12px,3vw,56px) 24px clamp(12px,3vw,56px);display:flex;flex-direction:column;height:100vh;box-sizing:border-box;width:100%';
+  el.style.cssText='padding:45px clamp(12px,3vw,56px) 24px clamp(12px,3vw,56px);display:flex;flex-direction:column;height:100vh;box-sizing:border-box;width:100%';
   el.innerHTML=`
     <div class="ov-topbar"><div class="ov-topbar-left"><span class="ov-topbar-label">Videos</span><span class="ov-topbar-dot"></span></div><span class="ov-topbar-date topbar-date"></span><div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div></div>
     <div style="padding-top:4px">
-      <div style="display:flex;gap:10px;align-items:center;margin-bottom:4px;flex-wrap:wrap">
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:4px;flex-wrap:wrap;position:relative;z-index:1000">
         <div style="display:flex;gap:2px;background:var(--glass);border:1px solid var(--border);border-radius:8px;padding:2px">
           <button class="${viewBtnS('dashboard')}" onclick="_vidSetView('dashboard')">Current</button>
           <button class="${viewBtnS('table')}" onclick="_vidSetView('table')">All Details</button>
           <button class="${viewBtnS('analytics')}" onclick="_vidSetView('analytics')">Analytics</button>
           <button class="${viewBtnS('monthly')}" onclick="_vidSetView('monthly')">Monthly</button>
         </div>
-        <input id="vidSearchInput" type="text" placeholder="Search videos..." value="${_vidSearch.replace(/"/g,'&quot;')}" oninput="_vidSetSearch(this.value)" style="padding:5px 10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:12px;background:var(--bg);color:var(--text);outline:none;width:180px">
+        <div style="position:relative">
+          <input id="vidSearchInput" type="text" autocomplete="off" placeholder="Search videos..." value="${_vidSearch.replace(/"/g,'&quot;')}" oninput="_vidSetSearch(this.value)" onkeydown="event.stopPropagation();_vidSearchKey(event)" onfocus="_vidSearchFocus()" style="padding:5px 10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:12px;background:var(--bg);color:var(--text);outline:none;width:180px">
+          ${_vidSearch?`<div style="display:flex;align-items:center;gap:1px;position:absolute;right:6px;top:50%;transform:translateY(-50%)">
+            <span id="vidSearchCount" style="font-size:10px;color:var(--muted);white-space:nowrap;margin-right:2px">...</span>
+            <button onclick="_vidSearchNav(-1)" style="background:none;border:none;cursor:pointer;padding:0 2px;font-size:10px;color:var(--muted);line-height:1" title="Previous (Shift+Enter)">▲</button>
+            <button onclick="_vidSearchNav(1)" style="background:none;border:none;cursor:pointer;padding:0 2px;font-size:10px;color:var(--muted);line-height:1" title="Next (Enter)">▼</button>
+            <button onclick="_vidSearch='';_vidMatchIds=[];_vidSearchFilterFn=null;_vidFilter='all';document.getElementById('vidSearchInput').value='';document.getElementById('vidSearchSuggestions').style.display='none';renderVideosPage();_vidScrollToDefault()" style="background:none;border:none;cursor:pointer;padding:0 2px;font-size:10px;color:var(--muted);line-height:1" title="Clear (Esc)">✕</button>
+          </div>`:''}
+          <div id="vidSearchSuggestions" style="display:none;position:absolute;top:100%;left:0;margin-top:4px;background:var(--bg);border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.1);z-index:1001;max-height:200px;overflow-y:auto;width:520px"></div>
+        </div>
         <div style="flex:1"></div>
         <div style="display:flex;gap:6px;align-items:center">
           ${_ytData&&_ytData.channelStats?`
@@ -306,7 +402,7 @@ function renderVideosPage(){
           </div>
           <div style="background:rgba(120,113,145,.06);border-radius:20px;padding:4px 10px 4px 8px;display:flex;align-items:center;gap:4px;font-size:12px">
             <span style="font-weight:700;color:#999;font-size:13px">$</span>
-            <span style="font-weight:600;color:#555">~${_ytNum(Math.round(_ytData.channelStats.totalViews/1000*4))}</span>
+            <span style="font-weight:600;color:#555">${_ytAnalytics&&_ytAnalytics.monthly?_ytNum(Math.round(_ytAnalytics.monthly.reduce((s,m)=>s+m.revenue,0))):'~'+_ytNum(Math.round(_ytData.channelStats.totalViews/1000*4))}</span>
           </div>
           <div style="width:1px;height:16px;background:rgba(210,205,228,.4);margin:0 2px"></div>
           `:''}
@@ -323,7 +419,7 @@ function renderVideosPage(){
             <span style="font-weight:600;color:#10b981">${stats.published}</span>
           </div>
         </div>
-        <button onclick="openVidModal()" style="background:rgba(255,255,255,.85);border:1px solid var(--border);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.08)" title="Add video">
+        <button onclick="openVidModal()" style="background:rgba(255,255,255,.85);border:1px solid var(--border);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.08);margin-right:56px" title="Add video">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         </button>
       </div>
@@ -350,8 +446,14 @@ function renderVideosPage(){
     });
   }
   const _rvpSe2=_vidScrollEl();if(_rvpSe2)_rvpSe2.scrollTop=_rvpTop;
+  // On first render of any view, scroll to default position
+  if(!_vidTableScrolledOnce&&_rvpTop===0){
+    _vidTableScrolledOnce=true;
+    _vidScrollToDefault();
+  }
+  if(_vidSearch)requestAnimationFrame(()=>_vidPostRenderMatches());
   // Load cached YT data from localStorage on first run
-  if(!_ytData){try{var _lsc=JSON.parse(localStorage.getItem('_ytCache')||'null');if(_lsc&&_lsc.channelStats){_ytData=_lsc;_ytBuildMatch();}}catch(e){}}
+  if(!_ytData){try{var _lsc=JSON.parse(localStorage.getItem('_ytCache')||'null');if(_lsc&&_lsc.channelStats){_ytData=_lsc;_ytBuildMatch();_vidAutoPublishFromYt();renderVideosPageKeepScroll();_vidScrollToDefault();}}catch(e){}}
   if(!_ytFetched){
     _ytFetched=true;
     fetch('/api/yt?_='+Date.now(),{cache:'no-store'}).then(function(r){if(!r.ok)throw new Error(r.status);return r.json();}).then(function(d){
@@ -359,7 +461,9 @@ function renderVideosPage(){
       _ytData=d;
       try{localStorage.setItem('_ytCache',JSON.stringify(d));}catch(e){}
       _ytBuildMatch();
+      _vidAutoPublishFromYt();
       renderVideosPageKeepScroll();
+      if(_vidTableScrolledOnce)_vidScrollToDefault();
     }).catch(function(){});
   }
   // Fetch YouTube Analytics API data (actual revenue) — once per page load
@@ -408,14 +512,14 @@ function _vidRenderDashboard(){
   let ideas=all.filter(v=>v.status==='idea');
   if(_vidSearch){
     const q=_vidSearch.toLowerCase();
-    const match=v=>(v.title||'').toLowerCase().includes(q)||(v.topic||'').toLowerCase().includes(q);
+    const match=v=>_vidSearchMatch(v,q);
     upNext=upNext.filter(match);inProgress=inProgress.filter(match);ideas=ideas.filter(match);
   }
   _vidDashVids=all.filter(v=>v.status!=='idea');
-  const _colHdr=`<div style="display:flex;align-items:center;gap:6px;flex-shrink:0;padding-right:0">
-            <div style="display:flex;gap:0">${VID_STEPS.map(s=>`<div style="width:28px;text-align:center;font-size:9px" title="${VID_STEP_LABELS[s]}">${VID_STEP_LABELS[s].length<=5?VID_STEP_LABELS[s]:VID_STEP_LABELS[s].slice(0,2)}</div>`).join('')}</div>
-            <span style="width:52px;text-align:right;font-size:9px;display:inline-block">Posted</span>
-            <span style="width:36px;text-align:right;font-size:9px;display:inline-block">Duration</span>
+  const _hasYt=!!_ytMatch;
+  const _colHdr=`<div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+            <div style="display:flex;align-items:center;gap:0">${VID_STEPS.map(s=>`<div style="width:28px;text-align:center" title="${VID_STEP_LABELS[s]}">${VID_STEP_LABELS[s].length<=5?VID_STEP_LABELS[s]:VID_STEP_LABELS[s].slice(0,2)}</div>`).join('')}</div>
+            <span style="width:52px;text-align:center;display:inline-block;font-size:10px;color:var(--muted);font-weight:600">Posted</span>
             <span style="width:28px;display:inline-block"></span>
             <button class="vid-del" style="visibility:hidden">✕</button>
           </div>`;
@@ -444,15 +548,15 @@ function _vidRenderDashboard(){
         ${(upNext.length||inProgress.length)?_colHdr:''}
       </div>
       <div class="vid-dash-header" style="grid-column:2;grid-row:1">
-        <div style="padding-left:10px">Ideas <span class="vid-count">${ideas.length}</span></div>
+        <div style="padding-left:10px">Ideas</div>
       </div>
       <div id="vidDashLeft" style="grid-column:1;grid-row:2;min-height:0;overflow-y:auto;overflow-x:hidden;border-right:1px solid var(--border)">
-        <div class="vid-drop-zone" data-drop-status="up_next" ondragover="_vidDashDragOver(event)" ondragleave="_vidDashDragLeave(event)" ondrop="_vidDashDrop(event,'up_next')" style="min-height:40px;padding-bottom:8px">
-          <div style="font-size:9px;font-weight:600;color:var(--muted);padding:6px 6px 6px 16px;letter-spacing:.03em;background:#fff;display:flex;align-items:center">Up Next</div>
+        <div class="vid-drop-zone" data-drop-status="up_next" ondragover="_vidDashDragOver(event)" ondragleave="_vidDashDragLeave(event)" ondrop="_vidDashDrop(event,'up_next')" style="min-height:40px;background:rgba(14,165,233,.03);border-bottom:1px solid rgba(255,255,255,.15)">
+          <div style="font-size:9px;font-weight:600;color:#0ea5e9;padding:6px 6px 6px 16px;letter-spacing:.03em;background:rgba(14,165,233,.06);display:flex;align-items:center;border-left:3px solid rgba(14,165,233,.4)">Up Next</div>
           ${upNext.length?_vidDashList(upNext,false):'<div style="color:var(--muted);font-size:11px;padding:8px 10px;opacity:.5">Drag ideas here</div>'}
         </div>
-        <div class="vid-drop-zone" data-drop-status="in_progress" ondragover="_vidDashDragOver(event)" ondragleave="_vidDashDragLeave(event)" ondrop="_vidDashDrop(event,'in_progress')" style="min-height:40px;padding-bottom:8px">
-          <div style="font-size:9px;font-weight:600;color:var(--muted);padding:6px 6px 6px 16px;letter-spacing:.03em;border-top:1px solid rgba(210,205,228,.15);margin-top:4px;background:#fff;display:flex;align-items:center">In Progress</div>
+        <div class="vid-drop-zone" data-drop-status="in_progress" ondragover="_vidDashDragOver(event)" ondragleave="_vidDashDragLeave(event)" ondrop="_vidDashDrop(event,'in_progress')" style="min-height:40px;background:rgba(245,158,11,.03);border-bottom:1px solid rgba(255,255,255,.15)">
+          <div style="font-size:9px;font-weight:600;color:#d97706;padding:6px 6px 6px 16px;letter-spacing:.03em;background:rgba(245,158,11,.06);display:flex;align-items:center;border-left:3px solid rgba(245,158,11,.4)">In Progress</div>
           ${inProgress.length?_vidDashList(inProgress,false):'<div style="color:var(--muted);font-size:11px;padding:8px 10px;opacity:.5">Drag up next here to start</div>'}
         </div>
       </div>
@@ -503,13 +607,14 @@ function _vidDashRow(v,isChild,simple){
   const isComplete=v.status==='published';
   const topic=v.topic||'';
   const showTopicTitle=(v.status==='in_progress'||v.status==='up_next')&&topic;
-  const _titleSuffix=v.title?'- '+_esc(v.title):'';
+  const _escOrHl=t=>_vidSearch?_vidHighlight(t,_vidSearch):_esc(t);
+  const _titleSuffix=v.title?'- '+_escOrHl(v.title):'';
   const primary=isComplete?v.title:(topic||v.title);
   const secondary=showTopicTitle?v.title:'';
-  const _addBtn=simple?'':v.video_type==='B'?'<button onclick="event.stopPropagation();openVidModalForBig(\''+sid+'\')" style="font-size:10px;font-weight:700;width:16px;height:16px;line-height:14px;text-align:center;border-radius:3px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;margin-right:4px" title="Add child video">+</button>':(!isChild?'<button style="font-size:10px;font-weight:700;width:16px;height:16px;line-height:14px;text-align:center;border-radius:3px;border:1px solid transparent;background:transparent;color:transparent;margin-right:4px;pointer-events:none">+</button>':'');
+  const _addBtn=simple?'':v.video_type==='B'?'<button onclick="event.stopPropagation();openVidModalForBig(\''+sid+'\')" style="font-size:10px;font-weight:700;width:16px;height:16px;line-height:16px;text-align:center;border-radius:3px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;margin-right:8px;vertical-align:middle;padding:0;flex-shrink:0" title="Add child video">+</button>':(!isChild?'<button style="font-size:10px;font-weight:700;width:16px;height:16px;line-height:16px;text-align:center;border-radius:3px;border:1px solid transparent;background:transparent;color:transparent;margin-right:8px;pointer-events:none;vertical-align:middle;padding:0;flex-shrink:0">+</button>':'');
   const _kidCount=v.video_type==='B'?(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===sid).length:0;
-  const _kidBadge=_kidCount?'<span style="font-size:9px;color:var(--muted);font-weight:400;margin-left:4px">'+_kidCount+'</span>':'';
-  const _tHtml=(showTopicTitle?'<span class="'+titleCls+'">'+_esc(topic)+'</span><span style="font-size:10px;color:var(--muted);margin-left:4px;font-weight:400">'+_titleSuffix+'</span>':'<span class="'+titleCls+'">'+_esc(primary)+'</span>')+_kidBadge;
+  const _kidBadge=_kidCount?'<span style="font-size:9px;color:rgba(140,135,160,.7);font-weight:400;margin-left:4px;position:relative;top:0.5px">('+_kidCount+')</span>':'';
+  const _tHtml=(showTopicTitle?'<span class="'+titleCls+'">'+_escOrHl(topic)+'</span><span style="font-size:10px;color:var(--muted);margin-left:4px;font-weight:400">'+_titleSuffix+'</span>':'<span class="'+titleCls+'">'+_escOrHl(primary)+'</span>')+_kidBadge;
   if(simple){
     let hasGroup=false;
     if(v.video_type==='B'){
@@ -522,12 +627,12 @@ function _vidDashRow(v,isChild,simple){
     const bulletColor=hasGroup?'rgba(139,92,246,.45)':'#fff';
     const tipAttr=hasGroup?`onmouseenter="_vidBulletTipShow(event,'${sid}')" onmouseleave="_vidBulletTipHide()"`:'';
     return`<div class="vid-dash-row${sel?' vid-sel':''}" draggable="true" ondragstart="_vidDashDragStart(event,'${sid}')" data-vid="${sid}" onclick="vidRowClick(event,'${sid}')" ondblclick="openVidEdit('${sid}')" oncontextmenu="showVidCtx(event,'${sid}')" onmouseenter="_vidIdeaRowEnter('${sid}')" onmouseleave="_vidIdeaRowLeave()">
-      <div style="flex:1;min-width:0;padding-left:10px;${indent}${!isChild?'font-weight:600;':''}${titleStyle}" ${tipAttr}><span style="color:${bulletColor};font-size:8px;margin-right:6px;cursor:default">●</span>${_addBtn}${childMark}${numHtml}${_tHtml}</div>
+      <div style="flex:1;min-width:0;padding-left:10px;display:flex;align-items:center;${indent}${!isChild?'font-weight:600;':''}${titleStyle}" ${tipAttr}><span style="color:${bulletColor};font-size:8px;margin-right:6px;cursor:default">●</span>${_addBtn}${childMark}${numHtml}${_tHtml}</div>
       <button class="vid-del" data-vid="${sid}">✕</button>
     </div>`;
   }
-  const postStr=_vidPostStr(v.post_date);
-  const durStr=v.duration_minutes?v.duration_minutes.toFixed(2):'';
+  const _postSrc=_ytPostDate(sid)||v.post_date;
+  const postStr=_vidPostStr(_postSrc);
   const isBig=v.video_type==='B';
   const bigRowStyle=isBig?'background:rgba(255,255,255,.50);':'';
   const _applicable=VID_STEPS.filter(s=>v[s]!=='na');
@@ -537,15 +642,13 @@ function _vidDashRow(v,isChild,simple){
   const _dropParent=v.video_type==='B'?sid:(v.big_video_id?String(v.big_video_id):null);
   const dropAttrs=_dropParent?'ondragover="_vidGroupDragOver(event)" ondragleave="_vidGroupDragLeave(event)" ondrop="_vidGroupDrop(event,\''+_dropParent+'\')"':'';
   return`<div class="vid-dash-row${sel?' vid-sel':''}${_vidChildSelected.has(sid)?' vid-child-sel':''}" draggable="true" ondragstart="_vidDashDragStart(event,'${sid}')" ${dropAttrs} data-vid="${sid}" onclick="vidRowClick(event,'${sid}')" ondblclick="_vidDashDblClick(event,'${sid}')" oncontextmenu="showVidCtx(event,'${sid}')" style="${bigRowStyle}">
-    <div style="flex:1;min-width:0;padding-left:10px;${indent}${!isChild?'font-weight:600;':''}${titleStyle}">
+    <div style="flex:1;min-width:0;padding-left:10px;display:flex;align-items:center;${indent}${!isChild?'font-weight:600;':''}${titleStyle}">
       ${_addBtn}${childMark}${numHtml}${_tHtml}
     </div>
     <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
-      <div style="display:flex;gap:0">${VID_STEPS.map(s=>`<div style="width:28px;text-align:center"><div class="vid-step-dot${v[s]==='done'?' done':v[s]==='na'?' na':''}" data-vid="${sid}" data-step="${s}" title="${VID_STEP_LABELS[s]}"></div></div>`).join('')}</div>
-      <span data-field="post_date" style="width:52px;text-align:right;font-size:11px;color:${_vidDateColor(v.post_date,v)};cursor:pointer;min-height:16px;display:inline-block">${postStr||''}</span>
-      <span data-field="duration_minutes" style="width:36px;text-align:right;font-size:11px;color:var(--muted);cursor:pointer;min-height:16px;display:inline-block">${durStr||''}</span>
-      ${(()=>{const ym=_ytForVid(sid);return ym?'<span style="width:42px;text-align:right;font-size:10px;color:#8b5cf6;display:inline-block" title="'+ym.views+' views / '+ym.likes+' likes">'+_ytNum(ym.views)+'</span>':'';})()}
-      <span style="width:28px;text-align:right;font-size:9px;color:var(--muted);font-weight:500;display:inline-block">${_pctVal}</span>
+      <div style="display:flex;align-items:center;gap:0">${VID_STEPS.map(s=>`<div style="width:28px;text-align:center;display:flex;align-items:center;justify-content:center"><div class="vid-step-dot${v[s]==='done'?' done':v[s]==='na'?' na':''}" data-vid="${sid}" data-step="${s}" title="${VID_STEP_LABELS[s]}"></div></div>`).join('')}</div>
+      <span class="vid-num" style="width:52px;text-align:right;font-size:11px;color:${_vidDateColor(_postSrc,v)};min-height:16px;display:inline-block">${postStr||''}</span>
+      <span class="vid-num" style="width:28px;text-align:right;font-size:9px;color:var(--muted);font-weight:500;display:inline-block">${_pctVal}</span>
       <button class="vid-del" data-vid="${sid}">✕</button>
     </div>
   </div>`;
@@ -825,7 +928,6 @@ async function _vidEnsureSynced(v){
   });
   if(!payload.title)payload.title='';
   const sv=await sbReqSilent('POST','videos',payload);
-  console.log('[vidSync] POST local→DB',v.id,JSON.stringify(payload),sv);
   if(sv&&sv[0]){
     const oldId=v.id;
     Object.assign(v,sv[0]);
@@ -956,7 +1058,7 @@ function vidTblSort(col){
   if(_vidSortCol!==col){_vidSortCol=col;_vidSortDir=1;}
   else if(_vidSortDir===1){_vidSortDir=-1;}
   else{_vidSortCol=null;_vidSortDir=1;}
-  renderVideosPage();
+  renderVideosPageKeepScroll();
 }
 function _vidSortVids(vids){
   const sorted=[...vids];
@@ -968,8 +1070,8 @@ function _vidSortVids(vids){
       else if(col==='group'){av=a.big_video_id||0;bv=b.big_video_id||0;}
       else if(col==='playlist'){av=(a.playlist||'').toLowerCase();bv=(b.playlist||'').toLowerCase();}
       else if(col==='status'){av=VID_STATUS_ORDER[a.status]??99;bv=VID_STATUS_ORDER[b.status]??99;}
-      else if(col==='duration'){av=a.duration_minutes||0;bv=b.duration_minutes||0;}
-      else if(col==='posted'){av=a.post_date||'';bv=b.post_date||'';}
+      else if(col==='duration'){av=_ytDurMin(String(a.id))||a.duration_minutes||0;bv=_ytDurMin(String(b.id))||b.duration_minutes||0;}
+      else if(col==='posted'){av=_ytPostDate(String(a.id))||a.post_date||'';bv=_ytPostDate(String(b.id))||b.post_date||'';}
       else{av='';bv='';}
       if(!av&&!bv)return 0;if(!av)return 1;if(!bv)return-1;
       return av<bv?-dir:av>bv?dir:0;
@@ -1048,16 +1150,14 @@ function _vidRenderTable(){
   }
   const thStyle='cursor:pointer;user-select:none';
   return`<div>
-    <table class="vid-tbl" style="table-layout:fixed;width:100%">
+    <table class="vid-tbl" style="width:100%">
       <thead><tr>
-        <th style="width:525px;${thStyle}" onclick="vidTblSort('title')">Title${_vidSortArrow('title')}</th>
-        ${VID_STEPS.map(s=>`<th style="width:22px;text-align:center;font-size:9px" title="${VID_STEP_LABELS[s]}">${VID_STEP_LABELS[s].length<=5?VID_STEP_LABELS[s]:VID_STEP_LABELS[s].slice(0,2)}</th>`).join('')}
-        <th style="width:62px;text-align:right;${thStyle}" onclick="vidTblSort('posted')">Posted${_vidSortArrow('posted')}</th>
-        <th style="width:50px;text-align:right;${thStyle}" onclick="vidTblSort('duration')">Dur${_vidSortArrow('duration')}</th>
-        <th style="width:28px"></th>
-        <th style="width:80px;${thStyle}" onclick="vidTblSort('status')">Status${_vidSortArrow('status')}</th>
-        ${_ytMatch?'<th style="width:45px;text-align:right;font-size:9px">Views</th><th style="width:50px;text-align:right;font-size:9px">Likes</th><th style="width:50px;text-align:right;font-size:9px">Comments</th>':''}
-        <th style="width:30px"><button onclick="_vidToggleCompleted()" style="font-size:12px;font-weight:700;width:20px;height:20px;line-height:18px;text-align:center;border-radius:5px;border:1.5px solid var(--border);background:${_vidShowCompleted?'rgba(14,165,233,.12)':'var(--bg)'};color:${_vidShowCompleted?'#0ea5e9':'var(--muted)'};cursor:pointer;vertical-align:middle" title="${_vidShowCompleted?'Hide':'Show'} Completed">${_vidShowCompleted?'−':'+'}</button></th>
+        <th style="padding-left:16px;${thStyle}" onclick="vidTblSort('title')">Title${_vidSortArrow('title')}</th>
+        <th style="width:${VID_STEPS.length*28}px;padding:0"><div style="display:flex;gap:0">${VID_STEPS.map(s=>`<div style="width:28px;text-align:center;font-size:10px" title="${VID_STEP_LABELS[s]}">${VID_STEP_LABELS[s].length<=5?VID_STEP_LABELS[s]:VID_STEP_LABELS[s].slice(0,2)}</div>`).join('')}</div></th>
+        <th style="width:12px"></th>
+        <th style="width:120px;${thStyle}" onclick="vidTblSort('status')">Status${_vidSortArrow('status')}</th>
+        ${_ytMatch?'<th style="width:52px;text-align:right;'+thStyle+'" onclick="vidTblSort(\'posted\')">Posted'+_vidSortArrow('posted')+'</th><th style="width:46px;text-align:right;'+thStyle+'" onclick="vidTblSort(\'duration\')">Length'+_vidSortArrow('duration')+'</th><th style="width:44px;text-align:right">Views</th><th style="width:38px;text-align:right">Likes</th><th style="width:42px;text-align:right">Cmts</th>':''}
+        <th style="width:30px"></th>
       </tr></thead>
       <tbody>${groupedHtml}</tbody>
     </table>
@@ -1102,28 +1202,24 @@ function _vidRow(v,isChild,postMap){
   const sid=String(v.id);
   const sel=_vidSelected.has(sid);
   const sc=VID_STATUS_COLORS[v.status]||'#94a3b8';
-  const postStr=_vidPostStr(v.post_date,true);
-  const durStr=v.duration_minutes?v.duration_minutes.toFixed(2):'';
   const isSmall=v.video_type==='L'&&v.big_video_id;
-  const indent=isChild?'padding-left:32px;':'padding-left:16px;';
+  const indent=isChild?'padding-left:30px;':'padding-left:16px;';
   const childMark=isChild?'<span style="color:#fff;font-size:10px;margin-right:4px">└</span>':'';
   const titleColor=isSmall?'color:var(--muted);':'';
   const postNum=postMap&&postMap[sid];
   const numHtml=postNum?`<span style="color:var(--muted);font-size:10px;margin-right:6px;min-width:18px;display:inline-block">${postNum}</span>`:'';
-  const addBtn=v.video_type==='B'?`<button onclick="event.stopPropagation();openVidModalForBig('${sid}')" style="font-size:10px;font-weight:700;width:16px;height:16px;line-height:14px;text-align:center;border-radius:3px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;margin-right:4px;flex-shrink:0" title="Add child video">+</button>`:(!isChild?'<button style="font-size:10px;font-weight:700;width:16px;height:16px;line-height:14px;text-align:center;border-radius:3px;border:1px solid transparent;background:transparent;color:transparent;margin-right:4px;pointer-events:none;flex-shrink:0">+</button>':'');
+  const addBtn=v.video_type==='B'?`<button onclick="event.stopPropagation();openVidModalForBig('${sid}')" style="font-size:10px;font-weight:700;width:16px;height:16px;line-height:16px;text-align:center;border-radius:3px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;margin-right:8px;vertical-align:middle;padding:0;flex-shrink:0" title="Add child video">+</button>`:(!isChild?'<button style="font-size:10px;font-weight:700;width:16px;height:16px;line-height:16px;text-align:center;border-radius:3px;border:1px solid transparent;background:transparent;color:transparent;margin-right:8px;pointer-events:none;vertical-align:middle;padding:0;flex-shrink:0">+</button>':'');
   const _titleSuffix=v.title?'- '+_esc(v.title):'';
   const isBig=v.video_type==='B';
   const _tblApplicable=VID_STEPS.filter(s=>v[s]!=='na');
   const _tblDone=_tblApplicable.filter(s=>v[s]==='done').length;
   const _tblPct=_tblApplicable.length?Math.round((_tblDone/_tblApplicable.length)*100):0;
   return`<tr class="vid-row${sel?' vid-sel':''}" data-vid="${sid}" onclick="vidCellClick(event,'${sid}')" ondblclick="openVidEdit('${sid}')" oncontextmenu="showVidCtx(event,'${sid}')" style="${isBig?'background:rgba(255,255,255,.50)':''}">
-    <td data-field="title" style="${indent}${!isChild?'font-weight:600;':''}${titleColor}overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${addBtn}${childMark}${numHtml}${(v.status==='in_progress'||v.status==='up_next')&&v.topic?`<span class="vid-title-text">${_esc(v.topic)}</span><span style="font-size:10px;color:var(--muted);margin-left:4px;font-weight:400">${_titleSuffix}</span>`:`<span class="vid-title-text">${_esc(v.title)}</span>`}${isBig?(()=>{const _kc=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===sid).length;return _kc?`<span style="font-size:9px;color:var(--muted);font-weight:400;margin-left:4px">${_kc}</span>`:''})():''}</td>
-    ${VID_STEPS.map(s=>`<td style="text-align:center"><div class="vid-step-dot${v[s]==='done'?' done':v[s]==='na'?' na':''}" data-vid="${sid}" data-step="${s}" title="${VID_STEP_LABELS[s]}"></div></td>`).join('')}
-    <td data-field="post_date" style="text-align:right;font-size:11px;color:${_vidDateColor(v.post_date,v)}">${postStr}</td>
-    <td data-field="duration_minutes" style="text-align:right;font-size:11px;color:var(--muted)">${durStr}</td>
-    <td style="text-align:right;font-size:9px;color:var(--muted);font-weight:500">${(v.status==='in_progress'||v.status==='up_next')&&_tblPct>0&&_tblPct<100?_tblPct+'%':''}</td>
-    <td data-field="status"><span class="vid-status-pill" style="background:${sc}12;color:${sc}">${VID_STATUS_LABELS[v.status]||v.status}</span></td>
-    ${_ytMatch?(()=>{const ym=_ytForVid(sid);return ym?'<td style="text-align:right;font-size:11px;color:var(--muted)">'+_ytNum(ym.views)+'</td><td style="text-align:right;font-size:11px;color:var(--muted)">'+_ytNum(ym.likes)+'</td><td style="text-align:right;font-size:11px;color:var(--muted)">'+_ytNum(ym.comments)+'</td>':'<td></td><td></td><td></td>';})():''}
+    <td data-field="title" style="${indent}${!isChild?'font-weight:600;':''}${titleColor}overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${addBtn}${childMark}${numHtml}${(v.status==='in_progress'||v.status==='up_next')&&v.topic?`<span class="vid-title-text">${_esc(v.topic)}</span><span style="font-size:10px;color:var(--muted);margin-left:4px;font-weight:400">${_titleSuffix}</span>`:`<span class="vid-title-text">${_esc(v.title)}</span>`}${isBig?(()=>{const _kc=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===sid).length;return _kc?`<span style="font-size:9px;color:rgba(140,135,160,.7);font-weight:400;margin-left:4px;position:relative;top:0.5px">(${_kc})</span>`:''})():''}</td>
+    <td style="padding:3px 0"><div style="display:flex;align-items:center;gap:0">${VID_STEPS.map(s=>`<div style="width:28px;text-align:center;display:flex;align-items:center;justify-content:center"><div class="vid-step-dot${v[s]==='done'?' done':v[s]==='na'?' na':''}" data-vid="${sid}" data-step="${s}" title="${VID_STEP_LABELS[s]}"></div></div>`).join('')}</div></td>
+    <td></td>
+    <td data-field="status" style="white-space:nowrap"><span class="vid-status-pill" style="background:${sc}12;color:${sc}">${VID_STATUS_LABELS[v.status]||v.status}${(v.status==='in_progress'||v.status==='up_next')&&_tblPct>0&&_tblPct<100?' · '+_tblPct+'%':''}</span></td>
+    ${_ytMatch?(()=>{const ym=_ytForVid(sid);if(ym){const _ytPost=ym.publishedAt?_vidPostStr(ym.publishedAt.slice(0,10),true):'';const _ytLen=ym.duration?_fmtDur(Math.round(_ytDurSec(ym.duration)/60*100)/100):'';return'<td class="vid-num" style="text-align:right;font-size:11px;color:'+_vidDateColor(ym.publishedAt?ym.publishedAt.slice(0,10):null,v)+'">'+_ytPost+'</td><td class="vid-num" style="text-align:right;font-size:11px;color:var(--muted)">'+_ytLen+'</td><td class="vid-num" style="text-align:right;font-size:11px;color:var(--muted)">'+_ytNum(ym.views)+'</td><td class="vid-num" style="text-align:right;font-size:11px;color:var(--muted)">'+_ytNum(ym.likes)+'</td><td class="vid-num" style="text-align:right;font-size:11px;color:var(--muted)">'+_ytNum(ym.comments)+'</td>';}return'<td></td><td></td><td></td><td></td><td></td>';})():''}
     <td><button class="vid-del" data-vid="${sid}">✕</button></td>
   </tr>`;
 }
@@ -1165,11 +1261,11 @@ function _vidBoardCard(v){
     <div style="font-size:12px;font-weight:${v.video_type==='B'||!v.big_video_id?'500':'400'};color:${v.video_type==='L'&&v.big_video_id?'var(--muted)':'var(--text)'};line-height:1.35;margin-bottom:4px">${_esc(v.title)}</div>
     <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:var(--muted)">
       ${postStr?`<span>${postStr}</span>`:''}
-      ${v.duration_minutes?`<span>${v.duration_minutes.toFixed(2)}</span>`:''}
+      ${(()=>{const _d=v.duration_minutes||_ytDurMin(String(v.id));return _d?`<span class="vid-num">${_fmtDur(_d)}</span>`:'';})()}
       <div style="flex:1"></div>
       <div style="display:flex;align-items:center;gap:3px">
         <div style="width:36px;height:4px;background:var(--border);border-radius:2px;overflow:hidden"><div style="width:${pct}%;height:100%;background:#10b981;border-radius:2px"></div></div>
-        <span style="font-size:9px">${pct}%</span>
+        <span class="vid-num" style="font-size:9px">${pct}%</span>
       </div>
     </div>
   </div>`;
@@ -1232,7 +1328,7 @@ function _vidRenderGroups(){
 }
 
 // ── MONTHLY VIEW ─────────────────────────────────────────────────────────────
-function _vidMonthNav(dir){_vidMonthOffset+=dir;renderVideosPage();}
+function _vidMonthNav(dir){_vidMonthOffset+=dir;renderVideosPageKeepScroll();}
 function _vidRenderMonthly(){
   const now=new Date();
   const viewDate=new Date(now.getFullYear(),now.getMonth()+_vidMonthOffset,1);
@@ -1294,7 +1390,23 @@ function _vidRenderMonthly(){
 function _ytDurSec(iso){if(!iso)return 0;var m=iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);if(!m)return 0;return(parseInt(m[1])||0)*3600+(parseInt(m[2])||0)*60+(parseInt(m[3])||0);}
 let _anTrendMetric='revenue';
 let _anTrendPeriod='monthly';
+let _anRevMode='earned'; // 'earned' = by month earned (real), 'posted' = by video post_date
 function _anSetTrend(metric,period){if(metric)_anTrendMetric=metric;if(period)_anTrendPeriod=period;renderVideosPageKeepScroll();}
+function _anToggleRevMode(){_anRevMode=_anRevMode==='earned'?'posted':'earned';renderVideosPageKeepScroll();}
+function _anTopicInputChange(q){
+  const list=document.getElementById('anTopicList');if(!list)return;
+  const lq=q.toLowerCase();
+  const all=(st.videos||[]).filter(v=>!v.is_deleted&&v.status==='published'&&v.topic);
+  const topicCounts={};
+  all.forEach(v=>{const t=v.topic;topicCounts[t]=(topicCounts[t]||0)+1;});
+  const filtered=Object.entries(topicCounts).filter(([t])=>t.toLowerCase().includes(lq)).sort((a,b)=>b[1]-a[1]);
+  if(!q){list.innerHTML='<div class="vid-sg-item" onmousedown="_anPickTopic(\'all\')" style="padding:5px 8px;font-size:11px;cursor:pointer;color:var(--muted)">All topics</div>'+filtered.map(([t,c])=>'<div class="vid-sg-item" onmousedown="_anPickTopic(\''+_esc(t.replace(/'/g,"\\'"))+'\')" style="padding:5px 8px;font-size:11px;cursor:pointer">'+_esc(t)+' <span style="color:var(--muted)">('+c+')</span></div>').join('');list.style.display='block';return;}
+  if(!filtered.length){list.style.display='none';return;}
+  list.style.display='block';
+  list.innerHTML=filtered.map(([t,c])=>'<div class="vid-sg-item" onmousedown="_anPickTopic(\''+_esc(t.replace(/'/g,"\\'"))+'\')" style="padding:5px 8px;font-size:11px;cursor:pointer">'+_vidHighlight(t,lq)+' <span style="color:var(--muted)">('+c+')</span></div>').join('');
+}
+function _anTopicShowList(){_anTopicInputChange(document.getElementById('anTopicInput')?.value||'');}
+function _anPickTopic(t){_anTopicFilter=t;const list=document.getElementById('anTopicList');if(list)list.style.display='none';renderVideosPageKeepScroll();}
 let _anTipStore={};
 function _anShowTip(e,key){
   _anHideTip();
@@ -1387,7 +1499,8 @@ function _anKpiModal(metric){
   html+='</table>';
   // Top contributors
   let topContrib=[];
-  if(metric==='revenue')topContrib=merged.slice(0,5).map(v=>({...v,_fmt:'~$'+_ytNum(Math.round(v.views/1000*rpm))}));
+  const _vidRevMap={};if(_ytAnalytics&&_ytAnalytics.topVideos)_ytAnalytics.topVideos.forEach(v=>{_vidRevMap[v.videoId]=v.revenue;});
+  if(metric==='revenue')topContrib=merged.map(v=>{const r=v.ytId&&_vidRevMap[v.ytId]!=null?_vidRevMap[v.ytId]:Math.round(v.views/1000*rpm);return{...v,_rev:r};}).sort((a,b)=>b._rev-a._rev).slice(0,5).map(v=>({...v,_fmt:(_hasReal?'':'~')+'$'+_ytNum(v._rev)}));
   else if(metric==='avg'||metric==='views'||metric==='subscribers')topContrib=merged.slice(0,5).map(v=>({...v,_fmt:_ytNum(v.views)+' views'}));
   else if(metric==='videos')topContrib=[];
   if(topContrib.length){
@@ -1420,6 +1533,9 @@ function _vidRenderAnalytics(){
   }).filter(v=>v&&v.views>0).sort((a,b)=>b.views-a.views);
 
   if(!merged.length) return '<div style="padding:40px;text-align:center;color:var(--muted)">No YouTube data available yet. Publish videos and check back!</div>';
+
+  const _mergedAll=merged; // keep unfiltered for topic list
+  if(_anTopicFilter!=='all') merged=merged.filter(v=>v.topic===_anTopicFilter);
 
   const totalViews=merged.reduce((s,v)=>s+v.views,0);
   const totalLikes=merged.reduce((s,v)=>s+v.likes,0);
@@ -1491,6 +1607,14 @@ function _vidRenderAnalytics(){
     _ytAnalytics.monthly.forEach(m=>{_realRevByMonth[m.month]=m.revenue;_realRevTotal+=m.revenue;});
   }
   const _realRevThisMonth=_hasRealRev?(_realRevByMonth[_thisMonth]||0):null;
+  // Per-video real revenue map (ytId → revenue) from Analytics API topVideos
+  const _vidRev={};
+  if(_ytAnalytics&&_ytAnalytics.topVideos)_ytAnalytics.topVideos.forEach(v=>{_vidRev[v.videoId]=v.revenue;});
+  // Attach real revenue to merged videos
+  if(Object.keys(_vidRev).length) merged.forEach(v=>{if(v.ytId&&_vidRev[v.ytId]!=null)v.realRev=_vidRev[v.ytId];});
+  // Revenue helper: real per-video revenue or RPM estimate
+  const _vRev=(v)=>v.realRev!=null?v.realRev:Math.round(v.views/1000*rpm);
+  const _revPfx=_hasRealRev?'':'~';
   const _spViews=_kpiLast6.map(([,d])=>d.views);
   const _spAvg=_kpiLast6.map(([,d])=>d.count?Math.round(d.views/d.count):0);
   const _spRev=_kpiLast6.map(([,d])=>Math.round(d.views/1000*rpm));
@@ -1502,52 +1626,59 @@ function _vidRenderAnalytics(){
     h+='<div style="display:flex;align-items:center;gap:8px;padding:8px 14px;margin-bottom:12px;background:rgba(139,92,246,.04);border:1px solid rgba(139,92,246,.15);border-radius:10px;font-size:11px;color:var(--muted)"><span>Revenue shown is estimated (~$4 RPM).</span><a href="/api/yt?mode=auth-start" target="_blank" style="color:#8b5cf6;font-weight:600;text-decoration:none">Connect YouTube Analytics</a><span>for actual revenue data.</span></div>';
   }
 
-  // ── KPIs ──
+  const _allTopics=[...new Set(_mergedAll.map(v=>v.topic).filter(Boolean))].sort();
+
+  // ── KPIs (compact inline) ──
   const _dismissed=_ytGetDismissed();
   const _unrepliedAll=_ytData.unrepliedComments||[];
   const _unrepliedN=_unrepliedAll.filter(c=>!_dismissed.includes(c.id)).length;
-  const _kc=(fn)=>'<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:10px;cursor:pointer" onclick="'+fn+'">';
-  h+='<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:16px">';
-  h+=`<div style="background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);border-radius:12px;padding:10px;cursor:pointer" onclick="_ytShowUnreplied()"><div style="text-align:center;padding:6px 0"><div style="font-size:10px;color:var(--muted);margin-bottom:2px">Unreplied Comments</div><div style="font-size:20px;font-weight:700;color:#ef4444">${_unrepliedN}</div></div></div>`;
-  h+=`${_kc("_anKpiModal('views')")}${stat('Total Views',_ytNum(totalViews),_ytNum(_tm.views)+' this month',sparkline(_spViews))}</div>`;
-  h+=`${_kc("_anKpiModal('avg')")}${stat('Avg Views/Video',_ytNum(avgViews),_ytNum(_tm.count?Math.round(_tm.views/_tm.count):0)+' avg this mo',sparkline(_spAvg))}</div>`;
-  h+=`${_kc("_anKpiModal('videos')")}${stat('Videos',String(merged.length),_tm.count+' this month',sparkline(_spVids))}</div>`;
   const _revLabel=_hasRealRev?'Revenue':'Est. Revenue';
   const _revValue=_hasRealRev?'$'+_ytNum(Math.round(_realRevTotal)):'$'+_ytNum(estRevenue);
-  const _revSub=_hasRealRev?'$'+_ytNum(Math.round(_realRevThisMonth||0))+' this month':'@ $'+rpm+' RPM';
+  const _revSub=_hasRealRev?'$'+_ytNum(Math.round(_realRevThisMonth||0))+' this mo':'@ $'+rpm+' RPM';
   const _spRevReal=_hasRealRev?_kpiLast6.map(([k])=>Math.round(_realRevByMonth[k]||0)):_spRev;
-  h+=`${_kc("_anKpiModal('revenue')")}${stat(_revLabel,_revValue,_revSub,sparkline(_spRevReal))}</div>`;
-  h+=`${_kc("_anKpiModal('subscribers')")}${stat('Subscribers',cs?_ytNum(cs.subscribers):'-')}</div>`;
-  h+='</div>';
-
+  const _kc2=(fn,bg)=>`<div style="background:${bg||'var(--glass)'};border:1px solid var(--border);border-radius:10px;padding:18px 10px;cursor:pointer;display:flex;align-items:center;gap:8px;min-width:0;flex:1" onclick="${fn}">`;
+  const _kStat=(label,val,spark)=>`${spark||''}<div style="min-width:0"><div style="font-size:9px;color:var(--muted);white-space:nowrap">${label}</div><div style="font-size:15px;font-weight:700;color:var(--text);white-space:nowrap">${val}</div></div>`;
   // ── TREND CHART + Strategy Insights ──
   const periodMap={};
   merged.forEach(v=>{
     if(!v.post_date)return;
     const key=_anTrendPeriod==='yearly'?v.post_date.slice(0,4):v.post_date.slice(0,7);
-    if(!periodMap[key])periodMap[key]={views:0,likes:0,comments:0,count:0};
+    if(!periodMap[key])periodMap[key]={views:0,likes:0,comments:0,count:0,vidRev:0};
     periodMap[key].views+=v.views;periodMap[key].likes+=v.likes;periodMap[key].comments+=v.comments;periodMap[key].count++;
+    periodMap[key].vidRev+=_vRev(v);
   });
-  const periods=Object.entries(periodMap).sort((a,b)=>a[0].localeCompare(b[0]));
-  const sliced=_anTrendPeriod==='yearly'?periods:periods.slice(-12);
-  const metricVals=sliced.map(([key,d])=>{
-    if(_anTrendMetric==='revenue'){
-      // Use real revenue if available, otherwise estimate
-      if(_hasRealRev){
-        // For monthly, key is "2025-01"; for yearly, key is "2025" — sum matching months
-        let rv=0;
-        if(_anTrendPeriod==='yearly'){_ytAnalytics.monthly.forEach(m=>{if(m.month.startsWith(key))rv+=m.revenue;});}
-        else{rv=_realRevByMonth[key]||0;}
-        rv=Math.round(rv);return{key,val:rv,fmt:'$'+_ytNum(rv)};
-      }
-      const v=Math.round(d.views/1000*rpm);return{key,val:v,fmt:'$'+_ytNum(v)};
-    }
-    if(_anTrendMetric==='views')return{key,val:d.views,fmt:_ytNum(d.views)};
-    if(_anTrendMetric==='likes')return{key,val:d.likes,fmt:_ytNum(d.likes)};
-    if(_anTrendMetric==='engagement'){const r=d.views>0?((d.likes+d.comments)/d.views*100):0;return{key,val:r,fmt:r.toFixed(1)+'%'};}
-    if(_anTrendMetric==='videos')return{key,val:d.count,fmt:String(d.count)};
-    return{key,val:0,fmt:'0'};
-  });
+  // "By Month" mode: use real Analytics API monthly data (actual activity per calendar month)
+  // "By Video" mode: attribute stats to the video's post_date
+  const _useByMonth=_hasRealRev&&_anRevMode==='earned'&&_anTrendMetric!=='videos';
+  let metricVals;
+  if(_useByMonth){
+    const moMap={};
+    _ytAnalytics.monthly.forEach(m=>{
+      const key=_anTrendPeriod==='yearly'?m.month.slice(0,4):m.month;
+      if(!moMap[key])moMap[key]={views:0,revenue:0,likes:0,comments:0};
+      moMap[key].views+=m.views;moMap[key].revenue+=m.revenue;moMap[key].likes+=m.likes;moMap[key].comments+=m.comments;
+    });
+    const moPeriods=Object.entries(moMap).sort((a,b)=>a[0].localeCompare(b[0]));
+    const moSliced=_anTrendPeriod==='yearly'?moPeriods:moPeriods.slice(-12);
+    metricVals=moSliced.map(([key,d])=>{
+      if(_anTrendMetric==='revenue'){const v=Math.round(d.revenue);return{key,val:v,fmt:'$'+_ytNum(v)};}
+      if(_anTrendMetric==='views')return{key,val:d.views,fmt:_ytNum(d.views)};
+      if(_anTrendMetric==='likes')return{key,val:d.likes,fmt:_ytNum(d.likes)};
+      if(_anTrendMetric==='engagement'){const r=d.views>0?((d.likes+d.comments)/d.views*100):0;return{key,val:r,fmt:r.toFixed(1)+'%'};}
+      return{key,val:0,fmt:'0'};
+    });
+  } else {
+    const periods=Object.entries(periodMap).sort((a,b)=>a[0].localeCompare(b[0]));
+    const sliced=_anTrendPeriod==='yearly'?periods:periods.slice(-12);
+    metricVals=sliced.map(([key,d])=>{
+      if(_anTrendMetric==='revenue'){const v=Math.round(d.vidRev);return{key,val:v,fmt:'$'+_ytNum(v)};}
+      if(_anTrendMetric==='views')return{key,val:d.views,fmt:_ytNum(d.views)};
+      if(_anTrendMetric==='likes')return{key,val:d.likes,fmt:_ytNum(d.likes)};
+      if(_anTrendMetric==='engagement'){const r=d.views>0?((d.likes+d.comments)/d.views*100):0;return{key,val:r,fmt:r.toFixed(1)+'%'};}
+      if(_anTrendMetric==='videos')return{key,val:d.count,fmt:String(d.count)};
+      return{key,val:0,fmt:'0'};
+    });
+  }
   const maxMetric=Math.max(...metricVals.map(m=>m.val),1);
   const _moAbbr=['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const _curPeriod=_anTrendPeriod==='yearly'?String(now.getFullYear()):_thisMonth;
@@ -1560,25 +1691,59 @@ function _vidRenderAnalytics(){
   if(_anTrendMetric==='engagement') summaryText='Avg: '+avgMetricVal.toFixed(1)+'%/'+perLabel;
   else if(_anTrendMetric==='revenue') summaryText='$'+_ytNum(totalMetric)+' total · $'+_ytNum(Math.round(avgMetricVal))+'/'+perLabel;
   else summaryText=_ytNum(totalMetric)+' total · '+_ytNum(Math.round(avgMetricVal))+'/'+perLabel;
+  // Date perspective toggle — "By Month" (actual calendar month activity) vs "By Video" (attributed to post date)
+  // Available for all metrics except "videos" (count is inherently by post date), requires Analytics API data
+  const _showDateToggle=_hasRealRev&&_anTrendMetric!=='videos';
+  const _dateToggle=_showDateToggle?`<div style="width:1px;height:18px;background:rgba(120,113,145,.3);margin:0 4px;flex-shrink:0"></div><div style="display:flex;gap:3px;align-items:center"><button onclick="_anToggleRevMode()" style="padding:3px 8px;border:1px solid ${_anRevMode==='earned'?'rgba(120,113,145,.4)':'var(--border)'};border-radius:5px;background:${_anRevMode==='earned'?'rgba(120,113,145,.15)':'transparent'};color:${_anRevMode==='earned'?'var(--text)':'var(--muted)'};font-size:10px;font-family:inherit;font-weight:${_anRevMode==='earned'?'600':'400'};cursor:pointer">Actual</button><button onclick="_anToggleRevMode()" style="padding:3px 8px;border:1px solid ${_anRevMode==='posted'?'rgba(120,113,145,.4)':'var(--border)'};border-radius:5px;background:${_anRevMode==='posted'?'rgba(120,113,145,.15)':'transparent'};color:${_anRevMode==='posted'?'var(--text)':'var(--muted)'};font-size:10px;font-family:inherit;font-weight:${_anRevMode==='posted'?'600':'400'};cursor:pointer">By Video</button></div>`:'';
   let trendHtml=`<div style="display:flex;align-items:center;gap:6px;margin-bottom:12px">
     <div style="display:flex;gap:3px;align-items:center">${tBtn('revenue','Revenue','metric')}${tBtn('views','Views','metric')}${tBtn('likes','Likes','metric')}${tBtn('engagement','Engagement','metric')}${tBtn('videos','Videos','metric')}</div>
     <div style="width:1px;height:18px;background:rgba(120,113,145,.3);margin:0 4px;flex-shrink:0"></div>
     <div style="display:flex;gap:3px;align-items:center">${tBtn('monthly','Monthly','period')}${tBtn('yearly','Yearly','period')}</div>
+    ${_dateToggle}
     <div style="flex:1"></div>
-    <span style="font-size:10px;color:var(--muted);white-space:nowrap;line-height:1">${summaryText}</span>
+    <span style="font-size:11px;color:var(--muted);white-space:nowrap;line-height:1">${summaryText}</span>
   </div>`;
-  trendHtml+='<div style="display:flex;align-items:flex-end;gap:4px;flex:1;min-height:0">';
+  // Forecast for current month: blend current pace with historical avg
+  const _daysInMonth=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
+  const _dayOfMonth=now.getDate();
+  const _monthProgress=Math.max(_dayOfMonth/_daysInMonth,0.05);
+  // Historical avg of completed months (exclude current)
+  const _completedVals=metricVals.filter(m=>m.key!==_curPeriod);
+  const _histAvg=_completedVals.length?_completedVals.reduce((s,m)=>s+m.val,0)/_completedVals.length:0;
+
+  const _barH=350; // bar area height in px
+  trendHtml+='<div style="display:flex;align-items:flex-end;gap:2px;height:'+(_barH+40)+'px;padding:0 8px">';
   metricVals.forEach(m=>{
-    const pct=Math.max(Math.round(m.val/maxMetric*100),3);
-    const isCur=m.key===_curPeriod;
+    const isCur=m.key===_curPeriod&&_anTrendPeriod==='monthly';
+    let forecast=0;
+    if(isCur&&_monthProgress<0.95){
+      const paceProj=m.val/_monthProgress;
+      forecast=Math.round(paceProj*0.6+_histAvg*0.4);
+      if(forecast<m.val)forecast=m.val;
+    }
+    const barPx=Math.max(Math.round(m.val/maxMetric*_barH),3);
     const label=_anTrendPeriod==='yearly'?m.key:(_moAbbr[parseInt(m.key.slice(5))]||m.key.slice(5));
-    trendHtml+=`<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:2px;height:100%">
-      <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;width:100%">
-        <span style="font-size:9px;color:var(--muted);white-space:nowrap;margin-bottom:2px">${m.fmt}</span>
-        <div style="width:100%;height:${pct}%;background:${isCur?trendColorCur:trendColor};border-radius:3px;min-height:3px${isCur?';box-shadow:0 0 0 1.5px rgba(120,113,145,.3)':''}" title="${m.key}: ${m.fmt}"></div>
-      </div>
-      <span style="font-size:9px;${isCur?'font-weight:700;color:var(--text)':'color:var(--muted)'}">${label}</span>
-    </div>`;
+    const fmtFn=(v)=>_anTrendMetric==='revenue'?'$'+_ytNum(v):_anTrendMetric==='engagement'?v.toFixed(1)+'%':_ytNum(v);
+    if(isCur&&forecast>m.val){
+      const forecastPx=Math.max(Math.round(forecast/maxMetric*_barH),3);
+      const stripePx=forecastPx-barPx;
+      trendHtml+=`<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end">
+          <span style="font-size:11px;color:var(--muted);white-space:nowrap;margin-bottom:3px">${fmtFn(forecast)}</span>
+          <div style="width:55%;display:flex;flex-direction:column;align-items:stretch">
+            <div style="height:${stripePx}px;background:repeating-linear-gradient(135deg,${trendColorCur},${trendColorCur} 2px,transparent 2px,transparent 5px);border-radius:4px 4px 0 0;opacity:.5"></div>
+            <div style="height:${barPx}px;background:${trendColorCur};border-radius:0 0 4px 4px;box-shadow:0 0 0 1.5px rgba(120,113,145,.3);display:flex;align-items:flex-start;justify-content:center;overflow:visible;position:relative">
+              <span style="font-size:10px;color:#fff;font-weight:600;white-space:nowrap;position:absolute;top:2px">${m.fmt}</span>
+            </div>
+          </div>
+        <span style="font-size:11px;margin-top:4px;font-weight:700;color:var(--text)">${label}</span>
+      </div>`;
+    } else {
+      trendHtml+=`<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end">
+          <span style="font-size:11px;color:var(--muted);white-space:nowrap;margin-bottom:3px">${m.fmt}</span>
+          <div style="width:55%;height:${barPx}px;background:${isCur?trendColorCur:trendColor};border-radius:4px${isCur?';box-shadow:0 0 0 1.5px rgba(120,113,145,.3)':''}" title="${m.key+': '+m.fmt}"></div>
+        <span style="font-size:11px;margin-top:4px;${isCur?'font-weight:700;color:var(--text)':'color:var(--muted)'}">${label}</span>
+      </div>`;
+    }
   });
   trendHtml+='</div>';
   // ── TREND (2/3) + Strategy Insights (1/3) ──
@@ -1636,24 +1801,24 @@ function _vidRenderAnalytics(){
   stratHtml+=_secHead('What to make');
   // Top earning topic
   if(topics.length){
-    const topicsByRev=topics.map(t=>({...t,estRev:Math.round(t.avgViews*t.count/1000*rpm),revPerVid:Math.round(t.avgViews/1000*rpm)})).sort((a,b)=>b.estRev-a.estRev);
-    _anTipStore['topicRev']={title:'Revenue by topic (total est.)',html:_miniBar(topicsByRev.slice(0,8),'estRev','topic',v=>'$'+_ytNum(v))};
-    if(topicsByRev[0]) stratHtml+=_row('<b>'+_ytEsc(topicsByRev[0].topic)+'</b> earns most (~$'+_ytNum(topicsByRev[0].estRev)+' total from '+topicsByRev[0].count+' vids)','topicRev');
+    const topicsByRev=topics.map(t=>{const vids=merged.filter(v=>v.topic===t.topic);const totalRev=vids.reduce((s,v)=>s+_vRev(v),0);return{...t,estRev:totalRev,revPerVid:Math.round(totalRev/t.count)};}).sort((a,b)=>b.estRev-a.estRev);
+    _anTipStore['topicRev']={title:(_hasRealRev?'':'Est. ')+'Revenue by topic (total)',html:_miniBar(topicsByRev.slice(0,8),'estRev','topic',v=>'$'+_ytNum(v))};
+    if(topicsByRev[0]) stratHtml+=_row('<b>'+_ytEsc(topicsByRev[0].topic)+'</b> earns most ('+_revPfx+'$'+_ytNum(topicsByRev[0].estRev)+' total from '+topicsByRev[0].count+' vids)','topicRev');
     // Best per-video topic if different
-    const topicsByPerVid=topics.filter(t=>t.count>=2).map(t=>({...t,revPerVid:Math.round(t.avgViews/1000*rpm)})).sort((a,b)=>b.revPerVid-a.revPerVid);
-    _anTipStore['topicPerVid']={title:'Est. revenue per video by topic',html:_miniBar(topicsByPerVid.slice(0,8),'revPerVid','topic',v=>'$'+_ytNum(v))};
-    if(topicsByPerVid[0]&&topicsByPerVid[0].topic!==topicsByRev[0].topic) stratHtml+=_row('<b>'+_ytEsc(topicsByPerVid[0].topic)+'</b> best per video (~$'+_ytNum(topicsByPerVid[0].revPerVid)+'/video)','topicPerVid');
+    const topicsByPerVid=topicsByRev.filter(t=>t.count>=2).sort((a,b)=>b.revPerVid-a.revPerVid);
+    _anTipStore['topicPerVid']={title:(_hasRealRev?'':'Est. ')+'Revenue per video by topic',html:_miniBar(topicsByPerVid.slice(0,8),'revPerVid','topic',v=>'$'+_ytNum(v))};
+    if(topicsByPerVid[0]&&topicsByPerVid[0].topic!==topicsByRev[0].topic) stratHtml+=_row('<b>'+_ytEsc(topicsByPerVid[0].topic)+'</b> best per video ('+_revPfx+'$'+_ytNum(topicsByPerVid[0].revPerVid)+'/video)','topicPerVid');
   }
   if(bigAvg&&smallAvg){
-    const bigRev=Math.round(bigAvg/1000*rpm);const smallRev=Math.round(smallAvg/1000*rpm);
+    const bigRevAvg=Math.round(bigVids.reduce((s,v)=>s+_vRev(v),0)/bigVids.length);const smallRevAvg=Math.round(smallVids.reduce((s,v)=>s+_vRev(v),0)/smallVids.length);
     const r=(bigAvg/smallAvg).toFixed(1);
-    _anTipStore['bigSmall']={title:'Big vs Small comparison',html:_miniBar([{label:'Big ('+bigVids.length+')',val:bigAvg},{label:'Small ('+smallVids.length+')',val:smallAvg}],'val','label',v=>_ytNum(v)+' avg')};
-    stratHtml+=_row('Big videos: <b>'+r+'x</b> more views, ~$'+_ytNum(bigRev)+'/vid vs ~$'+_ytNum(smallRev),'bigSmall');
+    _anTipStore['bigSmall']={title:'Big vs Small comparison',html:_miniBar([{label:'Big ('+bigVids.length+')',val:bigRevAvg},{label:'Small ('+smallVids.length+')',val:smallRevAvg}],'val','label',v=>'$'+_ytNum(v)+'/vid')};
+    stratHtml+=_row('Big videos: <b>'+r+'x</b> more views, '+_revPfx+'$'+_ytNum(bigRevAvg)+'/vid vs '+_revPfx+'$'+_ytNum(smallRevAvg),'bigSmall');
   }
   // Best combo
   if(bestDur&&topics.length){
     const comboVids=merged.filter(v=>{if(!v.duration_minutes)return false;const mins=parseInt(String(v.duration_minutes).split('.')[0])||0;return mins>=durBuckets[bestDur.label].min&&mins<durBuckets[bestDur.label].max&&v.topic===topics[0].topic;});
-    if(comboVids.length>=2){const comboRev=Math.round(comboVids.reduce((s,v)=>s+v.views,0)/comboVids.length/1000*rpm);stratHtml+=_row('Best combo: <b>'+_ytEsc(topics[0].topic)+' + '+bestDur.label+'</b> (~$'+_ytNum(comboRev)+'/vid)');}
+    if(comboVids.length>=2){const comboRev=Math.round(comboVids.reduce((s,v)=>s+_vRev(v),0)/comboVids.length);stratHtml+=_row('Best combo: <b>'+_ytEsc(topics[0].topic)+' + '+bestDur.label+'</b> ('+_revPfx+'$'+_ytNum(comboRev)+'/vid)');}
   }
 
   // ── HOW TO MAKE IT (duration + format) ──
@@ -1661,9 +1826,9 @@ function _vidRenderAnalytics(){
   _anTipStore['duration']={title:'Avg views by duration (n = video count)',html:_miniBar(durArr.map(d=>({...d,label:d.label+' ('+d.count+')'})),'avgViews','label')};
   if(bestDur) stratHtml+=_row('Best length: <b>'+bestDur.label+'</b> ('+_ytNum(bestDur.avgViews)+' avg views)','duration');
   if(durArr.length){
-    const durByRev=durArr.map(d=>({...d,revPerVid:Math.round(d.avgViews/1000*rpm)})).sort((a,b)=>b.revPerVid-a.revPerVid);
-    _anTipStore['durRev']={title:'Est. revenue per video by duration',html:_miniBar(durByRev,'revPerVid','label',v=>'$'+_ytNum(v))};
-    if(durByRev[0]&&durByRev[0].label!==bestDur?.label) stratHtml+=_row('Best length for $: <b>'+durByRev[0].label+'</b> (~$'+_ytNum(durByRev[0].revPerVid)+'/vid)','durRev');
+    const durByRev=durArr.map(d=>{const vids=merged.filter(v=>{if(!v.duration_minutes)return false;const mins=parseInt(String(v.duration_minutes).split('.')[0])||0;return mins>=durBuckets[d.label].min&&mins<durBuckets[d.label].max;});const revPer=vids.length?Math.round(vids.reduce((s,v)=>s+_vRev(v),0)/vids.length):0;return{...d,revPerVid:revPer};}).sort((a,b)=>b.revPerVid-a.revPerVid);
+    _anTipStore['durRev']={title:(_hasRealRev?'':'Est. ')+'Revenue per video by duration',html:_miniBar(durByRev,'revPerVid','label',v=>'$'+_ytNum(v))};
+    if(durByRev[0]&&durByRev[0].label!==bestDur?.label) stratHtml+=_row('Best length for $: <b>'+durByRev[0].label+'</b> ('+_revPfx+'$'+_ytNum(durByRev[0].revPerVid)+'/vid)','durRev');
   }
   // Engagement sweet spot — do high-engagement videos earn more?
   const engSorted=engagements.filter(v=>v.views>=100).sort((a,b)=>b.engRate-a.engRate);
@@ -1716,13 +1881,44 @@ function _vidRenderAnalytics(){
     }
   }
 
-  h+=`<div style="display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:16px">`;
-  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column">${trendHtml}</div>`;
-  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:16px 18px">
-    <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:8px">What Makes Your Videos Win</div>${stratHtml}</div>`;
+  // KPI card helper — compact, label left, value right, sparkline
+  const _kCard=(fn,label,val,spark,accent)=>{
+    const bg=accent?accent+'08':'var(--glass)';
+    const bdr=accent?accent+'30':'var(--border)';
+    return`<div style="background:${bg};border:1px solid ${bdr};border-radius:10px;padding:16px 12px;cursor:pointer;min-width:0;flex:1;text-align:center" onclick="${fn}">
+      <div style="font-size:10px;color:var(--muted);margin-bottom:3px">${label}</div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:5px">
+        <div style="font-size:16px;font-weight:700;color:${accent||'var(--text)'};white-space:nowrap">${val}</div>
+        ${spark||''}
+      </div>
+    </div>`;
+  };
+  // 2-col: KPIs + bar chart (left) | topic filter + insights (right)
+  h+=`<div style="display:grid;grid-template-columns:2.5fr 1fr;gap:12px;margin-bottom:12px;align-items:stretch">`;
+  // Left column: KPIs (single row) then bar chart
+  h+=`<div style="display:flex;flex-direction:column;gap:10px">`;
+  h+='<div style="display:flex;gap:8px;align-items:stretch">';
+  h+=_kCard("_ytShowUnreplied()",'Unreplied',String(_unrepliedN),'','#ef4444');
+  h+=_kCard("_anKpiModal('views')",'Views',_ytNum(totalViews),sparkline(_spViews));
+  h+=_kCard("_anKpiModal('avg')",'Avg/Vid',_ytNum(avgViews),sparkline(_spAvg));
+  h+=_kCard("_anKpiModal('videos')",'Videos',String(merged.length),sparkline(_spVids));
+  h+=_kCard("_anKpiModal('revenue')",_revLabel,_revValue,sparkline(_spRevReal));
+  h+=_kCard("_anKpiModal('subscribers')",'Subs',cs?_ytNum(cs.subscribers):'-');
   h+='</div>';
-
-  // ── ROW 2: Do More Like This + Try Next ──
+  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column">${trendHtml}</div>`;
+  h+='</div>';
+  // Right column: topic filter + insights
+  h+=`<div style="display:flex;flex-direction:column;gap:10px">`;
+  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:10px;padding:8px 14px;position:relative;flex-shrink:0">
+    <input id="anTopicInput" type="text" placeholder="Filter by topic..." value="${_anTopicFilter==='all'?'':_esc(_anTopicFilter)}" oninput="_anTopicInputChange(this.value)" onfocus="_anTopicShowList()" style="width:100%;padding:4px 8px;border:1px solid ${_anTopicFilter!=='all'?'rgba(139,92,246,.4)':'var(--border)'};border-radius:6px;font-family:inherit;font-size:11px;background:${_anTopicFilter!=='all'?'rgba(139,92,246,.04)':'var(--bg)'};color:var(--text);outline:none;box-sizing:border-box">
+    ${_anTopicFilter!=='all'?'<button onclick="_anTopicFilter=\'all\';renderVideosPageKeepScroll()" style="position:absolute;right:20px;bottom:10px;background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);line-height:1">✕</button>':''}
+    <div id="anTopicList" style="display:none;position:absolute;top:100%;left:0;right:0;margin-top:2px;background:var(--bg);border:1px solid var(--border);border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,.1);z-index:100;max-height:150px;overflow-y:auto"></div>
+  </div>`;
+  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:14px 16px;overflow-y:auto;flex:1">
+    <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:8px">Insights</div>${stratHtml}</div>`;
+  h+='</div>';
+  h+='</div>'; // close 2-col grid
+  // Do More Like This + Try Next — full width below
   h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">';
 
   const scored=engagements.filter(v=>v.views>=100).map(v=>({...v,score:v.views*(1+v.engRate/100)})).sort((a,b)=>b.score-a.score).slice(0,8);
@@ -1769,18 +1965,259 @@ function _vidRenderAnalytics(){
   }
   if(!ideaNum) tryHtml+='<div style="font-size:11px;color:var(--muted)">Not enough data yet for suggestions</div>';
   h+=card('Try Next',tryHtml);
-  h+='</div>';
+  h+='</div>'; // close Do More / Try Next grid
+
+  // ── Scatterplot ──
+  const _axOpts={views:'Views',likes:'Likes',comments:'Comments',engagement:'Engagement %',duration:'Duration (min)',revenue:(_hasRealRev?'':'Est. ')+'Revenue'};
+  const _axSel=(id,cur)=>Object.entries(_axOpts).map(([k,l])=>`<option value="${k}"${k===cur?' selected':''}>${l}</option>`).join('');
+  const _axVal=(v,ax)=>{
+    if(ax==='views')return v.views;if(ax==='likes')return v.likes;if(ax==='comments')return v.comments;
+    if(ax==='engagement')return v.views>0?((v.likes+v.comments)/v.views*100):0;
+    if(ax==='duration')return v.duration_minutes||0;
+    if(ax==='revenue')return _vRev(v);return 0;
+  };
+  const _scW=600,_scH=300,_scPad=40;
+  const xVals=merged.map(v=>_axVal(v,_anScatterX)),yVals=merged.map(v=>_axVal(v,_anScatterY));
+  const xMin=Math.min(...xVals,0),xMax=Math.max(...xVals,1),yMin=Math.min(...yVals,0),yMax=Math.max(...yVals,1);
+  const xScale=v=>(v-xMin)/(xMax-xMin)*(_scW-_scPad*2)+_scPad;
+  const yScale=v=>_scH-_scPad-(v-yMin)/(yMax-yMin)*(_scH-_scPad*2);
+  const _fmtAx=(v,ax)=>ax==='engagement'?v.toFixed(1)+'%':ax==='revenue'?'$'+_ytNum(Math.round(v)):ax==='duration'?v.toFixed(1)+'m':_ytNum(Math.round(v));
+  let scSvg=`<svg width="100%" viewBox="0 0 ${_scW} ${_scH}" style="display:block">`;
+  // Grid lines
+  for(let i=0;i<=4;i++){
+    const y=_scPad+(_scH-_scPad*2)*i/4;
+    const yv=yMax-(yMax-yMin)*i/4;
+    scSvg+=`<line x1="${_scPad}" y1="${y}" x2="${_scW-_scPad}" y2="${y}" stroke="rgba(120,113,145,.1)" stroke-width="1"/>`;
+    scSvg+=`<text x="${_scPad-4}" y="${y+3}" text-anchor="end" fill="var(--muted)" font-size="9">${_fmtAx(yv,_anScatterY)}</text>`;
+  }
+  for(let i=0;i<=4;i++){
+    const x=_scPad+(_scW-_scPad*2)*i/4;
+    const xv=xMin+(xMax-xMin)*i/4;
+    scSvg+=`<line x1="${x}" y1="${_scPad}" x2="${x}" y2="${_scH-_scPad}" stroke="rgba(120,113,145,.1)" stroke-width="1"/>`;
+    scSvg+=`<text x="${x}" y="${_scH-_scPad+14}" text-anchor="middle" fill="var(--muted)" font-size="9">${_fmtAx(xv,_anScatterX)}</text>`;
+  }
+  // Dots
+  const topicColors=['#8b5cf6','#f59e0b','#10b981','#ef4444','#0ea5e9','#ec4899','#6366f1','#14b8a6','#f97316','#84cc16'];
+  const topicList=[...new Set(merged.map(v=>v.topic||'Other'))];
+  merged.forEach(v=>{
+    const cx=xScale(_axVal(v,_anScatterX)),cy=yScale(_axVal(v,_anScatterY));
+    const ti=topicList.indexOf(v.topic||'Other')%topicColors.length;
+    scSvg+=`<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="5" fill="${topicColors[ti]}" opacity=".7" stroke="#fff" stroke-width="1"><title>${_ytEsc(v.title||'')}\n${_axOpts[_anScatterX]}: ${_fmtAx(_axVal(v,_anScatterX),_anScatterX)}\n${_axOpts[_anScatterY]}: ${_fmtAx(_axVal(v,_anScatterY),_anScatterY)}</title></circle>`;
+  });
+  scSvg+='</svg>';
+  // Legend
+  let legHtml=topicList.slice(0,8).map((t,i)=>`<span style="display:inline-flex;align-items:center;gap:3px;font-size:10px;color:var(--muted);margin-right:10px"><span style="width:8px;height:8px;border-radius:50%;background:${topicColors[i%topicColors.length]};flex-shrink:0"></span>${_ytEsc(t)}</span>`).join('');
+  let scHtml=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+    <span style="font-size:10px;color:var(--muted)">X:</span>
+    <select onchange="_anScatterX=this.value;renderVideosPageKeepScroll()" style="font-size:10px;font-family:inherit;border:1px solid var(--border);border-radius:5px;padding:2px 6px;background:var(--bg);color:var(--text);outline:none">${_axSel('_scX',_anScatterX)}</select>
+    <span style="font-size:10px;color:var(--muted)">Y:</span>
+    <select onchange="_anScatterY=this.value;renderVideosPageKeepScroll()" style="font-size:10px;font-family:inherit;border:1px solid var(--border);border-radius:5px;padding:2px 6px;background:var(--bg);color:var(--text);outline:none">${_axSel('_scY',_anScatterY)}</select>
+  </div>${scSvg}<div style="margin-top:6px">${legHtml}</div>`;
+  h+=card('Video Explorer',scHtml);
 
   h+='</div>';
   return h;
 }
 
 // ── View / Filter ────────────────────────────────────────────────────────────
-function _vidSetView(v){_vidView=v;renderVideosPage();}
-function _vidSetFilter(f){_vidFilter=f;renderVideosPage();}
-function _vidSetGroup(g){_vidGroupFilter=g;renderVideosPage();}
-function _vidSetSearch(q){_vidSearch=q;renderVideosPage();
-  requestAnimationFrame(()=>{const inp=document.getElementById('vidSearchInput');if(inp){inp.focus();inp.setSelectionRange(inp.value.length,inp.value.length);}});
+function _vidSetView(v){_vidView=v;localStorage.setItem('_vidView',v);renderVideosPage();_vidScrollToDefault();}
+function _vidSetFilter(f){_vidFilter=f;renderVideosPageKeepScroll();}
+function _vidSetGroup(g){_vidGroupFilter=g;renderVideosPageKeepScroll();}
+function _vidSetSearch(q){
+  _vidSearch=q;_vidMatchIdx=0;_vidSearchTs=Date.now();
+  // If search cleared, reset any active filter
+  if(!q){
+    const hadFilter=_vidFilter!=='all'||_anTopicFilter!=='all'||_vidSearchFilterFn;
+    _vidSearchFilterFn=null;
+    if(_vidFilter!=='all'){_vidFilter='all';renderVideosPageKeepScroll();_vidScrollToDefault();return;}
+    if(_anTopicFilter!=='all'){_anTopicFilter='all';renderVideosPageKeepScroll();_vidScrollToDefault();return;}
+    if(hadFilter){renderVideosPageKeepScroll();_vidScrollToDefault();return;}
+  }
+  _vidPostRenderMatches();
+  _vidShowSuggestions(q);
+  const cnt=document.getElementById('vidSearchCount');
+  if(cnt)cnt.textContent=(_vidMatchIds.length?(_vidMatchIdx+1):0)+'/'+_vidMatchIds.length;
+}
+function _vidDateMatch(d,q){
+  if(!d)return false;
+  // d is YYYY-MM-DD, q could be 4/20, 4/20/26, 4-20, 4.20, 4/20/2025, 2025-04, etc.
+  if(d.includes(q))return true;
+  const m=q.match(/^(\d{1,2})[\/\-\.](\d{1,2})(?:[\/\-\.](\d{2,4}))?$/);
+  if(!m)return false;
+  const mo=m[1].padStart(2,'0'),dy=m[2].padStart(2,'0');
+  if(m[3]){
+    const yr=m[3].length===2?'20'+m[3]:m[3];
+    return d===yr+'-'+mo+'-'+dy;
+  }
+  return d.slice(5)===mo+'-'+dy;
+}
+function _vidSearchMatch(v,q){
+  const statusLabel=(v.status==='published'?'complete':v.status||'').replace('_',' ').toLowerCase();
+  return(v.title||'').toLowerCase().includes(q)||(v.topic||'').toLowerCase().includes(q)||statusLabel.includes(q)||_vidDateMatch(v.post_date,q);
+}
+function _vidBuildMatches(){
+  _vidMatchIds=[];
+  // Will be rebuilt from DOM after render
+}
+function _vidPostRenderMatches(){
+  if(!_vidSearch){_vidMatchIds=[];return;}
+  _vidMatchIds=[];
+  const q=_vidSearch.toLowerCase();
+  // Count only videos visible on current view/filter using DOM rows
+  const rows=document.querySelectorAll('.vid-dash-row[data-vid],.vid-row[data-vid]');
+  const visibleIds=new Set();
+  rows.forEach(r=>visibleIds.add(r.dataset.vid));
+  // Match visible videos
+  (st.videos||[]).filter(v=>!v.is_deleted&&visibleIds.has(String(v.id))).forEach(v=>{
+    if(_vidSearchMatch(v,q))_vidMatchIds.push(String(v.id));
+  });
+  if(_vidMatchIdx>=_vidMatchIds.length)_vidMatchIdx=0;
+  const cnt=document.getElementById('vidSearchCount');
+  if(cnt)cnt.textContent=(_vidMatchIds.length?(_vidMatchIdx+1):0)+'/'+_vidMatchIds.length;
+}
+function _vidSearchNav(dir){
+  if(!_vidMatchIds.length)return;
+  _vidMatchIdx=(_vidMatchIdx+dir+_vidMatchIds.length)%_vidMatchIds.length;
+  _vidScrollToMatch();
+  const cnt=document.getElementById('vidSearchCount');
+  if(cnt)cnt.textContent=(_vidMatchIdx+1)+'/'+_vidMatchIds.length;
+}
+function _vidScrollToDefault(){
+  setTimeout(()=>{
+    const today=new Date().toISOString().slice(0,10);
+    const publishedBigs=(st.videos||[]).filter(v=>!v.is_deleted&&v.status==='published'&&v.video_type==='B'&&v.post_date&&v.post_date<today);
+    publishedBigs.sort((a,b)=>b.post_date.localeCompare(a.post_date));
+    const target=publishedBigs[2]||publishedBigs[publishedBigs.length-1];
+    if(!target)return;
+    const row=document.querySelector('.vid-dash-row[data-vid="'+target.id+'"]')||document.querySelector('.vid-row[data-vid="'+target.id+'"]');
+    if(row)row.scrollIntoView({block:'start'});
+  },50);
+}
+function _vidScrollToMatch(){
+  const id=_vidMatchIds[_vidMatchIdx];if(!id)return;
+  // Clear previous highlights
+  document.querySelectorAll('.vid-dash-row,.vid-row').forEach(r=>{if(r._vidHl)r.style.background='';r._vidHl=false;});
+  const row=document.querySelector('.vid-dash-row[data-vid="'+id+'"]')||document.querySelector('.vid-row[data-vid="'+id+'"]');
+  if(row){row.scrollIntoView({block:'center',behavior:'smooth'});row.style.transition='background .2s';row.style.background='rgba(139,92,246,.12)';row._vidHl=true;setTimeout(()=>{if(row._vidHl){row.style.background='';row._vidHl=false;}},1200);}
+}
+function _vidSearchKey(e){
+  const sg=document.getElementById('vidSearchSuggestions');
+  const sgOpen=sg&&sg.style.display!=='none';
+  if(e.key==='Escape'){_vidSearch='';_vidMatchIds=[];_vidSearchFilterFn=null;_vidFilter='all';document.getElementById('vidSearchInput').value='';if(sg)sg.style.display='none';renderVideosPage();_vidScrollToDefault();return;}
+  if(e.key==='Enter'){e.preventDefault();if(sgOpen){const act=sg.querySelector('.vid-sg-active');if(act){act.dispatchEvent(new MouseEvent('mousedown',{bubbles:true}));return;}sg.style.display='none';}_vidSearchNav(e.shiftKey?-1:1);return;}
+  if(e.key==='ArrowDown'){e.preventDefault();if(sgOpen){const items=sg.querySelectorAll('.vid-sg-item');const act=sg.querySelector('.vid-sg-active');let idx=0;items.forEach((it,i)=>{if(it===act)idx=i+1;});if(idx>=items.length)idx=0;items.forEach(it=>it.classList.remove('vid-sg-active'));if(items[idx]){items[idx].classList.add('vid-sg-active');_vidScrollToSuggestion(items[idx]);}}else{_vidSearchNav(1);}return;}
+  if(e.key==='ArrowUp'){e.preventDefault();if(sgOpen){const items=sg.querySelectorAll('.vid-sg-item');const act=sg.querySelector('.vid-sg-active');let idx=items.length-1;items.forEach((it,i)=>{if(it===act)idx=i-1;});if(idx<0)idx=items.length-1;items.forEach(it=>it.classList.remove('vid-sg-active'));if(items[idx]){items[idx].classList.add('vid-sg-active');_vidScrollToSuggestion(items[idx]);}}else{_vidSearchNav(-1);}return;}
+}
+function _vidScrollToSuggestion(item){
+  if(!item)return;
+  const id=item.dataset.vidId;
+  if(id){
+    const row=document.querySelector('.vid-dash-row[data-vid="'+id+'"]')||document.querySelector('.vid-row[data-vid="'+id+'"]');
+    if(row){document.querySelectorAll('.vid-dash-row,.vid-row').forEach(r=>{if(r._vidHl){r.style.background='';r._vidHl=false;}});row.scrollIntoView({block:'center',behavior:'smooth'});row.style.transition='background .2s';row.style.background='rgba(139,92,246,.12)';row._vidHl=true;}
+  }
+}
+function _vidShowSuggestions(q){
+  const sg=document.getElementById('vidSearchSuggestions');if(!sg)return;
+  if(!q||q.length<2){sg.style.display='none';return;}
+  const lq=q.toLowerCase();
+  const vids=(st.videos||[]).filter(v=>!v.is_deleted);
+  // Collect unique values by category
+  const seen=new Set();
+  const suggestions=[];
+  const add=(type,text,id)=>{const k=type+':'+text;if(seen.has(k))return;seen.add(k);suggestions.push({type,text,id});};
+  // Statuses first (exact-ish matches are most useful)
+  const statusLabels=[{val:'idea',label:'idea'},{val:'up_next',label:'up next'},{val:'in_progress',label:'in progress'},{val:'published',label:'complete'},{val:'backup',label:'backup'}];
+  statusLabels.forEach(s=>{if(s.label.includes(lq)||s.val.includes(lq))add('status',s.label);});
+  // Mismatch filter
+  if('mismatch'.includes(lq)||'unmatched'.includes(lq)||'no match'.includes(lq))add('filter','mismatch');
+  // Topics (deduplicated, sorted by frequency)
+  const topicCounts={};
+  vids.forEach(v=>{if(v.topic&&v.topic.toLowerCase().includes(lq)){topicCounts[v.topic]=(topicCounts[v.topic]||0)+1;}});
+  Object.entries(topicCounts).sort((a,b)=>b[1]-a[1]).slice(0,4).forEach(([t])=>add('topic',t));
+  // Dates — collect unique post_dates that match, format as M/D/YYYY
+  const dateCounts={};
+  vids.forEach(v=>{if(v.post_date&&_vidDateMatch(v.post_date,q)){dateCounts[v.post_date]=(dateCounts[v.post_date]||0)+1;}});
+  Object.entries(dateCounts).sort((a,b)=>b[0].localeCompare(a[0])).slice(0,5).forEach(([d,n])=>{
+    const [y,m,dy]=d.split('-');
+    const label=parseInt(m)+'/'+parseInt(dy)+'/'+y;
+    add('date',label);
+  });
+  // Titles (starts-with first, then contains) — deduplicate and exclude L children that duplicate B parent titles
+  const titleSeen=new Set();
+  const starts=[],contains=[];
+  vids.forEach(v=>{
+    if(!v.title||titleSeen.has(v.title))return;
+    // Skip L children whose title matches their B parent
+    if(v.video_type==='L'&&v.big_video_id){const par=vids.find(p=>String(p.id)===String(v.big_video_id));if(par&&par.title===v.title)return;}
+    titleSeen.add(v.title);
+    const lt=v.title.toLowerCase();
+    if(lt.startsWith(lq))starts.push({title:v.title,id:v.id});
+    else if(lt.includes(lq))contains.push({title:v.title,id:v.id});
+  });
+  [...starts,...contains].slice(0,5).forEach(t=>add('title',t.title,t.id));
+  if(!suggestions.length){sg.style.display='none';return;}
+  const badgeColors={status:'#8b5cf6',topic:'#f59e0b',date:'#0ea5e9',title:'var(--muted)',filter:'#ef4444'};
+  sg.style.display='block';
+  sg.innerHTML=suggestions.slice(0,8).map(s=>{
+    const hl=_vidHighlight(s.text,lq);
+    const safe=s.text.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    const action=s.id?'_vidGoToVideo(\''+s.id+'\')':'_vidPickSuggestion(\''+safe+'\',\''+s.type+'\')';
+    return'<div class="vid-sg-item" data-action="'+s.type+'" '+(s.id?'data-vid-id="'+s.id+'"':'')+' onmousedown="event.preventDefault();'+action+'" style="padding:5px 10px;font-size:12px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><span style="font-size:9px;color:'+badgeColors[s.type]+';margin-right:6px">'+s.type+'</span>'+hl+'</div>';
+  }).join('');
+}
+function _vidGoToVideo(id){
+  const sg=document.getElementById('vidSearchSuggestions');if(sg)sg.style.display='none';
+  const row=document.querySelector('.vid-dash-row[data-vid="'+id+'"]')||document.querySelector('.vid-row[data-vid="'+id+'"]');
+  if(row){row.scrollIntoView({block:'center',behavior:'smooth'});row.style.transition='background .2s';row.style.background='rgba(139,92,246,.12)';setTimeout(()=>row.style.background='',1200);}
+  const inp=document.getElementById('vidSearchInput');if(inp)inp.focus();
+}
+function _vidPickSuggestion(text,type){
+  const sg=document.getElementById('vidSearchSuggestions');if(sg)sg.style.display='none';
+  _vidSearchFilterFn=null;_vidFilter='all';_anTopicFilter='all';
+  if(type==='status'){
+    const statusMap={'idea':'idea','up next':'up_next','in progress':'in_progress','complete':'published','published':'published','backup':'backup'};
+    const st2=statusMap[text.toLowerCase()]||text;
+    _vidSearch=text;_vidMatchIds=[];_vidSearchTs=Date.now();
+    const inp2=document.getElementById('vidSearchInput');if(inp2)inp2.value=text;
+    _vidSetFilter(st2);
+    return;
+  }
+  if(type==='topic'){
+    _vidSearch=text;_vidMatchIds=[];_vidSearchTs=Date.now();
+    const inp2=document.getElementById('vidSearchInput');if(inp2)inp2.value=text;
+    if(_vidView==='analytics'){_anTopicFilter=text;}
+    else{_vidSearchFilterFn=v=>(v.topic||'').toLowerCase()===text.toLowerCase();}
+    renderVideosPageKeepScroll();return;
+  }
+  if(type==='date'){
+    _vidSearch=text;_vidMatchIds=[];_vidSearchTs=Date.now();
+    const inp2=document.getElementById('vidSearchInput');if(inp2)inp2.value=text;
+    _vidSearchFilterFn=v=>_vidDateMatch(v.post_date,text);
+    renderVideosPageKeepScroll();return;
+  }
+  if(type==='filter'&&text==='mismatch'){
+    _vidSearch=text;_vidMatchIds=[];_vidSearchTs=Date.now();
+    const inp2=document.getElementById('vidSearchInput');if(inp2)inp2.value=text;
+    _vidSearchFilterFn=v=>v.post_date&&v.status==='published'&&!_ytForVid(String(v.id));
+    renderVideosPageKeepScroll();return;
+  }
+  // Default: scroll to first match
+  const inp=document.getElementById('vidSearchInput');if(inp){inp.value=text;inp.focus();}
+  const lq=text.toLowerCase();
+  const rows=document.querySelectorAll('.vid-dash-row[data-vid],.vid-row[data-vid]');
+  for(const row of rows){
+    const title=row.querySelector('[title]');
+    if(title&&(title.getAttribute('title')||'').toLowerCase().includes(lq)){
+      row.scrollIntoView({block:'center',behavior:'smooth'});row.style.transition='background .2s';row.style.background='rgba(139,92,246,.12)';setTimeout(()=>row.style.background='',1200);break;
+    }
+  }
+}
+function _vidSearchFocus(){if(_vidSearch&&_vidSearch.length>=2)_vidShowSuggestions(_vidSearch);}
+function _vidHighlight(text,q){
+  if(!q)return _esc(text);
+  const idx=text.toLowerCase().indexOf(q.toLowerCase());
+  if(idx===-1)return _esc(text);
+  return _esc(text.slice(0,idx))+'<mark style="background:rgba(250,204,21,.4);padding:0 1px;border-radius:2px">'+_esc(text.slice(idx,idx+q.length))+'</mark>'+_esc(text.slice(idx+q.length));
 }
 
 // ── Selection ─────────────────────────────────────────────────────────────────
@@ -1875,41 +2312,9 @@ function _vidParseDate(str){
   return y+'-'+String(m).padStart(2,'0')+'-'+String(d).padStart(2,'0');
 }
 function _vidDashDblClick(e,id){
-  const span=e.target.closest('[data-field]');
-  if(span&&_vidView==='dashboard'){
-    e.stopPropagation();
-    _vidDashInlineEdit(span,id,span.dataset.field);
-    return;
-  }
   openVidEdit(id);
 }
-function _vidDashInlineEdit(span,id,field){
-  if(span._editing)return;
-  const v=(st.videos||[]).find(x=>String(x.id)===String(id));if(!v)return;
-  span._editing=true;
-  let el;
-  if(field==='post_date'){
-    el=document.createElement('input');el.type='text';el.placeholder='m/d';
-    el.value=v.post_date?_vidPostStr(v.post_date,true):'';
-    el.style.cssText='width:52px;font-size:10px;border:1px solid var(--border);border-radius:4px;padding:1px 2px;background:var(--bg);color:var(--text);outline:none;font-family:inherit;box-sizing:border-box;text-align:right';
-  }else if(field==='duration_minutes'){
-    el=document.createElement('input');el.type='number';el.step='0.01';el.value=v.duration_minutes||'';
-    el.style.cssText='width:36px;font-size:10px;border:1px solid var(--border);border-radius:4px;padding:1px 2px;background:var(--bg);color:var(--text);outline:none;font-family:inherit;box-sizing:border-box;text-align:right';
-  }else return;
-  const orig=span.innerHTML;
-  span.textContent='';span.appendChild(el);el.focus();el.select();
-  const commit=()=>{
-    if(!span._editing)return;span._editing=false;
-    const prev={[field]:v[field]};
-    if(field==='post_date')v.post_date=_vidParseDate(el.value);
-    else if(field==='duration_minutes')v.duration_minutes=parseFloat(el.value)||null;
-    save();renderVideosPageKeepScroll();
-    pushUndo(async()=>{Object.assign(v,prev);save();renderVideosPageKeepScroll();await sbReqSilent('PATCH','videos',prev,`?id=eq.${v.id}`);},'Inline edit');
-    sbReqSilent('PATCH','videos',{[field]:v[field]},`?id=eq.${v.id}`);
-  };
-  el.addEventListener('blur',commit);
-  el.addEventListener('keydown',ev=>{if(ev.key==='Enter'){ev.preventDefault();el.blur();}if(ev.key==='Escape'){span._editing=false;span.innerHTML=orig;}});
-}
+function _vidDashInlineEdit(){}
 function _vidUpdateChildSel(){
   _vidChildSelected.clear();
   _vidSelected.forEach(sid=>{
@@ -1935,15 +2340,11 @@ function vidCellEdit(td,id,field){
   if(td._editing)return;
   const v=(st.videos||[]).find(x=>String(x.id)===String(id));if(!v)return;
   td._editing=true;
-  const elStyle='width:100%;font-size:11px;border:1px solid var(--border);border-radius:4px;padding:2px 4px;background:var(--bg);color:var(--text);outline:none;font-family:inherit;box-sizing:border-box';
+  const elStyle='width:100%;font-size:11px;border:none;border-bottom:1px solid var(--border);border-radius:0;padding:0;margin:0;background:transparent;color:var(--text);outline:none;font-family:inherit;box-sizing:border-box;line-height:inherit;text-align:inherit;height:100%';
   let el;
   if(field==='status'){
     el=document.createElement('select');
     ['idea','up_next','in_progress','published','backup'].forEach(s=>{const o=document.createElement('option');o.value=s;o.textContent=s;if(v.status===s)o.selected=true;el.appendChild(o);});
-  }else if(field==='duration_minutes'){
-    el=document.createElement('input');el.type='number';el.step='0.01';el.value=v.duration_minutes||'';
-  }else if(field==='post_date'){
-    el=document.createElement('input');el.type='date';el.value=v.post_date||'';
   }else if(field==='title'){
     el=document.createElement('input');el.value=v.title||'';
   }else{return;}
@@ -1956,7 +2357,7 @@ function vidCellEdit(td,id,field){
     if(saved)return;saved=true;td._editing=false;
     let val=el.value;
     if(field==='duration_minutes')val=val?parseFloat(val):null;
-    if(field==='post_date')val=val||null;
+    if(field==='post_date')val=_vidParseDate(val);
     const prev=v[field]??null;
     if(val===prev){td.innerHTML=origHtml;return;}
     v[field]=val;save();
@@ -2132,6 +2533,12 @@ document.addEventListener('click',e=>{
   }
   if(!e.target.closest('#vmStatusDisplay')&&!e.target.closest('#vmStatusDrop')&&!e.target.closest('[onclick*="Status"]')){
     const d=document.getElementById('vmStatusDrop');if(d)d.style.display='none';
+  }
+  if(!e.target.closest('#vidSearchInput')&&!e.target.closest('#vidSearchSuggestions')){
+    const sg=document.getElementById('vidSearchSuggestions');if(sg)sg.style.display='none';
+  }
+  if(!e.target.closest('#anTopicInput')&&!e.target.closest('#anTopicList')){
+    const tl=document.getElementById('anTopicList');if(tl)tl.style.display='none';
   }
 });
 
@@ -2316,6 +2723,7 @@ async function saveVidModal(){
   // L videos without a big parent can't be in_progress/up_next
   if(data.video_type==='L'&&!data.big_video_id&&(data.status==='in_progress'||data.status==='up_next'))data.status='idea';
   closeMod('vidModal');
+  const _fromOv=activePg==='overview';
 
   if(_vidMode==='edit'&&_vidEditId){
     const v=(st.videos||[]).find(x=>String(x.id)===String(_vidEditId));
@@ -2336,7 +2744,7 @@ async function saveVidModal(){
       }
       Object.assign(v,data);
       const allStepsDone=VID_STEPS.every(s=>v[s]==='done'||v[s]==='na');
-      const hasFields=v.post_date&&v.duration_minutes&&v.topic&&v.title;
+      const hasFields=v.topic&&v.title;
       if(allStepsDone&&hasFields&&v.status!=='published'){v.status='published';data.status='published';}
       else if((!allStepsDone||!hasFields)&&v.status==='published'){v.status='in_progress';data.status='in_progress';}
       save();renderVideosPageKeepScroll();
@@ -2434,7 +2842,7 @@ async function cycleVidStep(id,step){
   // For B videos: all children must also be complete
   const allDone=VID_STEPS.every(s=>v[s]==='done'||v[s]==='na');
   const wasDone=VID_STEPS.every(s=>(s===step?cur:v[s]||'not_started')==='done'||(s===step?cur:v[s]||'not_started')==='na');
-  const hasFields=v.post_date&&v.duration_minutes&&v.topic&&v.title;
+  const hasFields=v.topic&&v.title;
   const selfComplete=allDone&&hasFields;
   const kidsComplete=v.video_type!=='B'||_vidAllChildrenComplete(v.id);
   if(selfComplete&&kidsComplete&&v.status!=='published'){
@@ -2509,18 +2917,143 @@ function _vidCelebrate(id){
   },1800);
 }
 
+// ── Click outside to deselect ─────────────────────────────────────────────────
+document.addEventListener('click',e=>{
+  if(activePg!=='videos'||!_vidSelected.size)return;
+  if(e.target.closest('.vid-dash-row,.vid-row,.vid-board-card,.vid-dash-header,.vid-del,.vid-step-dot,[data-field],.vm-overlay'))return;
+  _vidSelected.clear();_vidChildSelected.clear();_applyVidSel();
+});
+
 // ── Keyboard ──────────────────────────────────────────────────────────────────
 document.addEventListener('keydown',e=>{
   if(activePg!=='videos')return;
   if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'||e.target.tagName==='SELECT'||e.target.isContentEditable)return;
+  if(_vidSearch||Date.now()-_vidSearchTs<300){const si=document.getElementById('vidSearchInput');if(si){si.focus();return;}}
   if((e.key==='Delete'||e.key==='Backspace')&&_vidSelected.size>0){e.preventDefault();const all=new Set([..._vidSelected,..._vidChildSelected]);all.forEach(id=>delVideo(id));_vidSelected.clear();_vidChildSelected.clear();return;}
   if((e.metaKey||e.ctrlKey)&&e.key==='c'&&_vidSelected.size>0){e.preventDefault();_vidCopied=[];_vidSelected.forEach(id=>{const v=(st.videos||[]).find(x=>String(x.id)===String(id));if(v)_vidCopied.push({...v});});showToast('Copied '+_vidCopied.length+' video(s)','#0ea5e9',1500);return;}
   if((e.metaKey||e.ctrlKey)&&e.key==='v'&&_vidCopied.length>0){e.preventDefault();_vidCopied.forEach(v=>_vidDuplicate(v.id));return;}
   if(e.key==='n'&&!e.metaKey&&!e.ctrlKey){e.preventDefault();openVidModal();return;}
+  // ── Dashboard arrow key actions ──
+  if(_vidView==='dashboard'&&(e.key==='ArrowUp'||e.key==='ArrowDown'||e.key==='ArrowLeft'||e.key==='ArrowRight')){
+    const rows=[...document.querySelectorAll('.vid-dash-row[data-vid]')].map(r=>r.dataset.vid);
+    const dir=e.key==='ArrowUp'||e.key==='ArrowLeft'?-1:1;
+    const isUpDown=e.key==='ArrowUp'||e.key==='ArrowDown';
+    const isLeftRight=e.key==='ArrowLeft'||e.key==='ArrowRight';
+
+    // Shift+Up/Down: extend multi-selection
+    if(isUpDown&&e.shiftKey&&!e.metaKey&&!e.ctrlKey&&!e.altKey){
+      e.preventDefault();
+      if(!rows.length)return;
+      if(!_vidSelected.size){
+        const id=dir===-1?rows[rows.length-1]:rows[0];
+        _vidSelected.add(id);_vidLastSel=id;
+      }else{
+        const lastIdx=rows.indexOf(_vidLastSel);if(lastIdx===-1)return;
+        const nextIdx=lastIdx+dir;
+        if(nextIdx<0||nextIdx>=rows.length)return;
+        _vidSelected.add(rows[nextIdx]);_vidLastSel=rows[nextIdx];
+      }
+      _vidUpdateChildSel();_applyVidSel();return;
+    }
+
+    // Cmd+Left/Right: move between statuses
+    // B videos: Right = up_next→in_progress→idea, Left = idea→in_progress→up_next
+    // L videos: Right = up_next/in_progress→idea (direct, clears big_video_id), Left = same as B
+    if(isLeftRight&&(e.metaKey||e.ctrlKey)&&!e.shiftKey&&_vidSelected.size>0){
+      e.preventDefault();
+      const isRight=e.key==='ArrowRight';
+      const bigMap=isRight?{up_next:'in_progress',in_progress:'idea'}:{idea:'in_progress',in_progress:'up_next'};
+      const smallMap=isRight?{up_next:'idea',in_progress:'idea'}:{idea:'in_progress',in_progress:'up_next'};
+      const allIds=new Set([..._vidSelected,..._vidChildSelected]);
+      const vids=[...allIds].map(id=>(st.videos||[]).find(x=>String(x.id)===id)).filter(Boolean);
+      const toMove=vids.filter(v=>(v.video_type==='B'?bigMap:smallMap)[v.status]);
+      if(!toMove.length)return;
+      const undos=toMove.map(v=>({id:v.id,prev:v.status,prevBig:v.big_video_id}));
+      toMove.forEach(v=>{v.status=(v.video_type==='B'?bigMap:smallMap)[v.status];});
+      // When L videos move to idea, clear big_video_id (ungroup)
+      toMove.forEach(v=>{if(v.video_type!=='B'&&v.status==='idea'&&v.big_video_id){v.big_video_id=null;v.group_name=null;}});
+      // Move children of B videos that are moving
+      const bigIds=toMove.filter(v=>v.video_type==='B').map(v=>String(v.id));
+      const childrenMoved=[];
+      bigIds.forEach(bid=>{
+        (st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===bid&&!allIds.has(String(c.id))).forEach(c=>{
+          const newSt=smallMap[c.status];if(newSt){childrenMoved.push({id:c.id,prev:c.status,prevBig:c.big_video_id});c.status=newSt;if(newSt==='idea'){c.big_video_id=null;c.group_name=null;}}
+        });
+      });
+      save();renderVideosPageKeepScroll();
+      pushUndo(async()=>{[...undos,...childrenMoved].forEach(u=>{const v2=(st.videos||[]).find(x=>String(x.id)===u.id);if(v2){v2.status=u.prev;v2.big_video_id=u.prevBig;}});save();renderVideosPageKeepScroll();for(const u of[...undos,...childrenMoved])await sbReqSilent('PATCH','videos',{status:u.prev,big_video_id:u.prevBig??null},`?id=eq.${u.id}`);},'Move status');
+      (async()=>{for(const v of toMove)await sbReqSilent('PATCH','videos',{status:v.status,big_video_id:v.big_video_id??null,group_name:v.group_name??null},`?id=eq.${v.id}`);for(const cm of childrenMoved){const c=(st.videos||[]).find(x=>String(x.id)===cm.id);if(c)await sbReqSilent('PATCH','videos',{status:c.status,big_video_id:c.big_video_id??null,group_name:c.group_name??null},`?id=eq.${c.id}`);}})();
+      return;
+    }
+
+    // Cmd+Up/Down: reorder within column
+    if(isUpDown&&(e.metaKey||e.ctrlKey)&&!e.shiftKey&&_vidSelected.size>0){
+      e.preventDefault();
+      const selIds=new Set([..._vidSelected]);
+      const groups={};
+      selIds.forEach(sid=>{
+        const v=(st.videos||[]).find(x=>String(x.id)===sid);if(!v)return;
+        const key=v.status+'|'+v.video_type;
+        if(!groups[key])groups[key]=[];groups[key].push(v);
+      });
+      Object.values(groups).forEach(selVids=>{
+        const sample=selVids[0];
+        const siblings=(st.videos||[]).filter(x=>!x.is_deleted&&x.status===sample.status&&x.video_type===sample.video_type).sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
+        siblings.forEach((s,i)=>{if(s.vid_order==null)s.vid_order=i;});
+        const selSet=new Set(selVids.map(v=>String(v.id)));
+        const selIdxs=siblings.map((s,i)=>selSet.has(String(s.id))?i:-1).filter(i=>i>=0).sort((a,b)=>a-b);
+        if(!selIdxs.length)return;
+        if(dir===-1&&selIdxs[0]===0)return;
+        if(dir===1&&selIdxs[selIdxs.length-1]===siblings.length-1)return;
+        if(dir===-1){
+          const above=siblings[selIdxs[0]-1];
+          selIdxs.forEach(i=>{siblings[i].vid_order=siblings[i].vid_order-1;});
+          above.vid_order=siblings[selIdxs[selIdxs.length-1]].vid_order+1;
+        }else{
+          const below=siblings[selIdxs[selIdxs.length-1]+1];
+          selIdxs.forEach(i=>{siblings[i].vid_order=siblings[i].vid_order+1;});
+          below.vid_order=siblings[selIdxs[0]].vid_order-1;
+        }
+        siblings.forEach(s=>sbReqSilent('PATCH','videos',{vid_order:s.vid_order},`?id=eq.${s.id}`));
+      });
+      save();renderVideosPageKeepScroll();return;
+    }
+
+    // Plain Up/Down with selection: navigate (move single selection)
+    if(isUpDown&&!e.metaKey&&!e.ctrlKey&&!e.shiftKey&&!e.altKey){
+      e.preventDefault();
+      if(!rows.length)return;
+      if(!_vidSelected.size){
+        const id=dir===-1?rows[rows.length-1]:rows[0];
+        _vidSelected.clear();_vidSelected.add(id);_vidLastSel=id;
+      }else{
+        const lastIdx=rows.indexOf(_vidLastSel);if(lastIdx===-1)return;
+        const nextIdx=lastIdx+dir;
+        if(nextIdx<0||nextIdx>=rows.length)return;
+        _vidSelected.clear();_vidSelected.add(rows[nextIdx]);_vidLastSel=rows[nextIdx];
+      }
+      _vidUpdateChildSel();_applyVidSel();
+      // Scroll selected row into view
+      const selRow=document.querySelector('.vid-dash-row[data-vid="'+_vidLastSel+'"]');
+      if(selRow)selRow.scrollIntoView({block:'nearest'});
+      return;
+    }
+
+    // Plain Left/Right no selection: tab switch
+    if(isLeftRight&&!e.metaKey&&!e.ctrlKey&&!e.shiftKey&&!e.altKey&&_vidSelected.size===0){
+      e.preventDefault();
+      const tabs=['dashboard','table','analytics','monthly'];const i=tabs.indexOf(_vidView);
+      if(dir===-1&&i>0)_vidSetView(tabs[i-1]);
+      if(dir===1&&i<tabs.length-1)_vidSetView(tabs[i+1]);
+      return;
+    }
+    return;
+  }
+  // Non-dashboard: plain arrows for scroll/tab
   if(e.key==='ArrowLeft'&&!e.metaKey&&!e.ctrlKey&&_vidSelected.size===0){e.preventDefault();const tabs=['dashboard','table','analytics','monthly'];const i=tabs.indexOf(_vidView);if(i>0)_vidSetView(tabs[i-1]);return;}
   if(e.key==='ArrowRight'&&!e.metaKey&&!e.ctrlKey&&_vidSelected.size===0){e.preventDefault();const tabs=['dashboard','table','analytics','monthly'];const i=tabs.indexOf(_vidView);if(i<tabs.length-1)_vidSetView(tabs[i+1]);return;}
-  if(e.key==='ArrowUp'&&!e.metaKey&&!e.ctrlKey){e.preventDefault();const se=_vidScrollEl();if(se)se.scrollTop=0;return;}
-  if(e.key==='ArrowDown'&&!e.metaKey&&!e.ctrlKey){e.preventDefault();const se=_vidScrollEl();if(se)se.scrollTop=se.scrollHeight;return;}
+  if(e.key==='ArrowUp'&&!e.metaKey&&!e.ctrlKey){e.preventDefault();const se=_vidScrollEl();if(se){se.scrollTop=0;}return;}
+  if(e.key==='ArrowDown'&&!e.metaKey&&!e.ctrlKey){e.preventDefault();_vidScrollToDefault();return;}
   if(e.key==='e'&&!e.metaKey&&!e.ctrlKey&&_vidView==='table'){e.preventDefault();_vidShowCompleted=!_vidShowCompleted;renderVideosPageKeepScroll();return;}
   if(e.key==='c'&&!e.metaKey&&!e.ctrlKey&&_vidView==='table'){e.preventDefault();_vidShowCompleted=!_vidShowCompleted;renderVideosPageKeepScroll();return;}
 });

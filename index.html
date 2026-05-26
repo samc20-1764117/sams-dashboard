@@ -5,7 +5,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#fdf8f4">
-<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Dashboard">
 <link rel="manifest" href="manifest.json">
@@ -13,7 +13,6 @@
 <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet">
 <title>Sam's Dashboard</title>
-<link href="./Sam&#39;s Dashboard_files/css2" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 <script>(function(){try{var s=JSON.parse(localStorage.getItem('samdash_v7')||'{}');var d=document.documentElement;if(s.cfg&&s.cfg.dark)d.classList.add('init-dark');if(s.sb!==false)d.classList.add('init-sb');}catch(e){}})();</script>
 </head>
@@ -59,6 +58,7 @@
     <a class="nav-item" href="#recipes" onclick="event.preventDefault();showPage('recipes')"><div class="ndot" style="background:#f59e0b"></div>🍳 Recipes</a>
     <a class="nav-item" href="#notes" onclick="event.preventDefault();showPage('notes')"><div class="ndot" style="background:#8b5cf6"></div>📝 Notes</a>
     <a class="nav-item" href="#videos" onclick="event.preventDefault();showPage('videos')"><div class="ndot" style="background:#0ea5e9"></div>🎬 Videos</a>
+    <a class="nav-item" href="#packing" onclick="event.preventDefault();showPage('packing')"><div class="ndot" style="background:#22c55e"></div>Packing</a>
   </nav>
 </div>
 
@@ -93,10 +93,10 @@
       <!-- hidden elements so JS refs don't error -->
       <span id="todTitle" style="display:none">Today</span>
       <div style="display:none"><div class="ch-prog-bar"><div class="ch-prog-fill" id="todPB" style="width:0%"></div></div><span id="todPct">0%</span><span id="todPL">0/0</span></div>
-      <div class="tod-tb-header" style="padding:1px 10px;min-height:31px;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:4px">
+      <div class="tod-tb-header" style="display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:4px">
         <div style="display:flex;align-items:center;gap:2px;flex-shrink:0">
           <button class="btn btn-ghost btn-xs" onclick="shiftDay(-1)">←</button>
-          <button class="btn btn-ghost btn-xs" id="todPlusBtn" onclick="openQA('today',this)">+</button>
+          <button class="btn-plus" id="todPlusBtn" onclick="openQA('today',this)">+</button>
         </div>
         <div style="display:flex;align-items:center;justify-content:center;gap:5px">
           <span style="font-size:12px;font-weight:700;color:var(--text);letter-spacing:-.1px" id="ovTitle">Thursday, March 12</span>
@@ -108,9 +108,10 @@
           <button class="btn btn-ghost btn-xs" onclick="shiftDay(1)" style="flex-shrink:0">→</button>
         </div>
       </div>
+      <div id="vidOvPanel" style="display:none;position:absolute;inset:0;z-index:50;background:rgba(255,255,255,.98);backdrop-filter:blur(12px);overflow-y:auto;padding:0;opacity:0;transform:translateX(-12px);transition:opacity .25s ease,transform .25s ease;border-radius:inherit"></div>
       <div class="tod-tb-body">
       <div class="tod-section" onwheel="onTodWheel(event)">
-      <div id="ovBanner" class="ov-banner"><span id="ovBannerTxt">1 overdue task — move to today?</span><button class="ov-banner-btn" onclick="rolloverOverdue()">Move all to today</button></div><div class="tlist" id="todList" style="flex:1" ondblclick="if(!event.target.closest('.ti'))openQA('today',null)" ondragover="event.preventDefault();this.classList.add('drop-here')" ondragleave="this.classList.remove('drop-here')" ondrop="dropOnTodayList(event)"><div class="ti  ov-row " id="ti-t-1773193938936" draggable="true" ondragstart="dStart(event,&#39;t-1773193938936&#39;)" ondragend="this.classList.remove(&#39;dragging&#39;)" onclick="selTask(event,&#39;t-1773193938936&#39;)" ondblclick="tiDbl(event,&#39;t-1773193938936&#39;)" oncontextmenu="showCtx(event,&#39;t-1773193938936&#39;)">
+      <div id="ovBanner" class="ov-banner"><span id="ovBannerTxt">1 overdue task — move to today?</span><button class="ov-banner-btn" onclick="rolloverOverdue()">Move to today</button></div><div class="tlist" id="todList" style="flex:1" ondblclick="if(!event.target.closest('.ti'))openQA('today',null)" ondragover="event.preventDefault();this.classList.add('drop-here')" ondragleave="this.classList.remove('drop-here')" ondrop="dropOnTodayList(event)"><div class="ti  ov-row " id="ti-t-1773193938936" draggable="true" ondragstart="dStart(event,&#39;t-1773193938936&#39;)" ondragend="this.classList.remove(&#39;dragging&#39;)" onclick="selTask(event,&#39;t-1773193938936&#39;)" ondblclick="tiDbl(event,&#39;t-1773193938936&#39;)" oncontextmenu="showCtx(event,&#39;t-1773193938936&#39;)">
     <label class="chk-wrap" onclick="event.stopPropagation()" onmousedown="event.stopPropagation()"><input type="checkbox" class="chk" onchange="toggleTask(&#39;t-1773193938936&#39;,this.checked,&#39;wk&#39;)"></label>
     <span class="tn">tbd</span>
     <span class="cpill" style="background:#fff0f0;color:#b91c1c;border-color:rgba(239,68,68,.28)">Home</span>
@@ -152,16 +153,15 @@
       <div id="todProgressDonut" style="display:none;flex-direction:row;align-items:center;gap:11px;padding:7px 16px 4px">
         <svg width="56" height="56" viewBox="0 0 56 56" style="flex-shrink:0">
           <circle cx="28" cy="28" r="22" fill="none" stroke-width="4" style="stroke:var(--subtle);opacity:.3"/>
-          <circle id="_donutArc" cx="28" cy="28" r="22" fill="none" stroke-width="4" stroke-linecap="round" stroke-dasharray="0 138.23" transform="rotate(-90 28 28)" style="stroke:#22c55e"/>
+          <circle id="_donutArc" cx="28" cy="28" r="22" fill="none" stroke-width="4" stroke-linecap="round" stroke-dasharray="0 138.23" transform="rotate(-90 28 28)" style="stroke:#10b981"/>
           <text id="_donutPct" x="28" y="33" text-anchor="middle" style="font-size:12px;font-weight:700;fill:var(--text);font-family:DM Sans,sans-serif"></text>
         </svg>
         <div>
           <div id="_donutFrac" style="font-size:12px;font-weight:700;color:var(--text);line-height:1.3"></div>
-          <div style="font-size:9px;color:var(--muted);font-weight:500;letter-spacing:.04em;text-transform:uppercase">done today</div>
+          <div id="_donutLabel" style="font-size:9px;color:var(--muted);font-weight:500;letter-spacing:.04em;text-transform:uppercase">done today</div>
         </div>
       </div>
-      <div id="pupSkillsHighlight" class="pup-skills-highlight"></div>
-      <div id="_pupSkillsBtn" style="display:none;margin:1px 14px 2px;align-items:center"><button onclick="togglePupSkillsOpen()" style="flex:1;display:flex;align-items:center;gap:3px;background:transparent;border:none;cursor:pointer;font-family:inherit;padding:2px 0"><span style="font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)">Pup Skills</span><span id="_pupSkillsArrow" style="font-size:8px;color:var(--muted)">▾</span></button><button class="btn-plus" onclick="openPupAddModal()">+</button></div>
+      <div id="pupSkillsHighlight"></div>
       <div id="dailyHabitsSection" style="display:none"></div>
       </div><!-- tod-section -->
       <div class="tod-tb-divider"></div>
@@ -169,10 +169,9 @@
         <div class="tb-scroll" id="tbScroll" onwheel="onTBWheel(event)">
         <div class="tb-grid" id="tbGrid"><div class="tb-gutter"><div class="tb-tlbl">6a</div><div class="tb-tlbl">7a</div><div class="tb-tlbl">8a</div><div class="tb-tlbl">9a</div><div class="tb-tlbl">10a</div><div class="tb-tlbl">11a</div><div class="tb-tlbl">12p</div><div class="tb-tlbl">1p</div><div class="tb-tlbl">2p</div><div class="tb-tlbl">3p</div><div class="tb-tlbl">4p</div><div class="tb-tlbl">5p</div><div class="tb-tlbl">6p</div></div><div class="tb-col"><div class="tb-hour"></div><div class="tb-hour"></div><div class="tb-hour"></div><div class="tb-hour"></div><div class="tb-hour"></div><div class="tb-hour"></div><div class="tb-hour"></div><div class="tb-hour"></div><div class="tb-hour"></div><div class="tb-hour"></div><div class="tb-hour"></div><div class="tb-hour"></div><div class="tb-hour"></div><div class="tb-block" data-bid="b-1773252557098" style="top: 91px; height: 16px; background: rgb(219, 234, 254); color: rgb(30, 64, 175); border-color: rgba(59, 130, 246, 0.22); left: calc(0% + 2px); right: calc(0% + 2px); width: auto;"><div class="tb-row"><input type="checkbox" class="tb-chk"><span class="tb-bt">Wipe surfaces</span><span class="tb-btime">9:30am-10:00am</span><button class="tb-bdel" onclick="delBlock(&#39;b-1773252557098&#39;,event)">✕</button></div><div class="tb-resize" data-id="b-1773252557098"></div></div><div class="tb-block" data-bid="b-1773252645171" style="top: 169px; height: 16px; background: rgb(220, 252, 231); color: rgb(22, 101, 52); border-color: rgba(34, 197, 94, 0.22); left: calc(0% + 2px); right: calc(0% + 2px); width: auto;"><div class="tb-row"><input type="checkbox" class="tb-chk"><span class="tb-bt">Mochi collar</span><span class="tb-btime">12:30pm-1:00pm</span><button class="tb-bdel" onclick="delBlock(&#39;b-1773252645171&#39;,event)">✕</button></div><div class="tb-resize" data-id="b-1773252645171"></div></div><div class="nowline" id="tbNowLine" style="top: 191.967px;"><div class="nowdot"></div></div></div></div>
       </div>
-      <div class="tb-sum" id="tbSum"><div class="si"><span>Blocked:</span><span class="sv">1h 0m</span></div><div class="si"><div class="sdotc" style="background:#3b82f6"></div><span>Recurring</span><span class="sv">0h 30m</span></div><div class="si"><div class="sdotc" style="background:#22c55e"></div><span>Shopping</span><span class="sv">0h 30m</span></div></div>
+      <div class="tb-sum" id="tbSum"></div>
       </div><!-- tb-section -->
       </div><!-- tod-tb-body -->
-      <button class="btn btn-ghost btn-xs" id="autoTBToggle" onclick="toggleAutoTB()" title="Toggle auto time blocks" style="position:absolute;bottom:8px;right:8px;z-index:25;font-size:8px;opacity:.7">Auto</button>
     </div><!-- combined card -->
     </div><!-- overview-left -->
     <div class="row1-right-panel">
@@ -199,27 +198,28 @@
     </div>
     <!-- Shopping -->
     <div class="card">
-      <div class="ch"><div class="ct">Shopping</div><button class="btn-plus" onclick="openQA(&#39;shop&#39;,this)">+</button></div>
+      <div class="ch"><div class="ct" style="text-transform:none;letter-spacing:0;font-size:10px">Shopping</div><button class="btn-plus" onclick="openGroceryModal()" title="HEB Grocery List" style="padding:0 4px;display:flex;align-items:center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg></button><button class="btn-plus" onclick="openQA(&#39;shop&#39;,this)">+</button></div>
       <div id="shopOv" class="tlist" style="flex:1;padding:4px 0 0"></div>
     </div>
     <!-- Quick Links -->
     <div class="card" style="display:flex;flex-direction:column">
       <div class="ql-grid" style="flex:1;align-content:stretch;padding:8px;gap:6px">
-        <a class="ql-btn" href="#birthdays" onclick="event.preventDefault();showPage('birthdays')"><span class="ql-icon">🎂</span>Birthdays</a>
-        <a class="ql-btn" href="#pups" onclick="event.preventDefault();showPage('pups')"><span class="ql-icon">🐾</span>Pups</a>
-        <a class="ql-btn" href="#finance" onclick="event.preventDefault();showPage('finance')"><span class="ql-icon">💰</span>Finance</a>
-        <a class="ql-btn" href="#recipes" onclick="event.preventDefault();showPage('recipes')"><span class="ql-icon">🍳</span>Recipes</a>
-        <a class="ql-btn" href="#videos" onclick="event.preventDefault();showPage('videos')"><span class="ql-icon">🎬</span>Videos</a>
+        <a class="ql-btn" href="#videos" onclick="event.preventDefault();showPage('videos')"><span class="ql-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg></span>Videos</a>
+        <a class="ql-btn" href="#finance" onclick="event.preventDefault();showPage('finance')"><span class="ql-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>Finance</a>
+        <a class="ql-btn" href="#pups" onclick="event.preventDefault();showPage('pups')"><span class="ql-icon"><img src="./sunny_headshot.png" style="width:20px;height:20px;border-radius:50%;object-fit:cover"><img src="./mochi_headshot.png" style="width:20px;height:20px;border-radius:50%;object-fit:cover;margin-left:-2px"></span>Pups</a>
+        <a class="ql-btn" href="#birthdays" onclick="event.preventDefault();showPage('birthdays')"><span class="ql-icon"><svg width="18" height="20" viewBox="2 4 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="10" width="18" height="4" rx="1"/><rect x="5" y="14" width="14" height="8" rx="1"/><line x1="12" y1="10" x2="12" y2="22"/><path d="M12 10c-2-3-5-3-5-1s3 1 5 1"/><path d="M12 10c2-3 5-3 5-1s-3 1-5 1"/></svg></span>Birthdays</a>
+        <a class="ql-btn" href="#recipes" onclick="event.preventDefault();showPage('recipes')"><span class="ql-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3"/><path d="M18 22V15"/></svg></span>Recipes</a>
       </div>
     </div>
     </div><!-- row1-right-top -->
     <!-- Week Cal -->
-    <div class="card" style="flex:1;min-height:0;overflow:hidden;margin-top:4px">
+    <div class="card" style="flex:1;min-height:0;overflow:hidden">
       <div class="wkc-outer">
         <div class="wkc-nav">
           <button class="btn btn-ghost btn-xs" onclick="shiftWk(-1)">←</button>
           <button class="btn btn-ghost btn-xs" onclick="openMModal()" style="white-space:nowrap">Month</button>
           <div class="wkc-lbl" id="wkcLbl"></div>
+          <div id="unAssignedBadge" style="display:none"></div>
           <button class="btn btn-ghost btn-xs" onclick="goThisWk()" style="white-space:nowrap">This Week</button>
           <button class="btn btn-ghost btn-xs" onclick="shiftWk(1)">→</button>
         </div>
@@ -230,11 +230,9 @@
             <div class="wkc-edge right" id="wkcEdgeR">›</div>
             <div class="wkc-banners" id="wkcBanners"></div>
             <div class="wkc-cols" id="wkcCols" onwheel="onWkcWheel(event)"></div>
+            <div class="meal-row" id="mealRow"></div>
           </div>
-        </div>
-        <div class="wkc-foot">
-          <div id="unAssignedBadge" onclick="toggleUnMenu()" style="display:none;width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;font-size:10px;font-weight:700;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.18);flex-shrink:0"></div>
-          <div style="flex:1"></div>
+          <div class="meal-unassigned-wrap" id="mealUnassignedWrap"></div>
         </div>
       </div>
     </div><!-- week cal -->
@@ -367,6 +365,16 @@
 
 <!-- OTHER PAGES (empty) -->
 <div class="page" id="page-travel" style="display:none!important"><div id="travelList" style="display:none"></div></div>
+<div class="page" id="page-packing" style="padding:60px clamp(12px,3vw,56px) 24px clamp(12px,3vw,56px)">
+  <div class="ov-topbar">
+    <div class="ov-topbar-left"><span class="ov-topbar-label">Packing Lists</span><span class="ov-topbar-dot"></span></div>
+    <span class="ov-topbar-date topbar-date"></span>
+    <div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div>
+  </div>
+  <div class="card" style="flex:1;width:100%;display:flex;flex-direction:column;min-height:0;overflow:hidden;position:relative;margin-top:20px">
+    <div id="packingPageContent" style="flex:1;width:100%;min-height:0;overflow:hidden;padding:16px;display:flex;flex-direction:column"></div>
+  </div>
+</div>
 <div class="page" id="page-birthdays" style="padding:60px clamp(12px,3vw,56px) 24px clamp(12px,3vw,56px)">
   <div class="ov-topbar">
     <div class="ov-topbar-left"><span class="ov-topbar-label">Birthdays</span><span class="ov-topbar-dot"></span></div>
@@ -382,8 +390,8 @@
   <div id="bdayList" style="display:none"></div>
 </div>
 <div class="page" id="page-pups" style="padding:60px clamp(12px,3vw,56px) 24px clamp(12px,3vw,56px)"></div>
-<div class="page" id="page-finance" style="padding:60px clamp(12px,3vw,56px) 24px clamp(12px,3vw,56px)"><div class="ov-topbar"><div class="ov-topbar-left"><span class="ov-topbar-label">💰 Finance</span><span class="ov-topbar-dot"></span></div><span class="ov-topbar-date topbar-date"></span><div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div></div></div>
-<div class="page" id="page-recipes" style="padding:60px clamp(12px,3vw,56px) 24px clamp(12px,3vw,56px)"></div>
+<div class="page" id="page-finance" style="padding:60px clamp(12px,3vw,56px) 24px clamp(12px,3vw,56px);width:100%;box-sizing:border-box"><div class="ov-topbar"><div class="ov-topbar-left"><span class="ov-topbar-label">💰 Finance</span><span class="ov-topbar-dot"></span></div><span class="ov-topbar-date topbar-date"></span><div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div></div><div id="finPageContent" style="margin-top:20px;height:calc(100vh - 120px);display:flex;flex-direction:column"></div></div>
+<div class="page" id="page-recipes" style="padding:60px clamp(12px,3vw,56px) 24px clamp(12px,3vw,56px);width:100%;box-sizing:border-box"></div>
 <div class="page" id="page-notes" style="padding:clamp(12px,3vw,56px);padding-top:60px"><div class="ov-topbar"><div class="ov-topbar-left"><span class="ov-topbar-label">📝 Notes</span><span class="ov-topbar-dot"></span></div><span class="ov-topbar-date topbar-date"></span><div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div></div></div>
 <div class="page" id="page-videos"></div>
 <div class="page" id="page-settings" style="display:none!important"><input class="si2" id="cfgUrl" style="display:none"><input class="si2" id="cfgKey" style="display:none"><div class="cst idle" id="cst" style="display:none"></div></div>
@@ -427,7 +435,16 @@
     <div class="mfield"><label>End date</label><input id="tvEnd" type="date"></div>
     <div class="mfield"><label>Travel mode</label><select id="tvTravelMode" onkeydown="if(event.key==='Enter')setTimeout(saveTravelModal,0)"><option value="">None</option><option value="plane">✈️ Plane</option><option value="drive">🚗 Drive</option></select></div>
     <div class="mfield"><label>Notes <span style="opacity:.45;font-weight:400">(optional)</span></label><input id="tvNotes" placeholder="flights, hotels…"></div>
-    <div class="mact"><button class="btn btn-ghost" onclick="closeMod(&#39;travelModal&#39;)">Cancel</button><button class="btn btn-dark" onclick="saveTravelModal()">Save</button></div>
+    <div class="mact"><button class="btn btn-ghost" onclick="closeMod(&#39;travelModal&#39;)">Cancel</button><button id="tvPackBtn" class="btn btn-ghost tvpack-btn" style="display:none" onclick="closeMod('travelModal');openPackingModal(travelEditId)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"/><line x1="12" y1="11" x2="12" y2="16"/><line x1="9.5" y1="13.5" x2="14.5" y2="13.5"/></svg> Packing List</button><button class="btn btn-dark" onclick="saveTravelModal()">Save</button></div>
+  </div>
+</div>
+
+<!-- Packing Modal -->
+<div class="overlay" id="packingModal" tabindex="0" onclick="closeMod('packingModal',event)" onkeydown="_packModalKeydown(event)">
+  <div class="modal task-modal" style="width:720px;height:70vh;max-height:80vh;display:flex;flex-direction:column">
+    <div id="packingModalHeader" style="padding:12px 16px 0"></div>
+    <div id="packingModalBody" style="flex:1;overflow-y:auto;padding:0 8px 8px"></div>
+    <div id="packingModalFooter" style="padding:8px 16px 12px;border-top:1px solid var(--border)"></div>
   </div>
 </div>
 
@@ -641,6 +658,15 @@
       <label>Default timeblock time <span style="opacity:.45;font-weight:400">(optional)</span></label>
       <div style="display:flex;gap:6px;align-items:center"><input id="recEditStartTime" type="time" style="flex:1"> <span style="color:var(--muted)">to</span> <input id="recEditEndTime" type="time" style="flex:1"><button type="button" class="btn btn-ghost btn-xs" onclick="document.getElementById('recEditStartTime').value='';document.getElementById('recEditEndTime').value=''" style="flex-shrink:0;padding:4px 7px;font-size:11px">&#10005;</button></div>
     </div>
+    <div class="mfield" id="recEditDurField" style="display:none">
+      <label>Default timeblock duration</label>
+      <select id="recEditDur" style="width:100%;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,.6);font-size:12px">
+        <option value="30">30 min</option>
+        <option value="60">1 hour</option>
+        <option value="90">1.5 hours</option>
+        <option value="120">2 hours</option>
+      </select>
+    </div>
     <div class="mfield"><label>Notes <span style="opacity:.45;font-weight:400">(optional)</span></label><textarea id="recEditNotes" placeholder="Add notes…" style="resize:vertical;min-height:52px;width:100%;font-family:inherit;font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,.6);color:var(--text);outline:none"></textarea></div>
     </div>
     <div class="mact"><button class="btn btn-ghost" onclick="closeMod(&#39;recEditModal&#39;)">Cancel</button><button class="btn btn-dark" onclick="saveRecEdit()">Save</button></div>
@@ -703,22 +729,23 @@
 </div>
 
 <!-- Recipe Edit Modal -->
-<div class="overlay" id="recipeModal" onclick="closeMod('recipeModal',event)" onkeydown="if(event.key==='Escape'){event.stopPropagation();closeMod('recipeModal');return;}if(event.key==='Enter'&&event.target.tagName!=='TEXTAREA'&&!event.target.closest('.rm-ing-row')){event.preventDefault();saveRecipeModal();}">
-  <div class="modal" style="width:min(96vw,600px);padding:18px;max-height:90vh;overflow-y:auto">
+<div class="overlay" id="recipeModal" onclick="closeMod('recipeModal',event)" onkeydown="if(event.key==='Escape'){event.stopPropagation();closeMod('recipeModal');return;}">
+  <div class="modal" style="width:min(96vw,780px);padding:18px;max-height:90vh;min-height:520px;overflow-y:auto;display:flex;flex-direction:column">
     <div class="mt" id="recipeMTitle">Add Recipe</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px">
       <div class="mfield" style="grid-column:1/-1"><label>Recipe Name *</label><input id="rmName" placeholder="e.g. Chicken Tikka Masala"></div>
       <div class="mfield"><label>Meal Type</label><select id="rmMealType"><option value="">—</option><option value="Breakfast">Breakfast</option><option value="Lunch">Lunch</option><option value="Dinner">Dinner</option><option value="Snack">Snack</option><option value="Dessert">Dessert</option><option value="Drink">Drink</option><option value="Side">Side</option></select></div>
-      <div class="mfield"><label>Cuisine</label><input id="rmCuisine" placeholder="e.g. Italian, Mexican…"></div>
+      <div class="mfield"><label>Cuisine</label><select id="rmCuisine"><option value="">—</option><option value="American">American</option><option value="Mexican">Mexican</option><option value="Italian">Italian</option><option value="Chinese">Chinese</option><option value="Japanese">Japanese</option><option value="Korean">Korean</option><option value="Thai">Thai</option><option value="Indian">Indian</option><option value="Mediterranean">Mediterranean</option><option value="French">French</option><option value="Vietnamese">Vietnamese</option><option value="Greek">Greek</option><option value="Southern">Southern</option><option value="Tex-Mex">Tex-Mex</option><option value="Other">Other</option></select></div>
       <div class="mfield"><label>Time (min)</label><input id="rmTime" type="number" min="0" placeholder="45"></div>
-      <div class="mfield"><label>Servings</label><input id="rmServings" type="number" min="1" placeholder="4"></div>
+      <div class="mfield"><label>Servings</label><input id="rmServings" type="number" min="1" placeholder="4" onkeydown="if(event.key==='Tab'&&!event.shiftKey){event.preventDefault();if(!_rmIngredients.length)rmIngAdd(false);else{const a=document.querySelector('#rmIngRow0 .rm-ing-amt');if(a)a.focus();}}"></div>
     </div>
-    <div class="mfield" style="margin-top:4px">
-      <label>Ingredients</label>
-      <div class="rm-ing-wrap"><div id="rmIngList"></div><button type="button" class="rm-ing-add-btn" onclick="rmIngAdd()">+ Add ingredient</button></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px;flex:1">
+      <div class="mfield" style="margin:0;display:flex;flex-direction:column">
+        <label>Ingredients</label>
+        <div class="rm-ing-wrap rm-ing-compact" style="flex:1;overflow-y:auto"><div id="rmIngList"></div><button type="button" class="rm-ing-add-btn" onclick="rmIngAdd()">+ Add</button></div>
+      </div>
+      <div class="mfield" style="margin:0;display:flex;flex-direction:column"><label>Instructions</label><textarea id="rmInstructions" placeholder="Step-by-step instructions…" style="resize:vertical;flex:1;min-height:140px;width:100%;font-family:inherit;font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,.6);color:var(--text);outline:none;box-sizing:border-box"></textarea></div>
     </div>
-    <div class="mfield"><label>Instructions</label><textarea id="rmInstructions" placeholder="Step-by-step instructions…" style="resize:vertical;min-height:88px;width:100%;font-family:inherit;font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,.6);color:var(--text);outline:none"></textarea></div>
-    <div class="mfield" style="margin-top:2px"><label style="color:var(--muted)">Notes</label><textarea id="rmNotes" placeholder="Brief description or tips…" style="resize:vertical;min-height:40px;width:100%;font-family:inherit;font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,.6);color:var(--text);outline:none"></textarea></div>
     <div class="mact"><button class="btn btn-ghost" onclick="closeMod('recipeModal')">Cancel</button><button class="btn btn-dark" onclick="saveRecipeModal()">Save</button></div>
   </div>
 </div>
@@ -764,8 +791,8 @@
       <div style="display:flex;align-items:center;gap:10px">
         <div style="display:flex;gap:10px" id="vmSteps"></div>
         <div style="flex:1"></div>
-        <input id="vmPostDate" type="text" placeholder="Posted" style="width:80px;padding:6px 6px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:12px;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box">
-        <input id="vmDuration" type="number" step="0.01" placeholder="Duration" style="width:80px;padding:6px 6px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:12px;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box">
+        <input id="vmPostDate" type="hidden">
+        <input id="vmDuration" type="hidden">
       </div>
     </div>
     <textarea id="vmComment" placeholder="Comment" rows="2" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box;margin-top:8px;resize:vertical"></textarea>
@@ -925,7 +952,7 @@ function _updateOvTopDate(){const now=new Date();const ds=now.toLocaleDateString
 tickClock();_updateOvTopDate();setInterval(tickClock,1000);init();
 </script>
 <!-- Quick Notes -->
-<button id="qnBtn" onclick="toggleQN()" title="Quick Notes">📝</button>
+<button id="qnBtn" onclick="toggleQN()" title="Quick Notes"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted)"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
 <div id="qnPanel">
   <div class="qn-header">
     <span class="qn-title">Quick Notes</span>
@@ -935,7 +962,7 @@ tickClock();_updateOvTopDate();setInterval(tickClock,1000);init();
   <div class="qn-list" id="qnList"></div>
   <div class="qn-hist-list" id="qnHistList" style="display:none"></div>
   <div class="qn-input-row">
-    <input class="qn-input" id="qnInput" type="text" placeholder="Future you will thank you for writing this down…" autocapitalize="sentences" onkeydown="if(event.key==='Enter'){if(!this.value.trim()){_qnOpen=false;document.getElementById('qnPanel').classList.remove('open');}else{addQN();}}" oninput="if(this.value.length===1)this.value=this.value.toUpperCase()">
+    <input class="qn-input" id="qnInput" type="text" placeholder="Future you will thank you for writing this down…" autocapitalize="sentences" onkeydown="if(event.key==='Enter'){if(!this.value.trim()){_qnOpen=false;document.getElementById('qnPanel').classList.remove('open');this.blur();}else{addQN();}}if(event.key==='Escape'){_qnOpen=false;document.getElementById('qnPanel').classList.remove('open');this.blur();}" oninput="if(this.value.length===1)this.value=this.value.toUpperCase()">
   </div>
 </div>
 
@@ -967,5 +994,152 @@ tickClock();_updateOvTopDate();setInterval(tickClock,1000);init();
     </div>
   </div>
 </div>
+<script>
+// Debug grid overlay — press G to toggle (works on ALL pages)
+// Auto-dismiss when switching pages
+(function(){
+  const _origShowPage=window.showPage;
+  if(_origShowPage){window.showPage=function(){const ov=document.getElementById('_dbgGrid');if(ov)ov.remove();return _origShowPage.apply(this,arguments);};}
+})();
+document.addEventListener('keydown',e=>{
+  if(e.key==='g'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,.overlay.open')){
+    e.preventDefault();
+    let ov=document.getElementById('_dbgGrid');
+    if(ov){ov.remove();return;}
+    ov=document.createElement('div');ov.id='_dbgGrid';
+    ov.style.cssText='position:fixed;inset:0;z-index:99999;pointer-events:none;font-family:monospace;font-size:9px;';
+    const pg=document.querySelector('.page.active');
+    if(!pg){document.body.appendChild(ov);return;}
+    const W=window.innerWidth,H=window.innerHeight;
+    const ps=getComputedStyle(pg);
+    const pT=parseFloat(ps.paddingTop)||0,pL=parseFloat(ps.paddingLeft)||0;
+    const pR=parseFloat(ps.paddingRight)||0,pB=parseFloat(ps.paddingBottom)||0;
+    const pr=pg.getBoundingClientRect();
+    // content box edges (inside padding)
+    const cL=pr.left+pL,cR=pr.right-pR,cT=pr.top+pT;
+    // ── Helpers ──
+    function lbl(x,y,txt,col,bg){const l=document.createElement('div');l.style.cssText=`position:fixed;left:${x}px;top:${y}px;color:${col};font-weight:700;font-size:9px;background:${bg};padding:1px 5px;border-radius:2px;white-space:nowrap;`;l.textContent=txt;ov.appendChild(l);}
+    function band(x,y,w,h,bdr){const b=document.createElement('div');b.style.cssText=`position:fixed;left:${x}px;top:${y}px;width:${w}px;height:${h}px;background:rgba(0,200,0,.07);${bdr}`;ov.appendChild(b);}
+    // ── GREEN: Edge margins (CSS padding values) ──
+    // Top — from viewport top to where content starts
+    const topPx=Math.round(cT);
+    if(topPx>0){band(0,0,W,cT,'border-bottom:2px solid rgba(0,160,0,.5);');lbl(W/2-16,cT/2-6,topPx+'px','#080','rgba(200,255,200,.92)');}
+    // Bottom — scroll to see, so show the CSS value pinned at bottom
+    const botPx=Math.round(pB);
+    band(cL,H-24,cR-cL,24,'border-top:2px solid rgba(0,160,0,.5);');
+    lbl(W/2-24,H-18,'↓ '+botPx+'px','#080','rgba(200,255,200,.92)');
+    // Left — full height
+    if(pL>0){band(pr.left,0,pL,H,'border-right:2px solid rgba(0,160,0,.5);');lbl(pr.left+pL/2-10,H/2,Math.round(pL)+'px','#080','rgba(200,255,200,.92)');}
+    // Right — full height
+    if(pR>0){band(pr.right-pR,0,pR,H,'border-left:2px solid rgba(0,160,0,.5);');lbl(pr.right-pR/2-10,H/2,Math.round(pR)+'px','#080','rgba(200,255,200,.92)');}
+    // ── Collect .card containers (purple overlays) ──
+    const cards=[...pg.querySelectorAll('.card')].filter(c=>{
+      const r=c.getBoundingClientRect();
+      return r.height>0&&r.top<H&&r.bottom>0;
+    });
+    // ── Collect measurable elements for gap calculation ──
+    const gapEls=new Set(cards);
+    // Only collect "section-level" elements — direct children of flex/grid rows
+    // Not their internal children (e.g., individual tabs within tab bar)
+    function addSections(parent,depth){
+      if(depth>4)return;
+      const kids=[...parent.children].filter(ch=>ch.nodeType===1);
+      kids.forEach(ch=>{
+        if(ch.classList.contains('ov-topbar')||ch.classList.contains('topbar'))return;
+        const r=ch.getBoundingClientRect();
+        if(r.height<5||r.width<10||r.top>=H||r.bottom<=0)return;
+        let inCard=false;cards.forEach(c=>{if(c.contains(ch))inCard=true;});
+        if(inCard)return;
+        // Check if parent is a flex/grid row (meaning these children are sections)
+        const parentDisplay=getComputedStyle(parent).display;
+        const isInFlexRow=parentDisplay.includes('flex')&&getComputedStyle(parent).flexDirection!=='column';
+        if(isInFlexRow){
+          // This is a section-level item (tabs group, search, KPIs, etc.)
+          // Skip spacer divs
+          const cs=getComputedStyle(ch);
+          if(cs.flex==='1 1 0%'||cs.flex==='1'||(cs.flexGrow==='1'&&ch.children.length===0))return;
+          gapEls.add(ch);
+          // Don't recurse into these — they're leaf sections
+        } else {
+          // Wrapper div — recurse into it
+          gapEls.add(ch);
+          addSections(ch,depth+1);
+        }
+      });
+    }
+    addSections(pg,0);
+    // For pages with no cards, promote visible sections to cards for purple overlay
+    if(!cards.length){
+      [...pg.children].forEach(el=>{
+        if(el.nodeType!==1||el.classList.contains('ov-topbar')||el.classList.contains('topbar'))return;
+        const r=el.getBoundingClientRect();
+        if(r.height>30&&r.width>50&&r.top<H&&r.bottom>0)cards.push(el);
+      });
+    }
+    // ── PURPLE: Card overlays — frosted blur + dimensions at top-left ──
+    cards.forEach(el=>{
+      const r=el.getBoundingClientRect();
+      const shade=document.createElement('div');
+      shade.style.cssText=`position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;background:rgba(200,195,220,.3);backdrop-filter:blur(1px);-webkit-backdrop-filter:blur(1px);border:1.5px solid rgba(120,80,200,.4);border-radius:6px;`;
+      ov.appendChild(shade);
+      const dLbl=document.createElement('div');
+      dLbl.style.cssText=`position:fixed;left:${r.left+6}px;top:${r.top+6}px;color:rgba(90,50,170,.95);font-weight:700;font-size:9px;background:rgba(240,235,255,.95);padding:3px 7px;border-radius:4px;white-space:nowrap;line-height:1.5;`;
+      dLbl.innerHTML=`${Math.round(r.width)} →<br>${Math.round(r.height)} ↓`;
+      ov.appendChild(dLbl);
+    });
+    // ── BLUE/RED: Gaps — use cards for overview, gapEls for other pages ──
+    // Build final list: cards + non-card gapEls that aren't inside any card
+    const finalEls=[];const finalSet=new Set();
+    cards.forEach(c=>{finalEls.push(c);finalSet.add(c);});
+    gapEls.forEach(el=>{
+      if(finalSet.has(el))return;
+      // Skip if inside a card or if it contains a card
+      let dominated=false;
+      cards.forEach(c=>{if(c.contains(el)||el.contains(c))dominated=true;});
+      if(!dominated){finalEls.push(el);finalSet.add(el);}
+    });
+    const sorted=finalEls.map(c=>({el:c,r:c.getBoundingClientRect()}));
+    sorted.sort((a,b)=>(a.r.top-b.r.top)||a.r.left-b.r.left);
+    const gapsDone=new Set();
+    for(let i=0;i<sorted.length;i++){
+      const a=sorted[i].r;
+      // Vertical: find nearest below with overlapping x
+      for(let j=i+1;j<sorted.length;j++){
+        const b=sorted[j].r;
+        if(a.bottom>b.top-1)continue;
+        const xOv=Math.min(a.right,b.right)-Math.max(a.left,b.left);
+        if(xOv<15)continue;
+        const gap=Math.round(b.top-a.bottom);
+        if(gap<0||gap>150)continue;
+        if(sorted[i].el.contains(sorted[j].el)||sorted[j].el.contains(sorted[i].el))continue;
+        const k='v'+i+'-'+j;if(gapsDone.has(k))continue;gapsDone.add(k);
+        if(gap>0){const ln=document.createElement('div');ln.style.cssText=`position:fixed;left:${Math.max(a.left,b.left)}px;top:${a.bottom}px;width:${xOv}px;height:${gap}px;background:rgba(0,80,255,.06);border-top:1px dashed rgba(0,80,255,.35);border-bottom:1px dashed rgba(0,80,255,.35);`;ov.appendChild(ln);}
+        lbl(Math.max(a.left,b.left)-28,a.bottom+Math.max(0,gap)/2-6,gap+'px','#0055cc','rgba(210,220,255,.92)');
+        break;
+      }
+      // Horizontal: find nearest right with overlapping y
+      let foundH=false;
+      for(let j=i+1;j<sorted.length&&!foundH;j++){
+        const b=sorted[j].r;
+        if(a.right>b.left-1)continue;
+        const yOv=Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top);
+        if(yOv<10)continue;
+        const gap=Math.round(b.left-a.right);
+        if(gap<0||gap>150)continue;
+        if(sorted[i].el.contains(sorted[j].el)||sorted[j].el.contains(sorted[i].el))continue;
+        // Skip if one is parent of the other at any level
+        if(sorted[i].el.parentElement===sorted[j].el||sorted[j].el.parentElement===sorted[i].el)continue;
+        const k='h'+i+'-'+j;if(gapsDone.has(k))continue;gapsDone.add(k);
+        const midY=Math.max(a.top,b.top)+yOv/2;
+        if(gap>0){const ln=document.createElement('div');ln.style.cssText=`position:fixed;left:${a.right}px;top:${Math.max(a.top,b.top)}px;width:${gap}px;height:${yOv}px;background:rgba(255,40,0,.06);border-left:1px dashed rgba(255,40,0,.35);border-right:1px dashed rgba(255,40,0,.35);`;ov.appendChild(ln);}
+        lbl(a.right+Math.max(0,gap)/2-10,midY-6,gap+'px','#cc2200','rgba(255,220,210,.92)');
+        foundH=true;
+      }
+    }
+    document.body.appendChild(ov);
+  }
+});
+</script>
 <div id="uiTip" style="position:fixed;pointer-events:none;z-index:9999;background:rgba(255,250,246,.92);color:var(--muted);font-size:10px;font-weight:600;padding:3px 8px;border-radius:5px;white-space:nowrap;opacity:0;transition:opacity .1s;font-family:'DM Sans',sans-serif;box-shadow:0 2px 8px rgba(0,0,0,.1),0 1px 2px rgba(0,0,0,.06);border:1px solid rgba(210,195,185,.4);letter-spacing:.01em;top:0;left:0"></div>
+<div class="overlay" id="helpOverlay" onclick="closeMod('helpOverlay',event)"><div class="modal" style="width:420px;max-height:80vh;overflow-y:auto;padding:24px 28px" id="helpContent"></div></div>
 </body></html>

@@ -1,3 +1,4 @@
+let _pgNavLock=false;
 // ── Categories ─────────────────────────────────────────────────────────────────
 const CATS={
   'home':     {bg:'#eff6ff',t:'#1e40af',d:'#3b82f6',dot:'#bfdbfe',b:'rgba(59,130,246,.2)'},
@@ -8,9 +9,10 @@ const CATS={
   'recurring':{bg:'#ddf4f0',t:'#0f6b7a',d:'#2a9db5',dot:'#99f6e4',b:'rgba(42,157,181,.25)'},
   'weekly_reset':{bg:'#eff6ff',t:'#1e40af',d:'#3b82f6',dot:'#bfdbfe',b:'rgba(59,130,246,.2)'},
   'buy':      {bg:'#fef9c3',t:'#713f12',d:'#eab308',dot:'#fef08a',b:'rgba(234,179,8,.25)'},
-  'travel':   {bg:'#dcfce7',t:'#15803d',d:'#22c55e',dot:'#bbf7d0',b:'rgba(34,197,94,.3)'},
+  'travel':   {bg:'#e0f2fe',t:'#0369a1',d:'#38bdf8',dot:'#bae6fd',b:'rgba(56,189,248,.25)'},
   'birthday': {bg:'#ffedd5',t:'#c2410c',d:'#f97316',dot:'#fed7aa',b:'rgba(249,115,22,.3)'},
   'shopping': {bg:'#fff7ed',t:'#9a3412',d:'#ea580c',dot:'#fed7aa',b:'rgba(234,88,12,.25)'},
+  'videos':   {bg:'rgba(34,197,94,.1)',t:'#15803d',d:'#22c55e',dot:'#bbf7d0',b:'rgba(34,197,94,.2)'},
   'weekly goals':{bg:'#ffffff',t:'rgba(80,80,95,.85)',d:'rgba(200,200,215,.8)',dot:'#e8e8f0',b:'rgba(200,200,215,.4)'},
 };
 const IMP={bg:'#fef9c3',t:'#854d0e',d:'#eab308',dot:'#fef08a',b:'rgba(234,179,8,.35)'};
@@ -25,7 +27,7 @@ function slug(c){return(c||'other').toLowerCase().replace(/\s+/g,'-');}
 
 // ── State ──────────────────────────────────────────────────────────────────────
 let cfg={url:'https://gtirvyrqfuuuxkkqaeap.supabase.co',key:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0aXJ2eXJxZnV1dXhra3FhZWFwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwODY3NjAsImV4cCI6MjA4ODY2Mjc2MH0.6rtA0WeUUAcuV_sNVrxAbaaviPxPwNakh_bk7uylAOo',showAutoTB:true};
-let st={tasks:[],recurring:[],shopping:[],blocks:[],travel:[],birthdays:[],pup_skills:[],pupSessions:[],recipes:[],videos:[],autoTimeblocks:[],autoTBOverrides:[],wrRules:[],wrOverrides:[]};
+let st={tasks:[],recurring:[],shopping:[],blocks:[],travel:[],birthdays:[],pup_skills:[],pupSessions:[],pupWeeklyFocus:[],recipes:[],videos:[],autoTimeblocks:[],autoTBOverrides:[],wrRules:[],wrOverrides:[],groceryStaples:[],groceryList:[],mealPlan:[],packTemplates:[],packItems:[],finance:[],finSubs:[],_grocStapleSkips:{}};
 let dayOff=0,wkOff=0,moOff=0,wrRecOff=0,sbOpen=true,activePg='overview';
 let dragId=null,resizing=null,tMode='add',tId=null,tPreDate=null;
 let qaCtx='today',qaDsTarget=null,qaKCat='';
@@ -36,8 +38,8 @@ let undoStack=[];let undoTimer=null;
 let shopSortMode='store'; // 'store' or 'alpha'
 
 // ── Storage ────────────────────────────────────────────────────────────────────
-function load(){try{const s=JSON.parse(localStorage.getItem(KEY)||'{}');if(s.cfg)cfg={...cfg,...s.cfg};if(s.blocks)st.blocks=s.blocks.map(b=>{const{_col,_ncols,...rest}=b;return rest;});if(s.sb!==undefined)sbOpen=s.sb;if(s.overrides)localOverrides=s.overrides;if(s.delRec)deletedRecIds=new Set(s.delRec);if(s.delPupSess)deletedPupSessIds=new Set(s.delPupSess);if(s.tasks)st.tasks=s.tasks;if(s.recurring)st.recurring=s.recurring.map(r=>({...r,_doneByWk:r._doneByWk||{}}));if(s.shopping)st.shopping=s.shopping;if(s.travel)st.travel=s.travel;if(s.birthdays)st.birthdays=s.birthdays;if(s.pup_skills)st.pup_skills=s.pup_skills;if(s.pupSessions)st.pupSessions=s.pupSessions;if(s.recipes)st.recipes=s.recipes;if(s.videos)st.videos=s.videos;if(s.autoTimeblocks)st.autoTimeblocks=s.autoTimeblocks;if(s.autoTBOverrides)st.autoTBOverrides=s.autoTBOverrides;if(s.wrRules)st.wrRules=s.wrRules;if(s.wrOverrides)st.wrOverrides=s.wrOverrides;if(s._ytDismissed)st._ytDismissed=s._ytDismissed;}catch(e){}}
-function save(){try{localStorage.setItem(KEY,JSON.stringify({cfg,blocks:st.blocks,sb:sbOpen,overrides:localOverrides,delRec:[...deletedRecIds],delPupSess:[...deletedPupSessIds],tasks:st.tasks,recurring:st.recurring,shopping:st.shopping,travel:st.travel,birthdays:st.birthdays,pup_skills:st.pup_skills,pupSessions:st.pupSessions,recipes:st.recipes,videos:st.videos,autoTimeblocks:st.autoTimeblocks,autoTBOverrides:st.autoTBOverrides,wrRules:st.wrRules,wrOverrides:st.wrOverrides,_ytDismissed:st._ytDismissed}));}catch(e){}}
+function load(){try{const s=JSON.parse(localStorage.getItem(KEY)||'{}');if(s.cfg)cfg={...cfg,...s.cfg};if(s.blocks)st.blocks=s.blocks.map(b=>{const{_col,_ncols,...rest}=b;return rest;});if(s.sb!==undefined)sbOpen=s.sb;if(s.overrides)localOverrides=s.overrides;if(s.delRec)deletedRecIds=new Set(s.delRec);if(s.delPupSess)deletedPupSessIds=new Set(s.delPupSess);if(s.tasks)st.tasks=s.tasks;if(s.recurring)st.recurring=s.recurring.map(r=>({...r,_doneByWk:r._doneByWk||{}}));if(s.shopping)st.shopping=s.shopping;if(s.travel)st.travel=s.travel;if(s.birthdays)st.birthdays=s.birthdays;if(s.pup_skills)st.pup_skills=s.pup_skills;if(s.pupSessions)st.pupSessions=s.pupSessions;if(s.pupWeeklyFocus)st.pupWeeklyFocus=s.pupWeeklyFocus;if(s.recipes)st.recipes=s.recipes;if(s.videos)st.videos=s.videos;if(s.autoTimeblocks)st.autoTimeblocks=s.autoTimeblocks;if(s.autoTBOverrides)st.autoTBOverrides=s.autoTBOverrides;if(s.wrRules)st.wrRules=s.wrRules;if(s.wrOverrides)st.wrOverrides=s.wrOverrides;if(s._ytDismissed)st._ytDismissed=s._ytDismissed;if(s.groceryStaples)st.groceryStaples=s.groceryStaples;if(s.groceryList)st.groceryList=s.groceryList;if(s.mealPlan)st.mealPlan=s.mealPlan;if(s.packTemplates)st.packTemplates=s.packTemplates;if(s.packItems)st.packItems=s.packItems;if(s.finance)st.finance=s.finance;if(s.finSubs)st.finSubs=s.finSubs;}catch(e){}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify({cfg,blocks:st.blocks,sb:sbOpen,overrides:localOverrides,delRec:[...deletedRecIds],delPupSess:[...deletedPupSessIds],tasks:st.tasks,recurring:st.recurring,shopping:st.shopping,travel:st.travel,birthdays:st.birthdays,pup_skills:st.pup_skills,pupSessions:st.pupSessions,pupWeeklyFocus:st.pupWeeklyFocus,recipes:st.recipes,videos:st.videos,autoTimeblocks:st.autoTimeblocks,autoTBOverrides:st.autoTBOverrides,wrRules:st.wrRules,wrOverrides:st.wrOverrides,_ytDismissed:st._ytDismissed,groceryStaples:st.groceryStaples,groceryList:st.groceryList,mealPlan:st.mealPlan,packTemplates:st.packTemplates,packItems:st.packItems,finance:st.finance,finSubs:st.finSubs}));}catch(e){}}
 
 // ── Auth ───────────────────────────────────────────────────────────────────────
 let _sbClient=null;
@@ -156,6 +158,7 @@ async function sbSaveBlock(b){
     start_time:startTime,start_minutes:smVal,
     duration_minutes:b.dur,category:b.cat||'Home',
     task_id:b.taskId||null,rec_id:b.recId||null,shop_id:b.shopId||null,
+    vid_id:b._vidId||null,
     done:b._done||false
   };
   try{
@@ -190,7 +193,7 @@ async function manualBackup(){
   const btn=document.getElementById('backupTxt');
   btn.textContent='Saving…';
   try{
-    const tables=['tasks','shopping_list','travel','birthdays','pup_skills','time_blocks','auto_timeblocks','auto_timeblock_overrides','wr_recurring_rules','wr_recurring_overrides'];
+    const tables=['tasks','shopping_list','travel','birthdays','pup_skills','time_blocks','auto_timeblocks','auto_timeblock_overrides','wr_recurring_rules','wr_recurring_overrides','grocery_staples','grocery_list','meal_plan'];
     const backup={exported_at:new Date().toISOString(),mode:'manual',tables:{}};
     await Promise.all(tables.map(async t=>{
       try{
@@ -217,17 +220,33 @@ async function syncAll(silent=false){
   if(_sbClient){const{data:{session}}=await _sbClient.auth.getSession();if(session)_authToken=session.access_token;}
   if(!silent)setBadge('loading','Syncing…');
   try{
-    const[tasks,shop,trav,bdays,pupSkills,pupSessionsDb,recipes,videosDb]=await Promise.all([
+    const[tasks,shop,trav,bdays,pupSkills,pupSessionsDb,pupWkFocusDb,recipes,videosDb,gStaples,gList,mealPlanDb,packTplDb,packItemDb,finDb,finSubDb]=await Promise.all([
       sbReq('GET','tasks',null,'?order=due_date.asc.nullslast&select=*'),
       sbReq('GET','shopping_list',null,'?order=shop_order.asc.nullslast,store.asc,name.asc&select=*'),
       sbReq('GET','travel',null,'?order=start_date.asc&select=*'),
       sbReq('GET','birthdays',null,'?order=birthday.asc&select=*'),
       sbReqSilent('GET','pup_skills',null,'?order=pup.asc,skill_order.asc,skill.asc&select=*'),
       sbReqSilent('GET','pup_skill_sessions',null,'?order=day_date.asc&select=*'),
-      sbReqSilent('GET','recipes',null,'?order=name.asc&select=*'),
-      sbReqSilent('GET','videos',null,'?is_deleted=neq.true&order=created_at.asc&select=*')
+      sbReqSilent('GET','pup_weekly_focus',null,'?select=*'),
+      sbReqSilent('GET','recipes',null,'?order=sort_order.asc.nullslast,name.asc&select=*'),
+      sbReqSilent('GET','videos',null,'?is_deleted=neq.true&order=created_at.asc&select=*'),
+      sbReqSilent('GET','grocery_staples',null,'?order=sort_order.asc.nullslast,name.asc&select=*'),
+      sbReqSilent('GET','grocery_list',null,'?order=sort_order.asc.nullslast,name.asc&select=*'),
+      sbReqSilent('GET','meal_plan',null,'?order=meal_date.asc,sort_order.asc.nullslast&select=*'),
+      sbReqSilent('GET','packing_templates',null,'?order=category.asc,sort_order.asc.nullslast,name.asc&select=*'),
+      sbReqSilent('GET','packing_items',null,'?order=sort_order.asc.nullslast,name.asc&select=*'),
+      sbReqSilent('GET','finance',null,'?order=sort_order.asc.nullslast,name.asc&select=*'),
+      sbReqSilent('GET','finance_subs',null,'?order=sort_order.asc.nullslast,name.asc&select=*')
     ]);
     if(pupSessionsDb)st.pupSessions=pupSessionsDb.filter(s=>!deletedPupSessIds.has(String(s.id)));
+    if(pupWkFocusDb)st.pupWeeklyFocus=pupWkFocusDb;
+    if(gStaples)st.groceryStaples=gStaples;
+    if(gList)st.groceryList=gList;
+    if(mealPlanDb)st.mealPlan=mealPlanDb;
+    if(packTplDb){const localTpl=st.packTemplates.filter(t=>String(t.id).startsWith('l-'));st.packTemplates=[...packTplDb,...localTpl.filter(l=>!packTplDb.find(d=>d.id===l.id))];}
+    if(packItemDb){const localPI=st.packItems.filter(t=>String(t.id).startsWith('l-'));st.packItems=[...packItemDb,...localPI.filter(l=>!packItemDb.find(d=>d.id===l.id))];}
+    if(finDb)st.finance=finDb;
+    if(finSubDb)st.finSubs=finSubDb;
     // Fetch time_blocks separately so a failure doesn't break the whole sync
     const blocks=await sbReqSilent('GET','time_blocks',null,'?order=day_date.asc,start_minutes.asc&select=*');
     // Fetch auto timeblocks
@@ -354,12 +373,13 @@ async function syncAll(silent=false){
         if(b.category==='pup_session'){const _sk=(st.pup_skills||[]).find(x=>x.skill===b.title);if(_sk){const _ss=(st.pupSessions||[]).find(s=>String(s.skill_id)===String(_sk.id)&&s.day_date===b.day_date);if(_ss)_pupSessId=_ss.id;}}
         return{id:b.id,title:b.title||'',ds:b.day_date,sm:sm||0,
           dur:b.duration_minutes||30,cat:b.category||'Home',
-          taskId:b.task_id||null,recId:b.rec_id||null,shopId:b.shop_id||null,ruleId:null,_done:b.done||false,_pupSessId};
+          taskId:b.task_id||null,recId:b.rec_id||null,shopId:b.shop_id||null,_vidId:b.vid_id||null,ruleId:null,_done:b.done||false,_pupSessId};
       }),...localOnly];
     }
     save();
     const n=new Date();setBadge('',`Synced ${n.getHours()}:${String(n.getMinutes()).padStart(2,'0')}`);
     renderAll();
+    if(typeof seedPupReviewTask==='function')seedPupReviewTask();
   }catch(e){console.error('syncAll error',e);setBadge('err','Error');}
 }
 function setBadge(t,x){
@@ -510,8 +530,8 @@ function getBirthdayTasks(filterDate){
     if(!b.birthday)return;
     const parts=b.birthday.split('-');
     // Support MM-DD (2 parts) and YYYY-MM-DD (3 parts)
-    const mo=parts.length===2?parts[0]:parts[1];
-    const day=parts.length===2?parts[1]:parts[2];
+    const mo=String(parts.length===2?parts[0]:parts[1]).padStart(2,'0');
+    const day=String(parts.length===2?parts[1]:parts[2]).padStart(2,'0');
     [curYear,curYear+1].forEach(yr=>{
       const ds=`${yr}-${mo}-${day}`;
       // If filtering for a specific date, only return exact match
@@ -522,6 +542,23 @@ function getBirthdayTasks(filterDate){
     });
   });
   return filterDate?out:out.sort((a,b2)=>a.due_date.localeCompare(b2.due_date));
+}
+// Get birthdays in a date range [startDs, endDs] inclusive
+function getBirthdaysInRange(startDs,endDs){
+  const curYear=new Date().getFullYear();
+  const out=[],seen=new Set();
+  st.birthdays.forEach(b=>{
+    if(!b.birthday)return;
+    const parts=b.birthday.split('-');
+    const mo=String(parts.length===2?parts[0]:parts[1]).padStart(2,'0');
+    const day=String(parts.length===2?parts[1]:parts[2]).padStart(2,'0');
+    [curYear,curYear+1].forEach(yr=>{
+      const ds=`${yr}-${mo}-${day}`;
+      if(ds>=startDs&&ds<=endDs){const key=b.id+'-'+ds;if(!seen.has(key)){seen.add(key);out.push(mkBdayTask(b,ds));}}
+    });
+  });
+  console.log('[BDAY-RANGE]',startDs,'to',endDs,'birthdays:',st.birthdays.map(b=>b.birthday),'found:',out.length,out.map(x=>x.name+' '+x.due_date));
+  return out;
 }
 function mkBdayTask(b,ds){
   return{
@@ -553,7 +590,10 @@ function getExtrasForWeek(off=0){
     const label=tv.destination?`${tv.name} → ${tv.destination}`:tv.name;
     return{id:'tv-'+tv.id,name:label,category:'Travel',due_date:sd,end_date:ed,done:false,travel_mode:tv.travel_mode||null,_virtual:true,_type:'travel'};
   });
-  const bdayItems=dates.flatMap(d=>getBirthdayTasks(d2s(d)));
+  // Include birthdays from 3 days before week start through 3 days after week end
+  const bStart=new Date(dates[0]);bStart.setDate(bStart.getDate()-3);
+  const bEnd=new Date(dates[6]);bEnd.setDate(bEnd.getDate()+3);
+  const bdayItems=getBirthdaysInRange(d2s(bStart),d2s(bEnd));
   return[...travelItems,...bdayItems];
 }
 
@@ -679,6 +719,7 @@ function _stateSnap(){
     autoTBOverrides:JSON.parse(JSON.stringify(st.autoTBOverrides||[])),
     pupSessions:JSON.parse(JSON.stringify(st.pupSessions||[])),
     pup_skills:JSON.parse(JSON.stringify(st.pup_skills||[])),
+    pupWeeklyFocus:JSON.parse(JSON.stringify(st.pupWeeklyFocus||[])),
     videos:JSON.parse(JSON.stringify(st.videos||[]))
   };
 }
@@ -695,13 +736,14 @@ function _stateRestore(snap){
   if(snap.autoTBOverrides)st.autoTBOverrides=snap.autoTBOverrides;
   if(snap.pupSessions)st.pupSessions=snap.pupSessions;
   if(snap.pup_skills)st.pup_skills=snap.pup_skills;
+  if(snap.pupWeeklyFocus)st.pupWeeklyFocus=snap.pupWeeklyFocus;
   if(snap.videos)st.videos=snap.videos;
   save();
   renderAll();
   renderPupSkillsHighlight();
   if(document.getElementById('tbGrid'))renderDayTB();
   renderWkCal();renderRecOv();renderWeeklyPage();
-  if(typeof renderVideosPage==='function'&&document.getElementById('videosContent'))renderVideosPage();
+  if(typeof renderVideosPageKeepScroll==='function'&&document.getElementById('videosContent'))renderVideosPageKeepScroll();
 }
 
 function pushUndo(fn,msg,onExpire){
@@ -978,7 +1020,123 @@ document.addEventListener('keydown',e=>{
   if(e.key==='o'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus')&&!document.querySelector('.overlay.open')){
     e.preventDefault();showPage('overview');
   }
+  if(e.key==='v'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus')&&!document.querySelector('.overlay.open')){
+    e.preventDefault();showPage('videos');
+  }
+  // M to toggle month view on overview
+  if(e.key==='m'&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')){
+    if(document.getElementById('mModal').classList.contains('open')){e.preventDefault();closeMod('mModal');return;}
+    if(activePg==='overview'&&!document.querySelector('.overlay.open')){e.preventDefault();openMModal();return;}
+  }
+  // Cmd+Left/Right to switch between pages
+  if((e.metaKey||e.ctrlKey)&&(e.key==='ArrowLeft'||e.key==='ArrowRight')&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')){
+    e.preventDefault();
+    if(_pgNavLock)return;_pgNavLock=true;setTimeout(()=>{_pgNavLock=false;},150);
+    const _pgOrder=['overview','videos','pups','recipes','finance','birthdays','packing'];
+    const _ci=_pgOrder.indexOf(activePg);
+    if(_ci!==-1){
+      const _ni=e.key==='ArrowLeft'?_ci-1:_ci+1;
+      if(_ni>=0&&_ni<_pgOrder.length){showPage(_pgOrder[_ni]);}
+    }
+  }
+  // Help overlay: press "i" when nothing focused/selected
+  if(e.key==='i'&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')){
+    if(document.getElementById('helpOverlay').classList.contains('open')){e.preventDefault();closeMod('helpOverlay');return;}
+    if(!document.querySelector('.overlay.open')){e.preventDefault();_showHelpOverlay();return;}
+  }
+  // Close help overlay with Enter
+  if((e.key==='Enter')&&document.getElementById('helpOverlay').classList.contains('open')){
+    e.preventDefault();closeMod('helpOverlay');
+  }
 });
+
+// ── Help Overlay ─────────────────────────────────────────────────────────────
+function _showHelpOverlay(){
+  const _global=[
+    ['⌘ ←/→','Switch between pages'],
+    ['O','Go to Overview'],
+    ['V','Go to Videos'],
+    ['N','Quick Add task (to current day)'],
+    ['R','Reload page'],
+    ['S','Sync all data'],
+    ['I','Show this help'],
+    ['Esc','Close any modal / deselect all'],
+    ['⌘Z','Undo last action'],
+    ['⌘S','Prevented (no-op)'],
+  ];
+  const _pages={
+    overview:[
+      ['T','Jump to Today'],
+      ['M','Open / close month view'],
+      ['←/→','Previous / next day'],
+      ['W + ←/→','Previous / next week'],
+      ['←/→ (selected)','Move selected task ±1 day'],
+      ['↑/↓ (time block selected)','Move block ±30 min'],
+      ['Space','Toggle skip on WR rule'],
+      ['Delete / ⌫','Delete selected tasks'],
+      ['⌘C / ⌘V','Copy / paste tasks'],
+      ['⌘I','Toggle importance highlight'],
+      ['⌘A','Select all (when not in input)'],
+      ['Click','Select task or time block'],
+      ['Shift+Click','Multi-select range'],
+      ['Drag','Reorder / reschedule tasks'],
+      ['↑/↓ (vid panel)','Navigate videos'],
+      ['Delete (vid panel)','Remove video from calendar'],
+      ['Enter (vid panel)','Edit selected video'],
+    ],
+    videos:[
+      ['N','New video'],
+      ['E / C','Toggle completed (table view)'],
+      ['←/→','Switch tabs (Current → All → Analytics → Monthly)'],
+      ['↑','Scroll to top'],
+      ['↓','Scroll to current section'],
+      ['Delete / ⌫','Delete selected videos'],
+      ['⌘C / ⌘V','Copy / paste videos'],
+      ['Arrow keys (board)','Navigate video cards'],
+    ],
+    pups:[
+      ['↑/↓ (selected)','Reorder selected skills'],
+      ['Delete / ⌫','Delete selected skill group'],
+      ['⌘C / ⌘V','Copy / paste skills'],
+      ['Click','Select skill row'],
+      ['Shift+Click','Multi-select range'],
+    ],
+    recipes:[
+      ['Delete / ⌫','Delete selected recipes'],
+      ['⌘C / ⌘V','Copy / paste recipes'],
+      ['Click','Select recipe row'],
+    ],
+    finance:[],
+    birthdays:[
+      ['Delete / ⌫','Delete selected birthdays'],
+      ['⌘C / ⌘V','Copy / paste birthdays'],
+      ['Click','Select birthday row'],
+    ],
+  };
+  const pg=activePg||'overview';
+  const pgShortcuts=_pages[pg]||[];
+  let html='<div style="font-family:DM Sans,sans-serif">';
+  html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><h3 style="margin:0;font-size:15px;color:var(--text)">Keyboard Shortcuts</h3><span style="font-size:11px;background:rgba(109,95,230,.1);color:#6d5fe6;padding:2px 8px;border-radius:6px;font-weight:600">'+pg+'</span></div>';
+  if(pgShortcuts.length){
+    html+='<div style="margin-bottom:14px"><div style="font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:8px;font-weight:600">This Page</div>';
+    html+=_helpRows(pgShortcuts);
+    html+='</div>';
+  }
+  html+='<div><div style="font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:8px;font-weight:600">Global</div>';
+  html+=_helpRows(_global);
+  html+='</div></div>';
+  document.getElementById('helpContent').innerHTML=html;
+  document.getElementById('helpOverlay').classList.add('open');
+}
+function _helpRows(arr){
+  let h='<div style="display:grid;grid-template-columns:auto 1fr;gap:4px 12px">';
+  arr.forEach(([key,desc])=>{
+    h+='<div style="text-align:right"><kbd style="background:rgba(109,95,230,.08);border:1px solid rgba(109,95,230,.15);border-radius:4px;padding:1px 6px;font-size:11px;font-family:SF Mono,monospace;color:#6d5fe6;font-weight:500">'+key+'</kbd></div>';
+    h+='<div style="font-size:12px;color:var(--text);line-height:1.8">'+desc+'</div>';
+  });
+  h+='</div>';
+  return h;
+}
 
 // ── UI Tooltip ────────────────────────────────────────────────────────────────
 (function(){

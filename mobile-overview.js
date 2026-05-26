@@ -13,7 +13,7 @@ function hideLoginOverlay() {
 }
 
 // ── Desktop render stubs ──────────────────────────────────────────────────────
-function renderAll() { mRenderToday(); if (_mCurTab === 'tb') mRenderTB(); if (_mCurTab === 'week') mRenderWeek(); if (_mCurTab === 'shop') mRenderShop(); }
+function renderAll() { mRenderToday(); if (_mCurTab === 'tb') mRenderTB(); if (_mCurTab === 'week') mRenderWeek(); if (_mCurTab === 'shop') mRenderShop(); if (_mCurTab === 'groc') mRenderGroc(); }
 function renderToday() { mRenderToday(); }
 function renderWkCal() {}
 function renderWkSummary() {}
@@ -579,32 +579,36 @@ let _mCurTab = 'tb';
 
 function mShowTab(tab) {
   _mCurTab = tab;
-  const pages = {today: 'mTodayPage', tb: 'mTBPage', week: 'mWeekPage', shop: 'mShopPage'};
+  const pages = {today: 'mTodayPage', tb: 'mTBPage', week: 'mWeekPage', shop: 'mShopPage', groc: 'mGrocPage'};
   Object.entries(pages).forEach(([k, id]) => {
     const el = document.getElementById(id);
     if (el) el.style.display = k === tab ? '' : 'none';
   });
   const isToday = tab === 'today';
   const isShop = tab === 'shop';
+  const isGroc = tab === 'groc';
   document.getElementById('mAddBar').style.display = isToday ? '' : 'none';
   const shopBar = document.getElementById('mShopAddBar');
   if (shopBar) shopBar.style.display = isShop ? '' : 'none';
-  document.getElementById('mApp').style.paddingBottom = (isToday || isShop)
+  const grocBar = document.getElementById('mGrocAddBar');
+  if (grocBar) grocBar.style.display = isGroc ? '' : 'none';
+  document.getElementById('mApp').style.paddingBottom = (isToday || isShop || isGroc)
     ? 'calc(162px + env(safe-area-inset-bottom))'
     : 'calc(52px + env(safe-area-inset-bottom))';
   document.querySelectorAll('.m-nav-btn').forEach((b, i) => {
-    b.classList.toggle('active', (tab === 'today' && i === 0) || (tab === 'tb' && i === 1) || (tab === 'week' && i === 2) || (tab === 'shop' && i === 3));
+    b.classList.toggle('active', (tab === 'today' && i === 0) || (tab === 'tb' && i === 1) || (tab === 'week' && i === 2) || (tab === 'shop' && i === 3) || (tab === 'groc' && i === 4));
   });
-  const titles = {today: 'Today', tb: 'Timeblock', week: 'Week', shop: 'Shopping'};
+  const titles = {today: 'Today', tb: 'Timeblock', week: 'Week', shop: 'Shopping', groc: 'HEB Grocery'};
   const titleEl = document.getElementById('mHeaderTitle');
   if (titleEl) titleEl.textContent = titles[tab] || '';
   const progEl = document.getElementById('mProgress');
   if (progEl) progEl.style.display = isToday ? '' : 'none';
-  document.getElementById('mMain').style.padding = (isToday || isShop) ? '12px 16px' : '0';
+  document.getElementById('mMain').style.padding = (isToday || isShop || isGroc) ? '12px 16px' : '0';
 
   if (tab === 'tb')   { _mTBOffset = 0; mRenderTB(); _mScrollNow(); }
   else if (tab === 'week') { _mWeekOffset = 0; mRenderWeek(); }
   else if (tab === 'shop') { mRenderShop(); }
+  else if (tab === 'groc') { mRenderGroc(); }
   else { _mSetDate(); }
 }
 
@@ -1623,6 +1627,103 @@ async function mDeleteShopItem() {
   st.shopping = st.shopping.filter(x => String(x.id) !== String(id));
   save(); mCloseShopEdit(); mRenderShop(); mRenderToday();
   await sbReq('DELETE', 'shopping_list', null, `?id=eq.${id}`);
+}
+
+// ── Grocery (HEB) tab ─────────────────────────────────────────────────────────
+function mRenderGroc() {
+  const list = document.getElementById('mGrocList');
+  if (!list) return;
+  if (typeof generateGroceryStaples === 'function') generateGroceryStaples();
+  const wk = typeof _groceryWeekOf === 'function' ? _groceryWeekOf() : '';
+  const items = (st.groceryList || []).filter(g => g.week_of === wk);
+  const unchecked = items.filter(g => !g.checked);
+  const checked = items.filter(g => g.checked);
+  const countEl = document.getElementById('mGrocCount');
+  if (countEl) countEl.textContent = unchecked.length ? `${unchecked.length} items` : 'All done!';
+
+  let html = '';
+  // Planned meals section
+  const plannedMeals = typeof _mealsForWeek === 'function' ? _mealsForWeek() : [];
+  const uniqueMeals = [...new Map(plannedMeals.map(m => [String(m.recipe_id), m])).values()];
+  if (uniqueMeals.length) {
+    html += `<div class="m-groc-section-title">This Week's Meals</div>`;
+    uniqueMeals.forEach(m => {
+      html += `<div class="m-groc-row"><span class="m-groc-name" style="font-weight:600">🍽 ${(m.recipe_name||'').replace(/&/g,'&amp;')}</span>${(m.servings||1)>1?`<span class="m-groc-amt">${m.servings}d</span>`:''}  <button class="m-groc-del" onclick="mRemoveMealAndGroceries('${m.recipe_id}')">✕</button></div>`;
+    });
+  }
+  // Group by source
+  const staples = unchecked.filter(g => g.source === 'staple');
+  const recipeGroups = {};
+  unchecked.filter(g => g.source === 'recipe').forEach(g => {
+    const k = g.recipe_name || 'Recipe';
+    if (!recipeGroups[k]) recipeGroups[k] = [];
+    recipeGroups[k].push(g);
+  });
+  const manual = unchecked.filter(g => g.source === 'manual');
+
+  function grocRow(g) {
+    return `<div class="m-groc-row${g.checked ? ' m-groc-done' : ''}" data-id="${g.id}">
+      <input type="checkbox" class="m-groc-chk"${g.checked ? ' checked' : ''} onchange="mTogGroc('${g.id}',this.checked)">
+      <span class="m-groc-name">${(g.name || '').replace(/&/g,'&amp;').replace(/</g,'&lt;')}</span>
+      ${g.amount ? `<span class="m-groc-amt">${(g.amount || '').replace(/&/g,'&amp;').replace(/</g,'&lt;')}</span>` : ''}
+      <button class="m-groc-del" onclick="mDelGroc('${g.id}')">✕</button>
+    </div>`;
+  }
+
+  if (staples.length) {
+    html += `<div class="m-groc-section-title">Weekly Staples</div>`;
+    html += staples.map(grocRow).join('');
+  }
+  Object.entries(recipeGroups).forEach(([name, items]) => {
+    html += `<div class="m-groc-section-title">${name.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</div>`;
+    html += items.map(grocRow).join('');
+  });
+  if (manual.length) {
+    html += `<div class="m-groc-section-title">Other</div>`;
+    html += manual.map(grocRow).join('');
+  }
+  if (checked.length) {
+    html += `<div class="m-groc-section-title" style="opacity:.5">Done (${checked.length})</div>`;
+    html += checked.map(grocRow).join('');
+  }
+  if (!items.length) {
+    html = '<div class="m-empty">No grocery items yet. Add some below!</div>';
+  }
+  list.innerHTML = html;
+}
+
+async function mTogGroc(id, checked) {
+  const item = (st.groceryList || []).find(g => String(g.id) === String(id));
+  if (!item) return;
+  item.checked = checked;
+  save(); mRenderGroc();
+  sbReqSilent('PATCH', 'grocery_list', {checked}, `?id=eq.${id}`);
+}
+
+async function mDelGroc(id) {
+  st.groceryList = (st.groceryList || []).filter(g => String(g.id) !== String(id));
+  save(); mRenderGroc();
+  sbReqSilent('DELETE', 'grocery_list', null, `?id=eq.${id}`);
+}
+
+async function mAddGrocItem() {
+  const nameEl = document.getElementById('mGrocNewName');
+  const n = (nameEl.value || '').trim();
+  if (!n) return;
+  const wk = typeof _groceryWeekOf === 'function' ? _groceryWeekOf() : new Date().toISOString().split('T')[0];
+  const item = {name: n, amount: null, source: 'manual', source_id: null, recipe_name: null, aisle: null, checked: false, week_of: wk};
+  const sv = await sbReqSilent('POST', 'grocery_list', item);
+  if (sv && sv[0]) st.groceryList.push(sv[0]);
+  else { item.id = 'l-' + Date.now(); st.groceryList.push(item); }
+  save(); mRenderGroc();
+  nameEl.value = '';
+}
+
+function mRemoveMealAndGroceries(recipeId) {
+  if (typeof removeMealAndGroceries === 'function') {
+    removeMealAndGroceries(recipeId);
+    mRenderGroc();
+  }
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────

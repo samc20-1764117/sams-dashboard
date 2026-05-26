@@ -44,7 +44,10 @@ Supabase Auth (email+password), RLS on all tables. `init()`→`checkAuth()`→`d
 - **Undo/redo**: `pushUndo` on every mutating op (create, edit, delete, move, toggle); undo fn patches DB; `doRedo` undo entry also patches DB via `_syncRedoDiff(snap, beforeRedo)`
 - **Today list**: render row, sort priority, overdue logic, drag ID prefix, drag-to-timeblock, `_hasTBToday` check
 - **Weekly cal**: chip render (color, text, dragstart ID), chip click→`selTask`, dblclick→edit modal, X→remove, checkbox→toggle, dragover drop handler
-- **Timeblock**: `dropOnTB` handler for dragId prefix, `drawTBBlock` color/done derivation, dblclick→edit, `delBlock` removes linked item, checkbox syncs linked item
+- **Timeblock**: `dropOnTB` handler for dragId prefix, `drawTBBlock` color/done derivation, dblclick→edit, `delBlock` removes block only (never deletes underlying task), checkbox syncs linked item
+- **Multi-select → timeblock**: cmd/shift select tasks+WR items, drag to timeblock — all create consecutive blocks. `dropOnTB` `else` branch handles wrec/wrrule/rec-virt/task sids. Single undo reverts all.
+- **TB block selection**: `_getTBBlockSelId` returns `'blk-'+bl.id` for task-backed and shop blocks. Delete/Backspace on selected TB blocks only removes blocks. `applySelHighlight` cross-highlights via `selTaskIds` set.
+- **WR move across weeks**: calendar/edge drop handlers delete `_dateOverrides[currentWkKey]` when moving to different week, preventing ghost appearances in VOP.
 - **Selection**: `applySelHighlight` — `.ti` id match, `.chip`/`.mcell-t` dataset.tid, `.tb-block` bid→selId, `csForId` color, `applySelVars` CSS vars
 - **Monthly cal**: chip render, drag drop, unassigned panel
 - **Database**: POST all required fields, PATCH on edit/toggle, DELETE on remove; `sbSaveBlock` category field for TB link type detection
@@ -56,14 +59,29 @@ Supabase Auth (email+password), RLS on all tables. `init()`→`checkAuth()`→`d
   - **Left/Right**: `clamp(12px, 3vw, 56px)` — responsive, min 12px, max 56px.
   - **Bottom**: `24px` — fixed, matches overview page bottom gap.
   - **Top**: varies per page (typically 41–60px depending on topbar/toolbar height).
-- **Videos page** sets padding via JS (`el.style.cssText`); all other pages set it inline on the `.page` div in `index.html`.
+- **Videos page** sets padding via JS (`el.style.cssText`): `padding:45px clamp(12px,3vw,56px) 24px clamp(12px,3vw,56px)`.
 - **New pages**: always use these exact side/bottom values. Copy-paste: `style="padding:60px clamp(12px,3vw,56px) 24px clamp(12px,3vw,56px)"`.
-- **Overview page** uses `#page-overview{padding:clamp(12px,3vw,56px);padding-top:60px}` in CSS — sides/bottom match the standard.
+- **Overview page** uses `#page-overview{padding:clamp(12px,3vw,56px);padding-top:60px;padding-bottom:24px}` in CSS — all pages now have 24px bottom.
 - **Quick links** (overview grid): Shopping removed (redirected to weekly reset), Notes removed. Current: Birthdays, Pups, Finance, Recipes, Videos. One slot open.
 
 ## Keyboard Shortcuts (global, `core.js` keydown handler)
 - `Cmd/Ctrl+Z`: undo (page-aware: pups/recipes/birthdays use their own stacks).
 - `o`: `showPage('overview')` — only when no input/textarea/select focused and no modal open.
+- `v`: `showPage('videos')`.
+- `m`: toggle month view (`mModal`) on overview. Press again or Enter to close.
+- `i`: help overlay — shows all shortcuts (page-specific + global). Toggle with `i` again or Enter.
+- `⌘←/→`: switch pages in order: overview→videos→pups→recipes→finance→birthdays.
+- `s`: toggle HEB grocery modal (open/close). Also closes via `Enter` when not in input.
+- `g`: debug grid overlay (toggle). Shows: green edge margins (CSS padding), purple card overlays with dimensions (blur content), blue vertical gaps, red horizontal gaps. Works on all pages. Auto-dismisses on page switch. Script in `index.html` before `</body>`.
+- **Adding new shortcuts**: see full pattern in `rules/tasks-ui.md` → "Keyboard shortcut pattern". MUST follow all 5 steps (toggle, Enter close, stopPropagation, outline:none, dual handler).
+
+## Render After Mutation
+- After creating/modifying tasks or blocks, always call the relevant render functions. `renderAll()` does NOT include `renderDayTB()` — call it separately when timeblock grid is visible: `if(document.getElementById('tbGrid'))renderDayTB()`.
+- After async DB save returns (e.g. POST returns real ID), re-render affected views to swap temp→real IDs.
+
+## Selection IDs
+- Items can have different selection IDs depending on where they appear. Weekly calendar chips use `wrrule-virt-{id}`, WR panel uses `wrrule-{id}`. Drag/drop handlers must check BOTH prefixes when testing `selectedTasks.has()`. Use pattern: `selectedTasks.has('wrrule-'+id)||selectedTasks.has('wrrule-virt-'+id)`.
+- Multi-select drag: always filter `selectedTasks` for ALL relevant prefixes, strip prefixes to get real IDs.
 
 ## Undo / Redo
 - `pushUndo(fn,msg)`: snapshots state AFTER action (called post-mutation). `doUndo()`: pops, captures current snap for redo, calls fn. `doRedo()` (async): restores snap, `await _syncRedoDiff(before,after)`, pushes undo entry whose fn calls both `_stateRestore(beforeRedo)` AND `_syncRedoDiff(snap,beforeRedo)` to keep DB in sync on undo-after-redo.

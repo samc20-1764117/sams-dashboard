@@ -122,14 +122,14 @@ export async function onRequest(context) {
     }
     // Fetch analytics
     try {
-      const now = new Date(); const yd = new Date(now); yd.setDate(yd.getDate() - 1); const sd = new Date(now); sd.setFullYear(sd.getFullYear() - 2);
+      const now = new Date(); const ed = new Date(now.getFullYear(), now.getMonth(), 1); const sd = new Date(ed); sd.setFullYear(sd.getFullYear() - 2);
       const fmt = d => d.toISOString().slice(0, 10);
-      const mr = await fetch('https://youtubeanalytics.googleapis.com/v2/reports?' + new URLSearchParams({ ids: 'channel==MINE', startDate: fmt(sd), endDate: fmt(yd), metrics: 'views,estimatedRevenue,likes,comments,subscribersGained,averageViewDuration', dimensions: 'month', sort: 'month' }).toString(), { headers: { Authorization: 'Bearer ' + at } });
+      const mr = await fetch('https://youtubeanalytics.googleapis.com/v2/reports?' + new URLSearchParams({ ids: 'channel==MINE', startDate: fmt(sd), endDate: fmt(ed), metrics: 'views,estimatedRevenue,likes,comments,subscribersGained,averageViewDuration', dimensions: 'month', sort: 'month' }).toString(), { headers: { Authorization: 'Bearer ' + at } });
       const md = await mr.json();
       if (md.error) { const isQ = md.error.errors?.[0]?.reason === 'quotaExceeded'; await KV.put('yta-cooldown', '1', { expirationTtl: isQ ? 7200 : 600 }); const lg = await KV.get('yta-good', 'json'); return lg ? new Response(JSON.stringify(lg), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }) : new Response(JSON.stringify({ error: md.error.message }), { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }); }
       const monthly = (md.rows || []).map(r => ({ month: r[0], views: r[1], revenue: Math.round(r[2] * 100) / 100, likes: r[3], comments: r[4], subscribersGained: r[5], avgViewDuration: r[6] }));
       // Top videos by revenue
-      const vr = await fetch('https://youtubeanalytics.googleapis.com/v2/reports?' + new URLSearchParams({ ids: 'channel==MINE', startDate: fmt(sd), endDate: fmt(yd), metrics: 'views,estimatedRevenue,likes,comments,averageViewDuration', dimensions: 'video', sort: '-estimatedRevenue', maxResults: '50' }).toString(), { headers: { Authorization: 'Bearer ' + at } });
+      const vr = await fetch('https://youtubeanalytics.googleapis.com/v2/reports?' + new URLSearchParams({ ids: 'channel==MINE', startDate: fmt(sd), endDate: fmt(ed), metrics: 'views,estimatedRevenue,likes,comments,averageViewDuration', dimensions: 'video', sort: '-estimatedRevenue', maxResults: '50' }).toString(), { headers: { Authorization: 'Bearer ' + at } });
       const vd = await vr.json();
       let topVideos = [];
       if (!vd.error) topVideos = (vd.rows || []).map(r => ({ videoId: r[0], views: r[1], revenue: Math.round(r[2] * 100) / 100, likes: r[3], comments: r[4], avgViewDuration: r[5] }));

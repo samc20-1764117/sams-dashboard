@@ -77,6 +77,14 @@
       <div id="mShopList"></div>
     </div>
 
+    <!-- Grocery (HEB) tab -->
+    <div id="mGrocPage" style="display:none">
+      <div class="m-shop-header">
+        <span id="mGrocCount">HEB Grocery</span>
+      </div>
+      <div id="mGrocList"></div>
+    </div>
+
   </div>
 
   <!-- Add task bar (today tab only) -->
@@ -110,12 +118,21 @@
     </div>
   </div>
 
+  <!-- Grocery add bar (groc tab only) -->
+  <div id="mGrocAddBar" style="display:none">
+    <input id="mGrocNewName" type="text" placeholder="Add grocery item..." onkeydown="if(event.key==='Enter')mAddGrocItem()">
+    <div class="m-add-row2">
+      <button id="mGrocAddBtn" onclick="mAddGrocItem()">Add</button>
+    </div>
+  </div>
+
   <!-- Bottom nav -->
   <nav id="mNav">
     <button class="m-nav-btn" onclick="mShowTab('today')">Today</button>
     <button class="m-nav-btn active" onclick="mShowTab('tb')">Timeblock</button>
     <button class="m-nav-btn" onclick="mShowTab('week')">Week</button>
     <button class="m-nav-btn" onclick="mShowTab('shop')">Shop</button>
+    <button class="m-nav-btn" onclick="mShowTab('groc')">HEB</button>
   </nav>
 </div>
 
