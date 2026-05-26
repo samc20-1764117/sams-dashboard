@@ -1131,8 +1131,9 @@ body.dark .vid-stat-card{background:rgba(40,30,50,.4)}
 .fin-right .fin-card{flex:1;opacity:.72}
 .fin-left .fin-inv-card{opacity:.72;flex:1;min-height:0}
 .fin-personal-card{opacity:1!important}
-.fin-hero{display:flex;align-items:center;gap:16px;padding:0 16px 8px}
-.fin-kpi-stack{display:flex;flex-direction:column;gap:10px;flex:1;min-width:0}
+.fin-hero{display:flex;align-items:stretch;gap:16px;padding:0 16px 8px}
+.fin-kpi-stack{display:flex;flex-direction:column;gap:10px;min-width:180px;flex-shrink:0}
+.fin-hero-right{display:flex;align-items:center;gap:12px;flex:1;min-width:0}
 .fin-kpi{padding:12px 14px;border-radius:10px;background:rgba(100,100,140,.04);border:1px solid rgba(200,200,215,.1)}
 .fin-kpi-label{font-size:11px;font-weight:500;color:var(--text-secondary,#94a3b8);margin-bottom:4px}
 .fin-kpi-val{font-size:22px;font-weight:700;color:var(--text-primary,#334155);font-variant-numeric:tabular-nums}
@@ -1158,7 +1159,7 @@ body.dark .vid-stat-card{background:rgba(40,30,50,.4)}
 .fin-row:hover .delbtn,.fin-legend-row:hover .delbtn{opacity:1}
 .fin-name{font-weight:500}
 .fin-stats{padding:4px 16px 8px}
-.fin-right .fin-stats{padding:4px 30px 8px 16px}
+.fin-right .fin-stats{padding:4px 40px 8px 16px}
 .fin-stat-row{display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:12px;border-bottom:1px solid rgba(200,200,215,.06)}
 .fin-stat-label{color:var(--text-secondary,#64748b);font-weight:500}
 .fin-stat-val{font-weight:600;font-variant-numeric:tabular-nums;color:var(--text-primary,#334155)}
@@ -1187,8 +1188,8 @@ body.dark .vid-stat-card{background:rgba(40,30,50,.4)}
 .fin-cancel .fin-name{text-decoration:line-through;opacity:.5}
 .fin-cancel .fin-amt,.fin-cancel .fin-freq-sel{opacity:.5}
 .fin-due-edit{min-width:36px;text-align:center;font-size:11px;color:var(--text-secondary,#64748b);white-space:nowrap}
-.fin-chart-legend{padding:4px 16px 8px}
-.fin-donut{width:110px;height:110px;flex-shrink:0;transform:rotate(-90deg)}
+.fin-chart-legend{flex:1;min-width:0;padding:2px 0}
+.fin-donut{width:90px;height:90px;flex-shrink:0;transform:rotate(-90deg)}
 .fin-legend-row{display:flex;align-items:center;gap:6px;font-size:11px;padding:3px 0;border-bottom:1px solid rgba(200,200,215,.06)}
 .fin-legend-row:last-child{border-bottom:none}
 .fin-legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
@@ -1211,8 +1212,16 @@ body.dark .vid-stat-card{background:rgba(40,30,50,.4)}
 .fin-sub-scroll{flex:1;overflow-y:auto;min-height:0}
 .fin-sub-tbl td{padding:4px 12px!important;font-size:11px}
 .fin-sub-tbl th{padding:4px 12px!important}
+.fin-sub-tbl td:last-child,.fin-sub-tbl th:last-child{width:20px;padding:4px 4px!important}
+.fin-sub-tbl td:nth-last-child(2){padding-right:16px!important}
 .fin-sub-row td{height:28px}
 .fin-num{font-family:system-ui,-apple-system,sans-serif;font-variant-numeric:tabular-nums}
+#finPageContent{font-variant-numeric:tabular-nums}
+#finPageContent .fin-kpi-val,#finPageContent .fin-stat-val,#finPageContent .fin-legend-amt,#finPageContent .fin-amt,#finPageContent .fin-edit{font-variant-numeric:tabular-nums}
+.fin-inv-date{border-bottom:none!important;font-size:11px;min-width:60px}
+.fin-inv-amt{border-bottom:none!important;font-size:11px;min-width:50px;text-align:right}
+.fin-inv-date:hover,.fin-inv-amt:hover{background:rgba(109,95,230,.08)}
+.fin-inv-date:focus,.fin-inv-amt:focus{background:rgba(109,95,230,.1);box-shadow:0 0 0 1.5px rgba(109,95,230,.3)}
 .fin-chart-hit{cursor:pointer}
 .fin-donut circle{cursor:pointer}
 

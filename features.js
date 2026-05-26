@@ -1691,7 +1691,7 @@ function _finFmtPct(n){return(n>=0?'+':'')+n.toFixed(2)+'%';}
 function _finParseNum(s){return parseFloat((s||'').replace(/[$,\s]/g,''))||0;}
 function _finSnap(){return{finance:JSON.parse(JSON.stringify(st.finance)),finSubs:JSON.parse(JSON.stringify(st.finSubs))};}
 function _finRestore(snap){st.finance=snap.finance;st.finSubs=snap.finSubs;renderFinancePage();}
-function _finFocusNew(id,field){requestAnimationFrame(()=>{const el=document.querySelector(`[data-fid="${id}"][data-field="${field}"]`)||document.querySelector(`.fin-sub-plain[onfocus*="${id}"]`);if(el){el.focus();if(el.textContent){const r=document.createRange();r.selectNodeContents(el);const s=window.getSelection();s.removeAllRanges();s.addRange(r);}}});}
+function _finFocusNew(id,field){setTimeout(()=>{const el=document.querySelector(`[data-fid="${id}"][data-field="${field}"]`);if(el){el.focus();const r=document.createRange();r.selectNodeContents(el);const s=window.getSelection();s.removeAllRanges();s.addRange(r);}},50);}
 
 function renderFinancePage(){
   const el=document.getElementById('finPageContent');if(!el)return;
@@ -1757,6 +1757,8 @@ function _finRenderPersonal(accs,vtiAcc,currentVal,netWorth,gain,gainPct){
     const color=isVTI?'#22c55e':_FIN_COLORS_PASTEL[i%_FIN_COLORS_PASTEL.length];
     return{id:a.id,name:a.name,amt:a.amount,pct,start,color,isVTI};
   }):[];
+  // Right side: donut + legend
+  html+=`<div class="fin-hero-right">`;
   if(segs.length){
     html+=`<svg class="fin-donut" viewBox="0 0 42 42">`;
     segs.forEach(seg=>{
@@ -1765,8 +1767,6 @@ function _finRenderPersonal(accs,vtiAcc,currentVal,netWorth,gain,gainPct){
     });
     html+=`</svg>`;
   }
-  html+=`</div>`; // close fin-hero
-  // Legend rows below
   html+=`<div class="fin-chart-legend">`;
   allAccs.forEach(a=>{
     const seg=segs.find(s=>s.id===a.id);
@@ -1781,6 +1781,8 @@ function _finRenderPersonal(accs,vtiAcc,currentVal,netWorth,gain,gainPct){
     </div>`;
   });
   html+=`</div></div>`;
+  html+=`</div>`; // close fin-hero
+  html+=`</div>`; // close fin-card
   return html;
 }
 
@@ -1827,8 +1829,8 @@ function _finRenderInvestments(purchases,totalBought){
     <table class="fin-tbl"><tbody>`;
   sorted.forEach(p=>{
     html+=`<tr class="fin-row">
-      <td class="fin-ph-cell" style="font-size:11px">${p.date||''}</td>
-      <td class="fin-amt fin-ph-cell fin-num" style="font-size:11px">${_finFmt(Math.abs(p.amount||0))}</td>
+      <td class="fin-ph-cell" style="font-size:11px">${_finEditable(p.id,'date',p.date||'','fin-inv-date')}</td>
+      <td class="fin-amt fin-ph-cell fin-num" style="font-size:11px">${_finEditable(p.id,'amount',p.amount||0,'fin-inv-amt')}</td>
       <td><button class="delbtn" onclick="delFin('${p.id}')">&#x2715;</button></td>
     </tr>`;
   });
@@ -1987,7 +1989,7 @@ async function addFinRow(type){
   else Object.assign(fields,{name:'VTI Purchase',date:tod(),amount:0});
   const row={id:'l-'+Date.now(),sort_order:0,...fields};
   st.finance.unshift(row);renderFinancePage();
-  _finFocusNew(row.id,'name');
+  _finFocusNew(row.id,type==='vti'?'amount':'name');
   pushUndo(()=>{st.finance=st.finance.filter(r=>r.id!==row.id);renderFinancePage();},'Added '+(type==='vti'?'purchase':'account'));
   const sv=await sbReq('POST','finance',{...fields,sort_order:row.sort_order});
   if(sv&&sv[0]){const i=st.finance.findIndex(x=>x.id===row.id);if(i>-1)st.finance[i]=sv[0];}
