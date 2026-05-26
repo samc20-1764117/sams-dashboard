@@ -1791,7 +1791,7 @@ function _finRenderPersonal(accs,vtiAcc,currentVal,netWorth,totalAll){
       html+=`<circle cx="21" cy="21" r="15.9" fill="none" stroke="transparent" stroke-width="5" stroke-dasharray="${adjLen} ${100-adjLen}" stroke-dashoffset="${adjOff}" style="pointer-events:stroke" data-fin-seg="${seg.id}" data-fin-tip-name="${seg.name}" data-fin-tip-amt="${_finFmtRound(seg.amt)}" onmouseenter="_finHover('${seg.id}')" onmouseleave="_finHover(null)"/>`;
     });
     html+=`</g></svg>`;
-    html+=`<div class="fin-donut-center"><div class="fin-donut-label">Net Worth</div><div class="fin-donut-val">${_finFmtRound(netWorth)}</div>${hasExcluded?`<div style="font-size:9px;color:var(--text-secondary,#94a3b8)">All: ${_finFmtRound(totalAll)}</div>`:''}</div>`;
+    html+=`<div class="fin-donut-center"><div class="fin-donut-label">Net Worth</div><div class="fin-donut-val">${_finFmtRound(netWorth)}</div>${hasExcluded?`<div style="font-size:10px;color:var(--text-secondary,#94a3b8)">All: ${_finFmtRound(totalAll)}</div>`:''}</div>`;
     html+=`</div>`;
   }
   html+=`<div class="fin-chart-legend">`;
@@ -1806,8 +1806,7 @@ function _finRenderPersonal(accs,vtiAcc,currentVal,netWorth,totalAll){
       <span class="fin-legend-dot" style="background:${colorPastel};border:1.5px solid ${colorSolid}"></span>
       <span class="fin-legend-name">${_finEditable(a.id,'name',a.name,'fin-legend-edit-name')}</span>
       <span class="fin-legend-amt">${_finEditable(a.id,'amount',a.amount||0,'fin-legend-edit-amt',true)}</span>
-      <span class="fin-legend-pct">${pctStr}</span>
-      <button class="fin-excl-btn${a.exclude?' active':''}" onclick="_finToggleExclude('${a.id}')" title="${a.exclude?'Include in total':'Exclude from total'}">${a.exclude?'&#x21a9;':'&#x2212;'}</button>
+      <span class="fin-legend-pct">${pctStr}${a.exclude?`<button class="fin-excl-btn active" onclick="_finToggleExclude('${a.id}')" title="Include in total" style="opacity:1;color:#b0b8c4;margin-left:0">&#x21a9;</button>`:`<button class="fin-excl-btn" onclick="_finToggleExclude('${a.id}')" title="Exclude from total">&#x2212;</button>`}</span>
       <button class="delbtn fin-legend-del" onclick="delFin('${a.id}')">&#x2715;</button>
     </div>`;
   });
@@ -1858,14 +1857,14 @@ function _finRenderInvestments(purchases,totalBought,gain,gainPct,currentVal){
   // Full-width area chart below
   if(chronological.length>1){
     let cum=0;
-    const dataPoints=chronological.map(p=>{cum+=Math.abs(p.amount||0);return{date:p.date,cum,ts:new Date(p.date).getTime()};});
+    const dataPoints=chronological.map(p=>{const a=Math.abs(p.amount||0);cum+=a;return{date:p.date,amt:a,cum,ts:new Date(p.date).getTime()};});
     const max=Math.max(...dataPoints.map(d=>d.cum));
     const minTs=dataPoints[0].ts,maxTs=dataPoints[dataPoints.length-1].ts,tsRange=maxTs-minTs||1;
     // Use % coordinates based on actual date position
     const pts=dataPoints.map(d=>({
       px:3+((d.ts-minTs)/tsRange)*94,
       py:5+(1-d.cum/max)*75,
-      date:d.date,cum:d.cum
+      date:d.date,amt:d.amt,cum:d.cum
     }));
     const years=new Set();const yearLabels=[];
     dataPoints.forEach((d,i)=>{const y=(d.date||'').slice(0,4);if(y&&!years.has(y)){years.add(y);yearLabels.push({px:pts[i].px,y:y});}});
@@ -1882,7 +1881,10 @@ function _finRenderInvestments(purchases,totalBought,gain,gainPct,currentVal){
       html+=`<span class="fin-chart-dot" style="left:${p.px}%;top:${p.py}%"></span>`;
     });
     pts.forEach((p,i)=>{
-      html+=`<span class="fin-chart-dot-hit" style="left:${p.px}%" data-fin-tip="${_finDateNice(p.date)}: ${_finFmtRound(p.cum)}" data-fin-date="${p.date}" data-fin-dot-top="${p.py}" onmouseenter="_finChartHover(this)" onmouseleave="_finChartHover(null)"></span>`;
+      const prev=i>0?pts[i-1].px:p.px;const next=i<pts.length-1?pts[i+1].px:p.px;
+      const left=((prev+p.px)/2);const right=((p.px+next)/2);
+      const w=right-left;
+      html+=`<span class="fin-chart-dot-hit" style="left:${left.toFixed(2)}%;width:${w.toFixed(2)}%" data-fin-tip-date="${_finDateNice(p.date)}" data-fin-tip-amt="${_finFmtRound(p.amt)}" data-fin-tip-cum="${_finFmtRound(p.cum)}" data-fin-date="${p.date}" data-fin-dot-top="${p.py}" onmouseenter="_finChartHover(this)" onmouseleave="_finChartHover(null)"></span>`;
     });
     // Year labels
     yearLabels.forEach(yl=>{
@@ -2074,13 +2076,14 @@ function _finChartHover(el){
   const tip=_finEnsureTip();
   document.querySelectorAll('tr[data-fin-date]').forEach(r=>r.classList.remove('fin-legend-hover'));
   if(!el){tip.style.display='none';return;}
-  const parts=el.dataset.finTip.split(': ');
-  tip.innerHTML=`<div style="font-weight:600;font-size:12px">${parts[0]}</div><div style="font-size:11px;opacity:.7">${parts[1]||''}</div>`;
+  tip.innerHTML=`<div style="font-weight:600;font-size:12px">${el.dataset.finTipDate}</div><div style="font-size:12px;margin-top:2px">+${el.dataset.finTipAmt}</div><div style="font-size:11px;opacity:.6;margin-top:1px">Total: ${el.dataset.finTipCum}</div>`;
   tip.style.display='block';
   const chart=el.closest('.fin-inv-chart');
   const cr=chart.getBoundingClientRect();
   const dotTop=parseFloat(el.dataset.finDotTop)/100*cr.height+cr.top;
-  const dotLeft=el.getBoundingClientRect().left+el.getBoundingClientRect().width/2;
+  // Find the matching visible dot for positioning
+  const hitRect=el.getBoundingClientRect();
+  const dotLeft=hitRect.left+hitRect.width/2;
   tip.style.left=dotLeft-tip.offsetWidth/2+'px';tip.style.top=dotTop-tip.offsetHeight-10+'px';
   const date=el.dataset.finDate;
   document.querySelectorAll(`tr[data-fin-date="${date}"]`).forEach(r=>r.classList.add('fin-legend-hover'));
