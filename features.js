@@ -850,7 +850,7 @@ function renderMoCal(){
     // "Move overdue to this week" banner for monthly view
     if(_moOvGoals.length>0){
       const moBanner=document.createElement('div');moBanner.style.cssText='display:flex;align-items:center;gap:3px;padding:1px 3px;margin-bottom:1px;font-size:7px;font-weight:600;color:#b91c1c';
-      const moTxt=document.createElement('span');moTxt.textContent=`${_moOvGoals.length} overdue`;
+      const moTxt=document.createElement('span');moTxt.textContent=`${_moOvGoals.length} Overdue`;
       const moBtn=document.createElement('button');moBtn.textContent='Move';moBtn.style.cssText='margin-left:auto;background:#ef4444;color:#fff;border:none;border-radius:3px;padding:0 3px;font-size:6px;font-weight:600;cursor:pointer;font-family:inherit';
       moBtn.addEventListener('click',e=>{e.stopPropagation();const prevDates=_moOvGoals.map(t=>({id:t.id,prev:t.due_date}));_moOvGoals.forEach(t=>{t.due_date=wkMonDs;sbReq('PATCH','tasks',{due_date:wkMonDs},`?id=eq.${t.id}`);});save();renderMoCal();renderWkCal();renderWkSummary();pushUndo(()=>{prevDates.forEach(p=>{const t=st.tasks.find(x=>String(x.id)===String(p.id));if(t){t.due_date=p.prev;sbReq('PATCH','tasks',{due_date:p.prev},`?id=eq.${t.id}`);}});save();renderMoCal();renderWkCal();renderWkSummary();},'Moved overdue goals to this week');});
       moBanner.appendChild(moTxt);moBanner.appendChild(moBtn);
@@ -5047,7 +5047,7 @@ function updateOvBanner(){
   const total=ovTasks.length+ovRec.length+ovShop.length+ovPup.length+ovVid.length;
   const banner=document.getElementById('ovBanner');
   if(total>0){
-    document.getElementById('ovBannerTxt').textContent=`${total} overdue`;
+    document.getElementById('ovBannerTxt').textContent=`${total} Overdue`;
     banner.classList.add('show');
   } else {
     banner.classList.remove('show');
