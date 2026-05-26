@@ -1256,7 +1256,7 @@ function renderWkCal(){
           const _tmM=x.t.name.match(_timeRx);
           let _newSm=null,_newDur=null;
           if(x.savedTBs.length){_newSm=x.savedTBs[0].sm;_newDur=x.savedTBs[0].dur;}
-          else if(_tmM){let h=parseInt(_tmM[1]),mm=parseInt(_tmM[2]||'0');const ap=(_tmM[3]||'').toLowerCase();if(ap==='pm'&&h!==12)h+=12;else if(ap==='am'&&h===12)h=0;else if(!ap&&h>=1&&h<=6)h+=12;_newSm=h*60+mm;const lc=(x.t.category||'').toLowerCase();_newDur=lc==='social'?180:lc==='work'||lc==='my work'||lc==='recurring'?60:30;}
+          else if(_tmM){let h=parseInt(_tmM[1]),mm=parseInt(_tmM[2]||'0');const ap=(_tmM[3]||'').toLowerCase();if(ap==='pm'&&h!==12)h+=12;else if(ap==='am'&&h===12)h=0;else if(!ap&&h>=1&&h<=8)h+=12;_newSm=h*60+mm;const lc=(x.t.category||'').toLowerCase();_newDur=lc==='social'?180:lc==='work'||lc==='my work'||lc==='recurring'?60:30;}
           if(_newSm!==null){const _nb={id:crypto.randomUUID(),title:x.t.name,ds,sm:_newSm,dur:_newDur,cat:x.t.category||'',taskId:String(x.t.id)};st.blocks.push(_nb);sbSaveBlock(_nb);}
         });
         dragId=null;save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();

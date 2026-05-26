@@ -78,7 +78,7 @@ async function submitQA(){
   const _timeRx=/@(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i;
   const _tm=n.match(_timeRx);
   let _smAt=null;
-  if(_tm){let h=parseInt(_tm[1]),mm=parseInt(_tm[2]||'0');const ap=(_tm[3]||'').toLowerCase();if(ap==='pm'&&h!==12)h+=12;else if(ap==='am'&&h===12)h=0;else if(!ap&&h>=1&&h<=6)h+=12;_smAt=h*60+mm;}
+  if(_tm){let h=parseInt(_tm[1]),mm=parseInt(_tm[2]||'0');const ap=(_tm[3]||'').toLowerCase();if(ap==='pm'&&h!==12)h+=12;else if(ap==='am'&&h===12)h=0;else if(!ap&&h>=1&&h<=8)h+=12;_smAt=h*60+mm;}
   if(_smAt!==null&&!ds)ds=d2s(getDayDate(dayOff));
   const taskName=n;
   const _adQA=(c)=>{const lc=(c||'').toLowerCase();if(lc==='social')return 180;if(lc==='work'||lc==='my work'||lc==='recurring')return 60;return 30;};
@@ -217,7 +217,7 @@ async function saveTModal(){
     const _timeRx=/@(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i;
     const _tmMatch=n.match(_timeRx);
     let _smFromName=null;
-    if(_tmMatch){let h=parseInt(_tmMatch[1]),mm=parseInt(_tmMatch[2]||'0');const ap=(_tmMatch[3]||'').toLowerCase();if(ap==='pm'&&h!==12)h+=12;else if(ap==='am'&&h===12)h=0;else if(!ap&&h>=1&&h<=6)h+=12;_smFromName=h*60+mm;}
+    if(_tmMatch){let h=parseInt(_tmMatch[1]),mm=parseInt(_tmMatch[2]||'0');const ap=(_tmMatch[3]||'').toLowerCase();if(ap==='pm'&&h!==12)h+=12;else if(ap==='am'&&h===12)h=0;else if(!ap&&h>=1&&h<=8)h+=12;_smFromName=h*60+mm;}
     // Handle time block from @time in name or tTime field
     const _ttVal=document.getElementById('tTime')?.value;
     const _ttEndVal=document.getElementById('tTimeEnd')?.value;
