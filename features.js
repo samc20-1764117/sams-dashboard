@@ -1727,11 +1727,12 @@ function _finRenderPersonal(accs,vtiAcc,currentVal,netWorth,gain,gainPct){
 
   let html=`<div class="card fin-card fin-personal-card">
     <div class="fin-card-hdr"><span class="fin-card-title">Personal Finances</span><button class="fin-add-btn" onclick="addFinRow('account')" style="font-size:16px;padding:0 4px;line-height:1">+</button></div>
-    <div class="fin-kpi-row">
-      <div class="fin-kpi fin-kpi-primary"><div class="fin-kpi-label">Net Worth</div><div class="fin-kpi-val">${_finFmt(netWorth)}</div></div>
-      <div class="fin-kpi fin-kpi-gain"><div class="fin-kpi-label">VTI Gain</div><div class="fin-kpi-val">${_finFmt(gain)}</div><div class="fin-kpi-sub">${_finFmtPct(gainPct)}</div></div>
-    </div>`;
-  // Donut + legend with inline editing
+    <div class="fin-hero">
+      <div class="fin-kpi-stack">
+        <div class="fin-kpi fin-kpi-primary"><div class="fin-kpi-label">Net Worth</div><div class="fin-kpi-val">${_finFmt(netWorth)}</div></div>
+        <div class="fin-kpi fin-kpi-gain"><div class="fin-kpi-label">VTI Gain</div><div class="fin-kpi-val">${_finFmt(gain)}</div><div class="fin-kpi-sub">${_finFmtPct(gainPct)}</div></div>
+      </div>`;
+  // Donut in hero row (right of KPIs)
   let cum=0;
   const segs=total>0?chartItems.map((a,i)=>{
     const isVTI=(a.name||'')==='VTI';
@@ -1739,7 +1740,6 @@ function _finRenderPersonal(accs,vtiAcc,currentVal,netWorth,gain,gainPct){
     const color=isVTI?'#22c55e':_FIN_COLORS_PASTEL[i%_FIN_COLORS_PASTEL.length];
     return{id:a.id,name:a.name,amt:a.amount,pct,start,color,isVTI};
   }):[];
-  html+=`<div class="fin-chart-wrap">`;
   if(segs.length){
     html+=`<svg class="fin-donut" viewBox="0 0 42 42">`;
     segs.forEach(seg=>{
@@ -1748,6 +1748,8 @@ function _finRenderPersonal(accs,vtiAcc,currentVal,netWorth,gain,gainPct){
     });
     html+=`</svg>`;
   }
+  html+=`</div>`; // close fin-hero
+  // Legend rows below
   html+=`<div class="fin-chart-legend">`;
   allAccs.forEach(a=>{
     const seg=segs.find(s=>s.id===a.id);
@@ -1761,7 +1763,7 @@ function _finRenderPersonal(accs,vtiAcc,currentVal,netWorth,gain,gainPct){
       <button class="delbtn fin-legend-del" onclick="delFin('${a.id}')">&#x2715;</button>
     </div>`;
   });
-  html+=`</div></div></div>`;
+  html+=`</div></div>`;
   return html;
 }
 
@@ -1839,9 +1841,8 @@ function _finRenderSubs(){
     <div class="fin-sub-scroll">
     <table class="fin-tbl fin-sub-tbl"><thead><tr><th>Name</th><th>Freq</th><th>Due</th><th style="text-align:right">Amount</th><th></th></tr></thead><tbody>`;
   subs.forEach(sub=>{
-    const isMonthly=!sub.frequency||sub.frequency==='monthly'||sub.frequency==='weekly';
     const dueDisplay=_finDueDisplay(sub.due_month,sub.due_day);
-    const dueRaw=isMonthly?(sub.due_day||''):((sub.due_month?_FIN_MONTHS[sub.due_month-1]+' ':'')+( sub.due_day||''));
+    const dueRaw=(sub.due_month&&sub.due_month>=1&&sub.due_month<=12?_FIN_MONTHS[sub.due_month-1]+' ':'')+(sub.due_day||'');
     html+=`<tr class="fin-row fin-sub-row${sub.cancel?' fin-cancel':''}">
       <td>
         <span class="fin-sub-name-wrap">
@@ -1869,12 +1870,24 @@ function _finDueDisplay(month,day){
   return s.trim()||'—';
 }
 function _finParseDue(raw){
-  const t=raw.trim();if(!t)return{due_month:null,due_day:null};
-  const m=t.match(/^([a-zA-Z]+)\s*(\d+)/);
-  if(m){
-    const mi=_FIN_MONTHS.findIndex(x=>x.toLowerCase()===m[1].slice(0,3).toLowerCase());
-    return{due_month:mi>=0?mi+1:null,due_day:parseInt(m[2],10)||null};
+  const t=raw.replace(/(?:st|nd|rd|th)\b/gi,'').trim();
+  if(!t)return{due_month:null,due_day:null};
+  // "4/26" or "04/26"
+  const slash=t.match(/^(\d{1,2})\/(\d{1,2})$/);
+  if(slash)return{due_month:parseInt(slash[1],10)||null,due_day:parseInt(slash[2],10)||null};
+  // "Apr 26", "April 26", "april26"
+  const alpha=t.match(/^([a-zA-Z]+)\s*(\d+)/);
+  if(alpha){
+    const mi=_FIN_MONTHS.findIndex(x=>alpha[1].slice(0,3).toLowerCase()===x.toLowerCase());
+    return{due_month:mi>=0?mi+1:null,due_day:parseInt(alpha[2],10)||null};
   }
+  // "26 Apr", "26 April"
+  const dayFirst=t.match(/^(\d+)\s+([a-zA-Z]+)/);
+  if(dayFirst){
+    const mi=_FIN_MONTHS.findIndex(x=>dayFirst[2].slice(0,3).toLowerCase()===x.toLowerCase());
+    return{due_month:mi>=0?mi+1:null,due_day:parseInt(dayFirst[1],10)||null};
+  }
+  // Just a number
   const d=parseInt(t,10);
   return{due_month:null,due_day:d||null};
 }
