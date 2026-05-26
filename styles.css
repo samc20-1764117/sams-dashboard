@@ -1210,18 +1210,29 @@ body.dark .vid-stat-card{background:rgba(40,30,50,.4)}
 .fin-inv-scroll .fin-tbl td{padding:3px 12px;font-size:11px}
 /* Subscriptions compact + scroll */
 .fin-sub-scroll{flex:1;overflow-y:auto;min-height:0}
-.fin-sub-tbl td{padding:4px 12px!important;font-size:11px}
-.fin-sub-tbl th{padding:4px 12px!important}
+.fin-sub-tbl td{padding:4px 12px!important;font-size:12px}
+.fin-sub-tbl th{padding:4px 12px!important;font-size:10px}
 .fin-sub-tbl td:last-child,.fin-sub-tbl th:last-child{width:20px;padding:4px 4px!important}
-.fin-sub-tbl td:nth-last-child(2){padding-right:16px!important}
+.fin-sub-tbl .fin-amt{padding-right:16px!important;font-size:12px}
 .fin-sub-row td{height:28px}
-.fin-num{font-family:system-ui,-apple-system,sans-serif;font-variant-numeric:tabular-nums}
+/* Number alignment — fixed-width monospace numerals like videos page */
+.fin-mono{display:inline-block;text-align:right;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif}
 #finPageContent{font-variant-numeric:tabular-nums}
-#finPageContent .fin-kpi-val,#finPageContent .fin-stat-val,#finPageContent .fin-legend-amt,#finPageContent .fin-amt,#finPageContent .fin-edit{font-variant-numeric:tabular-nums}
-.fin-inv-date{border-bottom:none!important;font-size:11px;min-width:60px}
-.fin-inv-amt{border-bottom:none!important;font-size:11px;min-width:50px;text-align:right}
+#finPageContent .fin-kpi-val,#finPageContent .fin-stat-val,#finPageContent .fin-legend-amt,#finPageContent .fin-amt,#finPageContent .fin-edit{font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif}
+.fin-inv-date{border-bottom:none!important;font-size:11px;min-width:70px;font-variant-numeric:tabular-nums}
+.fin-inv-amt{border-bottom:none!important;font-size:11px;min-width:70px;text-align:right;font-variant-numeric:tabular-nums}
 .fin-inv-date:hover,.fin-inv-amt:hover{background:rgba(109,95,230,.08)}
 .fin-inv-date:focus,.fin-inv-amt:focus{background:rgba(109,95,230,.1);box-shadow:0 0 0 1.5px rgba(109,95,230,.3)}
+/* Net worth prominence */
+.fin-kpi-nw{background:rgba(59,130,246,.06);border-color:rgba(59,130,246,.15)}
+.fin-kpi-val-lg{font-size:28px!important;font-weight:800;color:var(--text-primary,#0f172a)!important}
+.fin-kpi-sub-muted{font-size:10px;color:var(--text-secondary,#94a3b8);margin-top:2px;font-weight:500}
+/* Legend exclude */
+.fin-legend-excluded{opacity:.45}
+.fin-excl-btn{border:none;background:none;cursor:pointer;font-size:8px;color:var(--text-secondary,#94a3b8);opacity:0;padding:1px 3px;border-radius:4px;transition:all .15s;line-height:1;flex-shrink:0}
+.fin-legend-row:hover .fin-excl-btn{opacity:.4}
+.fin-excl-btn:hover{opacity:.7!important;color:#f59e0b}
+.fin-excl-btn.active{opacity:1!important;color:#94a3b8}
 .fin-chart-hit{cursor:pointer}
 .fin-donut circle{cursor:pointer}
 

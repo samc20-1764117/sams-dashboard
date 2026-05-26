@@ -1689,6 +1689,8 @@ function _finOf(type){return st.finance.filter(r=>r.type===type);}
 function _finFmt(n){return n<0?'-$'+Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):'$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function _finFmtPct(n){return(n>=0?'+':'')+n.toFixed(2)+'%';}
 function _finParseNum(s){return parseFloat((s||'').replace(/[$,\s]/g,''))||0;}
+function _finN(n,w){return`<span class="fin-mono" style="width:${w||80}px">${_finFmt(n)}</span>`;}
+function _finDateFmt(d){if(!d)return'';const p=(d||'').split('-');if(p.length===3)return`<span class="fin-mono" style="width:70px">${p[1]}/${p[2]}/${p[0]}</span>`;return`<span class="fin-mono" style="width:70px">${d}</span>`;}
 function _finSnap(){return{finance:JSON.parse(JSON.stringify(st.finance)),finSubs:JSON.parse(JSON.stringify(st.finSubs))};}
 function _finRestore(snap){st.finance=snap.finance;st.finSubs=snap.finSubs;renderFinancePage();}
 function _finFocusNew(id,field){setTimeout(()=>{const el=document.querySelector(`[data-fid="${id}"][data-field="${field}"]`);if(el){el.focus();const r=document.createRange();r.selectNodeContents(el);const s=window.getSelection();s.removeAllRanges();s.addRange(r);}},50);}
@@ -1696,7 +1698,8 @@ function _finFocusNew(id,field){setTimeout(()=>{const el=document.querySelector(
 function renderFinancePage(){
   const el=document.getElementById('finPageContent');if(!el)return;
   const accs=_finOf('account').sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
-  const netWorth=accs.reduce((s,a)=>s+(a.amount||0),0);
+  const netWorth=accs.filter(a=>!a.exclude).reduce((s,a)=>s+(a.amount||0),0);
+  const totalAll=accs.reduce((s,a)=>s+(a.amount||0),0);
   const vtiAcc=accs.find(a=>(a.name||'')==='VTI');
   const purchases=_finOf('vti');
   const totalBought=purchases.reduce((s,p)=>s+Math.abs(p.amount||0),0);
@@ -1707,7 +1710,7 @@ function renderFinancePage(){
   let html=`<div class="fin-layout">`;
   // Left column: Personal Finances (with KPIs inside) + Investments below
   html+=`<div class="fin-left">`;
-  html+=_finRenderPersonal(accs,vtiAcc,currentVal,netWorth,gain,gainPct);
+  html+=_finRenderPersonal(accs,vtiAcc,currentVal,netWorth,gain,gainPct,totalAll);
   html+=_finRenderInvestments(purchases,totalBought);
   html+=`</div>`;
   // Right column: Subscriptions (full height)
@@ -1737,16 +1740,17 @@ function _finEditable(id,field,val,cls){
 }
 
 // ── Left Top: Personal Finances (KPIs + donut + editable legend) ────────────
-function _finRenderPersonal(accs,vtiAcc,currentVal,netWorth,gain,gainPct){
+function _finRenderPersonal(accs,vtiAcc,currentVal,netWorth,gain,gainPct,totalAll){
   const allAccs=[...accs].sort((a,b)=>(b.amount||0)-(a.amount||0));
-  const chartItems=[...accs.filter(a=>(a.amount||0)>0)].sort((a,b)=>(b.amount||0)-(a.amount||0));
+  const chartItems=[...accs.filter(a=>(a.amount||0)>0&&!a.exclude)].sort((a,b)=>(b.amount||0)-(a.amount||0));
   const total=chartItems.reduce((s,a)=>s+(a.amount||0),0);
+  const hasExcluded=accs.some(a=>a.exclude);
 
   let html=`<div class="card fin-card fin-personal-card">
     <div class="fin-card-hdr"><span class="fin-card-title">Personal Finances</span><button class="fin-add-btn" onclick="addFinRow('account')" style="font-size:16px;padding:0 4px;line-height:1">+</button></div>
     <div class="fin-hero">
       <div class="fin-kpi-stack">
-        <div class="fin-kpi fin-kpi-primary"><div class="fin-kpi-label">Net Worth</div><div class="fin-kpi-val">${_finFmt(netWorth)}</div></div>
+        <div class="fin-kpi fin-kpi-nw"><div class="fin-kpi-label">Net Worth</div><div class="fin-kpi-val fin-kpi-val-lg">${_finFmt(netWorth)}</div>${hasExcluded?`<div class="fin-kpi-sub-muted">All: ${_finFmt(totalAll)}</div>`:''}</div>
         <div class="fin-kpi fin-kpi-gain"><div class="fin-kpi-label">VTI Gain</div><div class="fin-kpi-val">${_finFmt(gain)}</div><div class="fin-kpi-sub">${_finFmtPct(gainPct)}</div></div>
       </div>`;
   // Donut in hero row (right of KPIs)
@@ -1770,13 +1774,15 @@ function _finRenderPersonal(accs,vtiAcc,currentVal,netWorth,gain,gainPct){
   html+=`<div class="fin-chart-legend">`;
   allAccs.forEach(a=>{
     const seg=segs.find(s=>s.id===a.id);
-    const color=seg?seg.color:'#cbd5e1';
+    const color=a.exclude?'#e2e8f0':(seg?seg.color:'#cbd5e1');
     const pctStr=seg?`${(seg.pct*100).toFixed(0)}%`:'';
-    html+=`<div class="fin-legend-row">
+    const excCls=a.exclude?' fin-legend-excluded':'';
+    html+=`<div class="fin-legend-row${excCls}">
       <span class="fin-legend-dot" style="background:${color}"></span>
       <span class="fin-legend-name">${_finEditable(a.id,'name',a.name,'fin-legend-edit-name')}</span>
       <span class="fin-legend-amt">${_finEditable(a.id,'amount',a.amount||0,'fin-legend-edit-amt')}</span>
       <span class="fin-legend-pct">${pctStr}</span>
+      <button class="fin-excl-btn${a.exclude?' active':''}" onclick="_finToggleExclude('${a.id}')" title="${a.exclude?'Include in total':'Exclude from total'}">&#9679;</button>
       <button class="delbtn fin-legend-del" onclick="delFin('${a.id}')">&#x2715;</button>
     </div>`;
   });
@@ -1788,8 +1794,12 @@ function _finRenderPersonal(accs,vtiAcc,currentVal,netWorth,gain,gainPct){
 
 // ── Left Bottom: Investments (VTI) — split: metrics+chart | line items ──────
 function _finRenderInvestments(purchases,totalBought){
-  const sorted=[...purchases].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
-  const chronological=[...purchases].sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+  const valid=purchases.filter(p=>p.date&&Math.abs(p.amount||0)>0);
+  const sorted=[...valid].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  const chronological=[...valid].sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+  const numPurchases=valid.length;
+  const avgPurchase=numPurchases?totalBought/numPurchases:0;
+  const lastPurchase=sorted.length?sorted[0]:null;
 
   let html=`<div class="card fin-card fin-inv-card">
     <div class="fin-card-hdr"><span class="fin-card-title">Investments</span></div>
@@ -1797,18 +1807,21 @@ function _finRenderInvestments(purchases,totalBought){
   // Left: metrics + chart
   html+=`<div class="fin-inv-left">
     <div class="fin-stats">
-      <div class="fin-stat-row"><span class="fin-stat-label fin-muted">Cost Basis</span><span class="fin-stat-val fin-muted">${_finFmt(totalBought)}</span></div>
+      <div class="fin-stat-row"><span class="fin-stat-label">Cost Basis</span><span class="fin-stat-val">${_finN(totalBought,90)}</span></div>
+      <div class="fin-stat-row"><span class="fin-stat-label">Purchases</span><span class="fin-stat-val">${numPurchases}</span></div>
+      <div class="fin-stat-row"><span class="fin-stat-label">Avg Purchase</span><span class="fin-stat-val">${_finN(avgPurchase,90)}</span></div>
+      ${lastPurchase?`<div class="fin-stat-row"><span class="fin-stat-label">Last Purchase</span><span class="fin-stat-val" style="font-size:11px">${_finDateFmt(lastPurchase.date)}</span></div>`:''}
     </div>`;
   if(chronological.length>1){
     let cum=0;
     const dataPoints=chronological.map(p=>{cum+=Math.abs(p.amount||0);return{date:p.date,cum};});
     const max=Math.max(...dataPoints.map(d=>d.cum));
-    const w=200,h=70,padB=18;
+    const w=200,h=90,padB=18;
     const ch=h-padB;
     const polyPts=dataPoints.map((d,i)=>`${(i/(dataPoints.length-1))*w},${ch-(d.cum/max)*ch}`).join(' ');
     const years=new Set();const yearLabels=[];
     dataPoints.forEach((d,i)=>{const y=(d.date||'').slice(0,4);if(y&&!years.has(y)){years.add(y);yearLabels.push({x:(i/(dataPoints.length-1))*w,y:y});}});
-    html+=`<div style="padding:4px 8px 4px"><svg viewBox="0 0 ${w} ${h}" style="width:100%;height:80px" preserveAspectRatio="xMidYMid meet">
+    html+=`<div style="padding:8px 8px 4px"><svg viewBox="0 0 ${w} ${h}" style="width:100%;height:120px" preserveAspectRatio="xMidYMid meet">
       <polyline points="0,${ch} ${polyPts} ${w},${ch}" fill="rgba(34,197,94,.06)" stroke="none"/>
       <polyline points="${polyPts}" fill="none" stroke="#22c55e" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>`;
     dataPoints.forEach((d,i)=>{
@@ -1829,8 +1842,8 @@ function _finRenderInvestments(purchases,totalBought){
     <table class="fin-tbl"><tbody>`;
   sorted.forEach(p=>{
     html+=`<tr class="fin-row">
-      <td class="fin-ph-cell" style="font-size:11px">${_finEditable(p.id,'date',p.date||'','fin-inv-date')}</td>
-      <td class="fin-amt fin-ph-cell fin-num" style="font-size:11px">${_finEditable(p.id,'amount',p.amount||0,'fin-inv-amt')}</td>
+      <td class="fin-ph-cell">${_finEditable(p.id,'date',p.date||'','fin-inv-date')}</td>
+      <td class="fin-amt fin-ph-cell">${_finEditable(p.id,'amount',Math.abs(p.amount||0),'fin-inv-amt')}</td>
       <td><button class="delbtn" onclick="delFin('${p.id}')">&#x2715;</button></td>
     </tr>`;
   });
@@ -1854,8 +1867,8 @@ function _finRenderSubs(){
   let html=`<div class="card fin-card">
     <div class="fin-card-hdr"><span class="fin-card-title">Subscriptions</span><button class="fin-add-btn" onclick="addFinSub()" style="font-size:16px;padding:0 4px;line-height:1">+</button></div>
     <div class="fin-stats">
-      <div class="fin-stat-row"><span class="fin-stat-label">Monthly</span><span class="fin-stat-val">${_finFmt(monthlyTotal)}</span></div>
-      <div class="fin-stat-row"><span class="fin-stat-label">Yearly</span><span class="fin-stat-val">${_finFmt(yearlyTotal)}</span></div>
+      <div class="fin-stat-row"><span class="fin-stat-label">Monthly</span><span class="fin-stat-val">${_finN(monthlyTotal,90)}</span></div>
+      <div class="fin-stat-row"><span class="fin-stat-label">Yearly</span><span class="fin-stat-val">${_finN(yearlyTotal,90)}</span></div>
     </div>
     <div class="fin-sub-scroll">
     <table class="fin-tbl fin-sub-tbl"><thead><tr><th>Name</th><th>Freq</th><th>Due</th><th style="text-align:right">Amount</th><th></th></tr></thead><tbody>`;
@@ -1993,6 +2006,13 @@ async function addFinRow(type){
   pushUndo(()=>{st.finance=st.finance.filter(r=>r.id!==row.id);renderFinancePage();},'Added '+(type==='vti'?'purchase':'account'));
   const sv=await sbReq('POST','finance',{...fields,sort_order:row.sort_order});
   if(sv&&sv[0]){const i=st.finance.findIndex(x=>x.id===row.id);if(i>-1)st.finance[i]=sv[0];}
+}
+
+async function _finToggleExclude(id){
+  const row=st.finance.find(r=>String(r.id)===String(id));if(!row)return;
+  row.exclude=!row.exclude;renderFinancePage();
+  pushUndo(()=>{row.exclude=!row.exclude;renderFinancePage();if(!String(id).startsWith('l-'))sbReqNullable('PATCH','finance',{exclude:row.exclude},`?id=eq.${id}`);},'Toggled exclude');
+  if(!String(id).startsWith('l-'))await sbReqNullable('PATCH','finance',{exclude:row.exclude},`?id=eq.${id}`);
 }
 
 async function delFin(id){
