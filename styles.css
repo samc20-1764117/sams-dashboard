@@ -1130,7 +1130,7 @@ body.dark .vid-stat-card{background:rgba(40,30,50,.4)}
 .fin-right{flex:1;min-width:0;display:flex;flex-direction:column}
 .fin-right .fin-card{flex:1;opacity:.72}
 .fin-left .fin-inv-card{opacity:.72;flex:1;min-height:0}
-.fin-personal-card{opacity:1!important}
+.fin-personal-card{opacity:1!important;flex:none}
 .fin-hero{display:flex;align-items:stretch;gap:16px;padding:0 16px 8px}
 .fin-kpi-stack{display:flex;flex-direction:column;gap:10px;min-width:180px;flex-shrink:0}
 .fin-hero-right{display:flex;align-items:center;gap:12px;flex:1;min-width:0}
@@ -1189,7 +1189,7 @@ body.dark .vid-stat-card{background:rgba(40,30,50,.4)}
 .fin-cancel .fin-amt,.fin-cancel .fin-freq-sel{opacity:.5}
 .fin-due-edit{min-width:36px;text-align:center;font-size:11px;color:var(--text-secondary,#64748b);white-space:nowrap}
 .fin-chart-legend{flex:1;min-width:0;padding:2px 0}
-.fin-donut{width:90px;height:90px;flex-shrink:0;transform:rotate(-90deg)}
+.fin-donut{width:90px;height:90px;flex-shrink:0;transform:rotate(-90deg);filter:drop-shadow(0 1px 2px rgba(0,0,0,.1)) drop-shadow(0 0 1px rgba(255,255,255,.8))}
 .fin-legend-row{display:flex;align-items:center;gap:6px;font-size:11px;padding:3px 0;border-bottom:1px solid rgba(200,200,215,.06)}
 .fin-legend-row:last-child{border-bottom:none}
 .fin-legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
@@ -1229,10 +1229,10 @@ body.dark .vid-stat-card{background:rgba(40,30,50,.4)}
 .fin-kpi-sub-muted{font-size:10px;color:var(--text-secondary,#94a3b8);margin-top:2px;font-weight:500}
 /* Legend exclude */
 .fin-legend-excluded{opacity:.45}
-.fin-excl-btn{border:none;background:none;cursor:pointer;font-size:8px;color:var(--text-secondary,#94a3b8);opacity:0;padding:1px 3px;border-radius:4px;transition:all .15s;line-height:1;flex-shrink:0}
-.fin-legend-row:hover .fin-excl-btn{opacity:.4}
-.fin-excl-btn:hover{opacity:.7!important;color:#f59e0b}
-.fin-excl-btn.active{opacity:1!important;color:#94a3b8}
+.fin-excl-btn{border:none;background:none;cursor:pointer;font-size:9px;color:var(--text-secondary,#94a3b8);opacity:0;padding:1px 4px;border-radius:4px;transition:all .15s;line-height:1;flex-shrink:0}
+.fin-legend-row:hover .fin-excl-btn{opacity:.5}
+.fin-excl-btn:hover{opacity:.8!important;color:#ef4444}
+.fin-excl-btn.active{opacity:.7!important;color:#ef4444}
 .fin-chart-hit{cursor:pointer}
 .fin-donut circle{cursor:pointer}
 

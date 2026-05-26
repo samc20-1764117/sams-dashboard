@@ -1682,7 +1682,8 @@ function openSB(){sbOpen=true;document.getElementById('sidebar').classList.remov
 // ══════════════════════════════════════════════════════════════════════════════
 // ── FINANCE PAGE ─────────────────────────────────────────────────────────────
 // ══════════════════════════════════════════════════════════════════════════════
-const _FIN_COLORS_PASTEL=['#3b82f6','#ec4899','#9333ea','#2a9db5','#eab308','#38bdf8','#f97316','#65a30d'];
+const _FIN_COLORS=['#3b82f6','#ec4899','#9333ea','#2a9db5','#eab308','#38bdf8','#f97316','#65a30d'];
+const _FIN_COLORS_LIGHT=['rgba(59,130,246,.55)','rgba(236,72,153,.55)','rgba(147,51,234,.55)','rgba(42,157,181,.55)','rgba(234,179,8,.55)','rgba(56,189,248,.55)','rgba(249,115,22,.55)','rgba(101,163,13,.55)'];
 function _finOf(type){return st.finance.filter(r=>r.type===type);}
 function _finFmt(n){return n<0?'-$'+Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):'$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function _finFmtRound(n){return n<0?'-$'+Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}):'$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});}
@@ -1709,8 +1710,8 @@ function renderFinancePage(){
   let html=`<div class="fin-layout">`;
   // Left column: Personal Finances (with KPIs inside) + Investments below
   html+=`<div class="fin-left">`;
-  html+=_finRenderPersonal(accs,vtiAcc,currentVal,netWorth,gain,gainPct,totalAll);
-  html+=_finRenderInvestments(purchases,totalBought);
+  html+=_finRenderPersonal(accs,vtiAcc,currentVal,netWorth,totalAll);
+  html+=_finRenderInvestments(purchases,totalBought,gain,gainPct);
   html+=`</div>`;
   // Right column: Subscriptions (full height)
   html+=`<div class="fin-right">`;
@@ -1739,42 +1740,53 @@ function _finEditable(id,field,val,cls,round){
 }
 
 // ── Left Top: Personal Finances (KPIs + donut + editable legend) ────────────
-function _finRenderPersonal(accs,vtiAcc,currentVal,netWorth,gain,gainPct,totalAll){
-  const allAccs=[...accs].sort((a,b)=>(b.amount||0)-(a.amount||0));
-  const chartItems=[...accs.filter(a=>(a.amount||0)>0&&!a.exclude)].sort((a,b)=>(b.amount||0)-(a.amount||0));
+function _finRenderPersonal(accs,vtiAcc,currentVal,netWorth,totalAll){
+  // Sort: non-excluded by amount desc, then excluded at bottom
+  const included=[...accs.filter(a=>!a.exclude)].sort((a,b)=>(b.amount||0)-(a.amount||0));
+  const excluded=[...accs.filter(a=>a.exclude)].sort((a,b)=>(b.amount||0)-(a.amount||0));
+  const allAccs=[...included,...excluded];
+  const chartItems=included.filter(a=>(a.amount||0)>0);
   const total=chartItems.reduce((s,a)=>s+(a.amount||0),0);
-  const hasExcluded=accs.some(a=>a.exclude);
+  const hasExcluded=excluded.length>0;
 
   let html=`<div class="card fin-card fin-personal-card">
     <div class="fin-card-hdr"><span class="fin-card-title">Personal Finances</span><button class="fin-add-btn" onclick="addFinRow('account')" style="font-size:16px;padding:0 4px;line-height:1">+</button></div>
     <div class="fin-hero">
       <div class="fin-kpi-stack">
         <div class="fin-kpi fin-kpi-nw"><div class="fin-kpi-label">Net Worth</div><div class="fin-kpi-val fin-kpi-val-lg">${_finFmtRound(netWorth)}</div>${hasExcluded?`<div class="fin-kpi-sub-muted">All: ${_finFmtRound(totalAll)}</div>`:''}</div>
-        <div class="fin-kpi fin-kpi-gain"><div class="fin-kpi-label">VTI Gain</div><div class="fin-kpi-val">${_finFmtRound(gain)}</div><div class="fin-kpi-sub">${_finFmtPct(gainPct)}</div></div>
       </div>`;
   // Donut in hero row (right of KPIs)
   let cum=0;
   const segs=total>0?chartItems.map((a,i)=>{
     const isVTI=(a.name||'')==='VTI';
     const pct=(a.amount||0)/total;const start=cum;cum+=pct;
-    const color=isVTI?'#22c55e':_FIN_COLORS_PASTEL[i%_FIN_COLORS_PASTEL.length];
-    return{id:a.id,name:a.name,amt:a.amount,pct,start,color,isVTI};
+    const color=isVTI?'#22c55e':_FIN_COLORS[i%_FIN_COLORS.length];
+    const colorLight=isVTI?'rgba(34,197,94,.45)':_FIN_COLORS_LIGHT[i%_FIN_COLORS_LIGHT.length];
+    return{id:a.id,name:a.name,amt:a.amount,pct,start,color,colorLight,isVTI};
   }):[];
   // Right side: donut + legend
   html+=`<div class="fin-hero-right">`;
   if(segs.length){
     html+=`<svg class="fin-donut" viewBox="0 0 42 42">`;
+    html+=`<defs><filter id="finGlass"><feGaussianBlur in="SourceAlpha" stdDeviation=".5" result="blur"/>
+      <feOffset in="blur" dx="0" dy=".3" result="offOut"/>
+      <feFlood flood-color="white" flood-opacity=".6" result="white"/>
+      <feComposite in="white" in2="offOut" operator="in" result="highlight"/>
+      <feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="highlight"/></feMerge></filter></defs>`;
+    // White gap ring underneath
+    html+=`<circle cx="21" cy="21" r="15.9" fill="none" stroke="white" stroke-width="5" />`;
     segs.forEach(seg=>{
-      const dashLen=seg.pct*100;const dashOff=100-(seg.start*100);
-      html+=`<circle cx="21" cy="21" r="15.9" fill="none" stroke="white" stroke-width="5.5" stroke-dasharray="${dashLen} ${100-dashLen}" stroke-dashoffset="${dashOff}"></circle>`;
-      html+=`<circle cx="21" cy="21" r="15.9" fill="none" stroke="${seg.color}" stroke-width="4" stroke-dasharray="${dashLen} ${100-dashLen}" stroke-dashoffset="${dashOff}"><title>${seg.name}: ${_finFmtRound(seg.amt)} (${(seg.pct*100).toFixed(1)}%)</title></circle>`;
+      const dashLen=seg.pct*100;const gap=0.6;const dashOff=100-(seg.start*100);
+      const adjLen=Math.max(dashLen-gap,0.1);
+      const adjOff=dashOff-gap/2;
+      html+=`<circle cx="21" cy="21" r="15.9" fill="none" stroke="${seg.colorLight}" stroke-width="4.2" stroke-dasharray="${adjLen} ${100-adjLen}" stroke-dashoffset="${adjOff}" filter="url(#finGlass)"><title>${seg.name}: ${_finFmtRound(seg.amt)} (${(seg.pct*100).toFixed(1)}%)</title></circle>`;
     });
     html+=`</svg>`;
   }
   html+=`<div class="fin-chart-legend">`;
   allAccs.forEach(a=>{
     const seg=segs.find(s=>s.id===a.id);
-    const color=a.exclude?'#e2e8f0':(seg?seg.color:'#cbd5e1');
+    const color=a.exclude?'#cbd5e1':(seg?seg.color:'#cbd5e1');
     const pctStr=seg?`${(seg.pct*100).toFixed(0)}%`:'';
     const excCls=a.exclude?' fin-legend-excluded':'';
     html+=`<div class="fin-legend-row${excCls}">
@@ -1782,7 +1794,7 @@ function _finRenderPersonal(accs,vtiAcc,currentVal,netWorth,gain,gainPct,totalAl
       <span class="fin-legend-name">${_finEditable(a.id,'name',a.name,'fin-legend-edit-name')}</span>
       <span class="fin-legend-amt">${_finEditable(a.id,'amount',a.amount||0,'fin-legend-edit-amt',true)}</span>
       <span class="fin-legend-pct">${pctStr}</span>
-      <button class="fin-excl-btn${a.exclude?' active':''}" onclick="_finToggleExclude('${a.id}')" title="${a.exclude?'Include in total':'Exclude from total'}">&#9679;</button>
+      <button class="fin-excl-btn${a.exclude?' active':''}" onclick="_finToggleExclude('${a.id}')" title="${a.exclude?'Include in total':'Exclude from total'}">${a.exclude?'&#x21a9;':'&#x2212;'}</button>
       <button class="delbtn fin-legend-del" onclick="delFin('${a.id}')">&#x2715;</button>
     </div>`;
   });
@@ -1793,7 +1805,7 @@ function _finRenderPersonal(accs,vtiAcc,currentVal,netWorth,gain,gainPct,totalAl
 }
 
 // ── Left Bottom: Investments (VTI) — split: metrics+chart | line items ──────
-function _finRenderInvestments(purchases,totalBought){
+function _finRenderInvestments(purchases,totalBought,gain,gainPct){
   const valid=purchases.filter(p=>p.date&&Math.abs(p.amount||0)>0);
   const sorted=[...valid].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
   const chronological=[...valid].sort((a,b)=>(a.date||'').localeCompare(b.date||''));
@@ -1807,6 +1819,7 @@ function _finRenderInvestments(purchases,totalBought){
   // Left: metrics + chart
   html+=`<div class="fin-inv-left">
     <div class="fin-stats">
+      <div class="fin-stat-row"><span class="fin-stat-label">Gain</span><span class="fin-stat-val" style="color:#10b981;font-weight:600">${_finN(gain,90)} <span style="font-size:10px;opacity:.7">${_finFmtPct(gainPct)}</span></span></div>
       <div class="fin-stat-row"><span class="fin-stat-label">Cost Basis</span><span class="fin-stat-val">${_finN(totalBought,90)}</span></div>
       <div class="fin-stat-row"><span class="fin-stat-label">Purchases</span><span class="fin-stat-val">${numPurchases}</span></div>
       <div class="fin-stat-row"><span class="fin-stat-label">Avg Purchase</span><span class="fin-stat-val">${_finN(avgPurchase,90)}</span></div>
