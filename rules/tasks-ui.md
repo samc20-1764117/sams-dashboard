@@ -1,7 +1,8 @@
 # Tasks & UI Rules
 
 ## Overdue Logic
-- **Tasks**: `due_date < today && !done && category !== 'Weekly Goals'`. Weekly Goals excluded from today overdue count/banner but shown as overdue (OV style) in WO modal and weekly cal goals column when viewing past weeks (`isPast` / `_goalsPast`).
+- **Tasks**: `due_date < today && !done && category !== 'Weekly Goals'`. Weekly Goals excluded from today overdue count/banner but shown as overdue (OV style) in WO modal and weekly cal goals column when viewing past weeks (`isPast` / `_goalsPast`). Carried-over overdue goals also appear on current week in weekly cal goals column, WO modal, and monthly view.
+- **Weekly Goals overdue carry-over**: uncompleted goals from past weeks (`due_date < wkStart`) shown with OV style on current week. Each view has a stacked banner: "X Overdue" text + red "Move to this week" button. Clicking moves all overdue goals' `due_date` to current `wkStart`. Undoable. Banner appears in: weekly cal goals column, WO modal (with light red bg), monthly view goals cell (compact).
 - **Shopping**: `due_date < today && !done`.
 - **Non-WR recurring**: `getRecurringWeekTasks(w)` for w=0 to wkOff-4. Cascading `__skip__` check. Seen set prevents duplicates.
 - **WR recurring** (`is_weekly_reset=true`): overdue if `_dateOverrides[wkKey] < today && !_doneByWk[wkKey]`. 4-week lookback. `wrRecHandled` set — only added when `_dateOverrides[wkKey] <= today` (future dates don't block older-week lookback).
@@ -9,7 +10,7 @@
 - **Pup sessions**: `day_date < today && !done`. Included in `updateOvBanner` count and `rolloverOverdue` (moves `day_date` to today, PATCHes `pup_skill_sessions`). Appear in today list when `dayOff===0`.
 - **Videos**: overdue if `_vidDayMap[id] < today && status !== 'published'`. Included in banner count and rollover (moves localStorage date to today). Appear in today list with red `OV` style + day letter.
 - Tasks/shopping/non-WR recurring only overdue if assigned to a date.
-- `updateOvBanner()` called from `renderToday()`.
+- `updateOvBanner()` called from `renderToday()`. Banner text: `X Overdue` + `Move to today` button. No task name or question.
 
 ## Task Modals
 - **`#tModal`**: add (`openTModal(cat='')`) + edit (`openEditTask(id)`). Save: `saveTModal()`.
