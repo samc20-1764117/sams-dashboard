@@ -1023,6 +1023,9 @@ document.addEventListener('keydown',e=>{
   if(e.key==='v'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus')&&!document.querySelector('.overlay.open')){
     e.preventDefault();showPage('videos');
   }
+  if(e.key==='f'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus')&&!document.querySelector('.overlay.open')){
+    e.preventDefault();showPage('finance');
+  }
   // M to toggle month view on overview
   if(e.key==='m'&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')){
     if(document.getElementById('mModal').classList.contains('open')){e.preventDefault();closeMod('mModal');return;}
@@ -1056,6 +1059,7 @@ function _showHelpOverlay(){
     ['⌘ ←/→','Switch between pages'],
     ['O','Go to Overview'],
     ['V','Go to Videos'],
+    ['F','Go to Finance'],
     ['N','Quick Add task (to current day)'],
     ['R','Reload page'],
     ['S','Sync all data'],

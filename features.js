@@ -1830,13 +1830,10 @@ function _finRenderInvestments(purchases,totalBought,gain,gainPct){
     <div class="fin-inv-split">`;
   // Left: metrics
   html+=`<div class="fin-inv-left">
-    <div class="fin-stats">
-      <div class="fin-stat-row"><span class="fin-stat-label">Gain</span><span class="fin-stat-val" style="color:#10b981;font-weight:600">${_finFmtRound(gain)}</span></div>
-      <div class="fin-stat-row"><span class="fin-stat-label"></span><span class="fin-stat-val" style="color:#10b981;font-size:11px;opacity:.7">${_finFmtPct(gainPct)}</span></div>
-      <div class="fin-stat-row"><span class="fin-stat-label">Cost Basis</span><span class="fin-stat-val">${_finFmtRound(totalBought)}</span></div>
-      <div class="fin-stat-row"><span class="fin-stat-label">Purchases</span><span class="fin-stat-val">${numPurchases}</span></div>
-      <div class="fin-stat-row"><span class="fin-stat-label">Avg Purchase</span><span class="fin-stat-val">${_finFmtRound(avgPurchase)}</span></div>
-      ${lastPurchase?`<div class="fin-stat-row"><span class="fin-stat-label">Last Purchase</span><span class="fin-stat-val" style="font-size:11px">${_finDateFmt(lastPurchase.date)}</span></div>`:''}
+    <div class="fin-inv-metrics">
+      <div class="fin-inv-metric-main" style="color:#10b981"><span style="font-size:20px;font-weight:700">${_finFmtRound(gain)}</span><span style="font-size:11px;font-weight:600;margin-left:6px;opacity:.7">${_finFmtPct(gainPct)}</span></div>
+      <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-secondary,#64748b);margin-top:2px">Total Gain</div>
+      <div style="margin-top:10px;font-size:11px;color:var(--text-secondary,#64748b)">Cost Basis <span style="font-weight:600;color:var(--text-primary,#334155)">${_finFmtRound(totalBought)}</span></div>
     </div>
   </div>`;
   // Right: purchase history (scrollable)
@@ -1912,7 +1909,7 @@ function _finRenderSubs(){
   let html=`<div class="card fin-card">
     <div class="fin-card-hdr"><span class="fin-card-title">Subscriptions</span><button class="fin-add-btn" onclick="addFinSub()" style="font-size:16px;padding:0 4px;line-height:1">+</button></div>
     <div class="fin-sub-scroll">
-    <table class="fin-tbl fin-sub-tbl"><colgroup><col class="fin-col-name"/><col class="fin-col-freq"/><col class="fin-col-due"/><col class="fin-col-amt"/><col class="fin-col-mo"/><col class="fin-col-del"/></colgroup><thead><tr><th>Name</th><th>Freq</th><th>Due</th><th>Amount</th><th>Per Month: ${_finFmtRound(monthlyTotal)}</th><th></th></tr></thead><tbody>`;
+    <table class="fin-tbl fin-sub-tbl"><colgroup><col class="fin-col-name"/><col class="fin-col-freq"/><col class="fin-col-due"/><col class="fin-col-amt"/><col class="fin-col-mo"/><col class="fin-col-del"/></colgroup><thead><tr><th>Name</th><th>Freq</th><th>Due</th><th>Amount</th><th style="white-space:nowrap"><span style="opacity:.6">Per Month:</span> <span style="font-size:12px;font-weight:600;font-variant-numeric:tabular-nums">${_finFmtRound(monthlyTotal)}</span></th><th></th></tr></thead><tbody>`;
   subs.forEach(sub=>{
     const dueDisplay=_finDueDisplay(sub.due_month,sub.due_day);
     const dueRaw=(sub.due_month&&sub.due_month>=1&&sub.due_month<=12?_FIN_MONTHS[sub.due_month-1]+' ':'')+(sub.due_day||'');
@@ -2076,7 +2073,9 @@ function _finChartHover(el){
   const tip=_finEnsureTip();
   document.querySelectorAll('tr[data-fin-date]').forEach(r=>r.classList.remove('fin-legend-hover'));
   if(!el){tip.style.display='none';return;}
-  tip.textContent=el.dataset.finTip;tip.style.display='block';
+  const parts=el.dataset.finTip.split(': ');
+  tip.innerHTML=`<div style="font-weight:600;font-size:12px">${parts[0]}</div><div style="font-size:11px;opacity:.7">${parts[1]||''}</div>`;
+  tip.style.display='block';
   const chart=el.closest('.fin-inv-chart');
   const cr=chart.getBoundingClientRect();
   const dotTop=parseFloat(el.dataset.finDotTop)/100*cr.height+cr.top;
