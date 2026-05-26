@@ -1682,7 +1682,7 @@ function openSB(){sbOpen=true;document.getElementById('sidebar').classList.remov
 // ══════════════════════════════════════════════════════════════════════════════
 // ── FINANCE PAGE ─────────────────────────────────────────────────────────────
 // ══════════════════════════════════════════════════════════════════════════════
-const _FIN_ACCT_COLORS_MAP={'vti':['#10b981','rgba(16,185,129,.45)'],'checking':['#60a5fa','rgba(96,165,250,.45)'],'rsus':['#a78bfa','rgba(167,139,250,.45)'],'rsu':['#a78bfa','rgba(167,139,250,.45)'],'cc points':['#ec4899','rgba(236,72,153,.45)'],'credit card':['#ec4899','rgba(236,72,153,.45)']};
+const _FIN_ACCT_COLORS_MAP={'vti':['#10b981','rgba(16,185,129,.45)'],'checking':['#60a5fa','rgba(96,165,250,.45)'],'rsus':['#ff00ff','rgba(255,0,255,.45)'],'rsu':['#ff00ff','rgba(255,0,255,.45)'],'cc points':['#ec4899','rgba(236,72,153,.45)'],'credit card':['#ec4899','rgba(236,72,153,.45)']};
 function _finAcctColor(name){return _FIN_ACCT_COLORS_MAP[(name||'').toLowerCase()]||null;}
 const _FIN_COLORS_FALLBACK=[['#2a9db5','rgba(42,157,181,.45)'],['#eab308','rgba(234,179,8,.45)'],['#38bdf8','rgba(56,189,248,.45)'],['#f97316','rgba(249,115,22,.45)'],['#65a30d','rgba(101,163,13,.45)']];
 function _finOf(type){return st.finance.filter(r=>r.type===type);}
