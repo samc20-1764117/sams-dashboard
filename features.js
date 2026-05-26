@@ -1786,8 +1786,8 @@ function _finRenderPersonal(accs,vtiAcc,currentVal,netWorth,totalAll){
       const dashLen=seg.pct*100;const gap=0.6;const dashOff=100-(seg.start*100);
       const adjLen=Math.max(dashLen-gap,0.1);
       const adjOff=dashOff-gap/2;
-      html+=`<circle cx="21" cy="21" r="15.9" fill="none" stroke="${seg.colorLight}" stroke-width="4.2" stroke-dasharray="${adjLen} ${100-adjLen}" stroke-dashoffset="${adjOff}" filter="url(#finGlass)"/>`;
-      html+=`<circle cx="21" cy="21" r="15.9" fill="none" stroke="transparent" stroke-width="5" stroke-dasharray="${adjLen} ${100-adjLen}" stroke-dashoffset="${adjOff}" style="pointer-events:stroke"><title>${seg.name}: ${_finFmtRound(seg.amt)} (${(seg.pct*100).toFixed(1)}%)</title></circle>`;
+      html+=`<circle cx="21" cy="21" r="15.9" fill="none" stroke="${seg.colorLight}" stroke-width="4.2" stroke-dasharray="${adjLen} ${100-adjLen}" stroke-dashoffset="${adjOff}" filter="url(#finGlass)" data-fin-seg="${seg.id}"/>`;
+      html+=`<circle cx="21" cy="21" r="15.9" fill="none" stroke="transparent" stroke-width="5" stroke-dasharray="${adjLen} ${100-adjLen}" stroke-dashoffset="${adjOff}" style="pointer-events:stroke" data-fin-seg="${seg.id}" data-fin-tip="${seg.name}: ${_finFmtRound(seg.amt)} (${(seg.pct*100).toFixed(1)}%)" onmouseenter="_finHover('${seg.id}')" onmouseleave="_finHover(null)"/>`;
     });
     html+=`</g></svg>`;
     html+=`<div class="fin-donut-center"><div class="fin-donut-label">Net Worth</div><div class="fin-donut-val">${_finFmtRound(netWorth)}</div>${hasExcluded?`<div style="font-size:9px;color:var(--text-secondary,#94a3b8)">All: ${_finFmtRound(totalAll)}</div>`:''}</div>`;
@@ -1800,7 +1800,7 @@ function _finRenderPersonal(accs,vtiAcc,currentVal,netWorth,totalAll){
     const color=a.exclude?'#cbd5e1':(seg?seg.color:(named?named[0]:'#cbd5e1'));
     const pctStr=seg?`${(seg.pct*100).toFixed(0)}%`:'';
     const excCls=a.exclude?' fin-legend-excluded':'';
-    html+=`<div class="fin-legend-row${excCls}">
+    html+=`<div class="fin-legend-row${excCls}" data-fin-id="${a.id}" onmouseenter="_finHover('${a.id}')" onmouseleave="_finHover(null)">
       <span class="fin-legend-dot" style="background:${color}"></span>
       <span class="fin-legend-name">${_finEditable(a.id,'name',a.name,'fin-legend-edit-name')}</span>
       <span class="fin-legend-amt">${_finEditable(a.id,'amount',a.amount||0,'fin-legend-edit-amt',true)}</span>
@@ -1857,28 +1857,27 @@ function _finRenderInvestments(purchases,totalBought,gain,gainPct){
     let cum=0;
     const dataPoints=chronological.map(p=>{cum+=Math.abs(p.amount||0);return{date:p.date,cum};});
     const max=Math.max(...dataPoints.map(d=>d.cum));
-    const w=400,h=130,padT=8,padB=18;
-    const ch=h-padB-padT;
-    const polyPts=dataPoints.map((d,i)=>`${(i/(dataPoints.length-1))*w},${padT+ch-(d.cum/max)*ch}`).join(' ');
+    const w=400,h=130,padT=8,padB=18,padL=12,padR=12;
+    const ch=h-padB-padT;const cw=w-padL-padR;
+    const polyPts=dataPoints.map((d,i)=>`${padL+(i/(dataPoints.length-1))*cw},${padT+ch-(d.cum/max)*ch}`).join(' ');
     const years=new Set();const yearLabels=[];
-    dataPoints.forEach((d,i)=>{const y=(d.date||'').slice(0,4);if(y&&!years.has(y)){years.add(y);yearLabels.push({x:(i/(dataPoints.length-1))*w,y:y});}});
+    dataPoints.forEach((d,i)=>{const y=(d.date||'').slice(0,4);if(y&&!years.has(y)){years.add(y);yearLabels.push({x:padL+(i/(dataPoints.length-1))*cw,y:y});}});
     const baseY=padT+ch;
     html+=`<div class="fin-inv-chart" style="position:relative">
       <svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" style="width:100%;height:100%;display:block">
       <defs><linearGradient id="finAreaGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#10b981" stop-opacity=".18"/><stop offset="100%" stop-color="#10b981" stop-opacity=".02"/></linearGradient></defs>
-      <polyline points="0,${baseY} ${polyPts} ${w},${baseY}" fill="url(#finAreaGrad)" stroke="none"/>
+      <polyline points="${padL},${baseY} ${polyPts} ${padL+cw},${baseY}" fill="url(#finAreaGrad)" stroke="none"/>
       <polyline points="${polyPts}" fill="none" stroke="#10b981" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>`;
     dataPoints.forEach((d,i)=>{
-      const x=(i/(dataPoints.length-1))*w;const y=padT+ch-(d.cum/max)*ch;
-      const pctX=(x/w*100).toFixed(2);const pctY=(y/h*100).toFixed(2);
+      const x=padL+(i/(dataPoints.length-1))*cw;const y=padT+ch-(d.cum/max)*ch;
       html+=`<circle cx="${x}" cy="${y}" r="3" fill="#10b981" opacity=".7" vector-effect="non-scaling-stroke"></circle>`;
     });
     html+=`</svg>`;
     // HTML dot overlays for reliable tooltips
     dataPoints.forEach((d,i)=>{
-      const pctX=(i/(dataPoints.length-1)*100).toFixed(2);
+      const pctX=((padL+(i/(dataPoints.length-1))*cw)/w*100).toFixed(2);
       const pctY=((padT+ch-(d.cum/max)*ch)/h*100).toFixed(2);
-      html+=`<span class="fin-chart-dot-hit" style="left:${pctX}%;top:${pctY}%" title="${d.date}: ${_finFmt(d.cum)}"></span>`;
+      html+=`<span class="fin-chart-dot-hit" style="left:${pctX}%;top:${pctY}%" data-fin-tip="${d.date}: ${_finFmt(d.cum)}" data-fin-chart-idx="${i}" onmouseenter="_finChartHover(this)" onmouseleave="_finChartHover(null)"></span>`;
     });
     // Year labels as HTML overlay so they don't stretch
     yearLabels.forEach(yl=>{
@@ -2050,6 +2049,31 @@ async function addFinRow(type){
   pushUndo(()=>{st.finance=st.finance.filter(r=>r.id!==row.id);renderFinancePage();},'Added '+(type==='vti'?'purchase':'account'));
   const sv=await sbReq('POST','finance',{...fields,sort_order:row.sort_order});
   if(sv&&sv[0]){const i=st.finance.findIndex(x=>x.id===row.id);if(i>-1)st.finance[i]=sv[0];}
+}
+
+// ── Finance hover interactions ──────────────────────────────────────────────
+let _finTip=null;
+function _finEnsureTip(){if(!_finTip){_finTip=document.createElement('div');_finTip.className='fin-tooltip';document.body.appendChild(_finTip);}return _finTip;}
+function _finHover(id){
+  document.querySelectorAll('.fin-legend-row').forEach(r=>r.classList.toggle('fin-legend-hover',id&&r.dataset.finId===id));
+  document.querySelectorAll('[data-fin-seg]').forEach(c=>{
+    if(!id){c.style.opacity='';return;}
+    c.style.opacity=c.dataset.finSeg===id?'1':'0.3';
+  });
+  if(!id&&_finTip)_finTip.style.display='none';
+  if(id){
+    const hit=document.querySelector(`[data-fin-seg="${id}"][data-fin-tip]`);
+    if(hit){const tip=_finEnsureTip();tip.textContent=hit.dataset.finTip;tip.style.display='block';
+      const r=hit.closest('.fin-donut-wrap').getBoundingClientRect();
+      tip.style.left=r.left+r.width/2-tip.offsetWidth/2+'px';tip.style.top=r.top-tip.offsetHeight-6+'px';}
+  }
+}
+function _finChartHover(el){
+  const tip=_finEnsureTip();
+  if(!el){tip.style.display='none';return;}
+  tip.textContent=el.dataset.finTip;tip.style.display='block';
+  const r=el.getBoundingClientRect();
+  tip.style.left=r.left+r.width/2-tip.offsetWidth/2+'px';tip.style.top=r.top-tip.offsetHeight-6+'px';
 }
 
 async function _finToggleExclude(id){
