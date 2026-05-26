@@ -4083,7 +4083,8 @@ function drawTBBlock(col,b){
   if(b._vidId&&b.dur>=60){
     const _vb=(st.videos||[]).find(x=>String(x.id)===String(b._vidId));
     if(_vb){const _steps=typeof VID_STEPS!=='undefined'?VID_STEPS:[];const _app=_steps.filter(s=>_vb[s]!=='na');
-      _vidStepsHtml=`<div class="tb-vid-steps" style="display:flex;align-items:flex-end;gap:6px;padding:4px 8px 6px;flex-wrap:wrap;flex:1">${_app.map(s=>`<div class="vid-step-dot tb-vsd${_vb[s]==='done'?' done':''}" data-vid="${b._vidId}" data-step="${s}" title="${(typeof VID_STEP_LABELS!=='undefined'?VID_STEP_LABELS[s]:s)}" style="width:10px;height:10px;cursor:pointer"></div>`).join('')}</div>`;
+      const _lbls=typeof VID_STEP_LABELS!=='undefined'?VID_STEP_LABELS:{};
+      _vidStepsHtml=`<div class="tb-vid-steps" style="display:flex;align-items:flex-end;gap:4px;padding:4px 8px 6px;flex-wrap:wrap;flex:1">${_app.map(s=>{const _dn=_vb[s]==='done';const _ltr=(_lbls[s]||s).charAt(0).toUpperCase();return`<div class="vid-step-dot tb-vsd${_dn?' done':''}" data-vid="${b._vidId}" data-step="${s}" title="${_lbls[s]||s}" style="width:13px;height:13px;cursor:pointer;border-radius:2px;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;line-height:1">${_dn?'':_ltr}</div>`;}).join('')}</div>`;
       _vidWhiteBg=true;
     }
   }
