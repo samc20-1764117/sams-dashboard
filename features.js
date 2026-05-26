@@ -74,17 +74,17 @@ async function submitQA(){
   const notes=document.getElementById('qaNotes')?.value.trim()||null;
   let ds=due;
   if(!ds){if(qaCtx==='today')ds=d2s(getDayDate(dayOff));else if(qaCtx==='week')ds=d2s(getWkDates(wkOff)[0]);else if(qaCtx==='wkc')ds=qaDsTarget||null;else ds=null;}
-  // Parse @time from name (e.g. @1:30pm, @2pm, @10am)
-  const _timeRx=/@(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i;
+  // Parse @time or @time-time range from name (e.g. @1:30pm, @2pm, @3:30-6pm, @3-5pm)
+  const _timeRx=/@(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\s*(?:-\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?)?/i;
   const _tm=n.match(_timeRx);
-  let _smAt=null;
-  if(_tm){let h=parseInt(_tm[1]),mm=parseInt(_tm[2]||'0');const ap=(_tm[3]||'').toLowerCase();if(ap==='pm'&&h!==12)h+=12;else if(ap==='am'&&h===12)h=0;else if(!ap&&h>=1&&h<=8)h+=12;_smAt=h*60+mm;}
+  let _smAt=null,_durAt=null;
+  if(_tm){const _endAp=(_tm[6]||'').toLowerCase();const _startAp=(_tm[3]||_tm[6]||'').toLowerCase();let h=parseInt(_tm[1]),mm=parseInt(_tm[2]||'0');if(_startAp==='pm'&&h!==12)h+=12;else if(_startAp==='am'&&h===12)h=0;else if(!_startAp&&h>=1&&h<=8)h+=12;_smAt=h*60+mm;if(_tm[4]){let eh=parseInt(_tm[4]),emm=parseInt(_tm[5]||'0');if(_endAp==='pm'&&eh!==12)eh+=12;else if(_endAp==='am'&&eh===12)eh=0;else if(!_endAp&&eh>=1&&eh<=8)eh+=12;const endSm=eh*60+emm;if(endSm>_smAt)_durAt=endSm-_smAt;}}
   if(_smAt!==null&&!ds)ds=d2s(getDayDate(dayOff));
   const taskName=n;
   const _adQA=(c)=>{const lc=(c||'').toLowerCase();if(lc==='social')return 180;if(lc==='work'||lc==='my work'||lc==='recurring')return 60;return 30;};
   const t={id:'l-'+Date.now(),name:taskName,category:cat,due_date:ds,done:false,important:imp,notes:notes||null};
   let _blk=null;
-  if(_smAt!==null&&ds){_blk={id:crypto.randomUUID(),title:taskName,ds,sm:_smAt,dur:_adQA(cat),cat,taskId:String(t.id)};st.blocks.push(_blk);}
+  if(_smAt!==null&&ds){_blk={id:crypto.randomUUID(),title:taskName,ds,sm:_smAt,dur:_durAt||_adQA(cat),cat,taskId:String(t.id)};st.blocks.push(_blk);}
   st.tasks.push(t);save();renderAll();if(_blk&&document.getElementById('tbGrid'))renderDayTB();
   let taskServerId=null;
   pushUndo(()=>{const rid=taskServerId||t.id;st.tasks=st.tasks.filter(x=>String(x.id)!==String(rid));if(_blk)st.blocks=st.blocks.filter(b=>b.id!==_blk.id);renderAll();if(taskServerId)sbReq('DELETE','tasks',null,`?id=eq.${taskServerId}`);if(_blk)sbDeleteBlock(_blk.id);},'Added task');
@@ -213,15 +213,15 @@ async function saveTModal(){
       if(oldDs){const blksToKill=st.blocks.filter(b=>String(b.taskId)===stid&&b.ds===oldDs);blksToKill.forEach(b=>sbDeleteBlock(b.id));st.blocks=st.blocks.filter(b=>!(String(b.taskId)===stid&&b.ds===oldDs));}
     }
     t.due_date=d;
-    // Parse @time from name (e.g. @1:30pm, @2pm, @10am)
-    const _timeRx=/@(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i;
+    // Parse @time or @time-time range from name (e.g. @1:30pm, @2pm, @3:30-6pm)
+    const _timeRx=/@(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\s*(?:-\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?)?/i;
     const _tmMatch=n.match(_timeRx);
-    let _smFromName=null;
-    if(_tmMatch){let h=parseInt(_tmMatch[1]),mm=parseInt(_tmMatch[2]||'0');const ap=(_tmMatch[3]||'').toLowerCase();if(ap==='pm'&&h!==12)h+=12;else if(ap==='am'&&h===12)h=0;else if(!ap&&h>=1&&h<=8)h+=12;_smFromName=h*60+mm;}
+    let _smFromName=null,_durFromName=null;
+    if(_tmMatch){const _endAp=(_tmMatch[6]||'').toLowerCase();const _startAp=(_tmMatch[3]||_tmMatch[6]||'').toLowerCase();let h=parseInt(_tmMatch[1]),mm=parseInt(_tmMatch[2]||'0');if(_startAp==='pm'&&h!==12)h+=12;else if(_startAp==='am'&&h===12)h=0;else if(!_startAp&&h>=1&&h<=8)h+=12;_smFromName=h*60+mm;if(_tmMatch[4]){let eh=parseInt(_tmMatch[4]),emm=parseInt(_tmMatch[5]||'0');if(_endAp==='pm'&&eh!==12)eh+=12;else if(_endAp==='am'&&eh===12)eh=0;else if(!_endAp&&eh>=1&&eh<=8)eh+=12;const endSm=eh*60+emm;if(endSm>_smFromName)_durFromName=endSm-_smFromName;}}
     // Handle time block from @time in name or tTime field
     const _ttVal=document.getElementById('tTime')?.value;
     const _ttEndVal=document.getElementById('tTimeEnd')?.value;
-    const _parseDur=(startSm,endVal,cat)=>{if(endVal){const em=parseInt(endVal.split(':')[0])*60+parseInt(endVal.split(':')[1]);if(em>startSm)return em-startSm;}return _adT(cat);};
+    const _parseDur=(startSm,endVal,cat)=>{if(endVal){const em=parseInt(endVal.split(':')[0])*60+parseInt(endVal.split(':')[1]);if(em>startSm)return em-startSm;}if(_durFromName)return _durFromName;return _adT(cat);};
     if(_smFromName!==null&&!d){d=d2s(getDayDate(dayOff));t.due_date=d;}
     if(d){const _ttDs=d;const _existBlk=st.blocks.find(b=>String(b.taskId)===stid&&b.ds===_ttDs);const _ttSmExplicit=_ttVal?parseInt(_ttVal.split(':')[0])*60+parseInt(_ttVal.split(':')[1]):null;const _ttSm=_ttSmExplicit!==null?_ttSmExplicit:(!_existBlk&&_smFromName!==null?_smFromName:null);if(_ttSm!==null){const _dur=_parseDur(_ttSm,_ttEndVal,c);if(_existBlk){_existBlk.sm=_ttSm;_existBlk.dur=_dur;_existBlk.title=n;_existBlk.cat=c;sbSaveBlock(_existBlk);}else{const _nb={id:crypto.randomUUID(),title:n,ds:_ttDs,sm:_ttSm,dur:_dur,cat:c,taskId:stid};st.blocks.push(_nb);sbSaveBlock(_nb);}}else if(_existBlk){_existBlk.title=n;_existBlk.cat=c;sbSaveBlock(_existBlk);}}
     renderAll();if(document.getElementById('tbGrid'))renderDayTB();

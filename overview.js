@@ -1252,11 +1252,11 @@ function renderWkCal(){
           localOverrides[String(x.t.id)]={due_date:ds};pendingLocal.add(String(x.t.id));
           removeTBBlocksForDate(ds,{taskId:x.t.id,oldDs:prevDs});
           // Auto-create timeblock on new day if task had one or has @time in name
-          const _timeRx=/@(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i;
+          const _timeRx=/@(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\s*(?:-\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?)?/i;
           const _tmM=x.t.name.match(_timeRx);
           let _newSm=null,_newDur=null;
           if(x.savedTBs.length){_newSm=x.savedTBs[0].sm;_newDur=x.savedTBs[0].dur;}
-          else if(_tmM){let h=parseInt(_tmM[1]),mm=parseInt(_tmM[2]||'0');const ap=(_tmM[3]||'').toLowerCase();if(ap==='pm'&&h!==12)h+=12;else if(ap==='am'&&h===12)h=0;else if(!ap&&h>=1&&h<=8)h+=12;_newSm=h*60+mm;const lc=(x.t.category||'').toLowerCase();_newDur=lc==='social'?180:lc==='work'||lc==='my work'||lc==='recurring'?60:30;}
+          else if(_tmM){const _eAp=(_tmM[6]||'').toLowerCase();const _sAp=(_tmM[3]||_tmM[6]||'').toLowerCase();let h=parseInt(_tmM[1]),mm=parseInt(_tmM[2]||'0');if(_sAp==='pm'&&h!==12)h+=12;else if(_sAp==='am'&&h===12)h=0;else if(!_sAp&&h>=1&&h<=8)h+=12;_newSm=h*60+mm;if(_tmM[4]){let eh=parseInt(_tmM[4]),emm=parseInt(_tmM[5]||'0');if(_eAp==='pm'&&eh!==12)eh+=12;else if(_eAp==='am'&&eh===12)eh=0;else if(!_eAp&&eh>=1&&eh<=8)eh+=12;const endSm=eh*60+emm;if(endSm>_newSm)_newDur=endSm-_newSm;}if(!_newDur){const lc=(x.t.category||'').toLowerCase();_newDur=lc==='social'?180:lc==='work'||lc==='my work'||lc==='recurring'?60:30;}}
           if(_newSm!==null){const _nb={id:crypto.randomUUID(),title:x.t.name,ds,sm:_newSm,dur:_newDur,cat:x.t.category||'',taskId:String(x.t.id)};st.blocks.push(_nb);sbSaveBlock(_nb);}
         });
         dragId=null;save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
