@@ -1750,10 +1750,10 @@ function _finRenderPersonal(accs,vtiAcc,currentVal,netWorth,totalAll){
   const hasExcluded=excluded.length>0;
 
   let html=`<div class="card fin-card fin-personal-card">
-    <div class="fin-card-hdr"><span class="fin-card-title">Personal Finances</span><button class="fin-add-btn" onclick="addFinRow('account')" style="font-size:16px;padding:0 4px;line-height:1">+</button></div>
     <div class="fin-hero">
       <div class="fin-kpi-stack">
         <div class="fin-kpi fin-kpi-nw"><div class="fin-kpi-label">Net Worth</div><div class="fin-kpi-val fin-kpi-val-lg">${_finFmtRound(netWorth)}</div>${hasExcluded?`<div class="fin-kpi-sub-muted">All: ${_finFmtRound(totalAll)}</div>`:''}</div>
+        <button class="fin-add-btn" onclick="addFinRow('account')" style="font-size:14px;padding:2px 6px;line-height:1;align-self:flex-start">+ Add</button>
       </div>`;
   // Donut in hero row (right of KPIs)
   let cum=0;
@@ -1814,43 +1814,22 @@ function _finRenderInvestments(purchases,totalBought,gain,gainPct){
   const lastPurchase=sorted.length?sorted[0]:null;
 
   let html=`<div class="card fin-card fin-inv-card">
-    <div class="fin-card-hdr"><span class="fin-card-title">Investments</span></div>
+    <div class="fin-card-hdr"><span class="fin-card-title">Investments</span><button class="fin-add-btn" onclick="addFinRow('vti')" style="font-size:16px;padding:0 4px;line-height:1">+</button></div>
     <div class="fin-inv-split">`;
-  // Left: metrics + chart
+  // Left: metrics
   html+=`<div class="fin-inv-left">
     <div class="fin-stats">
-      <div class="fin-stat-row"><span class="fin-stat-label">Gain</span><span class="fin-stat-val" style="color:#10b981;font-weight:600">${_finN(gain,90)} <span style="font-size:10px;opacity:.7">${_finFmtPct(gainPct)}</span></span></div>
+      <div class="fin-stat-row"><span class="fin-stat-label">Gain</span><span class="fin-stat-val" style="color:#10b981;font-weight:600">${_finN(gain,90)}</span></div>
+      <div class="fin-stat-row"><span class="fin-stat-label"></span><span class="fin-stat-val" style="color:#10b981;font-size:11px;opacity:.7">${_finFmtPct(gainPct)}</span></div>
       <div class="fin-stat-row"><span class="fin-stat-label">Cost Basis</span><span class="fin-stat-val">${_finN(totalBought,90)}</span></div>
       <div class="fin-stat-row"><span class="fin-stat-label">Purchases</span><span class="fin-stat-val">${numPurchases}</span></div>
       <div class="fin-stat-row"><span class="fin-stat-label">Avg Purchase</span><span class="fin-stat-val">${_finN(avgPurchase,90)}</span></div>
       ${lastPurchase?`<div class="fin-stat-row"><span class="fin-stat-label">Last Purchase</span><span class="fin-stat-val" style="font-size:11px">${_finDateFmt(lastPurchase.date)}</span></div>`:''}
-    </div>`;
-  if(chronological.length>1){
-    let cum=0;
-    const dataPoints=chronological.map(p=>{cum+=Math.abs(p.amount||0);return{date:p.date,cum};});
-    const max=Math.max(...dataPoints.map(d=>d.cum));
-    const w=200,h=90,padB=18;
-    const ch=h-padB;
-    const polyPts=dataPoints.map((d,i)=>`${(i/(dataPoints.length-1))*w},${ch-(d.cum/max)*ch}`).join(' ');
-    const years=new Set();const yearLabels=[];
-    dataPoints.forEach((d,i)=>{const y=(d.date||'').slice(0,4);if(y&&!years.has(y)){years.add(y);yearLabels.push({x:(i/(dataPoints.length-1))*w,y:y});}});
-    html+=`<div style="padding:8px 8px 4px"><svg viewBox="0 0 ${w} ${h}" style="width:100%;height:120px" preserveAspectRatio="xMidYMid meet">
-      <polyline points="0,${ch} ${polyPts} ${w},${ch}" fill="rgba(34,197,94,.06)" stroke="none"/>
-      <polyline points="${polyPts}" fill="none" stroke="#22c55e" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>`;
-    dataPoints.forEach((d,i)=>{
-      const x=(i/(dataPoints.length-1))*w;const y=ch-(d.cum/max)*ch;
-      html+=`<circle cx="${x}" cy="${y}" r="2.5" fill="#22c55e" opacity="0" class="fin-chart-dot"><title>${d.date}: ${_finFmt(d.cum)}</title></circle>`;
-      html+=`<circle cx="${x}" cy="${y}" r="8" fill="transparent" class="fin-chart-hit" onmouseenter="this.previousElementSibling.setAttribute('opacity','1')" onmouseleave="this.previousElementSibling.setAttribute('opacity','0')"><title>${d.date}: ${_finFmt(d.cum)}</title></circle>`;
-    });
-    yearLabels.forEach(yl=>{
-      html+=`<text x="${yl.x}" y="${h-2}" fill="var(--text-secondary,#94a3b8)" font-size="7" font-weight="600" font-family="system-ui">${yl.y}</text>`;
-    });
-    html+=`</svg></div>`;
-  }
-  html+=`</div>`;
-  // Right: purchase history line items
+    </div>
+  </div>`;
+  // Right: purchase history (scrollable)
   html+=`<div class="fin-inv-right">
-    <div class="fin-inv-right-hdr"><span>Purchase History</span><button class="fin-add-btn" onclick="addFinRow('vti')" style="font-size:14px;padding:0 4px;line-height:1">+</button></div>
+    <div class="fin-inv-right-hdr"><span>Purchase History</span></div>
     <div class="fin-inv-scroll">
     <table class="fin-tbl"><tbody>`;
   sorted.forEach(p=>{
@@ -1861,7 +1840,31 @@ function _finRenderInvestments(purchases,totalBought,gain,gainPct){
     </tr>`;
   });
   html+=`</tbody></table></div></div>`;
-  html+=`</div></div>`;
+  html+=`</div>`;
+  // Full-width area chart below
+  if(chronological.length>1){
+    let cum=0;
+    const dataPoints=chronological.map(p=>{cum+=Math.abs(p.amount||0);return{date:p.date,cum};});
+    const max=Math.max(...dataPoints.map(d=>d.cum));
+    const w=400,h=120,padB=18;
+    const ch=h-padB;
+    const polyPts=dataPoints.map((d,i)=>`${(i/(dataPoints.length-1))*w},${ch-(d.cum/max)*ch}`).join(' ');
+    const years=new Set();const yearLabels=[];
+    dataPoints.forEach((d,i)=>{const y=(d.date||'').slice(0,4);if(y&&!years.has(y)){years.add(y);yearLabels.push({x:(i/(dataPoints.length-1))*w,y:y});}});
+    html+=`<div class="fin-inv-chart"><svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+      <polyline points="0,${ch} ${polyPts} ${w},${ch}" fill="rgba(34,197,94,.08)" stroke="none"/>
+      <polyline points="${polyPts}" fill="none" stroke="#22c55e" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+    dataPoints.forEach((d,i)=>{
+      const x=(i/(dataPoints.length-1))*w;const y=ch-(d.cum/max)*ch;
+      html+=`<circle cx="${x}" cy="${y}" r="3" fill="#22c55e" opacity=".7"><title>${d.date}: ${_finFmt(d.cum)}</title></circle>`;
+      html+=`<circle cx="${x}" cy="${y}" r="10" fill="transparent" class="fin-chart-hit" onmouseenter="this.previousElementSibling.setAttribute('opacity','1');this.previousElementSibling.setAttribute('r','4.5')" onmouseleave="this.previousElementSibling.setAttribute('opacity','.7');this.previousElementSibling.setAttribute('r','3')"><title>${d.date}: ${_finFmt(d.cum)}</title></circle>`;
+    });
+    yearLabels.forEach(yl=>{
+      html+=`<text x="${yl.x}" y="${h-2}" fill="var(--text-secondary,#94a3b8)" font-size="9" font-weight="600" font-family="system-ui">${yl.y}</text>`;
+    });
+    html+=`</svg></div>`;
+  }
+  html+=`</div>`;
   return html;
 }
 
