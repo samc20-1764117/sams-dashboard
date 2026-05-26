@@ -1125,15 +1125,14 @@ body.dark .vid-stat-card{background:rgba(40,30,50,.4)}
 .ban-pack-inline:hover{background:rgba(255,255,255,.95)}
 
 /* ── Finance Page ─────────────────────────────────────────────────────────── */
-.fin-layout{display:flex;flex-direction:column;gap:16px;flex:1;min-height:0}
-.fin-top{display:flex;gap:16px;align-items:stretch}
-.fin-bottom{display:flex;gap:16px;flex:1;min-height:0}
-.fin-bottom-left{flex:1;min-width:0;display:flex;flex-direction:column}
-.fin-bottom-right{flex:1;min-width:0;display:flex;flex-direction:column}
-.fin-bottom-left .fin-card,.fin-bottom-right .fin-card{flex:1;opacity:.85}
-.fin-top .fin-card{opacity:1}
-.fin-kpi-stack{display:flex;flex-direction:column;gap:12px;min-width:200px;flex-shrink:0}
-.fin-kpi{padding:16px 18px;border-radius:12px;background:rgba(100,100,140,.05);border:1px solid rgba(200,200,215,.12)}
+.fin-layout{display:flex;gap:16px;flex:1;min-height:0}
+.fin-left{flex:1;min-width:0;display:flex;flex-direction:column;gap:16px}
+.fin-right{flex:1;min-width:0;display:flex;flex-direction:column}
+.fin-right .fin-card{flex:1;opacity:.88}
+.fin-left .fin-inv-card{opacity:.88;flex:1;min-height:0}
+.fin-personal-card{opacity:1!important}
+.fin-kpi-row{display:flex;gap:12px;padding:0 16px 4px}
+.fin-kpi{padding:12px 14px;border-radius:10px;background:rgba(100,100,140,.04);border:1px solid rgba(200,200,215,.1);flex:1}
 .fin-kpi-label{font-size:11px;font-weight:500;color:var(--text-secondary,#94a3b8);margin-bottom:4px}
 .fin-kpi-val{font-size:22px;font-weight:700;color:var(--text-primary,#334155);font-variant-numeric:tabular-nums}
 .fin-kpi-primary{background:rgba(100,100,140,.06)}
@@ -1158,7 +1157,7 @@ body.dark .vid-stat-card{background:rgba(40,30,50,.4)}
 .fin-row:hover .delbtn,.fin-legend-row:hover .delbtn{opacity:1}
 .fin-name{font-weight:500}
 .fin-stats{padding:4px 16px 8px}
-.fin-bottom-right .fin-stats{padding:4px 30px 8px 16px}
+.fin-right .fin-stats{padding:4px 30px 8px 16px}
 .fin-stat-row{display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:12px;border-bottom:1px solid rgba(200,200,215,.06)}
 .fin-stat-label{color:var(--text-secondary,#64748b);font-weight:500}
 .fin-stat-val{font-weight:600;font-variant-numeric:tabular-nums;color:var(--text-primary,#334155)}
@@ -1186,7 +1185,7 @@ body.dark .vid-stat-card{background:rgba(40,30,50,.4)}
 .fin-cancel{background:rgba(239,68,68,.04)!important}
 .fin-cancel .fin-name{text-decoration:line-through;opacity:.5}
 .fin-cancel .fin-amt,.fin-cancel .fin-freq-sel{opacity:.5}
-.fin-due-edit{min-width:24px;text-align:center;font-size:11px;color:var(--text-secondary,#64748b)}
+.fin-due-edit{min-width:36px;text-align:center;font-size:11px;color:var(--text-secondary,#64748b);white-space:nowrap}
 .fin-chart-wrap{display:flex;align-items:flex-start;gap:16px;padding:8px 16px 12px}
 .fin-donut{width:100px;height:100px;flex-shrink:0;transform:rotate(-90deg)}
 .fin-chart-legend{flex:1;min-width:0}

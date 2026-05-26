@@ -1683,22 +1683,14 @@ function renderFinancePage(){
   const gainPct=totalBought?((gain/totalBought)*100):0;
 
   let html=`<div class="fin-layout">`;
-  // Top row: KPIs stacked + Personal Finances
-  html+=`<div class="fin-top">`;
-  html+=`<div class="fin-kpi-stack">
-    <div class="fin-kpi fin-kpi-primary"><div class="fin-kpi-label">Net Worth</div><div class="fin-kpi-val">${_finFmt(netWorth)}</div></div>
-    <div class="fin-kpi fin-kpi-gain"><div class="fin-kpi-label">VTI Gain</div><div class="fin-kpi-val">${_finFmt(gain)}</div><div class="fin-kpi-sub">${_finFmtPct(gainPct)}</div></div>
-  </div>`;
-  html+=_finRenderPersonal(accs,vtiAcc,currentVal);
-  html+=`</div>`;
-  // Bottom row: Investments + Subscriptions
-  html+=`<div class="fin-bottom">`;
-  html+=`<div class="fin-bottom-left">`;
+  // Left column: Personal Finances (with KPIs inside) + Investments below
+  html+=`<div class="fin-left">`;
+  html+=_finRenderPersonal(accs,vtiAcc,currentVal,netWorth,gain,gainPct);
   html+=_finRenderInvestments(purchases,totalBought);
   html+=`</div>`;
-  html+=`<div class="fin-bottom-right">`;
+  // Right column: Subscriptions (full height)
+  html+=`<div class="fin-right">`;
   html+=_finRenderSubs();
-  html+=`</div>`;
   html+=`</div>`;
   html+=`</div>`;
   el.innerHTML=html;
@@ -1722,14 +1714,18 @@ function _finEditable(id,field,val,cls){
   return`<span class="fin-edit ${cls||''}" contenteditable="true" data-fid="${id}" data-field="${field}" onfocus="if(this.dataset.field!=='name'){this.textContent='${raw}';}" onblur="_finEditField('${id}','${field}',this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">${display}</span>`;
 }
 
-// ── Left Top: Personal Finances (donut + editable legend) ───────────────────
-function _finRenderPersonal(accs,vtiAcc,currentVal){
+// ── Left Top: Personal Finances (KPIs + donut + editable legend) ────────────
+function _finRenderPersonal(accs,vtiAcc,currentVal,netWorth,gain,gainPct){
   const allAccs=[...accs].sort((a,b)=>(b.amount||0)-(a.amount||0));
   const chartItems=[...accs.filter(a=>(a.amount||0)>0)].sort((a,b)=>(b.amount||0)-(a.amount||0));
   const total=chartItems.reduce((s,a)=>s+(a.amount||0),0);
 
-  let html=`<div class="card fin-card">
-    <div class="fin-card-hdr"><span class="fin-card-title">Personal Finances</span><button class="fin-add-btn" onclick="addFinRow('account')" style="font-size:16px;padding:0 4px;line-height:1">+</button></div>`;
+  let html=`<div class="card fin-card fin-personal-card">
+    <div class="fin-card-hdr"><span class="fin-card-title">Personal Finances</span><button class="fin-add-btn" onclick="addFinRow('account')" style="font-size:16px;padding:0 4px;line-height:1">+</button></div>
+    <div class="fin-kpi-row">
+      <div class="fin-kpi fin-kpi-primary"><div class="fin-kpi-label">Net Worth</div><div class="fin-kpi-val">${_finFmt(netWorth)}</div></div>
+      <div class="fin-kpi fin-kpi-gain"><div class="fin-kpi-label">VTI Gain</div><div class="fin-kpi-val">${_finFmt(gain)}</div><div class="fin-kpi-sub">${_finFmtPct(gainPct)}</div></div>
+    </div>`;
   // Donut + legend with inline editing
   let cum=0;
   const segs=total>0?chartItems.map((a,i)=>{
@@ -1769,7 +1765,7 @@ function _finRenderInvestments(purchases,totalBought){
   const sorted=[...purchases].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
   const chronological=[...purchases].sort((a,b)=>(a.date||'').localeCompare(b.date||''));
 
-  let html=`<div class="card fin-card">
+  let html=`<div class="card fin-card fin-inv-card">
     <div class="fin-card-hdr"><span class="fin-card-title">Investments</span></div>
     <div class="fin-inv-split">`;
   // Left: metrics + chart
@@ -1838,7 +1834,9 @@ function _finRenderSubs(){
     <div class="fin-sub-scroll">
     <table class="fin-tbl fin-sub-tbl"><thead><tr><th>Name</th><th>Freq</th><th>Due</th><th style="text-align:right">Amount</th><th></th></tr></thead><tbody>`;
   subs.forEach(sub=>{
-    const dayStr=sub.due_day?_finOrdinal(sub.due_day):'—';
+    const isMonthly=!sub.frequency||sub.frequency==='monthly'||sub.frequency==='weekly';
+    const dueDisplay=_finDueDisplay(sub.due_month,sub.due_day);
+    const dueRaw=isMonthly?(sub.due_day||''):((sub.due_month?_FIN_MONTHS[sub.due_month-1]+' ':'')+( sub.due_day||''));
     html+=`<tr class="fin-row fin-sub-row${sub.cancel?' fin-cancel':''}">
       <td>
         <span class="fin-sub-name-wrap">
@@ -1847,7 +1845,7 @@ function _finRenderSubs(){
         </span>
       </td>
       <td>${_finFreqSelect(sub.id,sub.frequency||'monthly')}</td>
-      <td><span class="fin-sub-plain fin-due-edit" contenteditable="true" data-fid="${sub.id}" data-field="due_day" onfocus="this.textContent='${sub.due_day||''}';" onblur="_finSubEditDay('${sub.id}',this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">${dayStr}</span></td>
+      <td><span class="fin-sub-plain fin-due-edit" contenteditable="true" data-fid="${sub.id}" data-field="due_day" onfocus="this.textContent='${dueRaw}';" onblur="_finSubEditDay('${sub.id}',this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">${dueDisplay}</span></td>
       <td class="fin-amt fin-num">${_finSubEditable(sub.id,'amount',sub.amount||0,'fin-sub-plain')}</td>
       <td><button class="delbtn" onclick="delFinSub('${sub.id}')">&#x2715;</button></td>
     </tr>`;
@@ -1857,6 +1855,24 @@ function _finRenderSubs(){
 }
 
 function _finOrdinal(n){const s=['th','st','nd','rd'];const v=n%100;return n+(s[(v-20)%10]||s[v]||s[0]);}
+const _FIN_MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function _finDueDisplay(month,day){
+  if(!day&&!month)return'—';
+  let s='';
+  if(month&&month>=1&&month<=12)s+=_FIN_MONTHS[month-1]+' ';
+  if(day)s+=_finOrdinal(day);
+  return s.trim()||'—';
+}
+function _finParseDue(raw){
+  const t=raw.trim();if(!t)return{due_month:null,due_day:null};
+  const m=t.match(/^([a-zA-Z]+)\s*(\d+)/);
+  if(m){
+    const mi=_FIN_MONTHS.findIndex(x=>x.toLowerCase()===m[1].slice(0,3).toLowerCase());
+    return{due_month:mi>=0?mi+1:null,due_day:parseInt(m[2],10)||null};
+  }
+  const d=parseInt(t,10);
+  return{due_month:null,due_day:d||null};
+}
 
 function _finSubEditable(id,field,val,cls){
   const display=typeof val==='number'?_finFmt(val):escHtml(val||'');
@@ -1876,13 +1892,13 @@ async function _finSubEditField(id,field,el){
 
 async function _finSubEditDay(id,el){
   const row=st.finSubs.find(r=>String(r.id)===String(id));if(!row)return;
-  const raw=el.textContent.trim();
-  const val=raw?parseInt(raw,10)||null:null;
-  if(row.due_day===val){renderFinancePage();return;}
-  const old=row.due_day;row.due_day=val;
+  const parsed=_finParseDue(el.textContent);
+  if(row.due_day===parsed.due_day&&row.due_month===parsed.due_month){renderFinancePage();return;}
+  const oldDay=row.due_day,oldMonth=row.due_month;
+  row.due_day=parsed.due_day;row.due_month=parsed.due_month;
   renderFinancePage();
-  pushUndo(()=>{row.due_day=old;renderFinancePage();if(!String(id).startsWith('l-'))sbReqNullable('PATCH','finance_subs',{due_day:old},`?id=eq.${id}`);},'Edited due day');
-  if(!String(id).startsWith('l-'))await sbReqNullable('PATCH','finance_subs',{due_day:val},`?id=eq.${id}`);
+  pushUndo(()=>{row.due_day=oldDay;row.due_month=oldMonth;renderFinancePage();if(!String(id).startsWith('l-'))sbReqNullable('PATCH','finance_subs',{due_day:oldDay,due_month:oldMonth},`?id=eq.${id}`);},'Edited due date');
+  if(!String(id).startsWith('l-'))await sbReqNullable('PATCH','finance_subs',{due_day:parsed.due_day,due_month:parsed.due_month},`?id=eq.${id}`);
 }
 
 function _finFreqSelect(id,val){
@@ -1912,7 +1928,7 @@ async function toggleFinSubCancel(id){
 
 async function addFinSub(){
   const snap=_finSnap();
-  const row={id:'l-'+Date.now(),name:'New Sub',amount:0,frequency:'monthly',due_day:null,cancel:false,sort_order:0};
+  const row={id:'l-'+Date.now(),name:'New Sub',amount:0,frequency:'monthly',due_day:null,due_month:null,cancel:false,sort_order:0};
   st.finSubs.unshift(row);renderFinancePage();
   _finFocusNew(row.id,'name');
   pushUndo(()=>{st.finSubs=st.finSubs.filter(r=>r.id!==row.id);renderFinancePage();},'Added subscription');
