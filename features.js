@@ -841,16 +841,21 @@ function renderMoCal(){
     const wkMonDs=d2s(wkMon);
     const wkEndDate=new Date(wkMon);wkEndDate.setDate(wkMon.getDate()+6);const wkEndDs=d2s(wkEndDate);
     const goalTasks=st.tasks.filter(t=>t.category==='Weekly Goals'&&t.due_date&&t.due_date.split('T')[0]>=wkMonDs&&t.due_date.split('T')[0]<=wkEndDs).sort((a,b)=>{const aI=a.important&&!a.done?0:1,bI=b.important&&!b.done?0:1;if(aI!==bI)return aI-bI;return(a.goal_order??9999)-(b.goal_order??9999);});
+    // Carried-over overdue goals from past weeks (current week only)
+    const _moIsCurWk=(wkMonDs<=today&&wkEndDs>=today);
+    const _moOvGoals=_moIsCurWk?st.tasks.filter(t=>t.category==='Weekly Goals'&&!t.done&&t.due_date&&t.due_date.split('T')[0]<wkMonDs):[];
+    const _allGoalTasks=[..._moOvGoals,...goalTasks];
     const goalsCell=document.createElement('div');goalsCell.className='mcell mo-goals-cell';goalsCell.dataset.wkmon=wkMonDs;
     const gBody=document.createElement('div');gBody.className='mcell-body';
     const _gCellH=Math.max(70,(window.innerHeight*0.94-100)/4-4);
     const _gAvailH=_gCellH-4;
-    const _gMaxVis=goalTasks.length<=Math.floor(_gAvailH/19)?goalTasks.length:Math.max(1,Math.floor((_gAvailH-10)/19));
-    const _gKey='goals-'+wkMonDs;const _gIsExp=_moExpandedCells.has(_gKey);const _gVisN=_gIsExp?goalTasks.length:_gMaxVis;
+    const _gMaxVis=_allGoalTasks.length<=Math.floor(_gAvailH/19)?_allGoalTasks.length:Math.max(1,Math.floor((_gAvailH-10)/19));
+    const _gKey='goals-'+wkMonDs;const _gIsExp=_moExpandedCells.has(_gKey);const _gVisN=_gIsExp?_allGoalTasks.length:_gMaxVis;
     const _goalsPastMo=wkEndDs<today;
-    goalTasks.forEach((t,_gi)=>{
+    _allGoalTasks.forEach((t,_gi)=>{
+      const _isCarried=_moOvGoals.includes(t);
       const chip=document.createElement('div');chip.className='mcell-t';chip.dataset.tid=String(t.id);chip.draggable=true;
-      const _goalOv=_goalsPastMo&&!t.done;
+      const _goalOv=(_goalsPastMo&&!t.done)||_isCarried;
       const _imp=t.important&&!t.done&&!_goalOv;
       const _gs=_goalOv?OV:_imp?IMP:{bg:'rgba(255,255,255,.82)',t:'rgba(80,80,95,.75)',b:'rgba(255,255,255,.9)'};
       chip.style.cssText=`background:${_gs.bg};color:${_gs.t};border-color:${_gs.b};cursor:grab${t.done?';opacity:.5':''}`;
@@ -862,7 +867,19 @@ function renderMoCal(){
       chk.addEventListener('change',function(){toggleTask(t.id,this.checked,'week');renderMoCal();});
       const nm=document.createElement('span');nm.style.cssText='flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';nm.textContent=t.name;
       const dx=document.createElement('button');dx.className='chip-del';dx.textContent='✕';dx.addEventListener('click',e2=>{e2.stopPropagation();delTask(t.id,e2);});
-      chip.appendChild(chk);chip.appendChild(nm);chip.appendChild(dx);
+      chip.appendChild(chk);chip.appendChild(nm);
+      if(_isCarried){
+        const mvBtn=document.createElement('button');mvBtn.className='chip-del';mvBtn.title='Move to this week';mvBtn.textContent='→';
+        mvBtn.style.cssText='font-size:9px;font-weight:700;color:#b91c1c;opacity:.7;flex-shrink:0';
+        mvBtn.addEventListener('click',e2=>{
+          e2.stopPropagation();const prev=t.due_date;t.due_date=wkMonDs;
+          save();renderMoCal();renderWkCal();renderWkSummary();
+          sbReq('PATCH','tasks',{due_date:wkMonDs},`?id=eq.${t.id}`);
+          pushUndo(()=>{t.due_date=prev;save();renderMoCal();renderWkCal();renderWkSummary();sbReq('PATCH','tasks',{due_date:prev},`?id=eq.${t.id}`);},'Moved goal to this week');
+        });
+        chip.appendChild(mvBtn);
+      }
+      chip.appendChild(dx);
       chip.addEventListener('mousedown',e=>{
         if(e.target.closest('.chk,.chip-del'))return;
         _blockMoDrag=true;chip.draggable=false;
