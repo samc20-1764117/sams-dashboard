@@ -1682,7 +1682,7 @@ function openSB(){sbOpen=true;document.getElementById('sidebar').classList.remov
 // ══════════════════════════════════════════════════════════════════════════════
 // ── FINANCE PAGE ─────────────────────────────────────────────────────────────
 // ══════════════════════════════════════════════════════════════════════════════
-const _FIN_ACCT_COLORS={'VTI':['#4ade80','rgba(74,222,128,.45)'],'Checking':['#3b82f6','rgba(59,130,246,.45)'],'RSUs':['#9333ea','rgba(147,51,234,.45)'],'CC Points':['#ec4899','rgba(236,72,153,.45)']};
+const _FIN_ACCT_COLORS={'VTI':['#10b981','rgba(16,185,129,.45)'],'Checking':['#3b82f6','rgba(59,130,246,.45)'],'RSUs':['#9333ea','rgba(147,51,234,.45)'],'CC Points':['#ec4899','rgba(236,72,153,.45)']};
 const _FIN_COLORS_FALLBACK=[['#2a9db5','rgba(42,157,181,.45)'],['#eab308','rgba(234,179,8,.45)'],['#38bdf8','rgba(56,189,248,.45)'],['#f97316','rgba(249,115,22,.45)'],['#65a30d','rgba(101,163,13,.45)']];
 function _finOf(type){return st.finance.filter(r=>r.type===type);}
 function _finFmt(n){return n<0?'-$'+Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):'$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
@@ -1827,8 +1827,8 @@ function _finRenderInvestments(purchases,totalBought,gain,gainPct){
   // Left: metrics
   html+=`<div class="fin-inv-left">
     <div class="fin-stats">
-      <div class="fin-stat-row"><span class="fin-stat-label">Gain</span><span class="fin-stat-val" style="color:#16a34a;font-weight:600">${_finN(gain,90)}</span></div>
-      <div class="fin-stat-row"><span class="fin-stat-label"></span><span class="fin-stat-val" style="color:#16a34a;font-size:11px;opacity:.7">${_finFmtPct(gainPct)}</span></div>
+      <div class="fin-stat-row"><span class="fin-stat-label">Gain</span><span class="fin-stat-val" style="color:#10b981;font-weight:600">${_finN(gain,90)}</span></div>
+      <div class="fin-stat-row"><span class="fin-stat-label"></span><span class="fin-stat-val" style="color:#10b981;font-size:11px;opacity:.7">${_finFmtPct(gainPct)}</span></div>
       <div class="fin-stat-row"><span class="fin-stat-label">Cost Basis</span><span class="fin-stat-val">${_finN(totalBought,90)}</span></div>
       <div class="fin-stat-row"><span class="fin-stat-label">Purchases</span><span class="fin-stat-val">${numPurchases}</span></div>
       <div class="fin-stat-row"><span class="fin-stat-label">Avg Purchase</span><span class="fin-stat-val">${_finN(avgPurchase,90)}</span></div>
@@ -1860,13 +1860,13 @@ function _finRenderInvestments(purchases,totalBought,gain,gainPct){
     const years=new Set();const yearLabels=[];
     dataPoints.forEach((d,i)=>{const y=(d.date||'').slice(0,4);if(y&&!years.has(y)){years.add(y);yearLabels.push({x:(i/(dataPoints.length-1))*w,y:y});}});
     const baseY=padT+ch;
-    html+=`<div class="fin-inv-chart"><svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
-      <defs><linearGradient id="finAreaGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#4ade80" stop-opacity=".18"/><stop offset="100%" stop-color="#4ade80" stop-opacity=".02"/></linearGradient></defs>
+    html+=`<div class="fin-inv-chart"><svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid meet">
+      <defs><linearGradient id="finAreaGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#10b981" stop-opacity=".18"/><stop offset="100%" stop-color="#10b981" stop-opacity=".02"/></linearGradient></defs>
       <polyline points="0,${baseY} ${polyPts} ${w},${baseY}" fill="url(#finAreaGrad)" stroke="none"/>
-      <polyline points="${polyPts}" fill="none" stroke="#4ade80" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+      <polyline points="${polyPts}" fill="none" stroke="#10b981" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
     dataPoints.forEach((d,i)=>{
       const x=(i/(dataPoints.length-1))*w;const y=padT+ch-(d.cum/max)*ch;
-      html+=`<circle cx="${x}" cy="${y}" r="3" fill="#4ade80" opacity=".7"><title>${d.date}: ${_finFmt(d.cum)}</title></circle>`;
+      html+=`<circle cx="${x}" cy="${y}" r="3" fill="#10b981" opacity=".7"><title>${d.date}: ${_finFmt(d.cum)}</title></circle>`;
       html+=`<circle cx="${x}" cy="${y}" r="10" fill="transparent" class="fin-chart-hit" onmouseenter="this.previousElementSibling.setAttribute('opacity','1');this.previousElementSibling.setAttribute('r','4.5')" onmouseleave="this.previousElementSibling.setAttribute('opacity','.7');this.previousElementSibling.setAttribute('r','3')"><title>${d.date}: ${_finFmt(d.cum)}</title></circle>`;
     });
     yearLabels.forEach(yl=>{
@@ -1897,7 +1897,7 @@ function _finRenderSubs(){
       <div class="fin-stat-row"><span class="fin-stat-label">Yearly</span><span class="fin-stat-val">${_finN(yearlyTotal,90)}</span></div>
     </div>
     <div class="fin-sub-scroll">
-    <table class="fin-tbl fin-sub-tbl"><thead><tr><th>Name</th><th>Freq</th><th>Due</th><th style="text-align:right">Amount</th><th style="text-align:right">/mo</th><th></th></tr></thead><tbody>`;
+    <table class="fin-tbl fin-sub-tbl"><thead><tr><th>Name</th><th>Freq</th><th>Due</th><th>Amount</th><th>/mo</th><th></th></tr></thead><tbody>`;
   subs.forEach(sub=>{
     const dueDisplay=_finDueDisplay(sub.due_month,sub.due_day);
     const dueRaw=(sub.due_month&&sub.due_month>=1&&sub.due_month<=12?_FIN_MONTHS[sub.due_month-1]+' ':'')+(sub.due_day||'');
@@ -1913,8 +1913,8 @@ function _finRenderSubs(){
       </td>
       <td>${_finFreqSelect(sub.id,sub.frequency||'monthly')}</td>
       <td><span class="fin-sub-plain fin-due-edit" contenteditable="true" data-fid="${sub.id}" data-field="due_day" onfocus="this.textContent='${dueRaw}';" onblur="_finSubEditDay('${sub.id}',this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">${dueDisplay}</span></td>
-      <td class="fin-amt fin-num">${_finSubEditable(sub.id,'amount',amt,'fin-sub-plain')}</td>
-      <td class="fin-amt fin-mo-adj">${_finFmt(moAdj)}</td>
+      <td class="fin-num">${_finSubEditable(sub.id,'amount',amt,'fin-sub-plain')}</td>
+      <td class="fin-mo-adj">${_finFmt(moAdj)}</td>
       <td><button class="delbtn" onclick="delFinSub('${sub.id}')">&#x2715;</button></td>
     </tr>`;
   });

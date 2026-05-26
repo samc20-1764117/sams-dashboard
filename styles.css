@@ -1139,8 +1139,8 @@ body.dark .vid-stat-card{background:rgba(40,30,50,.4)}
 .fin-kpi-val{font-size:22px;font-weight:700;color:var(--text-primary,#334155);font-variant-numeric:tabular-nums}
 .fin-kpi-primary{background:rgba(100,100,140,.06)}
 .fin-kpi-primary .fin-kpi-val{color:var(--text-primary,#1e293b)}
-.fin-kpi-gain{background:rgba(74,222,128,.06);border-color:rgba(74,222,128,.15)}
-.fin-kpi-gain .fin-kpi-val{color:#16a34a}
+.fin-kpi-gain{background:rgba(16,185,129,.06);border-color:rgba(16,185,129,.15)}
+.fin-kpi-gain .fin-kpi-val{color:#10b981}
 .fin-kpi-sub{font-size:12px;font-weight:600;color:#10b981;opacity:.8;margin-top:2px}
 .fin-card{margin-bottom:0;display:flex;flex-direction:column}
 .fin-card .fin-tbl{flex:1}
@@ -1189,7 +1189,7 @@ body.dark .vid-stat-card{background:rgba(40,30,50,.4)}
 .fin-cancel .fin-amt,.fin-cancel .fin-freq-sel{opacity:.5}
 .fin-due-edit{min-width:36px;text-align:center;font-size:11px;color:var(--text-secondary,#64748b);white-space:nowrap}
 .fin-chart-legend{flex:1;min-width:0;padding:2px 0}
-.fin-donut{width:130px;height:130px;flex-shrink:0;transform:rotate(-90deg);filter:drop-shadow(0 1px 3px rgba(0,0,0,.12)) drop-shadow(0 0 1px rgba(255,255,255,.8))}
+.fin-donut{width:130px;height:130px;flex-shrink:0;transform:rotate(-90deg)}
 .fin-legend-row{display:flex;align-items:center;gap:6px;font-size:11px;padding:3px 0;border-bottom:1px solid rgba(200,200,215,.06)}
 .fin-legend-row:last-child{border-bottom:none}
 .fin-legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
@@ -1208,15 +1208,15 @@ body.dark .vid-stat-card{background:rgba(40,30,50,.4)}
 .fin-inv-right-hdr{display:flex;align-items:center;justify-content:space-between;padding:6px 12px 4px;font-size:11px;font-weight:600;color:var(--text-secondary,#64748b)}
 .fin-inv-scroll{flex:1;overflow-y:auto;min-height:0}
 .fin-inv-scroll .fin-tbl td{padding:3px 12px;font-size:11px}
-.fin-inv-chart{flex:1;padding:0;min-height:0;overflow:hidden;border-radius:0 0 10px 10px}
+.fin-inv-chart{flex:1;padding:0 8px 4px;min-height:0;overflow:hidden}
 .fin-inv-chart svg{width:100%;height:100%;min-height:80px;display:block}
 /* Subscriptions compact + scroll */
 .fin-sub-scroll{flex:1;overflow-y:auto;min-height:0}
 .fin-sub-tbl td{padding:4px 12px!important;font-size:12px}
 .fin-sub-tbl th{padding:4px 12px!important;font-size:10px}
 .fin-sub-tbl td:last-child,.fin-sub-tbl th:last-child{width:20px;padding:4px 4px!important}
-.fin-sub-tbl .fin-amt{padding-right:16px!important;font-size:12px}
-.fin-mo-adj{font-size:11px!important;color:var(--text-secondary,#94a3b8);font-weight:500;white-space:nowrap}
+.fin-sub-tbl .fin-amt{font-size:12px}
+.fin-mo-adj{font-size:11px;color:var(--text-secondary,#94a3b8);font-weight:500;white-space:nowrap;font-variant-numeric:tabular-nums}
 .fin-sub-row td{height:28px}
 /* Number alignment — fixed-width monospace numerals like videos page */
 .fin-mono{display:inline-block;text-align:right;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif}
@@ -1237,7 +1237,7 @@ body.dark .vid-stat-card{background:rgba(40,30,50,.4)}
 .fin-excl-btn:hover{opacity:.8!important;color:#ef4444}
 .fin-excl-btn.active{opacity:.7!important;color:#ef4444}
 .fin-chart-hit{cursor:pointer}
-.fin-donut circle{cursor:pointer}
+.fin-donut circle{cursor:pointer;pointer-events:all}
 
 /* Anti-FOUC: applied before first paint via html classes set in head script */
 html.init-dark body{background:#1a100a!important;background-attachment:fixed!important;}
