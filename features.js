@@ -1751,7 +1751,7 @@ function _finRenderPersonal(accs,vtiAcc,currentVal,netWorth,totalAll){
   const hasExcluded=excluded.length>0;
 
   let html=`<div class="card fin-card fin-personal-card">
-    <div class="fin-card-hdr" style="padding:8px 16px 0"><span class="fin-card-title"></span><button class="fin-add-btn" onclick="addFinRow('account')" style="font-size:16px;padding:0 4px;line-height:1">+</button></div>
+    <div class="fin-card-hdr"><span class="fin-card-title"></span><button class="fin-add-btn" onclick="addFinRow('account')" style="font-size:16px;padding:0 4px;line-height:1">+</button></div>
     <div class="fin-hero">
       `;
   // Donut in hero row (right of KPIs)
