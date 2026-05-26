@@ -1129,8 +1129,8 @@ body.dark .vid-stat-card{background:rgba(40,30,50,.4)}
 .fin-left{flex:1;min-width:0;display:flex;flex-direction:column;gap:16px}
 .fin-right{flex:1;min-width:0;display:flex;flex-direction:column}
 .fin-right .fin-card{flex:1;opacity:.72}
-.fin-left .fin-inv-card{opacity:.72;flex:1.2;min-height:0}
-.fin-personal-card{opacity:1!important;flex:1}
+.fin-left .fin-inv-card{opacity:.72;flex:1;min-height:0}
+.fin-personal-card{opacity:1!important;flex:0 0 auto}
 .fin-hero{display:flex;align-items:stretch;gap:16px;padding:12px 16px 8px;flex:1}
 .fin-kpi-stack{display:flex;flex-direction:column;gap:10px;min-width:180px;flex-shrink:0}
 .fin-hero-right{display:flex;align-items:center;gap:12px;flex:1;min-width:0}
@@ -1216,6 +1216,7 @@ body.dark .vid-stat-card{background:rgba(40,30,50,.4)}
 .fin-sub-tbl th{padding:4px 12px!important;font-size:10px}
 .fin-sub-tbl td:last-child,.fin-sub-tbl th:last-child{width:20px;padding:4px 4px!important}
 .fin-sub-tbl .fin-amt{padding-right:16px!important;font-size:12px}
+.fin-mo-adj{font-size:11px!important;color:var(--text-secondary,#94a3b8);font-weight:500;white-space:nowrap}
 .fin-sub-row td{height:28px}
 /* Number alignment — fixed-width monospace numerals like videos page */
 .fin-mono{display:inline-block;text-align:right;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif}

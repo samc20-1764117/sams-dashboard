@@ -1750,10 +1750,10 @@ function _finRenderPersonal(accs,vtiAcc,currentVal,netWorth,totalAll){
   const hasExcluded=excluded.length>0;
 
   let html=`<div class="card fin-card fin-personal-card">
+    <div class="fin-card-hdr"><span class="fin-card-title">Net Worth</span><button class="fin-add-btn" onclick="addFinRow('account')" style="font-size:16px;padding:0 4px;line-height:1">+</button></div>
     <div class="fin-hero">
       <div class="fin-kpi-stack">
-        <div class="fin-kpi fin-kpi-nw"><div class="fin-kpi-label">Net Worth</div><div class="fin-kpi-val fin-kpi-val-lg">${_finFmtRound(netWorth)}</div>${hasExcluded?`<div class="fin-kpi-sub-muted">All: ${_finFmtRound(totalAll)}</div>`:''}</div>
-        <button class="fin-add-btn" onclick="addFinRow('account')" style="font-size:14px;padding:2px 6px;line-height:1;align-self:flex-start">+ Add</button>
+        <div class="fin-kpi fin-kpi-nw"><div class="fin-kpi-val fin-kpi-val-lg">${_finFmtRound(netWorth)}</div>${hasExcluded?`<div class="fin-kpi-sub-muted">All: ${_finFmtRound(totalAll)}</div>`:''}</div>
       </div>`;
   // Donut in hero row (right of KPIs)
   let cum=0;
@@ -1851,7 +1851,7 @@ function _finRenderInvestments(purchases,totalBought,gain,gainPct){
     const polyPts=dataPoints.map((d,i)=>`${(i/(dataPoints.length-1))*w},${ch-(d.cum/max)*ch}`).join(' ');
     const years=new Set();const yearLabels=[];
     dataPoints.forEach((d,i)=>{const y=(d.date||'').slice(0,4);if(y&&!years.has(y)){years.add(y);yearLabels.push({x:(i/(dataPoints.length-1))*w,y:y});}});
-    html+=`<div class="fin-inv-chart"><svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+    html+=`<div class="fin-inv-chart"><svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid meet">
       <polyline points="0,${ch} ${polyPts} ${w},${ch}" fill="rgba(34,197,94,.08)" stroke="none"/>
       <polyline points="${polyPts}" fill="none" stroke="#22c55e" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
     dataPoints.forEach((d,i)=>{
@@ -1887,10 +1887,14 @@ function _finRenderSubs(){
       <div class="fin-stat-row"><span class="fin-stat-label">Yearly</span><span class="fin-stat-val">${_finN(yearlyTotal,90)}</span></div>
     </div>
     <div class="fin-sub-scroll">
-    <table class="fin-tbl fin-sub-tbl"><thead><tr><th>Name</th><th>Freq</th><th>Due</th><th style="text-align:right">Amount</th><th></th></tr></thead><tbody>`;
+    <table class="fin-tbl fin-sub-tbl"><thead><tr><th>Name</th><th>Freq</th><th>Due</th><th style="text-align:right">Amount</th><th style="text-align:right">/mo</th><th></th></tr></thead><tbody>`;
   subs.forEach(sub=>{
     const dueDisplay=_finDueDisplay(sub.due_month,sub.due_day);
     const dueRaw=(sub.due_month&&sub.due_month>=1&&sub.due_month<=12?_FIN_MONTHS[sub.due_month-1]+' ':'')+(sub.due_day||'');
+    const amt=sub.amount||0;
+    const freq=sub.frequency||'monthly';
+    const moAdj=freq==='yearly'?amt/12:freq==='6-month'?amt/6:freq==='weekly'?amt*4.33:amt;
+    const showMo=freq!=='monthly';
     html+=`<tr class="fin-row fin-sub-row${sub.cancel?' fin-cancel':''}">
       <td>
         <span class="fin-sub-name-wrap">
@@ -1900,7 +1904,8 @@ function _finRenderSubs(){
       </td>
       <td>${_finFreqSelect(sub.id,sub.frequency||'monthly')}</td>
       <td><span class="fin-sub-plain fin-due-edit" contenteditable="true" data-fid="${sub.id}" data-field="due_day" onfocus="this.textContent='${dueRaw}';" onblur="_finSubEditDay('${sub.id}',this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">${dueDisplay}</span></td>
-      <td class="fin-amt fin-num">${_finSubEditable(sub.id,'amount',sub.amount||0,'fin-sub-plain')}</td>
+      <td class="fin-amt fin-num">${_finSubEditable(sub.id,'amount',amt,'fin-sub-plain')}</td>
+      <td class="fin-amt fin-mo-adj">${showMo?_finFmt(moAdj):''}</td>
       <td><button class="delbtn" onclick="delFinSub('${sub.id}')">&#x2715;</button></td>
     </tr>`;
   });
