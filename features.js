@@ -1750,8 +1750,8 @@ function _finRenderPersonal(accs,vtiAcc,currentVal,netWorth,totalAll){
   const total=chartItems.reduce((s,a)=>s+(a.amount||0),0);
   const hasExcluded=excluded.length>0;
 
-  let html=`<div class="card fin-card fin-personal-card">
-    <div class="fin-card-hdr"><span class="fin-card-title"></span><button class="fin-add-btn" onclick="addFinRow('account')" style="font-size:16px;padding:0 4px;line-height:1">+</button></div>
+  let html=`<div class="card fin-card fin-personal-card" style="position:relative">
+    <button class="fin-add-btn" onclick="addFinRow('account')" style="font-size:16px;padding:0 4px;line-height:1;position:absolute;top:12px;right:16px;z-index:1">+</button>
     <div class="fin-hero">
       `;
   // Donut in hero row (right of KPIs)
