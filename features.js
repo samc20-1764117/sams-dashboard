@@ -1751,11 +1751,9 @@ function _finRenderPersonal(accs,vtiAcc,currentVal,netWorth,totalAll){
   const hasExcluded=excluded.length>0;
 
   let html=`<div class="card fin-card fin-personal-card">
-    <div class="fin-hero" style="position:relative">
-      <button class="fin-add-btn" onclick="addFinRow('account')" style="font-size:16px;padding:0 4px;line-height:1;position:absolute;top:4px;right:4px">+</button>
-      <div class="fin-kpi-stack">
-        <div class="fin-kpi fin-kpi-nw"><div class="fin-kpi-label">Net Worth</div><div class="fin-kpi-val fin-kpi-val-lg">${_finFmtRound(netWorth)}</div>${hasExcluded?`<div class="fin-kpi-sub-muted">All: ${_finFmtRound(totalAll)}</div>`:''}</div>
-      </div>`;
+    <div class="fin-card-hdr" style="padding:8px 16px 0"><span class="fin-card-title"></span><button class="fin-add-btn" onclick="addFinRow('account')" style="font-size:16px;padding:0 4px;line-height:1">+</button></div>
+    <div class="fin-hero">
+      `;
   // Donut in hero row (right of KPIs)
   let cum=0;let _fbIdx=0;
   const segs=total>0?chartItems.map((a,i)=>{
@@ -1769,7 +1767,7 @@ function _finRenderPersonal(accs,vtiAcc,currentVal,netWorth,totalAll){
   // Right side: donut + legend
   html+=`<div class="fin-hero-right">`;
   if(segs.length){
-    html+=`<svg class="fin-donut" viewBox="0 0 42 42">`;
+    html+=`<div class="fin-donut-wrap"><svg class="fin-donut" viewBox="0 0 42 42">`;
     html+=`<defs>
       <filter id="finGlass" x="-10%" y="-10%" width="120%" height="120%">
         <feGaussianBlur in="SourceAlpha" stdDeviation=".4" result="blur"/>
@@ -1792,6 +1790,8 @@ function _finRenderPersonal(accs,vtiAcc,currentVal,netWorth,totalAll){
       html+=`<circle cx="21" cy="21" r="15.9" fill="none" stroke="transparent" stroke-width="5" stroke-dasharray="${adjLen} ${100-adjLen}" stroke-dashoffset="${adjOff}" style="pointer-events:stroke"><title>${seg.name}: ${_finFmtRound(seg.amt)} (${(seg.pct*100).toFixed(1)}%)</title></circle>`;
     });
     html+=`</g></svg>`;
+    html+=`<div class="fin-donut-center"><div class="fin-donut-label">Net Worth</div><div class="fin-donut-val">${_finFmtRound(netWorth)}</div>${hasExcluded?`<div style="font-size:9px;color:var(--text-secondary,#94a3b8)">All: ${_finFmtRound(totalAll)}</div>`:''}</div>`;
+    html+=`</div>`;
   }
   html+=`<div class="fin-chart-legend">`;
   allAccs.forEach(a=>{

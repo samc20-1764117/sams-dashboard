@@ -1189,7 +1189,11 @@ body.dark .vid-stat-card{background:rgba(40,30,50,.4)}
 .fin-cancel .fin-amt,.fin-cancel .fin-freq-sel{opacity:.5}
 .fin-due-edit{min-width:36px;text-align:center;font-size:11px;color:var(--text-secondary,#64748b);white-space:nowrap}
 .fin-chart-legend{flex:1;min-width:0;padding:2px 0}
-.fin-donut{width:130px;height:130px;flex-shrink:0}
+.fin-donut-wrap{position:relative;flex-shrink:0;width:160px;height:160px}
+.fin-donut{width:160px;height:160px}
+.fin-donut-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none}
+.fin-donut-center .fin-donut-label{font-size:10px;color:var(--text-secondary,#64748b);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.fin-donut-center .fin-donut-val{font-size:20px;font-weight:700;color:var(--text-primary,#334155);font-variant-numeric:tabular-nums}
 .fin-legend-row{display:flex;align-items:center;gap:6px;font-size:11px;padding:3px 0;border-bottom:1px solid rgba(200,200,215,.06)}
 .fin-legend-row:last-child{border-bottom:none}
 .fin-legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
