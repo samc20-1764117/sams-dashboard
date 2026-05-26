@@ -1751,7 +1751,7 @@ function _finRenderPersonal(accs,vtiAcc,currentVal,netWorth,totalAll){
   const hasExcluded=excluded.length>0;
 
   let html=`<div class="card fin-card fin-personal-card">
-    <div class="fin-card-hdr"><span class="fin-card-title">Personal Finances</span><button class="fin-add-btn" onclick="addFinRow('account')" style="font-size:16px;padding:0 4px;line-height:1">+</button></div>
+    <div class="fin-card-hdr" style="justify-content:flex-end"><button class="fin-add-btn" onclick="addFinRow('account')" style="font-size:16px;padding:0 4px;line-height:1">+</button></div>
     <div class="fin-hero">
       <div class="fin-kpi-stack">
         <div class="fin-kpi fin-kpi-nw"><div class="fin-kpi-label">Net Worth</div><div class="fin-kpi-val fin-kpi-val-lg">${_finFmtRound(netWorth)}</div>${hasExcluded?`<div class="fin-kpi-sub-muted">All: ${_finFmtRound(totalAll)}</div>`:''}</div>
