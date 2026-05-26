@@ -1682,7 +1682,7 @@ function openSB(){sbOpen=true;document.getElementById('sidebar').classList.remov
 // ══════════════════════════════════════════════════════════════════════════════
 // ── FINANCE PAGE ─────────────────────────────────────────────────────────────
 // ══════════════════════════════════════════════════════════════════════════════
-const _FIN_ACCT_COLORS={'VTI':['#10b981','rgba(16,185,129,.45)'],'Checking':['#3b82f6','rgba(59,130,246,.45)'],'RSUs':['#9333ea','rgba(147,51,234,.45)'],'CC Points':['#ec4899','rgba(236,72,153,.45)']};
+const _FIN_ACCT_COLORS={'VTI':['#10b981','rgba(16,185,129,.45)'],'Checking':['#60a5fa','rgba(96,165,250,.45)'],'RSUs':['#a78bfa','rgba(167,139,250,.45)'],'CC Points':['#ec4899','rgba(236,72,153,.45)']};
 const _FIN_COLORS_FALLBACK=[['#2a9db5','rgba(42,157,181,.45)'],['#eab308','rgba(234,179,8,.45)'],['#38bdf8','rgba(56,189,248,.45)'],['#f97316','rgba(249,115,22,.45)'],['#65a30d','rgba(101,163,13,.45)']];
 function _finOf(type){return st.finance.filter(r=>r.type===type);}
 function _finFmt(n){return n<0?'-$'+Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):'$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
@@ -1786,7 +1786,14 @@ function _finRenderPersonal(accs,vtiAcc,currentVal,netWorth,totalAll){
       const dashLen=seg.pct*100;const gap=0.6;const dashOff=100-(seg.start*100);
       const adjLen=Math.max(dashLen-gap,0.1);
       const adjOff=dashOff-gap/2;
-      html+=`<circle cx="21" cy="21" r="15.9" fill="none" stroke="${seg.colorLight}" stroke-width="4.2" stroke-dasharray="${adjLen} ${100-adjLen}" stroke-dashoffset="${adjOff}" filter="url(#finGlass)"><title>${seg.name}: ${_finFmtRound(seg.amt)} (${(seg.pct*100).toFixed(1)}%)</title></circle>`;
+      html+=`<circle cx="21" cy="21" r="15.9" fill="none" stroke="${seg.colorLight}" stroke-width="4.2" stroke-dasharray="${adjLen} ${100-adjLen}" stroke-dashoffset="${adjOff}" filter="url(#finGlass)"/>`;
+    });
+    // Transparent hit circles on top for tooltips
+    segs.forEach(seg=>{
+      const dashLen=seg.pct*100;const gap=0.6;const dashOff=100-(seg.start*100);
+      const adjLen=Math.max(dashLen-gap,0.1);
+      const adjOff=dashOff-gap/2;
+      html+=`<circle cx="21" cy="21" r="15.9" fill="none" stroke="transparent" stroke-width="5" stroke-dasharray="${adjLen} ${100-adjLen}" stroke-dashoffset="${adjOff}" style="pointer-events:stroke"><title>${seg.name}: ${_finFmtRound(seg.amt)} (${(seg.pct*100).toFixed(1)}%)</title></circle>`;
     });
     html+=`</svg>`;
   }
@@ -1860,19 +1867,23 @@ function _finRenderInvestments(purchases,totalBought,gain,gainPct){
     const years=new Set();const yearLabels=[];
     dataPoints.forEach((d,i)=>{const y=(d.date||'').slice(0,4);if(y&&!years.has(y)){years.add(y);yearLabels.push({x:(i/(dataPoints.length-1))*w,y:y});}});
     const baseY=padT+ch;
-    html+=`<div class="fin-inv-chart"><svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid meet">
+    html+=`<div class="fin-inv-chart" style="position:relative">
+      <svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" style="width:100%;height:100%;display:block">
       <defs><linearGradient id="finAreaGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#10b981" stop-opacity=".18"/><stop offset="100%" stop-color="#10b981" stop-opacity=".02"/></linearGradient></defs>
       <polyline points="0,${baseY} ${polyPts} ${w},${baseY}" fill="url(#finAreaGrad)" stroke="none"/>
-      <polyline points="${polyPts}" fill="none" stroke="#10b981" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+      <polyline points="${polyPts}" fill="none" stroke="#10b981" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>`;
     dataPoints.forEach((d,i)=>{
       const x=(i/(dataPoints.length-1))*w;const y=padT+ch-(d.cum/max)*ch;
-      html+=`<circle cx="${x}" cy="${y}" r="3" fill="#10b981" opacity=".7"><title>${d.date}: ${_finFmt(d.cum)}</title></circle>`;
-      html+=`<circle cx="${x}" cy="${y}" r="10" fill="transparent" class="fin-chart-hit" onmouseenter="this.previousElementSibling.setAttribute('opacity','1');this.previousElementSibling.setAttribute('r','4.5')" onmouseleave="this.previousElementSibling.setAttribute('opacity','.7');this.previousElementSibling.setAttribute('r','3')"><title>${d.date}: ${_finFmt(d.cum)}</title></circle>`;
+      html+=`<circle cx="${x}" cy="${y}" r="3" fill="#10b981" opacity=".7" vector-effect="non-scaling-stroke"><title>${d.date}: ${_finFmt(d.cum)}</title></circle>`;
+      html+=`<circle cx="${x}" cy="${y}" r="10" fill="transparent" style="pointer-events:all" onmouseenter="this.previousElementSibling.setAttribute('opacity','1');this.previousElementSibling.setAttribute('r','4.5')" onmouseleave="this.previousElementSibling.setAttribute('opacity','.7');this.previousElementSibling.setAttribute('r','3')"><title>${d.date}: ${_finFmt(d.cum)}</title></circle>`;
     });
+    html+=`</svg>`;
+    // Year labels as HTML overlay so they don't stretch
     yearLabels.forEach(yl=>{
-      html+=`<text x="${yl.x}" y="${h-2}" fill="var(--text-secondary,#94a3b8)" font-size="9" font-weight="600" font-family="system-ui">${yl.y}</text>`;
+      const pct=(yl.x/w*100).toFixed(1);
+      html+=`<span class="fin-chart-year" style="left:${pct}%">${yl.y}</span>`;
     });
-    html+=`</svg></div>`;
+    html+=`</div>`;
   }
   html+=`</div>`;
   return html;

@@ -1208,8 +1208,9 @@ body.dark .vid-stat-card{background:rgba(40,30,50,.4)}
 .fin-inv-right-hdr{display:flex;align-items:center;justify-content:space-between;padding:6px 12px 4px;font-size:11px;font-weight:600;color:var(--text-secondary,#64748b)}
 .fin-inv-scroll{flex:1;overflow-y:auto;min-height:0}
 .fin-inv-scroll .fin-tbl td{padding:3px 12px;font-size:11px}
-.fin-inv-chart{flex:1;padding:0 8px 4px;min-height:0;overflow:hidden}
+.fin-inv-chart{flex:1;padding:0;min-height:0;overflow:hidden;position:relative}
 .fin-inv-chart svg{width:100%;height:100%;min-height:80px;display:block}
+.fin-chart-year{position:absolute;bottom:2px;font-size:9px;font-weight:600;color:var(--text-secondary,#94a3b8);font-family:system-ui,-apple-system,sans-serif;transform:translateX(-50%);pointer-events:none}
 /* Subscriptions compact + scroll */
 .fin-sub-scroll{flex:1;overflow-y:auto;min-height:0}
 .fin-sub-tbl td{padding:4px 12px!important;font-size:12px}
@@ -1228,7 +1229,7 @@ body.dark .vid-stat-card{background:rgba(40,30,50,.4)}
 .fin-inv-date:focus,.fin-inv-amt:focus{background:rgba(109,95,230,.1);box-shadow:0 0 0 1.5px rgba(109,95,230,.3)}
 /* Net worth prominence */
 .fin-kpi-nw{background:rgba(59,130,246,.06);border-color:rgba(59,130,246,.15)}
-.fin-kpi-val-lg{font-size:28px!important;font-weight:800;color:var(--text-primary,#0f172a)!important}
+.fin-kpi-val-lg{font-size:26px!important;font-weight:600;color:var(--text-primary,#1e293b)!important}
 .fin-kpi-sub-muted{font-size:10px;color:var(--text-secondary,#94a3b8);margin-top:2px;font-weight:500}
 /* Legend exclude */
 .fin-legend-excluded{opacity:.45}
