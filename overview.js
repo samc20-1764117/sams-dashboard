@@ -4899,8 +4899,8 @@ function onTBWheel(e){
 }
 function shiftDay(n){const fl=document.getElementById('dayFlash');fl.textContent=n>0?'→':'←';fl.classList.add('show');setTimeout(()=>fl.classList.remove('show'),300);dayOff+=n;const _newDs=d2s(getDayDate(dayOff));const _newWkKey=dsToWkKey(_newDs);const _curWkKey=getWkKey(wkOff);if(_newWkKey!==_curWkKey){const _newWkOff=Math.round((new Date(_newWkKey+'T00:00:00')-new Date(getWkKey(0)+'T00:00:00'))/(7*86400000));wkOff=_newWkOff;renderWkSummary();}renderWkCal();renderDayTB();renderToday();}
 function goToday(){dayOff=0;if(wkOff!==0){wkOff=0;renderWkSummary();}renderWkCal();renderDayTB();renderToday();}
-function shiftWk(n){wkOff+=n;renderWkSummary();renderWkCal();renderPupSkillsHighlight();if(typeof renderMealRow==='function')renderMealRow();}
-function goThisWk(){wkOff=0;renderWkSummary();renderWkCal();renderPupSkillsHighlight();if(typeof renderMealRow==='function')renderMealRow();}
+function shiftWk(n){wkOff+=n;renderWkSummary();renderWkCal();renderUnassigned();renderPupSkillsHighlight();if(typeof renderMealRow==='function')renderMealRow();}
+function goThisWk(){wkOff=0;renderWkSummary();renderWkCal();renderUnassigned();renderPupSkillsHighlight();if(typeof renderMealRow==='function')renderMealRow();}
 
 // ── Notes expand on hover ────────────────────────────────────────────────────
 (function(){
