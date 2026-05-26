@@ -847,10 +847,13 @@ function renderMoCal(){
     const _gAvailH=_gCellH-4;
     const _gMaxVis=goalTasks.length<=Math.floor(_gAvailH/19)?goalTasks.length:Math.max(1,Math.floor((_gAvailH-10)/19));
     const _gKey='goals-'+wkMonDs;const _gIsExp=_moExpandedCells.has(_gKey);const _gVisN=_gIsExp?goalTasks.length:_gMaxVis;
+    const _goalsPastMo=wkEndDs<today;
     goalTasks.forEach((t,_gi)=>{
       const chip=document.createElement('div');chip.className='mcell-t';chip.dataset.tid=String(t.id);chip.draggable=true;
-      const _imp=t.important&&!t.done;
-      chip.style.cssText=`background:${_imp?IMP.bg:'rgba(255,255,255,.82)'};color:${_imp?IMP.t:'rgba(80,80,95,.75)'};border-color:${_imp?IMP.b:'rgba(255,255,255,.9)'};cursor:grab${t.done?';opacity:.5':''}`;
+      const _goalOv=_goalsPastMo&&!t.done;
+      const _imp=t.important&&!t.done&&!_goalOv;
+      const _gs=_goalOv?OV:_imp?IMP:{bg:'rgba(255,255,255,.82)',t:'rgba(80,80,95,.75)',b:'rgba(255,255,255,.9)'};
+      chip.style.cssText=`background:${_gs.bg};color:${_gs.t};border-color:${_gs.b};cursor:grab${t.done?';opacity:.5':''}`;
       if(_gi>=_gVisN){chip.style.display='none';chip.dataset.moreHidden='1';}
       let _blockMoDrag=false;
       chip.addEventListener('dragstart',e=>{if(_blockMoDrag){e.preventDefault();e.stopPropagation();return;}e.stopPropagation();dragId='wkgoal-mo::'+t.id+'::'+wkMonDs;chip.style.opacity='.4';document.body.classList.add('body-dragging');});
@@ -989,10 +992,11 @@ function mkMCell(date,om,today){
   const _isExp=_moExpandedCells.has(ds);
   const _visN=_isExp?tasks.length:_maxVis;
   tasks.forEach((t,_ti)=>{
+    const isBday=t._type==='birthday';
     const s=t.important&&!t.done?IMP:gc((t._isWrec||t._isWrRule)?'weekly_reset':t.category);
     const isTravel=t._type==='travel';
-    const isPast=isTravel&&t.end_date&&t.end_date<tod();
-    const chip=document.createElement('div');chip.className='mcell-t';chip.draggable=!t.done;
+    const isPast=(isTravel&&t.end_date&&t.end_date<tod())||(isBday&&t.due_date&&t.due_date<tod());
+    const chip=document.createElement('div');chip.className='mcell-t';chip.draggable=!t.done&&!isBday;
     // Travel: compute visual span position to extend chip across cell gaps
     let travelSpanStyle='';
     let isVisualFirst=true,isVisualLast=true;
@@ -1025,7 +1029,7 @@ function mkMCell(date,om,today){
       chip.innerHTML='<span style="flex:1"></span>';
     }else{
       chip.innerHTML=`<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${tmIcon(t)}${escHtml(t._type==='pup'&&typeof _pupDisplayName==='function'?_pupDisplayName(t):t.name)}</span>`;
-      if(!isTravel){
+      if(!isTravel&&!isBday){
         const _cw=document.createElement('label');_cw.className='chk-wrap';_cw.style.cssText='padding:2px 3px;margin:-2px -1px;flex-shrink:0';
         _cw.addEventListener('click',e=>e.stopPropagation());
         const _ck=document.createElement('input');_ck.type='checkbox';_ck.className='chk';_ck.style.cssText='width:8px;height:8px';_ck.checked=!!t.done;
@@ -1144,10 +1148,11 @@ function showMcellMorePop(e,tasks,ds){
   const title=document.createElement('div');title.className='mt';title.style.cssText='margin-bottom:10px';title.textContent=label;modal.appendChild(title);
   function closeMorePop(){ov.classList.remove('open');setTimeout(()=>ov.remove(),220);}
   tasks.forEach(t=>{
+    const isBday=t._type==='birthday';
     const s=t.important&&!t.done?IMP:gc((t._isWrec||t._isWrRule)?'weekly_reset':t.category);
     const isTravel=t._type==='travel';
-    const isPast=isTravel&&t.end_date&&t.end_date<tod();
-    const chip=document.createElement('div');chip.className='mcell-t';chip.draggable=!t.done&&!isTravel;
+    const isPast=(isTravel&&t.end_date&&t.end_date<tod())||(isBday&&t.due_date&&t.due_date<tod());
+    const chip=document.createElement('div');chip.className='mcell-t';chip.draggable=!t.done&&!isTravel&&!isBday;
     chip.style.cssText=`background:${s.bg};color:${s.t};border-color:${s.b};display:flex;align-items:center;gap:2px;margin-bottom:3px;cursor:${t.done?'default':isTravel?'pointer':'grab'};${t.done?'opacity:.25;text-decoration:line-through;':''}${isPast?'opacity:.35;':''}`;
     if(!t._virtual&&!t._type)chip.dataset.tid=String(t.id);
     else if(isTravel)chip.dataset.tid='tv-'+t._srcId;

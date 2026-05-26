@@ -90,6 +90,7 @@ See `rules/videos.md` for full rules. Table: `videos`. 4 views: Dashboard, All D
 Table: `birthdays(id,name,birthday,present_ideas)`. `present_ideas` JSON array. `saveBdayModal` does NOT include `present_ideas`.
 - **Weekly calendar banners**: grey out if timeblock done (`b._done`) OR date in past (`due_date < today`). `opacity:.35` via `addBanner` `isPast` param.
 - **Weekly list**: birthdays get `done:true` from timeblock done state → `tRowExtra` applies greyed/strikethrough. Past birthdays (`due_date < today && !done`) also greyed out (opacity + strikethrough) via `_bdPast` in `tRowExtra`.
+- **Monthly view** (`renderMoCal` in features.js): past birthdays greyed (`opacity:.35`), no checkbox, not draggable. Same in expanded "more" popup.
 - **Today list**: birthdays never greyed out regardless of timeblock state. Emoji wrapped in `.bday-emoji` span (8px, `margin-left:3px`, today-list only via `#todList` scope).
 - **`getBirthdaysInRange`** used for weekly calendar (supports past weeks); `getBirthdayTasks(null)` skips past dates — don't use for calendar.
 
