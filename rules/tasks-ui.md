@@ -1,7 +1,7 @@
 # Tasks & UI Rules
 
 ## Overdue Logic
-- **Tasks**: `due_date < today && !done && category !== 'Weekly Goals'`. Weekly Goals never overdue.
+- **Tasks**: `due_date < today && !done && category !== 'Weekly Goals'`. Weekly Goals excluded from today overdue count/banner but shown as overdue (OV style) in WO modal and weekly cal goals column when viewing past weeks (`isPast` / `_goalsPast`).
 - **Shopping**: `due_date < today && !done`.
 - **Non-WR recurring**: `getRecurringWeekTasks(w)` for w=0 to wkOff-4. Cascading `__skip__` check. Seen set prevents duplicates.
 - **WR recurring** (`is_weekly_reset=true`): overdue if `_dateOverrides[wkKey] < today && !_doneByWk[wkKey]`. 4-week lookback. `wrRecHandled` set — only added when `_dateOverrides[wkKey] <= today` (future dates don't block older-week lookback).

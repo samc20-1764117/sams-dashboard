@@ -990,7 +990,8 @@ function renderWkCal(){
     bdayThisWk.forEach(b=>{
       const s=gc('birthday');
       const bdDone=st.blocks.some(bl=>bl.cat==='Birthday'&&bl.title===b.name&&bl._done);
-      addBanner(b.name,b.due_date,b.due_date,s,null,bdDone);
+      const bdPast=!bdDone&&b.due_date<today2;
+      addBanner(b.name,b.due_date,b.due_date,s,null,bdDone||bdPast);
     });
 
     // Set banner container height based on lanes used (paddingTop already set synchronously)
@@ -1433,10 +1434,12 @@ function renderWkCal(){
   });
   const goalsUndone=st.tasks.filter(t=>t.category==='Weekly Goals'&&!t.done&&t.due_date&&t.due_date.split('T')[0]>=wkStart&&t.due_date.split('T')[0]<=wkEnd).sort((a,b)=>{const aI=a.important?0:1,bI=b.important?0:1;if(aI!==bI)return aI-bI;return(a.goal_order??9999)-(b.goal_order??9999);});
   const goalsDone=st.tasks.filter(t=>t.category==='Weekly Goals'&&t.done&&t.due_date&&t.due_date.split('T')[0]>=wkStart&&t.due_date.split('T')[0]<=wkEnd).sort((a,b)=>(a.goal_order??9999)-(b.goal_order??9999));
+  const _goalsPast=wkEnd<tod();
   [...goalsUndone,...goalsDone].forEach(t=>{
-    const imp=t.important&&!t.done;
-    const s=imp?IMP:{bg:'rgba(255,255,255,.82)',t:'rgba(80,80,95,.75)',b:'rgba(255,255,255,.9)'};
-    const chip=document.createElement('div');chip.className='chip'+(t.done?' done-chip':'');
+    const _goalOv=_goalsPast&&!t.done;
+    const imp=t.important&&!t.done&&!_goalOv;
+    const s=_goalOv?OV:imp?IMP:{bg:'rgba(255,255,255,.82)',t:'rgba(80,80,95,.75)',b:'rgba(255,255,255,.9)'};
+    const chip=document.createElement('div');chip.className='chip'+(t.done?' done-chip':'')+(_goalOv?' ov-row':'');
     chip.style.cssText=`background:${s.bg};color:${s.t};border-color:${s.b}`;
     chip.dataset.tid=String(t.id);
     chip.draggable=true;
@@ -1861,17 +1864,18 @@ function renderWOModal(){
     const body=document.createElement('div');body.className='wo-col-body';body.dataset.wkOff=String(off);body.dataset.wkStart=wkStart;
     const goals=st.tasks.filter(t=>t.category==='Weekly Goals'&&t.due_date&&t.due_date.split('T')[0]>=wkStart&&t.due_date.split('T')[0]<=wkEnd)
       .sort((a,b)=>{const aI=a.important&&!a.done?0:1,bI=b.important&&!b.done?0:1;if(aI!==bI)return aI-bI;return(a.goal_order??9999)-(b.goal_order??9999);});
-    goals.forEach(t=>{ body.appendChild(_woMakeChip(t,body)); });
+    goals.forEach(t=>{ body.appendChild(_woMakeChip(t,body,isPast)); });
     body.addEventListener('dblclick',e=>{if(e.target===body)openQA('wkc',null,wkStart,'Weekly Goals');});
     col.appendChild(body);
     cols.appendChild(col);
   }
 }
-function _woMakeChip(t,body){
-  const imp=t.important&&!t.done;
-  const s=imp?IMP:{bg:'rgba(255,255,255,.82)',t:'rgba(80,80,95,.75)',b:'rgba(255,255,255,.9)'};
+function _woMakeChip(t,body,isPastWk){
+  const ov=isPastWk&&!t.done;
+  const imp=t.important&&!t.done&&!ov;
+  const s=ov?OV:imp?IMP:{bg:'rgba(255,255,255,.82)',t:'rgba(80,80,95,.75)',b:'rgba(255,255,255,.9)'};
   const chip=document.createElement('div');
-  chip.className='chip wo-chip'+(t.done?' done-chip':'');chip.dataset.tid=String(t.id);
+  chip.className='chip wo-chip'+(t.done?' done-chip':'')+(ov?' ov-row':'');chip.dataset.tid=String(t.id);
   chip.style.cssText=`background:${s.bg};color:${s.t};border-color:${s.b};width:100%;box-sizing:border-box`;
   // Checkbox
   const chk=document.createElement('input');chk.type='checkbox';chk.className='wchk';chk.checked=t.done;
@@ -3413,9 +3417,10 @@ function tRowExtra(t){
   const modeIcon=isTv?(t.travel_mode==='plane'?_PLANE_SVG:t.travel_mode==='drive'?_CAR_SVG:''):'';
   const bdDrag=isBd?`draggable="true" ondragstart="dStart(event,'bday::${t._srcId}::${t.due_date}')" ondragend="dEnd(event)"`:'';
   const _bdDone=isBd&&t.done;
-  return`<div class="ti ti-${sl}${_bdDone?' done':''}" style="background:${s.bg}${_bdDone?';opacity:.45':''}" id="ti-${t.id}" ${bdDrag} onclick="selTask(event,'${t.id}')">
+  const _bdPast=isBd&&!_bdDone&&t.due_date&&t.due_date<tod();
+  return`<div class="ti ti-${sl}${_bdDone?' done':''}" style="background:${s.bg}${_bdDone||_bdPast?';opacity:.45':''}" id="ti-${t.id}" ${bdDrag} onclick="selTask(event,'${t.id}')">
     ${isTv?`<button class="pack-icon-btn pack-seg" onclick="event.stopPropagation();openPackingModal('${t._srcId}')" title="Packing list">${_PACK_SVG}</button>`:''}
-    <span class="tn" style="color:${s.t}${_bdDone?';text-decoration:line-through':''}">${modeIcon}${isBd?t.name.replace('🎂','<span class="bday-emoji">🎂</span>'):t.name}</span>
+    <span class="tn" style="color:${s.t}${_bdDone||_bdPast?';text-decoration:line-through':''}">${modeIcon}${isBd?t.name.replace('🎂','<span class="bday-emoji">🎂</span>'):t.name}</span>
     ${isTv||isBd?'':`<svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3" fill="${s.bg}" stroke="${s.d}" stroke-opacity="0.4" stroke-width="1"/></svg>`}
     ${isBd?'':`<span class="dlbl" style="${isTv?'margin-left:auto;color:#475569':''}">${fmtD(t.due_date)}${sub}</span>`}
     ${isTv?`<button class="delbtn" onclick="event.stopPropagation();delTravel('${t._srcId}')">✕</button>`:''}
