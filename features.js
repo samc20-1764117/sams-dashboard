@@ -847,6 +847,13 @@ function renderMoCal(){
     const _allGoalTasks=[..._moOvGoals,...goalTasks];
     const goalsCell=document.createElement('div');goalsCell.className='mcell mo-goals-cell';goalsCell.dataset.wkmon=wkMonDs;
     const gBody=document.createElement('div');gBody.className='mcell-body';
+    // "Move overdue to this week" banner for monthly view
+    if(_moOvGoals.length>0){
+      const moBanner=document.createElement('div');moBanner.style.cssText='font-size:7px;font-weight:700;color:#b91c1c;cursor:pointer;padding:1px 3px;margin-bottom:1px;opacity:.8;text-align:center';
+      moBanner.textContent=`↩ ${_moOvGoals.length} overdue`;
+      moBanner.addEventListener('click',e=>{e.stopPropagation();const prevDates=_moOvGoals.map(t=>({id:t.id,prev:t.due_date}));_moOvGoals.forEach(t=>{t.due_date=wkMonDs;sbReq('PATCH','tasks',{due_date:wkMonDs},`?id=eq.${t.id}`);});save();renderMoCal();renderWkCal();renderWkSummary();pushUndo(()=>{prevDates.forEach(p=>{const t=st.tasks.find(x=>String(x.id)===String(p.id));if(t){t.due_date=p.prev;sbReq('PATCH','tasks',{due_date:p.prev},`?id=eq.${t.id}`);}});save();renderMoCal();renderWkCal();renderWkSummary();},'Moved overdue goals to this week');});
+      gBody.appendChild(moBanner);
+    }
     const _gCellH=Math.max(70,(window.innerHeight*0.94-100)/4-4);
     const _gAvailH=_gCellH-4;
     const _gMaxVis=_allGoalTasks.length<=Math.floor(_gAvailH/19)?_allGoalTasks.length:Math.max(1,Math.floor((_gAvailH-10)/19));
@@ -863,22 +870,11 @@ function renderMoCal(){
       let _blockMoDrag=false;
       chip.addEventListener('dragstart',e=>{if(_blockMoDrag){e.preventDefault();e.stopPropagation();return;}e.stopPropagation();dragId='wkgoal-mo::'+t.id+'::'+wkMonDs;chip.style.opacity='.4';document.body.classList.add('body-dragging');});
       chip.addEventListener('dragend',()=>{chip.style.opacity='1';document.body.classList.remove('body-dragging');dragId=null;});
-      const chk=document.createElement('input');chk.type='checkbox';chk.className='chk';chk.style.cssText='width:8px;height:8px';chk.checked=t.done;
-      chk.addEventListener('change',function(){toggleTask(t.id,this.checked,'week');renderMoCal();});
+      const chk=document.createElement('input');chk.type='checkbox';chk.className='chk';chk.style.cssText='width:8px;height:8px;pointer-events:auto';chk.checked=t.done;
+      chk.addEventListener('click',function(e){e.stopPropagation();toggleTask(t.id,this.checked,'week');renderMoCal();});
       const nm=document.createElement('span');nm.style.cssText='flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';nm.textContent=t.name;
       const dx=document.createElement('button');dx.className='chip-del';dx.textContent='✕';dx.addEventListener('click',e2=>{e2.stopPropagation();delTask(t.id,e2);});
       chip.appendChild(chk);chip.appendChild(nm);
-      if(_isCarried){
-        const mvBtn=document.createElement('button');mvBtn.className='chip-del';mvBtn.title='Move to this week';mvBtn.textContent='→';
-        mvBtn.style.cssText='font-size:9px;font-weight:700;color:#b91c1c;opacity:.7;flex-shrink:0';
-        mvBtn.addEventListener('click',e2=>{
-          e2.stopPropagation();const prev=t.due_date;t.due_date=wkMonDs;
-          save();renderMoCal();renderWkCal();renderWkSummary();
-          sbReq('PATCH','tasks',{due_date:wkMonDs},`?id=eq.${t.id}`);
-          pushUndo(()=>{t.due_date=prev;save();renderMoCal();renderWkCal();renderWkSummary();sbReq('PATCH','tasks',{due_date:prev},`?id=eq.${t.id}`);},'Moved goal to this week');
-        });
-        chip.appendChild(mvBtn);
-      }
       chip.appendChild(dx);
       chip.addEventListener('mousedown',e=>{
         if(e.target.closest('.chk,.chip-del'))return;
@@ -940,7 +936,7 @@ function renderMoCal(){
       });
       gBody.appendChild(chip);
     });
-    const _gHidden=goalTasks.length-_gVisN;
+    const _gHidden=_allGoalTasks.length-_gVisN;
     const _gTogStyle='font-size:8px;color:var(--muted);cursor:pointer;padding:1px 2px;border-radius:3px';
     if(_gHidden>0){const more=document.createElement('div');more.style.cssText=_gTogStyle;more.textContent=`+${_gHidden} more`;more.addEventListener('click',e=>{e.stopPropagation();_moExpandedCells.add(_gKey);renderMoCal();});gBody.appendChild(more);}
     if(_gIsExp&&goalTasks.length>_gMaxVis){const less=document.createElement('div');less.style.cssText=_gTogStyle;less.textContent='▴ less';less.addEventListener('click',e=>{e.stopPropagation();_moExpandedCells.delete(_gKey);renderMoCal();});gBody.appendChild(less);}

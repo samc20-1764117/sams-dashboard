@@ -1437,6 +1437,13 @@ function renderWkCal(){
   // Overdue goals from past weeks (only show on current/future weeks, not when viewing past)
   const _goalsOvFromPast=wkStart<=tod()?st.tasks.filter(t=>t.category==='Weekly Goals'&&!t.done&&t.due_date&&t.due_date.split('T')[0]<wkStart).sort((a,b)=>(a.goal_order??9999)-(b.goal_order??9999)):[];
   const _goalsPast=wkEnd<tod();
+  // "Move overdue to this week" banner
+  if(_goalsOvFromPast.length>0){
+    const mvBanner=document.createElement('div');mvBanner.style.cssText='font-size:8px;font-weight:700;color:#b91c1c;cursor:pointer;padding:2px 4px;margin-bottom:2px;opacity:.8;text-align:center';
+    mvBanner.textContent=`↩ ${_goalsOvFromPast.length} overdue — move to this week`;
+    mvBanner.addEventListener('click',e=>{e.stopPropagation();const prevDates=_goalsOvFromPast.map(t=>({id:t.id,prev:t.due_date}));_goalsOvFromPast.forEach(t=>{t.due_date=wkStart;sbReq('PATCH','tasks',{due_date:wkStart},`?id=eq.${t.id}`);});save();renderWkCal();renderWkSummary();if(document.getElementById('woModal')?.classList.contains('open'))renderWOModal();pushUndo(()=>{prevDates.forEach(p=>{const t=st.tasks.find(x=>String(x.id)===String(p.id));if(t){t.due_date=p.prev;sbReq('PATCH','tasks',{due_date:p.prev},`?id=eq.${t.id}`);}});save();renderWkCal();renderWkSummary();if(document.getElementById('woModal')?.classList.contains('open'))renderWOModal();},'Moved overdue goals to this week');});
+    goalsCol.appendChild(mvBanner);
+  }
   [..._goalsOvFromPast,...goalsUndone,...goalsDone].forEach(t=>{
     const _goalOv=_goalsPast&&!t.done;
     const _goalOvCarried=!_goalOv&&_goalsOvFromPast.includes(t);
@@ -1453,18 +1460,6 @@ function renderWkCal(){
     chk.addEventListener('change',e2=>{e2.stopPropagation();toggleTask(t.id,chk.checked,'week');});
     const nm=document.createElement('span');nm.className='chip-name';nm.innerHTML=tmIcon(t)+escHtml(t.name);
     chip.appendChild(chk);chip.appendChild(nm);
-    // "Move to this week" button for overdue carried-over goals
-    if(_goalOvCarried){
-      const mvBtn=document.createElement('button');mvBtn.className='chip-del';mvBtn.title='Move to this week';mvBtn.textContent='→';
-      mvBtn.style.cssText='font-size:11px;font-weight:700;color:#b91c1c;opacity:.7';
-      mvBtn.addEventListener('click',e2=>{
-        e2.stopPropagation();const prev=t.due_date;t.due_date=wkStart;
-        save();renderWkCal();renderWkSummary();
-        sbReq('PATCH','tasks',{due_date:wkStart},`?id=eq.${t.id}`);
-        pushUndo(()=>{t.due_date=prev;save();renderWkCal();renderWkSummary();sbReq('PATCH','tasks',{due_date:prev},`?id=eq.${t.id}`);},'Moved goal to this week');
-      });
-      chip.appendChild(mvBtn);
-    }
     chip.addEventListener('contextmenu',e=>{showGoalCtx(e,String(t.id));});
     chip.addEventListener('click',e=>{
       if(e.target.closest('.wchk')||e.target.closest('.chip-del'))return;
@@ -1881,6 +1876,12 @@ function renderWOModal(){
       .sort((a,b)=>{const aI=a.important&&!a.done?0:1,bI=b.important&&!b.done?0:1;if(aI!==bI)return aI-bI;return(a.goal_order??9999)-(b.goal_order??9999);});
     // Overdue goals from past weeks carried into current week column only
     const _woOvGoals=isCurrent?st.tasks.filter(t=>t.category==='Weekly Goals'&&!t.done&&t.due_date&&t.due_date.split('T')[0]<wkStart):[];
+    if(_woOvGoals.length>0){
+      const woBanner=document.createElement('div');woBanner.style.cssText='font-size:9px;font-weight:700;color:#b91c1c;cursor:pointer;padding:3px 6px;margin-bottom:3px;opacity:.8;text-align:center;border-radius:4px;background:rgba(239,68,68,.08)';
+      woBanner.textContent=`↩ ${_woOvGoals.length} overdue — move to this week`;
+      woBanner.addEventListener('click',e=>{e.stopPropagation();const prevDates=_woOvGoals.map(t=>({id:t.id,prev:t.due_date}));_woOvGoals.forEach(t=>{t.due_date=wkStart;sbReq('PATCH','tasks',{due_date:wkStart},`?id=eq.${t.id}`);});save();renderWOModal();renderWkCal();renderWkSummary();pushUndo(()=>{prevDates.forEach(p=>{const t=st.tasks.find(x=>String(x.id)===String(p.id));if(t){t.due_date=p.prev;sbReq('PATCH','tasks',{due_date:p.prev},`?id=eq.${t.id}`);}});save();renderWOModal();renderWkCal();renderWkSummary();},'Moved overdue goals to this week');});
+      body.appendChild(woBanner);
+    }
     _woOvGoals.forEach(t=>{ body.appendChild(_woMakeChip(t,body,false,true,wkStart)); });
     goals.forEach(t=>{ body.appendChild(_woMakeChip(t,body,isPast,false,wkStart)); });
     body.addEventListener('dblclick',e=>{if(e.target===body)openQA('wkc',null,wkStart,'Weekly Goals');});
@@ -1902,18 +1903,6 @@ function _woMakeChip(t,body,isPastWk,isCarriedOv,targetWkStart){
   // Name
   const nm=document.createElement('span');nm.className='chip-name';nm.innerHTML=tmIcon(t)+escHtml(t.name);
   chip.appendChild(nm);
-  // "Move to this week" for carried-over overdue goals
-  if(isCarriedOv&&targetWkStart){
-    const mvBtn=document.createElement('button');mvBtn.className='chip-del';mvBtn.title='Move to this week';mvBtn.textContent='→';
-    mvBtn.style.cssText='font-size:11px;font-weight:700;color:#b91c1c;opacity:.7';
-    mvBtn.addEventListener('click',e2=>{
-      e2.stopPropagation();const prev=t.due_date;t.due_date=targetWkStart;
-      save();renderWOModal();renderWkCal();renderWkSummary();
-      sbReq('PATCH','tasks',{due_date:targetWkStart},`?id=eq.${t.id}`);
-      pushUndo(()=>{t.due_date=prev;save();renderWOModal();renderWkCal();renderWkSummary();sbReq('PATCH','tasks',{due_date:prev},`?id=eq.${t.id}`);},'Moved goal to this week');
-    });
-    chip.appendChild(mvBtn);
-  }
   // Delete button
   const dx=document.createElement('button');dx.className='chip-del';dx.textContent='✕';dx.title='Delete task';
   dx.addEventListener('click',e2=>{e2.stopPropagation();delTask(t.id,e2);});
