@@ -1858,20 +1858,17 @@ function _finRenderInvestments(purchases,totalBought,gain,gainPct,currentVal){
   // Full-width area chart below
   if(chronological.length>1){
     let cum=0;
-    const dataPoints=chronological.map(p=>{cum+=Math.abs(p.amount||0);return{date:p.date,cum};});
+    const dataPoints=chronological.map(p=>{cum+=Math.abs(p.amount||0);return{date:p.date,cum,ts:new Date(p.date).getTime()};});
     const max=Math.max(...dataPoints.map(d=>d.cum));
-    const w=400,h=130,padT=8,padB=18,padL=12,padR=12;
-    const ch=h-padB-padT;const cw=w-padL-padR;
-    const polyPts=dataPoints.map((d,i)=>`${padL+(i/(dataPoints.length-1))*cw},${padT+ch-(d.cum/max)*ch}`).join(' ');
-    const years=new Set();const yearLabels=[];
-    dataPoints.forEach((d,i)=>{const y=(d.date||'').slice(0,4);if(y&&!years.has(y)){years.add(y);yearLabels.push({x:padL+(i/(dataPoints.length-1))*cw,y:y});}});
-    const baseY=padT+ch;
-    // Use % coordinates for everything so HTML dots align with SVG
-    const pts=dataPoints.map((d,i)=>({
-      px:3+(i/(dataPoints.length-1))*94, // 3% to 97% horizontal
-      py:5+(1-d.cum/max)*75, // 5% to 80% vertical
+    const minTs=dataPoints[0].ts,maxTs=dataPoints[dataPoints.length-1].ts,tsRange=maxTs-minTs||1;
+    // Use % coordinates based on actual date position
+    const pts=dataPoints.map(d=>({
+      px:3+((d.ts-minTs)/tsRange)*94,
+      py:5+(1-d.cum/max)*75,
       date:d.date,cum:d.cum
     }));
+    const years=new Set();const yearLabels=[];
+    dataPoints.forEach((d,i)=>{const y=(d.date||'').slice(0,4);if(y&&!years.has(y)){years.add(y);yearLabels.push({px:pts[i].px,y:y});}});
     const svgPolyFill=pts.map(p=>`${p.px},${p.py}`).join(' ');
     const svgPolyLine=svgPolyFill;
     html+=`<div class="fin-inv-chart" style="position:relative;height:120px">
@@ -1888,9 +1885,8 @@ function _finRenderInvestments(purchases,totalBought,gain,gainPct,currentVal){
       html+=`<span class="fin-chart-dot-hit" style="left:${p.px}%" data-fin-tip="${_finDateNice(p.date)}: ${_finFmtRound(p.cum)}" data-fin-date="${p.date}" data-fin-dot-top="${p.py}" onmouseenter="_finChartHover(this)" onmouseleave="_finChartHover(null)"></span>`;
     });
     // Year labels
-    yearLabels.forEach((yl,yi)=>{
-      const pct=3+(yearLabels.length===1?47:(pts.findIndex(p=>p.date&&p.date.startsWith(yl.y))/(dataPoints.length-1))*94);
-      html+=`<span class="fin-chart-year" style="left:${pct.toFixed(1)}%">${yl.y}</span>`;
+    yearLabels.forEach(yl=>{
+      html+=`<span class="fin-chart-year" style="left:${yl.px.toFixed(1)}%">${yl.y}</span>`;
     });
     html+=`</div>`;
   }
@@ -1914,7 +1910,7 @@ function _finRenderSubs(){
   let html=`<div class="card fin-card">
     <div class="fin-card-hdr"><span class="fin-card-title">Subscriptions</span><button class="fin-add-btn" onclick="addFinSub()" style="font-size:16px;padding:0 4px;line-height:1">+</button></div>
     <div class="fin-sub-scroll">
-    <table class="fin-tbl fin-sub-tbl"><colgroup><col class="fin-col-name"/><col class="fin-col-freq"/><col class="fin-col-due"/><col class="fin-col-amt"/><col class="fin-col-mo"/><col class="fin-col-del"/></colgroup><thead><tr><th>Name</th><th>Freq</th><th>Due</th><th>Amount</th><th style="white-space:nowrap;vertical-align:bottom;text-align:right"><div style="font-size:9px;opacity:.6;line-height:1;margin-bottom:1px;text-align:right">Per Month</div><div style="font-size:12px;font-weight:600;font-variant-numeric:tabular-nums;text-align:right">${_finFmt(monthlyTotal)}</div></th><th></th></tr></thead><tbody>`;
+    <table class="fin-tbl fin-sub-tbl"><colgroup><col class="fin-col-name"/><col class="fin-col-freq"/><col class="fin-col-due"/><col class="fin-col-amt"/><col class="fin-col-mo"/><col class="fin-col-del"/></colgroup><thead><tr><th>Name</th><th style="text-align:center">Freq</th><th style="text-align:center">Due</th><th>Amount</th><th style="white-space:nowrap">Per Month ${_finFmt(monthlyTotal)}</th><th></th></tr></thead><tbody>`;
   subs.forEach(sub=>{
     const dueDisplay=_finDueDisplay(sub.due_month,sub.due_day);
     const dueRaw=(sub.due_month&&sub.due_month>=1&&sub.due_month<=12?_FIN_MONTHS[sub.due_month-1]+' ':'')+(sub.due_day||'');
@@ -1928,8 +1924,8 @@ function _finRenderSubs(){
           ${_finSubEditable(sub.id,'name',sub.name,'fin-name fin-sub-plain')}
         </span>
       </td>
-      <td>${_finFreqSelect(sub.id,sub.frequency||'monthly')}</td>
-      <td><span class="fin-sub-plain fin-due-edit" contenteditable="true" data-fid="${sub.id}" data-field="due_day" onfocus="this.textContent='${dueRaw}';" onblur="_finSubEditDay('${sub.id}',this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">${dueDisplay}</span></td>
+      <td style="text-align:center">${_finFreqSelect(sub.id,sub.frequency||'monthly')}</td>
+      <td style="text-align:center"><span class="fin-sub-plain fin-due-edit" contenteditable="true" data-fid="${sub.id}" data-field="due_day" onfocus="this.textContent='${dueRaw}';" onblur="_finSubEditDay('${sub.id}',this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">${dueDisplay}</span></td>
       <td class="fin-num">${_finSubEditable(sub.id,'amount',amt,'fin-sub-plain')}</td>
       <td class="fin-mo-adj">${_finFmt(moAdj)}</td>
       <td><button class="delbtn" onclick="delFinSub('${sub.id}')">&#x2715;</button></td>
