@@ -1832,8 +1832,8 @@ function _finRenderInvestments(purchases,totalBought,gain,gainPct,currentVal){
   html+=`<div class="fin-inv-left">
     <div class="fin-inv-metrics">
       <div style="font-size:11px;font-weight:600;color:var(--text-secondary,#64748b);margin-bottom:4px">Total Gain</div>
-      <div style="font-size:22px;font-weight:700;color:#10b981;line-height:1.1">${_finFmtRound(gain)}</div>
-      <div style="font-size:12px;font-weight:600;color:#10b981;opacity:.7;margin-top:2px">${_finFmtPct(gainPct)}</div>
+      <div style="font-size:22px;font-weight:700;color:var(--text-primary,#334155);line-height:1.1">${_finFmtRound(gain)}</div>
+      <div style="font-size:12px;font-weight:600;color:#059669;margin-top:2px">${_finFmtPct(gainPct)}</div>
       <div style="margin-top:12px;display:flex;justify-content:space-between;gap:16px">
         <div><div style="font-size:9px;font-weight:600;color:var(--text-secondary,#64748b);letter-spacing:.03em">VTI Value</div><div style="font-size:13px;font-weight:600;color:var(--text-primary,#334155);margin-top:1px">${_finFmtRound(currentVal)}</div></div>
         <div><div style="font-size:9px;font-weight:600;color:var(--text-secondary,#64748b);letter-spacing:.03em">Cost Basis</div><div style="font-size:13px;font-weight:600;color:var(--text-primary,#334155);margin-top:1px">${_finFmtRound(totalBought)}</div></div>
@@ -1913,7 +1913,7 @@ function _finRenderSubs(){
   let html=`<div class="card fin-card">
     <div class="fin-card-hdr"><span class="fin-card-title">Subscriptions</span><button class="fin-add-btn" onclick="addFinSub()" style="font-size:16px;padding:0 4px;line-height:1">+</button></div>
     <div class="fin-sub-scroll">
-    <table class="fin-tbl fin-sub-tbl"><colgroup><col class="fin-col-name"/><col class="fin-col-freq"/><col class="fin-col-due"/><col class="fin-col-amt"/><col class="fin-col-mo"/><col class="fin-col-del"/></colgroup><thead><tr><th>Name</th><th>Freq</th><th>Due</th><th>Amount</th><th style="white-space:nowrap"><span style="opacity:.6">Per Month:</span> <span style="font-size:12px;font-weight:600;font-variant-numeric:tabular-nums">${_finFmt(monthlyTotal)}</span></th><th></th></tr></thead><tbody>`;
+    <table class="fin-tbl fin-sub-tbl"><colgroup><col class="fin-col-name"/><col class="fin-col-freq"/><col class="fin-col-due"/><col class="fin-col-amt"/><col class="fin-col-mo"/><col class="fin-col-del"/></colgroup><thead><tr><th>Name</th><th>Freq</th><th>Due</th><th>Amount</th><th style="white-space:nowrap;vertical-align:bottom"><div style="font-size:9px;opacity:.6;line-height:1;margin-bottom:1px">Per Month</div><div style="font-size:12px;font-weight:600;font-variant-numeric:tabular-nums">${_finFmt(monthlyTotal)}</div></th><th></th></tr></thead><tbody>`;
   subs.forEach(sub=>{
     const dueDisplay=_finDueDisplay(sub.due_month,sub.due_day);
     const dueRaw=(sub.due_month&&sub.due_month>=1&&sub.due_month<=12?_FIN_MONTHS[sub.due_month-1]+' ':'')+(sub.due_day||'');
