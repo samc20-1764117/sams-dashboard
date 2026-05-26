@@ -1830,11 +1830,11 @@ function _finRenderInvestments(purchases,totalBought,gain,gainPct){
   // Left: metrics
   html+=`<div class="fin-inv-left">
     <div class="fin-stats">
-      <div class="fin-stat-row"><span class="fin-stat-label">Gain</span><span class="fin-stat-val" style="color:#10b981;font-weight:600">${_finN(gain,90)}</span></div>
+      <div class="fin-stat-row"><span class="fin-stat-label">Gain</span><span class="fin-stat-val" style="color:#10b981;font-weight:600">${_finFmtRound(gain)}</span></div>
       <div class="fin-stat-row"><span class="fin-stat-label"></span><span class="fin-stat-val" style="color:#10b981;font-size:11px;opacity:.7">${_finFmtPct(gainPct)}</span></div>
-      <div class="fin-stat-row"><span class="fin-stat-label">Cost Basis</span><span class="fin-stat-val">${_finN(totalBought,90)}</span></div>
+      <div class="fin-stat-row"><span class="fin-stat-label">Cost Basis</span><span class="fin-stat-val">${_finFmtRound(totalBought)}</span></div>
       <div class="fin-stat-row"><span class="fin-stat-label">Purchases</span><span class="fin-stat-val">${numPurchases}</span></div>
-      <div class="fin-stat-row"><span class="fin-stat-label">Avg Purchase</span><span class="fin-stat-val">${_finN(avgPurchase,90)}</span></div>
+      <div class="fin-stat-row"><span class="fin-stat-label">Avg Purchase</span><span class="fin-stat-val">${_finFmtRound(avgPurchase)}</span></div>
       ${lastPurchase?`<div class="fin-stat-row"><span class="fin-stat-label">Last Purchase</span><span class="fin-stat-val" style="font-size:11px">${_finDateFmt(lastPurchase.date)}</span></div>`:''}
     </div>
   </div>`;
@@ -1844,7 +1844,7 @@ function _finRenderInvestments(purchases,totalBought,gain,gainPct){
     <div class="fin-inv-scroll">
     <table class="fin-tbl"><tbody>`;
   sorted.forEach(p=>{
-    html+=`<tr class="fin-row">
+    html+=`<tr class="fin-row" data-fin-date="${p.date||''}">
       <td class="fin-ph-cell">${_finEditable(p.id,'date',p.date||'','fin-inv-date')}</td>
       <td class="fin-amt fin-ph-cell">${_finEditable(p.id,'amount',Math.abs(p.amount||0),'fin-inv-amt')}</td>
       <td><button class="delbtn" onclick="delFin('${p.id}')">&#x2715;</button></td>
@@ -1864,7 +1864,7 @@ function _finRenderInvestments(purchases,totalBought,gain,gainPct){
     dataPoints.forEach((d,i)=>{const y=(d.date||'').slice(0,4);if(y&&!years.has(y)){years.add(y);yearLabels.push({x:padL+(i/(dataPoints.length-1))*cw,y:y});}});
     const baseY=padT+ch;
     html+=`<div class="fin-inv-chart" style="position:relative">
-      <svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" style="width:100%;height:100%;display:block">
+      <svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid meet" style="width:100%;display:block">
       <defs><linearGradient id="finAreaGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#10b981" stop-opacity=".18"/><stop offset="100%" stop-color="#10b981" stop-opacity=".02"/></linearGradient></defs>
       <polyline points="${padL},${baseY} ${polyPts} ${padL+cw},${baseY}" fill="url(#finAreaGrad)" stroke="none"/>
       <polyline points="${polyPts}" fill="none" stroke="#10b981" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>`;
@@ -1906,8 +1906,7 @@ function _finRenderSubs(){
   let html=`<div class="card fin-card">
     <div class="fin-card-hdr"><span class="fin-card-title">Subscriptions</span><button class="fin-add-btn" onclick="addFinSub()" style="font-size:16px;padding:0 4px;line-height:1">+</button></div>
     <div class="fin-stats">
-      <div class="fin-stat-row"><span class="fin-stat-label">Monthly</span><span class="fin-stat-val">${_finN(monthlyTotal,90)}</span></div>
-      <div class="fin-stat-row"><span class="fin-stat-label">Yearly</span><span class="fin-stat-val">${_finN(yearlyTotal,90)}</span></div>
+      <div class="fin-stat-row"><span class="fin-stat-label">Per Month</span><span class="fin-stat-val">${_finFmtRound(monthlyTotal)}</span></div>
     </div>
     <div class="fin-sub-scroll">
     <table class="fin-tbl fin-sub-tbl"><colgroup><col class="fin-col-name"/><col class="fin-col-freq"/><col class="fin-col-due"/><col class="fin-col-amt"/><col class="fin-col-mo"/><col class="fin-col-del"/></colgroup><thead><tr><th>Name</th><th>Freq</th><th>Due</th><th>Amount</th><th>/mo</th><th></th></tr></thead><tbody>`;
@@ -2070,10 +2069,13 @@ function _finHover(id){
 }
 function _finChartHover(el){
   const tip=_finEnsureTip();
+  document.querySelectorAll('[data-fin-date]').forEach(r=>r.classList.remove('fin-legend-hover'));
   if(!el){tip.style.display='none';return;}
   tip.textContent=el.dataset.finTip;tip.style.display='block';
   const r=el.getBoundingClientRect();
   tip.style.left=r.left+r.width/2-tip.offsetWidth/2+'px';tip.style.top=r.top-tip.offsetHeight-6+'px';
+  const date=el.dataset.finTip.split(':')[0];
+  document.querySelectorAll(`[data-fin-date="${date}"]`).forEach(r=>r.classList.add('fin-legend-hover'));
 }
 
 async function _finToggleExclude(id){
