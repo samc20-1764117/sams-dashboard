@@ -1682,9 +1682,10 @@ function openSB(){sbOpen=true;document.getElementById('sidebar').classList.remov
 // ══════════════════════════════════════════════════════════════════════════════
 // ── FINANCE PAGE ─────────────────────────────────────────────────────────────
 // ══════════════════════════════════════════════════════════════════════════════
-const _FIN_COLORS_PASTEL=['#93c5fd','#c4b5fd','#fbcfe8','#fde68a','#a5f3fc','#fed7aa','#d9f99d','#e9d5ff'];
+const _FIN_COLORS_PASTEL=['#3b82f6','#ec4899','#9333ea','#2a9db5','#eab308','#38bdf8','#f97316','#65a30d'];
 function _finOf(type){return st.finance.filter(r=>r.type===type);}
 function _finFmt(n){return n<0?'-$'+Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):'$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function _finFmtRound(n){return n<0?'-$'+Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}):'$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});}
 function _finFmtPct(n){return(n>=0?'+':'')+n.toFixed(2)+'%';}
 function _finParseNum(s){return parseFloat((s||'').replace(/[$,\s]/g,''))||0;}
 function _finN(n,w){return`<span class="fin-mono" style="width:${w||80}px">${_finFmt(n)}</span>`;}
@@ -1731,9 +1732,9 @@ async function _finEditField(id,field,el){
   if(!String(id).startsWith('l-'))await sbReqNullable('PATCH','finance',{[field]:val},`?id=eq.${id}`);
 }
 
-function _finEditable(id,field,val,cls){
-  const display=typeof val==='number'?_finFmt(val):escHtml(val||'');
-  const raw=typeof val==='number'?val.toFixed(2):(val||'');
+function _finEditable(id,field,val,cls,round){
+  const display=typeof val==='number'?(round?_finFmtRound(val):_finFmt(val)):escHtml(val||'');
+  const raw=typeof val==='number'?(round?Math.round(val).toString():val.toFixed(2)):(val||'');
   return`<span class="fin-edit ${cls||''}" contenteditable="true" data-fid="${id}" data-field="${field}" onfocus="if(this.dataset.field!=='name'){this.textContent='${raw}';}" onblur="_finEditField('${id}','${field}',this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">${display}</span>`;
 }
 
@@ -1748,8 +1749,8 @@ function _finRenderPersonal(accs,vtiAcc,currentVal,netWorth,gain,gainPct,totalAl
     <div class="fin-card-hdr"><span class="fin-card-title">Personal Finances</span><button class="fin-add-btn" onclick="addFinRow('account')" style="font-size:16px;padding:0 4px;line-height:1">+</button></div>
     <div class="fin-hero">
       <div class="fin-kpi-stack">
-        <div class="fin-kpi fin-kpi-nw"><div class="fin-kpi-label">Net Worth</div><div class="fin-kpi-val fin-kpi-val-lg">${_finFmt(netWorth)}</div>${hasExcluded?`<div class="fin-kpi-sub-muted">All: ${_finFmt(totalAll)}</div>`:''}</div>
-        <div class="fin-kpi fin-kpi-gain"><div class="fin-kpi-label">VTI Gain</div><div class="fin-kpi-val">${_finFmt(gain)}</div><div class="fin-kpi-sub">${_finFmtPct(gainPct)}</div></div>
+        <div class="fin-kpi fin-kpi-nw"><div class="fin-kpi-label">Net Worth</div><div class="fin-kpi-val fin-kpi-val-lg">${_finFmtRound(netWorth)}</div>${hasExcluded?`<div class="fin-kpi-sub-muted">All: ${_finFmtRound(totalAll)}</div>`:''}</div>
+        <div class="fin-kpi fin-kpi-gain"><div class="fin-kpi-label">VTI Gain</div><div class="fin-kpi-val">${_finFmtRound(gain)}</div><div class="fin-kpi-sub">${_finFmtPct(gainPct)}</div></div>
       </div>`;
   // Donut in hero row (right of KPIs)
   let cum=0;
@@ -1764,8 +1765,9 @@ function _finRenderPersonal(accs,vtiAcc,currentVal,netWorth,gain,gainPct,totalAl
   if(segs.length){
     html+=`<svg class="fin-donut" viewBox="0 0 42 42">`;
     segs.forEach(seg=>{
-      const dashLen=seg.pct*100;const dashOff=100-(seg.start*100)+25;
-      html+=`<circle cx="21" cy="21" r="15.9" fill="none" stroke="${seg.color}" stroke-width="4.5" stroke-dasharray="${dashLen} ${100-dashLen}" stroke-dashoffset="${dashOff}"><title>${seg.name}: ${_finFmt(seg.amt)} (${(seg.pct*100).toFixed(1)}%)</title></circle>`;
+      const dashLen=seg.pct*100;const dashOff=100-(seg.start*100);
+      html+=`<circle cx="21" cy="21" r="15.9" fill="none" stroke="white" stroke-width="5.5" stroke-dasharray="${dashLen} ${100-dashLen}" stroke-dashoffset="${dashOff}"></circle>`;
+      html+=`<circle cx="21" cy="21" r="15.9" fill="none" stroke="${seg.color}" stroke-width="4" stroke-dasharray="${dashLen} ${100-dashLen}" stroke-dashoffset="${dashOff}"><title>${seg.name}: ${_finFmtRound(seg.amt)} (${(seg.pct*100).toFixed(1)}%)</title></circle>`;
     });
     html+=`</svg>`;
   }
@@ -1778,7 +1780,7 @@ function _finRenderPersonal(accs,vtiAcc,currentVal,netWorth,gain,gainPct,totalAl
     html+=`<div class="fin-legend-row${excCls}">
       <span class="fin-legend-dot" style="background:${color}"></span>
       <span class="fin-legend-name">${_finEditable(a.id,'name',a.name,'fin-legend-edit-name')}</span>
-      <span class="fin-legend-amt">${_finEditable(a.id,'amount',a.amount||0,'fin-legend-edit-amt')}</span>
+      <span class="fin-legend-amt">${_finEditable(a.id,'amount',a.amount||0,'fin-legend-edit-amt',true)}</span>
       <span class="fin-legend-pct">${pctStr}</span>
       <button class="fin-excl-btn${a.exclude?' active':''}" onclick="_finToggleExclude('${a.id}')" title="${a.exclude?'Include in total':'Exclude from total'}">&#9679;</button>
       <button class="delbtn fin-legend-del" onclick="delFin('${a.id}')">&#x2715;</button>
