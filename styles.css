@@ -1139,8 +1139,8 @@ body.dark .vid-stat-card{background:rgba(40,30,50,.4)}
 .fin-kpi-val{font-size:22px;font-weight:700;color:var(--text-primary,#334155);font-variant-numeric:tabular-nums}
 .fin-kpi-primary{background:rgba(100,100,140,.06)}
 .fin-kpi-primary .fin-kpi-val{color:var(--text-primary,#1e293b)}
-.fin-kpi-gain{background:rgba(16,185,129,.06);border-color:rgba(16,185,129,.15)}
-.fin-kpi-gain .fin-kpi-val{color:#10b981}
+.fin-kpi-gain{background:rgba(74,222,128,.06);border-color:rgba(74,222,128,.15)}
+.fin-kpi-gain .fin-kpi-val{color:#16a34a}
 .fin-kpi-sub{font-size:12px;font-weight:600;color:#10b981;opacity:.8;margin-top:2px}
 .fin-card{margin-bottom:0;display:flex;flex-direction:column}
 .fin-card .fin-tbl{flex:1}
@@ -1208,8 +1208,8 @@ body.dark .vid-stat-card{background:rgba(40,30,50,.4)}
 .fin-inv-right-hdr{display:flex;align-items:center;justify-content:space-between;padding:6px 12px 4px;font-size:11px;font-weight:600;color:var(--text-secondary,#64748b)}
 .fin-inv-scroll{flex:1;overflow-y:auto;min-height:0}
 .fin-inv-scroll .fin-tbl td{padding:3px 12px;font-size:11px}
-.fin-inv-chart{flex:1;padding:0 12px 8px;min-height:0}
-.fin-inv-chart svg{width:100%;height:100%;min-height:80px}
+.fin-inv-chart{flex:1;padding:0;min-height:0;overflow:hidden;border-radius:0 0 10px 10px}
+.fin-inv-chart svg{width:100%;height:100%;min-height:80px;display:block}
 /* Subscriptions compact + scroll */
 .fin-sub-scroll{flex:1;overflow-y:auto;min-height:0}
 .fin-sub-tbl td{padding:4px 12px!important;font-size:12px}
