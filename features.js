@@ -1893,7 +1893,8 @@ function _finRenderInvestments(purchases,totalBought,gain,gainPct){
 
 // ── Column 3: Subscriptions (finance_subs table) ─────────────────────────────
 function _finRenderSubs(){
-  const subs=[...st.finSubs].sort((a,b)=>(b.amount||0)-(a.amount||0));
+  const _moAmt=s=>{const a=s.amount||0;const f=s.frequency||'monthly';return f==='yearly'?a/12:f==='6-month'?a/6:f==='weekly'?a*4.33:a;};
+  const subs=[...st.finSubs].sort((a,b)=>_moAmt(b)-_moAmt(a));
   const monthlyTotal=subs.filter(s=>!s.cancel).reduce((s,sub)=>{
     const amt=sub.amount||0;
     if(sub.frequency==='yearly')return s+amt/12;
