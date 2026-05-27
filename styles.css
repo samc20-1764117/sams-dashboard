@@ -116,6 +116,7 @@ body{font-family:'DM Sans',sans-serif;background:#fef6f0;background-attachment:f
 .sdot.loading{background:#f59e0b;animation:bl 1s infinite}.sdot.err{background:#ef4444}
 @keyframes bl{0%,100%{opacity:1}50%{opacity:.2}}
 @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes vmFadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
 @keyframes confetti-fall{0%{transform:translate(0,0) rotate(0deg) scale(1);opacity:1}60%{opacity:1}100%{transform:translate(var(--cx),var(--cy)) rotate(var(--cr)) scale(.5);opacity:0}}
 @keyframes donut-wiggle{0%,100%{transform:rotate(-10deg) translateY(0)}25%{transform:rotate(10deg) translateY(-3px)}50%{transform:rotate(-8deg) translateY(0)}75%{transform:rotate(8deg) translateY(-2px)}}
 @keyframes d-arm-l{0%,100%{transform:rotate(-20deg)}50%{transform:rotate(28deg)}}

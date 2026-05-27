@@ -2598,6 +2598,7 @@ function openVidModal(type){
   _vidRenderSteps(defaults);
   document.getElementById('vmPostDate').value='';
   const _ytEl2=document.getElementById('vmYoutubeUrl');if(_ytEl2)_ytEl2.value='';
+  _vidUpdateModalFills();
   document.getElementById('vidModal').classList.add('open');
   setTimeout(()=>{const inp=document.getElementById('vmTopic');inp.focus();inp.setSelectionRange(0,0);},80);
 }
@@ -2622,6 +2623,7 @@ function openVidEdit(id){
   const _pd=v.post_date;
   document.getElementById('vmPostDate').value=_pd?parseInt(_pd.slice(5,7))+'/'+parseInt(_pd.slice(8,10))+(_pd.slice(0,4)!==String(new Date().getFullYear())?'/'+_pd.slice(2,4):''):'';
   const _ytEl=document.getElementById('vmYoutubeUrl');if(_ytEl)_ytEl.value=v.youtube_url||'';
+  _vidUpdateModalFills();
 
   document.getElementById('vidModal').classList.add('open');
   setTimeout(()=>{const inp=document.getElementById('vmTopic');inp.focus();const len=inp.value.length;inp.setSelectionRange(len,len);},80);
@@ -2631,10 +2633,9 @@ function _vidRenderSteps(vals){
   const el=document.getElementById('vmSteps');
   const parts=[];
   VID_STEPS.forEach(s=>{
-    // Insert Posted date input between Des and Tab
     if(s==='step_tableau_public'){
-      parts.push(`<div style="display:flex;flex-direction:column;gap:2px;align-items:center">
-        <span style="font-size:9px;color:var(--muted)">Posted</span>
+      parts.push(`<div id="vmPostDateWrap" style="display:flex;flex-direction:column;gap:2px;align-items:center">
+        <span class="vm-step-lbl" style="font-size:9px;color:var(--muted)">Posted</span>
         <input id="vmPostDate" type="text" placeholder="m/d" style="width:44px;height:22px;font-size:10px;padding:0 2px;border:1.5px solid rgba(210,205,228,.4);border-radius:3px;background:transparent;color:var(--text);text-align:center;box-sizing:border-box;outline:none">
       </div>`);
     }
@@ -2644,15 +2645,91 @@ function _vidRenderSteps(vals){
       <span style="font-size:9px;color:${cur==='na'?'var(--border)':'var(--muted)'}">${VID_STEP_LABELS[s]}</span>
       <div data-step="${s}" data-val="${cur}" tabindex="${tab}" onclick="_vidToggleModalStep(this)" oncontextmenu="_vidNaModalStep(event,this);return false" onkeydown="_vidStepKey(event,this)" style="${_vidModalStepCSS(cur)}"></div>
     </div>`);
-    // Link input after Tab stage (only when tab is required)
     if(s==='step_tableau_public'&&cur!=='na'){
-      parts.push(`<div style="display:flex;flex-direction:column;gap:2px;align-items:center">
-        <span style="font-size:9px;color:var(--muted)">Link</span>
+      parts.push(`<div id="vmLinkWrap" style="display:flex;flex-direction:column;gap:2px;align-items:center">
+        <span class="vm-step-lbl" style="font-size:9px;color:var(--muted)">Link</span>
         <input id="vmYoutubeUrl" type="text" placeholder="url" style="width:44px;height:22px;font-size:8px;padding:0 2px;border:1.5px solid rgba(210,205,228,.4);border-radius:3px;background:transparent;color:var(--text);text-align:center;box-sizing:border-box;outline:none">
       </div>`);
     }
   });
   el.innerHTML=parts.join('');
+  // Live-update green fill on Posted/Link inputs
+  const pdInp=document.getElementById('vmPostDate');
+  const ytInp=document.getElementById('vmYoutubeUrl');
+  if(pdInp)pdInp.addEventListener('input',_vidUpdateModalFills);
+  if(ytInp)ytInp.addEventListener('input',_vidUpdateModalFills);
+}
+function _vidUpdateModalFills(){
+  const pdInp=document.getElementById('vmPostDate');
+  const ytInp=document.getElementById('vmYoutubeUrl');
+  const pdW=document.getElementById('vmPostDateWrap');
+  const ytW=document.getElementById('vmLinkWrap');
+  // Posted: green when has value
+  if(pdInp&&pdW){
+    const filled=pdInp.value.trim().length>0;
+    pdInp.style.background=filled?'#10b981':'transparent';
+    pdInp.style.color=filled?'#fff':'var(--text)';
+    pdInp.style.borderColor=filled?'#10b981':'rgba(210,205,228,.4)';
+    pdInp.style.fontWeight=filled?'600':'400';
+    const lbl=pdW.querySelector('.vm-step-lbl');
+    if(lbl)lbl.style.color=filled?'#10b981':'var(--muted)';
+  }
+  // Link: green when has value
+  if(ytInp&&ytW){
+    const filled=ytInp.value.trim().length>0;
+    ytInp.style.background=filled?'#10b981':'transparent';
+    ytInp.style.color=filled?'#fff':'var(--text)';
+    ytInp.style.borderColor=filled?'#10b981':'rgba(210,205,228,.4)';
+    ytInp.style.fontWeight=filled?'600':'400';
+    const lbl=ytW.querySelector('.vm-step-lbl');
+    if(lbl)lbl.style.color=filled?'#10b981':'var(--muted)';
+  }
+  _vidUpdateModalComplete();
+}
+function _vidUpdateModalComplete(){
+  const wrap=document.getElementById('vmStepsWrap');if(!wrap)return;
+  const steps=document.querySelectorAll('#vmSteps [data-step]');
+  const allDone=[...steps].every(el=>el.dataset.val==='done'||el.dataset.val==='na');
+  const pdInp=document.getElementById('vmPostDate');
+  const hasPd=pdInp&&pdInp.value.trim().length>0;
+  const complete=allDone&&hasPd;
+  if(complete){
+    wrap.style.background='rgba(16,185,129,.08)';
+    wrap.style.borderColor='rgba(16,185,129,.35)';
+    wrap.style.boxShadow='0 0 0 1px rgba(16,185,129,.12), inset 0 1px 0 rgba(255,255,255,.6)';
+    // Add completion indicator if not already there
+    if(!wrap.querySelector('.vm-complete-badge')){
+      const badge=document.createElement('div');
+      badge.className='vm-complete-badge';
+      badge.style.cssText='display:flex;align-items:center;gap:4px;margin-top:6px;justify-content:center;animation:vmFadeIn .4s ease';
+      badge.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg><span style="font-size:10px;font-weight:600;color:#10b981;letter-spacing:.3px">COMPLETE</span>';
+      wrap.appendChild(badge);
+      // Mini sparkle burst
+      _vidModalSparkle(wrap);
+    }
+  }else{
+    wrap.style.background='rgba(255,255,255,.7)';
+    wrap.style.borderColor='rgba(210,205,228,.3)';
+    wrap.style.boxShadow='1px 1px 3px rgba(0,0,0,.06), inset 0 1px 0 rgba(255,255,255,.8)';
+    const badge=wrap.querySelector('.vm-complete-badge');
+    if(badge)badge.remove();
+  }
+}
+function _vidModalSparkle(container){
+  const rect=container.getBoundingClientRect();
+  const colors=['#10b981','#34d399','#6ee7b7','#a7f3d0','#fbbf24','#fcd34d'];
+  for(let i=0;i<12;i++){
+    const sp=document.createElement('div');
+    const x=rect.left+Math.random()*rect.width;
+    const y=rect.top+rect.height/2+Math.random()*20-10;
+    const dx=(Math.random()-0.5)*80;
+    const dy=-(Math.random()*60+20);
+    const size=Math.random()*4+2;
+    sp.style.cssText=`position:fixed;left:${x}px;top:${y}px;width:${size}px;height:${size}px;border-radius:50%;background:${colors[i%colors.length]};pointer-events:none;z-index:9999;opacity:1;transition:all .6s cubic-bezier(.2,.8,.3,1)`;
+    document.body.appendChild(sp);
+    requestAnimationFrame(()=>{sp.style.transform=`translate(${dx}px,${dy}px) scale(0)`;sp.style.opacity='0';});
+    setTimeout(()=>sp.remove(),700);
+  }
 }
 function _vidModalStepCSS(val){
   const base='width:22px;height:22px;border-radius:3px;cursor:pointer;display:flex;align-items:center;justify-content:center;user-select:none;transition:transform .1s;';
@@ -2716,6 +2793,7 @@ function _vidUpdateModalStep(el,val){
   el.textContent='';
   el.tabIndex=val==='na'?-1:0;
   el.parentElement.querySelector('span').style.color=val==='na'?'var(--border)':'var(--muted)';
+  _vidUpdateModalComplete();
 }
 
 async function saveVidModal(){

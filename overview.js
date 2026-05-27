@@ -1240,6 +1240,7 @@ function renderWkCal(){
         _vidAssignToDay(vidId,ds);
         dragId=null;return;
       }
+      if(dragId.startsWith('fin-cancel::')){dragId=null;return;}
       const _dragSid=String(dragId);
       const _isMulti=selectedTasks.has(_dragSid)&&selectedTasks.size>1;
       // Also move selected wrec/wrrule items when multi-dragging
@@ -1745,6 +1746,7 @@ function setupWkcEdgeDrop(){
       }
       dragId=null;return;
     }
+    if(dragId.startsWith('fin-cancel::')){dragId=null;return;}
     if(dragId.startsWith('wkgoal::')){
       const tid=dragId.split('::')[1];
       const gt=st.tasks.find(x=>String(x.id)===tid);dragId=null;
@@ -1841,6 +1843,7 @@ function setupEdge(id,dir){
       dragId=null;return;
     }
     // Regular task
+    if(dragId.startsWith('fin-cancel::')){dragId=null;return;}
     if(dragId.startsWith('wkgoal::')){
       const tid=dragId.split('::')[1];
       const gt=st.tasks.find(x=>String(x.id)===tid);dragId=null;
@@ -3050,6 +3053,7 @@ function dropOnTodayList(e){
     _vidAssignToDay(vidId,ds);
     dragId=null;return;
   }
+  if(dragId.startsWith('fin-cancel::')){dragId=null;return;}
 }
 
 // ── Shop overview ──────────────────────────────────────────────────────────────
@@ -4224,7 +4228,7 @@ function drawTBBlock(col,b){
   if(isPostTab){
     _ptVidId=linkedTask.notes.replace('_vid:','');
     const _ptVid=(st.videos||[]).find(x=>String(x.id)===String(_ptVidId));
-    if(_ptVid&&_ptVid.youtube_url)_copyLinkHtml=`<button class="tb-copy-link" data-url="${_ptVid.youtube_url.replace(/"/g,'&quot;')}" title="Copy YouTube link" style="background:none;border:none;cursor:pointer;padding:0 2px;opacity:.65;flex-shrink:0;display:inline-flex;align-items:center;vertical-align:middle;margin-right:2px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></button>`;
+    if(_ptVid&&_ptVid.youtube_url)_copyLinkHtml=`<button class="tb-copy-link" data-url="${_ptVid.youtube_url.replace(/"/g,'&quot;')}" title="Copy YouTube link" style="background:none;border:none;cursor:pointer;padding:0;opacity:.6;flex-shrink:0;display:inline-flex;align-items:center;margin-right:6px;position:relative;top:-1px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></button>`;
   }
   const _showTimeHere=_showTime&&!isPostTab;
   el.innerHTML=`<div class="tb-row"><input type="checkbox" class="tb-chk" ${b._done?'checked':''}><span class="tb-bt${b.dur>=30?' wrap':''}">${_displayTitle}</span><div class="tb-right">${_showTimeHere?`<span class="tb-btime">${tStr(b.sm)}-${tStr(b.sm+b.dur)}</span>`:''}${_copyLinkHtml}<button class="tb-bdel" onclick="delBlock('${b.id}',event)">✕</button></div></div>${_vidStepsHtml}${_notesHtml}<div class="tb-resize" data-id="${b.id}"></div>`;
@@ -4232,7 +4236,7 @@ function drawTBBlock(col,b){
     dot.addEventListener('click',e=>{e.stopPropagation();if(typeof _vidOvToggleStep==='function')_vidOvToggleStep(dot.dataset.vid,dot.dataset.step);});
   });
   const _clBtn=el.querySelector('.tb-copy-link');
-  if(_clBtn)_clBtn.addEventListener('click',e=>{e.stopPropagation();navigator.clipboard.writeText(_clBtn.dataset.url);_clBtn.innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';_clBtn.style.opacity='1';setTimeout(()=>{_clBtn.innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>';_clBtn.style.opacity='.65';},1500);});
+  if(_clBtn)_clBtn.addEventListener('click',e=>{e.stopPropagation();navigator.clipboard.writeText(_clBtn.dataset.url);_clBtn.innerHTML='<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';_clBtn.style.opacity='1';setTimeout(()=>{_clBtn.innerHTML='<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>';_clBtn.style.opacity='.6';},1500);});
   const tbChk=el.querySelector('.tb-chk');
   if(tbChk)tbChk.addEventListener('change',function(e){
     e.stopPropagation();
