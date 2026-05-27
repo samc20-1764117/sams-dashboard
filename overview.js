@@ -3140,8 +3140,14 @@ function _vidOvToggleStep(vidId,step){
   // Core 5 done + post_date + topic + title → published
   const coreSteps=typeof VID_STEPS_CORE!=='undefined'?VID_STEPS_CORE:['step_build','step_vo','step_cut','step_thumbnail','step_description'];
   const coreDone=coreSteps.every(s=>v[s]==='done'||v[s]==='na');
-  if(coreDone&&v.topic&&v.title&&v.post_date&&v.status!=='published')v.status='published';
-  else if(!coreDone&&v.status==='published')v.status='in_progress';
+  if(coreDone&&v.topic&&v.title&&v.post_date&&v.status!=='published'){
+    v.status='published';
+    const tabReq=v.step_tableau_public&&v.step_tableau_public!=='na'&&v.step_tableau_public!=='done';
+    if(tabReq&&typeof _vidCreateTabUpTask==='function')_vidCreateTabUpTask(vidId,v.post_date);
+  }else if(!coreDone&&v.status==='published'){
+    v.status='in_progress';
+    if(typeof _vidDeleteTabTask==='function')_vidDeleteTabTask(vidId);
+  }
   // If tab just completed, mark tab task done + remove from day map
   if(step==='step_tableau_public'&&next==='done'&&coreDone){
     const marker='_vid:'+vidId;
@@ -3152,7 +3158,13 @@ function _vidOvToggleStep(vidId,step){
   save();_renderVidOvMenu();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
   const patch={[step]:next,status:v.status};if(linked)patch[linked]=next;
   sbReqSilent('PATCH','videos',patch,`?id=eq.${vidId}`);
-  pushUndo(()=>{v[step]=prev;if(linked)v[linked]=linkedPrev;v.status=prevStatus;save();_renderVidOvMenu();renderAll();if(document.getElementById('tbGrid'))renderDayTB();const up={[step]:prev,status:prevStatus};if(linked)up[linked]=linkedPrev;sbReqSilent('PATCH','videos',up,`?id=eq.${vidId}`);},'Toggle step');
+  pushUndo(()=>{
+    if(v.status==='published'&&prevStatus!=='published'&&typeof _vidDeleteTabTask==='function')_vidDeleteTabTask(vidId);
+    v[step]=prev;if(linked)v[linked]=linkedPrev;v.status=prevStatus;
+    save();_renderVidOvMenu();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
+    const up={[step]:prev,status:prevStatus};if(linked)up[linked]=linkedPrev;
+    sbReqSilent('PATCH','videos',up,`?id=eq.${vidId}`);
+  },'Toggle step');
 }
 function _vidOvNaStep(vidId,step){
   const v=(st.videos||[]).find(x=>String(x.id)===String(vidId));if(!v)return;
@@ -3287,7 +3299,7 @@ async function _vidCreateTabUpTask(vidId,postDate){
   const marker='_vid:'+vidId;
   const existing=st.tasks.find(t=>t.notes&&t.notes.includes(marker));
   if(existing)return;
-  const name=(v.topic||v.title)+' - post tab';
+  const name='Tab - '+(v.topic||v.title);
   const t={id:'l-'+Date.now(),name,category:'My work',due_date:postDate,done:false,important:false,notes:marker};
   st.tasks.push(t);save();renderAll();
   const sv=await sbReq('POST','tasks',{name,category:'My work',due_date:postDate,done:false,important:false,notes:marker});
@@ -3308,6 +3320,17 @@ function _vidCompleteTabUp(vidId){
   sbReqSilent('PATCH','videos',vidPatch,`?id=eq.${v.id}`);
   save();renderAll();
   if(typeof renderVideosPageKeepScroll==='function')renderVideosPageKeepScroll();
+}
+function _vidUncompleteTabUp(vidId){
+  const v=(st.videos||[]).find(x=>String(x.id)===String(vidId));
+  if(!v)return;
+  const vidPatch={};
+  ['step_tableau_public','step_upload_tableau'].forEach(s=>{if(v[s]==='done'){v[s]='not_started';vidPatch[s]='not_started';}});
+  if(Object.keys(vidPatch).length){
+    sbReqSilent('PATCH','videos',vidPatch,`?id=eq.${v.id}`);
+    save();renderAll();
+    if(typeof renderVideosPageKeepScroll==='function')renderVideosPageKeepScroll();
+  }
 }
 function _vidUncompleteFromOv(vidId){
   // Undo: set back to in_progress, clear steps

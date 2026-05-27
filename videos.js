@@ -2747,15 +2747,31 @@ async function saveVidModal(){
       Object.assign(v,data);
       const coreDone=VID_STEPS_CORE.every(s=>v[s]==='done'||v[s]==='na');
       const hasFields=v.topic&&v.title&&v.post_date;
-      if(coreDone&&hasFields&&v.status!=='published'){v.status='published';data.status='published';}
-      else if(!coreDone&&v.status==='published'){v.status='in_progress';data.status='in_progress';}
+      const wasPub=prev.status==='published';
+      if(coreDone&&hasFields&&v.status!=='published'){
+        v.status='published';data.status='published';
+        const tabReq=v.step_tableau_public&&v.step_tableau_public!=='na'&&v.step_tableau_public!=='done';
+        if(tabReq&&typeof _vidCreateTabUpTask==='function')_vidCreateTabUpTask(String(v.id),v.post_date);
+      }else if((!coreDone||!hasFields)&&v.status==='published'){
+        v.status='in_progress';data.status='in_progress';
+        _vidDeleteTabTask(String(v.id));
+      }
+      // If post_date changed on a published video with tab task, update task date
+      if(v.status==='published'&&prev.post_date!==v.post_date&&v.post_date){
+        const marker='_vid:'+v.id;
+        const tabTask=st.tasks.find(t=>t.notes&&t.notes.includes(marker));
+        if(tabTask){tabTask.due_date=v.post_date;sbReqSilent('PATCH','tasks',{due_date:v.post_date},`?id=eq.${tabTask.id}`);}
+      }
       save();renderVideosPageKeepScroll();
       if(v.video_type==='B'&&v.status!==prev.status&&(v.status==='in_progress'||v.status==='up_next'))_vidPromoteChildren(v.id,v.status);
+      const _editId=_vidEditId;
       pushUndo(async()=>{
+        // If was published and now not, delete tab task. If was not and now is, also clean up.
+        if(v.status==='published'&&prev.status!=='published')_vidDeleteTabTask(String(_editId));
         Object.assign(v,prev);
         orphans.forEach(o=>{const c=(st.videos||[]).find(x=>String(x.id)===String(o.id));if(c){c.big_video_id=o.prevBigId;c.status=o.prevStatus;c.vid_order=o.prevOrder;}});
-        save();renderVideosPageKeepScroll();
-        await sbReqSilent('PATCH','videos',prev,`?id=eq.${_vidEditId}`);
+        save();renderVideosPageKeepScroll();if(typeof renderAll==='function')renderAll();
+        await sbReqSilent('PATCH','videos',prev,`?id=eq.${_editId}`);
         for(const o of orphans)await sbReqSilent('PATCH','videos',{big_video_id:o.prevBigId,status:o.prevStatus,vid_order:o.prevOrder??null},`?id=eq.${o.id}`);
       },'Edited video');
       await sbReqSilent('PATCH','videos',data,`?id=eq.${_vidEditId}`);
@@ -2852,21 +2868,29 @@ async function cycleVidStep(id,step){
   const tabRequired=v.step_tableau_public&&v.step_tableau_public!=='na';
   const tabDone=!tabRequired||v.step_tableau_public==='done';
 
-  // If core 5 just completed and no post_date → prompt for posting date
-  if(coreDone&&!wasCoreDone&&!v.post_date&&VID_STEPS_CORE.includes(step)){
-    const patch={[step]:next};
-    if(linked)patch[linked]=next;
-    save();renderVideosPageKeepScroll();
-    pushUndo(async()=>{
-      v[step]=prev;if(linked)v[linked]=linkedPrev;v.status=prevStatus;
+  // If core 5 just completed → prompt for posting date or auto-publish
+  if(coreDone&&!wasCoreDone&&VID_STEPS_CORE.includes(step)){
+    if(!v.post_date){
+      // No post_date → prompt
+      const patch={[step]:next};
+      if(linked)patch[linked]=next;
       save();renderVideosPageKeepScroll();
-      const up={[step]:prev,status:prevStatus};if(linked)up[linked]=linkedPrev;
-      await sbReqSilent('PATCH','videos',up,`?id=eq.${id}`);
-    },'Step change');
-    await sbReqSilent('PATCH','videos',patch,`?id=eq.${id}`);
-    // Prompt for posting date (reuse overview's prompt)
-    if(typeof _vidPromptPostDateFromVid==='function')_vidPromptPostDateFromVid(id);
-    return;
+      pushUndo(async()=>{
+        v[step]=prev;if(linked)v[linked]=linkedPrev;v.status=prevStatus;
+        save();renderVideosPageKeepScroll();
+        const up={[step]:prev,status:prevStatus};if(linked)up[linked]=linkedPrev;
+        await sbReqSilent('PATCH','videos',up,`?id=eq.${id}`);
+      },'Step change');
+      await sbReqSilent('PATCH','videos',patch,`?id=eq.${id}`);
+      _vidPromptPostDateFromVid(id);
+      return;
+    } else {
+      // post_date already set → auto-publish + create tab task if needed
+      v.status='published';
+      if(tabRequired&&!tabDone&&typeof _vidCreateTabUpTask==='function'){
+        _vidCreateTabUpTask(id,v.post_date);
+      }
+    }
   }
 
   // Auto-publish: core 5 done + post_date + topic + title → published
@@ -2874,12 +2898,13 @@ async function cycleVidStep(id,step){
   const kidsComplete=v.video_type!=='B'||_vidAllChildrenComplete(v.id);
   if(coreDone&&hasFields&&kidsComplete&&v.status!=='published'){
     v.status='published';
-    // If tab required, create the tab task
     if(tabRequired&&!tabDone&&typeof _vidCreateTabUpTask==='function'){
       _vidCreateTabUpTask(id,v.post_date);
     }
   }else if(!coreDone&&v.status==='published'&&prevStatus==='published'){
     v.status='in_progress';
+    // Delete tab task when reverting from published
+    _vidDeleteTabTask(id);
   }
   // If tab step just completed → true completeness celebration
   if(step==='step_tableau_public'&&next==='done'&&coreDone&&hasFields){
@@ -2909,9 +2934,18 @@ async function cycleVidStep(id,step){
   const wasDone=VID_STEPS.every(s=>(s===step?cur:v[s]||'not_started')==='done'||(s===step?cur:v[s]||'not_started')==='na');
   if(allDone&&hasFields&&kidsComplete&&!wasDone)_vidCelebrate(id);
   pushUndo(async()=>{
-    v[step]=prev;if(linked)v[linked]=linkedPrev;v.status=prevStatus;
+    v[step]=prev;if(linked)v[linked]=linkedPrev;
+    // If reverting from published, delete tab task + restore tab stages
+    if(v.status==='published'&&prevStatus!=='published')_vidDeleteTabTask(id);
+    if(prevStatus!=='published'&&v.status==='published'){
+      // Undo tab completion if tab was auto-completed
+      if(step==='step_tableau_public'&&prev!=='done'){
+        ['step_tableau_public','step_upload_tableau'].forEach(s=>{if(v[s]==='done')v[s]=prev;});
+      }
+    }
+    v.status=prevStatus;
     childUpdates.forEach(d=>{d.c.step_build=d.cPrev;d.c.status=d.cPrevStatus;});
-    save();renderVideosPageKeepScroll();
+    save();renderVideosPageKeepScroll();if(typeof renderAll==='function')renderAll();
     const up={[step]:prev,status:prevStatus};if(linked)up[linked]=linkedPrev;
     await sbReqSilent('PATCH','videos',up,`?id=eq.${id}`);
     for(const d of childUpdates)await sbReqSilent('PATCH','videos',{step_build:d.cPrev,status:d.cPrevStatus},`?id=eq.${d.c.id}`);
@@ -2920,6 +2954,15 @@ async function cycleVidStep(id,step){
   for(const d of childUpdates)await sbReqSilent('PATCH','videos',{step_build:d.c.step_build,status:d.c.status},`?id=eq.${d.c.id}`);
 }
 
+function _vidDeleteTabTask(vidId){
+  const marker='_vid:'+vidId;
+  const idx=st.tasks.findIndex(t=>t.notes&&t.notes.includes(marker));
+  if(idx>-1){
+    const task=st.tasks[idx];
+    st.tasks.splice(idx,1);
+    if(!String(task.id).startsWith('l-'))sbReqSilent('DELETE','tasks',null,`?id=eq.${task.id}`);
+  }
+}
 function _vidPromptPostDateFromVid(id){
   const v=(st.videos||[]).find(x=>String(x.id)===String(id));if(!v)return;
   if(v.post_date){_vidAfterPostDate(id);return;}
@@ -2955,6 +2998,9 @@ function _vidAfterPostDate(id){
   sbReqSilent('PATCH','videos',{status:'published'},`?id=eq.${v.id}`);
   if(tabRequired&&typeof _vidCreateTabUpTask==='function'){
     _vidCreateTabUpTask(id,v.post_date);
+  } else {
+    // No tab needed — remove from day map
+    if(typeof _vidDayMap==='function'){const map=_vidDayMap();delete map[String(id)];_vidDayMapSet(map);}
   }
   save();renderVideosPageKeepScroll();
   if(typeof renderAll==='function')renderAll();
