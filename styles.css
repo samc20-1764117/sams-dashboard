@@ -710,12 +710,14 @@ body.dark .rec-book-left{background:rgba(0,0,0,.1)}
 .rec-list-item:hover{background:rgba(210,205,228,.1);box-shadow:0 1px 2px rgba(0,0,0,.03)}
 .rec-list-item.active{background:rgba(255,255,255,.45);border:none;border-radius:0;margin-right:-14px;padding:8px 14px 8px 12px;z-index:12;position:relative}
 body.dark .rec-list-item.active{background:rgba(255,255,255,.06)}
-/* Inverse rounded corner — top scoop (box-shadow technique) */
-.rec-list-item.active::before{content:'';position:absolute;bottom:100%;right:0;width:14px;height:14px;border-radius:50%;background:transparent;box-shadow:7px 7px 0 0 rgba(255,255,255,.45);pointer-events:none}
-body.dark .rec-list-item.active::before{box-shadow:7px 7px 0 0 rgba(255,255,255,.06)}
-/* Inverse rounded corner — bottom scoop (box-shadow technique) */
-.rec-list-item.active::after{content:'';position:absolute;top:100%;right:0;width:14px;height:14px;border-radius:50%;background:transparent;box-shadow:7px -7px 0 0 rgba(255,255,255,.45);pointer-events:none}
-body.dark .rec-list-item.active::after{box-shadow:7px -7px 0 0 rgba(255,255,255,.06)}
+/* Inverse rounded corner — overflow-hidden + box-shadow approach */
+.scoop-top,.scoop-bot{position:absolute;right:0;width:14px;height:14px;overflow:hidden;pointer-events:none}
+.scoop-top{bottom:100%}
+.scoop-bot{top:100%}
+.scoop-top::before{content:'';position:absolute;width:28px;height:28px;border-radius:50%;bottom:0;right:0;box-shadow:0 0 0 20px rgba(255,255,255,.45)}
+.scoop-bot::before{content:'';position:absolute;width:28px;height:28px;border-radius:50%;top:0;right:0;box-shadow:0 0 0 20px rgba(255,255,255,.45)}
+body.dark .scoop-top::before{box-shadow:0 0 0 20px rgba(255,255,255,.06)}
+body.dark .scoop-bot::before{box-shadow:0 0 0 20px rgba(255,255,255,.06)}
 .rec-list-main{display:flex;align-items:center;gap:6px}
 .rec-list-fav{font-size:12px;color:var(--muted);opacity:.3;cursor:pointer;flex-shrink:0}
 .rec-list-fav.on{color:#ef4444;opacity:1}

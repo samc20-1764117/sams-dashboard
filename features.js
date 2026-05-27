@@ -2376,6 +2376,7 @@ function renderRecipeList(){
     const sid=String(r.id);
     const isSel=_recPanelId===sid;
     return`<div class="rec-list-item${isSel?' active':''}" data-rid="${sid}" onclick="selRecRow(event,'${sid}')">
+      ${isSel?'<div class="scoop-top"></div><div class="scoop-bot"></div>':''}
       <div class="rec-list-main">
         <span class="rec-list-fav${r.favorite?' on':''}" onclick="event.stopPropagation();toggleRecFavorite('${sid}',event)">♥</span>
         <span class="rec-list-name">${r.name?esc(r.name):'<em style="color:var(--muted)">New Recipe…</em>'}</span>
@@ -2429,8 +2430,8 @@ function renderRecipeDetail(id){
   function fmtMin(m){if(!m)return'';return m>=60?`${Math.floor(m/60)}h${m%60?' '+m%60+'m':''}`:m+'m';}
   const sid=String(r.id);
   const escV=v=>(v||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;');
-  const mealOpts=['','Breakfast','Lunch','Dinner','Snack','Dessert','Drink','Side'];
-  const cuisineOpts=['','American','Mexican','Italian','Chinese','Japanese','Korean','Thai','Indian','Mediterranean','French','Vietnamese','Greek','Southern','Tex-Mex','Other'];
+  const mealOpts=['','Lunch','Dinner','Side','Snack'];
+  const cuisineOpts=['','American','Mexican','Italian','Asian','Indian','Mediterranean','Vietnamese','Other'];
   let html=`<div class="rec-detail-header">
     <div class="rec-detail-title-wrap">
       <input class="rec-detail-title-inp" value="${escV(r.name)}" placeholder="Recipe name"
@@ -2489,6 +2490,15 @@ function _diTogglePantry(i,id){
   _diFlush();
   const ing=_detailIngs[i];
   ing.is_pantry=!ing.is_pantry;
+  // Propagate staple status to same ingredient in all other recipes
+  const lname=(ing.name||'').trim().toLowerCase();
+  if(lname)(st.recipes||[]).forEach(r=>{
+    if(String(r.id)===String(id))return;
+    const parsed=_parseIngredients(r.ingredients);
+    let changed=false;
+    parsed.forEach(p=>{if((p.name||'').trim().toLowerCase()===lname&&!!p.is_pantry!==!!ing.is_pantry){p.is_pantry=ing.is_pantry;changed=true;}});
+    if(changed){r.ingredients=_serializeIngredients(parsed);save();sbReqSilent('PATCH','recipes',{ingredients:r.ingredients},`?id=eq.${r.id}`);}
+  });
   _diSortStaples();
   const newIdx=_detailIngs.indexOf(ing);
   _diRender(id);_diSave(id);
@@ -3657,8 +3667,8 @@ function _renderMealRecipeModal(){
   const esc=v=>(v||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   const escV=v=>(v||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;');
   const sid=String(r.id);
-  const mealOpts=['','Breakfast','Lunch','Dinner','Snack','Dessert','Drink','Side'];
-  const cuisineOpts=['','American','Mexican','Italian','Chinese','Japanese','Korean','Thai','Indian','Mediterranean','French','Vietnamese','Greek','Southern','Tex-Mex','Other'];
+  const mealOpts=['','Lunch','Dinner','Side','Snack'];
+  const cuisineOpts=['','American','Mexican','Italian','Asian','Indian','Mediterranean','Vietnamese','Other'];
   const ings=_parseIngredients(r.ingredients);
   let html=`<div style="padding:20px 24px 0;display:flex;justify-content:space-between;align-items:flex-start">
     <input class="rec-detail-title-inp" value="${escV(r.name)}" placeholder="Recipe name" style="font-size:18px;font-weight:700;border:none;background:none;color:var(--text);width:100%;outline:none;font-family:inherit"
@@ -5291,6 +5301,30 @@ document.addEventListener('input',e=>{
     el.setSelectionRange(pos,pos);
   }
 },{capture:true});
+
+// Bullet continuation: Enter after a bullet line creates new bullet
+document.addEventListener('keydown',e=>{
+  const el=e.target;
+  if(el.tagName!=='TEXTAREA'||e.key!=='Enter')return;
+  const pos=el.selectionStart;
+  const val=el.value;
+  const lineStart=val.lastIndexOf('\n',pos-1)+1;
+  const line=val.slice(lineStart,pos);
+  if(line.startsWith('• ')&&line.trim()!=='•'){
+    e.preventDefault();
+    el.value=val.slice(0,pos)+'\n• '+val.slice(pos);
+    const np=pos+3;
+    el.setSelectionRange(np,np);
+    el.dispatchEvent(new Event('input',{bubbles:true}));
+  } else if(line.trim()==='•'){
+    // Empty bullet — remove it instead
+    e.preventDefault();
+    el.value=val.slice(0,lineStart)+val.slice(pos);
+    el.setSelectionRange(lineStart,lineStart);
+    el.dispatchEvent(new Event('input',{bubbles:true}));
+  }
+},{capture:true});
+
 async function addQN(){
   const inp=document.getElementById('qnInput');
   const txt=(inp?.value||'').trim();
