@@ -114,6 +114,7 @@ function renderToday(){
     }
     if(t._vidId)return st.blocks.some(b=>(b.ds===_todDs||isOvToday)&&String(b._vidId)===String(t._vidId));
     if(t._type==='pup')return st.blocks.some(b=>(b.ds===_todDs||isOvToday)&&String(b._pupSessId)===String(t._pupSessId));
+    if(t._type==='fin-cancel')return st.blocks.some(b=>(b.ds===_todDs||isOvToday)&&String(b._finCancelSubId)===String(t._subId));
     if(!t._virtual)return st.blocks.some(b=>(b.ds===_todDs||isOvToday)&&String(b.taskId)===String(t.id));
     return true;
   }
@@ -766,11 +767,11 @@ function tRowShopVirt(t,noDate=false,tbArrow=false,noColor=false){
 }
 function tRowFinCancel(t,tbArrow=false){
   const s=OV;
-  return`<div class="ti ov-row" id="ti-${t.id}" draggable="true"
+  return`<div class="ti ${t.done?'done':'ov-row'}" ${!t.done?`style="background:${s.bg}"`:''} id="ti-${t.id}" draggable="true"
     ondragstart="dragId='fin-cancel::${t._subId}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true)"
     ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false)"
     onclick="selTask(event,'${t.id}')" ondblclick="showPage('finance')">
-    <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" onchange="if(this.checked){delFinSub('${t._subId}');}"></label>
+    <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="archiveFinSub('${t._subId}',this.checked)"></label>
     <span class="tn">${t.name}</span>
     ${tbArrow?'<span class="tb-arrow">›</span>':''}
   </div>`;
@@ -1370,7 +1371,7 @@ function renderWkCal(){
       const chk=document.createElement('input');chk.type='checkbox';chk.className='wchk';chk.checked=t.done;
       chk.addEventListener('change',e2=>{
         e2.stopPropagation();
-        if(t._type==='fin-cancel'){if(chk.checked)delFinSub(t._subId);}
+        if(t._type==='fin-cancel'){archiveFinSub(t._subId,chk.checked);}
         else if(t._type==='vid'){if(chk.checked)_vidCompleteFromOv(t._vidId,chk);else _vidUncompleteFromOv(t._vidId);}
         else if(t._type==='pup'){togPupSessionDone(t._pupSessId,chk.checked);}
         else if(t._type==='shop'){togShop(t._shopId,chk.checked);}
@@ -4795,6 +4796,16 @@ function dropOnTB(e,ds,h,row,smOverride){
     st.blocks.push(blk);dragId=null;save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
     sbSaveBlock(blk);
     pushUndo(()=>{st.blocks=st.blocks.filter(b=>b.id!==blk.id);sbDeleteBlock(blk.id);save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();},'Added birthday to time block');
+    return;
+  } else if(dragId.startsWith('fin-cancel::')){
+    const subId=dragId.split('::')[1];
+    const sub=st.finSubs.find(x=>String(x.id)===String(subId));
+    if(!sub){dragId=null;return;}
+    if(st.blocks.some(b=>b.ds===ds&&String(b._finCancelSubId)===String(subId))){dragId=null;showToast('Already in time block','#6b7280',2000);return;}
+    const blk={id:crypto.randomUUID(),title:'Cancel '+sub.name,ds,sm,dur:30,cat:'Home',_finCancelSubId:String(subId)};
+    st.blocks.push(blk);dragId=null;save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
+    sbSaveBlock(blk);
+    pushUndo(()=>{st.blocks=st.blocks.filter(b=>b.id!==blk.id);sbDeleteBlock(blk.id);save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();},'Added to time block');
     return;
   } else if(dragId.startsWith('vid::')){
     const vidId=dragId.split('::')[1];

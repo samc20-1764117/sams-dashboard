@@ -1889,7 +1889,9 @@ function _finRenderInvestments(purchases,totalBought,gain,gainPct,currentVal){
 // ── Column 3: Subscriptions (finance_subs table) ─────────────────────────────
 function _finRenderSubs(){
   const _moAmt=s=>{const a=s.amount||0;const f=s.frequency||'monthly';return f==='yearly'?a/12:f==='6-month'?a/6:f==='weekly'?a*4.33:a;};
-  const subs=[...st.finSubs].sort((a,b)=>{if(a.cancel&&!b.cancel)return -1;if(!a.cancel&&b.cancel)return 1;return _moAmt(b)-_moAmt(a);});
+  const activeSubs=[...st.finSubs].filter(s=>!s.archived);
+  const archivedSubs=[...st.finSubs].filter(s=>s.archived);
+  const subs=activeSubs.sort((a,b)=>{if(a.cancel&&!b.cancel)return -1;if(!a.cancel&&b.cancel)return 1;return _moAmt(b)-_moAmt(a);});
   const monthlyTotal=subs.filter(s=>!s.cancel).reduce((s,sub)=>{
     const amt=sub.amount||0;
     if(sub.frequency==='yearly')return s+amt/12;
@@ -1900,7 +1902,7 @@ function _finRenderSubs(){
   const yearlyTotal=monthlyTotal*12;
 
   let html=`<div class="card fin-card">
-    <div class="fin-card-hdr"><span class="fin-card-title">Recurring Expenses</span><button class="fin-add-btn" onclick="addFinSub()" style="font-size:16px;padding:0 4px;line-height:1">+</button></div>
+    <div class="fin-card-hdr"><span class="fin-card-title">Recurring Expenses</span><div style="display:flex;gap:4px;align-items:center">${archivedSubs.length?`<button class="fin-add-btn" onclick="toggleFinArchive()" style="font-size:11px;padding:1px 6px;line-height:1;opacity:.6" title="View archived">&#128451;</button>`:''}<button class="fin-add-btn" onclick="addFinSub()" style="font-size:16px;padding:0 4px;line-height:1">+</button></div></div>
     <div class="fin-sub-scroll">
     <table class="fin-tbl fin-sub-tbl"><colgroup><col class="fin-col-name"/><col class="fin-col-freq"/><col class="fin-col-due"/><col class="fin-col-amt"/><col class="fin-col-mo"/><col class="fin-col-del"/></colgroup><thead><tr><th style="padding-left:17px!important">Name</th><th style="text-align:center">Freq</th><th style="text-align:right;padding-right:16px!important">Due</th><th style="text-align:right;padding-right:16px!important">Amount</th><th class="fin-mo-adj" style="font-size:12px;font-weight:500;text-align:right;padding:4px 12px!important;font-variant-numeric:tabular-nums;white-space:nowrap">Per Month: ${_finFmt(monthlyTotal)}</th><th></th></tr></thead><tbody>`;
   subs.forEach(sub=>{
@@ -1923,7 +1925,16 @@ function _finRenderSubs(){
       <td><button class="delbtn" onclick="delFinSub('${sub.id}')">&#x2715;</button></td>
     </tr>`;
   });
-  html+=`</tbody></table></div></div>`;
+  html+=`</tbody></table></div>`;
+  // Archive section
+  if(archivedSubs.length&&window._finArchiveOpen){
+    html+=`<div class="fin-archive-section"><div class="fin-archive-hdr" onclick="toggleFinArchive()">Archived (${archivedSubs.length})</div>`;
+    archivedSubs.forEach(sub=>{
+      html+=`<div class="fin-archive-row"><span class="fin-archive-name">${sub.name}</span><span class="fin-archive-amt">${_finFmt(sub.amount||0)}/${(sub.frequency||'monthly').replace('6-month','6mo').replace('yearly','yr').replace('monthly','mo').replace('weekly','wk')}</span><button class="fin-add-btn" onclick="unarchiveFinSub('${sub.id}')" style="font-size:11px;padding:1px 6px" title="Restore">&#8634;</button></div>`;
+    });
+    html+=`</div>`;
+  }
+  html+=`</div>`;
   return html;
 }
 
@@ -2016,7 +2027,7 @@ function _finCancelTasksForDate(ds){
   if(!st.finSubs)return[];
   const tasks=[];
   const viewDate=new Date(ds+'T00:00:00');
-  st.finSubs.filter(s=>s.cancel&&s.due_day).forEach(s=>{
+  st.finSubs.filter(s=>s.cancel&&!s.archived&&s.due_day).forEach(s=>{
     // Calculate next due date from due_month+due_day
     const today=new Date(ds+'T00:00:00');
     const yr=today.getFullYear();const mo=today.getMonth();
@@ -2059,6 +2070,26 @@ async function delFinSub(id){
   if(typeof renderToday==='function')renderToday();if(typeof renderWkCal==='function')renderWkCal();
   pushUndo(()=>{if(old)st.finSubs.push(old);renderFinancePage();if(typeof renderToday==='function')renderToday();if(typeof renderWkCal==='function')renderWkCal();if(!String(id).startsWith('l-'))sbReq('POST','finance_subs',old);},'Deleted subscription');
   if(!String(id).startsWith('l-'))await sbReq('DELETE','finance_subs',null,`?id=eq.${id}`);
+}
+
+function toggleFinArchive(){window._finArchiveOpen=!window._finArchiveOpen;renderFinancePage();}
+
+async function archiveFinSub(id,checked){
+  const sub=st.finSubs.find(r=>String(r.id)===String(id));
+  if(!sub)return;
+  const prev={archived:sub.archived||false,cancel:sub.cancel||false};
+  sub.archived=!!checked;sub.cancel=false;
+  renderFinancePage();if(typeof renderToday==='function')renderToday();if(typeof renderWkCal==='function')renderWkCal();
+  pushUndo(()=>{sub.archived=prev.archived;sub.cancel=prev.cancel;renderFinancePage();if(typeof renderToday==='function')renderToday();if(typeof renderWkCal==='function')renderWkCal();if(!String(id).startsWith('l-'))sbReq('PATCH','finance_subs',{archived:prev.archived,cancel:prev.cancel},`?id=eq.${id}`);},'Archived subscription');
+  if(!String(id).startsWith('l-'))await sbReq('PATCH','finance_subs',{archived:true,cancel:false},`?id=eq.${id}`);
+}
+
+async function unarchiveFinSub(id){
+  const sub=st.finSubs.find(r=>String(r.id)===String(id));
+  if(!sub)return;
+  sub.archived=false;sub.cancel=false;
+  renderFinancePage();if(typeof renderToday==='function')renderToday();if(typeof renderWkCal==='function')renderWkCal();
+  if(!String(id).startsWith('l-'))await sbReq('PATCH','finance_subs',{archived:false,cancel:false},`?id=eq.${id}`);
 }
 
 // ── Finance account Add / Delete ─────────────────────────────────────────────
