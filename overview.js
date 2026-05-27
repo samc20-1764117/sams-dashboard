@@ -3099,7 +3099,7 @@ function closeVidOvMenu(){
 }
 function _renderVidOvMenu(){
   const menu=document.getElementById('vidOvPanel');if(!menu)return;
-  const vids=(st.videos||[]).filter(v=>!v.is_deleted&&v.video_type==='B'&&v.status==='up_next');
+  const vids=(st.videos||[]).filter(v=>!v.is_deleted&&v.video_type==='B'&&(v.status==='up_next'||v.status==='in_progress')&&!(typeof _vidIsComplete==='function'&&_vidIsComplete(v)));
   const unassigned=vids;
   const _hdr=`<div class="tod-tb-header" style="display:flex;align-items:center;justify-content:center;position:relative;padding:8px 10px"><span onclick="closeVidOvMenu();showPage('videos')" style="font-size:12px;font-weight:700;color:var(--text);letter-spacing:-.1px;cursor:pointer" onmouseenter="this.style.color='var(--accent)'" onmouseleave="this.style.color='var(--text)'"title="Go to Videos page">Videos</span><button onclick="closeVidOvMenu()" style="position:absolute;right:10px;background:none;border:none;cursor:pointer;font-size:14px;color:var(--muted);padding:0 2px;line-height:1" title="Close">✕</button></div>`;
   if(!unassigned.length){
@@ -3555,7 +3555,8 @@ function tRow(t,o={}){
   const _isPostTab=t.notes&&t.notes.startsWith('_vid:');
   const s=ov?OV:imp?IMP:_isPostTab?{bg:'rgba(22,163,74,.18)',t:'#166534',d:'#16a34a',b:'rgba(22,163,74,.35)'}:gc(t.category);
   const sl=ov?'ov':imp?'imp':slug(t.category);
-  return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''} ${imp&&!ov?'imp-row':''}" style="${!ov&&!imp&&!o.noColor?`background:${s.bg}`:''}" id="ti-${t.id}" ${o.drag?`draggable="true" ondragstart="dStart(event,'${t.id}')" ondragend="dEnd(event)"`:''} onclick="selTask(event,'${t.id}')" ondblclick="tiDbl(event,'${t.id}')" oncontextmenu="showCtx(event,'${t.id}')">
+  const _dblHandler=_isPostTab?`if(typeof openVidEdit==='function')openVidEdit('${t.notes.replace('_vid:','')}')`:`tiDbl(event,'${t.id}')`;
+  return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''} ${imp&&!ov?'imp-row':''}" style="${!ov&&!imp&&!o.noColor?`background:${s.bg}`:''}" id="ti-${t.id}" ${o.drag?`draggable="true" ondragstart="dStart(event,'${t.id}')" ondragend="dEnd(event)"`:''} onclick="selTask(event,'${t.id}')" ondblclick="${_dblHandler}" oncontextmenu="showCtx(event,'${t.id}')">
     <label class="chk-wrap" onclick="event.stopPropagation()" onmousedown="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="toggleTask('${t.id}',this.checked,'${o.drag?'wk':''}')"></label>
     <span class="tn">${tmIcon(t)}${t.name}</span>
     ${o.cat?(o.catDot&&!ov?`<svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3" fill="${s.bg}" stroke="${s.d}" stroke-opacity="0.4" stroke-width="1"/></svg>`:(!o.catDot?`<span class="cpill" style="background:${s.bg};color:${s.t};border-color:${s.b}">${t.category||'?'}</span>`:'')):''}
@@ -4214,19 +4215,20 @@ function drawTBBlock(col,b){
     }
   }
   if(_vidWhiteBg)el.style.cssText+=';background:rgba(255,255,255,.88);color:#15803d;border-color:rgba(34,197,94,.25)';
-  // Copy-link button for Post Tab tasks
-  let _copyLinkHtml='';
+  // Post Tab tasks: link button replaces time, double-click opens video edit
+  let _copyLinkHtml='';let _ptVidId=null;
   if(isPostTab){
-    const _vidMarker=linkedTask.notes.replace('_vid:','');
-    const _ptVid=(st.videos||[]).find(x=>String(x.id)===String(_vidMarker));
-    if(_ptVid&&_ptVid.youtube_url)_copyLinkHtml=`<button class="tb-copy-link" data-url="${_ptVid.youtube_url.replace(/"/g,'&quot;')}" title="Copy YouTube link" style="background:none;border:none;cursor:pointer;font-size:11px;padding:1px 4px;opacity:.7;flex-shrink:0">📋</button>`;
+    _ptVidId=linkedTask.notes.replace('_vid:','');
+    const _ptVid=(st.videos||[]).find(x=>String(x.id)===String(_ptVidId));
+    if(_ptVid&&_ptVid.youtube_url)_copyLinkHtml=`<button class="tb-copy-link" data-url="${_ptVid.youtube_url.replace(/"/g,'&quot;')}" title="Copy YouTube link" style="background:none;border:none;cursor:pointer;padding:2px 4px;opacity:.65;flex-shrink:0;display:flex;align-items:center"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></button>`;
   }
-  el.innerHTML=`<div class="tb-row"><input type="checkbox" class="tb-chk" ${b._done?'checked':''}><span class="tb-bt${b.dur>=30?' wrap':''}">${_displayTitle}</span>${_copyLinkHtml}<div class="tb-right">${_showTime?`<span class="tb-btime">${tStr(b.sm)}-${tStr(b.sm+b.dur)}</span>`:''}<button class="tb-bdel" onclick="delBlock('${b.id}',event)">✕</button></div></div>${_vidStepsHtml}${_notesHtml}<div class="tb-resize" data-id="${b.id}"></div>`;
+  const _showTimeHere=_showTime&&!isPostTab;
+  el.innerHTML=`<div class="tb-row"><input type="checkbox" class="tb-chk" ${b._done?'checked':''}><span class="tb-bt${b.dur>=30?' wrap':''}">${_displayTitle}</span>${_copyLinkHtml}<div class="tb-right">${_showTimeHere?`<span class="tb-btime">${tStr(b.sm)}-${tStr(b.sm+b.dur)}</span>`:''}<button class="tb-bdel" onclick="delBlock('${b.id}',event)">✕</button></div></div>${_vidStepsHtml}${_notesHtml}<div class="tb-resize" data-id="${b.id}"></div>`;
   if(b._vidId)el.querySelectorAll('.vid-step-dot[data-step]').forEach(dot=>{
     dot.addEventListener('click',e=>{e.stopPropagation();if(typeof _vidOvToggleStep==='function')_vidOvToggleStep(dot.dataset.vid,dot.dataset.step);});
   });
   const _clBtn=el.querySelector('.tb-copy-link');
-  if(_clBtn)_clBtn.addEventListener('click',e=>{e.stopPropagation();navigator.clipboard.writeText(_clBtn.dataset.url);_clBtn.textContent='✓';setTimeout(()=>_clBtn.textContent='📋',1500);});
+  if(_clBtn)_clBtn.addEventListener('click',e=>{e.stopPropagation();navigator.clipboard.writeText(_clBtn.dataset.url);_clBtn.innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';_clBtn.style.opacity='1';setTimeout(()=>{_clBtn.innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>';_clBtn.style.opacity='.65';},1500);});
   const tbChk=el.querySelector('.tb-chk');
   if(tbChk)tbChk.addEventListener('change',function(e){
     e.stopPropagation();
@@ -4293,6 +4295,7 @@ function drawTBBlock(col,b){
     clearSelection();
     if(b.cat==='pup_session'){const _ps=b._pupSessId?(st.pupSessions||[]).find(s=>String(s.id)===String(b._pupSessId)):null;const _sk=_ps?(st.pup_skills||[]).find(x=>String(x.id)===String(_ps.skill_id)):((st.pup_skills||[]).find(x=>x.skill===b.title));if(_sk)openPupEditModal(_sk.id);}
     else if(b._vidId){if(typeof openVidEdit==='function')openVidEdit(b._vidId);}
+    else if(isPostTab&&_ptVidId){if(typeof openVidEdit==='function')openVidEdit(_ptVidId);}
     else if(b.taskId){openEditTask(b.taskId);}
     else if(b.ruleId){openWrEditModal(String(b.ruleId),dsToWkKey(b.ds),'this');}
     else if(b.recId){openRecEditModal(String(b.recId));}
