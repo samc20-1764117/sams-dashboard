@@ -2848,9 +2848,10 @@ function _recPickSuggestion(text,type){
 }
 
 // ── Easy Meals ────────────────────────────────────────────────────────────────
+let _editEasyIdx=-1,_emIngs=[];
 function toggleEasyMealsPopup(){
   let popup=document.querySelector('.easy-meals-popup');
-  if(popup){popup.classList.toggle('open');if(popup.classList.contains('open'))renderEasyMeals();return;}
+  if(popup){popup.classList.toggle('open');if(popup.classList.contains('open')){_editEasyIdx=-1;_emIngs=[];renderEasyMeals();}return;}
   popup=document.createElement('div');popup.className='easy-meals-popup open';
   document.querySelector('.rec-book-wrap').appendChild(popup);
   renderEasyMeals();
@@ -2858,64 +2859,98 @@ function toggleEasyMealsPopup(){
 function renderEasyMeals(){
   const popup=document.querySelector('.easy-meals-popup');if(!popup)return;
   const meals=st.easyMeals||[];
+  const editing=_editEasyIdx>=0;
   let html=`<div class="easy-meals-hdr"><span>Easy Meals</span><button onclick="toggleEasyMealsPopup()">✕</button></div>`;
-  html+=`<div class="easy-meals-list">`;
-  if(!meals.length)html+=`<div style="padding:16px;text-align:center;color:var(--muted);font-size:11px">No easy meals yet</div>`;
-  meals.forEach((m,i)=>{
-    const ings=(m.ingredients||[]).join(', ');
-    html+=`<div class="easy-meal-row" onclick="editEasyMeal(${i})">
-      <span class="easy-meal-name">${escHtml(m.name)}</span>
-      <span class="easy-meal-ings">${escHtml(ings)}</span>
-      <span style="color:var(--muted);font-size:10px">${m.servings||1}sv</span>
-      <button class="easy-meal-del" onclick="event.stopPropagation();deleteEasyMeal(${i})" title="Delete">✕</button>
-    </div>`;
-  });
-  html+=`</div>`;
-  html+=`<div class="easy-meals-add" id="easyMealForm">
-    <div class="easy-meals-add-row"><input id="easyMealName" placeholder="Meal name" onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('easyMealServings').focus()}"><input id="easyMealServings" type="number" min="1" placeholder="Sv" style="width:50px;flex:none" value="1" onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('easyMealIngs').focus()}"></div>
-    <textarea id="easyMealIngs" placeholder="Ingredients (one per line)"></textarea>
-    <div style="display:flex;gap:6px"><button onclick="saveEasyMeal()" style="flex:1;padding:4px 12px;border:1px solid var(--accent);border-radius:6px;background:var(--accent);color:#fff;font-size:11px;font-weight:600;cursor:pointer">Save</button><button id="easyMealCancelBtn" onclick="cancelEasyMealEdit()" style="display:none;padding:4px 12px;border:1px solid var(--border);border-radius:6px;background:transparent;color:var(--muted);font-size:11px;cursor:pointer">Cancel</button></div>
-  </div>`;
+  if(!editing){
+    html+=`<div class="easy-meals-list">`;
+    if(!meals.length)html+=`<div style="padding:16px;text-align:center;color:var(--muted);font-size:11px">No easy meals yet</div>`;
+    meals.forEach((m,i)=>{
+      const ings=_emIngNames(m);
+      html+=`<div class="easy-meal-row" onclick="editEasyMeal(${i})">
+        <span class="easy-meal-name">${escHtml(m.name)}</span>
+        <span class="easy-meal-ings">${escHtml(ings)}</span>
+        <span style="color:var(--muted);font-size:10px">${m.servings||1}sv</span>
+        <button class="easy-meal-del" onclick="event.stopPropagation();deleteEasyMeal(${i})" title="Delete">✕</button>
+      </div>`;
+    });
+    html+=`</div>`;
+    html+=`<div class="easy-meals-add"><button onclick="newEasyMeal()" style="width:100%;padding:6px;border:1px dashed var(--border);border-radius:8px;background:transparent;color:var(--accent);font-size:11px;font-weight:600;cursor:pointer">+ New Easy Meal</button></div>`;
+  } else {
+    const m=_editEasyIdx<meals.length?meals[_editEasyIdx]:null;
+    html+=`<div class="easy-meals-add" style="flex:1;overflow-y:auto;border-top:none">`;
+    html+=`<div class="easy-meals-add-row"><input id="easyMealName" placeholder="Meal name" value="${escHtml(m?m.name:'')}" onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('easyMealServings').focus()}"><input id="easyMealServings" type="number" min="1" placeholder="Sv" style="width:50px;flex:none" value="${m?m.servings||1:1}" onkeydown="if(event.key==='Enter'){event.preventDefault();_emFocusFirst()}"></div>`;
+    html+=`<div style="font-size:10px;font-weight:700;color:var(--muted);margin:4px 0 2px">Ingredients</div>`;
+    html+=`<div class="em-ing-list" id="emIngList">`;
+    _emIngs.forEach((ing,i)=>{
+      html+=`<div class="em-ing-row" id="emIng${i}"><input class="em-ing-name" placeholder="ingredient" value="${escHtml(ing.name||'')}" oninput="_emIngs[${i}].name=this.value" onkeydown="_emIngKey(event,${i})"><button class="em-ing-del" onclick="_emIngDel(${i})" title="Remove">✕</button></div>`;
+    });
+    html+=`</div>`;
+    html+=`<button class="em-ing-add" onclick="_emIngAdd()">+ Add ingredient</button>`;
+    html+=`<div style="display:flex;gap:6px;margin-top:4px"><button onclick="saveEasyMeal()" style="flex:1;padding:5px 12px;border:1px solid var(--accent);border-radius:6px;background:var(--accent);color:#fff;font-size:11px;font-weight:600;cursor:pointer">Save</button><button onclick="cancelEasyMealEdit()" style="padding:5px 12px;border:1px solid var(--border);border-radius:6px;background:transparent;color:var(--muted);font-size:11px;cursor:pointer">Cancel</button></div>`;
+    html+=`</div>`;
+  }
   popup.innerHTML=html;
 }
-let _editEasyIdx=-1;
+function _emIngNames(m){
+  const ings=_parseIngredients(m.ingredients);
+  return ings.map(x=>x.name).filter(Boolean).join(', ');
+}
+function newEasyMeal(){
+  _editEasyIdx=st.easyMeals?st.easyMeals.length:0;
+  _emIngs=[{name:''}];
+  renderEasyMeals();
+  setTimeout(()=>{const inp=document.getElementById('easyMealName');if(inp)inp.focus();},20);
+}
 function editEasyMeal(i){
   _editEasyIdx=i;
   const m=(st.easyMeals||[])[i];if(!m)return;
+  _emIngs=_parseIngredients(m.ingredients).map(x=>({name:x.name||''}));
+  if(!_emIngs.length)_emIngs=[{name:''}];
   renderEasyMeals();
-  const nameInp=document.getElementById('easyMealName');
-  const svInp=document.getElementById('easyMealServings');
-  const ingsTA=document.getElementById('easyMealIngs');
-  const cancelBtn=document.getElementById('easyMealCancelBtn');
-  if(nameInp)nameInp.value=m.name||'';
-  if(svInp)svInp.value=m.servings||1;
-  if(ingsTA)ingsTA.value=(m.ingredients||[]).join('\n');
-  if(cancelBtn)cancelBtn.style.display='inline-block';
-  if(nameInp)nameInp.focus();
 }
 function cancelEasyMealEdit(){
-  _editEasyIdx=-1;
-  const nameInp=document.getElementById('easyMealName');
-  const svInp=document.getElementById('easyMealServings');
-  const ingsTA=document.getElementById('easyMealIngs');
-  const cancelBtn=document.getElementById('easyMealCancelBtn');
-  if(nameInp)nameInp.value='';
-  if(svInp)svInp.value='1';
-  if(ingsTA)ingsTA.value='';
-  if(cancelBtn)cancelBtn.style.display='none';
+  _editEasyIdx=-1;_emIngs=[];
+  renderEasyMeals();
+}
+function _emIngAdd(){
+  _emFlush();_emIngs.push({name:''});renderEasyMeals();
+  const i=_emIngs.length-1;
+  setTimeout(()=>{const inp=document.querySelector(`#emIng${i} .em-ing-name`);if(inp)inp.focus();},20);
+}
+function _emIngDel(i){
+  _emFlush();_emIngs.splice(i,1);renderEasyMeals();
+}
+function _emFlush(){
+  _emIngs.forEach((ing,i)=>{const el=document.querySelector(`#emIng${i} .em-ing-name`);if(el)ing.name=el.value;});
+}
+function _emFocusFirst(){
+  const inp=document.querySelector('#emIng0 .em-ing-name');if(inp)inp.focus();
+}
+function _emIngKey(e,i){
+  if(e.key==='Enter'){
+    e.preventDefault();
+    _emIngs[i].name=e.target.value;
+    if(e.target.value.trim())_emIngAdd();
+  } else if(e.key==='Backspace'&&!e.target.value&&_emIngs.length>1){
+    _emIngDel(i);
+    const prev=Math.max(0,i-1);
+    setTimeout(()=>{const inp=document.querySelector(`#emIng${prev} .em-ing-name`);if(inp)inp.focus();},20);
+  }
 }
 function saveEasyMeal(){
+  _emFlush();
   const name=(document.getElementById('easyMealName')?.value||'').trim();
   if(!name)return;
   const servings=parseInt(document.getElementById('easyMealServings')?.value)||1;
-  const ingsRaw=(document.getElementById('easyMealIngs')?.value||'').split('\n').map(s=>s.trim()).filter(Boolean);
+  const clean=_emIngs.filter(x=>(x.name||'').trim());
+  const ingredients=_serializeIngredients(clean.map(x=>({name:x.name.trim(),amount:''})));
   if(!st.easyMeals)st.easyMeals=[];
   if(_editEasyIdx>=0&&_editEasyIdx<st.easyMeals.length){
-    st.easyMeals[_editEasyIdx]={...st.easyMeals[_editEasyIdx],name,servings,ingredients:ingsRaw};
+    st.easyMeals[_editEasyIdx]={...st.easyMeals[_editEasyIdx],name,servings,ingredients};
   } else {
-    st.easyMeals.push({id:'em-'+Date.now(),name,servings,ingredients:ingsRaw});
+    st.easyMeals.push({id:'em-'+Date.now(),name,servings,ingredients});
   }
-  _editEasyIdx=-1;
+  _editEasyIdx=-1;_emIngs=[];
   save();renderEasyMeals();
 }
 function deleteEasyMeal(i){
@@ -3804,12 +3839,13 @@ function renderMealPicker(){
   html+=`<div style="padding:8px 16px;max-height:50vh;overflow-y:auto">`;
   const easyFiltered=(st.easyMeals||[]).filter(m=>{
     if(!_mealPickerSearch)return true;
-    return m.name.toLowerCase().includes(_mealPickerSearch.toLowerCase())||(m.ingredients||[]).some(x=>x.toLowerCase().includes(_mealPickerSearch.toLowerCase()));
+    const lq=_mealPickerSearch.toLowerCase();
+    return m.name.toLowerCase().includes(lq)||_parseIngredients(m.ingredients).some(x=>(x.name||'').toLowerCase().includes(lq));
   });
   if(easyFiltered.length){
     html+=`<div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);padding:4px 0 2px">Easy Meals</div>`;
     easyFiltered.forEach(m=>{
-      html+=`<div class="groc-recipe-row" onclick="addEasyMealFromPicker('${m.id}')">${escHtml(m.name)} <span style="color:var(--muted);font-size:10px">${(m.ingredients||[]).length} items</span></div>`;
+      html+=`<div class="groc-recipe-row" onclick="addEasyMealFromPicker('${m.id}')">${escHtml(m.name)} <span style="color:var(--muted);font-size:10px">${_parseIngredients(m.ingredients).length} items</span></div>`;
     });
   }
   if(recipes.length&&easyFiltered.length)html+=`<div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);padding:8px 0 2px">Recipes</div>`;
@@ -3846,14 +3882,14 @@ async function addEasyMealFromPicker(emId){
   if(sv&&sv[0])st.mealPlan.push(sv[0]);
   else{item.id='l-'+Date.now();st.mealPlan.push(item);}
   save();renderMealRow();
-  // Add easy meal ingredients to grocery list
+  // Add easy meal ingredients to grocery list (same format as recipes)
   const wk=_groceryWeekOf();
   const stapleNames=new Set((st.groceryStaples||[]).filter(s=>s.active!==false).map(s=>s.name.toLowerCase()));
-  for(const ingName of (m.ingredients||[])){
-    if(stapleNames.has(ingName.toLowerCase()))continue;
-    const dup=(st.groceryList||[]).find(g=>g.week_of===wk&&g.name.toLowerCase()===ingName.toLowerCase());
+  const ings=_parseIngredients(m.ingredients).filter(x=>!x.is_pantry&&!stapleNames.has((x.name||'').toLowerCase()));
+  for(const ing of ings){
+    const dup=(st.groceryList||[]).find(g=>g.week_of===wk&&g.name.toLowerCase()===ing.name.toLowerCase());
     if(dup)continue;
-    const gi={name:ingName,amount:null,source:'recipe',source_id:emId,recipe_name:m.name,aisle:_inferAisle(ingName),checked:false,week_of:wk};
+    const gi={name:ing.name,amount:ing.amount||null,source:'recipe',source_id:emId,recipe_name:m.name,aisle:_inferAisle(ing.name),checked:false,week_of:wk};
     const gsv=await sbReqSilent('POST','grocery_list',gi);
     if(gsv&&gsv[0])st.groceryList.push(gsv[0]);
     else{gi.id='l-'+Date.now();st.groceryList.push(gi);}

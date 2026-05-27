@@ -691,8 +691,8 @@ body.dark .rec-search-inp:focus{border-color:var(--accent);box-shadow:0 2px 10px
 body.dark .rec-search-plus{background:rgba(40,28,20,.85);border-color:rgba(255,220,200,.15);box-shadow:0 2px 6px rgba(0,0,0,.15)}
 body.dark .rec-search-plus:hover{background:var(--accent);color:#fff}
 .rec-search-suggestions{display:none;position:absolute;top:100%;left:50%;transform:translateX(-50%);margin-top:6px;background:var(--bg);border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.1);z-index:1001;max-height:240px;overflow-y:auto;width:320px}
-/* Easy Meals float button — top right inset cutout */
-.easy-meals-float{position:absolute;top:-18px;right:24px;z-index:10;display:flex;flex-direction:column;align-items:center}
+/* Easy Meals float button — top left inset cutout */
+.easy-meals-float{position:absolute;top:-18px;left:24px;z-index:10;display:flex;flex-direction:column;align-items:center}
 .easy-meals-cutout{position:absolute;top:4px;left:-16px;right:-16px;bottom:-10px;background:var(--bg);border-radius:20px;z-index:0}
 body.dark .easy-meals-cutout{background:var(--bg)}
 .easy-meals-btn{position:relative;z-index:1;padding:7px 16px;border:1px solid rgba(210,205,228,.25);border-radius:10px;font-family:inherit;font-size:11px;font-weight:600;background:rgba(255,255,255,.9);color:var(--text);cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.05);transition:all .15s}
@@ -700,7 +700,7 @@ body.dark .easy-meals-cutout{background:var(--bg)}
 body.dark .easy-meals-btn{background:rgba(40,28,20,.85);border-color:rgba(255,220,200,.15);color:var(--text)}
 body.dark .easy-meals-btn:hover{border-color:var(--accent);color:var(--accent)}
 /* Easy Meals popup */
-.easy-meals-popup{display:none;position:absolute;top:34px;right:24px;z-index:1002;width:360px;max-height:480px;background:var(--bg);border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.12);overflow:hidden;flex-direction:column}
+.easy-meals-popup{display:none;position:absolute;top:34px;left:24px;z-index:1002;width:380px;max-height:520px;background:var(--bg);border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.12);overflow:hidden;flex-direction:column}
 .easy-meals-popup.open{display:flex}
 body.dark .easy-meals-popup{background:rgba(28,16,10,.95);border-color:rgba(255,220,200,.1)}
 .easy-meals-hdr{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);font-size:13px;font-weight:700}
@@ -719,6 +719,14 @@ body.dark .easy-meals-popup{background:rgba(28,16,10,.95);border-color:rgba(255,
 .easy-meals-add-row{display:flex;gap:6px;align-items:center}
 .easy-meals-add-row input{flex:1}
 .easy-meals-add-row button{padding:4px 12px;border:1px solid var(--accent);border-radius:6px;background:var(--accent);color:#fff;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap}
+.em-ing-list{max-height:160px;overflow-y:auto;display:flex;flex-direction:column;gap:1px}
+.em-ing-row{display:flex;align-items:center;gap:4px}
+.em-ing-row input{flex:1;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:11px;background:transparent;color:var(--text);outline:none;box-sizing:border-box}
+.em-ing-row input:focus{border-color:var(--accent)}
+.em-ing-del{background:none;border:none;cursor:pointer;color:var(--muted);font-size:9px;opacity:0;transition:opacity .1s;padding:2px}
+.em-ing-row:hover .em-ing-del{opacity:1}
+.em-ing-del:hover{color:#ef4444}
+.em-ing-add{background:none;border:none;cursor:pointer;color:var(--accent);font-size:11px;font-weight:600;padding:4px 0}
 .rec-book{display:grid;grid-template-columns:320px 1fr;height:100%;border-radius:12px;overflow:hidden;border:1px solid rgba(210,205,228,.15);background:rgba(255,252,248,.35);box-shadow:0 8px 32px rgba(80,50,20,.08);box-sizing:border-box;position:relative;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
 body.dark .rec-book{background:rgba(28,16,10,.35);border-color:rgba(255,220,200,.08);box-shadow:0 8px 32px rgba(0,0,0,.2)}
 /* Vertical divider between panels — drawn by JS pseudo approach */
