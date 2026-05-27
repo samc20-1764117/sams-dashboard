@@ -3,16 +3,20 @@
 ### Data Model
 - Table: `videos`. Key columns: `id`, `title`, `topic`, `video_type` (B=Big, L=Small), `big_video_id` (FK to parent B video's id), `playlist`, `status`, `post_date`, `duration_minutes` (min.sec format like 9.26), `is_deleted`.
 - **Grouping**: L videos link to B videos via `big_video_id`. B videos don't have `big_video_id` set. Standalone L videos have `big_video_id=null`.
-- **Stages** (step columns): `step_build`, `step_record`, `step_film`, `step_cut`, `step_thumbnail`, `step_description`, `step_tableau_public`, `step_upload_tableau`. Values: `done`, `not_started`, `na`.
+- **Stages** (step columns): `step_build`, `step_vo`, `step_cut`, `step_thumbnail`, `step_description`, `step_tableau_public`. `step_upload_tableau` kept in Supabase but merged into Tab visually (always synced). Values: `done`, `not_started`, `na`.
+- **Core 5 stages**: `VID_STEPS_CORE` = first 5 (Build, Vo, Cut, Th, Des). Completing all 5 triggers posting date prompt.
+- **Tab stage** (6th): `step_tableau_public` — controls both `step_tableau_public` and `step_upload_tableau` in Supabase.
+- **Completeness levels**: (1) Core 5 done → prompt posting date. (2) Core 5 done + posting date → status=published. If tab required, creates "post tab" task. (3) Tab done (or na) → true completeness, removed from overview.
 - **Dropped columns** (do not reference): `number`, `build_hours`, `step_answer_comments`, `step_short`.
 - **`group_name`**: legacy field migrated to `big_video_id`. Client-side migration in `renderVideosPage()` re-assigns `big_video_id` from `group_name` if missing — but ONLY for non-`idea` status videos. When ungrouping L videos (Cmd+Right to idea), MUST clear both `big_video_id` AND `group_name` (local + Supabase PATCH) or the migration will restore the parent link.
-- `VID_STEPS` array and `VID_STEP_LABELS` map define the 8 stages.
+- `VID_STEPS` array (6 stages) and `VID_STEP_LABELS` map define the displayed stages. `VID_STEPS_CORE` = first 5.
 
 ### Status & Published Logic
 - Statuses: `idea`, `up_next`, `in_progress`, `published`, `backup`. Order: 1. Idea → 2. Up Next → 3. In Progress → 4. Complete → 4. Backup (two 4s intentional).
 - `VID_STATUS_LABELS` maps internal names to display names (e.g. `published`→"Complete", `up_next`→"Up Next"). `VID_STATUS_ORDER` defines sort order.
-- **Auto-publish**: Two paths: (1) `cycleVidStep` — ALL steps done/na + `topic` + `title` → auto-set `published`. For B videos, all children must also meet criteria. (2) `_vidAutoPublishFromYt` — YT match exists + all steps done → auto-set `published` (runs after YT data load). Un-completing any requirement on published → `in_progress`. Published videos cannot have status changed via drag (protected in `_vidDashDrop`/`_vidGroupDrop`).
-- **Helper functions**: `_vidIsComplete(v)` checks single video completeness. `_vidAllChildrenComplete(bigId)` checks all children of a B video.
+- **Auto-publish**: Core 5 done + `post_date` + `topic` + `title` → `published`. If tab required, creates "post tab" task for the posting date. Tab completion = true completeness (removed from overview). `_vidAutoPublishFromYt` — YT match + all 6 steps done → `published`. Un-completing core steps on published → `in_progress`. Published videos cannot have status changed via drag.
+- **Posting date prompt**: Triggered when 5th core step completes (on any view) and no `post_date` set. If tab required: creates task. If not: fully complete.
+- **Helper functions**: `_vidIsComplete(v)` = core 5 done + post_date + topic + title. `_vidTrulyComplete(v)` = above + tab done/na. `_vidAllChildrenComplete(bigId)` checks children.
 - **Date colors**: no date=muted, published+future/today=green, published+past=black, all core done=green, has date=yellow.
 
 ### Header
@@ -51,20 +55,20 @@
 - **All Details**: Single click on td with `data-field` → `vidCellEdit()`: inline text input for title, dropdown for status. Inputs are borderless (`border:none; border-bottom:1px solid`) with transparent bg to prevent row height shift. Save on blur/Enter, cancel on Escape. Double click → `openVidEdit(id)` full edit modal. Posted/Length are YT-sourced, not inline-editable.
 - **Current tab**: Double-click on any row → opens full edit modal (`openVidEdit(id)`). No inline editing for posted/duration (YT-sourced).
 - **Step dots**: click cycles `not_started→done→not_started`. If `na`, click cycles `na→not_started`. Right-click toggles na/required via `_vidToggleStepNa()`.
-- **TA+Up linking**: `step_tableau_public` and `step_upload_tableau` always stay in sync — toggling na/required on one toggles the other. Applies in inline right-click (`_vidToggleStepNa`), modal right-click (`_vidNaModalStep`), and type change (`_vidTypeChanged`).
+- **Tab linking**: `step_tableau_public` and `step_upload_tableau` always stay in sync — toggling one toggles the other. Only Tab shown in UI; Up hidden but kept in Supabase.
 - All edits use `renderVideosPageKeepScroll()` to preserve scroll position.
 
 ### Edit Modal (`#vidModal`)
 - Layout: topic first, title second, B/L toggle top-right, status+big video row, then outset container with stages only (posted/duration hidden — YT-sourced).
 - Fields: title, topic, type (Big/Small toggle), status, big video (searchable input+datalist). `vmPostDate`/`vmDuration` are hidden inputs (data preserved on save, not visible).
 - **Stages**: toggle buttons — click=done/not done, right-click=na (invisible). Na stages can't be clicked, only right-click to restore.
-- **Defaults for new**: Big → all stages required. Small → Tab Pub & Upload default to `na`. Changing type dropdown updates stages.
+- **Defaults for new**: Big → all stages required. Small → Tab default to `na`. Changing type dropdown updates stages.
 - **Big Video field**: searchable via datalist of all B video titles. `_vidGetBigVideoId()` resolves title→id on save.
 - **Playlist field**: searchable via datalist of all existing playlists.
 
 ### + Button (Add Child Video)
 - Shown to the left of B video titles in both Dashboard and All Details.
-- `openVidModalForBig(bigId)`: opens add modal with type=Small, big video pre-selected, Tab Pub & Upload defaulted to na.
+- `openVidModalForBig(bigId)`: opens add modal with type=Small, big video pre-selected, Tab defaulted to na.
 
 ### Keyboard Shortcuts (when not in input)
 - `n` — open add modal

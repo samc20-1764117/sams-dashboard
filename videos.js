@@ -2703,10 +2703,11 @@ async function saveVidModal(){
   // B videos cannot have a parent
   if(data.video_type==='B')data.big_video_id=null;
   document.querySelectorAll('#vmSteps [data-step]').forEach(el=>{data[el.dataset.step]=el.dataset.val||'not_started';});
-  // Default Tab Pub + Upload to na for L-type videos with a parent group (not standalone)
+  // Sync step_upload_tableau to match step_tableau_public
+  data.step_upload_tableau=data.step_tableau_public||'not_started';
+  // Default Tab to na for L-type videos with a parent group (not standalone)
   if(_vidMode==='add'&&data.video_type==='L'&&data.big_video_id){
-    if(!data.step_tableau_public||data.step_tableau_public==='not_started')data.step_tableau_public='na';
-    if(!data.step_upload_tableau||data.step_upload_tableau==='not_started')data.step_upload_tableau='na';
+    if(!data.step_tableau_public||data.step_tableau_public==='not_started'){data.step_tableau_public='na';data.step_upload_tableau='na';}
   }
   // Match parent status when assigned to a big video
   if(data.big_video_id){
@@ -2744,10 +2745,10 @@ async function saveVidModal(){
         });
       }
       Object.assign(v,data);
-      const allStepsDone=VID_STEPS.every(s=>v[s]==='done'||v[s]==='na');
-      const hasFields=v.topic&&v.title;
-      if(allStepsDone&&hasFields&&v.status!=='published'){v.status='published';data.status='published';}
-      else if((!allStepsDone||!hasFields)&&v.status==='published'){v.status='in_progress';data.status='in_progress';}
+      const coreDone=VID_STEPS_CORE.every(s=>v[s]==='done'||v[s]==='na');
+      const hasFields=v.topic&&v.title&&v.post_date;
+      if(coreDone&&hasFields&&v.status!=='published'){v.status='published';data.status='published';}
+      else if(!coreDone&&v.status==='published'){v.status='in_progress';data.status='in_progress';}
       save();renderVideosPageKeepScroll();
       if(v.video_type==='B'&&v.status!==prev.status&&(v.status==='in_progress'||v.status==='up_next'))_vidPromoteChildren(v.id,v.status);
       pushUndo(async()=>{
@@ -2917,6 +2918,46 @@ async function cycleVidStep(id,step){
   },'Step change');
   await sbReqSilent('PATCH','videos',patch,`?id=eq.${id}`);
   for(const d of childUpdates)await sbReqSilent('PATCH','videos',{step_build:d.c.step_build,status:d.c.status},`?id=eq.${d.c.id}`);
+}
+
+function _vidPromptPostDateFromVid(id){
+  const v=(st.videos||[]).find(x=>String(x.id)===String(id));if(!v)return;
+  if(v.post_date){_vidAfterPostDate(id);return;}
+  const ds=typeof d2s==='function'?d2s(typeof getDayDate==='function'?getDayDate(0):new Date()):new Date().toISOString().slice(0,10);
+  const overlay=document.createElement('div');overlay.style.cssText='position:fixed;inset:0;z-index:600';
+  const pop=document.createElement('div');
+  pop.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:260px;padding:14px;background:rgba(255,255,255,.98);border:1px solid rgba(210,205,228,.4);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.15);backdrop-filter:blur(12px);z-index:601';
+  const tabRequired=v.step_tableau_public&&v.step_tableau_public!=='na'&&v.step_tableau_public!=='done';
+  pop.innerHTML=`
+    <div style="font-size:12px;font-weight:600;margin-bottom:6px">Post Date — ${typeof _esc==='function'?_esc(v.topic||v.title):v.topic||v.title}</div>
+    <p style="font-size:10px;color:var(--muted);margin:0 0 10px">${tabRequired?'A tab task will be created for this date.':'Video will be marked complete.'}</p>
+    <div style="margin-bottom:10px"><input id="_vidPostDateInp2" type="date" value="${ds}" style="width:100%;font-size:12px;padding:4px 6px;border:1px solid var(--border);border-radius:6px"></div>
+    <div style="display:flex;justify-content:flex-end;gap:6px"><button class="btn btn-ghost btn-xs" id="_vidPostCancel2">Cancel</button><button class="btn btn-dark btn-xs" id="_vidPostSave2">Set Date</button></div>`;
+  document.body.appendChild(overlay);document.body.appendChild(pop);
+  const _cleanup=()=>{overlay.remove();pop.remove();};
+  overlay.addEventListener('click',_cleanup);
+  document.getElementById('_vidPostCancel2').addEventListener('click',_cleanup);
+  document.getElementById('_vidPostSave2').addEventListener('click',async()=>{
+    const postDate=document.getElementById('_vidPostDateInp2').value;
+    if(!postDate){_cleanup();return;}
+    v.post_date=postDate;
+    await sbReqSilent('PATCH','videos',{post_date:postDate},`?id=eq.${v.id}`);
+    _cleanup();
+    _vidAfterPostDate(id);
+  });
+  pop.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();document.getElementById('_vidPostSave2').click();}if(e.key==='Escape')_cleanup();});
+  setTimeout(()=>document.getElementById('_vidPostDateInp2')?.focus(),60);
+}
+function _vidAfterPostDate(id){
+  const v=(st.videos||[]).find(x=>String(x.id)===String(id));if(!v)return;
+  const tabRequired=v.step_tableau_public&&v.step_tableau_public!=='na'&&v.step_tableau_public!=='done';
+  v.status='published';
+  sbReqSilent('PATCH','videos',{status:'published'},`?id=eq.${v.id}`);
+  if(tabRequired&&typeof _vidCreateTabUpTask==='function'){
+    _vidCreateTabUpTask(id,v.post_date);
+  }
+  save();renderVideosPageKeepScroll();
+  if(typeof renderAll==='function')renderAll();
 }
 
 function _vidCelebrate(id){
