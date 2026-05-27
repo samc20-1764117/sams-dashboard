@@ -2414,7 +2414,7 @@ function renderRecOv(){
       row.appendChild(makePawEl(rid,isDone));
     } else {
       const chkWrap=document.createElement('label');chkWrap.className='chk-wrap';chkWrap.addEventListener('click',e=>e.stopPropagation());
-      const chk=document.createElement('input');chk.type='checkbox';chk.className='chk';chk.checked=isDone;chk.style.cssText='width:11px;height:11px';
+      const chk=document.createElement('input');chk.type='checkbox';chk.className='chk';chk.checked=isDone;
       chk.addEventListener('change',function(){togWrRule(rid,this.checked,wkKey);});
       chkWrap.appendChild(chk);row.appendChild(chkWrap);
     }
@@ -3479,7 +3479,7 @@ function renderShopOv(){
     el.addEventListener('dragstart',e=>{if(e.target.closest('.chk-wrap,.delbtn'))return;e.stopPropagation();dragId='shop::'+s.id;e.dataTransfer.effectAllowed='move';el.style.opacity='.4';document.body.classList.add('body-dragging');showWkcEdges(true);});
     el.addEventListener('dragend',()=>{el.style.opacity='';document.body.classList.remove('body-dragging');showWkcEdges(false);const ph=container.querySelector('.shop-ov-ph');if(ph)ph.remove();dragId=null;});
     el.innerHTML=
-      `<label class="chk-wrap"><input type="checkbox" class="chk" style="width:11px;height:11px"${s.done?' checked':''}></label>`+
+      `<label class="chk-wrap"><input type="checkbox" class="chk"${s.done?' checked':''}></label>`+
       `<span class="tn">${escHtml(s.name)}</span>`+
       `<span class="cpill" style="background:none;color:var(--subtle);border:none;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;padding:0;flex-shrink:0">${escHtml(s.store||'')}</span>`+
       `<button class="delbtn">✕</button>`;
