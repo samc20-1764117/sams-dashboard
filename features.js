@@ -1805,8 +1805,7 @@ function _finRenderPersonal(accs,vtiAcc,currentVal,netWorth,totalAll){
     html+=`<div class="fin-legend-row${excCls}" data-fin-id="${a.id}" onmouseenter="_finHover('${a.id}')" onmouseleave="_finHover(null)">
       <span class="fin-legend-dot" style="background:${colorPastel};border:1.5px solid ${colorSolid}"></span>
       <span class="fin-legend-name">${_finEditable(a.id,'name',a.name,'fin-legend-edit-name')}</span>
-      <span class="fin-legend-amt">${_finEditable(a.id,'amount',a.amount||0,'fin-legend-edit-amt',true)}</span>
-      <span class="fin-legend-pct" style="margin-left:-10px">${pctStr}${a.exclude?`<button class="fin-excl-btn active" onclick="_finToggleExclude('${a.id}')" title="Include in total" style="opacity:1;color:#b0b8c4;margin-left:0">&#x21a9;</button>`:`<button class="fin-excl-btn" onclick="_finToggleExclude('${a.id}')" title="Exclude from total">&#x2212;</button>`}</span>
+      <span class="fin-legend-vals"><span class="fin-legend-amt">${_finEditable(a.id,'amount',a.amount||0,'fin-legend-edit-amt',true)}</span><span class="fin-legend-pct">${pctStr}${a.exclude?`<button class="fin-excl-btn active" onclick="_finToggleExclude('${a.id}')" title="Include in total" style="opacity:1;color:#b0b8c4;margin-left:0">&#x21a9;</button>`:`<button class="fin-excl-btn" onclick="_finToggleExclude('${a.id}')" title="Exclude from total">&#x2212;</button>`}</span></span>
       <button class="delbtn fin-legend-del" onclick="delFin('${a.id}')">&#x2715;</button>
     </div>`;
   });
@@ -1826,7 +1825,7 @@ function _finRenderInvestments(purchases,totalBought,gain,gainPct,currentVal){
   const lastPurchase=sorted.length?sorted[0]:null;
 
   let html=`<div class="card fin-card fin-inv-card">
-    <div class="fin-card-hdr"><span>Investments</span><button class="fin-add-btn" onclick="addFinRow('vti')" style="font-size:16px;padding:0 4px;line-height:1">+</button></div>
+    <div class="fin-card-hdr"><span class="fin-card-title">Investments</span><button class="fin-add-btn" onclick="addFinRow('vti')" style="font-size:16px;padding:0 4px;line-height:1">+</button></div>
     `;
   // Area chart fills card, KPI floats on top
   if(chronological.length>1){
