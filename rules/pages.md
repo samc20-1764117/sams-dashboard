@@ -1,7 +1,8 @@
 # Pages Rules
 
 ### Overview (`overview.js`)
-- **Today list** sort: done last→travel→overdue→important→type (regular=1,rec=2,shop=3,bday=4)→name. `_hasTBToday` checks `st.blocks` (by `ruleId/shopId/recId/taskId`) AND `getRecAutoTBForDate` (by `_recId`) for recurring tasks with `default_start_time`. Overdue pup sessions (`day_date < today && !done`) appear in today list when `dayOff===0` via `isOv(s.day_date)` filter.
+- **Today list** sort: done last→travel→overdue→important→type (regular=1,rec=2,shop=3,bday=4)→name. `_hasTBToday` checks `st.blocks` (by `ruleId/shopId/recId/taskId/_vidId`) AND `getRecAutoTBForDate` (by `_recId`) for recurring tasks with `default_start_time`. Overdue pup sessions (`day_date < today && !done`) appear in today list when `dayOff===0` via `isOv(s.day_date)` filter.
+- **Videos on today list**: shown via `vidToday` filter — includes videos in day map (`_vidDayMap`) or on a timeblock (`_vidOnTBToday`). Published videos show as checked/greyed (`.done` class). `tRowVidVirt` renders with `${t.done?'done':''}` class and checked checkbox. Do NOT add broad `post_date` matching — only day map and timeblock assignment.
 - **WR tasks in today list**: appear if `_dateOverrides[wkKey]===today` OR overdue (4-week lookback, undone only). `wrRulesToday/wrecToday` use seen sets to dedup.
 - **Shopping overview** (`#shopOv`): NO rAF-based max-height — caused items to be hidden when `offsetHeight=0` during background sync. Height naturally constrained by card's `overflow:hidden` + flex. Sort (`_shopOvSort`): `due_date` items first (by date), then no-date by `shop_order`. Drag-to-calendar assigns `_shopTopOrder` (min `shop_order` - 1). **Weekly cal chips**: store name NOT shown in parentheses.
 - **WR overview list** (`#recList`): `columns:2;column-fill:auto`. `max-height = 4 + 7 * itemHeight` (set in rAF, exactly 7 rows per column).
