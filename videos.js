@@ -2634,9 +2634,9 @@ function _vidRenderSteps(vals){
   const parts=[];
   VID_STEPS.forEach(s=>{
     if(s==='step_tableau_public'){
-      parts.push(`<div id="vmPostDateWrap" style="display:flex;flex-direction:column;gap:3px;align-items:center">
+      parts.push(`<div id="vmPostDateWrap" style="display:flex;flex-direction:column;gap:2px;align-items:center">
         <span class="vm-step-lbl" style="font-size:9px;color:var(--muted)">Posted</span>
-        <input id="vmPostDate" type="text" placeholder="m/d" style="width:50px;height:22px;font-size:11px;padding:0 3px;border:1.5px solid rgba(210,205,228,.4);border-radius:3px;background:transparent;color:var(--text);text-align:center;box-sizing:border-box;outline:none;font-weight:500">
+        <input id="vmPostDate" type="text" placeholder="m/d" style="width:50px;height:22px;font-size:11px;padding:0 3px;border:1.5px solid rgba(210,205,228,.4);border-radius:3px;background:transparent;color:var(--text);text-align:center;box-sizing:border-box;outline:none;font-weight:500;line-height:22px">
       </div>`);
     }
     const cur=vals[s]||'not_started';
@@ -2685,20 +2685,26 @@ function _vidUpdateModalFills(){
 }
 function _vidUpdateModalComplete(){
   const wrap=document.getElementById('vmStepsWrap');if(!wrap)return;
-  const statusRow=wrap.previousElementSibling; // the flex row with status + big video dropdowns
+  const statusRow=wrap.previousElementSibling; // the flex row with status dropdown
   const steps=document.querySelectorAll('#vmSteps [data-step]');
   const allDone=[...steps].every(el=>el.dataset.val==='done'||el.dataset.val==='na');
   const pdInp=document.getElementById('vmPostDate');
   const hasPd=pdInp&&pdInp.value.trim().length>0;
   const complete=allDone&&hasPd;
   if(complete){
-    // Green outline wrapping both status row and stages container
-    if(statusRow){statusRow.style.background='rgba(16,185,129,.06)';statusRow.style.border='1.5px solid rgba(16,185,129,.35)';statusRow.style.borderRadius='10px 10px 0 0';statusRow.style.padding='8px 12px';statusRow.style.borderBottom='none';}
-    wrap.style.background='rgba(16,185,129,.06)';
+    // Green styling on both containers — no size changes
+    if(statusRow){
+      statusRow.style.background='rgba(16,185,129,.05)';
+      statusRow.style.border='1.5px solid rgba(16,185,129,.35)';
+      statusRow.style.borderBottom='none';
+      statusRow.style.borderRadius='10px 10px 0 0';
+      statusRow.style.padding='6px 8px';
+    }
+    wrap.style.background='rgba(16,185,129,.05)';
     wrap.style.borderColor='rgba(16,185,129,.35)';
-    wrap.style.boxShadow='0 0 0 1px rgba(16,185,129,.12)';
-    if(statusRow){wrap.style.borderRadius='0 0 10px 10px';wrap.style.marginTop='0';}
-    // Overlay COMPLETE badge on status row, hide children
+    wrap.style.boxShadow='none';
+    if(statusRow){wrap.style.borderTopLeftRadius='0';wrap.style.borderTopRightRadius='0';wrap.style.marginTop='0';}
+    // Overlay COMPLETE badge on status row
     if(statusRow&&!statusRow.querySelector('.vm-complete-badge')){
       [...statusRow.children].forEach(c=>c.style.display='none');
       const badge=document.createElement('div');
@@ -2714,7 +2720,9 @@ function _vidUpdateModalComplete(){
     wrap.style.boxShadow='1px 1px 3px rgba(0,0,0,.06), inset 0 1px 0 rgba(255,255,255,.8)';
     wrap.style.borderRadius='10px';
     wrap.style.marginTop='8px';
-    if(statusRow){statusRow.style.background='';statusRow.style.border='';statusRow.style.borderRadius='';statusRow.style.padding='';statusRow.style.borderBottom='';
+    if(statusRow){
+      statusRow.style.background='';statusRow.style.border='';statusRow.style.borderBottom='';
+      statusRow.style.borderRadius='';statusRow.style.padding='';
       const badge=statusRow.querySelector('.vm-complete-badge');
       if(badge){badge.remove();[...statusRow.children].forEach(c=>c.style.display='');}
     }

@@ -4674,6 +4674,7 @@ function applySelHighlight(){
     const id=el.dataset.tid;
     if(!id)return;
     let sel=selectedTasks.has(id);
+    if(!sel)sel=selTaskIds.has(id);
     if(!sel&&id.startsWith('vid-ov-'))sel=selVidIds.has(id.replace('vid-ov-',''));
     else if(!sel&&id.startsWith('rec-virt-'))sel=selRecIds.has(id.replace('rec-virt-',''));
     else if(!sel&&id.startsWith('wrec-'))sel=selRecIds.has(id.replace('wrec-',''));
