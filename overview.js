@@ -817,7 +817,6 @@ function renderWkSummary(){
   const virtRec=getRecurringWeekTasks(wkOff);
   const virtExtras=getExtrasForWeek(wkOff);
   const _wkBdays=virtExtras.filter(t=>t._type==='birthday');
-  console.log('[WK-BDAY] wkOff=',wkOff,'bdayCount=',_wkBdays.length,'items=',_wkBdays.map(b=>b.name+' '+b.due_date));
   const _wrecWkk=getWkKey(wkOff);
   const wrecThisWk=st.recurring
     .filter(r=>(r.is_weekly_reset===true||r.is_weekly_reset==='true')&&r._dateOverrides&&r._dateOverrides[_wrecWkk]&&r._dateOverrides[_wrecWkk]!=='__skip__')

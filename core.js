@@ -559,7 +559,6 @@ function getBirthdaysInRange(startDs,endDs){
       if(ds>=startDs&&ds<=endDs){const key=b.id+'-'+ds;if(!seen.has(key)){seen.add(key);out.push(mkBdayTask(b,ds));}}
     });
   });
-  console.log('[BDAY-RANGE]',startDs,'to',endDs,'birthdays:',st.birthdays.map(b=>b.birthday),'found:',out.length,out.map(x=>x.name+' '+x.due_date));
   return out;
 }
 function mkBdayTask(b,ds){
