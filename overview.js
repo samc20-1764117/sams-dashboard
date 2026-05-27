@@ -396,7 +396,7 @@ function renderPupSkillsHighlight(){
       </div>`;
     }).join('');
     const progressBar=`<div style="height:3px;background:rgba(0,0,0,.06);margin:4px 10px 3px;border-radius:2px;overflow:hidden"><div style="height:100%;width:${pct}%;background:rgba(16,185,129,.7);border-radius:2px;transition:width .3s"></div></div>`;
-    return`<div style="flex:1;display:flex;flex-direction:column;background:rgba(197,219,248,.22);border:1px solid rgba(100,149,237,.18);border-radius:12px;padding:6px 0 5px;overflow:hidden;box-shadow:inset 0 1px 3px rgba(100,149,237,.06)">
+    return`<div style="flex:1;display:flex;flex-direction:column;background:rgba(255,255,255,.55);border:1px solid rgba(210,205,228,.3);border-radius:12px;padding:6px 0 5px;overflow:hidden;box-shadow:inset 0 1px 3px rgba(0,0,0,.04)">
       <div style="display:flex;align-items:center;padding:0 10px 2px;gap:4px">
         <span style="font-size:9px;font-weight:700;color:var(--muted);letter-spacing:.03em">${pup}</span>
         <span onclick="event.stopPropagation();openPupFocusPicker('${pup}')" style="cursor:pointer;font-size:7px;color:var(--muted);opacity:.4;line-height:1;margin-left:1px" title="Edit ${pup}'s skills for this week">✎</span>
@@ -856,7 +856,7 @@ function tRowVidVirt(t,arr){
   </div>`;
 }
 function _pupSessStyle(){
-  return{bg:'rgba(197,219,248,.32)',b:'rgba(100,149,237,.18)',t:'rgba(55,100,180,1)',d:'#6495ed',dot:'rgba(100,149,237,.22)'};
+  return{bg:'rgba(199,224,255,.30)',b:'rgba(130,170,240,.16)',t:'rgba(70,120,200,1)',d:'#82aaf0',dot:'rgba(130,170,240,.20)'};
 }
 function _pupDisplayName(t){const p=t._pup;return p?(p+': '+(t.name||'')):(t.name||'');}
 function tRowPupSess(t,noColor=false,tbArrow=false){
@@ -4694,22 +4694,89 @@ function dropOnTB(e,ds,h,row,smOverride){
     if(isPupSess){const sessId=dragId.split('::')[1];const sess=st.pupSessions.find(s=>String(s.id)===String(sessId));if(!sess){dragId=null;return;}skillId=sess.skill_id;}
     else{skillId=dragId.split('::')[1];}
     const skill=(st.pup_skills||[]).find(x=>String(x.id)===String(skillId));if(!skill){dragId=null;return;}
-    const sessAlready=st.pupSessions.find(s=>String(s.skill_id)===String(skillId)&&s.day_date===ds);
-    let newSessCreated=false;let tmpSessId=null;
-    if(!sessAlready){
-      const tmp='pss-tmp-'+Date.now();tmpSessId=tmp;newSessCreated=true;
-      st.pupSessions.push({id:tmp,skill_id:skillId,day_date:ds,done:false});
-      sbReqSilent('POST','pup_skill_sessions',{skill_id:skillId,day_date:ds,done:false}).then(sv=>{if(sv&&sv[0]){const i=st.pupSessions.findIndex(s=>s.id===tmp);if(i>-1){tmpSessId=sv[0].id;st.pupSessions[i]=sv[0];}const blkRef=st.blocks.find(b=>b._pupSessId===tmp);if(blkRef)blkRef._pupSessId=sv[0].id;}save();});
+    // Check multi-select
+    const _pupDragSid=isPupSess?'pup-sess-'+dragId.split('::')[1]:null;
+    const _isMultiPup=_pupDragSid&&selectedTasks.has(_pupDragSid)&&selectedTasks.size>1;
+    const _addedBlks=[];const _undoOps=[];
+    let _curSm=sm;
+    // Helper to add a single pup session block
+    const _addPupBlock=(skId,curSm)=>{
+      const sk=(st.pup_skills||[]).find(x=>String(x.id)===String(skId));
+      if(!sk)return curSm;
+      if(st.blocks.some(b=>b.ds===ds&&b.cat==='pup_session'&&String(b._pupSessId)&&(st.pupSessions.find(s=>String(s.id)===String(b._pupSessId)&&String(s.skill_id)===String(skId)))))return curSm;
+      const sessAlr=st.pupSessions.find(s=>String(s.skill_id)===String(skId)&&s.day_date===ds);
+      let newSess=false;let tmpId=null;
+      if(!sessAlr){
+        const tmp='pss-tmp-'+Date.now()+'-'+Math.random();tmpId=tmp;newSess=true;
+        st.pupSessions.push({id:tmp,skill_id:skId,day_date:ds,done:false});
+        sbReqSilent('POST','pup_skill_sessions',{skill_id:skId,day_date:ds,done:false}).then(sv=>{if(sv&&sv[0]){const i=st.pupSessions.findIndex(s=>s.id===tmp);if(i>-1){tmpId=sv[0].id;st.pupSessions[i]=sv[0];}const blkRef=st.blocks.find(b=>b._pupSessId===tmp);if(blkRef)blkRef._pupSessId=sv[0].id;}save();});
+      }
+      const sessRef=st.pupSessions.find(s=>String(s.skill_id)===String(skId)&&s.day_date===ds);
+      const blk={id:crypto.randomUUID(),title:sk.skill,ds,sm:curSm,dur:30,cat:'pup_session',_pupSessId:(sessRef?.id||tmpId)||null};
+      st.blocks.push(blk);_addedBlks.push(blk);sbSaveBlock(blk);
+      const _skId=skId,_tmpId=tmpId,_newSess=newSess;
+      _undoOps.push(()=>{if(_newSess){st.pupSessions=st.pupSessions.filter(s=>!(String(s.skill_id)===String(_skId)&&s.day_date===ds));if(_tmpId)sbReqSilent('DELETE','pup_skill_sessions',null,`?id=eq.${_tmpId}`);}});
+      return curSm+30;
+    };
+    _curSm=_addPupBlock(skillId,_curSm);
+    // Multi-select: also add other selected items
+    if(_isMultiPup){
+      for(const sid of [...selectedTasks]){
+        if(sid===_pupDragSid)continue;
+        if(sid.startsWith('pup-sess-')){
+          const sessId2=sid.replace('pup-sess-','');const sess2=st.pupSessions.find(s=>String(s.id)===String(sessId2));
+          if(sess2)_curSm=_addPupBlock(sess2.skill_id,_curSm);
+        } else if(sid.startsWith('wrrule-virt-')||sid.startsWith('wrrule-')){
+          const rid=sid.replace('wrrule-virt-','').replace('wrrule-','');const r=st.wrRules.find(x=>String(x.id)===String(rid));
+          if(r&&!st.blocks.some(b=>b.ds===ds&&(String(b.ruleId)===String(rid)||String(b.recId)===String(rid)))){
+            const prevDateOv=r._dateOverrides?{...r._dateOverrides}:{};if(!r._dateOverrides)r._dateOverrides={};r._dateOverrides[wkKeyFromDs(ds)]=ds;
+            const blk={id:crypto.randomUUID(),title:r.name,ds,sm:_curSm,dur:30,cat:'Recurring',ruleId:String(r.id),recId:String(r.id)};
+            st.blocks.push(blk);_addedBlks.push(blk);sbSaveBlock(blk);sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},`?id=eq.${rid}`);
+            _undoOps.push(()=>{r._dateOverrides=prevDateOv;sbReq('PATCH','wr_recurring_rules',{date_overrides:prevDateOv},`?id=eq.${rid}`);});_curSm+=30;}
+        } else if(sid.startsWith('wrec-')){
+          const rid=sid.replace('wrec-','');const r=st.recurring.find(x=>String(x.id)===String(rid));
+          if(r&&!st.blocks.some(b=>b.ds===ds&&String(b.recId)===String(rid))){
+            const prevDateOv=r._dateOverrides?{...r._dateOverrides}:{};if(!r._dateOverrides)r._dateOverrides={};r._dateOverrides[wkKeyFromDs(ds)]=ds;
+            const _dur=r.default_tb_duration||autoDur(r.name,'Recurring');
+            const blk={id:crypto.randomUUID(),title:r.name,ds,sm:_curSm,dur:_dur,cat:'Recurring',recId:String(r.id)};
+            st.blocks.push(blk);_addedBlks.push(blk);sbSaveBlock(blk);sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));
+            _undoOps.push(()=>{r._dateOverrides=prevDateOv;sbReq('PATCH','wr_recurring_rules',{date_overrides:prevDateOv},recQs(r.id));});_curSm+=_dur;}
+        } else if(sid.startsWith('rec-virt-')){
+          const rid=sid.replace('rec-virt-','');const r=st.recurring.find(x=>String(x.id)===String(rid));
+          if(r&&!st.blocks.some(b=>b.ds===ds&&String(b.recId)===String(rid))){
+            const prevDateOv=r._dateOverrides?{...r._dateOverrides}:{};if(!r._dateOverrides)r._dateOverrides={};r._dateOverrides[wkKeyFromDs(ds)]=ds;
+            const _dur=r.default_tb_duration||autoDur(r.name,'Recurring');
+            const blk={id:crypto.randomUUID(),title:r.name,ds,sm:_curSm,dur:_dur,cat:'Recurring',recId:String(r.id)};
+            st.blocks.push(blk);_addedBlks.push(blk);sbSaveBlock(blk);sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));
+            _undoOps.push(()=>{r._dateOverrides=prevDateOv;sbReq('PATCH','wr_recurring_rules',{date_overrides:prevDateOv},recQs(r.id));});_curSm+=_dur;}
+        } else if(sid.startsWith('vid-ov-')){
+          // skip — video TB has special handling
+        } else if(sid.startsWith('shop-cal-')){
+          const shopId2=sid.replace('shop-cal-','');const s=st.shopping.find(x=>String(x.id)===String(shopId2));
+          if(s&&!st.blocks.some(b=>b.ds===ds&&String(b.shopId)===String(shopId2))){
+            const prevDue=s.due_date;s.due_date=ds;
+            const blk={id:crypto.randomUUID(),title:s.name,ds,sm:_curSm,dur:autoDur(s.name,'Shopping'),cat:'Shopping',shopId:String(s.id)};
+            st.blocks.push(blk);_addedBlks.push(blk);sbSaveBlock(blk);sbReqNullable('PATCH','shopping_list',{due_date:ds},`?id=eq.${s.id}`);
+            _undoOps.push(()=>{s.due_date=prevDue;sbReqNullable('PATCH','shopping_list',{due_date:prevDue||null},`?id=eq.${s.id}`);});_curSm+=autoDur(s.name,'Shopping');}
+        } else {
+          const t=st.tasks.find(x=>String(x.id)===sid);
+          if(t&&!t._virtual&&!st.blocks.find(b=>b.taskId===String(t.id)&&b.ds===ds)){
+            const _dur=autoDur(t.name,t.category||'Home');const prevDate=t.due_date;
+            const blk={id:crypto.randomUUID(),title:t.name,ds,sm:_curSm,dur:_dur,cat:t.category||'Home',taskId:String(t.id)};
+            if((t.due_date||'').split('T')[0]!==ds){t.due_date=ds;sbReq('PATCH','tasks',{due_date:ds},`?id=eq.${t.id}`);}
+            st.blocks.push(blk);_addedBlks.push(blk);sbSaveBlock(blk);
+            _undoOps.push(()=>{t.due_date=prevDate||null;sbReq('PATCH','tasks',{due_date:prevDate||null},`?id=eq.${t.id}`);});_curSm+=_dur;}
+        }
+      }
     }
-    const sessRef=st.pupSessions.find(s=>String(s.skill_id)===String(skillId)&&s.day_date===ds);
-    const blk={id:crypto.randomUUID(),title:skill.skill,ds,sm,dur:30,cat:'pup_session',_pupSessId:(sessRef?.id||tmpSessId)||null};
-    st.blocks.push(blk);dragId=null;save();renderAll();sbSaveBlock(blk);
-    renderPupSkillsHighlight();renderWkCal();renderToday();
+    if(!_addedBlks.length){dragId=null;return;}
+    dragId=null;selectedTasks.clear();save();renderAll();renderPupSkillsHighlight();renderWkCal();renderToday();if(document.getElementById('tbGrid'))renderDayTB();
+    const _blkIds=_addedBlks.map(b=>b.id);
     pushUndo(()=>{
-      st.blocks=st.blocks.filter(b=>b.id!==blk.id);sbDeleteBlock(blk.id);
-      if(newSessCreated){st.pupSessions=st.pupSessions.filter(s=>!(String(s.skill_id)===String(skillId)&&s.day_date===ds));if(tmpSessId)sbReqSilent('DELETE','pup_skill_sessions',null,`?id=eq.${tmpSessId}`);}
-      save();renderAll();renderPupSkillsHighlight();renderWkCal();renderToday();
-    },'Added pup skill to time block');
+      st.blocks=st.blocks.filter(b=>!_blkIds.includes(b.id));_blkIds.forEach(id=>sbDeleteBlock(id));
+      _undoOps.forEach(fn=>fn());
+      save();renderAll();renderPupSkillsHighlight();renderWkCal();renderToday();if(document.getElementById('tbGrid'))renderDayTB();
+    },_addedBlks.length>1?`Added ${_addedBlks.length} to time block`:'Added pup skill to time block');
     return;
   }
   if(dragId.startsWith('wrrule::')){
@@ -4749,6 +4816,27 @@ function dropOnTB(e,ds,h,row,smOverride){
         sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));
         _undoOps.push(()=>{r._dateOverrides=prevDateOv;sbReq('PATCH','wr_recurring_rules',{date_overrides:prevDateOv},recQs(r.id));});
         _curSm+=_dur;
+      } else if(sid.startsWith('pup-sess-')){
+        const sessId2=sid.replace('pup-sess-','');const sess2=st.pupSessions.find(s=>String(s.id)===String(sessId2));
+        if(!sess2)continue;const sk2=(st.pup_skills||[]).find(x=>String(x.id)===String(sess2.skill_id));if(!sk2)continue;
+        const blk={id:crypto.randomUUID(),title:sk2.skill,ds,sm:_curSm,dur:30,cat:'pup_session',_pupSessId:String(sess2.id)};
+        st.blocks.push(blk);_addedBlks.push(blk);sbSaveBlock(blk);_curSm+=30;
+      } else if(sid.startsWith('shop-cal-')){
+        const shopId2=sid.replace('shop-cal-','');const s2=st.shopping.find(x=>String(x.id)===String(shopId2));
+        if(!s2||st.blocks.some(b=>b.ds===ds&&String(b.shopId)===String(shopId2)))continue;
+        const prevDue=s2.due_date;s2.due_date=ds;
+        const _dur=autoDur(s2.name,'Shopping');
+        const blk={id:crypto.randomUUID(),title:s2.name,ds,sm:_curSm,dur:_dur,cat:'Shopping',shopId:String(s2.id)};
+        st.blocks.push(blk);_addedBlks.push(blk);sbSaveBlock(blk);sbReqNullable('PATCH','shopping_list',{due_date:ds},`?id=eq.${s2.id}`);
+        _undoOps.push(()=>{s2.due_date=prevDue;sbReqNullable('PATCH','shopping_list',{due_date:prevDue||null},`?id=eq.${s2.id}`);});_curSm+=_dur;
+      } else if(sid.startsWith('rec-virt-')){
+        const rid=sid.replace('rec-virt-','');const r2=st.recurring.find(x=>String(x.id)===String(rid));
+        if(!r2||st.blocks.some(b=>b.ds===ds&&String(b.recId)===String(rid)))continue;
+        const prevDateOv2=r2._dateOverrides?{...r2._dateOverrides}:{};if(!r2._dateOverrides)r2._dateOverrides={};r2._dateOverrides[wkKey]=ds;
+        const _dur=r2.default_tb_duration||autoDur(r2.name,'Recurring');
+        const blk={id:crypto.randomUUID(),title:r2.name,ds,sm:_curSm,dur:_dur,cat:'Recurring',recId:String(r2.id)};
+        st.blocks.push(blk);_addedBlks.push(blk);sbSaveBlock(blk);sbReq('PATCH','wr_recurring_rules',{date_overrides:r2._dateOverrides},recQs(r2.id));
+        _undoOps.push(()=>{r2._dateOverrides=prevDateOv2;sbReq('PATCH','wr_recurring_rules',{date_overrides:prevDateOv2},recQs(r2.id));});_curSm+=_dur;
       } else {
         const t=st.tasks.find(x=>String(x.id)===sid);
         if(!t||t._virtual)continue;
@@ -4764,13 +4852,13 @@ function dropOnTB(e,ds,h,row,smOverride){
       }
     }
     if(!_addedBlks.length){dragId=null;showToast('Already in time block','#6b7280',2000);return;}
-    dragId=null;selectedTasks.clear();save();renderAll();renderRecOv();
+    dragId=null;selectedTasks.clear();save();renderAll();renderRecOv();renderPupSkillsHighlight();
     const _blkIds=_addedBlks.map(b=>b.id);
     pushUndo(()=>{
       st.blocks=st.blocks.filter(b=>!_blkIds.includes(b.id));
       _blkIds.forEach(id=>sbDeleteBlock(id));
       _undoOps.forEach(fn=>fn());
-      save();renderAll();renderRecOv();
+      save();renderAll();renderRecOv();renderPupSkillsHighlight();
     },_addedBlks.length>1?`Added ${_addedBlks.length} to time block`:'Added to time block');
     return;
   }
@@ -4810,6 +4898,27 @@ function dropOnTB(e,ds,h,row,smOverride){
         sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},`?id=eq.${rid}`);
         _undoOps.push(()=>{r._dateOverrides=prevDateOv;sbReq('PATCH','wr_recurring_rules',{date_overrides:prevDateOv},`?id=eq.${rid}`);});
         _curSm+=30;
+      } else if(sid.startsWith('pup-sess-')){
+        const sessId2=sid.replace('pup-sess-','');const sess2=st.pupSessions.find(s=>String(s.id)===String(sessId2));
+        if(!sess2)continue;const sk2=(st.pup_skills||[]).find(x=>String(x.id)===String(sess2.skill_id));if(!sk2)continue;
+        const blk={id:crypto.randomUUID(),title:sk2.skill,ds,sm:_curSm,dur:30,cat:'pup_session',_pupSessId:String(sess2.id)};
+        st.blocks.push(blk);_addedBlks.push(blk);sbSaveBlock(blk);_curSm+=30;
+      } else if(sid.startsWith('rec-virt-')){
+        const rid=sid.replace('rec-virt-','');const r2=st.recurring.find(x=>String(x.id)===String(rid));
+        if(!r2||st.blocks.some(b=>b.ds===ds&&String(b.recId)===String(rid)))continue;
+        const prevDateOv2=r2._dateOverrides?{...r2._dateOverrides}:{};if(!r2._dateOverrides)r2._dateOverrides={};r2._dateOverrides[wkKey]=ds;
+        const _dur=r2.default_tb_duration||autoDur(r2.name,'Recurring');
+        const blk={id:crypto.randomUUID(),title:r2.name,ds,sm:_curSm,dur:_dur,cat:'Recurring',recId:String(r2.id)};
+        st.blocks.push(blk);_addedBlks.push(blk);sbSaveBlock(blk);sbReq('PATCH','wr_recurring_rules',{date_overrides:r2._dateOverrides},recQs(r2.id));
+        _undoOps.push(()=>{r2._dateOverrides=prevDateOv2;sbReq('PATCH','wr_recurring_rules',{date_overrides:prevDateOv2},recQs(r2.id));});_curSm+=_dur;
+      } else if(sid.startsWith('shop-cal-')){
+        const shopId2=sid.replace('shop-cal-','');const s2=st.shopping.find(x=>String(x.id)===String(shopId2));
+        if(!s2||st.blocks.some(b=>b.ds===ds&&String(b.shopId)===String(shopId2)))continue;
+        const prevDue=s2.due_date;s2.due_date=ds;
+        const _dur=autoDur(s2.name,'Shopping');
+        const blk={id:crypto.randomUUID(),title:s2.name,ds,sm:_curSm,dur:_dur,cat:'Shopping',shopId:String(s2.id)};
+        st.blocks.push(blk);_addedBlks.push(blk);sbSaveBlock(blk);sbReqNullable('PATCH','shopping_list',{due_date:ds},`?id=eq.${s2.id}`);
+        _undoOps.push(()=>{s2.due_date=prevDue;sbReqNullable('PATCH','shopping_list',{due_date:prevDue||null},`?id=eq.${s2.id}`);});_curSm+=_dur;
       } else {
         const t=st.tasks.find(x=>String(x.id)===sid);
         if(!t||t._virtual)continue;
@@ -4825,13 +4934,13 @@ function dropOnTB(e,ds,h,row,smOverride){
       }
     }
     if(!_addedBlks.length){dragId=null;showToast('Already in time block','#6b7280',2000);return;}
-    dragId=null;selectedTasks.clear();save();renderAll();renderRecOv();renderWeeklyPage();
+    dragId=null;selectedTasks.clear();save();renderAll();renderRecOv();renderWeeklyPage();renderPupSkillsHighlight();
     const _blkIds=_addedBlks.map(b=>b.id);
     pushUndo(()=>{
       st.blocks=st.blocks.filter(b=>!_blkIds.includes(b.id));
       _blkIds.forEach(id=>sbDeleteBlock(id));
       _undoOps.forEach(fn=>fn());
-      save();renderAll();renderRecOv();renderWeeklyPage();
+      save();renderAll();renderRecOv();renderWeeklyPage();renderPupSkillsHighlight();
     },_addedBlks.length>1?`Added ${_addedBlks.length} to time block`:'Added to time block');
     return;
   } else if(dragId.startsWith('shop::')){
@@ -4963,6 +5072,19 @@ function dropOnTB(e,ds,h,row,smOverride){
         sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));
         _undoOps.push(()=>{r._dateOverrides=prevDateOv;sbReq('PATCH','wr_recurring_rules',{date_overrides:prevDateOv},recQs(r.id));});
         _curSm+=_dur;
+      } else if(sid.startsWith('pup-sess-')){
+        const sessId2=sid.replace('pup-sess-','');const sess2=st.pupSessions.find(s=>String(s.id)===String(sessId2));
+        if(!sess2)continue;const sk2=(st.pup_skills||[]).find(x=>String(x.id)===String(sess2.skill_id));if(!sk2)continue;
+        const blk={id:crypto.randomUUID(),title:sk2.skill,ds,sm:_curSm,dur:30,cat:'pup_session',_pupSessId:String(sess2.id)};
+        st.blocks.push(blk);_addedBlks.push(blk);sbSaveBlock(blk);_curSm+=30;
+      } else if(sid.startsWith('shop-cal-')){
+        const shopId2=sid.replace('shop-cal-','');const s2=st.shopping.find(x=>String(x.id)===String(shopId2));
+        if(!s2||st.blocks.some(b=>b.ds===ds&&String(b.shopId)===String(shopId2)))continue;
+        const prevDue=s2.due_date;s2.due_date=ds;
+        const _dur=autoDur(s2.name,'Shopping');
+        const blk={id:crypto.randomUUID(),title:s2.name,ds,sm:_curSm,dur:_dur,cat:'Shopping',shopId:String(s2.id)};
+        st.blocks.push(blk);_addedBlks.push(blk);sbSaveBlock(blk);sbReqNullable('PATCH','shopping_list',{due_date:ds},`?id=eq.${s2.id}`);
+        _undoOps.push(()=>{s2.due_date=prevDue;sbReqNullable('PATCH','shopping_list',{due_date:prevDue||null},`?id=eq.${s2.id}`);});_curSm+=_dur;
       } else {
         const t=st.tasks.find(x=>String(x.id)===sid);
         if(!t||t._virtual)continue;
@@ -4978,13 +5100,13 @@ function dropOnTB(e,ds,h,row,smOverride){
       }
     }
     if(!_addedBlks.length){dragId=null;showToast('Already in time block','#6b7280',2000);return;}
-    dragId=null;selectedTasks.clear();save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
+    dragId=null;selectedTasks.clear();save();renderAll();renderPupSkillsHighlight();if(document.getElementById('tbGrid'))renderDayTB();
     const _blkIds=_addedBlks.map(b=>b.id);
     pushUndo(()=>{
       st.blocks=st.blocks.filter(b=>!_blkIds.includes(b.id));
       _blkIds.forEach(id=>sbDeleteBlock(id));
       _undoOps.forEach(fn=>fn());
-      save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
+      save();renderAll();renderPupSkillsHighlight();if(document.getElementById('tbGrid'))renderDayTB();
     },_addedBlks.length>1?`Added ${_addedBlks.length} tasks to time block`:'Added to time block');
     return;
   }
