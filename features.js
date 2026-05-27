@@ -1782,13 +1782,13 @@ function _finRenderPersonal(accs,vtiAcc,currentVal,netWorth,totalAll){
       </filter></defs>`;
     // Rotate group so 0 starts at 12 o'clock
     html+=`<g transform="rotate(-90 21 21)">`;
-    html+=`<circle cx="21" cy="21" r="15.9" fill="none" stroke="white" stroke-width="5" />`;
+    html+=`<circle cx="21" cy="21" r="15.9" fill="none" stroke="white" stroke-width="3.5" />`;
     segs.forEach(seg=>{
       const dashLen=seg.pct*100;const gap=0.6;const dashOff=100-(seg.start*100);
       const adjLen=Math.max(dashLen-gap,0.1);
       const adjOff=dashOff-gap/2;
-      html+=`<circle cx="21" cy="21" r="15.9" fill="none" stroke="${seg.colorLight}" stroke-width="4.2" stroke-dasharray="${adjLen} ${100-adjLen}" stroke-dashoffset="${adjOff}" filter="url(#finGlass)" data-fin-seg="${seg.id}"/>`;
-      html+=`<circle cx="21" cy="21" r="15.9" fill="none" stroke="transparent" stroke-width="5" stroke-dasharray="${adjLen} ${100-adjLen}" stroke-dashoffset="${adjOff}" style="pointer-events:stroke" data-fin-seg="${seg.id}" data-fin-tip-name="${seg.name}" data-fin-tip-amt="${_finFmtRound(seg.amt)}" onmouseenter="_finHover('${seg.id}')" onmouseleave="_finHover(null)"/>`;
+      html+=`<circle cx="21" cy="21" r="15.9" fill="none" stroke="${seg.colorLight}" stroke-width="3" stroke-dasharray="${adjLen} ${100-adjLen}" stroke-dashoffset="${adjOff}" filter="url(#finGlass)" data-fin-seg="${seg.id}"/>`;
+      html+=`<circle cx="21" cy="21" r="15.9" fill="none" stroke="transparent" stroke-width="3.5" stroke-dasharray="${adjLen} ${100-adjLen}" stroke-dashoffset="${adjOff}" style="pointer-events:stroke" data-fin-seg="${seg.id}" data-fin-tip-name="${seg.name}" data-fin-tip-amt="${_finFmtRound(seg.amt)}" onmouseenter="_finHover('${seg.id}')" onmouseleave="_finHover(null)"/>`;
     });
     html+=`</g></svg>`;
     html+=`<div class="fin-donut-center"><div class="fin-donut-label">Net Worth</div><div class="fin-donut-val">${_finFmtRound(netWorth)}</div>${hasExcluded?`<div style="font-size:10px;color:var(--text-secondary,#94a3b8)">All: ${_finFmtRound(totalAll)}</div>`:''}</div>`;
@@ -1863,7 +1863,7 @@ function _finRenderInvestments(purchases,totalBought,gain,gainPct,currentVal){
     // Use % coordinates based on actual date position
     const pts=dataPoints.map(d=>({
       px:((d.ts-minTs)/tsRange)*100,
-      py:8+(1-d.cum/max)*72,
+      py:5+(1-d.cum/max)*80,
       date:d.date,amt:d.amt,cum:d.cum
     }));
     const years=new Set();const yearLabels=[];
@@ -1873,7 +1873,7 @@ function _finRenderInvestments(purchases,totalBought,gain,gainPct,currentVal){
     html+=`<div class="fin-inv-chart" style="position:relative;height:120px">
       <svg viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%">
       <defs><linearGradient id="finAreaGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#10b981" stop-opacity=".18"/><stop offset="100%" stop-color="#10b981" stop-opacity=".02"/></linearGradient></defs>
-      <polyline points="0,80 ${svgPolyFill} 100,80" fill="url(#finAreaGrad)" stroke="none"/>
+      <polyline points="0,85 ${svgPolyFill} 100,85" fill="url(#finAreaGrad)" stroke="none"/>
       <polyline points="${svgPolyLine}" fill="none" stroke="#10b981" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
       </svg>`;
     // HTML dots (visible, stay round) + hit areas (full-height strips)
