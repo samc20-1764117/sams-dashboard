@@ -655,7 +655,7 @@ function _vidDashRow(v,isChild,simple){
   const postStr=_vidPostStr(_postSrc);
   const isBig=v.video_type==='B';
   const bigRowStyle=isBig?'background:rgba(255,255,255,.50);':'';
-  const _applicable=VID_STEPS.filter(s=>v[s]!=='na');
+  const _applicable=VID_STEPS_CORE.filter(s=>v[s]!=='na');
   const _done=_applicable.filter(s=>v[s]==='done').length;
   const _pct=_applicable.length?Math.round((_done/_applicable.length)*100):0;
   const _pctVal=(v.status==='in_progress'||v.status==='up_next')&&_pct>0&&_pct<100?_pct+'%':'';
@@ -1231,7 +1231,7 @@ function _vidRow(v,isChild,postMap){
   const addBtn=v.video_type==='B'?`<button onclick="event.stopPropagation();openVidModalForBig('${sid}')" style="font-size:10px;font-weight:700;width:16px;height:16px;line-height:16px;text-align:center;border-radius:3px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;margin-right:8px;vertical-align:middle;padding:0;flex-shrink:0" title="Add child video">+</button>`:(!isChild?'<button style="font-size:10px;font-weight:700;width:16px;height:16px;line-height:16px;text-align:center;border-radius:3px;border:1px solid transparent;background:transparent;color:transparent;margin-right:8px;pointer-events:none;vertical-align:middle;padding:0;flex-shrink:0">+</button>':'');
   const _titleSuffix=v.title?'- '+_esc(v.title):'';
   const isBig=v.video_type==='B';
-  const _tblApplicable=VID_STEPS.filter(s=>v[s]!=='na');
+  const _tblApplicable=VID_STEPS_CORE.filter(s=>v[s]!=='na');
   const _tblDone=_tblApplicable.filter(s=>v[s]==='done').length;
   const _tblPct=_tblApplicable.length?Math.round((_tblDone/_tblApplicable.length)*100):0;
   return`<tr class="vid-row${sel?' vid-sel':''}" data-vid="${sid}" onclick="vidCellClick(event,'${sid}')" ondblclick="openVidEdit('${sid}')" oncontextmenu="showVidCtx(event,'${sid}')" style="${isBig?'background:rgba(255,255,255,.50)':''}">
@@ -1270,8 +1270,8 @@ function _vidBoardCard(v){
   const sid=String(v.id);
   const sel=_vidSelected.has(sid);
   const postStr=_vidPostStr(v.post_date);
-  const doneSteps=VID_STEPS.filter(s=>v[s]==='done').length;
-  const totalSteps=VID_STEPS.filter(s=>v[s]!=='na').length;
+  const doneSteps=VID_STEPS_CORE.filter(s=>v[s]==='done').length;
+  const totalSteps=VID_STEPS_CORE.filter(s=>v[s]!=='na').length;
   const pct=totalSteps?Math.round(doneSteps/totalSteps*100):0;
   return`<div class="vid-board-card${sel?' vid-sel':''}" draggable="true" ondragstart="_vidBoardDragStart(event,'${sid}')" onclick="vidRowClick(event,'${sid}')" ondblclick="openVidEdit('${sid}')" oncontextmenu="showVidCtx(event,'${sid}')">
     <div style="display:flex;align-items:center;gap:4px;margin-bottom:3px">
@@ -2905,10 +2905,10 @@ async function cycleVidStep(id,step){
   const tabRequired=v.step_tableau_public&&v.step_tableau_public!=='na';
   const tabDone=!tabRequired||v.step_tableau_public==='done';
 
-  // If core 5 just completed → prompt for posting date or auto-publish
-  if(coreDone&&!wasCoreDone&&VID_STEPS_CORE.includes(step)){
+  // If core 5 all done after this click
+  if(coreDone&&next==='done'&&VID_STEPS_CORE.includes(step)){
     if(!v.post_date){
-      // No post_date → prompt
+      // No post_date → prompt for posting date
       const patch={[step]:next};
       if(linked)patch[linked]=next;
       save();renderVideosPageKeepScroll();
@@ -2921,7 +2921,7 @@ async function cycleVidStep(id,step){
       await sbReqSilent('PATCH','videos',patch,`?id=eq.${id}`);
       _vidPromptPostDateFromVid(id);
       return;
-    } else {
+    } else if(v.status!=='published'){
       // post_date already set → auto-publish + create tab task if needed
       v.status='published';
       if(tabRequired&&!tabDone&&typeof _vidCreateTabUpTask==='function'){

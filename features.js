@@ -4480,6 +4480,7 @@ function applySelHighlight(){
   function csForId(id){
     if(!id)return null;
     if(id.startsWith('tv-'))return gc('travel');
+    if(id.startsWith('vid-ov-'))return{bg:'rgba(34,197,94,.1)',t:'#15803d',d:'#22c55e',b:'rgba(34,197,94,.2)'};
     if(id.startsWith('pup-sess-'))return typeof _pupSessStyle==='function'?_pupSessStyle():gc('recurring');
     if(id.startsWith('wrrule-'))return gc('weekly_reset');
     if(id.startsWith('wrec-')){const r=st.recurring.find(x=>String(x.id)===id.replace('wrec-',''));return gc(r&&(r.is_weekly_reset===true||r.is_weekly_reset==='true')?'weekly_reset':'recurring');}
