@@ -1717,16 +1717,10 @@ function renderFinancePage(){
   html+=_finRenderPersonal(accs,vtiAcc,currentVal,netWorth,totalAll);
   html+=_finRenderInvestments(purchases,totalBought,gain,gainPct,currentVal);
   html+=`</div>`;
-  // Right column: Details panel (if open) or Subscriptions
-  if(window._finDetailsOpen){
-    html+=`<div class="fin-right">`;
-    html+=_finRenderDetailsPanel(purchases);
-    html+=`</div>`;
-  } else {
-    html+=`<div class="fin-right">`;
-    html+=_finRenderSubs();
-    html+=`</div>`;
-  }
+  // Right column: Subscriptions (full height)
+  html+=`<div class="fin-right" style="position:relative">`;
+  html+=_finRenderSubs();
+  html+=`</div>`;
   html+=`</div>`;
   el.innerHTML=html;
 }
@@ -1981,9 +1975,14 @@ function _finSubTabNext(fid,curField){
     const cur=document.querySelector(`[data-fid="${fid}"][data-field="${curField}"]`);
     if(!cur)return;
     const row=cur.closest('tr');if(!row)return;
-    const editables=[...row.querySelectorAll('[contenteditable="true"]')];
-    const idx=editables.indexOf(cur);
-    if(idx>=0&&idx<editables.length-1){const nxt=editables[idx+1];nxt.focus();const r=document.createRange();r.selectNodeContents(nxt);const s=window.getSelection();s.removeAllRanges();s.addRange(r);}
+    const focusable=[...row.querySelectorAll('[contenteditable="true"],select.fin-freq-sel')].sort((a,b)=>{
+      const ra=a.getBoundingClientRect(),rb=b.getBoundingClientRect();return ra.left-rb.left;
+    });
+    const idx=focusable.indexOf(cur);
+    if(idx>=0&&idx<focusable.length-1){
+      const nxt=focusable[idx+1];nxt.focus();
+      if(nxt.contentEditable==='true'){const r=document.createRange();r.selectNodeContents(nxt);const s=window.getSelection();s.removeAllRanges();s.addRange(r);}
+    }
   },30);
 }
 function _finSubEditable(id,field,val,cls){
@@ -2014,7 +2013,7 @@ async function _finSubEditDay(id,el){
 }
 
 function _finFreqSelect(id,val){
-  return`<select class="fin-freq-sel" onchange="_finSubEditFreq('${id}',this.value)">
+  return`<select class="fin-freq-sel" data-fid="${id}" data-field="frequency" onchange="_finSubEditFreq('${id}',this.value)" onkeydown="if(event.key==='Tab'){event.preventDefault();_finSubTabNext('${id}','frequency');}">
     <option value="monthly"${val==='monthly'?' selected':''}>Monthly</option>
     <option value="yearly"${val==='yearly'?' selected':''}>Yearly</option>
     <option value="6-month"${val==='6-month'?' selected':''}>6-Month</option>
@@ -2070,7 +2069,7 @@ function _finCancelTasksForDate(ds){
 
 async function addFinSub(){
   const snap=_finSnap();
-  const row={id:'l-'+Date.now(),name:'New Sub',amount:0,frequency:'monthly',due_day:null,due_month:null,cancel:false,sort_order:0};
+  const row={id:'l-'+Date.now(),name:'',amount:0,frequency:'monthly',due_day:null,due_month:null,cancel:false,sort_order:0};
   st.finSubs.unshift(row);renderFinancePage();
   _finFocusNew(row.id,'name');
   pushUndo(()=>{st.finSubs=st.finSubs.filter(r=>r.id!==row.id);renderFinancePage();},'Added subscription');
@@ -2161,35 +2160,60 @@ async function saveFinInvAdd(){
   const fields={type:'vti',name:'VTI Purchase',date,amount:amt,sort_order:0};
   const row={id:'l-'+Date.now(),...fields};
   st.finance.unshift(row);renderFinancePage();
+  const detPop=document.getElementById('finInvDetailsPop');
+  if(detPop)_finRenderDetailsContent(detPop);
   pushUndo(()=>{st.finance=st.finance.filter(r=>r.id!==row.id);renderFinancePage();},'Added purchase');
   const sv=await sbReq('POST','finance',fields);
   if(sv&&sv[0]){const i=st.finance.findIndex(x=>x.id===row.id);if(i>-1)st.finance[i]=sv[0];}
 }
 
-// ── Investment Details Panel (replaces right column) ────────────────────────
-function openFinInvDetails(){window._finDetailsOpen=true;renderFinancePage();}
-function closeFinInvDetails(){window._finDetailsOpen=false;renderFinancePage();}
-function _finRenderDetailsPanel(purchases){
-  const valid=purchases.filter(p=>p.date&&Math.abs(p.amount||0)>0).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
-  let cum=0;const chron=[...valid].reverse();
+// ── Investment Details Popup (overlays recurring expenses column) ────────────
+function openFinInvDetails(){
+  let pop=document.getElementById('finInvDetailsPop');
+  if(pop){closeFinInvDetails();return;}
+  const invCard=document.querySelector('.fin-inv-card');
+  const rightCol=document.querySelector('.fin-right');
+  if(!invCard||!rightCol)return;
+  const invRect=invCard.getBoundingClientRect();
+  const rightRect=rightCol.getBoundingClientRect();
+  pop=document.createElement('div');pop.id='finInvDetailsPop';pop.className='fin-details-pop';
+  pop.style.cssText=`position:fixed;top:${invRect.top}px;left:${rightRect.left}px;width:${rightRect.width}px;height:${invRect.height}px;z-index:100`;
+  _finRenderDetailsContent(pop);
+  document.body.appendChild(pop);
+  requestAnimationFrame(()=>pop.classList.add('open'));
+  const onKey=e=>{const t=e.target?.tagName;if(t==='INPUT'||t==='TEXTAREA'||t==='SELECT')return;if(e.key==='Escape'||e.key==='Enter'){closeFinInvDetails();document.removeEventListener('keydown',onKey);}};
+  document.addEventListener('keydown',onKey);
+  pop._onKey=onKey;
+}
+function closeFinInvDetails(){
+  const pop=document.getElementById('finInvDetailsPop');
+  if(!pop)return;
+  if(pop._onKey)document.removeEventListener('keydown',pop._onKey);
+  pop.classList.remove('open');
+  pop.addEventListener('transitionend',()=>pop.remove(),{once:true});
+  setTimeout(()=>{if(pop.parentNode)pop.remove();},200);
+}
+function _finRenderDetailsContent(pop){
+  const purchases=_finOf('vti').filter(p=>p.date&&Math.abs(p.amount||0)>0).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  let cum=0;const chron=[...purchases].reverse();
   const cumMap={};chron.forEach(p=>{cum+=Math.abs(p.amount||0);cumMap[p.id]=cum;});
-  let html=`<div class="card fin-card fin-details-panel">
-    <div class="fin-card-hdr" style="position:relative"><span class="fin-card-title">Purchase History</span><div style="display:flex;gap:4px;align-items:center"><button class="fin-add-btn" onclick="openFinInvAdd(event)" style="font-size:16px;padding:0 4px;line-height:1">+</button><button class="fin-add-btn" onclick="closeFinInvDetails()" style="font-size:14px;padding:0 4px;line-height:1;opacity:.6" title="Close">&#x2715;</button></div></div>
-    <div class="fin-details-scroll"><table class="fin-tbl"><thead><tr><th style="padding-left:12px!important;text-align:left">Date</th><th style="text-align:right;padding-right:12px!important">Amount</th><th style="text-align:right;padding-right:12px!important">Cumulative</th><th></th></tr></thead><tbody>`;
-  valid.forEach(p=>{
+  let html=`<div class="fin-card-hdr" style="position:relative"><span class="fin-card-title">Purchase History</span><div style="display:flex;gap:4px;align-items:center"><button class="fin-add-btn" onclick="openFinInvAdd(event)" style="font-size:16px;padding:0 4px;line-height:1">+</button><button class="fin-add-btn" onclick="closeFinInvDetails()" style="font-size:14px;padding:0 4px;line-height:1;opacity:.6" title="Close">&#x2715;</button></div></div>`;
+  html+=`<div class="fin-details-scroll"><table class="fin-tbl"><thead><tr><th style="padding-left:12px!important;text-align:left">Date</th><th style="text-align:right;padding-right:12px!important">Amount</th><th style="text-align:right;padding-right:12px!important">Cumulative</th><th></th></tr></thead><tbody>`;
+  purchases.forEach(p=>{
     const d=p.date?new Date(p.date+'T12:00'):null;
     const ds=d?d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'—';
     html+=`<tr class="fin-row"><td style="padding-left:12px">${ds}</td><td style="text-align:right;padding-right:12px" class="fin-num">${_finFmt(Math.abs(p.amount||0))}</td><td style="text-align:right;padding-right:12px;color:var(--text-secondary)" class="fin-num">${_finFmt(cumMap[p.id]||0)}</td><td><button class="delbtn" onclick="delFinPurchase('${p.id}')">&#x2715;</button></td></tr>`;
   });
   html+=`</tbody></table></div>`;
-  if(!valid.length)html+=`<div style="text-align:center;color:var(--text-secondary);padding:20px;font-size:13px">No purchases yet</div>`;
-  html+=`</div>`;
-  return html;
+  if(!purchases.length)html+=`<div style="text-align:center;color:var(--text-secondary);padding:20px;font-size:13px">No purchases yet</div>`;
+  pop.innerHTML=html;
 }
 async function delFinPurchase(id){
   const old=st.finance.find(r=>String(r.id)===String(id));
   st.finance=st.finance.filter(r=>String(r.id)!==String(id));
   renderFinancePage();
+  const pop=document.getElementById('finInvDetailsPop');
+  if(pop)_finRenderDetailsContent(pop);
   pushUndo(()=>{if(old)st.finance.push(old);renderFinancePage();},'Deleted purchase');
   if(!String(id).startsWith('l-'))await sbReq('DELETE','finance',null,`?id=eq.${id}`);
 }
@@ -4192,6 +4216,7 @@ async function saveMealEdit(id){
 function showPage(id){
   if(id==='tasks')return;
   if(id==='shopping')id='weekly';// shopping merged into weekly page
+  const detPop=document.getElementById('finInvDetailsPop');if(detPop)detPop.remove();
   const _prevPg=activePg;activePg=id;
   document.querySelectorAll('.page').forEach(p=>{p.classList.remove('active');});
   const vidPage=document.getElementById('page-videos');if(vidPage)vidPage.removeAttribute('style');
