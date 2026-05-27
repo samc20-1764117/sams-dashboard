@@ -606,8 +606,8 @@ async function removePupSession(sessId){
 let _pupRecSeeded=false;
 async function seedPupReviewTask(){
   if(_pupRecSeeded)return;_pupRecSeeded=true;
-  const name='Prep Pup Training';
-  if(st.recurring.some(r=>r.name===name))return;
+  const name='Prep pup training';
+  if(st.recurring.some(r=>/prep pup training/i.test(r.name)))return;
   const tmp='rec-tmp-'+Date.now();
   const rec={id:tmp,name,cadence:'weekly',is_weekly_reset:false,is_enabled:true,appears_on_date:'Sunday',notes:'Review & set next week\'s focus skills for Mochi and Sunny',_doneByWk:{},_dateOverrides:{}};
   st.recurring.push(rec);save();renderToday();
@@ -4015,7 +4015,7 @@ function drawRecAutoTBBlock(col,ratb,ds){
   // Drag to move
   el.addEventListener('mousedown',e=>{
     if(e.target.classList.contains('atb-del')||e.target.classList.contains('atb-resize')||e.target.classList.contains('tb-chk'))return;
-    if(e.detail>=2){e.stopPropagation();openRecEditModal(ratb._recId);return;}
+    if(e.detail>=2){e.stopPropagation();openRecEditModal(ratb._recId,dsToWkKey(ds),'this');return;}
     e.preventDefault();e.stopPropagation();
     const startY=e.clientY,startSm=ratb.sm;
     _ratbDragged=false;let dragging=false;
@@ -4403,7 +4403,7 @@ function drawTBBlock(col,b){
     else if(isPostTab&&_ptVidId){if(typeof openVidEdit==='function')openVidEdit(_ptVidId);}
     else if(b.taskId){openEditTask(b.taskId);}
     else if(b.ruleId){openWrEditModal(String(b.ruleId),dsToWkKey(b.ds),'this');}
-    else if(b.recId){openRecEditModal(String(b.recId));}
+    else if(b.recId){openRecEditModal(String(b.recId),dsToWkKey(b.ds),'this');}
     else if(b._finCancelSubId){showPage('finance');}
     else{startTBInlineEdit(b.id,el.closest('.tb-col'));}
   });

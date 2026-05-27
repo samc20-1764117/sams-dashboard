@@ -5287,7 +5287,7 @@ function saveRecEdit(){
   closeMod('recEditModal');
   const prev={name:r.name,is_weekly_reset:r.is_weekly_reset,cadence:r.cadence,appears_on_date:r.appears_on_date,starting_date:r.starting_date,pup_related:r.pup_related,notes:r.notes,default_start_time:r.default_start_time,default_end_time:r.default_end_time,default_tb_duration:r.default_tb_duration};
   r.name=name;r.is_weekly_reset=isWr;r.cadence=cadence;r.appears_on_date=appearsOn;r.starting_date=startDate;r.pup_related=pupRelated;r.notes=notes;r.default_start_time=defStart;r.default_end_time=defEnd;r.default_tb_duration=defDur;
-  renderRecOv();renderWeeklyPage();renderWkSummary();renderWkCal();if(document.getElementById('tbGrid'))renderDayTB();
+  save();renderRecOv();renderWeeklyPage();renderWkSummary();renderWkCal();if(document.getElementById('tbGrid'))renderDayTB();
   const patch={name,is_weekly_reset:isWr,cadence,appears_on_date:appearsOn,pup_related:pupRelated,notes:notes||null,default_start_time:defStart,default_end_time:defEnd,default_tb_duration:defDur};
   if(startDate)patch.starting_date=startDate;
   sbReq('PATCH','wr_recurring_rules',patch,recQs(rid));
