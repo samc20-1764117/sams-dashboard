@@ -766,13 +766,12 @@ function tRowShopVirt(t,noDate=false,tbArrow=false,noColor=false){
   </div>`;
 }
 function tRowFinCancel(t,tbArrow=false){
-  const s=IMP;
-  return`<div class="ti ${t.done?'done':'imp-row'}" ${!t.done?`style="background:${s.bg}"`:''} id="ti-${t.id}" draggable="true"
+  return`<div class="ti ${t.done?'done':'imp-row'}" id="ti-${t.id}" draggable="true"
     ondragstart="dragId='fin-cancel::${t._subId}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true)"
     ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false)"
     onclick="selTask(event,'${t.id}')" ondblclick="showPage('finance')">
     <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="archiveFinSub('${t._subId}',this.checked)"></label>
-    <span class="tn" style="color:${s.t}">${t.name}</span>
+    <span class="tn">${t.name}</span>
     ${tbArrow?'<span class="tb-arrow">›</span>':''}
   </div>`;
 }
