@@ -930,7 +930,7 @@ async function _vidIdeaTypeDrop(e,newType){
 }
 
 // Push a local-only video (l-xxx id) to Supabase and replace the temp id
-const _VID_DB_COLS=['title','topic','status','post_date','duration_minutes','video_type','big_video_id','vid_order','comment',...VID_STEPS,'step_upload_tableau'];
+const _VID_DB_COLS=['title','topic','status','post_date','duration_minutes','video_type','big_video_id','vid_order','comment','youtube_url',...VID_STEPS,'step_upload_tableau'];
 async function _vidEnsureSynced(v){
   if(!String(v.id).startsWith('l-'))return;
   // If parent is also local, sync parent first
@@ -2597,6 +2597,7 @@ function openVidModal(type){
   if(t==='L'){defaults.step_tableau_public='na';defaults.step_upload_tableau='na';}
   _vidRenderSteps(defaults);
   document.getElementById('vmPostDate').value='';
+  document.getElementById('vmYoutubeUrl').value='';
   document.getElementById('vidModal').classList.add('open');
   setTimeout(()=>{const inp=document.getElementById('vmTopic');inp.focus();inp.setSelectionRange(0,0);},80);
 }
@@ -2620,6 +2621,7 @@ function openVidEdit(id){
   _vidRenderSteps(stepVals);
   const _pd=v.post_date;
   document.getElementById('vmPostDate').value=_pd?parseInt(_pd.slice(5,7))+'/'+parseInt(_pd.slice(8,10))+(_pd.slice(0,4)!==String(new Date().getFullYear())?'/'+_pd.slice(2,4):''):'';
+  document.getElementById('vmYoutubeUrl').value=v.youtube_url||'';
 
   document.getElementById('vidModal').classList.add('open');
   setTimeout(()=>{const inp=document.getElementById('vmTopic');inp.focus();const len=inp.value.length;inp.setSelectionRange(len,len);},80);
@@ -2721,6 +2723,7 @@ async function saveVidModal(){
     duration_minutes:parseFloat(document.getElementById('vmDuration').value)||null,
 
     big_video_id:_vidGetBigVideoId(),
+    youtube_url:document.getElementById('vmYoutubeUrl').value.trim()||null,
     comment:document.getElementById('vmComment').value.trim()||null
   };
   if(_vidMode==='edit'&&_vidEditId){
@@ -3008,9 +3011,12 @@ function _vidDeleteTabTask(vidId){
     if(!String(task.id).startsWith('l-'))sbReqSilent('DELETE','tasks',null,`?id=eq.${task.id}`);
   }
 }
+let _vidPromptOpen=false;
 function _vidPromptPostDateFromVid(id){
+  if(_vidPromptOpen)return;
   const v=(st.videos||[]).find(x=>String(x.id)===String(id));if(!v)return;
   if(v.post_date){_vidAfterPostDate(id);return;}
+  _vidPromptOpen=true;
   const ds=typeof d2s==='function'?d2s(typeof getDayDate==='function'?getDayDate(0):new Date()):new Date().toISOString().slice(0,10);
   const overlay=document.createElement('div');overlay.style.cssText='position:fixed;inset:0;z-index:600';
   const pop=document.createElement('div');
@@ -3020,16 +3026,21 @@ function _vidPromptPostDateFromVid(id){
     <div style="font-size:12px;font-weight:600;margin-bottom:6px">Post Date — ${typeof _esc==='function'?_esc(v.topic||v.title):v.topic||v.title}</div>
     <p style="font-size:10px;color:var(--muted);margin:0 0 10px">${tabRequired?'A tab task will be created for this date.':'Video will be marked complete.'}</p>
     <div style="margin-bottom:10px"><input id="_vidPostDateInp2" type="date" value="${ds}" style="width:100%;font-size:12px;padding:4px 6px;border:1px solid var(--border);border-radius:6px"></div>
+    ${tabRequired?`<div style="margin-bottom:10px"><input id="_vidYtUrlInp2" type="text" placeholder="YouTube link (optional)" value="${v.youtube_url||''}" style="width:100%;font-size:11px;padding:4px 6px;border:1px solid var(--border);border-radius:6px;box-sizing:border-box"></div>`:''}
     <div style="display:flex;justify-content:flex-end;gap:6px"><button class="btn btn-ghost btn-xs" id="_vidPostCancel2">Cancel</button><button class="btn btn-dark btn-xs" id="_vidPostSave2">Set Date</button></div>`;
   document.body.appendChild(overlay);document.body.appendChild(pop);
-  const _cleanup=()=>{overlay.remove();pop.remove();};
+  const _cleanup=()=>{_vidPromptOpen=false;overlay.remove();pop.remove();};
   overlay.addEventListener('click',_cleanup);
   document.getElementById('_vidPostCancel2').addEventListener('click',_cleanup);
   document.getElementById('_vidPostSave2').addEventListener('click',async()=>{
     const postDate=document.getElementById('_vidPostDateInp2').value;
     if(!postDate){_cleanup();return;}
     v.post_date=postDate;
-    await sbReqSilent('PATCH','videos',{post_date:postDate},`?id=eq.${v.id}`);
+    const ytInp=document.getElementById('_vidYtUrlInp2');
+    const ytUrl=ytInp?ytInp.value.trim():'';
+    if(ytUrl)v.youtube_url=ytUrl;
+    const patch={post_date:postDate};if(ytUrl)patch.youtube_url=ytUrl;
+    await sbReqSilent('PATCH','videos',patch,`?id=eq.${v.id}`);
     _cleanup();
     _vidAfterPostDate(id);
   });

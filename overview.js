@@ -3261,10 +3261,13 @@ function _vidCompleteFromOv(vidId,anchorEl){
   if(typeof renderVideosPageKeepScroll==='function')renderVideosPageKeepScroll();
 }
 
+let _vidOvPromptOpen=false;
 function _vidPromptPostDate(vidId,anchorEl){
+  if(_vidOvPromptOpen)return;
   const v=(st.videos||[]).find(x=>String(x.id)===String(vidId));if(!v)return;
   // If post_date already set, use it directly
   if(v.post_date){_vidCreateTabUpTask(vidId,v.post_date);return;}
+  _vidOvPromptOpen=true;
   // Prompt with a small popover near the anchor
   const ds=d2s(getDayDate(0));
   const overlay=document.createElement('div');overlay.style.cssText='position:fixed;inset:0;z-index:600';
@@ -3280,9 +3283,10 @@ function _vidPromptPostDate(vidId,anchorEl){
     <div style="font-size:12px;font-weight:600;margin-bottom:6px">Post Date — ${escHtml(v.topic||v.title)}</div>
     <p style="font-size:10px;color:var(--muted);margin:0 0 10px">${_tabReq?'A tab task will be created for this date.':'Video will be marked complete.'}</p>
     <div style="margin-bottom:10px"><input id="_vidPostDateInp" type="date" value="${ds}" style="width:100%;font-size:12px;padding:4px 6px;border:1px solid var(--border);border-radius:6px"></div>
+    ${_tabReq?`<div style="margin-bottom:10px"><input id="_vidYtUrlInp" type="text" placeholder="YouTube link (optional)" value="${v.youtube_url||''}" style="width:100%;font-size:11px;padding:4px 6px;border:1px solid var(--border);border-radius:6px;box-sizing:border-box"></div>`:''}
     <div style="display:flex;justify-content:flex-end;gap:6px"><button class="btn btn-ghost btn-xs" id="_vidPostCancel">Cancel</button><button class="btn btn-dark btn-xs" id="_vidPostSave">Set Date</button></div>`;
   document.body.appendChild(overlay);document.body.appendChild(pop);
-  const _cleanup=()=>{overlay.remove();pop.remove();};
+  const _cleanup=()=>{_vidOvPromptOpen=false;overlay.remove();pop.remove();};
   overlay.addEventListener('click',_cleanup);
   document.getElementById('_vidPostCancel').addEventListener('click',_cleanup);
   document.getElementById('_vidPostSave').addEventListener('click',async()=>{
@@ -3290,7 +3294,11 @@ function _vidPromptPostDate(vidId,anchorEl){
     if(!postDate){_cleanup();return;}
     v.post_date=postDate;
     v.status='published';
-    await sbReqSilent('PATCH','videos',{post_date:postDate,status:'published'},`?id=eq.${v.id}`);
+    const ytInp=document.getElementById('_vidYtUrlInp');
+    const ytUrl=ytInp?ytInp.value.trim():'';
+    if(ytUrl)v.youtube_url=ytUrl;
+    const vidPatch={post_date:postDate,status:'published'};if(ytUrl)vidPatch.youtube_url=ytUrl;
+    await sbReqSilent('PATCH','videos',vidPatch,`?id=eq.${v.id}`);
     _cleanup();
     const _tr=v.step_tableau_public&&v.step_tableau_public!=='na'&&v.step_tableau_public!=='done';
     if(_tr){_vidCreateTabUpTask(vidId,postDate);}
@@ -3308,11 +3316,16 @@ async function _vidCreateTabUpTask(vidId,postDate){
   const marker='_vid:'+vidId;
   const existing=st.tasks.find(t=>t.notes&&t.notes.includes(marker));
   if(existing)return;
-  const name='Tab - '+(v.topic||v.title);
-  const t={id:'l-'+Date.now(),name,category:'My work',due_date:postDate,done:false,important:false,notes:marker};
+  const name='Post Tab - '+(v.topic||v.title);
+  const t={id:'l-'+Date.now(),name,category:'Videos',due_date:postDate,done:false,important:false,notes:marker};
   st.tasks.push(t);save();renderAll();
-  const sv=await sbReq('POST','tasks',{name,category:'My work',due_date:postDate,done:false,important:false,notes:marker});
+  const sv=await sbReq('POST','tasks',{name,category:'Videos',due_date:postDate,done:false,important:false,notes:marker});
   if(sv&&sv[0]){const i=st.tasks.findIndex(x=>x.id===t.id);if(i>-1)st.tasks[i]=sv[0];}
+  // Auto-create timeblock at 7:30-8:00am on the posting date
+  const taskId=sv&&sv[0]?String(sv[0].id):t.id;
+  const tb={id:crypto.randomUUID(),title:name,ds:postDate,sm:450,dur:30,cat:'Videos',taskId,_done:false};
+  st.blocks.push(tb);sbSaveBlock(tb);
+  if(document.getElementById('tbGrid'))renderDayTB();
 }
 function _vidCompleteTabUp(vidId){
   const v=(st.videos||[]).find(x=>String(x.id)===String(vidId));
@@ -3510,7 +3523,8 @@ function tmIcon(t){if(!t||t._virtual)return '';if(t.travel_mode==='plane')return
 function tRow(t,o={}){
   const ov=isOv(t.due_date)&&!t.done;
   const imp=t.important&&!ov&&!t.done;
-  const s=ov?OV:imp?IMP:gc(t.category);
+  const _isPostTab=t.notes&&t.notes.startsWith('_vid:');
+  const s=ov?OV:imp?IMP:_isPostTab?{bg:'rgba(22,163,74,.18)',t:'#166534',d:'#16a34a',b:'rgba(22,163,74,.35)'}:gc(t.category);
   const sl=ov?'ov':imp?'imp':slug(t.category);
   return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''} ${imp&&!ov?'imp-row':''}" style="${!ov&&!imp&&!o.noColor?`background:${s.bg}`:''}" id="ti-${t.id}" ${o.drag?`draggable="true" ondragstart="dStart(event,'${t.id}')" ondragend="dEnd(event)"`:''} onclick="selTask(event,'${t.id}')" ondblclick="tiDbl(event,'${t.id}')" oncontextmenu="showCtx(event,'${t.id}')">
     <label class="chk-wrap" onclick="event.stopPropagation()" onmousedown="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="toggleTask('${t.id}',this.checked,'${o.drag?'wk':''}')"></label>
@@ -4136,7 +4150,8 @@ function drawTBBlock(col,b){
   const recCat=linkedRec?(linkedRec.is_weekly_reset===false?'recurring':'weekly_reset'):null;
   const effectiveCat=linkedTask?linkedTask.category:recCat||(linkedRule?'weekly_reset':null)||(b.cat||'Home');
   const isPupBlock=b.cat==='pup_session';
-  const s=isImp?IMP:isPupBlock?_pupSessStyle():gc(effectiveCat);
+  const isPostTab=linkedTask&&linkedTask.notes&&linkedTask.notes.startsWith('_vid:');
+  const s=isImp?IMP:isPupBlock?_pupSessStyle():isPostTab?{bg:'rgba(22,163,74,.18)',t:'#166534',d:'#16a34a',b:'rgba(22,163,74,.35)'}:gc(effectiveCat);
   const el=document.createElement('div');
   el.className='tb-block'+(b._done?' done-block':'');el.dataset.bid=b.id;
   el.addEventListener('contextmenu',e=>{
@@ -4169,10 +4184,19 @@ function drawTBBlock(col,b){
     }
   }
   if(_vidWhiteBg)el.style.cssText+=';background:rgba(255,255,255,.88);color:#15803d;border-color:rgba(34,197,94,.25)';
-  el.innerHTML=`<div class="tb-row"><input type="checkbox" class="tb-chk" ${b._done?'checked':''}><span class="tb-bt${b.dur>=30?' wrap':''}">${_displayTitle}</span><div class="tb-right">${_showTime?`<span class="tb-btime">${tStr(b.sm)}-${tStr(b.sm+b.dur)}</span>`:''}<button class="tb-bdel" onclick="delBlock('${b.id}',event)">✕</button></div></div>${_vidStepsHtml}${_notesHtml}<div class="tb-resize" data-id="${b.id}"></div>`;
+  // Copy-link button for Post Tab tasks
+  let _copyLinkHtml='';
+  if(isPostTab){
+    const _vidMarker=linkedTask.notes.replace('_vid:','');
+    const _ptVid=(st.videos||[]).find(x=>String(x.id)===String(_vidMarker));
+    if(_ptVid&&_ptVid.youtube_url)_copyLinkHtml=`<button class="tb-copy-link" data-url="${_ptVid.youtube_url.replace(/"/g,'&quot;')}" title="Copy YouTube link" style="background:none;border:none;cursor:pointer;font-size:11px;padding:1px 4px;opacity:.7;flex-shrink:0">📋</button>`;
+  }
+  el.innerHTML=`<div class="tb-row"><input type="checkbox" class="tb-chk" ${b._done?'checked':''}><span class="tb-bt${b.dur>=30?' wrap':''}">${_displayTitle}</span>${_copyLinkHtml}<div class="tb-right">${_showTime?`<span class="tb-btime">${tStr(b.sm)}-${tStr(b.sm+b.dur)}</span>`:''}<button class="tb-bdel" onclick="delBlock('${b.id}',event)">✕</button></div></div>${_vidStepsHtml}${_notesHtml}<div class="tb-resize" data-id="${b.id}"></div>`;
   if(b._vidId)el.querySelectorAll('.vid-step-dot[data-step]').forEach(dot=>{
     dot.addEventListener('click',e=>{e.stopPropagation();if(typeof _vidOvToggleStep==='function')_vidOvToggleStep(dot.dataset.vid,dot.dataset.step);});
   });
+  const _clBtn=el.querySelector('.tb-copy-link');
+  if(_clBtn)_clBtn.addEventListener('click',e=>{e.stopPropagation();navigator.clipboard.writeText(_clBtn.dataset.url);_clBtn.textContent='✓';setTimeout(()=>_clBtn.textContent='📋',1500);});
   const tbChk=el.querySelector('.tb-chk');
   if(tbChk)tbChk.addEventListener('change',function(e){
     e.stopPropagation();
@@ -4224,7 +4248,7 @@ function drawTBBlock(col,b){
   function _tbSelId(){return _getTBBlockSelId(b);}
   function _tbBlockSelId(bl){return _getTBBlockSelId(bl);}
   el.addEventListener('click',e=>{
-    if(e.target.classList.contains('tb-resize')||e.target.classList.contains('tb-bdel')||e.target.classList.contains('tb-chk')||e.target.classList.contains('vid-step-dot'))return;
+    if(e.target.classList.contains('tb-resize')||e.target.classList.contains('tb-bdel')||e.target.classList.contains('tb-chk')||e.target.classList.contains('vid-step-dot')||e.target.classList.contains('tb-copy-link'))return;
     if(tbDragging)return;
     e.stopPropagation();
     const tbSelId=_tbSelId();if(!tbSelId)return;
@@ -4234,7 +4258,7 @@ function drawTBBlock(col,b){
     applySelHighlight();
   });
   el.addEventListener('dblclick',e=>{
-    if(e.target.classList.contains('tb-resize')||e.target.classList.contains('tb-bdel')||e.target.classList.contains('tb-chk')||e.target.classList.contains('vid-step-dot'))return;
+    if(e.target.classList.contains('tb-resize')||e.target.classList.contains('tb-bdel')||e.target.classList.contains('tb-chk')||e.target.classList.contains('vid-step-dot')||e.target.classList.contains('tb-copy-link'))return;
     e.stopPropagation();
     clearSelection();
     if(b.cat==='pup_session'){const _ps=b._pupSessId?(st.pupSessions||[]).find(s=>String(s.id)===String(b._pupSessId)):null;const _sk=_ps?(st.pup_skills||[]).find(x=>String(x.id)===String(_ps.skill_id)):((st.pup_skills||[]).find(x=>x.skill===b.title));if(_sk)openPupEditModal(_sk.id);}
@@ -4245,7 +4269,7 @@ function drawTBBlock(col,b){
     else{startTBInlineEdit(b.id,el.closest('.tb-col'));}
   });
   el.addEventListener('mousedown',e=>{
-    if(e.target.classList.contains('tb-resize')||e.target.classList.contains('tb-bdel')||e.target.classList.contains('tb-chk')||e.target.classList.contains('vid-step-dot'))return;
+    if(e.target.classList.contains('tb-resize')||e.target.classList.contains('tb-bdel')||e.target.classList.contains('tb-chk')||e.target.classList.contains('vid-step-dot')||e.target.classList.contains('tb-copy-link'))return;
     if(e.detail>=2)return;
     e.stopPropagation();
     const startY=e.clientY,startSm=b.sm;

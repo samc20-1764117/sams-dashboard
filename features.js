@@ -4500,6 +4500,7 @@ function applySelHighlight(){
     if(!t)return null;
     if(!t.done&&t.due_date&&t.due_date.split('T')[0]<tod())return OV;
     if(t.important)return IMP;
+    if(t.notes&&t.notes.startsWith('_vid:'))return{bg:'rgba(22,163,74,.18)',t:'#166534',d:'#16a34a',b:'rgba(22,163,74,.35)'};
     return gc(t.category);
   }
   function applySelVars(el,cs){
@@ -4518,6 +4519,7 @@ function applySelHighlight(){
     let sel=selectedTasks.has(id);
     let csId=id;
     if(!sel)sel=selTaskIds.has(id);
+    if(!sel&&id.startsWith('vid-ov-')){sel=selVidIds.has(id.replace('vid-ov-',''));}
     if(!sel&&id.startsWith('rec-virt-')){sel=selRecIds.has(id.replace('rec-virt-',''));}
     if(!sel&&id.startsWith('shop-cal-')){sel=selShopIds.has(id.replace('shop-cal-',''));}
     if(!sel&&id.startsWith('wrrule-virt-')){sel=selWrRuleIds.has(id.replace('wrrule-virt-',''));}

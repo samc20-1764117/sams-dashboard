@@ -6,7 +6,8 @@
 - **Stages** (step columns): `step_build`, `step_vo`, `step_cut`, `step_thumbnail`, `step_description`, `step_tableau_public`. `step_upload_tableau` kept in Supabase but merged into Tab visually (always synced). Values: `done`, `not_started`, `na`.
 - **Core 5 stages**: `VID_STEPS_CORE` = first 5 (Build, Vo, Cut, Th, Des). Completing all 5 triggers posting date prompt.
 - **Tab stage** (6th): `step_tableau_public` — controls both `step_tableau_public` and `step_upload_tableau` in Supabase.
-- **Completeness levels**: (1) Core 5 done → prompt posting date. (2) Core 5 done + posting date → status=published. If tab required, creates "post tab" task. (3) Tab done (or na) → true completeness, removed from overview.
+- **Completeness levels**: (1) Core 5 done → prompt posting date. (2) Core 5 done + posting date → status=published. If tab required, creates "Post Tab - Topic" task (category=Videos, green) + auto timeblock 7:30-8am. (3) Tab done (or na) → true completeness, removed from overview.
+- **`youtube_url`**: stored on video record. Prompted during posting date entry (when tab required). Shown in edit modal. Post Tab timeblock has 📋 copy-link button.
 - **Dropped columns** (do not reference): `number`, `build_hours`, `step_answer_comments`, `step_short`.
 - **`group_name`**: legacy field migrated to `big_video_id`. Client-side migration in `renderVideosPage()` re-assigns `big_video_id` from `group_name` if missing — but ONLY for non-`idea` status videos. When ungrouping L videos (Cmd+Right to idea), MUST clear both `big_video_id` AND `group_name` (local + Supabase PATCH) or the migration will restore the parent link.
 - `VID_STEPS` array (6 stages) and `VID_STEP_LABELS` map define the displayed stages. `VID_STEPS_CORE` = first 5.
@@ -60,7 +61,7 @@
 
 ### Edit Modal (`#vidModal`)
 - Layout: topic first, title second, B/L toggle top-right, status+big video row, then outset container with stages only (posted/duration hidden — YT-sourced).
-- Fields: title, topic, type (Big/Small toggle), status, big video (searchable input+datalist). `vmPostDate`/`vmDuration` are hidden inputs (data preserved on save, not visible).
+- Fields: title, topic, type (Big/Small toggle), status, big video (searchable input+datalist), youtube_url. `vmPostDate` rendered inline between Des and Tab stages. `vmDuration` is hidden input.
 - **Stages**: toggle buttons — click=done/not done, right-click=na (invisible). Na stages can't be clicked, only right-click to restore.
 - **Defaults for new**: Big → all stages required. Small → Tab default to `na`. Changing type dropdown updates stages.
 - **Big Video field**: searchable via datalist of all B video titles. `_vidGetBigVideoId()` resolves title→id on save.
