@@ -3102,7 +3102,7 @@ function closeVidOvMenu(){
 }
 function _renderVidOvMenu(){
   const menu=document.getElementById('vidOvPanel');if(!menu)return;
-  const vids=(st.videos||[]).filter(v=>!v.is_deleted&&v.video_type==='B'&&(v.status==='up_next'||v.status==='in_progress')&&!(typeof _vidIsComplete==='function'&&_vidIsComplete(v)));
+  const vids=(st.videos||[]).filter(v=>!v.is_deleted&&v.video_type==='B'&&v.status==='up_next');
   const unassigned=vids;
   const _hdr=`<div class="tod-tb-header" style="display:flex;align-items:center;justify-content:center;position:relative;padding:8px 10px"><span onclick="closeVidOvMenu();showPage('videos')" style="font-size:12px;font-weight:700;color:var(--text);letter-spacing:-.1px;cursor:pointer" onmouseenter="this.style.color='var(--accent)'" onmouseleave="this.style.color='var(--text)'"title="Go to Videos page">Videos</span><button onclick="closeVidOvMenu()" style="position:absolute;right:10px;background:none;border:none;cursor:pointer;font-size:14px;color:var(--muted);padding:0 2px;line-height:1" title="Close">✕</button></div>`;
   if(!unassigned.length){
@@ -4223,10 +4223,10 @@ function drawTBBlock(col,b){
   if(isPostTab){
     _ptVidId=linkedTask.notes.replace('_vid:','');
     const _ptVid=(st.videos||[]).find(x=>String(x.id)===String(_ptVidId));
-    if(_ptVid&&_ptVid.youtube_url)_copyLinkHtml=`<button class="tb-copy-link" data-url="${_ptVid.youtube_url.replace(/"/g,'&quot;')}" title="Copy YouTube link" style="background:none;border:none;cursor:pointer;padding:2px 4px;opacity:.65;flex-shrink:0;display:flex;align-items:center"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></button>`;
+    if(_ptVid&&_ptVid.youtube_url)_copyLinkHtml=`<button class="tb-copy-link" data-url="${_ptVid.youtube_url.replace(/"/g,'&quot;')}" title="Copy YouTube link" style="background:none;border:none;cursor:pointer;padding:0 2px;opacity:.65;flex-shrink:0;display:inline-flex;align-items:center;vertical-align:middle;margin-right:2px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></button>`;
   }
   const _showTimeHere=_showTime&&!isPostTab;
-  el.innerHTML=`<div class="tb-row"><input type="checkbox" class="tb-chk" ${b._done?'checked':''}><span class="tb-bt${b.dur>=30?' wrap':''}">${_displayTitle}</span>${_copyLinkHtml}<div class="tb-right">${_showTimeHere?`<span class="tb-btime">${tStr(b.sm)}-${tStr(b.sm+b.dur)}</span>`:''}<button class="tb-bdel" onclick="delBlock('${b.id}',event)">✕</button></div></div>${_vidStepsHtml}${_notesHtml}<div class="tb-resize" data-id="${b.id}"></div>`;
+  el.innerHTML=`<div class="tb-row"><input type="checkbox" class="tb-chk" ${b._done?'checked':''}><span class="tb-bt${b.dur>=30?' wrap':''}">${_displayTitle}</span><div class="tb-right">${_showTimeHere?`<span class="tb-btime">${tStr(b.sm)}-${tStr(b.sm+b.dur)}</span>`:''}${_copyLinkHtml}<button class="tb-bdel" onclick="delBlock('${b.id}',event)">✕</button></div></div>${_vidStepsHtml}${_notesHtml}<div class="tb-resize" data-id="${b.id}"></div>`;
   if(b._vidId)el.querySelectorAll('.vid-step-dot[data-step]').forEach(dot=>{
     dot.addEventListener('click',e=>{e.stopPropagation();if(typeof _vidOvToggleStep==='function')_vidOvToggleStep(dot.dataset.vid,dot.dataset.step);});
   });
