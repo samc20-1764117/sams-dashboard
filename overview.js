@@ -109,12 +109,13 @@ function renderToday(){
       return false;
     }
     if(t._vidId)return st.blocks.some(b=>(b.ds===_todDs||isOvToday)&&String(b._vidId)===String(t._vidId));
+    if(t._type==='pup')return st.blocks.some(b=>(b.ds===_todDs||isOvToday)&&String(b._pupSessId)===String(t._pupSessId));
     if(!t._virtual)return st.blocks.some(b=>(b.ds===_todDs||isOvToday)&&String(b.taskId)===String(t.id));
     return true;
   }
   document.getElementById('todList').innerHTML=sorted.map(t=>{
     const arr=!t.done&&!_hasTBToday(t);
-    return t._type==='travel'||t._type==='birthday'?tRowExtra(t):t._type==='vid'?tRowVidVirt(t,arr):t._type==='shop'?tRowShopVirt(t,true,arr,true):t._type==='pup'?tRowPupSess(t,true):t._virtual?tRowTodayVirt(t,arr,true):tRow(t,{cat:true,catDot:true,drag:true,noDate:true,tbArrow:arr,noColor:true});
+    return t._type==='travel'||t._type==='birthday'?tRowExtra(t):t._type==='vid'?tRowVidVirt(t,arr):t._type==='shop'?tRowShopVirt(t,true,arr,true):t._type==='pup'?tRowPupSess(t,true,arr):t._virtual?tRowTodayVirt(t,arr,true):tRow(t,{cat:true,catDot:true,drag:true,noDate:true,tbArrow:arr,noColor:true});
   }).join('');
   updateOvBanner();
   renderPupSkillsHighlight();
@@ -781,7 +782,7 @@ function _pupSessStyle(){
   return{bg:'rgba(221,244,240,.38)',b:'rgba(42,157,181,.14)',t:'rgba(32,140,165,1)',d:'#2a9db5',dot:'rgba(42,157,181,.18)'};
 }
 function _pupDisplayName(t){const p=t._pup;return p?(p+': '+(t.name||'')):(t.name||'');}
-function tRowPupSess(t,noColor=false){
+function tRowPupSess(t,noColor=false,tbArrow=false){
   const ov=isOv(t.due_date)&&!t.done;
   const ps=ov?OV:_pupSessStyle();
   return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''}" draggable="true" style="${!ov&&!noColor?`background:${ps.bg};border:1px solid ${ps.b}`:''}" id="ti-pup-sess-${t._pupSessId}" onclick="selTask(event,'pup-sess-${t._pupSessId}')" ondblclick="openPupEditModal('${t._skillId}')" ondragstart="dragId='pupsess::${t._pupSessId}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);" ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false);">
@@ -789,6 +790,7 @@ function tRowPupSess(t,noColor=false){
     <span class="tn">${escHtml(_pupDisplayName(t))}</span>
     ${ov&&t.due_date?`<span class="dlbl ov">${['S','M','T','W','T','F','S'][new Date(t.due_date.split('T')[0]+'T12:00').getDay()]}</span>`:''}
     ${!ov?`<svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3" fill="none" stroke="rgba(42,157,181,.35)" stroke-width="1.5"/></svg>`:''}
+    ${tbArrow?'<span class="tb-arrow">›</span>':''}
     <button class="delbtn" onclick="event.stopPropagation();removePupSession('${t._pupSessId}')">✕</button>
   </div>`;
 }
