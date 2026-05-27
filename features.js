@@ -999,7 +999,8 @@ function mkMCell(date,om,today){
   const recOnDay=(_moRecMap[ds]||[]).filter(t=>!t.done);
   const extras=getExtrasForDate(ds);
   const travelOnDay=extras.filter(t=>t._type==='travel');
-  const undone=[...travelOnDay,...st.tasks.filter(t=>t.due_date&&t.due_date.split('T')[0]===ds&&!t.done&&t.category!=='Weekly Goals'),...extras.filter(t=>t._type!=='travel'),...shopOnDay,...wrecOnDay,...recOnDay];
+  const finCancelOnDay=typeof _finCancelTasksForDate==='function'?_finCancelTasksForDate(ds):[];
+  const undone=[...travelOnDay,...st.tasks.filter(t=>t.due_date&&t.due_date.split('T')[0]===ds&&!t.done&&t.category!=='Weekly Goals'),...extras.filter(t=>t._type!=='travel'),...shopOnDay,...wrecOnDay,...recOnDay,...finCancelOnDay];
   const done=[...st.tasks.filter(t=>t.due_date&&t.due_date.split('T')[0]===ds&&t.done&&t.category!=='Weekly Goals'),...shopOnDayDone];
   const tasks=typeof sortByTypeOrder==='function'?sortByTypeOrder([...undone,...done]):[...undone,...done];
   const _cellH=Math.max(70,(window.innerHeight*0.94-100)/4-4);
@@ -1888,7 +1889,7 @@ function _finRenderInvestments(purchases,totalBought,gain,gainPct,currentVal){
 // ── Column 3: Subscriptions (finance_subs table) ─────────────────────────────
 function _finRenderSubs(){
   const _moAmt=s=>{const a=s.amount||0;const f=s.frequency||'monthly';return f==='yearly'?a/12:f==='6-month'?a/6:f==='weekly'?a*4.33:a;};
-  const subs=[...st.finSubs].sort((a,b)=>_moAmt(b)-_moAmt(a));
+  const subs=[...st.finSubs].sort((a,b)=>{if(a.cancel&&!b.cancel)return -1;if(!a.cancel&&b.cancel)return 1;return _moAmt(b)-_moAmt(a);});
   const monthlyTotal=subs.filter(s=>!s.cancel).reduce((s,sub)=>{
     const amt=sub.amount||0;
     if(sub.frequency==='yearly')return s+amt/12;
@@ -1899,7 +1900,7 @@ function _finRenderSubs(){
   const yearlyTotal=monthlyTotal*12;
 
   let html=`<div class="card fin-card">
-    <div class="fin-card-hdr"><span class="fin-card-title">Subscriptions</span><button class="fin-add-btn" onclick="addFinSub()" style="font-size:16px;padding:0 4px;line-height:1">+</button></div>
+    <div class="fin-card-hdr"><span class="fin-card-title">Recurring Expenses</span><button class="fin-add-btn" onclick="addFinSub()" style="font-size:16px;padding:0 4px;line-height:1">+</button></div>
     <div class="fin-sub-scroll">
     <table class="fin-tbl fin-sub-tbl"><colgroup><col class="fin-col-name"/><col class="fin-col-freq"/><col class="fin-col-due"/><col class="fin-col-amt"/><col class="fin-col-mo"/><col class="fin-col-del"/></colgroup><thead><tr><th style="padding-left:17px!important">Name</th><th style="text-align:center">Freq</th><th style="text-align:right;padding-right:16px!important">Due</th><th style="text-align:right;padding-right:16px!important">Amount</th><th class="fin-mo-adj" style="font-size:12px;font-weight:500;text-align:right;padding:4px 12px!important;font-variant-numeric:tabular-nums;white-space:nowrap">Per Month: ${_finFmt(monthlyTotal)}</th><th></th></tr></thead><tbody>`;
   subs.forEach(sub=>{
@@ -2010,6 +2011,37 @@ async function toggleFinSubCancel(id){
   if(!String(id).startsWith('l-'))await sbReqNullable('PATCH','finance_subs',{cancel:row.cancel},`?id=eq.${id}`);
 }
 
+// Virtual cancel-reminder tasks for overview (3 days before due)
+function _finCancelTasksForDate(ds){
+  if(!st.finSubs)return[];
+  const tasks=[];
+  const viewDate=new Date(ds+'T00:00:00');
+  st.finSubs.filter(s=>s.cancel&&s.due_day).forEach(s=>{
+    // Calculate next due date from due_month+due_day
+    const today=new Date(ds+'T00:00:00');
+    const yr=today.getFullYear();const mo=today.getMonth();
+    let dueDate;
+    if(s.due_month&&s.due_month>=1&&s.due_month<=12){
+      // Specific month — yearly/6-month subscription
+      dueDate=new Date(yr,s.due_month-1,s.due_day);
+      if(dueDate<new Date(yr,mo,today.getDate()-3))dueDate=new Date(yr+1,s.due_month-1,s.due_day);
+    }else{
+      // Monthly — next occurrence of this day
+      dueDate=new Date(yr,mo,s.due_day);
+      if(dueDate<new Date(yr,mo,today.getDate()-3))dueDate=new Date(yr,mo+1,s.due_day);
+    }
+    const dueDateStr=d2s(dueDate);
+    // Show 3 days before due through due date
+    const reminderDate=new Date(dueDate);reminderDate.setDate(reminderDate.getDate()-3);
+    const reminderStr=d2s(reminderDate);
+    if(ds>=reminderStr&&ds<=dueDateStr){
+      const dueLabel=_FIN_MONTHS[dueDate.getMonth()]+' '+dueDate.getDate();
+      tasks.push({id:'fin-cancel-'+s.id,name:'Cancel '+s.name+' by '+dueLabel,category:'Home',due_date:reminderStr,done:false,_subId:s.id,_virtual:true,_type:'fin-cancel'});
+    }
+  });
+  return tasks;
+}
+
 async function addFinSub(){
   const snap=_finSnap();
   const row={id:'l-'+Date.now(),name:'New Sub',amount:0,frequency:'monthly',due_day:null,due_month:null,cancel:false,sort_order:0};
@@ -2025,7 +2057,8 @@ async function delFinSub(id){
   const snap=_finSnap();
   const old=st.finSubs.find(r=>String(r.id)===String(id));
   st.finSubs=st.finSubs.filter(r=>String(r.id)!==String(id));renderFinancePage();
-  pushUndo(()=>{if(old)st.finSubs.push(old);renderFinancePage();if(!String(id).startsWith('l-'))sbReq('POST','finance_subs',old);},'Deleted subscription');
+  if(typeof renderToday==='function')renderToday();if(typeof renderWkCal==='function')renderWkCal();
+  pushUndo(()=>{if(old)st.finSubs.push(old);renderFinancePage();if(typeof renderToday==='function')renderToday();if(typeof renderWkCal==='function')renderWkCal();if(!String(id).startsWith('l-'))sbReq('POST','finance_subs',old);},'Deleted subscription');
   if(!String(id).startsWith('l-'))await sbReq('DELETE','finance_subs',null,`?id=eq.${id}`);
 }
 

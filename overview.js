@@ -71,6 +71,7 @@ function renderToday(){
   const _vidStillPending=v=>v.status==='published'&&typeof _vidGroupFullyComplete==='function'&&!_vidGroupFullyComplete(v);
   const _hasTabTask0=vid=>{const m='_vid:'+vid;return st.tasks.some(t=>t.notes&&t.notes.includes(m));};
   const vidToday=(st.videos||[]).filter(v=>{if(v.is_deleted)return false;if(v.status==='published'&&!_vidStillPending(v))return false;const vd=_vdmToday[String(v.id)];if(vd===ds)return true;if(dayOff===0&&vd&&vd<ds)return true;if(_vidStillPending(v)&&v.post_date&&(v.post_date===ds||(dayOff===0&&v.post_date<ds))&&!_hasTabTask0(v.id))return true;return false;}).map(v=>({id:'vid-ov-'+v.id,name:v.topic||v.title,category:'Videos',due_date:_vdmToday[String(v.id)]||v.post_date||ds,done:v.status==='published',_vidId:v.id,_virtual:true,_type:'vid'}));
+  const finCancelToday=typeof _finCancelTasksForDate==='function'?_finCancelTasksForDate(ds):[];
   const virtToday=[
     ...allRecVirt.filter(v=>v.due_date===ds||(dayOff===0&&isOv(v.due_date)&&!v.done)),
     ...wrecToday,
@@ -78,6 +79,7 @@ function renderToday(){
     ...shopToday,
     ...pupSessToday,
     ...vidToday,
+    ...finCancelToday,
     ...getExtrasForDate(ds).map(t=>{
       // Birthday done state: never grey out in today list
       return t;
@@ -117,7 +119,7 @@ function renderToday(){
   }
   document.getElementById('todList').innerHTML=sorted.map(t=>{
     const arr=!t.done&&!_hasTBToday(t);
-    return t._type==='travel'||t._type==='birthday'?tRowExtra(t):t._type==='vid'?tRowVidVirt(t,arr):t._type==='shop'?tRowShopVirt(t,true,arr,true):t._type==='pup'?tRowPupSess(t,true,arr):t._virtual?tRowTodayVirt(t,arr,true):tRow(t,{cat:true,catDot:true,drag:true,noDate:true,tbArrow:arr,noColor:true});
+    return t._type==='travel'||t._type==='birthday'?tRowExtra(t):t._type==='vid'?tRowVidVirt(t,arr):t._type==='fin-cancel'?tRowFinCancel(t):t._type==='shop'?tRowShopVirt(t,true,arr,true):t._type==='pup'?tRowPupSess(t,true,arr):t._virtual?tRowTodayVirt(t,arr,true):tRow(t,{cat:true,catDot:true,drag:true,noDate:true,tbArrow:arr,noColor:true});
   }).join('');
   updateOvBanner();
   renderPupSkillsHighlight();
@@ -643,6 +645,7 @@ function taskTypePri(t){
   if(cat==='work')return 4;
   if(cat==='social')return 5;
   if(t._type==='vid')return 5.5;
+  if(t._type==='fin-cancel')return 6.5;
   if(t._type==='shop')return 7;
   if(t._type==='pup')return 8;
   if(t._virtual)return 6; // recurring (WR + non-WR), checked after shop/pup
@@ -761,6 +764,14 @@ function tRowShopVirt(t,noDate=false,tbArrow=false,noColor=false){
     <button class="delbtn" onclick="event.stopPropagation();unscheduleShop('${t._shopId}')">✕</button>
   </div>`;
 }
+function tRowFinCancel(t){
+  const s={bg:'rgba(239,68,68,.1)',t:'#dc2626',d:'#ef4444',b:'rgba(239,68,68,.2)'};
+  return`<div class="ti" style="background:${s.bg}" id="ti-${t.id}">
+    <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" onchange="if(this.checked){delFinSub('${t._subId}');}"></label>
+    <span class="tn" style="color:${s.t}">${t.name}</span>
+    <svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3" fill="${s.bg}" stroke="${s.d}" stroke-opacity="0.4" stroke-width="1"/></svg>
+  </div>`;
+}
 function tRowVidVirt(t,arr){
   const ov=isOv(t.due_date)&&!t.done;
   const _vs=ov?OV:{bg:'rgba(34,197,94,.1)',t:'#15803d',d:'#22c55e',b:'rgba(34,197,94,.2)'};const vid=String(t._vidId);
@@ -845,7 +856,7 @@ function renderWkSummary(){
   // wkBadge removed
   document.getElementById('wkPL').textContent=`${totalDone}/${totalAll}`;const _wkP=document.getElementById('wkPct');if(_wkP)_wkP.textContent=(totalAll?Math.round(totalDone/totalAll*100):0)+'%';
   document.getElementById('wkPB').style.width=totalAll?`${totalDone/totalAll*100}%`:'0%';
-  document.getElementById('wkList').innerHTML=ts.map(t=>t._type==='travel'||t._type==='birthday'?tRowExtra(t):t._type==='shop'?tRowShopVirt(t):tRowWk(t)).join('');
+  document.getElementById('wkList').innerHTML=ts.map(t=>t._type==='travel'||t._type==='birthday'?tRowExtra(t):t._type==='fin-cancel'?tRowFinCancel(t):t._type==='shop'?tRowShopVirt(t):tRowWk(t)).join('');
   _attachListRubberBand(document.getElementById('wkList'));
 }
 
@@ -1305,6 +1316,7 @@ function renderWkCal(){
     const _vPend=v=>v.status==='published'&&typeof _vidGroupFullyComplete==='function'&&!_vidGroupFullyComplete(v);
     const _hasTabTask=vid=>{const m='_vid:'+vid;return st.tasks.some(t=>t.notes&&t.notes.includes(m));};
     const vidForDay=(st.videos||[]).filter(v=>!v.is_deleted&&((_vdm[String(v.id)]===ds&&(v.status!=='published'||_vPend(v)))||(_vPend(v)&&v.post_date===ds&&!_hasTabTask(v.id)))).map(v=>({id:'vid-ov-'+v.id,name:v.topic||v.title,category:'Videos',due_date:ds,done:v.status==='published',_vidId:v.id,_virtual:true,_type:'vid'}));
+    const finCancelForDay=typeof _finCancelTasksForDate==='function'?_finCancelTasksForDate(ds):[];
     const undoneDay=sortTasksForDay([
       ...st.tasks.filter(t=>t.due_date&&t.due_date.split('T')[0]===ds&&!t.done&&t.category!=='Weekly Goals'),
       ...virtForDay,
@@ -1312,7 +1324,8 @@ function renderWkCal(){
       ...wrRulesForDay,
       ...shopForDay,
       ...pupSessForDay,
-      ...vidForDay
+      ...vidForDay,
+      ...finCancelForDay
     ],ds);
     const doneDay=sortTasksForDay([
       ...st.tasks.filter(t=>t.due_date&&t.due_date.split('T')[0]===ds&&t.done&&t.category!=='Weekly Goals'),
@@ -1326,7 +1339,7 @@ function renderWkCal(){
     dayTasks.forEach(t=>{
       const ov=isOv(t.due_date)&&!t.done,imp=t.important&&!ov&&!t.done;
       const _chipCat=(t._isWrec||t._isWrRule)?'weekly_reset':(t._virtual&&t._recId?'recurring':t.category);
-      const s=ov?OV:imp?IMP:t._type==='vid'?{bg:'rgba(34,197,94,.1)',t:'#15803d',d:'#22c55e',b:'rgba(34,197,94,.2)',dot:'rgba(34,197,94,.25)'}:t._type==='pup'?_pupSessStyle():gc(_chipCat);
+      const s=ov?OV:imp?IMP:t._type==='fin-cancel'?{bg:'rgba(239,68,68,.1)',t:'#dc2626',d:'#ef4444',b:'rgba(239,68,68,.2)'}:t._type==='vid'?{bg:'rgba(34,197,94,.1)',t:'#15803d',d:'#22c55e',b:'rgba(34,197,94,.2)',dot:'rgba(34,197,94,.25)'}:t._type==='pup'?_pupSessStyle():gc(_chipCat);
       const chip=document.createElement('div');chip.className='chip'+(t.done?' done-chip':'');
       chip.style.cssText=`background:${s.bg};color:${s.t};border-color:${s.b}`;
       if(!t._virtual)chip.dataset.tid=String(t.id);
@@ -1336,6 +1349,7 @@ function renderWkCal(){
       else if(t._recId)chip.dataset.tid='rec-virt-'+t._recId;
       else if(t._type==='vid')chip.dataset.tid='vid-ov-'+t._vidId;
       else if(t._type==='pup')chip.dataset.tid='pup-sess-'+t._pupSessId;
+      else if(t._type==='fin-cancel')chip.dataset.tid='fin-cancel-'+t._subId;
       chip.draggable=true;
       chip.addEventListener('dragstart',e2=>{
         if(t._type==='vid'){dragId='vid::'+t._vidId;}
@@ -1352,7 +1366,8 @@ function renderWkCal(){
       const chk=document.createElement('input');chk.type='checkbox';chk.className='wchk';chk.checked=t.done;
       chk.addEventListener('change',e2=>{
         e2.stopPropagation();
-        if(t._type==='vid'){if(chk.checked)_vidCompleteFromOv(t._vidId,chk);else _vidUncompleteFromOv(t._vidId);}
+        if(t._type==='fin-cancel'){if(chk.checked)delFinSub(t._subId);}
+        else if(t._type==='vid'){if(chk.checked)_vidCompleteFromOv(t._vidId,chk);else _vidUncompleteFromOv(t._vidId);}
         else if(t._type==='pup'){togPupSessionDone(t._pupSessId,chk.checked);}
         else if(t._type==='shop'){togShop(t._shopId,chk.checked);}
         else if(t._isWrRule){togWrRule(String(t._ruleId),chk.checked,t._wkKey||getWkKey(wkOff));}
