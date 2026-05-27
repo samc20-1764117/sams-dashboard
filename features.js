@@ -5104,11 +5104,11 @@ function tiDbl(e,id){
   clearSelection();
   openEditTask(id);
 }
-function tiDblRec(e,recId){
+function tiDblRec(e,recId,wkKey){
   if(e.target.closest('.chk')||e.target.closest('.delbtn'))return;
   e.stopPropagation();
   clearSelection();
-  openRecEditModal(recId);
+  openRecEditModal(recId,wkKey||'','this');
 }
 function tiClickRecWR(e,rid){
   if(e.target.closest('.chk')||e.target.closest('.delbtn'))return;
