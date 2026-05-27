@@ -4185,6 +4185,7 @@ function drawTBBlock(col,b){
   else if(linkedRec)b._done=!!(linkedRec._doneByWk&&linkedRec._doneByWk[dsToWkKey(b.ds)]);
   else if(linkedShop)b._done=!!linkedShop.done;
   else if(b._vidId){const _vb2=(st.videos||[]).find(x=>String(x.id)===String(b._vidId));if(_vb2)b._done=_vb2.status==='published';}
+  else if(b._finCancelSubId){const _fcs=st.finSubs.find(x=>String(x.id)===String(b._finCancelSubId));b._done=!!(_fcs&&_fcs.archived);}
   const isImp=linkedTask&&linkedTask.important&&!linkedTask.done;
   const linkedRule=b.ruleId?st.wrRules.find(x=>String(x.id)===String(b.ruleId)):null;
   const recCat=linkedRec?(linkedRec.is_weekly_reset===false?'recurring':'weekly_reset'):null;
@@ -4263,6 +4264,8 @@ function drawTBBlock(col,b){
       b._done=checked;sbUpdateBlock(b.id,{done:checked});save();renderToday();renderWkSummary();renderWkCal();
     } else if(b.cat==='pup_session'&&b._pupSessId){
       togPupSessionDone(String(b._pupSessId),checked);
+    } else if(b._finCancelSubId){
+      archiveFinSub(String(b._finCancelSubId),checked);
     } else {
       if(b.cat==='Birthday'){
         b._done=checked;sbUpdateBlock(b.id,{done:checked});save();renderToday();renderWkSummary();renderWkCal();
