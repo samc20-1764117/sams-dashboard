@@ -2653,7 +2653,7 @@ function _vidRenderSteps(vals){
     </div>`);
     if(s==='step_tableau_public'){
       const _linkNa=cur==='na';
-      parts.push(`<div id="vmLinkWrap" oncontextmenu="_vidLinkCtx(event);return false" style="display:flex;flex-direction:column;gap:2px;align-items:flex-start;flex:1;cursor:context-menu;${_linkNa?'opacity:.5':''}">
+      parts.push(`<div id="vmLinkWrap" oncontextmenu="_vidLinkCtx(event);return false" style="display:flex;flex-direction:column;gap:2px;align-items:flex-start;flex:1;cursor:default;${_linkNa?'opacity:.5':''}">
         <span class="vm-step-lbl" style="font-size:9px;color:${_linkNa?'rgba(180,175,205,.5)':'var(--muted)'}">Link</span>
         <input id="vmYoutubeUrl" type="text" placeholder="${_linkNa?'':'url'}" ${_linkNa?'readonly ':''} style="width:100%;height:22px;font-size:9px;padding:0 6px;border:1.5px solid rgba(210,205,228,${_linkNa?'.3':'.4'});border-radius:3px;background:${_linkNa?'rgba(210,205,228,.15)':'transparent'};color:var(--text);text-align:left;box-sizing:border-box;outline:none${_linkNa?';pointer-events:none':''}">
       </div>`);
