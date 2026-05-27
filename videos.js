@@ -2591,7 +2591,7 @@ function openVidModal(type){
   document.getElementById('vmDuration').value='';
 
   document.getElementById('vmComment').value='';
-  document.getElementById('vmBigVideoWrap').style.display=t==='B'?'none':'';
+  document.getElementById('vmBigVideoWrap').style.display=t==='B'?'none':'block';
   _vidPopulateBigVideoSelect('');
   const defaults={};
   if(t==='L'){defaults.step_tableau_public='na';defaults.step_upload_tableau='na';}
@@ -2616,7 +2616,7 @@ function openVidEdit(id){
   document.getElementById('vmDuration').value=v.duration_minutes||'';
   document.getElementById('vmComment').value=v.comment||'';
 
-  document.getElementById('vmBigVideoWrap').style.display=(v.video_type||'L')==='B'?'none':'';
+  document.getElementById('vmBigVideoWrap').style.display=(v.video_type||'L')==='B'?'none':'block';
   _vidPopulateBigVideoSelect(v.big_video_id||'');
   const stepVals={};VID_STEPS.forEach(s=>{stepVals[s]=v[s]||'not_started';});
   _vidRenderSteps(stepVals);
@@ -2646,9 +2646,9 @@ function _vidRenderSteps(vals){
       <div data-step="${s}" data-val="${cur}" tabindex="${tab}" onclick="_vidToggleModalStep(this)" oncontextmenu="_vidNaModalStep(event,this);return false" onkeydown="_vidStepKey(event,this)" style="${_vidModalStepCSS(cur)}"></div>
     </div>`);
     if(s==='step_tableau_public'&&cur!=='na'){
-      parts.push(`<div id="vmLinkWrap" style="display:flex;flex-direction:column;gap:2px;align-items:center">
+      parts.push(`<div id="vmLinkWrap" style="display:flex;flex-direction:column;gap:2px;align-items:center;flex:1">
         <span class="vm-step-lbl" style="font-size:9px;color:var(--muted)">Link</span>
-        <input id="vmYoutubeUrl" type="text" placeholder="url" style="width:44px;height:22px;font-size:8px;padding:0 2px;border:1.5px solid rgba(210,205,228,.4);border-radius:3px;background:transparent;color:var(--text);text-align:center;box-sizing:border-box;outline:none">
+        <input id="vmYoutubeUrl" type="text" placeholder="url" style="width:100%;height:22px;font-size:8px;padding:0 4px;border:1.5px solid rgba(210,205,228,.4);border-radius:3px;background:transparent;color:var(--text);text-align:center;box-sizing:border-box;outline:none">
       </div>`);
     }
   });
@@ -2671,8 +2671,6 @@ function _vidUpdateModalFills(){
     pdInp.style.color=filled?'#fff':'var(--text)';
     pdInp.style.borderColor=filled?'#10b981':'rgba(210,205,228,.4)';
     pdInp.style.fontWeight=filled?'600':'400';
-    const lbl=pdW.querySelector('.vm-step-lbl');
-    if(lbl)lbl.style.color=filled?'#10b981':'var(--muted)';
   }
   // Link: green when has value
   if(ytInp&&ytW){
@@ -2681,8 +2679,6 @@ function _vidUpdateModalFills(){
     ytInp.style.color=filled?'#fff':'var(--text)';
     ytInp.style.borderColor=filled?'#10b981':'rgba(210,205,228,.4)';
     ytInp.style.fontWeight=filled?'600':'400';
-    const lbl=ytW.querySelector('.vm-step-lbl');
-    if(lbl)lbl.style.color=filled?'#10b981':'var(--muted)';
   }
   _vidUpdateModalComplete();
 }
@@ -2784,7 +2780,7 @@ function _vidSetType(type){
   _vidTypeChanged(type);
 }
 function _vidTypeChanged(type){
-  document.getElementById('vmBigVideoWrap').style.display=type==='B'?'none':'';
+  document.getElementById('vmBigVideoWrap').style.display=type==='B'?'none':'block';
   if(type==='B'){document.getElementById('vmBigVideo').value='';}
   const els=document.querySelectorAll('#vmSteps [data-step]');
   els.forEach(el=>{

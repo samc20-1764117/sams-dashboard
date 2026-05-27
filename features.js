@@ -114,18 +114,18 @@ async function toggleTask(id,done,mode=''){
     else renderAll();
     if(document.getElementById('tbGrid'))renderDayTB();
   };
+  // If this is a vid tab task, sync tab stage on the video instantly
+  if(t.notes&&t.notes.startsWith('_vid:')){
+    const vidId=t.notes.replace('_vid:','');
+    if(done&&typeof _vidCompleteTabUp==='function')_vidCompleteTabUp(vidId);
+    if(!done&&typeof _vidUncompleteTabUp==='function')_vidUncompleteTabUp(vidId);
+  }
   rerender();
   const linkedBlocks=st.blocks?st.blocks.filter(b=>String(b.taskId)===String(id)):[];
   pushUndo(()=>{t.done=prev;localOverrides[sid]={...localOverrides[sid],done:prev};pendingLocal.add(sid);if(st.blocks)st.blocks.filter(b=>String(b.taskId)===String(id)).forEach(b=>b._done=prev);rerender();sbReq('PATCH','tasks',{done:prev},`?id=eq.${id}`).then(()=>pendingLocal.delete(sid));linkedBlocks.forEach(b=>sbUpdateBlock(b.id,{done:prev}));},(done?'Checked':'Unchecked')+' task');
   await sbReq('PATCH','tasks',{done},`?id=eq.${id}`);
   pendingLocal.delete(sid);
   linkedBlocks.forEach(b=>sbUpdateBlock(b.id,{done}));
-  // If this is a vid tab task, complete/uncomplete tab stage on the video
-  if(t.notes&&t.notes.startsWith('_vid:')){
-    const vidId=t.notes.replace('_vid:','');
-    if(done&&typeof _vidCompleteTabUp==='function')_vidCompleteTabUp(vidId);
-    if(!done&&typeof _vidUncompleteTabUp==='function')_vidUncompleteTabUp(vidId);
-  }
 }
 async function clearTaskDate(id,e){
   e&&e.stopPropagation();
