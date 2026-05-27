@@ -766,13 +766,13 @@ function tRowShopVirt(t,noDate=false,tbArrow=false,noColor=false){
   </div>`;
 }
 function tRowFinCancel(t,tbArrow=false){
-  const s=OV;
-  return`<div class="ti ${t.done?'done':'ov-row'}" ${!t.done?`style="background:${s.bg}"`:''} id="ti-${t.id}" draggable="true"
+  const s=IMP;
+  return`<div class="ti ${t.done?'done':'imp-row'}" ${!t.done?`style="background:${s.bg}"`:''} id="ti-${t.id}" draggable="true"
     ondragstart="dragId='fin-cancel::${t._subId}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true)"
     ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false)"
     onclick="selTask(event,'${t.id}')" ondblclick="showPage('finance')">
     <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="archiveFinSub('${t._subId}',this.checked)"></label>
-    <span class="tn">${t.name}</span>
+    <span class="tn" style="color:${s.t}">${t.name}</span>
     ${tbArrow?'<span class="tb-arrow">›</span>':''}
   </div>`;
 }
@@ -1344,8 +1344,8 @@ function renderWkCal(){
     dayTasks.forEach(t=>{
       const ov=isOv(t.due_date)&&!t.done,imp=t.important&&!ov&&!t.done;
       const _chipCat=(t._isWrec||t._isWrRule)?'weekly_reset':(t._virtual&&t._recId?'recurring':t.category);
-      const s=ov?OV:imp?IMP:t._type==='fin-cancel'?OV:t._type==='vid'?{bg:'rgba(34,197,94,.1)',t:'#15803d',d:'#22c55e',b:'rgba(34,197,94,.2)',dot:'rgba(34,197,94,.25)'}:t._type==='pup'?_pupSessStyle():gc(_chipCat);
-      const chip=document.createElement('div');chip.className='chip'+(t.done?' done-chip':'')+(t._type==='fin-cancel'?' ov-row':'');
+      const s=ov?OV:imp?IMP:t._type==='fin-cancel'?IMP:t._type==='vid'?{bg:'rgba(34,197,94,.1)',t:'#15803d',d:'#22c55e',b:'rgba(34,197,94,.2)',dot:'rgba(34,197,94,.25)'}:t._type==='pup'?_pupSessStyle():gc(_chipCat);
+      const chip=document.createElement('div');chip.className='chip'+(t.done?' done-chip':'')+(t._type==='fin-cancel'?' imp-row':'');
       chip.style.cssText=`background:${s.bg};color:${s.t};border-color:${s.b}`;
       if(!t._virtual)chip.dataset.tid=String(t.id);
       else if(t._type==='shop')chip.dataset.tid='shop-cal-'+t._shopId;
@@ -4190,7 +4190,8 @@ function drawTBBlock(col,b){
   const effectiveCat=linkedTask?linkedTask.category:recCat||(linkedRule?'weekly_reset':null)||(b.cat||'Home');
   const isPupBlock=b.cat==='pup_session';
   const isPostTab=linkedTask&&linkedTask.notes&&linkedTask.notes.startsWith('_vid:');
-  const s=isImp?IMP:isPupBlock?_pupSessStyle():isPostTab?{bg:'rgba(22,163,74,.18)',t:'#166534',d:'#16a34a',b:'rgba(22,163,74,.35)'}:gc(effectiveCat);
+  const isFinCancel=!!b._finCancelSubId;
+  const s=isFinCancel?IMP:isImp?IMP:isPupBlock?_pupSessStyle():isPostTab?{bg:'rgba(22,163,74,.18)',t:'#166534',d:'#16a34a',b:'rgba(22,163,74,.35)'}:gc(effectiveCat);
   const el=document.createElement('div');
   el.className='tb-block'+(b._done?' done-block':'');el.dataset.bid=b.id;
   el.addEventListener('contextmenu',e=>{
@@ -4806,7 +4807,8 @@ function dropOnTB(e,ds,h,row,smOverride){
     const sub=st.finSubs.find(x=>String(x.id)===String(subId));
     if(!sub){dragId=null;return;}
     if(st.blocks.some(b=>b.ds===ds&&String(b._finCancelSubId)===String(subId))){dragId=null;showToast('Already in time block','#6b7280',2000);return;}
-    const blk={id:crypto.randomUUID(),title:'Cancel '+sub.name,ds,sm,dur:30,cat:'Home',_finCancelSubId:String(subId)};
+    const _fcTitle=(()=>{if(!sub.due_day)return'Cancel '+sub.name;const _m=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];const now=new Date(ds+'T00:00:00');const yr=now.getFullYear(),mo=now.getMonth();let dd;if(sub.due_month&&sub.due_month>=1&&sub.due_month<=12){dd=new Date(yr,sub.due_month-1,sub.due_day);if(dd<now)dd=new Date(yr+1,sub.due_month-1,sub.due_day);}else{dd=new Date(yr,mo,sub.due_day);if(dd<now)dd=new Date(yr,mo+1,sub.due_day);}return'Cancel '+sub.name+' by '+_m[dd.getMonth()]+' '+dd.getDate();})();
+    const blk={id:crypto.randomUUID(),title:_fcTitle,ds,sm,dur:30,cat:'Home',_finCancelSubId:String(subId)};
     st.blocks.push(blk);dragId=null;save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
     sbSaveBlock(blk);
     pushUndo(()=>{st.blocks=st.blocks.filter(b=>b.id!==blk.id);sbDeleteBlock(blk.id);save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();},'Added to time block');
