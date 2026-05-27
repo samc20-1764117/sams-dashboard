@@ -3191,7 +3191,7 @@ function _vidOvToggleStep(vidId,step){
     const marker='_vid:'+vidId;
     const tabTask=st.tasks.find(t=>t.notes&&t.notes.includes(marker)&&!t.done);
     if(tabTask){tabTask.done=true;sbReqSilent('PATCH','tasks',{done:true},`?id=eq.${tabTask.id}`);}
-    if(typeof _vidGroupFullyComplete==='function'&&_vidGroupFullyComplete(v)){const map=_vidDayMap();delete map[String(vidId)];_vidDayMapSet(map);}
+    // Keep in day map — completed videos stay visible
   }
   save();_renderVidOvMenu();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
   const patch={[step]:next,status:v.status};if(linked)patch[linked]=next;
@@ -3329,7 +3329,7 @@ function _vidPromptPostDate(vidId,anchorEl){
     _cleanup();
     const _tr=v.step_tableau_public&&v.step_tableau_public!=='na'&&v.step_tableau_public!=='done';
     if(_tr){_vidCreateTabUpTask(vidId,postDate);}
-    else{const map=_vidDayMap();delete map[String(vidId)];_vidDayMapSet(map);}
+    // Keep in day map — completed videos stay visible
     save();renderAll();
     if(typeof renderVideosPageKeepScroll==='function')renderVideosPageKeepScroll();
   });

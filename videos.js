@@ -2641,10 +2641,11 @@ function _vidRenderSteps(vals){
     }
     const cur=vals[s]||'not_started';
     const tab=cur==='na'?-1:0;
-    const _tabGrey=s==='step_tableau_public'&&cur==='na'?'opacity:.35;':'';
-    parts.push(`<div style="display:flex;flex-direction:column;gap:2px;align-items:center;${_tabGrey}">
+    const _isTab=s==='step_tableau_public';
+    const _tabNa=_isTab&&cur==='na';
+    parts.push(`<div ${_isTab?'id="vmTabWrap" ':''} style="display:flex;flex-direction:column;gap:2px;align-items:center;${_tabNa?'opacity:.35':''}">
       <span style="font-size:9px;color:${cur==='na'?'var(--border)':'var(--muted)'}">${VID_STEP_LABELS[s]}</span>
-      <div data-step="${s}" data-val="${cur}" tabindex="${tab}" onclick="_vidToggleModalStep(this)" oncontextmenu="_vidNaModalStep(event,this);return false" onkeydown="_vidStepKey(event,this)" style="${_vidModalStepCSS(cur)}${s==='step_tableau_public'&&cur==='na'?';opacity:1':''}"></div>
+      <div data-step="${s}" data-val="${cur}" tabindex="${tab}" onclick="_vidToggleModalStep(this)" oncontextmenu="_vidNaModalStep(event,this);return false" onkeydown="_vidStepKey(event,this)" style="${_vidModalStepCSS(cur)}${_tabNa?';opacity:1':''}"></div>
     </div>`);
     if(s==='step_tableau_public'){
       const _linkNa=cur==='na';
@@ -2770,11 +2771,7 @@ function _vidNaModalStep(e,el){
     const lEl=document.querySelector(`[data-step="${linked}"]`);
     if(lEl){lEl.dataset.val=next;_vidUpdateModalStep(lEl,next);}
   }
-  // Toggle Link wrap when Tab is toggled na
-  if(el.dataset.step==='step_tableau_public'){
-    const lw=document.getElementById('vmLinkWrap');
-    if(lw){lw.style.opacity=next==='na'?'.35':'1';lw.style.pointerEvents=next==='na'?'none':'auto';}
-  }
+  // Tab+Link greying handled by _vidUpdateModalStep
 }
 function _vidSetType(type){
   document.getElementById('vmType').value=type;
@@ -2802,19 +2799,20 @@ function _vidTypeChanged(type){
       el.dataset.val='not_started';_vidUpdateModalStep(el,'not_started');
     }else if(s==='step_tableau_public'){tabNa=el.dataset.val==='na';}
   });
-  const lw=document.getElementById('vmLinkWrap');
-  if(lw){lw.style.opacity=tabNa?'.35':'1';lw.style.pointerEvents=tabNa?'none':'auto';}
+  // Tab+Link greying handled by _vidUpdateModalStep
 }
 function _vidUpdateModalStep(el,val){
   el.style.cssText=_vidModalStepCSS(val);
   el.textContent='';
   el.tabIndex=val==='na'?-1:0;
   el.parentElement.querySelector('span').style.color=val==='na'?'var(--border)':'var(--muted)';
-  // Grey out entire Tab container when na (like Link)
+  // Grey out Tab + Link containers when na
   if(el.dataset.step==='step_tableau_public'){
-    // Remove per-dot opacity since parent handles it
     if(val==='na')el.style.opacity='1';
-    el.parentElement.style.opacity=val==='na'?'.35':'';
+    const tw=document.getElementById('vmTabWrap');
+    if(tw)tw.style.opacity=val==='na'?'.35':'';
+    const lw=document.getElementById('vmLinkWrap');
+    if(lw){lw.style.opacity=val==='na'?'.35':'1';lw.style.pointerEvents=val==='na'?'none':'auto';}
   }
   _vidUpdateModalComplete();
 }
@@ -3084,7 +3082,7 @@ async function cycleVidStep(id,step){
     const marker='_vid:'+id;
     const tabTask=st.tasks.find(t=>t.notes&&t.notes.includes(marker)&&!t.done);
     if(tabTask){tabTask.done=true;sbReqSilent('PATCH','tasks',{done:true},`?id=eq.${tabTask.id}`);}
-    if(_vidGroupFullyComplete(v)&&typeof _vidDayMap==='function'){const map=_vidDayMap();delete map[String(id)];_vidDayMapSet(map);}
+    // Keep in day map — completed videos stay visible
   }
   // Big video build toggle → cascade to all children
   const childUpdates=[];
@@ -3185,10 +3183,7 @@ function _vidAfterPostDate(id){
   if(tabRequired&&typeof _vidCreateTabUpTask==='function'){
     _vidCreateTabUpTask(id,v.post_date);
   }
-  // Only remove from day map if entire group is fully complete
-  if(!tabRequired&&_vidGroupFullyComplete(v)){
-    if(typeof _vidDayMap==='function'){const map=_vidDayMap();delete map[String(id)];_vidDayMapSet(map);}
-  }
+  // Keep in day map — completed videos stay visible
   save();renderVideosPageKeepScroll();
   if(typeof renderAll==='function')renderAll();
 }
