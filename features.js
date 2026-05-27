@@ -1728,7 +1728,7 @@ async function _finEditField(id,field,el){
   const snap=_finSnap();
   const row=st.finance.find(r=>String(r.id)===String(id));if(!row)return;
   const val=field==='name'||field==='date'?el.textContent.trim():_finParseNum(el.textContent);
-  if(row[field]===val){el.textContent=typeof val==='number'?_finFmt(val):val;return;}
+  if(row[field]===val){renderFinancePage();return;}
   const old=row[field];row[field]=val;
   renderFinancePage();
   pushUndo(()=>{row[field]=old;renderFinancePage();if(!String(id).startsWith('l-'))sbReqNullable('PATCH','finance',{[field]:old},`?id=eq.${id}`);},'Edited '+field);
@@ -1826,34 +1826,27 @@ function _finRenderInvestments(purchases,totalBought,gain,gainPct,currentVal){
   const lastPurchase=sorted.length?sorted[0]:null;
 
   let html=`<div class="card fin-card fin-inv-card">
-    <div class="fin-card-hdr"><span class="fin-card-title">Investments</span><button class="fin-add-btn" onclick="addFinRow('vti')" style="font-size:16px;padding:0 4px;line-height:1">+</button></div>
-    <div class="fin-inv-split">`;
-  // Left: metrics
-  html+=`<div class="fin-inv-left">
-    <div class="fin-inv-metrics">
-      <div style="font-size:11px;font-weight:600;color:#1e293b;margin-bottom:4px">Total Gain</div>
-      <div style="font-size:22px;font-weight:700;color:#1e293b;line-height:1.1">${_finFmtRound(gain)}</div>
-      <div style="font-size:12px;font-weight:600;color:#059669;margin-top:2px">${_finFmtPct(gainPct)}</div>
-      <div style="margin-top:12px;display:flex;justify-content:space-between;gap:16px">
-        <div><div style="font-size:9px;font-weight:600;color:var(--text-secondary,#64748b);letter-spacing:.03em">VTI Value</div><div style="font-size:13px;font-weight:600;color:var(--text-primary,#334155);margin-top:1px">${_finFmtRound(currentVal)}</div></div>
-        <div><div style="font-size:9px;font-weight:600;color:var(--text-secondary,#64748b);letter-spacing:.03em">Cost Basis</div><div style="font-size:13px;font-weight:600;color:var(--text-primary,#334155);margin-top:1px">${_finFmtRound(totalBought)}</div></div>
+    <div class="fin-card-hdr"><span>Investments</span></div>
+    <div class="fin-inv-top">
+      <div class="fin-inv-left">
+        <div class="fin-inv-metrics">
+          <div style="font-size:11px;font-weight:600;color:#1e293b;margin-bottom:4px">Total Gain</div>
+          <div style="font-size:22px;font-weight:700;color:#1e293b;line-height:1.1">${_finFmtRound(gain)}</div>
+          <div style="font-size:12px;font-weight:600;color:#059669;margin-top:2px">${_finFmtPct(gainPct)}</div>
+          <div style="margin-top:10px;display:flex;justify-content:space-between;gap:12px">
+            <div><div style="font-size:9px;font-weight:600;color:var(--text-secondary,#64748b)">VTI Value</div><div style="font-size:13px;font-weight:600;color:var(--text-primary,#334155);margin-top:1px">${_finFmtRound(currentVal)}</div></div>
+            <div><div style="font-size:9px;font-weight:600;color:var(--text-secondary,#64748b)">Cost Basis</div><div style="font-size:13px;font-weight:600;color:var(--text-primary,#334155);margin-top:1px">${_finFmtRound(totalBought)}</div></div>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>`;
-  // Right: purchase history (scrollable)
-  html+=`<div class="fin-inv-right">
-    <div class="fin-inv-right-hdr"><span>Purchase History</span></div>
-    <div class="fin-inv-scroll">
-    <table class="fin-tbl"><tbody>`;
+      <div class="fin-inv-ph">
+        <div class="fin-inv-ph-hdr"><span style="font-size:11px;font-weight:600;color:var(--text-secondary,#64748b)">Purchases</span><button class="fin-add-btn" onclick="addFinRow('vti')" style="font-size:16px;padding:0 4px;line-height:1">+</button></div>
+        <div class="fin-inv-scroll">`;
   sorted.forEach(p=>{
-    html+=`<tr class="fin-row" data-fin-date="${p.date||''}">
-      <td class="fin-ph-cell">${_finEditable(p.id,'date',p.date||'','fin-inv-date')}</td>
-      <td class="fin-amt fin-ph-cell">${_finEditable(p.id,'amount',Math.abs(p.amount||0),'fin-inv-amt')}</td>
-      <td><button class="delbtn" onclick="delFin('${p.id}')">&#x2715;</button></td>
-    </tr>`;
+    html+=`<div class="fin-ph-row" data-fin-date="${p.date||''}">${_finEditable(p.id,'date',p.date||'','fin-inv-date')} ${_finEditable(p.id,'amount',Math.abs(p.amount||0),'fin-inv-amt')} <button class="delbtn" onclick="delFin('${p.id}')">&#x2715;</button></div>`;
   });
-  html+=`</tbody></table></div></div>`;
-  html+=`</div>`;
+  html+=`</div></div>
+    </div>`;
   // Full-width area chart below
   if(chronological.length>1){
     let cum=0;
@@ -1912,7 +1905,7 @@ function _finRenderSubs(){
   let html=`<div class="card fin-card">
     <div class="fin-card-hdr"><span class="fin-card-title">Subscriptions</span><button class="fin-add-btn" onclick="addFinSub()" style="font-size:16px;padding:0 4px;line-height:1">+</button></div>
     <div class="fin-sub-scroll">
-    <table class="fin-tbl fin-sub-tbl"><colgroup><col class="fin-col-name"/><col class="fin-col-freq"/><col class="fin-col-due"/><col class="fin-col-amt"/><col class="fin-col-mo"/><col class="fin-col-del"/></colgroup><thead><tr><th>Name</th><th style="text-align:center">Freq</th><th style="text-align:center">Due</th><th>Amount</th><th style="text-align:right;white-space:nowrap">Per Month <span style="font-size:12px;font-weight:500;font-variant-numeric:tabular-nums">${_finFmt(monthlyTotal)}</span></th><th></th></tr></thead><tbody>`;
+    <table class="fin-tbl fin-sub-tbl"><colgroup><col class="fin-col-name"/><col class="fin-col-freq"/><col class="fin-col-due"/><col class="fin-col-amt"/><col class="fin-col-mo"/><col class="fin-col-del"/></colgroup><thead><tr><th>Name</th><th style="text-align:center">Freq</th><th style="text-align:center">Due</th><th>Amount</th><th style="text-align:right;white-space:nowrap;padding-bottom:0"><div style="font-size:9px;opacity:.5;margin-bottom:1px">Per Month</div><div style="font-size:12px;font-weight:500;font-variant-numeric:tabular-nums">${_finFmt(monthlyTotal)}</div></th><th></th></tr></thead><tbody>`;
   subs.forEach(sub=>{
     const dueDisplay=_finDueDisplay(sub.due_month,sub.due_day);
     const dueRaw=(sub.due_month&&sub.due_month>=1&&sub.due_month<=12?_FIN_MONTHS[sub.due_month-1]+' ':'')+(sub.due_day||'');
@@ -1978,7 +1971,7 @@ function _finSubEditable(id,field,val,cls){
 async function _finSubEditField(id,field,el){
   const row=st.finSubs.find(r=>String(r.id)===String(id));if(!row)return;
   const val=field==='name'?el.textContent.trim():_finParseNum(el.textContent);
-  if(row[field]===val){el.textContent=typeof val==='number'?_finFmt(val):val;return;}
+  if(row[field]===val){renderFinancePage();return;}
   const old=row[field];row[field]=val;
   renderFinancePage();
   pushUndo(()=>{row[field]=old;renderFinancePage();if(!String(id).startsWith('l-'))sbReqNullable('PATCH','finance_subs',{[field]:old},`?id=eq.${id}`);},'Edited '+field);
