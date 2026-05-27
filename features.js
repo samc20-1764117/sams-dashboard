@@ -1826,7 +1826,6 @@ function _finRenderInvestments(purchases,totalBought,gain,gainPct,currentVal){
   const lastPurchase=sorted.length?sorted[0]:null;
 
   let html=`<div class="card fin-card fin-inv-card">
-    <div class="fin-card-hdr"><span>Investments</span><span style="display:flex;align-items:center;gap:6px;margin-left:auto"><span style="font-size:11px;font-weight:600;color:var(--text-secondary,#64748b)">Purchases</span><button class="fin-add-btn" onclick="addFinRow('vti')" style="font-size:16px;padding:0 4px;line-height:1">+</button></span></div>
     <div class="fin-inv-top">
       <div class="fin-inv-left">
         <div class="fin-inv-metrics">
@@ -1840,6 +1839,7 @@ function _finRenderInvestments(purchases,totalBought,gain,gainPct,currentVal){
         </div>
       </div>
       <div class="fin-inv-ph">
+        <div class="fin-inv-ph-hdr"><span style="font-size:11px;font-weight:600;color:var(--text-secondary,#64748b)">Purchases</span><button class="fin-add-btn" onclick="addFinRow('vti')" style="font-size:16px;padding:0 4px;line-height:1">+</button></div>
         <div class="fin-inv-scroll">`;
   sorted.forEach(p=>{
     html+=`<div class="fin-ph-row" data-fin-date="${p.date||''}">${_finEditable(p.id,'date',p.date||'','fin-inv-date')} ${_finEditable(p.id,'amount',Math.abs(p.amount||0),'fin-inv-amt')} <button class="delbtn" onclick="delFin('${p.id}')">&#x2715;</button></div>`;
@@ -1904,7 +1904,7 @@ function _finRenderSubs(){
   let html=`<div class="card fin-card">
     <div class="fin-card-hdr"><span class="fin-card-title">Subscriptions</span><button class="fin-add-btn" onclick="addFinSub()" style="font-size:16px;padding:0 4px;line-height:1">+</button></div>
     <div class="fin-sub-scroll">
-    <table class="fin-tbl fin-sub-tbl"><colgroup><col class="fin-col-name"/><col class="fin-col-freq"/><col class="fin-col-due"/><col class="fin-col-amt"/><col class="fin-col-mo"/><col class="fin-col-del"/></colgroup><thead><tr><th>Name</th><th style="text-align:center">Freq</th><th style="text-align:center">Due</th><th>Amount</th><th style="text-align:right;white-space:nowrap;font-size:12px;font-weight:500;font-variant-numeric:tabular-nums" class="fin-mo-adj">Per Month ${_finFmt(monthlyTotal)}</th><th></th></tr></thead><tbody>`;
+    <table class="fin-tbl fin-sub-tbl"><colgroup><col class="fin-col-name"/><col class="fin-col-freq"/><col class="fin-col-due"/><col class="fin-col-amt"/><col class="fin-col-mo"/><col class="fin-col-del"/></colgroup><thead><tr><th>Name</th><th style="text-align:center">Freq</th><th style="text-align:center">Due</th><th>Amount</th><th class="fin-mo-adj" style="font-size:12px;font-weight:500">Per Month ${_finFmt(monthlyTotal)}</th><th></th></tr></thead><tbody>`;
   subs.forEach(sub=>{
     const dueDisplay=_finDueDisplay(sub.due_month,sub.due_day);
     const dueRaw=(sub.due_month&&sub.due_month>=1&&sub.due_month<=12?_FIN_MONTHS[sub.due_month-1]+' ':'')+(sub.due_day||'');
@@ -2430,7 +2430,7 @@ function renderRecipeDetail(id){
   const sid=String(r.id);
   const escV=v=>(v||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;');
   const mealOpts=['','Lunch','Dinner','Side','Snack'];
-  const cuisineOpts=['','American','Mexican','Italian','Asian','Indian','Mediterranean','Vietnamese','Other'];
+  const cuisineOpts=['','American','Mexican','Italian','Asian','Indian','Mediterranean','Other'];
   let html=`<div class="rec-detail-header">
     <div class="rec-detail-title-wrap">
       <input class="rec-detail-title-inp" value="${escV(r.name)}" placeholder="Recipe name"
@@ -2847,6 +2847,83 @@ function _recPickSuggestion(text,type){
   if(rows.length){_recPanelId=String(rows[0].id);renderRecipeDetail(_recPanelId);renderRecipeList();}
 }
 
+// ── Easy Meals ────────────────────────────────────────────────────────────────
+function toggleEasyMealsPopup(){
+  let popup=document.querySelector('.easy-meals-popup');
+  if(popup){popup.classList.toggle('open');if(popup.classList.contains('open'))renderEasyMeals();return;}
+  popup=document.createElement('div');popup.className='easy-meals-popup open';
+  document.querySelector('.rec-book-wrap').appendChild(popup);
+  renderEasyMeals();
+}
+function renderEasyMeals(){
+  const popup=document.querySelector('.easy-meals-popup');if(!popup)return;
+  const meals=st.easyMeals||[];
+  let html=`<div class="easy-meals-hdr"><span>Easy Meals</span><button onclick="toggleEasyMealsPopup()">✕</button></div>`;
+  html+=`<div class="easy-meals-list">`;
+  if(!meals.length)html+=`<div style="padding:16px;text-align:center;color:var(--muted);font-size:11px">No easy meals yet</div>`;
+  meals.forEach((m,i)=>{
+    const ings=(m.ingredients||[]).join(', ');
+    html+=`<div class="easy-meal-row" onclick="editEasyMeal(${i})">
+      <span class="easy-meal-name">${escHtml(m.name)}</span>
+      <span class="easy-meal-ings">${escHtml(ings)}</span>
+      <span style="color:var(--muted);font-size:10px">${m.servings||1}sv</span>
+      <button class="easy-meal-del" onclick="event.stopPropagation();deleteEasyMeal(${i})" title="Delete">✕</button>
+    </div>`;
+  });
+  html+=`</div>`;
+  html+=`<div class="easy-meals-add" id="easyMealForm">
+    <div class="easy-meals-add-row"><input id="easyMealName" placeholder="Meal name" onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('easyMealServings').focus()}"><input id="easyMealServings" type="number" min="1" placeholder="Sv" style="width:50px;flex:none" value="1" onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('easyMealIngs').focus()}"></div>
+    <textarea id="easyMealIngs" placeholder="Ingredients (one per line)"></textarea>
+    <div style="display:flex;gap:6px"><button onclick="saveEasyMeal()" style="flex:1;padding:4px 12px;border:1px solid var(--accent);border-radius:6px;background:var(--accent);color:#fff;font-size:11px;font-weight:600;cursor:pointer">Save</button><button id="easyMealCancelBtn" onclick="cancelEasyMealEdit()" style="display:none;padding:4px 12px;border:1px solid var(--border);border-radius:6px;background:transparent;color:var(--muted);font-size:11px;cursor:pointer">Cancel</button></div>
+  </div>`;
+  popup.innerHTML=html;
+}
+let _editEasyIdx=-1;
+function editEasyMeal(i){
+  _editEasyIdx=i;
+  const m=(st.easyMeals||[])[i];if(!m)return;
+  renderEasyMeals();
+  const nameInp=document.getElementById('easyMealName');
+  const svInp=document.getElementById('easyMealServings');
+  const ingsTA=document.getElementById('easyMealIngs');
+  const cancelBtn=document.getElementById('easyMealCancelBtn');
+  if(nameInp)nameInp.value=m.name||'';
+  if(svInp)svInp.value=m.servings||1;
+  if(ingsTA)ingsTA.value=(m.ingredients||[]).join('\n');
+  if(cancelBtn)cancelBtn.style.display='inline-block';
+  if(nameInp)nameInp.focus();
+}
+function cancelEasyMealEdit(){
+  _editEasyIdx=-1;
+  const nameInp=document.getElementById('easyMealName');
+  const svInp=document.getElementById('easyMealServings');
+  const ingsTA=document.getElementById('easyMealIngs');
+  const cancelBtn=document.getElementById('easyMealCancelBtn');
+  if(nameInp)nameInp.value='';
+  if(svInp)svInp.value='1';
+  if(ingsTA)ingsTA.value='';
+  if(cancelBtn)cancelBtn.style.display='none';
+}
+function saveEasyMeal(){
+  const name=(document.getElementById('easyMealName')?.value||'').trim();
+  if(!name)return;
+  const servings=parseInt(document.getElementById('easyMealServings')?.value)||1;
+  const ingsRaw=(document.getElementById('easyMealIngs')?.value||'').split('\n').map(s=>s.trim()).filter(Boolean);
+  if(!st.easyMeals)st.easyMeals=[];
+  if(_editEasyIdx>=0&&_editEasyIdx<st.easyMeals.length){
+    st.easyMeals[_editEasyIdx]={...st.easyMeals[_editEasyIdx],name,servings,ingredients:ingsRaw};
+  } else {
+    st.easyMeals.push({id:'em-'+Date.now(),name,servings,ingredients:ingsRaw});
+  }
+  _editEasyIdx=-1;
+  save();renderEasyMeals();
+}
+function deleteEasyMeal(i){
+  if(!st.easyMeals)return;
+  st.easyMeals.splice(i,1);
+  save();renderEasyMeals();
+}
+
 function renderRecipesPage(){
   const page=document.getElementById('page-recipes');if(!page)return;
   if(!page._recInit){
@@ -2862,6 +2939,10 @@ function renderRecipesPage(){
           <button class="rec-search-plus" onclick="_recAddInline()" title="Add Recipe">+</button>
         </div>
         <div id="recSearchSuggestions" class="rec-search-suggestions"></div>
+      </div>
+      <div class="easy-meals-float">
+        <div class="easy-meals-cutout"></div>
+        <button class="easy-meals-btn" onclick="toggleEasyMealsPopup()">Easy Meals</button>
       </div>
       <div class="rec-book">
         <div class="rec-book-left">
@@ -3667,7 +3748,7 @@ function _renderMealRecipeModal(){
   const escV=v=>(v||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;');
   const sid=String(r.id);
   const mealOpts=['','Lunch','Dinner','Side','Snack'];
-  const cuisineOpts=['','American','Mexican','Italian','Asian','Indian','Mediterranean','Vietnamese','Other'];
+  const cuisineOpts=['','American','Mexican','Italian','Asian','Indian','Mediterranean','Other'];
   const ings=_parseIngredients(r.ingredients);
   let html=`<div style="padding:20px 24px 0;display:flex;justify-content:space-between;align-items:flex-start">
     <input class="rec-detail-title-inp" value="${escV(r.name)}" placeholder="Recipe name" style="font-size:18px;font-weight:700;border:none;background:none;color:var(--text);width:100%;outline:none;font-family:inherit"
@@ -3721,10 +3802,21 @@ function renderMealPicker(){
   let html=`<div class="groc-header"><h3>Pick a Recipe</h3><button class="groc-close" onclick="document.getElementById('mealPickerModal').close()">✕</button></div>`;
   html+=`<div class="groc-add"><input type="text" id="mealPickerSearch" placeholder="Search recipes…" value="${escHtml(_mealPickerSearch)}" oninput="_mealPickerSearch=this.value;renderMealPicker()"></div>`;
   html+=`<div style="padding:8px 16px;max-height:50vh;overflow-y:auto">`;
+  const easyFiltered=(st.easyMeals||[]).filter(m=>{
+    if(!_mealPickerSearch)return true;
+    return m.name.toLowerCase().includes(_mealPickerSearch.toLowerCase())||(m.ingredients||[]).some(x=>x.toLowerCase().includes(_mealPickerSearch.toLowerCase()));
+  });
+  if(easyFiltered.length){
+    html+=`<div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);padding:4px 0 2px">Easy Meals</div>`;
+    easyFiltered.forEach(m=>{
+      html+=`<div class="groc-recipe-row" onclick="addEasyMealFromPicker('${m.id}')">${escHtml(m.name)} <span style="color:var(--muted);font-size:10px">${(m.ingredients||[]).length} items</span></div>`;
+    });
+  }
+  if(recipes.length&&easyFiltered.length)html+=`<div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);padding:8px 0 2px">Recipes</div>`;
   recipes.forEach(r=>{
     html+=`<div class="groc-recipe-row" onclick="addMealFromPicker('${r.id}')">${escHtml(r.name)}${r.meal_type?` <span style="color:var(--muted);font-size:10px">${escHtml(r.meal_type)}</span>`:''}</div>`;
   });
-  if(!recipes.length)html+=`<div style="color:var(--muted);font-size:12px;padding:12px">No recipes found</div>`;
+  if(!recipes.length&&!easyFiltered.length)html+=`<div style="color:var(--muted);font-size:12px;padding:12px">No meals found</div>`;
   html+=`</div>`;
   modal.innerHTML=html;
   const inp=document.getElementById('mealPickerSearch');
@@ -3741,6 +3833,32 @@ async function addMealFromPicker(recipeId){
   save();renderMealRow();
   // Auto-add ingredients to grocery list
   addRecipeToGrocery(recipeId);
+  document.getElementById('mealPickerModal')?.close();
+  _mealPickerSearch='';
+  if(document.getElementById('groceryModal')?.open)renderGroceryModal();
+}
+
+async function addEasyMealFromPicker(emId){
+  const m=(st.easyMeals||[]).find(x=>x.id===emId);if(!m)return;
+  const ds=_mealPickerDs;if(!ds)return;
+  const item={recipe_id:null,recipe_name:m.name,meal_date:ds,servings:m.servings||1,meal_type:null,easy_meal_id:emId};
+  const sv=await sbReqSilent('POST','meal_plan',item);
+  if(sv&&sv[0])st.mealPlan.push(sv[0]);
+  else{item.id='l-'+Date.now();st.mealPlan.push(item);}
+  save();renderMealRow();
+  // Add easy meal ingredients to grocery list
+  const wk=_groceryWeekOf();
+  const stapleNames=new Set((st.groceryStaples||[]).filter(s=>s.active!==false).map(s=>s.name.toLowerCase()));
+  for(const ingName of (m.ingredients||[])){
+    if(stapleNames.has(ingName.toLowerCase()))continue;
+    const dup=(st.groceryList||[]).find(g=>g.week_of===wk&&g.name.toLowerCase()===ingName.toLowerCase());
+    if(dup)continue;
+    const gi={name:ingName,amount:null,source:'recipe',source_id:emId,recipe_name:m.name,aisle:_inferAisle(ingName),checked:false,week_of:wk};
+    const gsv=await sbReqSilent('POST','grocery_list',gi);
+    if(gsv&&gsv[0])st.groceryList.push(gsv[0]);
+    else{gi.id='l-'+Date.now();st.groceryList.push(gi);}
+  }
+  save();
   document.getElementById('mealPickerModal')?.close();
   _mealPickerSearch='';
   if(document.getElementById('groceryModal')?.open)renderGroceryModal();
