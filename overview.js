@@ -70,7 +70,8 @@ function renderToday(){
   const _vdmToday=_vidDayMap();
   const _vidStillPending=v=>v.status==='published'&&typeof _vidGroupFullyComplete==='function'&&!_vidGroupFullyComplete(v);
   const _hasTabTask0=vid=>{const m='_vid:'+vid;return st.tasks.some(t=>t.notes&&t.notes.includes(m));};
-  const vidToday=(st.videos||[]).filter(v=>{if(v.is_deleted)return false;if(v.status==='published'&&!_vidStillPending(v))return false;const vd=_vdmToday[String(v.id)];if(vd===ds)return true;if(dayOff===0&&vd&&vd<ds)return true;if(_vidStillPending(v)&&v.post_date&&(v.post_date===ds||(dayOff===0&&v.post_date<ds))&&!_hasTabTask0(v.id))return true;return false;}).map(v=>({id:'vid-ov-'+v.id,name:v.topic||v.title,category:'Videos',due_date:_vdmToday[String(v.id)]||v.post_date||ds,done:v.status==='published',_vidId:v.id,_virtual:true,_type:'vid'}));
+  const _vidOnTBToday=new Set(st.blocks.filter(b=>(b.ds===ds||(dayOff===0&&b.ds&&b.ds<ds))&&b._vidId).map(b=>String(b._vidId)));
+  const vidToday=(st.videos||[]).filter(v=>{if(v.is_deleted)return false;const vd=_vdmToday[String(v.id)];if(vd===ds)return true;if(dayOff===0&&vd&&vd<ds)return true;if(_vidOnTBToday.has(String(v.id)))return true;if(v.status==='published'&&v.post_date&&(v.post_date===ds||(dayOff===0&&v.post_date<ds)))return true;if(_vidStillPending(v)&&v.post_date&&(v.post_date===ds||(dayOff===0&&v.post_date<ds))&&!_hasTabTask0(v.id))return true;return false;}).map(v=>({id:'vid-ov-'+v.id,name:v.topic||v.title,category:'Videos',due_date:_vdmToday[String(v.id)]||v.post_date||ds,done:v.status==='published',_vidId:v.id,_virtual:true,_type:'vid'}));
   const finCancelToday=typeof _finCancelTasksForDate==='function'?_finCancelTasksForDate(ds):[];
   const virtToday=[
     ...allRecVirt.filter(v=>v.due_date===ds||(dayOff===0&&isOv(v.due_date)&&!v.done)),

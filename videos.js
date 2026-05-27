@@ -2655,7 +2655,7 @@ function _vidRenderSteps(vals){
       const _linkNa=cur==='na';
       parts.push(`<div id="vmLinkWrap" style="display:flex;flex-direction:column;gap:2px;align-items:flex-start;flex:1;${_linkNa?'opacity:.5;pointer-events:none':''}">
         <span class="vm-step-lbl" style="font-size:9px;color:${_linkNa?'rgba(180,175,205,.5)':'var(--muted)'}">Link</span>
-        <input id="vmYoutubeUrl" type="text" placeholder="url" style="width:100%;height:22px;font-size:9px;padding:0 6px;border:1.5px solid rgba(210,205,228,${_linkNa?'.3':'.4'});border-radius:3px;background:${_linkNa?'rgba(210,205,228,.15)':'transparent'};color:var(--text);text-align:left;box-sizing:border-box;outline:none">
+        <input id="vmYoutubeUrl" type="text" placeholder="${_linkNa?'':'url'}" oncontextmenu="_vidLinkCtx(event)" style="width:100%;height:22px;font-size:9px;padding:0 6px;border:1.5px solid rgba(210,205,228,${_linkNa?'.3':'.4'});border-radius:3px;background:${_linkNa?'rgba(210,205,228,.15)':'transparent'};color:var(--text);text-align:left;box-sizing:border-box;outline:none">
       </div>`);
     }
   });
@@ -2679,12 +2679,14 @@ function _vidUpdateModalFills(){
     pdInp.style.borderColor=filled?'#10b981':'rgba(210,205,228,.4)';
     pdInp.style.fontWeight=filled?'600':'400';
   }
-  // Link: green when has value
+  // Link: green when has value, grey when na
   if(ytInp&&ytW){
     const filled=ytInp.value.trim().length>0;
-    ytInp.style.background=filled?'#10b981':'transparent';
+    const tabEl=document.querySelector('[data-step="step_tableau_public"]');
+    const isNa=tabEl&&tabEl.dataset.val==='na';
+    ytInp.style.background=filled?'#10b981':isNa?'rgba(210,205,228,.15)':'transparent';
     ytInp.style.color=filled?'#fff':'var(--text)';
-    ytInp.style.borderColor=filled?'#10b981':'rgba(210,205,228,.4)';
+    ytInp.style.borderColor=filled?'#10b981':isNa?'rgba(210,205,228,.3)':'rgba(210,205,228,.4)';
     ytInp.style.fontWeight=filled?'600':'400';
   }
   _vidUpdateModalComplete();
@@ -2777,6 +2779,11 @@ function _vidNaModalStep(e,el){
   }
   // Tab+Link greying handled by _vidUpdateModalStep
 }
+function _vidLinkCtx(e){
+  e.preventDefault();
+  const tabEl=document.querySelector('[data-step="step_tableau_public"]');
+  if(tabEl)_vidNaModalStep(e,tabEl);
+}
 function _vidSetType(type){
   document.getElementById('vmType').value=type;
   const bBtn=document.getElementById('vmTypeB');
@@ -2821,7 +2828,7 @@ function _vidUpdateModalStep(el,val){
       lw.style.opacity=val==='na'?'.5':'1';lw.style.pointerEvents=val==='na'?'none':'auto';
       const lLbl=lw.querySelector('.vm-step-lbl');if(lLbl)lLbl.style.color=val==='na'?'rgba(180,175,205,.5)':'var(--muted)';
       const lInp=document.getElementById('vmYoutubeUrl');
-      if(lInp){lInp.style.borderColor=val==='na'?'rgba(210,205,228,.3)':'rgba(210,205,228,.4)';lInp.style.background=val==='na'?'rgba(210,205,228,.15)':'transparent';}
+      if(lInp){lInp.style.borderColor=val==='na'?'rgba(210,205,228,.3)':'rgba(210,205,228,.4)';lInp.style.background=val==='na'?'rgba(210,205,228,.15)':'transparent';lInp.placeholder=val==='na'?'':'url';}
     }
   }
   _vidUpdateModalComplete();
