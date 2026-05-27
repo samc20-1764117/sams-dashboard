@@ -2641,9 +2641,10 @@ function _vidRenderSteps(vals){
     }
     const cur=vals[s]||'not_started';
     const tab=cur==='na'?-1:0;
-    parts.push(`<div style="display:flex;flex-direction:column;gap:2px;align-items:center">
+    const _tabGrey=s==='step_tableau_public'&&cur==='na'?'opacity:.35;':'';
+    parts.push(`<div style="display:flex;flex-direction:column;gap:2px;align-items:center;${_tabGrey}">
       <span style="font-size:9px;color:${cur==='na'?'var(--border)':'var(--muted)'}">${VID_STEP_LABELS[s]}</span>
-      <div data-step="${s}" data-val="${cur}" tabindex="${tab}" onclick="_vidToggleModalStep(this)" oncontextmenu="_vidNaModalStep(event,this);return false" onkeydown="_vidStepKey(event,this)" style="${_vidModalStepCSS(cur)}"></div>
+      <div data-step="${s}" data-val="${cur}" tabindex="${tab}" onclick="_vidToggleModalStep(this)" oncontextmenu="_vidNaModalStep(event,this);return false" onkeydown="_vidStepKey(event,this)" style="${_vidModalStepCSS(cur)}${s==='step_tableau_public'&&cur==='na'?';opacity:1':''}"></div>
     </div>`);
     if(s==='step_tableau_public'){
       const _linkNa=cur==='na';
@@ -2692,24 +2693,21 @@ function _vidUpdateModalComplete(){
   const hasPd=pdInp&&pdInp.value.trim().length>0;
   const complete=allDone&&hasPd;
   if(complete){
-    // Green styling on both containers — no size changes
+    // Green styling — keep all sizes/margins exactly the same
     if(statusRow){
       statusRow.style.background='rgba(16,185,129,.05)';
-      statusRow.style.border='1.5px solid rgba(16,185,129,.35)';
-      statusRow.style.borderBottom='none';
-      statusRow.style.borderRadius='10px 10px 0 0';
-      statusRow.style.padding='6px 8px';
+      statusRow.style.outline='1.5px solid rgba(16,185,129,.35)';
+      statusRow.style.borderRadius='10px';
     }
     wrap.style.background='rgba(16,185,129,.05)';
     wrap.style.borderColor='rgba(16,185,129,.35)';
     wrap.style.boxShadow='none';
-    if(statusRow){wrap.style.borderTopLeftRadius='0';wrap.style.borderTopRightRadius='0';wrap.style.marginTop='0';}
     // Overlay COMPLETE badge on status row
     if(statusRow&&!statusRow.querySelector('.vm-complete-badge')){
       [...statusRow.children].forEach(c=>c.style.display='none');
       const badge=document.createElement('div');
       badge.className='vm-complete-badge';
-      badge.style.cssText='display:flex;align-items:center;gap:6px;justify-content:center;width:100%;animation:vmFadeIn .4s ease';
+      badge.style.cssText='display:flex;align-items:center;gap:6px;justify-content:center;width:100%;padding:8px 0;animation:vmFadeIn .4s ease';
       badge.innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg><span style="font-size:12px;font-weight:700;color:#10b981;letter-spacing:.5px">COMPLETE</span>';
       statusRow.appendChild(badge);
       _vidModalSparkle(wrap);
@@ -2718,11 +2716,8 @@ function _vidUpdateModalComplete(){
     wrap.style.background='rgba(255,255,255,.7)';
     wrap.style.borderColor='rgba(210,205,228,.3)';
     wrap.style.boxShadow='1px 1px 3px rgba(0,0,0,.06), inset 0 1px 0 rgba(255,255,255,.8)';
-    wrap.style.borderRadius='10px';
-    wrap.style.marginTop='8px';
     if(statusRow){
-      statusRow.style.background='';statusRow.style.border='';statusRow.style.borderBottom='';
-      statusRow.style.borderRadius='';statusRow.style.padding='';
+      statusRow.style.background='';statusRow.style.outline='';statusRow.style.borderRadius='';
       const badge=statusRow.querySelector('.vm-complete-badge');
       if(badge){badge.remove();[...statusRow.children].forEach(c=>c.style.display='');}
     }
@@ -2814,6 +2809,12 @@ function _vidUpdateModalStep(el,val){
   el.textContent='';
   el.tabIndex=val==='na'?-1:0;
   el.parentElement.querySelector('span').style.color=val==='na'?'var(--border)':'var(--muted)';
+  // Grey out entire Tab container when na (like Link)
+  if(el.dataset.step==='step_tableau_public'){
+    // Remove per-dot opacity since parent handles it
+    if(val==='na')el.style.opacity='1';
+    el.parentElement.style.opacity=val==='na'?'.35':'';
+  }
   _vidUpdateModalComplete();
 }
 
