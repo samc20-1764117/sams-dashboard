@@ -2702,12 +2702,13 @@ function _vidUpdateModalComplete(){
     wrap.style.background='rgba(16,185,129,.05)';
     wrap.style.borderColor='rgba(16,185,129,.35)';
     wrap.style.boxShadow='none';
-    // Overlay COMPLETE badge on status row
+    // Overlay COMPLETE badge on status row — use visibility to keep size
     if(statusRow&&!statusRow.querySelector('.vm-complete-badge')){
-      [...statusRow.children].forEach(c=>c.style.display='none');
+      statusRow.style.position='relative';
+      [...statusRow.children].forEach(c=>c.style.visibility='hidden');
       const badge=document.createElement('div');
       badge.className='vm-complete-badge';
-      badge.style.cssText='display:flex;align-items:center;gap:6px;justify-content:center;width:100%;padding:8px 0;animation:vmFadeIn .4s ease';
+      badge.style.cssText='position:absolute;inset:0;display:flex;align-items:center;gap:6px;justify-content:center;animation:vmFadeIn .4s ease';
       badge.innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg><span style="font-size:12px;font-weight:700;color:#10b981;letter-spacing:.5px">COMPLETE</span>';
       statusRow.appendChild(badge);
       _vidModalSparkle(wrap);
@@ -2717,9 +2718,9 @@ function _vidUpdateModalComplete(){
     wrap.style.borderColor='rgba(210,205,228,.3)';
     wrap.style.boxShadow='1px 1px 3px rgba(0,0,0,.06), inset 0 1px 0 rgba(255,255,255,.8)';
     if(statusRow){
-      statusRow.style.background='';statusRow.style.outline='';statusRow.style.borderRadius='';
+      statusRow.style.background='';statusRow.style.outline='';statusRow.style.borderRadius='';statusRow.style.position='';
       const badge=statusRow.querySelector('.vm-complete-badge');
-      if(badge){badge.remove();[...statusRow.children].forEach(c=>c.style.display='');}
+      if(badge){badge.remove();[...statusRow.children].forEach(c=>c.style.visibility='');}
     }
   }
 }
