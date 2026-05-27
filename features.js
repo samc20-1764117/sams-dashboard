@@ -1806,7 +1806,7 @@ function _finRenderPersonal(accs,vtiAcc,currentVal,netWorth,totalAll){
       <span class="fin-legend-dot" style="background:${colorPastel};border:1.5px solid ${colorSolid}"></span>
       <span class="fin-legend-name">${_finEditable(a.id,'name',a.name,'fin-legend-edit-name')}</span>
       <span class="fin-legend-amt">${_finEditable(a.id,'amount',a.amount||0,'fin-legend-edit-amt',true)}</span>
-      <span class="fin-legend-pct">${pctStr}${a.exclude?`<button class="fin-excl-btn active" onclick="_finToggleExclude('${a.id}')" title="Include in total" style="opacity:1;color:#b0b8c4;margin-left:0">&#x21a9;</button>`:`<button class="fin-excl-btn" onclick="_finToggleExclude('${a.id}')" title="Exclude from total">&#x2212;</button>`}</span>
+      <span class="fin-legend-pct" style="margin-left:-8px">${pctStr}${a.exclude?`<button class="fin-excl-btn active" onclick="_finToggleExclude('${a.id}')" title="Include in total" style="opacity:1;color:#b0b8c4;margin-left:0">&#x21a9;</button>`:`<button class="fin-excl-btn" onclick="_finToggleExclude('${a.id}')" title="Exclude from total">&#x2212;</button>`}</span>
       <button class="delbtn fin-legend-del" onclick="delFin('${a.id}')">&#x2715;</button>
     </div>`;
   });
@@ -1856,7 +1856,7 @@ function _finRenderInvestments(purchases,totalBought,gain,gainPct,currentVal){
         </div>
       </div>
       <div class="fin-inv-chart" style="position:relative;height:100%;min-height:160px;overflow:hidden">
-      <svg viewBox="-5 0 110 100" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%">
+      <svg viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%;overflow:visible">
       <defs><linearGradient id="finAreaGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#10b981" stop-opacity=".18"/><stop offset="100%" stop-color="#10b981" stop-opacity=".02"/></linearGradient></defs>
       <polygon points="${svgFillPoly}" fill="url(#finAreaGrad)" stroke="none"/>
       <polyline points="${svgPolyLine}" fill="none" stroke="#10b981" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
@@ -1895,7 +1895,7 @@ function _finRenderSubs(){
   let html=`<div class="card fin-card">
     <div class="fin-card-hdr"><span class="fin-card-title">Subscriptions</span><button class="fin-add-btn" onclick="addFinSub()" style="font-size:16px;padding:0 4px;line-height:1">+</button></div>
     <div class="fin-sub-scroll">
-    <table class="fin-tbl fin-sub-tbl"><colgroup><col class="fin-col-name"/><col class="fin-col-freq"/><col class="fin-col-due"/><col class="fin-col-amt"/><col class="fin-col-mo"/><col class="fin-col-del"/></colgroup><thead><tr><th>Name</th><th style="text-align:center">Freq</th><th style="text-align:center">Due</th><th>Amount</th><th class="fin-mo-adj" style="font-size:12px;font-weight:500;text-align:right;padding:4px 12px!important;font-variant-numeric:tabular-nums;white-space:nowrap">Per Month ${_finFmt(monthlyTotal)}</th><th></th></tr></thead><tbody>`;
+    <table class="fin-tbl fin-sub-tbl"><colgroup><col class="fin-col-name"/><col class="fin-col-freq"/><col class="fin-col-due"/><col class="fin-col-amt"/><col class="fin-col-mo"/><col class="fin-col-del"/></colgroup><thead><tr><th>Name</th><th style="text-align:center">Freq</th><th style="text-align:center">Due</th><th>Amount</th><th class="fin-mo-adj" style="font-size:12px;font-weight:500;text-align:right;padding:4px 12px!important;font-variant-numeric:tabular-nums;white-space:nowrap">Per Month: ${_finFmt(monthlyTotal)}</th><th></th></tr></thead><tbody>`;
   subs.forEach(sub=>{
     const dueDisplay=_finDueDisplay(sub.due_month,sub.due_day);
     const dueRaw=(sub.due_month&&sub.due_month>=1&&sub.due_month<=12?_FIN_MONTHS[sub.due_month-1]+' ':'')+(sub.due_day||'');
