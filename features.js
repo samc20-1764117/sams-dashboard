@@ -1852,7 +1852,7 @@ function _finRenderInvestments(purchases,totalBought,gain,gainPct,currentVal){
     const svgPolyFill=pts.map(p=>`${p.px},${p.py}`).join(' ');
     const svgPolyLine=`-5,${firstY} ${svgPolyFill} 105,${lastY}`;
     const svgFillPoly=`-5,${firstY} ${svgPolyFill} 105,${lastY} 105,100 -5,100`;
-    html+=`<div class="fin-inv-chart-wrap" style="margin:0 -8px -4px;padding:0;border-radius:0;border-top:none;position:relative;flex:1;min-height:0;overflow:hidden">
+    html+=`<div class="fin-inv-chart-wrap" style="margin:0;padding:0;border-radius:0;border-top:none;position:relative;flex:1;min-height:0;overflow:hidden">
       <div class="fin-inv-kpi-float">
         <div style="font-size:11px;font-weight:600;color:#1e293b;margin-bottom:4px">Total Gain</div>
         <div style="font-size:22px;font-weight:700;color:#1e293b;line-height:1.1">${_finFmtRound(gain)}</div>
