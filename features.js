@@ -2030,11 +2030,10 @@ function _finCancelTasksForDate(ds){
       dueDate=new Date(yr,mo,s.due_day);
       if(dueDate<new Date(yr,mo,today.getDate()-3))dueDate=new Date(yr,mo+1,s.due_day);
     }
-    const dueDateStr=d2s(dueDate);
-    // Show 3 days before due through due date
+    // Show exactly 3 days before due
     const reminderDate=new Date(dueDate);reminderDate.setDate(reminderDate.getDate()-3);
     const reminderStr=d2s(reminderDate);
-    if(ds>=reminderStr&&ds<=dueDateStr){
+    if(ds===reminderStr){
       const dueLabel=_FIN_MONTHS[dueDate.getMonth()]+' '+dueDate.getDate();
       tasks.push({id:'fin-cancel-'+s.id,name:'Cancel '+s.name+' by '+dueLabel,category:'Home',due_date:reminderStr,done:false,_subId:s.id,_virtual:true,_type:'fin-cancel'});
     }

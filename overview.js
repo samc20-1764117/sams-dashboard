@@ -766,7 +766,7 @@ function tRowShopVirt(t,noDate=false,tbArrow=false,noColor=false){
 }
 function tRowFinCancel(t){
   const s={bg:'rgba(239,68,68,.1)',t:'#dc2626',d:'#ef4444',b:'rgba(239,68,68,.2)'};
-  return`<div class="ti" style="background:${s.bg}" id="ti-${t.id}">
+  return`<div class="ti" style="background:${s.bg}" id="ti-${t.id}" onclick="selTask(event,'${t.id}')" ondblclick="showPage('finance')">
     <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" onchange="if(this.checked){delFinSub('${t._subId}');}"></label>
     <span class="tn" style="color:${s.t}">${t.name}</span>
     <svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3" fill="${s.bg}" stroke="${s.d}" stroke-opacity="0.4" stroke-width="1"/></svg>
@@ -1350,8 +1350,9 @@ function renderWkCal(){
       else if(t._type==='vid')chip.dataset.tid='vid-ov-'+t._vidId;
       else if(t._type==='pup')chip.dataset.tid='pup-sess-'+t._pupSessId;
       else if(t._type==='fin-cancel')chip.dataset.tid='fin-cancel-'+t._subId;
-      chip.draggable=true;
+      chip.draggable=t._type!=='fin-cancel';
       chip.addEventListener('dragstart',e2=>{
+        if(t._type==='fin-cancel'){e2.preventDefault();return;}
         if(t._type==='vid'){dragId='vid::'+t._vidId;}
         else if(t._type==='pup'){dragId='pupsess::'+t._pupSessId+'::'+ds;}
         else if(t._type==='shop'){dragId='shop::'+t._shopId;}
@@ -1410,7 +1411,7 @@ function renderWkCal(){
         }
         applySelHighlight();
       });
-      chip.addEventListener('dblclick',e=>{e.stopPropagation();if(t._type==='vid'){if(typeof openVidEdit==='function')openVidEdit(t._vidId);}else if(t._type==='pup'){openPupEditModal(t._skillId);}else if(t._type==='shop')tiDblShop(e,t._shopId);else if(!t._virtual)tiDbl(e,t.id);else tiDblRec(e,t._recId);});
+      chip.addEventListener('dblclick',e=>{e.stopPropagation();if(t._type==='fin-cancel'){showPage('finance');}else if(t._type==='vid'){if(typeof openVidEdit==='function')openVidEdit(t._vidId);}else if(t._type==='pup'){openPupEditModal(t._skillId);}else if(t._type==='shop')tiDblShop(e,t._shopId);else if(!t._virtual)tiDbl(e,t.id);else tiDblRec(e,t._recId);});
       const dx=document.createElement('button');dx.className='chip-del';dx.textContent='✕';
       dx.title=(t._type==='vid'||t._type==='shop'||t._isWrec||t._isWrRule)?'Remove from calendar':t._virtual?'Delete recurring task':'Delete task';
       dx.addEventListener('click',e2=>{
