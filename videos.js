@@ -242,7 +242,7 @@ const VID_STEPS_CORE=['step_build','step_vo','step_cut','step_thumbnail','step_d
 const VID_STEP_LABELS={step_build:'Build',step_vo:'Vo',step_film:'Film',step_cut:'Cut',step_thumbnail:'Th',step_description:'Des',step_tableau_public:'Tab'};
 const VID_STATUS_COLORS={published:'#10b981',in_progress:'#f59e0b',up_next:'#0ea5e9',idea:'#8b5cf6',backup:'#94a3b8'};
 const VID_STATUS_LABELS={published:'Complete',in_progress:'In Progress',up_next:'Up Next',idea:'Idea',backup:'Backup'};
-const VID_STATUS_ORDER={published:0,up_next:1,in_progress:2,backup:3,idea:4};
+const VID_STATUS_ORDER={published:0,up_next:1,in_progress:2,idea:3,backup:4};
 const VID_STEP_COLORS={done:'#10b981',in_progress:'#f59e0b',not_started:'transparent',na:'#d1d5db',backup:'#94a3b8',issue:'#ef4444'};
 
 // Build numbering from an ordered array of videos (display order)
@@ -508,7 +508,9 @@ function _vidRenderDashboard(){
     }
   });
   if(_promoteQ.length){save();for(const p of _promoteQ)sbReqSilent('PATCH','videos',{status:p.status},`?id=eq.${p.id}`);}
-  let upNext=all.filter(v=>v.status==='up_next');
+  // Published videos whose group isn't fully complete stay in Current (show as up_next)
+  const _pubPending=all.filter(v=>v.status==='published'&&!_vidGroupFullyComplete(v));
+  let upNext=all.filter(v=>v.status==='up_next').concat(_pubPending);
   let inProgress=all.filter(v=>v.status==='in_progress');
   let ideas=all.filter(v=>v.status==='idea');
   if(_vidSearch){
@@ -2424,7 +2426,7 @@ function _vidGetBigVideoId(){
 }
 
 const _VID_STATUS_OPTIONS=[
-  {value:'idea',label:'1. Idea'},{value:'up_next',label:'2. Up Next'},{value:'in_progress',label:'3. In Progress'},{value:'published',label:'4. Complete'},{value:'backup',label:'4. Backup'}
+  {value:'idea',label:'1. Idea'},{value:'in_progress',label:'2. In Progress'},{value:'up_next',label:'3. Up Next'},{value:'published',label:'4. Complete'},{value:'backup',label:'4. Backup'}
 ];
 function _vidModalKey(event){
   if(event.key==='Escape'){event.stopPropagation();closeMod('vidModal');}
@@ -2850,6 +2852,24 @@ function _vidAllChildrenComplete(bigId){
   const kids=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(bigId));
   return kids.every(k=>_vidIsComplete(k));
 }
+// Check if a video's entire group (Big + all Smalls) is truly complete
+function _vidGroupFullyComplete(v){
+  const all=st.videos||[];
+  if(v.video_type==='B'){
+    // Big: self must be truly complete + all children
+    if(!_vidTrulyComplete(v))return false;
+    const kids=all.filter(c=>!c.is_deleted&&String(c.big_video_id)===String(v.id));
+    return kids.every(k=>_vidTrulyComplete(k));
+  }else if(v.big_video_id){
+    // Small with parent: parent + all siblings must be truly complete
+    const parent=all.find(p=>!p.is_deleted&&String(p.id)===String(v.big_video_id));
+    if(parent&&!_vidTrulyComplete(parent))return false;
+    const siblings=all.filter(c=>!c.is_deleted&&String(c.big_video_id)===String(v.big_video_id));
+    return siblings.every(s=>_vidTrulyComplete(s));
+  }
+  // Standalone: just self
+  return _vidTrulyComplete(v);
+}
 async function cycleVidStep(id,step){
   const v=(st.videos||[]).find(x=>String(x.id)===String(id));if(!v)return;
   const cur=v[step]||'not_started';
@@ -2906,14 +2926,12 @@ async function cycleVidStep(id,step){
     // Delete tab task when reverting from published
     _vidDeleteTabTask(id);
   }
-  // If tab step just completed → true completeness celebration
+  // If tab step just completed → mark tab task done, remove from day map if group complete
   if(step==='step_tableau_public'&&next==='done'&&coreDone&&hasFields){
-    // Mark tab task as done if it exists
     const marker='_vid:'+id;
     const tabTask=st.tasks.find(t=>t.notes&&t.notes.includes(marker)&&!t.done);
     if(tabTask){tabTask.done=true;sbReqSilent('PATCH','tasks',{done:true},`?id=eq.${tabTask.id}`);}
-    // Remove from day map
-    if(typeof _vidDayMap==='function'){const map=_vidDayMap();delete map[String(id)];_vidDayMapSet(map);}
+    if(_vidGroupFullyComplete(v)&&typeof _vidDayMap==='function'){const map=_vidDayMap();delete map[String(id)];_vidDayMapSet(map);}
   }
   // Big video build toggle → cascade to all children
   const childUpdates=[];
@@ -2998,8 +3016,9 @@ function _vidAfterPostDate(id){
   sbReqSilent('PATCH','videos',{status:'published'},`?id=eq.${v.id}`);
   if(tabRequired&&typeof _vidCreateTabUpTask==='function'){
     _vidCreateTabUpTask(id,v.post_date);
-  } else {
-    // No tab needed — remove from day map
+  }
+  // Only remove from day map if entire group is fully complete
+  if(!tabRequired&&_vidGroupFullyComplete(v)){
     if(typeof _vidDayMap==='function'){const map=_vidDayMap();delete map[String(id)];_vidDayMapSet(map);}
   }
   save();renderVideosPageKeepScroll();
@@ -3089,8 +3108,8 @@ document.addEventListener('keydown',e=>{
     if(isLeftRight&&(e.metaKey||e.ctrlKey)&&!e.shiftKey&&_vidSelected.size>0){
       e.preventDefault();
       const isRight=e.key==='ArrowRight';
-      const bigMap=isRight?{up_next:'in_progress',in_progress:'idea'}:{idea:'in_progress',in_progress:'up_next'};
-      const smallMap=isRight?{up_next:'idea',in_progress:'idea'}:{idea:'in_progress',in_progress:'up_next'};
+      const bigMap=isRight?{idea:'in_progress',in_progress:'up_next'}:{up_next:'in_progress',in_progress:'idea'};
+      const smallMap=isRight?{idea:'in_progress',in_progress:'up_next'}:{up_next:'idea',in_progress:'idea'};
       const allIds=new Set([..._vidSelected,..._vidChildSelected]);
       const vids=[...allIds].map(id=>(st.videos||[]).find(x=>String(x.id)===id)).filter(Boolean);
       const toMove=vids.filter(v=>(v.video_type==='B'?bigMap:smallMap)[v.status]);

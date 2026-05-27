@@ -68,8 +68,8 @@ function renderToday(){
     .map(s=>{const skill=(st.pup_skills||[]).find(x=>String(x.id)===String(s.skill_id));if(!skill)return null;return{id:'pup-sess-'+s.id,name:skill.skill,category:'Recurring',due_date:s.day_date,done:s.done,_pupSessId:s.id,_skillId:s.skill_id,_pup:skill.pup,_virtual:true,_type:'pup'};}).filter(Boolean);
   // Videos assigned to today
   const _vdmToday=_vidDayMap();
-  const _vidTabPending=v=>v.status==='published'&&v.step_tableau_public&&v.step_tableau_public!=='na'&&v.step_tableau_public!=='done';
-  const vidToday=(st.videos||[]).filter(v=>{if(v.is_deleted)return false;if(v.status==='published'&&!_vidTabPending(v))return false;const vd=_vdmToday[String(v.id)];if(vd===ds)return true;if(dayOff===0&&vd&&vd<ds)return true;if(_vidTabPending(v)&&v.post_date&&(v.post_date===ds||(dayOff===0&&v.post_date<ds)))return true;return false;}).map(v=>({id:'vid-ov-'+v.id,name:v.topic||v.title,category:'Videos',due_date:_vdmToday[String(v.id)]||v.post_date||ds,done:v.status==='published'&&!_vidTabPending(v),_vidId:v.id,_virtual:true,_type:'vid'}));
+  const _vidStillPending=v=>v.status==='published'&&typeof _vidGroupFullyComplete==='function'&&!_vidGroupFullyComplete(v);
+  const vidToday=(st.videos||[]).filter(v=>{if(v.is_deleted)return false;if(v.status==='published'&&!_vidStillPending(v))return false;const vd=_vdmToday[String(v.id)];if(vd===ds)return true;if(dayOff===0&&vd&&vd<ds)return true;if(_vidStillPending(v)&&v.post_date&&(v.post_date===ds||(dayOff===0&&v.post_date<ds)))return true;return false;}).map(v=>({id:'vid-ov-'+v.id,name:v.topic||v.title,category:'Videos',due_date:_vdmToday[String(v.id)]||v.post_date||ds,done:v.status==='published',_vidId:v.id,_virtual:true,_type:'vid'}));
   const virtToday=[
     ...allRecVirt.filter(v=>v.due_date===ds||(dayOff===0&&isOv(v.due_date)&&!v.done)),
     ...wrecToday,
@@ -1301,8 +1301,8 @@ function renderWkCal(){
     const pupSessForDayDone=(st.pupSessions||[]).filter(s=>s.day_date===ds&&s.done).map(s=>_mkPupSessItem(s,true)).filter(Boolean);
     // Add videos assigned to this date
     const _vdm=_vidDayMap();
-    const _vTabPend=v=>v.status==='published'&&v.step_tableau_public&&v.step_tableau_public!=='na'&&v.step_tableau_public!=='done';
-    const vidForDay=(st.videos||[]).filter(v=>!v.is_deleted&&((_vdm[String(v.id)]===ds&&(v.status!=='published'||_vTabPend(v)))||(_vTabPend(v)&&v.post_date===ds))).map(v=>({id:'vid-ov-'+v.id,name:v.topic||v.title,category:'Videos',due_date:ds,done:v.status==='published'&&!_vTabPend(v),_vidId:v.id,_virtual:true,_type:'vid'}));
+    const _vPend=v=>v.status==='published'&&typeof _vidGroupFullyComplete==='function'&&!_vidGroupFullyComplete(v);
+    const vidForDay=(st.videos||[]).filter(v=>!v.is_deleted&&((_vdm[String(v.id)]===ds&&(v.status!=='published'||_vPend(v)))||(_vPend(v)&&v.post_date===ds))).map(v=>({id:'vid-ov-'+v.id,name:v.topic||v.title,category:'Videos',due_date:ds,done:v.status==='published',_vidId:v.id,_virtual:true,_type:'vid'}));
     const undoneDay=sortTasksForDay([
       ...st.tasks.filter(t=>t.due_date&&t.due_date.split('T')[0]===ds&&!t.done&&t.category!=='Weekly Goals'),
       ...virtForDay,
@@ -3148,12 +3148,12 @@ function _vidOvToggleStep(vidId,step){
     v.status='in_progress';
     if(typeof _vidDeleteTabTask==='function')_vidDeleteTabTask(vidId);
   }
-  // If tab just completed, mark tab task done + remove from day map
+  // If tab just completed, mark tab task done + remove from day map if group complete
   if(step==='step_tableau_public'&&next==='done'&&coreDone){
     const marker='_vid:'+vidId;
     const tabTask=st.tasks.find(t=>t.notes&&t.notes.includes(marker)&&!t.done);
     if(tabTask){tabTask.done=true;sbReqSilent('PATCH','tasks',{done:true},`?id=eq.${tabTask.id}`);}
-    const map=_vidDayMap();delete map[String(vidId)];_vidDayMapSet(map);
+    if(typeof _vidGroupFullyComplete==='function'&&_vidGroupFullyComplete(v)){const map=_vidDayMap();delete map[String(vidId)];_vidDayMapSet(map);}
   }
   save();_renderVidOvMenu();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
   const patch={[step]:next,status:v.status};if(linked)patch[linked]=next;
@@ -3311,12 +3311,27 @@ function _vidCompleteTabUp(vidId){
   const vidPatch={};
   // Mark both tab fields done
   ['step_tableau_public','step_upload_tableau'].forEach(s=>{if(v[s]&&v[s]!=='na'&&v[s]!=='done'){v[s]='done';vidPatch[s]='done';}});
-  // True completeness — remove from day map
-  const map=_vidDayMap();delete map[String(vidId)];_vidDayMapSet(map);
   // Mark the auto-created tab task as done
   const marker='_vid:'+vidId;
   const tabTask=st.tasks.find(t=>t.notes&&t.notes.includes(marker)&&!t.done);
   if(tabTask){tabTask.done=true;sbReqSilent('PATCH','tasks',{done:true},`?id=eq.${tabTask.id}`);}
+  // Remove from day map only if entire group is now complete
+  if(typeof _vidGroupFullyComplete==='function'&&_vidGroupFullyComplete(v)){
+    const map=_vidDayMap();delete map[String(vidId)];_vidDayMapSet(map);
+    // Also clean up group members from day map
+    if(v.video_type==='B'){
+      (st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(v.id)).forEach(c=>{delete map[String(c.id)];});
+      _vidDayMapSet(map);
+    }else if(v.big_video_id){
+      const map2=_vidDayMap();
+      const parent=(st.videos||[]).find(p=>!p.is_deleted&&String(p.id)===String(v.big_video_id));
+      if(parent&&typeof _vidGroupFullyComplete==='function'&&_vidGroupFullyComplete(parent)){
+        delete map2[String(parent.id)];
+        (st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(v.big_video_id)).forEach(c=>{delete map2[String(c.id)];});
+        _vidDayMapSet(map2);
+      }
+    }
+  }
   sbReqSilent('PATCH','videos',vidPatch,`?id=eq.${v.id}`);
   save();renderAll();
   if(typeof renderVideosPageKeepScroll==='function')renderVideosPageKeepScroll();
