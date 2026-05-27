@@ -69,7 +69,8 @@ function renderToday(){
   // Videos assigned to today
   const _vdmToday=_vidDayMap();
   const _vidStillPending=v=>v.status==='published'&&typeof _vidGroupFullyComplete==='function'&&!_vidGroupFullyComplete(v);
-  const vidToday=(st.videos||[]).filter(v=>{if(v.is_deleted)return false;if(v.status==='published'&&!_vidStillPending(v))return false;const vd=_vdmToday[String(v.id)];if(vd===ds)return true;if(dayOff===0&&vd&&vd<ds)return true;if(_vidStillPending(v)&&v.post_date&&(v.post_date===ds||(dayOff===0&&v.post_date<ds)))return true;return false;}).map(v=>({id:'vid-ov-'+v.id,name:v.topic||v.title,category:'Videos',due_date:_vdmToday[String(v.id)]||v.post_date||ds,done:v.status==='published',_vidId:v.id,_virtual:true,_type:'vid'}));
+  const _hasTabTask0=vid=>{const m='_vid:'+vid;return st.tasks.some(t=>t.notes&&t.notes.includes(m));};
+  const vidToday=(st.videos||[]).filter(v=>{if(v.is_deleted)return false;if(v.status==='published'&&!_vidStillPending(v))return false;const vd=_vdmToday[String(v.id)];if(vd===ds)return true;if(dayOff===0&&vd&&vd<ds)return true;if(_vidStillPending(v)&&v.post_date&&(v.post_date===ds||(dayOff===0&&v.post_date<ds))&&!_hasTabTask0(v.id))return true;return false;}).map(v=>({id:'vid-ov-'+v.id,name:v.topic||v.title,category:'Videos',due_date:_vdmToday[String(v.id)]||v.post_date||ds,done:v.status==='published',_vidId:v.id,_virtual:true,_type:'vid'}));
   const virtToday=[
     ...allRecVirt.filter(v=>v.due_date===ds||(dayOff===0&&isOv(v.due_date)&&!v.done)),
     ...wrecToday,
@@ -1302,7 +1303,8 @@ function renderWkCal(){
     // Add videos assigned to this date
     const _vdm=_vidDayMap();
     const _vPend=v=>v.status==='published'&&typeof _vidGroupFullyComplete==='function'&&!_vidGroupFullyComplete(v);
-    const vidForDay=(st.videos||[]).filter(v=>!v.is_deleted&&((_vdm[String(v.id)]===ds&&(v.status!=='published'||_vPend(v)))||(_vPend(v)&&v.post_date===ds))).map(v=>({id:'vid-ov-'+v.id,name:v.topic||v.title,category:'Videos',due_date:ds,done:v.status==='published',_vidId:v.id,_virtual:true,_type:'vid'}));
+    const _hasTabTask=vid=>{const m='_vid:'+vid;return st.tasks.some(t=>t.notes&&t.notes.includes(m));};
+    const vidForDay=(st.videos||[]).filter(v=>!v.is_deleted&&((_vdm[String(v.id)]===ds&&(v.status!=='published'||_vPend(v)))||(_vPend(v)&&v.post_date===ds&&!_hasTabTask(v.id)))).map(v=>({id:'vid-ov-'+v.id,name:v.topic||v.title,category:'Videos',due_date:ds,done:v.status==='published',_vidId:v.id,_virtual:true,_type:'vid'}));
     const undoneDay=sortTasksForDay([
       ...st.tasks.filter(t=>t.due_date&&t.due_date.split('T')[0]===ds&&!t.done&&t.category!=='Weekly Goals'),
       ...virtForDay,
@@ -3310,12 +3312,15 @@ function _vidPromptPostDate(vidId,anchorEl){
   setTimeout(()=>document.getElementById('_vidPostDateInp')?.focus(),60);
 }
 
+const _vidTabCreating=new Set();
 async function _vidCreateTabUpTask(vidId,postDate){
   const v=(st.videos||[]).find(x=>String(x.id)===String(vidId));if(!v)return;
-  // Check if task already exists
+  // Check if task already exists or is being created
   const marker='_vid:'+vidId;
+  if(_vidTabCreating.has(vidId))return;
   const existing=st.tasks.find(t=>t.notes&&t.notes.includes(marker));
   if(existing)return;
+  _vidTabCreating.add(vidId);
   const name='Post Tab - '+(v.topic||v.title);
   const t={id:'l-'+Date.now(),name,category:'Videos',due_date:postDate,done:false,important:false,notes:marker};
   st.tasks.push(t);save();renderAll();
@@ -3325,6 +3330,7 @@ async function _vidCreateTabUpTask(vidId,postDate){
   const taskId=sv&&sv[0]?String(sv[0].id):t.id;
   const tb={id:crypto.randomUUID(),title:name,ds:postDate,sm:450,dur:30,cat:'Videos',taskId,_done:false};
   st.blocks.push(tb);sbSaveBlock(tb);
+  _vidTabCreating.delete(vidId);
   if(document.getElementById('tbGrid'))renderDayTB();
 }
 function _vidCompleteTabUp(vidId){
