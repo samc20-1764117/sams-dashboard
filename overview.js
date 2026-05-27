@@ -3140,6 +3140,15 @@ function _vidOvToggleStep(vidId,step){
   // Core 5 done + post_date + topic + title → published
   const coreSteps=typeof VID_STEPS_CORE!=='undefined'?VID_STEPS_CORE:['step_build','step_vo','step_cut','step_thumbnail','step_description'];
   const coreDone=coreSteps.every(s=>v[s]==='done'||v[s]==='na');
+  if(coreDone&&next==='done'&&coreSteps.includes(step)&&!v.post_date){
+    // Core 5 just completed, no post_date → prompt
+    const patchOv={[step]:next};if(linked)patchOv[linked]=next;
+    save();_renderVidOvMenu();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
+    sbReqSilent('PATCH','videos',patchOv,`?id=eq.${vidId}`);
+    pushUndo(()=>{v[step]=prev;if(linked)v[linked]=linkedPrev;v.status=prevStatus;save();_renderVidOvMenu();renderAll();if(document.getElementById('tbGrid'))renderDayTB();const up={[step]:prev,status:prevStatus};if(linked)up[linked]=linkedPrev;sbReqSilent('PATCH','videos',up,`?id=eq.${vidId}`);},'Toggle step');
+    _vidPromptPostDate(vidId);
+    return;
+  }
   if(coreDone&&v.topic&&v.title&&v.post_date&&v.status!=='published'){
     v.status='published';
     const tabReq=v.step_tableau_public&&v.step_tableau_public!=='na'&&v.step_tableau_public!=='done';

@@ -2588,7 +2588,6 @@ function openVidModal(type){
   _vidSetType(t);
   document.getElementById('vmStatus').value='idea';
   _vidSetStatusDisplay('idea');
-  document.getElementById('vmPostDate').value='';
   document.getElementById('vmDuration').value='';
 
   document.getElementById('vmComment').value='';
@@ -2597,6 +2596,7 @@ function openVidModal(type){
   const defaults={};
   if(t==='L'){defaults.step_tableau_public='na';defaults.step_upload_tableau='na';}
   _vidRenderSteps(defaults);
+  document.getElementById('vmPostDate').value='';
   document.getElementById('vidModal').classList.add('open');
   setTimeout(()=>{const inp=document.getElementById('vmTopic');inp.focus();inp.setSelectionRange(0,0);},80);
 }
@@ -2611,8 +2611,6 @@ function openVidEdit(id){
   _vidSetType(v.video_type||'L');
   document.getElementById('vmStatus').value=v.status||'idea';
   _vidSetStatusDisplay(v.status||'idea');
-  const _pd=v.post_date;
-  document.getElementById('vmPostDate').value=_pd?parseInt(_pd.slice(5,7))+'/'+parseInt(_pd.slice(8,10))+(_pd.slice(0,4)!==String(new Date().getFullYear())?'/'+_pd.slice(2,4):''):'';
   document.getElementById('vmDuration').value=v.duration_minutes||'';
   document.getElementById('vmComment').value=v.comment||'';
 
@@ -2620,20 +2618,32 @@ function openVidEdit(id){
   _vidPopulateBigVideoSelect(v.big_video_id||'');
   const stepVals={};VID_STEPS.forEach(s=>{stepVals[s]=v[s]||'not_started';});
   _vidRenderSteps(stepVals);
+  const _pd=v.post_date;
+  document.getElementById('vmPostDate').value=_pd?parseInt(_pd.slice(5,7))+'/'+parseInt(_pd.slice(8,10))+(_pd.slice(0,4)!==String(new Date().getFullYear())?'/'+_pd.slice(2,4):''):'';
+
   document.getElementById('vidModal').classList.add('open');
   setTimeout(()=>{const inp=document.getElementById('vmTopic');inp.focus();const len=inp.value.length;inp.setSelectionRange(len,len);},80);
 }
 
 function _vidRenderSteps(vals){
   const el=document.getElementById('vmSteps');
-  el.innerHTML=VID_STEPS.map(s=>{
+  const parts=[];
+  VID_STEPS.forEach(s=>{
+    // Insert Posted date input between Des and Tab
+    if(s==='step_tableau_public'){
+      parts.push(`<div style="display:flex;flex-direction:column;gap:2px;align-items:center">
+        <span style="font-size:9px;color:var(--muted)">Posted</span>
+        <input id="vmPostDate" type="text" placeholder="m/d" style="width:44px;height:22px;font-size:10px;padding:0 2px;border:1.5px solid rgba(210,205,228,.4);border-radius:3px;background:transparent;color:var(--text);text-align:center;box-sizing:border-box;outline:none">
+      </div>`);
+    }
     const cur=vals[s]||'not_started';
     const tab=cur==='na'?-1:0;
-    return`<div style="display:flex;flex-direction:column;gap:2px;align-items:center">
+    parts.push(`<div style="display:flex;flex-direction:column;gap:2px;align-items:center">
       <span style="font-size:9px;color:${cur==='na'?'var(--border)':'var(--muted)'}">${VID_STEP_LABELS[s]}</span>
       <div data-step="${s}" data-val="${cur}" tabindex="${tab}" onclick="_vidToggleModalStep(this)" oncontextmenu="_vidNaModalStep(event,this);return false" onkeydown="_vidStepKey(event,this)" style="${_vidModalStepCSS(cur)}"></div>
-    </div>`;
-  }).join('');
+    </div>`);
+  });
+  el.innerHTML=parts.join('');
 }
 function _vidModalStepCSS(val){
   const base='width:22px;height:22px;border-radius:3px;cursor:pointer;display:flex;align-items:center;justify-content:center;user-select:none;transition:transform .1s;';
