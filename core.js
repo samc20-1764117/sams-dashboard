@@ -895,6 +895,7 @@ async function doRedo(){
   undoStack.push({fn:()=>{_stateRestore(beforeRedo);_syncRedoDiff(snap,beforeRedo);},msg,snapBeforeUndo:beforeRedo});
   _showRedoToast(msg||'Action');
 }
+let _lastVPress=0,_vNavTimer=null;
 document.addEventListener('keydown',e=>{
   if((e.metaKey||e.ctrlKey)&&e.key==='a'){const _ael=document.activeElement;const _isInput=_ael&&(_ael.tagName==='INPUT'||_ael.tagName==='TEXTAREA');if(!_isInput)e.preventDefault();return;}
   if((e.metaKey||e.ctrlKey)&&e.key==='z'){
@@ -1022,7 +1023,15 @@ document.addEventListener('keydown',e=>{
     e.preventDefault();showPage('overview');
   }
   if(e.key==='v'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus')&&!document.querySelector('.overlay.open')){
-    e.preventDefault();showPage('videos');
+    e.preventDefault();
+    const now=Date.now();
+    if(_lastVPress&&now-_lastVPress<350&&activePg==='overview'){
+      _lastVPress=0;if(_vNavTimer){clearTimeout(_vNavTimer);_vNavTimer=null;}
+      if(typeof toggleVidOvMenu==='function')toggleVidOvMenu();
+    } else {
+      _lastVPress=now;
+      _vNavTimer=setTimeout(()=>{_vNavTimer=null;showPage('videos');},350);
+    }
   }
   if(e.key==='f'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus')&&!document.querySelector('.overlay.open')){
     e.preventDefault();showPage('finance');

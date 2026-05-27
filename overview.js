@@ -1477,6 +1477,10 @@ function renderWkCal(){
       const nm=document.createElement('span');nm.className='chip-name';nm.innerHTML=tmIcon(t)+escHtml(t._type==='pup'?_pupDisplayName(t):t.name);
       // name click handled by chip click→selTask, dblclick→openEditTask
       chip.appendChild(chk);chip.appendChild(nm);
+      // HEB: shopping cart icon
+      if(/\bheb\b/i.test(t.name||'')){const hb=document.createElement('span');hb.className='heb-cnt';hb.innerHTML='<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>';hb.style.cssText='cursor:pointer;flex-shrink:0;margin-left:2px;opacity:.6';hb.addEventListener('click',ev=>{ev.stopPropagation();openGroceryModal();});chip.appendChild(hb);}
+      // Prep Pup Training: link to pup weekly skills popup
+      if(/prep pup training/i.test(t.name||'')){const pb=document.createElement('button');pb.className='chip-pup-link';pb.innerHTML='<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>';pb.title='Weekly pup skills';pb.style.cssText='background:none;border:none;cursor:pointer;padding:1px 2px;flex-shrink:0;margin-left:2px;opacity:.6;color:inherit;display:flex;align-items:center';pb.addEventListener('click',ev=>{ev.stopPropagation();if(typeof _openPupFocusModal==='function')_openPupFocusModal(null);});chip.appendChild(pb);}
       if(t._type==='vid'){
         const _v2=(st.videos||[]).find(x=>String(x.id)===String(t._vidId));
         if(_v2){const _steps2=typeof VID_STEPS_CORE!=='undefined'?VID_STEPS_CORE:(typeof VID_STEPS!=='undefined'?VID_STEPS:[]);const _app2=_steps2.filter(s=>_v2[s]!=='na');const _dn2=_app2.filter(s=>_v2[s]==='done').length;const _pct2=_app2.length?Math.round(_dn2/_app2.length*100):0;
