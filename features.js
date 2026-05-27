@@ -3192,6 +3192,10 @@ function renderGroceryModal(){
   const planDates=_grocWeekDatesFor(planMon);
   const planMeals=(st.mealPlan||[]).filter(m=>planDates.includes(m.meal_date));
   const plannedRecipeIds=new Set(planMeals.map(m=>String(m.recipe_id)));
+  const plannedEasyIds=new Set();
+  (st.easyMeals||[]).forEach(em=>{
+    if(planMeals.some(m=>m.easy_meal_id===em.id||(m.recipe_id===null&&m.recipe_name===em.name)))plannedEasyIds.add(em.id);
+  });
 
   // ── Build combined shopping list ──
   // 1) Recipe ingredients from grocery_list
@@ -3296,6 +3300,21 @@ function renderGroceryModal(){
   html+=`<div class="groc-recipe-list">`;
   let filteredRecipes=(st.recipes||[]);
   if(_grocRecSearch)filteredRecipes=filteredRecipes.filter(r=>r.name.toLowerCase().includes(_grocRecSearch.toLowerCase()));
+  // Easy meals first
+  let filteredEasy=(st.easyMeals||[]);
+  if(_grocRecSearch)filteredEasy=filteredEasy.filter(m=>m.name.toLowerCase().includes(_grocRecSearch.toLowerCase()));
+  if(filteredEasy.length){
+    html+=`<div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);padding:4px 6px 2px">Easy Meals</div>`;
+    filteredEasy.forEach(m=>{
+      const isPlanned=plannedEasyIds.has(m.id);
+      html+=`<label class="groc-recipe-check${isPlanned?' active':''}">
+        <input type="checkbox"${isPlanned?' checked':''} onchange="toggleEasyMealForWeek('${m.id}','${planMon}',this.checked)">
+        <span>${escHtml(m.name)}</span>
+        <span class="groc-recipe-type">1 meal</span>
+      </label>`;
+    });
+  }
+  if(filteredEasy.length&&filteredRecipes.length)html+=`<div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);padding:6px 6px 2px">Recipes</div>`;
   filteredRecipes.forEach(r=>{
     const isPlanned=plannedRecipeIds.has(String(r.id));
     html+=`<label class="groc-recipe-check${isPlanned?' active':''}">
@@ -3419,6 +3438,45 @@ async function toggleMealForWeek(recipeId,weekMon,checked){
     });
     // Remove grocery items for this recipe this week
     const grocToRemove=(st.groceryList||[]).filter(g=>g.week_of===weekMon&&g.source==='recipe'&&String(g.source_id)===String(recipeId));
+    grocToRemove.forEach(g=>{
+      st.groceryList=st.groceryList.filter(x=>String(x.id)!==String(g.id));
+      sbReqSilent('DELETE','grocery_list',null,`?id=eq.${g.id}`);
+    });
+  }
+  save();renderGroceryModal();
+  if(typeof renderMealRow==='function')renderMealRow();
+}
+
+// Toggle easy meal on/off for a week — always 1 slot, no division by people
+async function toggleEasyMealForWeek(emId,weekMon,checked){
+  const m=(st.easyMeals||[]).find(x=>x.id===emId);if(!m)return;
+  if(checked){
+    const dates=_grocWeekDatesFor(weekMon);
+    let ds=dates[0];
+    for(const d of dates){if((st.mealPlan||[]).filter(x=>x.meal_date===d).length<2){ds=d;break;}}
+    const item={recipe_id:null,recipe_name:m.name,meal_date:ds,servings:m.servings||1,meal_type:null,easy_meal_id:emId};
+    const sv=await sbReqSilent('POST','meal_plan',item);
+    if(sv&&sv[0])st.mealPlan.push(sv[0]);
+    else{item.id='l-'+Date.now();st.mealPlan.push(item);}
+    // Add ingredients to grocery list
+    const stapleNames=new Set((st.groceryStaples||[]).filter(s=>s.active!==false).map(s=>s.name.toLowerCase()));
+    const ings=_parseIngredients(m.ingredients).filter(i=>!i.is_pantry&&!stapleNames.has((i.name||'').toLowerCase()));
+    for(const ing of ings){
+      const dup=(st.groceryList||[]).find(g=>g.week_of===weekMon&&g.name.toLowerCase()===ing.name.toLowerCase());
+      if(dup)continue;
+      const gi={name:ing.name,amount:ing.amount||null,source:'recipe',source_id:emId,recipe_name:m.name,aisle:_inferAisle(ing.name),checked:false,week_of:weekMon};
+      const gsv=await sbReqSilent('POST','grocery_list',gi);
+      if(gsv&&gsv[0])st.groceryList.push(gsv[0]);
+      else{gi.id='l-'+Date.now();st.groceryList.push(gi);}
+    }
+  } else {
+    const dates=_grocWeekDatesFor(weekMon);
+    const toRemove=(st.mealPlan||[]).filter(x=>dates.includes(x.meal_date)&&(x.easy_meal_id===emId||(x.recipe_id===null&&x.recipe_name===m.name)));
+    toRemove.forEach(x=>{
+      st.mealPlan=st.mealPlan.filter(y=>String(y.id)!==String(x.id));
+      sbReqSilent('DELETE','meal_plan',null,`?id=eq.${x.id}`);
+    });
+    const grocToRemove=(st.groceryList||[]).filter(g=>g.week_of===weekMon&&g.source==='recipe'&&g.source_id===emId);
     grocToRemove.forEach(g=>{
       st.groceryList=st.groceryList.filter(x=>String(x.id)!==String(g.id));
       sbReqSilent('DELETE','grocery_list',null,`?id=eq.${g.id}`);
