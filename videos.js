@@ -2619,6 +2619,10 @@ function openVidEdit(id){
   document.getElementById('vmBigVideoWrap').style.display=(v.video_type||'L')==='B'?'none':'block';
   _vidPopulateBigVideoSelect(v.big_video_id||'');
   const stepVals={};VID_STEPS.forEach(s=>{stepVals[s]=v[s]||'not_started';});
+  // L-type videos: default Tab to na if not explicitly set/done
+  if((v.video_type||'L')==='L'&&(!v.step_tableau_public||v.step_tableau_public==='not_started')){
+    stepVals.step_tableau_public='na';stepVals.step_upload_tableau='na';
+  }
   _vidRenderSteps(stepVals);
   const _pd=v.post_date;
   document.getElementById('vmPostDate').value=_pd?parseInt(_pd.slice(5,7))+'/'+parseInt(_pd.slice(8,10))+(_pd.slice(0,4)!==String(new Date().getFullYear())?'/'+_pd.slice(2,4):''):'';
@@ -2643,13 +2647,13 @@ function _vidRenderSteps(vals){
     const tab=cur==='na'?-1:0;
     const _isTab=s==='step_tableau_public';
     const _tabNa=_isTab&&cur==='na';
-    parts.push(`<div ${_isTab?'id="vmTabWrap" ':''} style="display:flex;flex-direction:column;gap:2px;align-items:center;${_tabNa?'opacity:.35':''}">
-      <span style="font-size:9px;color:${cur==='na'?'var(--border)':'var(--muted)'}">${VID_STEP_LABELS[s]}</span>
+    parts.push(`<div ${_isTab?'id="vmTabWrap" ':''} style="display:flex;flex-direction:column;gap:2px;align-items:center;${_tabNa?'opacity:.5':''}">
+      <span style="font-size:9px;color:${cur==='na'?'rgba(180,175,205,.5)':'var(--muted)'}">${VID_STEP_LABELS[s]}</span>
       <div data-step="${s}" data-val="${cur}" tabindex="${tab}" onclick="_vidToggleModalStep(this)" oncontextmenu="_vidNaModalStep(event,this);return false" onkeydown="_vidStepKey(event,this)" style="${_vidModalStepCSS(cur)}${_tabNa?';opacity:1':''}"></div>
     </div>`);
     if(s==='step_tableau_public'){
       const _linkNa=cur==='na';
-      parts.push(`<div id="vmLinkWrap" style="display:flex;flex-direction:column;gap:2px;align-items:flex-start;flex:1;${_linkNa?'opacity:.35;pointer-events:none':''}">
+      parts.push(`<div id="vmLinkWrap" style="display:flex;flex-direction:column;gap:2px;align-items:flex-start;flex:1;${_linkNa?'opacity:.5;pointer-events:none':''}">
         <span class="vm-step-lbl" style="font-size:9px;color:var(--muted)">Link</span>
         <input id="vmYoutubeUrl" type="text" placeholder="url" style="width:100%;height:22px;font-size:9px;padding:0 6px;border:1.5px solid rgba(210,205,228,.4);border-radius:3px;background:transparent;color:var(--text);text-align:left;box-sizing:border-box;outline:none">
       </div>`);
@@ -2744,7 +2748,7 @@ function _vidModalSparkle(container){
 function _vidModalStepCSS(val){
   const base='width:22px;height:22px;border-radius:3px;cursor:pointer;display:flex;align-items:center;justify-content:center;user-select:none;transition:transform .1s;';
   if(val==='done')return base+'border:1.5px solid #10b981;background:#10b981';
-  if(val==='na')return base+'border:1.5px solid var(--border);background:var(--border);opacity:.35';
+  if(val==='na')return base+'border:1.5px solid rgba(210,205,228,.3);background:rgba(210,205,228,.15);opacity:.5';
   return base+'border:1.5px solid rgba(210,205,228,.4);background:transparent';
 }
 function _vidStepKey(event,el){
@@ -2805,14 +2809,15 @@ function _vidUpdateModalStep(el,val){
   el.style.cssText=_vidModalStepCSS(val);
   el.textContent='';
   el.tabIndex=val==='na'?-1:0;
-  el.parentElement.querySelector('span').style.color=val==='na'?'var(--border)':'var(--muted)';
+  el.parentElement.querySelector('span').style.color=val==='na'?'rgba(180,175,205,.5)':'var(--muted)';
   // Grey out Tab + Link containers when na
   if(el.dataset.step==='step_tableau_public'){
     if(val==='na')el.style.opacity='1';
+    else el.style.opacity='';
     const tw=document.getElementById('vmTabWrap');
-    if(tw)tw.style.opacity=val==='na'?'.35':'';
+    if(tw)tw.style.opacity=val==='na'?'.5':'';
     const lw=document.getElementById('vmLinkWrap');
-    if(lw){lw.style.opacity=val==='na'?'.35':'1';lw.style.pointerEvents=val==='na'?'none':'auto';}
+    if(lw){lw.style.opacity=val==='na'?'.5':'1';lw.style.pointerEvents=val==='na'?'none':'auto';}
   }
   _vidUpdateModalComplete();
 }
