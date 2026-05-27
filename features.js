@@ -1827,42 +1827,38 @@ function _finRenderInvestments(purchases,totalBought,gain,gainPct,currentVal){
 
   let html=`<div class="card fin-card fin-inv-card">
     <div class="fin-card-hdr"><span>Investments</span><button class="fin-add-btn" onclick="addFinRow('vti')" style="font-size:16px;padding:0 4px;line-height:1">+</button></div>
-    <div class="fin-inv-top">
-      <div class="fin-inv-left">
-        <div class="fin-inv-metrics">
-          <div style="font-size:11px;font-weight:600;color:#1e293b;margin-bottom:4px">Total Gain</div>
-          <div style="font-size:22px;font-weight:700;color:#1e293b;line-height:1.1">${_finFmtRound(gain)}</div>
-          <div style="font-size:12px;font-weight:600;color:#059669;margin-top:2px">${_finFmtPct(gainPct)}</div>
-          <div style="margin-top:10px;display:flex;justify-content:space-between;gap:12px">
-            <div><div style="font-size:9px;font-weight:600;color:var(--text-secondary,#64748b)">VTI Value</div><div style="font-size:13px;font-weight:600;color:var(--text-primary,#334155);margin-top:1px">${_finFmtRound(currentVal)}</div></div>
-            <div><div style="font-size:9px;font-weight:600;color:var(--text-secondary,#64748b)">Cost Basis</div><div style="font-size:13px;font-weight:600;color:var(--text-primary,#334155);margin-top:1px">${_finFmtRound(totalBought)}</div></div>
-          </div>
-        </div>
-      </div>
-    </div>`;
-  // Full-width area chart below
+    `;
+  // Area chart fills card, KPI floats on top
   if(chronological.length>1){
     let cum=0;
     const dataPoints=chronological.map(p=>{const a=Math.abs(p.amount||0);cum+=a;return{date:p.date,amt:a,cum,ts:new Date(p.date).getTime()};});
     const max=Math.max(...dataPoints.map(d=>d.cum));
     const minTs=dataPoints[0].ts,maxTs=dataPoints[dataPoints.length-1].ts,tsRange=maxTs-minTs||1;
-    // Use % coordinates based on actual date position
     const pts=dataPoints.map(d=>({
       px:((d.ts-minTs)/tsRange)*100,
-      py:5+(1-d.cum/max)*80,
+      py:5+(1-d.cum/max)*85,
       date:d.date,amt:d.amt,cum:d.cum
     }));
     const years=new Set();const yearLabels=[];
     dataPoints.forEach((d,i)=>{const y=(d.date||'').slice(0,4);if(y&&!years.has(y)){years.add(y);yearLabels.push({px:pts[i].px,y:y});}});
     const svgPolyFill=pts.map(p=>`${p.px},${p.py}`).join(' ');
     const svgPolyLine=svgPolyFill;
-    html+=`<div class="fin-inv-chart-wrap"><div class="fin-inv-chart" style="position:relative;height:120px">
+    html+=`<div class="fin-inv-chart-wrap" style="margin:0;border-radius:0 0 12px 12px;border-top:none;position:relative;flex:1;min-height:0">
+      <div class="fin-inv-kpi-float">
+        <div style="font-size:11px;font-weight:600;color:#1e293b;margin-bottom:4px">Total Gain</div>
+        <div style="font-size:22px;font-weight:700;color:#1e293b;line-height:1.1">${_finFmtRound(gain)}</div>
+        <div style="font-size:12px;font-weight:600;color:#059669;margin-top:2px">${_finFmtPct(gainPct)}</div>
+        <div style="margin-top:10px;display:flex;gap:12px">
+          <div><div style="font-size:9px;font-weight:600;color:var(--text-secondary,#64748b)">VTI Value</div><div style="font-size:13px;font-weight:600;color:var(--text-primary,#334155);margin-top:1px">${_finFmtRound(currentVal)}</div></div>
+          <div><div style="font-size:9px;font-weight:600;color:var(--text-secondary,#64748b)">Cost Basis</div><div style="font-size:13px;font-weight:600;color:var(--text-primary,#334155);margin-top:1px">${_finFmtRound(totalBought)}</div></div>
+        </div>
+      </div>
+      <div class="fin-inv-chart" style="position:relative;height:100%;min-height:160px">
       <svg viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%">
       <defs><linearGradient id="finAreaGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#10b981" stop-opacity=".18"/><stop offset="100%" stop-color="#10b981" stop-opacity=".02"/></linearGradient></defs>
-      <polyline points="0,85 ${svgPolyFill} 100,85" fill="url(#finAreaGrad)" stroke="none"/>
+      <polyline points="0,90 ${svgPolyFill} 100,90" fill="url(#finAreaGrad)" stroke="none"/>
       <polyline points="${svgPolyLine}" fill="none" stroke="#10b981" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
       </svg>`;
-    // HTML dots (visible, stay round) + hit areas (full-height strips)
     pts.forEach((p,i)=>{
       html+=`<span class="fin-chart-dot" style="left:${p.px}%;top:${p.py}%"></span>`;
     });
@@ -1872,7 +1868,6 @@ function _finRenderInvestments(purchases,totalBought,gain,gainPct,currentVal){
       const w=right-left;
       html+=`<span class="fin-chart-dot-hit" style="left:${left.toFixed(2)}%;width:${w.toFixed(2)}%" data-fin-tip-date="${_finDateNice(p.date)}" data-fin-tip-amt="${_finFmtRound(p.amt)}" data-fin-tip-cum="${_finFmtRound(p.cum)}" data-fin-date="${p.date}" data-fin-dot-top="${p.py}" onmouseenter="_finChartHover(this)" onmouseleave="_finChartHover(null)"></span>`;
     });
-    // Year labels
     yearLabels.forEach(yl=>{
       html+=`<span class="fin-chart-year" style="left:${yl.px.toFixed(1)}%">${yl.y}</span>`;
     });
@@ -1898,7 +1893,7 @@ function _finRenderSubs(){
   let html=`<div class="card fin-card">
     <div class="fin-card-hdr"><span class="fin-card-title">Subscriptions</span><button class="fin-add-btn" onclick="addFinSub()" style="font-size:16px;padding:0 4px;line-height:1">+</button></div>
     <div class="fin-sub-scroll">
-    <table class="fin-tbl fin-sub-tbl"><colgroup><col class="fin-col-name"/><col class="fin-col-freq"/><col class="fin-col-due"/><col class="fin-col-amt"/><col class="fin-col-mo"/><col class="fin-col-del"/></colgroup><thead><tr><th>Name</th><th style="text-align:center">Freq</th><th style="text-align:center">Due</th><th>Amount</th><th class="fin-mo-adj" style="font-size:12px;font-weight:500;padding:4px 12px"><span style="float:left;font-size:10px;opacity:.5;margin-right:6px">Per Month</span>${_finFmt(monthlyTotal)}</th><th></th></tr></thead><tbody>`;
+    <table class="fin-tbl fin-sub-tbl"><colgroup><col class="fin-col-name"/><col class="fin-col-freq"/><col class="fin-col-due"/><col class="fin-col-amt"/><col class="fin-col-mo"/><col class="fin-col-del"/></colgroup><thead><tr><th>Name</th><th style="text-align:center">Freq</th><th style="text-align:center">Due</th><th>Amount</th><th class="fin-mo-adj" style="font-size:12px;font-weight:500;text-align:right;padding:4px 12px!important;font-variant-numeric:tabular-nums;white-space:nowrap">Per Month ${_finFmt(monthlyTotal)}</th><th></th></tr></thead><tbody>`;
   subs.forEach(sub=>{
     const dueDisplay=_finDueDisplay(sub.due_month,sub.due_day);
     const dueRaw=(sub.due_month&&sub.due_month>=1&&sub.due_month<=12?_FIN_MONTHS[sub.due_month-1]+' ':'')+(sub.due_day||'');
