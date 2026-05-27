@@ -1717,10 +1717,16 @@ function renderFinancePage(){
   html+=_finRenderPersonal(accs,vtiAcc,currentVal,netWorth,totalAll);
   html+=_finRenderInvestments(purchases,totalBought,gain,gainPct,currentVal);
   html+=`</div>`;
-  // Right column: Subscriptions (full height)
-  html+=`<div class="fin-right">`;
-  html+=_finRenderSubs();
-  html+=`</div>`;
+  // Right column: Details panel (if open) or Subscriptions
+  if(window._finDetailsOpen){
+    html+=`<div class="fin-right">`;
+    html+=_finRenderDetailsPanel(purchases);
+    html+=`</div>`;
+  } else {
+    html+=`<div class="fin-right">`;
+    html+=_finRenderSubs();
+    html+=`</div>`;
+  }
   html+=`</div>`;
   el.innerHTML=html;
 }
@@ -1828,7 +1834,7 @@ function _finRenderInvestments(purchases,totalBought,gain,gainPct,currentVal){
   const lastPurchase=sorted.length?sorted[0]:null;
 
   let html=`<div class="card fin-card fin-inv-card">
-    <div class="fin-card-hdr"><span class="fin-card-title">Investments</span><div style="display:flex;gap:4px;align-items:center"><button class="fin-add-btn" onclick="openFinInvDetails()" style="font-size:11px;padding:1px 6px;line-height:1;opacity:.6" title="Purchase history">Details</button><button class="fin-add-btn" onclick="openFinInvAdd()" style="font-size:16px;padding:0 4px;line-height:1">+</button></div></div>
+    <div class="fin-card-hdr" style="position:relative"><span class="fin-card-title">Investments</span><div style="display:flex;gap:4px;align-items:center"><button class="fin-add-btn" onclick="openFinInvDetails()" style="font-size:11px;padding:1px 6px;line-height:1;opacity:.6" title="Purchase history">Details</button><button class="fin-add-btn" onclick="openFinInvAdd(event)" style="font-size:16px;padding:0 4px;line-height:1">+</button></div></div>
     `;
   // Area chart fills card, KPI floats on top
   if(chronological.length>1){
@@ -2070,7 +2076,16 @@ async function addFinSub(){
   pushUndo(()=>{st.finSubs=st.finSubs.filter(r=>r.id!==row.id);renderFinancePage();},'Added subscription');
   const{id,...fields}=row;
   const sv=await sbReq('POST','finance_subs',fields);
-  if(sv&&sv[0]){const i=st.finSubs.findIndex(x=>x.id===row.id);if(i>-1){const cur=st.finSubs[i];const realId=sv[0].id;cur.id=realId;renderFinancePage();const{id:_,...body}=cur;sbReqNullable('PATCH','finance_subs',body,`?id=eq.${realId}`);}}
+  if(sv&&sv[0]){
+    const i=st.finSubs.findIndex(x=>x.id===row.id);if(i<0)return;
+    const cur=st.finSubs[i];const realId=sv[0].id;
+    const ae=document.activeElement;
+    const editFid=ae?.dataset?.fid===String(row.id)?ae.dataset.field:null;
+    const editText=editFid?ae.textContent:'';
+    cur.id=realId;renderFinancePage();
+    if(editFid){const el=document.querySelector(`[data-fid="${realId}"][data-field="${editFid}"]`);if(el){el.textContent=editText;el.focus();const r=document.createRange();r.selectNodeContents(el);const s=window.getSelection();s.removeAllRanges();s.addRange(r);r.collapse(false);}}
+    const{id:_,...body}=cur;sbReqNullable('PATCH','finance_subs',body,`?id=eq.${realId}`);
+  }
 }
 
 async function delFinSub(id){
@@ -2115,36 +2130,34 @@ async function addFinRow(type){
   if(sv&&sv[0]){const i=st.finance.findIndex(x=>x.id===row.id);if(i>-1)st.finance[i]=sv[0];}
 }
 
-// ── Investment Add Popup ─────────────────────────────────────────────────────
-function openFinInvAdd(){
-  let ov=document.getElementById('finInvAddOv');
-  if(!ov){
-    ov=document.createElement('dialog');ov.id='finInvAddOv';ov.className='overlay';
-    ov.innerHTML=`<div class="modal" style="width:300px;padding:20px">
-      <h3 style="margin:0 0 12px;font-size:14px;font-weight:600">Add VTI Purchase</h3>
-      <label style="font-size:11px;font-weight:600;color:var(--text-secondary,#64748b)">Date</label>
-      <input id="finInvDate" type="date" style="width:100%;padding:6px 8px;border:1px solid rgba(200,200,215,.2);border-radius:6px;font-size:13px;margin:4px 0 10px;background:var(--card-bg,#fff);color:var(--text-primary,#334155)">
-      <label style="font-size:11px;font-weight:600;color:var(--text-secondary,#64748b)">Amount ($)</label>
-      <input id="finInvAmt" type="number" step="0.01" placeholder="0.00" style="width:100%;padding:6px 8px;border:1px solid rgba(200,200,215,.2);border-radius:6px;font-size:13px;margin:4px 0 14px;background:var(--card-bg,#fff);color:var(--text-primary,#334155)">
-      <div style="display:flex;gap:8px;justify-content:flex-end">
-        <button onclick="document.getElementById('finInvAddOv').close()" style="padding:6px 12px;border:1px solid rgba(200,200,215,.2);border-radius:6px;background:none;cursor:pointer;font-size:12px;color:var(--text-secondary)">Cancel</button>
-        <button onclick="saveFinInvAdd()" style="padding:6px 12px;border:none;border-radius:6px;background:#10b981;color:#fff;cursor:pointer;font-size:12px;font-weight:600">Add</button>
-      </div>
+// ── Investment Quick-Add Dropdown ────────────────────────────────────────────
+function openFinInvAdd(e){
+  let pop=document.getElementById('finInvAddPop');
+  if(pop){pop.remove();}
+  const btn=e?.target?.closest?.('.fin-add-btn')||document.querySelector('.fin-inv-card .fin-add-btn:last-child');
+  pop=document.createElement('div');pop.id='finInvAddPop';
+  pop.className='fin-quick-add';
+  pop.innerHTML=`
+    <div style="display:flex;gap:6px;align-items:center">
+      <input id="finInvDate" type="date" style="flex:1;padding:4px 6px;border:1px solid rgba(200,200,215,.25);border-radius:6px;font-size:12px;background:var(--card-bg,#fff);color:var(--text-primary,#334155)">
+      <input id="finInvAmt" type="number" step="0.01" placeholder="$0.00" style="width:90px;padding:4px 6px;border:1px solid rgba(200,200,215,.25);border-radius:6px;font-size:12px;background:var(--card-bg,#fff);color:var(--text-primary,#334155)">
+      <button onclick="saveFinInvAdd()" style="padding:4px 10px;border:none;border-radius:6px;background:#10b981;color:#fff;cursor:pointer;font-size:11px;font-weight:600;white-space:nowrap">Add</button>
     </div>`;
-    document.body.appendChild(ov);
-    ov.addEventListener('click',e=>{if(e.target===ov)ov.close();});
-    ov.addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Escape')ov.close();if(e.key==='Enter')saveFinInvAdd();});
-  }
+  btn.closest('.fin-card-hdr').appendChild(pop);
   document.getElementById('finInvDate').value=tod();
-  document.getElementById('finInvAmt').value='';
-  ov.showModal();
-  setTimeout(()=>document.getElementById('finInvAmt').focus(),50);
+  setTimeout(()=>{
+    const amt=document.getElementById('finInvAmt');amt.focus();
+    const close=ev=>{if(!pop.contains(ev.target)&&!btn.contains(ev.target)){pop.remove();document.removeEventListener('mousedown',close);}};
+    document.addEventListener('mousedown',close);
+    amt.addEventListener('keydown',ev=>{ev.stopPropagation();if(ev.key==='Enter')saveFinInvAdd();if(ev.key==='Escape')pop.remove();});
+    document.getElementById('finInvDate').addEventListener('keydown',ev=>{ev.stopPropagation();if(ev.key==='Escape')pop.remove();});
+  },30);
 }
 async function saveFinInvAdd(){
-  const date=document.getElementById('finInvDate').value;
-  const amt=parseFloat(document.getElementById('finInvAmt').value)||0;
+  const dateEl=document.getElementById('finInvDate');const amtEl=document.getElementById('finInvAmt');
+  const date=dateEl?.value||tod();const amt=parseFloat(amtEl?.value)||0;
   if(!amt){showToast('Enter an amount','#ef4444');return;}
-  document.getElementById('finInvAddOv').close();
+  const pop=document.getElementById('finInvAddPop');if(pop)pop.remove();
   const fields={type:'vti',name:'VTI Purchase',date,amount:amt,sort_order:0};
   const row={id:'l-'+Date.now(),...fields};
   st.finance.unshift(row);renderFinancePage();
@@ -2153,37 +2166,30 @@ async function saveFinInvAdd(){
   if(sv&&sv[0]){const i=st.finance.findIndex(x=>x.id===row.id);if(i>-1)st.finance[i]=sv[0];}
 }
 
-// ── Investment Details Modal ────────────────────────────────────────────────
-function openFinInvDetails(){
-  let ov=document.getElementById('finInvDetailsOv');
-  if(!ov){
-    ov=document.createElement('dialog');ov.id='finInvDetailsOv';ov.className='overlay';
-    ov.innerHTML=`<div class="modal" style="width:420px;max-height:70vh;padding:20px;display:flex;flex-direction:column">
-      <h3 style="margin:0 0 12px;font-size:14px;font-weight:600">Purchase History</h3>
-      <div id="finInvDetailsList" style="overflow-y:auto;flex:1;min-height:0"></div>
-    </div>`;
-    document.body.appendChild(ov);
-    ov.addEventListener('click',e=>{if(e.target===ov)ov.close();});
-    ov.addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Escape'||e.key==='Enter')ov.close();});
-  }
-  const purchases=_finOf('vti').filter(p=>p.date&&Math.abs(p.amount||0)>0).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
-  let cum=0;const chron=[...purchases].reverse();
+// ── Investment Details Panel (replaces right column) ────────────────────────
+function openFinInvDetails(){window._finDetailsOpen=true;renderFinancePage();}
+function closeFinInvDetails(){window._finDetailsOpen=false;renderFinancePage();}
+function _finRenderDetailsPanel(purchases){
+  const valid=purchases.filter(p=>p.date&&Math.abs(p.amount||0)>0).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  let cum=0;const chron=[...valid].reverse();
   const cumMap={};chron.forEach(p=>{cum+=Math.abs(p.amount||0);cumMap[p.id]=cum;});
-  let tbl=`<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="border-bottom:1px solid rgba(200,200,215,.15)"><th style="text-align:left;padding:4px 8px;font-weight:600;color:var(--text-secondary)">Date</th><th style="text-align:right;padding:4px 8px;font-weight:600;color:var(--text-secondary)">Amount</th><th style="text-align:right;padding:4px 8px;font-weight:600;color:var(--text-secondary)">Cumulative</th><th></th></tr></thead><tbody>`;
-  purchases.forEach(p=>{
+  let html=`<div class="card fin-card fin-details-panel">
+    <div class="fin-card-hdr" style="position:relative"><span class="fin-card-title">Purchase History</span><div style="display:flex;gap:4px;align-items:center"><button class="fin-add-btn" onclick="openFinInvAdd(event)" style="font-size:16px;padding:0 4px;line-height:1">+</button><button class="fin-add-btn" onclick="closeFinInvDetails()" style="font-size:14px;padding:0 4px;line-height:1;opacity:.6" title="Close">&#x2715;</button></div></div>
+    <div class="fin-details-scroll"><table class="fin-tbl"><thead><tr><th style="padding-left:12px!important;text-align:left">Date</th><th style="text-align:right;padding-right:12px!important">Amount</th><th style="text-align:right;padding-right:12px!important">Cumulative</th><th></th></tr></thead><tbody>`;
+  valid.forEach(p=>{
     const d=p.date?new Date(p.date+'T12:00'):null;
     const ds=d?d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'—';
-    tbl+=`<tr style="border-bottom:1px solid rgba(200,200,215,.06)"><td style="padding:6px 8px">${ds}</td><td style="text-align:right;padding:6px 8px;font-variant-numeric:tabular-nums">${_finFmt(Math.abs(p.amount||0))}</td><td style="text-align:right;padding:6px 8px;font-variant-numeric:tabular-nums;color:var(--text-secondary)">${_finFmt(cumMap[p.id]||0)}</td><td style="padding:6px 4px"><button class="delbtn" onclick="delFinPurchase('${p.id}')">&#x2715;</button></td></tr>`;
+    html+=`<tr class="fin-row"><td style="padding-left:12px">${ds}</td><td style="text-align:right;padding-right:12px" class="fin-num">${_finFmt(Math.abs(p.amount||0))}</td><td style="text-align:right;padding-right:12px;color:var(--text-secondary)" class="fin-num">${_finFmt(cumMap[p.id]||0)}</td><td><button class="delbtn" onclick="delFinPurchase('${p.id}')">&#x2715;</button></td></tr>`;
   });
-  tbl+=`</tbody></table>`;
-  if(!purchases.length)tbl='<div style="text-align:center;color:var(--text-secondary);padding:20px;font-size:13px">No purchases yet</div>';
-  document.getElementById('finInvDetailsList').innerHTML=tbl;
-  ov.showModal();
+  html+=`</tbody></table></div>`;
+  if(!valid.length)html+=`<div style="text-align:center;color:var(--text-secondary);padding:20px;font-size:13px">No purchases yet</div>`;
+  html+=`</div>`;
+  return html;
 }
 async function delFinPurchase(id){
   const old=st.finance.find(r=>String(r.id)===String(id));
   st.finance=st.finance.filter(r=>String(r.id)!==String(id));
-  renderFinancePage();openFinInvDetails();
+  renderFinancePage();
   pushUndo(()=>{if(old)st.finance.push(old);renderFinancePage();},'Deleted purchase');
   if(!String(id).startsWith('l-'))await sbReq('DELETE','finance',null,`?id=eq.${id}`);
 }
@@ -6020,7 +6026,7 @@ document.addEventListener('keydown',e=>{
   if(e.metaKey||e.ctrlKey||e.altKey)return;
   if(e.key==='n'){e.preventDefault();openQA('today',null,d2s(getDayDate(dayOff)));}
   if(e.key==='r'){e.preventDefault();location.reload();}
-  if(e.key==='s'){e.preventDefault();const gm=document.getElementById('groceryModal');if(gm&&gm.open)gm.close();else openGroceryModal();}
+  if(e.key==='s'&&activePg==='overview'){e.preventDefault();const gm=document.getElementById('groceryModal');if(gm&&gm.open)gm.close();else openGroceryModal();}
 });
 // Arrow keys: move selected TB blocks ±30 min
 window.addEventListener('keydown',e=>{

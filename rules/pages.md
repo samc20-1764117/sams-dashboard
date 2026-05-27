@@ -144,3 +144,10 @@ Table: `recipes` (columns include `sort_order int4`). Do NOT reference: protein,
 - **Enter to close**: global keydown closes panel on Enter when input is empty AND input not focused. When input focused: Enter+text=save, Enter+empty=close.
 - **Arrow keys**: `_qnOpen` flag suppresses day-shift arrow keys on overview.
 - **UI**: no binding/coils, no grid lines, no add button. Header: 13px bold `var(--muted)` title. Notes: `var(--muted)` text color. Placeholder: "Future you will thank you for writing this down…"
+
+### Finance (`features.js`)
+- **Layout**: 2-column `fin-layout`. Left: Personal Finances card + Investments card. Right: Recurring Expenses card (or Purchase History panel when details open).
+- **Investments quick-add**: `+` opens inline dropdown under button (not a modal). Date defaults to today. Enter in amount field submits.
+- **Purchase History panel**: `Details` button toggles `_finDetailsOpen`, replaces right column with scrollable purchase table + `+` button. Close `x` returns to Recurring Expenses.
+- **Subscriptions**: inline contenteditable editing. Tab moves to next field in same row. New sub via `+` focuses name field; POST merges server ID without losing in-progress edits.
+- **Keyboard shortcuts**: global shortcuts (`s`, `n`, `r`) do NOT fire when typing in contenteditable/input/textarea fields. `s` (grocery modal) is overview-only.

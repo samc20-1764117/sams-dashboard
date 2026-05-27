@@ -90,6 +90,9 @@ Supabase Auth (email+password), RLS on all tables. `init()`→`checkAuth()`→`d
 - `_stateRestore` restores all above + calls `renderAll(),renderPupSkillsHighlight(),renderDayTB(),renderWkCal(),renderRecOv(),renderWeeklyPage()`.
 - `_syncRedoDiff` (returns `Promise.all`): diffs tasks, recurring `_dateOverrides`, wrRules `_dateOverrides`, wrOverrides, shopping `due_date`, travel dates, blocks, autoTBOverrides, pupSessions (done/POST/DELETE), pup_skills (field PATCH).
 
+## UI Formatting
+- **"Same width numbers"**: use `font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif` on any column/cell with numeric data so digits align vertically. Apply via `.fin-num` or `.vid-num` class, or inline. Always use this for tables with monetary amounts, counts, or stats.
+
 ## Scheduled Jobs (cron)
 - `backup.js` — daily 8:00am, backs up all Supabase tables to `backup_auto.json`
 - `.claude/monitor.sh` — daily 8:17am, macOS notifications for: table row count > 5000, YT API quota exhausted (502 or RSS fallback)

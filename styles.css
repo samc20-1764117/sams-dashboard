@@ -1322,6 +1322,16 @@ body.dark .vid-stat-card{background:rgba(40,30,50,.4)}
 .fin-legend-excluded .fin-excl-btn.active{opacity:1!important}
 .fin-legend-hover{background:rgba(100,100,140,.06);border-radius:6px}
 .fin-tooltip{position:fixed;z-index:9999;background:rgba(255,255,255,.95);color:var(--text-primary,#334155);font-size:11px;font-weight:500;padding:6px 12px;border-radius:8px;pointer-events:none;white-space:nowrap;box-shadow:0 2px 12px rgba(0,0,0,.1);border:1px solid rgba(200,200,215,.2);backdrop-filter:blur(8px);text-align:center}
+.fin-num{font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif}
+.fin-quick-add{position:absolute;right:0;top:100%;z-index:10;background:rgba(255,252,248,.97);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(200,200,215,.2);border-radius:10px;padding:8px 10px;box-shadow:0 6px 20px rgba(0,0,0,.1);white-space:nowrap;margin-top:4px}
+.fin-quick-add input{outline:none}
+.fin-quick-add input:focus{border-color:rgba(109,95,230,.4);box-shadow:0 0 0 2px rgba(109,95,230,.1)}
+.fin-details-panel{opacity:.72;flex:1;min-height:0}
+.fin-details-scroll{flex:1;overflow-y:auto;min-height:0}
+.fin-details-panel .fin-tbl{font-size:12px}
+.fin-details-panel .fin-tbl td{padding:5px 8px;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif}
+.fin-details-panel .fin-tbl th{padding:4px 8px;font-size:10px;font-weight:600;color:var(--text-secondary,#64748b)}
+.fin-details-panel .fin-tbl td:last-child{width:24px;padding:4px 4px!important}
 .fin-chart-hit{cursor:pointer}
 .fin-donut circle{cursor:pointer;pointer-events:all}
 
