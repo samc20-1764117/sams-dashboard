@@ -661,7 +661,7 @@ function sortByTypeOrder(tasks){
     if(aT&&!bT)return -1;if(!aT&&bT)return 1;
     const aO=isOv(a.due_date)&&!a.done,bO=isOv(b.due_date)&&!b.done;
     if(aO&&!bO)return -1;if(!aO&&bO)return 1;
-    const aI=a.important&&!a.done,bI=b.important&&!b.done;
+    const aI=(a.important||a._type==='fin-cancel')&&!a.done,bI=(b.important||b._type==='fin-cancel')&&!b.done;
     if(aI&&!bI)return -1;if(!aI&&bI)return 1;
     return taskTypePri(a)-taskTypePri(b)||(a.name||'').localeCompare(b.name||'');
   });
@@ -766,12 +766,14 @@ function tRowShopVirt(t,noDate=false,tbArrow=false,noColor=false){
   </div>`;
 }
 function tRowFinCancel(t,tbArrow=false){
+  const s=IMP;
   return`<div class="ti ${t.done?'done':'imp-row'}" id="ti-${t.id}" draggable="true"
     ondragstart="dragId='fin-cancel::${t._subId}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true)"
     ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false)"
     onclick="selTask(event,'${t.id}')" ondblclick="showPage('finance')">
     <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="archiveFinSub('${t._subId}',this.checked)"></label>
     <span class="tn">${t.name}</span>
+    <svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3" fill="${s.bg}" stroke="${s.d}" stroke-opacity="0.4" stroke-width="1"/></svg>
     ${tbArrow?'<span class="tb-arrow">›</span>':''}
   </div>`;
 }
