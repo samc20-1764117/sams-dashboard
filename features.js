@@ -1826,7 +1826,7 @@ function _finRenderInvestments(purchases,totalBought,gain,gainPct,currentVal){
   const lastPurchase=sorted.length?sorted[0]:null;
 
   let html=`<div class="card fin-card fin-inv-card">
-    <div class="fin-card-hdr"><span>Investments</span></div>
+    <div class="fin-card-hdr"><span>Investments</span><span style="display:flex;align-items:center;gap:6px;margin-left:auto"><span style="font-size:11px;font-weight:600;color:var(--text-secondary,#64748b)">Purchases</span><button class="fin-add-btn" onclick="addFinRow('vti')" style="font-size:16px;padding:0 4px;line-height:1">+</button></span></div>
     <div class="fin-inv-top">
       <div class="fin-inv-left">
         <div class="fin-inv-metrics">
@@ -1840,7 +1840,6 @@ function _finRenderInvestments(purchases,totalBought,gain,gainPct,currentVal){
         </div>
       </div>
       <div class="fin-inv-ph">
-        <div class="fin-inv-ph-hdr"><span style="font-size:11px;font-weight:600;color:var(--text-secondary,#64748b)">Purchases</span><button class="fin-add-btn" onclick="addFinRow('vti')" style="font-size:16px;padding:0 4px;line-height:1">+</button></div>
         <div class="fin-inv-scroll">`;
   sorted.forEach(p=>{
     html+=`<div class="fin-ph-row" data-fin-date="${p.date||''}">${_finEditable(p.id,'date',p.date||'','fin-inv-date')} ${_finEditable(p.id,'amount',Math.abs(p.amount||0),'fin-inv-amt')} <button class="delbtn" onclick="delFin('${p.id}')">&#x2715;</button></div>`;
@@ -1905,7 +1904,7 @@ function _finRenderSubs(){
   let html=`<div class="card fin-card">
     <div class="fin-card-hdr"><span class="fin-card-title">Subscriptions</span><button class="fin-add-btn" onclick="addFinSub()" style="font-size:16px;padding:0 4px;line-height:1">+</button></div>
     <div class="fin-sub-scroll">
-    <table class="fin-tbl fin-sub-tbl"><colgroup><col class="fin-col-name"/><col class="fin-col-freq"/><col class="fin-col-due"/><col class="fin-col-amt"/><col class="fin-col-mo"/><col class="fin-col-del"/></colgroup><thead><tr><th>Name</th><th style="text-align:center">Freq</th><th style="text-align:center">Due</th><th>Amount</th><th style="text-align:right;white-space:nowrap;padding-bottom:0"><div style="font-size:9px;opacity:.5;margin-bottom:1px">Per Month</div><div style="font-size:12px;font-weight:500;font-variant-numeric:tabular-nums">${_finFmt(monthlyTotal)}</div></th><th></th></tr></thead><tbody>`;
+    <table class="fin-tbl fin-sub-tbl"><colgroup><col class="fin-col-name"/><col class="fin-col-freq"/><col class="fin-col-due"/><col class="fin-col-amt"/><col class="fin-col-mo"/><col class="fin-col-del"/></colgroup><thead><tr><th>Name</th><th style="text-align:center">Freq</th><th style="text-align:center">Due</th><th>Amount</th><th style="text-align:right;white-space:nowrap;font-size:12px;font-weight:500;font-variant-numeric:tabular-nums" class="fin-mo-adj">Per Month ${_finFmt(monthlyTotal)}</th><th></th></tr></thead><tbody>`;
   subs.forEach(sub=>{
     const dueDisplay=_finDueDisplay(sub.due_month,sub.due_day);
     const dueRaw=(sub.due_month&&sub.due_month>=1&&sub.due_month<=12?_FIN_MONTHS[sub.due_month-1]+' ':'')+(sub.due_day||'');
