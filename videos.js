@@ -357,6 +357,23 @@ function renderVideosPage(){
     if(!hasValidParent&&(v.status==='in_progress'||v.status==='up_next')){v.status='idea';_fixedIds.push(v.id);}
   });
   if(_fixedIds.length){save();_fixedIds.forEach(id=>{if(!String(id).startsWith('l-'))sbReqSilent('PATCH','videos',{status:'idea'},`?id=eq.${id}`);});}
+  // Auto-publish: core 5 done + post_date + topic + title → published
+  let _autoPublished=false;
+  st.videos.forEach(v=>{
+    if(v.is_deleted||v.status==='published'||v.status==='backup')return;
+    const cd=VID_STEPS_CORE.every(s=>v[s]==='done'||v[s]==='na');
+    if(cd&&v.post_date&&v.topic&&v.title){
+      v.status='published';_autoPublished=true;
+      sbReqSilent('PATCH','videos',{status:'published'},`?id=eq.${v.id}`);
+      // Create tab task if needed
+      const tabReq=v.step_tableau_public&&v.step_tableau_public!=='na'&&v.step_tableau_public!=='done';
+      if(tabReq&&typeof _vidCreateTabUpTask==='function'){
+        const marker='_vid:'+v.id;
+        if(!st.tasks.find(t=>t.notes&&t.notes.includes(marker)))_vidCreateTabUpTask(String(v.id),v.post_date);
+      }
+    }
+  });
+  if(_autoPublished)save();
   // Push any local-only videos to Supabase
   _vidSyncLocalVideos();
   _vidDashVids=null;_vidDashPostMap=null;

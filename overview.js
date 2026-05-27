@@ -765,7 +765,7 @@ function tRowVidVirt(t,arr){
   const _vs=ov?OV:{bg:'rgba(34,197,94,.1)',t:'#15803d',d:'#22c55e',b:'rgba(34,197,94,.2)'};const vid=String(t._vidId);
   const _v3=(st.videos||[]).find(x=>String(x.id)===String(vid));
   let _pct3='';
-  if(_v3){const _steps3=typeof VID_STEPS!=='undefined'?VID_STEPS:[];const _app3=_steps3.filter(ss=>_v3[ss]!=='na');const _dn3=_app3.filter(ss=>_v3[ss]==='done').length;_pct3=_app3.length?Math.round(_dn3/_app3.length*100):0;}
+  if(_v3){const _steps3=typeof VID_STEPS_CORE!=='undefined'?VID_STEPS_CORE:(typeof VID_STEPS!=='undefined'?VID_STEPS:[]);const _app3=_steps3.filter(ss=>_v3[ss]!=='na');const _dn3=_app3.filter(ss=>_v3[ss]==='done').length;_pct3=_app3.length?Math.round(_dn3/_app3.length*100):0;}
   return`<div class="ti ${ov?'ov-row':''}" style="background:${_vs.bg}" id="ti-${t.id}" draggable="true"
     ondragstart="dragId='vid::${vid}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true)"
     ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false)"
@@ -1363,7 +1363,7 @@ function renderWkCal(){
       chip.appendChild(chk);chip.appendChild(nm);
       if(t._type==='vid'){
         const _v2=(st.videos||[]).find(x=>String(x.id)===String(t._vidId));
-        if(_v2){const _steps2=typeof VID_STEPS!=='undefined'?VID_STEPS:[];const _app2=_steps2.filter(s=>_v2[s]!=='na');const _dn2=_app2.filter(s=>_v2[s]==='done').length;const _pct2=_app2.length?Math.round(_dn2/_app2.length*100):0;
+        if(_v2){const _steps2=typeof VID_STEPS_CORE!=='undefined'?VID_STEPS_CORE:(typeof VID_STEPS!=='undefined'?VID_STEPS:[]);const _app2=_steps2.filter(s=>_v2[s]!=='na');const _dn2=_app2.filter(s=>_v2[s]==='done').length;const _pct2=_app2.length?Math.round(_dn2/_app2.length*100):0;
           const pctEl=document.createElement('span');pctEl.style.cssText='font-size:8px;opacity:.5;flex-shrink:0;margin-left:auto';pctEl.textContent=_pct2+'%';chip.appendChild(pctEl);}
       }
       chip.addEventListener('contextmenu',e=>{
@@ -3088,7 +3088,7 @@ function _renderVidOvMenu(){
     menu.innerHTML=_hdr+'<div style="padding:30px;font-size:12px;color:var(--subtle);text-align:center">No videos to add</div>';
     return;
   }
-  const steps=typeof VID_STEPS!=='undefined'?VID_STEPS:[];
+  const steps=typeof VID_STEPS_CORE!=='undefined'?VID_STEPS_CORE:(typeof VID_STEPS!=='undefined'?VID_STEPS:[]);
   const labels=typeof VID_STEP_LABELS!=='undefined'?VID_STEP_LABELS:{};
   let html=_hdr;
   html+='<div style="padding:4px 14px 0"><div style="display:flex;align-items:center;padding:0 6px 4px;gap:5px"><div style="width:16px;flex-shrink:0;box-sizing:content-box;border:1px solid transparent"></div><span style="flex:1"></span><div style="display:flex;gap:0;flex-shrink:0">';
@@ -4153,7 +4153,7 @@ function drawTBBlock(col,b){
   let _vidStepsHtml='';let _vidWhiteBg=false;
   if(b._vidId&&b.dur>=60){
     const _vb=(st.videos||[]).find(x=>String(x.id)===String(b._vidId));
-    if(_vb){const _steps=typeof VID_STEPS!=='undefined'?VID_STEPS:[];const _app=_steps.filter(s=>_vb[s]!=='na');
+    if(_vb){const _steps=typeof VID_STEPS_CORE!=='undefined'?VID_STEPS_CORE:(typeof VID_STEPS!=='undefined'?VID_STEPS:[]);const _app=_steps.filter(s=>_vb[s]!=='na');
       const _lbls=typeof VID_STEP_LABELS!=='undefined'?VID_STEP_LABELS:{};
       _vidStepsHtml=`<div class="tb-vid-steps" style="display:flex;align-items:flex-end;gap:4px;padding:4px 8px 6px;flex-wrap:wrap;flex:1">${_app.map(s=>{const _dn=_vb[s]==='done';const _ltr=(_lbls[s]||s).charAt(0).toUpperCase();return`<div class="vid-step-dot tb-vsd${_dn?' done':''}" data-vid="${b._vidId}" data-step="${s}" title="${_lbls[s]||s}" style="width:13px;height:13px;cursor:pointer;border-radius:2px;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;line-height:1">${_dn?'':_ltr}</div>`;}).join('')}</div>`;
       _vidWhiteBg=true;

@@ -791,7 +791,10 @@
       <div style="display:flex;align-items:center;gap:10px">
         <div style="display:flex;gap:10px" id="vmSteps"></div>
         <div style="flex:1"></div>
-        <input id="vmPostDate" type="hidden">
+        <div style="display:flex;align-items:center;gap:4px">
+          <label for="vmPostDate" style="font-size:10px;color:var(--muted);white-space:nowrap">Posted</label>
+          <input id="vmPostDate" type="text" placeholder="m/d" style="width:60px;font-size:11px;padding:3px 6px;border:1px solid var(--border);border-radius:6px;background:transparent;color:var(--text);text-align:center">
+        </div>
         <input id="vmDuration" type="hidden">
       </div>
     </div>
