@@ -82,7 +82,7 @@ All indicators at far right, swap to X on hover. `cat-dot` stroke changes to acc
 ## Chip & UI Notes
 - **Hover-X**: `.chip-del` last flex child. X removes from ALL views + linked blocks. Exception: X on TB block itself → `delBlock` only.
 - **Chip checkboxes**: Done: `opacity:.5` + `text-decoration:line-through`. All done checkboxes/bones use grey `rgba(200,195,210,.35)` (not green). Green preserved in comment for reference: `/* #a3c41a */`.
-- **Checkbox rendering**: All checkboxes (`.chk`, `.tb-chk`, `.wchk`) use `::after` pseudo-element with `border:none` + `box-shadow:inset` (not CSS `border`). `.chk` and `.chk-wrap` require `transform:translateZ(0)` for GPU compositing — prevents oval distortion from CSS `columns:2` layout in `#recList`. Never remove these transforms.
+- **Checkbox rendering**: All checkboxes (`.chk`, `.tb-chk`, `.wchk`) use `::after` pseudo-element with `border:none` + `box-shadow:inset 0 0 0 1.25px rgba(180,170,210,.42)` (not CSS `border`). Checked: `box-shadow:inset 0 0 0 1px rgba(200,195,210,.35)`. `.chk` and `.chk-wrap` require `transform:translateZ(0)` for GPU compositing — prevents oval distortion from CSS `columns:2` layout in `#recList`. Never remove these transforms.
 - **Chip indicator dot**: Regular recurring: when `_dateOverrides[wkKey]` exists + not `'__skip__'`. WR rules: `wrOverrides` has `override_type:'edit'` with `custom_name` or `custom_notes`. WR tasks: NO dot.
 - **Cadence badge**: `{biweekly:'B',monthly:'M',quarterly:'Q',biannual:'BA',annual:'A'}`.
 - **Virtual task objects**: `_isWrRule:true,_isWrec:true,_type:'shop'`. Source: `_ruleId,_recId,_shopId`. WR rules use `_wkKey`.
