@@ -493,7 +493,8 @@ function getRecurringWeekTasks(off=0){
     const isDone=r._doneByWk&&r._doneByWk[wkKey];
     const nameOv=r._dateOverrides&&r._dateOverrides['name::'+wkKey];
     const displayName=(nameOv&&nameOv.name)||r.name;
-    out.push({id:'rec-virt-'+r.id,name:displayName,category:'Recurring',due_date:ds,done:!!isDone,_recId:r.id,_virtual:true,_wkKey:wkKey,_edited:!!(nameOv&&nameOv.name)});
+    const _wkNote=(nameOv&&nameOv.notes)||'';
+    out.push({id:'rec-virt-'+r.id,name:displayName,category:'Recurring',due_date:ds,done:!!isDone,_recId:r.id,_virtual:true,_wkKey:wkKey,_edited:!!(nameOv&&nameOv.name),_wkNote});
   });
   return out;
 }

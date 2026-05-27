@@ -59,8 +59,9 @@ function _moveOtherSelected(ds,excludeSid,undos,excludePrefixes){
   });
 }
 
-function _hebBadge(name){if(!/\bheb\b/i.test(name||''))return'';return`<span class="heb-cnt" onclick="event.stopPropagation();openGroceryModal();"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg></span>`}
+function _hebBadge(name){if(!/\bheb\b/i.test(name||''))return'';return`<span class="heb-cnt" onclick="event.stopPropagation();openGroceryModal();"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg></span>`}
 function _pupBadge(name){if(!/prep pup training/i.test(name||''))return'';return`<span class="pup-link-badge" onclick="event.stopPropagation();if(typeof _openPupFocusModal==='function')_openPupFocusModal(null);" title="Weekly pup skills"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></span>`}
+function _recWkNote(r,wkKey){if(!r||!wkKey||!r._dateOverrides)return'';const ov=r._dateOverrides['name::'+wkKey];return(ov&&ov.notes)||'';}
 
 function renderOv(){
   const n=new Date();
@@ -800,7 +801,7 @@ function tRowTodayVirt(t,tbArrow=false,noColor=false){
 
   return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''}" style="${!ov&&!noColor?`background:${s.bg}`:''}" id="ti-${t.id}" draggable="true" ondragstart="dragId='${_dragId}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);" ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false);" onclick="selTask(event,'${t.id}')" ondblclick="${_dblClick}" oncontextmenu="${_ctxMenu}">
     <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="${_chk}"></label>
-    ${_hebBadge(t.name)}${_pupBadge(t.name)}<span class="tn">${t.name}</span>
+    ${_hebBadge(t.name)}${_pupBadge(t.name)}<span class="tn">${t.name}${t._wkNote?` <span style="opacity:.5;font-size:9px">@${escHtml(t._wkNote)}</span>`:''}</span>
     ${!ov?`<svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3" fill="${ps.bg}" stroke="${ps.d}" stroke-opacity="0.4" stroke-width="1"/></svg>`:''}
     ${tbArrow?'<span class="tb-arrow">›</span>':''}
     ${ov&&t.due_date?`<span class="dlbl ov">${['S','M','T','W','T','F','S'][new Date(t.due_date.split('T')[0]+'T12:00').getDay()]}</span>`:''}
@@ -879,11 +880,11 @@ function renderWkSummary(){
   const _wrecWkk=getWkKey(wkOff);
   const wrecThisWk=st.recurring
     .filter(r=>(r.is_weekly_reset===true||r.is_weekly_reset==='true')&&r._dateOverrides&&r._dateOverrides[_wrecWkk]&&r._dateOverrides[_wrecWkk]!=='__skip__')
-    .map(r=>{const ds=r._dateOverrides[_wrecWkk];return{id:'rec-virt-'+r.id,name:r.name,category:'Recurring',due_date:ds,done:!!(r._doneByWk&&r._doneByWk[_wrecWkk]),_recId:r.id,_virtual:true,_isWrec:true,_wkKey:_wrecWkk};})
+    .map(r=>{const ds=r._dateOverrides[_wrecWkk];return{id:'rec-virt-'+r.id,name:r.name,category:'Recurring',due_date:ds,done:!!(r._doneByWk&&r._doneByWk[_wrecWkk]),_recId:r.id,_virtual:true,_isWrec:true,_wkKey:_wrecWkk,_wkNote:_recWkNote(r,_wrecWkk)};})
     .filter(v=>v.due_date&&!v.done);
   const wrRulesThisWk=st.wrRules
     .filter(r=>r._dateOverrides&&r._dateOverrides[_wrecWkk]&&r._dateOverrides[_wrecWkk]!=='__skip__'&&!isDoneWRRule(r.id,_wrecWkk))
-    .map(r=>{const ds=r._dateOverrides[_wrecWkk];return{id:'wrrule-virt-'+r.id,name:r.name,category:'Recurring',due_date:ds,done:false,_ruleId:r.id,_virtual:true,_isWrRule:true,_wkKey:_wrecWkk};})
+    .map(r=>{const ds=r._dateOverrides[_wrecWkk];return{id:'wrrule-virt-'+r.id,name:r.name,category:'Recurring',due_date:ds,done:false,_ruleId:r.id,_virtual:true,_isWrRule:true,_wkKey:_wrecWkk,_wkNote:_recWkNote(r,_wrecWkk)};})
     .filter(v=>v.due_date);
   const shopThisWk=st.shopping
     .filter(s=>s.due_date&&isInWk(s.due_date,wkOff)&&!s.done)
@@ -1390,7 +1391,8 @@ function renderWkCal(){
     for(let _pw=wkOff;_pw>=wkOff-4;_pw--){const _pwk=getWkKey(_pw);
       st.recurring.filter(r=>(r.is_weekly_reset===true||r.is_weekly_reset==='true')&&r._dateOverrides&&r._dateOverrides[_pwk]===ds&&!_wrecSeenDay.has(String(r.id))).forEach(r=>{
         _wrecSeenDay.add(String(r.id));const _isDone=!!(r._doneByWk&&r._doneByWk[_pwk]);
-        const item={id:'rec-virt-'+r.id,name:r.name,category:'Recurring',due_date:ds,done:_isDone,_recId:r.id,_virtual:true,_wkKey:_pwk,_isWrec:true};
+        const _wn=_recWkNote(r,_pwk);
+        const item={id:'rec-virt-'+r.id,name:r.name,category:'Recurring',due_date:ds,done:_isDone,_recId:r.id,_virtual:true,_wkKey:_pwk,_isWrec:true,_wkNote:_wn};
         if(_isDone)wrecForDayDone.push(item);else wrecForDay.push(item);
       });
     }
@@ -1398,7 +1400,8 @@ function renderWkCal(){
     for(let _pw=wkOff;_pw>=wkOff-4;_pw--){const _pwk=getWkKey(_pw);
       st.wrRules.filter(r=>r._dateOverrides&&r._dateOverrides[_pwk]===ds&&!_wrRuleSeenDay.has(String(r.id))&&!(st.wrOverrides||[]).some(o=>String(o.rule_id)===String(r.id)&&o.wk_key===_pwk&&o.override_type==='skip')).forEach(r=>{
         _wrRuleSeenDay.add(String(r.id));const _isDone=isDoneWRRule(r.id,_pwk);
-        const item={id:'wrrule-virt-'+r.id,name:r.name,category:'Recurring',due_date:ds,done:_isDone,_ruleId:r.id,_virtual:true,_wkKey:_pwk,_isWrRule:true};
+        const _wnr=_recWkNote(r,_pwk);
+        const item={id:'wrrule-virt-'+r.id,name:r.name,category:'Recurring',due_date:ds,done:_isDone,_ruleId:r.id,_virtual:true,_wkKey:_pwk,_isWrRule:true,_wkNote:_wnr};
         if(_isDone)wrRulesForDayDone.push(item);else wrRulesForDay.push(item);
       });
     }
@@ -1475,7 +1478,8 @@ function renderWkCal(){
         else{toggleTask(t.id,chk.checked,'week');}
       });
       const _chipPrefix=_hebBadge(t.name)+_pupBadge(t.name);
-      const nm=document.createElement('span');nm.className='chip-name';nm.innerHTML=_chipPrefix+tmIcon(t)+escHtml(t._type==='pup'?_pupDisplayName(t):t.name);
+      const _wkNoteSuffix=t._wkNote?` <span style="opacity:.5;font-size:8px">@${escHtml(t._wkNote)}</span>`:'';
+      const nm=document.createElement('span');nm.className='chip-name';nm.innerHTML=_chipPrefix+tmIcon(t)+escHtml(t._type==='pup'?_pupDisplayName(t):t.name)+_wkNoteSuffix;
       // name click handled by chip click→selTask, dblclick→openEditTask
       chip.appendChild(chk);chip.appendChild(nm);
       // Bind click handlers for inline badge icons
@@ -3584,7 +3588,7 @@ function tRowWk(t){
       :`showWrScopePicker(event,'⊘  Skip this week only','✕  Delete recurring task',()=>skipRecVirtThisWk('${t._recId}','${t._wkKey||getWkKey(wkOff)}'),()=>delRec('${t._recId}'))`;
     return`<div class="ti ${t.done?'done':''}" style="background:${s.bg}" id="ti-${t.id}" onclick="selTask(event,'${t.id}')" ondblclick="${t._isWrRule?`event.stopPropagation();openWrEditModal('${t._ruleId}','${t._wkKey||getWkKey(wkOff)}','this')`:`tiDblRec(event,'${t._recId}','${t._wkKey||getWkKey(wkOff)}')`}" oncontextmenu="${_wkCtxMenu}">
       <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="${t._isWrec?`togRec('${t._recId}',this.checked)`:`togRecVirt('${t._recId}',this.checked,'${t._wkKey||getWkKey(wkOff)}')`}"></label>
-      ${_hebBadge(t.name)}${_pupBadge(t.name)}<span class="tn">${t.name}</span>
+      ${_hebBadge(t.name)}${_pupBadge(t.name)}<span class="tn">${t.name}${t._wkNote?` <span style="opacity:.5;font-size:9px">@${escHtml(t._wkNote)}</span>`:''}</span>
       <span class="cpill" style="background:${s.bg};color:${s.t};border-color:${s.b}">Recurring</span>
       <span class="dlbl">${fmtD(t.due_date)}</span>
       <button class="delbtn" onclick="event.stopPropagation();${_wkXBtn}">✕</button>
@@ -4294,7 +4298,9 @@ function drawTBBlock(col,b){
   const _linkedRec=b.recId?st.recurring.find(r=>String(r.id)===String(b.recId)):null;
   const _rawNotes=(_linkedTask&&_linkedTask.notes)||(_linkedRec&&_linkedRec.notes)||'';
   const _notes=(_rawNotes&&_rawNotes.startsWith('_vid:'))?'':_rawNotes;
-  const _notesHtml=_notes?`<div class="tb-notes">${_notes.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>')}</div>`:'';
+  const _tbWkNote=_linkedRec?_recWkNote(_linkedRec,dsToWkKey(b.ds)):(linkedRule?_recWkNote(linkedRule,dsToWkKey(b.ds)):'');
+  const _allNotes=[_notes,_tbWkNote?'@'+_tbWkNote:''].filter(Boolean).join('\n');
+  const _notesHtml=_allNotes?`<div class="tb-notes">${_allNotes.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>')}</div>`:'';
   let _displayTitle=(_linkedTask&&_linkedTask.name)||(_linkedRec&&_linkedRec.name)||(linkedShop&&linkedShop.name)||b.title;
   if(isPupBlock){const _ps=b._pupSessId?(st.pupSessions||[]).find(s=>String(s.id)===String(b._pupSessId)):null;const _sk=_ps?(st.pup_skills||[]).find(x=>String(x.id)===String(_ps.skill_id)):null;const _pup=_sk?.pup;if(_pup)_displayTitle=_pup+': '+_displayTitle;}
   let _vidStepsHtml='';let _vidWhiteBg=false;
