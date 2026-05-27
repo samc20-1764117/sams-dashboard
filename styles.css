@@ -1237,8 +1237,8 @@ body.dark .vid-stat-card{background:rgba(40,30,50,.4)}
 .fin-legend-row:last-child{border-bottom:none}
 .fin-legend-dot{width:10px;height:10px;min-width:10px;min-height:10px;border-radius:50%;flex-shrink:0;align-self:center;box-shadow:inset 0 -1px 2px rgba(0,0,0,.1),inset 0 1px 1px rgba(255,255,255,.5),0 0 3px rgba(255,255,255,.3)}
 .fin-legend-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-left:2px}
-.fin-legend-amt{font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--text-primary,#334155);text-align:right;min-width:80px;flex-shrink:0;margin-right:4px}
-.fin-legend-pct{color:var(--text-secondary,#64748b);font-weight:600;font-variant-numeric:tabular-nums;font-size:13px;width:44px;flex-shrink:0;text-align:right;margin-right:0}
+.fin-legend-amt{font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--text-primary,#334155);text-align:right;min-width:80px;flex-shrink:0;margin-right:0}
+.fin-legend-pct{color:var(--text-secondary,#64748b);font-weight:600;font-variant-numeric:tabular-nums;font-size:13px;width:44px;flex-shrink:0;text-align:right;margin-right:0;margin-left:-4px}
 .fin-legend-del{font-size:10px}
 .fin-legend-edit-name{border-bottom:none!important;min-width:30px;font-weight:500;color:var(--text-primary,#334155)}
 .fin-legend-edit-amt{min-width:40px;text-align:right;display:block;width:100%}
@@ -1275,6 +1275,7 @@ body.dark .vid-stat-card{background:rgba(40,30,50,.4)}
 .fin-sub-tbl{table-layout:fixed}
 .fin-sub-tbl td{padding:4px 12px!important;font-size:12px;text-align:right;font-variant-numeric:tabular-nums}
 .fin-sub-tbl th{padding:4px 12px!important;font-size:10px;text-align:right}
+.fin-sub-tbl th.fin-mo-adj{font-size:12px;font-weight:500;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif}
 .fin-sub-tbl td:first-child,.fin-sub-tbl th:first-child{text-align:left}
 .fin-sub-tbl td:last-child,.fin-sub-tbl th:last-child{width:24px;padding:4px 4px!important}
 .fin-sub-tbl col.fin-col-name{width:auto}
@@ -1283,7 +1284,7 @@ body.dark .vid-stat-card{background:rgba(40,30,50,.4)}
 .fin-sub-tbl col.fin-col-amt{width:90px}
 .fin-sub-tbl col.fin-col-mo{width:150px}
 .fin-sub-tbl col.fin-col-del{width:24px}
-.fin-mo-adj{font-size:12px;color:var(--text-secondary,#94a3b8);font-weight:500;white-space:nowrap;font-variant-numeric:tabular-nums;text-align:right}
+.fin-mo-adj{font-size:12px;color:var(--text-secondary,#94a3b8);font-weight:500;white-space:nowrap;font-variant-numeric:tabular-nums;text-align:right;font-family:system-ui,-apple-system,sans-serif}
 .fin-sub-row td{height:28px}
 /* Number alignment — fixed-width monospace numerals like videos page */
 .fin-mono{display:inline-block;text-align:right;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif}

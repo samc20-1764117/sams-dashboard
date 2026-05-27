@@ -1841,9 +1841,11 @@ function _finRenderInvestments(purchases,totalBought,gain,gainPct,currentVal){
     }));
     const years=new Set();const yearLabels=[];
     dataPoints.forEach((d,i)=>{const y=(d.date||'').slice(0,4);if(y&&!years.has(y)){years.add(y);yearLabels.push({px:pts[i].px,y:y});}});
+    const firstY=pts[0].py,lastY=pts[pts.length-1].py;
     const svgPolyFill=pts.map(p=>`${p.px},${p.py}`).join(' ');
-    const svgPolyLine=svgPolyFill;
-    html+=`<div class="fin-inv-chart-wrap" style="margin:0;border-radius:0 0 12px 12px;border-top:none;position:relative;flex:1;min-height:0">
+    const svgPolyLine=`-5,${firstY} ${svgPolyFill} 105,${lastY}`;
+    const svgFillPoly=`-5,${firstY} ${svgPolyFill} 105,${lastY} 105,100 -5,100`;
+    html+=`<div class="fin-inv-chart-wrap" style="margin:0;border-radius:0 0 12px 12px;border-top:none;position:relative;flex:1;min-height:0;overflow:hidden">
       <div class="fin-inv-kpi-float">
         <div style="font-size:11px;font-weight:600;color:#1e293b;margin-bottom:4px">Total Gain</div>
         <div style="font-size:22px;font-weight:700;color:#1e293b;line-height:1.1">${_finFmtRound(gain)}</div>
@@ -1853,10 +1855,10 @@ function _finRenderInvestments(purchases,totalBought,gain,gainPct,currentVal){
           <div><div style="font-size:9px;font-weight:600;color:var(--text-secondary,#64748b)">Cost Basis</div><div style="font-size:13px;font-weight:600;color:var(--text-primary,#334155);margin-top:1px">${_finFmtRound(totalBought)}</div></div>
         </div>
       </div>
-      <div class="fin-inv-chart" style="position:relative;height:100%;min-height:160px">
-      <svg viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%">
+      <div class="fin-inv-chart" style="position:relative;height:100%;min-height:160px;overflow:hidden">
+      <svg viewBox="-5 0 110 100" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%">
       <defs><linearGradient id="finAreaGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#10b981" stop-opacity=".18"/><stop offset="100%" stop-color="#10b981" stop-opacity=".02"/></linearGradient></defs>
-      <polyline points="0,90 ${svgPolyFill} 100,90" fill="url(#finAreaGrad)" stroke="none"/>
+      <polygon points="${svgFillPoly}" fill="url(#finAreaGrad)" stroke="none"/>
       <polyline points="${svgPolyLine}" fill="none" stroke="#10b981" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
       </svg>`;
     pts.forEach((p,i)=>{
@@ -3449,17 +3451,17 @@ async function toggleEasyMealForWeek(emId,weekMon,checked){
     const dates=_grocWeekDatesFor(weekMon);
     let ds=dates[0];
     for(const d of dates){if((st.mealPlan||[]).filter(x=>x.meal_date===d).length<2){ds=d;break;}}
-    const item={recipe_id:null,recipe_name:m.name,meal_date:ds,servings:m.servings||1,meal_type:null,easy_meal_id:emId};
-    const sv=await sbReqSilent('POST','meal_plan',item);
-    if(sv&&sv[0])st.mealPlan.push(sv[0]);
-    else{item.id='l-'+Date.now();st.mealPlan.push(item);}
+    const dbItem={recipe_id:null,recipe_name:m.name,meal_date:ds,servings:m.servings||1,meal_type:null};
+    const sv=await sbReqSilent('POST','meal_plan',dbItem);
+    if(sv&&sv[0]){sv[0].easy_meal_id=emId;st.mealPlan.push(sv[0]);}
+    else{dbItem.id='l-'+Date.now();dbItem.easy_meal_id=emId;st.mealPlan.push(dbItem);}
     // Add ingredients to grocery list
     const stapleNames=new Set((st.groceryStaples||[]).filter(s=>s.active!==false).map(s=>s.name.toLowerCase()));
     const ings=_parseIngredients(m.ingredients).filter(i=>!i.is_pantry&&!stapleNames.has((i.name||'').toLowerCase()));
     for(const ing of ings){
       const dup=(st.groceryList||[]).find(g=>g.week_of===weekMon&&g.name.toLowerCase()===ing.name.toLowerCase());
       if(dup)continue;
-      const gi={name:ing.name,amount:ing.amount||null,source:'recipe',source_id:emId,recipe_name:m.name,aisle:_inferAisle(ing.name),checked:false,week_of:weekMon};
+      const gi={name:ing.name,amount:ing.amount||null,source:'recipe',source_id:null,recipe_name:m.name,aisle:_inferAisle(ing.name),checked:false,week_of:weekMon};
       const gsv=await sbReqSilent('POST','grocery_list',gi);
       if(gsv&&gsv[0])st.groceryList.push(gsv[0]);
       else{gi.id='l-'+Date.now();st.groceryList.push(gi);}
@@ -3471,7 +3473,7 @@ async function toggleEasyMealForWeek(emId,weekMon,checked){
       st.mealPlan=st.mealPlan.filter(y=>String(y.id)!==String(x.id));
       sbReqSilent('DELETE','meal_plan',null,`?id=eq.${x.id}`);
     });
-    const grocToRemove=(st.groceryList||[]).filter(g=>g.week_of===weekMon&&g.source==='recipe'&&g.source_id===emId);
+    const grocToRemove=(st.groceryList||[]).filter(g=>g.week_of===weekMon&&g.source==='recipe'&&g.recipe_name===m.name);
     grocToRemove.forEach(g=>{
       st.groceryList=st.groceryList.filter(x=>String(x.id)!==String(g.id));
       sbReqSilent('DELETE','grocery_list',null,`?id=eq.${g.id}`);
@@ -3945,10 +3947,10 @@ async function addMealFromPicker(recipeId){
 async function addEasyMealFromPicker(emId){
   const m=(st.easyMeals||[]).find(x=>x.id===emId);if(!m)return;
   const ds=_mealPickerDs;if(!ds)return;
-  const item={recipe_id:null,recipe_name:m.name,meal_date:ds,servings:m.servings||1,meal_type:null,easy_meal_id:emId};
-  const sv=await sbReqSilent('POST','meal_plan',item);
-  if(sv&&sv[0])st.mealPlan.push(sv[0]);
-  else{item.id='l-'+Date.now();st.mealPlan.push(item);}
+  const dbItem={recipe_id:null,recipe_name:m.name,meal_date:ds,servings:m.servings||1,meal_type:null};
+  const sv=await sbReqSilent('POST','meal_plan',dbItem);
+  if(sv&&sv[0]){sv[0].easy_meal_id=emId;st.mealPlan.push(sv[0]);}
+  else{dbItem.id='l-'+Date.now();dbItem.easy_meal_id=emId;st.mealPlan.push(dbItem);}
   save();renderMealRow();
   // Add easy meal ingredients to grocery list (same format as recipes)
   const wk=_groceryWeekOf();
@@ -3957,7 +3959,7 @@ async function addEasyMealFromPicker(emId){
   for(const ing of ings){
     const dup=(st.groceryList||[]).find(g=>g.week_of===wk&&g.name.toLowerCase()===ing.name.toLowerCase());
     if(dup)continue;
-    const gi={name:ing.name,amount:ing.amount||null,source:'recipe',source_id:emId,recipe_name:m.name,aisle:_inferAisle(ing.name),checked:false,week_of:wk};
+    const gi={name:ing.name,amount:ing.amount||null,source:'recipe',source_id:null,recipe_name:m.name,aisle:_inferAisle(ing.name),checked:false,week_of:wk};
     const gsv=await sbReqSilent('POST','grocery_list',gi);
     if(gsv&&gsv[0])st.groceryList.push(gsv[0]);
     else{gi.id='l-'+Date.now();st.groceryList.push(gi);}
