@@ -3283,7 +3283,7 @@ function _vidPromptPostDate(vidId,anchorEl){
     <div style="font-size:12px;font-weight:600;margin-bottom:6px">Post Date — ${escHtml(v.topic||v.title)}</div>
     <p style="font-size:10px;color:var(--muted);margin:0 0 10px">${_tabReq?'A tab task will be created for this date.':'Video will be marked complete.'}</p>
     <div style="margin-bottom:10px"><input id="_vidPostDateInp" type="date" value="${ds}" style="width:100%;font-size:12px;padding:4px 6px;border:1px solid var(--border);border-radius:6px"></div>
-    ${_tabReq?`<div style="margin-bottom:10px"><input id="_vidYtUrlInp" type="text" placeholder="YouTube link (optional)" value="${v.youtube_url||''}" style="width:100%;font-size:11px;padding:4px 6px;border:1px solid var(--border);border-radius:6px;box-sizing:border-box"></div>`:''}
+    <div style="margin-bottom:10px"><input id="_vidYtUrlInp" type="text" placeholder="YouTube link (optional)" value="${v.youtube_url||''}" style="width:100%;font-size:11px;padding:4px 6px;border:1px solid var(--border);border-radius:6px;box-sizing:border-box"></div>
     <div style="display:flex;justify-content:flex-end;gap:6px"><button class="btn btn-ghost btn-xs" id="_vidPostCancel">Cancel</button><button class="btn btn-dark btn-xs" id="_vidPostSave">Set Date</button></div>`;
   document.body.appendChild(overlay);document.body.appendChild(pop);
   const _cleanup=()=>{_vidOvPromptOpen=false;overlay.remove();pop.remove();};
@@ -4145,6 +4145,7 @@ function drawTBBlock(col,b){
   else if(_wrRuleId)b._done=isDoneWRRule(_wrRuleId,dsToWkKey(b.ds));
   else if(linkedRec)b._done=!!(linkedRec._doneByWk&&linkedRec._doneByWk[dsToWkKey(b.ds)]);
   else if(linkedShop)b._done=!!linkedShop.done;
+  else if(b._vidId){const _vb2=(st.videos||[]).find(x=>String(x.id)===String(b._vidId));if(_vb2)b._done=_vb2.status==='published';}
   const isImp=linkedTask&&linkedTask.important&&!linkedTask.done;
   const linkedRule=b.ruleId?st.wrRules.find(x=>String(x.id)===String(b.ruleId)):null;
   const recCat=linkedRec?(linkedRec.is_weekly_reset===false?'recurring':'weekly_reset'):null;

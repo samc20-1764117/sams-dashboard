@@ -3026,7 +3026,7 @@ function _vidPromptPostDateFromVid(id){
     <div style="font-size:12px;font-weight:600;margin-bottom:6px">Post Date — ${typeof _esc==='function'?_esc(v.topic||v.title):v.topic||v.title}</div>
     <p style="font-size:10px;color:var(--muted);margin:0 0 10px">${tabRequired?'A tab task will be created for this date.':'Video will be marked complete.'}</p>
     <div style="margin-bottom:10px"><input id="_vidPostDateInp2" type="date" value="${ds}" style="width:100%;font-size:12px;padding:4px 6px;border:1px solid var(--border);border-radius:6px"></div>
-    ${tabRequired?`<div style="margin-bottom:10px"><input id="_vidYtUrlInp2" type="text" placeholder="YouTube link (optional)" value="${v.youtube_url||''}" style="width:100%;font-size:11px;padding:4px 6px;border:1px solid var(--border);border-radius:6px;box-sizing:border-box"></div>`:''}
+    <div style="margin-bottom:10px"><input id="_vidYtUrlInp2" type="text" placeholder="YouTube link (optional)" value="${v.youtube_url||''}" style="width:100%;font-size:11px;padding:4px 6px;border:1px solid var(--border);border-radius:6px;box-sizing:border-box"></div>
     <div style="display:flex;justify-content:flex-end;gap:6px"><button class="btn btn-ghost btn-xs" id="_vidPostCancel2">Cancel</button><button class="btn btn-dark btn-xs" id="_vidPostSave2">Set Date</button></div>`;
   document.body.appendChild(overlay);document.body.appendChild(pop);
   const _cleanup=()=>{_vidPromptOpen=false;overlay.remove();pop.remove();};
