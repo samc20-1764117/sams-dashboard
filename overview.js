@@ -3279,10 +3279,7 @@ function _vidCompleteFromOv(vidId,anchorEl){
   v.status='published';vidPatch.status='published';
   sbReqSilent('PATCH','videos',vidPatch,`?id=eq.${v.id}`);
 
-  if(!tabRequired){
-    // No tab needed — fully done, remove from day map
-    const map=_vidDayMap();delete map[String(vidId)];_vidDayMapSet(map);
-  }
+  // Keep in day map so completed videos stay visible on today/weekly
 
   // Prompt for post date (creates tab task if needed)
   _vidPromptPostDate(vidId,anchorEl);
@@ -3375,23 +3372,7 @@ function _vidCompleteTabUp(vidId){
   const marker='_vid:'+vidId;
   const tabTask=st.tasks.find(t=>t.notes&&t.notes.includes(marker)&&!t.done);
   if(tabTask){tabTask.done=true;sbReqSilent('PATCH','tasks',{done:true},`?id=eq.${tabTask.id}`);}
-  // Remove from day map only if entire group is now complete
-  if(typeof _vidGroupFullyComplete==='function'&&_vidGroupFullyComplete(v)){
-    const map=_vidDayMap();delete map[String(vidId)];_vidDayMapSet(map);
-    // Also clean up group members from day map
-    if(v.video_type==='B'){
-      (st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(v.id)).forEach(c=>{delete map[String(c.id)];});
-      _vidDayMapSet(map);
-    }else if(v.big_video_id){
-      const map2=_vidDayMap();
-      const parent=(st.videos||[]).find(p=>!p.is_deleted&&String(p.id)===String(v.big_video_id));
-      if(parent&&typeof _vidGroupFullyComplete==='function'&&_vidGroupFullyComplete(parent)){
-        delete map2[String(parent.id)];
-        (st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(v.big_video_id)).forEach(c=>{delete map2[String(c.id)];});
-        _vidDayMapSet(map2);
-      }
-    }
-  }
+  // Keep in day map so completed videos stay visible on today/weekly
   sbReqSilent('PATCH','videos',vidPatch,`?id=eq.${v.id}`);
   save();renderAll();
   if(typeof renderVideosPageKeepScroll==='function')renderVideosPageKeepScroll();
@@ -4232,7 +4213,7 @@ function drawTBBlock(col,b){
   if(isPostTab){
     _ptVidId=linkedTask.notes.replace('_vid:','');
     const _ptVid=(st.videos||[]).find(x=>String(x.id)===String(_ptVidId));
-    if(_ptVid&&_ptVid.youtube_url)_copyLinkHtml=`<button class="tb-copy-link" data-url="${_ptVid.youtube_url.replace(/"/g,'&quot;')}" title="Copy YouTube link" style="background:none;border:none;cursor:pointer;padding:0;flex-shrink:0;display:inline-flex;align-items:center;margin-right:2px;color:#15803d"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#15803d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></button>`;
+    if(_ptVid&&_ptVid.youtube_url)_copyLinkHtml=`<button class="tb-copy-link" data-url="${_ptVid.youtube_url.replace(/"/g,'&quot;')}" title="Copy YouTube link" style="background:none;border:none;cursor:pointer;padding:0;flex-shrink:0;display:inline-flex;align-items:center;margin-right:2px;color:#15803d;position:relative;top:-1px"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#15803d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></button>`;
   }
   const _showTimeHere=_showTime&&!isPostTab;
   el.innerHTML=`<div class="tb-row"><input type="checkbox" class="tb-chk" ${b._done?'checked':''}><span class="tb-bt${b.dur>=30?' wrap':''}">${_displayTitle}</span><div class="tb-right">${_showTimeHere?`<span class="tb-btime">${tStr(b.sm)}-${tStr(b.sm+b.dur)}</span>`:''}${_copyLinkHtml}<button class="tb-bdel" onclick="delBlock('${b.id}',event)">✕</button></div></div>${_vidStepsHtml}${_notesHtml}<div class="tb-resize" data-id="${b.id}"></div>`;
