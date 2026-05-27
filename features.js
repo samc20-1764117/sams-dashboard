@@ -5285,9 +5285,9 @@ function saveRecEdit(){
     const prev=r._dateOverrides[nameOvKey];
     r._dateOverrides[nameOvKey]={name,notes};
     closeMod('recEditModal');
-    renderRecOv();renderWeeklyPage();renderWkSummary();renderWkCal();
+    save();renderRecOv();renderWeeklyPage();renderWkSummary();renderWkCal();if(document.getElementById('tbGrid'))renderDayTB();
     sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(rid));
-    pushUndo(()=>{if(prev!==undefined)r._dateOverrides[nameOvKey]=prev;else delete r._dateOverrides[nameOvKey];renderRecOv();renderWeeklyPage();renderWkSummary();renderWkCal();sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(rid));},'Edited recurring this week');
+    pushUndo(()=>{if(prev!==undefined)r._dateOverrides[nameOvKey]=prev;else delete r._dateOverrides[nameOvKey];save();renderRecOv();renderWeeklyPage();renderWkSummary();renderWkCal();if(document.getElementById('tbGrid'))renderDayTB();sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(rid));},'Edited recurring this week');
     return;
   }
   const name=document.getElementById('recEditName').value.trim();
@@ -5316,7 +5316,7 @@ function saveRecEdit(){
   const patch={name,is_weekly_reset:isWr,cadence,appears_on_date:appearsOn,pup_related:pupRelated,notes:notes||null,default_start_time:defStart,default_end_time:defEnd,default_tb_duration:defDur};
   if(startDate)patch.starting_date=startDate;
   sbReq('PATCH','wr_recurring_rules',patch,recQs(rid));
-  pushUndo(()=>{Object.assign(r,prev);renderRecOv();renderWeeklyPage();if(document.getElementById('tbGrid'))renderDayTB();},'Edited recurring');
+  pushUndo(()=>{Object.assign(r,prev);save();renderRecOv();renderWeeklyPage();renderWkSummary();renderWkCal();if(document.getElementById('tbGrid'))renderDayTB();},'Edited recurring');
 }
 
 
