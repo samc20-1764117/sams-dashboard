@@ -2597,7 +2597,7 @@ function openVidModal(type){
   if(t==='L'){defaults.step_tableau_public='na';defaults.step_upload_tableau='na';}
   _vidRenderSteps(defaults);
   document.getElementById('vmPostDate').value='';
-  document.getElementById('vmYoutubeUrl').value='';
+  const _ytEl2=document.getElementById('vmYoutubeUrl');if(_ytEl2)_ytEl2.value='';
   document.getElementById('vidModal').classList.add('open');
   setTimeout(()=>{const inp=document.getElementById('vmTopic');inp.focus();inp.setSelectionRange(0,0);},80);
 }
@@ -2621,7 +2621,7 @@ function openVidEdit(id){
   _vidRenderSteps(stepVals);
   const _pd=v.post_date;
   document.getElementById('vmPostDate').value=_pd?parseInt(_pd.slice(5,7))+'/'+parseInt(_pd.slice(8,10))+(_pd.slice(0,4)!==String(new Date().getFullYear())?'/'+_pd.slice(2,4):''):'';
-  document.getElementById('vmYoutubeUrl').value=v.youtube_url||'';
+  const _ytEl=document.getElementById('vmYoutubeUrl');if(_ytEl)_ytEl.value=v.youtube_url||'';
 
   document.getElementById('vidModal').classList.add('open');
   setTimeout(()=>{const inp=document.getElementById('vmTopic');inp.focus();const len=inp.value.length;inp.setSelectionRange(len,len);},80);
@@ -2644,6 +2644,13 @@ function _vidRenderSteps(vals){
       <span style="font-size:9px;color:${cur==='na'?'var(--border)':'var(--muted)'}">${VID_STEP_LABELS[s]}</span>
       <div data-step="${s}" data-val="${cur}" tabindex="${tab}" onclick="_vidToggleModalStep(this)" oncontextmenu="_vidNaModalStep(event,this);return false" onkeydown="_vidStepKey(event,this)" style="${_vidModalStepCSS(cur)}"></div>
     </div>`);
+    // Link input after Tab stage (only when tab is required)
+    if(s==='step_tableau_public'&&cur!=='na'){
+      parts.push(`<div style="display:flex;flex-direction:column;gap:2px;align-items:center">
+        <span style="font-size:9px;color:var(--muted)">Link</span>
+        <input id="vmYoutubeUrl" type="text" placeholder="url" style="width:44px;height:22px;font-size:8px;padding:0 2px;border:1.5px solid rgba(210,205,228,.4);border-radius:3px;background:transparent;color:var(--text);text-align:center;box-sizing:border-box;outline:none">
+      </div>`);
+    }
   });
   el.innerHTML=parts.join('');
 }
@@ -2723,7 +2730,7 @@ async function saveVidModal(){
     duration_minutes:parseFloat(document.getElementById('vmDuration').value)||null,
 
     big_video_id:_vidGetBigVideoId(),
-    youtube_url:document.getElementById('vmYoutubeUrl').value.trim()||null,
+    youtube_url:(document.getElementById('vmYoutubeUrl')||{}).value?.trim()||null,
     comment:document.getElementById('vmComment').value.trim()||null
   };
   if(_vidMode==='edit'&&_vidEditId){
@@ -2919,8 +2926,9 @@ async function cycleVidStep(id,step){
   const tabDone=!tabRequired||v.step_tableau_public==='done';
 
   // If core 5 all done after this click
+  const needsLink=tabRequired&&!v.youtube_url;
   if(coreDone&&next==='done'&&VID_STEPS_CORE.includes(step)){
-    if(!v.post_date){
+    if(!v.post_date||needsLink){
       // No post_date → prompt for posting date
       const patch={[step]:next};
       if(linked)patch[linked]=next;
@@ -3004,9 +3012,15 @@ async function cycleVidStep(id,step){
 
 function _vidDeleteTabTask(vidId){
   const marker='_vid:'+vidId;
-  const idx=st.tasks.findIndex(t=>t.notes&&t.notes.includes(marker));
-  if(idx>-1){
+  // Remove ALL matching tasks + their timeblocks (handles duplicates)
+  let idx;
+  while((idx=st.tasks.findIndex(t=>t.notes&&t.notes.includes(marker)))>-1){
     const task=st.tasks[idx];
+    // Delete associated timeblock(s)
+    let tbIdx;
+    while((tbIdx=st.blocks.findIndex(b=>String(b.taskId)===String(task.id)))>-1){
+      const tb=st.blocks.splice(tbIdx,1)[0];sbReqSilent('DELETE','time_blocks',null,`?id=eq.${tb.id}`);
+    }
     st.tasks.splice(idx,1);
     if(!String(task.id).startsWith('l-'))sbReqSilent('DELETE','tasks',null,`?id=eq.${task.id}`);
   }
@@ -3015,9 +3029,10 @@ let _vidPromptOpen=false;
 function _vidPromptPostDateFromVid(id){
   if(_vidPromptOpen)return;
   const v=(st.videos||[]).find(x=>String(x.id)===String(id));if(!v)return;
-  if(v.post_date){_vidAfterPostDate(id);return;}
+  const _tabReqP=v.step_tableau_public&&v.step_tableau_public!=='na'&&v.step_tableau_public!=='done';
+  if(v.post_date&&(!_tabReqP||v.youtube_url)){_vidAfterPostDate(id);return;}
   _vidPromptOpen=true;
-  const ds=typeof d2s==='function'?d2s(typeof getDayDate==='function'?getDayDate(0):new Date()):new Date().toISOString().slice(0,10);
+  const ds=v.post_date||(typeof d2s==='function'?d2s(typeof getDayDate==='function'?getDayDate(0):new Date()):new Date().toISOString().slice(0,10));
   const overlay=document.createElement('div');overlay.style.cssText='position:fixed;inset:0;z-index:600';
   const pop=document.createElement('div');
   pop.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:260px;padding:14px;background:rgba(255,255,255,.98);border:1px solid rgba(210,205,228,.4);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.15);backdrop-filter:blur(12px);z-index:601';
@@ -3026,7 +3041,7 @@ function _vidPromptPostDateFromVid(id){
     <div style="font-size:12px;font-weight:600;margin-bottom:6px">Post Date — ${typeof _esc==='function'?_esc(v.topic||v.title):v.topic||v.title}</div>
     <p style="font-size:10px;color:var(--muted);margin:0 0 10px">${tabRequired?'A tab task will be created for this date.':'Video will be marked complete.'}</p>
     <div style="margin-bottom:10px"><input id="_vidPostDateInp2" type="date" value="${ds}" style="width:100%;font-size:12px;padding:4px 6px;border:1px solid var(--border);border-radius:6px"></div>
-    <div style="margin-bottom:10px"><input id="_vidYtUrlInp2" type="text" placeholder="YouTube link (optional)" value="${v.youtube_url||''}" style="width:100%;font-size:11px;padding:4px 6px;border:1px solid var(--border);border-radius:6px;box-sizing:border-box"></div>
+    ${tabRequired?`<div style="margin-bottom:10px"><input id="_vidYtUrlInp2" type="text" placeholder="YouTube link (optional)" value="${v.youtube_url||''}" style="width:100%;font-size:11px;padding:4px 6px;border:1px solid var(--border);border-radius:6px;box-sizing:border-box"></div>`:''}
     <div style="display:flex;justify-content:flex-end;gap:6px"><button class="btn btn-ghost btn-xs" id="_vidPostCancel2">Cancel</button><button class="btn btn-dark btn-xs" id="_vidPostSave2">Set Date</button></div>`;
   document.body.appendChild(overlay);document.body.appendChild(pop);
   const _cleanup=()=>{_vidPromptOpen=false;overlay.remove();pop.remove();};

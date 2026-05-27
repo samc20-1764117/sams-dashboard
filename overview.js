@@ -3157,8 +3157,10 @@ function _vidOvToggleStep(vidId,step){
   // Core 5 done + post_date + topic + title → published
   const coreSteps=typeof VID_STEPS_CORE!=='undefined'?VID_STEPS_CORE:['step_build','step_vo','step_cut','step_thumbnail','step_description'];
   const coreDone=coreSteps.every(s=>v[s]==='done'||v[s]==='na');
-  if(coreDone&&next==='done'&&coreSteps.includes(step)&&!v.post_date){
-    // Core 5 just completed, no post_date → prompt
+  const _tabReqOv=v.step_tableau_public&&v.step_tableau_public!=='na'&&v.step_tableau_public!=='done';
+  const _needsLinkOv=_tabReqOv&&!v.youtube_url;
+  if(coreDone&&next==='done'&&coreSteps.includes(step)&&(!v.post_date||_needsLinkOv)){
+    // Core 5 just completed, missing post_date or link → prompt
     const patchOv={[step]:next};if(linked)patchOv[linked]=next;
     save();_renderVidOvMenu();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
     sbReqSilent('PATCH','videos',patchOv,`?id=eq.${vidId}`);
@@ -3282,11 +3284,12 @@ let _vidOvPromptOpen=false;
 function _vidPromptPostDate(vidId,anchorEl){
   if(_vidOvPromptOpen)return;
   const v=(st.videos||[]).find(x=>String(x.id)===String(vidId));if(!v)return;
-  // If post_date already set, use it directly
-  if(v.post_date){_vidCreateTabUpTask(vidId,v.post_date);return;}
+  // If post_date already set AND link not needed, skip prompt
+  const _tabReqP2=v.step_tableau_public&&v.step_tableau_public!=='na'&&v.step_tableau_public!=='done';
+  if(v.post_date&&(!_tabReqP2||v.youtube_url)){_vidCreateTabUpTask(vidId,v.post_date);return;}
   _vidOvPromptOpen=true;
   // Prompt with a small popover near the anchor
-  const ds=d2s(getDayDate(0));
+  const ds=v.post_date||d2s(getDayDate(0));
   const overlay=document.createElement('div');overlay.style.cssText='position:fixed;inset:0;z-index:600';
   const pop=document.createElement('div');
   pop.style.cssText='position:fixed;width:260px;padding:14px;background:rgba(255,255,255,.98);border:1px solid rgba(210,205,228,.4);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.15);backdrop-filter:blur(12px);z-index:601';
@@ -3300,7 +3303,7 @@ function _vidPromptPostDate(vidId,anchorEl){
     <div style="font-size:12px;font-weight:600;margin-bottom:6px">Post Date — ${escHtml(v.topic||v.title)}</div>
     <p style="font-size:10px;color:var(--muted);margin:0 0 10px">${_tabReq?'A tab task will be created for this date.':'Video will be marked complete.'}</p>
     <div style="margin-bottom:10px"><input id="_vidPostDateInp" type="date" value="${ds}" style="width:100%;font-size:12px;padding:4px 6px;border:1px solid var(--border);border-radius:6px"></div>
-    <div style="margin-bottom:10px"><input id="_vidYtUrlInp" type="text" placeholder="YouTube link (optional)" value="${v.youtube_url||''}" style="width:100%;font-size:11px;padding:4px 6px;border:1px solid var(--border);border-radius:6px;box-sizing:border-box"></div>
+    ${_tabReq?`<div style="margin-bottom:10px"><input id="_vidYtUrlInp" type="text" placeholder="YouTube link (optional)" value="${v.youtube_url||''}" style="width:100%;font-size:11px;padding:4px 6px;border:1px solid var(--border);border-radius:6px;box-sizing:border-box"></div>`:''}
     <div style="display:flex;justify-content:flex-end;gap:6px"><button class="btn btn-ghost btn-xs" id="_vidPostCancel">Cancel</button><button class="btn btn-dark btn-xs" id="_vidPostSave">Set Date</button></div>`;
   document.body.appendChild(overlay);document.body.appendChild(pop);
   const _cleanup=()=>{_vidOvPromptOpen=false;overlay.remove();pop.remove();};
@@ -3337,16 +3340,20 @@ async function _vidCreateTabUpTask(vidId,postDate){
   if(existing)return;
   _vidTabCreating.add(vidId);
   const name='Post Tab - '+(v.topic||v.title);
-  const t={id:'l-'+Date.now(),name,category:'Videos',due_date:postDate,done:false,important:false,notes:marker};
-  st.tasks.push(t);save();renderAll();
+  const localId='l-'+Date.now();
+  const t={id:localId,name,category:'Videos',due_date:postDate,done:false,important:false,notes:marker};
+  st.tasks.push(t);
+  // Create timeblock immediately with local task ID
+  const tb={id:crypto.randomUUID(),title:name,ds:postDate,sm:450,dur:30,cat:'Videos',taskId:localId,_done:false};
+  st.blocks.push(tb);
+  save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
   const sv=await sbReq('POST','tasks',{name,category:'Videos',due_date:postDate,done:false,important:false,notes:marker});
-  if(sv&&sv[0]){const i=st.tasks.findIndex(x=>x.id===t.id);if(i>-1)st.tasks[i]=sv[0];}
-  // Auto-create timeblock at 7:30-8:00am on the posting date
-  const taskId=sv&&sv[0]?String(sv[0].id):t.id;
-  const tb={id:crypto.randomUUID(),title:name,ds:postDate,sm:450,dur:30,cat:'Videos',taskId,_done:false};
-  st.blocks.push(tb);sbSaveBlock(tb);
+  if(sv&&sv[0]){
+    const i=st.tasks.findIndex(x=>x.id===localId);if(i>-1)st.tasks[i]=sv[0];
+    tb.taskId=String(sv[0].id);
+  }
+  sbSaveBlock(tb);
   _vidTabCreating.delete(vidId);
-  if(document.getElementById('tbGrid'))renderDayTB();
 }
 function _vidCompleteTabUp(vidId){
   const v=(st.videos||[]).find(x=>String(x.id)===String(vidId));
