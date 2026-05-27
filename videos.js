@@ -2634,9 +2634,9 @@ function _vidRenderSteps(vals){
   const parts=[];
   VID_STEPS.forEach(s=>{
     if(s==='step_tableau_public'){
-      parts.push(`<div id="vmPostDateWrap" style="display:flex;flex-direction:column;gap:2px;align-items:center">
+      parts.push(`<div id="vmPostDateWrap" style="display:flex;flex-direction:column;gap:3px;align-items:center">
         <span class="vm-step-lbl" style="font-size:9px;color:var(--muted)">Posted</span>
-        <input id="vmPostDate" type="text" placeholder="m/d" style="width:44px;height:22px;font-size:10px;padding:0 2px;border:1.5px solid rgba(210,205,228,.4);border-radius:3px;background:transparent;color:var(--text);text-align:center;box-sizing:border-box;outline:none">
+        <input id="vmPostDate" type="text" placeholder="m/d" style="width:50px;height:22px;font-size:11px;padding:0 3px;border:1.5px solid rgba(210,205,228,.4);border-radius:3px;background:transparent;color:var(--text);text-align:center;box-sizing:border-box;outline:none;font-weight:500">
       </div>`);
     }
     const cur=vals[s]||'not_started';
@@ -2645,10 +2645,11 @@ function _vidRenderSteps(vals){
       <span style="font-size:9px;color:${cur==='na'?'var(--border)':'var(--muted)'}">${VID_STEP_LABELS[s]}</span>
       <div data-step="${s}" data-val="${cur}" tabindex="${tab}" onclick="_vidToggleModalStep(this)" oncontextmenu="_vidNaModalStep(event,this);return false" onkeydown="_vidStepKey(event,this)" style="${_vidModalStepCSS(cur)}"></div>
     </div>`);
-    if(s==='step_tableau_public'&&cur!=='na'){
-      parts.push(`<div id="vmLinkWrap" style="display:flex;flex-direction:column;gap:2px;align-items:center;flex:1">
+    if(s==='step_tableau_public'){
+      const _linkNa=cur==='na';
+      parts.push(`<div id="vmLinkWrap" style="display:flex;flex-direction:column;gap:2px;align-items:flex-start;flex:1;${_linkNa?'opacity:.35;pointer-events:none':''}">
         <span class="vm-step-lbl" style="font-size:9px;color:var(--muted)">Link</span>
-        <input id="vmYoutubeUrl" type="text" placeholder="url" style="width:100%;height:22px;font-size:8px;padding:0 4px;border:1.5px solid rgba(210,205,228,.4);border-radius:3px;background:transparent;color:var(--text);text-align:center;box-sizing:border-box;outline:none">
+        <input id="vmYoutubeUrl" type="text" placeholder="url" style="width:100%;height:22px;font-size:9px;padding:0 6px;border:1.5px solid rgba(210,205,228,.4);border-radius:3px;background:transparent;color:var(--text);text-align:left;box-sizing:border-box;outline:none">
       </div>`);
     }
   });
@@ -2765,6 +2766,11 @@ function _vidNaModalStep(e,el){
     const lEl=document.querySelector(`[data-step="${linked}"]`);
     if(lEl){lEl.dataset.val=next;_vidUpdateModalStep(lEl,next);}
   }
+  // Toggle Link wrap when Tab is toggled na
+  if(el.dataset.step==='step_tableau_public'){
+    const lw=document.getElementById('vmLinkWrap');
+    if(lw){lw.style.opacity=next==='na'?'.35':'1';lw.style.pointerEvents=next==='na'?'none':'auto';}
+  }
 }
 function _vidSetType(type){
   document.getElementById('vmType').value=type;
@@ -2783,14 +2789,17 @@ function _vidTypeChanged(type){
   document.getElementById('vmBigVideoWrap').style.display=type==='B'?'none':'block';
   if(type==='B'){document.getElementById('vmBigVideo').value='';}
   const els=document.querySelectorAll('#vmSteps [data-step]');
+  let tabNa=false;
   els.forEach(el=>{
     const s=el.dataset.step;
     if(type==='L'&&(s==='step_tableau_public'||s==='step_upload_tableau')){
-      el.dataset.val='na';_vidUpdateModalStep(el,'na');
+      el.dataset.val='na';_vidUpdateModalStep(el,'na');if(s==='step_tableau_public')tabNa=true;
     }else if(type==='B'&&el.dataset.val==='na'&&(s==='step_tableau_public'||s==='step_upload_tableau')){
       el.dataset.val='not_started';_vidUpdateModalStep(el,'not_started');
-    }
+    }else if(s==='step_tableau_public'){tabNa=el.dataset.val==='na';}
   });
+  const lw=document.getElementById('vmLinkWrap');
+  if(lw){lw.style.opacity=tabNa?'.35':'1';lw.style.pointerEvents=tabNa?'none':'auto';}
 }
 function _vidUpdateModalStep(el,val){
   el.style.cssText=_vidModalStepCSS(val);
