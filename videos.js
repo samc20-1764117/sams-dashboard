@@ -237,8 +237,9 @@ let _vidSortCol=null,_vidSortDir=1,_vidShowCompleted=true,_vidTableScrolledOnce=
 let _anTopicFilter='all',_anScatterX='views',_anScatterY='likes';
 let _vidMonthOffset=0; // 0=current month, -1=last month, etc
 
-const VID_STEPS=['step_build','step_vo','step_cut','step_thumbnail','step_description','step_tableau_public','step_upload_tableau'];
-const VID_STEP_LABELS={step_build:'Build',step_vo:'Vo',step_film:'Film',step_cut:'Cut',step_thumbnail:'Th',step_description:'Des',step_tableau_public:'Tab',step_upload_tableau:'Up'};
+const VID_STEPS=['step_build','step_vo','step_cut','step_thumbnail','step_description','step_tableau_public'];
+const VID_STEPS_CORE=['step_build','step_vo','step_cut','step_thumbnail','step_description'];
+const VID_STEP_LABELS={step_build:'Build',step_vo:'Vo',step_film:'Film',step_cut:'Cut',step_thumbnail:'Th',step_description:'Des',step_tableau_public:'Tab'};
 const VID_STATUS_COLORS={published:'#10b981',in_progress:'#f59e0b',up_next:'#0ea5e9',idea:'#8b5cf6',backup:'#94a3b8'};
 const VID_STATUS_LABELS={published:'Complete',in_progress:'In Progress',up_next:'Up Next',idea:'Idea',backup:'Backup'};
 const VID_STATUS_ORDER={published:0,up_next:1,in_progress:2,backup:3,idea:4};
@@ -910,7 +911,7 @@ async function _vidIdeaTypeDrop(e,newType){
 }
 
 // Push a local-only video (l-xxx id) to Supabase and replace the temp id
-const _VID_DB_COLS=['title','topic','status','post_date','duration_minutes','video_type','big_video_id','vid_order','comment',...VID_STEPS];
+const _VID_DB_COLS=['title','topic','status','post_date','duration_minutes','video_type','big_video_id','vid_order','comment',...VID_STEPS,'step_upload_tableau'];
 async function _vidEnsureSynced(v){
   if(!String(v.id).startsWith('l-'))return;
   // If parent is also local, sync parent first
@@ -2826,7 +2827,8 @@ function _vidLinkedStep(step){
   if(step==='step_upload_tableau')return'step_tableau_public';
   return null;
 }
-function _vidIsComplete(v){return VID_STEPS.every(s=>v[s]==='done'||v[s]==='na')&&v.post_date&&v.duration_minutes&&v.topic&&v.title;}
+function _vidIsComplete(v){return VID_STEPS_CORE.every(s=>v[s]==='done'||v[s]==='na')&&v.post_date&&v.topic&&v.title;}
+function _vidTrulyComplete(v){return _vidIsComplete(v)&&(v.step_tableau_public==='done'||v.step_tableau_public==='na');}
 function _vidAllChildrenComplete(bigId){
   const kids=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(bigId));
   return kids.every(k=>_vidIsComplete(k));
@@ -2838,17 +2840,54 @@ async function cycleVidStep(id,step){
   const prev=cur;
   const prevStatus=v.status;
   v[step]=next;
-  // Auto-complete: all required steps done/na + post_date + duration + topic + title → published
-  // For B videos: all children must also be complete
-  const allDone=VID_STEPS.every(s=>v[s]==='done'||v[s]==='na');
-  const wasDone=VID_STEPS.every(s=>(s===step?cur:v[s]||'not_started')==='done'||(s===step?cur:v[s]||'not_started')==='na');
-  const hasFields=v.topic&&v.title;
-  const selfComplete=allDone&&hasFields;
+  // Sync step_upload_tableau when toggling step_tableau_public
+  const linked=_vidLinkedStep(step);
+  const linkedPrev=linked?v[linked]:null;
+  if(linked)v[linked]=next;
+
+  // Check if core 5 steps just became all done
+  const coreDone=VID_STEPS_CORE.every(s=>v[s]==='done'||v[s]==='na');
+  const wasCoreDone=VID_STEPS_CORE.every(s=>(s===step?cur:v[s]||'not_started')==='done'||(s===step?cur:v[s]||'not_started')==='na');
+  const tabRequired=v.step_tableau_public&&v.step_tableau_public!=='na';
+  const tabDone=!tabRequired||v.step_tableau_public==='done';
+
+  // If core 5 just completed and no post_date → prompt for posting date
+  if(coreDone&&!wasCoreDone&&!v.post_date&&VID_STEPS_CORE.includes(step)){
+    const patch={[step]:next};
+    if(linked)patch[linked]=next;
+    save();renderVideosPageKeepScroll();
+    pushUndo(async()=>{
+      v[step]=prev;if(linked)v[linked]=linkedPrev;v.status=prevStatus;
+      save();renderVideosPageKeepScroll();
+      const up={[step]:prev,status:prevStatus};if(linked)up[linked]=linkedPrev;
+      await sbReqSilent('PATCH','videos',up,`?id=eq.${id}`);
+    },'Step change');
+    await sbReqSilent('PATCH','videos',patch,`?id=eq.${id}`);
+    // Prompt for posting date (reuse overview's prompt)
+    if(typeof _vidPromptPostDateFromVid==='function')_vidPromptPostDateFromVid(id);
+    return;
+  }
+
+  // Auto-publish: core 5 done + post_date + topic + title → published
+  const hasFields=v.topic&&v.title&&v.post_date;
   const kidsComplete=v.video_type!=='B'||_vidAllChildrenComplete(v.id);
-  if(selfComplete&&kidsComplete&&v.status!=='published'){
+  if(coreDone&&hasFields&&kidsComplete&&v.status!=='published'){
     v.status='published';
-  }else if((!selfComplete||!kidsComplete)&&v.status==='published'&&prevStatus==='published'){
+    // If tab required, create the tab task
+    if(tabRequired&&!tabDone&&typeof _vidCreateTabUpTask==='function'){
+      _vidCreateTabUpTask(id,v.post_date);
+    }
+  }else if(!coreDone&&v.status==='published'&&prevStatus==='published'){
     v.status='in_progress';
+  }
+  // If tab step just completed → true completeness celebration
+  if(step==='step_tableau_public'&&next==='done'&&coreDone&&hasFields){
+    // Mark tab task as done if it exists
+    const marker='_vid:'+id;
+    const tabTask=st.tasks.find(t=>t.notes&&t.notes.includes(marker)&&!t.done);
+    if(tabTask){tabTask.done=true;sbReqSilent('PATCH','tasks',{done:true},`?id=eq.${tabTask.id}`);}
+    // Remove from day map
+    if(typeof _vidDayMap==='function'){const map=_vidDayMap();delete map[String(id)];_vidDayMapSet(map);}
   }
   // Big video build toggle → cascade to all children
   const childUpdates=[];
@@ -2859,21 +2898,21 @@ async function cycleVidStep(id,step){
       const cPrevStatus=c.status;
       childUpdates.push({c,cPrev,cPrevStatus});
       c.step_build=next;
-      const cAllDone=VID_STEPS.every(s=>c[s]==='done'||c[s]==='na');
-      const cHasFields=c.post_date&&c.duration_minutes&&c.topic&&c.title;
-      if(cAllDone&&cHasFields&&c.status!=='published')c.status='published';
-      else if((!cAllDone||!cHasFields)&&c.status==='published')c.status='in_progress';
     });
   }
   const patch={[step]:next};
+  if(linked)patch[linked]=next;
   if(v.status!==prevStatus)patch.status=v.status;
   save();renderVideosPageKeepScroll();
-  if(selfComplete&&kidsComplete&&!wasDone)_vidCelebrate(id);
+  const allDone=VID_STEPS.every(s=>v[s]==='done'||v[s]==='na');
+  const wasDone=VID_STEPS.every(s=>(s===step?cur:v[s]||'not_started')==='done'||(s===step?cur:v[s]||'not_started')==='na');
+  if(allDone&&hasFields&&kidsComplete&&!wasDone)_vidCelebrate(id);
   pushUndo(async()=>{
-    v[step]=prev;v.status=prevStatus;
+    v[step]=prev;if(linked)v[linked]=linkedPrev;v.status=prevStatus;
     childUpdates.forEach(d=>{d.c.step_build=d.cPrev;d.c.status=d.cPrevStatus;});
     save();renderVideosPageKeepScroll();
-    await sbReqSilent('PATCH','videos',{[step]:prev,status:prevStatus},`?id=eq.${id}`);
+    const up={[step]:prev,status:prevStatus};if(linked)up[linked]=linkedPrev;
+    await sbReqSilent('PATCH','videos',up,`?id=eq.${id}`);
     for(const d of childUpdates)await sbReqSilent('PATCH','videos',{step_build:d.cPrev,status:d.cPrevStatus},`?id=eq.${d.c.id}`);
   },'Step change');
   await sbReqSilent('PATCH','videos',patch,`?id=eq.${id}`);

@@ -1805,7 +1805,7 @@ function _finRenderPersonal(accs,vtiAcc,currentVal,netWorth,totalAll){
     html+=`<div class="fin-legend-row${excCls}" data-fin-id="${a.id}" onmouseenter="_finHover('${a.id}')" onmouseleave="_finHover(null)">
       <span class="fin-legend-dot" style="background:${colorPastel};border:1.5px solid ${colorSolid}"></span>
       <span class="fin-legend-name">${_finEditable(a.id,'name',a.name,'fin-legend-edit-name')}</span>
-      <span class="fin-legend-vals"><span class="fin-legend-amt">${_finEditable(a.id,'amount',a.amount||0,'fin-legend-edit-amt',true)}</span><span class="fin-legend-pct">${pctStr}${a.exclude?`<button class="fin-excl-btn active" onclick="_finToggleExclude('${a.id}')" title="Include in total" style="opacity:1;color:#b0b8c4;margin-left:0">&#x21a9;</button>`:`<button class="fin-excl-btn" onclick="_finToggleExclude('${a.id}')" title="Exclude from total">&#x2212;</button>`}</span></span>
+      <span class="fin-legend-amt">${_finEditable(a.id,'amount',a.amount||0,'fin-legend-edit-amt',true)}</span><span class="fin-legend-pct">${pctStr}${a.exclude?`<button class="fin-excl-btn active" onclick="_finToggleExclude('${a.id}')" title="Include in total" style="opacity:1;color:#b0b8c4;margin-left:0">&#x21a9;</button>`:`<button class="fin-excl-btn" onclick="_finToggleExclude('${a.id}')" title="Exclude from total">&#x2212;</button>`}</span>
       <button class="delbtn fin-legend-del" onclick="delFin('${a.id}')">&#x2715;</button>
     </div>`;
   });
@@ -1833,8 +1833,9 @@ function _finRenderInvestments(purchases,totalBought,gain,gainPct,currentVal){
     const dataPoints=chronological.map(p=>{const a=Math.abs(p.amount||0);cum+=a;return{date:p.date,amt:a,cum,ts:new Date(p.date).getTime()};});
     const max=Math.max(...dataPoints.map(d=>d.cum));
     const minTs=dataPoints[0].ts,maxTs=dataPoints[dataPoints.length-1].ts,tsRange=maxTs-minTs||1;
+    const pad=5;
     const pts=dataPoints.map(d=>({
-      px:((d.ts-minTs)/tsRange)*100,
+      px:pad+((d.ts-minTs)/tsRange)*(100-pad*2),
       py:5+(1-d.cum/max)*85,
       date:d.date,amt:d.amt,cum:d.cum
     }));
