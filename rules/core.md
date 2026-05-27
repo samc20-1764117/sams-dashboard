@@ -80,8 +80,9 @@ Supabase Auth (email+password), RLS on all tables. `init()`→`checkAuth()`→`d
 - After async DB save returns (e.g. POST returns real ID), re-render affected views to swap temp→real IDs.
 
 ## Selection IDs
+- Full task type table with all selection IDs and drag IDs: see `rules/tasks-ui.md` → "Task Types on Overview".
 - Items can have different selection IDs depending on where they appear. Weekly calendar chips use `wrrule-virt-{id}`, WR panel uses `wrrule-{id}`. Drag/drop handlers must check BOTH prefixes when testing `selectedTasks.has()`. Use pattern: `selectedTasks.has('wrrule-'+id)||selectedTasks.has('wrrule-virt-'+id)`.
-- Multi-select drag: always filter `selectedTasks` for ALL relevant prefixes, strip prefixes to get real IDs.
+- Multi-select drag: `_moveOtherSelected(ds, excludeSid, undos, excludePrefixes?)` handles all cross-type multi-select. Every drag handler calls it for types it doesn't handle inline.
 
 ## Undo / Redo
 - `pushUndo(fn,msg)`: snapshots state AFTER action (called post-mutation). `doUndo()`: pops, captures current snap for redo, calls fn. `doRedo()` (async): restores snap, `await _syncRedoDiff(before,after)`, pushes undo entry whose fn calls both `_stateRestore(beforeRedo)` AND `_syncRedoDiff(snap,beforeRedo)` to keep DB in sync on undo-after-redo.

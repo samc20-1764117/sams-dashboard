@@ -1,5 +1,33 @@
 # Tasks & UI Rules
 
+## Task Types on Overview
+
+All task types that appear on the overview calendar/today list. Every type must support: render, select (`selTask`), drag, drop onto calendar day, multi-select drag with mixed types, timeblock drop, checkbox toggle, delete (X), undo.
+
+| Type | Selection ID | Drag ID | Source |
+|------|-------------|---------|--------|
+| Regular task | `String(t.id)` | `String(t.id)` | `st.tasks` |
+| WR rule | `wrrule-{id}` / `wrrule-virt-{id}` | `wrrule::{id}` | `st.wrRules` |
+| WR recurring (legacy) | `wrec-{id}` | `wrec::{id}` | `st.recurring` (is_weekly_reset=true) |
+| Non-WR recurring | `rec-virt-{id}` | `rec::{id}::{date}` | `st.recurring` (is_weekly_reset=false) |
+| Shopping | `shop-cal-{id}` | `shop::{id}` | `st.shopping` |
+| Video | `vid-ov-{vidId}` | `vid::{vidId}` | `_vidDayMap` (localStorage) |
+| Pup session | `pup-sess-{sessId}` | `pupsess::{sessId}::{ds}` | `st.pupSessions` |
+| Pup skill (drag-only) | n/a | `pupskill::{skillId}` | `st.pup_skills` |
+| Finance cancellation | `fin-cancel-{subId}` | `fin-cancel::{subId}` | computed |
+| Travel banner | `tv-{id}` | `travel::{id}::{offset}` | `st.travel` |
+| Birthday | n/a | n/a | `st.birthdays` (banner only, not draggable) |
+| Weekly goal | `String(t.id)` | `wkgoal::{id}` | `st.tasks` (category=Weekly Goals) |
+| TB block | `blk-{id}` | block drag | `st.blocks` |
+| Auto TB | `atb::{atbId}` | auto-block drag | `st.autoTimeblocks` |
+
+### Multi-select global behavior
+- **Cmd/Ctrl+click**: toggle item in selection.
+- **Shift+click**: range-select within same container.
+- **Drag any selected item**: moves ALL selected items to target day, regardless of type.
+- `_moveOtherSelected(ds, excludeSid, undos, excludePrefixes?)` helper handles cross-type multi-select for all drag handlers.
+- Every drag handler must: (1) move its own type, (2) call `_moveOtherSelected` or inline-iterate `selectedTasks` for other types, (3) collect undo fns for all moved items.
+
 ## Overdue Logic
 - **Tasks**: `due_date < today && !done && category !== 'Weekly Goals'`. Weekly Goals excluded from today overdue count/banner but shown as overdue (OV style) in WO modal and weekly cal goals column when viewing past weeks (`isPast` / `_goalsPast`). Carried-over overdue goals also appear on current week in weekly cal goals column, WO modal, and monthly view.
 - **Weekly Goals overdue carry-over**: uncompleted goals from past weeks (`due_date < wkStart`) shown with OV style on current week. Each view has a stacked banner: "X Overdue" text + red "Move to this week" button. Clicking moves all overdue goals' `due_date` to current `wkStart`. Undoable. Banner appears in: weekly cal goals column, WO modal (with light red bg), monthly view goals cell (compact).
