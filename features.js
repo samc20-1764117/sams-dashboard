@@ -1863,19 +1863,30 @@ function _finRenderInvestments(purchases,totalBought,gain,gainPct,currentVal){
     // Use % coordinates based on actual date position
     const pts=dataPoints.map(d=>({
       px:3+((d.ts-minTs)/tsRange)*94,
-      py:5+(1-d.cum/max)*75,
+      py:8+(1-d.cum/max)*72,
       date:d.date,amt:d.amt,cum:d.cum
     }));
     const years=new Set();const yearLabels=[];
     dataPoints.forEach((d,i)=>{const y=(d.date||'').slice(0,4);if(y&&!years.has(y)){years.add(y);yearLabels.push({px:pts[i].px,y:y});}});
     const svgPolyFill=pts.map(p=>`${p.px},${p.py}`).join(' ');
     const svgPolyLine=svgPolyFill;
+    // Y-axis grid lines
+    const gridSteps=[0,.25,.5,.75,1];
+    const gridLabels=gridSteps.map(s=>({py:8+(1-s)*72,val:Math.round(max*s)}));
     html+=`<div class="fin-inv-chart" style="position:relative;height:120px">
       <svg viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%">
-      <defs><linearGradient id="finAreaGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#10b981" stop-opacity=".18"/><stop offset="100%" stop-color="#10b981" stop-opacity=".02"/></linearGradient></defs>
-      <polyline points="${pts[0].px},85 ${svgPolyFill} ${pts[pts.length-1].px},85" fill="url(#finAreaGrad)" stroke="none"/>
+      <defs><linearGradient id="finAreaGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#10b981" stop-opacity=".18"/><stop offset="100%" stop-color="#10b981" stop-opacity=".02"/></linearGradient></defs>`;
+    gridLabels.forEach(g=>{
+      html+=`<line x1="3" y1="${g.py}" x2="97" y2="${g.py}" stroke="rgba(200,200,215,.15)" stroke-width="0.5" vector-effect="non-scaling-stroke"/>`;
+    });
+    html+=`<polyline points="${pts[0].px},80 ${svgPolyFill} ${pts[pts.length-1].px},80" fill="url(#finAreaGrad)" stroke="none"/>
       <polyline points="${svgPolyLine}" fill="none" stroke="#10b981" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
       </svg>`;
+    // Y-axis labels
+    gridLabels.forEach(g=>{
+      if(g.val===0)return;
+      html+=`<span class="fin-chart-ylab" style="top:${g.py}%">${g.val>=1000?'$'+Math.round(g.val/1000)+'k':'$'+g.val}</span>`;
+    });
     // HTML dots (visible, stay round) + hit areas (full-height strips)
     pts.forEach((p,i)=>{
       html+=`<span class="fin-chart-dot" style="left:${p.px}%;top:${p.py}%"></span>`;
