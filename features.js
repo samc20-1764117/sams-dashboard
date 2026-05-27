@@ -1841,7 +1841,11 @@ function _finRenderInvestments(purchases,totalBought,gain,gainPct,currentVal){
       date:d.date,amt:d.amt,cum:d.cum
     }));
     const years=new Set();const yearLabels=[];
-    dataPoints.forEach(d=>{const y=(d.date||'').slice(0,4);if(y&&!years.has(y)){years.add(y);const jan1=new Date(y+'-01-01').getTime();const px=pad+((jan1-minTs)/tsRange)*(100-pad*2);yearLabels.push({px:Math.max(pad,Math.min(100-pad,px)),y:y});}});
+    const tsToPx=ts=>pad+((ts-minTs)/tsRange)*(100-pad*2);
+    dataPoints.forEach(d=>{const y=(d.date||'').slice(0,4);if(y)years.add(y);});
+    const maxYr=Math.max(...[...years].map(Number));
+    years.add(String(maxYr+1));
+    years.forEach(y=>{const jan1=new Date(y+'-01-01').getTime();const px=tsToPx(jan1);if(px>=-2&&px<=102)yearLabels.push({px,y});});
     const firstY=pts[0].py,lastY=pts[pts.length-1].py;
     const svgPolyFill=pts.map(p=>`${p.px},${p.py}`).join(' ');
     const svgPolyLine=`-5,${firstY} ${svgPolyFill} 105,${lastY}`;
