@@ -1919,7 +1919,7 @@ function _finRenderSubs(){
         </span>
       </td>
       <td style="text-align:center">${_finFreqSelect(sub.id,sub.frequency||'monthly')}</td>
-      <td style="text-align:right"><span class="fin-sub-plain fin-due-edit" contenteditable="true" data-fid="${sub.id}" data-field="due_day" onfocus="this.textContent='${dueRaw}';" onblur="_finSubEditDay('${sub.id}',this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">${dueDisplay}</span></td>
+      <td style="text-align:right"><span class="fin-sub-plain fin-due-edit" contenteditable="true" data-fid="${sub.id}" data-field="due_day" onfocus="this.textContent='${dueRaw}';" onblur="_finSubEditDay('${sub.id}',this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}if(event.key==='Tab'){event.preventDefault();this.blur();_finSubTabNext(this);}">${dueDisplay}</span></td>
       <td class="fin-num">${_finSubEditable(sub.id,'amount',amt,'fin-sub-plain')}</td>
       <td class="fin-mo-adj">${_finFmt(moAdj)}</td>
       <td><button class="delbtn" onclick="delFinSub('${sub.id}')">&#x2715;</button></td>
@@ -1970,10 +1970,16 @@ function _finParseDue(raw){
   return{due_month:null,due_day:d||null};
 }
 
+function _finSubTabNext(el){
+  const row=el.closest('tr');if(!row)return;
+  const editables=[...row.querySelectorAll('[contenteditable="true"]')];
+  const idx=editables.indexOf(el);
+  if(idx>=0&&idx<editables.length-1){setTimeout(()=>{const nxt=editables[idx+1];nxt.focus();const r=document.createRange();r.selectNodeContents(nxt);const s=window.getSelection();s.removeAllRanges();s.addRange(r);},20);}
+}
 function _finSubEditable(id,field,val,cls){
   const display=typeof val==='number'?_finFmt(val):escHtml(val||'');
   const raw=typeof val==='number'?val.toFixed(2):(val||'');
-  return`<span class="${cls||'fin-edit'}" contenteditable="true" data-fid="${id}" data-field="${field}" onfocus="if('${field}'!=='name'){this.textContent='${raw}';}" onblur="_finSubEditField('${id}','${field}',this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">${display}</span>`;
+  return`<span class="${cls||'fin-edit'}" contenteditable="true" data-fid="${id}" data-field="${field}" onfocus="if('${field}'!=='name'){this.textContent='${raw}';}" onblur="_finSubEditField('${id}','${field}',this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}if(event.key==='Tab'){event.preventDefault();this.blur();_finSubTabNext(this);}">${display}</span>`;
 }
 
 async function _finSubEditField(id,field,el){
@@ -2060,7 +2066,7 @@ async function addFinSub(){
   pushUndo(()=>{st.finSubs=st.finSubs.filter(r=>r.id!==row.id);renderFinancePage();},'Added subscription');
   const{id,...fields}=row;
   const sv=await sbReq('POST','finance_subs',fields);
-  if(sv&&sv[0]){const i=st.finSubs.findIndex(x=>x.id===row.id);if(i>-1)st.finSubs[i]=sv[0];}
+  if(sv&&sv[0]){const i=st.finSubs.findIndex(x=>x.id===row.id);if(i>-1){const cur=st.finSubs[i];const realId=sv[0].id;cur.id=realId;const{id:_,...body}=cur;sbReqNullable('PATCH','finance_subs',body,`?id=eq.${realId}`);}}
 }
 
 async function delFinSub(id){
