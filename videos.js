@@ -2688,31 +2688,39 @@ function _vidUpdateModalFills(){
 }
 function _vidUpdateModalComplete(){
   const wrap=document.getElementById('vmStepsWrap');if(!wrap)return;
+  const statusRow=wrap.previousElementSibling; // the flex row with status + big video dropdowns
   const steps=document.querySelectorAll('#vmSteps [data-step]');
   const allDone=[...steps].every(el=>el.dataset.val==='done'||el.dataset.val==='na');
   const pdInp=document.getElementById('vmPostDate');
   const hasPd=pdInp&&pdInp.value.trim().length>0;
   const complete=allDone&&hasPd;
   if(complete){
-    wrap.style.background='rgba(16,185,129,.08)';
+    // Green outline wrapping both status row and stages container
+    if(statusRow){statusRow.style.background='rgba(16,185,129,.06)';statusRow.style.border='1.5px solid rgba(16,185,129,.35)';statusRow.style.borderRadius='10px 10px 0 0';statusRow.style.padding='8px 12px';statusRow.style.borderBottom='none';}
+    wrap.style.background='rgba(16,185,129,.06)';
     wrap.style.borderColor='rgba(16,185,129,.35)';
-    wrap.style.boxShadow='0 0 0 1px rgba(16,185,129,.12), inset 0 1px 0 rgba(255,255,255,.6)';
-    // Add completion indicator if not already there
-    if(!wrap.querySelector('.vm-complete-badge')){
+    wrap.style.boxShadow='0 0 0 1px rgba(16,185,129,.12)';
+    if(statusRow){wrap.style.borderRadius='0 0 10px 10px';wrap.style.marginTop='0';}
+    // Overlay COMPLETE badge on status row, hide children
+    if(statusRow&&!statusRow.querySelector('.vm-complete-badge')){
+      [...statusRow.children].forEach(c=>c.style.display='none');
       const badge=document.createElement('div');
       badge.className='vm-complete-badge';
-      badge.style.cssText='display:flex;align-items:center;gap:4px;margin-top:6px;justify-content:center;animation:vmFadeIn .4s ease';
-      badge.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg><span style="font-size:10px;font-weight:600;color:#10b981;letter-spacing:.3px">COMPLETE</span>';
-      wrap.appendChild(badge);
-      // Mini sparkle burst
+      badge.style.cssText='display:flex;align-items:center;gap:6px;justify-content:center;width:100%;animation:vmFadeIn .4s ease';
+      badge.innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg><span style="font-size:12px;font-weight:700;color:#10b981;letter-spacing:.5px">COMPLETE</span>';
+      statusRow.appendChild(badge);
       _vidModalSparkle(wrap);
     }
   }else{
     wrap.style.background='rgba(255,255,255,.7)';
     wrap.style.borderColor='rgba(210,205,228,.3)';
     wrap.style.boxShadow='1px 1px 3px rgba(0,0,0,.06), inset 0 1px 0 rgba(255,255,255,.8)';
-    const badge=wrap.querySelector('.vm-complete-badge');
-    if(badge)badge.remove();
+    wrap.style.borderRadius='10px';
+    wrap.style.marginTop='8px';
+    if(statusRow){statusRow.style.background='';statusRow.style.border='';statusRow.style.borderRadius='';statusRow.style.padding='';statusRow.style.borderBottom='';
+      const badge=statusRow.querySelector('.vm-complete-badge');
+      if(badge){badge.remove();[...statusRow.children].forEach(c=>c.style.display='');}
+    }
   }
 }
 function _vidModalSparkle(container){
@@ -2878,6 +2886,20 @@ async function saveVidModal(){
         const marker='_vid:'+v.id;
         const tabTask=st.tasks.find(t=>t.notes&&t.notes.includes(marker));
         if(tabTask){tabTask.due_date=v.post_date;sbReqSilent('PATCH','tasks',{due_date:v.post_date},`?id=eq.${tabTask.id}`);}
+      }
+      // Sync tab stage → Post Tab task done state
+      if(v.status==='published'){
+        const _tabMarker='_vid:'+v.id;
+        const _tabTask2=st.tasks.find(t=>t.notes&&t.notes.includes(_tabMarker));
+        if(_tabTask2){
+          const _tabDone=v.step_tableau_public==='done'||v.step_tableau_public==='na';
+          if(_tabTask2.done!==_tabDone){
+            _tabTask2.done=_tabDone;
+            sbReqSilent('PATCH','tasks',{done:_tabDone},`?id=eq.${_tabTask2.id}`);
+            // Also update linked timeblocks
+            st.blocks.filter(b=>String(b.taskId)===String(_tabTask2.id)).forEach(b=>{b._done=_tabDone;sbUpdateBlock(b.id,{done:_tabDone});});
+          }
+        }
       }
       save();renderVideosPageKeepScroll();
       if(v.video_type==='B'&&v.status!==prev.status&&(v.status==='in_progress'||v.status==='up_next'))_vidPromoteChildren(v.id,v.status);

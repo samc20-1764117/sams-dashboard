@@ -1417,7 +1417,7 @@ function renderWkCal(){
         }
         applySelHighlight();
       });
-      chip.addEventListener('dblclick',e=>{e.stopPropagation();if(t._type==='fin-cancel'){showPage('finance');}else if(t._type==='vid'){if(typeof openVidEdit==='function')openVidEdit(t._vidId);}else if(t._type==='pup'){openPupEditModal(t._skillId);}else if(t._type==='shop')tiDblShop(e,t._shopId);else if(!t._virtual)tiDbl(e,t.id);else tiDblRec(e,t._recId);});
+      chip.addEventListener('dblclick',e=>{e.stopPropagation();if(t._type==='fin-cancel'){showPage('finance');}else if(t._type==='vid'){if(typeof openVidEdit==='function')openVidEdit(t._vidId);}else if(t._type==='pup'){openPupEditModal(t._skillId);}else if(t._type==='shop')tiDblShop(e,t._shopId);else if(t.notes&&t.notes.startsWith('_vid:')){if(typeof openVidEdit==='function')openVidEdit(t.notes.replace('_vid:',''));}else if(!t._virtual)tiDbl(e,t.id);else tiDblRec(e,t._recId);});
       const dx=document.createElement('button');dx.className='chip-del';dx.textContent='✕';
       dx.title=(t._type==='vid'||t._type==='shop'||t._isWrec||t._isWrRule)?'Remove from calendar':t._virtual?'Delete recurring task':'Delete task';
       dx.addEventListener('click',e2=>{
@@ -4230,7 +4230,7 @@ function drawTBBlock(col,b){
   if(isPostTab){
     _ptVidId=linkedTask.notes.replace('_vid:','');
     const _ptVid=(st.videos||[]).find(x=>String(x.id)===String(_ptVidId));
-    if(_ptVid&&_ptVid.youtube_url)_copyLinkHtml=`<button class="tb-copy-link" data-url="${_ptVid.youtube_url.replace(/"/g,'&quot;')}" title="Copy YouTube link" style="background:none;border:none;cursor:pointer;padding:0;opacity:.6;flex-shrink:0;display:inline-flex;align-items:center;margin-right:6px;position:relative;top:-1px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></button>`;
+    if(_ptVid&&_ptVid.youtube_url)_copyLinkHtml=`<button class="tb-copy-link" data-url="${_ptVid.youtube_url.replace(/"/g,'&quot;')}" title="Copy YouTube link" style="background:none;border:none;cursor:pointer;padding:0;opacity:.6;flex-shrink:0;display:inline-flex;align-items:center;margin-right:10px;position:relative;top:-1px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></button>`;
   }
   const _showTimeHere=_showTime&&!isPostTab;
   el.innerHTML=`<div class="tb-row"><input type="checkbox" class="tb-chk" ${b._done?'checked':''}><span class="tb-bt${b.dur>=30?' wrap':''}">${_displayTitle}</span><div class="tb-right">${_showTimeHere?`<span class="tb-btime">${tStr(b.sm)}-${tStr(b.sm+b.dur)}</span>`:''}${_copyLinkHtml}<button class="tb-bdel" onclick="delBlock('${b.id}',event)">✕</button></div></div>${_vidStepsHtml}${_notesHtml}<div class="tb-resize" data-id="${b.id}"></div>`;
