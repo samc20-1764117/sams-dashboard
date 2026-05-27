@@ -1870,7 +1870,7 @@ function _finRenderInvestments(purchases,totalBought,gain,gainPct,currentVal){
     dataPoints.forEach((d,i)=>{const y=(d.date||'').slice(0,4);if(y&&!years.has(y)){years.add(y);yearLabels.push({px:pts[i].px,y:y});}});
     const svgPolyFill=pts.map(p=>`${p.px},${p.py}`).join(' ');
     const svgPolyLine=svgPolyFill;
-    html+=`<div class="fin-inv-chart" style="position:relative;height:120px">
+    html+=`<div class="fin-inv-chart-wrap"><div class="fin-inv-chart" style="position:relative;height:120px">
       <svg viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%">
       <defs><linearGradient id="finAreaGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#10b981" stop-opacity=".18"/><stop offset="100%" stop-color="#10b981" stop-opacity=".02"/></linearGradient></defs>
       <polyline points="0,85 ${svgPolyFill} 100,85" fill="url(#finAreaGrad)" stroke="none"/>
@@ -1890,7 +1890,7 @@ function _finRenderInvestments(purchases,totalBought,gain,gainPct,currentVal){
     yearLabels.forEach(yl=>{
       html+=`<span class="fin-chart-year" style="left:${yl.px.toFixed(1)}%">${yl.y}</span>`;
     });
-    html+=`</div>`;
+    html+=`</div></div>`;
   }
   html+=`</div>`;
   return html;
