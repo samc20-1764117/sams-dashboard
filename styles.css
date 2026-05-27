@@ -700,7 +700,7 @@ body.dark .easy-meals-cutout{background:var(--bg)}
 body.dark .easy-meals-btn{background:rgba(40,28,20,.85);border-color:rgba(255,220,200,.15);color:var(--text)}
 body.dark .easy-meals-btn:hover{border-color:var(--accent);color:var(--accent)}
 /* Easy Meals popup */
-.easy-meals-popup{display:none;position:absolute;top:34px;left:24px;z-index:1002;width:380px;max-height:520px;background:var(--bg);border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.12);overflow:hidden;flex-direction:column}
+.easy-meals-popup{display:none;position:absolute;top:34px;left:24px;z-index:1002;width:380px;max-height:520px;background:var(--bg);border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.12);overflow:hidden;flex-direction:column;outline:none}
 .easy-meals-popup.open{display:flex}
 body.dark .easy-meals-popup{background:rgba(28,16,10,.95);border-color:rgba(255,220,200,.1)}
 .easy-meals-hdr{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);font-size:13px;font-weight:700}

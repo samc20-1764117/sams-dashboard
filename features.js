@@ -2843,11 +2843,32 @@ function _recPickSuggestion(text,type){
 
 // ── Easy Meals ────────────────────────────────────────────────────────────────
 let _editEasyIdx=-1,_emIngs=[];
+function _closeEasyMeals(){
+  const popup=document.querySelector('.easy-meals-popup');
+  if(popup)popup.classList.remove('open');
+  _editEasyIdx=-1;_emIngs=[];
+  document.activeElement?.blur();
+}
 function toggleEasyMealsPopup(){
   let popup=document.querySelector('.easy-meals-popup');
-  if(popup){popup.classList.toggle('open');if(popup.classList.contains('open')){_editEasyIdx=-1;_emIngs=[];renderEasyMeals();}return;}
+  if(popup){
+    if(popup.classList.contains('open')){_closeEasyMeals();return;}
+    popup.classList.add('open');_editEasyIdx=-1;_emIngs=[];renderEasyMeals();return;
+  }
   popup=document.createElement('div');popup.className='easy-meals-popup open';
   document.querySelector('.rec-book-wrap').appendChild(popup);
+  // Click outside to close
+  document.addEventListener('mousedown',e=>{
+    const p=document.querySelector('.easy-meals-popup');
+    if(!p||!p.classList.contains('open'))return;
+    if(!p.contains(e.target)&&!e.target.closest('.easy-meals-btn'))_closeEasyMeals();
+  });
+  // Enter/Escape to close
+  popup.addEventListener('keydown',e=>{
+    e.stopPropagation();
+    if(e.key==='Escape'){e.preventDefault();_closeEasyMeals();}
+    if(e.key==='Enter'&&!e.target.matches('input,textarea,button')){e.preventDefault();_closeEasyMeals();}
+  });
   renderEasyMeals();
 }
 function renderEasyMeals(){
