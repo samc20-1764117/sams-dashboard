@@ -1321,7 +1321,8 @@ function renderWkCal(){
     const _vdm=_vidDayMap();
     const _vPend=v=>v.status==='published'&&typeof _vidGroupFullyComplete==='function'&&!_vidGroupFullyComplete(v);
     const _hasTabTask=vid=>{const m='_vid:'+vid;return st.tasks.some(t=>t.notes&&t.notes.includes(m));};
-    const vidForDay=(st.videos||[]).filter(v=>!v.is_deleted&&((_vdm[String(v.id)]===ds)||(v.status==='published'&&v.post_date===ds)||(_vPend(v)&&v.post_date===ds&&!_hasTabTask(v.id)))).map(v=>({id:'vid-ov-'+v.id,name:v.topic||v.title,category:'Videos',due_date:ds,done:v.status==='published',_vidId:v.id,_virtual:true,_type:'vid'}));
+    const _vidOnTB=new Set(st.blocks.filter(b=>b.ds===ds&&b._vidId).map(b=>String(b._vidId)));
+    const vidForDay=(st.videos||[]).filter(v=>!v.is_deleted&&((_vdm[String(v.id)]===ds)||_vidOnTB.has(String(v.id))||(v.status==='published'&&v.post_date===ds)||(_vPend(v)&&v.post_date===ds&&!_hasTabTask(v.id)))).map(v=>({id:'vid-ov-'+v.id,name:v.topic||v.title,category:'Videos',due_date:ds,done:v.status==='published',_vidId:v.id,_virtual:true,_type:'vid'}));
     const finCancelForDay=typeof _finCancelTasksForDate==='function'?_finCancelTasksForDate(ds):[];
     const undoneDay=sortTasksForDay([
       ...st.tasks.filter(t=>t.due_date&&t.due_date.split('T')[0]===ds&&!t.done&&t.category!=='Weekly Goals'),

@@ -2654,8 +2654,8 @@ function _vidRenderSteps(vals){
     if(s==='step_tableau_public'){
       const _linkNa=cur==='na';
       parts.push(`<div id="vmLinkWrap" style="display:flex;flex-direction:column;gap:2px;align-items:flex-start;flex:1;${_linkNa?'opacity:.5;pointer-events:none':''}">
-        <span class="vm-step-lbl" style="font-size:9px;color:var(--muted)">Link</span>
-        <input id="vmYoutubeUrl" type="text" placeholder="url" style="width:100%;height:22px;font-size:9px;padding:0 6px;border:1.5px solid rgba(210,205,228,.4);border-radius:3px;background:transparent;color:var(--text);text-align:left;box-sizing:border-box;outline:none">
+        <span class="vm-step-lbl" style="font-size:9px;color:${_linkNa?'rgba(180,175,205,.5)':'var(--muted)'}">Link</span>
+        <input id="vmYoutubeUrl" type="text" placeholder="url" style="width:100%;height:22px;font-size:9px;padding:0 6px;border:1.5px solid rgba(210,205,228,${_linkNa?'.3':'.4'});border-radius:3px;background:${_linkNa?'rgba(210,205,228,.15)':'transparent'};color:var(--text);text-align:left;box-sizing:border-box;outline:none">
       </div>`);
     }
   });
@@ -2817,7 +2817,12 @@ function _vidUpdateModalStep(el,val){
     const tw=document.getElementById('vmTabWrap');
     if(tw)tw.style.opacity=val==='na'?'.5':'';
     const lw=document.getElementById('vmLinkWrap');
-    if(lw){lw.style.opacity=val==='na'?'.5':'1';lw.style.pointerEvents=val==='na'?'none':'auto';}
+    if(lw){
+      lw.style.opacity=val==='na'?'.5':'1';lw.style.pointerEvents=val==='na'?'none':'auto';
+      const lLbl=lw.querySelector('.vm-step-lbl');if(lLbl)lLbl.style.color=val==='na'?'rgba(180,175,205,.5)':'var(--muted)';
+      const lInp=document.getElementById('vmYoutubeUrl');
+      if(lInp){lInp.style.borderColor=val==='na'?'rgba(210,205,228,.3)':'rgba(210,205,228,.4)';lInp.style.background=val==='na'?'rgba(210,205,228,.15)':'transparent';}
+    }
   }
   _vidUpdateModalComplete();
 }
