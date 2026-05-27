@@ -119,7 +119,7 @@ function renderToday(){
   }
   document.getElementById('todList').innerHTML=sorted.map(t=>{
     const arr=!t.done&&!_hasTBToday(t);
-    return t._type==='travel'||t._type==='birthday'?tRowExtra(t):t._type==='vid'?tRowVidVirt(t,arr):t._type==='fin-cancel'?tRowFinCancel(t):t._type==='shop'?tRowShopVirt(t,true,arr,true):t._type==='pup'?tRowPupSess(t,true,arr):t._virtual?tRowTodayVirt(t,arr,true):tRow(t,{cat:true,catDot:true,drag:true,noDate:true,tbArrow:arr,noColor:true});
+    return t._type==='travel'||t._type==='birthday'?tRowExtra(t):t._type==='vid'?tRowVidVirt(t,arr):t._type==='fin-cancel'?tRowFinCancel(t,arr):t._type==='shop'?tRowShopVirt(t,true,arr,true):t._type==='pup'?tRowPupSess(t,true,arr):t._virtual?tRowTodayVirt(t,arr,true):tRow(t,{cat:true,catDot:true,drag:true,noDate:true,tbArrow:arr,noColor:true});
   }).join('');
   updateOvBanner();
   renderPupSkillsHighlight();
@@ -764,12 +764,15 @@ function tRowShopVirt(t,noDate=false,tbArrow=false,noColor=false){
     <button class="delbtn" onclick="event.stopPropagation();unscheduleShop('${t._shopId}')">✕</button>
   </div>`;
 }
-function tRowFinCancel(t){
-  const s={bg:'rgba(239,68,68,.1)',t:'#dc2626',d:'#ef4444',b:'rgba(239,68,68,.2)'};
-  return`<div class="ti" style="background:${s.bg}" id="ti-${t.id}" onclick="selTask(event,'${t.id}')" ondblclick="showPage('finance')">
+function tRowFinCancel(t,tbArrow=false){
+  const s=OV;
+  return`<div class="ti ov-row" id="ti-${t.id}" draggable="true"
+    ondragstart="dragId='fin-cancel::${t._subId}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true)"
+    ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false)"
+    onclick="selTask(event,'${t.id}')" ondblclick="showPage('finance')">
     <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" onchange="if(this.checked){delFinSub('${t._subId}');}"></label>
-    <span class="tn" style="color:${s.t}">${t.name}</span>
-    <svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3" fill="${s.bg}" stroke="${s.d}" stroke-opacity="0.4" stroke-width="1"/></svg>
+    <span class="tn">${t.name}</span>
+    ${tbArrow?'<span class="tb-arrow">›</span>':''}
   </div>`;
 }
 function tRowVidVirt(t,arr){
@@ -1339,8 +1342,8 @@ function renderWkCal(){
     dayTasks.forEach(t=>{
       const ov=isOv(t.due_date)&&!t.done,imp=t.important&&!ov&&!t.done;
       const _chipCat=(t._isWrec||t._isWrRule)?'weekly_reset':(t._virtual&&t._recId?'recurring':t.category);
-      const s=ov?OV:imp?IMP:t._type==='fin-cancel'?{bg:'rgba(239,68,68,.1)',t:'#dc2626',d:'#ef4444',b:'rgba(239,68,68,.2)'}:t._type==='vid'?{bg:'rgba(34,197,94,.1)',t:'#15803d',d:'#22c55e',b:'rgba(34,197,94,.2)',dot:'rgba(34,197,94,.25)'}:t._type==='pup'?_pupSessStyle():gc(_chipCat);
-      const chip=document.createElement('div');chip.className='chip'+(t.done?' done-chip':'');
+      const s=ov?OV:imp?IMP:t._type==='fin-cancel'?OV:t._type==='vid'?{bg:'rgba(34,197,94,.1)',t:'#15803d',d:'#22c55e',b:'rgba(34,197,94,.2)',dot:'rgba(34,197,94,.25)'}:t._type==='pup'?_pupSessStyle():gc(_chipCat);
+      const chip=document.createElement('div');chip.className='chip'+(t.done?' done-chip':'')+(t._type==='fin-cancel'?' ov-row':'');
       chip.style.cssText=`background:${s.bg};color:${s.t};border-color:${s.b}`;
       if(!t._virtual)chip.dataset.tid=String(t.id);
       else if(t._type==='shop')chip.dataset.tid='shop-cal-'+t._shopId;
@@ -1350,10 +1353,10 @@ function renderWkCal(){
       else if(t._type==='vid')chip.dataset.tid='vid-ov-'+t._vidId;
       else if(t._type==='pup')chip.dataset.tid='pup-sess-'+t._pupSessId;
       else if(t._type==='fin-cancel')chip.dataset.tid='fin-cancel-'+t._subId;
-      chip.draggable=t._type!=='fin-cancel';
+      chip.draggable=true;
       chip.addEventListener('dragstart',e2=>{
-        if(t._type==='fin-cancel'){e2.preventDefault();return;}
-        if(t._type==='vid'){dragId='vid::'+t._vidId;}
+        if(t._type==='fin-cancel'){dragId='fin-cancel::'+t._subId;}
+        else if(t._type==='vid'){dragId='vid::'+t._vidId;}
         else if(t._type==='pup'){dragId='pupsess::'+t._pupSessId+'::'+ds;}
         else if(t._type==='shop'){dragId='shop::'+t._shopId;}
         else if(t._isWrRule){dragId='wrrule::'+t._ruleId;}
