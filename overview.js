@@ -3334,7 +3334,13 @@ function _vidOvInlineAdd(bigId,orderBefore,orderAfter,afterEl){
   row.style.cssText='padding:2px 6px 2px 28px;display:flex;align-items:center;gap:4px';
   row.innerHTML=`<span style="color:rgba(140,135,160,.4);font-size:10px;width:16px;flex-shrink:0;text-align:center">└</span><input type="text" placeholder="Video topic..." style="flex:1;border:none;outline:none;background:transparent;font-size:11px;color:var(--text);font-weight:500;padding:3px 4px;border-radius:4px;box-shadow:inset 0 0 0 1px rgba(14,165,233,.3)">`;
   const inp=row.querySelector('input');
-  if(afterEl&&afterEl.parentNode)afterEl.parentNode.insertBefore(row,afterEl.nextSibling);
+  // For + on B video (no orderBefore), insert after last child row
+  if(afterEl&&afterEl.parentNode&&orderBefore==null){
+    let lastChild=afterEl;
+    let next=afterEl.nextElementSibling;
+    while(next&&(next.dataset.cvid||next.classList.contains('vid-insert-zone')||next.classList.contains('vid-ov-inline-add'))){lastChild=next;next=next.nextElementSibling;}
+    lastChild.parentNode.insertBefore(row,lastChild.nextSibling);
+  }else if(afterEl&&afterEl.parentNode){afterEl.parentNode.insertBefore(row,afterEl.nextSibling);}
   else{const panel=document.getElementById('vidOvPanel');if(panel){const content=panel.querySelector('div[style*="padding:4px 10px"]')||panel;content.appendChild(row);}}
   setTimeout(()=>inp.focus(),30);
   const _save=async()=>{
@@ -3852,12 +3858,14 @@ function _vidOvToggleAll(){
         }
       }
       // Arrow Left/Right — move between statuses (idea ↔ in_progress ↔ up_next)
-      if((e.key==='ArrowLeft'||e.key==='ArrowRight')&&_voaSel.size>0){
+      // Works with toolbox selection OR video popup selection
+      const _selIds=_voaSel.size>0?[..._voaSel]:(_vidOvSelVid?[_vidOvSelVid]:[]);
+      if((e.key==='ArrowLeft'||e.key==='ArrowRight')&&_selIds.length>0){
         e.preventDefault();
         const isRight=e.key==='ArrowRight';
         // Right: up_next→in_progress→idea, Left: idea→in_progress→up_next
         const statusMap=isRight?{up_next:'in_progress',in_progress:'idea'}:{idea:'in_progress',in_progress:'up_next'};
-        const allIds=[..._voaSel];
+        const allIds=_selIds;
         const vids=allIds.map(id=>(st.videos||[]).find(x=>String(x.id)===id)).filter(Boolean);
         const toMove=vids.filter(v=>statusMap[v.status]);
         if(!toMove.length)return;
@@ -3872,6 +3880,8 @@ function _vidOvToggleAll(){
             const ns=statusMap[c.status];if(ns){childUndos.push({id:c.id,prev:c.status,prevBig:c.big_video_id});c.status=ns;if(ns==='idea'){c.big_video_id=null;}}
           });
         });
+        // Clear selections after move
+        if(_voaSel.size===0&&_vidOvSelVid){_vidOvSelVid=null;_vidOvSelIdx=-1;}
         save();_vidOvRenderAll();_renderVidOvMenu();renderAll();
         pushUndo(()=>{[...undos,...childUndos].forEach(u=>{const v2=(st.videos||[]).find(x=>String(x.id)===u.id);if(v2){v2.status=u.prev;v2.big_video_id=u.prevBig;}});save();_vidOvRenderAll();_renderVidOvMenu();renderAll();[...undos,...childUndos].forEach(u=>sbReqSilent('PATCH','videos',{status:u.prev,big_video_id:u.prevBig??null},`?id=eq.${u.id}`));},'Move status');
         (async()=>{for(const v of toMove)await sbReqSilent('PATCH','videos',{status:v.status,big_video_id:v.big_video_id??null},`?id=eq.${v.id}`);for(const cm of childUndos){const c=(st.videos||[]).find(x=>String(x.id)===cm.id);if(c)await sbReqSilent('PATCH','videos',{status:c.status,big_video_id:c.big_video_id??null},`?id=eq.${c.id}`);}})();
