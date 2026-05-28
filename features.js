@@ -4285,7 +4285,7 @@ function renderGuidePage(){
 <div style="width:100%">
 <div class="ov-topbar"><div class="ov-topbar-left"><span class="ov-topbar-label">Style Guide</span><span class="ov-topbar-dot"></span></div><span class="ov-topbar-date topbar-date"></span><div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div></div>
 
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px">
+<div style="display:grid;grid-template-columns:180px 1fr;gap:14px;margin-top:16px">
 
 <div style="display:flex;flex-direction:column;gap:14px">
   <div style="${panel}">
@@ -4314,20 +4314,9 @@ function renderGuidePage(){
       ${card('Overdue',ov)}
     </div>
   </div>
-  <div style="${panel}">
-    ${secT('Multi-Select & Drag')}
-    <table style="width:100%;border-collapse:collapse;font-size:12px">
-    ${tHead('Action','Behavior')}
-    ${sRow('⌘/Ctrl + Click','Toggle item in selection')}
-    ${sRow('Shift + Click','Range-select in same container')}
-    ${sRow('Drag → day','Moves ALL selected to that day')}
-    ${sRow('Drag → timeblock','Creates blocks for all selected')}
-    ${sRow('Arrow keys','Move all selected ±1 day')}
-    </table>
-  </div>
 </div>
 
-<div style="display:flex;flex-direction:column;gap:14px">
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;align-content:start">
   <div style="${panel}">
     ${secT('Global Shortcuts')}
     <table style="width:100%;border-collapse:collapse;font-size:12px">
@@ -4368,6 +4357,17 @@ function renderGuidePage(){
     </table>
   </div>
   <div style="${panel}">
+    ${secT('Multi-Select & Drag')}
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+    ${tHead('Action','Behavior')}
+    ${sRow('⌘/Ctrl + Click','Toggle item in selection')}
+    ${sRow('Shift + Click','Range-select in same container')}
+    ${sRow('Drag → day','Moves ALL selected to that day')}
+    ${sRow('Drag → timeblock','Creates blocks for all selected')}
+    ${sRow('Arrow keys','Move all selected ±1 day')}
+    </table>
+  </div>
+  <div style="${panel}">
     ${secT('Videos Shortcuts')}
     <table style="width:100%;border-collapse:collapse;font-size:12px">
     ${tHead('Key','Action')}
@@ -4378,7 +4378,7 @@ function renderGuidePage(){
     ${sRow('Delete / ⌫','Delete selected')}
     </table>
   </div>
-  <div style="${panel}">
+  <div style="${panel};grid-column:span 2">
     ${secT('Pages')}
     <div style="display:flex;flex-wrap:wrap;gap:5px;font-size:12px">
       ${PAGES.map(p=>`<span style="background:rgba(0,0,0,.04);padding:3px 10px;border-radius:6px;font-weight:500">${p}</span>`).join('')}
