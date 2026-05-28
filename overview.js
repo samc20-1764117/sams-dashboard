@@ -2390,7 +2390,7 @@ function renderRecMoCal(){
     // 8th column: WR tasks for this week (2-column layout for overflow)
     const wrCell=document.createElement('div');
     wrCell.className='mcell';
-    wrCell.style.cssText='background:rgba(239,246,255,.4);border:none';
+    wrCell.style.cssText=`background:${_dk()?'rgba(255,255,255,.03)':'rgba(239,246,255,.4)'};border:none`;
     const wrBody=document.createElement('div');wrBody.className='mcell-body';
     wrBody.style.cssText='columns:2;column-gap:2px';
     (wrWeekMap[w]||[]).forEach(item=>wrBody.appendChild(makeChip(item,d2s(wkMon))));
