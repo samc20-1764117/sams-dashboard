@@ -40,6 +40,26 @@ async function setPupWkDone(skillId,newDone){
   }
   save();renderPupSkillsHighlight();if(document.getElementById('page-pups')?.classList.contains('active'))renderPupsPage();renderToday();renderWkCal();
 }
+async function _setPupTotalDone(skillId,newTotal){
+  if(newTotal<0)newTotal=0;
+  const allDone=_pupAllDone(skillId);
+  const today=d2s(new Date());
+  if(newTotal>allDone){
+    for(let i=0;i<newTotal-allDone;i++){
+      const tmp='pss-tmp-'+Date.now()+'-t'+i;
+      st.pupSessions.push({id:tmp,skill_id:skillId,day_date:today,done:true});
+      const sv=await sbReqSilent('POST','pup_skill_sessions',{skill_id:skillId,day_date:today,done:true});
+      if(sv&&sv[0]){const ix=st.pupSessions.findIndex(s=>s.id===tmp);if(ix>-1)st.pupSessions[ix]=sv[0];}
+    }
+  } else if(newTotal<allDone){
+    const doneSess=_pupAllSess(skillId).filter(s=>s.done).sort((a,b)=>b.day_date.localeCompare(a.day_date));
+    for(let i=0;i<allDone-newTotal&&i<doneSess.length;i++){
+      const s=doneSess[i];st.pupSessions=st.pupSessions.filter(x=>String(x.id)!==String(s.id));
+      if(!String(s.id).startsWith('pss-tmp-'))await sbReqSilent('DELETE','pup_skill_sessions',null,`?id=eq.${s.id}`);
+    }
+  }
+  save();renderPupSkillsHighlight();if(document.getElementById('page-pups')?.classList.contains('active'))renderPupsPage();renderToday();renderWkCal();
+}
 function openPupCountEdit(skillId,anchorEl){
   let pop=document.getElementById('_pupCountPop');
   if(!pop){pop=document.createElement('div');pop.id='_pupCountPop';pop.style.cssText='position:fixed;z-index:9999;background:var(--bg);border:1px solid var(--border);border-radius:10px;box-shadow:0 4px 18px rgba(0,0,0,.14);padding:10px 12px;font-size:12px;font-family:inherit;min-width:172px';document.body.appendChild(pop);}
@@ -89,6 +109,7 @@ function setPupModalDog(val){
   document.getElementById('pmPup').value=val;
   document.getElementById('pmDogMochi').classList.toggle('active',val==='Mochi');
   document.getElementById('pmDogSunny').classList.toggle('active',val==='Sunny');
+  const _tw=document.getElementById('pmDogToggleWrap');if(_tw){const c=val==='Mochi'?'#8b5cf6':'#d97706';_tw.style.borderColor=c+'44';}
   if(_pupEditId){
     const curRec=st.pup_skills.find(x=>x.id==_pupEditId);
     if(curRec&&curRec.pup!==val){
@@ -130,6 +151,7 @@ function openPupAddModal(){
   document.getElementById('pmSkipMochi').checked=false;
   document.getElementById('pmSkipSunny').checked=false;
   const _cr=document.getElementById('pmCountRow');if(_cr)_cr.style.display='none';
+  const _tw2=document.getElementById('pmDogToggleWrap');if(_tw2)_tw2.style.borderColor='#8b5cf644';
   document.getElementById('pupModal').classList.add('open');
   setTimeout(()=>document.getElementById('pmSkill').focus(),80);
 }
@@ -161,25 +183,27 @@ function openPupEditModal(id){
   // Show count editing for existing skills
   const _countRow=document.getElementById('pmCountRow');
   const _wkDoneEl=document.getElementById('pmWkDone');
-  const _countInfo=document.getElementById('pmCountInfo');
-  if(_countRow&&_wkDoneEl&&_countInfo){
+  const _totalDoneEl=document.getElementById('pmTotalDone');
+  if(_countRow&&_wkDoneEl){
     _countRow.style.display='';
-    const wkDone=_pupWkDone(id);const allDone=_pupAllDone(id);const last=_pupLastPracticed(id);
-    const lastStr=last?new Date(last+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}):'never';
-    _wkDoneEl.value=wkDone;
-    _countInfo.innerHTML=`<div>Total practices: <b>${allDone}</b></div><div>Last: ${lastStr}</div>`;
+    _wkDoneEl.value=_pupWkDone(id);
+    if(_totalDoneEl)_totalDoneEl.value=_pupAllDone(id);
   }
+  // Color the dog toggle
+  const _tw=document.getElementById('pmDogToggleWrap');
+  if(_tw){const c=s.pup==='Mochi'?'#8b5cf6':'#d97706';_tw.style.borderColor=c+'44';}
   document.getElementById('pupModal').classList.add('open');
   setTimeout(()=>{const _el=document.getElementById('pmSkill');if(_el){_el.focus();const _l=_el.value.length;_el.setSelectionRange(_l,_l);}},80);
 }
 async function savePupModal(){
   const _skipMochi=document.getElementById('pmSkipMochi').checked;
   const _skipSunny=document.getElementById('pmSkipSunny').checked;
-  // Save count if editing existing skill
-  const _wkDoneEl=document.getElementById('pmWkDone');
-  if(_pupEditId&&_wkDoneEl&&document.getElementById('pmCountRow').style.display!=='none'){
-    const newDone=parseInt(_wkDoneEl.value)||0;
-    setPupWkDone(_pupEditId,newDone);
+  // Save counts if editing existing skill
+  if(_pupEditId&&document.getElementById('pmCountRow')?.style.display!=='none'){
+    const _wkDoneEl=document.getElementById('pmWkDone');
+    const _totalEl=document.getElementById('pmTotalDone');
+    if(_wkDoneEl)setPupWkDone(_pupEditId,parseInt(_wkDoneEl.value)||0);
+    if(_totalEl)_setPupTotalDone(_pupEditId,parseInt(_totalEl.value)||0);
   }
   const data={
     pup:document.getElementById('pmPup').value,
@@ -598,7 +622,8 @@ function renderPupTable(){
       const nextHover=comment?`onmouseenter="showPupTip(event,'${comment}')" onmouseleave="hidePupTip()" style="cursor:help;padding:0 6px;font-size:11px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:var(--text)"`:`style="padding:0 6px;font-size:11px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:var(--text)"`;
       const nextDiv=`<div ondblclick="event.stopPropagation();pupCellEdit(this.closest('td'),'${sid}','next_step')" ${nextHover}>${nextStep}</div>`;
       const sessDiv=`<div onclick="event.stopPropagation();openPupCountEdit('${sid}',this)" style="height:100%;display:flex;align-items:center;justify-content:flex-end;padding-right:6px;cursor:pointer" title="Session details">${_pupCountBadge(s)}</div>`;
-      return`<td style="padding:2px 5px"><div data-drag-skill-id="${sid}" data-drag-pup="${p}" style="${pillBase};cursor:grab">${stageWidget}${nextDiv}${sessDiv}</div></td>`;
+      const dragGrip=`<div data-drag-skill-id="${sid}" data-drag-pup="${p}" style="height:100%;display:flex;align-items:center;justify-content:center;cursor:grab;padding:0 3px;opacity:.3" title="Drag to focus"><span style="font-size:8px;letter-spacing:1px">⠿</span></div>`;
+      return`<td style="padding:2px 5px"><div style="${pillBase};grid-template-columns:18px 30px 1fr 34px">${dragGrip}${stageWidget}${nextDiv}${sessDiv}</div></td>`;
     }).join('');
     const firstRec=pups.map(p=>g.byPup[p]).find(Boolean);
     const tipAttr=hasTip?` onmouseenter="showPupRichTip(event,${tipRows.replace(/"/g,'&quot;')})" onmouseleave="hidePupTip()" style="cursor:help"`:'';
@@ -654,10 +679,11 @@ function renderPupTable(){
       });
     });
   }
-  // Drag from table cells to focus zones via mousedown
+  // Drag from table cells to focus zones via mousedown on grip
   tbody.querySelectorAll('[data-drag-skill-id]').forEach(el=>{
     el.addEventListener('mousedown',e=>{
-      if(e.button!==0||e.target.closest('input,button'))return;
+      if(e.button!==0)return;
+      e.preventDefault();e.stopPropagation();
       const skillId=el.dataset.dragSkillId,pupName=el.dataset.dragPup;
       let dragging=false;const startX=e.clientX,startY=e.clientY;
       let ghost=null;
@@ -781,7 +807,7 @@ function _pupPageRenderCol(pup){
   const spacerHtml=spacerCount>0?`<div style="height:${spacerCount*30}px"></div>`:'';
   let html='';
   if(active.length||spacerCount>0){
-    html+=`<div class="_pupFocusDrop" data-pup="${pup}" style="background:${themeBg};border:1px solid ${themeBorder};border-radius:10px;padding:8px 6px;margin-bottom:6px;min-height:32px">`;
+    html+=`<div class="_pupFocusDrop" data-pup="${pup}" style="background:${themeBg};border:1px solid ${themeBorder};border-radius:10px;padding:6px;margin-bottom:6px;min-height:32px">`;
     html+=active.map(s=>renderSkill(s,true)).join('');
     html+=spacerHtml;
     html+=`</div>`;
