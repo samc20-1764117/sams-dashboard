@@ -5270,20 +5270,45 @@ function drawAutoTBBlock(col,atb,ds){
 function toggleAutoTB(){
   cfg.showAutoTB=!cfg.showAutoTB;save();
   if(document.getElementById('tbGrid'))renderDayTB();
-  const tog=document.getElementById('atbMgrShowTog');if(tog)tog.checked=cfg.showAutoTB;
 }
 // ── Auto TB Manager ───────────────────────────────────────────────────────────
 const _ATB_CATS=[{val:'',label:'None (grey)'},{val:'home',label:'Home'},{val:'my work',label:'My Work'},{val:'work',label:'Work'},{val:'social',label:'Social'},{val:'long term',label:'Long Term'},{val:'recurring',label:'Recurring'},{val:'travel',label:'Travel'},{val:'videos',label:'Videos'}];
+function _parseAtbTime(v){
+  if(!v)return null;
+  v=v.trim();
+  // HH:MM or HH:MM:SS (24h)
+  const m24=/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/.exec(v);
+  if(m24&&!(/[ap]/i.test(v))){const h=parseInt(m24[1]),m=parseInt(m24[2]);if(h>=0&&h<=23&&m>=0&&m<=59)return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':00';}
+  // 5:30pm, 5pm, 530pm, 5:30 pm
+  const mx=/^(\d{1,2})(?::?(\d{2}))?\s*(am|pm)?$/i.exec(v);
+  if(!mx)return null;
+  let h=parseInt(mx[1]),m=parseInt(mx[2]||'0');
+  const ap=(mx[3]||'').toLowerCase();
+  if(ap==='pm'&&h<12)h+=12;
+  if(ap==='am'&&h===12)h=0;
+  if(!ap){if(h>=1&&h<=8)h+=12;} // smart AM/PM like @time
+  if(h<0||h>23||m<0||m>59)return null;
+  return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':00';
+}
+function _fmtAtbTime(dbTime){
+  if(!dbTime)return'';
+  const[hh,mm]=(dbTime||'').split(':');
+  return tStr(parseInt(hh)*60+parseInt(mm||0));
+}
 const _ATB_DAYS=[{d:1,l:'M'},{d:2,l:'T'},{d:3,l:'W'},{d:4,l:'Th'},{d:5,l:'F'},{d:6,l:'Sa'},{d:0,l:'Su'}];
 let _atbMgrEl=null,_atbEditId=null;
 function openAutoTBManager(){
   if(_atbMgrEl){closeAutoTBManager();return;}
-  const sec=document.querySelector('.tb-section');if(!sec)return;
+  const sec=document.querySelector('.tod-section');if(!sec)return;
   _atbMgrEl=document.createElement('div');
   _atbMgrEl.className='atb-mgr';
   sec.appendChild(_atbMgrEl);
   _renderATBMgr();
   requestAnimationFrame(()=>requestAnimationFrame(()=>_atbMgrEl.classList.add('open')));
+  _atbMgrEl.addEventListener('keydown',e=>{
+    if(e.key==='Escape'){closeAutoTBManager();return;}
+    if(e.key==='Enter'&&!e.target.closest('input')){closeAutoTBManager();}
+  });
 }
 function closeAutoTBManager(){
   if(!_atbMgrEl)return;
@@ -5294,43 +5319,38 @@ function closeAutoTBManager(){
 function _renderATBMgr(){
   if(!_atbMgrEl)return;
   const items=st.autoTimeblocks||[];
-  let h=`<div class="atb-mgr-head"><h3>Auto Blocks</h3><label class="atb-mgr-tog"><input type="checkbox" id="atbMgrShowTog" ${cfg.showAutoTB?'checked':''} onchange="toggleAutoTB()"><span>Show</span></label><button onclick="closeAutoTBManager()" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);padding:0 2px">✕</button></div>`;
+  let h=`<div class="atb-mgr-head"><h3>Auto Blocks</h3><button onclick="closeAutoTBManager()" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);padding:0 2px">✕</button></div>`;
   items.forEach(a=>{
     const c=a.category?gc(a.category):null;
     const dotBg=c?c.d:'#c8c6d4';
     const days=a.days?a.days.split(',').map(Number):_ATB_DAYS.filter(x=>x.d>=1&&x.d<=5).map(x=>x.d);
-    const tStart=(a.start_time||'00:00').slice(0,5);
-    const tEnd=(a.end_time||'00:30').slice(0,5);
-    h+=`<div class="atb-mgr-item" data-atb-id="${a.id}" style="${a.is_enabled?'':'opacity:.45'}">`;
-    // Row 1: dot (clickable for cat) + name (editable) + time range (editable) + X delete
+    const tS=_fmtAtbTime(a.start_time);
+    const tE=_fmtAtbTime(a.end_time);
+    h+=`<div class="atb-mgr-item" data-atb-id="${a.id}">`;
     h+=`<div class="atb-mgr-r1">`;
     h+=`<div class="atb-mgr-dot" style="background:${dotBg}" onclick="_atbCycleCat(${a.id})" title="${a.category||'none'} — click to change"></div>`;
     h+=`<input class="atb-mgr-name" value="${a.label||''}" placeholder="Name" onchange="_atbInlineSave(${a.id},'label',this.value)" onkeydown="if(event.key==='Enter')this.blur()">`;
-    h+=`<input type="time" class="atb-mgr-tinput" value="${tStart}" onchange="_atbInlineSave(${a.id},'start_time',this.value+':00')">`;
+    h+=`<input class="atb-mgr-tinput" value="${tS}" placeholder="9am" onblur="_atbSaveTime(${a.id},'start_time',this)" onkeydown="if(event.key==='Enter')this.blur()">`;
     h+=`<span class="atb-mgr-tsep">-</span>`;
-    h+=`<input type="time" class="atb-mgr-tinput" value="${tEnd}" onchange="_atbInlineSave(${a.id},'end_time',this.value+':00')">`;
+    h+=`<input class="atb-mgr-tinput" value="${tE}" placeholder="10am" onblur="_atbSaveTime(${a.id},'end_time',this)" onkeydown="if(event.key==='Enter')this.blur()">`;
     h+=`<button class="atb-mgr-x" onclick="_atbDelRule(${a.id})">✕</button>`;
     h+=`</div>`;
-    // Row 2: day toggles
     h+=`<div class="atb-mgr-r2">`;
     _ATB_DAYS.forEach(dd=>{h+=`<span class="day-tog${days.includes(dd.d)?' on':''}" data-day="${dd.d}" onclick="_atbTogDay(${a.id},${dd.d},this)">${dd.l}</span>`;});
-    h+=`</div>`;
-    h+=`</div>`;
+    h+=`</div></div>`;
   });
-  // New item form
   if(_atbEditId==='new'){
     h+=`<div class="atb-mgr-item atb-mgr-new">`;
     h+=`<div class="atb-mgr-r1">`;
     h+=`<div class="atb-mgr-dot" style="background:#c8c6d4" id="atbNewDot" onclick="_atbCycleCatNew()" title="none — click to change"></div>`;
     h+=`<input class="atb-mgr-name" id="atbF_label" placeholder="Name" autofocus onkeydown="if(event.key==='Enter')_atbSaveNew()">`;
-    h+=`<input type="time" class="atb-mgr-tinput" id="atbF_start" value="09:00">`;
+    h+=`<input class="atb-mgr-tinput" id="atbF_start" value="" placeholder="9am" onkeydown="if(event.key==='Enter')_atbSaveNew()">`;
     h+=`<span class="atb-mgr-tsep">-</span>`;
-    h+=`<input type="time" class="atb-mgr-tinput" id="atbF_end" value="09:30">`;
+    h+=`<input class="atb-mgr-tinput" id="atbF_end" value="" placeholder="9:30am" onkeydown="if(event.key==='Enter')_atbSaveNew()">`;
     h+=`<button class="atb-mgr-x" onclick="_atbCancelEdit()" style="opacity:1;color:var(--muted)">✕</button>`;
     h+=`</div>`;
     h+=`<div class="atb-mgr-r2">`;
     _ATB_DAYS.forEach(dd=>{h+=`<span class="day-tog${dd.d>=1&&dd.d<=5?' on':''}" data-day="${dd.d}" onclick="this.classList.toggle('on')">${dd.l}</span>`;});
-    h+=`<button class="btn btn-xs" style="background:rgba(109,95,230,.85);color:#fff;border:none;font-size:7px;padding:2px 8px;border-radius:4px;margin-left:auto" onclick="_atbSaveNew()">Add</button>`;
     h+=`</div></div>`;
   }
   h+=`<button class="atb-mgr-add" onclick="_atbStartEdit('new')">+ Add auto block</button>`;
@@ -5345,6 +5365,12 @@ function _atbInlineSave(id,field,val){
   const patch={};patch[field]=val;
   sbReqSilent('PATCH','auto_timeblocks',patch,`?id=eq.${id}`);
   save();if(document.getElementById('tbGrid'))renderDayTB();
+}
+function _atbSaveTime(id,field,el){
+  const parsed=_parseAtbTime(el.value);
+  if(!parsed){el.value=_fmtAtbTime((st.autoTimeblocks.find(x=>x.id===id)||{})[field]);return;}
+  _atbInlineSave(id,field,parsed);
+  el.value=_fmtAtbTime(parsed);
 }
 function _atbTogDay(id,day,el){
   const a=st.autoTimeblocks.find(x=>x.id===id);if(!a)return;
@@ -5372,13 +5398,13 @@ function _atbCycleCatNew(){
 }
 function _atbSaveNew(){
   const label=document.getElementById('atbF_label').value.trim();
-  const startTime=document.getElementById('atbF_start').value;
-  const endTime=document.getElementById('atbF_end').value;
+  const startTime=_parseAtbTime(document.getElementById('atbF_start').value);
+  const endTime=_parseAtbTime(document.getElementById('atbF_end').value);
   const cat=_ATB_CATS[_atbNewCatIdx].val||null;
   const dayEls=document.querySelectorAll('.atb-mgr-new .day-tog.on');
   const days=[...dayEls].map(e=>e.dataset.day).join(',');
   if(!label||!startTime||!endTime)return;
-  const payload={label,start_time:startTime+':00',end_time:endTime+':00',category:cat,days:days||null,is_enabled:true,sort_order:(st.autoTimeblocks.length+1)};
+  const payload={label,start_time:startTime,end_time:endTime,category:cat,days:days||null,is_enabled:true,sort_order:(st.autoTimeblocks.length+1)};
   const tmpId='atb-tmp-'+Date.now();
   st.autoTimeblocks.push({...payload,id:tmpId});
   sbReqSilent('POST','auto_timeblocks',payload,'').then(res=>{

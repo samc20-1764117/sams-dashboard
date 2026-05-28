@@ -440,7 +440,7 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 .tod-tb-center{flex:1;text-align:center}
 .tod-tb-right{display:flex;align-items:center;gap:3px;flex-shrink:0}
 .tod-tb-body{flex:1;min-height:0;display:flex;flex-direction:row;overflow:hidden}
-.tod-section{flex:0.95;min-width:0;display:flex;flex-direction:column;overflow:hidden}
+.tod-section{flex:0.95;min-width:0;display:flex;flex-direction:column;overflow:hidden;position:relative}
 .tb-section{flex:1.05;min-width:0;display:flex;flex-direction:column;overflow:hidden;position:relative}
 .tod-tb-divider{flex-shrink:0;border-left:1px solid rgba(210,205,228,.3);margin:0}
 #pupSkillsHighlight{flex-shrink:0}
