@@ -3566,7 +3566,7 @@ function _vidCalRenderMonth(y,m,vidsByDate,today,search){
     const singleVid=filteredVids.length===1;
     const multiVid=filteredVids.length>1;
     html+=`<div class="vid-cal-day${isToday?' vid-cal-today':''}" data-caldate="${ds}" ondragover="event.preventDefault();this.classList.add('vid-cal-drop')" ondragleave="this.classList.remove('vid-cal-drop')" ondrop="_vidCalDrop(event,'${ds}')" style="padding:2px 4px;min-height:20px;overflow:hidden;display:flex;align-items:center;gap:3px${multiVid?';flex-wrap:wrap':''}">`;
-    html+=`<span style="font-size:7px;font-weight:${isToday?'700':'500'};color:${isToday?'#f97316':'var(--subtle)'};line-height:1;flex-shrink:0;width:10px;text-align:right;font-variant-numeric:tabular-nums">${d}</span>`;
+    html+=`<span style="font-size:7px;font-weight:${isToday?'700':'500'};color:${isToday?'#f97316':'var(--subtle)'};line-height:1;flex-shrink:0;width:12px;text-align:right;font-family:'SF Mono',ui-monospace,monospace">${d}</span>`;
     filteredVids.forEach(v=>{
       const {bg,fg}=_vidCalChipColor(v,ds,today);
       const sid=String(v.id);
