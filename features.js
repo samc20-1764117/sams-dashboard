@@ -2044,8 +2044,26 @@ function togFinCancelDone(subId,checked){
   const sid=String(subId);
   const prev=_finCancelDone.has(sid);
   if(checked)_finCancelDone.add(sid);else _finCancelDone.delete(sid);
-  _finCancelSave();_finCancelRender();
-  pushUndo(()=>{if(prev)_finCancelDone.add(sid);else _finCancelDone.delete(sid);_finCancelSave();_finCancelRender();},(checked?'Checked':'Unchecked')+' cancel task');
+  _finCancelSave();
+  // Also archive/unarchive the subscription
+  const sub=st.finSubs.find(r=>String(r.id)===sid);
+  if(sub){
+    const prevState={archived:sub.archived||false,cancel:sub.cancel||false};
+    if(checked){sub.archived=true;sub.cancel=false;}else{sub.archived=false;sub.cancel=true;}
+    if(activePg==='finance')renderFinancePage();
+    if(!sid.startsWith('l-'))sbReq('PATCH','finance_subs',{archived:sub.archived,cancel:sub.cancel},`?id=eq.${sid}`);
+    pushUndo(()=>{
+      if(prev)_finCancelDone.add(sid);else _finCancelDone.delete(sid);
+      _finCancelSave();
+      sub.archived=prevState.archived;sub.cancel=prevState.cancel;
+      if(activePg==='finance')renderFinancePage();
+      if(!sid.startsWith('l-'))sbReq('PATCH','finance_subs',{archived:prevState.archived,cancel:prevState.cancel},`?id=eq.${sid}`);
+      _finCancelRender();
+    },(checked?'Checked':'Unchecked')+' cancel task');
+  } else {
+    pushUndo(()=>{if(prev)_finCancelDone.add(sid);else _finCancelDone.delete(sid);_finCancelSave();_finCancelRender();},(checked?'Checked':'Unchecked')+' cancel task');
+  }
+  _finCancelRender();
 }
 function _finCancelRender(){
   if(typeof renderToday==='function')renderToday();if(typeof renderWkCal==='function')renderWkCal();
@@ -2056,7 +2074,7 @@ function _finCancelTasksForDate(ds){
   if(!st.finSubs)return[];
   const tasks=[];
   const viewDate=new Date(ds+'T00:00:00');
-  st.finSubs.filter(s=>s.cancel&&!s.archived&&s.due_day).forEach(s=>{
+  st.finSubs.filter(s=>(s.cancel&&!s.archived&&s.due_day)||(s.archived&&_finCancelDone.has(String(s.id))&&s.due_day)).forEach(s=>{
     // Calculate next due date from due_month+due_day
     const today=new Date(ds+'T00:00:00');
     const yr=today.getFullYear();const mo=today.getMonth();
