@@ -1064,8 +1064,10 @@ document.addEventListener('keydown',e=>{
   if(e.key==='d'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus')&&!document.querySelector('.overlay.open')){
     e.preventDefault();if(typeof toggleDark==='function')toggleDark();
   }
-  // M to toggle month view on overview
+  // M to toggle month view on overview (skip if video popup is open — it uses M for its own calendar)
   if(e.key==='m'&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')){
+    const _vp=document.getElementById('vidOvPanel');
+    if(_vp&&_vp.style.display==='block')return;
     if(document.getElementById('mModal').classList.contains('open')){e.preventDefault();closeMod('mModal');return;}
     if(activePg==='overview'&&!document.querySelector('.overlay.open')){e.preventDefault();openMModal();return;}
   }
