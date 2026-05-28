@@ -5456,7 +5456,7 @@ function toggleAutoTB(){
   if(document.getElementById('tbGrid'))renderDayTB();
 }
 // ── Auto TB Manager ───────────────────────────────────────────────────────────
-const _ATB_CATS=[{val:'',label:'None (grey)'},{val:'home',label:'Home'},{val:'my work',label:'My Work'},{val:'work',label:'Work'},{val:'social',label:'Social'},{val:'recurring',label:'Recurring'},{val:'videos',label:'Videos'}];
+const _ATB_CATS=[{val:'',label:'None (grey)'},{val:'home',label:'Home'},{val:'my work',label:'My Work'},{val:'work',label:'Work'},{val:'social',label:'Social'}];
 function _parseAtbTime(v){
   if(!v)return null;
   v=v.trim();
@@ -5510,9 +5510,9 @@ function _renderATBMgr(){
     const days=a.days?a.days.split(',').map(Number):_ATB_DAYS.filter(x=>x.d>=1&&x.d<=5).map(x=>x.d);
     const tS=_fmtAtbTime(a.start_time);
     const tE=_fmtAtbTime(a.end_time);
-    const onBg=c?c.bg:'rgba(200,198,212,.15)';
-    const onTxt=c?c.t:'#8a889a';
-    const onBdr=c?c.b:'rgba(200,198,212,.3)';
+    const onBg=c?c.bg:'rgba(180,175,200,.2)';
+    const onTxt=c?c.t:'#6b6880';
+    const onBdr=c?c.b:'rgba(180,175,200,.4)';
     h+=`<div class="atb-mgr-item" data-atb-id="${a.id}" style="border-left:2.5px solid ${barCol}">`;
     h+=`<div class="atb-mgr-r1">`;
     h+=`<input class="atb-mgr-name" value="${a.label||''}" placeholder="Name" onchange="_atbInlineSave(${a.id},'label',this.value)" onkeydown="if(event.key==='Enter')this.blur()">`;
@@ -5521,7 +5521,6 @@ function _renderATBMgr(){
     h+=`</div>`;
     h+=`<div class="atb-mgr-r2">`;
     _ATB_DAYS.forEach(dd=>{h+=`<span class="day-tog${days.includes(dd.d)?' on':''}" data-day="${dd.d}" onclick="_atbTogDay(${a.id},${dd.d},this)" style="${days.includes(dd.d)?`background:${onBg};color:${onTxt};border-color:${onBdr}`:''}">${dd.l}</span>`;});
-    h+=`<span class="atb-mgr-cat-lbl" onclick="_atbCycleCat(${a.id})" style="color:${barCol}">${a.category||'none'}</span>`;
     h+=`</div></div>`;
   });
   if(_atbEditId==='new'){
@@ -5533,7 +5532,6 @@ function _renderATBMgr(){
     h+=`</div>`;
     h+=`<div class="atb-mgr-r2">`;
     _ATB_DAYS.forEach(dd=>{h+=`<span class="day-tog${dd.d>=1&&dd.d<=5?' on':''}" data-day="${dd.d}" onclick="this.classList.toggle('on')">${dd.l}</span>`;});
-    h+=`<span class="atb-mgr-cat-lbl" onclick="_atbCycleCatNew()" style="color:#c8c6d4">none</span>`;
     h+=`</div></div>`;
   }
   h+=`<button class="atb-mgr-add" onclick="_atbStartEdit('new')">+ Add auto block</button>`;
@@ -5582,11 +5580,8 @@ function _atbCycleCatNew(){
   _atbNewCatIdx=(_atbNewCatIdx+1)%_ATB_CATS.length;
   const c=_ATB_CATS[_atbNewCatIdx];
   const col=c.val?gc(c.val):null;
-  const barCol=col?col.d:'#c8c6d4';
   const item=document.getElementById('atbNewItem');
-  if(item)item.style.borderLeftColor=barCol;
-  const lbl=item&&item.querySelector('.atb-mgr-cat-lbl');
-  if(lbl){lbl.textContent=c.val||'none';lbl.style.color=barCol;}
+  if(item)item.style.borderLeftColor=col?col.d:'#c8c6d4';
 }
 function _atbSaveNew(){
   const label=document.getElementById('atbF_label').value.trim();
