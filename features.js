@@ -4985,7 +4985,7 @@ document.addEventListener('keydown',async e=>{
   const tag=document.activeElement?.tagName;
   if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT')return;
   // t key: jump to today on overview
-  if(e.key==='t'&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&activePg==='overview'&&!document.querySelector('.overlay.open')){e.preventDefault();document.activeElement?.blur();goToday();return;}
+  if(e.key==='t'&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&activePg==='overview'&&!document.querySelector('.overlay.open')&&!(typeof _vidCalOpen!=='undefined'&&_vidCalOpen)){e.preventDefault();document.activeElement?.blur();goToday();return;}
   // Video panel keyboard nav (arrow up/down, delete, enter)
   if(activePg==='overview'&&typeof _vidOvKeyNav==='function'&&_vidOvKeyNav(e))return;
   // w + Arrow: shift week on overview
