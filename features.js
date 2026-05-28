@@ -1988,12 +1988,27 @@ function _finSubTabNext(fid,curField){
 function _finSubEditable(id,field,val,cls){
   const display=typeof val==='number'?_finFmt(val):escHtml(val||'');
   const raw=typeof val==='number'?val.toFixed(2):(val||'');
-  return`<span class="${cls||'fin-edit'}" contenteditable="true" data-fid="${id}" data-field="${field}" onfocus="if('${field}'!=='name'){this.textContent='${raw}';}" onblur="_finSubEditField('${id}','${field}',this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}if(event.key==='Tab'){event.preventDefault();_finSubTabNext('${id}','${field}');this.blur();}">${display}</span>`;
+  return`<span class="${cls||'fin-edit'}" contenteditable="true" data-fid="${id}" data-field="${field}" onfocus="if('${field}'!=='name'){this.textContent='${raw}';}" onblur="_finSubEditField('${id}','${field}',this)" onkeydown="if(event.key==='Escape'){const _r=st.finSubs.find(r=>String(r.id)==='${id}');if(_r&&_r._unsaved){st.finSubs=st.finSubs.filter(r=>r.id!==_r.id);renderFinancePage();return;}}if(event.key==='Enter'){event.preventDefault();this.blur();}if(event.key==='Tab'){event.preventDefault();_finSubTabNext('${id}','${field}');this.blur();}">${display}</span>`;
 }
 
 async function _finSubEditField(id,field,el){
   const row=st.finSubs.find(r=>String(r.id)===String(id));if(!row)return;
   const val=field==='name'?el.textContent.trim():_finParseNum(el.textContent);
+  // Unsaved row: commit if name provided, cancel if name still empty on blur
+  if(row._unsaved){
+    row[field]=val;
+    if(field==='name'&&!val){
+      // Check if focus moved to another field in same row — don't cancel yet
+      setTimeout(()=>{
+        const ae=document.activeElement;
+        if(ae?.dataset?.fid===String(id))return;
+        st.finSubs=st.finSubs.filter(r=>r.id!==row.id);renderFinancePage();
+      },50);
+      return;
+    }
+    if(field==='name'&&val){_finCommitNew(row);}
+    return;
+  }
   if(row[field]===val)return;
   const old=row[field];row[field]=val;
   renderFinancePage();
@@ -2004,6 +2019,7 @@ async function _finSubEditField(id,field,el){
 async function _finSubEditDay(id,el){
   const row=st.finSubs.find(r=>String(r.id)===String(id));if(!row)return;
   const parsed=_finParseDue(el.textContent);
+  if(row._unsaved){row.due_day=parsed.due_day;row.due_month=parsed.due_month;return;}
   if(row.due_day===parsed.due_day&&row.due_month===parsed.due_month){renderFinancePage();return;}
   const oldDay=row.due_day,oldMonth=row.due_month;
   row.due_day=parsed.due_day;row.due_month=parsed.due_month;
@@ -2023,6 +2039,7 @@ function _finFreqSelect(id,val){
 
 async function _finSubEditFreq(id,val){
   const row=st.finSubs.find(r=>String(r.id)===String(id));if(!row)return;
+  if(row._unsaved){row.frequency=val;return;}
   const old=row.frequency;row.frequency=val;
   renderFinancePage();
   pushUndo(()=>{row.frequency=old;renderFinancePage();if(!String(id).startsWith('l-'))sbReqNullable('PATCH','finance_subs',{frequency:old},`?id=eq.${id}`);},'Changed frequency');
@@ -2100,12 +2117,15 @@ function _finCancelTasksForDate(ds){
 }
 
 async function addFinSub(){
-  const snap=_finSnap();
-  const row={id:'l-'+Date.now(),name:'',amount:0,frequency:'monthly',due_day:null,due_month:null,cancel:false,sort_order:0};
+  const row={id:'l-'+Date.now(),name:'',amount:0,frequency:'monthly',due_day:null,due_month:null,cancel:false,sort_order:0,_unsaved:true};
   st.finSubs.unshift(row);renderFinancePage();
   _finFocusNew(row.id,'name');
+}
+async function _finCommitNew(row){
+  if(!row._unsaved)return;
+  delete row._unsaved;
+  const{id,_unsaved,...fields}=row;
   pushUndo(()=>{st.finSubs=st.finSubs.filter(r=>r.id!==row.id);renderFinancePage();},'Added subscription');
-  const{id,...fields}=row;
   const sv=await sbReq('POST','finance_subs',fields);
   if(sv&&sv[0]){
     const i=st.finSubs.findIndex(x=>x.id===row.id);if(i<0)return;
