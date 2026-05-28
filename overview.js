@@ -964,7 +964,7 @@ function renderWkCal(){
     head.appendChild(h);
   });
   const goalsH=document.createElement('div');goalsH.className='wkc-day-h wkc-goals-h';
-  goalsH.innerHTML=`<div style="display:flex;flex-direction:column;align-items:center;gap:3px"><button class="wo-hdr-btn" onclick="openWOModal()" style="font-size:10px">Objectives</button><div style="display:flex;align-items:center;gap:3px"><button class="wo-hdr-btn" onclick="toggleVidOvMenu()" title="Videos" style="padding:3px 5px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg></button><button class="wo-hdr-btn" onclick="toggleUnMenu()" id="unBadge2" title="Unassigned tasks" style="padding:3px 5px;position:relative"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg><span id="unBadgeDot" style="display:none;position:absolute;top:0;right:0;width:7px;height:7px;border-radius:50%;background:rgba(139,92,246,.6)"></span></button></div></div>`;
+  goalsH.innerHTML=`<div style="display:flex;flex-direction:column;align-items:center;gap:3px"><button class="wo-hdr-btn" onclick="openWOModal()" style="font-size:10px">Objectives</button><div style="display:flex;align-items:center;gap:3px"><button class="wo-hdr-btn" onclick="toggleUnMenu()" id="unBadge2" title="Unassigned tasks" style="padding:3px 5px;position:relative"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg><span id="unBadgeDot" style="display:none;position:absolute;top:0;right:0;width:7px;height:7px;border-radius:50%;background:rgba(139,92,246,.6)"></span></button></div></div>`;
   head.appendChild(goalsH);
 
   // ── Render travel banners ────────────────────────────────────────────────────
@@ -3218,11 +3218,15 @@ function closeVidOvMenu(){
 }
 function _renderVidOvMenu(){
   const menu=document.getElementById('vidOvPanel');if(!menu)return;
-  const vids=(st.videos||[]).filter(v=>!v.is_deleted&&v.video_type==='B'&&v.status==='up_next');
-  const unassigned=vids;
+  const all=(st.videos||[]).filter(v=>!v.is_deleted);
+  const upNext=all.filter(v=>v.video_type==='B'&&v.status==='up_next');
+  const inProg=all.filter(v=>v.video_type==='B'&&v.status==='in_progress');
+  // Published but group not fully complete stay in current
+  const pubPending=all.filter(v=>v.video_type==='B'&&v.status==='published'&&typeof _vidGroupFullyComplete==='function'&&!_vidGroupFullyComplete(v));
   const _hdr=`<div class="tod-tb-header" style="display:flex;align-items:center;justify-content:center;position:relative;padding:8px 10px"><span onclick="closeVidOvMenu();showPage('videos')" style="font-size:12px;font-weight:700;color:var(--text);letter-spacing:-.1px;cursor:pointer" onmouseenter="this.style.color='var(--accent)'" onmouseleave="this.style.color='var(--text)'"title="Go to Videos page">Videos</span><button onclick="closeVidOvMenu()" style="position:absolute;right:10px;background:none;border:none;cursor:pointer;font-size:14px;color:var(--muted);padding:0 2px;line-height:1" title="Close">✕</button></div>`;
-  if(!unassigned.length){
-    menu.innerHTML=_hdr+'<div style="padding:30px;font-size:12px;color:var(--subtle);text-align:center">No videos to add</div>';
+  const hasCurrent=upNext.length||inProg.length||pubPending.length;
+  if(!hasCurrent){
+    menu.innerHTML=_hdr+'<div style="padding:30px;font-size:12px;color:var(--subtle);text-align:center">No current videos</div>';
     return;
   }
   const steps=typeof VID_STEPS_CORE!=='undefined'?VID_STEPS_CORE:(typeof VID_STEPS!=='undefined'?VID_STEPS:[]);
@@ -3231,7 +3235,18 @@ function _renderVidOvMenu(){
   html+='<div style="padding:4px 14px 0"><div style="display:flex;align-items:center;padding:0 6px 4px;gap:5px"><div style="width:16px;flex-shrink:0;box-sizing:content-box;border:1px solid transparent"></div><span style="flex:1"></span><div style="display:flex;gap:0;flex-shrink:0">';
   html+=steps.map(s=>`<div style="width:22px;text-align:center;font-size:8px;color:var(--muted);font-weight:600;flex-shrink:0">${(labels[s]||s).slice(0,3)}</div>`).join('');
   html+='</div><span style="width:34px;flex-shrink:0"></span></div>';
-  unassigned.forEach(v=>{html+=_vidOvMenuItem(v,steps);});
+  if(upNext.length){
+    html+='<div style="font-size:9px;font-weight:600;color:#0ea5e9;padding:4px 6px 2px;letter-spacing:.03em">Up Next</div>';
+    upNext.forEach(v=>{html+=_vidOvMenuItem(v,steps);});
+  }
+  if(inProg.length){
+    html+='<div style="font-size:9px;font-weight:600;color:#d97706;padding:4px 6px 2px;letter-spacing:.03em;margin-top:4px">In Progress</div>';
+    inProg.forEach(v=>{html+=_vidOvMenuItem(v,steps);});
+  }
+  if(pubPending.length){
+    html+='<div style="font-size:9px;font-weight:600;color:#10b981;padding:4px 6px 2px;letter-spacing:.03em;margin-top:4px">Finishing Up</div>';
+    pubPending.forEach(v=>{html+=_vidOvMenuItem(v,steps);});
+  }
   html+='</div>';
   menu.innerHTML=html;
 }
@@ -3253,18 +3268,45 @@ function _vidOvMenuItem(v,steps){
   const _hov=`onmouseenter="this.style.background='${_hovBg}'" onmouseleave="this.style.background='none'" onclick="_vidOvClickSelect(this)"`;
   const _map=_vidDayMap();const _onCal=!!_map[sid];
   const _addBtn=`<button onclick="event.stopPropagation();if(typeof openVidModalForBig==='function')openVidModalForBig('${sid}')" style="font-size:10px;font-weight:700;width:16px;height:16px;line-height:16px;text-align:center;border-radius:3px;border:1px solid ${_onCal?'var(--accent)':'var(--border)'};background:var(--bg);color:${_onCal?'var(--accent)':'var(--muted)'};cursor:pointer;padding:0;flex-shrink:0" title="Add small video">+</button>`;
-  let html=`<div data-vidrow="${sid}" ${_dragAttr} ${_dblAttr} ${_ctxAttr} ${_hov} style="padding:5px 6px;border-radius:6px;font-size:13px;font-weight:600;color:var(--text);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s">${_addBtn}<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(v.topic||v.title)}</span><div style="display:flex;gap:0;flex-shrink:0">${_vidOvStepDots(v,steps)}</div><span style="font-size:10px;opacity:.5;width:34px;text-align:right;flex-shrink:0">${_vidOvPct(v,steps)}%</span></div>`;
+  const _xBtn=`<button class="vid-ov-x" onclick="event.stopPropagation();_vidOvDemote('${sid}')" title="Move to ideas">✕</button>`;
+  let html=`<div data-vidrow="${sid}" ${_dragAttr} ${_dblAttr} ${_ctxAttr} ${_hov} style="padding:5px 6px;border-radius:6px;font-size:13px;font-weight:600;color:var(--text);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s">${_addBtn}<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(v.topic||v.title)}</span><div style="display:flex;gap:0;flex-shrink:0">${_vidOvStepDots(v,steps)}</div><span style="font-size:10px;opacity:.5;width:34px;text-align:right;flex-shrink:0">${_vidOvPct(v,steps)}%</span>${_xBtn}</div>`;
   // Children (S/L videos)
   const children=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(v.id)&&c.status!=='published').sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
   children.forEach((c,ci)=>{
     const csid=String(c.id);
     const _cOnCal=!!_map[csid];
-    html+=`<div draggable="true" ondragstart="_vidOvChildDrag=event.currentTarget;dragId='vid::${csid}';event.dataTransfer.effectAllowed='move';document.body.classList.add('body-dragging');showWkcEdges(true);event.currentTarget.style.opacity='.4'" ondragend="event.currentTarget.style.opacity='1';_vidOvChildDrag=null;document.body.classList.remove('body-dragging');showWkcEdges(false)" ondragover="event.preventDefault();if(_vidOvChildDrag)this.style.borderTop='2px solid rgba(0,0,0,.12)'" ondragleave="this.style.borderTop=''" ondrop="_vidOvReorder(event,'${sid}','${csid}')" ${_hov} ondblclick="event.stopPropagation();if(typeof openVidEdit==='function')openVidEdit('${csid}')" oncontextmenu="if(typeof showVidCtx==='function')showVidCtx(event,'${csid}')" data-vidrow="${csid}" data-cvid="${csid}" style="padding:3px 6px;border-radius:6px;font-size:11px;font-weight:500;color:var(--muted);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s"><div style="width:16px;flex-shrink:0;box-sizing:content-box;border:1px solid transparent;text-align:center;color:${_cOnCal?'var(--accent)':'rgba(140,135,160,.4)'};font-size:10px;font-weight:${_cOnCal?'700':'400'}">└</div><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(c.topic||c.title)}</span><div style="display:flex;gap:0;flex-shrink:0">${_vidOvStepDots(c,steps)}</div><span style="font-size:9px;opacity:.4;width:34px;text-align:right;flex-shrink:0">${_vidOvPct(c,steps)}%</span></div>`;
+    const _cxBtn=`<button class="vid-ov-x" onclick="event.stopPropagation();_vidOvDemote('${csid}')" title="Move to ideas">✕</button>`;
+    html+=`<div draggable="true" ondragstart="_vidOvChildDrag=event.currentTarget;dragId='vid::${csid}';event.dataTransfer.effectAllowed='move';document.body.classList.add('body-dragging');showWkcEdges(true);event.currentTarget.style.opacity='.4'" ondragend="event.currentTarget.style.opacity='1';_vidOvChildDrag=null;document.body.classList.remove('body-dragging');showWkcEdges(false)" ondragover="event.preventDefault();if(_vidOvChildDrag)this.style.borderTop='2px solid rgba(0,0,0,.12)'" ondragleave="this.style.borderTop=''" ondrop="_vidOvReorder(event,'${sid}','${csid}')" ${_hov} ondblclick="event.stopPropagation();if(typeof openVidEdit==='function')openVidEdit('${csid}')" oncontextmenu="if(typeof showVidCtx==='function')showVidCtx(event,'${csid}')" data-vidrow="${csid}" data-cvid="${csid}" style="padding:3px 6px;border-radius:6px;font-size:11px;font-weight:500;color:var(--muted);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s"><div style="width:16px;flex-shrink:0;box-sizing:content-box;border:1px solid transparent;text-align:center;color:${_cOnCal?'var(--accent)':'rgba(140,135,160,.4)'};font-size:10px;font-weight:${_cOnCal?'700':'400'}">└</div><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(c.topic||c.title)}</span><div style="display:flex;gap:0;flex-shrink:0">${_vidOvStepDots(c,steps)}</div><span style="font-size:9px;opacity:.4;width:34px;text-align:right;flex-shrink:0">${_vidOvPct(c,steps)}%</span>${_cxBtn}</div>`;
     if(ci<children.length-1){const oA=c.vid_order??ci;const oB=children[ci+1].vid_order??(ci+1);html+=`<div class="vid-insert-zone" onclick="event.stopPropagation();if(typeof openVidModalBetween==='function')openVidModalBetween('${sid}',${oA},${oB})"><button class="vid-insert-btn">+</button></div>`;}
   });
   return html;
 }
 
+function _vidOvDemote(vidId){
+  const v=(st.videos||[]).find(x=>String(x.id)===String(vidId));if(!v)return;
+  const prevStatus=v.status;
+  v.status='idea';
+  // Also demote children of B videos
+  const childUndos=[];
+  if(v.video_type==='B'){
+    (st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(vidId)&&c.status!=='published').forEach(c=>{
+      const cp=c.status;c.status='idea';childUndos.push({id:c.id,prev:cp});
+      sbReqSilent('PATCH','videos',{status:'idea'},`?id=eq.${c.id}`);
+    });
+  }
+  // Remove from day map if assigned
+  const map=_vidDayMap();const prevDay=map[String(vidId)]||null;
+  if(prevDay){delete map[String(vidId)];_vidDayMapSet(map);}
+  save();_renderVidOvMenu();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
+  sbReqSilent('PATCH','videos',{status:'idea'},`?id=eq.${vidId}`);
+  pushUndo(()=>{
+    v.status=prevStatus;
+    childUndos.forEach(cu=>{const c=(st.videos||[]).find(x=>String(x.id)===String(cu.id));if(c){c.status=cu.prev;sbReqSilent('PATCH','videos',{status:cu.prev},`?id=eq.${cu.id}`);}});
+    if(prevDay){const m2=_vidDayMap();m2[String(vidId)]=prevDay;_vidDayMapSet(m2);}
+    save();_renderVidOvMenu();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
+    sbReqSilent('PATCH','videos',{status:prevStatus},`?id=eq.${vidId}`);
+  },'Moved to ideas');
+}
 function _vidOvToggleStep(vidId,step){
   const v=(st.videos||[]).find(x=>String(x.id)===String(vidId));if(!v)return;
   if(v[step]==='na')return;
@@ -4486,7 +4528,7 @@ function renderTBSum(ds){
   const dayMins=(HOURS[HOURS.length-1]-HOURS[0]+1)*60;
   const free=Math.max(0,dayMins-tot);
   const freeStr=free>=60?`${Math.floor(free/60)}h${free%60?` ${free%60}m`:''}`:` ${free}m`;
-  document.getElementById('tbSum').innerHTML=`<div class="si"><span>Blocked:</span><span class="sv">${Math.floor(tot/60)}h ${tot%60}m</span><span class="tb-free">(${freeStr} free)</span></div><button class="btn btn-ghost btn-xs" id="autoTBToggle" onclick="toggleAutoTB()" title="Toggle auto time blocks" style="margin-left:auto;font-size:8px;flex-shrink:0;opacity:${cfg.showAutoTB?'1':'.4'}">Auto</button>`;
+  document.getElementById('tbSum').innerHTML=`<div class="si"><span>Blocked:</span><span class="sv">${Math.floor(tot/60)}h ${tot%60}m</span><span class="tb-free">(${freeStr} free)</span></div><button class="btn btn-ghost btn-xs" id="autoTBToggle" onclick="toggleAutoTB()" title="Toggle auto time blocks" style="margin-left:auto;font-size:8px;flex-shrink:0;opacity:${cfg.showAutoTB?'1':'.4'}">Auto</button><button class="btn btn-ghost btn-xs" onclick="toggleVidOvMenu()" title="Videos" style="font-size:8px;flex-shrink:0;padding:3px 5px;display:flex;align-items:center;gap:3px"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg></button>`;
 }
 // ── Auto Timeblocks ────────────────────────────────────────────────────────────
 function getAutoTBForDate(ds){
