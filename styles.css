@@ -1224,11 +1224,14 @@ body.dark .vid-stat-card{background:rgba(40,30,50,.4)}
 .fin-sub-plain:hover{background:rgba(109,95,230,.08)}
 .fin-sub-plain:focus{background:rgba(109,95,230,.1);box-shadow:0 0 0 1.5px rgba(109,95,230,.3)}
 .fin-sub-row td{vertical-align:middle}
-.fin-sub-name-wrap{display:inline-flex;align-items:center;gap:4px}
+.fin-sub-name-wrap{display:flex;align-items:center;gap:4px}
+.fin-sub-name-wrap .fin-sub-plain{flex:1;min-width:80px}
 .fin-ph-cell{border-bottom:none!important}
 .fin-add-row td{padding:4px 16px!important}
 .fin-add-btn{border:none;background:none;color:var(--text-secondary,#94a3b8);font-size:11px;cursor:pointer;padding:4px 0;font-weight:500;transition:color .15s}
 .fin-add-btn:hover{color:#6d5fe6}
+.fin-hist-btn{border:1px solid rgba(200,200,215,.25);background:rgba(255,255,255,.5);color:var(--text-secondary,#64748b);font-size:10px;font-weight:600;cursor:pointer;padding:2px 8px;border-radius:6px;transition:all .15s;line-height:1.4}
+.fin-hist-btn:hover{background:rgba(109,95,230,.08);border-color:rgba(109,95,230,.25);color:#6d5fe6}
 .fin-freq-sel{border:none;background:transparent;font-size:11px;color:var(--text-secondary,#64748b);cursor:pointer;padding:2px;border-radius:4px;outline:none}
 .fin-freq-sel:hover{background:rgba(100,100,140,.08)}
 .fin-freq-sel:focus{box-shadow:0 0 0 1.5px rgba(109,95,230,.3)}

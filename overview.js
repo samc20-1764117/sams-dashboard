@@ -832,7 +832,7 @@ function tRowFinCancel(t,tbArrow=false){
     ondragstart="dragId='fin-cancel::${t._subId}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true)"
     ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false)"
     onclick="selTask(event,'${t.id}')" ondblclick="showPage('finance')">
-    <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="archiveFinSub('${t._subId}',this.checked)"></label>
+    <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="togFinCancelDone('${t._subId}',this.checked)"></label>
     <span class="tn">${t.name}</span>
     <svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3" fill="${s.bg}" stroke="${s.d}" stroke-opacity="0.4" stroke-width="1"/></svg>
     ${tbArrow?'<span class="tb-arrow">›</span>':''}
@@ -1469,7 +1469,7 @@ function renderWkCal(){
       const chk=document.createElement('input');chk.type='checkbox';chk.className='wchk';chk.checked=t.done;
       chk.addEventListener('change',e2=>{
         e2.stopPropagation();
-        if(t._type==='fin-cancel'){archiveFinSub(t._subId,chk.checked);}
+        if(t._type==='fin-cancel'){togFinCancelDone(t._subId,chk.checked);}
         else if(t._type==='vid'){if(chk.checked)_vidCompleteFromOv(t._vidId,chk);else _vidUncompleteFromOv(t._vidId);}
         else if(t._type==='pup'){togPupSessionDone(t._pupSessId,chk.checked);}
         else if(t._type==='shop'){togShop(t._shopId,chk.checked);}
@@ -4270,7 +4270,7 @@ function drawTBBlock(col,b){
   else if(linkedRec)b._done=!!(linkedRec._doneByWk&&linkedRec._doneByWk[dsToWkKey(b.ds)]);
   else if(linkedShop)b._done=!!linkedShop.done;
   else if(b._vidId){const _vb2=(st.videos||[]).find(x=>String(x.id)===String(b._vidId));if(_vb2)b._done=_vb2.status==='published';}
-  else if(b._finCancelSubId){const _fcs=st.finSubs.find(x=>String(x.id)===String(b._finCancelSubId));b._done=!!(_fcs&&_fcs.archived);}
+  else if(b._finCancelSubId){b._done=typeof _finCancelDone!=='undefined'&&_finCancelDone.has(String(b._finCancelSubId));}
   const isImp=linkedTask&&linkedTask.important&&!linkedTask.done;
   const linkedRule=b.ruleId?st.wrRules.find(x=>String(x.id)===String(b.ruleId)):null;
   const recCat=linkedRec?(linkedRec.is_weekly_reset===false?'recurring':'weekly_reset'):null;
@@ -4358,7 +4358,7 @@ function drawTBBlock(col,b){
     } else if(b.cat==='pup_session'&&b._pupSessId){
       togPupSessionDone(String(b._pupSessId),checked);
     } else if(b._finCancelSubId){
-      archiveFinSub(String(b._finCancelSubId),checked);
+      togFinCancelDone(String(b._finCancelSubId),checked);
     } else {
       if(b.cat==='Birthday'){
         b._done=checked;sbUpdateBlock(b.id,{done:checked});save();renderToday();renderWkSummary();renderWkCal();

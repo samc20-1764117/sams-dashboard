@@ -1828,7 +1828,7 @@ function _finRenderInvestments(purchases,totalBought,gain,gainPct,currentVal){
   const lastPurchase=sorted.length?sorted[0]:null;
 
   let html=`<div class="card fin-card fin-inv-card">
-    <div class="fin-card-hdr" style="position:relative"><span class="fin-card-title">Investments</span><div style="display:flex;gap:4px;align-items:center"><button class="fin-add-btn" onclick="openFinInvDetails()" style="font-size:11px;padding:1px 6px;line-height:1;opacity:.6" title="Purchase history">Details</button><button class="fin-add-btn" onclick="openFinInvAdd(event)" style="font-size:16px;padding:0 4px;line-height:1">+</button></div></div>
+    <div class="fin-card-hdr" style="position:relative"><span class="fin-card-title">Investments</span><div style="display:flex;gap:4px;align-items:center"><button class="fin-hist-btn" onclick="openFinInvDetails()">History</button><button class="fin-add-btn" onclick="openFinInvAdd(event)" style="font-size:16px;padding:0 4px;line-height:1">+</button></div></div>
     `;
   // Area chart fills card, KPI floats on top
   if(chronological.length>1){
@@ -2038,6 +2038,12 @@ async function toggleFinSubCancel(id){
 }
 
 // Virtual cancel-reminder tasks for overview (3 days before due)
+const _finCancelDone=new Set();
+function togFinCancelDone(subId,checked){
+  if(checked)_finCancelDone.add(String(subId));else _finCancelDone.delete(String(subId));
+  if(typeof renderToday==='function')renderToday();if(typeof renderWkCal==='function')renderWkCal();
+  if(document.getElementById('tbGrid')&&typeof renderDayTB==='function')renderDayTB();
+}
 function _finCancelTasksForDate(ds){
   if(!st.finSubs)return[];
   const tasks=[];
@@ -2061,7 +2067,7 @@ function _finCancelTasksForDate(ds){
     const reminderStr=d2s(reminderDate);
     if(ds===reminderStr){
       const dueLabel=_FIN_MONTHS[dueDate.getMonth()]+' '+dueDate.getDate();
-      tasks.push({id:'fin-cancel-'+s.id,name:'Cancel '+s.name+' by '+dueLabel,category:'Home',due_date:reminderStr,done:false,_subId:s.id,_virtual:true,_type:'fin-cancel'});
+      tasks.push({id:'fin-cancel-'+s.id,name:'Cancel '+s.name+' by '+dueLabel,category:'Home',due_date:reminderStr,done:_finCancelDone.has(String(s.id)),_subId:s.id,_virtual:true,_type:'fin-cancel'});
     }
   });
   return tasks;
@@ -2181,14 +2187,16 @@ function openFinInvDetails(){
   _finRenderDetailsContent(pop);
   document.body.appendChild(pop);
   requestAnimationFrame(()=>pop.classList.add('open'));
-  const onKey=e=>{const t=e.target?.tagName;if(t==='INPUT'||t==='TEXTAREA'||t==='SELECT')return;if(e.key==='Escape'||e.key==='Enter'){closeFinInvDetails();document.removeEventListener('keydown',onKey);}};
+  const onKey=e=>{const t=e.target?.tagName;if(t==='INPUT'||t==='TEXTAREA'||t==='SELECT')return;if(e.key==='Escape'||e.key==='Enter'){closeFinInvDetails();}};
+  const onClick=e=>{if(!pop.contains(e.target)&&!e.target.closest('.fin-hist-btn'))closeFinInvDetails();};
   document.addEventListener('keydown',onKey);
-  pop._onKey=onKey;
+  setTimeout(()=>document.addEventListener('mousedown',onClick),10);
+  pop._cleanup=()=>{document.removeEventListener('keydown',onKey);document.removeEventListener('mousedown',onClick);};
 }
 function closeFinInvDetails(){
   const pop=document.getElementById('finInvDetailsPop');
   if(!pop)return;
-  if(pop._onKey)document.removeEventListener('keydown',pop._onKey);
+  if(pop._cleanup)pop._cleanup();
   pop.classList.remove('open');
   pop.addEventListener('transitionend',()=>pop.remove(),{once:true});
   setTimeout(()=>{if(pop.parentNode)pop.remove();},200);
