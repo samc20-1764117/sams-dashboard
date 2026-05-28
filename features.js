@@ -4280,7 +4280,7 @@ function renderGuidePage(){
   const shortcutRow=(k,d)=>`<tr><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)"><span style="font-family:monospace;background:rgba(0,0,0,.06);padding:2px 6px;border-radius:4px;font-size:11px;font-weight:600">${k}</span></td><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04);font-size:12px">${d}</td></tr>`;
 
   el.innerHTML=`
-<div style="max-width:900px">
+<div style="width:100%;overflow:hidden">
 <div class="ov-topbar"><div class="ov-topbar-left"><span class="ov-topbar-label">Style Guide</span><span class="ov-topbar-dot"></span></div><span class="ov-topbar-date topbar-date"></span><div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div></div>
 
 ${sectionTitle('Task Category Colors')}
@@ -4308,7 +4308,7 @@ ${sectionTitle('Special States')}
 </div>
 
 ${sectionTitle('Task Types on Overview')}
-<table style="width:100%;border-collapse:collapse;font-size:12px;margin:8px 0">
+<table style="width:100%;border-collapse:collapse;font-size:12px;margin:8px 0;table-layout:fixed"><colgroup><col style="width:18%"><col style="width:41%"><col style="width:41%"></colgroup>
 <tr><th style="text-align:left;padding:6px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:2px solid rgba(0,0,0,.08)">Type</th><th style="text-align:left;padding:6px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:2px solid rgba(0,0,0,.08)">Selection ID</th><th style="text-align:left;padding:6px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:2px solid rgba(0,0,0,.08)">Drag ID</th></tr>
 <tr><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)">Regular task</td><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)"><code>String(id)</code></td><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)"><code>String(id)</code></td></tr>
 <tr><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)">WR rule</td><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)"><code>wrrule-{id}</code></td><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)"><code>wrrule::{id}</code></td></tr>
