@@ -3419,13 +3419,7 @@ function _vidOvNaStep(vidId,step){
 }
 // ── Post date helpers ────────────────────────────────────────────────────────
 function _vidOvPostStr(ds){if(!ds)return'';const d=new Date(ds+'T12:00:00');return(d.getMonth()+1)+'/'+d.getDate();}
-function _vidOvPostColor(v){
-  const today=d2s(new Date());
-  if(v.status==='published')return'#10b981';
-  if(v.post_date&&v.post_date<=today)return'#10b981';
-  if(v.post_date&&v.post_date>today)return v.video_type==='B'?'#0ea5e9':'#8b5cf6';
-  return'var(--muted)';
-}
+function _vidOvPostColor(){return'var(--subtle)';}
 function _vidOvEditPostDate(vidId,el){
   const v=(st.videos||[]).find(x=>String(x.id)===String(vidId));if(!v)return;
   const inp=document.createElement('input');inp.type='text';
@@ -3492,20 +3486,23 @@ function _vidOvToggleCal(){
   if(_vidCalOpen){_vidOvCloseCal();return;}
   const now=new Date();_vidCalMonth=now.getMonth();_vidCalYear=now.getFullYear();
   _vidCalOpen=true;_vidOvRenderCal();
-  // Close on click outside or Escape only (not arrows/Enter)
+  // Close only on clicks truly outside both panels, Escape, or M key
   setTimeout(()=>{
     const _calClose=e=>{
-      const cal=document.getElementById('vidOvCalPanel');
-      const panel=document.getElementById('vidOvPanel');
-      if(!cal||!_vidCalOpen)return;
-      // If target was removed from DOM (e.g. arrow button re-rendered), skip
+      if(!_vidCalOpen)return;
       if(!document.body.contains(e.target))return;
-      if(e.type==='click'&&!cal.contains(e.target)&&(!panel||!panel.contains(e.target))&&!e.target.closest('#vidOvPanel')&&!e.target.closest('#vidOvCalPanel')){_vidOvCloseCal();document.removeEventListener('click',_calClose);document.removeEventListener('keydown',_calKey);}
+      // Don't close if clicking inside calendar panel, video popup, or any child
+      const cal=document.getElementById('vidOvCalPanel');
+      const vp=document.getElementById('vidOvPanel');
+      const heroCard=vp?.closest('.card');
+      if(cal&&cal.contains(e.target))return;
+      if(vp&&vp.contains(e.target))return;
+      if(heroCard&&heroCard.contains(e.target))return;
+      _vidOvCloseCal();document.removeEventListener('click',_calClose);document.removeEventListener('keydown',_calKey);
     };
     const _calKey=e=>{
       if(!_vidCalOpen){document.removeEventListener('click',_calClose);document.removeEventListener('keydown',_calKey);return;}
       if(e.key==='Escape'){_vidOvCloseCal();document.removeEventListener('click',_calClose);document.removeEventListener('keydown',_calKey);}
-      // Arrow keys navigate months
       if(e.key==='ArrowLeft'){e.preventDefault();_vidCalMonth--;if(_vidCalMonth<0){_vidCalMonth=11;_vidCalYear--;}_vidOvRenderCal();}
       if(e.key==='ArrowRight'){e.preventDefault();_vidCalMonth++;if(_vidCalMonth>11){_vidCalMonth=0;_vidCalYear++;}_vidOvRenderCal();}
       if(e.key==='t'||e.key==='T'){e.preventDefault();const n=new Date();_vidCalMonth=n.getMonth();_vidCalYear=n.getFullYear();_vidOvRenderCal();}
@@ -3526,15 +3523,18 @@ function _vidCalChipColor(v,ds,today){
   if(isDone||isPast){
     return isBig?{bg:'rgba(16,185,129,.15)',fg:'#059669'}:{bg:'rgba(110,231,183,.15)',fg:'#34d399'};
   }
-  return isBig?{bg:'rgba(14,165,233,.10)',fg:'#0ea5e9'}:{bg:'rgba(147,197,253,.12)',fg:'#60a5fa'};
+  return isBig?{bg:'rgba(14,165,233,.12)',fg:'#0ea5e9'}:{bg:'rgba(14,165,233,.06)',fg:'rgba(14,165,233,.55)'};
 }
 function _vidCalRenderMonth(y,m,vidsByDate,today){
   const first=new Date(y,m,1);
   const daysInMonth=new Date(y,m+1,0).getDate();
-  const monthName=first.toLocaleDateString('en-US',{month:'short',year:'numeric'});
+  const mo=first.toLocaleDateString('en-US',{month:'short'});
+  const yr=String(y).slice(2);
   const now=new Date();const isCurMonth=y===now.getFullYear()&&m===now.getMonth();
-  let html=`<div style="margin-bottom:4px"><div style="font-size:10px;font-weight:700;color:${isCurMonth?'var(--accent)':'var(--text)'};padding:4px 4px 2px;letter-spacing:-.2px">${monthName}</div>`;
-  html+='<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:1px">';
+  // Month row: label on left, 5-col grid on right
+  let html=`<div style="display:flex;align-items:stretch;margin-bottom:2px;border-bottom:1px solid rgba(210,205,228,.1)">`;
+  html+=`<div style="width:44px;flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:2px 0"><span style="font-size:9px;font-weight:700;color:${isCurMonth?'var(--accent)':'var(--text)'};writing-mode:horizontal-tb;white-space:nowrap">${mo} '${yr}</span></div>`;
+  html+='<div style="flex:1;display:grid;grid-template-columns:repeat(5,1fr);gap:1px;min-width:0">';
   const firstDow=first.getDay();
   const weekdayIdx=firstDow===0?-1:firstDow===6?-1:firstDow-1;
   if(weekdayIdx>0)for(let i=0;i<weekdayIdx;i++)html+='<div></div>';
@@ -3546,34 +3546,72 @@ function _vidCalRenderMonth(y,m,vidsByDate,today){
     const isToday=ds===today;
     const dayVids=vidsByDate[ds]||[];
     html+=`<div class="vid-cal-day${isToday?' vid-cal-today':''}" data-caldate="${ds}" ondragover="event.preventDefault();this.classList.add('vid-cal-drop')" ondragleave="this.classList.remove('vid-cal-drop')" ondrop="_vidCalDrop(event,'${ds}')" style="padding:1px 2px;min-height:18px">`;
-    html+=`<div style="display:flex;align-items:flex-start;gap:0;flex-direction:column">`;
-    html+=`<div style="display:flex;align-items:center;gap:3px;width:100%"><span style="font-size:8px;font-weight:${isToday?'700':'500'};color:${isToday?'var(--accent)':'var(--text)'};min-width:12px;flex-shrink:0">${d}</span></div>`;
+    html+=`<span style="font-size:7px;font-weight:${isToday?'700':'500'};color:${isToday?'var(--accent)':'var(--subtle)'};line-height:1">${d}</span>`;
     dayVids.forEach(v=>{
       const {bg,fg}=_vidCalChipColor(v,ds,today);
       const sid=String(v.id);
-      html+=`<div draggable="true" ondragstart="event.dataTransfer.effectAllowed='move';_vidCalDragId='${sid}'" onclick="_vidCalSelectChip('${sid}')" class="vid-cal-chip" style="background:${bg};color:${fg};border-left:2px solid ${fg};max-width:100%;box-sizing:border-box" title="${escHtml(v.topic||v.title)}">${escHtml((v.topic||v.title||'').slice(0,18))}${(v.topic||v.title||'').length>18?'..':''}</div>`;
+      html+=`<div draggable="true" ondragstart="event.dataTransfer.effectAllowed='move';_vidCalDragId='${sid}'" onclick="_vidCalSelectChip('${sid}')" ondblclick="event.stopPropagation();if(typeof openVidEdit==='function')openVidEdit('${sid}')" class="vid-cal-chip" style="background:${bg};color:${fg};border-left:2px solid ${fg}" title="${escHtml(v.topic||v.title)}">${escHtml((v.topic||v.title||'').slice(0,20))}${(v.topic||v.title||'').length>20?'..':''}</div>`;
     });
-    html+='</div></div>';
+    html+='</div>';
   }
   html+='</div></div>';
   return html;
 }
 function _vidCalSelectChip(vidId){
   _vidOvSelVid=vidId;
-  // Highlight in video popup
   const panel=document.getElementById('vidOvPanel');
   if(panel){
     panel.querySelectorAll('[data-vidrow]').forEach(r=>{r.classList.remove('vid-sel');});
     const row=panel.querySelector(`[data-vidrow="${vidId}"]`);
-    if(row)row.classList.add('vid-sel');
+    if(row){row.classList.add('vid-sel');row.scrollIntoView({block:'nearest'});}
   }
-  // Highlight in calendar
-  const cal=document.getElementById('vidOvCalPanel');
-  if(cal){
-    cal.querySelectorAll('.vid-cal-chip').forEach(c=>c.style.outline='');
-    // Find the chip that was clicked by checking onclick attr isn't reliable, use event target
-    // We'll highlight via re-render approach — add a class
-  }
+}
+// Yearly heatmap view
+let _vidCalYearView=false;
+function _vidCalToggleYear(){
+  _vidCalYearView=!_vidCalYearView;
+  _vidOvRenderCal();
+}
+function _vidCalRenderYearView(allVids,today){
+  // Group videos by year and month
+  const byYM={};
+  allVids.forEach(v=>{
+    const ym=v.post_date.slice(0,7);
+    if(!byYM[ym])byYM[ym]=[];
+    byYM[ym].push(v);
+  });
+  const years=[...new Set(allVids.map(v=>v.post_date.slice(0,4)))].sort();
+  const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const maxCount=Math.max(...Object.values(byYM).map(a=>a.length),1);
+  let h='';
+  // Year columns side by side
+  h+='<div style="display:flex;gap:12px;padding:8px 14px;flex:1;overflow-y:auto">';
+  years.forEach(yr=>{
+    h+=`<div style="flex:1;min-width:100px">`;
+    h+=`<div style="font-size:11px;font-weight:700;color:var(--text);text-align:center;margin-bottom:6px">${yr}</div>`;
+    let yrTotal=0;
+    months.forEach((mo,mi)=>{
+      const key=`${yr}-${String(mi+1).padStart(2,'0')}`;
+      const vids=byYM[key]||[];
+      yrTotal+=vids.length;
+      const intensity=vids.length?Math.max(0.08,vids.length/maxCount*0.6):0;
+      const big=vids.filter(v=>v.video_type==='B').length;
+      const small=vids.length-big;
+      const now=new Date();const isFuture=parseInt(yr)>now.getFullYear()||(parseInt(yr)===now.getFullYear()&&mi>now.getMonth());
+      h+=`<div style="display:flex;align-items:center;gap:4px;padding:2px 4px;margin:1px 0;border-radius:3px;background:${vids.length?`rgba(14,165,233,${intensity})`:'transparent'}" title="${mo} ${yr}: ${vids.length} videos (${big}B, ${small}L)">`;
+      h+=`<span style="font-size:8px;color:var(--muted);width:22px;flex-shrink:0">${mo}</span>`;
+      h+=`<div style="flex:1;height:10px;background:rgba(120,113,145,.06);border-radius:2px;overflow:hidden">`;
+      if(big)h+=`<div style="width:${big/maxCount*100}%;height:100%;background:#0ea5e9;display:inline-block;float:left;border-radius:2px 0 0 2px"></div>`;
+      if(small)h+=`<div style="width:${small/maxCount*100}%;height:100%;background:rgba(14,165,233,.4);display:inline-block;float:left;${big?'':'border-radius:2px 0 0 2px'}"></div>`;
+      h+=`</div>`;
+      h+=`<span style="font-size:8px;font-weight:600;color:${isFuture?'var(--subtle)':'var(--text)'};width:14px;text-align:right;flex-shrink:0">${vids.length||''}</span>`;
+      h+='</div>';
+    });
+    h+=`<div style="text-align:center;font-size:9px;font-weight:700;color:var(--text);margin-top:4px;padding-top:4px;border-top:1px solid var(--border)">${yrTotal} total</div>`;
+    h+='</div>';
+  });
+  h+='</div>';
+  return h;
 }
 function _vidOvRenderCal(){
   let panel=document.getElementById('vidOvCalPanel');
@@ -3595,27 +3633,37 @@ function _vidOvRenderCal(){
   const allVids=(st.videos||[]).filter(v=>!v.is_deleted&&v.post_date);
   const vidsByDate={};
   allVids.forEach(v=>{const d=v.post_date;if(!vidsByDate[d])vidsByDate[d]=[];vidsByDate[d].push(v);});
-  // Header: legend left, arrows + title center, Today right
-  const _lg=(c,l)=>`<span style="display:inline-flex;align-items:center;gap:2px"><span style="display:inline-block;width:6px;height:6px;border-radius:1px;background:${c}"></span>${l}</span>`;
+  // Find earliest post date for scroll range
+  const dates=allVids.map(v=>v.post_date).sort();
+  const earliest=dates.length?dates[0]:today;
+  const startY=parseInt(earliest.slice(0,4));
+  const startM=parseInt(earliest.slice(5,7))-1;
+  const now=new Date();
+  // Count months from earliest to 3 months in future
+  const endY=now.getFullYear();const endM=now.getMonth()+3;
+  const totalMonths=((endY*12+endM)-(startY*12+startM))+1;
+  // Header
+  const _ib='background:none;border:none;cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;width:20px;height:20px;flex-shrink:0';
   let html=`<div class="tod-tb-header" style="position:relative">
-    <div style="display:flex;align-items:center;gap:6px;font-size:8px;color:var(--muted);flex-shrink:0">
-      <button onclick="_vidCalMonth--;if(_vidCalMonth<0){_vidCalMonth=11;_vidCalYear--};_vidOvRenderCal()" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--muted);padding:0 2px;display:flex;align-items:center">←</button>
-      ${_lg('#059669','B posted')} ${_lg('#34d399','L posted')} ${_lg('#0ea5e9','B')} ${_lg('#60a5fa','L')}
-    </div>
+    <button onclick="_vidCalMonth--;if(_vidCalMonth<0){_vidCalMonth=11;_vidCalYear--};_vidOvRenderCal()" style="${_ib};color:var(--muted)">←</button>
+    <button onclick="_vidCalToggleYear()" style="${_ib};color:${_vidCalYearView?'var(--accent)':'var(--muted)'}" title="Yearly overview"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></button>
     <span style="flex:1;text-align:center;font-size:12px;font-weight:700;color:var(--text);letter-spacing:-.1px">Schedule</span>
-    <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
-      <button onclick="var n=new Date();_vidCalMonth=n.getMonth();_vidCalYear=n.getFullYear();_vidOvRenderCal()" style="background:none;border:none;cursor:pointer;font-size:9px;font-weight:600;color:var(--muted);padding:1px 4px" title="Back to today (T)">Today</button>
-      <button onclick="_vidCalMonth++;if(_vidCalMonth>11){_vidCalMonth=0;_vidCalYear++};_vidOvRenderCal()" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--muted);padding:0 2px;display:flex;align-items:center">→</button>
-    </div>
+    <button onclick="var n=new Date();_vidCalMonth=n.getMonth();_vidCalYear=n.getFullYear();_vidOvRenderCal()" style="background:none;border:none;cursor:pointer;font-size:9px;font-weight:600;color:var(--muted);padding:1px 4px;flex-shrink:0" title="Back to today (T)">Today</button>
+    <button onclick="_vidCalMonth++;if(_vidCalMonth>11){_vidCalMonth=0;_vidCalYear++};_vidOvRenderCal()" style="${_ib};color:var(--muted)">→</button>
   </div>`;
-  // Fixed weekday row
-  html+='<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:1px;padding:2px 10px 0;flex-shrink:0">';
+  if(_vidCalYearView){
+    html+=_vidCalRenderYearView(allVids,today);
+    panel.innerHTML=html;
+    return;
+  }
+  // Fixed weekday row with left label spacer
+  html+='<div style="display:flex;flex-shrink:0;padding:2px 10px 0"><div style="width:44px;flex-shrink:0"></div><div style="flex:1;display:grid;grid-template-columns:repeat(5,1fr);gap:1px">';
   ['Mon','Tue','Wed','Thu','Fri'].forEach(d=>{html+=`<div style="font-size:8px;font-weight:600;color:var(--muted);text-align:center;padding:1px 0">${d}</div>`;});
-  html+='</div>';
-  // Months in scrollable container — fill available space
+  html+='</div></div>';
+  // Months in scrollable container from earliest to future
   html+='<div id="vidCalScroll" style="flex:1;overflow-y:auto;padding:2px 10px 6px" ondragover="event.preventDefault()">';
-  for(let i=0;i<5;i++){
-    let cm=_vidCalMonth+i,cy=_vidCalYear;
+  for(let i=0;i<totalMonths;i++){
+    let cm=startM+i,cy=startY;
     while(cm>11){cm-=12;cy++;}
     html+=_vidCalRenderMonth(cy,cm,vidsByDate,today);
   }
@@ -3625,6 +3673,12 @@ function _vidOvRenderCal(){
   if(scrollEl&&!scrollEl._whlBound){
     scrollEl._whlBound=true;
     scrollEl.addEventListener('wheel',e=>{e.stopPropagation();},{passive:true});
+  }
+  // Scroll to current month
+  if(scrollEl){
+    const curKey=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+    const todayCell=scrollEl.querySelector(`[data-caldate="${today}"]`);
+    if(todayCell)todayCell.scrollIntoView({block:'center',behavior:'instant'});
   }
 }
 // ── Focus this week toggle ───────────────────────────────────────────────────
