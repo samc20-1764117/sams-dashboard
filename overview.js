@@ -3544,7 +3544,7 @@ function _vidCalRenderMonth(y,m,vidsByDate,today,search){
   // Glass container for each month
   let html=`<div style="display:flex;align-items:stretch;margin-bottom:4px;background:rgba(255,255,255,.5);backdrop-filter:blur(8px);border:1px solid rgba(210,205,228,.15);border-radius:8px;overflow:hidden${isNewYear?';margin-top:8px':''}">`;
   // Left label: month on top, divider, year below
-  html+=`<div style="width:38px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px 2px;background:${isCurMonth?'rgba(14,165,233,.05)':'rgba(120,113,145,.03)'};border-right:1px solid rgba(210,205,228,.1)">`;
+  html+=`<div style="width:38px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px 2px;background:${isCurMonth?'rgba(249,115,22,.06)':'rgba(120,113,145,.03)'};border-right:1px solid rgba(210,205,228,.1)">`;
   html+=`<span style="font-size:10px;font-weight:700;color:${accentColor};line-height:1.1">${mo}</span>`;
   html+=`<span style="font-size:7px;font-weight:500;color:var(--muted);line-height:1;margin-top:3px">${y}</span>`;
   html+='</div>';
@@ -3566,7 +3566,7 @@ function _vidCalRenderMonth(y,m,vidsByDate,today,search){
     const singleVid=filteredVids.length===1;
     const multiVid=filteredVids.length>1;
     html+=`<div class="vid-cal-day${isToday?' vid-cal-today':''}" data-caldate="${ds}" ondragover="event.preventDefault();this.classList.add('vid-cal-drop')" ondragleave="this.classList.remove('vid-cal-drop')" ondrop="_vidCalDrop(event,'${ds}')" style="padding:2px 4px;min-height:20px;overflow:hidden;display:flex;align-items:center;gap:3px${multiVid?';flex-wrap:wrap':''}">`;
-    html+=`<span style="font-size:7px;font-weight:${isToday?'700':'500'};color:${isToday?'#f97316':'var(--subtle)'};line-height:1;flex-shrink:0;width:10px;text-align:right">${d}</span>`;
+    html+=`<span style="font-size:7px;font-weight:${isToday?'700':'500'};color:${isToday?'#f97316':'var(--subtle)'};line-height:1;flex-shrink:0;width:10px;text-align:right;font-variant-numeric:tabular-nums">${d}</span>`;
     filteredVids.forEach(v=>{
       const {bg,fg}=_vidCalChipColor(v,ds,today);
       const sid=String(v.id);
