@@ -2038,16 +2038,18 @@ async function toggleFinSubCancel(id){
 }
 
 // Virtual cancel-reminder tasks for overview (3 days before due)
-const _finCancelDone=new Set();
+const _finCancelDone=new Set(JSON.parse(localStorage.getItem('_finCancelDone')||'[]'));
+function _finCancelSave(){try{localStorage.setItem('_finCancelDone',JSON.stringify([..._finCancelDone]));}catch(e){}}
 function togFinCancelDone(subId,checked){
   const sid=String(subId);
   const prev=_finCancelDone.has(sid);
   if(checked)_finCancelDone.add(sid);else _finCancelDone.delete(sid);
-  _finCancelRender();
-  pushUndo(()=>{if(prev)_finCancelDone.add(sid);else _finCancelDone.delete(sid);_finCancelRender();},(checked?'Checked':'Unchecked')+' cancel task');
+  _finCancelSave();_finCancelRender();
+  pushUndo(()=>{if(prev)_finCancelDone.add(sid);else _finCancelDone.delete(sid);_finCancelSave();_finCancelRender();},(checked?'Checked':'Unchecked')+' cancel task');
 }
 function _finCancelRender(){
   if(typeof renderToday==='function')renderToday();if(typeof renderWkCal==='function')renderWkCal();
+  if(typeof renderWkSummary==='function')renderWkSummary();
   if(document.getElementById('tbGrid')&&typeof renderDayTB==='function')renderDayTB();
 }
 function _finCancelTasksForDate(ds){
