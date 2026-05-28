@@ -4993,7 +4993,10 @@ document.addEventListener('keydown',async e=>{
   if(e.key==='t'&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&activePg==='overview'&&!document.querySelector('.overlay.open')&&!(typeof _vidCalOpen!=='undefined'&&_vidCalOpen)){const _vp=document.getElementById('vidOvPanel');if(_vp&&_vp.style.display==='block'){}else{e.preventDefault();document.activeElement?.blur();goToday();return;}}
   // Video panel keyboard nav (arrow up/down, delete, enter)
   if(activePg==='overview'&&typeof _vidOvKeyNav==='function'&&_vidOvKeyNav(e))return;
-  if(activePg==='overview'&&typeof _vidOvAllOpen!=='undefined'&&_vidOvAllOpen)return;
+  if(activePg==='overview'&&typeof _vidOvAllOpen!=='undefined'&&_vidOvAllOpen){
+    // When toolbox open: block arrows (handled by toolbox), let other keys through
+    if(e.key==='ArrowUp'||e.key==='ArrowDown'||e.key==='ArrowLeft'||e.key==='ArrowRight'||e.key==='Delete'||e.key==='Backspace'||e.key==='n'||e.key==='Enter')return;
+  }
   // w + Arrow: shift week on overview
   if((e.key==='ArrowLeft'||e.key==='ArrowRight')&&_wKeyHeld&&activePg==='overview'){e.preventDefault();shiftWk(e.key==='ArrowLeft'?-1:1);return;}
   // Arrow left/right: shift day on overview when nothing selected

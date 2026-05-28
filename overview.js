@@ -3214,6 +3214,7 @@ function _vidOvKeyNav(e){
   return false;
 }
 function toggleVidOvMenu(){
+  if(typeof closeAutoTBManager==='function')closeAutoTBManager();
   const panel=document.getElementById('vidOvPanel');
   if(!panel)return;
   if(panel.style.display==='block'){closeVidOvMenu();return;}
