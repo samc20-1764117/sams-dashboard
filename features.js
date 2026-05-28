@@ -4378,12 +4378,6 @@ function renderGuidePage(){
     ${sRow('Delete / ⌫','Delete selected')}
     </table>
   </div>
-  <div style="${panel};grid-column:span 2">
-    ${secT('Pages')}
-    <div style="display:flex;flex-wrap:wrap;gap:5px;font-size:12px">
-      ${PAGES.map(p=>`<span style="background:rgba(0,0,0,.04);padding:3px 10px;border-radius:6px;font-weight:500">${p}</span>`).join('')}
-    </div>
-  </div>
 </div>
 
 </div>

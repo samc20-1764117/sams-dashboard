@@ -152,3 +152,8 @@ Table: `recipes` (columns include `sort_order int4`). Do NOT reference: protein,
 - **Subscriptions**: inline contenteditable editing. Tab moves to next field in same row. New sub via `+` focuses name field with `_unsaved:true`; only POSTs when name is non-empty on blur. Clicking away or Escape with empty name cancels (removes row). Only required field: name.
 - **Fin-cancel tasks**: checking off on overview archives the subscription and marks done visually. Undo restores both. `_finCancelTasksForDate` includes archived subs in `_finCancelDone` set.
 - **Keyboard shortcuts**: global shortcuts (`s`, `n`, `r`) do NOT fire when typing in contenteditable/input/textarea fields. `s` (grocery modal) is overview-only.
+
+### Style Guide (`features.js`, `page-guide`)
+- **Shortcut**: `L`. `renderGuidePage()` in features.js.
+- **Layout**: narrow left column (task color cards + special states), right 2-col grid (keyboard shortcuts, multi-select & drag).
+- **Must stay in sync**: when updating colors, shortcuts, or multi-select behavior, also update `renderGuidePage()`.
