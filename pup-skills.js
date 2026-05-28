@@ -13,6 +13,14 @@ async function _pupPageToggle(skillId,pup,checked){
   else await removePupWeeklyFocus(skillId,_pupPageWkOff);
   _pupPageRenderCol('Mochi');_pupPageRenderCol('Sunny');
 }
+async function _pupDropOnFocus(ev,targetPup){
+  const data=ev.dataTransfer.getData('text/plain');
+  if(!data||!data.includes('|'))return;
+  const [skillId,srcPup]=data.split('|');
+  if(srcPup!==targetPup)return;
+  await addPupWeeklyFocus(skillId,_pupPageWkOff);
+  _pupPageRenderCol('Mochi');_pupPageRenderCol('Sunny');
+}
 function _pupWkDone(skillId,off){const{mon,sun}=getWkBounds(off??wkOff);const monDs=d2s(mon),sunDs=d2s(sun);return(st.pupSessions||[]).filter(s=>String(s.skill_id)===String(skillId)&&s.day_date>=monDs&&s.day_date<=sunDs&&s.done).length;}
 function _pupWkSessTotal(skillId,off){const{mon,sun}=getWkBounds(off??wkOff);const monDs=d2s(mon),sunDs=d2s(sun);return(st.pupSessions||[]).filter(s=>String(s.skill_id)===String(skillId)&&s.day_date>=monDs&&s.day_date<=sunDs).length;}
 function _pupAllSess(skillId){return(st.pupSessions||[]).filter(s=>String(s.skill_id)===String(skillId));}
@@ -136,6 +144,13 @@ function setPupModalDog(val){
     }
   }
 }
+function _pmSkipChanged(){
+  const skipM=document.getElementById('pmSkipMochi').checked;
+  const skipS=document.getElementById('pmSkipSunny').checked;
+  const mBtn=document.getElementById('pmDogMochi'),sBtn=document.getElementById('pmDogSunny');
+  mBtn.style.visibility=skipM?'hidden':'visible';
+  sBtn.style.visibility=skipS?'hidden':'visible';
+}
 let _pmWordManual=false;
 function _pmSyncWord(){
   if(_pmWordManual)return;
@@ -178,6 +193,8 @@ function openPupAddModal(){
   document.getElementById('pmComments').value='';
   document.getElementById('pmSkipMochi').checked=false;
   document.getElementById('pmSkipSunny').checked=false;
+  document.getElementById('pmDogMochi').style.visibility='visible';
+  document.getElementById('pmDogSunny').style.visibility='visible';
   const _cr=document.getElementById('pmCountRow');if(_cr)_cr.style.display='none';
   setPupModalDog('Mochi');
   document.getElementById('pupModal').classList.add('open');
@@ -197,6 +214,7 @@ function openPupEditModal(id){
   _pupModalSunnyId=_sunnyRec?_sunnyRec.id:null;
   document.getElementById('pmSkipMochi').checked=_mochiRec?isPupSkip(_mochiRec.id):false;
   document.getElementById('pmSkipSunny').checked=_sunnyRec?isPupSkip(_sunnyRec.id):false;
+  _pmSkipChanged();
   setPupModalDog(s.pup||'Mochi');
   document.getElementById('pmSkill').value=s.skill||'';
   document.getElementById('pmCategory').value=s.category||'';
@@ -647,7 +665,7 @@ function renderPupTable(){
       const nextHover=comment?`onmouseenter="showPupTip(event,'${comment}')" onmouseleave="hidePupTip()" style="cursor:help;padding:0 6px;font-size:11px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:var(--text)"`:`style="padding:0 6px;font-size:11px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:var(--text)"`;
       const nextDiv=`<div ondblclick="event.stopPropagation();pupCellEdit(this.closest('td'),'${sid}','next_step')" ${nextHover}>${nextStep}</div>`;
       const sessDiv=`<div onclick="event.stopPropagation();openPupCountEdit('${sid}',this)" style="height:100%;display:flex;align-items:center;justify-content:flex-end;padding-right:6px;cursor:pointer" title="Session details">${_pupCountBadge(s)}</div>`;
-      return`<td data-drag-skill-id="${sid}" data-drag-pup="${p}" style="padding:2px 5px"><div style="${pillBase}">${stageWidget}${nextDiv}${sessDiv}</div></td>`;
+      return`<td data-drag-skill-id="${sid}" data-drag-pup="${p}" style="padding:2px 5px"><div draggable="true" ondragstart="event.dataTransfer.setData('text/plain','${sid}|${p}');event.dataTransfer.effectAllowed='copy';this.style.opacity='.3'" ondragend="this.style.opacity=''" style="${pillBase};cursor:grab">${stageWidget}${nextDiv}${sessDiv}</div></td>`;
     }).join('');
     const firstRec=pups.map(p=>g.byPup[p]).find(Boolean);
     const tipAttr=hasTip?` onmouseenter="showPupRichTip(event,${tipRows.replace(/"/g,'&quot;')})" onmouseleave="hidePupTip()" style="cursor:help"`:'';
@@ -703,49 +721,7 @@ function renderPupTable(){
       });
     });
   }
-  // Drag from table pup cells to focus zones — delegated on tbody
-  if(!tbody._pupCellDrag){
-    tbody._pupCellDrag=true;
-    tbody.addEventListener('mousedown',e=>{
-      const td=e.target.closest('td[data-drag-skill-id]');
-      if(!td||e.button!==0||e.target.closest('input[type="checkbox"]'))return;
-      e.preventDefault();e.stopPropagation();
-      const skillId=td.dataset.dragSkillId,pupName=td.dataset.dragPup;
-      const skillName=td.closest('tr')?.dataset.skillkey||'';
-      let dragging=false;const startX=e.clientX,startY=e.clientY;
-      let ghost=null;
-      const onMove=ev=>{
-        if(!dragging&&Math.abs(ev.clientX-startX)<5&&Math.abs(ev.clientY-startY)<5)return;
-        if(!dragging){
-          dragging=true;td.style.opacity='.3';
-          ghost=document.createElement('div');
-          ghost.textContent=skillName;
-          ghost.style.cssText='position:fixed;z-index:9999;padding:4px 10px;border-radius:6px;font-size:11px;background:'+(pupName==='Mochi'?'rgba(139,92,246,.18)':'rgba(251,191,36,.2)')+';color:var(--text);pointer-events:none;white-space:nowrap;font-weight:600';
-          document.body.appendChild(ghost);
-        }
-        ev.preventDefault();
-        ghost.style.left=(ev.clientX+12)+'px';ghost.style.top=(ev.clientY-8)+'px';
-        document.querySelectorAll('._pupFocusDrop').forEach(dz=>{
-          const r=dz.getBoundingClientRect();
-          const over=ev.clientX>=r.left&&ev.clientX<=r.right&&ev.clientY>=r.top&&ev.clientY<=r.bottom;
-          dz.style.outline=over?'2px solid '+(dz.dataset.pup==='Mochi'?'#8b5cf6':'#fbbf24'):'';
-          dz.style.background=over?(dz.dataset.pup==='Mochi'?'rgba(139,92,246,0.12)':'rgba(251,191,36,0.14)'):'';
-        });
-      };
-      const onUp=async ev=>{
-        document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);
-        td.style.opacity='';if(ghost)ghost.remove();
-        document.querySelectorAll('._pupFocusDrop').forEach(dz=>{dz.style.background='';dz.style.outline='';});
-        if(!dragging)return;
-        const dropTarget=document.elementFromPoint(ev.clientX,ev.clientY)?.closest('._pupFocusDrop');
-        if(dropTarget&&dropTarget.dataset.pup===pupName){
-          await addPupWeeklyFocus(skillId,_pupPageWkOff);
-          _pupPageRenderCol('Mochi');_pupPageRenderCol('Sunny');
-        }
-      };
-      document.addEventListener('mousemove',onMove);document.addEventListener('mouseup',onUp);
-    },true);
-  }
+  // No mousedown drag needed — HTML5 drag/drop on pill divs + focus zone drop handlers
 }
 function renderPupsPageKeepScroll(){
   const sc=document.getElementById('pupTblScroll');
@@ -818,7 +794,7 @@ function _pupPageRenderCol(pup){
     const countStr=checked&&(done||total)?`<span onclick="event.stopPropagation();openPupCountEdit('${sid}',this)" style="font-size:9px;font-weight:600;color:var(--muted);flex-shrink:0;cursor:pointer;padding:1px 3px;border-radius:3px;background:rgba(0,0,0,.04)">${done}/${total}</span>`:'';
     const availCount=!checked&&allDone?`<span style="font-size:9px;color:var(--muted);margin-left:auto;flex-shrink:0">${allDone}</span>`:'';
     const rightSide=checked?(ns||countStr?`<div style="display:flex;align-items:center;gap:5px;margin-left:auto;flex-shrink:0">${ns?`<span style="font-size:9px;color:var(--subtle);white-space:nowrap">${ns}</span>`:''}${countStr}</div>`:''):availCount;
-    return`<div class="_pupDragSkill" data-pupid="${sid}" data-pup="${pup}" data-checked="${checked}" style="display:flex;align-items:center;padding:5px 6px;border-radius:6px;gap:6px;${checked?'background:rgba(255,255,255,.7);border:1px solid rgba(210,205,228,.2);margin-bottom:3px':'opacity:.6;margin-bottom:2px;cursor:grab'}">
+    return`<div class="_pupDragSkill" data-pupid="${sid}" data-pup="${pup}" data-checked="${checked}" ${!checked?`draggable="true" ondragstart="event.dataTransfer.setData('text/plain','${sid}|${pup}');event.dataTransfer.effectAllowed='copy';this.style.opacity='.3'" ondragend="this.style.opacity='.6'"`:''} style="display:flex;align-items:center;padding:5px 6px;border-radius:6px;gap:6px;${checked?'background:rgba(255,255,255,.7);border:1px solid rgba(210,205,228,.2);margin-bottom:3px':'opacity:.6;margin-bottom:2px;cursor:grab'}">
       <input type="checkbox" ${checked?'checked':''} onchange="_pupPageToggle('${sid}','${pup}',this.checked)" style="width:13px;height:13px;accent-color:${accentHex};cursor:pointer;flex-shrink:0">
       <span style="font-size:11px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(displayName)}</span>
       ${rightSide}
@@ -833,42 +809,17 @@ function _pupPageRenderCol(pup){
   const spacerHtml=spacerCount>0?`<div style="height:${spacerCount*30}px"></div>`:'';
   let html='';
   if(active.length||spacerCount>0){
-    html+=`<div class="_pupFocusDrop" data-pup="${pup}" style="background:${themeBg};border:1px solid ${themeBorder};border-radius:10px;padding:6px 6px;margin-bottom:6px;min-height:32px">`;
+    html+=`<div class="_pupFocusDrop" data-pup="${pup}" ondragover="event.preventDefault();this.style.outline='2px solid ${pup==='Mochi'?'#8b5cf6':'#fbbf24'}';this.style.background='${pup==='Mochi'?'rgba(139,92,246,0.15)':'rgba(251,191,36,0.18)'}'" ondragleave="this.style.outline='';this.style.background='${themeBg}'" ondrop="event.preventDefault();this.style.outline='';this.style.background='${themeBg}';_pupDropOnFocus(event,'${pup}')" style="background:${themeBg};border:1px solid ${themeBorder};border-radius:10px;padding:6px 6px;margin-bottom:6px;min-height:32px">`;
     html+=active.map((s,i)=>{let h=renderSkill(s,true);if(i===active.length-1)h=h.replace('margin-bottom:3px','margin-bottom:0');return h;}).join('');
     html+=spacerHtml;
     html+=`</div>`;
   } else {
-    html+=`<div class="_pupFocusDrop" data-pup="${pup}" style="background:${themeBg};border:1px dashed ${themeBorder};border-radius:10px;padding:12px 6px;margin-bottom:6px;min-height:32px"><div style="font-size:10px;color:var(--muted);text-align:center">Check or drag skills here</div></div>`;
+    html+=`<div class="_pupFocusDrop" data-pup="${pup}" ondragover="event.preventDefault();this.style.outline='2px solid ${pup==='Mochi'?'#8b5cf6':'#fbbf24'}';this.style.background='${pup==='Mochi'?'rgba(139,92,246,0.15)':'rgba(251,191,36,0.18)'}'" ondragleave="this.style.outline='';this.style.background='${themeBg}'" ondrop="event.preventDefault();this.style.outline='';this.style.background='${themeBg}';_pupDropOnFocus(event,'${pup}')" style="background:${themeBg};border:1px dashed ${themeBorder};border-radius:10px;padding:12px 6px;margin-bottom:6px;min-height:32px"><div style="font-size:10px;color:var(--muted);text-align:center">Check or drag skills here</div></div>`;
   }
   if(inactive.length){
     html+=inactive.map(s=>renderSkill(s,false)).join('');
   }
   if(!allSkills.length)html='<div style="font-size:11px;color:var(--muted);text-align:center;padding:20px 0">No skills yet</div>';
   colEl.innerHTML=html;
-  // Drag from available skills to focus zone via mousedown
-  colEl.querySelectorAll('._pupDragSkill[data-checked="false"]').forEach(el=>{
-    el.addEventListener('mousedown',e=>{
-      if(e.button!==0||e.target.closest('input'))return;
-      const skillId=el.dataset.pupid,pupName=el.dataset.pup;
-      let dragging=false;const startX=e.clientX,startY=e.clientY;let ghost=null;
-      const onMove=ev=>{
-        if(!dragging&&Math.abs(ev.clientX-startX)<5&&Math.abs(ev.clientY-startY)<5)return;
-        if(!dragging){dragging=true;el.style.opacity='.3';ghost=document.createElement('div');ghost.textContent=el.querySelector('span')?.textContent||'';ghost.style.cssText='position:fixed;z-index:9999;padding:4px 10px;border-radius:6px;font-size:11px;background:rgba(139,92,246,.15);color:var(--text);pointer-events:none;white-space:nowrap';document.body.appendChild(ghost);}
-        ev.preventDefault();ghost.style.left=(ev.clientX+12)+'px';ghost.style.top=(ev.clientY-8)+'px';
-        document.querySelectorAll('._pupFocusDrop').forEach(dz=>{const r=dz.getBoundingClientRect();const over=ev.clientX>=r.left&&ev.clientX<=r.right&&ev.clientY>=r.top&&ev.clientY<=r.bottom;dz.style.background=over?(dz.dataset.pup==='Mochi'?'rgba(139,92,246,0.12)':'rgba(251,191,36,0.14)'):'';});
-      };
-      const onUp=async ev=>{
-        document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);
-        el.style.opacity='';if(ghost)ghost.remove();
-        document.querySelectorAll('._pupFocusDrop').forEach(dz=>{dz.style.background='';});
-        if(!dragging)return;
-        const dropTarget=document.elementFromPoint(ev.clientX,ev.clientY)?.closest('._pupFocusDrop');
-        if(dropTarget&&dropTarget.dataset.pup===pupName){
-          await addPupWeeklyFocus(skillId,_pupPageWkOff);
-          _pupPageRenderCol('Mochi');_pupPageRenderCol('Sunny');
-        }
-      };
-      document.addEventListener('mousemove',onMove);document.addEventListener('mouseup',onUp);
-    });
-  });
+  // HTML5 drag/drop handles available→focus via inline ondragstart + focus zone ondrop
 }
