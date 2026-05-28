@@ -5301,70 +5301,90 @@ function _renderATBMgr(){
     const days=a.days?a.days.split(',').map(Number):_ATB_DAYS.filter(x=>x.d>=1&&x.d<=5).map(x=>x.d);
     const tStart=(a.start_time||'00:00').slice(0,5);
     const tEnd=(a.end_time||'00:30').slice(0,5);
-    const tS=tStr(parseInt(tStart.split(':')[0])*60+parseInt(tStart.split(':')[1]));
-    const tE=tStr(parseInt(tEnd.split(':')[0])*60+parseInt(tEnd.split(':')[1]));
-    h+=`<div class="atb-mgr-row" style="${a.is_enabled?'':'opacity:.45'}">`;
-    h+=`<div class="atb-mgr-dot" style="background:${dotBg}"></div>`;
-    h+=`<span class="atb-mgr-label">${a.label||'(untitled)'}</span>`;
-    h+=`<span class="atb-mgr-time">${tS}-${tE}</span>`;
-    h+=`<div class="atb-mgr-days">`;
-    _ATB_DAYS.forEach(dd=>{h+=`<span class="atb-mgr-day${days.includes(dd.d)?' active':''}">${dd.l}</span>`;});
+    h+=`<div class="atb-mgr-item" data-atb-id="${a.id}" style="${a.is_enabled?'':'opacity:.45'}">`;
+    // Row 1: dot (clickable for cat) + name (editable) + time range (editable) + X delete
+    h+=`<div class="atb-mgr-r1">`;
+    h+=`<div class="atb-mgr-dot" style="background:${dotBg}" onclick="_atbCycleCat(${a.id})" title="${a.category||'none'} — click to change"></div>`;
+    h+=`<input class="atb-mgr-name" value="${a.label||''}" placeholder="Name" onchange="_atbInlineSave(${a.id},'label',this.value)" onkeydown="if(event.key==='Enter')this.blur()">`;
+    h+=`<input type="time" class="atb-mgr-tinput" value="${tStart}" onchange="_atbInlineSave(${a.id},'start_time',this.value+':00')">`;
+    h+=`<span class="atb-mgr-tsep">-</span>`;
+    h+=`<input type="time" class="atb-mgr-tinput" value="${tEnd}" onchange="_atbInlineSave(${a.id},'end_time',this.value+':00')">`;
+    h+=`<button class="atb-mgr-x" onclick="_atbDelRule(${a.id})">✕</button>`;
     h+=`</div>`;
-    h+=`<div class="atb-mgr-acts">`;
-    h+=`<button onclick="_atbTogEnabled(${a.id})" title="${a.is_enabled?'Disable':'Enable'}">${a.is_enabled?'on':'off'}</button>`;
-    h+=`<button onclick="_atbStartEdit(${a.id})" title="Edit">edit</button>`;
-    h+=`<button onclick="_atbDelRule(${a.id})" title="Delete">del</button>`;
-    h+=`</div></div>`;
-    if(_atbEditId===a.id)h+=_atbFormHTML(a);
+    // Row 2: day toggles
+    h+=`<div class="atb-mgr-r2">`;
+    _ATB_DAYS.forEach(dd=>{h+=`<span class="day-tog${days.includes(dd.d)?' on':''}" data-day="${dd.d}" onclick="_atbTogDay(${a.id},${dd.d},this)">${dd.l}</span>`;});
+    h+=`</div>`;
+    h+=`</div>`;
   });
-  if(_atbEditId==='new')h+=_atbFormHTML(null);
+  // New item form
+  if(_atbEditId==='new'){
+    h+=`<div class="atb-mgr-item atb-mgr-new">`;
+    h+=`<div class="atb-mgr-r1">`;
+    h+=`<div class="atb-mgr-dot" style="background:#c8c6d4" id="atbNewDot" onclick="_atbCycleCatNew()" title="none — click to change"></div>`;
+    h+=`<input class="atb-mgr-name" id="atbF_label" placeholder="Name" autofocus onkeydown="if(event.key==='Enter')_atbSaveNew()">`;
+    h+=`<input type="time" class="atb-mgr-tinput" id="atbF_start" value="09:00">`;
+    h+=`<span class="atb-mgr-tsep">-</span>`;
+    h+=`<input type="time" class="atb-mgr-tinput" id="atbF_end" value="09:30">`;
+    h+=`<button class="atb-mgr-x" onclick="_atbCancelEdit()" style="opacity:1;color:var(--muted)">✕</button>`;
+    h+=`</div>`;
+    h+=`<div class="atb-mgr-r2">`;
+    _ATB_DAYS.forEach(dd=>{h+=`<span class="day-tog${dd.d>=1&&dd.d<=5?' on':''}" data-day="${dd.d}" onclick="this.classList.toggle('on')">${dd.l}</span>`;});
+    h+=`<button class="btn btn-xs" style="background:rgba(109,95,230,.85);color:#fff;border:none;font-size:7px;padding:2px 8px;border-radius:4px;margin-left:auto" onclick="_atbSaveNew()">Add</button>`;
+    h+=`</div></div>`;
+  }
   h+=`<button class="atb-mgr-add" onclick="_atbStartEdit('new')">+ Add auto block</button>`;
   _atbMgrEl.innerHTML=h;
 }
-function _atbFormHTML(a){
-  const isNew=!a;
-  const label=a?a.label:'';
-  const st2=a?(a.start_time||'').slice(0,5):'09:00';
-  const et=a?(a.end_time||'').slice(0,5):'09:30';
-  const cat=a?a.category||'':'';
-  const days=a&&a.days?a.days.split(',').map(Number):(a?_ATB_DAYS.filter(x=>x.d>=1&&x.d<=5).map(x=>x.d):[1,2,3,4,5]);
-  let h=`<div class="atb-mgr-form" id="atbForm">`;
-  h+=`<div class="form-row"><label>Name</label><input type="text" id="atbF_label" value="${label}" placeholder="Meeting name" style="flex:1"></div>`;
-  h+=`<div class="form-row"><label>Time</label><input type="time" id="atbF_start" value="${st2}" style="width:80px"><span style="font-size:8px;color:var(--muted)">to</span><input type="time" id="atbF_end" value="${et}" style="width:80px"></div>`;
-  h+=`<div class="form-row"><label>Days</label><div class="day-toggles">`;
-  _ATB_DAYS.forEach(dd=>{h+=`<span class="day-tog${days.includes(dd.d)?' on':''}" data-day="${dd.d}" onclick="this.classList.toggle('on')">${dd.l}</span>`;});
-  h+=`</div></div>`;
-  h+=`<div class="form-row"><label>Category</label><select id="atbF_cat">`;
-  _ATB_CATS.forEach(c=>{h+=`<option value="${c.val}"${c.val===cat?' selected':''}>${c.label}</option>`;});
-  h+=`</select></div>`;
-  h+=`<div class="form-btns"><button class="btn btn-ghost btn-xs" onclick="_atbCancelEdit()">Cancel</button><button class="btn btn-xs" style="background:rgba(109,95,230,.85);color:#fff;border:none;font-size:8px;padding:3px 10px;border-radius:5px" onclick="_atbSaveForm(${isNew?'null':a.id})">${isNew?'Add':'Save'}</button></div>`;
-  h+=`</div>`;
-  return h;
-}
-function _atbStartEdit(id){_atbEditId=id;_renderATBMgr();}
+let _atbNewCatIdx=0;
+function _atbStartEdit(id){_atbEditId=id;_atbNewCatIdx=0;_renderATBMgr();}
 function _atbCancelEdit(){_atbEditId=null;_renderATBMgr();}
-function _atbSaveForm(existingId){
+function _atbInlineSave(id,field,val){
+  const a=st.autoTimeblocks.find(x=>x.id===id);if(!a)return;
+  a[field]=val;
+  const patch={};patch[field]=val;
+  sbReqSilent('PATCH','auto_timeblocks',patch,`?id=eq.${id}`);
+  save();if(document.getElementById('tbGrid'))renderDayTB();
+}
+function _atbTogDay(id,day,el){
+  const a=st.autoTimeblocks.find(x=>x.id===id);if(!a)return;
+  const days=a.days?a.days.split(',').map(Number):_ATB_DAYS.filter(x=>x.d>=1&&x.d<=5).map(x=>x.d);
+  const idx=days.indexOf(day);
+  if(idx>-1)days.splice(idx,1);else days.push(day);
+  el.classList.toggle('on');
+  a.days=days.length?days.join(','):null;
+  sbReqSilent('PATCH','auto_timeblocks',{days:a.days},`?id=eq.${id}`);
+  save();if(document.getElementById('tbGrid'))renderDayTB();
+}
+function _atbCycleCat(id){
+  const a=st.autoTimeblocks.find(x=>x.id===id);if(!a)return;
+  const curIdx=_ATB_CATS.findIndex(c=>c.val===(a.category||''));
+  const next=_ATB_CATS[(curIdx+1)%_ATB_CATS.length];
+  a.category=next.val||null;
+  sbReqSilent('PATCH','auto_timeblocks',{category:a.category},`?id=eq.${id}`);
+  save();_renderATBMgr();if(document.getElementById('tbGrid'))renderDayTB();
+}
+function _atbCycleCatNew(){
+  _atbNewCatIdx=(_atbNewCatIdx+1)%_ATB_CATS.length;
+  const c=_ATB_CATS[_atbNewCatIdx];
+  const dot=document.getElementById('atbNewDot');
+  if(dot){const col=c.val?gc(c.val):null;dot.style.background=col?col.d:'#c8c6d4';dot.title=(c.val||'none')+' — click to change';}
+}
+function _atbSaveNew(){
   const label=document.getElementById('atbF_label').value.trim();
   const startTime=document.getElementById('atbF_start').value;
   const endTime=document.getElementById('atbF_end').value;
-  const cat=document.getElementById('atbF_cat').value||null;
-  const dayEls=document.querySelectorAll('#atbForm .day-tog.on');
+  const cat=_ATB_CATS[_atbNewCatIdx].val||null;
+  const dayEls=document.querySelectorAll('.atb-mgr-new .day-tog.on');
   const days=[...dayEls].map(e=>e.dataset.day).join(',');
-  if(!label||!startTime||!endTime){return;}
-  const payload={label,start_time:startTime+':00',end_time:endTime+':00',category:cat,days:days||null,is_enabled:true};
-  if(existingId){
-    const a=st.autoTimeblocks.find(x=>x.id===existingId);
-    if(a){Object.assign(a,payload);}
-    sbReqSilent('PATCH','auto_timeblocks',payload,`?id=eq.${existingId}`);
-  }else{
-    payload.sort_order=(st.autoTimeblocks.length+1);
-    const tmpId='atb-tmp-'+Date.now();
-    st.autoTimeblocks.push({...payload,id:tmpId});
-    sbReqSilent('POST','auto_timeblocks',payload,'').then(res=>{
-      if(res&&res[0]){const idx=st.autoTimeblocks.findIndex(x=>x.id===tmpId);if(idx>-1)st.autoTimeblocks[idx]=res[0];}
-      save();
-    });
-  }
+  if(!label||!startTime||!endTime)return;
+  const payload={label,start_time:startTime+':00',end_time:endTime+':00',category:cat,days:days||null,is_enabled:true,sort_order:(st.autoTimeblocks.length+1)};
+  const tmpId='atb-tmp-'+Date.now();
+  st.autoTimeblocks.push({...payload,id:tmpId});
+  sbReqSilent('POST','auto_timeblocks',payload,'').then(res=>{
+    if(res&&res[0]){const idx=st.autoTimeblocks.findIndex(x=>x.id===tmpId);if(idx>-1)st.autoTimeblocks[idx]=res[0];}
+    save();_renderATBMgr();
+  });
   _atbEditId=null;save();_renderATBMgr();
   if(document.getElementById('tbGrid'))renderDayTB();
 }
