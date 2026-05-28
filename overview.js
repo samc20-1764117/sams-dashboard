@@ -4674,7 +4674,7 @@ function renderDayTB(){
   getVisibleBlocks(ds).forEach(b=>drawTBBlock(col,b));
   autoBlocks.forEach(a=>drawAutoTBBlock(col,a,ds));
   recAutoBlocks.forEach(a=>drawRecAutoTBBlock(col,a,ds));
-  const autoBtn=document.getElementById('autoTBToggle');if(autoBtn)autoBtn.style.opacity=cfg.showAutoTB?'1':'0.4';
+  // autoTBToggle opacity no longer needed — button opens manager now
   if(isDateToday(date)){const nl=document.createElement('div');nl.className='nowline';nl.id='tbNowLine';const nm=new Date(),nmins=(nm.getHours()-HOURS[0])*60+nm.getMinutes();if(nmins>=0){nl.style.top=nmins*PX+'px';nl.innerHTML='<div class="nowdot"></div>';}col.appendChild(nl);}
   // Drag on empty space: DOWN = create new block, UP = select multiple blocks
   col.addEventListener('mousedown',e=>{
@@ -5057,15 +5057,16 @@ function renderTBSum(ds){
   const dayMins=(HOURS[HOURS.length-1]-HOURS[0]+1)*60;
   const free=Math.max(0,dayMins-tot);
   const freeStr=free>=60?`${Math.floor(free/60)}h${free%60?` ${free%60}m`:''}`:` ${free}m`;
-  document.getElementById('tbSum').innerHTML=`<div class="si"><span>Blocked:</span><span class="sv">${Math.floor(tot/60)}h ${tot%60}m</span><span class="tb-free">(${freeStr} free)</span></div><button class="btn btn-ghost btn-xs" id="autoTBToggle" onclick="toggleAutoTB()" title="Toggle auto time blocks" style="margin-left:auto;font-size:8px;flex-shrink:0;opacity:${cfg.showAutoTB?'1':'.4'}">Auto</button><button class="btn btn-ghost btn-xs" onclick="toggleVidOvMenu()" title="Videos" style="font-size:8px;flex-shrink:0;padding:3px 5px;display:flex;align-items:center;gap:3px"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg></button>`;
+  document.getElementById('tbSum').innerHTML=`<div class="si"><span>Blocked:</span><span class="sv">${Math.floor(tot/60)}h ${tot%60}m</span><span class="tb-free">(${freeStr} free)</span></div><button class="btn btn-ghost btn-xs" id="autoTBToggle" onclick="openAutoTBManager()" title="Manage auto blocks" style="margin-left:auto;font-size:8px;flex-shrink:0">Auto</button><button class="btn btn-ghost btn-xs" onclick="toggleVidOvMenu()" title="Videos" style="font-size:8px;flex-shrink:0;padding:3px 5px;display:flex;align-items:center;gap:3px"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg></button>`;
 }
 // ── Auto Timeblocks ────────────────────────────────────────────────────────────
 function getAutoTBForDate(ds){
   if(!cfg.showAutoTB)return[];
   const dow=new Date(ds+'T00:00:00').getDay(); // 0=Sun,6=Sat
-  const isWeekday=dow>=1&&dow<=5;
   return st.autoTimeblocks.filter(a=>a.is_enabled).flatMap(a=>{
-    if(!isWeekday)return[];
+    const days=a.days?a.days.split(',').map(Number):null;
+    if(days){if(!days.includes(dow))return[];}
+    else{if(dow<1||dow>5)return[];} // legacy weekday-only
     const ov=st.autoTBOverrides.find(o=>String(o.base_id)===String(a.id)&&o.date===ds);
     if(ov&&(ov.start_time===null||ov.start_time===undefined))return[]; // deleted for this day
     const startTime=ov?ov.start_time:a.start_time;
@@ -5075,7 +5076,7 @@ function getAutoTBForDate(ds){
     const startMinutes=parseInt(sh)*60+parseInt(sm2||0);
     const endMinutes=parseInt(eh)*60+parseInt(em||0);
     const dur=Math.max(15,endMinutes-startMinutes);
-    return[{_atbId:String(a.id),_ovId:ov?String(ov.id):null,label:a.label||'',sm:startMinutes,dur,ds}];
+    return[{_atbId:String(a.id),_ovId:ov?String(ov.id):null,label:a.label||'',sm:startMinutes,dur,ds,_cat:a.category||null}];
   });
 }
 function delAutoTBForDay(atbId,ds,ovId){
@@ -5116,8 +5117,9 @@ function delAutoTBForDay(atbId,ds,ovId){
 function drawAutoTBBlock(col,atb,ds){
   const top=(atb.sm-HOURS[0]*60)*PX,ht=Math.max(atb.dur*PX,16);
   const el=document.createElement('div');
-  el.className='atb-block';
+  el.className='atb-block'+(atb._cat?' atb-cat':'');
   el.dataset.atbId=atb._atbId;
+  if(atb._cat){const c=gc(atb._cat);el.style.background=c.bg;el.style.color=c.t;el.style.borderColor=c.b;el.style.setProperty('--_atb-bg',c.bg);el.style.setProperty('--_atb-t',c.t);el.style.setProperty('--_atb-b',c.b);}
   el.addEventListener('dragover',e=>{if(!dragId)return;e.preventDefault();e.stopPropagation();el.classList.add('tb-drop-over');});
   el.addEventListener('dragleave',()=>el.classList.remove('tb-drop-over'));
   el.addEventListener('drop',e=>{if(!dragId)return;e.preventDefault();e.stopPropagation();el.classList.remove('tb-drop-over');dropOnTB(e,ds,null,null,atb.sm);});
@@ -5267,9 +5269,119 @@ function drawAutoTBBlock(col,atb,ds){
 }
 function toggleAutoTB(){
   cfg.showAutoTB=!cfg.showAutoTB;save();
-  const btn=document.getElementById('autoTBToggle');
-  if(btn)btn.style.opacity=cfg.showAutoTB?'1':'0.4';
   if(document.getElementById('tbGrid'))renderDayTB();
+  const tog=document.getElementById('atbMgrShowTog');if(tog)tog.checked=cfg.showAutoTB;
+}
+// ── Auto TB Manager ───────────────────────────────────────────────────────────
+const _ATB_CATS=[{val:'',label:'None (grey)'},{val:'home',label:'Home'},{val:'my work',label:'My Work'},{val:'work',label:'Work'},{val:'social',label:'Social'},{val:'long term',label:'Long Term'},{val:'recurring',label:'Recurring'},{val:'travel',label:'Travel'},{val:'videos',label:'Videos'}];
+const _ATB_DAYS=[{d:1,l:'M'},{d:2,l:'T'},{d:3,l:'W'},{d:4,l:'Th'},{d:5,l:'F'},{d:6,l:'Sa'},{d:0,l:'Su'}];
+let _atbMgrEl=null,_atbEditId=null;
+function openAutoTBManager(){
+  if(_atbMgrEl){closeAutoTBManager();return;}
+  const sec=document.querySelector('.tb-section');if(!sec)return;
+  _atbMgrEl=document.createElement('div');
+  _atbMgrEl.className='atb-mgr';
+  sec.appendChild(_atbMgrEl);
+  _renderATBMgr();
+  requestAnimationFrame(()=>requestAnimationFrame(()=>_atbMgrEl.classList.add('open')));
+}
+function closeAutoTBManager(){
+  if(!_atbMgrEl)return;
+  _atbMgrEl.classList.remove('open');
+  const el=_atbMgrEl;_atbMgrEl=null;_atbEditId=null;
+  setTimeout(()=>el.remove(),200);
+}
+function _renderATBMgr(){
+  if(!_atbMgrEl)return;
+  const items=st.autoTimeblocks||[];
+  let h=`<div class="atb-mgr-head"><h3>Auto Blocks</h3><label class="atb-mgr-tog"><input type="checkbox" id="atbMgrShowTog" ${cfg.showAutoTB?'checked':''} onchange="toggleAutoTB()"><span>Show</span></label><button onclick="closeAutoTBManager()" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);padding:0 2px">✕</button></div>`;
+  items.forEach(a=>{
+    const c=a.category?gc(a.category):null;
+    const dotBg=c?c.d:'#c8c6d4';
+    const days=a.days?a.days.split(',').map(Number):_ATB_DAYS.filter(x=>x.d>=1&&x.d<=5).map(x=>x.d);
+    const tStart=(a.start_time||'00:00').slice(0,5);
+    const tEnd=(a.end_time||'00:30').slice(0,5);
+    const tS=tStr(parseInt(tStart.split(':')[0])*60+parseInt(tStart.split(':')[1]));
+    const tE=tStr(parseInt(tEnd.split(':')[0])*60+parseInt(tEnd.split(':')[1]));
+    h+=`<div class="atb-mgr-row" style="${a.is_enabled?'':'opacity:.45'}">`;
+    h+=`<div class="atb-mgr-dot" style="background:${dotBg}"></div>`;
+    h+=`<span class="atb-mgr-label">${a.label||'(untitled)'}</span>`;
+    h+=`<span class="atb-mgr-time">${tS}-${tE}</span>`;
+    h+=`<div class="atb-mgr-days">`;
+    _ATB_DAYS.forEach(dd=>{h+=`<span class="atb-mgr-day${days.includes(dd.d)?' active':''}">${dd.l}</span>`;});
+    h+=`</div>`;
+    h+=`<div class="atb-mgr-acts">`;
+    h+=`<button onclick="_atbTogEnabled(${a.id})" title="${a.is_enabled?'Disable':'Enable'}">${a.is_enabled?'on':'off'}</button>`;
+    h+=`<button onclick="_atbStartEdit(${a.id})" title="Edit">edit</button>`;
+    h+=`<button onclick="_atbDelRule(${a.id})" title="Delete">del</button>`;
+    h+=`</div></div>`;
+    if(_atbEditId===a.id)h+=_atbFormHTML(a);
+  });
+  if(_atbEditId==='new')h+=_atbFormHTML(null);
+  h+=`<button class="atb-mgr-add" onclick="_atbStartEdit('new')">+ Add auto block</button>`;
+  _atbMgrEl.innerHTML=h;
+}
+function _atbFormHTML(a){
+  const isNew=!a;
+  const label=a?a.label:'';
+  const st2=a?(a.start_time||'').slice(0,5):'09:00';
+  const et=a?(a.end_time||'').slice(0,5):'09:30';
+  const cat=a?a.category||'':'';
+  const days=a&&a.days?a.days.split(',').map(Number):(a?_ATB_DAYS.filter(x=>x.d>=1&&x.d<=5).map(x=>x.d):[1,2,3,4,5]);
+  let h=`<div class="atb-mgr-form" id="atbForm">`;
+  h+=`<div class="form-row"><label>Name</label><input type="text" id="atbF_label" value="${label}" placeholder="Meeting name" style="flex:1"></div>`;
+  h+=`<div class="form-row"><label>Time</label><input type="time" id="atbF_start" value="${st2}" style="width:80px"><span style="font-size:8px;color:var(--muted)">to</span><input type="time" id="atbF_end" value="${et}" style="width:80px"></div>`;
+  h+=`<div class="form-row"><label>Days</label><div class="day-toggles">`;
+  _ATB_DAYS.forEach(dd=>{h+=`<span class="day-tog${days.includes(dd.d)?' on':''}" data-day="${dd.d}" onclick="this.classList.toggle('on')">${dd.l}</span>`;});
+  h+=`</div></div>`;
+  h+=`<div class="form-row"><label>Category</label><select id="atbF_cat">`;
+  _ATB_CATS.forEach(c=>{h+=`<option value="${c.val}"${c.val===cat?' selected':''}>${c.label}</option>`;});
+  h+=`</select></div>`;
+  h+=`<div class="form-btns"><button class="btn btn-ghost btn-xs" onclick="_atbCancelEdit()">Cancel</button><button class="btn btn-xs" style="background:rgba(109,95,230,.85);color:#fff;border:none;font-size:8px;padding:3px 10px;border-radius:5px" onclick="_atbSaveForm(${isNew?'null':a.id})">${isNew?'Add':'Save'}</button></div>`;
+  h+=`</div>`;
+  return h;
+}
+function _atbStartEdit(id){_atbEditId=id;_renderATBMgr();}
+function _atbCancelEdit(){_atbEditId=null;_renderATBMgr();}
+function _atbSaveForm(existingId){
+  const label=document.getElementById('atbF_label').value.trim();
+  const startTime=document.getElementById('atbF_start').value;
+  const endTime=document.getElementById('atbF_end').value;
+  const cat=document.getElementById('atbF_cat').value||null;
+  const dayEls=document.querySelectorAll('#atbForm .day-tog.on');
+  const days=[...dayEls].map(e=>e.dataset.day).join(',');
+  if(!label||!startTime||!endTime){return;}
+  const payload={label,start_time:startTime+':00',end_time:endTime+':00',category:cat,days:days||null,is_enabled:true};
+  if(existingId){
+    const a=st.autoTimeblocks.find(x=>x.id===existingId);
+    if(a){Object.assign(a,payload);}
+    sbReqSilent('PATCH','auto_timeblocks',payload,`?id=eq.${existingId}`);
+  }else{
+    payload.sort_order=(st.autoTimeblocks.length+1);
+    const tmpId='atb-tmp-'+Date.now();
+    st.autoTimeblocks.push({...payload,id:tmpId});
+    sbReqSilent('POST','auto_timeblocks',payload,'').then(res=>{
+      if(res&&res[0]){const idx=st.autoTimeblocks.findIndex(x=>x.id===tmpId);if(idx>-1)st.autoTimeblocks[idx]=res[0];}
+      save();
+    });
+  }
+  _atbEditId=null;save();_renderATBMgr();
+  if(document.getElementById('tbGrid'))renderDayTB();
+}
+function _atbTogEnabled(id){
+  const a=st.autoTimeblocks.find(x=>x.id===id);if(!a)return;
+  a.is_enabled=!a.is_enabled;
+  sbReqSilent('PATCH','auto_timeblocks',{is_enabled:a.is_enabled},`?id=eq.${id}`);
+  save();_renderATBMgr();if(document.getElementById('tbGrid'))renderDayTB();
+}
+function _atbDelRule(id){
+  const a=st.autoTimeblocks.find(x=>x.id===id);if(!a)return;
+  st.autoTimeblocks=st.autoTimeblocks.filter(x=>x.id!==id);
+  st.autoTBOverrides=st.autoTBOverrides.filter(o=>String(o.base_id)!==String(id));
+  sbReqSilent('DELETE','auto_timeblocks',null,`?id=eq.${id}`);
+  sbReqSilent('DELETE','auto_timeblock_overrides',null,`?base_id=eq.${id}`);
+  pushUndo(()=>{st.autoTimeblocks.push(a);save();_renderATBMgr();if(document.getElementById('tbGrid'))renderDayTB();sbReqSilent('POST','auto_timeblocks',{label:a.label,start_time:a.start_time,end_time:a.end_time,day_scope:a.day_scope,is_enabled:a.is_enabled,sort_order:a.sort_order,category:a.category,days:a.days},'');},'Deleted auto block');
+  save();_renderATBMgr();if(document.getElementById('tbGrid'))renderDayTB();
 }
 function dropOnTB(e,ds,h,row,smOverride){
   if(!dragId)return;
