@@ -4414,6 +4414,11 @@ function showPage(id){
   if(id==='tasks')return;
   if(id==='shopping')id='weekly';// shopping merged into weekly page
   const detPop=document.getElementById('finInvDetailsPop');if(detPop)detPop.remove();
+  // Close video overlay panels when leaving overview
+  if(typeof _vidOvCloseCal==='function'&&typeof _vidCalOpen!=='undefined'&&_vidCalOpen)_vidOvCloseCal();
+  if(typeof _vidOvCloseAll==='function'&&typeof _vidOvAllOpen!=='undefined'&&_vidOvAllOpen)_vidOvCloseAll();
+  if(typeof _vidOvCloseAnalytics==='function'&&typeof _vidOvAnOpen!=='undefined'&&_vidOvAnOpen)_vidOvCloseAnalytics();
+  if(typeof closeVidOvMenu==='function'){const _vp=document.getElementById('vidOvPanel');if(_vp&&_vp.style.display==='block')closeVidOvMenu();}
   const _prevPg=activePg;activePg=id;
   document.querySelectorAll('.page').forEach(p=>{p.classList.remove('active');});
   const vidPage=document.getElementById('page-videos');if(vidPage)vidPage.removeAttribute('style');

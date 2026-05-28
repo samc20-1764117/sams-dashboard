@@ -3546,7 +3546,7 @@ function _vidCalRenderMonth(y,m,vidsByDate,today,search){
   // Left label: month on top, divider, year below
   html+=`<div style="width:38px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px 2px;background:${isCurMonth?'rgba(14,165,233,.05)':'rgba(120,113,145,.03)'};border-right:1px solid rgba(210,205,228,.1)">`;
   html+=`<span style="font-size:10px;font-weight:700;color:${accentColor};line-height:1.1">${mo}</span>`;
-  html+=`<span style="font-size:7px;font-weight:500;color:var(--muted);line-height:1;margin-top:1px">${y}</span>`;
+  html+=`<span style="font-size:7px;font-weight:500;color:var(--muted);line-height:1;margin-top:3px">${y}</span>`;
   html+='</div>';
   // Days grid
   html+='<div style="flex:1;display:grid;grid-template-columns:repeat(5,1fr);gap:1px;min-width:0;padding:2px">';
@@ -3564,12 +3564,13 @@ function _vidCalRenderMonth(y,m,vidsByDate,today,search){
     let filteredVids=dayVids;
     if(search){const q=search.toLowerCase();filteredVids=dayVids.filter(v=>(v.topic||'').toLowerCase().includes(q)||(v.title||'').toLowerCase().includes(q));}
     const singleVid=filteredVids.length===1;
-    html+=`<div class="vid-cal-day${isToday?' vid-cal-today':''}" data-caldate="${ds}" ondragover="event.preventDefault();this.classList.add('vid-cal-drop')" ondragleave="this.classList.remove('vid-cal-drop')" ondrop="_vidCalDrop(event,'${ds}')" style="padding:1px 2px;min-height:18px;overflow:hidden${singleVid?';display:flex;align-items:center;gap:2px':''}">`;
-    html+=`<span style="font-size:7px;font-weight:${isToday?'700':'500'};color:${isToday?'#f97316':'var(--subtle)'};line-height:1;flex-shrink:0;width:10px;text-align:left">${d}</span>`;
+    const multiVid=filteredVids.length>1;
+    html+=`<div class="vid-cal-day${isToday?' vid-cal-today':''}" data-caldate="${ds}" ondragover="event.preventDefault();this.classList.add('vid-cal-drop')" ondragleave="this.classList.remove('vid-cal-drop')" ondrop="_vidCalDrop(event,'${ds}')" style="padding:2px 4px;min-height:20px;overflow:hidden;display:flex;align-items:center;gap:3px${multiVid?';flex-wrap:wrap':''}">`;
+    html+=`<span style="font-size:7px;font-weight:${isToday?'700':'500'};color:${isToday?'#f97316':'var(--subtle)'};line-height:1;flex-shrink:0;width:10px;text-align:right">${d}</span>`;
     filteredVids.forEach(v=>{
       const {bg,fg}=_vidCalChipColor(v,ds,today);
       const sid=String(v.id);
-      html+=`<div draggable="true" ondragstart="event.dataTransfer.effectAllowed='move';_vidCalDragId='${sid}'" onclick="event.stopPropagation();_vidCalSelectChip('${sid}')" ondblclick="event.stopPropagation();event.preventDefault();if(typeof openVidEdit==='function')openVidEdit('${sid}')" class="vid-cal-chip" style="background:${bg};color:${fg};border-left:2px solid ${fg}${singleVid?';flex:1;min-width:0':''}" title="${escHtml(v.topic||v.title)}">${escHtml(v.topic||v.title)}</div>`;
+      html+=`<div draggable="true" ondragstart="event.dataTransfer.effectAllowed='move';_vidCalDragId='${sid}'" onclick="event.stopPropagation();_vidCalSelectChip('${sid}')" ondblclick="event.stopPropagation();event.preventDefault();if(typeof openVidEdit==='function')openVidEdit('${sid}')" class="vid-cal-chip" style="background:${bg};color:${fg};border-left:2px solid ${fg};flex:1;min-width:0${multiVid?';width:calc(100% - 13px)':''}" title="${escHtml(v.topic||v.title)}">${escHtml(v.topic||v.title)}</div>`;
     });
     html+='</div>';
   }
@@ -3595,7 +3596,7 @@ function _vidCalHighlightChip(vidId){
   if(!vidId)return;
   cal.querySelectorAll('.vid-cal-chip').forEach(c=>{
     const oc=c.getAttribute('onclick')||'';
-    if(oc.includes("'"+vidId+"'"))c.style.outline='2px solid var(--accent)';
+    if(oc.includes("'"+vidId+"'"))c.style.outline='1.5px solid rgba(14,165,233,.5)';
   });
 }
 // Yearly heatmap view
