@@ -208,7 +208,7 @@ function openPupAddModal(){
   const _cr=document.getElementById('pmCountRow');if(_cr)_cr.style.display='none';
   setPupModalDog('Mochi');
   document.getElementById('pupModal').classList.add('open');
-  setTimeout(()=>document.getElementById('pmSkill').focus(),80);
+  setTimeout(()=>{const _el=document.getElementById('pmSkill');if(_el)_el.blur();},80);
 }
 function openPupEditModal(id){
   const s=st.pup_skills.find(x=>x.id==id);if(!s)return;
@@ -246,7 +246,7 @@ function openPupEditModal(id){
     if(_totalDoneEl)_totalDoneEl.value=_pupAllDone(id);
   }
   document.getElementById('pupModal').classList.add('open');
-  setTimeout(()=>{const _el=document.getElementById('pmSkill');if(_el){_el.focus();const _l=_el.value.length;_el.setSelectionRange(_l,_l);}},80);
+  setTimeout(()=>{const _el=document.getElementById('pmSkill');if(_el){_el.setSelectionRange(_el.value.length,_el.value.length);_el.blur();}},80);
 }
 async function savePupModal(){
   const _skipMochi=document.getElementById('pmSkipMochi').checked;
