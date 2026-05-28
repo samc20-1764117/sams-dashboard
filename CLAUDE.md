@@ -8,7 +8,7 @@ STRICT — these override all defaults:
 - ALWAYS use the Read tool (never `cat`/`head`/`tail` via Bash). Grep for exact function/line first, then read only that range.
 - NEVER read a full large file in one pass: overview.js, features.js, core.js. Always grep the section keyword first.
 - Token budget: form a hypothesis after ≤5 searches. Make the fix. Do not keep searching to confirm — trust the fix.
-- **"update rules"**: update only affected rules files. Terse reusable patterns only. Merge into existing entries where possible. Skip if nothing changed.
+- **"update rules"**: update only affected rules files AND update the Style Guide page (`renderGuidePage()` in features.js) if the change affects colors, task types, keyboard shortcuts, or multi-select behavior. Terse reusable patterns only. Merge into existing entries where possible. Skip if nothing changed.
 - **Cleanup**: always delete temporary/mockup files (e.g. `*-mockup.html`) when done with them. Never leave test artifacts in the repo.
 - **Mockups**: when creating mockup HTML files, always auto-open in browser via `open <file>`. Never make the user navigate to the file manually.
 
