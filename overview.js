@@ -5506,35 +5506,34 @@ function _renderATBMgr(){
   let h=`<div class="atb-mgr-head"><h3>Auto Blocks</h3><button onclick="closeAutoTBManager()" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);padding:0 2px">✕</button></div>`;
   items.forEach(a=>{
     const c=a.category?gc(a.category):null;
-    const dotFill=c?c.bg:'#eeedf4';
-    const dotStroke=c?c.d:'#c8c6d4';
+    const barCol=c?c.d:'#c8c6d4';
     const days=a.days?a.days.split(',').map(Number):_ATB_DAYS.filter(x=>x.d>=1&&x.d<=5).map(x=>x.d);
     const tS=_fmtAtbTime(a.start_time);
     const tE=_fmtAtbTime(a.end_time);
-    const onBg=c?c.bg:'rgba(109,95,230,.12)';
-    const onTxt=c?c.t:'rgba(109,95,230,.9)';
-    const onBdr=c?c.b:'rgba(109,95,230,.25)';
-    h+=`<div class="atb-mgr-item" data-atb-id="${a.id}">`;
+    const onBg=c?c.bg:'rgba(200,198,212,.15)';
+    const onTxt=c?c.t:'#8a889a';
+    const onBdr=c?c.b:'rgba(200,198,212,.3)';
+    h+=`<div class="atb-mgr-item" data-atb-id="${a.id}" style="border-left:2.5px solid ${barCol}">`;
     h+=`<div class="atb-mgr-r1">`;
-    h+=`<svg class="atb-mgr-dot" width="9" height="9" viewBox="0 0 9 9" onclick="_atbCycleCat(${a.id})" title="${a.category||'none'} — click to change" style="cursor:pointer;flex-shrink:0"><circle cx="4.5" cy="4.5" r="3" fill="${dotFill}" stroke="${dotStroke}" stroke-opacity="0.4" stroke-width="1"/></svg>`;
     h+=`<input class="atb-mgr-name" value="${a.label||''}" placeholder="Name" onchange="_atbInlineSave(${a.id},'label',this.value)" onkeydown="if(event.key==='Enter')this.blur()">`;
     h+=`<span class="atb-mgr-trange"><input class="atb-mgr-tinput" value="${tS}" placeholder="9am" onblur="_atbSaveTime(${a.id},'start_time',this)" onkeydown="if(event.key==='Enter')this.blur()"><span class="atb-mgr-tsep">-</span><input class="atb-mgr-tinput" value="${tE}" placeholder="10am" onblur="_atbSaveTime(${a.id},'end_time',this)" onkeydown="if(event.key==='Enter')this.blur()"></span>`;
     h+=`<button class="atb-mgr-x" onclick="_atbDelRule(${a.id})">✕</button>`;
     h+=`</div>`;
     h+=`<div class="atb-mgr-r2">`;
     _ATB_DAYS.forEach(dd=>{h+=`<span class="day-tog${days.includes(dd.d)?' on':''}" data-day="${dd.d}" onclick="_atbTogDay(${a.id},${dd.d},this)" style="${days.includes(dd.d)?`background:${onBg};color:${onTxt};border-color:${onBdr}`:''}">${dd.l}</span>`;});
+    h+=`<span class="atb-mgr-cat-lbl" onclick="_atbCycleCat(${a.id})" style="color:${barCol}">${a.category||'none'}</span>`;
     h+=`</div></div>`;
   });
   if(_atbEditId==='new'){
-    h+=`<div class="atb-mgr-item atb-mgr-new">`;
+    h+=`<div class="atb-mgr-item atb-mgr-new" id="atbNewItem" style="border-left:2.5px solid #c8c6d4">`;
     h+=`<div class="atb-mgr-r1">`;
-    h+=`<svg class="atb-mgr-dot" id="atbNewDot" width="9" height="9" viewBox="0 0 9 9" onclick="_atbCycleCatNew()" title="none — click to change" style="cursor:pointer;flex-shrink:0"><circle cx="4.5" cy="4.5" r="3" fill="#eeedf4" stroke="#c8c6d4" stroke-opacity="0.4" stroke-width="1"/></svg>`;
     h+=`<input class="atb-mgr-name" id="atbF_label" placeholder="Name" autofocus onkeydown="if(event.key==='Enter')_atbSaveNew()">`;
     h+=`<span class="atb-mgr-trange"><input class="atb-mgr-tinput" id="atbF_start" value="" placeholder="9am" onkeydown="if(event.key==='Enter')_atbSaveNew()"><span class="atb-mgr-tsep">-</span><input class="atb-mgr-tinput" id="atbF_end" value="" placeholder="9:30am" onkeydown="if(event.key==='Enter')_atbSaveNew()"></span>`;
     h+=`<button class="atb-mgr-x" onclick="_atbCancelEdit()" style="opacity:1;color:var(--muted)">✕</button>`;
     h+=`</div>`;
     h+=`<div class="atb-mgr-r2">`;
     _ATB_DAYS.forEach(dd=>{h+=`<span class="day-tog${dd.d>=1&&dd.d<=5?' on':''}" data-day="${dd.d}" onclick="this.classList.toggle('on')">${dd.l}</span>`;});
+    h+=`<span class="atb-mgr-cat-lbl" onclick="_atbCycleCatNew()" style="color:#c8c6d4">none</span>`;
     h+=`</div></div>`;
   }
   h+=`<button class="atb-mgr-add" onclick="_atbStartEdit('new')">+ Add auto block</button>`;
@@ -5582,8 +5581,12 @@ function _atbCycleCat(id){
 function _atbCycleCatNew(){
   _atbNewCatIdx=(_atbNewCatIdx+1)%_ATB_CATS.length;
   const c=_ATB_CATS[_atbNewCatIdx];
-  const dot=document.getElementById('atbNewDot');
-  if(dot){const col=c.val?gc(c.val):null;const ci=dot.querySelector('circle');if(ci){ci.setAttribute('fill',col?col.bg:'#eeedf4');ci.setAttribute('stroke',col?col.d:'#c8c6d4');}dot.setAttribute('title',(c.val||'none')+' — click to change');}
+  const col=c.val?gc(c.val):null;
+  const barCol=col?col.d:'#c8c6d4';
+  const item=document.getElementById('atbNewItem');
+  if(item)item.style.borderLeftColor=barCol;
+  const lbl=item&&item.querySelector('.atb-mgr-cat-lbl');
+  if(lbl){lbl.textContent=c.val||'none';lbl.style.color=barCol;}
 }
 function _atbSaveNew(){
   const label=document.getElementById('atbF_label').value.trim();
