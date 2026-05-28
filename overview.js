@@ -3546,7 +3546,7 @@ function _vidCalRenderMonth(y,m,vidsByDate,today,search){
   // Left label: month on top, divider, year below
   html+=`<div style="width:38px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px 2px;background:${isCurMonth?'rgba(249,115,22,.06)':'rgba(120,113,145,.03)'};border-right:1px solid rgba(210,205,228,.1)">`;
   html+=`<span style="font-size:10px;font-weight:700;color:${accentColor};line-height:1.1">${mo}</span>`;
-  html+=`<span style="font-size:7px;font-weight:500;color:var(--muted);line-height:1;margin-top:3px">${y}</span>`;
+  html+=`<span style="font-size:8px;font-weight:500;color:var(--muted);line-height:1;margin-top:3px">${y}</span>`;
   html+='</div>';
   // Days grid
   html+='<div style="flex:1;display:grid;grid-template-columns:repeat(5,1fr);gap:1px;min-width:0;padding:2px">';
