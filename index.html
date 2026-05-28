@@ -705,18 +705,18 @@
     <input type="checkbox" id="pmFocus" style="display:none">
 
     <!-- ═══ SKILL (shared across both dogs) ═══ -->
-    <div style="padding:10px 16px 8px;text-align:center">
+    <div style="padding:10px 16px 8px;text-align:center;background:rgba(255,255,255,.97);border-bottom:1px solid rgba(210,205,228,.18)">
       <input id="pmSkill" placeholder="Skill name" oninput="_pmSyncWord()" style="font-size:14px;font-weight:700;text-align:center;border:none;background:transparent;outline:none;width:100%;color:var(--text);padding:2px 0;font-family:inherit">
     </div>
     <!-- Shared fields -->
-    <div style="padding:0 16px 10px">
+    <div style="padding:8px 16px 10px">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px">
-        <div class="mfield" style="margin-bottom:0"><label style="text-transform:none;letter-spacing:0">Word</label><input id="pmWord" placeholder="Same as skill" onfocus="_pmWordFocus()" oninput="_pmWordEdit()"></div>
-        <div class="mfield" style="margin-bottom:0"><label style="text-transform:none;letter-spacing:0">Signal</label><input id="pmSignal" placeholder="Hand signal…"></div>
+        <div class="mfield" style="margin-bottom:0;min-width:0"><label style="text-transform:none;letter-spacing:0">Word</label><input id="pmWord" placeholder="Same as skill" onfocus="_pmWordFocus()" oninput="_pmWordEdit()"></div>
+        <div class="mfield" style="margin-bottom:0;min-width:0"><label style="text-transform:none;letter-spacing:0">Signal</label><input id="pmSignal" placeholder="Hand signal…"></div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-        <div class="mfield" style="margin-bottom:0"><label style="text-transform:none;letter-spacing:0">Category</label><select id="pmCategory"><option value="">—</option><option value="commands">Commands</option><option value="manners">Manners</option><option value="fun">Fun</option></select></div>
-        <div class="mfield" style="margin-bottom:0"><label style="text-transform:none;letter-spacing:0">Level</label><select id="pmLevel"><option value="">—</option><option value="Easy">Easy</option><option value="Medium">Medium</option><option value="Hard">Hard</option></select></div>
+        <div class="mfield" style="margin-bottom:0;min-width:0"><label style="text-transform:none;letter-spacing:0">Category</label><select id="pmCategory" style="width:100%"><option value="">—</option><option value="commands">Commands</option><option value="manners">Manners</option><option value="fun">Fun</option></select></div>
+        <div class="mfield" style="margin-bottom:0;min-width:0"><label style="text-transform:none;letter-spacing:0">Level</label><select id="pmLevel" style="width:100%"><option value="">—</option><option value="Easy">Easy</option><option value="Medium">Medium</option><option value="Hard">Hard</option></select></div>
       </div>
     </div>
 
