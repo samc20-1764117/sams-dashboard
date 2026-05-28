@@ -3213,40 +3213,34 @@ function closeVidOvMenu(){
   const panel=document.getElementById('vidOvPanel');
   if(!panel||panel.style.display==='none')return;
   _vidOvSelIdx=-1;
+  if(_vidCalOpen)_vidOvCloseCal();
   panel.style.opacity='0';panel.style.transform='translateX(-12px)';
   setTimeout(()=>{panel.style.display='none';},250);
 }
 function _renderVidOvMenu(){
   const menu=document.getElementById('vidOvPanel');if(!menu)return;
-  const all=(st.videos||[]).filter(v=>!v.is_deleted);
-  const upNext=all.filter(v=>v.video_type==='B'&&v.status==='up_next');
-  const inProg=all.filter(v=>v.video_type==='B'&&v.status==='in_progress');
-  // Published but group not fully complete stay in current
-  const pubPending=all.filter(v=>v.video_type==='B'&&v.status==='published'&&typeof _vidGroupFullyComplete==='function'&&!_vidGroupFullyComplete(v));
-  const _hdr=`<div class="tod-tb-header" style="display:flex;align-items:center;justify-content:center;position:relative;padding:8px 10px"><span onclick="closeVidOvMenu();showPage('videos')" style="font-size:12px;font-weight:700;color:var(--text);letter-spacing:-.1px;cursor:pointer" onmouseenter="this.style.color='var(--accent)'" onmouseleave="this.style.color='var(--text)'"title="Go to Videos page">Videos</span><button onclick="closeVidOvMenu()" style="position:absolute;right:10px;background:none;border:none;cursor:pointer;font-size:14px;color:var(--muted);padding:0 2px;line-height:1" title="Close">✕</button></div>`;
-  const hasCurrent=upNext.length||inProg.length||pubPending.length;
-  if(!hasCurrent){
-    menu.innerHTML=_hdr+'<div style="padding:30px;font-size:12px;color:var(--subtle);text-align:center">No current videos</div>';
+  const vids=(st.videos||[]).filter(v=>!v.is_deleted&&v.video_type==='B'&&v.status==='up_next');
+  const _hdr=`<div class="tod-tb-header" style="display:flex;align-items:center;justify-content:center;position:relative;padding:8px 10px"><button onclick="_vidOvToggleCal()" style="position:absolute;left:10px;background:none;border:none;cursor:pointer;font-size:12px;color:var(--muted);padding:2px;line-height:1" title="Posting calendar"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></button><span onclick="closeVidOvMenu();showPage('videos')" style="font-size:12px;font-weight:700;color:var(--text);letter-spacing:-.1px;cursor:pointer" onmouseenter="this.style.color='var(--accent)'" onmouseleave="this.style.color='var(--text)'"title="Go to Videos page">Videos</span><button onclick="closeVidOvMenu()" style="position:absolute;right:10px;background:none;border:none;cursor:pointer;font-size:14px;color:var(--muted);padding:0 2px;line-height:1" title="Close">✕</button></div>`;
+  if(!vids.length){
+    menu.innerHTML=_hdr+'<div style="padding:30px;font-size:12px;color:var(--subtle);text-align:center">No videos to add</div>';
     return;
   }
   const steps=typeof VID_STEPS_CORE!=='undefined'?VID_STEPS_CORE:(typeof VID_STEPS!=='undefined'?VID_STEPS:[]);
   const labels=typeof VID_STEP_LABELS!=='undefined'?VID_STEP_LABELS:{};
   let html=_hdr;
-  html+='<div style="padding:4px 14px 0"><div style="display:flex;align-items:center;padding:0 6px 4px;gap:5px"><div style="width:16px;flex-shrink:0;box-sizing:content-box;border:1px solid transparent"></div><span style="flex:1"></span><div style="display:flex;gap:0;flex-shrink:0">';
+  html+='<div style="padding:4px 10px 0">';
+  // Column header row aligned with video rows
+  html+='<div style="display:flex;align-items:center;padding:2px 6px 4px;gap:5px">';
+  html+='<div style="width:16px;flex-shrink:0"></div>';
+  html+='<span style="flex:1;min-width:0"></span>';
+  html+='<div style="display:flex;gap:0;flex-shrink:0">';
   html+=steps.map(s=>`<div style="width:22px;text-align:center;font-size:8px;color:var(--muted);font-weight:600;flex-shrink:0">${(labels[s]||s).slice(0,3)}</div>`).join('');
-  html+='</div><span style="width:34px;flex-shrink:0"></span></div>';
-  if(upNext.length){
-    html+='<div style="font-size:9px;font-weight:600;color:#0ea5e9;padding:4px 6px 2px;letter-spacing:.03em">Up Next</div>';
-    upNext.forEach(v=>{html+=_vidOvMenuItem(v,steps);});
-  }
-  if(inProg.length){
-    html+='<div style="font-size:9px;font-weight:600;color:#d97706;padding:4px 6px 2px;letter-spacing:.03em;margin-top:4px">In Progress</div>';
-    inProg.forEach(v=>{html+=_vidOvMenuItem(v,steps);});
-  }
-  if(pubPending.length){
-    html+='<div style="font-size:9px;font-weight:600;color:#10b981;padding:4px 6px 2px;letter-spacing:.03em;margin-top:4px">Finishing Up</div>';
-    pubPending.forEach(v=>{html+=_vidOvMenuItem(v,steps);});
-  }
+  html+='</div>';
+  html+='<span style="width:34px;flex-shrink:0"></span>';
+  html+='<span style="width:52px;flex-shrink:0;font-size:8px;color:var(--muted);font-weight:600;text-align:center">Post</span>';
+  html+='<span style="width:18px;flex-shrink:0"></span>';
+  html+='</div>';
+  vids.forEach(v=>{html+=_vidOvMenuItem(v,steps);});
   html+='</div>';
   menu.innerHTML=html;
 }
@@ -3255,7 +3249,7 @@ function _vidOvStepDots(vid,steps){
   return steps.map(s=>{
     const val=vid[s]||'not_started';
     const cls=val==='done'?'done':val==='na'?'na':'';
-    return`<div style="width:22px;display:flex;align-items:center;justify-content:center;flex-shrink:0"><div class="vid-step-dot${cls?' '+cls:''}" style="width:12px;height:12px;border-radius:2px;cursor:pointer" onclick="event.stopPropagation();_vidOvToggleStep('${sid}','${s}')" oncontextmenu="event.preventDefault();event.stopPropagation();_vidOvNaStep('${sid}','${s}')"></div></div>`;
+    return`<div style="width:22px;display:flex;align-items:center;justify-content:center;flex-shrink:0"><div class="vid-step-dot${cls?' '+cls:''}" style="width:12px;height:12px;border-radius:2px;cursor:pointer" onclick="event.stopPropagation();_vidOvToggleStep('${sid}','${s}',this)" oncontextmenu="event.preventDefault();event.stopPropagation();_vidOvNaStep('${sid}','${s}')"></div></div>`;
   }).join('');
 }
 function _vidOvPct(vid,steps){const app=steps.filter(s=>vid[s]!=='na');const dn=app.filter(s=>vid[s]==='done').length;return app.length?Math.round(dn/app.length*100):0;}
@@ -3269,14 +3263,20 @@ function _vidOvMenuItem(v,steps){
   const _map=_vidDayMap();const _onCal=!!_map[sid];
   const _addBtn=`<button onclick="event.stopPropagation();if(typeof openVidModalForBig==='function')openVidModalForBig('${sid}')" style="font-size:10px;font-weight:700;width:16px;height:16px;line-height:16px;text-align:center;border-radius:3px;border:1px solid ${_onCal?'var(--accent)':'var(--border)'};background:var(--bg);color:${_onCal?'var(--accent)':'var(--muted)'};cursor:pointer;padding:0;flex-shrink:0" title="Add small video">+</button>`;
   const _xBtn=`<button class="vid-ov-x" onclick="event.stopPropagation();_vidOvDemote('${sid}')" title="Move to ideas">✕</button>`;
-  let html=`<div data-vidrow="${sid}" ${_dragAttr} ${_dblAttr} ${_ctxAttr} ${_hov} style="padding:5px 6px;border-radius:6px;font-size:13px;font-weight:600;color:var(--text);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s">${_addBtn}<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(v.topic||v.title)}</span><div style="display:flex;gap:0;flex-shrink:0">${_vidOvStepDots(v,steps)}</div><span style="font-size:10px;opacity:.5;width:34px;text-align:right;flex-shrink:0">${_vidOvPct(v,steps)}%</span>${_xBtn}</div>`;
+  const _postDate=v.post_date?_vidOvPostStr(v.post_date):'';
+  const _postColor=v.post_date?_vidOvPostColor(v):'var(--muted)';
+  const _postField=`<span class="vid-ov-post" style="width:52px;flex-shrink:0;font-size:9px;text-align:center;color:${_postColor};cursor:pointer" onclick="event.stopPropagation();_vidOvEditPostDate('${sid}',this)" title="${v.post_date||'Set post date'}">${_postDate||'—'}</span>`;
+  let html=`<div data-vidrow="${sid}" ${_dragAttr} ${_dblAttr} ${_ctxAttr} ${_hov} style="padding:5px 6px;border-radius:6px;font-size:13px;font-weight:600;color:var(--text);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s">${_addBtn}<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(v.topic||v.title)}</span><div style="display:flex;gap:0;flex-shrink:0">${_vidOvStepDots(v,steps)}</div><span style="font-size:10px;opacity:.5;width:34px;text-align:right;flex-shrink:0">${_vidOvPct(v,steps)}%</span>${_postField}${_xBtn}</div>`;
   // Children (S/L videos)
   const children=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(v.id)&&c.status!=='published').sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
   children.forEach((c,ci)=>{
     const csid=String(c.id);
     const _cOnCal=!!_map[csid];
     const _cxBtn=`<button class="vid-ov-x" onclick="event.stopPropagation();_vidOvDemote('${csid}')" title="Move to ideas">✕</button>`;
-    html+=`<div draggable="true" ondragstart="_vidOvChildDrag=event.currentTarget;dragId='vid::${csid}';event.dataTransfer.effectAllowed='move';document.body.classList.add('body-dragging');showWkcEdges(true);event.currentTarget.style.opacity='.4'" ondragend="event.currentTarget.style.opacity='1';_vidOvChildDrag=null;document.body.classList.remove('body-dragging');showWkcEdges(false)" ondragover="event.preventDefault();if(_vidOvChildDrag)this.style.borderTop='2px solid rgba(0,0,0,.12)'" ondragleave="this.style.borderTop=''" ondrop="_vidOvReorder(event,'${sid}','${csid}')" ${_hov} ondblclick="event.stopPropagation();if(typeof openVidEdit==='function')openVidEdit('${csid}')" oncontextmenu="if(typeof showVidCtx==='function')showVidCtx(event,'${csid}')" data-vidrow="${csid}" data-cvid="${csid}" style="padding:3px 6px;border-radius:6px;font-size:11px;font-weight:500;color:var(--muted);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s"><div style="width:16px;flex-shrink:0;box-sizing:content-box;border:1px solid transparent;text-align:center;color:${_cOnCal?'var(--accent)':'rgba(140,135,160,.4)'};font-size:10px;font-weight:${_cOnCal?'700':'400'}">└</div><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(c.topic||c.title)}</span><div style="display:flex;gap:0;flex-shrink:0">${_vidOvStepDots(c,steps)}</div><span style="font-size:9px;opacity:.4;width:34px;text-align:right;flex-shrink:0">${_vidOvPct(c,steps)}%</span>${_cxBtn}</div>`;
+    const _cPostDate=c.post_date?_vidOvPostStr(c.post_date):'';
+    const _cPostColor=c.post_date?_vidOvPostColor(c):'var(--muted)';
+    const _cPostField=`<span class="vid-ov-post" style="width:52px;flex-shrink:0;font-size:9px;text-align:center;color:${_cPostColor};cursor:pointer" onclick="event.stopPropagation();_vidOvEditPostDate('${csid}',this)" title="${c.post_date||'Set post date'}">${_cPostDate||'—'}</span>`;
+    html+=`<div draggable="true" ondragstart="_vidOvChildDrag=event.currentTarget;dragId='vid::${csid}';event.dataTransfer.effectAllowed='move';document.body.classList.add('body-dragging');showWkcEdges(true);event.currentTarget.style.opacity='.4'" ondragend="event.currentTarget.style.opacity='1';_vidOvChildDrag=null;document.body.classList.remove('body-dragging');showWkcEdges(false)" ondragover="event.preventDefault();if(_vidOvChildDrag)this.style.borderTop='2px solid rgba(0,0,0,.12)'" ondragleave="this.style.borderTop=''" ondrop="_vidOvReorder(event,'${sid}','${csid}')" ${_hov} ondblclick="event.stopPropagation();if(typeof openVidEdit==='function')openVidEdit('${csid}')" oncontextmenu="if(typeof showVidCtx==='function')showVidCtx(event,'${csid}')" data-vidrow="${csid}" data-cvid="${csid}" style="padding:3px 6px;border-radius:6px;font-size:11px;font-weight:500;color:var(--muted);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s"><div style="width:16px;flex-shrink:0;box-sizing:content-box;border:1px solid transparent;text-align:center;color:${_cOnCal?'var(--accent)':'rgba(140,135,160,.4)'};font-size:10px;font-weight:${_cOnCal?'700':'400'}">└</div><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(c.topic||c.title)}</span><div style="display:flex;gap:0;flex-shrink:0">${_vidOvStepDots(c,steps)}</div><span style="font-size:9px;opacity:.4;width:34px;text-align:right;flex-shrink:0">${_vidOvPct(c,steps)}%</span>${_cPostField}${_cxBtn}</div>`;
     if(ci<children.length-1){const oA=c.vid_order??ci;const oB=children[ci+1].vid_order??(ci+1);html+=`<div class="vid-insert-zone" onclick="event.stopPropagation();if(typeof openVidModalBetween==='function')openVidModalBetween('${sid}',${oA},${oB})"><button class="vid-insert-btn">+</button></div>`;}
   });
   return html;
@@ -3285,33 +3285,42 @@ function _vidOvMenuItem(v,steps){
 function _vidOvDemote(vidId){
   const v=(st.videos||[]).find(x=>String(x.id)===String(vidId));if(!v)return;
   const prevStatus=v.status;
+  const prevBigId=v.big_video_id;
   v.status='idea';
+  const patch={status:'idea'};
+  // For small videos, unlink from big video
+  if(v.video_type!=='B'&&v.big_video_id){
+    v.big_video_id=null;patch.big_video_id=null;
+  }
   // Also demote children of B videos
   const childUndos=[];
   if(v.video_type==='B'){
     (st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(vidId)&&c.status!=='published').forEach(c=>{
-      const cp=c.status;c.status='idea';childUndos.push({id:c.id,prev:cp});
-      sbReqSilent('PATCH','videos',{status:'idea'},`?id=eq.${c.id}`);
+      const cp=c.status;const cpBig=c.big_video_id;
+      c.status='idea';c.big_video_id=null;
+      childUndos.push({id:c.id,prevStatus:cp,prevBig:cpBig});
+      sbReqSilent('PATCH','videos',{status:'idea',big_video_id:null},`?id=eq.${c.id}`);
     });
   }
   // Remove from day map if assigned
   const map=_vidDayMap();const prevDay=map[String(vidId)]||null;
   if(prevDay){delete map[String(vidId)];_vidDayMapSet(map);}
   save();_renderVidOvMenu();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
-  sbReqSilent('PATCH','videos',{status:'idea'},`?id=eq.${vidId}`);
+  sbReqSilent('PATCH','videos',patch,`?id=eq.${vidId}`);
   pushUndo(()=>{
-    v.status=prevStatus;
-    childUndos.forEach(cu=>{const c=(st.videos||[]).find(x=>String(x.id)===String(cu.id));if(c){c.status=cu.prev;sbReqSilent('PATCH','videos',{status:cu.prev},`?id=eq.${cu.id}`);}});
+    v.status=prevStatus;v.big_video_id=prevBigId;
+    childUndos.forEach(cu=>{const c=(st.videos||[]).find(x=>String(x.id)===String(cu.id));if(c){c.status=cu.prevStatus;c.big_video_id=cu.prevBig;sbReqSilent('PATCH','videos',{status:cu.prevStatus,big_video_id:cu.prevBig},`?id=eq.${cu.id}`);}});
     if(prevDay){const m2=_vidDayMap();m2[String(vidId)]=prevDay;_vidDayMapSet(m2);}
     save();_renderVidOvMenu();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
-    sbReqSilent('PATCH','videos',{status:prevStatus},`?id=eq.${vidId}`);
+    sbReqSilent('PATCH','videos',{status:prevStatus,big_video_id:prevBigId},`?id=eq.${vidId}`);
   },'Moved to ideas');
 }
-function _vidOvToggleStep(vidId,step){
+function _vidOvToggleStep(vidId,step,dotEl){
   const v=(st.videos||[]).find(x=>String(x.id)===String(vidId));if(!v)return;
   if(v[step]==='na')return;
   const prev=v[step];const next=prev==='done'?'not_started':'done';
   v[step]=next;
+  if(next==='done'&&dotEl)_vidStepCelebrate(dotEl);
   // Sync step_upload_tableau
   const linked=step==='step_tableau_public'?'step_upload_tableau':null;
   const linkedPrev=linked?v[linked]:null;
@@ -3369,6 +3378,147 @@ function _vidOvNaStep(vidId,step){
   const patch={[step]:next};if(linked)patch[linked]=next;
   sbReqSilent('PATCH','videos',patch,`?id=eq.${vidId}`);
   pushUndo(()=>{v[step]=prev;if(linked)v[linked]=linkedPrev;save();_renderVidOvMenu();renderAll();const up={[step]:prev};if(linked)up[linked]=linkedPrev;sbReqSilent('PATCH','videos',up,`?id=eq.${vidId}`);},'Toggle n/a');
+}
+// ── Post date helpers ────────────────────────────────────────────────────────
+function _vidOvPostStr(ds){if(!ds)return'';const d=new Date(ds+'T12:00:00');return(d.getMonth()+1)+'/'+d.getDate();}
+function _vidOvPostColor(v){
+  const today=d2s(new Date());
+  if(v.status==='published')return'#10b981';
+  if(v.post_date&&v.post_date<=today)return'#10b981';
+  if(v.post_date&&v.post_date>today)return v.video_type==='B'?'#0ea5e9':'#8b5cf6';
+  return'var(--muted)';
+}
+function _vidOvEditPostDate(vidId,el){
+  const v=(st.videos||[]).find(x=>String(x.id)===String(vidId));if(!v)return;
+  const inp=document.createElement('input');inp.type='date';inp.value=v.post_date||'';
+  inp.style.cssText='position:fixed;z-index:999;font-size:11px;padding:2px 4px;border:1px solid var(--border);border-radius:6px;background:var(--bg)';
+  const r=el.getBoundingClientRect();inp.style.top=(r.bottom+2)+'px';inp.style.left=Math.max(4,r.left-40)+'px';
+  document.body.appendChild(inp);inp.focus();
+  const close=()=>{inp.remove();};
+  inp.addEventListener('change',()=>{
+    const prev=v.post_date;v.post_date=inp.value||null;
+    save();_renderVidOvMenu();renderAll();
+    sbReqSilent('PATCH','videos',{post_date:v.post_date},`?id=eq.${vidId}`);
+    pushUndo(()=>{v.post_date=prev;save();_renderVidOvMenu();renderAll();sbReqSilent('PATCH','videos',{post_date:prev},`?id=eq.${vidId}`);},'Set post date');
+    close();
+  });
+  inp.addEventListener('blur',close);
+  inp.addEventListener('keydown',e=>{if(e.key==='Escape')close();if(e.key==='Enter'){inp.dispatchEvent(new Event('change'));close();}});
+}
+// ── Step celebration ─────────────────────────────────────────────────────────
+function _vidStepCelebrate(dotEl){
+  if(!dotEl)return;
+  const r=dotEl.getBoundingClientRect();
+  const cx=r.left+r.width/2,cy=r.top+r.height/2;
+  const colors=['#10b981','#34d399','#6ee7b7','#fbbf24','#60a5fa','#a78bfa'];
+  for(let i=0;i<8;i++){
+    const p=document.createElement('div');
+    p.style.cssText=`position:fixed;z-index:9999;width:5px;height:5px;border-radius:50%;pointer-events:none;background:${colors[i%colors.length]}`;
+    p.style.left=cx+'px';p.style.top=cy+'px';
+    document.body.appendChild(p);
+    const angle=(Math.PI*2/8)*i;const dist=18+Math.random()*14;
+    const dx=Math.cos(angle)*dist,dy=Math.sin(angle)*dist;
+    p.animate([
+      {transform:'translate(-50%,-50%) scale(1)',opacity:1},
+      {transform:`translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px)) scale(0)`,opacity:0}
+    ],{duration:450+Math.random()*200,easing:'cubic-bezier(.2,1,.3,1)',fill:'forwards'});
+    setTimeout(()=>p.remove(),700);
+  }
+}
+// ── Monthly calendar panel ───────────────────────────────────────────────────
+let _vidCalOpen=false,_vidCalMonth=null,_vidCalYear=null;
+function _vidOvToggleCal(){
+  if(_vidCalOpen){_vidOvCloseCal();return;}
+  const now=new Date();_vidCalMonth=now.getMonth();_vidCalYear=now.getFullYear();
+  _vidCalOpen=true;_vidOvRenderCal();
+  // Close on click outside or Enter/Escape
+  setTimeout(()=>{
+    const _calClose=e=>{
+      const cal=document.getElementById('vidOvCalPanel');
+      const panel=document.getElementById('vidOvPanel');
+      if(!cal)return;
+      if(e.type==='click'&&!cal.contains(e.target)&&(!panel||!panel.contains(e.target))){_vidOvCloseCal();document.removeEventListener('click',_calClose);document.removeEventListener('keydown',_calKey);}
+    };
+    const _calKey=e=>{
+      if(e.key==='Escape'||e.key==='Enter'){_vidOvCloseCal();document.removeEventListener('click',_calClose);document.removeEventListener('keydown',_calKey);}
+    };
+    document.addEventListener('click',_calClose);
+    document.addEventListener('keydown',_calKey);
+  },100);
+}
+function _vidOvCloseCal(){
+  _vidCalOpen=false;
+  const el=document.getElementById('vidOvCalPanel');
+  if(el){el.style.opacity='0';el.style.transform='translateX(12px)';setTimeout(()=>el.remove(),250);}
+}
+function _vidOvRenderCal(){
+  let panel=document.getElementById('vidOvCalPanel');
+  if(!panel){
+    panel=document.createElement('div');panel.id='vidOvCalPanel';
+    // Position fixed, covering the right panel area of the overview
+    const card=document.getElementById('vidOvPanel')?.closest('.card');
+    const rightPanel=document.querySelector('.row1-right-panel');
+    if(rightPanel){
+      const rr=rightPanel.getBoundingClientRect();
+      panel.style.cssText=`position:fixed;top:${rr.top}px;left:${rr.left}px;width:${rr.width}px;height:${rr.height}px;z-index:200;background:rgba(255,255,255,.98);backdrop-filter:blur(12px);border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.1);overflow:hidden;display:flex;flex-direction:column;opacity:0;transform:translateX(12px);transition:opacity .25s ease,transform .25s ease`;
+    }else{
+      panel.style.cssText='position:fixed;top:60px;right:20px;width:700px;bottom:20px;z-index:200;background:rgba(255,255,255,.98);backdrop-filter:blur(12px);border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.1);overflow:hidden;display:flex;flex-direction:column;opacity:0;transform:translateX(12px);transition:opacity .25s ease,transform .25s ease';
+    }
+    document.body.appendChild(panel);
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{panel.style.opacity='1';panel.style.transform='translateX(0)';}));
+  }
+  const today=d2s(new Date());
+  const first=new Date(_vidCalYear,_vidCalMonth,1);
+  const startDow=first.getDay();
+  const daysInMonth=new Date(_vidCalYear,_vidCalMonth+1,0).getDate();
+  const monthName=first.toLocaleDateString('en-US',{month:'long',year:'numeric'});
+  // Gather all videos with post_date in this month
+  const allVids=(st.videos||[]).filter(v=>!v.is_deleted&&v.post_date);
+  const vidsByDate={};
+  allVids.forEach(v=>{const d=v.post_date;if(!vidsByDate[d])vidsByDate[d]=[];vidsByDate[d].push(v);});
+  let html=`<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--border);flex-shrink:0">
+    <button onclick="_vidCalMonth--;if(_vidCalMonth<0){_vidCalMonth=11;_vidCalYear--};_vidOvRenderCal()" style="background:none;border:none;cursor:pointer;font-size:14px;color:var(--muted);padding:2px 6px">←</button>
+    <span style="font-size:13px;font-weight:700;color:var(--text)">${monthName}</span>
+    <button onclick="_vidCalMonth++;if(_vidCalMonth>11){_vidCalMonth=0;_vidCalYear++};_vidOvRenderCal()" style="background:none;border:none;cursor:pointer;font-size:14px;color:var(--muted);padding:2px 6px">→</button>
+  </div>`;
+  html+='<div style="flex:1;overflow-y:auto;padding:6px">';
+  html+='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:1px;text-align:center">';
+  ['S','M','T','W','T','F','S'].forEach(d=>{html+=`<div style="font-size:9px;font-weight:600;color:var(--muted);padding:4px 0">${d}</div>`;});
+  // Empty cells before start
+  for(let i=0;i<startDow;i++)html+='<div style="min-height:70px"></div>';
+  for(let d=1;d<=daysInMonth;d++){
+    const ds=`${_vidCalYear}-${String(_vidCalMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isToday=ds===today;
+    const dayVids=vidsByDate[ds]||[];
+    html+=`<div class="vid-cal-day${isToday?' vid-cal-today':''}" data-caldate="${ds}" ondragover="event.preventDefault();this.classList.add('vid-cal-drop')" ondragleave="this.classList.remove('vid-cal-drop')" ondrop="_vidCalDrop(event,'${ds}')">`;
+    html+=`<div style="font-size:10px;font-weight:${isToday?'700':'500'};color:${isToday?'var(--accent)':'var(--text)'};padding:2px 4px">${d}</div>`;
+    dayVids.forEach(v=>{
+      const isBig=v.video_type==='B';
+      const isDone=v.status==='published';
+      const isPast=ds<=today;
+      let bg,fg;
+      if(isDone||isPast){bg='rgba(16,185,129,.12)';fg='#10b981';}
+      else if(isBig){bg='rgba(14,165,233,.10)';fg='#0ea5e9';}
+      else{bg='rgba(139,92,246,.10)';fg='#8b5cf6';}
+      html+=`<div draggable="true" ondragstart="event.dataTransfer.effectAllowed='move';_vidCalDragId='${String(v.id)}'" class="vid-cal-chip" style="background:${bg};color:${fg};border-left:2px solid ${fg}" title="${escHtml(v.topic||v.title)}">${isBig?'B':'L'}: ${escHtml((v.topic||v.title||'').slice(0,18))}${(v.topic||v.title||'').length>18?'...':''}</div>`;
+    });
+    html+='</div>';
+  }
+  html+='</div></div>';
+  panel.innerHTML=html;
+}
+let _vidCalDragId=null;
+function _vidCalDrop(event,ds){
+  event.preventDefault();event.currentTarget.classList.remove('vid-cal-drop');
+  const vidId=_vidCalDragId||((typeof dragId==='string'&&dragId.startsWith('vid::'))?dragId.replace('vid::',''):null);
+  _vidCalDragId=null;
+  if(!vidId)return;
+  const v=(st.videos||[]).find(x=>String(x.id)===String(vidId));if(!v)return;
+  const prev=v.post_date;
+  v.post_date=ds;
+  save();_vidOvRenderCal();_renderVidOvMenu();renderAll();
+  sbReqSilent('PATCH','videos',{post_date:ds},`?id=eq.${vidId}`);
+  pushUndo(()=>{v.post_date=prev;save();_vidOvRenderCal();_renderVidOvMenu();renderAll();sbReqSilent('PATCH','videos',{post_date:prev},`?id=eq.${vidId}`);},'Moved post date');
 }
 let _vidOvChildDrag=null;
 function _vidOvReorder(event,bigId,targetId){

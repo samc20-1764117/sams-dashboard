@@ -454,7 +454,7 @@ function renderVideosPage(){
     el._vidClickBound=true;
     el.addEventListener('click',function(e){
       const dot=e.target.closest('.vid-step-dot');
-      if(dot){e.stopPropagation();const vid=dot.dataset.vid;const step=dot.dataset.step;if(vid&&step)cycleVidStep(vid,step);return;}
+      if(dot){e.stopPropagation();const vid=dot.dataset.vid;const step=dot.dataset.step;if(vid&&step)cycleVidStep(vid,step,dot);return;}
       const del=e.target.closest('.vid-del');
       if(del){e.stopPropagation();const vid=del.dataset.vid;if(vid)delVideo(vid);return;}
     });
@@ -3037,13 +3037,14 @@ function _vidGroupFullyComplete(v){
   // Standalone: just self
   return _vidTrulyComplete(v);
 }
-async function cycleVidStep(id,step){
+async function cycleVidStep(id,step,dotEl){
   const v=(st.videos||[]).find(x=>String(x.id)===String(id));if(!v)return;
   const cur=v[step]||'not_started';
   const next=cur==='na'?'not_started':cur==='done'?'not_started':'done';
   const prev=cur;
   const prevStatus=v.status;
   v[step]=next;
+  if(next==='done'&&dotEl&&typeof _vidStepCelebrate==='function')_vidStepCelebrate(dotEl);
   // Sync step_upload_tableau when toggling step_tableau_public
   const linked=_vidLinkedStep(step);
   const linkedPrev=linked?v[linked]:null;
