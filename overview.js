@@ -3540,8 +3540,7 @@ function _vidCalRenderMonth(y,m,vidsByDate,today,search){
   // Left label: month on top, divider, year below
   html+=`<div style="width:38px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px 2px;background:${isCurMonth?'rgba(14,165,233,.05)':'rgba(120,113,145,.03)'};border-right:1px solid rgba(210,205,228,.1)">`;
   html+=`<span style="font-size:10px;font-weight:700;color:${accentColor};line-height:1.1">${mo}</span>`;
-  html+=`<div style="width:16px;height:0;border-top:1px solid rgba(210,205,228,.25);margin:2px 0"></div>`;
-  html+=`<span style="font-size:7px;font-weight:500;color:var(--muted);line-height:1">${y}</span>`;
+  html+=`<span style="font-size:7px;font-weight:500;color:var(--muted);line-height:1;margin-top:1px">${y}</span>`;
   html+='</div>';
   // Days grid
   html+='<div style="flex:1;display:grid;grid-template-columns:repeat(5,1fr);gap:1px;min-width:0;padding:2px">';
@@ -3559,12 +3558,12 @@ function _vidCalRenderMonth(y,m,vidsByDate,today,search){
     let filteredVids=dayVids;
     if(search){const q=search.toLowerCase();filteredVids=dayVids.filter(v=>(v.topic||'').toLowerCase().includes(q)||(v.title||'').toLowerCase().includes(q));}
     const singleVid=filteredVids.length===1;
-    html+=`<div class="vid-cal-day${isToday?' vid-cal-today':''}" data-caldate="${ds}" ondragover="event.preventDefault();this.classList.add('vid-cal-drop')" ondragleave="this.classList.remove('vid-cal-drop')" ondrop="_vidCalDrop(event,'${ds}')" style="padding:1px 2px;min-height:18px${singleVid?';display:flex;align-items:center;gap:2px':''}">`;
+    html+=`<div class="vid-cal-day${isToday?' vid-cal-today':''}" data-caldate="${ds}" ondragover="event.preventDefault();this.classList.add('vid-cal-drop')" ondragleave="this.classList.remove('vid-cal-drop')" ondrop="_vidCalDrop(event,'${ds}')" style="padding:1px 2px;min-height:18px;overflow:hidden${singleVid?';display:flex;align-items:center;gap:2px':''}">`;
     html+=`<span style="font-size:7px;font-weight:${isToday?'700':'500'};color:${isToday?'#f97316':'var(--subtle)'};line-height:1;flex-shrink:0">${d}</span>`;
     filteredVids.forEach(v=>{
       const {bg,fg}=_vidCalChipColor(v,ds,today);
       const sid=String(v.id);
-      html+=`<div draggable="true" ondragstart="event.dataTransfer.effectAllowed='move';_vidCalDragId='${sid}'" onclick="event.stopPropagation();_vidCalSelectChip('${sid}')" ondblclick="event.stopPropagation();event.preventDefault();if(typeof openVidEdit==='function')openVidEdit('${sid}')" class="vid-cal-chip" style="background:${bg};color:${fg};border-left:2px solid ${fg}" title="${escHtml(v.topic||v.title)}">${escHtml(v.topic||v.title)}</div>`;
+      html+=`<div draggable="true" ondragstart="event.dataTransfer.effectAllowed='move';_vidCalDragId='${sid}'" onclick="event.stopPropagation();_vidCalSelectChip('${sid}')" ondblclick="event.stopPropagation();event.preventDefault();if(typeof openVidEdit==='function')openVidEdit('${sid}')" class="vid-cal-chip" style="background:${bg};color:${fg};border-left:2px solid ${fg}${singleVid?';flex:1;min-width:0':''}" title="${escHtml(v.topic||v.title)}">${escHtml(v.topic||v.title)}</div>`;
     });
     html+='</div>';
   }
@@ -3663,12 +3662,12 @@ function _vidOvRenderCal(){
   // Header
   const _ib='background:none;border:none;cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;width:20px;height:20px;flex-shrink:0';
   let html=`<div class="tod-tb-header" style="position:relative">
-    <button onclick="_vidCalMonth--;if(_vidCalMonth<0){_vidCalMonth=11;_vidCalYear--};_vidOvRenderCal()" style="${_ib};color:var(--muted);font-size:13px">←</button>
+    <button onclick="_vidCalMonth--;if(_vidCalMonth<0){_vidCalMonth=11;_vidCalYear--};_vidOvRenderCal()" style="${_ib};color:var(--muted)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
     <button onclick="_vidCalToggleYear()" style="${_ib};color:${_vidCalYearView?'var(--accent)':'var(--muted)'}" title="Yearly overview (Y)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></button>
     <span style="flex:1;text-align:center;font-size:12px;font-weight:700;color:var(--text);letter-spacing:-.1px">Schedule</span>
     <div style="position:relative;flex-shrink:0;display:flex;align-items:center"><input id="vidCalSearchInput" type="text" autocomplete="off" placeholder="Search..." value="${_search.replace(/"/g,'&quot;')}" oninput="window._vidCalSearch=this.value;_vidOvRenderCal()" onkeydown="event.stopPropagation();if(event.key==='Escape'){window._vidCalSearch='';this.value='';_vidOvRenderCal();}" style="padding:3px 8px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:10px;background:var(--bg);color:var(--text);outline:none;width:100px">${_search?'<button onclick="_vidCalClearSearch()" style="position:absolute;right:4px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:9px;color:var(--muted);padding:0">\u2715</button>':''}</div>
     <button onclick="var n=new Date();_vidCalMonth=n.getMonth();_vidCalYear=n.getFullYear();_vidOvRenderCal()" style="${_ib};font-size:9px;font-weight:600;color:var(--muted);width:auto;padding:0 4px" title="Back to today (T)">Today</button>
-    <button onclick="_vidCalMonth++;if(_vidCalMonth>11){_vidCalMonth=0;_vidCalYear++};_vidOvRenderCal()" style="${_ib};color:var(--muted);font-size:13px">→</button>
+    <button onclick="_vidCalMonth++;if(_vidCalMonth>11){_vidCalMonth=0;_vidCalYear++};_vidOvRenderCal()" style="${_ib};color:var(--muted)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
   </div>`;
   if(_vidCalYearView){
     html+=_vidCalRenderYearView(allVids,today);
