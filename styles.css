@@ -84,6 +84,9 @@ body.dark .wkc-col{border-color:rgba(255,255,255,.04);}
 body.dark .wkc-day-h{border-color:rgba(255,255,255,.04);}
 body.dark .wkc-more-badge{background:linear-gradient(transparent,rgba(24,24,28,.85) 40%);}
 body.dark .chip{border-color:rgba(255,255,255,.06);box-shadow:none;}
+body.dark .wkc-goals-col .chip{box-shadow:none;}
+body.dark .wo-chip.sel-row,body.dark .wkc-goals-col .chip.sel-row{outline-color:rgba(255,255,255,.15)!important;box-shadow:0 3px 10px rgba(0,0,0,.3)!important;}
+body.dark .chip.sel-row{outline:1px solid rgba(255,255,255,.15)!important;box-shadow:0 3px 10px rgba(0,0,0,.3)!important;}
 body.dark .wkc-banner{border-color:rgba(255,255,255,.06);box-shadow:none;}
 body.dark .ql-btn{background:rgba(255,255,255,.02);border-color:rgba(255,255,255,.06);color:var(--muted);}
 body.dark .ql-btn:hover{background:rgba(255,255,255,.05);color:var(--text);}
@@ -92,7 +95,13 @@ body.dark .tod-tb-header{border-color:rgba(255,255,255,.06);background:rgba(255,
 body.dark .tod-tb-divider{border-color:rgba(255,255,255,.06);}
 body.dark .tb-hour{border-color:rgba(255,255,255,.03);}
 body.dark .tb-hour::after{border-color:rgba(255,255,255,.02);}
-body.dark .tb-block{box-shadow:none;}
+body.dark .tb-block{box-shadow:none;border-color:rgba(255,255,255,.08);}
+body.dark .tb-tlbl{border-color:rgba(255,255,255,.06);}
+body.dark .chip-del{color:rgba(255,255,255,.3);}
+body.dark .atb-block{background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.06);color:rgba(255,255,255,.35);}
+body.dark .rec-atb-block{background:rgba(42,157,181,.08)!important;border-color:rgba(42,157,181,.15)!important;color:rgba(42,157,181,.6);}
+body.dark .tb-block:hover .tb-bdel{color:rgba(255,255,255,.4);}
+body.dark .rec-atb-block:hover .tb-bdel{color:rgba(42,157,181,.7)!important;}
 body.dark .ch-prog{border-color:rgba(255,255,255,.06);}
 body.dark .kol-item{border-color:rgba(255,255,255,.03);}
 body.dark .kol-add{background:rgba(255,255,255,.02);border-color:rgba(255,255,255,.04);}
@@ -128,6 +137,9 @@ body.dark .mcell:hover{background:rgba(255,255,255,.05);}
 body.dark .mcell-num{color:var(--muted);}
 body.dark .wo-col{border-color:rgba(255,255,255,.06);background:rgba(255,255,255,.02);}
 body.dark .wo-col-hdr{border-color:rgba(255,255,255,.06);}
+body.dark #_donutTrack{stroke:rgba(255,255,255,.15)!important;opacity:1!important;}
+body.dark .meal-row{border-color:rgba(255,255,255,.06);}
+body.dark .wkc-cols{border-bottom:1px solid rgba(255,255,255,.06);}
 
 /* Dark toggle button */
 .dark-toggle{display:flex;align-items:center;justify-content:center;font-family:'DM Sans',sans-serif;font-size:13px;background:rgba(255,255,255,.65);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.7);border-radius:20px;padding:4px 10px;cursor:pointer;transition:all .15s;box-shadow:0 2px 8px rgba(0,0,0,.06);color:var(--muted);line-height:1;}

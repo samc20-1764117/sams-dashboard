@@ -5636,9 +5636,13 @@ function ctxDoDelete(){
 function toggleDark(){
   const isDark=document.body.classList.toggle('dark');
   cfg.dark=isDark;save();
+  // Force background repaint on toggle
+  document.body.style.background='';
+  void document.body.offsetHeight;
   const ic=document.getElementById('darkToggleIcon');if(ic)ic.textContent=isDark?'☀️':'🌙';
   const lb=document.getElementById('darkToggleLabel');if(lb)lb.textContent=isDark?'Light Mode':'Night Mode';
   if(typeof renderAll==='function')renderAll();
+  if(typeof renderGuidePage==='function'&&activePg==='guide')renderGuidePage();
 }
 function toggleSettingsPopup(){
   const p=document.getElementById('settingsPopup');if(!p)return;
