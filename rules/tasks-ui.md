@@ -35,7 +35,7 @@ All task types that appear on the overview calendar/today list. Every type must 
 - **Non-WR recurring**: `getRecurringWeekTasks(w)` for w=0 to wkOff-4. Cascading `__skip__` check. Seen set prevents duplicates.
 - **WR recurring** (`is_weekly_reset=true`): overdue if `_dateOverrides[wkKey] < today && !_doneByWk[wkKey]`. 4-week lookback. `wrRecHandled` set — only added when `_dateOverrides[wkKey] <= today` (future dates don't block older-week lookback).
 - **WR rules** (`st.wrRules`): overdue if `_dateOverrides[wkKey] < today && !isDoneWRRule`. Same 4-week lookback + `wrRuleHandled` set with same future-date exception.
-- **Pup sessions**: `day_date < today && !done`. Included in `updateOvBanner` count and `rolloverOverdue` (moves `day_date` to today, PATCHes `pup_skill_sessions`). Appear in today list when `dayOff===0`.
+- **Pup sessions**: `day_date < today && !done`. Included in `updateOvBanner` count and `rolloverOverdue` (moves `day_date` to today, PATCHes `pup_skill_sessions`). Appear in today list when `dayOff===0`. Sorted by timeblock position (`_pupSessId` matched against `b._pupSessId` in `tbSm()`).
 - **Videos**: overdue if `_vidDayMap[id] < today && status !== 'published'`. Included in banner count and rollover (moves localStorage date to today). Appear in today list with red `OV` style + day letter.
 - Tasks/shopping/non-WR recurring only overdue if assigned to a date.
 - `updateOvBanner()` called from `renderToday()`. Banner text: `X Overdue` + `Move to today` button. No task name or question.
@@ -60,7 +60,7 @@ All task types that appear on the overview calendar/today list. Every type must 
 - **Modal outside-click drag fix**: `_modMousedownInside` flag prevents `closeMod` if mousedown was inside `.modal`.
 - **`#tNotes` textarea**: auto-expands, capped at `max-height:160px`. Reset on add open; pre-expanded on edit open. Newlines rendered via `.replace(/\n/g,'<br>')`.
 - **Cmd+Z in modals**: `_isInput && !_ael.closest('.overlay:not(.open)')` → return early.
-- **Global shortcuts**: `n`=new task, `r`=reload, `s`=grocery modal (overview only), `o`=overview, `v`=videos, `i`=help overlay, `m`=month view (overview). `⌘←/→`=switch pages (overview→videos→pups→recipes→finance→birthdays). Skip if INPUT/TEXTAREA/contentEditable or meta held.
+- **Global shortcuts**: `n`=new task, `r`=reload, `s`=grocery modal (overview only), `o`=overview, `v`=videos (single press), `vv`=videos popup on overview (double-tap within 350ms), `i`=help overlay, `m`=month view (overview). `⌘←/→`=switch pages (overview→videos→pups→recipes→finance→birthdays). Skip if INPUT/TEXTAREA/contentEditable or meta held.
 - **Overview shortcuts**: `←/→`=shift day, `w+←/→`=shift week (hold `w` then press arrow; works even with video panel open). `t`=jump to today. `_wKeyHeld` flag tracked via keydown/keyup/blur.
 - **Keyboard shortcut pattern** (MUST follow every time):
   1. Same key toggles open/close (check if modal is already `.open` before opening).
@@ -76,7 +76,12 @@ All task types that appear on the overview calendar/today list. Every type must 
 - **Global Cmd+C/V**: copies `selectedTasks`. Paste: `wrrule-{id}`→POST `wr_recurring_rules`; task ID→POST `tasks`.
 
 ## Indicator Placement
-All indicators at far right, swap to X on hover. `cat-dot` stroke changes to accent color (stroke-width 1.5, opacity 0.7) for tasks not on timeblock. `chip-del` inside relative chip. `wr-cad-badge` hidden on row hover to reveal X. `cpill` pointer-events:none. `heb-cnt` icon only (no count) on today-list HEB tasks — opens grocery modal on click.
+All indicators at far right, swap to X on hover. `cat-dot` stroke changes to accent color (stroke-width 1.5, opacity 0.7) for tasks not on timeblock. `chip-del` inside relative chip. `wr-cad-badge` hidden on row hover to reveal X. `cpill` pointer-events:none.
+
+### Recurring task inline badges
+- **HEB badge** (`.heb-cnt`): shopping cart icon (9px SVG) before task name on all views (today list, weekly chips, week summary, timeblock, recOv). Opens grocery modal on click. Uses `_hebBadge(name)` helper.
+- **Prep pup training badge** (`.pup-link-badge`): link icon (8px SVG) before task name on all views. Opens `_openPupFocusModal(null)` on click. Uses `_pupBadge(name)` helper. Match is case-insensitive.
+- Both badges: `display:inline-flex;align-items:center;margin-right:3px;opacity:.55`. CSS tweaks per view: `.chip` top:-0.5px, `.tb-block` top:-1px, `.ti` top:1px.
 - **Overdue rows**: no `cat-dot`. Show single DOW letter (`S/M/T/W/T/F/S`) in `.dlbl.ov` instead of full date. `.dlbl.ov` has `margin-right:-4px`.
 
 ## Chip & UI Notes

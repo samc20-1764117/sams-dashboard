@@ -104,4 +104,5 @@ Non-WR (`is_weekly_reset=false`) → `st.recurring`. All CRUD to `wr_recurring_r
 - **Done**: `_doneByWk[getWkKey(wkOff)]`. `togRec` writes/deletes key.
 - **Daily habits** (`cadence==='daily'`): excluded from all recurring views. Done keyed by date string `ds`. See pages.md Daily Habits.
 - **Drag move**: snapshot `savedBlocks` before `removeTBBlocksForDate`. Undo restores `_dateOverrides` + blocks.
-- **Edit this week only**: `openRecEditModal(rid,wkKey,'this')`. Saves `_dateOverrides['name::'+wkKey]={name,notes}`.
+- **Edit this week only**: `openRecEditModal(rid,wkKey,'this')`. Saves `_dateOverrides['name::'+wkKey]={name,notes}`. Double-click any recurring task defaults to "this week" scope (passes wkKey from all views: today list, weekly chips, week summary, timeblock, recOv).
+- **Per-week notes display**: `_wkNote` field on virtual task items. `_recWkNote(r,wkKey)` helper reads `_dateOverrides['name::'+wkKey].notes`. Shown as `@note` suffix (muted, smaller text) in today list/weekly chips/week summary. In timeblock, shown as a separate line under task title via `tb-notes` div (no `@` prefix). Both `save()` and `sbReq` called on edit for instant persistence.
