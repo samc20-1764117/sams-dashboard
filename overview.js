@@ -858,7 +858,7 @@ function tRowVidVirt(t,arr){
   </div>`;
 }
 function _pupSessStyle(){
-  return{bg:'#e0ecfa',b:'rgba(70,130,210,.2)',t:'#1e3a6e',d:'#4a80c8',dot:'rgba(70,130,210,.2)'};
+  return{bg:'#e8f4fb',b:'rgba(56,170,210,.18)',t:'#18577a',d:'#38aad2',dot:'rgba(56,170,210,.2)'};
 }
 function _pupDisplayName(t){const p=t._pup;return p?(p+': '+(t.name||'')):(t.name||'');}
 function tRowPupSess(t,noColor=false,tbArrow=false){
@@ -868,7 +868,7 @@ function tRowPupSess(t,noColor=false,tbArrow=false){
     <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="togPupSessionDone('${t._pupSessId}',this.checked)"></label>
     <span class="tn">${escHtml(_pupDisplayName(t))}</span>
     ${ov&&t.due_date?`<span class="dlbl ov">${['S','M','T','W','T','F','S'][new Date(t.due_date.split('T')[0]+'T12:00').getDay()]}</span>`:''}
-    ${!ov?`<svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3" fill="none" stroke="rgba(100,149,237,.35)" stroke-width="1.5"/></svg>`:''}
+    ${!ov?`<svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3" fill="none" stroke="rgba(56,170,210,.35)" stroke-width="1.5"/></svg>`:''}
     ${tbArrow?'<span class="tb-arrow">›</span>':''}
     <button class="delbtn" onclick="event.stopPropagation();removePupSession('${t._pupSessId}')">✕</button>
   </div>`;
