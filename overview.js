@@ -5297,7 +5297,7 @@ function drawAutoTBBlock(col,atb,ds){
   const ncols=atb._ncols||1,col_i=atb._col||0,colW=100/ncols,left=col_i*colW;
   const _showTime=ncols<=1;
   let css=`top:${top}px;height:${ht}px;left:calc(${left}% + 2px);right:calc(${100-left-colW}% + 2px);width:auto`;
-  if(atb._cat){const c=gc(atb._cat);const bg=`color-mix(in srgb,${c.bg} 50%,white)`;const t=`color-mix(in srgb,${c.t} 55%,#b0aec0)`;const b=`color-mix(in srgb,${c.b} 40%,rgba(180,175,200,.18))`;css+=`;background:${bg};color:${t};border-color:${b};--_atb-bg:${bg};--_atb-t:${t};--_atb-b:${b}`;}
+  if(atb._cat){const c=gc(atb._cat);const bg=`color-mix(in srgb,${c.bg} 35%,white)`;const t=`color-mix(in srgb,${c.t} 45%,#b0aec0)`;const b=`color-mix(in srgb,${c.b} 30%,rgba(210,205,228,.18))`;css+=`;background:${bg};color:${t};border-color:${b};--_atb-bg:${bg};--_atb-t:${t};--_atb-b:${b}`;}
   el.style.cssText=css;
   el.innerHTML=`<div class="tb-row"><span class="tb-bt${atb.dur>=30?' wrap':''}">${atb.label}</span><div class="tb-right">${_showTime?`<span class="tb-btime">${tStr(atb.sm)}-${tStr(atb.sm+atb.dur)}</span>`:''}<button class="tb-bdel atb-del" onclick="event.stopPropagation();delAutoTBForDay('${atb._atbId}','${ds}',${atb._ovId?`'${atb._ovId}'`:'null'})">✕</button></div></div><div class="tb-resize atb-resize"></div>`;
   const atbRes=el.querySelector('.atb-resize');
@@ -5549,8 +5549,13 @@ function _atbTogDay(id,day,el){
   const a=st.autoTimeblocks.find(x=>x.id===id);if(!a)return;
   const days=a.days?a.days.split(',').map(Number):_ATB_DAYS.filter(x=>x.d>=1&&x.d<=5).map(x=>x.d);
   const idx=days.indexOf(day);
+  const adding=idx<0;
   if(idx>-1)days.splice(idx,1);else days.push(day);
   el.classList.toggle('on');
+  const c=a.category?gc(a.category):null;
+  if(adding&&c){el.style.background=c.bg;el.style.color=c.t;el.style.borderColor=c.b;}
+  else if(adding){el.style.cssText='';}
+  else{el.style.cssText='';}
   a.days=days.length?days.join(','):null;
   sbReqSilent('PATCH','auto_timeblocks',{days:a.days},`?id=eq.${id}`);
   save();if(document.getElementById('tbGrid'))renderDayTB();
