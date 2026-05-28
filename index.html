@@ -703,16 +703,20 @@
   <div class="modal task-modal" style="width:400px;padding:0;overflow:hidden">
     <select id="pmPup" style="display:none"><option value="Mochi">Mochi</option><option value="Sunny">Sunny</option></select>
     <input type="checkbox" id="pmFocus" style="display:none">
-    <!-- Header: colored toggle left, skip+sort stacked right -->
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--border)">
+    <!-- Skill name as modal header -->
+    <div style="padding:12px 14px 6px;text-align:center">
+      <input id="pmSkill" placeholder="Skill name" oninput="_pmSyncWord()" style="font-size:15px;font-weight:700;text-align:center;border:none;background:transparent;outline:none;width:100%;color:var(--text);padding:2px 0;border-bottom:1.5px solid transparent" onfocus="this.style.borderBottomColor='rgba(109,95,230,.3)'" onblur="this.style.borderBottomColor='transparent'">
+    </div>
+    <!-- Toggle left, skip+sort right -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 14px 8px;border-bottom:1px solid var(--border)">
       <div style="display:flex;align-items:center;gap:8px">
         <div id="pmDogToggle"><div class="pup-dog-toggle" id="pmDogToggleWrap" style="border-radius:8px;overflow:hidden"><button id="pmDogMochi" class="pup-dog-btn active" onclick="setPupModalDog('Mochi')" style="font-size:12px;padding:4px 14px;border-radius:6px">Mochi</button><button id="pmDogSunny" class="pup-dog-btn" onclick="setPupModalDog('Sunny')" style="font-size:12px;padding:4px 14px;border-radius:6px">Sunny</button></div></div>
         <span id="pmBothLabel" style="display:none;font-size:10px;color:var(--muted)">Both pups</span>
       </div>
       <div id="pmSkipRow" style="display:flex;align-items:center;gap:8px">
         <div style="display:flex;flex-direction:column;gap:2px">
-          <label style="display:flex;align-items:center;gap:4px;font-size:9px;color:var(--subtle);cursor:pointer"><input type="checkbox" id="pmSkipMochi" style="width:10px;height:10px;cursor:pointer;accent-color:#ccc"> Skip Mochi</label>
-          <label style="display:flex;align-items:center;gap:4px;font-size:9px;color:var(--subtle);cursor:pointer"><input type="checkbox" id="pmSkipSunny" style="width:10px;height:10px;cursor:pointer;accent-color:#ccc"> Skip Sunny</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:9px;color:var(--subtle);cursor:pointer"><input type="checkbox" id="pmSkipMochi" style="width:10px;height:10px;cursor:pointer;opacity:.45"> Skip Mochi</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:9px;color:var(--subtle);cursor:pointer"><input type="checkbox" id="pmSkipSunny" style="width:10px;height:10px;cursor:pointer;opacity:.45"> Skip Sunny</label>
         </div>
         <div style="display:flex;flex-direction:column;gap:2px;align-items:center">
           <span style="font-size:8px;color:var(--subtle);line-height:1">Sort</span>
@@ -720,10 +724,9 @@
         </div>
       </div>
     </div>
-    <!-- Skill + Word -->
-    <div style="padding:12px 14px 4px">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
-        <div class="mfield"><label style="text-transform:none">Skill</label><input id="pmSkill" placeholder="Skill name" oninput="_pmSyncWord()"></div>
+    <!-- Word + Counts -->
+    <div style="padding:10px 14px 4px">
+      <div style="margin-bottom:8px">
         <div class="mfield"><label style="text-transform:none">Word</label><input id="pmWord" placeholder="Same as skill" onfocus="_pmWordFocus()" oninput="_pmWordEdit()"></div>
       </div>
       <!-- Counts (edit only) -->

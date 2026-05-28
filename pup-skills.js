@@ -703,38 +703,40 @@ function renderPupTable(){
       });
     });
   }
-  // Drag from table pup cells to focus zones
-  tbody.querySelectorAll('td[data-drag-skill-id]').forEach(el=>{
-    el.addEventListener('mousedown',e=>{
-      if(e.button!==0||e.target.closest('input[type="checkbox"]'))return;
-      e.stopPropagation();
-      const skillId=el.dataset.dragSkillId,pupName=el.dataset.dragPup;
+  // Drag from table pup cells to focus zones — delegated on tbody
+  if(!tbody._pupCellDrag){
+    tbody._pupCellDrag=true;
+    tbody.addEventListener('mousedown',e=>{
+      const td=e.target.closest('td[data-drag-skill-id]');
+      if(!td||e.button!==0||e.target.closest('input[type="checkbox"]'))return;
+      e.preventDefault();e.stopPropagation();
+      const skillId=td.dataset.dragSkillId,pupName=td.dataset.dragPup;
+      const skillName=td.closest('tr')?.dataset.skillkey||'';
       let dragging=false;const startX=e.clientX,startY=e.clientY;
       let ghost=null;
       const onMove=ev=>{
         if(!dragging&&Math.abs(ev.clientX-startX)<5&&Math.abs(ev.clientY-startY)<5)return;
         if(!dragging){
-          dragging=true;el.style.opacity='.3';
+          dragging=true;td.style.opacity='.3';
           ghost=document.createElement('div');
-          ghost.textContent=el.closest('tr')?.dataset.skillkey||'';
-          ghost.style.cssText='position:fixed;z-index:9999;padding:4px 10px;border-radius:6px;font-size:11px;background:rgba(139,92,246,.15);color:var(--text);pointer-events:none;white-space:nowrap';
+          ghost.textContent=skillName;
+          ghost.style.cssText='position:fixed;z-index:9999;padding:4px 10px;border-radius:6px;font-size:11px;background:'+(pupName==='Mochi'?'rgba(139,92,246,.18)':'rgba(251,191,36,.2)')+';color:var(--text);pointer-events:none;white-space:nowrap;font-weight:600';
           document.body.appendChild(ghost);
         }
         ev.preventDefault();
         ghost.style.left=(ev.clientX+12)+'px';ghost.style.top=(ev.clientY-8)+'px';
-        // Highlight drop zones
         document.querySelectorAll('._pupFocusDrop').forEach(dz=>{
           const r=dz.getBoundingClientRect();
           const over=ev.clientX>=r.left&&ev.clientX<=r.right&&ev.clientY>=r.top&&ev.clientY<=r.bottom;
+          dz.style.outline=over?'2px solid '+(dz.dataset.pup==='Mochi'?'#8b5cf6':'#fbbf24'):'';
           dz.style.background=over?(dz.dataset.pup==='Mochi'?'rgba(139,92,246,0.12)':'rgba(251,191,36,0.14)'):'';
         });
       };
       const onUp=async ev=>{
         document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);
-        el.style.opacity='';if(ghost)ghost.remove();
-        document.querySelectorAll('._pupFocusDrop').forEach(dz=>{dz.style.background='';});
+        td.style.opacity='';if(ghost)ghost.remove();
+        document.querySelectorAll('._pupFocusDrop').forEach(dz=>{dz.style.background='';dz.style.outline='';});
         if(!dragging)return;
-        // Check if dropped on a focus zone
         const dropTarget=document.elementFromPoint(ev.clientX,ev.clientY)?.closest('._pupFocusDrop');
         if(dropTarget&&dropTarget.dataset.pup===pupName){
           await addPupWeeklyFocus(skillId,_pupPageWkOff);
@@ -742,8 +744,8 @@ function renderPupTable(){
         }
       };
       document.addEventListener('mousemove',onMove);document.addEventListener('mouseup',onUp);
-    });
-  });
+    },true);
+  }
 }
 function renderPupsPageKeepScroll(){
   const sc=document.getElementById('pupTblScroll');
@@ -831,7 +833,7 @@ function _pupPageRenderCol(pup){
   const spacerHtml=spacerCount>0?`<div style="height:${spacerCount*30}px"></div>`:'';
   let html='';
   if(active.length||spacerCount>0){
-    html+=`<div class="_pupFocusDrop" data-pup="${pup}" style="background:${themeBg};border:1px solid ${themeBorder};border-radius:10px;padding:5px 6px;margin-bottom:6px;min-height:32px">`;
+    html+=`<div class="_pupFocusDrop" data-pup="${pup}" style="background:${themeBg};border:1px solid ${themeBorder};border-radius:10px;padding:6px 6px;margin-bottom:6px;min-height:32px">`;
     html+=active.map((s,i)=>{let h=renderSkill(s,true);if(i===active.length-1)h=h.replace('margin-bottom:3px','margin-bottom:0');return h;}).join('');
     html+=spacerHtml;
     html+=`</div>`;

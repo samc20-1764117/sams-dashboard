@@ -68,6 +68,7 @@ Supabase Auth (email+password), RLS on all tables. `init()`→`checkAuth()`→`d
 - `Cmd/Ctrl+Z`: undo (page-aware: pups/recipes/birthdays use their own stacks).
 - `o`: `showPage('overview')` — only when no input/textarea/select focused and no modal open.
 - `v`: `showPage('videos')`.
+- `p`: `showPage('pups')`.
 - `m`: toggle month view (`mModal`) on overview. Press again or Enter to close.
 - `i`: help overlay — shows all shortcuts (page-specific + global). Toggle with `i` again or Enter.
 - `⌘←/→`: switch pages in order: overview→videos→pups→recipes→finance→birthdays.

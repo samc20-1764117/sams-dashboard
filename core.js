@@ -1052,6 +1052,9 @@ document.addEventListener('keydown',e=>{
       _vNavTimer=setTimeout(()=>{_vNavTimer=null;showPage('videos');},350);
     }
   }
+  if(e.key==='p'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus')&&!document.querySelector('.overlay.open')){
+    e.preventDefault();showPage('pups');
+  }
   if(e.key==='f'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus')&&!document.querySelector('.overlay.open')){
     e.preventDefault();showPage('finance');
   }
@@ -1094,6 +1097,7 @@ function _showHelpOverlay(){
     ['⌘ ←/→','Switch between pages'],
     ['O','Go to Overview'],
     ['V','Go to Videos'],
+    ['P','Go to Pups'],
     ['F','Go to Finance'],
     ['N','Quick Add task (to current day)'],
     ['R','Reload page'],
@@ -1135,6 +1139,8 @@ function _showHelpOverlay(){
       ['Arrow keys (board)','Navigate video cards'],
     ],
     pups:[
+      ['←/→','Previous / next week'],
+      ['T','Jump to this week'],
       ['↑/↓ (selected)','Reorder selected skills'],
       ['Delete / ⌫','Delete selected skill group'],
       ['⌘C / ⌘V','Copy / paste skills'],
