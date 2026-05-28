@@ -504,13 +504,13 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 .atb-mgr-dot:hover{transform:scale(1.3)}
 .atb-mgr-name{font-size:9px;font-weight:600;color:var(--text);flex:1;min-width:0;border:none;background:transparent;font-family:inherit;outline:none;padding:1px 2px;border-radius:3px;transition:background .1s}
 .atb-mgr-name:focus{background:rgba(109,95,230,.06)}
-.atb-mgr-tinput{font-size:8px;color:var(--muted);border:none;background:transparent;font-family:inherit;outline:none;padding:1px 1px;width:40px;border-radius:3px;transition:background .1s;flex-shrink:0;text-align:right}
-.atb-mgr-tinput:focus{background:rgba(109,95,230,.06);text-align:left}
-.atb-mgr-tsep{font-size:8px;color:var(--muted);flex-shrink:0;margin:0 -1px}
+.atb-mgr-tinput{font-size:8px;color:var(--muted);border:none;background:transparent;font-family:inherit;outline:none;padding:1px 0;width:38px;border-radius:3px;transition:background .1s;flex-shrink:0;text-align:right}
+.atb-mgr-tinput:focus{background:rgba(109,95,230,.06);text-align:left;padding:1px 2px}
+.atb-mgr-tsep{font-size:7px;color:var(--muted);flex-shrink:0;margin:0 -2px}
 .atb-mgr-x{font-size:9px;opacity:0;background:none;border:none;cursor:pointer;color:var(--muted);padding:0 2px;line-height:1;transition:opacity .12s,color .1s;flex-shrink:0}
 .atb-mgr-item:hover .atb-mgr-x{opacity:1}
 .atb-mgr-x:hover{color:#ef4444}
-.day-tog{font-size:7px;font-weight:600;padding:2px 5px;border-radius:4px;border:1px solid rgba(210,205,228,.25);background:rgba(255,255,255,.4);color:var(--muted);cursor:pointer;transition:all .12s;user-select:none;line-height:1.3}
+.day-tog{font-size:7px;font-weight:600;padding:2px 0;border-radius:4px;border:1px solid rgba(210,205,228,.25);background:rgba(255,255,255,.4);color:var(--muted);cursor:pointer;transition:all .12s;user-select:none;line-height:1.3;width:20px;text-align:center;box-sizing:border-box}
 .day-tog.on{background:rgba(109,95,230,.12);color:rgba(109,95,230,.9);border-color:rgba(109,95,230,.25)}
 .atb-mgr-add{font-size:9px;font-weight:600;color:rgba(109,95,230,.7);background:none;border:1px dashed rgba(109,95,230,.2);border-radius:6px;padding:5px;cursor:pointer;transition:all .12s;width:100%}
 .atb-mgr-add:hover{background:rgba(109,95,230,.04);border-color:rgba(109,95,230,.35)}
@@ -1124,6 +1124,7 @@ body.dark .bday-add-menu{background:rgba(38,20,10,.97);border-color:rgba(255,220
 .vid-del{background:none;border:none;cursor:pointer;color:var(--muted);font-size:12px;opacity:0;transition:opacity .12s;padding:2px 4px}.vid-row:hover .vid-del,.vid-dash-row:hover .vid-del{opacity:1}.vid-del:hover{color:#ef4444}
 .vid-ov-x{background:none;border:none;cursor:pointer;color:var(--muted);font-size:11px;opacity:0;transition:opacity .12s;padding:0;width:18px;text-align:center;flex-shrink:0;box-sizing:border-box}[data-vidrow]:hover .vid-ov-x{opacity:.7}.vid-ov-x:hover{color:#ef4444;opacity:1!important}
 #vidOvPanel [data-vidrow].vid-sel{transform:none!important;box-shadow:inset 0 0 0 1.5px rgba(14,165,233,.35)!important;background:rgba(14,165,233,.07)!important;border-radius:6px}
+#vidOvAllPanel [data-alldrag].vid-sel{transform:none!important;box-shadow:inset 0 0 0 1.5px rgba(14,165,233,.35)!important;background:rgba(14,165,233,.07)!important;border-radius:6px}
 .vid-cal-day{min-height:18px;border-radius:3px;padding:1px;transition:background .12s;position:relative}
 .vid-ov-focus{background:rgba(250,204,21,.06)!important;box-shadow:inset 0 0 0 1px rgba(234,179,8,.18)!important}
 .vid-cal-day.vid-cal-today{background:rgba(249,115,22,.06);box-shadow:inset 0 0 0 1.5px rgba(249,115,22,.25);border-radius:4px}

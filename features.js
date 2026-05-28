@@ -5117,7 +5117,32 @@ document.addEventListener('keydown',async e=>{
     }
     // Auto-timeblock blocks: delete for that day
     const atbDelIds=ids.filter(id=>id.startsWith('atb::'));
-    if(atbDelIds.length){const ds=d2s(getDayDate(dayOff));atbDelIds.forEach(id=>{const atbId=id.replace('atb::','');const atb=getAutoTBForDate(ds).find(a=>a._atbId===atbId);if(atb)delAutoTBForDay(atbId,ds,atb._ovId||null);});clearSelection();return;}
+    if(atbDelIds.length){
+      const ds=d2s(getDayDate(dayOff));
+      const restores=[];
+      atbDelIds.forEach(id=>{
+        const atbId=id.replace('atb::','');
+        const atb=getAutoTBForDate(ds).find(a=>a._atbId===atbId);if(!atb)return;
+        const ovId=atb._ovId||null;
+        const prevOv=ovId?{...st.autoTBOverrides.find(o=>String(o.id)===ovId)}:null;
+        if(ovId){
+          const ov=st.autoTBOverrides.find(o=>String(o.id)===ovId);
+          if(ov){ov.start_time=null;ov.end_time=null;}
+          sbReqSilent('PATCH','auto_timeblock_overrides',{start_time:null,end_time:null},`?id=eq.${ovId}`);
+          restores.push(()=>{const ov2=st.autoTBOverrides.find(o=>String(o.id)===ovId);if(ov2&&prevOv){ov2.start_time=prevOv.start_time;ov2.end_time=prevOv.end_time;}sbReqSilent('PATCH','auto_timeblock_overrides',{start_time:prevOv.start_time,end_time:prevOv.end_time},`?id=eq.${ovId}`);});
+        } else {
+          const tmpId='atbov-tmp-'+Date.now()+'-'+atbId;
+          const payload={base_id:atbId,date:ds,start_time:null,end_time:null};
+          st.autoTBOverrides.push({...payload,id:tmpId});
+          let realId=null;
+          sbReqSilent('POST','auto_timeblock_overrides',payload,'').then(res=>{if(res&&res[0]){realId=String(res[0].id);const idx=st.autoTBOverrides.findIndex(o=>String(o.id)===tmpId);if(idx>-1)st.autoTBOverrides[idx]=res[0];save();}});
+          restores.push(()=>{const rid=realId||tmpId;st.autoTBOverrides=st.autoTBOverrides.filter(o=>String(o.id)!==rid);if(realId)sbReqSilent('DELETE','auto_timeblock_overrides',null,`?id=eq.${realId}`);});
+        }
+      });
+      save();if(document.getElementById('tbGrid'))renderDayTB();
+      pushUndo(()=>{restores.forEach(fn=>fn());save();if(document.getElementById('tbGrid'))renderDayTB();},`Deleted ${atbDelIds.length} auto block${atbDelIds.length>1?'s':''}`);
+      clearSelection();return;
+    }
     // Timeblock-only blocks (shop/WR rule/task): just remove from timeblock
     const blkOnlyIds=ids.filter(id=>id.startsWith('blk-'));
     if(blkOnlyIds.length){
