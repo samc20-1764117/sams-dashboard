@@ -4,6 +4,15 @@ function isPupSkip(id){return _skipMap()[String(id)]===true}
 function _saveSkip(id,val){const m=_skipMap();if(val)m[String(id)]=true;else delete m[String(id)];localStorage.setItem('pup_skip',JSON.stringify(m))}
 // ─────────────────────────────────────────────────────────────────────────────
 let _pupEditId=null,_pupModalMochiId=null,_pupModalSunnyId=null;
+let _pupPageWkOff=0;
+function _pupPageWkLabel(){return _pupPageWkOff===0?'This Week':(_pupPageWkOff>0?`+${_pupPageWkOff} wks`:`${Math.abs(_pupPageWkOff)}w ago`);}
+function _pupPageWkRange(){const m=new Date(_pupWkMonday(_pupPageWkOff)+'T12:00:00');return m.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' – '+(new Date(m.getTime()+6*86400000)).toLocaleDateString('en-US',{month:'short',day:'numeric'});}
+function _pupPageShiftWk(dir){_pupPageWkOff+=dir;seedPupWeeklyFocus(_pupPageWkOff);renderPupsPage();}
+async function _pupPageToggle(skillId,pup,checked){
+  if(checked)await addPupWeeklyFocus(skillId,_pupPageWkOff);
+  else await removePupWeeklyFocus(skillId,_pupPageWkOff);
+  _pupPageRenderCol(pup);
+}
 function _pupWkDone(skillId,off){const{mon,sun}=getWkBounds(off??wkOff);const monDs=d2s(mon),sunDs=d2s(sun);return(st.pupSessions||[]).filter(s=>String(s.skill_id)===String(skillId)&&s.day_date>=monDs&&s.day_date<=sunDs&&s.done).length;}
 function _pupWkSessTotal(skillId,off){const{mon,sun}=getWkBounds(off??wkOff);const monDs=d2s(mon),sunDs=d2s(sun);return(st.pupSessions||[]).filter(s=>String(s.skill_id)===String(skillId)&&s.day_date>=monDs&&s.day_date<=sunDs).length;}
 function _pupAllSess(skillId){return(st.pupSessions||[]).filter(s=>String(s.skill_id)===String(skillId));}
@@ -688,17 +697,15 @@ function renderPupsPage(){
     const total=ps.length||1;
     const pMastered=mastered.length/total*100,pInProg=inProgress.length/total*100,pNot=notStarted.length/total*100;
     const progressBar=`<div style="height:8px;border-radius:0 0 var(--r) var(--r);overflow:hidden;background:rgba(210,205,228,.2);display:flex;flex-shrink:0">${pMastered>0?`<div onmouseenter="showPupStageTip(event,'Mastered: ${mastered.length}','#22c55e')" onmouseleave="hidePupTip()" style="width:${pMastered}%;background:#22c55e;cursor:default;transition:width .3s"></div>`:''} ${pInProg>0?`<div onmouseenter="showPupStageTip(event,'In Progress: ${inProgress.length}','#eab308')" onmouseleave="hidePupTip()" style="width:${pInProg}%;background:#eab308;cursor:default;transition:width .3s"></div>`:''} ${pNot>0?`<div onmouseenter="showPupStageTip(event,'Not Started: ${notStarted.length}','#94a3b8')" onmouseleave="hidePupTip()" style="width:${pNot}%;background:rgba(210,205,228,.4);cursor:default;transition:width .3s"></div>`:''}</div>`;
-    const isSkip=s=>isPupSkip(s.id);
-    const trainWeek=ps.filter(s=>!isSkip(s)&&(s.focus===true||s.focus==='true'));
-    const upNext=inProgress.filter(s=>!isSkip(s)&&!(s.focus===true||s.focus==='true'));
     const img=pup==='Mochi'?'./mochi_headshot.png':'./sunny_headshot.png';
     const glowColor=pup==='Mochi'?'rgba(139,92,246,0.2)':'rgba(251,191,36,0.24)';
     const themeBg=pup==='Mochi'?'rgba(139,92,246,0.05)':'rgba(251,191,36,0.07)';
     const themeBorder=pup==='Mochi'?'rgba(139,92,246,0.12)':'rgba(251,191,36,0.18)';
-    return`<div class="pup-col card" style="display:flex;flex-direction:column;overflow:visible;position:relative;background:rgba(255,255,255,.92);border:1.5px solid rgba(210,205,228,.5);border-radius:18px"><img src="${img}" style="position:absolute;top:-44px;left:50%;transform:translateX(-50%);width:92px;height:92px;border-radius:50%;object-fit:cover;object-position:top;border:3px solid rgba(255,255,255,.9);box-shadow:0 0 18px 6px ${glowColor},0 4px 14px rgba(0,0,0,.1)"><div style="display:grid;grid-template-columns:1fr 92px 1fr;align-items:center;min-height:52px;border-bottom:1px solid rgba(210,205,228,.22);flex-shrink:0"><span style="font-weight:700;font-size:13px;color:var(--text);padding-left:13px">${pup}</span><span></span><span style="font-size:11px;color:var(--muted);font-weight:500;padding-right:13px;text-align:right">${inProgress.length} in progress</span></div><div style="padding:8px;overflow-y:auto;flex:1;min-height:0;display:flex;flex-direction:column;gap:12px">${trainWeek.length?`<div style="background:${themeBg};border:1px solid ${themeBorder};border-radius:10px;padding:10px 8px"><div class="pup-section-label">Train This Week</div>${trainWeek.map(s=>skillCardRow(s,'pup-focus-row')).join('')}</div>`:''} ${upNext.length?`<div><div class="pup-section-label" style="color:var(--text);font-weight:800">Up Next</div>${groupedCardRows(upNext,'pup-skill-emphasis')}</div>`:''} ${ps.length===0?'<div style="font-size:11px;color:var(--muted);text-align:center;padding:20px 0">No skills yet</div>':''}</div>${progressBar}</div>`;
+    return`<div class="pup-col card" style="display:flex;flex-direction:column;overflow:visible;position:relative;background:rgba(255,255,255,.92);border:1.5px solid rgba(210,205,228,.5);border-radius:18px"><img src="${img}" style="position:absolute;top:-44px;left:50%;transform:translateX(-50%);width:92px;height:92px;border-radius:50%;object-fit:cover;object-position:top;border:3px solid rgba(255,255,255,.9);box-shadow:0 0 18px 6px ${glowColor},0 4px 14px rgba(0,0,0,.1)"><div style="display:grid;grid-template-columns:1fr 92px 1fr;align-items:center;min-height:52px;border-bottom:1px solid rgba(210,205,228,.22);flex-shrink:0"><span style="font-weight:700;font-size:13px;color:var(--text);padding-left:13px">${pup}</span><span></span><span style="font-size:11px;color:var(--muted);font-weight:500;padding-right:13px;text-align:right">${inProgress.length} in progress</span></div><div style="padding:8px;overflow-y:auto;flex:1;min-height:0;display:flex;flex-direction:column;gap:2px" data-pup-col="${pup}"></div>${progressBar}</div>`;
   }
   const tableCol=`<div class="pup-col card" style="overflow:hidden"><div class="ch"><span style="font-weight:700;font-size:13px;color:var(--text)">All Skills</span><button class="btn-plus" onclick="openPupAddModal()" style="margin-left:auto;padding:2px 8px;font-size:13px;border-radius:8px;border:1px solid var(--border);background:transparent;cursor:pointer;color:var(--text)">+</button></div><div id="pupTblScroll" style="overflow:auto;flex:1;min-height:0"><table class="pup-tbl"><thead id="pupTblHead"></thead><tbody id="pupTblBody"></tbody></table></div></div>`;
-  page.innerHTML=`<div class="ov-topbar"><div class="ov-topbar-left"><span class="ov-topbar-label">Pups</span><span class="ov-topbar-dot"></span></div><span class="ov-topbar-date topbar-date"></span><div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div></div><div style="display:grid;grid-template-columns:1fr 1fr 2.2fr;gap:14px;height:calc(100vh - 80px);padding-top:26px;width:100%;box-sizing:border-box">${pupCol('Mochi','#8b5cf6')}${pupCol('Sunny','#fbbf24')}${tableCol}</div>`;
+  const arrowBtn='cursor:pointer;font-size:16px;color:var(--muted);padding:2px 8px;border-radius:6px;user-select:none;line-height:1';
+  page.innerHTML=`<div class="ov-topbar"><div class="ov-topbar-left"><span class="ov-topbar-label">Pups</span><span class="ov-topbar-dot"></span></div><div style="display:flex;align-items:center;gap:8px"><span onclick="_pupPageShiftWk(-1)" style="${arrowBtn}" title="Previous week">‹</span><div style="text-align:center"><div style="font-size:12px;font-weight:700;color:var(--text)">${_pupPageWkLabel()}</div><div style="font-size:10px;color:var(--muted)">${_pupPageWkRange()}</div></div><span onclick="_pupPageShiftWk(1)" style="${arrowBtn}" title="Next week">›</span>${_pupPageWkOff!==0?`<span onclick="_pupPageWkOff=0;seedPupWeeklyFocus(0);renderPupsPage()" style="font-size:9px;color:var(--muted);cursor:pointer;padding:2px 6px;border:1px solid var(--border);border-radius:4px" title="Jump to this week">today</span>`:''}</div><div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div></div><div style="display:grid;grid-template-columns:1fr 1fr 2.2fr;gap:14px;height:calc(100vh - 80px);padding-top:26px;width:100%;box-sizing:border-box">${pupCol('Mochi','#8b5cf6')}${pupCol('Sunny','#fbbf24')}${tableCol}</div>`;
   if(!page._pupDblClick){
     page._pupDblClick=true;
     page.addEventListener('dblclick',e=>{
@@ -716,5 +723,42 @@ function renderPupsPage(){
   };
   document.addEventListener('click',window._pupOutsideClick);
   renderPupTable();
-  const now=new Date();document.querySelectorAll('#page-pups .topbar-date').forEach(e=>e.textContent=now.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}));document.querySelectorAll('#page-pups .topbar-time').forEach(e=>e.textContent=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}));
+  seedPupWeeklyFocus(_pupPageWkOff);
+  _pupPageRenderCol('Mochi');_pupPageRenderCol('Sunny');
+  const now=new Date();document.querySelectorAll('#page-pups .topbar-time').forEach(e=>e.textContent=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}));
+}
+function _pupPageRenderCol(pup){
+  const colEl=document.querySelector(`[data-pup-col="${pup}"]`);if(!colEl)return;
+  const allSkills=(st.pup_skills||[]).filter(s=>s.pup===pup&&s.stage!=='Mastered').sort((a,b)=>(a.skill||'').localeCompare(b.skill||''));
+  const curIds=_pupWkFocusIds(pup,_pupPageWkOff);
+  const active=allSkills.filter(s=>curIds.includes(String(s.id)));
+  const inactive=allSkills.filter(s=>!curIds.includes(String(s.id)));
+  const accentHex=pup==='Mochi'?'#8b5cf6':'#d97706';
+  const themeBg=pup==='Mochi'?'rgba(139,92,246,0.05)':'rgba(251,191,36,0.07)';
+  const themeBorder=pup==='Mochi'?'rgba(139,92,246,0.12)':'rgba(251,191,36,0.18)';
+  const renderSkill=(s,checked)=>{
+    const sid=String(s.id);
+    const done=_pupWkDone(sid,_pupPageWkOff);const total=_pupWkSessTotal(sid,_pupPageWkOff);
+    const countStr=checked&&(done||total)?`<span style="font-size:9px;font-weight:600;color:var(--muted);margin-left:auto;flex-shrink:0">${done}/${total}</span>`:'';
+    const ns=s.next_step&&s.next_step!=='None'?`<div style="font-size:9px;color:var(--subtle);padding-left:20px;margin-top:1px">${s.next_step}</div>`:'';
+    return`<div style="display:flex;flex-direction:column;padding:3px 4px;border-radius:6px;${checked?'background:rgba(255,255,255,.7);border:1px solid rgba(210,205,228,.2);margin-bottom:2px':'opacity:.55;margin-bottom:1px'}" data-pupid="${sid}">
+      <div style="display:flex;align-items:center;gap:6px">
+        <input type="checkbox" ${checked?'checked':''} onchange="_pupPageToggle('${sid}','${pup}',this.checked)" style="width:13px;height:13px;accent-color:${accentHex};cursor:pointer;flex-shrink:0">
+        <span style="font-size:11px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(s.skill)}</span>
+        ${countStr}
+      </div>${checked?ns:''}
+    </div>`;
+  };
+  let html='';
+  if(active.length){
+    html+=`<div style="background:${themeBg};border:1px solid ${themeBorder};border-radius:10px;padding:8px 6px;margin-bottom:6px"><div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:${accentHex};margin-bottom:4px">Focus This Week</div>`;
+    html+=active.map(s=>renderSkill(s,true)).join('');
+    html+=`</div>`;
+  }
+  if(inactive.length){
+    html+=`<div style="font-size:8px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:4px 0 3px;padding-left:2px">Available</div>`;
+    html+=inactive.map(s=>renderSkill(s,false)).join('');
+  }
+  if(!allSkills.length)html='<div style="font-size:11px;color:var(--muted);text-align:center;padding:20px 0">No skills yet</div>';
+  colEl.innerHTML=html;
 }
