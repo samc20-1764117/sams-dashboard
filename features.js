@@ -2325,7 +2325,7 @@ async function delFin(id){
 }
 
 // ── Pages ──────────────────────────────────────────────────────────────────────
-const PAGES=['overview','weekly','shopping','travel','birthdays','settings','pups','finance','recipes','notes','videos','packing'];
+const PAGES=['overview','weekly','shopping','travel','birthdays','settings','pups','finance','recipes','notes','videos','packing','guide'];
 // ══════════════════════════════════════════════════════════════════════════════
 // ── RECIPES PAGE ──────────────────────────────────────────────────────────────
 // ══════════════════════════════════════════════════════════════════════════════
@@ -4269,6 +4269,121 @@ async function saveMealEdit(id){
 }
 // ── END GROCERY & MEAL PLANNING ───────────────────────────────────────────────
 
+// ── STYLE GUIDE PAGE ──────────────────────────────────────────────────────────
+function renderGuidePage(){
+  const el=document.getElementById('guideContent');if(!el)return;
+  const cats=CATS;const imp=IMP;const ov=OV;
+  const pupS=typeof _pupSessStyle==='function'?_pupSessStyle():{bg:'#f6fafd',b:'rgba(56,170,210,.16)',t:'#18577a',d:'#38aad2'};
+  const vidS={bg:'rgba(34,197,94,.1)',t:'#15803d',d:'#22c55e',b:'rgba(34,197,94,.2)'};
+  const card=(label,s)=>`<div style="background:${s.bg};color:${s.t};border:1px solid ${s.b};border-radius:8px;padding:6px 12px;font-size:12px;font-weight:500;display:flex;align-items:center;gap:8px"><span style="width:7px;height:7px;border-radius:50%;background:${s.d};flex-shrink:0"></span>${label}<span style="font-size:9px;opacity:.5;margin-left:auto;font-family:monospace">${s.bg}</span></div>`;
+  const sectionTitle=(t)=>`<div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:28px 0 10px">${t}</div>`;
+  const shortcutRow=(k,d)=>`<tr><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)"><span style="font-family:monospace;background:rgba(0,0,0,.06);padding:2px 6px;border-radius:4px;font-size:11px;font-weight:600">${k}</span></td><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04);font-size:12px">${d}</td></tr>`;
+
+  el.innerHTML=`
+<div style="max-width:900px">
+<div class="ov-topbar"><div class="ov-topbar-left"><span class="ov-topbar-label">Style Guide</span><span class="ov-topbar-dot"></span></div><span class="ov-topbar-date topbar-date"></span><div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div></div>
+
+${sectionTitle('Task Category Colors')}
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px">
+  ${card('Home',cats.home)}
+  ${card('My Work',cats['my work'])}
+  ${card('Work',cats.work)}
+  ${card('Social',cats.social)}
+  ${card('Long Term',cats['long term'])}
+  ${card('Recurring',cats.recurring)}
+  ${card('Weekly Reset',cats.weekly_reset)}
+  ${card('Buy',cats.buy)}
+  ${card('Travel',cats.travel)}
+  ${card('Birthday',cats.birthday)}
+  ${card('Shopping',cats.shopping)}
+  ${card('Videos',vidS)}
+  ${card('Weekly Goals',cats['weekly goals'])}
+  ${card('Pup Skills',pupS)}
+</div>
+
+${sectionTitle('Special States')}
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px">
+  ${card('Important',imp)}
+  ${card('Overdue',ov)}
+</div>
+
+${sectionTitle('Task Types on Overview')}
+<table style="width:100%;border-collapse:collapse;font-size:12px;margin:8px 0">
+<tr><th style="text-align:left;padding:6px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:2px solid rgba(0,0,0,.08)">Type</th><th style="text-align:left;padding:6px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:2px solid rgba(0,0,0,.08)">Selection ID</th><th style="text-align:left;padding:6px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:2px solid rgba(0,0,0,.08)">Drag ID</th></tr>
+<tr><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)">Regular task</td><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)"><code>String(id)</code></td><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)"><code>String(id)</code></td></tr>
+<tr><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)">WR rule</td><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)"><code>wrrule-{id}</code></td><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)"><code>wrrule::{id}</code></td></tr>
+<tr><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)">WR recurring</td><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)"><code>wrec-{id}</code></td><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)"><code>wrec::{id}</code></td></tr>
+<tr><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)">Non-WR recurring</td><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)"><code>rec-virt-{id}</code></td><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)"><code>rec::{id}::{date}</code></td></tr>
+<tr><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)">Shopping</td><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)"><code>shop-cal-{id}</code></td><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)"><code>shop::{id}</code></td></tr>
+<tr><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)">Video</td><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)"><code>vid-ov-{vidId}</code></td><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)"><code>vid::{vidId}</code></td></tr>
+<tr><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)">Pup session</td><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)"><code>pup-sess-{id}</code></td><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)"><code>pupsess::{id}::{ds}</code></td></tr>
+<tr><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)">Pup skill (drag)</td><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)">—</td><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)"><code>pupskill::{skillId}</code></td></tr>
+<tr><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)">Finance cancel</td><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)"><code>fin-cancel-{id}</code></td><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)"><code>fin-cancel::{id}</code></td></tr>
+<tr><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)">Travel</td><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)"><code>tv-{id}</code></td><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)"><code>travel::{id}::{off}</code></td></tr>
+<tr><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)">Weekly goal</td><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)"><code>String(id)</code></td><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)"><code>wkgoal::{id}</code></td></tr>
+<tr><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)">TB block</td><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)"><code>blk-{id}</code></td><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)">block drag</td></tr>
+<tr><td style="padding:4px 10px">Auto TB</td><td style="padding:4px 10px"><code>atb::{atbId}</code></td><td style="padding:4px 10px">auto-block drag</td></tr>
+</table>
+
+${sectionTitle('Keyboard Shortcuts — Global')}
+<table style="width:100%;border-collapse:collapse;font-size:12px">
+<tr><th style="text-align:left;padding:6px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:2px solid rgba(0,0,0,.08)">Key</th><th style="text-align:left;padding:6px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:2px solid rgba(0,0,0,.08)">Action</th></tr>
+${shortcutRow('⌘ ←/→','Switch between pages')}
+${shortcutRow('O','Go to Overview')}
+${shortcutRow('V','Go to Videos')}
+${shortcutRow('F','Go to Finance')}
+${shortcutRow('L','Style Guide')}
+${shortcutRow('N','Quick Add task')}
+${shortcutRow('R','Reload page')}
+${shortcutRow('S','Sync all / HEB grocery modal')}
+${shortcutRow('I','Show help overlay')}
+${shortcutRow('G','Debug grid overlay')}
+${shortcutRow('Esc','Close modal / deselect')}
+${shortcutRow('⌘Z','Undo')}
+</table>
+
+${sectionTitle('Keyboard Shortcuts — Overview')}
+<table style="width:100%;border-collapse:collapse;font-size:12px">
+<tr><th style="text-align:left;padding:6px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:2px solid rgba(0,0,0,.08)">Key</th><th style="text-align:left;padding:6px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:2px solid rgba(0,0,0,.08)">Action</th></tr>
+${shortcutRow('T','Jump to Today')}
+${shortcutRow('M','Month view toggle')}
+${shortcutRow('←/→','Previous / next day')}
+${shortcutRow('W + ←/→','Previous / next week')}
+${shortcutRow('←/→ (selected)','Move task ±1 day')}
+${shortcutRow('↑/↓ (TB)','Move block ±30 min')}
+${shortcutRow('⌘ ↑/↓ (TB)','Resize block ±30 min')}
+${shortcutRow('Space','Skip WR rule')}
+${shortcutRow('Delete / ⌫','Delete selected')}
+${shortcutRow('⌘C / ⌘V','Copy / paste tasks')}
+${shortcutRow('⌘I','Toggle important')}
+${shortcutRow('A','Add auto-blocks to selection')}
+${shortcutRow('Click','Select')}
+${shortcutRow('⌘+Click','Toggle in selection')}
+${shortcutRow('Shift+Click','Range select')}
+</table>
+
+${sectionTitle('Keyboard Shortcuts — Videos')}
+<table style="width:100%;border-collapse:collapse;font-size:12px">
+<tr><th style="text-align:left;padding:6px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:2px solid rgba(0,0,0,.08)">Key</th><th style="text-align:left;padding:6px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:2px solid rgba(0,0,0,.08)">Action</th></tr>
+${shortcutRow('N','New video')}
+${shortcutRow('E / C','Toggle completed')}
+${shortcutRow('←/→','Switch tabs')}
+${shortcutRow('↑/↓','Scroll top / current')}
+${shortcutRow('Delete / ⌫','Delete selected')}
+</table>
+
+${sectionTitle('Multi-Select & Drag')}
+<table style="width:100%;border-collapse:collapse;font-size:12px">
+<tr><th style="text-align:left;padding:6px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:2px solid rgba(0,0,0,.08)">Action</th><th style="text-align:left;padding:6px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:2px solid rgba(0,0,0,.08)">Behavior</th></tr>
+${shortcutRow('⌘/Ctrl + Click','Toggle item in selection')}
+${shortcutRow('Shift + Click','Range-select in same container')}
+${shortcutRow('Drag selected → day','Moves ALL selected to that day')}
+${shortcutRow('Drag selected → timeblock','Creates blocks for all selected')}
+${shortcutRow('Arrow keys (selected)','Move all ±1 day')}
+</table>
+</div>`;
+}
+
 function showPage(id){
   if(id==='tasks')return;
   if(id==='shopping')id='weekly';// shopping merged into weekly page
@@ -4280,7 +4395,7 @@ function showPage(id){
   const pageEl=document.getElementById('page-'+id);if(pageEl)pageEl.classList.add('active');
   const idx=PAGES.indexOf(id);if(idx>-1&&document.querySelectorAll('.nav-item')[idx])document.querySelectorAll('.nav-item')[idx].classList.add('active');
   const mainEl=document.getElementById('main');if(mainEl){mainEl.scrollTop=0;}
-  if(id==='weekly'){renderWeeklyPage();}if(id==='travel')renderTravelPage();if(id==='birthdays')renderBdayPage();if(id==='pups')renderPupsPage();if(id==='recipes')renderRecipesPage();if(id==='packing')renderPackingPage();if(id==='finance')renderFinancePage();if(id==='videos'){if(!_vidPageInit&&_prevPg!=='videos'){_vidView='dashboard';localStorage.setItem('_vidView','dashboard');}_vidPageInit=false;renderVideosPage();}if(id==='overview'){renderShopOv();renderRecOv();renderWkCal();if(document.getElementById('tbGrid'))renderDayTB();}else{const _tbSc=document.getElementById('tbScroll');if(_tbSc)_tbSc._scrollDay=null;}
+  if(id==='weekly'){renderWeeklyPage();}if(id==='travel')renderTravelPage();if(id==='birthdays')renderBdayPage();if(id==='pups')renderPupsPage();if(id==='recipes')renderRecipesPage();if(id==='packing')renderPackingPage();if(id==='finance')renderFinancePage();if(id==='guide')renderGuidePage();if(id==='videos'){if(!_vidPageInit&&_prevPg!=='videos'){_vidView='dashboard';localStorage.setItem('_vidView','dashboard');}_vidPageInit=false;renderVideosPage();}if(id==='overview'){renderShopOv();renderRecOv();renderWkCal();if(document.getElementById('tbGrid'))renderDayTB();}else{const _tbSc=document.getElementById('tbScroll');if(_tbSc)_tbSc._scrollDay=null;}
   const backBtn=document.getElementById('backToOv');if(backBtn)backBtn.style.display=id==='overview'?'none':'flex';
   renderUnassigned();
   history.replaceState(null,'','#'+id);

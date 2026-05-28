@@ -1037,6 +1037,9 @@ document.addEventListener('keydown',e=>{
   if(e.key==='f'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus')&&!document.querySelector('.overlay.open')){
     e.preventDefault();showPage('finance');
   }
+  if(e.key==='l'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus')&&!document.querySelector('.overlay.open')){
+    e.preventDefault();showPage('guide');
+  }
   // M to toggle month view on overview
   if(e.key==='m'&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')){
     if(document.getElementById('mModal').classList.contains('open')){e.preventDefault();closeMod('mModal');return;}
@@ -1075,6 +1078,7 @@ function _showHelpOverlay(){
     ['R','Reload page'],
     ['S','Sync all data'],
     ['I','Show this help'],
+    ['L','Style Guide'],
     ['Esc','Close any modal / deselect all'],
     ['⌘Z','Undo last action'],
     ['⌘S','Prevented (no-op)'],
