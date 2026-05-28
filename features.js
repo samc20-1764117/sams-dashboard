@@ -4354,6 +4354,7 @@ function renderGuidePage(){
     ${sRow('N','Quick Add task')}
     ${sRow('R','Reload page')}
     ${sRow('S','Sync all / HEB grocery')}
+    ${sRow('D','Toggle dark mode')}
     ${sRow('I','Help overlay')}
     ${sRow('G','Debug grid')}
     ${sRow('Esc','Close modal / deselect')}

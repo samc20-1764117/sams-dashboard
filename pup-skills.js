@@ -549,7 +549,8 @@ function renderPupTable(){
     lastMasteredSec=isMasteredAll;
     const anyRec=pups.map(p=>g.byPup[p]).find(Boolean);
     const anyId=anyRec?String(anyRec.id):'';
-    const word=g.word&&g.word!=='None'?esc(g.word):'';
+    const _rawWord=g.word&&g.word!=='None'?g.word:'';
+    const word=(_rawWord&&_rawWord.toLowerCase()!==(g.skill||'').toLowerCase())?esc(_rawWord):'';
     // Rich tooltip data: word, signal, per-pup comments
     const anySkillRec=pups.map(p=>g.byPup[p]).find(Boolean);
     const tipSignal=anySkillRec&&anySkillRec.signal&&anySkillRec.signal!=='None'?esc(anySkillRec.signal):'';
@@ -657,60 +658,16 @@ function renderPupsPage(){
   const page=document.getElementById('page-pups');if(!page)return;
   const skills=st.pup_skills||[];
   function esc(v){return(v||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;');}
-  function lvlPill(s){return s.level?`<span class="pup-pill">${s.level}</span>`:'';}
-  function skillCardRow(s,cls){
-    const isMastered=s.stage==='Mastered';
-    const ns=!isMastered&&s.next_step&&s.next_step!=='None'?s.next_step:'';
-    const cm=!isMastered&&s.comments&&s.comments!=='None'?s.comments:'';
-    const wd=(s.word&&s.word!=='None'&&s.word.toLowerCase()!==s.skill.toLowerCase())?esc(s.word):'';
-    const sig=s.signal&&s.signal!=='None'?esc(s.signal):'';
-    const sid=String(s.id);
-    const sigTip=sig?` onmouseenter="showPupTip(event,'${sig}')" onmouseleave="hidePupTip()" style="cursor:help"`:' style=""';
-    return`<div class="pup-skill-row ${cls}" data-pupid="${sid}" style="flex-direction:column;align-items:stretch;${sig?'cursor:pointer':''}"${sig?` onmouseenter="showPupTip(event,'${sig}')" onmouseleave="hidePupTip()"`:''}>
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:6px">
-        <div style="display:flex;align-items:center;gap:5px;flex:1;min-width:0;overflow:hidden">
-          <input type="checkbox" ${isMastered?'checked':''} onclick="event.stopPropagation();togglePupMastered('${sid}',this.checked)" title="Mark mastered" style="width:13px;height:13px;cursor:pointer;accent-color:#8b5cf6;flex-shrink:0">
-          <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;${isMastered?'opacity:.5;text-decoration:line-through':''}"><span class="pup-skill-name">${s.skill}</span>${wd?`<span style="font-size:10px;color:var(--muted);margin-left:4px">"${wd}"</span>`:''}</span>${sig?`<span style="font-size:9px;color:var(--muted);opacity:.6;flex-shrink:0;margin-left:2px">☞</span>`:''}
-        </div>
-        <div style="display:flex;align-items:center;gap:5px;flex-shrink:0">${ns?`<span style="font-size:10px;color:var(--muted);white-space:nowrap">${ns}</span>`:''}${!isMastered?`<span class="vid-num" onclick="event.stopPropagation();openPupCountEdit('${sid}',this)" title="Click for session details" style="font-size:10px;font-weight:600;color:var(--muted);cursor:pointer;padding:1px 4px;border-radius:4px;background:rgba(0,0,0,.04)">${_pupAllDone(sid)}/${_pupAllTotal(sid)}</span>`:''}</div>
-      </div>
-      ${cm?`<div style="font-size:10px;color:var(--subtle);margin-top:2px;padding-left:18px">${esc(cm)}</div>`:''}
-    </div>`;
-  }
-  const PUP_CAT_ORDER=['commands','manners','fun'];
-  const PUP_CAT_LABELS={commands:'Commands',manners:'Manners',fun:'Fun'};
-  const CATO_CARD={commands:0,manners:1,fun:2};
-  const LVLO_CARD={Easy:0,Medium:1,Hard:2};
-  function sortCardSkills(list){
-    return [...list].sort((a,b)=>{
-      const fa=(a.focus===true||a.focus==='true'?0:1),fb=(b.focus===true||b.focus==='true'?0:1);if(fa!==fb)return fa-fb;
-      const ca=CATO_CARD[a.category]??9,cb=CATO_CARD[b.category]??9;if(ca!==cb)return ca-cb;
-      const la=LVLO_CARD[a.level]??9,lb=LVLO_CARD[b.level]??9;if(la!==lb)return la-lb;
-      return (a.skill_order??9999)-(b.skill_order??9999);
-    });
-  }
-  function groupedCardRows(list,cls){
-    const sorted=sortCardSkills(list);
-    const grouped={};
-    sorted.forEach(s=>{const k=s.category||'other';(grouped[k]=grouped[k]||[]).push(s);});
-    const order=[...PUP_CAT_ORDER,...Object.keys(grouped).filter(k=>!PUP_CAT_ORDER.includes(k))];
-    return order.filter(k=>grouped[k]).map(k=>{
-      const label=PUP_CAT_LABELS[k]||(k.charAt(0).toUpperCase()+k.slice(1));
-      return`<div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin:6px 0 3px">${label}</div>${grouped[k].map(s=>skillCardRow(s,cls)).join('')}`;
-    }).join('');
-  }
   function pupCol(pup,color){
-    const ps=skills.filter(s=>s.pup===pup);
-    const mastered=ps.filter(s=>s.stage==='Mastered');
     const focusCount=_pupWkFocusIds(pup,_pupPageWkOff).length;
     const img=pup==='Mochi'?'./mochi_headshot.png':'./sunny_headshot.png';
     const glowColor=pup==='Mochi'?'rgba(139,92,246,0.2)':'rgba(251,191,36,0.24)';
     return`<div class="pup-col card" style="display:flex;flex-direction:column;overflow:visible;position:relative;background:rgba(255,255,255,.92);border:1.5px solid rgba(210,205,228,.5);border-radius:18px"><img src="${img}" style="position:absolute;top:-44px;left:50%;transform:translateX(-50%);width:92px;height:92px;border-radius:50%;object-fit:cover;object-position:top;border:3px solid rgba(255,255,255,.9);box-shadow:0 0 18px 6px ${glowColor},0 4px 14px rgba(0,0,0,.1)"><div style="display:grid;grid-template-columns:1fr 92px 1fr;align-items:center;min-height:52px;border-bottom:1px solid rgba(210,205,228,.22);flex-shrink:0"><span style="font-weight:700;font-size:13px;color:var(--text);padding-left:13px">${pup}</span><span></span><span data-pup-focus-count style="font-size:11px;color:var(--muted);font-weight:500;padding-right:13px;text-align:right">${focusCount} in focus</span></div><div style="padding:8px;overflow-y:auto;flex:1;min-height:0;display:flex;flex-direction:column;gap:2px" data-pup-col="${pup}"></div></div>`;
   }
   const tableCol=`<div class="pup-col card" style="overflow:hidden"><div class="ch"><span style="font-weight:700;font-size:13px;color:var(--text)">All Skills</span><button class="btn-plus" onclick="openPupAddModal()" style="margin-left:auto;padding:2px 8px;font-size:13px;border-radius:8px;border:1px solid var(--border);background:transparent;cursor:pointer;color:var(--text)">+</button></div><div id="pupTblScroll" style="overflow:auto;flex:1;min-height:0"><table class="pup-tbl"><thead id="pupTblHead"></thead><tbody id="pupTblBody"></tbody></table></div></div>`;
-  const arrowBtn='cursor:pointer;font-size:20px;color:var(--muted);padding:4px 2px;user-select:none;line-height:1;display:flex;align-items:center';
-  const wkLabel=`<div style="text-align:center;margin-bottom:6px"><span style="font-size:12px;font-weight:700;color:var(--text)">${_pupPageWkLabel()}</span> <span style="font-size:10px;color:var(--muted)">${_pupPageWkRange()}</span>${_pupPageWkOff!==0?` <span onclick="_pupPageWkOff=0;seedPupWeeklyFocus(0);renderPupsPage()" style="font-size:9px;color:var(--muted);cursor:pointer;padding:1px 5px;border:1px solid var(--border);border-radius:4px;margin-left:4px" title="Jump to this week">today</span>`:''}</div>`;
-  page.innerHTML=`<div class="ov-topbar"><div class="ov-topbar-left"><span class="ov-topbar-label">Pups</span><span class="ov-topbar-dot"></span></div><span class="ov-topbar-date topbar-date"></span><div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div></div><div style="height:calc(100vh - 80px);padding-top:26px;width:100%;box-sizing:border-box;display:flex;flex-direction:column">${wkLabel}<div style="display:grid;grid-template-columns:auto 1fr 14px 1fr auto 14px 2.2fr;gap:0;flex:1;min-height:0;align-items:stretch"><span onclick="_pupPageShiftWk(-1)" style="${arrowBtn};padding-right:6px" title="Previous week (←)">‹</span>${pupCol('Mochi','#8b5cf6')}<div></div>${pupCol('Sunny','#fbbf24')}<span onclick="_pupPageShiftWk(1)" style="${arrowBtn};padding-left:6px" title="Next week (→)">›</span><div></div>${tableCol}</div></div>`;
+  const arrowBtn='cursor:pointer;font-size:18px;color:var(--muted);padding:4px 8px;user-select:none;line-height:1;border-radius:6px';
+  const wkBar=`<div style="display:flex;align-items:center;justify-content:center;gap:10px;padding:6px 0;margin-top:4px;border-top:1px solid rgba(210,205,228,.15)"><span onclick="_pupPageShiftWk(-1)" style="${arrowBtn}" title="Previous week (←)">‹</span><div style="text-align:center"><span style="font-size:11px;font-weight:700;color:var(--text)">${_pupPageWkLabel()}</span> <span style="font-size:10px;color:var(--muted)">${_pupPageWkRange()}</span>${_pupPageWkOff!==0?` <span onclick="_pupPageWkOff=0;seedPupWeeklyFocus(0);renderPupsPage()" style="font-size:9px;color:var(--muted);cursor:pointer;padding:1px 5px;border:1px solid var(--border);border-radius:4px;margin-left:4px" title="Jump to this week (T)">today</span>`:''}</div><span onclick="_pupPageShiftWk(1)" style="${arrowBtn}" title="Next week (→)">›</span></div>`;
+  page.innerHTML=`<div class="ov-topbar"><div class="ov-topbar-left"><span class="ov-topbar-label">Pups</span><span class="ov-topbar-dot"></span></div><span class="ov-topbar-date topbar-date"></span><div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div></div><div style="display:grid;grid-template-columns:1fr 1fr 2.2fr;gap:14px;height:calc(100vh - 80px);padding-top:26px;width:100%;box-sizing:border-box"><div style="display:flex;flex-direction:column;grid-column:1/3;gap:0"><div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;flex:1;min-height:0">${pupCol('Mochi','#8b5cf6')}${pupCol('Sunny','#fbbf24')}</div>${wkBar}</div>${tableCol}</div>`;
   if(!page._pupDblClick){
     page._pupDblClick=true;
     page.addEventListener('dblclick',e=>{
@@ -756,24 +713,24 @@ function _pupPageRenderCol(pup){
   const themeBorder=pup==='Mochi'?'rgba(139,92,246,0.12)':'rgba(251,191,36,0.18)';
   const renderSkill=(s,checked)=>{
     const sid=String(s.id);
+    const displayName=(s.word&&s.word!=='None')?s.word:s.skill;
     const done=_pupWkDone(sid,_pupPageWkOff);const total=_pupWkSessTotal(sid,_pupPageWkOff);
-    const countStr=checked&&(done||total)?`<span style="font-size:9px;font-weight:600;color:var(--muted);margin-left:auto;flex-shrink:0">${done}/${total}</span>`:'';
-    const ns=s.next_step&&s.next_step!=='None'?`<div style="font-size:9px;color:var(--subtle);padding-left:20px;margin-top:1px">${s.next_step}</div>`:'';
-    return`<div class="_pupDragSkill" draggable="true" data-pupid="${sid}" data-pup="${pup}" data-checked="${checked}" style="display:flex;flex-direction:column;padding:3px 4px;border-radius:6px;${checked?'background:rgba(255,255,255,.7);border:1px solid rgba(210,205,228,.2);margin-bottom:2px':'opacity:.55;margin-bottom:1px'}">
-      <div style="display:flex;align-items:center;gap:6px">
-        <input type="checkbox" ${checked?'checked':''} onchange="_pupPageToggle('${sid}','${pup}',this.checked)" style="width:13px;height:13px;accent-color:${accentHex};cursor:pointer;flex-shrink:0">
-        <span style="font-size:11px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(s.skill)}</span>
-        ${countStr}
-      </div>${checked?ns:''}
+    const ns=checked&&s.next_step&&s.next_step!=='None'?escHtml(s.next_step):'';
+    const countStr=checked&&(done||total)?`<span style="font-size:9px;font-weight:600;color:var(--muted);flex-shrink:0">${done}/${total}</span>`:'';
+    const rightSide=ns||countStr?`<div style="display:flex;align-items:center;gap:5px;margin-left:auto;flex-shrink:0">${ns?`<span style="font-size:9px;color:var(--subtle);white-space:nowrap">${ns}</span>`:''}${countStr}</div>`:'';
+    return`<div class="_pupDragSkill" draggable="true" data-pupid="${sid}" data-pup="${pup}" data-checked="${checked}" style="display:flex;align-items:center;padding:3px 4px;border-radius:6px;gap:6px;${checked?'background:rgba(255,255,255,.7);border:1px solid rgba(210,205,228,.2);margin-bottom:2px':'opacity:.55;margin-bottom:1px'}">
+      <input type="checkbox" ${checked?'checked':''} onchange="_pupPageToggle('${sid}','${pup}',this.checked)" style="width:13px;height:13px;accent-color:${accentHex};cursor:pointer;flex-shrink:0">
+      <span style="font-size:11px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(displayName)}</span>
+      ${rightSide}
     </div>`;
   };
   // Compute max focus count across both pups for aligned available section
   const otherPup=pup==='Mochi'?'Sunny':'Mochi';
   const otherActiveCount=_pupWkFocusIds(otherPup,_pupPageWkOff).length;
   const maxFocus=Math.max(active.length,otherActiveCount);
-  // Spacer rows to align available sections
+  // Spacer rows to align available sections (each row ~25px)
   const spacerCount=maxFocus-active.length;
-  const spacerHtml=spacerCount>0?`<div style="height:${spacerCount*26}px"></div>`:'';
+  const spacerHtml=spacerCount>0?`<div style="height:${spacerCount*25}px"></div>`:'';
   let html='';
   if(active.length||spacerCount>0){
     html+=`<div class="_pupFocusDrop" data-pup="${pup}" style="background:${themeBg};border:1px solid ${themeBorder};border-radius:10px;padding:8px 6px;margin-bottom:6px;min-height:32px"><div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:${accentHex};margin-bottom:4px">Focus This Week</div>`;

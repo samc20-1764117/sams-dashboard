@@ -1058,6 +1058,9 @@ document.addEventListener('keydown',e=>{
   if(e.key==='l'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus')&&!document.querySelector('.overlay.open')){
     e.preventDefault();showPage('guide');
   }
+  if(e.key==='d'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus')&&!document.querySelector('.overlay.open')){
+    e.preventDefault();if(typeof toggleDark==='function')toggleDark();
+  }
   // M to toggle month view on overview
   if(e.key==='m'&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')){
     if(document.getElementById('mModal').classList.contains('open')){e.preventDefault();closeMod('mModal');return;}
