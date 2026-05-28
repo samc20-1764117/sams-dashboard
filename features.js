@@ -4275,112 +4275,118 @@ function renderGuidePage(){
   const cats=CATS;const imp=IMP;const ov=OV;
   const pupS=typeof _pupSessStyle==='function'?_pupSessStyle():{bg:'#f6fafd',b:'rgba(56,170,210,.16)',t:'#18577a',d:'#38aad2'};
   const vidS={bg:'rgba(34,197,94,.1)',t:'#15803d',d:'#22c55e',b:'rgba(34,197,94,.2)'};
-  const card=(label,s)=>`<div style="background:${s.bg};color:${s.t};border:1px solid ${s.b};border-radius:8px;padding:6px 12px;font-size:12px;font-weight:500;display:flex;align-items:center;gap:8px"><span style="width:7px;height:7px;border-radius:50%;background:${s.d};flex-shrink:0"></span>${label}<span style="font-size:9px;opacity:.5;margin-left:auto;font-family:monospace">${s.bg}</span></div>`;
-  const sectionTitle=(t)=>`<div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:28px 0 10px">${t}</div>`;
-  const shortcutRow=(k,d)=>`<tr><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)"><span style="font-family:monospace;background:rgba(0,0,0,.06);padding:2px 6px;border-radius:4px;font-size:11px;font-weight:600">${k}</span></td><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04);font-size:12px">${d}</td></tr>`;
+  const card=(label,s)=>`<div style="background:${s.bg};color:${s.t};border:1px solid ${s.b};border-radius:8px;padding:6px 12px;font-size:12px;font-weight:500;display:flex;align-items:center;gap:8px"><span style="width:7px;height:7px;border-radius:50%;background:${s.d};flex-shrink:0"></span>${label}</div>`;
+  const secT=(t)=>`<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:0 0 8px">${t}</div>`;
+  const sRow=(k,d)=>`<tr><td style="padding:3px 8px;border-bottom:1px solid rgba(0,0,0,.04)"><span style="font-family:monospace;background:rgba(0,0,0,.06);padding:2px 6px;border-radius:4px;font-size:11px;font-weight:600">${k}</span></td><td style="padding:3px 8px;border-bottom:1px solid rgba(0,0,0,.04);font-size:12px">${d}</td></tr>`;
+  const tHead=(c1,c2)=>`<tr><th style="text-align:left;padding:4px 8px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:2px solid rgba(0,0,0,.08)">${c1}</th><th style="text-align:left;padding:4px 8px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:2px solid rgba(0,0,0,.08)">${c2}</th></tr>`;
+  const panel='background:rgba(255,255,255,.55);border:1px solid rgba(210,205,228,.3);border-radius:12px;padding:14px 16px;box-shadow:inset 0 1px 3px rgba(0,0,0,.04)';
 
   el.innerHTML=`
-<div style="width:100%;overflow:hidden">
+<div style="width:100%">
 <div class="ov-topbar"><div class="ov-topbar-left"><span class="ov-topbar-label">Style Guide</span><span class="ov-topbar-dot"></span></div><span class="ov-topbar-date topbar-date"></span><div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div></div>
 
-${sectionTitle('Task Category Colors')}
-<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px">
-  ${card('Home',cats.home)}
-  ${card('My Work',cats['my work'])}
-  ${card('Work',cats.work)}
-  ${card('Social',cats.social)}
-  ${card('Long Term',cats['long term'])}
-  ${card('Recurring',cats.recurring)}
-  ${card('Weekly Reset',cats.weekly_reset)}
-  ${card('Buy',cats.buy)}
-  ${card('Travel',cats.travel)}
-  ${card('Birthday',cats.birthday)}
-  ${card('Shopping',cats.shopping)}
-  ${card('Videos',vidS)}
-  ${card('Weekly Goals',cats['weekly goals'])}
-  ${card('Pup Skills',pupS)}
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px">
+
+<div style="display:flex;flex-direction:column;gap:14px">
+  <div style="${panel}">
+    ${secT('Task Colors')}
+    <div style="display:flex;flex-direction:column;gap:5px">
+      ${card('Home',cats.home)}
+      ${card('My Work',cats['my work'])}
+      ${card('Work',cats.work)}
+      ${card('Social',cats.social)}
+      ${card('Long Term',cats['long term'])}
+      ${card('Recurring',cats.recurring)}
+      ${card('Weekly Reset',cats.weekly_reset)}
+      ${card('Buy',cats.buy)}
+      ${card('Travel',cats.travel)}
+      ${card('Birthday',cats.birthday)}
+      ${card('Shopping',cats.shopping)}
+      ${card('Videos',vidS)}
+      ${card('Weekly Goals',cats['weekly goals'])}
+      ${card('Pup Skills',pupS)}
+    </div>
+  </div>
+  <div style="${panel}">
+    ${secT('Special States')}
+    <div style="display:flex;flex-direction:column;gap:5px">
+      ${card('Important',imp)}
+      ${card('Overdue',ov)}
+    </div>
+  </div>
+  <div style="${panel}">
+    ${secT('Multi-Select & Drag')}
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+    ${tHead('Action','Behavior')}
+    ${sRow('⌘/Ctrl + Click','Toggle item in selection')}
+    ${sRow('Shift + Click','Range-select in same container')}
+    ${sRow('Drag → day','Moves ALL selected to that day')}
+    ${sRow('Drag → timeblock','Creates blocks for all selected')}
+    ${sRow('Arrow keys','Move all selected ±1 day')}
+    </table>
+  </div>
 </div>
 
-${sectionTitle('Special States')}
-<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px">
-  ${card('Important',imp)}
-  ${card('Overdue',ov)}
+<div style="display:flex;flex-direction:column;gap:14px">
+  <div style="${panel}">
+    ${secT('Global Shortcuts')}
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+    ${tHead('Key','Action')}
+    ${sRow('⌘ ←/→','Switch between pages')}
+    ${sRow('O','Overview')}
+    ${sRow('V','Videos')}
+    ${sRow('F','Finance')}
+    ${sRow('L','Style Guide')}
+    ${sRow('N','Quick Add task')}
+    ${sRow('R','Reload page')}
+    ${sRow('S','Sync all / HEB grocery')}
+    ${sRow('I','Help overlay')}
+    ${sRow('G','Debug grid')}
+    ${sRow('Esc','Close modal / deselect')}
+    ${sRow('⌘Z','Undo')}
+    </table>
+  </div>
+  <div style="${panel}">
+    ${secT('Overview Shortcuts')}
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+    ${tHead('Key','Action')}
+    ${sRow('T','Jump to Today')}
+    ${sRow('M','Month view toggle')}
+    ${sRow('←/→','Previous / next day')}
+    ${sRow('W + ←/→','Previous / next week')}
+    ${sRow('←/→ (selected)','Move task ±1 day')}
+    ${sRow('↑/↓ (TB)','Move block ±30 min')}
+    ${sRow('⌘ ↑/↓ (TB)','Resize block ±30 min')}
+    ${sRow('Space','Skip WR rule')}
+    ${sRow('Delete / ⌫','Delete selected')}
+    ${sRow('⌘C / ⌘V','Copy / paste tasks')}
+    ${sRow('⌘I','Toggle important')}
+    ${sRow('A','Add auto-blocks')}
+    ${sRow('Click','Select')}
+    ${sRow('⌘+Click','Toggle in selection')}
+    ${sRow('Shift+Click','Range select')}
+    </table>
+  </div>
+  <div style="${panel}">
+    ${secT('Videos Shortcuts')}
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+    ${tHead('Key','Action')}
+    ${sRow('N','New video')}
+    ${sRow('E / C','Toggle completed')}
+    ${sRow('←/→','Switch tabs')}
+    ${sRow('↑/↓','Scroll top / current')}
+    ${sRow('Delete / ⌫','Delete selected')}
+    </table>
+  </div>
+  <div style="${panel}">
+    ${secT('Pages')}
+    <div style="display:flex;flex-wrap:wrap;gap:5px;font-size:12px">
+      ${PAGES.map(p=>`<span style="background:rgba(0,0,0,.04);padding:3px 10px;border-radius:6px;font-weight:500">${p}</span>`).join('')}
+    </div>
+  </div>
 </div>
 
-${sectionTitle('Task Types on Overview')}
-<table style="width:100%;border-collapse:collapse;font-size:12px;margin:8px 0;table-layout:fixed"><colgroup><col style="width:18%"><col style="width:41%"><col style="width:41%"></colgroup>
-<tr><th style="text-align:left;padding:6px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:2px solid rgba(0,0,0,.08)">Type</th><th style="text-align:left;padding:6px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:2px solid rgba(0,0,0,.08)">Selection ID</th><th style="text-align:left;padding:6px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:2px solid rgba(0,0,0,.08)">Drag ID</th></tr>
-<tr><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)">Regular task</td><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)"><code>String(id)</code></td><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)"><code>String(id)</code></td></tr>
-<tr><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)">WR rule</td><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)"><code>wrrule-{id}</code></td><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)"><code>wrrule::{id}</code></td></tr>
-<tr><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)">WR recurring</td><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)"><code>wrec-{id}</code></td><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)"><code>wrec::{id}</code></td></tr>
-<tr><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)">Non-WR recurring</td><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)"><code>rec-virt-{id}</code></td><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)"><code>rec::{id}::{date}</code></td></tr>
-<tr><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)">Shopping</td><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)"><code>shop-cal-{id}</code></td><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)"><code>shop::{id}</code></td></tr>
-<tr><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)">Video</td><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)"><code>vid-ov-{vidId}</code></td><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)"><code>vid::{vidId}</code></td></tr>
-<tr><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)">Pup session</td><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)"><code>pup-sess-{id}</code></td><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)"><code>pupsess::{id}::{ds}</code></td></tr>
-<tr><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)">Pup skill (drag)</td><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)">—</td><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)"><code>pupskill::{skillId}</code></td></tr>
-<tr><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)">Finance cancel</td><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)"><code>fin-cancel-{id}</code></td><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)"><code>fin-cancel::{id}</code></td></tr>
-<tr><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)">Travel</td><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)"><code>tv-{id}</code></td><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)"><code>travel::{id}::{off}</code></td></tr>
-<tr><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)">Weekly goal</td><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)"><code>String(id)</code></td><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)"><code>wkgoal::{id}</code></td></tr>
-<tr><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)">TB block</td><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)"><code>blk-{id}</code></td><td style="padding:4px 10px;border-bottom:1px solid rgba(0,0,0,.04)">block drag</td></tr>
-<tr><td style="padding:4px 10px">Auto TB</td><td style="padding:4px 10px"><code>atb::{atbId}</code></td><td style="padding:4px 10px">auto-block drag</td></tr>
-</table>
-
-${sectionTitle('Keyboard Shortcuts — Global')}
-<table style="width:100%;border-collapse:collapse;font-size:12px">
-<tr><th style="text-align:left;padding:6px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:2px solid rgba(0,0,0,.08)">Key</th><th style="text-align:left;padding:6px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:2px solid rgba(0,0,0,.08)">Action</th></tr>
-${shortcutRow('⌘ ←/→','Switch between pages')}
-${shortcutRow('O','Go to Overview')}
-${shortcutRow('V','Go to Videos')}
-${shortcutRow('F','Go to Finance')}
-${shortcutRow('L','Style Guide')}
-${shortcutRow('N','Quick Add task')}
-${shortcutRow('R','Reload page')}
-${shortcutRow('S','Sync all / HEB grocery modal')}
-${shortcutRow('I','Show help overlay')}
-${shortcutRow('G','Debug grid overlay')}
-${shortcutRow('Esc','Close modal / deselect')}
-${shortcutRow('⌘Z','Undo')}
-</table>
-
-${sectionTitle('Keyboard Shortcuts — Overview')}
-<table style="width:100%;border-collapse:collapse;font-size:12px">
-<tr><th style="text-align:left;padding:6px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:2px solid rgba(0,0,0,.08)">Key</th><th style="text-align:left;padding:6px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:2px solid rgba(0,0,0,.08)">Action</th></tr>
-${shortcutRow('T','Jump to Today')}
-${shortcutRow('M','Month view toggle')}
-${shortcutRow('←/→','Previous / next day')}
-${shortcutRow('W + ←/→','Previous / next week')}
-${shortcutRow('←/→ (selected)','Move task ±1 day')}
-${shortcutRow('↑/↓ (TB)','Move block ±30 min')}
-${shortcutRow('⌘ ↑/↓ (TB)','Resize block ±30 min')}
-${shortcutRow('Space','Skip WR rule')}
-${shortcutRow('Delete / ⌫','Delete selected')}
-${shortcutRow('⌘C / ⌘V','Copy / paste tasks')}
-${shortcutRow('⌘I','Toggle important')}
-${shortcutRow('A','Add auto-blocks to selection')}
-${shortcutRow('Click','Select')}
-${shortcutRow('⌘+Click','Toggle in selection')}
-${shortcutRow('Shift+Click','Range select')}
-</table>
-
-${sectionTitle('Keyboard Shortcuts — Videos')}
-<table style="width:100%;border-collapse:collapse;font-size:12px">
-<tr><th style="text-align:left;padding:6px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:2px solid rgba(0,0,0,.08)">Key</th><th style="text-align:left;padding:6px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:2px solid rgba(0,0,0,.08)">Action</th></tr>
-${shortcutRow('N','New video')}
-${shortcutRow('E / C','Toggle completed')}
-${shortcutRow('←/→','Switch tabs')}
-${shortcutRow('↑/↓','Scroll top / current')}
-${shortcutRow('Delete / ⌫','Delete selected')}
-</table>
-
-${sectionTitle('Multi-Select & Drag')}
-<table style="width:100%;border-collapse:collapse;font-size:12px">
-<tr><th style="text-align:left;padding:6px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:2px solid rgba(0,0,0,.08)">Action</th><th style="text-align:left;padding:6px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:2px solid rgba(0,0,0,.08)">Behavior</th></tr>
-${shortcutRow('⌘/Ctrl + Click','Toggle item in selection')}
-${shortcutRow('Shift + Click','Range-select in same container')}
-${shortcutRow('Drag selected → day','Moves ALL selected to that day')}
-${shortcutRow('Drag selected → timeblock','Creates blocks for all selected')}
-${shortcutRow('Arrow keys (selected)','Move all ±1 day')}
-</table>
+</div>
 </div>`;
 }
 
