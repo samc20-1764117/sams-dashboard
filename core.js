@@ -1038,10 +1038,10 @@ document.addEventListener('keydown',e=>{
     else if(document.getElementById('mModal').classList.contains('open')){closeMod('mModal');document.activeElement?.blur();}
     else if(document.getElementById('recMoModal').classList.contains('open')&&!selectedTasks.size){closeMod('recMoModal');document.activeElement?.blur();}
   }
-  if(e.key==='o'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus')&&!document.querySelector('.overlay.open')){
+  if(e.key==='o'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')){
     e.preventDefault();showPage('overview');
   }
-  if(e.key==='v'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus')&&!document.querySelector('.overlay.open')){
+  if(e.key==='v'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')){
     e.preventDefault();
     const now=Date.now();
     if(_lastVPress&&now-_lastVPress<350&&activePg==='overview'){
@@ -1052,16 +1052,16 @@ document.addEventListener('keydown',e=>{
       _vNavTimer=setTimeout(()=>{_vNavTimer=null;showPage('videos');},350);
     }
   }
-  if(e.key==='p'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus')&&!document.querySelector('.overlay.open')){
+  if(e.key==='p'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')){
     e.preventDefault();showPage('pups');
   }
-  if(e.key==='f'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus')&&!document.querySelector('.overlay.open')){
+  if(e.key==='f'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')){
     e.preventDefault();showPage('finance');
   }
-  if(e.key==='l'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus')&&!document.querySelector('.overlay.open')){
+  if(e.key==='l'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')){
     e.preventDefault();showPage('guide');
   }
-  if(e.key==='d'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus')&&!document.querySelector('.overlay.open')){
+  if(e.key==='d'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')){
     e.preventDefault();if(typeof toggleDark==='function')toggleDark();
   }
   // M to toggle month view on overview (skip if video popup is open — it uses M for its own calendar)

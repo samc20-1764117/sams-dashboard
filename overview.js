@@ -3184,8 +3184,8 @@ function _vidDayMapSet(m){localStorage._vidDayMap=JSON.stringify(m);}
 let _vidOvSelIdx=-1;
 let _vidOvSelVid=null;
 function _vidOvGetRows(){const p=document.getElementById('vidOvPanel');return p?Array.from(p.querySelectorAll('[data-vidrow]')):[]}
-function _vidOvClickSelect(el){const rows=_vidOvGetRows();const idx=rows.indexOf(el);if(idx>=0){_vidOvSelIdx=idx;_vidOvSelVid=el.dataset.vidrow||null;_vidOvHighlight();}}
-function _vidOvHighlight(){const rows=_vidOvGetRows();rows.forEach((r,i)=>{r.classList.toggle('vid-sel',i===_vidOvSelIdx);});}
+function _vidOvClickSelect(el){const rows=_vidOvGetRows();const idx=rows.indexOf(el);if(idx>=0){_vidOvSelIdx=idx;_vidOvSelVid=el.dataset.vidrow||null;_vidOvHighlight();if(typeof _vidCalHighlightChip==='function')_vidCalHighlightChip(_vidOvSelVid);}}
+function _vidOvHighlight(){const rows=_vidOvGetRows();rows.forEach((r,i)=>{r.classList.toggle('vid-sel',i===_vidOvSelIdx);});if(typeof _vidCalHighlightChip==='function')_vidCalHighlightChip(_vidOvSelVid);}
 function _vidOvRestoreSel(){
   if(!_vidOvSelVid)return;
   const rows=_vidOvGetRows();
@@ -3504,7 +3504,10 @@ function _vidOvToggleCal(){
     };
     const _calKey=e=>{
       if(!_vidCalOpen){document.removeEventListener('click',_calClose);document.removeEventListener('keydown',_calKey);return;}
-      if(e.key==='Escape'){_vidOvCloseCal();document.removeEventListener('click',_calClose);document.removeEventListener('keydown',_calKey);}
+      const _ct=document.activeElement?.tagName;
+      const _typing=_ct==='INPUT'||_ct==='TEXTAREA'||_ct==='SELECT'||document.activeElement?.isContentEditable;
+      if(e.key==='Escape'){_vidOvCloseCal();document.removeEventListener('click',_calClose);document.removeEventListener('keydown',_calKey);return;}
+      if(_typing)return;
       if(e.key==='ArrowLeft'){e.preventDefault();_vidCalMonth--;if(_vidCalMonth<0){_vidCalMonth=11;_vidCalYear--;}_vidOvRenderCal();}
       if(e.key==='ArrowRight'){e.preventDefault();_vidCalMonth++;if(_vidCalMonth>11){_vidCalMonth=0;_vidCalYear++;}_vidOvRenderCal();}
       if(e.key==='t'||e.key==='T'){e.preventDefault();const n=new Date();_vidCalMonth=n.getMonth();_vidCalYear=n.getFullYear();_vidOvRenderCal();}
@@ -3516,6 +3519,9 @@ function _vidOvToggleCal(){
 }
 function _vidOvCloseCal(){
   _vidCalOpen=false;
+  _vidOvSelVid=null;
+  const panel=document.getElementById('vidOvPanel');
+  if(panel)panel.querySelectorAll('[data-vidrow]').forEach(r=>r.classList.remove('vid-sel'));
   const el=document.getElementById('vidOvCalPanel');
   if(el){el.style.opacity='0';el.style.transform='translateX(12px)';setTimeout(()=>el.remove(),250);}
 }
@@ -3559,7 +3565,7 @@ function _vidCalRenderMonth(y,m,vidsByDate,today,search){
     if(search){const q=search.toLowerCase();filteredVids=dayVids.filter(v=>(v.topic||'').toLowerCase().includes(q)||(v.title||'').toLowerCase().includes(q));}
     const singleVid=filteredVids.length===1;
     html+=`<div class="vid-cal-day${isToday?' vid-cal-today':''}" data-caldate="${ds}" ondragover="event.preventDefault();this.classList.add('vid-cal-drop')" ondragleave="this.classList.remove('vid-cal-drop')" ondrop="_vidCalDrop(event,'${ds}')" style="padding:1px 2px;min-height:18px;overflow:hidden${singleVid?';display:flex;align-items:center;gap:2px':''}">`;
-    html+=`<span style="font-size:7px;font-weight:${isToday?'700':'500'};color:${isToday?'#f97316':'var(--subtle)'};line-height:1;flex-shrink:0">${d}</span>`;
+    html+=`<span style="font-size:7px;font-weight:${isToday?'700':'500'};color:${isToday?'#f97316':'var(--subtle)'};line-height:1;flex-shrink:0;width:10px;text-align:left">${d}</span>`;
     filteredVids.forEach(v=>{
       const {bg,fg}=_vidCalChipColor(v,ds,today);
       const sid=String(v.id);
@@ -3572,12 +3578,25 @@ function _vidCalRenderMonth(y,m,vidsByDate,today,search){
 }
 function _vidCalSelectChip(vidId){
   _vidOvSelVid=vidId;
+  // Highlight in video popup
   const panel=document.getElementById('vidOvPanel');
   if(panel){
     panel.querySelectorAll('[data-vidrow]').forEach(r=>{r.classList.remove('vid-sel');});
     const row=panel.querySelector(`[data-vidrow="${vidId}"]`);
     if(row){row.classList.add('vid-sel');row.scrollIntoView({block:'nearest'});}
   }
+  // Highlight in calendar
+  _vidCalHighlightChip(vidId);
+}
+function _vidCalHighlightChip(vidId){
+  const cal=document.getElementById('vidOvCalPanel');
+  if(!cal)return;
+  cal.querySelectorAll('.vid-cal-chip').forEach(c=>c.style.outline='');
+  if(!vidId)return;
+  cal.querySelectorAll('.vid-cal-chip').forEach(c=>{
+    const oc=c.getAttribute('onclick')||'';
+    if(oc.includes("'"+vidId+"'"))c.style.outline='2px solid var(--accent)';
+  });
 }
 // Yearly heatmap view
 let _vidCalYearView=false;

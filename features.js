@@ -4978,12 +4978,12 @@ let _copiedBlocks=[];
 let _tbPasteSm=null; // set by clicking empty TB area
 document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key==='s'){e.preventDefault();}},{capture:true});
 let _wKeyHeld=false;
-document.addEventListener('keydown',e=>{if(e.key==='w'&&!e.metaKey&&!e.ctrlKey)_wKeyHeld=true;});
+document.addEventListener('keydown',e=>{if(e.key==='w'&&!e.metaKey&&!e.ctrlKey){const _t=document.activeElement?.tagName;if(_t==='INPUT'||_t==='TEXTAREA'||_t==='SELECT'||document.activeElement?.isContentEditable)return;_wKeyHeld=true;}});
 document.addEventListener('keyup',e=>{if(e.key==='w')_wKeyHeld=false;});
 window.addEventListener('blur',()=>{_wKeyHeld=false;});
 document.addEventListener('keydown',async e=>{
   const tag=document.activeElement?.tagName;
-  if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT')return;
+  if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT'||document.activeElement?.isContentEditable)return;
   // t key: jump to today on overview
   if(e.key==='t'&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&activePg==='overview'&&!document.querySelector('.overlay.open')&&!(typeof _vidCalOpen!=='undefined'&&_vidCalOpen)){e.preventDefault();document.activeElement?.blur();goToday();return;}
   // Video panel keyboard nav (arrow up/down, delete, enter)
