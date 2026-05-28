@@ -710,7 +710,7 @@
     <!-- Toggle left, skip+sort right -->
     <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--border)">
       <div style="display:flex;align-items:center;gap:8px">
-        <div id="pmDogToggle"><div class="pup-dog-toggle" id="pmDogToggleWrap" style="border-radius:8px;overflow:hidden"><button id="pmDogMochi" class="pup-dog-btn active" onclick="setPupModalDog('Mochi')" style="font-size:12px;padding:4px 14px;border-radius:6px;font-family:inherit">Mochi</button><button id="pmDogSunny" class="pup-dog-btn" onclick="setPupModalDog('Sunny')" style="font-size:12px;padding:4px 14px;border-radius:6px;font-family:inherit">Sunny</button></div></div>
+        <div id="pmDogToggle"><div class="pup-dog-toggle" id="pmDogToggleWrap"><button id="pmDogMochi" class="pup-dog-btn active" onclick="setPupModalDog('Mochi')" style="font-family:inherit">Mochi</button><button id="pmDogSunny" class="pup-dog-btn" onclick="setPupModalDog('Sunny')" style="font-family:inherit">Sunny</button></div></div>
         <span id="pmBothLabel" style="display:none;font-size:10px;color:var(--muted)">Both pups</span>
       </div>
       <div id="pmSkipRow" style="display:flex;align-items:center;gap:8px">
@@ -733,21 +733,19 @@
         </div>
       </div>
     </div>
-    <!-- Helper fields (greyed) -->
-    <div style="padding:8px 14px 8px;background:rgba(0,0,0,.018);border-top:1px solid rgba(210,205,228,.12)">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px">
-        <div class="mfield"><label style="text-transform:none;letter-spacing:0">Stage</label><select id="pmStage"><option value="Not Started">Not Started</option><option value="In Progress">In Progress</option><option value="Mastered">Mastered</option></select></div>
-        <div class="mfield"><label style="text-transform:none;letter-spacing:0">Next step</label><select id="pmNextStep"><option value="">—</option><option value="1. Duration">1. Duration</option><option value="2. Distance">2. Distance</option><option value="3. Distraction">3. Distraction</option></select></div>
+    <!-- Helper fields (compact, greyed) -->
+    <div style="padding:6px 14px 6px;background:rgba(0,0,0,.018);border-top:1px solid rgba(210,205,228,.12)">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;margin-bottom:3px">
+        <div class="mfield" style="margin-bottom:0"><label style="text-transform:none;letter-spacing:0;font-size:8px;margin-bottom:1px">Stage</label><select id="pmStage" style="padding:3px 4px;font-size:11px"><option value="Not Started">Not Started</option><option value="In Progress">In Progress</option><option value="Mastered">Mastered</option></select></div>
+        <div class="mfield" style="margin-bottom:0"><label style="text-transform:none;letter-spacing:0;font-size:8px;margin-bottom:1px">Next step</label><select id="pmNextStep" style="padding:3px 4px;font-size:11px"><option value="">—</option><option value="1. Duration">1. Duration</option><option value="2. Distance">2. Distance</option><option value="3. Distraction">3. Distraction</option></select></div>
+        <div class="mfield" style="margin-bottom:0"><label style="text-transform:none;letter-spacing:0;font-size:8px;margin-bottom:1px">Category</label><select id="pmCategory" style="padding:3px 4px;font-size:11px"><option value="">—</option><option value="commands">Commands</option><option value="manners">Manners</option><option value="fun">Fun</option></select></div>
+        <div class="mfield" style="margin-bottom:0"><label style="text-transform:none;letter-spacing:0;font-size:8px;margin-bottom:1px">Level</label><select id="pmLevel" style="padding:3px 4px;font-size:11px"><option value="">—</option><option value="Easy">Easy</option><option value="Medium">Medium</option><option value="Hard">Hard</option></select></div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px">
-        <div class="mfield"><label style="text-transform:none;letter-spacing:0">Category</label><select id="pmCategory"><option value="">—</option><option value="commands">Commands</option><option value="manners">Manners</option><option value="fun">Fun</option></select></div>
-        <div class="mfield"><label style="text-transform:none;letter-spacing:0">Level</label><select id="pmLevel"><option value="">—</option><option value="Easy">Easy</option><option value="Medium">Medium</option><option value="Hard">Hard</option></select></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:3px">
+        <div class="mfield" style="margin-bottom:0"><label style="text-transform:none;letter-spacing:0;font-size:8px;margin-bottom:1px">Word</label><input id="pmWord" placeholder="Same as skill" onfocus="_pmWordFocus()" oninput="_pmWordEdit()" style="padding:3px 6px;font-size:11px"></div>
+        <div class="mfield" style="margin-bottom:0"><label style="text-transform:none;letter-spacing:0;font-size:8px;margin-bottom:1px">Signal</label><input id="pmSignal" placeholder="Hand signal…" style="padding:3px 6px;font-size:11px"></div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px">
-        <div class="mfield"><label style="text-transform:none;letter-spacing:0">Word</label><input id="pmWord" placeholder="Same as skill" onfocus="_pmWordFocus()" oninput="_pmWordEdit()"></div>
-        <div class="mfield"><label style="text-transform:none;letter-spacing:0">Signal</label><input id="pmSignal" placeholder="Hand signal…"></div>
-      </div>
-      <div class="mfield" style="margin-bottom:0"><label style="text-transform:none;letter-spacing:0">Comments</label><input id="pmComments" placeholder="Notes…"></div>
+      <div class="mfield" style="margin-bottom:0"><label style="text-transform:none;letter-spacing:0;font-size:8px;margin-bottom:1px">Comments</label><input id="pmComments" placeholder="Notes…" style="padding:3px 6px;font-size:11px"></div>
     </div>
     <div class="mact" style="padding:8px 14px 12px"><button class="btn btn-ghost" onclick="closeMod('pupModal')">Cancel</button><button class="btn btn-dark" onclick="savePupModal()">Save</button></div>
   </div>

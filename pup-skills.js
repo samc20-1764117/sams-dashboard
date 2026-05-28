@@ -120,7 +120,7 @@ function setPupModalDog(val){
   // Color the active button
   mBtn.style.background=val==='Mochi'?'#8b5cf6':'transparent';mBtn.style.color=val==='Mochi'?'#fff':'var(--muted)';
   sBtn.style.background=val==='Sunny'?'#d97706':'transparent';sBtn.style.color=val==='Sunny'?'#fff':'var(--muted)';
-  const _tw=document.getElementById('pmDogToggleWrap');if(_tw)_tw.style.borderColor=val==='Mochi'?'#8b5cf644':'#d9770644';
+  const _tw=document.getElementById('pmDogToggleWrap');if(_tw)_tw.style.borderColor='var(--border)';
   // Color count section
   const _cb=document.querySelector('[data-pm-count-bg]');
   if(_cb){_cb.style.background=val==='Mochi'?'rgba(139,92,246,.06)':'rgba(217,119,6,.06)';_cb.style.border=`1px solid ${val==='Mochi'?'rgba(139,92,246,.1)':'rgba(217,119,6,.1)'}`;}
