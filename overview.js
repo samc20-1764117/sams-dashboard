@@ -3744,10 +3744,17 @@ function _vidOvToggleAll(){
       const p=document.getElementById('vidOvAllPanel');const vp=document.getElementById('vidOvPanel');
       if(!p||!_vidOvAllOpen)return;
       if(!document.body.contains(e.target))return;
+      // Don't close if clicking inside video modal, context menu, or either panel
+      const vm=document.getElementById('vidModal');const ctx=document.getElementById('vidCtxMenu');
+      if(vm&&vm.classList.contains('open')&&vm.contains(e.target))return;
+      if(ctx&&ctx.contains(e.target))return;
       if(e.type==='click'&&!p.contains(e.target)&&(!vp||!vp.contains(e.target))){_vidOvCloseAll();document.removeEventListener('click',_allClose);document.removeEventListener('keydown',_allKey);}
     };
     const _allKey=e=>{
       if(!_vidOvAllOpen){document.removeEventListener('click',_allClose);document.removeEventListener('keydown',_allKey);return;}
+      // Don't handle keys if video modal is open
+      const vm=document.getElementById('vidModal');
+      if(vm&&vm.classList.contains('open'))return;
       if(e.key==='Escape'){_vidOvCloseAll();document.removeEventListener('click',_allClose);document.removeEventListener('keydown',_allKey);}
       if(e.key==='n'&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&document.activeElement.tagName!=='INPUT'&&document.activeElement.tagName!=='TEXTAREA'){e.preventDefault();if(typeof openVidModal==='function')openVidModal();}
     };
@@ -3767,7 +3774,7 @@ function _vidOvAllProgRow(v,steps){
   let html=`<div data-alldrag="${sid}" draggable="true" ondragstart="dragId='vid::${sid}';event.dataTransfer.effectAllowed='move'" ondblclick="if(typeof openVidEdit==='function')openVidEdit('${sid}')" oncontextmenu="if(typeof showVidCtx==='function')showVidCtx(event,'${sid}')" style="padding:4px 6px;border-radius:6px;font-size:12px;font-weight:600;color:var(--text);cursor:grab;display:flex;align-items:center;gap:5px" onmouseenter="this.style.background='${_hovBg}'" onmouseleave="this.style.background=''">${_addBtn}<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(v.topic||v.title)}</span><div style="display:flex;gap:0;flex-shrink:0;align-items:center">${_vidOvStepDots(v,steps)}<span style="font-size:9px;opacity:.5;width:30px;text-align:right;flex-shrink:0;margin-left:2px">${_vidOvPct(v,steps)}%</span></div></div>`;
   // Show children (small videos) with └ lines
   if(v.video_type==='B'){
-    const children=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===sid&&c.status==='in_progress').sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
+    const children=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===sid&&(c.status==='in_progress'||c.status==='up_next')&&c.status===v.status).sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
     children.forEach(c=>{
       const csid=String(c.id);
       html+=`<div data-alldrag="${csid}" draggable="true" ondragstart="dragId='vid::${csid}';event.dataTransfer.effectAllowed='move'" ondblclick="if(typeof openVidEdit==='function')openVidEdit('${csid}')" oncontextmenu="if(typeof showVidCtx==='function')showVidCtx(event,'${csid}')" style="padding:3px 6px 3px 10px;border-radius:6px;font-size:11px;font-weight:500;color:var(--muted);cursor:grab;display:flex;align-items:center;gap:5px" onmouseenter="this.style.background='${_hovBg}'" onmouseleave="this.style.background=''"><span style="color:rgba(140,135,160,.4);font-size:10px;width:16px;flex-shrink:0;text-align:center">└</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(c.topic||c.title)}</span><div style="display:flex;gap:0;flex-shrink:0;align-items:center">${_vidOvStepDots(c,steps)}<span style="font-size:8px;opacity:.4;width:30px;text-align:right;flex-shrink:0;margin-left:2px">${_vidOvPct(c,steps)}%</span></div></div>`;
@@ -3798,20 +3805,33 @@ function _vidOvRenderAll(){
   }
   const all=(st.videos||[]).filter(v=>!v.is_deleted);
   const steps=typeof VID_STEPS_CORE!=='undefined'?VID_STEPS_CORE:(typeof VID_STEPS!=='undefined'?VID_STEPS:[]);
-  // Top-level in-progress: B videos + standalone L (not children shown under parent)
+  // Up Next
+  const upNextAll=all.filter(v=>v.status==='up_next').sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
+  const upNext=upNextAll.filter(v=>v.video_type==='B'||!v.big_video_id||!upNextAll.find(p=>String(p.id)===String(v.big_video_id)));
+  // In Progress — top-level B + standalone L (children shown under parent)
   const inProgAll=all.filter(v=>v.status==='in_progress').sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
   const inProg=inProgAll.filter(v=>v.video_type==='B'||!v.big_video_id||!inProgAll.find(p=>String(p.id)===String(v.big_video_id)));
   const bigIdeas=all.filter(v=>v.status==='idea'&&v.video_type==='B').sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
   const littleIdeas=all.filter(v=>v.status==='idea'&&v.video_type!=='B').sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
-  // 2-column layout: In Progress | Ideas (matching videos page current tab)
+  // 2-column layout: Current (Up Next + In Progress) | Ideas
   let h=`<div style="display:grid;grid-template-columns:1.5fr 1fr;grid-template-rows:auto 1fr;position:absolute;top:0;left:0;right:0;bottom:0">`;
   // Column headers
-  h+=`<div class="tod-tb-header" style="grid-column:1;grid-row:1;border-right:1px solid var(--border);justify-content:flex-start;padding-left:14px"><span style="font-size:9px;font-weight:600;color:#d97706;letter-spacing:.03em">In Progress</span></div>`;
+  h+=`<div class="tod-tb-header" style="grid-column:1;grid-row:1;border-right:1px solid var(--border);justify-content:flex-start;padding-left:14px"><span style="font-size:9px;font-weight:600;color:var(--text);letter-spacing:.03em">Current</span></div>`;
   h+=`<div class="tod-tb-header" style="grid-column:2;grid-row:1;justify-content:flex-start;padding-left:14px;display:flex;align-items:center;gap:6px"><span style="font-size:9px;font-weight:600;color:var(--muted);letter-spacing:.03em;flex:1">Ideas</span><button onclick="event.stopPropagation();if(typeof openVidModal==='function')openVidModal()" style="font-size:10px;font-weight:700;width:18px;height:18px;line-height:16px;text-align:center;border-radius:4px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;padding:0;flex-shrink:0" title="Add idea (N)">+</button></div>`;
-  // In Progress column — formatted like video popup with step dots
-  h+=`<div style="grid-column:1;grid-row:2;min-height:0;overflow-y:auto;border-right:1px solid var(--border);padding:4px" ondragover="event.preventDefault();this.style.background='rgba(245,158,11,.03)'" ondragleave="this.style.background=''" ondrop="this.style.background='';_vidOvAllDrop(event,'in_progress')">`;
-  if(inProg.length){inProg.forEach(v=>{h+=_vidOvAllProgRow(v,steps);});}
-  else h+='<div style="color:var(--muted);font-size:11px;padding:12px 10px;opacity:.5">Drag ideas here to start</div>';
+  // Current column — Up Next + In Progress zones
+  h+=`<div style="grid-column:1;grid-row:2;min-height:0;overflow-y:auto;border-right:1px solid var(--border)">`;
+  // Up Next zone
+  h+=`<div style="min-height:30px;background:rgba(14,165,233,.03);border-bottom:1px solid rgba(255,255,255,.15)" ondragover="event.preventDefault();this.style.background='rgba(14,165,233,.08)'" ondragleave="this.style.background='rgba(14,165,233,.03)'" ondrop="this.style.background='rgba(14,165,233,.03)';_vidOvAllDrop(event,'up_next')">`;
+  h+=`<div style="font-size:9px;font-weight:600;color:#0ea5e9;padding:6px 6px 6px 14px;letter-spacing:.03em;background:rgba(14,165,233,.06);display:flex;align-items:center;border-left:3px solid rgba(14,165,233,.4)">Up Next</div>`;
+  if(upNext.length){h+=`<div style="padding:4px">`;upNext.forEach(v=>{h+=_vidOvAllProgRow(v,steps);});h+=`</div>`;}
+  else h+='<div style="color:var(--muted);font-size:11px;padding:8px 10px;opacity:.5">Drag ideas here</div>';
+  h+='</div>';
+  // In Progress zone
+  h+=`<div style="min-height:30px;background:rgba(245,158,11,.03);border-bottom:1px solid rgba(255,255,255,.15)" ondragover="event.preventDefault();this.style.background='rgba(245,158,11,.08)'" ondragleave="this.style.background='rgba(245,158,11,.03)'" ondrop="this.style.background='rgba(245,158,11,.03)';_vidOvAllDrop(event,'in_progress')">`;
+  h+=`<div style="font-size:9px;font-weight:600;color:#d97706;padding:6px 6px 6px 14px;letter-spacing:.03em;background:rgba(245,158,11,.06);display:flex;align-items:center;border-left:3px solid rgba(245,158,11,.4)">In Progress</div>`;
+  if(inProg.length){h+=`<div style="padding:4px">`;inProg.forEach(v=>{h+=_vidOvAllProgRow(v,steps);});h+=`</div>`;}
+  else h+='<div style="color:var(--muted);font-size:11px;padding:8px 10px;opacity:.5">Drag up next here to start</div>';
+  h+='</div>';
   h+='</div>';
   // Ideas column — matching videos page style
   h+=`<div style="grid-column:2;grid-row:2;min-height:0;overflow-y:auto" ondragover="event.preventDefault();this.style.background='rgba(139,92,246,.03)'" ondragleave="this.style.background=''" ondrop="this.style.background='';_vidOvAllDrop(event,'idea')">`;

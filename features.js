@@ -6256,7 +6256,7 @@ document.addEventListener('keydown',e=>{
   const tag=document.activeElement?.tagName;
   if(tag==='INPUT'||tag==='TEXTAREA'||document.activeElement?.isContentEditable)return;
   if(e.metaKey||e.ctrlKey||e.altKey)return;
-  if(e.key==='n'){e.preventDefault();openQA('today',null,d2s(getDayDate(dayOff)));}
+  if(e.key==='n'){if(typeof _vidOvAllOpen!=='undefined'&&_vidOvAllOpen)return;e.preventDefault();openQA('today',null,d2s(getDayDate(dayOff)));}
   if(e.key==='r'){e.preventDefault();location.reload();}
   if(e.key==='s'&&activePg==='overview'){e.preventDefault();const gm=document.getElementById('groceryModal');if(gm&&gm.open)gm.close();else openGroceryModal();}
 });

@@ -2932,6 +2932,8 @@ async function saveVidModal(){
         }
       }
       save();renderVideosPageKeepScroll();
+      if(typeof _vidOvRenderAll==='function'&&typeof _vidOvAllOpen!=='undefined'&&_vidOvAllOpen)_vidOvRenderAll();
+      if(typeof _renderVidOvMenu==='function')_renderVidOvMenu();
       if(v.video_type==='B'&&v.status!==prev.status&&(v.status==='in_progress'||v.status==='up_next'))_vidPromoteChildren(v.id,v.status);
       const _editId=_vidEditId;
       pushUndo(async()=>{
@@ -2951,6 +2953,8 @@ async function saveVidModal(){
     const tmp='l-'+Date.now();
     const rec={id:tmp,...data};
     st.videos.push(rec);save();renderVideosPageKeepScroll();
+    if(typeof _vidOvRenderAll==='function'&&typeof _vidOvAllOpen!=='undefined'&&_vidOvAllOpen)_vidOvRenderAll();
+    if(typeof _renderVidOvMenu==='function')_renderVidOvMenu();
     pushUndo(async()=>{
       const v=(st.videos||[]).find(x=>x.id===tmp||x.id===rec.id);
       if(v){v.is_deleted=true;save();renderVideosPageKeepScroll();const sid=String(v.id);if(!sid.startsWith('l-'))await sbReqSilent('PATCH','videos',{is_deleted:true},`?id=eq.${sid}`);}
