@@ -721,6 +721,12 @@
       <div class="mfield"><label>Signal</label><input id="pmSignal" placeholder="Hand signal…"></div>
     </div>
     <div class="mfield"><label>Comments</label><input id="pmComments" placeholder="Notes or observations…"></div>
+    <div id="pmCountRow" style="display:none;margin-bottom:8px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div class="mfield" style="flex:1"><label>This week done</label><input id="pmWkDone" type="number" min="0" style="width:100%"></div>
+        <div style="font-size:11px;color:var(--muted);padding-top:14px" id="pmCountInfo"></div>
+      </div>
+    </div>
     <div id="pmSkipRow" style="display:flex;gap:16px;margin-bottom:10px">
       <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);cursor:pointer"><input type="checkbox" id="pmSkipMochi" style="width:13px;height:13px;cursor:pointer;accent-color:#8b5cf6"> Not relevant for Mochi</label>
       <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);cursor:pointer"><input type="checkbox" id="pmSkipSunny" style="width:13px;height:13px;cursor:pointer;accent-color:#fbbf24"> Not relevant for Sunny</label>

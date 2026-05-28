@@ -129,6 +129,7 @@ function openPupAddModal(){
   document.getElementById('pmComments').value='';
   document.getElementById('pmSkipMochi').checked=false;
   document.getElementById('pmSkipSunny').checked=false;
+  const _cr=document.getElementById('pmCountRow');if(_cr)_cr.style.display='none';
   document.getElementById('pupModal').classList.add('open');
   setTimeout(()=>document.getElementById('pmSkill').focus(),80);
 }
@@ -157,12 +158,29 @@ function openPupEditModal(id){
   document.getElementById('pmWord').value=s.word||'';
   document.getElementById('pmSignal').value=s.signal||'';
   document.getElementById('pmComments').value=s.comments||'';
+  // Show count editing for existing skills
+  const _countRow=document.getElementById('pmCountRow');
+  const _wkDoneEl=document.getElementById('pmWkDone');
+  const _countInfo=document.getElementById('pmCountInfo');
+  if(_countRow&&_wkDoneEl&&_countInfo){
+    _countRow.style.display='';
+    const wkDone=_pupWkDone(id);const allDone=_pupAllDone(id);const last=_pupLastPracticed(id);
+    const lastStr=last?new Date(last+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}):'never';
+    _wkDoneEl.value=wkDone;
+    _countInfo.textContent=`Total: ${allDone} · Last: ${lastStr}`;
+  }
   document.getElementById('pupModal').classList.add('open');
   setTimeout(()=>{const _el=document.getElementById('pmSkill');if(_el){_el.focus();const _l=_el.value.length;_el.setSelectionRange(_l,_l);}},80);
 }
 async function savePupModal(){
   const _skipMochi=document.getElementById('pmSkipMochi').checked;
   const _skipSunny=document.getElementById('pmSkipSunny').checked;
+  // Save count if editing existing skill
+  const _wkDoneEl=document.getElementById('pmWkDone');
+  if(_pupEditId&&_wkDoneEl&&document.getElementById('pmCountRow').style.display!=='none'){
+    const newDone=parseInt(_wkDoneEl.value)||0;
+    setPupWkDone(_pupEditId,newDone);
+  }
   const data={
     pup:document.getElementById('pmPup').value,
     skill:document.getElementById('pmSkill').value.trim(),
@@ -580,7 +598,7 @@ function renderPupTable(){
       const nextHover=comment?`onmouseenter="showPupTip(event,'${comment}')" onmouseleave="hidePupTip()" style="cursor:help;padding:0 6px;font-size:11px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:var(--text)"`:`style="padding:0 6px;font-size:11px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:var(--text)"`;
       const nextDiv=`<div ondblclick="event.stopPropagation();pupCellEdit(this.closest('td'),'${sid}','next_step')" ${nextHover}>${nextStep}</div>`;
       const sessDiv=`<div onclick="event.stopPropagation();openPupCountEdit('${sid}',this)" style="height:100%;display:flex;align-items:center;justify-content:flex-end;padding-right:6px;cursor:pointer" title="Session details">${_pupCountBadge(s)}</div>`;
-      return`<td draggable="true" data-drag-skill-id="${sid}" data-drag-pup="${p}" style="padding:2px 5px;cursor:grab"><div style="${pillBase}">${stageWidget}${nextDiv}${sessDiv}</div></td>`;
+      return`<td style="padding:2px 5px"><div draggable="true" data-drag-skill-id="${sid}" data-drag-pup="${p}" style="${pillBase};cursor:grab">${stageWidget}${nextDiv}${sessDiv}</div></td>`;
     }).join('');
     const firstRec=pups.map(p=>g.byPup[p]).find(Boolean);
     const tipAttr=hasTip?` onmouseenter="showPupRichTip(event,${tipRows.replace(/"/g,'&quot;')})" onmouseleave="hidePupTip()" style="cursor:help"`:'';
@@ -596,7 +614,7 @@ function renderPupTable(){
   if(!_pupSortCol){
     [...tbody.querySelectorAll('tr[data-skillkey]')].forEach(row=>{
       row.addEventListener('mousedown',e=>{
-        if(e.button!==0||e.target.closest('input,button')||e.target.closest('td[data-drag-skill-id]'))return;
+        if(e.button!==0||e.target.closest('input,button')||e.target.closest('[data-drag-skill-id]'))return;
         let dragging=false;const startY=e.clientY;let ph=null;
         // rows being moved: this row + other selected rows if this row is part of selection
         const dragKeys=(_selSkillKeys.has(row.dataset.skillkey)&&_selSkillKeys.size>1)
@@ -637,14 +655,14 @@ function renderPupTable(){
     });
   }
   // Drag from table cells to focus zones
-  tbody.querySelectorAll('td[data-drag-skill-id]').forEach(td=>{
-    td.addEventListener('dragstart',e=>{
+  tbody.querySelectorAll('[data-drag-skill-id]').forEach(el=>{
+    el.addEventListener('dragstart',e=>{
       e.stopPropagation();
-      e.dataTransfer.setData('text/plain',JSON.stringify({skillId:td.dataset.dragSkillId,pup:td.dataset.dragPup}));
+      e.dataTransfer.setData('text/plain',JSON.stringify({skillId:el.dataset.dragSkillId,pup:el.dataset.dragPup}));
       e.dataTransfer.effectAllowed='move';
-      td.style.opacity='.4';
+      el.style.opacity='.4';
     });
-    td.addEventListener('dragend',()=>{td.style.opacity='';});
+    el.addEventListener('dragend',()=>{el.style.opacity='';});
   });
 }
 function renderPupsPageKeepScroll(){
@@ -662,11 +680,12 @@ function renderPupsPage(){
     const focusCount=_pupWkFocusIds(pup,_pupPageWkOff).length;
     const img=pup==='Mochi'?'./mochi_headshot.png':'./sunny_headshot.png';
     const glowColor=pup==='Mochi'?'rgba(139,92,246,0.2)':'rgba(251,191,36,0.24)';
-    return`<div class="pup-col card" style="display:flex;flex-direction:column;overflow:visible;position:relative;background:rgba(255,255,255,.92);border:1.5px solid rgba(210,205,228,.5);border-radius:18px"><img src="${img}" style="position:absolute;top:-44px;left:50%;transform:translateX(-50%);width:92px;height:92px;border-radius:50%;object-fit:cover;object-position:top;border:3px solid rgba(255,255,255,.9);box-shadow:0 0 18px 6px ${glowColor},0 4px 14px rgba(0,0,0,.1)"><div style="display:grid;grid-template-columns:1fr 92px 1fr;align-items:center;min-height:52px;border-bottom:1px solid rgba(210,205,228,.22);flex-shrink:0"><span style="font-weight:700;font-size:13px;color:var(--text);padding-left:13px">${pup}</span><span></span><span data-pup-focus-count style="font-size:11px;color:var(--muted);font-weight:500;padding-right:13px;text-align:right">${focusCount} in focus</span></div><div style="padding:8px;overflow-y:auto;flex:1;min-height:0;display:flex;flex-direction:column;gap:2px" data-pup-col="${pup}"></div></div>`;
+    const totalPractices=(st.pupSessions||[]).filter(s=>{const sk=(st.pup_skills||[]).find(x=>String(x.id)===String(s.skill_id));return sk&&sk.pup===pup&&s.done;}).length;
+    return`<div class="pup-col card" style="display:flex;flex-direction:column;overflow:visible;position:relative;background:rgba(255,255,255,.92);border:1.5px solid rgba(210,205,228,.5);border-radius:18px 18px 0 0"><img src="${img}" style="position:absolute;top:-44px;left:50%;transform:translateX(-50%);width:92px;height:92px;border-radius:50%;object-fit:cover;object-position:top;border:3px solid rgba(255,255,255,.9);box-shadow:0 0 18px 6px ${glowColor},0 4px 14px rgba(0,0,0,.1)"><div style="display:grid;grid-template-columns:1fr 92px 1fr;align-items:center;min-height:52px;border-bottom:1px solid rgba(210,205,228,.22);flex-shrink:0"><span style="font-weight:700;font-size:13px;color:var(--text);padding-left:13px">${pup}</span><span></span><div style="text-align:right;padding-right:13px"><span data-pup-focus-count style="font-size:11px;color:var(--muted);font-weight:500">${focusCount} in focus</span><div style="font-size:9px;color:var(--subtle)">${totalPractices} practices</div></div></div><div style="padding:8px;overflow-y:auto;flex:1;min-height:0;display:flex;flex-direction:column;gap:2px" data-pup-col="${pup}"></div></div>`;
   }
   const tableCol=`<div class="pup-col card" style="overflow:hidden"><div class="ch"><span style="font-weight:700;font-size:13px;color:var(--text)">All Skills</span><button class="btn-plus" onclick="openPupAddModal()" style="margin-left:auto;padding:2px 8px;font-size:13px;border-radius:8px;border:1px solid var(--border);background:transparent;cursor:pointer;color:var(--text)">+</button></div><div id="pupTblScroll" style="overflow:auto;flex:1;min-height:0"><table class="pup-tbl"><thead id="pupTblHead"></thead><tbody id="pupTblBody"></tbody></table></div></div>`;
   const arrowBtn='cursor:pointer;font-size:18px;color:var(--muted);padding:4px 8px;user-select:none;line-height:1;border-radius:6px';
-  const wkBar=`<div style="display:flex;align-items:center;justify-content:center;gap:10px;padding:6px 0;margin-top:4px;border-top:1px solid rgba(210,205,228,.15)"><span onclick="_pupPageShiftWk(-1)" style="${arrowBtn}" title="Previous week (←)">‹</span><div style="text-align:center"><span style="font-size:11px;font-weight:700;color:var(--text)">${_pupPageWkLabel()}</span> <span style="font-size:10px;color:var(--muted)">${_pupPageWkRange()}</span>${_pupPageWkOff!==0?` <span onclick="_pupPageWkOff=0;seedPupWeeklyFocus(0);renderPupsPage()" style="font-size:9px;color:var(--muted);cursor:pointer;padding:1px 5px;border:1px solid var(--border);border-radius:4px;margin-left:4px" title="Jump to this week (T)">today</span>`:''}</div><span onclick="_pupPageShiftWk(1)" style="${arrowBtn}" title="Next week (→)">›</span></div>`;
+  const wkBar=`<div style="display:flex;align-items:center;justify-content:center;gap:10px;padding:8px 0;background:rgba(255,255,255,.92);border:1.5px solid rgba(210,205,228,.5);border-top:1px solid rgba(210,205,228,.22);border-radius:0 0 18px 18px;flex-shrink:0"><span onclick="_pupPageShiftWk(-1)" style="${arrowBtn}" title="Previous week (←)">‹</span><div style="text-align:center"><span style="font-size:11px;font-weight:700;color:var(--text)">${_pupPageWkLabel()}</span> <span style="font-size:10px;color:var(--muted)">${_pupPageWkRange()}</span>${_pupPageWkOff!==0?` <span onclick="_pupPageWkOff=0;seedPupWeeklyFocus(0);renderPupsPage()" style="font-size:9px;color:var(--muted);cursor:pointer;padding:1px 5px;border:1px solid var(--border);border-radius:4px;margin-left:4px" title="Jump to this week (T)">today</span>`:''}</div><span onclick="_pupPageShiftWk(1)" style="${arrowBtn}" title="Next week (→)">›</span></div>`;
   page.innerHTML=`<div class="ov-topbar"><div class="ov-topbar-left"><span class="ov-topbar-label">Pups</span><span class="ov-topbar-dot"></span></div><span class="ov-topbar-date topbar-date"></span><div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div></div><div style="display:grid;grid-template-columns:1fr 1fr 2.2fr;gap:14px;height:calc(100vh - 80px);padding-top:26px;width:100%;box-sizing:border-box"><div style="display:flex;flex-direction:column;grid-column:1/3;gap:0"><div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;flex:1;min-height:0">${pupCol('Mochi','#8b5cf6')}${pupCol('Sunny','#fbbf24')}</div>${wkBar}</div>${tableCol}</div>`;
   if(!page._pupDblClick){
     page._pupDblClick=true;
@@ -716,9 +735,9 @@ function _pupPageRenderCol(pup){
     const displayName=(s.word&&s.word!=='None')?s.word:s.skill;
     const done=_pupWkDone(sid,_pupPageWkOff);const total=_pupWkSessTotal(sid,_pupPageWkOff);
     const ns=checked&&s.next_step&&s.next_step!=='None'?escHtml(s.next_step):'';
-    const countStr=checked&&(done||total)?`<span style="font-size:9px;font-weight:600;color:var(--muted);flex-shrink:0">${done}/${total}</span>`:'';
+    const countStr=checked&&(done||total)?`<span onclick="event.stopPropagation();openPupCountEdit('${sid}',this)" style="font-size:9px;font-weight:600;color:var(--muted);flex-shrink:0;cursor:pointer;padding:1px 3px;border-radius:3px;background:rgba(0,0,0,.04)">${done}/${total}</span>`:'';
     const rightSide=ns||countStr?`<div style="display:flex;align-items:center;gap:5px;margin-left:auto;flex-shrink:0">${ns?`<span style="font-size:9px;color:var(--subtle);white-space:nowrap">${ns}</span>`:''}${countStr}</div>`:'';
-    return`<div class="_pupDragSkill" draggable="true" data-pupid="${sid}" data-pup="${pup}" data-checked="${checked}" style="display:flex;align-items:center;padding:3px 4px;border-radius:6px;gap:6px;${checked?'background:rgba(255,255,255,.7);border:1px solid rgba(210,205,228,.2);margin-bottom:2px':'opacity:.55;margin-bottom:1px'}">
+    return`<div class="_pupDragSkill" draggable="true" data-pupid="${sid}" data-pup="${pup}" data-checked="${checked}" style="display:flex;align-items:center;padding:5px 6px;border-radius:6px;gap:6px;${checked?'background:rgba(255,255,255,.7);border:1px solid rgba(210,205,228,.2);margin-bottom:3px':'opacity:.55;margin-bottom:2px'}">
       <input type="checkbox" ${checked?'checked':''} onchange="_pupPageToggle('${sid}','${pup}',this.checked)" style="width:13px;height:13px;accent-color:${accentHex};cursor:pointer;flex-shrink:0">
       <span style="font-size:11px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(displayName)}</span>
       ${rightSide}
@@ -730,15 +749,15 @@ function _pupPageRenderCol(pup){
   const maxFocus=Math.max(active.length,otherActiveCount);
   // Spacer rows to align available sections (each row ~25px)
   const spacerCount=maxFocus-active.length;
-  const spacerHtml=spacerCount>0?`<div style="height:${spacerCount*25}px"></div>`:'';
+  const spacerHtml=spacerCount>0?`<div style="height:${spacerCount*30}px"></div>`:'';
   let html='';
   if(active.length||spacerCount>0){
-    html+=`<div class="_pupFocusDrop" data-pup="${pup}" style="background:${themeBg};border:1px solid ${themeBorder};border-radius:10px;padding:8px 6px;margin-bottom:6px;min-height:32px"><div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:${accentHex};margin-bottom:4px">Focus This Week</div>`;
+    html+=`<div class="_pupFocusDrop" data-pup="${pup}" style="background:${themeBg};border:1px solid ${themeBorder};border-radius:10px;padding:8px 6px;margin-bottom:6px;min-height:32px"><div style="font-size:10px;font-weight:700;color:${accentHex};margin-bottom:5px">Focus this week</div>`;
     html+=active.map(s=>renderSkill(s,true)).join('');
     html+=spacerHtml;
     html+=`</div>`;
   } else {
-    html+=`<div class="_pupFocusDrop" data-pup="${pup}" style="background:${themeBg};border:1px dashed ${themeBorder};border-radius:10px;padding:8px 6px;margin-bottom:6px;min-height:32px"><div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:${accentHex};margin-bottom:4px">Focus This Week</div><div style="font-size:10px;color:var(--muted);text-align:center;padding:4px 0">Drag or check skills</div></div>`;
+    html+=`<div class="_pupFocusDrop" data-pup="${pup}" style="background:${themeBg};border:1px dashed ${themeBorder};border-radius:10px;padding:8px 6px;margin-bottom:6px;min-height:32px"><div style="font-size:10px;font-weight:700;color:${accentHex};margin-bottom:5px">Focus this week</div><div style="font-size:10px;color:var(--muted);text-align:center;padding:4px 0">Drag or check skills</div></div>`;
   }
   if(inactive.length){
     html+=inactive.map(s=>renderSkill(s,false)).join('');
