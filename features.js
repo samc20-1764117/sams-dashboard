@@ -1994,11 +1994,11 @@ function _finSubEditable(id,field,val,cls){
 async function _finSubEditField(id,field,el){
   const row=st.finSubs.find(r=>String(r.id)===String(id));if(!row)return;
   const val=field==='name'?el.textContent.trim():_finParseNum(el.textContent);
-  // Unsaved row: commit if name provided, cancel if name still empty on blur
+  // Unsaved row: commit if name provided, cancel if clicking away
   if(row._unsaved){
     row[field]=val;
-    if(field==='name'&&!val){
-      // Check if focus moved to another field in same row — don't cancel yet
+    const name=field==='name'?val:(row.name||'').trim();
+    if(!name){
       setTimeout(()=>{
         const ae=document.activeElement;
         if(ae?.dataset?.fid===String(id))return;
@@ -2006,7 +2006,7 @@ async function _finSubEditField(id,field,el){
       },50);
       return;
     }
-    if(field==='name'&&val){_finCommitNew(row);}
+    if(field==='name'){_finCommitNew(row);}
     return;
   }
   if(row[field]===val)return;
@@ -2019,7 +2019,8 @@ async function _finSubEditField(id,field,el){
 async function _finSubEditDay(id,el){
   const row=st.finSubs.find(r=>String(r.id)===String(id));if(!row)return;
   const parsed=_finParseDue(el.textContent);
-  if(row._unsaved){row.due_day=parsed.due_day;row.due_month=parsed.due_month;return;}
+  if(row._unsaved){row.due_day=parsed.due_day;row.due_month=parsed.due_month;
+    if(!(row.name||'').trim()){setTimeout(()=>{const ae=document.activeElement;if(ae?.dataset?.fid===String(id))return;st.finSubs=st.finSubs.filter(r=>r.id!==row.id);renderFinancePage();},50);}return;}
   if(row.due_day===parsed.due_day&&row.due_month===parsed.due_month){renderFinancePage();return;}
   const oldDay=row.due_day,oldMonth=row.due_month;
   row.due_day=parsed.due_day;row.due_month=parsed.due_month;
@@ -2039,7 +2040,8 @@ function _finFreqSelect(id,val){
 
 async function _finSubEditFreq(id,val){
   const row=st.finSubs.find(r=>String(r.id)===String(id));if(!row)return;
-  if(row._unsaved){row.frequency=val;return;}
+  if(row._unsaved){row.frequency=val;
+    if(!(row.name||'').trim()){setTimeout(()=>{const ae=document.activeElement;if(ae?.dataset?.fid===String(id))return;st.finSubs=st.finSubs.filter(r=>r.id!==row.id);renderFinancePage();},50);}return;}
   const old=row.frequency;row.frequency=val;
   renderFinancePage();
   pushUndo(()=>{row.frequency=old;renderFinancePage();if(!String(id).startsWith('l-'))sbReqNullable('PATCH','finance_subs',{frequency:old},`?id=eq.${id}`);},'Changed frequency');
