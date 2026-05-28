@@ -28,7 +28,7 @@ body.dark{
   --border:rgba(255,255,255,0.07);
   --shadow:0 10px 30px rgba(0,0,0,.5),0 2px 6px rgba(0,0,0,.3);
   --shadow-lg:0 20px 50px rgba(0,0,0,.6),0 4px 12px rgba(0,0,0,.4);
-  --text:#e8e8ea;--muted:#65656e;--subtle:#363640;--accent:#c26b4f;
+  --text:#e8e8ea;--muted:#9898a0;--subtle:#48485a;--accent:#c26b4f;
   --home-bg:rgba(59,130,246,.14);--home-t:#93c5fd;--home-b:rgba(59,130,246,.18);
   --mw-bg:rgba(163,196,26,.12);--mw-t:#bef264;--mw-b:rgba(163,196,26,.18);
   --work-bg:rgba(236,72,153,.12);--work-t:#f9a8d4;--work-b:rgba(236,72,153,.18);
@@ -138,8 +138,8 @@ body.dark .mcell-num{color:var(--muted);}
 body.dark .wo-col{border-color:rgba(255,255,255,.06);background:rgba(255,255,255,.02);}
 body.dark .wo-col-hdr{border-color:rgba(255,255,255,.06);}
 body.dark #_donutTrack{stroke:rgba(255,255,255,.15)!important;opacity:1!important;}
-body.dark .meal-row{border-color:rgba(255,255,255,.06);}
-body.dark .wkc-cols{border-bottom:1px solid rgba(255,255,255,.06);}
+body.dark .meal-days{border-color:rgba(255,255,255,.06);}
+body.dark .meal-cell.meal-drop{background:rgba(255,255,255,.04);}
 
 /* Dark toggle button */
 .dark-toggle{display:flex;align-items:center;justify-content:center;font-family:'DM Sans',sans-serif;font-size:13px;background:rgba(255,255,255,.65);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.7);border-radius:20px;padding:4px 10px;cursor:pointer;transition:all .15s;box-shadow:0 2px 8px rgba(0,0,0,.06);color:var(--muted);line-height:1;}
