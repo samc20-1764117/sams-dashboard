@@ -3229,23 +3229,24 @@ function _renderVidOvMenu(){
   const menu=document.getElementById('vidOvPanel');if(!menu)return;
   let vids=(st.videos||[]).filter(v=>!v.is_deleted&&v.video_type==='B'&&v.status==='up_next');
   const _focusActive=!!window._vidOvFocusWk;
-  // Focus mode: only show videos assigned to this week
+  // Focus mode: highlight (not filter) videos on calendar this week
+  let _focusSet=null;
   if(_focusActive){
+    _focusSet=new Set();
     const _wkStart=getWkKey(wkOff);
     const _wkEnd=d2s(new Date(new Date(_wkStart+'T00:00:00').getTime()+6*86400000));
     const _map=_vidDayMap();
-    const _inWeek=(vid)=>{
+    vids.forEach(vid=>{
       const sid=String(vid.id);
-      // Check if big video or any children are assigned to this week
       const dayDs=_map[sid];
-      if(dayDs&&dayDs>=_wkStart&&dayDs<=_wkEnd)return true;
-      if(vid.post_date&&vid.post_date>=_wkStart&&vid.post_date<=_wkEnd)return true;
-      const kids=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===sid);
-      return kids.some(c=>{const cd=_map[String(c.id)];return(cd&&cd>=_wkStart&&cd<=_wkEnd)||(c.post_date&&c.post_date>=_wkStart&&c.post_date<=_wkEnd);});
-    };
-    vids=vids.filter(_inWeek);
+      if((dayDs&&dayDs>=_wkStart&&dayDs<=_wkEnd)||(vid.post_date&&vid.post_date>=_wkStart&&vid.post_date<=_wkEnd))_focusSet.add(sid);
+      (st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===sid).forEach(c=>{
+        const cd=_map[String(c.id)];
+        if((cd&&cd>=_wkStart&&cd<=_wkEnd)||(c.post_date&&c.post_date>=_wkStart&&c.post_date<=_wkEnd)){_focusSet.add(sid);_focusSet.add(String(c.id));}
+      });
+    });
   }
-  const _hdr=`<div class="tod-tb-header" style="display:flex;align-items:center;position:relative;padding:8px 10px;gap:6px"><button onclick="_vidOvToggleCal()" style="background:none;border:none;cursor:pointer;color:var(--muted);padding:2px;line-height:1;flex-shrink:0" title="Posting calendar"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></button><button onclick="_vidOvToggleFocusWk()" style="background:none;border:none;cursor:pointer;color:${_focusActive?'var(--accent)':'var(--muted)'};padding:2px;line-height:1;flex-shrink:0;opacity:${_focusActive?'1':'.6'}" title="Focus this week"><svg width="12" height="12" viewBox="0 0 24 24" fill="${_focusActive?'var(--accent)':'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg></button><span style="flex:1;text-align:center;font-size:12px;font-weight:700;color:var(--text);letter-spacing:-.1px">Videos</span><button onclick="closeVidOvMenu();showPage('videos')" style="background:none;border:none;cursor:pointer;color:var(--muted);padding:2px;line-height:1;flex-shrink:0;font-size:9px;font-weight:600" title="Go to Videos page">Page</button><button onclick="closeVidOvMenu()" style="background:none;border:none;cursor:pointer;font-size:14px;color:var(--muted);padding:0 2px;line-height:1;flex-shrink:0" title="Close">✕</button></div>`;
+  const _hdr=`<div class="tod-tb-header" style="display:flex;align-items:center;position:relative;padding:8px 10px;gap:6px"><button onclick="_vidOvToggleCal()" style="background:none;border:none;cursor:pointer;color:${_vidCalOpen?'var(--accent)':'var(--muted)'};padding:2px;line-height:1;flex-shrink:0" title="Posting schedule"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></button><button onclick="_vidOvToggleFocusWk()" style="background:none;border:none;cursor:pointer;color:${_focusActive?'var(--accent)':'var(--muted)'};padding:2px;line-height:1;flex-shrink:0;font-size:9px;font-weight:600" title="Highlight this week's videos">${_focusActive?'<u>Wk</u>':'Wk'}</button><span style="flex:1;text-align:center;font-size:12px;font-weight:700;color:var(--text);letter-spacing:-.1px">Videos</span><button onclick="closeVidOvMenu();showPage('videos')" style="background:none;border:none;cursor:pointer;color:var(--muted);padding:2px;line-height:1;flex-shrink:0;font-size:9px;font-weight:600" title="Go to Videos page">All</button><button onclick="closeVidOvMenu()" style="background:none;border:none;cursor:pointer;font-size:14px;color:var(--muted);padding:0 2px;line-height:1;flex-shrink:0" title="Close">✕</button></div>`;
   if(!vids.length){
     menu.innerHTML=_hdr+'<div style="padding:30px;font-size:12px;color:var(--subtle);text-align:center">No videos to add</div>';
     return;
@@ -3254,18 +3255,18 @@ function _renderVidOvMenu(){
   const labels=typeof VID_STEP_LABELS!=='undefined'?VID_STEP_LABELS:{};
   let html=_hdr;
   html+='<div style="padding:4px 10px 0">';
-  // Column header row — matches row: [+btn 16px][name flex][stages][%34px][post 52px][x 18px]
-  html+='<div style="display:flex;align-items:center;padding:2px 6px 4px;gap:5px">';
-  html+='<div style="width:16px;flex-shrink:0"></div>'; // + button spacer
-  html+='<span style="flex:1;min-width:0"></span>'; // name spacer
+  // Column header row — [+btn 16px][name flex][stages+%][post 52px][x 18px]
+  html+='<div style="display:flex;align-items:center;padding:2px 6px 2px;gap:5px">';
+  html+='<div style="width:16px;flex-shrink:0"></div>';
+  html+='<span style="flex:1;min-width:0"></span>';
   html+='<div style="display:flex;gap:0;flex-shrink:0;align-items:center">';
-  html+=steps.map(s=>`<div style="width:22px;text-align:center;font-size:7px;color:var(--muted);font-weight:600;flex-shrink:0">${(labels[s]||s).slice(0,3)}</div>`).join('');
-  html+='<div style="width:30px;text-align:right;font-size:7px;color:var(--muted);font-weight:600;flex-shrink:0;margin-left:2px">%</div>';
+  html+=steps.map(s=>`<div style="width:22px;text-align:center;font-size:9px;color:var(--muted);font-weight:700;flex-shrink:0">${(labels[s]||s).charAt(0)}</div>`).join('');
+  html+='<div style="width:30px;flex-shrink:0;margin-left:2px"></div>';
   html+='</div>';
-  html+='<span style="width:52px;flex-shrink:0;font-size:7px;color:var(--muted);font-weight:600;text-align:center">Post</span>';
-  html+='<span style="width:18px;flex-shrink:0"></span>'; // x spacer
+  html+='<span style="width:52px;flex-shrink:0;font-size:8px;color:var(--muted);font-weight:600;text-align:center">Post</span>';
+  html+='<span style="width:18px;flex-shrink:0"></span>';
   html+='</div>';
-  vids.forEach(v=>{html+=_vidOvMenuItem(v,steps);});
+  vids.forEach(v=>{html+=_vidOvMenuItem(v,steps,_focusSet);});
   html+='</div>';
   menu.innerHTML=html;
   _vidOvRestoreSel();
@@ -3279,8 +3280,9 @@ function _vidOvStepDots(vid,steps){
   }).join('');
 }
 function _vidOvPct(vid,steps){const app=steps.filter(s=>vid[s]!=='na');const dn=app.filter(s=>vid[s]==='done').length;return app.length?Math.round(dn/app.length*100):0;}
-function _vidOvMenuItem(v,steps){
+function _vidOvMenuItem(v,steps,focusSet){
   const sid=String(v.id);
+  const _isFocused=focusSet&&focusSet.has(sid);
   const _dragAttr=`draggable="true" ondragstart="_vidOvSelVid='${sid}';dragId='vid::${sid}';event.dataTransfer.effectAllowed='move';document.body.classList.add('body-dragging');showWkcEdges(true)" ondragend="document.body.classList.remove('body-dragging');showWkcEdges(false)"`;
   const _dblAttr=`ondblclick="event.stopPropagation();if(typeof openVidEdit==='function')openVidEdit('${sid}')"`;
   const _ctxAttr=`oncontextmenu="if(typeof showVidCtx==='function')showVidCtx(event,'${sid}')"`;
@@ -3292,17 +3294,20 @@ function _vidOvMenuItem(v,steps){
   const _postDate=v.post_date?_vidOvPostStr(v.post_date):'';
   const _postColor=v.post_date?_vidOvPostColor(v):'var(--muted)';
   const _postField=`<span class="vid-ov-post" style="width:52px;flex-shrink:0;font-size:9px;text-align:center;color:${_postColor};cursor:pointer" onclick="event.stopPropagation();_vidOvEditPostDate('${sid}',this)" title="${v.post_date||'Set post date'}">${_postDate||'—'}</span>`;
-  let html=`<div data-vidrow="${sid}" ${_dragAttr} ${_dblAttr} ${_ctxAttr} ${_hov} style="padding:5px 6px;border-radius:6px;font-size:13px;font-weight:600;color:var(--text);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s">${_addBtn}<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(v.topic||v.title)}</span><div style="display:flex;gap:0;flex-shrink:0;align-items:center">${_vidOvStepDots(v,steps)}<span style="font-size:9px;opacity:.5;width:30px;text-align:right;flex-shrink:0;margin-left:2px">${_vidOvPct(v,steps)}%</span></div>${_postField}${_xBtn}</div>`;
+  const _focusCls=_isFocused?' vid-ov-focus':'';
+  let html=`<div data-vidrow="${sid}" ${_dragAttr} ${_dblAttr} ${_ctxAttr} ${_hov} class="${_focusCls}" style="padding:5px 6px;border-radius:6px;font-size:13px;font-weight:600;color:var(--text);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s">${_addBtn}<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(v.topic||v.title)}</span><div style="display:flex;gap:0;flex-shrink:0;align-items:center">${_vidOvStepDots(v,steps)}<span style="font-size:9px;opacity:.5;width:30px;text-align:right;flex-shrink:0;margin-left:2px">${_vidOvPct(v,steps)}%</span></div>${_postField}${_xBtn}</div>`;
   // Children (S/L videos)
   const children=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(v.id)&&c.status!=='published').sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
   children.forEach((c,ci)=>{
     const csid=String(c.id);
     const _cOnCal=!!_map[csid];
+    const _cFocused=focusSet&&focusSet.has(csid);
+    const _cFocusCls=_cFocused?' vid-ov-focus':'';
     const _cxBtn=`<button class="vid-ov-x" onclick="event.stopPropagation();_vidOvDemote('${csid}')" title="Move to ideas">✕</button>`;
     const _cPostDate=c.post_date?_vidOvPostStr(c.post_date):'';
     const _cPostColor=c.post_date?_vidOvPostColor(c):'var(--muted)';
     const _cPostField=`<span class="vid-ov-post" style="width:52px;flex-shrink:0;font-size:9px;text-align:center;color:${_cPostColor};cursor:pointer" onclick="event.stopPropagation();_vidOvEditPostDate('${csid}',this)" title="${c.post_date||'Set post date'}">${_cPostDate||'—'}</span>`;
-    html+=`<div draggable="true" ondragstart="_vidOvSelVid='${csid}';_vidOvChildDrag=event.currentTarget;dragId='vid::${csid}';event.dataTransfer.effectAllowed='move';document.body.classList.add('body-dragging');showWkcEdges(true);event.currentTarget.style.opacity='.4'" ondragend="event.currentTarget.style.opacity='1';_vidOvChildDrag=null;document.body.classList.remove('body-dragging');showWkcEdges(false)" ondragover="event.preventDefault();if(_vidOvChildDrag)this.style.borderTop='2px solid rgba(0,0,0,.12)'" ondragleave="this.style.borderTop=''" ondrop="_vidOvReorder(event,'${sid}','${csid}')" ${_hov} ondblclick="event.stopPropagation();if(typeof openVidEdit==='function')openVidEdit('${csid}')" oncontextmenu="if(typeof showVidCtx==='function')showVidCtx(event,'${csid}')" data-vidrow="${csid}" data-cvid="${csid}" style="padding:3px 6px;border-radius:6px;font-size:11px;font-weight:500;color:var(--muted);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s"><div style="width:16px;flex-shrink:0;box-sizing:content-box;border:1px solid transparent;text-align:center;color:${_cOnCal?'var(--accent)':'rgba(140,135,160,.4)'};font-size:10px;font-weight:${_cOnCal?'700':'400'}">└</div><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(c.topic||c.title)}</span><div style="display:flex;gap:0;flex-shrink:0;align-items:center">${_vidOvStepDots(c,steps)}<span style="font-size:8px;opacity:.4;width:30px;text-align:right;flex-shrink:0;margin-left:2px">${_vidOvPct(c,steps)}%</span></div>${_cPostField}${_cxBtn}</div>`;
+    html+=`<div draggable="true" ondragstart="_vidOvSelVid='${csid}';_vidOvChildDrag=event.currentTarget;dragId='vid::${csid}';event.dataTransfer.effectAllowed='move';document.body.classList.add('body-dragging');showWkcEdges(true);event.currentTarget.style.opacity='.4'" ondragend="event.currentTarget.style.opacity='1';_vidOvChildDrag=null;document.body.classList.remove('body-dragging');showWkcEdges(false)" ondragover="event.preventDefault();if(_vidOvChildDrag)this.style.borderTop='2px solid rgba(0,0,0,.12)'" ondragleave="this.style.borderTop=''" ondrop="_vidOvReorder(event,'${sid}','${csid}')" ${_hov} ondblclick="event.stopPropagation();if(typeof openVidEdit==='function')openVidEdit('${csid}')" oncontextmenu="if(typeof showVidCtx==='function')showVidCtx(event,'${csid}')" data-vidrow="${csid}" data-cvid="${csid}" class="${_cFocusCls}" style="padding:3px 6px;border-radius:6px;font-size:11px;font-weight:500;color:var(--muted);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s"><div style="width:16px;flex-shrink:0;box-sizing:content-box;border:1px solid transparent;text-align:center;color:${_cOnCal?'var(--accent)':'rgba(140,135,160,.4)'};font-size:10px;font-weight:${_cOnCal?'700':'400'}">└</div><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(c.topic||c.title)}</span><div style="display:flex;gap:0;flex-shrink:0;align-items:center">${_vidOvStepDots(c,steps)}<span style="font-size:8px;opacity:.4;width:30px;text-align:right;flex-shrink:0;margin-left:2px">${_vidOvPct(c,steps)}%</span></div>${_cPostField}${_cxBtn}</div>`;
     if(ci<children.length-1){const oA=c.vid_order??ci;const oB=children[ci+1].vid_order??(ci+1);html+=`<div class="vid-insert-zone" onclick="event.stopPropagation();if(typeof openVidModalBetween==='function')openVidModalBetween('${sid}',${oA},${oB})"><button class="vid-insert-btn">+</button></div>`;}
   });
   return html;
@@ -3486,14 +3491,15 @@ function _vidOvToggleCal(){
       const cal=document.getElementById('vidOvCalPanel');
       const panel=document.getElementById('vidOvPanel');
       if(!cal||!_vidCalOpen)return;
-      if(e.type==='click'&&!cal.contains(e.target)&&(!panel||!panel.contains(e.target))){_vidOvCloseCal();document.removeEventListener('click',_calClose);document.removeEventListener('keydown',_calKey);}
+      if(e.type==='click'&&!cal.contains(e.target)&&(!panel||!panel.contains(e.target))&&!e.target.closest('#vidOvPanel')&&!e.target.closest('#vidOvCalPanel')){_vidOvCloseCal();document.removeEventListener('click',_calClose);document.removeEventListener('keydown',_calKey);}
     };
     const _calKey=e=>{
       if(!_vidCalOpen){document.removeEventListener('click',_calClose);document.removeEventListener('keydown',_calKey);return;}
       if(e.key==='Escape'){_vidOvCloseCal();document.removeEventListener('click',_calClose);document.removeEventListener('keydown',_calKey);}
       // Arrow keys navigate months
-      if(e.key==='ArrowLeft'){e.preventDefault();_vidCalMonth-=3;while(_vidCalMonth<0){_vidCalMonth+=12;_vidCalYear--;}_vidOvRenderCal();}
-      if(e.key==='ArrowRight'){e.preventDefault();_vidCalMonth+=3;while(_vidCalMonth>11){_vidCalMonth-=12;_vidCalYear++;}_vidOvRenderCal();}
+      if(e.key==='ArrowLeft'){e.preventDefault();_vidCalMonth--;if(_vidCalMonth<0){_vidCalMonth=11;_vidCalYear--;}_vidOvRenderCal();}
+      if(e.key==='ArrowRight'){e.preventDefault();_vidCalMonth++;if(_vidCalMonth>11){_vidCalMonth=0;_vidCalYear++;}_vidOvRenderCal();}
+      if(e.key==='t'||e.key==='T'){e.preventDefault();const n=new Date();_vidCalMonth=n.getMonth();_vidCalYear=n.getFullYear();_vidOvRenderCal();}
     };
     document.addEventListener('click',_calClose);
     document.addEventListener('keydown',_calKey);
@@ -3513,7 +3519,7 @@ function _vidCalRenderMonth(y,m,vidsByDate,today){
   let html=`<div style="margin-bottom:8px"><div style="font-size:11px;font-weight:700;color:${isCurMonth?'var(--accent)':'var(--text)'};padding:6px 4px;letter-spacing:-.2px">${monthName}</div>`;
   html+='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:1px;text-align:center">';
   ['S','M','T','W','T','F','S'].forEach(d=>{html+=`<div style="font-size:8px;font-weight:600;color:var(--muted);padding:2px 0">${d}</div>`;});
-  for(let i=0;i<startDow;i++)html+='<div style="min-height:54px"></div>';
+  for(let i=0;i<startDow;i++)html+='<div style="min-height:38px"></div>';
   for(let d=1;d<=daysInMonth;d++){
     const ds=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const isToday=ds===today;
@@ -3539,12 +3545,15 @@ function _vidOvRenderCal(){
   let panel=document.getElementById('vidOvCalPanel');
   if(!panel){
     panel=document.createElement('div');panel.id='vidOvCalPanel';
+    // Align with the card that contains vidOvPanel
+    const card=document.getElementById('vidOvPanel')?.closest('.card');
     const rightPanel=document.querySelector('.row1-right-panel');
-    if(rightPanel){
-      const rr=rightPanel.getBoundingClientRect();
-      panel.style.cssText=`position:fixed;top:${rr.top}px;left:${rr.left}px;width:${rr.width}px;height:${rr.height}px;z-index:200;background:rgba(255,255,255,.98);backdrop-filter:blur(12px);border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.1);overflow:hidden;display:flex;flex-direction:column;opacity:0;transform:translateX(12px);transition:opacity .25s ease,transform .25s ease`;
+    if(card){
+      const cr=card.getBoundingClientRect();
+      const rr=rightPanel?rightPanel.getBoundingClientRect():{left:cr.right+10,width:700,top:cr.top,height:cr.height};
+      panel.style.cssText=`position:fixed;top:${cr.top}px;left:${rr.left}px;width:${rr.width}px;height:${cr.height}px;z-index:200;background:rgba(255,255,255,.98);backdrop-filter:blur(12px);border:1px solid rgba(210,205,228,.18);border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.08);overflow:hidden;display:flex;flex-direction:column;opacity:0;transform:translateX(12px);transition:opacity .25s ease,transform .25s ease`;
     }else{
-      panel.style.cssText='position:fixed;top:60px;right:20px;width:700px;bottom:20px;z-index:200;background:rgba(255,255,255,.98);backdrop-filter:blur(12px);border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.1);overflow:hidden;display:flex;flex-direction:column;opacity:0;transform:translateX(12px);transition:opacity .25s ease,transform .25s ease';
+      panel.style.cssText='position:fixed;top:60px;right:20px;width:700px;bottom:20px;z-index:200;background:rgba(255,255,255,.98);backdrop-filter:blur(12px);border:1px solid rgba(210,205,228,.18);border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.08);overflow:hidden;display:flex;flex-direction:column;opacity:0;transform:translateX(12px);transition:opacity .25s ease,transform .25s ease';
     }
     document.body.appendChild(panel);
     requestAnimationFrame(()=>requestAnimationFrame(()=>{panel.style.opacity='1';panel.style.transform='translateX(0)';}));
@@ -3556,9 +3565,9 @@ function _vidOvRenderCal(){
   // Header with nav arrows
   const monthName=new Date(_vidCalYear,_vidCalMonth,1).toLocaleDateString('en-US',{month:'long',year:'numeric'});
   let html=`<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 14px;border-bottom:1px solid var(--border);flex-shrink:0">
-    <button onclick="_vidCalMonth-=3;while(_vidCalMonth<0){_vidCalMonth+=12;_vidCalYear--};_vidOvRenderCal()" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--muted);padding:2px 6px">←</button>
-    <span style="font-size:12px;font-weight:700;color:var(--text)">Video Schedule</span>
-    <button onclick="_vidCalMonth+=3;while(_vidCalMonth>11){_vidCalMonth-=12;_vidCalYear++};_vidOvRenderCal()" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--muted);padding:2px 6px">→</button>
+    <button onclick="_vidCalMonth--;if(_vidCalMonth<0){_vidCalMonth=11;_vidCalYear--};_vidOvRenderCal()" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--muted);padding:2px 6px">←</button>
+    <div style="display:flex;align-items:center;gap:8px"><span style="font-size:12px;font-weight:700;color:var(--text)">Video Schedule</span><button onclick="var n=new Date();_vidCalMonth=n.getMonth();_vidCalYear=n.getFullYear();_vidOvRenderCal()" style="background:none;border:none;cursor:pointer;font-size:9px;font-weight:600;color:var(--muted);padding:1px 4px" title="Back to today (T)">Today</button></div>
+    <button onclick="_vidCalMonth++;if(_vidCalMonth>11){_vidCalMonth=0;_vidCalYear++};_vidOvRenderCal()" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--muted);padding:2px 6px">→</button>
   </div>`;
   // Legend
   html+=`<div style="display:flex;gap:10px;padding:4px 14px;font-size:8px;color:var(--muted);flex-shrink:0">
@@ -3567,7 +3576,7 @@ function _vidOvRenderCal(){
     <span><span style="display:inline-block;width:7px;height:7px;border-radius:2px;background:#8b5cf6;margin-right:2px"></span>Little</span>
   </div>`;
   // 3 months in scrollable container
-  html+='<div id="vidCalScroll" style="flex:1;overflow-y:auto;padding:6px 10px">';
+  html+='<div id="vidCalScroll" style="flex:1;overflow-y:auto;padding:6px 10px" ondragover="event.preventDefault()">';
   for(let i=0;i<3;i++){
     let cm=_vidCalMonth+i,cy=_vidCalYear;
     while(cm>11){cm-=12;cy++;}
