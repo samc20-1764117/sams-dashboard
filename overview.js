@@ -734,7 +734,8 @@ function sortTasksForDay(tasks,ds){
   if(!blks.length)return sortByTypeOrder(tasks);
   function tbSm(t){
     let b=null;
-    if(t._vidId)b=blks.find(x=>String(x._vidId)===String(t._vidId));
+    if(t._type==='pup'&&t._pupSessId)b=blks.find(x=>String(x._pupSessId)===String(t._pupSessId));
+    else if(t._vidId)b=blks.find(x=>String(x._vidId)===String(t._vidId));
     else if(t._shopId)b=blks.find(x=>String(x.shopId)===String(t._shopId));
     else if(t._ruleId)b=blks.find(x=>String(x.ruleId)===String(t._ruleId)||String(x.recId)===String(t._ruleId));
     else if(t._recId)b=blks.find(x=>String(x.recId)===String(t._recId));
