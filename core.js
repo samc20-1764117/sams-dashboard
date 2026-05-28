@@ -22,7 +22,25 @@ let HOURS=[...Array(20)].map((_,i)=>i+4);
 const DNAMES=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 const PX=40/60, KEY='samdash_v7';
 
-function gc(c){return CATS[(c||'').toLowerCase()]||{bg:'#f1f5f9',t:'#334155',d:'#94a3b8',b:'rgba(148,163,184,.2)'};}
+const CATS_DARK={
+  'home':{bg:'rgba(59,130,246,.14)',t:'#93c5fd',d:'#3b82f6',dot:'#93c5fd',b:'rgba(59,130,246,.18)'},
+  'my work':{bg:'rgba(163,196,26,.12)',t:'#bef264',d:'#65a30d',dot:'#bef264',b:'rgba(163,196,26,.18)'},
+  'work':{bg:'rgba(236,72,153,.12)',t:'#f9a8d4',d:'#ec4899',dot:'#f9a8d4',b:'rgba(236,72,153,.18)'},
+  'social':{bg:'rgba(147,51,234,.14)',t:'#d8b4fe',d:'#9333ea',dot:'#d8b4fe',b:'rgba(147,51,234,.18)'},
+  'long term':{bg:'rgba(148,163,184,.10)',t:'#94a3b8',d:'#94a3b8',dot:'#94a3b8',b:'rgba(148,163,184,.18)'},
+  'recurring':{bg:'rgba(16,185,129,.12)',t:'#6ee7b7',d:'#2a9db5',dot:'#6ee7b7',b:'rgba(16,185,129,.18)'},
+  'weekly_reset':{bg:'rgba(59,130,246,.14)',t:'#93c5fd',d:'#3b82f6',dot:'#93c5fd',b:'rgba(59,130,246,.18)'},
+  'buy':{bg:'rgba(234,179,8,.12)',t:'#fde68a',d:'#eab308',dot:'#fde68a',b:'rgba(234,179,8,.18)'},
+  'travel':{bg:'rgba(20,184,166,.12)',t:'#5eead4',d:'#38bdf8',dot:'#5eead4',b:'rgba(20,184,166,.18)'},
+  'birthday':{bg:'rgba(249,115,22,.12)',t:'#fdba74',d:'#f97316',dot:'#fdba74',b:'rgba(249,115,22,.18)'},
+  'shopping':{bg:'rgba(249,115,22,.12)',t:'#fdba74',d:'#ea580c',dot:'#fdba74',b:'rgba(249,115,22,.18)'},
+  'videos':{bg:'rgba(34,197,94,.12)',t:'#86efac',d:'#22c55e',dot:'#86efac',b:'rgba(34,197,94,.18)'},
+  'weekly goals':{bg:'rgba(255,255,255,.04)',t:'#e8e8ea',d:'rgba(200,200,215,.6)',dot:'#e8e8ea',b:'rgba(255,255,255,.06)'},
+};
+const IMP_DARK={bg:'rgba(234,179,8,.12)',t:'#fde68a',d:'#eab308',dot:'#fde68a',b:'rgba(234,179,8,.25)'};
+const OV_DARK={bg:'rgba(239,68,68,.12)',t:'#fca5a5',d:'#ef4444',dot:'#fca5a5',b:'rgba(239,68,68,.20)'};
+function _isDk(){return document.body.classList.contains('dark');}
+function gc(c){const m=_isDk()?CATS_DARK:CATS;return m[(c||'').toLowerCase()]||(_isDk()?{bg:'rgba(148,163,184,.08)',t:'#94a3b8',d:'#94a3b8',b:'rgba(148,163,184,.15)'}:{bg:'#f1f5f9',t:'#334155',d:'#94a3b8',b:'rgba(148,163,184,.2)'});}
 function slug(c){return(c||'other').toLowerCase().replace(/\s+/g,'-');}
 
 // ── State ──────────────────────────────────────────────────────────────────────

@@ -4272,14 +4272,39 @@ async function saveMealEdit(id){
 // ── STYLE GUIDE PAGE ──────────────────────────────────────────────────────────
 function renderGuidePage(){
   const el=document.getElementById('guideContent');if(!el)return;
+  const dk=document.body.classList.contains('dark');
   const cats=CATS;const imp=IMP;const ov=OV;
   const pupS=typeof _pupSessStyle==='function'?_pupSessStyle():{bg:'#f6fafd',b:'rgba(56,170,210,.16)',t:'#18577a',d:'#38aad2'};
   const vidS={bg:'rgba(34,197,94,.1)',t:'#15803d',d:'#22c55e',b:'rgba(34,197,94,.2)'};
+  // Dark-mode category colors (match CSS vars)
+  const dkCats={
+    'home':{bg:'rgba(59,130,246,.14)',t:'#93c5fd',d:'#3b82f6',b:'rgba(59,130,246,.18)'},
+    'my work':{bg:'rgba(163,196,26,.12)',t:'#bef264',d:'#65a30d',b:'rgba(163,196,26,.18)'},
+    'work':{bg:'rgba(236,72,153,.12)',t:'#f9a8d4',d:'#ec4899',b:'rgba(236,72,153,.18)'},
+    'social':{bg:'rgba(147,51,234,.14)',t:'#d8b4fe',d:'#9333ea',b:'rgba(147,51,234,.18)'},
+    'long term':{bg:'rgba(148,163,184,.10)',t:'#94a3b8',d:'#94a3b8',b:'rgba(148,163,184,.18)'},
+    'recurring':{bg:'rgba(16,185,129,.12)',t:'#6ee7b7',d:'#2a9db5',b:'rgba(16,185,129,.18)'},
+    'weekly_reset':{bg:'rgba(59,130,246,.14)',t:'#93c5fd',d:'#3b82f6',b:'rgba(59,130,246,.18)'},
+    'buy':{bg:'rgba(234,179,8,.12)',t:'#fde68a',d:'#eab308',b:'rgba(234,179,8,.18)'},
+    'travel':{bg:'rgba(20,184,166,.12)',t:'#5eead4',d:'#38bdf8',b:'rgba(20,184,166,.18)'},
+    'birthday':{bg:'rgba(249,115,22,.12)',t:'#fdba74',d:'#f97316',b:'rgba(249,115,22,.18)'},
+    'shopping':{bg:'rgba(249,115,22,.12)',t:'#fdba74',d:'#ea580c',b:'rgba(249,115,22,.18)'},
+    'videos':{bg:'rgba(34,197,94,.12)',t:'#86efac',d:'#22c55e',b:'rgba(34,197,94,.18)'},
+    'weekly goals':{bg:'rgba(255,255,255,.04)',t:'#e8e8ea',d:'rgba(200,200,215,.6)',b:'rgba(255,255,255,.06)'},
+  };
+  const dkImp={bg:'rgba(234,179,8,.12)',t:'#fde68a',d:'#eab308',b:'rgba(234,179,8,.25)'};
+  const dkOv={bg:'rgba(239,68,68,.12)',t:'#fca5a5',d:'#ef4444',b:'rgba(239,68,68,.20)'};
+  const dkPupS={bg:'rgba(56,170,210,.10)',t:'#67e8f9',d:'#38aad2',b:'rgba(56,170,210,.18)'};
+  const dkVidS={bg:'rgba(34,197,94,.12)',t:'#86efac',d:'#22c55e',b:'rgba(34,197,94,.18)'};
+  const _c=dk?dkCats:cats;const _imp=dk?dkImp:imp;const _ov=dk?dkOv:ov;
+  const _pupS=dk?dkPupS:pupS;const _vidS=dk?dkVidS:vidS;
   const card=(label,s)=>`<div style="background:${s.bg};color:${s.t};border:1px solid ${s.b};border-radius:8px;padding:6px 12px;font-size:12px;font-weight:500;display:flex;align-items:center;gap:8px"><span style="width:7px;height:7px;border-radius:50%;background:${s.d};flex-shrink:0"></span>${label}</div>`;
   const secT=(t)=>`<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:0 0 8px">${t}</div>`;
-  const sRow=(k,d)=>`<tr><td style="padding:3px 8px;border-bottom:1px solid rgba(0,0,0,.04)"><span style="font-family:monospace;background:rgba(0,0,0,.06);padding:2px 6px;border-radius:4px;font-size:11px;font-weight:600">${k}</span></td><td style="padding:3px 8px;border-bottom:1px solid rgba(0,0,0,.04);font-size:12px">${d}</td></tr>`;
-  const tHead=(c1,c2)=>`<tr><th style="text-align:left;padding:4px 8px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:2px solid rgba(0,0,0,.08)">${c1}</th><th style="text-align:left;padding:4px 8px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:2px solid rgba(0,0,0,.08)">${c2}</th></tr>`;
-  const panel='background:rgba(255,255,255,.55);border:1px solid rgba(210,205,228,.3);border-radius:12px;padding:14px 16px;box-shadow:inset 0 1px 3px rgba(0,0,0,.04)';
+  const _bdr=dk?'rgba(255,255,255,.04)':'rgba(0,0,0,.04)';const _bdr2=dk?'rgba(255,255,255,.06)':'rgba(0,0,0,.08)';
+  const _kbd=dk?'rgba(255,255,255,.06)':'rgba(0,0,0,.06)';
+  const sRow=(k,d)=>`<tr><td style="padding:3px 8px;border-bottom:1px solid ${_bdr}"><span style="font-family:monospace;background:${_kbd};padding:2px 6px;border-radius:4px;font-size:11px;font-weight:600">${k}</span></td><td style="padding:3px 8px;border-bottom:1px solid ${_bdr};font-size:12px">${d}</td></tr>`;
+  const tHead=(c1,c2)=>`<tr><th style="text-align:left;padding:4px 8px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:2px solid ${_bdr2}">${c1}</th><th style="text-align:left;padding:4px 8px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:2px solid ${_bdr2}">${c2}</th></tr>`;
+  const panel=dk?'background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:14px 16px':'background:rgba(255,255,255,.55);border:1px solid rgba(210,205,228,.3);border-radius:12px;padding:14px 16px;box-shadow:inset 0 1px 3px rgba(0,0,0,.04)';
 
   el.innerHTML=`
 <div style="width:100%">
@@ -4291,27 +4316,27 @@ function renderGuidePage(){
   <div style="${panel}">
     ${secT('Task Colors')}
     <div style="display:flex;flex-direction:column;gap:5px">
-      ${card('Home',cats.home)}
-      ${card('My Work',cats['my work'])}
-      ${card('Work',cats.work)}
-      ${card('Social',cats.social)}
-      ${card('Long Term',cats['long term'])}
-      ${card('Recurring',cats.recurring)}
-      ${card('Weekly Reset',cats.weekly_reset)}
-      ${card('Buy',cats.buy)}
-      ${card('Travel',cats.travel)}
-      ${card('Birthday',cats.birthday)}
-      ${card('Shopping',cats.shopping)}
-      ${card('Videos',vidS)}
-      ${card('Weekly Goals',cats['weekly goals'])}
-      ${card('Pup Skills',pupS)}
+      ${card('Home',_c.home)}
+      ${card('My Work',_c['my work'])}
+      ${card('Work',_c.work)}
+      ${card('Social',_c.social)}
+      ${card('Long Term',_c['long term'])}
+      ${card('Recurring',_c.recurring)}
+      ${card('Weekly Reset',_c.weekly_reset)}
+      ${card('Buy',_c.buy)}
+      ${card('Travel',_c.travel)}
+      ${card('Birthday',_c.birthday)}
+      ${card('Shopping',_c.shopping)}
+      ${card('Videos',_vidS)}
+      ${card('Weekly Goals',_c['weekly goals'])}
+      ${card('Pup Skills',_pupS)}
     </div>
   </div>
   <div style="${panel}">
     ${secT('Special States')}
     <div style="display:flex;flex-direction:column;gap:5px">
-      ${card('Important',imp)}
-      ${card('Overdue',ov)}
+      ${card('Important',_imp)}
+      ${card('Overdue',_ov)}
     </div>
   </div>
 </div>
@@ -5612,6 +5637,7 @@ function toggleDark(){
   cfg.dark=isDark;save();
   const ic=document.getElementById('darkToggleIcon');if(ic)ic.textContent=isDark?'☀️':'🌙';
   const lb=document.getElementById('darkToggleLabel');if(lb)lb.textContent=isDark?'Light Mode':'Night Mode';
+  if(typeof renderAll==='function')renderAll();
 }
 function toggleSettingsPopup(){
   const p=document.getElementById('settingsPopup');if(!p)return;

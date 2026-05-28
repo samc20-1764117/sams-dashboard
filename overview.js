@@ -1,3 +1,6 @@
+const _dk=()=>document.body.classList.contains('dark');
+const _OV=()=>_dk()?OV_DARK:OV;
+const _IMP=()=>_dk()?IMP_DARK:IMP;
 // ── Render all ─────────────────────────────────────────────────────────────────
 function renderAll(){renderOv();renderWeeklyPage();renderShopFull();renderTravelPage();renderBdayPage();if(typeof renderPupsPage==='function')renderPupsPage();if(typeof renderRecipesPage==='function')renderRecipesPage();if(typeof renderVideosPageKeepScroll==='function'&&activePg==='videos')renderVideosPageKeepScroll();if(typeof renderFinancePage==='function')renderFinancePage();if(document.getElementById('mModal')?.classList.contains('open'))renderMoCal();if(document.getElementById('recMoModal')?.classList.contains('open'))renderRecMoCal();if(document.getElementById('woModal')?.classList.contains('open'))renderWOModal();save();requestAnimationFrame(applySelHighlight);const m=document.getElementById('main');if(m&&m.style.opacity==='0')m.style.opacity='1';}
 
@@ -397,8 +400,9 @@ function renderPupSkillsHighlight(){
         <span class="vid-num" onclick="event.stopPropagation();openPupCountEdit('${s.id}',this)" title="Session details" style="font-size:8px;font-weight:600;color:var(--muted);flex-shrink:0;cursor:pointer;margin-left:auto">${doneC}/${total}</span>
       </div>`;
     }).join('');
-    const progressBar=`<div style="height:3px;background:rgba(0,0,0,.06);margin:4px 10px 3px;border-radius:2px;overflow:hidden"><div style="height:100%;width:${pct}%;background:rgba(16,185,129,.7);border-radius:2px;transition:width .3s"></div></div>`;
-    return`<div style="flex:1;display:flex;flex-direction:column;background:rgba(255,255,255,.55);border:1px solid rgba(210,205,228,.3);border-radius:12px;padding:6px 0 5px;overflow:hidden;box-shadow:inset 0 1px 3px rgba(0,0,0,.04)">
+    const dk=_dk();
+    const progressBar=`<div style="height:3px;background:${dk?'rgba(255,255,255,.06)':'rgba(0,0,0,.06)'};margin:4px 10px 3px;border-radius:2px;overflow:hidden"><div style="height:100%;width:${pct}%;background:rgba(16,185,129,.7);border-radius:2px;transition:width .3s"></div></div>`;
+    return`<div style="flex:1;display:flex;flex-direction:column;background:${dk?'rgba(255,255,255,.03)':'rgba(255,255,255,.55)'};border:1px solid ${dk?'rgba(255,255,255,.06)':'rgba(210,205,228,.3)'};border-radius:12px;padding:6px 0 5px;overflow:hidden;box-shadow:${dk?'none':'inset 0 1px 3px rgba(0,0,0,.04)'}">
       <div style="display:flex;align-items:center;padding:0 10px 2px;gap:4px">
         <span style="font-size:9px;font-weight:700;color:var(--muted);letter-spacing:.03em">${pup}</span>
         <span onclick="event.stopPropagation();openPupFocusPicker('${pup}')" style="cursor:pointer;font-size:7px;color:var(--muted);opacity:.4;line-height:1;margin-left:1px" title="Edit ${pup}'s skills for this week">✎</span>
@@ -521,7 +525,7 @@ function _pfpRenderCol(pup,col){
     const sid=String(s.id);
     const done=_pupWkDone(sid,_pfpWkOff);const total=_pupWkSessTotal(sid,_pfpWkOff);
     const countStr=checked&&(done||total)?`<span class="vid-num" style="font-size:8px;font-weight:600;color:var(--muted);margin-left:auto;flex-shrink:0">${done}/${total}</span>`:'';
-    return`<div style="display:flex;align-items:center;gap:6px;padding:3px 4px;border-radius:6px;${checked?'background:rgba(255,255,255,.7);border:1px solid rgba(210,205,228,.2);margin-bottom:2px':'opacity:.55;margin-bottom:1px'}" ondblclick="event.stopPropagation();openPupEditModal('${sid}')">
+    return`<div style="display:flex;align-items:center;gap:6px;padding:3px 4px;border-radius:6px;${checked?`background:${_dk()?'rgba(255,255,255,.06)':'rgba(255,255,255,.7)'};border:1px solid ${_dk()?'rgba(255,255,255,.06)':'rgba(210,205,228,.2)'};margin-bottom:2px`:'opacity:.55;margin-bottom:1px'}" ondblclick="event.stopPropagation();openPupEditModal('${sid}')">
       <input type="checkbox" ${checked?'checked':''} onchange="_pfpToggle('${sid}','${pup}',this.checked)" style="width:12px;height:12px;accent-color:${accentHex};cursor:pointer;flex-shrink:0">
       <span style="font-size:10px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(s.skill)}</span>
       ${countStr}
@@ -620,14 +624,14 @@ function showPupSkillTip(el,id){
   clearTimeout(_pupTipTimer);
   const s=(st.pup_skills||[]).find(x=>String(x.id)===String(id));if(!s)return;
   let tip=document.getElementById('_pupSkillTip');
-  if(!tip){tip=document.createElement('div');tip.id='_pupSkillTip';tip.style.cssText='position:fixed;z-index:9999;background:rgba(255,255,255,.97);border:1px solid rgba(210,205,228,.7);border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.12);padding:8px 11px;font-size:11px;font-family:inherit;pointer-events:none;min-width:140px;max-width:200px';document.body.appendChild(tip);}
+  if(!tip){tip=document.createElement('div');tip.id='_pupSkillTip';tip.style.cssText=`position:fixed;z-index:9999;background:${_dk()?'rgba(24,24,28,.97)':'rgba(255,255,255,.97)'};border:1px solid ${_dk()?'rgba(255,255,255,.10)':'rgba(210,205,228,.7)'};border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,${_dk()?'.35':'.12'});padding:8px 11px;font-size:11px;font-family:inherit;pointer-events:none;min-width:140px;max-width:200px`;document.body.appendChild(tip);}
   const pupColor=s.pup==='Mochi'?'#a78bfa':s.pup==='Sunny'?'#ca8a04':'var(--muted)';
   const pupLetter=s.pup==='Mochi'?'M':s.pup==='Sunny'?'S':'?';
   const skillLine=s.skill?`<div style="display:flex;justify-content:space-between;align-items:baseline;line-height:1.4;margin-bottom:3px"><span style="color:var(--text);font-weight:700;font-size:12px">${escHtml(s.skill)}</span><span style="font-weight:700;font-size:11px;color:${pupColor};margin-left:10px">${pupLetter}</span></div>`:'';
-  const nextLine=s.next_step?`<div style="line-height:1.4;margin-bottom:2px;font-size:11px;font-weight:500;color:rgba(44,24,16,.55)">${escHtml(s.next_step)}</div>`:'';
+  const nextLine=s.next_step?`<div style="line-height:1.4;margin-bottom:2px;font-size:11px;font-weight:500;color:var(--muted)">${escHtml(s.next_step)}</div>`:'';
   const notesLine=s.comments?`<div style="line-height:1.4;font-size:10px;color:var(--subtle)">${escHtml(s.comments)}</div>`:'';
   const totalDone=_pupAllDone(id);const totalSess=_pupAllTotal(id);
-  const totalLine=totalSess?`<div style="line-height:1.4;margin-top:3px;font-size:9px;color:var(--muted);border-top:1px solid rgba(210,205,228,.25);padding-top:3px;font-variant-numeric:tabular-nums">${totalDone} done · ${totalSess} total sessions</div>`:'';
+  const totalLine=totalSess?`<div style="line-height:1.4;margin-top:3px;font-size:9px;color:var(--muted);border-top:1px solid ${_dk()?'rgba(255,255,255,.06)':'rgba(210,205,228,.25)'};padding-top:3px;font-variant-numeric:tabular-nums">${totalDone} done · ${totalSess} total sessions</div>`:'';
   tip.innerHTML=skillLine+nextLine+notesLine+totalLine;
   const r=el.getBoundingClientRect();
   const tw=tip.offsetWidth||200;
@@ -656,9 +660,10 @@ function renderDailyHabits(){
       <button class="delbtn" onclick="event.stopPropagation();delRec('${r.id}')">✕</button>
     </div>`;
   }).join('');
-  el.innerHTML=`<div style="display:flex;align-items:center;padding:4px 10px 2px;gap:6px;border-top:1px solid rgba(0,0,0,.06);margin-top:2px">
-    <span style="font-size:10px;font-weight:600;letter-spacing:.05em;color:rgba(60,60,80,.55);text-transform:uppercase;flex:1">Daily</span>
-    ${habits.length?`<span style="font-size:10px;color:rgba(60,60,80,.45);font-weight:500">${doneCount}/${habits.length}</span>`:''}
+  const dk=_dk();
+  el.innerHTML=`<div style="display:flex;align-items:center;padding:4px 10px 2px;gap:6px;border-top:1px solid ${dk?'rgba(255,255,255,.04)':'rgba(0,0,0,.06)'};margin-top:2px">
+    <span style="font-size:10px;font-weight:600;letter-spacing:.05em;color:var(--muted);text-transform:uppercase;flex:1">Daily</span>
+    ${habits.length?`<span style="font-size:10px;color:var(--muted);font-weight:500">${doneCount}/${habits.length}</span>`:''}
     <button class="btn btn-ghost btn-xs" onclick="openAddDailyHabit(this)" style="padding:1px 6px;font-size:11px;line-height:1.4">+</button>
   </div>${rows?`<div style="padding:0 0 4px">${rows}</div>`:''}`;
 }
@@ -788,7 +793,7 @@ function sortByTBWeek(tasks){
 function tRowTodayVirt(t,tbArrow=false,noColor=false){
   const s=gc((t._isWrec||t._isWrRule)?'weekly_reset':'recurring');
   const ov=isOv(t.due_date)&&!t.done;
-  const ps=ov?OV:s;
+  const ps=ov?_OV():s;
   const _dragId=t._isWrRule?`wrrule::${t._ruleId}`:t._isWrec?`wrec::${t._recId}`:`rec::${t._recId}::${t.due_date||''}`;
   const _chk=t._isWrRule?`togWrRule('${t._ruleId}',this.checked,'${t._wkKey||getWkKey(wkOff)}')`
     :t._isWrec?`togRec('${t._recId}',this.checked,'${t._wkKey||getWkKey(wkOff)}')`:`togRecVirt('${t._recId}',this.checked,'${t._wkKey||getWkKey(wkOff)}')`;
@@ -813,7 +818,7 @@ function tRowTodayVirt(t,tbArrow=false,noColor=false){
 function tRowShopVirt(t,noDate=false,tbArrow=false,noColor=false){
   const s=gc('shopping');
   const ov=isOv(t.due_date)&&!t.done;
-  const ps=ov?OV:s;
+  const ps=ov?_OV():s;
   return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''}" style="${!ov&&!noColor?`background:${s.bg}`:''}" id="ti-${t.id}" draggable="true"
     ondragstart="dragId='shop::${t._shopId}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);"
     ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false);"
@@ -827,7 +832,7 @@ function tRowShopVirt(t,noDate=false,tbArrow=false,noColor=false){
   </div>`;
 }
 function tRowFinCancel(t,tbArrow=false){
-  const s=IMP;
+  const s=_IMP();
   return`<div class="ti ${t.done?'done':'imp-row'}" id="ti-${t.id}" draggable="true"
     ondragstart="dragId='fin-cancel::${t._subId}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true)"
     ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false)"
@@ -840,7 +845,7 @@ function tRowFinCancel(t,tbArrow=false){
 }
 function tRowVidVirt(t,arr){
   const ov=isOv(t.due_date)&&!t.done;
-  const _vs=ov?OV:{bg:'rgba(34,197,94,.1)',t:'#15803d',d:'#22c55e',b:'rgba(34,197,94,.2)'};const vid=String(t._vidId);
+  const _vs=ov?_OV():gc('videos');const vid=String(t._vidId);
   const _v3=(st.videos||[]).find(x=>String(x.id)===String(vid));
   let _pct3='';
   if(_v3){const _steps3=typeof VID_STEPS_CORE!=='undefined'?VID_STEPS_CORE:(typeof VID_STEPS!=='undefined'?VID_STEPS:[]);const _app3=_steps3.filter(ss=>_v3[ss]!=='na');const _dn3=_app3.filter(ss=>_v3[ss]==='done').length;_pct3=_app3.length?Math.round(_dn3/_app3.length*100):0;}
@@ -858,12 +863,13 @@ function tRowVidVirt(t,arr){
   </div>`;
 }
 function _pupSessStyle(){
+  if(_dk())return{bg:'rgba(56,170,210,.10)',t:'#67e8f9',d:'#38aad2',dot:'rgba(56,170,210,.15)',b:'rgba(56,170,210,.18)'};
   return{bg:'#f6fafd',b:'rgba(56,170,210,.16)',t:'#18577a',d:'#38aad2',dot:'rgba(56,170,210,.18)'};
 }
 function _pupDisplayName(t){const p=t._pup;return p?(p+': '+(t.name||'')):(t.name||'');}
 function tRowPupSess(t,noColor=false,tbArrow=false){
   const ov=isOv(t.due_date)&&!t.done;
-  const ps=ov?OV:_pupSessStyle();
+  const ps=ov?_OV():_pupSessStyle();
   return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''}" draggable="true" style="${!ov&&!noColor?`background:${ps.bg};border:1px solid ${ps.b}`:''}" id="ti-pup-sess-${t._pupSessId}" onclick="selTask(event,'pup-sess-${t._pupSessId}')" ondblclick="openPupEditModal('${t._skillId}')" ondragstart="dragId='pupsess::${t._pupSessId}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);" ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false);">
     <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="togPupSessionDone('${t._pupSessId}',this.checked)"></label>
     <span class="tn">${escHtml(_pupDisplayName(t))}</span>
@@ -1441,7 +1447,7 @@ function renderWkCal(){
     dayTasks.forEach(t=>{
       const ov=isOv(t.due_date)&&!t.done,imp=t.important&&!ov&&!t.done;
       const _chipCat=(t._isWrec||t._isWrRule)?'weekly_reset':(t._virtual&&t._recId?'recurring':t.category);
-      const s=ov?OV:imp?IMP:(t._type==='fin-cancel'&&!t.done)?IMP:t._type==='vid'?{bg:'rgba(34,197,94,.1)',t:'#15803d',d:'#22c55e',b:'rgba(34,197,94,.2)',dot:'rgba(34,197,94,.25)'}:t._type==='pup'?_pupSessStyle():gc(_chipCat);
+      const s=ov?_OV():imp?_IMP():(t._type==='fin-cancel'&&!t.done)?_IMP():t._type==='vid'?gc('videos'):t._type==='pup'?_pupSessStyle():gc(_chipCat);
       const chip=document.createElement('div');chip.className='chip'+(t.done?' done-chip':'')+(t._type==='fin-cancel'&&!t.done?' imp-row':'');
       chip.style.cssText=`background:${s.bg};color:${s.t};border-color:${s.b}`;
       if(!t._virtual)chip.dataset.tid=String(t.id);
@@ -1569,7 +1575,7 @@ function renderWkCal(){
   // "Move overdue to this week" banner
   if(_goalsOvFromPast.length>0){
     const mvBanner=document.createElement('div');mvBanner.style.cssText='display:flex;flex-direction:column;align-items:center;padding:2px 4px;margin-bottom:2px';
-    const mvTxt=document.createElement('span');mvTxt.textContent=`${_goalsOvFromPast.length} Overdue`;mvTxt.style.cssText='font-size:8px;font-weight:600;color:#b91c1c';
+    const mvTxt=document.createElement('span');mvTxt.textContent=`${_goalsOvFromPast.length} Overdue`;mvTxt.style.cssText=`font-size:8px;font-weight:600;color:${_dk()?'#fca5a5':'#b91c1c'}`;
     const mvBtn=document.createElement('button');mvBtn.textContent='Move to this week';mvBtn.style.cssText='background:#ef4444;color:#fff;border:none;border-radius:5px;padding:3px 6px;font-size:9px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:2px;width:100%';
     mvBtn.addEventListener('click',e=>{e.stopPropagation();const prevDates=_goalsOvFromPast.map(t=>({id:t.id,prev:t.due_date}));_goalsOvFromPast.forEach(t=>{t.due_date=wkStart;sbReq('PATCH','tasks',{due_date:wkStart},`?id=eq.${t.id}`);});save();renderWkCal();renderWkSummary();if(document.getElementById('woModal')?.classList.contains('open'))renderWOModal();pushUndo(()=>{prevDates.forEach(p=>{const t=st.tasks.find(x=>String(x.id)===String(p.id));if(t){t.due_date=p.prev;sbReq('PATCH','tasks',{due_date:p.prev},`?id=eq.${t.id}`);}});save();renderWkCal();renderWkSummary();if(document.getElementById('woModal')?.classList.contains('open'))renderWOModal();},'Moved overdue goals to this week');});
     mvBanner.appendChild(mvTxt);mvBanner.appendChild(mvBtn);
@@ -1579,7 +1585,7 @@ function renderWkCal(){
     const _goalOv=_goalsPast&&!t.done;
     const _goalOvCarried=!_goalOv&&_goalsOvFromPast.includes(t);
     const imp=t.important&&!t.done&&!_goalOv&&!_goalOvCarried;
-    const s=(_goalOv||_goalOvCarried)?OV:imp?IMP:{bg:'rgba(255,255,255,.82)',t:'rgba(80,80,95,.75)',b:'rgba(255,255,255,.9)'};
+    const s=(_goalOv||_goalOvCarried)?_OV():imp?_IMP():{bg:_dk()?'rgba(255,255,255,.04)':'rgba(255,255,255,.82)',t:_dk()?'var(--text)':'rgba(80,80,95,.75)',b:_dk()?'rgba(255,255,255,.06)':'rgba(255,255,255,.9)'};
     const chip=document.createElement('div');chip.className='chip'+(t.done?' done-chip':'')+(_goalOv||_goalOvCarried?' ov-row':'');
     chip.style.cssText=`background:${s.bg};color:${s.t};border-color:${s.b}`;
     chip.dataset.tid=String(t.id);
@@ -2010,8 +2016,8 @@ function renderWOModal(){
     // Overdue goals from past weeks carried into current week column only
     const _woOvGoals=isCurrent?st.tasks.filter(t=>t.category==='Weekly Goals'&&!t.done&&t.due_date&&t.due_date.split('T')[0]<wkStart):[];
     if(_woOvGoals.length>0){
-      const woBanner=document.createElement('div');woBanner.style.cssText='display:flex;flex-direction:column;align-items:center;padding:4px 6px;margin-bottom:3px;border-radius:4px;background:rgba(254,242,242,.9)';
-      const woTxt=document.createElement('span');woTxt.textContent=`${_woOvGoals.length} Overdue`;woTxt.style.cssText='font-size:10px;font-weight:600;color:#b91c1c';
+      const woBanner=document.createElement('div');woBanner.style.cssText=`display:flex;flex-direction:column;align-items:center;padding:4px 6px;margin-bottom:3px;border-radius:4px;background:${_dk()?'rgba(239,68,68,.10)':'rgba(254,242,242,.9)'}`;
+      const woTxt=document.createElement('span');woTxt.textContent=`${_woOvGoals.length} Overdue`;woTxt.style.cssText=`font-size:10px;font-weight:600;color:${_dk()?'#fca5a5':'#b91c1c'}`;
       const woBtn=document.createElement('button');woBtn.textContent='Move to this week';woBtn.style.cssText='background:#ef4444;color:#fff;border:none;border-radius:4px;padding:2px 8px;font-size:9px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:2px;width:100%';
       woBtn.addEventListener('click',e=>{e.stopPropagation();const prevDates=_woOvGoals.map(t=>({id:t.id,prev:t.due_date}));_woOvGoals.forEach(t=>{t.due_date=wkStart;sbReq('PATCH','tasks',{due_date:wkStart},`?id=eq.${t.id}`);});save();renderWOModal();renderWkCal();renderWkSummary();pushUndo(()=>{prevDates.forEach(p=>{const t=st.tasks.find(x=>String(x.id)===String(p.id));if(t){t.due_date=p.prev;sbReq('PATCH','tasks',{due_date:p.prev},`?id=eq.${t.id}`);}});save();renderWOModal();renderWkCal();renderWkSummary();},'Moved overdue goals to this week');});
       woBanner.appendChild(woTxt);woBanner.appendChild(woBtn);
@@ -2027,7 +2033,7 @@ function renderWOModal(){
 function _woMakeChip(t,body,isPastWk,isCarriedOv,targetWkStart){
   const ov=(isPastWk&&!t.done)||isCarriedOv;
   const imp=t.important&&!t.done&&!ov;
-  const s=ov?OV:imp?IMP:{bg:'rgba(255,255,255,.82)',t:'rgba(80,80,95,.75)',b:'rgba(255,255,255,.9)'};
+  const s=ov?_OV():imp?_IMP():{bg:_dk()?'rgba(255,255,255,.04)':'rgba(255,255,255,.82)',t:_dk()?'var(--text)':'rgba(80,80,95,.75)',b:_dk()?'rgba(255,255,255,.06)':'rgba(255,255,255,.9)'};
   const chip=document.createElement('div');
   chip.className='chip wo-chip'+(t.done?' done-chip':'')+(ov?' ov-row':'');chip.dataset.tid=String(t.id);
   chip.style.cssText=`background:${s.bg};color:${s.t};border-color:${s.b};width:100%;box-sizing:border-box`;
@@ -2061,7 +2067,7 @@ function _woMakeChip(t,body,isPastWk,isCarriedOv,targetWkStart){
     ev.preventDefault();ev.stopPropagation();
     const srcBody=chip.parentElement||body,srcTid=String(t.id);
     let startX=ev.clientX,startY=ev.clientY,mode=null,ph=null,clone=null;
-    const phStyle='height:20px;margin:2px 0;border-radius:5px;background:rgba(255,255,255,.25);border:1.5px dashed rgba(255,255,255,.7)';
+    const phStyle=`height:20px;margin:2px 0;border-radius:5px;background:${_dk()?'rgba(255,255,255,.04)':'rgba(255,255,255,.25)'};border:1.5px dashed ${_dk()?'rgba(255,255,255,.10)':'rgba(255,255,255,.7)'}`;
     const eL=document.getElementById('woEdgeL'),eR=document.getElementById('woEdgeR');
     const onMove=mv=>{
       const dx=mv.clientX-startX,dy=mv.clientY-startY;
@@ -3243,7 +3249,8 @@ function _vidOvMenuItem(v,steps){
   const _dragAttr=`draggable="true" ondragstart="dragId='vid::${sid}';event.dataTransfer.effectAllowed='move';document.body.classList.add('body-dragging');showWkcEdges(true)" ondragend="document.body.classList.remove('body-dragging');showWkcEdges(false)"`;
   const _dblAttr=`ondblclick="event.stopPropagation();if(typeof openVidEdit==='function')openVidEdit('${sid}')"`;
   const _ctxAttr=`oncontextmenu="if(typeof showVidCtx==='function')showVidCtx(event,'${sid}')"`;
-  const _hov=`onmouseenter="this.style.background='rgba(0,0,0,.04)'" onmouseleave="this.style.background='none'" onclick="_vidOvClickSelect(this)"`;
+  const _hovBg=_dk()?'rgba(255,255,255,.04)':'rgba(0,0,0,.04)';
+  const _hov=`onmouseenter="this.style.background='${_hovBg}'" onmouseleave="this.style.background='none'" onclick="_vidOvClickSelect(this)"`;
   const _map=_vidDayMap();const _onCal=!!_map[sid];
   const _addBtn=`<button onclick="event.stopPropagation();if(typeof openVidModalForBig==='function')openVidModalForBig('${sid}')" style="font-size:10px;font-weight:700;width:16px;height:16px;line-height:16px;text-align:center;border-radius:3px;border:1px solid ${_onCal?'var(--accent)':'var(--border)'};background:var(--bg);color:${_onCal?'var(--accent)':'var(--muted)'};cursor:pointer;padding:0;flex-shrink:0" title="Add small video">+</button>`;
   let html=`<div data-vidrow="${sid}" ${_dragAttr} ${_dblAttr} ${_ctxAttr} ${_hov} style="padding:5px 6px;border-radius:6px;font-size:13px;font-weight:600;color:var(--text);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s">${_addBtn}<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(v.topic||v.title)}</span><div style="display:flex;gap:0;flex-shrink:0">${_vidOvStepDots(v,steps)}</div><span style="font-size:10px;opacity:.5;width:34px;text-align:right;flex-shrink:0">${_vidOvPct(v,steps)}%</span></div>`;
@@ -3403,7 +3410,7 @@ function _vidPromptPostDate(vidId,anchorEl){
   const ds=v.post_date||d2s(getDayDate(0));
   const overlay=document.createElement('div');overlay.style.cssText='position:fixed;inset:0;z-index:600';
   const pop=document.createElement('div');
-  pop.style.cssText='position:fixed;width:260px;padding:14px;background:rgba(255,255,255,.98);border:1px solid rgba(210,205,228,.4);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.15);backdrop-filter:blur(12px);z-index:601';
+  pop.style.cssText=`position:fixed;width:260px;padding:14px;background:${_dk()?'rgba(24,24,28,.98)':'rgba(255,255,255,.98)'};border:1px solid ${_dk()?'rgba(255,255,255,.08)':'rgba(210,205,228,.4)'};border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,${_dk()?'.4':'.15'});backdrop-filter:blur(12px);z-index:601`;
   if(anchorEl){
     const r=anchorEl.getBoundingClientRect();
     pop.style.top=Math.min(r.bottom+6,window.innerHeight-200)+'px';
@@ -3647,7 +3654,7 @@ function tRow(t,o={}){
   const ov=isOv(t.due_date)&&!t.done;
   const imp=t.important&&!ov&&!t.done;
   const _isPostTab=t.notes&&t.notes.startsWith('_vid:');
-  const s=ov?OV:imp?IMP:_isPostTab?{bg:'rgba(22,163,74,.18)',t:'#166534',d:'#16a34a',b:'rgba(22,163,74,.35)'}:gc(t.category);
+  const s=ov?_OV():imp?_IMP():_isPostTab?{bg:'rgba(22,163,74,.18)',t:'#166534',d:'#16a34a',b:'rgba(22,163,74,.35)'}:gc(t.category);
   const sl=ov?'ov':imp?'imp':slug(t.category);
   const _dblHandler=_isPostTab?`if(typeof openVidEdit==='function')openVidEdit('${t.notes.replace('_vid:','')}')`:`tiDbl(event,'${t.id}')`;
   return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''} ${imp&&!ov?'imp-row':''}" style="${!ov&&!imp&&!o.noColor?`background:${s.bg}`:''}" id="ti-${t.id}" ${o.drag?`draggable="true" ondragstart="dStart(event,'${t.id}')" ondragend="dEnd(event)"`:''} onclick="selTask(event,'${t.id}')" ondblclick="${_dblHandler}" oncontextmenu="showCtx(event,'${t.id}')">
@@ -3681,7 +3688,7 @@ function renderKanban(){
               done:false,_srcId:tv.id,_type:'travel'
             }))
           :sortTasks(st.tasks.filter(t=>t.category===subCat&&!t.done));
-        const sub=document.createElement('div');sub.style.cssText=`flex:1;display:flex;flex-direction:column;overflow:hidden;background:color-mix(in srgb,${s.bg} 35%,rgba(255,255,255,.92))${!isTv?';border-top:1px solid rgba(210,205,228,.18)':''}`;
+        const sub=document.createElement('div');sub.style.cssText=`flex:1;display:flex;flex-direction:column;overflow:hidden;background:color-mix(in srgb,${s.bg} 35%,${_dk()?'rgba(24,24,28,.92)':'rgba(255,255,255,.92)'})${!isTv?`;border-top:1px solid ${_dk()?'rgba(255,255,255,.06)':'rgba(210,205,228,.18)'}`:''}`;
         const head=document.createElement('div');head.className='kol-head';head.style.cssText='border-bottom:1px solid rgba(210,205,228,.2);background:transparent';
         head.innerHTML=`<div class="kol-title" style="color:${s.t}">${subCat}</div><div class="kol-cnt">${tasks.length}</div>`;
         if(!isTv){const hp=document.createElement('button');hp.className='btn-plus';hp.textContent='+';hp.addEventListener('click',()=>openQA('kanban',hp,'',subCat));head.appendChild(hp);}
@@ -3730,7 +3737,7 @@ function renderKanban(){
     const s=gc(cat);
     const tasks=sortTasks(st.tasks.filter(t=>t.category===cat&&!t.done));
     const col=document.createElement('div');col.className='kol';
-    col.style.cssText=`background:color-mix(in srgb,${s.bg} 35%,rgba(255,255,255,.92));border:1px solid ${s.b};backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)`;
+    col.style.cssText=`background:color-mix(in srgb,${s.bg} 35%,${_dk()?'rgba(24,24,28,.92)':'rgba(255,255,255,.92)'});border:1px solid ${s.b};backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)`;
     const head=document.createElement('div');head.className='kol-head';head.style.cssText='border-bottom:1px solid rgba(210,205,228,.2);background:transparent';
     head.innerHTML=`<div class="kol-title" style="color:${s.t}">${cat}</div><div class="kol-cnt">${tasks.length}</div>`;
     const hplus=document.createElement('button');hplus.className='btn-plus';hplus.textContent='+';hplus.addEventListener('click',()=>openQA('kanban',hplus,'',cat));head.appendChild(hplus);
@@ -4278,7 +4285,7 @@ function drawTBBlock(col,b){
   const isPupBlock=b.cat==='pup_session';
   const isPostTab=linkedTask&&linkedTask.notes&&linkedTask.notes.startsWith('_vid:');
   const isFinCancel=!!b._finCancelSubId;
-  const s=isFinCancel?IMP:isImp?IMP:isPupBlock?_pupSessStyle():isPostTab?{bg:'rgba(22,163,74,.18)',t:'#166534',d:'#16a34a',b:'rgba(22,163,74,.35)'}:gc(effectiveCat);
+  const s=isFinCancel?_IMP():isImp?_IMP():isPupBlock?_pupSessStyle():isPostTab?(_dk()?{bg:'rgba(22,163,74,.12)',t:'#86efac',d:'#16a34a',b:'rgba(22,163,74,.20)'}:{bg:'rgba(22,163,74,.18)',t:'#166534',d:'#16a34a',b:'rgba(22,163,74,.35)'}):gc(effectiveCat);
   const el=document.createElement('div');
   el.className='tb-block'+(b._done?' done-block':'');el.dataset.bid=b.id;
   el.addEventListener('contextmenu',e=>{
@@ -4313,7 +4320,7 @@ function drawTBBlock(col,b){
       _vidWhiteBg=true;
     }
   }
-  if(_vidWhiteBg)el.style.cssText+=';background:rgba(255,255,255,.88);color:#15803d;border-color:rgba(34,197,94,.25)';
+  if(_vidWhiteBg)el.style.cssText+=`;background:${_dk()?'rgba(34,197,94,.12)':'rgba(255,255,255,.88)'};color:${_dk()?'#86efac':'#15803d'};border-color:rgba(34,197,94,.25)`;
   // Post Tab tasks: link button replaces time, double-click opens video edit
   let _copyLinkHtml='';let _ptVidId=null;
   if(isPostTab){
@@ -5158,14 +5165,14 @@ function startTBInlineEdit(blockId,col,onCommit){
   inp.className='tb-edit';
   inp.value=b.title||'';
   inp.placeholder='Name…';
-  inp.style.cssText='width:100%;font-size:9px;font-weight:600;background:rgba(255,255,255,.8);border:none;border-radius:3px;padding:1px 3px;outline:none;font-family:inherit;color:var(--text);min-width:0;box-sizing:border-box';
+  inp.style.cssText=`width:100%;font-size:9px;font-weight:600;background:${_dk()?'rgba(255,255,255,.06)':'rgba(255,255,255,.8)'};border:none;border-radius:3px;padding:1px 3px;outline:none;font-family:inherit;color:var(--text);min-width:0;box-sizing:border-box`;
   if(btSpan)btSpan.replaceWith(inp);else{if(tbRow)tbRow.prepend(inp);else el.prepend(inp);}
   _applyColor();
   window._tbEditing=true;
   let committed=false;
   let _tbImp=false;
   function _applyImpStyle(){
-    if(_tbImp){const is=IMP;el.style.background=is.bg;el.style.color=is.t;el.style.borderColor=is.b;if(_catLbl)_catLbl.style.color=is.t;}
+    if(_tbImp){const is=_IMP();el.style.background=is.bg;el.style.color=is.t;el.style.borderColor=is.b;if(_catLbl)_catLbl.style.color=is.t;}
     else _applyColor();
   }
   async function commit(){
