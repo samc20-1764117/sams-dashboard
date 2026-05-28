@@ -858,7 +858,7 @@ function tRowVidVirt(t,arr){
   </div>`;
 }
 function _pupSessStyle(){
-  return{bg:'#f0f8ff',b:'rgba(100,170,220,.25)',t:'#2c5ea0',d:'#5a9de0',dot:'rgba(170,210,240,.25)'};
+  return{bg:'#f3f0ff',b:'rgba(140,120,210,.2)',t:'#4c3d8f',d:'#7c6bc4',dot:'rgba(140,120,210,.2)'};
 }
 function _pupDisplayName(t){const p=t._pup;return p?(p+': '+(t.name||'')):(t.name||'');}
 function tRowPupSess(t,noColor=false,tbArrow=false){
