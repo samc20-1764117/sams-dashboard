@@ -3207,6 +3207,7 @@ function _vidOvKeyNav(e){
     e.preventDefault();const vid=rows[_vidOvSelIdx].dataset.vidrow;
     if(typeof openVidEdit==='function')openVidEdit(vid);return true;
   }
+  if(e.key==='m'||e.key==='M'){e.preventDefault();_vidOvToggleCal();return true;}
   return false;
 }
 function toggleVidOvMenu(){
@@ -3249,8 +3250,9 @@ function _renderVidOvMenu(){
       });
     });
   }
-  const _moonGlow=_focusActive?'filter:drop-shadow(0 0 4px rgba(59,130,246,.6))':'';
-  const _hdr=`<div class="tod-tb-header" style="display:flex;align-items:center;position:relative;padding:8px 10px;gap:6px"><button onclick="_vidOvToggleCal()" style="background:none;border:none;cursor:pointer;color:${_vidCalOpen?'var(--accent)':'var(--muted)'};padding:2px;line-height:1;flex-shrink:0" title="Posting schedule"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></button><button onclick="_vidOvToggleFocusWk()" style="background:none;border:none;cursor:pointer;padding:2px;line-height:1;flex-shrink:0;font-size:12px;${_moonGlow}" title="Focus this week">\u{1F319}</button><span style="flex:1;text-align:center;font-size:12px;font-weight:700;color:var(--text);letter-spacing:-.1px">Videos</span><button onclick="_vidOvToggleAll()" style="background:none;border:none;cursor:pointer;color:var(--muted);padding:2px;line-height:1;flex-shrink:0;font-size:9px;font-weight:600" title="All videos view">All</button><button onclick="_vidOvToggleAnalytics()" style="background:none;border:none;cursor:pointer;color:var(--muted);padding:2px;line-height:1;flex-shrink:0" title="Analytics"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></button><button onclick="closeVidOvMenu();showPage('videos')" style="background:none;border:none;cursor:pointer;color:var(--muted);padding:2px;line-height:1;flex-shrink:0" title="Go to Videos page"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></button><button onclick="closeVidOvMenu()" style="background:none;border:none;cursor:pointer;font-size:14px;color:var(--muted);padding:0 2px;line-height:1;flex-shrink:0" title="Close">✕</button></div>`;
+  const _moonColor=_focusActive?'#eab308':'var(--muted)';
+  const _moonGlow=_focusActive?'filter:drop-shadow(0 0 4px rgba(234,179,8,.5))':'';
+  const _hdr=`<div class="tod-tb-header" style="position:relative"><button onclick="_vidOvToggleCal()" style="background:none;border:none;cursor:pointer;color:${_vidCalOpen?'var(--accent)':'var(--muted)'};padding:2px;line-height:1;flex-shrink:0" title="Monthly schedule (M)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></button><button onclick="_vidOvToggleAll()" style="background:none;border:none;cursor:pointer;color:${_vidOvAllOpen?'var(--accent)':'var(--muted)'};padding:2px;line-height:1;flex-shrink:0" title="All videos"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg></button><button onclick="_vidOvToggleFocusWk()" style="background:none;border:none;cursor:pointer;color:${_moonColor};padding:2px;line-height:1;flex-shrink:0;${_moonGlow}" title="Focus this week"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg></button><span style="flex:1;text-align:center;font-size:12px;font-weight:700;color:var(--text);letter-spacing:-.1px">Videos</span><button onclick="_vidOvToggleAnalytics()" style="background:none;border:none;cursor:pointer;color:${_vidOvAnOpen?'var(--accent)':'var(--muted)'};padding:2px;line-height:1;flex-shrink:0" title="Analytics"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></button><button onclick="closeVidOvMenu();showPage('videos')" style="background:none;border:none;cursor:pointer;color:var(--muted);padding:2px;line-height:1;flex-shrink:0" title="Go to Videos page"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></button><button onclick="closeVidOvMenu()" style="background:none;border:none;cursor:pointer;font-size:14px;color:var(--muted);padding:0 2px;line-height:1;flex-shrink:0" title="Close">✕</button></div>`;
   if(!vids.length){
     menu.innerHTML=_hdr+'<div style="padding:30px;font-size:12px;color:var(--subtle);text-align:center">No videos to add</div>';
     return;
@@ -3640,6 +3642,11 @@ function _vidOvCloseAll(){
   const el=document.getElementById('vidOvAllPanel');
   if(el){el.style.opacity='0';el.style.transform='translateX(12px)';setTimeout(()=>el.remove(),250);}
 }
+function _vidOvAllRow(v){
+  const sid=String(v.id);
+  const _hovBg=typeof _dk==='function'&&_dk()?'rgba(255,255,255,.04)':'rgba(0,0,0,.04)';
+  return`<div data-alldrag="${sid}" draggable="true" ondragstart="dragId='vid::${sid}';event.dataTransfer.effectAllowed='move'" ondblclick="if(typeof openVidEdit==='function')openVidEdit('${sid}')" oncontextmenu="if(typeof showVidCtx==='function')showVidCtx(event,'${sid}')" style="padding:4px 8px;border-radius:6px;font-size:11px;font-weight:500;color:var(--text);cursor:grab;display:flex;align-items:center;gap:4px" onmouseenter="this.style.background='${_hovBg}'" onmouseleave="this.style.background=''"><span style="color:${v.video_type==='B'?'#0ea5e9':'#8b5cf6'};font-size:9px;font-weight:700;flex-shrink:0">${v.video_type||'L'}</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(v.topic||v.title)}</span></div>`;
+}
 function _vidOvRenderAll(){
   let panel=document.getElementById('vidOvAllPanel');
   if(!panel){
@@ -3658,33 +3665,31 @@ function _vidOvRenderAll(){
   }
   const all=(st.videos||[]).filter(v=>!v.is_deleted);
   const inProg=all.filter(v=>v.status==='in_progress').sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
-  const ideas=all.filter(v=>v.status==='idea').sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
-  let h=`<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 14px;border-bottom:1px solid var(--border);flex-shrink:0">
-    <span style="font-size:12px;font-weight:700;color:var(--text)">All Videos</span></div>`;
-  h+='<div style="flex:1;overflow-y:auto;display:flex;gap:12px;padding:10px 14px">';
+  const bigIdeas=all.filter(v=>v.status==='idea'&&v.video_type==='B').sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
+  const littleIdeas=all.filter(v=>v.status==='idea'&&v.video_type!=='B').sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
+  // 2-column layout: In Progress | Ideas (matching videos page current tab)
+  let h=`<div style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:auto 1fr;position:absolute;top:0;left:0;right:0;bottom:0">`;
+  // Column headers
+  h+=`<div class="tod-tb-header" style="grid-column:1;grid-row:1;border-right:1px solid var(--border);justify-content:flex-start;padding-left:14px"><span style="font-size:10px;font-weight:600;color:#d97706">In Progress</span><span style="font-size:9px;color:var(--muted);margin-left:4px">(${inProg.length})</span></div>`;
+  h+=`<div class="tod-tb-header" style="grid-column:2;grid-row:1;justify-content:flex-start;padding-left:14px"><span style="font-size:10px;font-weight:600;color:var(--muted)">Ideas</span><span style="font-size:9px;color:var(--muted);margin-left:4px">(${bigIdeas.length+littleIdeas.length})</span></div>`;
   // In Progress column
-  h+='<div style="flex:1;min-width:0">';
-  h+=`<div style="font-size:10px;font-weight:700;color:var(--muted);margin-bottom:6px">IN PROGRESS (${inProg.length})</div>`;
-  h+='<div id="vidOvAllInProg" ondragover="event.preventDefault();this.style.background=\'rgba(14,165,233,.04)\'" ondragleave="this.style.background=\'\'" ondrop="this.style.background=\'\';_vidOvAllDrop(event,\'in_progress\')" style="min-height:60px;border-radius:8px;transition:background .12s">';
-  inProg.forEach(v=>{
-    const sid=String(v.id);
-    h+=`<div data-alldrag="${sid}" draggable="true" ondragstart="dragId='vid::${sid}';event.dataTransfer.effectAllowed='move'" ondblclick="if(typeof openVidEdit==='function')openVidEdit('${sid}')" style="padding:5px 8px;border-radius:6px;font-size:11px;font-weight:500;color:var(--text);cursor:grab;display:flex;align-items:center;gap:4px" onmouseenter="this.style.background='rgba(0,0,0,.04)'" onmouseleave="this.style.background=''">`;
-    h+=`<span style="color:${v.video_type==='B'?'#0ea5e9':'#8b5cf6'};font-size:9px;font-weight:700;flex-shrink:0">${v.video_type||'L'}</span>`;
-    h+=`<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(v.topic||v.title)}</span></div>`;
-  });
-  h+='</div></div>';
-  // Ideas column
-  h+='<div style="flex:1;min-width:0">';
-  h+=`<div style="font-size:10px;font-weight:700;color:var(--muted);margin-bottom:6px">IDEAS (${ideas.length})</div>`;
-  h+='<div id="vidOvAllIdeas" ondragover="event.preventDefault();this.style.background=\'rgba(139,92,246,.04)\'" ondragleave="this.style.background=\'\'" ondrop="this.style.background=\'\';_vidOvAllDrop(event,\'idea\')" style="min-height:60px;border-radius:8px;transition:background .12s">';
-  ideas.forEach(v=>{
-    const sid=String(v.id);
-    h+=`<div data-alldrag="${sid}" draggable="true" ondragstart="dragId='vid::${sid}';event.dataTransfer.effectAllowed='move'" ondblclick="if(typeof openVidEdit==='function')openVidEdit('${sid}')" style="padding:5px 8px;border-radius:6px;font-size:11px;font-weight:500;color:var(--text);cursor:grab;display:flex;align-items:center;gap:4px" onmouseenter="this.style.background='rgba(0,0,0,.04)'" onmouseleave="this.style.background=''">`;
-    h+=`<span style="color:${v.video_type==='B'?'#0ea5e9':'#8b5cf6'};font-size:9px;font-weight:700;flex-shrink:0">${v.video_type||'L'}</span>`;
-    h+=`<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(v.topic||v.title)}</span></div>`;
-  });
-  h+='</div></div>';
+  h+=`<div style="grid-column:1;grid-row:2;min-height:0;overflow-y:auto;border-right:1px solid var(--border)" ondragover="event.preventDefault();this.style.background='rgba(245,158,11,.03)'" ondragleave="this.style.background=''" ondrop="this.style.background='';_vidOvAllDrop(event,'in_progress')">`;
+  if(inProg.length){inProg.forEach(v=>{h+=_vidOvAllRow(v);});}
+  else h+='<div style="color:var(--muted);font-size:11px;padding:12px 14px;opacity:.5">Drag up next here to start</div>';
   h+='</div>';
+  // Ideas column
+  h+=`<div style="grid-column:2;grid-row:2;min-height:0;overflow-y:auto" ondragover="event.preventDefault();this.style.background='rgba(139,92,246,.03)'" ondragleave="this.style.background=''" ondrop="this.style.background='';_vidOvAllDrop(event,'idea')">`;
+  if(bigIdeas.length||littleIdeas.length){
+    h+=`<div style="font-size:9px;font-weight:600;color:var(--muted);padding:6px 14px;letter-spacing:.03em">Big</div>`;
+    if(bigIdeas.length)bigIdeas.forEach(v=>{h+=_vidOvAllRow(v);});
+    else h+='<div style="color:var(--muted);font-size:10px;padding:4px 14px;opacity:.5">None</div>';
+    h+=`<div style="font-size:9px;font-weight:600;color:var(--muted);padding:6px 14px;letter-spacing:.03em;border-top:1px solid rgba(210,205,228,.15);margin-top:4px">Little</div>`;
+    if(littleIdeas.length)littleIdeas.forEach(v=>{h+=_vidOvAllRow(v);});
+    else h+='<div style="color:var(--muted);font-size:10px;padding:4px 14px;opacity:.5">None</div>';
+  }else{
+    h+='<div style="color:var(--muted);font-size:11px;padding:12px 14px;opacity:.5">No ideas yet</div>';
+  }
+  h+='</div></div>';
   panel.innerHTML=h;
 }
 function _vidOvAllDrop(event,newStatus){
@@ -3741,6 +3746,15 @@ function _vidOvRenderAnalyticsPanel(){
     document.body.appendChild(panel);
     requestAnimationFrame(()=>requestAnimationFrame(()=>{panel.style.opacity='1';panel.style.transform='translateX(0)';}));
   }
+  // Ensure YT data is loaded (may not be if videos page hasn't been visited)
+  if(typeof _ytData!=='undefined'&&!_ytData){
+    try{const _lsc=JSON.parse(localStorage.getItem('_ytCache')||'null');
+    if(_lsc&&_lsc.channelStats){_ytData=_lsc;if(typeof _ytBuildMatch==='function')_ytBuildMatch();}}catch(e){}
+  }
+  if(typeof _ytAnalytics!=='undefined'&&!_ytAnalytics){
+    try{const _lac=JSON.parse(localStorage.getItem('_ytAnalyticsCache')||'null');
+    if(_lac&&_lac.monthly)_ytAnalytics=_lac;}catch(e){}
+  }
   // Build analytics summary from videos page data
   const all=(st.videos||[]).filter(v=>!v.is_deleted);
   const published=all.filter(v=>v.status==='published'&&v.post_date);
@@ -3752,7 +3766,7 @@ function _vidOvRenderAnalyticsPanel(){
     if(yt.ytId&&!ytVideoIds.has(yt.ytId))return null;
     return{...v,views:yt.views,likes:yt.likes,comments:yt.comments,ytId:yt.ytId};
   }).filter(v=>v&&v.views>0).sort((a,b)=>b.views-a.views);
-  if(!merged.length){panel.innerHTML='<div style="padding:8px 14px;border-bottom:1px solid var(--border);font-size:12px;font-weight:700;color:var(--text)">Analytics</div><div style="padding:40px;text-align:center;color:var(--muted);font-size:12px">No YouTube data yet</div>';return;}
+  if(!merged.length){panel.innerHTML=`<div class="tod-tb-header" style="justify-content:flex-start;padding-left:14px"><span style="font-size:12px;font-weight:700;color:var(--text)">Analytics</span></div><div style="padding:40px;text-align:center;color:var(--muted);font-size:12px">No YouTube data yet. Visit the <a href="#" onclick="closeVidOvMenu();showPage('videos');return false" style="color:var(--accent)">Videos page</a> first to load data.</div>`;return;}
   const totalViews=merged.reduce((s,v)=>s+v.views,0);
   const totalLikes=merged.reduce((s,v)=>s+v.likes,0);
   const totalComments=merged.reduce((s,v)=>s+v.comments,0);
@@ -3763,28 +3777,46 @@ function _vidOvRenderAnalyticsPanel(){
   if(_hasRealRev)_ytAnalytics.monthly.forEach(m=>{_realRevTotal+=m.revenue;});
   const estRevenue=_hasRealRev?Math.round(_realRevTotal):Math.round(totalViews/1000*rpm);
   const _fmt=n=>n>=1e6?(n/1e6).toFixed(1)+'M':n>=1e3?(n/1e3).toFixed(1)+'K':String(n);
-  let h=`<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 14px;border-bottom:1px solid var(--border);flex-shrink:0">
-    <span style="font-size:12px;font-weight:700;color:var(--text)">Analytics</span></div>`;
+  const engRate=totalViews>0?((totalLikes+totalComments)/totalViews*100):0;
+  // Monthly buckets for sparklines
+  const _moMap={};
+  merged.forEach(v=>{if(!v.post_date)return;const k=v.post_date.slice(0,7);if(!_moMap[k])_moMap[k]={views:0,likes:0,comments:0,count:0};_moMap[k].views+=v.views;_moMap[k].likes+=v.likes;_moMap[k].comments+=v.comments;_moMap[k].count++;});
+  const _moSorted=Object.entries(_moMap).sort((a,b)=>a[0].localeCompare(b[0]));
+  const _last6=_moSorted.slice(-6);
+  function _spark(vals){
+    if(!vals||vals.length<2)return'';
+    const max=Math.max(...vals),min=Math.min(...vals),range=max-min||1;
+    const up=vals[vals.length-1]>=vals[0];const c=up?'#16a34a':'#dc2626';
+    const sw=40,sh=14;
+    const pts=vals.map((v,i)=>`${(i/(vals.length-1)*sw).toFixed(1)},${(sh-((v-min)/range)*sh).toFixed(1)}`).join(' ');
+    return`<svg width="${sw}" height="${sh}" style="flex-shrink:0"><polyline points="${pts}" fill="none" stroke="${c}" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" opacity=".6"/></svg>`;
+  }
+  const _spViews=_last6.map(([,d])=>d.views);
+  const _spAvg=_last6.map(([,d])=>d.count?Math.round(d.views/d.count):0);
+  let h=`<div class="tod-tb-header" style="justify-content:flex-start;padding-left:14px"><span style="font-size:12px;font-weight:700;color:var(--text)">Analytics</span></div>`;
   h+='<div style="flex:1;overflow-y:auto;padding:12px 16px">';
-  // KPI cards
-  h+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px">';
-  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center"><div style="font-size:9px;color:var(--muted)">Total Views</div><div style="font-size:18px;font-weight:700;color:var(--text)">${_fmt(totalViews)}</div><div style="font-size:9px;color:var(--muted)">${_fmt(avgViews)} avg</div></div>`;
-  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center"><div style="font-size:9px;color:var(--muted)">Likes</div><div style="font-size:18px;font-weight:700;color:var(--text)">${_fmt(totalLikes)}</div></div>`;
-  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center"><div style="font-size:9px;color:var(--muted)">Comments</div><div style="font-size:18px;font-weight:700;color:var(--text)">${_fmt(totalComments)}</div></div>`;
-  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center"><div style="font-size:9px;color:var(--muted)">${_hasRealRev?'Revenue':'Est Rev'}</div><div style="font-size:18px;font-weight:700;color:var(--text)">${_hasRealRev?'':'~'}$${_fmt(estRevenue)}</div></div>`;
+  // KPI cards with sparklines
+  h+='<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:16px">';
+  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:8px;padding:10px;display:flex;align-items:center;gap:8px">${_spark(_spViews)}<div><div style="font-size:9px;color:var(--muted)">Total Views</div><div style="font-size:16px;font-weight:700;color:var(--text)">${_fmt(totalViews)}</div><div style="font-size:9px;color:var(--muted)">${_fmt(avgViews)} avg/vid</div></div></div>`;
+  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:8px;padding:10px;display:flex;align-items:center;gap:8px">${_spark(_spAvg)}<div><div style="font-size:9px;color:var(--muted)">${_hasRealRev?'Revenue':'Est Revenue'}</div><div style="font-size:16px;font-weight:700;color:var(--text)">${_hasRealRev?'':'~'}$${_fmt(estRevenue)}</div><div style="font-size:9px;color:var(--muted)">${merged.length} published</div></div></div>`;
+  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:8px;padding:10px;display:flex;align-items:center;gap:8px"><div><div style="font-size:9px;color:var(--muted)">Engagement</div><div style="font-size:16px;font-weight:700;color:var(--text)">${engRate.toFixed(1)}%</div><div style="font-size:9px;color:var(--muted)">${_fmt(totalLikes)} likes · ${_fmt(totalComments)} comments</div></div></div>`;
+  const cs=typeof _ytData!=='undefined'&&_ytData?_ytData.channelStats:null;
+  h+=`<div style="background:var(--glass);border:1px solid var(--border);border-radius:8px;padding:10px;display:flex;align-items:center;gap:8px"><div><div style="font-size:9px;color:var(--muted)">Channel</div><div style="font-size:16px;font-weight:700;color:var(--text)">${cs?_fmt(parseInt(cs.subscriberCount)):'—'}</div><div style="font-size:9px;color:var(--muted)">${cs?'subscribers':'No channel data'}</div></div></div>`;
   h+='</div>';
   // Top videos list
   h+=`<div style="font-size:10px;font-weight:700;color:var(--muted);margin-bottom:6px">TOP VIDEOS</div>`;
-  const top=merged.slice(0,10);
+  const top=merged.slice(0,15);
   const maxV=top[0]?.views||1;
   top.forEach(v=>{
     const pct=Math.round(v.views/maxV*100);
-    h+=`<div style="display:flex;align-items:center;gap:8px;margin:4px 0">
-      <span style="font-size:10px;color:var(--muted);width:50px;text-align:right;flex-shrink:0">${_fmt(v.views)}</span>
-      <div style="flex:1;height:16px;background:rgba(120,113,145,.06);border-radius:4px;overflow:hidden">
-        <div style="width:${Math.max(pct,2)}%;height:100%;background:rgba(14,165,233,.2);border-radius:4px"></div>
+    const vEng=v.views>0?((v.likes+v.comments)/v.views*100).toFixed(1)+'%':'—';
+    h+=`<div style="display:flex;align-items:center;gap:6px;margin:3px 0">
+      <span style="font-size:10px;color:var(--muted);width:45px;text-align:right;flex-shrink:0">${_fmt(v.views)}</span>
+      <div style="flex:1;height:14px;background:rgba(120,113,145,.06);border-radius:3px;overflow:hidden">
+        <div style="width:${Math.max(pct,2)}%;height:100%;background:rgba(14,165,233,.2);border-radius:3px"></div>
       </div>
-      <span style="font-size:10px;color:var(--text);width:120px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(v.topic||v.title)}</span>
+      <span style="font-size:9px;color:var(--muted);width:32px;text-align:right;flex-shrink:0">${vEng}</span>
+      <span style="font-size:10px;color:var(--text);width:110px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(v.topic||v.title)}</span>
     </div>`;
   });
   h+='</div>';
