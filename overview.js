@@ -3195,6 +3195,7 @@ function _vidOvRestoreSel(){
 function _vidOvKeyNav(e){
   const panel=document.getElementById('vidOvPanel');
   if(!panel||panel.style.display!=='block')return false;
+  if(_vidOvAllOpen)return false;
   if(_vidCalOpen&&(e.key==='ArrowLeft'||e.key==='ArrowRight'))return false;
   const rows=_vidOvGetRows();if(!rows.length)return false;
   if(e.key==='ArrowDown'){e.preventDefault();_vidOvSelIdx=Math.min(_vidOvSelIdx+1,rows.length-1);_vidOvHighlight();return true;}
@@ -3208,6 +3209,7 @@ function _vidOvKeyNav(e){
     if(typeof openVidEdit==='function')openVidEdit(vid);return true;
   }
   if(e.key==='m'||e.key==='M'){e.preventDefault();_vidOvToggleCal();return true;}
+  if(e.key==='t'&&!e.metaKey&&!e.ctrlKey&&!_vidCalOpen){e.preventDefault();_vidOvToggleAll();return true;}
   return false;
 }
 function toggleVidOvMenu(){
@@ -3734,17 +3736,26 @@ function _vidOvToggleFocusWk(){
 }
 // ── All Videos panel (In Progress + Ideas) ──────────────────────────────────
 let _vidOvAllOpen=false;
+let _voaSel=new Set(),_voaLast=null,_voaCopied=[];
+function _voaGetRows(){const p=document.getElementById('vidOvAllPanel');return p?[...p.querySelectorAll('[data-alldrag]')]:[]}
+function _voaApplySel(){_voaGetRows().forEach(r=>{r.classList.toggle('vid-sel',_voaSel.has(r.dataset.alldrag));});}
+function _voaRowClick(e,sid){
+  if(e.target.closest('.vid-step-dot')||e.target.closest('button'))return;
+  if(e.metaKey||e.ctrlKey){if(_voaSel.has(sid))_voaSel.delete(sid);else _voaSel.add(sid);}
+  else if(e.shiftKey&&_voaLast){const rows=_voaGetRows().map(r=>r.dataset.alldrag);const a=rows.indexOf(_voaLast),b=rows.indexOf(sid);if(a>-1&&b>-1){const[lo,hi]=[Math.min(a,b),Math.max(a,b)];for(let i=lo;i<=hi;i++)_voaSel.add(rows[i]);}}
+  else{if(_voaSel.size===1&&_voaSel.has(sid))_voaSel.clear();else{_voaSel.clear();_voaSel.add(sid);}}
+  _voaLast=sid;_voaApplySel();
+}
 function _vidOvToggleAll(){
   if(_vidOvAllOpen){_vidOvCloseAll();return;}
   if(_vidCalOpen)_vidOvCloseCal();
   if(_vidOvAnOpen)_vidOvCloseAnalytics();
-  _vidOvAllOpen=true;_vidOvRenderAll();
+  _vidOvAllOpen=true;_voaSel.clear();_voaLast=null;_vidOvRenderAll();
   setTimeout(()=>{
     const _allClose=e=>{
       const p=document.getElementById('vidOvAllPanel');const vp=document.getElementById('vidOvPanel');
       if(!p||!_vidOvAllOpen)return;
       if(!document.body.contains(e.target))return;
-      // Don't close if clicking inside video modal, context menu, or either panel
       const vm=document.getElementById('vidModal');const ctx=document.getElementById('vidCtxMenu');
       if(vm&&vm.classList.contains('open')&&vm.contains(e.target))return;
       if(ctx&&ctx.contains(e.target))return;
@@ -3752,32 +3763,110 @@ function _vidOvToggleAll(){
     };
     const _allKey=e=>{
       if(!_vidOvAllOpen){document.removeEventListener('click',_allClose);document.removeEventListener('keydown',_allKey);return;}
-      // Don't handle keys if video modal is open
       const vm=document.getElementById('vidModal');
       if(vm&&vm.classList.contains('open'))return;
-      if(e.key==='Escape'){_vidOvCloseAll();document.removeEventListener('click',_allClose);document.removeEventListener('keydown',_allKey);}
-      if(e.key==='n'&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&document.activeElement.tagName!=='INPUT'&&document.activeElement.tagName!=='TEXTAREA'){e.preventDefault();if(typeof openVidModal==='function')openVidModal();}
+      const _ct=document.activeElement?.tagName;
+      const _typing=_ct==='INPUT'||_ct==='TEXTAREA'||_ct==='SELECT'||document.activeElement?.isContentEditable;
+      if(_typing)return;
+      if(e.key==='Escape'){if(_voaSel.size){_voaSel.clear();_voaApplySel();e.preventDefault();return;}_vidOvCloseAll();document.removeEventListener('click',_allClose);document.removeEventListener('keydown',_allKey);return;}
+      if(e.key==='n'&&!e.metaKey&&!e.ctrlKey&&!e.altKey){e.preventDefault();if(typeof openVidModal==='function')openVidModal();return;}
+      // Delete/Backspace — delete selected
+      if((e.key==='Delete'||e.key==='Backspace')&&_voaSel.size>0){e.preventDefault();_voaSel.forEach(id=>{if(typeof delVideo==='function')delVideo(id);});_voaSel.clear();_voaLast=null;setTimeout(()=>{_vidOvRenderAll();_renderVidOvMenu();},50);return;}
+      // Cmd+C — copy
+      if((e.metaKey||e.ctrlKey)&&e.key==='c'&&_voaSel.size>0){e.preventDefault();_voaCopied=[];_voaSel.forEach(id=>{const v=(st.videos||[]).find(x=>String(x.id)===id);if(v)_voaCopied.push({...v});});if(typeof showToast==='function')showToast('Copied '+_voaCopied.length+' video(s)','#0ea5e9',1500);return;}
+      // Cmd+V — paste
+      if((e.metaKey||e.ctrlKey)&&e.key==='v'&&_voaCopied.length>0){e.preventDefault();_voaCopied.forEach(v=>{if(typeof _vidDuplicate==='function')_vidDuplicate(v.id);});setTimeout(()=>{_vidOvRenderAll();_renderVidOvMenu();},50);return;}
+      const rows=_voaGetRows().map(r=>r.dataset.alldrag);
+      // Arrow Up/Down — navigate selection
+      if(e.key==='ArrowUp'||e.key==='ArrowDown'){
+        const dir=e.key==='ArrowUp'?-1:1;
+        // Cmd+Up/Down — reorder within status
+        if((e.metaKey||e.ctrlKey)&&!e.shiftKey&&_voaSel.size>0){
+          e.preventDefault();
+          const selIds=[..._voaSel];
+          const groups={};
+          selIds.forEach(sid=>{const v=(st.videos||[]).find(x=>String(x.id)===sid);if(!v)return;const key=v.status+'|'+v.video_type;if(!groups[key])groups[key]=[];groups[key].push(v);});
+          Object.values(groups).forEach(selVids=>{
+            const sample=selVids[0];
+            const siblings=(st.videos||[]).filter(x=>!x.is_deleted&&x.status===sample.status&&x.video_type===sample.video_type).sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
+            siblings.forEach((s,i)=>{if(s.vid_order==null)s.vid_order=i;});
+            const selSet=new Set(selVids.map(v=>String(v.id)));
+            const selIdxs=siblings.map((s,i)=>selSet.has(String(s.id))?i:-1).filter(i=>i>=0).sort((a,b)=>a-b);
+            if(!selIdxs.length)return;
+            if(dir===-1&&selIdxs[0]===0)return;
+            if(dir===1&&selIdxs[selIdxs.length-1]===siblings.length-1)return;
+            if(dir===-1){const above=siblings[selIdxs[0]-1];selIdxs.forEach(i=>{siblings[i].vid_order--;});above.vid_order=siblings[selIdxs[selIdxs.length-1]].vid_order+1;}
+            else{const below=siblings[selIdxs[selIdxs.length-1]+1];selIdxs.forEach(i=>{siblings[i].vid_order++;});below.vid_order=siblings[selIdxs[0]].vid_order-1;}
+            siblings.forEach(s=>sbReqSilent('PATCH','videos',{vid_order:s.vid_order},`?id=eq.${s.id}`));
+          });
+          save();_vidOvRenderAll();_renderVidOvMenu();return;
+        }
+        // Shift+Up/Down — extend selection
+        if(e.shiftKey&&!e.metaKey&&!e.ctrlKey){
+          e.preventDefault();if(!rows.length)return;
+          if(!_voaSel.size){const id=dir===-1?rows[rows.length-1]:rows[0];_voaSel.add(id);_voaLast=id;}
+          else{const li=rows.indexOf(_voaLast);if(li===-1)return;const ni=li+dir;if(ni<0||ni>=rows.length)return;_voaSel.add(rows[ni]);_voaLast=rows[ni];}
+          _voaApplySel();const sr=document.querySelector('[data-alldrag="'+_voaLast+'"]');if(sr)sr.scrollIntoView({block:'nearest'});return;
+        }
+        // Plain Up/Down — single navigate
+        if(!e.metaKey&&!e.ctrlKey&&!e.shiftKey){
+          e.preventDefault();if(!rows.length)return;
+          if(!_voaSel.size){const id=dir===-1?rows[rows.length-1]:rows[0];_voaSel.clear();_voaSel.add(id);_voaLast=id;}
+          else{const li=rows.indexOf(_voaLast);if(li===-1)return;const ni=li+dir;if(ni<0||ni>=rows.length)return;_voaSel.clear();_voaSel.add(rows[ni]);_voaLast=rows[ni];}
+          _voaApplySel();const sr=document.querySelector('[data-alldrag="'+_voaLast+'"]');if(sr)sr.scrollIntoView({block:'nearest'});return;
+        }
+      }
+      // Arrow Left/Right — move between statuses (idea ↔ in_progress)
+      if((e.key==='ArrowLeft'||e.key==='ArrowRight')&&_voaSel.size>0){
+        e.preventDefault();
+        const isRight=e.key==='ArrowRight';
+        // Left: idea→in_progress, Right: in_progress→idea
+        const statusMap=isRight?{in_progress:'idea'}:{idea:'in_progress'};
+        const allIds=[..._voaSel];
+        const vids=allIds.map(id=>(st.videos||[]).find(x=>String(x.id)===id)).filter(Boolean);
+        const toMove=vids.filter(v=>statusMap[v.status]);
+        if(!toMove.length)return;
+        const undos=toMove.map(v=>({id:v.id,prev:v.status,prevBig:v.big_video_id}));
+        toMove.forEach(v=>{v.status=statusMap[v.status];});
+        // When moving to idea, clear big_video_id for L videos
+        toMove.forEach(v=>{if(v.video_type!=='B'&&v.status==='idea'&&v.big_video_id){v.big_video_id=null;}});
+        // Move children of B videos
+        const childUndos=[];
+        toMove.filter(v=>v.video_type==='B').forEach(v=>{
+          (st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(v.id)&&!_voaSel.has(String(c.id))).forEach(c=>{
+            const ns=statusMap[c.status];if(ns){childUndos.push({id:c.id,prev:c.status,prevBig:c.big_video_id});c.status=ns;if(ns==='idea'){c.big_video_id=null;}}
+          });
+        });
+        save();_vidOvRenderAll();_renderVidOvMenu();renderAll();
+        pushUndo(()=>{[...undos,...childUndos].forEach(u=>{const v2=(st.videos||[]).find(x=>String(x.id)===u.id);if(v2){v2.status=u.prev;v2.big_video_id=u.prevBig;}});save();_vidOvRenderAll();_renderVidOvMenu();renderAll();[...undos,...childUndos].forEach(u=>sbReqSilent('PATCH','videos',{status:u.prev,big_video_id:u.prevBig??null},`?id=eq.${u.id}`));},'Move status');
+        (async()=>{for(const v of toMove)await sbReqSilent('PATCH','videos',{status:v.status,big_video_id:v.big_video_id??null},`?id=eq.${v.id}`);for(const cm of childUndos){const c=(st.videos||[]).find(x=>String(x.id)===cm.id);if(c)await sbReqSilent('PATCH','videos',{status:c.status,big_video_id:c.big_video_id??null},`?id=eq.${c.id}`);}})();
+        return;
+      }
+      // Enter — edit selected
+      if(e.key==='Enter'&&_voaSel.size===1){e.preventDefault();const sid=[..._voaSel][0];if(typeof openVidEdit==='function')openVidEdit(sid);return;}
     };
     document.addEventListener('click',_allClose);
     document.addEventListener('keydown',_allKey);
   },100);
 }
 function _vidOvCloseAll(){
-  _vidOvAllOpen=false;
+  _vidOvAllOpen=false;_voaSel.clear();_voaLast=null;
   const el=document.getElementById('vidOvAllPanel');
   if(el){el.style.opacity='0';el.style.transform='translateX(12px)';setTimeout(()=>el.remove(),250);}
 }
 function _vidOvAllProgRow(v,steps){
   const sid=String(v.id);
   const _hovBg=typeof _dk==='function'&&_dk()?'rgba(255,255,255,.04)':'rgba(0,0,0,.04)';
+  const _sel=_voaSel.has(sid);
   const _addBtn=v.video_type==='B'?`<button onclick="event.stopPropagation();if(typeof openVidModalForBig==='function')openVidModalForBig('${sid}')" style="font-size:10px;font-weight:700;width:16px;height:16px;line-height:14px;text-align:center;border-radius:3px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;padding:0;flex-shrink:0;box-sizing:border-box" title="Add small video">+</button>`:'';
-  let html=`<div data-alldrag="${sid}" draggable="true" ondragstart="dragId='vid::${sid}';event.dataTransfer.effectAllowed='move'" ondblclick="if(typeof openVidEdit==='function')openVidEdit('${sid}')" oncontextmenu="if(typeof showVidCtx==='function')showVidCtx(event,'${sid}')" style="padding:4px 6px;border-radius:6px;font-size:12px;font-weight:600;color:var(--text);cursor:grab;display:flex;align-items:center;gap:5px" onmouseenter="this.style.background='${_hovBg}'" onmouseleave="this.style.background=''">${_addBtn}<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(v.topic||v.title)}</span><div style="display:flex;gap:0;flex-shrink:0;align-items:center">${_vidOvStepDots(v,steps)}<span style="font-size:9px;opacity:.5;width:30px;text-align:right;flex-shrink:0;margin-left:2px">${_vidOvPct(v,steps)}%</span></div></div>`;
+  let html=`<div data-alldrag="${sid}" draggable="true" ondragstart="dragId='vid::${sid}';event.dataTransfer.effectAllowed='move'" onclick="_voaRowClick(event,'${sid}')" ondblclick="if(typeof openVidEdit==='function')openVidEdit('${sid}')" oncontextmenu="if(typeof showVidCtx==='function')showVidCtx(event,'${sid}')" class="${_sel?'vid-sel':''}" style="padding:4px 6px;border-radius:6px;font-size:12px;font-weight:600;color:var(--text);cursor:grab;display:flex;align-items:center;gap:5px" onmouseenter="if(!this.classList.contains('vid-sel'))this.style.background='${_hovBg}'" onmouseleave="if(!this.classList.contains('vid-sel'))this.style.background=''">${_addBtn}<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(v.topic||v.title)}</span><div style="display:flex;gap:0;flex-shrink:0;align-items:center">${_vidOvStepDots(v,steps)}<span style="font-size:9px;opacity:.5;width:30px;text-align:right;flex-shrink:0;margin-left:2px">${_vidOvPct(v,steps)}%</span></div></div>`;
   // Show children (small videos) with └ lines
   if(v.video_type==='B'){
     const children=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===sid&&(c.status==='in_progress'||c.status==='up_next')&&c.status===v.status).sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
     children.forEach(c=>{
       const csid=String(c.id);
-      html+=`<div data-alldrag="${csid}" draggable="true" ondragstart="dragId='vid::${csid}';event.dataTransfer.effectAllowed='move'" ondblclick="if(typeof openVidEdit==='function')openVidEdit('${csid}')" oncontextmenu="if(typeof showVidCtx==='function')showVidCtx(event,'${csid}')" style="padding:3px 6px 3px 10px;border-radius:6px;font-size:11px;font-weight:500;color:var(--muted);cursor:grab;display:flex;align-items:center;gap:5px" onmouseenter="this.style.background='${_hovBg}'" onmouseleave="this.style.background=''"><span style="color:rgba(140,135,160,.4);font-size:10px;width:16px;flex-shrink:0;text-align:center">└</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(c.topic||c.title)}</span><div style="display:flex;gap:0;flex-shrink:0;align-items:center">${_vidOvStepDots(c,steps)}<span style="font-size:8px;opacity:.4;width:30px;text-align:right;flex-shrink:0;margin-left:2px">${_vidOvPct(c,steps)}%</span></div></div>`;
+      const _csel=_voaSel.has(csid);
+      html+=`<div data-alldrag="${csid}" draggable="true" ondragstart="dragId='vid::${csid}';event.dataTransfer.effectAllowed='move'" onclick="_voaRowClick(event,'${csid}')" ondblclick="if(typeof openVidEdit==='function')openVidEdit('${csid}')" oncontextmenu="if(typeof showVidCtx==='function')showVidCtx(event,'${csid}')" class="${_csel?'vid-sel':''}" style="padding:3px 6px 3px 10px;border-radius:6px;font-size:11px;font-weight:500;color:var(--muted);cursor:grab;display:flex;align-items:center;gap:5px" onmouseenter="if(!this.classList.contains('vid-sel'))this.style.background='${_hovBg}'" onmouseleave="if(!this.classList.contains('vid-sel'))this.style.background=''"><span style="color:rgba(140,135,160,.4);font-size:10px;width:16px;flex-shrink:0;text-align:center">└</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(c.topic||c.title)}</span><div style="display:flex;gap:0;flex-shrink:0;align-items:center">${_vidOvStepDots(c,steps)}<span style="font-size:8px;opacity:.4;width:30px;text-align:right;flex-shrink:0;margin-left:2px">${_vidOvPct(c,steps)}%</span></div></div>`;
     });
   }
   return html;
@@ -3785,7 +3874,8 @@ function _vidOvAllProgRow(v,steps){
 function _vidOvAllIdeaRow(v){
   const sid=String(v.id);
   const _hovBg=typeof _dk==='function'&&_dk()?'rgba(255,255,255,.04)':'rgba(0,0,0,.04)';
-  return`<div data-alldrag="${sid}" draggable="true" ondragstart="dragId='vid::${sid}';event.dataTransfer.effectAllowed='move'" ondblclick="if(typeof openVidEdit==='function')openVidEdit('${sid}')" oncontextmenu="if(typeof showVidCtx==='function')showVidCtx(event,'${sid}')" style="padding:4px 8px;border-radius:6px;font-size:11px;font-weight:500;color:var(--text);cursor:grab" onmouseenter="this.style.background='${_hovBg}'" onmouseleave="this.style.background=''"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block">${escHtml(v.topic||v.title)}</span></div>`;
+  const _sel=_voaSel.has(sid);
+  return`<div data-alldrag="${sid}" draggable="true" ondragstart="dragId='vid::${sid}';event.dataTransfer.effectAllowed='move'" onclick="_voaRowClick(event,'${sid}')" ondblclick="if(typeof openVidEdit==='function')openVidEdit('${sid}')" oncontextmenu="if(typeof showVidCtx==='function')showVidCtx(event,'${sid}')" class="${_sel?'vid-sel':''}" style="padding:4px 8px;border-radius:6px;font-size:11px;font-weight:500;color:var(--text);cursor:grab" onmouseenter="if(!this.classList.contains('vid-sel'))this.style.background='${_hovBg}'" onmouseleave="if(!this.classList.contains('vid-sel'))this.style.background=''"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block">${escHtml(v.topic||v.title)}</span></div>`;
 }
 function _vidOvRenderAll(){
   let panel=document.getElementById('vidOvAllPanel');
@@ -3805,33 +3895,20 @@ function _vidOvRenderAll(){
   }
   const all=(st.videos||[]).filter(v=>!v.is_deleted);
   const steps=typeof VID_STEPS_CORE!=='undefined'?VID_STEPS_CORE:(typeof VID_STEPS!=='undefined'?VID_STEPS:[]);
-  // Up Next
-  const upNextAll=all.filter(v=>v.status==='up_next').sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
-  const upNext=upNextAll.filter(v=>v.video_type==='B'||!v.big_video_id||!upNextAll.find(p=>String(p.id)===String(v.big_video_id)));
   // In Progress — top-level B + standalone L (children shown under parent)
   const inProgAll=all.filter(v=>v.status==='in_progress').sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
   const inProg=inProgAll.filter(v=>v.video_type==='B'||!v.big_video_id||!inProgAll.find(p=>String(p.id)===String(v.big_video_id)));
   const bigIdeas=all.filter(v=>v.status==='idea'&&v.video_type==='B').sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
   const littleIdeas=all.filter(v=>v.status==='idea'&&v.video_type!=='B').sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
-  // 2-column layout: Current (Up Next + In Progress) | Ideas
+  // 2-column layout: In Progress | Ideas
   let h=`<div style="display:grid;grid-template-columns:1.5fr 1fr;grid-template-rows:auto 1fr;position:absolute;top:0;left:0;right:0;bottom:0">`;
   // Column headers
-  h+=`<div class="tod-tb-header" style="grid-column:1;grid-row:1;border-right:1px solid var(--border);justify-content:flex-start;padding-left:14px"><span style="font-size:9px;font-weight:600;color:var(--text);letter-spacing:.03em">Current</span></div>`;
+  h+=`<div class="tod-tb-header" style="grid-column:1;grid-row:1;border-right:1px solid var(--border);justify-content:flex-start;padding-left:14px"><span style="font-size:9px;font-weight:600;color:#d97706;letter-spacing:.03em">In Progress</span></div>`;
   h+=`<div class="tod-tb-header" style="grid-column:2;grid-row:1;justify-content:flex-start;padding-left:14px;display:flex;align-items:center;gap:6px"><span style="font-size:9px;font-weight:600;color:var(--muted);letter-spacing:.03em;flex:1">Ideas</span><button onclick="event.stopPropagation();if(typeof openVidModal==='function')openVidModal()" style="font-size:10px;font-weight:700;width:18px;height:18px;line-height:16px;text-align:center;border-radius:4px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;padding:0;flex-shrink:0" title="Add idea (N)">+</button></div>`;
-  // Current column — Up Next + In Progress zones
-  h+=`<div style="grid-column:1;grid-row:2;min-height:0;overflow-y:auto;border-right:1px solid var(--border)">`;
-  // Up Next zone
-  h+=`<div style="min-height:30px;background:rgba(14,165,233,.03);border-bottom:1px solid rgba(255,255,255,.15)" ondragover="event.preventDefault();this.style.background='rgba(14,165,233,.08)'" ondragleave="this.style.background='rgba(14,165,233,.03)'" ondrop="this.style.background='rgba(14,165,233,.03)';_vidOvAllDrop(event,'up_next')">`;
-  h+=`<div style="font-size:9px;font-weight:600;color:#0ea5e9;padding:6px 6px 6px 14px;letter-spacing:.03em;background:rgba(14,165,233,.06);display:flex;align-items:center;border-left:3px solid rgba(14,165,233,.4)">Up Next</div>`;
-  if(upNext.length){h+=`<div style="padding:4px">`;upNext.forEach(v=>{h+=_vidOvAllProgRow(v,steps);});h+=`</div>`;}
-  else h+='<div style="color:var(--muted);font-size:11px;padding:8px 10px;opacity:.5">Drag ideas here</div>';
-  h+='</div>';
-  // In Progress zone
-  h+=`<div style="min-height:30px;background:rgba(245,158,11,.03);border-bottom:1px solid rgba(255,255,255,.15)" ondragover="event.preventDefault();this.style.background='rgba(245,158,11,.08)'" ondragleave="this.style.background='rgba(245,158,11,.03)'" ondrop="this.style.background='rgba(245,158,11,.03)';_vidOvAllDrop(event,'in_progress')">`;
-  h+=`<div style="font-size:9px;font-weight:600;color:#d97706;padding:6px 6px 6px 14px;letter-spacing:.03em;background:rgba(245,158,11,.06);display:flex;align-items:center;border-left:3px solid rgba(245,158,11,.4)">In Progress</div>`;
-  if(inProg.length){h+=`<div style="padding:4px">`;inProg.forEach(v=>{h+=_vidOvAllProgRow(v,steps);});h+=`</div>`;}
-  else h+='<div style="color:var(--muted);font-size:11px;padding:8px 10px;opacity:.5">Drag up next here to start</div>';
-  h+='</div>';
+  // In Progress column
+  h+=`<div style="grid-column:1;grid-row:2;min-height:0;overflow-y:auto;border-right:1px solid var(--border);padding:4px" ondragover="event.preventDefault();this.style.background='rgba(245,158,11,.03)'" ondragleave="this.style.background=''" ondrop="this.style.background='';_vidOvAllDrop(event,'in_progress')">`;
+  if(inProg.length){inProg.forEach(v=>{h+=_vidOvAllProgRow(v,steps);});}
+  else h+='<div style="color:var(--muted);font-size:11px;padding:12px 10px;opacity:.5">Drag ideas here to start</div>';
   h+='</div>';
   // Ideas column — matching videos page style
   h+=`<div style="grid-column:2;grid-row:2;min-height:0;overflow-y:auto" ondragover="event.preventDefault();this.style.background='rgba(139,92,246,.03)'" ondragleave="this.style.background=''" ondrop="this.style.background='';_vidOvAllDrop(event,'idea')">`;

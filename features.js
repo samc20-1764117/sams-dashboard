@@ -4990,9 +4990,10 @@ document.addEventListener('keydown',async e=>{
   const tag=document.activeElement?.tagName;
   if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT'||document.activeElement?.isContentEditable)return;
   // t key: jump to today on overview
-  if(e.key==='t'&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&activePg==='overview'&&!document.querySelector('.overlay.open')&&!(typeof _vidCalOpen!=='undefined'&&_vidCalOpen)){e.preventDefault();document.activeElement?.blur();goToday();return;}
+  if(e.key==='t'&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&activePg==='overview'&&!document.querySelector('.overlay.open')&&!(typeof _vidCalOpen!=='undefined'&&_vidCalOpen)){const _vp=document.getElementById('vidOvPanel');if(_vp&&_vp.style.display==='block'){}else{e.preventDefault();document.activeElement?.blur();goToday();return;}}
   // Video panel keyboard nav (arrow up/down, delete, enter)
   if(activePg==='overview'&&typeof _vidOvKeyNav==='function'&&_vidOvKeyNav(e))return;
+  if(activePg==='overview'&&typeof _vidOvAllOpen!=='undefined'&&_vidOvAllOpen)return;
   // w + Arrow: shift week on overview
   if((e.key==='ArrowLeft'||e.key==='ArrowRight')&&_wKeyHeld&&activePg==='overview'){e.preventDefault();shiftWk(e.key==='ArrowLeft'?-1:1);return;}
   // Arrow left/right: shift day on overview when nothing selected

@@ -1046,6 +1046,7 @@ document.addEventListener('keydown',e=>{
     const now=Date.now();
     if(_lastVPress&&now-_lastVPress<350&&activePg==='overview'){
       _lastVPress=0;if(_vNavTimer){clearTimeout(_vNavTimer);_vNavTimer=null;}
+      if(typeof closeAutoTBManager==='function')closeAutoTBManager();
       if(typeof toggleVidOvMenu==='function')toggleVidOvMenu();
     } else {
       _lastVPress=now;
