@@ -148,8 +148,8 @@ function _pmSkipChanged(){
   const skipM=document.getElementById('pmSkipMochi').checked;
   const skipS=document.getElementById('pmSkipSunny').checked;
   const mBtn=document.getElementById('pmDogMochi'),sBtn=document.getElementById('pmDogSunny');
-  mBtn.style.visibility=skipM?'hidden':'visible';
-  sBtn.style.visibility=skipS?'hidden':'visible';
+  mBtn.style.opacity=skipM?'0':'';mBtn.style.pointerEvents=skipM?'none':'';
+  sBtn.style.opacity=skipS?'0':'';sBtn.style.pointerEvents=skipS?'none':'';
 }
 let _pmWordManual=false;
 function _pmSyncWord(){
@@ -665,7 +665,7 @@ function renderPupTable(){
       const nextHover=comment?`onmouseenter="showPupTip(event,'${comment}')" onmouseleave="hidePupTip()" style="cursor:help;padding:0 6px;font-size:11px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:var(--text)"`:`style="padding:0 6px;font-size:11px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:var(--text)"`;
       const nextDiv=`<div ondblclick="event.stopPropagation();pupCellEdit(this.closest('td'),'${sid}','next_step')" ${nextHover}>${nextStep}</div>`;
       const sessDiv=`<div onclick="event.stopPropagation();openPupCountEdit('${sid}',this)" style="height:100%;display:flex;align-items:center;justify-content:flex-end;padding-right:6px;cursor:pointer" title="Session details">${_pupCountBadge(s)}</div>`;
-      return`<td data-drag-skill-id="${sid}" data-drag-pup="${p}" style="padding:2px 5px"><div draggable="true" ondragstart="event.dataTransfer.setData('text/plain','${sid}|${p}');event.dataTransfer.effectAllowed='copy';this.style.opacity='.3'" ondragend="this.style.opacity=''" style="${pillBase};cursor:grab">${stageWidget}${nextDiv}${sessDiv}</div></td>`;
+      return`<td data-drag-skill-id="${sid}" data-drag-pup="${p}" style="padding:2px 5px"><div style="${pillBase}">${stageWidget}${nextDiv}${sessDiv}</div></td>`;
     }).join('');
     const firstRec=pups.map(p=>g.byPup[p]).find(Boolean);
     const tipAttr=hasTip?` onmouseenter="showPupRichTip(event,${tipRows.replace(/"/g,'&quot;')})" onmouseleave="hidePupTip()" style="cursor:help"`:'';
@@ -681,32 +681,62 @@ function renderPupTable(){
   if(!_pupSortCol){
     [...tbody.querySelectorAll('tr[data-skillkey]')].forEach(row=>{
       row.addEventListener('mousedown',e=>{
-        if(e.button!==0||e.target.closest('input,button')||e.target.closest('td[data-drag-skill-id]'))return;
-        let dragging=false;const startY=e.clientY;let ph=null;
-        // rows being moved: this row + other selected rows if this row is part of selection
+        if(e.button!==0||e.target.closest('input,button'))return;
+        let dragging=false;const startX=e.clientX,startY=e.clientY;let ph=null;let ghost=null;let mode=null;
         const dragKeys=(_selSkillKeys.has(row.dataset.skillkey)&&_selSkillKeys.size>1)
           ?[...tbody.querySelectorAll('tr[data-skillkey]')].filter(r=>_selSkillKeys.has(r.dataset.skillkey)).map(r=>r.dataset.skillkey)
           :[row.dataset.skillkey];
+        const tblRect=tbody.closest('table').getBoundingClientRect();
         const onMove=ev=>{
-          const dy=ev.clientY-startY;
-          if(!dragging&&Math.abs(dy)<5)return;
+          const dx=ev.clientX-startX,dy=ev.clientY-startY;
+          if(!dragging&&Math.abs(dx)<5&&Math.abs(dy)<5)return;
+          ev.preventDefault();
           if(!dragging){
             window.getSelection()?.removeAllRanges();dragging=true;
             [...tbody.querySelectorAll('tr[data-skillkey]')].filter(r=>dragKeys.includes(r.dataset.skillkey)).forEach(r=>r.style.opacity='.3');
-            ph=document.createElement('tr');
-            ph.innerHTML=`<td colspan="100" style="padding:0;height:0;border-top:2px dashed rgba(139,92,246,.65);pointer-events:none"></td>`;
           }
-          ev.preventDefault();
-          const refs=[...tbody.querySelectorAll('tr[data-skillkey]')].filter(r=>!dragKeys.includes(r.dataset.skillkey));
-          let ins=false;
-          for(const r of refs){const rc=r.getBoundingClientRect();if(ev.clientY<rc.top+rc.height/2){tbody.insertBefore(ph,r);ins=true;break;}}
-          if(!ins){if(refs.length)refs[refs.length-1].after(ph);else tbody.appendChild(ph);}
+          // Decide mode: if cursor is outside table bounds horizontally → focus-zone drop
+          const outsideTable=ev.clientX<tblRect.left-20||ev.clientX>tblRect.right+20||ev.clientY<tblRect.top-40;
+          if(outsideTable&&mode!=='focus'){
+            mode='focus';if(ph){ph.remove();ph=null;}
+            if(!ghost){ghost=document.createElement('div');ghost.textContent=row.dataset.skillkey;ghost.style.cssText='position:fixed;z-index:9999;padding:4px 10px;border-radius:6px;font-size:11px;background:rgba(139,92,246,.15);color:var(--text);pointer-events:none;white-space:nowrap;font-weight:600';document.body.appendChild(ghost);}
+          } else if(!outsideTable&&mode!=='reorder'){
+            mode='reorder';if(ghost){ghost.remove();ghost=null;}
+            document.querySelectorAll('._pupFocusDrop').forEach(dz=>{dz.style.outline='';dz.style.background='';});
+            if(!ph){ph=document.createElement('tr');ph.innerHTML=`<td colspan="100" style="padding:0;height:0;border-top:2px dashed rgba(139,92,246,.65);pointer-events:none"></td>`;}
+          }
+          if(mode==='focus'&&ghost){
+            ghost.style.left=(ev.clientX+12)+'px';ghost.style.top=(ev.clientY-8)+'px';
+            document.querySelectorAll('._pupFocusDrop').forEach(dz=>{
+              const r=dz.getBoundingClientRect();
+              const over=ev.clientX>=r.left&&ev.clientX<=r.right&&ev.clientY>=r.top&&ev.clientY<=r.bottom;
+              dz.style.outline=over?'2px solid '+(dz.dataset.pup==='Mochi'?'#8b5cf6':'#fbbf24'):'';
+              dz.style.background=over?(dz.dataset.pup==='Mochi'?'rgba(139,92,246,0.12)':'rgba(251,191,36,0.14)'):'';
+            });
+          }
+          if(mode==='reorder'&&ph){
+            const refs=[...tbody.querySelectorAll('tr[data-skillkey]')].filter(r=>!dragKeys.includes(r.dataset.skillkey));
+            let ins=false;
+            for(const r of refs){const rc=r.getBoundingClientRect();if(ev.clientY<rc.top+rc.height/2){tbody.insertBefore(ph,r);ins=true;break;}}
+            if(!ins){if(refs.length)refs[refs.length-1].after(ph);else tbody.appendChild(ph);}
+          }
         };
-        const onUp=()=>{
+        const onUp=async ev=>{
           document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);
           [...tbody.querySelectorAll('tr[data-skillkey]')].forEach(r=>r.style.opacity='');
-          if(dragging&&ph){
-            // insert all dragged rows at ph in their original relative order
+          if(ghost)ghost.remove();
+          document.querySelectorAll('._pupFocusDrop').forEach(dz=>{dz.style.outline='';dz.style.background='';});
+          if(!dragging)return;
+          if(mode==='focus'){
+            const dropTarget=document.elementFromPoint(ev.clientX,ev.clientY)?.closest('._pupFocusDrop');
+            if(dropTarget){
+              const targetPup=dropTarget.dataset.pup;
+              const skillName=row.dataset.skillkey;
+              const rec=(st.pup_skills||[]).find(s=>s.skill===skillName&&s.pup===targetPup);
+              if(rec){await addPupWeeklyFocus(String(rec.id),_pupPageWkOff);_pupPageRenderCol('Mochi');_pupPageRenderCol('Sunny');}
+            }
+            if(ph)ph.remove();
+          } else if(mode==='reorder'&&ph){
             const dRows=[...tbody.querySelectorAll('tr[data-skillkey]')].filter(r=>dragKeys.includes(r.dataset.skillkey));
             if(dRows.length){tbody.insertBefore(dRows[0],ph);for(let i=1;i<dRows.length;i++)dRows[i-1].after(dRows[i]);}
             ph.remove();
@@ -715,13 +745,12 @@ function renderPupTable(){
             ordered.forEach((r,i)=>{const key=r.dataset.skillkey;st.pup_skills.forEach(s=>{if(s.skill===key)s.skill_order=i;});});
             save();renderPupTable();
             ordered.forEach((r,i)=>{const key=r.dataset.skillkey;st.pup_skills.forEach(s=>{if(s.skill===key)sbReqSilent('PATCH','pup_skills',{skill_order:i},`?id=eq.${s.id}`);});});
-          }else if(dragging){if(ph)ph.remove();}
+          } else {if(ph)ph.remove();}
         };
         document.addEventListener('mousemove',onMove);document.addEventListener('mouseup',onUp);
       });
     });
   }
-  // No mousedown drag needed — HTML5 drag/drop on pill divs + focus zone drop handlers
 }
 function renderPupsPageKeepScroll(){
   const sc=document.getElementById('pupTblScroll');

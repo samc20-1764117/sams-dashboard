@@ -700,12 +700,12 @@
 
 <!-- Pup Skill Edit Modal -->
 <div class="overlay" id="pupModal" onclick="closeMod('pupModal',event)" onkeydown="if(event.key==='Escape'){event.stopPropagation();closeMod('pupModal');}else if(event.key==='Enter'&&event.target.tagName!=='SELECT'&&event.target.tagName!=='TEXTAREA'){event.preventDefault();const _n=document.getElementById('pmSkill').value.trim();if(!_n){closeMod('pupModal');}else{savePupModal();}}">
-  <div class="modal task-modal" style="width:400px;padding:0;overflow:hidden">
+  <div class="modal task-modal" style="width:400px;padding:0;overflow:hidden;font-family:'DM Sans',sans-serif">
     <select id="pmPup" style="display:none"><option value="Mochi">Mochi</option><option value="Sunny">Sunny</option></select>
     <input type="checkbox" id="pmFocus" style="display:none">
     <!-- Skill name as modal header -->
-    <div style="padding:10px 14px 4px;text-align:center;background:rgba(255,255,255,.95)">
-      <input id="pmSkill" placeholder="Skill name" oninput="_pmSyncWord()" style="font-size:15px;font-weight:700;text-align:center;border:none;background:transparent;outline:none;width:100%;color:var(--text);padding:2px 0">
+    <div style="padding:12px 14px 10px;text-align:center;background:rgba(255,255,255,.95)">
+      <input id="pmSkill" placeholder="Skill name" oninput="_pmSyncWord()" style="font-size:15px;font-weight:700;text-align:center;border:none;background:transparent;outline:none;width:100%;color:var(--text);padding:2px 0;font-family:inherit">
     </div>
     <!-- Toggle left, skip+sort right -->
     <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 14px 8px;border-bottom:1px solid var(--border)">
@@ -718,8 +718,8 @@
           <label style="display:flex;align-items:center;gap:4px;font-size:9px;color:var(--subtle);cursor:pointer;height:14px"><input type="checkbox" id="pmSkipMochi" onchange="_pmSkipChanged()" style="width:10px;height:10px;cursor:pointer;opacity:.35;accent-color:#999"> Skip Mochi</label>
           <label style="display:flex;align-items:center;gap:4px;font-size:9px;color:var(--subtle);cursor:pointer;height:14px"><input type="checkbox" id="pmSkipSunny" onchange="_pmSkipChanged()" style="width:10px;height:10px;cursor:pointer;opacity:.35;accent-color:#999"> Skip Sunny</label>
         </div>
-        <div style="display:flex;flex-direction:column;gap:2px;align-items:center">
-          <span style="font-size:8px;color:var(--subtle);line-height:14px">Sort</span>
+        <div style="display:flex;flex-direction:column;gap:2px;align-items:center;min-width:32px">
+          <span style="font-size:8px;color:var(--subtle);line-height:14px;text-align:center;width:100%">Sort</span>
           <input id="pmOrder" type="number" placeholder="#" min="1" style="width:32px;padding:1px 3px;font-size:9px;text-align:center;color:var(--subtle);border:1px solid var(--border);border-radius:4px;background:transparent;height:14px;box-sizing:border-box">
         </div>
       </div>
