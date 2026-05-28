@@ -4300,7 +4300,7 @@ function drawTBBlock(col,b){
   const _rawNotes=(_linkedTask&&_linkedTask.notes)||(_linkedRec&&_linkedRec.notes)||'';
   const _notes=(_rawNotes&&_rawNotes.startsWith('_vid:'))?'':_rawNotes;
   const _tbWkNote=_linkedRec?_recWkNote(_linkedRec,dsToWkKey(b.ds)):(linkedRule?_recWkNote(linkedRule,dsToWkKey(b.ds)):'');
-  const _allNotes=[_notes,_tbWkNote?'@'+_tbWkNote:''].filter(Boolean).join('\n');
+  const _allNotes=[_notes,_tbWkNote].filter(Boolean).join('\n');
   const _notesHtml=_allNotes?`<div class="tb-notes">${_allNotes.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>')}</div>`:'';
   let _displayTitle=(_linkedTask&&_linkedTask.name)||(_linkedRec&&_linkedRec.name)||(linkedShop&&linkedShop.name)||b.title;
   if(isPupBlock){const _ps=b._pupSessId?(st.pupSessions||[]).find(s=>String(s.id)===String(b._pupSessId)):null;const _sk=_ps?(st.pup_skills||[]).find(x=>String(x.id)===String(_ps.skill_id)):null;const _pup=_sk?.pup;if(_pup)_displayTitle=_pup+': '+_displayTitle;}
