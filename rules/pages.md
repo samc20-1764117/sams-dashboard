@@ -149,5 +149,6 @@ Table: `recipes` (columns include `sort_order int4`). Do NOT reference: protein,
 - **Layout**: 2-column `fin-layout`. Left: Personal Finances card + Investments card. Right: Recurring Expenses card (or Purchase History panel when details open).
 - **Investments quick-add**: `+` opens inline dropdown under button (not a modal). Date defaults to today. Enter in amount field submits.
 - **Purchase History panel**: `Details` button toggles `_finDetailsOpen`, replaces right column with scrollable purchase table + `+` button. Close `x` returns to Recurring Expenses.
-- **Subscriptions**: inline contenteditable editing. Tab moves to next field in same row. New sub via `+` focuses name field; POST merges server ID without losing in-progress edits.
+- **Subscriptions**: inline contenteditable editing. Tab moves to next field in same row. New sub via `+` focuses name field with `_unsaved:true`; only POSTs when name is non-empty on blur. Clicking away or Escape with empty name cancels (removes row). Only required field: name.
+- **Fin-cancel tasks**: checking off on overview archives the subscription and marks done visually. Undo restores both. `_finCancelTasksForDate` includes archived subs in `_finCancelDone` set.
 - **Keyboard shortcuts**: global shortcuts (`s`, `n`, `r`) do NOT fire when typing in contenteditable/input/textarea fields. `s` (grocery modal) is overview-only.
