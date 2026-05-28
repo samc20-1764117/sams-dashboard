@@ -3519,52 +3519,66 @@ function _vidOvCloseCal(){
   const el=document.getElementById('vidOvCalPanel');
   if(el){el.style.opacity='0';el.style.transform='translateX(12px)';setTimeout(()=>el.remove(),250);}
 }
+function _vidCalChipColor(v,ds,today){
+  const isBig=v.video_type==='B';
+  const isDone=v.status==='published';
+  const isPast=ds<=today;
+  if(isDone||isPast){
+    return isBig?{bg:'rgba(16,185,129,.15)',fg:'#059669'}:{bg:'rgba(110,231,183,.15)',fg:'#34d399'};
+  }
+  return isBig?{bg:'rgba(14,165,233,.10)',fg:'#0ea5e9'}:{bg:'rgba(147,197,253,.12)',fg:'#60a5fa'};
+}
 function _vidCalRenderMonth(y,m,vidsByDate,today){
   const first=new Date(y,m,1);
   const daysInMonth=new Date(y,m+1,0).getDate();
   const monthName=first.toLocaleDateString('en-US',{month:'short',year:'numeric'});
   const now=new Date();const isCurMonth=y===now.getFullYear()&&m===now.getMonth();
-  let html=`<div style="margin-bottom:6px"><div style="font-size:10px;font-weight:700;color:${isCurMonth?'var(--accent)':'var(--text)'};padding:4px 4px 2px;letter-spacing:-.2px">${monthName}</div>`;
-  // Weekdays only (Mon-Fri), compact rows: day number + chips inline
-  html+='<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:1px;text-align:center">';
-  ['M','T','W','T','F'].forEach(d=>{html+=`<div style="font-size:7px;font-weight:600;color:var(--muted);padding:1px 0">${d}</div>`;});
-  // Find first weekday and fill grid
-  let startedRow=false;
-  // Count empty slots before first weekday of month
-  const firstDow=first.getDay(); // 0=Sun
-  const weekdayIdx=firstDow===0?-1:firstDow===6?-1:firstDow-1; // Mon=0..Fri=4, Sat/Sun=-1
+  let html=`<div style="margin-bottom:4px"><div style="font-size:10px;font-weight:700;color:${isCurMonth?'var(--accent)':'var(--text)'};padding:4px 4px 2px;letter-spacing:-.2px">${monthName}</div>`;
+  html+='<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:1px">';
+  const firstDow=first.getDay();
+  const weekdayIdx=firstDow===0?-1:firstDow===6?-1:firstDow-1;
   if(weekdayIdx>0)for(let i=0;i<weekdayIdx;i++)html+='<div></div>';
   for(let d=1;d<=daysInMonth;d++){
     const dt=new Date(y,m,d);
     const dow=dt.getDay();
-    if(dow===0||dow===6)continue; // skip weekends
+    if(dow===0||dow===6)continue;
     const ds=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const isToday=ds===today;
     const dayVids=vidsByDate[ds]||[];
-    html+=`<div class="vid-cal-day${isToday?' vid-cal-today':''}" data-caldate="${ds}" ondragover="event.preventDefault();this.classList.add('vid-cal-drop')" ondragleave="this.classList.remove('vid-cal-drop')" ondrop="_vidCalDrop(event,'${ds}')" style="display:flex;align-items:flex-start;gap:2px;padding:2px 3px;min-height:20px;flex-wrap:wrap">`;
-    html+=`<span style="font-size:8px;font-weight:${isToday?'700':'500'};color:${isToday?'var(--accent)':'var(--text)'};min-width:12px;flex-shrink:0">${d}</span>`;
+    html+=`<div class="vid-cal-day${isToday?' vid-cal-today':''}" data-caldate="${ds}" ondragover="event.preventDefault();this.classList.add('vid-cal-drop')" ondragleave="this.classList.remove('vid-cal-drop')" ondrop="_vidCalDrop(event,'${ds}')" style="padding:1px 2px;min-height:18px">`;
+    html+=`<div style="display:flex;align-items:flex-start;gap:0;flex-direction:column">`;
+    html+=`<div style="display:flex;align-items:center;gap:3px;width:100%"><span style="font-size:8px;font-weight:${isToday?'700':'500'};color:${isToday?'var(--accent)':'var(--text)'};min-width:12px;flex-shrink:0">${d}</span></div>`;
     dayVids.forEach(v=>{
-      const isBig=v.video_type==='B';
-      const isDone=v.status==='published';
-      const isPast=ds<=today;
-      let bg,fg;
-      if(isDone||isPast){
-        if(isBig){bg='rgba(16,185,129,.15)';fg='#059669';}
-        else{bg='rgba(110,231,183,.15)';fg='#34d399';}
-      }else if(isBig){bg='rgba(14,165,233,.10)';fg='#0ea5e9';}
-      else{bg='rgba(139,92,246,.10)';fg='#8b5cf6';}
-      html+=`<div draggable="true" ondragstart="event.dataTransfer.effectAllowed='move';_vidCalDragId='${String(v.id)}'" class="vid-cal-chip" style="background:${bg};color:${fg};border-left:2px solid ${fg}" title="${escHtml(v.topic||v.title)}">${isBig?'B':'L'}: ${escHtml((v.topic||v.title||'').slice(0,14))}${(v.topic||v.title||'').length>14?'..':''}</div>`;
+      const {bg,fg}=_vidCalChipColor(v,ds,today);
+      const sid=String(v.id);
+      html+=`<div draggable="true" ondragstart="event.dataTransfer.effectAllowed='move';_vidCalDragId='${sid}'" onclick="_vidCalSelectChip('${sid}')" class="vid-cal-chip" style="background:${bg};color:${fg};border-left:2px solid ${fg};max-width:100%;box-sizing:border-box" title="${escHtml(v.topic||v.title)}">${escHtml((v.topic||v.title||'').slice(0,18))}${(v.topic||v.title||'').length>18?'..':''}</div>`;
     });
-    html+='</div>';
+    html+='</div></div>';
   }
   html+='</div></div>';
   return html;
+}
+function _vidCalSelectChip(vidId){
+  _vidOvSelVid=vidId;
+  // Highlight in video popup
+  const panel=document.getElementById('vidOvPanel');
+  if(panel){
+    panel.querySelectorAll('[data-vidrow]').forEach(r=>{r.classList.remove('vid-sel');});
+    const row=panel.querySelector(`[data-vidrow="${vidId}"]`);
+    if(row)row.classList.add('vid-sel');
+  }
+  // Highlight in calendar
+  const cal=document.getElementById('vidOvCalPanel');
+  if(cal){
+    cal.querySelectorAll('.vid-cal-chip').forEach(c=>c.style.outline='');
+    // Find the chip that was clicked by checking onclick attr isn't reliable, use event target
+    // We'll highlight via re-render approach — add a class
+  }
 }
 function _vidOvRenderCal(){
   let panel=document.getElementById('vidOvCalPanel');
   if(!panel){
     panel=document.createElement('div');panel.id='vidOvCalPanel';
-    // Align with the card that contains vidOvPanel
     const card=document.getElementById('vidOvPanel')?.closest('.card');
     const rightPanel=document.querySelector('.row1-right-panel');
     if(card){
@@ -3581,29 +3595,32 @@ function _vidOvRenderCal(){
   const allVids=(st.videos||[]).filter(v=>!v.is_deleted&&v.post_date);
   const vidsByDate={};
   allVids.forEach(v=>{const d=v.post_date;if(!vidsByDate[d])vidsByDate[d]=[];vidsByDate[d].push(v);});
-  // Header with nav arrows
-  const monthName=new Date(_vidCalYear,_vidCalMonth,1).toLocaleDateString('en-US',{month:'long',year:'numeric'});
-  let html=`<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 14px;border-bottom:1px solid var(--border);flex-shrink:0">
-    <button onclick="_vidCalMonth--;if(_vidCalMonth<0){_vidCalMonth=11;_vidCalYear--};_vidOvRenderCal()" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--muted);padding:2px 6px">←</button>
-    <div style="display:flex;align-items:center;gap:8px"><span style="font-size:12px;font-weight:700;color:var(--text)">Video Schedule</span><button onclick="var n=new Date();_vidCalMonth=n.getMonth();_vidCalYear=n.getFullYear();_vidOvRenderCal()" style="background:none;border:none;cursor:pointer;font-size:9px;font-weight:600;color:var(--muted);padding:1px 4px" title="Back to today (T)">Today</button></div>
-    <button onclick="_vidCalMonth++;if(_vidCalMonth>11){_vidCalMonth=0;_vidCalYear++};_vidOvRenderCal()" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--muted);padding:2px 6px">→</button>
+  // Header: legend left, arrows + title center, Today right
+  const _lg=(c,l)=>`<span style="display:inline-flex;align-items:center;gap:2px"><span style="display:inline-block;width:6px;height:6px;border-radius:1px;background:${c}"></span>${l}</span>`;
+  let html=`<div class="tod-tb-header" style="position:relative">
+    <div style="display:flex;align-items:center;gap:6px;font-size:8px;color:var(--muted);flex-shrink:0">
+      <button onclick="_vidCalMonth--;if(_vidCalMonth<0){_vidCalMonth=11;_vidCalYear--};_vidOvRenderCal()" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--muted);padding:0 2px;display:flex;align-items:center">←</button>
+      ${_lg('#059669','B posted')} ${_lg('#34d399','L posted')} ${_lg('#0ea5e9','B')} ${_lg('#60a5fa','L')}
+    </div>
+    <span style="flex:1;text-align:center;font-size:12px;font-weight:700;color:var(--text);letter-spacing:-.1px">Schedule</span>
+    <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
+      <button onclick="var n=new Date();_vidCalMonth=n.getMonth();_vidCalYear=n.getFullYear();_vidOvRenderCal()" style="background:none;border:none;cursor:pointer;font-size:9px;font-weight:600;color:var(--muted);padding:1px 4px" title="Back to today (T)">Today</button>
+      <button onclick="_vidCalMonth++;if(_vidCalMonth>11){_vidCalMonth=0;_vidCalYear++};_vidOvRenderCal()" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--muted);padding:0 2px;display:flex;align-items:center">→</button>
+    </div>
   </div>`;
-  // Legend
-  html+=`<div style="display:flex;gap:10px;padding:4px 14px;font-size:8px;color:var(--muted);flex-shrink:0">
-    <span><span style="display:inline-block;width:7px;height:7px;border-radius:2px;background:#10b981;margin-right:2px"></span>Posted</span>
-    <span><span style="display:inline-block;width:7px;height:7px;border-radius:2px;background:#0ea5e9;margin-right:2px"></span>Big</span>
-    <span><span style="display:inline-block;width:7px;height:7px;border-radius:2px;background:#8b5cf6;margin-right:2px"></span>Little</span>
-  </div>`;
-  // 3 months in scrollable container
-  html+='<div id="vidCalScroll" style="flex:1;overflow-y:auto;padding:6px 10px" ondragover="event.preventDefault()">';
-  for(let i=0;i<3;i++){
+  // Fixed weekday row
+  html+='<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:1px;padding:2px 10px 0;flex-shrink:0">';
+  ['Mon','Tue','Wed','Thu','Fri'].forEach(d=>{html+=`<div style="font-size:8px;font-weight:600;color:var(--muted);text-align:center;padding:1px 0">${d}</div>`;});
+  html+='</div>';
+  // Months in scrollable container — fill available space
+  html+='<div id="vidCalScroll" style="flex:1;overflow-y:auto;padding:2px 10px 6px" ondragover="event.preventDefault()">';
+  for(let i=0;i<5;i++){
     let cm=_vidCalMonth+i,cy=_vidCalYear;
     while(cm>11){cm-=12;cy++;}
     html+=_vidCalRenderMonth(cy,cm,vidsByDate,today);
   }
   html+='</div>';
   panel.innerHTML=html;
-  // Scroll support: wheel scrolls the container, not navigate months
   const scrollEl=document.getElementById('vidCalScroll');
   if(scrollEl&&!scrollEl._whlBound){
     scrollEl._whlBound=true;
