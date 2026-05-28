@@ -700,36 +700,47 @@
 
 <!-- Pup Skill Edit Modal -->
 <div class="overlay" id="pupModal" onclick="closeMod('pupModal',event)" onkeydown="if(event.key==='Escape'){event.stopPropagation();closeMod('pupModal');}else if(event.key==='Enter'&&event.target.tagName!=='SELECT'&&event.target.tagName!=='TEXTAREA'){event.preventDefault();const _n=document.getElementById('pmSkill').value.trim();if(!_n){closeMod('pupModal');}else{savePupModal();}}">
-  <div class="modal task-modal" style="width:420px">
+  <div class="modal task-modal" style="width:400px">
     <select id="pmPup" style="display:none"><option value="Mochi">Mochi</option><option value="Sunny">Sunny</option></select>
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+    <!-- Dog toggle + both label -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
       <div id="pmDogToggle"><div class="pup-dog-toggle"><button id="pmDogMochi" class="pup-dog-btn active" onclick="setPupModalDog('Mochi')">Mochi</button><button id="pmDogSunny" class="pup-dog-btn" onclick="setPupModalDog('Sunny')">Sunny</button></div></div><span id="pmBothLabel" style="display:none;font-size:11px;color:var(--muted);font-weight:500">Creates skill for both pups</span>
-      <input type="checkbox" id="pmFocus" title="Focus this week" style="width:15px;height:15px;cursor:pointer;accent-color:#eab308">
     </div>
+    <!-- Skill + Word -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
       <div class="mfield"><label>Skill *</label><input id="pmSkill" placeholder="Skill name"></div>
-      <div class="mfield"><label>Stage</label><select id="pmStage"><option value="Not Started">Not Started</option><option value="In Progress">In Progress</option><option value="Mastered">Mastered</option></select></div>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr 80px;gap:8px;margin-bottom:8px">
-      <div class="mfield"><label>Category</label><select id="pmCategory"><option value="">—</option><option value="commands">Commands</option><option value="manners">Manners</option><option value="fun">Fun</option></select></div>
-      <div class="mfield"><label>Level</label><select id="pmLevel"><option value="">—</option><option value="Easy">Easy</option><option value="Medium">Medium</option><option value="Hard">Hard</option></select></div>
-      <div class="mfield"><label>Order</label><input id="pmOrder" type="number" placeholder="—" min="1" style="width:100%"></div>
-    </div>
-    <div class="mfield"><label>Next Step</label><select id="pmNextStep"><option value="">—</option><option value="1. Duration">1. Duration</option><option value="2. Distance">2. Distance</option><option value="3. Distraction">3. Distraction</option></select></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
       <div class="mfield"><label>Word</label><input id="pmWord" placeholder="Verbal cue…"></div>
-      <div class="mfield"><label>Signal</label><input id="pmSignal" placeholder="Hand signal…"></div>
     </div>
-    <div class="mfield"><label>Comments</label><input id="pmComments" placeholder="Notes or observations…"></div>
-    <div id="pmCountRow" style="display:none;margin-bottom:8px">
-      <div style="display:flex;align-items:center;gap:12px">
-        <div class="mfield" style="flex:1"><label>This week done</label><input id="pmWkDone" type="number" min="0" style="width:100%"></div>
-        <div style="font-size:11px;color:var(--muted);padding-top:14px" id="pmCountInfo"></div>
+    <!-- Stage + Next Step -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+      <div class="mfield"><label>Stage</label><select id="pmStage"><option value="Not Started">Not Started</option><option value="In Progress">In Progress</option><option value="Mastered">Mastered</option></select></div>
+      <div class="mfield"><label>Next Step</label><select id="pmNextStep"><option value="">—</option><option value="1. Duration">1. Duration</option><option value="2. Distance">2. Distance</option><option value="3. Distraction">3. Distraction</option></select></div>
+    </div>
+    <!-- Counts (edit only) -->
+    <div id="pmCountRow" style="display:none;margin-bottom:8px;padding:8px 10px;background:rgba(139,92,246,.04);border-radius:8px;border:1px solid rgba(139,92,246,.08)">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:end">
+        <div class="mfield" style="margin-bottom:0"><label>This week</label><input id="pmWkDone" type="number" min="0" style="width:100%"></div>
+        <div style="font-size:11px;color:var(--muted);padding-bottom:6px" id="pmCountInfo"></div>
       </div>
     </div>
-    <div id="pmSkipRow" style="display:flex;gap:16px;margin-bottom:10px">
-      <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);cursor:pointer"><input type="checkbox" id="pmSkipMochi" style="width:13px;height:13px;cursor:pointer;accent-color:#8b5cf6"> Not relevant for Mochi</label>
-      <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);cursor:pointer"><input type="checkbox" id="pmSkipSunny" style="width:13px;height:13px;cursor:pointer;accent-color:#fbbf24"> Not relevant for Sunny</label>
+    <!-- Category + Level -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+      <div class="mfield"><label>Category</label><select id="pmCategory"><option value="">—</option><option value="commands">Commands</option><option value="manners">Manners</option><option value="fun">Fun</option></select></div>
+      <div class="mfield"><label>Level</label><select id="pmLevel"><option value="">—</option><option value="Easy">Easy</option><option value="Medium">Medium</option><option value="Hard">Hard</option></select></div>
+    </div>
+    <!-- Signal + Comments -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+      <div class="mfield"><label>Signal</label><input id="pmSignal" placeholder="Hand signal…"></div>
+      <div class="mfield"><label>Comments</label><input id="pmComments" placeholder="Notes…"></div>
+    </div>
+    <!-- Skip + Order + Focus -->
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap">
+      <div id="pmSkipRow" style="display:flex;gap:12px">
+        <label style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--muted);cursor:pointer"><input type="checkbox" id="pmSkipMochi" style="width:12px;height:12px;cursor:pointer;accent-color:#8b5cf6"> Skip Mochi</label>
+        <label style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--muted);cursor:pointer"><input type="checkbox" id="pmSkipSunny" style="width:12px;height:12px;cursor:pointer;accent-color:#fbbf24"> Skip Sunny</label>
+      </div>
+      <div class="mfield" style="width:60px;margin-bottom:0"><label style="font-size:9px">Order</label><input id="pmOrder" type="number" placeholder="—" min="1" style="width:100%;padding:3px 5px;font-size:11px"></div>
+      <input type="checkbox" id="pmFocus" title="Focus this week" style="display:none">
     </div>
     <div class="mact"><button class="btn btn-ghost" onclick="closeMod('pupModal')">Cancel</button><button class="btn btn-dark" onclick="savePupModal()">Save</button></div>
   </div>
