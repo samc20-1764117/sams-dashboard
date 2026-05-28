@@ -148,8 +148,18 @@ function _pmSkipChanged(){
   const skipM=document.getElementById('pmSkipMochi').checked;
   const skipS=document.getElementById('pmSkipSunny').checked;
   const mBtn=document.getElementById('pmDogMochi'),sBtn=document.getElementById('pmDogSunny');
+  const wrap=document.getElementById('pmDogToggleWrap');
   mBtn.style.opacity=skipM?'0':'';mBtn.style.pointerEvents=skipM?'none':'';
   sBtn.style.opacity=skipS?'0':'';sBtn.style.pointerEvents=skipS?'none':'';
+  // Hide entire toggle wrap border if both or the active one is skipped
+  if(wrap){
+    const bothSkip=skipM&&skipS;
+    const activeVal=document.getElementById('pmPup').value;
+    const activeSkip=(activeVal==='Mochi'&&skipM)||(activeVal==='Sunny'&&skipS);
+    wrap.style.borderColor=(bothSkip||activeSkip)?'transparent':'';
+    // If active pup is skipped, switch to the other if available
+    if(activeSkip&&!bothSkip){setPupModalDog(activeVal==='Mochi'?'Sunny':'Mochi');}
+  }
 }
 let _pmWordManual=false;
 function _pmSyncWord(){
@@ -733,7 +743,15 @@ function renderPupTable(){
               const targetPup=dropTarget.dataset.pup;
               const skillName=row.dataset.skillkey;
               const rec=(st.pup_skills||[]).find(s=>s.skill===skillName&&s.pup===targetPup);
-              if(rec){await addPupWeeklyFocus(String(rec.id),_pupPageWkOff);_pupPageRenderCol('Mochi');_pupPageRenderCol('Sunny');}
+              if(!rec){
+                showToast(`${skillName} not assigned to ${targetPup}`,'var(--muted)',1500);
+              } else if(!rec.stage||rec.stage==='Not Started'){
+                showToast(`${skillName} not started for ${targetPup}`,'var(--muted)',1500);
+              } else if(isPupSkip(rec.id)){
+                showToast(`${skillName} skipped for ${targetPup}`,'var(--muted)',1500);
+              } else {
+                await addPupWeeklyFocus(String(rec.id),_pupPageWkOff);_pupPageRenderCol('Mochi');_pupPageRenderCol('Sunny');
+              }
             }
             if(ph)ph.remove();
           } else if(mode==='reorder'&&ph){

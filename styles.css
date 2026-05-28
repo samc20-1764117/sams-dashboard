@@ -276,6 +276,7 @@ body.dark #pupFilterPop{background:rgba(40,22,14,.97);border-color:rgba(255,220,
 .pup-dog-toggle{display:inline-flex;border-radius:20px;border:1px solid var(--border);overflow:hidden;background:rgba(255,255,255,.4)}
 .pup-dog-btn{padding:4px 12px;font-size:12px;font-weight:600;font-family:inherit;border:none;background:transparent;cursor:pointer;color:var(--muted);transition:all .15s;line-height:1.4}
 .pup-dog-btn.active{background:#2c1810;color:#fff}
+#pmOrder::-webkit-inner-spin-button,#pmOrder::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
 body.dark .pup-dog-toggle{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.12)}
 body.dark .pup-dog-btn.active{background:rgba(194,107,79,.5);color:#fff}
 
