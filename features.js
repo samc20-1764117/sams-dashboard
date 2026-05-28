@@ -1979,10 +1979,10 @@ function _finSubTabNext(fid,curField){
       const ra=a.getBoundingClientRect(),rb=b.getBoundingClientRect();return ra.left-rb.left;
     });
     const idx=focusable.indexOf(cur);
-    if(idx>=0&&idx<focusable.length-1){
-      const nxt=focusable[idx+1];nxt.focus();
-      if(nxt.contentEditable==='true'){const r=document.createRange();r.selectNodeContents(nxt);const s=window.getSelection();s.removeAllRanges();s.addRange(r);}
-    }
+    let nxt;
+    if(idx>=0&&idx<focusable.length-1){nxt=focusable[idx+1];}
+    else{const nextRow=row.nextElementSibling;if(nextRow){nxt=nextRow.querySelector('[contenteditable="true"]');}}
+    if(nxt){nxt.focus();if(nxt.contentEditable==='true'){const r=document.createRange();r.selectNodeContents(nxt);const s=window.getSelection();s.removeAllRanges();s.addRange(r);}}
   },30);
 }
 function _finSubEditable(id,field,val,cls){
@@ -2040,7 +2040,13 @@ async function toggleFinSubCancel(id){
 // Virtual cancel-reminder tasks for overview (3 days before due)
 const _finCancelDone=new Set();
 function togFinCancelDone(subId,checked){
-  if(checked)_finCancelDone.add(String(subId));else _finCancelDone.delete(String(subId));
+  const sid=String(subId);
+  const prev=_finCancelDone.has(sid);
+  if(checked)_finCancelDone.add(sid);else _finCancelDone.delete(sid);
+  _finCancelRender();
+  pushUndo(()=>{if(prev)_finCancelDone.add(sid);else _finCancelDone.delete(sid);_finCancelRender();},(checked?'Checked':'Unchecked')+' cancel task');
+}
+function _finCancelRender(){
   if(typeof renderToday==='function')renderToday();if(typeof renderWkCal==='function')renderWkCal();
   if(document.getElementById('tbGrid')&&typeof renderDayTB==='function')renderDayTB();
 }

@@ -1441,8 +1441,8 @@ function renderWkCal(){
     dayTasks.forEach(t=>{
       const ov=isOv(t.due_date)&&!t.done,imp=t.important&&!ov&&!t.done;
       const _chipCat=(t._isWrec||t._isWrRule)?'weekly_reset':(t._virtual&&t._recId?'recurring':t.category);
-      const s=ov?OV:imp?IMP:t._type==='fin-cancel'?IMP:t._type==='vid'?{bg:'rgba(34,197,94,.1)',t:'#15803d',d:'#22c55e',b:'rgba(34,197,94,.2)',dot:'rgba(34,197,94,.25)'}:t._type==='pup'?_pupSessStyle():gc(_chipCat);
-      const chip=document.createElement('div');chip.className='chip'+(t.done?' done-chip':'')+(t._type==='fin-cancel'?' imp-row':'');
+      const s=ov?OV:imp?IMP:(t._type==='fin-cancel'&&!t.done)?IMP:t._type==='vid'?{bg:'rgba(34,197,94,.1)',t:'#15803d',d:'#22c55e',b:'rgba(34,197,94,.2)',dot:'rgba(34,197,94,.25)'}:t._type==='pup'?_pupSessStyle():gc(_chipCat);
+      const chip=document.createElement('div');chip.className='chip'+(t.done?' done-chip':'')+(t._type==='fin-cancel'&&!t.done?' imp-row':'');
       chip.style.cssText=`background:${s.bg};color:${s.t};border-color:${s.b}`;
       if(!t._virtual)chip.dataset.tid=String(t.id);
       else if(t._type==='shop')chip.dataset.tid='shop-cal-'+t._shopId;
