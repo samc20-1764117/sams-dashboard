@@ -699,14 +699,14 @@
 </div>
 
 <!-- Pup Skill Edit Modal -->
-<div class="overlay" id="pupModal" onclick="closeMod('pupModal',event)" onkeydown="if(event.key==='Escape'){event.stopPropagation();closeMod('pupModal');}else if(event.key==='Enter'&&event.target.tagName!=='SELECT'&&event.target.tagName!=='TEXTAREA'){event.preventDefault();const _n=document.getElementById('pmSkill').value.trim();if(!_n){closeMod('pupModal');}else{savePupModal();}}else if(event.key.length===1&&!event.metaKey&&!event.ctrlKey&&!document.activeElement.matches('input,select,textarea')){document.getElementById('pmSkill').focus();}">
+<div class="overlay" id="pupModal" onclick="closeMod('pupModal',event)" onkeydown="if(event.key==='Escape'){event.stopPropagation();closeMod('pupModal');}else if(event.key==='Enter'&&event.target.tagName!=='SELECT'&&event.target.tagName!=='TEXTAREA'){event.preventDefault();const _n=document.getElementById('pmSkill').value.trim();if(!_n){closeMod('pupModal');}else{savePupModal();}}">
   <div class="modal task-modal" style="width:400px;padding:0;overflow:hidden;font-family:'DM Sans',sans-serif;border:1.5px solid rgba(255,255,255,.7);box-shadow:0 20px 50px rgba(0,0,0,.12),0 0 0 1px rgba(255,255,255,.3),inset 0 1px 0 rgba(255,255,255,.8)">
     <select id="pmPup" style="display:none"><option value="Mochi">Mochi</option><option value="Sunny">Sunny</option></select>
     <input type="checkbox" id="pmFocus" style="display:none">
 
     <!-- ═══ SKILL (shared across both dogs) ═══ -->
     <div style="padding:10px 16px 8px;text-align:center;background:rgba(255,255,255,.97);border-bottom:1px solid rgba(210,205,228,.18)">
-      <input id="pmSkill" placeholder="Skill name" oninput="_pmSyncWord()" style="font-size:14px;font-weight:700;text-align:center;border:none;background:transparent;outline:none;width:100%;color:var(--text);padding:2px 0;font-family:inherit">
+      <input id="pmSkill" placeholder="Skill name" oninput="_pmSyncWord();this.style.caretColor=''" onkeydown="this.style.caretColor=''" style="font-size:14px;font-weight:700;text-align:center;border:none;background:transparent;outline:none;width:100%;color:var(--text);padding:2px 0;font-family:inherit;caret-color:transparent">
     </div>
     <!-- Shared fields -->
     <div style="padding:8px 16px 10px">
