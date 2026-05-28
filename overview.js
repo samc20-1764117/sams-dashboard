@@ -5141,13 +5141,14 @@ function drawAutoTBBlock(col,atb,ds){
   const el=document.createElement('div');
   el.className='atb-block'+(atb._cat?' atb-cat':'');
   el.dataset.atbId=atb._atbId;
-  if(atb._cat){const c=gc(atb._cat);el.style.background=c.bg;el.style.color=c.t;el.style.borderColor=c.b;el.style.setProperty('--_atb-bg',c.bg);el.style.setProperty('--_atb-t',c.t);el.style.setProperty('--_atb-b',c.b);}
   el.addEventListener('dragover',e=>{if(!dragId)return;e.preventDefault();e.stopPropagation();el.classList.add('tb-drop-over');});
   el.addEventListener('dragleave',()=>el.classList.remove('tb-drop-over'));
   el.addEventListener('drop',e=>{if(!dragId)return;e.preventDefault();e.stopPropagation();el.classList.remove('tb-drop-over');dropOnTB(e,ds,null,null,atb.sm);});
   const ncols=atb._ncols||1,col_i=atb._col||0,colW=100/ncols,left=col_i*colW;
   const _showTime=ncols<=1;
-  el.style.cssText=`top:${top}px;height:${ht}px;left:calc(${left}% + 2px);right:calc(${100-left-colW}% + 2px);width:auto`;
+  let css=`top:${top}px;height:${ht}px;left:calc(${left}% + 2px);right:calc(${100-left-colW}% + 2px);width:auto`;
+  if(atb._cat){const c=gc(atb._cat);css+=`;background:${c.bg};color:${c.t};border-color:${c.b};--_atb-bg:${c.bg};--_atb-t:${c.t};--_atb-b:${c.b}`;}
+  el.style.cssText=css;
   el.innerHTML=`<div class="tb-row"><span class="tb-bt${atb.dur>=30?' wrap':''}">${atb.label}</span><div class="tb-right">${_showTime?`<span class="tb-btime">${tStr(atb.sm)}-${tStr(atb.sm+atb.dur)}</span>`:''}<button class="tb-bdel atb-del" onclick="event.stopPropagation();delAutoTBForDay('${atb._atbId}','${ds}',${atb._ovId?`'${atb._ovId}'`:'null'})">✕</button></div></div><div class="tb-resize atb-resize"></div>`;
   const atbRes=el.querySelector('.atb-resize');
   if(atbRes)atbRes.addEventListener('mousedown',e=>{
