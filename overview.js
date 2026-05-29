@@ -5591,7 +5591,7 @@ function _atbSaveNew(){
   const dayEls=document.querySelectorAll('.atb-mgr-new .day-tog.on');
   const days=[...dayEls].map(e=>e.dataset.day).join(',');
   if(!label||!startTime||!endTime)return;
-  const payload={label,start_time:startTime,end_time:endTime,category:cat,days:days||null,is_enabled:true,sort_order:(st.autoTimeblocks.length+1)};
+  const payload={label,start_time:startTime,end_time:endTime,category:cat,days:days||null,is_enabled:true,sort_order:(st.autoTimeblocks.length+1),day_scope:'weekday'};
   const tmpId='atb-tmp-'+Date.now();
   st.autoTimeblocks.push({...payload,id:tmpId});
   sbReqSilent('POST','auto_timeblocks',payload,'').then(res=>{
