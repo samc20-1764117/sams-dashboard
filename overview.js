@@ -135,6 +135,7 @@ function renderToday(){
   const _hasTabTask0=vid=>{const m='_vid:'+vid;return st.tasks.some(t=>t.notes&&t.notes.includes(m));};
   const _vidOnTBToday=new Set(st.blocks.filter(b=>(b.ds===ds||(dayOff===0&&b.ds&&b.ds<ds))&&b._vidId).map(b=>String(b._vidId)));
   const vidToday=(st.videos||[]).filter(v=>{if(v.is_deleted)return false;const vd=_vdmToday[String(v.id)];if(vd===ds)return true;if(dayOff===0&&vd&&vd<ds)return true;if(_vidOnTBToday.has(String(v.id)))return true;if(_vidStillPending(v)&&v.post_date&&(v.post_date===ds||(dayOff===0&&v.post_date<ds))&&!_hasTabTask0(v.id))return true;return false;}).map(v=>({id:'vid-ov-'+v.id,name:v.topic||v.title,category:'Videos',due_date:_vdmToday[String(v.id)]||v.post_date||ds,done:v.status==='published',_vidId:v.id,_virtual:true,_type:'vid'}));
+  const vidStepToday=_vidStepTasksForDay(ds);
   const finCancelToday=typeof _finCancelTasksForDate==='function'?_finCancelTasksForDate(ds):[];
   const virtToday=[
     ...allRecVirt.filter(v=>v.due_date===ds||(dayOff===0&&isOv(v.due_date)&&!v.done)),
@@ -143,6 +144,7 @@ function renderToday(){
     ...shopToday,
     ...pupSessToday,
     ...vidToday,
+    ...vidStepToday,
     ...finCancelToday,
     ...getExtrasForDate(ds).map(t=>{
       // Birthday done state: never grey out in today list
@@ -184,7 +186,7 @@ function renderToday(){
   }
   document.getElementById('todList').innerHTML=sorted.map(t=>{
     const arr=!t.done&&!_hasTBToday(t);
-    return t._type==='travel'||t._type==='birthday'?tRowExtra(t):t._type==='vid'?tRowVidVirt(t,arr):t._type==='fin-cancel'?tRowFinCancel(t,arr):t._type==='shop'?tRowShopVirt(t,true,arr,true):t._type==='pup'?tRowPupSess(t,true,arr):t._virtual?tRowTodayVirt(t,arr,true):tRow(t,{cat:true,catDot:true,drag:true,noDate:true,tbArrow:arr,noColor:true});
+    return t._type==='travel'||t._type==='birthday'?tRowExtra(t):t._type==='vid'?tRowVidVirt(t,arr):t._type==='vidstep'?tRowVidStepVirt(t,arr):t._type==='fin-cancel'?tRowFinCancel(t,arr):t._type==='shop'?tRowShopVirt(t,true,arr,true):t._type==='pup'?tRowPupSess(t,true,arr):t._virtual?tRowTodayVirt(t,arr,true):tRow(t,{cat:true,catDot:true,drag:true,noDate:true,tbArrow:arr,noColor:true});
   }).join('');
   updateOvBanner();
   renderPupSkillsHighlight();
@@ -712,6 +714,7 @@ function taskTypePri(t){
   if(cat==='work')return 4;
   if(cat==='social')return 5;
   if(t._type==='vid')return 5.5;
+  if(t._type==='vidstep')return 5.6;
   if(t._type==='fin-cancel')return 6.5;
   if(t._type==='shop')return 7;
   if(t._type==='pup')return 8;
@@ -860,6 +863,19 @@ function tRowVidVirt(t,arr){
     ${!ov?`<span style="font-size:9px;opacity:.5;margin-left:auto;flex-shrink:0">${_pct3}%</span>`:''}
     ${arr?'<span class="tb-arrow">›</span>':''}
     <button class="delbtn" onclick="event.stopPropagation();_vidUnassignDay('${vid}')">✕</button>
+  </div>`;
+}
+function tRowVidStepVirt(t,arr){
+  const ov=isOv(t.due_date)&&!t.done;
+  const _vs=ov?_OV():gc('videos');
+  return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''}" style="background:${_vs.bg}" id="ti-${t.id}"
+    ondblclick="if(typeof openVidEdit==='function')openVidEdit('${t._vidId}')">
+    <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="_vidStepToggleDone('${t._vidId}','${t._vidStep}',this.checked)"></label>
+    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="${_vs.t}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;opacity:.6"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+    <span class="tn">${escHtml(t.name)}</span>
+    ${ov&&t.due_date?`<span class="dlbl ov">${['S','M','T','W','T','F','S'][new Date(t.due_date.split('T')[0]+'T12:00').getDay()]}</span>`:''}
+    ${arr?'<span class="tb-arrow">›</span>':''}
+    <button class="delbtn" onclick="event.stopPropagation();_vidStepUnassign('${t._vidId}','${t._vidStep}')">✕</button>
   </div>`;
 }
 function _pupSessStyle(){
@@ -1353,6 +1369,9 @@ function renderWkCal(){
         }
         dragId=null;return;
       }
+      if(dragId.startsWith('vidstep::')){
+        const parts=dragId.split('::');_vidStepAssignToDay(parts[1],parts[2],ds);dragId=null;return;
+      }
       if(dragId.startsWith('fin-cancel::')){dragId=null;return;}
       const _dragSid=String(dragId);
       const _isMulti=selectedTasks.has(_dragSid)&&selectedTasks.size>1;
@@ -1424,6 +1443,9 @@ function renderWkCal(){
     const _hasTabTask=vid=>{const m='_vid:'+vid;return st.tasks.some(t=>t.notes&&t.notes.includes(m));};
     const _vidOnTB=new Set(st.blocks.filter(b=>b.ds===ds&&b._vidId).map(b=>String(b._vidId)));
     const vidForDay=(st.videos||[]).filter(v=>!v.is_deleted&&((_vdm[String(v.id)]===ds)||_vidOnTB.has(String(v.id))||(_vPend(v)&&v.post_date===ds&&!_hasTabTask(v.id)))).map(v=>({id:'vid-ov-'+v.id,name:v.topic||v.title,category:'Videos',due_date:ds,done:v.status==='published',_vidId:v.id,_virtual:true,_type:'vid'}));
+    const vidStepForDay=_vidStepTasksForDay(ds);
+    const vidStepDone=vidStepForDay.filter(t=>t.done);
+    const vidStepUndone=vidStepForDay.filter(t=>!t.done);
     const finCancelForDay=typeof _finCancelTasksForDate==='function'?_finCancelTasksForDate(ds):[];
     const undoneDay=sortTasksForDay([
       ...st.tasks.filter(t=>t.due_date&&t.due_date.split('T')[0]===ds&&!t.done&&t.category!=='Weekly Goals'),
@@ -1433,6 +1455,7 @@ function renderWkCal(){
       ...shopForDay,
       ...pupSessForDay,
       ...vidForDay,
+      ...vidStepUndone,
       ...finCancelForDay
     ],ds);
     const doneDay=sortTasksForDay([
@@ -1441,13 +1464,14 @@ function renderWkCal(){
       ...wrecForDayDone,
       ...wrRulesForDayDone,
       ...shopForDayDone,
-      ...pupSessForDayDone
+      ...pupSessForDayDone,
+      ...vidStepDone
     ],ds);
     let dayTasks=[...undoneDay,...doneDay];
     dayTasks.forEach(t=>{
       const ov=isOv(t.due_date)&&!t.done,imp=t.important&&!ov&&!t.done;
       const _chipCat=(t._isWrec||t._isWrRule)?'weekly_reset':(t._virtual&&t._recId?'recurring':t.category);
-      const s=ov?_OV():imp?_IMP():(t._type==='fin-cancel'&&!t.done)?_IMP():t._type==='vid'?gc('videos'):t._type==='pup'?_pupSessStyle():gc(_chipCat);
+      const s=ov?_OV():imp?_IMP():(t._type==='fin-cancel'&&!t.done)?_IMP():t._type==='vid'||t._type==='vidstep'?gc('videos'):t._type==='pup'?_pupSessStyle():gc(_chipCat);
       const chip=document.createElement('div');chip.className='chip'+(t.done?' done-chip':'')+(t._type==='fin-cancel'&&!t.done?' imp-row':'');
       chip.style.cssText=`background:${s.bg};color:${s.t};border-color:${s.b}`;
       if(!t._virtual)chip.dataset.tid=String(t.id);
@@ -1456,12 +1480,14 @@ function renderWkCal(){
       else if(t._isWrec)chip.dataset.tid='wrec-'+t._recId;
       else if(t._recId)chip.dataset.tid='rec-virt-'+t._recId;
       else if(t._type==='vid')chip.dataset.tid='vid-ov-'+t._vidId;
+      else if(t._type==='vidstep')chip.dataset.tid=t.id;
       else if(t._type==='pup')chip.dataset.tid='pup-sess-'+t._pupSessId;
       else if(t._type==='fin-cancel')chip.dataset.tid='fin-cancel-'+t._subId;
       chip.draggable=true;
       chip.addEventListener('dragstart',e2=>{
         if(t._type==='fin-cancel'){dragId='fin-cancel::'+t._subId;}
         else if(t._type==='vid'){dragId='vid::'+t._vidId;}
+        else if(t._type==='vidstep'){dragId='vidstep::'+t._vidId+'::'+t._vidStep;}
         else if(t._type==='pup'){dragId='pupsess::'+t._pupSessId+'::'+ds;}
         else if(t._type==='shop'){dragId='shop::'+t._shopId;}
         else if(t._isWrRule){dragId='wrrule::'+t._ruleId;}
@@ -1477,6 +1503,7 @@ function renderWkCal(){
         e2.stopPropagation();
         if(t._type==='fin-cancel'){togFinCancelDone(t._subId,chk.checked);}
         else if(t._type==='vid'){if(chk.checked)_vidCompleteFromOv(t._vidId,chk);else _vidUncompleteFromOv(t._vidId);}
+        else if(t._type==='vidstep'){_vidStepToggleDone(t._vidId,t._vidStep,chk.checked);}
         else if(t._type==='pup'){togPupSessionDone(t._pupSessId,chk.checked);}
         else if(t._type==='shop'){togShop(t._shopId,chk.checked);}
         else if(t._isWrRule){togWrRule(String(t._ruleId),chk.checked,t._wkKey||getWkKey(wkOff));}
@@ -1840,6 +1867,9 @@ function setupWkcEdgeDrop(){
       _vidAssignToDay(vidId,newDs);
       dragId=null;shiftWk(dir);return;
     }
+    if(dragId.startsWith('vidstep::')){
+      const parts=dragId.split('::');_vidStepAssignToDay(parts[1],parts[2],newDs);dragId=null;shiftWk(dir);return;
+    }
     if(dragId.startsWith('travel::')){
       const parts=dragId.split('::');const tvId=parts[1],offsetDays=parseInt(parts[2])||0;
       const tv2=st.travel.find(x=>String(x.id)===String(tvId));
@@ -1935,6 +1965,9 @@ function setupEdge(id,dir){
       const vidId=dragId.split('::')[1];
       _vidAssignToDay(vidId,newDs);
       dragId=null;shiftWk(dir);return;
+    }
+    if(dragId.startsWith('vidstep::')){
+      const parts=dragId.split('::');_vidStepAssignToDay(parts[1],parts[2],newDs);dragId=null;shiftWk(dir);return;
     }
     if(dragId.startsWith('travel::')){
       const parts=dragId.split('::');const tvId=parts[1],offsetDays=parseInt(parts[2])||0;
@@ -3164,6 +3197,9 @@ function dropOnTodayList(e){
     _vidAssignToDay(vidId,ds);
     dragId=null;return;
   }
+  if(dragId.startsWith('vidstep::')){
+    const parts=dragId.split('::');_vidStepAssignToDay(parts[1],parts[2],ds);dragId=null;return;
+  }
   if(dragId.startsWith('fin-cancel::')){dragId=null;return;}
 }
 
@@ -3180,6 +3216,49 @@ function _shopOvSort(arr){
 // ── Videos on Overview ────────────────────────────────────────────────────────
 function _vidDayMap(){try{return JSON.parse(localStorage._vidDayMap||'{}');}catch(e){return{};}}
 function _vidDayMapSet(m){localStorage._vidDayMap=JSON.stringify(m);}
+// Video step → day map: key="vidId::stepName", value={ds,done}
+function _vidStepDayMap(){try{return JSON.parse(localStorage._vidStepDayMap||'{}');}catch(e){return{};}}
+function _vidStepDayMapSet(m){localStorage._vidStepDayMap=JSON.stringify(m);}
+const _VID_STEP_LABELS={step_build:'Build',step_vo:'VO',step_cut:'Cut',step_thumbnail:'Thumbnail',step_description:'Description'};
+function _vidStepAssignToDay(vidId,step,ds){
+  const m=_vidStepDayMap();const key=vidId+'::'+step;
+  const prev=m[key]||null;
+  m[key]={ds,done:false};_vidStepDayMapSet(m);
+  save();renderAll();
+  const panel=document.getElementById('vidOvPanel');if(panel&&panel.style.display==='block')_renderVidOvMenu();
+  pushUndo(()=>{const m2=_vidStepDayMap();if(prev)m2[key]=prev;else delete m2[key];_vidStepDayMapSet(m2);save();renderAll();const p2=document.getElementById('vidOvPanel');if(p2&&p2.style.display==='block')_renderVidOvMenu();},'Added step to calendar');
+}
+function _vidStepToggleDone(vidId,step,checked){
+  const m=_vidStepDayMap();const key=vidId+'::'+step;
+  if(!m[key])return;
+  m[key].done=checked;_vidStepDayMapSet(m);
+  // Thumbnail & Description sync to actual video stage
+  if(step==='step_thumbnail'||step==='step_description'){
+    const v=(st.videos||[]).find(x=>String(x.id)===String(vidId));
+    if(v){v[step]=checked?'done':'not_started';sbReqSilent('PATCH','videos',{[step]:v[step]},`?id=eq.${v.id}`);}
+  }
+  save();renderAll();
+  const panel=document.getElementById('vidOvPanel');if(panel&&panel.style.display==='block')_renderVidOvMenu();
+  if(_vidOvAllOpen)_vidOvRenderAll();
+}
+function _vidStepUnassign(vidId,step){
+  const m=_vidStepDayMap();const key=vidId+'::'+step;
+  const prev=m[key]||null;delete m[key];_vidStepDayMapSet(m);
+  save();renderAll();
+  const panel=document.getElementById('vidOvPanel');if(panel&&panel.style.display==='block')_renderVidOvMenu();
+  if(prev)pushUndo(()=>{const m2=_vidStepDayMap();m2[key]=prev;_vidStepDayMapSet(m2);save();renderAll();const p2=document.getElementById('vidOvPanel');if(p2&&p2.style.display==='block')_renderVidOvMenu();},'Removed step from calendar');
+}
+function _vidStepTasksForDay(ds){
+  const m=_vidStepDayMap();const tasks=[];
+  Object.entries(m).forEach(([key,val])=>{
+    if(val.ds!==ds)return;
+    const [vidId,step]=key.split('::');
+    const v=(st.videos||[]).find(x=>String(x.id)===String(vidId)&&!x.is_deleted);if(!v)return;
+    const label=_VID_STEP_LABELS[step]||step.replace('step_','');
+    tasks.push({id:'vidstep-'+key.replace('::','-'),name:label+': '+(v.topic||v.title),category:'Videos',due_date:ds,done:!!val.done,_vidId:vidId,_vidStep:step,_virtual:true,_type:'vidstep'});
+  });
+  return tasks;
+}
 
 let _vidOvSelIdx=-1;
 let _vidOvSelVid=null;
@@ -3287,7 +3366,7 @@ function _vidOvStepDots(vid,steps){
   return steps.map(s=>{
     const val=vid[s]||'not_started';
     const cls=val==='done'?'done':val==='na'?'na':'';
-    return`<div style="width:22px;display:flex;align-items:center;justify-content:center;flex-shrink:0"><div class="vid-step-dot${cls?' '+cls:''}" style="width:12px;height:12px;border-radius:2px;cursor:pointer" onclick="event.stopPropagation();_vidOvToggleStep('${sid}','${s}',this)" oncontextmenu="event.preventDefault();event.stopPropagation();_vidOvNaStep('${sid}','${s}')"></div></div>`;
+    return`<div style="width:22px;display:flex;align-items:center;justify-content:center;flex-shrink:0"><div class="vid-step-dot${cls?' '+cls:''}" draggable="true" style="width:12px;height:12px;border-radius:2px;cursor:pointer" onclick="event.stopPropagation();_vidOvToggleStep('${sid}','${s}',this)" oncontextmenu="event.preventDefault();event.stopPropagation();_vidOvNaStep('${sid}','${s}')" ondragstart="event.stopPropagation();dragId='vidstep::${sid}::${s}';event.dataTransfer.effectAllowed='move';document.body.classList.add('body-dragging');showWkcEdges(true)" ondragend="document.body.classList.remove('body-dragging');showWkcEdges(false)"></div></div>`;
   }).join('');
 }
 function _vidOvPct(vid,steps){const app=steps.filter(s=>vid[s]!=='na');const dn=app.filter(s=>vid[s]==='done').length;return app.length?Math.round(dn/app.length*100):0;}
@@ -5693,6 +5772,8 @@ function dropOnTB(e,ds,h,row,smOverride){
             _undoOps.push(()=>{r._dateOverrides=prevDateOv;sbReq('PATCH','wr_recurring_rules',{date_overrides:prevDateOv},recQs(r.id));});_curSm+=_dur;}
         } else if(sid.startsWith('vid-ov-')){
           // skip — video TB has special handling
+        } else if(sid.startsWith('vidstep-')){
+          // skip — vidstep tasks are virtual
         } else if(sid.startsWith('shop-cal-')){
           const shopId2=sid.replace('shop-cal-','');const s=st.shopping.find(x=>String(x.id)===String(shopId2));
           if(s&&!st.blocks.some(b=>b.ds===ds&&String(b.shopId)===String(shopId2))){
@@ -5964,6 +6045,17 @@ function dropOnTB(e,ds,h,row,smOverride){
       if(prevDay!==ds){const m2=_vidDayMap();if(prevDay)m2[String(vidId)]=prevDay;else delete m2[String(vidId)];_vidDayMapSet(m2);}
       save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
     },'Added video to time block');
+    return;
+  } else if(dragId.startsWith('vidstep::')){
+    const parts=dragId.split('::');const _vsVidId=parts[1],_vsStep=parts[2];
+    const _vsV=(st.videos||[]).find(x=>String(x.id)===String(_vsVidId));
+    if(!_vsV){dragId=null;return;}
+    const _vsLabel=(_VID_STEP_LABELS[_vsStep]||_vsStep.replace('step_',''))+': '+(_vsV.topic||_vsV.title);
+    _vidStepAssignToDay(_vsVidId,_vsStep,ds);
+    const blk={id:crypto.randomUUID(),title:_vsLabel,ds,sm,dur:30,cat:'Videos'};
+    st.blocks.push(blk);dragId=null;save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
+    sbSaveBlock(blk);
+    pushUndo(()=>{st.blocks=st.blocks.filter(b=>b.id!==blk.id);sbDeleteBlock(blk.id);_vidStepUnassign(_vsVidId,_vsStep);save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();},'Added step to time block');
     return;
   } else {
     // Multi-select: if dragged task is in selectedTasks with others, add all selected items
