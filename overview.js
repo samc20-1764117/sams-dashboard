@@ -5308,7 +5308,7 @@ function drawAutoTBBlock(col,atb,ds){
   const ncols=atb._ncols||1,col_i=atb._col||0,colW=100/ncols,left=col_i*colW;
   const _showTime=ncols<=1;
   let css=`top:${top}px;height:${ht}px;left:calc(${left}% + 2px);right:calc(${100-left-colW}% + 2px);width:auto`;
-  if(atb._cat){const c=gc(atb._cat);const bg=`color-mix(in srgb,${c.bg} 35%,white)`;const t=`color-mix(in srgb,${c.t} 45%,#b0aec0)`;const b=`color-mix(in srgb,${c.b} 30%,rgba(210,205,228,.18))`;css+=`;background:${bg};color:${t};border-color:${b};--_atb-bg:${bg};--_atb-t:${t};--_atb-b:${b}`;}
+  if(atb._cat){const c=gc(atb._cat);const bg=`color-mix(in srgb,${c.bg} 18%,rgba(245,244,250,.28))`;const t=`color-mix(in srgb,${c.t} 30%,#b0aec0)`;const b=`color-mix(in srgb,${c.b} 20%,rgba(210,205,228,.18))`;css+=`;background:${bg};color:${t};border-color:${b};--_atb-bg:${bg};--_atb-t:${t};--_atb-b:${b}`;}
   el.style.cssText=css;
   el.innerHTML=`<div class="tb-row"><span class="tb-bt${atb.dur>=30?' wrap':''}">${atb.label}</span><div class="tb-right">${_showTime?`<span class="tb-btime">${tStr(atb.sm)}-${tStr(atb.sm+atb.dur)}</span>`:''}<button class="tb-bdel atb-del" onclick="event.stopPropagation();delAutoTBForDay('${atb._atbId}','${ds}',${atb._ovId?`'${atb._ovId}'`:'null'})">✕</button></div></div><div class="tb-resize atb-resize"></div>`;
   const atbRes=el.querySelector('.atb-resize');
@@ -5513,7 +5513,7 @@ function _renderATBMgr(){
     const onBg=c?c.bg:'rgba(180,175,200,.2)';
     const onTxt=c?c.t:'#6b6880';
     const onBdr=c?c.b:'rgba(180,175,200,.4)';
-    h+=`<div class="atb-mgr-item" data-atb-id="${a.id}" style="border-left:2.5px solid ${barCol}">`;
+    h+=`<div class="atb-mgr-item" data-atb-id="${a.id}" style="border-left:2.5px solid ${barCol}"><div class="atb-mgr-catbar" onclick="_atbCycleCat(${a.id})" title="Change category"></div>`;
     h+=`<div class="atb-mgr-r1">`;
     h+=`<input class="atb-mgr-name" value="${a.label||''}" placeholder="Name" onchange="_atbInlineSave(${a.id},'label',this.value)" onkeydown="if(event.key==='Enter')this.blur()">`;
     h+=`<span class="atb-mgr-trange"><input class="atb-mgr-tinput" value="${tS}" placeholder="9am" onblur="_atbSaveTime(${a.id},'start_time',this)" onkeydown="if(event.key==='Enter')this.blur()"><span class="atb-mgr-tsep">-</span><input class="atb-mgr-tinput" value="${tE}" placeholder="10am" onblur="_atbSaveTime(${a.id},'end_time',this)" onkeydown="if(event.key==='Enter')this.blur()"></span>`;
@@ -5524,7 +5524,7 @@ function _renderATBMgr(){
     h+=`</div></div>`;
   });
   if(_atbEditId==='new'){
-    h+=`<div class="atb-mgr-item atb-mgr-new" id="atbNewItem" style="border-left:2.5px solid #c8c6d4">`;
+    h+=`<div class="atb-mgr-item atb-mgr-new" id="atbNewItem" style="border-left:2.5px solid #c8c6d4"><div class="atb-mgr-catbar" onclick="_atbCycleCatNew()" title="Change category"></div>`;
     h+=`<div class="atb-mgr-r1">`;
     h+=`<input class="atb-mgr-name" id="atbF_label" placeholder="Name" autofocus onkeydown="if(event.key==='Enter')_atbSaveNew()">`;
     h+=`<span class="atb-mgr-trange"><input class="atb-mgr-tinput" id="atbF_start" value="" placeholder="9am" onkeydown="if(event.key==='Enter')_atbSaveNew()"><span class="atb-mgr-tsep">-</span><input class="atb-mgr-tinput" id="atbF_end" value="" placeholder="9:30am" onkeydown="if(event.key==='Enter')_atbSaveNew()"></span>`;
