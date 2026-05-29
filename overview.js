@@ -3302,18 +3302,35 @@ function _vidOvKeyNav(e){
   if(_vidOvAllOpen)return false;
   if(_vidCalOpen&&(e.key==='ArrowLeft'||e.key==='ArrowRight'))return false;
   const rows=_vidOvGetRows();if(!rows.length)return false;
-  // Cmd+Up/Down: reorder selected B videos
+  // Cmd+Up/Down: reorder videos
   if((e.metaKey||e.ctrlKey)&&(e.key==='ArrowUp'||e.key==='ArrowDown')&&_vidOvSelSet.size>0){
     e.preventDefault();const dir=e.key==='ArrowUp'?-1:1;
-    const bVids=(st.videos||[]).filter(v=>!v.is_deleted&&v.video_type==='B'&&v.status==='up_next').sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
-    bVids.forEach((v,i)=>{if(v.vid_order==null)v.vid_order=i;});
-    const selBIds=[..._vidOvSelSet].filter(id=>{const v=bVids.find(x=>String(x.id)===id);return !!v;});
-    if(selBIds.length){
-      const idxs=selBIds.map(id=>bVids.findIndex(v=>String(v.id)===id)).filter(i=>i>=0).sort((a,b)=>a-b);
-      if(dir===-1&&idxs[0]>0){const above=bVids[idxs[0]-1];idxs.forEach(i=>{bVids[i].vid_order--;});above.vid_order=bVids[idxs[idxs.length-1]].vid_order+1;}
-      else if(dir===1&&idxs[idxs.length-1]<bVids.length-1){const below=bVids[idxs[idxs.length-1]+1];idxs.forEach(i=>{bVids[i].vid_order++;});below.vid_order=bVids[idxs[0]].vid_order-1;}
-      bVids.sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));bVids.forEach((v,i)=>{v.vid_order=i;sbReqSilent('PATCH','videos',{vid_order:i},`?id=eq.${v.id}`);});
-      save();_renderVidOvMenu();
+    // Check if selected is a child video
+    const selId=[..._vidOvSelSet][0];
+    const selVid=(st.videos||[]).find(v=>String(v.id)===selId&&!v.is_deleted);
+    if(selVid&&selVid.video_type!=='B'&&selVid.big_video_id){
+      // Reorder child within parent
+      const parentId=String(selVid.big_video_id);
+      const children=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===parentId&&c.status!=='published').sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
+      children.forEach((c,i)=>{if(c.vid_order==null)c.vid_order=i;});
+      const ci=children.findIndex(c=>String(c.id)===selId);
+      if(ci>=0&&((dir===-1&&ci>0)||(dir===1&&ci<children.length-1))){
+        const swap=children[ci+dir];const tmpO=selVid.vid_order;selVid.vid_order=swap.vid_order;swap.vid_order=tmpO;
+        children.sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));children.forEach((c,i)=>{c.vid_order=i;sbReqSilent('PATCH','videos',{vid_order:i},`?id=eq.${c.id}`);});
+        save();_renderVidOvMenu();
+      }
+    } else {
+      // Reorder B videos
+      const bVids=(st.videos||[]).filter(v=>!v.is_deleted&&v.video_type==='B'&&v.status==='up_next').sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
+      bVids.forEach((v,i)=>{if(v.vid_order==null)v.vid_order=i;});
+      const selBIds=[..._vidOvSelSet].filter(id=>{const v=bVids.find(x=>String(x.id)===id);return !!v;});
+      if(selBIds.length){
+        const idxs=selBIds.map(id=>bVids.findIndex(v=>String(v.id)===id)).filter(i=>i>=0).sort((a,b)=>a-b);
+        if(dir===-1&&idxs[0]>0){const above=bVids[idxs[0]-1];idxs.forEach(i=>{bVids[i].vid_order--;});above.vid_order=bVids[idxs[idxs.length-1]].vid_order+1;}
+        else if(dir===1&&idxs[idxs.length-1]<bVids.length-1){const below=bVids[idxs[idxs.length-1]+1];idxs.forEach(i=>{bVids[i].vid_order++;});below.vid_order=bVids[idxs[0]].vid_order-1;}
+        bVids.sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));bVids.forEach((v,i)=>{v.vid_order=i;sbReqSilent('PATCH','videos',{vid_order:i},`?id=eq.${v.id}`);});
+        save();_renderVidOvMenu();
+      }
     }
     return true;
   }
@@ -3387,11 +3404,11 @@ function _renderVidOvMenu(){
   html+='<div style="display:flex;align-items:center;padding:2px 6px 2px;gap:5px">';
   html+='<div style="width:16px;flex-shrink:0"></div>';
   html+='<span style="flex:1;min-width:0"></span>';
-  html+='<div style="display:flex;gap:0;flex-shrink:0;align-items:center">';
+  html+='<div style="display:flex;gap:0;flex-shrink:0;align-items:center;margin-left:5px">';
   html+=steps.map(s=>`<div style="width:22px;text-align:center;font-size:9px;color:var(--muted);font-weight:700;flex-shrink:0">${(labels[s]||s).charAt(0)}</div>`).join('');
   html+='</div>';
-  html+='<span style="width:46px;flex-shrink:0;font-size:8px;color:var(--muted);font-weight:600;text-align:right">Post</span>';
-  html+='<span style="width:18px;flex-shrink:0;text-align:center;font-size:8px;color:var(--muted);font-weight:600">%</span>';
+  html+='<span style="width:46px;flex-shrink:0;font-size:8px;color:var(--muted);font-weight:600;text-align:right;margin-right:5px">Post</span>';
+  html+='<span style="width:18px;flex-shrink:0"></span>';
   html+='</div>';
   vids.forEach(v=>{html+=_vidOvMenuItem(v,steps,_focusSet);});
   html+='</div>';
@@ -3423,9 +3440,9 @@ function _vidOvMenuItem(v,steps,focusSet){
   const _xBtn=`<button class="vid-ov-x" onclick="event.stopPropagation();_vidOvDemote('${sid}')" title="Move to ideas">✕</button>`;
   const _postDate=v.post_date?_vidOvPostStr(v.post_date):'';
   const _postColor=v.post_date?_vidOvPostColor(v):'var(--muted)';
-  const _postField=`<span class="vid-ov-post" style="width:46px;flex-shrink:0;font-size:9px;text-align:right;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif;color:${_postColor};cursor:pointer" onclick="event.stopPropagation();_vidOvEditPostDate('${sid}',this)" title="${v.post_date||'Set post date'}">${_postDate||'—'}</span>`;
+  const _postField=`<span class="vid-ov-post" style="width:46px;flex-shrink:0;font-size:9px;text-align:right;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif;color:${_postColor};cursor:pointer;margin-right:5px" onclick="event.stopPropagation();_vidOvEditPostDate('${sid}',this)" title="${v.post_date||'Set post date'}">${_postDate||'<span style="color:rgba(140,135,160,.4)">—</span>'}</span>`;
   const _focusCls=_isFocused?' vid-ov-focus':'';
-  let html=`<div data-vidrow="${sid}" ${_dragAttr} ${_dblAttr} ${_ctxAttr} ${_hov} class="${_focusCls}" style="padding:5px 6px 5px 6px;border-radius:6px;font-size:13px;font-weight:600;color:var(--text);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s">${_addBtn}<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(v.topic||v.title)}</span><div style="display:flex;gap:0;flex-shrink:0;align-items:center">${_vidOvStepDots(v,steps)}</div>${_postField}<div class="vid-ov-pctx" style="width:18px;flex-shrink:0;text-align:center;position:relative"><span class="vid-ov-pct" style="font-size:9px;opacity:.5;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif">${_vidOvPct(v,steps)}%</span>${_xBtn}</div></div>`;
+  let html=`<div data-vidrow="${sid}" ${_dragAttr} ${_dblAttr} ${_ctxAttr} ${_hov} class="${_focusCls}" style="padding:5px 6px 5px 6px;border-radius:6px;font-size:13px;font-weight:600;color:var(--text);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s">${_addBtn}<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(v.topic||v.title)}</span><div style="display:flex;gap:0;flex-shrink:0;align-items:center;margin-left:5px">${_vidOvStepDots(v,steps)}</div>${_postField}<div class="vid-ov-pctx" style="width:18px;flex-shrink:0;text-align:center;position:relative"><span class="vid-ov-pct" style="font-size:9px;opacity:.5;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif">${_vidOvPct(v,steps)}%</span>${_xBtn}</div></div>`;
   // Children (S/L videos)
   const children=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(v.id)&&c.status!=='published').sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
   children.forEach((c,ci)=>{
@@ -3436,9 +3453,9 @@ function _vidOvMenuItem(v,steps,focusSet){
     const _cxBtn=`<button class="vid-ov-x" onclick="event.stopPropagation();_vidOvDemote('${csid}')" title="Move to ideas">✕</button>`;
     const _cPostDate=c.post_date?_vidOvPostStr(c.post_date):'';
     const _cPostColor=c.post_date?_vidOvPostColor(c):'var(--muted)';
-    const _cPostField=`<span class="vid-ov-post" style="width:46px;flex-shrink:0;font-size:9px;text-align:right;font-variant-numeric:tabular-nums;color:${_cPostColor};cursor:pointer" onclick="event.stopPropagation();_vidOvEditPostDate('${csid}',this)" title="${c.post_date||'Set post date'}">${_cPostDate||'—'}</span>`;
-    html+=`<div draggable="true" ondragstart="_vidOvSelVid='${csid}';_vidOvChildDrag=event.currentTarget;dragId='vid::${csid}';event.dataTransfer.effectAllowed='move';document.body.classList.add('body-dragging');showWkcEdges(true);event.currentTarget.style.opacity='.4'" ondragend="event.currentTarget.style.opacity='1';_vidOvChildDrag=null;document.body.classList.remove('body-dragging');showWkcEdges(false)" ondragover="event.preventDefault()" ${_hov} ondblclick="event.stopPropagation();if(typeof openVidEdit==='function')openVidEdit('${csid}')" oncontextmenu="if(typeof showVidCtx==='function')showVidCtx(event,'${csid}')" data-vidrow="${csid}" data-cvid="${csid}" class="${_cFocusCls}" style="padding:3px 6px;border-radius:6px;font-size:11px;font-weight:500;color:var(--muted);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s"><div style="width:16px;flex-shrink:0;box-sizing:content-box;border:1px solid transparent;text-align:center;color:${_cOnCal?'var(--accent)':'rgba(140,135,160,.4)'};font-size:10px;font-weight:${_cOnCal?'700':'400'}">└</div><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(c.topic||c.title)}</span><div style="display:flex;gap:0;flex-shrink:0;align-items:center">${_vidOvStepDots(c,steps)}</div>${_cPostField}<div class="vid-ov-pctx" style="width:18px;flex-shrink:0;text-align:center;position:relative"><span class="vid-ov-pct" style="font-size:8px;opacity:.4;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif">${_vidOvPct(c,steps)}%</span>${_cxBtn}</div></div>`;
-    if(ci<children.length-1){const oA=c.vid_order??ci;const oB=children[ci+1].vid_order??(ci+1);html+=`<div class="vid-insert-zone" onclick="event.stopPropagation();_vidOvInlineAdd('${sid}',${oA},${oB},this)"><button class="vid-insert-btn">+</button></div>`;}
+    const _cPostField=`<span class="vid-ov-post" style="width:46px;flex-shrink:0;font-size:9px;text-align:right;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif;color:${_cPostColor};cursor:pointer;margin-right:5px" onclick="event.stopPropagation();_vidOvEditPostDate('${csid}',this)" title="${c.post_date||'Set post date'}">${_cPostDate||'<span style="color:rgba(140,135,160,.4)">—</span>'}</span>`;
+    html+=`<div draggable="true" ondragstart="_vidOvSelVid='${csid}';_vidOvChildDrag=event.currentTarget;dragId='vid::${csid}';event.dataTransfer.effectAllowed='move';document.body.classList.add('body-dragging');showWkcEdges(true);event.currentTarget.style.opacity='.4'" ondragend="event.currentTarget.style.opacity='1';_vidOvChildDrag=null;document.body.classList.remove('body-dragging');showWkcEdges(false)" ondragover="event.preventDefault()" ${_hov} ondblclick="event.stopPropagation();if(typeof openVidEdit==='function')openVidEdit('${csid}')" oncontextmenu="if(typeof showVidCtx==='function')showVidCtx(event,'${csid}')" data-vidrow="${csid}" data-cvid="${csid}" class="${_cFocusCls}" style="padding:3px 6px;border-radius:6px;font-size:11px;font-weight:500;color:var(--muted);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s"><div style="width:16px;flex-shrink:0;box-sizing:content-box;border:1px solid transparent;text-align:center;color:${_cOnCal?'var(--accent)':'rgba(140,135,160,.4)'};font-size:10px;font-weight:${_cOnCal?'700':'400'}">└</div><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(c.topic||c.title)}</span><div style="display:flex;gap:0;flex-shrink:0;align-items:center;margin-left:5px">${_vidOvStepDots(c,steps)}</div>${_cPostField}<div class="vid-ov-pctx" style="width:18px;flex-shrink:0;text-align:center;position:relative"><span class="vid-ov-pct" style="font-size:8px;opacity:.4;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif">${_vidOvPct(c,steps)}%</span>${_cxBtn}</div></div>`;
+    if(ci<children.length-1){const oA=c.vid_order??ci;const oB=children[ci+1].vid_order??(ci+1);html+=`<div class="vid-insert-zone" onclick="event.stopPropagation()"><button class="vid-insert-btn" onclick="_vidOvInlineAdd('${sid}',${oA},${oB},this.closest('.vid-insert-zone'))">+</button></div>`;}
   });
   return html;
 }
@@ -5297,7 +5314,7 @@ function drawTBBlock(col,b){
   if(b._vidStepVid&&b._vidStepName&&b._vidStepName!=='step_thumbnail'&&b._vidStepName!=='step_description'){
     const _vsV2=(st.videos||[]).find(x=>String(x.id)===String(b._vidStepVid));
     const _vsDone=_vsV2&&_vsV2[b._vidStepName]==='done';
-    _vidStepSquareHtml=`<div class="tb-vstep-sq${_vsDone?' done':''}" data-vid="${b._vidStepVid}" data-step="${b._vidStepName}" title="${_vsDone?'Stage complete':'Complete stage'}" style="width:12px;height:12px;border:1.5px solid rgba(34,197,94,.5);border-radius:2px;cursor:pointer;flex-shrink:0;margin-left:4px;display:inline-flex;align-items:center;justify-content:center;background:${_vsDone?'#16a34a':'transparent'}">${_vsDone?'<svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>':''}</div>`;
+    _vidStepSquareHtml=`<div class="tb-vstep-sq${_vsDone?' done':''}" data-vid="${b._vidStepVid}" data-step="${b._vidStepName}" title="${_vsDone?'Stage complete':'Complete stage'}" style="width:12px;height:12px;border:1.5px solid rgba(34,197,94,.5);border-radius:2px;cursor:pointer;flex-shrink:0;margin-left:auto;display:inline-flex;align-items:center;justify-content:center;background:${_vsDone?'#16a34a':'transparent'}"></div>`;
   }
   // Post Tab tasks: link button replaces time, double-click opens video edit
   let _copyLinkHtml='';let _ptVidId=null;
@@ -5306,7 +5323,7 @@ function drawTBBlock(col,b){
     const _ptVid=(st.videos||[]).find(x=>String(x.id)===String(_ptVidId));
     if(_ptVid&&_ptVid.youtube_url)_copyLinkHtml=`<button class="tb-copy-link" data-url="${_ptVid.youtube_url.replace(/"/g,'&quot;')}" title="Copy YouTube link" style="background:none;border:none;cursor:pointer;padding:0;flex-shrink:0;display:inline-flex;align-items:center;margin-right:2px;color:#15803d;position:relative;top:-1px"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#15803d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></button>`;
   }
-  const _showTimeHere=_showTime&&!isPostTab;
+  const _showTimeHere=_showTime&&!isPostTab&&!b._vidStepVid;
   const _tbBadgePrefix=_hebBadge(_displayTitle)+_pupBadge(_displayTitle);
   el.innerHTML=`<div class="tb-row"><input type="checkbox" class="tb-chk" ${b._done?'checked':''}>${_tbBadgePrefix}<span class="tb-bt${b.dur>=30?' wrap':''}">${_displayTitle}</span>${_vidStepSquareHtml}<div class="tb-right">${_showTimeHere?`<span class="tb-btime">${tStr(b.sm)}-${tStr(b.sm+b.dur)}</span>`:''}${_copyLinkHtml}<button class="tb-bdel" onclick="delBlock('${b.id}',event)">✕</button></div></div>${_vidStepsHtml}${_notesHtml}<div class="tb-resize" data-id="${b.id}"></div>`;
   if(b._vidId)el.querySelectorAll('.vid-step-dot[data-step]').forEach(dot=>{
@@ -5317,9 +5334,17 @@ function drawTBBlock(col,b){
     e.stopPropagation();
     const vid=_vstSq.dataset.vid,step=_vstSq.dataset.step;
     const v=(st.videos||[]).find(x=>String(x.id)===String(vid));if(!v)return;
-    const newVal=v[step]==='done'?'not_started':'done';
+    const prevVal=v[step];const newVal=prevVal==='done'?'not_started':'done';
     v[step]=newVal;
     sbReqSilent('PATCH','videos',{[step]:newVal},`?id=eq.${v.id}`);
+    // If completing stage, auto-check-off all tasks for this stage
+    if(newVal==='done'){
+      const m=_vidStepDayMap();const key=vid+'::'+step;
+      if(m[key]){m[key].done=true;_vidStepDayMapSet(m);}
+      // Also mark all timeblock blocks for this stage as done
+      (st.blocks||[]).forEach(bl=>{if(String(bl._vidStepVid)===String(vid)&&bl._vidStepName===step&&!bl._done){bl._done=true;sbUpdateBlock(bl.id,{done:true});}});
+    }
+    pushUndo(()=>{v[step]=prevVal;sbReqSilent('PATCH','videos',{[step]:prevVal},`?id=eq.${v.id}`);save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();},'Stage toggle');
     save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
     const panel=document.getElementById('vidOvPanel');if(panel&&panel.style.display==='block')_renderVidOvMenu();
   });
@@ -5351,8 +5376,10 @@ function drawTBBlock(col,b){
       togShop(String(b.shopId),checked);
     } else if(b._vidStepVid){
       // Checkbox toggles task done + for Th/Des also toggles the stage
+      const _prevDone=b._done;
       _vidStepToggleDone(b._vidStepVid,b._vidStepName,checked);
       b._done=checked;sbUpdateBlock(b.id,{done:checked});
+      pushUndo(()=>{_vidStepToggleDone(b._vidStepVid,b._vidStepName,!checked);b._done=_prevDone;sbUpdateBlock(b.id,{done:_prevDone});save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();},'Step checkbox');
     } else if(b._vidId){
       b._done=checked;sbUpdateBlock(b.id,{done:checked});save();renderToday();renderWkSummary();renderWkCal();
     } else if(b.cat==='pup_session'&&b._pupSessId){
@@ -6210,6 +6237,11 @@ function dropOnTB(e,ds,h,row,smOverride){
     const parts=dragId.split('::');const _vsVidId=parts[1],_vsStep=parts[2];
     const _vsV=(st.videos||[]).find(x=>String(x.id)===String(_vsVidId));
     if(!_vsV){dragId=null;return;}
+    // Th/Des: only allow one timeblock block total
+    if(_vsStep==='step_thumbnail'||_vsStep==='step_description'){
+      const existing=st.blocks.find(bl=>String(bl._vidStepVid)===String(_vsVidId)&&bl._vidStepName===_vsStep);
+      if(existing){dragId=null;return;}
+    }
     const _vsLabel=(_VID_STEP_LABELS[_vsStep]||_vsStep.replace('step_',''))+': '+(_vsV.topic||_vsV.title);
     _vidStepAssignToDay(_vsVidId,_vsStep,ds);
     const blk={id:crypto.randomUUID(),title:_vsLabel,ds,sm,dur:30,cat:'Videos',_vidStepVid:_vsVidId,_vidStepName:_vsStep};
