@@ -3345,7 +3345,7 @@ function _renderVidOvMenu(){
   const steps=typeof VID_STEPS_CORE!=='undefined'?VID_STEPS_CORE:(typeof VID_STEPS!=='undefined'?VID_STEPS:[]);
   const labels=typeof VID_STEP_LABELS!=='undefined'?VID_STEP_LABELS:{};
   let html=_hdr;
-  html+='<div style="padding:4px 10px 0;flex:1;min-height:0;overflow-y:auto" ondragover="event.preventDefault()" ondrop="_vidOvUpNextDrop(event)" onclick="_vidOvDeselect(event)">';
+  html+='<div style="padding:4px 10px 0;flex:1;min-height:0;overflow-y:auto" ondragover="event.preventDefault()" ondrop="_vidOvUpNextDrop(event)">';
   // Column header row — [+btn 16px][name flex][stages+%][post 52px][x 18px]
   html+='<div style="display:flex;align-items:center;padding:2px 6px 2px;gap:5px">';
   html+='<div style="width:16px;flex-shrink:0"></div>';
@@ -3361,6 +3361,8 @@ function _renderVidOvMenu(){
   html+='</div>';
   menu.innerHTML=html;
   _vidOvRestoreSel();
+  // Click empty space to deselect
+  menu.onclick=e=>{if(!e.target.closest('[data-vidrow]')&&!e.target.closest('button')&&!e.target.closest('.vid-step-dot')&&!e.target.closest('.vid-insert-zone')){_vidOvSelIdx=-1;_vidOvSelVid=null;_vidOvHighlight();}};
 }
 function _vidOvStepDots(vid,steps){
   const sid=String(vid.id);
@@ -4187,12 +4189,14 @@ function _vidOvReorderAt(event,bigId,targetId){
   const fromIdx=children.findIndex(c=>String(c.id)===dragId2);
   let toIdx=children.findIndex(c=>String(c.id)===targetId);
   if(fromIdx<0||toIdx<0)return;
-  // If mouse is below midpoint, insert after target instead of before
+  // If mouse is below midpoint, insert after target
   const r=event.currentTarget.getBoundingClientRect();
-  if(event.clientY>=r.top+r.height/2&&toIdx<children.length-1)toIdx++;
+  const insertAfter=event.clientY>=r.top+r.height/2;
+  if(insertAfter)toIdx++;
   // Adjust for removal
   const [moved]=children.splice(fromIdx,1);
   if(fromIdx<toIdx)toIdx--;
+  if(toIdx>children.length)toIdx=children.length;
   children.splice(toIdx,0,moved);
   children.forEach((c,i)=>{c.vid_order=i;sbReqSilent('PATCH','videos',{vid_order:i},`?id=eq.${c.id}`);});
   const savedFrom=fromIdx,savedTo=toIdx;
