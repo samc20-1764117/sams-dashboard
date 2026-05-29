@@ -495,7 +495,7 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 .atb-mgr.open{opacity:1;transform:translateY(0)}
 .atb-mgr-head{display:flex;align-items:center;gap:6px;padding-bottom:4px;border-bottom:1px solid rgba(210,205,228,.2)}
 .atb-mgr-head h3{font-size:10px;font-weight:700;color:var(--text);flex:1;margin:0}
-.atb-mgr-item{padding:6px 6px;border-radius:6px;transition:background .1s;border-bottom:1px solid rgba(210,205,228,.1);width:100%;box-sizing:border-box;border-left:2.5px solid #c8c6d4}
+.atb-mgr-item{padding:6px 2px 6px 6px;border-radius:6px;transition:background .1s;border-bottom:1px solid rgba(210,205,228,.1);width:100%;box-sizing:border-box;border-left:2.5px solid #c8c6d4}
 .atb-mgr-item:hover{background:rgba(109,95,230,.03)}
 .atb-mgr-r1{display:flex;align-items:center;gap:4px;width:100%}
 .atb-mgr-r2{display:flex;align-items:center;gap:3px;padding:3px 0 0 0}
@@ -1122,8 +1122,8 @@ body.dark .bday-add-menu{background:rgba(38,20,10,.97);border-color:rgba(255,220
 .vid-del{background:none;border:none;cursor:pointer;color:var(--muted);font-size:12px;opacity:0;transition:opacity .12s;padding:2px 4px}.vid-row:hover .vid-del,.vid-dash-row:hover .vid-del{opacity:1}.vid-del:hover{color:#ef4444}
 .vid-ov-x{background:none;border:none;cursor:pointer;color:var(--muted);font-size:11px;opacity:0;transition:opacity .12s;padding:0;width:18px;text-align:center;flex-shrink:0;box-sizing:border-box}[data-vidrow]:hover .vid-ov-x{opacity:.7}.vid-ov-x:hover{color:#ef4444;opacity:1!important}
 #vidOvPanel [data-vidrow].vid-sel{transform:none!important;box-shadow:inset 0 0 0 1.5px rgba(14,165,233,.35)!important;background:rgba(14,165,233,.07)!important;border-radius:6px}
-#vidOvPanel .vid-insert-zone .vid-insert-btn{left:22px;right:auto;transform:none}
-#vidOvPanel .vid-insert-zone::after{left:22px;right:22px}
+#vidOvPanel .vid-insert-zone .vid-insert-btn{left:27px;right:148px;width:14px;transform:none;margin:0 auto}
+#vidOvPanel .vid-insert-zone::after{left:27px;right:148px}
 #vidOvAllPanel [data-alldrag].vid-sel{transform:none!important;box-shadow:inset 0 0 0 1.5px rgba(14,165,233,.35)!important;background:rgba(14,165,233,.07)!important;border-radius:6px}
 .vid-cal-day{min-height:18px;border-radius:3px;padding:1px;transition:background .12s;position:relative}
 .vid-ov-focus{background:rgba(250,204,21,.06)!important;box-shadow:inset 0 0 0 1px rgba(234,179,8,.18)!important}

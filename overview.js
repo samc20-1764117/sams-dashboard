@@ -3331,8 +3331,8 @@ function _vidOvInlineAdd(bigId,orderBefore,orderAfter,afterEl){
   const insertOrder=orderBefore!=null&&orderAfter!=null?(orderBefore+orderAfter)/2:null;
   const row=document.createElement('div');
   row.className='vid-ov-inline-add';
-  row.style.cssText='padding:2px 6px 2px 28px;display:flex;align-items:center;gap:4px';
-  row.innerHTML=`<span style="color:rgba(140,135,160,.4);font-size:10px;width:16px;flex-shrink:0;text-align:center">└</span><input type="text" placeholder="Video topic..." style="flex:1;border:none;outline:none;background:transparent;font-size:11px;color:var(--text);font-weight:500;padding:3px 4px;border-radius:4px;box-shadow:inset 0 0 0 1px rgba(14,165,233,.3)">`;
+  row.style.cssText='padding:3px 6px;display:flex;align-items:center;gap:5px';
+  row.innerHTML=`<div style="width:16px;flex-shrink:0;box-sizing:content-box;border:1px solid transparent;text-align:center;color:rgba(140,135,160,.4);font-size:10px">└</div><input type="text" placeholder="Video topic..." style="flex:1;min-width:0;border:none;outline:none;background:transparent;font-size:11px;color:var(--text);font-weight:500;padding:3px 4px;border-radius:4px;box-shadow:inset 0 0 0 1px rgba(14,165,233,.3)">`;
   const inp=row.querySelector('input');
   // For + on B video (no orderBefore), insert after last child row
   if(afterEl&&afterEl.parentNode&&orderBefore==null){
