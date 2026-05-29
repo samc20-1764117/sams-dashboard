@@ -3345,7 +3345,7 @@ function _renderVidOvMenu(){
   const steps=typeof VID_STEPS_CORE!=='undefined'?VID_STEPS_CORE:(typeof VID_STEPS!=='undefined'?VID_STEPS:[]);
   const labels=typeof VID_STEP_LABELS!=='undefined'?VID_STEP_LABELS:{};
   let html=_hdr;
-  html+='<div style="padding:4px 10px 0;flex:1;min-height:0;overflow-y:auto" ondragover="event.preventDefault()" ondrop="_vidOvUpNextDrop(event)">';
+  html+='<div id="vidOvContent" style="padding:4px 10px 0;flex:1;min-height:0;overflow-y:auto" ondragover="event.preventDefault();_vidOvDragIndicator(event)" ondragleave="_vidOvClearIndicator()" ondrop="_vidOvContentDrop(event)">';
   // Column header row — [+btn 16px][name flex][stages+%][post 52px][x 18px]
   html+='<div style="display:flex;align-items:center;padding:2px 6px 2px;gap:5px">';
   html+='<div style="width:16px;flex-shrink:0"></div>';
@@ -3400,7 +3400,7 @@ function _vidOvMenuItem(v,steps,focusSet){
     const _cPostDate=c.post_date?_vidOvPostStr(c.post_date):'';
     const _cPostColor=c.post_date?_vidOvPostColor(c):'var(--muted)';
     const _cPostField=`<span class="vid-ov-post" style="width:52px;flex-shrink:0;font-size:9px;text-align:center;color:${_cPostColor};cursor:pointer" onclick="event.stopPropagation();_vidOvEditPostDate('${csid}',this)" title="${c.post_date||'Set post date'}">${_cPostDate||'—'}</span>`;
-    html+=`<div draggable="true" ondragstart="_vidOvSelVid='${csid}';_vidOvChildDrag=event.currentTarget;dragId='vid::${csid}';event.dataTransfer.effectAllowed='move';document.body.classList.add('body-dragging');showWkcEdges(true);event.currentTarget.style.opacity='.4'" ondragend="event.currentTarget.style.opacity='1';_vidOvChildDrag=null;document.body.classList.remove('body-dragging');showWkcEdges(false)" ondragover="event.preventDefault();if(_vidOvChildDrag){const _r=this.getBoundingClientRect();const _mid=_r.top+_r.height/2;if(event.clientY<_mid){this.style.borderTop='2px solid rgba(14,165,233,.4)';this.style.borderBottom='';}else{this.style.borderBottom='2px solid rgba(14,165,233,.4)';this.style.borderTop='';}}" ondragleave="this.style.borderTop='';this.style.borderBottom=''" ondrop="this.style.borderTop='';this.style.borderBottom='';_vidOvReorderAt(event,'${sid}','${csid}')" ${_hov} ondblclick="event.stopPropagation();if(typeof openVidEdit==='function')openVidEdit('${csid}')" oncontextmenu="if(typeof showVidCtx==='function')showVidCtx(event,'${csid}')" data-vidrow="${csid}" data-cvid="${csid}" class="${_cFocusCls}" style="padding:3px 6px;border-radius:6px;font-size:11px;font-weight:500;color:var(--muted);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s"><div style="width:16px;flex-shrink:0;box-sizing:content-box;border:1px solid transparent;text-align:center;color:${_cOnCal?'var(--accent)':'rgba(140,135,160,.4)'};font-size:10px;font-weight:${_cOnCal?'700':'400'}">└</div><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(c.topic||c.title)}</span><div style="display:flex;gap:0;flex-shrink:0;align-items:center">${_vidOvStepDots(c,steps)}<span style="font-size:8px;opacity:.4;width:30px;text-align:right;flex-shrink:0;margin-left:2px">${_vidOvPct(c,steps)}%</span></div>${_cPostField}${_cxBtn}</div>`;
+    html+=`<div draggable="true" ondragstart="_vidOvSelVid='${csid}';_vidOvChildDrag=event.currentTarget;dragId='vid::${csid}';event.dataTransfer.effectAllowed='move';document.body.classList.add('body-dragging');showWkcEdges(true);event.currentTarget.style.opacity='.4'" ondragend="event.currentTarget.style.opacity='1';_vidOvChildDrag=null;document.body.classList.remove('body-dragging');showWkcEdges(false)" ondragover="event.preventDefault()" ${_hov} ondblclick="event.stopPropagation();if(typeof openVidEdit==='function')openVidEdit('${csid}')" oncontextmenu="if(typeof showVidCtx==='function')showVidCtx(event,'${csid}')" data-vidrow="${csid}" data-cvid="${csid}" class="${_cFocusCls}" style="padding:3px 6px;border-radius:6px;font-size:11px;font-weight:500;color:var(--muted);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s"><div style="width:16px;flex-shrink:0;box-sizing:content-box;border:1px solid transparent;text-align:center;color:${_cOnCal?'var(--accent)':'rgba(140,135,160,.4)'};font-size:10px;font-weight:${_cOnCal?'700':'400'}">└</div><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(c.topic||c.title)}</span><div style="display:flex;gap:0;flex-shrink:0;align-items:center">${_vidOvStepDots(c,steps)}<span style="font-size:8px;opacity:.4;width:30px;text-align:right;flex-shrink:0;margin-left:2px">${_vidOvPct(c,steps)}%</span></div>${_cPostField}${_cxBtn}</div>`;
     if(ci<children.length-1){const oA=c.vid_order??ci;const oB=children[ci+1].vid_order??(ci+1);html+=`<div class="vid-insert-zone" onclick="event.stopPropagation();_vidOvInlineAdd('${sid}',${oA},${oB},this)"><button class="vid-insert-btn">+</button></div>`;}
   });
   return html;
@@ -4202,6 +4202,66 @@ function _vidOvReorderAt(event,bigId,targetId){
   const savedFrom=fromIdx,savedTo=toIdx;
   save();_renderVidOvMenu();
   pushUndo(()=>{children.splice(savedTo,1);children.splice(savedFrom,0,moved);children.sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));children.forEach((c,i)=>{c.vid_order=i;sbReqSilent('PATCH','videos',{vid_order:i},`?id=eq.${c.id}`);});save();_renderVidOvMenu();},'Reordered video');
+}
+let _vidOvDropLine=null;
+function _vidOvDragIndicator(e){
+  if(!_vidOvChildDrag)return;
+  const cont=document.getElementById('vidOvContent');if(!cont)return;
+  const dragVid=_vidOvChildDrag.dataset.cvid;
+  // Find the B video parent of the dragged child
+  const dragV=(st.videos||[]).find(x=>String(x.id)===dragVid);if(!dragV)return;
+  const bigId=String(dragV.big_video_id);
+  // Get all child rows for this parent
+  const rows=[...cont.querySelectorAll('[data-cvid]')].filter(r=>{
+    const rv=(st.videos||[]).find(x=>String(x.id)===r.dataset.cvid);
+    return rv&&String(rv.big_video_id)===bigId;
+  });
+  if(!rows.length)return;
+  // Find nearest gap
+  let bestIdx=0,bestDist=Infinity;
+  rows.forEach((r,i)=>{
+    const rect=r.getBoundingClientRect();
+    const topDist=Math.abs(e.clientY-rect.top);
+    const botDist=Math.abs(e.clientY-rect.bottom);
+    if(topDist<bestDist){bestDist=topDist;bestIdx=i;}
+    if(botDist<bestDist){bestDist=botDist;bestIdx=i+1;}
+  });
+  // Show indicator line
+  if(!_vidOvDropLine){_vidOvDropLine=document.createElement('div');_vidOvDropLine.style.cssText='height:2px;background:rgba(14,165,233,.5);border-radius:1px;pointer-events:none;margin:0 6px';}
+  // Remove from old position
+  if(_vidOvDropLine.parentNode)_vidOvDropLine.remove();
+  // Insert at the gap
+  const refRow=rows[bestIdx]||null;
+  if(refRow)refRow.parentNode.insertBefore(_vidOvDropLine,refRow);
+  else{const lastRow=rows[rows.length-1];if(lastRow&&lastRow.nextSibling)lastRow.parentNode.insertBefore(_vidOvDropLine,lastRow.nextSibling);else if(lastRow)lastRow.parentNode.appendChild(_vidOvDropLine);}
+  _vidOvDropLine._dropIdx=bestIdx;_vidOvDropLine._bigId=bigId;
+}
+function _vidOvClearIndicator(){if(_vidOvDropLine&&_vidOvDropLine.parentNode)_vidOvDropLine.remove();}
+function _vidOvContentDrop(event){
+  event.preventDefault();
+  if(_vidOvChildDrag&&_vidOvDropLine&&_vidOvDropLine._bigId){
+    const bigId=_vidOvDropLine._bigId;
+    const toPos=_vidOvDropLine._dropIdx;
+    _vidOvClearIndicator();
+    const dragVid=_vidOvChildDrag.dataset.cvid;
+    const children=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===bigId).sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
+    const fromIdx=children.findIndex(c=>String(c.id)===dragVid);
+    if(fromIdx<0)return;
+    let toIdx=toPos;
+    const [moved]=children.splice(fromIdx,1);
+    if(fromIdx<toIdx)toIdx--;
+    if(toIdx>children.length)toIdx=children.length;
+    if(toIdx<0)toIdx=0;
+    children.splice(toIdx,0,moved);
+    children.forEach((c,i)=>{c.vid_order=i;sbReqSilent('PATCH','videos',{vid_order:i},`?id=eq.${c.id}`);});
+    const sf=fromIdx,st2=toIdx;
+    save();_renderVidOvMenu();
+    pushUndo(()=>{children.splice(st2,1);children.splice(sf,0,moved);children.sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));children.forEach((c,i)=>{c.vid_order=i;sbReqSilent('PATCH','videos',{vid_order:i},`?id=eq.${c.id}`);});save();_renderVidOvMenu();},'Reordered video');
+    return;
+  }
+  _vidOvClearIndicator();
+  // Fall through to up_next drop for non-child drags
+  _vidOvUpNextDrop(event);
 }
 function _vidAssignToDay(vidId,ds){
   const map=_vidDayMap();
