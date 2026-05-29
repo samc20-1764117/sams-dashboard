@@ -1124,12 +1124,13 @@ body.dark .bday-add-menu{background:rgba(38,20,10,.97);border-color:rgba(255,220
 .vid-del{background:none;border:none;cursor:pointer;color:var(--muted);font-size:12px;opacity:0;transition:opacity .12s;padding:2px 4px}.vid-row:hover .vid-del,.vid-dash-row:hover .vid-del{opacity:1}.vid-del:hover{color:#ef4444}
 .vid-ov-x{background:none;border:none;cursor:pointer;color:var(--muted);font-size:11px;opacity:0;transition:opacity .12s;padding:0;width:18px;height:18px;text-align:center;position:absolute;top:50%;left:0;transform:translateY(-50%);box-sizing:border-box;z-index:1}[data-vidrow]:hover .vid-ov-x{opacity:.7}[data-vidrow]:hover .vid-ov-pct{opacity:0}.vid-ov-x:hover{color:#ef4444;opacity:1!important}
 #vidOvPanel [data-vidrow].vid-sel{transform:none!important;box-shadow:inset 0 0 0 1.5px rgba(14,165,233,.35)!important;background:rgba(14,165,233,.07)!important;border-radius:6px}
-#vidOvPanel .vid-insert-zone .vid-insert-btn{left:22px;right:195px;width:14px;transform:none;margin:0 auto}
-#vidOvPanel .vid-insert-zone:hover .vid-insert-btn{opacity:0;animation:vidOvFadeIn .15s 1s forwards}
+#vidOvPanel .vid-insert-zone{cursor:default}
+#vidOvPanel .vid-insert-zone .vid-insert-btn{left:22px;right:195px;width:14px;transform:none;margin:0 auto;display:none}
+#vidOvPanel .vid-insert-zone:hover .vid-insert-btn{display:none}
+#vidOvPanel .vid-insert-zone._iz-active .vid-insert-btn{display:block}
 #vidOvPanel .vid-insert-zone::after{left:22px;right:195px}
-#vidOvPanel .vid-insert-zone:hover::after{background:transparent;animation:vidOvLineFadeIn .15s 1s forwards}
-@keyframes vidOvFadeIn{to{opacity:1}}
-@keyframes vidOvLineFadeIn{to{background:rgba(210,205,228,.4)}}
+#vidOvPanel .vid-insert-zone:hover::after{background:transparent}
+#vidOvPanel .vid-insert-zone._iz-active::after{background:rgba(210,205,228,.4)}
 #vidOvAllPanel [data-alldrag].vid-sel{transform:none!important;box-shadow:inset 0 0 0 1.5px rgba(14,165,233,.35)!important;background:rgba(14,165,233,.07)!important;border-radius:6px}
 .vid-cal-day{min-height:18px;border-radius:3px;padding:1px;transition:background .12s;position:relative}
 .vid-ov-focus{background:rgba(250,204,21,.06)!important;box-shadow:inset 0 0 0 1px rgba(234,179,8,.18)!important}
