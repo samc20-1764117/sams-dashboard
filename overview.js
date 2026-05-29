@@ -868,10 +868,12 @@ function tRowVidVirt(t,arr){
 function tRowVidStepVirt(t,arr){
   const ov=isOv(t.due_date)&&!t.done;
   const _vs=ov?_OV():gc('videos');
-  return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''}" style="background:${_vs.bg}" id="ti-${t.id}"
+  return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''}" style="background:${_vs.bg}" id="ti-${t.id}" draggable="true"
+    ondragstart="dragId='vidstep::${t._vidId}::${t._vidStep}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true)"
+    ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false)"
+    onclick="selTask(event,'${t.id}')"
     ondblclick="if(typeof openVidEdit==='function')openVidEdit('${t._vidId}')">
     <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="_vidStepToggleDone('${t._vidId}','${t._vidStep}',this.checked)"></label>
-    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="${_vs.t}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;opacity:.6"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
     <span class="tn">${escHtml(t.name)}</span>
     ${ov&&t.due_date?`<span class="dlbl ov">${['S','M','T','W','T','F','S'][new Date(t.due_date.split('T')[0]+'T12:00').getDay()]}</span>`:''}
     ${arr?'<span class="tb-arrow">›</span>':''}
@@ -3219,7 +3221,7 @@ function _vidDayMapSet(m){localStorage._vidDayMap=JSON.stringify(m);}
 // Video step → day map: key="vidId::stepName", value={ds,done}
 function _vidStepDayMap(){try{return JSON.parse(localStorage._vidStepDayMap||'{}');}catch(e){return{};}}
 function _vidStepDayMapSet(m){localStorage._vidStepDayMap=JSON.stringify(m);}
-const _VID_STEP_LABELS={step_build:'Build',step_vo:'VO',step_cut:'Cut',step_thumbnail:'Thumbnail',step_description:'Description'};
+const _VID_STEP_LABELS={step_build:'Build',step_vo:'VO',step_cut:'Cut',step_thumbnail:'Th',step_description:'Des'};
 function _vidStepAssignToDay(vidId,step,ds){
   const m=_vidStepDayMap();const key=vidId+'::'+step;
   const prev=m[key]||null;
@@ -3363,6 +3365,7 @@ function _renderVidOvMenu(){
   _vidOvRestoreSel();
   // Click empty space to deselect
   menu.onclick=e=>{if(!e.target.closest('[data-vidrow]')&&!e.target.closest('button')&&!e.target.closest('.vid-step-dot')&&!e.target.closest('.vid-insert-zone')){_vidOvSelIdx=-1;_vidOvSelVid=null;_vidOvHighlight();}};
+  menu.ondblclick=e=>{if(!e.target.closest('[data-vidrow]')&&!e.target.closest('button')&&!e.target.closest('.vid-step-dot')&&!e.target.closest('.vid-insert-zone')&&!e.target.closest('.tod-tb-header')){if(typeof openVidModal==='function'){openVidModal('B');const _ss=document.getElementById('vmStatus');if(_ss){_ss.value='up_next';if(typeof _vidSetStatusDisplay==='function')_vidSetStatusDisplay('up_next');}}}};
 }
 function _vidOvStepDots(vid,steps){
   const sid=String(vid.id);
@@ -4204,28 +4207,31 @@ function _vidOvReorderAt(event,bigId,targetId){
   pushUndo(()=>{children.splice(savedTo,1);children.splice(savedFrom,0,moved);children.sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));children.forEach((c,i)=>{c.vid_order=i;sbReqSilent('PATCH','videos',{vid_order:i},`?id=eq.${c.id}`);});save();_renderVidOvMenu();},'Reordered video');
 }
 let _vidOvDropLine=null;
+let _vidOvDropLastIdx=-1;
 function _vidOvDragIndicator(e){
   if(!_vidOvChildDrag)return;
   const cont=document.getElementById('vidOvContent');if(!cont)return;
   const dragVid=_vidOvChildDrag.dataset.cvid;
-  // Find the B video parent of the dragged child
   const dragV=(st.videos||[]).find(x=>String(x.id)===dragVid);if(!dragV)return;
   const bigId=String(dragV.big_video_id);
-  // Get all child rows for this parent
   const rows=[...cont.querySelectorAll('[data-cvid]')].filter(r=>{
     const rv=(st.videos||[]).find(x=>String(x.id)===r.dataset.cvid);
     return rv&&String(rv.big_video_id)===bigId;
   });
   if(!rows.length)return;
-  // Find nearest gap
+  // Find nearest gap — use row centers so cursor anywhere in a row maps to above/below
   let bestIdx=0,bestDist=Infinity;
   rows.forEach((r,i)=>{
     const rect=r.getBoundingClientRect();
-    const topDist=Math.abs(e.clientY-rect.top);
-    const botDist=Math.abs(e.clientY-rect.bottom);
-    if(topDist<bestDist){bestDist=topDist;bestIdx=i;}
-    if(botDist<bestDist){bestDist=botDist;bestIdx=i+1;}
+    const mid=rect.top+rect.height/2;
+    if(e.clientY<mid){const d=mid-e.clientY;if(d<bestDist){bestDist=d;bestIdx=i;}}
+    else{const d=e.clientY-mid;if(d<bestDist){bestDist=d;bestIdx=i+1;}}
   });
+  // Hysteresis: only change position if cursor moved past 40% into another row's zone
+  if(_vidOvDropLastIdx>=0&&_vidOvDropLastIdx!==bestIdx){
+    const prevRow=rows[Math.min(_vidOvDropLastIdx,rows.length-1)];
+    if(prevRow){const pr=prevRow.getBoundingClientRect();const threshold=pr.height*0.4;if(bestDist<threshold){bestIdx=_vidOvDropLastIdx;}}
+  }
   // Show indicator line
   if(!_vidOvDropLine){_vidOvDropLine=document.createElement('div');_vidOvDropLine.style.cssText='height:2px;background:rgba(14,165,233,.5);border-radius:1px;pointer-events:none;margin:0 6px';}
   // Remove from old position
@@ -4234,9 +4240,9 @@ function _vidOvDragIndicator(e){
   const refRow=rows[bestIdx]||null;
   if(refRow)refRow.parentNode.insertBefore(_vidOvDropLine,refRow);
   else{const lastRow=rows[rows.length-1];if(lastRow&&lastRow.nextSibling)lastRow.parentNode.insertBefore(_vidOvDropLine,lastRow.nextSibling);else if(lastRow)lastRow.parentNode.appendChild(_vidOvDropLine);}
-  _vidOvDropLine._dropIdx=bestIdx;_vidOvDropLine._bigId=bigId;
+  _vidOvDropLine._dropIdx=bestIdx;_vidOvDropLine._bigId=bigId;_vidOvDropLastIdx=bestIdx;
 }
-function _vidOvClearIndicator(){if(_vidOvDropLine&&_vidOvDropLine.parentNode)_vidOvDropLine.remove();}
+function _vidOvClearIndicator(){if(_vidOvDropLine&&_vidOvDropLine.parentNode)_vidOvDropLine.remove();_vidOvDropLastIdx=-1;}
 function _vidOvContentDrop(event){
   event.preventDefault();
   if(_vidOvChildDrag&&_vidOvDropLine&&_vidOvDropLine._bigId){
