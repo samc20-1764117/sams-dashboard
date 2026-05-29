@@ -3302,6 +3302,21 @@ function _vidOvKeyNav(e){
   if(_vidOvAllOpen)return false;
   if(_vidCalOpen&&(e.key==='ArrowLeft'||e.key==='ArrowRight'))return false;
   const rows=_vidOvGetRows();if(!rows.length)return false;
+  // Cmd+Up/Down: reorder selected B videos
+  if((e.metaKey||e.ctrlKey)&&(e.key==='ArrowUp'||e.key==='ArrowDown')&&_vidOvSelSet.size>0){
+    e.preventDefault();const dir=e.key==='ArrowUp'?-1:1;
+    const bVids=(st.videos||[]).filter(v=>!v.is_deleted&&v.video_type==='B'&&v.status==='up_next').sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
+    bVids.forEach((v,i)=>{if(v.vid_order==null)v.vid_order=i;});
+    const selBIds=[..._vidOvSelSet].filter(id=>{const v=bVids.find(x=>String(x.id)===id);return !!v;});
+    if(selBIds.length){
+      const idxs=selBIds.map(id=>bVids.findIndex(v=>String(v.id)===id)).filter(i=>i>=0).sort((a,b)=>a-b);
+      if(dir===-1&&idxs[0]>0){const above=bVids[idxs[0]-1];idxs.forEach(i=>{bVids[i].vid_order--;});above.vid_order=bVids[idxs[idxs.length-1]].vid_order+1;}
+      else if(dir===1&&idxs[idxs.length-1]<bVids.length-1){const below=bVids[idxs[idxs.length-1]+1];idxs.forEach(i=>{bVids[i].vid_order++;});below.vid_order=bVids[idxs[0]].vid_order-1;}
+      bVids.sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));bVids.forEach((v,i)=>{v.vid_order=i;sbReqSilent('PATCH','videos',{vid_order:i},`?id=eq.${v.id}`);});
+      save();_renderVidOvMenu();
+    }
+    return true;
+  }
   if(e.key==='ArrowDown'){e.preventDefault();_vidOvSelIdx=Math.min(_vidOvSelIdx+1,rows.length-1);const nv=rows[_vidOvSelIdx]?.dataset.vidrow;if(e.shiftKey&&nv){_vidOvSelSet.add(nv);}else{_vidOvSelSet.clear();if(nv)_vidOvSelSet.add(nv);}_vidOvSelVid=nv||null;_vidOvHighlight();return true;}
   if(e.key==='ArrowUp'){e.preventDefault();_vidOvSelIdx=Math.max(_vidOvSelIdx-1,0);const nv=rows[_vidOvSelIdx]?.dataset.vidrow;if(e.shiftKey&&nv){_vidOvSelSet.add(nv);}else{_vidOvSelSet.clear();if(nv)_vidOvSelSet.add(nv);}_vidOvSelVid=nv||null;_vidOvHighlight();return true;}
   if((e.key==='Delete'||e.key==='Backspace')&&_vidOvSelIdx>=0&&_vidOvSelIdx<rows.length){
@@ -3376,15 +3391,14 @@ function _renderVidOvMenu(){
   html+=steps.map(s=>`<div style="width:22px;text-align:center;font-size:9px;color:var(--muted);font-weight:700;flex-shrink:0">${(labels[s]||s).charAt(0)}</div>`).join('');
   html+='</div>';
   html+='<span style="width:46px;flex-shrink:0;font-size:8px;color:var(--muted);font-weight:600;text-align:right">Post</span>';
-  html+='<span style="width:28px;flex-shrink:0;text-align:right;font-size:8px;color:var(--muted);font-weight:600">%</span>';
-  html+='<span style="width:18px;flex-shrink:0"></span>';
+  html+='<span style="width:18px;flex-shrink:0;text-align:center;font-size:8px;color:var(--muted);font-weight:600">%</span>';
   html+='</div>';
   vids.forEach(v=>{html+=_vidOvMenuItem(v,steps,_focusSet);});
   html+='</div>';
   menu.innerHTML=html;
   _vidOvRestoreSel();
   // Click empty space to deselect
-  menu.onclick=e=>{if(!e.target.closest('[data-vidrow]')&&!e.target.closest('button')&&!e.target.closest('.vid-step-dot')&&!e.target.closest('.vid-insert-zone')){_vidOvSelIdx=-1;_vidOvSelVid=null;_vidOvHighlight();}};
+  menu.onclick=e=>{if(!e.target.closest('[data-vidrow]')&&!e.target.closest('button')&&!e.target.closest('.vid-step-dot')&&!e.target.closest('.vid-insert-zone')){_vidOvSelIdx=-1;_vidOvSelVid=null;_vidOvSelSet.clear();_vidOvHighlight();}};
   menu.ondblclick=e=>{if(!e.target.closest('[data-vidrow]')&&!e.target.closest('button')&&!e.target.closest('.vid-step-dot')&&!e.target.closest('.vid-insert-zone')&&!e.target.closest('.tod-tb-header')){if(typeof openVidModal==='function'){openVidModal('B');const _ss=document.getElementById('vmStatus');if(_ss){_ss.value='up_next';if(typeof _vidSetStatusDisplay==='function')_vidSetStatusDisplay('up_next');}}}};
 }
 function _vidOvStepDots(vid,steps){
@@ -3409,9 +3423,9 @@ function _vidOvMenuItem(v,steps,focusSet){
   const _xBtn=`<button class="vid-ov-x" onclick="event.stopPropagation();_vidOvDemote('${sid}')" title="Move to ideas">✕</button>`;
   const _postDate=v.post_date?_vidOvPostStr(v.post_date):'';
   const _postColor=v.post_date?_vidOvPostColor(v):'var(--muted)';
-  const _postField=`<span class="vid-ov-post" style="width:46px;flex-shrink:0;font-size:9px;text-align:right;font-variant-numeric:tabular-nums;color:${_postColor};cursor:pointer" onclick="event.stopPropagation();_vidOvEditPostDate('${sid}',this)" title="${v.post_date||'Set post date'}">${_postDate||'—'}</span>`;
+  const _postField=`<span class="vid-ov-post" style="width:46px;flex-shrink:0;font-size:9px;text-align:right;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif;color:${_postColor};cursor:pointer" onclick="event.stopPropagation();_vidOvEditPostDate('${sid}',this)" title="${v.post_date||'Set post date'}">${_postDate||'—'}</span>`;
   const _focusCls=_isFocused?' vid-ov-focus':'';
-  let html=`<div data-vidrow="${sid}" ${_dragAttr} ${_dblAttr} ${_ctxAttr} ${_hov} class="${_focusCls}" style="padding:5px 6px;border-radius:6px;font-size:13px;font-weight:600;color:var(--text);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s">${_addBtn}<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(v.topic||v.title)}</span><div style="display:flex;gap:0;flex-shrink:0;align-items:center">${_vidOvStepDots(v,steps)}</div>${_postField}<span style="font-size:9px;opacity:.5;width:28px;text-align:right;flex-shrink:0;font-variant-numeric:tabular-nums">${_vidOvPct(v,steps)}%</span>${_xBtn}</div>`;
+  let html=`<div data-vidrow="${sid}" ${_dragAttr} ${_dblAttr} ${_ctxAttr} ${_hov} class="${_focusCls}" style="padding:5px 6px 5px 6px;border-radius:6px;font-size:13px;font-weight:600;color:var(--text);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s">${_addBtn}<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(v.topic||v.title)}</span><div style="display:flex;gap:0;flex-shrink:0;align-items:center">${_vidOvStepDots(v,steps)}</div>${_postField}<div class="vid-ov-pctx" style="width:18px;flex-shrink:0;text-align:center;position:relative"><span class="vid-ov-pct" style="font-size:9px;opacity:.5;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif">${_vidOvPct(v,steps)}%</span>${_xBtn}</div></div>`;
   // Children (S/L videos)
   const children=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(v.id)&&c.status!=='published').sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
   children.forEach((c,ci)=>{
@@ -3423,7 +3437,7 @@ function _vidOvMenuItem(v,steps,focusSet){
     const _cPostDate=c.post_date?_vidOvPostStr(c.post_date):'';
     const _cPostColor=c.post_date?_vidOvPostColor(c):'var(--muted)';
     const _cPostField=`<span class="vid-ov-post" style="width:46px;flex-shrink:0;font-size:9px;text-align:right;font-variant-numeric:tabular-nums;color:${_cPostColor};cursor:pointer" onclick="event.stopPropagation();_vidOvEditPostDate('${csid}',this)" title="${c.post_date||'Set post date'}">${_cPostDate||'—'}</span>`;
-    html+=`<div draggable="true" ondragstart="_vidOvSelVid='${csid}';_vidOvChildDrag=event.currentTarget;dragId='vid::${csid}';event.dataTransfer.effectAllowed='move';document.body.classList.add('body-dragging');showWkcEdges(true);event.currentTarget.style.opacity='.4'" ondragend="event.currentTarget.style.opacity='1';_vidOvChildDrag=null;document.body.classList.remove('body-dragging');showWkcEdges(false)" ondragover="event.preventDefault()" ${_hov} ondblclick="event.stopPropagation();if(typeof openVidEdit==='function')openVidEdit('${csid}')" oncontextmenu="if(typeof showVidCtx==='function')showVidCtx(event,'${csid}')" data-vidrow="${csid}" data-cvid="${csid}" class="${_cFocusCls}" style="padding:3px 6px;border-radius:6px;font-size:11px;font-weight:500;color:var(--muted);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s"><div style="width:16px;flex-shrink:0;box-sizing:content-box;border:1px solid transparent;text-align:center;color:${_cOnCal?'var(--accent)':'rgba(140,135,160,.4)'};font-size:10px;font-weight:${_cOnCal?'700':'400'}">└</div><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(c.topic||c.title)}</span><div style="display:flex;gap:0;flex-shrink:0;align-items:center">${_vidOvStepDots(c,steps)}</div>${_cPostField}<span style="font-size:8px;opacity:.4;width:28px;text-align:right;flex-shrink:0;font-variant-numeric:tabular-nums">${_vidOvPct(c,steps)}%</span>${_cxBtn}</div>`;
+    html+=`<div draggable="true" ondragstart="_vidOvSelVid='${csid}';_vidOvChildDrag=event.currentTarget;dragId='vid::${csid}';event.dataTransfer.effectAllowed='move';document.body.classList.add('body-dragging');showWkcEdges(true);event.currentTarget.style.opacity='.4'" ondragend="event.currentTarget.style.opacity='1';_vidOvChildDrag=null;document.body.classList.remove('body-dragging');showWkcEdges(false)" ondragover="event.preventDefault()" ${_hov} ondblclick="event.stopPropagation();if(typeof openVidEdit==='function')openVidEdit('${csid}')" oncontextmenu="if(typeof showVidCtx==='function')showVidCtx(event,'${csid}')" data-vidrow="${csid}" data-cvid="${csid}" class="${_cFocusCls}" style="padding:3px 6px;border-radius:6px;font-size:11px;font-weight:500;color:var(--muted);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s"><div style="width:16px;flex-shrink:0;box-sizing:content-box;border:1px solid transparent;text-align:center;color:${_cOnCal?'var(--accent)':'rgba(140,135,160,.4)'};font-size:10px;font-weight:${_cOnCal?'700':'400'}">└</div><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(c.topic||c.title)}</span><div style="display:flex;gap:0;flex-shrink:0;align-items:center">${_vidOvStepDots(c,steps)}</div>${_cPostField}<div class="vid-ov-pctx" style="width:18px;flex-shrink:0;text-align:center;position:relative"><span class="vid-ov-pct" style="font-size:8px;opacity:.4;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif">${_vidOvPct(c,steps)}%</span>${_cxBtn}</div></div>`;
     if(ci<children.length-1){const oA=c.vid_order??ci;const oB=children[ci+1].vid_order??(ci+1);html+=`<div class="vid-insert-zone" onclick="event.stopPropagation();_vidOvInlineAdd('${sid}',${oA},${oB},this)"><button class="vid-insert-btn">+</button></div>`;}
   });
   return html;
@@ -5211,6 +5225,18 @@ function _relayoutTBCol(col,ds){
 }
 function _getTBBlockSelId(bl){if(bl.cat==='pup_session'&&bl._pupSessId)return'pup-sess-'+String(bl._pupSessId);if(bl._finCancelSubId)return'fin-cancel-'+String(bl._finCancelSubId);if(bl._vidId)return'blk-'+bl.id;if(bl.cat==='Birthday')return'blk-'+bl.id;if(bl.ruleId)return'blk-'+bl.id;if(bl.recId&&(st.wrRules||[]).some(x=>String(x.id)===String(bl.recId)))return'blk-'+bl.id;const r=bl.recId?st.recurring.find(x=>String(x.id)===String(bl.recId)):null;const iw=r&&(r.is_weekly_reset===true||r.is_weekly_reset==='true');return bl.taskId?'blk-'+bl.id:bl.recId?(iw?'wrec-':'rec-virt-')+bl.recId:bl.shopId?'blk-'+bl.id:'blk-'+bl.id;}
 function drawTBBlock(col,b){
+  // Reconstruct vidstep data from title if not set (after page refresh)
+  if(!b._vidStepVid&&b.cat==='Videos'&&!b._vidId){
+    const _vsm=_vidStepDayMap();
+    for(const [key,val] of Object.entries(_vsm)){
+      if(val.ds!==b.ds)continue;
+      const [vid,step]=key.split('::');
+      const v=(st.videos||[]).find(x=>String(x.id)===vid&&!x.is_deleted);
+      if(!v)continue;
+      const lbl=(_VID_STEP_LABELS[step]||step.replace('step_',''))+': '+(v.topic||v.title);
+      if(b.title===lbl){b._vidStepVid=vid;b._vidStepName=step;break;}
+    }
+  }
   const top=(b.sm-HOURS[0]*60)*PX,ht=Math.max(b.dur*PX,16);
   const linkedTask=b.taskId?st.tasks.find(x=>String(x.id)===String(b.taskId)):null;
   const linkedRec=b.recId?(st.recurring.find(x=>String(x.id)===String(b.recId))||st.wrRules.find(x=>String(x.id)===String(b.recId))):null;
@@ -5268,7 +5294,7 @@ function drawTBBlock(col,b){
   if(_vidWhiteBg)el.style.cssText+=`;background:${_dk()?'rgba(34,197,94,.12)':'rgba(255,255,255,.88)'};color:${_dk()?'#86efac':'#15803d'};border-color:rgba(34,197,94,.25)`;
   // Vid step block: add stage complete square
   let _vidStepSquareHtml='';
-  if(b._vidStepVid&&b._vidStepName){
+  if(b._vidStepVid&&b._vidStepName&&b._vidStepName!=='step_thumbnail'&&b._vidStepName!=='step_description'){
     const _vsV2=(st.videos||[]).find(x=>String(x.id)===String(b._vidStepVid));
     const _vsDone=_vsV2&&_vsV2[b._vidStepName]==='done';
     _vidStepSquareHtml=`<div class="tb-vstep-sq${_vsDone?' done':''}" data-vid="${b._vidStepVid}" data-step="${b._vidStepName}" title="${_vsDone?'Stage complete':'Complete stage'}" style="width:12px;height:12px;border:1.5px solid rgba(34,197,94,.5);border-radius:2px;cursor:pointer;flex-shrink:0;margin-left:4px;display:inline-flex;align-items:center;justify-content:center;background:${_vsDone?'#16a34a':'transparent'}">${_vsDone?'<svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>':''}</div>`;
