@@ -3264,6 +3264,7 @@ let _vidOvSelIdx=-1;
 let _vidOvSelVid=null;
 function _vidOvGetRows(){const p=document.getElementById('vidOvPanel');return p?Array.from(p.querySelectorAll('[data-vidrow]')):[]}
 function _vidOvClickSelect(el){const rows=_vidOvGetRows();const idx=rows.indexOf(el);if(idx>=0){_vidOvSelIdx=idx;_vidOvSelVid=el.dataset.vidrow||null;_vidOvHighlight();if(typeof _vidCalHighlightChip==='function')_vidCalHighlightChip(_vidOvSelVid);}}
+function _vidOvDeselect(e){if(!e.target.closest('[data-vidrow]')){_vidOvSelIdx=-1;_vidOvSelVid=null;_vidOvHighlight();}}
 function _vidOvHighlight(){const rows=_vidOvGetRows();rows.forEach((r,i)=>{r.classList.toggle('vid-sel',i===_vidOvSelIdx);});if(typeof _vidCalHighlightChip==='function')_vidCalHighlightChip(_vidOvSelVid);}
 function _vidOvRestoreSel(){
   if(!_vidOvSelVid)return;
@@ -3344,7 +3345,7 @@ function _renderVidOvMenu(){
   const steps=typeof VID_STEPS_CORE!=='undefined'?VID_STEPS_CORE:(typeof VID_STEPS!=='undefined'?VID_STEPS:[]);
   const labels=typeof VID_STEP_LABELS!=='undefined'?VID_STEP_LABELS:{};
   let html=_hdr;
-  html+='<div style="padding:4px 10px 0;flex:1;min-height:0;overflow-y:auto" ondragover="event.preventDefault()" ondrop="_vidOvUpNextDrop(event)">';
+  html+='<div style="padding:4px 10px 0;flex:1;min-height:0;overflow-y:auto" ondragover="event.preventDefault()" ondrop="_vidOvUpNextDrop(event)" onclick="_vidOvDeselect(event)">';
   // Column header row — [+btn 16px][name flex][stages+%][post 52px][x 18px]
   html+='<div style="display:flex;align-items:center;padding:2px 6px 2px;gap:5px">';
   html+='<div style="width:16px;flex-shrink:0"></div>';
@@ -3397,7 +3398,7 @@ function _vidOvMenuItem(v,steps,focusSet){
     const _cPostDate=c.post_date?_vidOvPostStr(c.post_date):'';
     const _cPostColor=c.post_date?_vidOvPostColor(c):'var(--muted)';
     const _cPostField=`<span class="vid-ov-post" style="width:52px;flex-shrink:0;font-size:9px;text-align:center;color:${_cPostColor};cursor:pointer" onclick="event.stopPropagation();_vidOvEditPostDate('${csid}',this)" title="${c.post_date||'Set post date'}">${_cPostDate||'—'}</span>`;
-    html+=`<div draggable="true" ondragstart="_vidOvSelVid='${csid}';_vidOvChildDrag=event.currentTarget;dragId='vid::${csid}';event.dataTransfer.effectAllowed='move';document.body.classList.add('body-dragging');showWkcEdges(true);event.currentTarget.style.opacity='.4'" ondragend="event.currentTarget.style.opacity='1';_vidOvChildDrag=null;document.body.classList.remove('body-dragging');showWkcEdges(false)" ondragover="event.preventDefault();if(_vidOvChildDrag)this.style.borderTop='2px solid rgba(0,0,0,.12)'" ondragleave="this.style.borderTop=''" ondrop="_vidOvReorder(event,'${sid}','${csid}')" ${_hov} ondblclick="event.stopPropagation();if(typeof openVidEdit==='function')openVidEdit('${csid}')" oncontextmenu="if(typeof showVidCtx==='function')showVidCtx(event,'${csid}')" data-vidrow="${csid}" data-cvid="${csid}" class="${_cFocusCls}" style="padding:3px 6px;border-radius:6px;font-size:11px;font-weight:500;color:var(--muted);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s"><div style="width:16px;flex-shrink:0;box-sizing:content-box;border:1px solid transparent;text-align:center;color:${_cOnCal?'var(--accent)':'rgba(140,135,160,.4)'};font-size:10px;font-weight:${_cOnCal?'700':'400'}">└</div><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(c.topic||c.title)}</span><div style="display:flex;gap:0;flex-shrink:0;align-items:center">${_vidOvStepDots(c,steps)}<span style="font-size:8px;opacity:.4;width:30px;text-align:right;flex-shrink:0;margin-left:2px">${_vidOvPct(c,steps)}%</span></div>${_cPostField}${_cxBtn}</div>`;
+    html+=`<div draggable="true" ondragstart="_vidOvSelVid='${csid}';_vidOvChildDrag=event.currentTarget;dragId='vid::${csid}';event.dataTransfer.effectAllowed='move';document.body.classList.add('body-dragging');showWkcEdges(true);event.currentTarget.style.opacity='.4'" ondragend="event.currentTarget.style.opacity='1';_vidOvChildDrag=null;document.body.classList.remove('body-dragging');showWkcEdges(false)" ondragover="event.preventDefault();if(_vidOvChildDrag){const _r=this.getBoundingClientRect();const _mid=_r.top+_r.height/2;if(event.clientY<_mid){this.style.borderTop='2px solid rgba(14,165,233,.4)';this.style.borderBottom='';}else{this.style.borderBottom='2px solid rgba(14,165,233,.4)';this.style.borderTop='';}}" ondragleave="this.style.borderTop='';this.style.borderBottom=''" ondrop="this.style.borderTop='';this.style.borderBottom='';_vidOvReorderAt(event,'${sid}','${csid}')" ${_hov} ondblclick="event.stopPropagation();if(typeof openVidEdit==='function')openVidEdit('${csid}')" oncontextmenu="if(typeof showVidCtx==='function')showVidCtx(event,'${csid}')" data-vidrow="${csid}" data-cvid="${csid}" class="${_cFocusCls}" style="padding:3px 6px;border-radius:6px;font-size:11px;font-weight:500;color:var(--muted);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s"><div style="width:16px;flex-shrink:0;box-sizing:content-box;border:1px solid transparent;text-align:center;color:${_cOnCal?'var(--accent)':'rgba(140,135,160,.4)'};font-size:10px;font-weight:${_cOnCal?'700':'400'}">└</div><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(c.topic||c.title)}</span><div style="display:flex;gap:0;flex-shrink:0;align-items:center">${_vidOvStepDots(c,steps)}<span style="font-size:8px;opacity:.4;width:30px;text-align:right;flex-shrink:0;margin-left:2px">${_vidOvPct(c,steps)}%</span></div>${_cPostField}${_cxBtn}</div>`;
     if(ci<children.length-1){const oA=c.vid_order??ci;const oB=children[ci+1].vid_order??(ci+1);html+=`<div class="vid-insert-zone" onclick="event.stopPropagation();_vidOvInlineAdd('${sid}',${oA},${oB},this)"><button class="vid-insert-btn">+</button></div>`;}
   });
   return html;
@@ -4176,6 +4177,27 @@ function _vidOvReorder(event,bigId,targetId){
   children.forEach((c,i)=>{c.vid_order=i;sbReqSilent('PATCH','videos',{vid_order:i},`?id=eq.${c.id}`);});
   save();_renderVidOvMenu();
   pushUndo(()=>{children.splice(toIdx,1);children.splice(fromIdx,0,moved);children.sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));children.forEach((c,i)=>{c.vid_order=i;sbReqSilent('PATCH','videos',{vid_order:i},`?id=eq.${c.id}`);});save();_renderVidOvMenu();},'Reordered video');
+}
+function _vidOvReorderAt(event,bigId,targetId){
+  event.preventDefault();
+  if(!_vidOvChildDrag)return;
+  const dragId2=_vidOvChildDrag.dataset.cvid;
+  if(!dragId2||dragId2===targetId)return;
+  const children=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(bigId)).sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
+  const fromIdx=children.findIndex(c=>String(c.id)===dragId2);
+  let toIdx=children.findIndex(c=>String(c.id)===targetId);
+  if(fromIdx<0||toIdx<0)return;
+  // If mouse is below midpoint, insert after target instead of before
+  const r=event.currentTarget.getBoundingClientRect();
+  if(event.clientY>=r.top+r.height/2&&toIdx<children.length-1)toIdx++;
+  // Adjust for removal
+  const [moved]=children.splice(fromIdx,1);
+  if(fromIdx<toIdx)toIdx--;
+  children.splice(toIdx,0,moved);
+  children.forEach((c,i)=>{c.vid_order=i;sbReqSilent('PATCH','videos',{vid_order:i},`?id=eq.${c.id}`);});
+  const savedFrom=fromIdx,savedTo=toIdx;
+  save();_renderVidOvMenu();
+  pushUndo(()=>{children.splice(savedTo,1);children.splice(savedFrom,0,moved);children.sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));children.forEach((c,i)=>{c.vid_order=i;sbReqSilent('PATCH','videos',{vid_order:i},`?id=eq.${c.id}`);});save();_renderVidOvMenu();},'Reordered video');
 }
 function _vidAssignToDay(vidId,ds){
   const map=_vidDayMap();
