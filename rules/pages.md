@@ -15,6 +15,14 @@
 - **Shopping header**: `.ct` text uses `text-transform:none;letter-spacing:0` (not uppercase). Cart icon is SVG, not emoji.
 - **Today progress donut** (`#todProgressDonut`, `renderTodDonut`): fires `launchDonutConfetti()` once when `pct` first reaches 1.0 (`_donutWas100` flag prevents re-fire; resets when pct drops below 1). Confetti: 42 white+green pill-shaped sprinkles, staggered 0–150ms delay, gravity-arc easing. Dance: `launchDonutConfetti` injects arms/legs/eyes into the SVG — single `<g>` per limb with absolute SVG coords and `style.transformOrigin = "${tx}px ${ty}px"` for correct pivot; nested translate+rotate via CSS keyframes. Dance cleans up after 3s.
 - **Auto blocks**: `computeTBLayout` — sorts by start time then duration desc (longer blocks placed left). Never in today/overdue/metrics/recurring/weekly-cal.
+- **Auto block manager** (`openAutoTBManager`/`closeAutoTBManager`): overlay on `.tod-section`. Supabase table `auto_timeblocks` with `category` (text) and `days` (csv of JS day numbers e.g. "1,3,5") columns. `auto_timeblock_overrides` for per-day adjustments.
+  - **Layout**: each item = 2 rows. R1: name input + time range + hover ✕. R2: day toggles (M–Su) with `justify-content:space-between`. Left color bar (`border-left`) shows category color; click bar to cycle category (`_atbCycleCat`).
+  - **Categories**: `_ATB_CATS` = [None, Home, My Work, Work, Social]. Colors from `gc()`. None = grey. Cycle via left bar click or ↑/↓ arrows on any input/day toggle.
+  - **Day toggles**: `tabindex="0"`, space=toggle, Enter=blur (existing) or save (new), ←/→=navigate days, Tab after last day=save/close. `_kbTog` flag prevents space double-toggle (keydown + synthetic click).
+  - **New item flow**: Enter on name→focus start, Enter on start→focus end, Tab from end→focus Monday. `_atbSaveNew` POST requires `day_scope:'weekday'`.
+  - **Timeblock appearance**: colored auto blocks use `color-mix()` to appear muted/complete (18% bg, 30% text, 20% border mixed with grey base). `.atb-cat .tb-bt{opacity:.55}`.
+  - **Close**: Escape, Enter with nothing focused, click outside (`_atbOutsideClick`). Arrow keys blocked from day/week nav when manager open.
+  - **Inline editing**: `_atbInlineSave`, `_atbSaveTime` (uses `_parseAtbTime`), `_atbTogDay`. `_atbCycleCat` updates DOM directly (no re-render) for speed.
 
 ### Weekly Goals (`overview.js` + `features.js`)
 - **Category**: `'Weekly Goals'`. Not overdue. Not in Today list, timeblock, overdue banner, unassigned popup.
