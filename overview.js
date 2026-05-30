@@ -3347,18 +3347,22 @@ function _vidOvKeyNav(e){
         pushUndo(()=>{prevOrders.forEach(p=>{const c=(st.videos||[]).find(x=>String(x.id)===String(p.id));if(c){c.vid_order=p.ord;sbReqSilent('PATCH','videos',{vid_order:p.ord},`?id=eq.${p.id}`);}});save();_renderVidOvMenu();},'Reorder videos');
       }
     } else {
-      // Reorder B videos
+      // Reorder B videos — simple swap approach
       const bVids=(st.videos||[]).filter(v=>!v.is_deleted&&v.video_type==='B'&&v.status==='up_next').sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
-      bVids.forEach((v,i)=>{if(v.vid_order==null)v.vid_order=i;});
-      const selBIds=[..._vidOvSelSet].filter(id=>{const v=bVids.find(x=>String(x.id)===id);return !!v;});
-      if(selBIds.length){
-        const prevOrders=bVids.map(v=>({id:v.id,ord:v.vid_order}));
-        const idxs=selBIds.map(id=>bVids.findIndex(v=>String(v.id)===id)).filter(i=>i>=0).sort((a,b)=>a-b);
-        if(dir===-1&&idxs[0]>0){const above=bVids[idxs[0]-1];idxs.forEach(i=>{bVids[i].vid_order--;});above.vid_order=bVids[idxs[idxs.length-1]].vid_order+1;}
-        else if(dir===1&&idxs[idxs.length-1]<bVids.length-1){const below=bVids[idxs[idxs.length-1]+1];idxs.forEach(i=>{bVids[i].vid_order++;});below.vid_order=bVids[idxs[0]].vid_order-1;}
-        bVids.sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));bVids.forEach((v,i)=>{v.vid_order=i;sbReqSilent('PATCH','videos',{vid_order:i},`?id=eq.${v.id}`);});
-        save();_renderVidOvMenu();
-        pushUndo(()=>{prevOrders.forEach(p=>{const v=(st.videos||[]).find(x=>String(x.id)===String(p.id));if(v){v.vid_order=p.ord;sbReqSilent('PATCH','videos',{vid_order:p.ord},`?id=eq.${p.id}`);}});save();_renderVidOvMenu();},'Reorder videos');
+      // Normalize vid_order for all B vids
+      bVids.forEach((v,i)=>{v.vid_order=i;});
+      const selBId=selIds[0];
+      const idx=bVids.findIndex(v=>String(v.id)===selBId);
+      if(idx>=0){
+        const swapIdx=idx+dir;
+        if(swapIdx>=0&&swapIdx<bVids.length){
+          const prevOrders=bVids.map(v=>({id:v.id,ord:v.vid_order}));
+          // Swap vid_order
+          const tmp=bVids[idx].vid_order;bVids[idx].vid_order=bVids[swapIdx].vid_order;bVids[swapIdx].vid_order=tmp;
+          bVids.forEach(v=>sbReqSilent('PATCH','videos',{vid_order:v.vid_order},`?id=eq.${v.id}`));
+          save();_renderVidOvMenu();
+          pushUndo(()=>{prevOrders.forEach(p=>{const v=(st.videos||[]).find(x=>String(x.id)===String(p.id));if(v){v.vid_order=p.ord;sbReqSilent('PATCH','videos',{vid_order:p.ord},`?id=eq.${p.id}`);}});save();_renderVidOvMenu();},'Reorder videos');
+        }
       }
     }
     return true;
