@@ -1474,7 +1474,7 @@ function renderWkCal(){
     dayTasks.forEach(t=>{
       const ov=isOv(t.due_date)&&!t.done,imp=t.important&&!ov&&!t.done;
       const _chipCat=(t._isWrec||t._isWrRule)?'weekly_reset':(t._virtual&&t._recId?'recurring':t.category);
-      const s=ov?_OV():imp?_IMP():(t._type==='fin-cancel'&&!t.done)?_IMP():t._type==='vid'?gc('videos'):t._type==='vidstep'?gc('Home'):t._type==='pup'?_pupSessStyle():gc(_chipCat);
+      const s=ov?_OV():imp?_IMP():(t._type==='fin-cancel'&&!t.done)?_IMP():t._type==='vid'?gc('videos'):t._type==='vidstep'?gc('videos'):t._type==='pup'?_pupSessStyle():gc(_chipCat);
       const chip=document.createElement('div');chip.className='chip'+(t.done?' done-chip':'')+(t._type==='fin-cancel'&&!t.done?' imp-row':'');
       chip.style.cssText=`background:${s.bg};color:${s.t};border-color:${s.b}`;
       if(!t._virtual)chip.dataset.tid=String(t.id);
@@ -3302,10 +3302,10 @@ function _vidOvClickSelect(el,e){
 function _vidOvDeselect(e){if(!e.target.closest('[data-vidrow]')){_vidOvSelIdx=-1;_vidOvSelVid=null;_vidOvSelSet.clear();_vidOvHighlight();}}
 function _vidOvHighlight(){const rows=_vidOvGetRows();rows.forEach(r=>{r.classList.toggle('vid-sel',_vidOvSelSet.has(r.dataset.vidrow));});if(typeof _vidCalHighlightChip==='function')_vidCalHighlightChip(_vidOvSelVid);}
 function _vidOvRestoreSel(){
-  if(!_vidOvSelVid)return;
+  if(!_vidOvSelVid&&!_vidOvSelSet.size)return;
   const rows=_vidOvGetRows();
-  const idx=rows.findIndex(r=>r.dataset.vidrow===_vidOvSelVid);
-  if(idx>=0){_vidOvSelIdx=idx;_vidOvHighlight();}
+  if(_vidOvSelVid){const idx=rows.findIndex(r=>r.dataset.vidrow===_vidOvSelVid);if(idx>=0)_vidOvSelIdx=idx;}
+  _vidOvHighlight();
 }
 function _vidOvKeyNav(e){
   const panel=document.getElementById('vidOvPanel');
@@ -3328,11 +3328,13 @@ function _vidOvKeyNav(e){
       children.forEach((c,i)=>{if(c.vid_order==null)c.vid_order=i;});
       const selChildIds=selIds.filter(id=>children.some(c=>String(c.id)===id));
       if(selChildIds.length){
+        const prevOrders=children.map(c=>({id:c.id,ord:c.vid_order}));
         const idxs=selChildIds.map(id=>children.findIndex(c=>String(c.id)===id)).filter(i=>i>=0).sort((a,b)=>a-b);
         if(dir===-1&&idxs[0]>0){const above=children[idxs[0]-1];idxs.forEach(i=>{children[i].vid_order--;});above.vid_order=children[idxs[idxs.length-1]].vid_order+1;}
         else if(dir===1&&idxs[idxs.length-1]<children.length-1){const below=children[idxs[idxs.length-1]+1];idxs.forEach(i=>{children[i].vid_order++;});below.vid_order=children[idxs[0]].vid_order-1;}
         children.sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));children.forEach((c,i)=>{c.vid_order=i;sbReqSilent('PATCH','videos',{vid_order:i},`?id=eq.${c.id}`);});
         save();_renderVidOvMenu();
+        pushUndo(()=>{prevOrders.forEach(p=>{const c=(st.videos||[]).find(x=>String(x.id)===String(p.id));if(c){c.vid_order=p.ord;sbReqSilent('PATCH','videos',{vid_order:p.ord},`?id=eq.${p.id}`);}});save();_renderVidOvMenu();},'Reorder videos');
       }
     } else {
       // Reorder B videos
@@ -3340,20 +3342,26 @@ function _vidOvKeyNav(e){
       bVids.forEach((v,i)=>{if(v.vid_order==null)v.vid_order=i;});
       const selBIds=[..._vidOvSelSet].filter(id=>{const v=bVids.find(x=>String(x.id)===id);return !!v;});
       if(selBIds.length){
+        const prevOrders=bVids.map(v=>({id:v.id,ord:v.vid_order}));
         const idxs=selBIds.map(id=>bVids.findIndex(v=>String(v.id)===id)).filter(i=>i>=0).sort((a,b)=>a-b);
         if(dir===-1&&idxs[0]>0){const above=bVids[idxs[0]-1];idxs.forEach(i=>{bVids[i].vid_order--;});above.vid_order=bVids[idxs[idxs.length-1]].vid_order+1;}
         else if(dir===1&&idxs[idxs.length-1]<bVids.length-1){const below=bVids[idxs[idxs.length-1]+1];idxs.forEach(i=>{bVids[i].vid_order++;});below.vid_order=bVids[idxs[0]].vid_order-1;}
         bVids.sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));bVids.forEach((v,i)=>{v.vid_order=i;sbReqSilent('PATCH','videos',{vid_order:i},`?id=eq.${v.id}`);});
         save();_renderVidOvMenu();
+        pushUndo(()=>{prevOrders.forEach(p=>{const v=(st.videos||[]).find(x=>String(x.id)===String(p.id));if(v){v.vid_order=p.ord;sbReqSilent('PATCH','videos',{vid_order:p.ord},`?id=eq.${p.id}`);}});save();_renderVidOvMenu();},'Reorder videos');
       }
     }
     return true;
   }
   if(e.key==='ArrowDown'){e.preventDefault();_vidOvSelIdx=Math.min(_vidOvSelIdx+1,rows.length-1);const nv=rows[_vidOvSelIdx]?.dataset.vidrow;if(e.shiftKey&&nv){_vidOvSelSet.add(nv);}else{_vidOvSelSet.clear();if(nv)_vidOvSelSet.add(nv);}_vidOvSelVid=nv||null;_vidOvHighlight();return true;}
   if(e.key==='ArrowUp'){e.preventDefault();_vidOvSelIdx=Math.max(_vidOvSelIdx-1,0);const nv=rows[_vidOvSelIdx]?.dataset.vidrow;if(e.shiftKey&&nv){_vidOvSelSet.add(nv);}else{_vidOvSelSet.clear();if(nv)_vidOvSelSet.add(nv);}_vidOvSelVid=nv||null;_vidOvHighlight();return true;}
-  if((e.key==='Delete'||e.key==='Backspace')&&_vidOvSelIdx>=0&&_vidOvSelIdx<rows.length){
-    e.preventDefault();const vid=rows[_vidOvSelIdx].dataset.vidrow;
-    const map=_vidDayMap();if(map[vid]){_vidUnassignDay(vid);}return true;
+  if((e.key==='Delete'||e.key==='Backspace')&&_vidOvSelSet.size>0){
+    e.preventDefault();
+    const map=_vidDayMap();
+    const ids=[..._vidOvSelSet];
+    const prevMap={};ids.forEach(vid=>{if(map[vid])prevMap[vid]=map[vid];});
+    ids.forEach(vid=>{if(map[vid])_vidUnassignDay(vid);});
+    return true;
   }
   if(e.key==='Enter'&&_vidOvSelIdx>=0&&_vidOvSelIdx<rows.length){
     e.preventDefault();const vid=rows[_vidOvSelIdx].dataset.vidrow;
@@ -5334,7 +5342,7 @@ function drawTBBlock(col,b){
   if(b._vidStepVid&&b._vidStepName&&b._vidStepName!=='step_thumbnail'&&b._vidStepName!=='step_description'){
     const _vsV2=(st.videos||[]).find(x=>String(x.id)===String(b._vidStepVid));
     const _vsDone=_vsV2&&_vsV2[b._vidStepName]==='done';
-    _vidStepSquareHtml=`<div class="tb-vstep-sq${_vsDone?' done':''}" data-vid="${b._vidStepVid}" data-step="${b._vidStepName}" title="${_vsDone?'Stage complete':'Complete stage'}" style="width:12px;height:12px;border:1.5px solid rgba(34,197,94,.5);border-radius:2px;cursor:pointer;flex-shrink:0;margin-left:auto;align-self:flex-start;margin-top:-3px;display:inline-flex;align-items:center;justify-content:center;background:${_vsDone?'#16a34a':'transparent'}"></div>`;
+    _vidStepSquareHtml=`<div class="tb-vstep-sq${_vsDone?' done':''}" data-vid="${b._vidStepVid}" data-step="${b._vidStepName}" title="${_vsDone?'Stage complete':'Complete stage'}" style="width:9px;height:9px;border:1.5px solid rgba(34,197,94,.5);border-radius:1.5px;cursor:pointer;flex-shrink:0;margin-left:auto;align-self:center;display:inline-flex;align-items:center;justify-content:center;background:${_vsDone?'#16a34a':'transparent'}"></div>`;
   }
   // Post Tab tasks: link button replaces time, double-click opens video edit
   let _copyLinkHtml='';let _ptVidId=null;
