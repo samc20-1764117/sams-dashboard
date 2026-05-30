@@ -503,7 +503,7 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 .atb-mgr-r2{display:flex;align-items:center;padding:3px 0 0 0;width:100%;justify-content:space-between}
 .atb-mgr-name{font-size:9px;font-weight:600;color:var(--text);flex:1;min-width:0;border:none;background:transparent;font-family:inherit;outline:none;padding:1px 2px;border-radius:3px;transition:background .1s;margin-left:-1px}
 .atb-mgr-name:focus{background:rgba(109,95,230,.06)}
-.atb-mgr-trange{display:inline-flex;align-items:baseline;flex-shrink:0;white-space:nowrap;gap:0;font-size:8px;color:var(--muted);margin-right:-1px}
+.atb-mgr-trange{display:inline-flex;align-items:baseline;flex-shrink:0;white-space:nowrap;gap:0;font-size:8px;color:var(--muted);margin-right:-3px}
 .atb-mgr-tinput{font-size:inherit;color:inherit;border:none;background:transparent;font-family:inherit;outline:none;padding:0 1px;margin:0;width:36px;border-radius:3px;text-align:left}
 .atb-mgr-tinput:focus{background:rgba(109,95,230,.06);padding:1px 2px;width:40px}
 .atb-mgr-tsep{font-size:inherit;color:inherit;line-height:1}
