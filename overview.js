@@ -5891,7 +5891,7 @@ function _renderATBMgr(){
     h+=`<button class="atb-mgr-x" onclick="_atbDelRule(${a.id})">✕</button>`;
     h+=`</div>`;
     h+=`<div class="atb-mgr-r2">`;
-    _ATB_DAYS.forEach(dd=>{h+=`<span class="day-tog${days.includes(dd.d)?' on':''}" data-day="${dd.d}" tabindex="0" onclick="_atbTogDay(${a.id},${dd.d},this)" onkeydown="_atbDayKey(event,this,${a.id})" style="${days.includes(dd.d)?`background:${onBg};color:${onTxt};border-color:${onBdr}`:''}">${dd.l}</span>`;});
+    _ATB_DAYS.forEach(dd=>{h+=`<span class="day-tog${days.includes(dd.d)?' on':''}" data-day="${dd.d}" tabindex="0" onclick="if(this._kbTog){this._kbTog=false;return;}_atbTogDay(${a.id},${dd.d},this)" onkeydown="_atbDayKey(event,this,${a.id})" style="${days.includes(dd.d)?`background:${onBg};color:${onTxt};border-color:${onBdr}`:''}">${dd.l}</span>`;});
     h+=`</div></div>`;
   });
   if(_atbEditId==='new'){
@@ -5902,7 +5902,7 @@ function _renderATBMgr(){
     h+=`<button class="atb-mgr-x" onclick="_atbCancelEdit()" style="opacity:1;color:var(--muted)">✕</button>`;
     h+=`</div>`;
     h+=`<div class="atb-mgr-r2">`;
-    _ATB_DAYS.forEach(dd=>{h+=`<span class="day-tog${dd.d>=1&&dd.d<=5?' on':''}" data-day="${dd.d}" tabindex="0" onclick="this.classList.toggle('on')" onkeydown="_atbDayKey(event,this)">${dd.l}</span>`;});
+    _ATB_DAYS.forEach(dd=>{h+=`<span class="day-tog${dd.d>=1&&dd.d<=5?' on':''}" data-day="${dd.d}" tabindex="0" onclick="if(this._kbTog){this._kbTog=false;return;}this.classList.toggle('on')" onkeydown="_atbDayKey(event,this)">${dd.l}</span>`;});
     h+=`</div></div>`;
   }
   h+=`<button class="atb-mgr-add" onclick="_atbStartEdit('new')">+ Add auto block</button>`;
@@ -5912,7 +5912,7 @@ let _atbNewCatIdx=0;
 function _atbStartEdit(id){_atbEditId=id;_atbNewCatIdx=0;_renderATBMgr();}
 function _atbCancelEdit(){_atbEditId=null;_renderATBMgr();}
 function _atbDayKey(e,el,id){
-  if(e.key===' '){e.preventDefault();if(id!=null){_atbTogDay(id,+el.dataset.day,el);}else{el.classList.toggle('on');}return;}
+  if(e.key===' '){e.preventDefault();e.stopImmediatePropagation();el._kbTog=true;if(id!=null){_atbTogDay(id,+el.dataset.day,el);}else{el.classList.toggle('on');}return;}
   if(e.key==='Enter'){e.preventDefault();if(_atbEditId==='new')_atbSaveNew();else{el.blur();closeAutoTBManager();}return;}
   if(e.key==='ArrowRight'){e.preventDefault();e.stopPropagation();const next=el.nextElementSibling;if(next&&next.classList.contains('day-tog'))next.focus();return;}
   if(e.key==='ArrowLeft'){e.preventDefault();e.stopPropagation();const prev=el.previousElementSibling;if(prev&&prev.classList.contains('day-tog'))prev.focus();return;}
