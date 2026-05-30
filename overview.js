@@ -5913,7 +5913,7 @@ function _atbStartEdit(id){_atbEditId=id;_atbNewCatIdx=0;_renderATBMgr();}
 function _atbCancelEdit(){_atbEditId=null;_renderATBMgr();}
 function _atbDayKey(e,el,id){
   if(e.key===' '){e.preventDefault();e.stopImmediatePropagation();el._kbTog=true;if(id!=null){_atbTogDay(id,+el.dataset.day,el);}else{el.classList.toggle('on');}return;}
-  if(e.key==='Enter'){e.preventDefault();if(_atbEditId==='new')_atbSaveNew();else{el.blur();closeAutoTBManager();}return;}
+  if(e.key==='Enter'){e.preventDefault();if(_atbEditId==='new')_atbSaveNew();else el.blur();return;}
   if(e.key==='ArrowRight'){e.preventDefault();e.stopPropagation();const next=el.nextElementSibling;if(next&&next.classList.contains('day-tog'))next.focus();return;}
   if(e.key==='ArrowLeft'){e.preventDefault();e.stopPropagation();const prev=el.previousElementSibling;if(prev&&prev.classList.contains('day-tog'))prev.focus();return;}
   if(e.key==='ArrowUp'||e.key==='ArrowDown'){e.preventDefault();if(id!=null)_atbCycleCat(id);else _atbCycleCatNew();return;}
