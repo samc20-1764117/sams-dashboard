@@ -3689,9 +3689,12 @@ function _vidOvEditPostDate(vidId,el){
     pushUndo(()=>{v.post_date=prev;save();_renderVidOvMenu();renderAll();if(_vidCalOpen)_vidOvRenderCal();sbReqSilent('PATCH','videos',{post_date:prev},`?id=eq.${vidId}`);},'Set post date');
   };
   inp.addEventListener('keydown',e=>{
+    e.stopPropagation();
     if(e.key==='Escape')close();
     if(e.key==='Enter'){e.preventDefault();commit();}
   });
+  inp.addEventListener('dblclick',e=>e.stopPropagation());
+  inp.addEventListener('click',e=>e.stopPropagation());
   inp.addEventListener('blur',()=>setTimeout(commit,150));
 }
 function _vidParseShortDate(s){
