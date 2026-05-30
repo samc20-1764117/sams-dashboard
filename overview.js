@@ -3260,6 +3260,46 @@ function _vidStepToggleDone(vidId,step,checked){
   save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
   const panel=document.getElementById('vidOvPanel');if(panel&&panel.style.display==='block')_renderVidOvMenu();
   if(_vidOvAllOpen)_vidOvRenderAll();
+  if(checked&&(step==='step_thumbnail'||step==='step_description'))_vidCheckAllDone(vidId);
+}
+function _vidCheckAllDone(vidId){
+  const v=(st.videos||[]).find(x=>String(x.id)===String(vidId)&&!x.is_deleted);if(!v)return;
+  const steps=typeof VID_STEPS_CORE!=='undefined'?VID_STEPS_CORE:[];
+  const applicable=steps.filter(s=>v[s]!=='na');
+  if(!applicable.length)return;
+  if(!applicable.every(s=>v[s]==='done'))return;
+  // All stages done — celebrate!
+  setTimeout(()=>_vidCelebrate(v),300);
+}
+function _vidCelebrate(v){
+  // Confetti burst
+  const canvas=document.createElement('canvas');canvas.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;z-index:99999;pointer-events:none';
+  document.body.appendChild(canvas);const ctx=canvas.getContext('2d');
+  canvas.width=window.innerWidth;canvas.height=window.innerHeight;
+  const particles=[];const colors=['#22c55e','#16a34a','#4ade80','#86efac','#fbbf24','#f59e0b','#a78bfa','#60a5fa'];
+  for(let i=0;i<120;i++){particles.push({x:canvas.width/2,y:canvas.height/2,vx:(Math.random()-.5)*12,vy:Math.random()*-14-4,size:Math.random()*6+2,color:colors[Math.floor(Math.random()*colors.length)],life:1,decay:Math.random()*.015+.008});}
+  let af;const draw=()=>{ctx.clearRect(0,0,canvas.width,canvas.height);let alive=false;particles.forEach(p=>{if(p.life<=0)return;alive=true;p.x+=p.vx;p.y+=p.vy;p.vy+=.25;p.life-=p.decay;ctx.globalAlpha=p.life;ctx.fillStyle=p.color;ctx.fillRect(p.x,p.y,p.size,p.size);});if(alive)af=requestAnimationFrame(draw);else canvas.remove();};
+  af=requestAnimationFrame(draw);setTimeout(()=>{cancelAnimationFrame(af);canvas.remove();},3000);
+  // Modal for post date and link
+  const overlay=document.createElement('div');overlay.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.4);z-index:100000;display:flex;align-items:center;justify-content:center';
+  const modal=document.createElement('div');modal.style.cssText='background:var(--bg);border-radius:16px;padding:28px 32px;box-shadow:0 20px 60px rgba(0,0,0,.3);max-width:340px;width:90%;text-align:center;animation:vidCelebPop .3s ease-out';
+  const sid=String(v.id);
+  modal.innerHTML=`<div style="font-size:32px;margin-bottom:8px">🎉</div><div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:4px">Video Complete!</div><div style="font-size:12px;color:var(--muted);margin-bottom:16px">${escHtml(v.topic||v.title)}</div><div style="display:flex;flex-direction:column;gap:10px;text-align:left"><label style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Post Date</label><input id="_vcPostDate" type="text" placeholder="m/d or m/d/yy" value="${v.post_date?_vidOvPostStr(v.post_date):''}" style="font-size:13px;padding:6px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);outline:none"><label style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:4px">YouTube Link</label><input id="_vcYTLink" type="text" placeholder="https://youtube.com/..." value="${v.youtube_url||''}" style="font-size:13px;padding:6px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);outline:none"></div><div style="display:flex;gap:8px;margin-top:18px;justify-content:center"><button id="_vcSkip" style="padding:6px 16px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;font-size:12px;font-weight:600">Skip</button><button id="_vcSave" style="padding:6px 16px;border-radius:8px;border:none;background:#16a34a;color:white;cursor:pointer;font-size:12px;font-weight:700">Save</button></div>`;
+  overlay.appendChild(modal);document.body.appendChild(overlay);
+  const close=()=>overlay.remove();
+  overlay.querySelector('#_vcSkip').onclick=close;
+  overlay.addEventListener('click',e=>{if(e.target===overlay)close();});
+  overlay.querySelector('#_vcSave').onclick=()=>{
+    const pd=overlay.querySelector('#_vcPostDate').value.trim();
+    const yt=overlay.querySelector('#_vcYTLink').value.trim();
+    const patch={};
+    if(pd){const parsed=_vidParseShortDate(pd);if(parsed){v.post_date=parsed;patch.post_date=parsed;}}
+    if(yt){v.youtube_url=yt;patch.youtube_url=yt;}
+    if(Object.keys(patch).length)sbReqSilent('PATCH','videos',patch,`?id=eq.${sid}`);
+    save();_renderVidOvMenu();renderAll();
+    close();
+  };
+  setTimeout(()=>{const pdInp=overlay.querySelector('#_vcPostDate');if(pdInp)pdInp.focus();},100);
 }
 function _vidStepUnassign(vidId,step){
   const m=_vidStepDayMap();const key=vidId+'::'+step;
@@ -3433,10 +3473,10 @@ function _renderVidOvMenu(){
   let html=_hdr;
   html+='<div id="vidOvContent" style="padding:4px 10px 0;flex:1;min-height:0;overflow-y:auto" ondragover="event.preventDefault();_vidOvDragIndicator(event)" ondragleave="_vidOvClearIndicator()" ondrop="_vidOvContentDrop(event)">';
   // Column header row — [+btn 16px][name flex][stages+%][post 52px][x 18px]
-  html+='<div style="display:flex;align-items:center;padding:2px 10px 2px 6px;gap:5px">';
+  html+='<div style="display:flex;align-items:center;padding:2px 13px 2px 6px;gap:5px">';
   html+='<div style="width:16px;flex-shrink:0"></div>';
   html+='<span style="flex:1;min-width:0"></span>';
-  html+='<div style="display:flex;gap:0;flex-shrink:0;align-items:center;margin-left:20px">';
+  html+='<div style="display:flex;gap:0;flex-shrink:0;align-items:center;padding-left:20px">';
   html+=steps.map(s=>`<div style="width:22px;text-align:center;font-size:9px;color:var(--muted);font-weight:700;flex-shrink:0">${(labels[s]||s).charAt(0)}</div>`).join('');
   html+='</div>';
   html+='<span style="width:46px;flex-shrink:0;font-size:8px;color:var(--muted);font-weight:600;text-align:right">Post</span>';
@@ -3480,7 +3520,7 @@ function _vidOvMenuItem(v,steps,focusSet){
   const _postColor=v.post_date?_vidOvPostColor(v):'var(--muted)';
   const _postField=`<span class="vid-ov-post" style="width:46px;flex-shrink:0;font-size:9px;text-align:right;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif;color:${_postColor};cursor:pointer" onclick="event.stopPropagation();_vidOvEditPostDate('${sid}',this)" title="${v.post_date||'Set post date'}">${_postDate||''}</span>`;
   const _focusCls=_isFocused?' vid-ov-focus':'';
-  let html=`<div data-vidrow="${sid}" ${_dragAttr} ${_dblAttr} ${_ctxAttr} ${_hov} class="${_focusCls}" style="padding:5px 10px 5px 6px;border-radius:6px;font-size:13px;font-weight:600;color:var(--text);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s">${_addBtn}<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(v.topic||v.title)}</span><div style="display:flex;gap:0;flex-shrink:0;align-items:center;margin-left:20px">${_vidOvStepDots(v,steps)}</div>${_postField}<div class="vid-ov-pctx" style="width:16px;flex-shrink:0;text-align:center;position:relative"><span class="vid-ov-pct" style="font-size:9px;opacity:.5;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif">${_vidOvPct(v,steps)}%</span>${_xBtn}</div></div>`;
+  let html=`<div data-vidrow="${sid}" ${_dragAttr} ${_dblAttr} ${_ctxAttr} ${_hov} class="${_focusCls}" style="padding:5px 13px 5px 6px;border-radius:6px;font-size:13px;font-weight:600;color:var(--text);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s">${_addBtn}<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(v.topic||v.title)}</span><div style="display:flex;gap:0;flex-shrink:0;align-items:center;padding-left:20px">${_vidOvStepDots(v,steps)}</div>${_postField}<div class="vid-ov-pctx" style="width:16px;flex-shrink:0;text-align:center;position:relative"><span class="vid-ov-pct" style="font-size:9px;opacity:.5;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif">${_vidOvPct(v,steps)}%</span>${_xBtn}</div></div>`;
   // Children (S/L videos)
   const children=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(v.id)&&c.status!=='published').sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
   children.forEach((c,ci)=>{
@@ -3492,7 +3532,7 @@ function _vidOvMenuItem(v,steps,focusSet){
     const _cPostDate=c.post_date?_vidOvPostStr(c.post_date):'';
     const _cPostColor=c.post_date?_vidOvPostColor(c):'var(--muted)';
     const _cPostField=`<span class="vid-ov-post" style="width:46px;flex-shrink:0;font-size:9px;text-align:right;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif;color:${_cPostColor};cursor:pointer" onclick="event.stopPropagation();_vidOvEditPostDate('${csid}',this)" title="${c.post_date||'Set post date'}">${_cPostDate||''}</span>`;
-    html+=`<div draggable="true" ondragstart="_vidOvSelVid='${csid}';_vidOvChildDrag=event.currentTarget;dragId='vid::${csid}';event.dataTransfer.effectAllowed='move';document.body.classList.add('body-dragging');showWkcEdges(true);event.currentTarget.style.opacity='.4'" ondragend="event.currentTarget.style.opacity='1';_vidOvChildDrag=null;document.body.classList.remove('body-dragging');showWkcEdges(false)" ondragover="event.preventDefault()" ${_hov} ondblclick="event.stopPropagation();if(typeof openVidEdit==='function')openVidEdit('${csid}')" oncontextmenu="if(typeof showVidCtx==='function')showVidCtx(event,'${csid}')" data-vidrow="${csid}" data-cvid="${csid}" class="${_cFocusCls}" style="padding:3px 10px 3px 6px;border-radius:6px;font-size:11px;font-weight:500;color:var(--muted);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s"><div style="width:16px;flex-shrink:0;box-sizing:content-box;border:1px solid transparent;text-align:center;color:${_cOnCal?'var(--accent)':'rgba(140,135,160,.4)'};font-size:10px;font-weight:${_cOnCal?'700':'400'}">└</div><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(c.topic||c.title)}</span><div style="display:flex;gap:0;flex-shrink:0;align-items:center;margin-left:20px">${_vidOvStepDots(c,steps)}</div>${_cPostField}<div class="vid-ov-pctx" style="width:16px;flex-shrink:0;text-align:center;position:relative"><span class="vid-ov-pct" style="font-size:8px;opacity:.4;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif">${_vidOvPct(c,steps)}%</span>${_cxBtn}</div></div>`;
+    html+=`<div draggable="true" ondragstart="_vidOvSelVid='${csid}';_vidOvChildDrag=event.currentTarget;dragId='vid::${csid}';event.dataTransfer.effectAllowed='move';document.body.classList.add('body-dragging');showWkcEdges(true);event.currentTarget.style.opacity='.4'" ondragend="event.currentTarget.style.opacity='1';_vidOvChildDrag=null;document.body.classList.remove('body-dragging');showWkcEdges(false)" ondragover="event.preventDefault()" ${_hov} ondblclick="event.stopPropagation();if(typeof openVidEdit==='function')openVidEdit('${csid}')" oncontextmenu="if(typeof showVidCtx==='function')showVidCtx(event,'${csid}')" data-vidrow="${csid}" data-cvid="${csid}" class="${_cFocusCls}" style="padding:3px 13px 3px 6px;border-radius:6px;font-size:11px;font-weight:500;color:var(--muted);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s"><div style="width:16px;flex-shrink:0;box-sizing:content-box;border:1px solid transparent;text-align:center;color:${_cOnCal?'var(--accent)':'rgba(140,135,160,.4)'};font-size:10px;font-weight:${_cOnCal?'700':'400'}">└</div><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(c.topic||c.title)}</span><div style="display:flex;gap:0;flex-shrink:0;align-items:center;padding-left:20px">${_vidOvStepDots(c,steps)}</div>${_cPostField}<div class="vid-ov-pctx" style="width:16px;flex-shrink:0;text-align:center;position:relative"><span class="vid-ov-pct" style="font-size:8px;opacity:.4;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif">${_vidOvPct(c,steps)}%</span>${_cxBtn}</div></div>`;
     if(ci<children.length-1){const oA=c.vid_order??ci;const oB=children[ci+1].vid_order??(ci+1);html+=`<div class="vid-insert-zone"><button class="vid-insert-btn" onclick="event.stopPropagation();_vidOvInlineAdd('${sid}',${oA},${oB},this.closest('.vid-insert-zone'))">+</button></div>`;}
   });
   return html;
@@ -5381,7 +5421,7 @@ function drawTBBlock(col,b){
   if(b._vidStepVid&&b._vidStepName&&b._vidStepName!=='step_thumbnail'&&b._vidStepName!=='step_description'){
     const _vsV2=(st.videos||[]).find(x=>String(x.id)===String(b._vidStepVid));
     const _vsDone=_vsV2&&_vsV2[b._vidStepName]==='done';
-    _vidStepSquareHtml=`<div class="tb-vstep-sq${_vsDone?' done':''}" data-vid="${b._vidStepVid}" data-step="${b._vidStepName}" title="${_vsDone?'Stage complete':'Complete stage'}" style="width:9px;height:9px;border:1.5px solid rgba(34,197,94,.5);border-radius:1.5px;cursor:pointer;flex-shrink:0;margin-right:3px;display:inline-flex;align-items:center;justify-content:center;background:${_vsDone?'#16a34a':'transparent'}"></div>`;
+    _vidStepSquareHtml=`<div class="tb-vstep-sq${_vsDone?' done':''}" data-vid="${b._vidStepVid}" data-step="${b._vidStepName}" title="${_vsDone?'Stage complete':'Complete stage'}" style="width:9px;height:9px;border:1.5px solid rgba(34,197,94,.5);border-radius:1.5px;cursor:pointer;flex-shrink:0;margin-right:3px;margin-top:-1px;display:inline-flex;align-items:center;justify-content:center;background:${_vsDone?'#16a34a':'transparent'}"></div>`;
   }
   // Post Tab tasks: link button replaces time, double-click opens video edit
   let _copyLinkHtml='';let _ptVidId=null;
@@ -5414,6 +5454,7 @@ function drawTBBlock(col,b){
     pushUndo(()=>{v[step]=prevVal;sbReqSilent('PATCH','videos',{[step]:prevVal},`?id=eq.${v.id}`);save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();},'Stage toggle');
     save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
     const panel=document.getElementById('vidOvPanel');if(panel&&panel.style.display==='block')_renderVidOvMenu();
+    if(newVal==='done')_vidCheckAllDone(vid);
   });
   const _clBtn=el.querySelector('.tb-copy-link');
   if(_clBtn)_clBtn.addEventListener('click',e=>{e.stopPropagation();navigator.clipboard.writeText(_clBtn.dataset.url);_clBtn.innerHTML='<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';setTimeout(()=>{_clBtn.innerHTML='<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#15803d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>';},1500);});
