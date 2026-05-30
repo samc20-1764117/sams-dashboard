@@ -5958,7 +5958,15 @@ function _atbCycleCat(id){
   const next=_ATB_CATS[(curIdx+1)%_ATB_CATS.length];
   a.category=next.val||null;
   sbReqSilent('PATCH','auto_timeblocks',{category:a.category},`?id=eq.${id}`);
-  save();_renderATBMgr();if(document.getElementById('tbGrid'))renderDayTB();
+  // Update DOM directly instead of full re-render
+  const item=_atbMgrEl&&_atbMgrEl.querySelector(`[data-atb-id="${id}"]`);
+  if(item){
+    const c=a.category?gc(a.category):null;
+    item.style.borderLeftColor=c?c.d:'#c8c6d4';
+    const onBg=c?c.bg:'rgba(180,175,200,.2)',onTxt=c?c.t:'#6b6880',onBdr=c?c.b:'rgba(180,175,200,.4)';
+    item.querySelectorAll('.day-tog.on').forEach(d=>{if(c){d.style.background=onBg;d.style.color=onTxt;d.style.borderColor=onBdr;}else{d.style.cssText='';}});
+  }
+  save();if(document.getElementById('tbGrid'))renderDayTB();
 }
 function _atbCycleCatNew(){
   _atbNewCatIdx=(_atbNewCatIdx+1)%_ATB_CATS.length;
