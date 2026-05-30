@@ -4989,6 +4989,8 @@ window.addEventListener('blur',()=>{_wKeyHeld=false;});
 document.addEventListener('keydown',async e=>{
   const tag=document.activeElement?.tagName;
   if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT'||document.activeElement?.isContentEditable)return;
+  // q key: toggle quick notes
+  if(e.key==='q'&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&!document.querySelector('.overlay.open')){e.preventDefault();if(typeof toggleQN==='function')toggleQN();return;}
   // t key: jump to today on overview
   if(e.key==='t'&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&activePg==='overview'&&!document.querySelector('.overlay.open')&&!(typeof _vidCalOpen!=='undefined'&&_vidCalOpen)){const _vp=document.getElementById('vidOvPanel');if(_vp&&_vp.style.display==='block'){}else{e.preventDefault();document.activeElement?.blur();goToday();return;}}
   // Video panel keyboard nav (arrow up/down, delete, enter)
