@@ -3673,7 +3673,7 @@ function _vidOvEditPostDate(vidId,el){
   const inp=document.createElement('input');inp.type='text';
   inp.placeholder='m/d';
   inp.value=v.post_date?_vidOvPostStr(v.post_date):'';
-  inp.style.cssText='width:38px;font-size:9px;padding:1px 2px;border:1px solid var(--accent);border-radius:3px;background:var(--bg);outline:none;color:var(--text);text-align:right;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif;box-sizing:border-box;margin:0';
+  inp.style.cssText='width:30px;font-size:9px;padding:1px 1px;border:1px solid var(--accent);border-radius:3px;background:var(--bg);outline:none;color:var(--text);text-align:right;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif;box-sizing:border-box;margin:0';
   el.innerHTML='';el.appendChild(inp);inp.focus();inp.select();
   let closed=false;
   const close=()=>{if(closed)return;closed=true;inp.remove();};
