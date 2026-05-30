@@ -89,7 +89,14 @@
 
 **Unified Add modal** (`#wrRuleAddModal`): `openWrRuleAddModal(cadence?,type='wr')`. WR vs Scheduled toggle. Starting date field (`#wrAddAnchorField`) always visible when type=`sch` regardless of cadence (including weekly). `_wrReadCadenceFields` returns `starting_date` for `sch` type on all cadences.
 
-**Move prev/next week** (`_wrShiftAnchor`): Non-WR: marks current week `__skip__`, moves to adjacent week via `_dateOverrides[targetWkKey]`. WR rules: shifts `_dateOverrides[wkKey]` by ±7 days.
+**Context menu** (`#wrRuleCtxMenu`): populated dynamically by `showWrRuleCtx` based on cadence.
+- **Weekly/Other** (fires every week): ⊘ Skip this week · ✏️ Edit this week only · ✏️ Edit rule (all future) · ✕ Delete rule. No move prev/next (meaningless for weekly).
+- **Interval cadences** (biweekly/monthly/quarterly/biannual/annual): ⊘ Skip this cycle · ← Move to prev week (this time) · → Move to next week (this time) · ← Shift schedule earlier (all future) · → Shift schedule later (all future) · ✏️ Edit this week only · ✏️ Edit rule (all future) · ✕ Delete rule.
+
+**Move prev/next week (this time)** (`_wrShiftAnchor`): one-time override only. Skips current week, pins to adjacent week via `_dateOverrides`. Does NOT shift `starting_date`. Conflict guard: if target week already has this task (naturally due, moved-in override, or non-skip `_dateOverrides`), shows toast "Already scheduled that week" and blocks.
+
+**Shift schedule (all future)** (`wrCtxShiftSchedule`): shifts `starting_date` ±7 days so ALL future occurrences realign. Also moves current week instance to adjacent week (skip override + `_dateOverrides` pin). For WR rules, also writes move override to `wr_recurring_overrides`.
+
 **Edge drag (`rec::` weekly cal + setupEdge)**: sets `_dateOverrides[curWkKey]='__skip__'` + `_dateOverrides[tgtWkKey]=same-DOW date in target week`. For interval cadences (biweekly/quarterly/biannual/annual), also shifts `starting_date` ±7 days so all future occurrences align. PATCHes with `sbReqSilent` including both `date_overrides` and `starting_date`.
 
 **WR card sort**: done last→cadence (weekly=0,biweekly=2,monthly=4,quarterly=6,biannual=8,annual=10,other=12)→pup +1.

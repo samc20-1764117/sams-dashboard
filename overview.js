@@ -2694,8 +2694,30 @@ function showWrRuleCtx(e,id,wkKey){
   const isRule=st.wrRules.some(r=>String(r.id)===String(id));
   if(isRule){_wrCtxRuleId=String(id);_wrCtxRecId=null;}else{_wrCtxRecId=String(id);_wrCtxRuleId=null;}
   _wrCtxWkKey=wkKey;
+  // Determine cadence
+  const rule=isRule?st.wrRules.find(r=>String(r.id)===String(id)):st.recurring.find(r=>String(r.id)===String(id));
+  const cad=rule?.cadence||'weekly';
+  const isInterval=cad!=='weekly'&&cad!=='other';
   const m=document.getElementById('wrRuleCtxMenu');
-  const x=Math.min(e.clientX,window.innerWidth-185),y=Math.min(e.clientY,window.innerHeight-210);
+  let h='';
+  if(isInterval){
+    h+=`<div class="ctx-item" onclick="wrCtxSkipThisWeek()">⊘  Skip this cycle</div>`;
+    h+=`<div class="ctx-divider"></div>`;
+    h+=`<div class="ctx-item" onclick="wrCtxMovePrevWeek()">←  Move to prev week (this time)</div>`;
+    h+=`<div class="ctx-item" onclick="wrCtxMoveNextWeek()">→  Move to next week (this time)</div>`;
+    h+=`<div class="ctx-divider"></div>`;
+    h+=`<div class="ctx-item" onclick="wrCtxShiftSchedule(-7)">←  Shift schedule earlier (all future)</div>`;
+    h+=`<div class="ctx-item" onclick="wrCtxShiftSchedule(7)">→  Shift schedule later (all future)</div>`;
+  }else{
+    h+=`<div class="ctx-item" onclick="wrCtxSkipThisWeek()">⊘  Skip this week</div>`;
+  }
+  h+=`<div class="ctx-divider"></div>`;
+  h+=`<div class="ctx-item" onclick="wrCtxEditThisWeek()">✏️  Edit this week only</div>`;
+  h+=`<div class="ctx-item" onclick="wrCtxEditRule()">✏️  Edit rule (all future)</div>`;
+  h+=`<div class="ctx-divider"></div>`;
+  h+=`<div class="ctx-item ctx-danger" onclick="wrCtxDeleteRule()">✕  Delete rule</div>`;
+  m.innerHTML=h;
+  const x=Math.min(e.clientX,window.innerWidth-200),y=Math.min(e.clientY,window.innerHeight-280);
   m.style.left=x+'px';m.style.top=y+'px';m.style.display='block';
 }
 function hideWrRuleCtx(){const m=document.getElementById('wrRuleCtxMenu');if(m)m.style.display='none';}
@@ -2821,6 +2843,11 @@ function wrCtxSkipThisWeek(){
   if(!_wrCtxRuleId)return;
   writeWrOverride(_wrCtxRuleId,_wrCtxWkKey,{override_type:'skip'},{undoLabel:'Skipped WR task this week'});
 }
+function _wkKeyToOff(wkKey){
+  const mon=new Date(wkKey+'T12:00'),now=new Date(),dow=(now.getDay()+6)%7;
+  const curMon=new Date(now);curMon.setDate(now.getDate()-dow);curMon.setHours(0,0,0,0);
+  return Math.round((mon-curMon)/(7*864e5));
+}
 function _wrShiftAnchor(delta){
   hideWrRuleCtx();
   if(_wrCtxRecId){
@@ -2829,6 +2856,12 @@ function _wrShiftAnchor(delta){
     const srcMon=new Date(_wrCtxWkKey+'T12:00');
     srcMon.setDate(srcMon.getDate()+(delta>0?7:-7));
     const targetWkKey=d2s(srcMon);
+    // Conflict guard: check if already in target week (naturally or moved-in)
+    const tgtOv=r._dateOverrides[targetWkKey];
+    if(tgtOv&&tgtOv!=='__skip__'){showToast('Already scheduled that week','#6b7280',2000);return;}
+    const tgtOff=_wkKeyToOff(targetWkKey);
+    const natDue=getRecurringWeekTasks(tgtOff).some(t=>String(t._recId)===_wrCtxRecId);
+    if(natDue){showToast('Already scheduled that week','#6b7280',2000);return;}
     const prevCurrent=r._dateOverrides[_wrCtxWkKey];
     const prevTarget=r._dateOverrides[targetWkKey];
     const _natDow=dayNameToIdx(r.appears_on_date);
@@ -2855,6 +2888,13 @@ function _wrShiftAnchor(delta){
   const srcMon=new Date(srcWkKey+'T12:00');
   srcMon.setDate(srcMon.getDate()+(delta>0?7:-7));
   const targetWkKey=d2s(srcMon);
+  // Conflict guard: check if naturally due in target week or has non-skip override
+  const tgtOff=_wkKeyToOff(targetWkKey);
+  const naturallyDue=isWRRuleDueThisWeek(rule,tgtOff);
+  const tgtOv=rule._dateOverrides[targetWkKey];
+  const movedInOv=st.wrOverrides.some(o=>o.override_type==='move'&&o.moved_to_wk_key===targetWkKey&&String(o.rule_id)===String(_wrCtxRuleId));
+  if((naturallyDue||movedInOv)&&(!tgtOv||tgtOv==='__skip__')){/* naturally due and not skipped — conflict */showToast('Already scheduled that week','#6b7280',2000);return;}
+  if(tgtOv&&tgtOv!=='__skip__'){showToast('Already scheduled that week','#6b7280',2000);return;}
   const prevSrc=rule._dateOverrides[srcWkKey];
   const prevTgt=rule._dateOverrides[targetWkKey];
   // Compute the target date: shift current pinned date (or natural day) by ±7
@@ -2894,6 +2934,60 @@ function _wrShiftAnchor(delta){
 }
 function wrCtxMovePrevWeek(){_wrShiftAnchor(-7);}
 function wrCtxMoveNextWeek(){_wrShiftAnchor(7);}
+function wrCtxShiftSchedule(delta){
+  hideWrRuleCtx();
+  const rid=_wrCtxRecId||_wrCtxRuleId;if(!rid)return;
+  const isRec=!!_wrCtxRecId;
+  const rule=isRec?st.recurring.find(r=>String(r.id)===rid):st.wrRules.find(r=>String(r.id)===rid);
+  if(!rule||!rule.starting_date)return;
+  const wkKey=_wrCtxWkKey;
+  // Shift starting_date
+  const prevStart=rule.starting_date;
+  const newStart=new Date(prevStart+'T12:00');newStart.setDate(newStart.getDate()+delta);
+  rule.starting_date=d2s(newStart);
+  // Also move current week instance to adjacent week
+  if(!rule._dateOverrides)rule._dateOverrides={};
+  const srcMon=new Date(wkKey+'T12:00');
+  srcMon.setDate(srcMon.getDate()+(delta>0?7:-7));
+  const targetWkKey=d2s(srcMon);
+  const prevSrcOv=rule._dateOverrides[wkKey];
+  const prevTgtOv=rule._dateOverrides[targetWkKey];
+  // Compute target date
+  const curDs=prevSrcOv&&prevSrcOv!=='__skip__'?prevSrcOv:null;
+  const base=curDs?new Date(curDs+'T12:00'):new Date();
+  base.setDate(base.getDate()+delta);
+  const nextDs=d2s(base);
+  rule._dateOverrides[wkKey]='__skip__';
+  rule._dateOverrides[targetWkKey]=nextDs;
+  // Persist
+  const patchData={starting_date:rule.starting_date,date_overrides:rule._dateOverrides};
+  if(isRec){
+    sbReq('PATCH','wr_recurring_rules',patchData,recQs(rid));
+  }else{
+    sbReq('PATCH','wr_recurring_rules',patchData,`?id=eq.${rid}`);
+    // Write move override for WR rules
+    const _moveFull={rule_id:rid,wk_key:wkKey,override_type:'move',moved_to_wk_key:targetWkKey,done:null,custom_name:null,custom_notes:null};
+    const _existingOv=st.wrOverrides.find(o=>String(o.rule_id)===String(rid)&&o.wk_key===wkKey);
+    const _prevOv=_existingOv?{..._existingOv}:null;
+    let _ovRealId=null;
+    if(_existingOv){Object.assign(_existingOv,_moveFull);sbReqSilent('PATCH','wr_recurring_overrides',_moveFull,`?id=eq.${_existingOv.id}`);}
+    else{const _tmpId='wrov-tmp-'+Date.now();st.wrOverrides.push({..._moveFull,id:_tmpId});sbReqSilent('POST','wr_recurring_overrides',_moveFull,'').then(res=>{if(res&&res[0]){_ovRealId=String(res[0].id);const idx=st.wrOverrides.findIndex(o=>String(o.id)===_tmpId);if(idx>-1)st.wrOverrides[idx]=res[0];}});}
+  }
+  const _rerender=()=>{renderRecOv();renderWkCal();renderWeeklyPage();renderToday();if(document.getElementById('tbGrid'))renderDayTB();};
+  save();_rerender();
+  const dir=delta>0?'later':'earlier';
+  pushUndo(()=>{
+    rule.starting_date=prevStart;
+    if(prevSrcOv!==undefined)rule._dateOverrides[wkKey]=prevSrcOv;else delete rule._dateOverrides[wkKey];
+    if(prevTgtOv!==undefined)rule._dateOverrides[targetWkKey]=prevTgtOv;else delete rule._dateOverrides[targetWkKey];
+    sbReq('PATCH','wr_recurring_rules',{starting_date:prevStart,date_overrides:rule._dateOverrides},isRec?recQs(rid):`?id=eq.${rid}`);
+    if(!isRec){
+      if(_prevOv){const ov=st.wrOverrides.find(o=>String(o.rule_id)===String(rid)&&o.wk_key===wkKey);if(ov)Object.assign(ov,_prevOv);sbReqSilent('PATCH','wr_recurring_overrides',_prevOv,`?id=eq.${ov?ov.id:_prevOv.id}`);}
+      else{const id=_ovRealId||st.wrOverrides.find(o=>String(o.rule_id)===String(rid)&&o.wk_key===wkKey)?.id;st.wrOverrides=st.wrOverrides.filter(o=>String(o.rule_id)!==String(rid)||o.wk_key!==wkKey);if(id)sbReqSilent('DELETE','wr_recurring_overrides',null,`?id=eq.${id}`);}
+    }
+    save();_rerender();
+  },'Shifted schedule '+dir);
+}
 function wrCtxEditThisWeek(){
   hideWrRuleCtx();
   if(_wrCtxRecId){openRecEditModal(_wrCtxRecId,_wrCtxWkKey,'this');return;}
