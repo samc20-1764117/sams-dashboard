@@ -5824,11 +5824,17 @@ function openAutoTBManager(){
   requestAnimationFrame(()=>requestAnimationFrame(()=>_atbMgrEl.classList.add('open')));
   _atbMgrEl.addEventListener('keydown',e=>{
     if(e.key==='Escape'){closeAutoTBManager();return;}
-    if(e.key==='Enter'&&!e.target.closest('input')){closeAutoTBManager();}
+    if(e.key==='Enter'&&!e.target.closest('input')&&!e.target.classList.contains('day-tog')){closeAutoTBManager();}
   });
+  setTimeout(()=>document.addEventListener('click',_atbOutsideClick,true),50);
+}
+function _atbOutsideClick(e){
+  if(!_atbMgrEl)return document.removeEventListener('click',_atbOutsideClick,true);
+  if(!_atbMgrEl.contains(e.target)&&!e.target.closest('.atb-mgr')&&!e.target.closest('[onclick*="openAutoTBManager"]')){closeAutoTBManager();}
 }
 function closeAutoTBManager(){
   if(!_atbMgrEl)return;
+  document.removeEventListener('click',_atbOutsideClick,true);
   _atbMgrEl.classList.remove('open');
   const el=_atbMgrEl;_atbMgrEl=null;_atbEditId=null;
   setTimeout(()=>el.remove(),200);
@@ -5853,18 +5859,18 @@ function _renderATBMgr(){
     h+=`<button class="atb-mgr-x" onclick="_atbDelRule(${a.id})">✕</button>`;
     h+=`</div>`;
     h+=`<div class="atb-mgr-r2">`;
-    _ATB_DAYS.forEach(dd=>{h+=`<span class="day-tog${days.includes(dd.d)?' on':''}" data-day="${dd.d}" onclick="_atbTogDay(${a.id},${dd.d},this)" style="${days.includes(dd.d)?`background:${onBg};color:${onTxt};border-color:${onBdr}`:''}">${dd.l}</span>`;});
+    _ATB_DAYS.forEach(dd=>{h+=`<span class="day-tog${days.includes(dd.d)?' on':''}" data-day="${dd.d}" tabindex="0" onclick="_atbTogDay(${a.id},${dd.d},this)" onkeydown="_atbDayKey(event,this,${a.id})" style="${days.includes(dd.d)?`background:${onBg};color:${onTxt};border-color:${onBdr}`:''}">${dd.l}</span>`;});
     h+=`</div></div>`;
   });
   if(_atbEditId==='new'){
     h+=`<div class="atb-mgr-item atb-mgr-new" id="atbNewItem" style="border-left:2.5px solid #c8c6d4"><div class="atb-mgr-catbar" onclick="_atbCycleCatNew()" title="Change category"></div>`;
     h+=`<div class="atb-mgr-r1">`;
-    h+=`<input class="atb-mgr-name" id="atbF_label" placeholder="Name" autofocus onkeydown="if(event.key==='Enter')_atbSaveNew()">`;
-    h+=`<span class="atb-mgr-trange"><input class="atb-mgr-tinput" id="atbF_start" value="" placeholder="9am" onkeydown="if(event.key==='Enter')_atbSaveNew()"><span class="atb-mgr-tsep">-</span><input class="atb-mgr-tinput" id="atbF_end" value="" placeholder="9:30am" onkeydown="if(event.key==='Enter')_atbSaveNew()"></span>`;
+    h+=`<input class="atb-mgr-name" id="atbF_label" autofocus onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('atbF_start').focus();}">`;
+    h+=`<span class="atb-mgr-trange"><input class="atb-mgr-tinput" id="atbF_start" value="" onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('atbF_end').focus();}"><span class="atb-mgr-tsep">-</span><input class="atb-mgr-tinput" id="atbF_end" value="" onkeydown="if(event.key==='Enter'){event.preventDefault();const d=document.querySelector('.atb-mgr-new .day-tog');if(d)d.focus();else _atbSaveNew();}"></span>`;
     h+=`<button class="atb-mgr-x" onclick="_atbCancelEdit()" style="opacity:1;color:var(--muted)">✕</button>`;
     h+=`</div>`;
     h+=`<div class="atb-mgr-r2">`;
-    _ATB_DAYS.forEach(dd=>{h+=`<span class="day-tog${dd.d>=1&&dd.d<=5?' on':''}" data-day="${dd.d}" onclick="this.classList.toggle('on')">${dd.l}</span>`;});
+    _ATB_DAYS.forEach(dd=>{h+=`<span class="day-tog${dd.d>=1&&dd.d<=5?' on':''}" data-day="${dd.d}" tabindex="0" onclick="this.classList.toggle('on')" onkeydown="_atbDayKey(event,this)">${dd.l}</span>`;});
     h+=`</div></div>`;
   }
   h+=`<button class="atb-mgr-add" onclick="_atbStartEdit('new')">+ Add auto block</button>`;
@@ -5873,6 +5879,10 @@ function _renderATBMgr(){
 let _atbNewCatIdx=0;
 function _atbStartEdit(id){_atbEditId=id;_atbNewCatIdx=0;_renderATBMgr();}
 function _atbCancelEdit(){_atbEditId=null;_renderATBMgr();}
+function _atbDayKey(e,el,id){
+  if(e.key===' '||e.key==='Enter'){e.preventDefault();if(id!=null){_atbTogDay(id,+el.dataset.day,el);}else{el.classList.toggle('on');}return;}
+  if(e.key==='Tab'&&!e.shiftKey){const next=el.nextElementSibling;if(!next||!next.classList.contains('day-tog')){e.preventDefault();if(_atbEditId==='new')_atbSaveNew();else closeAutoTBManager();}}
+}
 function _atbInlineSave(id,field,val){
   const a=st.autoTimeblocks.find(x=>x.id===id);if(!a)return;
   a[field]=val;
@@ -5924,7 +5934,9 @@ function _atbSaveNew(){
   const dayEls=document.querySelectorAll('.atb-mgr-new .day-tog.on');
   const days=[...dayEls].map(e=>e.dataset.day).join(',');
   if(!label||!startTime||!endTime)return;
-  const payload={label,start_time:startTime,end_time:endTime,category:cat,days:days||null,is_enabled:true,sort_order:(st.autoTimeblocks.length+1),day_scope:'weekday'};
+  const payload={label,start_time:startTime,end_time:endTime,is_enabled:true,sort_order:(st.autoTimeblocks.length+1),day_scope:'weekday'};
+  if(cat)payload.category=cat;
+  if(days)payload.days=days;
   const tmpId='atb-tmp-'+Date.now();
   st.autoTimeblocks.push({...payload,id:tmpId});
   sbReqSilent('POST','auto_timeblocks',payload,'').then(res=>{
