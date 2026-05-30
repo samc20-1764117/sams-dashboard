@@ -500,7 +500,7 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 .atb-mgr-catbar{position:absolute;left:-2.5px;top:0;bottom:0;width:10px;cursor:pointer;z-index:1;border-radius:6px 0 0 6px}
 .atb-mgr-item:hover{background:rgba(109,95,230,.03)}
 .atb-mgr-r1{display:flex;align-items:center;gap:4px;width:100%}
-.atb-mgr-r2{display:flex;align-items:center;gap:0;padding:3px 0 0 0;width:100%;justify-content:space-between}
+.atb-mgr-r2{display:flex;align-items:center;gap:3px;padding:3px 0 0 0;width:100%;justify-content:flex-end}
 .atb-mgr-name{font-size:9px;font-weight:600;color:var(--text);flex:1;min-width:0;border:none;background:transparent;font-family:inherit;outline:none;padding:1px 2px;border-radius:3px;transition:background .1s}
 .atb-mgr-name:focus{background:rgba(109,95,230,.06)}
 .atb-mgr-trange{display:inline-flex;align-items:baseline;flex-shrink:0;white-space:nowrap;gap:0;font-size:8px;color:var(--muted)}
