@@ -3246,8 +3246,11 @@ function _vidStepToggleDone(vidId,step,checked){
   if(step==='step_thumbnail'||step==='step_description'){
     const v=(st.videos||[]).find(x=>String(x.id)===String(vidId));
     if(v){v[step]=checked?'done':'not_started';sbReqSilent('PATCH','videos',{[step]:v[step]},`?id=eq.${v.id}`);}
+    // Also sync timeblock block done state
+    const stBlk=(st.blocks||[]).find(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step);
+    if(stBlk){stBlk._done=checked;sbUpdateBlock(stBlk.id,{done:checked});}
   }
-  save();renderAll();
+  save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
   const panel=document.getElementById('vidOvPanel');if(panel&&panel.style.display==='block')_renderVidOvMenu();
   if(_vidOvAllOpen)_vidOvRenderAll();
 }
@@ -3357,10 +3360,9 @@ function _vidOvKeyNav(e){
   if(e.key==='ArrowUp'){e.preventDefault();_vidOvSelIdx=Math.max(_vidOvSelIdx-1,0);const nv=rows[_vidOvSelIdx]?.dataset.vidrow;if(e.shiftKey&&nv){_vidOvSelSet.add(nv);}else{_vidOvSelSet.clear();if(nv)_vidOvSelSet.add(nv);}_vidOvSelVid=nv||null;_vidOvHighlight();return true;}
   if((e.key==='Delete'||e.key==='Backspace')&&_vidOvSelSet.size>0){
     e.preventDefault();
-    const map=_vidDayMap();
     const ids=[..._vidOvSelSet];
-    const prevMap={};ids.forEach(vid=>{if(map[vid])prevMap[vid]=map[vid];});
-    ids.forEach(vid=>{if(map[vid])_vidUnassignDay(vid);});
+    ids.forEach(vid=>_vidOvDemote(vid));
+    _vidOvSelSet.clear();_vidOvSelIdx=-1;_vidOvSelVid=null;
     return true;
   }
   if(e.key==='Enter'&&_vidOvSelIdx>=0&&_vidOvSelIdx<rows.length){
@@ -3424,7 +3426,7 @@ function _renderVidOvMenu(){
   let html=_hdr;
   html+='<div id="vidOvContent" style="padding:4px 10px 0;flex:1;min-height:0;overflow-y:auto" ondragover="event.preventDefault();_vidOvDragIndicator(event)" ondragleave="_vidOvClearIndicator()" ondrop="_vidOvContentDrop(event)">';
   // Column header row — [+btn 16px][name flex][stages+%][post 52px][x 18px]
-  html+='<div style="display:flex;align-items:center;padding:2px 0 2px 6px;gap:5px">';
+  html+='<div style="display:flex;align-items:center;padding:2px 10px 2px 6px;gap:5px">';
   html+='<div style="width:16px;flex-shrink:0"></div>';
   html+='<span style="flex:1;min-width:0"></span>';
   html+='<div style="display:flex;gap:0;flex-shrink:0;align-items:center;margin-left:12px">';
@@ -3471,7 +3473,7 @@ function _vidOvMenuItem(v,steps,focusSet){
   const _postColor=v.post_date?_vidOvPostColor(v):'var(--muted)';
   const _postField=`<span class="vid-ov-post" style="width:46px;flex-shrink:0;font-size:9px;text-align:right;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif;color:${_postColor};cursor:pointer" onclick="event.stopPropagation();_vidOvEditPostDate('${sid}',this)" title="${v.post_date||'Set post date'}">${_postDate||''}</span>`;
   const _focusCls=_isFocused?' vid-ov-focus':'';
-  let html=`<div data-vidrow="${sid}" ${_dragAttr} ${_dblAttr} ${_ctxAttr} ${_hov} class="${_focusCls}" style="padding:5px 0 5px 6px;border-radius:6px;font-size:13px;font-weight:600;color:var(--text);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s">${_addBtn}<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(v.topic||v.title)}</span><div style="display:flex;gap:0;flex-shrink:0;align-items:center;margin-left:12px">${_vidOvStepDots(v,steps)}</div>${_postField}<div class="vid-ov-pctx" style="width:16px;flex-shrink:0;text-align:center;position:relative"><span class="vid-ov-pct" style="font-size:9px;opacity:.5;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif">${_vidOvPct(v,steps)}%</span>${_xBtn}</div></div>`;
+  let html=`<div data-vidrow="${sid}" ${_dragAttr} ${_dblAttr} ${_ctxAttr} ${_hov} class="${_focusCls}" style="padding:5px 10px 5px 6px;border-radius:6px;font-size:13px;font-weight:600;color:var(--text);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s">${_addBtn}<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(v.topic||v.title)}</span><div style="display:flex;gap:0;flex-shrink:0;align-items:center;margin-left:12px">${_vidOvStepDots(v,steps)}</div>${_postField}<div class="vid-ov-pctx" style="width:16px;flex-shrink:0;text-align:center;position:relative"><span class="vid-ov-pct" style="font-size:9px;opacity:.5;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif">${_vidOvPct(v,steps)}%</span>${_xBtn}</div></div>`;
   // Children (S/L videos)
   const children=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(v.id)&&c.status!=='published').sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
   children.forEach((c,ci)=>{
@@ -3483,7 +3485,7 @@ function _vidOvMenuItem(v,steps,focusSet){
     const _cPostDate=c.post_date?_vidOvPostStr(c.post_date):'';
     const _cPostColor=c.post_date?_vidOvPostColor(c):'var(--muted)';
     const _cPostField=`<span class="vid-ov-post" style="width:46px;flex-shrink:0;font-size:9px;text-align:right;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif;color:${_cPostColor};cursor:pointer" onclick="event.stopPropagation();_vidOvEditPostDate('${csid}',this)" title="${c.post_date||'Set post date'}">${_cPostDate||''}</span>`;
-    html+=`<div draggable="true" ondragstart="_vidOvSelVid='${csid}';_vidOvChildDrag=event.currentTarget;dragId='vid::${csid}';event.dataTransfer.effectAllowed='move';document.body.classList.add('body-dragging');showWkcEdges(true);event.currentTarget.style.opacity='.4'" ondragend="event.currentTarget.style.opacity='1';_vidOvChildDrag=null;document.body.classList.remove('body-dragging');showWkcEdges(false)" ondragover="event.preventDefault()" ${_hov} ondblclick="event.stopPropagation();if(typeof openVidEdit==='function')openVidEdit('${csid}')" oncontextmenu="if(typeof showVidCtx==='function')showVidCtx(event,'${csid}')" data-vidrow="${csid}" data-cvid="${csid}" class="${_cFocusCls}" style="padding:3px 0 3px 6px;border-radius:6px;font-size:11px;font-weight:500;color:var(--muted);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s"><div style="width:16px;flex-shrink:0;box-sizing:content-box;border:1px solid transparent;text-align:center;color:${_cOnCal?'var(--accent)':'rgba(140,135,160,.4)'};font-size:10px;font-weight:${_cOnCal?'700':'400'}">└</div><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(c.topic||c.title)}</span><div style="display:flex;gap:0;flex-shrink:0;align-items:center;margin-left:12px">${_vidOvStepDots(c,steps)}</div>${_cPostField}<div class="vid-ov-pctx" style="width:16px;flex-shrink:0;text-align:center;position:relative"><span class="vid-ov-pct" style="font-size:8px;opacity:.4;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif">${_vidOvPct(c,steps)}%</span>${_cxBtn}</div></div>`;
+    html+=`<div draggable="true" ondragstart="_vidOvSelVid='${csid}';_vidOvChildDrag=event.currentTarget;dragId='vid::${csid}';event.dataTransfer.effectAllowed='move';document.body.classList.add('body-dragging');showWkcEdges(true);event.currentTarget.style.opacity='.4'" ondragend="event.currentTarget.style.opacity='1';_vidOvChildDrag=null;document.body.classList.remove('body-dragging');showWkcEdges(false)" ondragover="event.preventDefault()" ${_hov} ondblclick="event.stopPropagation();if(typeof openVidEdit==='function')openVidEdit('${csid}')" oncontextmenu="if(typeof showVidCtx==='function')showVidCtx(event,'${csid}')" data-vidrow="${csid}" data-cvid="${csid}" class="${_cFocusCls}" style="padding:3px 10px 3px 6px;border-radius:6px;font-size:11px;font-weight:500;color:var(--muted);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s"><div style="width:16px;flex-shrink:0;box-sizing:content-box;border:1px solid transparent;text-align:center;color:${_cOnCal?'var(--accent)':'rgba(140,135,160,.4)'};font-size:10px;font-weight:${_cOnCal?'700':'400'}">└</div><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(c.topic||c.title)}</span><div style="display:flex;gap:0;flex-shrink:0;align-items:center;margin-left:12px">${_vidOvStepDots(c,steps)}</div>${_cPostField}<div class="vid-ov-pctx" style="width:16px;flex-shrink:0;text-align:center;position:relative"><span class="vid-ov-pct" style="font-size:8px;opacity:.4;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif">${_vidOvPct(c,steps)}%</span>${_cxBtn}</div></div>`;
     if(ci<children.length-1){const oA=c.vid_order??ci;const oB=children[ci+1].vid_order??(ci+1);html+=`<div class="vid-insert-zone"><button class="vid-insert-btn" onclick="event.stopPropagation();_vidOvInlineAdd('${sid}',${oA},${oB},this.closest('.vid-insert-zone'))">+</button></div>`;}
   });
   return html;
@@ -5342,7 +5344,7 @@ function drawTBBlock(col,b){
   if(b._vidStepVid&&b._vidStepName&&b._vidStepName!=='step_thumbnail'&&b._vidStepName!=='step_description'){
     const _vsV2=(st.videos||[]).find(x=>String(x.id)===String(b._vidStepVid));
     const _vsDone=_vsV2&&_vsV2[b._vidStepName]==='done';
-    _vidStepSquareHtml=`<div class="tb-vstep-sq${_vsDone?' done':''}" data-vid="${b._vidStepVid}" data-step="${b._vidStepName}" title="${_vsDone?'Stage complete':'Complete stage'}" style="width:9px;height:9px;border:1.5px solid rgba(34,197,94,.5);border-radius:1.5px;cursor:pointer;flex-shrink:0;margin-left:auto;align-self:center;display:inline-flex;align-items:center;justify-content:center;background:${_vsDone?'#16a34a':'transparent'}"></div>`;
+    _vidStepSquareHtml=`<div class="tb-vstep-sq${_vsDone?' done':''}" data-vid="${b._vidStepVid}" data-step="${b._vidStepName}" title="${_vsDone?'Stage complete':'Complete stage'}" style="width:9px;height:9px;border:1.5px solid rgba(34,197,94,.5);border-radius:1.5px;cursor:pointer;flex-shrink:0;margin-left:auto;margin-right:2px;align-self:flex-start;margin-top:-1.4px;display:inline-flex;align-items:center;justify-content:center;background:${_vsDone?'#16a34a':'transparent'}"></div>`;
   }
   // Post Tab tasks: link button replaces time, double-click opens video edit
   let _copyLinkHtml='';let _ptVidId=null;
