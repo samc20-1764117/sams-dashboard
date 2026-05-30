@@ -504,8 +504,8 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 .atb-mgr-name{font-size:9px;font-weight:600;color:var(--text);flex:1;min-width:0;border:none;background:transparent;font-family:inherit;outline:none;padding:1px 2px;border-radius:3px;transition:background .1s}
 .atb-mgr-name:focus{background:rgba(109,95,230,.06)}
 .atb-mgr-trange{display:inline-flex;align-items:baseline;flex-shrink:0;white-space:nowrap;gap:0;font-size:8px;color:var(--muted)}
-.atb-mgr-tinput{font-size:inherit;color:inherit;border:none;background:transparent;font-family:inherit;outline:none;padding:0;margin:0;width:5ch;border-radius:3px;text-align:right}
-.atb-mgr-tinput:focus{background:rgba(109,95,230,.06);text-align:left;padding:1px 2px;width:5.5ch}
+.atb-mgr-tinput{font-size:inherit;color:inherit;border:none;background:transparent;font-family:inherit;outline:none;padding:0 1px;margin:0;width:36px;border-radius:3px;text-align:left}
+.atb-mgr-tinput:focus{background:rgba(109,95,230,.06);padding:1px 2px;width:40px}
 .atb-mgr-tsep{font-size:inherit;color:inherit;line-height:1}
 .atb-mgr-x{font-size:9px;opacity:0;background:none;border:none;cursor:pointer;color:var(--muted);padding:0 2px;line-height:1;transition:opacity .12s,color .1s;flex-shrink:0;position:absolute;right:1px;top:6px}
 .atb-mgr-item:hover .atb-mgr-x{opacity:1}
