@@ -4998,9 +4998,9 @@ document.addEventListener('keydown',async e=>{
     if(e.key==='ArrowUp'||e.key==='ArrowDown'||e.key==='ArrowLeft'||e.key==='ArrowRight'||e.key==='Delete'||e.key==='Backspace'||e.key==='n'||e.key==='Enter')return;
   }
   // w + Arrow: shift week on overview
-  if((e.key==='ArrowLeft'||e.key==='ArrowRight')&&_wKeyHeld&&activePg==='overview'){e.preventDefault();shiftWk(e.key==='ArrowLeft'?-1:1);return;}
+  if((e.key==='ArrowLeft'||e.key==='ArrowRight')&&_wKeyHeld&&activePg==='overview'&&!document.querySelector('.atb-mgr')){e.preventDefault();shiftWk(e.key==='ArrowLeft'?-1:1);return;}
   // Arrow left/right: shift day on overview when nothing selected
-  if((e.key==='ArrowLeft'||e.key==='ArrowRight')&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&activePg==='overview'&&!document.querySelector('.overlay.open')&&!_qnOpen){
+  if((e.key==='ArrowLeft'||e.key==='ArrowRight')&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&activePg==='overview'&&!document.querySelector('.overlay.open')&&!_qnOpen&&!document.querySelector('.atb-mgr')){
     if(!selectedTasks.size){e.preventDefault();shiftDay(e.key==='ArrowLeft'?-1:1);return;}
     // Move selected tasks ±1 day on weekly cal
     if(!document.querySelector('.tb-col')||document.querySelector('.tb-col')){
