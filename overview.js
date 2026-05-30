@@ -5729,7 +5729,7 @@ function drawAutoTBBlock(col,atb,ds){
     const atbSid='atb::'+atb._atbId;
     if(e.metaKey||e.ctrlKey){if(selectedTasks.has(atbSid))selectedTasks.delete(atbSid);else selectedTasks.add(atbSid);lastSelectedId=atbSid;}
     else if(e.shiftKey&&lastSelectedId){const col2=el.closest('.tb-col');if(col2){const ids=[];col2.querySelectorAll('.tb-block[data-bid]').forEach(be=>{const bl=st.blocks.find(x=>String(x.id)===String(be.dataset.bid));if(bl){const sid=_getTBBlockSelId(bl);if(sid)ids.push(sid);}});col2.querySelectorAll('.atb-block[data-atb-id]').forEach(ae=>ids.push('atb::'+ae.dataset.atbId));const ai=ids.indexOf(lastSelectedId),bi2=ids.indexOf(atbSid);if(ai>-1&&bi2>-1){const lo=Math.min(ai,bi2),hi=Math.max(ai,bi2);ids.slice(lo,hi+1).forEach(x=>selectedTasks.add(x));}else selectedTasks.add(atbSid);}lastSelectedId=atbSid;}
-    else{selectedTasks.clear();selectedTasks.add(atbSid);lastSelectedId=atbSid;}
+    else{if(selectedTasks.size===1&&selectedTasks.has(atbSid)){selectedTasks.clear();selAtbId=null;selAtbDs=null;lastSelectedId=null;}else{selectedTasks.clear();selectedTasks.add(atbSid);lastSelectedId=atbSid;}}
     applySelHighlight();
   });
   let atbDragging=false,atbOnMove=null,atbOnUp=null;
@@ -5895,8 +5895,8 @@ function _renderATBMgr(){
     const onBdr=c?c.b:'rgba(180,175,200,.4)';
     h+=`<div class="atb-mgr-item" data-atb-id="${a.id}" style="border-left:2.5px solid ${barCol}"><div class="atb-mgr-catbar" onclick="_atbCycleCat(${a.id})" title="Change category"></div>`;
     h+=`<div class="atb-mgr-r1">`;
-    h+=`<input class="atb-mgr-name" value="${a.label||''}" placeholder="Name" onchange="_atbInlineSave(${a.id},'label',this.value)" onkeydown="if(event.key==='Enter')this.blur()">`;
-    h+=`<span class="atb-mgr-trange"><input class="atb-mgr-tinput" value="${tS}" placeholder="9am" onblur="_atbSaveTime(${a.id},'start_time',this)" onkeydown="if(event.key==='Enter')this.blur()"><span class="atb-mgr-tsep">-</span><input class="atb-mgr-tinput" value="${tE}" placeholder="10am" onblur="_atbSaveTime(${a.id},'end_time',this)" onkeydown="if(event.key==='Enter')this.blur()"></span>`;
+    h+=`<input class="atb-mgr-name" value="${a.label||''}" placeholder="Name" onchange="_atbInlineSave(${a.id},'label',this.value)" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='ArrowUp'||event.key==='ArrowDown'){event.preventDefault();_atbCycleCat(${a.id});}">`;
+    h+=`<span class="atb-mgr-trange"><input class="atb-mgr-tinput" value="${tS}" onblur="_atbSaveTime(${a.id},'start_time',this)" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='ArrowUp'||event.key==='ArrowDown'){event.preventDefault();_atbCycleCat(${a.id});}"><span class="atb-mgr-tsep">-</span><input class="atb-mgr-tinput" value="${tE}" onblur="_atbSaveTime(${a.id},'end_time',this)" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='ArrowUp'||event.key==='ArrowDown'){event.preventDefault();_atbCycleCat(${a.id});}"></span>`;
     h+=`<button class="atb-mgr-x" onclick="_atbDelRule(${a.id})">✕</button>`;
     h+=`</div>`;
     h+=`<div class="atb-mgr-r2">`;
@@ -5906,8 +5906,8 @@ function _renderATBMgr(){
   if(_atbEditId==='new'){
     h+=`<div class="atb-mgr-item atb-mgr-new" id="atbNewItem" style="border-left:2.5px solid #c8c6d4"><div class="atb-mgr-catbar" onclick="_atbCycleCatNew()" title="Change category"></div>`;
     h+=`<div class="atb-mgr-r1">`;
-    h+=`<input class="atb-mgr-name" id="atbF_label" autofocus onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('atbF_start').focus();}">`;
-    h+=`<span class="atb-mgr-trange"><input class="atb-mgr-tinput" id="atbF_start" value="" onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('atbF_end').focus();}"><span class="atb-mgr-tsep">-</span><input class="atb-mgr-tinput" id="atbF_end" value="" onkeydown="if(event.key==='Enter'){event.preventDefault();const d=document.querySelector('.atb-mgr-new .day-tog');if(d)d.focus();else _atbSaveNew();}"></span>`;
+    h+=`<input class="atb-mgr-name" id="atbF_label" autofocus onkeydown="_atbNewInputKey(event,'label')">`;
+    h+=`<span class="atb-mgr-trange"><input class="atb-mgr-tinput" id="atbF_start" value="" onkeydown="_atbNewInputKey(event,'start')"><span class="atb-mgr-tsep">-</span><input class="atb-mgr-tinput" id="atbF_end" value="" onkeydown="_atbNewInputKey(event,'end')"></span>`;
     h+=`<button class="atb-mgr-x" onclick="_atbCancelEdit()" style="opacity:1;color:var(--muted)">✕</button>`;
     h+=`</div>`;
     h+=`<div class="atb-mgr-r2">`;
@@ -5921,8 +5921,17 @@ let _atbNewCatIdx=0;
 function _atbStartEdit(id){_atbEditId=id;_atbNewCatIdx=0;_renderATBMgr();}
 function _atbCancelEdit(){_atbEditId=null;_renderATBMgr();}
 function _atbDayKey(e,el,id){
-  if(e.key===' '||e.key==='Enter'){e.preventDefault();if(id!=null){_atbTogDay(id,+el.dataset.day,el);}else{el.classList.toggle('on');}return;}
+  if(e.key===' '){e.preventDefault();if(id!=null){_atbTogDay(id,+el.dataset.day,el);}else{el.classList.toggle('on');}return;}
+  if(e.key==='Enter'){e.preventDefault();if(_atbEditId==='new')_atbSaveNew();else{el.blur();closeAutoTBManager();}return;}
+  if(e.key==='ArrowRight'){e.preventDefault();const next=el.nextElementSibling;if(next&&next.classList.contains('day-tog'))next.focus();return;}
+  if(e.key==='ArrowLeft'){e.preventDefault();const prev=el.previousElementSibling;if(prev&&prev.classList.contains('day-tog'))prev.focus();return;}
+  if(e.key==='ArrowUp'||e.key==='ArrowDown'){e.preventDefault();if(id!=null)_atbCycleCat(id);else _atbCycleCatNew();return;}
   if(e.key==='Tab'&&!e.shiftKey){const next=el.nextElementSibling;if(!next||!next.classList.contains('day-tog')){e.preventDefault();if(_atbEditId==='new')_atbSaveNew();else closeAutoTBManager();}}
+}
+function _atbNewInputKey(e,field){
+  if(e.key==='ArrowUp'||e.key==='ArrowDown'){e.preventDefault();_atbCycleCatNew();return;}
+  if(e.key==='Enter'){e.preventDefault();if(field==='label')document.getElementById('atbF_start').focus();else if(field==='start')document.getElementById('atbF_end').focus();else{const d=document.querySelector('.atb-mgr-new .day-tog');if(d)d.focus();else _atbSaveNew();}}
+  if(e.key==='Tab'&&!e.shiftKey&&field==='end'){e.preventDefault();const d=document.querySelector('.atb-mgr-new .day-tog');if(d)d.focus();}
 }
 function _atbInlineSave(id,field,val){
   const a=st.autoTimeblocks.find(x=>x.id===id);if(!a)return;
@@ -5981,8 +5990,8 @@ function _atbSaveNew(){
   const tmpId='atb-tmp-'+Date.now();
   st.autoTimeblocks.push({...payload,id:tmpId});
   sbReqSilent('POST','auto_timeblocks',payload,'').then(res=>{
-    if(res&&res[0]){const idx=st.autoTimeblocks.findIndex(x=>x.id===tmpId);if(idx>-1)st.autoTimeblocks[idx]=res[0];}
-    save();_renderATBMgr();
+    if(res&&res[0]){const idx=st.autoTimeblocks.findIndex(x=>x.id===tmpId);if(idx>-1)st.autoTimeblocks[idx]=res[0];save();_renderATBMgr();}
+    else{console.error('Auto block save failed, payload:',payload,'response:',res);showToast('Auto block save failed — check console','error');}
   });
   _atbEditId=null;save();_renderATBMgr();
   if(document.getElementById('tbGrid'))renderDayTB();
