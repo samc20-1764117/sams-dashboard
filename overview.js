@@ -1412,8 +1412,14 @@ function renderWkCal(){
     });
 
     // Exclude travel+birthday from per-col chips (shown as banners instead)
-    const virtForDay=getRecurringWeekTasks(wkOff).filter(v=>v.due_date===ds&&!v.done);
-    const virtForDayDone=getRecurringWeekTasks(wkOff).filter(v=>v.due_date===ds&&v.done);
+    // Non-WR recurring: check current week + past weeks for overrides moved forward
+    const _recSeenDay=new Set();const virtForDay=[];const virtForDayDone=[];
+    for(let _pw=wkOff;_pw>=wkOff-4;_pw--){
+      getRecurringWeekTasks(_pw).filter(v=>v.due_date===ds&&!_recSeenDay.has(String(v._recId))).forEach(v=>{
+        _recSeenDay.add(String(v._recId));
+        if(v.done)virtForDayDone.push(v);else virtForDay.push(v);
+      });
+    }
     const wkKey2=getWkKey(wkOff);
     // Add weekly reset tasks pinned to this date — check current week AND past weeks (overdue moved forward)
     const _wrecSeenDay=new Set();const wrecForDay=[];const wrecForDayDone=[];
@@ -1556,7 +1562,7 @@ function renderWkCal(){
       });
       chip.addEventListener('dblclick',e=>{e.stopPropagation();if(t._type==='fin-cancel'){showPage('finance');}else if(t._type==='vid'){if(typeof openVidEdit==='function')openVidEdit(t._vidId);}else if(t._type==='pup'){openPupEditModal(t._skillId);}else if(t._type==='shop')tiDblShop(e,t._shopId);else if(t.notes&&t.notes.startsWith('_vid:')){if(typeof openVidEdit==='function')openVidEdit(t.notes.replace('_vid:',''));}else if(!t._virtual)tiDbl(e,t.id);else tiDblRec(e,t._recId,t._wkKey||getWkKey(wkOff));});
       const dx=document.createElement('button');dx.className='chip-del';dx.textContent='✕';
-      dx.title=(t._type==='vid'||t._type==='shop'||t._isWrec||t._isWrRule)?'Remove from calendar':t._virtual?'Delete recurring task':'Delete task';
+      dx.title=(t._type==='vid'||t._type==='vidstep'||t._type==='shop'||t._isWrec||t._isWrRule)?'Remove from calendar':(t._virtual&&t._recId)?'Delete recurring task':'Delete task';
       dx.addEventListener('click',e2=>{
         e2.stopPropagation();
         if(t._type==='vid'){_vidUnassignDay(t._vidId);return;}
@@ -1576,7 +1582,11 @@ function renderWkCal(){
           showWrScopePicker(e2,'⊘  Skip this week only','✕  Delete recurring task',
             ()=>skipWRec(_rid,_wk),
             ()=>delRec(_rid),'⊠  Remove from views',()=>unscheduleWRec(_rid,_wk));
-        } else if(t._virtual){
+        } else if(t._type==='vidstep'){
+          _vidStepUnassign(t._vidId,t._vidStep);
+        } else if(t._type==='fin-cancel'){
+          delTask(t.id,e2);
+        } else if(t._virtual&&t._recId){
           const _rid=String(t._recId),_wk=t._wkKey||getWkKey(wkOff);
           showWrScopePicker(e2,'⊘  Skip this week only','✕  Delete recurring task',
             ()=>skipRecVirtThisWk(_rid,_wk),
@@ -2705,15 +2715,15 @@ function showWrRuleCtx(e,id,wkKey){
     h+=`<div class="ctx-divider"></div>`;
     h+=`<div class="ctx-cols">`;
     h+=`<div class="ctx-col">`;
-    h+=`<div class="ctx-col-hdr">This time</div>`;
-    h+=`<div class="ctx-item" onclick="wrCtxMovePrevWeek()">← Prev week</div>`;
+    h+=`<div class="ctx-col-hdr">This time only</div>`;
     h+=`<div class="ctx-item" onclick="wrCtxMoveNextWeek()">→ Next week</div>`;
+    h+=`<div class="ctx-item" onclick="wrCtxMovePrevWeek()">← Prev week</div>`;
     h+=`<div class="ctx-item" onclick="wrCtxEditThisWeek()">✏️ Edit</div>`;
     h+=`</div>`;
     h+=`<div class="ctx-col" style="border-left:1px solid rgba(210,205,228,.2)">`;
     h+=`<div class="ctx-col-hdr">All future</div>`;
-    h+=`<div class="ctx-item" onclick="wrCtxShiftSchedule(-7)">← Earlier</div>`;
-    h+=`<div class="ctx-item" onclick="wrCtxShiftSchedule(7)">→ Later</div>`;
+    h+=`<div class="ctx-item" onclick="wrCtxShiftSchedule(7)">→ Next week</div>`;
+    h+=`<div class="ctx-item" onclick="wrCtxShiftSchedule(-7)">← Prev week</div>`;
     h+=`<div class="ctx-item" onclick="wrCtxEditRule()">✏️ Edit</div>`;
     h+=`</div>`;
     h+=`</div>`;
