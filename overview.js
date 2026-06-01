@@ -2709,34 +2709,40 @@ function showWrRuleCtx(e,id,wkKey){
   const cad=rule?.cadence||'weekly';
   const isInterval=cad!=='weekly'&&cad!=='other';
   const m=document.getElementById('wrRuleCtxMenu');
-  let h='';
+  const _ico=(path,sz=12)=>`<svg width="${sz}" height="${sz}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${path}</svg>`;
+  const _icoNext=_ico('<line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>');
+  const _icoPrev=_ico('<line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>');
+  const _icoEdit=_ico('<path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>');
+  const _icoSkip=_ico('<circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>');
+  const _icoX=_ico('<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',10);
+  let h=`<div style="display:flex;align-items:center;justify-content:space-between;padding:4px 8px 2px">`;
+  h+=`<span style="font-size:10px;font-weight:600;color:var(--muted)">${rule?.name||'Task'}</span>`;
+  h+=`<button onclick="wrCtxDeleteRule()" style="background:none;border:none;cursor:pointer;color:var(--muted);padding:2px;border-radius:4px;display:flex;align-items:center" title="Delete rule permanently">${_icoX}</button>`;
+  h+=`</div>`;
   if(isInterval){
-    h+=`<div class="ctx-item" onclick="wrCtxSkipThisWeek()">⊘  Skip this cycle</div>`;
-    h+=`<div class="ctx-divider"></div>`;
+    h+=`<div class="ctx-item" onclick="wrCtxSkipThisWeek()">${_icoSkip} Skip this cycle</div>`;
     h+=`<div class="ctx-cols">`;
-    h+=`<div class="ctx-col">`;
+    h+=`<div class="ctx-col ctx-col-box">`;
     h+=`<div class="ctx-col-hdr">This time only</div>`;
-    h+=`<div class="ctx-item" onclick="wrCtxMoveNextWeek()">→ Next week</div>`;
-    h+=`<div class="ctx-item" onclick="wrCtxMovePrevWeek()">← Prev week</div>`;
-    h+=`<div class="ctx-item" onclick="wrCtxEditThisWeek()">✏️ Edit</div>`;
+    h+=`<div class="ctx-item" onclick="wrCtxMoveNextWeek()">${_icoNext} Next</div>`;
+    h+=`<div class="ctx-item" onclick="wrCtxMovePrevWeek()">${_icoPrev} Prev</div>`;
+    h+=`<div class="ctx-item" onclick="wrCtxEditThisWeek()">${_icoEdit} Edit</div>`;
     h+=`</div>`;
-    h+=`<div class="ctx-col" style="border-left:1px solid rgba(210,205,228,.2)">`;
+    h+=`<div class="ctx-col ctx-col-box">`;
     h+=`<div class="ctx-col-hdr">All future</div>`;
-    h+=`<div class="ctx-item" onclick="wrCtxShiftSchedule(7)">→ Next week</div>`;
-    h+=`<div class="ctx-item" onclick="wrCtxShiftSchedule(-7)">← Prev week</div>`;
-    h+=`<div class="ctx-item" onclick="wrCtxEditRule()">✏️ Edit</div>`;
+    h+=`<div class="ctx-item" onclick="wrCtxShiftSchedule(7)">${_icoNext} Next</div>`;
+    h+=`<div class="ctx-item" onclick="wrCtxShiftSchedule(-7)">${_icoPrev} Prev</div>`;
+    h+=`<div class="ctx-item" onclick="wrCtxEditRule()">${_icoEdit} Edit</div>`;
     h+=`</div>`;
     h+=`</div>`;
   }else{
-    h+=`<div class="ctx-item" onclick="wrCtxSkipThisWeek()">⊘  Skip this week</div>`;
+    h+=`<div class="ctx-item" onclick="wrCtxSkipThisWeek()">${_icoSkip} Skip this week</div>`;
     h+=`<div class="ctx-divider"></div>`;
-    h+=`<div class="ctx-item" onclick="wrCtxEditThisWeek()">✏️  Edit this week only</div>`;
-    h+=`<div class="ctx-item" onclick="wrCtxEditRule()">✏️  Edit rule (all future)</div>`;
+    h+=`<div class="ctx-item" onclick="wrCtxEditThisWeek()">${_icoEdit} Edit this week only</div>`;
+    h+=`<div class="ctx-item" onclick="wrCtxEditRule()">${_icoEdit} Edit rule (all future)</div>`;
   }
-  h+=`<div class="ctx-divider"></div>`;
-  h+=`<div class="ctx-item ctx-danger" onclick="wrCtxDeleteRule()">✕  Delete rule</div>`;
   m.innerHTML=h;
-  const x=Math.min(e.clientX,window.innerWidth-200),y=Math.min(e.clientY,window.innerHeight-260);
+  const x=Math.min(e.clientX,window.innerWidth-220),y=Math.min(e.clientY,window.innerHeight-260);
   m.style.left=x+'px';m.style.top=y+'px';m.style.display='block';
 }
 function hideWrRuleCtx(){const m=document.getElementById('wrRuleCtxMenu');if(m)m.style.display='none';}
