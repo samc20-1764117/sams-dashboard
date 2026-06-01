@@ -4852,9 +4852,11 @@ function applySelHighlight(){
   });
   // Resolve selected vid-ov- IDs
   const selVidIds=new Set();
+  const selVidStepIds=new Set();
   const selFinCancelIds=new Set();
   selectedTasks.forEach(id=>{
     if(id.startsWith('vid-ov-'))selVidIds.add(id.replace('vid-ov-',''));
+    if(id.startsWith('vidstep-'))selVidStepIds.add(id);
     if(id.startsWith('fin-cancel-'))selFinCancelIds.add(id.replace('fin-cancel-',''));
   });
   // Resolve selected timeblocks to their underlying task/shop/rec IDs for cross-view highlight
@@ -4867,6 +4869,7 @@ function applySelHighlight(){
     if(b.shopId)selShopIds.add(String(b.shopId));
     if(b.ruleId)selWrRuleIds.add(String(b.ruleId));
     if(b.recId){const _isWrR=!b.ruleId&&(st.wrRules||[]).some(x=>String(x.id)===String(b.recId));if(_isWrR)selWrRuleIds.add(String(b.recId));else selRecIds.add(String(b.recId));}
+    if(b._vidStepVid&&b._vidStepName)selVidStepIds.add('vidstep-'+String(b._vidStepVid)+'-'+String(b._vidStepName));
     if(b._vidId)selVidIds.add(String(b._vidId));
     if(b._finCancelSubId)selectedTasks.has('blk-'+String(b.id))&&selFinCancelIds.add(String(b._finCancelSubId));
   });
@@ -4909,6 +4912,7 @@ function applySelHighlight(){
     if(!sel&&id.startsWith('wrrule-virt-')){sel=selWrRuleIds.has(id.replace('wrrule-virt-',''));}
     else if(!sel&&id.startsWith('wrrule-')){sel=selWrRuleIds.has(id.replace('wrrule-',''));}
     if(!sel&&id.startsWith('fin-cancel-')){sel=selFinCancelIds.has(id.replace('fin-cancel-',''));}
+    if(!sel&&id.startsWith('vidstep-')){sel=selVidStepIds.has(id);}
     el.classList.toggle('sel-row',sel);
     if(sel)applySelVars(el,csForId(csId));
     else clearSelVars(el);
@@ -4925,6 +4929,7 @@ function applySelHighlight(){
     else if(!sel&&id.startsWith('wrrule-virt-'))sel=selWrRuleIds.has(id.replace('wrrule-virt-',''));
     else if(!sel&&id.startsWith('wrrule-'))sel=selWrRuleIds.has(id.replace('wrrule-',''));
     if(!sel&&id.startsWith('fin-cancel-'))sel=selFinCancelIds.has(id.replace('fin-cancel-',''));
+    if(!sel&&id.startsWith('vidstep-'))sel=selVidStepIds.has(id);
     el.classList.toggle('sel-row',sel);
     if(sel)applySelVars(el,csForId(id));
     else clearSelVars(el);
@@ -4952,7 +4957,7 @@ function applySelHighlight(){
     else if(b.recId){const rid=String(b.recId);const _r=st.recurring.find(x=>String(x.id)===rid);const _isWrRule=!_r&&(st.wrRules||[]).some(x=>String(x.id)===rid);const _isWr=_r&&(_r.is_weekly_reset===true||_r.is_weekly_reset==='true');if(_isWrRule||b.ruleId){const blkId='blk-'+String(b.id);sel=selectedTasks.has(blkId)||selWrRuleIds.has(rid);csId='wrrule-'+rid;}else{sel=selectedTasks.has('rec-virt-'+rid)||selRecIds.has(rid)||selectedTasks.has('wrec-'+rid);csId=(_isWr?'wrec-':'rec-virt-')+rid;}}
     else if(b.ruleId){const blkId='blk-'+String(b.id);const rid=String(b.ruleId);sel=selectedTasks.has(blkId)||selWrRuleIds.has(rid);csId='wrrule-'+rid;}
     else if(b.shopId){const sid=String(b.shopId);const blkId='blk-'+String(b.id);sel=selectedTasks.has(blkId)||selectedTasks.has('shop-cal-'+sid)||selShopIds.has(sid);csId='shop-cal-'+sid;}
-    else if(b._vidStepVid){const blkId='blk-'+String(b.id);sel=selectedTasks.has(blkId);csId='vidstep-'+String(b._vidStepVid);}
+    else if(b._vidStepVid){const blkId='blk-'+String(b.id);const vsId='vidstep-'+String(b._vidStepVid)+'-'+String(b._vidStepName||'');sel=selectedTasks.has(blkId)||selectedTasks.has(vsId);csId='vidstep-'+String(b._vidStepVid);}
     else if(b._vidId){const vid=String(b._vidId);const blkId='blk-'+String(b.id);sel=selectedTasks.has(blkId)||selectedTasks.has('vid-ov-'+vid)||selVidIds.has(vid);csId='vid-ov-'+vid;}
     else if(b._finCancelSubId){const fcId=String(b._finCancelSubId);const blkId='blk-'+String(b.id);sel=selectedTasks.has(blkId)||selectedTasks.has('fin-cancel-'+fcId)||selFinCancelIds.has(fcId);csId='fin-cancel-'+fcId;}
     el.classList.toggle('sel-row',sel);
