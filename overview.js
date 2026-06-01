@@ -3644,7 +3644,7 @@ function _vidOvMenuItem(v,steps,focusSet){
   const _hov=`onmouseenter="this.style.background='${_hovBg}'" onmouseleave="this.style.background='none'" onclick="_vidOvClickSelect(this,event)"`;
   const _map=_vidDayMap();const _onCal=!!_map[sid];
   const _addBtn=`<button onclick="event.stopPropagation();_vidOvInlineAdd('${sid}',null,null,this.closest('[data-vidrow]'))" style="font-size:10px;font-weight:700;width:16px;height:16px;line-height:14px;text-align:center;border-radius:3px;border:1px solid ${_onCal?'var(--accent)':'var(--border)'};background:var(--bg);color:${_onCal?'var(--accent)':'var(--muted)'};cursor:pointer;padding:0;flex-shrink:0;box-sizing:border-box" title="Add small video">+</button>`;
-  const _xBtn=`<button class="vid-ov-x" onclick="event.stopPropagation();_vidOvShowActionMenu(['${sid}'],this)" title="Actions">✕</button>`;
+  const _xBtn=`<button class="vid-ov-x" onclick="event.stopPropagation();_vidOvXClick('${sid}',this)" title="Actions">✕</button>`;
   const _postDate=v.post_date?_vidOvPostStr(v.post_date):'';
   const _postColor=v.post_date?_vidOvPostColor(v):'var(--muted)';
   const _postField=`<span class="vid-ov-post" data-postvid="${sid}" style="width:28px;flex-shrink:0;font-size:9px;text-align:right;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif;color:${_postColor};cursor:pointer;line-height:12px">${_postDate||''}</span>`;
@@ -3657,7 +3657,7 @@ function _vidOvMenuItem(v,steps,focusSet){
     const _cOnCal=!!_map[csid];
     const _cFocused=focusSet&&focusSet.has(csid);
     const _cFocusCls=_cFocused?' vid-ov-focus':'';
-    const _cxBtn=`<button class="vid-ov-x" onclick="event.stopPropagation();_vidOvShowActionMenu(['${csid}'],this)" title="Actions">✕</button>`;
+    const _cxBtn=`<button class="vid-ov-x" onclick="event.stopPropagation();_vidOvXClick('${csid}',this)" title="Actions">✕</button>`;
     const _cPostDate=c.post_date?_vidOvPostStr(c.post_date):'';
     const _cPostColor=c.post_date?_vidOvPostColor(c):'var(--muted)';
     const _cPostField=`<span class="vid-ov-post" data-postvid="${csid}" style="width:28px;flex-shrink:0;font-size:9px;text-align:right;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif;color:${_cPostColor};cursor:pointer;line-height:12px">${_cPostDate||''}</span>`;
@@ -3770,10 +3770,27 @@ function _vidOvBulkDemote(ids){
 function _vidOvBulkDelete(ids){
   const undoData=ids.map(vid=>{
     const v=(st.videos||[]).find(x=>String(x.id)===vid);if(!v)return null;
-    return{vid,prev:{...v}};
+    return{vid,wasDeleted:v.is_deleted};
   }).filter(Boolean);
-  ids.forEach(id=>{if(typeof delVideo==='function')delVideo(id);});
-  setTimeout(()=>{_renderVidOvMenu();renderAll();if(document.getElementById('tbGrid'))renderDayTB();if(typeof _vidOvRenderAll==='function'&&_vidOvAllOpen)_vidOvRenderAll();},50);
+  ids.forEach(vid=>{
+    const v=(st.videos||[]).find(x=>String(x.id)===vid);if(!v)return;
+    v.is_deleted=true;
+    if(typeof _vidSelected!=='undefined')_vidSelected.delete(vid);
+    if(!vid.startsWith('l-'))sbReqSilent('PATCH','videos',{is_deleted:true},`?id=eq.${vid}`);
+  });
+  save();_renderVidOvMenu();renderAll();if(document.getElementById('tbGrid'))renderDayTB();if(_vidOvAllOpen&&typeof _vidOvRenderAll==='function')_vidOvRenderAll();
+  pushUndo(()=>{
+    undoData.forEach(u=>{
+      const v=(st.videos||[]).find(x=>String(x.id)===u.vid);if(!v)return;
+      v.is_deleted=u.wasDeleted;
+      if(!u.vid.startsWith('l-'))sbReqSilent('PATCH','videos',{is_deleted:u.wasDeleted},`?id=eq.${u.vid}`);
+    });
+    save();_renderVidOvMenu();renderAll();if(document.getElementById('tbGrid'))renderDayTB();if(_vidOvAllOpen&&typeof _vidOvRenderAll==='function')_vidOvRenderAll();
+  },'Deleted videos');
+}
+function _vidOvXClick(vid,btn){
+  const ids=_vidOvSelSet.has(vid)&&_vidOvSelSet.size>1?[..._vidOvSelSet]:_voaSel.has(vid)&&_voaSel.size>1?[..._voaSel]:[vid];
+  _vidOvShowActionMenu(ids,btn);
 }
 function _vidOvShowActionMenu(ids,anchorEl){
   const ex=document.querySelector('.vid-ov-action-menu');if(ex)ex.remove();
