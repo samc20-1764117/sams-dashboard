@@ -3347,6 +3347,11 @@ function _vidStepAssignToDay(vidId,step,ds){
   const prev=m[key]||null;
   const prevDs=prev?prev.ds:null;
   m[key]={ds,done:prev?prev.done:false};_vidStepDayMapSet(m);
+  // Reconstruct _vidStepVid on blocks that match by title (may not be set after refresh)
+  if(prevDs){
+    const v=(st.videos||[]).find(x=>String(x.id)===String(vidId));
+    if(v){const lbl=(_VID_STEP_LABELS[step]||step.replace('step_',''))+': '+(v.topic||v.title);(st.blocks||[]).filter(bl=>!bl._vidStepVid&&bl.cat==='Videos'&&bl.ds===prevDs&&bl.title===lbl).forEach(bl=>{bl._vidStepVid=String(vidId);bl._vidStepName=step;});}
+  }
   // Move timeblock blocks to new day
   if(prevDs&&prevDs!==ds){
     (st.blocks||[]).filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step&&bl.ds===prevDs).forEach(bl=>{
@@ -3355,7 +3360,7 @@ function _vidStepAssignToDay(vidId,step,ds){
   }
   save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
   const panel=document.getElementById('vidOvPanel');if(panel&&panel.style.display==='block')_renderVidOvMenu();
-  pushUndo(()=>{const m2=_vidStepDayMap();if(prev)m2[key]=prev;else delete m2[key];_vidStepDayMapSet(m2);if(prevDs&&prevDs!==ds){(st.blocks||[]).filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step&&bl.ds===ds).forEach(bl=>{bl.ds=prevDs;sbUpdateBlock(bl.id,{ds:prevDs});});}save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();const p2=document.getElementById('vidOvPanel');if(p2&&p2.style.display==='block')_renderVidOvMenu();},'Moved step');
+  pushUndo(()=>{const m2=_vidStepDayMap();if(prev)m2[key]=prev;else delete m2[key];_vidStepDayMapSet(m2);if(prevDs&&prevDs!==ds){const v2=(st.videos||[]).find(x=>String(x.id)===String(vidId));if(v2){const lbl2=(_VID_STEP_LABELS[step]||step.replace('step_',''))+': '+(v2.topic||v2.title);(st.blocks||[]).filter(bl=>!bl._vidStepVid&&bl.cat==='Videos'&&bl.ds===ds&&bl.title===lbl2).forEach(bl=>{bl._vidStepVid=String(vidId);bl._vidStepName=step;});}(st.blocks||[]).filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step&&bl.ds===ds).forEach(bl=>{bl.ds=prevDs;sbUpdateBlock(bl.id,{ds:prevDs});});}save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();const p2=document.getElementById('vidOvPanel');if(p2&&p2.style.display==='block')_renderVidOvMenu();},'Moved step');
 }
 function _vidStepToggleDone(vidId,step,checked){
   const m=_vidStepDayMap();const key=vidId+'::'+step;
