@@ -3755,7 +3755,7 @@ function _vidOvBulkDemote(ids){
     const map=_vidDayMap();if(map[vid]){delete map[vid];_vidDayMapSet(map);}
     sbReqSilent('PATCH','videos',patch,`?id=eq.${vid}`);
   });
-  save();_renderVidOvMenu();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
+  save();_renderVidOvMenu();renderAll();if(document.getElementById('tbGrid'))renderDayTB();if(_vidOvAllOpen&&typeof _vidOvRenderAll==='function')_vidOvRenderAll();
   pushUndo(()=>{
     undoData.forEach(u=>{
       const v=(st.videos||[]).find(x=>String(x.id)===u.vid);if(!v)return;
@@ -3764,7 +3764,7 @@ function _vidOvBulkDemote(ids){
       u.childData.forEach(cu=>{const c=(st.videos||[]).find(x=>String(x.id)===String(cu.id));if(c){c.status=cu.status;c.big_video_id=cu.big;sbReqSilent('PATCH','videos',{status:cu.status,big_video_id:cu.big},`?id=eq.${cu.id}`);}});
       if(u.prevDay){const m=_vidDayMap();m[u.vid]=u.prevDay;_vidDayMapSet(m);}
     });
-    save();_renderVidOvMenu();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
+    save();_renderVidOvMenu();renderAll();if(document.getElementById('tbGrid'))renderDayTB();if(_vidOvAllOpen&&typeof _vidOvRenderAll==='function')_vidOvRenderAll();
   },'Moved to ideas');
 }
 function _vidOvBulkDelete(ids){
@@ -3792,6 +3792,7 @@ function _vidOvShowActionMenu(ids,anchorEl){
     if(action===0)_vidOvBulkDemote(ids);
     else _vidOvBulkDelete(ids);
     _vidOvSelSet.clear();_vidOvSelIdx=-1;_vidOvSelVid=null;
+    if(typeof _voaSel!=='undefined'&&_voaSel.size>0){_voaSel.clear();if(typeof _voaLast!=='undefined')_voaLast=null;if(typeof _voaApplySel==='function')_voaApplySel();}
   };
   const hk=e=>{
     if(e.key==='Escape'){e.preventDefault();e.stopPropagation();close();return;}
@@ -4235,7 +4236,7 @@ function _vidOvToggleAll(){
       if(e.key==='Escape'){if(_voaSel.size){_voaSel.clear();_voaApplySel();e.preventDefault();return;}_vidOvCloseAll();document.removeEventListener('click',_allClose);document.removeEventListener('keydown',_allKey);return;}
       if(e.key==='n'&&!e.metaKey&&!e.ctrlKey&&!e.altKey){e.preventDefault();if(typeof openVidModal==='function')openVidModal();return;}
       // Delete/Backspace — delete selected
-      if((e.key==='Delete'||e.key==='Backspace')&&_voaSel.size>0){e.preventDefault();const ids=[..._voaSel];const row=document.querySelector('[data-alldrag].voa-sel');_vidOvShowActionMenu(ids,row||null);return;}
+      if((e.key==='Delete'||e.key==='Backspace')&&_voaSel.size>0){e.preventDefault();const ids=[..._voaSel];const row=document.querySelector('[data-alldrag].vid-sel');_vidOvShowActionMenu(ids,row||null);return;}
       // Cmd+C — copy
       if((e.metaKey||e.ctrlKey)&&e.key==='c'&&_voaSel.size>0){e.preventDefault();_voaCopied=[];_voaSel.forEach(id=>{const v=(st.videos||[]).find(x=>String(x.id)===id);if(v)_voaCopied.push({...v});});if(typeof showToast==='function')showToast('Copied '+_voaCopied.length+' video(s)','#0ea5e9',1500);return;}
       // Cmd+V — paste
