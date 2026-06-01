@@ -112,7 +112,14 @@ function renderToday(){
       // If this task has been __skip__'d for its occurrence week or any later week up to today, don't show as overdue
       const _rec=st.recurring.find(x=>String(x.id)===String(v._recId));
       if(_rec&&_rec._dateOverrides){for(let sw=w;sw<=0;sw++){if(_rec._dateOverrides[getWkKey(sw)]==='__skip__')return;}}
-      if(!allRecVirt.find(x=>x._recId===v._recId))allRecVirt.push(v);
+      // Dedup: prefer overdue occurrence over future one (so overdue shows on today)
+      const existing=allRecVirt.findIndex(x=>x._recId===v._recId);
+      if(existing>=0){
+        const ev=allRecVirt[existing];
+        const evOv=isOv(ev.due_date)&&!ev.done;
+        const vOv=isOv(v.due_date)&&!v.done;
+        if(vOv&&!evOv){allRecVirt[existing]=v;}// replace future with overdue
+      } else {allRecVirt.push(v);}
     });
   }
   // Weekly reset tasks pinned to today/overdue via _dateOverrides (look back 4 weeks)
