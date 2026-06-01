@@ -60,7 +60,7 @@ All task types that appear on the overview calendar/today list. Every type must 
 - **Modal outside-click drag fix**: `_modMousedownInside` flag prevents `closeMod` if mousedown was inside `.modal`.
 - **`#tNotes` textarea**: auto-expands, capped at `max-height:160px`. Reset on add open; pre-expanded on edit open. Newlines rendered via `.replace(/\n/g,'<br>')`.
 - **Cmd+Z in modals**: `_isInput && !_ael.closest('.overlay:not(.open)')` → return early.
-- **Global shortcuts**: `n`=new task, `r`=reload, `s`=grocery modal (overview only), `o`=overview, `v`=videos (single press), `vv`=videos popup on overview (double-tap within 350ms), `p`=pups, `f`=finance, `l`=guide, `d`=dark mode, `i`=help overlay, `m`=month view (overview). `⌘←/→`=switch pages (overview→videos→pups→recipes→finance→birthdays). Skip if INPUT/TEXTAREA/SELECT/contentEditable focused or meta held. **All single-key shortcuts MUST check `[contenteditable="true"]:focus` (CSS selector) or `document.activeElement?.isContentEditable` (JS) — never fire while user is typing.**
+- **Global shortcuts**: `n`=new task, `r`=reload, `s`=grocery modal (overview only), `o`=overview, `v`=videos (single press), `vv`=videos popup on overview (double-tap within 350ms), `p`=pups, `f`=finance, `l`=guide, `d`=dark mode, `i`=help overlay, `m`=month view (overview), `q`=quick notes (`toggleQN()`). `⌘←/→`=switch pages (overview→videos→pups→recipes→finance→birthdays). Skip if INPUT/TEXTAREA/SELECT/contentEditable focused or meta held. **All single-key shortcuts MUST check `[contenteditable="true"]:focus` (CSS selector) or `document.activeElement?.isContentEditable` (JS) — never fire while user is typing.**
 - **Overview shortcuts**: `←/→`=shift day, `w+←/→`=shift week (hold `w` then press arrow; `_wKeyHeld` also skips if typing). `t`=jump to today. `_wKeyHeld` flag tracked via keydown/keyup/blur.
 - **Page navigation closes overlays**: `showPage()` closes video calendar, all panel, analytics panel, and video popup before switching pages.
 - **Keyboard shortcut pattern** (MUST follow every time):
@@ -131,3 +131,4 @@ Video tasks assigned to days via `_vidDayMap` (localStorage) follow the SAME rul
 - **Overdue**: `_vidDayMap[id] < today` when `dayOff===0`. Shows OV style + day letter.
 - **Completion**: checkbox calls `_vidCompleteFromOv` (popup to mark steps done or whole video).
 - **Delete (✕)**: calls `_vidUnassignDay` — removes from `_vidDayMap` + deletes linked timeblock.
+- **Video stage tasks (vidstep)**: `_vidStepDayMap` entries. Overdue vidsteps auto-move to today via `_vidStepTasksForDayWithOverdue()`. Selection uses `'blk-'+block.id` ID and green highlight color (`vidstep-` prefix in `csForId`). Dblclick in timeblock opens `openVidEdit(b._vidStepVid)`.
