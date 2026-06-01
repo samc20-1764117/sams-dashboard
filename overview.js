@@ -3569,13 +3569,17 @@ function _renderVidOvMenu(){
     const _wkStart=getWkKey(wkOff);
     const _wkEnd=d2s(new Date(new Date(_wkStart+'T00:00:00').getTime()+6*86400000));
     const _map=_vidDayMap();
+    const _sMap=_vidStepDayMap();
+    const _inWk=ds=>ds&&ds>=_wkStart&&ds<=_wkEnd;
+    const _vidHasStepInWk=vid=>{for(const k in _sMap){if(k.startsWith(String(vid.id)+'::')&&_sMap[k]&&_inWk(_sMap[k].ds))return true;}return false;};
     vids.forEach(vid=>{
       const sid=String(vid.id);
       const dayDs=_map[sid];
-      if((dayDs&&dayDs>=_wkStart&&dayDs<=_wkEnd)||(vid.post_date&&vid.post_date>=_wkStart&&vid.post_date<=_wkEnd))_focusSet.add(sid);
+      if(_inWk(dayDs)||_inWk(vid.post_date)||_vidHasStepInWk(vid))_focusSet.add(sid);
       (st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===sid).forEach(c=>{
-        const cd=_map[String(c.id)];
-        if((cd&&cd>=_wkStart&&cd<=_wkEnd)||(c.post_date&&c.post_date>=_wkStart&&c.post_date<=_wkEnd)){_focusSet.add(sid);_focusSet.add(String(c.id));}
+        const csid=String(c.id);
+        const cd=_map[csid];
+        if(_inWk(cd)||_inWk(c.post_date)||_vidHasStepInWk(c)){_focusSet.add(sid);_focusSet.add(csid);}
       });
     });
   }
