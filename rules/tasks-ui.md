@@ -131,4 +131,4 @@ Video tasks assigned to days via `_vidDayMap` (localStorage) follow the SAME rul
 - **Overdue**: `_vidDayMap[id] < today` when `dayOff===0`. Shows OV style + day letter.
 - **Completion**: checkbox calls `_vidCompleteFromOv` (popup to mark steps done or whole video).
 - **Delete (✕)**: calls `_vidUnassignDay` — removes from `_vidDayMap` + deletes linked timeblock.
-- **Video stage tasks (vidstep)**: `_vidStepDayMap` entries. Overdue vidsteps auto-move to today via `_vidStepTasksForDayWithOverdue()`. Selection uses `'blk-'+block.id` ID and green highlight color (`vidstep-` prefix in `csForId`). Dblclick in timeblock opens `openVidEdit(b._vidStepVid)`.
+- **Video stage tasks (vidstep)**: `_vidStepDayMap` entries. Overdue vidsteps auto-move to today via `_vidStepTasksForDayWithOverdue()`. Selection synced across views via `selVidStepIds` set — today list ID `vidstep-{vid}-{step}` cross-references TB block's `_vidStepVid`+`_vidStepName`. Green highlight color (`vidstep-` prefix in `csForId`). Dblclick in timeblock opens `openVidEdit(b._vidStepVid)`.
