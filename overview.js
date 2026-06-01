@@ -178,6 +178,7 @@ function renderToday(){
       if(isOvToday){const ov=getRecAutoTBForDate(t.due_date);if(ov.some(a=>String(a._recId)===String(t._recId)))return true;}
       return false;
     }
+    if(t._type==='vidstep')return st.blocks.some(b=>(b.ds===_todDs||isOvToday)&&String(b._vidStepVid)===String(t._vidId)&&b._vidStepName===t._vidStep);
     if(t._vidId)return st.blocks.some(b=>(b.ds===_todDs||isOvToday)&&String(b._vidId)===String(t._vidId));
     if(t._type==='pup')return st.blocks.some(b=>(b.ds===_todDs||isOvToday)&&String(b._pupSessId)===String(t._pupSessId));
     if(t._type==='fin-cancel')return st.blocks.some(b=>(b.ds===_todDs||isOvToday)&&String(b._finCancelSubId)===String(t._subId));
