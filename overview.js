@@ -2703,21 +2703,30 @@ function showWrRuleCtx(e,id,wkKey){
   if(isInterval){
     h+=`<div class="ctx-item" onclick="wrCtxSkipThisWeek()">⊘  Skip this cycle</div>`;
     h+=`<div class="ctx-divider"></div>`;
-    h+=`<div class="ctx-item" onclick="wrCtxMovePrevWeek()">←  Move to prev week (this time)</div>`;
-    h+=`<div class="ctx-item" onclick="wrCtxMoveNextWeek()">→  Move to next week (this time)</div>`;
-    h+=`<div class="ctx-divider"></div>`;
-    h+=`<div class="ctx-item" onclick="wrCtxShiftSchedule(-7)">←  Shift schedule earlier (all future)</div>`;
-    h+=`<div class="ctx-item" onclick="wrCtxShiftSchedule(7)">→  Shift schedule later (all future)</div>`;
+    h+=`<div class="ctx-cols">`;
+    h+=`<div class="ctx-col">`;
+    h+=`<div class="ctx-col-hdr">This time</div>`;
+    h+=`<div class="ctx-item" onclick="wrCtxMovePrevWeek()">← Prev week</div>`;
+    h+=`<div class="ctx-item" onclick="wrCtxMoveNextWeek()">→ Next week</div>`;
+    h+=`<div class="ctx-item" onclick="wrCtxEditThisWeek()">✏️ Edit</div>`;
+    h+=`</div>`;
+    h+=`<div class="ctx-col" style="border-left:1px solid rgba(210,205,228,.2)">`;
+    h+=`<div class="ctx-col-hdr">All future</div>`;
+    h+=`<div class="ctx-item" onclick="wrCtxShiftSchedule(-7)">← Earlier</div>`;
+    h+=`<div class="ctx-item" onclick="wrCtxShiftSchedule(7)">→ Later</div>`;
+    h+=`<div class="ctx-item" onclick="wrCtxEditRule()">✏️ Edit</div>`;
+    h+=`</div>`;
+    h+=`</div>`;
   }else{
     h+=`<div class="ctx-item" onclick="wrCtxSkipThisWeek()">⊘  Skip this week</div>`;
+    h+=`<div class="ctx-divider"></div>`;
+    h+=`<div class="ctx-item" onclick="wrCtxEditThisWeek()">✏️  Edit this week only</div>`;
+    h+=`<div class="ctx-item" onclick="wrCtxEditRule()">✏️  Edit rule (all future)</div>`;
   }
-  h+=`<div class="ctx-divider"></div>`;
-  h+=`<div class="ctx-item" onclick="wrCtxEditThisWeek()">✏️  Edit this week only</div>`;
-  h+=`<div class="ctx-item" onclick="wrCtxEditRule()">✏️  Edit rule (all future)</div>`;
   h+=`<div class="ctx-divider"></div>`;
   h+=`<div class="ctx-item ctx-danger" onclick="wrCtxDeleteRule()">✕  Delete rule</div>`;
   m.innerHTML=h;
-  const x=Math.min(e.clientX,window.innerWidth-200),y=Math.min(e.clientY,window.innerHeight-280);
+  const x=Math.min(e.clientX,window.innerWidth-200),y=Math.min(e.clientY,window.innerHeight-260);
   m.style.left=x+'px';m.style.top=y+'px';m.style.display='block';
 }
 function hideWrRuleCtx(){const m=document.getElementById('wrRuleCtxMenu');if(m)m.style.display='none';}
