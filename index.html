@@ -53,6 +53,7 @@
     <a class="nav-item" href="#weekly" onclick="event.preventDefault();showPage('weekly')"><div class="ndot" style="background:#10b981"></div>Recurring Tasks</a>
     <a class="nav-item" href="#weekly" onclick="event.preventDefault();showPage('weekly')"><div class="ndot" style="background:#eab308"></div>Shopping</a>
     <a class="nav-item" href="#birthdays" onclick="event.preventDefault();showPage('birthdays')"><div class="ndot" style="background:#f97316"></div>Birthdays</a>
+    <a class="nav-item" href="#ideas" onclick="event.preventDefault();showPage('ideas')"><div class="ndot" style="background:#a855f7"></div>Ideas</a>
     <a class="nav-item" href="#pups" onclick="event.preventDefault();showPage('pups')"><div class="ndot" style="background:#f43f5e"></div>🐾 Pups</a>
     <a class="nav-item" href="#finance" onclick="event.preventDefault();showPage('finance')"><div class="ndot" style="background:#22c55e"></div>Finance</a>
     <a class="nav-item" href="#recipes" onclick="event.preventDefault();showPage('recipes')"><div class="ndot" style="background:#f59e0b"></div>🍳 Recipes</a>
@@ -208,6 +209,7 @@
         <a class="ql-btn" href="#finance" onclick="event.preventDefault();showPage('finance')"><span class="ql-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>Finance</a>
         <a class="ql-btn" href="#pups" onclick="event.preventDefault();showPage('pups')"><span class="ql-icon"><img src="./sunny_headshot.png" style="width:20px;height:20px;border-radius:50%;object-fit:cover"><img src="./mochi_headshot.png" style="width:20px;height:20px;border-radius:50%;object-fit:cover;margin-left:-2px"></span>Pups</a>
         <a class="ql-btn" href="#birthdays" onclick="event.preventDefault();showPage('birthdays')"><span class="ql-icon"><svg width="18" height="20" viewBox="2 4 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="10" width="18" height="4" rx="1"/><rect x="5" y="14" width="14" height="8" rx="1"/><line x1="12" y1="10" x2="12" y2="22"/><path d="M12 10c-2-3-5-3-5-1s3 1 5 1"/><path d="M12 10c2-3 5-3 5-1s-3 1-5 1"/></svg></span>Birthdays</a>
+        <a class="ql-btn" href="#ideas" onclick="event.preventDefault();showPage('ideas')"><span class="ql-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"/></svg></span>Ideas</a>
         <a class="ql-btn" href="#recipes" onclick="event.preventDefault();showPage('recipes')"><span class="ql-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3"/><path d="M18 22V15"/></svg></span>Recipes</a>
       </div>
     </div>
@@ -388,6 +390,17 @@
   <div id="bdayAddMenu" class="bday-add-menu" style="display:none"></div>
   <div id="bdayPresentPopup" style="display:none;position:fixed;z-index:9998;background:rgba(255,255,255,.97);border:1px solid rgba(210,205,228,.35);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.13);padding:10px 12px 10px;min-width:200px;max-width:280px;backdrop-filter:blur(10px)"></div>
   <div id="bdayList" style="display:none"></div>
+</div>
+<div class="page" id="page-ideas" style="padding:60px clamp(12px,3vw,56px) 24px clamp(12px,3vw,56px)">
+  <div class="ov-topbar">
+    <div class="ov-topbar-left"><span class="ov-topbar-label">Ideas</span><span class="ov-topbar-dot"></span></div>
+    <span class="ov-topbar-date topbar-date"></span>
+    <div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div>
+  </div>
+  <div class="card" style="flex:1;width:100%;display:flex;flex-direction:column;min-height:0;overflow:hidden;position:relative;margin-top:20px">
+    <button class="btn-plus" onclick="openIdeasAddForm()" style="position:absolute;top:8px;right:8px;z-index:10">+</button>
+    <div id="ideasPageContent" style="flex:1;width:100%;min-height:0;overflow-y:auto;padding:12px 16px"></div>
+  </div>
 </div>
 <div class="page" id="page-pups" style="padding:60px clamp(12px,3vw,56px) 24px clamp(12px,3vw,56px)"></div>
 <div class="page" id="page-finance" style="padding:60px clamp(12px,3vw,56px) 24px clamp(12px,3vw,56px);width:100%;box-sizing:border-box"><div class="ov-topbar"><div class="ov-topbar-left"><span class="ov-topbar-label">Finance</span><span class="ov-topbar-dot"></span></div><span class="ov-topbar-date topbar-date"></span><div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div></div><div id="finPageContent" style="margin-top:20px;flex:1;min-height:0;display:flex;flex-direction:column"></div></div>

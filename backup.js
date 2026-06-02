@@ -19,7 +19,8 @@ const TABLES = [
   'auto_timeblocks',
   'auto_timeblock_overrides',
   'packing_templates',
-  'packing_items'
+  'packing_items',
+  'ideas'
 ];
 
 const MODE = process.argv[2] === 'manual' ? 'manual' : 'auto';

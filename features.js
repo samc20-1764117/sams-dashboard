@@ -2324,8 +2324,85 @@ async function delFin(id){
   if(!String(id).startsWith('l-'))await sbReq('DELETE','finance',null,`?id=eq.${id}`);
 }
 
+// ── Ideas ─────────────────────────────────────────────────────────────────────
+let _ideasShowArchived=false;
+function renderIdeasPage(){
+  save();
+  const pg=document.getElementById('ideasPageContent');if(!pg)return;
+  const active=st.ideas.filter(i=>!i.archived);
+  const archived=st.ideas.filter(i=>i.archived);
+  let html='';
+  if(!active.length&&!archived.length){html='<div style="text-align:center;color:var(--muted);padding:40px 0;font-size:13px">No ideas yet. Click + to add one.</div>';pg.innerHTML=html;return;}
+  active.forEach(idea=>{html+=_ideaCard(idea);});
+  if(archived.length){
+    html+=`<div style="margin-top:20px;border-top:1px solid var(--border);padding-top:12px">
+      <button onclick="_ideasShowArchived=!_ideasShowArchived;renderIdeasPage()" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);font-family:inherit;padding:4px 0">${_ideasShowArchived?'▾':'▸'} Archived (${archived.length})</button>`;
+    if(_ideasShowArchived){archived.forEach(idea=>{html+=_ideaCard(idea,true);});}
+    html+='</div>';
+  }
+  pg.innerHTML=html;
+}
+function _ideaCard(idea,isArchived){
+  const date=idea.created_at?new Date(idea.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'';
+  return`<div class="idea-card${isArchived?' archived':''}" style="padding:10px 12px;margin-bottom:8px;border-radius:8px;background:${isArchived?'rgba(148,163,184,.06)':'rgba(168,85,247,.06)'};border:1px solid ${isArchived?'rgba(148,163,184,.15)':'rgba(168,85,247,.18)'};position:relative">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+      <span style="font-size:12px;font-weight:600;color:${isArchived?'var(--muted)':'var(--text)'}">${escHtml(idea.topic)}</span>
+      <div style="display:flex;gap:4px;align-items:center">
+        <span style="font-size:10px;color:var(--muted)">${date}</span>
+        <button onclick="toggleIdeaArchive('${idea.id}')" title="${isArchived?'Restore':'Archive'}" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);padding:2px 4px">${isArchived?'↩':'✕'}</button>
+      </div>
+    </div>
+    <div ondblclick="editIdeaInline(this,'${idea.id}')" style="font-size:12px;color:${isArchived?'var(--muted)':'var(--text-secondary,#64748b)'};white-space:pre-wrap;line-height:1.5;cursor:text">${escHtml(idea.idea)}</div>
+  </div>`;
+}
+function openIdeasAddForm(){
+  const pg=document.getElementById('ideasPageContent');if(!pg)return;
+  if(document.getElementById('ideaAddForm'))return;
+  const form=document.createElement('div');form.id='ideaAddForm';
+  form.style.cssText='padding:12px;margin-bottom:12px;border-radius:8px;background:rgba(168,85,247,.06);border:1px solid rgba(168,85,247,.18)';
+  form.innerHTML=`<input id="ideaTopicInput" placeholder="Topic name" style="width:100%;box-sizing:border-box;padding:6px 8px;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,.6);font-size:12px;font-family:inherit;color:var(--text);margin-bottom:6px;outline:none">
+    <textarea id="ideaTextInput" placeholder="Your idea..." style="width:100%;box-sizing:border-box;padding:6px 8px;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,.6);font-size:12px;font-family:inherit;color:var(--text);resize:vertical;min-height:60px;outline:none"></textarea>
+    <div style="display:flex;gap:6px;justify-content:flex-end;margin-top:6px">
+      <button onclick="document.getElementById('ideaAddForm').remove()" class="btn btn-ghost btn-xs">Cancel</button>
+      <button onclick="saveNewIdea()" class="btn btn-ghost btn-xs" style="background:var(--accent);color:#fff">Save</button>
+    </div>`;
+  pg.prepend(form);
+  document.getElementById('ideaTopicInput').focus();
+  document.getElementById('ideaTextInput').addEventListener('keydown',e=>{if(e.key==='Enter'&&e.metaKey){e.preventDefault();saveNewIdea();}});
+}
+async function saveNewIdea(){
+  const topic=(document.getElementById('ideaTopicInput')||{}).value?.trim();
+  const idea=(document.getElementById('ideaTextInput')||{}).value?.trim();
+  if(!topic||!idea)return;
+  const localId='l-'+Date.now();
+  const row={id:localId,topic,idea,archived:false,created_at:new Date().toISOString()};
+  st.ideas.unshift(row);renderIdeasPage();
+  const sv=await sbReq('POST','ideas',{topic,idea,archived:false});
+  if(sv&&sv[0]){const idx=st.ideas.findIndex(i=>i.id===localId);if(idx>=0)st.ideas[idx]=sv[0];}
+  save();
+}
+async function toggleIdeaArchive(id){
+  const idea=st.ideas.find(i=>String(i.id)===String(id));if(!idea)return;
+  idea.archived=!idea.archived;renderIdeasPage();save();
+  if(!String(id).startsWith('l-'))await sbReq('PATCH','ideas',{archived:idea.archived},`?id=eq.${id}`);
+}
+function editIdeaInline(el,id){
+  const idea=st.ideas.find(i=>String(i.id)===String(id));if(!idea)return;
+  const ta=document.createElement('textarea');
+  ta.value=idea.idea;
+  ta.style.cssText='width:100%;box-sizing:border-box;padding:4px 6px;border-radius:4px;border:1px solid var(--accent);background:rgba(255,255,255,.8);font-size:12px;font-family:inherit;color:var(--text);resize:vertical;min-height:40px;outline:none;line-height:1.5';
+  el.replaceWith(ta);ta.focus();
+  const commit=async()=>{
+    const val=ta.value.trim();if(val)idea.idea=val;
+    renderIdeasPage();save();
+    if(!String(id).startsWith('l-'))await sbReq('PATCH','ideas',{idea:idea.idea},`?id=eq.${id}`);
+  };
+  ta.addEventListener('blur',commit);
+  ta.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.metaKey){e.preventDefault();ta.blur();}if(e.key==='Escape'){ta.value=idea.idea;ta.blur();}});
+}
+
 // ── Pages ──────────────────────────────────────────────────────────────────────
-const PAGES=['overview','weekly','shopping','travel','birthdays','settings','pups','finance','recipes','notes','videos','packing','guide'];
+const PAGES=['overview','weekly','shopping','travel','birthdays','ideas','settings','pups','finance','recipes','notes','videos','packing','guide'];
 // ══════════════════════════════════════════════════════════════════════════════
 // ── RECIPES PAGE ──────────────────────────────────────────────────────────────
 // ══════════════════════════════════════════════════════════════════════════════
@@ -4426,7 +4503,7 @@ function showPage(id){
   const pageEl=document.getElementById('page-'+id);if(pageEl)pageEl.classList.add('active');
   const idx=PAGES.indexOf(id);if(idx>-1&&document.querySelectorAll('.nav-item')[idx])document.querySelectorAll('.nav-item')[idx].classList.add('active');
   const mainEl=document.getElementById('main');if(mainEl){mainEl.scrollTop=0;}
-  if(id==='weekly'){renderWeeklyPage();}if(id==='travel')renderTravelPage();if(id==='birthdays')renderBdayPage();if(id==='pups')renderPupsPage();if(id==='recipes')renderRecipesPage();if(id==='packing')renderPackingPage();if(id==='finance')renderFinancePage();if(id==='guide')renderGuidePage();if(id==='videos'){if(!_vidPageInit&&_prevPg!=='videos'){_vidView='dashboard';localStorage.setItem('_vidView','dashboard');}_vidPageInit=false;renderVideosPage();}if(id==='overview'){renderShopOv();renderRecOv();renderWkCal();if(document.getElementById('tbGrid'))renderDayTB();}else{const _tbSc=document.getElementById('tbScroll');if(_tbSc)_tbSc._scrollDay=null;}
+  if(id==='weekly'){renderWeeklyPage();}if(id==='travel')renderTravelPage();if(id==='birthdays')renderBdayPage();if(id==='ideas')renderIdeasPage();if(id==='pups')renderPupsPage();if(id==='recipes')renderRecipesPage();if(id==='packing')renderPackingPage();if(id==='finance')renderFinancePage();if(id==='guide')renderGuidePage();if(id==='videos'){if(!_vidPageInit&&_prevPg!=='videos'){_vidView='dashboard';localStorage.setItem('_vidView','dashboard');}_vidPageInit=false;renderVideosPage();}if(id==='overview'){renderShopOv();renderRecOv();renderWkCal();if(document.getElementById('tbGrid'))renderDayTB();}else{const _tbSc=document.getElementById('tbScroll');if(_tbSc)_tbSc._scrollDay=null;}
   const backBtn=document.getElementById('backToOv');if(backBtn)backBtn.style.display=id==='overview'?'none':'flex';
   renderUnassigned();
   history.replaceState(null,'','#'+id);
