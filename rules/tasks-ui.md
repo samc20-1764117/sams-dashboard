@@ -38,6 +38,7 @@ All task types that appear on the overview calendar/today list. Every type must 
 - **Pup sessions**: `day_date < today && !done`. Included in `updateOvBanner` count and `rolloverOverdue` (moves `day_date` to today, PATCHes `pup_skill_sessions`). Appear in today list when `dayOff===0`. Sorted by timeblock position (`_pupSessId` matched against `b._pupSessId` in `tbSm()`).
 - **Videos**: overdue if `_vidDayMap[id] < today && status !== 'published'`. Included in banner count and rollover (moves localStorage date to today). Appear in today list with red `OV` style + day letter.
 - Tasks/shopping/non-WR recurring only overdue if assigned to a date.
+- **Non-WR recurring dedup**: `allRecVirt` deduplicates by `_recId`. If current week has a future (not yet due) occurrence, overdue occurrences from past weeks are suppressed — the upcoming occurrence takes priority. This prevents showing both an overdue and an upcoming instance of the same recurring task.
 - `updateOvBanner()` called from `renderToday()`. Banner text: `X Overdue` + `Move to today` button. No task name or question.
 
 ## Task Modals
@@ -132,3 +133,7 @@ Video tasks assigned to days via `_vidDayMap` (localStorage) follow the SAME rul
 - **Completion**: checkbox calls `_vidCompleteFromOv` (popup to mark steps done or whole video).
 - **Delete (✕)**: calls `_vidUnassignDay` — removes from `_vidDayMap` + deletes linked timeblock.
 - **Video stage tasks (vidstep)**: `_vidStepDayMap` entries. Overdue vidsteps auto-move to today via `_vidStepTasksForDayWithOverdue()`. Selection synced across views via `selVidStepIds` set — today list ID `vidstep-{vid}-{step}` cross-references TB block's `_vidStepVid`+`_vidStepName`. Green highlight color (`vidstep-` prefix in `csForId`). Dblclick in timeblock opens `openVidEdit(b._vidStepVid)`.
+- **Vidstep DB persistence**: `_vidStepVid` stored in `vid_id` column, `_vidStepName` in `rec_id` column. On load, blocks with `vid_id` + `rec_id` starting with `step_` are recognized as vidstep blocks. `_vidStepReconstructBlocks()` is a fallback for legacy blocks (title matching). Must run before sort and before `_hasTBToday`.
+- **Vidstep timeblock moves**: use `sbUpdateBlock(id, {day_date: ds})` — NOT `{ds}`. The DB column is `day_date`.
+- **Vidstep sorting**: `sortTasksForDay` → `tbSm()` has explicit `_type==='vidstep'` check before the `_vidId` check (vidstep blocks use `_vidStepVid`, not `_vidId`).
+- **Vidstep focus**: `_renderVidOvMenu` focus mode checks `_vidStepDayMap` entries in addition to `_vidDayMap` and `post_date`.
