@@ -1063,6 +1063,12 @@ document.addEventListener('keydown',e=>{
   if(e.key==='f'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')){
     e.preventDefault();if(activePg==='finance')showPage('overview');else showPage('finance');
   }
+  // GG to close help overlay when open
+  if(e.key==='g'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&document.getElementById('helpOverlay').classList.contains('open')){
+    const now=Date.now();
+    if(_lastGPress&&now-_lastGPress<400){_lastGPress=0;e.preventDefault();e.stopImmediatePropagation();closeMod('helpOverlay');return;}
+    _lastGPress=now;e.preventDefault();e.stopImmediatePropagation();return;
+  }
   // G = grid lines (handled in index.html), GG = help overlay
   if(e.key==='g'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')){
     const now=Date.now();
