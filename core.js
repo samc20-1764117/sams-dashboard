@@ -175,8 +175,8 @@ async function sbSaveBlock(b){
     id:b.id,title:b.title||'',day_date:b.ds,
     start_time:startTime,start_minutes:smVal,
     duration_minutes:b.dur,category:b.cat||'Home',
-    task_id:b.taskId||null,rec_id:b.recId||null,shop_id:b.shopId||null,
-    vid_id:b._vidId||null,
+    task_id:b.taskId||null,rec_id:b._vidStepName||b.recId||null,shop_id:b.shopId||null,
+    vid_id:b._vidStepVid||b._vidId||null,
     done:b._done||false
   };
   try{
@@ -391,9 +391,11 @@ async function syncAll(silent=false){
         if(b.category==='pup_session'){const _sk=(st.pup_skills||[]).find(x=>x.skill===b.title);if(_sk){const _ss=(st.pupSessions||[]).find(s=>String(s.skill_id)===String(_sk.id)&&s.day_date===b.day_date);if(_ss)_pupSessId=_ss.id;}}
         let _finCancelSubId=null;
         if((b.title||'').startsWith('Cancel ')&&st.finSubs){const _sub=st.finSubs.find(s=>b.title==='Cancel '+s.name||b.title.startsWith('Cancel '+s.name+' by '));if(_sub)_finCancelSubId=String(_sub.id);}
+        const _isVidStep=b.vid_id&&b.rec_id&&b.rec_id.startsWith('step_');
         return{id:b.id,title:b.title||'',ds:b.day_date,sm:sm||0,
           dur:b.duration_minutes||30,cat:b.category||'Home',
-          taskId:b.task_id||null,recId:b.rec_id||null,shopId:b.shop_id||null,_vidId:b.vid_id||null,ruleId:null,_done:b.done||false,_pupSessId,_finCancelSubId};
+          taskId:b.task_id||null,recId:_isVidStep?null:b.rec_id||null,shopId:b.shop_id||null,_vidId:_isVidStep?null:b.vid_id||null,ruleId:null,_done:b.done||false,_pupSessId,_finCancelSubId,
+          _vidStepVid:_isVidStep?b.vid_id:null,_vidStepName:_isVidStep?b.rec_id:null};
       }),...localOnly];
     }
     save();
