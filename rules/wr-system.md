@@ -89,9 +89,9 @@
 
 **Unified Add modal** (`#wrRuleAddModal`): `openWrRuleAddModal(cadence?,type='wr')`. WR vs Scheduled toggle. Starting date field (`#wrAddAnchorField`) always visible when type=`sch` regardless of cadence (including weekly). `_wrReadCadenceFields` returns `starting_date` for `sch` type on all cadences.
 
-**Context menu** (`#wrRuleCtxMenu`): populated dynamically by `showWrRuleCtx` based on cadence.
-- **Weekly/Other** (fires every week): ⊘ Skip this week · ✏️ Edit this week only · ✏️ Edit rule (all future) · ✕ Delete rule. No move prev/next (meaningless for weekly).
-- **Interval cadences** (biweekly/monthly/quarterly/biannual/annual): ⊘ Skip this cycle · ← Move to prev week (this time) · → Move to next week (this time) · ← Shift schedule earlier (all future) · → Shift schedule later (all future) · ✏️ Edit this week only · ✏️ Edit rule (all future) · ✕ Delete rule.
+**Context menu** (`#wrRuleCtxMenu`): populated dynamically by `showWrRuleCtx` based on cadence. SVG outline icons (no emoji). Header shows task name + X close button (X = delete rule permanently, undoable). `wrCtxDeleteRule` DELETEs from DB; `pushUndo` re-POSTs to restore.
+- **Weekly/Other** (fires every week): Skip this week · divider · Edit this week · Edit all future. No move prev/next (meaningless for weekly).
+- **Interval cadences** (biweekly/monthly/quarterly/biannual/annual): Skip this cycle · two-column boxes: "This time only" (Next/Prev/Edit) | "All future" (Next/Prev/Edit). Columns use `.ctx-col-box` containers.
 
 **Move prev/next week (this time)** (`_wrShiftAnchor`): one-time override only. Skips current week, pins to adjacent week via `_dateOverrides`. Does NOT shift `starting_date`. Conflict guard: if target week already has this task (naturally due, moved-in override, or non-skip `_dateOverrides`), shows toast "Already scheduled that week" and blocks.
 
@@ -106,6 +106,7 @@
 ## Non-WR Recurring Task Logic
 Non-WR (`is_weekly_reset=false`) → `st.recurring`. All CRUD to `wr_recurring_rules`.
 - **Scheduled**: auto by cadence+`appears_on_date`. `getRecurringWeekTasks(off)`. Excludes `cadence==='daily'`.
+- **Weekly cal overdue**: `renderWkCal` loops `getRecurringWeekTasks` back 4 weeks (like WR/wrec) so overdue tasks moved forward via `_dateOverrides` appear on the correct day.
 - **Default timeblock time** (optional): `default_start_time`/`default_end_time` on `wr_recurring_rules`. When set, `getRecAutoTBForDate(ds)` auto-generates virtual TB blocks (like autoTB). Per-week overrides stored in `_dateOverrides['tb::'+wkKey]` = `{start,end}` or `'__skip__'`. Skipped if already manually placed (`st.blocks` has matching `recId`). `drawRecAutoTBBlock` renders; move/resize saves via `_saveRecAutoTBOv`; delete via `delRecAutoTBForDay`.
 - `skipRecVirtThisWk`: sets `__skip__`, removes TBs, PATCHes `date_overrides`, undo.
 - **Done**: `_doneByWk[getWkKey(wkOff)]`. `togRec` writes/deletes key.

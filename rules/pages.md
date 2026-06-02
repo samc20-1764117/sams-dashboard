@@ -143,7 +143,7 @@ Table: `recipes` (columns include `sort_order int4`). Do NOT reference: protein,
 - Staples: skip-this-week via `st._grocStapleSkips[weekMon]` or remove permanently.
 
 ### Quick Links (overview, `index.html`)
-- Grid order: Videos → Finance → Pups → Birthdays → Recipes.
+- Grid order: Videos → Finance → Pups → Birthdays → Ideas → Recipes.
 - Icons: outline SVGs with `opacity:.45` via `.ql-icon`. Pups uses actual dog headshots (Sunny left, Mochi right) at full opacity (`:has(img)` override). Text color: `var(--muted)`.
 - Quick Notes button (`#qnBtn`): 34×34px circle, pencil outline SVG, layered glow shadow.
 
