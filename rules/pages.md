@@ -113,6 +113,13 @@ Table: `birthdays(id,name,birthday,present_ideas)`. `present_ideas` JSON array. 
 - **Today list**: birthdays never greyed out regardless of timeblock state. Emoji wrapped in `.bday-emoji` span (8px, `margin-left:3px`, today-list only via `#todList` scope).
 - **`getBirthdaysInRange`** used for weekly calendar (supports past weeks); `getBirthdayTasks(null)` skips past dates — don't use for calendar.
 
+### Ideas (`features.js`)
+Table: `ideas(id uuid, topic text, idea text, archived bool, created_at timestamptz)`. Soft delete via `archived` flag — never hard-delete.
+- **Cards**: purple tint (`rgba(168,85,247,.06)`), topic bold header + date + archive button, idea text below.
+- **Inline edit**: dblclick idea text → `contentEditable`. Cmd+Enter saves, Escape reverts. No container resize.
+- **Archived**: collapsible section at bottom, grey tint, restore via ↩ button.
+- **Add**: `+` button opens inline form (topic + idea). Cmd+Enter submits.
+
 ### Recipes (`features.js`)
 Table: `recipes` (columns include `sort_order int4`). Do NOT reference: protein,prep_time,cook_time,difficulty,last_made_date,notes. Ingredients: JSON `[{name,amount,is_pantry?}]`.
 - **Book layout**: `.rec-book` two-panel grid (`320px 1fr`), `border-radius:12px`, glassy container (`backdrop-filter:blur(12px)`). Left: scrollable recipe list. Right: `#recDetailPanel` always-visible detail view. Active item uses **inverse rounded corners** (radial-gradient scoops via `::before`/`::after`) to create seamless tab-opening into detail panel. Active bg matches right panel bg exactly (`rgba(255,255,255,.45)` / dark `.06`). Wrap height: `calc(100vh - 102px)`.
