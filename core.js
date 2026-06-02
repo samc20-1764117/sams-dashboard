@@ -255,7 +255,7 @@ async function syncAll(silent=false){
       sbReqSilent('GET','packing_items',null,'?order=sort_order.asc.nullslast,name.asc&select=*'),
       sbReqSilent('GET','finance',null,'?order=sort_order.asc.nullslast,name.asc&select=*'),
       sbReqSilent('GET','finance_subs',null,'?order=sort_order.asc.nullslast,name.asc&select=*'),
-      sbReqSilent('GET','ideas',null,'?order=created_at.desc&select=*')
+      sbReqSilent('GET','ideas',null,'?order=sort_order.asc.nullslast,created_at.desc&select=*')
     ]);
     if(ideasDb)st.ideas=ideasDb;
     if(pupSessionsDb)st.pupSessions=pupSessionsDb.filter(s=>!deletedPupSessIds.has(String(s.id)));
@@ -918,7 +918,7 @@ async function doRedo(){
   undoStack.push({fn:()=>{_stateRestore(beforeRedo);_syncRedoDiff(snap,beforeRedo);},msg,snapBeforeUndo:beforeRedo});
   _showRedoToast(msg||'Action');
 }
-let _lastVPress=0,_vNavTimer=null;
+let _lastVPress=0,_vNavTimer=null,_lastGPress=0,_gNavTimer=null;
 document.addEventListener('keydown',e=>{
   if((e.metaKey||e.ctrlKey)&&e.key==='a'){const _ael=document.activeElement;const _isInput=_ael&&(_ael.tagName==='INPUT'||_ael.tagName==='TEXTAREA');if(!_isInput)e.preventDefault();return;}
   if((e.metaKey||e.ctrlKey)&&e.key==='z'){
@@ -1063,8 +1063,11 @@ document.addEventListener('keydown',e=>{
   if(e.key==='f'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')){
     e.preventDefault();showPage('finance');
   }
-  if(e.key==='l'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')){
-    e.preventDefault();showPage('guide');
+  if(e.key==='g'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')){
+    const now=Date.now();
+    if(_lastGPress&&now-_lastGPress<400){_lastGPress=0;if(_gNavTimer){clearTimeout(_gNavTimer);_gNavTimer=null;}e.preventDefault();_showHelpOverlay();return;}
+    _lastGPress=now;_gNavTimer=setTimeout(()=>{_gNavTimer=null;showPage('guide');},400);
+    e.preventDefault();return;
   }
   if(e.key==='d'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')){
     e.preventDefault();if(typeof toggleDark==='function')toggleDark();
@@ -1087,14 +1090,22 @@ document.addEventListener('keydown',e=>{
       if(_ni>=0&&_ni<_pgOrder.length){showPage(_pgOrder[_ni]);}
     }
   }
-  // Help overlay: press "i" when nothing focused/selected
-  if(e.key==='i'&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')){
-    if(document.getElementById('helpOverlay').classList.contains('open')){e.preventDefault();closeMod('helpOverlay');return;}
-    if(!document.querySelector('.overlay.open')){e.preventDefault();_showHelpOverlay();return;}
+  // I = ideas page
+  if(e.key==='i'&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')){
+    e.preventDefault();showPage('ideas');return;
   }
   // Close help overlay with Enter
   if((e.key==='Enter')&&document.getElementById('helpOverlay').classList.contains('open')){
     e.preventDefault();closeMod('helpOverlay');
+  }
+  // Close ideas archive modal with Enter
+  if(e.key==='Enter'&&!document.querySelector('input:focus,textarea:focus')){
+    const _iam=document.getElementById('ideasArchiveModal');
+    if(_iam&&_iam.classList.contains('open')){e.preventDefault();closeMod('ideasArchiveModal');return;}
+  }
+  // N on ideas page = new idea
+  if(e.key==='n'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')){
+    if(document.getElementById('page-ideas')?.classList.contains('active')){e.preventDefault();openIdeasAddForm();return;}
   }
 });
 

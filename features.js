@@ -2326,29 +2326,31 @@ async function delFin(id){
 
 // ── Ideas ─────────────────────────────────────────────────────────────────────
 function _ideaFmtDisplay(text){
-  return escHtml(text).replace(/^• /gm,'<span style="color:var(--accent)">•</span> ');
+  return escHtml(text).replace(/^• /gm,'<span style="color:#64748b">•</span> ');
 }
+let _ideaDragId=null;
 function renderIdeasPage(){
   save();
   const pg=document.getElementById('ideasPageContent');if(!pg)return;
   const dk=document.body.classList.contains('dark');
-  const active=st.ideas.filter(i=>!i.archived);
+  const active=st.ideas.filter(i=>!i.archived).sort((a,b)=>(a.sort_order??9999)-(b.sort_order??9999));
   const archivedCount=st.ideas.filter(i=>i.archived).length;
   const cntEl=document.getElementById('ideasCount');if(cntEl)cntEl.textContent=active.length;
   const archBtn=document.getElementById('ideasArchiveBtn');if(archBtn)archBtn.style.display=archivedCount?'':'none';
-  let html='<div style="padding:12px 16px">';
+  let html='<div id="ideasList" style="padding:12px 16px">';
   if(!active.length){html+='<div style="text-align:center;color:var(--muted);padding:40px 0;font-size:13px">No ideas yet. Click + to add one.</div></div>';pg.innerHTML=html;return;}
   active.forEach(idea=>{html+=_ideaCard(idea,dk);});
   html+='</div>';
   pg.innerHTML=html;
+  _ideaSetupDrag();
 }
 function _ideaCard(idea,dk){
   const date=idea.created_at?new Date(idea.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'';
-  const bg=dk?'rgba(255,255,255,.04)':'rgba(255,255,255,.7)';
-  const bdr=dk?'rgba(255,255,255,.08)':'rgba(210,205,228,.25)';
+  const bg=dk?'rgba(255,255,255,.06)':'rgba(255,255,255,.85)';
+  const bdr=dk?'rgba(255,255,255,.08)':'rgba(210,205,228,.3)';
   const hasIdea=idea.idea&&idea.idea.trim();
   const ideaHtml=hasIdea?`<div ondblclick="editIdeaInline(this,'${idea.id}')" style="font-size:12px;color:var(--muted);white-space:pre-wrap;line-height:1.5;cursor:text">${_ideaFmtDisplay(idea.idea)}</div>`:'';
-  return`<div class="idea-row" style="padding:10px 12px;margin-bottom:8px;border-radius:8px;background:${bg};border:1px solid ${bdr}">
+  return`<div class="idea-row" draggable="true" data-idea-id="${idea.id}" ondragstart="_ideaDragStart(event,'${idea.id}')" ondragend="_ideaDragEnd(event)" style="padding:10px 12px;margin-bottom:8px;border-radius:8px;background:${bg};border:1px solid ${bdr};cursor:grab">
     <div style="display:flex;justify-content:space-between;align-items:center${hasIdea?';margin-bottom:4px':''}">
       <span ondblclick="editIdeaTopicInline(this,'${idea.id}')" style="font-size:12px;font-weight:600;color:var(--text);cursor:text">${escHtml(idea.topic)}</span>
       <div style="display:flex;gap:4px;align-items:center">
@@ -2489,6 +2491,42 @@ function editIdeaTopicInline(el,id){
     if(e.key==='Enter'){e.preventDefault();input.blur();return;}
     if(e.key==='Escape'){input.value=idea.topic;input.blur();return;}
     e.stopPropagation();
+  });
+}
+function _ideaDragStart(e,id){_ideaDragId=id;e.dataTransfer.effectAllowed='move';e.target.style.opacity='.4';}
+function _ideaDragEnd(e){_ideaDragId=null;e.target.style.opacity='';}
+function _ideaSetupDrag(){
+  const list=document.getElementById('ideasList');if(!list)return;
+  list.addEventListener('dragover',e=>{
+    if(!_ideaDragId)return;e.preventDefault();
+    const rows=[...list.querySelectorAll('.idea-row')];
+    let ph=list.querySelector('.idea-drop-ph');
+    if(!ph){ph=document.createElement('div');ph.className='idea-drop-ph';ph.style.cssText='height:2px;margin:4px 0;border-radius:99px;background:var(--accent);pointer-events:none';list.appendChild(ph);}
+    let inserted=false;
+    for(const r of rows){const rc=r.getBoundingClientRect();if(e.clientY<rc.top+rc.height/2){list.insertBefore(ph,r);inserted=true;break;}}
+    if(!inserted){const last=rows[rows.length-1];if(last)last.after(ph);}
+  });
+  list.addEventListener('dragleave',e=>{if(!list.contains(e.relatedTarget)){const ph=list.querySelector('.idea-drop-ph');if(ph)ph.remove();}});
+  list.addEventListener('drop',e=>{
+    e.preventDefault();
+    const ph=list.querySelector('.idea-drop-ph');if(ph)ph.remove();
+    if(!_ideaDragId)return;
+    const rows=[...list.querySelectorAll('.idea-row')];
+    const ids=rows.map(r=>r.dataset.ideaId);
+    // find drop index
+    let dropIdx=ids.length;
+    for(let i=0;i<rows.length;i++){const rc=rows[i].getBoundingClientRect();if(e.clientY<rc.top+rc.height/2){dropIdx=i;break;}}
+    // reorder active ideas
+    const active=st.ideas.filter(i=>!i.archived).sort((a,b)=>(a.sort_order??9999)-(b.sort_order??9999));
+    const dragIdx=active.findIndex(i=>String(i.id)===String(_ideaDragId));
+    if(dragIdx<0)return;
+    const [moved]=active.splice(dragIdx,1);
+    if(dropIdx>dragIdx)dropIdx--;
+    active.splice(dropIdx,0,moved);
+    active.forEach((idea,i)=>{idea.sort_order=i;});
+    renderIdeasPage();save();
+    active.forEach(idea=>{if(!String(idea.id).startsWith('l-'))sbReqSilent('PATCH','ideas',{sort_order:idea.sort_order},`?id=eq.${idea.id}`);});
+    _ideaDragId=null;
   });
 }
 
@@ -4518,13 +4556,13 @@ function renderGuidePage(){
     ${sRow('O','Overview')}
     ${sRow('V','Videos')}
     ${sRow('F','Finance')}
-    ${sRow('L','Style Guide')}
-    ${sRow('N','Quick Add task')}
+    ${sRow('G','Style Guide')}
+    ${sRow('GG','Help overlay')}
+    ${sRow('I','Ideas')}
+    ${sRow('N','Quick Add task / New idea')}
     ${sRow('R','Reload page')}
     ${sRow('S','Sync all / HEB grocery')}
     ${sRow('D','Toggle dark mode')}
-    ${sRow('I','Help overlay')}
-    ${sRow('G','Debug grid')}
     ${sRow('Esc','Close modal / deselect')}
     ${sRow('⌘Z','Undo')}
     </table>

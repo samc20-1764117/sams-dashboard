@@ -114,12 +114,15 @@ Table: `birthdays(id,name,birthday,present_ideas)`. `present_ideas` JSON array. 
 - **`getBirthdaysInRange`** used for weekly calendar (supports past weeks); `getBirthdayTasks(null)` skips past dates — don't use for calendar.
 
 ### Ideas (`features.js`)
-Table: `ideas(id uuid, topic text NOT NULL, idea text NULL, archived bool, created_at timestamptz)`. Soft delete via `archived` flag — never hard-delete.
-- **Cards**: purple tint (`rgba(168,85,247,.06)`), topic bold header + date + hover ✕. Idea text below only if non-null.
+Table: `ideas(id uuid, topic text NOT NULL, idea text, archived bool, sort_order int4, created_at timestamptz)`. Soft delete via `archived` flag — never hard-delete.
+- **Cards**: white (`rgba(255,255,255,.85)`), container glass (`rgba(255,255,255,.38)` + blur). Topic bold header + date + hover ✕.
+- **Header bar**: `.ch` with count, Archive button (opens modal), + button.
 - **Inline edit**: dblclick topic or idea text → inline input/textarea. Enter (topic) or Cmd+Enter (idea) saves, Escape reverts.
-- **Archived**: collapsible section at bottom, grey tint, ↩ restore button (always visible).
+- **Archived**: modal popup via Archive button in header. ↩ restore button (accent colored).
 - **Active ✕**: hover-only via `.idea-row:hover .idea-x-btn`.
-- **Add flow**: `+` opens form. Enter on topic = instant save (no notes). Tab on topic = show notes textarea. Cmd+Enter in notes = save. Empty topic + Enter/Escape = cancel.
+- **Add flow**: `+` or `N` key opens form. Enter on topic = instant save (no notes). Tab on topic = show notes textarea. Cmd+Enter in notes = save. Empty topic + Enter/Escape = cancel.
+- **Drag reorder**: `draggable="true"`, updates `sort_order` for all active ideas. PATCHes each to Supabase.
+- **Shortcuts**: `I` = navigate to ideas page. `N` (on ideas page) = new idea.
 
 ### Recipes (`features.js`)
 Table: `recipes` (columns include `sort_order int4`). Do NOT reference: protein,prep_time,cook_time,difficulty,last_made_date,notes. Ingredients: JSON `[{name,amount,is_pantry?}]`.
@@ -180,6 +183,6 @@ Table: `recipes` (columns include `sort_order int4`). Do NOT reference: protein,
 - **Keyboard shortcuts**: global shortcuts (`s`, `n`, `r`) do NOT fire when typing in contenteditable/input/textarea fields. `s` (grocery modal) is overview-only.
 
 ### Style Guide (`features.js`, `page-guide`)
-- **Shortcut**: `L`. `renderGuidePage()` in features.js.
+- **Shortcut**: `G` (single press). Double `G` opens help overlay. `renderGuidePage()` in features.js.
 - **Layout**: narrow left column (task color cards + special states), right 2-col grid (keyboard shortcuts, multi-select & drag).
 - **Must stay in sync**: when updating colors, shortcuts, or multi-select behavior, also update `renderGuidePage()`.
