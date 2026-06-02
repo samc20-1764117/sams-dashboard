@@ -161,6 +161,7 @@ function renderToday(){
     })
   ];
   const allToday=[...ts,...virtToday];
+  if(typeof _vidStepReconstructBlocks==='function')_vidStepReconstructBlocks();
   const sorted=sortTasksToday(allToday);
   const doneCount=sorted.filter(t=>t.done&&t._type!=='birthday').length+sorted.filter(t=>t._type==='birthday'&&st.blocks.some(b=>b.cat==='Birthday'&&b.title===t.name&&b._done)).length;
   // todBadge removed
@@ -168,7 +169,6 @@ function renderToday(){
   document.getElementById('todPB').style.width=sorted.length?`${doneCount/sorted.length*100}%`:'0%';
   renderTodDonut(doneCount,sorted.length);
   const _todDs=ds;
-  if(typeof _vidStepReconstructBlocks==='function')_vidStepReconstructBlocks();
   function _hasTBToday(t){
     if(t._type==='travel')return true;
     if(t._type==='birthday')return st.blocks.some(b=>b.ds===_todDs&&b.cat==='Birthday'&&b.title===t.name);
@@ -754,6 +754,7 @@ function sortTasksForDay(tasks,ds){
   function tbSm(t){
     let b=null;
     if(t._type==='pup'&&t._pupSessId)b=blks.find(x=>String(x._pupSessId)===String(t._pupSessId));
+    else if(t._type==='vidstep')b=blks.find(x=>String(x._vidStepVid)===String(t._vidId)&&x._vidStepName===t._vidStep);
     else if(t._vidId)b=blks.find(x=>String(x._vidId)===String(t._vidId));
     else if(t._shopId)b=blks.find(x=>String(x.shopId)===String(t._shopId));
     else if(t._ruleId)b=blks.find(x=>String(x.ruleId)===String(t._ruleId)||String(x.recId)===String(t._ruleId));
