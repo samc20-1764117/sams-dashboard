@@ -2325,7 +2325,6 @@ async function delFin(id){
 }
 
 // ── Ideas ─────────────────────────────────────────────────────────────────────
-let _ideasShowArchived=false;
 function _ideaFmtDisplay(text){
   return escHtml(text).replace(/^• /gm,'<span style="color:var(--accent)">•</span> ');
 }
@@ -2335,34 +2334,57 @@ function renderIdeasPage(){
   const dk=document.body.classList.contains('dark');
   const active=st.ideas.filter(i=>!i.archived);
   const archivedCount=st.ideas.filter(i=>i.archived).length;
+  const cntEl=document.getElementById('ideasCount');if(cntEl)cntEl.textContent=active.length;
+  const archBtn=document.getElementById('ideasArchiveBtn');if(archBtn)archBtn.style.display=archivedCount?'':'none';
   let html='<div style="padding:12px 16px">';
-  if(!active.length&&!archivedCount){html+='<div style="text-align:center;color:var(--muted);padding:40px 0;font-size:13px">No ideas yet. Click + to add one.</div></div>';pg.innerHTML=html;return;}
-  active.forEach(idea=>{html+=_ideaCard(idea,false,dk);});
-  if(archivedCount){
-    html+=`<div style="margin-top:16px;padding-top:10px">
-      <button onclick="_ideasShowArchived=!_ideasShowArchived;renderIdeasPage()" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);font-family:inherit;padding:4px 0">${_ideasShowArchived?'▾':'▸'} Archived (${archivedCount})</button>`;
-    if(_ideasShowArchived){st.ideas.filter(i=>i.archived).forEach(idea=>{html+=_ideaCard(idea,true,dk);});}
-    html+='</div>';
-  }
+  if(!active.length){html+='<div style="text-align:center;color:var(--muted);padding:40px 0;font-size:13px">No ideas yet. Click + to add one.</div></div>';pg.innerHTML=html;return;}
+  active.forEach(idea=>{html+=_ideaCard(idea,dk);});
   html+='</div>';
   pg.innerHTML=html;
 }
-function _ideaCard(idea,isArchived,dk){
+function _ideaCard(idea,dk){
   const date=idea.created_at?new Date(idea.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'';
-  const bg=isArchived?(dk?'rgba(255,255,255,.02)':'rgba(148,163,184,.06)'):(dk?'rgba(168,85,247,.08)':'rgba(168,85,247,.06)');
-  const bdr=isArchived?(dk?'rgba(255,255,255,.06)':'rgba(148,163,184,.15)'):(dk?'rgba(168,85,247,.15)':'rgba(168,85,247,.18)');
+  const bg=dk?'rgba(255,255,255,.04)':'rgba(255,255,255,.7)';
+  const bdr=dk?'rgba(255,255,255,.08)':'rgba(210,205,228,.25)';
   const hasIdea=idea.idea&&idea.idea.trim();
   const ideaHtml=hasIdea?`<div ondblclick="editIdeaInline(this,'${idea.id}')" style="font-size:12px;color:var(--muted);white-space:pre-wrap;line-height:1.5;cursor:text">${_ideaFmtDisplay(idea.idea)}</div>`:'';
   return`<div class="idea-row" style="padding:10px 12px;margin-bottom:8px;border-radius:8px;background:${bg};border:1px solid ${bdr}">
     <div style="display:flex;justify-content:space-between;align-items:center${hasIdea?';margin-bottom:4px':''}">
-      <span ondblclick="editIdeaTopicInline(this,'${idea.id}')" style="font-size:12px;font-weight:600;color:${isArchived?'var(--muted)':'var(--text)'};cursor:text">${escHtml(idea.topic)}</span>
+      <span ondblclick="editIdeaTopicInline(this,'${idea.id}')" style="font-size:12px;font-weight:600;color:var(--text);cursor:text">${escHtml(idea.topic)}</span>
       <div style="display:flex;gap:4px;align-items:center">
         <span style="font-size:10px;color:var(--muted)">${date}</span>
-        ${isArchived?`<button onclick="restoreIdea('${idea.id}')" title="Restore" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);padding:2px 4px">↩</button>`:`<button onclick="toggleIdeaArchive('${idea.id}')" title="Archive" class="idea-x-btn" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);padding:2px 4px;opacity:0;transition:opacity .15s">✕</button>`}
+        <button onclick="toggleIdeaArchive('${idea.id}')" title="Archive" class="idea-x-btn" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);padding:2px 4px;opacity:0;transition:opacity .15s">✕</button>
       </div>
     </div>
     ${ideaHtml}
   </div>`;
+}
+function openIdeasArchive(){
+  const dk=document.body.classList.contains('dark');
+  const archived=st.ideas.filter(i=>i.archived);
+  const content=document.getElementById('ideasArchiveContent');if(!content)return;
+  if(!archived.length){content.innerHTML='<div style="text-align:center;color:var(--muted);padding:24px 0;font-size:12px">No archived ideas</div>';}
+  else{
+    let html='';
+    archived.forEach(idea=>{
+      const date=idea.created_at?new Date(idea.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'';
+      const hasIdea=idea.idea&&idea.idea.trim();
+      const bg=dk?'rgba(255,255,255,.03)':'rgba(148,163,184,.06)';
+      const bdr=dk?'rgba(255,255,255,.06)':'rgba(148,163,184,.15)';
+      html+=`<div style="padding:10px 12px;margin-bottom:8px;border-radius:8px;background:${bg};border:1px solid ${bdr}">
+        <div style="display:flex;justify-content:space-between;align-items:center${hasIdea?';margin-bottom:4px':''}">
+          <span style="font-size:12px;font-weight:600;color:var(--muted)">${escHtml(idea.topic)}</span>
+          <div style="display:flex;gap:4px;align-items:center">
+            <span style="font-size:10px;color:var(--muted)">${date}</span>
+            <button onclick="restoreIdea('${idea.id}')" title="Restore" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--accent);padding:2px 4px">↩</button>
+          </div>
+        </div>
+        ${hasIdea?`<div style="font-size:12px;color:var(--muted);white-space:pre-wrap;line-height:1.5;opacity:.6">${_ideaFmtDisplay(idea.idea)}</div>`:''}
+      </div>`;
+    });
+    content.innerHTML=html;
+  }
+  document.getElementById('ideasArchiveModal').classList.add('open');
 }
 function openIdeasAddForm(){
   const pg=document.getElementById('ideasPageContent');if(!pg)return;
@@ -2410,7 +2432,10 @@ async function toggleIdeaArchive(id){
 }
 async function restoreIdea(id){
   const idea=st.ideas.find(i=>String(i.id)===String(id));if(!idea)return;
-  idea.archived=false;renderIdeasPage();save();
+  idea.archived=false;renderIdeasPage();
+  const archModal=document.getElementById('ideasArchiveModal');
+  if(archModal&&archModal.classList.contains('open'))openIdeasArchive();
+  save();
   if(!String(id).startsWith('l-'))await sbReq('PATCH','ideas',{archived:false},`?id=eq.${id}`);
 }
 function editIdeaInline(el,id){

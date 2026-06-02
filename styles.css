@@ -238,7 +238,9 @@ body{font-family:'DM Sans',sans-serif;background:#fef6f0;background-attachment:f
 @media(max-width:900px){.main{margin-left:0;padding:12px 0 24px 0}#page-overview{padding:0 12px}.overview-cols{grid-template-columns:1fr;height:auto}}
 .main.full{margin-left:0}
 .page{display:none;position:relative;z-index:0}.page.active{display:block}#page-birthdays.active{display:flex!important;flex-direction:column;height:100vh;width:100%;box-sizing:border-box}#page-finance.active{display:flex!important;flex-direction:column;height:100vh;box-sizing:border-box}#page-ideas.active{display:flex!important;flex-direction:column;height:100vh;width:100%;box-sizing:border-box}
-.idea-row:hover .idea-x-btn{opacity:1}.idea-x-btn:hover{color:#ef4444!important}
+.ideas-card{background:rgba(255,255,255,.78)!important;backdrop-filter:blur(32px)!important;-webkit-backdrop-filter:blur(32px)!important}
+body.dark .ideas-card{background:rgba(24,24,28,.55)!important;backdrop-filter:blur(32px)!important;-webkit-backdrop-filter:blur(32px)!important}
+.idea-row:hover .idea-x-btn{opacity:1!important}.idea-x-btn:hover{color:#ef4444!important}
 
 /* Undo toast */
 .back-btn{display:none}
