@@ -739,10 +739,6 @@ function skipRecVirtThisWk(rid,wkKey){
   if(!r._dateOverrides)r._dateOverrides={};
   const prev=r._dateOverrides[wkKey];
   r._dateOverrides[wkKey]='__skip__';
-  // If skipping an overdue occurrence from a past week, also skip current week so the new occurrence doesn't linger
-  const curWk=getWkKey(wkOff);
-  let prevCur;
-  if(wkKey!==curWk&&!(r._doneByWk&&r._doneByWk[curWk])){prevCur=r._dateOverrides[curWk];r._dateOverrides[curWk]='__skip__';}
   const linkedBlocks=st.blocks?st.blocks.filter(b=>String(b.recId)===String(rid)&&isInWk(b.ds,wkOff)):[];
   if(st.blocks)st.blocks=st.blocks.filter(b=>!(String(b.recId)===String(rid)&&isInWk(b.ds,wkOff)));
   save();renderWeeklyPage();renderToday();renderWkSummary();renderWkCal();
@@ -751,7 +747,6 @@ function skipRecVirtThisWk(rid,wkKey){
   sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(rid));
   pushUndo(()=>{
     if(prev!==undefined)r._dateOverrides[wkKey]=prev;else delete r._dateOverrides[wkKey];
-    if(wkKey!==curWk){if(prevCur!==undefined)r._dateOverrides[curWk]=prevCur;else delete r._dateOverrides[curWk];}
     linkedBlocks.forEach(b=>{if(st.blocks)st.blocks.push(b);sbSaveBlock(b);});
     save();renderWeeklyPage();renderToday();renderWkSummary();renderWkCal();
     if(document.getElementById('tbGrid'))renderDayTB();
