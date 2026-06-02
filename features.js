@@ -2326,21 +2326,25 @@ async function delFin(id){
 
 // ── Ideas ─────────────────────────────────────────────────────────────────────
 let _ideasShowArchived=false;
+function _ideaFmtDisplay(text){
+  return escHtml(text).replace(/^• /gm,'<span style="color:var(--accent)">•</span> ');
+}
 function renderIdeasPage(){
   save();
   const pg=document.getElementById('ideasPageContent');if(!pg)return;
   const dk=document.body.classList.contains('dark');
   const active=st.ideas.filter(i=>!i.archived);
   const archived=st.ideas.filter(i=>i.archived);
-  let html='';
-  if(!active.length&&!archived.length){html='<div style="text-align:center;color:var(--muted);padding:40px 0;font-size:13px">No ideas yet. Click + to add one.</div>';pg.innerHTML=html;return;}
+  let html='<div style="padding:12px 16px">';
+  if(!active.length&&!archived.length){html+='<div style="text-align:center;color:var(--muted);padding:40px 0;font-size:13px">No ideas yet. Click + to add one.</div></div>';pg.innerHTML=html;return;}
   active.forEach(idea=>{html+=_ideaCard(idea,false,dk);});
   if(archived.length){
-    html+=`<div style="margin-top:20px;border-top:1px solid var(--border);padding-top:12px">
+    html+=`<div style="margin-top:16px;border-top:1px solid var(--border);padding-top:10px">
       <button onclick="_ideasShowArchived=!_ideasShowArchived;renderIdeasPage()" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);font-family:inherit;padding:4px 0">${_ideasShowArchived?'▾':'▸'} Archived (${archived.length})</button>`;
     if(_ideasShowArchived){archived.forEach(idea=>{html+=_ideaCard(idea,true,dk);});}
     html+='</div>';
   }
+  html+='</div>';
   pg.innerHTML=html;
 }
 function _ideaCard(idea,isArchived,dk){
@@ -2355,7 +2359,7 @@ function _ideaCard(idea,isArchived,dk){
         <button onclick="toggleIdeaArchive('${idea.id}')" title="${isArchived?'Restore':'Archive'}" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);padding:2px 4px">${isArchived?'↩':'✕'}</button>
       </div>
     </div>
-    <div ondblclick="editIdeaInline(this,'${idea.id}')" style="font-size:12px;color:var(--muted);white-space:pre-wrap;line-height:1.5;cursor:text">${escHtml(idea.idea)}</div>
+    <div ondblclick="editIdeaInline(this,'${idea.id}')" style="font-size:12px;color:var(--muted);white-space:pre-wrap;line-height:1.5;cursor:text">${_ideaFmtDisplay(idea.idea)}</div>
   </div>`;
 }
 function openIdeasAddForm(){
@@ -2363,26 +2367,45 @@ function openIdeasAddForm(){
   if(document.getElementById('ideaAddForm'))return;
   const dk=document.body.classList.contains('dark');
   const form=document.createElement('div');form.id='ideaAddForm';
-  form.style.cssText=`padding:12px;margin-bottom:12px;border-radius:8px;background:${dk?'rgba(168,85,247,.08)':'rgba(168,85,247,.06)'};border:1px solid ${dk?'rgba(168,85,247,.15)':'rgba(168,85,247,.18)'}`;
+  form.style.cssText=`padding:12px;margin:12px 16px 0;border-radius:8px;background:${dk?'rgba(168,85,247,.08)':'rgba(168,85,247,.06)'};border:1px solid ${dk?'rgba(168,85,247,.15)':'rgba(168,85,247,.18)'}`;
   const inputBg=dk?'rgba(255,255,255,.06)':'rgba(255,255,255,.6)';
   form.innerHTML=`<input id="ideaTopicInput" placeholder="Topic name" style="width:100%;box-sizing:border-box;padding:6px 8px;border-radius:6px;border:1px solid var(--border);background:${inputBg};font-size:12px;font-family:inherit;color:var(--text);margin-bottom:6px;outline:none">
-    <textarea id="ideaTextInput" placeholder="Your idea..." style="width:100%;box-sizing:border-box;padding:6px 8px;border-radius:6px;border:1px solid var(--border);background:${inputBg};font-size:12px;font-family:inherit;color:var(--text);resize:vertical;min-height:60px;outline:none"></textarea>
+    <textarea id="ideaTextInput" placeholder="Your idea... (Enter for new line, Cmd+Enter to save)" style="width:100%;box-sizing:border-box;padding:6px 8px;border-radius:6px;border:1px solid var(--border);background:${inputBg};font-size:12px;font-family:inherit;color:var(--text);resize:vertical;min-height:60px;outline:none;line-height:1.5"></textarea>
     <div style="display:flex;gap:6px;justify-content:flex-end;margin-top:6px">
-      <button onclick="document.getElementById('ideaAddForm').remove()" class="btn btn-ghost btn-xs">Cancel</button>
+      <button onclick="_ideaCancelAdd()" class="btn btn-ghost btn-xs">Cancel</button>
       <button onclick="saveNewIdea()" class="btn btn-ghost btn-xs" style="background:var(--accent);color:#fff">Save</button>
     </div>`;
   pg.prepend(form);
   document.getElementById('ideaTopicInput').focus();
-  document.getElementById('ideaTextInput').addEventListener('keydown',e=>{if(e.key==='Enter'&&e.metaKey){e.preventDefault();saveNewIdea();}});
+  const topicEl=document.getElementById('ideaTopicInput');
+  const textEl=document.getElementById('ideaTextInput');
+  topicEl.addEventListener('keydown',e=>{
+    if(e.key==='Enter'){e.preventDefault();textEl.focus();}
+    if(e.key==='Escape'){_ideaCancelAdd();}
+    e.stopPropagation();
+  });
+  textEl.addEventListener('keydown',e=>{
+    if(e.key==='Enter'&&e.metaKey){e.preventDefault();saveNewIdea();return;}
+    if(e.key==='Escape'){_ideaCancelAdd();return;}
+    e.stopPropagation();
+  });
+}
+function _ideaCancelAdd(){
+  const topic=(document.getElementById('ideaTopicInput')||{}).value?.trim()||'';
+  const idea=(document.getElementById('ideaTextInput')||{}).value?.trim()||'';
+  if(topic||idea){saveNewIdea();}
+  else{const f=document.getElementById('ideaAddForm');if(f)f.remove();}
 }
 async function saveNewIdea(){
-  const topic=(document.getElementById('ideaTopicInput')||{}).value?.trim();
-  const idea=(document.getElementById('ideaTextInput')||{}).value?.trim();
-  if(!topic||!idea)return;
+  const topic=(document.getElementById('ideaTopicInput')||{}).value?.trim()||'';
+  const idea=(document.getElementById('ideaTextInput')||{}).value?.trim()||'';
+  if(!topic&&!idea){const f=document.getElementById('ideaAddForm');if(f)f.remove();return;}
+  const finalTopic=topic||'Untitled';
+  const finalIdea=idea||topic;
   const localId='l-'+Date.now();
-  const row={id:localId,topic,idea,archived:false,created_at:new Date().toISOString()};
+  const row={id:localId,topic:finalTopic,idea:finalIdea,archived:false,created_at:new Date().toISOString()};
   st.ideas.unshift(row);renderIdeasPage();
-  const sv=await sbReq('POST','ideas',{topic,idea,archived:false});
+  const sv=await sbReq('POST','ideas',{topic:finalTopic,idea:finalIdea,archived:false});
   if(sv&&sv[0]){const idx=st.ideas.findIndex(i=>i.id===localId);if(idx>=0)st.ideas[idx]=sv[0];}
   save();
 }
@@ -2393,27 +2416,31 @@ async function toggleIdeaArchive(id){
 }
 function editIdeaInline(el,id){
   const idea=st.ideas.find(i=>String(i.id)===String(id));if(!idea)return;
-  if(el.contentEditable==='true')return;
-  el.contentEditable='true';
-  el.style.outline='none';
-  el.style.borderBottom='1px solid var(--accent)';
-  el.style.paddingBottom='2px';
-  el.focus();
-  const sel=window.getSelection();sel.selectAllChildren(el);sel.collapseToEnd();
+  if(el.dataset.editing==='true')return;
+  el.dataset.editing='true';
+  const rect=el.getBoundingClientRect();
+  const dk=document.body.classList.contains('dark');
+  const ta=document.createElement('textarea');
+  ta.value=idea.idea;
+  ta.style.cssText=`width:100%;box-sizing:border-box;padding:0;margin:0;border:none;border-bottom:1px solid var(--accent);background:transparent;font-size:12px;font-family:inherit;color:var(--muted);resize:none;outline:none;line-height:1.5;overflow:hidden;white-space:pre-wrap`;
+  ta.style.height=Math.max(rect.height,20)+'px';
+  el.textContent='';el.appendChild(ta);
+  ta.focus();
+  ta.setSelectionRange(ta.value.length,ta.value.length);
+  const autoH=()=>{ta.style.height='auto';ta.style.height=ta.scrollHeight+'px';};
+  ta.addEventListener('input',autoH);
+  requestAnimationFrame(autoH);
   let saved=false;
   const commit=async()=>{
     if(saved)return;saved=true;
-    el.contentEditable='false';
-    el.style.borderBottom='';el.style.paddingBottom='';
-    const val=el.textContent.trim();if(val)idea.idea=val;
-    el.textContent=idea.idea;
-    save();
+    const val=ta.value.trim();if(val)idea.idea=val;
+    renderIdeasPage();save();
     if(!String(id).startsWith('l-'))await sbReq('PATCH','ideas',{idea:idea.idea},`?id=eq.${id}`);
   };
-  el.addEventListener('blur',commit,{once:true});
-  el.addEventListener('keydown',e=>{
-    if(e.key==='Enter'&&e.metaKey){e.preventDefault();el.blur();}
-    if(e.key==='Escape'){el.textContent=idea.idea;el.blur();}
+  ta.addEventListener('blur',commit);
+  ta.addEventListener('keydown',e=>{
+    if(e.key==='Enter'&&e.metaKey){e.preventDefault();ta.blur();return;}
+    if(e.key==='Escape'){ta.value=idea.idea;ta.blur();return;}
     e.stopPropagation();
   });
 }
