@@ -995,7 +995,8 @@ function renderWkCal(){
     head.appendChild(h);
   });
   const goalsH=document.createElement('div');goalsH.className='wkc-day-h wkc-goals-h';
-  goalsH.innerHTML=`<div style="display:flex;flex-direction:column;align-items:center;gap:3px"><button class="wo-hdr-btn" onclick="openWOModal()" style="font-size:10px">Objectives</button><div style="display:flex;align-items:center;gap:3px"><button class="wo-hdr-btn" onclick="toggleUnMenu()" id="unBadge2" title="Unassigned tasks" style="padding:3px 5px;position:relative"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg><span id="unBadgeDot" style="display:none;position:absolute;top:0;right:0;width:7px;height:7px;border-radius:50%;background:rgba(139,92,246,.6)"></span></button></div></div>`;
+  const _unCnt=st.tasks.filter(t=>!t.due_date&&!t.done&&t.category!=='Long term'&&t.category!=='Weekly Goals').length;
+  goalsH.innerHTML=`<div style="display:flex;flex-direction:column;align-items:center;gap:3px"><button class="wo-hdr-btn" onclick="openWOModal()" style="font-size:10px">Objectives</button><div style="display:flex;align-items:center;gap:3px"><button class="wo-hdr-btn" onclick="toggleUnMenu()" id="unBadge2" title="${_unCnt?_unCnt+' unassigned tasks':'No unassigned tasks'}" style="padding:3px 5px;position:relative"><span style="font-size:10px;font-weight:600">${_unCnt||''}</span><span id="unBadgeDot" style="display:none;position:absolute;top:0;right:0;width:7px;height:7px;border-radius:50%;background:rgba(139,92,246,.6)"></span></button></div></div>`;
   head.appendChild(goalsH);
 
   // ── Render travel banners ────────────────────────────────────────────────────
