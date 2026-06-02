@@ -3890,12 +3890,30 @@ function _vidOvToggleStep(vidId,step,dotEl){
     if(tabTask){tabTask.done=true;sbReqSilent('PATCH','tasks',{done:true},`?id=eq.${tabTask.id}`);}
     // Keep in day map — completed videos stay visible
   }
+  // Sync daymap + timeblock blocks
+  const _ovM=_vidStepDayMap();const _ovK=vidId+'::'+step;
+  if(next==='done'){
+    if(_ovM[_ovK]){_ovM[_ovK].done=true;_vidStepDayMapSet(_ovM);}
+    (st.blocks||[]).forEach(bl=>{if(String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step&&!bl._done){bl._done=true;sbUpdateBlock(bl.id,{done:true});}});
+  } else {
+    if(_ovM[_ovK]){_ovM[_ovK].done=false;_vidStepDayMapSet(_ovM);}
+    (st.blocks||[]).forEach(bl=>{if(String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step&&bl._done){bl._done=false;sbUpdateBlock(bl.id,{done:false});}});
+  }
   save();_renderVidOvMenu();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
   const patch={[step]:next,status:v.status};if(linked)patch[linked]=next;
   sbReqSilent('PATCH','videos',patch,`?id=eq.${vidId}`);
   pushUndo(()=>{
     if(v.status==='published'&&prevStatus!=='published'&&typeof _vidDeleteTabTask==='function')_vidDeleteTabTask(vidId);
     v[step]=prev;if(linked)v[linked]=linkedPrev;v.status=prevStatus;
+    // Reverse daymap + block sync
+    const _uM=_vidStepDayMap();const _uK=vidId+'::'+step;
+    if(prev==='done'){
+      if(_uM[_uK]){_uM[_uK].done=true;_vidStepDayMapSet(_uM);}
+      (st.blocks||[]).forEach(bl=>{if(String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step&&!bl._done){bl._done=true;sbUpdateBlock(bl.id,{done:true});}});
+    } else {
+      if(_uM[_uK]){_uM[_uK].done=false;_vidStepDayMapSet(_uM);}
+      (st.blocks||[]).forEach(bl=>{if(String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step&&bl._done){bl._done=false;sbUpdateBlock(bl.id,{done:false});}});
+    }
     save();_renderVidOvMenu();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
     const up={[step]:prev,status:prevStatus};if(linked)up[linked]=linkedPrev;
     sbReqSilent('PATCH','videos',up,`?id=eq.${vidId}`);
