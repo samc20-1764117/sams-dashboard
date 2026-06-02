@@ -6635,7 +6635,8 @@ function dropOnTB(e,ds,h,row,smOverride){
     }
     const _vsLabel=(_VID_STEP_LABELS[_vsStep]||_vsStep.replace('step_',''))+': '+(_vsV.topic||_vsV.title);
     _vidStepAssignToDay(_vsVidId,_vsStep,ds);
-    const blk={id:crypto.randomUUID(),title:_vsLabel,ds,sm,dur:30,cat:'Videos',_vidStepVid:_vsVidId,_vidStepName:_vsStep};
+    const _vsDur=(_vsStep==='step_build'||_vsStep==='step_vo'||_vsStep==='step_cut')?60:30;
+    const blk={id:crypto.randomUUID(),title:_vsLabel,ds,sm,dur:_vsDur,cat:'Videos',_vidStepVid:_vsVidId,_vidStepName:_vsStep};
     st.blocks.push(blk);dragId=null;save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
     sbSaveBlock(blk);
     pushUndo(()=>{st.blocks=st.blocks.filter(b=>b.id!==blk.id);sbDeleteBlock(blk.id);_vidStepUnassign(_vsVidId,_vsStep);save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();},'Added step to time block');
