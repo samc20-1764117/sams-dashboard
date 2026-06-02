@@ -4556,8 +4556,9 @@ function renderGuidePage(){
     ${sRow('O','Overview')}
     ${sRow('V','Videos')}
     ${sRow('F','Finance')}
-    ${sRow('G','Style Guide')}
+    ${sRow('G','Grid lines (debug)')}
     ${sRow('GG','Help overlay')}
+    ${sRow('L','Style Guide')}
     ${sRow('I','Ideas')}
     ${sRow('N','Quick Add task / New idea')}
     ${sRow('R','Reload page')}
@@ -4614,6 +4615,7 @@ function renderGuidePage(){
 
 </div>
 </div>`;
+  const now=new Date();document.querySelectorAll('#page-guide .topbar-date').forEach(e=>e.textContent=now.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}));document.querySelectorAll('#page-guide .topbar-time').forEach(e=>e.textContent=now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}));
 }
 
 function showPage(id){

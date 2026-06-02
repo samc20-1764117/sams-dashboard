@@ -1054,20 +1054,29 @@ document.addEventListener('keydown',e=>{
       if(typeof toggleVidOvMenu==='function')toggleVidOvMenu();
     } else {
       _lastVPress=now;
-      _vNavTimer=setTimeout(()=>{_vNavTimer=null;showPage('videos');},350);
+      _vNavTimer=setTimeout(()=>{_vNavTimer=null;if(activePg==='videos')showPage('overview');else showPage('videos');},350);
     }
   }
   if(e.key==='p'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')){
-    e.preventDefault();showPage('pups');
+    e.preventDefault();if(activePg==='pups')showPage('overview');else showPage('pups');
   }
   if(e.key==='f'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')){
-    e.preventDefault();showPage('finance');
+    e.preventDefault();if(activePg==='finance')showPage('overview');else showPage('finance');
   }
+  // G = grid lines (handled in index.html), GG = help overlay
   if(e.key==='g'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')){
     const now=Date.now();
-    if(_lastGPress&&now-_lastGPress<400){_lastGPress=0;if(_gNavTimer){clearTimeout(_gNavTimer);_gNavTimer=null;}e.preventDefault();_showHelpOverlay();return;}
-    _lastGPress=now;_gNavTimer=setTimeout(()=>{_gNavTimer=null;showPage('guide');},400);
-    e.preventDefault();return;
+    if(_lastGPress&&now-_lastGPress<400){
+      _lastGPress=0;
+      // Remove grid if first G toggled it on, stop index.html grid handler
+      const ov=document.getElementById('_dbgGrid');if(ov)ov.remove();
+      e.preventDefault();e.stopImmediatePropagation();_showHelpOverlay();return;
+    }
+    _lastGPress=now;
+  }
+  // L = style guide
+  if(e.key==='l'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')){
+    e.preventDefault();if(activePg==='guide')showPage('overview');else showPage('guide');return;
   }
   if(e.key==='d'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')){
     e.preventDefault();if(typeof toggleDark==='function')toggleDark();
@@ -1092,7 +1101,7 @@ document.addEventListener('keydown',e=>{
   }
   // I = ideas page
   if(e.key==='i'&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')){
-    e.preventDefault();showPage('ideas');return;
+    e.preventDefault();if(activePg==='ideas')showPage('overview');else showPage('ideas');return;
   }
   // Close help overlay with Enter
   if((e.key==='Enter')&&document.getElementById('helpOverlay').classList.contains('open')){
@@ -1120,8 +1129,10 @@ function _showHelpOverlay(){
     ['N','Quick Add task (to current day)'],
     ['R','Reload page'],
     ['S','Sync all data'],
-    ['I','Show this help'],
+    ['I','Go to Ideas'],
     ['L','Style Guide'],
+    ['G','Grid lines (debug)'],
+    ['GG','Show this help'],
     ['Esc','Close any modal / deselect all'],
     ['⌘Z','Undo last action'],
     ['⌘S','Prevented (no-op)'],
@@ -1175,6 +1186,10 @@ function _showHelpOverlay(){
       ['Delete / ⌫','Delete selected birthdays'],
       ['⌘C / ⌘V','Copy / paste birthdays'],
       ['Click','Select birthday row'],
+    ],
+    ideas:[
+      ['N','New idea'],
+      ['Enter','Close archive modal'],
     ],
   };
   const pg=activePg||'overview';
