@@ -2931,6 +2931,22 @@ async function saveVidModal(){
           }
         }
       }
+      // Sync overview daymap + timeblock blocks for changed stages
+      if(typeof _vidStepDayMap==='function'){
+        const _sdm2=_vidStepDayMap();let _sdmChanged=false;
+        VID_STEPS_CORE.forEach(s=>{
+          if(v[s]!==prev[s]){
+            const _sk=String(v.id)+'::'+s;
+            if(_sdm2[_sk]){_sdm2[_sk].done=v[s]==='done';_sdmChanged=true;}
+            if(v[s]==='done'){
+              (st.blocks||[]).forEach(bl=>{if(String(bl._vidStepVid)===String(v.id)&&bl._vidStepName===s&&!bl._done){bl._done=true;sbUpdateBlock(bl.id,{done:true});}});
+            } else {
+              (st.blocks||[]).forEach(bl=>{if(String(bl._vidStepVid)===String(v.id)&&bl._vidStepName===s&&bl._done){bl._done=false;sbUpdateBlock(bl.id,{done:false});}});
+            }
+          }
+        });
+        if(_sdmChanged)_vidStepDayMapSet(_sdm2);
+      }
       save();renderVideosPageKeepScroll();
       if(typeof _vidOvRenderAll==='function'&&typeof _vidOvAllOpen!=='undefined'&&_vidOvAllOpen)_vidOvRenderAll();
       if(typeof _renderVidOvMenu==='function')_renderVidOvMenu();
@@ -3117,6 +3133,16 @@ async function cycleVidStep(id,step,dotEl){
       c.step_build=next;
     });
   }
+  // Sync overview daymap + timeblock blocks
+  if(typeof _vidStepDayMap==='function'){
+    const _sdm=_vidStepDayMap();const _sdk=id+'::'+step;
+    if(_sdm[_sdk]){_sdm[_sdk].done=next==='done';_vidStepDayMapSet(_sdm);}
+    if(next==='done'){
+      (st.blocks||[]).forEach(bl=>{if(String(bl._vidStepVid)===String(id)&&bl._vidStepName===step&&!bl._done){bl._done=true;sbUpdateBlock(bl.id,{done:true});}});
+    } else {
+      (st.blocks||[]).forEach(bl=>{if(String(bl._vidStepVid)===String(id)&&bl._vidStepName===step&&bl._done){bl._done=false;sbUpdateBlock(bl.id,{done:false});}});
+    }
+  }
   const patch={[step]:next};
   if(linked)patch[linked]=next;
   if(v.status!==prevStatus)patch.status=v.status;
@@ -3135,6 +3161,16 @@ async function cycleVidStep(id,step,dotEl){
       }
     }
     v.status=prevStatus;
+    // Reverse daymap + block sync
+    if(typeof _vidStepDayMap==='function'){
+      const _usdm=_vidStepDayMap();const _usk=id+'::'+step;
+      if(_usdm[_usk]){_usdm[_usk].done=prev==='done';_vidStepDayMapSet(_usdm);}
+      if(prev==='done'){
+        (st.blocks||[]).forEach(bl=>{if(String(bl._vidStepVid)===String(id)&&bl._vidStepName===step&&!bl._done){bl._done=true;sbUpdateBlock(bl.id,{done:true});}});
+      } else {
+        (st.blocks||[]).forEach(bl=>{if(String(bl._vidStepVid)===String(id)&&bl._vidStepName===step&&bl._done){bl._done=false;sbUpdateBlock(bl.id,{done:false});}});
+      }
+    }
     childUpdates.forEach(d=>{d.c.step_build=d.cPrev;d.c.status=d.cPrevStatus;});
     save();renderVideosPageKeepScroll();if(typeof renderAll==='function')renderAll();
     const up={[step]:prev,status:prevStatus};if(linked)up[linked]=linkedPrev;

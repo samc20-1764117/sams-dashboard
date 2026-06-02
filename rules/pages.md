@@ -183,6 +183,6 @@ Table: `recipes` (columns include `sort_order int4`). Do NOT reference: protein,
 - **Keyboard shortcuts**: global shortcuts (`s`, `n`, `r`) do NOT fire when typing in contenteditable/input/textarea fields. `s` (grocery modal) is overview-only.
 
 ### Style Guide (`features.js`, `page-guide`)
-- **Shortcut**: `G` (single press). Double `G` opens help overlay. `renderGuidePage()` in features.js.
+- **Shortcut**: `L` (single press, toggle back to overview). `renderGuidePage()` in features.js.
 - **Layout**: narrow left column (task color cards + special states), right 2-col grid (keyboard shortcuts, multi-select & drag).
 - **Must stay in sync**: when updating colors, shortcuts, or multi-select behavior, also update `renderGuidePage()`.

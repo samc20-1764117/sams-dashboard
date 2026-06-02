@@ -5698,12 +5698,14 @@ function drawTBBlock(col,b){
     const prevVal=v[step];const newVal=prevVal==='done'?'not_started':'done';
     v[step]=newVal;
     sbReqSilent('PATCH','videos',{[step]:newVal},`?id=eq.${v.id}`);
-    // If completing stage, auto-check-off all tasks for this stage
+    // Sync daymap + timeblock blocks to match stage state
+    const m=_vidStepDayMap();const key=vid+'::'+step;
     if(newVal==='done'){
-      const m=_vidStepDayMap();const key=vid+'::'+step;
       if(m[key]){m[key].done=true;_vidStepDayMapSet(m);}
-      // Also mark all timeblock blocks for this stage as done
       (st.blocks||[]).forEach(bl=>{if(String(bl._vidStepVid)===String(vid)&&bl._vidStepName===step&&!bl._done){bl._done=true;sbUpdateBlock(bl.id,{done:true});}});
+    } else {
+      if(m[key]){m[key].done=false;_vidStepDayMapSet(m);}
+      (st.blocks||[]).forEach(bl=>{if(String(bl._vidStepVid)===String(vid)&&bl._vidStepName===step&&bl._done){bl._done=false;sbUpdateBlock(bl.id,{done:false});}});
     }
     pushUndo(()=>{v[step]=prevVal;sbReqSilent('PATCH','videos',{[step]:prevVal},`?id=eq.${v.id}`);save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();},'Stage toggle');
     save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
