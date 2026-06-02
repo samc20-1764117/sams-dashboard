@@ -48,6 +48,13 @@ function _moveOtherSelected(ds,excludeSid,undos,excludePrefixes){
       undos.push(()=>{if(prevDs)_vidAssignToDay(vidId,prevDs);else _vidUnassignDay(vidId);});
       return;
     }
+    // Video steps
+    if(sid.startsWith('vidstep-')){
+      const m=sid.match(/^vidstep-(.+)-(step_\w+)$/);
+      if(m){const vidId=m[1],step=m[2];const prevDs=(_vidStepDayMap()[vidId+'::'+step]||{}).ds||null;_vidStepAssignToDay(vidId,step,ds);
+        undos.push(()=>{if(prevDs)_vidStepAssignToDay(vidId,step,prevDs);else _vidStepUnassign(vidId,step);});}
+      return;
+    }
     // Shopping
     if(sid.startsWith('shop-cal-')){
       const shopId=sid.replace('shop-cal-','');const s=st.shopping.find(x=>String(x.id)===String(shopId));

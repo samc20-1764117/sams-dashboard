@@ -5494,6 +5494,9 @@ document.addEventListener('keydown',async e=>{
         const rid=id.replace('wrrule-','');
         const r=st.wrRules.find(x=>String(x.id)===rid);
         if(r)_copiedTasks.push({...r,_isWrRule:true});
+      } else if(id.startsWith('vidstep-')){
+        const m=id.match(/^vidstep-(.+)-(step_\w+)$/);
+        if(m){const vidId=m[1],step=m[2];const v=(st.videos||[]).find(x=>String(x.id)===String(vidId));if(v)_copiedTasks.push({_isVidStep:true,_vidId:vidId,_vidStep:step,name:(typeof _VID_STEP_LABELS!=='undefined'?_VID_STEP_LABELS[step]:step)+': '+(v.topic||v.title)});}
       } else {
         const t=st.tasks.find(x=>String(x.id)===id);
         if(t)_copiedTasks.push({...t});
@@ -5560,6 +5563,9 @@ document.addEventListener('keydown',async e=>{
         if(sv&&sv[0]){const idx=st.recurring.findIndex(x=>x.id===tempId);if(idx>-1)st.recurring[idx]={...sv[0],_doneByWk:{},_done:false,_dateOverrides:{}};}
         save();renderRecOv();renderWeeklyPage();renderToday();renderWkSummary();renderWkCal();
         pushUndo(()=>{st.recurring=st.recurring.filter(x=>x.id!==tempId&&!(sv&&sv[0]&&x.id===sv[0].id));save();renderRecOv();renderWeeklyPage();renderToday();renderWkSummary();renderWkCal();},'Duplicated recurring');
+      } else if(t._isVidStep){
+        const pasteDate=(activePg==='overview'&&Array.isArray(_pasteColDates)&&_pasteColDates.length)?_pasteColDates[0]:d2s(getDayDate(dayOff));
+        if(typeof _vidStepAssignToDay==='function')_vidStepAssignToDay(t._vidId,t._vidStep,pasteDate);
       } else {
         const dates=(activePg==='overview'&&Array.isArray(_pasteColDates)&&_pasteColDates.length)?_pasteColDates:[t.due_date];
         for(const pasteDate of dates){
