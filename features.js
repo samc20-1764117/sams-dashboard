@@ -2397,9 +2397,9 @@ async function saveNewIdea(){
   const idea=(document.getElementById('ideaTextInput')||{}).value?.trim()||'';
   if(!topic){_ideaCancelAdd();return;}
   const localId='l-'+Date.now();
-  const row={id:localId,topic,idea:idea||null,archived:false,created_at:new Date().toISOString()};
+  const row={id:localId,topic,idea:idea||'',archived:false,created_at:new Date().toISOString()};
   st.ideas.unshift(row);renderIdeasPage();
-  const sv=await sbReq('POST','ideas',{topic,idea:idea||null,archived:false});
+  const sv=await sbReq('POST','ideas',{topic,idea:idea||'',archived:false});
   if(sv&&sv[0]){const idx=st.ideas.findIndex(i=>i.id===localId);if(idx>=0)st.ideas[idx]=sv[0];}
   save();
 }
@@ -2432,7 +2432,7 @@ function editIdeaInline(el,id){
   const commit=async()=>{
     if(saved)return;saved=true;
     const val=ta.value.trim();
-    idea.idea=val||null;
+    idea.idea=val||'';
     renderIdeasPage();save();
     if(!String(id).startsWith('l-'))await sbReq('PATCH','ideas',{idea:idea.idea},`?id=eq.${id}`);
   };
