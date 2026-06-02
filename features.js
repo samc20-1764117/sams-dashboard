@@ -2334,14 +2334,14 @@ function renderIdeasPage(){
   const pg=document.getElementById('ideasPageContent');if(!pg)return;
   const dk=document.body.classList.contains('dark');
   const active=st.ideas.filter(i=>!i.archived);
-  const archived=st.ideas.filter(i=>i.archived);
+  const archivedCount=st.ideas.filter(i=>i.archived).length;
   let html='<div style="padding:12px 16px">';
-  if(!active.length&&!archived.length){html+='<div style="text-align:center;color:var(--muted);padding:40px 0;font-size:13px">No ideas yet. Click + to add one.</div></div>';pg.innerHTML=html;return;}
+  if(!active.length&&!archivedCount){html+='<div style="text-align:center;color:var(--muted);padding:40px 0;font-size:13px">No ideas yet. Click + to add one.</div></div>';pg.innerHTML=html;return;}
   active.forEach(idea=>{html+=_ideaCard(idea,false,dk);});
-  if(archived.length){
-    html+=`<div style="margin-top:16px;border-top:1px solid var(--border);padding-top:10px">
-      <button onclick="_ideasShowArchived=!_ideasShowArchived;renderIdeasPage()" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);font-family:inherit;padding:4px 0">${_ideasShowArchived?'▾':'▸'} Archived (${archived.length})</button>`;
-    if(_ideasShowArchived){archived.forEach(idea=>{html+=_ideaCard(idea,true,dk);});}
+  if(archivedCount){
+    html+=`<div style="margin-top:16px;padding-top:10px">
+      <button onclick="_ideasShowArchived=!_ideasShowArchived;renderIdeasPage()" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);font-family:inherit;padding:4px 0">${_ideasShowArchived?'▾':'▸'} Archived (${archivedCount})</button>`;
+    if(_ideasShowArchived){st.ideas.filter(i=>i.archived).forEach(idea=>{html+=_ideaCard(idea,true,dk);});}
     html+='</div>';
   }
   html+='</div>';
@@ -2351,15 +2351,17 @@ function _ideaCard(idea,isArchived,dk){
   const date=idea.created_at?new Date(idea.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'';
   const bg=isArchived?(dk?'rgba(255,255,255,.02)':'rgba(148,163,184,.06)'):(dk?'rgba(168,85,247,.08)':'rgba(168,85,247,.06)');
   const bdr=isArchived?(dk?'rgba(255,255,255,.06)':'rgba(148,163,184,.15)'):(dk?'rgba(168,85,247,.15)':'rgba(168,85,247,.18)');
-  return`<div style="padding:10px 12px;margin-bottom:8px;border-radius:8px;background:${bg};border:1px solid ${bdr}">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-      <span style="font-size:12px;font-weight:600;color:${isArchived?'var(--muted)':'var(--text)'}">${escHtml(idea.topic)}</span>
+  const hasIdea=idea.idea&&idea.idea.trim();
+  const ideaHtml=hasIdea?`<div ondblclick="editIdeaInline(this,'${idea.id}')" style="font-size:12px;color:var(--muted);white-space:pre-wrap;line-height:1.5;cursor:text">${_ideaFmtDisplay(idea.idea)}</div>`:'';
+  return`<div class="idea-row" style="padding:10px 12px;margin-bottom:8px;border-radius:8px;background:${bg};border:1px solid ${bdr}">
+    <div style="display:flex;justify-content:space-between;align-items:center${hasIdea?';margin-bottom:4px':''}">
+      <span ondblclick="editIdeaTopicInline(this,'${idea.id}')" style="font-size:12px;font-weight:600;color:${isArchived?'var(--muted)':'var(--text)'};cursor:text">${escHtml(idea.topic)}</span>
       <div style="display:flex;gap:4px;align-items:center">
         <span style="font-size:10px;color:var(--muted)">${date}</span>
-        <button onclick="toggleIdeaArchive('${idea.id}')" title="${isArchived?'Restore':'Archive'}" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);padding:2px 4px">${isArchived?'↩':'✕'}</button>
+        ${isArchived?`<button onclick="restoreIdea('${idea.id}')" title="Restore" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);padding:2px 4px">↩</button>`:`<button onclick="toggleIdeaArchive('${idea.id}')" title="Archive" class="idea-x-btn" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);padding:2px 4px;opacity:0;transition:opacity .15s">✕</button>`}
       </div>
     </div>
-    <div ondblclick="editIdeaInline(this,'${idea.id}')" style="font-size:12px;color:var(--muted);white-space:pre-wrap;line-height:1.5;cursor:text">${_ideaFmtDisplay(idea.idea)}</div>
+    ${ideaHtml}
   </div>`;
 }
 function openIdeasAddForm(){
@@ -2369,19 +2371,16 @@ function openIdeasAddForm(){
   const form=document.createElement('div');form.id='ideaAddForm';
   form.style.cssText=`padding:12px;margin:12px 16px 0;border-radius:8px;background:${dk?'rgba(168,85,247,.08)':'rgba(168,85,247,.06)'};border:1px solid ${dk?'rgba(168,85,247,.15)':'rgba(168,85,247,.18)'}`;
   const inputBg=dk?'rgba(255,255,255,.06)':'rgba(255,255,255,.6)';
-  form.innerHTML=`<input id="ideaTopicInput" placeholder="Topic name" style="width:100%;box-sizing:border-box;padding:6px 8px;border-radius:6px;border:1px solid var(--border);background:${inputBg};font-size:12px;font-family:inherit;color:var(--text);margin-bottom:6px;outline:none">
-    <textarea id="ideaTextInput" placeholder="Your idea... (Enter for new line, Cmd+Enter to save)" style="width:100%;box-sizing:border-box;padding:6px 8px;border-radius:6px;border:1px solid var(--border);background:${inputBg};font-size:12px;font-family:inherit;color:var(--text);resize:vertical;min-height:60px;outline:none;line-height:1.5"></textarea>
-    <div style="display:flex;gap:6px;justify-content:flex-end;margin-top:6px">
-      <button onclick="_ideaCancelAdd()" class="btn btn-ghost btn-xs">Cancel</button>
-      <button onclick="saveNewIdea()" class="btn btn-ghost btn-xs" style="background:var(--accent);color:#fff">Save</button>
-    </div>`;
+  form.innerHTML=`<input id="ideaTopicInput" placeholder="Topic name (Enter to save, Tab for notes)" style="width:100%;box-sizing:border-box;padding:6px 8px;border-radius:6px;border:1px solid var(--border);background:${inputBg};font-size:12px;font-family:inherit;color:var(--text);outline:none">
+    <textarea id="ideaTextInput" placeholder="Notes (optional)" style="display:none;width:100%;box-sizing:border-box;padding:6px 8px;border-radius:6px;border:1px solid var(--border);background:${inputBg};font-size:12px;font-family:inherit;color:var(--text);resize:vertical;min-height:60px;outline:none;line-height:1.5;margin-top:6px"></textarea>`;
   pg.prepend(form);
-  document.getElementById('ideaTopicInput').focus();
   const topicEl=document.getElementById('ideaTopicInput');
   const textEl=document.getElementById('ideaTextInput');
+  topicEl.focus();
   topicEl.addEventListener('keydown',e=>{
-    if(e.key==='Enter'){e.preventDefault();textEl.focus();}
-    if(e.key==='Escape'){_ideaCancelAdd();}
+    if(e.key==='Enter'){e.preventDefault();saveNewIdea();return;}
+    if(e.key==='Tab'&&!e.shiftKey){e.preventDefault();textEl.style.display='';textEl.focus();return;}
+    if(e.key==='Escape'){_ideaCancelAdd();return;}
     e.stopPropagation();
   });
   textEl.addEventListener('keydown',e=>{
@@ -2391,38 +2390,37 @@ function openIdeasAddForm(){
   });
 }
 function _ideaCancelAdd(){
-  const topic=(document.getElementById('ideaTopicInput')||{}).value?.trim()||'';
-  const idea=(document.getElementById('ideaTextInput')||{}).value?.trim()||'';
-  if(topic||idea){saveNewIdea();}
-  else{const f=document.getElementById('ideaAddForm');if(f)f.remove();}
+  const f=document.getElementById('ideaAddForm');if(f)f.remove();
 }
 async function saveNewIdea(){
   const topic=(document.getElementById('ideaTopicInput')||{}).value?.trim()||'';
   const idea=(document.getElementById('ideaTextInput')||{}).value?.trim()||'';
-  if(!topic&&!idea){const f=document.getElementById('ideaAddForm');if(f)f.remove();return;}
-  const finalTopic=topic||'Untitled';
-  const finalIdea=idea||topic;
+  if(!topic){_ideaCancelAdd();return;}
   const localId='l-'+Date.now();
-  const row={id:localId,topic:finalTopic,idea:finalIdea,archived:false,created_at:new Date().toISOString()};
+  const row={id:localId,topic,idea:idea||null,archived:false,created_at:new Date().toISOString()};
   st.ideas.unshift(row);renderIdeasPage();
-  const sv=await sbReq('POST','ideas',{topic:finalTopic,idea:finalIdea,archived:false});
+  const sv=await sbReq('POST','ideas',{topic,idea:idea||null,archived:false});
   if(sv&&sv[0]){const idx=st.ideas.findIndex(i=>i.id===localId);if(idx>=0)st.ideas[idx]=sv[0];}
   save();
 }
 async function toggleIdeaArchive(id){
   const idea=st.ideas.find(i=>String(i.id)===String(id));if(!idea)return;
-  idea.archived=!idea.archived;renderIdeasPage();save();
-  if(!String(id).startsWith('l-'))await sbReq('PATCH','ideas',{archived:idea.archived},`?id=eq.${id}`);
+  idea.archived=true;renderIdeasPage();save();
+  if(!String(id).startsWith('l-'))await sbReq('PATCH','ideas',{archived:true},`?id=eq.${id}`);
+}
+async function restoreIdea(id){
+  const idea=st.ideas.find(i=>String(i.id)===String(id));if(!idea)return;
+  idea.archived=false;renderIdeasPage();save();
+  if(!String(id).startsWith('l-'))await sbReq('PATCH','ideas',{archived:false},`?id=eq.${id}`);
 }
 function editIdeaInline(el,id){
   const idea=st.ideas.find(i=>String(i.id)===String(id));if(!idea)return;
   if(el.dataset.editing==='true')return;
   el.dataset.editing='true';
   const rect=el.getBoundingClientRect();
-  const dk=document.body.classList.contains('dark');
   const ta=document.createElement('textarea');
-  ta.value=idea.idea;
-  ta.style.cssText=`width:100%;box-sizing:border-box;padding:0;margin:0;border:none;border-bottom:1px solid var(--accent);background:transparent;font-size:12px;font-family:inherit;color:var(--muted);resize:none;outline:none;line-height:1.5;overflow:hidden;white-space:pre-wrap`;
+  ta.value=idea.idea||'';
+  ta.style.cssText='width:100%;box-sizing:border-box;padding:0;margin:0;border:none;border-bottom:1px solid var(--accent);background:transparent;font-size:12px;font-family:inherit;color:var(--muted);resize:none;outline:none;line-height:1.5;overflow:hidden;white-space:pre-wrap';
   ta.style.height=Math.max(rect.height,20)+'px';
   el.textContent='';el.appendChild(ta);
   ta.focus();
@@ -2433,14 +2431,38 @@ function editIdeaInline(el,id){
   let saved=false;
   const commit=async()=>{
     if(saved)return;saved=true;
-    const val=ta.value.trim();if(val)idea.idea=val;
+    const val=ta.value.trim();
+    idea.idea=val||null;
     renderIdeasPage();save();
     if(!String(id).startsWith('l-'))await sbReq('PATCH','ideas',{idea:idea.idea},`?id=eq.${id}`);
   };
   ta.addEventListener('blur',commit);
   ta.addEventListener('keydown',e=>{
     if(e.key==='Enter'&&e.metaKey){e.preventDefault();ta.blur();return;}
-    if(e.key==='Escape'){ta.value=idea.idea;ta.blur();return;}
+    if(e.key==='Escape'){ta.value=idea.idea||'';ta.blur();return;}
+    e.stopPropagation();
+  });
+}
+function editIdeaTopicInline(el,id){
+  const idea=st.ideas.find(i=>String(i.id)===String(id));if(!idea)return;
+  if(el.dataset.editing==='true')return;
+  el.dataset.editing='true';
+  const input=document.createElement('input');
+  input.value=idea.topic;
+  input.style.cssText='width:100%;box-sizing:border-box;padding:0;margin:0;border:none;border-bottom:1px solid var(--accent);background:transparent;font-size:12px;font-weight:600;font-family:inherit;color:var(--text);outline:none';
+  el.textContent='';el.appendChild(input);
+  input.focus();input.select();
+  let saved=false;
+  const commit=async()=>{
+    if(saved)return;saved=true;
+    const val=input.value.trim();if(val)idea.topic=val;
+    renderIdeasPage();save();
+    if(!String(id).startsWith('l-'))await sbReq('PATCH','ideas',{topic:idea.topic},`?id=eq.${id}`);
+  };
+  input.addEventListener('blur',commit);
+  input.addEventListener('keydown',e=>{
+    if(e.key==='Enter'){e.preventDefault();input.blur();return;}
+    if(e.key==='Escape'){input.value=idea.topic;input.blur();return;}
     e.stopPropagation();
   });
 }

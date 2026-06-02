@@ -114,11 +114,12 @@ Table: `birthdays(id,name,birthday,present_ideas)`. `present_ideas` JSON array. 
 - **`getBirthdaysInRange`** used for weekly calendar (supports past weeks); `getBirthdayTasks(null)` skips past dates — don't use for calendar.
 
 ### Ideas (`features.js`)
-Table: `ideas(id uuid, topic text, idea text, archived bool, created_at timestamptz)`. Soft delete via `archived` flag — never hard-delete.
-- **Cards**: purple tint (`rgba(168,85,247,.06)`), topic bold header + date + archive button, idea text below.
-- **Inline edit**: dblclick idea text → `contentEditable`. Cmd+Enter saves, Escape reverts. No container resize.
-- **Archived**: collapsible section at bottom, grey tint, restore via ↩ button.
-- **Add**: `+` button opens inline form (topic + idea). Cmd+Enter submits.
+Table: `ideas(id uuid, topic text NOT NULL, idea text NULL, archived bool, created_at timestamptz)`. Soft delete via `archived` flag — never hard-delete.
+- **Cards**: purple tint (`rgba(168,85,247,.06)`), topic bold header + date + hover ✕. Idea text below only if non-null.
+- **Inline edit**: dblclick topic or idea text → inline input/textarea. Enter (topic) or Cmd+Enter (idea) saves, Escape reverts.
+- **Archived**: collapsible section at bottom, grey tint, ↩ restore button (always visible).
+- **Active ✕**: hover-only via `.idea-row:hover .idea-x-btn`.
+- **Add flow**: `+` opens form. Enter on topic = instant save (no notes). Tab on topic = show notes textarea. Cmd+Enter in notes = save. Empty topic + Enter/Escape = cancel.
 
 ### Recipes (`features.js`)
 Table: `recipes` (columns include `sort_order int4`). Do NOT reference: protein,prep_time,cook_time,difficulty,last_made_date,notes. Ingredients: JSON `[{name,amount,is_pantry?}]`.
