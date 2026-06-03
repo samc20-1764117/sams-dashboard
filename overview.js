@@ -3391,13 +3391,22 @@ function _vidStepAssignToDay(vidId,step,ds){
   const panel=document.getElementById('vidOvPanel');if(panel&&panel.style.display==='block')_renderVidOvMenu();
   pushUndo(()=>{_vidStepReconstructBlocks();const m2=_vidStepDayMap();if(prev)m2[key]=prev;else delete m2[key];_vidStepDayMapSet(m2);if(prevDs&&prevDs!==ds){(st.blocks||[]).filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step&&bl.ds===ds).forEach(bl=>{bl.ds=prevDs;sbUpdateBlock(bl.id,{day_date:prevDs});});}save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();const p2=document.getElementById('vidOvPanel');if(p2&&p2.style.display==='block')_renderVidOvMenu();},'Moved step');
 }
-function _vidStepToggleDone(vidId,step,checked){
+function _vidStepToggleDone(vidId,step,checked,_fromTB){
   const m=_vidStepDayMap();const key=vidId+'::'+step;
   if(!m[key])return;
-  // For Build/VO/Cut, done flag tracks whether ALL timeblock blocks are done
+  const ds=m[key].ds;
+  // For Build/VO/Cut, done flag tracks whether ALL timeblock blocks ON THE SAME DAY are done
+  // Blocks on other days are independent (copies = new tasks)
   if(step!=='step_thumbnail'&&step!=='step_description'){
-    const stageBlocks=(st.blocks||[]).filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step);
-    m[key].done=stageBlocks.length>0&&stageBlocks.every(bl=>bl._done);
+    const stageBlocks=(st.blocks||[]).filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step&&bl.ds===ds);
+    if(_fromTB){
+      // Called from TB checkbox — block already toggled, just check if all are done
+      m[key].done=stageBlocks.length>0&&stageBlocks.every(bl=>bl._done);
+    } else {
+      // Called from today/weekly list — mark ALL same-day blocks to match
+      stageBlocks.forEach(bl=>{if(bl._done!==checked){bl._done=checked;sbUpdateBlock(bl.id,{done:checked});}});
+      m[key].done=checked;
+    }
   } else {
     m[key].done=checked;
   }
@@ -3436,7 +3445,7 @@ function _vidStepTasksForDayWithOverdue(todayDs){
     const label=_VID_STEP_LABELS[step]||step.replace('step_','');
     let isDone=false;
     if(step!=='step_thumbnail'&&step!=='step_description'){
-      const stageBlocks=(st.blocks||[]).filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step);
+      const stageBlocks=(st.blocks||[]).filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step&&bl.ds===val.ds);
       if(stageBlocks.length>0)isDone=stageBlocks.every(bl=>bl._done);
     }
     if(isDone)return;
@@ -3454,7 +3463,7 @@ function _vidStepTasksForDayWithOverdue(todayDs){
     const label=_VID_STEP_LABELS[step]||step.replace('step_','');
     let isDone=!!val.done;
     if(step!=='step_thumbnail'&&step!=='step_description'){
-      const stageBlocks=(st.blocks||[]).filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step);
+      const stageBlocks=(st.blocks||[]).filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step&&bl.ds===val.ds);
       if(stageBlocks.length>0)isDone=stageBlocks.every(bl=>bl._done);
     }
     tasks.push({id:'vidstep-'+key.replace('::','-'),name:label+': '+(v.topic||v.title),category:'Videos',due_date:val.ds,done:isDone,_vidId:vidId,_vidStep:step,_virtual:true,_type:'vidstep'});
@@ -3468,10 +3477,10 @@ function _vidStepTasksForDay(ds){
     const [vidId,step]=key.split('::');
     const v=(st.videos||[]).find(x=>String(x.id)===String(vidId)&&!x.is_deleted);if(!v)return;
     const label=_VID_STEP_LABELS[step]||step.replace('step_','');
-    // For Build/VO/Cut: only show done if ALL timeblock blocks for this stage are done
+    // For Build/VO/Cut: only show done if ALL timeblock blocks for this stage ON THIS DAY are done
     let isDone=!!val.done;
     if(step!=='step_thumbnail'&&step!=='step_description'){
-      const stageBlocks=(st.blocks||[]).filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step);
+      const stageBlocks=(st.blocks||[]).filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step&&bl.ds===ds);
       if(stageBlocks.length>0)isDone=stageBlocks.every(bl=>bl._done);
     }
     tasks.push({id:'vidstep-'+key.replace('::','-'),name:label+': '+(v.topic||v.title),category:'Videos',due_date:ds,done:isDone,_vidId:vidId,_vidStep:step,_virtual:true,_type:'vidstep'});
@@ -5772,8 +5781,8 @@ function drawTBBlock(col,b){
       // Set block done FIRST so _vidStepToggleDone sees correct state when checking "all blocks done?"
       const _prevDone=b._done;
       b._done=checked;sbUpdateBlock(b.id,{done:checked});
-      _vidStepToggleDone(b._vidStepVid,b._vidStepName,checked);
-      pushUndo(()=>{b._done=_prevDone;sbUpdateBlock(b.id,{done:_prevDone});_vidStepToggleDone(b._vidStepVid,b._vidStepName,!checked);save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();},'Step checkbox');
+      _vidStepToggleDone(b._vidStepVid,b._vidStepName,checked,true);
+      pushUndo(()=>{b._done=_prevDone;sbUpdateBlock(b.id,{done:_prevDone});_vidStepToggleDone(b._vidStepVid,b._vidStepName,!checked,true);save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();},'Step checkbox');
     } else if(b._vidId){
       b._done=checked;sbUpdateBlock(b.id,{done:checked});save();renderToday();renderWkSummary();renderWkCal();
     } else if(b.cat==='pup_session'&&b._pupSessId){
