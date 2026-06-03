@@ -264,14 +264,17 @@ function mGetTodayTasks() {
   // Video tasks assigned to today (mirrors desktop logic)
   const _vdm = typeof _vidDayMap === 'function' ? _vidDayMap() : {};
   const _vidOnTB = new Set((st.blocks || []).filter(b => (b.ds === ds || (b.ds && b.ds < ds)) && b._vidId).map(b => String(b._vidId)));
+  const _hasTabTask = vid => { const m = '_vid:' + vid; return st.tasks.some(t => t.notes && t.notes.includes(m)); };
   const vidToday = (st.videos || []).filter(v => {
     if (v.is_deleted) return false;
     const vd = _vdm[String(v.id)];
     if (vd === ds) return true;
     if (vd && vd < ds) return true;
     if (_vidOnTB.has(String(v.id))) return true;
+    // Also show videos with post_date matching today or overdue
+    if (v.post_date && (v.post_date === ds || v.post_date < ds) && v.status !== 'published' && !_hasTabTask(v.id)) return true;
     return false;
-  }).map(v => ({id: 'vid-ov-' + v.id, name: v.topic || v.title, category: 'Videos', due_date: _vdm[String(v.id)] || ds, done: v.status === 'published', _vidId: v.id, _virtual: true, _type: 'vid'}));
+  }).map(v => ({id: 'vid-ov-' + v.id, name: v.topic || v.title, category: 'Videos', due_date: _vdm[String(v.id)] || v.post_date || ds, done: v.status === 'published', _vidId: v.id, _virtual: true, _type: 'vid'}));
 
   // Video step tasks
   const vidStepToday = typeof _vidStepTasksForDayWithOverdue === 'function' ? _vidStepTasksForDayWithOverdue(ds) : [];
@@ -638,7 +641,25 @@ function mShowTab(tab) {
 // ── Timeblock constants ───────────────────────────────────────────────────────
 const M_TB_START = 6 * 60;   // 6am
 const M_TB_END   = 22 * 60;  // 10pm
-const M_PX       = 1.1;      // px per minute → 66px per hour, ~1056px total
+const M_PX       = 0.9;      // px per minute → 54px per hour, ~864px total
+
+// Compute side-by-side layout for overlapping blocks
+function _mComputeOverlap(blocks) {
+  const sorted = [...blocks].sort((a, b) => a.sm - b.sm || (b.dur - a.dur));
+  const colEnds = [];
+  sorted.forEach(b => {
+    let placed = false;
+    for (let i = 0; i < colEnds.length; i++) {
+      if (b.sm >= colEnds[i]) { colEnds[i] = b.sm + b.dur; b._col = i; placed = true; break; }
+    }
+    if (!placed) { b._col = colEnds.length; colEnds.push(b.sm + b.dur); }
+  });
+  sorted.forEach(b => {
+    let maxCol = 0;
+    sorted.forEach(b2 => { if (b2.sm < b.sm + b.dur && b2.sm + b2.dur > b.sm) maxCol = Math.max(maxCol, b2._col); });
+    b._ncols = maxCol + 1;
+  });
+}
 
 function _mTStr(m) {
   const h = Math.floor(m / 60), mn = m % 60;
@@ -754,9 +775,21 @@ function mRenderTimeline() {
   // Blocks for displayed day
   const ds = d2s(getDayDate(_mTBOffset));
   const todayBlocks = (st.blocks || []).filter(b => b.ds === ds).sort((a, b) => a.sm - b.sm);
+
+  // Compute overlap layout (side-by-side)
+  _mComputeOverlap(todayBlocks);
+
   let html = todayBlocks.map(b => {
     const y    = (b.sm - M_TB_START) * M_PX;
-    const hPx  = Math.max(b.dur * M_PX, 28) - 2; // 2px gap between blocks
+    const hPx  = Math.max(b.dur * M_PX, 24) - 2;
+    // Overlap positioning
+    const ncols = b._ncols || 1;
+    const colI  = b._col || 0;
+    const colW  = 100 / ncols;
+    const left  = colI * colW;
+    const posStyle = ncols > 1
+      ? `top:${y}px;height:${hPx}px;left:calc(${left}% + 2px);right:calc(${100 - left - colW}% + 2px)`
+      : `top:${y}px;height:${hPx}px`;
     // Derive done from linked item (authoritative)
     const linkedTask = b.taskId ? st.tasks.find(x => String(x.id) === String(b.taskId)) : null;
     const linkedRec = b.recId ? (st.recurring.find(x => String(x.id) === String(b.recId)) || (st.wrRules || []).find(x => String(x.id) === String(b.recId))) : null;
@@ -768,14 +801,14 @@ function mRenderTimeline() {
     else if (linkedShop) b._done = !!linkedShop.done;
     const displayName = (linkedTask && linkedTask.name) || (linkedRec && linkedRec.name) || (linkedShop && linkedShop.name) || b.title;
     const s    = gc(b.cat || '');
-    const timeRange = `${_mTStr(b.sm)}–${_mTStr(b.sm + b.dur)}`;
+    const timeRange = `${_mTStr(b.sm)}\u2013${_mTStr(b.sm + b.dur)}`;
     const doneClass = b._done ? ' m-done-block' : '';
-    return `<div class="m-tl-block${doneClass}" data-bid="${b.id}" style="top:${y}px;height:${hPx}px;background:${s.bg};border:1px solid rgba(255,255,255,.55);border-left:3px solid ${s.d}">
+    return `<div class="m-tl-block${doneClass}" data-bid="${b.id}" style="${posStyle};background:${s.bg};border:1px solid rgba(255,255,255,.55);border-left:3px solid ${s.d}">
       <input type="checkbox" class="m-tb-chk" data-bid="${b.id}" ${b._done ? 'checked' : ''}>
       <div style="overflow:hidden;flex:1;min-width:0;pointer-events:none">
         <div class="m-tl-block-name" style="color:${s.t}">${escHtml(displayName || '')}</div>
       </div>
-      <span class="m-tl-block-time" style="color:${s.d};pointer-events:none">${timeRange}</span>
+      ${ncols <= 1 ? `<span class="m-tl-block-time" style="color:${s.d};pointer-events:none">${timeRange}</span>` : ''}
     </div>`;
   }).join('');
 
@@ -1025,8 +1058,14 @@ function mInitBlockDrag() {
 let _mSelectedChipId = null;
 
 function mSelectChip(taskId) {
-  _mSelectedChipId = (_mSelectedChipId === String(taskId)) ? null : String(taskId);
+  _mSelectedChipId = String(taskId);
   mRenderUnassigned();
+  // Immediately open block creation at current time (or next 15-min slot)
+  const now = new Date();
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  const snapMin = Math.round(nowMin / 15) * 15;
+  const sm = Math.max(M_TB_START, Math.min(M_TB_END - 30, snapMin));
+  mOpenNewBlock(sm);
 }
 
 // ── Block sheet ───────────────────────────────────────────────────────────────
@@ -1306,10 +1345,12 @@ function mRenderWeek() {
   requestAnimationFrame(() => {
     const todayEl = list.querySelector('.m-wk-day.is-today');
     if (todayEl) {
-      todayEl.scrollIntoView({block: 'start'});
-      // Offset a bit so the header is visible
+      // Scroll so today's divider header is visible at top
+      const divider = todayEl.previousElementSibling;
+      const scrollTarget = (divider && divider.classList.contains('m-wk-divider')) ? divider : todayEl;
+      scrollTarget.scrollIntoView({block: 'start'});
       const page = document.getElementById('mWeekPage');
-      if (page) page.scrollTop = Math.max(0, page.scrollTop - 10);
+      if (page) page.scrollTop = Math.max(0, page.scrollTop - 4);
     }
   });
 }
