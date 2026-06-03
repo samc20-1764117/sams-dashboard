@@ -1922,13 +1922,17 @@ function mRemoveMealAndGroceries(recipeId) {
 }
 
 // ── Month view ────────────────────────────────────────────────────────────────
-let _mMonthOffset = 0; // 0=current month, -1=last, +1=next
+let _mMonthOffset = 0;
+let _mMonthSelectedDs = null;
 
 function mOpenMonth() {
   _mMonthOffset = 0;
+  _mMonthSelectedDs = d2s(getDayDate(0));
   _mRenderMonth();
+  _mRenderMonthDetail(_mMonthSelectedDs);
   document.getElementById('mMonthBackdrop').classList.add('open');
   document.getElementById('mMonthSheet').classList.add('open');
+  _mInitMonthSwipe();
 }
 function mCloseMonth() {
   document.getElementById('mMonthBackdrop').classList.remove('open');
@@ -1937,6 +1941,37 @@ function mCloseMonth() {
 function mMonthPrev() { _mMonthOffset--; _mRenderMonth(); }
 function mMonthNext() { _mMonthOffset++; _mRenderMonth(); }
 
+function _mInitMonthSwipe() {
+  const sheet = document.getElementById('mMonthGrid');
+  if (!sheet || sheet._moSwipe) return;
+  sheet._moSwipe = true;
+  let sx = 0, sy = 0;
+  sheet.addEventListener('touchstart', e => { sx = e.touches[0].clientX; sy = e.touches[0].clientY; }, {passive: true});
+  sheet.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - sx;
+    const dy = e.changedTouches[0].clientY - sy;
+    if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy)) return;
+    if (dx < 0) mMonthNext(); else mMonthPrev();
+  }, {passive: true});
+}
+
+function _mGetTaskDatesMap() {
+  const map = {};
+  const add = (ds, item) => { if (!map[ds]) map[ds] = []; map[ds].push(item); };
+  (st.tasks || []).forEach(t => { if (t.due_date) add(t.due_date.split('T')[0], {name: t.name, cat: t.category, done: !!t.done}); });
+  (st.shopping || []).forEach(s => { if (s.due_date) add(s.due_date, {name: s.name, cat: 'Shopping', done: !!s.done}); });
+  const _vdm = typeof _vidDayMap === 'function' ? _vidDayMap() : {};
+  (st.videos || []).forEach(v => {
+    if (v.is_deleted) return;
+    const ds = _vdm[String(v.id)] || v.post_date;
+    if (ds) add(ds, {name: v.topic || v.title, cat: 'Videos', done: v.status === 'published'});
+  });
+  for (let w = -6; w <= 6; w++) {
+    try { getRecurringWeekTasks(w).forEach(v => add(v.due_date, {name: v.name, cat: 'Recurring', done: !!v.done})); } catch(e) {}
+  }
+  return map;
+}
+
 function _mRenderMonth() {
   const now = new Date();
   const yr = now.getFullYear();
@@ -1944,71 +1979,84 @@ function _mRenderMonth() {
   const first = new Date(yr, mo, 1);
   const last = new Date(yr, mo + 1, 0);
   const today = d2s(getDayDate(0));
+  const taskMap = _mGetTaskDatesMap();
 
   document.getElementById('mMonthTitle').textContent = first.toLocaleDateString('en-US', {month: 'long', year: 'numeric'});
 
-  // Build set of dates that have tasks
-  const taskDates = new Set();
-  (st.tasks || []).forEach(t => { if (t.due_date && !t.done) taskDates.add(t.due_date.split('T')[0]); });
-  (st.shopping || []).forEach(s => { if (s.due_date && !s.done) taskDates.add(s.due_date); });
-  const _vdm = typeof _vidDayMap === 'function' ? _vidDayMap() : {};
-  Object.values(_vdm).forEach(ds => taskDates.add(ds));
-  // Recurring tasks for visible weeks
-  for (let w = -6; w <= 6; w++) {
-    try {
-      getRecurringWeekTasks(w).forEach(v => { if (!v.done) taskDates.add(v.due_date); });
-    } catch(e) {}
-  }
-
-  // Day headers
   const dayNames = ['M','T','W','T','F','S','S'];
   let html = dayNames.map(d => `<div class="m-mo-hdr">${d}</div>`).join('');
 
-  // Leading blanks (Mon=0)
   const startDow = (first.getDay() + 6) % 7;
-  // Fill previous month days
   const prevLast = new Date(yr, mo, 0);
   for (let i = startDow - 1; i >= 0; i--) {
     const d = prevLast.getDate() - i;
     const ds = d2s(new Date(yr, mo - 1, d));
-    html += `<div class="m-mo-day other-month" onclick="mMonthTapDay('${ds}')">${d}</div>`;
+    const hasTasks = !!(taskMap[ds] && taskMap[ds].some(t => !t.done));
+    html += `<div class="m-mo-day other-month${hasTasks ? ' has-tasks' : ''}${_mMonthSelectedDs === ds ? ' selected' : ''}" onclick="mMonthSelectDay('${ds}')"><span class="m-mo-num">${d}</span></div>`;
   }
 
-  // Current month days
   for (let d = 1; d <= last.getDate(); d++) {
     const ds = d2s(new Date(yr, mo, d));
     const isToday = ds === today;
-    const hasTasks = taskDates.has(ds);
-    html += `<div class="m-mo-day${isToday ? ' is-today' : ''}${hasTasks ? ' has-tasks' : ''}" onclick="mMonthTapDay('${ds}')">${d}</div>`;
+    const hasTasks = !!(taskMap[ds] && taskMap[ds].some(t => !t.done));
+    html += `<div class="m-mo-day${isToday ? ' is-today' : ''}${hasTasks ? ' has-tasks' : ''}${_mMonthSelectedDs === ds ? ' selected' : ''}" onclick="mMonthSelectDay('${ds}')"><span class="m-mo-num">${d}</span></div>`;
   }
 
-  // Trailing blanks
   const endDow = (last.getDay() + 6) % 7;
   for (let i = 1; i <= 6 - endDow; i++) {
     const ds = d2s(new Date(yr, mo + 1, i));
-    html += `<div class="m-mo-day other-month" onclick="mMonthTapDay('${ds}')">${i}</div>`;
+    const hasTasks = !!(taskMap[ds] && taskMap[ds].some(t => !t.done));
+    html += `<div class="m-mo-day other-month${hasTasks ? ' has-tasks' : ''}${_mMonthSelectedDs === ds ? ' selected' : ''}" onclick="mMonthSelectDay('${ds}')"><span class="m-mo-num">${i}</span></div>`;
   }
 
   document.getElementById('mMonthGrid').innerHTML = html;
 }
 
+function mMonthSelectDay(ds) {
+  _mMonthSelectedDs = ds;
+  // Update selected highlight
+  document.querySelectorAll('.m-mo-day').forEach(el => el.classList.remove('selected'));
+  const allDays = document.querySelectorAll('.m-mo-day');
+  allDays.forEach(el => { if (el.onclick && el.onclick.toString().includes(ds)) el.classList.add('selected'); });
+  // Re-render grid to update selection (simpler than DOM manipulation)
+  _mRenderMonth();
+  _mRenderMonthDetail(ds);
+}
+
+function _mRenderMonthDetail(ds) {
+  const detail = document.getElementById('mMonthDetail');
+  if (!detail) return;
+  const d = new Date(ds + 'T12:00:00');
+  const label = d.toLocaleDateString('en-US', {weekday: 'long', month: 'long', day: 'numeric'});
+
+  // Gather all tasks for this day
+  const weekOff = _mWkGetWeekOff(ds);
+  const tasks = mGetDayTasks(ds, weekOff);
+
+  let html = `<div class="m-mo-detail-hd">${label}</div>`;
+  if (!tasks.length) {
+    html += '<div class="m-mo-detail-empty">No tasks</div>';
+  } else {
+    tasks.forEach(t => {
+      const catKey = t._type === 'shop' ? 'shopping' : t._type === 'vid' || t._type === 'vidstep' ? 'Videos' : (t._virtual && t._recId) ? 'recurring' : (t.category || '');
+      const s = gc(catKey);
+      html += `<div class="m-mo-detail-item${t.done ? ' done' : ''}">
+        <span class="m-mo-detail-dot" style="background:${s.bg};border:1px solid ${s.d}"></span>
+        ${escHtml(t.name || '')}
+      </div>`;
+    });
+  }
+  detail.innerHTML = html;
+}
+
 function mMonthTapDay(ds) {
   mCloseMonth();
-  // Switch to week tab and scroll to the tapped day
   if (_mCurTab !== 'week') mShowTab('week');
-  // Ensure the day is rendered
   const weekOff = _mWkGetWeekOff(ds);
+  const list = document.getElementById('mWeekList');
   if (weekOff < _mWkRenderedLo || weekOff > _mWkRenderedHi) {
-    // Need to render more weeks
-    const list = document.getElementById('mWeekList');
-    while (weekOff < _mWkRenderedLo) {
-      _mWkRenderedLo--;
-      list.insertAdjacentHTML('afterbegin', _mWkRenderWeekHtml(_mWkRenderedLo));
-    }
-    while (weekOff > _mWkRenderedHi) {
-      _mWkRenderedHi++;
-      list.insertAdjacentHTML('beforeend', _mWkRenderWeekHtml(_mWkRenderedHi));
-    }
+    while (weekOff < _mWkRenderedLo) { _mWkRenderedLo--; list.insertAdjacentHTML('afterbegin', _mWkRenderWeekHtml(_mWkRenderedLo)); }
+    while (weekOff > _mWkRenderedHi) { _mWkRenderedHi++; list.insertAdjacentHTML('beforeend', _mWkRenderWeekHtml(_mWkRenderedHi)); }
   }
   requestAnimationFrame(() => {
     const dayEl = document.querySelector(`.m-wk-day[data-ds="${ds}"]`);
