@@ -1040,14 +1040,22 @@ function mOpenNewBlock(sm) {
   document.getElementById('mBlockTime').value = `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
 
   if (_mSelectedChipId) {
-    const t = st.tasks.find(x => String(x.id) === _mSelectedChipId);
-    if (t) {
-      document.getElementById('mBlockName').value = t.name || '';
-      mSelectCat('block', t.category || 'Home');
+    const chipId = _mSelectedChipId;
+    let chipName = '', chipCat = 'Home';
+    if (chipId.startsWith('rec-')) {
+      const recId = chipId.replace('rec-', '');
+      const r = st.recurring.find(x => String(x.id) === recId);
+      if (r) { chipName = r.name || ''; chipCat = r.category || 'Recurring'; }
+    } else if (chipId.startsWith('shop-')) {
+      const shopId = chipId.replace('shop-', '');
+      const s = st.shopping.find(x => String(x.id) === shopId);
+      if (s) { chipName = s.name || ''; chipCat = 'Shopping'; }
     } else {
-      document.getElementById('mBlockName').value = '';
-      mSelectCat('block', _mBlockCat);
+      const t = st.tasks.find(x => String(x.id) === chipId);
+      if (t) { chipName = t.name || ''; chipCat = t.category || 'Home'; }
     }
+    document.getElementById('mBlockName').value = chipName;
+    mSelectCat('block', chipCat);
   } else {
     document.getElementById('mBlockName').value = '';
     mSelectCat('block', _mBlockCat);
@@ -1116,8 +1124,14 @@ async function mSaveBlock() {
       category: cat
     });
   } else {
-    const taskId = _mSelectedChipId || null;
-    const b = {id: 'lb-' + Date.now(), title: name, ds, sm, dur: _mBlockDur, cat, taskId, recId: null, shopId: null, _done: false};
+    let taskId = null, recId = null, shopId = null;
+    if (_mSelectedChipId) {
+      const cid = _mSelectedChipId;
+      if (cid.startsWith('rec-')) recId = cid.replace('rec-', '');
+      else if (cid.startsWith('shop-')) shopId = cid.replace('shop-', '');
+      else taskId = cid;
+    }
+    const b = {id: 'lb-' + Date.now(), title: name, ds, sm, dur: _mBlockDur, cat, taskId, recId, shopId, _done: false};
     if (!st.blocks) st.blocks = [];
     st.blocks.push(b);
     save();
@@ -1171,7 +1185,25 @@ function mGetDayTasks(ds, weekOff) {
     .filter(s => !s.done && s.due_date && (s.due_date === ds || (isToday && isOv(s.due_date))))
     .map(s => ({id: 'shop-' + s.id, name: s.name, category: 'Shopping', due_date: s.due_date, done: false, _shopId: s.id, _virtual: true, _type: 'shop'}));
 
-  return [...regular, ...recVirt, ...shopItems].sort((a, b) => {
+  // Video tasks assigned to this day
+  const _vdm = typeof _vidDayMap === 'function' ? _vidDayMap() : {};
+  const vidForDay = (st.videos || []).filter(v => {
+    if (v.is_deleted) return false;
+    const vd = _vdm[String(v.id)];
+    if (vd === ds) return true;
+    if (isToday && vd && vd < ds) return true;
+    return false;
+  }).map(v => ({id: 'vid-' + v.id, name: v.topic || v.title, category: 'Videos', due_date: ds, done: v.status === 'published', _vidId: v.id, _virtual: true, _type: 'vid'}));
+
+  // Video step tasks
+  const vidStepForDay = typeof _vidStepTasksForDay === 'function' ? _vidStepTasksForDay(ds) : [];
+  const vidStepItems = isToday && typeof _vidStepTasksForDayWithOverdue === 'function'
+    ? _vidStepTasksForDayWithOverdue(ds) : vidStepForDay;
+
+  // Extras (travel, birthdays)
+  const extras = getExtrasForDate(ds);
+
+  return [...regular, ...recVirt, ...shopItems, ...vidForDay, ...vidStepItems, ...extras].sort((a, b) => {
     if (a.done && !b.done) return 1;
     if (!a.done && b.done) return -1;
     return (a.name || '').localeCompare(b.name || '');
@@ -1180,25 +1212,28 @@ function mGetDayTasks(ds, weekOff) {
 
 function mWkTaskRow(t) {
   const ov      = isOv(t.due_date) && !t.done;
-  const catKey  = t._type === 'shop' ? 'shopping' : (t._virtual && t._recId) ? 'recurring' : (t.category || '');
+  const catKey  = t._type === 'shop' ? 'shopping' : t._type === 'vid' || t._type === 'vidstep' ? 'Videos' : (t._virtual && t._recId) ? 'recurring' : (t.category || '');
   const s       = ov ? OV : gc(catKey);
   const canDrag = !t._virtual && !t._type;
+  const noCheck = t._type === 'travel' || t._type === 'birthday';
 
   let onchange = '';
   if (t._type === 'shop')          onchange = `togShop('${t._shopId}',this.checked)`;
   else if (t._virtual && t._recId) onchange = `togRecVirt('${t._recId}',this.checked,'${t._wkKey}')`;
-  else if (!t._virtual)            onchange = `toggleTask('${t.id}',this.checked)`;
+  else if (!t._virtual && !noCheck) onchange = `toggleTask('${t.id}',this.checked)`;
 
   const dot = `<span style="width:8px;height:8px;border-radius:50%;background:${s.bg};border:1.5px solid ${s.d};flex-shrink:0;display:inline-block"></span>`;
-  const chk = onchange
-    ? `<label style="display:flex;align-items:center;justify-content:center;width:22px;height:32px;flex-shrink:0;cursor:pointer"><input type="checkbox"${t.done ? ' checked' : ''} onchange="${onchange}" style="width:16px;height:16px;accent-color:var(--accent)"></label>`
-    : `<span style="width:22px;height:32px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px">📅</span>`;
+  const chk = noCheck
+    ? `<span style="width:22px;height:32px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px">\u{1F4C5}</span>`
+    : onchange
+      ? `<label class="m-wk-chk-wrap"><input type="checkbox" class="m-wk-chk"${t.done ? ' checked' : ''} onchange="${onchange}"></label>`
+      : `<span style="width:22px;height:32px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px">\u{1F4C5}</span>`;
 
   const dragAttrs = canDrag ? ` data-tid="${t.id}" data-tname="${escHtml(t.name || '')}"` : '';
 
-  return `<div class="m-wk-row${ov ? ' m-ov' : ''}"${dragAttrs}>
+  return `<div class="m-wk-row${t.done ? ' m-wk-done' : ''}${ov ? ' m-ov' : ''}"${dragAttrs}>
     ${chk}
-    <span style="flex:1;font-size:13px;line-height:1.3;${t.done ? 'text-decoration:line-through;opacity:.4' : ''}${ov ? ';color:#dc2626' : ''}">${escHtml(t.name || '')}</span>
+    <span class="m-wk-task-name${t.done ? ' done' : ''}" style="${ov ? 'color:#dc2626' : ''}">${escHtml(t.name || '')}</span>
     ${dot}
   </div>`;
 }
