@@ -5729,15 +5729,16 @@ function drawTBBlock(col,b){
     v[step]=newVal;
     sbReqSilent('PATCH','videos',{[step]:newVal},`?id=eq.${v.id}`);
     // Sync daymap + timeblock blocks to match stage state
+    // Stage square marks ALL instances (including later ones) done/undone
     const m=_vidStepDayMap();const key=vid+'::'+step;
+    const _prevBlkStates=[];
+    (st.blocks||[]).forEach(bl=>{if(String(bl._vidStepVid)===String(vid)&&bl._vidStepName===step){_prevBlkStates.push({id:bl.id,done:bl._done});const want=newVal==='done';if(bl._done!==want){bl._done=want;sbUpdateBlock(bl.id,{done:want});}}});
     if(newVal==='done'){
       if(m[key]){m[key].done=true;_vidStepDayMapSet(m);}
-      (st.blocks||[]).forEach(bl=>{if(String(bl._vidStepVid)===String(vid)&&bl._vidStepName===step&&!bl._done){bl._done=true;sbUpdateBlock(bl.id,{done:true});}});
     } else {
       if(m[key]){m[key].done=false;_vidStepDayMapSet(m);}
-      (st.blocks||[]).forEach(bl=>{if(String(bl._vidStepVid)===String(vid)&&bl._vidStepName===step&&bl._done){bl._done=false;sbUpdateBlock(bl.id,{done:false});}});
     }
-    pushUndo(()=>{v[step]=prevVal;sbReqSilent('PATCH','videos',{[step]:prevVal},`?id=eq.${v.id}`);save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();},'Stage toggle');
+    pushUndo(()=>{v[step]=prevVal;sbReqSilent('PATCH','videos',{[step]:prevVal},`?id=eq.${v.id}`);_prevBlkStates.forEach(s=>{const bl2=st.blocks.find(x=>x.id===s.id);if(bl2){bl2._done=s.done;sbUpdateBlock(bl2.id,{done:s.done});}});const m2=_vidStepDayMap();if(m2[key]){m2[key].done=prevVal==='done';_vidStepDayMapSet(m2);}save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();},'Stage toggle');
     save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
     const panel=document.getElementById('vidOvPanel');if(panel&&panel.style.display==='block')_renderVidOvMenu();
   });
@@ -5768,11 +5769,11 @@ function drawTBBlock(col,b){
     } else if(b.shopId){
       togShop(String(b.shopId),checked);
     } else if(b._vidStepVid){
-      // Checkbox toggles task done + for Th/Des also toggles the stage
+      // Set block done FIRST so _vidStepToggleDone sees correct state when checking "all blocks done?"
       const _prevDone=b._done;
-      _vidStepToggleDone(b._vidStepVid,b._vidStepName,checked);
       b._done=checked;sbUpdateBlock(b.id,{done:checked});
-      pushUndo(()=>{_vidStepToggleDone(b._vidStepVid,b._vidStepName,!checked);b._done=_prevDone;sbUpdateBlock(b.id,{done:_prevDone});save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();},'Step checkbox');
+      _vidStepToggleDone(b._vidStepVid,b._vidStepName,checked);
+      pushUndo(()=>{b._done=_prevDone;sbUpdateBlock(b.id,{done:_prevDone});_vidStepToggleDone(b._vidStepVid,b._vidStepName,!checked);save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();},'Step checkbox');
     } else if(b._vidId){
       b._done=checked;sbUpdateBlock(b.id,{done:checked});save();renderToday();renderWkSummary();renderWkCal();
     } else if(b.cat==='pup_session'&&b._pupSessId){
