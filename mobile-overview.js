@@ -1488,7 +1488,11 @@ function mRenderWeek() {
       const divider = todayEl.previousElementSibling;
       const scrollTarget = (divider && divider.classList.contains('m-wk-divider')) ? divider : todayEl;
       const page = document.getElementById('mWeekPage');
-      if (page) page.scrollTop = scrollTarget.offsetTop;
+      if (page) {
+        const pageRect = page.getBoundingClientRect();
+        const targetRect = scrollTarget.getBoundingClientRect();
+        page.scrollTop = page.scrollTop + targetRect.top - pageRect.top;
+      }
     }
   });
 }
