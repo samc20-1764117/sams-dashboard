@@ -227,17 +227,50 @@ function mInitPickers() {
 }
 
 // ── Sort today ────────────────────────────────────────────────────────────────
+// Match desktop sort: birthday, done last, travel, overdue, important, timeblock order, then type priority
+function _mTaskTypePri(t) {
+  if (t._type === 'birthday') return 1;
+  const cat = (t.category || '').toLowerCase();
+  if (cat === 'home') return 2;
+  if (cat === 'my work') return 3;
+  if (cat === 'work') return 4;
+  if (cat === 'social') return 5;
+  if (t._type === 'vid') return 5.5;
+  if (t._type === 'vidstep') return 5.6;
+  if (t._type === 'shop') return 7;
+  if (t._type === 'pup') return 8;
+  if (t._virtual) return 6;
+  return 5;
+}
 function mSortToday(tasks) {
+  const ds = _mTodayOffset === 0 ? d2s(getDayDate(0)) : _mTodayDateStr();
+  const blks = (st.blocks || []).filter(b => b.ds === ds);
+  function tbSm(t) {
+    let b = null;
+    if (t._type === 'pup' && t._pupSessId) b = blks.find(x => String(x._pupSessId) === String(t._pupSessId));
+    else if (t._type === 'vidstep') b = blks.find(x => String(x._vidStepVid) === String(t._vidId) && x._vidStepName === t._vidStep);
+    else if (t._vidId) b = blks.find(x => String(x._vidId) === String(t._vidId));
+    else if (t._shopId) b = blks.find(x => String(x.shopId) === String(t._shopId));
+    else if (t._ruleId) b = blks.find(x => String(x.ruleId) === String(t._ruleId) || String(x.recId) === String(t._ruleId));
+    else if (t._recId) b = blks.find(x => String(x.recId) === String(t._recId));
+    else if (!t._virtual) b = blks.find(x => String(x.taskId) === String(t.id));
+    return b ? b.sm : null;
+  }
   return [...tasks].sort((a, b) => {
-    if (a.done && !b.done) return 1;
-    if (!a.done && b.done) return -1;
-    const aOv = isOv(a.due_date) && !a.done, bOv = isOv(b.due_date) && !b.done;
-    if (aOv && !bOv) return -1;
-    if (!aOv && bOv) return 1;
-    const typeOrd = t => t._type === 'travel' ? 0 : t._type === 'birthday' ? 1 : t._isWrRule || t._isWrec || (t._virtual && t._recId) ? 3 : t._type === 'shop' ? 4 : 2;
-    const diff = typeOrd(a) - typeOrd(b);
-    if (diff !== 0) return diff;
-    return (a.name || '').localeCompare(b.name || '');
+    const aB = a._type === 'birthday', bB = b._type === 'birthday';
+    if (aB && !bB) return -1; if (!aB && bB) return 1;
+    if (a.done && !b.done) return 1; if (!a.done && b.done) return -1;
+    const aT = a._type === 'travel' && !a.done, bT = b._type === 'travel' && !b.done;
+    if (aT && !bT) return -1; if (!aT && bT) return 1;
+    const aO = isOv(a.due_date) && !a.done, bO = isOv(b.due_date) && !b.done;
+    if (aO && !bO) return -1; if (!aO && bO) return 1;
+    const aI = a.important && !a.done, bI = b.important && !b.done;
+    if (aI && !bI) return -1; if (!aI && bI) return 1;
+    const aSm = tbSm(a), bSm = tbSm(b);
+    if (aSm !== null && bSm === null) return -1;
+    if (aSm === null && bSm !== null) return 1;
+    if (aSm !== null && bSm !== null) return aSm - bSm;
+    return _mTaskTypePri(a) - _mTaskTypePri(b) || (a.name || '').localeCompare(b.name || '');
   });
 }
 
@@ -830,12 +863,14 @@ function mRenderUnassigned() {
     ...shopUnassigned.map(s => ({ id: 'shop-' + s.id, name: s.name, category: 'Shopping' }))
   ];
 
-  // Date label merged into unassigned bar
+  // Date label + refresh merged into unassigned bar
   const d = getDayDate(_mTBOffset);
-  const opts = {weekday: 'short', month: 'short', day: 'numeric'};
-  const prefix = _mTBOffset === 0 ? 'Today' : _mTBOffset === -1 ? 'Yesterday' : _mTBOffset === 1 ? 'Tomorrow' : '';
-  const dateTxt = prefix ? prefix + ' · ' + d.toLocaleDateString('en-US', opts) : d.toLocaleDateString('en-US', opts);
-  const dateChip = `<span class="m-tb-date-lbl">${dateTxt}</span>`;
+  const prefix = _mTBOffset === 0 ? 'Today' : _mTBOffset === -1 ? 'Yesterday' : _mTBOffset === 1 ? 'Tomorrow' : d.toLocaleDateString('en-US', {weekday: 'long'});
+  const subDate = d.toLocaleDateString('en-US', {weekday: 'long', month: 'long', day: 'numeric'});
+  const dateChip = `<div class="m-tb-hdr-wrap">
+    <div class="m-tb-date-lbl">${prefix}<div class="m-tb-date-sub">${subDate}</div></div>
+    <button class="m-reload-btn" onclick="location.reload(true)" title="Reload app">↻</button>
+  </div>`;
 
   if (!allUnassigned.length) {
     bar.innerHTML = dateChip;
