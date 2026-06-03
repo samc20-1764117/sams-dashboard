@@ -3417,9 +3417,13 @@ function _vidStepToggleDone(vidId,step,checked){
 function _vidStepUnassign(vidId,step){
   const m=_vidStepDayMap();const key=vidId+'::'+step;
   const prev=m[key]||null;delete m[key];_vidStepDayMapSet(m);
-  save();renderAll();
+  // Delete linked timeblock blocks
+  const removedBlks=st.blocks.filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step);
+  st.blocks=st.blocks.filter(bl=>!(String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step));
+  removedBlks.forEach(bl=>sbDeleteBlock(bl.id));
+  save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
   const panel=document.getElementById('vidOvPanel');if(panel&&panel.style.display==='block')_renderVidOvMenu();
-  if(prev)pushUndo(()=>{const m2=_vidStepDayMap();m2[key]=prev;_vidStepDayMapSet(m2);save();renderAll();const p2=document.getElementById('vidOvPanel');if(p2&&p2.style.display==='block')_renderVidOvMenu();},'Removed step from calendar');
+  if(prev||removedBlks.length)pushUndo(()=>{const m2=_vidStepDayMap();if(prev)m2[key]=prev;_vidStepDayMapSet(m2);removedBlks.forEach(bl=>{st.blocks.push(bl);sbSaveBlock(bl);});save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();const p2=document.getElementById('vidOvPanel');if(p2&&p2.style.display==='block')_renderVidOvMenu();},'Removed step from calendar');
 }
 function _vidStepTasksForDayWithOverdue(todayDs){
   const m=_vidStepDayMap();const tasks=[];const seen=new Set();let moved=false;
