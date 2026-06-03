@@ -22,12 +22,30 @@ let HOURS=[...Array(20)].map((_,i)=>i+4);
 const DNAMES=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 const PX=40/60, KEY='samdash_v7';
 
-function gc(c){return CATS[(c||'').toLowerCase()]||{bg:'#f1f5f9',t:'#334155',d:'#94a3b8',b:'rgba(148,163,184,.2)'};}
+const CATS_DARK={
+  'home':{bg:'rgba(59,130,246,.14)',t:'#93c5fd',d:'#3b82f6',dot:'#93c5fd',b:'rgba(59,130,246,.18)'},
+  'my work':{bg:'rgba(163,196,26,.12)',t:'#bef264',d:'#65a30d',dot:'#bef264',b:'rgba(163,196,26,.18)'},
+  'work':{bg:'rgba(236,72,153,.12)',t:'#f9a8d4',d:'#ec4899',dot:'#f9a8d4',b:'rgba(236,72,153,.18)'},
+  'social':{bg:'rgba(147,51,234,.14)',t:'#d8b4fe',d:'#9333ea',dot:'#d8b4fe',b:'rgba(147,51,234,.18)'},
+  'long term':{bg:'rgba(148,163,184,.10)',t:'#94a3b8',d:'#94a3b8',dot:'#94a3b8',b:'rgba(148,163,184,.18)'},
+  'recurring':{bg:'rgba(16,185,129,.12)',t:'#6ee7b7',d:'#2a9db5',dot:'#6ee7b7',b:'rgba(16,185,129,.18)'},
+  'weekly_reset':{bg:'rgba(59,130,246,.14)',t:'#93c5fd',d:'#3b82f6',dot:'#93c5fd',b:'rgba(59,130,246,.18)'},
+  'buy':{bg:'rgba(234,179,8,.12)',t:'#fde68a',d:'#eab308',dot:'#fde68a',b:'rgba(234,179,8,.18)'},
+  'travel':{bg:'rgba(20,184,166,.12)',t:'#5eead4',d:'#38bdf8',dot:'#5eead4',b:'rgba(20,184,166,.18)'},
+  'birthday':{bg:'rgba(249,115,22,.12)',t:'#fdba74',d:'#f97316',dot:'#fdba74',b:'rgba(249,115,22,.18)'},
+  'shopping':{bg:'rgba(249,115,22,.12)',t:'#fdba74',d:'#ea580c',dot:'#fdba74',b:'rgba(249,115,22,.18)'},
+  'videos':{bg:'rgba(34,197,94,.12)',t:'#86efac',d:'#22c55e',dot:'#86efac',b:'rgba(34,197,94,.18)'},
+  'weekly goals':{bg:'rgba(255,255,255,.04)',t:'#e8e8ea',d:'rgba(200,200,215,.6)',dot:'#e8e8ea',b:'rgba(255,255,255,.06)'},
+};
+const IMP_DARK={bg:'rgba(234,179,8,.12)',t:'#fde68a',d:'#eab308',dot:'#fde68a',b:'rgba(234,179,8,.25)'};
+const OV_DARK={bg:'rgba(239,68,68,.12)',t:'#fca5a5',d:'#ef4444',dot:'#fca5a5',b:'rgba(239,68,68,.20)'};
+function _isDk(){return document.body.classList.contains('dark');}
+function gc(c){const m=_isDk()?CATS_DARK:CATS;return m[(c||'').toLowerCase()]||(_isDk()?{bg:'rgba(148,163,184,.08)',t:'#94a3b8',d:'#94a3b8',b:'rgba(148,163,184,.15)'}:{bg:'#f1f5f9',t:'#334155',d:'#94a3b8',b:'rgba(148,163,184,.2)'});}
 function slug(c){return(c||'other').toLowerCase().replace(/\s+/g,'-');}
 
 // ── State ──────────────────────────────────────────────────────────────────────
 let cfg={url:'https://gtirvyrqfuuuxkkqaeap.supabase.co',key:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0aXJ2eXJxZnV1dXhra3FhZWFwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwODY3NjAsImV4cCI6MjA4ODY2Mjc2MH0.6rtA0WeUUAcuV_sNVrxAbaaviPxPwNakh_bk7uylAOo',showAutoTB:true};
-let st={tasks:[],recurring:[],shopping:[],blocks:[],travel:[],birthdays:[],pup_skills:[],pupSessions:[],pupWeeklyFocus:[],recipes:[],videos:[],autoTimeblocks:[],autoTBOverrides:[],wrRules:[],wrOverrides:[],groceryStaples:[],groceryList:[],mealPlan:[],packTemplates:[],packItems:[],finance:[],finSubs:[],_grocStapleSkips:{}};
+let st={tasks:[],recurring:[],shopping:[],blocks:[],travel:[],birthdays:[],ideas:[],pup_skills:[],pupSessions:[],pupWeeklyFocus:[],recipes:[],videos:[],autoTimeblocks:[],autoTBOverrides:[],wrRules:[],wrOverrides:[],groceryStaples:[],groceryList:[],mealPlan:[],packTemplates:[],packItems:[],finance:[],finSubs:[],easyMeals:[],_grocStapleSkips:{}};
 let dayOff=0,wkOff=0,moOff=0,wrRecOff=0,sbOpen=true,activePg='overview';
 let dragId=null,resizing=null,tMode='add',tId=null,tPreDate=null;
 let qaCtx='today',qaDsTarget=null,qaKCat='';
@@ -38,8 +56,8 @@ let undoStack=[];let undoTimer=null;
 let shopSortMode='store'; // 'store' or 'alpha'
 
 // ── Storage ────────────────────────────────────────────────────────────────────
-function load(){try{const s=JSON.parse(localStorage.getItem(KEY)||'{}');if(s.cfg)cfg={...cfg,...s.cfg};if(s.blocks)st.blocks=s.blocks.map(b=>{const{_col,_ncols,...rest}=b;return rest;});if(s.sb!==undefined)sbOpen=s.sb;if(s.overrides)localOverrides=s.overrides;if(s.delRec)deletedRecIds=new Set(s.delRec);if(s.delPupSess)deletedPupSessIds=new Set(s.delPupSess);if(s.tasks)st.tasks=s.tasks;if(s.recurring)st.recurring=s.recurring.map(r=>({...r,_doneByWk:r._doneByWk||{}}));if(s.shopping)st.shopping=s.shopping;if(s.travel)st.travel=s.travel;if(s.birthdays)st.birthdays=s.birthdays;if(s.pup_skills)st.pup_skills=s.pup_skills;if(s.pupSessions)st.pupSessions=s.pupSessions;if(s.pupWeeklyFocus)st.pupWeeklyFocus=s.pupWeeklyFocus;if(s.recipes)st.recipes=s.recipes;if(s.videos)st.videos=s.videos;if(s.autoTimeblocks)st.autoTimeblocks=s.autoTimeblocks;if(s.autoTBOverrides)st.autoTBOverrides=s.autoTBOverrides;if(s.wrRules)st.wrRules=s.wrRules;if(s.wrOverrides)st.wrOverrides=s.wrOverrides;if(s._ytDismissed)st._ytDismissed=s._ytDismissed;if(s.groceryStaples)st.groceryStaples=s.groceryStaples;if(s.groceryList)st.groceryList=s.groceryList;if(s.mealPlan)st.mealPlan=s.mealPlan;if(s.packTemplates)st.packTemplates=s.packTemplates;if(s.packItems)st.packItems=s.packItems;if(s.finance)st.finance=s.finance;if(s.finSubs)st.finSubs=s.finSubs;}catch(e){}}
-function save(){try{localStorage.setItem(KEY,JSON.stringify({cfg,blocks:st.blocks,sb:sbOpen,overrides:localOverrides,delRec:[...deletedRecIds],delPupSess:[...deletedPupSessIds],tasks:st.tasks,recurring:st.recurring,shopping:st.shopping,travel:st.travel,birthdays:st.birthdays,pup_skills:st.pup_skills,pupSessions:st.pupSessions,pupWeeklyFocus:st.pupWeeklyFocus,recipes:st.recipes,videos:st.videos,autoTimeblocks:st.autoTimeblocks,autoTBOverrides:st.autoTBOverrides,wrRules:st.wrRules,wrOverrides:st.wrOverrides,_ytDismissed:st._ytDismissed,groceryStaples:st.groceryStaples,groceryList:st.groceryList,mealPlan:st.mealPlan,packTemplates:st.packTemplates,packItems:st.packItems,finance:st.finance,finSubs:st.finSubs}));}catch(e){}}
+function load(){try{const s=JSON.parse(localStorage.getItem(KEY)||'{}');if(s.cfg)cfg={...cfg,...s.cfg};if(s.blocks)st.blocks=s.blocks.map(b=>{const{_col,_ncols,...rest}=b;return rest;});if(s.sb!==undefined)sbOpen=s.sb;if(s.overrides)localOverrides=s.overrides;if(s.delRec)deletedRecIds=new Set(s.delRec);if(s.delPupSess)deletedPupSessIds=new Set(s.delPupSess);if(s.tasks)st.tasks=s.tasks;if(s.recurring)st.recurring=s.recurring.map(r=>({...r,_doneByWk:r._doneByWk||{}}));if(s.shopping)st.shopping=s.shopping;if(s.travel)st.travel=s.travel;if(s.birthdays)st.birthdays=s.birthdays;if(s.ideas)st.ideas=s.ideas;if(s.pup_skills)st.pup_skills=s.pup_skills;if(s.pupSessions)st.pupSessions=s.pupSessions;if(s.pupWeeklyFocus)st.pupWeeklyFocus=s.pupWeeklyFocus;if(s.recipes)st.recipes=s.recipes;if(s.videos)st.videos=s.videos;if(s.autoTimeblocks)st.autoTimeblocks=s.autoTimeblocks;if(s.autoTBOverrides)st.autoTBOverrides=s.autoTBOverrides;if(s.wrRules)st.wrRules=s.wrRules;if(s.wrOverrides)st.wrOverrides=s.wrOverrides;if(s._ytDismissed)st._ytDismissed=s._ytDismissed;if(s.groceryStaples)st.groceryStaples=s.groceryStaples;if(s.groceryList)st.groceryList=s.groceryList;if(s.mealPlan)st.mealPlan=s.mealPlan;if(s.packTemplates)st.packTemplates=s.packTemplates;if(s.packItems)st.packItems=s.packItems;if(s.finance)st.finance=s.finance;if(s.finSubs)st.finSubs=s.finSubs;if(s.easyMeals)st.easyMeals=s.easyMeals;}catch(e){}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify({cfg,blocks:st.blocks,sb:sbOpen,overrides:localOverrides,delRec:[...deletedRecIds],delPupSess:[...deletedPupSessIds],tasks:st.tasks,recurring:st.recurring,shopping:st.shopping,travel:st.travel,birthdays:st.birthdays,ideas:st.ideas,pup_skills:st.pup_skills,pupSessions:st.pupSessions,pupWeeklyFocus:st.pupWeeklyFocus,recipes:st.recipes,videos:st.videos,autoTimeblocks:st.autoTimeblocks,autoTBOverrides:st.autoTBOverrides,wrRules:st.wrRules,wrOverrides:st.wrOverrides,_ytDismissed:st._ytDismissed,groceryStaples:st.groceryStaples,groceryList:st.groceryList,mealPlan:st.mealPlan,packTemplates:st.packTemplates,packItems:st.packItems,finance:st.finance,finSubs:st.finSubs,easyMeals:st.easyMeals}));}catch(e){}}
 
 // ── Auth ───────────────────────────────────────────────────────────────────────
 let _sbClient=null;
@@ -157,8 +175,8 @@ async function sbSaveBlock(b){
     id:b.id,title:b.title||'',day_date:b.ds,
     start_time:startTime,start_minutes:smVal,
     duration_minutes:b.dur,category:b.cat||'Home',
-    task_id:b.taskId||null,rec_id:b.recId||null,shop_id:b.shopId||null,
-    vid_id:b._vidId||null,
+    task_id:b.taskId||null,rec_id:b._vidStepName||b.recId||null,shop_id:b.shopId||null,
+    vid_id:b._vidStepVid||b._vidId||null,
     done:b._done||false
   };
   try{
@@ -220,7 +238,7 @@ async function syncAll(silent=false){
   if(_sbClient){const{data:{session}}=await _sbClient.auth.getSession();if(session)_authToken=session.access_token;}
   if(!silent)setBadge('loading','Syncing…');
   try{
-    const[tasks,shop,trav,bdays,pupSkills,pupSessionsDb,pupWkFocusDb,recipes,videosDb,gStaples,gList,mealPlanDb,packTplDb,packItemDb,finDb,finSubDb]=await Promise.all([
+    const[tasks,shop,trav,bdays,pupSkills,pupSessionsDb,pupWkFocusDb,recipes,videosDb,gStaples,gList,mealPlanDb,packTplDb,packItemDb,finDb,finSubDb,ideasDb]=await Promise.all([
       sbReq('GET','tasks',null,'?order=due_date.asc.nullslast&select=*'),
       sbReq('GET','shopping_list',null,'?order=shop_order.asc.nullslast,store.asc,name.asc&select=*'),
       sbReq('GET','travel',null,'?order=start_date.asc&select=*'),
@@ -236,8 +254,10 @@ async function syncAll(silent=false){
       sbReqSilent('GET','packing_templates',null,'?order=category.asc,sort_order.asc.nullslast,name.asc&select=*'),
       sbReqSilent('GET','packing_items',null,'?order=sort_order.asc.nullslast,name.asc&select=*'),
       sbReqSilent('GET','finance',null,'?order=sort_order.asc.nullslast,name.asc&select=*'),
-      sbReqSilent('GET','finance_subs',null,'?order=sort_order.asc.nullslast,name.asc&select=*')
+      sbReqSilent('GET','finance_subs',null,'?order=sort_order.asc.nullslast,name.asc&select=*'),
+      sbReqSilent('GET','ideas',null,'?order=sort_order.asc.nullslast,created_at.desc&select=*')
     ]);
+    if(ideasDb)st.ideas=ideasDb;
     if(pupSessionsDb)st.pupSessions=pupSessionsDb.filter(s=>!deletedPupSessIds.has(String(s.id)));
     if(pupWkFocusDb)st.pupWeeklyFocus=pupWkFocusDb;
     if(gStaples)st.groceryStaples=gStaples;
@@ -371,9 +391,13 @@ async function syncAll(silent=false){
         if(sm==null&&b.start_time){const[hh,mm]=(b.start_time||'00:00').split(':');sm=parseInt(hh)*60+parseInt(mm);}
         let _pupSessId=null;
         if(b.category==='pup_session'){const _sk=(st.pup_skills||[]).find(x=>x.skill===b.title);if(_sk){const _ss=(st.pupSessions||[]).find(s=>String(s.skill_id)===String(_sk.id)&&s.day_date===b.day_date);if(_ss)_pupSessId=_ss.id;}}
+        let _finCancelSubId=null;
+        if((b.title||'').startsWith('Cancel ')&&st.finSubs){const _sub=st.finSubs.find(s=>b.title==='Cancel '+s.name||b.title.startsWith('Cancel '+s.name+' by '));if(_sub)_finCancelSubId=String(_sub.id);}
+        const _isVidStep=b.vid_id&&b.rec_id&&b.rec_id.startsWith('step_');
         return{id:b.id,title:b.title||'',ds:b.day_date,sm:sm||0,
           dur:b.duration_minutes||30,cat:b.category||'Home',
-          taskId:b.task_id||null,recId:b.rec_id||null,shopId:b.shop_id||null,_vidId:b.vid_id||null,ruleId:null,_done:b.done||false,_pupSessId};
+          taskId:b.task_id||null,recId:_isVidStep?null:b.rec_id||null,shopId:b.shop_id||null,_vidId:_isVidStep?null:b.vid_id||null,ruleId:null,_done:b.done||false,_pupSessId,_finCancelSubId,
+          _vidStepVid:_isVidStep?b.vid_id:null,_vidStepName:_isVidStep?b.rec_id:null};
       }),...localOnly];
     }
     save();
@@ -491,7 +515,8 @@ function getRecurringWeekTasks(off=0){
     const isDone=r._doneByWk&&r._doneByWk[wkKey];
     const nameOv=r._dateOverrides&&r._dateOverrides['name::'+wkKey];
     const displayName=(nameOv&&nameOv.name)||r.name;
-    out.push({id:'rec-virt-'+r.id,name:displayName,category:'Recurring',due_date:ds,done:!!isDone,_recId:r.id,_virtual:true,_wkKey:wkKey,_edited:!!(nameOv&&nameOv.name)});
+    const _wkNote=(nameOv&&nameOv.notes)||'';
+    out.push({id:'rec-virt-'+r.id,name:displayName,category:'Recurring',due_date:ds,done:!!isDone,_recId:r.id,_virtual:true,_wkKey:wkKey,_edited:!!(nameOv&&nameOv.name),_wkNote});
   });
   return out;
 }
@@ -557,7 +582,6 @@ function getBirthdaysInRange(startDs,endDs){
       if(ds>=startDs&&ds<=endDs){const key=b.id+'-'+ds;if(!seen.has(key)){seen.add(key);out.push(mkBdayTask(b,ds));}}
     });
   });
-  console.log('[BDAY-RANGE]',startDs,'to',endDs,'birthdays:',st.birthdays.map(b=>b.birthday),'found:',out.length,out.map(x=>x.name+' '+x.due_date));
   return out;
 }
 function mkBdayTask(b,ds){
@@ -894,6 +918,7 @@ async function doRedo(){
   undoStack.push({fn:()=>{_stateRestore(beforeRedo);_syncRedoDiff(snap,beforeRedo);},msg,snapBeforeUndo:beforeRedo});
   _showRedoToast(msg||'Action');
 }
+let _lastVPress=0,_vNavTimer=null,_lastGPress=0,_gNavTimer=null;
 document.addEventListener('keydown',e=>{
   if((e.metaKey||e.ctrlKey)&&e.key==='a'){const _ael=document.activeElement;const _isInput=_ael&&(_ael.tagName==='INPUT'||_ael.tagName==='TEXTAREA');if(!_isInput)e.preventDefault();return;}
   if((e.metaKey||e.ctrlKey)&&e.key==='z'){
@@ -1017,14 +1042,55 @@ document.addEventListener('keydown',e=>{
     else if(document.getElementById('mModal').classList.contains('open')){closeMod('mModal');document.activeElement?.blur();}
     else if(document.getElementById('recMoModal').classList.contains('open')&&!selectedTasks.size){closeMod('recMoModal');document.activeElement?.blur();}
   }
-  if(e.key==='o'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus')&&!document.querySelector('.overlay.open')){
+  if(e.key==='o'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')){
     e.preventDefault();showPage('overview');
   }
-  if(e.key==='v'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus')&&!document.querySelector('.overlay.open')){
-    e.preventDefault();showPage('videos');
+  if(e.key==='v'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')){
+    e.preventDefault();
+    const now=Date.now();
+    if(_lastVPress&&now-_lastVPress<350&&activePg==='overview'){
+      _lastVPress=0;if(_vNavTimer){clearTimeout(_vNavTimer);_vNavTimer=null;}
+      if(typeof closeAutoTBManager==='function')closeAutoTBManager();
+      if(typeof toggleVidOvMenu==='function')toggleVidOvMenu();
+    } else {
+      _lastVPress=now;
+      _vNavTimer=setTimeout(()=>{_vNavTimer=null;if(activePg==='videos')showPage('overview');else showPage('videos');},350);
+    }
   }
-  // M to toggle month view on overview
+  if(e.key==='p'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')){
+    e.preventDefault();if(activePg==='pups')showPage('overview');else showPage('pups');
+  }
+  if(e.key==='f'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')){
+    e.preventDefault();if(activePg==='finance')showPage('overview');else showPage('finance');
+  }
+  // GG to close help overlay when open
+  if(e.key==='g'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&document.getElementById('helpOverlay').classList.contains('open')){
+    const now=Date.now();
+    if(_lastGPress&&now-_lastGPress<400){_lastGPress=0;e.preventDefault();e.stopImmediatePropagation();closeMod('helpOverlay');return;}
+    _lastGPress=now;e.preventDefault();e.stopImmediatePropagation();return;
+  }
+  // G = grid lines (handled in index.html), GG = help overlay
+  if(e.key==='g'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')){
+    const now=Date.now();
+    if(_lastGPress&&now-_lastGPress<400){
+      _lastGPress=0;
+      // Remove grid if first G toggled it on, stop index.html grid handler
+      const ov=document.getElementById('_dbgGrid');if(ov)ov.remove();
+      e.preventDefault();e.stopImmediatePropagation();_showHelpOverlay();return;
+    }
+    _lastGPress=now;
+  }
+  // L = style guide
+  if(e.key==='l'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')){
+    e.preventDefault();if(activePg==='guide')showPage('overview');else showPage('guide');return;
+  }
+  if(e.key==='d'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')){
+    e.preventDefault();if(typeof toggleDark==='function')toggleDark();
+  }
+  // M to toggle month view on overview (skip if video popup is open — it uses M for its own calendar)
   if(e.key==='m'&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')){
+    const _vp=document.getElementById('vidOvPanel');
+    if(_vp&&_vp.style.display==='block')return;
     if(document.getElementById('mModal').classList.contains('open')){e.preventDefault();closeMod('mModal');return;}
     if(activePg==='overview'&&!document.querySelector('.overlay.open')){e.preventDefault();openMModal();return;}
   }
@@ -1032,21 +1098,29 @@ document.addEventListener('keydown',e=>{
   if((e.metaKey||e.ctrlKey)&&(e.key==='ArrowLeft'||e.key==='ArrowRight')&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')){
     e.preventDefault();
     if(_pgNavLock)return;_pgNavLock=true;setTimeout(()=>{_pgNavLock=false;},150);
-    const _pgOrder=['overview','videos','pups','recipes','finance','birthdays','packing'];
+    const _pgOrder=['overview','videos','pups','recipes','finance','birthdays','ideas','packing'];
     const _ci=_pgOrder.indexOf(activePg);
     if(_ci!==-1){
       const _ni=e.key==='ArrowLeft'?_ci-1:_ci+1;
       if(_ni>=0&&_ni<_pgOrder.length){showPage(_pgOrder[_ni]);}
     }
   }
-  // Help overlay: press "i" when nothing focused/selected
-  if(e.key==='i'&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')){
-    if(document.getElementById('helpOverlay').classList.contains('open')){e.preventDefault();closeMod('helpOverlay');return;}
-    if(!document.querySelector('.overlay.open')){e.preventDefault();_showHelpOverlay();return;}
+  // I = ideas page
+  if(e.key==='i'&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')){
+    e.preventDefault();if(activePg==='ideas')showPage('overview');else showPage('ideas');return;
   }
   // Close help overlay with Enter
   if((e.key==='Enter')&&document.getElementById('helpOverlay').classList.contains('open')){
     e.preventDefault();closeMod('helpOverlay');
+  }
+  // Close ideas archive modal with Enter
+  if(e.key==='Enter'&&!document.querySelector('input:focus,textarea:focus')){
+    const _iam=document.getElementById('ideasArchiveModal');
+    if(_iam&&_iam.classList.contains('open')){e.preventDefault();closeMod('ideasArchiveModal');return;}
+  }
+  // N on ideas page = new idea
+  if(e.key==='n'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')){
+    if(document.getElementById('page-ideas')?.classList.contains('active')){e.preventDefault();openIdeasAddForm();return;}
   }
 });
 
@@ -1056,10 +1130,15 @@ function _showHelpOverlay(){
     ['⌘ ←/→','Switch between pages'],
     ['O','Go to Overview'],
     ['V','Go to Videos'],
+    ['P','Go to Pups'],
+    ['F','Go to Finance'],
     ['N','Quick Add task (to current day)'],
     ['R','Reload page'],
     ['S','Sync all data'],
-    ['I','Show this help'],
+    ['I','Go to Ideas'],
+    ['L','Style Guide'],
+    ['G','Grid lines (debug)'],
+    ['GG','Show this help'],
     ['Esc','Close any modal / deselect all'],
     ['⌘Z','Undo last action'],
     ['⌘S','Prevented (no-op)'],
@@ -1095,6 +1174,8 @@ function _showHelpOverlay(){
       ['Arrow keys (board)','Navigate video cards'],
     ],
     pups:[
+      ['←/→','Previous / next week'],
+      ['T','Jump to this week'],
       ['↑/↓ (selected)','Reorder selected skills'],
       ['Delete / ⌫','Delete selected skill group'],
       ['⌘C / ⌘V','Copy / paste skills'],
@@ -1111,6 +1192,10 @@ function _showHelpOverlay(){
       ['Delete / ⌫','Delete selected birthdays'],
       ['⌘C / ⌘V','Copy / paste birthdays'],
       ['Click','Select birthday row'],
+    ],
+    ideas:[
+      ['N','New idea'],
+      ['Enter','Close archive modal'],
     ],
   };
   const pg=activePg||'overview';

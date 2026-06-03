@@ -1,7 +1,8 @@
 # Pages Rules
 
 ### Overview (`overview.js`)
-- **Today list** sort: done last→travel→overdue→important→type (regular=1,rec=2,shop=3,bday=4)→name. `_hasTBToday` checks `st.blocks` (by `ruleId/shopId/recId/taskId`) AND `getRecAutoTBForDate` (by `_recId`) for recurring tasks with `default_start_time`. Overdue pup sessions (`day_date < today && !done`) appear in today list when `dayOff===0` via `isOv(s.day_date)` filter.
+- **Today list** sort: done last→travel→overdue→important→type (regular=1,rec=2,shop=3,bday=4)→name. `_hasTBToday` checks `st.blocks` (by `ruleId/shopId/recId/taskId/_vidId`) AND `getRecAutoTBForDate` (by `_recId`) for recurring tasks with `default_start_time`. Overdue pup sessions (`day_date < today && !done`) appear in today list when `dayOff===0` via `isOv(s.day_date)` filter.
+- **Videos on today list**: shown via `vidToday` filter — includes videos in day map (`_vidDayMap`) or on a timeblock (`_vidOnTBToday`). Published videos show as checked/greyed (`.done` class). `tRowVidVirt` renders with `${t.done?'done':''}` class and checked checkbox. Do NOT add broad `post_date` matching — only day map and timeblock assignment.
 - **WR tasks in today list**: appear if `_dateOverrides[wkKey]===today` OR overdue (4-week lookback, undone only). `wrRulesToday/wrecToday` use seen sets to dedup.
 - **Shopping overview** (`#shopOv`): NO rAF-based max-height — caused items to be hidden when `offsetHeight=0` during background sync. Height naturally constrained by card's `overflow:hidden` + flex. Sort (`_shopOvSort`): `due_date` items first (by date), then no-date by `shop_order`. Drag-to-calendar assigns `_shopTopOrder` (min `shop_order` - 1). **Weekly cal chips**: store name NOT shown in parentheses.
 - **WR overview list** (`#recList`): `columns:2;column-fill:auto`. `max-height = 4 + 7 * itemHeight` (set in rAF, exactly 7 rows per column).
@@ -9,10 +10,24 @@
 - **Pup Skills Highlight** (`#pupSkillsHighlight`): below `#todList`. Two side-by-side inset tiles (Mochi / Sunny) showing this week's focus skills. Weekly focus tracked via `pup_weekly_focus` Supabase table (`skill_id uuid`, `week_start`). Auto-seeded from `pup_skills.focus` flag via `seedPupWeeklyFocus()` (guarded by `_pupWkFocusSeeding`). Each tile: flex column, `border-radius:12px`, inset white container. Undone skills sorted to top, done-this-week to bottom (opacity `.35`, no strikethrough). Progress bar: `rgba(16,185,129,.7)`, pinned to bottom via flex spacer `<div style="flex:1">`. Counts use `tabular-nums`. Hover tooltip shows total sessions. Tiles hidden when no focus skills for either pup. Checkbox syncs via `togPupSkillTrained`; time block pup checkbox uses `b.cat==='pup_session'&&b._pupSessId` branch.
 - **Layout**: `.row1-right-top` uses `height:min(225px,28vh)` (not max-height) to prevent container resizing when navigating weeks.
 - **Header "+" button**: `id="todPlusBtn"`. Opens `openQA('today',this)`. QA close handler: `.closest('.btn-plus,#todPlusBtn,.wkc-add-btn')`.
-- **Videos on overview**: Vid button in objectives header. Click toggles `#vidOvPanel` — slides in from left over the today/timeblock card. Shows up_next B videos with children, stage dots (click=toggle done, right-click=toggle na), progress %, `+` buttons to add smalls. Panel stays open after drag. Assigned videos greyed out (opacity .4). "Videos" header links to videos page. Drag onto day → `_vidAssignToDay` stores in `localStorage._vidDayMap` (undoable). Video appears as soft indigo chip. Check off → `_vidCompleteFromOv`. ✕ → `_vidUnassignDay` (undoable). Dblclick/Enter → `openVidEdit` (stays on overview). Right-click → `showVidCtx`. Keyboard nav: ↑/↓ navigate rows, Delete removes from calendar, Enter edits. `W + ←/→` shifts week (works with panel open).
+- **Videos on overview**: Vid button in objectives header. Click toggles `#vidOvPanel` — slides in from left over the today/timeblock card. Shows up_next B videos with children, stage dots (click=toggle done, right-click=toggle na), progress %, `+` buttons to add smalls. B videos sorted by `vid_order`. Panel stays open after drag. Assigned videos greyed out (opacity .4). "Videos" header links to videos page. Drag onto day → `_vidAssignToDay` stores in `localStorage._vidDayMap` (undoable). Video appears as soft indigo chip. Check off → `_vidCompleteFromOv`. ✕ → `_vidUnassignDay` (undoable). Dblclick/Enter → `openVidEdit` (stays on overview). Right-click → `showVidCtx`. Keyboard nav: ↑/↓ navigate rows, Cmd+↑/↓ reorder B videos (swap `vid_order`), Enter edits. `W + ←/→` shifts week (works with panel open). **Action menu**: X button or Delete/Backspace key shows dropdown with "Move to Ideas" (default, grey) and "Delete" (red). Arrow keys toggle, Enter confirms, Escape closes. Respects multi-selection — if clicked video is in selection, applies to all selected. `_vidOvShowActionMenu(ids, anchorEl)`. Bulk ops use `_vidOvBulkDemote` (single undo) and `_vidOvBulkDelete` (single undo). Also clears `_voaSel` (All Videos selection) on exec.
+- **Video popup post dates**: inline editable via single/double click on post field (`[data-postvid]`). Borderless input with bottom accent border. `commitSilent` pattern — blur saves without re-rendering, so clicking between post fields works seamlessly. Click target expanded via CSS `::before` pseudo-element (`-12px` top/bottom/left, `-6px` right). Post date colors: green if posted, orange if future, red if past-due.
+- **Video stage tasks on calendar** (`_vidStepDayMap`): `localStorage._vidStepDayMap` maps `"vidId::stepName"` → `{ds, done}`. Assigned via stage dot drag to weekly cal. `_vidStepTasksForDay(ds)` returns tasks for a specific day. `_vidStepTasksForDayWithOverdue(todayDs)` used for today only — auto-moves overdue entries to today in the day map. Drag ID: `'vidstep-'+vidId+'::'+step`. Today list ID: `vidstep-{vid}-{step}`. TB block ID: `blk-{blockId}`. Cross-view selection synced via `selVidStepIds` set in `applySelHighlight`. Selection color: green (`csForId` matches `vidstep-` prefix). Dblclick in timeblock opens `openVidEdit`. Sort priority 5.6 (between vid and recurring).
+- **Video Schedule Calendar** (`#vidOvCalPanel`): `m`/`M` toggles when video popup open. Fixed panel right of video popup. Glass-morph month containers (month label left, 5-col weekday grid right). Current month label uses light orange bg (`rgba(249,115,22,.06)`) matching today highlight. Day numbers: right-aligned, monospace font (`SF Mono`), `font-variant-numeric:tabular-nums`. Today cell: orange `box-shadow:inset 1.5px`. 4-color chip scheme: `_vidCalChipColor()` — Big posted=dark green, Small posted=lime, Big not-posted=dark blue, Small not-posted=light blue. Single-vid days: inline flex (day + chip). Multi-vid days: `flex-wrap:wrap`. Selection synced both directions (popup ↔ calendar) via `_vidCalSelectChip`/`_vidCalHighlightChip` — blue outline (`rgba(14,165,233,.5)`). Selection clears on calendar close. Dblclick chip → `openVidEdit`. Drag chips between days. Search bar in header. Keyboard: arrows=nav months, `t`=today, `y`=yearly heatmap (all skip if typing). Calendar key handler MUST check for input/contenteditable focus. `showPage()` closes all video panels.
 - **Shopping header**: `.ct` text uses `text-transform:none;letter-spacing:0` (not uppercase). Cart icon is SVG, not emoji.
 - **Today progress donut** (`#todProgressDonut`, `renderTodDonut`): fires `launchDonutConfetti()` once when `pct` first reaches 1.0 (`_donutWas100` flag prevents re-fire; resets when pct drops below 1). Confetti: 42 white+green pill-shaped sprinkles, staggered 0–150ms delay, gravity-arc easing. Dance: `launchDonutConfetti` injects arms/legs/eyes into the SVG — single `<g>` per limb with absolute SVG coords and `style.transformOrigin = "${tx}px ${ty}px"` for correct pivot; nested translate+rotate via CSS keyframes. Dance cleans up after 3s.
+- **Timeblock hour labels**: 8a and 4p (weekday work bounds) rendered in warm brown (`rgba(90,65,40,.95)` light / `rgba(255,220,200,.8)` dark), `fontWeight:700`. Other hours use default `var(--muted)`.
+- **Timeblock summary**: "Blocked:" label `var(--muted)`, value `.sv` uses `var(--subtle)` (not `var(--text)`), "(free)" uses `var(--subtle)`.
+- **Unassigned badge**: `#unBadge2` in weekly header always renders with count (not plus icon) to prevent header height changes when navigating days. Count computed inline in `renderWkCal`.
 - **Auto blocks**: `computeTBLayout` — sorts by start time then duration desc (longer blocks placed left). Never in today/overdue/metrics/recurring/weekly-cal.
+- **Auto block manager** (`openAutoTBManager`/`closeAutoTBManager`): overlay on `.tod-section`. Supabase table `auto_timeblocks` with `category` (text) and `days` (csv of JS day numbers e.g. "1,3,5") columns. `auto_timeblock_overrides` for per-day adjustments.
+  - **Layout**: each item = 2 rows. R1: name input + time range + hover ✕. R2: day toggles (M–Su) with `justify-content:space-between`. Left color bar (`border-left`) shows category color; click bar to cycle category (`_atbCycleCat`).
+  - **Categories**: `_ATB_CATS` = [None, Home, My Work, Work, Social]. Colors from `gc()`. None = grey. Cycle via left bar click or ↑/↓ arrows on any input/day toggle.
+  - **Day toggles**: `tabindex="0"`, space=toggle, Enter=blur (existing) or save (new), ←/→=navigate days, Tab after last day=save/close. `_kbTog` flag prevents space double-toggle (keydown + synthetic click).
+  - **New item flow**: Enter on name→focus start, Enter on start→focus end, Tab from end→focus Monday. `_atbSaveNew` POST requires `day_scope:'weekday'`.
+  - **Timeblock appearance**: colored auto blocks use `color-mix()` to appear muted/complete (18% bg, 30% text, 20% border mixed with grey base). `.atb-cat .tb-bt{opacity:.55}`.
+  - **Close**: Escape, Enter with nothing focused, click outside (`_atbOutsideClick`). Arrow keys blocked from day/week nav when manager open.
+  - **Inline editing**: `_atbInlineSave`, `_atbSaveTime` (uses `_parseAtbTime`), `_atbTogDay`. `_atbCycleCat` updates DOM directly (no re-render) for speed.
 
 ### Weekly Goals (`overview.js` + `features.js`)
 - **Category**: `'Weekly Goals'`. Not overdue. Not in Today list, timeblock, overdue banner, unassigned popup.
@@ -81,7 +96,14 @@ Tables: `packing_items(id,travel_id,name,category,source,checked,sort_order)`, `
 - **Close**: click overlay background or Escape. `_modMousedownInside` flag resets on mouseup.
 
 ### Pup Skills (`pup-skills.js`)
-Table: `pup_skills`. Sort: mastered last→category→focus→pup→level→skill_order. Inline edit: `pupCellEdit(td,id,field)`. Add modal: `openPupAddModal()`. Edit modal: `openPupEditModal(id)`. Enter in modal: closes if skill empty, saves otherwise. `savePupModal` POSTs/PATCHes Supabase and calls both `renderPupsPage()` and `renderPupSkillsHighlight()`. **Session counts**: table has a "Sessions" column and card rows (non-mastered) show a count badge — both display lifetime `done/total` from `st.pupSessions`. Clicking either opens `openPupCountEdit(skillId, anchorEl)`: a popover showing total done (lifetime), total sessions (lifetime), last practiced date, this week done/total, and an editable "done this wk" field (Enter saves, Escape closes). `setPupWkDone(skillId, newDone)` creates/removes `pup_skill_sessions` rows to match the desired done count. Count color: `var(--muted)` always. Key helpers defined at top of file: `_pupWkDone`, `_pupWkSessTotal`, `_pupAllSess`, `_pupAllDone`, `_pupAllTotal`, `_pupLastPracticed`, `_pupCountBadge`.
+Table: `pup_skills`. Sort: mastered last→category→focus→pup→level→skill_order. Inline edit: `pupCellEdit(td,id,field)`. Add modal: `openPupAddModal()`. Edit modal: `openPupEditModal(id)`. Enter in modal: closes if skill empty, saves otherwise. `savePupModal` POSTs/PATCHes Supabase and calls both `renderPupsPage()` and `renderPupSkillsHighlight()`.
+- **Layout**: 3-column grid — Mochi col + Sunny col (with shared week bar below) + All Skills table. Pup columns show focus checklist (highlighted box) and available skills below, aligned with spacers.
+- **Weekly focus**: `pupWeeklyFocus` system (shared with overview). `_pupPageWkOff` for week offset. `←/→` keys shift weeks, `T` jumps to current. `_pupPageToggle` checks/unchecks focus. `_pupPageRenderCol(pup)` renders each column.
+- **Drag**: Row mousedown handler supports dual-mode — drag within table = reorder, drag outside table to focus zone = add skill for that pup. Shows toast if skill can't be added (not assigned, not started, or skipped). Available list items use HTML5 drag (`draggable="true"` + `ondragstart`) with `_pupDropOnFocus` handler on focus zones.
+- **Edit/Add modal** (`#pupModal`): Two sections separated by divider. **Top (shared fields)**: skill name header (white bg, black text, `caret-color:transparent` on open), word, signal, category, level. **Bottom (per-dog)**: pup toggle, skip checkboxes (`_pmSkipChanged` hides skipped pup's toggle via `opacity:0`), sort #, counts (edit only, pup-colored), stage, next step, comments. All inputs `color:var(--muted)` except skill header. Custom select carets via CSS. Liquid glass border on modal.
+- **Session counts**: table has a "Sessions" column and card rows (non-mastered) show a count badge — both display lifetime `done/total` from `st.pupSessions`. Clicking either opens `openPupCountEdit(skillId, anchorEl)`: a popover showing total done (lifetime), total sessions (lifetime), last practiced date, this week done/total, and an editable "done this wk" field (Enter saves, Escape closes). `setPupWkDone(skillId, newDone)` creates/removes `pup_skill_sessions` rows to match the desired done count. Count color: `var(--muted)` always. Key helpers defined at top of file: `_pupWkDone`, `_pupWkSessTotal`, `_pupAllSess`, `_pupAllDone`, `_pupAllTotal`, `_pupLastPracticed`, `_pupCountBadge`.
+- **Word auto-sync**: `_pmSyncWord()` mirrors skill name to word unless manually edited (`_pmWordManual`). Greyed out if auto-synced.
+- **Shared vs per-dog fields**: Shared (both dogs): `skill`, `word`, `signal`, `category`, `level`, `skill_order`. Per-dog: `stage`, `next_step`, `comments`, session counts.
 
 ### Videos (`videos.js`)
 See `rules/videos.md` for full rules. Table: `videos`. 4 views: Dashboard, All Details, Videos by Progress, Monthly. B→L grouping via `big_video_id`. 8 stages (steps). Auto-publish when core stages done + has post_date. Inline cell editing. Searchable big video + playlist fields.
@@ -93,6 +115,17 @@ Table: `birthdays(id,name,birthday,present_ideas)`. `present_ideas` JSON array. 
 - **Monthly view** (`renderMoCal` in features.js): past birthdays greyed (`opacity:.35`), no checkbox, not draggable. Same in expanded "more" popup.
 - **Today list**: birthdays never greyed out regardless of timeblock state. Emoji wrapped in `.bday-emoji` span (8px, `margin-left:3px`, today-list only via `#todList` scope).
 - **`getBirthdaysInRange`** used for weekly calendar (supports past weeks); `getBirthdayTasks(null)` skips past dates — don't use for calendar.
+
+### Ideas (`features.js`)
+Table: `ideas(id uuid, topic text NOT NULL, idea text, archived bool, sort_order int4, created_at timestamptz)`. Soft delete via `archived` flag — never hard-delete.
+- **Cards**: white (`rgba(255,255,255,.85)`), container glass (`rgba(255,255,255,.38)` + blur). Topic bold header + date + hover ✕.
+- **Header bar**: `.ch` with count, Archive button (opens modal), + button.
+- **Inline edit**: dblclick topic or idea text → inline input/textarea. Enter (topic) or Cmd+Enter (idea) saves, Escape reverts.
+- **Archived**: modal popup via Archive button in header. ↩ restore button (accent colored).
+- **Active ✕**: hover-only via `.idea-row:hover .idea-x-btn`.
+- **Add flow**: `+` or `N` key opens form. Enter on topic = instant save (no notes). Tab on topic = show notes textarea. Cmd+Enter in notes = save. Empty topic + Enter/Escape = cancel.
+- **Drag reorder**: `draggable="true"`, updates `sort_order` for all active ideas. PATCHes each to Supabase.
+- **Shortcuts**: `I` = navigate to ideas page. `N` (on ideas page) = new idea.
 
 ### Recipes (`features.js`)
 Table: `recipes` (columns include `sort_order int4`). Do NOT reference: protein,prep_time,cook_time,difficulty,last_made_date,notes. Ingredients: JSON `[{name,amount,is_pantry?}]`.
@@ -124,7 +157,7 @@ Table: `recipes` (columns include `sort_order int4`). Do NOT reference: protein,
 - Staples: skip-this-week via `st._grocStapleSkips[weekMon]` or remove permanently.
 
 ### Quick Links (overview, `index.html`)
-- Grid order: Videos → Finance → Pups → Birthdays → Recipes.
+- Grid order: Videos → Finance → Pups → Birthdays → Ideas → Recipes.
 - Icons: outline SVGs with `opacity:.45` via `.ql-icon`. Pups uses actual dog headshots (Sunny left, Mochi right) at full opacity (`:has(img)` override). Text color: `var(--muted)`.
 - Quick Notes button (`#qnBtn`): 34×34px circle, pencil outline SVG, layered glow shadow.
 
@@ -143,3 +176,16 @@ Table: `recipes` (columns include `sort_order int4`). Do NOT reference: protein,
 - **Enter to close**: global keydown closes panel on Enter when input is empty AND input not focused. When input focused: Enter+text=save, Enter+empty=close.
 - **Arrow keys**: `_qnOpen` flag suppresses day-shift arrow keys on overview.
 - **UI**: no binding/coils, no grid lines, no add button. Header: 13px bold `var(--muted)` title. Notes: `var(--muted)` text color. Placeholder: "Future you will thank you for writing this down…"
+
+### Finance (`features.js`)
+- **Layout**: 2-column `fin-layout`. Left: Personal Finances card + Investments card. Right: Recurring Expenses card (or Purchase History panel when details open).
+- **Investments quick-add**: `+` opens inline dropdown under button (not a modal). Date defaults to today. Enter in amount field submits.
+- **Purchase History panel**: `Details` button toggles `_finDetailsOpen`, replaces right column with scrollable purchase table + `+` button. Close `x` returns to Recurring Expenses.
+- **Subscriptions**: inline contenteditable editing. Tab moves to next field in same row. New sub via `+` focuses name field with `_unsaved:true`; only POSTs when name is non-empty on blur. Clicking away or Escape with empty name cancels (removes row). Only required field: name.
+- **Fin-cancel tasks**: checking off on overview archives the subscription and marks done visually. Undo restores both. `_finCancelTasksForDate` includes archived subs in `_finCancelDone` set.
+- **Keyboard shortcuts**: global shortcuts (`s`, `n`, `r`) do NOT fire when typing in contenteditable/input/textarea fields. `s` (grocery modal) is overview-only.
+
+### Style Guide (`features.js`, `page-guide`)
+- **Shortcut**: `L` (single press, toggle back to overview). `renderGuidePage()` in features.js.
+- **Layout**: narrow left column (task color cards + special states), right 2-col grid (keyboard shortcuts, multi-select & drag).
+- **Must stay in sync**: when updating colors, shortcuts, or multi-select behavior, also update `renderGuidePage()`.

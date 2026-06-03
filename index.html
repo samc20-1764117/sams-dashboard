@@ -13,7 +13,7 @@
 <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet">
 <title>Sam's Dashboard</title>
-<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="styles.css?v=20260602a">
 <script>(function(){try{var s=JSON.parse(localStorage.getItem('samdash_v7')||'{}');var d=document.documentElement;if(s.cfg&&s.cfg.dark)d.classList.add('init-dark');if(s.sb!==false)d.classList.add('init-sb');}catch(e){}})();</script>
 </head>
 <body class="preload">
@@ -53,8 +53,9 @@
     <a class="nav-item" href="#weekly" onclick="event.preventDefault();showPage('weekly')"><div class="ndot" style="background:#10b981"></div>Recurring Tasks</a>
     <a class="nav-item" href="#weekly" onclick="event.preventDefault();showPage('weekly')"><div class="ndot" style="background:#eab308"></div>Shopping</a>
     <a class="nav-item" href="#birthdays" onclick="event.preventDefault();showPage('birthdays')"><div class="ndot" style="background:#f97316"></div>Birthdays</a>
+    <a class="nav-item" href="#ideas" onclick="event.preventDefault();showPage('ideas')"><div class="ndot" style="background:#a855f7"></div>Ideas</a>
     <a class="nav-item" href="#pups" onclick="event.preventDefault();showPage('pups')"><div class="ndot" style="background:#f43f5e"></div>🐾 Pups</a>
-    <a class="nav-item" href="#finance" onclick="event.preventDefault();showPage('finance')"><div class="ndot" style="background:#22c55e"></div>💰 Finance</a>
+    <a class="nav-item" href="#finance" onclick="event.preventDefault();showPage('finance')"><div class="ndot" style="background:#22c55e"></div>Finance</a>
     <a class="nav-item" href="#recipes" onclick="event.preventDefault();showPage('recipes')"><div class="ndot" style="background:#f59e0b"></div>🍳 Recipes</a>
     <a class="nav-item" href="#notes" onclick="event.preventDefault();showPage('notes')"><div class="ndot" style="background:#8b5cf6"></div>📝 Notes</a>
     <a class="nav-item" href="#videos" onclick="event.preventDefault();showPage('videos')"><div class="ndot" style="background:#0ea5e9"></div>🎬 Videos</a>
@@ -74,7 +75,7 @@
   </button>
   <button class="settings-btn" onclick="location.reload()" data-tip="Refresh" style="padding:0;width:20px;height:20px"><svg style="width:10px;height:10px;display:block;flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg></button>
   <div style="position:relative">
-    <button class="settings-btn" id="settingsBtn" onclick="toggleSettingsPopup()" data-tip="Settings" style="padding:0;width:20px;height:20px"><svg style="width:10px;height:10px;display:block;flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg></button>
+    <button class="settings-btn" id="settingsBtn" onclick="toggleSettingsPopup()" style="padding:0;width:20px;height:20px"><svg style="width:10px;height:10px;display:block;flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg></button>
   </div>
 </div>
 
@@ -152,7 +153,7 @@
   </div></div>
       <div id="todProgressDonut" style="display:none;flex-direction:row;align-items:center;gap:11px;padding:7px 16px 4px">
         <svg width="56" height="56" viewBox="0 0 56 56" style="flex-shrink:0">
-          <circle cx="28" cy="28" r="22" fill="none" stroke-width="4" style="stroke:var(--subtle);opacity:.3"/>
+          <circle id="_donutTrack" cx="28" cy="28" r="22" fill="none" stroke-width="4" style="stroke:var(--subtle);opacity:.3"/>
           <circle id="_donutArc" cx="28" cy="28" r="22" fill="none" stroke-width="4" stroke-linecap="round" stroke-dasharray="0 138.23" transform="rotate(-90 28 28)" style="stroke:#10b981"/>
           <text id="_donutPct" x="28" y="33" text-anchor="middle" style="font-size:12px;font-weight:700;fill:var(--text);font-family:DM Sans,sans-serif"></text>
         </svg>
@@ -208,6 +209,7 @@
         <a class="ql-btn" href="#finance" onclick="event.preventDefault();showPage('finance')"><span class="ql-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>Finance</a>
         <a class="ql-btn" href="#pups" onclick="event.preventDefault();showPage('pups')"><span class="ql-icon"><img src="./sunny_headshot.png" style="width:20px;height:20px;border-radius:50%;object-fit:cover"><img src="./mochi_headshot.png" style="width:20px;height:20px;border-radius:50%;object-fit:cover;margin-left:-2px"></span>Pups</a>
         <a class="ql-btn" href="#birthdays" onclick="event.preventDefault();showPage('birthdays')"><span class="ql-icon"><svg width="18" height="20" viewBox="2 4 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="10" width="18" height="4" rx="1"/><rect x="5" y="14" width="14" height="8" rx="1"/><line x1="12" y1="10" x2="12" y2="22"/><path d="M12 10c-2-3-5-3-5-1s3 1 5 1"/><path d="M12 10c2-3 5-3 5-1s-3 1-5 1"/></svg></span>Birthdays</a>
+        <a class="ql-btn" href="#ideas" onclick="event.preventDefault();showPage('ideas')"><span class="ql-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"/></svg></span>Ideas</a>
         <a class="ql-btn" href="#recipes" onclick="event.preventDefault();showPage('recipes')"><span class="ql-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3"/><path d="M18 22V15"/></svg></span>Recipes</a>
       </div>
     </div>
@@ -389,10 +391,37 @@
   <div id="bdayPresentPopup" style="display:none;position:fixed;z-index:9998;background:rgba(255,255,255,.97);border:1px solid rgba(210,205,228,.35);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.13);padding:10px 12px 10px;min-width:200px;max-width:280px;backdrop-filter:blur(10px)"></div>
   <div id="bdayList" style="display:none"></div>
 </div>
+<div class="page" id="page-ideas" style="padding:60px clamp(12px,3vw,56px) 24px clamp(12px,3vw,56px)">
+  <div class="ov-topbar">
+    <div class="ov-topbar-left"><span class="ov-topbar-label">Ideas</span><span class="ov-topbar-dot"></span></div>
+    <span class="ov-topbar-date topbar-date"></span>
+    <div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div>
+  </div>
+  <div class="card ideas-card" style="flex:1;width:100%;display:flex;flex-direction:column;min-height:0;overflow:hidden;margin-top:20px">
+    <div class="ch">
+      <div class="ct" style="text-transform:none;letter-spacing:0;font-size:10px"><span id="ideasCount">0</span> ideas</div>
+      <div style="flex:1"></div>
+      <button class="btn btn-ghost btn-xs" onclick="openIdeasArchive()" id="ideasArchiveBtn" style="display:none;font-size:10px;gap:3px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5" rx="1"/><line x1="10" y1="12" x2="14" y2="12"/></svg>Archive</button>
+      <button class="btn-plus" onclick="openIdeasAddForm()">+</button>
+    </div>
+    <div id="ideasPageContent" style="flex:1;width:100%;min-height:0;overflow-y:auto;padding:0"></div>
+  </div>
+  <div id="ideasArchiveModal" class="overlay" style="z-index:495" onclick="closeMod('ideasArchiveModal',event)">
+    <div class="modal" style="width:min(500px,90vw);max-height:70vh;display:flex;flex-direction:column">
+      <div class="ch" style="flex-shrink:0">
+        <div class="ct" style="text-transform:none;letter-spacing:0;font-size:10px">Archived Ideas</div>
+        <div style="flex:1"></div>
+        <button class="btn btn-ghost btn-xs" onclick="closeMod('ideasArchiveModal')" style="font-size:10px">Close</button>
+      </div>
+      <div id="ideasArchiveContent" style="flex:1;overflow-y:auto;padding:12px 16px"></div>
+    </div>
+  </div>
+</div>
 <div class="page" id="page-pups" style="padding:60px clamp(12px,3vw,56px) 24px clamp(12px,3vw,56px)"></div>
-<div class="page" id="page-finance" style="padding:60px clamp(12px,3vw,56px) 24px clamp(12px,3vw,56px);width:100%;box-sizing:border-box"><div class="ov-topbar"><div class="ov-topbar-left"><span class="ov-topbar-label">💰 Finance</span><span class="ov-topbar-dot"></span></div><span class="ov-topbar-date topbar-date"></span><div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div></div><div id="finPageContent" style="margin-top:20px;height:calc(100vh - 120px);display:flex;flex-direction:column"></div></div>
+<div class="page" id="page-finance" style="padding:60px clamp(12px,3vw,56px) 24px clamp(12px,3vw,56px);width:100%;box-sizing:border-box"><div class="ov-topbar"><div class="ov-topbar-left"><span class="ov-topbar-label">Finance</span><span class="ov-topbar-dot"></span></div><span class="ov-topbar-date topbar-date"></span><div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div></div><div id="finPageContent" style="margin-top:20px;flex:1;min-height:0;display:flex;flex-direction:column"></div></div>
 <div class="page" id="page-recipes" style="padding:60px clamp(12px,3vw,56px) 24px clamp(12px,3vw,56px);width:100%;box-sizing:border-box"></div>
 <div class="page" id="page-notes" style="padding:clamp(12px,3vw,56px);padding-top:60px"><div class="ov-topbar"><div class="ov-topbar-left"><span class="ov-topbar-label">📝 Notes</span><span class="ov-topbar-dot"></span></div><span class="ov-topbar-date topbar-date"></span><div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div></div></div>
+<div class="page" id="page-guide" style="padding:60px clamp(12px,3vw,56px) 24px clamp(12px,3vw,56px)"><div id="guideContent"></div></div>
 <div class="page" id="page-videos"></div>
 <div class="page" id="page-settings" style="display:none!important"><input class="si2" id="cfgUrl" style="display:none"><input class="si2" id="cfgKey" style="display:none"><div class="cst idle" id="cst" style="display:none"></div></div>
 
@@ -698,33 +727,64 @@
 </div>
 
 <!-- Pup Skill Edit Modal -->
-<div class="overlay" id="pupModal" onclick="closeMod('pupModal',event)" onkeydown="if(event.key==='Escape'){event.stopPropagation();closeMod('pupModal');}elseif(event.key==='Enter'&&event.target.tagName!=='SELECT'&&event.target.tagName!=='TEXTAREA'){event.preventDefault();const _n=document.getElementById('pmSkill').value.trim();if(!_n){closeMod('pupModal');}else{savePupModal();}}">
-  <div class="modal task-modal" style="width:420px">
+<div class="overlay" id="pupModal" onclick="closeMod('pupModal',event)" onkeydown="if(event.key==='Escape'){event.stopPropagation();closeMod('pupModal');}else if(event.key==='Enter'&&event.target.tagName!=='SELECT'&&event.target.tagName!=='TEXTAREA'){event.preventDefault();const _n=document.getElementById('pmSkill').value.trim();if(!_n){closeMod('pupModal');}else{savePupModal();}}">
+  <div class="modal task-modal" style="width:400px;padding:0;overflow:hidden;font-family:'DM Sans',sans-serif;border:1.5px solid rgba(255,255,255,.7);box-shadow:0 20px 50px rgba(0,0,0,.12),0 0 0 1px rgba(255,255,255,.3),inset 0 1px 0 rgba(255,255,255,.8)">
     <select id="pmPup" style="display:none"><option value="Mochi">Mochi</option><option value="Sunny">Sunny</option></select>
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-      <div id="pmDogToggle"><div class="pup-dog-toggle"><button id="pmDogMochi" class="pup-dog-btn active" onclick="setPupModalDog('Mochi')">Mochi</button><button id="pmDogSunny" class="pup-dog-btn" onclick="setPupModalDog('Sunny')">Sunny</button></div></div><span id="pmBothLabel" style="display:none;font-size:11px;color:var(--muted);font-weight:500">Creates skill for both pups</span>
-      <input type="checkbox" id="pmFocus" title="Focus this week" style="width:15px;height:15px;cursor:pointer;accent-color:#eab308">
+    <input type="checkbox" id="pmFocus" style="display:none">
+
+    <!-- ═══ SKILL (shared across both dogs) ═══ -->
+    <div style="padding:10px 16px 8px;text-align:center;background:rgba(255,255,255,.97);border-bottom:1px solid rgba(210,205,228,.18)">
+      <input id="pmSkill" placeholder="Skill name" oninput="_pmSyncWord();this.style.caretColor=''" onkeydown="this.style.caretColor=''" style="font-size:14px;font-weight:700;text-align:center;border:none;background:transparent;outline:none;width:100%;color:var(--text);padding:2px 0;font-family:inherit;caret-color:transparent">
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
-      <div class="mfield"><label>Skill *</label><input id="pmSkill" placeholder="Skill name"></div>
-      <div class="mfield"><label>Stage</label><select id="pmStage"><option value="Not Started">Not Started</option><option value="In Progress">In Progress</option><option value="Mastered">Mastered</option></select></div>
+    <!-- Shared fields -->
+    <div style="padding:8px 16px 10px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px">
+        <div class="mfield" style="margin-bottom:0;min-width:0"><label style="text-transform:none;letter-spacing:0">Word</label><input id="pmWord" placeholder="Same as skill" onfocus="_pmWordFocus()" oninput="_pmWordEdit()"></div>
+        <div class="mfield" style="margin-bottom:0;min-width:0"><label style="text-transform:none;letter-spacing:0">Signal</label><input id="pmSignal" placeholder="Hand signal…"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div class="mfield" style="margin-bottom:0;min-width:0"><label style="text-transform:none;letter-spacing:0">Category</label><select id="pmCategory" style="width:100%"><option value="">—</option><option value="commands">Commands</option><option value="manners">Manners</option><option value="fun">Fun</option></select></div>
+        <div class="mfield" style="margin-bottom:0;min-width:0"><label style="text-transform:none;letter-spacing:0">Level</label><select id="pmLevel" style="width:100%"><option value="">—</option><option value="Easy">Easy</option><option value="Medium">Medium</option><option value="Hard">Hard</option></select></div>
+      </div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr 80px;gap:8px;margin-bottom:8px">
-      <div class="mfield"><label>Category</label><select id="pmCategory"><option value="">—</option><option value="commands">Commands</option><option value="manners">Manners</option><option value="fun">Fun</option></select></div>
-      <div class="mfield"><label>Level</label><select id="pmLevel"><option value="">—</option><option value="Easy">Easy</option><option value="Medium">Medium</option><option value="Hard">Hard</option></select></div>
-      <div class="mfield"><label>Order</label><input id="pmOrder" type="number" placeholder="—" min="1" style="width:100%"></div>
+
+    <!-- ═══ PER-DOG section ═══ -->
+    <div style="border-top:1px solid rgba(210,205,228,.22);padding:8px 16px 6px;background:rgba(0,0,0,.015)">
+      <!-- Toggle + skip/sort row -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div id="pmDogToggle"><div class="pup-dog-toggle" id="pmDogToggleWrap"><button id="pmDogMochi" class="pup-dog-btn active" onclick="setPupModalDog('Mochi')" style="font-family:inherit">Mochi</button><button id="pmDogSunny" class="pup-dog-btn" onclick="setPupModalDog('Sunny')" style="font-family:inherit">Sunny</button></div></div>
+          <span id="pmBothLabel" style="display:none;font-size:10px;color:var(--muted)">Both pups</span>
+        </div>
+        <div id="pmSkipRow" style="display:flex;align-items:center;gap:8px">
+          <div style="display:flex;flex-direction:column;gap:2px">
+            <label style="display:flex;align-items:center;gap:4px;font-size:9px;color:var(--subtle);cursor:pointer;height:14px;font-weight:500;letter-spacing:0"><input type="checkbox" id="pmSkipMochi" onchange="_pmSkipChanged()" style="width:10px;height:10px;cursor:pointer;opacity:.35;accent-color:#999"> Skip Mochi</label>
+            <label style="display:flex;align-items:center;gap:4px;font-size:9px;color:var(--subtle);cursor:pointer;height:14px;font-weight:500;letter-spacing:0"><input type="checkbox" id="pmSkipSunny" onchange="_pmSkipChanged()" style="width:10px;height:10px;cursor:pointer;opacity:.35;accent-color:#999"> Skip Sunny</label>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:2px;align-items:center;width:32px">
+            <span style="font-size:8px;color:var(--subtle);line-height:14px;text-align:center;display:block;width:32px">Sort</span>
+            <input id="pmOrder" type="number" placeholder="#" min="1" style="width:32px;padding:1px 0;font-size:9px;text-align:center;color:var(--subtle);border:1px solid var(--border);border-radius:4px;background:transparent;height:14px;box-sizing:border-box;-moz-appearance:textfield;display:block;margin:0 auto" onwheel="event.preventDefault()">
+          </div>
+        </div>
+      </div>
+      <!-- Counts (edit only) -->
+      <div id="pmCountRow" style="display:none;margin-bottom:8px">
+        <div style="padding:6px 10px;border-radius:8px" data-pm-count-bg>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <div class="mfield" style="margin-bottom:0"><label style="text-transform:none;letter-spacing:0">This week</label><input id="pmWkDone" type="number" min="0" style="width:100%"></div>
+            <div class="mfield" style="margin-bottom:0"><label style="text-transform:none;letter-spacing:0">Total practices</label><input id="pmTotalDone" type="number" min="0" style="width:100%"></div>
+          </div>
+        </div>
+      </div>
+      <!-- Per-dog fields -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px">
+        <div class="mfield" style="margin-bottom:0"><label style="text-transform:none;letter-spacing:0">Stage</label><select id="pmStage"><option value="Not Started">Not Started</option><option value="In Progress">In Progress</option><option value="Mastered">Mastered</option></select></div>
+        <div class="mfield" style="margin-bottom:0"><label style="text-transform:none;letter-spacing:0">Next step</label><select id="pmNextStep"><option value="">—</option><option value="1. Duration">1. Duration</option><option value="2. Distance">2. Distance</option><option value="3. Distraction">3. Distraction</option></select></div>
+      </div>
+      <div class="mfield" style="margin-bottom:0"><label style="text-transform:none;letter-spacing:0">Comments</label><input id="pmComments" placeholder="Notes…"></div>
     </div>
-    <div class="mfield"><label>Next Step</label><select id="pmNextStep"><option value="">—</option><option value="1. Duration">1. Duration</option><option value="2. Distance">2. Distance</option><option value="3. Distraction">3. Distraction</option></select></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
-      <div class="mfield"><label>Word</label><input id="pmWord" placeholder="Verbal cue…"></div>
-      <div class="mfield"><label>Signal</label><input id="pmSignal" placeholder="Hand signal…"></div>
-    </div>
-    <div class="mfield"><label>Comments</label><input id="pmComments" placeholder="Notes or observations…"></div>
-    <div id="pmSkipRow" style="display:flex;gap:16px;margin-bottom:10px">
-      <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);cursor:pointer"><input type="checkbox" id="pmSkipMochi" style="width:13px;height:13px;cursor:pointer;accent-color:#8b5cf6"> Not relevant for Mochi</label>
-      <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);cursor:pointer"><input type="checkbox" id="pmSkipSunny" style="width:13px;height:13px;cursor:pointer;accent-color:#fbbf24"> Not relevant for Sunny</label>
-    </div>
-    <div class="mact"><button class="btn btn-ghost" onclick="closeMod('pupModal')">Cancel</button><button class="btn btn-dark" onclick="savePupModal()">Save</button></div>
+
+    <div class="mact" style="padding:8px 16px 10px"><button class="btn btn-ghost" onclick="closeMod('pupModal')">Cancel</button><button class="btn btn-dark" onclick="savePupModal()">Save</button></div>
   </div>
 </div>
 
@@ -755,11 +815,11 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="core.js"></script>
-<script src="overview.js"></script>
-<script src="features.js"></script>
-<script src="pup-skills.js"></script>
-<script src="videos.js"></script>
+<script src="core.js?v=20260602a"></script>
+<script src="overview.js?v=20260602a"></script>
+<script src="features.js?v=20260602a"></script>
+<script src="pup-skills.js?v=20260602a"></script>
+<script src="videos.js?v=20260602a"></script>
 
 <!-- Video Modal -->
 <div class="overlay" id="vidModal" onclick="closeMod('vidModal',event)" onkeydown="_vidModalKey(event)">
@@ -772,7 +832,14 @@
       </div>
     </div>
     <input id="vmType" type="hidden" value="L">
-    <input id="vmTopic" placeholder="Topic *" style="width:100%;padding:8px 10px;border-radius:8px;font-family:inherit;font-size:13px;background:#fff;color:var(--text);outline:none;box-sizing:border-box;border:1px solid rgba(210,205,228,.3);box-shadow:1px 1px 3px rgba(0,0,0,.06), inset 0 1px 0 rgba(255,255,255,.8)">
+    <div style="display:flex;gap:8px">
+      <input id="vmTopic" placeholder="Topic *" style="flex:1;min-width:0;padding:8px 10px;border-radius:8px;font-family:inherit;font-size:13px;background:#fff;color:var(--text);outline:none;box-sizing:border-box;border:1px solid rgba(210,205,228,.3);box-shadow:1px 1px 3px rgba(0,0,0,.06), inset 0 1px 0 rgba(255,255,255,.8)">
+      <div id="vmBigVideoWrap" style="flex:1;min-width:0;position:relative;display:none">
+        <input id="vmBigVideo" placeholder="Big Video (none)" autocomplete="off" style="width:100%;padding:8px 28px 8px 10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box" onclick="_vidToggleDropdown('BigVideo')" oninput="_vidFilterDropdown('BigVideo')" onkeydown="_vidDropKey(event,'BigVideo')">
+        <span onclick="_vidToggleDropdown('BigVideo')" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--muted);font-size:10px;user-select:none">▼</span>
+        <div id="vmBigVideoDrop" style="display:none;position:absolute;top:100%;left:0;right:0;max-height:180px;overflow-y:auto;background:var(--bg);border:1px solid var(--border);border-radius:8px;margin-top:2px;z-index:10;box-shadow:0 4px 12px rgba(0,0,0,.12)"></div>
+      </div>
+    </div>
     <input id="vmTitle" placeholder="Video title" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box;margin-top:8px">
     <div style="display:flex;gap:8px;margin-top:8px">
       <div style="flex:1;min-width:0;position:relative">
@@ -781,17 +848,10 @@
         <input id="vmStatus" type="hidden" value="idea">
         <div id="vmStatusDrop" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--bg);border:1px solid var(--border);border-radius:8px;margin-top:2px;z-index:10;box-shadow:0 4px 12px rgba(0,0,0,.12);overflow:hidden"></div>
       </div>
-      <div id="vmBigVideoWrap" style="flex:1;min-width:0;position:relative">
-        <input id="vmBigVideo" placeholder="Big Video (none)" autocomplete="off" style="width:100%;padding:8px 28px 8px 10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box" onclick="_vidToggleDropdown('BigVideo')" oninput="_vidFilterDropdown('BigVideo')" onkeydown="_vidDropKey(event,'BigVideo')">
-        <span onclick="_vidToggleDropdown('BigVideo')" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--muted);font-size:10px;user-select:none">▼</span>
-        <div id="vmBigVideoDrop" style="display:none;position:absolute;top:100%;left:0;right:0;max-height:180px;overflow-y:auto;background:var(--bg);border:1px solid var(--border);border-radius:8px;margin-top:2px;z-index:10;box-shadow:0 4px 12px rgba(0,0,0,.12)"></div>
-      </div>
     </div>
-    <div style="margin-top:8px;padding:12px 19px;border-radius:10px;background:rgba(255,255,255,.7);border:1px solid rgba(210,205,228,.3);box-shadow:1px 1px 3px rgba(0,0,0,.06), inset 0 1px 0 rgba(255,255,255,.8)">
+    <div id="vmStepsWrap" style="margin-top:8px;padding:12px 19px;border-radius:10px;background:rgba(255,255,255,.7);border:1px solid rgba(210,205,228,.3);box-shadow:1px 1px 3px rgba(0,0,0,.06), inset 0 1px 0 rgba(255,255,255,.8);transition:all .3s">
       <div style="display:flex;align-items:center;gap:10px">
-        <div style="display:flex;gap:10px" id="vmSteps"></div>
-        <div style="flex:1"></div>
-        <input id="vmPostDate" type="hidden">
+        <div style="display:flex;gap:10px;flex:1;align-items:flex-end" id="vmSteps"></div>
         <input id="vmDuration" type="hidden">
       </div>
     </div>
@@ -842,17 +902,8 @@
   <div id="wrScopeThis" class="ctx-item" onclick="wrScopeDoThis()"></div>
   <div id="wrScopeAll" class="ctx-item" onclick="wrScopeDoAll()"></div>
 </div>
-<!-- WR Rule context menu (Apple Calendar-style: this week vs all future) -->
-<div id="wrRuleCtxMenu" style="display:none;position:fixed;z-index:9999;background:rgba(255,255,255,.98);border:1px solid rgba(210,205,228,.4);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);padding:4px;min-width:175px;backdrop-filter:blur(12px)">
-  <div class="ctx-item" onclick="wrCtxEditThisWeek()">✏️  Edit this week only</div>
-  <div class="ctx-item" onclick="wrCtxSkipThisWeek()">⊘  Skip this week</div>
-  <div class="ctx-item" onclick="wrCtxMovePrevWeek()">←  Move to prev week</div>
-  <div class="ctx-item" onclick="wrCtxMoveNextWeek()">→  Move to next week</div>
-  <div class="ctx-divider"></div>
-  <div class="ctx-item" onclick="wrCtxEditRule()">✏️  Edit rule (all future)</div>
-  <div class="ctx-divider"></div>
-  <div class="ctx-item ctx-danger" onclick="wrCtxDeleteRule()">✕  Delete rule</div>
-</div>
+<!-- WR Rule context menu (populated dynamically based on cadence) -->
+<div id="wrRuleCtxMenu" style="display:none;position:fixed;z-index:9999;background:rgba(255,255,255,.98);border:1px solid rgba(210,205,228,.4);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);padding:4px;min-width:220px;backdrop-filter:blur(12px)"></div>
 <!-- Unified edit WR recurring task modal -->
 <div id="wrEditModal" class="overlay" onclick="closeMod('wrEditModal',event)" onkeydown="if(event.key==='Enter'&&!['SELECT','TEXTAREA'].includes(event.target.tagName)){event.preventDefault();event.stopPropagation();saveWrEditModal();}if(event.key==='Escape'){event.stopPropagation();closeMod('wrEditModal');}">
   <div class="modal task-modal" style="width:350px">

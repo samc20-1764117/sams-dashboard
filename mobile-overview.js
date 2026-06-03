@@ -44,6 +44,63 @@ function openWOModal() {}
 function dStart() {}
 function dEnd() {}
 
+// ── Mobile video step tasks (no localStorage dependency) ─────────────────────
+const _M_VID_STEP_LABELS = {step_build:'Build', step_vo:'VO', step_cut:'Cut', step_thumbnail:'Th', step_description:'Des'};
+const _M_VID_STEPS = ['step_build','step_vo','step_cut','step_thumbnail','step_description'];
+
+function _mVidStepTasksForDay(ds) {
+  // Mobile has no _vidDayMap (localStorage per-device). Use timeblocks only.
+  // Only show step tasks for videos that have blocks on this day.
+  const today = d2s(getDayDate(0));
+  const isToday = ds === today;
+  const vidOnBlocks = new Set();
+  (st.blocks || []).forEach(b => {
+    if (b.ds !== ds && !(isToday && b.ds && b.ds < ds)) return;
+    if (b._vidStepVid) vidOnBlocks.add(String(b._vidStepVid));
+    else if (b._vidId) vidOnBlocks.add(String(b._vidId));
+  });
+  if (!vidOnBlocks.size) return [];
+  const tasks = [];
+  (st.videos || []).forEach(v => {
+    if (v.is_deleted || v.status === 'published') return;
+    if (!vidOnBlocks.has(String(v.id))) return;
+    _M_VID_STEPS.forEach(step => {
+      const val = v[step];
+      if (!val || val === 'done' || val === 'na') return;
+      const label = _M_VID_STEP_LABELS[step] || step.replace('step_','');
+      let isDone = false;
+      if (step !== 'step_thumbnail' && step !== 'step_description') {
+        const stageBlocks = (st.blocks || []).filter(bl => String(bl._vidStepVid) === String(v.id) && bl._vidStepName === step);
+        if (stageBlocks.length > 0) isDone = stageBlocks.every(bl => bl._done);
+      }
+      tasks.push({id: 'vidstep-' + v.id + '-' + step, name: label + ': ' + (v.topic || v.title), category: 'Videos', due_date: ds, done: isDone, _vidId: v.id, _vidStep: step, _virtual: true, _type: 'vidstep'});
+    });
+  });
+  return tasks;
+}
+
+// ── Mobile video step toggle ─────────────────────────────────────────────────
+function mToggleVidStep(vidId, step, checked) {
+  const v = (st.videos || []).find(x => String(x.id) === String(vidId) && !x.is_deleted);
+  if (!v) return;
+  if (step === 'step_thumbnail' || step === 'step_description') {
+    // Thumbnail & Description: toggle the actual video stage field
+    v[step] = checked ? 'done' : 'not_started';
+    save();
+    sbReqSilent('PATCH', 'videos', {[step]: v[step]}, `?id=eq.${v.id}`);
+    // Also sync any linked timeblock block
+    const stBlk = (st.blocks || []).find(bl => String(bl._vidStepVid) === String(vidId) && bl._vidStepName === step);
+    if (stBlk) { stBlk._done = checked; sbUpdateBlock(stBlk.id, {done: checked}); }
+  } else {
+    // Build/VO/Cut: just toggle the timeblock block done state, don't touch video stage
+    const stageBlocks = (st.blocks || []).filter(bl => String(bl._vidStepVid) === String(vidId) && bl._vidStepName === step);
+    stageBlocks.forEach(bl => { bl._done = checked; sbUpdateBlock(bl.id, {done: checked}); });
+    save();
+  }
+  mRenderToday();
+  if (_mCurTab === 'week') mRenderWeek();
+}
+
 // ── Mobile-only helpers ───────────────────────────────────────────────────────
 function isDoneWRRule(ruleId, wkKey) {
   return !!(st.wrOverrides || []).some(o =>
@@ -170,23 +227,56 @@ function mInitPickers() {
 }
 
 // ── Sort today ────────────────────────────────────────────────────────────────
+// Match desktop sort: birthday, done last, travel, overdue, important, timeblock order, then type priority
+function _mTaskTypePri(t) {
+  if (t._type === 'birthday') return 1;
+  const cat = (t.category || '').toLowerCase();
+  if (cat === 'home') return 2;
+  if (cat === 'my work') return 3;
+  if (cat === 'work') return 4;
+  if (cat === 'social') return 5;
+  if (t._type === 'vid') return 5.5;
+  if (t._type === 'vidstep') return 5.6;
+  if (t._type === 'shop') return 7;
+  if (t._type === 'pup') return 8;
+  if (t._virtual) return 6;
+  return 5;
+}
 function mSortToday(tasks) {
+  const ds = _mTodayOffset === 0 ? d2s(getDayDate(0)) : _mTodayDateStr();
+  const blks = (st.blocks || []).filter(b => b.ds === ds);
+  function tbSm(t) {
+    let b = null;
+    if (t._type === 'pup' && t._pupSessId) b = blks.find(x => String(x._pupSessId) === String(t._pupSessId));
+    else if (t._type === 'vidstep') b = blks.find(x => String(x._vidStepVid) === String(t._vidId) && x._vidStepName === t._vidStep);
+    else if (t._vidId) b = blks.find(x => String(x._vidId) === String(t._vidId));
+    else if (t._shopId) b = blks.find(x => String(x.shopId) === String(t._shopId));
+    else if (t._ruleId) b = blks.find(x => String(x.ruleId) === String(t._ruleId) || String(x.recId) === String(t._ruleId));
+    else if (t._recId) b = blks.find(x => String(x.recId) === String(t._recId));
+    else if (!t._virtual) b = blks.find(x => String(x.taskId) === String(t.id));
+    return b ? b.sm : null;
+  }
   return [...tasks].sort((a, b) => {
-    if (a.done && !b.done) return 1;
-    if (!a.done && b.done) return -1;
-    const aOv = isOv(a.due_date) && !a.done, bOv = isOv(b.due_date) && !b.done;
-    if (aOv && !bOv) return -1;
-    if (!aOv && bOv) return 1;
-    const typeOrd = t => t._type === 'travel' ? 0 : t._type === 'birthday' ? 1 : t._isWrRule || t._isWrec || (t._virtual && t._recId) ? 3 : t._type === 'shop' ? 4 : 2;
-    const diff = typeOrd(a) - typeOrd(b);
-    if (diff !== 0) return diff;
-    return (a.name || '').localeCompare(b.name || '');
+    const aB = a._type === 'birthday', bB = b._type === 'birthday';
+    if (aB && !bB) return -1; if (!aB && bB) return 1;
+    if (a.done && !b.done) return 1; if (!a.done && b.done) return -1;
+    const aT = a._type === 'travel' && !a.done, bT = b._type === 'travel' && !b.done;
+    if (aT && !bT) return -1; if (!aT && bT) return 1;
+    const aO = isOv(a.due_date) && !a.done, bO = isOv(b.due_date) && !b.done;
+    if (aO && !bO) return -1; if (!aO && bO) return 1;
+    const aI = a.important && !a.done, bI = b.important && !b.done;
+    if (aI && !bI) return -1; if (!aI && bI) return 1;
+    const aSm = tbSm(a), bSm = tbSm(b);
+    if (aSm !== null && bSm === null) return -1;
+    if (aSm === null && bSm !== null) return 1;
+    if (aSm !== null && bSm !== null) return aSm - bSm;
+    return _mTaskTypePri(a) - _mTaskTypePri(b) || (a.name || '').localeCompare(b.name || '');
   });
 }
 
 // ── Gather today's tasks ──────────────────────────────────────────────────────
 function mGetTodayTasks() {
-  const ds = d2s(getDayDate(0));
+  const ds = _mTodayOffset === 0 ? d2s(getDayDate(0)) : _mTodayDateStr();
 
   const ts = st.tasks.filter(t => {
     if (!t.due_date || t.category === 'Weekly Goals') return false;
@@ -209,16 +299,17 @@ function mGetTodayTasks() {
     });
   }
 
+  // WR recurring — only current week (WR tasks reset weekly, past weeks don't carry over)
   const _wrecSeen = new Set();
   const wrecToday = [];
-  for (let _w = 0; _w >= -4; _w--) {
-    const _wkKey = getWkKey(_w);
+  {
+    const _wkKey = getWkKey(0);
     st.recurring
       .filter(r =>
         (r.is_weekly_reset === true || r.is_weekly_reset === 'true') &&
         r._dateOverrides && r._dateOverrides[_wkKey] &&
         r._dateOverrides[_wkKey] !== '__skip__' &&
-        (r._dateOverrides[_wkKey] === ds || r._dateOverrides[_wkKey] < ds) &&
+        (r._dateOverrides[_wkKey] === ds || (r._dateOverrides[_wkKey] < ds && !(r._doneByWk && r._doneByWk[_wkKey]))) &&
         !_wrecSeen.has(String(r.id))
       )
       .forEach(r => {
@@ -228,10 +319,11 @@ function mGetTodayTasks() {
       });
   }
 
+  // WR rules — only current week
   const _wrRulesSeen = new Set();
   const wrRulesToday = [];
-  for (let _w = 0; _w >= -4; _w--) {
-    const _wkKey = getWkKey(_w);
+  {
+    const _wkKey = getWkKey(0);
     st.wrRules
       .filter(r =>
         r._dateOverrides && r._dateOverrides[_wkKey] &&
@@ -259,6 +351,20 @@ function mGetTodayTasks() {
       return {id: 'pup-sess-' + s.id, name: (skill.pup ? skill.pup + ': ' : '') + skill.skill, category: 'Recurring', due_date: s.day_date, done: s.done, _pupSessId: s.id, _skillId: s.skill_id, _virtual: true, _type: 'pup'};
     }).filter(Boolean);
 
+  // Video step tasks (mobile-specific — only videos with blocks on this day)
+  const vidStepToday = _mVidStepTasksForDay(ds);
+  const _vidStepIds = new Set(vidStepToday.map(t => String(t._vidId)));
+
+  // Video tasks — only post_date match or on timeblock, skip if already has step tasks
+  const _vidOnTB = new Set((st.blocks || []).filter(b => (b.ds === ds || (b.ds && b.ds < ds)) && b._vidId).map(b => String(b._vidId)));
+  const vidToday = (st.videos || []).filter(v => {
+    if (v.is_deleted || v.status === 'published') return false;
+    if (_vidStepIds.has(String(v.id))) return false; // already shown as step tasks
+    if (_vidOnTB.has(String(v.id))) return true;
+    if (v.post_date && (v.post_date === ds || v.post_date < ds)) return true;
+    return false;
+  }).map(v => ({id: 'vid-ov-' + v.id, name: v.topic || v.title, category: 'Videos', due_date: v.post_date || ds, done: false, _vidId: v.id, _virtual: true, _type: 'vid'}));
+
   return mSortToday([
     ...ts,
     ...allRecVirt.filter(v => v.due_date === ds || (isOv(v.due_date) && !v.done)),
@@ -266,6 +372,8 @@ function mGetTodayTasks() {
     ...wrRulesToday,
     ...shopToday,
     ...pupSessToday,
+    ...vidToday,
+    ...vidStepToday,
     ...getExtrasForDate(ds)
   ]);
 }
@@ -282,6 +390,8 @@ function mTaskRow(t) {
   if (t._isWrRule) onchange = `togWrRule('${t._ruleId}',this.checked,'${t._wkKey}')`;
   else if (t._isWrec) onchange = `togRec('${t._recId}',this.checked,'${t._wkKey}')`;
   else if (t._virtual && t._recId) onchange = `togRecVirt('${t._recId}',this.checked,'${t._wkKey}')`;
+  else if (t._type === 'vidstep') onchange = `mToggleVidStep('${t._vidId}','${t._vidStep}',this.checked)`;
+  else if (t._type === 'vid') onchange = `toggleTask('${t.id}',this.checked)`;
   else if (t._type === 'shop') onchange = `togShop('${t._shopId}',this.checked)`;
   else if (t._type === 'pup') onchange = `togPupSessionDone('${t._pupSessId}',this.checked)`;
   else if (!t._virtual) onchange = `toggleTask('${t.id}',this.checked)`;
@@ -313,6 +423,8 @@ function mRenderToday() {
   const el = document.getElementById('mTodayList');
   if (!el) return;
   el.innerHTML = sorted.length ? sorted.map(mTaskRow).join('') : '<div class="m-empty">All done ✓</div>';
+  _mUpdateTodayHeader();
+  _mInitTodaySwipe();
 }
 
 // ── Add task ──────────────────────────────────────────────────────────────────
@@ -327,7 +439,7 @@ async function mAddTask() {
   const n = inp.value.trim();
   if (!n) return;
   const cat = _mAddCat;
-  const ds = d2s(getDayDate(0));
+  const ds = _mTodayOffset === 0 ? d2s(getDayDate(0)) : _mTodayDateStr();
   const important = _mAddImportant;
   const t = {id: 'l-' + Date.now(), name: n, category: cat, due_date: ds, done: false, important};
   st.tasks.push(t);
@@ -574,8 +686,54 @@ function mInitPTR() {
   }, {passive: true});
 }
 
+// ── Today day offset & swiping ───────────────────────────────────────────────
+let _mTodayOffset = 0;
+
+function _mTodayDateStr() {
+  const d = new Date();
+  d.setDate(d.getDate() + _mTodayOffset);
+  return d2s(d);
+}
+
+function _mUpdateTodayHeader() {
+  const titleEl = document.getElementById('mHeaderTitle');
+  const dateLbl = document.getElementById('mDateLbl');
+  if (_mTodayOffset === 0) {
+    if (titleEl) titleEl.textContent = 'Today';
+    if (dateLbl) dateLbl.textContent = new Date().toLocaleDateString('en-US', {weekday: 'long', month: 'long', day: 'numeric'});
+  } else {
+    const d = new Date();
+    d.setDate(d.getDate() + _mTodayOffset);
+    if (titleEl) titleEl.textContent = d.toLocaleDateString('en-US', {weekday: 'long'});
+    if (dateLbl) dateLbl.textContent = d.toLocaleDateString('en-US', {month: 'long', day: 'numeric'});
+  }
+}
+
+function _mInitTodaySwipe() {
+  const page = document.getElementById('mTodayPage');
+  if (!page || page._swipeInited) return;
+  page._swipeInited = true;
+  let startX = 0, startY = 0, swiping = false;
+  page.addEventListener('touchstart', e => {
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    swiping = true;
+  }, {passive: true});
+  page.addEventListener('touchend', e => {
+    if (!swiping) return;
+    swiping = false;
+    const dx = e.changedTouches[0].clientX - startX;
+    const dy = e.changedTouches[0].clientY - startY;
+    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+      _mTodayOffset += dx < 0 ? 1 : -1;
+      mRenderToday();
+      _mUpdateTodayHeader();
+    }
+  }, {passive: true});
+}
+
 // ── Tab switching ─────────────────────────────────────────────────────────────
-let _mCurTab = 'tb';
+let _mCurTab = 'today';
 
 function mShowTab(tab) {
   _mCurTab = tab;
@@ -593,29 +751,54 @@ function mShowTab(tab) {
   const grocBar = document.getElementById('mGrocAddBar');
   if (grocBar) grocBar.style.display = isGroc ? '' : 'none';
   document.getElementById('mApp').style.paddingBottom = (isToday || isShop || isGroc)
-    ? 'calc(162px + env(safe-area-inset-bottom))'
-    : 'calc(52px + env(safe-area-inset-bottom))';
+    ? 'calc(170px + env(safe-area-inset-bottom))'
+    : 'calc(60px + env(safe-area-inset-bottom))';
   document.querySelectorAll('.m-nav-btn').forEach((b, i) => {
     b.classList.toggle('active', (tab === 'today' && i === 0) || (tab === 'tb' && i === 1) || (tab === 'week' && i === 2) || (tab === 'shop' && i === 3) || (tab === 'groc' && i === 4));
   });
-  const titles = {today: 'Today', tb: 'Timeblock', week: 'Week', shop: 'Shopping', groc: 'HEB Grocery'};
+  const titles = {today: 'Today', tb: 'Schedule', week: 'Week', shop: 'Shopping', groc: 'HEB Grocery'};
   const titleEl = document.getElementById('mHeaderTitle');
   if (titleEl) titleEl.textContent = titles[tab] || '';
   const progEl = document.getElementById('mProgress');
   if (progEl) progEl.style.display = isToday ? '' : 'none';
+  const monthBtn = document.getElementById('mMonthBtn');
+  if (monthBtn) monthBtn.style.display = tab === 'week' ? '' : 'none';
+  const dateLbl = document.getElementById('mDateLbl');
+  if (dateLbl) dateLbl.style.display = tab === 'tb' ? 'none' : '';
+  // Hide main header on schedule tab — merged into unassigned bar
+  const hdr = document.getElementById('mHeader');
+  if (hdr) hdr.style.display = tab === 'tb' ? 'none' : '';
   document.getElementById('mMain').style.padding = (isToday || isShop || isGroc) ? '12px 16px' : '0';
 
   if (tab === 'tb')   { _mTBOffset = 0; mRenderTB(); _mScrollNow(); }
-  else if (tab === 'week') { _mWeekOffset = 0; mRenderWeek(); }
+  else if (tab === 'week') { mRenderWeek(); mInitWeekScroll(); }
   else if (tab === 'shop') { mRenderShop(); }
   else if (tab === 'groc') { mRenderGroc(); }
-  else { _mSetDate(); }
+  else { _mTodayOffset = 0; _mSetDate(); }
 }
 
 // ── Timeblock constants ───────────────────────────────────────────────────────
 const M_TB_START = 6 * 60;   // 6am
 const M_TB_END   = 22 * 60;  // 10pm
-const M_PX       = 0.75;     // px per minute → 45px per hour, ~720px total
+const M_PX       = 0.9;      // px per minute → 54px per hour, ~864px total
+
+// Compute side-by-side layout for overlapping blocks
+function _mComputeOverlap(blocks) {
+  const sorted = [...blocks].sort((a, b) => a.sm - b.sm || (b.dur - a.dur));
+  const colEnds = [];
+  sorted.forEach(b => {
+    let placed = false;
+    for (let i = 0; i < colEnds.length; i++) {
+      if (b.sm >= colEnds[i]) { colEnds[i] = b.sm + b.dur; b._col = i; placed = true; break; }
+    }
+    if (!placed) { b._col = colEnds.length; colEnds.push(b.sm + b.dur); }
+  });
+  sorted.forEach(b => {
+    let maxCol = 0;
+    sorted.forEach(b2 => { if (b2.sm < b.sm + b.dur && b2.sm + b2.dur > b.sm) maxCol = Math.max(maxCol, b2._col); });
+    b._ncols = maxCol + 1;
+  });
+}
 
 function _mTStr(m) {
   const h = Math.floor(m / 60), mn = m % 60;
@@ -628,14 +811,6 @@ let _mTBOffset = 0; // day offset (0=today, -1=yesterday, +1=tomorrow)
 
 // ── Timeblock rendering ───────────────────────────────────────────────────────
 function mRenderTB() {
-  // Update date label for displayed day
-  const d    = getDayDate(_mTBOffset);
-  const lbl  = document.getElementById('mDateLbl');
-  if (lbl) {
-    const opts = {weekday: 'short', month: 'short', day: 'numeric'};
-    const prefix = _mTBOffset === 0 ? 'Today · ' : _mTBOffset === -1 ? 'Yesterday · ' : _mTBOffset === 1 ? 'Tomorrow · ' : '';
-    lbl.textContent = prefix + d.toLocaleDateString('en-US', opts);
-  }
   mRenderUnassigned();
   mRenderTimeline();
 }
@@ -688,11 +863,20 @@ function mRenderUnassigned() {
     ...shopUnassigned.map(s => ({ id: 'shop-' + s.id, name: s.name, category: 'Shopping' }))
   ];
 
+  // Date label + refresh merged into unassigned bar
+  const d = getDayDate(_mTBOffset);
+  const prefix = _mTBOffset === 0 ? 'Today' : _mTBOffset === -1 ? 'Yesterday' : _mTBOffset === 1 ? 'Tomorrow' : d.toLocaleDateString('en-US', {weekday: 'long'});
+  const subDate = d.toLocaleDateString('en-US', {weekday: 'long', month: 'long', day: 'numeric'});
+  const dateChip = `<div class="m-tb-hdr-wrap">
+    <div class="m-tb-date-lbl">${prefix}<div class="m-tb-date-sub">${subDate}</div></div>
+    <button class="m-reload-btn" onclick="location.reload(true)" title="Reload app">↻</button>
+  </div>`;
+
   if (!allUnassigned.length) {
-    bar.innerHTML = '<span class="m-chip-empty">No unassigned tasks</span>';
+    bar.innerHTML = dateChip;
     return;
   }
-  bar.innerHTML = allUnassigned.map(t => {
+  bar.innerHTML = dateChip + allUnassigned.map(t => {
     const s   = gc(t.category || '');
     const sel = _mSelectedChipId === String(t.id);
     return `<button class="m-chip${sel ? ' selected' : ''}" onclick="mSelectChip('${t.id}')" style="--cdot:${s.bg};--cborder:${s.d}">${escHtml(t.name)}</button>`;
@@ -728,13 +912,12 @@ function mRenderTimeline() {
   }
   labels.innerHTML = hrs.join('');
 
-  // Blocks for displayed day
+  // Collect ALL blocks (regular + auto + recurring auto) for unified overlap layout
   const ds = d2s(getDayDate(_mTBOffset));
-  const todayBlocks = (st.blocks || []).filter(b => b.ds === ds).sort((a, b) => a.sm - b.sm);
-  let html = todayBlocks.map(b => {
-    const y    = (b.sm - M_TB_START) * M_PX;
-    const hPx  = Math.max(b.dur * M_PX, 28);
-    // Derive done from linked item (authoritative)
+  const allItems = [];
+
+  // Regular saved blocks
+  (st.blocks || []).filter(b => b.ds === ds).forEach(b => {
     const linkedTask = b.taskId ? st.tasks.find(x => String(x.id) === String(b.taskId)) : null;
     const linkedRec = b.recId ? (st.recurring.find(x => String(x.id) === String(b.recId)) || (st.wrRules || []).find(x => String(x.id) === String(b.recId))) : null;
     const linkedShop = b.shopId ? st.shopping.find(x => String(x.id) === String(b.shopId)) : null;
@@ -744,17 +927,9 @@ function mRenderTimeline() {
     else if (linkedRec && linkedRec._doneByWk) b._done = !!linkedRec._doneByWk[dsToWkKey(b.ds)];
     else if (linkedShop) b._done = !!linkedShop.done;
     const displayName = (linkedTask && linkedTask.name) || (linkedRec && linkedRec.name) || (linkedShop && linkedShop.name) || b.title;
-    const s    = gc(b.cat || '');
-    const timeRange = `${_mTStr(b.sm)}–${_mTStr(b.sm + b.dur)}`;
-    const doneClass = b._done ? ' m-done-block' : '';
-    return `<div class="m-tl-block${doneClass}" data-bid="${b.id}" style="top:${y}px;height:${hPx}px;background:${s.bg};border:1px solid rgba(255,255,255,.55);border-left:3px solid ${s.d}">
-      <input type="checkbox" class="m-tb-chk" data-bid="${b.id}" ${b._done ? 'checked' : ''}>
-      <div style="overflow:hidden;flex:1;min-width:0;pointer-events:none">
-        <div class="m-tl-block-name" style="color:${s.t}">${escHtml(displayName || '')}</div>
-      </div>
-      <span class="m-tl-block-time" style="color:${s.d};pointer-events:none">${timeRange}</span>
-    </div>`;
-  }).join('');
+    const s = gc(b.cat || '');
+    allItems.push({sm: b.sm, dur: b.dur, type: 'block', bid: b.id, done: b._done, name: displayName, s, _b: b});
+  });
 
   // Auto blocks
   if (cfg.showAutoTB) {
@@ -771,14 +946,7 @@ function mRenderTimeline() {
         const startMin = parseInt(sh) * 60 + parseInt(sm2 || 0);
         const endMin = parseInt(eh) * 60 + parseInt(em || 0);
         const dur = Math.max(15, endMin - startMin);
-        const y = (startMin - M_TB_START) * M_PX;
-        const hPx = Math.max(dur * M_PX, 28);
-        html += `<div class="m-tl-block m-auto-block" style="top:${y}px;height:${hPx}px">
-          <div style="overflow:hidden;flex:1;min-width:0;pointer-events:none">
-            <div class="m-tl-block-name">${escHtml(a.label || '')}</div>
-          </div>
-          <span class="m-tl-block-time" style="pointer-events:none">${_mTStr(startMin)}–${_mTStr(startMin + dur)}</span>
-        </div>`;
+        allItems.push({sm: startMin, dur, type: 'auto', name: a.label, cls: 'm-auto-block'});
       });
     }
   }
@@ -807,15 +975,42 @@ function mRenderTimeline() {
     const startMin = parseInt(sh) * 60 + parseInt(sm2 || 0);
     const endMin = parseInt(eh) * 60 + parseInt(em || 0);
     const dur = Math.max(15, endMin - startMin);
-    const y = (startMin - M_TB_START) * M_PX;
-    const hPx = Math.max(dur * M_PX, 28);
-    html += `<div class="m-tl-block m-rec-auto-block" style="top:${y}px;height:${hPx}px">
-      <div style="overflow:hidden;flex:1;min-width:0;pointer-events:none">
-        <div class="m-tl-block-name">${escHtml(v.name || '')}</div>
-      </div>
-      <span class="m-tl-block-time" style="pointer-events:none">${_mTStr(startMin)}–${_mTStr(startMin + dur)}</span>
-    </div>`;
+    allItems.push({sm: startMin, dur, type: 'recauto', name: v.name, cls: 'm-rec-auto-block'});
   });
+
+  // Compute overlap for ALL items together
+  _mComputeOverlap(allItems);
+
+  let html = allItems.map(item => {
+    const y = (item.sm - M_TB_START) * M_PX;
+    const hPx = Math.max(item.dur * M_PX, item.type === 'block' ? 24 : 28) - 2;
+    const ncols = item._ncols || 1;
+    const colI = item._col || 0;
+    const colW = 100 / ncols;
+    const left = colI * colW;
+    const posStyle = ncols > 1
+      ? `top:${y}px;height:${hPx}px;left:calc(${left}% + 2px);right:calc(${100 - left - colW}% + 2px)`
+      : `top:${y}px;height:${hPx}px`;
+    const timeRange = `${_mTStr(item.sm)}\u2013${_mTStr(item.sm + item.dur)}`;
+
+    if (item.type === 'block') {
+      const doneClass = item.done ? ' m-done-block' : '';
+      return `<div class="m-tl-block${doneClass}" data-bid="${item.bid}" style="${posStyle};background:${item.s.bg};border:1px solid rgba(255,255,255,.55);border-left:3px solid ${item.s.d}">
+        <input type="checkbox" class="m-tb-chk" data-bid="${item.bid}" ${item.done ? 'checked' : ''}>
+        <div style="overflow:hidden;flex:1;min-width:0;pointer-events:none">
+          <div class="m-tl-block-name" style="color:${item.s.t}">${escHtml(item.name || '')}</div>
+        </div>
+        ${ncols <= 1 ? `<span class="m-tl-block-time" style="color:${item.s.t};pointer-events:none">${timeRange}</span>` : ''}
+      </div>`;
+    } else {
+      return `<div class="m-tl-block ${item.cls}" style="${posStyle}">
+        <div style="overflow:hidden;flex:1;min-width:0;pointer-events:none">
+          <div class="m-tl-block-name">${escHtml(item.name || '')}</div>
+        </div>
+        ${ncols <= 1 ? `<span class="m-tl-block-time" style="pointer-events:none">${timeRange}</span>` : ''}
+      </div>`;
+    }
+  }).join('');
 
   col.innerHTML = html;
 
@@ -1002,8 +1197,14 @@ function mInitBlockDrag() {
 let _mSelectedChipId = null;
 
 function mSelectChip(taskId) {
-  _mSelectedChipId = (_mSelectedChipId === String(taskId)) ? null : String(taskId);
+  _mSelectedChipId = String(taskId);
   mRenderUnassigned();
+  // Immediately open block creation at current time (or next 15-min slot)
+  const now = new Date();
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  const snapMin = Math.round(nowMin / 15) * 15;
+  const sm = Math.max(M_TB_START, Math.min(M_TB_END - 30, snapMin));
+  mOpenNewBlock(sm);
 }
 
 // ── Block sheet ───────────────────────────────────────────────────────────────
@@ -1021,14 +1222,22 @@ function mOpenNewBlock(sm) {
   document.getElementById('mBlockTime').value = `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
 
   if (_mSelectedChipId) {
-    const t = st.tasks.find(x => String(x.id) === _mSelectedChipId);
-    if (t) {
-      document.getElementById('mBlockName').value = t.name || '';
-      mSelectCat('block', t.category || 'Home');
+    const chipId = _mSelectedChipId;
+    let chipName = '', chipCat = 'Home';
+    if (chipId.startsWith('rec-')) {
+      const recId = chipId.replace('rec-', '');
+      const r = st.recurring.find(x => String(x.id) === recId);
+      if (r) { chipName = r.name || ''; chipCat = r.category || 'Recurring'; }
+    } else if (chipId.startsWith('shop-')) {
+      const shopId = chipId.replace('shop-', '');
+      const s = st.shopping.find(x => String(x.id) === shopId);
+      if (s) { chipName = s.name || ''; chipCat = 'Shopping'; }
     } else {
-      document.getElementById('mBlockName').value = '';
-      mSelectCat('block', _mBlockCat);
+      const t = st.tasks.find(x => String(x.id) === chipId);
+      if (t) { chipName = t.name || ''; chipCat = t.category || 'Home'; }
     }
+    document.getElementById('mBlockName').value = chipName;
+    mSelectCat('block', chipCat);
   } else {
     document.getElementById('mBlockName').value = '';
     mSelectCat('block', _mBlockCat);
@@ -1097,8 +1306,14 @@ async function mSaveBlock() {
       category: cat
     });
   } else {
-    const taskId = _mSelectedChipId || null;
-    const b = {id: 'lb-' + Date.now(), title: name, ds, sm, dur: _mBlockDur, cat, taskId, recId: null, shopId: null, _done: false};
+    let taskId = null, recId = null, shopId = null;
+    if (_mSelectedChipId) {
+      const cid = _mSelectedChipId;
+      if (cid.startsWith('rec-')) recId = cid.replace('rec-', '');
+      else if (cid.startsWith('shop-')) shopId = cid.replace('shop-', '');
+      else taskId = cid;
+    }
+    const b = {id: 'lb-' + Date.now(), title: name, ds, sm, dur: _mBlockDur, cat, taskId, recId, shopId, _done: false};
     if (!st.blocks) st.blocks = [];
     st.blocks.push(b);
     save();
@@ -1124,6 +1339,16 @@ const _WK_DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 function mWeekPrev() { _mWeekOffset--; mRenderWeek(); }
 function mWeekNext() { _mWeekOffset++; mRenderWeek(); }
 
+function _mWkGetWeekOff(ds) {
+  const d = new Date(ds + 'T12:00:00');
+  const today = new Date(); today.setHours(12, 0, 0, 0);
+  const dDow = (d.getDay() + 6) % 7;
+  const tDow = (today.getDay() + 6) % 7;
+  const dMon = new Date(d); dMon.setDate(d.getDate() - dDow);
+  const tMon = new Date(today); tMon.setDate(today.getDate() - tDow);
+  return Math.round((dMon - tMon) / (7 * 86400000));
+}
+
 function mGetDayTasks(ds, weekOff) {
   const today = d2s(getDayDate(0));
   const isToday = ds === today;
@@ -1142,7 +1367,24 @@ function mGetDayTasks(ds, weekOff) {
     .filter(s => !s.done && s.due_date && (s.due_date === ds || (isToday && isOv(s.due_date))))
     .map(s => ({id: 'shop-' + s.id, name: s.name, category: 'Shopping', due_date: s.due_date, done: false, _shopId: s.id, _virtual: true, _type: 'shop'}));
 
-  return [...regular, ...recVirt, ...shopItems].sort((a, b) => {
+  // Video step tasks (mobile-specific — only videos with blocks on this day)
+  const vidStepItems = _mVidStepTasksForDay(ds);
+  const _vidStepDayIds = new Set(vidStepItems.map(t => String(t._vidId)));
+
+  // Video tasks — only post_date match or on timeblock, skip if already has step tasks
+  const _vidOnTBDay = new Set((st.blocks || []).filter(b => (b.ds === ds || (isToday && b.ds && b.ds < ds)) && b._vidId).map(b => String(b._vidId)));
+  const vidForDay = (st.videos || []).filter(v => {
+    if (v.is_deleted || v.status === 'published') return false;
+    if (_vidStepDayIds.has(String(v.id))) return false;
+    if (_vidOnTBDay.has(String(v.id))) return true;
+    if (v.post_date && (v.post_date === ds || (isToday && v.post_date < ds))) return true;
+    return false;
+  }).map(v => ({id: 'vid-' + v.id, name: v.topic || v.title, category: 'Videos', due_date: ds, done: false, _vidId: v.id, _virtual: true, _type: 'vid'}));
+
+  // Extras (travel, birthdays)
+  const extras = getExtrasForDate(ds);
+
+  return [...regular, ...recVirt, ...shopItems, ...vidForDay, ...vidStepItems, ...extras].sort((a, b) => {
     if (a.done && !b.done) return 1;
     if (!a.done && b.done) return -1;
     return (a.name || '').localeCompare(b.name || '');
@@ -1151,56 +1393,62 @@ function mGetDayTasks(ds, weekOff) {
 
 function mWkTaskRow(t) {
   const ov      = isOv(t.due_date) && !t.done;
-  const catKey  = t._type === 'shop' ? 'shopping' : (t._virtual && t._recId) ? 'recurring' : (t.category || '');
+  const catKey  = t._type === 'shop' ? 'shopping' : t._type === 'vid' || t._type === 'vidstep' ? 'Videos' : (t._virtual && t._recId) ? 'recurring' : (t.category || '');
   const s       = ov ? OV : gc(catKey);
   const canDrag = !t._virtual && !t._type;
+  const noCheck = t._type === 'travel' || t._type === 'birthday';
 
   let onchange = '';
   if (t._type === 'shop')          onchange = `togShop('${t._shopId}',this.checked)`;
+  else if (t._type === 'vidstep')  onchange = `mToggleVidStep('${t._vidId}','${t._vidStep}',this.checked)`;
+  else if (t._type === 'vid')      onchange = `toggleTask('${t.id}',this.checked)`;
+  else if (t._isWrRule)            onchange = `togWrRule('${t._ruleId}',this.checked,'${t._wkKey}')`;
   else if (t._virtual && t._recId) onchange = `togRecVirt('${t._recId}',this.checked,'${t._wkKey}')`;
-  else if (!t._virtual)            onchange = `toggleTask('${t.id}',this.checked)`;
+  else if (t._type === 'pup')      onchange = `togPupSessionDone('${t._pupSessId}',this.checked)`;
+  else if (!t._virtual && !noCheck) onchange = `toggleTask('${t.id}',this.checked)`;
 
   const dot = `<span style="width:8px;height:8px;border-radius:50%;background:${s.bg};border:1.5px solid ${s.d};flex-shrink:0;display:inline-block"></span>`;
-  const chk = onchange
-    ? `<label style="display:flex;align-items:center;justify-content:center;width:22px;height:32px;flex-shrink:0;cursor:pointer"><input type="checkbox"${t.done ? ' checked' : ''} onchange="${onchange}" style="width:16px;height:16px;accent-color:var(--accent)"></label>`
-    : `<span style="width:22px;height:32px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px">📅</span>`;
+  const chk = noCheck
+    ? `<span style="width:22px;height:32px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px">\u{1F4C5}</span>`
+    : `<label class="m-wk-chk-wrap"><input type="checkbox" class="m-wk-chk"${t.done ? ' checked' : ''}${onchange ? ` onchange="${onchange}"` : ''}></label>`;
 
   const dragAttrs = canDrag ? ` data-tid="${t.id}" data-tname="${escHtml(t.name || '')}"` : '';
 
-  return `<div class="m-wk-row${ov ? ' m-ov' : ''}"${dragAttrs}>
+  return `<div class="m-wk-row${t.done ? ' m-wk-done' : ''}${ov ? ' m-ov' : ''}"${dragAttrs}>
     ${chk}
-    <span style="flex:1;font-size:13px;line-height:1.3;${t.done ? 'text-decoration:line-through;opacity:.4' : ''}${ov ? ';color:#dc2626' : ''}">${escHtml(t.name || '')}</span>
+    <span class="m-wk-task-name${t.done ? ' done' : ''}" style="${ov ? 'color:#dc2626' : ''}">${escHtml(t.name || '')}</span>
     ${dot}
   </div>`;
 }
 
-function mRenderWeek() {
-  const dates  = getWkDates(_mWeekOffset);
-  const today  = d2s(getDayDate(0));
-  const start  = dates[0].toLocaleDateString('en-US', {month: 'short', day: 'numeric'});
-  const end    = dates[6].toLocaleDateString('en-US', {month: 'short', day: 'numeric'});
+// Week infinite scroll state
+let _mWkRenderedLo = 0;  // lowest week offset rendered
+let _mWkRenderedHi = 0;  // highest week offset rendered
+let _mWkScrollLock = false;
 
-  // Range label
-  const rangeLbl = document.getElementById('mWeekRangeLbl');
-  if (rangeLbl) {
-    rangeLbl.textContent = _mWeekOffset === 0 ? 'This Week'
-      : _mWeekOffset === -1 ? 'Last Week'
-      : _mWeekOffset === 1  ? 'Next Week'
-      : `${start} – ${end}`;
-  }
-  // Header date label
-  const dateLbl = document.getElementById('mDateLbl');
-  if (dateLbl) dateLbl.textContent = `${start} – ${end}`;
+function _mWkLabel(off) {
+  if (off === 0) return 'This Week';
+  if (off === -1) return 'Last Week';
+  if (off === 1) return 'Next Week';
+  const dates = getWkDates(off);
+  return dates[0].toLocaleDateString('en-US', {month: 'short', day: 'numeric'}) + ' – ' + dates[6].toLocaleDateString('en-US', {month: 'short', day: 'numeric'});
+}
 
-  const html = dates.map((d, i) => {
-    const ds      = d2s(d);
+function _mWkRenderWeekHtml(weekOff) {
+  const dates = getWkDates(weekOff);
+  const today = d2s(getDayDate(0));
+  const isCurrent = weekOff === 0;
+  let html = `<div class="m-wk-divider${isCurrent ? ' is-current' : ''}" data-wk="${weekOff}">${_mWkLabel(weekOff)}</div>`;
+
+  dates.forEach((d, i) => {
+    const ds = d2s(d);
     const isToday = ds === today;
-    const isPast  = !isToday && ds < today;
+    const isPast = !isToday && ds < today;
     const dateStr = d.toLocaleDateString('en-US', {month: 'short', day: 'numeric'});
-    const tasks   = mGetDayTasks(ds, _mWeekOffset);
-    const doneC   = tasks.filter(t => t.done).length;
+    const tasks = mGetDayTasks(ds, weekOff);
+    const doneC = tasks.filter(t => t.done).length;
 
-    return `<div class="m-wk-day${isToday ? ' is-today' : ''}${isPast ? ' is-past' : ''}" data-ds="${ds}">
+    html += `<div class="m-wk-day${isToday ? ' is-today' : ''}${isPast ? ' is-past' : ''}" data-ds="${ds}">
       <div class="m-wk-hd">
         <div class="m-wk-hd-left">
           <span class="m-wk-dname">${_WK_DAYS[i]}</span>
@@ -1212,14 +1460,81 @@ function mRenderWeek() {
           <button class="m-wk-add" onclick="mWkAddTask('${ds}')">+</button>
         </div>
       </div>
-      ${tasks.length
-        ? tasks.map(mWkTaskRow).join('')
-        : '<div class="m-wk-empty">—</div>'
-      }
+      ${tasks.length ? tasks.map(mWkTaskRow).join('') : '<div class="m-wk-empty">\u2014</div>'}
     </div>`;
-  }).join('');
+  });
+  return html;
+}
 
-  document.getElementById('mWeekList').innerHTML = html;
+function mRenderWeek() {
+  const list = document.getElementById('mWeekList');
+  if (!list) return;
+  const dateLbl = document.getElementById('mDateLbl');
+  if (dateLbl) dateLbl.textContent = 'Week';
+
+  // Render last week + this week + next week
+  _mWkRenderedLo = -1;
+  _mWkRenderedHi = 1;
+  let html = '';
+  for (let w = _mWkRenderedLo; w <= _mWkRenderedHi; w++) {
+    html += _mWkRenderWeekHtml(w);
+  }
+  list.innerHTML = html;
+
+  // Scroll to today
+  requestAnimationFrame(() => {
+    const todayEl = list.querySelector('.m-wk-day.is-today');
+    if (todayEl) {
+      const divider = todayEl.previousElementSibling;
+      const scrollTarget = (divider && divider.classList.contains('m-wk-divider')) ? divider : todayEl;
+      const page = document.getElementById('mWeekPage');
+      if (page) {
+        const pageRect = page.getBoundingClientRect();
+        const targetRect = scrollTarget.getBoundingClientRect();
+        page.scrollTop = page.scrollTop + targetRect.top - pageRect.top;
+      }
+    }
+  });
+}
+
+function _mWkLoadMore(direction) {
+  if (_mWkScrollLock) return;
+  _mWkScrollLock = true;
+  const list = document.getElementById('mWeekList');
+  if (!list) { _mWkScrollLock = false; return; }
+
+  if (direction === 'up') {
+    _mWkRenderedLo--;
+    const html = _mWkRenderWeekHtml(_mWkRenderedLo);
+    const page = document.getElementById('mWeekPage');
+    const prevHeight = list.scrollHeight;
+    list.insertAdjacentHTML('afterbegin', html);
+    // Maintain scroll position
+    if (page) page.scrollTop += list.scrollHeight - prevHeight;
+  } else {
+    _mWkRenderedHi++;
+    list.insertAdjacentHTML('beforeend', _mWkRenderWeekHtml(_mWkRenderedHi));
+  }
+  setTimeout(() => { _mWkScrollLock = false; }, 200);
+}
+
+function mInitWeekScroll() {
+  const page = document.getElementById('mWeekPage');
+  if (!page || page._weekScrollInited) return;
+  page._weekScrollInited = true;
+
+  page.addEventListener('scroll', () => {
+    if (_mWkScrollLock) return;
+    const threshold = 200;
+    // Near bottom — load next week
+    if (page.scrollHeight - page.scrollTop - page.clientHeight < threshold) {
+      _mWkLoadMore('down');
+    }
+    // Near top — load previous week
+    if (page.scrollTop < threshold) {
+      _mWkLoadMore('up');
+    }
+  }, {passive: true});
 }
 
 // ── Week: add task for specific day ──────────────────────────────────────────
@@ -1254,7 +1569,29 @@ async function mSaveWkTask() {
   st.tasks.push(t);
   save();
   mCloseWkAdd();
-  mRenderWeek();
+  // Re-render just the current day in the week list
+  const dayEl = document.querySelector(`.m-wk-day[data-ds="${ds}"]`);
+  if (dayEl) {
+    const weekOff = _mWkGetWeekOff(ds);
+    const tasks = mGetDayTasks(ds, weekOff);
+    const doneC = tasks.filter(t => t.done).length;
+    const dateObj = new Date(ds + 'T12:00:00');
+    const dayIdx = (dateObj.getDay() + 6) % 7;
+    dayEl.innerHTML = `<div class="m-wk-hd">
+      <div class="m-wk-hd-left">
+        <span class="m-wk-dname">${_WK_DAYS[dayIdx]}</span>
+        <span class="m-wk-ddate">${dateObj.toLocaleDateString('en-US', {month: 'short', day: 'numeric'})}</span>
+        ${ds === d2s(getDayDate(0)) ? '<span class="m-wk-today-dot"></span>' : ''}
+      </div>
+      <div class="m-wk-hd-right">
+        ${tasks.length ? `<span class="m-wk-cnt">${doneC}/${tasks.length}</span>` : ''}
+        <button class="m-wk-add" onclick="mWkAddTask('${ds}')">+</button>
+      </div>
+    </div>
+    ${tasks.length ? tasks.map(mWkTaskRow).join('') : '<div class="m-wk-empty">\u2014</div>'}`;
+  } else {
+    mRenderWeek();
+  }
   const sv = await sbReq('POST', 'tasks', {name: n, category: cat, due_date: ds, done: false});
   if (sv && sv[0]) {
     const i = st.tasks.findIndex(x => x.id === t.id);
@@ -1273,13 +1610,13 @@ function _mWkDragMove(e) {
   _mWkDrag.ghost.style.left = touch.clientX + 'px';
   _mWkDrag.ghost.style.top  = (touch.clientY - 44) + 'px';
 
-  // Auto-scroll #mMain when near top/bottom edges
-  const main = document.getElementById('mMain');
-  if (main) {
-    const mr = main.getBoundingClientRect();
+  // Auto-scroll #mWeekPage when near top/bottom edges
+  const scrollEl = document.getElementById('mWeekPage');
+  if (scrollEl) {
+    const mr = scrollEl.getBoundingClientRect();
     const EDGE = 80, SPEED = 8;
-    if (touch.clientY > mr.bottom - EDGE)      main.scrollTop += SPEED;
-    else if (touch.clientY < mr.top + EDGE)    main.scrollTop -= SPEED;
+    if (touch.clientY > mr.bottom - EDGE)      scrollEl.scrollTop += SPEED;
+    else if (touch.clientY < mr.top + EDGE)    scrollEl.scrollTop -= SPEED;
   }
 
   // ghost has pointer-events:none so elementFromPoint hits through it
@@ -1726,6 +2063,149 @@ function mRemoveMealAndGroceries(recipeId) {
   }
 }
 
+// ── Month view ────────────────────────────────────────────────────────────────
+let _mMonthOffset = 0;
+let _mMonthSelectedDs = null;
+
+function mOpenMonth() {
+  _mMonthOffset = 0;
+  _mMonthSelectedDs = d2s(getDayDate(0));
+  _mRenderMonth();
+  _mRenderMonthDetail(_mMonthSelectedDs);
+  document.getElementById('mMonthBackdrop').classList.add('open');
+  document.getElementById('mMonthSheet').classList.add('open');
+  _mInitMonthSwipe();
+}
+function mCloseMonth() {
+  document.getElementById('mMonthBackdrop').classList.remove('open');
+  document.getElementById('mMonthSheet').classList.remove('open');
+}
+function mMonthPrev() { _mMonthOffset--; _mRenderMonth(); }
+function mMonthNext() { _mMonthOffset++; _mRenderMonth(); }
+
+function _mInitMonthSwipe() {
+  const sheet = document.getElementById('mMonthGrid');
+  if (!sheet || sheet._moSwipe) return;
+  sheet._moSwipe = true;
+  let sx = 0, sy = 0;
+  sheet.addEventListener('touchstart', e => { sx = e.touches[0].clientX; sy = e.touches[0].clientY; }, {passive: true});
+  sheet.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - sx;
+    const dy = e.changedTouches[0].clientY - sy;
+    if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy)) return;
+    if (dx < 0) mMonthNext(); else mMonthPrev();
+  }, {passive: true});
+}
+
+function _mGetTaskDatesMap() {
+  const map = {};
+  const add = (ds, item) => { if (!map[ds]) map[ds] = []; map[ds].push(item); };
+  (st.tasks || []).forEach(t => { if (t.due_date) add(t.due_date.split('T')[0], {name: t.name, cat: t.category, done: !!t.done}); });
+  (st.shopping || []).forEach(s => { if (s.due_date) add(s.due_date, {name: s.name, cat: 'Shopping', done: !!s.done}); });
+  const _vdm = typeof _vidDayMap === 'function' ? _vidDayMap() : {};
+  (st.videos || []).forEach(v => {
+    if (v.is_deleted) return;
+    const ds = _vdm[String(v.id)] || v.post_date;
+    if (ds) add(ds, {name: v.topic || v.title, cat: 'Videos', done: v.status === 'published'});
+  });
+  for (let w = -6; w <= 6; w++) {
+    try { getRecurringWeekTasks(w).forEach(v => add(v.due_date, {name: v.name, cat: 'Recurring', done: !!v.done})); } catch(e) {}
+  }
+  return map;
+}
+
+function _mRenderMonth() {
+  const now = new Date();
+  const yr = now.getFullYear();
+  const mo = now.getMonth() + _mMonthOffset;
+  const first = new Date(yr, mo, 1);
+  const last = new Date(yr, mo + 1, 0);
+  const today = d2s(getDayDate(0));
+  const taskMap = _mGetTaskDatesMap();
+
+  document.getElementById('mMonthTitle').textContent = first.toLocaleDateString('en-US', {month: 'long', year: 'numeric'});
+
+  const dayNames = ['M','T','W','T','F','S','S'];
+  let html = dayNames.map(d => `<div class="m-mo-hdr">${d}</div>`).join('');
+
+  const startDow = (first.getDay() + 6) % 7;
+  const prevLast = new Date(yr, mo, 0);
+  for (let i = startDow - 1; i >= 0; i--) {
+    const d = prevLast.getDate() - i;
+    const ds = d2s(new Date(yr, mo - 1, d));
+    const hasTasks = !!(taskMap[ds] && taskMap[ds].some(t => !t.done));
+    html += `<div class="m-mo-day other-month${hasTasks ? ' has-tasks' : ''}${_mMonthSelectedDs === ds ? ' selected' : ''}" onclick="mMonthSelectDay('${ds}')"><span class="m-mo-num">${d}</span></div>`;
+  }
+
+  for (let d = 1; d <= last.getDate(); d++) {
+    const ds = d2s(new Date(yr, mo, d));
+    const isToday = ds === today;
+    const hasTasks = !!(taskMap[ds] && taskMap[ds].some(t => !t.done));
+    html += `<div class="m-mo-day${isToday ? ' is-today' : ''}${hasTasks ? ' has-tasks' : ''}${_mMonthSelectedDs === ds ? ' selected' : ''}" onclick="mMonthSelectDay('${ds}')"><span class="m-mo-num">${d}</span></div>`;
+  }
+
+  const endDow = (last.getDay() + 6) % 7;
+  for (let i = 1; i <= 6 - endDow; i++) {
+    const ds = d2s(new Date(yr, mo + 1, i));
+    const hasTasks = !!(taskMap[ds] && taskMap[ds].some(t => !t.done));
+    html += `<div class="m-mo-day other-month${hasTasks ? ' has-tasks' : ''}${_mMonthSelectedDs === ds ? ' selected' : ''}" onclick="mMonthSelectDay('${ds}')"><span class="m-mo-num">${i}</span></div>`;
+  }
+
+  document.getElementById('mMonthGrid').innerHTML = html;
+}
+
+function mMonthSelectDay(ds) {
+  _mMonthSelectedDs = ds;
+  // Update selected highlight
+  document.querySelectorAll('.m-mo-day').forEach(el => el.classList.remove('selected'));
+  const allDays = document.querySelectorAll('.m-mo-day');
+  allDays.forEach(el => { if (el.onclick && el.onclick.toString().includes(ds)) el.classList.add('selected'); });
+  // Re-render grid to update selection (simpler than DOM manipulation)
+  _mRenderMonth();
+  _mRenderMonthDetail(ds);
+}
+
+function _mRenderMonthDetail(ds) {
+  const detail = document.getElementById('mMonthDetail');
+  if (!detail) return;
+  const d = new Date(ds + 'T12:00:00');
+  const label = d.toLocaleDateString('en-US', {weekday: 'long', month: 'long', day: 'numeric'});
+
+  // Gather all tasks for this day
+  const weekOff = _mWkGetWeekOff(ds);
+  const tasks = mGetDayTasks(ds, weekOff);
+
+  let html = `<div class="m-mo-detail-hd">${label}</div>`;
+  if (!tasks.length) {
+    html += '<div class="m-mo-detail-empty">No tasks</div>';
+  } else {
+    tasks.forEach(t => {
+      const catKey = t._type === 'shop' ? 'shopping' : t._type === 'vid' || t._type === 'vidstep' ? 'Videos' : (t._virtual && t._recId) ? 'recurring' : (t.category || '');
+      const s = gc(catKey);
+      html += `<div class="m-mo-detail-item${t.done ? ' done' : ''}">
+        <span class="m-mo-detail-dot" style="background:${s.bg};border:1px solid ${s.d}"></span>
+        ${escHtml(t.name || '')}
+      </div>`;
+    });
+  }
+  detail.innerHTML = html;
+}
+
+function mMonthTapDay(ds) {
+  mCloseMonth();
+  if (_mCurTab !== 'week') mShowTab('week');
+  const weekOff = _mWkGetWeekOff(ds);
+  const list = document.getElementById('mWeekList');
+  if (weekOff < _mWkRenderedLo || weekOff > _mWkRenderedHi) {
+    while (weekOff < _mWkRenderedLo) { _mWkRenderedLo--; list.insertAdjacentHTML('afterbegin', _mWkRenderWeekHtml(_mWkRenderedLo)); }
+    while (weekOff > _mWkRenderedHi) { _mWkRenderedHi++; list.insertAdjacentHTML('beforeend', _mWkRenderWeekHtml(_mWkRenderedHi)); }
+  }
+  requestAnimationFrame(() => {
+    const dayEl = document.querySelector(`.m-wk-day[data-ds="${ds}"]`);
+    if (dayEl) dayEl.scrollIntoView({block: 'start', behavior: 'smooth'});
+  });
+}
+
 // ── Init ──────────────────────────────────────────────────────────────────────
 async function mInit() {
   load();
@@ -1736,13 +2216,13 @@ async function mInit() {
   mInitPTR();
   mInitTBSwipe();
   mInitBlockDrag();
-  mInitWeekSwipe();
+  mInitWeekScroll();
   mInitWkDrag();
   const authed = await checkAuth();
   if (!authed) return;
   hideLoginOverlay();
   await syncAll();
-  mShowTab('tb');
+  mShowTab('today');
   setInterval(() => { if (cfg.url && cfg.key) syncAll(true); }, 30000);
 }
 

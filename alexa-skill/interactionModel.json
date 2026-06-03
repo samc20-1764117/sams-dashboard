@@ -6,30 +6,21 @@
         {
           "name": "AddTaskIntent",
           "slots": [
-            { "name": "TaskName", "type": "AMAZON.SearchQuery" },
-            { "name": "TaskDate", "type": "AMAZON.DATE" }
+            { "name": "TaskName", "type": "AMAZON.SearchQuery" }
           ],
           "samples": [
             "create task {TaskName}",
-            "create task {TaskName} for {TaskDate}",
             "add task {TaskName}",
-            "add task {TaskName} for {TaskDate}",
             "create a task {TaskName}",
-            "create a task {TaskName} for {TaskDate}",
             "new task {TaskName}",
-            "new task {TaskName} for {TaskDate}",
-            "create task for {TaskDate} {TaskName}",
             "add {TaskName} to my tasks",
-            "add {TaskName} to my tasks for {TaskDate}",
-            "task {TaskName} for {TaskDate}",
             "task {TaskName}"
           ]
         },
         {
           "name": "AddShoppingIntent",
           "slots": [
-            { "name": "ItemName", "type": "AMAZON.SearchQuery" },
-            { "name": "StoreName", "type": "AMAZON.SearchQuery" }
+            { "name": "ItemName", "type": "AMAZON.SearchQuery" }
           ],
           "samples": [
             "add {ItemName} to shopping list",
@@ -38,12 +29,24 @@
             "put {ItemName} on the shopping list",
             "put {ItemName} on shopping list",
             "shopping list add {ItemName}",
-            "add {ItemName} to shopping list for {StoreName}",
-            "add {ItemName} for {StoreName}",
             "I need {ItemName}",
             "I need to buy {ItemName}",
             "buy {ItemName}",
             "add {ItemName}"
+          ]
+        },
+        {
+          "name": "LogPupSessionIntent",
+          "slots": [
+            { "name": "PupTraining", "type": "AMAZON.SearchQuery" }
+          ],
+          "samples": [
+            "log {PupTraining}",
+            "record {PupTraining}",
+            "pup training {PupTraining}",
+            "log pup session {PupTraining}",
+            "pup session {PupTraining}",
+            "training session {PupTraining}"
           ]
         },
         { "name": "AMAZON.HelpIntent", "samples": [] },

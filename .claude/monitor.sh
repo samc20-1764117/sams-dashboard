@@ -7,7 +7,7 @@ SUPABASE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
 # Table row limits — warn if any table exceeds this
 ROW_LIMIT=5000
 
-TABLES="tasks shopping_list travel birthdays pup_skills time_blocks auto_timeblocks auto_timeblock_overrides wr_recurring_rules wr_recurring_overrides"
+TABLES="tasks shopping_list travel birthdays ideas pup_skills time_blocks auto_timeblocks auto_timeblock_overrides wr_recurring_rules wr_recurring_overrides"
 
 # Check table sizes
 for table in $TABLES; do

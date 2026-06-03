@@ -3,7 +3,7 @@
     "apis": {
       "custom": {
         "endpoint": {
-          "uri": "YOUR_SUPABASE_EDGE_FUNCTION_URL"
+          "uri": "https://sams-dashboard.pages.dev/api/alexa"
         }
       }
     },
@@ -12,12 +12,12 @@
       "locales": {
         "en-US": {
           "name": "Sam Dashboard",
-          "summary": "Add tasks and shopping items to my dashboard",
-          "description": "Personal dashboard voice assistant for adding tasks and shopping list items",
+          "summary": "Add tasks, shopping items, and log pup training sessions",
+          "description": "Personal dashboard voice assistant for adding tasks, shopping list items, and logging pup training sessions",
           "examplePhrases": [
             "Alexa, tell my dashboard to create task buy groceries for today",
             "Alexa, tell my dashboard to add milk to shopping list",
-            "Alexa, open my dashboard"
+            "Alexa, tell my dashboard Mochi practiced sit"
           ]
         }
       },

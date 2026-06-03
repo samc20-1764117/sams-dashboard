@@ -28,18 +28,9 @@
 - Close: outside click or Escape.
 
 ## Selection & Drag IDs
-| Prefix | Source | Action |
-|--------|--------|--------|
-| `String(t.id)` | regular task | permanent delete |
-| `wrrule-{id}` | WR rule | skip this week (override) |
-| `rec-virt-{id}` | non-WR recurring | `skipRecVirtThisWk` |
-| `wrec-{id}` | legacy WR chip | unschedule only |
-| `shop-cal-{id}` | shopping chip | null `due_date` |
-| `blk-{id}` | shop/WR rule in TB | keyboard Delete→`delBlock` only |
-| `tv-{id}` | travel banner | permanent delete |
-| `recmo::{recId}::{srcDs}` | non-WR chip in recMoModal | same-week drop only |
-| `recmo-wr::{ruleId}::{srcWkKey}` | WR chip in recMoModal | cross-week drop |
+See `rules/tasks-ui.md` → "Task Types on Overview" for the full selection/drag ID table.
 
+**WR-specific drag/drop:**
 - Weekly cal drag: `wrec::{recId}`, `rec::{recId}::{dueDate}`, `wrrule::{ruleId}`, `shop::{shopId}`.
 - recMoModal non-WR drop→scope picker: "This week"→`_dateOverrides[wkKey]=ds`; "All future"→`appears_on_date`.
 - recMoModal WR drop→scope picker: "↻ All future"→shift `starting_date`; "⊞ This week"→`writeWrOverride({override_type:'move'})`.
@@ -58,7 +49,7 @@
 
 **`unscheduleWrRule(rid,wkKey)`**: removes `_dateOverrides[wkKey]` + linked TB blocks. Undo restores.
 
-**WR rule TB block identity**: `ruleId` is null after DB load (not persisted). Blocks link via `recId` (set to rule ID on drop). All lookups check `b.recId` as fallback. `dropOnTB` sets both `ruleId` and `recId` to `String(r.id)`.
+**WR rule TB block identity**: `ruleId` is null after DB load because `rule_id` column migration is pending (see core.md). Blocks link via `recId` (set to rule ID on drop). All lookups check `b.recId` as fallback. `dropOnTB` sets both `ruleId` and `recId` to `String(r.id)`.
 
 **WR rule drag-to-day**: must PATCH `wr_recurring_rules` with updated `date_overrides` after `_dateOverrides` change. Undo must also PATCH to restore.
 
@@ -89,7 +80,14 @@
 
 **Unified Add modal** (`#wrRuleAddModal`): `openWrRuleAddModal(cadence?,type='wr')`. WR vs Scheduled toggle. Starting date field (`#wrAddAnchorField`) always visible when type=`sch` regardless of cadence (including weekly). `_wrReadCadenceFields` returns `starting_date` for `sch` type on all cadences.
 
-**Move prev/next week** (`_wrShiftAnchor`): Non-WR: marks current week `__skip__`, moves to adjacent week via `_dateOverrides[targetWkKey]`. WR rules: shifts `_dateOverrides[wkKey]` by ±7 days.
+**Context menu** (`#wrRuleCtxMenu`): populated dynamically by `showWrRuleCtx` based on cadence. SVG outline icons (no emoji). Header shows task name + X close button (X = delete rule permanently, undoable). `wrCtxDeleteRule` DELETEs from DB; `pushUndo` re-POSTs to restore.
+- **Weekly/Other** (fires every week): Skip this week · divider · Edit this week · Edit all future. No move prev/next (meaningless for weekly).
+- **Interval cadences** (biweekly/monthly/quarterly/biannual/annual): Skip this cycle · two-column boxes: "This time only" (Next/Prev/Edit) | "All future" (Next/Prev/Edit). Columns use `.ctx-col-box` containers.
+
+**Move prev/next week (this time)** (`_wrShiftAnchor`): one-time override only. Skips current week, pins to adjacent week via `_dateOverrides`. Does NOT shift `starting_date`. Conflict guard: if target week already has this task (naturally due, moved-in override, or non-skip `_dateOverrides`), shows toast "Already scheduled that week" and blocks.
+
+**Shift schedule (all future)** (`wrCtxShiftSchedule`): shifts `starting_date` ±7 days so ALL future occurrences realign. Also moves current week instance to adjacent week (skip override + `_dateOverrides` pin). For WR rules, also writes move override to `wr_recurring_overrides`.
+
 **Edge drag (`rec::` weekly cal + setupEdge)**: sets `_dateOverrides[curWkKey]='__skip__'` + `_dateOverrides[tgtWkKey]=same-DOW date in target week`. For interval cadences (biweekly/quarterly/biannual/annual), also shifts `starting_date` ±7 days so all future occurrences align. PATCHes with `sbReqSilent` including both `date_overrides` and `starting_date`.
 
 **WR card sort**: done last→cadence (weekly=0,biweekly=2,monthly=4,quarterly=6,biannual=8,annual=10,other=12)→pup +1.
@@ -99,9 +97,11 @@
 ## Non-WR Recurring Task Logic
 Non-WR (`is_weekly_reset=false`) → `st.recurring`. All CRUD to `wr_recurring_rules`.
 - **Scheduled**: auto by cadence+`appears_on_date`. `getRecurringWeekTasks(off)`. Excludes `cadence==='daily'`.
+- **Weekly cal overdue**: `renderWkCal` loops `getRecurringWeekTasks` back 4 weeks (like WR/wrec) so overdue tasks moved forward via `_dateOverrides` appear on the correct day.
 - **Default timeblock time** (optional): `default_start_time`/`default_end_time` on `wr_recurring_rules`. When set, `getRecAutoTBForDate(ds)` auto-generates virtual TB blocks (like autoTB). Per-week overrides stored in `_dateOverrides['tb::'+wkKey]` = `{start,end}` or `'__skip__'`. Skipped if already manually placed (`st.blocks` has matching `recId`). `drawRecAutoTBBlock` renders; move/resize saves via `_saveRecAutoTBOv`; delete via `delRecAutoTBForDay`.
 - `skipRecVirtThisWk`: sets `__skip__`, removes TBs, PATCHes `date_overrides`, undo.
 - **Done**: `_doneByWk[getWkKey(wkOff)]`. `togRec` writes/deletes key.
 - **Daily habits** (`cadence==='daily'`): excluded from all recurring views. Done keyed by date string `ds`. See pages.md Daily Habits.
 - **Drag move**: snapshot `savedBlocks` before `removeTBBlocksForDate`. Undo restores `_dateOverrides` + blocks.
-- **Edit this week only**: `openRecEditModal(rid,wkKey,'this')`. Saves `_dateOverrides['name::'+wkKey]={name,notes}`.
+- **Edit this week only**: `openRecEditModal(rid,wkKey,'this')`. Saves `_dateOverrides['name::'+wkKey]={name,notes}`. Double-click any recurring task defaults to "this week" scope (passes wkKey from all views: today list, weekly chips, week summary, timeblock, recOv).
+- **Per-week notes display**: `_wkNote` field on virtual task items. `_recWkNote(r,wkKey)` helper reads `_dateOverrides['name::'+wkKey].notes`. Shown as `@note` suffix (muted, smaller text) in today list/weekly chips/week summary. In timeblock, shown as a separate line under task title via `tb-notes` div (no `@` prefix). Both `save()` and `sbReq` called on edit for instant persistence.

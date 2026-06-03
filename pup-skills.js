@@ -4,6 +4,23 @@ function isPupSkip(id){return _skipMap()[String(id)]===true}
 function _saveSkip(id,val){const m=_skipMap();if(val)m[String(id)]=true;else delete m[String(id)];localStorage.setItem('pup_skip',JSON.stringify(m))}
 // ─────────────────────────────────────────────────────────────────────────────
 let _pupEditId=null,_pupModalMochiId=null,_pupModalSunnyId=null;
+let _pupPageWkOff=0;
+function _pupPageWkLabel(){return _pupPageWkOff===0?'This Week':(_pupPageWkOff>0?`+${_pupPageWkOff} wks`:`${Math.abs(_pupPageWkOff)}w ago`);}
+function _pupPageWkRange(){const m=new Date(_pupWkMonday(_pupPageWkOff)+'T12:00:00');return m.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' – '+(new Date(m.getTime()+6*86400000)).toLocaleDateString('en-US',{month:'short',day:'numeric'});}
+function _pupPageShiftWk(dir){_pupPageWkOff+=dir;seedPupWeeklyFocus(_pupPageWkOff);renderPupsPage();}
+async function _pupPageToggle(skillId,pup,checked){
+  if(checked)await addPupWeeklyFocus(skillId,_pupPageWkOff);
+  else await removePupWeeklyFocus(skillId,_pupPageWkOff);
+  _pupPageRenderCol('Mochi');_pupPageRenderCol('Sunny');
+}
+async function _pupDropOnFocus(ev,targetPup){
+  const data=ev.dataTransfer.getData('text/plain');
+  if(!data||!data.includes('|'))return;
+  const [skillId,srcPup]=data.split('|');
+  if(srcPup!==targetPup)return;
+  await addPupWeeklyFocus(skillId,_pupPageWkOff);
+  _pupPageRenderCol('Mochi');_pupPageRenderCol('Sunny');
+}
 function _pupWkDone(skillId,off){const{mon,sun}=getWkBounds(off??wkOff);const monDs=d2s(mon),sunDs=d2s(sun);return(st.pupSessions||[]).filter(s=>String(s.skill_id)===String(skillId)&&s.day_date>=monDs&&s.day_date<=sunDs&&s.done).length;}
 function _pupWkSessTotal(skillId,off){const{mon,sun}=getWkBounds(off??wkOff);const monDs=d2s(mon),sunDs=d2s(sun);return(st.pupSessions||[]).filter(s=>String(s.skill_id)===String(skillId)&&s.day_date>=monDs&&s.day_date<=sunDs).length;}
 function _pupAllSess(skillId){return(st.pupSessions||[]).filter(s=>String(s.skill_id)===String(skillId));}
@@ -28,6 +45,26 @@ async function setPupWkDone(skillId,newDone){
     const sorted=[...doneSess].sort((a,b)=>b.day_date.localeCompare(a.day_date));
     const toRemove=doneSess.length-newDone;
     for(let i=0;i<toRemove&&i<sorted.length;i++){const s=sorted[i];st.pupSessions=st.pupSessions.filter(x=>String(x.id)!==String(s.id));await sbReqSilent('DELETE','pup_skill_sessions',null,`?id=eq.${s.id}`);}
+  }
+  save();renderPupSkillsHighlight();if(document.getElementById('page-pups')?.classList.contains('active'))renderPupsPage();renderToday();renderWkCal();
+}
+async function _setPupTotalDone(skillId,newTotal){
+  if(newTotal<0)newTotal=0;
+  const allDone=_pupAllDone(skillId);
+  const today=d2s(new Date());
+  if(newTotal>allDone){
+    for(let i=0;i<newTotal-allDone;i++){
+      const tmp='pss-tmp-'+Date.now()+'-t'+i;
+      st.pupSessions.push({id:tmp,skill_id:skillId,day_date:today,done:true});
+      const sv=await sbReqSilent('POST','pup_skill_sessions',{skill_id:skillId,day_date:today,done:true});
+      if(sv&&sv[0]){const ix=st.pupSessions.findIndex(s=>s.id===tmp);if(ix>-1)st.pupSessions[ix]=sv[0];}
+    }
+  } else if(newTotal<allDone){
+    const doneSess=_pupAllSess(skillId).filter(s=>s.done).sort((a,b)=>b.day_date.localeCompare(a.day_date));
+    for(let i=0;i<allDone-newTotal&&i<doneSess.length;i++){
+      const s=doneSess[i];st.pupSessions=st.pupSessions.filter(x=>String(x.id)!==String(s.id));
+      if(!String(s.id).startsWith('pss-tmp-'))await sbReqSilent('DELETE','pup_skill_sessions',null,`?id=eq.${s.id}`);
+    }
   }
   save();renderPupSkillsHighlight();if(document.getElementById('page-pups')?.classList.contains('active'))renderPupsPage();renderToday();renderWkCal();
 }
@@ -78,8 +115,15 @@ function pupHdrClick(col){clearTimeout(_pupHdrClickTimer);_pupHdrClickTimer=setT
 function pupHdrDbl(e,col){clearTimeout(_pupHdrClickTimer);_pupHdrClickTimer=null;pupFilterBy(e,col);}
 function setPupModalDog(val){
   document.getElementById('pmPup').value=val;
-  document.getElementById('pmDogMochi').classList.toggle('active',val==='Mochi');
-  document.getElementById('pmDogSunny').classList.toggle('active',val==='Sunny');
+  const mBtn=document.getElementById('pmDogMochi'),sBtn=document.getElementById('pmDogSunny');
+  mBtn.classList.toggle('active',val==='Mochi');sBtn.classList.toggle('active',val==='Sunny');
+  // Color the active button
+  mBtn.style.background=val==='Mochi'?'#8b5cf6':'transparent';mBtn.style.color=val==='Mochi'?'#fff':'var(--muted)';
+  sBtn.style.background=val==='Sunny'?'#d97706':'transparent';sBtn.style.color=val==='Sunny'?'#fff':'var(--muted)';
+  const _tw=document.getElementById('pmDogToggleWrap');if(_tw)_tw.style.borderColor='var(--border)';
+  // Color count section
+  const _cb=document.querySelector('[data-pm-count-bg]');
+  if(_cb){_cb.style.background=val==='Mochi'?'rgba(139,92,246,.06)':'rgba(217,119,6,.06)';_cb.style.border=`1px solid ${val==='Mochi'?'rgba(139,92,246,.1)':'rgba(217,119,6,.1)'}`;}
   if(_pupEditId){
     const curRec=st.pup_skills.find(x=>x.id==_pupEditId);
     if(curRec&&curRec.pup!==val){
@@ -93,12 +137,51 @@ function setPupModalDog(val){
         document.getElementById('pmOrder').value=other.skill_order||'';
         document.getElementById('pmFocus').checked=(other.focus===true||other.focus==='true');
         document.getElementById('pmNextStep').value=other.next_step||'';
-        document.getElementById('pmWord').value=other.word||'';
+        _pmInitWord(other.skill||'',other.word||'');
         document.getElementById('pmSignal').value=other.signal||'';
         document.getElementById('pmComments').value=other.comments||'';
       }
     }
   }
+}
+function _pmSkipChanged(){
+  const skipM=document.getElementById('pmSkipMochi').checked;
+  const skipS=document.getElementById('pmSkipSunny').checked;
+  const mBtn=document.getElementById('pmDogMochi'),sBtn=document.getElementById('pmDogSunny');
+  const wrap=document.getElementById('pmDogToggleWrap');
+  mBtn.style.opacity=skipM?'0':'';mBtn.style.pointerEvents=skipM?'none':'';
+  sBtn.style.opacity=skipS?'0':'';sBtn.style.pointerEvents=skipS?'none':'';
+  // Hide entire toggle wrap border if both or the active one is skipped
+  if(wrap){
+    const bothSkip=skipM&&skipS;
+    const activeVal=document.getElementById('pmPup').value;
+    const activeSkip=(activeVal==='Mochi'&&skipM)||(activeVal==='Sunny'&&skipS);
+    wrap.style.borderColor=(bothSkip||activeSkip)?'transparent':'';
+    // If active pup is skipped, switch to the other if available
+    if(activeSkip&&!bothSkip){setPupModalDog(activeVal==='Mochi'?'Sunny':'Mochi');}
+  }
+}
+let _pmWordManual=false;
+function _pmSyncWord(){
+  if(_pmWordManual)return;
+  const w=document.getElementById('pmWord');if(!w)return;
+  w.value=document.getElementById('pmSkill').value;w.style.color='var(--subtle)';
+}
+function _pmWordFocus(){
+  const w=document.getElementById('pmWord');if(!w)return;
+  if(!_pmWordManual&&w.value){w.select();}
+}
+function _pmWordEdit(){
+  const w=document.getElementById('pmWord'),s=document.getElementById('pmSkill');if(!w||!s)return;
+  _pmWordManual=w.value!==''&&w.value!==s.value;
+  w.style.color=_pmWordManual?'var(--text)':'var(--subtle)';
+}
+function _pmInitWord(skillVal,wordVal){
+  const w=document.getElementById('pmWord');if(!w)return;
+  const sameOrEmpty=!wordVal||wordVal==='None'||wordVal.toLowerCase()===skillVal.toLowerCase();
+  _pmWordManual=!sameOrEmpty;
+  w.value=sameOrEmpty?skillVal:(wordVal||'');
+  w.style.color=_pmWordManual?'var(--text)':'var(--subtle)';
 }
 function openPupAddModal(){
   _pupEditId=null;_pupModalMochiId=null;_pupModalSunnyId=null;
@@ -115,13 +198,17 @@ function openPupAddModal(){
   document.getElementById('pmOrder').value='';
   document.getElementById('pmFocus').checked=false;
   document.getElementById('pmNextStep').value='';
-  document.getElementById('pmWord').value='';
+  _pmInitWord('','');
   document.getElementById('pmSignal').value='';
   document.getElementById('pmComments').value='';
   document.getElementById('pmSkipMochi').checked=false;
   document.getElementById('pmSkipSunny').checked=false;
+  document.getElementById('pmDogMochi').style.visibility='visible';
+  document.getElementById('pmDogSunny').style.visibility='visible';
+  const _cr=document.getElementById('pmCountRow');if(_cr)_cr.style.display='none';
+  setPupModalDog('Mochi');
   document.getElementById('pupModal').classList.add('open');
-  setTimeout(()=>document.getElementById('pmSkill').focus(),80);
+  setTimeout(()=>{const _el=document.getElementById('pmSkill');if(_el){_el.style.caretColor='transparent';_el.focus();}},80);
 }
 function openPupEditModal(id){
   const s=st.pup_skills.find(x=>x.id==id);if(!s)return;
@@ -137,6 +224,7 @@ function openPupEditModal(id){
   _pupModalSunnyId=_sunnyRec?_sunnyRec.id:null;
   document.getElementById('pmSkipMochi').checked=_mochiRec?isPupSkip(_mochiRec.id):false;
   document.getElementById('pmSkipSunny').checked=_sunnyRec?isPupSkip(_sunnyRec.id):false;
+  _pmSkipChanged();
   setPupModalDog(s.pup||'Mochi');
   document.getElementById('pmSkill').value=s.skill||'';
   document.getElementById('pmCategory').value=s.category||'';
@@ -145,15 +233,31 @@ function openPupEditModal(id){
   document.getElementById('pmOrder').value=s.skill_order||'';
   document.getElementById('pmFocus').checked=(s.focus===true||s.focus==='true');
   document.getElementById('pmNextStep').value=s.next_step||'';
-  document.getElementById('pmWord').value=s.word||'';
+  _pmInitWord(s.skill||'',s.word||'');
   document.getElementById('pmSignal').value=s.signal||'';
   document.getElementById('pmComments').value=s.comments||'';
+  // Show count editing for existing skills
+  const _countRow=document.getElementById('pmCountRow');
+  const _wkDoneEl=document.getElementById('pmWkDone');
+  const _totalDoneEl=document.getElementById('pmTotalDone');
+  if(_countRow&&_wkDoneEl){
+    _countRow.style.display='';
+    _wkDoneEl.value=_pupWkDone(id);
+    if(_totalDoneEl)_totalDoneEl.value=_pupAllDone(id);
+  }
   document.getElementById('pupModal').classList.add('open');
-  setTimeout(()=>{const _el=document.getElementById('pmSkill');if(_el){_el.focus();const _l=_el.value.length;_el.setSelectionRange(_l,_l);}},80);
+  setTimeout(()=>{const _el=document.getElementById('pmSkill');if(_el){_el.style.caretColor='transparent';_el.focus();_el.setSelectionRange(_el.value.length,_el.value.length);}},80);
 }
 async function savePupModal(){
   const _skipMochi=document.getElementById('pmSkipMochi').checked;
   const _skipSunny=document.getElementById('pmSkipSunny').checked;
+  // Save counts if editing existing skill
+  if(_pupEditId&&document.getElementById('pmCountRow')?.style.display!=='none'){
+    const _wkDoneEl=document.getElementById('pmWkDone');
+    const _totalEl=document.getElementById('pmTotalDone');
+    if(_wkDoneEl)setPupWkDone(_pupEditId,parseInt(_wkDoneEl.value)||0);
+    if(_totalEl)_setPupTotalDone(_pupEditId,parseInt(_totalEl.value)||0);
+  }
   const data={
     pup:document.getElementById('pmPup').value,
     skill:document.getElementById('pmSkill').value.trim(),
@@ -540,7 +644,8 @@ function renderPupTable(){
     lastMasteredSec=isMasteredAll;
     const anyRec=pups.map(p=>g.byPup[p]).find(Boolean);
     const anyId=anyRec?String(anyRec.id):'';
-    const word=g.word&&g.word!=='None'?esc(g.word):'';
+    const _rawWord=g.word&&g.word!=='None'?g.word:'';
+    const word=(_rawWord&&_rawWord.toLowerCase()!==(g.skill||'').toLowerCase())?esc(_rawWord):'';
     // Rich tooltip data: word, signal, per-pup comments
     const anySkillRec=pups.map(p=>g.byPup[p]).find(Boolean);
     const tipSignal=anySkillRec&&anySkillRec.signal&&anySkillRec.signal!=='None'?esc(anySkillRec.signal):'';
@@ -570,14 +675,14 @@ function renderPupTable(){
       const nextHover=comment?`onmouseenter="showPupTip(event,'${comment}')" onmouseleave="hidePupTip()" style="cursor:help;padding:0 6px;font-size:11px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:var(--text)"`:`style="padding:0 6px;font-size:11px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:var(--text)"`;
       const nextDiv=`<div ondblclick="event.stopPropagation();pupCellEdit(this.closest('td'),'${sid}','next_step')" ${nextHover}>${nextStep}</div>`;
       const sessDiv=`<div onclick="event.stopPropagation();openPupCountEdit('${sid}',this)" style="height:100%;display:flex;align-items:center;justify-content:flex-end;padding-right:6px;cursor:pointer" title="Session details">${_pupCountBadge(s)}</div>`;
-      return`<td style="padding:2px 5px"><div style="${pillBase}">${stageWidget}${nextDiv}${sessDiv}</div></td>`;
+      return`<td data-drag-skill-id="${sid}" data-drag-pup="${p}" style="padding:2px 5px"><div style="${pillBase}">${stageWidget}${nextDiv}${sessDiv}</div></td>`;
     }).join('');
     const firstRec=pups.map(p=>g.byPup[p]).find(Boolean);
     const tipAttr=hasTip?` onmouseenter="showPupRichTip(event,${tipRows.replace(/"/g,'&quot;')})" onmouseleave="hidePupTip()" style="cursor:help"`:'';
     const rowSel=_selSkillKeys.has(g.skill)?'pup-sel':'';
     rowsHtml.push(`<tr data-skillkey="${esc(g.skill)}" class="${rowSel}" onclick="pupRowClick(event,'${esc(g.skill)}')" ondblclick="openPupEditModal('${firstRec?String(firstRec.id):''}')"${!_pupSortCol?` style="cursor:grab${isMasteredAll?';opacity:.45':''}"`:isMasteredAll?' style="opacity:.45"':''}>
       <td${tipAttr} style="height:${isGroupNotStarted?'24px':isMasteredAll?'26px':'30px'};max-width:100px;width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;${tdE}">${esc(g.skill)}</td>
-      <td${tipAttr} style="width:72px;${tdE};font-style:${word?'italic':'normal'};color:${word?'var(--text)':'var(--muted)'}">${word||'—'}</td>
+      <td${tipAttr} style="width:72px;${tdE};font-style:${word?'italic':'normal'};color:${word?'var(--text)':'transparent'}">${word||''}</td>
       ${pupCells}
       <td style="width:28px;padding:2px 4px;text-align:right"><button class="pup-del" data-skillkey="${esc(g.skill)}" onclick="event.stopPropagation();deletePupGroup(this.dataset.skillkey)" title="Delete">×</button></td>
     </tr>`);
@@ -587,31 +692,69 @@ function renderPupTable(){
     [...tbody.querySelectorAll('tr[data-skillkey]')].forEach(row=>{
       row.addEventListener('mousedown',e=>{
         if(e.button!==0||e.target.closest('input,button'))return;
-        let dragging=false;const startY=e.clientY;let ph=null;
-        // rows being moved: this row + other selected rows if this row is part of selection
+        let dragging=false;const startX=e.clientX,startY=e.clientY;let ph=null;let ghost=null;let mode=null;
         const dragKeys=(_selSkillKeys.has(row.dataset.skillkey)&&_selSkillKeys.size>1)
           ?[...tbody.querySelectorAll('tr[data-skillkey]')].filter(r=>_selSkillKeys.has(r.dataset.skillkey)).map(r=>r.dataset.skillkey)
           :[row.dataset.skillkey];
+        const tblRect=tbody.closest('table').getBoundingClientRect();
         const onMove=ev=>{
-          const dy=ev.clientY-startY;
-          if(!dragging&&Math.abs(dy)<5)return;
+          const dx=ev.clientX-startX,dy=ev.clientY-startY;
+          if(!dragging&&Math.abs(dx)<5&&Math.abs(dy)<5)return;
+          ev.preventDefault();
           if(!dragging){
             window.getSelection()?.removeAllRanges();dragging=true;
             [...tbody.querySelectorAll('tr[data-skillkey]')].filter(r=>dragKeys.includes(r.dataset.skillkey)).forEach(r=>r.style.opacity='.3');
-            ph=document.createElement('tr');
-            ph.innerHTML=`<td colspan="100" style="padding:0;height:0;border-top:2px dashed rgba(139,92,246,.65);pointer-events:none"></td>`;
           }
-          ev.preventDefault();
-          const refs=[...tbody.querySelectorAll('tr[data-skillkey]')].filter(r=>!dragKeys.includes(r.dataset.skillkey));
-          let ins=false;
-          for(const r of refs){const rc=r.getBoundingClientRect();if(ev.clientY<rc.top+rc.height/2){tbody.insertBefore(ph,r);ins=true;break;}}
-          if(!ins){if(refs.length)refs[refs.length-1].after(ph);else tbody.appendChild(ph);}
+          // Decide mode: if cursor is outside table bounds horizontally → focus-zone drop
+          const outsideTable=ev.clientX<tblRect.left-20||ev.clientX>tblRect.right+20||ev.clientY<tblRect.top-40;
+          if(outsideTable&&mode!=='focus'){
+            mode='focus';if(ph){ph.remove();ph=null;}
+            if(!ghost){ghost=document.createElement('div');ghost.textContent=row.dataset.skillkey;ghost.style.cssText='position:fixed;z-index:9999;padding:4px 10px;border-radius:6px;font-size:11px;background:rgba(139,92,246,.15);color:var(--text);pointer-events:none;white-space:nowrap;font-weight:600';document.body.appendChild(ghost);}
+          } else if(!outsideTable&&mode!=='reorder'){
+            mode='reorder';if(ghost){ghost.remove();ghost=null;}
+            document.querySelectorAll('._pupFocusDrop').forEach(dz=>{dz.style.outline='';dz.style.background='';});
+            if(!ph){ph=document.createElement('tr');ph.innerHTML=`<td colspan="100" style="padding:0;height:0;border-top:2px dashed rgba(139,92,246,.65);pointer-events:none"></td>`;}
+          }
+          if(mode==='focus'&&ghost){
+            ghost.style.left=(ev.clientX+12)+'px';ghost.style.top=(ev.clientY-8)+'px';
+            document.querySelectorAll('._pupFocusDrop').forEach(dz=>{
+              const r=dz.getBoundingClientRect();
+              const over=ev.clientX>=r.left&&ev.clientX<=r.right&&ev.clientY>=r.top&&ev.clientY<=r.bottom;
+              dz.style.outline=over?'2px solid '+(dz.dataset.pup==='Mochi'?'#8b5cf6':'#fbbf24'):'';
+              dz.style.background=over?(dz.dataset.pup==='Mochi'?'rgba(139,92,246,0.12)':'rgba(251,191,36,0.14)'):'';
+            });
+          }
+          if(mode==='reorder'&&ph){
+            const refs=[...tbody.querySelectorAll('tr[data-skillkey]')].filter(r=>!dragKeys.includes(r.dataset.skillkey));
+            let ins=false;
+            for(const r of refs){const rc=r.getBoundingClientRect();if(ev.clientY<rc.top+rc.height/2){tbody.insertBefore(ph,r);ins=true;break;}}
+            if(!ins){if(refs.length)refs[refs.length-1].after(ph);else tbody.appendChild(ph);}
+          }
         };
-        const onUp=()=>{
+        const onUp=async ev=>{
           document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);
           [...tbody.querySelectorAll('tr[data-skillkey]')].forEach(r=>r.style.opacity='');
-          if(dragging&&ph){
-            // insert all dragged rows at ph in their original relative order
+          if(ghost)ghost.remove();
+          document.querySelectorAll('._pupFocusDrop').forEach(dz=>{dz.style.outline='';dz.style.background='';});
+          if(!dragging)return;
+          if(mode==='focus'){
+            const dropTarget=document.elementFromPoint(ev.clientX,ev.clientY)?.closest('._pupFocusDrop');
+            if(dropTarget){
+              const targetPup=dropTarget.dataset.pup;
+              const skillName=row.dataset.skillkey;
+              const rec=(st.pup_skills||[]).find(s=>s.skill===skillName&&s.pup===targetPup);
+              if(!rec){
+                showToast(`${skillName} not assigned to ${targetPup}`,'var(--muted)',1500);
+              } else if(!rec.stage||rec.stage==='Not Started'){
+                showToast(`${skillName} not started for ${targetPup}`,'var(--muted)',1500);
+              } else if(isPupSkip(rec.id)){
+                showToast(`${skillName} skipped for ${targetPup}`,'var(--muted)',1500);
+              } else {
+                await addPupWeeklyFocus(String(rec.id),_pupPageWkOff);_pupPageRenderCol('Mochi');_pupPageRenderCol('Sunny');
+              }
+            }
+            if(ph)ph.remove();
+          } else if(mode==='reorder'&&ph){
             const dRows=[...tbody.querySelectorAll('tr[data-skillkey]')].filter(r=>dragKeys.includes(r.dataset.skillkey));
             if(dRows.length){tbody.insertBefore(dRows[0],ph);for(let i=1;i<dRows.length;i++)dRows[i-1].after(dRows[i]);}
             ph.remove();
@@ -620,7 +763,7 @@ function renderPupTable(){
             ordered.forEach((r,i)=>{const key=r.dataset.skillkey;st.pup_skills.forEach(s=>{if(s.skill===key)s.skill_order=i;});});
             save();renderPupTable();
             ordered.forEach((r,i)=>{const key=r.dataset.skillkey;st.pup_skills.forEach(s=>{if(s.skill===key)sbReqSilent('PATCH','pup_skills',{skill_order:i},`?id=eq.${s.id}`);});});
-          }else if(dragging){if(ph)ph.remove();}
+          } else {if(ph)ph.remove();}
         };
         document.addEventListener('mousemove',onMove);document.addEventListener('mouseup',onUp);
       });
@@ -638,67 +781,17 @@ function renderPupsPage(){
   const page=document.getElementById('page-pups');if(!page)return;
   const skills=st.pup_skills||[];
   function esc(v){return(v||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;');}
-  function lvlPill(s){return s.level?`<span class="pup-pill">${s.level}</span>`:'';}
-  function skillCardRow(s,cls){
-    const isMastered=s.stage==='Mastered';
-    const ns=!isMastered&&s.next_step&&s.next_step!=='None'?s.next_step:'';
-    const cm=!isMastered&&s.comments&&s.comments!=='None'?s.comments:'';
-    const wd=(s.word&&s.word!=='None'&&s.word.toLowerCase()!==s.skill.toLowerCase())?esc(s.word):'';
-    const sig=s.signal&&s.signal!=='None'?esc(s.signal):'';
-    const sid=String(s.id);
-    const sigTip=sig?` onmouseenter="showPupTip(event,'${sig}')" onmouseleave="hidePupTip()" style="cursor:help"`:' style=""';
-    return`<div class="pup-skill-row ${cls}" data-pupid="${sid}" style="flex-direction:column;align-items:stretch;${sig?'cursor:pointer':''}"${sig?` onmouseenter="showPupTip(event,'${sig}')" onmouseleave="hidePupTip()"`:''}>
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:6px">
-        <div style="display:flex;align-items:center;gap:5px;flex:1;min-width:0;overflow:hidden">
-          <input type="checkbox" ${isMastered?'checked':''} onclick="event.stopPropagation();togglePupMastered('${sid}',this.checked)" title="Mark mastered" style="width:13px;height:13px;cursor:pointer;accent-color:#8b5cf6;flex-shrink:0">
-          <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;${isMastered?'opacity:.5;text-decoration:line-through':''}"><span class="pup-skill-name">${s.skill}</span>${wd?`<span style="font-size:10px;color:var(--muted);margin-left:4px">"${wd}"</span>`:''}</span>${sig?`<span style="font-size:9px;color:var(--muted);opacity:.6;flex-shrink:0;margin-left:2px">☞</span>`:''}
-        </div>
-        <div style="display:flex;align-items:center;gap:5px;flex-shrink:0">${ns?`<span style="font-size:10px;color:var(--muted);white-space:nowrap">${ns}</span>`:''}${!isMastered?`<span class="vid-num" onclick="event.stopPropagation();openPupCountEdit('${sid}',this)" title="Click for session details" style="font-size:10px;font-weight:600;color:var(--muted);cursor:pointer;padding:1px 4px;border-radius:4px;background:rgba(0,0,0,.04)">${_pupAllDone(sid)}/${_pupAllTotal(sid)}</span>`:''}</div>
-      </div>
-      ${cm?`<div style="font-size:10px;color:var(--subtle);margin-top:2px;padding-left:18px">${esc(cm)}</div>`:''}
-    </div>`;
-  }
-  const PUP_CAT_ORDER=['commands','manners','fun'];
-  const PUP_CAT_LABELS={commands:'Commands',manners:'Manners',fun:'Fun'};
-  const CATO_CARD={commands:0,manners:1,fun:2};
-  const LVLO_CARD={Easy:0,Medium:1,Hard:2};
-  function sortCardSkills(list){
-    return [...list].sort((a,b)=>{
-      const fa=(a.focus===true||a.focus==='true'?0:1),fb=(b.focus===true||b.focus==='true'?0:1);if(fa!==fb)return fa-fb;
-      const ca=CATO_CARD[a.category]??9,cb=CATO_CARD[b.category]??9;if(ca!==cb)return ca-cb;
-      const la=LVLO_CARD[a.level]??9,lb=LVLO_CARD[b.level]??9;if(la!==lb)return la-lb;
-      return (a.skill_order??9999)-(b.skill_order??9999);
-    });
-  }
-  function groupedCardRows(list,cls){
-    const sorted=sortCardSkills(list);
-    const grouped={};
-    sorted.forEach(s=>{const k=s.category||'other';(grouped[k]=grouped[k]||[]).push(s);});
-    const order=[...PUP_CAT_ORDER,...Object.keys(grouped).filter(k=>!PUP_CAT_ORDER.includes(k))];
-    return order.filter(k=>grouped[k]).map(k=>{
-      const label=PUP_CAT_LABELS[k]||(k.charAt(0).toUpperCase()+k.slice(1));
-      return`<div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin:6px 0 3px">${label}</div>${grouped[k].map(s=>skillCardRow(s,cls)).join('')}`;
-    }).join('');
-  }
   function pupCol(pup,color){
-    const ps=skills.filter(s=>s.pup===pup);
-    const mastered=ps.filter(s=>s.stage==='Mastered');
-    const inProgress=ps.filter(s=>s.stage==='In Progress');
-    const notStarted=ps.filter(s=>!s.stage||s.stage==='Not Started');
-    const total=ps.length||1;
-    const pMastered=mastered.length/total*100,pInProg=inProgress.length/total*100,pNot=notStarted.length/total*100;
-    const progressBar=`<div style="height:8px;border-radius:0 0 var(--r) var(--r);overflow:hidden;background:rgba(210,205,228,.2);display:flex;flex-shrink:0">${pMastered>0?`<div onmouseenter="showPupStageTip(event,'Mastered: ${mastered.length}','#22c55e')" onmouseleave="hidePupTip()" style="width:${pMastered}%;background:#22c55e;cursor:default;transition:width .3s"></div>`:''} ${pInProg>0?`<div onmouseenter="showPupStageTip(event,'In Progress: ${inProgress.length}','#eab308')" onmouseleave="hidePupTip()" style="width:${pInProg}%;background:#eab308;cursor:default;transition:width .3s"></div>`:''} ${pNot>0?`<div onmouseenter="showPupStageTip(event,'Not Started: ${notStarted.length}','#94a3b8')" onmouseleave="hidePupTip()" style="width:${pNot}%;background:rgba(210,205,228,.4);cursor:default;transition:width .3s"></div>`:''}</div>`;
-    const isSkip=s=>isPupSkip(s.id);
-    const trainWeek=ps.filter(s=>!isSkip(s)&&(s.focus===true||s.focus==='true'));
-    const upNext=inProgress.filter(s=>!isSkip(s)&&!(s.focus===true||s.focus==='true'));
+    const focusCount=_pupWkFocusIds(pup,_pupPageWkOff).length;
     const img=pup==='Mochi'?'./mochi_headshot.png':'./sunny_headshot.png';
     const glowColor=pup==='Mochi'?'rgba(139,92,246,0.2)':'rgba(251,191,36,0.24)';
-    const themeBg=pup==='Mochi'?'rgba(139,92,246,0.05)':'rgba(251,191,36,0.07)';
-    const themeBorder=pup==='Mochi'?'rgba(139,92,246,0.12)':'rgba(251,191,36,0.18)';
-    return`<div class="pup-col card" style="display:flex;flex-direction:column;overflow:visible;position:relative;background:rgba(255,255,255,.92);border:1.5px solid rgba(210,205,228,.5);border-radius:18px"><img src="${img}" style="position:absolute;top:-44px;left:50%;transform:translateX(-50%);width:92px;height:92px;border-radius:50%;object-fit:cover;object-position:top;border:3px solid rgba(255,255,255,.9);box-shadow:0 0 18px 6px ${glowColor},0 4px 14px rgba(0,0,0,.1)"><div style="display:grid;grid-template-columns:1fr 92px 1fr;align-items:center;min-height:52px;border-bottom:1px solid rgba(210,205,228,.22);flex-shrink:0"><span style="font-weight:700;font-size:13px;color:var(--text);padding-left:13px">${pup}</span><span></span><span style="font-size:11px;color:var(--muted);font-weight:500;padding-right:13px;text-align:right">${inProgress.length} in progress</span></div><div style="padding:8px;overflow-y:auto;flex:1;min-height:0;display:flex;flex-direction:column;gap:12px">${trainWeek.length?`<div style="background:${themeBg};border:1px solid ${themeBorder};border-radius:10px;padding:10px 8px"><div class="pup-section-label">Train This Week</div>${trainWeek.map(s=>skillCardRow(s,'pup-focus-row')).join('')}</div>`:''} ${upNext.length?`<div><div class="pup-section-label" style="color:var(--text);font-weight:800">Up Next</div>${groupedCardRows(upNext,'pup-skill-emphasis')}</div>`:''} ${ps.length===0?'<div style="font-size:11px;color:var(--muted);text-align:center;padding:20px 0">No skills yet</div>':''}</div>${progressBar}</div>`;
+    const totalPractices=(st.pupSessions||[]).filter(s=>{const sk=(st.pup_skills||[]).find(x=>String(x.id)===String(s.skill_id));return sk&&sk.pup===pup&&s.done;}).length;
+    return`<div class="pup-col card" style="display:flex;flex-direction:column;overflow:visible;position:relative;background:rgba(255,255,255,.92);border:1.5px solid rgba(210,205,228,.5);border-radius:18px 18px 0 0"><img src="${img}" style="position:absolute;top:-44px;left:50%;transform:translateX(-50%);width:92px;height:92px;border-radius:50%;object-fit:cover;object-position:top;border:3px solid rgba(255,255,255,.9);box-shadow:0 0 18px 6px ${glowColor},0 4px 14px rgba(0,0,0,.1)"><div style="display:grid;grid-template-columns:1fr 92px 1fr;align-items:center;min-height:52px;border-bottom:1px solid rgba(210,205,228,.22);flex-shrink:0"><span style="font-weight:700;font-size:13px;color:var(--text);padding-left:13px">${pup}</span><span></span><span style="font-size:11px;color:var(--muted);font-weight:500;padding-right:13px;text-align:right">${totalPractices} practices</span></div><div style="padding:8px;overflow-y:auto;flex:1;min-height:0;display:flex;flex-direction:column;gap:2px" data-pup-col="${pup}"></div></div>`;
   }
   const tableCol=`<div class="pup-col card" style="overflow:hidden"><div class="ch"><span style="font-weight:700;font-size:13px;color:var(--text)">All Skills</span><button class="btn-plus" onclick="openPupAddModal()" style="margin-left:auto;padding:2px 8px;font-size:13px;border-radius:8px;border:1px solid var(--border);background:transparent;cursor:pointer;color:var(--text)">+</button></div><div id="pupTblScroll" style="overflow:auto;flex:1;min-height:0"><table class="pup-tbl"><thead id="pupTblHead"></thead><tbody id="pupTblBody"></tbody></table></div></div>`;
-  page.innerHTML=`<div class="ov-topbar"><div class="ov-topbar-left"><span class="ov-topbar-label">Pups</span><span class="ov-topbar-dot"></span></div><span class="ov-topbar-date topbar-date"></span><div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div></div><div style="display:grid;grid-template-columns:1fr 1fr 2.2fr;gap:14px;height:calc(100vh - 80px);padding-top:26px;width:100%;box-sizing:border-box">${pupCol('Mochi','#8b5cf6')}${pupCol('Sunny','#fbbf24')}${tableCol}</div>`;
+  const arrowBtn='cursor:pointer;font-size:18px;color:var(--muted);padding:4px 8px;user-select:none;line-height:1;border-radius:6px';
+  const wkBar=`<div style="display:flex;align-items:center;justify-content:center;gap:10px;padding:8px 0;background:rgba(255,255,255,.55);border:1px solid rgba(210,205,228,.3);border-top:1px solid rgba(210,205,228,.15);border-radius:0 0 18px 18px;flex-shrink:0"><span onclick="_pupPageShiftWk(-1)" style="${arrowBtn}" title="Previous week (←)">‹</span><div style="text-align:center"><span style="font-size:11px;font-weight:700;color:var(--text)">${_pupPageWkLabel()}</span> <span style="font-size:10px;color:var(--muted)">${_pupPageWkRange()}</span>${_pupPageWkOff!==0?` <span onclick="_pupPageWkOff=0;seedPupWeeklyFocus(0);renderPupsPage()" style="font-size:9px;color:var(--muted);cursor:pointer;padding:1px 5px;border:1px solid var(--border);border-radius:4px;margin-left:4px" title="Jump to this week (T)">today</span>`:''}</div><span onclick="_pupPageShiftWk(1)" style="${arrowBtn}" title="Next week (→)">›</span></div>`;
+  page.innerHTML=`<div class="ov-topbar"><div class="ov-topbar-left"><span class="ov-topbar-label">Pups</span><span class="ov-topbar-dot"></span></div><span class="ov-topbar-date topbar-date"></span><div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div></div><div style="display:grid;grid-template-columns:1fr 1fr 2.2fr;gap:14px;height:calc(100vh - 80px);padding-top:26px;width:100%;box-sizing:border-box"><div style="display:flex;flex-direction:column;grid-column:1/3;gap:0"><div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;flex:1;min-height:0">${pupCol('Mochi','#8b5cf6')}${pupCol('Sunny','#fbbf24')}</div>${wkBar}</div>${tableCol}</div>`;
   if(!page._pupDblClick){
     page._pupDblClick=true;
     page.addEventListener('dblclick',e=>{
@@ -715,6 +808,65 @@ function renderPupsPage(){
     if(!e.target.closest('#pupTblBody')){_selSkillKeys.clear();_lastSelKey=null;_selPupIds.clear();applyPupSelHighlight();}
   };
   document.addEventListener('click',window._pupOutsideClick);
+  // Keyboard shortcuts for pup page
+  if(window._pupPageKeyFn)document.removeEventListener('keydown',window._pupPageKeyFn);
+  window._pupPageKeyFn=e=>{
+    const pg=document.getElementById('page-pups');if(!pg||!pg.classList.contains('active'))return;
+    const inInput=e.target.matches('input,textarea,select,[contenteditable]');if(inInput)return;
+    if(e.key==='ArrowLeft'){e.preventDefault();_pupPageShiftWk(-1);return;}
+    if(e.key==='ArrowRight'){e.preventDefault();_pupPageShiftWk(1);return;}
+    if(e.key==='t'){e.preventDefault();_pupPageWkOff=0;seedPupWeeklyFocus(0);renderPupsPage();return;}
+  };
+  document.addEventListener('keydown',window._pupPageKeyFn);
   renderPupTable();
-  const now=new Date();document.querySelectorAll('#page-pups .topbar-date').forEach(e=>e.textContent=now.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}));document.querySelectorAll('#page-pups .topbar-time').forEach(e=>e.textContent=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}));
+  seedPupWeeklyFocus(_pupPageWkOff);
+  _pupPageRenderCol('Mochi');_pupPageRenderCol('Sunny');
+  const now=new Date();document.querySelectorAll('#page-pups .topbar-date').forEach(e=>e.textContent=now.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}));document.querySelectorAll('#page-pups .topbar-time').forEach(e=>e.textContent=now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}));
+}
+function _pupPageRenderCol(pup){
+  const colEl=document.querySelector(`[data-pup-col="${pup}"]`);if(!colEl)return;
+  const allSkills=(st.pup_skills||[]).filter(s=>s.pup===pup&&s.stage!=='Mastered').sort((a,b)=>(a.skill||'').localeCompare(b.skill||''));
+  const curIds=_pupWkFocusIds(pup,_pupPageWkOff);
+  const active=allSkills.filter(s=>curIds.includes(String(s.id)));
+  const inactive=allSkills.filter(s=>!curIds.includes(String(s.id)));
+  const accentHex=pup==='Mochi'?'#8b5cf6':'#d97706';
+  const themeBg=pup==='Mochi'?'rgba(139,92,246,0.05)':'rgba(251,191,36,0.07)';
+  const themeBorder=pup==='Mochi'?'rgba(139,92,246,0.12)':'rgba(251,191,36,0.18)';
+  const renderSkill=(s,checked)=>{
+    const sid=String(s.id);
+    const displayName=(s.word&&s.word!=='None')?s.word:s.skill;
+    const done=_pupWkDone(sid,_pupPageWkOff);const total=_pupWkSessTotal(sid,_pupPageWkOff);
+    const allDone=_pupAllDone(sid);
+    const ns=checked&&s.next_step&&s.next_step!=='None'?escHtml(s.next_step):'';
+    const countStr=checked&&(done||total)?`<span onclick="event.stopPropagation();openPupCountEdit('${sid}',this)" style="font-size:9px;font-weight:600;color:var(--muted);flex-shrink:0;cursor:pointer;padding:1px 3px;border-radius:3px;background:rgba(0,0,0,.04)">${done}/${total}</span>`:'';
+    const availCount=!checked&&allDone?`<span style="font-size:9px;color:var(--muted);margin-left:auto;flex-shrink:0">${allDone}</span>`:'';
+    const rightSide=checked?(ns||countStr?`<div style="display:flex;align-items:center;gap:5px;margin-left:auto;flex-shrink:0">${ns?`<span style="font-size:9px;color:var(--subtle);white-space:nowrap">${ns}</span>`:''}${countStr}</div>`:''):availCount;
+    return`<div class="_pupDragSkill" data-pupid="${sid}" data-pup="${pup}" data-checked="${checked}" ${!checked?`draggable="true" ondragstart="event.dataTransfer.setData('text/plain','${sid}|${pup}');event.dataTransfer.effectAllowed='copy';this.style.opacity='.3'" ondragend="this.style.opacity='.6'"`:''} style="display:flex;align-items:center;padding:5px 6px;border-radius:6px;gap:6px;${checked?'background:rgba(255,255,255,.7);border:1px solid rgba(210,205,228,.2);margin-bottom:3px':'opacity:.6;margin-bottom:2px;cursor:grab'}">
+      <input type="checkbox" ${checked?'checked':''} onchange="_pupPageToggle('${sid}','${pup}',this.checked)" style="width:13px;height:13px;accent-color:${accentHex};cursor:pointer;flex-shrink:0">
+      <span style="font-size:11px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(displayName)}</span>
+      ${rightSide}
+    </div>`;
+  };
+  // Compute max focus count across both pups for aligned available section
+  const otherPup=pup==='Mochi'?'Sunny':'Mochi';
+  const otherActiveCount=_pupWkFocusIds(otherPup,_pupPageWkOff).length;
+  const maxFocus=Math.max(active.length,otherActiveCount);
+  // Spacer rows to align available sections (each row ~25px)
+  const spacerCount=maxFocus-active.length;
+  const spacerHtml=spacerCount>0?`<div style="height:${spacerCount*30}px"></div>`:'';
+  let html='';
+  if(active.length||spacerCount>0){
+    html+=`<div class="_pupFocusDrop" data-pup="${pup}" ondragover="event.preventDefault();this.style.outline='2px solid ${pup==='Mochi'?'#8b5cf6':'#fbbf24'}';this.style.background='${pup==='Mochi'?'rgba(139,92,246,0.15)':'rgba(251,191,36,0.18)'}'" ondragleave="this.style.outline='';this.style.background='${themeBg}'" ondrop="event.preventDefault();this.style.outline='';this.style.background='${themeBg}';_pupDropOnFocus(event,'${pup}')" style="background:${themeBg};border:1px solid ${themeBorder};border-radius:10px;padding:6px 6px;margin-bottom:6px;min-height:32px">`;
+    html+=active.map((s,i)=>{let h=renderSkill(s,true);if(i===active.length-1)h=h.replace('margin-bottom:3px','margin-bottom:0');return h;}).join('');
+    html+=spacerHtml;
+    html+=`</div>`;
+  } else {
+    html+=`<div class="_pupFocusDrop" data-pup="${pup}" ondragover="event.preventDefault();this.style.outline='2px solid ${pup==='Mochi'?'#8b5cf6':'#fbbf24'}';this.style.background='${pup==='Mochi'?'rgba(139,92,246,0.15)':'rgba(251,191,36,0.18)'}'" ondragleave="this.style.outline='';this.style.background='${themeBg}'" ondrop="event.preventDefault();this.style.outline='';this.style.background='${themeBg}';_pupDropOnFocus(event,'${pup}')" style="background:${themeBg};border:1px dashed ${themeBorder};border-radius:10px;padding:12px 6px;margin-bottom:6px;min-height:32px"><div style="font-size:10px;color:var(--muted);text-align:center">Check or drag skills here</div></div>`;
+  }
+  if(inactive.length){
+    html+=inactive.map(s=>renderSkill(s,false)).join('');
+  }
+  if(!allSkills.length)html='<div style="font-size:11px;color:var(--muted);text-align:center;padding:20px 0">No skills yet</div>';
+  colEl.innerHTML=html;
+  // HTML5 drag/drop handles available→focus via inline ondragstart + focus zone ondrop
 }

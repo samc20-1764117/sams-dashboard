@@ -1,15 +1,46 @@
 # Tasks & UI Rules
 
+## Task Types on Overview
+
+All task types that appear on the overview calendar/today list. Every type must support: render, select (`selTask`), drag, drop onto calendar day, multi-select drag with mixed types, timeblock drop, checkbox toggle, delete (X), undo.
+
+| Type | Selection ID | Drag ID | Source |
+|------|-------------|---------|--------|
+| Regular task | `String(t.id)` | `String(t.id)` | `st.tasks` |
+| WR rule | `wrrule-{id}` / `wrrule-virt-{id}` | `wrrule::{id}` | `st.wrRules` |
+| WR recurring (legacy) | `wrec-{id}` | `wrec::{id}` | `st.recurring` (is_weekly_reset=true) |
+| Non-WR recurring | `rec-virt-{id}` | `rec::{id}::{date}` | `st.recurring` (is_weekly_reset=false) |
+| Shopping | `shop-cal-{id}` | `shop::{id}` | `st.shopping` |
+| Video | `vid-ov-{vidId}` | `vid::{vidId}` | `_vidDayMap` (localStorage) |
+| Pup session | `pup-sess-{sessId}` | `pupsess::{sessId}::{ds}` | `st.pupSessions` |
+| Pup skill (drag-only) | n/a | `pupskill::{skillId}` | `st.pup_skills` |
+| Finance cancellation | `fin-cancel-{subId}` | `fin-cancel::{subId}` | computed |
+| Travel banner | `tv-{id}` | `travel::{id}::{offset}` | `st.travel` |
+| Birthday | n/a | n/a | `st.birthdays` (banner only, not draggable) |
+| Weekly goal | `String(t.id)` | `wkgoal::{id}` | `st.tasks` (category=Weekly Goals) |
+| TB block | `blk-{id}` | block drag | `st.blocks` |
+| Video stage (vidstep) | `vidstep-{vid}-{step}` | `vidstep::{vid}::{step}` | `_vidStepDayMap` (localStorage) |
+| Auto TB | `atb::{atbId}` | auto-block drag | `st.autoTimeblocks` |
+
+### Multi-select global behavior
+- **Cmd/Ctrl+click**: toggle item in selection.
+- **Shift+click**: range-select within same container.
+- **Drag any selected item**: moves ALL selected items to target day, regardless of type.
+- `_moveOtherSelected(ds, excludeSid, undos, excludePrefixes?)` helper handles cross-type multi-select for all drag handlers.
+- Every drag handler must: (1) move its own type, (2) call `_moveOtherSelected` or inline-iterate `selectedTasks` for other types, (3) collect undo fns for all moved items.
+
 ## Overdue Logic
-- **Tasks**: `due_date < today && !done && category !== 'Weekly Goals'`. Weekly Goals excluded from today overdue count/banner but shown as overdue (OV style) in WO modal and weekly cal goals column when viewing past weeks (`isPast` / `_goalsPast`).
+- **Tasks**: `due_date < today && !done && category !== 'Weekly Goals'`. Weekly Goals excluded from today overdue count/banner but shown as overdue (OV style) in WO modal and weekly cal goals column when viewing past weeks (`isPast` / `_goalsPast`). Carried-over overdue goals also appear on current week in weekly cal goals column, WO modal, and monthly view.
+- **Weekly Goals overdue carry-over**: uncompleted goals from past weeks (`due_date < wkStart`) shown with OV style on current week. Each view has a stacked banner: "X Overdue" text + red "Move to this week" button. Clicking moves all overdue goals' `due_date` to current `wkStart`. Undoable. Banner appears in: weekly cal goals column, WO modal (with light red bg), monthly view goals cell (compact).
 - **Shopping**: `due_date < today && !done`.
 - **Non-WR recurring**: `getRecurringWeekTasks(w)` for w=0 to wkOff-4. Cascading `__skip__` check. Seen set prevents duplicates.
 - **WR recurring** (`is_weekly_reset=true`): overdue if `_dateOverrides[wkKey] < today && !_doneByWk[wkKey]`. 4-week lookback. `wrRecHandled` set — only added when `_dateOverrides[wkKey] <= today` (future dates don't block older-week lookback).
 - **WR rules** (`st.wrRules`): overdue if `_dateOverrides[wkKey] < today && !isDoneWRRule`. Same 4-week lookback + `wrRuleHandled` set with same future-date exception.
-- **Pup sessions**: `day_date < today && !done`. Included in `updateOvBanner` count and `rolloverOverdue` (moves `day_date` to today, PATCHes `pup_skill_sessions`). Appear in today list when `dayOff===0`.
+- **Pup sessions**: `day_date < today && !done`. Included in `updateOvBanner` count and `rolloverOverdue` (moves `day_date` to today, PATCHes `pup_skill_sessions`). Appear in today list when `dayOff===0`. Sorted by timeblock position (`_pupSessId` matched against `b._pupSessId` in `tbSm()`).
 - **Videos**: overdue if `_vidDayMap[id] < today && status !== 'published'`. Included in banner count and rollover (moves localStorage date to today). Appear in today list with red `OV` style + day letter.
 - Tasks/shopping/non-WR recurring only overdue if assigned to a date.
-- `updateOvBanner()` called from `renderToday()`.
+- **Non-WR recurring dedup**: `allRecVirt` deduplicates by `_recId`. If current week has a future (not yet due) occurrence, overdue occurrences from past weeks are suppressed — the upcoming occurrence takes priority. This prevents showing both an overdue and an upcoming instance of the same recurring task.
+- `updateOvBanner()` called from `renderToday()`. Banner text: `X Overdue` + `Move to today` button. No task name or question.
 
 ## Task Modals
 - **`#tModal`**: add (`openTModal(cat='')`) + edit (`openEditTask(id)`). Save: `saveTModal()`.
@@ -31,8 +62,8 @@
 - **Modal outside-click drag fix**: `_modMousedownInside` flag prevents `closeMod` if mousedown was inside `.modal`.
 - **`#tNotes` textarea**: auto-expands, capped at `max-height:160px`. Reset on add open; pre-expanded on edit open. Newlines rendered via `.replace(/\n/g,'<br>')`.
 - **Cmd+Z in modals**: `_isInput && !_ael.closest('.overlay:not(.open)')` → return early.
-- **Global shortcuts**: `n`=new task, `r`=reload, `s`=sync all, `o`=overview, `v`=videos, `i`=help overlay, `m`=month view (overview). `⌘←/→`=switch pages (overview→videos→pups→recipes→finance→birthdays). Skip if INPUT/TEXTAREA/contentEditable or meta held.
-- **Overview shortcuts**: `←/→`=shift day, `w+←/→`=shift week (hold `w` then press arrow; works even with video panel open). `t`=jump to today. `_wKeyHeld` flag tracked via keydown/keyup/blur.
+- **Shortcuts**: see `rules/core.md` → "Keyboard Shortcuts" for full list. Key additions: `d`=dark mode, `n`=new task, `r`=reload, `q`=quick notes, `vv`=videos popup (double-tap). Overview: `←/→`=shift day, `w+←/→`=shift week, `t`=today. **All single-key shortcuts MUST check contentEditable focus.**
+- **Page navigation closes overlays**: `showPage()` closes video calendar, all panel, analytics panel, and video popup before switching pages.
 - **Keyboard shortcut pattern** (MUST follow every time):
   1. Same key toggles open/close (check if modal is already `.open` before opening).
   2. `Enter` also closes (when not in input/textarea/button).
@@ -40,25 +71,34 @@
   4. Add `outline:none` to modal CSS to prevent browser focus ring.
   5. Both global handler AND modal's own `keydown` listener must handle the key.
   6. On modal `close` event: call `modal.blur();document.activeElement?.blur()` — focus must return to `<body>` so global shortcuts keep working. Without this, the closed dialog retains focus and its `stopPropagation` blocks all future keypresses from reaching the global handler.
-- **Help overlay** (`i` key): shows all shortcuts for current page + global. Toggle with `i` again or `Enter`. Uses `#helpOverlay` (standard `.overlay`+`.modal`). Page-specific content via `_pages[activePg]` map in `_showHelpOverlay()`.
+- **Help overlay** (`gg` double-press): shows all shortcuts for current page + global. Toggle with `gg` again or `Enter`. Uses `#helpOverlay` (standard `.overlay`+`.modal`). Page-specific content via `_pages[activePg]` map in `_showHelpOverlay()`.
+- **Page shortcut toggle**: all page shortcuts (V, P, F, I, L) return to overview when pressed while already on that page.
 - **RULE: When adding ANY new keyboard shortcut**, you MUST also update `_showHelpOverlay()` in `core.js` to include it in the correct page's `_pages[pageName]` array (or `_global` if global). Audit existing entries to ensure nothing is missing or stale.
 - **Month view toggle** (`m` key): opens `mModal` on overview, closes if already open. Enter/Esc also close.
 - **Text selection**: `user-select:none` on `html,body`. `Ctrl/Cmd+A` blocked globally (allowed in INPUT/TEXTAREA).
 - **Global Cmd+C/V**: copies `selectedTasks`. Paste: `wrrule-{id}`→POST `wr_recurring_rules`; task ID→POST `tasks`.
 
 ## Indicator Placement
-All indicators at far right, swap to X on hover. `cat-dot` stroke changes to accent color (stroke-width 1.5, opacity 0.7) for tasks not on timeblock. `chip-del` inside relative chip. `wr-cad-badge` hidden on row hover to reveal X. `cpill` pointer-events:none. `heb-cnt` icon only (no count) on today-list HEB tasks — opens grocery modal on click.
+All indicators at far right, swap to X on hover. `cat-dot` stroke changes to accent color (stroke-width 1.5, opacity 0.7) for tasks not on timeblock. `chip-del` inside relative chip. `wr-cad-badge` hidden on row hover to reveal X. `cpill` pointer-events:none.
+
+### Recurring task inline badges
+- **HEB badge** (`.heb-cnt`): shopping cart icon (9px SVG) before task name on all views (today list, weekly chips, week summary, timeblock, recOv). Opens grocery modal on click. Uses `_hebBadge(name)` helper.
+- **Prep pup training badge** (`.pup-link-badge`): link icon (8px SVG) before task name on all views. Opens `_openPupFocusModal(null)` on click. Uses `_pupBadge(name)` helper. Match is case-insensitive.
+- Both badges: `display:inline-flex;align-items:center;margin-right:3px;opacity:.55`. CSS tweaks per view: `.chip` top:-0.5px, `.tb-block` top:-1px, `.ti` top:1px.
 - **Overdue rows**: no `cat-dot`. Show single DOW letter (`S/M/T/W/T/F/S`) in `.dlbl.ov` instead of full date. `.dlbl.ov` has `margin-right:-4px`.
 
 ## Chip & UI Notes
 - **Hover-X**: `.chip-del` last flex child. X removes from ALL views + linked blocks. Exception: X on TB block itself → `delBlock` only.
 - **Chip checkboxes**: Done: `opacity:.5` + `text-decoration:line-through`. All done checkboxes/bones use grey `rgba(200,195,210,.35)` (not green). Green preserved in comment for reference: `/* #a3c41a */`.
+- **Checkbox rendering**: All checkboxes (`.chk`, `.tb-chk`, `.wchk`) use `::after` pseudo-element with `border:none` + `box-shadow:inset 0 0 0 1.25px rgba(180,170,210,.42)` (not CSS `border`). Checked: `box-shadow:inset 0 0 0 1px rgba(200,195,210,.35)`. `.chk` and `.chk-wrap` require `transform:translateZ(0)` for GPU compositing — prevents oval distortion from CSS `columns:2` layout in `#recList`. Never remove these transforms.
 - **Chip indicator dot**: Regular recurring: when `_dateOverrides[wkKey]` exists + not `'__skip__'`. WR rules: `wrOverrides` has `override_type:'edit'` with `custom_name` or `custom_notes`. WR tasks: NO dot.
 - **Cadence badge**: `{biweekly:'B',monthly:'M',quarterly:'Q',biannual:'BA',annual:'A'}`.
 - **Virtual task objects**: `_isWrRule:true,_isWrec:true,_type:'shop'`. Source: `_ruleId,_recId,_shopId`. WR rules use `_wkKey`.
 - **Weekly Goals chips + IMP override**: when `t.important && !t.done`, use IMP yellow — no `!important` CSS on color/border so inline JS wins.
 - **WR tasks in timeblock**: render blue (`weekly_reset`). `drawTBBlock` looks up `linkedRule` via `b.ruleId`; `effectiveCat='weekly_reset'` if matched.
 - **`@time` in task name**: `submitQA` auto-detects `@1:30pm` style, creates timeblock immediately with local task ID, updates `taskId` after server confirm. Name kept as-is. If no due date, defaults to today. `autoDur`: Social=180min, Work/My work/Recurring=60min, Home=30min. Same durations apply when dragging tasks onto timeblock grid. **Priority**: manually-set timeblock position (via drag) takes precedence over `@time` in name — editing a task (e.g. adding notes) never reverts a manually-placed block. `@time` only creates a NEW block if none exists.
+- **`@time` smart AM/PM**: when no am/pm suffix, hours 1–8 default to PM (e.g. `@7:30` → 7:30 PM). Hours 9–11 stay AM. End time am/pm infers start (e.g. `@3:30-6pm` → both PM).
+- **`@time` range**: supports `@start-end` format (e.g. `@3:30-6pm`, `@3-5pm`, `@10am-12pm`). Duration computed from range, overrides `autoDur`. Regex: `/@(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\s*(?:-\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?)?/i`. All 3 parsers updated (submitQA, saveTModal, task-move-to-day).
 - **Task move to new day (weekly cal drop or Arrow Left/Right)**: if task had a timeblock on old day, auto-creates block on new day at same time/duration. If no old block but `@time` in name, creates block from parsed time. Undo removes new block and restores old. Arrow keys move all selected tasks ±1 day relative to each task's own date (works for regular, rec, wrec, wrrule, shop).
 - **Multi-select mixed-type drag**: dragging any selected item (task, wrec, wrrule) moves ALL selected items together. Each drag handler (task, `wrec::`, `wrrule::`) iterates `selectedTasks` and moves items of all types. Full undo for all moved items via `_mixedUndos`/`_wrecUndos`/`_wrUndos` arrays.
 - **Overdue display**: all overdue tasks show red `OV` style + `ov-row` class + day-of-week letter (`dlbl ov`) positioned at `right:9px` (aligned with dot indicators). `.tb-arrow` and `.wr-unassigned` hidden on `ov-row`. `.tb-arrow` in todList at `right:3px` (right of dot, between dot and list edge). `.wr-unassigned` at `right:2px` (same position).
@@ -93,3 +133,12 @@ Video tasks assigned to days via `_vidDayMap` (localStorage) follow the SAME rul
 - **Overdue**: `_vidDayMap[id] < today` when `dayOff===0`. Shows OV style + day letter.
 - **Completion**: checkbox calls `_vidCompleteFromOv` (popup to mark steps done or whole video).
 - **Delete (✕)**: calls `_vidUnassignDay` — removes from `_vidDayMap` + deletes linked timeblock.
+- **Video stage tasks (vidstep)**: `_vidStepDayMap` entries. Overdue vidsteps auto-move to today via `_vidStepTasksForDayWithOverdue()`. Weekly cal X button calls `_vidStepUnassign` (not the recurring skip/delete picker). Selection synced across views via `selVidStepIds` set — today list ID `vidstep-{vid}-{step}` cross-references TB block's `_vidStepVid`+`_vidStepName`. Green highlight color (`vidstep-` prefix in `csForId`). Dblclick in timeblock opens `openVidEdit(b._vidStepVid)`.
+- **Vidstep default durations**: Build/VO/Cut → 60 min, Th/Des → 30 min (unless manually changed).
+- **Vidstep unassign**: `_vidStepUnassign` removes from `_vidStepDayMap` AND deletes all linked timeblock blocks (same pattern as `_vidUnassignDay` for whole videos).
+- **Vidstep cross-view sync**: toggling a stage anywhere (videos page dot via `cycleVidStep`, overview stage square, overview checkbox, video edit modal) must sync all three: `v[step]`, `_vidStepDayMap[key].done`, and timeblock block `_done`. Sync code in `cycleVidStep`, `_vidOvToggleStep`, stage square click handler, and modal save path.
+- **Vidstep copy/paste**: Cmd+C copies vidstep tasks (`_isVidStep` flag). Cmd+V creates a new timeblock block on the target day (duplicate, not move) + assigns step to that day. `_moveOtherSelected` handles vidstep IDs (`vidstep-{vid}-{step}` prefix) for multi-select drag.
+- **Vidstep DB persistence**: `_vidStepVid` stored in `vid_id` column, `_vidStepName` in `rec_id` column. On load, blocks with `vid_id` + `rec_id` starting with `step_` are recognized as vidstep blocks. `_vidStepReconstructBlocks()` is a fallback for legacy blocks (title matching). Must run before sort and before `_hasTBToday`.
+- **Vidstep timeblock moves**: use `sbUpdateBlock(id, {day_date: ds})` — NOT `{ds}`. The DB column is `day_date`.
+- **Vidstep sorting**: `sortTasksForDay` → `tbSm()` has explicit `_type==='vidstep'` check before the `_vidId` check (vidstep blocks use `_vidStepVid`, not `_vidId`).
+- **Vidstep focus**: `_renderVidOvMenu` focus mode checks `_vidStepDayMap` entries in addition to `_vidDayMap` and `post_date`.
