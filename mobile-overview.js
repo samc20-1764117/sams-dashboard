@@ -825,7 +825,7 @@ function mRenderTimeline() {
     const endMin = parseInt(eh) * 60 + parseInt(em || 0);
     const dur = Math.max(15, endMin - startMin);
     const y = (startMin - M_TB_START) * M_PX;
-    const hPx = Math.max(dur * M_PX, 28);
+    const hPx = Math.max(dur * M_PX, 28) - 2;
     html += `<div class="m-tl-block m-rec-auto-block" style="top:${y}px;height:${hPx}px">
       <div style="overflow:hidden;flex:1;min-width:0;pointer-events:none">
         <div class="m-tl-block-name">${escHtml(v.name || '')}</div>

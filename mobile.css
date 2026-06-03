@@ -80,9 +80,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 #mAddFlagBtn.flagged{background:rgba(245,158,11,.15);color:#d97706;border-color:rgba(245,158,11,.4)}
 
 /* ── Bottom nav ───────────────────────────────────────────────────────────── */
-#mNav{position:fixed;bottom:0;left:0;right:0;height:calc(52px + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);display:flex;background:var(--bg);border-top:1px solid var(--border);z-index:15}
-.m-nav-btn{flex:1;background:none;border:none;font-size:12px;font-weight:600;font-family:inherit;color:var(--sub);cursor:pointer;padding:0;transition:color .15s}
+#mNav{position:fixed;bottom:0;left:0;right:0;height:calc(60px + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);display:flex;background:var(--bg);border-top:1px solid var(--border);z-index:15;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+.m-nav-btn{flex:1;background:none;border:none;font-family:inherit;color:var(--sub);cursor:pointer;padding:6px 0 2px;transition:color .15s;display:flex;flex-direction:column;align-items:center;gap:2px;position:relative}
+.m-nav-btn span{font-size:10px;font-weight:600;letter-spacing:.02em}
+.m-nav-icon{width:22px;height:22px;transition:color .15s}
 .m-nav-btn.active{color:var(--accent)}
+.m-nav-btn.active::after{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:20px;height:2.5px;border-radius:0 0 2px 2px;background:var(--accent)}
 
 /* ── Shop tab ────────────────────────────────────────────────────────────── */
 .m-shop-header{padding:12px 16px 8px;font-size:15px;font-weight:700;color:var(--text)}
