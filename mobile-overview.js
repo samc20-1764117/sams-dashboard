@@ -48,33 +48,50 @@ function dEnd() {}
 const _M_VID_STEP_LABELS = {step_build:'Build', step_vo:'VO', step_cut:'Cut', step_thumbnail:'Th', step_description:'Des'};
 const _M_VID_STEPS = ['step_build','step_vo','step_cut','step_thumbnail','step_description'];
 
+function _mReconstructVidStepBlocks() {
+  // Match blocks to video steps by title (mobile equivalent of desktop _vidStepReconstructBlocks)
+  (st.blocks || []).filter(bl => !bl._vidStepVid && bl.cat === 'Videos' && !bl._vidId).forEach(bl => {
+    (st.videos || []).forEach(v => {
+      if (v.is_deleted) return;
+      _M_VID_STEPS.forEach(step => {
+        const lbl = (_M_VID_STEP_LABELS[step] || step.replace('step_','')) + ': ' + (v.topic || v.title);
+        if (bl.title === lbl) { bl._vidStepVid = String(v.id); bl._vidStepName = step; }
+      });
+    });
+  });
+}
+
 function _mVidStepTasksForDay(ds) {
-  // Mobile has no _vidDayMap (localStorage per-device). Use timeblocks only.
-  // Only show step tasks for videos that have blocks on this day.
+  // Only show step tasks that have specific blocks on this day
+  _mReconstructVidStepBlocks();
   const today = d2s(getDayDate(0));
   const isToday = ds === today;
-  const vidOnBlocks = new Set();
-  (st.blocks || []).forEach(b => {
-    if (b.ds !== ds && !(isToday && b.ds && b.ds < ds)) return;
-    if (b._vidStepVid) vidOnBlocks.add(String(b._vidStepVid));
-    else if (b._vidId) vidOnBlocks.add(String(b._vidId));
+  const isPast = ds < today;
+  // For past days, don't show undone video step tasks (avoid stale overdue entries)
+  const dayBlocks = (st.blocks || []).filter(b => b.ds === ds || (isToday && b.ds && b.ds < ds));
+  // Collect which video+step combos have blocks today
+  const stepBlockMap = new Map();
+  dayBlocks.forEach(b => {
+    if (!b._vidStepVid) return;
+    const key = b._vidStepVid + '::' + b._vidStepName;
+    if (!stepBlockMap.has(key)) stepBlockMap.set(key, []);
+    stepBlockMap.get(key).push(b);
   });
-  if (!vidOnBlocks.size) return [];
+  if (!stepBlockMap.size) return [];
   const tasks = [];
-  (st.videos || []).forEach(v => {
-    if (v.is_deleted || v.status === 'published') return;
-    if (!vidOnBlocks.has(String(v.id))) return;
-    _M_VID_STEPS.forEach(step => {
-      const val = v[step];
-      if (!val || val === 'done' || val === 'na') return;
-      const label = _M_VID_STEP_LABELS[step] || step.replace('step_','');
-      let isDone = false;
-      if (step !== 'step_thumbnail' && step !== 'step_description') {
-        const stageBlocks = (st.blocks || []).filter(bl => String(bl._vidStepVid) === String(v.id) && bl._vidStepName === step);
-        if (stageBlocks.length > 0) isDone = stageBlocks.every(bl => bl._done);
-      }
-      tasks.push({id: 'vidstep-' + v.id + '-' + step, name: label + ': ' + (v.topic || v.title), category: 'Videos', due_date: ds, done: isDone, _vidId: v.id, _vidStep: step, _virtual: true, _type: 'vidstep'});
-    });
+  stepBlockMap.forEach((blocks, key) => {
+    const [vidId, step] = key.split('::');
+    const v = (st.videos || []).find(x => String(x.id) === String(vidId) && !x.is_deleted);
+    if (!v) return;
+    if (v[step] === 'done' || v[step] === 'na') return;
+    const label = _M_VID_STEP_LABELS[step] || step.replace('step_','');
+    let isDone = false;
+    if (step !== 'step_thumbnail' && step !== 'step_description') {
+      isDone = blocks.every(bl => bl._done);
+    }
+    // Skip undone step tasks on past days — they show as overdue on today instead
+    if (isPast && !isDone) return;
+    tasks.push({id: 'vidstep-' + vidId + '-' + step, name: label + ': ' + (v.topic || v.title), category: 'Videos', due_date: ds, done: isDone, _vidId: vidId, _vidStep: step, _virtual: true, _type: 'vidstep'});
   });
   return tasks;
 }
@@ -863,24 +880,18 @@ function mRenderUnassigned() {
     ...shopUnassigned.map(s => ({ id: 'shop-' + s.id, name: s.name, category: 'Shopping' }))
   ];
 
-  // Date label + refresh merged into unassigned bar
+  // Date label + chips + refresh all in one row
   const d = getDayDate(_mTBOffset);
   const prefix = _mTBOffset === 0 ? 'Today' : _mTBOffset === -1 ? 'Yesterday' : _mTBOffset === 1 ? 'Tomorrow' : d.toLocaleDateString('en-US', {weekday: 'long'});
   const subDate = d.toLocaleDateString('en-US', {weekday: 'long', month: 'long', day: 'numeric'});
-  const dateChip = `<div class="m-tb-hdr-wrap">
-    <div class="m-tb-date-lbl">${prefix}<div class="m-tb-date-sub">${subDate}</div></div>
-    <button class="m-reload-btn" onclick="location.reload(true)" title="Reload app">↻</button>
-  </div>`;
-
-  if (!allUnassigned.length) {
-    bar.innerHTML = dateChip;
-    return;
-  }
-  bar.innerHTML = dateChip + allUnassigned.map(t => {
-    const s   = gc(t.category || '');
+  const datePart = `<div class="m-tb-date-lbl">${prefix}<div class="m-tb-date-sub">${subDate}</div></div>`;
+  const chips = allUnassigned.map(t => {
+    const s = gc(t.category || '');
     const sel = _mSelectedChipId === String(t.id);
     return `<button class="m-chip${sel ? ' selected' : ''}" onclick="mSelectChip('${t.id}')" style="--cdot:${s.bg};--cborder:${s.d}">${escHtml(t.name)}</button>`;
   }).join('');
+  const refreshBtn = `<button class="m-reload-btn" onclick="location.reload(true)" title="Reload app" style="flex-shrink:0;margin-left:auto">↻</button>`;
+  bar.innerHTML = datePart + chips + refreshBtn;
 }
 
 function mRenderTimeline() {
@@ -1481,20 +1492,21 @@ function mRenderWeek() {
   }
   list.innerHTML = html;
 
-  // Scroll to today
-  requestAnimationFrame(() => {
+  // Scroll to today (double rAF to ensure DOM is laid out)
+  requestAnimationFrame(() => requestAnimationFrame(() => {
     const todayEl = list.querySelector('.m-wk-day.is-today');
     if (todayEl) {
-      const divider = todayEl.previousElementSibling;
-      const scrollTarget = (divider && divider.classList.contains('m-wk-divider')) ? divider : todayEl;
       const page = document.getElementById('mWeekPage');
       if (page) {
+        // Use the "This Week" divider above today
+        const divider = todayEl.closest('.m-wk-day').previousElementSibling;
+        const target = (divider && divider.classList.contains('m-wk-divider')) ? divider : todayEl;
         const pageRect = page.getBoundingClientRect();
-        const targetRect = scrollTarget.getBoundingClientRect();
+        const targetRect = target.getBoundingClientRect();
         page.scrollTop = page.scrollTop + targetRect.top - pageRect.top;
       }
     }
-  });
+  }));
 }
 
 function _mWkLoadMore(direction) {
