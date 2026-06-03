@@ -209,10 +209,11 @@ function mGetTodayTasks() {
     });
   }
 
+  // WR recurring — only current week (WR tasks reset weekly, past weeks don't carry over)
   const _wrecSeen = new Set();
   const wrecToday = [];
-  for (let _w = 0; _w >= -4; _w--) {
-    const _wkKey = getWkKey(_w);
+  {
+    const _wkKey = getWkKey(0);
     st.recurring
       .filter(r =>
         (r.is_weekly_reset === true || r.is_weekly_reset === 'true') &&
@@ -228,10 +229,11 @@ function mGetTodayTasks() {
       });
   }
 
+  // WR rules — only current week
   const _wrRulesSeen = new Set();
   const wrRulesToday = [];
-  for (let _w = 0; _w >= -4; _w--) {
-    const _wkKey = getWkKey(_w);
+  {
+    const _wkKey = getWkKey(0);
     st.wrRules
       .filter(r =>
         r._dateOverrides && r._dateOverrides[_wkKey] &&
