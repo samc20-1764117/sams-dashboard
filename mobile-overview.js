@@ -73,11 +73,32 @@ function _mVidStepTasksForDay(ds) {
         const stageBlocks = (st.blocks || []).filter(bl => String(bl._vidStepVid) === String(v.id) && bl._vidStepName === step);
         if (stageBlocks.length > 0) isDone = stageBlocks.every(bl => bl._done);
       }
-      if (isDone) return;
-      tasks.push({id: 'vidstep-' + v.id + '-' + step, name: label + ': ' + (v.topic || v.title), category: 'Videos', due_date: ds, done: false, _vidId: v.id, _vidStep: step, _virtual: true, _type: 'vidstep'});
+      tasks.push({id: 'vidstep-' + v.id + '-' + step, name: label + ': ' + (v.topic || v.title), category: 'Videos', due_date: ds, done: isDone, _vidId: v.id, _vidStep: step, _virtual: true, _type: 'vidstep'});
     });
   });
   return tasks;
+}
+
+// ── Mobile video step toggle ─────────────────────────────────────────────────
+function mToggleVidStep(vidId, step, checked) {
+  const v = (st.videos || []).find(x => String(x.id) === String(vidId) && !x.is_deleted);
+  if (!v) return;
+  if (step === 'step_thumbnail' || step === 'step_description') {
+    // Thumbnail & Description: toggle the actual video stage field
+    v[step] = checked ? 'done' : 'not_started';
+    save();
+    sbReqSilent('PATCH', 'videos', {[step]: v[step]}, `?id=eq.${v.id}`);
+    // Also sync any linked timeblock block
+    const stBlk = (st.blocks || []).find(bl => String(bl._vidStepVid) === String(vidId) && bl._vidStepName === step);
+    if (stBlk) { stBlk._done = checked; sbUpdateBlock(stBlk.id, {done: checked}); }
+  } else {
+    // Build/VO/Cut: just toggle the timeblock block done state, don't touch video stage
+    const stageBlocks = (st.blocks || []).filter(bl => String(bl._vidStepVid) === String(vidId) && bl._vidStepName === step);
+    stageBlocks.forEach(bl => { bl._done = checked; sbUpdateBlock(bl.id, {done: checked}); });
+    save();
+  }
+  mRenderToday();
+  if (_mCurTab === 'week') mRenderWeek();
 }
 
 // ── Mobile-only helpers ───────────────────────────────────────────────────────
@@ -334,6 +355,8 @@ function mTaskRow(t) {
   if (t._isWrRule) onchange = `togWrRule('${t._ruleId}',this.checked,'${t._wkKey}')`;
   else if (t._isWrec) onchange = `togRec('${t._recId}',this.checked,'${t._wkKey}')`;
   else if (t._virtual && t._recId) onchange = `togRecVirt('${t._recId}',this.checked,'${t._wkKey}')`;
+  else if (t._type === 'vidstep') onchange = `mToggleVidStep('${t._vidId}','${t._vidStep}',this.checked)`;
+  else if (t._type === 'vid') onchange = `toggleTask('${t.id}',this.checked)`;
   else if (t._type === 'shop') onchange = `togShop('${t._shopId}',this.checked)`;
   else if (t._type === 'pup') onchange = `togPupSessionDone('${t._pupSessId}',this.checked)`;
   else if (!t._virtual) onchange = `toggleTask('${t.id}',this.checked)`;
@@ -1337,15 +1360,17 @@ function mWkTaskRow(t) {
 
   let onchange = '';
   if (t._type === 'shop')          onchange = `togShop('${t._shopId}',this.checked)`;
+  else if (t._type === 'vidstep')  onchange = `mToggleVidStep('${t._vidId}','${t._vidStep}',this.checked)`;
+  else if (t._type === 'vid')      onchange = `toggleTask('${t.id}',this.checked)`;
+  else if (t._isWrRule)            onchange = `togWrRule('${t._ruleId}',this.checked,'${t._wkKey}')`;
   else if (t._virtual && t._recId) onchange = `togRecVirt('${t._recId}',this.checked,'${t._wkKey}')`;
+  else if (t._type === 'pup')      onchange = `togPupSessionDone('${t._pupSessId}',this.checked)`;
   else if (!t._virtual && !noCheck) onchange = `toggleTask('${t.id}',this.checked)`;
 
   const dot = `<span style="width:8px;height:8px;border-radius:50%;background:${s.bg};border:1.5px solid ${s.d};flex-shrink:0;display:inline-block"></span>`;
   const chk = noCheck
     ? `<span style="width:22px;height:32px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px">\u{1F4C5}</span>`
-    : onchange
-      ? `<label class="m-wk-chk-wrap"><input type="checkbox" class="m-wk-chk"${t.done ? ' checked' : ''} onchange="${onchange}"></label>`
-      : `<span style="width:22px;height:32px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px">\u{1F4C5}</span>`;
+    : `<label class="m-wk-chk-wrap"><input type="checkbox" class="m-wk-chk"${t.done ? ' checked' : ''}${onchange ? ` onchange="${onchange}"` : ''}></label>`;
 
   const dragAttrs = canDrag ? ` data-tid="${t.id}" data-tname="${escHtml(t.name || '')}"` : '';
 
