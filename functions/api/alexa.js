@@ -68,7 +68,7 @@ async function sbRest(method, table, sbKey, body, query) {
 
 // ── Intent handlers ──
 async function handleAddTask(slots, sbKey) {
-  const taskName = sanitize(slots.TaskName?.value);
+  const taskName = capitalize(sanitize(slots.TaskName?.value));
   if (!taskName) return alexaResp('What task would you like to create?', false);
 
   const today = new Date().toISOString().split('T')[0];
@@ -85,16 +85,27 @@ async function handleAddTask(slots, sbKey) {
 }
 
 async function handleAddShopping(slots, sbKey) {
-  const itemName = sanitize(slots.ItemName?.value);
-  if (!itemName) return alexaResp('What item would you like to add?', false);
+  let raw = sanitize(slots.ItemName?.value);
+  if (!raw) return alexaResp('What item would you like to add?', false);
+
+  // Parse "for HEB" / "for Target" etc. from the end
+  let store = null;
+  const forMatch = raw.match(/\s+for\s+(.+)$/i);
+  if (forMatch) {
+    store = capitalize(forMatch[1].trim());
+    raw = raw.slice(0, forMatch.index).trim();
+  }
+
+  const itemName = capitalize(raw);
 
   await sbRest('POST', 'shopping_list', sbKey, {
     name: itemName,
-    store: null,
+    store: store,
     done: false,
   });
 
-  return alexaResp(`Added ${itemName} to your shopping list.`, true);
+  const storeMsg = store ? ` for ${store}` : '';
+  return alexaResp(`Added ${itemName} to your shopping list${storeMsg}.`, true);
 }
 
 async function handleLogPupSession(slots, sbKey) {
@@ -147,6 +158,11 @@ async function handleLogPupSession(slots, sbKey) {
 function sanitize(val) {
   if (!val || typeof val !== 'string') return null;
   return val.trim().slice(0, 200);
+}
+
+function capitalize(str) {
+  if (!str) return str;
+  return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
 function formatDate(d) {
