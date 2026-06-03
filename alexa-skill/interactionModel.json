@@ -41,10 +41,12 @@
             { "name": "PupTraining", "type": "AMAZON.SearchQuery" }
           ],
           "samples": [
-            "{PupTraining}",
             "log {PupTraining}",
             "record {PupTraining}",
-            "pup training {PupTraining}"
+            "pup training {PupTraining}",
+            "log pup session {PupTraining}",
+            "pup session {PupTraining}",
+            "training session {PupTraining}"
           ]
         },
         { "name": "AMAZON.HelpIntent", "samples": [] },
