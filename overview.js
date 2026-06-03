@@ -94,6 +94,7 @@ function renderSummaryMetrics(){
 
 // ── Today tasks: real tasks for today + overdue + virtual recurring for today's DOW ──
 function renderToday(){
+  if(typeof _vidStepReconstructBlocks==='function')_vidStepReconstructBlocks();
   const dayDate=getDayDate(dayOff),ds=d2s(dayDate);
   const _fullDateStr=dayDate.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
   document.getElementById('todTitle').textContent=isDateToday(dayDate)?`Today • ${_fullDateStr}`:_fullDateStr;
@@ -168,7 +169,6 @@ function renderToday(){
     })
   ];
   const allToday=[...ts,...virtToday];
-  if(typeof _vidStepReconstructBlocks==='function')_vidStepReconstructBlocks();
   const sorted=sortTasksToday(allToday);
   const doneCount=sorted.filter(t=>t.done&&t._type!=='birthday').length+sorted.filter(t=>t._type==='birthday'&&st.blocks.some(b=>b.cat==='Birthday'&&b.title===t.name&&b._done)).length;
   // todBadge removed
@@ -977,6 +977,7 @@ let _pasteColDates=null;
 
 
 function renderWkCal(){
+  if(typeof _vidStepReconstructBlocks==='function')_vidStepReconstructBlocks();
   const dates=getWkDates(wkOff);
   document.getElementById('wkcLbl').textContent=`${dates[0].toLocaleDateString('en-US',{month:'short',day:'numeric'})} – ${dates[6].toLocaleDateString('en-US',{month:'short',day:'numeric'})}`;
   const head=document.getElementById('wkcHead');head.innerHTML='';
@@ -3391,6 +3392,7 @@ function _vidStepAssignToDay(vidId,step,ds){
   pushUndo(()=>{_vidStepReconstructBlocks();const m2=_vidStepDayMap();if(prev)m2[key]=prev;else delete m2[key];_vidStepDayMapSet(m2);if(prevDs&&prevDs!==ds){(st.blocks||[]).filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step&&bl.ds===ds).forEach(bl=>{bl.ds=prevDs;sbUpdateBlock(bl.id,{day_date:prevDs});});}save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();const p2=document.getElementById('vidOvPanel');if(p2&&p2.style.display==='block')_renderVidOvMenu();},'Moved step');
 }
 function _vidStepToggleDone(vidId,step,checked,_fromTB){
+  _vidStepReconstructBlocks();
   const m=_vidStepDayMap();const key=vidId+'::'+step;
   if(!m[key])return;
   const ds=m[key].ds;
@@ -3437,22 +3439,9 @@ function _vidStepComputeDone(vidId,step,ds,mapEntry){
   // For Thumbnail/Description: use daymap done flag
   if(step!=='step_thumbnail'&&step!=='step_description'){
     const stageBlocks=(st.blocks||[]).filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step);
-    // DEBUG: find blocks that SHOULD match but don't have _vidStepVid
-    const allVidBlocks=(st.blocks||[]).filter(bl=>bl.cat==='Videos'&&bl.ds===ds);
-    if(stageBlocks.length===0&&allVidBlocks.length>0){
-      console.warn('[_vidStepComputeDone] NO stageBlocks found but Videos blocks exist on',ds,
-        'vidId=',vidId,'step=',step,
-        'allVidBlocks=',allVidBlocks.map(bl=>({id:bl.id,title:bl.title,_vidStepVid:bl._vidStepVid,_vidStepName:bl._vidStepName,_vidId:bl._vidId,done:bl._done})));
-    }
-    if(stageBlocks.length>0){
-      const result=stageBlocks.every(bl=>bl._done);
-      console.log('[_vidStepComputeDone]',vidId,step,'blocks:',stageBlocks.length,'allDone:',result,stageBlocks.map(bl=>({id:bl.id.slice(0,8),done:bl._done})));
-      return result;
-    }
+    if(stageBlocks.length>0)return stageBlocks.every(bl=>bl._done);
   }
-  const fallback=!!(mapEntry&&mapEntry.done);
-  console.log('[_vidStepComputeDone] FALLBACK',vidId,step,'mapEntry.done=',mapEntry?.done,'result=',fallback);
-  return fallback;
+  return !!(mapEntry&&mapEntry.done);
 }
 function _vidStepTasksForDayWithOverdue(todayDs){
   const m=_vidStepDayMap();const tasks=[];let moved=false;
