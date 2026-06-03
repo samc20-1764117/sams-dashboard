@@ -592,7 +592,7 @@ function mInitPTR() {
 }
 
 // ── Tab switching ─────────────────────────────────────────────────────────────
-let _mCurTab = 'tb';
+let _mCurTab = 'today';
 
 function mShowTab(tab) {
   _mCurTab = tab;
@@ -615,7 +615,7 @@ function mShowTab(tab) {
   document.querySelectorAll('.m-nav-btn').forEach((b, i) => {
     b.classList.toggle('active', (tab === 'today' && i === 0) || (tab === 'tb' && i === 1) || (tab === 'week' && i === 2) || (tab === 'shop' && i === 3) || (tab === 'groc' && i === 4));
   });
-  const titles = {today: 'Today', tb: 'Timeblock', week: 'Week', shop: 'Shopping', groc: 'HEB Grocery'};
+  const titles = {today: 'Today', tb: 'Schedule', week: 'Week', shop: 'Shopping', groc: 'HEB Grocery'};
   const titleEl = document.getElementById('mHeaderTitle');
   if (titleEl) titleEl.textContent = titles[tab] || '';
   const progEl = document.getElementById('mProgress');
