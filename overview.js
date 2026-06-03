@@ -3395,15 +3395,14 @@ function _vidStepToggleDone(vidId,step,checked,_fromTB){
   const m=_vidStepDayMap();const key=vidId+'::'+step;
   if(!m[key])return;
   const ds=m[key].ds;
-  // For Build/VO/Cut, done flag tracks whether ALL timeblock blocks ON THE SAME DAY are done
-  // Blocks on other days are independent (copies = new tasks)
+  // For Build/VO/Cut, done flag tracks whether ALL TB blocks for this stage are done
   if(step!=='step_thumbnail'&&step!=='step_description'){
-    const stageBlocks=(st.blocks||[]).filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step&&bl.ds===ds);
+    const stageBlocks=(st.blocks||[]).filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step);
     if(_fromTB){
       // Called from TB checkbox — block already toggled, just check if all are done
       m[key].done=stageBlocks.length>0&&stageBlocks.every(bl=>bl._done);
     } else {
-      // Called from today/weekly list — mark ALL same-day blocks to match
+      // Called from today/weekly list — mark ALL blocks to match
       stageBlocks.forEach(bl=>{if(bl._done!==checked){bl._done=checked;sbUpdateBlock(bl.id,{done:checked});}});
       m[key].done=checked;
     }
