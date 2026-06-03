@@ -368,21 +368,16 @@ function mGetTodayTasks() {
       return {id: 'pup-sess-' + s.id, name: (skill.pup ? skill.pup + ': ' : '') + skill.skill, category: 'Recurring', due_date: s.day_date, done: s.done, _pupSessId: s.id, _skillId: s.skill_id, _virtual: true, _type: 'pup'};
     }).filter(Boolean);
 
-  // Video step tasks (mobile-specific — only videos with blocks on this day)
+  // Video step tasks — only steps with blocks on this day (matches desktop _vidStepDayMap)
   const vidStepToday = _mVidStepTasksForDay(ds);
 
-  // Video tasks — show if has block with _vidId, step block, or post_date
-  const _vidOnTB = new Set();
-  (st.blocks || []).filter(b => b.ds === ds || (b.ds && b.ds < ds)).forEach(b => {
-    if (b._vidId) _vidOnTB.add(String(b._vidId));
-    if (b._vidStepVid) _vidOnTB.add(String(b._vidStepVid));
-  });
+  // Video tasks — only show if has a direct _vidId block on this day (matches desktop _vidDayMap)
+  const _vidOnTB = new Set((st.blocks || []).filter(b => b.ds === ds && b._vidId).map(b => String(b._vidId)));
   const vidToday = (st.videos || []).filter(v => {
     if (v.is_deleted || v.status === 'published') return false;
     if (_vidOnTB.has(String(v.id))) return true;
-    if (v.post_date && (v.post_date === ds || v.post_date < ds)) return true;
     return false;
-  }).map(v => ({id: 'vid-ov-' + v.id, name: v.topic || v.title, category: 'Videos', due_date: v.post_date || ds, done: false, _vidId: v.id, _virtual: true, _type: 'vid'}));
+  }).map(v => ({id: 'vid-ov-' + v.id, name: v.topic || v.title, category: 'Videos', due_date: ds, done: false, _vidId: v.id, _virtual: true, _type: 'vid'}));
 
   return mSortToday([
     ...ts,
@@ -800,9 +795,10 @@ function mShowTab(tab) {
 }
 
 // ── Timeblock constants ───────────────────────────────────────────────────────
-const M_TB_START = 6 * 60 + 30; // 6:30am
-const M_TB_END   = 20 * 60;    // 8pm
-const M_PX       = 0.7;        // px per minute → 42px per hour, ~567px total
+const M_TB_START = 5 * 60;   // 5am (full range, scrollable)
+const M_TB_END   = 23 * 60;  // 11pm
+const M_PX       = 0.8;      // px per minute → 48px per hour
+const M_TB_DEFAULT_SCROLL = 6 * 60 + 30; // default scroll to 6:30am
 
 // Compute side-by-side layout for overlapping blocks
 function _mComputeOverlap(blocks) {
@@ -908,7 +904,7 @@ function mRenderTimeline() {
   labels.style.height = totalH + 'px';
   col.style.height    = totalH + 'px';
 
-  // Hour labels + lines (start at first full hour)
+  // Hour labels + lines
   const hrs = [];
   const firstHour = Math.ceil(M_TB_START / 60) * 60;
   for (let m = firstHour; m <= M_TB_END; m += 60) {
@@ -1090,13 +1086,15 @@ function mRenderTimeline() {
 function _mScrollNow() {
   const scroll = document.getElementById('mTLScroll');
   if (!scroll) return;
-  if (_mTBOffset !== 0) { scroll.scrollTop = 0; return; }
-  const now    = new Date();
-  const nowMin = now.getHours() * 60 + now.getMinutes();
-  if (nowMin >= M_TB_START && nowMin <= M_TB_END) {
-    const y = (nowMin - M_TB_START) * M_PX;
-    setTimeout(() => { scroll.scrollTop = Math.max(0, y - 100); }, 50);
+  if (_mTBOffset !== 0) {
+    // Non-today: scroll to default position
+    const y = (M_TB_DEFAULT_SCROLL - M_TB_START) * M_PX;
+    setTimeout(() => { scroll.scrollTop = Math.max(0, y); }, 50);
+    return;
   }
+  // Today: scroll to 6:30am as default view
+  const y = (M_TB_DEFAULT_SCROLL - M_TB_START) * M_PX;
+  setTimeout(() => { scroll.scrollTop = Math.max(0, y); }, 50);
 }
 
 // ── Day swipe navigation on timeline ─────────────────────────────────────────
@@ -1384,19 +1382,14 @@ function mGetDayTasks(ds, weekOff) {
     .filter(s => !s.done && s.due_date && (s.due_date === ds || (isToday && isOv(s.due_date))))
     .map(s => ({id: 'shop-' + s.id, name: s.name, category: 'Shopping', due_date: s.due_date, done: false, _shopId: s.id, _virtual: true, _type: 'shop'}));
 
-  // Video step tasks (mobile-specific — only videos with blocks on this day)
+  // Video step tasks — only steps with blocks on this day
   const vidStepItems = _mVidStepTasksForDay(ds);
 
-  // Video tasks — show if has block or post_date
-  const _vidOnTBDay = new Set();
-  (st.blocks || []).filter(b => b.ds === ds || (isToday && b.ds && b.ds < ds)).forEach(b => {
-    if (b._vidId) _vidOnTBDay.add(String(b._vidId));
-    if (b._vidStepVid) _vidOnTBDay.add(String(b._vidStepVid));
-  });
+  // Video tasks — only direct _vidId blocks on this day
+  const _vidOnTBDay = new Set((st.blocks || []).filter(b => b.ds === ds && b._vidId).map(b => String(b._vidId)));
   const vidForDay = (st.videos || []).filter(v => {
     if (v.is_deleted || v.status === 'published') return false;
     if (_vidOnTBDay.has(String(v.id))) return true;
-    if (v.post_date && (v.post_date === ds || (isToday && v.post_date < ds))) return true;
     return false;
   }).map(v => ({id: 'vid-' + v.id, name: v.topic || v.title, category: 'Videos', due_date: ds, done: false, _vidId: v.id, _virtual: true, _type: 'vid'}));
 
@@ -2176,10 +2169,14 @@ function _mGetTaskDatesMap() {
   const add = (ds, item) => { if (!map[ds]) map[ds] = []; map[ds].push(item); };
   (st.tasks || []).forEach(t => { if (t.due_date) add(t.due_date.split('T')[0], {name: t.name, cat: t.category, done: !!t.done}); });
   (st.shopping || []).forEach(s => { if (s.due_date) add(s.due_date, {name: s.name, cat: 'Shopping', done: !!s.done}); });
-  const _vdm = typeof _vidDayMap === 'function' ? _vidDayMap() : {};
+  // Videos: use blocks as source of truth (mobile has no _vidDayMap)
+  const _vidBlockDays = {};
+  (st.blocks || []).forEach(b => {
+    if (b._vidId && b.ds) _vidBlockDays[String(b._vidId)] = b.ds;
+  });
   (st.videos || []).forEach(v => {
     if (v.is_deleted) return;
-    const ds = _vdm[String(v.id)] || v.post_date;
+    const ds = _vidBlockDays[String(v.id)];
     if (ds) add(ds, {name: v.topic || v.title, cat: 'Videos', done: v.status === 'published'});
   });
   for (let w = -6; w <= 6; w++) {
