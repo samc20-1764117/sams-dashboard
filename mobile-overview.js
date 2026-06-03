@@ -1306,11 +1306,12 @@ function mGetDayTasks(ds, weekOff) {
     .filter(s => !s.done && s.due_date && (s.due_date === ds || (isToday && isOv(s.due_date))))
     .map(s => ({id: 'shop-' + s.id, name: s.name, category: 'Shopping', due_date: s.due_date, done: false, _shopId: s.id, _virtual: true, _type: 'shop'}));
 
-  // Video tasks — show in-progress videos on today (mobile has no _vidDayMap)
+  // Video tasks — use timeblocks + post_date (mobile has no _vidDayMap)
+  const _vidOnTBDay = new Set((st.blocks || []).filter(b => (b.ds === ds || (isToday && b.ds && b.ds < ds)) && b._vidId).map(b => String(b._vidId)));
   const vidForDay = (st.videos || []).filter(v => {
     if (v.is_deleted || v.status === 'published') return false;
-    if (v.post_date && v.post_date === ds) return true;
-    if (isToday) return true; // show all in-progress on today
+    if (_vidOnTBDay.has(String(v.id))) return true;
+    if (v.post_date && (v.post_date === ds || (isToday && v.post_date < ds))) return true;
     return false;
   }).map(v => ({id: 'vid-' + v.id, name: v.topic || v.title, category: 'Videos', due_date: ds, done: false, _vidId: v.id, _virtual: true, _type: 'vid'}));
 
