@@ -34,8 +34,11 @@
       <h1 id="mHeaderTitle">Today</h1>
       <div id="mDateLbl"></div>
     </div>
-    <span id="mProgress" class="m-prog"></span>
-    <button class="m-reload-btn" onclick="location.reload(true)" title="Reload app">↻</button>
+    <div style="display:flex;align-items:center;gap:4px">
+      <span id="mProgress" class="m-prog"></span>
+      <button id="mMonthBtn" class="m-month-btn" onclick="mOpenMonth()" style="display:none">Month</button>
+      <button class="m-reload-btn" onclick="location.reload(true)" title="Reload app">↻</button>
+    </div>
   </div>
   <div id="mPTR"><div class="m-ptr-spinner"></div><span id="mPTRLbl">Pull to refresh</span></div>
   <div id="mMain">
@@ -253,6 +256,17 @@
     <button id="mShopEditDel" onclick="mDeleteShopItem()">Delete</button>
     <button id="mShopEditSave" onclick="mSaveShopEdit()">Save</button>
   </div>
+</div>
+
+<!-- Month view modal -->
+<div id="mMonthBackdrop" onclick="mCloseMonth()"></div>
+<div id="mMonthSheet">
+  <div id="mMonthNav">
+    <button class="m-mo-nav-btn" onclick="mMonthPrev()">&lsaquo;</button>
+    <span id="mMonthTitle"></span>
+    <button class="m-mo-nav-btn" onclick="mMonthNext()">&rsaquo;</button>
+  </div>
+  <div id="mMonthGrid"></div>
 </div>
 
 <!-- Hidden undo scaffolding (required by core.js pushUndo) -->

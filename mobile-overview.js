@@ -622,6 +622,10 @@ function mShowTab(tab) {
   if (titleEl) titleEl.textContent = titles[tab] || '';
   const progEl = document.getElementById('mProgress');
   if (progEl) progEl.style.display = isToday ? '' : 'none';
+  const monthBtn = document.getElementById('mMonthBtn');
+  if (monthBtn) monthBtn.style.display = tab === 'week' ? '' : 'none';
+  const dateLbl = document.getElementById('mDateLbl');
+  if (dateLbl) dateLbl.style.display = '';
   document.getElementById('mMain').style.padding = (isToday || isShop || isGroc) ? '12px 16px' : '0';
 
   if (tab === 'tb')   { _mTBOffset = 0; mRenderTB(); _mScrollNow(); }
@@ -1874,6 +1878,101 @@ function mRemoveMealAndGroceries(recipeId) {
     removeMealAndGroceries(recipeId);
     mRenderGroc();
   }
+}
+
+// ── Month view ────────────────────────────────────────────────────────────────
+let _mMonthOffset = 0; // 0=current month, -1=last, +1=next
+
+function mOpenMonth() {
+  _mMonthOffset = 0;
+  _mRenderMonth();
+  document.getElementById('mMonthBackdrop').classList.add('open');
+  document.getElementById('mMonthSheet').classList.add('open');
+}
+function mCloseMonth() {
+  document.getElementById('mMonthBackdrop').classList.remove('open');
+  document.getElementById('mMonthSheet').classList.remove('open');
+}
+function mMonthPrev() { _mMonthOffset--; _mRenderMonth(); }
+function mMonthNext() { _mMonthOffset++; _mRenderMonth(); }
+
+function _mRenderMonth() {
+  const now = new Date();
+  const yr = now.getFullYear();
+  const mo = now.getMonth() + _mMonthOffset;
+  const first = new Date(yr, mo, 1);
+  const last = new Date(yr, mo + 1, 0);
+  const today = d2s(getDayDate(0));
+
+  document.getElementById('mMonthTitle').textContent = first.toLocaleDateString('en-US', {month: 'long', year: 'numeric'});
+
+  // Build set of dates that have tasks
+  const taskDates = new Set();
+  (st.tasks || []).forEach(t => { if (t.due_date && !t.done) taskDates.add(t.due_date.split('T')[0]); });
+  (st.shopping || []).forEach(s => { if (s.due_date && !s.done) taskDates.add(s.due_date); });
+  const _vdm = typeof _vidDayMap === 'function' ? _vidDayMap() : {};
+  Object.values(_vdm).forEach(ds => taskDates.add(ds));
+  // Recurring tasks for visible weeks
+  for (let w = -6; w <= 6; w++) {
+    try {
+      getRecurringWeekTasks(w).forEach(v => { if (!v.done) taskDates.add(v.due_date); });
+    } catch(e) {}
+  }
+
+  // Day headers
+  const dayNames = ['M','T','W','T','F','S','S'];
+  let html = dayNames.map(d => `<div class="m-mo-hdr">${d}</div>`).join('');
+
+  // Leading blanks (Mon=0)
+  const startDow = (first.getDay() + 6) % 7;
+  // Fill previous month days
+  const prevLast = new Date(yr, mo, 0);
+  for (let i = startDow - 1; i >= 0; i--) {
+    const d = prevLast.getDate() - i;
+    const ds = d2s(new Date(yr, mo - 1, d));
+    html += `<div class="m-mo-day other-month" onclick="mMonthTapDay('${ds}')">${d}</div>`;
+  }
+
+  // Current month days
+  for (let d = 1; d <= last.getDate(); d++) {
+    const ds = d2s(new Date(yr, mo, d));
+    const isToday = ds === today;
+    const hasTasks = taskDates.has(ds);
+    html += `<div class="m-mo-day${isToday ? ' is-today' : ''}${hasTasks ? ' has-tasks' : ''}" onclick="mMonthTapDay('${ds}')">${d}</div>`;
+  }
+
+  // Trailing blanks
+  const endDow = (last.getDay() + 6) % 7;
+  for (let i = 1; i <= 6 - endDow; i++) {
+    const ds = d2s(new Date(yr, mo + 1, i));
+    html += `<div class="m-mo-day other-month" onclick="mMonthTapDay('${ds}')">${i}</div>`;
+  }
+
+  document.getElementById('mMonthGrid').innerHTML = html;
+}
+
+function mMonthTapDay(ds) {
+  mCloseMonth();
+  // Switch to week tab and scroll to the tapped day
+  if (_mCurTab !== 'week') mShowTab('week');
+  // Ensure the day is rendered
+  const weekOff = _mWkGetWeekOff(ds);
+  if (weekOff < _mWkRenderedLo || weekOff > _mWkRenderedHi) {
+    // Need to render more weeks
+    const list = document.getElementById('mWeekList');
+    while (weekOff < _mWkRenderedLo) {
+      _mWkRenderedLo--;
+      list.insertAdjacentHTML('afterbegin', _mWkRenderWeekHtml(_mWkRenderedLo));
+    }
+    while (weekOff > _mWkRenderedHi) {
+      _mWkRenderedHi++;
+      list.insertAdjacentHTML('beforeend', _mWkRenderWeekHtml(_mWkRenderedHi));
+    }
+  }
+  requestAnimationFrame(() => {
+    const dayEl = document.querySelector(`.m-wk-day[data-ds="${ds}"]`);
+    if (dayEl) dayEl.scrollIntoView({block: 'start', behavior: 'smooth'});
+  });
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────

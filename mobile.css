@@ -16,7 +16,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .m-month-btn{background:none;border:1px solid var(--border);border-radius:var(--rs);font-size:11px;font-weight:600;color:var(--sub);cursor:pointer;padding:4px 10px;font-family:inherit;margin-right:4px}
 
 /* ── Main scroll area ─────────────────────────────────────────────────────── */
-#mMain{flex:1;padding:12px 16px;display:flex;flex-direction:column;gap:14px;overflow-y:auto}
+#mMain{flex:1;padding:12px 16px;display:flex;flex-direction:column;gap:14px;overflow-y:auto;min-height:0}
 
 /* ── Section card ─────────────────────────────────────────────────────────── */
 .m-section{background:var(--glass);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;overflow:clip}
@@ -214,7 +214,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .m-tl-now::before{content:'';position:absolute;left:-4px;top:-4px;width:10px;height:10px;border-radius:50%;background:var(--accent)}
 
 /* ── Week view ────────────────────────────────────────────────────────────── */
-#mWeekPage{display:flex;flex-direction:column;flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+#mWeekPage{display:flex;flex-direction:column;flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;min-height:0}
 #mWeekList{display:flex;flex-direction:column;padding-bottom:80px}
 
 /* Week divider */
@@ -228,7 +228,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .m-wk-day.is-today .m-wk-hd{background:rgba(124,106,247,.08)}
 .m-wk-day.is-past .m-wk-hd{opacity:.5}
 .m-wk-day.is-past .m-wk-row{opacity:.6}
-.m-wk-hd{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:var(--bg);position:sticky;top:0;z-index:4;border-bottom:1px solid var(--border)}
+.m-wk-hd{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:var(--bg);position:sticky;top:0;z-index:4;border-bottom:1px solid var(--border);box-shadow:0 1px 3px rgba(0,0,0,.04)}
 .m-wk-hd-left{display:flex;align-items:center;gap:10px}
 .m-wk-dname{font-size:14px;font-weight:700;color:var(--text);min-width:32px}
 .m-wk-ddate{font-size:13px;color:var(--sub)}
@@ -243,8 +243,14 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .m-wk-empty{padding:10px 16px;font-size:12px;color:var(--sub)}
 
 /* Week task row */
-.m-wk-row{display:flex;align-items:center;gap:8px;padding:9px 16px;border-top:1px solid var(--border);background:var(--bg);-webkit-user-select:none;user-select:none}
+.m-wk-row{display:flex;align-items:center;gap:8px;padding:9px 16px;border-top:1px solid var(--border);background:rgba(255,255,255,.35);-webkit-user-select:none;user-select:none}
 .m-wk-row.m-ov{background:rgba(239,68,68,.04)}
+.m-wk-row.m-wk-done{opacity:.5}
+.m-wk-task-name{flex:1;font-size:13px;line-height:1.3}
+.m-wk-task-name.done{text-decoration:line-through;color:var(--sub)}
+.m-wk-chk-wrap{display:flex;align-items:center;justify-content:center;width:22px;height:32px;flex-shrink:0;cursor:pointer}
+.m-wk-chk{width:16px;height:16px;accent-color:#999;cursor:pointer}
+.m-wk-chk:checked{accent-color:#aaa}
 
 /* Week add sheet */
 #mWkAddBackdrop{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:100;display:none;opacity:0;transition:opacity .22s}
@@ -269,6 +275,25 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 #mFullAddDue:focus{border-color:var(--accent)}
 #mFullAddSheet .m-cpick-opts{z-index:102}
 #mFullAddSave{width:100%;padding:12px;border-radius:var(--rs);border:none;background:var(--accent);color:#fff;font-size:15px;font-weight:600;font-family:inherit;cursor:pointer}
+
+/* ── Month view ──────────────────────────────────────────────────────────── */
+#mMonthBackdrop{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:100;display:none;opacity:0;transition:opacity .22s}
+#mMonthBackdrop.open{display:block;opacity:1}
+#mMonthSheet{position:fixed;bottom:0;left:0;right:0;background:var(--bg);border-radius:18px 18px 0 0;padding:16px 16px;padding-bottom:calc(20px + env(safe-area-inset-bottom));z-index:101;transform:translateY(100%);transition:transform .25s cubic-bezier(.32,1,.23,1);max-height:70vh}
+#mMonthSheet.open{transform:translateY(0)}
+#mMonthNav{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+#mMonthTitle{font-size:15px;font-weight:700}
+.m-mo-nav-btn{background:none;border:none;font-size:24px;color:var(--sub);cursor:pointer;padding:4px 10px;line-height:1;font-weight:300}
+.m-mo-nav-btn:active{color:var(--accent)}
+#mMonthGrid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center}
+.m-mo-hdr{font-size:10px;font-weight:700;color:var(--sub);padding:4px 0;text-transform:uppercase;letter-spacing:.05em}
+.m-mo-day{padding:6px 2px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;color:var(--text);position:relative;min-height:36px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.m-mo-day:active{background:rgba(124,106,247,.1)}
+.m-mo-day.is-today{background:var(--accent);color:#fff;font-weight:700;border-radius:50%;width:32px;height:32px;margin:0 auto;padding:0}
+.m-mo-day.is-today .m-mo-dots{filter:brightness(2)}
+.m-mo-day.other-month{color:var(--sub);opacity:.35}
+.m-mo-day.has-tasks::after{content:'';width:4px;height:4px;border-radius:50%;background:var(--accent);position:absolute;bottom:2px}
+.m-mo-day.is-today.has-tasks::after{background:#fff}
 
 /* ── Login ────────────────────────────────────────────────────────────────── */
 #mLogin{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100dvh;padding:24px;gap:16px}
