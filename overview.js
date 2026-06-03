@@ -3449,10 +3449,10 @@ function _vidStepTasksForDayWithOverdue(todayDs){
     if(val.ds>todayDs)return;// future — skip
     const [vidId,step]=key.split('::');
     const v=(st.videos||[]).find(x=>String(x.id)===String(vidId)&&!x.is_deleted);if(!v)return;
-    if(v[step]==='done'||v[step]==='na')return;
+    if(v[step]==='na')return;
     // Auto-move overdue map entries to today (but do NOT move blocks — they stay on their original day)
     if(val.ds<todayDs){val.ds=todayDs;m[key]=val;moved=true;}
-    const isDone=_vidStepComputeDone(vidId,step,val.ds,val);
+    const isDone=v[step]==='done'||_vidStepComputeDone(vidId,step,val.ds,val);
     const label=_VID_STEP_LABELS[step]||step.replace('step_','');
     tasks.push({id:'vidstep-'+key.replace('::','-'),name:label+': '+(v.topic||v.title),category:'Videos',due_date:todayDs,done:isDone,_vidId:vidId,_vidStep:step,_virtual:true,_type:'vidstep'});
   });
@@ -3466,7 +3466,7 @@ function _vidStepTasksForDay(ds){
     const [vidId,step]=key.split('::');
     const v=(st.videos||[]).find(x=>String(x.id)===String(vidId)&&!x.is_deleted);if(!v)return;
     const label=_VID_STEP_LABELS[step]||step.replace('step_','');
-    const isDone=_vidStepComputeDone(vidId,step,ds,val);
+    const isDone=v[step]==='done'||_vidStepComputeDone(vidId,step,ds,val);
     tasks.push({id:'vidstep-'+key.replace('::','-'),name:label+': '+(v.topic||v.title),category:'Videos',due_date:ds,done:isDone,_vidId:vidId,_vidStep:step,_virtual:true,_type:'vidstep'});
   });
   return tasks;
