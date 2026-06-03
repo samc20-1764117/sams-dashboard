@@ -5762,6 +5762,7 @@ function drawTBBlock(col,b){
     e.stopPropagation();
     this.blur();
     const checked=this.checked;
+    const _origDone=b._done;// capture BEFORE any mutation
     b._done=checked;
     el.classList.toggle('done-block',b._done);
     sbUpdateBlock(b.id,{done:checked});
@@ -5778,11 +5779,9 @@ function drawTBBlock(col,b){
     } else if(b.shopId){
       togShop(String(b.shopId),checked);
     } else if(b._vidStepVid){
-      // Set block done FIRST so _vidStepToggleDone sees correct state when checking "all blocks done?"
-      const _prevDone=b._done;
-      b._done=checked;sbUpdateBlock(b.id,{done:checked});
+      // Block already toggled above; now sync daymap (only done when ALL same-day blocks done)
       _vidStepToggleDone(b._vidStepVid,b._vidStepName,checked,true);
-      pushUndo(()=>{b._done=_prevDone;sbUpdateBlock(b.id,{done:_prevDone});_vidStepToggleDone(b._vidStepVid,b._vidStepName,!checked,true);save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();},'Step checkbox');
+      pushUndo(()=>{b._done=_origDone;sbUpdateBlock(b.id,{done:_origDone});_vidStepToggleDone(b._vidStepVid,b._vidStepName,!checked,true);save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();},'Step checkbox');
     } else if(b._vidId){
       b._done=checked;sbUpdateBlock(b.id,{done:checked});save();renderToday();renderWkSummary();renderWkCal();
     } else if(b.cat==='pup_session'&&b._pupSessId){
