@@ -3434,28 +3434,25 @@ function _vidStepUnassign(vidId,step){
   const panel=document.getElementById('vidOvPanel');if(panel&&panel.style.display==='block')_renderVidOvMenu();
   if(prev||removedBlks.length)pushUndo(()=>{const m2=_vidStepDayMap();if(prev)m2[key]=prev;_vidStepDayMapSet(m2);removedBlks.forEach(bl=>{st.blocks.push(bl);sbSaveBlock(bl);});save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();const p2=document.getElementById('vidOvPanel');if(p2&&p2.style.display==='block')_renderVidOvMenu();},'Removed step from calendar');
 }
-function _vidStepIsDone(vidId,step,ds){
-  // For Build/VO/Cut: done only when ALL same-day TB blocks are done (blocks are source of truth)
+function _vidStepComputeDone(vidId,step,ds,mapEntry){
+  // For Build/VO/Cut: done only when ALL TB blocks for this stage are done (blocks are source of truth)
   // For Thumbnail/Description: use daymap done flag
   if(step!=='step_thumbnail'&&step!=='step_description'){
-    const stageBlocks=(st.blocks||[]).filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step&&bl.ds===ds);
+    const stageBlocks=(st.blocks||[]).filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step);
     if(stageBlocks.length>0)return stageBlocks.every(bl=>bl._done);
-    // No blocks — fall back to daymap
   }
-  const m=_vidStepDayMap();const key=vidId+'::'+step;
-  return !!(m[key]&&m[key].done);
+  return !!(mapEntry&&mapEntry.done);
 }
 function _vidStepTasksForDayWithOverdue(todayDs){
-  const m=_vidStepDayMap();const tasks=[];const seen=new Set();let moved=false;
+  const m=_vidStepDayMap();const tasks=[];let moved=false;
   Object.entries(m).forEach(([key,val])=>{
     if(val.ds>todayDs)return;// future — skip
     const [vidId,step]=key.split('::');
     const v=(st.videos||[]).find(x=>String(x.id)===String(vidId)&&!x.is_deleted);if(!v)return;
     if(v[step]==='done'||v[step]==='na')return;
-    // Auto-move overdue vidsteps to today (move blocks too so ds stays in sync)
-    if(val.ds<todayDs){const oldDs=val.ds;val.ds=todayDs;m[key]=val;moved=true;(st.blocks||[]).filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step&&bl.ds===oldDs).forEach(bl=>{bl.ds=todayDs;sbUpdateBlock(bl.id,{day_date:todayDs});});}
-    const isDone=_vidStepIsDone(vidId,step,val.ds);
-    seen.add(key);
+    // Auto-move overdue map entries to today (but do NOT move blocks — they stay on their original day)
+    if(val.ds<todayDs){val.ds=todayDs;m[key]=val;moved=true;}
+    const isDone=_vidStepComputeDone(vidId,step,val.ds,val);
     const label=_VID_STEP_LABELS[step]||step.replace('step_','');
     tasks.push({id:'vidstep-'+key.replace('::','-'),name:label+': '+(v.topic||v.title),category:'Videos',due_date:todayDs,done:isDone,_vidId:vidId,_vidStep:step,_virtual:true,_type:'vidstep'});
   });
@@ -3469,7 +3466,7 @@ function _vidStepTasksForDay(ds){
     const [vidId,step]=key.split('::');
     const v=(st.videos||[]).find(x=>String(x.id)===String(vidId)&&!x.is_deleted);if(!v)return;
     const label=_VID_STEP_LABELS[step]||step.replace('step_','');
-    const isDone=_vidStepIsDone(vidId,step,ds);
+    const isDone=_vidStepComputeDone(vidId,step,ds,val);
     tasks.push({id:'vidstep-'+key.replace('::','-'),name:label+': '+(v.topic||v.title),category:'Videos',due_date:ds,done:isDone,_vidId:vidId,_vidStep:step,_virtual:true,_type:'vidstep'});
   });
   return tasks;
