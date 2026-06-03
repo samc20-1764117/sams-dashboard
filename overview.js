@@ -3365,13 +3365,12 @@ const _VID_STEP_LABELS={step_build:'Build',step_vo:'VO',step_cut:'Cut',step_thum
 function _vidStepReconstructBlocks(){
   const m=_vidStepDayMap();
   (st.blocks||[]).filter(bl=>!bl._vidStepVid&&bl.cat==='Videos'&&!bl._vidId).forEach(bl=>{
-    for(const [key,val] of Object.entries(m)){
-      if(val.ds!==bl.ds)continue;
+    for(const [key] of Object.entries(m)){
       const [vid,step]=key.split('::');
       const v=(st.videos||[]).find(x=>String(x.id)===vid&&!x.is_deleted);
       if(!v)continue;
       const lbl=(_VID_STEP_LABELS[step]||step.replace('step_',''))+': '+(v.topic||v.title);
-      if(bl.title===lbl){bl._vidStepVid=vid;bl._vidStepName=step;break;}
+      if(bl.title===lbl){bl._vidStepVid=vid;bl._vidStepName=step;sbUpdateBlock(bl.id,{vid_id:vid,rec_id:step});break;}
     }
   });
 }
