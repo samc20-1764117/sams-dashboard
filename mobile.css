@@ -216,7 +216,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .m-tl-now::before{content:'';position:absolute;left:-4px;top:-4px;width:10px;height:10px;border-radius:50%;background:var(--accent)}
 
 /* ── Week view ────────────────────────────────────────────────────────────── */
-#mWeekPage{display:flex;flex-direction:column;flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;min-height:0}
+#mWeekPage{display:flex;flex-direction:column;flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;min-height:0;position:relative}
 #mWeekList{display:flex;flex-direction:column;padding-bottom:80px}
 
 /* Week divider */
