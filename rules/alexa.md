@@ -9,17 +9,23 @@
 ## Intents
 
 ### AddTaskIntent
-- Slots: `TaskName` (SearchQuery), `TaskDate` (DATE, optional — defaults today)
+- Slot: `TaskName` (SearchQuery) — free-form task description
+- Always sets due date to today (edit in dashboard if needed)
 - Inserts into `tasks` with `category: 'Home'`, `done: false`, `important: false`
 
 ### AddShoppingIntent
-- Slots: `ItemName` (SearchQuery), `StoreName` (SearchQuery, optional)
-- Inserts into `shopping_list` with `done: false`
+- Slot: `ItemName` (SearchQuery) — free-form item name
+- Inserts into `shopping_list` with `done: false`, no store (assign in dashboard)
 
 ### LogPupSessionIntent
-- Slots: `PupName` (custom PUP_NAME: Mochi/Sunny), `SkillName` (SearchQuery)
-- Queries `pup_skills` table, matches by pup name (exact) + skill name (partial, case-insensitive)
+- Slot: `PupTraining` (SearchQuery) — single phrase like "Mochi practiced sit"
+- Server parses pup name from first word, strips filler words (practiced/did/trained)
+- Matches remaining text against `pup_skills` table (partial, case-insensitive)
 - Inserts into `pup_skill_sessions` with `skill_id`, `day_date: today`, `done: true`
+
+## Alexa SearchQuery Limitation
+- `AMAZON.SearchQuery` cannot be combined with other slots in the same utterance
+- That's why each intent uses a single SearchQuery slot and parses server-side
 
 ## Env Vars (Cloudflare Pages Settings)
 - `ALEXA_SKILL_ID` — your skill's Application ID (starts with `amzn1.ask.skill.`)
@@ -40,7 +46,7 @@
 ```bash
 curl -X POST https://dev.sams-dashboard.pages.dev/api/alexa \
   -H "Content-Type: application/json" \
-  -d '{"session":{"application":{"applicationId":"YOUR_SKILL_ID"}},"request":{"type":"IntentRequest","intent":{"name":"AddShoppingIntent","slots":{"ItemName":{"value":"milk"},"StoreName":{"value":"HEB"}}}}}'
+  -d '{"session":{"application":{"applicationId":"YOUR_SKILL_ID"}},"request":{"type":"IntentRequest","intent":{"name":"AddShoppingIntent","slots":{"ItemName":{"value":"milk"}}}}}'
 ```
 
 ## Input Sanitization

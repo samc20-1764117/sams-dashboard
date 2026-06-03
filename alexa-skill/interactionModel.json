@@ -6,30 +6,21 @@
         {
           "name": "AddTaskIntent",
           "slots": [
-            { "name": "TaskName", "type": "AMAZON.SearchQuery" },
-            { "name": "TaskDate", "type": "AMAZON.DATE" }
+            { "name": "TaskName", "type": "AMAZON.SearchQuery" }
           ],
           "samples": [
             "create task {TaskName}",
-            "create task {TaskName} for {TaskDate}",
             "add task {TaskName}",
-            "add task {TaskName} for {TaskDate}",
             "create a task {TaskName}",
-            "create a task {TaskName} for {TaskDate}",
             "new task {TaskName}",
-            "new task {TaskName} for {TaskDate}",
-            "create task for {TaskDate} {TaskName}",
             "add {TaskName} to my tasks",
-            "add {TaskName} to my tasks for {TaskDate}",
-            "task {TaskName} for {TaskDate}",
             "task {TaskName}"
           ]
         },
         {
           "name": "AddShoppingIntent",
           "slots": [
-            { "name": "ItemName", "type": "AMAZON.SearchQuery" },
-            { "name": "StoreName", "type": "AMAZON.SearchQuery" }
+            { "name": "ItemName", "type": "AMAZON.SearchQuery" }
           ],
           "samples": [
             "add {ItemName} to shopping list",
@@ -38,8 +29,6 @@
             "put {ItemName} on the shopping list",
             "put {ItemName} on shopping list",
             "shopping list add {ItemName}",
-            "add {ItemName} to shopping list for {StoreName}",
-            "add {ItemName} for {StoreName}",
             "I need {ItemName}",
             "I need to buy {ItemName}",
             "buy {ItemName}",
@@ -49,34 +38,19 @@
         {
           "name": "LogPupSessionIntent",
           "slots": [
-            { "name": "PupName", "type": "PUP_NAME" },
-            { "name": "SkillName", "type": "AMAZON.SearchQuery" }
+            { "name": "PupTraining", "type": "AMAZON.SearchQuery" }
           ],
           "samples": [
-            "{PupName} practiced {SkillName}",
-            "{PupName} did {SkillName}",
-            "{PupName} worked on {SkillName}",
-            "log {SkillName} for {PupName}",
-            "log {PupName} {SkillName}",
-            "{PupName} trained {SkillName}",
-            "record {SkillName} for {PupName}",
-            "{PupName} session {SkillName}",
-            "pup training {PupName} {SkillName}"
+            "{PupTraining}",
+            "log {PupTraining}",
+            "record {PupTraining}",
+            "pup training {PupTraining}"
           ]
         },
         { "name": "AMAZON.HelpIntent", "samples": [] },
         { "name": "AMAZON.StopIntent", "samples": [] },
         { "name": "AMAZON.CancelIntent", "samples": [] },
         { "name": "AMAZON.FallbackIntent", "samples": [] }
-      ],
-      "types": [
-        {
-          "name": "PUP_NAME",
-          "values": [
-            { "name": { "value": "Mochi" } },
-            { "name": { "value": "Sunny" } }
-          ]
-        }
       ]
     }
   }

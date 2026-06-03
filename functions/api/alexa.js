@@ -71,51 +71,62 @@ async function handleAddTask(slots, sbKey) {
   const taskName = sanitize(slots.TaskName?.value);
   if (!taskName) return alexaResp('What task would you like to create?', false);
 
-  const dateSlot = slots.TaskDate?.value;
-  const dueDate = dateSlot || new Date().toISOString().split('T')[0];
+  const today = new Date().toISOString().split('T')[0];
 
   await sbRest('POST', 'tasks', sbKey, {
     name: taskName,
     category: 'Home',
-    due_date: dueDate,
+    due_date: today,
     done: false,
     important: false,
   });
 
-  return alexaResp(`Added task: ${taskName} for ${formatDate(dueDate)}.`, true);
+  return alexaResp(`Added task: ${taskName} for today.`, true);
 }
 
 async function handleAddShopping(slots, sbKey) {
   const itemName = sanitize(slots.ItemName?.value);
   if (!itemName) return alexaResp('What item would you like to add?', false);
 
-  const store = sanitize(slots.StoreName?.value) || null;
-
   await sbRest('POST', 'shopping_list', sbKey, {
     name: itemName,
-    store: store,
+    store: null,
     done: false,
   });
 
-  const storeMsg = store ? ` for ${store}` : '';
-  return alexaResp(`Added ${itemName} to your shopping list${storeMsg}.`, true);
+  return alexaResp(`Added ${itemName} to your shopping list.`, true);
 }
 
 async function handleLogPupSession(slots, sbKey) {
-  const pupName = sanitize(slots.PupName?.value);
-  const skillName = sanitize(slots.SkillName?.value);
-  if (!pupName || !skillName) {
+  const phrase = sanitize(slots.PupTraining?.value);
+  if (!phrase) {
     return alexaResp('Which pup and what skill? Try: Mochi practiced sit.', false);
   }
 
-  // Query pup_skills for a case-insensitive partial match
+  // Parse pup name from the phrase — check if it starts with a known pup name
   const skills = await sbRest('GET', 'pup_skills', sbKey, null, '?select=id,pup,skill');
-  const pupLower = pupName.toLowerCase();
-  const skillLower = skillName.toLowerCase();
+  const pupNames = [...new Set(skills.map(s => s.pup.toLowerCase()))];
+  const words = phrase.toLowerCase().split(/\s+/);
+
+  let pupName = null;
+  let skillPart = phrase.toLowerCase();
+  for (const name of pupNames) {
+    if (words[0] === name) {
+      pupName = name;
+      // Remove pup name and filler words like "practiced", "did", "worked on"
+      skillPart = words.slice(1).join(' ')
+        .replace(/^(practiced|did|worked on|trained|session)\s*/i, '').trim();
+      break;
+    }
+  }
+
+  if (!pupName || !skillPart) {
+    return alexaResp('Say the pup name then the skill. Like: Mochi practiced sit.', false);
+  }
 
   const match = skills.find(s =>
-    s.pup.toLowerCase() === pupLower &&
-    s.skill.toLowerCase().includes(skillLower)
+    s.pup.toLowerCase() === pupName &&
+    s.skill.toLowerCase().includes(skillPart)
   );
 
   if (!match) {
