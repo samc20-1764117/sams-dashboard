@@ -33,3 +33,4 @@ Grep the relevant file only — do not read files not needed for the task:
 - `rules/deploy.md` — push to production steps
 - `rules/dark-mode.md` — dark mode design system, CSS/JS patterns, per-page checklist, completed/remaining pages
 - `rules/mobile.md` — **mobile PWA only** (mobile.html/css/mobile-overview.js). Architecture, tab system, all interaction patterns, iOS rules, init flow. Read this before any mobile work. Do NOT read for desktop tasks.
+- `rules/alexa.md` — Alexa voice integration (intents, env vars, Alexa Developer Console setup, testing)

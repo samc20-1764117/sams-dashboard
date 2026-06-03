@@ -46,10 +46,37 @@
             "add {ItemName}"
           ]
         },
+        {
+          "name": "LogPupSessionIntent",
+          "slots": [
+            { "name": "PupName", "type": "PUP_NAME" },
+            { "name": "SkillName", "type": "AMAZON.SearchQuery" }
+          ],
+          "samples": [
+            "{PupName} practiced {SkillName}",
+            "{PupName} did {SkillName}",
+            "{PupName} worked on {SkillName}",
+            "log {SkillName} for {PupName}",
+            "log {PupName} {SkillName}",
+            "{PupName} trained {SkillName}",
+            "record {SkillName} for {PupName}",
+            "{PupName} session {SkillName}",
+            "pup training {PupName} {SkillName}"
+          ]
+        },
         { "name": "AMAZON.HelpIntent", "samples": [] },
         { "name": "AMAZON.StopIntent", "samples": [] },
         { "name": "AMAZON.CancelIntent", "samples": [] },
         { "name": "AMAZON.FallbackIntent", "samples": [] }
+      ],
+      "types": [
+        {
+          "name": "PUP_NAME",
+          "values": [
+            { "name": { "value": "Mochi" } },
+            { "name": { "value": "Sunny" } }
+          ]
+        }
       ]
     }
   }
