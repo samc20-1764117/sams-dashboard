@@ -1493,21 +1493,22 @@ function mRenderWeek() {
   }
   list.innerHTML = html;
 
-  // Scroll to today
+  // Scroll to today — find "This Week" divider and scroll it to top
   setTimeout(() => {
-    const todayEl = list.querySelector('.m-wk-day.is-today');
-    if (!todayEl) return;
     const page = document.getElementById('mWeekPage');
     if (!page) return;
-    // Find the "This Week" divider by walking backwards from today
+    const todayEl = list.querySelector('.m-wk-day.is-today');
+    if (!todayEl) return;
+    // Walk backwards to find the "This Week" divider
     let target = todayEl;
-    let prev = todayEl.previousElementSibling;
-    while (prev && !prev.classList.contains('m-wk-divider')) prev = prev.previousElementSibling;
-    if (prev) target = prev;
-    const pageRect = page.getBoundingClientRect();
-    const targetRect = target.getBoundingClientRect();
-    page.scrollTop = page.scrollTop + targetRect.top - pageRect.top;
-  }, 50);
+    let el = todayEl.previousElementSibling;
+    while (el) {
+      if (el.classList.contains('m-wk-divider')) { target = el; break; }
+      el = el.previousElementSibling;
+    }
+    // Calculate offset within the list
+    page.scrollTop = target.offsetTop;
+  }, 100);
 }
 
 function _mWkLoadMore(direction) {
