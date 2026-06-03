@@ -27,7 +27,7 @@ Auto-commit after every turn via Stop hook (pushes to `dev`). No manual action n
 Grep the relevant file only — do not read files not needed for the task:
 - `rules/core.md` — architecture, auth, data/persistence, undo/redo
 - `rules/tasks-ui.md` — overdue logic, task modals, interaction patterns, UI notes
-- `rules/wr-system.md` — WR rules, non-WR recurring, X menus, skip behavior, drag IDs
+- `rules/wr-system.md` — WR rules, non-WR recurring, X menus, skip behavior, WR-specific drag/drop
 - `rules/pages.md` — per-page rules (overview, shopping, travel, pup skills, birthdays, recipes, HEB/grocery, etc.)
 - `rules/videos.md` — videos page (data model, views, stages, inline editing, grouping, keyboard shortcuts)
 - `rules/deploy.md` — push to production steps

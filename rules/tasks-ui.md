@@ -19,6 +19,7 @@ All task types that appear on the overview calendar/today list. Every type must 
 | Birthday | n/a | n/a | `st.birthdays` (banner only, not draggable) |
 | Weekly goal | `String(t.id)` | `wkgoal::{id}` | `st.tasks` (category=Weekly Goals) |
 | TB block | `blk-{id}` | block drag | `st.blocks` |
+| Video stage (vidstep) | `vidstep-{vid}-{step}` | `vidstep::{vid}::{step}` | `_vidStepDayMap` (localStorage) |
 | Auto TB | `atb::{atbId}` | auto-block drag | `st.autoTimeblocks` |
 
 ### Multi-select global behavior
@@ -61,8 +62,7 @@ All task types that appear on the overview calendar/today list. Every type must 
 - **Modal outside-click drag fix**: `_modMousedownInside` flag prevents `closeMod` if mousedown was inside `.modal`.
 - **`#tNotes` textarea**: auto-expands, capped at `max-height:160px`. Reset on add open; pre-expanded on edit open. Newlines rendered via `.replace(/\n/g,'<br>')`.
 - **Cmd+Z in modals**: `_isInput && !_ael.closest('.overlay:not(.open)')` → return early.
-- **Global shortcuts**: `n`=new task, `r`=reload, `s`=grocery modal (overview only), `o`=overview, `v`=videos (single press), `vv`=videos popup on overview (double-tap within 350ms), `p`=pups, `f`=finance, `l`=guide, `d`=dark mode, `i`=help overlay, `m`=month view (overview), `q`=quick notes (`toggleQN()`). `⌘←/→`=switch pages (overview→videos→pups→recipes→finance→birthdays). Skip if INPUT/TEXTAREA/SELECT/contentEditable focused or meta held. **All single-key shortcuts MUST check `[contenteditable="true"]:focus` (CSS selector) or `document.activeElement?.isContentEditable` (JS) — never fire while user is typing.**
-- **Overview shortcuts**: `←/→`=shift day, `w+←/→`=shift week (hold `w` then press arrow; `_wKeyHeld` also skips if typing). `t`=jump to today. `_wKeyHeld` flag tracked via keydown/keyup/blur.
+- **Shortcuts**: see `rules/core.md` → "Keyboard Shortcuts" for full list. Key additions: `d`=dark mode, `n`=new task, `r`=reload, `q`=quick notes, `vv`=videos popup (double-tap). Overview: `←/→`=shift day, `w+←/→`=shift week, `t`=today. **All single-key shortcuts MUST check contentEditable focus.**
 - **Page navigation closes overlays**: `showPage()` closes video calendar, all panel, analytics panel, and video popup before switching pages.
 - **Keyboard shortcut pattern** (MUST follow every time):
   1. Same key toggles open/close (check if modal is already `.open` before opening).

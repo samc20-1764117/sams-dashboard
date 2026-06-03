@@ -28,18 +28,9 @@
 - Close: outside click or Escape.
 
 ## Selection & Drag IDs
-| Prefix | Source | Action |
-|--------|--------|--------|
-| `String(t.id)` | regular task | permanent delete |
-| `wrrule-{id}` | WR rule | skip this week (override) |
-| `rec-virt-{id}` | non-WR recurring | `skipRecVirtThisWk` |
-| `wrec-{id}` | legacy WR chip | unschedule only |
-| `shop-cal-{id}` | shopping chip | null `due_date` |
-| `blk-{id}` | shop/WR rule in TB | keyboard Delete→`delBlock` only |
-| `tv-{id}` | travel banner | permanent delete |
-| `recmo::{recId}::{srcDs}` | non-WR chip in recMoModal | same-week drop only |
-| `recmo-wr::{ruleId}::{srcWkKey}` | WR chip in recMoModal | cross-week drop |
+See `rules/tasks-ui.md` → "Task Types on Overview" for the full selection/drag ID table.
 
+**WR-specific drag/drop:**
 - Weekly cal drag: `wrec::{recId}`, `rec::{recId}::{dueDate}`, `wrrule::{ruleId}`, `shop::{shopId}`.
 - recMoModal non-WR drop→scope picker: "This week"→`_dateOverrides[wkKey]=ds`; "All future"→`appears_on_date`.
 - recMoModal WR drop→scope picker: "↻ All future"→shift `starting_date`; "⊞ This week"→`writeWrOverride({override_type:'move'})`.
@@ -58,7 +49,7 @@
 
 **`unscheduleWrRule(rid,wkKey)`**: removes `_dateOverrides[wkKey]` + linked TB blocks. Undo restores.
 
-**WR rule TB block identity**: `ruleId` is null after DB load (not persisted). Blocks link via `recId` (set to rule ID on drop). All lookups check `b.recId` as fallback. `dropOnTB` sets both `ruleId` and `recId` to `String(r.id)`.
+**WR rule TB block identity**: `ruleId` is null after DB load because `rule_id` column migration is pending (see core.md). Blocks link via `recId` (set to rule ID on drop). All lookups check `b.recId` as fallback. `dropOnTB` sets both `ruleId` and `recId` to `String(r.id)`.
 
 **WR rule drag-to-day**: must PATCH `wr_recurring_rules` with updated `date_overrides` after `_dateOverrides` change. Undo must also PATCH to restore.
 

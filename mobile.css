@@ -243,7 +243,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .m-wk-empty{padding:10px 16px;font-size:12px;color:var(--sub)}
 
 /* Week task row */
-.m-wk-row{display:flex;align-items:center;gap:8px;padding:9px 16px;border-top:1px solid var(--border);background:rgba(255,255,255,.35);-webkit-user-select:none;user-select:none}
+.m-wk-row{display:flex;align-items:center;gap:8px;padding:9px 16px;border-top:1px solid var(--border);background:var(--glass);-webkit-user-select:none;user-select:none}
 .m-wk-row.m-ov{background:rgba(239,68,68,.04)}
 .m-wk-row.m-wk-done{opacity:.5}
 .m-wk-task-name{flex:1;font-size:13px;line-height:1.3}
