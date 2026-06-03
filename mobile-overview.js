@@ -49,21 +49,21 @@ const _M_VID_STEP_LABELS = {step_build:'Build', step_vo:'VO', step_cut:'Cut', st
 const _M_VID_STEPS = ['step_build','step_vo','step_cut','step_thumbnail','step_description'];
 
 function _mVidStepTasksForDay(ds) {
-  // Mobile has no _vidDayMap (localStorage per-device). Use timeblocks + post_date.
+  // Mobile has no _vidDayMap (localStorage per-device). Use timeblocks only.
+  // Only show step tasks for videos that have blocks on this day.
   const today = d2s(getDayDate(0));
   const isToday = ds === today;
-  // Videos linked to blocks on this day (or overdue blocks if today)
-  const vidOnBlocks = new Set((st.blocks || []).filter(b => {
-    if (b._vidId) { if (b.ds === ds) return true; if (isToday && b.ds && b.ds < ds) return true; }
-    if (b._vidStepVid) { if (b.ds === ds) return true; if (isToday && b.ds && b.ds < ds) return true; }
-    return false;
-  }).map(b => String(b._vidId || b._vidStepVid)));
+  const vidOnBlocks = new Set();
+  (st.blocks || []).forEach(b => {
+    if (b.ds !== ds && !(isToday && b.ds && b.ds < ds)) return;
+    if (b._vidStepVid) vidOnBlocks.add(String(b._vidStepVid));
+    else if (b._vidId) vidOnBlocks.add(String(b._vidId));
+  });
+  if (!vidOnBlocks.size) return [];
   const tasks = [];
   (st.videos || []).forEach(v => {
     if (v.is_deleted || v.status === 'published') return;
-    const hasBlock = vidOnBlocks.has(String(v.id));
-    const hasPostDate = v.post_date && (v.post_date === ds || (isToday && v.post_date < ds));
-    if (!hasBlock && !hasPostDate) return;
+    if (!vidOnBlocks.has(String(v.id))) return;
     _M_VID_STEPS.forEach(step => {
       const val = v[step];
       if (!val || val === 'done' || val === 'na') return;
@@ -318,17 +318,19 @@ function mGetTodayTasks() {
       return {id: 'pup-sess-' + s.id, name: (skill.pup ? skill.pup + ': ' : '') + skill.skill, category: 'Recurring', due_date: s.day_date, done: s.done, _pupSessId: s.id, _skillId: s.skill_id, _virtual: true, _type: 'pup'};
     }).filter(Boolean);
 
-  // Video tasks — use timeblocks + post_date (mobile has no _vidDayMap)
+  // Video step tasks (mobile-specific — only videos with blocks on this day)
+  const vidStepToday = _mVidStepTasksForDay(ds);
+  const _vidStepIds = new Set(vidStepToday.map(t => String(t._vidId)));
+
+  // Video tasks — only post_date match or on timeblock, skip if already has step tasks
   const _vidOnTB = new Set((st.blocks || []).filter(b => (b.ds === ds || (b.ds && b.ds < ds)) && b._vidId).map(b => String(b._vidId)));
   const vidToday = (st.videos || []).filter(v => {
     if (v.is_deleted || v.status === 'published') return false;
+    if (_vidStepIds.has(String(v.id))) return false; // already shown as step tasks
     if (_vidOnTB.has(String(v.id))) return true;
     if (v.post_date && (v.post_date === ds || v.post_date < ds)) return true;
     return false;
   }).map(v => ({id: 'vid-ov-' + v.id, name: v.topic || v.title, category: 'Videos', due_date: v.post_date || ds, done: false, _vidId: v.id, _virtual: true, _type: 'vid'}));
-
-  // Video step tasks (mobile-specific — reads from video fields, not localStorage)
-  const vidStepToday = _mVidStepTasksForDay(ds);
 
   return mSortToday([
     ...ts,
@@ -1330,17 +1332,19 @@ function mGetDayTasks(ds, weekOff) {
     .filter(s => !s.done && s.due_date && (s.due_date === ds || (isToday && isOv(s.due_date))))
     .map(s => ({id: 'shop-' + s.id, name: s.name, category: 'Shopping', due_date: s.due_date, done: false, _shopId: s.id, _virtual: true, _type: 'shop'}));
 
-  // Video tasks — use timeblocks + post_date (mobile has no _vidDayMap)
+  // Video step tasks (mobile-specific — only videos with blocks on this day)
+  const vidStepItems = _mVidStepTasksForDay(ds);
+  const _vidStepDayIds = new Set(vidStepItems.map(t => String(t._vidId)));
+
+  // Video tasks — only post_date match or on timeblock, skip if already has step tasks
   const _vidOnTBDay = new Set((st.blocks || []).filter(b => (b.ds === ds || (isToday && b.ds && b.ds < ds)) && b._vidId).map(b => String(b._vidId)));
   const vidForDay = (st.videos || []).filter(v => {
     if (v.is_deleted || v.status === 'published') return false;
+    if (_vidStepDayIds.has(String(v.id))) return false;
     if (_vidOnTBDay.has(String(v.id))) return true;
     if (v.post_date && (v.post_date === ds || (isToday && v.post_date < ds))) return true;
     return false;
   }).map(v => ({id: 'vid-' + v.id, name: v.topic || v.title, category: 'Videos', due_date: ds, done: false, _vidId: v.id, _virtual: true, _type: 'vid'}));
-
-  // Video step tasks (mobile-specific)
-  const vidStepItems = _mVidStepTasksForDay(ds);
 
   // Extras (travel, birthdays)
   const extras = getExtrasForDate(ds);
