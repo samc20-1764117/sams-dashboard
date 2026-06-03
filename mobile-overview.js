@@ -49,17 +49,21 @@ const _M_VID_STEP_LABELS = {step_build:'Build', step_vo:'VO', step_cut:'Cut', st
 const _M_VID_STEPS = ['step_build','step_vo','step_cut','step_thumbnail','step_description'];
 
 function _mVidStepTasksForDay(ds) {
-  // Mobile: localStorage._vidDayMap is per-device and empty on mobile.
-  // Show step tasks for ALL in-progress videos (not published, not deleted).
+  // Mobile has no _vidDayMap (localStorage per-device). Use timeblocks + post_date.
   const today = d2s(getDayDate(0));
   const isToday = ds === today;
+  // Videos linked to blocks on this day (or overdue blocks if today)
+  const vidOnBlocks = new Set((st.blocks || []).filter(b => {
+    if (b._vidId) { if (b.ds === ds) return true; if (isToday && b.ds && b.ds < ds) return true; }
+    if (b._vidStepVid) { if (b.ds === ds) return true; if (isToday && b.ds && b.ds < ds) return true; }
+    return false;
+  }).map(b => String(b._vidId || b._vidStepVid)));
   const tasks = [];
   (st.videos || []).forEach(v => {
     if (v.is_deleted || v.status === 'published') return;
-    // For non-today days in week view, only show if post_date matches
-    if (!isToday && v.post_date && v.post_date !== ds) return;
-    // For non-today without post_date, skip (only show on today)
-    if (!isToday && !v.post_date) return;
+    const hasBlock = vidOnBlocks.has(String(v.id));
+    const hasPostDate = v.post_date && (v.post_date === ds || (isToday && v.post_date < ds));
+    if (!hasBlock && !hasPostDate) return;
     _M_VID_STEPS.forEach(step => {
       const val = v[step];
       if (!val || val === 'done' || val === 'na') return;
@@ -293,14 +297,12 @@ function mGetTodayTasks() {
       return {id: 'pup-sess-' + s.id, name: (skill.pup ? skill.pup + ': ' : '') + skill.skill, category: 'Recurring', due_date: s.day_date, done: s.done, _pupSessId: s.id, _skillId: s.skill_id, _virtual: true, _type: 'pup'};
     }).filter(Boolean);
 
-  // Video tasks — show all in-progress videos on today (mobile has no _vidDayMap)
+  // Video tasks — use timeblocks + post_date (mobile has no _vidDayMap)
   const _vidOnTB = new Set((st.blocks || []).filter(b => (b.ds === ds || (b.ds && b.ds < ds)) && b._vidId).map(b => String(b._vidId)));
   const vidToday = (st.videos || []).filter(v => {
     if (v.is_deleted || v.status === 'published') return false;
     if (_vidOnTB.has(String(v.id))) return true;
     if (v.post_date && (v.post_date === ds || v.post_date < ds)) return true;
-    // Show all in-progress videos on today
-    if (_mTodayOffset === 0) return true;
     return false;
   }).map(v => ({id: 'vid-ov-' + v.id, name: v.topic || v.title, category: 'Videos', due_date: v.post_date || ds, done: false, _vidId: v.id, _virtual: true, _type: 'vid'}));
 
