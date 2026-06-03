@@ -370,13 +370,15 @@ function mGetTodayTasks() {
 
   // Video step tasks (mobile-specific — only videos with blocks on this day)
   const vidStepToday = _mVidStepTasksForDay(ds);
-  const _vidStepIds = new Set(vidStepToday.map(t => String(t._vidId)));
 
-  // Video tasks — only post_date match or on timeblock, skip if already has step tasks
-  const _vidOnTB = new Set((st.blocks || []).filter(b => (b.ds === ds || (b.ds && b.ds < ds)) && b._vidId).map(b => String(b._vidId)));
+  // Video tasks — show if has block with _vidId, step block, or post_date
+  const _vidOnTB = new Set();
+  (st.blocks || []).filter(b => b.ds === ds || (b.ds && b.ds < ds)).forEach(b => {
+    if (b._vidId) _vidOnTB.add(String(b._vidId));
+    if (b._vidStepVid) _vidOnTB.add(String(b._vidStepVid));
+  });
   const vidToday = (st.videos || []).filter(v => {
     if (v.is_deleted || v.status === 'published') return false;
-    if (_vidStepIds.has(String(v.id))) return false; // already shown as step tasks
     if (_vidOnTB.has(String(v.id))) return true;
     if (v.post_date && (v.post_date === ds || v.post_date < ds)) return true;
     return false;
