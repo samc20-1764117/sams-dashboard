@@ -610,8 +610,8 @@ function mShowTab(tab) {
   const grocBar = document.getElementById('mGrocAddBar');
   if (grocBar) grocBar.style.display = isGroc ? '' : 'none';
   document.getElementById('mApp').style.paddingBottom = (isToday || isShop || isGroc)
-    ? 'calc(162px + env(safe-area-inset-bottom))'
-    : 'calc(52px + env(safe-area-inset-bottom))';
+    ? 'calc(170px + env(safe-area-inset-bottom))'
+    : 'calc(60px + env(safe-area-inset-bottom))';
   document.querySelectorAll('.m-nav-btn').forEach((b, i) => {
     b.classList.toggle('active', (tab === 'today' && i === 0) || (tab === 'tb' && i === 1) || (tab === 'week' && i === 2) || (tab === 'shop' && i === 3) || (tab === 'groc' && i === 4));
   });
@@ -623,7 +623,7 @@ function mShowTab(tab) {
   document.getElementById('mMain').style.padding = (isToday || isShop || isGroc) ? '12px 16px' : '0';
 
   if (tab === 'tb')   { _mTBOffset = 0; mRenderTB(); _mScrollNow(); }
-  else if (tab === 'week') { _mWeekOffset = 0; mRenderWeek(); }
+  else if (tab === 'week') { mRenderWeek(); mInitWeekScroll(); }
   else if (tab === 'shop') { mRenderShop(); }
   else if (tab === 'groc') { mRenderGroc(); }
   else { _mSetDate(); }
@@ -1141,6 +1141,16 @@ const _WK_DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 function mWeekPrev() { _mWeekOffset--; mRenderWeek(); }
 function mWeekNext() { _mWeekOffset++; mRenderWeek(); }
 
+function _mWkGetWeekOff(ds) {
+  const d = new Date(ds + 'T12:00:00');
+  const today = new Date(); today.setHours(12, 0, 0, 0);
+  const dDow = (d.getDay() + 6) % 7;
+  const tDow = (today.getDay() + 6) % 7;
+  const dMon = new Date(d); dMon.setDate(d.getDate() - dDow);
+  const tMon = new Date(today); tMon.setDate(today.getDate() - tDow);
+  return Math.round((dMon - tMon) / (7 * 86400000));
+}
+
 function mGetDayTasks(ds, weekOff) {
   const today = d2s(getDayDate(0));
   const isToday = ds === today;
@@ -1191,33 +1201,34 @@ function mWkTaskRow(t) {
   </div>`;
 }
 
-function mRenderWeek() {
-  const dates  = getWkDates(_mWeekOffset);
-  const today  = d2s(getDayDate(0));
-  const start  = dates[0].toLocaleDateString('en-US', {month: 'short', day: 'numeric'});
-  const end    = dates[6].toLocaleDateString('en-US', {month: 'short', day: 'numeric'});
+// Week infinite scroll state
+let _mWkRenderedLo = 0;  // lowest week offset rendered
+let _mWkRenderedHi = 0;  // highest week offset rendered
+let _mWkScrollLock = false;
 
-  // Range label
-  const rangeLbl = document.getElementById('mWeekRangeLbl');
-  if (rangeLbl) {
-    rangeLbl.textContent = _mWeekOffset === 0 ? 'This Week'
-      : _mWeekOffset === -1 ? 'Last Week'
-      : _mWeekOffset === 1  ? 'Next Week'
-      : `${start} – ${end}`;
-  }
-  // Header date label
-  const dateLbl = document.getElementById('mDateLbl');
-  if (dateLbl) dateLbl.textContent = `${start} – ${end}`;
+function _mWkLabel(off) {
+  if (off === 0) return 'This Week';
+  if (off === -1) return 'Last Week';
+  if (off === 1) return 'Next Week';
+  const dates = getWkDates(off);
+  return dates[0].toLocaleDateString('en-US', {month: 'short', day: 'numeric'}) + ' – ' + dates[6].toLocaleDateString('en-US', {month: 'short', day: 'numeric'});
+}
 
-  const html = dates.map((d, i) => {
-    const ds      = d2s(d);
+function _mWkRenderWeekHtml(weekOff) {
+  const dates = getWkDates(weekOff);
+  const today = d2s(getDayDate(0));
+  const isCurrent = weekOff === 0;
+  let html = `<div class="m-wk-divider${isCurrent ? ' is-current' : ''}" data-wk="${weekOff}">${_mWkLabel(weekOff)}</div>`;
+
+  dates.forEach((d, i) => {
+    const ds = d2s(d);
     const isToday = ds === today;
-    const isPast  = !isToday && ds < today;
+    const isPast = !isToday && ds < today;
     const dateStr = d.toLocaleDateString('en-US', {month: 'short', day: 'numeric'});
-    const tasks   = mGetDayTasks(ds, _mWeekOffset);
-    const doneC   = tasks.filter(t => t.done).length;
+    const tasks = mGetDayTasks(ds, weekOff);
+    const doneC = tasks.filter(t => t.done).length;
 
-    return `<div class="m-wk-day${isToday ? ' is-today' : ''}${isPast ? ' is-past' : ''}" data-ds="${ds}">
+    html += `<div class="m-wk-day${isToday ? ' is-today' : ''}${isPast ? ' is-past' : ''}" data-ds="${ds}">
       <div class="m-wk-hd">
         <div class="m-wk-hd-left">
           <span class="m-wk-dname">${_WK_DAYS[i]}</span>
@@ -1229,14 +1240,77 @@ function mRenderWeek() {
           <button class="m-wk-add" onclick="mWkAddTask('${ds}')">+</button>
         </div>
       </div>
-      ${tasks.length
-        ? tasks.map(mWkTaskRow).join('')
-        : '<div class="m-wk-empty">—</div>'
-      }
+      ${tasks.length ? tasks.map(mWkTaskRow).join('') : '<div class="m-wk-empty">\u2014</div>'}
     </div>`;
-  }).join('');
+  });
+  return html;
+}
 
-  document.getElementById('mWeekList').innerHTML = html;
+function mRenderWeek() {
+  const list = document.getElementById('mWeekList');
+  if (!list) return;
+  const dateLbl = document.getElementById('mDateLbl');
+  if (dateLbl) dateLbl.textContent = 'Week';
+
+  // Render last week + this week + next week
+  _mWkRenderedLo = -1;
+  _mWkRenderedHi = 1;
+  let html = '';
+  for (let w = _mWkRenderedLo; w <= _mWkRenderedHi; w++) {
+    html += _mWkRenderWeekHtml(w);
+  }
+  list.innerHTML = html;
+
+  // Scroll to today
+  requestAnimationFrame(() => {
+    const todayEl = list.querySelector('.m-wk-day.is-today');
+    if (todayEl) {
+      todayEl.scrollIntoView({block: 'start'});
+      // Offset a bit so the header is visible
+      const page = document.getElementById('mWeekPage');
+      if (page) page.scrollTop = Math.max(0, page.scrollTop - 10);
+    }
+  });
+}
+
+function _mWkLoadMore(direction) {
+  if (_mWkScrollLock) return;
+  _mWkScrollLock = true;
+  const list = document.getElementById('mWeekList');
+  if (!list) { _mWkScrollLock = false; return; }
+
+  if (direction === 'up') {
+    _mWkRenderedLo--;
+    const html = _mWkRenderWeekHtml(_mWkRenderedLo);
+    const page = document.getElementById('mWeekPage');
+    const prevHeight = list.scrollHeight;
+    list.insertAdjacentHTML('afterbegin', html);
+    // Maintain scroll position
+    if (page) page.scrollTop += list.scrollHeight - prevHeight;
+  } else {
+    _mWkRenderedHi++;
+    list.insertAdjacentHTML('beforeend', _mWkRenderWeekHtml(_mWkRenderedHi));
+  }
+  setTimeout(() => { _mWkScrollLock = false; }, 200);
+}
+
+function mInitWeekScroll() {
+  const page = document.getElementById('mWeekPage');
+  if (!page || page._weekScrollInited) return;
+  page._weekScrollInited = true;
+
+  page.addEventListener('scroll', () => {
+    if (_mWkScrollLock) return;
+    const threshold = 200;
+    // Near bottom — load next week
+    if (page.scrollHeight - page.scrollTop - page.clientHeight < threshold) {
+      _mWkLoadMore('down');
+    }
+    // Near top — load previous week
+    if (page.scrollTop < threshold) {
+      _mWkLoadMore('up');
+    }
+  }, {passive: true});
 }
 
 // ── Week: add task for specific day ──────────────────────────────────────────
@@ -1271,7 +1345,29 @@ async function mSaveWkTask() {
   st.tasks.push(t);
   save();
   mCloseWkAdd();
-  mRenderWeek();
+  // Re-render just the current day in the week list
+  const dayEl = document.querySelector(`.m-wk-day[data-ds="${ds}"]`);
+  if (dayEl) {
+    const weekOff = _mWkGetWeekOff(ds);
+    const tasks = mGetDayTasks(ds, weekOff);
+    const doneC = tasks.filter(t => t.done).length;
+    const dateObj = new Date(ds + 'T12:00:00');
+    const dayIdx = (dateObj.getDay() + 6) % 7;
+    dayEl.innerHTML = `<div class="m-wk-hd">
+      <div class="m-wk-hd-left">
+        <span class="m-wk-dname">${_WK_DAYS[dayIdx]}</span>
+        <span class="m-wk-ddate">${dateObj.toLocaleDateString('en-US', {month: 'short', day: 'numeric'})}</span>
+        ${ds === d2s(getDayDate(0)) ? '<span class="m-wk-today-dot"></span>' : ''}
+      </div>
+      <div class="m-wk-hd-right">
+        ${tasks.length ? `<span class="m-wk-cnt">${doneC}/${tasks.length}</span>` : ''}
+        <button class="m-wk-add" onclick="mWkAddTask('${ds}')">+</button>
+      </div>
+    </div>
+    ${tasks.length ? tasks.map(mWkTaskRow).join('') : '<div class="m-wk-empty">\u2014</div>'}`;
+  } else {
+    mRenderWeek();
+  }
   const sv = await sbReq('POST', 'tasks', {name: n, category: cat, due_date: ds, done: false});
   if (sv && sv[0]) {
     const i = st.tasks.findIndex(x => x.id === t.id);
@@ -1290,13 +1386,13 @@ function _mWkDragMove(e) {
   _mWkDrag.ghost.style.left = touch.clientX + 'px';
   _mWkDrag.ghost.style.top  = (touch.clientY - 44) + 'px';
 
-  // Auto-scroll #mMain when near top/bottom edges
-  const main = document.getElementById('mMain');
-  if (main) {
-    const mr = main.getBoundingClientRect();
+  // Auto-scroll #mWeekPage when near top/bottom edges
+  const scrollEl = document.getElementById('mWeekPage');
+  if (scrollEl) {
+    const mr = scrollEl.getBoundingClientRect();
     const EDGE = 80, SPEED = 8;
-    if (touch.clientY > mr.bottom - EDGE)      main.scrollTop += SPEED;
-    else if (touch.clientY < mr.top + EDGE)    main.scrollTop -= SPEED;
+    if (touch.clientY > mr.bottom - EDGE)      scrollEl.scrollTop += SPEED;
+    else if (touch.clientY < mr.top + EDGE)    scrollEl.scrollTop -= SPEED;
   }
 
   // ghost has pointer-events:none so elementFromPoint hits through it
@@ -1753,13 +1849,13 @@ async function mInit() {
   mInitPTR();
   mInitTBSwipe();
   mInitBlockDrag();
-  mInitWeekSwipe();
+  mInitWeekScroll();
   mInitWkDrag();
   const authed = await checkAuth();
   if (!authed) return;
   hideLoginOverlay();
   await syncAll();
-  mShowTab('tb');
+  mShowTab('today');
   setInterval(() => { if (cfg.url && cfg.key) syncAll(true); }, 30000);
 }
 

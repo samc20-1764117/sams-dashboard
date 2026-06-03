@@ -4,7 +4,7 @@ html.init-dark{--bg:#16141f;--glass:rgba(30,28,40,.8);--border:rgba(255,255,255,
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100dvh;font-size:15px}
 
 /* ── App shell ─────────────────────────────────────────────────────────────── */
-#mApp{display:none;flex-direction:column;min-height:100dvh;padding-bottom:calc(162px + env(safe-area-inset-bottom))}
+#mApp{display:none;flex-direction:column;min-height:100dvh;padding-bottom:calc(170px + env(safe-area-inset-bottom))}
 #mApp.ready{display:flex}
 
 /* ── Header ───────────────────────────────────────────────────────────────── */
@@ -71,7 +71,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .m-cpick-opt:active{filter:brightness(.95)}
 
 /* ── Add task bar ─────────────────────────────────────────────────────────── */
-#mAddBar{position:fixed;bottom:calc(52px + env(safe-area-inset-bottom));left:0;right:0;display:flex;flex-direction:column;gap:7px;padding:10px 16px;background:var(--bg);border-top:1px solid var(--border);z-index:20}
+#mAddBar{position:fixed;bottom:calc(60px + env(safe-area-inset-bottom));left:0;right:0;display:flex;flex-direction:column;gap:7px;padding:10px 16px;background:var(--bg);border-top:1px solid var(--border);z-index:20}
 #mNewTask{width:100%;padding:10px 13px;border-radius:var(--rs);border:1px solid var(--border);background:var(--glass);font-size:16px;font-family:inherit;color:var(--text);outline:none}
 #mNewTask:focus{border-color:var(--accent)}
 .m-add-row2{display:flex;gap:8px;align-items:center}
@@ -99,7 +99,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .m-shop-item .m-shop-del{background:none;border:none;font-size:14px;color:var(--muted);cursor:pointer;padding:2px 4px;flex-shrink:0}
 .m-shop-item.m-shop-dragging{opacity:.4}
 .m-shop-drag-ph{height:42px;margin-bottom:6px;border-radius:var(--rs);background:rgba(109,95,230,.1);border:2px dashed rgba(109,95,230,.4);box-sizing:border-box}
-#mShopAddBar{position:fixed;bottom:calc(52px + env(safe-area-inset-bottom));left:0;right:0;display:flex;flex-direction:column;gap:7px;padding:10px 16px;background:var(--bg);border-top:1px solid var(--border);z-index:20}
+#mShopAddBar{position:fixed;bottom:calc(60px + env(safe-area-inset-bottom));left:0;right:0;display:flex;flex-direction:column;gap:7px;padding:10px 16px;background:var(--bg);border-top:1px solid var(--border);z-index:20}
 #mShopNewName{width:100%;padding:10px 13px;border-radius:var(--rs);border:1px solid var(--border);background:var(--glass);font-size:16px;font-family:inherit;color:var(--text);outline:none}
 #mShopNewName:focus{border-color:var(--accent)}
 .m-shop-store-sel{padding:8px 10px;border-radius:var(--rs);border:1px solid var(--border);background:var(--glass);font-size:14px;font-family:inherit;color:var(--text);outline:none;flex:1}
@@ -114,7 +114,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .m-groc-amt{font-size:12px;color:var(--muted);flex-shrink:0}
 .m-groc-done .m-groc-name{text-decoration:line-through;opacity:.5}
 .m-groc-del{background:none;border:none;font-size:14px;color:var(--muted);cursor:pointer;padding:2px 4px;flex-shrink:0}
-#mGrocAddBar{position:fixed;bottom:calc(52px + env(safe-area-inset-bottom));left:0;right:0;display:flex;flex-direction:column;gap:7px;padding:10px 16px;background:var(--bg);border-top:1px solid var(--border);z-index:20}
+#mGrocAddBar{position:fixed;bottom:calc(60px + env(safe-area-inset-bottom));left:0;right:0;display:flex;flex-direction:column;gap:7px;padding:10px 16px;background:var(--bg);border-top:1px solid var(--border);z-index:20}
 #mGrocNewName{padding:10px 13px;border-radius:var(--rs);border:1px solid var(--border);background:var(--glass);font-size:16px;font-family:inherit;color:var(--text);outline:none;width:100%;box-sizing:border-box}
 #mGrocNewName:focus{border-color:var(--accent)}
 #mGrocAddBtn{padding:8px 20px;border-radius:var(--rs);border:none;background:var(--accent);color:#fff;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer}
@@ -213,33 +213,36 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .m-tl-now::before{content:'';position:absolute;left:-4px;top:-4px;width:10px;height:10px;border-radius:50%;background:var(--accent)}
 
 /* ── Week view ────────────────────────────────────────────────────────────── */
-#mWeekPage{display:flex;flex-direction:column;flex:1}
-#mWeekNav{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:var(--bg);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:5}
-#mWeekRangeLbl{font-size:14px;font-weight:600}
-.m-wk-nav-btn{background:none;border:none;font-size:22px;color:var(--sub);cursor:pointer;padding:4px 8px;line-height:1;font-weight:300}
-.m-wk-nav-btn:active{color:var(--accent)}
-#mWeekList{display:flex;flex-direction:column}
+#mWeekPage{display:flex;flex-direction:column;flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+#mWeekList{display:flex;flex-direction:column;padding-bottom:80px}
+
+/* Week divider */
+.m-wk-divider{display:flex;align-items:center;gap:10px;padding:14px 16px 6px;color:var(--sub);font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.m-wk-divider::after{content:'';flex:1;border-top:1px solid var(--border)}
+.m-wk-divider.is-current{color:var(--accent)}
+.m-wk-divider.is-current::after{border-top-color:rgba(124,106,247,.3)}
 
 /* Day group */
 .m-wk-day{border-bottom:1px solid var(--border)}
-.m-wk-day.is-today .m-wk-hd{background:rgba(124,106,247,.06)}
-.m-wk-day.is-past{opacity:.7}
-.m-wk-hd{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;background:var(--bg);position:sticky;top:44px;z-index:4;border-bottom:1px solid var(--border)}
-.m-wk-hd-left{display:flex;align-items:center;gap:8px}
-.m-wk-dname{font-size:13px;font-weight:700;color:var(--text);min-width:28px}
-.m-wk-ddate{font-size:12px;color:var(--sub)}
-.m-wk-today-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);flex-shrink:0}
+.m-wk-day.is-today .m-wk-hd{background:rgba(124,106,247,.08)}
+.m-wk-day.is-past .m-wk-hd{opacity:.5}
+.m-wk-day.is-past .m-wk-row{opacity:.6}
+.m-wk-hd{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:var(--bg);position:sticky;top:0;z-index:4;border-bottom:1px solid var(--border)}
+.m-wk-hd-left{display:flex;align-items:center;gap:10px}
+.m-wk-dname{font-size:14px;font-weight:700;color:var(--text);min-width:32px}
+.m-wk-ddate{font-size:13px;color:var(--sub)}
+.m-wk-today-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);flex-shrink:0}
 .m-wk-hd-right{display:flex;align-items:center;gap:8px}
-.m-wk-cnt{font-size:11px;font-weight:600;color:var(--sub);background:var(--glass);border:1px solid var(--border);padding:2px 7px;border-radius:10px}
-.m-wk-add{background:none;border:none;font-size:20px;color:var(--sub);cursor:pointer;padding:0 2px;line-height:1;font-weight:300;opacity:.6}
-.m-wk-add:active{opacity:1;color:var(--accent)}
+.m-wk-cnt{font-size:11px;font-weight:600;color:var(--sub);background:var(--glass);border:1px solid var(--border);padding:2px 8px;border-radius:10px}
+.m-wk-add{background:none;border:none;font-size:22px;color:var(--accent);cursor:pointer;padding:0 2px;line-height:1;font-weight:400;opacity:.7}
+.m-wk-add:active{opacity:1}
 .m-wk-day.m-wk-drop-target{background:rgba(124,106,247,.08);outline:none}
 .m-wk-day.m-wk-drop-target .m-wk-hd{background:rgba(124,106,247,.18);color:var(--accent)}
 .m-wk-day.m-wk-drop-target .m-wk-row{background:rgba(124,106,247,.05)}
-.m-wk-empty{padding:8px 14px;font-size:12px;color:var(--sub)}
+.m-wk-empty{padding:10px 16px;font-size:12px;color:var(--sub)}
 
 /* Week task row */
-.m-wk-row{display:flex;align-items:center;gap:7px;padding:7px 14px;border-top:1px solid var(--border);background:var(--bg);-webkit-user-select:none;user-select:none}
+.m-wk-row{display:flex;align-items:center;gap:8px;padding:9px 16px;border-top:1px solid var(--border);background:var(--bg);-webkit-user-select:none;user-select:none}
 .m-wk-row.m-ov{background:rgba(239,68,68,.04)}
 
 /* Week add sheet */
