@@ -5565,7 +5565,12 @@ document.addEventListener('keydown',async e=>{
         pushUndo(()=>{st.recurring=st.recurring.filter(x=>x.id!==tempId&&!(sv&&sv[0]&&x.id===sv[0].id));save();renderRecOv();renderWeeklyPage();renderToday();renderWkSummary();renderWkCal();},'Duplicated recurring');
       } else if(t._isVidStep){
         const pasteDate=(activePg==='overview'&&Array.isArray(_pasteColDates)&&_pasteColDates.length)?_pasteColDates[0]:d2s(getDayDate(dayOff));
+        const _vsDur=(t._vidStep==='step_build'||t._vidStep==='step_vo'||t._vidStep==='step_cut')?60:30;
+        const blk={id:crypto.randomUUID(),title:t.name,ds:pasteDate,sm:540,dur:_vsDur,cat:'Videos',_vidStepVid:t._vidId,_vidStepName:t._vidStep};
+        st.blocks.push(blk);sbSaveBlock(blk);
         if(typeof _vidStepAssignToDay==='function')_vidStepAssignToDay(t._vidId,t._vidStep,pasteDate);
+        save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
+        pushUndo(()=>{st.blocks=st.blocks.filter(b=>b.id!==blk.id);sbDeleteBlock(blk.id);save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();},'Pasted step');
       } else {
         const dates=(activePg==='overview'&&Array.isArray(_pasteColDates)&&_pasteColDates.length)?_pasteColDates:[t.due_date];
         for(const pasteDate of dates){
