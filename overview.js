@@ -3398,10 +3398,14 @@ function _vidStepToggleDone(vidId,step,checked,_fromTB){
   // For Build/VO/Cut, done flag tracks whether ALL timeblock blocks ON THE SAME DAY are done
   // Blocks on other days are independent (copies = new tasks)
   if(step!=='step_thumbnail'&&step!=='step_description'){
-    const stageBlocks=(st.blocks||[]).filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step&&bl.ds===ds);
+    const allBlocks=(st.blocks||[]).filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step);
+    const stageBlocks=allBlocks.filter(bl=>bl.ds===ds);
+    console.log('[vidStepToggle]',{vidId,step,checked,_fromTB,ds,allBlockCount:allBlocks.length,sameDayCount:stageBlocks.length,blockStates:stageBlocks.map(bl=>({id:bl.id,done:bl._done,ds:bl.ds})),allBlockStates:allBlocks.map(bl=>({id:bl.id,done:bl._done,ds:bl.ds,hasVid:!!bl._vidStepVid}))});
     if(_fromTB){
       // Called from TB checkbox — block already toggled, just check if all are done
-      m[key].done=stageBlocks.length>0&&stageBlocks.every(bl=>bl._done);
+      const allDone=stageBlocks.length>0&&stageBlocks.every(bl=>bl._done);
+      console.log('[vidStepToggle] _fromTB result:',{allDone,prevMapDone:m[key].done});
+      m[key].done=allDone;
     } else {
       // Called from today/weekly list — mark ALL same-day blocks to match
       stageBlocks.forEach(bl=>{if(bl._done!==checked){bl._done=checked;sbUpdateBlock(bl.id,{done:checked});}});
@@ -5780,6 +5784,7 @@ function drawTBBlock(col,b){
       togShop(String(b.shopId),checked);
     } else if(b._vidStepVid){
       // Block already toggled above; now sync daymap (only done when ALL same-day blocks done)
+      console.log('[TB-chk vidstep]',{vid:b._vidStepVid,step:b._vidStepName,checked,blockId:b.id,blockDs:b.ds});
       _vidStepToggleDone(b._vidStepVid,b._vidStepName,checked,true);
       pushUndo(()=>{b._done=_origDone;sbUpdateBlock(b.id,{done:_origDone});_vidStepToggleDone(b._vidStepVid,b._vidStepName,!checked,true);save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();},'Step checkbox');
     } else if(b._vidId){
