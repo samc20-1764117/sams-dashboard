@@ -3449,8 +3449,8 @@ function _vidStepTasksForDayWithOverdue(todayDs){
       if(stageBlocks.length>0)isDone=stageBlocks.every(bl=>bl._done);
     }
     if(isDone)return;
-    // Auto-move overdue vidsteps to today
-    if(val.ds<todayDs){val.ds=todayDs;m[key]=val;moved=true;}
+    // Auto-move overdue vidsteps to today (move blocks too so ds stays in sync)
+    if(val.ds<todayDs){const oldDs=val.ds;val.ds=todayDs;m[key]=val;moved=true;(st.blocks||[]).filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step&&bl.ds===oldDs).forEach(bl=>{bl.ds=todayDs;sbUpdateBlock(bl.id,{day_date:todayDs});});}
     seen.add(key);
     tasks.push({id:'vidstep-'+key.replace('::','-'),name:label+': '+(v.topic||v.title),category:'Videos',due_date:todayDs,done:false,_vidId:vidId,_vidStep:step,_virtual:true,_type:'vidstep'});
   });
