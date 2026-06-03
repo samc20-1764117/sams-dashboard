@@ -787,7 +787,10 @@ function mShowTab(tab) {
   // Hide main header on schedule tab — merged into unassigned bar
   const hdr = document.getElementById('mHeader');
   if (hdr) hdr.style.display = tab === 'tb' ? 'none' : '';
-  document.getElementById('mMain').style.padding = (isToday || isShop || isGroc) ? '12px 16px' : '0';
+  const main = document.getElementById('mMain');
+  main.style.padding = (isToday || isShop || isGroc) ? '12px 16px' : '0';
+  main.style.overflow = (tab === 'week' || tab === 'tb') ? 'hidden' : '';
+  main.scrollTop = 0;
 
   if (tab === 'tb')   { _mTBOffset = 0; mRenderTB(); _mScrollNow(); }
   else if (tab === 'week') { mRenderWeek(); mInitWeekScroll(); }
@@ -797,9 +800,9 @@ function mShowTab(tab) {
 }
 
 // ── Timeblock constants ───────────────────────────────────────────────────────
-const M_TB_START = 6 * 60;   // 6am
-const M_TB_END   = 22 * 60;  // 10pm
-const M_PX       = 0.9;      // px per minute → 54px per hour, ~864px total
+const M_TB_START = 6 * 60 + 30; // 6:30am
+const M_TB_END   = 20 * 60;    // 8pm
+const M_PX       = 0.7;        // px per minute → 42px per hour, ~567px total
 
 // Compute side-by-side layout for overlapping blocks
 function _mComputeOverlap(blocks) {
@@ -905,9 +908,10 @@ function mRenderTimeline() {
   labels.style.height = totalH + 'px';
   col.style.height    = totalH + 'px';
 
-  // Hour labels + lines
+  // Hour labels + lines (start at first full hour)
   const hrs = [];
-  for (let m = M_TB_START; m <= M_TB_END; m += 60) {
+  const firstHour = Math.ceil(M_TB_START / 60) * 60;
+  for (let m = firstHour; m <= M_TB_END; m += 60) {
     const y   = (m - M_TB_START) * M_PX;
     const h   = m / 60;
     const lbl = h === 12 ? '12pm' : h > 12 ? (h - 12) + 'pm' : h + 'am';
@@ -1382,13 +1386,15 @@ function mGetDayTasks(ds, weekOff) {
 
   // Video step tasks (mobile-specific — only videos with blocks on this day)
   const vidStepItems = _mVidStepTasksForDay(ds);
-  const _vidStepDayIds = new Set(vidStepItems.map(t => String(t._vidId)));
 
-  // Video tasks — only post_date match or on timeblock, skip if already has step tasks
-  const _vidOnTBDay = new Set((st.blocks || []).filter(b => (b.ds === ds || (isToday && b.ds && b.ds < ds)) && b._vidId).map(b => String(b._vidId)));
+  // Video tasks — show if has block or post_date
+  const _vidOnTBDay = new Set();
+  (st.blocks || []).filter(b => b.ds === ds || (isToday && b.ds && b.ds < ds)).forEach(b => {
+    if (b._vidId) _vidOnTBDay.add(String(b._vidId));
+    if (b._vidStepVid) _vidOnTBDay.add(String(b._vidStepVid));
+  });
   const vidForDay = (st.videos || []).filter(v => {
     if (v.is_deleted || v.status === 'published') return false;
-    if (_vidStepDayIds.has(String(v.id))) return false;
     if (_vidOnTBDay.has(String(v.id))) return true;
     if (v.post_date && (v.post_date === ds || (isToday && v.post_date < ds))) return true;
     return false;
@@ -1494,21 +1500,21 @@ function mRenderWeek() {
   }
   list.innerHTML = html;
 
-  // Scroll to today (double rAF to ensure DOM is laid out)
-  requestAnimationFrame(() => requestAnimationFrame(() => {
+  // Scroll to today
+  setTimeout(() => {
     const todayEl = list.querySelector('.m-wk-day.is-today');
-    if (todayEl) {
-      const page = document.getElementById('mWeekPage');
-      if (page) {
-        // Use the "This Week" divider above today
-        const divider = todayEl.closest('.m-wk-day').previousElementSibling;
-        const target = (divider && divider.classList.contains('m-wk-divider')) ? divider : todayEl;
-        const pageRect = page.getBoundingClientRect();
-        const targetRect = target.getBoundingClientRect();
-        page.scrollTop = page.scrollTop + targetRect.top - pageRect.top;
-      }
-    }
-  }));
+    if (!todayEl) return;
+    const page = document.getElementById('mWeekPage');
+    if (!page) return;
+    // Find the "This Week" divider by walking backwards from today
+    let target = todayEl;
+    let prev = todayEl.previousElementSibling;
+    while (prev && !prev.classList.contains('m-wk-divider')) prev = prev.previousElementSibling;
+    if (prev) target = prev;
+    const pageRect = page.getBoundingClientRect();
+    const targetRect = target.getBoundingClientRect();
+    page.scrollTop = page.scrollTop + targetRect.top - pageRect.top;
+  }, 50);
 }
 
 function _mWkLoadMore(direction) {
@@ -2094,8 +2100,62 @@ function mCloseMonth() {
   document.getElementById('mMonthBackdrop').classList.remove('open');
   document.getElementById('mMonthSheet').classList.remove('open');
 }
-function mMonthPrev() { _mMonthOffset--; _mRenderMonth(); }
-function mMonthNext() { _mMonthOffset++; _mRenderMonth(); }
+let _mYearViewOpen = false;
+let _mYearOffset = 0;
+
+function mMonthPrev() {
+  if (_mYearViewOpen) { _mYearOffset--; _mRenderYear(); }
+  else { _mMonthOffset--; _mRenderMonth(); }
+}
+function mMonthNext() {
+  if (_mYearViewOpen) { _mYearOffset++; _mRenderYear(); }
+  else { _mMonthOffset++; _mRenderMonth(); }
+}
+
+function mToggleYearView() {
+  _mYearViewOpen = !_mYearViewOpen;
+  const yearEl = document.getElementById('mYearView');
+  const gridEl = document.getElementById('mMonthGrid');
+  const detailEl = document.getElementById('mMonthDetail');
+  if (_mYearViewOpen) {
+    _mYearOffset = 0;
+    yearEl.style.display = '';
+    gridEl.style.display = 'none';
+    detailEl.style.display = 'none';
+    _mRenderYear();
+  } else {
+    yearEl.style.display = 'none';
+    gridEl.style.display = '';
+    detailEl.style.display = '';
+    _mRenderMonth();
+  }
+}
+
+function _mRenderYear() {
+  const now = new Date();
+  const yr = now.getFullYear() + _mYearOffset;
+  document.getElementById('mMonthTitle').textContent = String(yr);
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const today = d2s(getDayDate(0));
+  const todayMo = new Date().getMonth();
+  const todayYr = new Date().getFullYear();
+  let html = '';
+  months.forEach((name, mi) => {
+    const isCurrent = yr === todayYr && mi === todayMo;
+    html += `<button class="m-yr-month${isCurrent ? ' is-current' : ''}" onclick="mYearSelectMonth(${mi}, ${yr})">${name}</button>`;
+  });
+  document.getElementById('mYearView').innerHTML = html;
+}
+
+function mYearSelectMonth(mo, yr) {
+  const now = new Date();
+  _mMonthOffset = (yr - now.getFullYear()) * 12 + (mo - now.getMonth());
+  _mYearViewOpen = false;
+  document.getElementById('mYearView').style.display = 'none';
+  document.getElementById('mMonthGrid').style.display = '';
+  document.getElementById('mMonthDetail').style.display = '';
+  _mRenderMonth();
+}
 
 function _mInitMonthSwipe() {
   const sheet = document.getElementById('mMonthGrid');

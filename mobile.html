@@ -263,9 +263,10 @@
 <div id="mMonthSheet">
   <div id="mMonthNav">
     <button class="m-mo-nav-btn" onclick="mMonthPrev()">&lsaquo;</button>
-    <span id="mMonthTitle"></span>
+    <span id="mMonthTitle" onclick="mToggleYearView()"></span>
     <button class="m-mo-nav-btn" onclick="mMonthNext()">&rsaquo;</button>
   </div>
+  <div id="mYearView" style="display:none"></div>
   <div id="mMonthGrid"></div>
   <div id="mMonthDetail"></div>
 </div>
