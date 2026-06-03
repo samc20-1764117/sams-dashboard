@@ -5,17 +5,18 @@ export async function onRequest(context) {
     return new Response(null, { status: 204 });
   }
 
-  // Validate shared secret
-  const token = context.request.headers.get('X-Alexa-Token');
-  if (!token || token !== context.env.ALEXA_SECRET) {
-    return new Response('Unauthorized', { status: 401 });
-  }
-
   const sbKey = context.env.SUPABASE_KEY;
   if (!sbKey) return alexaResp('Server misconfigured.');
 
   try {
     const body = await context.request.json();
+
+    // Validate Alexa Application ID
+    const appId = body.session?.application?.applicationId;
+    if (!appId || appId !== context.env.ALEXA_SKILL_ID) {
+      return new Response('Unauthorized', { status: 401 });
+    }
+
     const reqType = body.request?.type;
 
     if (reqType === 'LaunchRequest') {
