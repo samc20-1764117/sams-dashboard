@@ -3438,9 +3438,22 @@ function _vidStepComputeDone(vidId,step,ds,mapEntry){
   // For Thumbnail/Description: use daymap done flag
   if(step!=='step_thumbnail'&&step!=='step_description'){
     const stageBlocks=(st.blocks||[]).filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step);
-    if(stageBlocks.length>0)return stageBlocks.every(bl=>bl._done);
+    // DEBUG: find blocks that SHOULD match but don't have _vidStepVid
+    const allVidBlocks=(st.blocks||[]).filter(bl=>bl.cat==='Videos'&&bl.ds===ds);
+    if(stageBlocks.length===0&&allVidBlocks.length>0){
+      console.warn('[_vidStepComputeDone] NO stageBlocks found but Videos blocks exist on',ds,
+        'vidId=',vidId,'step=',step,
+        'allVidBlocks=',allVidBlocks.map(bl=>({id:bl.id,title:bl.title,_vidStepVid:bl._vidStepVid,_vidStepName:bl._vidStepName,_vidId:bl._vidId,done:bl._done})));
+    }
+    if(stageBlocks.length>0){
+      const result=stageBlocks.every(bl=>bl._done);
+      console.log('[_vidStepComputeDone]',vidId,step,'blocks:',stageBlocks.length,'allDone:',result,stageBlocks.map(bl=>({id:bl.id.slice(0,8),done:bl._done})));
+      return result;
+    }
   }
-  return !!(mapEntry&&mapEntry.done);
+  const fallback=!!(mapEntry&&mapEntry.done);
+  console.log('[_vidStepComputeDone] FALLBACK',vidId,step,'mapEntry.done=',mapEntry?.done,'result=',fallback);
+  return fallback;
 }
 function _vidStepTasksForDayWithOverdue(todayDs){
   const m=_vidStepDayMap();const tasks=[];let moved=false;
