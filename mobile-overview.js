@@ -44,6 +44,36 @@ function openWOModal() {}
 function dStart() {}
 function dEnd() {}
 
+// ── Mobile video step tasks (no localStorage dependency) ─────────────────────
+const _M_VID_STEP_LABELS = {step_build:'Build', step_vo:'VO', step_cut:'Cut', step_thumbnail:'Th', step_description:'Des'};
+const _M_VID_STEPS = ['step_build','step_vo','step_cut','step_thumbnail','step_description'];
+
+function _mVidStepTasksForDay(ds) {
+  const _vdm = typeof _vidDayMap === 'function' ? _vidDayMap() : {};
+  const tasks = [];
+  (st.videos || []).forEach(v => {
+    if (v.is_deleted || v.status === 'published') return;
+    // Only include steps for videos assigned to this day (or overdue to today)
+    const vd = _vdm[String(v.id)] || v.post_date;
+    if (!vd) return;
+    if (vd > ds) return; // future
+    _M_VID_STEPS.forEach(step => {
+      const val = v[step];
+      if (!val || val === 'done' || val === 'na') return;
+      const label = _M_VID_STEP_LABELS[step] || step.replace('step_','');
+      // Check if block exists and is done
+      let isDone = false;
+      if (step !== 'step_thumbnail' && step !== 'step_description') {
+        const stageBlocks = (st.blocks || []).filter(bl => String(bl._vidStepVid) === String(v.id) && bl._vidStepName === step);
+        if (stageBlocks.length > 0) isDone = stageBlocks.every(bl => bl._done);
+      }
+      if (isDone) return;
+      tasks.push({id: 'vidstep-' + v.id + '-' + step, name: label + ': ' + (v.topic || v.title), category: 'Videos', due_date: ds, done: false, _vidId: v.id, _vidStep: step, _virtual: true, _type: 'vidstep'});
+    });
+  });
+  return tasks;
+}
+
 // ── Mobile-only helpers ───────────────────────────────────────────────────────
 function isDoneWRRule(ruleId, wkKey) {
   return !!(st.wrOverrides || []).some(o =>
@@ -186,7 +216,7 @@ function mSortToday(tasks) {
 
 // ── Gather today's tasks ──────────────────────────────────────────────────────
 function mGetTodayTasks() {
-  const ds = d2s(getDayDate(0));
+  const ds = _mTodayOffset === 0 ? d2s(getDayDate(0)) : _mTodayDateStr();
 
   const ts = st.tasks.filter(t => {
     if (!t.due_date || t.category === 'Weekly Goals') return false;
@@ -276,8 +306,8 @@ function mGetTodayTasks() {
     return false;
   }).map(v => ({id: 'vid-ov-' + v.id, name: v.topic || v.title, category: 'Videos', due_date: _vdm[String(v.id)] || v.post_date || ds, done: v.status === 'published', _vidId: v.id, _virtual: true, _type: 'vid'}));
 
-  // Video step tasks
-  const vidStepToday = typeof _vidStepTasksForDayWithOverdue === 'function' ? _vidStepTasksForDayWithOverdue(ds) : [];
+  // Video step tasks (mobile-specific — reads from video fields, not localStorage)
+  const vidStepToday = _mVidStepTasksForDay(ds);
 
   return mSortToday([
     ...ts,
@@ -335,6 +365,8 @@ function mRenderToday() {
   const el = document.getElementById('mTodayList');
   if (!el) return;
   el.innerHTML = sorted.length ? sorted.map(mTaskRow).join('') : '<div class="m-empty">All done ✓</div>';
+  _mUpdateTodayHeader();
+  _mInitTodaySwipe();
 }
 
 // ── Add task ──────────────────────────────────────────────────────────────────
@@ -349,7 +381,7 @@ async function mAddTask() {
   const n = inp.value.trim();
   if (!n) return;
   const cat = _mAddCat;
-  const ds = d2s(getDayDate(0));
+  const ds = _mTodayOffset === 0 ? d2s(getDayDate(0)) : _mTodayDateStr();
   const important = _mAddImportant;
   const t = {id: 'l-' + Date.now(), name: n, category: cat, due_date: ds, done: false, important};
   st.tasks.push(t);
@@ -596,6 +628,52 @@ function mInitPTR() {
   }, {passive: true});
 }
 
+// ── Today day offset & swiping ───────────────────────────────────────────────
+let _mTodayOffset = 0;
+
+function _mTodayDateStr() {
+  const d = new Date();
+  d.setDate(d.getDate() + _mTodayOffset);
+  return d2s(d);
+}
+
+function _mUpdateTodayHeader() {
+  const titleEl = document.getElementById('mHeaderTitle');
+  const dateLbl = document.getElementById('mDateLbl');
+  if (_mTodayOffset === 0) {
+    if (titleEl) titleEl.textContent = 'Today';
+    if (dateLbl) dateLbl.textContent = new Date().toLocaleDateString('en-US', {weekday: 'long', month: 'long', day: 'numeric'});
+  } else {
+    const d = new Date();
+    d.setDate(d.getDate() + _mTodayOffset);
+    if (titleEl) titleEl.textContent = d.toLocaleDateString('en-US', {weekday: 'long'});
+    if (dateLbl) dateLbl.textContent = d.toLocaleDateString('en-US', {month: 'long', day: 'numeric'});
+  }
+}
+
+function _mInitTodaySwipe() {
+  const page = document.getElementById('mTodayPage');
+  if (!page || page._swipeInited) return;
+  page._swipeInited = true;
+  let startX = 0, startY = 0, swiping = false;
+  page.addEventListener('touchstart', e => {
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    swiping = true;
+  }, {passive: true});
+  page.addEventListener('touchend', e => {
+    if (!swiping) return;
+    swiping = false;
+    const dx = e.changedTouches[0].clientX - startX;
+    const dy = e.changedTouches[0].clientY - startY;
+    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+      _mTodayOffset += dx < 0 ? 1 : -1;
+      mRenderToday();
+      _mUpdateTodayHeader();
+    }
+  }, {passive: true});
+}
+
 // ── Tab switching ─────────────────────────────────────────────────────────────
 let _mCurTab = 'today';
 
@@ -635,7 +713,7 @@ function mShowTab(tab) {
   else if (tab === 'week') { mRenderWeek(); mInitWeekScroll(); }
   else if (tab === 'shop') { mRenderShop(); }
   else if (tab === 'groc') { mRenderGroc(); }
-  else { _mSetDate(); }
+  else { _mTodayOffset = 0; _mSetDate(); }
 }
 
 // ── Timeblock constants ───────────────────────────────────────────────────────
@@ -808,7 +886,7 @@ function mRenderTimeline() {
       <div style="overflow:hidden;flex:1;min-width:0;pointer-events:none">
         <div class="m-tl-block-name" style="color:${s.t}">${escHtml(displayName || '')}</div>
       </div>
-      ${ncols <= 1 ? `<span class="m-tl-block-time" style="color:${s.d};pointer-events:none">${timeRange}</span>` : ''}
+      ${ncols <= 1 ? `<span class="m-tl-block-time" style="color:${s.t};pointer-events:none">${timeRange}</span>` : ''}
     </div>`;
   }).join('');
 
@@ -1238,10 +1316,8 @@ function mGetDayTasks(ds, weekOff) {
     return false;
   }).map(v => ({id: 'vid-' + v.id, name: v.topic || v.title, category: 'Videos', due_date: ds, done: v.status === 'published', _vidId: v.id, _virtual: true, _type: 'vid'}));
 
-  // Video step tasks
-  const vidStepForDay = typeof _vidStepTasksForDay === 'function' ? _vidStepTasksForDay(ds) : [];
-  const vidStepItems = isToday && typeof _vidStepTasksForDayWithOverdue === 'function'
-    ? _vidStepTasksForDayWithOverdue(ds) : vidStepForDay;
+  // Video step tasks (mobile-specific)
+  const vidStepItems = _mVidStepTasksForDay(ds);
 
   // Extras (travel, birthdays)
   const extras = getExtrasForDate(ds);
@@ -1350,7 +1426,9 @@ function mRenderWeek() {
       const scrollTarget = (divider && divider.classList.contains('m-wk-divider')) ? divider : todayEl;
       scrollTarget.scrollIntoView({block: 'start'});
       const page = document.getElementById('mWeekPage');
-      if (page) page.scrollTop = Math.max(0, page.scrollTop - 4);
+      const hdr = document.getElementById('mHeader');
+      const hdrH = hdr ? hdr.offsetHeight + 8 : 60;
+      if (page) page.scrollTop = Math.max(0, page.scrollTop - hdrH);
     }
   });
 }
