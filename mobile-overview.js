@@ -218,7 +218,7 @@ function mGetTodayTasks() {
         (r.is_weekly_reset === true || r.is_weekly_reset === 'true') &&
         r._dateOverrides && r._dateOverrides[_wkKey] &&
         r._dateOverrides[_wkKey] !== '__skip__' &&
-        (r._dateOverrides[_wkKey] === ds || r._dateOverrides[_wkKey] < ds) &&
+        (r._dateOverrides[_wkKey] === ds || (r._dateOverrides[_wkKey] < ds && !(r._doneByWk && r._doneByWk[_wkKey]))) &&
         !_wrecSeen.has(String(r.id))
       )
       .forEach(r => {
@@ -259,6 +259,21 @@ function mGetTodayTasks() {
       return {id: 'pup-sess-' + s.id, name: (skill.pup ? skill.pup + ': ' : '') + skill.skill, category: 'Recurring', due_date: s.day_date, done: s.done, _pupSessId: s.id, _skillId: s.skill_id, _virtual: true, _type: 'pup'};
     }).filter(Boolean);
 
+  // Video tasks assigned to today (mirrors desktop logic)
+  const _vdm = typeof _vidDayMap === 'function' ? _vidDayMap() : {};
+  const _vidOnTB = new Set((st.blocks || []).filter(b => (b.ds === ds || (b.ds && b.ds < ds)) && b._vidId).map(b => String(b._vidId)));
+  const vidToday = (st.videos || []).filter(v => {
+    if (v.is_deleted) return false;
+    const vd = _vdm[String(v.id)];
+    if (vd === ds) return true;
+    if (vd && vd < ds) return true;
+    if (_vidOnTB.has(String(v.id))) return true;
+    return false;
+  }).map(v => ({id: 'vid-ov-' + v.id, name: v.topic || v.title, category: 'Videos', due_date: _vdm[String(v.id)] || ds, done: v.status === 'published', _vidId: v.id, _virtual: true, _type: 'vid'}));
+
+  // Video step tasks
+  const vidStepToday = typeof _vidStepTasksForDayWithOverdue === 'function' ? _vidStepTasksForDayWithOverdue(ds) : [];
+
   return mSortToday([
     ...ts,
     ...allRecVirt.filter(v => v.due_date === ds || (isOv(v.due_date) && !v.done)),
@@ -266,6 +281,8 @@ function mGetTodayTasks() {
     ...wrRulesToday,
     ...shopToday,
     ...pupSessToday,
+    ...vidToday,
+    ...vidStepToday,
     ...getExtrasForDate(ds)
   ]);
 }
@@ -615,7 +632,7 @@ function mShowTab(tab) {
 // ── Timeblock constants ───────────────────────────────────────────────────────
 const M_TB_START = 6 * 60;   // 6am
 const M_TB_END   = 22 * 60;  // 10pm
-const M_PX       = 0.75;     // px per minute → 45px per hour, ~720px total
+const M_PX       = 1.1;      // px per minute → 66px per hour, ~1056px total
 
 function _mTStr(m) {
   const h = Math.floor(m / 60), mn = m % 60;
@@ -733,7 +750,7 @@ function mRenderTimeline() {
   const todayBlocks = (st.blocks || []).filter(b => b.ds === ds).sort((a, b) => a.sm - b.sm);
   let html = todayBlocks.map(b => {
     const y    = (b.sm - M_TB_START) * M_PX;
-    const hPx  = Math.max(b.dur * M_PX, 28);
+    const hPx  = Math.max(b.dur * M_PX, 28) - 2; // 2px gap between blocks
     // Derive done from linked item (authoritative)
     const linkedTask = b.taskId ? st.tasks.find(x => String(x.id) === String(b.taskId)) : null;
     const linkedRec = b.recId ? (st.recurring.find(x => String(x.id) === String(b.recId)) || (st.wrRules || []).find(x => String(x.id) === String(b.recId))) : null;
@@ -772,7 +789,7 @@ function mRenderTimeline() {
         const endMin = parseInt(eh) * 60 + parseInt(em || 0);
         const dur = Math.max(15, endMin - startMin);
         const y = (startMin - M_TB_START) * M_PX;
-        const hPx = Math.max(dur * M_PX, 28);
+        const hPx = Math.max(dur * M_PX, 28) - 2;
         html += `<div class="m-tl-block m-auto-block" style="top:${y}px;height:${hPx}px">
           <div style="overflow:hidden;flex:1;min-width:0;pointer-events:none">
             <div class="m-tl-block-name">${escHtml(a.label || '')}</div>
