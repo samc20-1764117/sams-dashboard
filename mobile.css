@@ -175,7 +175,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 #mTBPage{display:flex;flex-direction:column;gap:0;flex:1;min-height:0}
 
 /* Unassigned chips bar */
-#mUnassignedBar{display:flex;gap:8px;padding:10px 16px;overflow-x:auto;flex-shrink:0;border-bottom:1px solid var(--border);-webkit-overflow-scrolling:touch;scrollbar-width:none}
+#mUnassignedBar{display:flex;gap:8px;padding:10px 16px;padding-top:calc(10px + env(safe-area-inset-top));overflow-x:auto;flex-shrink:0;border-bottom:1px solid var(--border);-webkit-overflow-scrolling:touch;scrollbar-width:none;align-items:center}
+.m-tb-date-lbl{font-size:14px;font-weight:700;color:var(--text);white-space:nowrap;flex-shrink:0}
 #mUnassignedBar::-webkit-scrollbar{display:none}
 .m-chip{padding:6px 12px;border-radius:20px;border:1.5px solid var(--border);background:var(--glass);font-size:13px;font-family:inherit;color:var(--text);cursor:pointer;white-space:nowrap;flex-shrink:0;font-weight:500;display:flex;align-items:center;gap:6px}
 .m-chip::before{content:'';width:8px;height:8px;border-radius:50%;background:var(--cdot, var(--sub));border:1.5px solid var(--cborder, var(--sub));flex-shrink:0}

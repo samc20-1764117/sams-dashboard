@@ -729,7 +729,10 @@ function mShowTab(tab) {
   const monthBtn = document.getElementById('mMonthBtn');
   if (monthBtn) monthBtn.style.display = tab === 'week' ? '' : 'none';
   const dateLbl = document.getElementById('mDateLbl');
-  if (dateLbl) dateLbl.style.display = '';
+  if (dateLbl) dateLbl.style.display = tab === 'tb' ? 'none' : '';
+  // Hide main header on schedule tab — merged into unassigned bar
+  const hdr = document.getElementById('mHeader');
+  if (hdr) hdr.style.display = tab === 'tb' ? 'none' : '';
   document.getElementById('mMain').style.padding = (isToday || isShop || isGroc) ? '12px 16px' : '0';
 
   if (tab === 'tb')   { _mTBOffset = 0; mRenderTB(); _mScrollNow(); }
@@ -773,14 +776,6 @@ let _mTBOffset = 0; // day offset (0=today, -1=yesterday, +1=tomorrow)
 
 // ── Timeblock rendering ───────────────────────────────────────────────────────
 function mRenderTB() {
-  // Update date label for displayed day
-  const d    = getDayDate(_mTBOffset);
-  const lbl  = document.getElementById('mDateLbl');
-  if (lbl) {
-    const opts = {weekday: 'short', month: 'short', day: 'numeric'};
-    const prefix = _mTBOffset === 0 ? 'Today · ' : _mTBOffset === -1 ? 'Yesterday · ' : _mTBOffset === 1 ? 'Tomorrow · ' : '';
-    lbl.textContent = prefix + d.toLocaleDateString('en-US', opts);
-  }
   mRenderUnassigned();
   mRenderTimeline();
 }
@@ -833,11 +828,18 @@ function mRenderUnassigned() {
     ...shopUnassigned.map(s => ({ id: 'shop-' + s.id, name: s.name, category: 'Shopping' }))
   ];
 
+  // Date label merged into unassigned bar
+  const d = getDayDate(_mTBOffset);
+  const opts = {weekday: 'short', month: 'short', day: 'numeric'};
+  const prefix = _mTBOffset === 0 ? 'Today' : _mTBOffset === -1 ? 'Yesterday' : _mTBOffset === 1 ? 'Tomorrow' : '';
+  const dateTxt = prefix ? prefix + ' · ' + d.toLocaleDateString('en-US', opts) : d.toLocaleDateString('en-US', opts);
+  const dateChip = `<span class="m-tb-date-lbl">${dateTxt}</span>`;
+
   if (!allUnassigned.length) {
-    bar.innerHTML = '<span class="m-chip-empty">No unassigned tasks</span>';
+    bar.innerHTML = dateChip;
     return;
   }
-  bar.innerHTML = allUnassigned.map(t => {
+  bar.innerHTML = dateChip + allUnassigned.map(t => {
     const s   = gc(t.category || '');
     const sel = _mSelectedChipId === String(t.id);
     return `<button class="m-chip${sel ? ' selected' : ''}" onclick="mSelectChip('${t.id}')" style="--cdot:${s.bg};--cborder:${s.d}">${escHtml(t.name)}</button>`;
@@ -873,25 +875,12 @@ function mRenderTimeline() {
   }
   labels.innerHTML = hrs.join('');
 
-  // Blocks for displayed day
+  // Collect ALL blocks (regular + auto + recurring auto) for unified overlap layout
   const ds = d2s(getDayDate(_mTBOffset));
-  const todayBlocks = (st.blocks || []).filter(b => b.ds === ds).sort((a, b) => a.sm - b.sm);
+  const allItems = [];
 
-  // Compute overlap layout (side-by-side)
-  _mComputeOverlap(todayBlocks);
-
-  let html = todayBlocks.map(b => {
-    const y    = (b.sm - M_TB_START) * M_PX;
-    const hPx  = Math.max(b.dur * M_PX, 24) - 2;
-    // Overlap positioning
-    const ncols = b._ncols || 1;
-    const colI  = b._col || 0;
-    const colW  = 100 / ncols;
-    const left  = colI * colW;
-    const posStyle = ncols > 1
-      ? `top:${y}px;height:${hPx}px;left:calc(${left}% + 2px);right:calc(${100 - left - colW}% + 2px)`
-      : `top:${y}px;height:${hPx}px`;
-    // Derive done from linked item (authoritative)
+  // Regular saved blocks
+  (st.blocks || []).filter(b => b.ds === ds).forEach(b => {
     const linkedTask = b.taskId ? st.tasks.find(x => String(x.id) === String(b.taskId)) : null;
     const linkedRec = b.recId ? (st.recurring.find(x => String(x.id) === String(b.recId)) || (st.wrRules || []).find(x => String(x.id) === String(b.recId))) : null;
     const linkedShop = b.shopId ? st.shopping.find(x => String(x.id) === String(b.shopId)) : null;
@@ -901,17 +890,9 @@ function mRenderTimeline() {
     else if (linkedRec && linkedRec._doneByWk) b._done = !!linkedRec._doneByWk[dsToWkKey(b.ds)];
     else if (linkedShop) b._done = !!linkedShop.done;
     const displayName = (linkedTask && linkedTask.name) || (linkedRec && linkedRec.name) || (linkedShop && linkedShop.name) || b.title;
-    const s    = gc(b.cat || '');
-    const timeRange = `${_mTStr(b.sm)}\u2013${_mTStr(b.sm + b.dur)}`;
-    const doneClass = b._done ? ' m-done-block' : '';
-    return `<div class="m-tl-block${doneClass}" data-bid="${b.id}" style="${posStyle};background:${s.bg};border:1px solid rgba(255,255,255,.55);border-left:3px solid ${s.d}">
-      <input type="checkbox" class="m-tb-chk" data-bid="${b.id}" ${b._done ? 'checked' : ''}>
-      <div style="overflow:hidden;flex:1;min-width:0;pointer-events:none">
-        <div class="m-tl-block-name" style="color:${s.t}">${escHtml(displayName || '')}</div>
-      </div>
-      ${ncols <= 1 ? `<span class="m-tl-block-time" style="color:${s.t};pointer-events:none">${timeRange}</span>` : ''}
-    </div>`;
-  }).join('');
+    const s = gc(b.cat || '');
+    allItems.push({sm: b.sm, dur: b.dur, type: 'block', bid: b.id, done: b._done, name: displayName, s, _b: b});
+  });
 
   // Auto blocks
   if (cfg.showAutoTB) {
@@ -928,14 +909,7 @@ function mRenderTimeline() {
         const startMin = parseInt(sh) * 60 + parseInt(sm2 || 0);
         const endMin = parseInt(eh) * 60 + parseInt(em || 0);
         const dur = Math.max(15, endMin - startMin);
-        const y = (startMin - M_TB_START) * M_PX;
-        const hPx = Math.max(dur * M_PX, 28) - 2;
-        html += `<div class="m-tl-block m-auto-block" style="top:${y}px;height:${hPx}px">
-          <div style="overflow:hidden;flex:1;min-width:0;pointer-events:none">
-            <div class="m-tl-block-name">${escHtml(a.label || '')}</div>
-          </div>
-          <span class="m-tl-block-time" style="pointer-events:none">${_mTStr(startMin)}–${_mTStr(startMin + dur)}</span>
-        </div>`;
+        allItems.push({sm: startMin, dur, type: 'auto', name: a.label, cls: 'm-auto-block'});
       });
     }
   }
@@ -964,15 +938,42 @@ function mRenderTimeline() {
     const startMin = parseInt(sh) * 60 + parseInt(sm2 || 0);
     const endMin = parseInt(eh) * 60 + parseInt(em || 0);
     const dur = Math.max(15, endMin - startMin);
-    const y = (startMin - M_TB_START) * M_PX;
-    const hPx = Math.max(dur * M_PX, 28) - 2;
-    html += `<div class="m-tl-block m-rec-auto-block" style="top:${y}px;height:${hPx}px">
-      <div style="overflow:hidden;flex:1;min-width:0;pointer-events:none">
-        <div class="m-tl-block-name">${escHtml(v.name || '')}</div>
-      </div>
-      <span class="m-tl-block-time" style="pointer-events:none">${_mTStr(startMin)}–${_mTStr(startMin + dur)}</span>
-    </div>`;
+    allItems.push({sm: startMin, dur, type: 'recauto', name: v.name, cls: 'm-rec-auto-block'});
   });
+
+  // Compute overlap for ALL items together
+  _mComputeOverlap(allItems);
+
+  let html = allItems.map(item => {
+    const y = (item.sm - M_TB_START) * M_PX;
+    const hPx = Math.max(item.dur * M_PX, item.type === 'block' ? 24 : 28) - 2;
+    const ncols = item._ncols || 1;
+    const colI = item._col || 0;
+    const colW = 100 / ncols;
+    const left = colI * colW;
+    const posStyle = ncols > 1
+      ? `top:${y}px;height:${hPx}px;left:calc(${left}% + 2px);right:calc(${100 - left - colW}% + 2px)`
+      : `top:${y}px;height:${hPx}px`;
+    const timeRange = `${_mTStr(item.sm)}\u2013${_mTStr(item.sm + item.dur)}`;
+
+    if (item.type === 'block') {
+      const doneClass = item.done ? ' m-done-block' : '';
+      return `<div class="m-tl-block${doneClass}" data-bid="${item.bid}" style="${posStyle};background:${item.s.bg};border:1px solid rgba(255,255,255,.55);border-left:3px solid ${item.s.d}">
+        <input type="checkbox" class="m-tb-chk" data-bid="${item.bid}" ${item.done ? 'checked' : ''}>
+        <div style="overflow:hidden;flex:1;min-width:0;pointer-events:none">
+          <div class="m-tl-block-name" style="color:${item.s.t}">${escHtml(item.name || '')}</div>
+        </div>
+        ${ncols <= 1 ? `<span class="m-tl-block-time" style="color:${item.s.t};pointer-events:none">${timeRange}</span>` : ''}
+      </div>`;
+    } else {
+      return `<div class="m-tl-block ${item.cls}" style="${posStyle}">
+        <div style="overflow:hidden;flex:1;min-width:0;pointer-events:none">
+          <div class="m-tl-block-name">${escHtml(item.name || '')}</div>
+        </div>
+        ${ncols <= 1 ? `<span class="m-tl-block-time" style="pointer-events:none">${timeRange}</span>` : ''}
+      </div>`;
+    }
+  }).join('');
 
   col.innerHTML = html;
 
@@ -1445,14 +1446,10 @@ function mRenderWeek() {
   requestAnimationFrame(() => {
     const todayEl = list.querySelector('.m-wk-day.is-today');
     if (todayEl) {
-      // Scroll so today's divider header is visible at top
       const divider = todayEl.previousElementSibling;
       const scrollTarget = (divider && divider.classList.contains('m-wk-divider')) ? divider : todayEl;
-      scrollTarget.scrollIntoView({block: 'start'});
       const page = document.getElementById('mWeekPage');
-      const hdr = document.getElementById('mHeader');
-      const hdrH = hdr ? hdr.offsetHeight + 8 : 60;
-      if (page) page.scrollTop = Math.max(0, page.scrollTop - hdrH);
+      if (page) page.scrollTop = scrollTarget.offsetTop;
     }
   });
 }
