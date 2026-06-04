@@ -379,7 +379,7 @@ function mGetTodayTasks() {
     return false;
   }).map(v => ({id: 'vid-ov-' + v.id, name: v.topic || v.title, category: 'Videos', due_date: ds, done: false, _vidId: v.id, _virtual: true, _type: 'vid'}));
 
-  return mSortToday([
+  const all = [
     ...ts,
     ...allRecVirt.filter(v => v.due_date === ds || (isOv(v.due_date) && !v.done)),
     ...wrecToday,
@@ -389,7 +389,21 @@ function mGetTodayTasks() {
     ...vidToday,
     ...vidStepToday,
     ...getExtrasForDate(ds)
-  ]);
+  ];
+  // Dedup by id AND by name (prevents same task from multiple sources)
+  const seenId = new Set();
+  const seenName = new Set();
+  const deduped = all.filter(t => {
+    const idKey = String(t.id);
+    if (seenId.has(idKey)) return false;
+    seenId.add(idKey);
+    // Also dedup by name to catch same task from different sources (e.g. regular task + WR rule)
+    const nameKey = (t.name || '').toLowerCase().trim();
+    if (nameKey && seenName.has(nameKey)) return false;
+    seenName.add(nameKey);
+    return true;
+  });
+  return mSortToday(deduped);
 }
 
 // ── Task row ──────────────────────────────────────────────────────────────────
@@ -411,6 +425,7 @@ function mTaskRow(t) {
   else if (!t._virtual) onchange = `toggleTask('${t.id}',this.checked)`;
 
   const safeName = escHtml(t.name || '');
+  const arrow = !t.done && !t._hasTB ? '<span class="m-row-arrow">▸</span>' : '';
   const dot = `<span class="m-cat-dot" style="background:${s.bg};border:1.5px solid ${s.d};flex-shrink:0;width:10px;height:10px;border-radius:50%;display:inline-block"></span>`;
 
   const inner = `<div class="m-row${t.done ? ' m-done' : ''}${ov ? ' m-ov' : ''}">
@@ -419,7 +434,7 @@ function mTaskRow(t) {
       : `<label class="m-chk-wrap"><input type="checkbox" ${t.done ? 'checked' : ''} onchange="${onchange}"></label>`
     }
     <span class="m-row-name${t.done ? ' done' : ''}">${safeName}</span>
-    ${dot}
+    ${arrow}${dot}
   </div>`;
 
   return `<div class="m-row-outer"${canEdit ? ` data-tid="${t.id}"` : ''}>
@@ -431,6 +446,20 @@ function mTaskRow(t) {
 // ── Render today ──────────────────────────────────────────────────────────────
 function mRenderToday() {
   const sorted = mGetTodayTasks();
+  // Tag tasks with timeblock info for arrow indicator
+  const ds = _mTodayOffset === 0 ? d2s(getDayDate(0)) : _mTodayDateStr();
+  const blks = (st.blocks || []).filter(b => b.ds === ds);
+  sorted.forEach(t => {
+    let b = null;
+    if (t._type === 'pup' && t._pupSessId) b = blks.find(x => String(x._pupSessId) === String(t._pupSessId));
+    else if (t._type === 'vidstep') b = blks.find(x => String(x._vidStepVid) === String(t._vidId) && x._vidStepName === t._vidStep);
+    else if (t._vidId) b = blks.find(x => String(x._vidId) === String(t._vidId));
+    else if (t._shopId) b = blks.find(x => String(x.shopId) === String(t._shopId));
+    else if (t._ruleId) b = blks.find(x => String(x.ruleId) === String(t._ruleId) || String(x.recId) === String(t._ruleId));
+    else if (t._recId) b = blks.find(x => String(x.recId) === String(t._recId));
+    else if (!t._virtual) b = blks.find(x => String(x.taskId) === String(t.id));
+    t._hasTB = !!b;
+  });
   const doneCount = sorted.filter(t => t.done).length;
   const progEl = document.getElementById('mProgress');
   if (progEl && _mCurTab === 'today') progEl.textContent = doneCount + '/' + sorted.length;
@@ -1086,15 +1115,13 @@ function mRenderTimeline() {
 function _mScrollNow() {
   const scroll = document.getElementById('mTLScroll');
   if (!scroll) return;
-  if (_mTBOffset !== 0) {
-    // Non-today: scroll to default position
-    const y = (M_TB_DEFAULT_SCROLL - M_TB_START) * M_PX;
-    setTimeout(() => { scroll.scrollTop = Math.max(0, y); }, 50);
-    return;
-  }
-  // Today: scroll to 6:30am as default view
   const y = (M_TB_DEFAULT_SCROLL - M_TB_START) * M_PX;
-  setTimeout(() => { scroll.scrollTop = Math.max(0, y); }, 50);
+  // Double rAF ensures layout is complete before scrolling
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      scroll.scrollTop = Math.max(0, y);
+    });
+  });
 }
 
 // ── Day swipe navigation on timeline ─────────────────────────────────────────
@@ -1396,7 +1423,20 @@ function mGetDayTasks(ds, weekOff) {
   // Extras (travel, birthdays)
   const extras = getExtrasForDate(ds);
 
-  return [...regular, ...recVirt, ...shopItems, ...vidForDay, ...vidStepItems, ...extras].sort((a, b) => {
+  const all = [...regular, ...recVirt, ...shopItems, ...vidForDay, ...vidStepItems, ...extras];
+  // Dedup by id and name
+  const seenId = new Set();
+  const seenName = new Set();
+  const deduped = all.filter(t => {
+    const idKey = String(t.id);
+    if (seenId.has(idKey)) return false;
+    seenId.add(idKey);
+    const nameKey = (t.name || '').toLowerCase().trim();
+    if (nameKey && seenName.has(nameKey)) return false;
+    seenName.add(nameKey);
+    return true;
+  });
+  return deduped.sort((a, b) => {
     if (a.done && !b.done) return 1;
     if (!a.done && b.done) return -1;
     return (a.name || '').localeCompare(b.name || '');
@@ -1493,22 +1533,15 @@ function mRenderWeek() {
   }
   list.innerHTML = html;
 
-  // Scroll to today — find "This Week" divider and scroll it to top
+  // Scroll to today
   setTimeout(() => {
     const page = document.getElementById('mWeekPage');
     if (!page) return;
     const todayEl = list.querySelector('.m-wk-day.is-today');
-    if (!todayEl) return;
-    // Walk backwards to find the "This Week" divider
-    let target = todayEl;
-    let el = todayEl.previousElementSibling;
-    while (el) {
-      if (el.classList.contains('m-wk-divider')) { target = el; break; }
-      el = el.previousElementSibling;
+    if (todayEl) {
+      page.scrollTop = todayEl.offsetTop;
     }
-    // Calculate offset within the list
-    page.scrollTop = target.offsetTop;
-  }, 100);
+  }, 120);
 }
 
 function _mWkLoadMore(direction) {
