@@ -146,12 +146,13 @@ function renderToday(){
   const pupSessToday=(st.pupSessions||[])
     .filter(s=>s.day_date===ds||(dayOff===0&&isOv(s.day_date)&&!s.done))
     .map(s=>{const skill=(st.pup_skills||[]).find(x=>String(x.id)===String(s.skill_id));if(!skill)return null;return{id:'pup-sess-'+s.id,name:skill.skill,category:'Recurring',due_date:s.day_date,done:s.done,_pupSessId:s.id,_skillId:s.skill_id,_pup:skill.pup,_virtual:true,_type:'pup'};}).filter(Boolean);
-  // Videos assigned to today
+  // Videos assigned to today — auto-move overdue daymap entries and clean up old blocks
   const _vdmToday=_vidDayMap();
+  if(dayOff===0){let _vdmChanged=false;Object.entries(_vdmToday).forEach(([vid,vds])=>{if(vds&&vds<ds){_vdmToday[vid]=ds;_vdmChanged=true;for(let i=st.blocks.length-1;i>=0;i--){const b=st.blocks[i];if(String(b._vidId)===vid&&b.ds!==ds){sbDeleteBlock(b.id);st.blocks.splice(i,1);}}}});if(_vdmChanged)_vidDayMapSet(_vdmToday);}
   const _vidStillPending=v=>v.status==='published'&&typeof _vidGroupFullyComplete==='function'&&!_vidGroupFullyComplete(v);
   const _hasTabTask0=vid=>{const m='_vid:'+vid;return st.tasks.some(t=>t.notes&&t.notes.includes(m));};
-  const _vidOnTBToday=new Set(st.blocks.filter(b=>(b.ds===ds||(dayOff===0&&b.ds&&b.ds<ds))&&b._vidId).map(b=>String(b._vidId)));
-  const vidToday=(st.videos||[]).filter(v=>{if(v.is_deleted)return false;const vd=_vdmToday[String(v.id)];if(vd===ds)return true;if(dayOff===0&&vd&&vd<ds)return true;if(_vidOnTBToday.has(String(v.id)))return true;if(_vidStillPending(v)&&v.post_date&&(v.post_date===ds||(dayOff===0&&v.post_date<ds))&&!_hasTabTask0(v.id))return true;return false;}).map(v=>({id:'vid-ov-'+v.id,name:v.topic||v.title,category:'Videos',due_date:_vdmToday[String(v.id)]||v.post_date||ds,done:v.status==='published',_vidId:v.id,_virtual:true,_type:'vid'}));
+  const _vidOnTBToday=new Set(st.blocks.filter(b=>b.ds===ds&&b._vidId).map(b=>String(b._vidId)));
+  const vidToday=(st.videos||[]).filter(v=>{if(v.is_deleted)return false;const vd=_vdmToday[String(v.id)];if(vd===ds)return true;if(_vidOnTBToday.has(String(v.id)))return true;if(_vidStillPending(v)&&v.post_date&&(v.post_date===ds||(dayOff===0&&v.post_date<ds))&&!_hasTabTask0(v.id))return true;return false;}).map(v=>({id:'vid-ov-'+v.id,name:v.topic||v.title,category:'Videos',due_date:ds,done:v.status==='published',_vidId:v.id,_virtual:true,_type:'vid'}));
   const vidStepToday=dayOff===0?_vidStepTasksForDayWithOverdue(ds):_vidStepTasksForDay(ds);
   const finCancelToday=typeof _finCancelTasksForDate==='function'?_finCancelTasksForDate(ds):[];
   const virtToday=[
@@ -3460,8 +3461,10 @@ function _vidStepTasksForDayWithOverdue(todayDs){
     const [vidId,step]=key.split('::');
     const v=(st.videos||[]).find(x=>String(x.id)===String(vidId)&&!x.is_deleted);if(!v)return;
     if(v[step]==='na')return;
-    // Auto-move overdue map entries to today (but do NOT move blocks — they stay on their original day)
-    if(val.ds<todayDs){val.ds=todayDs;val.done=false;m[key]=val;moved=true;}
+    // Auto-move overdue map entries to today — reset done state and uncheck any old TB blocks
+    if(val.ds<todayDs){val.ds=todayDs;val.done=false;m[key]=val;moved=true;
+      (st.blocks||[]).filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step&&bl._done).forEach(bl=>{bl._done=false;sbUpdateBlock(bl.id,{done:false});});
+    }
     const isDone=v[step]==='done'||_vidStepComputeDone(vidId,step,val.ds,val);
     const label=_VID_STEP_LABELS[step]||step.replace('step_','');
     tasks.push({id:'vidstep-'+key.replace('::','-'),name:label+': '+(v.topic||v.title),category:'Videos',due_date:todayDs,done:isDone,_vidId:vidId,_vidStep:step,_virtual:true,_type:'vidstep'});
