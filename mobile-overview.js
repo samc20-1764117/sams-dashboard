@@ -1414,11 +1414,13 @@ function mGetDayTasks(ds, weekOff) {
 
   // Video tasks — only direct _vidId blocks on this day
   const _vidOnTBDay = new Set((st.blocks || []).filter(b => b.ds === ds && b._vidId).map(b => String(b._vidId)));
+  const isPast = !isToday && ds < today;
   const vidForDay = (st.videos || []).filter(v => {
     if (v.is_deleted || v.status === 'published') return false;
     if (_vidOnTBDay.has(String(v.id))) return true;
     return false;
-  }).map(v => ({id: 'vid-' + v.id, name: v.topic || v.title, category: 'Videos', due_date: ds, done: false, _vidId: v.id, _virtual: true, _type: 'vid'}));
+  }).map(v => ({id: 'vid-' + v.id, name: v.topic || v.title, category: 'Videos', due_date: ds, done: v.status === 'published', _vidId: v.id, _virtual: true, _type: 'vid'}))
+  .filter(v => !(isPast && !v.done)); // Skip undone video tasks on past days
 
   // Extras (travel, birthdays)
   const extras = getExtrasForDate(ds);
@@ -1534,14 +1536,19 @@ function mRenderWeek() {
   list.innerHTML = html;
 
   // Scroll to today
-  setTimeout(() => {
-    const page = document.getElementById('mWeekPage');
-    if (!page) return;
-    const todayEl = list.querySelector('.m-wk-day.is-today');
-    if (todayEl) {
-      page.scrollTop = todayEl.offsetTop;
-    }
-  }, 120);
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      const page = document.getElementById('mWeekPage');
+      if (!page) return;
+      const todayEl = list.querySelector('.m-wk-day.is-today');
+      if (todayEl) {
+        // Calculate offset relative to scroll container
+        let offset = 0, el = todayEl;
+        while (el && el !== page) { offset += el.offsetTop; el = el.offsetParent; }
+        page.scrollTop = offset;
+      }
+    });
+  });
 }
 
 function _mWkLoadMore(direction) {
