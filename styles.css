@@ -644,6 +644,7 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 .overlay{position:fixed;inset:0;background:rgba(30,20,60,.32);display:flex;align-items:center;justify-content:center;z-index:500;opacity:0;pointer-events:none;transition:opacity .18s}
 .overlay.open,dialog.overlay[open]{opacity:1;pointer-events:all}
 dialog.overlay{background:transparent;border:none;padding:0;margin:0;width:100%;height:100%;max-width:100%;max-height:100%;position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+dialog.overlay.grocery-modal{width:min(960px,96vw);height:min(720px,88vh);max-width:min(960px,96vw);max-height:min(720px,88vh);inset:unset;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(255,252,248,.98);border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.15),0 4px 16px rgba(0,0,0,.08)}
 dialog.overlay[open] .modal{transform:none;opacity:1}
 dialog.overlay[open]::backdrop{background:rgba(30,20,60,.32)}
 .modal{background:rgba(255,252,248,.96);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.5);border-radius:16px;box-shadow:0 20px 50px rgba(0,0,0,0.12),inset 0 1px 0 rgba(255,255,255,0.7);transform:scale(.94) translateY(18px);opacity:0;transition:transform .28s cubic-bezier(.34,1.38,.64,1),opacity .2s ease}

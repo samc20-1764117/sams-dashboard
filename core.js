@@ -255,7 +255,7 @@ async function syncAll(silent=false){
       sbReqSilent('GET','packing_items',null,'?order=sort_order.asc.nullslast,name.asc&select=*'),
       sbReqSilent('GET','finance',null,'?order=sort_order.asc.nullslast,name.asc&select=*'),
       sbReqSilent('GET','finance_subs',null,'?order=sort_order.asc.nullslast,name.asc&select=*'),
-      sbReqSilent('GET','ideas',null,'?order=sort_order.asc.nullslast,created_at.desc&select=*')
+      sbReqSilent('GET','ideas',null,'?order=created_at.desc&select=*')
     ]);
     if(ideasDb)st.ideas=ideasDb;
     if(pupSessionsDb)st.pupSessions=pupSessionsDb.filter(s=>!deletedPupSessIds.has(String(s.id)));
