@@ -6868,15 +6868,35 @@ function updateNowLine(){
 if(!window._nowLineInterval)window._nowLineInterval=setInterval(updateNowLine,60000);
 function onRM(e){if(!resizing)return;const b=st.blocks.find(x=>x.id===resizing.id);if(!b)return;const delta=Math.round((e.clientY-resizing.sy)/PX/15)*15;b.dur=Math.max(15,resizing.sd+delta);if(resizing.others)resizing.others.forEach(o=>{const ob=st.blocks.find(x=>String(x.id)===o.id);if(ob)ob.dur=Math.max(15,o.sd+delta);});renderDayTB();}
 function onRU(){if(!resizing)return;const bid=resizing.id;const prevDur=resizing.sd;const others=(resizing.others||[]).slice();resizing=null;document.removeEventListener('mousemove',onRM);document.removeEventListener('mouseup',onRU);const b=st.blocks.find(x=>x.id===bid);if(!b)return;const newDur=b.dur;const otherNewDurs=others.map(o=>{const ob=st.blocks.find(x=>String(x.id)===o.id);return{id:o.id,prev:o.sd,cur:ob?ob.dur:o.sd};});pushUndo(()=>{b.dur=prevDur;sbUpdateBlock(bid,{duration_minutes:prevDur});otherNewDurs.forEach(o=>{const ob=st.blocks.find(x=>String(x.id)===o.id);if(ob){ob.dur=o.prev;sbUpdateBlock(o.id,{duration_minutes:o.prev});}});save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();},'Resized block'+(others.length?'s':''));save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();sbUpdateBlock(bid,{duration_minutes:newDur});otherNewDurs.forEach(o=>sbUpdateBlock(o.id,{duration_minutes:o.cur}));}
-// ── Tab cycling through TB blocks + unassigned tasks ──────────────────────────
+// ── Tab cycling through TB blocks + auto blocks + today's unassigned tasks ────
 function _tbTabCycle(reverse){
   const ds=d2s(getDayDate(dayOff));
-  // 1. TB blocks sorted by start time
-  const blocks=getVisibleBlocks(ds).slice().sort((a,b)=>a.sm-b.sm||a.title.localeCompare(b.title));
-  const tbIds=blocks.map(b=>_getTBBlockSelId(b));
-  // 2. Unassigned tasks
-  const unTs=st.tasks.filter(t=>!t.due_date&&!t.done&&t.category!=='Long term'&&t.category!=='Weekly Goals');
-  const unIds=unTs.map(t=>String(t.id));
+  // 1. All TB items: manual blocks + auto blocks, sorted by start time
+  //    For overlapping blocks (same sm), sort right-to-left (higher _col first)
+  const blocks=getVisibleBlocks(ds).slice();
+  const autoBlocks=getAutoTBForDate(ds);
+  const recAutoBlocks=getRecAutoTBForDate(ds);
+  // Ensure layout is computed so _col is set
+  computeTBLayout(ds,[...autoBlocks,...recAutoBlocks]);
+  // Build unified list with type tags
+  const tbItems=[];
+  blocks.forEach(b=>tbItems.push({type:'block',sm:b.sm,col:b._col||0,id:_getTBBlockSelId(b),bid:b.id}));
+  autoBlocks.forEach(a=>tbItems.push({type:'auto',sm:a.sm,col:a._col||0,id:'atb::'+a._atbId}));
+  recAutoBlocks.forEach(a=>tbItems.push({type:'recauto',sm:a.sm,col:a._col||0,id:a._recId?'rec-virt-'+a._recId:'atb::'+a._atbId}));
+  // Sort by start time, then right-to-left (higher col first) for overlaps
+  tbItems.sort((a,b)=>a.sm-b.sm||(b.col-a.col));
+  const tbIds=tbItems.map(x=>x.id);
+  // 2. Today's tasks NOT on the time block
+  const todayList=document.getElementById('todList');
+  const unIds=[];
+  if(todayList){
+    todayList.querySelectorAll('.ti[id],.chip[data-tid]').forEach(el=>{
+      // Only include items with the tb-arrow (not on TB)
+      if(!el.querySelector('.tb-arrow'))return;
+      const sid=el.id?el.id.replace('ti-',''):(el.dataset.tid||'');
+      if(sid)unIds.push(sid);
+    });
+  }
   const allIds=[...tbIds,...unIds];
   if(!allIds.length)return;
   // Find current position
@@ -6895,13 +6915,15 @@ function _tbTabCycle(reverse){
   // Scroll into view
   const isTB=next<tbIds.length;
   if(isTB){
-    const el=document.querySelector(`.tb-block[data-bid="${blocks[next].id}"]`);
+    const item=tbItems[next];
+    let el;
+    if(item.type==='block')el=document.querySelector(`.tb-block[data-bid="${item.bid}"]`);
+    else if(item.type==='auto')el=document.querySelector(`.atb-block[data-atb-id="${item.id.replace('atb::','')}"]`);
+    else el=document.querySelector(`.ratb-block[data-rec-id="${item.id.replace('rec-virt-','')}"]`);
     if(el)el.scrollIntoView({block:'nearest',behavior:'smooth'});
   } else {
-    // Open unassigned menu if not open, scroll to task
-    const menu=document.getElementById('unMenu');
-    if(!menu||menu.style.display!=='block'){if(typeof toggleUnMenu==='function')toggleUnMenu();}
-    setTimeout(()=>{const el=document.getElementById('ti-'+sid);if(el)el.scrollIntoView({block:'nearest',behavior:'smooth'});},50);
+    const el=document.getElementById('ti-'+sid)||todayList?.querySelector(`[data-tid="${sid}"]`);
+    if(el)el.scrollIntoView({block:'nearest',behavior:'smooth'});
   }
 }
 function delBlock(id,e){
