@@ -146,9 +146,16 @@ function renderToday(){
   const pupSessToday=(st.pupSessions||[])
     .filter(s=>s.day_date===ds||(dayOff===0&&isOv(s.day_date)&&!s.done))
     .map(s=>{const skill=(st.pup_skills||[]).find(x=>String(x.id)===String(s.skill_id));if(!skill)return null;return{id:'pup-sess-'+s.id,name:skill.skill,category:'Recurring',due_date:s.day_date,done:s.done,_pupSessId:s.id,_skillId:s.skill_id,_pup:skill.pup,_virtual:true,_type:'pup'};}).filter(Boolean);
-  // Videos assigned to today — auto-move overdue daymap entries and clean up old blocks
+  // Videos assigned to today — auto-move overdue daymap entries and clean up orphaned blocks
   const _vdmToday=_vidDayMap();
-  if(dayOff===0){let _vdmChanged=false;Object.entries(_vdmToday).forEach(([vid,vds])=>{if(vds&&vds<ds){_vdmToday[vid]=ds;_vdmChanged=true;for(let i=st.blocks.length-1;i>=0;i--){const b=st.blocks[i];if(String(b._vidId)===vid&&b.ds!==ds){sbDeleteBlock(b.id);st.blocks.splice(i,1);}}}});if(_vdmChanged)_vidDayMapSet(_vdmToday);}
+  if(dayOff===0){
+    let _vdmChanged=false;
+    // 1. Move overdue daymap entries to today
+    Object.entries(_vdmToday).forEach(([vid,vds])=>{if(vds&&vds<ds){_vdmToday[vid]=ds;_vdmChanged=true;}});
+    if(_vdmChanged)_vidDayMapSet(_vdmToday);
+    // 2. Remove video blocks on wrong days (daymap says X but block is on Y)
+    for(let i=st.blocks.length-1;i>=0;i--){const b=st.blocks[i];if(!b._vidId)continue;const mapped=_vdmToday[String(b._vidId)];if(mapped&&b.ds!==mapped){sbDeleteBlock(b.id);st.blocks.splice(i,1);}}
+  }
   const _vidStillPending=v=>v.status==='published'&&typeof _vidGroupFullyComplete==='function'&&!_vidGroupFullyComplete(v);
   const _hasTabTask0=vid=>{const m='_vid:'+vid;return st.tasks.some(t=>t.notes&&t.notes.includes(m));};
   const _vidOnTBToday=new Set(st.blocks.filter(b=>b.ds===ds&&b._vidId).map(b=>String(b._vidId)));
@@ -3447,10 +3454,12 @@ function _vidStepUnassign(vidId,step){
 }
 function _vidStepComputeDone(vidId,step,ds,mapEntry){
   // For Build/VO/Cut: done only when ALL TB blocks for this stage are done (blocks are source of truth)
+  // If no blocks exist, NOT done (don't fall back to stale mapEntry)
   // For Thumbnail/Description: use daymap done flag
   if(step!=='step_thumbnail'&&step!=='step_description'){
     const stageBlocks=(st.blocks||[]).filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step);
     if(stageBlocks.length>0)return stageBlocks.every(bl=>bl._done);
+    return false;
   }
   return !!(mapEntry&&mapEntry.done);
 }
@@ -6645,10 +6654,10 @@ function dropOnTB(e,ds,h,row,smOverride){
     const v=(st.videos||[]).find(x=>String(x.id)===String(vidId));
     if(!v){dragId=null;return;}
     if(st.blocks.some(b=>b.ds===ds&&String(b._vidId)===String(vidId))){dragId=null;showToast('Already in time block','#6b7280',2000);return;}
-    // Remove any existing block for this video on other days
-    const _oldVidBlkIdx=st.blocks.findIndex(b=>String(b._vidId)===String(vidId));
-    const _oldVidBlk=_oldVidBlkIdx>=0?st.blocks.splice(_oldVidBlkIdx,1)[0]:null;
-    if(_oldVidBlk)sbDeleteBlock(_oldVidBlk.id);
+    // Remove ALL existing blocks for this video on other days
+    const _oldVidBlks=[];
+    for(let i=st.blocks.length-1;i>=0;i--){const b=st.blocks[i];if(String(b._vidId)===String(vidId)&&b.ds!==ds){_oldVidBlks.push(st.blocks.splice(i,1)[0]);}}
+    _oldVidBlks.forEach(b=>sbDeleteBlock(b.id));
     const blk={id:crypto.randomUUID(),title:v.topic||v.title||'Video',ds,sm,dur:60,cat:'Videos',_vidId:String(vidId)};
     // Assign video to this day if not already
     const _vdm=_vidDayMap();const prevDay=_vdm[String(vidId)];
@@ -6657,7 +6666,7 @@ function dropOnTB(e,ds,h,row,smOverride){
     sbSaveBlock(blk);
     pushUndo(()=>{
       st.blocks=st.blocks.filter(b=>b.id!==blk.id);sbDeleteBlock(blk.id);
-      if(_oldVidBlk){st.blocks.push(_oldVidBlk);sbSaveBlock(_oldVidBlk);}
+      _oldVidBlks.forEach(b=>{st.blocks.push(b);sbSaveBlock(b);});
       if(prevDay!==ds){const m2=_vidDayMap();if(prevDay)m2[String(vidId)]=prevDay;else delete m2[String(vidId)];_vidDayMapSet(m2);}
       save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
     },'Added video to time block');
