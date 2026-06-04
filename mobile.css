@@ -21,7 +21,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 /* ── Section card ─────────────────────────────────────────────────────────── */
 .m-section{background:var(--glass);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;overflow:clip}
 .m-section-hd{display:flex;align-items:center;justify-content:space-between;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--sub);padding:10px 14px 8px}
-.m-section-hd-add{background:none;border:none;color:var(--accent);font-size:20px;line-height:1;padding:0 2px;cursor:pointer;font-weight:400}
+.m-section-hd-add{background:none;border:none;color:#999;font-size:20px;line-height:1;padding:0 2px;cursor:pointer;font-weight:400}
 
 /* ── Pull-to-refresh ──────────────────────────────────────────────────────── */
 #mPTR{display:flex;align-items:center;justify-content:center;gap:8px;height:0;overflow:hidden;opacity:0;transition:height .2s,opacity .2s;color:var(--sub);font-size:12px}
@@ -39,16 +39,18 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .m-row-outer.ptr-ready .m-del-hint{opacity:1}
 
 /* ── Task rows ────────────────────────────────────────────────────────────── */
-.m-row{display:flex;align-items:center;gap:8px;padding:11px 14px;border-top:1px solid var(--border);min-height:46px;background:var(--bg);position:relative;will-change:transform}
-.m-done{opacity:.45}
+.m-row{display:flex;align-items:center;gap:8px;padding:8px 14px;border-top:1px solid var(--border);min-height:38px;background:var(--bg);position:relative;will-change:transform}
+.m-done{opacity:.35}
+.m-done .m-row-name{color:#aaa}
 .m-ov{background:rgba(239,68,68,.06)}
 
 .m-chk-wrap{display:flex;align-items:center;justify-content:center;width:28px;height:28px;flex-shrink:0;cursor:pointer}
-.m-chk-wrap input[type=checkbox]{width:18px;height:18px;accent-color:var(--accent);cursor:pointer;flex-shrink:0}
+.m-chk-wrap input[type=checkbox]{width:18px;height:18px;accent-color:#999;cursor:pointer;flex-shrink:0}
 
 .m-row-icon{font-size:16px;width:28px;text-align:center;flex-shrink:0}
 .m-row-name{flex:1;font-size:14px;line-height:1.35}
-.m-row-name.done{text-decoration:line-through}
+.m-row-name.done{text-decoration:line-through;color:#aaa}
+.m-row-arrow{font-size:10px;color:#bbb;flex-shrink:0;margin-right:-2px}
 .m-row-tag{font-size:11px;padding:2px 8px;border-radius:20px;white-space:nowrap;flex-shrink:0;font-weight:500}
 
 /* Edit button on rows */
@@ -212,8 +214,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .m-rec-auto-block .m-tl-block-time{color:#2a9db5!important}
 
 /* Now line */
-.m-tl-now{position:absolute;left:0;right:0;height:2px;background:var(--accent);border-radius:1px;pointer-events:none}
-.m-tl-now::before{content:'';position:absolute;left:-4px;top:-4px;width:10px;height:10px;border-radius:50%;background:var(--accent)}
+.m-tl-now{position:absolute;left:0;right:0;height:2px;background:#999;border-radius:1px;pointer-events:none}
+.m-tl-now::before{content:'';position:absolute;left:-4px;top:-4px;width:10px;height:10px;border-radius:50%;background:#999}
 
 /* ── Week view ────────────────────────────────────────────────────────────── */
 #mWeekPage{display:flex;flex-direction:column;flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;min-height:0;position:relative}
