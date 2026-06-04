@@ -6868,6 +6868,42 @@ function updateNowLine(){
 if(!window._nowLineInterval)window._nowLineInterval=setInterval(updateNowLine,60000);
 function onRM(e){if(!resizing)return;const b=st.blocks.find(x=>x.id===resizing.id);if(!b)return;const delta=Math.round((e.clientY-resizing.sy)/PX/15)*15;b.dur=Math.max(15,resizing.sd+delta);if(resizing.others)resizing.others.forEach(o=>{const ob=st.blocks.find(x=>String(x.id)===o.id);if(ob)ob.dur=Math.max(15,o.sd+delta);});renderDayTB();}
 function onRU(){if(!resizing)return;const bid=resizing.id;const prevDur=resizing.sd;const others=(resizing.others||[]).slice();resizing=null;document.removeEventListener('mousemove',onRM);document.removeEventListener('mouseup',onRU);const b=st.blocks.find(x=>x.id===bid);if(!b)return;const newDur=b.dur;const otherNewDurs=others.map(o=>{const ob=st.blocks.find(x=>String(x.id)===o.id);return{id:o.id,prev:o.sd,cur:ob?ob.dur:o.sd};});pushUndo(()=>{b.dur=prevDur;sbUpdateBlock(bid,{duration_minutes:prevDur});otherNewDurs.forEach(o=>{const ob=st.blocks.find(x=>String(x.id)===o.id);if(ob){ob.dur=o.prev;sbUpdateBlock(o.id,{duration_minutes:o.prev});}});save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();},'Resized block'+(others.length?'s':''));save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();sbUpdateBlock(bid,{duration_minutes:newDur});otherNewDurs.forEach(o=>sbUpdateBlock(o.id,{duration_minutes:o.cur}));}
+// ── Tab cycling through TB blocks + unassigned tasks ──────────────────────────
+function _tbTabCycle(reverse){
+  const ds=d2s(getDayDate(dayOff));
+  // 1. TB blocks sorted by start time
+  const blocks=getVisibleBlocks(ds).slice().sort((a,b)=>a.sm-b.sm||a.title.localeCompare(b.title));
+  const tbIds=blocks.map(b=>_getTBBlockSelId(b));
+  // 2. Unassigned tasks
+  const unTs=st.tasks.filter(t=>!t.due_date&&!t.done&&t.category!=='Long term'&&t.category!=='Weekly Goals');
+  const unIds=unTs.map(t=>String(t.id));
+  const allIds=[...tbIds,...unIds];
+  if(!allIds.length)return;
+  // Find current position
+  let cur=-1;
+  if(lastSelectedId&&selectedTasks.size===1&&selectedTasks.has(lastSelectedId)){
+    cur=allIds.indexOf(lastSelectedId);
+  }
+  // Move
+  let next;
+  if(cur===-1)next=reverse?allIds.length-1:0;
+  else if(reverse)next=(cur-1+allIds.length)%allIds.length;
+  else next=(cur+1)%allIds.length;
+  const sid=allIds[next];
+  selectedTasks.clear();selectedTasks.add(sid);lastSelectedId=sid;
+  applySelHighlight();
+  // Scroll into view
+  const isTB=next<tbIds.length;
+  if(isTB){
+    const el=document.querySelector(`.tb-block[data-bid="${blocks[next].id}"]`);
+    if(el)el.scrollIntoView({block:'nearest',behavior:'smooth'});
+  } else {
+    // Open unassigned menu if not open, scroll to task
+    const menu=document.getElementById('unMenu');
+    if(!menu||menu.style.display!=='block'){if(typeof toggleUnMenu==='function')toggleUnMenu();}
+    setTimeout(()=>{const el=document.getElementById('ti-'+sid);if(el)el.scrollIntoView({block:'nearest',behavior:'smooth'});},50);
+  }
+}
 function delBlock(id,e){
   e&&e.stopPropagation();
   const b=st.blocks.find(x=>x.id===id);if(!b)return;
