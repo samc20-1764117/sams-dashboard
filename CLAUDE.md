@@ -3,6 +3,7 @@
 ## Response & Search Rules
 
 STRICT — these override all defaults:
+- **Efficiency**: minimize tool calls. Chain bash commands with `&&`. Read/write multiple files in parallel. Never make the user approve 7 separate operations when 2 would do.
 - Responses: short numbered list of changes only. No explanations unless asked.
 - ALWAYS use the Grep tool (never `grep`/`rg`/`find` via Bash). Use `-C 1` or no context. Expand only if first result is insufficient.
 - ALWAYS use the Read tool (never `cat`/`head`/`tail` via Bash). Grep for exact function/line first, then read only that range.
