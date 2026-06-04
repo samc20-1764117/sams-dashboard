@@ -3461,7 +3461,7 @@ function _vidStepTasksForDayWithOverdue(todayDs){
     const v=(st.videos||[]).find(x=>String(x.id)===String(vidId)&&!x.is_deleted);if(!v)return;
     if(v[step]==='na')return;
     // Auto-move overdue map entries to today (but do NOT move blocks — they stay on their original day)
-    if(val.ds<todayDs){val.ds=todayDs;m[key]=val;moved=true;}
+    if(val.ds<todayDs){val.ds=todayDs;val.done=false;m[key]=val;moved=true;}
     const isDone=v[step]==='done'||_vidStepComputeDone(vidId,step,val.ds,val);
     const label=_VID_STEP_LABELS[step]||step.replace('step_','');
     tasks.push({id:'vidstep-'+key.replace('::','-'),name:label+': '+(v.topic||v.title),category:'Videos',due_date:todayDs,done:isDone,_vidId:vidId,_vidStep:step,_virtual:true,_type:'vidstep'});
@@ -4719,15 +4719,15 @@ function _vidAssignToDay(vidId,ds){
   const prev=map[String(vidId)]||null;
   map[String(vidId)]=ds;
   _vidDayMapSet(map);
-  // Remove timeblock from old day (time slot won't match new day)
-  const _vidBlkIdx=st.blocks.findIndex(b=>String(b._vidId)===String(vidId)&&b.ds!==ds);
-  const _vidBlkRemoved=_vidBlkIdx>=0?st.blocks.splice(_vidBlkIdx,1)[0]:null;
-  if(_vidBlkRemoved)sbDeleteBlock(_vidBlkRemoved.id);
+  // Remove ALL timeblocks from old days (not just the first one)
+  const _vidBlksRemoved=[];
+  for(let i=st.blocks.length-1;i>=0;i--){const b=st.blocks[i];if(String(b._vidId)===String(vidId)&&b.ds!==ds){_vidBlksRemoved.push(st.blocks.splice(i,1)[0]);}}
+  _vidBlksRemoved.forEach(b=>sbDeleteBlock(b.id));
   save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
   // Re-render panel if open
   const panel=document.getElementById('vidOvPanel');
   if(panel&&panel.style.display==='block')_renderVidOvMenu();
-  pushUndo(()=>{const m2=_vidDayMap();if(prev)m2[String(vidId)]=prev;else delete m2[String(vidId)];_vidDayMapSet(m2);if(_vidBlkRemoved){st.blocks.push(_vidBlkRemoved);sbSaveBlock(_vidBlkRemoved);}save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();const p2=document.getElementById('vidOvPanel');if(p2&&p2.style.display==='block')_renderVidOvMenu();},'Added video to calendar');
+  pushUndo(()=>{const m2=_vidDayMap();if(prev)m2[String(vidId)]=prev;else delete m2[String(vidId)];_vidDayMapSet(m2);_vidBlksRemoved.forEach(b=>{st.blocks.push(b);sbSaveBlock(b);});save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();const p2=document.getElementById('vidOvPanel');if(p2&&p2.style.display==='block')_renderVidOvMenu();},'Added video to calendar');
 }
 function _vidUnassignDay(vidId){
   const map=_vidDayMap();
