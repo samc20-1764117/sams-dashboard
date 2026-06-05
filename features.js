@@ -5492,6 +5492,7 @@ document.addEventListener('keydown',async e=>{
   }
   // Cmd+C: copy selected tasks or blocks
   if((e.metaKey||e.ctrlKey)&&e.key==='c'&&selectedTasks.size>0){
+    console.log('[COPY] selectedTasks:',[...selectedTasks]);
     // Check if any are TB blocks
     const blkIds=[...selectedTasks].filter(id=>id.startsWith('blk-'));
     if(blkIds.length){
@@ -5524,6 +5525,8 @@ document.addEventListener('keydown',async e=>{
         if(t)_copiedTasks.push({...t});
       }
     });
+    console.log('[COPY] _copiedTasks:',JSON.stringify(_copiedTasks));
+    console.log('[COPY] _copiedBlocks:',JSON.stringify(_copiedBlocks));
     if(_copiedTasks.length)showToast(`Copied ${_copiedTasks.length} item${_copiedTasks.length>1?'s':''}`,'#6d5fe6',1500);
     return;
   }
@@ -5559,6 +5562,9 @@ document.addEventListener('keydown',async e=>{
     return;
   }
   // Cmd+V: paste (duplicate) copied tasks
+  if((e.metaKey||e.ctrlKey)&&e.key==='v'){
+    console.log('[PASTE] _copiedTasks:',_copiedTasks.length,'_copiedBlocks:',_copiedBlocks.length);
+  }
   if((e.metaKey||e.ctrlKey)&&e.key==='v'&&_copiedTasks.length>0){
     e.preventDefault();
     _copiedTasks.forEach(async t=>{
