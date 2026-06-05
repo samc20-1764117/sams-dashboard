@@ -6,6 +6,7 @@ export async function onRequest(context) {
   }
 
   const sbKey = context.env.SUPABASE_KEY;
+  const userId = context.env.SUPABASE_USER_ID;
   if (!sbKey) return alexaResp('Server misconfigured.');
 
   try {
@@ -27,9 +28,9 @@ export async function onRequest(context) {
       const intent = body.request.intent.name;
       const slots = body.request.intent.slots || {};
 
-      if (intent === 'AddTaskIntent') return await handleAddTask(slots, sbKey);
-      if (intent === 'AddShoppingIntent') return await handleAddShopping(slots, sbKey);
-      if (intent === 'LogPupSessionIntent') return await handleLogPupSession(slots, sbKey);
+      if (intent === 'AddTaskIntent') return await handleAddTask(slots, sbKey, userId);
+      if (intent === 'AddShoppingIntent') return await handleAddShopping(slots, sbKey, userId);
+      if (intent === 'LogPupSessionIntent') return await handleLogPupSession(slots, sbKey, userId);
 
       if (intent === 'AMAZON.HelpIntent') {
         return alexaResp('You can say: create task call the vet for tomorrow. Or: add milk to shopping list. Or: Mochi practiced sit.');
@@ -67,7 +68,7 @@ async function sbRest(method, table, sbKey, body, query) {
 }
 
 // ── Intent handlers ──
-async function handleAddTask(slots, sbKey) {
+async function handleAddTask(slots, sbKey, userId) {
   const taskName = capitalize(sanitize(slots.TaskName?.value));
   if (!taskName) return alexaResp('What task would you like to create?', false);
 
@@ -79,12 +80,13 @@ async function handleAddTask(slots, sbKey) {
     due_date: today,
     done: false,
     important: false,
+    ...(userId && { user_id: userId }),
   });
 
   return alexaResp(`Added task: ${taskName} for today.`, true);
 }
 
-async function handleAddShopping(slots, sbKey) {
+async function handleAddShopping(slots, sbKey, userId) {
   let raw = sanitize(slots.ItemName?.value);
   if (!raw) return alexaResp('What item would you like to add?', false);
 
@@ -102,13 +104,14 @@ async function handleAddShopping(slots, sbKey) {
     name: itemName,
     store: store,
     done: false,
+    ...(userId && { user_id: userId }),
   });
 
   const storeMsg = store ? ` for ${store}` : '';
   return alexaResp(`Added ${itemName} to your shopping list${storeMsg}.`, true);
 }
 
-async function handleLogPupSession(slots, sbKey) {
+async function handleLogPupSession(slots, sbKey, userId) {
   const phrase = sanitize(slots.PupTraining?.value);
   if (!phrase) {
     return alexaResp('Which pup and what skill? Try: Mochi practiced sit.', false);
@@ -149,6 +152,7 @@ async function handleLogPupSession(slots, sbKey) {
     skill_id: match.id,
     day_date: today,
     done: true,
+    ...(userId && { user_id: userId }),
   });
 
   return alexaResp(`Logged ${match.skill} session for ${match.pup}.`, true);
