@@ -8,7 +8,7 @@
 
 -- SET YOUR USER ID HERE (paste your UUID from the query above)
 -- Example: DO $$ BEGIN PERFORM set_config('app.user_id', 'a1b2c3d4-...', false); END $$;
-DO $$ BEGIN PERFORM set_config('app.user_id', 'YOUR_USER_ID_HERE', false); END $$;
+DO $$ BEGIN PERFORM set_config('app.user_id', '6bc98cc0-da5f-4ae2-b83b-b2423592238c', false); END $$;
 
 -- ============================================================================
 -- STEP 2: Add user_id column to all tables + backfill
