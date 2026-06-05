@@ -661,6 +661,48 @@ dialog.overlay[open]::backdrop{background:rgba(30,20,60,.32)}
 .overlay.open .modal{transform:scale(1) translateY(0);opacity:1}
 #mModal,#recMoModal{backdrop-filter:none;-webkit-backdrop-filter:none}
 .bg-canvas.orbs-paused .orb{animation-play-state:paused}
+
+/* Mountain scenic theme */
+.bg-canvas.theme-mountains .orb{opacity:.5;filter:blur(100px)}
+.bg-canvas.theme-mountains .orb1{width:500px;height:500px;top:-10%;left:20%;animation-duration:30s;opacity:.7}
+.bg-canvas.theme-mountains .orb2{width:400px;height:400px;top:5%;right:10%;animation-duration:25s;opacity:.35}
+.bg-canvas.theme-mountains::before,.bg-canvas.theme-mountains::after{content:'';position:absolute;bottom:0;left:0;right:0;z-index:1}
+.bg-canvas.theme-mountains::before{
+  height:55%;
+  background:
+    linear-gradient(175deg,transparent 30%,rgba(120,100,110,.12) 31%,rgba(120,100,110,.12) 32%,transparent 33%),
+    linear-gradient(170deg,transparent 25%,rgba(100,85,95,.10) 26%,rgba(100,85,95,.10) 27%,transparent 28%);
+  clip-path:polygon(
+    0% 100%, 0% 65%,
+    3% 58%, 8% 48%, 12% 42%, 15% 38%, 18% 35%, 22% 30%,
+    25% 26%, 27% 23%, 30% 20%, 32% 18%, 35% 15%, 37% 18%,
+    40% 22%, 42% 25%, 44% 22%, 46% 18%, 48% 14%, 50% 11%,
+    52% 8%, 54% 5%, 55% 3%, 56% 5%, 58% 10%, 60% 15%,
+    62% 20%, 64% 24%, 66% 28%, 68% 25%, 70% 20%, 72% 16%,
+    74% 13%, 76% 10%, 78% 14%, 80% 18%, 82% 22%,
+    85% 28%, 88% 34%, 90% 38%, 93% 44%, 96% 50%, 100% 55%,
+    100% 100%
+  );
+  background:linear-gradient(180deg,rgba(160,140,155,.35) 0%,rgba(130,115,125,.45) 40%,rgba(105,90,100,.5) 100%);
+}
+.bg-canvas.theme-mountains::after{
+  height:42%;
+  clip-path:polygon(
+    0% 100%, 0% 70%,
+    4% 62%, 8% 55%, 12% 48%, 15% 44%, 18% 40%,
+    20% 36%, 23% 32%, 26% 28%, 28% 25%, 30% 22%,
+    32% 20%, 34% 25%, 36% 30%, 38% 34%, 40% 30%,
+    42% 26%, 44% 22%, 46% 18%, 48% 15%, 50% 20%,
+    52% 26%, 54% 32%, 56% 36%, 58% 32%, 60% 28%,
+    62% 24%, 64% 20%, 66% 16%, 68% 13%, 70% 16%,
+    72% 20%, 74% 25%, 76% 30%, 78% 34%, 80% 30%,
+    82% 26%, 84% 22%, 86% 28%, 88% 34%, 90% 40%,
+    93% 48%, 96% 56%, 100% 62%,
+    100% 100%
+  );
+  background:linear-gradient(180deg,rgba(110,95,105,.55) 0%,rgba(90,78,88,.65) 30%,rgba(75,65,72,.7) 60%,rgba(65,56,62,.6) 100%);
+}
+body.dark .bg-canvas.theme-mountains::before,body.dark .bg-canvas.theme-mountains::after{opacity:0}
 .mt{font-size:14px;font-weight:700;letter-spacing:-.3px;margin-bottom:11px}
 .mfield{margin-bottom:8px}
 .mfield label{display:block;font-size:9px;font-weight:700;color:var(--muted);margin-bottom:2px;text-transform:uppercase;letter-spacing:.07em}
