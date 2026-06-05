@@ -5524,11 +5524,7 @@ document.addEventListener('keydown',async e=>{
         if(t)_copiedTasks.push({...t});
       }
     });
-    if(_copiedTasks.length){
-      showToast(`Copied ${_copiedTasks.length} item${_copiedTasks.length>1?'s':''}`,'#6d5fe6',1500);
-      // Clear selection so arrow keys navigate days (not cycle TB)
-      selectedTasks.clear();lastSelectedId=null;if(typeof applySelHighlight==='function')applySelHighlight();
-    }
+    if(_copiedTasks.length)showToast(`Copied ${_copiedTasks.length} item${_copiedTasks.length>1?'s':''}`,'#6d5fe6',1500);
     return;
   }
   // Cmd+V: paste copied blocks
@@ -5565,7 +5561,9 @@ document.addEventListener('keydown',async e=>{
   // Cmd+V: paste (duplicate) copied tasks
   if((e.metaKey||e.ctrlKey)&&e.key==='v'&&_copiedTasks.length>0){
     e.preventDefault();
+    console.log('[PASTE] _pasteColDates:',_pasteColDates,'dayOff:',dayOff,'activePg:',activePg);
     _copiedTasks.forEach(async t=>{
+      console.log('[PASTE] item:',t._isVidStep?'vidstep':'other',t._isVidStep?t._vidStep:'');
       if(t._isWrRule){
         const dupName=uniqueRecName(t.name);
         const tmpId='wrrule-tmp-'+Date.now();
