@@ -215,7 +215,7 @@ async function manualBackup(){
     const backup={exported_at:new Date().toISOString(),mode:'manual',tables:{}};
     await Promise.all(tables.map(async t=>{
       try{
-        const r=await fetch(`${cfg.url}/rest/v1/${t}?select=*`,{headers:{'apikey':cfg.key,'Authorization':'Bearer '+cfg.key}});
+        const r=await fetch(`${cfg.url}/rest/v1/${t}?select=*`,{headers:{'apikey':cfg.key,'Authorization':`Bearer ${_getAuthToken()}`}});
         backup.tables[t]=await r.json();
       }catch(e){backup.tables[t]=null;}
     }));
