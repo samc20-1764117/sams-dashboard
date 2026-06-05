@@ -5165,7 +5165,7 @@ function applySelHighlight(){
     else if(b.recId){const rid=String(b.recId);const _r=st.recurring.find(x=>String(x.id)===rid);const _isWrRule=!_r&&(st.wrRules||[]).some(x=>String(x.id)===rid);const _isWr=_r&&(_r.is_weekly_reset===true||_r.is_weekly_reset==='true');if(_isWrRule||b.ruleId){const blkId='blk-'+String(b.id);sel=selectedTasks.has(blkId)||selWrRuleIds.has(rid);csId='wrrule-'+rid;}else{sel=selectedTasks.has('rec-virt-'+rid)||selRecIds.has(rid)||selectedTasks.has('wrec-'+rid);csId=(_isWr?'wrec-':'rec-virt-')+rid;}}
     else if(b.ruleId){const blkId='blk-'+String(b.id);const rid=String(b.ruleId);sel=selectedTasks.has(blkId)||selWrRuleIds.has(rid);csId='wrrule-'+rid;}
     else if(b.shopId){const sid=String(b.shopId);const blkId='blk-'+String(b.id);sel=selectedTasks.has(blkId)||selectedTasks.has('shop-cal-'+sid)||selShopIds.has(sid);csId='shop-cal-'+sid;}
-    else if(b._vidStepVid){const blkId='blk-'+String(b.id);const vsId='vidstep-'+String(b._vidStepVid)+'-'+String(b._vidStepName||'');sel=selectedTasks.has(blkId)||selectedTasks.has(vsId);csId='vidstep-'+String(b._vidStepVid);}
+    else if(b._vidStepVid){const blkId='blk-'+String(b.id);const vsId='vidstep-'+String(b._vidStepVid)+'-'+String(b._vidStepName||'');sel=selectedTasks.has(blkId)||selectedTasks.has(vsId);csId=vsId;}
     else if(b._vidId){const vid=String(b._vidId);const blkId='blk-'+String(b.id);sel=selectedTasks.has(blkId)||selectedTasks.has('vid-ov-'+vid)||selVidIds.has(vid);csId='vid-ov-'+vid;}
     else if(b._finCancelSubId){const fcId=String(b._finCancelSubId);const blkId='blk-'+String(b.id);sel=selectedTasks.has(blkId)||selectedTasks.has('fin-cancel-'+fcId)||selFinCancelIds.has(fcId);csId='fin-cancel-'+fcId;}
     el.classList.toggle('sel-row',sel);
@@ -5218,6 +5218,12 @@ document.addEventListener('keydown',async e=>{
   // Arrow left/right: shift day on overview when nothing selected
   if((e.key==='ArrowLeft'||e.key==='ArrowRight')&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&activePg==='overview'&&!document.querySelector('.overlay.open')&&!_qnOpen&&!document.querySelector('.atb-mgr')){
     if(!selectedTasks.size){e.preventDefault();shiftDay(e.key==='ArrowLeft'?-1:1);return;}
+    // If a TB block or auto-block is selected, cycle like Tab/Shift+Tab
+    if(selectedTasks.size===1&&lastSelectedId){
+      const sid=lastSelectedId;
+      const isTBSel=sid.startsWith('blk-')||sid.startsWith('atb::')||sid.startsWith('vidstep-')||sid.startsWith('pup-sess-');
+      if(isTBSel&&typeof _tbTabCycle==='function'){e.preventDefault();_tbTabCycle(e.key==='ArrowLeft');return;}
+    }
     // Move selected tasks ±1 day on weekly cal
     if(!document.querySelector('.tb-col')||document.querySelector('.tb-col')){
       const dir=e.key==='ArrowLeft'?-1:1;
