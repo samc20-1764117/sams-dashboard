@@ -5892,14 +5892,52 @@ function ctxDoDelete(){
 }
 
 // ══════════════════════════════════════════════════════════
+// THEMES
+// ══════════════════════════════════════════════════════════
+const THEMES={
+  peach:{name:'Peach',bg:'linear-gradient(135deg,#fef3ee 0%,#fffbf2 50%,#fdf0fb 100%)',body:'#fef6f0',orbs:['radial-gradient(circle,#fcd5ce,#f9b8ae)','radial-gradient(circle,#fed7aa,#fbbf7a)','radial-gradient(circle,#fbcfe8,#f9a8d4)','radial-gradient(circle,#fef3c7,#fde68a)','radial-gradient(circle,#e9d5ff,#d8b4fe)'],swatch:'linear-gradient(135deg,#fcd5ce,#fbbf7a,#f9a8d4)'},
+  ocean:{name:'Ocean',bg:'linear-gradient(135deg,#e8f4f8 0%,#f0f7ff 40%,#e6f0f8 70%,#f0eef8 100%)',body:'#ecf4f8',orbs:['radial-gradient(circle,#bae6fd,#7dd3fc)','radial-gradient(circle,#a5f3fc,#67e8f9)','radial-gradient(circle,#c7d2fe,#a5b4fc)','radial-gradient(circle,#bae6fd,#93c5fd)','radial-gradient(circle,#a5f3fc,#67e8f9)'],swatch:'linear-gradient(135deg,#7dd3fc,#67e8f9,#a5b4fc)'},
+  sage:{name:'Sage',bg:'linear-gradient(135deg,#f0f5ed 0%,#f5f7f0 40%,#eef3ea 70%,#f2f0e8 100%)',body:'#f1f5ee',orbs:['radial-gradient(circle,#bbf7d0,#86efac)','radial-gradient(circle,#d9f99d,#bef264)','radial-gradient(circle,#fef3c7,#fde68a)','radial-gradient(circle,#bbf7d0,#6ee7b7)','radial-gradient(circle,#d9f99d,#a3e635)'],swatch:'linear-gradient(135deg,#86efac,#bef264,#fde68a)'},
+  lavender:{name:'Lavender',bg:'linear-gradient(135deg,#f5f0ff 0%,#faf5ff 40%,#f0eaff 70%,#f8f0ff 100%)',body:'#f5f0ff',orbs:['radial-gradient(circle,#e9d5ff,#d8b4fe)','radial-gradient(circle,#f0abfc,#e879f9)','radial-gradient(circle,#c4b5fd,#a78bfa)','radial-gradient(circle,#ddd6fe,#c4b5fd)','radial-gradient(circle,#f0abfc,#d946ef)'],swatch:'linear-gradient(135deg,#d8b4fe,#e879f9,#a78bfa)'},
+  golden:{name:'Golden',bg:'linear-gradient(135deg,#fefce8 0%,#fff9e6 40%,#fef5e0 70%,#fefaf0 100%)',body:'#fefce8',orbs:['radial-gradient(circle,#fde68a,#fbbf24)','radial-gradient(circle,#fed7aa,#fb923c)','radial-gradient(circle,#fecaca,#fca5a5)','radial-gradient(circle,#fef3c7,#fcd34d)','radial-gradient(circle,#fed7aa,#f97316)'],swatch:'linear-gradient(135deg,#fbbf24,#fb923c,#fca5a5)'},
+  frost:{name:'Frost',bg:'linear-gradient(160deg,#f8f9fc 0%,#f0f2f8 50%,#f5f4fa 100%)',body:'#f6f7fb',orbs:['radial-gradient(circle,rgba(200,210,240,.5),rgba(180,195,230,.3))','radial-gradient(circle,rgba(220,210,240,.4),rgba(200,190,230,.2))','radial-gradient(circle,rgba(200,215,240,.3),rgba(185,200,235,.15))','radial-gradient(circle,rgba(210,210,240,.3),rgba(190,195,230,.15))','radial-gradient(circle,rgba(200,210,235,.3),rgba(180,195,225,.15))'],swatch:'linear-gradient(135deg,#dce3f0,#d0d4e8,#e0ddf0)'},
+  rose:{name:'Rose',bg:'linear-gradient(135deg,#fff1f2 0%,#fef2f8 40%,#fce7f3 70%,#fdf2f8 100%)',body:'#fff1f2',orbs:['radial-gradient(circle,#fda4af,#fb7185)','radial-gradient(circle,#f9a8d4,#f472b6)','radial-gradient(circle,#fecdd3,#fda4af)','radial-gradient(circle,#fbcfe8,#f9a8d4)','radial-gradient(circle,#fda4af,#e11d48)'],swatch:'linear-gradient(135deg,#fb7185,#f472b6,#fda4af)'},
+  clay:{name:'Clay',bg:'linear-gradient(135deg,#faf5f0 0%,#f5ede4 40%,#f8f0ea 70%,#faf6f2 100%)',body:'#f8f4ef',orbs:['radial-gradient(circle,#e8c9a8,#d4a574)','radial-gradient(circle,#f5d0b0,#e8b68a)','radial-gradient(circle,#fde68a,#fbbf24)','radial-gradient(circle,#dfc4a8,#c9a57a)','radial-gradient(circle,#f0d4b8,#dbb88e)'],swatch:'linear-gradient(135deg,#d4a574,#e8b68a,#fbbf24)'},
+};
+function applyTheme(key,skipSave){
+  const t=THEMES[key]||THEMES.peach;
+  document.documentElement.style.setProperty('--bg',t.bg);
+  if(!cfg.dark){document.body.style.background=t.body;document.body.style.backgroundAttachment='fixed';}
+  const orbs=document.querySelectorAll('.bg-canvas .orb');
+  orbs.forEach((o,i)=>{if(t.orbs[i])o.style.background=t.orbs[i];});
+  // Update active swatch
+  document.querySelectorAll('.theme-swatch').forEach(s=>{s.classList.toggle('active',s.dataset.theme===key);});
+  if(!skipSave){localStorage._dashTheme=key;}
+}
+function initTheme(){
+  const key=localStorage._dashTheme||'peach';
+  applyTheme(key,true);
+}
+initTheme();
+document.addEventListener('DOMContentLoaded',()=>{
+  const picker=document.getElementById('themePicker');if(!picker)return;
+  const cur=localStorage._dashTheme||'peach';
+  Object.entries(THEMES).forEach(([key,t])=>{
+    const s=document.createElement('div');s.className='theme-swatch'+(key===cur?' active':'');s.dataset.theme=key;
+    s.style.background=t.swatch;
+    s.innerHTML=`<span class="theme-swatch-tip">${t.name}</span>`;
+    s.onclick=()=>applyTheme(key);
+    picker.appendChild(s);
+  });
+});
+
 // DARK MODE
 // ══════════════════════════════════════════════════════════
 function toggleDark(){
   const isDark=document.body.classList.toggle('dark');
   cfg.dark=isDark;save();
-  // Force background repaint on toggle
-  document.body.style.background='';
-  void document.body.offsetHeight;
+  if(!isDark){const key=localStorage._dashTheme||'peach';applyTheme(key,true);}
+  else{document.body.style.background='';void document.body.offsetHeight;}
   const ic=document.getElementById('darkToggleIcon');if(ic)ic.textContent=isDark?'☀️':'🌙';
   const lb=document.getElementById('darkToggleLabel');if(lb)lb.textContent=isDark?'Light Mode':'Night Mode';
   if(typeof renderAll==='function')renderAll();
