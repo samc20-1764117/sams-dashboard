@@ -6883,8 +6883,8 @@ function _tbTabCycle(reverse){
   blocks.forEach(b=>tbItems.push({type:'block',sm:b.sm,col:b._col||0,id:_getTBBlockSelId(b),bid:b.id}));
   autoBlocks.forEach(a=>tbItems.push({type:'auto',sm:a.sm,col:a._col||0,id:'atb::'+a._atbId}));
   recAutoBlocks.forEach(a=>tbItems.push({type:'recauto',sm:a.sm,col:a._col||0,id:a._recId?'rec-virt-'+a._recId:'atb::'+a._atbId}));
-  // Sort by start time, then right-to-left (higher col first) for overlaps
-  tbItems.sort((a,b)=>a.sm-b.sm||(b.col-a.col));
+  // Sort by start time, then left-to-right (lower col first) for overlaps
+  tbItems.sort((a,b)=>a.sm-b.sm||(a.col-b.col));
   const tbIds=tbItems.map(x=>x.id);
   // 2. Today's tasks NOT on the time block
   const todayList=document.getElementById('todList');

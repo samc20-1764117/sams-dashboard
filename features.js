@@ -5566,13 +5566,9 @@ document.addEventListener('keydown',async e=>{
       } else if(t._isVidStep){
         // Only Build/VO/Cut can be pasted onto a day — Th/Des cannot
         if(t._vidStep==='step_thumbnail'||t._vidStep==='step_description'){if(typeof showToast==='function')showToast('Th/Des steps can\'t be pasted to a day','#ef4444',1500);return;}
-        // Paste creates a standalone TB block on the target day — does NOT move the vidstep assignment
         const pasteDate=(activePg==='overview'&&Array.isArray(_pasteColDates)&&_pasteColDates.length)?_pasteColDates[0]:d2s(getDayDate(dayOff));
-        const _vsDur=(t._vidStep==='step_build'||t._vidStep==='step_vo'||t._vidStep==='step_cut')?60:30;
-        const blk={id:crypto.randomUUID(),title:t.name,ds:pasteDate,sm:540,dur:_vsDur,cat:'Videos',_vidStepVid:t._vidId,_vidStepName:t._vidStep};
-        st.blocks.push(blk);sbSaveBlock(blk);
-        save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
-        pushUndo(()=>{st.blocks=st.blocks.filter(b=>b.id!==blk.id);sbDeleteBlock(blk.id);save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();},'Pasted step');
+        // Assign step to the target day (moves daymap + creates TB block)
+        if(typeof _vidStepAssignToDay==='function')_vidStepAssignToDay(t._vidId,t._vidStep,pasteDate);
       } else {
         const dates=(activePg==='overview'&&Array.isArray(_pasteColDates)&&_pasteColDates.length)?_pasteColDates:[t.due_date];
         for(const pasteDate of dates){
