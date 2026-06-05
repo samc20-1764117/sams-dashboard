@@ -5207,6 +5207,52 @@ document.addEventListener('keydown',async e=>{
   if(e.key==='q'&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&!document.querySelector('.overlay.open')){e.preventDefault();if(typeof toggleQN==='function')toggleQN();return;}
   // t key: jump to today on overview
   if(e.key==='t'&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&activePg==='overview'&&!document.querySelector('.overlay.open')&&!(typeof _vidCalOpen!=='undefined'&&_vidCalOpen)){const _vp=document.getElementById('vidOvPanel');if(_vp&&_vp.style.display==='block'){}else{e.preventDefault();document.activeElement?.blur();goToday();return;}}
+  // A key: add selected today-list task to TB at current time
+  if(e.key==='a'&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&activePg==='overview'&&selectedTasks.size>0&&!document.querySelector('.overlay.open')&&!_qnOpen){
+    const ds=d2s(getDayDate(dayOff));
+    const now=new Date();const nowSm=now.getHours()*60+now.getMinutes();
+    const snap=Math.round(nowSm/15)*15;
+    let added=0;
+    const undos=[];
+    for(const sid of selectedTasks){
+      // Regular task
+      const t=st.tasks.find(x=>String(x.id)===sid);
+      if(t&&!t._virtual){
+        if(st.blocks.some(b=>String(b.taskId)===sid&&b.ds===ds))continue;
+        const dur=(()=>{const c=(t.category||'').toLowerCase();const n=(t.name||'').toLowerCase();if(c==='social'||/social/.test(n))return 180;if(c==='work'||c==='my work'||c==='recurring'||/\bheb\b/.test(n)||/pilates/.test(n))return 60;return 30;})();
+        const blk={id:crypto.randomUUID(),title:t.name,ds,sm:snap+added*30,dur,cat:t.category||'Home',taskId:sid};
+        st.blocks.push(blk);sbSaveBlock(blk);
+        undos.push(()=>{st.blocks=st.blocks.filter(b=>b.id!==blk.id);sbDeleteBlock(blk.id);});
+        added++;continue;
+      }
+      // Vidstep
+      if(sid.startsWith('vidstep-')){
+        const m=sid.match(/^vidstep-(.+)-(step_\w+)$/);
+        if(m){
+          const vidId=m[1],step=m[2];
+          if(step==='step_thumbnail'||step==='step_description')continue;
+          if(typeof _vidStepAssignToDay==='function')_vidStepAssignToDay(vidId,step,ds);
+          added++;
+        }
+        continue;
+      }
+      // Recurring
+      if(sid.startsWith('rec-virt-')){
+        const recId=sid.replace('rec-virt-','');
+        if(st.blocks.some(b=>String(b.recId)===recId&&b.ds===ds))continue;
+        const r=st.recurring.find(x=>String(x.id)===recId);if(!r)continue;
+        const blk={id:crypto.randomUUID(),title:r.name,ds,sm:snap+added*30,dur:30,cat:'Recurring',recId};
+        st.blocks.push(blk);sbSaveBlock(blk);
+        undos.push(()=>{st.blocks=st.blocks.filter(b=>b.id!==blk.id);sbDeleteBlock(blk.id);});
+        added++;continue;
+      }
+    }
+    if(added){e.preventDefault();save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
+      if(undos.length)pushUndo(()=>{undos.forEach(fn=>fn());save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();},'Added to time block');
+      showToast('Added to time block','#6d5fe6',1200);
+    }
+    return;
+  }
   // Video panel keyboard nav (arrow up/down, delete, enter)
   if(activePg==='overview'&&typeof _vidOvKeyNav==='function'&&_vidOvKeyNav(e))return;
   if(activePg==='overview'&&typeof _vidOvAllOpen!=='undefined'&&_vidOvAllOpen){
