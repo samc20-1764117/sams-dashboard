@@ -7,7 +7,15 @@ const fs = require('fs');
 const path = require('path');
 
 const SUPABASE_URL = 'https://gtirvyrqfuuuxkkqaeap.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0aXJ2eXJxZnV1dXhra3FhZWFwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwODY3NjAsImV4cCI6MjA4ODY2Mjc2MH0.6rtA0WeUUAcuV_sNVrxAbaaviPxPwNakh_bk7uylAOo';
+// Load service role key from .env (bypasses RLS, never committed to git)
+const envPath = path.join(__dirname, '.env');
+const envContent = fs.existsSync(envPath) ? fs.readFileSync(envPath, 'utf8') : '';
+const envMatch = envContent.match(/SUPABASE_SERVICE_ROLE_KEY=(.+)/);
+const SUPABASE_KEY = envMatch ? envMatch[1].trim() : '';
+if (!SUPABASE_KEY || SUPABASE_KEY === 'PASTE_YOUR_SERVICE_ROLE_KEY_HERE') {
+  console.error('ERROR: Set SUPABASE_SERVICE_ROLE_KEY in .env first');
+  process.exit(1);
+}
 
 const TABLES = [
   'tasks',
