@@ -1,0 +1,186 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMax slice">
+  <defs>
+    <!-- Sky gradient -->
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#8b6faa"/>
+      <stop offset="12%" stop-color="#a07aad"/>
+      <stop offset="25%" stop-color="#c49aab"/>
+      <stop offset="38%" stop-color="#dea88e"/>
+      <stop offset="50%" stop-color="#efbe8a"/>
+      <stop offset="62%" stop-color="#f5cc94"/>
+      <stop offset="75%" stop-color="#efc09a"/>
+      <stop offset="100%" stop-color="#d4a488"/>
+    </linearGradient>
+
+    <!-- Sun glow -->
+    <radialGradient id="sunglow" cx="0.35" cy="0.42" r="0.35">
+      <stop offset="0%" stop-color="#ffe4b5" stop-opacity="0.8"/>
+      <stop offset="30%" stop-color="#f5c890" stop-opacity="0.4"/>
+      <stop offset="70%" stop-color="#e0a878" stop-opacity="0.1"/>
+      <stop offset="100%" stop-color="#c49aab" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Atmospheric haze gradients -->
+    <linearGradient id="haze1" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#c9a0a8" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#b0909a" stop-opacity="0.1"/>
+    </linearGradient>
+    <linearGradient id="haze2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#bfa0a8" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#a08890" stop-opacity="0.05"/>
+    </linearGradient>
+
+    <!-- Mountain fill gradients - far to near -->
+    <linearGradient id="mtn1" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#9888a0"/>
+      <stop offset="40%" stop-color="#a090a5"/>
+      <stop offset="100%" stop-color="#b0a0aa"/>
+    </linearGradient>
+    <linearGradient id="mtn2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#887898"/>
+      <stop offset="50%" stop-color="#908090"/>
+      <stop offset="100%" stop-color="#a09098"/>
+    </linearGradient>
+    <linearGradient id="mtn3" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#706475"/>
+      <stop offset="40%" stop-color="#7a6e7a"/>
+      <stop offset="100%" stop-color="#8a7e88"/>
+    </linearGradient>
+    <linearGradient id="mtn4" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#5a4e5e"/>
+      <stop offset="50%" stop-color="#655868"/>
+      <stop offset="100%" stop-color="#706270"/>
+    </linearGradient>
+    <linearGradient id="mtn5" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#483c4a"/>
+      <stop offset="60%" stop-color="#3e3440"/>
+      <stop offset="100%" stop-color="#352c38"/>
+    </linearGradient>
+
+    <!-- Tree texture gradient -->
+    <linearGradient id="trees" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#3a3040"/>
+      <stop offset="100%" stop-color="#2e2634"/>
+    </linearGradient>
+
+    <!-- Cloud filter for soft edges -->
+    <filter id="softcloud">
+      <feGaussianBlur stdDeviation="8"/>
+    </filter>
+    <filter id="mtnhaze1">
+      <feGaussianBlur stdDeviation="2"/>
+    </filter>
+    <filter id="mtnhaze2">
+      <feGaussianBlur stdDeviation="1"/>
+    </filter>
+  </defs>
+
+  <!-- Sky -->
+  <rect width="1920" height="1080" fill="url(#sky)"/>
+
+  <!-- Sun glow -->
+  <rect width="1920" height="1080" fill="url(#sunglow)"/>
+
+  <!-- Wispy clouds -->
+  <g opacity="0.35">
+    <ellipse cx="400" cy="280" rx="220" ry="18" fill="#e8c8a8" filter="url(#softcloud)"/>
+    <ellipse cx="520" cy="260" rx="180" ry="14" fill="#e0c0a0" filter="url(#softcloud)"/>
+    <ellipse cx="300" cy="310" rx="160" ry="12" fill="#d8b898" filter="url(#softcloud)"/>
+    <ellipse cx="1400" cy="200" rx="200" ry="16" fill="#d0a8b0" filter="url(#softcloud)"/>
+    <ellipse cx="1550" cy="230" rx="140" ry="10" fill="#d8b0a8" filter="url(#softcloud)"/>
+    <ellipse cx="900" cy="180" rx="250" ry="14" fill="#c8a0a8" filter="url(#softcloud)"/>
+    <ellipse cx="700" cy="320" rx="190" ry="16" fill="#e4c4a4" filter="url(#softcloud)"/>
+  </g>
+
+  <!-- Layer 1: Very far mountains (haziest, lightest) -->
+  <g opacity="0.5">
+    <path d="M0,680 Q80,620 160,600 Q200,590 240,595 Q320,580 380,540 Q420,520 460,530
+             Q520,510 580,480 Q620,460 660,470 Q720,450 780,430 Q820,420 860,440
+             Q920,420 960,400 Q1000,390 1040,410 Q1100,390 1160,380 Q1200,375 1240,390
+             Q1300,370 1360,360 Q1400,355 1440,370 Q1500,350 1560,380 Q1620,370 1680,390
+             Q1740,380 1800,420 Q1860,440 1920,460 L1920,1080 L0,1080 Z"
+          fill="url(#mtn1)" filter="url(#mtnhaze1)"/>
+  </g>
+
+  <!-- Atmospheric haze layer -->
+  <rect y="500" width="1920" height="200" fill="url(#haze2)" opacity="0.3"/>
+
+  <!-- Layer 2: Far-mid mountains -->
+  <path d="M0,720 Q40,700 80,690 Q140,670 200,660 Q260,640 300,620 Q340,600 380,590
+           Q420,580 460,600 Q500,580 540,560 Q570,548 600,555 Q640,540 680,520
+           Q720,500 760,490 Q800,485 840,500 Q880,490 920,480 Q960,475 1000,490
+           Q1040,480 1080,460 Q1120,448 1160,455 Q1200,440 1240,430 Q1280,425 1320,440
+           Q1360,430 1400,420 Q1440,415 1480,430 Q1520,420 1560,440 Q1600,435 1640,450
+           Q1680,445 1720,460 Q1760,465 1800,480 Q1840,490 1880,510 Q1900,520 1920,530
+           L1920,1080 L0,1080 Z"
+        fill="url(#mtn2)"/>
+
+  <!-- Layer 3: Mid mountains - the hero peaks -->
+  <path d="M0,780 Q30,760 60,750 Q100,730 140,710 Q170,695 200,700 Q240,685 280,670
+           Q310,655 340,640 Q370,625 400,620 Q430,610 460,625 Q490,615 520,600
+           Q550,585 580,570 Q600,558 620,550 Q650,535 680,520 Q700,510 720,505
+           Q745,498 770,510 Q800,500 830,515 Q860,510 890,530 Q920,520 950,535
+           Q980,525 1010,540 Q1040,530 1060,520 Q1080,508 1100,500 Q1130,488 1160,480
+           Q1180,475 1200,480 Q1230,470 1260,462 Q1290,455 1310,460 Q1340,450 1370,442
+           Q1400,438 1420,445 Q1450,435 1480,440 Q1510,435 1540,445 Q1570,440 1600,455
+           Q1630,450 1660,460 Q1700,465 1740,480 Q1780,490 1820,510 Q1860,530 1900,550
+           Q1910,555 1920,560 L1920,1080 L0,1080 Z"
+        fill="url(#mtn3)"/>
+
+  <!-- Haze between mid and near layers -->
+  <rect y="650" width="1920" height="150" fill="url(#haze1)" opacity="0.2"/>
+
+  <!-- Layer 4: Near-mid mountains with more detail -->
+  <path d="M0,830 Q20,818 50,810 Q80,798 110,790 Q140,778 170,770
+           Q200,758 230,750 Q260,740 290,735 Q320,728 350,738 Q380,730 410,720
+           Q440,712 470,708 Q500,700 530,695 Q555,688 580,692 Q610,685 640,678
+           Q670,670 700,665 Q725,660 750,668 Q780,660 810,655 Q840,650 870,660
+           Q900,652 930,648 Q960,645 990,655 Q1020,648 1050,640 Q1080,635 1100,630
+           Q1120,625 1140,632 Q1170,625 1200,618 Q1230,612 1250,615 Q1280,608 1310,600
+           Q1340,595 1360,600 Q1390,594 1420,590 Q1450,586 1470,592 Q1500,585 1530,580
+           Q1560,578 1580,585 Q1610,580 1640,590 Q1670,588 1700,598 Q1730,605 1760,615
+           Q1790,625 1820,640 Q1850,655 1880,670 Q1910,685 1920,692
+           L1920,1080 L0,1080 Z"
+        fill="url(#mtn4)"/>
+
+  <!-- Layer 5: Nearest mountains / foothills with trees -->
+  <path d="M0,900 Q30,888 60,878 Q100,865 140,855 Q170,845 200,840
+           Q240,832 280,828 Q310,822 340,830 Q370,824 400,818 Q430,812 460,808
+           Q490,802 520,798 Q548,793 575,800 Q600,794 630,788 Q660,783 690,780
+           Q715,776 740,782 Q770,776 800,772 Q830,768 855,774 Q880,770 910,766
+           Q940,762 970,768 Q1000,764 1030,758 Q1060,753 1085,756 Q1110,750 1140,745
+           Q1170,740 1195,744 Q1220,738 1250,732 Q1280,728 1305,734 Q1330,728 1360,724
+           Q1390,720 1415,726 Q1440,722 1470,718 Q1500,715 1520,720 Q1550,716 1580,725
+           Q1610,722 1640,730 Q1680,738 1720,750 Q1760,762 1800,778 Q1840,794 1880,812
+           Q1910,826 1920,834 L1920,1080 L0,1080 Z"
+        fill="url(#mtn5)"/>
+
+  <!-- Tree line texture on nearest hills -->
+  <g opacity="0.6">
+    <!-- Individual tree cluster shapes along the ridge -->
+    <path d="M0,910 Q15,902 30,895 L30,900 Q42,893 50,888 L50,894 Q65,886 80,880 L80,888
+             Q100,878 120,872 L120,880 Q140,870 160,865 L160,872 Q180,862 200,858 L200,864
+             Q220,856 240,852 L240,858 Q260,850 280,848 L280,854 Q300,846 320,850 L320,855
+             Q340,848 360,844 L360,850 Q380,842 400,838 L400,845
+             Q420,836 440,832 L440,838 Q460,830 480,826 L480,833 Q500,825 520,822 L520,828
+             Q540,820 560,818 L560,824 Q580,816 600,812 L600,820 Q620,812 640,810 L640,816
+             Q660,808 680,806 L680,812 Q700,804 720,802 L720,808 Q740,800 760,804 L760,810
+             L760,1080 L0,1080 Z" fill="url(#trees)"/>
+    <path d="M760,810 Q780,802 800,798 L800,804 Q820,796 840,794 L840,800 Q860,792 880,790 L880,796
+             Q900,788 920,786 L920,792 Q940,784 960,788 L960,794 Q980,786 1000,782 L1000,788
+             Q1020,780 1040,778 L1040,784 Q1060,776 1080,772 L1080,779 Q1100,770 1120,768 L1120,774
+             Q1140,766 1160,764 L1160,770 Q1180,762 1200,760 L1200,766 Q1220,758 1240,755 L1240,762
+             Q1260,754 1280,752 L1280,758 Q1300,750 1320,748 L1320,754 Q1340,746 1360,745 L1360,752
+             Q1380,744 1400,742 L1400,748 Q1420,740 1440,738 L1440,745 Q1460,737 1480,736 L1480,742
+             Q1500,734 1520,738 L1520,744 Q1540,736 1560,742 L1560,748 Q1580,740 1600,746 L1600,752
+             Q1640,754 1680,762 Q1720,772 1760,786 Q1800,800 1840,818 Q1880,836 1920,852
+             L1920,1080 L760,1080 Z" fill="url(#trees)"/>
+  </g>
+
+  <!-- Slight warm light hitting the left side of peaks (golden hour effect) -->
+  <g opacity="0.12">
+    <path d="M620,550 Q650,535 680,520 Q700,510 720,505 Q730,502 735,505 Q720,515 700,530 Q680,545 660,555 Z" fill="#ffd4a0"/>
+    <path d="M1100,500 Q1130,488 1160,480 Q1180,475 1190,478 Q1175,488 1155,500 Q1135,512 1120,518 Z" fill="#ffd4a0"/>
+    <path d="M1360,442 Q1385,435 1400,438 Q1405,440 1395,448 Q1380,455 1370,458 Z" fill="#ffd4a0"/>
+  </g>
+</svg>
