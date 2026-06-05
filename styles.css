@@ -662,10 +662,11 @@ dialog.overlay[open]::backdrop{background:rgba(30,20,60,.32)}
 #mModal,#recMoModal{backdrop-filter:none;-webkit-backdrop-filter:none}
 .bg-canvas.orbs-paused .orb{animation-play-state:paused}
 
-/* Mountain scenic theme */
-.bg-canvas.theme-mountains{background:url('mountains.svg') center bottom/cover no-repeat}
-.bg-canvas.theme-mountains .orb{opacity:0!important}
-body.dark .bg-canvas.theme-mountains{opacity:0}
+/* Scenic photo themes */
+.bg-canvas.theme-scenic{background-size:cover;background-position:center bottom;background-repeat:no-repeat}
+.bg-canvas.theme-scenic .orb{opacity:0!important}
+body.dark .bg-canvas.theme-scenic{opacity:0}
+.bg-canvas.theme-austin{background-image:url('theme-austin.jpg')}
 .mt{font-size:14px;font-weight:700;letter-spacing:-.3px;margin-bottom:11px}
 .mfield{margin-bottom:8px}
 .mfield label{display:block;font-size:9px;font-weight:700;color:var(--muted);margin-bottom:2px;text-transform:uppercase;letter-spacing:.07em}

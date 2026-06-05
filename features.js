@@ -5903,7 +5903,7 @@ const THEMES={
   frost:{name:'Frost',bg:'linear-gradient(160deg,#f8f9fc 0%,#f0f2f8 50%,#f5f4fa 100%)',body:'#f6f7fb',orbs:['radial-gradient(circle,rgba(200,210,240,.5),rgba(180,195,230,.3))','radial-gradient(circle,rgba(220,210,240,.4),rgba(200,190,230,.2))','radial-gradient(circle,rgba(200,215,240,.3),rgba(185,200,235,.15))','radial-gradient(circle,rgba(210,210,240,.3),rgba(190,195,230,.15))','radial-gradient(circle,rgba(200,210,235,.3),rgba(180,195,225,.15))'],swatch:'linear-gradient(135deg,#dce3f0,#d0d4e8,#e0ddf0)'},
   rose:{name:'Rose',bg:'linear-gradient(135deg,#fff1f2 0%,#fef2f8 40%,#fce7f3 70%,#fdf2f8 100%)',body:'#fff1f2',orbs:['radial-gradient(circle,#fda4af,#fb7185)','radial-gradient(circle,#f9a8d4,#f472b6)','radial-gradient(circle,#fecdd3,#fda4af)','radial-gradient(circle,#fbcfe8,#f9a8d4)','radial-gradient(circle,#fda4af,#e11d48)'],swatch:'linear-gradient(135deg,#fb7185,#f472b6,#fda4af)'},
   clay:{name:'Clay',bg:'linear-gradient(135deg,#faf5f0 0%,#f5ede4 40%,#f8f0ea 70%,#faf6f2 100%)',body:'#f8f4ef',orbs:['radial-gradient(circle,#e8c9a8,#d4a574)','radial-gradient(circle,#f5d0b0,#e8b68a)','radial-gradient(circle,#fde68a,#fbbf24)','radial-gradient(circle,#dfc4a8,#c9a57a)','radial-gradient(circle,#f0d4b8,#dbb88e)'],swatch:'linear-gradient(135deg,#d4a574,#e8b68a,#fbbf24)'},
-  mountains:{name:'Mountains',bg:'linear-gradient(180deg,#8b6faa 0%,#c49aab 30%,#efbe8a 60%,#d4a488 100%)',body:'#8b6faa',orbs:['none','none','none','none','none'],swatch:'linear-gradient(180deg,#8b6faa,#efbe8a,#483c4a)',scenic:true},
+  austin:{name:'Austin',bg:'linear-gradient(180deg,#9a82b4 0%,#d4899a 40%,#e8a090 100%)',body:'#b488a8',orbs:['none','none','none','none','none'],swatch:'linear-gradient(180deg,#9a82b4,#e09088,#d4899a)',scenic:'austin'},
 };
 function applyTheme(key,skipSave){
   const t=THEMES[key]||THEMES.peach;
@@ -5912,12 +5912,17 @@ function applyTheme(key,skipSave){
   const orbs=document.querySelectorAll('.bg-canvas .orb');
   orbs.forEach((o,i)=>{if(t.orbs[i])o.style.background=t.orbs[i];});
   const canvas=document.querySelector('.bg-canvas');
-  if(canvas)canvas.classList.toggle('theme-mountains',!!t.scenic);
+  if(canvas){
+    canvas.classList.remove('theme-scenic');
+    canvas.className.split(' ').filter(c=>c.startsWith('theme-')).forEach(c=>canvas.classList.remove(c));
+    if(t.scenic){canvas.classList.add('theme-scenic','theme-'+t.scenic);}
+  }
   document.querySelectorAll('.theme-swatch').forEach(s=>{s.classList.toggle('active',s.dataset.theme===key);});
   if(!skipSave){localStorage._dashTheme=key;}
 }
 function initTheme(){
-  const key=localStorage._dashTheme||'peach';
+  let key=localStorage._dashTheme||'peach';
+  if(key==='mountains'){key='austin';localStorage._dashTheme=key;}
   applyTheme(key,true);
 }
 initTheme();
