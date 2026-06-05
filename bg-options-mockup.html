@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Dashboard Background Options</title>
+<style>
+  * { margin: 0; box-sizing: border-box; }
+  body { font-family: 'DM Sans', system-ui, sans-serif; background: #1a1a2e; color: #fff; padding: 30px; }
+  h1 { text-align: center; font-size: 24px; margin-bottom: 8px; font-weight: 600; }
+  p.sub { text-align: center; color: #aaa; font-size: 14px; margin-bottom: 30px; }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; max-width: 1200px; margin: 0 auto; }
+  .option { border-radius: 16px; overflow: hidden; cursor: pointer; transition: transform .2s, box-shadow .2s; border: 2px solid rgba(255,255,255,.08); }
+  .option:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(0,0,0,.4); border-color: rgba(255,255,255,.2); }
+  .preview { height: 260px; position: relative; overflow: hidden; }
+  .label { padding: 14px 16px; background: rgba(0,0,0,.5); backdrop-filter: blur(10px); }
+  .label h3 { font-size: 15px; font-weight: 600; margin-bottom: 3px; }
+  .label p { font-size: 11px; color: #aaa; line-height: 1.4; }
+  .current-badge { display: inline-block; background: rgba(124,106,247,.3); color: #c4b5fd; font-size: 9px; font-weight: 700; padding: 2px 8px; border-radius: 10px; margin-left: 8px; text-transform: uppercase; letter-spacing: .5px; }
+
+  /* Fake card elements for previews */
+  .fake-card { position: absolute; background: rgba(255,255,255,.55); border: 1px solid rgba(210,205,228,.3); border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,.04); }
+  .fake-card-sm { width: 100px; height: 60px; }
+  .fake-card-md { width: 140px; height: 80px; }
+  .fake-card-lg { width: 180px; height: 50px; }
+  .fake-sidebar { position: absolute; left: 0; top: 0; bottom: 0; width: 50px; background: rgba(255,255,255,.7); border-right: 1px solid rgba(210,205,228,.3); }
+  .fake-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(0,0,0,.12); margin: 12px auto 0; }
+
+  /* Orb animation */
+  .orb { position: absolute; border-radius: 50%; filter: blur(60px); opacity: .45; animation: drift 18s ease-in-out infinite alternate; }
+  @keyframes drift { from { transform: translate(0,0) scale(1); } to { transform: translate(30px, 20px) scale(1.1); } }
+
+  /* Option 1: Current */
+  .bg-current { background: linear-gradient(135deg, #fef3ee 0%, #fffbf2 50%, #fdf0fb 100%); }
+  .bg-current .orb1 { width: 200px; height: 200px; background: radial-gradient(circle, #fcd5ce, #f9b8ae); top: -40px; left: -30px; }
+  .bg-current .orb2 { width: 180px; height: 180px; background: radial-gradient(circle, #fed7aa, #fbbf7a); top: 20%; right: -30px; animation-delay: -3s; }
+  .bg-current .orb3 { width: 160px; height: 160px; background: radial-gradient(circle, #fbcfe8, #f9a8d4); bottom: -30px; left: 30%; animation-delay: -6s; }
+
+  /* Option 2: Ocean Mist */
+  .bg-ocean { background: linear-gradient(135deg, #e8f4f8 0%, #f0f7ff 40%, #e6f0f8 70%, #f0eef8 100%); }
+  .bg-ocean .orb1 { width: 220px; height: 220px; background: radial-gradient(circle, #bae6fd, #7dd3fc); top: -50px; left: -40px; opacity: .35; }
+  .bg-ocean .orb2 { width: 180px; height: 180px; background: radial-gradient(circle, #a5f3fc, #67e8f9); bottom: -20px; right: -30px; opacity: .3; animation-delay: -5s; }
+  .bg-ocean .orb3 { width: 150px; height: 150px; background: radial-gradient(circle, #c7d2fe, #a5b4fc); top: 30%; right: 20%; opacity: .25; animation-delay: -8s; }
+
+  /* Option 3: Sage Garden */
+  .bg-sage { background: linear-gradient(135deg, #f0f5ed 0%, #f5f7f0 40%, #eef3ea 70%, #f2f0e8 100%); }
+  .bg-sage .orb1 { width: 200px; height: 200px; background: radial-gradient(circle, #bbf7d0, #86efac); top: -40px; right: -30px; opacity: .3; }
+  .bg-sage .orb2 { width: 170px; height: 170px; background: radial-gradient(circle, #d9f99d, #bef264); bottom: -30px; left: -20px; opacity: .25; animation-delay: -4s; }
+  .bg-sage .orb3 { width: 140px; height: 140px; background: radial-gradient(circle, #fef3c7, #fde68a); top: 40%; left: 30%; opacity: .25; animation-delay: -7s; }
+
+  /* Option 4: Lavender Dream */
+  .bg-lavender { background: linear-gradient(135deg, #f5f0ff 0%, #faf5ff 40%, #f0eaff 70%, #f8f0ff 100%); }
+  .bg-lavender .orb1 { width: 220px; height: 220px; background: radial-gradient(circle, #e9d5ff, #d8b4fe); top: -50px; left: -30px; opacity: .4; }
+  .bg-lavender .orb2 { width: 180px; height: 180px; background: radial-gradient(circle, #f0abfc, #e879f9); bottom: -30px; right: -20px; opacity: .25; animation-delay: -5s; }
+  .bg-lavender .orb3 { width: 150px; height: 150px; background: radial-gradient(circle, #c4b5fd, #a78bfa); top: 20%; right: 10%; opacity: .2; animation-delay: -9s; }
+
+  /* Option 5: Golden Hour */
+  .bg-golden { background: linear-gradient(135deg, #fefce8 0%, #fff9e6 40%, #fef5e0 70%, #fefaf0 100%); }
+  .bg-golden .orb1 { width: 200px; height: 200px; background: radial-gradient(circle, #fde68a, #fbbf24); top: -40px; right: -30px; opacity: .3; }
+  .bg-golden .orb2 { width: 180px; height: 180px; background: radial-gradient(circle, #fed7aa, #fb923c); bottom: -20px; left: -30px; opacity: .25; animation-delay: -4s; }
+  .bg-golden .orb3 { width: 140px; height: 140px; background: radial-gradient(circle, #fecaca, #fca5a5); top: 30%; left: 40%; opacity: .2; animation-delay: -7s; }
+
+  /* Option 6: Minimal Frost */
+  .bg-frost { background: linear-gradient(160deg, #f8f9fc 0%, #f0f2f8 50%, #f5f4fa 100%); }
+  .bg-frost .orb1 { width: 250px; height: 250px; background: radial-gradient(circle, rgba(200,210,240,.5), rgba(180,195,230,.3)); top: -60px; left: -40px; opacity: .3; filter: blur(80px); }
+  .bg-frost .orb2 { width: 200px; height: 200px; background: radial-gradient(circle, rgba(220,210,240,.4), rgba(200,190,230,.2)); bottom: -40px; right: -30px; opacity: .25; filter: blur(80px); animation-delay: -6s; }
+
+  /* Option 7: Rose Quartz */
+  .bg-rose { background: linear-gradient(135deg, #fff1f2 0%, #fef2f8 40%, #fce7f3 70%, #fdf2f8 100%); }
+  .bg-rose .orb1 { width: 200px; height: 200px; background: radial-gradient(circle, #fda4af, #fb7185); top: -40px; left: -20px; opacity: .3; }
+  .bg-rose .orb2 { width: 170px; height: 170px; background: radial-gradient(circle, #f9a8d4, #f472b6); bottom: -30px; right: -30px; opacity: .25; animation-delay: -5s; }
+  .bg-rose .orb3 { width: 140px; height: 140px; background: radial-gradient(circle, #fecdd3, #fda4af); top: 35%; right: 15%; opacity: .2; animation-delay: -8s; }
+
+  /* Option 8: Midnight Soft (light dark) */
+  .bg-midnight { background: linear-gradient(135deg, #1e1e2e 0%, #232336 50%, #1e1e2e 100%); }
+  .bg-midnight .orb1 { width: 220px; height: 220px; background: radial-gradient(circle, rgba(124,106,247,.3), rgba(99,80,230,.15)); top: -50px; left: -30px; opacity: .5; }
+  .bg-midnight .orb2 { width: 180px; height: 180px; background: radial-gradient(circle, rgba(244,114,182,.2), rgba(236,72,153,.1)); bottom: -30px; right: -20px; opacity: .4; animation-delay: -4s; }
+  .bg-midnight .orb3 { width: 150px; height: 150px; background: radial-gradient(circle, rgba(96,165,250,.2), rgba(59,130,246,.1)); top: 25%; right: 15%; opacity: .35; animation-delay: -7s; }
+  .bg-midnight .fake-card { background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.08); }
+  .bg-midnight .fake-sidebar { background: rgba(255,255,255,.04); border-color: rgba(255,255,255,.06); }
+  .bg-midnight .fake-dot { background: rgba(255,255,255,.15); }
+
+  /* Option 9: Warm Clay */
+  .bg-clay { background: linear-gradient(135deg, #faf5f0 0%, #f5ede4 40%, #f8f0ea 70%, #faf6f2 100%); }
+  .bg-clay .orb1 { width: 200px; height: 200px; background: radial-gradient(circle, #e8c9a8, #d4a574); top: -40px; right: -20px; opacity: .25; }
+  .bg-clay .orb2 { width: 170px; height: 170px; background: radial-gradient(circle, #f5d0b0, #e8b68a); bottom: -30px; left: -30px; opacity: .2; animation-delay: -5s; }
+  .bg-clay .orb3 { width: 140px; height: 140px; background: radial-gradient(circle, #fde68a, #fbbf24); top: 30%; left: 35%; opacity: .15; animation-delay: -8s; }
+</style>
+</head>
+<body>
+  <h1>Dashboard Background Options</h1>
+  <p class="sub">Click any option to see it full-screen. Press Escape to go back.</p>
+
+  <div class="grid">
+    <!-- Current -->
+    <div class="option" onclick="preview(this)">
+      <div class="preview bg-current">
+        <div class="orb orb1"></div><div class="orb orb2"></div><div class="orb orb3"></div>
+        <div class="fake-sidebar"><div class="fake-dot"></div><div class="fake-dot"></div><div class="fake-dot"></div></div>
+        <div class="fake-card fake-card-md" style="top:30px;left:70px"></div>
+        <div class="fake-card fake-card-sm" style="top:30px;right:20px"></div>
+        <div class="fake-card fake-card-lg" style="bottom:40px;left:70px"></div>
+      </div>
+      <div class="label"><h3>Current <span class="current-badge">Active</span></h3><p>Warm peach/pink with animated orbs</p></div>
+    </div>
+
+    <!-- Ocean Mist -->
+    <div class="option" onclick="preview(this)">
+      <div class="preview bg-ocean">
+        <div class="orb orb1"></div><div class="orb orb2"></div><div class="orb orb3"></div>
+        <div class="fake-sidebar"><div class="fake-dot"></div><div class="fake-dot"></div><div class="fake-dot"></div></div>
+        <div class="fake-card fake-card-md" style="top:30px;left:70px"></div>
+        <div class="fake-card fake-card-sm" style="top:30px;right:20px"></div>
+        <div class="fake-card fake-card-lg" style="bottom:40px;left:70px"></div>
+      </div>
+      <div class="label"><h3>Ocean Mist</h3><p>Cool blue-teal tones, calming & airy</p></div>
+    </div>
+
+    <!-- Sage Garden -->
+    <div class="option" onclick="preview(this)">
+      <div class="preview bg-sage">
+        <div class="orb orb1"></div><div class="orb orb2"></div><div class="orb orb3"></div>
+        <div class="fake-sidebar"><div class="fake-dot"></div><div class="fake-dot"></div><div class="fake-dot"></div></div>
+        <div class="fake-card fake-card-md" style="top:30px;left:70px"></div>
+        <div class="fake-card fake-card-sm" style="top:30px;right:20px"></div>
+        <div class="fake-card fake-card-lg" style="bottom:40px;left:70px"></div>
+      </div>
+      <div class="label"><h3>Sage Garden</h3><p>Soft greens with warm accents, earthy</p></div>
+    </div>
+
+    <!-- Lavender Dream -->
+    <div class="option" onclick="preview(this)">
+      <div class="preview bg-lavender">
+        <div class="orb orb1"></div><div class="orb orb2"></div><div class="orb orb3"></div>
+        <div class="fake-sidebar"><div class="fake-dot"></div><div class="fake-dot"></div><div class="fake-dot"></div></div>
+        <div class="fake-card fake-card-md" style="top:30px;left:70px"></div>
+        <div class="fake-card fake-card-sm" style="top:30px;right:20px"></div>
+        <div class="fake-card fake-card-lg" style="bottom:40px;left:70px"></div>
+      </div>
+      <div class="label"><h3>Lavender Dream</h3><p>Purple-lilac tones, elegant & soft</p></div>
+    </div>
+
+    <!-- Golden Hour -->
+    <div class="option" onclick="preview(this)">
+      <div class="preview bg-golden">
+        <div class="orb orb1"></div><div class="orb orb2"></div><div class="orb orb3"></div>
+        <div class="fake-sidebar"><div class="fake-dot"></div><div class="fake-dot"></div><div class="fake-dot"></div></div>
+        <div class="fake-card fake-card-md" style="top:30px;left:70px"></div>
+        <div class="fake-card fake-card-sm" style="top:30px;right:20px"></div>
+        <div class="fake-card fake-card-lg" style="bottom:40px;left:70px"></div>
+      </div>
+      <div class="label"><h3>Golden Hour</h3><p>Warm yellows & amber, sunny vibes</p></div>
+    </div>
+
+    <!-- Minimal Frost -->
+    <div class="option" onclick="preview(this)">
+      <div class="preview bg-frost">
+        <div class="orb orb1"></div><div class="orb orb2"></div>
+        <div class="fake-sidebar"><div class="fake-dot"></div><div class="fake-dot"></div><div class="fake-dot"></div></div>
+        <div class="fake-card fake-card-md" style="top:30px;left:70px"></div>
+        <div class="fake-card fake-card-sm" style="top:30px;right:20px"></div>
+        <div class="fake-card fake-card-lg" style="bottom:40px;left:70px"></div>
+      </div>
+      <div class="label"><h3>Minimal Frost</h3><p>Nearly white with subtle cool undertone, clean</p></div>
+    </div>
+
+    <!-- Rose Quartz -->
+    <div class="option" onclick="preview(this)">
+      <div class="preview bg-rose">
+        <div class="orb orb1"></div><div class="orb orb2"></div><div class="orb orb3"></div>
+        <div class="fake-sidebar"><div class="fake-dot"></div><div class="fake-dot"></div><div class="fake-dot"></div></div>
+        <div class="fake-card fake-card-md" style="top:30px;left:70px"></div>
+        <div class="fake-card fake-card-sm" style="top:30px;right:20px"></div>
+        <div class="fake-card fake-card-lg" style="bottom:40px;left:70px"></div>
+      </div>
+      <div class="label"><h3>Rose Quartz</h3><p>Pink-forward, romantic & soft</p></div>
+    </div>
+
+    <!-- Midnight Soft -->
+    <div class="option" onclick="preview(this)">
+      <div class="preview bg-midnight">
+        <div class="orb orb1"></div><div class="orb orb2"></div><div class="orb orb3"></div>
+        <div class="fake-sidebar"><div class="fake-dot"></div><div class="fake-dot"></div><div class="fake-dot"></div></div>
+        <div class="fake-card fake-card-md" style="top:30px;left:70px"></div>
+        <div class="fake-card fake-card-sm" style="top:30px;right:20px"></div>
+        <div class="fake-card fake-card-lg" style="bottom:40px;left:70px"></div>
+      </div>
+      <div class="label"><h3>Midnight Soft</h3><p>Dark with colorful glowing orbs</p></div>
+    </div>
+
+    <!-- Warm Clay -->
+    <div class="option" onclick="preview(this)">
+      <div class="preview bg-clay">
+        <div class="orb orb1"></div><div class="orb orb2"></div><div class="orb orb3"></div>
+        <div class="fake-sidebar"><div class="fake-dot"></div><div class="fake-dot"></div><div class="fake-dot"></div></div>
+        <div class="fake-card fake-card-md" style="top:30px;left:70px"></div>
+        <div class="fake-card fake-card-sm" style="top:30px;right:20px"></div>
+        <div class="fake-card fake-card-lg" style="bottom:40px;left:70px"></div>
+      </div>
+      <div class="label"><h3>Warm Clay</h3><p>Neutral terracotta tones, cozy & grounded</p></div>
+    </div>
+  </div>
+
+  <!-- Fullscreen preview overlay -->
+  <div id="overlay" style="display:none;position:fixed;inset:0;z-index:100;transition:opacity .3s;cursor:pointer" onclick="closePreview()">
+    <div id="overlayBg" style="position:absolute;inset:0"></div>
+    <div style="position:absolute;top:20px;right:24px;color:rgba(0,0,0,.4);font-size:14px;font-weight:600;z-index:1">Press ESC or click to close</div>
+    <div style="position:absolute;bottom:30px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.6);backdrop-filter:blur(10px);padding:10px 24px;border-radius:12px;z-index:1">
+      <h3 id="overlayTitle" style="font-size:16px;color:#fff;margin-bottom:2px"></h3>
+      <p id="overlayDesc" style="font-size:12px;color:#ccc"></p>
+    </div>
+  </div>
+
+  <script>
+    function preview(el) {
+      const bg = el.querySelector('.preview');
+      const overlay = document.getElementById('overlay');
+      const overlayBg = document.getElementById('overlayBg');
+      const title = el.querySelector('.label h3').textContent;
+      const desc = el.querySelector('.label p').textContent;
+
+      // Clone the background class
+      overlayBg.className = bg.className.replace('preview ', '');
+      overlayBg.innerHTML = '';
+      bg.querySelectorAll('.orb').forEach(o => {
+        const clone = o.cloneNode(true);
+        clone.style.width = parseFloat(getComputedStyle(o).width) * 3 + 'px';
+        clone.style.height = parseFloat(getComputedStyle(o).height) * 3 + 'px';
+        overlayBg.appendChild(clone);
+      });
+
+      document.getElementById('overlayTitle').textContent = title;
+      document.getElementById('overlayDesc').textContent = desc;
+      overlay.style.display = 'block';
+    }
+
+    function closePreview() {
+      document.getElementById('overlay').style.display = 'none';
+    }
+
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') closePreview();
+    });
+  </script>
+</body>
+</html>
