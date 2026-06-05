@@ -5561,9 +5561,7 @@ document.addEventListener('keydown',async e=>{
   // Cmd+V: paste (duplicate) copied tasks
   if((e.metaKey||e.ctrlKey)&&e.key==='v'&&_copiedTasks.length>0){
     e.preventDefault();
-    console.log('[PASTE] _pasteColDates:',_pasteColDates,'dayOff:',dayOff,'activePg:',activePg);
     _copiedTasks.forEach(async t=>{
-      console.log('[PASTE] item:',t._isVidStep?'vidstep':'other',t._isVidStep?t._vidStep:'');
       if(t._isWrRule){
         const dupName=uniqueRecName(t.name);
         const tmpId='wrrule-tmp-'+Date.now();
@@ -5592,8 +5590,8 @@ document.addEventListener('keydown',async e=>{
         // Only Build/VO/Cut can be pasted onto a day — Th/Des cannot
         if(t._vidStep==='step_thumbnail'||t._vidStep==='step_description'){if(typeof showToast==='function')showToast('Th/Des steps can\'t be pasted to a day','#ef4444',1500);return;}
         const pasteDate=(activePg==='overview'&&Array.isArray(_pasteColDates)&&_pasteColDates.length)?_pasteColDates[0]:d2s(getDayDate(dayOff));
-        // Assign step to the target day (moves daymap + creates TB block)
-        if(typeof _vidStepAssignToDay==='function')_vidStepAssignToDay(t._vidId,t._vidStep,pasteDate);
+        // Move step to the target day (updates daymap + moves TB block)
+        if(typeof _vidStepAssignToDay==='function'){_vidStepAssignToDay(t._vidId,t._vidStep,pasteDate);showToast('Moved step to '+pasteDate,'#6d5fe6',1500);}
       } else {
         const dates=(activePg==='overview'&&Array.isArray(_pasteColDates)&&_pasteColDates.length)?_pasteColDates:[t.due_date];
         for(const pasteDate of dates){
