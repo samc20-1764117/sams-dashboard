@@ -3441,6 +3441,19 @@ function _vidStepToggleDone(vidId,step,checked,_fromTB){
   const panel=document.getElementById('vidOvPanel');if(panel&&panel.style.display==='block')_renderVidOvMenu();
   if(_vidOvAllOpen)_vidOvRenderAll();
 }
+function _vidStepAddBlock(vidId,step,ds){
+  const v=(st.videos||[]).find(x=>String(x.id)===String(vidId)&&!x.is_deleted);if(!v)return;
+  const label=(_VID_STEP_LABELS[step]||step.replace('step_',''))+': '+(v.topic||v.title);
+  const dur=(step==='step_build'||step==='step_vo'||step==='step_cut')?60:30;
+  const now=new Date();const sm=Math.round((now.getHours()*60+now.getMinutes())/15)*15;
+  const blk={id:crypto.randomUUID(),title:label,ds,sm,dur,cat:'Videos',_vidStepVid:String(vidId),_vidStepName:step};
+  st.blocks.push(blk);sbSaveBlock(blk);
+  // Ensure daymap has an entry (use earliest day)
+  const m=_vidStepDayMap();const key=vidId+'::'+step;
+  if(!m[key]||m[key].ds>ds){m[key]={ds,done:false};_vidStepDayMapSet(m);}
+  save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
+  pushUndo(()=>{st.blocks=st.blocks.filter(b=>b.id!==blk.id);sbDeleteBlock(blk.id);save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();},'Added step block');
+}
 function _vidStepUnassign(vidId,step){
   const m=_vidStepDayMap();const key=vidId+'::'+step;
   const prev=m[key]||null;delete m[key];_vidStepDayMapSet(m);
@@ -6901,11 +6914,11 @@ function _addSelectedToTB(sids){
     }
     // Vidstep (Build/VO/Cut only)
     if(sid.startsWith('vidstep-')){
-      const m=sid.match(/^vidstep-(.+)-(step_\w+)$/);
-      if(m){
-        const vidId=m[1],step=m[2];
+      const m2=sid.match(/^vidstep-(.+)-(step_\w+)$/);
+      if(m2){
+        const vidId=m2[1],step=m2[2];
         if(step==='step_thumbnail'||step==='step_description')continue;
-        _vidStepAssignToDay(vidId,step,ds);
+        _vidStepAddBlock(vidId,step,ds);
         added++;
       }
       continue;
