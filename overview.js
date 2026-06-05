@@ -6398,7 +6398,13 @@ function dropOnTB(e,ds,h,row,smOverride){
         } else if(sid.startsWith('vid-ov-')){
           // skip — video TB has special handling
         } else if(sid.startsWith('vidstep-')){
-          // skip — vidstep tasks are virtual
+          const vsm=sid.match(/^vidstep-(.+)-(step_\w+)$/);
+          if(vsm){
+            const vsVid=vsm[1],vsStep=vsm[2];
+            if(vsStep!=='step_thumbnail'&&vsStep!=='step_description'){
+              if(typeof _vidStepAssignToDay==='function')_vidStepAssignToDay(vsVid,vsStep,ds);
+            }
+          }
         } else if(sid.startsWith('shop-cal-')){
           const shopId2=sid.replace('shop-cal-','');const s=st.shopping.find(x=>String(x.id)===String(shopId2));
           if(s&&!st.blocks.some(b=>b.ds===ds&&String(b.shopId)===String(shopId2))){

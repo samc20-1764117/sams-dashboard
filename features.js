@@ -5554,6 +5554,7 @@ document.addEventListener('keydown',async e=>{
         if(t)_copiedTasks.push({...t});
       }
     });
+    if(_copiedTasks.length)showToast(`Copied ${_copiedTasks.length} item${_copiedTasks.length>1?'s':''}`,'#6d5fe6',1500);
     return;
   }
   // Cmd+V: paste copied blocks
