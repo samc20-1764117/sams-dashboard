@@ -3373,6 +3373,7 @@ function _vidStepDayMapSet(m){localStorage._vidStepDayMap=JSON.stringify(m);}
 const _VID_STEP_LABELS={step_build:'Build',step_vo:'VO',step_cut:'Cut',step_thumbnail:'Th',step_description:'Des'};
 function _vidStepReconstructBlocks(){
   const m=_vidStepDayMap();let mapChanged=false;
+  const _dbg292=m['292::step_build'];if(_dbg292)console.log('[RECONSTRUCT] 292::step_build BEFORE:',JSON.stringify(_dbg292));
   // 1. Tag untagged video blocks with vidstep metadata
   (st.blocks||[]).filter(bl=>!bl._vidStepVid&&bl.cat==='Videos'&&!bl._vidId).forEach(bl=>{
     for(const [key] of Object.entries(m)){
@@ -3391,7 +3392,7 @@ function _vidStepReconstructBlocks(){
     if(seen.has(key))return;seen.add(key);
     if(!m[key]||m[key].ds!==todayDs){m[key]={ds:todayDs,done:m[key]?m[key].done:false};mapChanged=true;}
   });
-  if(mapChanged)_vidStepDayMapSet(m);
+  if(mapChanged){console.log('[RECONSTRUCT] MAP CHANGED! 292::step_build AFTER:',JSON.stringify(m['292::step_build']));_vidStepDayMapSet(m);}
 }
 function _vidStepAssignToDay(vidId,step,ds){
   _vidStepReconstructBlocks();
