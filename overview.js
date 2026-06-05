@@ -3398,6 +3398,7 @@ function _vidStepAssignToDay(vidId,step,ds){
   const m=_vidStepDayMap();const key=vidId+'::'+step;
   const prev=m[key]||null;
   const prevDs=prev?prev.ds:null;
+  console.log('[ASSIGN] vidId:',vidId,'step:',step,'ds:',ds,'prevDs:',prevDs,'key:',key,'mapEntry:',JSON.stringify(prev));
   m[key]={ds,done:prev?prev.done:false};_vidStepDayMapSet(m);
   // Move timeblock blocks to new day
   if(prevDs&&prevDs!==ds){
