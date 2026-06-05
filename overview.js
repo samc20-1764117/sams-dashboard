@@ -6688,6 +6688,14 @@ function dropOnTB(e,ds,h,row,smOverride){
     }
     const _vsLabel=(_VID_STEP_LABELS[_vsStep]||_vsStep.replace('step_',''))+': '+(_vsV.topic||_vsV.title);
     _vidStepAssignToDay(_vsVidId,_vsStep,ds);
+    // Only create a new block if _vidStepAssignToDay didn't already move one here
+    const existingOnDay=st.blocks.find(bl=>String(bl._vidStepVid)===String(_vsVidId)&&bl._vidStepName===_vsStep&&bl.ds===ds);
+    if(existingOnDay){
+      // Block was moved here — just update its time position
+      existingOnDay.sm=sm;sbUpdateBlock(existingOnDay.id,{start_minutes:sm});
+      dragId=null;save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
+      return;
+    }
     const _vsDur=(_vsStep==='step_build'||_vsStep==='step_vo'||_vsStep==='step_cut')?60:30;
     const blk={id:crypto.randomUUID(),title:_vsLabel,ds,sm,dur:_vsDur,cat:'Videos',_vidStepVid:_vsVidId,_vidStepName:_vsStep};
     st.blocks.push(blk);dragId=null;save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
@@ -6874,6 +6882,111 @@ function updateNowLine(){
 if(!window._nowLineInterval)window._nowLineInterval=setInterval(updateNowLine,60000);
 function onRM(e){if(!resizing)return;const b=st.blocks.find(x=>x.id===resizing.id);if(!b)return;const delta=Math.round((e.clientY-resizing.sy)/PX/15)*15;b.dur=Math.max(15,resizing.sd+delta);if(resizing.others)resizing.others.forEach(o=>{const ob=st.blocks.find(x=>String(x.id)===o.id);if(ob)ob.dur=Math.max(15,o.sd+delta);});renderDayTB();}
 function onRU(){if(!resizing)return;const bid=resizing.id;const prevDur=resizing.sd;const others=(resizing.others||[]).slice();resizing=null;document.removeEventListener('mousemove',onRM);document.removeEventListener('mouseup',onRU);const b=st.blocks.find(x=>x.id===bid);if(!b)return;const newDur=b.dur;const otherNewDurs=others.map(o=>{const ob=st.blocks.find(x=>String(x.id)===o.id);return{id:o.id,prev:o.sd,cur:ob?ob.dur:o.sd};});pushUndo(()=>{b.dur=prevDur;sbUpdateBlock(bid,{duration_minutes:prevDur});otherNewDurs.forEach(o=>{const ob=st.blocks.find(x=>String(x.id)===o.id);if(ob){ob.dur=o.prev;sbUpdateBlock(o.id,{duration_minutes:o.prev});}});save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();},'Resized block'+(others.length?'s':''));save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();sbUpdateBlock(bid,{duration_minutes:newDur});otherNewDurs.forEach(o=>sbUpdateBlock(o.id,{duration_minutes:o.cur}));}
+// ── 'A' key: add selected today-list items to TB at current time ──────────────
+function _addSelectedToTB(sids){
+  const ds=d2s(getDayDate(dayOff));
+  const now=new Date();const nowSm=now.getHours()*60+now.getMinutes();
+  let sm=Math.round(nowSm/15)*15;
+  const autoDur=(name,category)=>{const c=(category||'').toLowerCase();const n=(name||'').toLowerCase();if(c==='social'||/social/.test(n))return 180;if(c==='work'||c==='my work'||c==='recurring'||/\bheb\b/.test(n)||/pilates/.test(n))return 60;return 30;};
+  const wkKey2=getWkKey(wkOff);
+  let added=0;const undos=[];const newBlks=[];
+  for(const sid of sids){
+    // Regular task
+    const t=st.tasks.find(x=>String(x.id)===sid);
+    if(t&&!t._virtual){
+      if(st.blocks.some(b=>String(b.taskId)===sid&&b.ds===ds))continue;
+      const dur=autoDur(t.name,t.category);
+      const blk={id:crypto.randomUUID(),title:t.name,ds,sm,dur,cat:t.category||'Home',taskId:sid};
+      st.blocks.push(blk);newBlks.push(blk);sbSaveBlock(blk);
+      undos.push(()=>{st.blocks=st.blocks.filter(b=>b.id!==blk.id);sbDeleteBlock(blk.id);});
+      sm+=dur;added++;continue;
+    }
+    // Vidstep (Build/VO/Cut only)
+    if(sid.startsWith('vidstep-')){
+      const m=sid.match(/^vidstep-(.+)-(step_\w+)$/);
+      if(m){
+        const vidId=m[1],step=m[2];
+        if(step==='step_thumbnail'||step==='step_description')continue;
+        _vidStepAssignToDay(vidId,step,ds);
+        added++;
+      }
+      continue;
+    }
+    // WR rules
+    if(sid.startsWith('wrrule-virt-')||sid.startsWith('wrrule-')){
+      const rid=sid.replace('wrrule-virt-','').replace('wrrule-','');
+      const r=st.wrRules.find(x=>String(x.id)===String(rid));
+      if(r&&!st.blocks.some(b=>b.ds===ds&&(String(b.ruleId)===String(rid)||String(b.recId)===String(rid)))){
+        const prevOv=r._dateOverrides?{...r._dateOverrides}:{};if(!r._dateOverrides)r._dateOverrides={};r._dateOverrides[wkKey2]=ds;
+        const blk={id:crypto.randomUUID(),title:r.name,ds,sm,dur:30,cat:'Recurring',ruleId:String(r.id),recId:String(r.id)};
+        st.blocks.push(blk);newBlks.push(blk);sbSaveBlock(blk);sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},`?id=eq.${rid}`);
+        undos.push(()=>{r._dateOverrides=prevOv;sbReq('PATCH','wr_recurring_rules',{date_overrides:prevOv},`?id=eq.${rid}`);});
+        sm+=30;added++;
+      }
+      continue;
+    }
+    // WR recurring (wrec)
+    if(sid.startsWith('wrec-')){
+      const rid=sid.replace('wrec-','');
+      const r=st.recurring.find(x=>String(x.id)===String(rid));
+      if(r&&!st.blocks.some(b=>b.ds===ds&&String(b.recId)===String(rid))){
+        const dur=r.default_tb_duration||autoDur(r.name,'Recurring');
+        const prevOv=r._dateOverrides?{...r._dateOverrides}:{};if(!r._dateOverrides)r._dateOverrides={};r._dateOverrides[wkKey2]=ds;
+        const blk={id:crypto.randomUUID(),title:r.name,ds,sm,dur,cat:'Recurring',recId:String(r.id)};
+        st.blocks.push(blk);newBlks.push(blk);sbSaveBlock(blk);sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));
+        undos.push(()=>{r._dateOverrides=prevOv;sbReq('PATCH','wr_recurring_rules',{date_overrides:prevOv},recQs(r.id));});
+        sm+=dur;added++;
+      }
+      continue;
+    }
+    // Non-WR recurring
+    if(sid.startsWith('rec-virt-')){
+      const recId=sid.replace('rec-virt-','');
+      if(st.blocks.some(b=>String(b.recId)===recId&&b.ds===ds))continue;
+      const r=st.recurring.find(x=>String(x.id)===recId);if(!r)continue;
+      const dur=r.default_tb_duration||autoDur(r.name,'Recurring');
+      const prevOv=r._dateOverrides?{...r._dateOverrides}:{};if(!r._dateOverrides)r._dateOverrides={};r._dateOverrides[wkKey2]=ds;
+      const blk={id:crypto.randomUUID(),title:r.name,ds,sm,dur,cat:'Recurring',recId};
+      st.blocks.push(blk);newBlks.push(blk);sbSaveBlock(blk);sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));
+      undos.push(()=>{r._dateOverrides=prevOv;sbReq('PATCH','wr_recurring_rules',{date_overrides:prevOv},recQs(r.id));});
+      sm+=dur;added++;continue;
+    }
+    // Shopping
+    if(sid.startsWith('shop-cal-')){
+      const shopId=sid.replace('shop-cal-','');
+      const s=st.shopping.find(x=>String(x.id)===String(shopId));
+      if(s&&!st.blocks.some(b=>b.ds===ds&&String(b.shopId)===String(shopId))){
+        const dur=autoDur(s.name,'Shopping');
+        const prevDue=s.due_date;s.due_date=ds;
+        const blk={id:crypto.randomUUID(),title:s.name,ds,sm,dur,cat:'Shopping',shopId:String(s.id)};
+        st.blocks.push(blk);newBlks.push(blk);sbSaveBlock(blk);sbReqNullable('PATCH','shopping_list',{due_date:ds},`?id=eq.${s.id}`);
+        undos.push(()=>{s.due_date=prevDue;sbReqNullable('PATCH','shopping_list',{due_date:prevDue||null},`?id=eq.${s.id}`);});
+        sm+=dur;added++;
+      }
+      continue;
+    }
+    // Pup sessions
+    if(sid.startsWith('pup-sess-')){
+      const sessId=sid.replace('pup-sess-','');
+      const sess=st.pupSessions.find(s=>String(s.id)===String(sessId));
+      if(sess){
+        const sk=(st.pup_skills||[]).find(x=>String(x.id)===String(sess.skill_id));
+        if(sk&&!st.blocks.some(b=>b.ds===ds&&b.cat==='pup_session'&&String(b._pupSessId)===String(sessId))){
+          const blk={id:crypto.randomUUID(),title:sk.skill,ds,sm,dur:30,cat:'pup_session',_pupSessId:String(sessId)};
+          st.blocks.push(blk);newBlks.push(blk);sbSaveBlock(blk);
+          undos.push(()=>{st.blocks=st.blocks.filter(b=>b.id!==blk.id);sbDeleteBlock(blk.id);});
+          sm+=30;added++;
+        }
+      }
+      continue;
+    }
+  }
+  if(added){
+    save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
+    if(undos.length)pushUndo(()=>{undos.forEach(fn=>fn());newBlks.forEach(b=>sbDeleteBlock(b.id));st.blocks=st.blocks.filter(b=>!newBlks.some(nb=>nb.id===b.id));save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();},'Added to time block');
+    showToast('Added to time block','#6d5fe6',1200);
+  }
+}
 // ── Tab cycling through TB blocks + auto blocks + today's unassigned tasks ────
 function _tbTabCycle(reverse){
   const ds=d2s(getDayDate(dayOff));
