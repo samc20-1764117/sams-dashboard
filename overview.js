@@ -3373,7 +3373,6 @@ function _vidStepDayMapSet(m){localStorage._vidStepDayMap=JSON.stringify(m);}
 const _VID_STEP_LABELS={step_build:'Build',step_vo:'VO',step_cut:'Cut',step_thumbnail:'Th',step_description:'Des'};
 function _vidStepReconstructBlocks(){
   const m=_vidStepDayMap();let mapChanged=false;
-  const _dbg292=m['292::step_build'];if(_dbg292)console.log('[RECONSTRUCT] 292::step_build BEFORE:',JSON.stringify(_dbg292));
   // 1. Tag untagged video blocks with vidstep metadata
   (st.blocks||[]).filter(bl=>!bl._vidStepVid&&bl.cat==='Videos'&&!bl._vidId).forEach(bl=>{
     for(const [key] of Object.entries(m)){
@@ -3392,7 +3391,7 @@ function _vidStepReconstructBlocks(){
     if(seen.has(key))return;seen.add(key);
     if(!m[key]||m[key].ds!==todayDs){m[key]={ds:todayDs,done:m[key]?m[key].done:false};mapChanged=true;}
   });
-  if(mapChanged){console.log('[RECONSTRUCT] MAP CHANGED! 292::step_build AFTER:',JSON.stringify(m['292::step_build']));_vidStepDayMapSet(m);}
+  if(mapChanged)_vidStepDayMapSet(m);
 }
 function _vidStepAssignToDay(vidId,step,ds){
   _vidStepReconstructBlocks();
@@ -3471,10 +3470,8 @@ function _vidStepTasksForDayWithOverdue(todayDs){
     const [vidId,step]=key.split('::');
     const v=(st.videos||[]).find(x=>String(x.id)===String(vidId)&&!x.is_deleted);if(!v)return;
     if(v[step]==='na')return;
-    // Auto-move overdue map entries to today — reset done state and uncheck any old TB blocks
-    if(val.ds<todayDs){val.ds=todayDs;val.done=false;m[key]=val;moved=true;
-      (st.blocks||[]).filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step&&bl._done).forEach(bl=>{bl._done=false;sbUpdateBlock(bl.id,{done:false});});
-    }
+    // Show overdue steps on today but don't auto-move them (user may have placed them intentionally)
+    if(val.ds<todayDs){/* keep on original day — will show here as overdue */}
     const isDone=v[step]==='done'||_vidStepComputeDone(vidId,step,val.ds,val);
     const label=_VID_STEP_LABELS[step]||step.replace('step_','');
     tasks.push({id:'vidstep-'+key.replace('::','-'),name:label+': '+(v.topic||v.title),category:'Videos',due_date:todayDs,done:isDone,_vidId:vidId,_vidStep:step,_virtual:true,_type:'vidstep'});
