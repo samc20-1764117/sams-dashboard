@@ -5596,8 +5596,9 @@ document.addEventListener('keydown',async e=>{
         // Only Build/VO/Cut can be pasted onto a day — Th/Des cannot
         if(t._vidStep==='step_thumbnail'||t._vidStep==='step_description'){if(typeof showToast==='function')showToast('Th/Des steps can\'t be pasted to a day','#ef4444',1500);return;}
         const pasteDate=(activePg==='overview'&&Array.isArray(_pasteColDates)&&_pasteColDates.length)?_pasteColDates[0]:d2s(getDayDate(dayOff));
+        console.log('[PASTE VIDSTEP] vidId:',t._vidId,'step:',t._vidStep,'pasteDate:',pasteDate,'dayOff:',dayOff);
         // Assign step to the target day (moves daymap + creates TB block)
-        if(typeof _vidStepAssignToDay==='function')_vidStepAssignToDay(t._vidId,t._vidStep,pasteDate);
+        if(typeof _vidStepAssignToDay==='function'){console.log('[PASTE VIDSTEP] calling _vidStepAssignToDay');_vidStepAssignToDay(t._vidId,t._vidStep,pasteDate);}else{console.log('[PASTE VIDSTEP] _vidStepAssignToDay NOT found');}
       } else {
         const dates=(activePg==='overview'&&Array.isArray(_pasteColDates)&&_pasteColDates.length)?_pasteColDates:[t.due_date];
         for(const pasteDate of dates){
