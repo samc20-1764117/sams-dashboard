@@ -5564,6 +5564,8 @@ document.addEventListener('keydown',async e=>{
         save();renderRecOv();renderWeeklyPage();renderToday();renderWkSummary();renderWkCal();
         pushUndo(()=>{st.recurring=st.recurring.filter(x=>x.id!==tempId&&!(sv&&sv[0]&&x.id===sv[0].id));save();renderRecOv();renderWeeklyPage();renderToday();renderWkSummary();renderWkCal();},'Duplicated recurring');
       } else if(t._isVidStep){
+        // Only Build/VO/Cut can be pasted onto a day — Th/Des cannot
+        if(t._vidStep==='step_thumbnail'||t._vidStep==='step_description'){if(typeof showToast==='function')showToast('Th/Des steps can\'t be pasted to a day','#ef4444',1500);return;}
         // Paste creates a standalone TB block on the target day — does NOT move the vidstep assignment
         const pasteDate=(activePg==='overview'&&Array.isArray(_pasteColDates)&&_pasteColDates.length)?_pasteColDates[0]:d2s(getDayDate(dayOff));
         const _vsDur=(t._vidStep==='step_build'||t._vidStep==='step_vo'||t._vidStep==='step_cut')?60:30;
