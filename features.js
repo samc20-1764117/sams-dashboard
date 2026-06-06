@@ -5256,7 +5256,7 @@ document.addEventListener('keydown',async e=>{
           rt.due_date=newDs;
           removeTBBlocksForDate(newDs,{taskId:rt.id,oldDs:prevDs});
           // Re-create timeblock on new day
-          if(savedTBs.length){const nb={id:crypto.randomUUID(),title:rt.name,ds:newDs,sm:savedTBs[0].sm,dur:savedTBs[0].dur,cat:rt.category||'',taskId:sid};st.blocks.push(nb);sbSaveBlock(nb);}
+          if(savedTBs.length&&!st.blocks.some(b=>String(b.taskId)===sid&&b.ds===newDs)){const nb={id:crypto.randomUUID(),title:rt.name,ds:newDs,sm:savedTBs[0].sm,dur:savedTBs[0].dur,cat:rt.category||'',taskId:sid};st.blocks.push(nb);sbSaveBlock(nb);}
           sbReqNullable('PATCH','tasks',{due_date:newDs},`?id=eq.${sid}`);
           undos.push(()=>{rt.due_date=prev;const nBlks=st.blocks.filter(b=>String(b.taskId)===sid&&b.ds===newDs);nBlks.forEach(b=>sbDeleteBlock(b.id));st.blocks=st.blocks.filter(b=>!(String(b.taskId)===sid&&b.ds===newDs));savedTBs.forEach(b=>{if(!st.blocks.find(y=>y.id===b.id))st.blocks.push(b);sbSaveBlock(b);});sbReqNullable('PATCH','tasks',{due_date:prev},`?id=eq.${sid}`);});
           moved=true;continue;

@@ -161,6 +161,21 @@ function renderToday(){
   const _hasTabTask0=vid=>{const m='_vid:'+vid;return st.tasks.some(t=>t.notes&&t.notes.includes(m));};
   const _vidOnTBToday=new Set(st.blocks.filter(b=>b.ds===ds&&b._vidId).map(b=>String(b._vidId)));
   const vidToday=(st.videos||[]).filter(v=>{if(v.is_deleted)return false;const vd=_vdmToday[String(v.id)];if(vd===ds)return true;if(_vidOnTBToday.has(String(v.id)))return true;if(_vidStillPending(v)&&v.post_date&&(v.post_date===ds||(dayOff===0&&v.post_date<ds))&&!_hasTabTask0(v.id))return true;return false;}).map(v=>({id:'vid-ov-'+v.id,name:v.topic||v.title,category:'Videos',due_date:ds,done:v.status==='published',_vidId:v.id,_virtual:true,_type:'vid'}));
+  // Auto-move overdue vidstep daymap entries to today (same as regular videos)
+  if(dayOff===0){
+    const _vsm0=_vidStepDayMap();let _vsm0Changed=false;
+    Object.entries(_vsm0).forEach(([key,val])=>{
+      if(val.ds&&val.ds<ds&&!val.done){
+        const [vidId,step]=key.split('::');
+        const v=(st.videos||[]).find(x=>String(x.id)===String(vidId)&&!x.is_deleted);
+        if(!v||v[step]==='na'||v[step]==='done')return;
+        // Move blocks from old day to today
+        (st.blocks||[]).filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step&&bl.ds===val.ds).forEach(bl=>{bl.ds=ds;sbUpdateBlock(bl.id,{day_date:ds});});
+        _vsm0[key].ds=ds;_vsm0Changed=true;
+      }
+    });
+    if(_vsm0Changed)_vidStepDayMapSet(_vsm0);
+  }
   const vidStepToday=dayOff===0?_vidStepTasksForDayWithOverdue(ds):_vidStepTasksForDay(ds);
   const finCancelToday=typeof _finCancelTasksForDate==='function'?_finCancelTasksForDate(ds):[];
   const virtToday=[
@@ -1449,7 +1464,7 @@ function renderWkCal(){
           let _newSm=null,_newDur=null;
           if(x.savedTBs.length){_newSm=x.savedTBs[0].sm;_newDur=x.savedTBs[0].dur;}
           else if(_tmM){const _eAp=(_tmM[6]||'').toLowerCase();const _sAp=(_tmM[3]||_tmM[6]||'').toLowerCase();let h=parseInt(_tmM[1]),mm=parseInt(_tmM[2]||'0');if(_sAp==='pm'&&h!==12)h+=12;else if(_sAp==='am'&&h===12)h=0;else if(!_sAp&&h>=1&&h<=8)h+=12;_newSm=h*60+mm;if(_tmM[4]){let eh=parseInt(_tmM[4]),emm=parseInt(_tmM[5]||'0');if(_eAp==='pm'&&eh!==12)eh+=12;else if(_eAp==='am'&&eh===12)eh=0;else if(!_eAp&&eh>=1&&eh<=8)eh+=12;const endSm=eh*60+emm;if(endSm>_newSm)_newDur=endSm-_newSm;}if(!_newDur){const lc=(x.t.category||'').toLowerCase();_newDur=lc==='social'?180:lc==='work'||lc==='my work'||lc==='recurring'?60:30;}}
-          if(_newSm!==null){const _nb={id:crypto.randomUUID(),title:x.t.name,ds,sm:_newSm,dur:_newDur,cat:x.t.category||'',taskId:String(x.t.id)};st.blocks.push(_nb);sbSaveBlock(_nb);}
+          if(_newSm!==null&&!st.blocks.some(b=>String(b.taskId)===String(x.t.id)&&b.ds===ds)){const _nb={id:crypto.randomUUID(),title:x.t.name,ds,sm:_newSm,dur:_newDur,cat:x.t.category||'',taskId:String(x.t.id)};st.blocks.push(_nb);sbSaveBlock(_nb);}
         });
         dragId=null;save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
         pushUndo(()=>{
