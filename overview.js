@@ -3483,8 +3483,8 @@ function _vidStepTasksForDayWithOverdue(todayDs){
     const [vidId,step]=key.split('::');
     const v=(st.videos||[]).find(x=>String(x.id)===String(vidId)&&!x.is_deleted);if(!v)return;
     if(v[step]==='na')return;
-    // Show overdue steps on today but don't auto-move them (user may have placed them intentionally)
-    if(val.ds<todayDs){/* keep on original day — will show here as overdue */}
+    // Auto-move overdue map entries to today
+    if(val.ds<todayDs){val.ds=todayDs;val.done=false;m[key]=val;moved=true;}
     const isDone=v[step]==='done'||_vidStepComputeDone(vidId,step,val.ds,val);
     const label=_VID_STEP_LABELS[step]||step.replace('step_','');
     tasks.push({id:'vidstep-'+key.replace('::','-'),name:label+': '+(v.topic||v.title),category:'Videos',due_date:todayDs,done:isDone,_vidId:vidId,_vidStep:step,_virtual:true,_type:'vidstep'});
@@ -3493,7 +3493,8 @@ function _vidStepTasksForDayWithOverdue(todayDs){
   return tasks;
 }
 function _vidStepTasksForDay(ds){
-  const m=_vidStepDayMap();const tasks=[];
+  const m=_vidStepDayMap();const tasks=[];const seen=new Set();
+  // 1. Steps assigned to this day via daymap
   Object.entries(m).forEach(([key,val])=>{
     if(val.ds!==ds)return;
     const [vidId,step]=key.split('::');
@@ -3501,6 +3502,17 @@ function _vidStepTasksForDay(ds){
     const label=_VID_STEP_LABELS[step]||step.replace('step_','');
     const isDone=v[step]==='done'||_vidStepComputeDone(vidId,step,ds,val);
     tasks.push({id:'vidstep-'+key.replace('::','-'),name:label+': '+(v.topic||v.title),category:'Videos',due_date:ds,done:isDone,_vidId:vidId,_vidStep:step,_virtual:true,_type:'vidstep'});
+    seen.add(key);
+  });
+  // 2. Steps that have TB blocks on this day but daymap points elsewhere (multi-day Build/VO/Cut)
+  (st.blocks||[]).filter(bl=>bl._vidStepVid&&bl._vidStepName&&bl.ds===ds).forEach(bl=>{
+    const key=bl._vidStepVid+'::'+bl._vidStepName;
+    if(seen.has(key))return;seen.add(key);
+    const v=(st.videos||[]).find(x=>String(x.id)===String(bl._vidStepVid)&&!x.is_deleted);if(!v)return;
+    const step=bl._vidStepName;
+    const label=_VID_STEP_LABELS[step]||step.replace('step_','');
+    const isDone=v[step]==='done'||_vidStepComputeDone(bl._vidStepVid,step,ds,null);
+    tasks.push({id:'vidstep-'+key.replace('::','-'),name:label+': '+(v.topic||v.title),category:'Videos',due_date:ds,done:isDone,_vidId:bl._vidStepVid,_vidStep:step,_virtual:true,_type:'vidstep'});
   });
   return tasks;
 }
