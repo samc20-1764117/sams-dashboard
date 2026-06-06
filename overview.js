@@ -161,26 +161,7 @@ function renderToday(){
   const _hasTabTask0=vid=>{const m='_vid:'+vid;return st.tasks.some(t=>t.notes&&t.notes.includes(m));};
   const _vidOnTBToday=new Set(st.blocks.filter(b=>b.ds===ds&&b._vidId).map(b=>String(b._vidId)));
   const vidToday=(st.videos||[]).filter(v=>{if(v.is_deleted)return false;const vd=_vdmToday[String(v.id)];if(vd===ds)return true;if(_vidOnTBToday.has(String(v.id)))return true;if(_vidStillPending(v)&&v.post_date&&(v.post_date===ds||(dayOff===0&&v.post_date<ds))&&!_hasTabTask0(v.id))return true;return false;}).map(v=>({id:'vid-ov-'+v.id,name:v.topic||v.title,category:'Videos',due_date:ds,done:v.status==='published',_vidId:v.id,_virtual:true,_type:'vid'}));
-  // Auto-move overdue vidstep daymap entries + orphaned blocks to today
-  if(dayOff===0){
-    const _vsm0=_vidStepDayMap();let _vsm0Changed=false;
-    // 1. Move daymap entries from past days to today
-    Object.entries(_vsm0).forEach(([key,val])=>{
-      if(val.ds&&val.ds<ds&&!val.done){
-        const [vidId,step]=key.split('::');
-        const v=(st.videos||[]).find(x=>String(x.id)===String(vidId)&&!x.is_deleted);
-        if(!v||v[step]==='na'||v[step]==='done')return;
-        _vsm0[key].ds=ds;_vsm0Changed=true;
-      }
-    });
-    if(_vsm0Changed)_vidStepDayMapSet(_vsm0);
-    // 2. Move ALL vidstep blocks on past days to today (including orphaned multi-day blocks)
-    (st.blocks||[]).filter(bl=>bl._vidStepVid&&bl._vidStepName&&bl.ds<ds&&!bl._done).forEach(bl=>{
-      const v=(st.videos||[]).find(x=>String(x.id)===String(bl._vidStepVid)&&!x.is_deleted);
-      if(!v||v[bl._vidStepName]==='na'||v[bl._vidStepName]==='done')return;
-      bl.ds=ds;sbUpdateBlock(bl.id,{day_date:ds});
-    });
-  }
+  // No auto-move for vidsteps — they stay on their assigned day and show as overdue in today list
   const vidStepToday=dayOff===0?_vidStepTasksForDayWithOverdue(ds):_vidStepTasksForDay(ds);
   const finCancelToday=typeof _finCancelTasksForDate==='function'?_finCancelTasksForDate(ds):[];
   const virtToday=[
