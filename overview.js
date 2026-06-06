@@ -83,8 +83,8 @@ function renderOv(){
 function renderSummaryMetrics(){
   const ds=d2s(getDayDate(dayOff));
   const blocked=st.blocks.filter(b=>b.ds===ds).reduce((s,b)=>s+b.dur,0);
-  const _todVidSteps=typeof _vidStepTasksForDayWithOverdue==='function'?_vidStepTasksForDayWithOverdue(ds):[];
-  const ovCount=st.tasks.filter(t=>!t.done&&isOv(t.due_date)&&t.category!=='Weekly Goals').length+st.shopping.filter(s=>!s.done&&s.due_date&&isOv(s.due_date)).length+_todVidSteps.filter(t=>t._overdue&&!t.done).length;
+  const _vidStepOvCount=(()=>{const m=typeof _vidStepDayMap==='function'?_vidStepDayMap():{};let c=0;Object.entries(m).forEach(([key,val])=>{if(val.ds>=ds||val.done)return;const[vidId,step]=key.split('::');const v=(st.videos||[]).find(x=>String(x.id)===String(vidId)&&!x.is_deleted);if(!v||v[step]==='na'||v[step]==='done')return;c++;});return c;})();
+  const ovCount=st.tasks.filter(t=>!t.done&&isOv(t.due_date)&&t.category!=='Weekly Goals').length+st.shopping.filter(s=>!s.done&&s.due_date&&isOv(s.due_date)).length+_vidStepOvCount;
   const tpEl=document.getElementById('todPct'),wpEl=document.getElementById('wkPct');
   const el_tp=document.getElementById('smTodayPct'),el_wp=document.getElementById('smWkPct'),el_bl=document.getElementById('smBlocked'),el_ov=document.getElementById('smOverdue');
   if(el_tp&&tpEl)el_tp.textContent=tpEl.textContent||'0%';
@@ -894,19 +894,19 @@ function tRowVidVirt(t,arr){
   </div>`;
 }
 function tRowVidStepVirt(t,arr){
-  const ov=(isOv(t.due_date)||t._overdue)&&!t.done;
+  const ov=isOv(t.due_date)&&!t.done;
   const _vs=ov?_OV():gc('videos');
   return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''}" id="ti-${t.id}" draggable="true"
     ondragstart="dragId='vidstep::${t._vidId}::${t._vidStep}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true)"
     ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false)"
     onclick="selTask(event,'${t.id}')"
     ondblclick="if(typeof openVidEdit==='function')openVidEdit('${t._vidId}')">
-    <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="_vidStepToggleDone('${t._vidId}','${t._vidStep}',this.checked,false,'${t.due_date}')"></label>
+    <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="_vidStepToggleDone('${t._vidId}','${t._vidStep}',this.checked)"></label>
     <span class="tn">${escHtml(t.name)}</span>
     ${ov&&t.due_date?`<span class="dlbl ov">${['S','M','T','W','T','F','S'][new Date(t.due_date.split('T')[0]+'T12:00').getDay()]}</span>`:''}
     ${!ov?`<svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3" fill="${_vs.bg}" stroke="${_vs.d}" stroke-opacity="0.4" stroke-width="1"/></svg>`:''}
     ${arr?'<span class="tb-arrow">›</span>':''}
-    <button class="delbtn" onclick="event.stopPropagation();_vidStepUnassign('${t._vidId}','${t._vidStep}','${t.due_date}')">✕</button>
+    <button class="delbtn" onclick="event.stopPropagation();_vidStepUnassign('${t._vidId}','${t._vidStep}')">✕</button>
   </div>`;
 }
 function _pupSessStyle(){
@@ -1508,7 +1508,7 @@ function renderWkCal(){
     ],ds);
     let dayTasks=[...undoneDay,...doneDay];
     dayTasks.forEach(t=>{
-      const ov=(isOv(t.due_date)||t._overdue)&&!t.done,imp=t.important&&!ov&&!t.done;
+      const ov=isOv(t.due_date)&&!t.done,imp=t.important&&!ov&&!t.done;
       const _chipCat=(t._isWrec||t._isWrRule)?'weekly_reset':(t._virtual&&t._recId?'recurring':t.category);
       const s=ov?_OV():imp?_IMP():(t._type==='fin-cancel'&&!t.done)?_IMP():t._type==='vid'?gc('videos'):t._type==='vidstep'?gc('videos'):t._type==='pup'?_pupSessStyle():gc(_chipCat);
       const chip=document.createElement('div');chip.className='chip'+(t.done?' done-chip':'')+(t._type==='fin-cancel'&&!t.done?' imp-row':'');
@@ -3505,20 +3505,16 @@ function _vidStepComputeDone(vidId,step,ds,mapEntry){
   return !!(mapEntry&&mapEntry.done);
 }
 function _vidStepTasksForDayWithOverdue(todayDs){
-  const m=_vidStepDayMap();const tasks=[];let moved=false;
+  const m=_vidStepDayMap();const tasks=[];
   Object.entries(m).forEach(([key,val])=>{
     if(val.ds>todayDs)return;// future — skip
     const [vidId,step]=key.split('::');
     const v=(st.videos||[]).find(x=>String(x.id)===String(vidId)&&!x.is_deleted);if(!v)return;
     if(v[step]==='na')return;
-    // Auto-move overdue map entries to today
-    const wasOverdue=val.ds<todayDs;
-    if(wasOverdue){val.ds=todayDs;val.done=false;m[key]=val;moved=true;}
     const isDone=v[step]==='done'||_vidStepComputeDone(vidId,step,val.ds,val);
     const label=_VID_STEP_LABELS[step]||step.replace('step_','');
-    tasks.push({id:'vidstep-'+key.replace('::','-'),name:label+': '+(v.topic||v.title),category:'Videos',due_date:todayDs,done:isDone,_vidId:vidId,_vidStep:step,_virtual:true,_type:'vidstep',_overdue:wasOverdue&&!isDone});
+    tasks.push({id:'vidstep-'+key.replace('::','-'),name:label+': '+(v.topic||v.title),category:'Videos',due_date:val.ds,done:isDone,_vidId:vidId,_vidStep:step,_virtual:true,_type:'vidstep'});
   });
-  if(moved)_vidStepDayMapSet(m);
   return tasks;
 }
 function _vidStepTasksForDay(ds){
