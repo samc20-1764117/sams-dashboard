@@ -3448,9 +3448,9 @@ function _vidStepAddBlock(vidId,step,ds){
   const now=new Date();const sm=Math.round((now.getHours()*60+now.getMinutes())/15)*15;
   const blk={id:crypto.randomUUID(),title:label,ds,sm,dur,cat:'Videos',_vidStepVid:String(vidId),_vidStepName:step};
   st.blocks.push(blk);sbSaveBlock(blk);
-  // Ensure daymap has an entry (use earliest day)
+  // Ensure daymap has an entry if none exists (don't change existing)
   const m=_vidStepDayMap();const key=vidId+'::'+step;
-  if(!m[key]||m[key].ds>ds){m[key]={ds,done:false};_vidStepDayMapSet(m);}
+  if(!m[key]){m[key]={ds,done:false};_vidStepDayMapSet(m);}
   save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
   pushUndo(()=>{st.blocks=st.blocks.filter(b=>b.id!==blk.id);sbDeleteBlock(blk.id);save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();},'Added step block');
 }
