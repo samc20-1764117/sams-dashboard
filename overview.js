@@ -161,20 +161,25 @@ function renderToday(){
   const _hasTabTask0=vid=>{const m='_vid:'+vid;return st.tasks.some(t=>t.notes&&t.notes.includes(m));};
   const _vidOnTBToday=new Set(st.blocks.filter(b=>b.ds===ds&&b._vidId).map(b=>String(b._vidId)));
   const vidToday=(st.videos||[]).filter(v=>{if(v.is_deleted)return false;const vd=_vdmToday[String(v.id)];if(vd===ds)return true;if(_vidOnTBToday.has(String(v.id)))return true;if(_vidStillPending(v)&&v.post_date&&(v.post_date===ds||(dayOff===0&&v.post_date<ds))&&!_hasTabTask0(v.id))return true;return false;}).map(v=>({id:'vid-ov-'+v.id,name:v.topic||v.title,category:'Videos',due_date:ds,done:v.status==='published',_vidId:v.id,_virtual:true,_type:'vid'}));
-  // Auto-move overdue vidstep daymap entries to today (same as regular videos)
+  // Auto-move overdue vidstep daymap entries + orphaned blocks to today
   if(dayOff===0){
     const _vsm0=_vidStepDayMap();let _vsm0Changed=false;
+    // 1. Move daymap entries from past days to today
     Object.entries(_vsm0).forEach(([key,val])=>{
       if(val.ds&&val.ds<ds&&!val.done){
         const [vidId,step]=key.split('::');
         const v=(st.videos||[]).find(x=>String(x.id)===String(vidId)&&!x.is_deleted);
         if(!v||v[step]==='na'||v[step]==='done')return;
-        // Move blocks from old day to today
-        (st.blocks||[]).filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step&&bl.ds===val.ds).forEach(bl=>{bl.ds=ds;sbUpdateBlock(bl.id,{day_date:ds});});
         _vsm0[key].ds=ds;_vsm0Changed=true;
       }
     });
     if(_vsm0Changed)_vidStepDayMapSet(_vsm0);
+    // 2. Move ALL vidstep blocks on past days to today (including orphaned multi-day blocks)
+    (st.blocks||[]).filter(bl=>bl._vidStepVid&&bl._vidStepName&&bl.ds<ds&&!bl._done).forEach(bl=>{
+      const v=(st.videos||[]).find(x=>String(x.id)===String(bl._vidStepVid)&&!x.is_deleted);
+      if(!v||v[bl._vidStepName]==='na'||v[bl._vidStepName]==='done')return;
+      bl.ds=ds;sbUpdateBlock(bl.id,{day_date:ds});
+    });
   }
   const vidStepToday=dayOff===0?_vidStepTasksForDayWithOverdue(ds):_vidStepTasksForDay(ds);
   const finCancelToday=typeof _finCancelTasksForDate==='function'?_finCancelTasksForDate(ds):[];
@@ -5563,6 +5568,14 @@ function _saveRecAutoTBOv(ratb,ds,prevDur,prevSm){
 function renderDayTB(){
   if(window._tbEditing)return;
   const date=getDayDate(dayOff),ds=d2s(date);
+  // Dedup: remove duplicate blocks for same task on same day (keep first)
+  const _seenTB=new Set();
+  for(let i=st.blocks.length-1;i>=0;i--){
+    const b=st.blocks[i];if(b.ds!==ds)continue;
+    const k=b.taskId?'t:'+b.taskId:b._vidId?'v:'+b._vidId:null;
+    if(!k)continue;// vidstep, rec, shop, etc. may have legitimate duplicates
+    if(_seenTB.has(k)){st.blocks.splice(i,1);sbDeleteBlock(b.id);}else _seenTB.add(k);
+  }
   const lbl=document.getElementById('dayLbl');if(lbl)lbl.textContent=isDateToday(date)?`Today ${date.toLocaleDateString('en-US',{month:'short',day:'numeric'})}`:date.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
   const grid=document.getElementById('tbGrid');if(!grid)return;grid.innerHTML='';
   // Ensure tb-scroll allows drag events through
