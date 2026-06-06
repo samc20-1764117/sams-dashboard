@@ -118,6 +118,7 @@ All indicators at far right, swap to X on hover. `cat-dot` stroke changes to acc
 - **Multi-auto-block drag**: when dragging an auto-block with other auto-blocks selected, `otherSelAtbs` collects them (by `data-atb-id` + `selectedTasks`). All move together. Persist via `base_id+date` lookup (PATCH if override exists, else POST). Undo via `_undoOtherAtbs()` included in both `pushUndo` paths.
 - **Cmd/Ctrl+I**: toggles important flag. In tModal toggles `#tImp`, in QA popup toggles `#qaImp`, otherwise toggles all selected tasks (regular, recurring, WR rules, shopping). Each flips independently. Full undo.
 - **Rubber-band on weekly cal** (`_attachWkcRubberBand`): column-aware X filtering — selBox snaps to column boundaries. Only activates when `dy>5 && dy>dx*2` (vertical drag). Left/right drag reserved for travel task creation.
+- **'A' key (today list → TB)**: when items are selected in today list and not yet on timeblock (have `.tb-arrow`), pressing 'A' calls `_addSelectedToTB(sids)`. Works for ALL item types: regular tasks, vidsteps (`_vidStepAddBlock`), WR rules, wrec, rec-virt, shopping, pup sessions. Places block at current time rounded to 15 min. Does NOT auto-select/highlight unassigned items — only operates on explicitly selected items.
 
 ## Video Tasks on Overview (Calendar Integration)
 
@@ -133,12 +134,20 @@ Video tasks assigned to days via `_vidDayMap` (localStorage) follow the SAME rul
 - **Overdue**: `_vidDayMap[id] < today` when `dayOff===0`. Shows OV style + day letter.
 - **Completion**: checkbox calls `_vidCompleteFromOv` (popup to mark steps done or whole video).
 - **Delete (✕)**: calls `_vidUnassignDay` — removes from `_vidDayMap` + deletes linked timeblock.
-- **Video stage tasks (vidstep)**: `_vidStepDayMap` entries. Overdue vidsteps auto-move to today via `_vidStepTasksForDayWithOverdue()`. Weekly cal X button calls `_vidStepUnassign` (not the recurring skip/delete picker). Selection synced across views via `selVidStepIds` set — today list ID `vidstep-{vid}-{step}` cross-references TB block's `_vidStepVid`+`_vidStepName`. Green highlight color (`vidstep-` prefix in `csForId`). Dblclick in timeblock opens `openVidEdit(b._vidStepVid)`.
+- **Video stage tasks (vidstep)**: `_vidStepDayMap` (localStorage) tracks one entry per step (`vidId::step → {ds, done}`). TB blocks provide multi-day support for Build/VO/Cut. Weekly cal X calls `_vidStepUnassign` (not skip/delete picker). Selection via today list ID `vidstep-{vid}-{step}`, cross-refs TB block's `_vidStepVid`+`_vidStepName`. Dblclick opens `openVidEdit(b._vidStepVid)`.
+- **Vidstep multi-day (Build/VO/Cut ONLY)**: These 3 stages can have TB blocks on multiple days (e.g., building Mon+Tue). `_vidStepAddBlock(vidId,step,ds)` creates a new block without moving existing ones. Daymap tracks the "primary" day; `_vidStepTasksForDay(ds)` also checks TB blocks to find steps on days the daymap doesn't point to. Th/Des are single-instance only.
+- **Vidstep overdue**: `_vidStepTasksForDayWithOverdue(todayDs)` includes entries where `val.ds <= todayDs`. Does NOT auto-move daymap — keeps original date so `isOv(due_date)` works naturally. Overdue vidsteps show red styling + day letter badge. Included in `ovCount` in `renderSummaryMetrics` (computed from daymap without mutation).
+- **Vidstep operations — today list vs weekly chips**:
+  - **Today list** (`tRowVidStepVirt`): check/delete operate on ALL blocks for the step (no day scoping). One aggregated entry per step.
+  - **Weekly chips**: check/delete pass `forDay=t.due_date` → only affect that day's blocks (independent instances).
+  - `_vidStepToggleDone(vidId,step,checked,_fromTB,forDay)` — `forDay` scopes to that day's blocks; omit for all blocks.
+  - `_vidStepUnassign(vidId,step,forDay)` — `forDay` removes only that day's blocks and reassigns daymap to another day if needed; omit to remove everything.
+- **Vidstep done computation**: `_vidStepComputeDone(vidId,step,ds,mapEntry)` — for Build/VO/Cut, checks blocks on that specific day. For Th/Des, uses daymap done flag.
 - **Vidstep default durations**: Build/VO/Cut → 60 min, Th/Des → 30 min (unless manually changed).
-- **Vidstep unassign**: `_vidStepUnassign` removes from `_vidStepDayMap` AND deletes all linked timeblock blocks (same pattern as `_vidUnassignDay` for whole videos).
 - **Vidstep cross-view sync**: toggling a stage anywhere (videos page dot via `cycleVidStep`, overview stage square, overview checkbox, video edit modal) must sync all three: `v[step]`, `_vidStepDayMap[key].done`, and timeblock block `_done`. Sync code in `cycleVidStep`, `_vidOvToggleStep`, stage square click handler, and modal save path.
-- **Vidstep copy/paste**: Cmd+C copies vidstep tasks (`_isVidStep` flag). Cmd+V creates a new timeblock block on the target day (duplicate, not move) + assigns step to that day. `_moveOtherSelected` handles vidstep IDs (`vidstep-{vid}-{step}` prefix) for multi-select drag.
+- **Vidstep copy/paste**: Cmd+C copies vidstep tasks (`_isVidStep` flag). Cmd+V on Build/VO/Cut calls `_vidStepAddBlock` (duplicate, not move). Th/Des steps can't be pasted (toast warning). Target day from `_pasteColDates` (weekly column click).
 - **Vidstep DB persistence**: `_vidStepVid` stored in `vid_id` column, `_vidStepName` in `rec_id` column. On load, blocks with `vid_id` + `rec_id` starting with `step_` are recognized as vidstep blocks. `_vidStepReconstructBlocks()` is a fallback for legacy blocks (title matching). Must run before sort and before `_hasTBToday`.
 - **Vidstep timeblock moves**: use `sbUpdateBlock(id, {day_date: ds})` — NOT `{ds}`. The DB column is `day_date`.
 - **Vidstep sorting**: `sortTasksForDay` → `tbSm()` has explicit `_type==='vidstep'` check before the `_vidId` check (vidstep blocks use `_vidStepVid`, not `_vidId`).
 - **Vidstep focus**: `_renderVidOvMenu` focus mode checks `_vidStepDayMap` entries in addition to `_vidDayMap` and `post_date`.
+- **⚠️ KNOWN ISSUE (needs fixing)**: Multi-day vidstep operations (check, delete, move, undo) are still buggy. The daymap-only-tracks-one-entry architecture conflicts with multi-day needs. Today list operates on all blocks but weekly chips are day-scoped — edge cases with overdue items, undo, and cross-view sync remain.
