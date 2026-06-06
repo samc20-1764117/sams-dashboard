@@ -3417,12 +3417,20 @@ function _vidStepReconstructBlocks(){
     }
   });
   // 2. Ensure map entries exist for any vidstep blocks on today
+  // For multi-day steps (Build/VO/Cut), only create if no entry exists — don't move existing entries to today
   const todayDs=d2s(new Date());
   const seen=new Set();
   (st.blocks||[]).filter(bl=>bl._vidStepVid&&bl._vidStepName&&bl.ds===todayDs).forEach(bl=>{
     const key=bl._vidStepVid+'::'+bl._vidStepName;
     if(seen.has(key))return;seen.add(key);
-    if(!m[key]||m[key].ds!==todayDs){m[key]={ds:todayDs,done:m[key]?m[key].done:false};mapChanged=true;}
+    const isMulti=bl._vidStepName!=='step_thumbnail'&&bl._vidStepName!=='step_description';
+    if(isMulti){
+      // Multi-day: only create entry if none exists (don't overwrite — preserves overdue on original day)
+      if(!m[key]){m[key]={ds:todayDs,done:false};mapChanged=true;}
+    } else {
+      // Single-day (Th/Des): always sync daymap to today
+      if(!m[key]||m[key].ds!==todayDs){m[key]={ds:todayDs,done:m[key]?m[key].done:false};mapChanged=true;}
+    }
   });
   if(mapChanged)_vidStepDayMapSet(m);
 }
@@ -3550,9 +3558,7 @@ function _vidStepComputeDone(vidId,step,ds,mapEntry){
   if(step!=='step_thumbnail'&&step!=='step_description'){
     const dayBlocks=(st.blocks||[]).filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step&&bl.ds===ds);
     if(dayBlocks.length>0)return dayBlocks.every(bl=>bl._done);
-    // Fallback: check all blocks if none on this specific day
-    const allBlocks=(st.blocks||[]).filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step);
-    if(allBlocks.length>0)return allBlocks.every(bl=>bl._done);
+    // No blocks on this specific day = not done for this day (no cross-day fallback)
     return false;
   }
   return !!(mapEntry&&mapEntry.done);
