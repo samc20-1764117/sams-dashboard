@@ -83,7 +83,7 @@ function renderOv(){
 function renderSummaryMetrics(){
   const ds=d2s(getDayDate(dayOff));
   const blocked=st.blocks.filter(b=>b.ds===ds).reduce((s,b)=>s+b.dur,0);
-  const _vidStepOvCount=(()=>{if(typeof _vidStepDayMap!=='function')return 0;const m=_vidStepDayMap();let c=0;const seen=new Set();Object.entries(m).forEach(([key,val])=>{if(val.ds>=ds||val.done)return;const[vidId,step]=key.split('::');const v=(st.videos||[]).find(x=>String(x.id)===String(vidId)&&!x.is_deleted);if(!v||v[step]==='na'||v[step]==='done')return;c++;seen.add(key);});(st.blocks||[]).filter(bl=>bl._vidStepVid&&bl._vidStepName&&bl.ds<ds&&bl._vidStepName!=='step_thumbnail'&&bl._vidStepName!=='step_description').forEach(bl=>{const key=bl._vidStepVid+'::'+bl._vidStepName;if(seen.has(key))return;seen.add(key);const v=(st.videos||[]).find(x=>String(x.id)===String(bl._vidStepVid)&&!x.is_deleted);if(!v||v[bl._vidStepName]==='na'||v[bl._vidStepName]==='done')return;if(_vidStepComputeDone(bl._vidStepVid,bl._vidStepName,bl.ds,null))return;c++;});return c;})();
+  const _vidStepOvCount=(()=>{if(typeof _vidStepDayMap!=='function')return 0;const m=_vidStepDayMap();let c=0;const seen=new Set();Object.entries(m).forEach(([key,val])=>{if(val.ds>=ds||val.done)return;const[vidId,step]=key.split('::');const v=(st.videos||[]).find(x=>String(x.id)===String(vidId)&&!x.is_deleted);if(!v||v[step]==='na'||v[step]==='done')return;c++;seen.add(key+'::'+val.ds);});(st.blocks||[]).filter(bl=>bl._vidStepVid&&bl._vidStepName&&bl.ds<ds&&bl._vidStepName!=='step_thumbnail'&&bl._vidStepName!=='step_description').forEach(bl=>{const dayKey=bl._vidStepVid+'::'+bl._vidStepName+'::'+bl.ds;if(seen.has(dayKey))return;seen.add(dayKey);const v=(st.videos||[]).find(x=>String(x.id)===String(bl._vidStepVid)&&!x.is_deleted);if(!v||v[bl._vidStepName]==='na'||v[bl._vidStepName]==='done')return;if(_vidStepComputeDone(bl._vidStepVid,bl._vidStepName,bl.ds,null))return;c++;});return c;})();
   const ovCount=st.tasks.filter(t=>!t.done&&isOv(t.due_date)&&t.category!=='Weekly Goals').length+st.shopping.filter(s=>!s.done&&s.due_date&&isOv(s.due_date)).length+_vidStepOvCount;
   const tpEl=document.getElementById('todPct'),wpEl=document.getElementById('wkPct');
   const el_tp=document.getElementById('smTodayPct'),el_wp=document.getElementById('smWkPct'),el_bl=document.getElementById('smBlocked'),el_ov=document.getElementById('smOverdue');
@@ -205,7 +205,10 @@ function renderToday(){
       if(isOvToday){const ov=getRecAutoTBForDate(t.due_date);if(ov.some(a=>String(a._recId)===String(t._recId)))return true;}
       return false;
     }
-    if(t._type==='vidstep')return st.blocks.some(b=>(b.ds===_todDs||isOvToday)&&String(b._vidStepVid)===String(t._vidId)&&b._vidStepName===t._vidStep);
+    if(t._type==='vidstep'){
+      const _vsDay=t._vidStepDay||_todDs;
+      return st.blocks.some(b=>b.ds===_vsDay&&String(b._vidStepVid)===String(t._vidId)&&b._vidStepName===t._vidStep);
+    }
     if(t._vidId)return st.blocks.some(b=>(b.ds===_todDs||isOvToday)&&String(b._vidId)===String(t._vidId));
     if(t._type==='pup')return st.blocks.some(b=>(b.ds===_todDs||isOvToday)&&String(b._pupSessId)===String(t._pupSessId));
     if(t._type==='fin-cancel')return st.blocks.some(b=>(b.ds===_todDs||isOvToday)&&String(b._finCancelSubId)===String(t._subId));
@@ -897,12 +900,13 @@ function tRowVidVirt(t,arr){
 function tRowVidStepVirt(t,arr){
   const ov=isOv(t.due_date)&&!t.done;
   const _vs=ov?_OV():gc('videos');
+  const _day=t._vidStepDay||'';
   return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''}" id="ti-${t.id}" draggable="true"
-    ondragstart="dragId='vidstep::${t._vidId}::${t._vidStep}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true)"
+    ondragstart="dragId='vidstep::${t._vidId}::${t._vidStep}::${_day}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true)"
     ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false)"
     onclick="selTask(event,'${t.id}')"
     ondblclick="if(typeof openVidEdit==='function')openVidEdit('${t._vidId}')">
-    <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="_vidStepToggleDone('${t._vidId}','${t._vidStep}',this.checked)"></label>
+    <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="_vidStepToggleDone('${t._vidId}','${t._vidStep}',this.checked,false,'${_day}')"></label>
     <span class="tn">${escHtml(t.name)}</span>
     ${ov&&t.due_date?`<span class="dlbl ov">${['S','M','T','W','T','F','S'][new Date(t.due_date.split('T')[0]+'T12:00').getDay()]}</span>`:''}
     ${!ov?`<svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3" fill="${_vs.bg}" stroke="${_vs.d}" stroke-opacity="0.4" stroke-width="1"/></svg>`:''}
@@ -3573,18 +3577,19 @@ function _vidStepTasksForDayWithOverdue(todayDs){
     if(v[step]==='na')return;
     const isDone=v[step]==='done'||_vidStepComputeDone(vidId,step,val.ds,val);
     const label=_VID_STEP_LABELS[step]||step.replace('step_','');
-    tasks.push({id:'vidstep-'+key.replace('::','-'),name:label+': '+(v.topic||v.title),category:'Videos',due_date:val.ds,done:isDone,_vidId:vidId,_vidStep:step,_virtual:true,_type:'vidstep'});
-    seen.add(key);
+    tasks.push({id:'vidstep-'+key.replace('::','-')+'-'+val.ds,name:label+': '+(v.topic||v.title),category:'Videos',due_date:val.ds,done:isDone,_vidId:vidId,_vidStep:step,_virtual:true,_type:'vidstep',_vidStepDay:val.ds});
+    seen.add(key+'::'+val.ds);
   });
-  // 2. Multi-day Build/VO/Cut blocks on past days not covered by daymap
-  (st.blocks||[]).filter(bl=>bl._vidStepVid&&bl._vidStepName&&bl.ds<todayDs&&bl._vidStepName!=='step_thumbnail'&&bl._vidStepName!=='step_description').forEach(bl=>{
-    const key=bl._vidStepVid+'::'+bl._vidStepName;
-    if(seen.has(key))return;seen.add(key);
+  // 2. Multi-day Build/VO/Cut blocks on other days (overdue past days + today) not covered by daymap
+  const _isMultiStep=n=>n!=='step_thumbnail'&&n!=='step_description';
+  (st.blocks||[]).filter(bl=>bl._vidStepVid&&bl._vidStepName&&bl.ds<=todayDs&&_isMultiStep(bl._vidStepName)).forEach(bl=>{
+    const dayKey=bl._vidStepVid+'::'+bl._vidStepName+'::'+bl.ds;
+    if(seen.has(dayKey))return;seen.add(dayKey);
     const v=(st.videos||[]).find(x=>String(x.id)===String(bl._vidStepVid)&&!x.is_deleted);if(!v)return;
     if(v[bl._vidStepName]==='na')return;
     const isDone=v[bl._vidStepName]==='done'||_vidStepComputeDone(bl._vidStepVid,bl._vidStepName,bl.ds,null);
     const label=_VID_STEP_LABELS[bl._vidStepName]||bl._vidStepName.replace('step_','');
-    tasks.push({id:'vidstep-'+key.replace('::','-'),name:label+': '+(v.topic||v.title),category:'Videos',due_date:bl.ds,done:isDone,_vidId:bl._vidStepVid,_vidStep:bl._vidStepName,_virtual:true,_type:'vidstep'});
+    tasks.push({id:'vidstep-'+bl._vidStepVid+'-'+bl._vidStepName+'-'+bl.ds,name:label+': '+(v.topic||v.title),category:'Videos',due_date:bl.ds,done:isDone,_vidId:bl._vidStepVid,_vidStep:bl._vidStepName,_virtual:true,_type:'vidstep',_vidStepDay:bl.ds});
   });
   return tasks;
 }
@@ -3597,7 +3602,7 @@ function _vidStepTasksForDay(ds){
     const v=(st.videos||[]).find(x=>String(x.id)===String(vidId)&&!x.is_deleted);if(!v)return;
     const label=_VID_STEP_LABELS[step]||step.replace('step_','');
     const isDone=v[step]==='done'||_vidStepComputeDone(vidId,step,ds,val);
-    tasks.push({id:'vidstep-'+key.replace('::','-'),name:label+': '+(v.topic||v.title),category:'Videos',due_date:ds,done:isDone,_vidId:vidId,_vidStep:step,_virtual:true,_type:'vidstep'});
+    tasks.push({id:'vidstep-'+key.replace('::','-')+'-'+ds,name:label+': '+(v.topic||v.title),category:'Videos',due_date:ds,done:isDone,_vidId:vidId,_vidStep:step,_virtual:true,_type:'vidstep',_vidStepDay:ds});
     seen.add(key);
   });
   // 2. Steps that have TB blocks on this day but daymap points elsewhere (multi-day Build/VO/Cut)
@@ -3608,7 +3613,7 @@ function _vidStepTasksForDay(ds){
     const step=bl._vidStepName;
     const label=_VID_STEP_LABELS[step]||step.replace('step_','');
     const isDone=v[step]==='done'||_vidStepComputeDone(bl._vidStepVid,step,ds,null);
-    tasks.push({id:'vidstep-'+key.replace('::','-'),name:label+': '+(v.topic||v.title),category:'Videos',due_date:ds,done:isDone,_vidId:bl._vidStepVid,_vidStep:step,_virtual:true,_type:'vidstep'});
+    tasks.push({id:'vidstep-'+key.replace('::','-')+'-'+ds,name:label+': '+(v.topic||v.title),category:'Videos',due_date:ds,done:isDone,_vidId:bl._vidStepVid,_vidStep:step,_virtual:true,_type:'vidstep',_vidStepDay:ds});
   });
   return tasks;
 }
