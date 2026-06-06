@@ -6038,7 +6038,14 @@ function updateOvBanner(){
   const ovShop=getOvShopping();
   const ovPup=(st.pupSessions||[]).filter(s=>!s.done&&s.day_date&&s.day_date<today);
   const _ovVdm=_vidDayMap();const ovVid=(st.videos||[]).filter(v=>!v.is_deleted&&v.status!=='published'&&_ovVdm[String(v.id)]&&_ovVdm[String(v.id)]<today);
-  const total=ovTasks.length+ovRec.length+ovShop.length+ovPup.length+ovVid.length;
+  // Overdue vidsteps: daymap entries on past days + orphaned blocks on past days
+  let ovVidStepCount=0;
+  if(typeof _vidStepDayMap==='function'){
+    const _ovsm=_vidStepDayMap();const _ovsSeen=new Set();
+    Object.entries(_ovsm).forEach(([key,val])=>{if(val.ds>=today||val.done)return;const[vidId,step]=key.split('::');const v=(st.videos||[]).find(x=>String(x.id)===String(vidId)&&!x.is_deleted);if(!v||v[step]==='na'||v[step]==='done')return;ovVidStepCount++;_ovsSeen.add(key);});
+    (st.blocks||[]).filter(bl=>bl._vidStepVid&&bl._vidStepName&&bl.ds<today&&!bl._done&&bl._vidStepName!=='step_thumbnail'&&bl._vidStepName!=='step_description').forEach(bl=>{const key=bl._vidStepVid+'::'+bl._vidStepName;if(_ovsSeen.has(key))return;_ovsSeen.add(key);const v=(st.videos||[]).find(x=>String(x.id)===String(bl._vidStepVid)&&!x.is_deleted);if(!v||v[bl._vidStepName]==='na'||v[bl._vidStepName]==='done')return;ovVidStepCount++;});
+  }
+  const total=ovTasks.length+ovRec.length+ovShop.length+ovPup.length+ovVid.length+ovVidStepCount;
   const banner=document.getElementById('ovBanner');
   if(total>0){
     document.getElementById('ovBannerTxt').textContent=`${total} Overdue`;
@@ -6054,7 +6061,12 @@ async function rolloverOverdue(){
   const ovShop=getOvShopping();
   const ovPup=(st.pupSessions||[]).filter(s=>!s.done&&s.day_date&&s.day_date<today);
   const _roVdm=_vidDayMap();const ovVid=(st.videos||[]).filter(v=>!v.is_deleted&&v.status!=='published'&&_roVdm[String(v.id)]&&_roVdm[String(v.id)]<today);
-  if(!ovTasks.length&&!ovRec.length&&!ovShop.length&&!ovPup.length&&!ovVid.length)return;
+  // Overdue vidsteps: collect daymap entries + orphaned blocks on past days
+  const _roVsm=typeof _vidStepDayMap==='function'?_vidStepDayMap():{};
+  const _roVsKeys=[];const _roVsSeen=new Set();
+  Object.entries(_roVsm).forEach(([key,val])=>{if(val.ds>=today||val.done)return;const[vidId,step]=key.split('::');const v=(st.videos||[]).find(x=>String(x.id)===String(vidId)&&!x.is_deleted);if(!v||v[step]==='na'||v[step]==='done')return;_roVsKeys.push(key);_roVsSeen.add(key);});
+  const _roVsBlocks=(st.blocks||[]).filter(bl=>bl._vidStepVid&&bl._vidStepName&&bl.ds<today&&!bl._done).filter(bl=>{const key=bl._vidStepVid+'::'+bl._vidStepName;if(_roVsSeen.has(key))return false;const v=(st.videos||[]).find(x=>String(x.id)===String(bl._vidStepVid)&&!x.is_deleted);return v&&v[bl._vidStepName]!=='na'&&v[bl._vidStepName]!=='done';});
+  if(!ovTasks.length&&!ovRec.length&&!ovShop.length&&!ovPup.length&&!ovVid.length&&!_roVsKeys.length&&!_roVsBlocks.length)return;
   const prevDates=ovTasks.map(t=>({id:String(t.id),date:t.due_date}));
   const prevRecWkKeys=ovRec.map(v=>{
     const prevDate=v._ruleId
@@ -6073,14 +6085,26 @@ async function rolloverOverdue(){
   ovPup.forEach(s=>{s.day_date=today;});
   const prevVidDates=ovVid.map(v=>({id:String(v.id),date:_roVdm[String(v.id)]}));
   ovVid.forEach(v=>{_roVdm[String(v.id)]=today;});_vidDayMapSet(_roVdm);
+  // Rollover vidstep daymap entries to today
+  const _prevVsMap=_roVsKeys.map(k=>({key:k,prev:{..._roVsm[k]}}));
+  _roVsKeys.forEach(k=>{_roVsm[k].ds=today;});
+  if(_roVsKeys.length&&typeof _vidStepDayMapSet==='function')_vidStepDayMapSet(_roVsm);
+  // Rollover orphaned vidstep blocks to today
+  const _prevVsBlks=_roVsBlocks.map(bl=>({id:bl.id,ds:bl.ds}));
+  _roVsBlocks.forEach(bl=>{bl.ds=today;sbUpdateBlock(bl.id,{day_date:today});});
+  // Also move blocks that match rolled-over daymap entries
+  _roVsKeys.forEach(k=>{const[vidId,step]=k.split('::');(st.blocks||[]).filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step&&bl.ds<today&&!bl._done).forEach(bl=>{_prevVsBlks.push({id:bl.id,ds:bl.ds});bl.ds=today;sbUpdateBlock(bl.id,{day_date:today});});});
   renderAll();
-  const total=ovTasks.length+ovRec.length+ovShop.length+ovPup.length+ovVid.length;
+  const total=ovTasks.length+ovRec.length+ovShop.length+ovPup.length+ovVid.length+_roVsKeys.length+_roVsBlocks.length;
   pushUndo(()=>{
     prevDates.forEach(({id,date})=>{const t=st.tasks.find(x=>String(x.id)===id);if(t)t.due_date=date;});
     prevRecWkKeys.forEach(({recId,ruleId,wkKey,prevDate})=>{if(ruleId){const r=st.wrRules.find(x=>String(x.id)===String(ruleId));if(r){if(!r._dateOverrides)r._dateOverrides={};if(prevDate)r._dateOverrides[wkKey]=prevDate;else delete r._dateOverrides[wkKey];}}else{const r=st.recurring.find(x=>String(x.id)===String(recId));if(r){if(!r._dateOverrides)r._dateOverrides={};if(prevDate)r._dateOverrides[wkKey]=prevDate;else delete r._dateOverrides[wkKey];}}});
     prevShopDates.forEach(({id,date})=>{const s=st.shopping.find(x=>String(x.id)===id);if(s)s.due_date=date;});
     prevPupDates.forEach(({id,date})=>{const s=(st.pupSessions||[]).find(x=>String(x.id)===id);if(s)s.day_date=date;});
     prevVidDates.forEach(({id,date})=>{const m=_vidDayMap();if(date)m[id]=date;else delete m[id];_vidDayMapSet(m);});
+    // Undo vidstep rollover
+    if(_prevVsMap.length&&typeof _vidStepDayMap==='function'){const m=_vidStepDayMap();_prevVsMap.forEach(({key,prev})=>{m[key]=prev;});_vidStepDayMapSet(m);}
+    _prevVsBlks.forEach(({id,ds})=>{const bl=st.blocks.find(x=>x.id===id);if(bl){bl.ds=ds;sbUpdateBlock(bl.id,{day_date:ds});}});
     renderAll();
     prevDates.forEach(({id,date})=>sbReq('PATCH','tasks',{due_date:date},`?id=eq.${id}`));
     prevShopDates.forEach(({id,date})=>sbReqNullable('PATCH','shopping_list',{due_date:date||null},`?id=eq.${id}`));
