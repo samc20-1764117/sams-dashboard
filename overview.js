@@ -83,7 +83,7 @@ function renderOv(){
 function renderSummaryMetrics(){
   const ds=d2s(getDayDate(dayOff));
   const blocked=st.blocks.filter(b=>b.ds===ds).reduce((s,b)=>s+b.dur,0);
-  const _vidStepOvCount=(()=>{const m=typeof _vidStepDayMap==='function'?_vidStepDayMap():{};let c=0;Object.entries(m).forEach(([key,val])=>{if(val.ds>=ds||val.done)return;const[vidId,step]=key.split('::');const v=(st.videos||[]).find(x=>String(x.id)===String(vidId)&&!x.is_deleted);if(!v||v[step]==='na'||v[step]==='done')return;c++;});return c;})();
+  const _vidStepOvCount=(()=>{if(typeof _vidStepDayMap!=='function')return 0;const m=_vidStepDayMap();let c=0;const seen=new Set();Object.entries(m).forEach(([key,val])=>{if(val.ds>=ds||val.done)return;const[vidId,step]=key.split('::');const v=(st.videos||[]).find(x=>String(x.id)===String(vidId)&&!x.is_deleted);if(!v||v[step]==='na'||v[step]==='done')return;c++;seen.add(key);});(st.blocks||[]).filter(bl=>bl._vidStepVid&&bl._vidStepName&&bl.ds<ds&&bl._vidStepName!=='step_thumbnail'&&bl._vidStepName!=='step_description').forEach(bl=>{const key=bl._vidStepVid+'::'+bl._vidStepName;if(seen.has(key))return;seen.add(key);const v=(st.videos||[]).find(x=>String(x.id)===String(bl._vidStepVid)&&!x.is_deleted);if(!v||v[bl._vidStepName]==='na'||v[bl._vidStepName]==='done')return;if(_vidStepComputeDone(bl._vidStepVid,bl._vidStepName,bl.ds,null))return;c++;});return c;})();
   const ovCount=st.tasks.filter(t=>!t.done&&isOv(t.due_date)&&t.category!=='Weekly Goals').length+st.shopping.filter(s=>!s.done&&s.due_date&&isOv(s.due_date)).length+_vidStepOvCount;
   const tpEl=document.getElementById('todPct'),wpEl=document.getElementById('wkPct');
   const el_tp=document.getElementById('smTodayPct'),el_wp=document.getElementById('smWkPct'),el_bl=document.getElementById('smBlocked'),el_ov=document.getElementById('smOverdue');
@@ -1403,7 +1403,27 @@ function renderWkCal(){
         dragId=null;return;
       }
       if(dragId.startsWith('vidstep::')){
-        const parts=dragId.split('::');_vidStepAssignToDay(parts[1],parts[2],ds);dragId=null;return;
+        const parts=dragId.split('::');const _vsVid=parts[1],_vsStep=parts[2],_vsSrcDay=parts[3]||null;
+        const _vsIsMulti=_vsStep!=='step_thumbnail'&&_vsStep!=='step_description';
+        if(_vsIsMulti&&_vsSrcDay&&_vsSrcDay!==ds){
+          // Multi-day step: move only source day's blocks to target day
+          const _vsMoved=st.blocks.filter(bl=>String(bl._vidStepVid)===String(_vsVid)&&bl._vidStepName===_vsStep&&bl.ds===_vsSrcDay);
+          const _vsPrevBlks=_vsMoved.map(bl=>({id:bl.id,ds:bl.ds}));
+          _vsMoved.forEach(bl=>{bl.ds=ds;sbUpdateBlock(bl.id,{day_date:ds});});
+          // If daymap pointed to source day, update it to target day
+          const _vsM=_vidStepDayMap();const _vsK=_vsVid+'::'+_vsStep;
+          const _vsPrevMap=_vsM[_vsK]?{..._vsM[_vsK]}:null;
+          if(_vsM[_vsK]&&_vsM[_vsK].ds===_vsSrcDay){_vsM[_vsK].ds=ds;_vidStepDayMapSet(_vsM);}
+          save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
+          pushUndo(()=>{
+            _vsPrevBlks.forEach(p=>{const bl=st.blocks.find(x=>x.id===p.id);if(bl){bl.ds=p.ds;sbUpdateBlock(bl.id,{day_date:p.ds});}});
+            const m2=_vidStepDayMap();if(_vsPrevMap)m2[_vsK]=_vsPrevMap;_vidStepDayMapSet(m2);
+            save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
+          },'Moved step');
+        } else {
+          _vidStepAssignToDay(_vsVid,_vsStep,ds);
+        }
+        dragId=null;return;
       }
       if(dragId.startsWith('fin-cancel::')){dragId=null;return;}
       const _dragSid=String(dragId);
@@ -1526,7 +1546,7 @@ function renderWkCal(){
       chip.addEventListener('dragstart',e2=>{
         if(t._type==='fin-cancel'){dragId='fin-cancel::'+t._subId;}
         else if(t._type==='vid'){dragId='vid::'+t._vidId;}
-        else if(t._type==='vidstep'){dragId='vidstep::'+t._vidId+'::'+t._vidStep;}
+        else if(t._type==='vidstep'){dragId='vidstep::'+t._vidId+'::'+t._vidStep+'::'+ds;}
         else if(t._type==='pup'){dragId='pupsess::'+t._pupSessId+'::'+ds;}
         else if(t._type==='shop'){dragId='shop::'+t._shopId;}
         else if(t._isWrRule){dragId='wrrule::'+t._ruleId;}
@@ -1911,7 +1931,12 @@ function setupWkcEdgeDrop(){
       dragId=null;shiftWk(dir);return;
     }
     if(dragId.startsWith('vidstep::')){
-      const parts=dragId.split('::');_vidStepAssignToDay(parts[1],parts[2],newDs);dragId=null;shiftWk(dir);return;
+      const parts=dragId.split('::');const _eV=parts[1],_eS=parts[2],_eSD=parts[3]||null;
+      if(_eS!=='step_thumbnail'&&_eS!=='step_description'&&_eSD){
+        st.blocks.filter(bl=>String(bl._vidStepVid)===String(_eV)&&bl._vidStepName===_eS&&bl.ds===_eSD).forEach(bl=>{bl.ds=newDs;sbUpdateBlock(bl.id,{day_date:newDs});});
+        const _eM3=_vidStepDayMap();const _eK3=_eV+'::'+_eS;if(_eM3[_eK3]&&_eM3[_eK3].ds===_eSD){_eM3[_eK3].ds=newDs;_vidStepDayMapSet(_eM3);}save();
+      } else {_vidStepAssignToDay(_eV,_eS,newDs);}
+      dragId=null;shiftWk(dir);return;
     }
     if(dragId.startsWith('travel::')){
       const parts=dragId.split('::');const tvId=parts[1],offsetDays=parseInt(parts[2])||0;
@@ -2010,7 +2035,12 @@ function setupEdge(id,dir){
       dragId=null;shiftWk(dir);return;
     }
     if(dragId.startsWith('vidstep::')){
-      const parts=dragId.split('::');_vidStepAssignToDay(parts[1],parts[2],newDs);dragId=null;shiftWk(dir);return;
+      const parts=dragId.split('::');const _eV=parts[1],_eS=parts[2],_eSD=parts[3]||null;
+      if(_eS!=='step_thumbnail'&&_eS!=='step_description'&&_eSD){
+        st.blocks.filter(bl=>String(bl._vidStepVid)===String(_eV)&&bl._vidStepName===_eS&&bl.ds===_eSD).forEach(bl=>{bl.ds=newDs;sbUpdateBlock(bl.id,{day_date:newDs});});
+        const _eM3=_vidStepDayMap();const _eK3=_eV+'::'+_eS;if(_eM3[_eK3]&&_eM3[_eK3].ds===_eSD){_eM3[_eK3].ds=newDs;_vidStepDayMapSet(_eM3);}save();
+      } else {_vidStepAssignToDay(_eV,_eS,newDs);}
+      dragId=null;shiftWk(dir);return;
     }
     if(dragId.startsWith('travel::')){
       const parts=dragId.split('::');const tvId=parts[1],offsetDays=parseInt(parts[2])||0;
@@ -3350,7 +3380,8 @@ function dropOnTodayList(e){
     dragId=null;return;
   }
   if(dragId.startsWith('vidstep::')){
-    const parts=dragId.split('::');_vidStepAssignToDay(parts[1],parts[2],ds);dragId=null;return;
+    const parts=dragId.split('::');
+    _vidStepAssignToDay(parts[1],parts[2],ds);dragId=null;return;
   }
   if(dragId.startsWith('fin-cancel::')){dragId=null;return;}
 }
@@ -3413,7 +3444,15 @@ function _vidStepAssignToDay(vidId,step,ds){
 function _vidStepToggleDone(vidId,step,checked,_fromTB,forDay){
   _vidStepReconstructBlocks();
   const m=_vidStepDayMap();const key=vidId+'::'+step;
-  if(!m[key])return;
+  // Ensure daymap entry exists if blocks exist (paste may have skipped creating one)
+  if(!m[key]){
+    const anyBlock=(st.blocks||[]).find(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step);
+    if(!anyBlock)return;
+    m[key]={ds:anyBlock.ds,done:false};
+  }
+  // Save previous state for undo
+  const _prevMapDone=m[key].done;
+  const _prevBlockStates=(st.blocks||[]).filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step).map(bl=>({id:bl.id,done:bl._done}));
   // For Build/VO/Cut, done flag tracks whether ALL TB blocks for this stage are done
   if(step!=='step_thumbnail'&&step!=='step_description'){
     if(_fromTB){
@@ -3448,6 +3487,19 @@ function _vidStepToggleDone(vidId,step,checked,_fromTB,forDay){
   save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
   const panel=document.getElementById('vidOvPanel');if(panel&&panel.style.display==='block')_renderVidOvMenu();
   if(_vidOvAllOpen)_vidOvRenderAll();
+  // Push undo (skip if called from TB — TB handler pushes its own undo)
+  if(!_fromTB){
+    const _undoVidStep=step,_undoVidId=vidId,_undoChecked=checked;
+    pushUndo(()=>{
+      const m2=_vidStepDayMap();if(m2[key]){m2[key].done=_prevMapDone;_vidStepDayMapSet(m2);}
+      _prevBlockStates.forEach(s=>{const bl=st.blocks.find(x=>x.id===s.id);if(bl){bl._done=s.done;sbUpdateBlock(bl.id,{done:s.done});}});
+      if(_undoVidStep==='step_thumbnail'||_undoVidStep==='step_description'){
+        const v2=(st.videos||[]).find(x=>String(x.id)===String(_undoVidId));
+        if(v2){v2[_undoVidStep]=_undoChecked?'not_started':'done';sbReqSilent('PATCH','videos',{[_undoVidStep]:v2[_undoVidStep]},`?id=eq.${v2.id}`);}
+      }
+      save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
+    },'Step toggle');
+  }
 }
 function _vidStepAddBlock(vidId,step,ds){
   const v=(st.videos||[]).find(x=>String(x.id)===String(vidId)&&!x.is_deleted);if(!v)return;
@@ -3505,7 +3557,8 @@ function _vidStepComputeDone(vidId,step,ds,mapEntry){
   return !!(mapEntry&&mapEntry.done);
 }
 function _vidStepTasksForDayWithOverdue(todayDs){
-  const m=_vidStepDayMap();const tasks=[];
+  const m=_vidStepDayMap();const tasks=[];const seen=new Set();
+  // 1. Steps from daymap (today or overdue)
   Object.entries(m).forEach(([key,val])=>{
     if(val.ds>todayDs)return;// future — skip
     const [vidId,step]=key.split('::');
@@ -3514,6 +3567,17 @@ function _vidStepTasksForDayWithOverdue(todayDs){
     const isDone=v[step]==='done'||_vidStepComputeDone(vidId,step,val.ds,val);
     const label=_VID_STEP_LABELS[step]||step.replace('step_','');
     tasks.push({id:'vidstep-'+key.replace('::','-'),name:label+': '+(v.topic||v.title),category:'Videos',due_date:val.ds,done:isDone,_vidId:vidId,_vidStep:step,_virtual:true,_type:'vidstep'});
+    seen.add(key);
+  });
+  // 2. Multi-day Build/VO/Cut blocks on past days not covered by daymap
+  (st.blocks||[]).filter(bl=>bl._vidStepVid&&bl._vidStepName&&bl.ds<todayDs&&bl._vidStepName!=='step_thumbnail'&&bl._vidStepName!=='step_description').forEach(bl=>{
+    const key=bl._vidStepVid+'::'+bl._vidStepName;
+    if(seen.has(key))return;seen.add(key);
+    const v=(st.videos||[]).find(x=>String(x.id)===String(bl._vidStepVid)&&!x.is_deleted);if(!v)return;
+    if(v[bl._vidStepName]==='na')return;
+    const isDone=v[bl._vidStepName]==='done'||_vidStepComputeDone(bl._vidStepVid,bl._vidStepName,bl.ds,null);
+    const label=_VID_STEP_LABELS[bl._vidStepName]||bl._vidStepName.replace('step_','');
+    tasks.push({id:'vidstep-'+key.replace('::','-'),name:label+': '+(v.topic||v.title),category:'Videos',due_date:bl.ds,done:isDone,_vidId:bl._vidStepVid,_vidStep:bl._vidStepName,_virtual:true,_type:'vidstep'});
   });
   return tasks;
 }
@@ -5699,8 +5763,7 @@ function drawTBBlock(col,b){
   // Reconstruct vidstep data from title if not set (after page refresh)
   if(!b._vidStepVid&&b.cat==='Videos'&&!b._vidId){
     const _vsm=_vidStepDayMap();
-    for(const [key,val] of Object.entries(_vsm)){
-      if(val.ds!==b.ds)continue;
+    for(const [key] of Object.entries(_vsm)){
       const [vid,step]=key.split('::');
       const v=(st.videos||[]).find(x=>String(x.id)===vid&&!x.is_deleted);
       if(!v)continue;
@@ -6726,29 +6789,41 @@ function dropOnTB(e,ds,h,row,smOverride){
     },'Added video to time block');
     return;
   } else if(dragId.startsWith('vidstep::')){
-    const parts=dragId.split('::');const _vsVidId=parts[1],_vsStep=parts[2];
+    const parts=dragId.split('::');const _vsVidId=parts[1],_vsStep=parts[2],_vsSrcDay=parts[3]||null;
     const _vsV=(st.videos||[]).find(x=>String(x.id)===String(_vsVidId));
     if(!_vsV){dragId=null;return;}
+    const _vsIsMulti=_vsStep!=='step_thumbnail'&&_vsStep!=='step_description';
     // Th/Des: only allow one timeblock block total
-    if(_vsStep==='step_thumbnail'||_vsStep==='step_description'){
+    if(!_vsIsMulti){
       const existing=st.blocks.find(bl=>String(bl._vidStepVid)===String(_vsVidId)&&bl._vidStepName===_vsStep);
       if(existing){dragId=null;return;}
-    }
-    const _vsLabel=(_VID_STEP_LABELS[_vsStep]||_vsStep.replace('step_',''))+': '+(_vsV.topic||_vsV.title);
-    _vidStepAssignToDay(_vsVidId,_vsStep,ds);
-    // Only create a new block if _vidStepAssignToDay didn't already move one here
-    const existingOnDay=st.blocks.find(bl=>String(bl._vidStepVid)===String(_vsVidId)&&bl._vidStepName===_vsStep&&bl.ds===ds);
-    if(existingOnDay){
-      // Block was moved here — just update its time position
-      existingOnDay.sm=sm;sbUpdateBlock(existingOnDay.id,{start_minutes:sm});
-      dragId=null;save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
+      const _vsLabel=(_VID_STEP_LABELS[_vsStep]||_vsStep.replace('step_',''))+': '+(_vsV.topic||_vsV.title);
+      _vidStepAssignToDay(_vsVidId,_vsStep,ds);
+      const existingOnDay=st.blocks.find(bl=>String(bl._vidStepVid)===String(_vsVidId)&&bl._vidStepName===_vsStep&&bl.ds===ds);
+      if(existingOnDay){existingOnDay.sm=sm;sbUpdateBlock(existingOnDay.id,{start_minutes:sm});dragId=null;save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();return;}
+      const blk={id:crypto.randomUUID(),title:_vsLabel,ds,sm,dur:30,cat:'Videos',_vidStepVid:_vsVidId,_vidStepName:_vsStep};
+      st.blocks.push(blk);dragId=null;save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();sbSaveBlock(blk);
+      pushUndo(()=>{st.blocks=st.blocks.filter(b=>b.id!==blk.id);sbDeleteBlock(blk.id);save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();},'Added step to time block');
       return;
     }
-    const _vsDur=(_vsStep==='step_build'||_vsStep==='step_vo'||_vsStep==='step_cut')?60:30;
-    const blk={id:crypto.randomUUID(),title:_vsLabel,ds,sm,dur:_vsDur,cat:'Videos',_vidStepVid:_vsVidId,_vidStepName:_vsStep};
-    st.blocks.push(blk);dragId=null;save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
-    sbSaveBlock(blk);
-    pushUndo(()=>{st.blocks=st.blocks.filter(b=>b.id!==blk.id);sbDeleteBlock(blk.id);_vidStepUnassign(_vsVidId,_vsStep);save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();},'Added step to time block');
+    // Build/VO/Cut: if dragged from a specific day, move those blocks; otherwise add new block
+    if(_vsSrcDay&&_vsSrcDay!==ds){
+      const _vsMoved=st.blocks.filter(bl=>String(bl._vidStepVid)===String(_vsVidId)&&bl._vidStepName===_vsStep&&bl.ds===_vsSrcDay);
+      const _vsPrevBlks=_vsMoved.map(bl=>({id:bl.id,ds:bl.ds,sm:bl.sm}));
+      _vsMoved.forEach(bl=>{bl.ds=ds;bl.sm=sm;sbUpdateBlock(bl.id,{day_date:ds,start_minutes:sm});});
+      const _vsM2=_vidStepDayMap();const _vsK2=_vsVidId+'::'+_vsStep;
+      const _vsPrevMap=_vsM2[_vsK2]?{..._vsM2[_vsK2]}:null;
+      if(_vsM2[_vsK2]&&_vsM2[_vsK2].ds===_vsSrcDay){_vsM2[_vsK2].ds=ds;_vidStepDayMapSet(_vsM2);}
+      dragId=null;save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
+      pushUndo(()=>{_vsPrevBlks.forEach(p=>{const bl=st.blocks.find(x=>x.id===p.id);if(bl){bl.ds=p.ds;bl.sm=p.sm;sbUpdateBlock(bl.id,{day_date:p.ds,start_minutes:p.sm});}});const m2=_vidStepDayMap();if(_vsPrevMap)m2[_vsK2]=_vsPrevMap;_vidStepDayMapSet(m2);save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();},'Moved step');
+      return;
+    }
+    // Add new block on this day (don't move existing)
+    const _vsLabel=(_VID_STEP_LABELS[_vsStep]||_vsStep.replace('step_',''))+': '+(_vsV.topic||_vsV.title);
+    _vidStepAddBlock(_vsVidId,_vsStep,ds);
+    const newBlk=st.blocks.find(bl=>String(bl._vidStepVid)===String(_vsVidId)&&bl._vidStepName===_vsStep&&bl.ds===ds);
+    if(newBlk){newBlk.sm=sm;sbUpdateBlock(newBlk.id,{start_minutes:sm});}
+    dragId=null;save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
     return;
   } else {
     // Multi-select: if dragged task is in selectedTasks with others, add all selected items
@@ -6955,6 +7030,7 @@ function _addSelectedToTB(sids){
       if(m2){
         const vidId=m2[1],step=m2[2];
         if(step==='step_thumbnail'||step==='step_description')continue;
+        if(st.blocks.some(b=>String(b._vidStepVid)===String(vidId)&&b._vidStepName===step&&b.ds===ds))continue;
         _vidStepAddBlock(vidId,step,ds);
         added++;
       }
