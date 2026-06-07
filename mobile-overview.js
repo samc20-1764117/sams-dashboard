@@ -304,7 +304,7 @@ function mGetTodayTasks() {
   });
 
   const allRecVirt = [];
-  for (let w = 0; w >= -4; w--) {
+  for (let w = 0; w >= -1; w--) {
     getRecurringWeekTasks(w).forEach(v => {
       const _rec = st.recurring.find(x => String(x.id) === String(v._recId));
       if (_rec && _rec._dateOverrides) {
@@ -390,7 +390,7 @@ function mGetTodayTasks() {
 
   const all = [
     ...ts,
-    ...allRecVirt.filter(v => v.due_date === ds || (isOv(v.due_date) && !v.done)),
+    ...allRecVirt.filter(v => v.due_date === ds || (_mTodayOffset === 0 && isOv(v.due_date) && !v.done)),
     ...wrecToday,
     ...wrRulesToday,
     ...shopToday,
@@ -2344,7 +2344,7 @@ async function mInit() {
   hideLoginOverlay();
   await syncAll();
   mShowTab('today');
-  setInterval(() => { if (cfg.url && cfg.key) syncAll(true); }, 30000);
+  setInterval(async () => { if (cfg.url && cfg.key) { await syncAll(true); mShowTab(_mCurTab); } }, 30000);
 }
 
 document.addEventListener('DOMContentLoaded', mInit);

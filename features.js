@@ -5561,7 +5561,7 @@ document.addEventListener('keydown',async e=>{
         const r=st.wrRules.find(x=>String(x.id)===rid);
         if(r)_copiedTasks.push({...r,_isWrRule:true});
       } else if(id.startsWith('vidstep-')){
-        const m=id.match(/^vidstep-(.+)-(step_\w+)$/);
+        const m=id.match(/^vidstep-(\d+)-(step_\w+)/);
         if(m){const vidId=m[1],step=m[2];const v=(st.videos||[]).find(x=>String(x.id)===String(vidId));if(v)_copiedTasks.push({_isVidStep:true,_vidId:vidId,_vidStep:step,name:(typeof _VID_STEP_LABELS!=='undefined'?_VID_STEP_LABELS[step]:step)+': '+(v.topic||v.title)});}
       } else {
         const t=st.tasks.find(x=>String(x.id)===id);
