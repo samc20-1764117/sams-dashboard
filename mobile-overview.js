@@ -304,7 +304,7 @@ function mGetTodayTasks() {
   });
 
   const allRecVirt = [];
-  for (let w = 0; w >= -1; w--) {
+  for (let w = 0; w >= -4; w--) {
     getRecurringWeekTasks(w).forEach(v => {
       const _rec = st.recurring.find(x => String(x.id) === String(v._recId));
       if (_rec && _rec._dateOverrides) {
