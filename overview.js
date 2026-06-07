@@ -69,7 +69,7 @@ function _moveOtherSelected(ds,excludeSid,undos,excludePrefixes){
   });
 }
 
-function _hebBadge(name){if(!/\bheb\b/i.test(name||''))return'';return`<span class="heb-cnt" onclick="event.stopPropagation();openGroceryModal();"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg></span>`}
+function _hebBadge(name,wkKey){if(!/\bheb\b/i.test(name||''))return'';const arg=wkKey?`'${wkKey}'`:'';return`<span class="heb-cnt" onclick="event.stopPropagation();openGroceryModal(${arg});"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg></span>`}
 function _pupBadge(name){if(!/prep pup training/i.test(name||''))return'';return`<span class="pup-link-badge" onclick="event.stopPropagation();if(typeof _openPupFocusModal==='function')_openPupFocusModal(null);" title="Weekly pup skills"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></span>`}
 function _recWkNote(r,wkKey){if(!r||!wkKey||!r._dateOverrides)return'';const ov=r._dateOverrides['name::'+wkKey];return(ov&&ov.notes)||'';}
 
@@ -180,11 +180,12 @@ function renderToday(){
   ];
   const allToday=[...ts,...virtToday];
   const sorted=sortTasksToday(allToday);
-  const doneCount=sorted.filter(t=>t.done&&t._type!=='birthday').length+sorted.filter(t=>t._type==='birthday'&&st.blocks.some(b=>b.cat==='Birthday'&&b.title===t.name&&b._done)).length;
+  const _pctItems=sorted.filter(t=>t._type!=='travel');
+  const doneCount=_pctItems.filter(t=>t.done&&t._type!=='birthday').length+_pctItems.filter(t=>t._type==='birthday'&&st.blocks.some(b=>b.cat==='Birthday'&&b.title===t.name&&b._done)).length;
   // todBadge removed
-  document.getElementById('todPL').textContent=`${doneCount}/${sorted.length}`;const _todP=document.getElementById('todPct');if(_todP)_todP.textContent=(sorted.length?Math.round(doneCount/sorted.length*100):0)+'%';
-  document.getElementById('todPB').style.width=sorted.length?`${doneCount/sorted.length*100}%`:'0%';
-  renderTodDonut(doneCount,sorted.length);
+  document.getElementById('todPL').textContent=`${doneCount}/${_pctItems.length}`;const _todP=document.getElementById('todPct');if(_todP)_todP.textContent=(_pctItems.length?Math.round(doneCount/_pctItems.length*100):0)+'%';
+  document.getElementById('todPB').style.width=_pctItems.length?`${doneCount/_pctItems.length*100}%`:'0%';
+  renderTodDonut(doneCount,_pctItems.length);
   const _todDs=ds;
   function _hasTBToday(t){
     if(t._type==='travel')return true;
@@ -845,7 +846,7 @@ function tRowTodayVirt(t,tbArrow=false,noColor=false){
 
   return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''}" style="${!ov&&!noColor?`background:${s.bg}`:''}" id="ti-${t.id}" draggable="true" ondragstart="dragId='${_dragId}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);" ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false);" onclick="selTask(event,'${t.id}')" ondblclick="${_dblClick}" oncontextmenu="${_ctxMenu}">
     <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="${_chk}"></label>
-    ${_hebBadge(t.name)}${_pupBadge(t.name)}<span class="tn">${t.name}${t._wkNote?` <span style="opacity:.5;font-size:9px">@${escHtml(t._wkNote)}</span>`:''}</span>
+    ${_hebBadge(t.name,t._wkKey)}${_pupBadge(t.name)}<span class="tn">${t.name}${t._wkNote?` <span style="opacity:.5;font-size:9px">@${escHtml(t._wkNote)}</span>`:''}</span>
     ${!ov?`<svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3" fill="${ps.bg}" stroke="${ps.d}" stroke-opacity="0.4" stroke-width="1"/></svg>`:''}
     ${tbArrow?'<span class="tb-arrow">›</span>':''}
     ${ov&&t.due_date?`<span class="dlbl ov">${['S','M','T','W','T','F','S'][new Date(t.due_date.split('T')[0]+'T12:00').getDay()]}</span>`:''}
@@ -1578,13 +1579,13 @@ function renderWkCal(){
         else if(t._virtual){togRecVirt(t._recId,chk.checked,t._wkKey||getWkKey(wkOff));}
         else{toggleTask(t.id,chk.checked,'week');}
       });
-      const _chipPrefix=_hebBadge(t.name)+_pupBadge(t.name);
+      const _chipPrefix=_hebBadge(t.name,t._wkKey)+_pupBadge(t.name);
       const _wkNoteSuffix=t._wkNote?` <span style="opacity:.5;font-size:8px">@${escHtml(t._wkNote)}</span>`:'';
       const nm=document.createElement('span');nm.className='chip-name';nm.innerHTML=_chipPrefix+tmIcon(t)+escHtml(t._type==='pup'?_pupDisplayName(t):t.name)+_wkNoteSuffix;
       // name click handled by chip click→selTask, dblclick→openEditTask
       chip.appendChild(chk);chip.appendChild(nm);
       // Bind click handlers for inline badge icons
-      const _hebEl=nm.querySelector('.heb-cnt');if(_hebEl)_hebEl.addEventListener('click',ev=>{ev.stopPropagation();openGroceryModal();});
+      const _hebEl=nm.querySelector('.heb-cnt');if(_hebEl)_hebEl.addEventListener('click',ev=>{ev.stopPropagation();openGroceryModal(t._wkKey);});
       const _pupEl=nm.querySelector('.pup-link-badge');if(_pupEl)_pupEl.addEventListener('click',ev=>{ev.stopPropagation();if(typeof _openPupFocusModal==='function')_openPupFocusModal(null);});
       if(t._type==='vid'){
         const _v2=(st.videos||[]).find(x=>String(x.id)===String(t._vidId));
@@ -2386,8 +2387,8 @@ function renderRecMoCal(){
     chkWrap.appendChild(chk);chip.appendChild(chkWrap);
     // Name
     // Prefix badges
-    const _recBadgeHtml=_hebBadge(item.name)+_pupBadge(item.name);
-    if(_recBadgeHtml){const bw=document.createElement('span');bw.style.cssText='display:inline-flex;align-items:center;flex-shrink:0';bw.innerHTML=_recBadgeHtml;chip.appendChild(bw);const _hb=bw.querySelector('.heb-cnt');if(_hb)_hb.addEventListener('click',ev=>{ev.stopPropagation();openGroceryModal();});const _pb=bw.querySelector('.pup-link-badge');if(_pb)_pb.addEventListener('click',ev=>{ev.stopPropagation();if(typeof _openPupFocusModal==='function')_openPupFocusModal(null);});}
+    const _recBadgeHtml=_hebBadge(item.name,wkKey)+_pupBadge(item.name);
+    if(_recBadgeHtml){const bw=document.createElement('span');bw.style.cssText='display:inline-flex;align-items:center;flex-shrink:0';bw.innerHTML=_recBadgeHtml;chip.appendChild(bw);const _hb=bw.querySelector('.heb-cnt');if(_hb)_hb.addEventListener('click',ev=>{ev.stopPropagation();openGroceryModal(wkKey);});const _pb=bw.querySelector('.pup-link-badge');if(_pb)_pb.addEventListener('click',ev=>{ev.stopPropagation();if(typeof _openPupFocusModal==='function')_openPupFocusModal(null);});}
     const nm=document.createElement('span');nm.style.cssText=`flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap${isDone?';text-decoration:line-through':''}`;
     nm.textContent=item.name;chip.appendChild(nm);
     // Indicator dot: moved (regular) or edited (WR)
@@ -5107,7 +5108,7 @@ function tRowWk(t){
       :`showWrScopePicker(event,'⊘  Skip this week only','✕  Delete recurring task',()=>skipRecVirtThisWk('${t._recId}','${t._wkKey||getWkKey(wkOff)}'),()=>delRec('${t._recId}'))`;
     return`<div class="ti ${t.done?'done':''}" style="background:${s.bg}" id="ti-${t.id}" onclick="selTask(event,'${t.id}')" ondblclick="${t._isWrRule?`event.stopPropagation();openWrEditModal('${t._ruleId}','${t._wkKey||getWkKey(wkOff)}','this')`:`tiDblRec(event,'${t._recId}','${t._wkKey||getWkKey(wkOff)}')`}" oncontextmenu="${_wkCtxMenu}">
       <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="${t._isWrec?`togRec('${t._recId}',this.checked)`:`togRecVirt('${t._recId}',this.checked,'${t._wkKey||getWkKey(wkOff)}')`}"></label>
-      ${_hebBadge(t.name)}${_pupBadge(t.name)}<span class="tn">${t.name}${t._wkNote?` <span style="opacity:.5;font-size:9px">@${escHtml(t._wkNote)}</span>`:''}</span>
+      ${_hebBadge(t.name,t._wkKey)}${_pupBadge(t.name)}<span class="tn">${t.name}${t._wkNote?` <span style="opacity:.5;font-size:9px">@${escHtml(t._wkNote)}</span>`:''}</span>
       <span class="cpill" style="background:${s.bg};color:${s.t};border-color:${s.b}">Recurring</span>
       <span class="dlbl">${fmtD(t.due_date)}</span>
       <button class="delbtn" onclick="event.stopPropagation();${_wkXBtn}">✕</button>
@@ -5866,7 +5867,8 @@ function drawTBBlock(col,b){
     if(_ptVid&&_ptVid.youtube_url)_copyLinkHtml=`<button class="tb-copy-link" data-url="${_ptVid.youtube_url.replace(/"/g,'&quot;')}" title="Copy YouTube link" style="background:none;border:none;cursor:pointer;padding:0;flex-shrink:0;display:inline-flex;align-items:center;margin-right:2px;color:#15803d;position:relative;top:-1px"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#15803d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></button>`;
   }
   const _showTimeHere=_showTime&&!isPostTab&&!b._vidStepVid;
-  const _tbBadgePrefix=_hebBadge(_displayTitle)+_pupBadge(_displayTitle);
+  const _tbWkKey=b.recId?(()=>{const _r2=st.wrRules.find(x=>String(x.id)===String(b.recId));if(_r2&&_r2._dateOverrides){for(const[k,v] of Object.entries(_r2._dateOverrides)){if(v===b.ds)return k;}}return dsToWkKey(b.ds);})():dsToWkKey(b.ds);
+  const _tbBadgePrefix=_hebBadge(_displayTitle,_tbWkKey)+_pupBadge(_displayTitle);
   el.innerHTML=`<div class="tb-row"><input type="checkbox" class="tb-chk" ${b._done?'checked':''}>${_tbBadgePrefix}<span class="tb-bt${b.dur>=30?' wrap':''}">${_displayTitle}</span><div class="tb-right">${_vidStepSquareHtml}${_showTimeHere?`<span class="tb-btime">${tStr(b.sm)}-${tStr(b.sm+b.dur)}</span>`:''}${_copyLinkHtml}<button class="tb-bdel" onclick="delBlock('${b.id}',event)">✕</button></div></div>${_vidStepsHtml}${_notesHtml}<div class="tb-resize" data-id="${b.id}"></div>`;
   if(b._vidId)el.querySelectorAll('.vid-step-dot[data-step]').forEach(dot=>{
     dot.addEventListener('click',e=>{e.stopPropagation();if(typeof _vidOvToggleStep==='function')_vidOvToggleStep(dot.dataset.vid,dot.dataset.step);});
@@ -5896,7 +5898,7 @@ function drawTBBlock(col,b){
   const _clBtn=el.querySelector('.tb-copy-link');
   if(_clBtn)_clBtn.addEventListener('click',e=>{e.stopPropagation();navigator.clipboard.writeText(_clBtn.dataset.url);_clBtn.innerHTML='<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';setTimeout(()=>{_clBtn.innerHTML='<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#15803d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>';},1500);});
   const _tbHebBtn=el.querySelector('.heb-cnt');
-  if(_tbHebBtn)_tbHebBtn.addEventListener('click',e=>{e.stopPropagation();openGroceryModal();});
+  if(_tbHebBtn)_tbHebBtn.addEventListener('click',e=>{e.stopPropagation();openGroceryModal(_tbWkKey);});
   const _tbPupBtn=el.querySelector('.pup-link-badge');
   if(_tbPupBtn)_tbPupBtn.addEventListener('click',e=>{e.stopPropagation();if(typeof _openPupFocusModal==='function')_openPupFocusModal(null);});
   const tbChk=el.querySelector('.tb-chk');

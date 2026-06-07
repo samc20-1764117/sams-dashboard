@@ -3537,8 +3537,15 @@ async function delGroceryItem(id){
   sbReqSilent('DELETE','grocery_list',null,`?id=eq.${id}`);
 }
 
-function openGroceryModal(){
-  _grocWkOff=0;_grocRecSearch='';
+function openGroceryModal(wkKeyOrOff){
+  if(typeof wkKeyOrOff==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(wkKeyOrOff)){
+    // Convert wkKey (Monday date) to offset from current week
+    const thisMon=getWkKey(0);
+    _grocWkOff=Math.round((new Date(wkKeyOrOff+'T00:00:00')-new Date(thisMon+'T00:00:00'))/604800000);
+  } else {
+    _grocWkOff=wkKeyOrOff||0;
+  }
+  _grocRecSearch='';
   generateGroceryStaples().then(()=>renderGroceryModal());
   let modal=document.getElementById('groceryModal');
   if(!modal){
@@ -3641,8 +3648,8 @@ function renderGroceryModal(){
   // ── Build combined shopping list ──
   // 1) Recipe ingredients from grocery_list
   const grocItems=(st.groceryList||[]).filter(g=>g.week_of===planMon);
-  // 2) HEB-tagged overview shopping items
-  const hebShopItems=(st.shopping||[]).filter(s=>s.store&&s.store.toLowerCase()==='heb');
+  // 2) HEB-tagged overview shopping items (undone only)
+  const hebShopItems=(st.shopping||[]).filter(s=>s.store&&s.store.toLowerCase()==='heb'&&!s.done);
   // 3) Weekly staples (active, not skipped this week)
   const staples=(st.groceryStaples||[]).filter(s=>s.active!==false);
   const skippedThisWeek=(st._grocStapleSkips||{})[planMon]||[];
