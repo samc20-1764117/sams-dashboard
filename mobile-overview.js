@@ -312,7 +312,16 @@ function mGetTodayTasks() {
           if (_rec._dateOverrides[getWkKey(sw)] === '__skip__') return;
         }
       }
-      if (!allRecVirt.find(x => x._recId === v._recId)) allRecVirt.push(v);
+      // Match desktop dedup: if current week has a future occurrence, suppress overdue past-week one
+      const existing = allRecVirt.findIndex(x => x._recId === v._recId);
+      if (existing >= 0) {
+        const ev = allRecVirt[existing];
+        const evFuture = !isOv(ev.due_date) && !ev.done;
+        const vFuture = !isOv(v.due_date) && !v.done;
+        if (vFuture && !evFuture) allRecVirt[existing] = v;
+      } else {
+        allRecVirt.push(v);
+      }
     });
   }
 
@@ -408,10 +417,10 @@ function mGetTodayTasks() {
 
 // ── Task row ──────────────────────────────────────────────────────────────────
 function mTaskRow(t) {
-  const ov = isOv(t.due_date) && !t.done;
+  const noCheck = t._type === 'travel' || t._type === 'birthday';
+  const ov = !noCheck && isOv(t.due_date) && !t.done;
   const catKey = t._isWrRule || t._isWrec ? 'weekly_reset' : t._type === 'shop' ? 'shopping' : t._type === 'travel' ? 'travel' : t._type === 'birthday' ? 'birthday' : (t.category || '');
   const s = ov ? OV : gc(catKey);
-  const noCheck = t._type === 'travel' || t._type === 'birthday';
   const canEdit = !t._virtual && !t._type;
 
   let onchange = '';
@@ -1446,11 +1455,11 @@ function mGetDayTasks(ds, weekOff) {
 }
 
 function mWkTaskRow(t) {
-  const ov      = isOv(t.due_date) && !t.done;
+  const noCheck = t._type === 'travel' || t._type === 'birthday';
+  const ov      = !noCheck && isOv(t.due_date) && !t.done;
   const catKey  = t._type === 'shop' ? 'shopping' : t._type === 'vid' || t._type === 'vidstep' ? 'Videos' : (t._virtual && t._recId) ? 'recurring' : (t.category || '');
   const s       = ov ? OV : gc(catKey);
   const canDrag = !t._virtual && !t._type;
-  const noCheck = t._type === 'travel' || t._type === 'birthday';
 
   let onchange = '';
   if (t._type === 'shop')          onchange = `togShop('${t._shopId}',this.checked)`;
