@@ -5307,6 +5307,19 @@ document.addEventListener('keydown',async e=>{
           undos.push(()=>{s.due_date=prev;sbReqNullable('PATCH','shopping_list',{due_date:prev},`?id=eq.${shopId}`);});
           moved=true;continue;
         }
+        // Video overview chip (vid-ov-*)
+        if(sid.startsWith('vid-ov-')){
+          const vidId=sid.replace('vid-ov-','');
+          const map=typeof _vidDayMap==='function'?_vidDayMap():null;if(!map)continue;
+          const curDs=map[String(vidId)];if(!curDs)continue;
+          const newDs=_shiftDs(curDs,dir);
+          const prevDs=curDs;
+          map[String(vidId)]=newDs;_vidDayMapSet(map);
+          // Move linked timeblock blocks
+          (st.blocks||[]).filter(b=>String(b._vidId)===String(vidId)&&b.ds===prevDs).forEach(b=>{b.ds=newDs;sbSaveBlock(b);});
+          undos.push(()=>{const m2=_vidDayMap();m2[String(vidId)]=prevDs;_vidDayMapSet(m2);(st.blocks||[]).filter(b=>String(b._vidId)===String(vidId)&&b.ds===newDs).forEach(b=>{b.ds=prevDs;sbSaveBlock(b);});});
+          moved=true;continue;
+        }
         // Timeblock block (blk-*)
         if(sid.startsWith('blk-')){
           const blkId=sid.replace('blk-','');
@@ -5320,11 +5333,23 @@ document.addEventListener('keydown',async e=>{
         if(sid.startsWith('vidstep-')){
           const m=sid.match(/^vidstep-(.+)-(step_\w+)$/);if(!m)continue;
           const vidId=m[1],step=m[2];
-          const blks=st.blocks.filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step);
-          if(!blks.length)continue;
-          const prevDsList=blks.map(bl=>bl.ds);
-          blks.forEach(bl=>{bl.ds=_shiftDs(bl.ds,dir);sbSaveBlock(bl);});
-          undos.push(()=>{blks.forEach((bl,i)=>{bl.ds=prevDsList[i];sbSaveBlock(bl);});});
+          const stepMap=typeof _vidStepDayMap==='function'?_vidStepDayMap():null;
+          const key=vidId+'::'+step;
+          const prevEntry=stepMap?stepMap[key]:null;
+          const prevDs=prevEntry?prevEntry.ds:null;
+          if(!prevDs){
+            // No daymap entry — just move the blocks directly
+            const blks=st.blocks.filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step);
+            if(!blks.length)continue;
+            const prevDsList=blks.map(bl=>bl.ds);
+            blks.forEach(bl=>{bl.ds=_shiftDs(bl.ds,dir);sbSaveBlock(bl);});
+            undos.push(()=>{blks.forEach((bl,i)=>{bl.ds=prevDsList[i];sbSaveBlock(bl);});});
+          } else {
+            const newDs=_shiftDs(prevDs,dir);
+            stepMap[key]={ds:newDs,done:prevEntry.done};_vidStepDayMapSet(stepMap);
+            (st.blocks||[]).filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step&&bl.ds===prevDs).forEach(bl=>{bl.ds=newDs;sbUpdateBlock(bl.id,{day_date:newDs});});
+            undos.push(()=>{const m2=_vidStepDayMap();m2[key]={ds:prevDs,done:prevEntry.done};_vidStepDayMapSet(m2);(st.blocks||[]).filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step&&bl.ds===newDs).forEach(bl=>{bl.ds=prevDs;sbUpdateBlock(bl.id,{day_date:prevDs});});});
+          }
           moved=true;continue;
         }
       }
