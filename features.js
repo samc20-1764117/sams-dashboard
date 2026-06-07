@@ -5234,11 +5234,11 @@ document.addEventListener('keydown',async e=>{
   // Arrow left/right: shift day on overview when nothing selected
   if((e.key==='ArrowLeft'||e.key==='ArrowRight')&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&activePg==='overview'&&!document.querySelector('.overlay.open')&&!_qnOpen&&!document.querySelector('.atb-mgr')){
     if(!selectedTasks.size){e.preventDefault();shiftDay(e.key==='ArrowLeft'?-1:1);return;}
-    // If a TB block or auto-block is selected, cycle like Tab/Shift+Tab
+    // If a single auto-block is selected (not blk/vidstep which should move days), cycle like Tab
     if(selectedTasks.size===1&&lastSelectedId){
       const sid=lastSelectedId;
-      const isTBSel=sid.startsWith('blk-')||sid.startsWith('atb::')||sid.startsWith('vidstep-')||sid.startsWith('pup-sess-');
-      if(isTBSel&&typeof _tbTabCycle==='function'){e.preventDefault();_tbTabCycle(e.key==='ArrowLeft');return;}
+      const isTBCycleOnly=sid.startsWith('atb::')||sid.startsWith('pup-sess-');
+      if(isTBCycleOnly&&typeof _tbTabCycle==='function'){e.preventDefault();_tbTabCycle(e.key==='ArrowLeft');return;}
     }
     // Move selected tasks ±1 day on weekly cal
     if(!document.querySelector('.tb-col')||document.querySelector('.tb-col')){
@@ -5305,6 +5305,26 @@ document.addEventListener('keydown',async e=>{
           const prev=s.due_date;s.due_date=newDs;
           sbReqNullable('PATCH','shopping_list',{due_date:newDs},`?id=eq.${shopId}`);
           undos.push(()=>{s.due_date=prev;sbReqNullable('PATCH','shopping_list',{due_date:prev},`?id=eq.${shopId}`);});
+          moved=true;continue;
+        }
+        // Timeblock block (blk-*)
+        if(sid.startsWith('blk-')){
+          const blkId=sid.replace('blk-','');
+          const b=st.blocks.find(x=>String(x.id)===blkId);if(!b||!b.ds)continue;
+          const prevDs=b.ds;const newDs=_shiftDs(prevDs,dir);
+          b.ds=newDs;sbSaveBlock(b);
+          undos.push(()=>{b.ds=prevDs;sbSaveBlock(b);});
+          moved=true;continue;
+        }
+        // Video step (vidstep-*)
+        if(sid.startsWith('vidstep-')){
+          const m=sid.match(/^vidstep-(.+)-(step_\w+)$/);if(!m)continue;
+          const vidId=m[1],step=m[2];
+          const blks=st.blocks.filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step);
+          if(!blks.length)continue;
+          const prevDsList=blks.map(bl=>bl.ds);
+          blks.forEach(bl=>{bl.ds=_shiftDs(bl.ds,dir);sbSaveBlock(bl);});
+          undos.push(()=>{blks.forEach((bl,i)=>{bl.ds=prevDsList[i];sbSaveBlock(bl);});});
           moved=true;continue;
         }
       }
