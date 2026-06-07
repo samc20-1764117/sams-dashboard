@@ -643,6 +643,9 @@ async function removePupSession(sessId){
 let _pupRecSeeded=false;
 async function seedPupReviewTask(){
   if(_pupRecSeeded)return;_pupRecSeeded=true;
+  // Rename existing "Prep pup training" → "Prep pups"
+  const _oldPup=st.recurring.find(r=>/prep pup training/i.test(r.name));
+  if(_oldPup){_oldPup.name='Prep pups';save();sbReqSilent('PATCH','wr_recurring_rules',{name:'Prep pups'},`?id=eq.${_oldPup.id}`);}
   const name='Prep pups';
   if(st.recurring.some(r=>/prep pup/i.test(r.name)))return;
   const tmp='rec-tmp-'+Date.now();
