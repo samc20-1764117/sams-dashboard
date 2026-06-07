@@ -5329,16 +5329,15 @@ document.addEventListener('keydown',async e=>{
           undos.push(()=>{b.ds=prevDs;sbSaveBlock(b);});
           moved=true;continue;
         }
-        // Video step (vidstep-*)
+        // Video step (vidstep-*) — ID may be vidstep-{vid}-{step} or vidstep-{vid}-{step}-{ds}
         if(sid.startsWith('vidstep-')){
-          const m=sid.match(/^vidstep-(.+)-(step_\w+)$/);if(!m)continue;
-          const vidId=m[1],step=m[2];
+          const m=sid.match(/^vidstep-(\d+)-(step_\w+)(?:-(\d{4}-\d{2}-\d{2}))?/);if(!m)continue;
+          const vidId=m[1],step=m[2],chipDs=m[3]||null;
           const stepMap=typeof _vidStepDayMap==='function'?_vidStepDayMap():null;
           const key=vidId+'::'+step;
           const prevEntry=stepMap?stepMap[key]:null;
-          const prevDs=prevEntry?prevEntry.ds:null;
+          const prevDs=chipDs||( prevEntry?prevEntry.ds:null);
           if(!prevDs){
-            // No daymap entry — just move the blocks directly
             const blks=st.blocks.filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step);
             if(!blks.length)continue;
             const prevDsList=blks.map(bl=>bl.ds);
@@ -5346,9 +5345,9 @@ document.addEventListener('keydown',async e=>{
             undos.push(()=>{blks.forEach((bl,i)=>{bl.ds=prevDsList[i];sbSaveBlock(bl);});});
           } else {
             const newDs=_shiftDs(prevDs,dir);
-            stepMap[key]={ds:newDs,done:prevEntry.done};_vidStepDayMapSet(stepMap);
+            if(stepMap&&prevEntry){stepMap[key]={ds:newDs,done:prevEntry.done};_vidStepDayMapSet(stepMap);}
             (st.blocks||[]).filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step&&bl.ds===prevDs).forEach(bl=>{bl.ds=newDs;sbUpdateBlock(bl.id,{day_date:newDs});});
-            undos.push(()=>{const m2=_vidStepDayMap();m2[key]={ds:prevDs,done:prevEntry.done};_vidStepDayMapSet(m2);(st.blocks||[]).filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step&&bl.ds===newDs).forEach(bl=>{bl.ds=prevDs;sbUpdateBlock(bl.id,{day_date:prevDs});});});
+            undos.push(()=>{if(stepMap&&prevEntry){const m2=_vidStepDayMap();m2[key]={ds:prevDs,done:prevEntry.done};_vidStepDayMapSet(m2);}(st.blocks||[]).filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step&&bl.ds===newDs).forEach(bl=>{bl.ds=prevDs;sbUpdateBlock(bl.id,{day_date:prevDs});});});
           }
           moved=true;continue;
         }
