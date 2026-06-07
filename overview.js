@@ -3636,8 +3636,8 @@ function _vidOvClickSelect(el,e){
     if(_vidOvSelSet.has(vid))_vidOvSelSet.delete(vid);else _vidOvSelSet.add(vid);
     _vidOvSelIdx=idx;_vidOvSelVid=vid;
   }else{
-    _vidOvSelSet.clear();_vidOvSelSet.add(vid);
-    _vidOvSelIdx=idx;_vidOvSelVid=vid;
+    if(_vidOvSelSet.size===1&&_vidOvSelSet.has(vid)){_vidOvSelSet.clear();_vidOvSelIdx=-1;_vidOvSelVid=null;}
+    else{_vidOvSelSet.clear();_vidOvSelSet.add(vid);_vidOvSelIdx=idx;_vidOvSelVid=vid;}
   }
   _vidOvHighlight();if(typeof _vidCalHighlightChip==='function')_vidCalHighlightChip(_vidOvSelVid);
 }
