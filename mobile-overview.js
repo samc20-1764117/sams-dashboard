@@ -299,7 +299,7 @@ function mGetTodayTasks() {
     if (!t.due_date || t.category === 'Weekly Goals') return false;
     const tds = t.due_date.split('T')[0];
     if (tds === ds) return true;
-    if (isOv(t.due_date) && !t.done) return true;
+    if (_mTodayOffset === 0 && isOv(t.due_date) && !t.done) return true;
     return false;
   });
 
@@ -2330,6 +2330,8 @@ function mMonthTapDay(ds) {
 // ── Init ──────────────────────────────────────────────────────────────────────
 async function mInit() {
   load();
+  // Clear stale local overrides on mobile — always trust Supabase as source of truth
+  if (typeof localOverrides !== 'undefined') { for (const k in localOverrides) delete localOverrides[k]; }
   _mSetDate();
   mInitPickers();
   mInitTodayDblTap();

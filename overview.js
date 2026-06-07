@@ -136,10 +136,10 @@ function renderToday(){
   // Weekly reset tasks pinned to today/overdue via _dateOverrides (look back 4 weeks)
   const _wkKeyNow=getWkKey(wkOff);
   const _wrecSeen=new Set();const wrecToday=[];
-  for(let _w=_wkHi;_w>=Math.min(0,_dayWkOff)-4;_w--){const _wkKey=getWkKey(_w);st.recurring.filter(r=>(r.is_weekly_reset===true||r.is_weekly_reset==='true')&&r._dateOverrides&&r._dateOverrides[_wkKey]&&r._dateOverrides[_wkKey]!=='__skip__'&&(r._dateOverrides[_wkKey]===ds||(dayOff===0&&r._dateOverrides[_wkKey]<ds))&&!_wrecSeen.has(String(r.id))).forEach(r=>{_wrecSeen.add(String(r.id));const _isDone=!!(r._doneByWk&&r._doneByWk[_wkKey]);wrecToday.push({id:'rec-virt-'+r.id,name:r.name,category:'Recurring',due_date:r._dateOverrides[_wkKey],done:_isDone,_recId:r.id,_virtual:true,_wkKey:_wkKey,_isWrec:true});});}
+  for(let _w=_wkHi;_w>=Math.min(0,_dayWkOff)-4;_w--){const _wkKey=getWkKey(_w);st.recurring.filter(r=>(r.is_weekly_reset===true||r.is_weekly_reset==='true')&&r._dateOverrides&&r._dateOverrides[_wkKey]&&r._dateOverrides[_wkKey]!=='__skip__'&&(r._dateOverrides[_wkKey]===ds||(dayOff===0&&r._dateOverrides[_wkKey]<ds))&&!_wrecSeen.has(r.id+'::'+_wkKey)).forEach(r=>{_wrecSeen.add(r.id+'::'+_wkKey);const _isDone=!!(r._doneByWk&&r._doneByWk[_wkKey]);wrecToday.push({id:'wrec-'+r.id,name:r.name,category:'Recurring',due_date:r._dateOverrides[_wkKey],done:_isDone,_recId:r.id,_virtual:true,_wkKey:_wkKey,_isWrec:true});});}
   // New-style WR rules pinned to today/overdue via _dateOverrides (look back 4 weeks)
   const _wrRulesSeen=new Set();const wrRulesToday=[];
-  for(let _w=_wkHi;_w>=Math.min(0,_dayWkOff)-4;_w--){const _wkKey=getWkKey(_w);st.wrRules.filter(r=>r._dateOverrides&&r._dateOverrides[_wkKey]&&r._dateOverrides[_wkKey]!=='__skip__'&&!(st.wrOverrides||[]).some(o=>String(o.rule_id)===String(r.id)&&o.wk_key===_wkKey&&o.override_type==='skip')&&(r._dateOverrides[_wkKey]===ds||(dayOff===0&&r._dateOverrides[_wkKey]<ds&&!isDoneWRRule(r.id,_wkKey)))&&!_wrRulesSeen.has(String(r.id))).forEach(r=>{_wrRulesSeen.add(String(r.id));const _isDone=isDoneWRRule(r.id,_wkKey);wrRulesToday.push({id:'wrrule-virt-'+r.id,name:r.name,category:'Recurring',due_date:r._dateOverrides[_wkKey],done:_isDone,_ruleId:r.id,_virtual:true,_wkKey:_wkKey,_isWrRule:true});});}
+  for(let _w=_wkHi;_w>=Math.min(0,_dayWkOff)-4;_w--){const _wkKey=getWkKey(_w);st.wrRules.filter(r=>r._dateOverrides&&r._dateOverrides[_wkKey]&&r._dateOverrides[_wkKey]!=='__skip__'&&!(st.wrOverrides||[]).some(o=>String(o.rule_id)===String(r.id)&&o.wk_key===_wkKey&&o.override_type==='skip')&&(r._dateOverrides[_wkKey]===ds||(dayOff===0&&r._dateOverrides[_wkKey]<ds&&!isDoneWRRule(r.id,_wkKey)))&&!_wrRulesSeen.has(r.id+'::'+_wkKey)).forEach(r=>{_wrRulesSeen.add(r.id+'::'+_wkKey);const _isDone=isDoneWRRule(r.id,_wkKey);wrRulesToday.push({id:'wrrule-virt-'+r.id,name:r.name,category:'Recurring',due_date:r._dateOverrides[_wkKey],done:_isDone,_ruleId:r.id,_virtual:true,_wkKey:_wkKey,_isWrRule:true});});}
   // Shopping items due today (or overdue when viewing today)
   const shopToday=st.shopping
     .filter(s=>!s.done&&s.due_date&&(s.due_date===ds||(dayOff===0&&isOv(s.due_date))))
@@ -643,8 +643,8 @@ async function removePupSession(sessId){
 let _pupRecSeeded=false;
 async function seedPupReviewTask(){
   if(_pupRecSeeded)return;_pupRecSeeded=true;
-  const name='Prep pup training';
-  if(st.recurring.some(r=>/prep pup training/i.test(r.name)))return;
+  const name='Prep pups';
+  if(st.recurring.some(r=>/prep pup/i.test(r.name)))return;
   const tmp='rec-tmp-'+Date.now();
   const rec={id:tmp,name,cadence:'weekly',is_weekly_reset:false,is_enabled:true,appears_on_date:'Sunday',notes:'Review & set next week\'s focus skills for Mochi and Sunny',_doneByWk:{},_dateOverrides:{}};
   st.recurring.push(rec);save();renderToday();
@@ -3576,6 +3576,7 @@ function _vidStepTasksForDayWithOverdue(todayDs){
     const v=(st.videos||[]).find(x=>String(x.id)===String(vidId)&&!x.is_deleted);if(!v)return;
     if(v[step]==='na')return;
     const isDone=v[step]==='done'||_vidStepComputeDone(vidId,step,val.ds,val);
+    if(isDone&&val.ds<todayDs)return;// done + overdue = hide from today
     const label=_VID_STEP_LABELS[step]||step.replace('step_','');
     tasks.push({id:'vidstep-'+key.replace('::','-')+'-'+val.ds,name:label+': '+(v.topic||v.title),category:'Videos',due_date:val.ds,done:isDone,_vidId:vidId,_vidStep:step,_virtual:true,_type:'vidstep',_vidStepDay:val.ds});
     seen.add(key+'::'+val.ds);
@@ -3588,6 +3589,7 @@ function _vidStepTasksForDayWithOverdue(todayDs){
     const v=(st.videos||[]).find(x=>String(x.id)===String(bl._vidStepVid)&&!x.is_deleted);if(!v)return;
     if(v[bl._vidStepName]==='na')return;
     const isDone=v[bl._vidStepName]==='done'||_vidStepComputeDone(bl._vidStepVid,bl._vidStepName,bl.ds,null);
+    if(isDone&&bl.ds<todayDs)return;// done + overdue = hide from today
     const label=_VID_STEP_LABELS[bl._vidStepName]||bl._vidStepName.replace('step_','');
     tasks.push({id:'vidstep-'+bl._vidStepVid+'-'+bl._vidStepName+'-'+bl.ds,name:label+': '+(v.topic||v.title),category:'Videos',due_date:bl.ds,done:isDone,_vidId:bl._vidStepVid,_vidStep:bl._vidStepName,_virtual:true,_type:'vidstep',_vidStepDay:bl.ds});
   });
