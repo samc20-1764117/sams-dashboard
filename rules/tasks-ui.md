@@ -19,7 +19,7 @@ All task types that appear on the overview calendar/today list. Every type must 
 | Birthday | n/a | n/a | `st.birthdays` (banner only, not draggable) |
 | Weekly goal | `String(t.id)` | `wkgoal::{id}` | `st.tasks` (category=Weekly Goals) |
 | TB block | `blk-{id}` | block drag | `st.blocks` |
-| Video stage (vidstep) | `vidstep-{vid}-{step}` | `vidstep::{vid}::{step}` | `_vidStepDayMap` (localStorage) |
+| Video stage (vidstep) | `vidstep-{vid}-{step}-{day}` | `vidstep::{vid}::{step}::{day}` | `_vidStepDayMap` (localStorage) |
 | Auto TB | `atb::{atbId}` | auto-block drag | `st.autoTimeblocks` |
 
 ### Multi-select global behavior
@@ -134,19 +134,21 @@ Video tasks assigned to days via `_vidDayMap` (localStorage) follow the SAME rul
 - **Overdue**: `_vidDayMap[id] < today` when `dayOff===0`. Shows OV style + day letter.
 - **Completion**: checkbox calls `_vidCompleteFromOv` (popup to mark steps done or whole video).
 - **Delete (✕)**: calls `_vidUnassignDay` — removes from `_vidDayMap` + deletes linked timeblock.
-- **Video stage tasks (vidstep)**: `_vidStepDayMap` (localStorage) tracks one entry per step (`vidId::step → {ds, done}`). TB blocks provide multi-day support for Build/VO/Cut. Weekly cal X calls `_vidStepUnassign` (not skip/delete picker). Selection via today list ID `vidstep-{vid}-{step}`, cross-refs TB block's `_vidStepVid`+`_vidStepName`. Dblclick opens `openVidEdit(b._vidStepVid)`.
-- **Vidstep multi-day (Build/VO/Cut ONLY)**: These 3 stages can have TB blocks on multiple days (e.g., building Mon+Tue). `_vidStepAddBlock(vidId,step,ds)` creates a new block without moving existing ones. Daymap tracks the "primary" day; `_vidStepTasksForDay(ds)` also checks TB blocks to find steps on days the daymap doesn't point to. Th/Des are single-instance only.
-- **Vidstep overdue**: No auto-move — vidsteps stay on their assigned past day. `_vidStepTasksForDayWithOverdue(todayDs)` includes them in the today list with overdue styling (red + day letter badge). Weekly cal shows them as red chips on the original day. `_vidStepOvCount` also scans past-day blocks.
+- **Video stage tasks (vidstep)**: `_vidStepDayMap` (localStorage) tracks one entry per step (`vidId::step → {ds, done}`). TB blocks provide multi-day support for Build/VO/Cut. Weekly cal X calls `_vidStepUnassign` (not skip/delete picker). Selection via today list ID `vidstep-{vid}-{step}-{day}`, cross-refs TB block's `_vidStepVid`+`_vidStepName`. Dblclick opens `openVidEdit(b._vidStepVid)`.
+- **Vidstep multi-day (Build/VO/Cut ONLY)**: These 3 stages can have TB blocks on multiple days (e.g., building Mon+Tue). Each day's instance is **independent** — appears as a separate row in the today list with its own check/done state. `_vidStepAddBlock(vidId,step,ds)` creates a new block without moving existing ones. Daymap tracks the "primary" day; `_vidStepTasksForDay(ds)` also checks TB blocks to find steps on days the daymap doesn't point to. Th/Des are single-instance only.
+- **Vidstep per-day independence**: `seen` sets in `_vidStepTasksForDayWithOverdue` and `_vidStepOvCount` use `vidId::step::day` keys (not `vidId::step`), so the same step on different days produces separate entries. Task objects carry `_vidStepDay` property for day-scoped operations. IDs include day suffix: `vidstep-{vid}-{step}-{day}`.
+- **Vidstep overdue**: No auto-move — vidsteps stay on their assigned past day. `_vidStepTasksForDayWithOverdue(todayDs)` shows overdue instances alongside today's instances as separate rows. `_vidStepOvCount` uses per-day dedup. Weekly cal shows overdue as red chips on the original day.
+- **Vidstep reconstruction**: `_vidStepReconstructBlocks()` — for multi-day Build/VO/Cut, only creates daymap entry if none exists (does NOT overwrite existing to today, preserving overdue). For single-day Th/Des, always syncs daymap to today.
 - **Vidstep operations — today list vs weekly chips**:
-  - **Today list** (`tRowVidStepVirt`): check/delete operate on ALL blocks for the step (no day scoping). Drag uses `vidstep::vid::step` (no source day).
-  - **Weekly chips**: check/delete pass `forDay=t.due_date` → only affect that day's blocks (independent instances). Drag uses `vidstep::vid::step::sourceDay` — drop moves only source day's blocks.
+  - **Today list** (`tRowVidStepVirt`): Each instance scoped to `_vidStepDay`. Drag uses `vidstep::vid::step::day`. Toggle passes `forDay` to `_vidStepToggleDone`. `_hasTBToday` checks blocks on the instance's specific day.
+  - **Weekly chips**: check/delete pass `forDay=t.due_date` → only affect that day's blocks. Drag uses `vidstep::vid::step::sourceDay` — drop moves only source day's blocks.
   - `_vidStepToggleDone(vidId,step,checked,_fromTB,forDay)` — `forDay` scopes to that day's blocks; omit for all blocks. Pushes undo (except when `_fromTB`=true — TB handler pushes its own). Auto-creates daymap entry if blocks exist without one.
   - `_vidStepUnassign(vidId,step,forDay)` — `forDay` removes only that day's blocks and reassigns daymap to another day if needed; omit to remove everything.
-- **Vidstep done computation**: `_vidStepComputeDone(vidId,step,ds,mapEntry)` — for Build/VO/Cut, checks blocks on that specific day. For Th/Des, uses daymap done flag.
+- **Vidstep done computation**: `_vidStepComputeDone(vidId,step,ds,mapEntry)` — for Build/VO/Cut, checks blocks on that specific day only (no cross-day fallback). For Th/Des, uses daymap done flag.
 - **Vidstep default durations**: Build/VO/Cut → 60 min, Th/Des → 30 min (unless manually changed).
 - **Vidstep cross-view sync**: toggling a stage anywhere (videos page dot via `cycleVidStep`, overview stage square, overview checkbox, video edit modal) must sync all three: `v[step]`, `_vidStepDayMap[key].done`, and timeblock block `_done`. Sync code in `cycleVidStep`, `_vidOvToggleStep`, stage square click handler, and modal save path.
 - **Vidstep copy/paste**: Cmd+C copies vidstep tasks (`_isVidStep` flag). Cmd+V on Build/VO/Cut calls `_vidStepAddBlock` (duplicate, not move). Th/Des steps can't be pasted (toast warning). Target day from `_pasteColDates` (weekly column click).
-- **Vidstep DB persistence**: `_vidStepVid` stored in `vid_id` column, `_vidStepName` in `rec_id` column. On load, blocks with `vid_id` + `rec_id` starting with `step_` are recognized as vidstep blocks. `_vidStepReconstructBlocks()` is a fallback for legacy blocks (title matching, no daymap date restriction). Must run before sort and before `_hasTBToday`.
+- **Vidstep DB persistence**: `_vidStepVid` stored in `vid_id` column, `_vidStepName` in `rec_id` column. On load, blocks with `vid_id` + `rec_id` starting with `step_` are recognized as vidstep blocks. `_vidStepReconstructBlocks()` tags legacy blocks (title matching) and ensures daymap entries exist. Must run before sort and before `_hasTBToday`.
 - **Vidstep timeblock moves**: use `sbUpdateBlock(id, {day_date: ds})` — NOT `{ds}`. The DB column is `day_date`.
 - **Vidstep sorting**: `sortTasksForDay` → `tbSm()` has explicit `_type==='vidstep'` check before the `_vidId` check (vidstep blocks use `_vidStepVid`, not `_vidId`).
 - **Vidstep focus**: `_renderVidOvMenu` focus mode checks `_vidStepDayMap` entries in addition to `_vidDayMap` and `post_date`.
