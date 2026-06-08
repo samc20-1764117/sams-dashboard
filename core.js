@@ -73,11 +73,16 @@ function _initSbClient(){
     _authToken=session?session.access_token:null;
     _userId=session?.user?.id||null;
     if(!session&&event==='SIGNED_OUT'){
-      // Token refresh can briefly fire SIGNED_OUT — verify session is truly gone
-      await new Promise(r=>setTimeout(r,1500));
-      const{data}=await _sbClient.auth.getSession();
-      if(!data.session)showLoginOverlay(event);
-      else{_authToken=data.session.access_token;_userId=data.session.user?.id||null;}
+      // Network blips cause token refresh to fail and fire SIGNED_OUT — wait and re-verify
+      await new Promise(r=>setTimeout(r,2000));
+      try{
+        const{data}=await _sbClient.auth.getSession();
+        if(data.session){_authToken=data.session.access_token;_userId=data.session.user?.id||null;}
+        else showLoginOverlay(event);
+      }catch(e){
+        // getSession itself failed (network still down) — don't show login, session is likely still valid locally
+        console.warn('Auth re-check failed (network), keeping session');
+      }
     }
   });
 }
