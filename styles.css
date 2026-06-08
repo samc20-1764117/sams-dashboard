@@ -1230,7 +1230,7 @@ body.dark .groc-add input{background:rgba(255,255,255,.06);border-color:rgba(255
 .groc-bottom{display:grid;grid-template-columns:.8fr .7fr 1.5fr;flex:1;min-height:0;overflow:hidden;width:100%}
 .groc-panel{overflow-y:auto;padding:10px 12px;min-width:0;display:flex;flex-direction:column}
 .groc-panel+.groc-panel{border-left:1px solid rgba(210,205,228,.2)}
-.groc-panel-title{font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px;letter-spacing:-.2px;flex-shrink:0}
+.groc-panel-title{font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px;letter-spacing:-.2px;flex-shrink:0;min-height:28px;display:flex;align-items:center}
 .groc-meal-tag{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:5px;background:rgba(249,115,22,.1);border:1px solid rgba(249,115,22,.2);font-size:11px;font-weight:500;color:#c2410c;cursor:grab;white-space:nowrap}
 .groc-meal-tag button{background:none;border:none;cursor:pointer;color:rgba(194,107,79,.5);font-size:9px;padding:0 2px}
 .groc-meal-tag button:hover{color:#ef4444}
@@ -1241,7 +1241,8 @@ body.dark .groc-meal-tag{background:rgba(249,115,22,.15);color:#fb923c;border-co
 .groc-recipe-check{display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:6px;font-size:12px;color:var(--text);cursor:pointer;transition:background .1s}
 .groc-recipe-check:hover{background:rgba(124,106,247,.06)}
 .groc-recipe-check.active{background:rgba(249,115,22,.06)}
-.groc-recipe-check input[type="checkbox"]{width:14px;height:14px;accent-color:#f97316;flex-shrink:0}
+.groc-recipe-check input[type="checkbox"]{width:14px;height:14px;accent-color:#999;flex-shrink:0}
+.groc-recipe-check.active input[type="checkbox"]{accent-color:#f97316}
 .groc-recipe-check span:first-of-type{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .groc-recipe-type{font-size:10px;color:var(--muted);flex-shrink:0}
 .groc-selected-meals{display:flex;flex-direction:column;gap:2px}

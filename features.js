@@ -3746,8 +3746,7 @@ function renderGroceryModal(){
 
   // Col 1: Search + recipe checkboxes
   html+=`<div class="groc-panel">`;
-  html+=`<div class="groc-panel-title"><button onclick="document.getElementById('groceryModal').close();showPage('recipes')" style="padding:4px 10px;border-radius:6px;border:1px solid var(--accent,#c67b48);background:var(--accent,#c67b48);color:#fff;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">Recipes</button></div>`;
-  html+=`<div style="margin-bottom:6px;flex-shrink:0"><input type="text" id="grocRecipeSearch" placeholder="Search recipes…" oninput="_grocRecSearch=this.value;renderGroceryModal()" value="${escHtml(_grocRecSearch||'')}" style="width:100%;padding:6px 10px;border-radius:var(--rs);border:1px solid var(--gb);font-size:12px;font-family:inherit;color:var(--text);background:var(--glass);outline:none;box-sizing:border-box"></div>`;
+  html+=`<div class="groc-panel-title" style="gap:6px"><button onclick="document.getElementById('groceryModal').close();showPage('recipes')" style="padding:4px 10px;border-radius:6px;border:1px solid var(--accent,#c67b48);background:var(--accent,#c67b48);color:#fff;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;flex-shrink:0">Recipes</button><input type="text" id="grocRecipeSearch" placeholder="Search…" oninput="_grocRecSearch=this.value;renderGroceryModal()" value="${escHtml(_grocRecSearch||'')}" style="flex:1;padding:4px 8px;border-radius:var(--rs);border:1px solid var(--gb);font-size:11px;font-family:inherit;color:var(--text);background:var(--glass);outline:none;box-sizing:border-box;min-width:0"></div>`;
   html+=`<div class="groc-recipe-list">`;
   let filteredRecipes=(st.recipes||[]);
   if(_grocRecSearch)filteredRecipes=filteredRecipes.filter(r=>r.name.toLowerCase().includes(_grocRecSearch.toLowerCase()));
@@ -3790,7 +3789,7 @@ function renderGroceryModal(){
     else if(em) _totalMealsCovered+=1;
     else _totalMealsCovered+=1;
   });
-  html+=`<div class="groc-panel-title" style="display:flex;align-items:center;justify-content:space-between">Planned Meals${_totalMealsCovered?` <span style="font-weight:500;font-size:10px;color:var(--muted)">${_totalMealsCovered} meals</span>`:''}<span class="groc-people-toggle" style="font-weight:400;font-size:10px">People: <button onclick="setGrocPeople(1,'${menuMon}')"${_ppl===1?' class="active"':''}>1</button><button onclick="setGrocPeople(2,'${menuMon}')"${_ppl===2?' class="active"':''}>2</button></span></div>`;
+  html+=`<div style="flex-shrink:0;margin-bottom:4px;min-height:28px"><div class="groc-panel-title" style="margin-bottom:2px">Planned Meals</div><div style="display:flex;align-items:center;justify-content:space-between;font-size:10px;color:var(--muted)">${_totalMealsCovered?`<span style="font-weight:500">${_totalMealsCovered} meals</span>`:'<span></span>'}<span class="groc-people-toggle" style="font-weight:400">People: <button onclick="setGrocPeople(1,'${menuMon}')"${_ppl===1?' class="active"':''}>1</button><button onclick="setGrocPeople(2,'${menuMon}')"${_ppl===2?' class="active"':''}>2</button></span></div></div>`;
   if(planMeals.length){
     html+=`<div class="groc-selected-meals">`;
     planMeals.forEach(m=>{
