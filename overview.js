@@ -5770,12 +5770,19 @@ function getVisibleBlocks(ds){
       const rec=st.recurring.find(x=>String(x.id)===String(b.recId));
       if(rec){
         const wkk=dsToWkKey(ds);
-        if(rec._dateOverrides&&rec._dateOverrides[wkk]!==undefined&&rec._dateOverrides[wkk]!==ds)return false;
+        // Block is valid if current week's override matches ds, OR any other week's override points to ds
+        if(rec._dateOverrides&&rec._dateOverrides[wkk]!==undefined&&rec._dateOverrides[wkk]!==ds){
+          const anyOvMatch=Object.values(rec._dateOverrides).some(v=>v===ds);
+          if(!anyOvMatch)return false;
+        }
       } else {
         const r=st.wrRules.find(x=>String(x.id)===String(b.recId));
         if(!r)return false;
         const wkk=dsToWkKey(ds);
-        if(r._dateOverrides&&r._dateOverrides[wkk]!==undefined&&r._dateOverrides[wkk]!==ds)return false;
+        if(r._dateOverrides&&r._dateOverrides[wkk]!==undefined&&r._dateOverrides[wkk]!==ds){
+          const anyOvMatch=Object.values(r._dateOverrides).some(v=>v===ds);
+          if(!anyOvMatch)return false;
+        }
       }
     } else if(b.ruleId){
       const r=st.wrRules.find(x=>String(x.id)===String(b.ruleId));
