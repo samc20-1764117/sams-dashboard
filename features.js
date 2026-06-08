@@ -3687,14 +3687,15 @@ function renderGroceryModal(){
       <button class="groc-del" onclick="delGroceryItem('${g.id}')">✕</button>
     </div>`;}
 
-  // ── HEADER — full-width bar with Recipes left, controls center, X right ──
+  // ── HEADER — Recipes button left, ← week label →, X right ──
+  const _grocIsThisWk=_grocWkOff===0;
+  const _grocWkLabel=_grocIsThisWk?'This Week':_grocWeekLabel(menuMon);
   let html=`<div style="display:flex;align-items:center;width:100%;box-sizing:border-box;padding:10px 16px;border-bottom:1px solid rgba(210,205,228,.2);flex-shrink:0;background:inherit;z-index:2">
-    <button class="groc-nav-btn" onclick="document.getElementById('groceryModal').close();showPage('recipes')">Recipes</button>
-    <div style="display:flex;align-items:center;gap:8px;flex:1;justify-content:center">
+    <button onclick="document.getElementById('groceryModal').close();showPage('recipes')" style="padding:5px 12px;border-radius:8px;border:1px solid var(--accent,#c67b48);background:var(--accent,#c67b48);color:#fff;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">Recipes</button>
+    <div style="display:flex;align-items:center;gap:10px;flex:1;justify-content:center">
       <button class="groc-nav-btn" onclick="_grocWkOff--;renderGroceryModal();this.closest('dialog').focus()">←</button>
+      <span style="font-size:13px;font-weight:600;color:var(--text);min-width:100px;text-align:center">${_grocWkLabel}</span>
       <button class="groc-nav-btn" onclick="_grocWkOff++;renderGroceryModal();this.closest('dialog').focus()">→</button>
-      <button class="groc-nav-btn" onclick="_grocWkOff=0;renderGroceryModal();this.closest('dialog').focus()"${_grocWkOff===0?' disabled style="opacity:.4;pointer-events:none"':''}>This Week</button>
-      <span class="groc-people-toggle">People: <button onclick="setGrocPeople(1,'${menuMon}')"${_getGrocPeople(menuMon)===1?' class="active"':''}>1</button><button onclick="setGrocPeople(2,'${menuMon}')"${_getGrocPeople(menuMon)===2?' class="active"':''}>2</button></span>
     </div>
     <button class="groc-close" onclick="document.getElementById('groceryModal').close()">✕</button>
   </div>`;
@@ -3739,7 +3740,7 @@ function renderGroceryModal(){
   html+=`</div></div>`;
 
   // ── BOTTOM section header ──
-  html+=`<div style="padding:10px 16px 6px;font-size:15px;font-weight:800;color:var(--text);letter-spacing:-.3px;border-top:2px solid ${_dk()?'rgba(255,255,255,.08)':'rgba(200,190,175,.35)'};background:${_dk()?'rgba(255,255,255,.04)':'rgba(240,234,226,.7)'}">Shopping Next Week<span style="font-size:11px;font-weight:500;color:var(--muted);margin-left:8px">${_grocWeekLabel(planMon)}</span></div>`;
+  html+=`<div style="padding:10px 16px 8px;font-size:15px;font-weight:800;color:var(--text);letter-spacing:-.3px;border-top:2px solid ${_dk()?'rgba(255,255,255,.08)':'rgba(200,190,175,.35)'};background:${_dk()?'rgba(255,255,255,.04)':'rgba(240,234,226,.7)'};width:100%;box-sizing:border-box">Shopping Next Week<span style="font-size:11px;font-weight:500;color:var(--muted);margin-left:8px">${_grocWeekLabel(planMon)}</span></div>`;
 
   // ─── BOTTOM: Three columns ──
   html+=`<div class="groc-bottom" style="background:${_dk()?'rgba(255,255,255,.04)':'rgba(240,234,226,.7)'}">`;
@@ -3780,7 +3781,7 @@ function renderGroceryModal(){
 
   // Col 2: Selected meals with remove
   html+=`<div class="groc-panel">`;
-  html+=`<div class="groc-panel-title">Planned Meals <span style="font-weight:400;color:var(--muted);font-size:10px">${_grocWeekLabel(planMon)}</span></div>`;
+  html+=`<div class="groc-panel-title" style="display:flex;align-items:center;justify-content:space-between">Planned Meals<span class="groc-people-toggle" style="font-weight:400;font-size:10px">People: <button onclick="setGrocPeople(1,'${menuMon}')"${_getGrocPeople(menuMon)===1?' class="active"':''}>1</button><button onclick="setGrocPeople(2,'${menuMon}')"${_getGrocPeople(menuMon)===2?' class="active"':''}>2</button></span></div>`;
   if(planMeals.length){
     html+=`<div class="groc-selected-meals">`;
     planMeals.forEach(m=>{
