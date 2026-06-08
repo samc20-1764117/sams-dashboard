@@ -2055,7 +2055,7 @@ function mRenderGroc() {
   const unchecked = items.filter(g => !g.checked);
   const checked = items.filter(g => g.checked);
   const countEl = document.getElementById('mGrocCount');
-  if (countEl) countEl.textContent = unchecked.length ? `HEB (${unchecked.length} items)` : 'HEB ✓';
+  if (countEl) countEl.textContent = unchecked.length ? `HEB (${unchecked.length} items) v2` : 'HEB ✓ v2';
 
   let html = '';
 
