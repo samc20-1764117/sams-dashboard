@@ -3696,7 +3696,7 @@ function renderGroceryModal(){
     </div>
     <button class="groc-nav-btn" onclick="_grocWkOff=0;renderGroceryModal();this.closest('dialog').focus()"${_grocWkOff===0?' disabled style="opacity:.4;pointer-events:none"':''}>This Week</button>
     <span class="groc-people-toggle">People: <button onclick="setGrocPeople(1,'${menuMon}')"${_getGrocPeople(menuMon)===1?' class="active"':''}>1</button><button onclick="setGrocPeople(2,'${menuMon}')"${_getGrocPeople(menuMon)===2?' class="active"':''}>2</button></span>
-    <button class="groc-close" onclick="document.getElementById('groceryModal').close()">✕</button>
+    <button class="groc-close" style="margin-left:auto" onclick="document.getElementById('groceryModal').close()">✕</button>
   </div>`;
 
   // ── TOP: This week's meals (menuMon) — driven by last week's recipe picks ──
