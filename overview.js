@@ -207,7 +207,9 @@ function renderToday(){
       return false;
     }
     if(t._type==='vidstep'){
-      return st.blocks.some(b=>b.ds===_todDs&&String(b._vidStepVid)===String(t._vidId)&&b._vidStepName===t._vidStep);
+      const _vsBlk=st.blocks.filter(b=>b.ds===_todDs&&String(b._vidStepVid)===String(t._vidId)&&b._vidStepName===t._vidStep);
+      if(_vsBlk.length)console.log('[VS-TB-BLOCK]',t.name,JSON.stringify(_vsBlk.map(b=>({id:b.id,ds:b.ds,sm:b.sm,dur:b.dur,done:b._done,title:b.title}))));
+      return _vsBlk.length>0;
     }
     if(t._vidId)return st.blocks.some(b=>(b.ds===_todDs||isOvToday)&&String(b._vidId)===String(t._vidId));
     if(t._type==='pup')return st.blocks.some(b=>(b.ds===_todDs||isOvToday)&&String(b._pupSessId)===String(t._pupSessId));
