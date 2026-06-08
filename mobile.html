@@ -13,7 +13,7 @@
 <script>
 // Inline cache-buster: fetch version file (bypasses iOS PWA HTML cache) and reload if stale
 (function(){
-  var BUILD='20260608b';
+  window._BUILD='20260608b';var BUILD=window._BUILD;
   if(sessionStorage._mReloaded===BUILD)return;
   fetch('/mobile-version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(d){
     if(d.v&&d.v!==BUILD){sessionStorage._mReloaded=d.v;location.reload();}

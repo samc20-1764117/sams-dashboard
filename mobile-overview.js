@@ -1,4 +1,6 @@
 // mobile-overview.js
+// If old cached HTML is loaded (no inline _BUILD), redirect to cache-busted URL
+if(!window._BUILD&&!sessionStorage._mBust){sessionStorage._mBust='1';location.href='/mobile.html?_='+Date.now();}
 window._mobileMode = true;
 
 // ── Login overlay ─────────────────────────────────────────────────────────────
