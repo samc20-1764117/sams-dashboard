@@ -3789,7 +3789,7 @@ function renderGroceryModal(){
     else if(em) _totalMealsCovered+=1;
     else _totalMealsCovered+=1;
   });
-  html+=`<div class="groc-panel-title" style="justify-content:space-between;gap:6px">Planned Meals<span style="display:flex;align-items:center;gap:8px;margin-left:auto">${_totalMealsCovered?`<span style="font-weight:500;font-size:10px;color:var(--muted)">${_totalMealsCovered} meals</span>`:''}<span class="groc-people-toggle" style="font-weight:400;font-size:10px">People: <button onclick="setGrocPeople(1,'${menuMon}')"${_ppl===1?' class="active"':''}>1</button><button onclick="setGrocPeople(2,'${menuMon}')"${_ppl===2?' class="active"':''}>2</button></span></span></div>`;
+  html+=`<div class="groc-panel-title" style="justify-content:space-between;align-items:flex-start">Planned Meals<span style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;margin-left:auto"><span class="groc-people-toggle" style="font-weight:400;font-size:10px">People: <button onclick="setGrocPeople(1,'${menuMon}')"${_ppl===1?' class="active"':''}>1</button><button onclick="setGrocPeople(2,'${menuMon}')"${_ppl===2?' class="active"':''}>2</button></span>${_totalMealsCovered?`<span style="font-weight:500;font-size:9px;color:var(--muted)">${_totalMealsCovered} meals</span>`:''}</span></div>`;
   if(planMeals.length){
     html+=`<div class="groc-selected-meals">`;
     planMeals.forEach(m=>{
