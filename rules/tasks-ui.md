@@ -44,6 +44,26 @@ All task types that appear on the overview calendar/today list. Every type must 
 - **Non-WR recurring dedup**: `allRecVirt` deduplicates by `_recId::_wkKey`. Same task from different weeks = separate instances (e.g. HEB moved cross-week + this week's natural occurrence). Same task+week = deduped, preferring future over overdue. `getOvRecurring()` uses same `_recId::_wkKey` dedup for overdue banner/rollover.
 - `updateOvBanner()` called from `renderToday()`. Banner text: `X Overdue` + `Move to today` button. No task name or question.
 
+## Sort Order
+
+Three sort functions (`sortByTypeOrder`, `sortTasksForDay`, `sortByTBWeek`) all use the same tier system:
+
+**Tier 1 — Hard priority (checked first, in order):**
+1. Birthday — always first
+2. Done — always last
+3. Travel (undone) — floats up
+4. Overdue (undone) — floats up
+5. Important / fin-cancel (undone) — floats up
+
+**Tier 2 — Timeblock position** (sortTasksForDay/sortByTBWeek only): tasks with blocks sort by start minute above unblocked tasks.
+
+**Tier 3 — `taskTypePri` category order:**
+birthday(1) → home(2) → my work(3) → work(4) → social/other(5) → vid(5.5) → vidstep(5.6) → non-WR recurring(6) → fin-cancel(6.5) → shopping(7) → pup(8) → weekly reset(9)
+
+**Tier 4 — Alphabetical** by name (tiebreaker).
+
+Mobile `_mTaskTypePri` and `mSortToday` mirror this exactly.
+
 ## Task Modals
 - **`#tModal`**: add (`openTModal(cat='')`) + edit (`openEditTask(id)`). Save: `saveTModal()`.
 - **`#qaPopup`** (`openQA(ctx,btn,ds,kcat)`): cat defaults `kcat` when `ctx==='kanban'` OR `ctx==='wkc'` and `kcat` provided, else `'Home'`.
