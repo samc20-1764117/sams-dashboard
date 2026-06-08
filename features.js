@@ -3689,7 +3689,7 @@ function renderGroceryModal(){
 
   // ── HEADER ──
   let html=`<div class="groc-header">
-    <button class="groc-nav-btn" onclick="document.getElementById('groceryModal').close();showPage('recipes')">Recipes</button>
+    <button class="groc-nav-btn" style="margin-right:auto" onclick="document.getElementById('groceryModal').close();showPage('recipes')">Recipes</button>
     <div style="display:flex;align-items:center;gap:8px">
       <button class="groc-nav-btn" onclick="_grocWkOff--;renderGroceryModal();this.closest('dialog').focus()">←</button>
       <span style="font-size:12px;color:var(--muted)">${_grocWeekLabel(menuMon)}</span>
@@ -3697,7 +3697,7 @@ function renderGroceryModal(){
       <button class="groc-nav-btn" onclick="_grocWkOff=0;renderGroceryModal();this.closest('dialog').focus()"${_grocWkOff===0?' disabled style="opacity:.4;pointer-events:none"':''}>This Week</button>
       <span class="groc-people-toggle">People: <button onclick="setGrocPeople(1,'${menuMon}')"${_getGrocPeople(menuMon)===1?' class="active"':''}>1</button><button onclick="setGrocPeople(2,'${menuMon}')"${_getGrocPeople(menuMon)===2?' class="active"':''}>2</button></span>
     </div>
-    <button class="groc-close" onclick="document.getElementById('groceryModal').close()">✕</button>
+    <button class="groc-close" style="margin-left:auto" onclick="document.getElementById('groceryModal').close()">✕</button>
   </div>`;
 
   // ── TOP: This week's meals (menuMon) — driven by last week's recipe picks ──
