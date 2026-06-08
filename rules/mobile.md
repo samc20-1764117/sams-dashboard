@@ -453,5 +453,5 @@ document.addEventListener('DOMContentLoaded', mInit);
 ### Login overlay (mobile override)
 Mobile overrides `showLoginOverlay(event)` and `hideLoginOverlay()` from core.js:
 - `_mLoggedIn` flag prevents transient auth events (token refresh) from showing login
-- Only shows login overlay on explicit `SIGNED_OUT` event or when never logged in
-- `core.js` line 73: `if(!session&&event==='SIGNED_OUT'){showLoginOverlay(event);}` — only triggers on sign-out, not token refresh null sessions
+- **Desktop `core.js`**: `onAuthStateChange` never shows login overlay — network blips (DNS `ERR_NAME_NOT_RESOLVED`) cause false `SIGNED_OUT`. Login gated by `checkAuth()` on page load only.
+- Mobile has its own `showLoginOverlay` override with `_mLoggedIn` guard

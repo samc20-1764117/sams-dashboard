@@ -11,8 +11,9 @@ Global scope — no modules/bundler.
 
 ## Auth
 Supabase Auth (email+password), RLS on all tables. `init()`→`checkAuth()`→`doLogin()`→`syncAll()`. All `sbReq*` use JWT + anon `apikey`. Token auto-refreshes hourly (1 week). `syncAll` calls `getSession()` first to prevent 401 on long sessions.
-- `#main` starts `opacity:0`; `renderAll()` sets to `1`.
-- Initial `renderAll()` deferred via `document.fonts.ready.then(()=>requestAnimationFrame(renderAll))` — fonts loaded before first paint so WR column maxHeight stable on hard refresh.
+- **Anti-glitch preload**: `body.preload` class hides `.main`, `.sidebar`, `.ov-topbar` via `visibility:hidden` and suppresses all transitions/animations. Removed only after `document.fonts.ready` resolves (via `_removePreloadAfterFonts` helper). This prevents font-swap layout shifts on refresh.
+- **Post-sync preload**: `syncAll` re-adds `body.preload` before `renderAll()` and removes after 2 rAFs — prevents visible size jumps when synced data differs from localStorage.
+- **Auth state changes**: `onAuthStateChange` only updates `_authToken`/`_userId` on valid sessions. NEVER shows login overlay — network blips (DNS failures) cause false `SIGNED_OUT` events. Login gated by `checkAuth()` on page load only.
 - `_firstSyncDone=true` before initial `renderAll()` from localStorage so overdue banner shows instantly.
 - `#main` left transition suppressed during `init()` (prevents shopping list squish animation).
 - `#backToOv` button lives OUTSIDE `#main` (sibling, between sidebar and `#main` in DOM). Must stay outside `#main` — `#main`'s `position:fixed` + `overflow:auto` traps z-index of children. `position:fixed;z-index:999` on backToOv.
