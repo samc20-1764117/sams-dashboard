@@ -1,8 +1,9 @@
 # Mobile Dashboard Rules
 
 > **CRITICAL**: The mobile app is a separate PWA that shares the same Supabase backend as the desktop web app.
-> - **NEVER touch**: `index.html`, `overview.js`, `features.js` (except stubs already in mobile-overview.js), `core.js`, `style.css`, `manifest.json`, or any desktop-only JS/CSS.
-> - **Mobile-only files**: `mobile.html`, `mobile.css`, `mobile-overview.js`, `mobile-manifest.json`, `_headers`
+> - **NEVER touch**: `index.html`, `overview.js`, `features.js` (except stubs already in mobile-overview.js), `style.css`, `manifest.json`, or any desktop-only JS/CSS.
+> - **core.js**: shared file, may be modified carefully when mobile needs differ (e.g. auth event handling). Changes affect desktop too — test both.
+> - **Mobile-only files**: `mobile.html`, `mobile.css`, `mobile-overview.js`, `mobile-manifest.json`, `mobile-sw.js`, `_headers`
 > - The desktop web app runs in a separate terminal — changes to shared files will break it.
 
 ---
@@ -16,18 +17,20 @@
 | `mobile.css` | All mobile styles. CSS vars match desktop (`--accent:#7c6af7`, `--bg`, `--glass`, etc.) |
 | `mobile-overview.js` | All mobile logic. Loaded after `core.js` + `features.js`. Sets `window._mobileMode = true` |
 | `mobile-manifest.json` | PWA manifest with `start_url: /mobile.html` (separate from desktop `manifest.json`) |
+| `mobile-sw.js` | Network-first service worker — always fetches from network, no caching. Registered in mobile.html |
 | `_headers` | Cloudflare Pages cache-control: `no-cache, no-store, must-revalidate` for all mobile files |
 
 ### Script load order (mobile.html)
 ```
-supabase CDN → core.js → features.js → mobile-overview.js
+service worker registration → supabase CDN → core.js → features.js → mobile-overview.js
 ```
-`core.js` and `features.js` are shared — **never modified for mobile**. All mobile-specific logic goes in `mobile-overview.js`.
+Script tags use cache-busting `?v=YYYYMMDD` query params. Update the version string when deploying changes.
+`core.js` and `features.js` are shared. All mobile-specific logic goes in `mobile-overview.js`.
 
 ### Desktop stubs (top of mobile-overview.js)
 All desktop render functions are no-ops or redirect to mobile equivalents:
 ```js
-function renderAll()   { mRenderToday(); if (_mCurTab==='tb') mRenderTB(); if (_mCurTab==='week') mRenderWeek(); if (_mCurTab==='shop') mRenderShop(); }
+function renderAll()   { mRenderToday(); if (_mCurTab==='tb') mRenderTB(); if (_mCurTab==='week') mRenderWeek(); if (_mCurTab==='shop') mRenderShop(); if (_mCurTab==='groc') mRenderGroc(); }
 function renderToday() { mRenderToday(); }
 function renderShopOv(){ if (_mCurTab==='shop') mRenderShop(); }
 function renderShopFull(){ if (_mCurTab==='shop') mRenderShop(); }
@@ -137,7 +140,7 @@ let _mFullAddCat  = 'Home';  // full add sheet (today)
 
 ### State
 ```js
-let _mCurTab = 'tb'; // 'today' | 'tb' | 'week' | 'shop'  (default: tb)
+let _mCurTab = 'tb'; // 'today' | 'tb' | 'week' | 'shop' | 'groc'  (default: tb)
 ```
 
 ### `mShowTab(tab)`
@@ -369,7 +372,34 @@ Each `.m-wk-day` has `data-ds="YYYY-MM-DD"` and contains:
 
 ---
 
-## iOS-Specific Rules
+## Tab 5: HEB Grocery (`groc`)
+
+### Layout
+```
+#mGrocPage
+  .m-shop-header.m-groc-hdr  ← header: 📖 Recipes button | "HEB Grocery" | ✕ Close
+  #mGrocList                  ← two sections: Meals (this week) + Shopping List (next week)
+```
+
+### Two-section design
+- **Meals section** (this week): `_grocWeekMonday(0)` — shows planned meals via `_mealsForWeek()`
+- **Shopping List section** (next week): `_grocWeekMonday(1)` — grocery items from `st.groceryList` where `week_of === nextWkMon`
+- Sections visually separated by `border-top: 2px solid var(--border)` on next-week header
+- Each section header shows date range via `_mGrocDateRange(mon)`
+
+### Key functions
+- `mRenderGroc()` — renders both sections into `#mGrocList`
+- `mTogGroc(id, checked)` — toggle grocery item checked state
+- `mDelGroc(id)` — delete grocery item
+- `mRemoveMealAndGroceries(recipeId)` — remove meal + associated grocery items
+- `mOpenRecipes()` / `mCloseRecipes()` — recipe picker bottom sheet (`#mRecipeSheet` + `#mRecipeBackdrop`)
+
+### Grocery list grouping
+Within shopping list section, items grouped by: Weekly Staples → recipe groups → Other → Done (collapsed)
+
+---
+
+
 
 - All `<input>` and `<textarea>` must have `font-size: 16px` minimum — otherwise iOS auto-zooms on focus
 - Use `env(safe-area-inset-bottom)` and `env(safe-area-inset-top)` for notch/home indicator padding
@@ -379,15 +409,17 @@ Each `.m-wk-day` has `data-ds="YYYY-MM-DD"` and contains:
 - When scroll-lock is needed during drag: set `element.style.overflowY = 'hidden'` rather than `passive: false` where possible
 - Add `passive: false` touchmove to `document` dynamically only during active drag, remove on touchend
 
-## PWA
+## PWA & Caching
 - `mobile-manifest.json` (not `manifest.json`) — `start_url: /mobile.html`, `display: standalone`
 - `mobile.html` links: `<link rel="manifest" href="mobile-manifest.json">`
+- `mobile-sw.js` — network-first service worker, registered at top of mobile.html. Always fetches from network; deletes all caches on activate. Solves iOS standalone PWA aggressive caching.
 - `_headers` sets `no-cache` on all mobile files so Cloudflare Pages doesn't cache stale versions
+- Script tags use `?v=YYYYMMDD` cache-busting params — update on each deploy
 
 ## Deployment
 - Dev: `https://dev.sams-dashboard.pages.dev/mobile.html`
 - Production: follow `rules/deploy.md`
-- Hard refresh on iOS: Settings → Safari → Advanced → Website Data → delete, or use the ↻ reload button in the app header
+- iOS PWA caching: the service worker handles cache busting. If user still sees stale content, the service worker may not have installed yet — needs one Safari tab refresh to bootstrap.
 
 ---
 
@@ -415,5 +447,11 @@ document.addEventListener('DOMContentLoaded', mInit);
 ```
 
 ### Auth flow
-`checkAuth()` (core.js) calls `showLoginOverlay()` if not authed.
+`checkAuth()` (core.js) calls `showLoginOverlay()` if no session found.
 `mDoLogin()` → `doLogin_m(email, pass)` → `_sbClient.auth.signInWithPassword()` → sets `_authToken` → `hideLoginOverlay()` → `syncAll()`
+
+### Login overlay (mobile override)
+Mobile overrides `showLoginOverlay(event)` and `hideLoginOverlay()` from core.js:
+- `_mLoggedIn` flag prevents transient auth events (token refresh) from showing login
+- Only shows login overlay on explicit `SIGNED_OUT` event or when never logged in
+- `core.js` line 73: `if(!session&&event==='SIGNED_OUT'){showLoginOverlay(event);}` — only triggers on sign-out, not token refresh null sessions
