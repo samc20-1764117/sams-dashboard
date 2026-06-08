@@ -4,6 +4,8 @@
 
 All task types that appear on the overview calendar/today list. Every type must support: render, select (`selTask`), drag, drop onto calendar day, multi-select drag with mixed types, timeblock drop, checkbox toggle, delete (X), undo.
 
+- **Progress %**: Today list header shows completion percentage. Excludes `_type==='travel'` items (auto-managed, not manually checked off). Excludes `_type==='birthday'` from done count.
+
 | Type | Selection ID | Drag ID | Source |
 |------|-------------|---------|--------|
 | Regular task | `String(t.id)` | `String(t.id)` | `st.tasks` |
@@ -82,8 +84,8 @@ All task types that appear on the overview calendar/today list. Every type must 
 All indicators at far right, swap to X on hover. `cat-dot` stroke changes to accent color (stroke-width 1.5, opacity 0.7) for tasks not on timeblock. `chip-del` inside relative chip. `wr-cad-badge` hidden on row hover to reveal X. `cpill` pointer-events:none.
 
 ### Recurring task inline badges
-- **HEB badge** (`.heb-cnt`): shopping cart icon (9px SVG) before task name on all views (today list, weekly chips, week summary, timeblock, recOv). Opens grocery modal on click. Uses `_hebBadge(name)` helper.
-- **Prep pup training badge** (`.pup-link-badge`): link icon (8px SVG) before task name on all views. Opens `_openPupFocusModal(null)` on click. Uses `_pupBadge(name)` helper. Match is case-insensitive.
+- **HEB badge** (`.heb-cnt`): shopping cart icon (9px SVG) before task name on all views (today list, weekly chips, week summary, timeblock, recOv). Opens grocery modal on click. Uses `_hebBadge(name, wkKey)` helper — passes week context so each instance opens its own week's grocery list.
+- **Prep pups badge** (`.pup-link-badge`): link icon (8px SVG) before task name on all views. Opens `_openPupFocusModal(null)` on click. Uses `_pupBadge(name)` helper. Match is case-insensitive. (Renamed from "Prep pup training".)
 - Both badges: `display:inline-flex;align-items:center;margin-right:3px;opacity:.55`. CSS tweaks per view: `.chip` top:-0.5px, `.tb-block` top:-1px, `.ti` top:1px.
 - **Overdue rows**: no `cat-dot`. Show single DOW letter (`S/M/T/W/T/F/S`) in `.dlbl.ov` instead of full date. `.dlbl.ov` has `margin-right:-4px`.
 
@@ -137,7 +139,7 @@ Video tasks assigned to days via `_vidDayMap` (localStorage) follow the SAME rul
 - **Video stage tasks (vidstep)**: `_vidStepDayMap` (localStorage) tracks one entry per step (`vidId::step → {ds, done}`). TB blocks provide multi-day support for Build/VO/Cut. Weekly cal X calls `_vidStepUnassign` (not skip/delete picker). Selection via today list ID `vidstep-{vid}-{step}-{day}`, cross-refs TB block's `_vidStepVid`+`_vidStepName`. Dblclick opens `openVidEdit(b._vidStepVid)`.
 - **Vidstep multi-day (Build/VO/Cut ONLY)**: These 3 stages can have TB blocks on multiple days (e.g., building Mon+Tue). Each day's instance is **independent** — appears as a separate row in the today list with its own check/done state. `_vidStepAddBlock(vidId,step,ds)` creates a new block without moving existing ones. Daymap tracks the "primary" day; `_vidStepTasksForDay(ds)` also checks TB blocks to find steps on days the daymap doesn't point to. Th/Des are single-instance only.
 - **Vidstep per-day independence**: `seen` sets in `_vidStepTasksForDayWithOverdue` and `_vidStepOvCount` use `vidId::step::day` keys (not `vidId::step`), so the same step on different days produces separate entries. Task objects carry `_vidStepDay` property for day-scoped operations. IDs include day suffix: `vidstep-{vid}-{step}-{day}`.
-- **Vidstep overdue**: No auto-move — vidsteps stay on their assigned past day. `_vidStepTasksForDayWithOverdue(todayDs)` shows overdue instances alongside today's instances as separate rows. `_vidStepOvCount` uses per-day dedup. Weekly cal shows overdue as red chips on the original day.
+- **Vidstep overdue**: No auto-move — vidsteps stay on their assigned past day. `_vidStepTasksForDayWithOverdue(todayDs)` shows overdue instances alongside today's instances as separate rows. `_vidStepOvCount` uses per-day dedup. Weekly cal shows overdue as red chips on the original day. **Done overdue vidsteps are filtered out** — if `isDone && val.ds < todayDs`, the item is hidden from the today list (no ghost entries for completed past items).
 - **Vidstep reconstruction**: `_vidStepReconstructBlocks()` — for multi-day Build/VO/Cut, only creates daymap entry if none exists (does NOT overwrite existing to today, preserving overdue). For single-day Th/Des, always syncs daymap to today.
 - **Vidstep operations — today list vs weekly chips**:
   - **Today list** (`tRowVidStepVirt`): Each instance scoped to `_vidStepDay`. Drag uses `vidstep::vid::step::day`. Toggle passes `forDay` to `_vidStepToggleDone`. `_hasTBToday` checks blocks on the instance's specific day.
