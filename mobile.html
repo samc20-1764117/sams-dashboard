@@ -280,6 +280,7 @@
 <!-- Hidden undo scaffolding (required by core.js pushUndo) -->
 <div id="undoToast" style="display:none!important"><span id="undoMsg"></span><button id="redoBtn"></button></div>
 
+<script>if('serviceWorker' in navigator) navigator.serviceWorker.register('/mobile-sw.js');</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="core.js?v=20260608a"></script>
 <script src="features.js?v=20260608a"></script>
