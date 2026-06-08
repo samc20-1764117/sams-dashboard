@@ -832,7 +832,7 @@ function tRowTodayVirt(t,tbArrow=false,noColor=false){
   const s=gc((t._isWrec||t._isWrRule)?'weekly_reset':'recurring');
   const ov=isOv(t.due_date)&&!t.done;
   const ps=ov?_OV():s;
-  const _dragId=t._isWrRule?`wrrule::${t._ruleId}`:t._isWrec?`wrec::${t._recId}`:`rec::${t._recId}::${t.due_date||''}`;
+  const _dragId=t._isWrRule?`wrrule::${t._ruleId}`:t._isWrec?`wrec::${t._recId}::${t._wkKey||''}`:`rec::${t._recId}::${t.due_date||''}::${t._wkKey||''}`;
   const _chk=t._isWrRule?`togWrRule('${t._ruleId}',this.checked,'${t._wkKey||getWkKey(wkOff)}')`
     :t._isWrec?`togRec('${t._recId}',this.checked,'${t._wkKey||getWkKey(wkOff)}')`:`togRecVirt('${t._recId}',this.checked,'${t._wkKey||getWkKey(wkOff)}')`;
   const _xBtn=t._isWrRule?`showWrScopePicker(event,'⊘  Skip this week only','✕  Delete rule (all future)',()=>writeWrOverride('${t._ruleId}','${t._wkKey||getWkKey(wkOff)}',{override_type:'skip'},{undoLabel:'Skipped WR task this week'}),()=>wrCtxDeleteRule('${t._ruleId}'),'⊠  Remove from views',()=>unscheduleWrRule('${t._ruleId}','${t._wkKey||getWkKey(wkOff)}'))`
@@ -1210,10 +1210,10 @@ function renderWkCal(){
         dragId=null;return;
       }
       if(dragId.startsWith('rec::')){
-        const [,recId,origDate]=dragId.split('::');
+        const [,recId,origDate,srcWkKey]=dragId.split('::');
         const r=st.recurring.find(x=>String(x.id)===String(recId));
         if(r&&ds!==origDate){
-          const wkKey=origDate?getWkKey(wkOff):getWkKey(wkOff);
+          const wkKey=srcWkKey||getWkKey(wkOff);
           if(!r._dateOverrides)r._dateOverrides={};
           const prevOverride=r._dateOverrides[wkKey];
           const savedBlocks=st.blocks.filter(b=>b.recId&&String(b.recId)===String(r.id)&&b.ds===origDate).map(b=>({...b}));
@@ -1283,14 +1283,14 @@ function renderWkCal(){
       }
       // Weekly reset task dragged onto calendar
       if(dragId.startsWith('wrec::')){
-        const recId=dragId.split('::')[1];
+        const _wrecParts=dragId.split('::');const recId=_wrecParts[1];const _wrecSrcWk=_wrecParts[2]||'';
         const r=st.recurring.find(x=>String(x.id)===String(recId));
         const newWkKey=dsToWkKey(ds);
         const _wrecSid='wrec-'+recId;
         const _isMultiWrec=selectedTasks.has(_wrecSid)&&selectedTasks.size>1;
         const _wrecUndos=[];
         // Helper: move a recurring rule's override from old week to new week
-        const _curWkKey=getWkKey(wkOff);
+        const _curWkKey=_wrecSrcWk||getWkKey(wkOff);
         const _moveRecOv=(rec,qs)=>{
           if(!rec._dateOverrides)rec._dateOverrides={};
           const prevCur=rec._dateOverrides[_curWkKey];
@@ -1558,8 +1558,8 @@ function renderWkCal(){
         else if(t._type==='pup'){dragId='pupsess::'+t._pupSessId+'::'+ds;}
         else if(t._type==='shop'){dragId='shop::'+t._shopId;}
         else if(t._isWrRule){dragId='wrrule::'+t._ruleId;}
-        else if(t._isWrec){dragId='wrec::'+t._recId;}
-        else if(t._virtual){dragId='rec::'+t._recId+'::'+t.due_date;}
+        else if(t._isWrec){dragId='wrec::'+t._recId+'::'+(t._wkKey||'');}
+        else if(t._virtual){dragId='rec::'+t._recId+'::'+t.due_date+'::'+(t._wkKey||'');}
         else{dragId=String(t.id);}
         document.body.classList.add('body-dragging');
         chip.style.opacity='.4';showWkcEdges(true);e2.stopPropagation();
@@ -1887,11 +1887,11 @@ function setupWkcEdgeDrop(){
     const targetDates=getWkDates(targetWkOff);
     const newDs=dir===1?d2s(targetDates[0]):d2s(targetDates[6]);
     if(dragId.startsWith('wrec::')){
-      const recId=dragId.split('::')[1];
+      const _weParts=dragId.split('::');const recId=_weParts[1];const _weSrcWk=_weParts[2]||'';
       const rec=st.recurring.find(x=>String(x.id)===String(recId));
       if(rec){
         if(!rec._dateOverrides)rec._dateOverrides={};
-        const curWkKey=getWkKey(wkOff);
+        const curWkKey=_weSrcWk||getWkKey(wkOff);
         const tgtWkKey=getWkKey(targetWkOff);
         const prevCur=rec._dateOverrides[curWkKey];
         const prevTgt=rec._dateOverrides[tgtWkKey];
@@ -1904,14 +1904,14 @@ function setupWkcEdgeDrop(){
       dragId=null;return;
     }
     if(dragId.startsWith('rec::')){
-      const recId=dragId.split('::')[1];
+      const _reParts=dragId.split('::');const recId=_reParts[1];const _reSrcWk=_reParts[3]||'';
       const rec=st.recurring.find(x=>String(x.id)===String(recId));
       if(rec){
         if(!rec._dateOverrides)rec._dateOverrides={};
-        const curWkKey=getWkKey(wkOff);const tgtWkKey=getWkKey(targetWkOff);
+        const curWkKey=_reSrcWk||getWkKey(wkOff);const tgtWkKey=getWkKey(targetWkOff);
         const prevCurOv=rec._dateOverrides[curWkKey];const prevTgtOv=rec._dateOverrides[tgtWkKey];
         const prevStart=rec.starting_date;
-        // Skip current week, add override for target week
+        // Skip source week, add override for target week
         rec._dateOverrides[curWkKey]='__skip__';
         // For target week, use the same day-of-week as natural occurrence
         const cadence=rec.cadence||'weekly';
@@ -1993,11 +1993,11 @@ function setupEdge(id,dir){
     const newDs=dir===1?d2s(targetDates[0]):d2s(targetDates[6]);
     // Handle wrec:: (weekly reset)
     if(dragId.startsWith('wrec::')){
-      const recId=dragId.split('::')[1];
+      const _we2Parts=dragId.split('::');const recId=_we2Parts[1];const _we2SrcWk=_we2Parts[2]||'';
       const r=st.recurring.find(x=>String(x.id)===String(recId));
       if(r){
         if(!r._dateOverrides)r._dateOverrides={};
-        const curWkKey=getWkKey(wkOff);
+        const curWkKey=_we2SrcWk||getWkKey(wkOff);
         const tgtWkKey=getWkKey(targetWkOff);
         const prevCur=r._dateOverrides[curWkKey];
         const prevTgt=r._dateOverrides[tgtWkKey];
@@ -2011,11 +2011,11 @@ function setupEdge(id,dir){
     }
     // Handle rec:: (non-weekly recurring virtual)
     if(dragId.startsWith('rec::')){
-      const recId=dragId.split('::')[1];
+      const _re2Parts=dragId.split('::');const recId=_re2Parts[1];const _re2SrcWk=_re2Parts[3]||'';
       const rec=st.recurring.find(x=>String(x.id)===String(recId));
       if(rec){
         if(!rec._dateOverrides)rec._dateOverrides={};
-        const curWkKey=getWkKey(wkOff);const tgtWkKey=getWkKey(targetWkOff);
+        const curWkKey=_re2SrcWk||getWkKey(wkOff);const tgtWkKey=getWkKey(targetWkOff);
         const prevCurOv=rec._dateOverrides[curWkKey];const prevTgtOv=rec._dateOverrides[tgtWkKey];
         const prevStart=rec.starting_date;
         rec._dateOverrides[curWkKey]='__skip__';
@@ -3351,10 +3351,11 @@ function dropOnTodayList(e){
     dragId=null;return;
   }
   if(dragId.startsWith('wrec::')||dragId.startsWith('rec::')){
-    const recId=dragId.startsWith('wrec::')?dragId.split('::')[1]:dragId.split('::')[1];
+    const _tdParts=dragId.split('::');const recId=_tdParts[1];
+    const _tdSrcWk=dragId.startsWith('wrec::')?(_tdParts[2]||''):(_tdParts[3]||'');
     const r=st.recurring.find(x=>String(x.id)===String(recId));
     if(r){
-      const wkKey=getWkKey(wkOff);
+      const wkKey=_tdSrcWk||getWkKey(wkOff);
       if(!r._dateOverrides)r._dateOverrides={};
       const prev=r._dateOverrides[wkKey];
       r._dateOverrides[wkKey]=ds;
@@ -6692,10 +6693,10 @@ function dropOnTB(e,ds,h,row,smOverride){
     return;
   }
   if(dragId.startsWith('wrec::')){
-    const recId=dragId.split('::')[1];
+    const _tbWeParts=dragId.split('::');const recId=_tbWeParts[1];const _tbWeSrcWk=_tbWeParts[2]||'';
     const _wrecSid='wrec-'+recId;
     const _isMultiWrec=selectedTasks.has(_wrecSid)&&selectedTasks.size>1;
-    const wkKey=wkKeyFromDs(ds);
+    const wkKey=_tbWeSrcWk||wkKeyFromDs(ds);
     const _addedBlks=[];const _undoOps=[];
     let _curSm=sm;
     const _allSids=_isMultiWrec?[...selectedTasks]:[_wrecSid];
@@ -6791,11 +6792,11 @@ function dropOnTB(e,ds,h,row,smOverride){
     },'Added to time block');
     return;
   } else if(dragId.startsWith('rec::')){
-    // recurring virtual task: rec::recId::date
-    const recId=dragId.split('::')[1];
+    // recurring virtual task: rec::recId::date::wkKey
+    const _tbReParts=dragId.split('::');const recId=_tbReParts[1];const _tbReSrcWk=_tbReParts[3]||'';
     const r=st.recurring.find(x=>String(x.id)===String(recId));
     if(!r){dragId=null;return;}
-    const wkKey=wkKeyFromDs(ds);
+    const wkKey=_tbReSrcWk||wkKeyFromDs(ds);
     const prevDateOv=r._dateOverrides?{...r._dateOverrides}:{};
     if(!r._dateOverrides)r._dateOverrides={};
     r._dateOverrides[wkKey]=ds;

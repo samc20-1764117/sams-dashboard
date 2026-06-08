@@ -1096,9 +1096,9 @@ function mkMCell(date,om,today){
     }
     const t=st.tasks.find(x=>String(x.id)===String(dragId));
     if(dragId&&dragId.startsWith('wrec::')){
-      const recId=dragId.split('::')[1];
+      const _moWeParts=dragId.split('::');const recId=_moWeParts[1];const _moWeSrcWk=_moWeParts[2]||'';
       const r=st.recurring.find(x=>String(x.id)===String(recId));
-      if(r){if(!r._dateOverrides)r._dateOverrides={};const wkKey=getWkKey(0);const prev=r._dateOverrides[wkKey];r._dateOverrides[wkKey]=ds;save();sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));pushUndo(()=>{if(prev)r._dateOverrides[wkKey]=prev;else delete r._dateOverrides[wkKey];save();renderAll();renderMoCal();sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));},'Pinned weekly task');}
+      if(r){if(!r._dateOverrides)r._dateOverrides={};const wkKey=_moWeSrcWk||getWkKey(0);const prev=r._dateOverrides[wkKey];r._dateOverrides[wkKey]=ds;save();sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));pushUndo(()=>{if(prev)r._dateOverrides[wkKey]=prev;else delete r._dateOverrides[wkKey];save();renderAll();renderMoCal();sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));},'Pinned weekly task');}
       dragId=null;renderAll();renderMoCal();return;
     }
     if(dragId&&dragId.startsWith('shop::')){
