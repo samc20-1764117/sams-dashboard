@@ -2364,7 +2364,7 @@ async function mInit() {
   hideLoginOverlay();
   await syncAll();
   mShowTab('today');
-  setInterval(async () => { if (cfg.url && cfg.key) { await syncAll(true); mShowTab(_mCurTab); } }, 30000);
+  setInterval(() => { if (cfg.url && cfg.key) syncAll(true); }, 30000);
 }
 
 document.addEventListener('DOMContentLoaded', mInit);
