@@ -6071,23 +6071,26 @@ function getOvRecurring(){
   const out=[];
   for(let w=0;w>=wkOff-4;w--){
     getRecurringWeekTasks(w).forEach(v=>{
-      if(seen.has(v._recId))return;
+      const _dk=v._recId+'::'+(v._wkKey||'');
+      if(seen.has(_dk))return;
       // If skipped for this week or any later week up to now, don't count as overdue
       const _rec=st.recurring.find(x=>String(x.id)===String(v._recId));
       if(_rec&&_rec._dateOverrides){for(let sw=w;sw<=0;sw++){if(_rec._dateOverrides[getWkKey(sw)]==='__skip__')return;}}
-      seen.add(v._recId);
+      seen.add(_dk);
       if(!v.done&&v.due_date<today){out.push(v);}
     });
     // Weekly reset tasks: check all past-week overrides
     {const wkKey=getWkKey(w);
     st.recurring.filter(r=>(r.is_weekly_reset===true||r.is_weekly_reset==='true')&&r._dateOverrides&&r._dateOverrides[wkKey]&&r._dateOverrides[wkKey]!=='__skip__'&&!wrRecHandled.has(String(r.id))).forEach(r=>{
       if(r._dateOverrides[wkKey]<=today)wrRecHandled.add(String(r.id));// only block older-week lookback when date is today or past (not future)
-      if(!(r._doneByWk&&r._doneByWk[wkKey])&&r._dateOverrides[wkKey]<today&&!seen.has('wrec-'+r.id)){seen.add('wrec-'+r.id);out.push({id:'rec-virt-'+r.id,name:r.name,category:'Recurring',due_date:r._dateOverrides[wkKey],done:false,_recId:r.id,_virtual:true,_wkKey:wkKey,_isWrec:true});}
+      const _wk='wrec-'+r.id+'::'+wkKey;
+      if(!(r._doneByWk&&r._doneByWk[wkKey])&&r._dateOverrides[wkKey]<today&&!seen.has(_wk)){seen.add(_wk);out.push({id:'rec-virt-'+r.id,name:r.name,category:'Recurring',due_date:r._dateOverrides[wkKey],done:false,_recId:r.id,_virtual:true,_wkKey:wkKey,_isWrec:true});}
     });
     // WR rules: check all past-week overrides
     st.wrRules.filter(r=>r._dateOverrides&&r._dateOverrides[wkKey]&&r._dateOverrides[wkKey]!=='__skip__'&&!wrRuleHandled.has(String(r.id))&&!(st.wrOverrides||[]).some(o=>String(o.rule_id)===String(r.id)&&o.wk_key===wkKey&&o.override_type==='skip')).forEach(r=>{
       if(r._dateOverrides[wkKey]<=today)wrRuleHandled.add(String(r.id));// only block older-week lookback when date is today or past (not future)
-      if(!isDoneWRRule(r.id,wkKey)&&r._dateOverrides[wkKey]<today&&!seen.has('wrrule-'+r.id)){seen.add('wrrule-'+r.id);out.push({id:'wrrule-virt-'+r.id,name:r.name,category:'Recurring',due_date:r._dateOverrides[wkKey],done:false,_ruleId:r.id,_virtual:true,_wkKey:wkKey,_isWrRule:true});}
+      const _wrk='wrrule-'+r.id+'::'+wkKey;
+      if(!isDoneWRRule(r.id,wkKey)&&r._dateOverrides[wkKey]<today&&!seen.has(_wrk)){seen.add(_wrk);out.push({id:'wrrule-virt-'+r.id,name:r.name,category:'Recurring',due_date:r._dateOverrides[wkKey],done:false,_ruleId:r.id,_virtual:true,_wkKey:wkKey,_isWrRule:true});}
     });}
   }
   return out;
