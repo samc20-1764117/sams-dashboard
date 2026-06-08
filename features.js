@@ -3739,6 +3739,9 @@ function renderGroceryModal(){
   }
   html+=`</div></div>`;
 
+  // ── DIVIDER between this-week meals and next-week planning ──
+  html+=`<div style="border-top:3px solid var(--accent,#c67b48);margin:0 16px;opacity:.7"></div>`;
+
   // ��─ BOTTOM: Three columns ──
   html+=`<div class="groc-bottom">`;
 
