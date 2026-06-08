@@ -263,6 +263,7 @@ function _mTaskTypePri(t) {
   if (t._type === 'vidstep') return 5.6;
   if (t._type === 'shop') return 7;
   if (t._type === 'pup') return 8;
+  if (t._isWrec || t._isWrRule) return 9;
   if (t._virtual) return 6;
   return 5;
 }

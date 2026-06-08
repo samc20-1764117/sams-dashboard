@@ -740,7 +740,7 @@ async function submitDailyHabit(){
   if(res&&res[0]){const idx=st.recurring.findIndex(x=>x.id===tmp);if(idx>=0)st.recurring[idx]={...st.recurring[idx],...res[0],_doneByWk:{},_dateOverrides:{}};save();renderDailyHabits();}
 }
 // Type priority for untimed tasks: travel sorted first via pre-check; important via pre-check
-// Order: birthday(1) home(2) my work(3) work(4) social(5) recurring(6) shopping(7) pup(8)
+// Order: birthday(1) home(2) my work(3) work(4) social(5) recurring(6) shopping(7) pup(8) weekly-reset(9)
 function taskTypePri(t){
   if(t._type==='birthday')return 1;
   const cat=(t.category||'').toLowerCase();
@@ -753,7 +753,8 @@ function taskTypePri(t){
   if(t._type==='fin-cancel')return 6.5;
   if(t._type==='shop')return 7;
   if(t._type==='pup')return 8;
-  if(t._virtual)return 6; // recurring (WR + non-WR), checked after shop/pup
+  if(t._isWrec||t._isWrRule)return 9;
+  if(t._virtual)return 6; // non-WR recurring
   return 5; // other regular tasks
 }
 function sortByTypeOrder(tasks){
