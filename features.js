@@ -4995,13 +4995,15 @@ async function init(){
   if(initHash==='videos')_vidPageInit=true;
   if(initHash&&PAGES.includes(initHash))showPage(initHash);
   // Render from localStorage before auth check so UI is populated instantly
-  if(cfg.url&&cfg.key){document.getElementById('cfgUrl').value=cfg.url;document.getElementById('cfgKey').value=cfg.key;_firstSyncDone=true;renderAll();requestAnimationFrame(()=>requestAnimationFrame(()=>document.body.classList.remove('preload')));}
+  const _removePreload=()=>requestAnimationFrame(()=>requestAnimationFrame(()=>document.body.classList.remove('preload')));
+  const _removePreloadAfterFonts=()=>document.fonts.ready.then(_removePreload).catch(_removePreload);
+  if(cfg.url&&cfg.key){document.getElementById('cfgUrl').value=cfg.url;document.getElementById('cfgKey').value=cfg.key;_firstSyncDone=true;renderAll();_removePreloadAfterFonts();}
   const authed=await checkAuth();
-  if(!authed){document.body.classList.remove('preload');return;}
+  if(!authed){_removePreloadAfterFonts();return;}
   if(cfg.url&&cfg.key){
     deletedRecIds=new Set();save();
     syncAll(false).then(()=>{_firstSyncDone=true;});
-  } else{_firstSyncDone=true;renderAll();setBadge('err','Not connected');requestAnimationFrame(()=>document.body.classList.remove('preload'));}
+  } else{_firstSyncDone=true;renderAll();setBadge('err','Not connected');_removePreloadAfterFonts();}
   setupWkcEdgeDrop();setupEdge('wkListEdgeR',1);
   setInterval(()=>{if(cfg.url&&cfg.key)syncAll(true);},30000);
 }
