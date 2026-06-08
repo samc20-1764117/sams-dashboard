@@ -404,7 +404,7 @@ async function syncAll(silent=false){
     }
     save();
     const n=new Date();setBadge('',`Synced ${n.getHours()}:${String(n.getMinutes()).padStart(2,'0')}`);
-    renderAll();
+    document.body.classList.add('preload');renderAll();requestAnimationFrame(()=>requestAnimationFrame(()=>document.body.classList.remove('preload')));
     if(typeof seedPupReviewTask==='function')seedPupReviewTask();
   }catch(e){console.error('syncAll error',e);setBadge('err','Error');}
 }
