@@ -2030,28 +2030,46 @@ async function mDeleteShopItem() {
 }
 
 // ── Grocery (HEB) tab ─────────────────────────────────────────────────────────
+function _mGrocDateRange(mon) {
+  const m = new Date(mon + 'T12:00:00');
+  const s = new Date(m); s.setDate(m.getDate() + 6);
+  return m.toLocaleDateString('en-US', {month: 'short', day: 'numeric'}) + ' – ' + s.toLocaleDateString('en-US', {month: 'short', day: 'numeric'});
+}
+
 function mRenderGroc() {
   const list = document.getElementById('mGrocList');
   if (!list) return;
   if (typeof generateGroceryStaples === 'function') generateGroceryStaples();
-  const wk = typeof _groceryWeekOf === 'function' ? _groceryWeekOf() : '';
-  const items = (st.groceryList || []).filter(g => g.week_of === wk);
+
+  // This week = meals you're eating now
+  const thisWkMon = typeof _grocWeekMonday === 'function' ? _grocWeekMonday(0) : getWkKey(0);
+  // Next week = what you're planning/shopping for
+  const nextWkMon = typeof _grocWeekMonday === 'function' ? _grocWeekMonday(1) : (() => { const d = new Date(thisWkMon + 'T12:00:00'); d.setDate(d.getDate() + 7); return d.toISOString().split('T')[0]; })();
+
+  const items = (st.groceryList || []).filter(g => g.week_of === nextWkMon);
   const unchecked = items.filter(g => !g.checked);
   const checked = items.filter(g => g.checked);
   const countEl = document.getElementById('mGrocCount');
-  if (countEl) countEl.textContent = unchecked.length ? `${unchecked.length} items` : 'All done!';
+  if (countEl) countEl.textContent = unchecked.length ? `HEB (${unchecked.length} items)` : 'HEB ✓';
 
   let html = '';
-  // Planned meals section
+
+  // ── THIS WEEK: Meals ──
   const plannedMeals = typeof _mealsForWeek === 'function' ? _mealsForWeek() : [];
   const uniqueMeals = [...new Map(plannedMeals.map(m => [String(m.recipe_id), m])).values()];
+  html += `<div class="m-groc-week-hdr">Meals · <span class="m-groc-week-dates">${_mGrocDateRange(thisWkMon)}</span></div>`;
   if (uniqueMeals.length) {
-    html += `<div class="m-groc-section-title">This Week's Meals</div>`;
     uniqueMeals.forEach(m => {
       html += `<div class="m-groc-row"><span class="m-groc-name" style="font-weight:600">🍽 ${(m.recipe_name||'').replace(/&/g,'&amp;')}</span>${(m.servings||1)>1?`<span class="m-groc-amt">${m.servings}d</span>`:''}  <button class="m-groc-del" onclick="mRemoveMealAndGroceries('${m.recipe_id}')">✕</button></div>`;
     });
+  } else {
+    html += '<div class="m-groc-row" style="opacity:.4;font-style:italic;padding:6px 0">No meals planned</div>';
   }
-  // Group by source
+
+  // ── NEXT WEEK: Planned Meals + Shopping List ──
+  html += `<div class="m-groc-week-hdr m-groc-next-week">Shopping List · <span class="m-groc-week-dates">${_mGrocDateRange(nextWkMon)}</span></div>`;
+
+  // Group grocery items by source
   const staples = unchecked.filter(g => g.source === 'staple');
   const recipeGroups = {};
   unchecked.filter(g => g.source === 'recipe').forEach(g => {
@@ -2086,8 +2104,8 @@ function mRenderGroc() {
     html += `<div class="m-groc-section-title" style="opacity:.5">Done (${checked.length})</div>`;
     html += checked.map(grocRow).join('');
   }
-  if (!items.length) {
-    html = '<div class="m-empty">No grocery items yet. Add some below!</div>';
+  if (!unchecked.length && !checked.length) {
+    html += '<div class="m-groc-row" style="opacity:.4;font-style:italic;padding:6px 0">No items yet</div>';
   }
   list.innerHTML = html;
 }
@@ -2110,7 +2128,7 @@ async function mAddGrocItem() {
   const nameEl = document.getElementById('mGrocNewName');
   const n = (nameEl.value || '').trim();
   if (!n) return;
-  const wk = typeof _groceryWeekOf === 'function' ? _groceryWeekOf() : new Date().toISOString().split('T')[0];
+  const wk = typeof _grocWeekMonday === 'function' ? _grocWeekMonday(1) : (() => { const d = new Date(); const dow = (d.getDay()+6)%7; d.setDate(d.getDate()-dow+7); return d.toISOString().split('T')[0]; })();
   const item = {name: n, amount: null, source: 'manual', source_id: null, recipe_name: null, aisle: null, checked: false, week_of: wk};
   const sv = await sbReqSilent('POST', 'grocery_list', item);
   if (sv && sv[0]) st.groceryList.push(sv[0]);

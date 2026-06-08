@@ -110,6 +110,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 
 /* ── Grocery (HEB) tab ──────────────────────────────────────────────────── */
 #mGrocList{padding:0 16px 120px}
+.m-groc-week-hdr{font-size:14px;font-weight:700;color:var(--text);padding:16px 0 8px;display:flex;align-items:baseline;gap:6px}
+.m-groc-week-hdr.m-groc-next-week{margin-top:8px;padding-top:16px;border-top:2px solid var(--border)}
+.m-groc-week-dates{font-size:12px;font-weight:400;color:var(--sub)}
 .m-groc-section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:14px 0 4px}
 .m-groc-row{display:flex;align-items:center;gap:8px;padding:10px 8px;border-radius:var(--rs);background:var(--glass);margin-bottom:6px}
 .m-groc-chk{width:16px;height:16px;flex-shrink:0;accent-color:var(--accent)}
