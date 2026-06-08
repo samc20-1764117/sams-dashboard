@@ -77,8 +77,10 @@
 
     <!-- Grocery (HEB) tab -->
     <div id="mGrocPage" style="display:none">
-      <div class="m-shop-header">
+      <div class="m-shop-header m-groc-hdr">
+        <button class="m-groc-hdr-btn" onclick="mOpenRecipes()" title="Recipes">📖</button>
         <span id="mGrocCount">HEB Grocery</span>
+        <button class="m-groc-hdr-btn m-groc-close" onclick="mShowTab('today')" title="Close">✕</button>
       </div>
       <div id="mGrocList"></div>
     </div>
@@ -257,6 +259,10 @@
     <button id="mShopEditSave" onclick="mSaveShopEdit()">Save</button>
   </div>
 </div>
+
+<!-- Recipe picker sheet -->
+<div id="mRecipeBackdrop" onclick="mCloseRecipes()"></div>
+<div id="mRecipeSheet" class="m-recipe-sheet"></div>
 
 <!-- Month view modal -->
 <div id="mMonthBackdrop" onclick="mCloseMonth()"></div>

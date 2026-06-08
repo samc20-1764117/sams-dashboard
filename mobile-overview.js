@@ -2142,6 +2142,40 @@ async function mAddGrocItem() {
   nameEl.value = '';
 }
 
+function mOpenRecipes() {
+  const recipes = (st.recipes || []).filter(r => !r.is_deleted);
+  let html = '<h3 style="margin:0 0 12px">Recipes</h3>';
+  if (!recipes.length) {
+    html += '<div style="opacity:.5;padding:12px 0">No recipes yet</div>';
+  } else {
+    recipes.forEach(r => {
+      const ing = Array.isArray(r.ingredients) ? r.ingredients.length : 0;
+      html += `<div class="m-recipe-row" onclick="mAddRecipeToMealPlan('${r.id}')">
+        <span class="m-recipe-name">${escHtml(r.name || '')}</span>
+        ${ing ? `<span class="m-recipe-meta">${ing} items</span>` : ''}
+        <span class="m-recipe-add">+</span>
+      </div>`;
+    });
+  }
+  document.getElementById('mRecipeSheet').innerHTML = html;
+  document.getElementById('mRecipeBackdrop').classList.add('open');
+  document.getElementById('mRecipeSheet').classList.add('open');
+}
+function mCloseRecipes() {
+  document.getElementById('mRecipeBackdrop').classList.remove('open');
+  document.getElementById('mRecipeSheet').classList.remove('open');
+}
+async function mAddRecipeToMealPlan(recipeId) {
+  if (typeof addRecipeToMealPlan === 'function') {
+    await addRecipeToMealPlan(recipeId);
+    mRenderGroc();
+  } else if (typeof _grocAddRecipe === 'function') {
+    await _grocAddRecipe(recipeId);
+    mRenderGroc();
+  }
+  mCloseRecipes();
+}
+
 function mRemoveMealAndGroceries(recipeId) {
   if (typeof removeMealAndGroceries === 'function') {
     removeMealAndGroceries(recipeId);
