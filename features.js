@@ -3687,14 +3687,13 @@ function renderGroceryModal(){
       <button class="groc-del" onclick="delGroceryItem('${g.id}')">✕</button>
     </div>`;}
 
-  // ── HEADER — Recipes button left, ← week label →, X right ──
+  // ── HEADER — ← week label →, X right ──
   const _grocIsThisWk=_grocWkOff===0;
   const _grocWkLabel=_grocIsThisWk?'This Week':_grocWeekLabel(menuMon);
   let html=`<div style="display:flex;align-items:center;width:100%;box-sizing:border-box;padding:10px 16px;border-bottom:1px solid rgba(210,205,228,.2);flex-shrink:0;background:inherit;z-index:2">
-    <button onclick="document.getElementById('groceryModal').close();showPage('recipes')" style="padding:5px 12px;border-radius:8px;border:1px solid var(--accent,#c67b48);background:var(--accent,#c67b48);color:#fff;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">Recipes</button>
     <div style="display:flex;align-items:center;gap:10px;flex:1;justify-content:center">
       <button class="groc-nav-btn" onclick="_grocWkOff--;renderGroceryModal();this.closest('dialog').focus()">←</button>
-      <span style="font-size:13px;font-weight:600;color:var(--text);min-width:100px;text-align:center">${_grocWkLabel}</span>
+      <span style="font-size:13px;font-weight:600;color:var(--text);min-width:120px;text-align:center">${_grocWkLabel}</span>
       <button class="groc-nav-btn" onclick="_grocWkOff++;renderGroceryModal();this.closest('dialog').focus()">→</button>
     </div>
     <button class="groc-close" onclick="document.getElementById('groceryModal').close()">✕</button>
@@ -3747,7 +3746,7 @@ function renderGroceryModal(){
 
   // Col 1: Search + recipe checkboxes
   html+=`<div class="groc-panel">`;
-  html+=`<div class="groc-panel-title">Recipes</div>`;
+  html+=`<div class="groc-panel-title"><button onclick="document.getElementById('groceryModal').close();showPage('recipes')" style="padding:4px 10px;border-radius:6px;border:1px solid var(--accent,#c67b48);background:var(--accent,#c67b48);color:#fff;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">Recipes</button></div>`;
   html+=`<div style="margin-bottom:6px;flex-shrink:0"><input type="text" id="grocRecipeSearch" placeholder="Search recipes…" oninput="_grocRecSearch=this.value;renderGroceryModal()" value="${escHtml(_grocRecSearch||'')}" style="width:100%;padding:6px 10px;border-radius:var(--rs);border:1px solid var(--gb);font-size:12px;font-family:inherit;color:var(--text);background:var(--glass);outline:none;box-sizing:border-box"></div>`;
   html+=`<div class="groc-recipe-list">`;
   let filteredRecipes=(st.recipes||[]);
@@ -3781,11 +3780,23 @@ function renderGroceryModal(){
 
   // Col 2: Selected meals with remove
   html+=`<div class="groc-panel">`;
-  html+=`<div class="groc-panel-title" style="display:flex;align-items:center;justify-content:space-between">Planned Meals<span class="groc-people-toggle" style="font-weight:400;font-size:10px">People: <button onclick="setGrocPeople(1,'${menuMon}')"${_getGrocPeople(menuMon)===1?' class="active"':''}>1</button><button onclick="setGrocPeople(2,'${menuMon}')"${_getGrocPeople(menuMon)===2?' class="active"':''}>2</button></span></div>`;
+  const _ppl=_getGrocPeople(menuMon);
+  // Calculate total meals covered: each recipe's servings / people count
+  let _totalMealsCovered=0;
+  planMeals.forEach(m=>{
+    const r=(st.recipes||[]).find(x=>String(x.id)===String(m.recipe_id));
+    const em=(st.easyMeals||[]).find(x=>x.id===m.easy_meal_id);
+    if(r&&r.servings) _totalMealsCovered+=Math.ceil(r.servings/_ppl);
+    else if(em) _totalMealsCovered+=1;
+    else _totalMealsCovered+=1;
+  });
+  html+=`<div class="groc-panel-title" style="display:flex;align-items:center;justify-content:space-between">Planned Meals${_totalMealsCovered?` <span style="font-weight:500;font-size:10px;color:var(--muted)">${_totalMealsCovered} meals</span>`:''}<span class="groc-people-toggle" style="font-weight:400;font-size:10px">People: <button onclick="setGrocPeople(1,'${menuMon}')"${_ppl===1?' class="active"':''}>1</button><button onclick="setGrocPeople(2,'${menuMon}')"${_ppl===2?' class="active"':''}>2</button></span></div>`;
   if(planMeals.length){
     html+=`<div class="groc-selected-meals">`;
     planMeals.forEach(m=>{
-      html+=`<div class="groc-selected-meal"><span>${escHtml(m.recipe_name)}</span><button onclick="removeMealFromWeek('${m.id}','${planMon}')">✕</button></div>`;
+      const r=(st.recipes||[]).find(x=>String(x.id)===String(m.recipe_id));
+      const mealCt=r&&r.servings?Math.ceil(r.servings/_ppl):1;
+      html+=`<div class="groc-selected-meal"><span>${escHtml(m.recipe_name)}</span><span style="font-size:9px;color:var(--muted);margin-left:auto;margin-right:6px">${mealCt} meal${mealCt>1?'s':''}</span><button onclick="removeMealFromWeek('${m.id}','${planMon}')">✕</button></div>`;
     });
     html+=`</div>`;
   } else {
@@ -3795,7 +3806,7 @@ function renderGroceryModal(){
 
   // Col 3: Complete shopping list sorted by aisle
   html+=`<div class="groc-panel">`;
-  html+=`<div class="groc-panel-title" style="display:flex;align-items:center;justify-content:space-between">Shopping List <span style="font-weight:400;color:var(--muted);font-size:10px">(${allItems.length})</span><button class="groc-nav-btn" onclick="openGroceryStaplesEditor()" style="font-size:10px">Staples</button></div>`;
+  html+=`<div class="groc-panel-title" style="display:flex;align-items:center;justify-content:space-between">Shopping List<button class="groc-nav-btn" onclick="openGroceryStaplesEditor()" style="font-size:10px">Staples</button></div>`;
   html+=`<div class="groc-add"><input type="text" id="grocAddName" placeholder="Add item…" style="flex:1"><button onclick="addGroceryManualForWeek('${planMon}')">+</button></div>`;
   Object.entries(byAisle).forEach(([aisle,items])=>{
     html+=`<div class="groc-section"><div class="groc-section-title">${escHtml(aisle)}</div><div class="groc-section-grid">${items.map(itemRow).join('')}</div></div>`;
