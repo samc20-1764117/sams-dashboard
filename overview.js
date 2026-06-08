@@ -3525,6 +3525,17 @@ function _vidStepToggleDone(vidId,step,checked,_fromTB,forDay){
     },'Step toggle');
   }
 }
+function _vidStepAssignExtraDay(vidId,step,ds){
+  const m=_vidStepDayMap();const key=vidId+'::'+step;
+  if(!m[key]){m[key]={ds,done:false};_vidStepDayMapSet(m);save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();pushUndo(()=>{const m2=_vidStepDayMap();delete m2[key];_vidStepDayMapSet(m2);save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();},'Assigned step');return;}
+  const entry=m[key];
+  if(entry.ds===ds)return;// already on this day
+  if(!entry.extraDays)entry.extraDays=[];
+  if(entry.extraDays.includes(ds))return;// already extra
+  entry.extraDays.push(ds);_vidStepDayMapSet(m);
+  save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
+  pushUndo(()=>{const m2=_vidStepDayMap();const e2=m2[key];if(e2&&e2.extraDays){e2.extraDays=e2.extraDays.filter(d=>d!==ds);if(!e2.extraDays.length)delete e2.extraDays;_vidStepDayMapSet(m2);}save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();},'Assigned step to day');
+}
 function _vidStepAddBlock(vidId,step,ds){
   const v=(st.videos||[]).find(x=>String(x.id)===String(vidId)&&!x.is_deleted);if(!v)return;
   const label=(_VID_STEP_LABELS[step]||step.replace('step_',''))+': '+(v.topic||v.title);
@@ -3546,11 +3557,16 @@ function _vidStepUnassign(vidId,step,forDay){
     const removedBlks=st.blocks.filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step&&bl.ds===forDay);
     st.blocks=st.blocks.filter(bl=>!(String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step&&bl.ds===forDay));
     removedBlks.forEach(bl=>sbDeleteBlock(bl.id));
-    // If daymap points to this day, reassign to another day with blocks or remove
-    const prevMap=m[key]?{...m[key]}:null;
+    // Also remove from extraDays if present
+    const prevMap=m[key]?JSON.parse(JSON.stringify(m[key])):null;
+    if(m[key]&&m[key].extraDays){m[key].extraDays=m[key].extraDays.filter(d=>d!==forDay);if(!m[key].extraDays.length)delete m[key].extraDays;}
+    // If daymap primary points to this day, reassign to another day with blocks/extraDays or remove
     if(m[key]&&m[key].ds===forDay){
       const otherBlock=st.blocks.find(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step);
-      if(otherBlock){m[key]={ds:otherBlock.ds,done:!!otherBlock._done};}else{delete m[key];}
+      const otherExtra=m[key].extraDays&&m[key].extraDays[0];
+      if(otherBlock){m[key]={...m[key],ds:otherBlock.ds,done:!!otherBlock._done};}
+      else if(otherExtra){m[key]={...m[key],ds:otherExtra};m[key].extraDays=m[key].extraDays.filter(d=>d!==otherExtra);if(!m[key].extraDays.length)delete m[key].extraDays;}
+      else{delete m[key];}
     }
     _vidStepDayMapSet(m);
     save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
@@ -3580,17 +3596,29 @@ function _vidStepComputeDone(vidId,step,ds,mapEntry){
 }
 function _vidStepTasksForDayWithOverdue(todayDs){
   const m=_vidStepDayMap();const tasks=[];const seen=new Set();
-  // 1. Steps from daymap (today or overdue)
+  // 1. Steps from daymap (today or overdue) + extraDays
   Object.entries(m).forEach(([key,val])=>{
-    if(val.ds>todayDs)return;// future — skip
     const [vidId,step]=key.split('::');
     const v=(st.videos||[]).find(x=>String(x.id)===String(vidId)&&!x.is_deleted);if(!v)return;
     if(v[step]==='na')return;
-    const isDone=v[step]==='done'||_vidStepComputeDone(vidId,step,val.ds,val);
-    if(isDone&&val.ds<todayDs)return;// done + overdue = hide from today
     const label=_VID_STEP_LABELS[step]||step.replace('step_','');
-    tasks.push({id:'vidstep-'+key.replace('::','-')+'-'+val.ds,name:label+': '+(v.topic||v.title),category:'Videos',due_date:val.ds,done:isDone,_vidId:vidId,_vidStep:step,_virtual:true,_type:'vidstep',_vidStepDay:val.ds});
-    seen.add(key+'::'+val.ds);
+    // Primary day
+    if(val.ds<=todayDs){
+      const isDone=v[step]==='done'||_vidStepComputeDone(vidId,step,val.ds,val);
+      if(!(isDone&&val.ds<todayDs)){
+        tasks.push({id:'vidstep-'+key.replace('::','-')+'-'+val.ds,name:label+': '+(v.topic||v.title),category:'Videos',due_date:val.ds,done:isDone,_vidId:vidId,_vidStep:step,_virtual:true,_type:'vidstep',_vidStepDay:val.ds});
+        seen.add(key+'::'+val.ds);
+      }
+    }
+    // Extra days (calendar-only, no TB block)
+    if(val.extraDays){val.extraDays.forEach(ed=>{
+      if(ed>todayDs)return;
+      const dayKey=key+'::'+ed;if(seen.has(dayKey))return;
+      const edDone=v[step]==='done'||_vidStepComputeDone(vidId,step,ed,null);
+      if(edDone&&ed<todayDs)return;
+      tasks.push({id:'vidstep-'+key.replace('::','-')+'-'+ed,name:label+': '+(v.topic||v.title),category:'Videos',due_date:ed,done:edDone,_vidId:vidId,_vidStep:step,_virtual:true,_type:'vidstep',_vidStepDay:ed});
+      seen.add(dayKey);
+    });}
   });
   // 2. Multi-day Build/VO/Cut blocks on other days (overdue past days + today) not covered by daymap
   const _isMultiStep=n=>n!=='step_thumbnail'&&n!=='step_description';
@@ -3608,13 +3636,15 @@ function _vidStepTasksForDayWithOverdue(todayDs){
 }
 function _vidStepTasksForDay(ds){
   const m=_vidStepDayMap();const tasks=[];const seen=new Set();
-  // 1. Steps assigned to this day via daymap
+  // 1. Steps assigned to this day via daymap (primary + extraDays)
   Object.entries(m).forEach(([key,val])=>{
-    if(val.ds!==ds)return;
+    const matchesPrimary=val.ds===ds;
+    const matchesExtra=val.extraDays&&val.extraDays.includes(ds);
+    if(!matchesPrimary&&!matchesExtra)return;
     const [vidId,step]=key.split('::');
     const v=(st.videos||[]).find(x=>String(x.id)===String(vidId)&&!x.is_deleted);if(!v)return;
     const label=_VID_STEP_LABELS[step]||step.replace('step_','');
-    const isDone=v[step]==='done'||_vidStepComputeDone(vidId,step,ds,val);
+    const isDone=v[step]==='done'||_vidStepComputeDone(vidId,step,ds,matchesPrimary?val:null);
     tasks.push({id:'vidstep-'+key.replace('::','-')+'-'+ds,name:label+': '+(v.topic||v.title),category:'Videos',due_date:ds,done:isDone,_vidId:vidId,_vidStep:step,_virtual:true,_type:'vidstep',_vidStepDay:ds});
     seen.add(key);
   });
