@@ -10,6 +10,12 @@
 /mobile-manifest.json
   Cache-Control: no-cache, no-store, must-revalidate
 
+/mobile-version.json
+  Cache-Control: no-cache, no-store, must-revalidate
+
+/mobile-sw.js
+  Cache-Control: no-cache, no-store, must-revalidate
+
 /*.js
   Cache-Control: no-cache, no-store, must-revalidate
 

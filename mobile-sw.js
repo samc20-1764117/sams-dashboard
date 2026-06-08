@@ -1,8 +1,11 @@
-// Network-first service worker — always fetch fresh, no caching
-self.addEventListener('fetch', e => {
-  e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
+var VERSION = '20260608b';
+self.addEventListener('install', function(e) {
+  self.skipWaiting();
 });
-self.addEventListener('activate', e => {
-  e.waitUntil(caches.keys().then(k => Promise.all(k.map(c => caches.delete(c)))));
+self.addEventListener('activate', function(e) {
+  e.waitUntil(caches.keys().then(function(k) { return Promise.all(k.map(function(c) { return caches.delete(c); })); }));
   self.clients.claim();
+});
+self.addEventListener('fetch', function(e) {
+  e.respondWith(fetch(e.request).catch(function() { return caches.match(e.request); }));
 });
