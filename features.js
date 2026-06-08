@@ -3689,6 +3689,7 @@ function renderGroceryModal(){
 
   // ── HEADER ──
   let html=`<div class="groc-header">
+    <button class="groc-nav-btn" onclick="document.getElementById('groceryModal').close();showPage('recipes')">Recipes</button>
     <div style="display:flex;align-items:center;gap:8px">
       <button class="groc-nav-btn" onclick="_grocWkOff--;renderGroceryModal();this.closest('dialog').focus()">←</button>
       <span style="font-size:12px;color:var(--muted)">${_grocWeekLabel(menuMon)}</span>
