@@ -69,21 +69,10 @@ function _getAuthToken(){return _authToken||cfg.key;}
 function _initSbClient(){
   if(_sbClient||!cfg.url||!cfg.key)return;
   _sbClient=supabase.createClient(cfg.url,cfg.key,{auth:{persistSession:true,autoRefreshToken:true}});
-  _sbClient.auth.onAuthStateChange(async(event,session)=>{
-    _authToken=session?session.access_token:null;
-    _userId=session?.user?.id||null;
-    if(!session&&event==='SIGNED_OUT'){
-      // Network blips cause token refresh to fail and fire SIGNED_OUT — wait and re-verify
-      await new Promise(r=>setTimeout(r,2000));
-      try{
-        const{data}=await _sbClient.auth.getSession();
-        if(data.session){_authToken=data.session.access_token;_userId=data.session.user?.id||null;}
-        else showLoginOverlay(event);
-      }catch(e){
-        // getSession itself failed (network still down) — don't show login, session is likely still valid locally
-        console.warn('Auth re-check failed (network), keeping session');
-      }
-    }
+  _sbClient.auth.onAuthStateChange((event,session)=>{
+    if(session){_authToken=session.access_token;_userId=session.user?.id||null;}
+    // Never show login overlay from auth state changes — network blips cause false SIGNED_OUT events.
+    // Login is gated by checkAuth() on page load only. If truly signed out, next refresh will catch it.
   });
 }
 function showLoginOverlay(){

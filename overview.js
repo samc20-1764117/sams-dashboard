@@ -207,9 +207,7 @@ function renderToday(){
       return false;
     }
     if(t._type==='vidstep'){
-      const _vsBlk=st.blocks.filter(b=>b.ds===_todDs&&String(b._vidStepVid)===String(t._vidId)&&b._vidStepName===t._vidStep);
-      if(_vsBlk.length)console.log('[VS-TB-BLOCK]',t.name,JSON.stringify(_vsBlk.map(b=>({id:b.id,ds:b.ds,sm:b.sm,dur:b.dur,done:b._done,title:b.title}))));
-      return _vsBlk.length>0;
+      return st.blocks.some(b=>b.ds===_todDs&&String(b._vidStepVid)===String(t._vidId)&&b._vidStepName===t._vidStep);
     }
     if(t._vidId)return st.blocks.some(b=>(b.ds===_todDs||isOvToday)&&String(b._vidId)===String(t._vidId));
     if(t._type==='pup')return st.blocks.some(b=>(b.ds===_todDs||isOvToday)&&String(b._pupSessId)===String(t._pupSessId));
@@ -3415,6 +3413,14 @@ function _vidStepDayMapSet(m){localStorage._vidStepDayMap=JSON.stringify(m);}
 const _VID_STEP_LABELS={step_build:'Build',step_vo:'VO',step_cut:'Cut',step_thumbnail:'Th',step_description:'Des'};
 function _vidStepReconstructBlocks(){
   const m=_vidStepDayMap();let mapChanged=false;
+  // 0. Remove ghost vidstep blocks with start times outside visible TB range (e.g. 1am)
+  const _minSm=HOURS[0]*60;
+  for(let i=st.blocks.length-1;i>=0;i--){
+    const bl=st.blocks[i];
+    if(bl._vidStepVid&&bl._vidStepName&&bl.sm<_minSm){
+      sbDeleteBlock(bl.id);st.blocks.splice(i,1);
+    }
+  }
   // 1. Tag untagged video blocks with vidstep metadata
   (st.blocks||[]).filter(bl=>!bl._vidStepVid&&bl.cat==='Videos'&&!bl._vidId).forEach(bl=>{
     for(const [key] of Object.entries(m)){
