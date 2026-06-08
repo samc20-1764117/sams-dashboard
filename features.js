@@ -3688,9 +3688,9 @@ function renderGroceryModal(){
     </div>`;}
 
   // ── HEADER ──
-  let html=`<div class="groc-header" style="display:flex;align-items:center;justify-content:space-between">
+  let html=`<div class="groc-header">
     <button class="groc-nav-btn" onclick="document.getElementById('groceryModal').close();showPage('recipes')">Recipes</button>
-    <div style="display:flex;align-items:center;gap:8px;flex:1;justify-content:center">
+    <div style="display:flex;align-items:center;gap:8px">
       <button class="groc-nav-btn" onclick="_grocWkOff--;renderGroceryModal();this.closest('dialog').focus()">←</button>
       <span style="font-size:12px;color:var(--muted)">${_grocWeekLabel(menuMon)}</span>
       <button class="groc-nav-btn" onclick="_grocWkOff++;renderGroceryModal();this.closest('dialog').focus()">→</button>
