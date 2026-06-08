@@ -69,10 +69,16 @@ function _getAuthToken(){return _authToken||cfg.key;}
 function _initSbClient(){
   if(_sbClient||!cfg.url||!cfg.key)return;
   _sbClient=supabase.createClient(cfg.url,cfg.key,{auth:{persistSession:true,autoRefreshToken:true}});
-  _sbClient.auth.onAuthStateChange((event,session)=>{
+  _sbClient.auth.onAuthStateChange(async(event,session)=>{
     _authToken=session?session.access_token:null;
     _userId=session?.user?.id||null;
-    if(!session&&event==='SIGNED_OUT'){showLoginOverlay(event);}
+    if(!session&&event==='SIGNED_OUT'){
+      // Token refresh can briefly fire SIGNED_OUT — verify session is truly gone
+      await new Promise(r=>setTimeout(r,1500));
+      const{data}=await _sbClient.auth.getSession();
+      if(!data.session)showLoginOverlay(event);
+      else{_authToken=data.session.access_token;_userId=data.session.user?.id||null;}
+    }
   });
 }
 function showLoginOverlay(){

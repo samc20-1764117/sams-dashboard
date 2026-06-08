@@ -207,9 +207,7 @@ function renderToday(){
       return false;
     }
     if(t._type==='vidstep'){
-      const _vsHasTB=st.blocks.some(b=>b.ds===_todDs&&String(b._vidStepVid)===String(t._vidId)&&b._vidStepName===t._vidStep);
-      console.log('[VS-TB]',t.name,'_vidStepDay='+t._vidStepDay,'todDs='+_todDs,'hasTB='+_vsHasTB,'blocks on today='+st.blocks.filter(b=>b.ds===_todDs&&String(b._vidStepVid)===String(t._vidId)).length);
-      return _vsHasTB;
+      return st.blocks.some(b=>b.ds===_todDs&&String(b._vidStepVid)===String(t._vidId)&&b._vidStepName===t._vidStep);
     }
     if(t._vidId)return st.blocks.some(b=>(b.ds===_todDs||isOvToday)&&String(b._vidId)===String(t._vidId));
     if(t._type==='pup')return st.blocks.some(b=>(b.ds===_todDs||isOvToday)&&String(b._pupSessId)===String(t._pupSessId));
