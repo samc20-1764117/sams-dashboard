@@ -121,8 +121,9 @@ function renderToday(){
       // If this task has been __skip__'d for its occurrence week or any later week up to today, don't show as overdue
       const _rec=st.recurring.find(x=>String(x.id)===String(v._recId));
       if(_rec&&_rec._dateOverrides){for(let sw=w;sw<=0;sw++){if(_rec._dateOverrides[getWkKey(sw)]==='__skip__')return;}}
-      // Dedup: if current week has a future (not yet due) occurrence, suppress overdue from past weeks
-      const existing=allRecVirt.findIndex(x=>x._recId===v._recId);
+      // Dedup: same recId+wkKey = same instance; different wkKey = separate instances (e.g. HEB moved cross-week)
+      const _dedupKey=v._recId+'::'+(v._wkKey||'');
+      const existing=allRecVirt.findIndex(x=>(x._recId+'::'+(x._wkKey||''))===_dedupKey);
       if(existing>=0){
         const ev=allRecVirt[existing];
         const evFuture=!isOv(ev.due_date)&&!ev.done;
