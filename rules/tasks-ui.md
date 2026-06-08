@@ -10,8 +10,8 @@ All task types that appear on the overview calendar/today list. Every type must 
 |------|-------------|---------|--------|
 | Regular task | `String(t.id)` | `String(t.id)` | `st.tasks` |
 | WR rule | `wrrule-{id}` / `wrrule-virt-{id}` | `wrrule::{id}` | `st.wrRules` |
-| WR recurring (legacy) | `wrec-{id}` | `wrec::{id}` | `st.recurring` (is_weekly_reset=true) |
-| Non-WR recurring | `rec-virt-{id}` | `rec::{id}::{date}` | `st.recurring` (is_weekly_reset=false) |
+| WR recurring (legacy) | `wrec-{id}` | `wrec::{id}::{wkKey}` | `st.recurring` (is_weekly_reset=true) |
+| Non-WR recurring | `rec-virt-{id}` | `rec::{id}::{date}::{wkKey}` | `st.recurring` (is_weekly_reset=false) |
 | Shopping | `shop-cal-{id}` | `shop::{id}` | `st.shopping` |
 | Video | `vid-ov-{vidId}` | `vid::{vidId}` | `_vidDayMap` (localStorage) |
 | Pup session | `pup-sess-{sessId}` | `pupsess::{sessId}::{ds}` | `st.pupSessions` |
@@ -41,7 +41,7 @@ All task types that appear on the overview calendar/today list. Every type must 
 - **Pup sessions**: `day_date < today && !done`. Included in `updateOvBanner` count and `rolloverOverdue` (moves `day_date` to today, PATCHes `pup_skill_sessions`). Appear in today list when `dayOff===0`. Sorted by timeblock position (`_pupSessId` matched against `b._pupSessId` in `tbSm()`).
 - **Videos**: overdue if `_vidDayMap[id] < today && status !== 'published'`. Included in banner count and rollover (moves localStorage date to today). Appear in today list with red `OV` style + day letter.
 - Tasks/shopping/non-WR recurring only overdue if assigned to a date.
-- **Non-WR recurring dedup**: `allRecVirt` deduplicates by `_recId`. If current week has a future (not yet due) occurrence, overdue occurrences from past weeks are suppressed — the upcoming occurrence takes priority. This prevents showing both an overdue and an upcoming instance of the same recurring task.
+- **Non-WR recurring dedup**: `allRecVirt` deduplicates by `_recId::_wkKey`. Same task from different weeks = separate instances (e.g. HEB moved cross-week + this week's natural occurrence). Same task+week = deduped, preferring future over overdue. `getOvRecurring()` uses same `_recId::_wkKey` dedup for overdue banner/rollover.
 - `updateOvBanner()` called from `renderToday()`. Banner text: `X Overdue` + `Move to today` button. No task name or question.
 
 ## Task Modals

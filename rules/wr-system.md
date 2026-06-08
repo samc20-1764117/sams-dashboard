@@ -31,7 +31,8 @@
 See `rules/tasks-ui.md` → "Task Types on Overview" for the full selection/drag ID table.
 
 **WR-specific drag/drop:**
-- Weekly cal drag: `wrec::{recId}`, `rec::{recId}::{dueDate}`, `wrrule::{ruleId}`, `shop::{shopId}`.
+- Weekly cal drag: `wrec::{recId}::{wkKey}`, `rec::{recId}::{dueDate}::{wkKey}`, `wrrule::{ruleId}`, `shop::{shopId}`.
+- **wkKey in drag IDs**: `wrec::` and `rec::` carry the source `_wkKey` so drop handlers modify the correct week's `_dateOverrides`. Critical when same task has instances from multiple weeks (e.g. HEB moved cross-week). All drop handlers (within-week, cross-week edge, today-list, TB grid, monthly cal) extract `srcWkKey` and fall back to `getWkKey(wkOff)` if empty.
 - recMoModal non-WR drop→scope picker: "This week"→`_dateOverrides[wkKey]=ds`; "All future"→`appears_on_date`.
 - recMoModal WR drop→scope picker: "↻ All future"→shift `starting_date`; "⊞ This week"→`writeWrOverride({override_type:'move'})`.
 
@@ -53,13 +54,13 @@ See `rules/tasks-ui.md` → "Task Types on Overview" for the full selection/drag
 
 **WR rule drag-to-day**: must PATCH `wr_recurring_rules` with updated `date_overrides` after `_dateOverrides` change. Undo must also PATCH to restore.
 
-**WR cross-week move**: when moving WR task to different week (calendar drop, edge drop), must delete `_dateOverrides[currentWkKey]` AND set `_dateOverrides[newWkKey]=ds`. Use `dsToWkKey(ds)` for target week, `getWkKey(wkOff)` for current. Undo restores both keys.
+**WR cross-week move**: when moving WR task to different week (calendar drop, edge drop), must delete `_dateOverrides[srcWkKey]` AND set `_dateOverrides[newWkKey]=ds`. Use `dsToWkKey(ds)` for target week, `srcWkKey` from dragId (fallback `getWkKey(wkOff)`) for source. Undo restores both keys.
 
 **Pup-related checkbox**: `makePawEl` renders bone SVG icon (14×14px, `margin-left:-2px`) instead of regular checkbox. Done state: grey `rgba(200,195,210,.35)` fill/stroke (matches grey checkbox style). Undone: white fill, muted stroke.
 
 **Unassigned indicator**: WR rules not yet assigned to a day (`!_dateOverrides[wkKey]`) show `›` via `.wr-unassigned` class, matching today list's `tb-arrow` style.
 
-**`getVisibleBlocks(ds)`**: WR rule block visible only if `r._dateOverrides[dsToWkKey(ds)]===ds`.
+**`getVisibleBlocks(ds)`**: WR rule/rec block visible if `_dateOverrides[dsToWkKey(ds)]===ds` OR any other week's override points to `ds`. This supports cross-week instances (e.g. HEB from last week appearing on today).
 
 **Undo for task-move-to-day**: snapshot `savedTBs` BEFORE `removeTBBlocksForDate`. Undo restores blocks in state + DB.
 
