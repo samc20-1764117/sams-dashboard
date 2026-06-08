@@ -2,12 +2,17 @@
 window._mobileMode = true;
 
 // ── Login overlay ─────────────────────────────────────────────────────────────
-function showLoginOverlay() {
+let _mLoggedIn = false;
+function showLoginOverlay(event) {
+  // On mobile, ignore transient null-session events during token refresh
+  // Only show login if we were never logged in, or on explicit SIGNED_OUT
+  if (_mLoggedIn && event !== 'SIGNED_OUT') return;
   document.getElementById('mLogin').style.display = 'flex';
   document.getElementById('mApp').classList.remove('ready');
   setTimeout(() => document.getElementById('mEmail') && document.getElementById('mEmail').focus(), 100);
 }
 function hideLoginOverlay() {
+  _mLoggedIn = true;
   document.getElementById('mLogin').style.display = 'none';
   document.getElementById('mApp').classList.add('ready');
 }

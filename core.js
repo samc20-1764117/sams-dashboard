@@ -70,7 +70,7 @@ function _initSbClient(){
   _sbClient.auth.onAuthStateChange((event,session)=>{
     _authToken=session?session.access_token:null;
     _userId=session?.user?.id||null;
-    if(!session&&event!=='INITIAL_SESSION'){showLoginOverlay();}
+    if(!session&&event!=='INITIAL_SESSION'){showLoginOverlay(event);}
   });
 }
 function showLoginOverlay(){
