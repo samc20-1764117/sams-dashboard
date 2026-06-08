@@ -794,6 +794,8 @@ function sortTasksForDay(tasks,ds){
     if(aT&&!bT)return -1;if(!aT&&bT)return 1;
     const aO=isOv(a.due_date)&&!a.done,bO=isOv(b.due_date)&&!b.done;
     if(aO&&!bO)return -1;if(!aO&&bO)return 1;
+    const aI=(a.important||a._type==='fin-cancel')&&!a.done,bI=(b.important||b._type==='fin-cancel')&&!b.done;
+    if(aI&&!bI)return -1;if(!aI&&bI)return 1;
     const aSm=tbSm(a),bSm=tbSm(b);
     if(aSm!==null&&bSm===null)return -1;
     if(aSm===null&&bSm!==null)return 1;
@@ -821,6 +823,8 @@ function sortByTBWeek(tasks){
     if(aT&&!bT)return -1;if(!aT&&bT)return 1;
     const aO=isOv(a.due_date)&&!a.done,bO=isOv(b.due_date)&&!b.done;
     if(aO&&!bO)return -1;if(!aO&&bO)return 1;
+    const aI=(a.important||a._type==='fin-cancel')&&!a.done,bI=(b.important||b._type==='fin-cancel')&&!b.done;
+    if(aI&&!bI)return -1;if(!aI&&bI)return 1;
     const aSm=tbSmAny(a),bSm=tbSmAny(b);
     if(aSm!==null&&bSm===null)return -1;
     if(aSm===null&&bSm!==null)return 1;
