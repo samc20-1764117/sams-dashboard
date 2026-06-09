@@ -3558,6 +3558,7 @@ function _vidStepAddBlock(vidId,step,ds){
   if(!m[key]){m[key]={ds,done:false};_vidStepDayMapSet(m);}
   save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
   pushUndo(()=>{st.blocks=st.blocks.filter(b=>b.id!==blk.id);sbDeleteBlock(blk.id);save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();},'Added step block');
+  return blk;
 }
 function _vidStepUnassign(vidId,step,forDay){
   const m=_vidStepDayMap();const key=vidId+'::'+step;
@@ -6950,8 +6951,7 @@ function dropOnTB(e,ds,h,row,smOverride){
     }
     // Add new block on this day (don't move existing)
     const _vsLabel=(_VID_STEP_LABELS[_vsStep]||_vsStep.replace('step_',''))+': '+(_vsV.topic||_vsV.title);
-    _vidStepAddBlock(_vsVidId,_vsStep,ds);
-    const newBlk=st.blocks.find(bl=>String(bl._vidStepVid)===String(_vsVidId)&&bl._vidStepName===_vsStep&&bl.ds===ds);
+    const newBlk=_vidStepAddBlock(_vsVidId,_vsStep,ds);
     if(newBlk){newBlk.sm=sm;sbUpdateBlock(newBlk.id,{start_minutes:sm});}
     dragId=null;save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
     return;
