@@ -4102,12 +4102,14 @@ function _vidOvToggleStep(vidId,step,dotEl){
   }
   // Sync daymap + timeblock blocks
   const _ovM=_vidStepDayMap();const _ovK=vidId+'::'+step;
+  const _todayDs=d2s(new Date());
   if(next==='done'){
     if(_ovM[_ovK]){_ovM[_ovK].done=true;_vidStepDayMapSet(_ovM);}
     (st.blocks||[]).forEach(bl=>{if(String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step&&!bl._done){bl._done=true;sbUpdateBlock(bl.id,{done:true});}});
   } else {
     if(_ovM[_ovK]){_ovM[_ovK].done=false;_vidStepDayMapSet(_ovM);}
-    (st.blocks||[]).forEach(bl=>{if(String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step&&bl._done){bl._done=false;sbUpdateBlock(bl.id,{done:false});}});
+    // Only uncheck blocks on today or future — past completed blocks stay done
+    (st.blocks||[]).forEach(bl=>{if(String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step&&bl._done&&bl.ds>=_todayDs){bl._done=false;sbUpdateBlock(bl.id,{done:false});}});
   }
   save();_renderVidOvMenu();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
   const patch={[step]:next,status:v.status};if(linked)patch[linked]=next;
@@ -4117,12 +4119,14 @@ function _vidOvToggleStep(vidId,step,dotEl){
     v[step]=prev;if(linked)v[linked]=linkedPrev;v.status=prevStatus;
     // Reverse daymap + block sync
     const _uM=_vidStepDayMap();const _uK=vidId+'::'+step;
+    const _uTodayDs=d2s(new Date());
     if(prev==='done'){
       if(_uM[_uK]){_uM[_uK].done=true;_vidStepDayMapSet(_uM);}
       (st.blocks||[]).forEach(bl=>{if(String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step&&!bl._done){bl._done=true;sbUpdateBlock(bl.id,{done:true});}});
     } else {
       if(_uM[_uK]){_uM[_uK].done=false;_vidStepDayMapSet(_uM);}
-      (st.blocks||[]).forEach(bl=>{if(String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step&&bl._done){bl._done=false;sbUpdateBlock(bl.id,{done:false});}});
+      // Only uncheck blocks on today or future — past completed blocks stay done
+      (st.blocks||[]).forEach(bl=>{if(String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step&&bl._done&&bl.ds>=_uTodayDs){bl._done=false;sbUpdateBlock(bl.id,{done:false});}});
     }
     save();_renderVidOvMenu();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
     const up={[step]:prev,status:prevStatus};if(linked)up[linked]=linkedPrev;
@@ -5986,13 +5990,16 @@ function drawTBBlock(col,b){
     v[step]=newVal;
     sbReqSilent('PATCH','videos',{[step]:newVal},`?id=eq.${v.id}`);
     // Sync daymap + timeblock blocks to match stage state
-    // Stage square marks ALL instances (including later ones) done/undone
     const m=_vidStepDayMap();const key=vid+'::'+step;
+    const _sqTodayDs=d2s(new Date());
     const _prevBlkStates=[];
-    (st.blocks||[]).forEach(bl=>{if(String(bl._vidStepVid)===String(vid)&&bl._vidStepName===step){_prevBlkStates.push({id:bl.id,done:bl._done});const want=newVal==='done';if(bl._done!==want){bl._done=want;sbUpdateBlock(bl.id,{done:want});}}});
     if(newVal==='done'){
+      // Mark all blocks done
+      (st.blocks||[]).forEach(bl=>{if(String(bl._vidStepVid)===String(vid)&&bl._vidStepName===step){_prevBlkStates.push({id:bl.id,done:bl._done});if(!bl._done){bl._done=true;sbUpdateBlock(bl.id,{done:true});}}});
       if(m[key]){m[key].done=true;_vidStepDayMapSet(m);}
     } else {
+      // Only uncheck today/future blocks — past completed blocks stay done
+      (st.blocks||[]).forEach(bl=>{if(String(bl._vidStepVid)===String(vid)&&bl._vidStepName===step){_prevBlkStates.push({id:bl.id,done:bl._done});if(bl._done&&bl.ds>=_sqTodayDs){bl._done=false;sbUpdateBlock(bl.id,{done:false});}}});
       if(m[key]){m[key].done=false;_vidStepDayMapSet(m);}
     }
     pushUndo(()=>{v[step]=prevVal;sbReqSilent('PATCH','videos',{[step]:prevVal},`?id=eq.${v.id}`);_prevBlkStates.forEach(s=>{const bl2=st.blocks.find(x=>x.id===s.id);if(bl2){bl2._done=s.done;sbUpdateBlock(bl2.id,{done:s.done});}});const m2=_vidStepDayMap();if(m2[key]){m2[key].done=prevVal==='done';_vidStepDayMapSet(m2);}save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();},'Stage toggle');
