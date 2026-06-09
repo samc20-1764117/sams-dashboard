@@ -3883,7 +3883,7 @@ function _vidOvMenuItem(v,steps,focusSet){
   const _countBadge=_smallCount?` <span style="font-size:10px;font-weight:400;color:var(--muted);opacity:.5;font-family:system-ui,-apple-system,sans-serif;font-variant-numeric:tabular-nums">· ${_smallCount}</span>`:'';
   let html=`<div data-vidrow="${sid}" ${_dragAttr} ${_dblAttr} ${_ctxAttr} ${_hov} class="${_focusCls}" style="padding:5px 19px 5px 6px;border-radius:6px;font-size:12px;font-weight:600;color:var(--text);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s">${_addBtn}<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:12px">${escHtml(v.topic||v.title)}${_countBadge}</span><div style="display:flex;gap:0;flex-shrink:0;align-items:center">${_vidOvStepDots(v,steps)}</div>${_postField}<div class="vid-ov-pctx" style="width:14px;flex-shrink:0;text-align:center;position:relative;margin-left:12px;display:flex;align-items:center;justify-content:center;line-height:12px"><span class="vid-ov-pct" style="font-size:9px;opacity:.5;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif;line-height:12px">${_vidOvPct(v,steps)?_vidOvPct(v,steps)+'%':''}</span>${_xBtn}</div></div>`;
   // Children (S/L videos)
-  const children=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(v.id)&&c.status==='up_next').sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
+  const children=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(v.id)&&c.status!=='published'&&c.status!=='idea').sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
   children.forEach((c,ci)=>{
     const csid=String(c.id);
     const _cOnCal=!!_map[csid];
@@ -4645,18 +4645,19 @@ function _vidOvRenderAll(){
   const all=(st.videos||[]).filter(v=>!v.is_deleted);
   const steps=typeof VID_STEPS_CORE!=='undefined'?VID_STEPS_CORE:(typeof VID_STEPS!=='undefined'?VID_STEPS:[]);
   // In Progress — top-level B + standalone L (children shown under parent)
-  const inProgAll=all.filter(v=>v.status==='in_progress').sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
+  const upNextIds=new Set(all.filter(v=>v.status==='up_next').map(v=>String(v.id)));
+  const inProgAll=all.filter(v=>v.status==='in_progress'&&!(v.big_video_id&&upNextIds.has(String(v.big_video_id)))).sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
   const inProg=inProgAll.filter(v=>v.video_type==='B'||!v.big_video_id||!inProgAll.find(p=>String(p.id)===String(v.big_video_id)));
   const bigIdeas=all.filter(v=>v.status==='idea'&&v.video_type==='B').sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
   const littleIdeas=all.filter(v=>v.status==='idea'&&v.video_type!=='B').sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
   // 2-column layout: In Progress | Ideas
   let h=`<div onclick="if(!event.target.closest('[data-alldrag]')&&!event.target.closest('button')){_voaSel.clear();_voaLast=null;_voaApplySel()}" style="display:grid;grid-template-columns:1.5fr 1fr;grid-template-rows:auto 1fr;position:absolute;top:0;left:0;right:0;bottom:0">`;
   // Column headers
-  h+=`<div class="tod-tb-header" style="grid-column:1;grid-row:1;border-right:1.5px solid var(--border);justify-content:flex-start;padding-left:14px"><span style="font-size:9px;font-weight:600;color:#d97706;letter-spacing:.03em">In Progress</span></div>`;
+  h+=`<div class="tod-tb-header" style="grid-column:1;grid-row:1;border-right:1.5px solid rgba(210,205,228,.3);justify-content:flex-start;padding-left:14px"><span style="font-size:9px;font-weight:600;color:#d97706;letter-spacing:.03em">In Progress</span></div>`;
   h+=`<div class="tod-tb-header" style="grid-column:2;grid-row:1;justify-content:flex-start;padding-left:14px;display:flex;align-items:center;gap:6px"><span style="font-size:9px;font-weight:600;color:var(--muted);letter-spacing:.03em;flex:1">Ideas</span><button onclick="event.stopPropagation();if(typeof openVidModal==='function')openVidModal()" style="font-size:10px;font-weight:700;width:18px;height:18px;line-height:16px;text-align:center;border-radius:4px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;padding:0;flex-shrink:0" title="Add idea (N)">+</button></div>`;
   // In Progress column
   const labels=typeof VID_STEP_LABELS!=='undefined'?VID_STEP_LABELS:{};
-  h+=`<div style="grid-column:1;grid-row:2;min-height:0;overflow-y:auto;border-right:1.5px solid var(--border);padding:4px" ondragover="event.preventDefault();this.style.background='rgba(245,158,11,.03)'" ondragleave="this.style.background=''" ondrop="this.style.background='';_vidOvAllDrop(event,'in_progress')">`;
+  h+=`<div style="grid-column:1;grid-row:2;min-height:0;overflow-y:auto;border-right:1.5px solid rgba(210,205,228,.3);padding:4px" ondragover="event.preventDefault();this.style.background='rgba(245,158,11,.03)'" ondragleave="this.style.background=''" ondrop="this.style.background='';_vidOvAllDrop(event,'in_progress')">`;
   // Stage column headers
   h+='<div style="display:flex;align-items:center;padding:3px 6px;gap:5px">';
   h+='<div style="width:12px;flex-shrink:0"></div>';
