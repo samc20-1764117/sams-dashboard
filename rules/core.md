@@ -29,6 +29,9 @@ Supabase Auth (email+password), RLS on all tables. `init()`→`checkAuth()`→`d
 - `toggleTask/togRec/togShop`: call `sbUpdateBlock(b.id,{done})` for linked TB blocks.
 - `drawTBBlock` derives `b._done` from linked item at render time. `linkedRec` checks both `st.recurring` and `st.wrRules`. `recCat='weekly_reset'` unless `is_weekly_reset===false`.
 - `syncAll` preserves local-only blocks during sync via `localOnly` filter.
+- **Sync race protection**: `_lastSaveTs` tracks last `save()` call. During `syncAll` task merge, if `save()` was called within 60s, local task fields (`due_date`, `done`, `important`, `category`) win over DB values. This prevents the 30s sync cycle from overwriting in-flight PATCHes. After 60s, DB values take precedence (allowing cross-device sync).
+- **`localOverrides`**: explicit per-task field overrides that always win until DB catches up. Used by drag-and-drop moves and "Move overdue" buttons. `pendingLocal` set prevents DB overwrites while PATCH is in flight.
+- **WR `_dateOverrides` merge**: during sync, local `_dateOverrides` always win over DB values (no `if(!dbOvs[k])` guard). This prevents recurring task day-moves from reverting.
 - `renderDayTB` skips if `window._tbEditing===true`. `renderAll()` does NOT call `renderDayTB()`. Ops changing TB state must also call `if(document.getElementById('tbGrid'))renderDayTB()` — including undo closures.
 - `delTask`: removes linked TB blocks by `taskId` AND title match.
 - `rolloverOverdue()`: stores `prevDate` before rollover. Undo restores original date + patches DB.
