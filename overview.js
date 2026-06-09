@@ -3940,7 +3940,9 @@ function _vidOvDemote(vidId){
   const prevStatus=v.status;
   const prevBigId=v.big_video_id;
   v.status='idea';
-  const patch={status:'idea'};
+  const prevPostDate=v.post_date;
+  v.post_date=null;
+  const patch={status:'idea',post_date:null};
   // For small videos, unlink from big video
   if(v.video_type!=='B'&&v.big_video_id){
     v.big_video_id=null;patch.big_video_id=null;
@@ -3949,10 +3951,10 @@ function _vidOvDemote(vidId){
   const childUndos=[];
   if(v.video_type==='B'){
     (st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(vidId)&&c.status!=='published').forEach(c=>{
-      const cp=c.status;const cpBig=c.big_video_id;
-      c.status='idea';c.big_video_id=null;
-      childUndos.push({id:c.id,prevStatus:cp,prevBig:cpBig});
-      sbReqSilent('PATCH','videos',{status:'idea',big_video_id:null},`?id=eq.${c.id}`);
+      const cp=c.status;const cpBig=c.big_video_id;const cpPost=c.post_date;
+      c.status='idea';c.big_video_id=null;c.post_date=null;
+      childUndos.push({id:c.id,prevStatus:cp,prevBig:cpBig,prevPost:cpPost});
+      sbReqSilent('PATCH','videos',{status:'idea',big_video_id:null,post_date:null},`?id=eq.${c.id}`);
     });
   }
   // Remove from day map if assigned
@@ -3961,26 +3963,26 @@ function _vidOvDemote(vidId){
   save();_renderVidOvMenu();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
   sbReqSilent('PATCH','videos',patch,`?id=eq.${vidId}`);
   pushUndo(()=>{
-    v.status=prevStatus;v.big_video_id=prevBigId;
-    childUndos.forEach(cu=>{const c=(st.videos||[]).find(x=>String(x.id)===String(cu.id));if(c){c.status=cu.prevStatus;c.big_video_id=cu.prevBig;sbReqSilent('PATCH','videos',{status:cu.prevStatus,big_video_id:cu.prevBig},`?id=eq.${cu.id}`);}});
+    v.status=prevStatus;v.big_video_id=prevBigId;v.post_date=prevPostDate;
+    childUndos.forEach(cu=>{const c=(st.videos||[]).find(x=>String(x.id)===String(cu.id));if(c){c.status=cu.prevStatus;c.big_video_id=cu.prevBig;c.post_date=cu.prevPost;sbReqSilent('PATCH','videos',{status:cu.prevStatus,big_video_id:cu.prevBig,post_date:cu.prevPost??null},`?id=eq.${cu.id}`);}});
     if(prevDay){const m2=_vidDayMap();m2[String(vidId)]=prevDay;_vidDayMapSet(m2);}
     save();_renderVidOvMenu();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
-    sbReqSilent('PATCH','videos',{status:prevStatus,big_video_id:prevBigId},`?id=eq.${vidId}`);
+    sbReqSilent('PATCH','videos',{status:prevStatus,big_video_id:prevBigId,post_date:prevPostDate??null},`?id=eq.${vidId}`);
   },'Moved to ideas');
 }
 function _vidOvBulkDemote(ids){
   const undoData=ids.map(vid=>{
     const v=(st.videos||[]).find(x=>String(x.id)===vid);if(!v)return null;
-    const prevStatus=v.status;const prevBig=v.big_video_id;
+    const prevStatus=v.status;const prevBig=v.big_video_id;const prevPost=v.post_date;
     const map=_vidDayMap();const prevDay=map[vid]||null;
-    const childData=v.video_type==='B'?(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===vid&&c.status!=='published').map(c=>({id:c.id,status:c.status,big:c.big_video_id})):[];
-    return{vid,prevStatus,prevBig,prevDay,childData};
+    const childData=v.video_type==='B'?(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===vid&&c.status!=='published').map(c=>({id:c.id,status:c.status,big:c.big_video_id,post:c.post_date})):[];
+    return{vid,prevStatus,prevBig,prevPost,prevDay,childData};
   }).filter(Boolean);
   ids.forEach(vid=>{
     const v=(st.videos||[]).find(x=>String(x.id)===vid);if(!v)return;
-    v.status='idea';const patch={status:'idea'};
+    v.status='idea';v.post_date=null;const patch={status:'idea',post_date:null};
     if(v.video_type!=='B'&&v.big_video_id){v.big_video_id=null;patch.big_video_id=null;}
-    if(v.video_type==='B'){(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===vid&&c.status!=='published').forEach(c=>{c.status='idea';c.big_video_id=null;sbReqSilent('PATCH','videos',{status:'idea',big_video_id:null},`?id=eq.${c.id}`);});}
+    if(v.video_type==='B'){(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===vid&&c.status!=='published').forEach(c=>{c.status='idea';c.big_video_id=null;c.post_date=null;sbReqSilent('PATCH','videos',{status:'idea',big_video_id:null,post_date:null},`?id=eq.${c.id}`);});}
     const map=_vidDayMap();if(map[vid]){delete map[vid];_vidDayMapSet(map);}
     sbReqSilent('PATCH','videos',patch,`?id=eq.${vid}`);
   });
@@ -3988,9 +3990,9 @@ function _vidOvBulkDemote(ids){
   pushUndo(()=>{
     undoData.forEach(u=>{
       const v=(st.videos||[]).find(x=>String(x.id)===u.vid);if(!v)return;
-      v.status=u.prevStatus;v.big_video_id=u.prevBig;
-      sbReqSilent('PATCH','videos',{status:u.prevStatus,big_video_id:u.prevBig},`?id=eq.${u.vid}`);
-      u.childData.forEach(cu=>{const c=(st.videos||[]).find(x=>String(x.id)===String(cu.id));if(c){c.status=cu.status;c.big_video_id=cu.big;sbReqSilent('PATCH','videos',{status:cu.status,big_video_id:cu.big},`?id=eq.${cu.id}`);}});
+      v.status=u.prevStatus;v.big_video_id=u.prevBig;v.post_date=u.prevPost;
+      sbReqSilent('PATCH','videos',{status:u.prevStatus,big_video_id:u.prevBig,post_date:u.prevPost??null},`?id=eq.${u.vid}`);
+      u.childData.forEach(cu=>{const c=(st.videos||[]).find(x=>String(x.id)===String(cu.id));if(c){c.status=cu.status;c.big_video_id=cu.big;c.post_date=cu.post;sbReqSilent('PATCH','videos',{status:cu.status,big_video_id:cu.big,post_date:cu.post??null},`?id=eq.${cu.id}`);}});
       if(u.prevDay){const m=_vidDayMap();m[u.vid]=u.prevDay;_vidDayMapSet(m);}
     });
     save();_renderVidOvMenu();renderAll();if(document.getElementById('tbGrid'))renderDayTB();if(_vidOvAllOpen&&typeof _vidOvRenderAll==='function')_vidOvRenderAll();
@@ -4557,22 +4559,22 @@ function _vidOvToggleAll(){
         const vids=allIds.map(id=>(st.videos||[]).find(x=>String(x.id)===id)).filter(Boolean);
         const toMove=vids.filter(v=>statusMap[v.status]);
         if(!toMove.length)return;
-        const undos=toMove.map(v=>({id:v.id,prev:v.status,prevBig:v.big_video_id}));
+        const undos=toMove.map(v=>({id:v.id,prev:v.status,prevBig:v.big_video_id,prevPost:v.post_date}));
         toMove.forEach(v=>{v.status=statusMap[v.status];});
-        // When moving to idea, clear big_video_id for L videos
-        toMove.forEach(v=>{if(v.video_type!=='B'&&v.status==='idea'&&v.big_video_id){v.big_video_id=null;}});
+        // When moving to idea, clear big_video_id and post_date for L videos
+        toMove.forEach(v=>{if(v.status==='idea'){v.post_date=null;if(v.video_type!=='B'&&v.big_video_id){v.big_video_id=null;}}});
         // Move children of B videos
         const childUndos=[];
         toMove.filter(v=>v.video_type==='B').forEach(v=>{
           (st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(v.id)&&!_voaSel.has(String(c.id))).forEach(c=>{
-            const ns=statusMap[c.status];if(ns){childUndos.push({id:c.id,prev:c.status,prevBig:c.big_video_id});c.status=ns;if(ns==='idea'){c.big_video_id=null;}}
+            const ns=statusMap[c.status];if(ns){childUndos.push({id:c.id,prev:c.status,prevBig:c.big_video_id,prevPost:c.post_date});c.status=ns;if(ns==='idea'){c.big_video_id=null;c.post_date=null;}}
           });
         });
         // Clear selections after move
         if(_voaSel.size===0&&_vidOvSelVid){_vidOvSelVid=null;_vidOvSelIdx=-1;}
         save();_vidOvRenderAll();_renderVidOvMenu();renderAll();
-        pushUndo(()=>{[...undos,...childUndos].forEach(u=>{const v2=(st.videos||[]).find(x=>String(x.id)===u.id);if(v2){v2.status=u.prev;v2.big_video_id=u.prevBig;}});save();_vidOvRenderAll();_renderVidOvMenu();renderAll();[...undos,...childUndos].forEach(u=>sbReqSilent('PATCH','videos',{status:u.prev,big_video_id:u.prevBig??null},`?id=eq.${u.id}`));},'Move status');
-        (async()=>{for(const v of toMove)await sbReqSilent('PATCH','videos',{status:v.status,big_video_id:v.big_video_id??null},`?id=eq.${v.id}`);for(const cm of childUndos){const c=(st.videos||[]).find(x=>String(x.id)===cm.id);if(c)await sbReqSilent('PATCH','videos',{status:c.status,big_video_id:c.big_video_id??null},`?id=eq.${c.id}`);}})();
+        pushUndo(()=>{[...undos,...childUndos].forEach(u=>{const v2=(st.videos||[]).find(x=>String(x.id)===u.id);if(v2){v2.status=u.prev;v2.big_video_id=u.prevBig;v2.post_date=u.prevPost;}});save();_vidOvRenderAll();_renderVidOvMenu();renderAll();[...undos,...childUndos].forEach(u=>sbReqSilent('PATCH','videos',{status:u.prev,big_video_id:u.prevBig??null,post_date:u.prevPost??null},`?id=eq.${u.id}`));},'Move status');
+        (async()=>{for(const v of toMove)await sbReqSilent('PATCH','videos',{status:v.status,big_video_id:v.big_video_id??null,post_date:v.post_date??null},`?id=eq.${v.id}`);for(const cm of childUndos){const c=(st.videos||[]).find(x=>String(x.id)===cm.id);if(c)await sbReqSilent('PATCH','videos',{status:c.status,big_video_id:c.big_video_id??null,post_date:c.post_date??null},`?id=eq.${c.id}`);}})();
         return;
       }
       // Enter — edit selected
