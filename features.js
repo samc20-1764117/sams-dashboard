@@ -5562,10 +5562,10 @@ document.addEventListener('keydown',async e=>{
     // Check if any are TB blocks (blk- IDs or vidstep blocks selected from TB)
     const blkIds=[...selectedTasks].filter(id=>id.startsWith('blk-'));
     const tbOpen=!!document.getElementById('tbGrid');
-    // Vidstep selections from TB: find matching blocks for Build/VO/Cut only
+    // Vidstep selections from TB (no day suffix) vs today list (has day suffix like -2026-06-09)
     const vsBlkIds=tbOpen?[...selectedTasks].filter(id=>{
       if(!id.startsWith('vidstep-'))return false;
-      const m=id.match(/^vidstep-(\d+)-(step_\w+)/);
+      const m=id.match(/^vidstep-(\d+)-(step_\w+)$/);
       if(!m)return false;
       const step=m[2];
       return step!=='step_thumbnail'&&step!=='step_description';
