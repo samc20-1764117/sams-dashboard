@@ -3680,7 +3680,7 @@ function _vidOvToggleTitleMode(){
     const card=panel.parentElement;
     if(_vidOvTitleMode){
       const cols=card.closest('.overview-cols');
-      const extend=cols?(cols.offsetWidth-card.offsetWidth-14)+'px':'600px';
+      const extend=cols?Math.round((cols.offsetWidth-card.offsetWidth-14)*0.55)+'px':'300px';
       panel.style.right='-'+extend;
       if(card){card.style.overflow='visible';card.style.zIndex='60';}
     }else{
