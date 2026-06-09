@@ -288,7 +288,7 @@ async function syncAll(silent=false){
       const prevRecOvs={};st.recurring.forEach(r=>{if(r._dateOverrides)prevRecOvs[String(r.id)]=r._dateOverrides;});
       const _isWR=r=>r.is_weekly_reset===true||r.is_weekly_reset==='true';
       st.wrRules=wrRules.filter(_isWR);
-      st.wrRules.forEach(r=>{const dbOvs={...(r.date_overrides||{})};const prevOvs=prevPins[String(r.id)];if(prevOvs){Object.keys(prevOvs).forEach(k=>{if(!dbOvs[k])dbOvs[k]=prevOvs[k];});}r._dateOverrides=dbOvs;});
+      st.wrRules.forEach(r=>{const dbOvs={...(r.date_overrides||{})};const prevOvs=prevPins[String(r.id)];if(prevOvs){Object.keys(prevOvs).forEach(k=>{dbOvs[k]=prevOvs[k];});}r._dateOverrides=dbOvs;});
       const nonWR=wrRules.filter(r=>!_isWR(r));
       const dbIds=new Set(nonWR.map(r=>String(r.id)));
       const localPending=st.recurring.filter(r=>{
@@ -302,7 +302,7 @@ async function syncAll(silent=false){
           const isDone=!!(dbwk[getWkKey(0)]);
           const dateOvs={...(r.date_overrides||{})};
           const prevOvs=prevRecOvs[String(r.id)];
-          if(prevOvs){Object.keys(prevOvs).forEach(k=>{if(!dateOvs[k])dateOvs[k]=prevOvs[k];});}
+          if(prevOvs){Object.keys(prevOvs).forEach(k=>{dateOvs[k]=prevOvs[k];});}
           return{...r,_doneByWk:dbwk,_done:isDone,_dateOverrides:dateOvs};
         }),
         ...localPending
