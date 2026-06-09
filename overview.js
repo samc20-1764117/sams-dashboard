@@ -4672,12 +4672,12 @@ function _vidOvRenderAll(){
   // Ideas column — matching videos page style
   h+=`<div style="grid-column:2;grid-row:2;min-height:0;overflow-y:auto;padding:4px;display:flex;flex-direction:column">`;
   if(bigIdeas.length||littleIdeas.length){
-    h+=`<div style="flex:1;min-height:40px" ondragover="event.preventDefault();this.style.background='rgba(139,92,246,.03)'" ondragleave="this.style.background=''" ondrop="this.style.background='';_vidOvAllDropType(event,'B')">`;
+    h+=`<div style="min-height:30px;padding-bottom:4px" ondragover="event.preventDefault();this.style.background='rgba(139,92,246,.03)'" ondragleave="this.style.background=''" ondrop="this.style.background='';_vidOvAllDropType(event,'B')">`;
     h+=`<div style="font-size:9px;font-weight:600;color:var(--muted);padding:4px 6px 4px 10px;letter-spacing:.03em">Big</div>`;
     if(bigIdeas.length)bigIdeas.forEach(v=>{h+=_vidOvAllIdeaRow(v);});
     else h+='<div style="color:var(--muted);font-size:10px;padding:4px 10px;opacity:.5">None</div>';
     h+='</div>';
-    h+=`<div style="flex:1;min-height:40px;border-top:1px solid rgba(210,205,228,.15)" ondragover="event.preventDefault();this.style.background='rgba(139,92,246,.03)'" ondragleave="this.style.background=''" ondrop="this.style.background='';_vidOvAllDropType(event,'L')">`;
+    h+=`<div style="min-height:30px;border-top:1px solid rgba(210,205,228,.15);padding-bottom:4px" ondragover="event.preventDefault();this.style.background='rgba(139,92,246,.03)'" ondragleave="this.style.background=''" ondrop="this.style.background='';_vidOvAllDropType(event,'L')">`;
     h+=`<div style="font-size:9px;font-weight:600;color:var(--muted);padding:4px 6px 4px 10px;letter-spacing:.03em">Little</div>`;
     if(littleIdeas.length)littleIdeas.forEach(v=>{h+=_vidOvAllIdeaRow(v);});
     else h+='<div style="color:var(--muted);font-size:10px;padding:4px 10px;opacity:.5">None</div>';
