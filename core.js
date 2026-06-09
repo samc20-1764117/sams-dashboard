@@ -59,7 +59,8 @@ let shopSortMode='store'; // 'store' or 'alpha'
 
 // ── Storage ────────────────────────────────────────────────────────────────────
 function load(){try{const s=JSON.parse(localStorage.getItem(KEY)||'{}');if(s.cfg)cfg={...cfg,...s.cfg};if(s.blocks)st.blocks=s.blocks.map(b=>{const{_col,_ncols,...rest}=b;return rest;});if(s.sb!==undefined)sbOpen=s.sb;if(s.overrides)localOverrides=s.overrides;if(s.delRec)deletedRecIds=new Set(s.delRec);if(s.delPupSess)deletedPupSessIds=new Set(s.delPupSess);if(s.tasks)st.tasks=s.tasks;if(s.recurring)st.recurring=s.recurring.map(r=>({...r,_doneByWk:r._doneByWk||{}}));if(s.shopping)st.shopping=s.shopping;if(s.travel)st.travel=s.travel;if(s.birthdays)st.birthdays=s.birthdays;if(s.ideas)st.ideas=s.ideas;if(s.pup_skills)st.pup_skills=s.pup_skills;if(s.pupSessions)st.pupSessions=s.pupSessions;if(s.pupWeeklyFocus)st.pupWeeklyFocus=s.pupWeeklyFocus;if(s.recipes)st.recipes=s.recipes;if(s.videos)st.videos=s.videos;if(s.autoTimeblocks)st.autoTimeblocks=s.autoTimeblocks;if(s.autoTBOverrides)st.autoTBOverrides=s.autoTBOverrides;if(s.wrRules)st.wrRules=s.wrRules;if(s.wrOverrides)st.wrOverrides=s.wrOverrides;if(s._ytDismissed)st._ytDismissed=s._ytDismissed;if(s.groceryStaples)st.groceryStaples=s.groceryStaples;if(s.groceryList)st.groceryList=s.groceryList;if(s.mealPlan)st.mealPlan=s.mealPlan;if(s.packTemplates)st.packTemplates=s.packTemplates;if(s.packItems)st.packItems=s.packItems;if(s.finance)st.finance=s.finance;if(s.finSubs)st.finSubs=s.finSubs;if(s.easyMeals)st.easyMeals=s.easyMeals;}catch(e){}}
-function save(){try{localStorage.setItem(KEY,JSON.stringify({cfg,blocks:st.blocks,sb:sbOpen,overrides:localOverrides,delRec:[...deletedRecIds],delPupSess:[...deletedPupSessIds],tasks:st.tasks,recurring:st.recurring,shopping:st.shopping,travel:st.travel,birthdays:st.birthdays,ideas:st.ideas,pup_skills:st.pup_skills,pupSessions:st.pupSessions,pupWeeklyFocus:st.pupWeeklyFocus,recipes:st.recipes,videos:st.videos,autoTimeblocks:st.autoTimeblocks,autoTBOverrides:st.autoTBOverrides,wrRules:st.wrRules,wrOverrides:st.wrOverrides,_ytDismissed:st._ytDismissed,groceryStaples:st.groceryStaples,groceryList:st.groceryList,mealPlan:st.mealPlan,packTemplates:st.packTemplates,packItems:st.packItems,finance:st.finance,finSubs:st.finSubs,easyMeals:st.easyMeals}));}catch(e){}}
+let _lastSaveTs=0;
+function save(){_lastSaveTs=Date.now();try{localStorage.setItem(KEY,JSON.stringify({cfg,blocks:st.blocks,sb:sbOpen,overrides:localOverrides,delRec:[...deletedRecIds],delPupSess:[...deletedPupSessIds],tasks:st.tasks,recurring:st.recurring,shopping:st.shopping,travel:st.travel,birthdays:st.birthdays,ideas:st.ideas,pup_skills:st.pup_skills,pupSessions:st.pupSessions,pupWeeklyFocus:st.pupWeeklyFocus,recipes:st.recipes,videos:st.videos,autoTimeblocks:st.autoTimeblocks,autoTBOverrides:st.autoTBOverrides,wrRules:st.wrRules,wrOverrides:st.wrOverrides,_ytDismissed:st._ytDismissed,groceryStaples:st.groceryStaples,groceryList:st.groceryList,mealPlan:st.mealPlan,packTemplates:st.packTemplates,packItems:st.packItems,finance:st.finance,finSubs:st.finSubs,easyMeals:st.easyMeals}));}catch(e){}}
 
 // ── Auth ───────────────────────────────────────────────────────────────────────
 let _sbClient=null;
@@ -325,6 +326,18 @@ async function syncAll(silent=false){
         if(pendingLocal.has(sid)){
           const local=st.tasks.find(lt=>String(lt.id)===sid);
           if(local) return local;
+        }
+        // Preserve local changes for 60s after last save (gives PATCHes time to land)
+        if(_lastSaveTs&&Date.now()-_lastSaveTs<60000){
+          const local=st.tasks.find(lt=>String(lt.id)===sid);
+          if(local){
+            const patch={};
+            if((local.due_date||null)!==(dbT.due_date||null))patch.due_date=local.due_date;
+            if(local.done!==dbT.done)patch.done=local.done;
+            if(local.important!==dbT.important)patch.important=local.important;
+            if((local.category||null)!==(dbT.category||null))patch.category=local.category;
+            if(Object.keys(patch).length)return{...dbT,...patch};
+          }
         }
         return dbT;
       });
