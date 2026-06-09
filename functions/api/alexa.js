@@ -7,8 +7,7 @@ export async function onRequest(context) {
 
   const sbKey = context.env.SUPABASE_KEY;
   const userId = context.env.SUPABASE_USER_ID;
-  if (!sbKey) return alexaResp('Server misconfigured. No SUPABASE_KEY.');
-  if (!userId) return alexaResp('Server misconfigured. No SUPABASE_USER_ID.');
+  if (!sbKey || !userId) return alexaResp('Server misconfigured.');
 
   try {
     const body = await context.request.json();
