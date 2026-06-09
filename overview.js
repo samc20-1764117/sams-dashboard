@@ -3672,6 +3672,40 @@ function _vidStepTasksForDay(ds){
   return tasks;
 }
 
+let _vidOvTitleMode=false;
+function _vidOvToggleTitleMode(){
+  _vidOvTitleMode=!_vidOvTitleMode;
+  const panel=document.getElementById('vidOvPanel');
+  if(panel)panel.style.width=_vidOvTitleMode?'calc(100% + 180px)':'';
+  _renderVidOvMenu();
+}
+function _vidOvStartTitleEdit(el,vidId){
+  if(el.querySelector('input'))return;
+  const v=(st.videos||[]).find(x=>String(x.id)===String(vidId));if(!v)return;
+  const prev=v.title||'';
+  el.textContent='';
+  const inp=document.createElement('input');
+  inp.type='text';inp.value=prev;
+  inp.style.cssText='width:100%;border:none;outline:none;background:transparent;font-size:11px;color:var(--text);font-weight:500;padding:1px 3px;border-radius:3px;box-shadow:inset 0 0 0 1px rgba(14,165,233,.35);font-family:inherit';
+  el.appendChild(inp);
+  inp.focus();inp.select();
+  const _commit=()=>{
+    const val=inp.value.trim();
+    if(inp._saved)return;inp._saved=true;
+    el.textContent=val||'';
+    if(val!==prev){
+      v.title=val;save();
+      sbReqSilent('PATCH','videos',{title:val},`?id=eq.${vidId}`);
+      pushUndo(()=>{v.title=prev;save();_renderVidOvMenu();sbReqSilent('PATCH','videos',{title:prev},`?id=eq.${vidId}`);},'Edit title');
+    }
+  };
+  inp.addEventListener('keydown',e=>{
+    if(e.key==='Enter'){e.preventDefault();e.stopPropagation();_commit();}
+    if(e.key==='Escape'){e.stopPropagation();inp._saved=true;el.textContent=prev;}
+    e.stopPropagation();
+  });
+  inp.addEventListener('blur',()=>setTimeout(_commit,80));
+}
 let _vidOvSelIdx=-1;
 let _vidOvSelVid=null;
 const _vidOvSelSet=new Set();
@@ -3817,7 +3851,7 @@ function _renderVidOvMenu(){
   const _moonColor=_focusActive?'#eab308':'var(--muted)';
   const _moonGlow=_focusActive?'filter:drop-shadow(0 0 4px rgba(234,179,8,.5))':'';
   const _ib='background:none;border:none;cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;width:20px;height:20px;flex-shrink:0';
-  const _hdr=`<div class="tod-tb-header" style="position:relative"><button onclick="_vidOvToggleCal()" style="${_ib};color:${_vidCalOpen?'var(--accent)':'var(--muted)'}" title="Monthly schedule (M)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></button><button onclick="_vidOvToggleAll()" style="${_ib};color:${_vidOvAllOpen?'var(--accent)':'var(--muted)'}" title="All videos"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg></button><button onclick="_vidOvToggleFocusWk()" style="${_ib};color:${_moonColor};${_moonGlow}" title="Focus this week"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg></button><span style="flex:1;text-align:center;font-size:12px;font-weight:700;color:var(--text);letter-spacing:-.1px">Videos</span><button onclick="_vidOvToggleAnalytics()" style="${_ib};color:${_vidOvAnOpen?'var(--accent)':'var(--muted)'}" title="Analytics"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></button><button onclick="closeVidOvMenu();showPage('videos')" style="${_ib};color:var(--muted)" title="Go to Videos page"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></button><button onclick="closeVidOvMenu()" style="${_ib};color:var(--muted);font-size:14px" title="Close">✕</button></div>`;
+  const _hdr=`<div class="tod-tb-header" style="position:relative"><button onclick="_vidOvToggleCal()" style="${_ib};color:${_vidCalOpen?'var(--accent)':'var(--muted)'}" title="Monthly schedule (M)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></button><button onclick="_vidOvToggleAll()" style="${_ib};color:${_vidOvAllOpen?'var(--accent)':'var(--muted)'}" title="All videos"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg></button><button onclick="_vidOvToggleFocusWk()" style="${_ib};color:${_moonColor};${_moonGlow}" title="Focus this week"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg></button><button onclick="_vidOvToggleTitleMode()" style="${_ib};color:${_vidOvTitleMode?'var(--accent)':'var(--muted)'}" title="Edit titles"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button><span style="flex:1;text-align:center;font-size:12px;font-weight:700;color:var(--text);letter-spacing:-.1px">Videos</span><button onclick="_vidOvToggleAnalytics()" style="${_ib};color:${_vidOvAnOpen?'var(--accent)':'var(--muted)'}" title="Analytics"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></button><button onclick="closeVidOvMenu();showPage('videos')" style="${_ib};color:var(--muted)" title="Go to Videos page"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></button><button onclick="closeVidOvMenu()" style="${_ib};color:var(--muted);font-size:14px" title="Close">✕</button></div>`;
   if(!vids.length){
     menu.innerHTML=_hdr+'<div style="padding:30px;font-size:12px;color:var(--subtle);text-align:center">No videos to add</div>';
     return;
@@ -3830,6 +3864,7 @@ function _renderVidOvMenu(){
   html+='<div style="display:flex;align-items:center;padding:3px 19px 3px 6px;gap:5px">';
   html+='<div style="width:12px;flex-shrink:0"></div>';
   html+='<span style="flex:1;min-width:0"></span>';
+  if(_vidOvTitleMode)html+='<span style="width:160px;flex-shrink:0;font-size:9px;color:var(--muted);font-weight:700">Title</span>';
   html+='<div style="display:flex;gap:0;flex-shrink:0;align-items:center">';
   html+=steps.map(s=>`<div style="width:22px;text-align:center;font-size:9px;color:var(--muted);font-weight:700;flex-shrink:0">${(labels[s]||s).charAt(0)}</div>`).join('');
   html+='</div>';
