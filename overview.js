@@ -3870,7 +3870,7 @@ function _vidOvMenuItem(v,steps,focusSet){
   const _hovBg=_dk()?'rgba(255,255,255,.04)':'rgba(0,0,0,.04)';
   const _hov=`onmouseenter="this.style.background='${_hovBg}'" onmouseleave="this.style.background='none'" onclick="_vidOvClickSelect(this,event)"`;
   const _map=_vidDayMap();const _onCal=!!_map[sid];
-  const _addBtn=`<div onclick="event.stopPropagation();_vidOvInlineAdd('${sid}',null,null,this.closest('[data-vidrow]'))" style="font-size:10px;width:12px;height:12px;display:flex;align-items:center;justify-content:center;line-height:1;border-radius:2px;border:1px solid ${_onCal?'var(--accent)':'var(--border)'};background:var(--bg);color:${_onCal?'var(--accent)':'var(--muted)'};cursor:pointer;flex-shrink:0;box-sizing:border-box" title="Add small video">+</div>`;
+  const _addBtn=`<div onclick="event.stopPropagation();_vidOvInlineAdd('${sid}',null,null,this.closest('[data-vidrow]'))" style="width:12px;height:12px;display:flex;align-items:center;justify-content:center;border-radius:2px;border:1px solid ${_onCal?'var(--accent)':'var(--border)'};background:var(--bg);color:${_onCal?'var(--accent)':'var(--muted)'};cursor:pointer;flex-shrink:0;box-sizing:border-box" title="Add small video"><svg width="7" height="7" viewBox="0 0 7 7" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><line x1="3.5" y1="1" x2="3.5" y2="6"/><line x1="1" y1="3.5" x2="6" y2="3.5"/></svg></div>`;
   const _xBtn=`<button class="vid-ov-x" onclick="event.stopPropagation();_vidOvXClick('${sid}',this)" title="Actions">✕</button>`;
   const _postDate=v.post_date?_vidOvPostStr(v.post_date):'';
   const _postColor=v.post_date?_vidOvPostColor(v):'var(--muted)';
@@ -3878,7 +3878,7 @@ function _vidOvMenuItem(v,steps,focusSet){
   const _focusCls=_isFocused?' vid-ov-focus':'';
   const _smallCount=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===sid).length;
   const _countBadge=_smallCount?`<span style="font-size:10px;font-weight:400;color:var(--muted);margin-left:3px;opacity:.6">· ${_smallCount}</span>`:'';
-  let html=`<div data-vidrow="${sid}" ${_dragAttr} ${_dblAttr} ${_ctxAttr} ${_hov} class="${_focusCls}" style="padding:3px 19px 3px 6px;border-radius:6px;font-size:12px;line-height:14px;font-weight:600;color:var(--text);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s">${_addBtn}<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:14px">${escHtml(v.topic||v.title)}${_countBadge}</span><div style="display:flex;gap:0;flex-shrink:0;align-items:center">${_vidOvStepDots(v,steps)}</div>${_postField}<div class="vid-ov-pctx" style="width:14px;flex-shrink:0;text-align:center;position:relative;margin-left:12px;display:flex;align-items:center;justify-content:center;line-height:12px"><span class="vid-ov-pct" style="font-size:9px;opacity:.5;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif;line-height:12px">${_vidOvPct(v,steps)?_vidOvPct(v,steps)+'%':''}</span>${_xBtn}</div></div>`;
+  let html=`<div data-vidrow="${sid}" ${_dragAttr} ${_dblAttr} ${_ctxAttr} ${_hov} class="${_focusCls}" style="padding:3px 19px 3px 6px;border-radius:6px;font-size:12px;line-height:14px;font-weight:600;color:var(--text);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s">${_addBtn}<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(v.topic||v.title)}${_countBadge}</span><div style="display:flex;gap:0;flex-shrink:0;align-items:center">${_vidOvStepDots(v,steps)}</div>${_postField}<div class="vid-ov-pctx" style="width:14px;flex-shrink:0;text-align:center;position:relative;margin-left:12px;display:flex;align-items:center;justify-content:center;line-height:12px"><span class="vid-ov-pct" style="font-size:9px;opacity:.5;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif;line-height:12px">${_vidOvPct(v,steps)?_vidOvPct(v,steps)+'%':''}</span>${_xBtn}</div></div>`;
   // Children (S/L videos)
   const children=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(v.id)&&c.status!=='published').sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
   children.forEach((c,ci)=>{
@@ -4399,7 +4399,7 @@ function _vidOvRenderCal(){
     requestAnimationFrame(()=>requestAnimationFrame(()=>{panel.style.opacity='1';panel.style.transform='translateX(0)';}));
   }
   const today=d2s(new Date());
-  const allVids=(st.videos||[]).filter(v=>!v.is_deleted&&v.post_date);
+  const allVids=(st.videos||[]).filter(v=>!v.is_deleted&&v.post_date&&v.status!=='idea');
   const vidsByDate={};
   allVids.forEach(v=>{const d=v.post_date;if(!vidsByDate[d])vidsByDate[d]=[];vidsByDate[d].push(v);});
   // Find earliest post date for scroll range
