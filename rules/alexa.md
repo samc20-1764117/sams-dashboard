@@ -27,20 +27,22 @@
 - `AMAZON.SearchQuery` cannot be combined with other slots in the same utterance
 - That's why each intent uses a single SearchQuery slot and parses server-side
 
-## Env Vars (Cloudflare Pages Settings)
+## Env Vars (Cloudflare Pages Settings → Preview)
 - `ALEXA_SKILL_ID` — your skill's Application ID (starts with `amzn1.ask.skill.`)
 - `SUPABASE_KEY` — Supabase service role key (NOT the anon key)
+- `SUPABASE_USER_ID` — user UUID for RLS (inserts need this or rows are invisible to dashboard)
+- **IMPORTANT**: Env var changes require a new deployment to take effect
 
 ## Alexa Developer Console Setup
 1. Go to developer.amazon.com → Alexa Skills Kit
 2. Create Custom Skill → "Sam Dashboard"
 3. Interaction Model tab → JSON Editor → paste `alexa-skill/interactionModel.json`
-4. Endpoint tab → HTTPS → `https://sams-dashboard.pages.dev/api/alexa`
+4. Endpoint tab → HTTPS → `https://dev.sams-dashboard.pages.dev/api/alexa`
    - Select "My development endpoint is a sub-domain of a domain that has a wildcard certificate"
 5. Copy the Skill ID from the top of the skill page (starts with `amzn1.ask.skill.`)
 6. Add it as `ALEXA_SKILL_ID` env var in Cloudflare Pages settings
 7. Build Model → Test tab → enable testing
-8. Test with: "tell my dashboard to add milk to shopping list"
+8. Test with: "tell my assistant to add milk to shopping list"
 
 ## Testing with curl
 ```bash
