@@ -5604,7 +5604,7 @@ document.addEventListener('keydown',async e=>{
     const _pastePromises=[];
     sorted.forEach(ob=>{
       const nb={id:crypto.randomUUID(),title:ob.title,ds,sm:baseSm,dur:ob.dur,cat:ob.cat||'Home',
-        taskId:null,recId:null,shopId:null,_vidId:ob._vidId||null,_done:false};
+        taskId:null,recId:null,shopId:null,_vidId:ob._vidId||null,_vidStepVid:ob._vidStepVid||null,_vidStepName:ob._vidStepName||null,_done:false};
       // Duplicate linked task so dblclick opens edit modal for the new copy
       if(ob.taskId){
         const orig=st.tasks.find(t=>String(t.id)===String(ob.taskId));
@@ -5614,6 +5614,11 @@ document.addEventListener('keydown',async e=>{
           st.tasks.push({...dup,id:tmpId});nb.taskId=tmpId;
           _pastePromises.push(sbReq('POST','tasks',dup).then(sv=>{if(sv&&sv[0]){const idx=st.tasks.findIndex(x=>x.id===tmpId);if(idx>-1)st.tasks[idx]={...st.tasks[idx],...sv[0]};nb.taskId=String(sv[0].id);sbSaveBlock(nb);}}));
         }
+      }
+      // For vidstep blocks, ensure daymap entry exists so it shows in today list
+      if(nb._vidStepVid&&nb._vidStepName&&typeof _vidStepDayMap==='function'){
+        const _pm=_vidStepDayMap();const _pk=nb._vidStepVid+'::'+nb._vidStepName;
+        if(!_pm[_pk]){_pm[_pk]={ds,done:false};_vidStepDayMapSet(_pm);}
       }
       st.blocks.push(nb);newBlks.push(nb);sbSaveBlock(nb);
       baseSm+=ob.dur;

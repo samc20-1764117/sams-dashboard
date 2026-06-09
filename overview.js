@@ -3461,6 +3461,9 @@ function _vidStepAssignToDay(vidId,step,ds){
   const m=_vidStepDayMap();const key=vidId+'::'+step;
   const prev=m[key]||null;
   const prevDs=prev?prev.ds:null;
+  // Guard: already on this day (primary or extraDays)
+  if(prevDs===ds){showToast('Already on this day','#e67e22',1500);return;}
+  if(prev&&prev.extraDays&&prev.extraDays.includes(ds)){showToast('Already on this day','#e67e22',1500);return;}
   m[key]={ds,done:prev?prev.done:false};_vidStepDayMapSet(m);
   // Move timeblock blocks to new day
   if(prevDs&&prevDs!==ds){
