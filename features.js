@@ -5559,9 +5559,18 @@ document.addEventListener('keydown',async e=>{
   }
   // Cmd+C: copy selected tasks or blocks
   if((e.metaKey||e.ctrlKey)&&e.key==='c'&&selectedTasks.size>0){
-    // Check if any are TB blocks
+    // Check if any are TB blocks (blk- IDs or vidstep blocks selected from TB)
     const blkIds=[...selectedTasks].filter(id=>id.startsWith('blk-'));
-    if(blkIds.length){
+    const tbOpen=!!document.getElementById('tbGrid');
+    // Vidstep selections from TB: find matching blocks for Build/VO/Cut only
+    const vsBlkIds=tbOpen?[...selectedTasks].filter(id=>{
+      if(!id.startsWith('vidstep-'))return false;
+      const m=id.match(/^vidstep-(\d+)-(step_\w+)/);
+      if(!m)return false;
+      const step=m[2];
+      return step!=='step_thumbnail'&&step!=='step_description';
+    }):[];
+    if(blkIds.length||vsBlkIds.length){
       _copiedBlocks=[];
       const ds=d2s(getDayDate(dayOff));
       blkIds.forEach(sid=>{
@@ -5569,8 +5578,15 @@ document.addEventListener('keydown',async e=>{
         const b=st.blocks.find(x=>String(x.id)===bid);
         if(b)_copiedBlocks.push({...b});
       });
+      vsBlkIds.forEach(sid=>{
+        const m=sid.match(/^vidstep-(\d+)-(step_\w+)/);
+        if(!m)return;
+        const vidId=m[1],step=m[2];
+        const b=(st.blocks||[]).find(x=>String(x._vidStepVid)===String(vidId)&&x._vidStepName===step&&x.ds===ds);
+        if(b)_copiedBlocks.push({...b});
+      });
       _copiedTasks=[];
-      showToast(`Copied ${_copiedBlocks.length} block${_copiedBlocks.length>1?'s':''}`,'#6d5fe6',1500);
+      if(_copiedBlocks.length)showToast(`Copied ${_copiedBlocks.length} block${_copiedBlocks.length>1?'s':''}`,'#6d5fe6',1500);
       return;
     }
     _copiedTasks=[];_copiedBlocks=[];
