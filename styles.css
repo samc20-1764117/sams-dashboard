@@ -1156,7 +1156,6 @@ body.dark .bday-add-menu{background:rgba(38,20,10,.97);border-color:rgba(255,220
 .vid-ov-action-item{padding:6px 14px;cursor:pointer;color:var(--text);transition:background .1s}.vid-ov-action-item[data-i="0"]:hover,.vid-ov-action-item[data-i="0"].sel{background:rgba(140,140,140,.12);color:var(--muted)}.vid-ov-action-item[data-i="1"].sel,.vid-ov-action-item[data-i="1"]:hover{background:rgba(239,68,68,.1);color:#ef4444}
 #vidOvPanel [data-postvid]{position:relative;cursor:pointer}
 #vidOvPanel [data-postvid]::before{content:'';position:absolute;top:-12px;bottom:-12px;left:-12px;right:-6px}
-#vidOvPanel [data-vidrow]{height:22px;min-height:22px;max-height:22px;box-sizing:content-box}
 #vidOvPanel [data-vidrow].vid-sel{transform:none!important;box-shadow:inset 0 0 0 1.5px rgba(14,165,233,.35)!important;background:rgba(14,165,233,.07)!important;border-radius:6px}
 #vidOvPanel .vid-insert-zone{cursor:default}
 #vidOvPanel .vid-insert-zone .vid-insert-btn{left:22px;right:200px;width:14px;transform:none;margin:0 auto;display:none}
