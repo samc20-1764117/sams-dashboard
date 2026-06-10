@@ -5988,7 +5988,7 @@ function renderDayTB(){
   const gut=document.createElement('div');gut.className='tb-gutter';
   const _dow=new Date(ds+'T00:00:00').getDay(),_isWkday=_dow>=1&&_dow<=5;
   HOURS.forEach(h=>{const l=document.createElement('div');l.className='tb-tlbl';l.textContent=h===12?'12p':h>12?`${h-12}p`:`${h}a`;if(_isWkday&&(h===8||h===16)){l.style.color=_dk()?'rgba(255,220,200,.8)':'rgba(90,65,40,.95)';l.style.fontWeight='700';}gut.appendChild(l);});
-  grid.appendChild(gut);
+  grid.appendChild(gut);_syncPX();
   const col=document.createElement('div');col.className='tb-col';
   HOURS.forEach(h=>{
     const row=document.createElement('div');row.className='tb-hour';

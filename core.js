@@ -23,8 +23,7 @@ const KCATS=['Home','My work','Work','Social+Travel','Long term','Weekly Goals']
 let HOURS=[...Array(20)].map((_,i)=>i+4);
 const DNAMES=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 let PX=40/60; const KEY='samdash_v7';
-function _calcHourH(){const vh=window.innerHeight;const overhead=220;const avail=vh-overhead;const h=Math.max(24,Math.min(40,Math.floor(avail/HOURS.length)));document.documentElement.style.setProperty('--hour-h',h+'px');PX=h/60;}
-_calcHourH();window.addEventListener('resize',()=>{_calcHourH();if(typeof renderDayTB==='function'&&document.getElementById('tbGrid'))renderDayTB();});
+function _syncPX(){const el=document.querySelector('.tb-hour')||document.querySelector('.tb-tlbl');if(el){const h=el.getBoundingClientRect().height;if(h>0)PX=h/60;}}
 
 const CATS_DARK={
   'home':{bg:'rgba(59,130,246,.14)',t:'#93c5fd',d:'#3b82f6',dot:'#93c5fd',b:'rgba(59,130,246,.18)'},
