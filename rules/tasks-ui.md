@@ -84,7 +84,7 @@ Mobile `_mTaskTypePri` and `mSortToday` mirror this exactly.
 - **Modal outside-click drag fix**: `_modMousedownInside` flag prevents `closeMod` if mousedown was inside `.modal`.
 - **`#tNotes` textarea**: auto-expands, capped at `max-height:160px`. Reset on add open; pre-expanded on edit open. Newlines rendered via `.replace(/\n/g,'<br>')`.
 - **Cmd+Z in modals**: `_isInput && !_ael.closest('.overlay:not(.open)')` → return early.
-- **Shortcuts**: see `rules/core.md` → "Keyboard Shortcuts" for full list. Key additions: `d`=dark mode, `n`=new task, `r`=reload, `q`=quick notes, `vv`=videos popup (double-tap). Overview: `←/→`=shift day, `w+←/→`=shift week, `t`=today. **All single-key shortcuts MUST check contentEditable focus.**
+- **Shortcuts**: see `rules/core.md` → "Keyboard Shortcuts" for full list. Key additions: `d`=dark mode, `n`=new task, `r`=reload, `q`=quick notes, `v`=videos popup, `vv`=videos page. Overview: `←/→`=shift day, `w+←/→`=shift week, `t`=today. **All single-key shortcuts MUST check contentEditable focus.**
 - **Page navigation closes overlays**: `showPage()` closes video calendar, all panel, analytics panel, and video popup before switching pages.
 - **Keyboard shortcut pattern** (MUST follow every time):
   1. Same key toggles open/close (check if modal is already `.open` before opening).

@@ -1066,13 +1066,15 @@ document.addEventListener('keydown',e=>{
   if(e.key==='v'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')){
     e.preventDefault();
     const now=Date.now();
-    if(_lastVPress&&now-_lastVPress<350&&activePg==='overview'){
+    if(_lastVPress&&now-_lastVPress<350){
       _lastVPress=0;if(_vNavTimer){clearTimeout(_vNavTimer);_vNavTimer=null;}
-      if(typeof closeAutoTBManager==='function')closeAutoTBManager();
-      if(typeof toggleVidOvMenu==='function')toggleVidOvMenu();
+      showPage('videos');
     } else {
       _lastVPress=now;
-      _vNavTimer=setTimeout(()=>{_vNavTimer=null;if(activePg==='videos')showPage('overview');else showPage('videos');},350);
+      _vNavTimer=setTimeout(()=>{_vNavTimer=null;
+        if(activePg!=='overview')showPage('overview');
+        setTimeout(()=>{if(typeof closeAutoTBManager==='function')closeAutoTBManager();if(typeof toggleVidOvMenu==='function')toggleVidOvMenu();},activePg==='overview'?0:100);
+      },350);
     }
   }
   if(e.key==='p'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')){
@@ -1147,7 +1149,8 @@ function _showHelpOverlay(){
   const _global=[
     ['⌘ ←/→','Switch between pages'],
     ['O','Go to Overview'],
-    ['V','Go to Videos'],
+    ['V','Video popup (toggle)'],
+    ['VV','Go to Videos page'],
     ['P','Go to Pups'],
     ['F','Go to Finance'],
     ['N','Quick Add task (to current day)'],
@@ -1177,6 +1180,7 @@ function _showHelpOverlay(){
       ['Click','Select task or time block'],
       ['Shift+Click','Multi-select range'],
       ['Drag','Reorder / reschedule tasks'],
+      ['E (vid panel)','Toggle edit titles/comments'],
       ['↑/↓ (vid panel)','Navigate videos'],
       ['Delete (vid panel)','Remove video from calendar'],
       ['Enter (vid panel)','Edit selected video'],

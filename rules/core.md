@@ -71,7 +71,7 @@ Supabase Auth (email+password), RLS on all tables. `init()`→`checkAuth()`→`d
 ## Keyboard Shortcuts (global, `core.js` keydown handler)
 - `Cmd/Ctrl+Z`: undo (page-aware: pups/recipes/birthdays use their own stacks).
 - `o`: `showPage('overview')` — only when no input/textarea/select focused and no modal open.
-- `v`: videos page. Press again to return to overview. `vv` on overview opens video overlay panel.
+- `v`: opens video overlay popup (navigates to overview first if needed). Press again to close. `vv` (double-press) opens videos page.
 - `p`: pups page. Press again to return to overview.
 - `f`: finance page. Press again to return to overview.
 - `m`: toggle month view (`mModal`) on overview. Press again or Enter to close.
