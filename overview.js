@@ -5254,12 +5254,15 @@ function renderShopOv(){
       if(!s){if(ph)ph.remove();return;}
       if(!ph)return; // no placeholder means not a reorder drop
       const prevOrders=st.shopping.filter(x=>!x.done).map(x=>({id:x.id,shop_order:x.shop_order}));
+      // Multi-select: gather all selected shop IDs (include dragged)
+      const selShopIds=new Set([shopId]);
+      selectedTasks.forEach(sid=>{if(sid.startsWith('shop-cal-'))selShopIds.add(sid.replace('shop-cal-',''));});
       const allRows=[...container.querySelectorAll('.ti')];
       const children=[...container.children];
       const phIdx=children.indexOf(ph);
-      const before=allRows.filter(r=>children.indexOf(r)<phIdx).map(r=>r.id.replace('ti-shop-cal-',''));
-      const after=allRows.filter(r=>children.indexOf(r)>=phIdx&&r.id!=='ti-shop-cal-'+shopId).map(r=>r.id.replace('ti-shop-cal-',''));
-      const orderedIds=[...before,shopId,...after];
+      const before=allRows.filter(r=>children.indexOf(r)<phIdx&&!selShopIds.has(r.id.replace('ti-shop-cal-',''))).map(r=>r.id.replace('ti-shop-cal-',''));
+      const after=allRows.filter(r=>children.indexOf(r)>=phIdx&&!selShopIds.has(r.id.replace('ti-shop-cal-',''))).map(r=>r.id.replace('ti-shop-cal-',''));
+      const orderedIds=[...before,...selShopIds,...after];
       orderedIds.forEach((id,i)=>{const it=st.shopping.find(x=>String(x.id)===String(id));if(it)it.shop_order=i;});
       ph.remove();
       save();
