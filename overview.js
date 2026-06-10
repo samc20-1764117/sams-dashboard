@@ -3783,6 +3783,7 @@ function _vidOvKeyNav(e){
   if(!panel||panel.style.display!=='block')return false;
   // T always works for toggling toolbox
   if(e.key==='t'&&!e.metaKey&&!e.ctrlKey&&!_vidCalOpen){e.preventDefault();_vidOvToggleAll();return true;}
+  if(e.key==='e'&&!e.metaKey&&!e.ctrlKey&&!_vidCalOpen){e.preventDefault();_vidOvToggleTitleMode();return true;}
   if(_vidOvAllOpen)return false;
   if(_vidCalOpen&&(e.key==='ArrowLeft'||e.key==='ArrowRight'))return false;
   const rows=_vidOvGetRows();if(!rows.length)return false;
