@@ -2099,6 +2099,81 @@ function showGoalCtx(e,taskId){
     ()=>{const n=parseInt(prompt('Move how many weeks? (use negative for past)','1'));if(!isNaN(n)&&n!==0)moveGoalWeeks(taskId,n);}
   );
 }
+// ── Weekly Goals Keyboard Nav ──────────────────────────────────────────────────
+function _wkGoalKeyNav(e){
+  // Check if any goal tasks are selected
+  const goalSel=[...selectedTasks].filter(s=>{const t=st.tasks.find(x=>String(x.id)===s);return t&&t.category==='Weekly Goals';});
+  if(!goalSel.length)return false;
+  const _typing=document.activeElement?.tagName==='INPUT'||document.activeElement?.tagName==='TEXTAREA'||document.activeElement?.tagName==='SELECT'||document.activeElement?.isContentEditable;
+  if(_typing)return false;
+
+  // Find the container — either WO modal body or overview goals column
+  const woOpen=document.getElementById('woModal')?.classList.contains('open');
+  let container=null,allChips=[];
+  if(woOpen){
+    // Find which column has selected chips
+    const bodies=[...document.querySelectorAll('.wo-col-body')];
+    for(const b of bodies){const chips=[...b.querySelectorAll('.wo-chip[data-tid]')];if(chips.some(c=>goalSel.includes(c.dataset.tid))){container=b;allChips=chips;break;}}
+  }
+  if(!container){
+    const gc=document.querySelector('.wkc-goals-col');
+    if(gc){container=gc;allChips=[...gc.querySelectorAll('.chip[data-tid]')];}
+  }
+  if(!container||!allChips.length)return false;
+  const allIds=allChips.map(c=>c.dataset.tid);
+
+  // Cmd+Up/Down: reorder
+  if((e.metaKey||e.ctrlKey)&&(e.key==='ArrowUp'||e.key==='ArrowDown')){
+    e.preventDefault();
+    const dir=e.key==='ArrowUp'?-1:1;
+    const selSet=new Set(goalSel);
+    const prevOrders=allIds.map(id=>{const t=st.tasks.find(x=>String(x.id)===id);return{id,ord:t?t.goal_order:0};});
+    // Normalize
+    allIds.forEach((id,i)=>{const t=st.tasks.find(x=>String(x.id)===id);if(t)t.goal_order=i;});
+    const idxs=goalSel.map(id=>allIds.indexOf(id)).filter(i=>i>=0).sort((a,b)=>a-b);
+    if(!idxs.length)return true;
+    if(dir===-1&&idxs[0]>0){
+      const aboveId=allIds[idxs[0]-1];const above=st.tasks.find(x=>String(x.id)===aboveId);
+      idxs.forEach(i=>{const t=st.tasks.find(x=>String(x.id)===allIds[i]);if(t)t.goal_order--;});
+      if(above)above.goal_order=st.tasks.find(x=>String(x.id)===allIds[idxs[idxs.length-1]])?.goal_order+1||idxs.length;
+    } else if(dir===1&&idxs[idxs.length-1]<allIds.length-1){
+      const belowId=allIds[idxs[idxs.length-1]+1];const below=st.tasks.find(x=>String(x.id)===belowId);
+      idxs.forEach(i=>{const t=st.tasks.find(x=>String(x.id)===allIds[i]);if(t)t.goal_order++;});
+      if(below)below.goal_order=st.tasks.find(x=>String(x.id)===allIds[idxs[0]])?.goal_order-1||0;
+    } else return true;
+    // Re-normalize and save
+    const sorted=allIds.map(id=>st.tasks.find(x=>String(x.id)===id)).filter(Boolean).sort((a,b)=>(a.goal_order??9999)-(b.goal_order??9999));
+    sorted.forEach((t,i)=>{t.goal_order=i;sbReqNullable('PATCH','tasks',{goal_order:i},`?id=eq.${t.id}`);});
+    save();renderWkCal();renderWkSummary();if(woOpen)renderWOModal();
+    pushUndo(()=>{prevOrders.forEach(({id,ord})=>{const t=st.tasks.find(x=>String(x.id)===id);if(t){t.goal_order=ord;sbReqNullable('PATCH','tasks',{goal_order:ord},`?id=eq.${id}`);}});save();renderWkCal();renderWkSummary();if(document.getElementById('woModal')?.classList.contains('open'))renderWOModal();},'Reorder goals');
+    setTimeout(()=>{selSet.forEach(id=>selectedTasks.add(id));applySelHighlight();},20);
+    return true;
+  }
+
+  // Arrow Up/Down: navigate
+  if(e.key==='ArrowUp'||e.key==='ArrowDown'){
+    e.preventDefault();
+    const lastSel=goalSel[goalSel.length-1];
+    const curIdx=allIds.indexOf(lastSel);
+    const newIdx=e.key==='ArrowUp'?Math.max(0,curIdx-1):Math.min(allIds.length-1,curIdx+1);
+    const newId=allIds[newIdx];
+    if(e.shiftKey){selectedTasks.add(newId);lastSelectedId=newId;}
+    else{selectedTasks.clear();selectedTasks.add(newId);lastSelectedId=newId;}
+    applySelHighlight();
+    const el=allChips[newIdx];if(el)el.scrollIntoView({block:'nearest'});
+    return true;
+  }
+
+  // Delete/Backspace
+  if(e.key==='Delete'||e.key==='Backspace'){
+    e.preventDefault();
+    goalSel.forEach(id=>{if(typeof delTask==='function')delTask(id);});
+    selectedTasks.clear();
+    return true;
+  }
+
+  return false;
+}
 // ── Weekly Objectives Modal ────────────────────────────────────────────────────
 let _woViewOff=0; // weeks offset relative to wkOff for the modal view start
 function openWOModal(){

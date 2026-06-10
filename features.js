@@ -5251,6 +5251,8 @@ document.addEventListener('keydown',async e=>{
   if(activePg==='overview'&&typeof _vidOvKeyNav==='function'&&_vidOvKeyNav(e))return;
   // Shopping list keyboard nav on overview
   if(activePg==='overview'&&typeof _shopOvKeyNav==='function'&&_shopOvKeyNav(e))return;
+  // Weekly goals keyboard nav (overview + WO modal)
+  if(activePg==='overview'&&typeof _wkGoalKeyNav==='function'&&_wkGoalKeyNav(e))return;
   if(activePg==='overview'&&typeof _vidOvAllOpen!=='undefined'&&_vidOvAllOpen){
     // When toolbox open: block arrows (handled by toolbox), let other keys through
     if(e.key==='ArrowUp'||e.key==='ArrowDown'||e.key==='ArrowLeft'||e.key==='ArrowRight'||e.key==='Delete'||e.key==='Backspace'||e.key==='n'||e.key==='Enter')return;
