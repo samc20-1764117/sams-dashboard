@@ -104,6 +104,7 @@ async function checkAuth(){
 }
 
 // ── Supabase ───────────────────────────────────────────────────────────────────
+let _sbNetFails=0,_sbNetToastTimer=null;
 async function sbReq(method,table,body,qs=''){
   if(!cfg.url||!cfg.key)return null;
   if(method!=='POST'&&/eq\.t-/.test(qs))return null;
@@ -117,10 +118,12 @@ async function sbReq(method,table,body,qs=''){
       showToast('⚠️ Save failed ('+r.status+'): '+errMsg,'#ef4444',8000);
       return null;
     }
+    _sbNetFails=0;
     const t=await r.text();return t?JSON.parse(t):[];
   }catch(e){
     console.error('Supabase fetch error',method,table,e);
-    showToast('⚠️ Save failed — check connection','#ef4444',4000);
+    _sbNetFails++;
+    if(!_sbNetToastTimer){showToast('⚠️ Save failed — check connection','#ef4444',4000);_sbNetToastTimer=setTimeout(()=>{_sbNetToastTimer=null;},10000);}
     return null;
   }
 }
