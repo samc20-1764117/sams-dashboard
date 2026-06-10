@@ -1068,7 +1068,7 @@ document.addEventListener('keydown',e=>{
     const now=Date.now();
     if(_lastVPress&&now-_lastVPress<350){
       _lastVPress=0;if(_vNavTimer){clearTimeout(_vNavTimer);_vNavTimer=null;}
-      showPage('videos');
+      if(activePg==='videos')showPage('overview');else showPage('videos');
     } else {
       _lastVPress=now;
       _vNavTimer=setTimeout(()=>{_vNavTimer=null;

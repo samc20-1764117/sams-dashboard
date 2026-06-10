@@ -3673,20 +3673,26 @@ function _vidStepTasksForDay(ds){
 }
 
 let _vidOvTitleMode=false;
+function _vidOvCloseTitleMode(){
+  if(!_vidOvTitleMode)return;
+  _vidOvTitleMode=false;
+  const panel=document.getElementById('vidOvPanel');
+  if(panel){const card=panel.parentElement;panel.style.right='0';if(card){card.style.overflow='hidden';card.style.zIndex='';}}
+  _renderVidOvMenu();
+}
 function _vidOvToggleTitleMode(){
-  _vidOvTitleMode=!_vidOvTitleMode;
+  if(_vidOvTitleMode){_vidOvCloseTitleMode();return;}
+  if(_vidOvAllOpen)_vidOvCloseAll();
+  if(_vidCalOpen)_vidOvCloseCal();
+  if(_vidOvAnOpen)_vidOvCloseAnalytics();
+  _vidOvTitleMode=true;
   const panel=document.getElementById('vidOvPanel');
   if(panel){
     const card=panel.parentElement;
-    if(_vidOvTitleMode){
-      const cols=card.closest('.overview-cols');
-      const extend=cols?(cols.offsetWidth-card.offsetWidth-14)+'px':'600px';
-      panel.style.right='-'+extend;
-      if(card){card.style.overflow='visible';card.style.zIndex='60';}
-    }else{
-      panel.style.right='0';
-      if(card){card.style.overflow='hidden';card.style.zIndex='';}
-    }
+    const cols=card.closest('.overview-cols');
+    const extend=cols?(cols.offsetWidth-card.offsetWidth-14)+'px':'600px';
+    panel.style.right='-'+extend;
+    if(card){card.style.overflow='visible';card.style.zIndex='60';}
   }
   _renderVidOvMenu();
 }
@@ -3858,7 +3864,7 @@ function closeVidOvMenu(){
   if(_vidCalOpen)_vidOvCloseCal();
   if(_vidOvAllOpen)_vidOvCloseAll();
   if(_vidOvAnOpen)_vidOvCloseAnalytics();
-  if(_vidOvTitleMode){_vidOvTitleMode=false;panel.style.right='0';const card=panel.parentElement;if(card){card.style.overflow='hidden';card.style.zIndex='';}}
+  if(_vidOvTitleMode)_vidOvCloseTitleMode();
   panel.style.opacity='0';panel.style.transform='translateX(-12px)';
   setTimeout(()=>{panel.style.display='none';},250);
 }
@@ -4303,6 +4309,9 @@ function _vidStepCelebrate(dotEl){
 let _vidCalOpen=false,_vidCalMonth=null,_vidCalYear=null;
 function _vidOvToggleCal(){
   if(_vidCalOpen){_vidOvCloseCal();return;}
+  if(_vidOvAllOpen)_vidOvCloseAll();
+  if(_vidOvAnOpen)_vidOvCloseAnalytics();
+  if(_vidOvTitleMode)_vidOvCloseTitleMode();
   const now=new Date();_vidCalMonth=now.getMonth();_vidCalYear=now.getFullYear();
   _vidCalOpen=true;_vidOvRenderCal();
   // Close only on clicks truly outside both panels, Escape, or M key
@@ -4567,6 +4576,7 @@ function _vidOvToggleAll(){
   if(_vidOvAllOpen){_vidOvCloseAll();return;}
   if(_vidCalOpen)_vidOvCloseCal();
   if(_vidOvAnOpen)_vidOvCloseAnalytics();
+  if(_vidOvTitleMode)_vidOvCloseTitleMode();
   _vidOvAllOpen=true;_voaSel.clear();_voaLast=null;_vidOvRenderAll();
   setTimeout(()=>{
     const _allClose=e=>{
@@ -4835,6 +4845,7 @@ function _vidOvToggleAnalytics(){
   if(_vidOvAnOpen){_vidOvCloseAnalytics();return;}
   if(_vidCalOpen)_vidOvCloseCal();
   if(_vidOvAllOpen)_vidOvCloseAll();
+  if(_vidOvTitleMode)_vidOvCloseTitleMode();
   _vidOvAnOpen=true;_vidOvRenderAnalyticsPanel();
   setTimeout(()=>{
     const _anClose=e=>{
