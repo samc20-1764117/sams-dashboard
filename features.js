@@ -6133,7 +6133,7 @@ function updateOvBanner(){
   let ovVidStepCount=0;
   if(typeof _vidStepDayMap==='function'){
     const _ovsm=_vidStepDayMap();const _ovsSeen=new Set();
-    Object.entries(_ovsm).forEach(([key,val])=>{if(val.ds>=today||val.done)return;const[vidId,step]=key.split('::');const v=(st.videos||[]).find(x=>String(x.id)===String(vidId)&&!x.is_deleted);if(!v||v[step]==='na'||v[step]==='done')return;ovVidStepCount++;_ovsSeen.add(key);});
+    Object.entries(_ovsm).forEach(([key,val])=>{if(val.ds>=today)return;const[vidId,step]=key.split('::');const v=(st.videos||[]).find(x=>String(x.id)===String(vidId)&&!x.is_deleted);if(!v||v[step]==='na'||v[step]==='done')return;if(typeof _vidStepComputeDone==='function'&&_vidStepComputeDone(vidId,step,val.ds,val))return;ovVidStepCount++;_ovsSeen.add(key);});
     (st.blocks||[]).filter(bl=>bl._vidStepVid&&bl._vidStepName&&bl.ds<today&&!bl._done&&bl._vidStepName!=='step_thumbnail'&&bl._vidStepName!=='step_description').forEach(bl=>{const key=bl._vidStepVid+'::'+bl._vidStepName;if(_ovsSeen.has(key))return;_ovsSeen.add(key);const v=(st.videos||[]).find(x=>String(x.id)===String(bl._vidStepVid)&&!x.is_deleted);if(!v||v[bl._vidStepName]==='na'||v[bl._vidStepName]==='done')return;ovVidStepCount++;});
   }
   const total=ovTasks.length+ovRec.length+ovShop.length+ovPup.length+ovVid.length+ovVidStepCount;
@@ -6155,7 +6155,7 @@ async function rolloverOverdue(){
   // Overdue vidsteps: collect daymap entries + orphaned blocks on past days
   const _roVsm=typeof _vidStepDayMap==='function'?_vidStepDayMap():{};
   const _roVsKeys=[];const _roVsSeen=new Set();
-  Object.entries(_roVsm).forEach(([key,val])=>{if(val.ds>=today||val.done)return;const[vidId,step]=key.split('::');const v=(st.videos||[]).find(x=>String(x.id)===String(vidId)&&!x.is_deleted);if(!v||v[step]==='na'||v[step]==='done')return;_roVsKeys.push(key);_roVsSeen.add(key);});
+  Object.entries(_roVsm).forEach(([key,val])=>{if(val.ds>=today)return;const[vidId,step]=key.split('::');const v=(st.videos||[]).find(x=>String(x.id)===String(vidId)&&!x.is_deleted);if(!v||v[step]==='na'||v[step]==='done')return;if(typeof _vidStepComputeDone==='function'&&_vidStepComputeDone(vidId,step,val.ds,val))return;_roVsKeys.push(key);_roVsSeen.add(key);});
   const _roVsBlocks=(st.blocks||[]).filter(bl=>bl._vidStepVid&&bl._vidStepName&&bl.ds<today&&!bl._done).filter(bl=>{const key=bl._vidStepVid+'::'+bl._vidStepName;if(_roVsSeen.has(key))return false;const v=(st.videos||[]).find(x=>String(x.id)===String(bl._vidStepVid)&&!x.is_deleted);return v&&v[bl._vidStepName]!=='na'&&v[bl._vidStepName]!=='done';});
   if(!ovTasks.length&&!ovRec.length&&!ovShop.length&&!ovPup.length&&!ovVid.length&&!_roVsKeys.length&&!_roVsBlocks.length)return;
   const prevDates=ovTasks.map(t=>({id:String(t.id),date:t.due_date}));

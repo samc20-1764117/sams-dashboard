@@ -84,10 +84,7 @@ function renderSummaryMetrics(){
   const ds=d2s(getDayDate(dayOff));
   const blocked=st.blocks.filter(b=>b.ds===ds).reduce((s,b)=>s+b.dur,0);
   const _vidStepOvCount=(()=>{if(typeof _vidStepDayMap!=='function')return 0;const m=_vidStepDayMap();let c=0;const seen=new Set();Object.entries(m).forEach(([key,val])=>{if(val.ds>=ds)return;const[vidId,step]=key.split('::');const v=(st.videos||[]).find(x=>String(x.id)===String(vidId)&&!x.is_deleted);if(!v||v[step]==='na'||v[step]==='done')return;if(_vidStepComputeDone(vidId,step,val.ds,val))return;c++;seen.add(key+'::'+val.ds);});(st.blocks||[]).filter(bl=>bl._vidStepVid&&bl._vidStepName&&bl.ds<ds&&bl._vidStepName!=='step_thumbnail'&&bl._vidStepName!=='step_description').forEach(bl=>{const dayKey=bl._vidStepVid+'::'+bl._vidStepName+'::'+bl.ds;if(seen.has(dayKey))return;seen.add(dayKey);const v=(st.videos||[]).find(x=>String(x.id)===String(bl._vidStepVid)&&!x.is_deleted);if(!v||v[bl._vidStepName]==='na'||v[bl._vidStepName]==='done')return;if(_vidStepComputeDone(bl._vidStepVid,bl._vidStepName,bl.ds,null))return;c++;});return c;})();
-  const _ovTasks=st.tasks.filter(t=>!t.done&&isOv(t.due_date)&&t.category!=='Weekly Goals');
-  const _ovShop=st.shopping.filter(s=>!s.done&&s.due_date&&isOv(s.due_date));
-  console.log('[OV DEBUG] tasks:',_ovTasks.map(t=>t.name+' due:'+t.due_date),'shop:',_ovShop.map(s=>s.name+' due:'+s.due_date),'vidSteps:',_vidStepOvCount);
-  const ovCount=_ovTasks.length+_ovShop.length+_vidStepOvCount;
+  const ovCount=st.tasks.filter(t=>!t.done&&isOv(t.due_date)&&t.category!=='Weekly Goals').length+st.shopping.filter(s=>!s.done&&s.due_date&&isOv(s.due_date)).length+_vidStepOvCount;
   const tpEl=document.getElementById('todPct'),wpEl=document.getElementById('wkPct');
   const el_tp=document.getElementById('smTodayPct'),el_wp=document.getElementById('smWkPct'),el_bl=document.getElementById('smBlocked'),el_ov=document.getElementById('smOverdue');
   if(el_tp&&tpEl)el_tp.textContent=tpEl.textContent||'0%';
