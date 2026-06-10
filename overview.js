@@ -5309,6 +5309,11 @@ function _vidUncompleteFromOv(vidId){
   if(typeof renderVideosPageKeepScroll==='function')renderVideosPageKeepScroll();
 }
 
+function _shopScrollTo(container,el){
+  const ct=container.getBoundingClientRect(),er=el.getBoundingClientRect();
+  if(er.top<ct.top)container.scrollTop-=ct.top-er.top;
+  else if(er.bottom>ct.bottom)container.scrollTop+=er.bottom-ct.bottom;
+}
 function _shopOvKeyNav(e){
   // Only handle when shop items are selected
   const shopSel=[...selectedTasks].filter(s=>s.startsWith('shop-cal-'));
@@ -5341,8 +5346,13 @@ function _shopOvKeyNav(e){
     sorted.forEach((s,i)=>{s.shop_order=i;sbReqNullable('PATCH','shopping_list',{shop_order:i},`?id=eq.${s.id}`);});
     save();renderShopOv();
     pushUndo(()=>{prevOrders.forEach(({id,shop_order})=>{const it=st.shopping.find(x=>String(x.id)===String(id));if(it){it.shop_order=shop_order;sbReqNullable('PATCH','shopping_list',{shop_order:shop_order??null},`?id=eq.${id}`);}});save();renderShopOv();},'Reorder shopping');
-    // Re-select after render
-    setTimeout(()=>{selIds.forEach(id=>selectedTasks.add('shop-cal-'+id));applySelHighlight();},20);
+    // Re-select after render and scroll into view
+    setTimeout(()=>{selIds.forEach(id=>selectedTasks.add('shop-cal-'+id));applySelHighlight();
+      const c=document.getElementById('shopOv');
+      const scrollId=[...selIds][dir===-1?0:selIds.size-1];
+      const firstSelEl=document.getElementById('ti-shop-cal-'+scrollId);
+      if(c&&firstSelEl)_shopScrollTo(c,firstSelEl);
+    },20);
     return true;
   }
 
@@ -5360,9 +5370,9 @@ function _shopOvKeyNav(e){
       selectedTasks.clear();selectedTasks.add(newId);lastSelectedId=newId;
     }
     applySelHighlight();
-    // Scroll into view
+    // Scroll into view within container
     const el=document.getElementById('ti-'+newId);
-    if(el)el.scrollIntoView({block:'nearest'});
+    if(el)_shopScrollTo(container,el);
     return true;
   }
 
