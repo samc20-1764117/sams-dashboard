@@ -105,6 +105,7 @@ async function checkAuth(){
 // ── Supabase ───────────────────────────────────────────────────────────────────
 async function sbReq(method,table,body,qs=''){
   if(!cfg.url||!cfg.key)return null;
+  if(method!=='POST'&&/eq\.t-/.test(qs))return null;
   try{
     const prefer=method==='DELETE'?'return=minimal':'return=representation';
     const r=await fetch(`${cfg.url}/rest/v1/${table}${qs}`,{method,headers:{'apikey':cfg.key,'Authorization':`Bearer ${_getAuthToken()}`,'Content-Type':'application/json','Prefer':prefer},body:body?JSON.stringify(body):null});
@@ -153,6 +154,7 @@ let deletedPupSessIds=new Set();
 // ── Supabase silent request (no toast on failure) ────────────────────────────
 async function sbReqSilent(method,table,body,qs=''){
   if(!cfg.url||!cfg.key)return null;
+  if(method!=='POST'&&/eq\.t-/.test(qs))return null;
   try{
     const r=await fetch(`${cfg.url}/rest/v1/${table}${qs}`,{
       method,

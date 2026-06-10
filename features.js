@@ -122,8 +122,9 @@ async function toggleTask(id,done,mode=''){
   }
   rerender();
   const linkedBlocks=st.blocks?st.blocks.filter(b=>String(b.taskId)===String(id)):[];
-  pushUndo(()=>{t.done=prev;localOverrides[sid]={...localOverrides[sid],done:prev};pendingLocal.add(sid);if(st.blocks)st.blocks.filter(b=>String(b.taskId)===String(id)).forEach(b=>b._done=prev);rerender();sbReq('PATCH','tasks',{done:prev},`?id=eq.${id}`).then(()=>pendingLocal.delete(sid));linkedBlocks.forEach(b=>sbUpdateBlock(b.id,{done:prev}));},(done?'Checked':'Unchecked')+' task');
-  await sbReq('PATCH','tasks',{done},`?id=eq.${id}`);
+  const _isTemp=sid.startsWith('t-');
+  pushUndo(()=>{t.done=prev;localOverrides[sid]={...localOverrides[sid],done:prev};pendingLocal.add(sid);if(st.blocks)st.blocks.filter(b=>String(b.taskId)===String(id)).forEach(b=>b._done=prev);rerender();if(!_isTemp)sbReq('PATCH','tasks',{done:prev},`?id=eq.${id}`).then(()=>pendingLocal.delete(sid));linkedBlocks.forEach(b=>sbUpdateBlock(b.id,{done:prev}));},(done?'Checked':'Unchecked')+' task');
+  if(!_isTemp)await sbReq('PATCH','tasks',{done},`?id=eq.${id}`);
   pendingLocal.delete(sid);
   linkedBlocks.forEach(b=>sbUpdateBlock(b.id,{done}));
 }
