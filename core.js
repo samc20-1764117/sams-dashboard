@@ -1189,7 +1189,7 @@ function _showHelpOverlay(){
       ['Enter (vid panel)','Edit selected video'],
     ],
     videos:[
-      ['N','New video'],
+      ['N','New big video'],['N L','New little video'],['N B','New big video'],
       ['E / C','Toggle completed (table view)'],
       ['←/→','Switch tabs (Current → All → Analytics → Monthly)'],
       ['↑','Scroll to top'],

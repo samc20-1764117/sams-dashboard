@@ -4626,7 +4626,9 @@ function renderGuidePage(){
     ${secT('Videos Shortcuts')}
     <table style="width:100%;border-collapse:collapse;font-size:12px">
     ${tHead('Key','Action')}
-    ${sRow('N','New video')}
+    ${sRow('N','New big video')}
+    ${sRow('N L','New little video')}
+    ${sRow('N B','New big video')}
     ${sRow('E / C','Toggle completed')}
     ${sRow('←/→','Switch tabs')}
     ${sRow('↑/↓','Scroll top / current')}
@@ -5255,7 +5257,7 @@ document.addEventListener('keydown',async e=>{
   if(activePg==='overview'&&typeof _wkGoalKeyNav==='function'&&_wkGoalKeyNav(e))return;
   if(activePg==='overview'&&typeof _vidOvAllOpen!=='undefined'&&_vidOvAllOpen){
     // When toolbox open: block arrows (handled by toolbox), let other keys through
-    if(e.key==='ArrowUp'||e.key==='ArrowDown'||e.key==='ArrowLeft'||e.key==='ArrowRight'||e.key==='Delete'||e.key==='Backspace'||e.key==='n'||e.key==='Enter')return;
+    if(e.key==='ArrowUp'||e.key==='ArrowDown'||e.key==='ArrowLeft'||e.key==='ArrowRight'||e.key==='Delete'||e.key==='Backspace'||e.key==='n'||e.key==='Enter'||((e.key==='l'||e.key==='b')&&window._vidNTimer))return;
   }
   // w + Arrow: shift week on overview
   if((e.key==='ArrowLeft'||e.key==='ArrowRight')&&_wKeyHeld&&activePg==='overview'&&!document.querySelector('.atb-mgr')){e.preventDefault();shiftWk(e.key==='ArrowLeft'?-1:1);return;}
