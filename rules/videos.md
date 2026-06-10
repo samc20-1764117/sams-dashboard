@@ -73,7 +73,8 @@
 - `openVidModalForBig(bigId)`: opens add modal with type=Small, big video pre-selected, Tab defaulted to na.
 
 ### Keyboard Shortcuts (when not in input)
-- `n` — open add modal
+- `n` / `b` — open add modal (Big video default)
+- `l` — open add modal (Little video default)
 - `e` — expand (show completed, table view only)
 - `c` — collapse (hide completed, table view only)
 - `Delete/Backspace` — delete selected
