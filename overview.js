@@ -4338,7 +4338,8 @@ function _vidOvToggleCal(){
       if(_typing)return;
       if(e.key==='ArrowLeft'){e.preventDefault();_vidCalMonth--;if(_vidCalMonth<0){_vidCalMonth=11;_vidCalYear--;}_vidOvRenderCal();}
       if(e.key==='ArrowRight'){e.preventDefault();_vidCalMonth++;if(_vidCalMonth>11){_vidCalMonth=0;_vidCalYear++;}_vidOvRenderCal();}
-      if(e.key==='t'||e.key==='T'){e.preventDefault();const n=new Date();_vidCalMonth=n.getMonth();_vidCalYear=n.getFullYear();_vidOvRenderCal();}
+      if(e.key==='t'||e.key==='T'){e.preventDefault();_vidOvToggleAll();return;}
+      if(e.key==='e'){e.preventDefault();_vidOvToggleTitleMode();return;}
       if(e.key==='y'||e.key==='Y'){e.preventDefault();_vidCalToggleYear();}
     };
     document.addEventListener('click',_calClose);
