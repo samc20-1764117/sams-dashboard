@@ -2446,7 +2446,7 @@ const _VID_STATUS_OPTIONS=[
   {value:'idea',label:'1. Idea'},{value:'in_progress',label:'2. In Progress'},{value:'up_next',label:'3. Up Next'},{value:'published',label:'4. Complete'},{value:'backup',label:'4. Backup'}
 ];
 function _vidModalKey(event){
-  if(event.key==='Escape'){event.stopPropagation();closeMod('vidModal');}
+  if(event.key==='Escape'){event.stopPropagation();closeMod('vidModal');document.activeElement?.blur();}
   else if(event.key==='Enter'&&(event.metaKey||event.target.tagName!=='TEXTAREA')){
     // Close any open dropdowns first
     var sDrop=document.getElementById('vmStatusDrop');if(sDrop)sDrop.style.display='none';
@@ -2836,7 +2836,7 @@ function _vidUpdateModalStep(el,val){
 
 async function saveVidModal(){
   const topic=document.getElementById('vmTopic').value.trim();
-  if(!topic){closeMod('vidModal');return;}
+  if(!topic){closeMod('vidModal');document.activeElement?.blur();return;}
   const title=document.getElementById('vmTitle').value.trim();
   const data={
     title:title||'',
