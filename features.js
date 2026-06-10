@@ -24,7 +24,9 @@ function openQA(ctx,btn,ds='',kcat=''){
     <div class="qa-field"><label>Stage</label><select id="qaStage" style="${selStyle}"><option value="Not Started">Not Started</option><option value="In Progress">In Progress</option><option value="Mastered">Mastered</option></select></div>`;
   } else if(ctx==='shop'){
     title='Add Item';
-    extra=`<div class="qa-field"><label>Store</label><input id="qaStore" list="storeList" placeholder="HEB, Ikea, Online…" style="width:100%;padding:5px 7px;border-radius:8px;border:1px solid var(--border);font-family:inherit;font-size:12px;background:rgba(255,255,255,.8);color:var(--text);outline:none" ><datalist id="storeList">${[...new Set(st.shopping.map(x=>x.store).filter(Boolean))].sort().map(s=>`<option value="${s}">`).join('')}<option value="HEB"><option value="Ikea"><option value="Online"><option value="Other"></datalist></div>`;
+    const _shopStores=[...new Set(['Online','HEB',...st.shopping.map(x=>x.store).filter(Boolean)])].filter(x=>x!=='Other');
+    const _sStyle='width:100%;padding:5px 7px;border-radius:8px;border:1px solid var(--border);font-family:inherit;font-size:12px;background:rgba(255,255,255,.8);color:var(--text);outline:none';
+    extra=`<div class="qa-field"><label>Store</label><select id="qaStore" style="${_sStyle}" onchange="if(this.value==='__custom'){this.style.display='none';const ci=document.getElementById('qaStoreCustom');ci.style.display='';ci.focus();}">${_shopStores.map(s=>`<option value="${escHtml(s)}">${escHtml(s)}</option>`).join('')}<option value="__custom">Custom…</option></select><input id="qaStoreCustom" placeholder="Type store name…" style="${_sStyle};display:none" onkeydown="if(event.key==='Enter')event.stopPropagation()"></div>`;
   } else if(ctx==='rec'){
     title='Add Recurring Task';extra='';
   } else {
@@ -59,7 +61,9 @@ async function submitQA(){
     return;
   }
   if(qaCtx==='shop'){
-    const store=(document.getElementById('qaStore')?.value||'').trim()||'Other';
+    let store=(document.getElementById('qaStore')?.value||'').trim();
+    if(store==='__custom')store=(document.getElementById('qaStoreCustom')?.value||'').trim();
+    if(!store)store='Online';
     const s={id:'l-'+Date.now(),name:n,store,done:false};st.shopping.push(s);renderAll();
     let shopServerId=null;
     pushUndo(()=>{const rid=shopServerId||s.id;st.shopping=st.shopping.filter(x=>String(x.id)!==String(rid));renderAll();if(shopServerId)sbReq('DELETE','shopping_list',null,`?id=eq.${shopServerId}`);},'Added item');
@@ -639,7 +643,7 @@ function renderShopFull(){save();
     sorted.forEach(s=>{
       const el=document.createElement('div');
       el.className='ti'+(s.done?' done':'');el.id='ti-shop-cal-'+s.id;
-      el.innerHTML=`<input type="checkbox" class="chk"${s.done?' checked':''}><span class="tn">${escHtml(s.name)}</span><span class="cpill" style="background:none;color:#94a3b8;border:none;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;padding:0;flex-shrink:0;margin-left:auto;margin-right:4px">${escHtml(s.store||'Other')}</span><button class="delbtn">✕</button>`;
+      el.innerHTML=`<input type="checkbox" class="chk"${s.done?' checked':''}><span class="tn">${escHtml(s.name)}</span><span class="cpill" style="background:none;color:#94a3b8;border:none;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;padding:0;flex-shrink:0;margin-left:auto;margin-right:4px">${escHtml(s.store||'Online')}</span><button class="delbtn">✕</button>`;
       el.querySelector('.chk').addEventListener('change',e=>togShop(s.id,e.target.checked));
       el.querySelector('.delbtn').addEventListener('click',e=>{e.stopPropagation();delShop(s.id);});
       let _shopDragged=false;
@@ -682,11 +686,11 @@ function renderShopFull(){save();
   let html='';
   if(mode==='alpha'){
     const all=[...todo,...done].sort((a,b)=>(a.name||'').localeCompare(b.name||''));
-    html=all.map(s=>`<div class="ti ${s.done?'done':''}" id="ti-shop-cal-${s.id}" draggable="true" ondragstart="dragId='shop::${s.id}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);" ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false);" onclick="tiClickShop(event,'${s.id}')" ondblclick="tiDblShop(event,'${s.id}')"><input type="checkbox" class="chk" ${s.done?'checked':''} onchange="togShop('${s.id}',this.checked)"><span class="tn">${s.name}</span><span class="cpill" style="background:none;color:#94a3b8;border:none;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;padding:0;flex-shrink:0;margin-left:auto;margin-right:4px">${s.store||'Other'}</span><button class="delbtn" onclick="delShop('${s.id}')">✕</button></div>`).join('');
+    html=all.map(s=>`<div class="ti ${s.done?'done':''}" id="ti-shop-cal-${s.id}" draggable="true" ondragstart="dragId='shop::${s.id}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);" ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false);" onclick="tiClickShop(event,'${s.id}')" ondblclick="tiDblShop(event,'${s.id}')"><input type="checkbox" class="chk" ${s.done?'checked':''} onchange="togShop('${s.id}',this.checked)"><span class="tn">${s.name}</span><span class="cpill" style="background:none;color:#94a3b8;border:none;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;padding:0;flex-shrink:0;margin-left:auto;margin-right:4px">${s.store||'Online'}</span><button class="delbtn" onclick="delShop('${s.id}')">✕</button></div>`).join('');
   } else {
-    const g={};[...todo,...done].forEach(s=>{const k=s.store||'Other';if(!g[k])g[k]=[];g[k].push(s);});
+    const g={};[...todo,...done].forEach(s=>{const k=s.store||'Online';if(!g[k])g[k]=[];g[k].push(s);});
     html=Object.entries(g).sort(([a],[b])=>a.localeCompare(b)).map(([store,items])=>
-      `<div style="padding:5px 10px 2px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-top:2px">${store}</div>${items.map(s=>`<div class="ti ${s.done?'done':''}" id="ti-shop-cal-${s.id}" draggable="true" ondragstart="dragId='shop::${s.id}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);" ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false);" onclick="tiClickShop(event,'${s.id}')" ondblclick="tiDblShop(event,'${s.id}')"><input type="checkbox" class="chk" ${s.done?'checked':''} onchange="togShop('${s.id}',this.checked)"><span class="tn">${s.name}</span><span class="cpill" style="background:none;color:#94a3b8;border:none;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;padding:0;flex-shrink:0;margin-left:auto;margin-right:4px">${s.store||'Other'}</span><button class="delbtn" onclick="delShop('${s.id}')">✕</button></div>`).join('')}`
+      `<div style="padding:5px 10px 2px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-top:2px">${store}</div>${items.map(s=>`<div class="ti ${s.done?'done':''}" id="ti-shop-cal-${s.id}" draggable="true" ondragstart="dragId='shop::${s.id}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);" ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false);" onclick="tiClickShop(event,'${s.id}')" ondblclick="tiDblShop(event,'${s.id}')"><input type="checkbox" class="chk" ${s.done?'checked':''} onchange="togShop('${s.id}',this.checked)"><span class="tn">${s.name}</span><span class="cpill" style="background:none;color:#94a3b8;border:none;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;padding:0;flex-shrink:0;margin-left:auto;margin-right:4px">${s.store||'Online'}</span><button class="delbtn" onclick="delShop('${s.id}')">✕</button></div>`).join('')}`
     ).join('');
   }
   sf.innerHTML=html;
@@ -5754,7 +5758,14 @@ function openEditShop(id){
   const s=st.shopping.find(x=>String(x.id)===String(id));if(!s)return;
   _shopEditId=id;
   document.getElementById('shopEditName').value=s.name;
-  document.getElementById('shopEditStore').value=s.store||'';
+  const _sel=document.getElementById('shopEditStore');
+  const _ci=document.getElementById('shopEditStoreCustom');
+  const _stores=[...new Set(['Online','HEB',...st.shopping.map(x=>x.store).filter(Boolean)])].filter(x=>x!=='Other');
+  const cur=s.store||'Online';
+  const inList=_stores.includes(cur);
+  _sel.innerHTML=_stores.map(x=>`<option value="${escHtml(x)}">${escHtml(x)}</option>`).join('')+'<option value="__custom">Custom\u2026</option>';
+  if(inList){_sel.value=cur;_sel.style.display='';_ci.style.display='none';_ci.value='';}
+  else{_sel.value='__custom';_sel.style.display='none';_ci.style.display='';_ci.value=cur;}
   document.getElementById('shopEditModal').classList.add('open');
   setTimeout(()=>{const _el=document.getElementById('shopEditName');if(_el){_el.focus();const _l=_el.value.length;_el.setSelectionRange(_l,_l);}},80);
 }
@@ -5762,7 +5773,9 @@ function saveShopEdit(){
   const id=_shopEditId;if(!id)return;
   const s=st.shopping.find(x=>String(x.id)===String(id));if(!s)return;
   const name=document.getElementById('shopEditName').value.trim();
-  const store=document.getElementById('shopEditStore').value.trim();
+  let store=document.getElementById('shopEditStore').value.trim();
+  if(store==='__custom')store=(document.getElementById('shopEditStoreCustom')?.value||'').trim();
+  if(!store)store='Online';
   if(!name){closeMod('shopEditModal');return;}
   closeMod('shopEditModal');
   const prev={name:s.name,store:s.store};
@@ -6287,7 +6300,7 @@ function copyShopList(){
   if(!todo.length){alert('Shopping list is empty!');return;}
   // Group by store
   const byStore={};
-  todo.forEach(s=>{if(!byStore[s.store||'Other'])byStore[s.store||'Other']=[];byStore[s.store||'Other'].push(s.name);});
+  todo.forEach(s=>{if(!byStore[s.store||'Online'])byStore[s.store||'Online']=[];byStore[s.store||'Online'].push(s.name);});
   let text='Shopping List\n'+'─'.repeat(20)+'\n';
   Object.entries(byStore).sort(([a],[b])=>a.localeCompare(b)).forEach(([store,items])=>{
     text+=`\n${store}:\n`;

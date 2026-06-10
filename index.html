@@ -627,7 +627,7 @@ if(sessionStorage._mReloaded===BUILD);else{
   <div class="modal task-modal">
     <div class="mt">Edit Item</div>
     <div class="mfield"><label>Item name *</label><input id="shopEditName" placeholder="Item name" onkeydown="if(event.key===&#39;Enter&#39;)saveShopEdit()"></div>
-    <div class="mfield"><label>Store</label><input id="shopEditStore" list="shopEditStoreList" placeholder="HEB, Ikea, Online…" onkeydown="if(event.key===&#39;Enter&#39;)saveShopEdit()"><datalist id="shopEditStoreList"><option value="HEB"></option><option value="Ikea"></option><option value="Online"></option><option value="Other"></option></datalist></div>
+    <div class="mfield"><label>Store</label><select id="shopEditStore" style="width:100%;padding:5px 7px;border-radius:8px;border:1px solid var(--border);font-family:inherit;font-size:12px;background:rgba(255,255,255,.8);color:var(--text);outline:none" onchange="if(this.value==='__custom'){this.style.display='none';var ci=document.getElementById('shopEditStoreCustom');ci.style.display='';ci.focus();}"></select><input id="shopEditStoreCustom" placeholder="Type store name…" style="width:100%;padding:5px 7px;border-radius:8px;border:1px solid var(--border);font-family:inherit;font-size:12px;background:rgba(255,255,255,.8);color:var(--text);outline:none;display:none" onkeydown="if(event.key==='Enter')saveShopEdit()"></div>
     <div class="mact"><button class="btn btn-ghost" onclick="closeMod(&#39;shopEditModal&#39;)">Cancel</button><button class="btn btn-dark" onclick="saveShopEdit()">Save</button></div>
   </div>
 </div>
