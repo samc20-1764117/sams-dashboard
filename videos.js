@@ -3298,7 +3298,8 @@ document.addEventListener('keydown',e=>{
   if((e.key==='Delete'||e.key==='Backspace')&&_vidSelected.size>0){e.preventDefault();const all=new Set([..._vidSelected,..._vidChildSelected]);all.forEach(id=>delVideo(id));_vidSelected.clear();_vidChildSelected.clear();return;}
   if((e.metaKey||e.ctrlKey)&&e.key==='c'&&_vidSelected.size>0){e.preventDefault();_vidCopied=[];_vidSelected.forEach(id=>{const v=(st.videos||[]).find(x=>String(x.id)===String(id));if(v)_vidCopied.push({...v});});showToast('Copied '+_vidCopied.length+' video(s)','#0ea5e9',1500);return;}
   if((e.metaKey||e.ctrlKey)&&e.key==='v'&&_vidCopied.length>0){e.preventDefault();_vidCopied.forEach(v=>_vidDuplicate(v.id));return;}
-  if(e.key==='n'&&!e.metaKey&&!e.ctrlKey){e.preventDefault();openVidModal('B');_vidNChordListen();return;}
+  if((e.key==='n'||e.key==='b')&&!e.metaKey&&!e.ctrlKey){e.preventDefault();openVidModal('B');return;}
+  if(e.key==='l'&&!e.metaKey&&!e.ctrlKey){e.preventDefault();openVidModal('L');return;}
   // ── Arrow key actions (all views) ──
   if((_vidView==='dashboard'||_vidView==='table'||_vidView==='board')&&(e.key==='ArrowUp'||e.key==='ArrowDown'||e.key==='ArrowLeft'||e.key==='ArrowRight')){
     const rowSel=_vidView==='table'?'.vid-row[data-vid]':_vidView==='board'?'.vid-board-card[data-vid]':'.vid-dash-row[data-vid]';

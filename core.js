@@ -1104,7 +1104,8 @@ document.addEventListener('keydown',e=>{
     _lastGPress=now;
   }
   // L = style guide
-  if(e.key==='l'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')){
+  const _vPanel=document.getElementById('vidOvPanel');
+  if(e.key==='l'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')&&!(_vPanel&&_vPanel.style.display==='block')){
     e.preventDefault();if(activePg==='guide')showPage('overview');else showPage('guide');return;
   }
   if(e.key==='d'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')){
@@ -1189,7 +1190,7 @@ function _showHelpOverlay(){
       ['Enter (vid panel)','Edit selected video'],
     ],
     videos:[
-      ['N','New big video'],['N L','New little video'],['N B','New big video'],
+      ['N / B','New big video'],['L','New little video'],
       ['E / C','Toggle completed (table view)'],
       ['←/→','Switch tabs (Current → All → Analytics → Monthly)'],
       ['↑','Scroll to top'],
