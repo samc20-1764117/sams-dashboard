@@ -5224,6 +5224,63 @@ function _vidUncompleteFromOv(vidId){
   if(typeof renderVideosPageKeepScroll==='function')renderVideosPageKeepScroll();
 }
 
+function _shopOvGetSelIds(clickedId){
+  const ids=new Set([String(clickedId)]);
+  selectedTasks.forEach(sid=>{if(sid.startsWith('shop-cal-'))ids.add(sid.replace('shop-cal-',''));});
+  return ids;
+}
+function _shopOvMoveToTop(ids){
+  const prevOrders=st.shopping.filter(x=>!x.done).map(x=>({id:x.id,shop_order:x.shop_order}));
+  const sorted=_shopOvSort(st.shopping.filter(s=>!s.done));
+  const moving=sorted.filter(s=>ids.has(String(s.id)));
+  const rest=sorted.filter(s=>!ids.has(String(s.id)));
+  [...moving,...rest].forEach((s,i)=>s.shop_order=i);
+  save();st.shopping.filter(x=>!x.done).forEach(it=>sbReqNullable('PATCH','shopping_list',{shop_order:it.shop_order??null},`?id=eq.${it.id}`));
+  pushUndo(()=>{prevOrders.forEach(({id,shop_order})=>{const it=st.shopping.find(x=>String(x.id)===String(id));if(it){it.shop_order=shop_order;sbReqNullable('PATCH','shopping_list',{shop_order:shop_order??null},`?id=eq.${id}`);}});renderShopOv();},'Move to top');
+  renderShopOv();
+}
+function _shopOvMoveToBottom(ids){
+  const prevOrders=st.shopping.filter(x=>!x.done).map(x=>({id:x.id,shop_order:x.shop_order}));
+  const sorted=_shopOvSort(st.shopping.filter(s=>!s.done));
+  const rest=sorted.filter(s=>!ids.has(String(s.id)));
+  const moving=sorted.filter(s=>ids.has(String(s.id)));
+  [...rest,...moving].forEach((s,i)=>s.shop_order=i);
+  save();st.shopping.filter(x=>!x.done).forEach(it=>sbReqNullable('PATCH','shopping_list',{shop_order:it.shop_order??null},`?id=eq.${it.id}`));
+  pushUndo(()=>{prevOrders.forEach(({id,shop_order})=>{const it=st.shopping.find(x=>String(x.id)===String(id));if(it){it.shop_order=shop_order;sbReqNullable('PATCH','shopping_list',{shop_order:shop_order??null},`?id=eq.${id}`);}});renderShopOv();},'Move to bottom');
+  renderShopOv();
+}
+function _shopOvCtx(e,shopId){
+  e.preventDefault();e.stopPropagation();
+  // Ensure clicked item is selected
+  if(!selectedTasks.has('shop-cal-'+shopId))selTask(e,'shop-cal-'+shopId);
+  const ids=_shopOvGetSelIds(shopId);
+  const count=ids.size;
+  const label=count>1?count+' items':'item';
+  // Remove existing
+  let menu=document.getElementById('shopOvCtxMenu');
+  if(menu)menu.remove();
+  menu=document.createElement('div');
+  menu.id='shopOvCtxMenu';
+  menu.className='vid-ov-action-menu';
+  menu.style.cssText=`position:fixed;left:${Math.min(e.clientX,window.innerWidth-160)}px;top:${Math.min(e.clientY,window.innerHeight-140)}px;z-index:99999;min-width:150px`;
+  menu.innerHTML=`<div class="vid-ov-action-item" data-i="top" style="padding:6px 14px;cursor:pointer">↑  Move to top</div><div class="vid-ov-action-item" data-i="bot" style="padding:6px 14px;cursor:pointer">↓  Move to bottom</div><div style="height:1px;margin:3px 8px;background:var(--border)"></div><div class="vid-ov-action-item" data-i="edit" style="padding:6px 14px;cursor:pointer">✏️  Edit</div><div class="vid-ov-action-item" data-i="del" style="padding:6px 14px;cursor:pointer;color:#ef4444">✕  Delete ${label}</div>`;
+  document.body.appendChild(menu);
+  menu.querySelector('[data-i="top"]').onclick=()=>{menu.remove();_shopOvMoveToTop(ids);};
+  menu.querySelector('[data-i="bot"]').onclick=()=>{menu.remove();_shopOvMoveToBottom(ids);};
+  menu.querySelector('[data-i="edit"]').onclick=()=>{menu.remove();if(typeof openEditShop==='function')openEditShop(shopId);};
+  menu.querySelector('[data-i="del"]').onclick=()=>{
+    menu.remove();
+    const copies=[];ids.forEach(id=>{const s=st.shopping.find(x=>String(x.id)===String(id));if(s)copies.push({...s});});
+    ids.forEach(id=>{st.shopping=st.shopping.filter(x=>String(x.id)!==String(id));});
+    selectedTasks.clear();save();renderShopOv();if(typeof renderShopFull==='function')renderShopFull();
+    pushUndo(()=>{copies.forEach(c=>st.shopping.push(c));save();renderShopOv();if(typeof renderShopFull==='function')renderShopFull();copies.forEach(c=>sbReq('POST','shopping_list',{name:c.name,store:c.store,done:c.done,due_date:c.due_date,shop_order:c.shop_order}));},'Deleted '+copies.length+' item'+(copies.length>1?'s':''));
+    ids.forEach(id=>sbReq('DELETE','shopping_list',null,`?id=eq.${id}`));
+  };
+  const _close=ev=>{if(!menu.contains(ev.target)){menu.remove();document.removeEventListener('mousedown',_close);}};
+  setTimeout(()=>document.addEventListener('mousedown',_close),50);
+  const _esc=ev=>{if(ev.key==='Escape'){menu.remove();document.removeEventListener('keydown',_esc);document.removeEventListener('mousedown',_close);}};
+  document.addEventListener('keydown',_esc);
+}
 function renderShopOv(){
   const shopSorted=_shopOvSort(st.shopping.filter(s=>!s.done));
   const container=document.getElementById('shopOv');
@@ -5232,9 +5289,17 @@ function renderShopOv(){
   // Set up container DnD for in-list reorder (once per container lifetime)
   if(!container._shopDnDSetup){
     container._shopDnDSetup=true;
+    let _shopScrollRAF=null;
     container.addEventListener('dragover',e=>{
       if(!dragId||!dragId.startsWith('shop::'))return;
       e.preventDefault();
+      // Auto-scroll near edges
+      const rect=container.getBoundingClientRect();
+      const edge=30;
+      const speed=6;
+      cancelAnimationFrame(_shopScrollRAF);
+      if(e.clientY-rect.top<edge)container.scrollTop-=speed;
+      else if(rect.bottom-e.clientY<edge)container.scrollTop+=speed;
       let ph=container.querySelector('.shop-ov-ph');
       if(!ph){ph=document.createElement('div');ph.className='shop-ov-ph';ph.style.cssText='height:2px;margin:2px 10px;border-radius:99px;background:rgba(150,150,160,.5);pointer-events:none;flex-shrink:0';container.appendChild(ph);}
       const rows=[...container.querySelectorAll('.ti')];
@@ -5284,7 +5349,7 @@ function renderShopOv(){
       `<button class="delbtn">✕</button>`;
     el.addEventListener('click',e=>tiClickShop(e,s.id));
     el.addEventListener('dblclick',e=>tiDblShop(e,s.id));
-    el.addEventListener('contextmenu',e=>showCtxShop(e,s.id));
+    el.addEventListener('contextmenu',e=>_shopOvCtx(e,s.id));
     el.querySelector('.chk-wrap').addEventListener('click',e=>e.stopPropagation());
     el.querySelector('.chk').addEventListener('change',e=>togShop(s.id,e.target.checked));
     el.querySelector('.delbtn').addEventListener('click',e=>{e.stopPropagation();delShop(s.id);});
