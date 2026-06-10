@@ -23,7 +23,7 @@ const KCATS=['Home','My work','Work','Social+Travel','Long term','Weekly Goals']
 let HOURS=[...Array(20)].map((_,i)=>i+4);
 const DNAMES=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 let PX=40/60; const KEY='samdash_v7';
-function _syncPX(){const sc=document.getElementById('tbScroll');if(sc){const visH=sc.clientHeight;const hourH=visH/12.5;document.documentElement.style.setProperty('--hour-h',hourH+'px');PX=hourH/60;}}
+function _syncPX(){const sc=document.getElementById('tbScroll');if(sc){const visH=sc.clientHeight;const hourH=visH/14;document.documentElement.style.setProperty('--hour-h',hourH+'px');PX=hourH/60;}}
 
 const CATS_DARK={
   'home':{bg:'rgba(59,130,246,.14)',t:'#93c5fd',d:'#3b82f6',dot:'#93c5fd',b:'rgba(59,130,246,.18)'},
