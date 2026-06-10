@@ -5224,6 +5224,77 @@ function _vidUncompleteFromOv(vidId){
   if(typeof renderVideosPageKeepScroll==='function')renderVideosPageKeepScroll();
 }
 
+function _shopOvKeyNav(e){
+  // Only handle when shop items are selected
+  const shopSel=[...selectedTasks].filter(s=>s.startsWith('shop-cal-'));
+  if(!shopSel.length)return false;
+  const container=document.getElementById('shopOv');if(!container)return false;
+  const rows=[...container.querySelectorAll('.ti')];if(!rows.length)return false;
+  const _typing=document.activeElement?.tagName==='INPUT'||document.activeElement?.tagName==='TEXTAREA'||document.activeElement?.tagName==='SELECT'||document.activeElement?.isContentEditable;
+  if(_typing)return false;
+
+  // Cmd+Up/Down: reorder selected items
+  if((e.metaKey||e.ctrlKey)&&(e.key==='ArrowUp'||e.key==='ArrowDown')){
+    e.preventDefault();
+    const dir=e.key==='ArrowUp'?-1:1;
+    const selIds=new Set(shopSel.map(s=>s.replace('shop-cal-','')));
+    const sorted=_shopOvSort(st.shopping.filter(s=>!s.done));
+    sorted.forEach((s,i)=>s.shop_order=i);
+    const prevOrders=sorted.map(s=>({id:s.id,shop_order:s.shop_order}));
+    const idxs=[...selIds].map(id=>sorted.findIndex(s=>String(s.id)===id)).filter(i=>i>=0).sort((a,b)=>a-b);
+    if(!idxs.length)return true;
+    if(dir===-1&&idxs[0]>0){
+      const above=sorted[idxs[0]-1];
+      idxs.forEach(i=>{sorted[i].shop_order--;});
+      above.shop_order=sorted[idxs[idxs.length-1]].shop_order+1;
+    } else if(dir===1&&idxs[idxs.length-1]<sorted.length-1){
+      const below=sorted[idxs[idxs.length-1]+1];
+      idxs.forEach(i=>{sorted[i].shop_order++;});
+      below.shop_order=sorted[idxs[0]].shop_order-1;
+    } else return true;
+    sorted.sort((a,b)=>(a.shop_order??9999)-(b.shop_order??9999));
+    sorted.forEach((s,i)=>{s.shop_order=i;sbReqNullable('PATCH','shopping_list',{shop_order:i},`?id=eq.${s.id}`);});
+    save();renderShopOv();
+    pushUndo(()=>{prevOrders.forEach(({id,shop_order})=>{const it=st.shopping.find(x=>String(x.id)===String(id));if(it){it.shop_order=shop_order;sbReqNullable('PATCH','shopping_list',{shop_order:shop_order??null},`?id=eq.${id}`);}});save();renderShopOv();},'Reorder shopping');
+    // Re-select after render
+    setTimeout(()=>{selIds.forEach(id=>selectedTasks.add('shop-cal-'+id));applySelHighlight();},20);
+    return true;
+  }
+
+  // Arrow Up/Down: navigate selection
+  if(e.key==='ArrowUp'||e.key==='ArrowDown'){
+    e.preventDefault();
+    const allIds=rows.map(r=>r.id.replace('ti-',''));
+    const lastSel=shopSel[shopSel.length-1];
+    const curIdx=allIds.indexOf(lastSel);
+    const newIdx=e.key==='ArrowUp'?Math.max(0,curIdx-1):Math.min(allIds.length-1,curIdx+1);
+    const newId=allIds[newIdx];
+    if(e.shiftKey){
+      selectedTasks.add(newId);lastSelectedId=newId;
+    } else {
+      selectedTasks.clear();selectedTasks.add(newId);lastSelectedId=newId;
+    }
+    applySelHighlight();
+    // Scroll into view
+    const el=document.getElementById('ti-'+newId);
+    if(el)el.scrollIntoView({block:'nearest'});
+    return true;
+  }
+
+  // Delete/Backspace: delete selected
+  if(e.key==='Delete'||e.key==='Backspace'){
+    e.preventDefault();
+    const ids=new Set(shopSel.map(s=>s.replace('shop-cal-','')));
+    const copies=[];ids.forEach(id=>{const s=st.shopping.find(x=>String(x.id)===String(id));if(s)copies.push({...s});});
+    ids.forEach(id=>{st.shopping=st.shopping.filter(x=>String(x.id)!==String(id));});
+    selectedTasks.clear();save();renderShopOv();if(typeof renderShopFull==='function')renderShopFull();
+    pushUndo(()=>{copies.forEach(c=>st.shopping.push(c));save();renderShopOv();if(typeof renderShopFull==='function')renderShopFull();copies.forEach(c=>sbReq('POST','shopping_list',{name:c.name,store:c.store,done:c.done,due_date:c.due_date,shop_order:c.shop_order}));},'Deleted '+copies.length+' item'+(copies.length>1?'s':''));
+    ids.forEach(id=>sbReq('DELETE','shopping_list',null,`?id=eq.${id}`));
+    return true;
+  }
+
+  return false;
+}
 function _shopOvGetSelIds(clickedId){
   const ids=new Set([String(clickedId)]);
   selectedTasks.forEach(sid=>{if(sid.startsWith('shop-cal-'))ids.add(sid.replace('shop-cal-',''));});

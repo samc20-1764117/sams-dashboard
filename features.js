@@ -5249,6 +5249,8 @@ document.addEventListener('keydown',async e=>{
   }
   // Video panel keyboard nav (arrow up/down, delete, enter)
   if(activePg==='overview'&&typeof _vidOvKeyNav==='function'&&_vidOvKeyNav(e))return;
+  // Shopping list keyboard nav on overview
+  if(activePg==='overview'&&typeof _shopOvKeyNav==='function'&&_shopOvKeyNav(e))return;
   if(activePg==='overview'&&typeof _vidOvAllOpen!=='undefined'&&_vidOvAllOpen){
     // When toolbox open: block arrows (handled by toolbox), let other keys through
     if(e.key==='ArrowUp'||e.key==='ArrowDown'||e.key==='ArrowLeft'||e.key==='ArrowRight'||e.key==='Delete'||e.key==='Backspace'||e.key==='n'||e.key==='Enter')return;
