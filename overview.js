@@ -50,7 +50,7 @@ function _moveOtherSelected(ds,excludeSid,undos,excludePrefixes){
     }
     // Video steps
     if(sid.startsWith('vidstep-')){
-      const m=sid.match(/^vidstep-(.+)-(step_\w+)$/);
+      const m=sid.match(/^vidstep-(.+)-(step_\w+)-\d{4}-\d{2}-\d{2}$/)||sid.match(/^vidstep-(.+)-(step_\w+)$/);
       if(m){const vidId=m[1],step=m[2];const prevDs=(_vidStepDayMap()[vidId+'::'+step]||{}).ds||null;_vidStepAssignToDay(vidId,step,ds);
         undos.push(()=>{if(prevDs)_vidStepAssignToDay(vidId,step,prevDs);else _vidStepUnassign(vidId,step);});}
       return;
@@ -1424,14 +1424,15 @@ function renderWkCal(){
           const _vsMoved=st.blocks.filter(bl=>String(bl._vidStepVid)===String(_vsVid)&&bl._vidStepName===_vsStep&&bl.ds===_vsSrcDay);
           const _vsPrevBlks=_vsMoved.map(bl=>({id:bl.id,ds:bl.ds}));
           _vsMoved.forEach(bl=>{bl.ds=ds;sbUpdateBlock(bl.id,{day_date:ds});});
-          // If daymap pointed to source day, update it to target day
+          // Always update daymap to target day (source day may differ from daymap primary)
           const _vsM=_vidStepDayMap();const _vsK=_vsVid+'::'+_vsStep;
           const _vsPrevMap=_vsM[_vsK]?{..._vsM[_vsK]}:null;
-          if(_vsM[_vsK]&&_vsM[_vsK].ds===_vsSrcDay){_vsM[_vsK].ds=ds;_vidStepDayMapSet(_vsM);}
+          if(!_vsM[_vsK])_vsM[_vsK]={ds:ds,done:false};else _vsM[_vsK].ds=ds;
+          _vidStepDayMapSet(_vsM);
           save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
           pushUndo(()=>{
             _vsPrevBlks.forEach(p=>{const bl=st.blocks.find(x=>x.id===p.id);if(bl){bl.ds=p.ds;sbUpdateBlock(bl.id,{day_date:p.ds});}});
-            const m2=_vidStepDayMap();if(_vsPrevMap)m2[_vsK]=_vsPrevMap;_vidStepDayMapSet(m2);
+            const m2=_vidStepDayMap();if(_vsPrevMap)m2[_vsK]=_vsPrevMap;else delete m2[_vsK];_vidStepDayMapSet(m2);
             save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
           },'Moved step');
         } else {
@@ -1948,7 +1949,7 @@ function setupWkcEdgeDrop(){
       const parts=dragId.split('::');const _eV=parts[1],_eS=parts[2],_eSD=parts[3]||null;
       if(_eS!=='step_thumbnail'&&_eS!=='step_description'&&_eSD){
         st.blocks.filter(bl=>String(bl._vidStepVid)===String(_eV)&&bl._vidStepName===_eS&&bl.ds===_eSD).forEach(bl=>{bl.ds=newDs;sbUpdateBlock(bl.id,{day_date:newDs});});
-        const _eM3=_vidStepDayMap();const _eK3=_eV+'::'+_eS;if(_eM3[_eK3]&&_eM3[_eK3].ds===_eSD){_eM3[_eK3].ds=newDs;_vidStepDayMapSet(_eM3);}save();
+        const _eM3=_vidStepDayMap();const _eK3=_eV+'::'+_eS;if(!_eM3[_eK3])_eM3[_eK3]={ds:newDs,done:false};else _eM3[_eK3].ds=newDs;_vidStepDayMapSet(_eM3);save();
       } else {_vidStepAssignToDay(_eV,_eS,newDs);}
       dragId=null;shiftWk(dir);return;
     }
@@ -2052,7 +2053,7 @@ function setupEdge(id,dir){
       const parts=dragId.split('::');const _eV=parts[1],_eS=parts[2],_eSD=parts[3]||null;
       if(_eS!=='step_thumbnail'&&_eS!=='step_description'&&_eSD){
         st.blocks.filter(bl=>String(bl._vidStepVid)===String(_eV)&&bl._vidStepName===_eS&&bl.ds===_eSD).forEach(bl=>{bl.ds=newDs;sbUpdateBlock(bl.id,{day_date:newDs});});
-        const _eM3=_vidStepDayMap();const _eK3=_eV+'::'+_eS;if(_eM3[_eK3]&&_eM3[_eK3].ds===_eSD){_eM3[_eK3].ds=newDs;_vidStepDayMapSet(_eM3);}save();
+        const _eM3=_vidStepDayMap();const _eK3=_eV+'::'+_eS;if(!_eM3[_eK3])_eM3[_eK3]={ds:newDs,done:false};else _eM3[_eK3].ds=newDs;_vidStepDayMapSet(_eM3);save();
       } else {_vidStepAssignToDay(_eV,_eS,newDs);}
       dragId=null;shiftWk(dir);return;
     }
@@ -6973,7 +6974,7 @@ function dropOnTB(e,ds,h,row,smOverride){
         } else if(sid.startsWith('vid-ov-')){
           // skip — video TB has special handling
         } else if(sid.startsWith('vidstep-')){
-          const vsm=sid.match(/^vidstep-(.+)-(step_\w+)$/);
+          const vsm=sid.match(/^vidstep-(.+)-(step_\w+)-\d{4}-\d{2}-\d{2}$/)||sid.match(/^vidstep-(.+)-(step_\w+)$/);
           if(vsm){
             const vsVid=vsm[1],vsStep=vsm[2];
             if(vsStep!=='step_thumbnail'&&vsStep!=='step_description'){
@@ -7489,7 +7490,7 @@ function _addSelectedToTB(sids){
     }
     // Vidstep (Build/VO/Cut only)
     if(sid.startsWith('vidstep-')){
-      const m2=sid.match(/^vidstep-(.+)-(step_\w+)$/);
+      const m2=sid.match(/^vidstep-(.+)-(step_\w+)-\d{4}-\d{2}-\d{2}$/)||sid.match(/^vidstep-(.+)-(step_\w+)$/);
       if(m2){
         const vidId=m2[1],step=m2[2];
         if(step==='step_thumbnail'||step==='step_description')continue;
