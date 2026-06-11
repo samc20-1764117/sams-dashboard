@@ -843,14 +843,21 @@ function _rowDiffHtml(el){
     .replace(/ ?(undo-flash|just-done|chk-pop|sel-row)/g,'')
     .replace(/--sel-[\w-]*:[^;"]*;?\s*/g,'');
 }
+// Key by container + id: the same task renders in multiple lists (todList, wkList, …)
+// with identical element ids but different markup — keying by id alone makes them
+// overwrite each other in the map and false-flash on every undo
+function _rowKey(el){
+  const c=el.parentElement?el.parentElement.closest('[id]'):null;
+  return(c?c.id:'')+'::'+el.id;
+}
 function _rowSnapMap(){
   const m=new Map();
-  document.querySelectorAll('#page-overview .ti[id]').forEach(el=>m.set(el.id,_rowDiffHtml(el)));
+  document.querySelectorAll('#page-overview .ti[id]').forEach(el=>m.set(_rowKey(el),_rowDiffHtml(el)));
   return m;
 }
 function _flashChangedRows(before){
   document.querySelectorAll('#page-overview .ti[id]').forEach(el=>{
-    if(before.get(el.id)!==_rowDiffHtml(el)){
+    if(before.get(_rowKey(el))!==_rowDiffHtml(el)){
       el.classList.add('undo-flash');
       setTimeout(()=>el.classList.remove('undo-flash'),900);
     }
