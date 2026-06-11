@@ -835,14 +835,22 @@ function _showRedoToast(msg){
 }
 
 // Flash overview rows changed by undo/redo
+// Diff strips transient state: flash/check animations + selection styling (sel-row class
+// and --sel-* inline props are applied async via requestAnimationFrame, so they'd show
+// as a false diff on every selected row otherwise)
+function _rowDiffHtml(el){
+  return el.outerHTML
+    .replace(/ ?(undo-flash|just-done|chk-pop|sel-row)/g,'')
+    .replace(/--sel-[\w-]*:[^;"]*;?\s*/g,'');
+}
 function _rowSnapMap(){
   const m=new Map();
-  document.querySelectorAll('#page-overview .ti[id]').forEach(el=>m.set(el.id,el.outerHTML.replace(/ ?(undo-flash|just-done|chk-pop)/g,'')));
+  document.querySelectorAll('#page-overview .ti[id]').forEach(el=>m.set(el.id,_rowDiffHtml(el)));
   return m;
 }
 function _flashChangedRows(before){
   document.querySelectorAll('#page-overview .ti[id]').forEach(el=>{
-    if(before.get(el.id)!==el.outerHTML.replace(/ ?(undo-flash|just-done|chk-pop)/g,'')){
+    if(before.get(el.id)!==_rowDiffHtml(el)){
       el.classList.add('undo-flash');
       setTimeout(()=>el.classList.remove('undo-flash'),900);
     }
