@@ -669,13 +669,21 @@ body.dark .bg-canvas.theme-scenic{opacity:0}
 .bg-canvas.theme-austin{background-image:url('theme-austin.jpg')}
 /* Scenic themes: weekly calendar card only goes glassy so the photo shows through (near-zero blur keeps it crisp) */
 body.scenic-theme:not(.dark) .card:has(.wkc-outer){background:rgba(255,255,255,.24);backdrop-filter:blur(2px) saturate(1.2);-webkit-backdrop-filter:blur(2px) saturate(1.2)}
-/* Chips use low-alpha category tints that need a light base to read — give each a white underlay over the photo */
+/* Chips use low-alpha category tints that need a light base to read — white underlay (::before) + duplicated tint (::after) for vibrancy over the photo */
 body.scenic-theme:not(.dark) .card:has(.wkc-outer) .chip{position:relative}
-body.scenic-theme:not(.dark) .card:has(.wkc-outer) .chip::before{content:'';position:absolute;inset:0;border-radius:inherit;background:rgba(255,255,255,.85);z-index:-1}
+body.scenic-theme:not(.dark) .card:has(.wkc-outer) .chip::before{content:'';position:absolute;inset:0;border-radius:inherit;background:rgba(255,255,255,.85);z-index:-2}
+body.scenic-theme:not(.dark) .card:has(.wkc-outer) .chip::after{content:'';position:absolute;inset:0;border-radius:inherit;background:inherit;z-index:-1;pointer-events:none}
 body.scenic-theme:not(.dark) .card:has(.wkc-outer) .wkc-goals-col .chip{backdrop-filter:none;-webkit-backdrop-filter:none}
 /* Boost chip color saturation (on the column, not the chip — a chip-level filter would break the ::before underlay stacking) */
 body.scenic-theme:not(.dark) .card:has(.wkc-outer) .wkc-col,
 body.scenic-theme:not(.dark) .card:has(.wkc-outer) .wkc-goals-col{filter:saturate(1.6)}
+/* Scenic: WR / Shopping / Quick Links cards more solid (between default .62 and hero .88) */
+body.scenic-theme:not(.dark) .card:has(#recList),
+body.scenic-theme:not(.dark) .card:has(#shopOv),
+body.scenic-theme:not(.dark) .card:has(.ql-grid){background:rgba(255,255,255,.78)}
+/* Scenic: weekly view header bands match the card glass; the columns content stays the most see-through */
+body.scenic-theme:not(.dark) .card:has(.wkc-outer) .wkc-nav{background:rgba(255,255,255,.5)}
+body.scenic-theme:not(.dark) .card:has(.wkc-outer) .wkc-head{background:rgba(255,255,255,.5)}
 /* Scenic: white/grey topbar so the header reads over the photo */
 body.scenic-theme:not(.dark) .ov-topbar-label{color:rgba(255,255,255,.78);text-shadow:0 1px 5px rgba(0,0,0,.3)}
 body.scenic-theme:not(.dark) .ov-topbar-date{color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.35)}
