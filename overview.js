@@ -1456,11 +1456,12 @@ function renderWkCal(){
           _vsMoved.forEach(bl=>{bl.ds=ds;sbUpdateBlock(bl.id,{day_date:ds});});
           // Update daymap for the moved instance only: primary if it matches src day, else swap extraDay
           const _vsM=_vidStepDayMap();const _vsK=_vsVid+'::'+_vsStep;
-          const _vsPrevMap=_vsM[_vsK]?{..._vsM[_vsK]}:null;
+          const _vsPrevMap=_vsM[_vsK]?JSON.parse(JSON.stringify(_vsM[_vsK])):null;
           const _vsE=_vsM[_vsK];
           if(!_vsE)_vsM[_vsK]={ds:ds,done:false};
           else if(_vsE.ds===_vsSrcDay)_vsE.ds=ds;
           else if(_vsE.extraDays&&_vsE.extraDays.includes(_vsSrcDay)){_vsE.extraDays=_vsE.extraDays.filter(d=>d!==_vsSrcDay);if(_vsE.ds!==ds&&!_vsE.extraDays.includes(ds))_vsE.extraDays.push(ds);if(!_vsE.extraDays.length)delete _vsE.extraDays;}
+          if(_vsE)_vidStepMoveDoneDay(_vsE,_vsSrcDay,ds);
           _vidStepDayMapSet(_vsM);
           save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
           pushUndo(()=>{
@@ -1982,7 +1983,7 @@ function setupWkcEdgeDrop(){
       const parts=dragId.split('::');const _eV=parts[1],_eS=parts[2],_eSD=parts[3]||null;
       if(_eS!=='step_thumbnail'&&_eS!=='step_description'&&_eSD){
         st.blocks.filter(bl=>String(bl._vidStepVid)===String(_eV)&&bl._vidStepName===_eS&&bl.ds===_eSD).forEach(bl=>{bl.ds=newDs;sbUpdateBlock(bl.id,{day_date:newDs});});
-        const _eM3=_vidStepDayMap();const _eK3=_eV+'::'+_eS;const _eE3=_eM3[_eK3];if(!_eE3)_eM3[_eK3]={ds:newDs,done:false};else if(_eE3.ds===_eSD)_eE3.ds=newDs;else if(_eE3.extraDays&&_eE3.extraDays.includes(_eSD)){_eE3.extraDays=_eE3.extraDays.filter(d=>d!==_eSD);if(_eE3.ds!==newDs&&!_eE3.extraDays.includes(newDs))_eE3.extraDays.push(newDs);if(!_eE3.extraDays.length)delete _eE3.extraDays;}_vidStepDayMapSet(_eM3);save();
+        const _eM3=_vidStepDayMap();const _eK3=_eV+'::'+_eS;const _eE3=_eM3[_eK3];if(!_eE3)_eM3[_eK3]={ds:newDs,done:false};else if(_eE3.ds===_eSD)_eE3.ds=newDs;else if(_eE3.extraDays&&_eE3.extraDays.includes(_eSD)){_eE3.extraDays=_eE3.extraDays.filter(d=>d!==_eSD);if(_eE3.ds!==newDs&&!_eE3.extraDays.includes(newDs))_eE3.extraDays.push(newDs);if(!_eE3.extraDays.length)delete _eE3.extraDays;}if(_eE3)_vidStepMoveDoneDay(_eE3,_eSD,newDs);_vidStepDayMapSet(_eM3);save();
       } else {_vidStepAssignToDay(_eV,_eS,newDs);}
       dragId=null;shiftWk(dir);return;
     }
@@ -2086,7 +2087,7 @@ function setupEdge(id,dir){
       const parts=dragId.split('::');const _eV=parts[1],_eS=parts[2],_eSD=parts[3]||null;
       if(_eS!=='step_thumbnail'&&_eS!=='step_description'&&_eSD){
         st.blocks.filter(bl=>String(bl._vidStepVid)===String(_eV)&&bl._vidStepName===_eS&&bl.ds===_eSD).forEach(bl=>{bl.ds=newDs;sbUpdateBlock(bl.id,{day_date:newDs});});
-        const _eM3=_vidStepDayMap();const _eK3=_eV+'::'+_eS;const _eE3=_eM3[_eK3];if(!_eE3)_eM3[_eK3]={ds:newDs,done:false};else if(_eE3.ds===_eSD)_eE3.ds=newDs;else if(_eE3.extraDays&&_eE3.extraDays.includes(_eSD)){_eE3.extraDays=_eE3.extraDays.filter(d=>d!==_eSD);if(_eE3.ds!==newDs&&!_eE3.extraDays.includes(newDs))_eE3.extraDays.push(newDs);if(!_eE3.extraDays.length)delete _eE3.extraDays;}_vidStepDayMapSet(_eM3);save();
+        const _eM3=_vidStepDayMap();const _eK3=_eV+'::'+_eS;const _eE3=_eM3[_eK3];if(!_eE3)_eM3[_eK3]={ds:newDs,done:false};else if(_eE3.ds===_eSD)_eE3.ds=newDs;else if(_eE3.extraDays&&_eE3.extraDays.includes(_eSD)){_eE3.extraDays=_eE3.extraDays.filter(d=>d!==_eSD);if(_eE3.ds!==newDs&&!_eE3.extraDays.includes(newDs))_eE3.extraDays.push(newDs);if(!_eE3.extraDays.length)delete _eE3.extraDays;}if(_eE3)_vidStepMoveDoneDay(_eE3,_eSD,newDs);_vidStepDayMapSet(_eM3);save();
       } else {_vidStepAssignToDay(_eV,_eS,newDs);}
       dragId=null;shiftWk(dir);return;
     }
@@ -3582,10 +3583,14 @@ function _vidStepAssignToDay(vidId,step,ds,srcDay){
     const ne={...prev,extraDays:(prev.extraDays||[]).filter(d=>d!==srcDay)};
     if(ne.ds!==ds&&!ne.extraDays.includes(ds))ne.extraDays.push(ds);
     if(!ne.extraDays.length)delete ne.extraDays;
+    if(prev.doneDays)ne.doneDays={...prev.doneDays};
+    _vidStepMoveDoneDay(ne,srcDay,ds);
     m[key]=ne;
   } else {
     const ne={ds,done:prev?prev.done:false};
     if(prev&&prev.extraDays){const ex=prev.extraDays.filter(d=>d!==ds);if(ex.length)ne.extraDays=ex;}
+    if(prev&&prev.doneDays)ne.doneDays={...prev.doneDays};
+    if(moveFrom)_vidStepMoveDoneDay(ne,moveFrom,ds);
     m[key]=ne;
   }
   _vidStepDayMapSet(m);
@@ -3611,6 +3616,7 @@ function _vidStepToggleDone(vidId,step,checked,_fromTB,forDay){
   }
   // Save previous state for undo
   const _prevMapDone=m[key].done;
+  const _prevDoneDays=m[key].doneDays?JSON.parse(JSON.stringify(m[key].doneDays)):null;
   const _prevBlockStates=(st.blocks||[]).filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step).map(bl=>({id:bl.id,done:bl._done}));
   // For Build/VO/Cut, done flag tracks whether ALL TB blocks for this stage are done
   if(step!=='step_thumbnail'&&step!=='step_description'){
@@ -3622,6 +3628,12 @@ function _vidStepToggleDone(vidId,step,checked,_fromTB,forDay){
       // Called from today/weekly list with day scope — only toggle blocks for that day
       const dayBlocks=(st.blocks||[]).filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step&&bl.ds===forDay);
       dayBlocks.forEach(bl=>{if(bl._done!==checked){bl._done=checked;sbUpdateBlock(bl.id,{done:checked});}});
+      // Block-less day (calendar-only instance): store per-day done in daymap doneDays
+      if(!dayBlocks.length){
+        if(!m[key].doneDays)m[key].doneDays={};
+        if(checked)m[key].doneDays[forDay]=true;else delete m[key].doneDays[forDay];
+        if(!Object.keys(m[key].doneDays).length)delete m[key].doneDays;
+      }
       // Update daymap done: all blocks across all days must be done
       const allBlocks=(st.blocks||[]).filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step);
       m[key].done=allBlocks.length>0&&allBlocks.every(bl=>bl._done);
@@ -3650,7 +3662,7 @@ function _vidStepToggleDone(vidId,step,checked,_fromTB,forDay){
   if(!_fromTB){
     const _undoVidStep=step,_undoVidId=vidId,_undoChecked=checked;
     pushUndo(()=>{
-      const m2=_vidStepDayMap();if(m2[key]){m2[key].done=_prevMapDone;_vidStepDayMapSet(m2);}
+      const m2=_vidStepDayMap();if(m2[key]){m2[key].done=_prevMapDone;if(_prevDoneDays)m2[key].doneDays=_prevDoneDays;else delete m2[key].doneDays;_vidStepDayMapSet(m2);}
       _prevBlockStates.forEach(s=>{const bl=st.blocks.find(x=>x.id===s.id);if(bl){bl._done=s.done;sbUpdateBlock(bl.id,{done:s.done});}});
       if(_undoVidStep==='step_thumbnail'||_undoVidStep==='step_description'){
         const v2=(st.videos||[]).find(x=>String(x.id)===String(_undoVidId));
@@ -3678,9 +3690,11 @@ function _vidStepAddBlock(vidId,step,ds){
   const now=new Date();const sm=Math.round((now.getHours()*60+now.getMinutes())/15)*15;
   const blk={id:crypto.randomUUID(),title:label,ds,sm,dur,cat:'Videos',_vidStepVid:String(vidId),_vidStepName:step};
   st.blocks.push(blk);sbSaveBlock(blk);
-  // Ensure daymap has an entry if none exists (don't change existing)
+  // Ensure daymap has an entry if none exists (don't change existing);
+  // a block now exists on this day, so block done-state takes over from doneDays
   const m=_vidStepDayMap();const key=vidId+'::'+step;
   if(!m[key]){m[key]={ds,done:false};_vidStepDayMapSet(m);}
+  else if(m[key].doneDays&&m[key].doneDays[ds]!==undefined){_vidStepMoveDoneDay(m[key],ds,null);_vidStepDayMapSet(m);}
   save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
   pushUndo(()=>{st.blocks=st.blocks.filter(b=>b.id!==blk.id);sbDeleteBlock(blk.id);save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();},'Added step block');
   return blk;
@@ -3693,9 +3707,10 @@ function _vidStepUnassign(vidId,step,forDay){
     const removedBlks=st.blocks.filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step&&bl.ds===forDay);
     st.blocks=st.blocks.filter(bl=>!(String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step&&bl.ds===forDay));
     removedBlks.forEach(bl=>sbDeleteBlock(bl.id));
-    // Also remove from extraDays if present
+    // Also remove from extraDays + per-day done flag if present
     const prevMap=m[key]?JSON.parse(JSON.stringify(m[key])):null;
     if(m[key]&&m[key].extraDays){m[key].extraDays=m[key].extraDays.filter(d=>d!==forDay);if(!m[key].extraDays.length)delete m[key].extraDays;}
+    if(m[key])_vidStepMoveDoneDay(m[key],forDay,null);
     // If daymap primary points to this day, reassign to another day with blocks/extraDays or remove
     if(m[key]&&m[key].ds===forDay){
       const otherBlock=st.blocks.find(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step);
@@ -3721,15 +3736,23 @@ function _vidStepUnassign(vidId,step,forDay){
   if(prev||removedBlks.length)pushUndo(()=>{const m2=_vidStepDayMap();if(prev)m2[key]=prev;_vidStepDayMapSet(m2);removedBlks.forEach(bl=>{st.blocks.push(bl);sbSaveBlock(bl);});save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();const p2=document.getElementById('vidOvPanel');if(p2&&p2.style.display==='block')_renderVidOvMenu();},'Removed step from calendar');
 }
 function _vidStepComputeDone(vidId,step,ds,mapEntry){
-  // For Build/VO/Cut: check blocks for this specific day (independent per day)
+  // For Build/VO/Cut: check blocks for this specific day (independent per day);
+  // block-less days (calendar-only instances) fall back to daymap doneDays[ds]
   // For Thumbnail/Description: use daymap done flag
   if(step!=='step_thumbnail'&&step!=='step_description'){
     const dayBlocks=(st.blocks||[]).filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step&&bl.ds===ds);
     if(dayBlocks.length>0)return dayBlocks.every(bl=>bl._done);
-    // No blocks on this specific day = not done for this day (no cross-day fallback)
-    return false;
+    const e=mapEntry||_vidStepDayMap()[vidId+'::'+step];
+    return !!(e&&e.doneDays&&e.doneDays[ds]);
   }
   return !!(mapEntry&&mapEntry.done);
+}
+// Carry a block-less day's done flag when an instance moves from one day to another
+function _vidStepMoveDoneDay(e,from,to){
+  if(!e||!e.doneDays||e.doneDays[from]===undefined)return;
+  if(to&&to!==from)e.doneDays[to]=e.doneDays[from];
+  delete e.doneDays[from];
+  if(!Object.keys(e.doneDays).length)delete e.doneDays;
 }
 function _vidStepTasksForDayWithOverdue(todayDs){
   const m=_vidStepDayMap();const tasks=[];const seen=new Set();
@@ -7325,10 +7348,21 @@ function dropOnTB(e,ds,h,row,smOverride){
       const _vsPrevBlks=_vsMoved.map(bl=>({id:bl.id,ds:bl.ds,sm:bl.sm}));
       _vsMoved.forEach(bl=>{bl.ds=ds;bl.sm=sm;sbUpdateBlock(bl.id,{day_date:ds,start_minutes:sm});});
       const _vsM2=_vidStepDayMap();const _vsK2=_vsVidId+'::'+_vsStep;
-      const _vsPrevMap=_vsM2[_vsK2]?{..._vsM2[_vsK2]}:null;
-      if(_vsM2[_vsK2]&&_vsM2[_vsK2].ds===_vsSrcDay){_vsM2[_vsK2].ds=ds;_vidStepDayMapSet(_vsM2);}
+      const _vsPrevMap=_vsM2[_vsK2]?JSON.parse(JSON.stringify(_vsM2[_vsK2])):null;
+      const _vsE2=_vsM2[_vsK2];
+      if(_vsE2&&_vsE2.ds===_vsSrcDay)_vsE2.ds=ds;
+      else if(_vsE2&&_vsE2.extraDays&&_vsE2.extraDays.includes(_vsSrcDay)){_vsE2.extraDays=_vsE2.extraDays.filter(d=>d!==_vsSrcDay);if(_vsE2.ds!==ds&&!_vsE2.extraDays.includes(ds))_vsE2.extraDays.push(ds);if(!_vsE2.extraDays.length)delete _vsE2.extraDays;}
+      if(_vsE2)_vidStepMoveDoneDay(_vsE2,_vsSrcDay,ds);
+      _vidStepDayMapSet(_vsM2);
+      // Calendar-only instance (no blocks on src day) dropped on TB: create a block at drop position
+      let _vsNewBlk=null;
+      if(!_vsMoved.length){
+        const _vsLbl=(_VID_STEP_LABELS[_vsStep]||_vsStep.replace('step_',''))+': '+(_vsV.topic||_vsV.title);
+        _vsNewBlk={id:crypto.randomUUID(),title:_vsLbl,ds,sm,dur:30,cat:'Videos',_vidStepVid:_vsVidId,_vidStepName:_vsStep};
+        st.blocks.push(_vsNewBlk);sbSaveBlock(_vsNewBlk);
+      }
       dragId=null;save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
-      pushUndo(()=>{_vsPrevBlks.forEach(p=>{const bl=st.blocks.find(x=>x.id===p.id);if(bl){bl.ds=p.ds;bl.sm=p.sm;sbUpdateBlock(bl.id,{day_date:p.ds,start_minutes:p.sm});}});const m2=_vidStepDayMap();if(_vsPrevMap)m2[_vsK2]=_vsPrevMap;_vidStepDayMapSet(m2);save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();},'Moved step');
+      pushUndo(()=>{_vsPrevBlks.forEach(p=>{const bl=st.blocks.find(x=>x.id===p.id);if(bl){bl.ds=p.ds;bl.sm=p.sm;sbUpdateBlock(bl.id,{day_date:p.ds,start_minutes:p.sm});}});if(_vsNewBlk){st.blocks=st.blocks.filter(b=>b.id!==_vsNewBlk.id);sbDeleteBlock(_vsNewBlk.id);}const m2=_vidStepDayMap();if(_vsPrevMap)m2[_vsK2]=_vsPrevMap;else delete m2[_vsK2];_vidStepDayMapSet(m2);save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();},'Moved step');
       return;
     }
     // Add new block on this day (don't move existing)

@@ -5378,9 +5378,17 @@ document.addEventListener('keydown',async e=>{
             undos.push(()=>{blks.forEach((bl,i)=>{bl.ds=prevDsList[i];sbSaveBlock(bl);});});
           } else {
             const newDs=_shiftDs(prevDs,dir);
-            if(stepMap&&prevEntry){stepMap[key]={ds:newDs,done:prevEntry.done};_vidStepDayMapSet(stepMap);}
+            let prevSnap=null;
+            if(stepMap&&prevEntry){
+              prevSnap=JSON.parse(JSON.stringify(prevEntry));
+              // Move only the selected instance: primary if it matches, else swap extraDay
+              if(prevEntry.ds===prevDs)prevEntry.ds=newDs;
+              else if(prevEntry.extraDays&&prevEntry.extraDays.includes(prevDs)){prevEntry.extraDays=prevEntry.extraDays.filter(d=>d!==prevDs);if(prevEntry.ds!==newDs&&!prevEntry.extraDays.includes(newDs))prevEntry.extraDays.push(newDs);if(!prevEntry.extraDays.length)delete prevEntry.extraDays;}
+              if(typeof _vidStepMoveDoneDay==='function')_vidStepMoveDoneDay(prevEntry,prevDs,newDs);
+              _vidStepDayMapSet(stepMap);
+            }
             (st.blocks||[]).filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step&&bl.ds===prevDs).forEach(bl=>{bl.ds=newDs;sbUpdateBlock(bl.id,{day_date:newDs});});
-            undos.push(()=>{if(stepMap&&prevEntry){const m2=_vidStepDayMap();m2[key]={ds:prevDs,done:prevEntry.done};_vidStepDayMapSet(m2);}(st.blocks||[]).filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step&&bl.ds===newDs).forEach(bl=>{bl.ds=prevDs;sbUpdateBlock(bl.id,{day_date:prevDs});});});
+            undos.push(()=>{if(prevSnap){const m2=_vidStepDayMap();m2[key]=prevSnap;_vidStepDayMapSet(m2);}(st.blocks||[]).filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step&&bl.ds===newDs).forEach(bl=>{bl.ds=prevDs;sbUpdateBlock(bl.id,{day_date:prevDs});});});
           }
           moved=true;continue;
         }
