@@ -50,9 +50,9 @@ function _moveOtherSelected(ds,excludeSid,undos,excludePrefixes){
     }
     // Video steps
     if(sid.startsWith('vidstep-')){
-      const m=sid.match(/^vidstep-(.+)-(step_\w+)-\d{4}-\d{2}-\d{2}$/)||sid.match(/^vidstep-(.+)-(step_\w+)$/);
-      if(m){const vidId=m[1],step=m[2];const prevDs=(_vidStepDayMap()[vidId+'::'+step]||{}).ds||null;_vidStepAssignToDay(vidId,step,ds);
-        undos.push(()=>{if(prevDs)_vidStepAssignToDay(vidId,step,prevDs);else _vidStepUnassign(vidId,step);});}
+      const m=sid.match(/^vidstep-(.+)-(step_\w+)-(\d{4}-\d{2}-\d{2})$/)||sid.match(/^vidstep-(.+)-(step_\w+)$/);
+      if(m){const vidId=m[1],step=m[2],srcDay=m[3]||null;const prevDs=(_vidStepDayMap()[vidId+'::'+step]||{}).ds||null;_vidStepAssignToDay(vidId,step,ds,srcDay);
+        undos.push(()=>{if(srcDay)_vidStepAssignToDay(vidId,step,srcDay,ds);else if(prevDs)_vidStepAssignToDay(vidId,step,prevDs);else _vidStepUnassign(vidId,step);});}
       return;
     }
     // Shopping
@@ -83,7 +83,7 @@ function renderOv(){
 function renderSummaryMetrics(){
   const ds=d2s(getDayDate(dayOff));
   const blocked=st.blocks.filter(b=>b.ds===ds).reduce((s,b)=>s+b.dur,0);
-  const _vidStepOvCount=(()=>{if(typeof _vidStepDayMap!=='function')return 0;const m=_vidStepDayMap();let c=0;const seen=new Set();Object.entries(m).forEach(([key,val])=>{if(val.ds>=ds)return;const[vidId,step]=key.split('::');const v=(st.videos||[]).find(x=>String(x.id)===String(vidId)&&!x.is_deleted);if(!v||v[step]==='na'||v[step]==='done')return;if(_vidStepComputeDone(vidId,step,val.ds,val))return;c++;seen.add(key+'::'+val.ds);});(st.blocks||[]).filter(bl=>bl._vidStepVid&&bl._vidStepName&&bl.ds<ds&&bl._vidStepName!=='step_thumbnail'&&bl._vidStepName!=='step_description').forEach(bl=>{const dayKey=bl._vidStepVid+'::'+bl._vidStepName+'::'+bl.ds;if(seen.has(dayKey))return;seen.add(dayKey);const v=(st.videos||[]).find(x=>String(x.id)===String(bl._vidStepVid)&&!x.is_deleted);if(!v||v[bl._vidStepName]==='na'||v[bl._vidStepName]==='done')return;if(_vidStepComputeDone(bl._vidStepVid,bl._vidStepName,bl.ds,null))return;c++;});return c;})();
+  const _vidStepOvCount=(()=>{if(typeof _vidStepDayMap!=='function')return 0;const m=_vidStepDayMap();let c=0;const seen=new Set();Object.entries(m).forEach(([key,val])=>{const[vidId,step]=key.split('::');const v=(st.videos||[]).find(x=>String(x.id)===String(vidId)&&!x.is_deleted);if(!v||v[step]==='na'||v[step]==='done')return;if(val.ds<ds&&!_vidStepComputeDone(vidId,step,val.ds,val)){c++;seen.add(key+'::'+val.ds);}(val.extraDays||[]).forEach(ed=>{if(ed>=ds)return;const dk=key+'::'+ed;if(seen.has(dk))return;seen.add(dk);if(_vidStepComputeDone(vidId,step,ed,null))return;c++;});});(st.blocks||[]).filter(bl=>bl._vidStepVid&&bl._vidStepName&&bl.ds<ds&&bl._vidStepName!=='step_thumbnail'&&bl._vidStepName!=='step_description').forEach(bl=>{const dayKey=bl._vidStepVid+'::'+bl._vidStepName+'::'+bl.ds;if(seen.has(dayKey))return;seen.add(dayKey);const v=(st.videos||[]).find(x=>String(x.id)===String(bl._vidStepVid)&&!x.is_deleted);if(!v||v[bl._vidStepName]==='na'||v[bl._vidStepName]==='done')return;if(_vidStepComputeDone(bl._vidStepVid,bl._vidStepName,bl.ds,null))return;c++;});return c;})();
   const ovCount=st.tasks.filter(t=>!t.done&&isOv(t.due_date)&&t.category!=='Weekly Goals').length+st.shopping.filter(s=>!s.done&&s.due_date&&isOv(s.due_date)).length+_vidStepOvCount;
   const tpEl=document.getElementById('todPct'),wpEl=document.getElementById('wkPct');
   const el_tp=document.getElementById('smTodayPct'),el_wp=document.getElementById('smWkPct'),el_bl=document.getElementById('smBlocked'),el_ov=document.getElementById('smOverdue');
@@ -1454,10 +1454,13 @@ function renderWkCal(){
           const _vsMoved=st.blocks.filter(bl=>String(bl._vidStepVid)===String(_vsVid)&&bl._vidStepName===_vsStep&&bl.ds===_vsSrcDay);
           const _vsPrevBlks=_vsMoved.map(bl=>({id:bl.id,ds:bl.ds}));
           _vsMoved.forEach(bl=>{bl.ds=ds;sbUpdateBlock(bl.id,{day_date:ds});});
-          // Always update daymap to target day (source day may differ from daymap primary)
+          // Update daymap for the moved instance only: primary if it matches src day, else swap extraDay
           const _vsM=_vidStepDayMap();const _vsK=_vsVid+'::'+_vsStep;
           const _vsPrevMap=_vsM[_vsK]?{..._vsM[_vsK]}:null;
-          if(!_vsM[_vsK])_vsM[_vsK]={ds:ds,done:false};else _vsM[_vsK].ds=ds;
+          const _vsE=_vsM[_vsK];
+          if(!_vsE)_vsM[_vsK]={ds:ds,done:false};
+          else if(_vsE.ds===_vsSrcDay)_vsE.ds=ds;
+          else if(_vsE.extraDays&&_vsE.extraDays.includes(_vsSrcDay)){_vsE.extraDays=_vsE.extraDays.filter(d=>d!==_vsSrcDay);if(_vsE.ds!==ds&&!_vsE.extraDays.includes(ds))_vsE.extraDays.push(ds);if(!_vsE.extraDays.length)delete _vsE.extraDays;}
           _vidStepDayMapSet(_vsM);
           save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
           pushUndo(()=>{
@@ -1979,7 +1982,7 @@ function setupWkcEdgeDrop(){
       const parts=dragId.split('::');const _eV=parts[1],_eS=parts[2],_eSD=parts[3]||null;
       if(_eS!=='step_thumbnail'&&_eS!=='step_description'&&_eSD){
         st.blocks.filter(bl=>String(bl._vidStepVid)===String(_eV)&&bl._vidStepName===_eS&&bl.ds===_eSD).forEach(bl=>{bl.ds=newDs;sbUpdateBlock(bl.id,{day_date:newDs});});
-        const _eM3=_vidStepDayMap();const _eK3=_eV+'::'+_eS;if(!_eM3[_eK3])_eM3[_eK3]={ds:newDs,done:false};else _eM3[_eK3].ds=newDs;_vidStepDayMapSet(_eM3);save();
+        const _eM3=_vidStepDayMap();const _eK3=_eV+'::'+_eS;const _eE3=_eM3[_eK3];if(!_eE3)_eM3[_eK3]={ds:newDs,done:false};else if(_eE3.ds===_eSD)_eE3.ds=newDs;else if(_eE3.extraDays&&_eE3.extraDays.includes(_eSD)){_eE3.extraDays=_eE3.extraDays.filter(d=>d!==_eSD);if(_eE3.ds!==newDs&&!_eE3.extraDays.includes(newDs))_eE3.extraDays.push(newDs);if(!_eE3.extraDays.length)delete _eE3.extraDays;}_vidStepDayMapSet(_eM3);save();
       } else {_vidStepAssignToDay(_eV,_eS,newDs);}
       dragId=null;shiftWk(dir);return;
     }
@@ -2083,7 +2086,7 @@ function setupEdge(id,dir){
       const parts=dragId.split('::');const _eV=parts[1],_eS=parts[2],_eSD=parts[3]||null;
       if(_eS!=='step_thumbnail'&&_eS!=='step_description'&&_eSD){
         st.blocks.filter(bl=>String(bl._vidStepVid)===String(_eV)&&bl._vidStepName===_eS&&bl.ds===_eSD).forEach(bl=>{bl.ds=newDs;sbUpdateBlock(bl.id,{day_date:newDs});});
-        const _eM3=_vidStepDayMap();const _eK3=_eV+'::'+_eS;if(!_eM3[_eK3])_eM3[_eK3]={ds:newDs,done:false};else _eM3[_eK3].ds=newDs;_vidStepDayMapSet(_eM3);save();
+        const _eM3=_vidStepDayMap();const _eK3=_eV+'::'+_eS;const _eE3=_eM3[_eK3];if(!_eE3)_eM3[_eK3]={ds:newDs,done:false};else if(_eE3.ds===_eSD)_eE3.ds=newDs;else if(_eE3.extraDays&&_eE3.extraDays.includes(_eSD)){_eE3.extraDays=_eE3.extraDays.filter(d=>d!==_eSD);if(_eE3.ds!==newDs&&!_eE3.extraDays.includes(newDs))_eE3.extraDays.push(newDs);if(!_eE3.extraDays.length)delete _eE3.extraDays;}_vidStepDayMapSet(_eM3);save();
       } else {_vidStepAssignToDay(_eV,_eS,newDs);}
       dragId=null;shiftWk(dir);return;
     }
@@ -3502,7 +3505,7 @@ function dropOnTodayList(e){
   }
   if(dragId.startsWith('vidstep::')){
     const parts=dragId.split('::');
-    _vidStepAssignToDay(parts[1],parts[2],ds);dragId=null;return;
+    _vidStepAssignToDay(parts[1],parts[2],ds,parts[3]||null);dragId=null;return;
   }
   if(dragId.startsWith('fin-cancel::')){dragId=null;return;}
 }
@@ -3564,24 +3567,38 @@ function _vidStepReconstructBlocks(){
   });
   if(mapChanged)_vidStepDayMapSet(m);
 }
-function _vidStepAssignToDay(vidId,step,ds){
+function _vidStepAssignToDay(vidId,step,ds,srcDay){
   _vidStepReconstructBlocks();
   const m=_vidStepDayMap();const key=vidId+'::'+step;
   const prev=m[key]||null;
   const prevDs=prev?prev.ds:null;
+  // The instance being moved: explicit srcDay (per-day drag) or the daymap primary
+  const moveFrom=srcDay||prevDs;
   // Guard: already on this day (primary or extraDays)
   if(prevDs===ds){showToast('Already on this day','#e67e22',1500);return;}
   if(prev&&prev.extraDays&&prev.extraDays.includes(ds)){showToast('Already on this day','#e67e22',1500);return;}
-  m[key]={ds,done:prev?prev.done:false};_vidStepDayMapSet(m);
-  // Move timeblock blocks to new day
-  if(prevDs&&prevDs!==ds){
-    (st.blocks||[]).filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step&&bl.ds===prevDs).forEach(bl=>{
-      bl.ds=ds;sbUpdateBlock(bl.id,{day_date:ds});
+  if(srcDay&&prev&&prevDs!==srcDay){
+    // Moving a non-primary instance: swap its extraDay, leave primary untouched
+    const ne={...prev,extraDays:(prev.extraDays||[]).filter(d=>d!==srcDay)};
+    if(ne.ds!==ds&&!ne.extraDays.includes(ds))ne.extraDays.push(ds);
+    if(!ne.extraDays.length)delete ne.extraDays;
+    m[key]=ne;
+  } else {
+    const ne={ds,done:prev?prev.done:false};
+    if(prev&&prev.extraDays){const ex=prev.extraDays.filter(d=>d!==ds);if(ex.length)ne.extraDays=ex;}
+    m[key]=ne;
+  }
+  _vidStepDayMapSet(m);
+  // Move timeblock blocks from the moved instance's day only
+  const movedIds=[];
+  if(moveFrom&&moveFrom!==ds){
+    (st.blocks||[]).filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step&&bl.ds===moveFrom).forEach(bl=>{
+      movedIds.push(bl.id);bl.ds=ds;sbUpdateBlock(bl.id,{day_date:ds});
     });
   }
   save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
   const panel=document.getElementById('vidOvPanel');if(panel&&panel.style.display==='block')_renderVidOvMenu();
-  pushUndo(()=>{_vidStepReconstructBlocks();const m2=_vidStepDayMap();if(prev)m2[key]=prev;else delete m2[key];_vidStepDayMapSet(m2);if(prevDs&&prevDs!==ds){(st.blocks||[]).filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step&&bl.ds===ds).forEach(bl=>{bl.ds=prevDs;sbUpdateBlock(bl.id,{day_date:prevDs});});}save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();const p2=document.getElementById('vidOvPanel');if(p2&&p2.style.display==='block')_renderVidOvMenu();},'Moved step');
+  pushUndo(()=>{_vidStepReconstructBlocks();const m2=_vidStepDayMap();if(prev)m2[key]=prev;else delete m2[key];_vidStepDayMapSet(m2);movedIds.forEach(id=>{const bl=st.blocks.find(x=>x.id===id);if(bl){bl.ds=moveFrom;sbUpdateBlock(bl.id,{day_date:moveFrom});}});save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();const p2=document.getElementById('vidOvPanel');if(p2&&p2.style.display==='block')_renderVidOvMenu();},'Moved step');
 }
 function _vidStepToggleDone(vidId,step,checked,_fromTB,forDay){
   _vidStepReconstructBlocks();
@@ -7004,11 +7021,11 @@ function dropOnTB(e,ds,h,row,smOverride){
         } else if(sid.startsWith('vid-ov-')){
           // skip — video TB has special handling
         } else if(sid.startsWith('vidstep-')){
-          const vsm=sid.match(/^vidstep-(.+)-(step_\w+)-\d{4}-\d{2}-\d{2}$/)||sid.match(/^vidstep-(.+)-(step_\w+)$/);
+          const vsm=sid.match(/^vidstep-(.+)-(step_\w+)-(\d{4}-\d{2}-\d{2})$/)||sid.match(/^vidstep-(.+)-(step_\w+)$/);
           if(vsm){
-            const vsVid=vsm[1],vsStep=vsm[2];
+            const vsVid=vsm[1],vsStep=vsm[2],vsSrcDay=vsm[3]||null;
             if(vsStep!=='step_thumbnail'&&vsStep!=='step_description'){
-              if(typeof _vidStepAssignToDay==='function')_vidStepAssignToDay(vsVid,vsStep,ds);
+              if(typeof _vidStepAssignToDay==='function')_vidStepAssignToDay(vsVid,vsStep,ds,vsSrcDay);
             }
           }
         } else if(sid.startsWith('shop-cal-')){
