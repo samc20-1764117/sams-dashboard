@@ -94,6 +94,7 @@ Supabase Auth (email+password), RLS on all tables. `init()`→`checkAuth()`→`d
 
 ## Undo / Redo
 - `pushUndo(fn,msg)`: snapshots state AFTER action (called post-mutation). `doUndo()`: pops, captures current snap for redo, calls fn. `doRedo()` (async): restores snap, `await _syncRedoDiff(before,after)`, pushes undo entry whose fn calls both `_stateRestore(beforeRedo)` AND `_syncRedoDiff(snap,beforeRedo)` to keep DB in sync on undo-after-redo.
+- **Undo flash**: `doUndo`/`doRedo` flash overview rows whose HTML changed (`_rowSnapMap()` before, `_flashChangedRows()` after → `.undo-flash` class, 900ms). Diff strips transient classes (`undo-flash|just-done|chk-pop`) so repeat undos don't over-flash.
 - `_stateSnap` captures: `tasks,recurring,shopping,travel,birthdays,blocks,wrRules,wrOverrides,autoTBOverrides,pupSessions,pup_skills`.
 - `_stateRestore` restores all above + calls `renderAll(),renderPupSkillsHighlight(),renderDayTB(),renderWkCal(),renderRecOv(),renderWeeklyPage()`.
 - `_syncRedoDiff` (returns `Promise.all`): diffs tasks, recurring `_dateOverrides`, wrRules `_dateOverrides`, wrOverrides, shopping `due_date`, travel dates, blocks, autoTBOverrides, pupSessions (done/POST/DELETE), pup_skills (field PATCH).
