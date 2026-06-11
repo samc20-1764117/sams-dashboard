@@ -3707,7 +3707,8 @@ function _vidStepUnassign(vidId,step,forDay){
     _vidStepDayMapSet(m);
     save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
     const panel=document.getElementById('vidOvPanel');if(panel&&panel.style.display==='block')_renderVidOvMenu();
-    if(removedBlks.length)pushUndo(()=>{const m2=_vidStepDayMap();if(prevMap)m2[key]=prevMap;else delete m2[key];_vidStepDayMapSet(m2);removedBlks.forEach(bl=>{st.blocks.push(bl);sbSaveBlock(bl);});save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();},'Removed step from day');
+    const _mapChanged=JSON.stringify(prevMap)!==JSON.stringify(m[key]||null);
+    if(removedBlks.length||_mapChanged)pushUndo(()=>{const m2=_vidStepDayMap();if(prevMap)m2[key]=prevMap;else delete m2[key];_vidStepDayMapSet(m2);removedBlks.forEach(bl=>{st.blocks.push(bl);sbSaveBlock(bl);});save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();},'Removed step from day');
     return;
   }
   // Original behavior: remove ALL
