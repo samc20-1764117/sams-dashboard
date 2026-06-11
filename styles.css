@@ -1553,3 +1553,14 @@ body.dark .ti.undo-flash{animation-name:undoFlashDark}
 #todProgressDonut svg{filter:drop-shadow(0 0 5px rgba(16,185,129,.35))}
 #_donutFrac{font-size:13px;font-weight:700;fill:#059669}
 body.dark #_donutFrac{fill:#34d399}
+
+/* ── Overview simplify batch (calm the canvas) — delete this block to fully revert ── */
+/* calmer background orbs */
+.orb{opacity:.22}
+/* lighter structural lines */
+#page-overview .card{border-color:rgba(210,205,228,.10)}
+#page-overview .ch,#page-overview .ch-prog,#page-overview .tod-tb-header{border-bottom-color:rgba(210,205,228,.12)}
+#page-overview .tod-tb-divider{border-left-color:rgba(210,205,228,.18)}
+body.dark #page-overview .card{border-color:rgba(255,255,255,.035)}
+body.dark #page-overview .ch,body.dark #page-overview .ch-prog,body.dark #page-overview .tod-tb-header{border-bottom-color:rgba(255,255,255,.035)}
+body.dark #page-overview .tod-tb-divider{border-left-color:rgba(255,255,255,.04)}
