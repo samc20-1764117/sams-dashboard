@@ -1153,7 +1153,7 @@ function renderWkCal(){
   const cols=document.getElementById('wkcCols');cols.innerHTML='';
   dates.forEach((date,di)=>{
     const ds=d2s(date);
-    const col=document.createElement('div');col.className='wkc-col'+(ds===d2s(getDayDate(dayOff))&&!isDateToday(date)?' wkc-col-sel':'');
+    const col=document.createElement('div');col.className='wkc-col'+(ds===d2s(getDayDate(dayOff))&&!isDateToday(date)?' wkc-col-sel':'')+(isDateToday(date)?' wkc-col-today':'');
     col.dataset.ds=ds;
     col.style.paddingTop=_colPaddingPre[di];
 
