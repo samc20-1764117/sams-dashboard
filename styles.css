@@ -673,6 +673,14 @@ body.scenic-theme:not(.dark) .card:has(.wkc-outer){background:rgba(255,255,255,.
 body.scenic-theme:not(.dark) .card:has(.wkc-outer) .chip{position:relative}
 body.scenic-theme:not(.dark) .card:has(.wkc-outer) .chip::before{content:'';position:absolute;inset:0;border-radius:inherit;background:rgba(255,255,255,.85);z-index:-1}
 body.scenic-theme:not(.dark) .card:has(.wkc-outer) .wkc-goals-col .chip{backdrop-filter:none;-webkit-backdrop-filter:none}
+/* Boost chip color saturation (on the column, not the chip — a chip-level filter would break the ::before underlay stacking) */
+body.scenic-theme:not(.dark) .card:has(.wkc-outer) .wkc-col,
+body.scenic-theme:not(.dark) .card:has(.wkc-outer) .wkc-goals-col{filter:saturate(1.6)}
+/* Scenic: white/grey topbar so the header reads over the photo */
+body.scenic-theme:not(.dark) .ov-topbar-label{color:rgba(255,255,255,.78);text-shadow:0 1px 5px rgba(0,0,0,.3)}
+body.scenic-theme:not(.dark) .ov-topbar-date{color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.35)}
+body.scenic-theme:not(.dark) .ov-topbar-dot{background:#fff;opacity:.55}
+body.scenic-theme:not(.dark) .ov-topbar-time{color:rgba(255,255,255,.88);background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.28);text-shadow:0 1px 4px rgba(0,0,0,.3)}
 .mt{font-size:14px;font-weight:700;letter-spacing:-.3px;margin-bottom:11px}
 .mfield{margin-bottom:8px}
 .mfield label{display:block;font-size:9px;font-weight:700;color:var(--muted);margin-bottom:2px;text-transform:uppercase;letter-spacing:.07em}
