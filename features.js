@@ -6053,6 +6053,7 @@ function applyTheme(key,skipSave){
     canvas.className.split(' ').filter(c=>c.startsWith('theme-')).forEach(c=>canvas.classList.remove(c));
     if(t.scenic){canvas.classList.add('theme-scenic','theme-'+t.scenic);}
   }
+  document.body.classList.toggle('scenic-theme',!!t.scenic);
   document.querySelectorAll('.theme-swatch').forEach(s=>{s.classList.toggle('active',s.dataset.theme===key);});
   if(!skipSave){localStorage._dashTheme=key;}
 }

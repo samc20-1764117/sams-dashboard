@@ -667,6 +667,12 @@ dialog.overlay[open]::backdrop{background:rgba(30,20,60,.32)}
 .bg-canvas.theme-scenic .orb{opacity:0!important}
 body.dark .bg-canvas.theme-scenic{opacity:0}
 .bg-canvas.theme-austin{background-image:url('theme-austin.jpg')}
+/* Scenic themes: glassier containers so the photo shows through */
+body.scenic-theme:not(.dark) .card{background:rgba(255,255,255,.42);backdrop-filter:blur(14px) saturate(1.15);-webkit-backdrop-filter:blur(14px) saturate(1.15);border-color:rgba(255,255,255,.4)}
+body.scenic-theme:not(.dark) .card-hero{background:rgba(255,255,255,.52)!important}
+body.scenic-theme:not(.dark) #page-overview .card{box-shadow:0 8px 28px rgba(0,0,0,.12),inset 0 1px 0 rgba(255,255,255,.45)}
+/* Weekly calendar extra glassy */
+body.scenic-theme:not(.dark) .card:has(.wkc-outer){background:rgba(255,255,255,.24);backdrop-filter:blur(7px) saturate(1.2);-webkit-backdrop-filter:blur(7px) saturate(1.2)}
 .mt{font-size:14px;font-weight:700;letter-spacing:-.3px;margin-bottom:11px}
 .mfield{margin-bottom:8px}
 .mfield label{display:block;font-size:9px;font-weight:700;color:var(--muted);margin-bottom:2px;text-transform:uppercase;letter-spacing:.07em}
