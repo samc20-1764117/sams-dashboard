@@ -468,7 +468,7 @@ function renderPupSkillsHighlight(){
     const progressBar=`<div style="height:3px;background:${dk?'rgba(255,255,255,.06)':'rgba(0,0,0,.06)'};margin:4px 10px 3px;border-radius:2px;overflow:hidden"><div style="height:100%;width:${pct}%;background:rgba(16,185,129,.7);border-radius:2px;transition:width .3s"></div></div>`;
     return`<div style="flex:1;display:flex;flex-direction:column;background:${dk?'rgba(255,255,255,.03)':'rgba(255,255,255,.55)'};border:1px solid ${dk?'rgba(255,255,255,.06)':'rgba(210,205,228,.3)'};border-radius:12px;padding:6px 0 5px;overflow:hidden;box-shadow:${dk?'none':'inset 0 1px 3px rgba(0,0,0,.04)'}">
       <div style="display:flex;align-items:center;padding:0 10px 2px;gap:4px">
-        <span style="font-size:9px;font-weight:700;color:var(--muted);letter-spacing:.08em;text-transform:uppercase">${pup}</span>
+        <span style="font-size:9px;font-weight:700;color:var(--muted);letter-spacing:.03em">${pup}</span>
         <span onclick="event.stopPropagation();openPupFocusPicker('${pup}')" style="cursor:pointer;font-size:7px;color:var(--muted);opacity:.4;line-height:1;margin-left:1px" title="Edit ${pup}'s skills for this week">✎</span>
         <span class="vid-num" style="font-size:8px;font-weight:600;color:var(--muted);margin-left:auto">${wkDoneTotal}/${wkSessTotal}</span>
       </div>
@@ -729,7 +729,7 @@ function renderDailyHabits(){
   }).join('');
   const dk=_dk();
   el.innerHTML=`<div style="display:flex;align-items:center;padding:4px 10px 2px;gap:6px;border-top:1px solid ${dk?'rgba(255,255,255,.04)':'rgba(0,0,0,.06)'};margin-top:2px">
-    <span style="font-size:9px;font-weight:700;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;flex:1">Daily</span>
+    <span style="font-size:10px;font-weight:600;letter-spacing:.05em;color:var(--muted);text-transform:uppercase;flex:1">Daily</span>
     ${habits.length?`<span style="font-size:10px;color:var(--muted);font-weight:500">${doneCount}/${habits.length}</span>`:''}
     <button class="btn btn-ghost btn-xs" onclick="openAddDailyHabit(this)" style="padding:1px 6px;font-size:11px;line-height:1.4">+</button>
   </div>${rows?`<div style="padding:0 0 4px">${rows}</div>`:''}`;
