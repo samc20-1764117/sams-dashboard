@@ -1549,3 +1549,7 @@ body.dark #page-overview #dailyHabitsSection>div:nth-child(2) .ti.done{backgroun
 @keyframes undoFlashDark{0%{background:rgba(255,255,255,.14)}100%{background:transparent}}
 .ti.undo-flash{animation:undoFlash .9s ease-out}
 body.dark .ti.undo-flash{animation-name:undoFlashDark}
+/* donut: mockup style (gradient ring + soft glow + fraction inside), green */
+#todProgressDonut svg{filter:drop-shadow(0 0 5px rgba(16,185,129,.35))}
+#_donutFrac{font-size:13px;font-weight:700;fill:#059669}
+body.dark #_donutFrac{fill:#34d399}
