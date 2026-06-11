@@ -834,9 +834,24 @@ function _showRedoToast(msg){
   undoTimer=setTimeout(()=>toast.classList.remove('show'),4000);
 }
 
+// Flash overview rows changed by undo/redo
+function _rowSnapMap(){
+  const m=new Map();
+  document.querySelectorAll('#page-overview .ti[id]').forEach(el=>m.set(el.id,el.outerHTML.replace(/ ?(undo-flash|just-done|chk-pop)/g,'')));
+  return m;
+}
+function _flashChangedRows(before){
+  document.querySelectorAll('#page-overview .ti[id]').forEach(el=>{
+    if(before.get(el.id)!==el.outerHTML.replace(/ ?(undo-flash|just-done|chk-pop)/g,'')){
+      el.classList.add('undo-flash');
+      setTimeout(()=>el.classList.remove('undo-flash'),900);
+    }
+  });
+}
 function doUndo(){
   if(!undoStack.length)return;
   const entry=undoStack.pop();
+  const _rowsBefore=_rowSnapMap();
   // Snapshot state right before undo so redo can restore to this point
   const snapAfterUndo=entry.snapBeforeUndo; // this IS the pre-undo state
   const snapForRedo=_stateSnap(); // current state = what redo should restore to... wait, that's wrong
@@ -844,6 +859,7 @@ function doUndo(){
   // redoFn should restore to the state BEFORE we called doUndo = current state right now
   const currentSnap=_stateSnap();
   entry.fn();
+  _flashChangedRows(_rowsBefore);
   redoStack.push({snap:currentSnap,msg:entry.msg});
   document.getElementById('undoToast').classList.remove('show');
 }
@@ -933,7 +949,9 @@ async function doRedo(){
   if(!redoStack.length)return;
   const{snap,msg}=redoStack.pop();
   const beforeRedo=_stateSnap();
+  const _rowsBefore=_rowSnapMap();
   _stateRestore(snap);
+  _flashChangedRows(_rowsBefore);
   await _syncRedoDiff(beforeRedo,snap);
   // undo-after-redo must also patch DB back to pre-redo state
   undoStack.push({fn:()=>{_stateRestore(beforeRedo);_syncRedoDiff(snap,beforeRedo);},msg,snapBeforeUndo:beforeRedo});

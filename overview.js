@@ -317,16 +317,31 @@ function launchDonutConfetti(){
     setTimeout(()=>el.remove(), 2000);
   }
 }
+let _donutPctShown=0,_donutPctRaf=null;
+function _donutTickPct(to,dur){
+  const pEl=document.getElementById('_donutPct');if(!pEl)return;
+  if(_donutPctRaf){cancelAnimationFrame(_donutPctRaf);_donutPctRaf=null;}
+  const from=_donutPctShown;
+  if(to===from){pEl.textContent=to+'%';return;}
+  const start=performance.now();
+  const step=now=>{
+    const k=Math.min(1,(now-start)/dur);
+    const v=Math.round(from+(to-from)*(1-Math.pow(1-k,3)));
+    _donutPctShown=v;pEl.textContent=v+'%';
+    if(k<1)_donutPctRaf=requestAnimationFrame(step);else _donutPctRaf=null;
+  };
+  _donutPctRaf=requestAnimationFrame(step);
+}
 function renderTodDonut(done,total){
   const wrap=document.getElementById('todProgressDonut');if(!wrap)return;
-  if(!total){wrap.style.display='none';_donutInited=false;_donutWas100=false;return;}
+  if(!total){wrap.style.display='none';_donutInited=false;_donutWas100=false;_donutPctShown=0;return;}
   wrap.style.display='flex';
   const C=2*Math.PI*22;
   const arc=document.getElementById('_donutArc');
   const pEl=document.getElementById('_donutPct');
   const fEl=document.getElementById('_donutFrac');
   const pct=done/total;
-  if(pEl)pEl.textContent=Math.round(pct*100)+'%';
+  _donutTickPct(Math.round(pct*100),_donutInited?450:900);
   if(fEl)fEl.textContent=`${done}/${total}`;
   const lbEl=document.getElementById('_donutLabel');
   if(lbEl){const dd=getDayDate(dayOff);lbEl.textContent=isDateToday(dd)?'done today':'done '+dd.toLocaleDateString('en-US',{month:'short',day:'numeric'});}
@@ -350,6 +365,21 @@ function renderTodDonut(done,total){
   }
   if(!isNow100)_donutWas100=false;
 }
+// Checkbox pop + strikethrough draw on completion (overview rows with ids).
+// Runs after the inline onchange handler has re-rendered, so it animates the fresh node.
+document.addEventListener('change',e=>{
+  const chk=e.target;
+  if(!(chk instanceof HTMLInputElement)||!chk.classList.contains('chk'))return;
+  const row=chk.closest('.ti');const rid=row&&row.id;if(!rid)return;
+  const fresh=document.getElementById(rid);
+  if(!fresh||!fresh.closest('#page-overview'))return;
+  const wrap=fresh.querySelector('.chk-wrap');
+  if(wrap){wrap.classList.add('chk-pop');setTimeout(()=>wrap.classList.remove('chk-pop'),320);}
+  if(chk.checked&&fresh.classList.contains('done')){
+    fresh.classList.add('just-done');
+    setTimeout(()=>fresh.classList.remove('just-done'),360);
+  }
+});
 function _pupWkMonday(off=0){const{mon}=getWkBounds(off);return d2s(mon);}
 function _pupWkFocusIds(pup,off=0){
   const wkStart=_pupWkMonday(off);

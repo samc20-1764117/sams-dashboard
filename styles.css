@@ -1535,3 +1535,17 @@ body.dark #page-overview .card{box-shadow:0 2px 12px rgba(0,0,0,.32),inset 0 1px
 #page-overview #dailyHabitsSection>div:nth-child(2) .ti.done{background:rgba(194,107,79,.08);border-color:rgba(194,107,79,.25)}
 body.dark #page-overview #dailyHabitsSection>div:nth-child(2) .ti{background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.1)}
 body.dark #page-overview #dailyHabitsSection>div:nth-child(2) .ti.done{background:rgba(194,107,79,.16);border-color:rgba(194,107,79,.3)}
+
+/* ── Overview Batch B+C micro-interactions — delete this block to fully revert ── */
+/* 8a. checkbox pop on toggle (class added by JS, never on re-render) */
+@keyframes chkPop{0%{transform:scale(1)}45%{transform:scale(1.45)}100%{transform:scale(1)}}
+.chk-pop .chk::after{animation:chkPop .3s cubic-bezier(.34,1.56,.64,1)}
+/* 8b. strikethrough draws left-to-right on completion */
+@keyframes strikeDraw{from{width:0}to{width:100%}}
+.ti.just-done .tn{text-decoration:none!important;position:relative}
+.ti.just-done .tn::after{content:'';position:absolute;left:0;top:51%;height:1px;width:0;background:currentColor;animation:strikeDraw .32s ease-out forwards}
+/* 15. flash rows changed by undo/redo */
+@keyframes undoFlash{0%{background:rgba(194,107,79,.20)}100%{background:transparent}}
+@keyframes undoFlashDark{0%{background:rgba(255,255,255,.14)}100%{background:transparent}}
+.ti.undo-flash{animation:undoFlash .9s ease-out}
+body.dark .ti.undo-flash{animation-name:undoFlashDark}
