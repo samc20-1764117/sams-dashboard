@@ -3057,6 +3057,14 @@ function _wkKeyToOff(wkKey){
   const curMon=new Date(now);curMon.setDate(now.getDate()-dow);curMon.setHours(0,0,0,0);
   return Math.round((mon-curMon)/(7*864e5));
 }
+// Clamp a pinned override date into targetWkKey's Mon–Sun; if landing in current week, never before today (prevents phantom overdue)
+function _wrClampToWeek(ds,targetWkKey){
+  const sun=new Date(targetWkKey+'T12:00');sun.setDate(sun.getDate()+6);const sunDs=d2s(sun);
+  while(ds<targetWkKey){const d=new Date(ds+'T12:00');d.setDate(d.getDate()+7);ds=d2s(d);}
+  while(ds>sunDs){const d=new Date(ds+'T12:00');d.setDate(d.getDate()-7);ds=d2s(d);}
+  if(targetWkKey===getWkKey(0)&&ds<tod())ds=tod();
+  return ds;
+}
 function _wrShiftAnchor(delta){
   hideWrRuleCtx();
   if(_wrCtxRecId){
@@ -3075,9 +3083,9 @@ function _wrShiftAnchor(delta){
     const prevTarget=r._dateOverrides[targetWkKey];
     const _natDow=dayNameToIdx(r.appears_on_date);
     const _natDate=_natDow>=0?getDateForDow(_natDow,wkOff):null;
-    const base=prevCurrent&&prevCurrent!=='__skip__'?new Date(prevCurrent+'T12:00'):_natDate?new Date(d2s(_natDate)+'T12:00'):new Date();
+    const base=prevCurrent&&prevCurrent!=='__skip__'?new Date(prevCurrent+'T12:00'):_natDate?new Date(d2s(_natDate)+'T12:00'):new Date(_wrCtxWkKey+'T12:00');
     base.setDate(base.getDate()+delta);
-    const next=d2s(base);
+    const next=_wrClampToWeek(d2s(base),targetWkKey);
     r._dateOverrides[_wrCtxWkKey]='__skip__';
     r._dateOverrides[targetWkKey]=next;
     save();renderAll();renderWkCal();renderToday();
@@ -3108,9 +3116,9 @@ function _wrShiftAnchor(delta){
   const prevTgt=rule._dateOverrides[targetWkKey];
   // Compute the target date: shift current pinned date (or natural day) by ±7
   const curDs=prevSrc&&prevSrc!=='__skip__'?prevSrc:null;
-  const base=curDs?new Date(curDs+'T12:00'):new Date();
+  const base=curDs?new Date(curDs+'T12:00'):new Date(srcWkKey+'T12:00');
   base.setDate(base.getDate()+delta);
-  const nextDs=d2s(base);
+  const nextDs=_wrClampToWeek(d2s(base),targetWkKey);
   // 1. Update _dateOverrides: remove from current week, pin to target week
   delete rule._dateOverrides[srcWkKey];
   rule._dateOverrides[targetWkKey]=nextDs;
@@ -3161,11 +3169,11 @@ function wrCtxShiftSchedule(delta){
   const targetWkKey=d2s(srcMon);
   const prevSrcOv=rule._dateOverrides[wkKey];
   const prevTgtOv=rule._dateOverrides[targetWkKey];
-  // Compute target date
+  // Compute target date — must land inside target week, never instantly overdue
   const curDs=prevSrcOv&&prevSrcOv!=='__skip__'?prevSrcOv:null;
-  const base=curDs?new Date(curDs+'T12:00'):new Date();
+  const base=curDs?new Date(curDs+'T12:00'):new Date(wkKey+'T12:00');
   base.setDate(base.getDate()+delta);
-  const nextDs=d2s(base);
+  const nextDs=_wrClampToWeek(d2s(base),targetWkKey);
   rule._dateOverrides[wkKey]='__skip__';
   rule._dateOverrides[targetWkKey]=nextDs;
   // Persist

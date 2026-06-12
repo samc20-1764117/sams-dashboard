@@ -681,14 +681,16 @@ body.scenic-theme:not(.dark) .card:has(.wkc-outer) .wkc-goals-col{filter:saturat
 body.scenic-theme:not(.dark) .card:has(#recList),
 body.scenic-theme:not(.dark) .card:has(#shopOv),
 body.scenic-theme:not(.dark) .card:has(.ql-grid){background:rgba(255,255,255,.78)}
-/* Scenic: weekly view header bands match the card glass; the columns content stays the most see-through */
-body.scenic-theme:not(.dark) .card:has(.wkc-outer) .wkc-nav{background:rgba(255,255,255,.5)}
-body.scenic-theme:not(.dark) .card:has(.wkc-outer) .wkc-head{background:rgba(255,255,255,.5)}
+/* Scenic: weekly view header bands solid white for readability; the columns content stays the most see-through */
+body.scenic-theme:not(.dark) .card:has(.wkc-outer) .wkc-nav{background:rgba(255,255,255,.85)}
+body.scenic-theme:not(.dark) .card:has(.wkc-outer) .wkc-head{background:rgba(255,255,255,.85)}
+/* Scenic: strip button chrome — Objectives / unassigned badge / Weekly Reset label read as plain text */
+body.scenic-theme:not(.dark) .wo-hdr-btn{background:transparent;border-color:transparent;box-shadow:none}
 /* Scenic: white/grey topbar so the header reads over the photo */
 body.scenic-theme:not(.dark) .ov-topbar-label{color:rgba(255,255,255,.78);text-shadow:0 1px 5px rgba(0,0,0,.3)}
 body.scenic-theme:not(.dark) .ov-topbar-date{color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.35)}
 body.scenic-theme:not(.dark) .ov-topbar-dot{background:#fff;opacity:.55}
-body.scenic-theme:not(.dark) .ov-topbar-time{color:rgba(255,255,255,.88);background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.28);text-shadow:0 1px 4px rgba(0,0,0,.3)}
+body.scenic-theme:not(.dark) .ov-topbar-time{color:rgba(255,255,255,.88);background:transparent;border-color:transparent;text-shadow:0 1px 4px rgba(0,0,0,.3)}
 .mt{font-size:14px;font-weight:700;letter-spacing:-.3px;margin-bottom:11px}
 .mfield{margin-bottom:8px}
 .mfield label{display:block;font-size:9px;font-weight:700;color:var(--muted);margin-bottom:2px;text-transform:uppercase;letter-spacing:.07em}
