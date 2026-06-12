@@ -3114,14 +3114,12 @@ function _wrShiftAnchor(delta){
   if(tgtOv&&tgtOv!=='__skip__'){showToast('Already scheduled that week','#6b7280',2000);return;}
   const prevSrc=rule._dateOverrides[srcWkKey];
   const prevTgt=rule._dateOverrides[targetWkKey];
-  // Compute the target date: shift current pinned date (or natural day) by ±7
+  // Only carry a day pin if the source instance had one — otherwise stay unassigned in target WR container (move override shows it)
   const curDs=prevSrc&&prevSrc!=='__skip__'?prevSrc:null;
-  const base=curDs?new Date(curDs+'T12:00'):new Date(srcWkKey+'T12:00');
-  base.setDate(base.getDate()+delta);
-  const nextDs=_wrClampToWeek(d2s(base),targetWkKey);
-  // 1. Update _dateOverrides: remove from current week, pin to target week
+  // 1. Update _dateOverrides: remove from current week, pin to target week only if previously pinned
   delete rule._dateOverrides[srcWkKey];
-  rule._dateOverrides[targetWkKey]=nextDs;
+  if(curDs){const base=new Date(curDs+'T12:00');base.setDate(base.getDate()+delta);rule._dateOverrides[targetWkKey]=_wrClampToWeek(d2s(base),targetWkKey);}
+  else delete rule._dateOverrides[targetWkKey];
   sbReq('PATCH','wr_recurring_rules',{date_overrides:rule._dateOverrides},`?id=eq.${_wrCtxRuleId}`);
   // 2. Create move override in wrOverrides so renderRecOv hides it from current week
   const _moveFull={rule_id:_wrCtxRuleId,wk_key:srcWkKey,override_type:'move',moved_to_wk_key:targetWkKey,done:null,custom_name:null,custom_notes:null};
@@ -3169,13 +3167,14 @@ function wrCtxShiftSchedule(delta){
   const targetWkKey=d2s(srcMon);
   const prevSrcOv=rule._dateOverrides[wkKey];
   const prevTgtOv=rule._dateOverrides[targetWkKey];
-  // Compute target date — must land inside target week, never instantly overdue
+  // Compute target date — only carry a day pin if the source instance had one.
+  // WR tasks with no pin stay unassigned in the target week's WR container (move override / shifted schedule shows them).
   const curDs=prevSrcOv&&prevSrcOv!=='__skip__'?prevSrcOv:null;
-  const base=curDs?new Date(curDs+'T12:00'):new Date(wkKey+'T12:00');
-  base.setDate(base.getDate()+delta);
-  const nextDs=_wrClampToWeek(d2s(base),targetWkKey);
+  let nextDs=null;
+  if(curDs){const base=new Date(curDs+'T12:00');base.setDate(base.getDate()+delta);nextDs=_wrClampToWeek(d2s(base),targetWkKey);}
+  else if(isRec){const _nd=dayNameToIdx(rule.appears_on_date);if(_nd>=0)nextDs=_wrClampToWeek(d2s(getDateForDow(_nd,_wkKeyToOff(targetWkKey))),targetWkKey);}
   rule._dateOverrides[wkKey]='__skip__';
-  rule._dateOverrides[targetWkKey]=nextDs;
+  if(nextDs)rule._dateOverrides[targetWkKey]=nextDs;else delete rule._dateOverrides[targetWkKey];
   // Persist
   const patchData={starting_date:rule.starting_date,date_overrides:rule._dateOverrides};
   if(isRec){

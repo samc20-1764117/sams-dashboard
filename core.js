@@ -294,10 +294,11 @@ async function syncAll(silent=false){
       const prevPins={};st.wrRules.forEach(r=>{if(r._dateOverrides)prevPins[String(r.id)]=r._dateOverrides;});
       const prevRecOvs={};st.recurring.forEach(r=>{if(r._dateOverrides)prevRecOvs[String(r.id)]=r._dateOverrides;});
       const _isWR=r=>r.is_weekly_reset===true||r.is_weekly_reset==='true';
-      // Self-heal: clamp override dates into their wkKey's Mon–Sun (bad data from old shift-schedule caused phantom overdue)
-      const _normOvs=o=>{Object.keys(o).forEach(k=>{let v=o[k];if(!v||v==='__skip__'||!/^\d{4}-\d{2}-\d{2}$/.test(String(v))||!/^\d{4}-\d{2}-\d{2}$/.test(k))return;const sun=new Date(k+'T12:00');sun.setDate(sun.getDate()+6);const sunDs=d2s(sun);while(v<k){const d=new Date(v+'T12:00');d.setDate(d.getDate()+7);v=d2s(d);}while(v>sunDs){const d=new Date(v+'T12:00');d.setDate(d.getDate()-7);v=d2s(d);}o[k]=v;});return o;};
+      // Self-heal out-of-week override dates (bad data from old shift-schedule caused phantom overdue):
+      // WR rules → delete the pin (back to unassigned; move override/schedule shows the instance). Non-WR → clamp into week (pin carries the instance).
+      const _normOvs=(o,del)=>{Object.keys(o).forEach(k=>{let v=o[k];if(!v||v==='__skip__'||!/^\d{4}-\d{2}-\d{2}$/.test(String(v))||!/^\d{4}-\d{2}-\d{2}$/.test(k))return;const sun=new Date(k+'T12:00');sun.setDate(sun.getDate()+6);const sunDs=d2s(sun);if(v>=k&&v<=sunDs)return;if(del){delete o[k];return;}while(v<k){const d=new Date(v+'T12:00');d.setDate(d.getDate()+7);v=d2s(d);}while(v>sunDs){const d=new Date(v+'T12:00');d.setDate(d.getDate()-7);v=d2s(d);}o[k]=v;});return o;};
       st.wrRules=wrRules.filter(_isWR);
-      st.wrRules.forEach(r=>{const dbOvs={...(r.date_overrides||{})};const prevOvs=prevPins[String(r.id)];if(prevOvs){Object.keys(prevOvs).forEach(k=>{dbOvs[k]=prevOvs[k];});}r._dateOverrides=_normOvs(dbOvs);});
+      st.wrRules.forEach(r=>{const dbOvs={...(r.date_overrides||{})};const prevOvs=prevPins[String(r.id)];if(prevOvs){Object.keys(prevOvs).forEach(k=>{dbOvs[k]=prevOvs[k];});}r._dateOverrides=_normOvs(dbOvs,true);});
       const nonWR=wrRules.filter(r=>!_isWR(r));
       const dbIds=new Set(nonWR.map(r=>String(r.id)));
       const localPending=st.recurring.filter(r=>{
