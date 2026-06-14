@@ -439,13 +439,19 @@ async function seedPupWeeklyFocus(off=0){
   save();
   _pupWkFocusSeeding.delete(wkStart);
 }
+const _PUP_EYE_OFF='<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+const _PUP_EYE='<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+function _pupHiddenTiles(){try{return JSON.parse(localStorage._pupHiddenTiles||'[]');}catch(e){return[];}}
+function _setPupTileHidden(pup,hidden){let arr=_pupHiddenTiles().filter(p=>p!==pup);if(hidden)arr.push(pup);localStorage._pupHiddenTiles=JSON.stringify(arr);renderPupSkillsHighlight();}
 function renderPupSkillsHighlight(){
   const wrap=document.getElementById('pupSkillsHighlight');if(!wrap)return;
   seedPupWeeklyFocus(wkOff);
   const mochiSkills=_pupWkFocusSkills('Mochi',wkOff);
   const sunnySkills=_pupWkFocusSkills('Sunny',wkOff);
   if(!mochiSkills.length&&!sunnySkills.length){wrap.innerHTML='';wrap.style.cssText='display:none';return;}
+  const _hidden=_pupHiddenTiles();
   wrap.style.cssText='display:flex;gap:7px;margin:7px;flex-shrink:0';
+  const mkChip=pup=>`<div class="pup-restore-chip" onclick="_setPupTileHidden('${pup}',false)" title="Show ${pup}">${_PUP_EYE}<span>${pup}</span></div>`;
   const mkTile=(pup,skills,accentColor)=>{
     const wkDoneTotal=skills.reduce((a,s)=>a+_pupWkDone(s.id),0);
     const wkSessTotal=skills.reduce((a,s)=>a+_pupWkSessTotal(s.id),0);
@@ -466,11 +472,12 @@ function renderPupSkillsHighlight(){
     }).join('');
     const dk=_dk();
     const progressBar=`<div style="height:3px;background:${dk?'rgba(255,255,255,.06)':'rgba(0,0,0,.06)'};margin:4px 10px 3px;border-radius:2px;overflow:hidden"><div style="height:100%;width:${pct}%;background:rgba(16,185,129,.7);border-radius:2px;transition:width .3s"></div></div>`;
-    return`<div style="flex:1;display:flex;flex-direction:column;background:${dk?'rgba(255,255,255,.03)':'rgba(255,255,255,.55)'};border:1px solid ${dk?'rgba(255,255,255,.06)':'rgba(210,205,228,.3)'};border-radius:12px;padding:6px 0 5px;overflow:hidden;box-shadow:${dk?'none':'inset 0 1px 3px rgba(0,0,0,.04)'}">
+    return`<div class="pup-tile" style="flex:1;display:flex;flex-direction:column;background:${dk?'rgba(255,255,255,.03)':'rgba(255,255,255,.55)'};border:1px solid ${dk?'rgba(255,255,255,.06)':'rgba(210,205,228,.3)'};border-radius:12px;padding:6px 0 5px;overflow:hidden;box-shadow:${dk?'none':'inset 0 1px 3px rgba(0,0,0,.04)'}">
       <div style="display:flex;align-items:center;padding:0 10px 2px;gap:4px">
         <span style="font-size:9px;font-weight:700;color:var(--muted);letter-spacing:.03em">${pup}</span>
         <span onclick="event.stopPropagation();openPupFocusPicker('${pup}')" style="cursor:pointer;font-size:7px;color:var(--muted);opacity:.4;line-height:1;margin-left:1px" title="Edit ${pup}'s skills for this week">✎</span>
         <span class="vid-num" style="font-size:8px;font-weight:600;color:var(--muted);margin-left:auto">${wkDoneTotal}/${wkSessTotal}</span>
+        <span class="pup-tile-hide" onclick="event.stopPropagation();_setPupTileHidden('${pup}',true)" title="Hide ${pup}">${_PUP_EYE_OFF}</span>
       </div>
       ${rows}
       <div style="flex:1"></div>
@@ -478,8 +485,8 @@ function renderPupSkillsHighlight(){
     </div>`;
   };
   let html='';
-  if(mochiSkills.length)html+=mkTile('Mochi',mochiSkills,'#a78bfa');
-  if(sunnySkills.length)html+=mkTile('Sunny',sunnySkills,'#d4a017');
+  if(mochiSkills.length)html+=_hidden.includes('Mochi')?mkChip('Mochi'):mkTile('Mochi',mochiSkills,'#a78bfa');
+  if(sunnySkills.length)html+=_hidden.includes('Sunny')?mkChip('Sunny'):mkTile('Sunny',sunnySkills,'#d4a017');
   wrap.innerHTML=html;
   if(!wrap._dblBound){wrap._dblBound=true;wrap.addEventListener('dblclick',e=>{if(!e.target.closest('.ti'))_openPupFocusModal(null);});}
 }

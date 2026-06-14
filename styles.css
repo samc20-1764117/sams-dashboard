@@ -328,6 +328,13 @@ button:focus,button:focus-visible,.btn:focus,.btn:focus-visible{outline:none}
 .ch-prog-stat{display:flex;align-items:center;gap:3px;font-family:'DM Sans',sans-serif;font-size:9px;font-weight:600;color:var(--muted);white-space:nowrap}
 .ch-prog-stat .pct{color:#059669;font-weight:700;font-size:10px}
 .ct{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);flex:1}
+.pup-tile-hide{opacity:0;transition:opacity .15s;cursor:pointer;color:var(--muted);line-height:0;display:inline-flex;align-items:center;flex-shrink:0}
+.pup-tile:hover .pup-tile-hide{opacity:.5}
+.pup-tile-hide:hover{opacity:1}
+.pup-restore-chip{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;flex-shrink:0;width:30px;cursor:pointer;color:var(--muted);opacity:.45;border:1px dashed rgba(210,205,228,.4);border-radius:12px;transition:opacity .15s}
+.pup-restore-chip:hover{opacity:.85}
+.pup-restore-chip span{font-size:8px;font-weight:700;writing-mode:vertical-rl;letter-spacing:.05em}
+body.dark .pup-restore-chip{border-color:rgba(255,255,255,.1)}
 .cbadge{font-family:'DM Sans',sans-serif;font-size:9px;background:rgba(255,255,255,.65);border:1px solid var(--border);padding:0px 5px;border-radius:8px;color:var(--muted)}
 .prog{padding:7px 13px 6px;flex-shrink:0}
 .prog-lbl{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
