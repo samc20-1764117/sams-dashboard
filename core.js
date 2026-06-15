@@ -294,9 +294,13 @@ async function syncAll(silent=false){
       const prevPins={};st.wrRules.forEach(r=>{if(r._dateOverrides)prevPins[String(r.id)]=r._dateOverrides;});
       const prevRecOvs={};st.recurring.forEach(r=>{if(r._dateOverrides)prevRecOvs[String(r.id)]=r._dateOverrides;});
       const _isWR=r=>r.is_weekly_reset===true||r.is_weekly_reset==='true';
-      // Self-heal out-of-week override dates (bad data from old shift-schedule caused phantom overdue):
-      // WR rules → delete the pin (back to unassigned; move override/schedule shows the instance). Non-WR → clamp into week (pin carries the instance).
-      const _normOvs=(o,del)=>{Object.keys(o).forEach(k=>{let v=o[k];if(!v||v==='__skip__'||!/^\d{4}-\d{2}-\d{2}$/.test(String(v))||!/^\d{4}-\d{2}-\d{2}$/.test(k))return;const sun=new Date(k+'T12:00');sun.setDate(sun.getDate()+6);const sunDs=d2s(sun);if(v>=k&&v<=sunDs)return;if(del){delete o[k];return;}while(v<k){const d=new Date(v+'T12:00');d.setDate(d.getDate()+7);v=d2s(d);}while(v>sunDs){const d=new Date(v+'T12:00');d.setDate(d.getDate()-7);v=d2s(d);}o[k]=v;});return o;};
+      // Self-heal out-of-week override dates. A pin (_dateOverrides[wkKey]=date) must hold a date WITHIN
+      // that week. A cross-week move filed under the wrong week key would otherwise be corrupted here.
+      // WR rules → delete the misfiled pin (move override/schedule shows the instance).
+      // Non-WR → RELOCATE the date to the week that contains it, and skip the source week so its default
+      // occurrence doesn't reappear as a phantom overdue task. (Old behavior clamped the date back into the
+      // source week by ±7 days, which silently turned "moved to next Monday" into "this Monday".)
+      const _normOvs=(o,del)=>{Object.keys(o).forEach(k=>{const v=o[k];if(!v||v==='__skip__'||!/^\d{4}-\d{2}-\d{2}$/.test(String(v))||!/^\d{4}-\d{2}-\d{2}$/.test(k))return;const sun=new Date(k+'T12:00');sun.setDate(sun.getDate()+6);const sunDs=d2s(sun);if(v>=k&&v<=sunDs)return;if(del){delete o[k];return;}const nk=dsToWkKey(v);if(nk!==k&&(o[nk]===undefined||o[nk]==='__skip__'))o[nk]=v;o[k]='__skip__';});return o;};
       st.wrRules=wrRules.filter(_isWR);
       st.wrRules.forEach(r=>{const dbOvs={...(r.date_overrides||{})};const prevOvs=prevPins[String(r.id)];if(prevOvs){Object.keys(prevOvs).forEach(k=>{dbOvs[k]=prevOvs[k];});}r._dateOverrides=_normOvs(dbOvs,true);});
       const nonWR=wrRules.filter(r=>!_isWR(r));
