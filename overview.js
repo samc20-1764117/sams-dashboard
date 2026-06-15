@@ -2811,8 +2811,8 @@ function renderRecOv(){
     if(elReg)elReg.appendChild(row);
   });
   // Update skipped-this-week button
-  // Include both weekly-reset and plain weekly recurring tasks skipped/removed this week
-  const _skippedWrecCount=st.recurring.filter(r=>r._dateOverrides&&r._dateOverrides[wkKey]==='__skip__').length;
+  // Include both weekly-reset and plain weekly recurring tasks genuinely skipped this week (not moved forward)
+  const _skippedWrecCount=_recSkippedThisWk(wkKey).length;
   const _skCount=skipIds.size+_skippedWrecCount;
   const _skBtn=document.getElementById('wrSkippedBtn');
   if(_skBtn){_skBtn.style.display=_skCount?'':'none';_skBtn.textContent='↩ '+_skCount;}
@@ -2963,11 +2963,20 @@ function wrScopeDoAll(){hideWrScopePicker();if(_wrScopeCbAll)_wrScopeCbAll();}
 document.addEventListener('mousedown',e=>{if(!e.target.closest('#wrScopePicker'))hideWrScopePicker();},{capture:true,passive:true});
 
 /// ── Skipped-this-week popup ───────────────────────────────────────────────────
+// Recurring tasks (WR-recurring + plain non-WR) genuinely SKIPPED this week.
+// Excludes tasks merely moved to a later week — those also mark the source week '__skip__'
+// but carry a real date pin in a later week, so they aren't "skipped", just relocated.
+function _recSkippedThisWk(wkKey){
+  return st.recurring.filter(r=>{
+    if(!r._dateOverrides||r._dateOverrides[wkKey]!=='__skip__')return false;
+    return !Object.keys(r._dateOverrides).some(k=>/^\d{4}-\d{2}-\d{2}$/.test(k)&&k>wkKey&&r._dateOverrides[k]&&r._dateOverrides[k]!=='__skip__');
+  });
+}
 function openWrSkipped(e){
   e.stopPropagation();
   const wkKey=getWkKey(wrRecOff);
   const skippedRules=st.wrRules.filter(r=>(st.wrOverrides||[]).some(o=>String(o.rule_id)===String(r.id)&&o.wk_key===wkKey&&o.override_type==='skip'));
-  const skippedWrec=st.recurring.filter(r=>r._dateOverrides&&r._dateOverrides[wkKey]==='__skip__');
+  const skippedWrec=_recSkippedThisWk(wkKey);
   const picker=document.getElementById('wrSkippedPicker');if(!picker)return;
   picker.innerHTML='';
   if(!skippedRules.length&&!skippedWrec.length){picker.style.display='none';return;}
