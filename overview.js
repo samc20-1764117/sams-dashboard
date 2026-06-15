@@ -8,29 +8,31 @@ function renderAll(){renderOv();renderWeeklyPage();renderShopFull();renderTravel
 // excludePrefixes: optional array of prefixes to skip (e.g. ['shop-cal-'] when shop handler already moves its own)
 function _moveOtherSelected(ds,excludeSid,undos,excludePrefixes){
   if(!selectedTasks.has(excludeSid)||selectedTasks.size<=1)return;
-  const wkKey=getWkKey(wkOff);
+  // Override must be keyed by the DESTINATION week (value must fall within that week, per _normOvs).
+  const newWkKey=dsToWkKey(ds);
+  const curWkKey=getWkKey(wkOff);
   [...selectedTasks].forEach(sid=>{
     if(sid===excludeSid)return;
     if(excludePrefixes&&excludePrefixes.some(p=>sid.startsWith(p)))return;
     // WR rules
     if(sid.startsWith('wrrule-virt-')||sid.startsWith('wrrule-')){
       const rid=sid.replace('wrrule-virt-','').replace('wrrule-','');const r=st.wrRules.find(x=>String(x.id)===String(rid));
-      if(r){if(!r._dateOverrides)r._dateOverrides={};const prev=r._dateOverrides[wkKey];r._dateOverrides[wkKey]=ds;sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},`?id=eq.${rid}`);
-        undos.push(()=>{if(prev!==undefined)r._dateOverrides[wkKey]=prev;else delete r._dateOverrides[wkKey];sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},`?id=eq.${rid}`);});}
+      if(r){if(!r._dateOverrides)r._dateOverrides={};const prevCur=r._dateOverrides[curWkKey];const prevNew=r._dateOverrides[newWkKey];if(curWkKey!==newWkKey&&prevCur!==undefined)delete r._dateOverrides[curWkKey];r._dateOverrides[newWkKey]=ds;sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},`?id=eq.${rid}`);
+        undos.push(()=>{if(curWkKey!==newWkKey){if(prevCur!==undefined)r._dateOverrides[curWkKey]=prevCur;else delete r._dateOverrides[curWkKey];}if(prevNew!==undefined)r._dateOverrides[newWkKey]=prevNew;else delete r._dateOverrides[newWkKey];sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},`?id=eq.${rid}`);});}
       return;
     }
-    // WR recurring (legacy wrec)
+    // WR recurring (legacy wrec) — appears only when scheduled, so clear source week on cross-week move
     if(sid.startsWith('wrec-')){
       const rid=sid.replace('wrec-','');const r=st.recurring.find(x=>String(x.id)===String(rid));
-      if(r){if(!r._dateOverrides)r._dateOverrides={};const prev=r._dateOverrides[wkKey];r._dateOverrides[wkKey]=ds;sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));
-        undos.push(()=>{if(prev!==undefined)r._dateOverrides[wkKey]=prev;else delete r._dateOverrides[wkKey];sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));});}
+      if(r){if(!r._dateOverrides)r._dateOverrides={};const prevCur=r._dateOverrides[curWkKey];const prevNew=r._dateOverrides[newWkKey];if(curWkKey!==newWkKey&&prevCur!==undefined)delete r._dateOverrides[curWkKey];r._dateOverrides[newWkKey]=ds;sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));
+        undos.push(()=>{if(curWkKey!==newWkKey){if(prevCur!==undefined)r._dateOverrides[curWkKey]=prevCur;else delete r._dateOverrides[curWkKey];}if(prevNew!==undefined)r._dateOverrides[newWkKey]=prevNew;else delete r._dateOverrides[newWkKey];sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));});}
       return;
     }
-    // Non-WR recurring
+    // Non-WR recurring — appears by default every week, so skip source week on cross-week move
     if(sid.startsWith('rec-virt-')){
       const rid=sid.replace('rec-virt-','');const r=st.recurring.find(x=>String(x.id)===String(rid));
-      if(r){if(!r._dateOverrides)r._dateOverrides={};const prev=r._dateOverrides[wkKey];r._dateOverrides[wkKey]=ds;sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));
-        undos.push(()=>{if(prev!==undefined)r._dateOverrides[wkKey]=prev;else delete r._dateOverrides[wkKey];sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));});}
+      if(r){if(!r._dateOverrides)r._dateOverrides={};const prevCur=r._dateOverrides[curWkKey];const prevNew=r._dateOverrides[newWkKey];if(curWkKey!==newWkKey)r._dateOverrides[curWkKey]='__skip__';r._dateOverrides[newWkKey]=ds;sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));
+        undos.push(()=>{if(curWkKey!==newWkKey){if(prevCur!==undefined)r._dateOverrides[curWkKey]=prevCur;else delete r._dateOverrides[curWkKey];}if(prevNew!==undefined)r._dateOverrides[newWkKey]=prevNew;else delete r._dateOverrides[newWkKey];sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));});}
       return;
     }
     // Pup sessions
@@ -1256,11 +1258,16 @@ function renderWkCal(){
         const [,recId,origDate,srcWkKey]=dragId.split('::');
         const r=st.recurring.find(x=>String(x.id)===String(recId));
         if(r&&ds!==origDate){
-          const wkKey=srcWkKey||getWkKey(wkOff);
+          const curWkKey=srcWkKey||getWkKey(wkOff);
+          const newWkKey=dsToWkKey(ds);
           if(!r._dateOverrides)r._dateOverrides={};
-          const prevOverride=r._dateOverrides[wkKey];
+          const prevCur=r._dateOverrides[curWkKey];
+          const prevNew=r._dateOverrides[newWkKey];
           const savedBlocks=st.blocks.filter(b=>b.recId&&String(b.recId)===String(r.id)&&b.ds===origDate).map(b=>({...b}));
-          r._dateOverrides[wkKey]=ds;
+          // Override must be keyed by the DESTINATION week (value must fall within that week, per _normOvs).
+          // Cross-week move: skip the source week so its default occurrence doesn't linger as overdue.
+          if(curWkKey!==newWkKey)r._dateOverrides[curWkKey]='__skip__';
+          r._dateOverrides[newWkKey]=ds;
           removeTBBlocksForDate(ds,{recId:r.id,oldDs:origDate});
           const _recSid='rec-virt-'+recId;
           const _recOtherUndos=[];
@@ -1268,8 +1275,8 @@ function renderWkCal(){
           save();dragId=null;renderAll();if(document.getElementById('tbGrid'))renderDayTB();
           sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));
           pushUndo(()=>{
-            if(prevOverride)r._dateOverrides[wkKey]=prevOverride;
-            else delete r._dateOverrides[wkKey];
+            if(prevCur!==undefined)r._dateOverrides[curWkKey]=prevCur;else delete r._dateOverrides[curWkKey];
+            if(prevNew!==undefined)r._dateOverrides[newWkKey]=prevNew;else delete r._dateOverrides[newWkKey];
             st.blocks=st.blocks.filter(b=>!(b.recId&&String(b.recId)===String(r.id)&&b.ds===ds));
             savedBlocks.forEach(b=>{st.blocks.push(b);sbSaveBlock(b);});
             _recOtherUndos.forEach(fn=>fn());
