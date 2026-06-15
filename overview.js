@@ -2811,7 +2811,8 @@ function renderRecOv(){
     if(elReg)elReg.appendChild(row);
   });
   // Update skipped-this-week button
-  const _skippedWrecCount=st.recurring.filter(r=>(r.is_weekly_reset===true||r.is_weekly_reset==='true')&&r._dateOverrides&&r._dateOverrides[wkKey]==='__skip__').length;
+  // Include both weekly-reset and plain weekly recurring tasks skipped/removed this week
+  const _skippedWrecCount=st.recurring.filter(r=>r._dateOverrides&&r._dateOverrides[wkKey]==='__skip__').length;
   const _skCount=skipIds.size+_skippedWrecCount;
   const _skBtn=document.getElementById('wrSkippedBtn');
   if(_skBtn){_skBtn.style.display=_skCount?'':'none';_skBtn.textContent='↩ '+_skCount;}
@@ -2966,7 +2967,7 @@ function openWrSkipped(e){
   e.stopPropagation();
   const wkKey=getWkKey(wrRecOff);
   const skippedRules=st.wrRules.filter(r=>(st.wrOverrides||[]).some(o=>String(o.rule_id)===String(r.id)&&o.wk_key===wkKey&&o.override_type==='skip'));
-  const skippedWrec=st.recurring.filter(r=>(r.is_weekly_reset===true||r.is_weekly_reset==='true')&&r._dateOverrides&&r._dateOverrides[wkKey]==='__skip__');
+  const skippedWrec=st.recurring.filter(r=>r._dateOverrides&&r._dateOverrides[wkKey]==='__skip__');
   const picker=document.getElementById('wrSkippedPicker');if(!picker)return;
   picker.innerHTML='';
   if(!skippedRules.length&&!skippedWrec.length){picker.style.display='none';return;}
