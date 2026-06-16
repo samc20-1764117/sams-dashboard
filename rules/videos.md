@@ -68,6 +68,7 @@
 - **Tab+Link greying**: when Tab is na, both Tab wrapper (`vmTabWrap`) and Link wrapper (`vmLinkWrap`) grey at `opacity:.5`. Link input gets grey fill (`rgba(210,205,228,.15)`), no placeholder. Right-click on Link (`_vidLinkCtx`) toggles both Tab+Link together via `_vidNaModalStep`. Link wrapper has `cursor:default`.
 - **Defaults for new**: Big → all stages required. Small → Tab default to `na`. Changing type dropdown updates stages.
 - **Big Video field**: searchable via datalist of all B video titles. `_vidGetBigVideoId()` resolves title→id on save.
+- **Rapid add from overview pop-up**: when `_vidMode==='add'` AND opened from the overview (`activePg==='overview'`), `saveVidModal` does NOT close on save (`_keepOpen`) — it clears topic/title/comment and refocuses topic so you can keep adding (Save and Enter behave identically). An empty submit closes it via the empty-topic guard. Edit mode and the videos-page add modal still close on save.
 - **Playlist field**: searchable via datalist of all existing playlists.
 
 ### + Button (Add Child Video)

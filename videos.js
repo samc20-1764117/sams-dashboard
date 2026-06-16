@@ -2879,8 +2879,11 @@ async function saveVidModal(){
   }
   // L videos without a big parent can't be in_progress/up_next
   if(data.video_type==='L'&&!data.big_video_id&&(data.status==='in_progress'||data.status==='up_next'))data.status='idea';
-  closeMod('vidModal');
   const _fromOv=activePg==='overview';
+  // Rapid add from the videos pop-up: keep the toolbox open after saving so you can add another (Save
+  // behaves like Enter). An empty submit (Enter/Save again) closes it via the empty-topic guard above.
+  const _keepOpen=_vidMode==='add'&&_fromOv;
+  if(!_keepOpen)closeMod('vidModal');
 
   if(_vidMode==='edit'&&_vidEditId){
     const v=(st.videos||[]).find(x=>String(x.id)===String(_vidEditId));
@@ -2971,6 +2974,7 @@ async function saveVidModal(){
     st.videos.push(rec);save();renderVideosPageKeepScroll();
     if(typeof _vidOvRenderAll==='function'&&typeof _vidOvAllOpen!=='undefined'&&_vidOvAllOpen)_vidOvRenderAll();
     if(typeof _renderVidOvMenu==='function')_renderVidOvMenu();
+    if(_keepOpen){['vmTopic','vmTitle','vmComment'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});const _tp=document.getElementById('vmTopic');if(_tp)setTimeout(()=>_tp.focus(),20);}
     pushUndo(async()=>{
       const v=(st.videos||[]).find(x=>x.id===tmp||x.id===rec.id);
       if(v){v.is_deleted=true;save();renderVideosPageKeepScroll();const sid=String(v.id);if(!sid.startsWith('l-'))await sbReqSilent('PATCH','videos',{is_deleted:true},`?id=eq.${sid}`);}
