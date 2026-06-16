@@ -2800,8 +2800,8 @@ function renderRecOv(){
     if(elReg)elReg.appendChild(row);
   });
   // Update skipped-this-week button
-  // Include both weekly-reset and plain weekly recurring tasks genuinely skipped this week (not moved forward)
-  const _skippedWrecCount=_recSkippedThisWk(wkKey).length;
+  // Include both weekly-reset and plain weekly recurring tasks genuinely skipped this week (occurs that week)
+  const _skippedWrecCount=_recSkippedThisWk(wkKey,wrRecOff).length;
   const _skCount=skipIds.size+_skippedWrecCount;
   const _skBtn=document.getElementById('wrSkippedBtn');
   if(_skBtn){_skBtn.style.display=_skCount?'':'none';_skBtn.textContent='↩ '+_skCount;}
@@ -2952,17 +2952,27 @@ function wrScopeDoAll(){hideWrScopePicker();if(_wrScopeCbAll)_wrScopeCbAll();}
 document.addEventListener('mousedown',e=>{if(!e.target.closest('#wrScopePicker'))hideWrScopePicker();},{capture:true,passive:true});
 
 /// ── Skipped-this-week popup ───────────────────────────────────────────────────
-// Recurring tasks (WR-recurring + plain non-WR) removed from this week via '__skip__'.
-// A genuine skip and a moved-forward/back source are stored identically ('__skip__' on the
-// source week), so this shows both; restoring returns the task to its default day.
-function _recSkippedThisWk(wkKey){
-  return st.recurring.filter(r=>r._dateOverrides&&r._dateOverrides[wkKey]==='__skip__');
+// Recurring tasks (WR-recurring + plain non-WR) genuinely skipped this week.
+// A skip only counts if the task ACTUALLY occurs that week — a '__skip__' on an off-cycle week
+// (e.g. a quarterly task between occurrences, or leftover from a "move all future" shift) is not a
+// real skip and must not appear. Weekly-reset tasks are override-driven (no natural cadence), so a
+// '__skip__' on them is always a genuine skip. `off` = week offset matching wkKey (getWkKey(off)===wkKey).
+function _recSkippedThisWk(wkKey,off){
+  return st.recurring.filter(r=>{
+    if(!r._dateOverrides||r._dateOverrides[wkKey]!=='__skip__')return false;
+    if(r.is_weekly_reset===true||r.is_weekly_reset==='true')return true;
+    if(off===undefined)return true;
+    const saved=r._dateOverrides[wkKey];delete r._dateOverrides[wkKey];
+    const occurs=getRecurringWeekTasks(off).some(v=>String(v._recId)===String(r.id));
+    r._dateOverrides[wkKey]=saved;
+    return occurs;
+  });
 }
 function openWrSkipped(e){
   e.stopPropagation();
   const wkKey=getWkKey(wrRecOff);
   const skippedRules=st.wrRules.filter(r=>(st.wrOverrides||[]).some(o=>String(o.rule_id)===String(r.id)&&o.wk_key===wkKey&&o.override_type==='skip'));
-  const skippedWrec=_recSkippedThisWk(wkKey);
+  const skippedWrec=_recSkippedThisWk(wkKey,wrRecOff);
   const picker=document.getElementById('wrSkippedPicker');if(!picker)return;
   picker.innerHTML='';
   if(!skippedRules.length&&!skippedWrec.length){picker.style.display='none';return;}

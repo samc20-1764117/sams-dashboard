@@ -22,7 +22,7 @@
 
 ## Skipped-This-Week Popup
 - **`#wrSkippedBtn`**: shows `↩ N`. Hidden when N=0. Updated by `renderRecOv()`.
-- **`#wrSkippedPicker`**: lists skipped WR rules + `st.recurring` removed this week (WR-recurring AND plain non-WR weekly, e.g. HEB) via `_recSkippedThisWk(wkKey)` = any `_dateOverrides[wkKey]==='__skip__'`. NOTE: a genuine skip and a moved-forward/back source are stored identically (`__skip__` on the source week) and a moved instance lands on the task's normal weekday, so they can't be reliably told apart — both appear. Click → un-skip (`unSkipWRec` deletes the `__skip__` key → reverts to default day).
+- **`#wrSkippedPicker`**: lists skipped WR rules + `st.recurring` genuinely skipped this week via `_recSkippedThisWk(wkKey,off)`. A `_dateOverrides[wkKey]==='__skip__'` counts ONLY if the task actually occurs that week — verified by temporarily removing the skip and checking `getRecurringWeekTasks(off)` returns it. This excludes off-cycle `__skip__` artifacts (e.g. a quarterly task between occurrences, or leftover from a "move all future" shift). Weekly-reset (`is_weekly_reset`) tasks are override-driven so their `__skip__` always counts. `off` must satisfy `getWkKey(off)===wkKey` (callers pass `wrRecOff`). Forward "move this occurrence" no longer writes `__skip__` (carry pattern), so it never appears here. Click → un-skip (`unSkipWRec` deletes the `__skip__` key → reverts to default day).
 - **`unSkipWrRule(ruleId,wkKey)`**: removes skip override + DELETE DB. Clears `_dateOverrides[wkKey]`. Undo restores both.
 - **`unSkipWRec(rid,wkKey)`**: deletes `_dateOverrides[wkKey]` (`__skip__`). PATCHes DB. Undoable.
 - Close: outside click or Escape.
