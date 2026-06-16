@@ -22,7 +22,7 @@
 
 ## Skipped-This-Week Popup
 - **`#wrSkippedBtn`**: shows `↩ N`. Hidden when N=0. Updated by `renderRecOv()`.
-- **`#wrSkippedPicker`**: lists skipped WR rules + genuinely-skipped `st.recurring` (WR-recurring AND plain non-WR weekly, e.g. HEB) for `wrRecOff` week, via `_recSkippedThisWk(wkKey)`. That helper EXCLUDES tasks merely moved to a later week (those also set source `__skip__` but carry a real date pin in a later week-key). Click → un-skip (`unSkipWRec` deletes the `__skip__` key → reverts to default day).
+- **`#wrSkippedPicker`**: lists skipped WR rules + `st.recurring` removed this week (WR-recurring AND plain non-WR weekly, e.g. HEB) via `_recSkippedThisWk(wkKey)` = any `_dateOverrides[wkKey]==='__skip__'`. NOTE: a genuine skip and a moved-forward/back source are stored identically (`__skip__` on the source week) and a moved instance lands on the task's normal weekday, so they can't be reliably told apart — both appear. Click → un-skip (`unSkipWRec` deletes the `__skip__` key → reverts to default day).
 - **`unSkipWrRule(ruleId,wkKey)`**: removes skip override + DELETE DB. Clears `_dateOverrides[wkKey]`. Undo restores both.
 - **`unSkipWRec(rid,wkKey)`**: deletes `_dateOverrides[wkKey]` (`__skip__`). PATCHes DB. Undoable.
 - Close: outside click or Escape.

@@ -2963,14 +2963,11 @@ function wrScopeDoAll(){hideWrScopePicker();if(_wrScopeCbAll)_wrScopeCbAll();}
 document.addEventListener('mousedown',e=>{if(!e.target.closest('#wrScopePicker'))hideWrScopePicker();},{capture:true,passive:true});
 
 /// ── Skipped-this-week popup ───────────────────────────────────────────────────
-// Recurring tasks (WR-recurring + plain non-WR) genuinely SKIPPED this week.
-// Excludes tasks merely moved to a later week — those also mark the source week '__skip__'
-// but carry a real date pin in a later week, so they aren't "skipped", just relocated.
+// Recurring tasks (WR-recurring + plain non-WR) removed from this week via '__skip__'.
+// A genuine skip and a moved-forward/back source are stored identically ('__skip__' on the
+// source week), so this shows both; restoring returns the task to its default day.
 function _recSkippedThisWk(wkKey){
-  return st.recurring.filter(r=>{
-    if(!r._dateOverrides||r._dateOverrides[wkKey]!=='__skip__')return false;
-    return !Object.keys(r._dateOverrides).some(k=>/^\d{4}-\d{2}-\d{2}$/.test(k)&&k>wkKey&&r._dateOverrides[k]&&r._dateOverrides[k]!=='__skip__');
-  });
+  return st.recurring.filter(r=>r._dateOverrides&&r._dateOverrides[wkKey]==='__skip__');
 }
 function openWrSkipped(e){
   e.stopPropagation();
