@@ -89,7 +89,10 @@ See `rules/tasks-ui.md` → "Task Types on Overview" for the full selection/drag
 
 **Shift schedule (all future)** (`wrCtxShiftSchedule`): shifts `starting_date` ±7 days so ALL future occurrences realign. Also moves current week instance to adjacent week (skip override + `_dateOverrides` pin). For WR rules, also writes move override to `wr_recurring_overrides`.
 
-**Edge drag (`rec::` weekly cal + setupEdge)**: sets `_dateOverrides[curWkKey]='__skip__'` + `_dateOverrides[tgtWkKey]=same-DOW date in target week`. For interval cadences (biweekly/quarterly/biannual/annual), also shifts `starting_date` ±7 days so all future occurrences align. PATCHes with `sbReqSilent` including both `date_overrides` and `starting_date`.
+**Edge drag (`rec::` weekly cal + setupEdge) — move THIS occurrence to adjacent week:**
+- **Forward** (`dir>0`): CARRY — `_dateOverrides[curWkKey]=newDs` (newDs = first day of next week = Monday). No `__skip__`. Renders in the target week via the back-lookback (`renderWkCal`/today loop scan up to 4 prior weeks) while that week's own occurrence still shows — so a weekly task appears in BOTH weeks (e.g. HEB carried to next Monday + next-week Sunday HEB). `_normOvs` preserves forward (out-of-week, value>week) carries. Stays OUT of the skipped-this-week list (tracks `__skip__` only).
+- **Backward** (`dir<0`): `_dateOverrides[curWkKey]='__skip__'` + `_dateOverrides[getWkKey(targetWkOff)]=newDs` (in-week pin in the earlier target week) — the back-lookback can't reach a later source key from an earlier view, so carry won't render. (Backward moves therefore still appear in the skipped list.)
+- Does NOT shift `starting_date` (that's the separate "move all future" gesture). Undo snapshots whole `_dateOverrides`. PATCHes `date_overrides` only.
 
 **WR card sort**: done last→cadence (weekly=0,biweekly=2,monthly=4,quarterly=6,biannual=8,annual=10,other=12)→pup +1.
 

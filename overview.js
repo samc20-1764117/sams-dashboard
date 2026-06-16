@@ -1958,27 +1958,22 @@ function setupWkcEdgeDrop(){
       const rec=st.recurring.find(x=>String(x.id)===String(recId));
       if(rec){
         if(!rec._dateOverrides)rec._dateOverrides={};
-        const curWkKey=_reSrcWk||getWkKey(wkOff);const tgtWkKey=getWkKey(targetWkOff);
-        const prevCurOv=rec._dateOverrides[curWkKey];const prevTgtOv=rec._dateOverrides[tgtWkKey];
-        const prevStart=rec.starting_date;
-        // Skip source week, add override for target week
-        rec._dateOverrides[curWkKey]='__skip__';
-        // For target week, use the same day-of-week as natural occurrence
-        const cadence=rec.cadence||'weekly';
-        const dow=dayNameToIdx(rec.appears_on_date);
-        const tgtDate=dow>=0?getDateForDow(dow,targetWkOff):null;
-        rec._dateOverrides[tgtWkKey]=tgtDate?d2s(tgtDate):newDs;
-        // For interval tasks, shift starting_date so all future weeks align
-        if((cadence==='biweekly'||cadence==='quarterly'||cadence==='biannual'||cadence==='annual')&&rec.starting_date){
-          const sd=new Date(rec.starting_date+'T00:00:00');sd.setDate(sd.getDate()+dir*7);rec.starting_date=d2s(sd);
-        }
+        const curWkKey=_reSrcWk||getWkKey(wkOff);
+        const _prevOvs={...rec._dateOverrides};
+        // Move THIS occurrence to the adjacent week ("move all future" is a separate gesture).
+        // FORWARD: CARRY it — pin the source week's instance to a date in the (later) target week, no
+        // '__skip__'. It renders in the target week via the calendar's back-lookback while that week's own
+        // occurrence still shows (e.g. HEB carried to next Monday, next-week Sunday HEB still there), and
+        // it stays out of the skipped-this-week list. _normOvs preserves the forward carry.
+        // BACKWARD: the back-lookback can't reach a later source week from an earlier view, so skip the
+        // source week and pin the (earlier) target week directly.
+        if(dir>0){rec._dateOverrides[curWkKey]=newDs;}
+        else{rec._dateOverrides[curWkKey]='__skip__';rec._dateOverrides[getWkKey(targetWkOff)]=newDs;}
         dragId=null;shiftWk(dir);save();renderAll();
-        sbReqSilent('PATCH','wr_recurring_rules',{date_overrides:rec._dateOverrides,starting_date:rec.starting_date||null},`?id=eq.${rec.id}`);
+        sbReqSilent('PATCH','wr_recurring_rules',{date_overrides:rec._dateOverrides},`?id=eq.${rec.id}`);
         pushUndo(()=>{
-          if(prevCurOv!==undefined)rec._dateOverrides[curWkKey]=prevCurOv;else delete rec._dateOverrides[curWkKey];
-          if(prevTgtOv!==undefined)rec._dateOverrides[tgtWkKey]=prevTgtOv;else delete rec._dateOverrides[tgtWkKey];
-          rec.starting_date=prevStart;save();renderAll();
-          sbReqSilent('PATCH','wr_recurring_rules',{date_overrides:rec._dateOverrides,starting_date:rec.starting_date||null},`?id=eq.${rec.id}`);
+          rec._dateOverrides=_prevOvs;save();renderAll();
+          sbReqSilent('PATCH','wr_recurring_rules',{date_overrides:rec._dateOverrides},`?id=eq.${rec.id}`);
         },'Moved to other week');
       }
       dragId=null;return;
@@ -2065,24 +2060,18 @@ function setupEdge(id,dir){
       const rec=st.recurring.find(x=>String(x.id)===String(recId));
       if(rec){
         if(!rec._dateOverrides)rec._dateOverrides={};
-        const curWkKey=_re2SrcWk||getWkKey(wkOff);const tgtWkKey=getWkKey(targetWkOff);
-        const prevCurOv=rec._dateOverrides[curWkKey];const prevTgtOv=rec._dateOverrides[tgtWkKey];
-        const prevStart=rec.starting_date;
-        rec._dateOverrides[curWkKey]='__skip__';
-        const cadence=rec.cadence||'weekly';
-        const dow=dayNameToIdx(rec.appears_on_date);
-        const tgtDate=dow>=0?getDateForDow(dow,targetWkOff):null;
-        rec._dateOverrides[tgtWkKey]=tgtDate?d2s(tgtDate):newDs;
-        if((cadence==='biweekly'||cadence==='quarterly'||cadence==='biannual'||cadence==='annual')&&rec.starting_date){
-          const sd=new Date(rec.starting_date+'T00:00:00');sd.setDate(sd.getDate()+dir*7);rec.starting_date=d2s(sd);
-        }
+        const curWkKey=_re2SrcWk||getWkKey(wkOff);
+        const _prevOvs={...rec._dateOverrides};
+        // Move THIS occurrence to the adjacent week (see the matching edge handler above for details).
+        // Forward: carry (pin source week to a date in the later target week, no '__skip__', shows both).
+        // Backward: skip source + pin the earlier target week (back-lookback can't reach a later source).
+        if(dir>0){rec._dateOverrides[curWkKey]=newDs;}
+        else{rec._dateOverrides[curWkKey]='__skip__';rec._dateOverrides[getWkKey(targetWkOff)]=newDs;}
         dragId=null;shiftWk(dir);save();renderAll();
-        sbReqSilent('PATCH','wr_recurring_rules',{date_overrides:rec._dateOverrides,starting_date:rec.starting_date||null},`?id=eq.${rec.id}`);
+        sbReqSilent('PATCH','wr_recurring_rules',{date_overrides:rec._dateOverrides},`?id=eq.${rec.id}`);
         pushUndo(()=>{
-          if(prevCurOv!==undefined)rec._dateOverrides[curWkKey]=prevCurOv;else delete rec._dateOverrides[curWkKey];
-          if(prevTgtOv!==undefined)rec._dateOverrides[tgtWkKey]=prevTgtOv;else delete rec._dateOverrides[tgtWkKey];
-          rec.starting_date=prevStart;save();renderAll();
-          sbReqSilent('PATCH','wr_recurring_rules',{date_overrides:rec._dateOverrides,starting_date:rec.starting_date||null},`?id=eq.${rec.id}`);
+          rec._dateOverrides=_prevOvs;save();renderAll();
+          sbReqSilent('PATCH','wr_recurring_rules',{date_overrides:rec._dateOverrides},`?id=eq.${rec.id}`);
         },'Moved to other week');
       }
       dragId=null;return;
