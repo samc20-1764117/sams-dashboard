@@ -2659,7 +2659,7 @@ function renderRecMoCal(){
 }
 
 // ── Weekly Reset card — generated from wr_recurring_rules for selected week ────
-function shiftWrRec(n){wrRecOff+=n;renderRecOv();}
+function shiftWrRec(n){_goToWeek(wrRecOff+n);}
 
 function renderRecOv(){
   const wkKey=getWkKey(wrRecOff);
@@ -4050,7 +4050,8 @@ function _vidOvNewVideo(type){
 }
 function _renderVidOvMenu(){
   const menu=document.getElementById('vidOvPanel');if(!menu)return;
-  let vids=(st.videos||[]).filter(v=>!v.is_deleted&&v.video_type==='B'&&v.status==='up_next').sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
+  // Keep a published big visible while its group isn't fully complete (its smalls are still pending).
+  let vids=(st.videos||[]).filter(v=>!v.is_deleted&&v.video_type==='B'&&(v.status==='up_next'||(v.status==='published'&&!_vidGroupFullyComplete(v)))).sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
   if(window._vidOvFocusWk===undefined&&localStorage._vidOvFocusWk==='1')window._vidOvFocusWk=true;
   const _focusActive=!!window._vidOvFocusWk;
   // Focus mode: highlight (not filter) videos on calendar this week
@@ -4148,7 +4149,8 @@ function _vidOvMenuItem(v,steps,focusSet){
   const _commentField=_vidOvTitleMode?`<span class="vid-ov-title" data-vidcomment="${sid}" ondblclick="event.stopPropagation();_vidOvStartCommentEdit(this,'${sid}')" style="flex:1;min-width:0;font-size:11px;font-weight:400;color:${v.comment?'var(--text)':'var(--muted)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:text;padding:0 3px;border-radius:3px;line-height:12px;display:block;min-height:12px">${v.comment?escHtml(v.comment):''}</span>`:'';
   let html=`<div data-vidrow="${sid}" ${_dragAttr} ${_dblAttr} ${_ctxAttr} ${_hov} class="${_focusCls}" style="padding:5px 19px 5px 6px;border-radius:6px;font-size:12px;font-weight:600;color:var(--text);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s">${_addBtn}<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:12px">${escHtml(v.topic||v.title)}${_countBadge}</span>${_titleField}${_commentField}<div style="display:flex;gap:0;flex-shrink:0;align-items:center">${_vidOvStepDots(v,steps)}</div>${_postField}<div class="vid-ov-pctx" style="width:14px;flex-shrink:0;text-align:center;position:relative;margin-left:12px;display:flex;align-items:center;justify-content:center;line-height:12px"><span class="vid-ov-pct" style="font-size:9px;opacity:.5;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif;line-height:12px">${_vidOvPct(v,steps)?_vidOvPct(v,steps)+'%':''}</span>${_xBtn}</div></div>`;
   // Children (S/L videos)
-  const children=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(v.id)&&c.status!=='published'&&c.status!=='idea').sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
+  // Keep a published small visible (shown done) under its big until the whole group is complete.
+  const children=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(v.id)&&c.status!=='idea'&&(c.status!=='published'||!_vidGroupFullyComplete(c))).sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
   children.forEach((c,ci)=>{
     const csid=String(c.id);
     const _cOnCal=!!_map[csid];
@@ -5255,6 +5257,18 @@ function _vidUnassignDay(vidId){
   const panel=document.getElementById('vidOvPanel');
   if(panel&&panel.style.display==='block')_renderVidOvMenu();
   if(prev)pushUndo(()=>{const m2=_vidDayMap();m2[String(vidId)]=prev;_vidDayMapSet(m2);if(_vidBlkRemoved){st.blocks.push(_vidBlkRemoved);sbSaveBlock(_vidBlkRemoved);}save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();const p2=document.getElementById('vidOvPanel');if(p2&&p2.style.display==='block')_renderVidOvMenu();},'Removed video from calendar');
+}
+// A video's whole big/small group is complete only when the big AND every non-deleted small are
+// published. Used to keep a finished member visible (grouped under its big) in the up-next list and
+// in today/weekly until the entire group is done — smalls stay with their big and vice versa.
+function _vidGroupFullyComplete(v){
+  if(!v)return false;
+  const bigId=v.video_type==='B'?String(v.id):(v.big_video_id?String(v.big_video_id):null);
+  if(!bigId)return v.status==='published';
+  const big=(st.videos||[]).find(x=>String(x.id)===bigId&&!x.is_deleted);
+  if(big&&big.status!=='published')return false;
+  const smalls=(st.videos||[]).filter(x=>!x.is_deleted&&String(x.big_video_id)===bigId);
+  return smalls.every(s=>s.status==='published');
 }
 function _vidCompleteFromOv(vidId,anchorEl){
   const v=(st.videos||[]).find(x=>String(x.id)===String(vidId));
@@ -7784,10 +7798,19 @@ function onTBWheel(e){
   if(e.deltaY<0&&atTop){e.preventDefault();tbWD+=e.deltaY;if(tbWT)clearTimeout(tbWT);tbWT=setTimeout(()=>{if(tbWD<-40)shiftDay(-1);tbWD=0;tbWT=null;},100);}
   else if(e.deltaY>0&&atBot){e.preventDefault();tbWD+=e.deltaY;if(tbWT)clearTimeout(tbWT);tbWT=setTimeout(()=>{if(tbWD>40)shiftDay(1);tbWD=0;tbWT=null;},100);}
 }
-function shiftDay(n){const fl=document.getElementById('dayFlash');fl.textContent=n>0?'→':'←';fl.classList.add('show');setTimeout(()=>fl.classList.remove('show'),300);dayOff+=n;const _newDs=d2s(getDayDate(dayOff));const _newWkKey=dsToWkKey(_newDs);const _curWkKey=getWkKey(wkOff);if(_newWkKey!==_curWkKey){const _newWkOff=Math.round((new Date(_newWkKey+'T00:00:00')-new Date(getWkKey(0)+'T00:00:00'))/(7*86400000));wkOff=_newWkOff;renderWkSummary();}renderWkCal();renderDayTB();renderToday();}
-function goToday(){dayOff=0;if(wkOff!==0){wkOff=0;renderWkSummary();}renderWkCal();renderDayTB();renderToday();}
-function shiftWk(n){wkOff+=n;renderWkSummary();renderWkCal();renderUnassigned();renderPupSkillsHighlight();if(typeof renderMealRow==='function')renderMealRow();}
-function goThisWk(){wkOff=0;renderWkSummary();renderWkCal();renderUnassigned();renderPupSkillsHighlight();if(typeof renderMealRow==='function')renderMealRow();}
+function shiftDay(n){const fl=document.getElementById('dayFlash');fl.textContent=n>0?'→':'←';fl.classList.add('show');setTimeout(()=>fl.classList.remove('show'),300);dayOff+=n;const _newDs=d2s(getDayDate(dayOff));const _newWkKey=dsToWkKey(_newDs);const _curWkKey=getWkKey(wkOff);if(_newWkKey!==_curWkKey){const _newWkOff=Math.round((new Date(_newWkKey+'T00:00:00')-new Date(getWkKey(0)+'T00:00:00'))/(7*86400000));wkOff=_newWkOff;wrRecOff=_newWkOff;renderWkSummary();if(typeof renderRecOv==='function')renderRecOv();const _vp=document.getElementById('vidOvPanel');if(_vp&&_vp.style.display==='block'&&typeof _renderVidOvMenu==='function')_renderVidOvMenu();}renderWkCal();renderDayTB();renderToday();}
+function goToday(){dayOff=0;if(wkOff!==0||wrRecOff!==0){wkOff=0;wrRecOff=0;renderWkSummary();if(typeof renderRecOv==='function')renderRecOv();const _vp=document.getElementById('vidOvPanel');if(_vp&&_vp.style.display==='block'&&typeof _renderVidOvMenu==='function')_renderVidOvMenu();}renderWkCal();renderDayTB();renderToday();}
+// Weekly calendar, Weekly Reset card, and the videos pop-up focus week share ONE week offset, so
+// navigating any of them moves the others in lockstep and the focus highlight follows the shown week.
+function _goToWeek(off){
+  wkOff=off;wrRecOff=off;
+  renderWkSummary();renderWkCal();renderUnassigned();renderPupSkillsHighlight();
+  if(typeof renderMealRow==='function')renderMealRow();
+  if(typeof renderRecOv==='function')renderRecOv();
+  const _vp=document.getElementById('vidOvPanel');if(_vp&&_vp.style.display==='block'&&typeof _renderVidOvMenu==='function')_renderVidOvMenu();
+}
+function shiftWk(n){_goToWeek(wkOff+n);}
+function goThisWk(){_goToWeek(0);}
 
 // ── Notes expand on hover ────────────────────────────────────────────────────
 (function(){

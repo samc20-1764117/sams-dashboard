@@ -746,14 +746,14 @@ function skipRecVirtThisWk(rid,wkKey){
   r._dateOverrides[wkKey]='__skip__';
   const linkedBlocks=st.blocks?st.blocks.filter(b=>String(b.recId)===String(rid)&&isInWk(b.ds,wkOff)):[];
   if(st.blocks)st.blocks=st.blocks.filter(b=>!(String(b.recId)===String(rid)&&isInWk(b.ds,wkOff)));
-  save();renderWeeklyPage();renderToday();renderWkSummary();renderWkCal();
+  save();renderWeeklyPage();renderToday();renderWkSummary();renderWkCal();if(typeof renderRecOv==='function')renderRecOv();
   if(document.getElementById('tbGrid'))renderDayTB();
   linkedBlocks.forEach(b=>sbDeleteBlock(b.id));
   sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(rid));
   pushUndo(()=>{
     if(prev!==undefined)r._dateOverrides[wkKey]=prev;else delete r._dateOverrides[wkKey];
     linkedBlocks.forEach(b=>{if(st.blocks)st.blocks.push(b);sbSaveBlock(b);});
-    save();renderWeeklyPage();renderToday();renderWkSummary();renderWkCal();
+    save();renderWeeklyPage();renderToday();renderWkSummary();renderWkCal();if(typeof renderRecOv==='function')renderRecOv();
     if(document.getElementById('tbGrid'))renderDayTB();
     sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(rid));
   },'Removed from week');

@@ -40,6 +40,8 @@
 - **Global numbering**: numbers computed from ALL non-deleted videos with `post_date` (not just visible ones). Numbers are stable regardless of show/hide completed toggle.
 - **Default sort** (`_vidSortVids`): groups by parent B video's `post_date`. Within group: B first, then children by `post_date`. Standalone L by own `post_date`. Sortable column headers override this (click asc, click desc, click reset).
 - **B→L grouping**: maintained in all views. B videos always appear before their children.
+- **Group completion coupling** (`_vidGroupFullyComplete(v)` in overview.js): a big/small group is "done" only when the B AND every non-deleted L are `published`. The overview **videos pop-up** (`_renderVidOvMenu`) keeps a finished member visible (shown done; status stays `published` so Analytics still matches) under its big until the whole group is done — a published L stays nested under its B, a published B stays in the up-next list until all its L's are published, then the group drops off together. Also gates `_vidStillPending`/`_vPend` (today list + weekly cal show a published-but-group-incomplete video on its post_date).
+- **Videos pop-up focus week** (`_vidOvFocusWk`): highlights videos scheduled in `getWkKey(wkOff)`. Pop-up re-renders on every week change so the highlight tracks the currently-shown week.
 
 ### Display Rules
 - **In progress videos**: show "Topic - Title" where topic is normal color, title is muted. For small (L) videos, both topic and title are muted/grey.
