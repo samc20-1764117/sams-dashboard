@@ -2890,7 +2890,10 @@ async function saveVidModal(){
   }
   // L videos without a big parent can't be in_progress/up_next
   if(data.video_type==='L'&&!data.big_video_id&&(data.status==='in_progress'||data.status==='up_next'))data.status='idea';
-  closeMod('vidModal');
+  // Defer the modal close one tick: the videos pop-up / sub-panels' outside-click handlers skip closing
+  // only WHILE the modal is open, so closing it synchronously here lets the Save click then close the
+  // toolbox. Deferring keeps the modal "open" through the click, so those handlers leave the toolbox alone.
+  setTimeout(()=>closeMod('vidModal'),0);
   const _fromOv=activePg==='overview';
 
   if(_vidMode==='edit'&&_vidEditId){
