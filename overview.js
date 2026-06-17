@@ -3171,38 +3171,45 @@ function wrCtxShiftSchedule(delta){
   const rule=isRec?st.recurring.find(r=>String(r.id)===rid):st.wrRules.find(r=>String(r.id)===rid);
   if(!rule||!rule.starting_date)return;
   const wkKey=_wrCtxWkKey;
-  // Shift starting_date
+  if(!rule._dateOverrides)rule._dateOverrides={};
+  // Does the task actually appear in the source week (pinned, or naturally due on the OLD schedule)?
+  // Only then relocate its current instance — otherwise "all future" just shifts the schedule and we
+  // must NOT skip/move a non-existent instance (which left a phantom and made the move look broken).
+  const _srcOv0=rule._dateOverrides[wkKey];
+  const _appearsThisWk=(!!_srcOv0&&_srcOv0!=='__skip__')||(!!wkKey&&(isRec?getRecurringWeekTasks(_wkKeyToOff(wkKey)).some(t=>String(t._recId)===String(rid)):isWRRuleDueThisWeek(rule,_wkKeyToOff(wkKey))));
+  // Shift starting_date — all future occurrences realign (always happens).
   const prevStart=rule.starting_date;
   const newStart=new Date(prevStart+'T12:00');newStart.setDate(newStart.getDate()+delta);
   rule.starting_date=d2s(newStart);
-  // Also move current week instance to adjacent week
-  if(!rule._dateOverrides)rule._dateOverrides={};
   const srcMon=new Date(wkKey+'T12:00');
   srcMon.setDate(srcMon.getDate()+(delta>0?7:-7));
   const targetWkKey=d2s(srcMon);
   const prevSrcOv=rule._dateOverrides[wkKey];
   const prevTgtOv=rule._dateOverrides[targetWkKey];
-  // Compute target date — only carry a day pin if the source instance had one.
-  // WR tasks with no pin stay unassigned in the target week's WR container (move override / shifted schedule shows them).
-  const curDs=prevSrcOv&&prevSrcOv!=='__skip__'?prevSrcOv:null;
-  let nextDs=null;
-  if(curDs){const base=new Date(curDs+'T12:00');base.setDate(base.getDate()+delta);nextDs=_wrClampToWeek(d2s(base),targetWkKey);}
-  else if(isRec){const _nd=dayNameToIdx(rule.appears_on_date);if(_nd>=0)nextDs=_wrClampToWeek(d2s(getDateForDow(_nd,_wkKeyToOff(targetWkKey))),targetWkKey);}
-  rule._dateOverrides[wkKey]='__skip__';
-  if(nextDs)rule._dateOverrides[targetWkKey]=nextDs;else delete rule._dateOverrides[targetWkKey];
+  if(_appearsThisWk){
+    const curDs=prevSrcOv&&prevSrcOv!=='__skip__'?prevSrcOv:null;
+    let nextDs=null;
+    if(curDs){const base=new Date(curDs+'T12:00');base.setDate(base.getDate()+delta);nextDs=_wrClampToWeek(d2s(base),targetWkKey);}
+    else if(isRec){const _nd=dayNameToIdx(rule.appears_on_date);if(_nd>=0)nextDs=_wrClampToWeek(d2s(getDateForDow(_nd,_wkKeyToOff(targetWkKey))),targetWkKey);}
+    rule._dateOverrides[wkKey]='__skip__';
+    if(nextDs)rule._dateOverrides[targetWkKey]=nextDs;else delete rule._dateOverrides[targetWkKey];
+  }
   // Persist
   const patchData={starting_date:rule.starting_date,date_overrides:rule._dateOverrides};
+  let _prevOv=null,_ovRealId=null,_movedOv=false;
   if(isRec){
     sbReq('PATCH','wr_recurring_rules',patchData,recQs(rid));
   }else{
     sbReq('PATCH','wr_recurring_rules',patchData,`?id=eq.${rid}`);
-    // Write move override for WR rules
-    const _moveFull={rule_id:rid,wk_key:wkKey,override_type:'move',moved_to_wk_key:targetWkKey,done:null,custom_name:null,custom_notes:null};
-    const _existingOv=st.wrOverrides.find(o=>String(o.rule_id)===String(rid)&&o.wk_key===wkKey);
-    const _prevOv=_existingOv?{..._existingOv}:null;
-    let _ovRealId=null;
-    if(_existingOv){Object.assign(_existingOv,_moveFull);sbReqSilent('PATCH','wr_recurring_overrides',_moveFull,`?id=eq.${_existingOv.id}`);}
-    else{const _tmpId='wrov-tmp-'+Date.now();st.wrOverrides.push({..._moveFull,id:_tmpId});sbReqSilent('POST','wr_recurring_overrides',_moveFull,'').then(res=>{if(res&&res[0]){_ovRealId=String(res[0].id);const idx=st.wrOverrides.findIndex(o=>String(o.id)===_tmpId);if(idx>-1)st.wrOverrides[idx]=res[0];}});}
+    if(_appearsThisWk){
+      // Write move override for WR rules so renderRecOv hides this week's instance + shows it in the target week
+      _movedOv=true;
+      const _moveFull={rule_id:rid,wk_key:wkKey,override_type:'move',moved_to_wk_key:targetWkKey,done:null,custom_name:null,custom_notes:null};
+      const _existingOv=st.wrOverrides.find(o=>String(o.rule_id)===String(rid)&&o.wk_key===wkKey);
+      _prevOv=_existingOv?{..._existingOv}:null;
+      if(_existingOv){Object.assign(_existingOv,_moveFull);sbReqSilent('PATCH','wr_recurring_overrides',_moveFull,`?id=eq.${_existingOv.id}`);}
+      else{const _tmpId='wrov-tmp-'+Date.now();st.wrOverrides.push({..._moveFull,id:_tmpId});sbReqSilent('POST','wr_recurring_overrides',_moveFull,'').then(res=>{if(res&&res[0]){_ovRealId=String(res[0].id);const idx=st.wrOverrides.findIndex(o=>String(o.id)===_tmpId);if(idx>-1)st.wrOverrides[idx]=res[0];}});}
+    }
   }
   const _rerender=()=>{renderRecOv();renderWkCal();renderWeeklyPage();renderToday();if(document.getElementById('tbGrid'))renderDayTB();};
   save();_rerender();
@@ -3212,7 +3219,7 @@ function wrCtxShiftSchedule(delta){
     if(prevSrcOv!==undefined)rule._dateOverrides[wkKey]=prevSrcOv;else delete rule._dateOverrides[wkKey];
     if(prevTgtOv!==undefined)rule._dateOverrides[targetWkKey]=prevTgtOv;else delete rule._dateOverrides[targetWkKey];
     sbReq('PATCH','wr_recurring_rules',{starting_date:prevStart,date_overrides:rule._dateOverrides},isRec?recQs(rid):`?id=eq.${rid}`);
-    if(!isRec){
+    if(_movedOv){
       if(_prevOv){const ov=st.wrOverrides.find(o=>String(o.rule_id)===String(rid)&&o.wk_key===wkKey);if(ov)Object.assign(ov,_prevOv);sbReqSilent('PATCH','wr_recurring_overrides',_prevOv,`?id=eq.${ov?ov.id:_prevOv.id}`);}
       else{const id=_ovRealId||st.wrOverrides.find(o=>String(o.rule_id)===String(rid)&&o.wk_key===wkKey)?.id;st.wrOverrides=st.wrOverrides.filter(o=>String(o.rule_id)!==String(rid)||o.wk_key!==wkKey);if(id)sbReqSilent('DELETE','wr_recurring_overrides',null,`?id=eq.${id}`);}
     }
