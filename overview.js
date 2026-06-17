@@ -3173,17 +3173,33 @@ function wrCtxShiftSchedule(delta){
   // "All future → Next/Prev": shift the recurrence anchor by `delta` days so the next occurrence AND
   // every future one move a week. Correct for all interval cadences (biweekly=parity flip,
   // monthly=day-of-month, quarterly=anchor week). Falls back to the source week if no starting_date.
+  const wkKey=_wrCtxWkKey||getWkKey(wkOff);
   const prevStart=rule.starting_date;
-  const base=rule.starting_date?new Date(rule.starting_date+'T12:00'):new Date((_wrCtxWkKey||getWkKey(wkOff))+'T12:00');
+  const base=rule.starting_date?new Date(rule.starting_date+'T12:00'):new Date(wkKey+'T12:00');
   base.setDate(base.getDate()+delta);
   rule.starting_date=d2s(base);
-  sbReq('PATCH','wr_recurring_rules',{starting_date:rule.starting_date},isRec?recQs(rid):`?id=eq.${rid}`);
+  // Clear anything pinning this rule to the CURRENT week, or the shifted schedule won't actually move it
+  // off this week: its own per-week pin/skip, plus any stale move-override into/at this week.
+  if(!rule._dateOverrides)rule._dateOverrides={};
+  const _prevDov=rule._dateOverrides[wkKey];
+  if(_prevDov!==undefined)delete rule._dateOverrides[wkKey];
+  let _removedOvs=[];
+  if(!isRec){
+    _removedOvs=(st.wrOverrides||[]).filter(o=>String(o.rule_id)===String(rid)&&o.override_type==='move'&&(o.wk_key===wkKey||o.moved_to_wk_key===wkKey)).map(o=>({...o}));
+    if(_removedOvs.length){
+      st.wrOverrides=st.wrOverrides.filter(o=>!(String(o.rule_id)===String(rid)&&o.override_type==='move'&&(o.wk_key===wkKey||o.moved_to_wk_key===wkKey)));
+      _removedOvs.forEach(o=>{if(o.id&&!String(o.id).startsWith('wrov-tmp-'))sbReqSilent('DELETE','wr_recurring_overrides',null,`?id=eq.${o.id}`);});
+    }
+  }
+  sbReq('PATCH','wr_recurring_rules',{starting_date:rule.starting_date,date_overrides:rule._dateOverrides},isRec?recQs(rid):`?id=eq.${rid}`);
   const _rerender=()=>{renderRecOv();renderWkCal();renderWeeklyPage();renderToday();if(document.getElementById('tbGrid'))renderDayTB();};
   save();_rerender();
   if(typeof showToast==='function')showToast('Schedule moved '+(delta>0?'1 week later':'1 week earlier'),'#10b981',1600);
   pushUndo(()=>{
     rule.starting_date=prevStart;
-    sbReq('PATCH','wr_recurring_rules',{starting_date:prevStart},isRec?recQs(rid):`?id=eq.${rid}`);
+    if(_prevDov!==undefined)rule._dateOverrides[wkKey]=_prevDov;
+    _removedOvs.forEach(o=>{st.wrOverrides.push(o);sbReqSilent('POST','wr_recurring_overrides',{rule_id:o.rule_id,wk_key:o.wk_key,override_type:o.override_type,moved_to_wk_key:o.moved_to_wk_key||null,done:o.done||null,custom_name:o.custom_name||null,custom_notes:o.custom_notes||null},'');});
+    sbReq('PATCH','wr_recurring_rules',{starting_date:prevStart,date_overrides:rule._dateOverrides},isRec?recQs(rid):`?id=eq.${rid}`);
     save();_rerender();
   },'Shifted schedule');
 }

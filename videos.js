@@ -2836,8 +2836,16 @@ function _vidUpdateModalStep(el,val){
 
 async function saveVidModal(){
   // Keep the videos pop-up (toolbox) open across a Save-button click — the click otherwise triggers a
-  // stray close. Cleared on the next tick, after the click finishes dispatching.
-  window._vidOvSuppressClose=true;setTimeout(()=>{window._vidOvSuppressClose=false;},0);
+  // stray close. Suppress any close for a window, AND re-assert it open as a backstop (covers both
+  // closeVidOvMenu and any other close path).
+  const _vpEl=document.getElementById('vidOvPanel');
+  const _vpWasOpen=!!_vpEl&&_vpEl.style.display==='block';
+  if(_vpWasOpen){
+    window._vidOvSuppressClose=true;
+    setTimeout(()=>{window._vidOvSuppressClose=false;},700);
+    const _reopen=()=>{if(_vpEl){_vpEl.style.display='block';_vpEl.style.opacity='1';_vpEl.style.transform='translateX(0)';}};
+    setTimeout(_reopen,300);setTimeout(_reopen,600);
+  }
   const topic=document.getElementById('vmTopic').value.trim();
   if(!topic){closeMod('vidModal');document.activeElement?.blur();return;}
   const title=document.getElementById('vmTitle').value.trim();
