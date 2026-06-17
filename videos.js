@@ -2835,6 +2835,9 @@ function _vidUpdateModalStep(el,val){
 }
 
 async function saveVidModal(){
+  // Keep the videos pop-up (toolbox) open across a Save-button click — the click otherwise triggers a
+  // stray close. Cleared on the next tick, after the click finishes dispatching.
+  window._vidOvSuppressClose=true;setTimeout(()=>{window._vidOvSuppressClose=false;},0);
   const topic=document.getElementById('vmTopic').value.trim();
   if(!topic){closeMod('vidModal');document.activeElement?.blur();return;}
   const title=document.getElementById('vmTitle').value.trim();
