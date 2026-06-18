@@ -152,16 +152,18 @@ function renderToday(){
   const _vdmToday=_vidDayMap();
   if(dayOff===0){
     let _vdmChanged=false;
-    // 1. Move overdue daymap entries to today
-    Object.entries(_vdmToday).forEach(([vid,vds])=>{if(vds&&vds<ds){_vdmToday[vid]=ds;_vdmChanged=true;}});
+    // 1. Move overdue daymap entries to today — but NOT published/done videos (they stay on the day
+    //    they were done; auto-moving them dragged finished videos onto today as crossed-out duplicates).
+    Object.entries(_vdmToday).forEach(([vid,vds])=>{const _av=(st.videos||[]).find(x=>String(x.id)===String(vid));if(vds&&vds<ds&&!(_av&&_av.status==='published')){_vdmToday[vid]=ds;_vdmChanged=true;}});
     if(_vdmChanged)_vidDayMapSet(_vdmToday);
-    // 2. Remove video blocks on wrong days (daymap says X but block is on Y)
-    for(let i=st.blocks.length-1;i>=0;i--){const b=st.blocks[i];if(!b._vidId)continue;const mapped=_vdmToday[String(b._vidId)];if(mapped&&b.ds!==mapped){sbDeleteBlock(b.id);st.blocks.splice(i,1);}}
+    // 2. Remove video blocks on wrong days (daymap says X but block is on Y) — skip published videos so
+    //    a stale daymap doesn't delete the block on the day they were actually done.
+    for(let i=st.blocks.length-1;i>=0;i--){const b=st.blocks[i];if(!b._vidId)continue;const _cbv=(st.videos||[]).find(x=>String(x.id)===String(b._vidId));if(_cbv&&_cbv.status==='published')continue;const mapped=_vdmToday[String(b._vidId)];if(mapped&&b.ds!==mapped){sbDeleteBlock(b.id);st.blocks.splice(i,1);}}
   }
   const _vidStillPending=v=>v.status==='published'&&typeof _vidGroupFullyComplete==='function'&&!_vidGroupFullyComplete(v);
   const _hasTabTask0=vid=>{const m='_vid:'+vid;return st.tasks.some(t=>t.notes&&t.notes.includes(m));};
   const _vidOnTBToday=new Set(st.blocks.filter(b=>b.ds===ds&&b._vidId).map(b=>String(b._vidId)));
-  const vidToday=(st.videos||[]).filter(v=>{if(v.is_deleted)return false;const vd=_vdmToday[String(v.id)];if(vd===ds)return true;if(_vidOnTBToday.has(String(v.id)))return true;if(_vidStillPending(v)&&v.post_date&&(v.post_date===ds||(dayOff===0&&v.post_date<ds))&&!_hasTabTask0(v.id))return true;return false;}).map(v=>({id:'vid-ov-'+v.id,name:v.topic||v.title,category:'Videos',due_date:ds,done:v.status==='published',_vidId:v.id,_virtual:true,_type:'vid'}));
+  const vidToday=(st.videos||[]).filter(v=>{if(v.is_deleted)return false;const vd=_vdmToday[String(v.id)];if(vd===ds&&v.status!=='published')return true;if(_vidOnTBToday.has(String(v.id)))return true;if(_vidStillPending(v)&&v.post_date===ds&&!_hasTabTask0(v.id))return true;return false;}).map(v=>({id:'vid-ov-'+v.id,name:v.topic||v.title,category:'Videos',due_date:ds,done:v.status==='published',_vidId:v.id,_virtual:true,_type:'vid'}));
   // No auto-move for vidsteps — they stay on their assigned day and show as overdue in today list
   const vidStepToday=dayOff===0?_vidStepTasksForDayWithOverdue(ds):_vidStepTasksForDay(ds);
   const finCancelToday=typeof _finCancelTasksForDate==='function'?_finCancelTasksForDate(ds):[];
@@ -1559,7 +1561,7 @@ function renderWkCal(){
     const _vPend=v=>v.status==='published'&&typeof _vidGroupFullyComplete==='function'&&!_vidGroupFullyComplete(v);
     const _hasTabTask=vid=>{const m='_vid:'+vid;return st.tasks.some(t=>t.notes&&t.notes.includes(m));};
     const _vidOnTB=new Set(st.blocks.filter(b=>b.ds===ds&&b._vidId).map(b=>String(b._vidId)));
-    const vidForDay=(st.videos||[]).filter(v=>!v.is_deleted&&((_vdm[String(v.id)]===ds)||_vidOnTB.has(String(v.id))||(_vPend(v)&&v.post_date===ds&&!_hasTabTask(v.id)))).map(v=>({id:'vid-ov-'+v.id,name:v.topic||v.title,category:'Videos',due_date:ds,done:v.status==='published',_vidId:v.id,_virtual:true,_type:'vid'}));
+    const vidForDay=(st.videos||[]).filter(v=>!v.is_deleted&&(((_vdm[String(v.id)]===ds)&&v.status!=='published')||_vidOnTB.has(String(v.id))||(_vPend(v)&&v.post_date===ds&&!_hasTabTask(v.id)))).map(v=>({id:'vid-ov-'+v.id,name:v.topic||v.title,category:'Videos',due_date:ds,done:v.status==='published',_vidId:v.id,_virtual:true,_type:'vid'}));
     const vidStepForDay=_vidStepTasksForDay(ds);
     const vidStepDone=vidStepForDay.filter(t=>t.done);
     const vidStepUndone=vidStepForDay.filter(t=>!t.done);
