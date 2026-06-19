@@ -2833,7 +2833,10 @@ function writeWrOverride(ruleId,wkKey,payload,{onDone,undoLabel='Changed WR task
   // Capture and remove timeblocks for this rule in the target week (skip only)
   const _skipRule=isSkip?st.wrRules.find(x=>String(x.id)===String(ruleId)):null;
   const _pinnedDs=_skipRule?._dateOverrides?.[wkKey];
-  const linkedBlocks=isSkip&&st.blocks?st.blocks.filter(b=>dsToWkKey(b.ds)===wkKey&&(String(b.ruleId)===String(ruleId)||String(b.recId)===String(ruleId)||(!b.ruleId&&!b.recId&&_pinnedDs&&b.ds===_pinnedDs&&!b.taskId&&!b.shopId))):[];
+  // The 3rd clause catches this rule's block when its ruleId/recId is null (pending rule_id migration) by
+  // matching an unlinked block on the pinned day — but must NOT swallow video/stage/pup blocks that merely
+  // happen to sit on that same day (they have no ruleId/recId/taskId/shopId either).
+  const linkedBlocks=isSkip&&st.blocks?st.blocks.filter(b=>dsToWkKey(b.ds)===wkKey&&(String(b.ruleId)===String(ruleId)||String(b.recId)===String(ruleId)||(!b.ruleId&&!b.recId&&_pinnedDs&&b.ds===_pinnedDs&&!b.taskId&&!b.shopId&&!b._vidStepVid&&!b._vidId&&!b._pupSessId&&!b._finCancelSubId))):[];
   if(isSkip&&linkedBlocks.length){st.blocks=st.blocks.filter(b=>!linkedBlocks.some(lb=>lb.id===b.id));linkedBlocks.forEach(b=>sbDeleteBlock(b.id));}
   const _syncBlockDone=(isDone)=>{if(st.blocks)st.blocks.filter(b=>dsToWkKey(b.ds)===wkKey&&(String(b.ruleId)===String(ruleId)||String(b.recId)===String(ruleId))).forEach(b=>{b._done=isDone;});};
   const _rerender=()=>{renderRecOv();renderWkCal();renderWeeklyPage();renderToday();if(document.getElementById('tbGrid'))renderDayTB();};
@@ -3035,7 +3038,7 @@ function unscheduleWrRule(rid,wkKey){
   const prev=r._dateOverrides[wkKey];
   const _unschDs=prev&&prev!=='__skip__'?prev:null;
   delete r._dateOverrides[wkKey];
-  const linkedBlocks=st.blocks?st.blocks.filter(b=>String(b.ruleId)===String(rid)||String(b.recId)===String(rid)||(!b.ruleId&&!b.recId&&_unschDs&&b.ds===_unschDs&&!b.taskId&&!b.shopId)):[];
+  const linkedBlocks=st.blocks?st.blocks.filter(b=>String(b.ruleId)===String(rid)||String(b.recId)===String(rid)||(!b.ruleId&&!b.recId&&_unschDs&&b.ds===_unschDs&&!b.taskId&&!b.shopId&&!b._vidStepVid&&!b._vidId&&!b._pupSessId&&!b._finCancelSubId)):[];
   if(st.blocks)st.blocks=st.blocks.filter(b=>!linkedBlocks.some(lb=>lb.id===b.id));
   save();renderAll();
   linkedBlocks.forEach(b=>sbDeleteBlock(b.id));

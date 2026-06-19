@@ -46,7 +46,7 @@ See `rules/tasks-ui.md` → "Task Types on Overview" for the full selection/drag
 
 **Schedule logic** (`isWRRuleDueThisWeek`): weekly/other=always; biweekly=week diff mod 2===0; monthly=day-of-month in Mon–Sun; quarterly/biannual/annual=week diff mod 13/26/52===0.
 
-**`writeWrOverride(ruleId,wkKey,payload,{onDone,undoLabel})`**: PATCH if override exists, POST if not. On `skip`: removes linked TB blocks (`b.ruleId===ruleId` OR `b.recId===ruleId`), restores on undo.
+**`writeWrOverride(ruleId,wkKey,payload,{onDone,undoLabel})`**: PATCH if override exists, POST if not. On `skip`: removes linked TB blocks (`b.ruleId===ruleId` OR `b.recId===ruleId`, OR — because the `rule_id` column migration is pending and DB-loaded WR-rule blocks have null ruleId/recId — an unlinked block on the rule's pinned day). That last "unlinked on pinned day" clause MUST exclude `_vidStepVid`/`_vidId`/`_pupSessId`/`_finCancelSubId` blocks, or skipping a WR rule wrongly deletes a video-stage/video/pup block that merely sits on the same day. Same guard applies in `unscheduleWrRule`. Restores on undo.
 
 **`unscheduleWrRule(rid,wkKey)`**: removes `_dateOverrides[wkKey]` + linked TB blocks. Undo restores.
 
