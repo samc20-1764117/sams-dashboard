@@ -2407,6 +2407,22 @@ async function mInit() {
   await syncAll();
   mShowTab('today');
   setInterval(() => { if (cfg.url && cfg.key) syncAll(true); }, 30000);
+
+  // iOS suspends setInterval while the PWA is backgrounded — so reopening the app
+  // shows stale data (tasks completed on desktop still appear undone → false overdue)
+  // until the timer thaws. Force an immediate re-sync whenever the app returns to foreground.
+  let _mLastFgSync = 0;
+  const _mForegroundSync = () => {
+    if (!cfg.url || !cfg.key) return;
+    if (document.visibilityState !== 'visible') return;
+    const now = Date.now();
+    if (now - _mLastFgSync < 3000) return; // dedup visibilitychange+pageshow double-fire
+    _mLastFgSync = now;
+    syncAll(true).catch(() => {});
+  };
+  document.addEventListener('visibilitychange', _mForegroundSync);
+  window.addEventListener('pageshow', _mForegroundSync);
+  window.addEventListener('focus', _mForegroundSync);
 }
 
 document.addEventListener('DOMContentLoaded', mInit);
