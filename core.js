@@ -303,7 +303,7 @@ async function syncAll(silent=false){
       // Non-WR → keep forward carries; only clamp backward (earlier-than-week) dates, which are stale bad data.
       const _normOvs=(o,del)=>{Object.keys(o).forEach(k=>{let v=o[k];if(!v||v==='__skip__'||!/^\d{4}-\d{2}-\d{2}$/.test(String(v))||!/^\d{4}-\d{2}-\d{2}$/.test(k))return;const sun=new Date(k+'T12:00');sun.setDate(sun.getDate()+6);const sunDs=d2s(sun);if(v>=k&&v<=sunDs)return;if(del){delete o[k];return;}if(v>sunDs)return;while(v<k){const d=new Date(v+'T12:00');d.setDate(d.getDate()+7);v=d2s(d);}o[k]=v;});return o;};
       st.wrRules=wrRules.filter(_isWR);
-      st.wrRules.forEach(r=>{const dbOvs={...(r.date_overrides||{})};const prevOvs=prevPins[String(r.id)];if(prevOvs){Object.keys(prevOvs).forEach(k=>{dbOvs[k]=prevOvs[k];});}r._dateOverrides=_normOvs(dbOvs,true);});
+      st.wrRules.forEach(r=>{const dbOvs={...(r.date_overrides||{})};const prevOvs=prevPins[String(r.id)];if(prevOvs){Object.keys(prevOvs).forEach(k=>{if(dbOvs[k]==='__skip__')return;dbOvs[k]=prevOvs[k];});}r._dateOverrides=_normOvs(dbOvs,true);});
       const nonWR=wrRules.filter(r=>!_isWR(r));
       const dbIds=new Set(nonWR.map(r=>String(r.id)));
       const localPending=st.recurring.filter(r=>{
@@ -317,7 +317,10 @@ async function syncAll(silent=false){
           const isDone=!!(dbwk[getWkKey(0)]);
           const dateOvs={...(r.date_overrides||{})};
           const prevOvs=prevRecOvs[String(r.id)];
-          if(prevOvs){Object.keys(prevOvs).forEach(k=>{dateOvs[k]=prevOvs[k];});}
+          // Preserve local optimistic overrides — but never let a stale local copy resurrect a
+          // task the DB says is skipped this week ('__skip__'). Otherwise a skip made on another
+          // device (desktop) never syncs here: local keeps clobbering the DB skip every sync.
+          if(prevOvs){Object.keys(prevOvs).forEach(k=>{if(dateOvs[k]==='__skip__')return;dateOvs[k]=prevOvs[k];});}
           return{...r,_doneByWk:dbwk,_done:isDone,_dateOverrides:_normOvs(dateOvs)};
         }),
         ...localPending
