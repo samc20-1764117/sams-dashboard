@@ -335,7 +335,14 @@ async function syncAll(silent=false){
             return dbVal===ov;
           });
           if(allMatch){delete localOverrides[sid];save();}
-          else return{...dbT,...override};
+          else{
+            // DB still doesn't reflect this local change — a prior PATCH silently failed
+            // (e.g. expired session/network blip). Re-push it so it eventually lands instead
+            // of leaving the override to mask the failure forever (which left other devices stale).
+            const _body={};Object.entries(override).forEach(([k,v])=>{_body[k]=v===''?null:v;});
+            sbReqSilent('PATCH','tasks',_body,`?id=eq.${sid}`);
+            return{...dbT,...override};
+          }
         }
         if(pendingLocal.has(sid)){
           const local=st.tasks.find(lt=>String(lt.id)===sid);
