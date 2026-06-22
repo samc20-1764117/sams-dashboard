@@ -1517,7 +1517,9 @@ function _mWkRenderWeekHtml(weekOff) {
     const isPast = !isToday && ds < today;
     const dateStr = d.toLocaleDateString('en-US', {month: 'short', day: 'numeric'});
     const tasks = mGetDayTasks(ds, weekOff);
-    const doneC = tasks.filter(t => t.done).length;
+    // Birthdays & trips have no checkbox; once their day has passed they're effectively complete,
+    // so count them as done on past days (otherwise the per-day done/total ratio reads low).
+    const doneC = tasks.filter(t => t.done || (isPast && (t._type === 'travel' || t._type === 'birthday'))).length;
 
     html += `<div class="m-wk-day${isToday ? ' is-today' : ''}${isPast ? ' is-past' : ''}" data-ds="${ds}">
       <div class="m-wk-hd">
@@ -1670,7 +1672,8 @@ async function mSaveWkTask() {
   if (dayEl) {
     const weekOff = _mWkGetWeekOff(ds);
     const tasks = mGetDayTasks(ds, weekOff);
-    const doneC = tasks.filter(t => t.done).length;
+    const _isPastDay = ds < d2s(getDayDate(0));
+    const doneC = tasks.filter(t => t.done || (_isPastDay && (t._type === 'travel' || t._type === 'birthday'))).length;
     const dateObj = new Date(ds + 'T12:00:00');
     const dayIdx = (dateObj.getDay() + 6) % 7;
     dayEl.innerHTML = `<div class="m-wk-hd">
