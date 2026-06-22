@@ -6272,13 +6272,18 @@ async function idpSave(){
   const picker=document.getElementById('inlineDatePicker');
   picker.classList.remove('show');picker.style.display='none';
   if(!_idpTaskId)return;
-  const t=st.tasks.find(x=>String(x.id)===_idpTaskId);if(!t)return;
+  const sid=_idpTaskId;
+  const t=st.tasks.find(x=>String(x.id)===sid);if(!t)return;
   const prev=t.due_date;
   t.due_date=newDate||null;
+  // Override + pending so a sync can't revert the move, and a silently-failed PATCH
+  // self-heals via the syncAll re-push (see core.js merge) instead of snapping back to overdue.
+  localOverrides[sid]={due_date:newDate||null};pendingLocal.add(sid);save();
   renderAll();
-  pushUndo(()=>{t.due_date=prev;renderAll();sbReq('PATCH','tasks',{due_date:prev},`?id=eq.${_idpTaskId}`);},'Changed date');
-  await sbReq('PATCH','tasks',{due_date:newDate||null},`?id=eq.${_idpTaskId}`);
+  pushUndo(()=>{t.due_date=prev;localOverrides[sid]={due_date:prev||null};pendingLocal.add(sid);save();renderAll();sbReqNullable('PATCH','tasks',{due_date:prev||null},`?id=eq.${sid}`).then(r=>{if(r){delete localOverrides[sid];pendingLocal.delete(sid);}});},'Changed date');
   _idpTaskId=null;
+  const res=await sbReqNullable('PATCH','tasks',{due_date:newDate||null},`?id=eq.${sid}`);
+  if(res)pendingLocal.delete(sid); // success: override clears on next sync once DB matches
 }
 async function idpClear(){
   document.getElementById('idpInput').value='';

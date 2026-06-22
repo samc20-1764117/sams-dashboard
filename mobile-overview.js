@@ -159,7 +159,7 @@ function togRecVirt(recId, done, wkKey) {
   else delete r._doneByWk[wkKey];
   r._done = false;
   if (st.blocks) st.blocks.filter(b => String(b.recId) === String(recId)).forEach(b => b._done = done);
-  save(); mRenderToday();
+  save(); renderAll();  // renderAll (not just Today) so the Week tab refreshes live too
   sbReq('PATCH', 'wr_recurring_rules', {done_by_week: r._doneByWk}, `?id=eq.${recId}`);
 }
 
@@ -834,7 +834,7 @@ function mShowTab(tab) {
   main.scrollTop = 0;
 
   if (tab === 'tb')   { _mTBOffset = 0; mRenderTB(); _mScrollNow(); }
-  else if (tab === 'week') { mRenderWeek(); mInitWeekScroll(); }
+  else if (tab === 'week') { mRenderWeek(true); mInitWeekScroll(); }
   else if (tab === 'shop') { mRenderShop(); }
   else if (tab === 'groc') { mRenderGroc(); }
   else { _mTodayOffset = 0; _mSetDate(); }
@@ -1537,35 +1537,53 @@ function _mWkRenderWeekHtml(weekOff) {
   return html;
 }
 
-function mRenderWeek() {
+// Robustly scroll the week list so today sits at the top. The flex scroll container
+// (#mWeekPage) isn't height-constrained the instant the tab is shown, so an early
+// scrollTop assignment gets clamped to 0 (= last week). Retry until it's scrollable
+// and the position actually takes.
+function _mWkScrollToToday(attempt = 0) {
+  const page = document.getElementById('mWeekPage');
+  const list = document.getElementById('mWeekList');
+  if (!page || !list) return;
+  const todayEl = list.querySelector('.m-wk-day.is-today');
+  if (!todayEl) return;
+  let offset = 0, el = todayEl;
+  while (el && el !== page) { offset += el.offsetTop; el = el.offsetParent; }
+  // Not scrollable yet (height not resolved) — wait and retry
+  if (page.scrollHeight - page.clientHeight < offset && attempt < 15) {
+    return setTimeout(() => _mWkScrollToToday(attempt + 1), 40);
+  }
+  _mWkScrollLock = true;
+  page.scrollTop = offset;
+  setTimeout(() => { _mWkScrollLock = false; }, 120);
+  // If it got clamped, try again
+  if (Math.abs(page.scrollTop - offset) > 4 && attempt < 15) {
+    setTimeout(() => _mWkScrollToToday(attempt + 1), 40);
+  }
+}
+
+function mRenderWeek(reset = false) {
   const list = document.getElementById('mWeekList');
   if (!list) return;
   const dateLbl = document.getElementById('mDateLbl');
   if (dateLbl) dateLbl.textContent = 'Week';
+  const page = document.getElementById('mWeekPage');
+  const prevScroll = page ? page.scrollTop : 0;
 
-  // Render last week + this week + next week
-  _mWkRenderedLo = -1;
-  _mWkRenderedHi = 1;
+  // Only reset to the default range on explicit open; background re-renders (sync)
+  // keep the user's loaded range and scroll position instead of yanking to today.
+  if (reset) { _mWkRenderedLo = -1; _mWkRenderedHi = 1; }
   let html = '';
   for (let w = _mWkRenderedLo; w <= _mWkRenderedHi; w++) {
     html += _mWkRenderWeekHtml(w);
   }
   list.innerHTML = html;
 
-  // Scroll to today
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      const page = document.getElementById('mWeekPage');
-      if (!page) return;
-      const todayEl = list.querySelector('.m-wk-day.is-today');
-      if (todayEl) {
-        // Calculate offset relative to scroll container
-        let offset = 0, el = todayEl;
-        while (el && el !== page) { offset += el.offsetTop; el = el.offsetParent; }
-        page.scrollTop = offset;
-      }
-    });
-  });
+  if (reset) {
+    requestAnimationFrame(() => requestAnimationFrame(() => _mWkScrollToToday()));
+  } else if (page) {
+    page.scrollTop = prevScroll;
+  }
 }
 
 function _mWkLoadMore(direction) {
