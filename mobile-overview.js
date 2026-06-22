@@ -1537,27 +1537,38 @@ function _mWkRenderWeekHtml(weekOff) {
   return html;
 }
 
-// Robustly scroll the week list so today sits at the top. The flex scroll container
-// (#mWeekPage) isn't height-constrained the instant the tab is shown, so an early
-// scrollTop assignment gets clamped to 0 (= last week). Retry until it's scrollable
-// and the position actually takes.
-function _mWkScrollToToday(attempt = 0) {
+// The element that actually scrolls the week view. The layout doesn't always bound
+// #mWeekPage, so the whole document scrolls instead — detect which one is real.
+function _mWkScroller() {
   const page = document.getElementById('mWeekPage');
+  if (page && page.scrollHeight - page.clientHeight > 5) return page;
+  return document.scrollingElement || document.documentElement;
+}
+
+// Scroll the week list so today sits at the top. Works whether #mWeekPage scrolls
+// or the document scrolls, and retries until the layout has settled (otherwise the
+// position gets clamped to 0 = last week).
+function _mWkScrollToToday(attempt = 0) {
   const list = document.getElementById('mWeekList');
-  if (!page || !list) return;
+  if (!list) return;
   const todayEl = list.querySelector('.m-wk-day.is-today');
   if (!todayEl) return;
-  let offset = 0, el = todayEl;
-  while (el && el !== page) { offset += el.offsetTop; el = el.offsetParent; }
+  const sc = _mWkScroller();
   // Not scrollable yet (height not resolved) — wait and retry
-  if (page.scrollHeight - page.clientHeight < offset && attempt < 15) {
+  if (sc.scrollHeight - sc.clientHeight < 5 && attempt < 25) {
     return setTimeout(() => _mWkScrollToToday(attempt + 1), 40);
   }
+  const isDoc = sc === document.scrollingElement || sc === document.documentElement;
+  const scTop = isDoc ? 0 : sc.getBoundingClientRect().top;
+  // Offset for a sticky/fixed app header that overlaps the top (only when the doc scrolls)
+  const hdr = document.getElementById('mHeader');
+  const headerH = (isDoc && hdr && hdr.offsetParent !== null && getComputedStyle(hdr).position !== 'static') ? hdr.offsetHeight : 0;
+  const target = Math.max(0, sc.scrollTop + (todayEl.getBoundingClientRect().top - scTop - headerH));
   _mWkScrollLock = true;
-  page.scrollTop = offset;
+  sc.scrollTop = target;
   setTimeout(() => { _mWkScrollLock = false; }, 120);
-  // If it got clamped, try again
-  if (Math.abs(page.scrollTop - offset) > 4 && attempt < 15) {
+  // If it got clamped / didn't take, try again
+  if (Math.abs(sc.scrollTop - target) > 4 && attempt < 25) {
     setTimeout(() => _mWkScrollToToday(attempt + 1), 40);
   }
 }
@@ -1567,8 +1578,7 @@ function mRenderWeek(reset = false) {
   if (!list) return;
   const dateLbl = document.getElementById('mDateLbl');
   if (dateLbl) dateLbl.textContent = 'Week';
-  const page = document.getElementById('mWeekPage');
-  const prevScroll = page ? page.scrollTop : 0;
+  const prevScroll = _mWkScroller().scrollTop;
 
   // Only reset to the default range on explicit open; background re-renders (sync)
   // keep the user's loaded range and scroll position instead of yanking to today.
@@ -1581,8 +1591,8 @@ function mRenderWeek(reset = false) {
 
   if (reset) {
     requestAnimationFrame(() => requestAnimationFrame(() => _mWkScrollToToday()));
-  } else if (page) {
-    page.scrollTop = prevScroll;
+  } else {
+    _mWkScroller().scrollTop = prevScroll;
   }
 }
 
@@ -1595,11 +1605,11 @@ function _mWkLoadMore(direction) {
   if (direction === 'up') {
     _mWkRenderedLo--;
     const html = _mWkRenderWeekHtml(_mWkRenderedLo);
-    const page = document.getElementById('mWeekPage');
+    const sc = _mWkScroller();
     const prevHeight = list.scrollHeight;
     list.insertAdjacentHTML('afterbegin', html);
-    // Maintain scroll position
-    if (page) page.scrollTop += list.scrollHeight - prevHeight;
+    // Maintain scroll position so the view doesn't jump when prepending a week
+    sc.scrollTop += list.scrollHeight - prevHeight;
   } else {
     _mWkRenderedHi++;
     list.insertAdjacentHTML('beforeend', _mWkRenderWeekHtml(_mWkRenderedHi));
@@ -1608,22 +1618,19 @@ function _mWkLoadMore(direction) {
 }
 
 function mInitWeekScroll() {
+  if (window._weekScrollInited) return;
+  window._weekScrollInited = true;
+  const onScroll = () => {
+    if (_mWkScrollLock || _mCurTab !== 'week') return;
+    const sc = _mWkScroller();
+    const threshold = 300;
+    if (sc.scrollHeight - sc.scrollTop - sc.clientHeight < threshold) _mWkLoadMore('down');
+    if (sc.scrollTop < threshold) _mWkLoadMore('up');
+  };
+  // Listen on both: #mWeekPage when it scrolls, and window when the document scrolls
   const page = document.getElementById('mWeekPage');
-  if (!page || page._weekScrollInited) return;
-  page._weekScrollInited = true;
-
-  page.addEventListener('scroll', () => {
-    if (_mWkScrollLock) return;
-    const threshold = 200;
-    // Near bottom — load next week
-    if (page.scrollHeight - page.scrollTop - page.clientHeight < threshold) {
-      _mWkLoadMore('down');
-    }
-    // Near top — load previous week
-    if (page.scrollTop < threshold) {
-      _mWkLoadMore('up');
-    }
-  }, {passive: true});
+  if (page) page.addEventListener('scroll', onScroll, {passive: true});
+  window.addEventListener('scroll', onScroll, {passive: true});
 }
 
 // ── Week: add task for specific day ──────────────────────────────────────────
