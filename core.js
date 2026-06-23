@@ -153,6 +153,9 @@ async function sbReqNullable(method,table,body,qs=''){
 const pendingLocal=new Set();
 const pendingTravelIds=new Set();
 const pendingShopIds=new Set();
+// Block ids created/saved locally but not yet confirmed in the DB. Only these are preserved
+// across a sync — a block missing from the DB that ISN'T pending was deleted elsewhere.
+const pendingBlockIds=new Set();
 let deletedRecIds=new Set();
 let deletedPupSessIds=new Set();
 // ── Supabase silent request (no toast on failure) ────────────────────────────
@@ -188,6 +191,7 @@ async function sbSaveBlock(b){
     vid_id:b._vidStepVid||b._vidId||null,
     done:b._done||false
   };
+  pendingBlockIds.add(String(b.id));
   try{
     const r=await fetch(`${cfg.url}/rest/v1/time_blocks?on_conflict=id`,{
       method:'POST',
@@ -202,6 +206,7 @@ async function sbSaveBlock(b){
   }catch(e){console.error('sbSaveBlock fetch error',e);}
 }
 async function sbDeleteBlock(id){
+  pendingBlockIds.delete(String(id));
   if(!cfg.url||!cfg.key)return;
   try{
     const r=await fetch(`${cfg.url}/rest/v1/time_blocks?id=eq.${id}`,{method:'DELETE',headers:{'apikey':cfg.key,'Authorization':`Bearer ${_getAuthToken()}`,'Prefer':'return=minimal'}});
@@ -424,7 +429,13 @@ async function syncAll(silent=false){
     }
     if(blocks){
       const dbIds=new Set(blocks.map(b=>String(b.id)));
-      const localOnly=st.blocks.filter(b=>!dbIds.has(String(b.id)));
+      // Only keep local blocks that are genuinely pending (created locally, not yet confirmed in
+      // the DB). A block missing from the DB that ISN'T pending was deleted on another device —
+      // drop it rather than resurrecting it (which left phantom blocks + checked-off step tasks).
+      const localOnly=st.blocks.filter(b=>!dbIds.has(String(b.id))&&pendingBlockIds.has(String(b.id)));
+      // Re-push any pending block the DB still doesn't have, so a silently-failed save eventually lands.
+      localOnly.forEach(b=>sbSaveBlock(b));
+      dbIds.forEach(id=>pendingBlockIds.delete(String(id))); // confirmed in DB → no longer pending
       st.blocks=[...blocks.map(b=>{
         let sm=b.start_minutes;
         if(sm==null&&b.start_time){const[hh,mm]=(b.start_time||'00:00').split(':');sm=parseInt(hh)*60+parseInt(mm);}
