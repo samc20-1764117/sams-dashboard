@@ -3669,7 +3669,34 @@ function _vidStepToggleDone(vidId,step,checked,_fromTB,forDay){
     const stBlk=(st.blocks||[]).find(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step);
     if(stBlk){stBlk._done=checked;sbUpdateBlock(stBlk.id,{done:checked});}
   }
+  // Sync core-step completion to the video record + prompt for post date when all stages finish
+  let _promptPostDateVid=false,_prevVidStatus=null,_prevVidStepVal=null;
+  const _coreList=typeof VID_STEPS_CORE!=='undefined'?VID_STEPS_CORE:['step_build','step_vo','step_cut','step_thumbnail','step_description'];
+  const _vRec=(st.videos||[]).find(x=>String(x.id)===String(vidId));
+  if(_vRec&&_coreList.includes(step)&&_vRec[step]!=='na'){
+    _prevVidStatus=_vRec.status;_prevVidStepVal=_vRec[step];
+    const _stageNowDone=m[key]?!!m[key].done:checked;
+    // Build/VO/Cut: mirror overall stage completion onto the video record (Th/Des synced above)
+    if(step!=='step_thumbnail'&&step!=='step_description'){
+      const _nv=_stageNowDone?'done':'not_started';
+      if(_vRec[step]!==_nv){_vRec[step]=_nv;sbReqSilent('PATCH','videos',{[step]:_nv},`?id=eq.${_vRec.id}`);}
+    }
+    const _coreDone=_coreList.every(s=>_vRec[s]==='done'||_vRec[s]==='na');
+    const _tabReq=_vRec.step_tableau_public&&_vRec.step_tableau_public!=='na'&&_vRec.step_tableau_public!=='done';
+    if(_stageNowDone&&_coreDone){
+      const _needsLink=_tabReq&&!_vRec.youtube_url;
+      if(!_vRec.post_date||_needsLink){_promptPostDateVid=true;}
+      else if(_vRec.status!=='published'&&_vRec.topic&&_vRec.title){
+        _vRec.status='published';sbReqSilent('PATCH','videos',{status:'published'},`?id=eq.${_vRec.id}`);
+        if(_tabReq&&typeof _vidCreateTabUpTask==='function')_vidCreateTabUpTask(vidId,_vRec.post_date);
+      }
+    } else if(!_coreDone&&_vRec.status==='published'){
+      _vRec.status='in_progress';sbReqSilent('PATCH','videos',{status:'in_progress'},`?id=eq.${_vRec.id}`);
+      if(typeof _vidDeleteTabTask==='function')_vidDeleteTabTask(vidId);
+    }
+  }
   save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
+  if(_promptPostDateVid&&typeof _vidPromptPostDate==='function')_vidPromptPostDate(vidId);
   const panel=document.getElementById('vidOvPanel');if(panel&&panel.style.display==='block')_renderVidOvMenu();
   if(_vidOvAllOpen)_vidOvRenderAll();
   // Push undo (skip if called from TB — TB handler pushes its own undo)
@@ -3681,6 +3708,12 @@ function _vidStepToggleDone(vidId,step,checked,_fromTB,forDay){
       if(_undoVidStep==='step_thumbnail'||_undoVidStep==='step_description'){
         const v2=(st.videos||[]).find(x=>String(x.id)===String(_undoVidId));
         if(v2){v2[_undoVidStep]=_undoChecked?'not_started':'done';sbReqSilent('PATCH','videos',{[_undoVidStep]:v2[_undoVidStep]},`?id=eq.${v2.id}`);}
+      }
+      // Restore video-record step value (Build/VO/Cut) + status changed by the core-done sync
+      const v3=(st.videos||[]).find(x=>String(x.id)===String(_undoVidId));
+      if(v3){
+        if(_undoVidStep!=='step_thumbnail'&&_undoVidStep!=='step_description'&&_prevVidStepVal!=null&&v3[_undoVidStep]!==_prevVidStepVal){v3[_undoVidStep]=_prevVidStepVal;sbReqSilent('PATCH','videos',{[_undoVidStep]:_prevVidStepVal},`?id=eq.${v3.id}`);}
+        if(_prevVidStatus!=null&&v3.status!==_prevVidStatus){v3.status=_prevVidStatus;sbReqSilent('PATCH','videos',{status:_prevVidStatus},`?id=eq.${v3.id}`);}
       }
       save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
     },'Step toggle');
