@@ -12,7 +12,11 @@ Confirm success by reporting the pushed commit hash.
 
 # Branch gotcha (dev deploys ONLY from `dev`)
 
-Cloudflare dev builds from the `dev` branch. If the session is on another branch (e.g. `ipad`), the Stop-hook auto-commit lands there and **never deploys** — symptom: code edits "do nothing" no matter how often the user refreshes. Check with `git branch --show-current`. Fix: confirm it's a fast-forward (`git merge-base --is-ancestor origin/dev HEAD`), `git push origin HEAD:dev`, then realign locally (`git branch -f dev HEAD && git checkout dev`). Verify live with `curl -s "https://dev.sams-dashboard.pages.dev/<file>?x=$(date +%s)" | grep -c "<unique string from the edit>"`.
+Cloudflare dev builds from the `dev` branch. Symptom of a deploy gap: code edits "do nothing" no matter how often the user refreshes, because commits aren't reaching `origin/dev`.
+
+**Do NOT trust `git branch --show-current` alone** — the session can be on `dev` yet still not deploy. Reliable check is **unpushed commits**: `git log origin/dev..dev --oneline` (anything listed = committed but NOT on the deployed branch). Root cause seen 2026-06-25: the Stop hook in `.claude/settings.json` was hardcoded to `git push origin HEAD:ipad` (stale `ipad` target) while the session was on `dev`, so every auto-commit pushed to `ipad` and `origin/dev` stayed frozen. Fixed to `git push origin HEAD:dev`. If it recurs, re-check that hook's push target matches `dev`.
+
+Fix a gap manually: confirm fast-forward (`git merge-base --is-ancestor origin/dev HEAD`), then `git push origin HEAD:dev`. Always verify live before telling the user it's fixed: `curl -s "https://dev.sams-dashboard.pages.dev/<file>?x=$(date +%s)" | grep -c "<unique string from the edit>"` (poll until >0 — Cloudflare build takes ~30-60s).
 
 # Deploy Notifications
 
