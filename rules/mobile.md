@@ -309,16 +309,20 @@ Each `.m-wk-day` has `data-ds="YYYY-MM-DD"` and contains:
 - Shopping items due on `ds` (overdue only on today)
 - Sorted: undone first, then alphabetical
 
+### Per-day done/total count
+- `doneC = tasks.filter(t => t.done || (isPast && (t._type==='travel'||t._type==='birthday')))`. Birthdays/trips have no checkbox, so past ones must count as done or the ratio reads low. `isPast = ds < today`. Fixed in BOTH `_mWkRenderWeekHtml` and the single-day re-render in `mSaveWkTask`.
+
 ### Week task rows (`mWkTaskRow(t)`)
 - Regular (non-virtual): `data-tid` + `data-tname` for drag; checkbox → `toggleTask()`
 - Recurring virtual: checkbox → `togRecVirt(recId, done, wkKey)`
 - Shopping: checkbox → `togShop(shopId, done)`
 - No edit button in week view (use Today tab for edit)
 
-### Week navigation
-- `‹` / `›` buttons call `mWeekPrev()` / `mWeekNext()` → adjust `_mWeekOffset`, re-render
-- Swipe left/right on `#mWeekPage`: `mInitWeekSwipe()` — same 60px + angle threshold as TB swipe
-- Blocked when `_mWkDrag` is active
+### Week navigation (infinite scroll)
+- Renders weeks `_mWkRenderedLo..Hi` (default −1..+1) via `_mWkRenderWeekHtml`. `mRenderWeek(reset)`: `reset=true` ONLY on tab-open (resets range + scroll-to-today); background/sync re-renders pass no arg → preserve range + scroll position (no yank).
+- **Scroll container is not always `#mWeekPage`** — the flex layout often leaves it unbounded so the **document** scrolls. `_mWkScroller()` returns `#mWeekPage` if scrollable, else `document.scrollingElement`. ALL scroll logic (scroll-to-today, preserve, load-more, the scroll listener) must use `_mWkScroller()`, not `#mWeekPage` directly.
+- `_mWkScrollToToday()`: aligns today's `.m-wk-day` to the top (offset by sticky `#mHeader` when the doc scrolls); retries up to 25× until the scroller is actually scrollable (early calls get clamped to 0 = last week).
+- `mInitWeekScroll()`: one listener on both `#mWeekPage` and `window`; near top/bottom → `_mWkLoadMore('up'/'down')`.
 
 ### Drag-to-reschedule (between days)
 - `.m-wk-row` has `-webkit-user-select:none; user-select:none` in CSS to prevent text selection on long-press
@@ -445,6 +449,12 @@ async function mInit() {
 }
 document.addEventListener('DOMContentLoaded', mInit);
 ```
+
+### Foreground re-sync
+After the 30s `setInterval`, `mInit` adds `visibilitychange`/`pageshow`/`focus` listeners → `syncAll(true)` (3s dedup guard). iOS freezes `setInterval` while the PWA is backgrounded, so without this, reopening shows stale data (completed-elsewhere tasks reappear, deleted items linger). This is the mobile-side defense against stale-cache complaints — the DB is the source of truth; force a re-pull on every foreground.
+
+### Live re-render after toggle
+`togRecVirt` (and other mobile togglers) MUST call `renderAll()`, not just `mRenderToday()` — otherwise checking a recurring task while on the Week tab doesn't update that tab. `renderAll()` re-renders whichever tab is current.
 
 ### Auth flow
 `checkAuth()` (core.js) calls `showLoginOverlay()` if no session found.

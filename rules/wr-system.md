@@ -33,7 +33,7 @@ See `rules/tasks-ui.md` → "Task Types on Overview" for the full selection/drag
 **WR-specific drag/drop:**
 - Weekly cal drag: `wrec::{recId}::{wkKey}`, `rec::{recId}::{dueDate}::{wkKey}`, `wrrule::{ruleId}`, `shop::{shopId}`.
 - **wkKey in drag IDs**: `wrec::` and `rec::` carry the source `_wkKey` so drop handlers modify the correct week's `_dateOverrides`. Critical when same task has instances from multiple weeks (e.g. HEB moved cross-week). All drop handlers (within-week, cross-week edge, today-list, TB grid, monthly cal) extract `srcWkKey` and fall back to `getWkKey(wkOff)` if empty.
-- recMoModal non-WR drop→scope picker: "This week"→`_dateOverrides[wkKey]=ds`; "All future"→`appears_on_date`.
+- recMoModal non-WR drop→scope picker (supports **cross-week**, no same-week guard). dragId `recmo::{recId}::{ds}::{srcWkKey}` (srcWkKey = chip's `t._wkKey`, carried via the dayMap item). "⊘ This time only"→`_dateOverrides[srcWkKey]=ds` (pins the source week's occurrence onto the dropped date, any week). "↻ All future"→shift `starting_date` by the src→target week delta AND set `appears_on_date` to the dropped weekday (or day-of-month if monthly). Moved-dot indicator keys off `t._wkKey` (schedule week), not `dsToWkKey(due)`, so it shows after a cross-week move.
 - recMoModal WR drop→scope picker: "↻ All future"→shift `starting_date`; "⊞ This week"→`writeWrOverride({override_type:'move'})`.
 
 ## WR Recurring Rules System
