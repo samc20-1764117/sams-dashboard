@@ -6475,8 +6475,27 @@ function drawTBBlock(col,b){
       (st.blocks||[]).forEach(bl=>{if(String(bl._vidStepVid)===String(vid)&&bl._vidStepName===step){_prevBlkStates.push({id:bl.id,done:bl._done});if(bl._done&&bl.ds>=_sqTodayDs){bl._done=false;sbUpdateBlock(bl.id,{done:false});}}});
       if(m[key]){m[key].done=false;_vidStepDayMapSet(m);}
     }
-    pushUndo(()=>{v[step]=prevVal;sbReqSilent('PATCH','videos',{[step]:prevVal},`?id=eq.${v.id}`);_prevBlkStates.forEach(s=>{const bl2=st.blocks.find(x=>x.id===s.id);if(bl2){bl2._done=s.done;sbUpdateBlock(bl2.id,{done:s.done});}});const m2=_vidStepDayMap();if(m2[key]){m2[key].done=prevVal==='done';_vidStepDayMapSet(m2);}save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();},'Stage toggle');
+    // All stages complete → prompt for post date / publish (same as completing on the videos page)
+    let _sqPrompt=false;const _sqPrevStatus=v.status;
+    const _coreList=typeof VID_STEPS_CORE!=='undefined'?VID_STEPS_CORE:['step_build','step_vo','step_cut','step_thumbnail','step_description'];
+    if(_coreList.includes(step)){
+      // A core step counts as done if the record says so, or (Build/VO/Cut) the day-map stage is complete
+      const _stepDone=s=>{if(v[s]==='done'||v[s]==='na')return true;if(s==='step_thumbnail'||s==='step_description')return false;const e=m[vid+'::'+s];return !!(e&&e.done);};
+      const _coreDone=_coreList.every(_stepDone);
+      const _tabReq=v.step_tableau_public&&v.step_tableau_public!=='na'&&v.step_tableau_public!=='done';
+      if(newVal==='done'&&_coreDone){
+        // Backfill the record so v.step_* is consistent everywhere
+        _coreList.forEach(s=>{if(s!=='step_thumbnail'&&s!=='step_description'&&v[s]!=='na'&&v[s]!=='done'){v[s]='done';sbReqSilent('PATCH','videos',{[s]:'done'},`?id=eq.${v.id}`);}});
+        const _needsLink=_tabReq&&!v.youtube_url;
+        if(!v.post_date||_needsLink){_sqPrompt=true;}
+        else if(v.status!=='published'&&v.topic&&v.title){v.status='published';sbReqSilent('PATCH','videos',{status:'published'},`?id=eq.${v.id}`);if(_tabReq&&typeof _vidCreateTabUpTask==='function')_vidCreateTabUpTask(vid,v.post_date);}
+      } else if(newVal!=='done'&&!_coreDone&&v.status==='published'){
+        v.status='in_progress';sbReqSilent('PATCH','videos',{status:'in_progress'},`?id=eq.${v.id}`);if(typeof _vidDeleteTabTask==='function')_vidDeleteTabTask(vid);
+      }
+    }
+    pushUndo(()=>{v[step]=prevVal;v.status=_sqPrevStatus;sbReqSilent('PATCH','videos',{[step]:prevVal,status:_sqPrevStatus},`?id=eq.${v.id}`);_prevBlkStates.forEach(s=>{const bl2=st.blocks.find(x=>x.id===s.id);if(bl2){bl2._done=s.done;sbUpdateBlock(bl2.id,{done:s.done});}});const m2=_vidStepDayMap();if(m2[key]){m2[key].done=prevVal==='done';_vidStepDayMapSet(m2);}save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();},'Stage toggle');
     save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
+    if(_sqPrompt&&typeof _vidPromptPostDate==='function')_vidPromptPostDate(vid);
     const panel=document.getElementById('vidOvPanel');if(panel&&panel.style.display==='block')_renderVidOvMenu();
   });
   const _clBtn=el.querySelector('.tb-copy-link');
