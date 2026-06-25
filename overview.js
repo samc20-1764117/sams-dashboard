@@ -3681,7 +3681,18 @@ function _vidStepToggleDone(vidId,step,checked,_fromTB,forDay){
       const _nv=_stageNowDone?'done':'not_started';
       if(_vRec[step]!==_nv){_vRec[step]=_nv;sbReqSilent('PATCH','videos',{[step]:_nv},`?id=eq.${_vRec.id}`);}
     }
-    const _coreDone=_coreList.every(s=>_vRec[s]==='done'||_vRec[s]==='na');
+    // A core step counts as done if the record says so, or (Build/VO/Cut) the day-map stage is complete.
+    // Build/VO/Cut completed earlier via the overview only set the day-map flag, never the record.
+    const _stepDone=s=>{
+      if(_vRec[s]==='done'||_vRec[s]==='na')return true;
+      if(s==='step_thumbnail'||s==='step_description')return false;
+      const e=m[vidId+'::'+s];return !!(e&&e.done);
+    };
+    const _coreDone=_coreList.every(_stepDone);
+    // Backfill the record so v.step_* is consistent everywhere (percentages, videos page, publish)
+    if(_stageNowDone&&_coreDone){
+      _coreList.forEach(s=>{if(s!=='step_thumbnail'&&s!=='step_description'&&_vRec[s]!=='na'&&_vRec[s]!=='done'){_vRec[s]='done';sbReqSilent('PATCH','videos',{[s]:'done'},`?id=eq.${_vRec.id}`);}});
+    }
     const _tabReq=_vRec.step_tableau_public&&_vRec.step_tableau_public!=='na'&&_vRec.step_tableau_public!=='done';
     if(_stageNowDone&&_coreDone){
       const _needsLink=_tabReq&&!_vRec.youtube_url;
