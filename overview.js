@@ -7863,8 +7863,8 @@ function onTBWheel(e){
   if(e.deltaY<0&&atTop){e.preventDefault();tbWD+=e.deltaY;if(tbWT)clearTimeout(tbWT);tbWT=setTimeout(()=>{if(tbWD<-40)shiftDay(-1);tbWD=0;tbWT=null;},100);}
   else if(e.deltaY>0&&atBot){e.preventDefault();tbWD+=e.deltaY;if(tbWT)clearTimeout(tbWT);tbWT=setTimeout(()=>{if(tbWD>40)shiftDay(1);tbWD=0;tbWT=null;},100);}
 }
-function shiftDay(n){const fl=document.getElementById('dayFlash');fl.textContent=n>0?'→':'←';fl.classList.add('show');setTimeout(()=>fl.classList.remove('show'),300);dayOff+=n;const _newDs=d2s(getDayDate(dayOff));const _newWkKey=dsToWkKey(_newDs);const _curWkKey=getWkKey(wkOff);if(_newWkKey!==_curWkKey){const _newWkOff=Math.round((new Date(_newWkKey+'T00:00:00')-new Date(getWkKey(0)+'T00:00:00'))/(7*86400000));wkOff=_newWkOff;wrRecOff=_newWkOff;renderWkSummary();if(typeof renderRecOv==='function')renderRecOv();const _vp=document.getElementById('vidOvPanel');if(_vp&&_vp.style.display==='block'&&typeof _renderVidOvMenu==='function')_renderVidOvMenu();}renderWkCal();renderDayTB();renderToday();}
-function goToday(){dayOff=0;if(wkOff!==0||wrRecOff!==0){wkOff=0;wrRecOff=0;renderWkSummary();if(typeof renderRecOv==='function')renderRecOv();const _vp=document.getElementById('vidOvPanel');if(_vp&&_vp.style.display==='block'&&typeof _renderVidOvMenu==='function')_renderVidOvMenu();}renderWkCal();renderDayTB();renderToday();}
+function shiftDay(n){const fl=document.getElementById('dayFlash');fl.textContent=n>0?'→':'←';fl.classList.add('show');setTimeout(()=>fl.classList.remove('show'),300);dayOff+=n;const _newDs=d2s(getDayDate(dayOff));const _newWkKey=dsToWkKey(_newDs);const _curWkKey=getWkKey(wkOff);if(_newWkKey!==_curWkKey){const _newWkOff=Math.round((new Date(_newWkKey+'T00:00:00')-new Date(getWkKey(0)+'T00:00:00'))/(7*86400000));wkOff=_newWkOff;wrRecOff=_newWkOff;renderWkSummary();if(typeof renderRecOv==='function')renderRecOv();const _vp=document.getElementById('vidOvPanel');if(_vp&&_vp.style.display==='block'&&typeof _renderVidOvMenu==='function')_renderVidOvMenu();}renderWkCal();renderDayTB();renderToday();if(typeof applySelHighlight==='function')requestAnimationFrame(applySelHighlight);}
+function goToday(){dayOff=0;if(wkOff!==0||wrRecOff!==0){wkOff=0;wrRecOff=0;renderWkSummary();if(typeof renderRecOv==='function')renderRecOv();const _vp=document.getElementById('vidOvPanel');if(_vp&&_vp.style.display==='block'&&typeof _renderVidOvMenu==='function')_renderVidOvMenu();}renderWkCal();renderDayTB();renderToday();if(typeof applySelHighlight==='function')requestAnimationFrame(applySelHighlight);}
 // Weekly calendar, Weekly Reset card, and the videos pop-up focus week share ONE week offset, so
 // navigating any of them moves the others in lockstep and the focus highlight follows the shown week.
 function _goToWeek(off){
@@ -7873,6 +7873,9 @@ function _goToWeek(off){
   if(typeof renderMealRow==='function')renderMealRow();
   if(typeof renderRecOv==='function')renderRecOv();
   const _vp=document.getElementById('vidOvPanel');if(_vp&&_vp.style.display==='block'&&typeof _renderVidOvMenu==='function')_renderVidOvMenu();
+  // Keep the multi-select highlight across week changes — selection IDs (e.g. wrrule-virt-<ruleId>) are
+  // week-independent, so a selected weekly-reset task stays highlighted in every week it appears.
+  if(typeof applySelHighlight==='function')requestAnimationFrame(applySelHighlight);
 }
 function shiftWk(n){_goToWeek(wkOff+n);}
 function goThisWk(){_goToWeek(0);}
