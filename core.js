@@ -698,8 +698,17 @@ function getNthWeekday(year,month,nth,weekday){
 function isWRRuleDueThisWeek(rule,off=0){
   if(!rule.is_enabled)return false;
   const cadence=rule.cadence||'weekly';
-  if(cadence==='weekly'||cadence==='other')return true;
   const{mon,sun}=getWkBounds(off);
+  if(cadence==='weekly'||cadence==='other'){
+    // Bound to the rule's start week so newly created tasks don't appear in past weeks.
+    // Legacy rules with no starting_date stay unbounded (every week), preserving old behavior.
+    if(rule.starting_date){
+      const sd=new Date(rule.starting_date+'T12:00');
+      const sDow=sd.getDay();const sMon=new Date(sd);sMon.setDate(sd.getDate()-(sDow===0?6:sDow-1));sMon.setHours(0,0,0,0);
+      if(mon<sMon)return false;
+    }
+    return true;
+  }
   if(cadence==='biweekly'){
     if(!rule.starting_date)return false;
     const anchor=new Date(rule.starting_date+'T12:00');

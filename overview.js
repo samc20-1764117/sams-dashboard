@@ -3381,6 +3381,13 @@ async function saveWrRuleAdd(){
   const name=document.getElementById('wrAddName').value.trim();if(!name){closeMod('wrRuleAddModal');return;}
   const notes=document.getElementById('wrAddNotes').value.trim()||null;
   const cadenceFields=_wrReadCadenceFields('wrAdd');
+  // Weekly/other tasks have no parity anchor — snap their start to the Monday of the chosen
+  // (or current) week so a newly created task begins THIS week and never shows in past weeks.
+  if(cadenceFields.cadence==='weekly'||cadenceFields.cadence==='other'){
+    const _aD=cadenceFields.starting_date?new Date(cadenceFields.starting_date+'T12:00'):getWkBounds(0).mon;
+    const _aDow=_aD.getDay();const _aMon=new Date(_aD);_aMon.setDate(_aD.getDate()-(_aDow===0?6:_aDow-1));
+    cadenceFields.starting_date=d2s(_aMon);
+  }
   closeMod('wrRuleAddModal');
   if(_wrAddType==='sch'){
     const cadence=cadenceFields.cadence;
