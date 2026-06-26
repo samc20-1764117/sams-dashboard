@@ -509,10 +509,6 @@ function getRecurringWeekTasks(off=0){
   st.recurring.filter(r=>!r.is_weekly_reset&&r.appears_on_date&&r.cadence!=='daily').forEach(r=>{
     const cadence=r.cadence||'weekly';
     const wkKey=getWkKey(off);
-    // An explicit (non-skip) per-week pin forces this occurrence to show that week, overriding the
-    // start-date and parity gates below. Used to freeze past occurrences when "all future" shifts.
-    const _pinV=r._dateOverrides&&r._dateOverrides[wkKey];
-    const hasPin=!!_pinV&&_pinV!=='__skip__';
     let date=null;
 
     if(cadence==='monthly'){
@@ -523,7 +519,7 @@ function getRecurringWeekTasks(off=0){
         if(domNum<1||domNum>31)return;
         const match=wkDates.find(d=>d.getDate()===domNum);
         if(!match)return;
-        if(!hasPin&&r.starting_date){const sd=new Date(r.starting_date+'T00:00:00');if(match<sd)return;}
+        if(r.starting_date){const sd=new Date(r.starting_date+'T00:00:00');if(match<sd)return;}
         date=match;
       } else {
         // Nth weekday format: "2nd Sunday"
@@ -539,15 +535,15 @@ function getRecurringWeekTasks(off=0){
         for(let day=1;day<=31;day++){const d=new Date(year,month,day);if(d.getMonth()!==month)break;if(d.getDay()===dow){count++;if(count===n){targetDate=d;break;}}}
         if(!targetDate)return;
         if(!wkDates.some(d=>d2s(d)===d2s(targetDate)))return;
-        if(!hasPin&&r.starting_date){const sd=new Date(r.starting_date+'T00:00:00');if(targetDate<sd)return;}
+        if(r.starting_date){const sd=new Date(r.starting_date+'T00:00:00');if(targetDate<sd)return;}
         date=targetDate;
       }
     } else {
       // weekly or biweekly — use appears_on_date day of week
       const dow=dayNameToIdx(r.appears_on_date);if(dow<0)return;
       date=getDateForDow(dow,off);if(!date)return;
-      if(!hasPin&&r.starting_date){const sd=new Date(r.starting_date+'T00:00:00');if(date<sd)return;}
-      if(!hasPin&&(cadence==='biweekly'||cadence==='quarterly'||cadence==='biannual'||cadence==='annual')){
+      if(r.starting_date){const sd=new Date(r.starting_date+'T00:00:00');if(date<sd)return;}
+      if(cadence==='biweekly'||cadence==='quarterly'||cadence==='biannual'||cadence==='annual'){
         if(r.starting_date){
           const interval=cadence==='quarterly'?13:cadence==='biannual'?26:cadence==='annual'?52:2;
           const sd=new Date(r.starting_date+'T00:00:00');
@@ -701,12 +697,6 @@ function getNthWeekday(year,month,nth,weekday){
 // Returns true if the wr_recurring_rule fires during week `off`.
 function isWRRuleDueThisWeek(rule,off=0){
   if(!rule.is_enabled)return false;
-  // An explicit (non-skip) per-week pin forces the rule to appear that week, regardless of cadence
-  // parity/start — used to freeze past occurrences when an "all future" shift moves the schedule.
-  const _wkK=getWkKey(off);
-  if(rule._dateOverrides&&rule._dateOverrides[_wkK]){
-    return rule._dateOverrides[_wkK]!=='__skip__'; // non-skip pin → force-show; '__skip__' → force-hide
-  }
   const cadence=rule.cadence||'weekly';
   const{mon,sun}=getWkBounds(off);
   if(cadence==='weekly'||cadence==='other'){
