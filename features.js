@@ -4626,6 +4626,7 @@ function renderGuidePage(){
     ${sRow('Drag → day','Moves ALL selected to that day')}
     ${sRow('Drag → timeblock','Creates blocks for all selected')}
     ${sRow('Arrow keys','Move all selected ±1 day')}
+    ${sRow('Change week (← →)','Selection persists — a selected weekly-reset/recurring task stays highlighted in every week it appears')}
     </table>
   </div>
   <div style="${panel}">
