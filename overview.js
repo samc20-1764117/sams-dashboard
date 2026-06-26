@@ -3183,12 +3183,34 @@ function wrCtxShiftSchedule(delta){
   // monthly=day-of-month, quarterly=anchor week). Falls back to the source week if no starting_date.
   const wkKey=_wrCtxWkKey||getWkKey(wkOff);
   const prevStart=rule.starting_date;
+  if(!rule._dateOverrides)rule._dateOverrides={};
+  // Freeze the PAST: only this week + later should move. For every week BEFORE the context week
+  // (within a quarter's lookback — beyond that nothing renders), nail the OLD schedule in place so the
+  // starting_date shift below (which reparents the whole series, flipping parity both ways) can't
+  // retroactively move history: pin weeks that occur now to their date, and '__skip__' the rest so the
+  // flipped parity can't introduce phantom occurrences. Both are honored by the schedule predicates.
+  const _ctxOff=Math.round((new Date(wkKey+'T12:00')-new Date(getWkKey(0)+'T12:00'))/(7*86400000));
+  const _frozenKeys=[];
+  // Only interval cadences flip parity (and only they expose move prev/next). Weekly/other have no
+  // history to disturb, so skip the freeze for them.
+  const _isIntervalCad=['biweekly','monthly','quarterly','biannual','annual'].includes(rule.cadence);
+  for(let _o=_ctxOff-1;_isIntervalCad&&_o>=_ctxOff-13;_o--){
+    const _wk=getWkKey(_o);
+    if(rule._dateOverrides[_wk]!==undefined)continue; // respect existing pins/skips
+    let _occDs=null;
+    if(isRec){
+      const _t=(typeof getRecurringWeekTasks==='function'?getRecurringWeekTasks(_o):[]).find(t=>String(t._recId)===String(rid));
+      if(_t)_occDs=_t.due_date;
+    }else if(typeof isWRRuleDueThisWeek==='function'&&isWRRuleDueThisWeek(rule,_o)){
+      _occDs=_wk; // WR rules have no fixed weekday — pin to the week's Monday to keep it that week
+    }
+    rule._dateOverrides[_wk]=_occDs||'__skip__';_frozenKeys.push(_wk);
+  }
   const base=rule.starting_date?new Date(rule.starting_date+'T12:00'):new Date(wkKey+'T12:00');
   base.setDate(base.getDate()+delta);
   rule.starting_date=d2s(base);
   // Clear anything pinning this rule to the CURRENT week, or the shifted schedule won't actually move it
   // off this week: its own per-week pin/skip, plus any stale move-override into/at this week.
-  if(!rule._dateOverrides)rule._dateOverrides={};
   const _prevDov=rule._dateOverrides[wkKey];
   if(_prevDov!==undefined)delete rule._dateOverrides[wkKey];
   let _removedOvs=[];
@@ -3205,6 +3227,7 @@ function wrCtxShiftSchedule(delta){
   if(typeof showToast==='function')showToast('Schedule moved '+(delta>0?'1 week later':'1 week earlier'),'#10b981',1600);
   pushUndo(()=>{
     rule.starting_date=prevStart;
+    _frozenKeys.forEach(k=>{delete rule._dateOverrides[k];});
     if(_prevDov!==undefined)rule._dateOverrides[wkKey]=_prevDov;
     _removedOvs.forEach(o=>{st.wrOverrides.push(o);sbReqSilent('POST','wr_recurring_overrides',{rule_id:o.rule_id,wk_key:o.wk_key,override_type:o.override_type,moved_to_wk_key:o.moved_to_wk_key||null,done:o.done||null,custom_name:o.custom_name||null,custom_notes:o.custom_notes||null},'');});
     sbReq('PATCH','wr_recurring_rules',{starting_date:prevStart,date_overrides:rule._dateOverrides},isRec?recQs(rid):`?id=eq.${rid}`);
