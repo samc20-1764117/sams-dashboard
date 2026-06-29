@@ -3184,7 +3184,10 @@ function wrCtxMovePrevWeek(){_wrShiftAnchor(-7);}
 function wrCtxMoveNextWeek(){_wrShiftAnchor(7);}
 // "All future" schedule shifts move the anchor, but UNDONE occurrences pinned in PAST weeks under the
 // OLD schedule linger and render as overdue ("I moved it to this week but last week still shows overdue").
-// Clear undone non-skip past-week pins (done ones stay as history). Returns removed {wk,val} for undo.
+// Mark undone non-skip past-week pins as '__skip__' (done ones stay as history). NOT a plain delete:
+// a deleted pin gets resurrected by a stale tab/device's prevPins merge on sync, but a DB '__skip__'
+// wins over any stale local pin (core.js sync merge), so the removal sticks everywhere.
+// Returns removed {wk,val} for undo (undo restores the original value).
 function _wrClearPastOrphanPins(rule,isWrRule,lookback=6){
   const removed=[];
   if(!rule._dateOverrides)return removed;
@@ -3194,7 +3197,7 @@ function _wrClearPastOrphanPins(rule,isWrRule,lookback=6){
     if(!v||v==='__skip__')continue;
     const done=isWrRule?(typeof isDoneWRRule==='function'&&isDoneWRRule(rule.id,wk)):!!(rule._doneByWk&&rule._doneByWk[wk]);
     if(done)continue;
-    removed.push({wk,val:v});delete rule._dateOverrides[wk];
+    removed.push({wk,val:v});rule._dateOverrides[wk]='__skip__';
   }
   return removed;
 }
