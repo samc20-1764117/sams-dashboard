@@ -5724,7 +5724,7 @@ document.addEventListener('keydown',async e=>{
 document.addEventListener('mousedown',e=>{
   // Week/day navigation must NOT clear the selection — a selected weekly-reset/recurring task should
   // stay selected as you move across weeks (these buttons fire on mousedown before their click→nav runs).
-  if(e.target.closest('[onclick*="shiftWk"],[onclick*="shiftDay"],[onclick*="goThisWk"],[onclick*="goToday"]'))return;
+  if(e.target.closest('[onclick*="shiftWk"],[onclick*="shiftWrRec"],[onclick*="shiftDay"],[onclick*="goThisWk"],[onclick*="goToday"]'))return;
   if(!e.target.closest('.ti')&&!e.target.closest('.kol-item')&&!e.target.closest('.chip')&&!e.target.closest('.mcell-t')&&!e.target.closest('.tb-block')&&!e.target.closest('.wkc-banner')&&!e.target.closest('#ctxMenu')){
     clearSelection();
   }
