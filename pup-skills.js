@@ -285,7 +285,7 @@ async function savePupModal(){
     recs.forEach(s=>st.pup_skills.push(s));
     save();renderPupsPage();renderPupSkillsHighlight();
     for(const s of recs){
-      const sv=await sbReq('POST','pup_skills',{...data,pup:s.pup,skip:false});
+      const sv=await sbReq('POST','pup_skills',{...data,pup:s.pup});
       if(sv&&sv[0]){const i=st.pup_skills.findIndex(x=>x.id===s.id);if(i>-1)st.pup_skills[i]=sv[0];save();
         if(s.pup==='Mochi'&&_skipMochi)_saveSkip(sv[0].id,true);
         if(s.pup==='Sunny'&&_skipSunny)_saveSkip(sv[0].id,true);
