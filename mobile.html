@@ -11,13 +11,20 @@
 <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png">
 <title>Sam's Dashboard</title>
 <script>
-// Inline cache-buster: fetch version file (bypasses iOS PWA HTML cache) and reload if stale
+// Inline cache-buster: if the served HTML is stale, force a FRESH network fetch by
+// navigating to a versioned URL (a URL iOS has never cached — plain reload() can be
+// served straight back out of the iOS PWA app-shell cache and never update).
 (function(){
-  window._BUILD='20260706a';var BUILD=window._BUILD;
-  if(sessionStorage._mReloaded===BUILD)return;
-  fetch('/mobile-version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(d){
-    if(d.v&&d.v!==BUILD){sessionStorage._mReloaded=d.v;location.reload();}
-  }).catch(function(){});
+  window._BUILD='20260706b';var BUILD=window._BUILD;
+  try{
+    var qs=new URLSearchParams(location.search);
+    fetch('/mobile-version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(d){
+      if(!d.v||d.v===BUILD)return;        // already fresh
+      if(qs.get('b')===d.v)return;        // already tried this version this navigation — stop, no loop
+      qs.set('b',d.v);
+      location.replace(location.pathname+'?'+qs.toString());
+    }).catch(function(){});
+  }catch(e){}
 })();
 </script>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet">
@@ -290,7 +297,15 @@
 <!-- Hidden undo scaffolding (required by core.js pushUndo) -->
 <div id="undoToast" style="display:none!important"><span id="undoMsg"></span><button id="redoBtn"></button></div>
 
-<script>if('serviceWorker' in navigator) navigator.serviceWorker.register('/mobile-sw.js');</script>
+<script>
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('/mobile-sw.js').then(function(reg){
+    try{reg.update();}catch(e){}
+    // Re-check for a newer worker every time the app is reopened/foregrounded.
+    document.addEventListener('visibilitychange',function(){ if(!document.hidden){ try{reg.update();}catch(e){} } });
+  }).catch(function(){});
+}
+</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="core.js?v=20260622b"></script>
 <script src="features.js?v=20260621b"></script>
