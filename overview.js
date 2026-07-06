@@ -875,7 +875,9 @@ function sortByTBWeek(tasks){
 // Virtual task row for today's list - done ones sink to bottom, greyed, uncheckable if done
 function tRowTodayVirt(t,tbArrow=false,noColor=false){
   const s=gc((t._isWrec||t._isWrRule)?'weekly_reset':'recurring');
-  const ov=isOv(t.due_date)&&!t.done;
+  // WR task carried from a prior week (owning wkKey is in the past) = overdue, even if its pin lands today/future
+  const _wrCarried=(t._isWrRule||t._isWrec)&&t._wkKey&&t._wkKey<getWkKey(0);
+  const ov=(isOv(t.due_date)||_wrCarried)&&!t.done;
   const ps=ov?_OV():s;
   const _dragId=t._isWrRule?`wrrule::${t._ruleId}`:t._isWrec?`wrec::${t._recId}::${t._wkKey||''}`:`rec::${t._recId}::${t.due_date||''}::${t._wkKey||''}`;
   const _chk=t._isWrRule?`togWrRule('${t._ruleId}',this.checked,'${t._wkKey||getWkKey(wkOff)}')`
