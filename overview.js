@@ -2774,9 +2774,9 @@ function renderRecOv(){
       else{const cw=document.createElement('label');cw.className='chk-wrap';cw.addEventListener('click',e=>e.stopPropagation());const c=document.createElement('input');c.type='checkbox';c.className='chk';c.addEventListener('change',function(){togWrRule(rid,this.checked,pwk);});cw.appendChild(c);row.appendChild(cw);}
       const nm=document.createElement('span');nm.className='tn';nm.textContent=r.name;row.appendChild(nm);
       const mv=document.createElement('button');
-      mv.className='wr-ov-move';mv.textContent='Move to this week';
+      mv.className='wr-ov-move';mv.textContent='Move';
       mv.addEventListener('mousedown',e=>e.stopPropagation());
-      mv.addEventListener('click',e=>{e.stopPropagation();showWrScopePicker(e,'⊞  This week only','↻  All future',()=>wrMoveToThisWeek(rid,pwk,false),()=>wrMoveToThisWeek(rid,pwk,true));});
+      mv.addEventListener('click',e=>{e.stopPropagation();showWrScopePicker(e,'⊞  Move this occurrence','↻  Move all future',()=>wrMoveToThisWeek(rid,pwk,false),()=>wrMoveToThisWeek(rid,pwk,true),'⊘  Skip',()=>writeWrOverride(rid,pwk,{override_type:'skip'},{undoLabel:'Skipped WR task'}));});
       row.appendChild(mv);
       if(elReg)elReg.appendChild(row);
     });
