@@ -6,6 +6,7 @@ Global scope — no modules/bundler.
 - `overview.js`: `renderAll,renderOv,renderToday,renderWkSummary,renderWkCal,renderRecOv,renderRecMoCal,renderShopOv,renderUnassigned,renderKanban,renderDayTB,tRow`, drag-drop, WR rule CRUD, scope picker, `writeWrOverride,unSkipWrRule,unSkipWRec,openWrSkipped`, daily habits: `renderDailyHabits,togDailyHabit,openAddDailyHabit,closeDailyHabitPopup,submitDailyHabit`, pup skills highlight: `renderPupSkillsHighlight,togPupSkillTrained`
 - `features.js`: task CRUD, secondary pages, `showPage,closeMod,init(),selTask,clearSelection,showCtx,mkMCell,renderMoCal`, quick notes, `getOvRecurring,rolloverOverdue,updateOvBanner,skipWRec`
 - `pup-skills.js`: all pup skills logic
+- `touch-layer.js`: opt-in iPad/touch enhancement layer for the DESKTOP app. Loads ONLY when the URL has `?ipadtest=1` (loader at bottom of index.html); acts only on coarse-pointer devices; every block try/catch-wrapped so it can never break the page. REUSES desktop drag (`dStart`/`dropOnTB` + global `dragId`) so Supabase sync is identical — no separate data path. Phase 1 = long-press a task → drag onto `#tbGrid`. Never alter desktop code paths for touch; always reuse them.
 
 **Where is X?** Overview/today/calendar/kanban/timeblocks/recurring-monthly → `overview.js`. Secondary pages + CRUD + ctx menus + regular monthly cal → `features.js`. Utils/Supabase/auth/undo → `core.js`.
 
@@ -17,6 +18,13 @@ Supabase Auth (email+password), RLS on all tables. `init()`→`checkAuth()`→`d
 - `_firstSyncDone=true` before initial `renderAll()` from localStorage so overdue banner shows instantly.
 - `#main` left transition suppressed during `init()` (prevents shopping list squish animation).
 - `#backToOv` button lives OUTSIDE `#main` (sibling, between sidebar and `#main` in DOM). Must stay outside `#main` — `#main`'s `position:fixed` + `overflow:auto` traps z-index of children. `position:fixed;z-index:999` on backToOv.
+
+## Security & External Assets
+- **NO public CDNs.** This user's devices/network block CDN domains (jsdelivr, Google Fonts), so critical assets are self-hosted same-origin: `supabase.min.js` (supabase-js@2.110.0, loaded in `index.html` + `mobile.html`) and DM Sans under `/fonts/` (`fonts/dmsans.css` + woff2). Symptom of a re-introduced CDN: `supabase is not defined` on login, or text falling back to a default font ("messed up"). Never re-point these at a CDN — availability is top priority.
+- **RLS is enforced** on all Supabase tables (verified 2026-07-06: anon key alone returns `[]` on read, `401` on write). The anon key hardcoded in `core.js` is public-by-design — safe ONLY because RLS requires an authenticated JWT. Never disable RLS; never move queries to trust the anon key.
+- **`_headers`** sets a global CSP + `X-Frame-Options:DENY`, HSTS, `nosniff`, Referrer-Policy, Permissions-Policy. CSP keeps `'unsafe-inline'` for `script-src`/`style-src` (app relies on inline `onclick`/`onsubmit`/styles — removing it breaks everything); `connect-src` must include `*.supabase.co`; `font-src`/`style-src`/`script-src` all include `'self'` for the vendored assets.
+- **`functions/api/yt.js`**: GET-only (the unauthenticated POST cache-seed endpoint was removed 2026-07-02); CORS locked to the two known origins, not origin-reflected.
+- **XSS**: user-entered strings (task names, categories, notes) interpolated into `innerHTML` MUST go through `escHtml()`. Fixed spots: `tRow` name/category (`overview.js`), unassigned menu (`features.js`).
 
 ## Data & Persistence
 - POST must include ALL required fields. Missing NOT NULL → silent 400.

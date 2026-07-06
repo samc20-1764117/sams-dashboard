@@ -416,9 +416,11 @@ Within shopping list section, items grouped by: Weekly Staples → recipe groups
 ## PWA & Caching
 - `mobile-manifest.json` (not `manifest.json`) — `start_url: /mobile.html`, `display: standalone`
 - `mobile.html` links: `<link rel="manifest" href="mobile-manifest.json">`
-- `mobile-sw.js` — network-first service worker, registered at top of mobile.html. Always fetches from network; deletes all caches on activate. Solves iOS standalone PWA aggressive caching.
+- `mobile-sw.js` — network-first service worker. Always fetches from network; deletes all caches on activate. Solves iOS standalone PWA aggressive caching. Registration (bottom of mobile.html) now calls `reg.update()` on load AND on `visibilitychange` (re-checks for a new worker on every foreground).
+- **Self-update mechanism** (inline `<head>` version-checker): fetches `mobile-version.json` (no-store) and, on mismatch, does `location.replace(pathname+'?b='+ver)` — a NEW url iOS has never cached. Do NOT use `location.reload()`: iOS serves a reload straight from the standalone PWA app-shell cache, so it never actually updates (can loop). Guard: if `?b` already equals the server version, stop (no loop).
 - `_headers` sets `no-cache` on all mobile files so Cloudflare Pages doesn't cache stale versions
-- Script tags use `?v=YYYYMMDD` cache-busting params — update on each deploy
+- Script tags use `?v=YYYYMMDD` cache-busting params. **Every deploy bump ALL of:** `_BUILD` const in mobile.html + `mobile-version.json` + asset `?v=` queries + `mobile-sw.js` VERSION. This lets a stuck installed PWA self-heal on next foreground — **no reinstall needed** (fully close + reopen on wifi, may take 2 opens).
+- **Vendored assets** (see core.md): `supabase.min.js` and `fonts/dmsans.css` load same-origin — never from a CDN (blocked on this user's devices; caused `supabase is not defined` login failures + broken fonts).
 
 ## Deployment
 - Dev: `https://dev.sams-dashboard.pages.dev/mobile.html`
@@ -459,6 +461,8 @@ After the 30s `setInterval`, `mInit` adds `visibilitychange`/`pageshow`/`focus` 
 ### Auth flow
 `checkAuth()` (core.js) calls `showLoginOverlay()` if no session found.
 `mDoLogin()` → `doLogin_m(email, pass)` → `_sbClient.auth.signInWithPassword()` → sets `_authToken` → `hideLoginOverlay()` → `syncAll()`
+- **`doLogin_m` is try/catch wrapped** and shows any failure in `#mLoginErr` (missing supabase lib, bad network, no session). Never let it fail silently — a silent failure reads to the user as "the button does nothing". If a user reports the login button not working, first ask what the RED error says.
+- **Login markup**: inputs + button are inside `<form onsubmit="event.preventDefault();mDoLogin();return false">` with `<button type="submit">`, so the iOS keyboard's Return key submits (button tap not required). `#mLogin` is `justify-content:flex-start` + `padding-top:14vh` (NOT `center` — centering parked the button under the iOS keyboard, making it untappable). Button has transparent tap-highlight, so "no flash on tap" is normal and ≠ tap not landing.
 
 ### Login overlay (mobile override)
 Mobile overrides `showLoginOverlay(event)` and `hideLoginOverlay()` from core.js:
