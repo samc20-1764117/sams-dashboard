@@ -13,7 +13,7 @@
 <script>
 // Inline cache-buster: fetch version file (bypasses iOS PWA HTML cache) and reload if stale
 (function(){
-  window._BUILD='20260608b';var BUILD=window._BUILD;
+  window._BUILD='20260705a';var BUILD=window._BUILD;
   if(sessionStorage._mReloaded===BUILD)return;
   fetch('/mobile-version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(d){
     if(d.v&&d.v!==BUILD){sessionStorage._mReloaded=d.v;location.reload();}
@@ -28,13 +28,13 @@
 
 <!-- Login -->
 <div id="mLogin">
-  <div class="card">
+  <form class="card" onsubmit="event.preventDefault();mDoLogin();return false">
     <h2>Sam's Dashboard</h2>
     <input id="mEmail" type="email" placeholder="Email" autocomplete="email">
     <input id="mPass" type="password" placeholder="Password" autocomplete="current-password">
     <div id="mLoginErr"></div>
-    <button onclick="mDoLogin()">Sign in</button>
-  </div>
+    <button type="submit">Sign in</button>
+  </form>
 </div>
 
 <!-- App -->
