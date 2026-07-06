@@ -2619,7 +2619,7 @@ function renderRecMoCal(){
             const _orphans=_wrClearPastOrphanPins(r,false);
             r.starting_date=newStart;r.appears_on_date=newAppears;save();renderAll();renderRecMoCal();
             sbReq('PATCH','wr_recurring_rules',{starting_date:newStart,appears_on_date:newAppears,date_overrides:r._dateOverrides},recQs(r.id));
-            pushUndo(()=>{r.starting_date=prevStart;r.appears_on_date=prevAppears;if(_prevSrcPin!==undefined)r._dateOverrides[srcWkKey]=_prevSrcPin;_orphans.forEach(o=>{r._dateOverrides[o.wk]=o.val;});save();renderAll();renderRecMoCal();sbReq('PATCH','wr_recurring_rules',{starting_date:prevStart,appears_on_date:prevAppears,date_overrides:r._dateOverrides},recQs(r.id));},'Moved recurring task all future');
+            pushUndo(()=>{r.starting_date=prevStart;r.appears_on_date=prevAppears;if(_prevSrcPin!==undefined)r._dateOverrides[srcWkKey]=_prevSrcPin;_orphans.forEach(o=>{if(o.val===undefined)delete r._dateOverrides[o.wk];else r._dateOverrides[o.wk]=o.val;});save();renderAll();renderRecMoCal();sbReq('PATCH','wr_recurring_rules',{starting_date:prevStart,appears_on_date:prevAppears,date_overrides:r._dateOverrides},recQs(r.id));},'Moved recurring task all future');
           }
         );
       });
@@ -2661,7 +2661,7 @@ function renderRecMoCal(){
           const _orphans=_wrClearPastOrphanPins(rule,true);
           sbReqSilent('PATCH','wr_recurring_rules',{starting_date:newAnchor,date_overrides:rule._dateOverrides},`?id=eq.${ruleId}`);
           save();renderRecOv();renderWeeklyPage();renderRecMoCal();
-          pushUndo(()=>{rule.starting_date=prevAnchor;if(_prevSrcPin!==undefined)rule._dateOverrides[srcWkKey]=_prevSrcPin;_orphans.forEach(o=>{rule._dateOverrides[o.wk]=o.val;});sbReqSilent('PATCH','wr_recurring_rules',{starting_date:prevAnchor,date_overrides:rule._dateOverrides},`?id=eq.${ruleId}`);save();renderRecOv();renderWeeklyPage();renderRecMoCal();},'Shifted WR rule start');
+          pushUndo(()=>{rule.starting_date=prevAnchor;if(_prevSrcPin!==undefined)rule._dateOverrides[srcWkKey]=_prevSrcPin;_orphans.forEach(o=>{if(o.val===undefined)delete rule._dateOverrides[o.wk];else rule._dateOverrides[o.wk]=o.val;});sbReqSilent('PATCH','wr_recurring_rules',{starting_date:prevAnchor,date_overrides:rule._dateOverrides},`?id=eq.${ruleId}`);save();renderRecOv();renderWeeklyPage();renderRecMoCal();},'Shifted WR rule start');
         },
         ()=>{// Move override for this week only
           writeWrOverride(ruleId,srcWkKey,{override_type:'move',moved_to_wk_key:destWkKey},{undoLabel:'Moved WR task this week'});
@@ -3190,14 +3190,25 @@ function wrCtxMoveNextWeek(){_wrShiftAnchor(7);}
 // Returns removed {wk,val} for undo (undo restores the original value).
 function _wrClearPastOrphanPins(rule,isWrRule,lookback=6){
   const removed=[];
-  if(!rule._dateOverrides)return removed;
+  if(!rule._dateOverrides)rule._dateOverrides={};
   for(let o=-1;o>=-lookback;o--){
     const wk=getWkKey(o);
     const v=rule._dateOverrides[wk];
-    if(!v||v==='__skip__')continue;
-    const done=isWrRule?(typeof isDoneWRRule==='function'&&isDoneWRRule(rule.id,wk)):!!(rule._doneByWk&&rule._doneByWk[wk]);
-    if(done)continue;
-    removed.push({wk,val:v});rule._dateOverrides[wk]='__skip__';
+    if(v==='__skip__')continue;
+    if(isWrRule){
+      // WR rules are override-driven — only clear an existing undone pin.
+      if(!v)continue;
+      if(typeof isDoneWRRule==='function'&&isDoneWRRule(rule.id,wk))continue;
+      removed.push({wk,val:v});rule._dateOverrides[wk]='__skip__';
+    } else {
+      // Non-WR: a forward shift flips biweekly parity / moves the anchor across history,
+      // which can SURFACE a past week's natural (unpinned) undone occurrence as stale overdue.
+      // Freeze any undone occurrence this past week (pinned OR natural), computed against the
+      // already-shifted schedule. Done weeks stay as history. Off-cycle weeks yield nothing → skipped.
+      const occ=getRecurringWeekTasks(o).find(t=>String(t._recId)===String(rule.id));
+      if(!occ||occ.done)continue;
+      removed.push({wk,val:v});rule._dateOverrides[wk]='__skip__';// v may be undefined (natural occurrence)
+    }
   }
   return removed;
 }
@@ -3237,7 +3248,7 @@ function wrCtxShiftSchedule(delta){
   pushUndo(()=>{
     rule.starting_date=prevStart;
     if(_prevDov!==undefined)rule._dateOverrides[wkKey]=_prevDov;
-    _orphans.forEach(o=>{rule._dateOverrides[o.wk]=o.val;});
+    _orphans.forEach(o=>{if(o.val===undefined)delete rule._dateOverrides[o.wk];else rule._dateOverrides[o.wk]=o.val;});
     _removedOvs.forEach(o=>{st.wrOverrides.push(o);sbReqSilent('POST','wr_recurring_overrides',{rule_id:o.rule_id,wk_key:o.wk_key,override_type:o.override_type,moved_to_wk_key:o.moved_to_wk_key||null,done:o.done||null,custom_name:o.custom_name||null,custom_notes:o.custom_notes||null},'');});
     sbReq('PATCH','wr_recurring_rules',{starting_date:prevStart,date_overrides:rule._dateOverrides},isRec?recQs(rid):`?id=eq.${rid}`);
     save();_rerender();
