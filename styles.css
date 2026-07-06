@@ -402,11 +402,9 @@ body.dark .inline-date-picker input[type="date"]{background:rgba(255,255,255,.08
 .delbtn{opacity:0;background:none;border:none;cursor:pointer;color:var(--subtle);font-size:10px;padding:1px 2px;border-radius:3px;flex-shrink:0;transition:opacity .1s;position:absolute;right:3px;top:50%;transform:translateY(-50%)}
 #todList .delbtn{right:3px;width:17px;height:17px;display:flex;align-items:center;justify-content:center;padding:0}
 .ti:hover .delbtn,.ti.sel-row .delbtn{opacity:1;color:var(--subtle)}.delbtn:hover{color:#ef4444!important}
-.movebtn{opacity:0;background:none;border:none;cursor:pointer;color:var(--subtle);font-size:12px;font-weight:700;padding:0;border-radius:3px;flex-shrink:0;transition:opacity .1s;position:absolute;right:20px;top:50%;transform:translateY(-50%);width:16px;height:16px;display:flex;align-items:center;justify-content:center}
-.ti:hover .movebtn,.ti.sel-row .movebtn{opacity:1}
-.ti.ov-row .movebtn{opacity:.85;color:#9f3826}
-.movebtn:hover{color:#2563eb!important}
-body.dark .ti.ov-row .movebtn{color:#fca5a5}
+.wr-ov-row{display:flex;align-items:center;gap:4px}
+.wr-ov-move{margin-left:auto;background:#ef4444;color:#fff;border:none;border-radius:5px;padding:2px 7px;font-size:8.5px;font-weight:700;cursor:pointer;font-family:inherit;flex-shrink:0;white-space:nowrap}
+.wr-ov-move:hover{background:#dc2626}
 .wr-has-cad{font-size:10.5px}
 .wr-cad-badge{position:absolute;right:3px;top:50%;transform:translateY(-50%);font-size:9px;font-weight:700;letter-spacing:.3px;padding:1px 3px;border-radius:3px;background:rgba(180,160,140,.1);color:var(--subtle);pointer-events:none}
 .wr-cad-badge.changed{background:rgba(59,130,246,.18);color:#1e40af}

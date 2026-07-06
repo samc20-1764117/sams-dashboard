@@ -875,9 +875,7 @@ function sortByTBWeek(tasks){
 // Virtual task row for today's list - done ones sink to bottom, greyed, uncheckable if done
 function tRowTodayVirt(t,tbArrow=false,noColor=false){
   const s=gc((t._isWrec||t._isWrRule)?'weekly_reset':'recurring');
-  // WR task carried from a prior week (owning wkKey is in the past) = overdue, even if its pin lands today/future
-  const _wrCarried=(t._isWrRule||t._isWrec)&&t._wkKey&&t._wkKey<getWkKey(0);
-  const ov=(isOv(t.due_date)||_wrCarried)&&!t.done;
+  const ov=isOv(t.due_date)&&!t.done;
   const ps=ov?_OV():s;
   const _dragId=t._isWrRule?`wrrule::${t._ruleId}`:t._isWrec?`wrec::${t._recId}::${t._wkKey||''}`:`rec::${t._recId}::${t.due_date||''}::${t._wkKey||''}`;
   const _chk=t._isWrRule?`togWrRule('${t._ruleId}',this.checked,'${t._wkKey||getWkKey(wkOff)}')`
@@ -887,9 +885,6 @@ function tRowTodayVirt(t,tbArrow=false,noColor=false){
     :`showWrScopePicker(event,'⊘  Skip this week only','✕  Delete recurring task',()=>skipRecVirtThisWk('${t._recId}','${t._wkKey||getWkKey(wkOff)}'),()=>delRec('${t._recId}'))`;
   const _recIdAttr=t._isWrRule?t._ruleId:t._recId;
   const _wkKeyAttr=t._wkKey||getWkKey(wkOff);
-  // Overdue/carried WR task (day pin owned by a prior week): offer "Move to this week"
-  const _wrMovable=t._isWrRule&&!t.done&&t._wkKey&&t._wkKey<getWkKey(0);
-  const _mvBtn=_wrMovable?`<button class="movebtn" title="Move to this week" onmousedown="event.stopPropagation()" onclick="event.stopPropagation();showWrScopePicker(event,'⊞  This week only','↻  All future',()=>wrMoveToThisWeek('${t._ruleId}','${t._wkKey}',false),()=>wrMoveToThisWeek('${t._ruleId}','${t._wkKey}',true))">»</button>`:'';
   const _dblClick=t._isWrRule?`event.stopPropagation();openWrEditModal('${t._ruleId}','${_wkKeyAttr}','this')`:`tiDblRec(event,'${_recIdAttr}','${_wkKeyAttr}')`;
   const _ctxMenu=t._isWrRule?`showWrRuleCtx(event,'${t._ruleId}','${_wkKeyAttr}')`:t._isWrec||t._virtual?`showWrRuleCtx(event,'${_recIdAttr}','${_wkKeyAttr}')`:`showCtx(event,'${t.id}',true,'${_recIdAttr}')`;
 
@@ -899,7 +894,7 @@ function tRowTodayVirt(t,tbArrow=false,noColor=false){
     ${!ov?`<svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3" fill="${ps.bg}" stroke="${ps.d}" stroke-opacity="0.4" stroke-width="1"/></svg>`:''}
     ${tbArrow?'<span class="tb-arrow">›</span>':''}
     ${ov&&t.due_date?`<span class="dlbl ov">${['S','M','T','W','T','F','S'][new Date(t.due_date.split('T')[0]+'T12:00').getDay()]}</span>`:''}
-    ${_mvBtn}<button class="delbtn" onclick="event.stopPropagation();${_xBtn}">✕</button>
+    <button class="delbtn" onclick="event.stopPropagation();${_xBtn}">✕</button>
   </div>`;
 }
 
@@ -2748,6 +2743,43 @@ function renderRecOv(){
     wrap.addEventListener('click',e=>{e.stopPropagation();togWrRule(ruleId,!isDone,wkKey);});
     wrap.addEventListener('mousedown',e=>e.stopPropagation());
     return wrap;
+  }
+  // ── Overdue WR: rules whose most-recent prior due week was missed (current-week view only) ──
+  if(wrRecOff===0){
+    const _ovRows=[];
+    st.wrRules.filter(r=>r.is_enabled).forEach(r=>{
+      if(items.some(x=>String(x.id)===String(r.id)))return; // already present this week
+      const _startMon=r.starting_date?(()=>{const sd=new Date(r.starting_date+'T12:00');const dw=sd.getDay();const m=new Date(sd);m.setDate(sd.getDate()-(dw===0?6:dw-1));m.setHours(0,0,0,0);return m;})():null;
+      for(let w=-1;w>=-8;w--){
+        const pwk=getWkKey(w);
+        if(_startMon&&new Date(pwk+'T12:00')<_startMon)break; // before the rule existed
+        const pinned=r._dateOverrides&&r._dateOverrides[pwk];
+        const dueThatWk=isWRRuleDueThisWeek(r,w)||(pinned&&pinned!=='__skip__');
+        if(!dueThatWk)continue; // keep looking back for the most recent due week
+        // Most recent prior due week found — flag overdue only if it wasn't handled, then stop
+        const skipped=pinned==='__skip__'||(st.wrOverrides||[]).some(o=>String(o.rule_id)===String(r.id)&&o.wk_key===pwk&&o.override_type==='skip');
+        const moved=(st.wrOverrides||[]).some(o=>String(o.rule_id)===String(r.id)&&o.wk_key===pwk&&o.override_type==='move');
+        if(!skipped&&!moved&&!isDoneWRRule(r.id,pwk))_ovRows.push({r,pwk});
+        break;
+      }
+    });
+    _ovRows.forEach(({r,pwk})=>{
+      const rid=String(r.id);
+      const isPup=r.pup_related===true||r.pup_related==='true';
+      const row=document.createElement('div');
+      row.className='ti ov-row wr-ov-row';
+      row.style.cssText='cursor:default;break-inside:avoid;margin:0 6px;padding:3px 8px 3px 10px';
+      row.addEventListener('contextmenu',e=>showWrRuleCtx(e,rid,pwk));
+      if(isPup){row.appendChild(makePawEl(rid,false));}
+      else{const cw=document.createElement('label');cw.className='chk-wrap';cw.addEventListener('click',e=>e.stopPropagation());const c=document.createElement('input');c.type='checkbox';c.className='chk';c.addEventListener('change',function(){togWrRule(rid,this.checked,pwk);});cw.appendChild(c);row.appendChild(cw);}
+      const nm=document.createElement('span');nm.className='tn';nm.textContent=r.name;row.appendChild(nm);
+      const mv=document.createElement('button');
+      mv.className='wr-ov-move';mv.textContent='Move to this week';
+      mv.addEventListener('mousedown',e=>e.stopPropagation());
+      mv.addEventListener('click',e=>{e.stopPropagation();showWrScopePicker(e,'⊞  This week only','↻  All future',()=>wrMoveToThisWeek(rid,pwk,false),()=>wrMoveToThisWeek(rid,pwk,true));});
+      row.appendChild(mv);
+      if(elReg)elReg.appendChild(row);
+    });
   }
   sorted.forEach(r=>{
     const rid=String(r.id);
