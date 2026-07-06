@@ -1848,12 +1848,19 @@ async function mDoLogin() {
 }
 async function doLogin_m(email, pass) {
   const err = document.getElementById('mLoginErr');
-  if (!_sbClient) _initSbClient();
-  const {data, error} = await _sbClient.auth.signInWithPassword({email, password: pass});
-  if (error) { err.textContent = error.message; err.style.display = 'block'; return; }
-  _authToken = data.session.access_token;
-  hideLoginOverlay();
-  await syncAll();
+  const showErr = m => { if (err) { err.textContent = m; err.style.display = 'block'; } };
+  try {
+    if (!_sbClient) _initSbClient();
+    if (!_sbClient || !window.supabase) { showErr('Login library not loaded — check connection, then close & reopen the app.'); return; }
+    const {data, error} = await _sbClient.auth.signInWithPassword({email, password: pass});
+    if (error) { showErr(error.message); return; }
+    if (!data || !data.session) { showErr('No session returned. Try again.'); return; }
+    _authToken = data.session.access_token;
+    hideLoginOverlay();
+    await syncAll();
+  } catch (e) {
+    showErr('Login error: ' + (e && e.message ? e.message : String(e)));
+  }
 }
 
 // ── Date label ────────────────────────────────────────────────────────────────

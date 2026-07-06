@@ -13,7 +13,7 @@
 <script>
 // Inline cache-buster: fetch version file (bypasses iOS PWA HTML cache) and reload if stale
 (function(){
-  window._BUILD='20260705b';var BUILD=window._BUILD;
+  window._BUILD='20260706a';var BUILD=window._BUILD;
   if(sessionStorage._mReloaded===BUILD)return;
   fetch('/mobile-version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(d){
     if(d.v&&d.v!==BUILD){sessionStorage._mReloaded=d.v;location.reload();}
@@ -294,5 +294,5 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="core.js?v=20260622b"></script>
 <script src="features.js?v=20260621b"></script>
-<script src="mobile-overview.js?v=20260622b"></script>
+<script src="mobile-overview.js?v=20260706a"></script>
 </body></html>
