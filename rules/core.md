@@ -22,6 +22,17 @@ Supabase Auth (email+password), RLS on all tables. `init()`→`checkAuth()`→`d
 ## Security & External Assets
 - **NO public CDNs.** This user's devices/network block CDN domains (jsdelivr, Google Fonts), so critical assets are self-hosted same-origin: `supabase.min.js` (supabase-js@2.110.0, loaded in `index.html` + `mobile.html`) and DM Sans under `/fonts/` (`fonts/dmsans.css` + woff2). Symptom of a re-introduced CDN: `supabase is not defined` on login, or text falling back to a default font ("messed up"). Never re-point these at a CDN — availability is top priority.
 - **RLS is enforced** on all Supabase tables (verified 2026-07-06: anon key alone returns `[]` on read, `401` on write). The anon key hardcoded in `core.js` is public-by-design — safe ONLY because RLS requires an authenticated JWT. Never disable RLS; never move queries to trust the anon key.
+
+## Sync & Egress (version-gated) — added 2026-07-07 after free-tier egress overage
+- **Mechanism**: `table_versions` table (tbl, ver, bumped_at) bumped by statement-level triggers (`trg_bump_ver` → `bump_table_version()`, SECURITY DEFINER, covers browser + Alexa service key + restore.js) on all 22 synced tables (`migrations/006_table_versions.sql`). `syncAll` GETs `table_versions?select=tbl,ver` (~750B) first and only refetches tables whose ver changed. Before the fix each sync was ~705KB × every 30s.
+- **Cursor `_tblVer`** (core.js) is in-memory per-tab ON PURPOSE. Never persist it: a shared cursor lets tab A advance it, starving tab B's refetch, then B's `save()` clobbers fresh localStorage. Page load = one full sync (intended).
+- **Force-fetch**: tables with unconfirmed local writes (`pendingLocal`/`localOverrides`→tasks, `pendingShopIds`, `pendingTravelIds`, `pendingBlockIds`) always fetch, so merge-block re-push self-heals still run. Undo-dirty apply-skips (`_pupUndoDirty`/`_recUndoDirty` during silent sync) count as failed fetches — cursor doesn't advance.
+- **Fallback**: null/empty version fetch → full sync (today's old behavior). Safe if migration missing/offline.
+- **Hidden-tab pause**: both intervals guard `!document.hidden`; desktop has a `visibilitychange` resync (3s dedup), mobile's `_mForegroundSync` already covered it.
+- **New synced table** → add `trg_bump_ver` trigger (copy from 006) + entry in `syncAll`'s `_res` cursor map, else it refetches every poll forever.
+- **NEVER**: unconditional full-table polling, shorter poll interval, removing `!document.hidden` guards or version gating, persisting `_tblVer`.
+- **Egress meter**: settings gear popup → "Supabase egress (this device)". `_renderEgress()` (features.js), bytes counted in `_egAdd()` (core.js), localStorage `samdash_egress`. Per-device lower bound; red if projection >4GB.
+- **Check real usage (the number Supabase bills on)**: supabase.com → sign in → org `samcohn20@gmail.com's Org` → **Usage** (or `https://supabase.com/dashboard/org/tqhyhvkxwfcclkbtlmoc/usage`) → Egress graph. Healthy = daily egress in low-MB after 2026-07-07 (was ~0.5–1GB/day); month total well under 5GB. Graph lags ~24h. Overage banner clears once a billing cycle stays under quota; grace period ends 2026-08-05. If egress climbs again: check for a device on a pre-fix cached build (settings meter missing = old code) and verify `table_versions` still exists (`SELECT * FROM table_versions` in SQL Editor).
 - **`_headers`** sets a global CSP + `X-Frame-Options:DENY`, HSTS, `nosniff`, Referrer-Policy, Permissions-Policy. CSP keeps `'unsafe-inline'` for `script-src`/`style-src` (app relies on inline `onclick`/`onsubmit`/styles — removing it breaks everything); `connect-src` must include `*.supabase.co`; `font-src`/`style-src`/`script-src` all include `'self'` for the vendored assets.
 - **`functions/api/yt.js`**: GET-only (the unauthenticated POST cache-seed endpoint was removed 2026-07-02); CORS locked to the two known origins, not origin-reflected.
 - **XSS**: user-entered strings (task names, categories, notes) interpolated into `innerHTML` MUST go through `escHtml()`. Fixed spots: `tRow` name/category (`overview.js`), unassigned menu (`features.js`).
@@ -53,7 +64,7 @@ Supabase Auth (email+password), RLS on all tables. `init()`→`checkAuth()`→`d
 **Default**: any new item type or new field on an existing type must automatically match all existing behavior unless explicitly overridden. No partial implementations.
 
 **Checklist — validate every location the item appears before marking done:**
-- **State**: add to `st`, `load()`, `save()`, `syncAll` (fetch + merge), `_stateSnap`, `_stateRestore`, `_syncRedoDiff` (PATCH/POST/DELETE)
+- **State**: add to `st`, `load()`, `save()`, `syncAll` (fetch + merge), `_stateSnap`, `_stateRestore`, `_syncRedoDiff` (PATCH/POST/DELETE). New synced table also needs `trg_bump_ver` trigger + `_res` map entry (see Sync & Egress)
 - **Undo/redo**: `pushUndo` on every mutating op (create, edit, delete, move, toggle); undo fn patches DB; `doRedo` undo entry also patches DB via `_syncRedoDiff(snap, beforeRedo)`
 - **Today list**: render row, sort priority, overdue logic, drag ID prefix, drag-to-timeblock, `_hasTBToday` check
 - **Weekly cal**: chip render (color, text, dragstart ID), chip click→`selTask`, dblclick→edit modal, X→remove, checkbox→toggle, dragover drop handler
