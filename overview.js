@@ -2767,14 +2767,15 @@ function renderRecOv(){
       const rid=String(r.id);
       const isPup=r.pup_related===true||r.pup_related==='true';
       const row=document.createElement('div');
-      row.className='ti ov-row wr-ov-row';
-      row.style.cssText='cursor:default;break-inside:avoid;margin:0 6px;padding:3px 8px 3px 10px';
+      row.className='ti ov-row';
+      row.style.cssText='cursor:default;break-inside:avoid;margin:0 6px;padding:3px 50px 3px 10px';
       row.addEventListener('contextmenu',e=>showWrRuleCtx(e,rid,pwk));
       if(isPup){row.appendChild(makePawEl(rid,false));}
       else{const cw=document.createElement('label');cw.className='chk-wrap';cw.addEventListener('click',e=>e.stopPropagation());const c=document.createElement('input');c.type='checkbox';c.className='chk';c.addEventListener('change',function(){togWrRule(rid,this.checked,pwk);});cw.appendChild(c);row.appendChild(cw);}
       const nm=document.createElement('span');nm.className='tn';nm.textContent=r.name;row.appendChild(nm);
       const mv=document.createElement('button');
       mv.className='wr-ov-move';mv.textContent='Move';
+      mv.style.cssText='position:absolute;right:6px;top:50%;transform:translateY(-50%)';
       mv.addEventListener('mousedown',e=>e.stopPropagation());
       mv.addEventListener('click',e=>{e.stopPropagation();showWrScopePicker(e,'⊞  Move this occurrence','↻  Move all future',()=>wrMoveToThisWeek(rid,pwk,false),()=>wrMoveToThisWeek(rid,pwk,true),'⊘  Skip',()=>writeWrOverride(rid,pwk,{override_type:'skip'},{undoLabel:'Skipped WR task'}));});
       row.appendChild(mv);
