@@ -68,6 +68,12 @@ let _sbClient=null;
 let _authToken=null;
 let _userId=null;
 function _getAuthToken(){return _authToken||cfg.key;}
+// On a 401 (expired token after idle), refresh the session once and signal retry
+async function _sbRefreshAuth(){
+  if(!_sbClient)return false;
+  try{const{data}=await _sbClient.auth.refreshSession();if(data?.session){_authToken=data.session.access_token;_userId=data.session.user?.id||_userId;return true;}}catch(e){}
+  return false;
+}
 function _initSbClient(){
   if(_sbClient||!cfg.url||!cfg.key)return;
   _sbClient=supabase.createClient(cfg.url,cfg.key,{auth:{persistSession:true,autoRefreshToken:true}});
@@ -107,13 +113,14 @@ async function checkAuth(){
 let _sbNetFails=0,_sbNetToastTimer=null;
 // Egress meter: cumulative bytes downloaded from Supabase this month (per device, localStorage)
 function _egAdd(n){try{const d=new Date(),mo=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');let e=JSON.parse(localStorage.getItem('samdash_egress')||'{}');if(e.month!==mo)e={month:mo,bytes:0};e.bytes+=n;localStorage.setItem('samdash_egress',JSON.stringify(e));}catch(x){}}
-async function sbReq(method,table,body,qs=''){
+async function sbReq(method,table,body,qs='',_retried=false){
   if(!cfg.url||!cfg.key)return null;
   if(method!=='POST'&&/eq\.t-/.test(qs))return null;
   try{
     const prefer=method==='DELETE'?'return=minimal':'return=representation';
     const r=await fetch(`${cfg.url}/rest/v1/${table}${qs}`,{method,headers:{'apikey':cfg.key,'Authorization':`Bearer ${_getAuthToken()}`,'Content-Type':'application/json','Prefer':prefer},body:body?JSON.stringify(body):null});
     if(!r.ok){
+      if(r.status===401&&!_retried&&await _sbRefreshAuth())return sbReq(method,table,body,qs,true);
       const errText=await r.text();
       console.error('Supabase error',method,table,r.status,errText);
       let errMsg='';try{const ej=JSON.parse(errText);errMsg=ej.message||ej.details||'';}catch(x){errMsg=errText.slice(0,120);}
@@ -137,7 +144,7 @@ let localOverrides={};
 // refetch (stale st, then its save() clobbers the fresh copy). Page load = full sync.
 let _tblVer={};
 
-async function sbReqNullable(method,table,body,qs=''){
+async function sbReqNullable(method,table,body,qs='',_retried=false){
   if(!cfg.url||!cfg.key)return null;
   try{
     const payload=JSON.stringify(body);
@@ -152,6 +159,7 @@ async function sbReqNullable(method,table,body,qs=''){
       },
       body:payload
     });
+    if(r.status===401&&!_retried&&await _sbRefreshAuth())return sbReqNullable(method,table,body,qs,true);
     return r.ok;
   }catch(e){return null;}
 }
@@ -165,7 +173,7 @@ const pendingBlockIds=new Set();
 let deletedRecIds=new Set();
 let deletedPupSessIds=new Set();
 // ── Supabase silent request (no toast on failure) ────────────────────────────
-async function sbReqSilent(method,table,body,qs=''){
+async function sbReqSilent(method,table,body,qs='',_retried=false){
   if(!cfg.url||!cfg.key)return null;
   if(method!=='POST'&&/eq\.t-/.test(qs))return null;
   try{
@@ -174,7 +182,9 @@ async function sbReqSilent(method,table,body,qs=''){
       headers:{'apikey':cfg.key,'Authorization':`Bearer ${_getAuthToken()}`,'Content-Type':'application/json','Prefer':'return=representation'},
       body:body?JSON.stringify(body):null
     });
-    if(!r.ok){const t=await r.text();console.warn('Supabase silent fail',method,table,r.status,t);return null;}
+    if(!r.ok){
+      if(r.status===401&&!_retried&&await _sbRefreshAuth())return sbReqSilent(method,table,body,qs,true);
+      const t=await r.text();console.warn('Supabase silent fail',method,table,r.status,t);return null;}
     const t=await r.text();_egAdd(t.length);return t?JSON.parse(t):[];
   }catch(e){console.warn('sbReqSilent error',method,table,e);return null;}
 }
