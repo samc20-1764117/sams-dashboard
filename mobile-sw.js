@@ -1,4 +1,4 @@
-var VERSION = '20260707a';
+var VERSION = '20260707b';
 self.addEventListener('install', function(e) {
   self.skipWaiting();
 });
@@ -7,5 +7,10 @@ self.addEventListener('activate', function(e) {
   self.clients.claim();
 });
 self.addEventListener('fetch', function(e) {
-  e.respondWith(fetch(e.request).catch(function() { return caches.match(e.request); }));
+  // Same-origin only: never intercept CDN/cross-origin requests (stale cached pages
+  // still reference dead CDN URLs; letting the browser+CSP handle them avoids SW errors)
+  if (new URL(e.request.url).origin !== self.location.origin) return;
+  e.respondWith(fetch(e.request).catch(function() {
+    return caches.match(e.request).then(function(r) { return r || Response.error(); });
+  }));
 });
