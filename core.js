@@ -267,6 +267,32 @@ async function manualBackup(){
   }
 }
 
+// ── client_kv: cross-device sync for localStorage maps (video day assignments) ──
+// Desktop assigns video steps/videos to days in localStorage (_vidStepDayMap/_vidDayMap),
+// which mobile could never see. Mirror those blobs through the client_kv table:
+// push when the local copy changed since last push, otherwise adopt the server copy.
+const _KV_MAPS={vid_step_day_map:'_vidStepDayMap',vid_day_map:'_vidDayMap'};
+async function _kvSyncMaps(rows){
+  for(const[k,lsKey]of Object.entries(_KV_MAPS)){
+    try{
+      const local=localStorage[lsKey]||'{}';
+      const pushedKey=lsKey+'Pushed';
+      const pushed=localStorage[pushedKey];
+      const row=rows?rows.find(r=>r.k===k):null;
+      const server=row?JSON.stringify(row.v||{}):null;
+      // Dirty = changed since last push; first run counts as dirty only if local has data the server lacks
+      const dirty=pushed===undefined?(local!=='{}'&&(server===null||server==='{}')):local!==pushed;
+      if(dirty){
+        const r=await sbReqSilent('PATCH','client_kv',{v:JSON.parse(local),updated_at:new Date().toISOString()},`?k=eq.${k}`);
+        if(r)localStorage[pushedKey]=local;
+      }else if(server!==null&&server!==local){
+        localStorage[lsKey]=server;localStorage[pushedKey]=server;
+      }else if(server!==null&&pushed===undefined){
+        localStorage[pushedKey]=local;
+      }
+    }catch(e){console.warn('kv sync',k,e);}
+  }
+}
 async function syncAll(silent=false){
   if(!cfg.url||!cfg.key){setBadge('err','Not connected');return;}
   if(_sbClient){const{data:{session}}=await _sbClient.auth.getSession();if(session)_authToken=session.access_token;}
@@ -287,7 +313,7 @@ async function syncAll(silent=false){
     if(pendingBlockIds.size)_force.add('time_blocks');
     const _dirty=t=>!_vMap||_force.has(t)||_vMap[t]===undefined||_tblVer[t]!==_vMap[t];
     const _gv=(fn,t,qs)=>_dirty(t)?fn('GET',t,null,qs):Promise.resolve(null);
-    const[tasks,shop,trav,bdays,pupSkills,pupSessionsDb,pupWkFocusDb,recipes,videosDb,gStaples,gList,mealPlanDb,packTplDb,packItemDb,finDb,finSubDb,ideasDb]=await Promise.all([
+    const[tasks,shop,trav,bdays,pupSkills,pupSessionsDb,pupWkFocusDb,recipes,videosDb,gStaples,gList,mealPlanDb,packTplDb,packItemDb,finDb,finSubDb,ideasDb,clientKv]=await Promise.all([
       _gv(sbReq,'tasks','?order=due_date.asc.nullslast&select=*'),
       _gv(sbReq,'shopping_list','?order=shop_order.asc.nullslast,store.asc,name.asc&select=*'),
       _gv(sbReq,'travel','?order=start_date.asc&select=*'),
@@ -304,7 +330,8 @@ async function syncAll(silent=false){
       _gv(sbReqSilent,'packing_items','?order=sort_order.asc.nullslast,name.asc&select=*'),
       _gv(sbReqSilent,'finance','?order=sort_order.asc.nullslast,name.asc&select=*'),
       _gv(sbReqSilent,'finance_subs','?order=sort_order.asc.nullslast,name.asc&select=*'),
-      _gv(sbReqSilent,'ideas','?order=created_at.desc&select=*')
+      _gv(sbReqSilent,'ideas','?order=created_at.desc&select=*'),
+      _gv(sbReqSilent,'client_kv','?select=*')
     ]);
     if(ideasDb)st.ideas=ideasDb;
     if(pupSessionsDb)st.pupSessions=pupSessionsDb.filter(s=>!deletedPupSessIds.has(String(s.id)));
@@ -485,6 +512,7 @@ async function syncAll(silent=false){
           _vidStepVid:_isVidStep?b.vid_id:null,_vidStepName:_isVidStep?b.rec_id:null};
       }),...localOnly];
     }
+    await _kvSyncMaps(clientKv);
     // Advance version cursors: only for tables whose fetch succeeded (non-null) or that
     // weren't dirty. Failed/skipped-apply fetches keep the old cursor → retried next poll.
     if(_vMap){
@@ -495,7 +523,7 @@ async function syncAll(silent=false){
         videos:videosDb,grocery_staples:gStaples,grocery_list:gList,meal_plan:mealPlanDb,
         packing_templates:packTplDb,packing_items:packItemDb,finance:finDb,finance_subs:finSubDb,
         ideas:ideasDb,time_blocks:blocks,auto_timeblocks:autoTBs,auto_timeblock_overrides:autoTBOvs,
-        wr_recurring_rules:wrRules,wr_recurring_overrides:wrOvs};
+        wr_recurring_rules:wrRules,wr_recurring_overrides:wrOvs,client_kv:clientKv};
       Object.keys(_res).forEach(t=>{if(_vMap[t]!==undefined&&(_res[t]||!_dirty(t)))_tblVer[t]=_vMap[t];});
     }
     save();

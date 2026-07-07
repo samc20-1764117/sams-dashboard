@@ -68,43 +68,69 @@ function _mReconstructVidStepBlocks() {
   });
 }
 
+// Day map synced from desktop via client_kv table (core.js _kvSyncMaps)
+function _mVidStepMap() { try { return JSON.parse(localStorage._vidStepDayMap || '{}'); } catch(e) { return {}; } }
+function _mVidStepMapSet(m) { localStorage._vidStepDayMap = JSON.stringify(m); }
+
+// Done state for one step instance on one day (mirrors desktop _vidStepComputeDone)
+function _mVidStepDone(vidId, step, ds, entry) {
+  if (step !== 'step_thumbnail' && step !== 'step_description') {
+    const dayBlocks = (st.blocks || []).filter(bl => String(bl._vidStepVid) === String(vidId) && bl._vidStepName === step && bl.ds === ds);
+    if (dayBlocks.length) return dayBlocks.every(bl => bl._done);
+    const e = entry || _mVidStepMap()[vidId + '::' + step];
+    return !!(e && e.doneDays && e.doneDays[ds]);
+  }
+  return !!(entry && entry.done);
+}
+
 function _mVidStepTasksForDay(ds) {
-  // Only show step tasks that have specific blocks on this day
+  // Mirrors desktop: daymap entries (primary + extraDays) + blocks not covered by the map.
+  // When ds is today, also pulls overdue (past, undone) instances — like desktop's WithOverdue.
   _mReconstructVidStepBlocks();
   const today = d2s(getDayDate(0));
   const isToday = ds === today;
-  const isPast = ds < today;
-  // For past days, don't show undone video step tasks (avoid stale overdue entries)
-  const dayBlocks = (st.blocks || []).filter(b => b.ds === ds || (isToday && b.ds && b.ds < ds));
-  // Collect which video+step combos have blocks today
-  const stepBlockMap = new Map();
-  dayBlocks.forEach(b => {
-    if (!b._vidStepVid) return;
-    const key = b._vidStepVid + '::' + b._vidStepName;
-    if (!stepBlockMap.has(key)) stepBlockMap.set(key, []);
-    stepBlockMap.get(key).push(b);
-  });
-  if (!stepBlockMap.size) return [];
-  const tasks = [];
-  stepBlockMap.forEach((blocks, key) => {
-    const [vidId, step] = key.split('::');
+  const m = _mVidStepMap();
+  const tasks = []; const seen = new Set();
+  const push = (vidId, step, day, isDone) => {
     const v = (st.videos || []).find(x => String(x.id) === String(vidId) && !x.is_deleted);
-    if (!v) return;
-    if (v[step] === 'done' || v[step] === 'na') return;
+    if (!v || v[step] === 'na') return;
+    const done = v[step] === 'done' || isDone;
     const label = _M_VID_STEP_LABELS[step] || step.replace('step_','');
-    let isDone = false;
-    if (step !== 'step_thumbnail' && step !== 'step_description') {
-      isDone = blocks.every(bl => bl._done);
-    }
-    // Skip undone step tasks on past days — they show as overdue on today instead
-    if (isPast && !isDone) return;
-    tasks.push({id: 'vidstep-' + vidId + '-' + step, name: label + ': ' + (v.topic || v.title), category: 'Videos', due_date: ds, done: isDone, _vidId: vidId, _vidStep: step, _virtual: true, _type: 'vidstep'});
+    tasks.push({id: 'vidstep-' + vidId + '-' + step + '-' + day, name: label + ': ' + (v.topic || v.title), category: 'Videos', due_date: day, done, _vidId: vidId, _vidStep: step, _virtual: true, _type: 'vidstep'});
+  };
+  // 1. Daymap instances
+  Object.entries(m).forEach(([key, val]) => {
+    const [vidId, step] = key.split('::');
+    const consider = (day, entry) => {
+      const dk = key + '::' + day;
+      if (seen.has(dk)) return;
+      const v = (st.videos || []).find(x => String(x.id) === String(vidId) && !x.is_deleted);
+      if (!v) return;
+      const isDone = v[step] === 'done' || _mVidStepDone(vidId, step, day, entry);
+      if (isToday) { if (day > today) return; if (isDone && day < today) return; } // overdue carry, hide done-past
+      else if (day !== ds) return;
+      seen.add(dk);
+      push(vidId, step, day, isDone);
+    };
+    consider(val.ds, val);
+    (val.extraDays || []).forEach(ed => consider(ed, null));
+  });
+  // 2. Blocks on this day (or ≤ today when today) not covered by the map
+  (st.blocks || []).filter(bl => bl._vidStepVid && bl._vidStepName && (isToday ? bl.ds <= ds : bl.ds === ds)).forEach(bl => {
+    const dk = bl._vidStepVid + '::' + bl._vidStepName + '::' + bl.ds;
+    if (seen.has(dk)) return;
+    const v = (st.videos || []).find(x => String(x.id) === String(bl._vidStepVid) && !x.is_deleted);
+    if (!v) return;
+    const isDone = v[bl._vidStepName] === 'done' || _mVidStepDone(bl._vidStepVid, bl._vidStepName, bl.ds, m[bl._vidStepVid + '::' + bl._vidStepName]);
+    if (isToday && isDone && bl.ds < ds) return;
+    seen.add(dk);
+    push(bl._vidStepVid, bl._vidStepName, bl.ds, isDone);
   });
   return tasks;
 }
 
 // ── Mobile video step toggle ─────────────────────────────────────────────────
-function mToggleVidStep(vidId, step, checked) {
+function mToggleVidStep(vidId, step, checked, forDay) {
   const v = (st.videos || []).find(x => String(x.id) === String(vidId) && !x.is_deleted);
   if (!v) return;
   if (step === 'step_thumbnail' || step === 'step_description') {
@@ -112,17 +138,33 @@ function mToggleVidStep(vidId, step, checked) {
     v[step] = checked ? 'done' : 'not_started';
     save();
     sbReqSilent('PATCH', 'videos', {[step]: v[step]}, `?id=eq.${v.id}`);
-    // Also sync any linked timeblock block
+    // Also sync any linked timeblock block + daymap done flag
     const stBlk = (st.blocks || []).find(bl => String(bl._vidStepVid) === String(vidId) && bl._vidStepName === step);
     if (stBlk) { stBlk._done = checked; sbUpdateBlock(stBlk.id, {done: checked}); }
+    const m = _mVidStepMap(); const e = m[vidId + '::' + step];
+    if (e) { e.done = checked; _mVidStepMapSet(m); }
   } else {
-    // Build/VO/Cut: just toggle the timeblock block done state, don't touch video stage
-    const stageBlocks = (st.blocks || []).filter(bl => String(bl._vidStepVid) === String(vidId) && bl._vidStepName === step);
-    stageBlocks.forEach(bl => { bl._done = checked; sbUpdateBlock(bl.id, {done: checked}); });
+    // Build/VO/Cut: toggle blocks for the tapped day (or all if no day given)
+    const all = (st.blocks || []).filter(bl => String(bl._vidStepVid) === String(vidId) && bl._vidStepName === step);
+    const dayBlocks = forDay ? all.filter(bl => bl.ds === forDay) : all;
+    if (dayBlocks.length) {
+      dayBlocks.forEach(bl => { bl._done = checked; sbUpdateBlock(bl.id, {done: checked}); });
+    } else if (forDay) {
+      // Calendar-only instance (no block): per-day done lives in the synced daymap
+      const m = _mVidStepMap(); const key = vidId + '::' + step; const e = m[key];
+      if (e) {
+        if (!e.doneDays) e.doneDays = {};
+        if (checked) e.doneDays[forDay] = true; else delete e.doneDays[forDay];
+        if (!Object.keys(e.doneDays).length) delete e.doneDays;
+        _mVidStepMapSet(m);
+      }
+    }
+    // Stage-level done flag: all blocks done
+    const m2 = _mVidStepMap(); const e2 = m2[vidId + '::' + step];
+    if (e2) { e2.done = all.length > 0 && all.every(bl => bl._done); _mVidStepMapSet(m2); }
     save();
   }
-  mRenderToday();
-  if (_mCurTab === 'week') mRenderWeek();
+  renderAll();
 }
 
 // ── Mobile-only helpers ───────────────────────────────────────────────────────
@@ -261,6 +303,7 @@ function _mTaskTypePri(t) {
   if (cat === 'social') return 5;
   if (t._type === 'vid') return 5.5;
   if (t._type === 'vidstep') return 5.6;
+  if (t._type === 'fin-cancel') return 6.5;
   if (t._type === 'shop') return 7;
   if (t._type === 'pup') return 8;
   if (t._isWrec || t._isWrRule) return 9;
@@ -269,6 +312,10 @@ function _mTaskTypePri(t) {
 }
 function mSortToday(tasks) {
   const ds = _mTodayOffset === 0 ? d2s(getDayDate(0)) : _mTodayDateStr();
+  return mSortDayTasks(tasks, ds);
+}
+// Shared day sort — exact port of desktop sortTasksForDay (used by Today, Week, Month)
+function mSortDayTasks(tasks, ds) {
   const blks = (st.blocks || []).filter(b => b.ds === ds);
   function tbSm(t) {
     let b = null;
@@ -435,7 +482,7 @@ function mTaskRow(t) {
   if (t._isWrRule) onchange = `togWrRule('${t._ruleId}',this.checked,'${t._wkKey}')`;
   else if (t._isWrec) onchange = `togRec('${t._recId}',this.checked,'${t._wkKey}')`;
   else if (t._virtual && t._recId) onchange = `togRecVirt('${t._recId}',this.checked,'${t._wkKey}')`;
-  else if (t._type === 'vidstep') onchange = `mToggleVidStep('${t._vidId}','${t._vidStep}',this.checked)`;
+  else if (t._type === 'vidstep') onchange = `mToggleVidStep('${t._vidId}','${t._vidStep}',this.checked,'${t.due_date}')`;
   else if (t._type === 'vid') onchange = `toggleTask('${t.id}',this.checked)`;
   else if (t._type === 'shop') onchange = `togShop('${t._shopId}',this.checked)`;
   else if (t._type === 'pup') onchange = `togPupSessionDone('${t._pupSessId}',this.checked)`;
@@ -797,6 +844,7 @@ let _mCurTab = 'today';
 
 function mShowTab(tab) {
   _mCurTab = tab;
+  try { localStorage._mLastTab = tab; } catch(e) {}
   const pages = {today: 'mTodayPage', tb: 'mTBPage', week: 'mWeekPage', shop: 'mShopPage', groc: 'mGrocPage'};
   Object.entries(pages).forEach(([k, id]) => {
     const el = document.getElementById(id);
@@ -990,24 +1038,24 @@ function mRenderTimeline() {
     allItems.push({sm: b.sm, dur: b.dur, type: 'block', bid: b.id, done: b._done, name: displayName, s, _b: b});
   });
 
-  // Auto blocks
+  // Auto blocks — respect each block's days list (0=Sun..6=Sat), like desktop getAutoTBForDate
   if (cfg.showAutoTB) {
     const dow = new Date(ds + 'T00:00:00').getDay();
-    const isWeekday = dow >= 1 && dow <= 5;
-    if (isWeekday) {
-      (st.autoTimeblocks || []).filter(a => a.is_enabled).forEach(a => {
-        const ov = (st.autoTBOverrides || []).find(o => String(o.base_id) === String(a.id) && o.date === ds);
-        if (ov && (ov.start_time === null || ov.start_time === undefined)) return;
-        const startTime = ov ? ov.start_time : a.start_time;
-        const endTime = ov ? ov.end_time : a.end_time;
-        const [sh, sm2] = (startTime || '00:00').split(':');
-        const [eh, em] = (endTime || '00:30').split(':');
-        const startMin = parseInt(sh) * 60 + parseInt(sm2 || 0);
-        const endMin = parseInt(eh) * 60 + parseInt(em || 0);
-        const dur = Math.max(15, endMin - startMin);
-        allItems.push({sm: startMin, dur, type: 'auto', name: a.label, cls: 'm-auto-block'});
-      });
-    }
+    (st.autoTimeblocks || []).filter(a => a.is_enabled).forEach(a => {
+      const days = a.days ? a.days.split(',').map(Number) : null;
+      if (days) { if (!days.includes(dow)) return; }
+      else { if (dow < 1 || dow > 5) return; } // legacy weekday-only
+      const ov = (st.autoTBOverrides || []).find(o => String(o.base_id) === String(a.id) && o.date === ds);
+      if (ov && (ov.start_time === null || ov.start_time === undefined)) return;
+      const startTime = ov ? ov.start_time : a.start_time;
+      const endTime = ov ? ov.end_time : a.end_time;
+      const [sh, sm2] = (startTime || '00:00').split(':');
+      const [eh, em] = (endTime || '00:30').split(':');
+      const startMin = parseInt(sh) * 60 + parseInt(sm2 || 0);
+      const endMin = parseInt(eh) * 60 + parseInt(em || 0);
+      const dur = Math.max(15, endMin - startMin);
+      allItems.push({sm: startMin, dur, type: 'auto', name: a.label, cls: 'm-auto-block'});
+    });
   }
 
   // Recurring auto blocks
@@ -1455,11 +1503,7 @@ function mGetDayTasks(ds, weekOff) {
     seenName.add(nameKey);
     return true;
   });
-  return deduped.sort((a, b) => {
-    if (a.done && !b.done) return 1;
-    if (!a.done && b.done) return -1;
-    return (a.name || '').localeCompare(b.name || '');
-  });
+  return mSortDayTasks(deduped, ds); // same ordering rules as desktop week (travel/birthday top, overdue, important, TB time, type)
 }
 
 function mWkTaskRow(t) {
@@ -1471,7 +1515,7 @@ function mWkTaskRow(t) {
 
   let onchange = '';
   if (t._type === 'shop')          onchange = `togShop('${t._shopId}',this.checked)`;
-  else if (t._type === 'vidstep')  onchange = `mToggleVidStep('${t._vidId}','${t._vidStep}',this.checked)`;
+  else if (t._type === 'vidstep')  onchange = `mToggleVidStep('${t._vidId}','${t._vidStep}',this.checked,'${t.due_date}')`;
   else if (t._type === 'vid')      onchange = `toggleTask('${t.id}',this.checked)`;
   else if (t._isWrRule)            onchange = `togWrRule('${t._ruleId}',this.checked,'${t._wkKey}')`;
   else if (t._virtual && t._recId) onchange = `togRecVirt('${t._recId}',this.checked,'${t._wkKey}')`;
@@ -2440,7 +2484,7 @@ async function mInit() {
   if (!authed) return;
   hideLoginOverlay();
   await syncAll();
-  mShowTab('today');
+  mShowTab(['today','tb','week','shop','groc'].includes(localStorage._mLastTab) ? localStorage._mLastTab : 'today'); // restore last tab across refresh
   setInterval(() => { if (cfg.url && cfg.key && !document.hidden) syncAll(true); }, 30000);
 
   // iOS suspends setInterval while the PWA is backgrounded — so reopening the app
