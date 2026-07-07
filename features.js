@@ -5014,7 +5014,14 @@ async function init(){
     syncAll(false).then(()=>{_firstSyncDone=true;});
   } else{_firstSyncDone=true;renderAll();setBadge('err','Not connected');_removePreloadAfterFonts();}
   setupWkcEdgeDrop();setupEdge('wkListEdgeR',1);
-  setInterval(()=>{if(cfg.url&&cfg.key)syncAll(true);},30000);
+  setInterval(()=>{if(cfg.url&&cfg.key&&!document.hidden)syncAll(true);},30000);
+  // Sync immediately on return to a visible tab (interval was paused while hidden)
+  let _fgLastSync=0;
+  document.addEventListener('visibilitychange',()=>{
+    if(document.hidden||!cfg.url||!cfg.key)return;
+    const n=Date.now();if(n-_fgLastSync<3000)return;_fgLastSync=n;
+    syncAll(true).catch(()=>{});
+  });
 }
 
 function toggleKanban(){
@@ -6101,8 +6108,18 @@ function toggleSettingsPopup(){
     const r=btn.getBoundingClientRect();
     p.style.top=(r.bottom+8)+'px';
     p.style.right=(window.innerWidth-r.right)+'px';
+    _renderEgress();
   }
   p.classList.toggle('open');
+}
+function _renderEgress(){
+  const el=document.getElementById('egressMeter');if(!el)return;
+  let e={};try{e=JSON.parse(localStorage.getItem('samdash_egress')||'{}');}catch(x){}
+  const mb=(e.bytes||0)/1048576;
+  const d=new Date(),dim=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();
+  const projGB=(mb/d.getDate())*dim/1024;
+  el.textContent=(mb<1024?mb.toFixed(1)+' MB':(mb/1024).toFixed(2)+' GB')+' this month · proj '+projGB.toFixed(2)+' GB / 5 GB';
+  el.style.color=projGB>4?'#ef4444':'';
 }
 document.addEventListener('click',function(e){
   const popup=document.getElementById('settingsPopup');

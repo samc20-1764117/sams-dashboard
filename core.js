@@ -105,6 +105,8 @@ async function checkAuth(){
 
 // ── Supabase ───────────────────────────────────────────────────────────────────
 let _sbNetFails=0,_sbNetToastTimer=null;
+// Egress meter: cumulative bytes downloaded from Supabase this month (per device, localStorage)
+function _egAdd(n){try{const d=new Date(),mo=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');let e=JSON.parse(localStorage.getItem('samdash_egress')||'{}');if(e.month!==mo)e={month:mo,bytes:0};e.bytes+=n;localStorage.setItem('samdash_egress',JSON.stringify(e));}catch(x){}}
 async function sbReq(method,table,body,qs=''){
   if(!cfg.url||!cfg.key)return null;
   if(method!=='POST'&&/eq\.t-/.test(qs))return null;
@@ -119,7 +121,7 @@ async function sbReq(method,table,body,qs=''){
       return null;
     }
     _sbNetFails=0;
-    const t=await r.text();return t?JSON.parse(t):[];
+    const t=await r.text();_egAdd(t.length);return t?JSON.parse(t):[];
   }catch(e){
     console.error('Supabase fetch error',method,table,e);
     _sbNetFails++;
@@ -130,6 +132,10 @@ async function sbReq(method,table,body,qs=''){
 // localOverrides: map of taskId -> partial fields that always win over DB on sync
 // Persisted to localStorage so refreshes don't lose pending changes
 let localOverrides={};
+// Per-tab table-version cursor for gated sync. In-memory ON PURPOSE (not persisted):
+// a shared localStorage cursor would let one tab advance it and starve another tab's
+// refetch (stale st, then its save() clobbers the fresh copy). Page load = full sync.
+let _tblVer={};
 
 async function sbReqNullable(method,table,body,qs=''){
   if(!cfg.url||!cfg.key)return null;
@@ -169,7 +175,7 @@ async function sbReqSilent(method,table,body,qs=''){
       body:body?JSON.stringify(body):null
     });
     if(!r.ok){const t=await r.text();console.warn('Supabase silent fail',method,table,r.status,t);return null;}
-    const t=await r.text();return t?JSON.parse(t):[];
+    const t=await r.text();_egAdd(t.length);return t?JSON.parse(t):[];
   }catch(e){console.warn('sbReqSilent error',method,table,e);return null;}
 }
 
@@ -252,24 +258,39 @@ async function syncAll(silent=false){
   if(_sbClient){const{data:{session}}=await _sbClient.auth.getSession();if(session)_authToken=session.access_token;}
   if(!silent)setBadge('loading','Syncing…');
   try{
+    // ── Version-gated sync: poll tiny table_versions first, only refetch changed tables ──
+    if(!silent)_tblVer={}; // manual/init sync = force full refresh
+    let _vMap=null;
+    const _vRows=await sbReqSilent('GET','table_versions',null,'?select=tbl,ver');
+    if(_vRows&&_vRows.length){_vMap={};_vRows.forEach(r=>{_vMap[r.tbl]=r.ver;});}
+    // null/empty _vMap (migration not run, offline, RLS issue) → _dirty always true → full sync
+    // Force-fetch tables with unconfirmed local writes: their merge blocks contain the
+    // re-push/override-clear self-heal, which only runs on a non-null fetch result.
+    const _force=new Set();
+    if(pendingLocal.size||Object.keys(localOverrides).length)_force.add('tasks');
+    if(pendingShopIds.size)_force.add('shopping_list');
+    if(pendingTravelIds.size)_force.add('travel');
+    if(pendingBlockIds.size)_force.add('time_blocks');
+    const _dirty=t=>!_vMap||_force.has(t)||_vMap[t]===undefined||_tblVer[t]!==_vMap[t];
+    const _gv=(fn,t,qs)=>_dirty(t)?fn('GET',t,null,qs):Promise.resolve(null);
     const[tasks,shop,trav,bdays,pupSkills,pupSessionsDb,pupWkFocusDb,recipes,videosDb,gStaples,gList,mealPlanDb,packTplDb,packItemDb,finDb,finSubDb,ideasDb]=await Promise.all([
-      sbReq('GET','tasks',null,'?order=due_date.asc.nullslast&select=*'),
-      sbReq('GET','shopping_list',null,'?order=shop_order.asc.nullslast,store.asc,name.asc&select=*'),
-      sbReq('GET','travel',null,'?order=start_date.asc&select=*'),
-      sbReq('GET','birthdays',null,'?order=birthday.asc&select=*'),
-      sbReqSilent('GET','pup_skills',null,'?order=pup.asc,skill_order.asc,skill.asc&select=*'),
-      sbReqSilent('GET','pup_skill_sessions',null,'?order=day_date.asc&select=*'),
-      sbReqSilent('GET','pup_weekly_focus',null,'?select=*'),
-      sbReqSilent('GET','recipes',null,'?order=sort_order.asc.nullslast,name.asc&select=*'),
-      sbReqSilent('GET','videos',null,'?is_deleted=neq.true&order=created_at.asc&select=*'),
-      sbReqSilent('GET','grocery_staples',null,'?order=sort_order.asc.nullslast,name.asc&select=*'),
-      sbReqSilent('GET','grocery_list',null,'?order=sort_order.asc.nullslast,name.asc&select=*'),
-      sbReqSilent('GET','meal_plan',null,'?order=meal_date.asc,sort_order.asc.nullslast&select=*'),
-      sbReqSilent('GET','packing_templates',null,'?order=category.asc,sort_order.asc.nullslast,name.asc&select=*'),
-      sbReqSilent('GET','packing_items',null,'?order=sort_order.asc.nullslast,name.asc&select=*'),
-      sbReqSilent('GET','finance',null,'?order=sort_order.asc.nullslast,name.asc&select=*'),
-      sbReqSilent('GET','finance_subs',null,'?order=sort_order.asc.nullslast,name.asc&select=*'),
-      sbReqSilent('GET','ideas',null,'?order=created_at.desc&select=*')
+      _gv(sbReq,'tasks','?order=due_date.asc.nullslast&select=*'),
+      _gv(sbReq,'shopping_list','?order=shop_order.asc.nullslast,store.asc,name.asc&select=*'),
+      _gv(sbReq,'travel','?order=start_date.asc&select=*'),
+      _gv(sbReq,'birthdays','?order=birthday.asc&select=*'),
+      _gv(sbReqSilent,'pup_skills','?order=pup.asc,skill_order.asc,skill.asc&select=*'),
+      _gv(sbReqSilent,'pup_skill_sessions','?order=day_date.asc&select=*'),
+      _gv(sbReqSilent,'pup_weekly_focus','?select=*'),
+      _gv(sbReqSilent,'recipes','?order=sort_order.asc.nullslast,name.asc&select=*'),
+      _gv(sbReqSilent,'videos','?is_deleted=neq.true&order=created_at.asc&select=*'),
+      _gv(sbReqSilent,'grocery_staples','?order=sort_order.asc.nullslast,name.asc&select=*'),
+      _gv(sbReqSilent,'grocery_list','?order=sort_order.asc.nullslast,name.asc&select=*'),
+      _gv(sbReqSilent,'meal_plan','?order=meal_date.asc,sort_order.asc.nullslast&select=*'),
+      _gv(sbReqSilent,'packing_templates','?order=category.asc,sort_order.asc.nullslast,name.asc&select=*'),
+      _gv(sbReqSilent,'packing_items','?order=sort_order.asc.nullslast,name.asc&select=*'),
+      _gv(sbReqSilent,'finance','?order=sort_order.asc.nullslast,name.asc&select=*'),
+      _gv(sbReqSilent,'finance_subs','?order=sort_order.asc.nullslast,name.asc&select=*'),
+      _gv(sbReqSilent,'ideas','?order=created_at.desc&select=*')
     ]);
     if(ideasDb)st.ideas=ideasDb;
     if(pupSessionsDb)st.pupSessions=pupSessionsDb.filter(s=>!deletedPupSessIds.has(String(s.id)));
@@ -282,18 +303,18 @@ async function syncAll(silent=false){
     if(finDb)st.finance=finDb;
     if(finSubDb)st.finSubs=finSubDb;
     // Fetch time_blocks separately so a failure doesn't break the whole sync
-    const blocks=await sbReqSilent('GET','time_blocks',null,'?order=day_date.asc,start_minutes.asc&select=*');
+    const blocks=await _gv(sbReqSilent,'time_blocks','?order=day_date.asc,start_minutes.asc&select=*');
     // Fetch auto timeblocks
     const[autoTBs,autoTBOvs]=await Promise.all([
-      sbReqSilent('GET','auto_timeblocks',null,'?is_enabled=eq.true&order=sort_order.asc&select=*'),
-      sbReqSilent('GET','auto_timeblock_overrides',null,'?order=date.asc&select=*')
+      _gv(sbReqSilent,'auto_timeblocks','?is_enabled=eq.true&order=sort_order.asc&select=*'),
+      _gv(sbReqSilent,'auto_timeblock_overrides','?order=date.asc&select=*')
     ]);
     if(autoTBs)st.autoTimeblocks=autoTBs;
     if(autoTBOvs)st.autoTBOverrides=autoTBOvs;
     // Fetch WR recurring rules + overrides
     const[wrRules,wrOvs]=await Promise.all([
-      sbReqSilent('GET','wr_recurring_rules',null,'?is_enabled=eq.true&order=sort_order.asc,name.asc&select=*'),
-      sbReqSilent('GET','wr_recurring_overrides',null,'?order=wk_key.asc&select=*')
+      _gv(sbReqSilent,'wr_recurring_rules','?is_enabled=eq.true&order=sort_order.asc,name.asc&select=*'),
+      _gv(sbReqSilent,'wr_recurring_overrides','?order=wk_key.asc&select=*')
     ]);
     if(wrRules){
       const prevPins={};st.wrRules.forEach(r=>{if(r._dateOverrides)prevPins[String(r.id)]=r._dateOverrides;});
@@ -449,6 +470,19 @@ async function syncAll(silent=false){
           taskId:b.task_id||null,recId:_isVidStep?null:b.rec_id||null,shopId:b.shop_id||null,_vidId:_isVidStep?null:b.vid_id||null,ruleId:null,_done:b.done||false,_pupSessId,_finCancelSubId,
           _vidStepVid:_isVidStep?b.vid_id:null,_vidStepName:_isVidStep?b.rec_id:null};
       }),...localOnly];
+    }
+    // Advance version cursors: only for tables whose fetch succeeded (non-null) or that
+    // weren't dirty. Failed/skipped-apply fetches keep the old cursor → retried next poll.
+    if(_vMap){
+      const _res={tasks,shopping_list:shop,travel:trav,birthdays:bdays,
+        pup_skills:(silent&&_pupUndoDirty)?null:pupSkills,
+        pup_skill_sessions:pupSessionsDb,pup_weekly_focus:pupWkFocusDb,
+        recipes:(silent&&_recUndoDirty)?null:recipes,
+        videos:videosDb,grocery_staples:gStaples,grocery_list:gList,meal_plan:mealPlanDb,
+        packing_templates:packTplDb,packing_items:packItemDb,finance:finDb,finance_subs:finSubDb,
+        ideas:ideasDb,time_blocks:blocks,auto_timeblocks:autoTBs,auto_timeblock_overrides:autoTBOvs,
+        wr_recurring_rules:wrRules,wr_recurring_overrides:wrOvs};
+      Object.keys(_res).forEach(t=>{if(_vMap[t]!==undefined&&(_res[t]||!_dirty(t)))_tblVer[t]=_vMap[t];});
     }
     save();
     const n=new Date();setBadge('',`Synced ${n.getHours()}:${String(n.getMinutes()).padStart(2,'0')}`);

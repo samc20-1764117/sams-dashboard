@@ -2441,7 +2441,7 @@ async function mInit() {
   hideLoginOverlay();
   await syncAll();
   mShowTab('today');
-  setInterval(() => { if (cfg.url && cfg.key) syncAll(true); }, 30000);
+  setInterval(() => { if (cfg.url && cfg.key && !document.hidden) syncAll(true); }, 30000);
 
   // iOS suspends setInterval while the PWA is backgrounded — so reopening the app
   // shows stale data (tasks completed on desktop still appear undone → false overdue)
