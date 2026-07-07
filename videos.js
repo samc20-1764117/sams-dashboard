@@ -2446,7 +2446,7 @@ const _VID_STATUS_OPTIONS=[
   {value:'idea',label:'1. Idea'},{value:'in_progress',label:'2. In Progress'},{value:'up_next',label:'3. Up Next'},{value:'published',label:'4. Complete'},{value:'backup',label:'4. Backup'}
 ];
 function _vidModalKey(event){
-  if(event.key==='Escape'){event.stopPropagation();closeMod('vidModal');}
+  if(event.key==='Escape'){event.stopPropagation();closeMod('vidModal');document.activeElement?.blur();}
   else if(event.key==='Enter'&&(event.metaKey||event.target.tagName!=='TEXTAREA')){
     // Close any open dropdowns first
     var sDrop=document.getElementById('vmStatusDrop');if(sDrop)sDrop.style.display='none';
@@ -2835,8 +2835,19 @@ function _vidUpdateModalStep(el,val){
 }
 
 async function saveVidModal(){
+  // Keep the videos pop-up (toolbox) open across a Save-button click — the click otherwise triggers a
+  // stray close. Suppress any close for a window, AND re-assert it open as a backstop (covers both
+  // closeVidOvMenu and any other close path).
+  const _vpEl=document.getElementById('vidOvPanel');
+  const _vpWasOpen=!!_vpEl&&_vpEl.style.display==='block';
+  if(_vpWasOpen){
+    window._vidOvSuppressClose=true;
+    setTimeout(()=>{window._vidOvSuppressClose=false;},700);
+    const _reopen=()=>{if(_vpEl){_vpEl.style.display='block';_vpEl.style.opacity='1';_vpEl.style.transform='translateX(0)';}};
+    setTimeout(_reopen,300);setTimeout(_reopen,600);
+  }
   const topic=document.getElementById('vmTopic').value.trim();
-  if(!topic){closeMod('vidModal');return;}
+  if(!topic){closeMod('vidModal');document.activeElement?.blur();return;}
   const title=document.getElementById('vmTitle').value.trim();
   const data={
     title:title||'',
@@ -2879,7 +2890,10 @@ async function saveVidModal(){
   }
   // L videos without a big parent can't be in_progress/up_next
   if(data.video_type==='L'&&!data.big_video_id&&(data.status==='in_progress'||data.status==='up_next'))data.status='idea';
-  closeMod('vidModal');
+  // Defer the modal close one tick: the videos pop-up / sub-panels' outside-click handlers skip closing
+  // only WHILE the modal is open, so closing it synchronously here lets the Save click then close the
+  // toolbox. Deferring keeps the modal "open" through the click, so those handlers leave the toolbox alone.
+  setTimeout(()=>closeMod('vidModal'),0);
   const _fromOv=activePg==='overview';
 
   if(_vidMode==='edit'&&_vidEditId){
@@ -3298,7 +3312,8 @@ document.addEventListener('keydown',e=>{
   if((e.key==='Delete'||e.key==='Backspace')&&_vidSelected.size>0){e.preventDefault();const all=new Set([..._vidSelected,..._vidChildSelected]);all.forEach(id=>delVideo(id));_vidSelected.clear();_vidChildSelected.clear();return;}
   if((e.metaKey||e.ctrlKey)&&e.key==='c'&&_vidSelected.size>0){e.preventDefault();_vidCopied=[];_vidSelected.forEach(id=>{const v=(st.videos||[]).find(x=>String(x.id)===String(id));if(v)_vidCopied.push({...v});});showToast('Copied '+_vidCopied.length+' video(s)','#0ea5e9',1500);return;}
   if((e.metaKey||e.ctrlKey)&&e.key==='v'&&_vidCopied.length>0){e.preventDefault();_vidCopied.forEach(v=>_vidDuplicate(v.id));return;}
-  if(e.key==='n'&&!e.metaKey&&!e.ctrlKey){e.preventDefault();openVidModal();return;}
+  if((e.key==='n'||e.key==='b')&&!e.metaKey&&!e.ctrlKey){e.preventDefault();openVidModal('B');return;}
+  if(e.key==='l'&&!e.metaKey&&!e.ctrlKey){e.preventDefault();openVidModal('L');return;}
   // ── Arrow key actions (all views) ──
   if((_vidView==='dashboard'||_vidView==='table'||_vidView==='board')&&(e.key==='ArrowUp'||e.key==='ArrowDown'||e.key==='ArrowLeft'||e.key==='ArrowRight')){
     const rowSel=_vidView==='table'?'.vid-row[data-vid]':_vidView==='board'?'.vid-board-card[data-vid]':'.vid-dash-row[data-vid]';

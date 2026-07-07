@@ -1,3 +1,5 @@
+// If old cached HTML is loaded (no inline _BUILD), redirect to cache-busted URL
+if(!window._BUILD&&!sessionStorage._bust){sessionStorage._bust='1';location.href='/?_='+Date.now();}
 let _pgNavLock=false;
 // ── Categories ─────────────────────────────────────────────────────────────────
 const CATS={
@@ -20,7 +22,8 @@ const OV={bg:'#fff0f0',t:'#b91c1c',d:'#ef4444',dot:'#fecaca',b:'rgba(239,68,68,.
 const KCATS=['Home','My work','Work','Social+Travel','Long term','Weekly Goals'];
 let HOURS=[...Array(20)].map((_,i)=>i+4);
 const DNAMES=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-const PX=40/60, KEY='samdash_v7';
+let PX=40/60; const KEY='samdash_v7';
+function _syncPX(){const sc=document.getElementById('tbScroll');if(sc){const visH=sc.clientHeight;const hourH=visH/14;document.documentElement.style.setProperty('--hour-h',hourH+'px');PX=hourH/60;}}
 
 const CATS_DARK={
   'home':{bg:'rgba(59,130,246,.14)',t:'#93c5fd',d:'#3b82f6',dot:'#93c5fd',b:'rgba(59,130,246,.18)'},
@@ -57,7 +60,8 @@ let shopSortMode='store'; // 'store' or 'alpha'
 
 // ── Storage ────────────────────────────────────────────────────────────────────
 function load(){try{const s=JSON.parse(localStorage.getItem(KEY)||'{}');if(s.cfg)cfg={...cfg,...s.cfg};if(s.blocks)st.blocks=s.blocks.map(b=>{const{_col,_ncols,...rest}=b;return rest;});if(s.sb!==undefined)sbOpen=s.sb;if(s.overrides)localOverrides=s.overrides;if(s.delRec)deletedRecIds=new Set(s.delRec);if(s.delPupSess)deletedPupSessIds=new Set(s.delPupSess);if(s.tasks)st.tasks=s.tasks;if(s.recurring)st.recurring=s.recurring.map(r=>({...r,_doneByWk:r._doneByWk||{}}));if(s.shopping)st.shopping=s.shopping;if(s.travel)st.travel=s.travel;if(s.birthdays)st.birthdays=s.birthdays;if(s.ideas)st.ideas=s.ideas;if(s.pup_skills)st.pup_skills=s.pup_skills;if(s.pupSessions)st.pupSessions=s.pupSessions;if(s.pupWeeklyFocus)st.pupWeeklyFocus=s.pupWeeklyFocus;if(s.recipes)st.recipes=s.recipes;if(s.videos)st.videos=s.videos;if(s.autoTimeblocks)st.autoTimeblocks=s.autoTimeblocks;if(s.autoTBOverrides)st.autoTBOverrides=s.autoTBOverrides;if(s.wrRules)st.wrRules=s.wrRules;if(s.wrOverrides)st.wrOverrides=s.wrOverrides;if(s._ytDismissed)st._ytDismissed=s._ytDismissed;if(s.groceryStaples)st.groceryStaples=s.groceryStaples;if(s.groceryList)st.groceryList=s.groceryList;if(s.mealPlan)st.mealPlan=s.mealPlan;if(s.packTemplates)st.packTemplates=s.packTemplates;if(s.packItems)st.packItems=s.packItems;if(s.finance)st.finance=s.finance;if(s.finSubs)st.finSubs=s.finSubs;if(s.easyMeals)st.easyMeals=s.easyMeals;}catch(e){}}
-function save(){try{localStorage.setItem(KEY,JSON.stringify({cfg,blocks:st.blocks,sb:sbOpen,overrides:localOverrides,delRec:[...deletedRecIds],delPupSess:[...deletedPupSessIds],tasks:st.tasks,recurring:st.recurring,shopping:st.shopping,travel:st.travel,birthdays:st.birthdays,ideas:st.ideas,pup_skills:st.pup_skills,pupSessions:st.pupSessions,pupWeeklyFocus:st.pupWeeklyFocus,recipes:st.recipes,videos:st.videos,autoTimeblocks:st.autoTimeblocks,autoTBOverrides:st.autoTBOverrides,wrRules:st.wrRules,wrOverrides:st.wrOverrides,_ytDismissed:st._ytDismissed,groceryStaples:st.groceryStaples,groceryList:st.groceryList,mealPlan:st.mealPlan,packTemplates:st.packTemplates,packItems:st.packItems,finance:st.finance,finSubs:st.finSubs,easyMeals:st.easyMeals}));}catch(e){}}
+let _lastSaveTs=0;
+function save(){_lastSaveTs=Date.now();try{localStorage.setItem(KEY,JSON.stringify({cfg,blocks:st.blocks,sb:sbOpen,overrides:localOverrides,delRec:[...deletedRecIds],delPupSess:[...deletedPupSessIds],tasks:st.tasks,recurring:st.recurring,shopping:st.shopping,travel:st.travel,birthdays:st.birthdays,ideas:st.ideas,pup_skills:st.pup_skills,pupSessions:st.pupSessions,pupWeeklyFocus:st.pupWeeklyFocus,recipes:st.recipes,videos:st.videos,autoTimeblocks:st.autoTimeblocks,autoTBOverrides:st.autoTBOverrides,wrRules:st.wrRules,wrOverrides:st.wrOverrides,_ytDismissed:st._ytDismissed,groceryStaples:st.groceryStaples,groceryList:st.groceryList,mealPlan:st.mealPlan,packTemplates:st.packTemplates,packItems:st.packItems,finance:st.finance,finSubs:st.finSubs,easyMeals:st.easyMeals}));}catch(e){}}
 
 // ── Auth ───────────────────────────────────────────────────────────────────────
 let _sbClient=null;
@@ -68,9 +72,9 @@ function _initSbClient(){
   if(_sbClient||!cfg.url||!cfg.key)return;
   _sbClient=supabase.createClient(cfg.url,cfg.key,{auth:{persistSession:true,autoRefreshToken:true}});
   _sbClient.auth.onAuthStateChange((event,session)=>{
-    _authToken=session?session.access_token:null;
-    _userId=session?.user?.id||null;
-    if(!session&&event!=='INITIAL_SESSION'){showLoginOverlay(event);}
+    if(session){_authToken=session.access_token;_userId=session.user?.id||null;}
+    // Never show login overlay from auth state changes — network blips cause false SIGNED_OUT events.
+    // Login is gated by checkAuth() on page load only. If truly signed out, next refresh will catch it.
   });
 }
 function showLoginOverlay(){
@@ -100,8 +104,12 @@ async function checkAuth(){
 }
 
 // ── Supabase ───────────────────────────────────────────────────────────────────
+let _sbNetFails=0,_sbNetToastTimer=null;
+// Egress meter: cumulative bytes downloaded from Supabase this month (per device, localStorage)
+function _egAdd(n){try{const d=new Date(),mo=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');let e=JSON.parse(localStorage.getItem('samdash_egress')||'{}');if(e.month!==mo)e={month:mo,bytes:0};e.bytes+=n;localStorage.setItem('samdash_egress',JSON.stringify(e));}catch(x){}}
 async function sbReq(method,table,body,qs=''){
   if(!cfg.url||!cfg.key)return null;
+  if(method!=='POST'&&/eq\.t-/.test(qs))return null;
   try{
     const prefer=method==='DELETE'?'return=minimal':'return=representation';
     const r=await fetch(`${cfg.url}/rest/v1/${table}${qs}`,{method,headers:{'apikey':cfg.key,'Authorization':`Bearer ${_getAuthToken()}`,'Content-Type':'application/json','Prefer':prefer},body:body?JSON.stringify(body):null});
@@ -112,16 +120,22 @@ async function sbReq(method,table,body,qs=''){
       showToast('⚠️ Save failed ('+r.status+'): '+errMsg,'#ef4444',8000);
       return null;
     }
-    const t=await r.text();return t?JSON.parse(t):[];
+    _sbNetFails=0;
+    const t=await r.text();_egAdd(t.length);return t?JSON.parse(t):[];
   }catch(e){
     console.error('Supabase fetch error',method,table,e);
-    showToast('⚠️ Save failed — check connection','#ef4444',4000);
+    _sbNetFails++;
+    if(!_sbNetToastTimer){showToast('⚠️ Save failed — check connection','#ef4444',4000);_sbNetToastTimer=setTimeout(()=>{_sbNetToastTimer=null;},10000);}
     return null;
   }
 }
 // localOverrides: map of taskId -> partial fields that always win over DB on sync
 // Persisted to localStorage so refreshes don't lose pending changes
 let localOverrides={};
+// Per-tab table-version cursor for gated sync. In-memory ON PURPOSE (not persisted):
+// a shared localStorage cursor would let one tab advance it and starve another tab's
+// refetch (stale st, then its save() clobbers the fresh copy). Page load = full sync.
+let _tblVer={};
 
 async function sbReqNullable(method,table,body,qs=''){
   if(!cfg.url||!cfg.key)return null;
@@ -145,11 +159,15 @@ async function sbReqNullable(method,table,body,qs=''){
 const pendingLocal=new Set();
 const pendingTravelIds=new Set();
 const pendingShopIds=new Set();
+// Block ids created/saved locally but not yet confirmed in the DB. Only these are preserved
+// across a sync — a block missing from the DB that ISN'T pending was deleted elsewhere.
+const pendingBlockIds=new Set();
 let deletedRecIds=new Set();
 let deletedPupSessIds=new Set();
 // ── Supabase silent request (no toast on failure) ────────────────────────────
 async function sbReqSilent(method,table,body,qs=''){
   if(!cfg.url||!cfg.key)return null;
+  if(method!=='POST'&&/eq\.t-/.test(qs))return null;
   try{
     const r=await fetch(`${cfg.url}/rest/v1/${table}${qs}`,{
       method,
@@ -157,7 +175,7 @@ async function sbReqSilent(method,table,body,qs=''){
       body:body?JSON.stringify(body):null
     });
     if(!r.ok){const t=await r.text();console.warn('Supabase silent fail',method,table,r.status,t);return null;}
-    const t=await r.text();return t?JSON.parse(t):[];
+    const t=await r.text();_egAdd(t.length);return t?JSON.parse(t):[];
   }catch(e){console.warn('sbReqSilent error',method,table,e);return null;}
 }
 
@@ -179,6 +197,7 @@ async function sbSaveBlock(b){
     vid_id:b._vidStepVid||b._vidId||null,
     done:b._done||false
   };
+  pendingBlockIds.add(String(b.id));
   try{
     const r=await fetch(`${cfg.url}/rest/v1/time_blocks?on_conflict=id`,{
       method:'POST',
@@ -193,6 +212,7 @@ async function sbSaveBlock(b){
   }catch(e){console.error('sbSaveBlock fetch error',e);}
 }
 async function sbDeleteBlock(id){
+  pendingBlockIds.delete(String(id));
   if(!cfg.url||!cfg.key)return;
   try{
     const r=await fetch(`${cfg.url}/rest/v1/time_blocks?id=eq.${id}`,{method:'DELETE',headers:{'apikey':cfg.key,'Authorization':`Bearer ${_getAuthToken()}`,'Prefer':'return=minimal'}});
@@ -238,24 +258,39 @@ async function syncAll(silent=false){
   if(_sbClient){const{data:{session}}=await _sbClient.auth.getSession();if(session)_authToken=session.access_token;}
   if(!silent)setBadge('loading','Syncing…');
   try{
+    // ── Version-gated sync: poll tiny table_versions first, only refetch changed tables ──
+    if(!silent)_tblVer={}; // manual/init sync = force full refresh
+    let _vMap=null;
+    const _vRows=await sbReqSilent('GET','table_versions',null,'?select=tbl,ver');
+    if(_vRows&&_vRows.length){_vMap={};_vRows.forEach(r=>{_vMap[r.tbl]=r.ver;});}
+    // null/empty _vMap (migration not run, offline, RLS issue) → _dirty always true → full sync
+    // Force-fetch tables with unconfirmed local writes: their merge blocks contain the
+    // re-push/override-clear self-heal, which only runs on a non-null fetch result.
+    const _force=new Set();
+    if(pendingLocal.size||Object.keys(localOverrides).length)_force.add('tasks');
+    if(pendingShopIds.size)_force.add('shopping_list');
+    if(pendingTravelIds.size)_force.add('travel');
+    if(pendingBlockIds.size)_force.add('time_blocks');
+    const _dirty=t=>!_vMap||_force.has(t)||_vMap[t]===undefined||_tblVer[t]!==_vMap[t];
+    const _gv=(fn,t,qs)=>_dirty(t)?fn('GET',t,null,qs):Promise.resolve(null);
     const[tasks,shop,trav,bdays,pupSkills,pupSessionsDb,pupWkFocusDb,recipes,videosDb,gStaples,gList,mealPlanDb,packTplDb,packItemDb,finDb,finSubDb,ideasDb]=await Promise.all([
-      sbReq('GET','tasks',null,'?order=due_date.asc.nullslast&select=*'),
-      sbReq('GET','shopping_list',null,'?order=shop_order.asc.nullslast,store.asc,name.asc&select=*'),
-      sbReq('GET','travel',null,'?order=start_date.asc&select=*'),
-      sbReq('GET','birthdays',null,'?order=birthday.asc&select=*'),
-      sbReqSilent('GET','pup_skills',null,'?order=pup.asc,skill_order.asc,skill.asc&select=*'),
-      sbReqSilent('GET','pup_skill_sessions',null,'?order=day_date.asc&select=*'),
-      sbReqSilent('GET','pup_weekly_focus',null,'?select=*'),
-      sbReqSilent('GET','recipes',null,'?order=sort_order.asc.nullslast,name.asc&select=*'),
-      sbReqSilent('GET','videos',null,'?is_deleted=neq.true&order=created_at.asc&select=*'),
-      sbReqSilent('GET','grocery_staples',null,'?order=sort_order.asc.nullslast,name.asc&select=*'),
-      sbReqSilent('GET','grocery_list',null,'?order=sort_order.asc.nullslast,name.asc&select=*'),
-      sbReqSilent('GET','meal_plan',null,'?order=meal_date.asc,sort_order.asc.nullslast&select=*'),
-      sbReqSilent('GET','packing_templates',null,'?order=category.asc,sort_order.asc.nullslast,name.asc&select=*'),
-      sbReqSilent('GET','packing_items',null,'?order=sort_order.asc.nullslast,name.asc&select=*'),
-      sbReqSilent('GET','finance',null,'?order=sort_order.asc.nullslast,name.asc&select=*'),
-      sbReqSilent('GET','finance_subs',null,'?order=sort_order.asc.nullslast,name.asc&select=*'),
-      sbReqSilent('GET','ideas',null,'?order=created_at.desc&select=*')
+      _gv(sbReq,'tasks','?order=due_date.asc.nullslast&select=*'),
+      _gv(sbReq,'shopping_list','?order=shop_order.asc.nullslast,store.asc,name.asc&select=*'),
+      _gv(sbReq,'travel','?order=start_date.asc&select=*'),
+      _gv(sbReq,'birthdays','?order=birthday.asc&select=*'),
+      _gv(sbReqSilent,'pup_skills','?order=pup.asc,skill_order.asc,skill.asc&select=*'),
+      _gv(sbReqSilent,'pup_skill_sessions','?order=day_date.asc&select=*'),
+      _gv(sbReqSilent,'pup_weekly_focus','?select=*'),
+      _gv(sbReqSilent,'recipes','?order=sort_order.asc.nullslast,name.asc&select=*'),
+      _gv(sbReqSilent,'videos','?is_deleted=neq.true&order=created_at.asc&select=*'),
+      _gv(sbReqSilent,'grocery_staples','?order=sort_order.asc.nullslast,name.asc&select=*'),
+      _gv(sbReqSilent,'grocery_list','?order=sort_order.asc.nullslast,name.asc&select=*'),
+      _gv(sbReqSilent,'meal_plan','?order=meal_date.asc,sort_order.asc.nullslast&select=*'),
+      _gv(sbReqSilent,'packing_templates','?order=category.asc,sort_order.asc.nullslast,name.asc&select=*'),
+      _gv(sbReqSilent,'packing_items','?order=sort_order.asc.nullslast,name.asc&select=*'),
+      _gv(sbReqSilent,'finance','?order=sort_order.asc.nullslast,name.asc&select=*'),
+      _gv(sbReqSilent,'finance_subs','?order=sort_order.asc.nullslast,name.asc&select=*'),
+      _gv(sbReqSilent,'ideas','?order=created_at.desc&select=*')
     ]);
     if(ideasDb)st.ideas=ideasDb;
     if(pupSessionsDb)st.pupSessions=pupSessionsDb.filter(s=>!deletedPupSessIds.has(String(s.id)));
@@ -268,25 +303,33 @@ async function syncAll(silent=false){
     if(finDb)st.finance=finDb;
     if(finSubDb)st.finSubs=finSubDb;
     // Fetch time_blocks separately so a failure doesn't break the whole sync
-    const blocks=await sbReqSilent('GET','time_blocks',null,'?order=day_date.asc,start_minutes.asc&select=*');
+    const blocks=await _gv(sbReqSilent,'time_blocks','?order=day_date.asc,start_minutes.asc&select=*');
     // Fetch auto timeblocks
     const[autoTBs,autoTBOvs]=await Promise.all([
-      sbReqSilent('GET','auto_timeblocks',null,'?is_enabled=eq.true&order=sort_order.asc&select=*'),
-      sbReqSilent('GET','auto_timeblock_overrides',null,'?order=date.asc&select=*')
+      _gv(sbReqSilent,'auto_timeblocks','?is_enabled=eq.true&order=sort_order.asc&select=*'),
+      _gv(sbReqSilent,'auto_timeblock_overrides','?order=date.asc&select=*')
     ]);
     if(autoTBs)st.autoTimeblocks=autoTBs;
     if(autoTBOvs)st.autoTBOverrides=autoTBOvs;
     // Fetch WR recurring rules + overrides
     const[wrRules,wrOvs]=await Promise.all([
-      sbReqSilent('GET','wr_recurring_rules',null,'?is_enabled=eq.true&order=sort_order.asc,name.asc&select=*'),
-      sbReqSilent('GET','wr_recurring_overrides',null,'?order=wk_key.asc&select=*')
+      _gv(sbReqSilent,'wr_recurring_rules','?is_enabled=eq.true&order=sort_order.asc,name.asc&select=*'),
+      _gv(sbReqSilent,'wr_recurring_overrides','?order=wk_key.asc&select=*')
     ]);
     if(wrRules){
       const prevPins={};st.wrRules.forEach(r=>{if(r._dateOverrides)prevPins[String(r.id)]=r._dateOverrides;});
       const prevRecOvs={};st.recurring.forEach(r=>{if(r._dateOverrides)prevRecOvs[String(r.id)]=r._dateOverrides;});
       const _isWR=r=>r.is_weekly_reset===true||r.is_weekly_reset==='true';
+      // Normalize override dates. A pin (_dateOverrides[wkKey]=date) normally holds a date within its week.
+      // EXCEPTION — forward carry: a non-WR task's overdue instance can be moved forward to a later week and
+      // is intentionally kept under its ORIGINAL week key with an out-of-week (future) date, so it stays a
+      // SEPARATE instance from that later week's own occurrence (e.g. last week's HEB landed on this Monday
+      // while this week's HEB stays on its Sunday). Those forward pins MUST be preserved as-is.
+      // WR rules → drop out-of-week pins (the wr_recurring_overrides move/schedule shows the instance).
+      // Non-WR → keep forward carries; only clamp backward (earlier-than-week) dates, which are stale bad data.
+      const _normOvs=(o,del)=>{Object.keys(o).forEach(k=>{let v=o[k];if(!v||v==='__skip__'||!/^\d{4}-\d{2}-\d{2}$/.test(String(v))||!/^\d{4}-\d{2}-\d{2}$/.test(k))return;const sun=new Date(k+'T12:00');sun.setDate(sun.getDate()+6);const sunDs=d2s(sun);if(v>=k&&v<=sunDs)return;if(del){delete o[k];return;}if(v>sunDs)return;while(v<k){const d=new Date(v+'T12:00');d.setDate(d.getDate()+7);v=d2s(d);}o[k]=v;});return o;};
       st.wrRules=wrRules.filter(_isWR);
-      st.wrRules.forEach(r=>{const dbOvs={...(r.date_overrides||{})};const prevOvs=prevPins[String(r.id)];if(prevOvs){Object.keys(prevOvs).forEach(k=>{if(!dbOvs[k])dbOvs[k]=prevOvs[k];});}r._dateOverrides=dbOvs;});
+      st.wrRules.forEach(r=>{const dbOvs={...(r.date_overrides||{})};const prevOvs=prevPins[String(r.id)];if(prevOvs){Object.keys(prevOvs).forEach(k=>{if(dbOvs[k]==='__skip__')return;dbOvs[k]=prevOvs[k];});}r._dateOverrides=_normOvs(dbOvs,true);});
       const nonWR=wrRules.filter(r=>!_isWR(r));
       const dbIds=new Set(nonWR.map(r=>String(r.id)));
       const localPending=st.recurring.filter(r=>{
@@ -300,8 +343,11 @@ async function syncAll(silent=false){
           const isDone=!!(dbwk[getWkKey(0)]);
           const dateOvs={...(r.date_overrides||{})};
           const prevOvs=prevRecOvs[String(r.id)];
-          if(prevOvs){Object.keys(prevOvs).forEach(k=>{if(!dateOvs[k])dateOvs[k]=prevOvs[k];});}
-          return{...r,_doneByWk:dbwk,_done:isDone,_dateOverrides:dateOvs};
+          // Preserve local optimistic overrides — but never let a stale local copy resurrect a
+          // task the DB says is skipped this week ('__skip__'). Otherwise a skip made on another
+          // device (desktop) never syncs here: local keeps clobbering the DB skip every sync.
+          if(prevOvs){Object.keys(prevOvs).forEach(k=>{if(dateOvs[k]==='__skip__')return;dateOvs[k]=prevOvs[k];});}
+          return{...r,_doneByWk:dbwk,_done:isDone,_dateOverrides:_normOvs(dateOvs)};
         }),
         ...localPending
       ];
@@ -318,11 +364,30 @@ async function syncAll(silent=false){
             return dbVal===ov;
           });
           if(allMatch){delete localOverrides[sid];save();}
-          else return{...dbT,...override};
+          else{
+            // DB still doesn't reflect this local change — a prior PATCH silently failed
+            // (e.g. expired session/network blip). Re-push it so it eventually lands instead
+            // of leaving the override to mask the failure forever (which left other devices stale).
+            const _body={};Object.entries(override).forEach(([k,v])=>{_body[k]=v===''?null:v;});
+            sbReqSilent('PATCH','tasks',_body,`?id=eq.${sid}`);
+            return{...dbT,...override};
+          }
         }
         if(pendingLocal.has(sid)){
           const local=st.tasks.find(lt=>String(lt.id)===sid);
           if(local) return local;
+        }
+        // Preserve local changes for 60s after last save (gives PATCHes time to land)
+        if(_lastSaveTs&&Date.now()-_lastSaveTs<60000){
+          const local=st.tasks.find(lt=>String(lt.id)===sid);
+          if(local){
+            const patch={};
+            if((local.due_date||null)!==(dbT.due_date||null))patch.due_date=local.due_date;
+            if(local.done!==dbT.done)patch.done=local.done;
+            if(local.important!==dbT.important)patch.important=local.important;
+            if((local.category||null)!==(dbT.category||null))patch.category=local.category;
+            if(Object.keys(patch).length)return{...dbT,...patch};
+          }
         }
         return dbT;
       });
@@ -385,7 +450,13 @@ async function syncAll(silent=false){
     }
     if(blocks){
       const dbIds=new Set(blocks.map(b=>String(b.id)));
-      const localOnly=st.blocks.filter(b=>!dbIds.has(String(b.id)));
+      // Only keep local blocks that are genuinely pending (created locally, not yet confirmed in
+      // the DB). A block missing from the DB that ISN'T pending was deleted on another device —
+      // drop it rather than resurrecting it (which left phantom blocks + checked-off step tasks).
+      const localOnly=st.blocks.filter(b=>!dbIds.has(String(b.id))&&pendingBlockIds.has(String(b.id)));
+      // Re-push any pending block the DB still doesn't have, so a silently-failed save eventually lands.
+      localOnly.forEach(b=>sbSaveBlock(b));
+      dbIds.forEach(id=>pendingBlockIds.delete(String(id))); // confirmed in DB → no longer pending
       st.blocks=[...blocks.map(b=>{
         let sm=b.start_minutes;
         if(sm==null&&b.start_time){const[hh,mm]=(b.start_time||'00:00').split(':');sm=parseInt(hh)*60+parseInt(mm);}
@@ -400,9 +471,22 @@ async function syncAll(silent=false){
           _vidStepVid:_isVidStep?b.vid_id:null,_vidStepName:_isVidStep?b.rec_id:null};
       }),...localOnly];
     }
+    // Advance version cursors: only for tables whose fetch succeeded (non-null) or that
+    // weren't dirty. Failed/skipped-apply fetches keep the old cursor → retried next poll.
+    if(_vMap){
+      const _res={tasks,shopping_list:shop,travel:trav,birthdays:bdays,
+        pup_skills:(silent&&_pupUndoDirty)?null:pupSkills,
+        pup_skill_sessions:pupSessionsDb,pup_weekly_focus:pupWkFocusDb,
+        recipes:(silent&&_recUndoDirty)?null:recipes,
+        videos:videosDb,grocery_staples:gStaples,grocery_list:gList,meal_plan:mealPlanDb,
+        packing_templates:packTplDb,packing_items:packItemDb,finance:finDb,finance_subs:finSubDb,
+        ideas:ideasDb,time_blocks:blocks,auto_timeblocks:autoTBs,auto_timeblock_overrides:autoTBOvs,
+        wr_recurring_rules:wrRules,wr_recurring_overrides:wrOvs};
+      Object.keys(_res).forEach(t=>{if(_vMap[t]!==undefined&&(_res[t]||!_dirty(t)))_tblVer[t]=_vMap[t];});
+    }
     save();
     const n=new Date();setBadge('',`Synced ${n.getHours()}:${String(n.getMinutes()).padStart(2,'0')}`);
-    renderAll();
+    document.body.classList.add('preload');renderAll();requestAnimationFrame(()=>requestAnimationFrame(()=>document.body.classList.remove('preload')));
     if(typeof seedPupReviewTask==='function')seedPupReviewTask();
   }catch(e){console.error('syncAll error',e);setBadge('err','Error');}
 }
@@ -648,8 +732,17 @@ function getNthWeekday(year,month,nth,weekday){
 function isWRRuleDueThisWeek(rule,off=0){
   if(!rule.is_enabled)return false;
   const cadence=rule.cadence||'weekly';
-  if(cadence==='weekly'||cadence==='other')return true;
   const{mon,sun}=getWkBounds(off);
+  if(cadence==='weekly'||cadence==='other'){
+    // Bound to the rule's start week so newly created tasks don't appear in past weeks.
+    // Legacy rules with no starting_date stay unbounded (every week), preserving old behavior.
+    if(rule.starting_date){
+      const sd=new Date(rule.starting_date+'T12:00');
+      const sDow=sd.getDay();const sMon=new Date(sd);sMon.setDate(sd.getDate()-(sDow===0?6:sDow-1));sMon.setHours(0,0,0,0);
+      if(mon<sMon)return false;
+    }
+    return true;
+  }
   if(cadence==='biweekly'){
     if(!rule.starting_date)return false;
     const anchor=new Date(rule.starting_date+'T12:00');
@@ -813,9 +906,39 @@ function _showRedoToast(msg){
   undoTimer=setTimeout(()=>toast.classList.remove('show'),4000);
 }
 
+// Flash overview rows changed by undo/redo
+// Diff strips transient state: flash/check animations + selection styling (sel-row class
+// and --sel-* inline props are applied async via requestAnimationFrame, so they'd show
+// as a false diff on every selected row otherwise)
+function _rowDiffHtml(el){
+  return el.outerHTML
+    .replace(/ ?(undo-flash|just-done|chk-pop|sel-row)/g,'')
+    .replace(/--sel-[\w-]*:[^;"]*;?\s*/g,'');
+}
+// Key by container + id: the same task renders in multiple lists (todList, wkList, …)
+// with identical element ids but different markup — keying by id alone makes them
+// overwrite each other in the map and false-flash on every undo
+function _rowKey(el){
+  const c=el.parentElement?el.parentElement.closest('[id]'):null;
+  return(c?c.id:'')+'::'+el.id;
+}
+function _rowSnapMap(){
+  const m=new Map();
+  document.querySelectorAll('#page-overview .ti[id]').forEach(el=>m.set(_rowKey(el),_rowDiffHtml(el)));
+  return m;
+}
+function _flashChangedRows(before){
+  document.querySelectorAll('#page-overview .ti[id]').forEach(el=>{
+    if(before.get(_rowKey(el))!==_rowDiffHtml(el)){
+      el.classList.add('undo-flash');
+      setTimeout(()=>el.classList.remove('undo-flash'),900);
+    }
+  });
+}
 function doUndo(){
   if(!undoStack.length)return;
   const entry=undoStack.pop();
+  const _rowsBefore=_rowSnapMap();
   // Snapshot state right before undo so redo can restore to this point
   const snapAfterUndo=entry.snapBeforeUndo; // this IS the pre-undo state
   const snapForRedo=_stateSnap(); // current state = what redo should restore to... wait, that's wrong
@@ -823,6 +946,7 @@ function doUndo(){
   // redoFn should restore to the state BEFORE we called doUndo = current state right now
   const currentSnap=_stateSnap();
   entry.fn();
+  _flashChangedRows(_rowsBefore);
   redoStack.push({snap:currentSnap,msg:entry.msg});
   document.getElementById('undoToast').classList.remove('show');
 }
@@ -912,7 +1036,9 @@ async function doRedo(){
   if(!redoStack.length)return;
   const{snap,msg}=redoStack.pop();
   const beforeRedo=_stateSnap();
+  const _rowsBefore=_rowSnapMap();
   _stateRestore(snap);
+  _flashChangedRows(_rowsBefore);
   await _syncRedoDiff(beforeRedo,snap);
   // undo-after-redo must also patch DB back to pre-redo state
   undoStack.push({fn:()=>{_stateRestore(beforeRedo);_syncRedoDiff(snap,beforeRedo);},msg,snapBeforeUndo:beforeRedo});
@@ -1051,13 +1177,15 @@ document.addEventListener('keydown',e=>{
   if(e.key==='v'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')){
     e.preventDefault();
     const now=Date.now();
-    if(_lastVPress&&now-_lastVPress<350&&activePg==='overview'){
+    if(_lastVPress&&now-_lastVPress<350){
       _lastVPress=0;if(_vNavTimer){clearTimeout(_vNavTimer);_vNavTimer=null;}
-      if(typeof closeAutoTBManager==='function')closeAutoTBManager();
-      if(typeof toggleVidOvMenu==='function')toggleVidOvMenu();
+      if(activePg==='videos')showPage('overview');else showPage('videos');
     } else {
       _lastVPress=now;
-      _vNavTimer=setTimeout(()=>{_vNavTimer=null;if(activePg==='videos')showPage('overview');else showPage('videos');},350);
+      _vNavTimer=setTimeout(()=>{_vNavTimer=null;
+        if(activePg!=='overview')showPage('overview');
+        setTimeout(()=>{if(typeof closeAutoTBManager==='function')closeAutoTBManager();if(typeof toggleVidOvMenu==='function')toggleVidOvMenu();},activePg==='overview'?0:100);
+      },350);
     }
   }
   if(e.key==='p'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')){
@@ -1084,7 +1212,8 @@ document.addEventListener('keydown',e=>{
     _lastGPress=now;
   }
   // L = style guide
-  if(e.key==='l'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')){
+  const _vPanel=document.getElementById('vidOvPanel');
+  if(e.key==='l'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')&&!(_vPanel&&_vPanel.style.display==='block')){
     e.preventDefault();if(activePg==='guide')showPage('overview');else showPage('guide');return;
   }
   if(e.key==='d'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')){
@@ -1132,7 +1261,8 @@ function _showHelpOverlay(){
   const _global=[
     ['⌘ ←/→','Switch between pages'],
     ['O','Go to Overview'],
-    ['V','Go to Videos'],
+    ['V','Video popup (toggle)'],
+    ['VV','Go to Videos page'],
     ['P','Go to Pups'],
     ['F','Go to Finance'],
     ['N','Quick Add task (to current day)'],
@@ -1162,12 +1292,13 @@ function _showHelpOverlay(){
       ['Click','Select task or time block'],
       ['Shift+Click','Multi-select range'],
       ['Drag','Reorder / reschedule tasks'],
+      ['E (vid panel)','Toggle edit titles/comments'],
       ['↑/↓ (vid panel)','Navigate videos'],
       ['Delete (vid panel)','Remove video from calendar'],
       ['Enter (vid panel)','Edit selected video'],
     ],
     videos:[
-      ['N','New video'],
+      ['N / B','New big video'],['L','New little video'],
       ['E / C','Toggle completed (table view)'],
       ['←/→','Switch tabs (Current → All → Analytics → Monthly)'],
       ['↑','Scroll to top'],

@@ -24,7 +24,9 @@ function openQA(ctx,btn,ds='',kcat=''){
     <div class="qa-field"><label>Stage</label><select id="qaStage" style="${selStyle}"><option value="Not Started">Not Started</option><option value="In Progress">In Progress</option><option value="Mastered">Mastered</option></select></div>`;
   } else if(ctx==='shop'){
     title='Add Item';
-    extra=`<div class="qa-field"><label>Store</label><input id="qaStore" list="storeList" placeholder="HEB, Ikea, Online…" style="width:100%;padding:5px 7px;border-radius:8px;border:1px solid var(--border);font-family:inherit;font-size:12px;background:rgba(255,255,255,.8);color:var(--text);outline:none" ><datalist id="storeList">${[...new Set(st.shopping.map(x=>x.store).filter(Boolean))].sort().map(s=>`<option value="${s}">`).join('')}<option value="HEB"><option value="Ikea"><option value="Online"><option value="Other"></datalist></div>`;
+    const _shopStores=[...new Set(['Online','HEB',...st.shopping.map(x=>x.store).filter(Boolean)])].filter(x=>x!=='Other');
+    const _sStyle='width:100%;padding:5px 7px;border-radius:8px;border:1px solid var(--border);font-family:inherit;font-size:12px;background:rgba(255,255,255,.8);color:var(--text);outline:none';
+    extra=`<div class="qa-field"><label>Store</label><select id="qaStore" style="${_sStyle}" onchange="if(this.value==='__custom'){this.style.display='none';const ci=document.getElementById('qaStoreCustom');ci.style.display='';ci.focus();}">${_shopStores.map(s=>`<option value="${escHtml(s)}">${escHtml(s)}</option>`).join('')}<option value="__custom">Custom…</option></select><input id="qaStoreCustom" placeholder="Type store name…" style="${_sStyle};display:none" onkeydown="if(event.key==='Enter')event.stopPropagation()"></div>`;
   } else if(ctx==='rec'){
     title='Add Recurring Task';extra='';
   } else {
@@ -59,7 +61,9 @@ async function submitQA(){
     return;
   }
   if(qaCtx==='shop'){
-    const store=(document.getElementById('qaStore')?.value||'').trim()||'Other';
+    let store=(document.getElementById('qaStore')?.value||'').trim();
+    if(store==='__custom')store=(document.getElementById('qaStoreCustom')?.value||'').trim();
+    if(!store)store='Online';
     const s={id:'l-'+Date.now(),name:n,store,done:false};st.shopping.push(s);renderAll();
     let shopServerId=null;
     pushUndo(()=>{const rid=shopServerId||s.id;st.shopping=st.shopping.filter(x=>String(x.id)!==String(rid));renderAll();if(shopServerId)sbReq('DELETE','shopping_list',null,`?id=eq.${shopServerId}`);},'Added item');
@@ -122,9 +126,12 @@ async function toggleTask(id,done,mode=''){
   }
   rerender();
   const linkedBlocks=st.blocks?st.blocks.filter(b=>String(b.taskId)===String(id)):[];
-  pushUndo(()=>{t.done=prev;localOverrides[sid]={...localOverrides[sid],done:prev};pendingLocal.add(sid);if(st.blocks)st.blocks.filter(b=>String(b.taskId)===String(id)).forEach(b=>b._done=prev);rerender();sbReq('PATCH','tasks',{done:prev},`?id=eq.${id}`).then(()=>pendingLocal.delete(sid));linkedBlocks.forEach(b=>sbUpdateBlock(b.id,{done:prev}));},(done?'Checked':'Unchecked')+' task');
-  await sbReq('PATCH','tasks',{done},`?id=eq.${id}`);
-  pendingLocal.delete(sid);
+  const _isTemp=sid.startsWith('t-');
+  pushUndo(()=>{t.done=prev;localOverrides[sid]={...localOverrides[sid],done:prev};pendingLocal.add(sid);if(st.blocks)st.blocks.filter(b=>String(b.taskId)===String(id)).forEach(b=>b._done=prev);rerender();if(!_isTemp)sbReq('PATCH','tasks',{done:prev},`?id=eq.${id}`).then(()=>pendingLocal.delete(sid));linkedBlocks.forEach(b=>sbUpdateBlock(b.id,{done:prev}));},(done?'Checked':'Unchecked')+' task');
+  if(!_isTemp){
+    try{await sbReq('PATCH','tasks',{done},`?id=eq.${id}`);pendingLocal.delete(sid);}
+    catch(e){/* save failed — keep localOverride+pendingLocal so syncAll re-pushes it */}
+  } else {pendingLocal.delete(sid);}
   linkedBlocks.forEach(b=>sbUpdateBlock(b.id,{done}));
 }
 async function clearTaskDate(id,e){
@@ -638,7 +645,7 @@ function renderShopFull(){save();
     sorted.forEach(s=>{
       const el=document.createElement('div');
       el.className='ti'+(s.done?' done':'');el.id='ti-shop-cal-'+s.id;
-      el.innerHTML=`<input type="checkbox" class="chk"${s.done?' checked':''}><span class="tn">${escHtml(s.name)}</span><span class="cpill" style="background:none;color:#94a3b8;border:none;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;padding:0;flex-shrink:0;margin-left:auto;margin-right:4px">${escHtml(s.store||'Other')}</span><button class="delbtn">✕</button>`;
+      el.innerHTML=`<input type="checkbox" class="chk"${s.done?' checked':''}><span class="tn">${escHtml(s.name)}</span><span class="cpill" style="background:none;color:#94a3b8;border:none;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;padding:0;flex-shrink:0;margin-left:auto;margin-right:4px">${escHtml(s.store||'Online')}</span><button class="delbtn">✕</button>`;
       el.querySelector('.chk').addEventListener('change',e=>togShop(s.id,e.target.checked));
       el.querySelector('.delbtn').addEventListener('click',e=>{e.stopPropagation();delShop(s.id);});
       let _shopDragged=false;
@@ -681,11 +688,11 @@ function renderShopFull(){save();
   let html='';
   if(mode==='alpha'){
     const all=[...todo,...done].sort((a,b)=>(a.name||'').localeCompare(b.name||''));
-    html=all.map(s=>`<div class="ti ${s.done?'done':''}" id="ti-shop-cal-${s.id}" draggable="true" ondragstart="dragId='shop::${s.id}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);" ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false);" onclick="tiClickShop(event,'${s.id}')" ondblclick="tiDblShop(event,'${s.id}')"><input type="checkbox" class="chk" ${s.done?'checked':''} onchange="togShop('${s.id}',this.checked)"><span class="tn">${s.name}</span><span class="cpill" style="background:none;color:#94a3b8;border:none;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;padding:0;flex-shrink:0;margin-left:auto;margin-right:4px">${s.store||'Other'}</span><button class="delbtn" onclick="delShop('${s.id}')">✕</button></div>`).join('');
+    html=all.map(s=>`<div class="ti ${s.done?'done':''}" id="ti-shop-cal-${s.id}" draggable="true" ondragstart="dragId='shop::${s.id}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);" ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false);" onclick="tiClickShop(event,'${s.id}')" ondblclick="tiDblShop(event,'${s.id}')"><input type="checkbox" class="chk" ${s.done?'checked':''} onchange="togShop('${s.id}',this.checked)"><span class="tn">${s.name}</span><span class="cpill" style="background:none;color:#94a3b8;border:none;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;padding:0;flex-shrink:0;margin-left:auto;margin-right:4px">${s.store||'Online'}</span><button class="delbtn" onclick="delShop('${s.id}')">✕</button></div>`).join('');
   } else {
-    const g={};[...todo,...done].forEach(s=>{const k=s.store||'Other';if(!g[k])g[k]=[];g[k].push(s);});
+    const g={};[...todo,...done].forEach(s=>{const k=s.store||'Online';if(!g[k])g[k]=[];g[k].push(s);});
     html=Object.entries(g).sort(([a],[b])=>a.localeCompare(b)).map(([store,items])=>
-      `<div style="padding:5px 10px 2px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-top:2px">${store}</div>${items.map(s=>`<div class="ti ${s.done?'done':''}" id="ti-shop-cal-${s.id}" draggable="true" ondragstart="dragId='shop::${s.id}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);" ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false);" onclick="tiClickShop(event,'${s.id}')" ondblclick="tiDblShop(event,'${s.id}')"><input type="checkbox" class="chk" ${s.done?'checked':''} onchange="togShop('${s.id}',this.checked)"><span class="tn">${s.name}</span><span class="cpill" style="background:none;color:#94a3b8;border:none;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;padding:0;flex-shrink:0;margin-left:auto;margin-right:4px">${s.store||'Other'}</span><button class="delbtn" onclick="delShop('${s.id}')">✕</button></div>`).join('')}`
+      `<div style="padding:5px 10px 2px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-top:2px">${store}</div>${items.map(s=>`<div class="ti ${s.done?'done':''}" id="ti-shop-cal-${s.id}" draggable="true" ondragstart="dragId='shop::${s.id}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);" ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false);" onclick="tiClickShop(event,'${s.id}')" ondblclick="tiDblShop(event,'${s.id}')"><input type="checkbox" class="chk" ${s.done?'checked':''} onchange="togShop('${s.id}',this.checked)"><span class="tn">${s.name}</span><span class="cpill" style="background:none;color:#94a3b8;border:none;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;padding:0;flex-shrink:0;margin-left:auto;margin-right:4px">${s.store||'Online'}</span><button class="delbtn" onclick="delShop('${s.id}')">✕</button></div>`).join('')}`
     ).join('');
   }
   sf.innerHTML=html;
@@ -741,14 +748,14 @@ function skipRecVirtThisWk(rid,wkKey){
   r._dateOverrides[wkKey]='__skip__';
   const linkedBlocks=st.blocks?st.blocks.filter(b=>String(b.recId)===String(rid)&&isInWk(b.ds,wkOff)):[];
   if(st.blocks)st.blocks=st.blocks.filter(b=>!(String(b.recId)===String(rid)&&isInWk(b.ds,wkOff)));
-  save();renderWeeklyPage();renderToday();renderWkSummary();renderWkCal();
+  save();renderWeeklyPage();renderToday();renderWkSummary();renderWkCal();if(typeof renderRecOv==='function')renderRecOv();
   if(document.getElementById('tbGrid'))renderDayTB();
   linkedBlocks.forEach(b=>sbDeleteBlock(b.id));
   sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(rid));
   pushUndo(()=>{
     if(prev!==undefined)r._dateOverrides[wkKey]=prev;else delete r._dateOverrides[wkKey];
     linkedBlocks.forEach(b=>{if(st.blocks)st.blocks.push(b);sbSaveBlock(b);});
-    save();renderWeeklyPage();renderToday();renderWkSummary();renderWkCal();
+    save();renderWeeklyPage();renderToday();renderWkSummary();renderWkCal();if(typeof renderRecOv==='function')renderRecOv();
     if(document.getElementById('tbGrid'))renderDayTB();
     sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(rid));
   },'Removed from week');
@@ -960,7 +967,7 @@ function renderMoCal(){
     const s=gc(t.category);
     const el=document.createElement('div');el.className='uitem';el.draggable=true;
     el.addEventListener('dragstart',e=>dStart(e,t.id));el.addEventListener('dragend',()=>el.style.opacity='');
-    el.innerHTML=`<span class="udot" style="background:${s.d}"></span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.name}</span>`;
+    el.innerHTML=`<span class="udot" style="background:${s.d}"></span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(t.name)}</span>`;
     mual.appendChild(el);
   });
 }
@@ -1096,9 +1103,9 @@ function mkMCell(date,om,today){
     }
     const t=st.tasks.find(x=>String(x.id)===String(dragId));
     if(dragId&&dragId.startsWith('wrec::')){
-      const recId=dragId.split('::')[1];
+      const _moWeParts=dragId.split('::');const recId=_moWeParts[1];const _moWeSrcWk=_moWeParts[2]||'';
       const r=st.recurring.find(x=>String(x.id)===String(recId));
-      if(r){if(!r._dateOverrides)r._dateOverrides={};const wkKey=getWkKey(0);const prev=r._dateOverrides[wkKey];r._dateOverrides[wkKey]=ds;save();sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));pushUndo(()=>{if(prev)r._dateOverrides[wkKey]=prev;else delete r._dateOverrides[wkKey];save();renderAll();renderMoCal();sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));},'Pinned weekly task');}
+      if(r){if(!r._dateOverrides)r._dateOverrides={};const wkKey=_moWeSrcWk||getWkKey(0);const prev=r._dateOverrides[wkKey];r._dateOverrides[wkKey]=ds;save();sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));pushUndo(()=>{if(prev)r._dateOverrides[wkKey]=prev;else delete r._dateOverrides[wkKey];save();renderAll();renderMoCal();sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));},'Pinned weekly task');}
       dragId=null;renderAll();renderMoCal();return;
     }
     if(dragId&&dragId.startsWith('shop::')){
@@ -3687,15 +3694,15 @@ function renderGroceryModal(){
       <button class="groc-del" onclick="delGroceryItem('${g.id}')">✕</button>
     </div>`;}
 
-  // ── HEADER ──
-  let html=`<div class="groc-header">
-    <div style="display:flex;align-items:center;gap:8px">
+  // ── HEADER — ← week label →, X right ──
+  const _grocIsThisWk=_grocWkOff===0;
+  const _grocWkLabel=_grocIsThisWk?'This Week':_grocWeekLabel(menuMon);
+  let html=`<div style="display:flex;align-items:center;width:100%;box-sizing:border-box;padding:10px 16px;border-bottom:1px solid rgba(210,205,228,.2);flex-shrink:0;background:inherit;z-index:2">
+    <div style="display:flex;align-items:center;gap:10px;flex:1;justify-content:center">
       <button class="groc-nav-btn" onclick="_grocWkOff--;renderGroceryModal();this.closest('dialog').focus()">←</button>
-      <span style="font-size:12px;color:var(--muted)">${_grocWeekLabel(menuMon)}</span>
+      <span style="font-size:13px;font-weight:600;color:var(--text);min-width:120px;text-align:center">${_grocWkLabel}</span>
       <button class="groc-nav-btn" onclick="_grocWkOff++;renderGroceryModal();this.closest('dialog').focus()">→</button>
     </div>
-    <button class="groc-nav-btn" onclick="_grocWkOff=0;renderGroceryModal();this.closest('dialog').focus()"${_grocWkOff===0?' disabled style="opacity:.4;pointer-events:none"':''}>This Week</button>
-    <span class="groc-people-toggle">People: <button onclick="setGrocPeople(1,'${menuMon}')"${_getGrocPeople(menuMon)===1?' class="active"':''}>1</button><button onclick="setGrocPeople(2,'${menuMon}')"${_getGrocPeople(menuMon)===2?' class="active"':''}>2</button></span>
     <button class="groc-close" onclick="document.getElementById('groceryModal').close()">✕</button>
   </div>`;
 
@@ -3713,8 +3720,8 @@ function renderGroceryModal(){
     if(missing<=0)return;
     for(let i=0;i<missing;i++) unplacedMenu.push({recipe_id:rid,recipe_name:r.name});
   });
-  html+=`<div class="groc-menu-strip">`;
-  html+=`<div class="groc-menu-label">This Week <span style="font-size:9px;color:var(--muted);font-weight:400">${_grocWeekLabel(menuMon)}</span></div>`;
+  html+=`<div class="groc-menu-strip" style="border-bottom:none;padding-bottom:6px">`;
+  html+=`<div style="font-size:15px;font-weight:800;color:var(--text);margin-bottom:8px;letter-spacing:-.3px;display:flex;align-items:baseline;gap:8px">Meals This Week<span style="font-size:11px;font-weight:500;color:var(--muted)">${_grocWeekLabel(menuMon)}</span></div>`;
   html+=`<div class="groc-menu-cols">`;
   menuDates.forEach((ds,i)=>{
     const meals=(st.mealPlan||[]).filter(m=>m.meal_date===ds);
@@ -3738,13 +3745,15 @@ function renderGroceryModal(){
   }
   html+=`</div></div>`;
 
-  // ��─ BOTTOM: Three columns ──
-  html+=`<div class="groc-bottom">`;
+  // ── BOTTOM section header ──
+  html+=`<div style="padding:10px 16px 8px;font-size:15px;font-weight:800;color:var(--text);letter-spacing:-.3px;border-top:2px solid ${_dk()?'rgba(255,255,255,.08)':'rgba(200,190,175,.35)'};background:${_dk()?'rgba(255,255,255,.04)':'rgba(240,234,226,.7)'};width:100%;box-sizing:border-box">Shopping Next Week<span style="font-size:11px;font-weight:500;color:var(--muted);margin-left:8px">${_grocWeekLabel(planMon)}</span></div>`;
+
+  // ─── BOTTOM: Three columns ──
+  html+=`<div class="groc-bottom" style="background:${_dk()?'rgba(255,255,255,.04)':'rgba(240,234,226,.7)'}">`;
 
   // Col 1: Search + recipe checkboxes
   html+=`<div class="groc-panel">`;
-  html+=`<div class="groc-panel-title">Recipes</div>`;
-  html+=`<div style="margin-bottom:6px;flex-shrink:0"><input type="text" id="grocRecipeSearch" placeholder="Search recipes…" oninput="_grocRecSearch=this.value;renderGroceryModal()" value="${escHtml(_grocRecSearch||'')}" style="width:100%;padding:6px 10px;border-radius:var(--rs);border:1px solid var(--gb);font-size:12px;font-family:inherit;color:var(--text);background:var(--glass);outline:none;box-sizing:border-box"></div>`;
+  html+=`<div class="groc-panel-title" style="gap:6px;align-items:stretch"><button onclick="document.getElementById('groceryModal').close();showPage('recipes')" style="padding:0 10px;border-radius:6px;border:1px solid var(--accent,#c67b48);background:var(--accent,#c67b48);color:#fff;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;flex-shrink:0;height:26px;line-height:26px">Recipes</button><input type="text" id="grocRecipeSearch" placeholder="Search…" oninput="_grocRecSearch=this.value;renderGroceryModal()" value="${escHtml(_grocRecSearch||'')}" style="flex:1;padding:0 8px;border-radius:var(--rs);border:1px solid var(--gb);font-size:11px;font-family:inherit;color:var(--text);background:var(--glass);outline:none;box-sizing:border-box;min-width:0;height:26px"></div>`;
   html+=`<div class="groc-recipe-list">`;
   let filteredRecipes=(st.recipes||[]);
   if(_grocRecSearch)filteredRecipes=filteredRecipes.filter(r=>r.name.toLowerCase().includes(_grocRecSearch.toLowerCase()));
@@ -3777,11 +3786,23 @@ function renderGroceryModal(){
 
   // Col 2: Selected meals with remove
   html+=`<div class="groc-panel">`;
-  html+=`<div class="groc-panel-title">Planned Meals <span style="font-weight:400;color:var(--muted);font-size:10px">${_grocWeekLabel(planMon)}</span></div>`;
+  const _ppl=_getGrocPeople(menuMon);
+  // Calculate total meals covered: each recipe's servings / people count
+  let _totalMealsCovered=0;
+  planMeals.forEach(m=>{
+    const r=(st.recipes||[]).find(x=>String(x.id)===String(m.recipe_id));
+    const em=(st.easyMeals||[]).find(x=>x.id===m.easy_meal_id);
+    if(r&&r.servings) _totalMealsCovered+=Math.ceil(r.servings/_ppl);
+    else if(em) _totalMealsCovered+=1;
+    else _totalMealsCovered+=1;
+  });
+  html+=`<div class="groc-panel-title" style="justify-content:space-between"><span style="display:flex;flex-direction:column;line-height:1.2">Planned Meals${_totalMealsCovered?`<span style="font-weight:500;font-size:9px;color:var(--muted)">${_totalMealsCovered} meals</span>`:''}</span><span class="groc-people-toggle" style="font-weight:400;font-size:10px">People: <button onclick="setGrocPeople(1,'${menuMon}')"${_ppl===1?' class="active"':''}>1</button><button onclick="setGrocPeople(2,'${menuMon}')"${_ppl===2?' class="active"':''}>2</button></span></div>`;
   if(planMeals.length){
     html+=`<div class="groc-selected-meals">`;
     planMeals.forEach(m=>{
-      html+=`<div class="groc-selected-meal"><span>${escHtml(m.recipe_name)}</span><button onclick="removeMealFromWeek('${m.id}','${planMon}')">✕</button></div>`;
+      const r=(st.recipes||[]).find(x=>String(x.id)===String(m.recipe_id));
+      const mealCt=r&&r.servings?Math.ceil(r.servings/_ppl):1;
+      html+=`<div class="groc-selected-meal"><span>${escHtml(m.recipe_name)}</span><span style="font-size:9px;color:var(--muted);margin-left:auto;margin-right:6px">${mealCt} meal${mealCt>1?'s':''}</span><button onclick="removeMealFromWeek('${m.id}','${planMon}')">✕</button></div>`;
     });
     html+=`</div>`;
   } else {
@@ -3791,7 +3812,7 @@ function renderGroceryModal(){
 
   // Col 3: Complete shopping list sorted by aisle
   html+=`<div class="groc-panel">`;
-  html+=`<div class="groc-panel-title" style="display:flex;align-items:center;justify-content:space-between">Shopping List <span style="font-weight:400;color:var(--muted);font-size:10px">(${allItems.length})</span><button class="groc-nav-btn" onclick="openGroceryStaplesEditor()" style="font-size:10px">Staples</button></div>`;
+  html+=`<div class="groc-panel-title" style="display:flex;align-items:center;justify-content:space-between">Shopping List<button class="groc-nav-btn" onclick="openGroceryStaplesEditor()" style="font-size:10px">Staples</button></div>`;
   html+=`<div class="groc-add"><input type="text" id="grocAddName" placeholder="Add item…" style="flex:1"><button onclick="addGroceryManualForWeek('${planMon}')">+</button></div>`;
   Object.entries(byAisle).forEach(([aisle,items])=>{
     html+=`<div class="groc-section"><div class="groc-section-title">${escHtml(aisle)}</div><div class="groc-section-grid">${items.map(itemRow).join('')}</div></div>`;
@@ -4605,13 +4626,15 @@ function renderGuidePage(){
     ${sRow('Drag → day','Moves ALL selected to that day')}
     ${sRow('Drag → timeblock','Creates blocks for all selected')}
     ${sRow('Arrow keys','Move all selected ±1 day')}
+    ${sRow('Change week (← →)','Selection persists — a selected weekly-reset/recurring task stays highlighted in every week it appears')}
     </table>
   </div>
   <div style="${panel}">
     ${secT('Videos Shortcuts')}
     <table style="width:100%;border-collapse:collapse;font-size:12px">
     ${tHead('Key','Action')}
-    ${sRow('N','New video')}
+    ${sRow('N / B','New big video')}
+    ${sRow('L','New little video')}
     ${sRow('E / C','Toggle completed')}
     ${sRow('←/→','Switch tabs')}
     ${sRow('↑/↓','Scroll top / current')}
@@ -4981,15 +5004,24 @@ async function init(){
   if(initHash==='videos')_vidPageInit=true;
   if(initHash&&PAGES.includes(initHash))showPage(initHash);
   // Render from localStorage before auth check so UI is populated instantly
-  if(cfg.url&&cfg.key){document.getElementById('cfgUrl').value=cfg.url;document.getElementById('cfgKey').value=cfg.key;_firstSyncDone=true;renderAll();requestAnimationFrame(()=>requestAnimationFrame(()=>document.body.classList.remove('preload')));}
+  const _removePreload=()=>requestAnimationFrame(()=>requestAnimationFrame(()=>document.body.classList.remove('preload')));
+  const _removePreloadAfterFonts=()=>document.fonts.ready.then(_removePreload).catch(_removePreload);
+  if(cfg.url&&cfg.key){document.getElementById('cfgUrl').value=cfg.url;document.getElementById('cfgKey').value=cfg.key;_firstSyncDone=true;renderAll();_removePreloadAfterFonts();}
   const authed=await checkAuth();
-  if(!authed){document.body.classList.remove('preload');return;}
+  if(!authed){_removePreloadAfterFonts();return;}
   if(cfg.url&&cfg.key){
     deletedRecIds=new Set();save();
     syncAll(false).then(()=>{_firstSyncDone=true;});
-  } else{_firstSyncDone=true;renderAll();setBadge('err','Not connected');requestAnimationFrame(()=>document.body.classList.remove('preload'));}
+  } else{_firstSyncDone=true;renderAll();setBadge('err','Not connected');_removePreloadAfterFonts();}
   setupWkcEdgeDrop();setupEdge('wkListEdgeR',1);
-  setInterval(()=>{if(cfg.url&&cfg.key)syncAll(true);},30000);
+  setInterval(()=>{if(cfg.url&&cfg.key&&!document.hidden)syncAll(true);},30000);
+  // Sync immediately on return to a visible tab (interval was paused while hidden)
+  let _fgLastSync=0;
+  document.addEventListener('visibilitychange',()=>{
+    if(document.hidden||!cfg.url||!cfg.key)return;
+    const n=Date.now();if(n-_fgLastSync<3000)return;_fgLastSync=n;
+    syncAll(true).catch(()=>{});
+  });
 }
 
 function toggleKanban(){
@@ -5232,9 +5264,13 @@ document.addEventListener('keydown',async e=>{
   }
   // Video panel keyboard nav (arrow up/down, delete, enter)
   if(activePg==='overview'&&typeof _vidOvKeyNav==='function'&&_vidOvKeyNav(e))return;
+  // Shopping list keyboard nav on overview
+  if(activePg==='overview'&&typeof _shopOvKeyNav==='function'&&_shopOvKeyNav(e))return;
+  // Weekly goals keyboard nav (overview + WO modal)
+  if(activePg==='overview'&&typeof _wkGoalKeyNav==='function'&&_wkGoalKeyNav(e))return;
   if(activePg==='overview'&&typeof _vidOvAllOpen!=='undefined'&&_vidOvAllOpen){
     // When toolbox open: block arrows (handled by toolbox), let other keys through
-    if(e.key==='ArrowUp'||e.key==='ArrowDown'||e.key==='ArrowLeft'||e.key==='ArrowRight'||e.key==='Delete'||e.key==='Backspace'||e.key==='n'||e.key==='Enter')return;
+    if(e.key==='ArrowUp'||e.key==='ArrowDown'||e.key==='ArrowLeft'||e.key==='ArrowRight'||e.key==='Delete'||e.key==='Backspace'||e.key==='n'||e.key==='l'||e.key==='b'||e.key==='Enter')return;
   }
   // w + Arrow: shift week on overview
   if((e.key==='ArrowLeft'||e.key==='ArrowRight')&&_wKeyHeld&&activePg==='overview'&&!document.querySelector('.atb-mgr')){e.preventDefault();shiftWk(e.key==='ArrowLeft'?-1:1);return;}
@@ -5352,9 +5388,17 @@ document.addEventListener('keydown',async e=>{
             undos.push(()=>{blks.forEach((bl,i)=>{bl.ds=prevDsList[i];sbSaveBlock(bl);});});
           } else {
             const newDs=_shiftDs(prevDs,dir);
-            if(stepMap&&prevEntry){stepMap[key]={ds:newDs,done:prevEntry.done};_vidStepDayMapSet(stepMap);}
+            let prevSnap=null;
+            if(stepMap&&prevEntry){
+              prevSnap=JSON.parse(JSON.stringify(prevEntry));
+              // Move only the selected instance: primary if it matches, else swap extraDay
+              if(prevEntry.ds===prevDs)prevEntry.ds=newDs;
+              else if(prevEntry.extraDays&&prevEntry.extraDays.includes(prevDs)){prevEntry.extraDays=prevEntry.extraDays.filter(d=>d!==prevDs);if(prevEntry.ds!==newDs&&!prevEntry.extraDays.includes(newDs))prevEntry.extraDays.push(newDs);if(!prevEntry.extraDays.length)delete prevEntry.extraDays;}
+              if(typeof _vidStepMoveDoneDay==='function')_vidStepMoveDoneDay(prevEntry,prevDs,newDs);
+              _vidStepDayMapSet(stepMap);
+            }
             (st.blocks||[]).filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step&&bl.ds===prevDs).forEach(bl=>{bl.ds=newDs;sbUpdateBlock(bl.id,{day_date:newDs});});
-            undos.push(()=>{if(stepMap&&prevEntry){const m2=_vidStepDayMap();m2[key]={ds:prevDs,done:prevEntry.done};_vidStepDayMapSet(m2);}(st.blocks||[]).filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step&&bl.ds===newDs).forEach(bl=>{bl.ds=prevDs;sbUpdateBlock(bl.id,{day_date:prevDs});});});
+            undos.push(()=>{if(prevSnap){const m2=_vidStepDayMap();m2[key]=prevSnap;_vidStepDayMapSet(m2);}(st.blocks||[]).filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step&&bl.ds===newDs).forEach(bl=>{bl.ds=prevDs;sbUpdateBlock(bl.id,{day_date:prevDs});});});
           }
           moved=true;continue;
         }
@@ -5543,9 +5587,18 @@ document.addEventListener('keydown',async e=>{
   }
   // Cmd+C: copy selected tasks or blocks
   if((e.metaKey||e.ctrlKey)&&e.key==='c'&&selectedTasks.size>0){
-    // Check if any are TB blocks
+    // Check if any are TB blocks (blk- IDs or vidstep blocks selected from TB)
     const blkIds=[...selectedTasks].filter(id=>id.startsWith('blk-'));
-    if(blkIds.length){
+    const tbOpen=!!document.getElementById('tbGrid');
+    // Vidstep selections from TB (no day suffix) vs today list (has day suffix like -2026-06-09)
+    const vsBlkIds=tbOpen?[...selectedTasks].filter(id=>{
+      if(!id.startsWith('vidstep-'))return false;
+      const m=id.match(/^vidstep-(\d+)-(step_\w+)$/);
+      if(!m)return false;
+      const step=m[2];
+      return step!=='step_thumbnail'&&step!=='step_description';
+    }):[];
+    if(blkIds.length||vsBlkIds.length){
       _copiedBlocks=[];
       const ds=d2s(getDayDate(dayOff));
       blkIds.forEach(sid=>{
@@ -5553,8 +5606,15 @@ document.addEventListener('keydown',async e=>{
         const b=st.blocks.find(x=>String(x.id)===bid);
         if(b)_copiedBlocks.push({...b});
       });
+      vsBlkIds.forEach(sid=>{
+        const m=sid.match(/^vidstep-(\d+)-(step_\w+)/);
+        if(!m)return;
+        const vidId=m[1],step=m[2];
+        const b=(st.blocks||[]).find(x=>String(x._vidStepVid)===String(vidId)&&x._vidStepName===step&&x.ds===ds);
+        if(b)_copiedBlocks.push({...b});
+      });
       _copiedTasks=[];
-      showToast(`Copied ${_copiedBlocks.length} block${_copiedBlocks.length>1?'s':''}`,'#6d5fe6',1500);
+      if(_copiedBlocks.length)showToast(`Copied ${_copiedBlocks.length} block${_copiedBlocks.length>1?'s':''}`,'#6d5fe6',1500);
       return;
     }
     _copiedTasks=[];_copiedBlocks=[];
@@ -5588,7 +5648,7 @@ document.addEventListener('keydown',async e=>{
     const _pastePromises=[];
     sorted.forEach(ob=>{
       const nb={id:crypto.randomUUID(),title:ob.title,ds,sm:baseSm,dur:ob.dur,cat:ob.cat||'Home',
-        taskId:null,recId:null,shopId:null,_vidId:ob._vidId||null,_done:false};
+        taskId:null,recId:null,shopId:null,_vidId:ob._vidId||null,_vidStepVid:ob._vidStepVid||null,_vidStepName:ob._vidStepName||null,_done:false};
       // Duplicate linked task so dblclick opens edit modal for the new copy
       if(ob.taskId){
         const orig=st.tasks.find(t=>String(t.id)===String(ob.taskId));
@@ -5598,6 +5658,11 @@ document.addEventListener('keydown',async e=>{
           st.tasks.push({...dup,id:tmpId});nb.taskId=tmpId;
           _pastePromises.push(sbReq('POST','tasks',dup).then(sv=>{if(sv&&sv[0]){const idx=st.tasks.findIndex(x=>x.id===tmpId);if(idx>-1)st.tasks[idx]={...st.tasks[idx],...sv[0]};nb.taskId=String(sv[0].id);sbSaveBlock(nb);}}));
         }
+      }
+      // For vidstep blocks, ensure daymap entry exists so it shows in today list
+      if(nb._vidStepVid&&nb._vidStepName&&typeof _vidStepDayMap==='function'){
+        const _pm=_vidStepDayMap();const _pk=nb._vidStepVid+'::'+nb._vidStepName;
+        if(!_pm[_pk]){_pm[_pk]={ds,done:false};_vidStepDayMapSet(_pm);}
       }
       st.blocks.push(nb);newBlks.push(nb);sbSaveBlock(nb);
       baseSm+=ob.dur;
@@ -5641,8 +5706,8 @@ document.addEventListener('keydown',async e=>{
         // Only Build/VO/Cut can be pasted onto a day — Th/Des cannot
         if(t._vidStep==='step_thumbnail'||t._vidStep==='step_description'){if(typeof showToast==='function')showToast('Th/Des steps can\'t be pasted to a day','#ef4444',1500);return;}
         const pasteDate=(activePg==='overview'&&Array.isArray(_pasteColDates)&&_pasteColDates.length)?_pasteColDates[0]:d2s(getDayDate(dayOff));
-        // Create a new TB block on the target day (Build/VO/Cut can span multiple days)
-        if(typeof _vidStepAddBlock==='function')_vidStepAddBlock(t._vidId,t._vidStep,pasteDate);
+        // Assign step to day without creating a TB block
+        if(typeof _vidStepAssignExtraDay==='function')_vidStepAssignExtraDay(t._vidId,t._vidStep,pasteDate);
       } else {
         const dates=(activePg==='overview'&&Array.isArray(_pasteColDates)&&_pasteColDates.length)?_pasteColDates:[t.due_date];
         for(const pasteDate of dates){
@@ -5664,6 +5729,9 @@ document.addEventListener('keydown',async e=>{
 
 // Click outside any task clears selection (use mousedown to not conflict with selTask)
 document.addEventListener('mousedown',e=>{
+  // Week/day navigation must NOT clear the selection — a selected weekly-reset/recurring task should
+  // stay selected as you move across weeks (these buttons fire on mousedown before their click→nav runs).
+  if(e.target.closest('[onclick*="shiftWk"],[onclick*="shiftWrRec"],[onclick*="shiftDay"],[onclick*="goThisWk"],[onclick*="goToday"]'))return;
   if(!e.target.closest('.ti')&&!e.target.closest('.kol-item')&&!e.target.closest('.chip')&&!e.target.closest('.mcell-t')&&!e.target.closest('.tb-block')&&!e.target.closest('.wkc-banner')&&!e.target.closest('#ctxMenu')){
     clearSelection();
   }
@@ -5711,7 +5779,14 @@ function openEditShop(id){
   const s=st.shopping.find(x=>String(x.id)===String(id));if(!s)return;
   _shopEditId=id;
   document.getElementById('shopEditName').value=s.name;
-  document.getElementById('shopEditStore').value=s.store||'';
+  const _sel=document.getElementById('shopEditStore');
+  const _ci=document.getElementById('shopEditStoreCustom');
+  const _stores=[...new Set(['Online','HEB',...st.shopping.map(x=>x.store).filter(Boolean)])].filter(x=>x!=='Other');
+  const cur=s.store||'Online';
+  const inList=_stores.includes(cur);
+  _sel.innerHTML=_stores.map(x=>`<option value="${escHtml(x)}">${escHtml(x)}</option>`).join('')+'<option value="__custom">Custom\u2026</option>';
+  if(inList){_sel.value=cur;_sel.style.display='';_ci.style.display='none';_ci.value='';}
+  else{_sel.value='__custom';_sel.style.display='none';_ci.style.display='';_ci.value=cur;}
   document.getElementById('shopEditModal').classList.add('open');
   setTimeout(()=>{const _el=document.getElementById('shopEditName');if(_el){_el.focus();const _l=_el.value.length;_el.setSelectionRange(_l,_l);}},80);
 }
@@ -5719,7 +5794,9 @@ function saveShopEdit(){
   const id=_shopEditId;if(!id)return;
   const s=st.shopping.find(x=>String(x.id)===String(id));if(!s)return;
   const name=document.getElementById('shopEditName').value.trim();
-  const store=document.getElementById('shopEditStore').value.trim();
+  let store=document.getElementById('shopEditStore').value.trim();
+  if(store==='__custom')store=(document.getElementById('shopEditStoreCustom')?.value||'').trim();
+  if(!store)store='Online';
   if(!name){closeMod('shopEditModal');return;}
   closeMod('shopEditModal');
   const prev={name:s.name,store:s.store};
@@ -5989,6 +6066,7 @@ function applyTheme(key,skipSave){
     canvas.className.split(' ').filter(c=>c.startsWith('theme-')).forEach(c=>canvas.classList.remove(c));
     if(t.scenic){canvas.classList.add('theme-scenic','theme-'+t.scenic);}
   }
+  document.body.classList.toggle('scenic-theme',!!t.scenic);
   document.querySelectorAll('.theme-swatch').forEach(s=>{s.classList.toggle('active',s.dataset.theme===key);});
   if(!skipSave){localStorage._dashTheme=key;}
 }
@@ -6030,8 +6108,18 @@ function toggleSettingsPopup(){
     const r=btn.getBoundingClientRect();
     p.style.top=(r.bottom+8)+'px';
     p.style.right=(window.innerWidth-r.right)+'px';
+    _renderEgress();
   }
   p.classList.toggle('open');
+}
+function _renderEgress(){
+  const el=document.getElementById('egressMeter');if(!el)return;
+  let e={};try{e=JSON.parse(localStorage.getItem('samdash_egress')||'{}');}catch(x){}
+  const mb=(e.bytes||0)/1048576;
+  const d=new Date(),dim=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();
+  const projGB=(mb/d.getDate())*dim/1024;
+  el.textContent=(mb<1024?mb.toFixed(1)+' MB':(mb/1024).toFixed(2)+' GB')+' this month · proj '+projGB.toFixed(2)+' GB / 5 GB';
+  el.style.color=projGB>4?'#ef4444':'';
 }
 document.addEventListener('click',function(e){
   const popup=document.getElementById('settingsPopup');
@@ -6055,23 +6143,26 @@ function getOvRecurring(){
   const out=[];
   for(let w=0;w>=wkOff-4;w--){
     getRecurringWeekTasks(w).forEach(v=>{
-      if(seen.has(v._recId))return;
+      const _dk=v._recId+'::'+(v._wkKey||'');
+      if(seen.has(_dk))return;
       // If skipped for this week or any later week up to now, don't count as overdue
       const _rec=st.recurring.find(x=>String(x.id)===String(v._recId));
       if(_rec&&_rec._dateOverrides){for(let sw=w;sw<=0;sw++){if(_rec._dateOverrides[getWkKey(sw)]==='__skip__')return;}}
-      seen.add(v._recId);
+      seen.add(_dk);
       if(!v.done&&v.due_date<today){out.push(v);}
     });
     // Weekly reset tasks: check all past-week overrides
     {const wkKey=getWkKey(w);
     st.recurring.filter(r=>(r.is_weekly_reset===true||r.is_weekly_reset==='true')&&r._dateOverrides&&r._dateOverrides[wkKey]&&r._dateOverrides[wkKey]!=='__skip__'&&!wrRecHandled.has(String(r.id))).forEach(r=>{
       if(r._dateOverrides[wkKey]<=today)wrRecHandled.add(String(r.id));// only block older-week lookback when date is today or past (not future)
-      if(!(r._doneByWk&&r._doneByWk[wkKey])&&r._dateOverrides[wkKey]<today&&!seen.has('wrec-'+r.id)){seen.add('wrec-'+r.id);out.push({id:'rec-virt-'+r.id,name:r.name,category:'Recurring',due_date:r._dateOverrides[wkKey],done:false,_recId:r.id,_virtual:true,_wkKey:wkKey,_isWrec:true});}
+      const _wk='wrec-'+r.id+'::'+wkKey;
+      if(!(r._doneByWk&&r._doneByWk[wkKey])&&r._dateOverrides[wkKey]<today&&!seen.has(_wk)){seen.add(_wk);out.push({id:'rec-virt-'+r.id,name:r.name,category:'Recurring',due_date:r._dateOverrides[wkKey],done:false,_recId:r.id,_virtual:true,_wkKey:wkKey,_isWrec:true});}
     });
     // WR rules: check all past-week overrides
     st.wrRules.filter(r=>r._dateOverrides&&r._dateOverrides[wkKey]&&r._dateOverrides[wkKey]!=='__skip__'&&!wrRuleHandled.has(String(r.id))&&!(st.wrOverrides||[]).some(o=>String(o.rule_id)===String(r.id)&&o.wk_key===wkKey&&o.override_type==='skip')).forEach(r=>{
       if(r._dateOverrides[wkKey]<=today)wrRuleHandled.add(String(r.id));// only block older-week lookback when date is today or past (not future)
-      if(!isDoneWRRule(r.id,wkKey)&&r._dateOverrides[wkKey]<today&&!seen.has('wrrule-'+r.id)){seen.add('wrrule-'+r.id);out.push({id:'wrrule-virt-'+r.id,name:r.name,category:'Recurring',due_date:r._dateOverrides[wkKey],done:false,_ruleId:r.id,_virtual:true,_wkKey:wkKey,_isWrRule:true});}
+      const _wrk='wrrule-'+r.id+'::'+wkKey;
+      if(!isDoneWRRule(r.id,wkKey)&&r._dateOverrides[wkKey]<today&&!seen.has(_wrk)){seen.add(_wrk);out.push({id:'wrrule-virt-'+r.id,name:r.name,category:'Recurring',due_date:r._dateOverrides[wkKey],done:false,_ruleId:r.id,_virtual:true,_wkKey:wkKey,_isWrRule:true});}
     });}
   }
   return out;
@@ -6093,8 +6184,8 @@ function updateOvBanner(){
   let ovVidStepCount=0;
   if(typeof _vidStepDayMap==='function'){
     const _ovsm=_vidStepDayMap();const _ovsSeen=new Set();
-    Object.entries(_ovsm).forEach(([key,val])=>{if(val.ds>=today||val.done)return;const[vidId,step]=key.split('::');const v=(st.videos||[]).find(x=>String(x.id)===String(vidId)&&!x.is_deleted);if(!v||v[step]==='na'||v[step]==='done')return;ovVidStepCount++;_ovsSeen.add(key);});
-    (st.blocks||[]).filter(bl=>bl._vidStepVid&&bl._vidStepName&&bl.ds<today&&!bl._done&&bl._vidStepName!=='step_thumbnail'&&bl._vidStepName!=='step_description').forEach(bl=>{const key=bl._vidStepVid+'::'+bl._vidStepName;if(_ovsSeen.has(key))return;_ovsSeen.add(key);const v=(st.videos||[]).find(x=>String(x.id)===String(bl._vidStepVid)&&!x.is_deleted);if(!v||v[bl._vidStepName]==='na'||v[bl._vidStepName]==='done')return;ovVidStepCount++;});
+    Object.entries(_ovsm).forEach(([key,val])=>{const[vidId,step]=key.split('::');const v=(st.videos||[]).find(x=>String(x.id)===String(vidId)&&!x.is_deleted);if(!v||v[step]==='na'||v[step]==='done')return;if(val.ds<today&&!(typeof _vidStepComputeDone==='function'&&_vidStepComputeDone(vidId,step,val.ds,val))){ovVidStepCount++;_ovsSeen.add(key+'::'+val.ds);}(val.extraDays||[]).forEach(ed=>{if(ed>=today)return;const dk=key+'::'+ed;if(_ovsSeen.has(dk))return;_ovsSeen.add(dk);if(typeof _vidStepComputeDone==='function'&&_vidStepComputeDone(vidId,step,ed,null))return;ovVidStepCount++;});});
+    (st.blocks||[]).filter(bl=>bl._vidStepVid&&bl._vidStepName&&bl.ds<today&&!bl._done&&bl._vidStepName!=='step_thumbnail'&&bl._vidStepName!=='step_description').forEach(bl=>{const dayKey=bl._vidStepVid+'::'+bl._vidStepName+'::'+bl.ds;if(_ovsSeen.has(dayKey))return;_ovsSeen.add(dayKey);const v=(st.videos||[]).find(x=>String(x.id)===String(bl._vidStepVid)&&!x.is_deleted);if(!v||v[bl._vidStepName]==='na'||v[bl._vidStepName]==='done')return;ovVidStepCount++;});
   }
   const total=ovTasks.length+ovRec.length+ovShop.length+ovPup.length+ovVid.length+ovVidStepCount;
   const banner=document.getElementById('ovBanner');
@@ -6112,12 +6203,12 @@ async function rolloverOverdue(){
   const ovShop=getOvShopping();
   const ovPup=(st.pupSessions||[]).filter(s=>!s.done&&s.day_date&&s.day_date<today);
   const _roVdm=_vidDayMap();const ovVid=(st.videos||[]).filter(v=>!v.is_deleted&&v.status!=='published'&&_roVdm[String(v.id)]&&_roVdm[String(v.id)]<today);
-  // Overdue vidsteps: collect daymap entries + orphaned blocks on past days
+  // Overdue vidsteps: collect daymap entries (primary + extraDays) + orphaned blocks, per-day keys
   const _roVsm=typeof _vidStepDayMap==='function'?_vidStepDayMap():{};
-  const _roVsKeys=[];const _roVsSeen=new Set();
-  Object.entries(_roVsm).forEach(([key,val])=>{if(val.ds>=today||val.done)return;const[vidId,step]=key.split('::');const v=(st.videos||[]).find(x=>String(x.id)===String(vidId)&&!x.is_deleted);if(!v||v[step]==='na'||v[step]==='done')return;_roVsKeys.push(key);_roVsSeen.add(key);});
-  const _roVsBlocks=(st.blocks||[]).filter(bl=>bl._vidStepVid&&bl._vidStepName&&bl.ds<today&&!bl._done).filter(bl=>{const key=bl._vidStepVid+'::'+bl._vidStepName;if(_roVsSeen.has(key))return false;const v=(st.videos||[]).find(x=>String(x.id)===String(bl._vidStepVid)&&!x.is_deleted);return v&&v[bl._vidStepName]!=='na'&&v[bl._vidStepName]!=='done';});
-  if(!ovTasks.length&&!ovRec.length&&!ovShop.length&&!ovPup.length&&!ovVid.length&&!_roVsKeys.length&&!_roVsBlocks.length)return;
+  const _roVsKeys=[];const _roVsExtra=[];const _roVsSeen=new Set();
+  Object.entries(_roVsm).forEach(([key,val])=>{const[vidId,step]=key.split('::');const v=(st.videos||[]).find(x=>String(x.id)===String(vidId)&&!x.is_deleted);if(!v||v[step]==='na'||v[step]==='done')return;if(val.ds<today&&!(typeof _vidStepComputeDone==='function'&&_vidStepComputeDone(vidId,step,val.ds,val))){_roVsKeys.push(key);_roVsSeen.add(key+'::'+val.ds);}(val.extraDays||[]).forEach(ed=>{if(ed>=today)return;const dk=key+'::'+ed;if(_roVsSeen.has(dk))return;_roVsSeen.add(dk);if(typeof _vidStepComputeDone==='function'&&_vidStepComputeDone(vidId,step,ed,null))return;_roVsExtra.push({key,ed});});});
+  const _roVsBlocks=(st.blocks||[]).filter(bl=>bl._vidStepVid&&bl._vidStepName&&bl.ds<today&&!bl._done&&bl._vidStepName!=='step_thumbnail'&&bl._vidStepName!=='step_description').filter(bl=>{const dk=bl._vidStepVid+'::'+bl._vidStepName+'::'+bl.ds;if(_roVsSeen.has(dk))return false;_roVsSeen.add(dk);const v=(st.videos||[]).find(x=>String(x.id)===String(bl._vidStepVid)&&!x.is_deleted);return v&&v[bl._vidStepName]!=='na'&&v[bl._vidStepName]!=='done';});
+  if(!ovTasks.length&&!ovRec.length&&!ovShop.length&&!ovPup.length&&!ovVid.length&&!_roVsKeys.length&&!_roVsExtra.length&&!_roVsBlocks.length)return;
   const prevDates=ovTasks.map(t=>({id:String(t.id),date:t.due_date}));
   const prevRecWkKeys=ovRec.map(v=>{
     const prevDate=v._ruleId
@@ -6136,17 +6227,19 @@ async function rolloverOverdue(){
   ovPup.forEach(s=>{s.day_date=today;});
   const prevVidDates=ovVid.map(v=>({id:String(v.id),date:_roVdm[String(v.id)]}));
   ovVid.forEach(v=>{_roVdm[String(v.id)]=today;});_vidDayMapSet(_roVdm);
-  // Rollover vidstep daymap entries to today
-  const _prevVsMap=_roVsKeys.map(k=>({key:k,prev:{..._roVsm[k]}}));
+  // Rollover vidstep daymap entries to today (primary + overdue extraDay instances)
+  const _roVsTouched=[...new Set([..._roVsKeys,..._roVsExtra.map(x=>x.key)])];
+  const _prevVsMap=_roVsTouched.map(k=>({key:k,prev:{..._roVsm[k],extraDays:_roVsm[k].extraDays?[..._roVsm[k].extraDays]:undefined}}));
   _roVsKeys.forEach(k=>{_roVsm[k].ds=today;});
-  if(_roVsKeys.length&&typeof _vidStepDayMapSet==='function')_vidStepDayMapSet(_roVsm);
+  _roVsExtra.forEach(({key,ed})=>{const e=_roVsm[key];if(!e||!e.extraDays)return;e.extraDays=e.extraDays.filter(d=>d!==ed);if(e.ds!==today&&!e.extraDays.includes(today))e.extraDays.push(today);if(!e.extraDays.length)delete e.extraDays;});
+  if(_roVsTouched.length&&typeof _vidStepDayMapSet==='function')_vidStepDayMapSet(_roVsm);
   // Rollover orphaned vidstep blocks to today
   const _prevVsBlks=_roVsBlocks.map(bl=>({id:bl.id,ds:bl.ds}));
   _roVsBlocks.forEach(bl=>{bl.ds=today;sbUpdateBlock(bl.id,{day_date:today});});
   // Also move blocks that match rolled-over daymap entries
   _roVsKeys.forEach(k=>{const[vidId,step]=k.split('::');(st.blocks||[]).filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step&&bl.ds<today&&!bl._done).forEach(bl=>{_prevVsBlks.push({id:bl.id,ds:bl.ds});bl.ds=today;sbUpdateBlock(bl.id,{day_date:today});});});
   renderAll();
-  const total=ovTasks.length+ovRec.length+ovShop.length+ovPup.length+ovVid.length+_roVsKeys.length+_roVsBlocks.length;
+  const total=ovTasks.length+ovRec.length+ovShop.length+ovPup.length+ovVid.length+_roVsKeys.length+_roVsExtra.length+_roVsBlocks.length;
   pushUndo(()=>{
     prevDates.forEach(({id,date})=>{const t=st.tasks.find(x=>String(x.id)===id);if(t)t.due_date=date;});
     prevRecWkKeys.forEach(({recId,ruleId,wkKey,prevDate})=>{if(ruleId){const r=st.wrRules.find(x=>String(x.id)===String(ruleId));if(r){if(!r._dateOverrides)r._dateOverrides={};if(prevDate)r._dateOverrides[wkKey]=prevDate;else delete r._dateOverrides[wkKey];}}else{const r=st.recurring.find(x=>String(x.id)===String(recId));if(r){if(!r._dateOverrides)r._dateOverrides={};if(prevDate)r._dateOverrides[wkKey]=prevDate;else delete r._dateOverrides[wkKey];}}});
@@ -6200,13 +6293,18 @@ async function idpSave(){
   const picker=document.getElementById('inlineDatePicker');
   picker.classList.remove('show');picker.style.display='none';
   if(!_idpTaskId)return;
-  const t=st.tasks.find(x=>String(x.id)===_idpTaskId);if(!t)return;
+  const sid=_idpTaskId;
+  const t=st.tasks.find(x=>String(x.id)===sid);if(!t)return;
   const prev=t.due_date;
   t.due_date=newDate||null;
+  // Override + pending so a sync can't revert the move, and a silently-failed PATCH
+  // self-heals via the syncAll re-push (see core.js merge) instead of snapping back to overdue.
+  localOverrides[sid]={due_date:newDate||null};pendingLocal.add(sid);save();
   renderAll();
-  pushUndo(()=>{t.due_date=prev;renderAll();sbReq('PATCH','tasks',{due_date:prev},`?id=eq.${_idpTaskId}`);},'Changed date');
-  await sbReq('PATCH','tasks',{due_date:newDate||null},`?id=eq.${_idpTaskId}`);
+  pushUndo(()=>{t.due_date=prev;localOverrides[sid]={due_date:prev||null};pendingLocal.add(sid);save();renderAll();sbReqNullable('PATCH','tasks',{due_date:prev||null},`?id=eq.${sid}`).then(r=>{if(r){delete localOverrides[sid];pendingLocal.delete(sid);}});},'Changed date');
   _idpTaskId=null;
+  const res=await sbReqNullable('PATCH','tasks',{due_date:newDate||null},`?id=eq.${sid}`);
+  if(res)pendingLocal.delete(sid); // success: override clears on next sync once DB matches
 }
 async function idpClear(){
   document.getElementById('idpInput').value='';
@@ -6241,7 +6339,7 @@ function copyShopList(){
   if(!todo.length){alert('Shopping list is empty!');return;}
   // Group by store
   const byStore={};
-  todo.forEach(s=>{if(!byStore[s.store||'Other'])byStore[s.store||'Other']=[];byStore[s.store||'Other'].push(s.name);});
+  todo.forEach(s=>{if(!byStore[s.store||'Online'])byStore[s.store||'Online']=[];byStore[s.store||'Online'].push(s.name);});
   let text='Shopping List\n'+'─'.repeat(20)+'\n';
   Object.entries(byStore).sort(([a],[b])=>a.localeCompare(b)).forEach(([store,items])=>{
     text+=`\n${store}:\n`;
@@ -6653,7 +6751,7 @@ document.addEventListener('keydown',e=>{
   const tag=document.activeElement?.tagName;
   if(tag==='INPUT'||tag==='TEXTAREA'||document.activeElement?.isContentEditable)return;
   if(e.metaKey||e.ctrlKey||e.altKey)return;
-  if(e.key==='n'){if(typeof _vidOvAllOpen!=='undefined'&&_vidOvAllOpen)return;e.preventDefault();openQA('today',null,d2s(getDayDate(dayOff)));}
+  if(e.key==='n'){const _vp=document.getElementById('vidOvPanel');if(_vp&&_vp.style.display==='block')return;if(typeof _vidOvAllOpen!=='undefined'&&_vidOvAllOpen)return;e.preventDefault();openQA('today',null,d2s(getDayDate(dayOff)));}
   if(e.key==='r'){e.preventDefault();location.reload();}
   if(e.key==='s'&&activePg==='overview'){e.preventDefault();const gm=document.getElementById('groceryModal');if(gm&&gm.open)gm.close();else openGroceryModal();}
 });

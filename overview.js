@@ -50,9 +50,9 @@ function _moveOtherSelected(ds,excludeSid,undos,excludePrefixes){
     }
     // Video steps
     if(sid.startsWith('vidstep-')){
-      const m=sid.match(/^vidstep-(.+)-(step_\w+)$/);
-      if(m){const vidId=m[1],step=m[2];const prevDs=(_vidStepDayMap()[vidId+'::'+step]||{}).ds||null;_vidStepAssignToDay(vidId,step,ds);
-        undos.push(()=>{if(prevDs)_vidStepAssignToDay(vidId,step,prevDs);else _vidStepUnassign(vidId,step);});}
+      const m=sid.match(/^vidstep-(.+)-(step_\w+)-(\d{4}-\d{2}-\d{2})$/)||sid.match(/^vidstep-(.+)-(step_\w+)$/);
+      if(m){const vidId=m[1],step=m[2],srcDay=m[3]||null;const prevDs=(_vidStepDayMap()[vidId+'::'+step]||{}).ds||null;_vidStepAssignToDay(vidId,step,ds,srcDay);
+        undos.push(()=>{if(srcDay)_vidStepAssignToDay(vidId,step,srcDay,ds);else if(prevDs)_vidStepAssignToDay(vidId,step,prevDs);else _vidStepUnassign(vidId,step);});}
       return;
     }
     // Shopping
@@ -83,7 +83,7 @@ function renderOv(){
 function renderSummaryMetrics(){
   const ds=d2s(getDayDate(dayOff));
   const blocked=st.blocks.filter(b=>b.ds===ds).reduce((s,b)=>s+b.dur,0);
-  const _vidStepOvCount=(()=>{if(typeof _vidStepDayMap!=='function')return 0;const m=_vidStepDayMap();let c=0;const seen=new Set();Object.entries(m).forEach(([key,val])=>{if(val.ds>=ds||val.done)return;const[vidId,step]=key.split('::');const v=(st.videos||[]).find(x=>String(x.id)===String(vidId)&&!x.is_deleted);if(!v||v[step]==='na'||v[step]==='done')return;c++;seen.add(key+'::'+val.ds);});(st.blocks||[]).filter(bl=>bl._vidStepVid&&bl._vidStepName&&bl.ds<ds&&bl._vidStepName!=='step_thumbnail'&&bl._vidStepName!=='step_description').forEach(bl=>{const dayKey=bl._vidStepVid+'::'+bl._vidStepName+'::'+bl.ds;if(seen.has(dayKey))return;seen.add(dayKey);const v=(st.videos||[]).find(x=>String(x.id)===String(bl._vidStepVid)&&!x.is_deleted);if(!v||v[bl._vidStepName]==='na'||v[bl._vidStepName]==='done')return;if(_vidStepComputeDone(bl._vidStepVid,bl._vidStepName,bl.ds,null))return;c++;});return c;})();
+  const _vidStepOvCount=(()=>{if(typeof _vidStepDayMap!=='function')return 0;const m=_vidStepDayMap();let c=0;const seen=new Set();Object.entries(m).forEach(([key,val])=>{const[vidId,step]=key.split('::');const v=(st.videos||[]).find(x=>String(x.id)===String(vidId)&&!x.is_deleted);if(!v||v[step]==='na'||v[step]==='done')return;if(val.ds<ds&&!_vidStepComputeDone(vidId,step,val.ds,val)){c++;seen.add(key+'::'+val.ds);}(val.extraDays||[]).forEach(ed=>{if(ed>=ds)return;const dk=key+'::'+ed;if(seen.has(dk))return;seen.add(dk);if(_vidStepComputeDone(vidId,step,ed,null))return;c++;});});(st.blocks||[]).filter(bl=>bl._vidStepVid&&bl._vidStepName&&bl.ds<ds&&bl._vidStepName!=='step_thumbnail'&&bl._vidStepName!=='step_description').forEach(bl=>{const dayKey=bl._vidStepVid+'::'+bl._vidStepName+'::'+bl.ds;if(seen.has(dayKey))return;seen.add(dayKey);const v=(st.videos||[]).find(x=>String(x.id)===String(bl._vidStepVid)&&!x.is_deleted);if(!v||v[bl._vidStepName]==='na'||v[bl._vidStepName]==='done')return;if(_vidStepComputeDone(bl._vidStepVid,bl._vidStepName,bl.ds,null))return;c++;});return c;})();
   const ovCount=st.tasks.filter(t=>!t.done&&isOv(t.due_date)&&t.category!=='Weekly Goals').length+st.shopping.filter(s=>!s.done&&s.due_date&&isOv(s.due_date)).length+_vidStepOvCount;
   const tpEl=document.getElementById('todPct'),wpEl=document.getElementById('wkPct');
   const el_tp=document.getElementById('smTodayPct'),el_wp=document.getElementById('smWkPct'),el_bl=document.getElementById('smBlocked'),el_ov=document.getElementById('smOverdue');
@@ -121,8 +121,9 @@ function renderToday(){
       // If this task has been __skip__'d for its occurrence week or any later week up to today, don't show as overdue
       const _rec=st.recurring.find(x=>String(x.id)===String(v._recId));
       if(_rec&&_rec._dateOverrides){for(let sw=w;sw<=0;sw++){if(_rec._dateOverrides[getWkKey(sw)]==='__skip__')return;}}
-      // Dedup: if current week has a future (not yet due) occurrence, suppress overdue from past weeks
-      const existing=allRecVirt.findIndex(x=>x._recId===v._recId);
+      // Dedup: same recId+wkKey = same instance; different wkKey = separate instances (e.g. HEB moved cross-week)
+      const _dedupKey=v._recId+'::'+(v._wkKey||'');
+      const existing=allRecVirt.findIndex(x=>(x._recId+'::'+(x._wkKey||''))===_dedupKey);
       if(existing>=0){
         const ev=allRecVirt[existing];
         const evFuture=!isOv(ev.due_date)&&!ev.done;
@@ -151,16 +152,18 @@ function renderToday(){
   const _vdmToday=_vidDayMap();
   if(dayOff===0){
     let _vdmChanged=false;
-    // 1. Move overdue daymap entries to today
-    Object.entries(_vdmToday).forEach(([vid,vds])=>{if(vds&&vds<ds){_vdmToday[vid]=ds;_vdmChanged=true;}});
+    // 1. Move overdue daymap entries to today — but NOT published/done videos (they stay on the day
+    //    they were done; auto-moving them dragged finished videos onto today as crossed-out duplicates).
+    Object.entries(_vdmToday).forEach(([vid,vds])=>{const _av=(st.videos||[]).find(x=>String(x.id)===String(vid));if(vds&&vds<ds&&!(_av&&_av.status==='published')){_vdmToday[vid]=ds;_vdmChanged=true;}});
     if(_vdmChanged)_vidDayMapSet(_vdmToday);
-    // 2. Remove video blocks on wrong days (daymap says X but block is on Y)
-    for(let i=st.blocks.length-1;i>=0;i--){const b=st.blocks[i];if(!b._vidId)continue;const mapped=_vdmToday[String(b._vidId)];if(mapped&&b.ds!==mapped){sbDeleteBlock(b.id);st.blocks.splice(i,1);}}
+    // 2. Remove video blocks on wrong days (daymap says X but block is on Y) — skip published videos so
+    //    a stale daymap doesn't delete the block on the day they were actually done.
+    for(let i=st.blocks.length-1;i>=0;i--){const b=st.blocks[i];if(!b._vidId)continue;const _cbv=(st.videos||[]).find(x=>String(x.id)===String(b._vidId));if(_cbv&&_cbv.status==='published')continue;const mapped=_vdmToday[String(b._vidId)];if(mapped&&b.ds!==mapped){sbDeleteBlock(b.id);st.blocks.splice(i,1);}}
   }
   const _vidStillPending=v=>v.status==='published'&&typeof _vidGroupFullyComplete==='function'&&!_vidGroupFullyComplete(v);
   const _hasTabTask0=vid=>{const m='_vid:'+vid;return st.tasks.some(t=>t.notes&&t.notes.includes(m));};
   const _vidOnTBToday=new Set(st.blocks.filter(b=>b.ds===ds&&b._vidId).map(b=>String(b._vidId)));
-  const vidToday=(st.videos||[]).filter(v=>{if(v.is_deleted)return false;const vd=_vdmToday[String(v.id)];if(vd===ds)return true;if(_vidOnTBToday.has(String(v.id)))return true;if(_vidStillPending(v)&&v.post_date&&(v.post_date===ds||(dayOff===0&&v.post_date<ds))&&!_hasTabTask0(v.id))return true;return false;}).map(v=>({id:'vid-ov-'+v.id,name:v.topic||v.title,category:'Videos',due_date:ds,done:v.status==='published',_vidId:v.id,_virtual:true,_type:'vid'}));
+  const vidToday=(st.videos||[]).filter(v=>{if(v.is_deleted)return false;const vd=_vdmToday[String(v.id)];if(vd===ds&&v.status!=='published')return true;if(_vidOnTBToday.has(String(v.id)))return true;if(_vidStillPending(v)&&v.post_date===ds&&!_hasTabTask0(v.id))return true;return false;}).map(v=>({id:'vid-ov-'+v.id,name:v.topic||v.title,category:'Videos',due_date:ds,done:v.status==='published',_vidId:v.id,_virtual:true,_type:'vid'}));
   // No auto-move for vidsteps — they stay on their assigned day and show as overdue in today list
   const vidStepToday=dayOff===0?_vidStepTasksForDayWithOverdue(ds):_vidStepTasksForDay(ds);
   const finCancelToday=typeof _finCancelTasksForDate==='function'?_finCancelTasksForDate(ds):[];
@@ -207,8 +210,7 @@ function renderToday(){
       return false;
     }
     if(t._type==='vidstep'){
-      const _vsDay=t._vidStepDay||_todDs;
-      return st.blocks.some(b=>b.ds===_vsDay&&String(b._vidStepVid)===String(t._vidId)&&b._vidStepName===t._vidStep);
+      return st.blocks.some(b=>b.ds===_todDs&&String(b._vidStepVid)===String(t._vidId)&&b._vidStepName===t._vidStep);
     }
     if(t._vidId)return st.blocks.some(b=>(b.ds===_todDs||isOvToday)&&String(b._vidId)===String(t._vidId));
     if(t._type==='pup')return st.blocks.some(b=>(b.ds===_todDs||isOvToday)&&String(b._pupSessId)===String(t._pupSessId));
@@ -317,16 +319,31 @@ function launchDonutConfetti(){
     setTimeout(()=>el.remove(), 2000);
   }
 }
+let _donutPctShown=0,_donutPctRaf=null;
+function _donutTickPct(to,dur){
+  const pEl=document.getElementById('_donutPct');if(!pEl)return;
+  if(_donutPctRaf){cancelAnimationFrame(_donutPctRaf);_donutPctRaf=null;}
+  const from=_donutPctShown;
+  if(to===from){pEl.textContent=to+'%';return;}
+  const start=performance.now();
+  const step=now=>{
+    const k=Math.min(1,(now-start)/dur);
+    const v=Math.round(from+(to-from)*(1-Math.pow(1-k,3)));
+    _donutPctShown=v;pEl.textContent=v+'%';
+    if(k<1)_donutPctRaf=requestAnimationFrame(step);else _donutPctRaf=null;
+  };
+  _donutPctRaf=requestAnimationFrame(step);
+}
 function renderTodDonut(done,total){
   const wrap=document.getElementById('todProgressDonut');if(!wrap)return;
-  if(!total){wrap.style.display='none';_donutInited=false;_donutWas100=false;return;}
+  if(!total){wrap.style.display='none';_donutInited=false;_donutWas100=false;_donutPctShown=0;return;}
   wrap.style.display='flex';
   const C=2*Math.PI*22;
   const arc=document.getElementById('_donutArc');
   const pEl=document.getElementById('_donutPct');
   const fEl=document.getElementById('_donutFrac');
   const pct=done/total;
-  if(pEl)pEl.textContent=Math.round(pct*100)+'%';
+  _donutTickPct(Math.round(pct*100),_donutInited?450:900);
   if(fEl)fEl.textContent=`${done}/${total}`;
   const lbEl=document.getElementById('_donutLabel');
   if(lbEl){const dd=getDayDate(dayOff);lbEl.textContent=isDateToday(dd)?'done today':'done '+dd.toLocaleDateString('en-US',{month:'short',day:'numeric'});}
@@ -350,6 +367,21 @@ function renderTodDonut(done,total){
   }
   if(!isNow100)_donutWas100=false;
 }
+// Checkbox pop + strikethrough draw on completion (overview rows with ids).
+// Runs after the inline onchange handler has re-rendered, so it animates the fresh node.
+document.addEventListener('change',e=>{
+  const chk=e.target;
+  if(!(chk instanceof HTMLInputElement)||!chk.classList.contains('chk'))return;
+  const row=chk.closest('.ti');const rid=row&&row.id;if(!rid)return;
+  const fresh=document.getElementById(rid);
+  if(!fresh||!fresh.closest('#page-overview'))return;
+  const wrap=fresh.querySelector('.chk-wrap');
+  if(wrap){wrap.classList.add('chk-pop');setTimeout(()=>wrap.classList.remove('chk-pop'),320);}
+  if(chk.checked&&fresh.classList.contains('done')){
+    fresh.classList.add('just-done');
+    setTimeout(()=>fresh.classList.remove('just-done'),360);
+  }
+});
 function _pupWkMonday(off=0){const{mon}=getWkBounds(off);return d2s(mon);}
 function _pupWkFocusIds(pup,off=0){
   const wkStart=_pupWkMonday(off);
@@ -409,13 +441,19 @@ async function seedPupWeeklyFocus(off=0){
   save();
   _pupWkFocusSeeding.delete(wkStart);
 }
+const _PUP_EYE_OFF='<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+const _PUP_EYE='<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+function _pupHiddenTiles(){try{return JSON.parse(localStorage._pupHiddenTiles||'[]');}catch(e){return[];}}
+function _setPupTileHidden(pup,hidden){let arr=_pupHiddenTiles().filter(p=>p!==pup);if(hidden)arr.push(pup);localStorage._pupHiddenTiles=JSON.stringify(arr);renderPupSkillsHighlight();}
 function renderPupSkillsHighlight(){
   const wrap=document.getElementById('pupSkillsHighlight');if(!wrap)return;
   seedPupWeeklyFocus(wkOff);
   const mochiSkills=_pupWkFocusSkills('Mochi',wkOff);
   const sunnySkills=_pupWkFocusSkills('Sunny',wkOff);
   if(!mochiSkills.length&&!sunnySkills.length){wrap.innerHTML='';wrap.style.cssText='display:none';return;}
+  const _hidden=_pupHiddenTiles();
   wrap.style.cssText='display:flex;gap:7px;margin:7px;flex-shrink:0';
+  const mkChip=pup=>`<div class="pup-restore-chip" onclick="_setPupTileHidden('${pup}',false)" title="Show ${pup}">${_PUP_EYE}<span>${pup}</span></div>`;
   const mkTile=(pup,skills,accentColor)=>{
     const wkDoneTotal=skills.reduce((a,s)=>a+_pupWkDone(s.id),0);
     const wkSessTotal=skills.reduce((a,s)=>a+_pupWkSessTotal(s.id),0);
@@ -436,11 +474,12 @@ function renderPupSkillsHighlight(){
     }).join('');
     const dk=_dk();
     const progressBar=`<div style="height:3px;background:${dk?'rgba(255,255,255,.06)':'rgba(0,0,0,.06)'};margin:4px 10px 3px;border-radius:2px;overflow:hidden"><div style="height:100%;width:${pct}%;background:rgba(16,185,129,.7);border-radius:2px;transition:width .3s"></div></div>`;
-    return`<div style="flex:1;display:flex;flex-direction:column;background:${dk?'rgba(255,255,255,.03)':'rgba(255,255,255,.55)'};border:1px solid ${dk?'rgba(255,255,255,.06)':'rgba(210,205,228,.3)'};border-radius:12px;padding:6px 0 5px;overflow:hidden;box-shadow:${dk?'none':'inset 0 1px 3px rgba(0,0,0,.04)'}">
+    return`<div class="pup-tile" style="flex:1;display:flex;flex-direction:column;background:${dk?'rgba(255,255,255,.03)':'rgba(255,255,255,.55)'};border:1px solid ${dk?'rgba(255,255,255,.06)':'rgba(210,205,228,.3)'};border-radius:12px;padding:6px 0 5px;overflow:hidden;box-shadow:${dk?'none':'inset 0 1px 3px rgba(0,0,0,.04)'}">
       <div style="display:flex;align-items:center;padding:0 10px 2px;gap:4px">
         <span style="font-size:9px;font-weight:700;color:var(--muted);letter-spacing:.03em">${pup}</span>
         <span onclick="event.stopPropagation();openPupFocusPicker('${pup}')" style="cursor:pointer;font-size:7px;color:var(--muted);opacity:.4;line-height:1;margin-left:1px" title="Edit ${pup}'s skills for this week">✎</span>
         <span class="vid-num" style="font-size:8px;font-weight:600;color:var(--muted);margin-left:auto">${wkDoneTotal}/${wkSessTotal}</span>
+        <span class="pup-tile-hide" onclick="event.stopPropagation();_setPupTileHidden('${pup}',true)" title="Hide ${pup}">${_PUP_EYE_OFF}</span>
       </div>
       ${rows}
       <div style="flex:1"></div>
@@ -448,8 +487,8 @@ function renderPupSkillsHighlight(){
     </div>`;
   };
   let html='';
-  if(mochiSkills.length)html+=mkTile('Mochi',mochiSkills,'#a78bfa');
-  if(sunnySkills.length)html+=mkTile('Sunny',sunnySkills,'#d4a017');
+  if(mochiSkills.length)html+=_hidden.includes('Mochi')?mkChip('Mochi'):mkTile('Mochi',mochiSkills,'#a78bfa');
+  if(sunnySkills.length)html+=_hidden.includes('Sunny')?mkChip('Sunny'):mkTile('Sunny',sunnySkills,'#d4a017');
   wrap.innerHTML=html;
   if(!wrap._dblBound){wrap._dblBound=true;wrap.addEventListener('dblclick',e=>{if(!e.target.closest('.ti'))_openPupFocusModal(null);});}
 }
@@ -740,7 +779,7 @@ async function submitDailyHabit(){
   if(res&&res[0]){const idx=st.recurring.findIndex(x=>x.id===tmp);if(idx>=0)st.recurring[idx]={...st.recurring[idx],...res[0],_doneByWk:{},_dateOverrides:{}};save();renderDailyHabits();}
 }
 // Type priority for untimed tasks: travel sorted first via pre-check; important via pre-check
-// Order: birthday(1) home(2) my work(3) work(4) social(5) recurring(6) shopping(7) pup(8)
+// Order: birthday(1) home(2) my work(3) work(4) social(5) recurring(6) shopping(7) pup(8) weekly-reset(9)
 function taskTypePri(t){
   if(t._type==='birthday')return 1;
   const cat=(t.category||'').toLowerCase();
@@ -753,7 +792,8 @@ function taskTypePri(t){
   if(t._type==='fin-cancel')return 6.5;
   if(t._type==='shop')return 7;
   if(t._type==='pup')return 8;
-  if(t._virtual)return 6; // recurring (WR + non-WR), checked after shop/pup
+  if(t._isWrec||t._isWrRule)return 9;
+  if(t._virtual)return 6; // non-WR recurring
   return 5; // other regular tasks
 }
 function sortByTypeOrder(tasks){
@@ -794,6 +834,8 @@ function sortTasksForDay(tasks,ds){
     if(aT&&!bT)return -1;if(!aT&&bT)return 1;
     const aO=isOv(a.due_date)&&!a.done,bO=isOv(b.due_date)&&!b.done;
     if(aO&&!bO)return -1;if(!aO&&bO)return 1;
+    const aI=(a.important||a._type==='fin-cancel')&&!a.done,bI=(b.important||b._type==='fin-cancel')&&!b.done;
+    if(aI&&!bI)return -1;if(!aI&&bI)return 1;
     const aSm=tbSm(a),bSm=tbSm(b);
     if(aSm!==null&&bSm===null)return -1;
     if(aSm===null&&bSm!==null)return 1;
@@ -821,6 +863,8 @@ function sortByTBWeek(tasks){
     if(aT&&!bT)return -1;if(!aT&&bT)return 1;
     const aO=isOv(a.due_date)&&!a.done,bO=isOv(b.due_date)&&!b.done;
     if(aO&&!bO)return -1;if(!aO&&bO)return 1;
+    const aI=(a.important||a._type==='fin-cancel')&&!a.done,bI=(b.important||b._type==='fin-cancel')&&!b.done;
+    if(aI&&!bI)return -1;if(!aI&&bI)return 1;
     const aSm=tbSmAny(a),bSm=tbSmAny(b);
     if(aSm!==null&&bSm===null)return -1;
     if(aSm===null&&bSm!==null)return 1;
@@ -833,7 +877,7 @@ function tRowTodayVirt(t,tbArrow=false,noColor=false){
   const s=gc((t._isWrec||t._isWrRule)?'weekly_reset':'recurring');
   const ov=isOv(t.due_date)&&!t.done;
   const ps=ov?_OV():s;
-  const _dragId=t._isWrRule?`wrrule::${t._ruleId}`:t._isWrec?`wrec::${t._recId}`:`rec::${t._recId}::${t.due_date||''}`;
+  const _dragId=t._isWrRule?`wrrule::${t._ruleId}`:t._isWrec?`wrec::${t._recId}::${t._wkKey||''}`:`rec::${t._recId}::${t.due_date||''}::${t._wkKey||''}`;
   const _chk=t._isWrRule?`togWrRule('${t._ruleId}',this.checked,'${t._wkKey||getWkKey(wkOff)}')`
     :t._isWrec?`togRec('${t._recId}',this.checked,'${t._wkKey||getWkKey(wkOff)}')`:`togRecVirt('${t._recId}',this.checked,'${t._wkKey||getWkKey(wkOff)}')`;
   const _xBtn=t._isWrRule?`showWrScopePicker(event,'⊘  Skip this week only','✕  Delete rule (all future)',()=>writeWrOverride('${t._ruleId}','${t._wkKey||getWkKey(wkOff)}',{override_type:'skip'},{undoLabel:'Skipped WR task this week'}),()=>wrCtxDeleteRule('${t._ruleId}'),'⊠  Remove from views',()=>unscheduleWrRule('${t._ruleId}','${t._wkKey||getWkKey(wkOff)}'))`
@@ -915,7 +959,7 @@ function tRowVidStepVirt(t,arr){
     ${ov&&t.due_date?`<span class="dlbl ov">${['S','M','T','W','T','F','S'][new Date(t.due_date.split('T')[0]+'T12:00').getDay()]}</span>`:''}
     ${!ov?`<svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3" fill="${_vs.bg}" stroke="${_vs.d}" stroke-opacity="0.4" stroke-width="1"/></svg>`:''}
     ${arr?'<span class="tb-arrow">›</span>':''}
-    <button class="delbtn" onclick="event.stopPropagation();_vidStepUnassign('${t._vidId}','${t._vidStep}')">✕</button>
+    <button class="delbtn" onclick="event.stopPropagation();_vidStepUnassign('${t._vidId}','${t._vidStep}','${_day}')">✕</button>
   </div>`;
 }
 function _pupSessStyle(){
@@ -1211,10 +1255,12 @@ function renderWkCal(){
         dragId=null;return;
       }
       if(dragId.startsWith('rec::')){
-        const [,recId,origDate]=dragId.split('::');
+        const [,recId,origDate,srcWkKey]=dragId.split('::');
         const r=st.recurring.find(x=>String(x.id)===String(recId));
         if(r&&ds!==origDate){
-          const wkKey=origDate?getWkKey(wkOff):getWkKey(wkOff);
+          // Key by the SOURCE week so the moved instance stays distinct from the destination week's own
+          // occurrence (carry-forward). The out-of-week date is preserved by _normOvs.
+          const wkKey=srcWkKey||getWkKey(wkOff);
           if(!r._dateOverrides)r._dateOverrides={};
           const prevOverride=r._dateOverrides[wkKey];
           const savedBlocks=st.blocks.filter(b=>b.recId&&String(b.recId)===String(r.id)&&b.ds===origDate).map(b=>({...b}));
@@ -1284,14 +1330,14 @@ function renderWkCal(){
       }
       // Weekly reset task dragged onto calendar
       if(dragId.startsWith('wrec::')){
-        const recId=dragId.split('::')[1];
+        const _wrecParts=dragId.split('::');const recId=_wrecParts[1];const _wrecSrcWk=_wrecParts[2]||'';
         const r=st.recurring.find(x=>String(x.id)===String(recId));
         const newWkKey=dsToWkKey(ds);
         const _wrecSid='wrec-'+recId;
         const _isMultiWrec=selectedTasks.has(_wrecSid)&&selectedTasks.size>1;
         const _wrecUndos=[];
         // Helper: move a recurring rule's override from old week to new week
-        const _curWkKey=getWkKey(wkOff);
+        const _curWkKey=_wrecSrcWk||getWkKey(wkOff);
         const _moveRecOv=(rec,qs)=>{
           if(!rec._dateOverrides)rec._dateOverrides={};
           const prevCur=rec._dateOverrides[_curWkKey];
@@ -1419,14 +1465,19 @@ function renderWkCal(){
           const _vsMoved=st.blocks.filter(bl=>String(bl._vidStepVid)===String(_vsVid)&&bl._vidStepName===_vsStep&&bl.ds===_vsSrcDay);
           const _vsPrevBlks=_vsMoved.map(bl=>({id:bl.id,ds:bl.ds}));
           _vsMoved.forEach(bl=>{bl.ds=ds;sbUpdateBlock(bl.id,{day_date:ds});});
-          // If daymap pointed to source day, update it to target day
+          // Update daymap for the moved instance only: primary if it matches src day, else swap extraDay
           const _vsM=_vidStepDayMap();const _vsK=_vsVid+'::'+_vsStep;
-          const _vsPrevMap=_vsM[_vsK]?{..._vsM[_vsK]}:null;
-          if(_vsM[_vsK]&&_vsM[_vsK].ds===_vsSrcDay){_vsM[_vsK].ds=ds;_vidStepDayMapSet(_vsM);}
+          const _vsPrevMap=_vsM[_vsK]?JSON.parse(JSON.stringify(_vsM[_vsK])):null;
+          const _vsE=_vsM[_vsK];
+          if(!_vsE)_vsM[_vsK]={ds:ds,done:false};
+          else if(_vsE.ds===_vsSrcDay)_vsE.ds=ds;
+          else if(_vsE.extraDays&&_vsE.extraDays.includes(_vsSrcDay)){_vsE.extraDays=_vsE.extraDays.filter(d=>d!==_vsSrcDay);if(_vsE.ds!==ds&&!_vsE.extraDays.includes(ds))_vsE.extraDays.push(ds);if(!_vsE.extraDays.length)delete _vsE.extraDays;}
+          if(_vsE)_vidStepMoveDoneDay(_vsE,_vsSrcDay,ds);
+          _vidStepDayMapSet(_vsM);
           save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
           pushUndo(()=>{
             _vsPrevBlks.forEach(p=>{const bl=st.blocks.find(x=>x.id===p.id);if(bl){bl.ds=p.ds;sbUpdateBlock(bl.id,{day_date:p.ds});}});
-            const m2=_vidStepDayMap();if(_vsPrevMap)m2[_vsK]=_vsPrevMap;_vidStepDayMapSet(m2);
+            const m2=_vidStepDayMap();if(_vsPrevMap)m2[_vsK]=_vsPrevMap;else delete m2[_vsK];_vidStepDayMapSet(m2);
             save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
           },'Moved step');
         } else {
@@ -1510,7 +1561,7 @@ function renderWkCal(){
     const _vPend=v=>v.status==='published'&&typeof _vidGroupFullyComplete==='function'&&!_vidGroupFullyComplete(v);
     const _hasTabTask=vid=>{const m='_vid:'+vid;return st.tasks.some(t=>t.notes&&t.notes.includes(m));};
     const _vidOnTB=new Set(st.blocks.filter(b=>b.ds===ds&&b._vidId).map(b=>String(b._vidId)));
-    const vidForDay=(st.videos||[]).filter(v=>!v.is_deleted&&((_vdm[String(v.id)]===ds)||_vidOnTB.has(String(v.id))||(_vPend(v)&&v.post_date===ds&&!_hasTabTask(v.id)))).map(v=>({id:'vid-ov-'+v.id,name:v.topic||v.title,category:'Videos',due_date:ds,done:v.status==='published',_vidId:v.id,_virtual:true,_type:'vid'}));
+    const vidForDay=(st.videos||[]).filter(v=>!v.is_deleted&&(((_vdm[String(v.id)]===ds)&&v.status!=='published')||_vidOnTB.has(String(v.id))||(_vPend(v)&&v.post_date===ds&&!_hasTabTask(v.id)))).map(v=>({id:'vid-ov-'+v.id,name:v.topic||v.title,category:'Videos',due_date:ds,done:v.status==='published',_vidId:v.id,_virtual:true,_type:'vid'}));
     const vidStepForDay=_vidStepTasksForDay(ds);
     const vidStepDone=vidStepForDay.filter(t=>t.done);
     const vidStepUndone=vidStepForDay.filter(t=>!t.done);
@@ -1559,8 +1610,8 @@ function renderWkCal(){
         else if(t._type==='pup'){dragId='pupsess::'+t._pupSessId+'::'+ds;}
         else if(t._type==='shop'){dragId='shop::'+t._shopId;}
         else if(t._isWrRule){dragId='wrrule::'+t._ruleId;}
-        else if(t._isWrec){dragId='wrec::'+t._recId;}
-        else if(t._virtual){dragId='rec::'+t._recId+'::'+t.due_date;}
+        else if(t._isWrec){dragId='wrec::'+t._recId+'::'+(t._wkKey||'');}
+        else if(t._virtual){dragId='rec::'+t._recId+'::'+t.due_date+'::'+(t._wkKey||'');}
         else{dragId=String(t.id);}
         document.body.classList.add('body-dragging');
         chip.style.opacity='.4';showWkcEdges(true);e2.stopPropagation();
@@ -1676,7 +1727,7 @@ function renderWkCal(){
     const mvBanner=document.createElement('div');mvBanner.style.cssText='display:flex;flex-direction:column;align-items:center;padding:2px 4px;margin-bottom:2px';
     const mvTxt=document.createElement('span');mvTxt.textContent=`${_goalsOvFromPast.length} Overdue`;mvTxt.style.cssText=`font-size:8px;font-weight:600;color:${_dk()?'#fca5a5':'#b91c1c'}`;
     const mvBtn=document.createElement('button');mvBtn.textContent='Move to this week';mvBtn.style.cssText='background:#ef4444;color:#fff;border:none;border-radius:5px;padding:3px 6px;font-size:9px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:2px;width:100%';
-    mvBtn.addEventListener('click',e=>{e.stopPropagation();const prevDates=_goalsOvFromPast.map(t=>({id:t.id,prev:t.due_date}));_goalsOvFromPast.forEach(t=>{t.due_date=wkStart;sbReq('PATCH','tasks',{due_date:wkStart},`?id=eq.${t.id}`);});save();renderWkCal();renderWkSummary();if(document.getElementById('woModal')?.classList.contains('open'))renderWOModal();pushUndo(()=>{prevDates.forEach(p=>{const t=st.tasks.find(x=>String(x.id)===String(p.id));if(t){t.due_date=p.prev;sbReq('PATCH','tasks',{due_date:p.prev},`?id=eq.${t.id}`);}});save();renderWkCal();renderWkSummary();if(document.getElementById('woModal')?.classList.contains('open'))renderWOModal();},'Moved overdue goals to this week');});
+    mvBtn.addEventListener('click',e=>{e.stopPropagation();const prevDates=_goalsOvFromPast.map(t=>({id:t.id,prev:t.due_date}));_goalsOvFromPast.forEach(t=>{const sid=String(t.id);t.due_date=wkStart;localOverrides[sid]={due_date:wkStart};pendingLocal.add(sid);sbReqNullable('PATCH','tasks',{due_date:wkStart},`?id=eq.${t.id}`).then(()=>pendingLocal.delete(sid));});save();renderWkCal();renderWkSummary();if(document.getElementById('woModal')?.classList.contains('open'))renderWOModal();pushUndo(()=>{prevDates.forEach(p=>{const t=st.tasks.find(x=>String(x.id)===String(p.id));if(t){const sid=String(t.id);t.due_date=p.prev;localOverrides[sid]={due_date:p.prev};pendingLocal.add(sid);sbReqNullable('PATCH','tasks',{due_date:p.prev},`?id=eq.${t.id}`).then(()=>pendingLocal.delete(sid));}});save();renderWkCal();renderWkSummary();if(document.getElementById('woModal')?.classList.contains('open'))renderWOModal();},'Moved overdue goals to this week');});
     mvBanner.appendChild(mvTxt);mvBanner.appendChild(mvBtn);
     goalsCol.appendChild(mvBanner);
   }
@@ -1888,11 +1939,11 @@ function setupWkcEdgeDrop(){
     const targetDates=getWkDates(targetWkOff);
     const newDs=dir===1?d2s(targetDates[0]):d2s(targetDates[6]);
     if(dragId.startsWith('wrec::')){
-      const recId=dragId.split('::')[1];
+      const _weParts=dragId.split('::');const recId=_weParts[1];const _weSrcWk=_weParts[2]||'';
       const rec=st.recurring.find(x=>String(x.id)===String(recId));
       if(rec){
         if(!rec._dateOverrides)rec._dateOverrides={};
-        const curWkKey=getWkKey(wkOff);
+        const curWkKey=_weSrcWk||getWkKey(wkOff);
         const tgtWkKey=getWkKey(targetWkOff);
         const prevCur=rec._dateOverrides[curWkKey];
         const prevTgt=rec._dateOverrides[tgtWkKey];
@@ -1905,31 +1956,26 @@ function setupWkcEdgeDrop(){
       dragId=null;return;
     }
     if(dragId.startsWith('rec::')){
-      const recId=dragId.split('::')[1];
+      const _reParts=dragId.split('::');const recId=_reParts[1];const _reSrcWk=_reParts[3]||'';
       const rec=st.recurring.find(x=>String(x.id)===String(recId));
       if(rec){
         if(!rec._dateOverrides)rec._dateOverrides={};
-        const curWkKey=getWkKey(wkOff);const tgtWkKey=getWkKey(targetWkOff);
-        const prevCurOv=rec._dateOverrides[curWkKey];const prevTgtOv=rec._dateOverrides[tgtWkKey];
-        const prevStart=rec.starting_date;
-        // Skip current week, add override for target week
-        rec._dateOverrides[curWkKey]='__skip__';
-        // For target week, use the same day-of-week as natural occurrence
-        const cadence=rec.cadence||'weekly';
-        const dow=dayNameToIdx(rec.appears_on_date);
-        const tgtDate=dow>=0?getDateForDow(dow,targetWkOff):null;
-        rec._dateOverrides[tgtWkKey]=tgtDate?d2s(tgtDate):newDs;
-        // For interval tasks, shift starting_date so all future weeks align
-        if((cadence==='biweekly'||cadence==='quarterly'||cadence==='biannual'||cadence==='annual')&&rec.starting_date){
-          const sd=new Date(rec.starting_date+'T00:00:00');sd.setDate(sd.getDate()+dir*7);rec.starting_date=d2s(sd);
-        }
+        const curWkKey=_reSrcWk||getWkKey(wkOff);
+        const _prevOvs={...rec._dateOverrides};
+        // Move THIS occurrence to the adjacent week ("move all future" is a separate gesture).
+        // FORWARD: CARRY it — pin the source week's instance to a date in the (later) target week, no
+        // '__skip__'. It renders in the target week via the calendar's back-lookback while that week's own
+        // occurrence still shows (e.g. HEB carried to next Monday, next-week Sunday HEB still there), and
+        // it stays out of the skipped-this-week list. _normOvs preserves the forward carry.
+        // BACKWARD: the back-lookback can't reach a later source week from an earlier view, so skip the
+        // source week and pin the (earlier) target week directly.
+        if(dir>0){rec._dateOverrides[curWkKey]=newDs;}
+        else{rec._dateOverrides[curWkKey]='__skip__';rec._dateOverrides[getWkKey(targetWkOff)]=newDs;}
         dragId=null;shiftWk(dir);save();renderAll();
-        sbReqSilent('PATCH','wr_recurring_rules',{date_overrides:rec._dateOverrides,starting_date:rec.starting_date||null},`?id=eq.${rec.id}`);
+        sbReqSilent('PATCH','wr_recurring_rules',{date_overrides:rec._dateOverrides},`?id=eq.${rec.id}`);
         pushUndo(()=>{
-          if(prevCurOv!==undefined)rec._dateOverrides[curWkKey]=prevCurOv;else delete rec._dateOverrides[curWkKey];
-          if(prevTgtOv!==undefined)rec._dateOverrides[tgtWkKey]=prevTgtOv;else delete rec._dateOverrides[tgtWkKey];
-          rec.starting_date=prevStart;save();renderAll();
-          sbReqSilent('PATCH','wr_recurring_rules',{date_overrides:rec._dateOverrides,starting_date:rec.starting_date||null},`?id=eq.${rec.id}`);
+          rec._dateOverrides=_prevOvs;save();renderAll();
+          sbReqSilent('PATCH','wr_recurring_rules',{date_overrides:rec._dateOverrides},`?id=eq.${rec.id}`);
         },'Moved to other week');
       }
       dragId=null;return;
@@ -1943,7 +1989,7 @@ function setupWkcEdgeDrop(){
       const parts=dragId.split('::');const _eV=parts[1],_eS=parts[2],_eSD=parts[3]||null;
       if(_eS!=='step_thumbnail'&&_eS!=='step_description'&&_eSD){
         st.blocks.filter(bl=>String(bl._vidStepVid)===String(_eV)&&bl._vidStepName===_eS&&bl.ds===_eSD).forEach(bl=>{bl.ds=newDs;sbUpdateBlock(bl.id,{day_date:newDs});});
-        const _eM3=_vidStepDayMap();const _eK3=_eV+'::'+_eS;if(_eM3[_eK3]&&_eM3[_eK3].ds===_eSD){_eM3[_eK3].ds=newDs;_vidStepDayMapSet(_eM3);}save();
+        const _eM3=_vidStepDayMap();const _eK3=_eV+'::'+_eS;const _eE3=_eM3[_eK3];if(!_eE3)_eM3[_eK3]={ds:newDs,done:false};else if(_eE3.ds===_eSD)_eE3.ds=newDs;else if(_eE3.extraDays&&_eE3.extraDays.includes(_eSD)){_eE3.extraDays=_eE3.extraDays.filter(d=>d!==_eSD);if(_eE3.ds!==newDs&&!_eE3.extraDays.includes(newDs))_eE3.extraDays.push(newDs);if(!_eE3.extraDays.length)delete _eE3.extraDays;}if(_eE3)_vidStepMoveDoneDay(_eE3,_eSD,newDs);_vidStepDayMapSet(_eM3);save();
       } else {_vidStepAssignToDay(_eV,_eS,newDs);}
       dragId=null;shiftWk(dir);return;
     }
@@ -1994,11 +2040,11 @@ function setupEdge(id,dir){
     const newDs=dir===1?d2s(targetDates[0]):d2s(targetDates[6]);
     // Handle wrec:: (weekly reset)
     if(dragId.startsWith('wrec::')){
-      const recId=dragId.split('::')[1];
+      const _we2Parts=dragId.split('::');const recId=_we2Parts[1];const _we2SrcWk=_we2Parts[2]||'';
       const r=st.recurring.find(x=>String(x.id)===String(recId));
       if(r){
         if(!r._dateOverrides)r._dateOverrides={};
-        const curWkKey=getWkKey(wkOff);
+        const curWkKey=_we2SrcWk||getWkKey(wkOff);
         const tgtWkKey=getWkKey(targetWkOff);
         const prevCur=r._dateOverrides[curWkKey];
         const prevTgt=r._dateOverrides[tgtWkKey];
@@ -2012,28 +2058,22 @@ function setupEdge(id,dir){
     }
     // Handle rec:: (non-weekly recurring virtual)
     if(dragId.startsWith('rec::')){
-      const recId=dragId.split('::')[1];
+      const _re2Parts=dragId.split('::');const recId=_re2Parts[1];const _re2SrcWk=_re2Parts[3]||'';
       const rec=st.recurring.find(x=>String(x.id)===String(recId));
       if(rec){
         if(!rec._dateOverrides)rec._dateOverrides={};
-        const curWkKey=getWkKey(wkOff);const tgtWkKey=getWkKey(targetWkOff);
-        const prevCurOv=rec._dateOverrides[curWkKey];const prevTgtOv=rec._dateOverrides[tgtWkKey];
-        const prevStart=rec.starting_date;
-        rec._dateOverrides[curWkKey]='__skip__';
-        const cadence=rec.cadence||'weekly';
-        const dow=dayNameToIdx(rec.appears_on_date);
-        const tgtDate=dow>=0?getDateForDow(dow,targetWkOff):null;
-        rec._dateOverrides[tgtWkKey]=tgtDate?d2s(tgtDate):newDs;
-        if((cadence==='biweekly'||cadence==='quarterly'||cadence==='biannual'||cadence==='annual')&&rec.starting_date){
-          const sd=new Date(rec.starting_date+'T00:00:00');sd.setDate(sd.getDate()+dir*7);rec.starting_date=d2s(sd);
-        }
+        const curWkKey=_re2SrcWk||getWkKey(wkOff);
+        const _prevOvs={...rec._dateOverrides};
+        // Move THIS occurrence to the adjacent week (see the matching edge handler above for details).
+        // Forward: carry (pin source week to a date in the later target week, no '__skip__', shows both).
+        // Backward: skip source + pin the earlier target week (back-lookback can't reach a later source).
+        if(dir>0){rec._dateOverrides[curWkKey]=newDs;}
+        else{rec._dateOverrides[curWkKey]='__skip__';rec._dateOverrides[getWkKey(targetWkOff)]=newDs;}
         dragId=null;shiftWk(dir);save();renderAll();
-        sbReqSilent('PATCH','wr_recurring_rules',{date_overrides:rec._dateOverrides,starting_date:rec.starting_date||null},`?id=eq.${rec.id}`);
+        sbReqSilent('PATCH','wr_recurring_rules',{date_overrides:rec._dateOverrides},`?id=eq.${rec.id}`);
         pushUndo(()=>{
-          if(prevCurOv!==undefined)rec._dateOverrides[curWkKey]=prevCurOv;else delete rec._dateOverrides[curWkKey];
-          if(prevTgtOv!==undefined)rec._dateOverrides[tgtWkKey]=prevTgtOv;else delete rec._dateOverrides[tgtWkKey];
-          rec.starting_date=prevStart;save();renderAll();
-          sbReqSilent('PATCH','wr_recurring_rules',{date_overrides:rec._dateOverrides,starting_date:rec.starting_date||null},`?id=eq.${rec.id}`);
+          rec._dateOverrides=_prevOvs;save();renderAll();
+          sbReqSilent('PATCH','wr_recurring_rules',{date_overrides:rec._dateOverrides},`?id=eq.${rec.id}`);
         },'Moved to other week');
       }
       dragId=null;return;
@@ -2047,7 +2087,7 @@ function setupEdge(id,dir){
       const parts=dragId.split('::');const _eV=parts[1],_eS=parts[2],_eSD=parts[3]||null;
       if(_eS!=='step_thumbnail'&&_eS!=='step_description'&&_eSD){
         st.blocks.filter(bl=>String(bl._vidStepVid)===String(_eV)&&bl._vidStepName===_eS&&bl.ds===_eSD).forEach(bl=>{bl.ds=newDs;sbUpdateBlock(bl.id,{day_date:newDs});});
-        const _eM3=_vidStepDayMap();const _eK3=_eV+'::'+_eS;if(_eM3[_eK3]&&_eM3[_eK3].ds===_eSD){_eM3[_eK3].ds=newDs;_vidStepDayMapSet(_eM3);}save();
+        const _eM3=_vidStepDayMap();const _eK3=_eV+'::'+_eS;const _eE3=_eM3[_eK3];if(!_eE3)_eM3[_eK3]={ds:newDs,done:false};else if(_eE3.ds===_eSD)_eE3.ds=newDs;else if(_eE3.extraDays&&_eE3.extraDays.includes(_eSD)){_eE3.extraDays=_eE3.extraDays.filter(d=>d!==_eSD);if(_eE3.ds!==newDs&&!_eE3.extraDays.includes(newDs))_eE3.extraDays.push(newDs);if(!_eE3.extraDays.length)delete _eE3.extraDays;}if(_eE3)_vidStepMoveDoneDay(_eE3,_eSD,newDs);_vidStepDayMapSet(_eM3);save();
       } else {_vidStepAssignToDay(_eV,_eS,newDs);}
       dragId=null;shiftWk(dir);return;
     }
@@ -2094,6 +2134,81 @@ function showGoalCtx(e,taskId){
     ()=>{const n=parseInt(prompt('Move how many weeks? (use negative for past)','1'));if(!isNaN(n)&&n!==0)moveGoalWeeks(taskId,n);}
   );
 }
+// ── Weekly Goals Keyboard Nav ──────────────────────────────────────────────────
+function _wkGoalKeyNav(e){
+  // Check if any goal tasks are selected
+  const goalSel=[...selectedTasks].filter(s=>{const t=st.tasks.find(x=>String(x.id)===s);return t&&t.category==='Weekly Goals';});
+  if(!goalSel.length)return false;
+  const _typing=document.activeElement?.tagName==='INPUT'||document.activeElement?.tagName==='TEXTAREA'||document.activeElement?.tagName==='SELECT'||document.activeElement?.isContentEditable;
+  if(_typing)return false;
+
+  // Find the container — either WO modal body or overview goals column
+  const woOpen=document.getElementById('woModal')?.classList.contains('open');
+  let container=null,allChips=[];
+  if(woOpen){
+    // Find which column has selected chips
+    const bodies=[...document.querySelectorAll('.wo-col-body')];
+    for(const b of bodies){const chips=[...b.querySelectorAll('.wo-chip[data-tid]')];if(chips.some(c=>goalSel.includes(c.dataset.tid))){container=b;allChips=chips;break;}}
+  }
+  if(!container){
+    const gc=document.querySelector('.wkc-goals-col');
+    if(gc){container=gc;allChips=[...gc.querySelectorAll('.chip[data-tid]')];}
+  }
+  if(!container||!allChips.length)return false;
+  const allIds=allChips.map(c=>c.dataset.tid);
+
+  // Cmd+Up/Down: reorder
+  if((e.metaKey||e.ctrlKey)&&(e.key==='ArrowUp'||e.key==='ArrowDown')){
+    e.preventDefault();
+    const dir=e.key==='ArrowUp'?-1:1;
+    const selSet=new Set(goalSel);
+    const prevOrders=allIds.map(id=>{const t=st.tasks.find(x=>String(x.id)===id);return{id,ord:t?t.goal_order:0};});
+    // Normalize
+    allIds.forEach((id,i)=>{const t=st.tasks.find(x=>String(x.id)===id);if(t)t.goal_order=i;});
+    const idxs=goalSel.map(id=>allIds.indexOf(id)).filter(i=>i>=0).sort((a,b)=>a-b);
+    if(!idxs.length)return true;
+    if(dir===-1&&idxs[0]>0){
+      const aboveId=allIds[idxs[0]-1];const above=st.tasks.find(x=>String(x.id)===aboveId);
+      idxs.forEach(i=>{const t=st.tasks.find(x=>String(x.id)===allIds[i]);if(t)t.goal_order--;});
+      if(above)above.goal_order=st.tasks.find(x=>String(x.id)===allIds[idxs[idxs.length-1]])?.goal_order+1||idxs.length;
+    } else if(dir===1&&idxs[idxs.length-1]<allIds.length-1){
+      const belowId=allIds[idxs[idxs.length-1]+1];const below=st.tasks.find(x=>String(x.id)===belowId);
+      idxs.forEach(i=>{const t=st.tasks.find(x=>String(x.id)===allIds[i]);if(t)t.goal_order++;});
+      if(below)below.goal_order=st.tasks.find(x=>String(x.id)===allIds[idxs[0]])?.goal_order-1||0;
+    } else return true;
+    // Re-normalize and save
+    const sorted=allIds.map(id=>st.tasks.find(x=>String(x.id)===id)).filter(Boolean).sort((a,b)=>(a.goal_order??9999)-(b.goal_order??9999));
+    sorted.forEach((t,i)=>{t.goal_order=i;sbReqNullable('PATCH','tasks',{goal_order:i},`?id=eq.${t.id}`);});
+    save();renderWkCal();renderWkSummary();if(woOpen)renderWOModal();
+    pushUndo(()=>{prevOrders.forEach(({id,ord})=>{const t=st.tasks.find(x=>String(x.id)===id);if(t){t.goal_order=ord;sbReqNullable('PATCH','tasks',{goal_order:ord},`?id=eq.${id}`);}});save();renderWkCal();renderWkSummary();if(document.getElementById('woModal')?.classList.contains('open'))renderWOModal();},'Reorder goals');
+    setTimeout(()=>{selSet.forEach(id=>selectedTasks.add(id));applySelHighlight();},20);
+    return true;
+  }
+
+  // Arrow Up/Down: navigate
+  if(e.key==='ArrowUp'||e.key==='ArrowDown'){
+    e.preventDefault();
+    const lastSel=goalSel[goalSel.length-1];
+    const curIdx=allIds.indexOf(lastSel);
+    const newIdx=e.key==='ArrowUp'?Math.max(0,curIdx-1):Math.min(allIds.length-1,curIdx+1);
+    const newId=allIds[newIdx];
+    if(e.shiftKey){selectedTasks.add(newId);lastSelectedId=newId;}
+    else{selectedTasks.clear();selectedTasks.add(newId);lastSelectedId=newId;}
+    applySelHighlight();
+    const el=allChips[newIdx];if(el)el.scrollIntoView({block:'nearest'});
+    return true;
+  }
+
+  // Delete/Backspace
+  if(e.key==='Delete'||e.key==='Backspace'){
+    e.preventDefault();
+    goalSel.forEach(id=>{if(typeof delTask==='function')delTask(id);});
+    selectedTasks.clear();
+    return true;
+  }
+
+  return false;
+}
 // ── Weekly Objectives Modal ────────────────────────────────────────────────────
 let _woViewOff=0; // weeks offset relative to wkOff for the modal view start
 function openWOModal(){
@@ -2134,7 +2249,7 @@ function renderWOModal(){
       const woBanner=document.createElement('div');woBanner.style.cssText=`display:flex;flex-direction:column;align-items:center;padding:4px 6px;margin-bottom:3px;border-radius:4px;background:${_dk()?'rgba(239,68,68,.10)':'rgba(254,242,242,.9)'}`;
       const woTxt=document.createElement('span');woTxt.textContent=`${_woOvGoals.length} Overdue`;woTxt.style.cssText=`font-size:10px;font-weight:600;color:${_dk()?'#fca5a5':'#b91c1c'}`;
       const woBtn=document.createElement('button');woBtn.textContent='Move to this week';woBtn.style.cssText='background:#ef4444;color:#fff;border:none;border-radius:4px;padding:2px 8px;font-size:9px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:2px;width:100%';
-      woBtn.addEventListener('click',e=>{e.stopPropagation();const prevDates=_woOvGoals.map(t=>({id:t.id,prev:t.due_date}));_woOvGoals.forEach(t=>{t.due_date=wkStart;sbReq('PATCH','tasks',{due_date:wkStart},`?id=eq.${t.id}`);});save();renderWOModal();renderWkCal();renderWkSummary();pushUndo(()=>{prevDates.forEach(p=>{const t=st.tasks.find(x=>String(x.id)===String(p.id));if(t){t.due_date=p.prev;sbReq('PATCH','tasks',{due_date:p.prev},`?id=eq.${t.id}`);}});save();renderWOModal();renderWkCal();renderWkSummary();},'Moved overdue goals to this week');});
+      woBtn.addEventListener('click',e=>{e.stopPropagation();const prevDates=_woOvGoals.map(t=>({id:t.id,prev:t.due_date}));_woOvGoals.forEach(t=>{const sid=String(t.id);t.due_date=wkStart;localOverrides[sid]={due_date:wkStart};pendingLocal.add(sid);sbReqNullable('PATCH','tasks',{due_date:wkStart},`?id=eq.${t.id}`).then(()=>pendingLocal.delete(sid));});save();renderWOModal();renderWkCal();renderWkSummary();pushUndo(()=>{prevDates.forEach(p=>{const t=st.tasks.find(x=>String(x.id)===String(p.id));if(t){const sid=String(t.id);t.due_date=p.prev;localOverrides[sid]={due_date:p.prev};pendingLocal.add(sid);sbReqNullable('PATCH','tasks',{due_date:p.prev},`?id=eq.${t.id}`).then(()=>pendingLocal.delete(sid));}});save();renderWOModal();renderWkCal();renderWkSummary();},'Moved overdue goals to this week');});
       woBanner.appendChild(woTxt);woBanner.appendChild(woBtn);
       body.appendChild(woBanner);
     }
@@ -2354,9 +2469,9 @@ function renderRecMoCal(){
     });
     getRecurringWeekTasks(wkOff).forEach(t=>{
       const r=st.recurring.find(x=>String(x.id)===String(t._recId));
-      const wkKey=dsToWkKey(t.due_date);
+      const wkKey=t._wkKey||dsToWkKey(t.due_date); // schedule week (override is keyed by it, even after a cross-week move)
       const hasMoveOverride=r&&r._dateOverrides&&r._dateOverrides[wkKey]&&r._dateOverrides[wkKey]!=='__skip__';
-      addToDay(t.due_date,{name:t.name,isPup:r&&(r.pup_related===true||r.pup_related==='true'),isWR:false,recId:String(t._recId),moved:!!hasMoveOverride,cadence:r&&r.cadence});
+      addToDay(t.due_date,{name:t.name,isPup:r&&(r.pup_related===true||r.pup_related==='true'),isWR:false,recId:String(t._recId),moved:!!hasMoveOverride,cadence:r&&r.cadence,srcWkKey:t._wkKey});
     });
   }
   const dowEl=document.getElementById('recMoDow');dowEl.innerHTML='';
@@ -2445,7 +2560,7 @@ function renderRecMoCal(){
       chip.addEventListener('dragstart',e=>{e.stopPropagation();dragId='recmo-wr::'+item.ruleId+'::'+srcWkKey;chip.style.opacity='.4';document.body.classList.add('body-dragging');});
       chip.addEventListener('dragend',()=>{chip.style.opacity='1';document.body.classList.remove('body-dragging');dragId=null;});
     } else {
-      chip.addEventListener('dragstart',e=>{e.stopPropagation();dragId='recmo::'+item.recId+'::'+ds;chip.style.opacity='.4';document.body.classList.add('body-dragging');});
+      chip.addEventListener('dragstart',e=>{e.stopPropagation();dragId='recmo::'+item.recId+'::'+ds+'::'+(item.srcWkKey||dsToWkKey(ds));chip.style.opacity='.4';document.body.classList.add('body-dragging');});
       chip.addEventListener('dragend',()=>{chip.style.opacity='1';document.body.classList.remove('body-dragging');dragId=null;});
     }
     return chip;
@@ -2477,26 +2592,34 @@ function renderRecMoCal(){
       cell.addEventListener('drop',e=>{
         e.preventDefault();cell.classList.remove('dov');
         if(!dragId||!dragId.startsWith('recmo::'))return;
-        const parts=dragId.split('::');const recId=parts[1];const srcDs=parts[2];dragId=null;
+        const parts=dragId.split('::');const recId=parts[1];const srcDs=parts[2];const srcWkKey=parts[3]||dsToWkKey(srcDs);dragId=null;
         if(ds===srcDs)return;
-        if(dsToWkKey(ds)!==dsToWkKey(srcDs))return;
         const r=st.recurring.find(x=>String(x.id)===recId);if(!r)return;
-        const wkKey=dsToWkKey(ds);
+        const tgtWkKey=dsToWkKey(ds);
         showWrScopePicker(e,
-          '⊘  This week only',
+          '⊘  This time only',
           '↻  All future',
-          ()=>{// this week only — date override
-            if(!r._dateOverrides)r._dateOverrides={};const prev=r._dateOverrides[wkKey];
-            r._dateOverrides[wkKey]=ds;save();renderAll();renderRecMoCal();
+          ()=>{// this occurrence only — pin the source week's occurrence onto the dropped date (any week)
+            if(!r._dateOverrides)r._dateOverrides={};const prev=r._dateOverrides[srcWkKey];
+            r._dateOverrides[srcWkKey]=ds;save();renderAll();renderRecMoCal();
             sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));
-            pushUndo(()=>{if(prev!==undefined)r._dateOverrides[wkKey]=prev;else delete r._dateOverrides[wkKey];save();renderAll();renderRecMoCal();sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));},'Moved recurring task this week');
+            pushUndo(()=>{if(prev!==undefined)r._dateOverrides[srcWkKey]=prev;else delete r._dateOverrides[srcWkKey];save();renderAll();renderRecMoCal();sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));},'Moved recurring task this time');
           },
-          ()=>{// all future — update appears_on_date
-            const prev=r.appears_on_date;
-            const newVal=(r.cadence==='monthly')?String(new Date(ds+'T00:00:00').getDate()):DAYNAMES[new Date(ds+'T00:00:00').getDay()];
-            r.appears_on_date=newVal;save();renderAll();renderRecMoCal();
-            sbReq('PATCH','wr_recurring_rules',{appears_on_date:newVal},recQs(r.id));
-            pushUndo(()=>{r.appears_on_date=prev;save();renderAll();renderRecMoCal();sbReq('PATCH','wr_recurring_rules',{appears_on_date:prev},recQs(r.id));},'Moved recurring task all future');
+          ()=>{// all future — shift the recurrence anchor by the week delta + land on the dropped weekday/day
+            const prevStart=r.starting_date;const prevAppears=r.appears_on_date;
+            if(!r._dateOverrides)r._dateOverrides={};
+            const _prevSrcPin=r._dateOverrides[srcWkKey];
+            const deltaWeeks=Math.round((new Date(tgtWkKey+'T12:00')-new Date(srcWkKey+'T12:00'))/(7*86400000));
+            const base=r.starting_date?new Date(r.starting_date+'T12:00'):new Date(srcWkKey+'T12:00');
+            base.setDate(base.getDate()+deltaWeeks*7);
+            const newStart=d2s(base);
+            const newAppears=(r.cadence==='monthly')?String(new Date(ds+'T00:00:00').getDate()):DAYNAMES[new Date(ds+'T00:00:00').getDay()];
+            // moving the schedule forward: drop the source occurrence + undone past orphans so they don't linger as overdue
+            if(_prevSrcPin!==undefined)delete r._dateOverrides[srcWkKey];
+            const _orphans=_wrClearPastOrphanPins(r,false);
+            r.starting_date=newStart;r.appears_on_date=newAppears;save();renderAll();renderRecMoCal();
+            sbReq('PATCH','wr_recurring_rules',{starting_date:newStart,appears_on_date:newAppears,date_overrides:r._dateOverrides},recQs(r.id));
+            pushUndo(()=>{r.starting_date=prevStart;r.appears_on_date=prevAppears;if(_prevSrcPin!==undefined)r._dateOverrides[srcWkKey]=_prevSrcPin;_orphans.forEach(o=>{if(o.val===undefined)delete r._dateOverrides[o.wk];else r._dateOverrides[o.wk]=o.val;});save();renderAll();renderRecMoCal();sbReq('PATCH','wr_recurring_rules',{starting_date:prevStart,appears_on_date:prevAppears,date_overrides:r._dateOverrides},recQs(r.id));},'Moved recurring task all future');
           }
         );
       });
@@ -2527,13 +2650,18 @@ function renderRecMoCal(){
         '⊞  This week only',
         ()=>{// Shift anchor — affects all future occurrences
           const prevAnchor=rule.starting_date;
+          if(!rule._dateOverrides)rule._dateOverrides={};
+          const _prevSrcPin=rule._dateOverrides[srcWkKey];
           const base=rule.starting_date?new Date(rule.starting_date+'T12:00'):new Date(srcWkKey+'T12:00');
           base.setDate(base.getDate()+deltaWeeks*7);
           const newAnchor=d2s(base);
           rule.starting_date=newAnchor;
-          sbReqSilent('PATCH','wr_recurring_rules',{starting_date:newAnchor},`?id=eq.${ruleId}`);
+          // moving the schedule forward: drop the source occurrence + undone past orphans so they don't linger as overdue
+          if(_prevSrcPin!==undefined)delete rule._dateOverrides[srcWkKey];
+          const _orphans=_wrClearPastOrphanPins(rule,true);
+          sbReqSilent('PATCH','wr_recurring_rules',{starting_date:newAnchor,date_overrides:rule._dateOverrides},`?id=eq.${ruleId}`);
           save();renderRecOv();renderWeeklyPage();renderRecMoCal();
-          pushUndo(()=>{rule.starting_date=prevAnchor;sbReqSilent('PATCH','wr_recurring_rules',{starting_date:prevAnchor},`?id=eq.${ruleId}`);save();renderRecOv();renderWeeklyPage();renderRecMoCal();},'Shifted WR rule start');
+          pushUndo(()=>{rule.starting_date=prevAnchor;if(_prevSrcPin!==undefined)rule._dateOverrides[srcWkKey]=_prevSrcPin;_orphans.forEach(o=>{if(o.val===undefined)delete rule._dateOverrides[o.wk];else rule._dateOverrides[o.wk]=o.val;});sbReqSilent('PATCH','wr_recurring_rules',{starting_date:prevAnchor,date_overrides:rule._dateOverrides},`?id=eq.${ruleId}`);save();renderRecOv();renderWeeklyPage();renderRecMoCal();},'Shifted WR rule start');
         },
         ()=>{// Move override for this week only
           writeWrOverride(ruleId,srcWkKey,{override_type:'move',moved_to_wk_key:destWkKey},{undoLabel:'Moved WR task this week'});
@@ -2546,7 +2674,7 @@ function renderRecMoCal(){
 }
 
 // ── Weekly Reset card — generated from wr_recurring_rules for selected week ────
-function shiftWrRec(n){wrRecOff+=n;renderRecOv();}
+function shiftWrRec(n){_goToWeek(wrRecOff+n);}
 
 function renderRecOv(){
   const wkKey=getWkKey(wrRecOff);
@@ -2615,6 +2743,44 @@ function renderRecOv(){
     wrap.addEventListener('click',e=>{e.stopPropagation();togWrRule(ruleId,!isDone,wkKey);});
     wrap.addEventListener('mousedown',e=>e.stopPropagation());
     return wrap;
+  }
+  // ── Overdue WR: rules whose most-recent prior due week was missed (current-week view only) ──
+  if(wrRecOff===0){
+    const _ovRows=[];
+    st.wrRules.filter(r=>r.is_enabled).forEach(r=>{
+      if(items.some(x=>String(x.id)===String(r.id)))return; // already present this week
+      const _startMon=r.starting_date?(()=>{const sd=new Date(r.starting_date+'T12:00');const dw=sd.getDay();const m=new Date(sd);m.setDate(sd.getDate()-(dw===0?6:dw-1));m.setHours(0,0,0,0);return m;})():null;
+      for(let w=-1;w>=-8;w--){
+        const pwk=getWkKey(w);
+        if(_startMon&&new Date(pwk+'T12:00')<_startMon)break; // before the rule existed
+        const pinned=r._dateOverrides&&r._dateOverrides[pwk];
+        const dueThatWk=isWRRuleDueThisWeek(r,w)||(pinned&&pinned!=='__skip__');
+        if(!dueThatWk)continue; // keep looking back for the most recent due week
+        // Most recent prior due week found — flag overdue only if it wasn't handled, then stop
+        const skipped=pinned==='__skip__'||(st.wrOverrides||[]).some(o=>String(o.rule_id)===String(r.id)&&o.wk_key===pwk&&o.override_type==='skip');
+        const moved=(st.wrOverrides||[]).some(o=>String(o.rule_id)===String(r.id)&&o.wk_key===pwk&&o.override_type==='move');
+        if(!skipped&&!moved&&!isDoneWRRule(r.id,pwk))_ovRows.push({r,pwk});
+        break;
+      }
+    });
+    _ovRows.forEach(({r,pwk})=>{
+      const rid=String(r.id);
+      const isPup=r.pup_related===true||r.pup_related==='true';
+      const row=document.createElement('div');
+      row.className='ti ov-row';
+      row.style.cssText='cursor:default;break-inside:avoid;margin:0 6px;padding:3px 50px 3px 10px';
+      row.addEventListener('contextmenu',e=>showWrRuleCtx(e,rid,pwk));
+      if(isPup){row.appendChild(makePawEl(rid,false));}
+      else{const cw=document.createElement('label');cw.className='chk-wrap';cw.addEventListener('click',e=>e.stopPropagation());const c=document.createElement('input');c.type='checkbox';c.className='chk';c.addEventListener('change',function(){togWrRule(rid,this.checked,pwk);});cw.appendChild(c);row.appendChild(cw);}
+      const nm=document.createElement('span');nm.className='tn';nm.textContent=r.name;row.appendChild(nm);
+      const mv=document.createElement('button');
+      mv.className='wr-ov-move';mv.textContent='Move';
+      mv.style.cssText='position:absolute;right:6px;top:50%;transform:translateY(-50%)';
+      mv.addEventListener('mousedown',e=>e.stopPropagation());
+      mv.addEventListener('click',e=>{e.stopPropagation();showWrScopePicker(e,'⊞  Move this occurrence','↻  Move all future',()=>wrMoveToThisWeek(rid,pwk,false),()=>wrMoveToThisWeek(rid,pwk,true),'⊘  Skip',()=>writeWrOverride(rid,pwk,{override_type:'skip'},{undoLabel:'Skipped WR task'}));});
+      row.appendChild(mv);
+      if(elReg)elReg.appendChild(row);
+    });
   }
   sorted.forEach(r=>{
     const rid=String(r.id);
@@ -2687,7 +2853,8 @@ function renderRecOv(){
     if(elReg)elReg.appendChild(row);
   });
   // Update skipped-this-week button
-  const _skippedWrecCount=st.recurring.filter(r=>(r.is_weekly_reset===true||r.is_weekly_reset==='true')&&r._dateOverrides&&r._dateOverrides[wkKey]==='__skip__').length;
+  // Include both weekly-reset and plain weekly recurring tasks genuinely skipped this week (occurs that week)
+  const _skippedWrecCount=_recSkippedThisWk(wkKey,wrRecOff).length;
   const _skCount=skipIds.size+_skippedWrecCount;
   const _skBtn=document.getElementById('wrSkippedBtn');
   if(_skBtn){_skBtn.style.display=_skCount?'':'none';_skBtn.textContent='↩ '+_skCount;}
@@ -2717,7 +2884,10 @@ function writeWrOverride(ruleId,wkKey,payload,{onDone,undoLabel='Changed WR task
   // Capture and remove timeblocks for this rule in the target week (skip only)
   const _skipRule=isSkip?st.wrRules.find(x=>String(x.id)===String(ruleId)):null;
   const _pinnedDs=_skipRule?._dateOverrides?.[wkKey];
-  const linkedBlocks=isSkip&&st.blocks?st.blocks.filter(b=>dsToWkKey(b.ds)===wkKey&&(String(b.ruleId)===String(ruleId)||String(b.recId)===String(ruleId)||(!b.ruleId&&!b.recId&&_pinnedDs&&b.ds===_pinnedDs&&!b.taskId&&!b.shopId))):[];
+  // The 3rd clause catches this rule's block when its ruleId/recId is null (pending rule_id migration) by
+  // matching an unlinked block on the pinned day — but must NOT swallow video/stage/pup blocks that merely
+  // happen to sit on that same day (they have no ruleId/recId/taskId/shopId either).
+  const linkedBlocks=isSkip&&st.blocks?st.blocks.filter(b=>dsToWkKey(b.ds)===wkKey&&(String(b.ruleId)===String(ruleId)||String(b.recId)===String(ruleId)||(!b.ruleId&&!b.recId&&_pinnedDs&&b.ds===_pinnedDs&&!b.taskId&&!b.shopId&&!b._vidStepVid&&!b._vidId&&!b._pupSessId&&!b._finCancelSubId))):[];
   if(isSkip&&linkedBlocks.length){st.blocks=st.blocks.filter(b=>!linkedBlocks.some(lb=>lb.id===b.id));linkedBlocks.forEach(b=>sbDeleteBlock(b.id));}
   const _syncBlockDone=(isDone)=>{if(st.blocks)st.blocks.filter(b=>dsToWkKey(b.ds)===wkKey&&(String(b.ruleId)===String(ruleId)||String(b.recId)===String(ruleId))).forEach(b=>{b._done=isDone;});};
   const _rerender=()=>{renderRecOv();renderWkCal();renderWeeklyPage();renderToday();if(document.getElementById('tbGrid'))renderDayTB();};
@@ -2838,11 +3008,27 @@ function wrScopeDoAll(){hideWrScopePicker();if(_wrScopeCbAll)_wrScopeCbAll();}
 document.addEventListener('mousedown',e=>{if(!e.target.closest('#wrScopePicker'))hideWrScopePicker();},{capture:true,passive:true});
 
 /// ── Skipped-this-week popup ───────────────────────────────────────────────────
+// Recurring tasks (WR-recurring + plain non-WR) genuinely skipped this week.
+// A skip only counts if the task ACTUALLY occurs that week — a '__skip__' on an off-cycle week
+// (e.g. a quarterly task between occurrences, or leftover from a "move all future" shift) is not a
+// real skip and must not appear. Weekly-reset tasks are override-driven (no natural cadence), so a
+// '__skip__' on them is always a genuine skip. `off` = week offset matching wkKey (getWkKey(off)===wkKey).
+function _recSkippedThisWk(wkKey,off){
+  return st.recurring.filter(r=>{
+    if(!r._dateOverrides||r._dateOverrides[wkKey]!=='__skip__')return false;
+    if(r.is_weekly_reset===true||r.is_weekly_reset==='true')return true;
+    if(off===undefined)return true;
+    const saved=r._dateOverrides[wkKey];delete r._dateOverrides[wkKey];
+    const occurs=getRecurringWeekTasks(off).some(v=>String(v._recId)===String(r.id));
+    r._dateOverrides[wkKey]=saved;
+    return occurs;
+  });
+}
 function openWrSkipped(e){
   e.stopPropagation();
   const wkKey=getWkKey(wrRecOff);
   const skippedRules=st.wrRules.filter(r=>(st.wrOverrides||[]).some(o=>String(o.rule_id)===String(r.id)&&o.wk_key===wkKey&&o.override_type==='skip'));
-  const skippedWrec=st.recurring.filter(r=>(r.is_weekly_reset===true||r.is_weekly_reset==='true')&&r._dateOverrides&&r._dateOverrides[wkKey]==='__skip__');
+  const skippedWrec=_recSkippedThisWk(wkKey,wrRecOff);
   const picker=document.getElementById('wrSkippedPicker');if(!picker)return;
   picker.innerHTML='';
   if(!skippedRules.length&&!skippedWrec.length){picker.style.display='none';return;}
@@ -2903,7 +3089,7 @@ function unscheduleWrRule(rid,wkKey){
   const prev=r._dateOverrides[wkKey];
   const _unschDs=prev&&prev!=='__skip__'?prev:null;
   delete r._dateOverrides[wkKey];
-  const linkedBlocks=st.blocks?st.blocks.filter(b=>String(b.ruleId)===String(rid)||String(b.recId)===String(rid)||(!b.ruleId&&!b.recId&&_unschDs&&b.ds===_unschDs&&!b.taskId&&!b.shopId)):[];
+  const linkedBlocks=st.blocks?st.blocks.filter(b=>String(b.ruleId)===String(rid)||String(b.recId)===String(rid)||(!b.ruleId&&!b.recId&&_unschDs&&b.ds===_unschDs&&!b.taskId&&!b.shopId&&!b._vidStepVid&&!b._vidId&&!b._pupSessId&&!b._finCancelSubId)):[];
   if(st.blocks)st.blocks=st.blocks.filter(b=>!linkedBlocks.some(lb=>lb.id===b.id));
   save();renderAll();
   linkedBlocks.forEach(b=>sbDeleteBlock(b.id));
@@ -2942,6 +3128,14 @@ function _wkKeyToOff(wkKey){
   const curMon=new Date(now);curMon.setDate(now.getDate()-dow);curMon.setHours(0,0,0,0);
   return Math.round((mon-curMon)/(7*864e5));
 }
+// Clamp a pinned override date into targetWkKey's Mon–Sun; if landing in current week, never before today (prevents phantom overdue)
+function _wrClampToWeek(ds,targetWkKey){
+  const sun=new Date(targetWkKey+'T12:00');sun.setDate(sun.getDate()+6);const sunDs=d2s(sun);
+  while(ds<targetWkKey){const d=new Date(ds+'T12:00');d.setDate(d.getDate()+7);ds=d2s(d);}
+  while(ds>sunDs){const d=new Date(ds+'T12:00');d.setDate(d.getDate()-7);ds=d2s(d);}
+  if(targetWkKey===getWkKey(0)&&ds<tod())ds=tod();
+  return ds;
+}
 function _wrShiftAnchor(delta){
   hideWrRuleCtx();
   if(_wrCtxRecId){
@@ -2960,9 +3154,9 @@ function _wrShiftAnchor(delta){
     const prevTarget=r._dateOverrides[targetWkKey];
     const _natDow=dayNameToIdx(r.appears_on_date);
     const _natDate=_natDow>=0?getDateForDow(_natDow,wkOff):null;
-    const base=prevCurrent&&prevCurrent!=='__skip__'?new Date(prevCurrent+'T12:00'):_natDate?new Date(d2s(_natDate)+'T12:00'):new Date();
+    const base=prevCurrent&&prevCurrent!=='__skip__'?new Date(prevCurrent+'T12:00'):_natDate?new Date(d2s(_natDate)+'T12:00'):new Date(_wrCtxWkKey+'T12:00');
     base.setDate(base.getDate()+delta);
-    const next=d2s(base);
+    const next=_wrClampToWeek(d2s(base),targetWkKey);
     r._dateOverrides[_wrCtxWkKey]='__skip__';
     r._dateOverrides[targetWkKey]=next;
     save();renderAll();renderWkCal();renderToday();
@@ -2991,14 +3185,12 @@ function _wrShiftAnchor(delta){
   if(tgtOv&&tgtOv!=='__skip__'){showToast('Already scheduled that week','#6b7280',2000);return;}
   const prevSrc=rule._dateOverrides[srcWkKey];
   const prevTgt=rule._dateOverrides[targetWkKey];
-  // Compute the target date: shift current pinned date (or natural day) by ±7
+  // Only carry a day pin if the source instance had one — otherwise stay unassigned in target WR container (move override shows it)
   const curDs=prevSrc&&prevSrc!=='__skip__'?prevSrc:null;
-  const base=curDs?new Date(curDs+'T12:00'):new Date();
-  base.setDate(base.getDate()+delta);
-  const nextDs=d2s(base);
-  // 1. Update _dateOverrides: remove from current week, pin to target week
+  // 1. Update _dateOverrides: remove from current week, pin to target week only if previously pinned
   delete rule._dateOverrides[srcWkKey];
-  rule._dateOverrides[targetWkKey]=nextDs;
+  if(curDs){const base=new Date(curDs+'T12:00');base.setDate(base.getDate()+delta);rule._dateOverrides[targetWkKey]=_wrClampToWeek(d2s(base),targetWkKey);}
+  else delete rule._dateOverrides[targetWkKey];
   sbReq('PATCH','wr_recurring_rules',{date_overrides:rule._dateOverrides},`?id=eq.${_wrCtxRuleId}`);
   // 2. Create move override in wrOverrides so renderRecOv hides it from current week
   const _moveFull={rule_id:_wrCtxRuleId,wk_key:srcWkKey,override_type:'move',moved_to_wk_key:targetWkKey,done:null,custom_name:null,custom_notes:null};
@@ -3028,59 +3220,118 @@ function _wrShiftAnchor(delta){
 }
 function wrCtxMovePrevWeek(){_wrShiftAnchor(-7);}
 function wrCtxMoveNextWeek(){_wrShiftAnchor(7);}
+// "All future" schedule shifts move the anchor, but UNDONE occurrences pinned in PAST weeks under the
+// OLD schedule linger and render as overdue ("I moved it to this week but last week still shows overdue").
+// Mark undone non-skip past-week pins as '__skip__' (done ones stay as history). NOT a plain delete:
+// a deleted pin gets resurrected by a stale tab/device's prevPins merge on sync, but a DB '__skip__'
+// wins over any stale local pin (core.js sync merge), so the removal sticks everywhere.
+// Returns removed {wk,val} for undo (undo restores the original value).
+function _wrClearPastOrphanPins(rule,isWrRule,lookback=6){
+  const removed=[];
+  if(!rule._dateOverrides)rule._dateOverrides={};
+  for(let o=-1;o>=-lookback;o--){
+    const wk=getWkKey(o);
+    const v=rule._dateOverrides[wk];
+    if(v==='__skip__')continue;
+    if(isWrRule){
+      // WR rules are override-driven — only clear an existing undone pin.
+      if(!v)continue;
+      if(typeof isDoneWRRule==='function'&&isDoneWRRule(rule.id,wk))continue;
+      removed.push({wk,val:v});rule._dateOverrides[wk]='__skip__';
+    } else {
+      // Non-WR: a forward shift flips biweekly parity / moves the anchor across history,
+      // which can SURFACE a past week's natural (unpinned) undone occurrence as stale overdue.
+      // Freeze any undone occurrence this past week (pinned OR natural), computed against the
+      // already-shifted schedule. Done weeks stay as history. Off-cycle weeks yield nothing → skipped.
+      const occ=getRecurringWeekTasks(o).find(t=>String(t._recId)===String(rule.id));
+      if(!occ||occ.done)continue;
+      removed.push({wk,val:v});rule._dateOverrides[wk]='__skip__';// v may be undefined (natural occurrence)
+    }
+  }
+  return removed;
+}
 function wrCtxShiftSchedule(delta){
   hideWrRuleCtx();
   const rid=_wrCtxRecId||_wrCtxRuleId;if(!rid)return;
   const isRec=!!_wrCtxRecId;
   const rule=isRec?st.recurring.find(r=>String(r.id)===rid):st.wrRules.find(r=>String(r.id)===rid);
-  if(!rule||!rule.starting_date)return;
-  const wkKey=_wrCtxWkKey;
-  // Shift starting_date
+  if(!rule)return;
+  // "All future → Next/Prev": shift the recurrence anchor by `delta` days so the next occurrence AND
+  // every future one move a week. Correct for all interval cadences (biweekly=parity flip,
+  // monthly=day-of-month, quarterly=anchor week). Falls back to the source week if no starting_date.
+  const wkKey=_wrCtxWkKey||getWkKey(wkOff);
   const prevStart=rule.starting_date;
-  const newStart=new Date(prevStart+'T12:00');newStart.setDate(newStart.getDate()+delta);
-  rule.starting_date=d2s(newStart);
-  // Also move current week instance to adjacent week
-  if(!rule._dateOverrides)rule._dateOverrides={};
-  const srcMon=new Date(wkKey+'T12:00');
-  srcMon.setDate(srcMon.getDate()+(delta>0?7:-7));
-  const targetWkKey=d2s(srcMon);
-  const prevSrcOv=rule._dateOverrides[wkKey];
-  const prevTgtOv=rule._dateOverrides[targetWkKey];
-  // Compute target date
-  const curDs=prevSrcOv&&prevSrcOv!=='__skip__'?prevSrcOv:null;
-  const base=curDs?new Date(curDs+'T12:00'):new Date();
+  const base=rule.starting_date?new Date(rule.starting_date+'T12:00'):new Date(wkKey+'T12:00');
   base.setDate(base.getDate()+delta);
-  const nextDs=d2s(base);
-  rule._dateOverrides[wkKey]='__skip__';
-  rule._dateOverrides[targetWkKey]=nextDs;
-  // Persist
-  const patchData={starting_date:rule.starting_date,date_overrides:rule._dateOverrides};
-  if(isRec){
-    sbReq('PATCH','wr_recurring_rules',patchData,recQs(rid));
-  }else{
-    sbReq('PATCH','wr_recurring_rules',patchData,`?id=eq.${rid}`);
-    // Write move override for WR rules
-    const _moveFull={rule_id:rid,wk_key:wkKey,override_type:'move',moved_to_wk_key:targetWkKey,done:null,custom_name:null,custom_notes:null};
-    const _existingOv=st.wrOverrides.find(o=>String(o.rule_id)===String(rid)&&o.wk_key===wkKey);
-    const _prevOv=_existingOv?{..._existingOv}:null;
-    let _ovRealId=null;
-    if(_existingOv){Object.assign(_existingOv,_moveFull);sbReqSilent('PATCH','wr_recurring_overrides',_moveFull,`?id=eq.${_existingOv.id}`);}
-    else{const _tmpId='wrov-tmp-'+Date.now();st.wrOverrides.push({..._moveFull,id:_tmpId});sbReqSilent('POST','wr_recurring_overrides',_moveFull,'').then(res=>{if(res&&res[0]){_ovRealId=String(res[0].id);const idx=st.wrOverrides.findIndex(o=>String(o.id)===_tmpId);if(idx>-1)st.wrOverrides[idx]=res[0];}});}
+  rule.starting_date=d2s(base);
+  // Clear anything pinning this rule to the CURRENT week, or the shifted schedule won't actually move it
+  // off this week: its own per-week pin/skip, plus any stale move-override into/at this week.
+  if(!rule._dateOverrides)rule._dateOverrides={};
+  const _prevDov=rule._dateOverrides[wkKey];
+  if(_prevDov!==undefined)delete rule._dateOverrides[wkKey];
+  // Drop undone past-week occurrences from the old schedule so they don't linger as overdue.
+  const _orphans=_wrClearPastOrphanPins(rule,!isRec);
+  let _removedOvs=[];
+  if(!isRec){
+    _removedOvs=(st.wrOverrides||[]).filter(o=>String(o.rule_id)===String(rid)&&o.override_type==='move'&&(o.wk_key===wkKey||o.moved_to_wk_key===wkKey)).map(o=>({...o}));
+    if(_removedOvs.length){
+      st.wrOverrides=st.wrOverrides.filter(o=>!(String(o.rule_id)===String(rid)&&o.override_type==='move'&&(o.wk_key===wkKey||o.moved_to_wk_key===wkKey)));
+      _removedOvs.forEach(o=>{if(o.id&&!String(o.id).startsWith('wrov-tmp-'))sbReqSilent('DELETE','wr_recurring_overrides',null,`?id=eq.${o.id}`);});
+    }
   }
+  sbReq('PATCH','wr_recurring_rules',{starting_date:rule.starting_date,date_overrides:rule._dateOverrides},isRec?recQs(rid):`?id=eq.${rid}`);
   const _rerender=()=>{renderRecOv();renderWkCal();renderWeeklyPage();renderToday();if(document.getElementById('tbGrid'))renderDayTB();};
   save();_rerender();
-  const dir=delta>0?'later':'earlier';
+  if(typeof showToast==='function')showToast('Schedule moved '+(delta>0?'1 week later':'1 week earlier'),'#10b981',1600);
   pushUndo(()=>{
     rule.starting_date=prevStart;
-    if(prevSrcOv!==undefined)rule._dateOverrides[wkKey]=prevSrcOv;else delete rule._dateOverrides[wkKey];
-    if(prevTgtOv!==undefined)rule._dateOverrides[targetWkKey]=prevTgtOv;else delete rule._dateOverrides[targetWkKey];
+    if(_prevDov!==undefined)rule._dateOverrides[wkKey]=_prevDov;
+    _orphans.forEach(o=>{if(o.val===undefined)delete rule._dateOverrides[o.wk];else rule._dateOverrides[o.wk]=o.val;});
+    _removedOvs.forEach(o=>{st.wrOverrides.push(o);sbReqSilent('POST','wr_recurring_overrides',{rule_id:o.rule_id,wk_key:o.wk_key,override_type:o.override_type,moved_to_wk_key:o.moved_to_wk_key||null,done:o.done||null,custom_name:o.custom_name||null,custom_notes:o.custom_notes||null},'');});
     sbReq('PATCH','wr_recurring_rules',{starting_date:prevStart,date_overrides:rule._dateOverrides},isRec?recQs(rid):`?id=eq.${rid}`);
-    if(!isRec){
-      if(_prevOv){const ov=st.wrOverrides.find(o=>String(o.rule_id)===String(rid)&&o.wk_key===wkKey);if(ov)Object.assign(ov,_prevOv);sbReqSilent('PATCH','wr_recurring_overrides',_prevOv,`?id=eq.${ov?ov.id:_prevOv.id}`);}
-      else{const id=_ovRealId||st.wrOverrides.find(o=>String(o.rule_id)===String(rid)&&o.wk_key===wkKey)?.id;st.wrOverrides=st.wrOverrides.filter(o=>String(o.rule_id)!==String(rid)||o.wk_key!==wkKey);if(id)sbReqSilent('DELETE','wr_recurring_overrides',null,`?id=eq.${id}`);}
-    }
     save();_rerender();
-  },'Shifted schedule '+dir);
+  },'Shifted schedule');
+}
+// Move an overdue/carried WR rule (day-pinned in a prior week) into the CURRENT week as UNASSIGNED.
+// scope: allFuture=false → just this occurrence; allFuture=true → also re-anchor the recurrence to now.
+function wrMoveToThisWeek(ruleId,srcWkKey,allFuture){
+  const rule=st.wrRules.find(r=>String(r.id)===String(ruleId));if(!rule)return;
+  const curWkKey=getWkKey(0);
+  if(!rule._dateOverrides)rule._dateOverrides={};
+  const prevStart=rule.starting_date;
+  const prevSrcPin=rule._dateOverrides[srcWkKey];
+  // Overrides to remove (recreate on undo): everything tied to the source week + any skip on the current week
+  const _delKey=o=>String(o.rule_id)===String(ruleId)&&(o.wk_key===srcWkKey||(o.wk_key===curWkKey&&o.override_type==='skip'));
+  const _deleted=(st.wrOverrides||[]).filter(_delKey).map(o=>({...o}));
+  // 1. Drop the past-week day pin so it leaves the overdue/today list
+  if(prevSrcPin!==undefined)delete rule._dateOverrides[srcWkKey];
+  // 2. Delete stale source-week / current-week-skip overrides
+  _deleted.forEach(o=>{if(o.id&&!String(o.id).startsWith('wrov-tmp-'))sbReqSilent('DELETE','wr_recurring_overrides',null,`?id=eq.${o.id}`);});
+  if(_deleted.length)st.wrOverrides=(st.wrOverrides||[]).filter(o=>!_delKey(o));
+  // 3. All future → re-anchor the recurrence to now (cadence recomputes from today)
+  if(allFuture)rule.starting_date=tod();
+  // 4. Ensure it shows in the current week UNASSIGNED — add a move-in override only if it isn't already present
+  const naturallyDue=isWRRuleDueThisWeek(rule,0);
+  const hasCur=(st.wrOverrides||[]).some(o=>String(o.rule_id)===String(ruleId)&&((o.wk_key===curWkKey&&o.override_type!=='skip')||(o.override_type==='move'&&o.moved_to_wk_key===curWkKey)));
+  let _addedHolder=null;
+  if(!naturallyDue&&!hasCur){
+    const _moveFull={rule_id:ruleId,wk_key:srcWkKey,override_type:'move',moved_to_wk_key:curWkKey,done:null,custom_name:null,custom_notes:null};
+    _addedHolder={..._moveFull,id:'wrov-tmp-'+Date.now()};
+    st.wrOverrides.push(_addedHolder);
+    sbReqSilent('POST','wr_recurring_overrides',_moveFull,'').then(res=>{if(res&&res[0])Object.assign(_addedHolder,res[0]);});
+  }
+  sbReq('PATCH','wr_recurring_rules',{starting_date:rule.starting_date,date_overrides:rule._dateOverrides},`?id=eq.${ruleId}`);
+  const _rerender=()=>{save();renderRecOv();renderWkCal();renderWeeklyPage();renderToday();if(document.getElementById('tbGrid'))renderDayTB();};
+  _rerender();
+  if(typeof showToast==='function')showToast('Moved to this week'+(allFuture?' · all future':''),'#10b981',1600);
+  pushUndo(()=>{
+    rule.starting_date=prevStart;
+    if(prevSrcPin!==undefined)rule._dateOverrides[srcWkKey]=prevSrcPin;else delete rule._dateOverrides[srcWkKey];
+    if(_addedHolder){if(_addedHolder.id&&!String(_addedHolder.id).startsWith('wrov-tmp-'))sbReqSilent('DELETE','wr_recurring_overrides',null,`?id=eq.${_addedHolder.id}`);st.wrOverrides=st.wrOverrides.filter(o=>o!==_addedHolder);}
+    _deleted.forEach(o=>{const _h={rule_id:o.rule_id,wk_key:o.wk_key,override_type:o.override_type,moved_to_wk_key:o.moved_to_wk_key||null,done:o.done||null,custom_name:o.custom_name||null,custom_notes:o.custom_notes||null,id:'wrov-tmp-'+Date.now()+'-'+o.wk_key};st.wrOverrides.push(_h);sbReqSilent('POST','wr_recurring_overrides',{rule_id:_h.rule_id,wk_key:_h.wk_key,override_type:_h.override_type,moved_to_wk_key:_h.moved_to_wk_key,done:_h.done,custom_name:_h.custom_name,custom_notes:_h.custom_notes},'').then(res=>{if(res&&res[0])Object.assign(_h,res[0]);});});
+    sbReq('PATCH','wr_recurring_rules',{starting_date:prevStart,date_overrides:rule._dateOverrides},`?id=eq.${ruleId}`);
+    save();renderRecOv();renderWkCal();renderWeeklyPage();renderToday();if(document.getElementById('tbGrid'))renderDayTB();
+  },'Moved WR task to this week');
 }
 function wrCtxEditThisWeek(){
   hideWrRuleCtx();
@@ -3252,6 +3503,13 @@ async function saveWrRuleAdd(){
   const name=document.getElementById('wrAddName').value.trim();if(!name){closeMod('wrRuleAddModal');return;}
   const notes=document.getElementById('wrAddNotes').value.trim()||null;
   const cadenceFields=_wrReadCadenceFields('wrAdd');
+  // Weekly/other tasks have no parity anchor — snap their start to the Monday of the chosen
+  // (or current) week so a newly created task begins THIS week and never shows in past weeks.
+  if(cadenceFields.cadence==='weekly'||cadenceFields.cadence==='other'){
+    const _aD=cadenceFields.starting_date?new Date(cadenceFields.starting_date+'T12:00'):getWkBounds(0).mon;
+    const _aDow=_aD.getDay();const _aMon=new Date(_aD);_aMon.setDate(_aD.getDate()-(_aDow===0?6:_aDow-1));
+    cadenceFields.starting_date=d2s(_aMon);
+  }
   closeMod('wrRuleAddModal');
   if(_wrAddType==='sch'){
     const cadence=cadenceFields.cadence;
@@ -3352,10 +3610,11 @@ function dropOnTodayList(e){
     dragId=null;return;
   }
   if(dragId.startsWith('wrec::')||dragId.startsWith('rec::')){
-    const recId=dragId.startsWith('wrec::')?dragId.split('::')[1]:dragId.split('::')[1];
+    const _tdParts=dragId.split('::');const recId=_tdParts[1];
+    const _tdSrcWk=dragId.startsWith('wrec::')?(_tdParts[2]||''):(_tdParts[3]||'');
     const r=st.recurring.find(x=>String(x.id)===String(recId));
     if(r){
-      const wkKey=getWkKey(wkOff);
+      const wkKey=_tdSrcWk||getWkKey(wkOff);
       if(!r._dateOverrides)r._dateOverrides={};
       const prev=r._dateOverrides[wkKey];
       r._dateOverrides[wkKey]=ds;
@@ -3390,7 +3649,7 @@ function dropOnTodayList(e){
   }
   if(dragId.startsWith('vidstep::')){
     const parts=dragId.split('::');
-    _vidStepAssignToDay(parts[1],parts[2],ds);dragId=null;return;
+    _vidStepAssignToDay(parts[1],parts[2],ds,parts[3]||null);dragId=null;return;
   }
   if(dragId.startsWith('fin-cancel::')){dragId=null;return;}
 }
@@ -3414,6 +3673,16 @@ function _vidStepDayMapSet(m){localStorage._vidStepDayMap=JSON.stringify(m);}
 const _VID_STEP_LABELS={step_build:'Build',step_vo:'VO',step_cut:'Cut',step_thumbnail:'Th',step_description:'Des'};
 function _vidStepReconstructBlocks(){
   const m=_vidStepDayMap();let mapChanged=false;
+  // 0. Fix vidstep blocks with missing start_minutes — assign default instead of deleting
+  const _minSm=HOURS[0]*60;
+  const _defaultSm=8*60;// 8am
+  for(let i=st.blocks.length-1;i>=0;i--){
+    const bl=st.blocks[i];
+    if(bl._vidStepVid&&bl._vidStepName&&bl.sm<_minSm){
+      console.warn('[vidstep] Block with sm='+bl.sm+' fixed to default:',bl.title,bl.ds);
+      bl.sm=_defaultSm;sbUpdateBlock(bl.id,{start_minutes:_defaultSm});
+    }
+  }
   // 1. Tag untagged video blocks with vidstep metadata
   (st.blocks||[]).filter(bl=>!bl._vidStepVid&&bl.cat==='Videos'&&!bl._vidId).forEach(bl=>{
     for(const [key] of Object.entries(m)){
@@ -3442,21 +3711,42 @@ function _vidStepReconstructBlocks(){
   });
   if(mapChanged)_vidStepDayMapSet(m);
 }
-function _vidStepAssignToDay(vidId,step,ds){
+function _vidStepAssignToDay(vidId,step,ds,srcDay){
   _vidStepReconstructBlocks();
   const m=_vidStepDayMap();const key=vidId+'::'+step;
   const prev=m[key]||null;
   const prevDs=prev?prev.ds:null;
-  m[key]={ds,done:prev?prev.done:false};_vidStepDayMapSet(m);
-  // Move timeblock blocks to new day
-  if(prevDs&&prevDs!==ds){
-    (st.blocks||[]).filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step&&bl.ds===prevDs).forEach(bl=>{
-      bl.ds=ds;sbUpdateBlock(bl.id,{day_date:ds});
+  // The instance being moved: explicit srcDay (per-day drag) or the daymap primary
+  const moveFrom=srcDay||prevDs;
+  // Guard: already on this day (primary or extraDays)
+  if(prevDs===ds){showToast('Already on this day','#e67e22',1500);return;}
+  if(prev&&prev.extraDays&&prev.extraDays.includes(ds)){showToast('Already on this day','#e67e22',1500);return;}
+  if(srcDay&&prev&&prevDs!==srcDay){
+    // Moving a non-primary instance: swap its extraDay, leave primary untouched
+    const ne={...prev,extraDays:(prev.extraDays||[]).filter(d=>d!==srcDay)};
+    if(ne.ds!==ds&&!ne.extraDays.includes(ds))ne.extraDays.push(ds);
+    if(!ne.extraDays.length)delete ne.extraDays;
+    if(prev.doneDays)ne.doneDays={...prev.doneDays};
+    _vidStepMoveDoneDay(ne,srcDay,ds);
+    m[key]=ne;
+  } else {
+    const ne={ds,done:prev?prev.done:false};
+    if(prev&&prev.extraDays){const ex=prev.extraDays.filter(d=>d!==ds);if(ex.length)ne.extraDays=ex;}
+    if(prev&&prev.doneDays)ne.doneDays={...prev.doneDays};
+    if(moveFrom)_vidStepMoveDoneDay(ne,moveFrom,ds);
+    m[key]=ne;
+  }
+  _vidStepDayMapSet(m);
+  // Move timeblock blocks from the moved instance's day only
+  const movedIds=[];
+  if(moveFrom&&moveFrom!==ds){
+    (st.blocks||[]).filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step&&bl.ds===moveFrom).forEach(bl=>{
+      movedIds.push(bl.id);bl.ds=ds;sbUpdateBlock(bl.id,{day_date:ds});
     });
   }
   save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
   const panel=document.getElementById('vidOvPanel');if(panel&&panel.style.display==='block')_renderVidOvMenu();
-  pushUndo(()=>{_vidStepReconstructBlocks();const m2=_vidStepDayMap();if(prev)m2[key]=prev;else delete m2[key];_vidStepDayMapSet(m2);if(prevDs&&prevDs!==ds){(st.blocks||[]).filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step&&bl.ds===ds).forEach(bl=>{bl.ds=prevDs;sbUpdateBlock(bl.id,{day_date:prevDs});});}save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();const p2=document.getElementById('vidOvPanel');if(p2&&p2.style.display==='block')_renderVidOvMenu();},'Moved step');
+  pushUndo(()=>{_vidStepReconstructBlocks();const m2=_vidStepDayMap();if(prev)m2[key]=prev;else delete m2[key];_vidStepDayMapSet(m2);movedIds.forEach(id=>{const bl=st.blocks.find(x=>x.id===id);if(bl){bl.ds=moveFrom;sbUpdateBlock(bl.id,{day_date:moveFrom});}});save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();const p2=document.getElementById('vidOvPanel');if(p2&&p2.style.display==='block')_renderVidOvMenu();},'Moved step');
 }
 function _vidStepToggleDone(vidId,step,checked,_fromTB,forDay){
   _vidStepReconstructBlocks();
@@ -3469,6 +3759,7 @@ function _vidStepToggleDone(vidId,step,checked,_fromTB,forDay){
   }
   // Save previous state for undo
   const _prevMapDone=m[key].done;
+  const _prevDoneDays=m[key].doneDays?JSON.parse(JSON.stringify(m[key].doneDays)):null;
   const _prevBlockStates=(st.blocks||[]).filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step).map(bl=>({id:bl.id,done:bl._done}));
   // For Build/VO/Cut, done flag tracks whether ALL TB blocks for this stage are done
   if(step!=='step_thumbnail'&&step!=='step_description'){
@@ -3480,6 +3771,12 @@ function _vidStepToggleDone(vidId,step,checked,_fromTB,forDay){
       // Called from today/weekly list with day scope — only toggle blocks for that day
       const dayBlocks=(st.blocks||[]).filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step&&bl.ds===forDay);
       dayBlocks.forEach(bl=>{if(bl._done!==checked){bl._done=checked;sbUpdateBlock(bl.id,{done:checked});}});
+      // Block-less day (calendar-only instance): store per-day done in daymap doneDays
+      if(!dayBlocks.length){
+        if(!m[key].doneDays)m[key].doneDays={};
+        if(checked)m[key].doneDays[forDay]=true;else delete m[key].doneDays[forDay];
+        if(!Object.keys(m[key].doneDays).length)delete m[key].doneDays;
+      }
       // Update daymap done: all blocks across all days must be done
       const allBlocks=(st.blocks||[]).filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step);
       m[key].done=allBlocks.length>0&&allBlocks.every(bl=>bl._done);
@@ -3501,22 +3798,77 @@ function _vidStepToggleDone(vidId,step,checked,_fromTB,forDay){
     const stBlk=(st.blocks||[]).find(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step);
     if(stBlk){stBlk._done=checked;sbUpdateBlock(stBlk.id,{done:checked});}
   }
+  // Sync core-step completion to the video record + prompt for post date when all stages finish
+  let _promptPostDateVid=false,_prevVidStatus=null,_prevVidStepVal=null;
+  const _coreList=typeof VID_STEPS_CORE!=='undefined'?VID_STEPS_CORE:['step_build','step_vo','step_cut','step_thumbnail','step_description'];
+  const _vRec=(st.videos||[]).find(x=>String(x.id)===String(vidId));
+  if(_vRec&&_coreList.includes(step)&&_vRec[step]!=='na'){
+    _prevVidStatus=_vRec.status;_prevVidStepVal=_vRec[step];
+    const _stageNowDone=m[key]?!!m[key].done:checked;
+    // Build/VO/Cut: mirror overall stage completion onto the video record (Th/Des synced above)
+    if(step!=='step_thumbnail'&&step!=='step_description'){
+      const _nv=_stageNowDone?'done':'not_started';
+      if(_vRec[step]!==_nv){_vRec[step]=_nv;sbReqSilent('PATCH','videos',{[step]:_nv},`?id=eq.${_vRec.id}`);}
+    }
+    // A core step counts as done if the record says so, or (Build/VO/Cut) the day-map stage is complete.
+    // Build/VO/Cut completed earlier via the overview only set the day-map flag, never the record.
+    const _stepDone=s=>{
+      if(_vRec[s]==='done'||_vRec[s]==='na')return true;
+      if(s==='step_thumbnail'||s==='step_description')return false;
+      const e=m[vidId+'::'+s];return !!(e&&e.done);
+    };
+    const _coreDone=_coreList.every(_stepDone);
+    // Backfill the record so v.step_* is consistent everywhere (percentages, videos page, publish)
+    if(_stageNowDone&&_coreDone){
+      _coreList.forEach(s=>{if(s!=='step_thumbnail'&&s!=='step_description'&&_vRec[s]!=='na'&&_vRec[s]!=='done'){_vRec[s]='done';sbReqSilent('PATCH','videos',{[s]:'done'},`?id=eq.${_vRec.id}`);}});
+    }
+    const _tabReq=_vRec.step_tableau_public&&_vRec.step_tableau_public!=='na'&&_vRec.step_tableau_public!=='done';
+    if(_stageNowDone&&_coreDone){
+      const _needsLink=_tabReq&&!_vRec.youtube_url;
+      if(!_vRec.post_date||_needsLink){_promptPostDateVid=true;}
+      else if(_vRec.status!=='published'&&_vRec.topic&&_vRec.title){
+        _vRec.status='published';sbReqSilent('PATCH','videos',{status:'published'},`?id=eq.${_vRec.id}`);
+        if(_tabReq&&typeof _vidCreateTabUpTask==='function')_vidCreateTabUpTask(vidId,_vRec.post_date);
+      }
+    } else if(!_coreDone&&_vRec.status==='published'){
+      _vRec.status='in_progress';sbReqSilent('PATCH','videos',{status:'in_progress'},`?id=eq.${_vRec.id}`);
+      if(typeof _vidDeleteTabTask==='function')_vidDeleteTabTask(vidId);
+    }
+  }
   save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
+  if(_promptPostDateVid&&typeof _vidPromptPostDate==='function')_vidPromptPostDate(vidId);
   const panel=document.getElementById('vidOvPanel');if(panel&&panel.style.display==='block')_renderVidOvMenu();
   if(_vidOvAllOpen)_vidOvRenderAll();
   // Push undo (skip if called from TB — TB handler pushes its own undo)
   if(!_fromTB){
     const _undoVidStep=step,_undoVidId=vidId,_undoChecked=checked;
     pushUndo(()=>{
-      const m2=_vidStepDayMap();if(m2[key]){m2[key].done=_prevMapDone;_vidStepDayMapSet(m2);}
+      const m2=_vidStepDayMap();if(m2[key]){m2[key].done=_prevMapDone;if(_prevDoneDays)m2[key].doneDays=_prevDoneDays;else delete m2[key].doneDays;_vidStepDayMapSet(m2);}
       _prevBlockStates.forEach(s=>{const bl=st.blocks.find(x=>x.id===s.id);if(bl){bl._done=s.done;sbUpdateBlock(bl.id,{done:s.done});}});
       if(_undoVidStep==='step_thumbnail'||_undoVidStep==='step_description'){
         const v2=(st.videos||[]).find(x=>String(x.id)===String(_undoVidId));
         if(v2){v2[_undoVidStep]=_undoChecked?'not_started':'done';sbReqSilent('PATCH','videos',{[_undoVidStep]:v2[_undoVidStep]},`?id=eq.${v2.id}`);}
       }
+      // Restore video-record step value (Build/VO/Cut) + status changed by the core-done sync
+      const v3=(st.videos||[]).find(x=>String(x.id)===String(_undoVidId));
+      if(v3){
+        if(_undoVidStep!=='step_thumbnail'&&_undoVidStep!=='step_description'&&_prevVidStepVal!=null&&v3[_undoVidStep]!==_prevVidStepVal){v3[_undoVidStep]=_prevVidStepVal;sbReqSilent('PATCH','videos',{[_undoVidStep]:_prevVidStepVal},`?id=eq.${v3.id}`);}
+        if(_prevVidStatus!=null&&v3.status!==_prevVidStatus){v3.status=_prevVidStatus;sbReqSilent('PATCH','videos',{status:_prevVidStatus},`?id=eq.${v3.id}`);}
+      }
       save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
     },'Step toggle');
   }
+}
+function _vidStepAssignExtraDay(vidId,step,ds){
+  const m=_vidStepDayMap();const key=vidId+'::'+step;
+  if(!m[key]){m[key]={ds,done:false};_vidStepDayMapSet(m);save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();pushUndo(()=>{const m2=_vidStepDayMap();delete m2[key];_vidStepDayMapSet(m2);save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();},'Assigned step');return;}
+  const entry=m[key];
+  if(entry.ds===ds)return;// already on this day
+  if(!entry.extraDays)entry.extraDays=[];
+  if(entry.extraDays.includes(ds))return;// already extra
+  entry.extraDays.push(ds);_vidStepDayMapSet(m);
+  save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
+  pushUndo(()=>{const m2=_vidStepDayMap();const e2=m2[key];if(e2&&e2.extraDays){e2.extraDays=e2.extraDays.filter(d=>d!==ds);if(!e2.extraDays.length)delete e2.extraDays;_vidStepDayMapSet(m2);}save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();},'Assigned step to day');
 }
 function _vidStepAddBlock(vidId,step,ds){
   const v=(st.videos||[]).find(x=>String(x.id)===String(vidId)&&!x.is_deleted);if(!v)return;
@@ -3525,11 +3877,14 @@ function _vidStepAddBlock(vidId,step,ds){
   const now=new Date();const sm=Math.round((now.getHours()*60+now.getMinutes())/15)*15;
   const blk={id:crypto.randomUUID(),title:label,ds,sm,dur,cat:'Videos',_vidStepVid:String(vidId),_vidStepName:step};
   st.blocks.push(blk);sbSaveBlock(blk);
-  // Ensure daymap has an entry if none exists (don't change existing)
+  // Ensure daymap has an entry if none exists (don't change existing);
+  // a block now exists on this day, so block done-state takes over from doneDays
   const m=_vidStepDayMap();const key=vidId+'::'+step;
   if(!m[key]){m[key]={ds,done:false};_vidStepDayMapSet(m);}
+  else if(m[key].doneDays&&m[key].doneDays[ds]!==undefined){_vidStepMoveDoneDay(m[key],ds,null);_vidStepDayMapSet(m);}
   save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
   pushUndo(()=>{st.blocks=st.blocks.filter(b=>b.id!==blk.id);sbDeleteBlock(blk.id);save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();},'Added step block');
+  return blk;
 }
 function _vidStepUnassign(vidId,step,forDay){
   const m=_vidStepDayMap();const key=vidId+'::'+step;
@@ -3539,16 +3894,23 @@ function _vidStepUnassign(vidId,step,forDay){
     const removedBlks=st.blocks.filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step&&bl.ds===forDay);
     st.blocks=st.blocks.filter(bl=>!(String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step&&bl.ds===forDay));
     removedBlks.forEach(bl=>sbDeleteBlock(bl.id));
-    // If daymap points to this day, reassign to another day with blocks or remove
-    const prevMap=m[key]?{...m[key]}:null;
+    // Also remove from extraDays + per-day done flag if present
+    const prevMap=m[key]?JSON.parse(JSON.stringify(m[key])):null;
+    if(m[key]&&m[key].extraDays){m[key].extraDays=m[key].extraDays.filter(d=>d!==forDay);if(!m[key].extraDays.length)delete m[key].extraDays;}
+    if(m[key])_vidStepMoveDoneDay(m[key],forDay,null);
+    // If daymap primary points to this day, reassign to another day with blocks/extraDays or remove
     if(m[key]&&m[key].ds===forDay){
       const otherBlock=st.blocks.find(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step);
-      if(otherBlock){m[key]={ds:otherBlock.ds,done:!!otherBlock._done};}else{delete m[key];}
+      const otherExtra=m[key].extraDays&&m[key].extraDays[0];
+      if(otherBlock){m[key]={...m[key],ds:otherBlock.ds,done:!!otherBlock._done};}
+      else if(otherExtra){m[key]={...m[key],ds:otherExtra};m[key].extraDays=m[key].extraDays.filter(d=>d!==otherExtra);if(!m[key].extraDays.length)delete m[key].extraDays;}
+      else{delete m[key];}
     }
     _vidStepDayMapSet(m);
     save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
     const panel=document.getElementById('vidOvPanel');if(panel&&panel.style.display==='block')_renderVidOvMenu();
-    if(removedBlks.length)pushUndo(()=>{const m2=_vidStepDayMap();if(prevMap)m2[key]=prevMap;else delete m2[key];_vidStepDayMapSet(m2);removedBlks.forEach(bl=>{st.blocks.push(bl);sbSaveBlock(bl);});save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();},'Removed step from day');
+    const _mapChanged=JSON.stringify(prevMap)!==JSON.stringify(m[key]||null);
+    if(removedBlks.length||_mapChanged)pushUndo(()=>{const m2=_vidStepDayMap();if(prevMap)m2[key]=prevMap;else delete m2[key];_vidStepDayMapSet(m2);removedBlks.forEach(bl=>{st.blocks.push(bl);sbSaveBlock(bl);});save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();},'Removed step from day');
     return;
   }
   // Original behavior: remove ALL
@@ -3561,29 +3923,49 @@ function _vidStepUnassign(vidId,step,forDay){
   if(prev||removedBlks.length)pushUndo(()=>{const m2=_vidStepDayMap();if(prev)m2[key]=prev;_vidStepDayMapSet(m2);removedBlks.forEach(bl=>{st.blocks.push(bl);sbSaveBlock(bl);});save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();const p2=document.getElementById('vidOvPanel');if(p2&&p2.style.display==='block')_renderVidOvMenu();},'Removed step from calendar');
 }
 function _vidStepComputeDone(vidId,step,ds,mapEntry){
-  // For Build/VO/Cut: check blocks for this specific day (independent per day)
+  // For Build/VO/Cut: check blocks for this specific day (independent per day);
+  // block-less days (calendar-only instances) fall back to daymap doneDays[ds]
   // For Thumbnail/Description: use daymap done flag
   if(step!=='step_thumbnail'&&step!=='step_description'){
     const dayBlocks=(st.blocks||[]).filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step&&bl.ds===ds);
     if(dayBlocks.length>0)return dayBlocks.every(bl=>bl._done);
-    // No blocks on this specific day = not done for this day (no cross-day fallback)
-    return false;
+    const e=mapEntry||_vidStepDayMap()[vidId+'::'+step];
+    return !!(e&&e.doneDays&&e.doneDays[ds]);
   }
   return !!(mapEntry&&mapEntry.done);
 }
+// Carry a block-less day's done flag when an instance moves from one day to another
+function _vidStepMoveDoneDay(e,from,to){
+  if(!e||!e.doneDays||e.doneDays[from]===undefined)return;
+  if(to&&to!==from)e.doneDays[to]=e.doneDays[from];
+  delete e.doneDays[from];
+  if(!Object.keys(e.doneDays).length)delete e.doneDays;
+}
 function _vidStepTasksForDayWithOverdue(todayDs){
   const m=_vidStepDayMap();const tasks=[];const seen=new Set();
-  // 1. Steps from daymap (today or overdue)
+  // 1. Steps from daymap (today or overdue) + extraDays
   Object.entries(m).forEach(([key,val])=>{
-    if(val.ds>todayDs)return;// future — skip
     const [vidId,step]=key.split('::');
     const v=(st.videos||[]).find(x=>String(x.id)===String(vidId)&&!x.is_deleted);if(!v)return;
     if(v[step]==='na')return;
-    const isDone=v[step]==='done'||_vidStepComputeDone(vidId,step,val.ds,val);
-    if(isDone&&val.ds<todayDs)return;// done + overdue = hide from today
     const label=_VID_STEP_LABELS[step]||step.replace('step_','');
-    tasks.push({id:'vidstep-'+key.replace('::','-')+'-'+val.ds,name:label+': '+(v.topic||v.title),category:'Videos',due_date:val.ds,done:isDone,_vidId:vidId,_vidStep:step,_virtual:true,_type:'vidstep',_vidStepDay:val.ds});
-    seen.add(key+'::'+val.ds);
+    // Primary day
+    if(val.ds<=todayDs){
+      const isDone=v[step]==='done'||_vidStepComputeDone(vidId,step,val.ds,val);
+      if(!(isDone&&val.ds<todayDs)){
+        tasks.push({id:'vidstep-'+key.replace('::','-')+'-'+val.ds,name:label+': '+(v.topic||v.title),category:'Videos',due_date:val.ds,done:isDone,_vidId:vidId,_vidStep:step,_virtual:true,_type:'vidstep',_vidStepDay:val.ds});
+        seen.add(key+'::'+val.ds);
+      }
+    }
+    // Extra days (calendar-only, no TB block)
+    if(val.extraDays){val.extraDays.forEach(ed=>{
+      if(ed>todayDs)return;
+      const dayKey=key+'::'+ed;if(seen.has(dayKey))return;
+      const edDone=v[step]==='done'||_vidStepComputeDone(vidId,step,ed,null);
+      if(edDone&&ed<todayDs)return;
+      tasks.push({id:'vidstep-'+key.replace('::','-')+'-'+ed,name:label+': '+(v.topic||v.title),category:'Videos',due_date:ed,done:edDone,_vidId:vidId,_vidStep:step,_virtual:true,_type:'vidstep',_vidStepDay:ed});
+      seen.add(dayKey);
+    });}
   });
   // 2. Multi-day Build/VO/Cut blocks on other days (overdue past days + today) not covered by daymap
   const _isMultiStep=n=>n!=='step_thumbnail'&&n!=='step_description';
@@ -3601,13 +3983,15 @@ function _vidStepTasksForDayWithOverdue(todayDs){
 }
 function _vidStepTasksForDay(ds){
   const m=_vidStepDayMap();const tasks=[];const seen=new Set();
-  // 1. Steps assigned to this day via daymap
+  // 1. Steps assigned to this day via daymap (primary + extraDays)
   Object.entries(m).forEach(([key,val])=>{
-    if(val.ds!==ds)return;
+    const matchesPrimary=val.ds===ds;
+    const matchesExtra=val.extraDays&&val.extraDays.includes(ds);
+    if(!matchesPrimary&&!matchesExtra)return;
     const [vidId,step]=key.split('::');
     const v=(st.videos||[]).find(x=>String(x.id)===String(vidId)&&!x.is_deleted);if(!v)return;
     const label=_VID_STEP_LABELS[step]||step.replace('step_','');
-    const isDone=v[step]==='done'||_vidStepComputeDone(vidId,step,ds,val);
+    const isDone=v[step]==='done'||_vidStepComputeDone(vidId,step,ds,matchesPrimary?val:null);
     tasks.push({id:'vidstep-'+key.replace('::','-')+'-'+ds,name:label+': '+(v.topic||v.title),category:'Videos',due_date:ds,done:isDone,_vidId:vidId,_vidStep:step,_virtual:true,_type:'vidstep',_vidStepDay:ds});
     seen.add(key);
   });
@@ -3624,6 +4008,84 @@ function _vidStepTasksForDay(ds){
   return tasks;
 }
 
+let _vidOvTitleMode=false;
+function _vidOvCloseTitleMode(){
+  if(!_vidOvTitleMode)return;
+  _vidOvTitleMode=false;
+  const panel=document.getElementById('vidOvPanel');
+  if(panel){const card=panel.parentElement;panel.style.right='0';if(card){card.style.overflow='hidden';card.style.zIndex='';}}
+  _renderVidOvMenu();
+}
+function _vidOvToggleTitleMode(){
+  if(_vidOvTitleMode){_vidOvCloseTitleMode();return;}
+  if(_vidOvAllOpen)_vidOvCloseAll();
+  if(_vidCalOpen)_vidOvCloseCal();
+  if(_vidOvAnOpen)_vidOvCloseAnalytics();
+  _vidOvTitleMode=true;
+  const panel=document.getElementById('vidOvPanel');
+  if(panel){
+    const card=panel.parentElement;
+    const cols=card.closest('.overview-cols');
+    const extend=cols?(cols.offsetWidth-card.offsetWidth-14)+'px':'600px';
+    panel.style.right='-'+extend;
+    if(card){card.style.overflow='visible';card.style.zIndex='60';}
+  }
+  _renderVidOvMenu();
+}
+function _vidOvStartTitleEdit(el,vidId){
+  if(el.querySelector('input'))return;
+  const v=(st.videos||[]).find(x=>String(x.id)===String(vidId));if(!v)return;
+  const prev=v.title||'';
+  el.textContent='';
+  const inp=document.createElement('input');
+  inp.type='text';inp.value=prev;
+  inp.style.cssText='width:100%;border:none;outline:1px solid rgba(14,165,233,.35);outline-offset:-1px;background:transparent;font-size:11px;color:var(--text);font-weight:500;padding:0 3px;border-radius:3px;font-family:inherit;height:12px;line-height:12px;box-sizing:border-box;margin:0';
+  el.appendChild(inp);
+  inp.focus();inp.select();
+  const _commit=()=>{
+    const val=inp.value.trim();
+    if(inp._saved)return;inp._saved=true;
+    el.textContent=val||'';
+    if(val!==prev){
+      v.title=val;save();
+      sbReqSilent('PATCH','videos',{title:val},`?id=eq.${vidId}`);
+      pushUndo(()=>{v.title=prev;save();_renderVidOvMenu();sbReqSilent('PATCH','videos',{title:prev},`?id=eq.${vidId}`);},'Edit title');
+    }
+  };
+  inp.addEventListener('keydown',e=>{
+    if(e.key==='Enter'){e.preventDefault();e.stopPropagation();_commit();}
+    if(e.key==='Escape'){e.stopPropagation();inp._saved=true;el.textContent=prev||'';}
+    e.stopPropagation();
+  });
+  inp.addEventListener('blur',()=>setTimeout(_commit,80));
+}
+function _vidOvStartCommentEdit(el,vidId){
+  if(el.querySelector('input'))return;
+  const v=(st.videos||[]).find(x=>String(x.id)===String(vidId));if(!v)return;
+  const prev=v.comment||'';
+  el.textContent='';
+  const inp=document.createElement('input');
+  inp.type='text';inp.value=prev;
+  inp.style.cssText='width:100%;border:none;outline:1px solid rgba(14,165,233,.35);outline-offset:-1px;background:transparent;font-size:11px;color:var(--text);font-weight:400;padding:0 3px;border-radius:3px;font-family:inherit;height:12px;line-height:12px;box-sizing:border-box;margin:0';
+  el.appendChild(inp);
+  inp.focus();inp.select();
+  const _commit=()=>{
+    const val=inp.value.trim();
+    if(inp._saved)return;inp._saved=true;
+    el.textContent=val||'';
+    if(val!==prev){
+      v.comment=val;save();
+      sbReqSilent('PATCH','videos',{comment:val},`?id=eq.${vidId}`);
+      pushUndo(()=>{v.comment=prev;save();_renderVidOvMenu();sbReqSilent('PATCH','videos',{comment:prev},`?id=eq.${vidId}`);},'Edit comment');
+    }
+  };
+  inp.addEventListener('keydown',e=>{
+    if(e.key==='Enter'){e.preventDefault();e.stopPropagation();_commit();}
+    if(e.key==='Escape'){e.stopPropagation();inp._saved=true;el.textContent=prev||'';}
+    e.stopPropagation();
+  });
+  inp.addEventListener('blur',()=>setTimeout(_commit,80));
+}
 let _vidOvSelIdx=-1;
 let _vidOvSelVid=null;
 const _vidOvSelSet=new Set();
@@ -3660,6 +4122,9 @@ function _vidOvKeyNav(e){
   if(!panel||panel.style.display!=='block')return false;
   // T always works for toggling toolbox
   if(e.key==='t'&&!e.metaKey&&!e.ctrlKey&&!_vidCalOpen){e.preventDefault();_vidOvToggleAll();return true;}
+  if(e.key==='e'&&!e.metaKey&&!e.ctrlKey&&!_vidCalOpen){e.preventDefault();_vidOvToggleTitleMode();return true;}
+  if((e.key==='n'||e.key==='b')&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&!_vidCalOpen){e.preventDefault();_vidOvNewVideo('B');return true;}
+  if(e.key==='l'&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&!_vidCalOpen){e.preventDefault();_vidOvNewVideo('L');return true;}
   if(_vidOvAllOpen)return false;
   if(_vidCalOpen&&(e.key==='ArrowLeft'||e.key==='ArrowRight'))return false;
   const rows=_vidOvGetRows();if(!rows.length)return false;
@@ -3731,18 +4196,30 @@ function toggleVidOvMenu(){
   requestAnimationFrame(()=>{requestAnimationFrame(()=>{panel.style.opacity='1';panel.style.transform='translateX(0)';});});
 }
 function closeVidOvMenu(){
+  // Suppressed briefly while saving from the add/edit modal so the Save click doesn't also close the
+  // toolbox (mirrors Enter, which doesn't trigger the stray close).
+  if(window._vidOvSuppressClose)return;
   const panel=document.getElementById('vidOvPanel');
   if(!panel||panel.style.display==='none')return;
   _vidOvSelIdx=-1;
   if(_vidCalOpen)_vidOvCloseCal();
   if(_vidOvAllOpen)_vidOvCloseAll();
   if(_vidOvAnOpen)_vidOvCloseAnalytics();
+  if(_vidOvTitleMode)_vidOvCloseTitleMode();
   panel.style.opacity='0';panel.style.transform='translateX(-12px)';
   setTimeout(()=>{panel.style.display='none';},250);
 }
+function _vidOvNewVideo(type){
+  if(typeof openVidModal==='function'){
+    openVidModal(type||'B');
+    const _ss=document.getElementById('vmStatus');
+    if(_ss){_ss.value='up_next';if(typeof _vidSetStatusDisplay==='function')_vidSetStatusDisplay('up_next');}
+  }
+}
 function _renderVidOvMenu(){
   const menu=document.getElementById('vidOvPanel');if(!menu)return;
-  let vids=(st.videos||[]).filter(v=>!v.is_deleted&&v.video_type==='B'&&v.status==='up_next').sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
+  // Keep a published big visible while its group isn't fully complete (its smalls are still pending).
+  let vids=(st.videos||[]).filter(v=>!v.is_deleted&&v.video_type==='B'&&(v.status==='up_next'||(v.status==='published'&&!_vidGroupFullyComplete(v)))).sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
   if(window._vidOvFocusWk===undefined&&localStorage._vidOvFocusWk==='1')window._vidOvFocusWk=true;
   const _focusActive=!!window._vidOvFocusWk;
   // Focus mode: highlight (not filter) videos on calendar this week
@@ -3769,7 +4246,7 @@ function _renderVidOvMenu(){
   const _moonColor=_focusActive?'#eab308':'var(--muted)';
   const _moonGlow=_focusActive?'filter:drop-shadow(0 0 4px rgba(234,179,8,.5))':'';
   const _ib='background:none;border:none;cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;width:20px;height:20px;flex-shrink:0';
-  const _hdr=`<div class="tod-tb-header" style="position:relative"><button onclick="_vidOvToggleCal()" style="${_ib};color:${_vidCalOpen?'var(--accent)':'var(--muted)'}" title="Monthly schedule (M)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></button><button onclick="_vidOvToggleAll()" style="${_ib};color:${_vidOvAllOpen?'var(--accent)':'var(--muted)'}" title="All videos"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg></button><button onclick="_vidOvToggleFocusWk()" style="${_ib};color:${_moonColor};${_moonGlow}" title="Focus this week"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg></button><span style="flex:1;text-align:center;font-size:12px;font-weight:700;color:var(--text);letter-spacing:-.1px">Videos</span><button onclick="_vidOvToggleAnalytics()" style="${_ib};color:${_vidOvAnOpen?'var(--accent)':'var(--muted)'}" title="Analytics"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></button><button onclick="closeVidOvMenu();showPage('videos')" style="${_ib};color:var(--muted)" title="Go to Videos page"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></button><button onclick="closeVidOvMenu()" style="${_ib};color:var(--muted);font-size:14px" title="Close">✕</button></div>`;
+  const _hdr=`<div class="tod-tb-header" style="position:relative"><button onclick="_vidOvToggleCal()" style="${_ib};color:${_vidCalOpen?'var(--accent)':'var(--muted)'}" title="Monthly schedule (M)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></button><button onclick="_vidOvToggleAll()" style="${_ib};color:${_vidOvAllOpen?'var(--accent)':'var(--muted)'}" title="All videos"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg></button><button onclick="_vidOvToggleTitleMode()" style="${_ib};color:${_vidOvTitleMode?'var(--accent)':'var(--muted)'}" title="Edit titles"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button><button onclick="_vidOvNewVideo('B')" style="${_ib};color:var(--muted)" title="Add video (N)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button><span style="flex:1;text-align:center;font-size:12px;font-weight:700;color:var(--text);letter-spacing:-.1px">Videos</span><button onclick="_vidOvToggleFocusWk()" style="${_ib};color:${_moonColor};${_moonGlow}" title="Focus this week"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg></button><button onclick="_vidOvToggleAnalytics()" style="${_ib};color:${_vidOvAnOpen?'var(--accent)':'var(--muted)'}" title="Analytics"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></button><button onclick="closeVidOvMenu();showPage('videos')" style="${_ib};color:var(--muted)" title="Go to Videos page"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></button><button onclick="closeVidOvMenu()" style="${_ib};color:var(--muted);font-size:14px" title="Close">✕</button></div>`;
   if(!vids.length){
     menu.innerHTML=_hdr+'<div style="padding:30px;font-size:12px;color:var(--subtle);text-align:center">No videos to add</div>';
     return;
@@ -3779,9 +4256,10 @@ function _renderVidOvMenu(){
   let html=_hdr;
   html+='<div id="vidOvContent" style="padding:4px 10px 0;flex:1;min-height:0;overflow-y:auto" ondragover="event.preventDefault();_vidOvDragIndicator(event)" ondragleave="_vidOvClearIndicator()" ondrop="_vidOvContentDrop(event)">';
   // Column header row — [+btn 16px][name flex][stages+%][post 52px][x 18px]
-  html+='<div style="display:flex;align-items:center;padding:2px 19px 2px 6px;gap:3px">';
-  html+='<div style="width:16px;flex-shrink:0"></div>';
+  html+='<div style="display:flex;align-items:center;padding:3px 19px 3px 6px;gap:5px">';
+  html+='<div style="width:12px;flex-shrink:0"></div>';
   html+='<span style="flex:1;min-width:0"></span>';
+  if(_vidOvTitleMode)html+='<span style="flex:1;min-width:0;font-size:9px;color:var(--muted);font-weight:700">Title</span><span style="flex:1;min-width:0;font-size:9px;color:var(--muted);font-weight:700">Comment</span>';
   html+='<div style="display:flex;gap:0;flex-shrink:0;align-items:center">';
   html+=steps.map(s=>`<div style="width:22px;text-align:center;font-size:9px;color:var(--muted);font-weight:700;flex-shrink:0">${(labels[s]||s).charAt(0)}</div>`).join('');
   html+='</div>';
@@ -3806,7 +4284,7 @@ function _renderVidOvMenu(){
   _vidOvRestoreSel();
   // Click empty space to deselect
   menu.onclick=e=>{if(!e.target.closest('[data-vidrow]')&&!e.target.closest('button')&&!e.target.closest('.vid-step-dot')&&!e.target.closest('.vid-insert-zone')&&!e.target.closest('[data-postvid]')){_vidOvSelIdx=-1;_vidOvSelVid=null;_vidOvSelSet.clear();_vidOvHighlight();}};
-  menu.ondblclick=e=>{if(!e.target.closest('[data-vidrow]')&&!e.target.closest('button')&&!e.target.closest('.vid-step-dot')&&!e.target.closest('.vid-insert-zone')&&!e.target.closest('.tod-tb-header')){if(typeof openVidModal==='function'){openVidModal('B');const _ss=document.getElementById('vmStatus');if(_ss){_ss.value='up_next';if(typeof _vidSetStatusDisplay==='function')_vidSetStatusDisplay('up_next');}}}};
+  menu.ondblclick=e=>{if(!e.target.closest('[data-vidrow]')&&!e.target.closest('button')&&!e.target.closest('.vid-step-dot')&&!e.target.closest('.vid-insert-zone')&&!e.target.closest('.tod-tb-header')){if(typeof _vidOvNewVideo==='function')_vidOvNewVideo('B');}};
 }
 function _vidOvStepDots(vid,steps){
   const sid=String(vid.id);
@@ -3826,15 +4304,21 @@ function _vidOvMenuItem(v,steps,focusSet){
   const _hovBg=_dk()?'rgba(255,255,255,.04)':'rgba(0,0,0,.04)';
   const _hov=`onmouseenter="this.style.background='${_hovBg}'" onmouseleave="this.style.background='none'" onclick="_vidOvClickSelect(this,event)"`;
   const _map=_vidDayMap();const _onCal=!!_map[sid];
-  const _addBtn=`<button onclick="event.stopPropagation();_vidOvInlineAdd('${sid}',null,null,this.closest('[data-vidrow]'))" style="font-size:10px;font-weight:700;width:16px;height:16px;line-height:14px;text-align:center;border-radius:3px;border:1px solid ${_onCal?'var(--accent)':'var(--border)'};background:var(--bg);color:${_onCal?'var(--accent)':'var(--muted)'};cursor:pointer;padding:0;flex-shrink:0;box-sizing:border-box" title="Add small video">+</button>`;
+  const _btnAccent=_onCal||_isFocused;
+  const _addBtn=`<div onclick="event.stopPropagation();_vidOvInlineAdd('${sid}',null,null,this.closest('[data-vidrow]'))" style="width:12px;min-width:12px;max-width:12px;height:12px;min-height:12px;max-height:12px;display:flex;align-items:center;justify-content:center;align-self:center;border-radius:2px;border:1px solid ${_btnAccent?'var(--accent)':'var(--border)'};background:var(--bg);color:${_btnAccent?'var(--accent)':'var(--muted)'};cursor:pointer;flex-shrink:0;flex-grow:0;box-sizing:border-box;overflow:hidden" title="Add small video"><svg width="6" height="6" viewBox="0 0 6 6" style="display:block;flex-shrink:0" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"><line x1="3" y1="1" x2="3" y2="5"/><line x1="1" y1="3" x2="5" y2="3"/></svg></div>`;
   const _xBtn=`<button class="vid-ov-x" onclick="event.stopPropagation();_vidOvXClick('${sid}',this)" title="Actions">✕</button>`;
   const _postDate=v.post_date?_vidOvPostStr(v.post_date):'';
   const _postColor=v.post_date?_vidOvPostColor(v):'var(--muted)';
   const _postField=`<span class="vid-ov-post" data-postvid="${sid}" style="width:28px;flex-shrink:0;font-size:9px;text-align:right;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif;color:${_postColor};cursor:pointer;line-height:12px">${_postDate||''}</span>`;
   const _focusCls=_isFocused?' vid-ov-focus':'';
-  let html=`<div data-vidrow="${sid}" ${_dragAttr} ${_dblAttr} ${_ctxAttr} ${_hov} class="${_focusCls}" style="padding:5px 19px 5px 6px;border-radius:6px;font-size:13px;font-weight:600;color:var(--text);cursor:grab;display:flex;align-items:center;gap:3px;transition:background .1s">${_addBtn}<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(v.topic||v.title)}</span><div style="display:flex;gap:0;flex-shrink:0;align-items:center">${_vidOvStepDots(v,steps)}</div>${_postField}<div class="vid-ov-pctx" style="width:14px;flex-shrink:0;text-align:center;position:relative;margin-left:12px;display:flex;align-items:center;justify-content:center;line-height:12px"><span class="vid-ov-pct" style="font-size:9px;opacity:.5;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif;line-height:12px">${_vidOvPct(v,steps)?_vidOvPct(v,steps)+'%':''}</span>${_xBtn}</div></div>`;
+  const _smallCount=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===sid).length;
+  const _countBadge=_smallCount?` <span style="font-size:10px;font-weight:400;color:var(--muted);opacity:.5;font-family:system-ui,-apple-system,sans-serif;font-variant-numeric:tabular-nums">· ${_smallCount}</span>`:'';
+  const _titleField=_vidOvTitleMode?`<span class="vid-ov-title" data-vidtitle="${sid}" ondblclick="event.stopPropagation();_vidOvStartTitleEdit(this,'${sid}')" style="flex:1;min-width:0;font-size:11px;font-weight:500;color:${v.title?'var(--text)':'var(--muted)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:text;padding:0 3px;border-radius:3px;line-height:12px;display:block;min-height:12px">${v.title?escHtml(v.title):''}</span>`:'';
+  const _commentField=_vidOvTitleMode?`<span class="vid-ov-title" data-vidcomment="${sid}" ondblclick="event.stopPropagation();_vidOvStartCommentEdit(this,'${sid}')" style="flex:1;min-width:0;font-size:11px;font-weight:400;color:${v.comment?'var(--text)':'var(--muted)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:text;padding:0 3px;border-radius:3px;line-height:12px;display:block;min-height:12px">${v.comment?escHtml(v.comment):''}</span>`:'';
+  let html=`<div data-vidrow="${sid}" ${_dragAttr} ${_dblAttr} ${_ctxAttr} ${_hov} class="${_focusCls}" style="padding:5px 19px 5px 6px;border-radius:6px;font-size:12px;font-weight:600;color:var(--text);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s">${_addBtn}<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:12px">${escHtml(v.topic||v.title)}${_countBadge}</span>${_titleField}${_commentField}<div style="display:flex;gap:0;flex-shrink:0;align-items:center">${_vidOvStepDots(v,steps)}</div>${_postField}<div class="vid-ov-pctx" style="width:14px;flex-shrink:0;text-align:center;position:relative;margin-left:12px;display:flex;align-items:center;justify-content:center;line-height:12px"><span class="vid-ov-pct" style="font-size:9px;opacity:.5;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif;line-height:12px">${_vidOvPct(v,steps)?_vidOvPct(v,steps)+'%':''}</span>${_xBtn}</div></div>`;
   // Children (S/L videos)
-  const children=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(v.id)&&c.status!=='published').sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
+  // Keep a published small visible (shown done) under its big until the whole group is complete.
+  const children=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(v.id)&&c.status!=='idea'&&(c.status!=='published'||!_vidGroupFullyComplete(c))).sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
   children.forEach((c,ci)=>{
     const csid=String(c.id);
     const _cOnCal=!!_map[csid];
@@ -3844,7 +4328,7 @@ function _vidOvMenuItem(v,steps,focusSet){
     const _cPostDate=c.post_date?_vidOvPostStr(c.post_date):'';
     const _cPostColor=c.post_date?_vidOvPostColor(c):'var(--muted)';
     const _cPostField=`<span class="vid-ov-post" data-postvid="${csid}" style="width:28px;flex-shrink:0;font-size:9px;text-align:right;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif;color:${_cPostColor};cursor:pointer;line-height:12px">${_cPostDate||''}</span>`;
-    html+=`<div draggable="true" ondragstart="_vidOvSelVid='${csid}';_vidOvChildDrag=event.currentTarget;dragId='vid::${csid}';event.dataTransfer.effectAllowed='move';document.body.classList.add('body-dragging');showWkcEdges(true);event.currentTarget.style.opacity='.4'" ondragend="event.currentTarget.style.opacity='1';_vidOvChildDrag=null;document.body.classList.remove('body-dragging');showWkcEdges(false)" ondragover="event.preventDefault()" ${_hov} ondblclick="event.stopPropagation();if(typeof openVidEdit==='function')openVidEdit('${csid}')" oncontextmenu="if(typeof showVidCtx==='function')showVidCtx(event,'${csid}')" data-vidrow="${csid}" data-cvid="${csid}" class="${_cFocusCls}" style="padding:5px 19px 5px 6px;border-radius:6px;font-size:11px;font-weight:500;color:var(--muted);cursor:grab;display:flex;align-items:center;gap:3px;transition:background .1s"><div style="width:16px;flex-shrink:0;box-sizing:border-box;border:1px solid transparent;text-align:center;color:${_cOnCal?'var(--accent)':'rgba(140,135,160,.4)'};font-size:10px;font-weight:${_cOnCal?'700':'400'}">└</div><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(c.topic||c.title)}</span><div style="display:flex;gap:0;flex-shrink:0;align-items:center">${_vidOvStepDots(c,steps)}</div>${_cPostField}<div class="vid-ov-pctx" style="width:14px;flex-shrink:0;text-align:center;position:relative;margin-left:12px;display:flex;align-items:center;justify-content:center;line-height:12px"><span class="vid-ov-pct" style="font-size:9px;opacity:.4;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif;line-height:12px">${_vidOvPct(c,steps)?_vidOvPct(c,steps)+'%':''}</span>${_cxBtn}</div></div>`;
+    html+=`<div draggable="true" ondragstart="_vidOvSelVid='${csid}';_vidOvChildDrag=event.currentTarget;dragId='vid::${csid}';event.dataTransfer.effectAllowed='move';document.body.classList.add('body-dragging');showWkcEdges(true);event.currentTarget.style.opacity='.4'" ondragend="event.currentTarget.style.opacity='1';_vidOvChildDrag=null;document.body.classList.remove('body-dragging');showWkcEdges(false)" ondragover="event.preventDefault()" ${_hov} ondblclick="event.stopPropagation();if(typeof openVidEdit==='function')openVidEdit('${csid}')" oncontextmenu="if(typeof showVidCtx==='function')showVidCtx(event,'${csid}')" data-vidrow="${csid}" data-cvid="${csid}" class="${_cFocusCls}" style="padding:5px 19px 5px 6px;border-radius:6px;font-size:11px;font-weight:500;color:var(--muted);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s"><div style="width:12px;flex-shrink:0;box-sizing:border-box;display:flex;align-items:center;justify-content:center;color:${_cOnCal?'var(--accent)':'rgba(140,135,160,.4)'};font-size:9px;font-weight:${_cOnCal?'700':'400'}">└</div><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:12px">${escHtml(c.topic||c.title)}</span>${_vidOvTitleMode?`<span class="vid-ov-title" data-vidtitle="${csid}" ondblclick="event.stopPropagation();_vidOvStartTitleEdit(this,'${csid}')" style="flex:1;min-width:0;font-size:11px;font-weight:500;color:${c.title?'var(--text)':'var(--muted)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:text;padding:0 3px;border-radius:3px;line-height:12px;display:block;min-height:12px">${c.title?escHtml(c.title):''}</span>`:''}${_vidOvTitleMode?`<span class="vid-ov-title" data-vidcomment="${csid}" ondblclick="event.stopPropagation();_vidOvStartCommentEdit(this,'${csid}')" style="flex:1;min-width:0;font-size:11px;font-weight:400;color:${c.comment?'var(--text)':'var(--muted)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:text;padding:0 3px;border-radius:3px;line-height:12px;display:block;min-height:12px">${c.comment?escHtml(c.comment):''}</span>`:''}<div style="display:flex;gap:0;flex-shrink:0;align-items:center">${_vidOvStepDots(c,steps)}</div>${_cPostField}<div class="vid-ov-pctx" style="width:14px;flex-shrink:0;text-align:center;position:relative;margin-left:12px;display:flex;align-items:center;justify-content:center;line-height:12px"><span class="vid-ov-pct" style="font-size:9px;opacity:.4;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif;line-height:12px">${_vidOvPct(c,steps)?_vidOvPct(c,steps)+'%':''}</span>${_cxBtn}</div></div>`;
     if(ci<children.length-1){const oA=c.vid_order??ci;const oB=children[ci+1].vid_order??(ci+1);html+=`<div class="vid-insert-zone"><button class="vid-insert-btn" onclick="event.stopPropagation();_vidOvInlineAdd('${sid}',${oA},${oB},this.closest('.vid-insert-zone'))">+</button></div>`;}
   });
   return html;
@@ -3858,7 +4342,7 @@ function _vidOvInlineAdd(bigId,orderBefore,orderAfter,afterEl){
   const row=document.createElement('div');
   row.className='vid-ov-inline-add';
   row.style.cssText='padding:3px 6px;display:flex;align-items:center;gap:5px';
-  row.innerHTML=`<div style="width:16px;flex-shrink:0;box-sizing:border-box;border:1px solid transparent;text-align:center;color:rgba(140,135,160,.4);font-size:10px">└</div><input type="text" placeholder="Video topic..." style="flex:1;min-width:0;border:none;outline:none;background:transparent;font-size:11px;color:var(--text);font-weight:500;padding:3px 4px;border-radius:4px;box-shadow:inset 0 0 0 1px rgba(14,165,233,.3)">`;
+  row.innerHTML=`<div style="width:12px;flex-shrink:0;box-sizing:border-box;display:flex;align-items:center;justify-content:center;color:rgba(140,135,160,.4);font-size:9px">└</div><input type="text" placeholder="Video topic..." style="flex:1;min-width:0;border:none;outline:none;background:transparent;font-size:11px;color:var(--text);font-weight:500;padding:3px 4px;border-radius:4px;box-shadow:inset 0 0 0 1px rgba(14,165,233,.3)">`;
   const inp=row.querySelector('input');
   // For + on B video (no orderBefore), insert after last child row
   if(afterEl&&afterEl.parentNode&&orderBefore==null){
@@ -3894,7 +4378,9 @@ function _vidOvDemote(vidId){
   const prevStatus=v.status;
   const prevBigId=v.big_video_id;
   v.status='idea';
-  const patch={status:'idea'};
+  const prevPostDate=v.post_date;
+  v.post_date=null;
+  const patch={status:'idea',post_date:null};
   // For small videos, unlink from big video
   if(v.video_type!=='B'&&v.big_video_id){
     v.big_video_id=null;patch.big_video_id=null;
@@ -3903,10 +4389,10 @@ function _vidOvDemote(vidId){
   const childUndos=[];
   if(v.video_type==='B'){
     (st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(vidId)&&c.status!=='published').forEach(c=>{
-      const cp=c.status;const cpBig=c.big_video_id;
-      c.status='idea';c.big_video_id=null;
-      childUndos.push({id:c.id,prevStatus:cp,prevBig:cpBig});
-      sbReqSilent('PATCH','videos',{status:'idea',big_video_id:null},`?id=eq.${c.id}`);
+      const cp=c.status;const cpBig=c.big_video_id;const cpPost=c.post_date;
+      c.status='idea';c.big_video_id=null;c.post_date=null;
+      childUndos.push({id:c.id,prevStatus:cp,prevBig:cpBig,prevPost:cpPost});
+      sbReqSilent('PATCH','videos',{status:'idea',big_video_id:null,post_date:null},`?id=eq.${c.id}`);
     });
   }
   // Remove from day map if assigned
@@ -3915,26 +4401,26 @@ function _vidOvDemote(vidId){
   save();_renderVidOvMenu();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
   sbReqSilent('PATCH','videos',patch,`?id=eq.${vidId}`);
   pushUndo(()=>{
-    v.status=prevStatus;v.big_video_id=prevBigId;
-    childUndos.forEach(cu=>{const c=(st.videos||[]).find(x=>String(x.id)===String(cu.id));if(c){c.status=cu.prevStatus;c.big_video_id=cu.prevBig;sbReqSilent('PATCH','videos',{status:cu.prevStatus,big_video_id:cu.prevBig},`?id=eq.${cu.id}`);}});
+    v.status=prevStatus;v.big_video_id=prevBigId;v.post_date=prevPostDate;
+    childUndos.forEach(cu=>{const c=(st.videos||[]).find(x=>String(x.id)===String(cu.id));if(c){c.status=cu.prevStatus;c.big_video_id=cu.prevBig;c.post_date=cu.prevPost;sbReqSilent('PATCH','videos',{status:cu.prevStatus,big_video_id:cu.prevBig,post_date:cu.prevPost??null},`?id=eq.${cu.id}`);}});
     if(prevDay){const m2=_vidDayMap();m2[String(vidId)]=prevDay;_vidDayMapSet(m2);}
     save();_renderVidOvMenu();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
-    sbReqSilent('PATCH','videos',{status:prevStatus,big_video_id:prevBigId},`?id=eq.${vidId}`);
+    sbReqSilent('PATCH','videos',{status:prevStatus,big_video_id:prevBigId,post_date:prevPostDate??null},`?id=eq.${vidId}`);
   },'Moved to ideas');
 }
 function _vidOvBulkDemote(ids){
   const undoData=ids.map(vid=>{
     const v=(st.videos||[]).find(x=>String(x.id)===vid);if(!v)return null;
-    const prevStatus=v.status;const prevBig=v.big_video_id;
+    const prevStatus=v.status;const prevBig=v.big_video_id;const prevPost=v.post_date;
     const map=_vidDayMap();const prevDay=map[vid]||null;
-    const childData=v.video_type==='B'?(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===vid&&c.status!=='published').map(c=>({id:c.id,status:c.status,big:c.big_video_id})):[];
-    return{vid,prevStatus,prevBig,prevDay,childData};
+    const childData=v.video_type==='B'?(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===vid&&c.status!=='published').map(c=>({id:c.id,status:c.status,big:c.big_video_id,post:c.post_date})):[];
+    return{vid,prevStatus,prevBig,prevPost,prevDay,childData};
   }).filter(Boolean);
   ids.forEach(vid=>{
     const v=(st.videos||[]).find(x=>String(x.id)===vid);if(!v)return;
-    v.status='idea';const patch={status:'idea'};
+    v.status='idea';v.post_date=null;const patch={status:'idea',post_date:null};
     if(v.video_type!=='B'&&v.big_video_id){v.big_video_id=null;patch.big_video_id=null;}
-    if(v.video_type==='B'){(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===vid&&c.status!=='published').forEach(c=>{c.status='idea';c.big_video_id=null;sbReqSilent('PATCH','videos',{status:'idea',big_video_id:null},`?id=eq.${c.id}`);});}
+    if(v.video_type==='B'){(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===vid&&c.status!=='published').forEach(c=>{c.status='idea';c.big_video_id=null;c.post_date=null;sbReqSilent('PATCH','videos',{status:'idea',big_video_id:null,post_date:null},`?id=eq.${c.id}`);});}
     const map=_vidDayMap();if(map[vid]){delete map[vid];_vidDayMapSet(map);}
     sbReqSilent('PATCH','videos',patch,`?id=eq.${vid}`);
   });
@@ -3942,9 +4428,9 @@ function _vidOvBulkDemote(ids){
   pushUndo(()=>{
     undoData.forEach(u=>{
       const v=(st.videos||[]).find(x=>String(x.id)===u.vid);if(!v)return;
-      v.status=u.prevStatus;v.big_video_id=u.prevBig;
-      sbReqSilent('PATCH','videos',{status:u.prevStatus,big_video_id:u.prevBig},`?id=eq.${u.vid}`);
-      u.childData.forEach(cu=>{const c=(st.videos||[]).find(x=>String(x.id)===String(cu.id));if(c){c.status=cu.status;c.big_video_id=cu.big;sbReqSilent('PATCH','videos',{status:cu.status,big_video_id:cu.big},`?id=eq.${cu.id}`);}});
+      v.status=u.prevStatus;v.big_video_id=u.prevBig;v.post_date=u.prevPost;
+      sbReqSilent('PATCH','videos',{status:u.prevStatus,big_video_id:u.prevBig,post_date:u.prevPost??null},`?id=eq.${u.vid}`);
+      u.childData.forEach(cu=>{const c=(st.videos||[]).find(x=>String(x.id)===String(cu.id));if(c){c.status=cu.status;c.big_video_id=cu.big;c.post_date=cu.post;sbReqSilent('PATCH','videos',{status:cu.status,big_video_id:cu.big,post_date:cu.post??null},`?id=eq.${cu.id}`);}});
       if(u.prevDay){const m=_vidDayMap();m[u.vid]=u.prevDay;_vidDayMapSet(m);}
     });
     save();_renderVidOvMenu();renderAll();if(document.getElementById('tbGrid'))renderDayTB();if(_vidOvAllOpen&&typeof _vidOvRenderAll==='function')_vidOvRenderAll();
@@ -4049,12 +4535,14 @@ function _vidOvToggleStep(vidId,step,dotEl){
   }
   // Sync daymap + timeblock blocks
   const _ovM=_vidStepDayMap();const _ovK=vidId+'::'+step;
+  const _todayDs=d2s(new Date());
   if(next==='done'){
     if(_ovM[_ovK]){_ovM[_ovK].done=true;_vidStepDayMapSet(_ovM);}
     (st.blocks||[]).forEach(bl=>{if(String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step&&!bl._done){bl._done=true;sbUpdateBlock(bl.id,{done:true});}});
   } else {
     if(_ovM[_ovK]){_ovM[_ovK].done=false;_vidStepDayMapSet(_ovM);}
-    (st.blocks||[]).forEach(bl=>{if(String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step&&bl._done){bl._done=false;sbUpdateBlock(bl.id,{done:false});}});
+    // Only uncheck blocks on today or future — past completed blocks stay done
+    (st.blocks||[]).forEach(bl=>{if(String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step&&bl._done&&bl.ds>=_todayDs){bl._done=false;sbUpdateBlock(bl.id,{done:false});}});
   }
   save();_renderVidOvMenu();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
   const patch={[step]:next,status:v.status};if(linked)patch[linked]=next;
@@ -4064,12 +4552,14 @@ function _vidOvToggleStep(vidId,step,dotEl){
     v[step]=prev;if(linked)v[linked]=linkedPrev;v.status=prevStatus;
     // Reverse daymap + block sync
     const _uM=_vidStepDayMap();const _uK=vidId+'::'+step;
+    const _uTodayDs=d2s(new Date());
     if(prev==='done'){
       if(_uM[_uK]){_uM[_uK].done=true;_vidStepDayMapSet(_uM);}
       (st.blocks||[]).forEach(bl=>{if(String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step&&!bl._done){bl._done=true;sbUpdateBlock(bl.id,{done:true});}});
     } else {
       if(_uM[_uK]){_uM[_uK].done=false;_vidStepDayMapSet(_uM);}
-      (st.blocks||[]).forEach(bl=>{if(String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step&&bl._done){bl._done=false;sbUpdateBlock(bl.id,{done:false});}});
+      // Only uncheck blocks on today or future — past completed blocks stay done
+      (st.blocks||[]).forEach(bl=>{if(String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step&&bl._done&&bl.ds>=_uTodayDs){bl._done=false;sbUpdateBlock(bl.id,{done:false});}});
     }
     save();_renderVidOvMenu();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
     const up={[step]:prev,status:prevStatus};if(linked)up[linked]=linkedPrev;
@@ -4169,6 +4659,9 @@ function _vidStepCelebrate(dotEl){
 let _vidCalOpen=false,_vidCalMonth=null,_vidCalYear=null;
 function _vidOvToggleCal(){
   if(_vidCalOpen){_vidOvCloseCal();return;}
+  if(_vidOvAllOpen)_vidOvCloseAll();
+  if(_vidOvAnOpen)_vidOvCloseAnalytics();
+  if(_vidOvTitleMode)_vidOvCloseTitleMode();
   const now=new Date();_vidCalMonth=now.getMonth();_vidCalYear=now.getFullYear();
   _vidCalOpen=true;_vidOvRenderCal();
   // Close only on clicks truly outside both panels, Escape, or M key
@@ -4195,7 +4688,8 @@ function _vidOvToggleCal(){
       if(_typing)return;
       if(e.key==='ArrowLeft'){e.preventDefault();_vidCalMonth--;if(_vidCalMonth<0){_vidCalMonth=11;_vidCalYear--;}_vidOvRenderCal();}
       if(e.key==='ArrowRight'){e.preventDefault();_vidCalMonth++;if(_vidCalMonth>11){_vidCalMonth=0;_vidCalYear++;}_vidOvRenderCal();}
-      if(e.key==='t'||e.key==='T'){e.preventDefault();const n=new Date();_vidCalMonth=n.getMonth();_vidCalYear=n.getFullYear();_vidOvRenderCal();}
+      if(e.key==='t'||e.key==='T'){e.preventDefault();_vidOvToggleAll();return;}
+      if(e.key==='e'){e.preventDefault();_vidOvToggleTitleMode();return;}
       if(e.key==='y'||e.key==='Y'){e.preventDefault();_vidCalToggleYear();}
     };
     document.addEventListener('click',_calClose);
@@ -4351,7 +4845,7 @@ function _vidOvRenderCal(){
     requestAnimationFrame(()=>requestAnimationFrame(()=>{panel.style.opacity='1';panel.style.transform='translateX(0)';}));
   }
   const today=d2s(new Date());
-  const allVids=(st.videos||[]).filter(v=>!v.is_deleted&&v.post_date);
+  const allVids=(st.videos||[]).filter(v=>!v.is_deleted&&v.post_date&&v.status!=='idea');
   const vidsByDate={};
   allVids.forEach(v=>{const d=v.post_date;if(!vidsByDate[d])vidsByDate[d]=[];vidsByDate[d].push(v);});
   // Find earliest post date for scroll range
@@ -4433,6 +4927,7 @@ function _vidOvToggleAll(){
   if(_vidOvAllOpen){_vidOvCloseAll();return;}
   if(_vidCalOpen)_vidOvCloseCal();
   if(_vidOvAnOpen)_vidOvCloseAnalytics();
+  if(_vidOvTitleMode)_vidOvCloseTitleMode();
   _vidOvAllOpen=true;_voaSel.clear();_voaLast=null;_vidOvRenderAll();
   setTimeout(()=>{
     const _allClose=e=>{
@@ -4452,7 +4947,8 @@ function _vidOvToggleAll(){
       const _typing=_ct==='INPUT'||_ct==='TEXTAREA'||_ct==='SELECT'||document.activeElement?.isContentEditable;
       if(_typing)return;
       if(e.key==='Escape'){if(_voaSel.size){_voaSel.clear();_voaApplySel();e.preventDefault();return;}_vidOvCloseAll();document.removeEventListener('click',_allClose);document.removeEventListener('keydown',_allKey);return;}
-      if(e.key==='n'&&!e.metaKey&&!e.ctrlKey&&!e.altKey){e.preventDefault();if(typeof openVidModal==='function')openVidModal();return;}
+      if((e.key==='n'||e.key==='b')&&!e.metaKey&&!e.ctrlKey&&!e.altKey){e.preventDefault();_vidOvNewVideo('B');return;}
+      if(e.key==='l'&&!e.metaKey&&!e.ctrlKey&&!e.altKey){e.preventDefault();_vidOvNewVideo('L');return;}
       // Delete/Backspace — delete selected
       if((e.key==='Delete'||e.key==='Backspace')&&_voaSel.size>0){e.preventDefault();const ids=[..._voaSel];const row=document.querySelector('[data-alldrag].vid-sel');_vidOvShowActionMenu(ids,row||null);return;}
       // Cmd+C — copy
@@ -4511,22 +5007,22 @@ function _vidOvToggleAll(){
         const vids=allIds.map(id=>(st.videos||[]).find(x=>String(x.id)===id)).filter(Boolean);
         const toMove=vids.filter(v=>statusMap[v.status]);
         if(!toMove.length)return;
-        const undos=toMove.map(v=>({id:v.id,prev:v.status,prevBig:v.big_video_id}));
+        const undos=toMove.map(v=>({id:v.id,prev:v.status,prevBig:v.big_video_id,prevPost:v.post_date}));
         toMove.forEach(v=>{v.status=statusMap[v.status];});
-        // When moving to idea, clear big_video_id for L videos
-        toMove.forEach(v=>{if(v.video_type!=='B'&&v.status==='idea'&&v.big_video_id){v.big_video_id=null;}});
+        // When moving to idea, clear big_video_id and post_date for L videos
+        toMove.forEach(v=>{if(v.status==='idea'){v.post_date=null;if(v.video_type!=='B'&&v.big_video_id){v.big_video_id=null;}}});
         // Move children of B videos
         const childUndos=[];
         toMove.filter(v=>v.video_type==='B').forEach(v=>{
           (st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(v.id)&&!_voaSel.has(String(c.id))).forEach(c=>{
-            const ns=statusMap[c.status];if(ns){childUndos.push({id:c.id,prev:c.status,prevBig:c.big_video_id});c.status=ns;if(ns==='idea'){c.big_video_id=null;}}
+            const ns=statusMap[c.status];if(ns){childUndos.push({id:c.id,prev:c.status,prevBig:c.big_video_id,prevPost:c.post_date});c.status=ns;if(ns==='idea'){c.big_video_id=null;c.post_date=null;}}
           });
         });
         // Clear selections after move
         if(_voaSel.size===0&&_vidOvSelVid){_vidOvSelVid=null;_vidOvSelIdx=-1;}
         save();_vidOvRenderAll();_renderVidOvMenu();renderAll();
-        pushUndo(()=>{[...undos,...childUndos].forEach(u=>{const v2=(st.videos||[]).find(x=>String(x.id)===u.id);if(v2){v2.status=u.prev;v2.big_video_id=u.prevBig;}});save();_vidOvRenderAll();_renderVidOvMenu();renderAll();[...undos,...childUndos].forEach(u=>sbReqSilent('PATCH','videos',{status:u.prev,big_video_id:u.prevBig??null},`?id=eq.${u.id}`));},'Move status');
-        (async()=>{for(const v of toMove)await sbReqSilent('PATCH','videos',{status:v.status,big_video_id:v.big_video_id??null},`?id=eq.${v.id}`);for(const cm of childUndos){const c=(st.videos||[]).find(x=>String(x.id)===cm.id);if(c)await sbReqSilent('PATCH','videos',{status:c.status,big_video_id:c.big_video_id??null},`?id=eq.${c.id}`);}})();
+        pushUndo(()=>{[...undos,...childUndos].forEach(u=>{const v2=(st.videos||[]).find(x=>String(x.id)===u.id);if(v2){v2.status=u.prev;v2.big_video_id=u.prevBig;v2.post_date=u.prevPost;}});save();_vidOvRenderAll();_renderVidOvMenu();renderAll();[...undos,...childUndos].forEach(u=>sbReqSilent('PATCH','videos',{status:u.prev,big_video_id:u.prevBig??null,post_date:u.prevPost??null},`?id=eq.${u.id}`));},'Move status');
+        (async()=>{for(const v of toMove)await sbReqSilent('PATCH','videos',{status:v.status,big_video_id:v.big_video_id??null,post_date:v.post_date??null},`?id=eq.${v.id}`);for(const cm of childUndos){const c=(st.videos||[]).find(x=>String(x.id)===cm.id);if(c)await sbReqSilent('PATCH','videos',{status:c.status,big_video_id:c.big_video_id??null,post_date:c.post_date??null},`?id=eq.${c.id}`);}})();
         return;
       }
       // Enter — edit selected
@@ -4545,15 +5041,25 @@ function _vidOvAllProgRow(v,steps){
   const sid=String(v.id);
   const _hovBg=typeof _dk==='function'&&_dk()?'rgba(255,255,255,.04)':'rgba(0,0,0,.04)';
   const _sel=_voaSel.has(sid);
-  const _addBtn=v.video_type==='B'?`<button onclick="event.stopPropagation();_vidOvInlineAdd('${sid}',null,null,this.closest('[data-alldrag]'))" style="font-size:10px;font-weight:700;width:16px;height:16px;line-height:14px;text-align:center;border-radius:3px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;padding:0;flex-shrink:0;box-sizing:border-box" title="Add small video">+</button>`:'';
-  let html=`<div data-alldrag="${sid}" draggable="true" ondragstart="dragId='vid::${sid}';event.dataTransfer.effectAllowed='move'" onclick="_voaRowClick(event,'${sid}')" ondblclick="if(typeof openVidEdit==='function')openVidEdit('${sid}')" oncontextmenu="if(typeof showVidCtx==='function')showVidCtx(event,'${sid}')" class="${_sel?'vid-sel':''}" style="padding:4px 6px;border-radius:6px;font-size:12px;font-weight:600;color:var(--text);cursor:grab;display:flex;align-items:center;gap:5px" onmouseenter="if(!this.classList.contains('vid-sel'))this.style.background='${_hovBg}'" onmouseleave="if(!this.classList.contains('vid-sel'))this.style.background=''">${_addBtn}<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(v.topic||v.title)}</span><div style="display:flex;gap:0;flex-shrink:0;align-items:center">${_vidOvStepDots(v,steps)}<span style="font-size:9px;opacity:.5;width:30px;text-align:right;flex-shrink:0;margin-left:2px">${_vidOvPct(v,steps)?_vidOvPct(v,steps)+'%':''}</span></div></div>`;
+  const _isB=v.video_type==='B';
+  const _xBtn=`<button class="vid-ov-x" onclick="event.stopPropagation();_vidOvXClick('${sid}',this)" title="Actions">✕</button>`;
+  if(!_isB){
+    // Standalone L video — render as small/child style
+    let html=`<div data-vidrow="${sid}" data-alldrag="${sid}" draggable="true" ondragstart="dragId='vid::${sid}';event.dataTransfer.effectAllowed='move'" onclick="_voaRowClick(event,'${sid}')" ondblclick="if(typeof openVidEdit==='function')openVidEdit('${sid}')" oncontextmenu="if(typeof showVidCtx==='function')showVidCtx(event,'${sid}')" class="${_sel?'vid-sel':''}" style="padding:5px 6px;border-radius:6px;font-size:11px;font-weight:500;color:var(--muted);cursor:grab;display:flex;align-items:center;gap:5px" onmouseenter="if(!this.classList.contains('vid-sel'))this.style.background='${_hovBg}'" onmouseleave="if(!this.classList.contains('vid-sel'))this.style.background=''"><div style="width:12px;flex-shrink:0"></div><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(v.topic||v.title)}</span><div style="display:flex;gap:0;flex-shrink:0;align-items:center">${_vidOvStepDots(v,steps)}</div><div class="vid-ov-pctx" style="width:14px;flex-shrink:0;text-align:center;position:relative;margin-left:2px;display:flex;align-items:center;justify-content:center;line-height:12px"><span class="vid-ov-pct" style="font-size:9px;opacity:.5;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif;line-height:12px">${_vidOvPct(v,steps)?_vidOvPct(v,steps)+'%':''}</span>${_xBtn}</div></div>`;
+    return html;
+  }
+  const _addBtn=`<div onclick="event.stopPropagation();_vidOvInlineAdd('${sid}',null,null,this.closest('[data-alldrag]'))" style="width:12px;min-width:12px;max-width:12px;height:12px;min-height:12px;max-height:12px;display:flex;align-items:center;justify-content:center;align-self:center;border-radius:2px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;flex-shrink:0;flex-grow:0;box-sizing:border-box;overflow:hidden" title="Add small video"><svg width="6" height="6" viewBox="0 0 6 6" style="display:block;flex-shrink:0" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"><line x1="3" y1="1" x2="3" y2="5"/><line x1="1" y1="3" x2="5" y2="3"/></svg></div>`;
+  const _childCount=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===sid).length;
+  const _countBadge=_childCount?` <span style="font-size:10px;font-weight:400;color:var(--muted);opacity:.5;font-family:system-ui,-apple-system,sans-serif;font-variant-numeric:tabular-nums">· ${_childCount}</span>`:'';
+  let html=`<div data-vidrow="${sid}" data-alldrag="${sid}" draggable="true" ondragstart="dragId='vid::${sid}';event.dataTransfer.effectAllowed='move'" onclick="_voaRowClick(event,'${sid}')" ondblclick="if(typeof openVidEdit==='function')openVidEdit('${sid}')" oncontextmenu="if(typeof showVidCtx==='function')showVidCtx(event,'${sid}')" class="${_sel?'vid-sel':''}" style="padding:5px 6px;border-radius:6px;font-size:12px;font-weight:600;color:var(--text);cursor:grab;display:flex;align-items:center;gap:5px" onmouseenter="if(!this.classList.contains('vid-sel'))this.style.background='${_hovBg}'" onmouseleave="if(!this.classList.contains('vid-sel'))this.style.background=''">${_addBtn}<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:12px">${escHtml(v.topic||v.title)}${_countBadge}</span><div style="display:flex;gap:0;flex-shrink:0;align-items:center">${_vidOvStepDots(v,steps)}</div><div class="vid-ov-pctx" style="width:14px;flex-shrink:0;text-align:center;position:relative;margin-left:2px;display:flex;align-items:center;justify-content:center;line-height:12px"><span class="vid-ov-pct" style="font-size:9px;opacity:.5;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif;line-height:12px">${_vidOvPct(v,steps)?_vidOvPct(v,steps)+'%':''}</span>${_xBtn}</div></div>`;
   // Show children (small videos) with └ lines
   if(v.video_type==='B'){
     const children=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===sid&&(c.status==='in_progress'||c.status==='up_next')&&c.status===v.status).sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
     children.forEach(c=>{
       const csid=String(c.id);
       const _csel=_voaSel.has(csid);
-      html+=`<div data-alldrag="${csid}" draggable="true" ondragstart="dragId='vid::${csid}';event.dataTransfer.effectAllowed='move'" onclick="_voaRowClick(event,'${csid}')" ondblclick="if(typeof openVidEdit==='function')openVidEdit('${csid}')" oncontextmenu="if(typeof showVidCtx==='function')showVidCtx(event,'${csid}')" class="${_csel?'vid-sel':''}" style="padding:3px 6px 3px 10px;border-radius:6px;font-size:11px;font-weight:500;color:var(--muted);cursor:grab;display:flex;align-items:center;gap:5px" onmouseenter="if(!this.classList.contains('vid-sel'))this.style.background='${_hovBg}'" onmouseleave="if(!this.classList.contains('vid-sel'))this.style.background=''"><span style="color:rgba(140,135,160,.4);font-size:10px;width:16px;flex-shrink:0;text-align:center">└</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(c.topic||c.title)}</span><div style="display:flex;gap:0;flex-shrink:0;align-items:center">${_vidOvStepDots(c,steps)}<span style="font-size:8px;opacity:.4;width:30px;text-align:right;flex-shrink:0;margin-left:2px">${_vidOvPct(c,steps)?_vidOvPct(c,steps)+'%':''}</span></div></div>`;
+      const _cxBtn=`<button class="vid-ov-x" onclick="event.stopPropagation();_vidOvXClick('${csid}',this)" title="Actions">✕</button>`;
+      html+=`<div data-vidrow="${csid}" data-alldrag="${csid}" draggable="true" ondragstart="dragId='vid::${csid}';event.dataTransfer.effectAllowed='move'" onclick="_voaRowClick(event,'${csid}')" ondblclick="if(typeof openVidEdit==='function')openVidEdit('${csid}')" oncontextmenu="if(typeof showVidCtx==='function')showVidCtx(event,'${csid}')" class="${_csel?'vid-sel':''}" style="padding:5px 6px;border-radius:6px;font-size:11px;font-weight:500;color:var(--muted);cursor:grab;display:flex;align-items:center;gap:5px" onmouseenter="if(!this.classList.contains('vid-sel'))this.style.background='${_hovBg}'" onmouseleave="if(!this.classList.contains('vid-sel'))this.style.background=''"><div style="width:12px;flex-shrink:0;box-sizing:border-box;display:flex;align-items:center;justify-content:center;color:rgba(140,135,160,.4);font-size:9px">└</div><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:11px">${escHtml(c.topic||c.title)}</span><div style="display:flex;gap:0;flex-shrink:0;align-items:center">${_vidOvStepDots(c,steps)}</div><div class="vid-ov-pctx" style="width:14px;flex-shrink:0;text-align:center;position:relative;margin-left:2px;display:flex;align-items:center;justify-content:center;line-height:12px"><span class="vid-ov-pct" style="font-size:9px;opacity:.5;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif;line-height:12px">${_vidOvPct(c,steps)?_vidOvPct(c,steps)+'%':''}</span>${_cxBtn}</div></div>`;
     });
   }
   return html;
@@ -4562,7 +5068,8 @@ function _vidOvAllIdeaRow(v){
   const sid=String(v.id);
   const _hovBg=typeof _dk==='function'&&_dk()?'rgba(255,255,255,.04)':'rgba(0,0,0,.04)';
   const _sel=_voaSel.has(sid);
-  return`<div data-alldrag="${sid}" draggable="true" ondragstart="dragId='vid::${sid}';event.dataTransfer.effectAllowed='move'" onclick="_voaRowClick(event,'${sid}')" ondblclick="if(typeof openVidEdit==='function')openVidEdit('${sid}')" oncontextmenu="if(typeof showVidCtx==='function')showVidCtx(event,'${sid}')" class="${_sel?'vid-sel':''}" style="padding:4px 8px;border-radius:6px;font-size:11px;font-weight:500;color:var(--text);cursor:grab" onmouseenter="if(!this.classList.contains('vid-sel'))this.style.background='${_hovBg}'" onmouseleave="if(!this.classList.contains('vid-sel'))this.style.background=''"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block">${escHtml(v.topic||v.title)}</span></div>`;
+  const _xBtn=`<button class="vid-ov-x" onclick="event.stopPropagation();_vidOvBulkDelete(['${sid}'])" title="Delete" style="position:static;transform:none;width:14px;height:14px;font-size:10px">✕</button>`;
+  return`<div data-vidrow="${sid}" data-alldrag="${sid}" draggable="true" ondragstart="dragId='vid::${sid}';event.dataTransfer.effectAllowed='move'" onclick="_voaRowClick(event,'${sid}')" ondblclick="if(typeof openVidEdit==='function')openVidEdit('${sid}')" oncontextmenu="if(typeof showVidCtx==='function')showVidCtx(event,'${sid}')" class="${_sel?'vid-sel':''}" style="padding:3px 8px 3px 10px;border-radius:6px;font-size:11px;font-weight:500;color:var(--text);cursor:grab;display:flex;align-items:center;gap:4px" onmouseenter="if(!this.classList.contains('vid-sel'))this.style.background='${_hovBg}'" onmouseleave="if(!this.classList.contains('vid-sel'))this.style.background=''"><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:normal">${escHtml(v.topic||v.title)}</span>${_xBtn}</div>`;
 }
 function _vidOvRenderAll(){
   let panel=document.getElementById('vidOvAllPanel');
@@ -4583,31 +5090,46 @@ function _vidOvRenderAll(){
   const all=(st.videos||[]).filter(v=>!v.is_deleted);
   const steps=typeof VID_STEPS_CORE!=='undefined'?VID_STEPS_CORE:(typeof VID_STEPS!=='undefined'?VID_STEPS:[]);
   // In Progress — top-level B + standalone L (children shown under parent)
-  const inProgAll=all.filter(v=>v.status==='in_progress').sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
+  const upNextIds=new Set(all.filter(v=>v.status==='up_next').map(v=>String(v.id)));
+  const inProgAll=all.filter(v=>v.status==='in_progress'&&!(v.big_video_id&&upNextIds.has(String(v.big_video_id)))).sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
   const inProg=inProgAll.filter(v=>v.video_type==='B'||!v.big_video_id||!inProgAll.find(p=>String(p.id)===String(v.big_video_id)));
   const bigIdeas=all.filter(v=>v.status==='idea'&&v.video_type==='B').sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
   const littleIdeas=all.filter(v=>v.status==='idea'&&v.video_type!=='B').sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
   // 2-column layout: In Progress | Ideas
   let h=`<div onclick="if(!event.target.closest('[data-alldrag]')&&!event.target.closest('button')){_voaSel.clear();_voaLast=null;_voaApplySel()}" style="display:grid;grid-template-columns:1.5fr 1fr;grid-template-rows:auto 1fr;position:absolute;top:0;left:0;right:0;bottom:0">`;
   // Column headers
-  h+=`<div class="tod-tb-header" style="grid-column:1;grid-row:1;border-right:1px solid var(--border);justify-content:flex-start;padding-left:14px"><span style="font-size:9px;font-weight:600;color:#d97706;letter-spacing:.03em">In Progress</span></div>`;
+  h+=`<div class="tod-tb-header" style="grid-column:1;grid-row:1;border-right:1.5px solid rgba(210,205,228,.3);justify-content:flex-start;padding-left:14px"><span style="font-size:9px;font-weight:600;color:#d97706;letter-spacing:.03em">In Progress</span></div>`;
   h+=`<div class="tod-tb-header" style="grid-column:2;grid-row:1;justify-content:flex-start;padding-left:14px;display:flex;align-items:center;gap:6px"><span style="font-size:9px;font-weight:600;color:var(--muted);letter-spacing:.03em;flex:1">Ideas</span><button onclick="event.stopPropagation();if(typeof openVidModal==='function')openVidModal()" style="font-size:10px;font-weight:700;width:18px;height:18px;line-height:16px;text-align:center;border-radius:4px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;padding:0;flex-shrink:0" title="Add idea (N)">+</button></div>`;
   // In Progress column
-  h+=`<div style="grid-column:1;grid-row:2;min-height:0;overflow-y:auto;border-right:1px solid var(--border);padding:4px" ondragover="event.preventDefault();this.style.background='rgba(245,158,11,.03)'" ondragleave="this.style.background=''" ondrop="this.style.background='';_vidOvAllDrop(event,'in_progress')">`;
+  const labels=typeof VID_STEP_LABELS!=='undefined'?VID_STEP_LABELS:{};
+  h+=`<div style="grid-column:1;grid-row:2;min-height:0;overflow-y:auto;border-right:1.5px solid rgba(210,205,228,.3);padding:4px" ondragover="event.preventDefault();this.style.background='rgba(245,158,11,.03)'" ondragleave="this.style.background=''" ondrop="this.style.background='';_vidOvAllDrop(event,'in_progress')">`;
+  // Stage column headers
+  h+='<div style="display:flex;align-items:center;padding:3px 6px;gap:5px">';
+  h+='<div style="width:12px;flex-shrink:0"></div>';
+  h+='<span style="flex:1;min-width:0"></span>';
+  h+='<div style="display:flex;gap:0;flex-shrink:0;align-items:center">';
+  h+=steps.map(s=>`<div style="width:22px;text-align:center;font-size:9px;color:var(--muted);font-weight:700;flex-shrink:0">${(labels[s]||s).charAt(0)}</div>`).join('');
+  h+='</div>';
+  h+='<span style="width:14px;flex-shrink:0;margin-left:2px"></span>';
+  h+='</div>';
   if(inProg.length){inProg.forEach(v=>{h+=_vidOvAllProgRow(v,steps);});}
   else h+='<div style="color:var(--muted);font-size:11px;padding:12px 10px;opacity:.5">Drag ideas here to start</div>';
   h+='</div>';
   // Ideas column — matching videos page style
-  h+=`<div style="grid-column:2;grid-row:2;min-height:0;overflow-y:auto" ondragover="event.preventDefault();this.style.background='rgba(139,92,246,.03)'" ondragleave="this.style.background=''" ondrop="this.style.background='';_vidOvAllDrop(event,'idea')">`;
+  h+=`<div style="grid-column:2;grid-row:2;min-height:0;overflow-y:auto;padding:4px;display:flex;flex-direction:column">`;
   if(bigIdeas.length||littleIdeas.length){
-    h+=`<div style="font-size:9px;font-weight:600;color:var(--muted);padding:6px 6px 6px 14px;letter-spacing:.03em">Big</div>`;
+    h+=`<div style="min-height:30px;padding-bottom:4px" ondragover="event.preventDefault();this.style.background='rgba(139,92,246,.03)'" ondragleave="this.style.background=''" ondrop="this.style.background='';_vidOvAllDropType(event,'B')">`;
+    h+=`<div style="font-size:9px;font-weight:600;color:var(--muted);padding:4px 6px 4px 10px;letter-spacing:.03em">Big</div>`;
     if(bigIdeas.length)bigIdeas.forEach(v=>{h+=_vidOvAllIdeaRow(v);});
-    else h+='<div style="color:var(--muted);font-size:10px;padding:4px 14px;opacity:.5">None</div>';
-    h+=`<div style="font-size:9px;font-weight:600;color:var(--muted);padding:6px 6px 6px 14px;letter-spacing:.03em;border-top:1px solid rgba(210,205,228,.15);margin-top:4px">Little</div>`;
+    else h+='<div style="color:var(--muted);font-size:10px;padding:4px 10px;opacity:.5">None</div>';
+    h+='</div>';
+    h+=`<div style="min-height:30px;border-top:1px solid rgba(210,205,228,.15);padding-bottom:4px" ondragover="event.preventDefault();this.style.background='rgba(139,92,246,.03)'" ondragleave="this.style.background=''" ondrop="this.style.background='';_vidOvAllDropType(event,'L')">`;
+    h+=`<div style="font-size:9px;font-weight:600;color:var(--muted);padding:4px 6px 4px 10px;letter-spacing:.03em">Little</div>`;
     if(littleIdeas.length)littleIdeas.forEach(v=>{h+=_vidOvAllIdeaRow(v);});
-    else h+='<div style="color:var(--muted);font-size:10px;padding:4px 14px;opacity:.5">None</div>';
+    else h+='<div style="color:var(--muted);font-size:10px;padding:4px 10px;opacity:.5">None</div>';
+    h+='</div>';
   }else{
-    h+='<div style="color:var(--muted);font-size:11px;padding:12px 14px;opacity:.5">No ideas yet</div>';
+    h+='<div style="color:var(--muted);font-size:11px;padding:12px 10px;opacity:.5">No ideas yet</div>';
   }
   h+='</div></div>';
   panel.innerHTML=h;
@@ -4631,6 +5153,24 @@ function _vidOvAllDrop(event,newStatus){
   save();_vidOvRenderAll();_renderVidOvMenu();renderAll();
   sbReqSilent('PATCH','videos',{status:newStatus},`?id=eq.${v.id}`);
   pushUndo(()=>{v.status=prev;childUndos.forEach(cu=>{const c=(st.videos||[]).find(x=>String(x.id)===String(cu.id));if(c){c.status=cu.prev;sbReqSilent('PATCH','videos',{status:cu.prev},`?id=eq.${cu.id}`);}});save();_vidOvRenderAll();_renderVidOvMenu();renderAll();sbReqSilent('PATCH','videos',{status:prev},`?id=eq.${v.id}`);},'Changed video status');
+}
+function _vidOvAllDropType(event,newType){
+  event.preventDefault();
+  const vidId=(typeof dragId==='string'&&dragId.startsWith('vid::'))?dragId.replace('vid::',''):null;
+  if(!vidId)return;
+  const v=(st.videos||[]).find(x=>String(x.id)===String(vidId));if(!v)return;
+  const prevType=v.video_type;const prevStatus=v.status;
+  // Set status to idea and type
+  v.video_type=newType;
+  if(v.status!=='idea')v.status='idea';
+  // If converting to L, clear big_video_id; if converting to B, also clear it
+  const prevBig=v.big_video_id;
+  if(newType==='L')v.big_video_id=null;
+  if(newType==='B')v.big_video_id=null;
+  const patch={video_type:newType,status:'idea',big_video_id:null};
+  save();_vidOvRenderAll();_renderVidOvMenu();renderAll();
+  sbReqSilent('PATCH','videos',patch,`?id=eq.${v.id}`);
+  pushUndo(()=>{v.video_type=prevType;v.status=prevStatus;v.big_video_id=prevBig;save();_vidOvRenderAll();_renderVidOvMenu();renderAll();sbReqSilent('PATCH','videos',{video_type:prevType,status:prevStatus,big_video_id:prevBig??null},`?id=eq.${v.id}`);},'Changed video type');
 }
 function _vidOvUpNextDrop(event){
   event.preventDefault();
@@ -4657,6 +5197,7 @@ function _vidOvToggleAnalytics(){
   if(_vidOvAnOpen){_vidOvCloseAnalytics();return;}
   if(_vidCalOpen)_vidOvCloseCal();
   if(_vidOvAllOpen)_vidOvCloseAll();
+  if(_vidOvTitleMode)_vidOvCloseTitleMode();
   _vidOvAnOpen=true;_vidOvRenderAnalyticsPanel();
   setTimeout(()=>{
     const _anClose=e=>{
@@ -4885,6 +5426,18 @@ function _vidUnassignDay(vidId){
   if(panel&&panel.style.display==='block')_renderVidOvMenu();
   if(prev)pushUndo(()=>{const m2=_vidDayMap();m2[String(vidId)]=prev;_vidDayMapSet(m2);if(_vidBlkRemoved){st.blocks.push(_vidBlkRemoved);sbSaveBlock(_vidBlkRemoved);}save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();const p2=document.getElementById('vidOvPanel');if(p2&&p2.style.display==='block')_renderVidOvMenu();},'Removed video from calendar');
 }
+// A video's whole big/small group is complete only when the big AND every non-deleted small are
+// published. Used to keep a finished member visible (grouped under its big) in the up-next list and
+// in today/weekly until the entire group is done — smalls stay with their big and vice versa.
+function _vidGroupFullyComplete(v){
+  if(!v)return false;
+  const bigId=v.video_type==='B'?String(v.id):(v.big_video_id?String(v.big_video_id):null);
+  if(!bigId)return v.status==='published';
+  const big=(st.videos||[]).find(x=>String(x.id)===bigId&&!x.is_deleted);
+  if(big&&big.status!=='published')return false;
+  const smalls=(st.videos||[]).filter(x=>!x.is_deleted&&String(x.big_video_id)===bigId);
+  return smalls.every(s=>s.status==='published');
+}
 function _vidCompleteFromOv(vidId,anchorEl){
   const v=(st.videos||[]).find(x=>String(x.id)===String(vidId));
   if(!v)return;
@@ -5032,6 +5585,144 @@ function _vidUncompleteFromOv(vidId){
   if(typeof renderVideosPageKeepScroll==='function')renderVideosPageKeepScroll();
 }
 
+function _shopScrollTo(container,el){
+  const ct=container.getBoundingClientRect(),er=el.getBoundingClientRect();
+  if(er.top<ct.top)container.scrollTop-=ct.top-er.top;
+  else if(er.bottom>ct.bottom)container.scrollTop+=er.bottom-ct.bottom;
+}
+function _shopOvKeyNav(e){
+  // Only handle when shop items are selected
+  const shopSel=[...selectedTasks].filter(s=>s.startsWith('shop-cal-'));
+  if(!shopSel.length)return false;
+  const container=document.getElementById('shopOv');if(!container)return false;
+  const rows=[...container.querySelectorAll('.ti')];if(!rows.length)return false;
+  const _typing=document.activeElement?.tagName==='INPUT'||document.activeElement?.tagName==='TEXTAREA'||document.activeElement?.tagName==='SELECT'||document.activeElement?.isContentEditable;
+  if(_typing)return false;
+
+  // Cmd+Up/Down: reorder selected items
+  if((e.metaKey||e.ctrlKey)&&(e.key==='ArrowUp'||e.key==='ArrowDown')){
+    e.preventDefault();
+    const dir=e.key==='ArrowUp'?-1:1;
+    const selIds=new Set(shopSel.map(s=>s.replace('shop-cal-','')));
+    const sorted=_shopOvSort(st.shopping.filter(s=>!s.done));
+    sorted.forEach((s,i)=>s.shop_order=i);
+    const prevOrders=sorted.map(s=>({id:s.id,shop_order:s.shop_order}));
+    const idxs=[...selIds].map(id=>sorted.findIndex(s=>String(s.id)===id)).filter(i=>i>=0).sort((a,b)=>a-b);
+    if(!idxs.length)return true;
+    if(dir===-1&&idxs[0]>0){
+      const above=sorted[idxs[0]-1];
+      idxs.forEach(i=>{sorted[i].shop_order--;});
+      above.shop_order=sorted[idxs[idxs.length-1]].shop_order+1;
+    } else if(dir===1&&idxs[idxs.length-1]<sorted.length-1){
+      const below=sorted[idxs[idxs.length-1]+1];
+      idxs.forEach(i=>{sorted[i].shop_order++;});
+      below.shop_order=sorted[idxs[0]].shop_order-1;
+    } else return true;
+    sorted.sort((a,b)=>(a.shop_order??9999)-(b.shop_order??9999));
+    sorted.forEach((s,i)=>{s.shop_order=i;sbReqNullable('PATCH','shopping_list',{shop_order:i},`?id=eq.${s.id}`);});
+    save();renderShopOv();
+    pushUndo(()=>{prevOrders.forEach(({id,shop_order})=>{const it=st.shopping.find(x=>String(x.id)===String(id));if(it){it.shop_order=shop_order;sbReqNullable('PATCH','shopping_list',{shop_order:shop_order??null},`?id=eq.${id}`);}});save();renderShopOv();},'Reorder shopping');
+    // Re-select after render and scroll into view
+    setTimeout(()=>{selIds.forEach(id=>selectedTasks.add('shop-cal-'+id));applySelHighlight();
+      const c=document.getElementById('shopOv');
+      const scrollId=[...selIds][dir===-1?0:selIds.size-1];
+      const firstSelEl=document.getElementById('ti-shop-cal-'+scrollId);
+      if(c&&firstSelEl)_shopScrollTo(c,firstSelEl);
+    },20);
+    return true;
+  }
+
+  // Arrow Up/Down: navigate selection
+  if(e.key==='ArrowUp'||e.key==='ArrowDown'){
+    e.preventDefault();
+    const allIds=rows.map(r=>r.id.replace('ti-',''));
+    const lastSel=shopSel[shopSel.length-1];
+    const curIdx=allIds.indexOf(lastSel);
+    const newIdx=e.key==='ArrowUp'?Math.max(0,curIdx-1):Math.min(allIds.length-1,curIdx+1);
+    const newId=allIds[newIdx];
+    if(e.shiftKey){
+      selectedTasks.add(newId);lastSelectedId=newId;
+    } else {
+      selectedTasks.clear();selectedTasks.add(newId);lastSelectedId=newId;
+    }
+    applySelHighlight();
+    // Scroll into view within container
+    const el=document.getElementById('ti-'+newId);
+    if(el)_shopScrollTo(container,el);
+    return true;
+  }
+
+  // Delete/Backspace: delete selected
+  if(e.key==='Delete'||e.key==='Backspace'){
+    e.preventDefault();
+    const ids=new Set(shopSel.map(s=>s.replace('shop-cal-','')));
+    const copies=[];ids.forEach(id=>{const s=st.shopping.find(x=>String(x.id)===String(id));if(s)copies.push({...s});});
+    ids.forEach(id=>{st.shopping=st.shopping.filter(x=>String(x.id)!==String(id));});
+    selectedTasks.clear();save();renderShopOv();if(typeof renderShopFull==='function')renderShopFull();
+    pushUndo(()=>{copies.forEach(c=>st.shopping.push(c));save();renderShopOv();if(typeof renderShopFull==='function')renderShopFull();copies.forEach(c=>sbReq('POST','shopping_list',{name:c.name,store:c.store,done:c.done,due_date:c.due_date,shop_order:c.shop_order}));},'Deleted '+copies.length+' item'+(copies.length>1?'s':''));
+    ids.forEach(id=>sbReq('DELETE','shopping_list',null,`?id=eq.${id}`));
+    return true;
+  }
+
+  return false;
+}
+function _shopOvGetSelIds(clickedId){
+  const ids=new Set([String(clickedId)]);
+  selectedTasks.forEach(sid=>{if(sid.startsWith('shop-cal-'))ids.add(sid.replace('shop-cal-',''));});
+  return ids;
+}
+function _shopOvMoveToTop(ids){
+  const prevOrders=st.shopping.filter(x=>!x.done).map(x=>({id:x.id,shop_order:x.shop_order}));
+  const sorted=_shopOvSort(st.shopping.filter(s=>!s.done));
+  const moving=sorted.filter(s=>ids.has(String(s.id)));
+  const rest=sorted.filter(s=>!ids.has(String(s.id)));
+  [...moving,...rest].forEach((s,i)=>s.shop_order=i);
+  save();st.shopping.filter(x=>!x.done).forEach(it=>sbReqNullable('PATCH','shopping_list',{shop_order:it.shop_order??null},`?id=eq.${it.id}`));
+  pushUndo(()=>{prevOrders.forEach(({id,shop_order})=>{const it=st.shopping.find(x=>String(x.id)===String(id));if(it){it.shop_order=shop_order;sbReqNullable('PATCH','shopping_list',{shop_order:shop_order??null},`?id=eq.${id}`);}});renderShopOv();},'Move to top');
+  renderShopOv();
+}
+function _shopOvMoveToBottom(ids){
+  const prevOrders=st.shopping.filter(x=>!x.done).map(x=>({id:x.id,shop_order:x.shop_order}));
+  const sorted=_shopOvSort(st.shopping.filter(s=>!s.done));
+  const rest=sorted.filter(s=>!ids.has(String(s.id)));
+  const moving=sorted.filter(s=>ids.has(String(s.id)));
+  [...rest,...moving].forEach((s,i)=>s.shop_order=i);
+  save();st.shopping.filter(x=>!x.done).forEach(it=>sbReqNullable('PATCH','shopping_list',{shop_order:it.shop_order??null},`?id=eq.${it.id}`));
+  pushUndo(()=>{prevOrders.forEach(({id,shop_order})=>{const it=st.shopping.find(x=>String(x.id)===String(id));if(it){it.shop_order=shop_order;sbReqNullable('PATCH','shopping_list',{shop_order:shop_order??null},`?id=eq.${id}`);}});renderShopOv();},'Move to bottom');
+  renderShopOv();
+}
+function _shopOvCtx(e,shopId){
+  e.preventDefault();e.stopPropagation();
+  // Ensure clicked item is selected
+  if(!selectedTasks.has('shop-cal-'+shopId))selTask(e,'shop-cal-'+shopId);
+  const ids=_shopOvGetSelIds(shopId);
+  const count=ids.size;
+  const label=count>1?count+' items':'item';
+  // Remove existing
+  let menu=document.getElementById('shopOvCtxMenu');
+  if(menu)menu.remove();
+  menu=document.createElement('div');
+  menu.id='shopOvCtxMenu';
+  menu.className='vid-ov-action-menu';
+  menu.style.cssText=`position:fixed;left:${Math.min(e.clientX,window.innerWidth-160)}px;top:${Math.min(e.clientY,window.innerHeight-140)}px;z-index:99999;min-width:150px`;
+  menu.innerHTML=`<div class="vid-ov-action-item" data-i="top" style="padding:6px 14px;cursor:pointer">↑  Move to top</div><div class="vid-ov-action-item" data-i="bot" style="padding:6px 14px;cursor:pointer">↓  Move to bottom</div><div style="height:1px;margin:3px 8px;background:var(--border)"></div><div class="vid-ov-action-item" data-i="edit" style="padding:6px 14px;cursor:pointer">✏️  Edit</div><div class="vid-ov-action-item" data-i="del" style="padding:6px 14px;cursor:pointer;color:#ef4444">✕  Delete ${label}</div>`;
+  document.body.appendChild(menu);
+  menu.querySelector('[data-i="top"]').onclick=()=>{menu.remove();_shopOvMoveToTop(ids);};
+  menu.querySelector('[data-i="bot"]').onclick=()=>{menu.remove();_shopOvMoveToBottom(ids);};
+  menu.querySelector('[data-i="edit"]').onclick=()=>{menu.remove();if(typeof openEditShop==='function')openEditShop(shopId);};
+  menu.querySelector('[data-i="del"]').onclick=()=>{
+    menu.remove();
+    const copies=[];ids.forEach(id=>{const s=st.shopping.find(x=>String(x.id)===String(id));if(s)copies.push({...s});});
+    ids.forEach(id=>{st.shopping=st.shopping.filter(x=>String(x.id)!==String(id));});
+    selectedTasks.clear();save();renderShopOv();if(typeof renderShopFull==='function')renderShopFull();
+    pushUndo(()=>{copies.forEach(c=>st.shopping.push(c));save();renderShopOv();if(typeof renderShopFull==='function')renderShopFull();copies.forEach(c=>sbReq('POST','shopping_list',{name:c.name,store:c.store,done:c.done,due_date:c.due_date,shop_order:c.shop_order}));},'Deleted '+copies.length+' item'+(copies.length>1?'s':''));
+    ids.forEach(id=>sbReq('DELETE','shopping_list',null,`?id=eq.${id}`));
+  };
+  const _close=ev=>{if(!menu.contains(ev.target)){menu.remove();document.removeEventListener('mousedown',_close);}};
+  setTimeout(()=>document.addEventListener('mousedown',_close),50);
+  const _esc=ev=>{if(ev.key==='Escape'){menu.remove();document.removeEventListener('keydown',_esc);document.removeEventListener('mousedown',_close);}};
+  document.addEventListener('keydown',_esc);
+}
 function renderShopOv(){
   const shopSorted=_shopOvSort(st.shopping.filter(s=>!s.done));
   const container=document.getElementById('shopOv');
@@ -5040,9 +5731,17 @@ function renderShopOv(){
   // Set up container DnD for in-list reorder (once per container lifetime)
   if(!container._shopDnDSetup){
     container._shopDnDSetup=true;
+    let _shopScrollRAF=null;
     container.addEventListener('dragover',e=>{
       if(!dragId||!dragId.startsWith('shop::'))return;
       e.preventDefault();
+      // Auto-scroll near edges
+      const rect=container.getBoundingClientRect();
+      const edge=30;
+      const speed=6;
+      cancelAnimationFrame(_shopScrollRAF);
+      if(e.clientY-rect.top<edge)container.scrollTop-=speed;
+      else if(rect.bottom-e.clientY<edge)container.scrollTop+=speed;
       let ph=container.querySelector('.shop-ov-ph');
       if(!ph){ph=document.createElement('div');ph.className='shop-ov-ph';ph.style.cssText='height:2px;margin:2px 10px;border-radius:99px;background:rgba(150,150,160,.5);pointer-events:none;flex-shrink:0';container.appendChild(ph);}
       const rows=[...container.querySelectorAll('.ti')];
@@ -5062,12 +5761,15 @@ function renderShopOv(){
       if(!s){if(ph)ph.remove();return;}
       if(!ph)return; // no placeholder means not a reorder drop
       const prevOrders=st.shopping.filter(x=>!x.done).map(x=>({id:x.id,shop_order:x.shop_order}));
+      // Multi-select: gather all selected shop IDs (include dragged)
+      const selShopIds=new Set([shopId]);
+      selectedTasks.forEach(sid=>{if(sid.startsWith('shop-cal-'))selShopIds.add(sid.replace('shop-cal-',''));});
       const allRows=[...container.querySelectorAll('.ti')];
       const children=[...container.children];
       const phIdx=children.indexOf(ph);
-      const before=allRows.filter(r=>children.indexOf(r)<phIdx).map(r=>r.id.replace('ti-shop-cal-',''));
-      const after=allRows.filter(r=>children.indexOf(r)>=phIdx&&r.id!=='ti-shop-cal-'+shopId).map(r=>r.id.replace('ti-shop-cal-',''));
-      const orderedIds=[...before,shopId,...after];
+      const before=allRows.filter(r=>children.indexOf(r)<phIdx&&!selShopIds.has(r.id.replace('ti-shop-cal-',''))).map(r=>r.id.replace('ti-shop-cal-',''));
+      const after=allRows.filter(r=>children.indexOf(r)>=phIdx&&!selShopIds.has(r.id.replace('ti-shop-cal-',''))).map(r=>r.id.replace('ti-shop-cal-',''));
+      const orderedIds=[...before,...selShopIds,...after];
       orderedIds.forEach((id,i)=>{const it=st.shopping.find(x=>String(x.id)===String(id));if(it)it.shop_order=i;});
       ph.remove();
       save();
@@ -5089,7 +5791,7 @@ function renderShopOv(){
       `<button class="delbtn">✕</button>`;
     el.addEventListener('click',e=>tiClickShop(e,s.id));
     el.addEventListener('dblclick',e=>tiDblShop(e,s.id));
-    el.addEventListener('contextmenu',e=>showCtxShop(e,s.id));
+    el.addEventListener('contextmenu',e=>_shopOvCtx(e,s.id));
     el.querySelector('.chk-wrap').addEventListener('click',e=>e.stopPropagation());
     el.querySelector('.chk').addEventListener('change',e=>togShop(s.id,e.target.checked));
     el.querySelector('.delbtn').addEventListener('click',e=>{e.stopPropagation();delShop(s.id);});
@@ -5171,8 +5873,8 @@ function tRow(t,o={}){
   const _dblHandler=_isPostTab?`if(typeof openVidEdit==='function')openVidEdit('${t.notes.replace('_vid:','')}')`:`tiDbl(event,'${t.id}')`;
   return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''} ${imp&&!ov?'imp-row':''}" style="${!ov&&!imp&&!o.noColor?`background:${s.bg}`:''}" id="ti-${t.id}" ${o.drag?`draggable="true" ondragstart="dStart(event,'${t.id}')" ondragend="dEnd(event)"`:''} onclick="selTask(event,'${t.id}')" ondblclick="${_dblHandler}" oncontextmenu="showCtx(event,'${t.id}')">
     <label class="chk-wrap" onclick="event.stopPropagation()" onmousedown="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="toggleTask('${t.id}',this.checked,'${o.drag?'wk':''}')"></label>
-    <span class="tn">${tmIcon(t)}${t.name}</span>
-    ${o.cat?(o.catDot&&!ov?`<svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3" fill="${s.bg}" stroke="${s.d}" stroke-opacity="0.4" stroke-width="1"/></svg>`:(!o.catDot?`<span class="cpill" style="background:${s.bg};color:${s.t};border-color:${s.b}">${t.category||'?'}</span>`:'')):''}
+    <span class="tn">${tmIcon(t)}${escHtml(t.name)}</span>
+    ${o.cat?(o.catDot&&!ov?`<svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3" fill="${s.bg}" stroke="${s.d}" stroke-opacity="0.4" stroke-width="1"/></svg>`:(!o.catDot?`<span class="cpill" style="background:${s.bg};color:${s.t};border-color:${s.b}">${escHtml(t.category||'?')}</span>`:'')):''}
     ${o.tbArrow?'<span class="tb-arrow">›</span>':''}
     ${o.flag?'<span class="flag-u">📅</span>':''}
     ${!o.flag&&(!o.noDate||ov)&&t.due_date?ov?`<span class="dlbl ov">${['S','M','T','W','T','F','S'][new Date(t.due_date.split('T')[0]+'T12:00').getDay()]}</span>`:`<span class="dlbl" style="cursor:pointer" onclick="openInlineDatePicker(event,'${t.id}','${t.due_date}')">${fmtD(t.due_date)} <span class="date-clr" title="Clear date" onclick="event.stopPropagation();clearTaskDate('${t.id}',event)">×</span></span>`:''}
@@ -5610,6 +6312,7 @@ function renderDayTB(){
     });
     col.appendChild(row);
   });
+  grid.appendChild(col);_syncPX();
   // Auto-create birthday blocks at 7:30am if not already placed
   getBirthdayTasks(ds).forEach(bt=>{
     if(st.blocks.some(b=>b.ds===ds&&b.cat==='Birthday'&&b.title===bt.name))return;
@@ -5714,7 +6417,7 @@ function renderDayTB(){
     document.addEventListener('mousemove',onMove);
     document.addEventListener('mouseup',onUp);
   });
-  grid.appendChild(col);renderTBSum(ds);requestAnimationFrame(applySelHighlight);
+  renderTBSum(ds);requestAnimationFrame(applySelHighlight);
   // Default scroll to current time minus 1 hour; reset when day changes but preserve position mid-session
   const tbSc2=document.getElementById('tbScroll');
   if(tbSc2&&tbSc2._scrollDay!==ds){const _scrollVal=Math.round((6.5-HOURS[0])*60*PX);tbSc2.scrollTop=_scrollVal;if(tbSc2.scrollTop===_scrollVal){tbSc2._scrollDay=ds;}else{tbSc2._scrollDay=null;}}
@@ -5731,12 +6434,19 @@ function getVisibleBlocks(ds){
       const rec=st.recurring.find(x=>String(x.id)===String(b.recId));
       if(rec){
         const wkk=dsToWkKey(ds);
-        if(rec._dateOverrides&&rec._dateOverrides[wkk]!==undefined&&rec._dateOverrides[wkk]!==ds)return false;
+        // Block is valid if current week's override matches ds, OR any other week's override points to ds
+        if(rec._dateOverrides&&rec._dateOverrides[wkk]!==undefined&&rec._dateOverrides[wkk]!==ds){
+          const anyOvMatch=Object.values(rec._dateOverrides).some(v=>v===ds);
+          if(!anyOvMatch)return false;
+        }
       } else {
         const r=st.wrRules.find(x=>String(x.id)===String(b.recId));
         if(!r)return false;
         const wkk=dsToWkKey(ds);
-        if(r._dateOverrides&&r._dateOverrides[wkk]!==undefined&&r._dateOverrides[wkk]!==ds)return false;
+        if(r._dateOverrides&&r._dateOverrides[wkk]!==undefined&&r._dateOverrides[wkk]!==ds){
+          const anyOvMatch=Object.values(r._dateOverrides).some(v=>v===ds);
+          if(!anyOvMatch)return false;
+        }
       }
     } else if(b.ruleId){
       const r=st.wrRules.find(x=>String(x.id)===String(b.ruleId));
@@ -5847,7 +6557,7 @@ function drawTBBlock(col,b){
     const _vb=(st.videos||[]).find(x=>String(x.id)===String(b._vidId));
     if(_vb){const _steps=typeof VID_STEPS_CORE!=='undefined'?VID_STEPS_CORE:(typeof VID_STEPS!=='undefined'?VID_STEPS:[]);const _app=_steps.filter(s=>_vb[s]!=='na');
       const _lbls=typeof VID_STEP_LABELS!=='undefined'?VID_STEP_LABELS:{};
-      _vidStepsHtml=`<div class="tb-vid-steps" style="display:flex;align-items:flex-end;gap:4px;padding:4px 8px 6px;flex-wrap:wrap;flex:1">${_app.map(s=>{const _dn=_vb[s]==='done';const _ltr=(_lbls[s]||s).charAt(0).toUpperCase();return`<div class="vid-step-dot tb-vsd${_dn?' done':''}" data-vid="${b._vidId}" data-step="${s}" title="${_lbls[s]||s}" style="width:13px;height:13px;cursor:pointer;border-radius:2px;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;line-height:1">${_dn?'':_ltr}</div>`;}).join('')}</div>`;
+      _vidStepsHtml=`<div class="tb-vid-steps" style="display:flex;align-items:flex-start;gap:4px;padding:4px 8px 6px;flex-wrap:wrap;flex:1">${_app.map(s=>{const _dn=_vb[s]==='done';const _ltr=(_lbls[s]||s).charAt(0).toUpperCase();return`<div class="vid-step-dot tb-vsd${_dn?' done':''}" data-vid="${b._vidId}" data-step="${s}" title="${_lbls[s]||s}" style="width:13px;height:13px;cursor:pointer;border-radius:2px;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;line-height:1">${_dn?'':_ltr}</div>`;}).join('')}</div>`;
       _vidWhiteBg=true;
     }
   }
@@ -5882,17 +6592,39 @@ function drawTBBlock(col,b){
     v[step]=newVal;
     sbReqSilent('PATCH','videos',{[step]:newVal},`?id=eq.${v.id}`);
     // Sync daymap + timeblock blocks to match stage state
-    // Stage square marks ALL instances (including later ones) done/undone
     const m=_vidStepDayMap();const key=vid+'::'+step;
+    const _sqTodayDs=d2s(new Date());
     const _prevBlkStates=[];
-    (st.blocks||[]).forEach(bl=>{if(String(bl._vidStepVid)===String(vid)&&bl._vidStepName===step){_prevBlkStates.push({id:bl.id,done:bl._done});const want=newVal==='done';if(bl._done!==want){bl._done=want;sbUpdateBlock(bl.id,{done:want});}}});
     if(newVal==='done'){
+      // Mark all blocks done
+      (st.blocks||[]).forEach(bl=>{if(String(bl._vidStepVid)===String(vid)&&bl._vidStepName===step){_prevBlkStates.push({id:bl.id,done:bl._done});if(!bl._done){bl._done=true;sbUpdateBlock(bl.id,{done:true});}}});
       if(m[key]){m[key].done=true;_vidStepDayMapSet(m);}
     } else {
+      // Only uncheck today/future blocks — past completed blocks stay done
+      (st.blocks||[]).forEach(bl=>{if(String(bl._vidStepVid)===String(vid)&&bl._vidStepName===step){_prevBlkStates.push({id:bl.id,done:bl._done});if(bl._done&&bl.ds>=_sqTodayDs){bl._done=false;sbUpdateBlock(bl.id,{done:false});}}});
       if(m[key]){m[key].done=false;_vidStepDayMapSet(m);}
     }
-    pushUndo(()=>{v[step]=prevVal;sbReqSilent('PATCH','videos',{[step]:prevVal},`?id=eq.${v.id}`);_prevBlkStates.forEach(s=>{const bl2=st.blocks.find(x=>x.id===s.id);if(bl2){bl2._done=s.done;sbUpdateBlock(bl2.id,{done:s.done});}});const m2=_vidStepDayMap();if(m2[key]){m2[key].done=prevVal==='done';_vidStepDayMapSet(m2);}save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();},'Stage toggle');
+    // All stages complete → prompt for post date / publish (same as completing on the videos page)
+    let _sqPrompt=false;const _sqPrevStatus=v.status;
+    const _coreList=typeof VID_STEPS_CORE!=='undefined'?VID_STEPS_CORE:['step_build','step_vo','step_cut','step_thumbnail','step_description'];
+    if(_coreList.includes(step)){
+      // A core step counts as done if the record says so, or (Build/VO/Cut) the day-map stage is complete
+      const _stepDone=s=>{if(v[s]==='done'||v[s]==='na')return true;if(s==='step_thumbnail'||s==='step_description')return false;const e=m[vid+'::'+s];return !!(e&&e.done);};
+      const _coreDone=_coreList.every(_stepDone);
+      const _tabReq=v.step_tableau_public&&v.step_tableau_public!=='na'&&v.step_tableau_public!=='done';
+      if(newVal==='done'&&_coreDone){
+        // Backfill the record so v.step_* is consistent everywhere
+        _coreList.forEach(s=>{if(s!=='step_thumbnail'&&s!=='step_description'&&v[s]!=='na'&&v[s]!=='done'){v[s]='done';sbReqSilent('PATCH','videos',{[s]:'done'},`?id=eq.${v.id}`);}});
+        const _needsLink=_tabReq&&!v.youtube_url;
+        if(!v.post_date||_needsLink){_sqPrompt=true;}
+        else if(v.status!=='published'&&v.topic&&v.title){v.status='published';sbReqSilent('PATCH','videos',{status:'published'},`?id=eq.${v.id}`);if(_tabReq&&typeof _vidCreateTabUpTask==='function')_vidCreateTabUpTask(vid,v.post_date);}
+      } else if(newVal!=='done'&&!_coreDone&&v.status==='published'){
+        v.status='in_progress';sbReqSilent('PATCH','videos',{status:'in_progress'},`?id=eq.${v.id}`);if(typeof _vidDeleteTabTask==='function')_vidDeleteTabTask(vid);
+      }
+    }
+    pushUndo(()=>{v[step]=prevVal;v.status=_sqPrevStatus;sbReqSilent('PATCH','videos',{[step]:prevVal,status:_sqPrevStatus},`?id=eq.${v.id}`);_prevBlkStates.forEach(s=>{const bl2=st.blocks.find(x=>x.id===s.id);if(bl2){bl2._done=s.done;sbUpdateBlock(bl2.id,{done:s.done});}});const m2=_vidStepDayMap();if(m2[key]){m2[key].done=prevVal==='done';_vidStepDayMapSet(m2);}save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();},'Stage toggle');
     save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
+    if(_sqPrompt&&typeof _vidPromptPostDate==='function')_vidPromptPostDate(vid);
     const panel=document.getElementById('vidOvPanel');if(panel&&panel.style.display==='block')_renderVidOvMenu();
   });
   const _clBtn=el.querySelector('.tb-copy-link');
@@ -6536,11 +7268,11 @@ function dropOnTB(e,ds,h,row,smOverride){
         } else if(sid.startsWith('vid-ov-')){
           // skip — video TB has special handling
         } else if(sid.startsWith('vidstep-')){
-          const vsm=sid.match(/^vidstep-(.+)-(step_\w+)$/);
+          const vsm=sid.match(/^vidstep-(.+)-(step_\w+)-(\d{4}-\d{2}-\d{2})$/)||sid.match(/^vidstep-(.+)-(step_\w+)$/);
           if(vsm){
-            const vsVid=vsm[1],vsStep=vsm[2];
+            const vsVid=vsm[1],vsStep=vsm[2],vsSrcDay=vsm[3]||null;
             if(vsStep!=='step_thumbnail'&&vsStep!=='step_description'){
-              if(typeof _vidStepAssignToDay==='function')_vidStepAssignToDay(vsVid,vsStep,ds);
+              if(typeof _vidStepAssignToDay==='function')_vidStepAssignToDay(vsVid,vsStep,ds,vsSrcDay);
             }
           }
         } else if(sid.startsWith('shop-cal-')){
@@ -6655,10 +7387,10 @@ function dropOnTB(e,ds,h,row,smOverride){
     return;
   }
   if(dragId.startsWith('wrec::')){
-    const recId=dragId.split('::')[1];
+    const _tbWeParts=dragId.split('::');const recId=_tbWeParts[1];const _tbWeSrcWk=_tbWeParts[2]||'';
     const _wrecSid='wrec-'+recId;
     const _isMultiWrec=selectedTasks.has(_wrecSid)&&selectedTasks.size>1;
-    const wkKey=wkKeyFromDs(ds);
+    const wkKey=_tbWeSrcWk||wkKeyFromDs(ds);
     const _addedBlks=[];const _undoOps=[];
     let _curSm=sm;
     const _allSids=_isMultiWrec?[...selectedTasks]:[_wrecSid];
@@ -6754,11 +7486,11 @@ function dropOnTB(e,ds,h,row,smOverride){
     },'Added to time block');
     return;
   } else if(dragId.startsWith('rec::')){
-    // recurring virtual task: rec::recId::date
-    const recId=dragId.split('::')[1];
+    // recurring virtual task: rec::recId::date::wkKey
+    const _tbReParts=dragId.split('::');const recId=_tbReParts[1];const _tbReSrcWk=_tbReParts[3]||'';
     const r=st.recurring.find(x=>String(x.id)===String(recId));
     if(!r){dragId=null;return;}
-    const wkKey=wkKeyFromDs(ds);
+    const wkKey=_tbReSrcWk||wkKeyFromDs(ds);
     const prevDateOv=r._dateOverrides?{...r._dateOverrides}:{};
     if(!r._dateOverrides)r._dateOverrides={};
     r._dateOverrides[wkKey]=ds;
@@ -6839,16 +7571,26 @@ function dropOnTB(e,ds,h,row,smOverride){
       const _vsPrevBlks=_vsMoved.map(bl=>({id:bl.id,ds:bl.ds,sm:bl.sm}));
       _vsMoved.forEach(bl=>{bl.ds=ds;bl.sm=sm;sbUpdateBlock(bl.id,{day_date:ds,start_minutes:sm});});
       const _vsM2=_vidStepDayMap();const _vsK2=_vsVidId+'::'+_vsStep;
-      const _vsPrevMap=_vsM2[_vsK2]?{..._vsM2[_vsK2]}:null;
-      if(_vsM2[_vsK2]&&_vsM2[_vsK2].ds===_vsSrcDay){_vsM2[_vsK2].ds=ds;_vidStepDayMapSet(_vsM2);}
+      const _vsPrevMap=_vsM2[_vsK2]?JSON.parse(JSON.stringify(_vsM2[_vsK2])):null;
+      const _vsE2=_vsM2[_vsK2];
+      if(_vsE2&&_vsE2.ds===_vsSrcDay)_vsE2.ds=ds;
+      else if(_vsE2&&_vsE2.extraDays&&_vsE2.extraDays.includes(_vsSrcDay)){_vsE2.extraDays=_vsE2.extraDays.filter(d=>d!==_vsSrcDay);if(_vsE2.ds!==ds&&!_vsE2.extraDays.includes(ds))_vsE2.extraDays.push(ds);if(!_vsE2.extraDays.length)delete _vsE2.extraDays;}
+      if(_vsE2)_vidStepMoveDoneDay(_vsE2,_vsSrcDay,ds);
+      _vidStepDayMapSet(_vsM2);
+      // Calendar-only instance (no blocks on src day) dropped on TB: create a block at drop position
+      let _vsNewBlk=null;
+      if(!_vsMoved.length){
+        const _vsLbl=(_VID_STEP_LABELS[_vsStep]||_vsStep.replace('step_',''))+': '+(_vsV.topic||_vsV.title);
+        _vsNewBlk={id:crypto.randomUUID(),title:_vsLbl,ds,sm,dur:30,cat:'Videos',_vidStepVid:_vsVidId,_vidStepName:_vsStep};
+        st.blocks.push(_vsNewBlk);sbSaveBlock(_vsNewBlk);
+      }
       dragId=null;save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
-      pushUndo(()=>{_vsPrevBlks.forEach(p=>{const bl=st.blocks.find(x=>x.id===p.id);if(bl){bl.ds=p.ds;bl.sm=p.sm;sbUpdateBlock(bl.id,{day_date:p.ds,start_minutes:p.sm});}});const m2=_vidStepDayMap();if(_vsPrevMap)m2[_vsK2]=_vsPrevMap;_vidStepDayMapSet(m2);save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();},'Moved step');
+      pushUndo(()=>{_vsPrevBlks.forEach(p=>{const bl=st.blocks.find(x=>x.id===p.id);if(bl){bl.ds=p.ds;bl.sm=p.sm;sbUpdateBlock(bl.id,{day_date:p.ds,start_minutes:p.sm});}});if(_vsNewBlk){st.blocks=st.blocks.filter(b=>b.id!==_vsNewBlk.id);sbDeleteBlock(_vsNewBlk.id);}const m2=_vidStepDayMap();if(_vsPrevMap)m2[_vsK2]=_vsPrevMap;else delete m2[_vsK2];_vidStepDayMapSet(m2);save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();},'Moved step');
       return;
     }
     // Add new block on this day (don't move existing)
     const _vsLabel=(_VID_STEP_LABELS[_vsStep]||_vsStep.replace('step_',''))+': '+(_vsV.topic||_vsV.title);
-    _vidStepAddBlock(_vsVidId,_vsStep,ds);
-    const newBlk=st.blocks.find(bl=>String(bl._vidStepVid)===String(_vsVidId)&&bl._vidStepName===_vsStep&&bl.ds===ds);
+    const newBlk=_vidStepAddBlock(_vsVidId,_vsStep,ds);
     if(newBlk){newBlk.sm=sm;sbUpdateBlock(newBlk.id,{start_minutes:sm});}
     dragId=null;save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
     return;
@@ -7053,7 +7795,7 @@ function _addSelectedToTB(sids){
     }
     // Vidstep (Build/VO/Cut only)
     if(sid.startsWith('vidstep-')){
-      const m2=sid.match(/^vidstep-(.+)-(step_\w+)$/);
+      const m2=sid.match(/^vidstep-(.+)-(step_\w+)-\d{4}-\d{2}-\d{2}$/)||sid.match(/^vidstep-(.+)-(step_\w+)$/);
       if(m2){
         const vidId=m2[1],step=m2[2];
         if(step==='step_thumbnail'||step==='step_description')continue;
@@ -7243,10 +7985,24 @@ function onTBWheel(e){
   if(e.deltaY<0&&atTop){e.preventDefault();tbWD+=e.deltaY;if(tbWT)clearTimeout(tbWT);tbWT=setTimeout(()=>{if(tbWD<-40)shiftDay(-1);tbWD=0;tbWT=null;},100);}
   else if(e.deltaY>0&&atBot){e.preventDefault();tbWD+=e.deltaY;if(tbWT)clearTimeout(tbWT);tbWT=setTimeout(()=>{if(tbWD>40)shiftDay(1);tbWD=0;tbWT=null;},100);}
 }
-function shiftDay(n){const fl=document.getElementById('dayFlash');fl.textContent=n>0?'→':'←';fl.classList.add('show');setTimeout(()=>fl.classList.remove('show'),300);dayOff+=n;const _newDs=d2s(getDayDate(dayOff));const _newWkKey=dsToWkKey(_newDs);const _curWkKey=getWkKey(wkOff);if(_newWkKey!==_curWkKey){const _newWkOff=Math.round((new Date(_newWkKey+'T00:00:00')-new Date(getWkKey(0)+'T00:00:00'))/(7*86400000));wkOff=_newWkOff;renderWkSummary();}renderWkCal();renderDayTB();renderToday();}
-function goToday(){dayOff=0;if(wkOff!==0){wkOff=0;renderWkSummary();}renderWkCal();renderDayTB();renderToday();}
-function shiftWk(n){wkOff+=n;renderWkSummary();renderWkCal();renderUnassigned();renderPupSkillsHighlight();if(typeof renderMealRow==='function')renderMealRow();}
-function goThisWk(){wkOff=0;renderWkSummary();renderWkCal();renderUnassigned();renderPupSkillsHighlight();if(typeof renderMealRow==='function')renderMealRow();}
+function shiftDay(n){const fl=document.getElementById('dayFlash');fl.textContent=n>0?'→':'←';fl.classList.add('show');setTimeout(()=>fl.classList.remove('show'),300);dayOff+=n;const _newDs=d2s(getDayDate(dayOff));const _newWkKey=dsToWkKey(_newDs);const _curWkKey=getWkKey(wkOff);if(_newWkKey!==_curWkKey){const _newWkOff=Math.round((new Date(_newWkKey+'T00:00:00')-new Date(getWkKey(0)+'T00:00:00'))/(7*86400000));wkOff=_newWkOff;wrRecOff=_newWkOff;renderWkSummary();if(typeof renderRecOv==='function')renderRecOv();const _vp=document.getElementById('vidOvPanel');if(_vp&&_vp.style.display==='block'&&typeof _renderVidOvMenu==='function')_renderVidOvMenu();}renderWkCal();renderDayTB();renderToday();if(typeof applySelHighlight==='function')applySelHighlight();}
+function goToday(){dayOff=0;if(wkOff!==0||wrRecOff!==0){wkOff=0;wrRecOff=0;renderWkSummary();if(typeof renderRecOv==='function')renderRecOv();const _vp=document.getElementById('vidOvPanel');if(_vp&&_vp.style.display==='block'&&typeof _renderVidOvMenu==='function')_renderVidOvMenu();}renderWkCal();renderDayTB();renderToday();if(typeof applySelHighlight==='function')applySelHighlight();}
+// Weekly calendar, Weekly Reset card, and the videos pop-up focus week share ONE week offset, so
+// navigating any of them moves the others in lockstep and the focus highlight follows the shown week.
+function _goToWeek(off){
+  wkOff=off;wrRecOff=off;
+  renderWkSummary();renderWkCal();renderUnassigned();renderPupSkillsHighlight();
+  if(typeof renderMealRow==='function')renderMealRow();
+  if(typeof renderRecOv==='function')renderRecOv();
+  const _vp=document.getElementById('vidOvPanel');if(_vp&&_vp.style.display==='block'&&typeof _renderVidOvMenu==='function')_renderVidOvMenu();
+  // Keep the multi-select highlight across week changes — selection IDs (e.g. wrrule-virt-<ruleId>) are
+  // week-independent, so a selected weekly-reset task stays highlighted in every week it appears.
+  // Call synchronously (NOT via rAF): the week renders above are synchronous, and rAF is frame-throttled
+  // (won't fire in a backgrounded tab / can race a re-render), which left the highlight unapplied.
+  if(typeof applySelHighlight==='function')applySelHighlight();
+}
+function shiftWk(n){_goToWeek(wkOff+n);}
+function goThisWk(){_goToWeek(0);}
 
 // ── Notes expand on hover ────────────────────────────────────────────────────
 (function(){

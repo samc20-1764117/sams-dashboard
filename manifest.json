@@ -2,7 +2,7 @@
   "name": "Sam's Dashboard",
   "short_name": "Dashboard",
   "description": "Sam's personal dashboard",
-  "start_url": "/",
+  "start_url": "/?v=20260608b",
   "display": "standalone",
   "background_color": "#fdf8f4",
   "theme_color": "#fdf8f4",

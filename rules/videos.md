@@ -16,7 +16,8 @@
 - Statuses: `idea`, `up_next`, `in_progress`, `published`, `backup`. Order: 1. Idea → 2. Up Next → 3. In Progress → 4. Complete → 4. Backup (two 4s intentional).
 - `VID_STATUS_LABELS` maps internal names to display names (e.g. `published`→"Complete", `up_next`→"Up Next"). `VID_STATUS_ORDER` defines sort order.
 - **Auto-publish**: Core 5 done + `post_date` + `topic` + `title` → `published`. If tab required, creates "post tab" task for the posting date. Tab completion = true completeness (removed from overview). `_vidAutoPublishFromYt` — YT match + all 6 steps done → `published`. Un-completing core steps on published → `in_progress`. Published videos cannot have status changed via drag.
-- **Posting date prompt**: Triggered when 5th core step completes (on any view) and no `post_date` set. If tab required: creates task. If not: fully complete.
+- **Posting date prompt**: Triggered when the 5th core step completes and no `post_date` set (or tab-required link missing). If tab required: creates task. If not: fully complete. Fires from EVERY completion path: videos page (`cycleVidStep`), overview video panel dots (`_vidOvToggleStep`), AND overview stage-task completion — the timeblock green stage square (`.tb-vstep-sq`, Build/VO/Cut only), the today/week list checkbox + TB checkbox (both via `_vidStepToggleDone`). Each path syncs/backfills `v.step_*` on the record and then calls `_vidPromptPostDate`.
+- **Overview stage completion sync (important)**: Build/VO/Cut completion on the overview historically set only the day-map `done` flag, NOT `v.step_*` on the record — so `coreDone` (which reads `v.step_*`) silently never tripped and the prompt was skipped. Fix: completing a Build/VO/Cut stage now writes `v[step]='done'` to the record; `coreDone` detection treats a Build/VO/Cut step as done if EITHER `v[step]==='done'/'na'` OR its day-map entry `.done` is set (covers stages completed before the record was synced); when all 5 are done it backfills any lagging `v.step_*` so percentages/videos page/publish stay consistent. Th/Des always store on the record (no square — checkbox only).
 - **Helper functions**: `_vidIsComplete(v)` = core 5 done + post_date + topic + title. `_vidTrulyComplete(v)` = above + tab done/na. `_vidAllChildrenComplete(bigId)` checks children.
 - **Date colors**: no date=muted, published+future/today=green, published+past=black, all core done=green, has date=yellow.
 
@@ -40,6 +41,8 @@
 - **Global numbering**: numbers computed from ALL non-deleted videos with `post_date` (not just visible ones). Numbers are stable regardless of show/hide completed toggle.
 - **Default sort** (`_vidSortVids`): groups by parent B video's `post_date`. Within group: B first, then children by `post_date`. Standalone L by own `post_date`. Sortable column headers override this (click asc, click desc, click reset).
 - **B→L grouping**: maintained in all views. B videos always appear before their children.
+- **Group completion coupling** (`_vidGroupFullyComplete(v)` in overview.js): a big/small group is "done" only when the B AND every non-deleted L are `published`. The overview **videos pop-up** (`_renderVidOvMenu`) keeps a finished member visible (shown done; status stays `published` so Analytics still matches) under its big until the whole group is done — a published L stays nested under its B, a published B stays in the up-next list until all its L's are published, then the group drops off together. Also gates `_vidStillPending`/`_vPend` (today list + weekly cal show a published-but-group-incomplete video on its post_date).
+- **Videos pop-up focus week** (`_vidOvFocusWk`): highlights videos scheduled in `getWkKey(wkOff)`. Pop-up re-renders on every week change so the highlight tracks the currently-shown week.
 
 ### Display Rules
 - **In progress videos**: show "Topic - Title" where topic is normal color, title is muted. For small (L) videos, both topic and title are muted/grey.
@@ -66,6 +69,7 @@
 - **Tab+Link greying**: when Tab is na, both Tab wrapper (`vmTabWrap`) and Link wrapper (`vmLinkWrap`) grey at `opacity:.5`. Link input gets grey fill (`rgba(210,205,228,.15)`), no placeholder. Right-click on Link (`_vidLinkCtx`) toggles both Tab+Link together via `_vidNaModalStep`. Link wrapper has `cursor:default`.
 - **Defaults for new**: Big → all stages required. Small → Tab default to `na`. Changing type dropdown updates stages.
 - **Big Video field**: searchable via datalist of all B video titles. `_vidGetBigVideoId()` resolves title→id on save.
+- **Save closes the add/edit modal but keeps the videos pop-up (toolbox) open** — and Save must match Enter. Two pieces in `saveVidModal`: (1) it `setTimeout(()=>closeMod('vidModal'),0)` — DEFERRED, because the pop-up/sub-panel outside-click handlers (`_allClose`/`_calClose`/`_anClose`) only skip closing WHILE the modal is open; closing it synchronously let the Save click then close the toolbox. (2) Belt-and-suspenders: sets `window._vidOvSuppressClose=true` (checked at top of `closeVidOvMenu`) for ~700ms and re-asserts `vidOvPanel` open. Enter routes through the same `saveVidModal`, so behavior is identical.
 - **Playlist field**: searchable via datalist of all existing playlists.
 
 ### + Button (Add Child Video)
@@ -73,7 +77,8 @@
 - `openVidModalForBig(bigId)`: opens add modal with type=Small, big video pre-selected, Tab defaulted to na.
 
 ### Keyboard Shortcuts (when not in input)
-- `n` — open add modal
+- `n` / `b` — open add modal (Big video default)
+- `l` — open add modal (Little video default)
 - `e` — expand (show completed, table view only)
 - `c` — collapse (hide completed, table view only)
 - `Delete/Backspace` — delete selected

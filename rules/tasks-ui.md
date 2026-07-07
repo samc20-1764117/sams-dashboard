@@ -4,12 +4,14 @@
 
 All task types that appear on the overview calendar/today list. Every type must support: render, select (`selTask`), drag, drop onto calendar day, multi-select drag with mixed types, timeblock drop, checkbox toggle, delete (X), undo.
 
+- **Progress %**: Today list header shows completion percentage. Excludes `_type==='travel'` items (auto-managed, not manually checked off). Excludes `_type==='birthday'` from done count.
+
 | Type | Selection ID | Drag ID | Source |
 |------|-------------|---------|--------|
 | Regular task | `String(t.id)` | `String(t.id)` | `st.tasks` |
 | WR rule | `wrrule-{id}` / `wrrule-virt-{id}` | `wrrule::{id}` | `st.wrRules` |
-| WR recurring (legacy) | `wrec-{id}` | `wrec::{id}` | `st.recurring` (is_weekly_reset=true) |
-| Non-WR recurring | `rec-virt-{id}` | `rec::{id}::{date}` | `st.recurring` (is_weekly_reset=false) |
+| WR recurring (legacy) | `wrec-{id}` | `wrec::{id}::{wkKey}` | `st.recurring` (is_weekly_reset=true) |
+| Non-WR recurring | `rec-virt-{id}` | `rec::{id}::{date}::{wkKey}` | `st.recurring` (is_weekly_reset=false) |
 | Shopping | `shop-cal-{id}` | `shop::{id}` | `st.shopping` |
 | Video | `vid-ov-{vidId}` | `vid::{vidId}` | `_vidDayMap` (localStorage) |
 | Pup session | `pup-sess-{sessId}` | `pupsess::{sessId}::{ds}` | `st.pupSessions` |
@@ -39,8 +41,28 @@ All task types that appear on the overview calendar/today list. Every type must 
 - **Pup sessions**: `day_date < today && !done`. Included in `updateOvBanner` count and `rolloverOverdue` (moves `day_date` to today, PATCHes `pup_skill_sessions`). Appear in today list when `dayOff===0`. Sorted by timeblock position (`_pupSessId` matched against `b._pupSessId` in `tbSm()`).
 - **Videos**: overdue if `_vidDayMap[id] < today && status !== 'published'`. Included in banner count and rollover (moves localStorage date to today). Appear in today list with red `OV` style + day letter.
 - Tasks/shopping/non-WR recurring only overdue if assigned to a date.
-- **Non-WR recurring dedup**: `allRecVirt` deduplicates by `_recId`. If current week has a future (not yet due) occurrence, overdue occurrences from past weeks are suppressed — the upcoming occurrence takes priority. This prevents showing both an overdue and an upcoming instance of the same recurring task.
+- **Non-WR recurring dedup**: `allRecVirt` deduplicates by `_recId::_wkKey`. Same task from different weeks = separate instances (e.g. HEB moved cross-week + this week's natural occurrence). Same task+week = deduped, preferring future over overdue. `getOvRecurring()` uses same `_recId::_wkKey` dedup for overdue banner/rollover.
 - `updateOvBanner()` called from `renderToday()`. Banner text: `X Overdue` + `Move to today` button. No task name or question.
+
+## Sort Order
+
+Three sort functions (`sortByTypeOrder`, `sortTasksForDay`, `sortByTBWeek`) all use the same tier system:
+
+**Tier 1 — Hard priority (checked first, in order):**
+1. Birthday — always first
+2. Done — always last
+3. Travel (undone) — floats up
+4. Overdue (undone) — floats up
+5. Important / fin-cancel (undone) — floats up
+
+**Tier 2 — Timeblock position** (sortTasksForDay/sortByTBWeek only): tasks with blocks sort by start minute above unblocked tasks.
+
+**Tier 3 — `taskTypePri` category order:**
+birthday(1) → home(2) → my work(3) → work(4) → social/other(5) → vid(5.5) → vidstep(5.6) → non-WR recurring(6) → fin-cancel(6.5) → shopping(7) → pup(8) → weekly reset(9)
+
+**Tier 4 — Alphabetical** by name (tiebreaker).
+
+Mobile `_mTaskTypePri` and `mSortToday` mirror this exactly.
 
 ## Task Modals
 - **`#tModal`**: add (`openTModal(cat='')`) + edit (`openEditTask(id)`). Save: `saveTModal()`.
@@ -62,7 +84,7 @@ All task types that appear on the overview calendar/today list. Every type must 
 - **Modal outside-click drag fix**: `_modMousedownInside` flag prevents `closeMod` if mousedown was inside `.modal`.
 - **`#tNotes` textarea**: auto-expands, capped at `max-height:160px`. Reset on add open; pre-expanded on edit open. Newlines rendered via `.replace(/\n/g,'<br>')`.
 - **Cmd+Z in modals**: `_isInput && !_ael.closest('.overlay:not(.open)')` → return early.
-- **Shortcuts**: see `rules/core.md` → "Keyboard Shortcuts" for full list. Key additions: `d`=dark mode, `n`=new task, `r`=reload, `q`=quick notes, `vv`=videos popup (double-tap). Overview: `←/→`=shift day, `w+←/→`=shift week, `t`=today. **All single-key shortcuts MUST check contentEditable focus.**
+- **Shortcuts**: see `rules/core.md` → "Keyboard Shortcuts" for full list. Key additions: `d`=dark mode, `n`=new task (overview) / new Big video (videos popup/page), `b`=new Big video, `l`=new Little video, `r`=reload, `q`=quick notes, `v`=videos popup, `vv`=videos page. Overview: `←/→`=shift day, `w+←/→`=shift week, `t`=today. **All single-key shortcuts MUST check contentEditable focus.** `n`/`b`/`l` on video popup pre-set status=up_next. `L` global shortcut (style guide) blocked when video panel is open.
 - **Page navigation closes overlays**: `showPage()` closes video calendar, all panel, analytics panel, and video popup before switching pages.
 - **Keyboard shortcut pattern** (MUST follow every time):
   1. Same key toggles open/close (check if modal is already `.open` before opening).
@@ -82,8 +104,8 @@ All task types that appear on the overview calendar/today list. Every type must 
 All indicators at far right, swap to X on hover. `cat-dot` stroke changes to accent color (stroke-width 1.5, opacity 0.7) for tasks not on timeblock. `chip-del` inside relative chip. `wr-cad-badge` hidden on row hover to reveal X. `cpill` pointer-events:none.
 
 ### Recurring task inline badges
-- **HEB badge** (`.heb-cnt`): shopping cart icon (9px SVG) before task name on all views (today list, weekly chips, week summary, timeblock, recOv). Opens grocery modal on click. Uses `_hebBadge(name)` helper.
-- **Prep pup training badge** (`.pup-link-badge`): link icon (8px SVG) before task name on all views. Opens `_openPupFocusModal(null)` on click. Uses `_pupBadge(name)` helper. Match is case-insensitive.
+- **HEB badge** (`.heb-cnt`): shopping cart icon (9px SVG) before task name on all views (today list, weekly chips, week summary, timeblock, recOv). Opens grocery modal on click. Uses `_hebBadge(name, wkKey)` helper — passes week context so each instance opens its own week's grocery list.
+- **Prep pups badge** (`.pup-link-badge`): link icon (8px SVG) before task name on all views. Opens `_openPupFocusModal(null)` on click. Uses `_pupBadge(name)` helper. Match is case-insensitive. (Renamed from "Prep pup training".)
 - Both badges: `display:inline-flex;align-items:center;margin-right:3px;opacity:.55`. CSS tweaks per view: `.chip` top:-0.5px, `.tb-block` top:-1px, `.ti` top:1px.
 - **Overdue rows**: no `cat-dot`. Show single DOW letter (`S/M/T/W/T/F/S`) in `.dlbl.ov` instead of full date. `.dlbl.ov` has `margin-right:-4px`.
 
@@ -99,7 +121,7 @@ All indicators at far right, swap to X on hover. `cat-dot` stroke changes to acc
 - **`@time` in task name**: `submitQA` auto-detects `@1:30pm` style, creates timeblock immediately with local task ID, updates `taskId` after server confirm. Name kept as-is. If no due date, defaults to today. `autoDur`: Social=180min, Work/My work/Recurring=60min, Home=30min. Same durations apply when dragging tasks onto timeblock grid. **Priority**: manually-set timeblock position (via drag) takes precedence over `@time` in name — editing a task (e.g. adding notes) never reverts a manually-placed block. `@time` only creates a NEW block if none exists.
 - **`@time` smart AM/PM**: when no am/pm suffix, hours 1–8 default to PM (e.g. `@7:30` → 7:30 PM). Hours 9–11 stay AM. End time am/pm infers start (e.g. `@3:30-6pm` → both PM).
 - **`@time` range**: supports `@start-end` format (e.g. `@3:30-6pm`, `@3-5pm`, `@10am-12pm`). Duration computed from range, overrides `autoDur`. Regex: `/@(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\s*(?:-\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?)?/i`. All 3 parsers updated (submitQA, saveTModal, task-move-to-day).
-- **Task move to new day (weekly cal drop or Arrow Left/Right)**: if task had a timeblock on old day, auto-creates block on new day at same time/duration. If no old block but `@time` in name, creates block from parsed time. Undo removes new block and restores old. Arrow keys move all selected tasks ±1 day relative to each task's own date (works for regular, rec, wrec, wrrule, shop).
+- **Task move to new day (weekly cal drop or Arrow Left/Right)**: if task had a timeblock on old day, auto-creates block on new day at same time/duration. If no old block but `@time` in name, creates block from parsed time. Undo removes new block and restores old. Arrow keys move all selected tasks ±1 day relative to each task's own date (works for regular, rec, wrec, wrrule, shop, `vid-ov-*`, `blk-*`, `vidstep-*`). `vid-ov-*` updates `_vidDayMap` + moves linked blocks. `blk-*` moves block `ds`. `vidstep-*` updates `_vidStepDayMap` + moves blocks; regex `^vidstep-(\d+)-(step_\w+)` handles both TB-grid IDs (no date suffix) and chip IDs (with `-YYYY-MM-DD` suffix).
 - **Multi-select mixed-type drag**: dragging any selected item (task, wrec, wrrule) moves ALL selected items together. Each drag handler (task, `wrec::`, `wrrule::`) iterates `selectedTasks` and moves items of all types. Full undo for all moved items via `_mixedUndos`/`_wrecUndos`/`_wrUndos` arrays.
 - **Overdue display**: all overdue tasks show red `OV` style + `ov-row` class + day-of-week letter (`dlbl ov`) positioned at `right:9px` (aligned with dot indicators). `.tb-arrow` and `.wr-unassigned` hidden on `ov-row`. `.tb-arrow` in todList at `right:3px` (right of dot, between dot and list edge). `.wr-unassigned` at `right:2px` (same position).
 - **Weekly Reset card header** (`#wrRecWkLbl`): "Weekly Reset" when `wrRecOff===0`, else date range.
@@ -134,20 +156,27 @@ Video tasks assigned to days via `_vidDayMap` (localStorage) follow the SAME rul
 - **Overdue**: `_vidDayMap[id] < today` when `dayOff===0`. Shows OV style + day letter.
 - **Completion**: checkbox calls `_vidCompleteFromOv` (popup to mark steps done or whole video).
 - **Delete (✕)**: calls `_vidUnassignDay` — removes from `_vidDayMap` + deletes linked timeblock.
-- **Video stage tasks (vidstep)**: `_vidStepDayMap` (localStorage) tracks one entry per step (`vidId::step → {ds, done}`). TB blocks provide multi-day support for Build/VO/Cut. Weekly cal X calls `_vidStepUnassign` (not skip/delete picker). Selection via today list ID `vidstep-{vid}-{step}-{day}`, cross-refs TB block's `_vidStepVid`+`_vidStepName`. Dblclick opens `openVidEdit(b._vidStepVid)`.
-- **Vidstep multi-day (Build/VO/Cut ONLY)**: These 3 stages can have TB blocks on multiple days (e.g., building Mon+Tue). Each day's instance is **independent** — appears as a separate row in the today list with its own check/done state. `_vidStepAddBlock(vidId,step,ds)` creates a new block without moving existing ones. Daymap tracks the "primary" day; `_vidStepTasksForDay(ds)` also checks TB blocks to find steps on days the daymap doesn't point to. Th/Des are single-instance only.
-- **Vidstep per-day independence**: `seen` sets in `_vidStepTasksForDayWithOverdue` and `_vidStepOvCount` use `vidId::step::day` keys (not `vidId::step`), so the same step on different days produces separate entries. Task objects carry `_vidStepDay` property for day-scoped operations. IDs include day suffix: `vidstep-{vid}-{step}-{day}`.
-- **Vidstep overdue**: No auto-move — vidsteps stay on their assigned past day. `_vidStepTasksForDayWithOverdue(todayDs)` shows overdue instances alongside today's instances as separate rows. `_vidStepOvCount` uses per-day dedup. Weekly cal shows overdue as red chips on the original day.
-- **Vidstep reconstruction**: `_vidStepReconstructBlocks()` — for multi-day Build/VO/Cut, only creates daymap entry if none exists (does NOT overwrite existing to today, preserving overdue). For single-day Th/Des, always syncs daymap to today.
+- **Video stage tasks (vidstep)**: `_vidStepDayMap` (localStorage) tracks one entry per step (`vidId::step → {ds, done, extraDays?}`). TB blocks provide multi-day support for Build/VO/Cut. Weekly cal X calls `_vidStepUnassign` (not skip/delete picker). Selection via today list ID `vidstep-{vid}-{step}-{day}`, cross-refs TB block's `_vidStepVid`+`_vidStepName`. Dblclick opens `openVidEdit(b._vidStepVid)`.
+- **Vidstep multi-day (Build/VO/Cut ONLY)**: These 3 stages can span multiple days. Each day's instance is **independent for TB purposes** — appears as a separate row in the today list with its own check/done state. Daymap tracks the "primary" day + optional `extraDays` array for calendar-only assignments (no TB block). `_vidStepTasksForDay(ds)` checks: daymap primary, daymap extraDays, and TB blocks. Th/Des are single-instance only.
+- **Vidstep duplicate guard**: `_vidStepAssignToDay` checks if the step is already on the target day (primary or extraDays) — if so, shows toast "Already on this day" and returns. Prevents silent duplicates from drag-drop.
+- **Vidstep TB copy/paste (Build/VO/Cut ONLY)**: Cmd+C on a vidstep TB block (detected via `vidstep-` selection ID when TB is open) copies to `_copiedBlocks` with `_vidStepVid` + `_vidStepName`. Cmd+V creates a new independent TB block (separate instance, new UUID). Daymap entry auto-created if missing. Th/Des blocks cannot be TB-copied (single-instance only). This is distinct from today-list Cmd+C/V which uses `_copiedTasks` → `_vidStepAssignExtraDay`.
+- **Vidstep extraDays**: `_vidStepAssignExtraDay(vidId,step,ds)` adds a day to `extraDays` without creating a TB block. Used by paste (Cmd+V). The step shows on the day's calendar/task list with the "not on TB" arrow. Unassign (`_vidStepUnassign` with `forDay`) also removes from `extraDays`.
+- **Vidstep per-day independence**: `seen` sets in `_vidStepTasksForDayWithOverdue` and `_vidStepOvCount` use `vidId::step::day` keys (not `vidId::step`), so the same step on different days produces separate entries. Task objects carry `_vidStepDay` property for day-scoped operations. IDs include day suffix: `vidstep-{vid}-{step}-{day}`. **Regex matching MUST try date-suffixed pattern first**: `sid.match(/^vidstep-(.+)-(step_\w+)-\d{4}-\d{2}-\d{2}$/)||sid.match(/^vidstep-(.+)-(step_\w+)$/)` — plain `$` anchor alone will never match IDs with the day suffix.
+- **Vidstep overdue**: No auto-move — vidsteps stay on their assigned past day. `_vidStepTasksForDayWithOverdue(todayDs)` shows overdue instances alongside today's instances as separate rows. `_vidStepOvCount` uses per-day dedup. Weekly cal shows overdue as red chips on the original day. **Done overdue vidsteps are filtered out** — if `isDone && val.ds < todayDs`, the item is hidden from the today list (no ghost entries for completed past items).
+- **Vidstep done consistency (CRITICAL)**: ALL overdue vidstep checks MUST use `_vidStepComputeDone()` — never rely on `val.done` alone. `val.done` only covers Th/Des (daymap flag). Build/VO/Cut done state lives on timeblock blocks (`bl._done`) per day; block-less days (extraDays/calendar-only instances) store done in daymap `doneDays:{ds:true}` (written by `_vidStepToggleDone` when `forDay` has no blocks). Both only accessible via `_vidStepComputeDone`. Applies to: `_vidStepOvCount` (overview.js), `updateOvBanner` (features.js), `rolloverOverdue` (features.js). Using `val.done` instead causes phantom overdue counts with nothing in the list.
+- **Vidstep instance moves (CRITICAL)**: NEVER write `m[key]={ds,...}` wholesale (drops `extraDays`/`doneDays`) and NEVER unconditionally set `m[key].ds` for a dragged instance. Pattern: if `entry.ds===srcDay` move primary; else if `srcDay` in `extraDays` swap it (dedupe vs primary/target); then `_vidStepMoveDoneDay(entry,srcDay,newDay)` carries the per-day done flag. `_vidStepAssignToDay(vidId,step,ds,srcDay)` implements this — pass `srcDay` from day-suffixed drag IDs. Daymap undo snapshots must be deep copies (`JSON.parse(JSON.stringify())` — entries hold nested arrays/objects).
+- **Vidstep overdue counting/rollover**: banner + rollover scan daymap primaries AND `extraDays` AND orphaned past blocks, deduped with per-day keys (`vidId::step::day`), matching `_vidStepTasksForDayWithOverdue`. Rollover moves overdue extraDay instances to today (merging if today already has the step).
+- **Vidstep reconstruction**: `_vidStepReconstructBlocks()` — fixes vidstep blocks with `sm < HOURS[0]*60` by reassigning to 8am default (NEVER delete — blocks with `sm=0` from null `start_minutes` must be preserved). For multi-day Build/VO/Cut, only creates daymap entry if none exists (does NOT overwrite existing to today, preserving overdue). For single-day Th/Des, always syncs daymap to today.
 - **Vidstep operations — today list vs weekly chips**:
-  - **Today list** (`tRowVidStepVirt`): Each instance scoped to `_vidStepDay`. Drag uses `vidstep::vid::step::day`. Toggle passes `forDay` to `_vidStepToggleDone`. `_hasTBToday` checks blocks on the instance's specific day.
-  - **Weekly chips**: check/delete pass `forDay=t.due_date` → only affect that day's blocks. Drag uses `vidstep::vid::step::sourceDay` — drop moves only source day's blocks.
+  - **Today list** (`tRowVidStepVirt`): Each instance scoped to `_vidStepDay`. Drag uses `vidstep::vid::step::day`. Toggle passes `forDay` to `_vidStepToggleDone`. `_hasTBToday` checks blocks on `_todDs` (today's date) only — NOT `_vidStepDay`. This ensures overdue vidsteps from past days correctly show as "not on TB" if there's no block on today.
+  - **Weekly chips**: check/delete pass `forDay=t.due_date` → only affect that day's blocks. Drag uses `vidstep::vid::step::sourceDay` — drop moves source day's blocks and updates only the dragged instance in the daymap (primary if `ds===sourceDay`, else extraDay swap; doneDays carried). Dropping a calendar-only instance on the TB grid creates a block at the drop position.
   - `_vidStepToggleDone(vidId,step,checked,_fromTB,forDay)` — `forDay` scopes to that day's blocks; omit for all blocks. Pushes undo (except when `_fromTB`=true — TB handler pushes its own). Auto-creates daymap entry if blocks exist without one.
   - `_vidStepUnassign(vidId,step,forDay)` — `forDay` removes only that day's blocks and reassigns daymap to another day if needed; omit to remove everything.
 - **Vidstep done computation**: `_vidStepComputeDone(vidId,step,ds,mapEntry)` — for Build/VO/Cut, checks blocks on that specific day only (no cross-day fallback). For Th/Des, uses daymap done flag.
 - **Vidstep default durations**: Build/VO/Cut → 60 min, Th/Des → 30 min (unless manually changed).
 - **Vidstep cross-view sync**: toggling a stage anywhere (videos page dot via `cycleVidStep`, overview stage square, overview checkbox, video edit modal) must sync all three: `v[step]`, `_vidStepDayMap[key].done`, and timeblock block `_done`. Sync code in `cycleVidStep`, `_vidOvToggleStep`, stage square click handler, and modal save path.
-- **Vidstep copy/paste**: Cmd+C copies vidstep tasks (`_isVidStep` flag). Cmd+V on Build/VO/Cut calls `_vidStepAddBlock` (duplicate, not move). Th/Des steps can't be pasted (toast warning). Target day from `_pasteColDates` (weekly column click).
+- **Vidstep uncheck preserves past blocks (Build/VO/Cut)**: When a stage is unchecked (set to `not_started`), only blocks on today or future days (`bl.ds >= todayDs`) are unchecked. Past completed blocks stay done — they represent work already finished. Checking a stage done still marks ALL blocks done. Undo restores exact previous per-block states. Applies to: `_vidOvToggleStep`, stage square click handler, and their undo paths.
+- **Vidstep copy/paste**: Cmd+C copies vidstep tasks (`_isVidStep` flag, regex `^vidstep-(\d+)-(step_\w+)` handles both ID formats). Cmd+V on Build/VO/Cut calls `_vidStepAssignExtraDay` — adds day to calendar WITHOUT creating a TB block. Th/Des steps can't be pasted (toast warning). Target day from `_pasteColDates` (weekly column click).
 - **Vidstep DB persistence**: `_vidStepVid` stored in `vid_id` column, `_vidStepName` in `rec_id` column. On load, blocks with `vid_id` + `rec_id` starting with `step_` are recognized as vidstep blocks. `_vidStepReconstructBlocks()` tags legacy blocks (title matching) and ensures daymap entries exist. Must run before sort and before `_hasTBToday`.
 - **Vidstep timeblock moves**: use `sbUpdateBlock(id, {day_date: ds})` — NOT `{ds}`. The DB column is `day_date`.
 - **Vidstep sorting**: `sortTasksForDay` → `tbSm()` has explicit `_type==='vidstep'` check before the `_vidId` check (vidstep blocks use `_vidStepVid`, not `_vidId`).

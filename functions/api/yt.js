@@ -29,10 +29,12 @@ async function _rssFallback(channelId) {
 }
 
 export async function onRequest(context) {
+  const _allowedOrigins = ['https://sams-dashboard.pages.dev', 'https://dev.sams-dashboard.pages.dev'];
+  const _origin = context.request.headers.get('Origin');
   const corsHeaders = {
-    'Access-Control-Allow-Origin': context.request.headers.get('Origin') || 'https://dev.sams-dashboard.pages.dev',
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, X-YT-Auth',
+    'Access-Control-Allow-Origin': _allowedOrigins.includes(_origin) ? _origin : 'https://sams-dashboard.pages.dev',
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
   };
   if (context.request.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -140,18 +142,9 @@ export async function onRequest(context) {
     } catch (e) { await KV.put('yta-cooldown', '1', { expirationTtl: 300 }); const lg = await KV.get('yta-good', 'json'); return lg ? new Response(JSON.stringify(lg), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }) : new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }); }
   }
 
-  // POST: seed KV cache with provided data
-  if (context.request.method === 'POST') {
-    const KV = context.env.YT_CACHE;
-    if (!KV) return new Response('no KV', { status: 500, headers: corsHeaders });
-    const body = await context.request.json();
-    if (body && body.channelStats) {
-      await KV.put('yt-fresh', JSON.stringify(body), { expirationTtl: 43200 });
-      await KV.put('yt-good', JSON.stringify(body));
-      await KV.delete('yt-cooldown');
-      return new Response(JSON.stringify({ ok: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-    }
-    return new Response('invalid', { status: 400, headers: corsHeaders });
+  // Reject any non-GET method (POST cache-seed endpoint removed — was unauthenticated)
+  if (context.request.method !== 'GET') {
+    return new Response('Method not allowed', { status: 405, headers: corsHeaders });
   }
 
   const API_KEY = context.env.YOUTUBE_API_KEY;

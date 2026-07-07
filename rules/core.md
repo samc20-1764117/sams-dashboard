@@ -6,16 +6,25 @@ Global scope — no modules/bundler.
 - `overview.js`: `renderAll,renderOv,renderToday,renderWkSummary,renderWkCal,renderRecOv,renderRecMoCal,renderShopOv,renderUnassigned,renderKanban,renderDayTB,tRow`, drag-drop, WR rule CRUD, scope picker, `writeWrOverride,unSkipWrRule,unSkipWRec,openWrSkipped`, daily habits: `renderDailyHabits,togDailyHabit,openAddDailyHabit,closeDailyHabitPopup,submitDailyHabit`, pup skills highlight: `renderPupSkillsHighlight,togPupSkillTrained`
 - `features.js`: task CRUD, secondary pages, `showPage,closeMod,init(),selTask,clearSelection,showCtx,mkMCell,renderMoCal`, quick notes, `getOvRecurring,rolloverOverdue,updateOvBanner,skipWRec`
 - `pup-skills.js`: all pup skills logic
+- `touch-layer.js`: opt-in iPad/touch enhancement layer for the DESKTOP app. Loads ONLY when the URL has `?ipadtest=1` (loader at bottom of index.html); acts only on coarse-pointer devices; every block try/catch-wrapped so it can never break the page. REUSES desktop drag (`dStart`/`dropOnTB` + global `dragId`) so Supabase sync is identical — no separate data path. Phase 1 = long-press a task → drag onto `#tbGrid`. Never alter desktop code paths for touch; always reuse them.
 
 **Where is X?** Overview/today/calendar/kanban/timeblocks/recurring-monthly → `overview.js`. Secondary pages + CRUD + ctx menus + regular monthly cal → `features.js`. Utils/Supabase/auth/undo → `core.js`.
 
 ## Auth
 Supabase Auth (email+password), RLS on all tables. `init()`→`checkAuth()`→`doLogin()`→`syncAll()`. All `sbReq*` use JWT + anon `apikey`. Token auto-refreshes hourly (1 week). `syncAll` calls `getSession()` first to prevent 401 on long sessions.
-- `#main` starts `opacity:0`; `renderAll()` sets to `1`.
-- Initial `renderAll()` deferred via `document.fonts.ready.then(()=>requestAnimationFrame(renderAll))` — fonts loaded before first paint so WR column maxHeight stable on hard refresh.
+- **Anti-glitch preload**: `body.preload` class hides `.main`, `.sidebar`, `.ov-topbar` via `visibility:hidden` and suppresses all transitions/animations. Removed only after `document.fonts.ready` resolves (via `_removePreloadAfterFonts` helper). This prevents font-swap layout shifts on refresh.
+- **Post-sync preload**: `syncAll` re-adds `body.preload` before `renderAll()` and removes after 2 rAFs — prevents visible size jumps when synced data differs from localStorage.
+- **Auth state changes**: `onAuthStateChange` only updates `_authToken`/`_userId` on valid sessions. NEVER shows login overlay — network blips (DNS failures) cause false `SIGNED_OUT` events. Login gated by `checkAuth()` on page load only.
 - `_firstSyncDone=true` before initial `renderAll()` from localStorage so overdue banner shows instantly.
 - `#main` left transition suppressed during `init()` (prevents shopping list squish animation).
 - `#backToOv` button lives OUTSIDE `#main` (sibling, between sidebar and `#main` in DOM). Must stay outside `#main` — `#main`'s `position:fixed` + `overflow:auto` traps z-index of children. `position:fixed;z-index:999` on backToOv.
+
+## Security & External Assets
+- **NO public CDNs.** This user's devices/network block CDN domains (jsdelivr, Google Fonts), so critical assets are self-hosted same-origin: `supabase.min.js` (supabase-js@2.110.0, loaded in `index.html` + `mobile.html`) and DM Sans under `/fonts/` (`fonts/dmsans.css` + woff2). Symptom of a re-introduced CDN: `supabase is not defined` on login, or text falling back to a default font ("messed up"). Never re-point these at a CDN — availability is top priority.
+- **RLS is enforced** on all Supabase tables (verified 2026-07-06: anon key alone returns `[]` on read, `401` on write). The anon key hardcoded in `core.js` is public-by-design — safe ONLY because RLS requires an authenticated JWT. Never disable RLS; never move queries to trust the anon key.
+- **`_headers`** sets a global CSP + `X-Frame-Options:DENY`, HSTS, `nosniff`, Referrer-Policy, Permissions-Policy. CSP keeps `'unsafe-inline'` for `script-src`/`style-src` (app relies on inline `onclick`/`onsubmit`/styles — removing it breaks everything); `connect-src` must include `*.supabase.co`; `font-src`/`style-src`/`script-src` all include `'self'` for the vendored assets.
+- **`functions/api/yt.js`**: GET-only (the unauthenticated POST cache-seed endpoint was removed 2026-07-02); CORS locked to the two known origins, not origin-reflected.
+- **XSS**: user-entered strings (task names, categories, notes) interpolated into `innerHTML` MUST go through `escHtml()`. Fixed spots: `tRow` name/category (`overview.js`), unassigned menu (`features.js`).
 
 ## Data & Persistence
 - POST must include ALL required fields. Missing NOT NULL → silent 400.
@@ -27,7 +36,11 @@ Supabase Auth (email+password), RLS on all tables. `init()`→`checkAuth()`→`d
 - **Category pickers**: `KCATS` (kanban): includes Long term. `_CAT_OPT_LIST` (quick-add): excludes Long term. `#tCatDrop`+`#bCat` in index.html: hardcoded, Weekly Goals present, Long term removed.
 - `toggleTask/togRec/togShop`: call `sbUpdateBlock(b.id,{done})` for linked TB blocks.
 - `drawTBBlock` derives `b._done` from linked item at render time. `linkedRec` checks both `st.recurring` and `st.wrRules`. `recCat='weekly_reset'` unless `is_weekly_reset===false`.
-- `syncAll` preserves local-only blocks during sync via `localOnly` filter.
+- **Block sync (preserve only pending)**: `syncAll` keeps a local block missing from the DB ONLY if its id is in `pendingBlockIds` (added in `sbSaveBlock`, removed in `sbDeleteBlock` + when confirmed in DB). A block missing from the DB that ISN'T pending was deleted on another device → drop it (don't resurrect). Pending blocks still absent from the DB are re-pushed via `sbSaveBlock` each sync (heals a silently-failed save). Prevents phantom blocks + phantom checked-off step tasks on the other device.
+- **Sync race protection**: `_lastSaveTs` tracks last `save()` call. During `syncAll` task merge, if `save()` was called within 60s, local task fields (`due_date`, `done`, `important`, `category`) win over DB values. This prevents the 30s sync cycle from overwriting in-flight PATCHes. After 60s, DB values take precedence (allowing cross-device sync).
+- **`localOverrides` + self-heal**: explicit per-task field overrides that win until DB catches up. Used by drag/drop moves, "Move overdue", inline date picker (`idpSave` MUST set the override — it didn't, causing moves to revert). `pendingLocal` blocks DB overwrites while PATCH is in flight. **Self-heal**: in the `syncAll` task merge, when an override doesn't match the DB (a silently-failed PATCH), re-push it (`sbReqSilent PATCH`) so it eventually lands instead of masking the failure forever. `toggleTask` wraps its PATCH in try/catch — on failure it keeps the override+pending so the re-push heals it. **Any write path that mutates a task locally must set `localOverrides`+`pendingLocal`, or a failed save silently reverts.**
+- **WR/recurring `_dateOverrides` merge**: during sync, local `_dateOverrides` win over DB — EXCEPT a DB value of `'__skip__'` always wins (`if(dbOvs[k]==='__skip__')return;` before copying local). Lets a skip made on another device sync in; without it, a stale local copy resurrects a skipped task every sync. Day-moves (positive pins) still preserve normally.
+  - **Durably removing a pin → set `'__skip__'`, NEVER plain `delete`.** A deleted pin is resurrected on the next sync of ANY tab/device that still holds it locally (local-wins merge above re-adds it, even back to the DB). Setting `'__skip__'` makes the DB authoritative so the removal sticks everywhere. This is why `_wrClearPastOrphanPins` (move-all-future orphan cleanup) and direct data fixes use `'__skip__'`. Consequence for debugging: a "fixed" pin reappearing across refreshes = a stale session re-merging, not a failed write — verify against a fresh DB GET, and prefer the live app (drive Chrome) over editing localStorage.
 - `renderDayTB` skips if `window._tbEditing===true`. `renderAll()` does NOT call `renderDayTB()`. Ops changing TB state must also call `if(document.getElementById('tbGrid'))renderDayTB()` — including undo closures.
 - `delTask`: removes linked TB blocks by `taskId` AND title match.
 - `rolloverOverdue()`: stores `prevDate` before rollover. Undo restores original date + patches DB.
@@ -67,7 +80,7 @@ Supabase Auth (email+password), RLS on all tables. `init()`→`checkAuth()`→`d
 ## Keyboard Shortcuts (global, `core.js` keydown handler)
 - `Cmd/Ctrl+Z`: undo (page-aware: pups/recipes/birthdays use their own stacks).
 - `o`: `showPage('overview')` — only when no input/textarea/select focused and no modal open.
-- `v`: videos page. Press again to return to overview. `vv` on overview opens video overlay panel.
+- `v`: opens video overlay popup (navigates to overview first if needed). Press again to close. `vv` (double-press) opens videos page (toggles back to overview if already on videos page).
 - `p`: pups page. Press again to return to overview.
 - `f`: finance page. Press again to return to overview.
 - `m`: toggle month view (`mModal`) on overview. Press again or Enter to close.
@@ -87,9 +100,13 @@ Supabase Auth (email+password), RLS on all tables. `init()`→`checkAuth()`→`d
 - Full task type table with all selection IDs and drag IDs: see `rules/tasks-ui.md` → "Task Types on Overview".
 - Items can have different selection IDs depending on where they appear. Weekly calendar chips use `wrrule-virt-{id}`, WR panel uses `wrrule-{id}`. Drag/drop handlers must check BOTH prefixes when testing `selectedTasks.has()`. Use pattern: `selectedTasks.has('wrrule-'+id)||selectedTasks.has('wrrule-virt-'+id)`.
 - Multi-select drag: `_moveOtherSelected(ds, excludeSid, undos, excludePrefixes?)` handles all cross-type multi-select. Every drag handler calls it for types it doesn't handle inline.
+- **Selection persists across week navigation**: selection IDs are week-independent (`wrrule-virt-{id}`, `rec-virt-{id}`, `wrec-{id}` carry no wk_key), and week nav never clears `selectedTasks` — so a selected weekly-reset/recurring task stays highlighted in EVERY week it appears (select "Couch", arrow forward, it shows selected wherever present). TWO things must hold:
+  1. **Re-apply highlight after nav**: nav functions (`_goToWeek`, `shiftDay` cross-week, `goToday`) call `applySelHighlight()` **synchronously** at the end (week renders are synchronous, rows already exist). Do NOT use `requestAnimationFrame` — rAF is frame-throttled (won't fire in a backgrounded tab, races re-render), silently leaving the highlight unapplied.
+  2. **Don't clear selection on the nav click**: the global mousedown "click-outside-a-task clears selection" handler (features.js) must EXCLUDE every week/day nav control: `[onclick*="shiftWk"],[onclick*="shiftWrRec"],[onclick*="shiftDay"],[onclick*="goThisWk"],[onclick*="goToday"]`. The weekly-reset panel has its OWN arrows (`shiftWrRec`, distinct from the topbar `shiftWk`) — both route through `_goToWeek` but mousedown fires before the click→nav, so a missing exclusion clears the selection first. Verified live 2026-06-29.
 
 ## Undo / Redo
 - `pushUndo(fn,msg)`: snapshots state AFTER action (called post-mutation). `doUndo()`: pops, captures current snap for redo, calls fn. `doRedo()` (async): restores snap, `await _syncRedoDiff(before,after)`, pushes undo entry whose fn calls both `_stateRestore(beforeRedo)` AND `_syncRedoDiff(snap,beforeRedo)` to keep DB in sync on undo-after-redo.
+- **Undo flash**: `doUndo`/`doRedo` flash overview rows whose HTML changed (`_rowSnapMap()` before, `_flashChangedRows()` after → `.undo-flash` class, 900ms). Diff strips transient classes (`undo-flash|just-done|chk-pop`) so repeat undos don't over-flash.
 - `_stateSnap` captures: `tasks,recurring,shopping,travel,birthdays,blocks,wrRules,wrOverrides,autoTBOverrides,pupSessions,pup_skills`.
 - `_stateRestore` restores all above + calls `renderAll(),renderPupSkillsHighlight(),renderDayTB(),renderWkCal(),renderRecOv(),renderWeeklyPage()`.
 - `_syncRedoDiff` (returns `Promise.all`): diffs tasks, recurring `_dateOverrides`, wrRules `_dateOverrides`, wrOverrides, shopping `due_date`, travel dates, blocks, autoTBOverrides, pupSessions (done/POST/DELETE), pup_skills (field PATCH).

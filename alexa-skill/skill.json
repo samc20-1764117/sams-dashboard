@@ -3,7 +3,7 @@
     "apis": {
       "custom": {
         "endpoint": {
-          "uri": "https://sams-dashboard.pages.dev/api/alexa"
+          "uri": "https://dev.sams-dashboard.pages.dev/api/alexa"
         }
       }
     },

@@ -1,4 +1,6 @@
 // mobile-overview.js
+// If old cached HTML is loaded (no inline _BUILD), redirect to cache-busted URL
+if(!window._BUILD&&!sessionStorage._mBust){sessionStorage._mBust='1';location.href='/mobile.html?_='+Date.now();}
 window._mobileMode = true;
 
 // ── Login overlay ─────────────────────────────────────────────────────────────
@@ -157,7 +159,7 @@ function togRecVirt(recId, done, wkKey) {
   else delete r._doneByWk[wkKey];
   r._done = false;
   if (st.blocks) st.blocks.filter(b => String(b.recId) === String(recId)).forEach(b => b._done = done);
-  save(); mRenderToday();
+  save(); renderAll();  // renderAll (not just Today) so the Week tab refreshes live too
   sbReq('PATCH', 'wr_recurring_rules', {done_by_week: r._doneByWk}, `?id=eq.${recId}`);
 }
 
@@ -261,6 +263,7 @@ function _mTaskTypePri(t) {
   if (t._type === 'vidstep') return 5.6;
   if (t._type === 'shop') return 7;
   if (t._type === 'pup') return 8;
+  if (t._isWrec || t._isWrRule) return 9;
   if (t._virtual) return 6;
   return 5;
 }
@@ -286,7 +289,7 @@ function mSortToday(tasks) {
     if (aT && !bT) return -1; if (!aT && bT) return 1;
     const aO = isOv(a.due_date) && !a.done, bO = isOv(b.due_date) && !b.done;
     if (aO && !bO) return -1; if (!aO && bO) return 1;
-    const aI = a.important && !a.done, bI = b.important && !b.done;
+    const aI = (a.important || a._type === 'fin-cancel') && !a.done, bI = (b.important || b._type === 'fin-cancel') && !b.done;
     if (aI && !bI) return -1; if (!aI && bI) return 1;
     const aSm = tbSm(a), bSm = tbSm(b);
     if (aSm !== null && bSm === null) return -1;
@@ -831,7 +834,7 @@ function mShowTab(tab) {
   main.scrollTop = 0;
 
   if (tab === 'tb')   { _mTBOffset = 0; mRenderTB(); _mScrollNow(); }
-  else if (tab === 'week') { mRenderWeek(); mInitWeekScroll(); }
+  else if (tab === 'week') { mRenderWeek(true); mInitWeekScroll(); }
   else if (tab === 'shop') { mRenderShop(); }
   else if (tab === 'groc') { mRenderGroc(); }
   else { _mTodayOffset = 0; _mSetDate(); }
@@ -1514,7 +1517,9 @@ function _mWkRenderWeekHtml(weekOff) {
     const isPast = !isToday && ds < today;
     const dateStr = d.toLocaleDateString('en-US', {month: 'short', day: 'numeric'});
     const tasks = mGetDayTasks(ds, weekOff);
-    const doneC = tasks.filter(t => t.done).length;
+    // Birthdays & trips have no checkbox; once their day has passed they're effectively complete,
+    // so count them as done on past days (otherwise the per-day done/total ratio reads low).
+    const doneC = tasks.filter(t => t.done || (isPast && (t._type === 'travel' || t._type === 'birthday'))).length;
 
     html += `<div class="m-wk-day${isToday ? ' is-today' : ''}${isPast ? ' is-past' : ''}" data-ds="${ds}">
       <div class="m-wk-hd">
@@ -1534,35 +1539,63 @@ function _mWkRenderWeekHtml(weekOff) {
   return html;
 }
 
-function mRenderWeek() {
+// The element that actually scrolls the week view. The layout doesn't always bound
+// #mWeekPage, so the whole document scrolls instead — detect which one is real.
+function _mWkScroller() {
+  const page = document.getElementById('mWeekPage');
+  if (page && page.scrollHeight - page.clientHeight > 5) return page;
+  return document.scrollingElement || document.documentElement;
+}
+
+// Scroll the week list so today sits at the top. Works whether #mWeekPage scrolls
+// or the document scrolls, and retries until the layout has settled (otherwise the
+// position gets clamped to 0 = last week).
+function _mWkScrollToToday(attempt = 0) {
+  const list = document.getElementById('mWeekList');
+  if (!list) return;
+  const todayEl = list.querySelector('.m-wk-day.is-today');
+  if (!todayEl) return;
+  const sc = _mWkScroller();
+  // Not scrollable yet (height not resolved) — wait and retry
+  if (sc.scrollHeight - sc.clientHeight < 5 && attempt < 25) {
+    return setTimeout(() => _mWkScrollToToday(attempt + 1), 40);
+  }
+  const isDoc = sc === document.scrollingElement || sc === document.documentElement;
+  const scTop = isDoc ? 0 : sc.getBoundingClientRect().top;
+  // Offset for a sticky/fixed app header that overlaps the top (only when the doc scrolls)
+  const hdr = document.getElementById('mHeader');
+  const headerH = (isDoc && hdr && hdr.offsetParent !== null && getComputedStyle(hdr).position !== 'static') ? hdr.offsetHeight : 0;
+  const target = Math.max(0, sc.scrollTop + (todayEl.getBoundingClientRect().top - scTop - headerH));
+  _mWkScrollLock = true;
+  sc.scrollTop = target;
+  setTimeout(() => { _mWkScrollLock = false; }, 120);
+  // If it got clamped / didn't take, try again
+  if (Math.abs(sc.scrollTop - target) > 4 && attempt < 25) {
+    setTimeout(() => _mWkScrollToToday(attempt + 1), 40);
+  }
+}
+
+function mRenderWeek(reset = false) {
   const list = document.getElementById('mWeekList');
   if (!list) return;
   const dateLbl = document.getElementById('mDateLbl');
   if (dateLbl) dateLbl.textContent = 'Week';
+  const prevScroll = _mWkScroller().scrollTop;
 
-  // Render last week + this week + next week
-  _mWkRenderedLo = -1;
-  _mWkRenderedHi = 1;
+  // Only reset to the default range on explicit open; background re-renders (sync)
+  // keep the user's loaded range and scroll position instead of yanking to today.
+  if (reset) { _mWkRenderedLo = -1; _mWkRenderedHi = 1; }
   let html = '';
   for (let w = _mWkRenderedLo; w <= _mWkRenderedHi; w++) {
     html += _mWkRenderWeekHtml(w);
   }
   list.innerHTML = html;
 
-  // Scroll to today
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      const page = document.getElementById('mWeekPage');
-      if (!page) return;
-      const todayEl = list.querySelector('.m-wk-day.is-today');
-      if (todayEl) {
-        // Calculate offset relative to scroll container
-        let offset = 0, el = todayEl;
-        while (el && el !== page) { offset += el.offsetTop; el = el.offsetParent; }
-        page.scrollTop = offset;
-      }
-    });
-  });
+  if (reset) {
+    requestAnimationFrame(() => requestAnimationFrame(() => _mWkScrollToToday()));
+  } else {
+    _mWkScroller().scrollTop = prevScroll;
+  }
 }
 
 function _mWkLoadMore(direction) {
@@ -1574,11 +1607,11 @@ function _mWkLoadMore(direction) {
   if (direction === 'up') {
     _mWkRenderedLo--;
     const html = _mWkRenderWeekHtml(_mWkRenderedLo);
-    const page = document.getElementById('mWeekPage');
+    const sc = _mWkScroller();
     const prevHeight = list.scrollHeight;
     list.insertAdjacentHTML('afterbegin', html);
-    // Maintain scroll position
-    if (page) page.scrollTop += list.scrollHeight - prevHeight;
+    // Maintain scroll position so the view doesn't jump when prepending a week
+    sc.scrollTop += list.scrollHeight - prevHeight;
   } else {
     _mWkRenderedHi++;
     list.insertAdjacentHTML('beforeend', _mWkRenderWeekHtml(_mWkRenderedHi));
@@ -1587,22 +1620,19 @@ function _mWkLoadMore(direction) {
 }
 
 function mInitWeekScroll() {
+  if (window._weekScrollInited) return;
+  window._weekScrollInited = true;
+  const onScroll = () => {
+    if (_mWkScrollLock || _mCurTab !== 'week') return;
+    const sc = _mWkScroller();
+    const threshold = 300;
+    if (sc.scrollHeight - sc.scrollTop - sc.clientHeight < threshold) _mWkLoadMore('down');
+    if (sc.scrollTop < threshold) _mWkLoadMore('up');
+  };
+  // Listen on both: #mWeekPage when it scrolls, and window when the document scrolls
   const page = document.getElementById('mWeekPage');
-  if (!page || page._weekScrollInited) return;
-  page._weekScrollInited = true;
-
-  page.addEventListener('scroll', () => {
-    if (_mWkScrollLock) return;
-    const threshold = 200;
-    // Near bottom — load next week
-    if (page.scrollHeight - page.scrollTop - page.clientHeight < threshold) {
-      _mWkLoadMore('down');
-    }
-    // Near top — load previous week
-    if (page.scrollTop < threshold) {
-      _mWkLoadMore('up');
-    }
-  }, {passive: true});
+  if (page) page.addEventListener('scroll', onScroll, {passive: true});
+  window.addEventListener('scroll', onScroll, {passive: true});
 }
 
 // ── Week: add task for specific day ──────────────────────────────────────────
@@ -1642,7 +1672,8 @@ async function mSaveWkTask() {
   if (dayEl) {
     const weekOff = _mWkGetWeekOff(ds);
     const tasks = mGetDayTasks(ds, weekOff);
-    const doneC = tasks.filter(t => t.done).length;
+    const _isPastDay = ds < d2s(getDayDate(0));
+    const doneC = tasks.filter(t => t.done || (_isPastDay && (t._type === 'travel' || t._type === 'birthday'))).length;
     const dateObj = new Date(ds + 'T12:00:00');
     const dayIdx = (dateObj.getDay() + 6) % 7;
     dayEl.innerHTML = `<div class="m-wk-hd">
@@ -1817,12 +1848,19 @@ async function mDoLogin() {
 }
 async function doLogin_m(email, pass) {
   const err = document.getElementById('mLoginErr');
-  if (!_sbClient) _initSbClient();
-  const {data, error} = await _sbClient.auth.signInWithPassword({email, password: pass});
-  if (error) { err.textContent = error.message; err.style.display = 'block'; return; }
-  _authToken = data.session.access_token;
-  hideLoginOverlay();
-  await syncAll();
+  const showErr = m => { if (err) { err.textContent = m; err.style.display = 'block'; } };
+  try {
+    if (!_sbClient) _initSbClient();
+    if (!_sbClient || !window.supabase) { showErr('Login library not loaded — check connection, then close & reopen the app.'); return; }
+    const {data, error} = await _sbClient.auth.signInWithPassword({email, password: pass});
+    if (error) { showErr(error.message); return; }
+    if (!data || !data.session) { showErr('No session returned. Try again.'); return; }
+    _authToken = data.session.access_token;
+    hideLoginOverlay();
+    await syncAll();
+  } catch (e) {
+    showErr('Login error: ' + (e && e.message ? e.message : String(e)));
+  }
 }
 
 // ── Date label ────────────────────────────────────────────────────────────────
@@ -2403,7 +2441,23 @@ async function mInit() {
   hideLoginOverlay();
   await syncAll();
   mShowTab('today');
-  setInterval(() => { if (cfg.url && cfg.key) syncAll(true); }, 30000);
+  setInterval(() => { if (cfg.url && cfg.key && !document.hidden) syncAll(true); }, 30000);
+
+  // iOS suspends setInterval while the PWA is backgrounded — so reopening the app
+  // shows stale data (tasks completed on desktop still appear undone → false overdue)
+  // until the timer thaws. Force an immediate re-sync whenever the app returns to foreground.
+  let _mLastFgSync = 0;
+  const _mForegroundSync = () => {
+    if (!cfg.url || !cfg.key) return;
+    if (document.visibilityState !== 'visible') return;
+    const now = Date.now();
+    if (now - _mLastFgSync < 3000) return; // dedup visibilitychange+pageshow double-fire
+    _mLastFgSync = now;
+    syncAll(true).catch(() => {});
+  };
+  document.addEventListener('visibilitychange', _mForegroundSync);
+  window.addEventListener('pageshow', _mForegroundSync);
+  window.addEventListener('focus', _mForegroundSync);
 }
 
 document.addEventListener('DOMContentLoaded', mInit);

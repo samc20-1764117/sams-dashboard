@@ -21,8 +21,8 @@
 - **Skip filtering**: `wrRulesToday/wrRulesForDay/wrRulesForDayDone` filter skip overrides. `wrecToday/wrecForDay` filter `_dateOverrides[wkKey]!=='__skip__'`.
 
 ## Skipped-This-Week Popup
-- **`#wrSkippedBtn`**: shows `↩ N`. Hidden when N=0. Updated by `renderRecOv()`.
-- **`#wrSkippedPicker`**: lists skipped WR rules + WR recurring for `wrRecOff` week. Click → un-skip.
+- **`#wrSkippedBtn`**: shows `↩ N`. Hidden when N=0. Count set in `renderRecOv()`. Every skip path (`skipWRec`, `skipRecVirtThisWk`, `writeWrOverride` skip) MUST call `renderRecOv()` in its re-render so the count + popup update instantly (skipRecVirtThisWk previously rendered weekly/today/cal but not recOv, so the button only updated after a refresh).
+- **`#wrSkippedPicker`**: lists skipped WR rules + `st.recurring` genuinely skipped this week via `_recSkippedThisWk(wkKey,off)`. A `_dateOverrides[wkKey]==='__skip__'` counts ONLY if the task actually occurs that week — verified by temporarily removing the skip and checking `getRecurringWeekTasks(off)` returns it. This excludes off-cycle `__skip__` artifacts (e.g. a quarterly task between occurrences, or leftover from a "move all future" shift). Weekly-reset (`is_weekly_reset`) tasks are override-driven so their `__skip__` always counts. `off` must satisfy `getWkKey(off)===wkKey` (callers pass `wrRecOff`). Forward "move this occurrence" no longer writes `__skip__` (carry pattern), so it never appears here. Click → un-skip (`unSkipWRec` deletes the `__skip__` key → reverts to default day).
 - **`unSkipWrRule(ruleId,wkKey)`**: removes skip override + DELETE DB. Clears `_dateOverrides[wkKey]`. Undo restores both.
 - **`unSkipWRec(rid,wkKey)`**: deletes `_dateOverrides[wkKey]` (`__skip__`). PATCHes DB. Undoable.
 - Close: outside click or Escape.
@@ -31,8 +31,9 @@
 See `rules/tasks-ui.md` → "Task Types on Overview" for the full selection/drag ID table.
 
 **WR-specific drag/drop:**
-- Weekly cal drag: `wrec::{recId}`, `rec::{recId}::{dueDate}`, `wrrule::{ruleId}`, `shop::{shopId}`.
-- recMoModal non-WR drop→scope picker: "This week"→`_dateOverrides[wkKey]=ds`; "All future"→`appears_on_date`.
+- Weekly cal drag: `wrec::{recId}::{wkKey}`, `rec::{recId}::{dueDate}::{wkKey}`, `wrrule::{ruleId}`, `shop::{shopId}`.
+- **wkKey in drag IDs**: `wrec::` and `rec::` carry the source `_wkKey` so drop handlers modify the correct week's `_dateOverrides`. Critical when same task has instances from multiple weeks (e.g. HEB moved cross-week). All drop handlers (within-week, cross-week edge, today-list, TB grid, monthly cal) extract `srcWkKey` and fall back to `getWkKey(wkOff)` if empty.
+- recMoModal non-WR drop→scope picker (supports **cross-week**, no same-week guard). dragId `recmo::{recId}::{ds}::{srcWkKey}` (srcWkKey = chip's `t._wkKey`, carried via the dayMap item). "⊘ This time only"→`_dateOverrides[srcWkKey]=ds` (pins the source week's occurrence onto the dropped date, any week). "↻ All future"→shift `starting_date` by the src→target week delta AND set `appears_on_date` to the dropped weekday (or day-of-month if monthly). Moved-dot indicator keys off `t._wkKey` (schedule week), not `dsToWkKey(due)`, so it shows after a cross-week move.
 - recMoModal WR drop→scope picker: "↻ All future"→shift `starting_date`; "⊞ This week"→`writeWrOverride({override_type:'move'})`.
 
 ## WR Recurring Rules System
@@ -45,7 +46,7 @@ See `rules/tasks-ui.md` → "Task Types on Overview" for the full selection/drag
 
 **Schedule logic** (`isWRRuleDueThisWeek`): weekly/other=always; biweekly=week diff mod 2===0; monthly=day-of-month in Mon–Sun; quarterly/biannual/annual=week diff mod 13/26/52===0.
 
-**`writeWrOverride(ruleId,wkKey,payload,{onDone,undoLabel})`**: PATCH if override exists, POST if not. On `skip`: removes linked TB blocks (`b.ruleId===ruleId` OR `b.recId===ruleId`), restores on undo.
+**`writeWrOverride(ruleId,wkKey,payload,{onDone,undoLabel})`**: PATCH if override exists, POST if not. On `skip`: removes linked TB blocks (`b.ruleId===ruleId` OR `b.recId===ruleId`, OR — because the `rule_id` column migration is pending and DB-loaded WR-rule blocks have null ruleId/recId — an unlinked block on the rule's pinned day). That last "unlinked on pinned day" clause MUST exclude `_vidStepVid`/`_vidId`/`_pupSessId`/`_finCancelSubId` blocks, or skipping a WR rule wrongly deletes a video-stage/video/pup block that merely sits on the same day. Same guard applies in `unscheduleWrRule`. Restores on undo.
 
 **`unscheduleWrRule(rid,wkKey)`**: removes `_dateOverrides[wkKey]` + linked TB blocks. Undo restores.
 
@@ -53,13 +54,13 @@ See `rules/tasks-ui.md` → "Task Types on Overview" for the full selection/drag
 
 **WR rule drag-to-day**: must PATCH `wr_recurring_rules` with updated `date_overrides` after `_dateOverrides` change. Undo must also PATCH to restore.
 
-**WR cross-week move**: when moving WR task to different week (calendar drop, edge drop), must delete `_dateOverrides[currentWkKey]` AND set `_dateOverrides[newWkKey]=ds`. Use `dsToWkKey(ds)` for target week, `getWkKey(wkOff)` for current. Undo restores both keys.
+**WR cross-week move**: when moving WR task to different week (calendar drop, edge drop), must delete `_dateOverrides[srcWkKey]` AND set `_dateOverrides[newWkKey]=ds`. Use `dsToWkKey(ds)` for target week, `srcWkKey` from dragId (fallback `getWkKey(wkOff)`) for source. Undo restores both keys.
 
 **Pup-related checkbox**: `makePawEl` renders bone SVG icon (14×14px, `margin-left:-2px`) instead of regular checkbox. Done state: grey `rgba(200,195,210,.35)` fill/stroke (matches grey checkbox style). Undone: white fill, muted stroke.
 
 **Unassigned indicator**: WR rules not yet assigned to a day (`!_dateOverrides[wkKey]`) show `›` via `.wr-unassigned` class, matching today list's `tb-arrow` style.
 
-**`getVisibleBlocks(ds)`**: WR rule block visible only if `r._dateOverrides[dsToWkKey(ds)]===ds`.
+**`getVisibleBlocks(ds)`**: WR rule/rec block visible if `_dateOverrides[dsToWkKey(ds)]===ds` OR any other week's override points to `ds`. This supports cross-week instances (e.g. HEB from last week appearing on today).
 
 **Undo for task-move-to-day**: snapshot `savedTBs` BEFORE `removeTBBlocksForDate`. Undo restores blocks in state + DB.
 
@@ -79,6 +80,7 @@ See `rules/tasks-ui.md` → "Task Types on Overview" for the full selection/drag
 **WR Edit modal** (`#wrEditModal`): `openWrEditModal(rid,wkKey,defaultScope)` — "This week only" vs "All future".
 
 **Unified Add modal** (`#wrRuleAddModal`): `openWrRuleAddModal(cadence?,type='wr')`. WR vs Scheduled toggle. Starting date field (`#wrAddAnchorField`) always visible when type=`sch` regardless of cadence (including weekly). `_wrReadCadenceFields` returns `starting_date` for `sch` type on all cadences.
+- **New weekly/other tasks start THIS week** (`saveWrRuleAdd`): weekly/other have no parity anchor, so their `starting_date` is snapped to the Monday of the chosen (or current) week. Without this, `isWRRuleDueThisWeek` returns `true` for weekly/other with no lower bound, so a brand-new task renders in every PAST week as a phantom unfinished item. `isWRRuleDueThisWeek` now bounds weekly/other by `starting_date`'s week (legacy rules with no `starting_date` stay unbounded = every week, preserving old behavior).
 
 **Context menu** (`#wrRuleCtxMenu`): populated dynamically by `showWrRuleCtx` based on cadence. SVG outline icons (no emoji). Header shows task name + X close button (X = delete rule permanently, undoable). `wrCtxDeleteRule` DELETEs from DB; `pushUndo` re-POSTs to restore.
 - **Weekly/Other** (fires every week): Skip this week · divider · Edit this week · Edit all future. No move prev/next (meaningless for weekly).
@@ -86,13 +88,22 @@ See `rules/tasks-ui.md` → "Task Types on Overview" for the full selection/drag
 
 **Move prev/next week (this time)** (`_wrShiftAnchor`): one-time override only. Skips current week, pins to adjacent week via `_dateOverrides`. Does NOT shift `starting_date`. Conflict guard: if target week already has this task (naturally due, moved-in override, or non-skip `_dateOverrides`), shows toast "Already scheduled that week" and blocks.
 
-**Shift schedule (all future)** (`wrCtxShiftSchedule`): shifts `starting_date` ±7 days so ALL future occurrences realign. Also moves current week instance to adjacent week (skip override + `_dateOverrides` pin). For WR rules, also writes move override to `wr_recurring_overrides`.
+**Shift schedule (all future)** (`wrCtxShiftSchedule`): "All future → Next/Prev". Shifts `starting_date` by `delta` days (±7) — moves the next occurrence AND all future ones a week, correct for every interval cadence (biweekly = parity flip, monthly = day-of-month, quarterly = anchor week). ALSO clears anything pinning the rule to the CURRENT week so the shift is visible: deletes `_dateOverrides[wkKey]` and removes stale `move` overrides for the rule with `wk_key===wkKey` OR `moved_to_wk_key===wkKey` (these "move-in" pins were why the task kept showing this week despite the toast). Re-renders + confirmation toast + fully undoable (restores starting_date, the pin, and re-POSTs removed move overrides).
+- **Orphan-pin cleanup** (`_wrClearPastOrphanPins`): all three "all future" handlers (`wrCtxShiftSchedule` + both recMoModal drag handlers — recurring at the cell `↻ All future`, WR at the wrCell drop) shift `starting_date` but the moved occurrence's day-pin in the SOURCE/past weeks would otherwise linger and render as overdue ("moved to this week from last, but last week still shows overdue"). Each handler now deletes the source-week pin, clears UNDONE non-skip `_dateOverrides` pins in the prior 6 weeks (done pins stay as history), AND freezes natural/unpinned undone past occurrences by writing `__skip__` for those weeks — otherwise a biweekly parity flip makes a formerly off-cycle past week suddenly "due" and it renders as stale overdue (2026-07 Journal bug). Undo in all three handlers restores removed pins AND deletes any skips the cleanup wrote. Note: an off-cycle past pin on a biweekly/monthly rule = a clear orphan (only a manual move puts it there); a past pin on a WEEKLY rule is a legit missed occurrence (every week is real) and stays overdue.
+- **KNOWN LIMITATION — shifting also moves PAST occurrences.** Because the whole series is computed from the single `starting_date` anchor, a ±7 shift flips parity for every week, including history (past occurrences move/appear/disappear). User wants only "this week + all later" to move, past frozen. A 2026-06 attempt to freeze the past (pin/`__skip__` the prior 13 weeks + make `getRecurringWeekTasks`/`isWRRuleDueThisWeek` honor those pins) was REVERTED: making the predicates honor per-week pins globally surfaced existing pins and rendered current tasks on past days. **Do NOT re-attempt by changing the global predicates.** A safe fix needs a per-rule schedule-era boundary (old anchor for weeks < shift week, new anchor after) — and MUST be reproduced + verified against the live dev app before shipping, not written blind.
 
-**Edge drag (`rec::` weekly cal + setupEdge)**: sets `_dateOverrides[curWkKey]='__skip__'` + `_dateOverrides[tgtWkKey]=same-DOW date in target week`. For interval cadences (biweekly/quarterly/biannual/annual), also shifts `starting_date` ±7 days so all future occurrences align. PATCHes with `sbReqSilent` including both `date_overrides` and `starting_date`.
+**Edge drag (`rec::` weekly cal + setupEdge) — move THIS occurrence to adjacent week:**
+- **Forward** (`dir>0`): CARRY — `_dateOverrides[curWkKey]=newDs` (newDs = first day of next week = Monday). No `__skip__`. Renders in the target week via the back-lookback (`renderWkCal`/today loop scan up to 4 prior weeks) while that week's own occurrence still shows — so a weekly task appears in BOTH weeks (e.g. HEB carried to next Monday + next-week Sunday HEB). `_normOvs` preserves forward (out-of-week, value>week) carries. Stays OUT of the skipped-this-week list (tracks `__skip__` only).
+- **Backward** (`dir<0`): `_dateOverrides[curWkKey]='__skip__'` + `_dateOverrides[getWkKey(targetWkOff)]=newDs` (in-week pin in the earlier target week) — the back-lookback can't reach a later source key from an earlier view, so carry won't render. (Backward moves therefore still appear in the skipped list.)
+- Does NOT shift `starting_date` (that's the separate "move all future" gesture). Undo snapshots whole `_dateOverrides`. PATCHes `date_overrides` only.
 
 **WR card sort**: done last→cadence (weekly=0,biweekly=2,monthly=4,quarterly=6,biannual=8,annual=10,other=12)→pup +1.
 
 **WR overview list** (`#recList`): `columns:2;column-fill:auto`. `max-height = 4 + 7 * itemHeight` (set in rAF after render, exactly 7 rows per column). Must use actual rendered height with fonts loaded.
+
+**Overdue WR rows** (`renderRecOv`, current-week view only, `wrRecOff===0`): overdue = the rule's MOST RECENT prior due week (scan back up to 8 weeks, due = `isWRRuleDueThisWeek` OR non-skip pin; stop at first due week; skip weeks before `starting_date`'s Monday) was not done/skipped/moved, and the rule isn't already in this week's items. Rendered at TOP of the Weekly Reset container as red rows: `className='ti ov-row'`, padding `3px 50px 3px 10px` (right padding reserves button space so text aligns with normal WR rows), checkbox/paw → `togWrRule(rid,checked,pwk)` (marks done in the OVERDUE week). `.wr-ov-move` "Move" button absolutely positioned (`right:6px;top:50%;translateY(-50%)`); click → `showWrScopePicker`: ⊘ Skip (`writeWrOverride` skip on `pwk`) / ⊞ Move this occurrence / ↻ Move all future. Right-click → `showWrRuleCtx(e,rid,pwk)`. Overdue WR is handled ONLY here — do NOT add these to the today list (reverted).
+
+**`wrMoveToThisWeek(ruleId,srcWkKey,allFuture)`**: re-homes an overdue WR task into the current week as UNASSIGNED. Deletes source-week day pin + source-week overrides + any current-week skip override; `allFuture` also re-anchors `starting_date=tod()` (cadence recomputes from today). If not naturally due this week and no current-week override exists, POSTs a `move` override (`wk_key=srcWkKey, moved_to_wk_key=curWkKey`). Fully undoable (restores starting_date, pin, and re-POSTs every deleted override — undo must DELETE any restored/added overrides it created).
 
 ## Non-WR Recurring Task Logic
 Non-WR (`is_weekly_reset=false`) → `st.recurring`. All CRUD to `wr_recurring_rules`.

@@ -1,8 +1,9 @@
 # Mobile Dashboard Rules
 
 > **CRITICAL**: The mobile app is a separate PWA that shares the same Supabase backend as the desktop web app.
-> - **NEVER touch**: `index.html`, `overview.js`, `features.js` (except stubs already in mobile-overview.js), `core.js`, `style.css`, `manifest.json`, or any desktop-only JS/CSS.
-> - **Mobile-only files**: `mobile.html`, `mobile.css`, `mobile-overview.js`, `mobile-manifest.json`, `_headers`
+> - **NEVER touch**: `index.html`, `overview.js`, `features.js` (except stubs already in mobile-overview.js), `style.css`, `manifest.json`, or any desktop-only JS/CSS.
+> - **core.js**: shared file, may be modified carefully when mobile needs differ (e.g. auth event handling). Changes affect desktop too — test both.
+> - **Mobile-only files**: `mobile.html`, `mobile.css`, `mobile-overview.js`, `mobile-manifest.json`, `mobile-sw.js`, `_headers`
 > - The desktop web app runs in a separate terminal — changes to shared files will break it.
 
 ---
@@ -16,18 +17,20 @@
 | `mobile.css` | All mobile styles. CSS vars match desktop (`--accent:#7c6af7`, `--bg`, `--glass`, etc.) |
 | `mobile-overview.js` | All mobile logic. Loaded after `core.js` + `features.js`. Sets `window._mobileMode = true` |
 | `mobile-manifest.json` | PWA manifest with `start_url: /mobile.html` (separate from desktop `manifest.json`) |
+| `mobile-sw.js` | Network-first service worker — always fetches from network, no caching. Registered in mobile.html |
 | `_headers` | Cloudflare Pages cache-control: `no-cache, no-store, must-revalidate` for all mobile files |
 
 ### Script load order (mobile.html)
 ```
-supabase CDN → core.js → features.js → mobile-overview.js
+service worker registration → supabase CDN → core.js → features.js → mobile-overview.js
 ```
-`core.js` and `features.js` are shared — **never modified for mobile**. All mobile-specific logic goes in `mobile-overview.js`.
+Script tags use cache-busting `?v=YYYYMMDD` query params. Update the version string when deploying changes.
+`core.js` and `features.js` are shared. All mobile-specific logic goes in `mobile-overview.js`.
 
 ### Desktop stubs (top of mobile-overview.js)
 All desktop render functions are no-ops or redirect to mobile equivalents:
 ```js
-function renderAll()   { mRenderToday(); if (_mCurTab==='tb') mRenderTB(); if (_mCurTab==='week') mRenderWeek(); if (_mCurTab==='shop') mRenderShop(); }
+function renderAll()   { mRenderToday(); if (_mCurTab==='tb') mRenderTB(); if (_mCurTab==='week') mRenderWeek(); if (_mCurTab==='shop') mRenderShop(); if (_mCurTab==='groc') mRenderGroc(); }
 function renderToday() { mRenderToday(); }
 function renderShopOv(){ if (_mCurTab==='shop') mRenderShop(); }
 function renderShopFull(){ if (_mCurTab==='shop') mRenderShop(); }
@@ -137,7 +140,7 @@ let _mFullAddCat  = 'Home';  // full add sheet (today)
 
 ### State
 ```js
-let _mCurTab = 'tb'; // 'today' | 'tb' | 'week' | 'shop'  (default: tb)
+let _mCurTab = 'tb'; // 'today' | 'tb' | 'week' | 'shop' | 'groc'  (default: tb)
 ```
 
 ### `mShowTab(tab)`
@@ -306,16 +309,20 @@ Each `.m-wk-day` has `data-ds="YYYY-MM-DD"` and contains:
 - Shopping items due on `ds` (overdue only on today)
 - Sorted: undone first, then alphabetical
 
+### Per-day done/total count
+- `doneC = tasks.filter(t => t.done || (isPast && (t._type==='travel'||t._type==='birthday')))`. Birthdays/trips have no checkbox, so past ones must count as done or the ratio reads low. `isPast = ds < today`. Fixed in BOTH `_mWkRenderWeekHtml` and the single-day re-render in `mSaveWkTask`.
+
 ### Week task rows (`mWkTaskRow(t)`)
 - Regular (non-virtual): `data-tid` + `data-tname` for drag; checkbox → `toggleTask()`
 - Recurring virtual: checkbox → `togRecVirt(recId, done, wkKey)`
 - Shopping: checkbox → `togShop(shopId, done)`
 - No edit button in week view (use Today tab for edit)
 
-### Week navigation
-- `‹` / `›` buttons call `mWeekPrev()` / `mWeekNext()` → adjust `_mWeekOffset`, re-render
-- Swipe left/right on `#mWeekPage`: `mInitWeekSwipe()` — same 60px + angle threshold as TB swipe
-- Blocked when `_mWkDrag` is active
+### Week navigation (infinite scroll)
+- Renders weeks `_mWkRenderedLo..Hi` (default −1..+1) via `_mWkRenderWeekHtml`. `mRenderWeek(reset)`: `reset=true` ONLY on tab-open (resets range + scroll-to-today); background/sync re-renders pass no arg → preserve range + scroll position (no yank).
+- **Scroll container is not always `#mWeekPage`** — the flex layout often leaves it unbounded so the **document** scrolls. `_mWkScroller()` returns `#mWeekPage` if scrollable, else `document.scrollingElement`. ALL scroll logic (scroll-to-today, preserve, load-more, the scroll listener) must use `_mWkScroller()`, not `#mWeekPage` directly.
+- `_mWkScrollToToday()`: aligns today's `.m-wk-day` to the top (offset by sticky `#mHeader` when the doc scrolls); retries up to 25× until the scroller is actually scrollable (early calls get clamped to 0 = last week).
+- `mInitWeekScroll()`: one listener on both `#mWeekPage` and `window`; near top/bottom → `_mWkLoadMore('up'/'down')`.
 
 ### Drag-to-reschedule (between days)
 - `.m-wk-row` has `-webkit-user-select:none; user-select:none` in CSS to prevent text selection on long-press
@@ -369,7 +376,34 @@ Each `.m-wk-day` has `data-ds="YYYY-MM-DD"` and contains:
 
 ---
 
-## iOS-Specific Rules
+## Tab 5: HEB Grocery (`groc`)
+
+### Layout
+```
+#mGrocPage
+  .m-shop-header.m-groc-hdr  ← header: 📖 Recipes button | "HEB Grocery" | ✕ Close
+  #mGrocList                  ← two sections: Meals (this week) + Shopping List (next week)
+```
+
+### Two-section design
+- **Meals section** (this week): `_grocWeekMonday(0)` — shows planned meals via `_mealsForWeek()`
+- **Shopping List section** (next week): `_grocWeekMonday(1)` — grocery items from `st.groceryList` where `week_of === nextWkMon`
+- Sections visually separated by `border-top: 2px solid var(--border)` on next-week header
+- Each section header shows date range via `_mGrocDateRange(mon)`
+
+### Key functions
+- `mRenderGroc()` — renders both sections into `#mGrocList`
+- `mTogGroc(id, checked)` — toggle grocery item checked state
+- `mDelGroc(id)` — delete grocery item
+- `mRemoveMealAndGroceries(recipeId)` — remove meal + associated grocery items
+- `mOpenRecipes()` / `mCloseRecipes()` — recipe picker bottom sheet (`#mRecipeSheet` + `#mRecipeBackdrop`)
+
+### Grocery list grouping
+Within shopping list section, items grouped by: Weekly Staples → recipe groups → Other → Done (collapsed)
+
+---
+
+
 
 - All `<input>` and `<textarea>` must have `font-size: 16px` minimum — otherwise iOS auto-zooms on focus
 - Use `env(safe-area-inset-bottom)` and `env(safe-area-inset-top)` for notch/home indicator padding
@@ -379,15 +413,19 @@ Each `.m-wk-day` has `data-ds="YYYY-MM-DD"` and contains:
 - When scroll-lock is needed during drag: set `element.style.overflowY = 'hidden'` rather than `passive: false` where possible
 - Add `passive: false` touchmove to `document` dynamically only during active drag, remove on touchend
 
-## PWA
+## PWA & Caching
 - `mobile-manifest.json` (not `manifest.json`) — `start_url: /mobile.html`, `display: standalone`
 - `mobile.html` links: `<link rel="manifest" href="mobile-manifest.json">`
+- `mobile-sw.js` — network-first service worker. Always fetches from network; deletes all caches on activate. Solves iOS standalone PWA aggressive caching. Registration (bottom of mobile.html) now calls `reg.update()` on load AND on `visibilitychange` (re-checks for a new worker on every foreground).
+- **Self-update mechanism** (inline `<head>` version-checker): fetches `mobile-version.json` (no-store) and, on mismatch, does `location.replace(pathname+'?b='+ver)` — a NEW url iOS has never cached. Do NOT use `location.reload()`: iOS serves a reload straight from the standalone PWA app-shell cache, so it never actually updates (can loop). Guard: if `?b` already equals the server version, stop (no loop).
 - `_headers` sets `no-cache` on all mobile files so Cloudflare Pages doesn't cache stale versions
+- Script tags use `?v=YYYYMMDD` cache-busting params. **Every deploy bump ALL of:** `_BUILD` const in mobile.html + `mobile-version.json` + asset `?v=` queries + `mobile-sw.js` VERSION. This lets a stuck installed PWA self-heal on next foreground — **no reinstall needed** (fully close + reopen on wifi, may take 2 opens).
+- **Vendored assets** (see core.md): `supabase.min.js` and `fonts/dmsans.css` load same-origin — never from a CDN (blocked on this user's devices; caused `supabase is not defined` login failures + broken fonts).
 
 ## Deployment
 - Dev: `https://dev.sams-dashboard.pages.dev/mobile.html`
 - Production: follow `rules/deploy.md`
-- Hard refresh on iOS: Settings → Safari → Advanced → Website Data → delete, or use the ↻ reload button in the app header
+- iOS PWA caching: the service worker handles cache busting. If user still sees stale content, the service worker may not have installed yet — needs one Safari tab refresh to bootstrap.
 
 ---
 
@@ -414,6 +452,20 @@ async function mInit() {
 document.addEventListener('DOMContentLoaded', mInit);
 ```
 
+### Foreground re-sync
+After the 30s `setInterval`, `mInit` adds `visibilitychange`/`pageshow`/`focus` listeners → `syncAll(true)` (3s dedup guard). iOS freezes `setInterval` while the PWA is backgrounded, so without this, reopening shows stale data (completed-elsewhere tasks reappear, deleted items linger). This is the mobile-side defense against stale-cache complaints — the DB is the source of truth; force a re-pull on every foreground.
+
+### Live re-render after toggle
+`togRecVirt` (and other mobile togglers) MUST call `renderAll()`, not just `mRenderToday()` — otherwise checking a recurring task while on the Week tab doesn't update that tab. `renderAll()` re-renders whichever tab is current.
+
 ### Auth flow
-`checkAuth()` (core.js) calls `showLoginOverlay()` if not authed.
+`checkAuth()` (core.js) calls `showLoginOverlay()` if no session found.
 `mDoLogin()` → `doLogin_m(email, pass)` → `_sbClient.auth.signInWithPassword()` → sets `_authToken` → `hideLoginOverlay()` → `syncAll()`
+- **`doLogin_m` is try/catch wrapped** and shows any failure in `#mLoginErr` (missing supabase lib, bad network, no session). Never let it fail silently — a silent failure reads to the user as "the button does nothing". If a user reports the login button not working, first ask what the RED error says.
+- **Login markup**: inputs + button are inside `<form onsubmit="event.preventDefault();mDoLogin();return false">` with `<button type="submit">`, so the iOS keyboard's Return key submits (button tap not required). `#mLogin` is `justify-content:flex-start` + `padding-top:14vh` (NOT `center` — centering parked the button under the iOS keyboard, making it untappable). Button has transparent tap-highlight, so "no flash on tap" is normal and ≠ tap not landing.
+
+### Login overlay (mobile override)
+Mobile overrides `showLoginOverlay(event)` and `hideLoginOverlay()` from core.js:
+- `_mLoggedIn` flag prevents transient auth events (token refresh) from showing login
+- **Desktop `core.js`**: `onAuthStateChange` never shows login overlay — network blips (DNS `ERR_NAME_NOT_RESOLVED`) cause false `SIGNED_OUT`. Login gated by `checkAuth()` on page load only.
+- Mobile has its own `showLoginOverlay` override with `_mLoggedIn` guard
