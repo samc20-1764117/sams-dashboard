@@ -6361,7 +6361,9 @@ let _qnOpen=false,_qnNotes=[],_qnLoaded=false,_qnSel=new Set(),_qnLastSel=null;
 async function _qnFetch(){
   if(_qnLoaded)return;
   const rows=await sbReqSilent('GET','quick_notes',null,'?is_visible=is.true&order=sort_order.asc.nullslast,created_at.asc');
-  if(rows&&Array.isArray(rows)){_qnNotes=rows;_qnLoaded=true;}
+  // Only latch _qnLoaded on an authenticated fetch — an anon-token fetch (session still
+  // restoring at page open) returns [] under RLS and would permanently show "No notes yet"
+  if(rows&&Array.isArray(rows)){_qnNotes=rows;_qnLoaded=!!_authToken;}
 }
 function toggleQN(){
   _qnOpen=!_qnOpen;
