@@ -5015,13 +5015,19 @@ async function init(){
   } else{_firstSyncDone=true;renderAll();setBadge('err','Not connected');_removePreloadAfterFonts();}
   setupWkcEdgeDrop();setupEdge('wkListEdgeR',1);
   setInterval(()=>{if(cfg.url&&cfg.key&&!document.hidden)syncAll(true);},30000);
-  // Sync immediately on return to a visible tab (interval was paused while hidden)
+  // Sync immediately on return to a visible tab (interval was paused while hidden).
+  // pageshow + focus cover iPad/iOS standalone PWA, where visibilitychange doesn't
+  // reliably fire on app-switcher resume/unlock. Version-gated, so a no-change
+  // foreground event costs only the ~1KB table_versions poll.
   let _fgLastSync=0;
-  document.addEventListener('visibilitychange',()=>{
+  const _fgResync=()=>{
     if(document.hidden||!cfg.url||!cfg.key)return;
     const n=Date.now();if(n-_fgLastSync<3000)return;_fgLastSync=n;
     syncAll(true).catch(()=>{});
-  });
+  };
+  document.addEventListener('visibilitychange',_fgResync);
+  window.addEventListener('pageshow',_fgResync);
+  window.addEventListener('focus',_fgResync);
 }
 
 function toggleKanban(){

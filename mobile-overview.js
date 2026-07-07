@@ -70,6 +70,7 @@ function _mReconstructVidStepBlocks() {
 
 // Day map synced from desktop via client_kv table (core.js _kvSyncMaps)
 function _mVidStepMap() { try { return JSON.parse(localStorage._vidStepDayMap || '{}'); } catch(e) { return {}; } }
+function _mVidDayMap() { try { return JSON.parse(localStorage._vidDayMap || '{}'); } catch(e) { return {}; } }
 function _mVidStepMapSet(m) { localStorage._vidStepDayMap = JSON.stringify(m); }
 
 // Done state for one step instance on one day (mirrors desktop _vidStepComputeDone)
@@ -435,13 +436,18 @@ function mGetTodayTasks() {
   // Video step tasks — only steps with blocks on this day (matches desktop _vidStepDayMap)
   const vidStepToday = _mVidStepTasksForDay(ds);
 
-  // Video tasks — only show if has a direct _vidId block on this day (matches desktop _vidDayMap)
+  // Video tasks — day-map assignment (synced via client_kv) or a direct _vidId block on this day
+  const _vdmT = _mVidDayMap();
   const _vidOnTB = new Set((st.blocks || []).filter(b => b.ds === ds && b._vidId).map(b => String(b._vidId)));
   const vidToday = (st.videos || []).filter(v => {
     if (v.is_deleted || v.status === 'published') return false;
+    if (_vdmT[String(v.id)] === ds) return true;
     if (_vidOnTB.has(String(v.id))) return true;
     return false;
   }).map(v => ({id: 'vid-ov-' + v.id, name: v.topic || v.title, category: 'Videos', due_date: ds, done: false, _vidId: v.id, _virtual: true, _type: 'vid'}));
+
+  // Subscription-cancel reminders (features.js)
+  const finCancelToday = typeof _finCancelTasksForDate === 'function' ? _finCancelTasksForDate(ds).filter(t => t.due_date === ds || (_mTodayOffset === 0 && isOv(t.due_date) && !t.done)) : [];
 
   const all = [
     ...ts,
@@ -452,6 +458,7 @@ function mGetTodayTasks() {
     ...pupSessToday,
     ...vidToday,
     ...vidStepToday,
+    ...finCancelToday,
     ...getExtrasForDate(ds)
   ];
   // Dedup by id AND by name (prevents same task from multiple sources)
@@ -486,6 +493,7 @@ function mTaskRow(t) {
   else if (t._type === 'vid') onchange = `toggleTask('${t.id}',this.checked)`;
   else if (t._type === 'shop') onchange = `togShop('${t._shopId}',this.checked)`;
   else if (t._type === 'pup') onchange = `togPupSessionDone('${t._pupSessId}',this.checked)`;
+  else if (t._type === 'fin-cancel') onchange = `togFinCancelDone('${t._subId}',this.checked);renderAll()`;
   else if (!t._virtual) onchange = `toggleTask('${t.id}',this.checked)`;
 
   const safeName = escHtml(t.name || '');
@@ -1470,6 +1478,32 @@ function mGetDayTasks(ds, weekOff) {
 
   const recVirt = getRecurringWeekTasks(weekOff).filter(v => v.due_date === ds);
 
+  // WR recurring + WR rules pinned to this date (current + past 4 weeks — overdue moved forward), like desktop week
+  const wrecDay = []; const _wrecSeen = new Set();
+  const wrRulesDay = []; const _wrRuleSeen = new Set();
+  for (let pw = weekOff; pw >= weekOff - 4; pw--) {
+    const pwk = getWkKey(pw);
+    (st.recurring || []).filter(r => (r.is_weekly_reset === true || r.is_weekly_reset === 'true') && r._dateOverrides && r._dateOverrides[pwk] === ds && !_wrecSeen.has(String(r.id))).forEach(r => {
+      _wrecSeen.add(String(r.id));
+      const done = !!(r._doneByWk && r._doneByWk[pwk]);
+      wrecDay.push({id: 'rec-virt-' + r.id, name: r.name, category: 'Recurring', due_date: ds, done, _recId: r.id, _virtual: true, _wkKey: pwk, _isWrec: true});
+    });
+    (st.wrRules || []).filter(r => r._dateOverrides && r._dateOverrides[pwk] === ds && !_wrRuleSeen.has(String(r.id)) && !(st.wrOverrides || []).some(o => String(o.rule_id) === String(r.id) && o.wk_key === pwk && o.override_type === 'skip')).forEach(r => {
+      _wrRuleSeen.add(String(r.id));
+      wrRulesDay.push({id: 'wrrule-virt-' + r.id, name: r.name, category: 'Recurring', due_date: ds, done: isDoneWRRule(r.id, pwk), _ruleId: r.id, _virtual: true, _wkKey: pwk, _isWrRule: true});
+    });
+  }
+
+  // Pup skill sessions on this date, like desktop week
+  const pupDay = (st.pupSessions || []).filter(s => s.day_date === ds).map(s => {
+    const skill = (st.pup_skills || []).find(x => String(x.id) === String(s.skill_id));
+    if (!skill) return null;
+    return {id: 'pup-sess-' + s.id, name: (skill.pup ? skill.pup + ': ' : '') + skill.skill, category: 'Recurring', due_date: ds, done: !!s.done, _pupSessId: s.id, _skillId: s.skill_id, _virtual: true, _type: 'pup'};
+  }).filter(Boolean);
+
+  // Subscription-cancel reminders (features.js)
+  const finDay = typeof _finCancelTasksForDate === 'function' ? _finCancelTasksForDate(ds) : [];
+
   const shopItems = st.shopping
     .filter(s => !s.done && s.due_date && (s.due_date === ds || (isToday && isOv(s.due_date))))
     .map(s => ({id: 'shop-' + s.id, name: s.name, category: 'Shopping', due_date: s.due_date, done: false, _shopId: s.id, _virtual: true, _type: 'shop'}));
@@ -1477,11 +1511,13 @@ function mGetDayTasks(ds, weekOff) {
   // Video step tasks — only steps with blocks on this day
   const vidStepItems = _mVidStepTasksForDay(ds);
 
-  // Video tasks — only direct _vidId blocks on this day
+  // Video tasks — day-map assignment (synced via client_kv) or direct _vidId blocks on this day
+  const _vdmW = _mVidDayMap();
   const _vidOnTBDay = new Set((st.blocks || []).filter(b => b.ds === ds && b._vidId).map(b => String(b._vidId)));
   const isPast = !isToday && ds < today;
   const vidForDay = (st.videos || []).filter(v => {
     if (v.is_deleted || v.status === 'published') return false;
+    if (_vdmW[String(v.id)] === ds) return true;
     if (_vidOnTBDay.has(String(v.id))) return true;
     return false;
   }).map(v => ({id: 'vid-' + v.id, name: v.topic || v.title, category: 'Videos', due_date: ds, done: v.status === 'published', _vidId: v.id, _virtual: true, _type: 'vid'}))
@@ -1490,7 +1526,7 @@ function mGetDayTasks(ds, weekOff) {
   // Extras (travel, birthdays)
   const extras = getExtrasForDate(ds);
 
-  const all = [...regular, ...recVirt, ...shopItems, ...vidForDay, ...vidStepItems, ...extras];
+  const all = [...regular, ...recVirt, ...wrecDay, ...wrRulesDay, ...pupDay, ...finDay, ...shopItems, ...vidForDay, ...vidStepItems, ...extras];
   // Dedup by id and name
   const seenId = new Set();
   const seenName = new Set();
@@ -1520,6 +1556,7 @@ function mWkTaskRow(t) {
   else if (t._isWrRule)            onchange = `togWrRule('${t._ruleId}',this.checked,'${t._wkKey}')`;
   else if (t._virtual && t._recId) onchange = `togRecVirt('${t._recId}',this.checked,'${t._wkKey}')`;
   else if (t._type === 'pup')      onchange = `togPupSessionDone('${t._pupSessId}',this.checked)`;
+  else if (t._type === 'fin-cancel') onchange = `togFinCancelDone('${t._subId}',this.checked);renderAll()`;
   else if (!t._virtual && !noCheck) onchange = `toggleTask('${t.id}',this.checked)`;
 
   const dot = `<span style="width:8px;height:8px;border-radius:50%;background:${s.bg};border:1.5px solid ${s.d};flex-shrink:0;display:inline-block"></span>`;
