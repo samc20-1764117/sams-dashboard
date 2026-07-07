@@ -68,9 +68,13 @@ let _sbClient=null;
 let _authToken=null;
 let _userId=null;
 function _getAuthToken(){return _authToken||cfg.key;}
-// On a 401 (expired token after idle), refresh the session once and signal retry
+// On a 401/403 (expired token after idle, or write sent before session restored →
+// anon-role RLS 42501), reload the session once and signal retry.
 async function _sbRefreshAuth(){
   if(!_sbClient)return false;
+  // getSession() restores the persisted session (and auto-refreshes if expired) —
+  // covers the "wrote before session finished loading" race where _authToken is null
+  try{const{data:{session}}=await _sbClient.auth.getSession();if(session&&session.access_token!==_authToken){_authToken=session.access_token;_userId=session.user?.id||_userId;return true;}}catch(e){}
   try{const{data}=await _sbClient.auth.refreshSession();if(data?.session){_authToken=data.session.access_token;_userId=data.session.user?.id||_userId;return true;}}catch(e){}
   return false;
 }
@@ -120,7 +124,7 @@ async function sbReq(method,table,body,qs='',_retried=false){
     const prefer=method==='DELETE'?'return=minimal':'return=representation';
     const r=await fetch(`${cfg.url}/rest/v1/${table}${qs}`,{method,headers:{'apikey':cfg.key,'Authorization':`Bearer ${_getAuthToken()}`,'Content-Type':'application/json','Prefer':prefer},body:body?JSON.stringify(body):null});
     if(!r.ok){
-      if(r.status===401&&!_retried&&await _sbRefreshAuth())return sbReq(method,table,body,qs,true);
+      if((r.status===401||r.status===403)&&!_retried&&await _sbRefreshAuth())return sbReq(method,table,body,qs,true);
       const errText=await r.text();
       console.error('Supabase error',method,table,r.status,errText);
       let errMsg='';try{const ej=JSON.parse(errText);errMsg=ej.message||ej.details||'';}catch(x){errMsg=errText.slice(0,120);}
@@ -159,7 +163,7 @@ async function sbReqNullable(method,table,body,qs='',_retried=false){
       },
       body:payload
     });
-    if(r.status===401&&!_retried&&await _sbRefreshAuth())return sbReqNullable(method,table,body,qs,true);
+    if((r.status===401||r.status===403)&&!_retried&&await _sbRefreshAuth())return sbReqNullable(method,table,body,qs,true);
     return r.ok;
   }catch(e){return null;}
 }
@@ -183,7 +187,7 @@ async function sbReqSilent(method,table,body,qs='',_retried=false){
       body:body?JSON.stringify(body):null
     });
     if(!r.ok){
-      if(r.status===401&&!_retried&&await _sbRefreshAuth())return sbReqSilent(method,table,body,qs,true);
+      if((r.status===401||r.status===403)&&!_retried&&await _sbRefreshAuth())return sbReqSilent(method,table,body,qs,true);
       const t=await r.text();console.warn('Supabase silent fail',method,table,r.status,t);return null;}
     const t=await r.text();_egAdd(t.length);return t?JSON.parse(t):[];
   }catch(e){console.warn('sbReqSilent error',method,table,e);return null;}
