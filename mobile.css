@@ -193,9 +193,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 /* Bottom resize handle: drag up/down to shorten/extend a block */
 .m-tb-resize{position:absolute;left:0;right:0;bottom:0;height:14px;z-index:6}
 .m-tb-resize::after{content:'';position:absolute;left:50%;transform:translateX(-50%);bottom:3px;width:28px;height:3px;border-radius:2px;background:rgba(0,0,0,.18)}
-/* Undo/redo header buttons */
-.m-ur-btn{background:none;border:none;font-size:17px;color:var(--sub);cursor:pointer;padding:4px 5px;line-height:1;opacity:.7;font-family:inherit}
-.m-ur-btn:active{color:var(--accent);opacity:1}
+/* Undo/redo snackbar: slides up above the bottom nav after each undoable action */
+#mSnack{position:fixed;left:50%;bottom:calc(64px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(80px);display:flex;align-items:center;gap:14px;background:#26232f;color:#fff;font-size:13px;font-weight:500;padding:10px 10px 10px 16px;border-radius:12px;box-shadow:0 8px 28px rgba(0,0,0,.28);z-index:950;opacity:0;transition:transform .25s cubic-bezier(.3,1.3,.5,1),opacity .2s ease;max-width:calc(100vw - 32px);pointer-events:none}
+#mSnack.show{transform:translateX(-50%) translateY(0);opacity:1;pointer-events:auto}
+#mSnack span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#mSnack button{background:none;border:none;color:#b5a8ff;font-size:13px;font-weight:800;letter-spacing:.04em;padding:4px 8px;font-family:inherit;flex-shrink:0}
 .m-tb-date-lbl{font-size:15px;font-weight:700;color:var(--text);white-space:nowrap;flex-shrink:0;line-height:1.2}
 .m-tb-date-sub{font-size:11px;font-weight:400;color:var(--sub);margin-top:1px}
 #mUnassignedBar::-webkit-scrollbar{display:none}

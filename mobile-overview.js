@@ -37,7 +37,18 @@ function setBadge() {}
 function renderPupSkillsHighlight() {}
 function renderDailyHabits() {}
 function updateOvBanner() {}
-function _showUndoToast() {}
+// Snackbar undo/redo (modern contextual pattern): every pushUndo shows a pill above
+// the nav with an UNDO action; undoing offers REDO the same way. No permanent buttons.
+function _mSnack(msg, btnLabel, btnFn) {
+  let el = document.getElementById('mSnack');
+  if (!el) { el = document.createElement('div'); el.id = 'mSnack'; document.body.appendChild(el); }
+  window._mSnackAction = btnFn;
+  el.innerHTML = `<span>${escHtml(msg)}</span><button onclick="document.getElementById('mSnack').classList.remove('show');(_mSnackAction||function(){})()">${btnLabel}</button>`;
+  el.classList.add('show');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), 5000);
+}
+function _showUndoToast(msg) { _mSnack(msg || 'Done', 'UNDO', () => mUndo()); }
 function _showRedoToast() {}
 function selTask() {}
 function showCtx() {}
@@ -644,11 +655,13 @@ function mUndo() {
   if (!undoStack.length) { showToast('Nothing to undo', '#6b6880', 1200); return; }
   doUndo();
   renderAll();
+  _mSnack('Undone', 'REDO', () => mRedo());
 }
 async function mRedo() {
   if (!redoStack.length) { showToast('Nothing to redo', '#6b6880', 1200); return; }
   await doRedo();
   renderAll();
+  _mSnack('Redone', 'UNDO', () => mUndo());
 }
 
 async function mSaveEditTask() {
@@ -1045,7 +1058,7 @@ function mRenderUnassigned() {
     return `<button class="m-chip${sel ? ' selected' : ''}" onclick="mSelectChip('${t.id}')" data-cid="${t.id}" data-cname="${escHtml(t.name)}" data-ccat="${escHtml(t.category || '')}" style="--cdot:${s.bg};--cborder:${s.d}">${escHtml(t.name)}</button>`;
   }).join('');
   // Chips scroll in their own container so undo/redo/reload stay pinned at the right edge
-  const refreshBtn = `<button class="m-ur-btn" onclick="mUndo()" title="Undo" style="flex-shrink:0;margin-left:auto">⟲</button><button class="m-ur-btn" onclick="mRedo()" title="Redo" style="flex-shrink:0">⟳</button><button class="m-reload-btn" onclick="location.reload(true)" title="Reload app" style="flex-shrink:0">↻</button>`;
+  const refreshBtn = `<button class="m-reload-btn" onclick="location.reload(true)" title="Reload app" style="flex-shrink:0;margin-left:auto">↻</button>`;
   bar.innerHTML = datePart + `<div id="mChipScroll">${chips}</div>` + refreshBtn;
   mInitChipDrag();
 }
