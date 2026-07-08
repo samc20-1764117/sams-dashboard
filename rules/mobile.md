@@ -140,7 +140,7 @@ let _mFullAddCat  = 'Home';  // full add sheet (today)
 
 ### State
 ```js
-let _mCurTab = 'tb'; // 'today' | 'tb' | 'week' | 'shop' | 'groc'  (default: tb)
+let _mCurTab = 'today'; // 'today' | 'tb' | 'week' | 'shop' | 'groc'. Persisted to localStorage._mLastTab; init restores it (refresh keeps current tab).
 ```
 
 ### `mShowTab(tab)`
@@ -249,7 +249,7 @@ let _mTBOffset   = 0;        // day offset (0=today, ±N days)
 - Regular blocks: absolutely positioned in `#mTLCol` by `top = (sm - M_TB_START) * M_PX`
 - Done blocks: `.m-done-block` — `opacity:.45`, name gets `text-decoration:line-through`
 - Checkbox: `.m-tb-chk` on each regular block — circular, green when checked (matches desktop `tb-chk`). Derives done state from linked task/rec/shop. Toggle logic mirrors desktop (`toggleTask`, `togWrRule`, `togRec`, `togRecVirt`, `togShop`)
-- Auto blocks: rendered when `cfg.showAutoTB` + weekday; grey background (`rgba(245,244,250,.28)`), grey text (`#b0aec0`) — matches desktop `atb-block`. From `st.autoTimeblocks` with `st.autoTBOverrides`
+- Auto blocks: rendered when `cfg.showAutoTB`; respects each block's `days` CSV (0=Sun..6=Sat, null = legacy Mon–Fri) like desktop `getAutoTBForDate`; grey background (`rgba(245,244,250,.28)`), grey text (`#b0aec0`) — matches desktop `atb-block`. From `st.autoTimeblocks` with `st.autoTBOverrides`
 - Recurring auto blocks: recurring tasks with `default_start_time` not manually placed; teal background (`rgba(221,244,240,.45)`), teal text (`#0f6b7a`) — matches desktop `rec-atb-block`
 - Block height: `Math.max(dur * M_PX, 28)`
 - Time format: `_mTStr()` outputs `h:mmam/pm` (matches desktop `tStr()`)
@@ -307,7 +307,9 @@ Each `.m-wk-day` has `data-ds="YYYY-MM-DD"` and contains:
 - Overdue regular tasks shown on today's row only
 - `getRecurringWeekTasks(weekOff)` filtered by `due_date === ds`
 - Shopping items due on `ds` (overdue only on today)
-- Sorted: undone first, then alphabetical
+- Also includes (desktop week parity): WR pinned instances (current + past 4 wk keys), pup sessions, fin-cancel reminders, videos via `_vidDayMap`, video steps via `_vidStepDayMap`
+- Sorted via `mSortDayTasks(tasks, ds)` — exact port of desktop `sortTasksForDay` (birthday → done-bottom → travel → overdue → important → TB start time → type priority → alpha). Same fn used by Today & Month.
+- **Video day-maps sync**: `_vidStepDayMap`/`_vidDayMap` (localStorage) mirror through the `client_kv` table (core.js `_kvSyncMaps`, migration 007). Mobile reads them like desktop; mobile toggles write doneDays back and push on next sync.
 
 ### Per-day done/total count
 - `doneC = tasks.filter(t => t.done || (isPast && (t._type==='travel'||t._type==='birthday')))`. Birthdays/trips have no checkbox, so past ones must count as done or the ratio reads low. `isPast = ds < today`. Fixed in BOTH `_mWkRenderWeekHtml` and the single-day re-render in `mSaveWkTask`.
@@ -446,7 +448,7 @@ async function mInit() {
   if (!authed) return; // showLoginOverlay() called by core.js
   hideLoginOverlay();
   await syncAll();     // fetch from Supabase → renderAll()
-  mShowTab('tb');      // default to timeblock tab after data loads
+  mShowTab(localStorage._mLastTab || 'today'); // restore last tab (validated against tab list)
   setInterval(() => { if (cfg.url && cfg.key) syncAll(true); }, 30000);
 }
 document.addEventListener('DOMContentLoaded', mInit);

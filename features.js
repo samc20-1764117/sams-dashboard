@@ -5015,13 +5015,19 @@ async function init(){
   } else{_firstSyncDone=true;renderAll();setBadge('err','Not connected');_removePreloadAfterFonts();}
   setupWkcEdgeDrop();setupEdge('wkListEdgeR',1);
   setInterval(()=>{if(cfg.url&&cfg.key&&!document.hidden)syncAll(true);},30000);
-  // Sync immediately on return to a visible tab (interval was paused while hidden)
+  // Sync immediately on return to a visible tab (interval was paused while hidden).
+  // pageshow + focus cover iPad/iOS standalone PWA, where visibilitychange doesn't
+  // reliably fire on app-switcher resume/unlock. Version-gated, so a no-change
+  // foreground event costs only the ~1KB table_versions poll.
   let _fgLastSync=0;
-  document.addEventListener('visibilitychange',()=>{
+  const _fgResync=()=>{
     if(document.hidden||!cfg.url||!cfg.key)return;
     const n=Date.now();if(n-_fgLastSync<3000)return;_fgLastSync=n;
     syncAll(true).catch(()=>{});
-  });
+  };
+  document.addEventListener('visibilitychange',_fgResync);
+  window.addEventListener('pageshow',_fgResync);
+  window.addEventListener('focus',_fgResync);
 }
 
 function toggleKanban(){
@@ -5873,6 +5879,17 @@ function openRecEditModal(rid,wkKey='',scope='all'){
   const nameOv=(wkKey&&r._dateOverrides&&r._dateOverrides[nameOvKey])||null;
   document.getElementById('recEditNameThis').value=(nameOv&&nameOv.name)||r.name;
   document.getElementById('recEditNotesThis').value=(nameOv&&nameOv.notes)||'';
+  // This-occurrence date: current due date of this week's instance (pin or natural)
+  const dThisEl=document.getElementById('recEditDateThis');
+  if(dThisEl){
+    let ods='';
+    if(wkKey){
+      const off=Math.round((new Date(wkKey+'T12:00')-new Date(getWkKey(0)+'T12:00'))/(7*86400000));
+      const inst=getRecurringWeekTasks(off).find(t=>String(t._recId)===String(rid));
+      ods=inst?inst.due_date:'';
+    }
+    dThisEl.value=ods;dThisEl.dataset.orig=ods;
+  }
   // Show/hide scope toggle
   const toggleEl=document.getElementById('recEditScopeToggle');
   if(toggleEl)toggleEl.style.display=wkKey?'flex':'none';
@@ -5891,10 +5908,17 @@ function saveRecEdit(){
     const nameOvKey='name::'+_recEditWkKey;
     const prev=r._dateOverrides[nameOvKey];
     r._dateOverrides[nameOvKey]={name,notes};
+    // This-occurrence date change → per-week move pin (same as dragging the chip)
+    const dThisEl=document.getElementById('recEditDateThis');
+    const newDs=dThisEl?dThisEl.value:'';const origDs=dThisEl?(dThisEl.dataset.orig||''):'';
+    const dateChanged=!!(newDs&&newDs!==origDs);
+    const pinWk=_recEditWkKey;
+    const prevPin=r._dateOverrides[pinWk];
+    if(dateChanged){r._dateOverrides[pinWk]=newDs;removeTBBlocksForDate(newDs,{recId:r.id,oldDs:origDs});}
     closeMod('recEditModal');
     save();renderRecOv();renderWeeklyPage();renderWkSummary();renderWkCal();if(document.getElementById('tbGrid'))renderDayTB();
     sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(rid));
-    pushUndo(()=>{if(prev!==undefined)r._dateOverrides[nameOvKey]=prev;else delete r._dateOverrides[nameOvKey];save();renderRecOv();renderWeeklyPage();renderWkSummary();renderWkCal();if(document.getElementById('tbGrid'))renderDayTB();sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(rid));},'Edited recurring this week');
+    pushUndo(()=>{if(prev!==undefined)r._dateOverrides[nameOvKey]=prev;else delete r._dateOverrides[nameOvKey];if(dateChanged){if(prevPin!==undefined)r._dateOverrides[pinWk]=prevPin;else delete r._dateOverrides[pinWk];}save();renderRecOv();renderWeeklyPage();renderWkSummary();renderWkCal();if(document.getElementById('tbGrid'))renderDayTB();sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(rid));},'Edited recurring this week');
     return;
   }
   const name=document.getElementById('recEditName').value.trim();
@@ -5918,12 +5942,17 @@ function saveRecEdit(){
   const defDur=parseInt(document.getElementById('recEditDur')?.value)||60;
   closeMod('recEditModal');
   const prev={name:r.name,is_weekly_reset:r.is_weekly_reset,cadence:r.cadence,appears_on_date:r.appears_on_date,starting_date:r.starting_date,pup_related:r.pup_related,notes:r.notes,default_start_time:r.default_start_time,default_end_time:r.default_end_time,default_tb_duration:r.default_tb_duration};
+  // Schedule change → clear undone current/future-week move pins, or an old pin keeps
+  // overriding the new schedule (e.g. day-of-month edited 26→25 but still shows the 26th)
+  const schedChanged=prev.cadence!==cadence||String(prev.appears_on_date)!==String(appearsOn)||(startDate&&prev.starting_date!==startDate);
+  const _futPins=schedChanged?_recClearFuturePins(r):[];
   r.name=name;r.is_weekly_reset=isWr;r.cadence=cadence;r.appears_on_date=appearsOn;r.starting_date=startDate;r.pup_related=pupRelated;r.notes=notes;r.default_start_time=defStart;r.default_end_time=defEnd;r.default_tb_duration=defDur;
   save();renderRecOv();renderWeeklyPage();renderWkSummary();renderWkCal();if(document.getElementById('tbGrid'))renderDayTB();
   const patch={name,is_weekly_reset:isWr,cadence,appears_on_date:appearsOn,pup_related:pupRelated,notes:notes||null,default_start_time:defStart,default_end_time:defEnd,default_tb_duration:defDur};
   if(startDate)patch.starting_date=startDate;
+  if(_futPins.length)patch.date_overrides=r._dateOverrides;
   sbReq('PATCH','wr_recurring_rules',patch,recQs(rid));
-  pushUndo(()=>{Object.assign(r,prev);save();renderRecOv();renderWeeklyPage();renderWkSummary();renderWkCal();if(document.getElementById('tbGrid'))renderDayTB();},'Edited recurring');
+  pushUndo(()=>{Object.assign(r,prev);_futPins.forEach(o=>{if(!r._dateOverrides)r._dateOverrides={};r._dateOverrides[o.wk]=o.val;});save();renderRecOv();renderWeeklyPage();renderWkSummary();renderWkCal();if(document.getElementById('tbGrid'))renderDayTB();if(_futPins.length)sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(rid));},'Edited recurring');
 }
 
 
@@ -6361,7 +6390,9 @@ let _qnOpen=false,_qnNotes=[],_qnLoaded=false,_qnSel=new Set(),_qnLastSel=null;
 async function _qnFetch(){
   if(_qnLoaded)return;
   const rows=await sbReqSilent('GET','quick_notes',null,'?is_visible=is.true&order=sort_order.asc.nullslast,created_at.asc');
-  if(rows&&Array.isArray(rows)){_qnNotes=rows;_qnLoaded=true;}
+  // Only latch _qnLoaded on an authenticated fetch — an anon-token fetch (session still
+  // restoring at page open) returns [] under RLS and would permanently show "No notes yet"
+  if(rows&&Array.isArray(rows)){_qnNotes=rows;_qnLoaded=!!_authToken;}
 }
 function toggleQN(){
   _qnOpen=!_qnOpen;

@@ -59,15 +59,25 @@ let undoStack=[];let undoTimer=null;
 let shopSortMode='store'; // 'store' or 'alpha'
 
 // ── Storage ────────────────────────────────────────────────────────────────────
-function load(){try{const s=JSON.parse(localStorage.getItem(KEY)||'{}');if(s.cfg)cfg={...cfg,...s.cfg};if(s.blocks)st.blocks=s.blocks.map(b=>{const{_col,_ncols,...rest}=b;return rest;});if(s.sb!==undefined)sbOpen=s.sb;if(s.overrides)localOverrides=s.overrides;if(s.delRec)deletedRecIds=new Set(s.delRec);if(s.delPupSess)deletedPupSessIds=new Set(s.delPupSess);if(s.tasks)st.tasks=s.tasks;if(s.recurring)st.recurring=s.recurring.map(r=>({...r,_doneByWk:r._doneByWk||{}}));if(s.shopping)st.shopping=s.shopping;if(s.travel)st.travel=s.travel;if(s.birthdays)st.birthdays=s.birthdays;if(s.ideas)st.ideas=s.ideas;if(s.pup_skills)st.pup_skills=s.pup_skills;if(s.pupSessions)st.pupSessions=s.pupSessions;if(s.pupWeeklyFocus)st.pupWeeklyFocus=s.pupWeeklyFocus;if(s.recipes)st.recipes=s.recipes;if(s.videos)st.videos=s.videos;if(s.autoTimeblocks)st.autoTimeblocks=s.autoTimeblocks;if(s.autoTBOverrides)st.autoTBOverrides=s.autoTBOverrides;if(s.wrRules)st.wrRules=s.wrRules;if(s.wrOverrides)st.wrOverrides=s.wrOverrides;if(s._ytDismissed)st._ytDismissed=s._ytDismissed;if(s.groceryStaples)st.groceryStaples=s.groceryStaples;if(s.groceryList)st.groceryList=s.groceryList;if(s.mealPlan)st.mealPlan=s.mealPlan;if(s.packTemplates)st.packTemplates=s.packTemplates;if(s.packItems)st.packItems=s.packItems;if(s.finance)st.finance=s.finance;if(s.finSubs)st.finSubs=s.finSubs;if(s.easyMeals)st.easyMeals=s.easyMeals;}catch(e){}}
+function load(){try{const s=JSON.parse(localStorage.getItem(KEY)||'{}');if(s.cfg)cfg={...cfg,...s.cfg};if(s.blocks)st.blocks=s.blocks.map(b=>{const{_col,_ncols,...rest}=b;return rest;});if(s.sb!==undefined)sbOpen=s.sb;if(s.overrides)localOverrides=_ovProxy(s.overrides);if(s.overrideTs)_ovTs=s.overrideTs;if(s.delRec)deletedRecIds=new Set(s.delRec);if(s.delPupSess)deletedPupSessIds=new Set(s.delPupSess);if(s.tasks)st.tasks=s.tasks;if(s.recurring)st.recurring=s.recurring.map(r=>({...r,_doneByWk:r._doneByWk||{}}));if(s.shopping)st.shopping=s.shopping;if(s.travel)st.travel=s.travel;if(s.birthdays)st.birthdays=s.birthdays;if(s.ideas)st.ideas=s.ideas;if(s.pup_skills)st.pup_skills=s.pup_skills;if(s.pupSessions)st.pupSessions=s.pupSessions;if(s.pupWeeklyFocus)st.pupWeeklyFocus=s.pupWeeklyFocus;if(s.recipes)st.recipes=s.recipes;if(s.videos)st.videos=s.videos;if(s.autoTimeblocks)st.autoTimeblocks=s.autoTimeblocks;if(s.autoTBOverrides)st.autoTBOverrides=s.autoTBOverrides;if(s.wrRules)st.wrRules=s.wrRules;if(s.wrOverrides)st.wrOverrides=s.wrOverrides;if(s._ytDismissed)st._ytDismissed=s._ytDismissed;if(s.groceryStaples)st.groceryStaples=s.groceryStaples;if(s.groceryList)st.groceryList=s.groceryList;if(s.mealPlan)st.mealPlan=s.mealPlan;if(s.packTemplates)st.packTemplates=s.packTemplates;if(s.packItems)st.packItems=s.packItems;if(s.finance)st.finance=s.finance;if(s.finSubs)st.finSubs=s.finSubs;if(s.easyMeals)st.easyMeals=s.easyMeals;}catch(e){}}
 let _lastSaveTs=0;
-function save(){_lastSaveTs=Date.now();try{localStorage.setItem(KEY,JSON.stringify({cfg,blocks:st.blocks,sb:sbOpen,overrides:localOverrides,delRec:[...deletedRecIds],delPupSess:[...deletedPupSessIds],tasks:st.tasks,recurring:st.recurring,shopping:st.shopping,travel:st.travel,birthdays:st.birthdays,ideas:st.ideas,pup_skills:st.pup_skills,pupSessions:st.pupSessions,pupWeeklyFocus:st.pupWeeklyFocus,recipes:st.recipes,videos:st.videos,autoTimeblocks:st.autoTimeblocks,autoTBOverrides:st.autoTBOverrides,wrRules:st.wrRules,wrOverrides:st.wrOverrides,_ytDismissed:st._ytDismissed,groceryStaples:st.groceryStaples,groceryList:st.groceryList,mealPlan:st.mealPlan,packTemplates:st.packTemplates,packItems:st.packItems,finance:st.finance,finSubs:st.finSubs,easyMeals:st.easyMeals}));}catch(e){}}
+function save(){_lastSaveTs=Date.now();try{localStorage.setItem(KEY,JSON.stringify({cfg,blocks:st.blocks,sb:sbOpen,overrides:localOverrides,overrideTs:_ovTs,delRec:[...deletedRecIds],delPupSess:[...deletedPupSessIds],tasks:st.tasks,recurring:st.recurring,shopping:st.shopping,travel:st.travel,birthdays:st.birthdays,ideas:st.ideas,pup_skills:st.pup_skills,pupSessions:st.pupSessions,pupWeeklyFocus:st.pupWeeklyFocus,recipes:st.recipes,videos:st.videos,autoTimeblocks:st.autoTimeblocks,autoTBOverrides:st.autoTBOverrides,wrRules:st.wrRules,wrOverrides:st.wrOverrides,_ytDismissed:st._ytDismissed,groceryStaples:st.groceryStaples,groceryList:st.groceryList,mealPlan:st.mealPlan,packTemplates:st.packTemplates,packItems:st.packItems,finance:st.finance,finSubs:st.finSubs,easyMeals:st.easyMeals}));}catch(e){}}
 
 // ── Auth ───────────────────────────────────────────────────────────────────────
 let _sbClient=null;
 let _authToken=null;
 let _userId=null;
 function _getAuthToken(){return _authToken||cfg.key;}
+// On a 401/403 (expired token after idle, or write sent before session restored →
+// anon-role RLS 42501), reload the session once and signal retry.
+async function _sbRefreshAuth(){
+  if(!_sbClient)return false;
+  // getSession() restores the persisted session (and auto-refreshes if expired) —
+  // covers the "wrote before session finished loading" race where _authToken is null
+  try{const{data:{session}}=await _sbClient.auth.getSession();if(session&&session.access_token!==_authToken){_authToken=session.access_token;_userId=session.user?.id||_userId;return true;}}catch(e){}
+  try{const{data}=await _sbClient.auth.refreshSession();if(data?.session){_authToken=data.session.access_token;_userId=data.session.user?.id||_userId;return true;}}catch(e){}
+  return false;
+}
 function _initSbClient(){
   if(_sbClient||!cfg.url||!cfg.key)return;
   _sbClient=supabase.createClient(cfg.url,cfg.key,{auth:{persistSession:true,autoRefreshToken:true}});
@@ -107,13 +117,14 @@ async function checkAuth(){
 let _sbNetFails=0,_sbNetToastTimer=null;
 // Egress meter: cumulative bytes downloaded from Supabase this month (per device, localStorage)
 function _egAdd(n){try{const d=new Date(),mo=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');let e=JSON.parse(localStorage.getItem('samdash_egress')||'{}');if(e.month!==mo)e={month:mo,bytes:0};e.bytes+=n;localStorage.setItem('samdash_egress',JSON.stringify(e));}catch(x){}}
-async function sbReq(method,table,body,qs=''){
+async function sbReq(method,table,body,qs='',_retried=false){
   if(!cfg.url||!cfg.key)return null;
   if(method!=='POST'&&/eq\.t-/.test(qs))return null;
   try{
     const prefer=method==='DELETE'?'return=minimal':'return=representation';
     const r=await fetch(`${cfg.url}/rest/v1/${table}${qs}`,{method,headers:{'apikey':cfg.key,'Authorization':`Bearer ${_getAuthToken()}`,'Content-Type':'application/json','Prefer':prefer},body:body?JSON.stringify(body):null});
     if(!r.ok){
+      if((r.status===401||r.status===403)&&!_retried&&await _sbRefreshAuth())return sbReq(method,table,body,qs,true);
       const errText=await r.text();
       console.error('Supabase error',method,table,r.status,errText);
       let errMsg='';try{const ej=JSON.parse(errText);errMsg=ej.message||ej.details||'';}catch(x){errMsg=errText.slice(0,120);}
@@ -130,14 +141,21 @@ async function sbReq(method,table,body,qs=''){
   }
 }
 // localOverrides: map of taskId -> partial fields that always win over DB on sync
-// Persisted to localStorage so refreshes don't lose pending changes
-let localOverrides={};
+// Persisted to localStorage so refreshes don't lose pending changes.
+// _ovTs records WHEN each override was set (proxy traps assignment), so the merge can
+// drop an override when the DB row was updated more recently by another device.
+let _ovTs={};
+const _ovProxy=o=>new Proxy(o,{
+  set(t,k,v){t[k]=v;_ovTs[k]=Date.now();return true;},
+  deleteProperty(t,k){delete t[k];delete _ovTs[k];return true;}
+});
+let localOverrides=_ovProxy({});
 // Per-tab table-version cursor for gated sync. In-memory ON PURPOSE (not persisted):
 // a shared localStorage cursor would let one tab advance it and starve another tab's
 // refetch (stale st, then its save() clobbers the fresh copy). Page load = full sync.
 let _tblVer={};
 
-async function sbReqNullable(method,table,body,qs=''){
+async function sbReqNullable(method,table,body,qs='',_retried=false){
   if(!cfg.url||!cfg.key)return null;
   try{
     const payload=JSON.stringify(body);
@@ -152,6 +170,7 @@ async function sbReqNullable(method,table,body,qs=''){
       },
       body:payload
     });
+    if((r.status===401||r.status===403)&&!_retried&&await _sbRefreshAuth())return sbReqNullable(method,table,body,qs,true);
     return r.ok;
   }catch(e){return null;}
 }
@@ -165,7 +184,7 @@ const pendingBlockIds=new Set();
 let deletedRecIds=new Set();
 let deletedPupSessIds=new Set();
 // ── Supabase silent request (no toast on failure) ────────────────────────────
-async function sbReqSilent(method,table,body,qs=''){
+async function sbReqSilent(method,table,body,qs='',_retried=false){
   if(!cfg.url||!cfg.key)return null;
   if(method!=='POST'&&/eq\.t-/.test(qs))return null;
   try{
@@ -174,7 +193,9 @@ async function sbReqSilent(method,table,body,qs=''){
       headers:{'apikey':cfg.key,'Authorization':`Bearer ${_getAuthToken()}`,'Content-Type':'application/json','Prefer':'return=representation'},
       body:body?JSON.stringify(body):null
     });
-    if(!r.ok){const t=await r.text();console.warn('Supabase silent fail',method,table,r.status,t);return null;}
+    if(!r.ok){
+      if((r.status===401||r.status===403)&&!_retried&&await _sbRefreshAuth())return sbReqSilent(method,table,body,qs,true);
+      const t=await r.text();console.warn('Supabase silent fail',method,table,r.status,t);return null;}
     const t=await r.text();_egAdd(t.length);return t?JSON.parse(t):[];
   }catch(e){console.warn('sbReqSilent error',method,table,e);return null;}
 }
@@ -253,6 +274,32 @@ async function manualBackup(){
   }
 }
 
+// ── client_kv: cross-device sync for localStorage maps (video day assignments) ──
+// Desktop assigns video steps/videos to days in localStorage (_vidStepDayMap/_vidDayMap),
+// which mobile could never see. Mirror those blobs through the client_kv table:
+// push when the local copy changed since last push, otherwise adopt the server copy.
+const _KV_MAPS={vid_step_day_map:'_vidStepDayMap',vid_day_map:'_vidDayMap'};
+async function _kvSyncMaps(rows){
+  for(const[k,lsKey]of Object.entries(_KV_MAPS)){
+    try{
+      const local=localStorage[lsKey]||'{}';
+      const pushedKey=lsKey+'Pushed';
+      const pushed=localStorage[pushedKey];
+      const row=rows?rows.find(r=>r.k===k):null;
+      const server=row?JSON.stringify(row.v||{}):null;
+      // Dirty = changed since last push; first run counts as dirty only if local has data the server lacks
+      const dirty=pushed===undefined?(local!=='{}'&&(server===null||server==='{}')):local!==pushed;
+      if(dirty){
+        const r=await sbReqSilent('PATCH','client_kv',{v:JSON.parse(local),updated_at:new Date().toISOString()},`?k=eq.${k}`);
+        if(r)localStorage[pushedKey]=local;
+      }else if(server!==null&&server!==local){
+        localStorage[lsKey]=server;localStorage[pushedKey]=server;
+      }else if(server!==null&&pushed===undefined){
+        localStorage[pushedKey]=local;
+      }
+    }catch(e){console.warn('kv sync',k,e);}
+  }
+}
 async function syncAll(silent=false){
   if(!cfg.url||!cfg.key){setBadge('err','Not connected');return;}
   if(_sbClient){const{data:{session}}=await _sbClient.auth.getSession();if(session)_authToken=session.access_token;}
@@ -273,7 +320,7 @@ async function syncAll(silent=false){
     if(pendingBlockIds.size)_force.add('time_blocks');
     const _dirty=t=>!_vMap||_force.has(t)||_vMap[t]===undefined||_tblVer[t]!==_vMap[t];
     const _gv=(fn,t,qs)=>_dirty(t)?fn('GET',t,null,qs):Promise.resolve(null);
-    const[tasks,shop,trav,bdays,pupSkills,pupSessionsDb,pupWkFocusDb,recipes,videosDb,gStaples,gList,mealPlanDb,packTplDb,packItemDb,finDb,finSubDb,ideasDb]=await Promise.all([
+    const[tasks,shop,trav,bdays,pupSkills,pupSessionsDb,pupWkFocusDb,recipes,videosDb,gStaples,gList,mealPlanDb,packTplDb,packItemDb,finDb,finSubDb,ideasDb,clientKv]=await Promise.all([
       _gv(sbReq,'tasks','?order=due_date.asc.nullslast&select=*'),
       _gv(sbReq,'shopping_list','?order=shop_order.asc.nullslast,store.asc,name.asc&select=*'),
       _gv(sbReq,'travel','?order=start_date.asc&select=*'),
@@ -290,7 +337,8 @@ async function syncAll(silent=false){
       _gv(sbReqSilent,'packing_items','?order=sort_order.asc.nullslast,name.asc&select=*'),
       _gv(sbReqSilent,'finance','?order=sort_order.asc.nullslast,name.asc&select=*'),
       _gv(sbReqSilent,'finance_subs','?order=sort_order.asc.nullslast,name.asc&select=*'),
-      _gv(sbReqSilent,'ideas','?order=created_at.desc&select=*')
+      _gv(sbReqSilent,'ideas','?order=created_at.desc&select=*'),
+      _gv(sbReqSilent,'client_kv','?select=*')
     ]);
     if(ideasDb)st.ideas=ideasDb;
     if(pupSessionsDb)st.pupSessions=pupSessionsDb.filter(s=>!deletedPupSessIds.has(String(s.id)));
@@ -364,6 +412,12 @@ async function syncAll(silent=false){
             return dbVal===ov;
           });
           if(allMatch){delete localOverrides[sid];save();}
+          else if(dbT.updated_at&&Date.parse(dbT.updated_at)>(_ovTs[sid]||0)+5000){
+            // DB row was updated AFTER this override was set → another device changed it.
+            // Remote wins; drop the override instead of re-pushing our stale value
+            // (re-pushing here reverted phone-made moves back to the old date).
+            delete localOverrides[sid];save();
+          }
           else{
             // DB still doesn't reflect this local change — a prior PATCH silently failed
             // (e.g. expired session/network blip). Re-push it so it eventually lands instead
@@ -471,6 +525,7 @@ async function syncAll(silent=false){
           _vidStepVid:_isVidStep?b.vid_id:null,_vidStepName:_isVidStep?b.rec_id:null};
       }),...localOnly];
     }
+    await _kvSyncMaps(clientKv);
     // Advance version cursors: only for tables whose fetch succeeded (non-null) or that
     // weren't dirty. Failed/skipped-apply fetches keep the old cursor → retried next poll.
     if(_vMap){
@@ -481,7 +536,7 @@ async function syncAll(silent=false){
         videos:videosDb,grocery_staples:gStaples,grocery_list:gList,meal_plan:mealPlanDb,
         packing_templates:packTplDb,packing_items:packItemDb,finance:finDb,finance_subs:finSubDb,
         ideas:ideasDb,time_blocks:blocks,auto_timeblocks:autoTBs,auto_timeblock_overrides:autoTBOvs,
-        wr_recurring_rules:wrRules,wr_recurring_overrides:wrOvs};
+        wr_recurring_rules:wrRules,wr_recurring_overrides:wrOvs,client_kv:clientKv};
       Object.keys(_res).forEach(t=>{if(_vMap[t]!==undefined&&(_res[t]||!_dirty(t)))_tblVer[t]=_vMap[t];});
     }
     save();
@@ -778,6 +833,22 @@ function isWRRuleDueThisWeek(rule,off=0){
     return diffWks>=0&&diffWks%intervalWks===0;
   }
   return false;
+}
+
+// Remove undone move pins for current+future weeks — a leftover pin would keep overriding a
+// changed schedule (e.g. day-of-month edited 26→25 but an old pin still shows the 26th).
+// Skips ('__skip__') and done weeks stay. Returns removed entries for undo.
+function _recClearFuturePins(r){
+  const out=[];if(!r._dateOverrides)return out;
+  const nowWk=getWkKey(0);
+  Object.keys(r._dateOverrides).forEach(k=>{
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(k)||k<nowWk)return;
+    const v=r._dateOverrides[k];
+    if(v==='__skip__')return;
+    if(r._doneByWk&&r._doneByWk[k])return;
+    out.push({wk:k,val:v});delete r._dateOverrides[k];
+  });
+  return out;
 }
 
 // Sort: overdue→important→rest, done last

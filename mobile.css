@@ -183,7 +183,19 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 #mTBPage{display:flex;flex-direction:column;gap:0;flex:1;min-height:0}
 
 /* Unassigned chips bar */
-#mUnassignedBar{display:flex;gap:8px;padding:10px 16px;padding-top:calc(10px + env(safe-area-inset-top));overflow-x:auto;flex-shrink:0;border-bottom:1px solid var(--border);-webkit-overflow-scrolling:touch;scrollbar-width:none;align-items:center}
+#mUnassignedBar{display:flex;gap:8px;padding:10px 16px;padding-top:calc(10px + env(safe-area-inset-top));flex-shrink:0;border-bottom:1px solid var(--border);align-items:center}
+#mChipScroll{display:flex;gap:8px;align-items:center;overflow-x:auto;flex:1;min-width:0;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+#mChipScroll::-webkit-scrollbar{display:none}
+.m-chip-ghost{position:fixed;z-index:999;pointer-events:none;transform:translate(-50%,-50%);box-shadow:0 6px 24px rgba(0,0,0,.22);background:#fff;border-color:var(--accent)}
+#mDropInd{position:absolute;left:2px;right:2px;z-index:4;pointer-events:none;border:2px dashed var(--accent);border-radius:8px;background:rgba(124,106,247,.10);color:var(--accent);font-size:10px;font-weight:700;align-items:center;justify-content:flex-end;padding-right:8px;display:flex}
+/* Timeline blocks: no text selection/callout during long-press drag */
+.m-tl-block,.m-tl-block *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+/* Bottom resize handle: drag up/down to shorten/extend a block */
+.m-tb-resize{position:absolute;left:0;right:0;bottom:0;height:14px;z-index:6}
+.m-tb-resize::after{content:'';position:absolute;left:50%;transform:translateX(-50%);bottom:3px;width:28px;height:3px;border-radius:2px;background:rgba(0,0,0,.18)}
+/* Undo/redo header buttons */
+.m-ur-btn{background:none;border:none;font-size:17px;color:var(--sub);cursor:pointer;padding:4px 5px;line-height:1;opacity:.7;font-family:inherit}
+.m-ur-btn:active{color:var(--accent);opacity:1}
 .m-tb-date-lbl{font-size:15px;font-weight:700;color:var(--text);white-space:nowrap;flex-shrink:0;line-height:1.2}
 .m-tb-date-sub{font-size:11px;font-weight:400;color:var(--sub);margin-top:1px}
 #mUnassignedBar::-webkit-scrollbar{display:none}
@@ -228,10 +240,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 #mWeekList{display:flex;flex-direction:column;padding-bottom:80px}
 
 /* Week divider */
-.m-wk-divider{display:flex;align-items:center;gap:10px;padding:14px 16px 6px;color:var(--sub);font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
-.m-wk-divider::after{content:'';flex:1;border-top:1px solid var(--border)}
-.m-wk-divider.is-current{color:var(--accent)}
-.m-wk-divider.is-current::after{border-top-color:rgba(124,106,247,.3)}
+.m-wk-divider{display:flex;align-items:center;gap:10px;padding:16px 16px 8px;margin-top:14px;color:var(--text);font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;border-top:4px solid rgba(124,106,247,.30);background:linear-gradient(rgba(124,106,247,.08),transparent)}
+.m-wk-divider.is-current{color:var(--accent);border-top-color:var(--accent)}
 
 /* Day group */
 .m-wk-day{border-bottom:1px solid var(--border)}
@@ -336,3 +346,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 #mLogin input{padding:10px 12px;border-radius:var(--rs);border:1px solid var(--border);background:rgba(255,255,255,.6);font-size:16px;font-family:inherit;color:var(--text);outline:none;width:100%}
 #mLogin button{padding:11px;border-radius:var(--rs);border:none;background:var(--accent);color:#fff;font-size:16px;font-weight:600;font-family:inherit;cursor:pointer}
 #mLoginErr{color:#e05;font-size:13px;text-align:center;display:none}
+
+/* Overdue → Today pill (today list) */
+.m-mv-today{flex-shrink:0;border:1px solid var(--accent);color:var(--accent);background:rgba(124,106,247,.08);border-radius:12px;font-size:11px;font-weight:600;padding:4px 9px;margin-left:4px;font-family:inherit;white-space:nowrap}
+.m-mv-today:active{background:var(--accent);color:#fff}
+
+/* Trip banner row (week view): full-row tint, no checkbox/emoji */
+.m-wk-travel{padding:9px 16px;border-top:1px solid var(--border);font-size:13px}
+.m-wk-day.is-past .m-wk-travel{opacity:.6}
