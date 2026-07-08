@@ -336,3 +336,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 #mLogin input{padding:10px 12px;border-radius:var(--rs);border:1px solid var(--border);background:rgba(255,255,255,.6);font-size:16px;font-family:inherit;color:var(--text);outline:none;width:100%}
 #mLogin button{padding:11px;border-radius:var(--rs);border:none;background:var(--accent);color:#fff;font-size:16px;font-weight:600;font-family:inherit;cursor:pointer}
 #mLoginErr{color:#e05;font-size:13px;text-align:center;display:none}
+
+/* Overdue → Today pill (today list) */
+.m-mv-today{flex-shrink:0;border:1px solid var(--accent);color:var(--accent);background:rgba(124,106,247,.08);border-radius:12px;font-size:11px;font-weight:600;padding:4px 9px;margin-left:4px;font-family:inherit;white-space:nowrap}
+.m-mv-today:active{background:var(--accent);color:#fff}
+
+/* Trip banner row (week view): full-row tint, no checkbox/emoji */
+.m-wk-travel{padding:9px 16px;border-top:1px solid var(--border);font-size:13px}
+.m-wk-day.is-past .m-wk-travel{opacity:.6}

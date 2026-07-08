@@ -499,6 +499,9 @@ function mTaskRow(t) {
   const safeName = escHtml(t.name || '');
   const arrow = !t.done && !t._hasTB ? '<span class="m-row-arrow">▸</span>' : '';
   const dot = `<span class="m-cat-dot" style="background:${s.bg};border:1.5px solid ${s.d};flex-shrink:0;width:10px;height:10px;border-radius:50%;display:inline-block"></span>`;
+  // Overdue regular/shopping tasks get a one-tap reschedule to today
+  const canMv = ov && (canEdit || t._type === 'shop');
+  const mvBtn = canMv ? `<button class="m-mv-today" onclick="event.stopPropagation();mMoveToToday('${t._type === 'shop' ? t._shopId : t.id}','${t._type === 'shop' ? 'shop' : 'task'}')">→ Today</button>` : '';
 
   const inner = `<div class="m-row${t.done ? ' m-done' : ''}${ov ? ' m-ov' : ''}">
     ${noCheck
@@ -506,7 +509,7 @@ function mTaskRow(t) {
       : `<label class="m-chk-wrap"><input type="checkbox" ${t.done ? 'checked' : ''} onchange="${onchange}"></label>`
     }
     <span class="m-row-name${t.done ? ' done' : ''}">${safeName}</span>
-    ${arrow}${dot}
+    ${mvBtn}${arrow}${dot}
   </div>`;
 
   return `<div class="m-row-outer"${canEdit ? ` data-tid="${t.id}"` : ''}>
@@ -602,6 +605,37 @@ function mCloseEdit() {
   document.getElementById('mEditPickOpts')?.classList.remove('open');
 }
 
+// When a task moves to a new day, carry its undone schedule blocks along (they're
+// stale on the old day otherwise — e.g. moved task still showing on yesterday's TB)
+function _mMoveTaskBlocks(taskId, fromDs, toDs) {
+  if (!fromDs || !toDs || fromDs === toDs) return;
+  (st.blocks || []).filter(b => String(b.taskId) === String(taskId) && !b._done && b.ds === fromDs).forEach(b => {
+    b.ds = toDs;
+    sbUpdateBlock(b.id, {day_date: toDs});
+  });
+}
+
+// Overdue → Today button on the today list
+function mMoveToToday(id, type) {
+  const today = d2s(getDayDate(0));
+  if (type === 'shop') {
+    const s = st.shopping.find(x => String(x.id) === String(id));
+    if (!s) return;
+    s.due_date = today;
+    save();
+    sbReq('PATCH', 'shopping_list', {due_date: today}, `?id=eq.${id}`);
+  } else {
+    const t = st.tasks.find(x => String(x.id) === String(id));
+    if (!t) return;
+    const from = (t.due_date || '').split('T')[0];
+    t.due_date = today;
+    _mMoveTaskBlocks(id, from, today);
+    save();
+    sbReq('PATCH', 'tasks', {due_date: today}, `?id=eq.${id}`);
+  }
+  renderAll();
+}
+
 async function mSaveEditTask() {
   if (!_mEditId) return;
   const t = st.tasks.find(x => String(x.id) === String(_mEditId));
@@ -612,10 +646,12 @@ async function mSaveEditTask() {
   const important = _mEditImportant;
   if (!name) return;
   const id = _mEditId;
+  const _prevDue = (t.due_date || '').split('T')[0];
   t.name = name;
   t.category = category;
   t.due_date = due_date;
   t.important = important;
+  if (due_date) _mMoveTaskBlocks(id, _prevDue, due_date.split('T')[0]);
   save();
   mCloseEdit();
   mRenderToday();
@@ -1543,7 +1579,14 @@ function mGetDayTasks(ds, weekOff) {
 }
 
 function mWkTaskRow(t) {
-  const noCheck = t._type === 'travel' || t._type === 'birthday';
+  // Trips: full-width tinted banner row — no emoji, no checkbox, clearly not a checkable task
+  if (t._type === 'travel') {
+    const ts = gc(t.category || 'Travel');
+    return `<div class="m-wk-row m-wk-travel" style="background:${ts.bg};border-left:3px solid ${ts.d}">
+      <span class="m-wk-task-name" style="color:${ts.t};font-weight:600">${escHtml(t.name || '')}</span>
+    </div>`;
+  }
+  const noCheck = t._type === 'birthday';
   const ov      = !noCheck && isOv(t.due_date) && !t.done;
   const catKey  = t._type === 'shop' ? 'shopping' : t._type === 'vid' || t._type === 'vidstep' ? 'Videos' : (t._virtual && t._recId) ? 'recurring' : (t.category || '');
   const s       = ov ? OV : gc(catKey);
@@ -1886,7 +1929,9 @@ function mInitWkDrag() {
     if (currentTargetDs && currentTargetDs !== origDs) {
       const t = st.tasks.find(x => String(x.id) === String(tid));
       if (t) {
+        const _prevDue = (t.due_date || '').split('T')[0];
         t.due_date = currentTargetDs;
+        _mMoveTaskBlocks(tid, _prevDue, currentTargetDs);
         save();
         mRenderWeek();
         await sbReq('PATCH', 'tasks', {due_date: currentTargetDs}, `?id=eq.${tid}`);
