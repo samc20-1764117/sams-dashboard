@@ -835,6 +835,22 @@ function isWRRuleDueThisWeek(rule,off=0){
   return false;
 }
 
+// Remove undone move pins for current+future weeks — a leftover pin would keep overriding a
+// changed schedule (e.g. day-of-month edited 26→25 but an old pin still shows the 26th).
+// Skips ('__skip__') and done weeks stay. Returns removed entries for undo.
+function _recClearFuturePins(r){
+  const out=[];if(!r._dateOverrides)return out;
+  const nowWk=getWkKey(0);
+  Object.keys(r._dateOverrides).forEach(k=>{
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(k)||k<nowWk)return;
+    const v=r._dateOverrides[k];
+    if(v==='__skip__')return;
+    if(r._doneByWk&&r._doneByWk[k])return;
+    out.push({wk:k,val:v});delete r._dateOverrides[k];
+  });
+  return out;
+}
+
 // Sort: overdue→important→rest, done last
 function sortTasks(tasks){
   return [...tasks].sort((a,b)=>{

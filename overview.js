@@ -1261,25 +1261,34 @@ function renderWkCal(){
           // Key by the SOURCE week so the moved instance stays distinct from the destination week's own
           // occurrence (carry-forward). The out-of-week date is preserved by _normOvs.
           const wkKey=srcWkKey||getWkKey(wkOff);
-          if(!r._dateOverrides)r._dateOverrides={};
-          const prevOverride=r._dateOverrides[wkKey];
-          const savedBlocks=st.blocks.filter(b=>b.recId&&String(b.recId)===String(r.id)&&b.ds===origDate).map(b=>({...b}));
-          r._dateOverrides[wkKey]=ds;
-          removeTBBlocksForDate(ds,{recId:r.id,oldDs:origDate});
           const _recSid='rec-virt-'+recId;
-          const _recOtherUndos=[];
-          _moveOtherSelected(ds,_recSid,_recOtherUndos);
-          save();dragId=null;renderAll();if(document.getElementById('tbGrid'))renderDayTB();
-          sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));
-          pushUndo(()=>{
-            if(prevOverride)r._dateOverrides[wkKey]=prevOverride;
-            else delete r._dateOverrides[wkKey];
-            st.blocks=st.blocks.filter(b=>!(b.recId&&String(b.recId)===String(r.id)&&b.ds===ds));
-            savedBlocks.forEach(b=>{st.blocks.push(b);sbSaveBlock(b);});
-            _recOtherUndos.forEach(fn=>fn());
+          const _isMultiRec=selectedTasks.has(_recSid)&&selectedTasks.size>1;
+          const doThisTime=()=>{
+            if(!r._dateOverrides)r._dateOverrides={};
+            const prevOverride=r._dateOverrides[wkKey];
+            const savedBlocks=st.blocks.filter(b=>b.recId&&String(b.recId)===String(r.id)&&b.ds===origDate).map(b=>({...b}));
+            r._dateOverrides[wkKey]=ds;
+            removeTBBlocksForDate(ds,{recId:r.id,oldDs:origDate});
+            const _recOtherUndos=[];
+            _moveOtherSelected(ds,_recSid,_recOtherUndos);
             save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
             sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));
-          },'Moved recurring task'+(selectedTasks.size>1?'s':''));
+            pushUndo(()=>{
+              if(prevOverride)r._dateOverrides[wkKey]=prevOverride;
+              else delete r._dateOverrides[wkKey];
+              st.blocks=st.blocks.filter(b=>!(b.recId&&String(b.recId)===String(r.id)&&b.ds===ds));
+              savedBlocks.forEach(b=>{st.blocks.push(b);sbSaveBlock(b);});
+              _recOtherUndos.forEach(fn=>fn());
+              save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
+              sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));
+            },'Moved recurring task'+(selectedTasks.size>1?'s':''));
+          };
+          // Interval cadences (monthly/quarterly/biannual/annual): ask this-time vs all-future.
+          // Weekly/biweekly and multi-select keep the direct this-time move.
+          if(!_isMultiRec&&['monthly','quarterly','biannual','annual'].includes(r.cadence)){
+            dragId=null;
+            showWrScopePicker(e,'⊘  This time only','↻  All future',doThisTime,()=>_recMoveAllFuture(r,wkKey,ds));
+          } else doThisTime();
         }
         dragId=null;return;
       }
@@ -1959,24 +1968,30 @@ function setupWkcEdgeDrop(){
       const _reParts=dragId.split('::');const recId=_reParts[1];const _reSrcWk=_reParts[3]||'';
       const rec=st.recurring.find(x=>String(x.id)===String(recId));
       if(rec){
-        if(!rec._dateOverrides)rec._dateOverrides={};
         const curWkKey=_reSrcWk||getWkKey(wkOff);
-        const _prevOvs={...rec._dateOverrides};
-        // Move THIS occurrence to the adjacent week ("move all future" is a separate gesture).
-        // FORWARD: CARRY it — pin the source week's instance to a date in the (later) target week, no
-        // '__skip__'. It renders in the target week via the calendar's back-lookback while that week's own
-        // occurrence still shows (e.g. HEB carried to next Monday, next-week Sunday HEB still there), and
-        // it stays out of the skipped-this-week list. _normOvs preserves the forward carry.
-        // BACKWARD: the back-lookback can't reach a later source week from an earlier view, so skip the
-        // source week and pin the (earlier) target week directly.
-        if(dir>0){rec._dateOverrides[curWkKey]=newDs;}
-        else{rec._dateOverrides[curWkKey]='__skip__';rec._dateOverrides[getWkKey(targetWkOff)]=newDs;}
-        dragId=null;shiftWk(dir);save();renderAll();
-        sbReqSilent('PATCH','wr_recurring_rules',{date_overrides:rec._dateOverrides},`?id=eq.${rec.id}`);
-        pushUndo(()=>{
-          rec._dateOverrides=_prevOvs;save();renderAll();
+        const doThisTime=()=>{
+          if(!rec._dateOverrides)rec._dateOverrides={};
+          const _prevOvs={...rec._dateOverrides};
+          // Move THIS occurrence to the adjacent week ("move all future" is a separate gesture).
+          // FORWARD: CARRY it — pin the source week's instance to a date in the (later) target week, no
+          // '__skip__'. It renders in the target week via the calendar's back-lookback while that week's own
+          // occurrence still shows (e.g. HEB carried to next Monday, next-week Sunday HEB still there), and
+          // it stays out of the skipped-this-week list. _normOvs preserves the forward carry.
+          // BACKWARD: the back-lookback can't reach a later source week from an earlier view, so skip the
+          // source week and pin the (earlier) target week directly.
+          if(dir>0){rec._dateOverrides[curWkKey]=newDs;}
+          else{rec._dateOverrides[curWkKey]='__skip__';rec._dateOverrides[getWkKey(targetWkOff)]=newDs;}
+          shiftWk(dir);save();renderAll();
           sbReqSilent('PATCH','wr_recurring_rules',{date_overrides:rec._dateOverrides},`?id=eq.${rec.id}`);
-        },'Moved to other week');
+          pushUndo(()=>{
+            rec._dateOverrides=_prevOvs;save();renderAll();
+            sbReqSilent('PATCH','wr_recurring_rules',{date_overrides:rec._dateOverrides},`?id=eq.${rec.id}`);
+          },'Moved to other week');
+        };
+        if(['monthly','quarterly','biannual','annual'].includes(rec.cadence)){
+          dragId=null;
+          showWrScopePicker(e,'⊘  This time only','↻  All future',doThisTime,()=>{_recMoveAllFuture(rec,curWkKey,newDs);shiftWk(dir);});
+        } else doThisTime();
       }
       dragId=null;return;
     }
@@ -2061,20 +2076,26 @@ function setupEdge(id,dir){
       const _re2Parts=dragId.split('::');const recId=_re2Parts[1];const _re2SrcWk=_re2Parts[3]||'';
       const rec=st.recurring.find(x=>String(x.id)===String(recId));
       if(rec){
-        if(!rec._dateOverrides)rec._dateOverrides={};
         const curWkKey=_re2SrcWk||getWkKey(wkOff);
-        const _prevOvs={...rec._dateOverrides};
-        // Move THIS occurrence to the adjacent week (see the matching edge handler above for details).
-        // Forward: carry (pin source week to a date in the later target week, no '__skip__', shows both).
-        // Backward: skip source + pin the earlier target week (back-lookback can't reach a later source).
-        if(dir>0){rec._dateOverrides[curWkKey]=newDs;}
-        else{rec._dateOverrides[curWkKey]='__skip__';rec._dateOverrides[getWkKey(targetWkOff)]=newDs;}
-        dragId=null;shiftWk(dir);save();renderAll();
-        sbReqSilent('PATCH','wr_recurring_rules',{date_overrides:rec._dateOverrides},`?id=eq.${rec.id}`);
-        pushUndo(()=>{
-          rec._dateOverrides=_prevOvs;save();renderAll();
+        const doThisTime=()=>{
+          if(!rec._dateOverrides)rec._dateOverrides={};
+          const _prevOvs={...rec._dateOverrides};
+          // Move THIS occurrence to the adjacent week (see the matching edge handler above for details).
+          // Forward: carry (pin source week to a date in the later target week, no '__skip__', shows both).
+          // Backward: skip source + pin the earlier target week (back-lookback can't reach a later source).
+          if(dir>0){rec._dateOverrides[curWkKey]=newDs;}
+          else{rec._dateOverrides[curWkKey]='__skip__';rec._dateOverrides[getWkKey(targetWkOff)]=newDs;}
+          shiftWk(dir);save();renderAll();
           sbReqSilent('PATCH','wr_recurring_rules',{date_overrides:rec._dateOverrides},`?id=eq.${rec.id}`);
-        },'Moved to other week');
+          pushUndo(()=>{
+            rec._dateOverrides=_prevOvs;save();renderAll();
+            sbReqSilent('PATCH','wr_recurring_rules',{date_overrides:rec._dateOverrides},`?id=eq.${rec.id}`);
+          },'Moved to other week');
+        };
+        if(['monthly','quarterly','biannual','annual'].includes(rec.cadence)){
+          dragId=null;
+          showWrScopePicker(e,'⊘  This time only','↻  All future',doThisTime,()=>{_recMoveAllFuture(rec,curWkKey,newDs);shiftWk(dir);});
+        } else doThisTime();
       }
       dragId=null;return;
     }
@@ -2605,22 +2626,7 @@ function renderRecMoCal(){
             sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));
             pushUndo(()=>{if(prev!==undefined)r._dateOverrides[srcWkKey]=prev;else delete r._dateOverrides[srcWkKey];save();renderAll();renderRecMoCal();sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));},'Moved recurring task this time');
           },
-          ()=>{// all future — shift the recurrence anchor by the week delta + land on the dropped weekday/day
-            const prevStart=r.starting_date;const prevAppears=r.appears_on_date;
-            if(!r._dateOverrides)r._dateOverrides={};
-            const _prevSrcPin=r._dateOverrides[srcWkKey];
-            const deltaWeeks=Math.round((new Date(tgtWkKey+'T12:00')-new Date(srcWkKey+'T12:00'))/(7*86400000));
-            const base=r.starting_date?new Date(r.starting_date+'T12:00'):new Date(srcWkKey+'T12:00');
-            base.setDate(base.getDate()+deltaWeeks*7);
-            const newStart=d2s(base);
-            const newAppears=(r.cadence==='monthly')?String(new Date(ds+'T00:00:00').getDate()):DAYNAMES[new Date(ds+'T00:00:00').getDay()];
-            // moving the schedule forward: drop the source occurrence + undone past orphans so they don't linger as overdue
-            if(_prevSrcPin!==undefined)delete r._dateOverrides[srcWkKey];
-            const _orphans=_wrClearPastOrphanPins(r,false);
-            r.starting_date=newStart;r.appears_on_date=newAppears;save();renderAll();renderRecMoCal();
-            sbReq('PATCH','wr_recurring_rules',{starting_date:newStart,appears_on_date:newAppears,date_overrides:r._dateOverrides},recQs(r.id));
-            pushUndo(()=>{r.starting_date=prevStart;r.appears_on_date=prevAppears;if(_prevSrcPin!==undefined)r._dateOverrides[srcWkKey]=_prevSrcPin;_orphans.forEach(o=>{if(o.val===undefined)delete r._dateOverrides[o.wk];else r._dateOverrides[o.wk]=o.val;});save();renderAll();renderRecMoCal();sbReq('PATCH','wr_recurring_rules',{starting_date:prevStart,appears_on_date:prevAppears,date_overrides:r._dateOverrides},recQs(r.id));},'Moved recurring task all future');
-          }
+          ()=>_recMoveAllFuture(r,srcWkKey,ds,()=>renderRecMoCal())// all future — shift anchor + land on the dropped weekday/day-of-month
         );
       });
       cells.appendChild(cell);
@@ -3249,6 +3255,30 @@ function _wrClearPastOrphanPins(rule,isWrRule,lookback=6){
     }
   }
   return removed;
+}
+// "All future" move for a non-WR recurring rule: shift the recurrence anchor so the occurrence
+// lands on `ds` (from srcWkKey's occurrence) and every future one follows. Monthly → new
+// day-of-month; other cadences → new weekday. Clears the source pin, past orphans, and stale
+// future pins. Handles save/render/PATCH/undo. `extraRender` runs after each re-render.
+function _recMoveAllFuture(r,srcWkKey,ds,extraRender){
+  const DAYS_AF=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const prevStart=r.starting_date;const prevAppears=r.appears_on_date;
+  if(!r._dateOverrides)r._dateOverrides={};
+  const _prevSrcPin=r._dateOverrides[srcWkKey];
+  const tgtWkKey=dsToWkKey(ds);
+  const deltaWeeks=Math.round((new Date(tgtWkKey+'T12:00')-new Date(srcWkKey+'T12:00'))/(7*86400000));
+  const base=r.starting_date?new Date(r.starting_date+'T12:00'):new Date(srcWkKey+'T12:00');
+  base.setDate(base.getDate()+deltaWeeks*7);
+  const newStart=d2s(base);
+  const newAppears=(r.cadence==='monthly')?String(new Date(ds+'T00:00:00').getDate()):DAYS_AF[new Date(ds+'T00:00:00').getDay()];
+  if(_prevSrcPin!==undefined)delete r._dateOverrides[srcWkKey];
+  const _orphans=_wrClearPastOrphanPins(r,false);
+  const _futPins=_recClearFuturePins(r);
+  r.starting_date=newStart;r.appears_on_date=newAppears;
+  const rerender=()=>{save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();if(extraRender)extraRender();};
+  rerender();
+  sbReq('PATCH','wr_recurring_rules',{starting_date:newStart,appears_on_date:newAppears,date_overrides:r._dateOverrides},recQs(r.id));
+  pushUndo(()=>{r.starting_date=prevStart;r.appears_on_date=prevAppears;if(_prevSrcPin!==undefined)r._dateOverrides[srcWkKey]=_prevSrcPin;_orphans.forEach(o=>{if(o.val===undefined)delete r._dateOverrides[o.wk];else r._dateOverrides[o.wk]=o.val;});_futPins.forEach(o=>{r._dateOverrides[o.wk]=o.val;});rerender();sbReq('PATCH','wr_recurring_rules',{starting_date:prevStart,appears_on_date:prevAppears,date_overrides:r._dateOverrides},recQs(r.id));},'Moved recurring task all future');
 }
 function wrCtxShiftSchedule(delta){
   hideWrRuleCtx();
