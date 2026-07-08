@@ -621,9 +621,11 @@ function mMoveToToday(id, type) {
   if (type === 'shop') {
     const s = st.shopping.find(x => String(x.id) === String(id));
     if (!s) return;
+    const prev = s.due_date;
     s.due_date = today;
     save();
     sbReq('PATCH', 'shopping_list', {due_date: today}, `?id=eq.${id}`);
+    pushUndo(() => { const s2 = st.shopping.find(x => String(x.id) === String(id)); if (s2) s2.due_date = prev; save(); renderAll(); sbReq('PATCH', 'shopping_list', {due_date: prev}, `?id=eq.${id}`); }, 'Moved to today');
   } else {
     const t = st.tasks.find(x => String(x.id) === String(id));
     if (!t) return;
@@ -632,7 +634,20 @@ function mMoveToToday(id, type) {
     _mMoveTaskBlocks(id, from, today);
     save();
     sbReq('PATCH', 'tasks', {due_date: today}, `?id=eq.${id}`);
+    pushUndo(() => { const t2 = st.tasks.find(x => String(x.id) === String(id)); if (t2) { t2.due_date = from; _mMoveTaskBlocks(id, today, from); } save(); renderAll(); sbReq('PATCH', 'tasks', {due_date: from}, `?id=eq.${id}`); }, 'Moved to today');
   }
+  renderAll();
+}
+
+// ── Undo / redo (core.js stacks; shared toggles + instrumented mobile actions) ──
+function mUndo() {
+  if (!undoStack.length) { showToast('Nothing to undo', '#6b6880', 1200); return; }
+  doUndo();
+  renderAll();
+}
+async function mRedo() {
+  if (!redoStack.length) { showToast('Nothing to redo', '#6b6880', 1200); return; }
+  await doRedo();
   renderAll();
 }
 
@@ -1029,8 +1044,8 @@ function mRenderUnassigned() {
     const sel = _mSelectedChipId === String(t.id);
     return `<button class="m-chip${sel ? ' selected' : ''}" onclick="mSelectChip('${t.id}')" data-cid="${t.id}" data-cname="${escHtml(t.name)}" data-ccat="${escHtml(t.category || '')}" style="--cdot:${s.bg};--cborder:${s.d}">${escHtml(t.name)}</button>`;
   }).join('');
-  // Chips scroll in their own container so the reload button stays pinned at the right edge
-  const refreshBtn = `<button class="m-reload-btn" onclick="location.reload(true)" title="Reload app" style="flex-shrink:0;margin-left:auto">↻</button>`;
+  // Chips scroll in their own container so undo/redo/reload stay pinned at the right edge
+  const refreshBtn = `<button class="m-ur-btn" onclick="mUndo()" title="Undo" style="flex-shrink:0;margin-left:auto">⟲</button><button class="m-ur-btn" onclick="mRedo()" title="Redo" style="flex-shrink:0">⟳</button><button class="m-reload-btn" onclick="location.reload(true)" title="Reload app" style="flex-shrink:0">↻</button>`;
   bar.innerHTML = datePart + `<div id="mChipScroll">${chips}</div>` + refreshBtn;
   mInitChipDrag();
 }
@@ -1048,10 +1063,26 @@ function mInitChipDrag() {
     const t = e.touches[0];
     ghost.style.left = t.clientX + 'px';
     ghost.style.top = (t.clientY - 44) + 'px';
+    // Live drop indicator: show the snapped 30-min slot on the timeline under the finger
+    const col = document.getElementById('mTLCol');
+    if (!col) return;
+    const rect = col.getBoundingClientRect();
+    let ind = document.getElementById('mDropInd');
+    if (t.clientY >= rect.top && t.clientY <= rect.bottom && t.clientX >= rect.left - 40 && t.clientX <= rect.right) {
+      if (!ind) { ind = document.createElement('div'); ind.id = 'mDropInd'; col.appendChild(ind); }
+      let sm = M_TB_START + (t.clientY - rect.top) / M_PX;
+      sm = Math.max(M_TB_START, Math.min(M_TB_END - 30, Math.round(sm / 15) * 15));
+      ind.style.top = ((sm - M_TB_START) * M_PX) + 'px';
+      ind.style.height = (30 * M_PX) + 'px';
+      ind.style.display = 'flex';
+      ind.textContent = _mTStr(sm);
+    } else if (ind) ind.style.display = 'none';
   };
   const cleanup = () => {
     cancel();
     if (ghost) { ghost.remove(); ghost = null; }
+    const ind = document.getElementById('mDropInd');
+    if (ind) ind.remove();
     document.removeEventListener('touchmove', onMove);
     drag = null;
   };
@@ -1098,6 +1129,7 @@ function mInitChipDrag() {
     st.blocks.push(b);
     _mSelectedChipId = null;
     save(); mRenderTB();
+    pushUndo(() => { st.blocks = (st.blocks || []).filter(x => String(x.id) !== String(b.id)); save(); mRenderTB(); sbDeleteBlock(b.id); }, 'Scheduled task');
     await sbSaveBlock(b);
   }, {passive: true});
 }
@@ -1221,6 +1253,7 @@ function mRenderTimeline() {
           <div class="m-tl-block-name" style="color:${item.s.t}">${escHtml(item.name || '')}</div>
         </div>
         ${ncols <= 1 ? `<span class="m-tl-block-time" style="color:${item.s.t};pointer-events:none">${timeRange}</span>` : ''}
+        <div class="m-tb-resize" data-bid="${item.bid}"></div>
       </div>`;
     } else {
       return `<div class="m-tl-block ${item.cls}" style="${posStyle}">
@@ -1339,8 +1372,19 @@ function mInitBlockDrag() {
   let pressTimer  = null;
   let touchStartY = 0;
   let touchStartX = 0;
+  let _mResize    = null; // {el, b, origDur, startY} — bottom-handle duration drag
 
   col.addEventListener('touchstart', e => {
+    // Bottom resize handle: starts immediately (no long-press)
+    const rz = e.target.closest('.m-tb-resize');
+    if (rz) {
+      const b = (st.blocks || []).find(x => String(x.id) === rz.dataset.bid);
+      if (!b) return;
+      _mResize = {el: rz.closest('.m-tl-block'), b, origDur: b.dur, startY: e.touches[0].clientY};
+      const scrl = document.getElementById('mTLScroll');
+      if (scrl) scrl.style.overflowY = 'hidden';
+      return;
+    }
     const blockEl = e.target.closest('.m-tl-block');
     if (!blockEl) return;
     touchStartY = e.touches[0].clientY;
@@ -1363,6 +1407,14 @@ function mInitBlockDrag() {
   }, {passive: true});
 
   col.addEventListener('touchmove', e => {
+    if (_mResize) {
+      const dy = e.touches[0].clientY - _mResize.startY;
+      let dur = Math.round((_mResize.origDur + dy / M_PX) / 15) * 15;
+      dur = Math.max(15, Math.min(M_TB_END - _mResize.b.sm, dur));
+      _mResize.b.dur = dur;
+      _mResize.el.style.height = Math.max(dur * M_PX, 28) + 'px';
+      return;
+    }
     if (pressTimer) {
       // Cancel longpress if finger moved before threshold
       if (Math.abs(e.touches[0].clientY - touchStartY) > 8 ||
@@ -1381,6 +1433,22 @@ function mInitBlockDrag() {
   }, {passive: true});
 
   col.addEventListener('touchend', async () => {
+    if (_mResize) {
+      const {b, origDur} = _mResize;
+      _mResize = null;
+      const scrl = document.getElementById('mTLScroll');
+      if (scrl) scrl.style.overflowY = '';
+      _mDragJustEnded = true;
+      setTimeout(() => { _mDragJustEnded = false; }, 300);
+      if (b.dur !== origDur) {
+        save();
+        mRenderTimeline();
+        sbUpdateBlock(b.id, {duration_minutes: b.dur});
+        const _newDur = b.dur;
+        pushUndo(() => { const b2 = (st.blocks || []).find(x => String(x.id) === String(b.id)); if (b2) b2.dur = origDur; save(); mRenderTB(); sbUpdateBlock(b.id, {duration_minutes: origDur}); }, 'Resized block');
+      }
+      return;
+    }
     if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
     if (!_mDragBlock) return;
 
@@ -1999,10 +2067,12 @@ function mInitWkDrag() {
       const t = st.tasks.find(x => String(x.id) === String(tid));
       if (t) {
         const _prevDue = (t.due_date || '').split('T')[0];
-        t.due_date = currentTargetDs;
-        _mMoveTaskBlocks(tid, _prevDue, currentTargetDs);
+        const _newDs = currentTargetDs;
+        t.due_date = _newDs;
+        _mMoveTaskBlocks(tid, _prevDue, _newDs);
         save();
         mRenderWeek();
+        pushUndo(() => { const t2 = st.tasks.find(x => String(x.id) === String(tid)); if (t2) { t2.due_date = _prevDue; _mMoveTaskBlocks(tid, _newDs, _prevDue); } save(); renderAll(); sbReq('PATCH', 'tasks', {due_date: _prevDue}, `?id=eq.${tid}`); }, 'Moved task');
         await sbReq('PATCH', 'tasks', {due_date: currentTargetDs}, `?id=eq.${tid}`);
       }
     }
