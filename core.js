@@ -431,18 +431,10 @@ async function syncAll(silent=false){
           const local=st.tasks.find(lt=>String(lt.id)===sid);
           if(local) return local;
         }
-        // Preserve local changes for 60s after last save (gives PATCHes time to land)
-        if(_lastSaveTs&&Date.now()-_lastSaveTs<60000){
-          const local=st.tasks.find(lt=>String(lt.id)===sid);
-          if(local){
-            const patch={};
-            if((local.due_date||null)!==(dbT.due_date||null))patch.due_date=local.due_date;
-            if(local.done!==dbT.done)patch.done=local.done;
-            if(local.important!==dbT.important)patch.important=local.important;
-            if((local.category||null)!==(dbT.category||null))patch.category=local.category;
-            if(Object.keys(patch).length)return{...dbT,...patch};
-          }
-        }
+        // NOTE: the old "preserve local changes for 60s after last save" catch-all was
+        // removed 2026-07-08: save() runs at the end of every 30s sync, so the window
+        // never closed and remote (phone-made) changes were masked forever. In-flight
+        // local edits are protected by pendingLocal + localOverrides above.
         return dbT;
       });
       const dbIds=new Set(tasks.map(t=>String(t.id)));

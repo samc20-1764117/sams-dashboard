@@ -50,6 +50,27 @@ function _mSnack(msg, btnLabel, btnFn) {
 }
 function _showUndoToast(msg) { _mSnack(msg || 'Done', 'UNDO', () => mUndo()); }
 function _showRedoToast() {}
+
+// Reload button: tap = reload, hold (550ms) = undo last action (works past the snackbar window)
+let _mReloadLP = null, _mReloadDidLP = false;
+function mReloadTap() {
+  if (_mReloadDidLP) { _mReloadDidLP = false; return; } // click after a long-press: swallow
+  location.reload(true);
+}
+document.addEventListener('touchstart', e => {
+  const b = e.target.closest('.m-reload-btn');
+  if (!b) return;
+  _mReloadDidLP = false;
+  _mReloadLP = setTimeout(() => {
+    _mReloadLP = null;
+    _mReloadDidLP = true;
+    if (navigator.vibrate) { try { navigator.vibrate(10); } catch(x) {} }
+    mUndo();
+  }, 550);
+}, {passive: true});
+['touchend', 'touchmove', 'touchcancel'].forEach(ev => document.addEventListener(ev, () => {
+  if (_mReloadLP) { clearTimeout(_mReloadLP); _mReloadLP = null; }
+}, {passive: true}));
 function selTask() {}
 function showCtx() {}
 function showWrRuleCtx() {}
@@ -1058,7 +1079,7 @@ function mRenderUnassigned() {
     return `<button class="m-chip${sel ? ' selected' : ''}" onclick="mSelectChip('${t.id}')" data-cid="${t.id}" data-cname="${escHtml(t.name)}" data-ccat="${escHtml(t.category || '')}" style="--cdot:${s.bg};--cborder:${s.d}">${escHtml(t.name)}</button>`;
   }).join('');
   // Chips scroll in their own container so undo/redo/reload stay pinned at the right edge
-  const refreshBtn = `<button class="m-reload-btn" onclick="location.reload(true)" title="Reload app" style="flex-shrink:0;margin-left:auto">↻</button>`;
+  const refreshBtn = `<button class="m-reload-btn" onclick="mReloadTap()" title="Reload app (hold to undo)" style="flex-shrink:0;margin-left:auto">↻</button>`;
   bar.innerHTML = datePart + `<div id="mChipScroll">${chips}</div>` + refreshBtn;
   mInitChipDrag();
 }
