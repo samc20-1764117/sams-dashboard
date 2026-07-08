@@ -15,7 +15,7 @@
 // navigating to a versioned URL (a URL iOS has never cached — plain reload() can be
 // served straight back out of the iOS PWA app-shell cache and never update).
 (function(){
-  window._BUILD='20260708a';var BUILD=window._BUILD;
+  window._BUILD='20260708b';var BUILD=window._BUILD;
   try{
     var qs=new URLSearchParams(location.search);
     fetch('/mobile-version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(d){
@@ -307,7 +307,7 @@ if('serviceWorker' in navigator){
 }
 </script>
 <script src="supabase.min.js?v=2110"></script>
-<script src="core.js?v=20260708a"></script>
-<script src="features.js?v=20260708a"></script>
-<script src="mobile-overview.js?v=20260708a"></script>
+<script src="core.js?v=20260708b"></script>
+<script src="features.js?v=20260708b"></script>
+<script src="mobile-overview.js?v=20260708b"></script>
 </body></html>

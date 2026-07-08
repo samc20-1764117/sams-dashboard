@@ -1027,10 +1027,79 @@ function mRenderUnassigned() {
   const chips = allUnassigned.map(t => {
     const s = gc(t.category || '');
     const sel = _mSelectedChipId === String(t.id);
-    return `<button class="m-chip${sel ? ' selected' : ''}" onclick="mSelectChip('${t.id}')" style="--cdot:${s.bg};--cborder:${s.d}">${escHtml(t.name)}</button>`;
+    return `<button class="m-chip${sel ? ' selected' : ''}" onclick="mSelectChip('${t.id}')" data-cid="${t.id}" data-cname="${escHtml(t.name)}" data-ccat="${escHtml(t.category || '')}" style="--cdot:${s.bg};--cborder:${s.d}">${escHtml(t.name)}</button>`;
   }).join('');
+  // Chips scroll in their own container so the reload button stays pinned at the right edge
   const refreshBtn = `<button class="m-reload-btn" onclick="location.reload(true)" title="Reload app" style="flex-shrink:0;margin-left:auto">↻</button>`;
-  bar.innerHTML = datePart + chips + refreshBtn;
+  bar.innerHTML = datePart + `<div id="mChipScroll">${chips}</div>` + refreshBtn;
+  mInitChipDrag();
+}
+
+// ── Long-press drag an unassigned chip onto the timeline → creates a 30-min block ──
+function mInitChipDrag() {
+  const bar = document.getElementById('mUnassignedBar');
+  if (!bar || bar._chipDragInited) return;
+  bar._chipDragInited = true;
+  let timer = null, drag = null, ghost = null, sx = 0, sy = 0;
+  const cancel = () => { if (timer) { clearTimeout(timer); timer = null; } };
+  const onMove = e => {
+    if (!drag) return;
+    e.preventDefault();
+    const t = e.touches[0];
+    ghost.style.left = t.clientX + 'px';
+    ghost.style.top = (t.clientY - 44) + 'px';
+  };
+  const cleanup = () => {
+    cancel();
+    if (ghost) { ghost.remove(); ghost = null; }
+    document.removeEventListener('touchmove', onMove);
+    drag = null;
+  };
+  bar.addEventListener('touchstart', e => {
+    const chip = e.target.closest('.m-chip');
+    if (!chip) return;
+    const t = e.touches[0]; sx = t.clientX; sy = t.clientY;
+    timer = setTimeout(() => {
+      timer = null;
+      drag = {id: chip.dataset.cid, name: chip.dataset.cname, cat: chip.dataset.ccat || 'Home'};
+      ghost = document.createElement('div');
+      ghost.className = 'm-chip m-chip-ghost';
+      ghost.textContent = drag.name;
+      document.body.appendChild(ghost);
+      ghost.style.left = sx + 'px'; ghost.style.top = (sy - 44) + 'px';
+      document.addEventListener('touchmove', onMove, {passive: false});
+      if (navigator.vibrate) { try { navigator.vibrate(10); } catch(x) {} }
+    }, 480);
+  }, {passive: true});
+  bar.addEventListener('touchmove', e => {
+    if (drag) return;
+    const t = e.touches[0];
+    // Finger moved before long-press fired → user is scrolling the chip row, not dragging
+    if (Math.abs(t.clientX - sx) > 10 || Math.abs(t.clientY - sy) > 10) cancel();
+  }, {passive: true});
+  bar.addEventListener('touchcancel', cleanup, {passive: true});
+  bar.addEventListener('touchend', async e => {
+    if (!drag) { cancel(); return; }
+    const t = e.changedTouches[0];
+    const d = drag; cleanup();
+    const col = document.getElementById('mTLCol');
+    if (!col) return;
+    const rect = col.getBoundingClientRect();
+    if (t.clientY < rect.top || t.clientY > rect.bottom || t.clientX < rect.left - 40 || t.clientX > rect.right) return; // dropped outside timeline
+    let sm = M_TB_START + (t.clientY - rect.top) / M_PX;
+    sm = Math.max(M_TB_START, Math.min(M_TB_END - 30, Math.round(sm / 15) * 15));
+    let taskId = null, recId = null, shopId = null;
+    const cid = String(d.id);
+    if (cid.startsWith('rec-')) recId = cid.replace('rec-', '');
+    else if (cid.startsWith('shop-')) shopId = cid.replace('shop-', '');
+    else taskId = cid;
+    const b = {id: 'lb-' + Date.now(), title: d.name, ds: d2s(getDayDate(_mTBOffset)), sm, dur: 30, cat: d.cat, taskId, recId, shopId, _done: false};
+    if (!st.blocks) st.blocks = [];
+    st.blocks.push(b);
+    _mSelectedChipId = null;
+    save(); mRenderTB();
+    await sbSaveBlock(b);
+  }, {passive: true});
 }
 
 function mRenderTimeline() {

@@ -59,9 +59,9 @@ let undoStack=[];let undoTimer=null;
 let shopSortMode='store'; // 'store' or 'alpha'
 
 // ── Storage ────────────────────────────────────────────────────────────────────
-function load(){try{const s=JSON.parse(localStorage.getItem(KEY)||'{}');if(s.cfg)cfg={...cfg,...s.cfg};if(s.blocks)st.blocks=s.blocks.map(b=>{const{_col,_ncols,...rest}=b;return rest;});if(s.sb!==undefined)sbOpen=s.sb;if(s.overrides)localOverrides=s.overrides;if(s.delRec)deletedRecIds=new Set(s.delRec);if(s.delPupSess)deletedPupSessIds=new Set(s.delPupSess);if(s.tasks)st.tasks=s.tasks;if(s.recurring)st.recurring=s.recurring.map(r=>({...r,_doneByWk:r._doneByWk||{}}));if(s.shopping)st.shopping=s.shopping;if(s.travel)st.travel=s.travel;if(s.birthdays)st.birthdays=s.birthdays;if(s.ideas)st.ideas=s.ideas;if(s.pup_skills)st.pup_skills=s.pup_skills;if(s.pupSessions)st.pupSessions=s.pupSessions;if(s.pupWeeklyFocus)st.pupWeeklyFocus=s.pupWeeklyFocus;if(s.recipes)st.recipes=s.recipes;if(s.videos)st.videos=s.videos;if(s.autoTimeblocks)st.autoTimeblocks=s.autoTimeblocks;if(s.autoTBOverrides)st.autoTBOverrides=s.autoTBOverrides;if(s.wrRules)st.wrRules=s.wrRules;if(s.wrOverrides)st.wrOverrides=s.wrOverrides;if(s._ytDismissed)st._ytDismissed=s._ytDismissed;if(s.groceryStaples)st.groceryStaples=s.groceryStaples;if(s.groceryList)st.groceryList=s.groceryList;if(s.mealPlan)st.mealPlan=s.mealPlan;if(s.packTemplates)st.packTemplates=s.packTemplates;if(s.packItems)st.packItems=s.packItems;if(s.finance)st.finance=s.finance;if(s.finSubs)st.finSubs=s.finSubs;if(s.easyMeals)st.easyMeals=s.easyMeals;}catch(e){}}
+function load(){try{const s=JSON.parse(localStorage.getItem(KEY)||'{}');if(s.cfg)cfg={...cfg,...s.cfg};if(s.blocks)st.blocks=s.blocks.map(b=>{const{_col,_ncols,...rest}=b;return rest;});if(s.sb!==undefined)sbOpen=s.sb;if(s.overrides)localOverrides=_ovProxy(s.overrides);if(s.overrideTs)_ovTs=s.overrideTs;if(s.delRec)deletedRecIds=new Set(s.delRec);if(s.delPupSess)deletedPupSessIds=new Set(s.delPupSess);if(s.tasks)st.tasks=s.tasks;if(s.recurring)st.recurring=s.recurring.map(r=>({...r,_doneByWk:r._doneByWk||{}}));if(s.shopping)st.shopping=s.shopping;if(s.travel)st.travel=s.travel;if(s.birthdays)st.birthdays=s.birthdays;if(s.ideas)st.ideas=s.ideas;if(s.pup_skills)st.pup_skills=s.pup_skills;if(s.pupSessions)st.pupSessions=s.pupSessions;if(s.pupWeeklyFocus)st.pupWeeklyFocus=s.pupWeeklyFocus;if(s.recipes)st.recipes=s.recipes;if(s.videos)st.videos=s.videos;if(s.autoTimeblocks)st.autoTimeblocks=s.autoTimeblocks;if(s.autoTBOverrides)st.autoTBOverrides=s.autoTBOverrides;if(s.wrRules)st.wrRules=s.wrRules;if(s.wrOverrides)st.wrOverrides=s.wrOverrides;if(s._ytDismissed)st._ytDismissed=s._ytDismissed;if(s.groceryStaples)st.groceryStaples=s.groceryStaples;if(s.groceryList)st.groceryList=s.groceryList;if(s.mealPlan)st.mealPlan=s.mealPlan;if(s.packTemplates)st.packTemplates=s.packTemplates;if(s.packItems)st.packItems=s.packItems;if(s.finance)st.finance=s.finance;if(s.finSubs)st.finSubs=s.finSubs;if(s.easyMeals)st.easyMeals=s.easyMeals;}catch(e){}}
 let _lastSaveTs=0;
-function save(){_lastSaveTs=Date.now();try{localStorage.setItem(KEY,JSON.stringify({cfg,blocks:st.blocks,sb:sbOpen,overrides:localOverrides,delRec:[...deletedRecIds],delPupSess:[...deletedPupSessIds],tasks:st.tasks,recurring:st.recurring,shopping:st.shopping,travel:st.travel,birthdays:st.birthdays,ideas:st.ideas,pup_skills:st.pup_skills,pupSessions:st.pupSessions,pupWeeklyFocus:st.pupWeeklyFocus,recipes:st.recipes,videos:st.videos,autoTimeblocks:st.autoTimeblocks,autoTBOverrides:st.autoTBOverrides,wrRules:st.wrRules,wrOverrides:st.wrOverrides,_ytDismissed:st._ytDismissed,groceryStaples:st.groceryStaples,groceryList:st.groceryList,mealPlan:st.mealPlan,packTemplates:st.packTemplates,packItems:st.packItems,finance:st.finance,finSubs:st.finSubs,easyMeals:st.easyMeals}));}catch(e){}}
+function save(){_lastSaveTs=Date.now();try{localStorage.setItem(KEY,JSON.stringify({cfg,blocks:st.blocks,sb:sbOpen,overrides:localOverrides,overrideTs:_ovTs,delRec:[...deletedRecIds],delPupSess:[...deletedPupSessIds],tasks:st.tasks,recurring:st.recurring,shopping:st.shopping,travel:st.travel,birthdays:st.birthdays,ideas:st.ideas,pup_skills:st.pup_skills,pupSessions:st.pupSessions,pupWeeklyFocus:st.pupWeeklyFocus,recipes:st.recipes,videos:st.videos,autoTimeblocks:st.autoTimeblocks,autoTBOverrides:st.autoTBOverrides,wrRules:st.wrRules,wrOverrides:st.wrOverrides,_ytDismissed:st._ytDismissed,groceryStaples:st.groceryStaples,groceryList:st.groceryList,mealPlan:st.mealPlan,packTemplates:st.packTemplates,packItems:st.packItems,finance:st.finance,finSubs:st.finSubs,easyMeals:st.easyMeals}));}catch(e){}}
 
 // ── Auth ───────────────────────────────────────────────────────────────────────
 let _sbClient=null;
@@ -141,8 +141,15 @@ async function sbReq(method,table,body,qs='',_retried=false){
   }
 }
 // localOverrides: map of taskId -> partial fields that always win over DB on sync
-// Persisted to localStorage so refreshes don't lose pending changes
-let localOverrides={};
+// Persisted to localStorage so refreshes don't lose pending changes.
+// _ovTs records WHEN each override was set (proxy traps assignment), so the merge can
+// drop an override when the DB row was updated more recently by another device.
+let _ovTs={};
+const _ovProxy=o=>new Proxy(o,{
+  set(t,k,v){t[k]=v;_ovTs[k]=Date.now();return true;},
+  deleteProperty(t,k){delete t[k];delete _ovTs[k];return true;}
+});
+let localOverrides=_ovProxy({});
 // Per-tab table-version cursor for gated sync. In-memory ON PURPOSE (not persisted):
 // a shared localStorage cursor would let one tab advance it and starve another tab's
 // refetch (stale st, then its save() clobbers the fresh copy). Page load = full sync.
@@ -405,6 +412,12 @@ async function syncAll(silent=false){
             return dbVal===ov;
           });
           if(allMatch){delete localOverrides[sid];save();}
+          else if(dbT.updated_at&&Date.parse(dbT.updated_at)>(_ovTs[sid]||0)+5000){
+            // DB row was updated AFTER this override was set → another device changed it.
+            // Remote wins; drop the override instead of re-pushing our stale value
+            // (re-pushing here reverted phone-made moves back to the old date).
+            delete localOverrides[sid];save();
+          }
           else{
             // DB still doesn't reflect this local change — a prior PATCH silently failed
             // (e.g. expired session/network blip). Re-push it so it eventually lands instead
