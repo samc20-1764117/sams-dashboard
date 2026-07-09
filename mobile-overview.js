@@ -43,7 +43,7 @@ function _mSnack(msg, btnLabel, btnFn) {
   let el = document.getElementById('mSnack');
   if (!el) { el = document.createElement('div'); el.id = 'mSnack'; document.body.appendChild(el); }
   window._mSnackAction = btnFn;
-  el.innerHTML = `<span>${escHtml(msg)}</span><button onclick="document.getElementById('mSnack').classList.remove('show');(_mSnackAction||function(){})()">${btnLabel}</button>`;
+  el.innerHTML = `<span>${escHtml(msg)}</span>` + (btnLabel ? `<button onclick="document.getElementById('mSnack').classList.remove('show');(_mSnackAction||function(){})()">${btnLabel}</button>` : '');
   el.classList.add('show');
   clearTimeout(el._t);
   el._t = setTimeout(() => el.classList.remove('show'), 5000);
@@ -51,7 +51,7 @@ function _mSnack(msg, btnLabel, btnFn) {
 function _showUndoToast(msg) { _mSnack(msg || 'Done', 'UNDO', () => mUndo()); }
 function _showRedoToast() {}
 
-// Reload button: tap = reload, hold (550ms) = undo last action (works past the snackbar window)
+// Reload button: tap = reload, hold (~1.5s) = undo last action (works past the snackbar window)
 let _mReloadLP = null, _mReloadDidLP = false;
 function mReloadTap() {
   if (_mReloadDidLP) { _mReloadDidLP = false; return; } // click after a long-press: swallow
@@ -66,7 +66,7 @@ document.addEventListener('touchstart', e => {
     _mReloadDidLP = true;
     if (navigator.vibrate) { try { navigator.vibrate(10); } catch(x) {} }
     mUndo();
-  }, 550);
+  }, 1500);
 }, {passive: true});
 ['touchend', 'touchmove', 'touchcancel'].forEach(ev => document.addEventListener(ev, () => {
   if (_mReloadLP) { clearTimeout(_mReloadLP); _mReloadLP = null; }
@@ -674,9 +674,10 @@ function mMoveToToday(id, type) {
 // ── Undo / redo (core.js stacks; shared toggles + instrumented mobile actions) ──
 function mUndo() {
   if (!undoStack.length) { showToast('Nothing to undo', '#6b6880', 1200); return; }
+  const label = undoStack[undoStack.length - 1].msg || 'last action';
   doUndo();
   renderAll();
-  _mSnack('Undone', 'REDO', () => mRedo());
+  _mSnack('Undid: ' + label, null, null);
 }
 async function mRedo() {
   if (!redoStack.length) { showToast('Nothing to redo', '#6b6880', 1200); return; }
