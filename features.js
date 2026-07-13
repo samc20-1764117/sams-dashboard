@@ -19,7 +19,7 @@ function openQA(ctx,btn,ds='',kcat=''){
   if(ctx==='pup'){
     title='Add Skill';
     const selStyle='width:100%;padding:5px 7px;border-radius:8px;border:1px solid var(--border);font-family:inherit;font-size:12px;background:rgba(255,255,255,.8);color:var(--text);outline:none';
-    extra=`<div class="qa-field"><label>Pup</label><select id="qaPup" style="${selStyle}"><option value="Mochi">Mochi</option><option value="Sunny">Sunny</option></select></div>
+    extra=`<div class="qa-field"><label>Pup</label><select id="qaPup" style="${selStyle}"><option value="Both">Both</option><option value="Mochi">Mochi only</option><option value="Sunny">Sunny only</option></select></div>
     <div class="qa-field"><label>Level</label><select id="qaLevel" style="${selStyle}"><option value="">—</option><option value="Easy">Easy</option><option value="Medium">Medium</option><option value="Hard">Hard</option></select></div>
     <div class="qa-field"><label>Stage</label><select id="qaStage" style="${selStyle}"><option value="Not Started">Not Started</option><option value="In Progress">In Progress</option><option value="Mastered">Mastered</option></select></div>`;
   } else if(ctx==='shop'){
@@ -51,13 +51,20 @@ async function submitQA(){
   const n=document.getElementById('qaName').value.trim();if(!n){closeQA();return;}
   closeQA();
   if(qaCtx==='pup'){
-    const pup=document.getElementById('qaPup')?.value||'Mochi';
+    const sel=document.getElementById('qaPup')?.value||'Both';
     const level=document.getElementById('qaLevel')?.value||null;
     const stage=document.getElementById('qaStage')?.value||'Not Started';
-    const s={id:'l-'+Date.now(),pup,skill:n,level:level||null,stage,focus:false,success_rate:null,next_step:null,comments:null};
-    st.pup_skills.push(s);save();renderPupsPage();
-    const sv=await sbReq('POST','pup_skills',{pup,skill:n,level:level||null,stage,focus:false});
-    if(sv&&sv[0]){const i=st.pup_skills.findIndex(x=>x.id===s.id);if(i>-1)st.pup_skills[i]=sv[0];save();renderPupTable();}
+    const tmp=Date.now();
+    // Always create records for BOTH pups; "X only" marks the other pup skipped
+    const recs=['Mochi','Sunny'].map(pup=>({id:'l-'+tmp+'-'+pup[0],pup,skill:n,level:level||null,stage,focus:false,success_rate:null,next_step:null,comments:null}));
+    recs.forEach(s=>st.pup_skills.push(s));save();renderPupsPage();
+    for(const s of recs){
+      const sv=await sbReq('POST','pup_skills',{pup:s.pup,skill:n,level:level||null,stage,focus:false});
+      if(sv&&sv[0]){const i=st.pup_skills.findIndex(x=>x.id===s.id);if(i>-1)st.pup_skills[i]=sv[0];save();
+        if(sel!=='Both'&&sv[0].pup!==sel)_saveSkip(sv[0].id,true);
+      }
+    }
+    renderPupTable();
     return;
   }
   if(qaCtx==='shop'){
