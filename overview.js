@@ -51,7 +51,7 @@ function _moveOtherSelected(ds,excludeSid,undos,excludePrefixes){
     // Video steps
     if(sid.startsWith('vidstep-')){
       const m=sid.match(/^vidstep-(.+)-(step_\w+)-(\d{4}-\d{2}-\d{2})$/)||sid.match(/^vidstep-(.+)-(step_\w+)$/);
-      if(m){const vidId=m[1],step=m[2],srcDay=m[3]||null;const prevDs=(_vidStepDayMap()[vidId+'::'+step]||{}).ds||null;_vidStepAssignToDay(vidId,step,ds,srcDay);
+      if(m){const vidId=m[1],step=m[2],srcDay=m[3]||null;const prevDs=(_vidStepDayMap()[vidId+'::'+step]||{}).ds||null;_vidStepAssignToDay(vidId,step,ds,srcDay||prevDs);
         undos.push(()=>{if(srcDay)_vidStepAssignToDay(vidId,step,srcDay,ds);else if(prevDs)_vidStepAssignToDay(vidId,step,prevDs);else _vidStepUnassign(vidId,step);});}
       return;
     }
@@ -3751,6 +3751,8 @@ function _vidStepAssignToDay(vidId,step,ds,srcDay){
   // Guard: already on this day (primary or extraDays)
   if(prevDs===ds){showToast('Already on this day','#e67e22',1500);return;}
   if(prev&&prev.extraDays&&prev.extraDays.includes(ds)){showToast('Already on this day','#e67e22',1500);return;}
+  // Fresh drag (no srcDay) of a multi-day stage already on the calendar → add another instance, don't move
+  if(!srcDay&&prev&&step!=='step_thumbnail'&&step!=='step_description'){_vidStepAssignExtraDay(vidId,step,ds);return;}
   if(srcDay&&prev&&prevDs!==srcDay){
     // Moving a non-primary instance: swap its extraDay, leave primary untouched
     const ne={...prev,extraDays:(prev.extraDays||[]).filter(d=>d!==srcDay)};
@@ -3898,6 +3900,7 @@ function _vidStepAssignExtraDay(vidId,step,ds){
   if(entry.extraDays.includes(ds))return;// already extra
   entry.extraDays.push(ds);_vidStepDayMapSet(m);
   save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
+  const panel=document.getElementById('vidOvPanel');if(panel&&panel.style.display==='block')_renderVidOvMenu();
   pushUndo(()=>{const m2=_vidStepDayMap();const e2=m2[key];if(e2&&e2.extraDays){e2.extraDays=e2.extraDays.filter(d=>d!==ds);if(!e2.extraDays.length)delete e2.extraDays;_vidStepDayMapSet(m2);}save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();},'Assigned step to day');
 }
 function _vidStepAddBlock(vidId,step,ds){
