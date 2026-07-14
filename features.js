@@ -6189,7 +6189,7 @@ function getOvRecurring(){
     });
     // Weekly reset tasks: check all past-week overrides
     {const wkKey=getWkKey(w);
-    st.recurring.filter(r=>(r.is_weekly_reset===true||r.is_weekly_reset==='true')&&r._dateOverrides&&r._dateOverrides[wkKey]&&r._dateOverrides[wkKey]!=='__skip__'&&!wrRecHandled.has(String(r.id))).forEach(r=>{
+    st.recurring.filter(r=>(r.is_weekly_reset===true||r.is_weekly_reset==='true')&&r._dateOverrides&&r._dateOverrides[wkKey]&&r._dateOverrides[wkKey]!=='__skip__'&&!(st.wrOverrides||[]).some(o=>String(o.rule_id)===String(r.id)&&o.wk_key===wkKey&&(o.override_type==='skip'||o.override_type==='move'))&&!wrRecHandled.has(String(r.id))).forEach(r=>{
       if(r._dateOverrides[wkKey]<=today)wrRecHandled.add(String(r.id));// only block older-week lookback when date is today or past (not future)
       const _wk='wrec-'+r.id+'::'+wkKey;
       if(!(r._doneByWk&&r._doneByWk[wkKey])&&r._dateOverrides[wkKey]<today&&!seen.has(_wk)){seen.add(_wk);out.push({id:'rec-virt-'+r.id,name:r.name,category:'Recurring',due_date:r._dateOverrides[wkKey],done:false,_recId:r.id,_virtual:true,_wkKey:wkKey,_isWrec:true});}
