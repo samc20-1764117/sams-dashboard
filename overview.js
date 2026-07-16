@@ -3793,12 +3793,19 @@ function _vidStepToggleDone(vidId,step,checked,_fromTB,forDay){
   const _prevMapDone=m[key].done;
   const _prevDoneDays=m[key].doneDays?JSON.parse(JSON.stringify(m[key].doneDays)):null;
   const _prevBlockStates=(st.blocks||[]).filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step).map(bl=>({id:bl.id,done:bl._done}));
-  // For Build/VO/Cut, done flag tracks whether ALL TB blocks for this stage are done
+  // For Build/VO/Cut, done flag tracks whether ALL instances (TB blocks + calendar-only days) are done
+  const _allInstanceDays=()=>{
+    const days=new Set();
+    if(m[key].ds)days.add(m[key].ds);
+    (m[key].extraDays||[]).forEach(d=>days.add(d));
+    (st.blocks||[]).filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step).forEach(bl=>days.add(bl.ds));
+    return[...days];
+  };
+  const _stageAllDone=()=>{const days=_allInstanceDays();return days.length>0&&days.every(d=>_vidStepComputeDone(vidId,step,d,m[key]));};
   if(step!=='step_thumbnail'&&step!=='step_description'){
     if(_fromTB){
-      // Called from TB checkbox — block already toggled, just check if all are done
-      const stageBlocks=(st.blocks||[]).filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step);
-      m[key].done=stageBlocks.length>0&&stageBlocks.every(bl=>bl._done);
+      // Called from TB checkbox — block already toggled, just check if all instances are done
+      m[key].done=_stageAllDone();
     } else if(forDay){
       // Called from today/weekly list with day scope — only toggle blocks for that day
       const dayBlocks=(st.blocks||[]).filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step&&bl.ds===forDay);
@@ -3809,13 +3816,18 @@ function _vidStepToggleDone(vidId,step,checked,_fromTB,forDay){
         if(checked)m[key].doneDays[forDay]=true;else delete m[key].doneDays[forDay];
         if(!Object.keys(m[key].doneDays).length)delete m[key].doneDays;
       }
-      // Update daymap done: all blocks across all days must be done
-      const allBlocks=(st.blocks||[]).filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step);
-      m[key].done=allBlocks.length>0&&allBlocks.every(bl=>bl._done);
+      // Update daymap done: all instances (blocks + calendar-only days) must be done
+      m[key].done=_stageAllDone();
     } else {
-      // Called from today/weekly list without day scope — mark ALL blocks to match
+      // Called from today/weekly list without day scope — mark ALL instances to match
       const stageBlocks=(st.blocks||[]).filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step);
       stageBlocks.forEach(bl=>{if(bl._done!==checked){bl._done=checked;sbUpdateBlock(bl.id,{done:checked});}});
+      const _blockDays=new Set(stageBlocks.map(bl=>bl.ds));
+      _allInstanceDays().filter(d=>!_blockDays.has(d)).forEach(d=>{
+        if(!m[key].doneDays)m[key].doneDays={};
+        if(checked)m[key].doneDays[d]=true;else delete m[key].doneDays[d];
+      });
+      if(m[key].doneDays&&!Object.keys(m[key].doneDays).length)delete m[key].doneDays;
       m[key].done=checked;
     }
   } else {
