@@ -3270,9 +3270,13 @@ function _wrClearPastOrphanPins(rule,isWrRule,lookback=6,skipWk=null){
     const v=rule._dateOverrides[wk];
     if(v==='__skip__')continue;
     if(isWrRule){
-      // WR rules are override-driven — only clear an existing undone pin.
-      if(!v)continue;
+      // Freeze undone past occurrences: pinned ones AND natural schedule-computed ones — an
+      // anchor shift (biweekly parity flip etc.) can surface phantom past due-weeks with no done
+      // record, which render as unchecked/overdue even though the original weeks WERE done.
+      const _natDue=typeof isWRRuleDueThisWeek==='function'&&isWRRuleDueThisWeek(rule,o);
+      if(!v&&!_natDue)continue;
       if(typeof isDoneWRRule==='function'&&isDoneWRRule(rule.id,wk))continue;
+      if((st.wrOverrides||[]).some(ov=>String(ov.rule_id)===String(rule.id)&&ov.wk_key===wk&&(ov.override_type==='skip'||ov.override_type==='move')))continue;
       removed.push({wk,val:v});rule._dateOverrides[wk]='__skip__';
     } else {
       // Non-WR: a forward shift flips biweekly parity / moves the anchor across history,
