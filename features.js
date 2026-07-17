@@ -33,8 +33,8 @@ function openQA(ctx,btn,ds='',kcat=''){
     const def=(ctx==='kanban'||ctx==='wkc')&&kcat?kcat:'Home';
     const defaultDate=ctx==='today'?d2s(getDayDate(dayOff)):(ds||'');
     extra=`<div class="qa-field"><label>Category</label>${catSelHTML('qaCat',def)}</div>
-    <div class="qa-field"><label>Due date <span style="opacity:.45">(optional)</span></label><input id="qaDue" type="date" value="${defaultDate}" style="width:100%;padding:5px 7px;border-radius:8px;border:1px solid var(--border);font-family:inherit;font-size:12px;background:rgba(255,255,255,.8);color:var(--text);outline:none"></div>
-    <div class="qa-imp-row"><input type="checkbox" id="qaImp" style="width:13px;height:13px;cursor:pointer;accent-color:#eab308"><label for="qaImp">⭐ Important</label></div>
+    <div class="qa-field"><label>Due date <span style="opacity:.45">(optional)</span></label><input id="qaDue" type="date" value="${defaultDate}" style="width:100%;padding:5px 7px;border-radius:8px;border:1px solid var(--border);font-family:inherit;font-size:12px;background:rgba(255,255,255,.8);color:var(--text);outline:none" onkeydown="if(event.key==='Tab'&&!event.shiftKey){event.preventDefault();document.getElementById('qaImp').focus();}"></div>
+    <div class="qa-imp-row"><input type="checkbox" id="qaImp" style="width:13px;height:13px;cursor:pointer;accent-color:#eab308" onkeydown="if(event.key==='Tab'&&!event.shiftKey){event.preventDefault();document.getElementById('qaNotes').focus();}"><label for="qaImp">⭐ Important</label></div>
     <div class="qa-field" style="margin-top:6px"><label>Notes <span style="opacity:.45;font-weight:400">(optional)</span></label><textarea id="qaNotes" placeholder="Add notes…" style="resize:vertical;min-height:44px;width:100%;font-family:inherit;font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,.6);color:var(--text);outline:none;box-sizing:border-box"></textarea></div>`;
   }
   document.getElementById('qaTitle').textContent=title;

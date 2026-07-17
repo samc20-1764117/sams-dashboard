@@ -2942,13 +2942,41 @@ function togWrRule(ruleId,isDone,wkKey){
 }
 
 // ── WR Rule Context Menu ─────────────────────────────────────────────────────
-let _wrCtxRuleId=null,_wrCtxWkKey=null,_wrCtxRecId=null;
+let _wrCtxRuleId=null,_wrCtxWkKey=null,_wrCtxRecId=null,_wrCtxMulti=null;
+// Map a selection ID (today list / weekly page rows) to a WR-rule or recurring target
+function _wrSelTarget(sid){
+  const m=String(sid).match(/^(wrrule(?:-virt)?|rec-virt|wrec)-(.+)$/);
+  if(!m)return null;
+  const id=String(m[2]);
+  if(m[1].startsWith('wrrule')&&st.wrRules.some(r=>String(r.id)===id))return{isRec:false,id};
+  if(st.recurring.some(r=>String(r.id)===id))return{isRec:true,id};
+  return null;
+}
+// Run a ctx action once per selected WR/recurring item (or just the clicked one)
+function _wrCtxEach(fn){
+  const targets=_wrCtxMulti&&_wrCtxMulti.length>1?_wrCtxMulti.slice():null;
+  if(!targets){fn();return;}
+  targets.forEach(t=>{
+    if(t.isRec){_wrCtxRecId=t.id;_wrCtxRuleId=null;}
+    else{_wrCtxRuleId=t.id;_wrCtxRecId=null;}
+    fn();
+  });
+  _wrCtxMulti=null;
+  if(typeof clearSelection==='function')clearSelection();
+}
 
 function showWrRuleCtx(e,id,wkKey){
   e.preventDefault();e.stopPropagation();
   const isRule=st.wrRules.some(r=>String(r.id)===String(id));
   if(isRule){_wrCtxRuleId=String(id);_wrCtxRecId=null;}else{_wrCtxRecId=String(id);_wrCtxRuleId=null;}
   _wrCtxWkKey=wkKey;
+  // Multi-select: if the clicked item is part of a multi-selection of WR/recurring items, actions apply to all
+  _wrCtxMulti=null;
+  if(typeof selectedTasks!=='undefined'&&selectedTasks.size>1){
+    const seen=new Set(),targets=[];
+    selectedTasks.forEach(sid=>{const t=_wrSelTarget(sid);if(t&&!seen.has(t.isRec+':'+t.id)){seen.add(t.isRec+':'+t.id);targets.push(t);}});
+    if(targets.length>1&&targets.some(t=>t.id===String(id)))_wrCtxMulti=targets;
+  }
   // Determine cadence
   const rule=isRule?st.wrRules.find(r=>String(r.id)===String(id)):st.recurring.find(r=>String(r.id)===String(id));
   const cad=rule?.cadence||'weekly';
@@ -2961,7 +2989,7 @@ function showWrRuleCtx(e,id,wkKey){
   const _icoSkip=_ico('<circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>');
   const _icoX=_ico('<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',10);
   let h=`<div style="display:flex;align-items:center;justify-content:space-between;padding:4px 8px 2px">`;
-  h+=`<span style="font-size:10px;font-weight:600;color:var(--muted)">${rule?.name||'Task'}</span>`;
+  h+=`<span style="font-size:10px;font-weight:600;color:var(--muted)">${_wrCtxMulti?_wrCtxMulti.length+' selected':rule?.name||'Task'}</span>`;
   h+=`<button onclick="wrCtxDeleteRule()" style="background:none;border:none;cursor:pointer;color:var(--muted);padding:2px;border-radius:4px;display:flex;align-items:center" title="Delete rule permanently">${_icoX}</button>`;
   h+=`</div>`;
   if(isInterval){
@@ -3118,8 +3146,9 @@ function showWrXPicker(e,rid,wkKey){
   );
 }
 
-function wrCtxSkipThisWeek(){
-  hideWrRuleCtx();if(!_wrCtxWkKey)return;
+function wrCtxSkipThisWeek(){hideWrRuleCtx();_wrCtxEach(_wrCtxSkipThisWeekOne);}
+function _wrCtxSkipThisWeekOne(){
+  if(!_wrCtxWkKey)return;
   if(_wrCtxRecId){
     const r=st.recurring.find(x=>String(x.id)===_wrCtxRecId);if(!r)return;
     if(r.is_weekly_reset===true||r.is_weekly_reset==='true')skipWRec(_wrCtxRecId,_wrCtxWkKey);
@@ -3142,8 +3171,8 @@ function _wrClampToWeek(ds,targetWkKey){
   if(targetWkKey===getWkKey(0)&&ds<tod())ds=tod();
   return ds;
 }
-function _wrShiftAnchor(delta){
-  hideWrRuleCtx();
+function _wrShiftAnchor(delta){hideWrRuleCtx();_wrCtxEach(()=>_wrShiftAnchorOne(delta));}
+function _wrShiftAnchorOne(delta){
   if(_wrCtxRecId){
     const r=st.recurring.find(x=>String(x.id)===_wrCtxRecId);if(!r||!_wrCtxWkKey)return;
     if(!r._dateOverrides)r._dateOverrides={};
@@ -3232,11 +3261,12 @@ function wrCtxMoveNextWeek(){_wrShiftAnchor(7);}
 // a deleted pin gets resurrected by a stale tab/device's prevPins merge on sync, but a DB '__skip__'
 // wins over any stale local pin (core.js sync merge), so the removal sticks everywhere.
 // Returns removed {wk,val} for undo (undo restores the original value).
-function _wrClearPastOrphanPins(rule,isWrRule,lookback=6){
+function _wrClearPastOrphanPins(rule,isWrRule,lookback=6,skipWk=null){
   const removed=[];
   if(!rule._dateOverrides)rule._dateOverrides={};
   for(let o=-1;o>=-lookback;o--){
     const wk=getWkKey(o);
+    if(wk===skipWk)continue;
     const v=rule._dateOverrides[wk];
     if(v==='__skip__')continue;
     if(isWrRule){
@@ -3272,16 +3302,24 @@ function _recMoveAllFuture(r,srcWkKey,ds,extraRender){
   const newStart=d2s(base);
   const newAppears=(r.cadence==='monthly')?String(new Date(ds+'T00:00:00').getDate()):DAYS_AF[new Date(ds+'T00:00:00').getDay()];
   if(_prevSrcPin!==undefined)delete r._dateOverrides[srcWkKey];
-  const _orphans=_wrClearPastOrphanPins(r,false);
   const _futPins=_recClearFuturePins(r);
   r.starting_date=newStart;r.appears_on_date=newAppears;
+  // Orphan clearing MUST run against the already-shifted schedule — the shift can surface phantom
+  // past occurrences (new parity) that never existed before; never freeze the move target's week.
+  const _orphans=_wrClearPastOrphanPins(r,false,6,tgtWkKey);
+  // Same phantom in the CURRENT week: shifted schedule lands an undone occurrence on an already-past day
+  const _curWk=getWkKey(0);
+  if(_curWk!==tgtWkKey&&_curWk!==srcWkKey&&r._dateOverrides[_curWk]!=='__skip__'){
+    const _curOcc=getRecurringWeekTasks(0).find(t=>String(t._recId)===String(r.id));
+    if(_curOcc&&!_curOcc.done&&_curOcc.due_date<tod()){_orphans.push({wk:_curWk,val:r._dateOverrides[_curWk]});r._dateOverrides[_curWk]='__skip__';}
+  }
   const rerender=()=>{save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();if(extraRender)extraRender();};
   rerender();
   sbReq('PATCH','wr_recurring_rules',{starting_date:newStart,appears_on_date:newAppears,date_overrides:r._dateOverrides},recQs(r.id));
   pushUndo(()=>{r.starting_date=prevStart;r.appears_on_date=prevAppears;if(_prevSrcPin!==undefined)r._dateOverrides[srcWkKey]=_prevSrcPin;_orphans.forEach(o=>{if(o.val===undefined)delete r._dateOverrides[o.wk];else r._dateOverrides[o.wk]=o.val;});_futPins.forEach(o=>{r._dateOverrides[o.wk]=o.val;});rerender();sbReq('PATCH','wr_recurring_rules',{starting_date:prevStart,appears_on_date:prevAppears,date_overrides:r._dateOverrides},recQs(r.id));},'Moved recurring task all future');
 }
-function wrCtxShiftSchedule(delta){
-  hideWrRuleCtx();
+function wrCtxShiftSchedule(delta){hideWrRuleCtx();_wrCtxEach(()=>_wrCtxShiftScheduleOne(delta));}
+function _wrCtxShiftScheduleOne(delta){
   const rid=_wrCtxRecId||_wrCtxRuleId;if(!rid)return;
   const isRec=!!_wrCtxRecId;
   const rule=isRec?st.recurring.find(r=>String(r.id)===rid):st.wrRules.find(r=>String(r.id)===rid);
@@ -3377,6 +3415,10 @@ function wrCtxEditRule(){
 }
 function wrCtxDeleteRule(ruleId){
   hideWrRuleCtx();
+  if(ruleId){_wrCtxDeleteRuleOne(ruleId);return;}
+  _wrCtxEach(_wrCtxDeleteRuleOne);
+}
+function _wrCtxDeleteRuleOne(ruleId){
   if(!ruleId&&_wrCtxRecId){delRec(_wrCtxRecId);return;}
   const rid=ruleId||_wrCtxRuleId;if(!rid)return;
   const rule=st.wrRules.find(r=>String(r.id)===String(rid));if(!rule)return;
