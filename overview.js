@@ -137,10 +137,10 @@ function renderToday(){
   // Weekly reset tasks pinned to today/overdue via _dateOverrides (look back 4 weeks)
   const _wkKeyNow=getWkKey(wkOff);
   const _wrecSeen=new Set();const wrecToday=[];
-  for(let _w=_wkHi;_w>=Math.min(0,_dayWkOff)-4;_w--){const _wkKey=getWkKey(_w);st.recurring.filter(r=>(r.is_weekly_reset===true||r.is_weekly_reset==='true')&&r._dateOverrides&&r._dateOverrides[_wkKey]&&r._dateOverrides[_wkKey]!=='__skip__'&&!(st.wrOverrides||[]).some(o=>String(o.rule_id)===String(r.id)&&o.wk_key===_wkKey&&(o.override_type==='skip'||o.override_type==='move'))&&(r._dateOverrides[_wkKey]===ds||(dayOff===0&&r._dateOverrides[_wkKey]<ds))&&!_wrecSeen.has(r.id+'::'+_wkKey)).forEach(r=>{_wrecSeen.add(r.id+'::'+_wkKey);const _isDone=!!(r._doneByWk&&r._doneByWk[_wkKey]);wrecToday.push({id:'wrec-'+r.id,name:r.name,category:'Recurring',due_date:r._dateOverrides[_wkKey],done:_isDone,_recId:r.id,_virtual:true,_wkKey:_wkKey,_isWrec:true});});}
+  for(let _w=_wkHi;_w>=Math.min(0,_dayWkOff)-4;_w--){const _wkKey=getWkKey(_w);st.recurring.filter(r=>(r.is_weekly_reset===true||r.is_weekly_reset==='true')&&r._dateOverrides&&r._dateOverrides[_wkKey]&&r._dateOverrides[_wkKey]!=='__skip__'&&!(st.wrOverrides||[]).some(o=>String(o.rule_id)===String(r.id)&&o.wk_key===_wkKey&&(o.override_type==='skip'||o.override_type==='move'))&&(r._dateOverrides[_wkKey]===ds||(dayOff===0&&r._dateOverrides[_wkKey]<ds&&r._dateOverrides[_wkKey]>=getWkKey(0)))&&!_wrecSeen.has(r.id+'::'+_wkKey)).forEach(r=>{_wrecSeen.add(r.id+'::'+_wkKey);const _isDone=!!(r._doneByWk&&r._doneByWk[_wkKey]);wrecToday.push({id:'wrec-'+r.id,name:r.name,category:'Recurring',due_date:r._dateOverrides[_wkKey],done:_isDone,_recId:r.id,_virtual:true,_wkKey:_wkKey,_isWrec:true});});}
   // New-style WR rules pinned to today/overdue via _dateOverrides (look back 4 weeks)
   const _wrRulesSeen=new Set();const wrRulesToday=[];
-  for(let _w=_wkHi;_w>=Math.min(0,_dayWkOff)-4;_w--){const _wkKey=getWkKey(_w);st.wrRules.filter(r=>r._dateOverrides&&r._dateOverrides[_wkKey]&&r._dateOverrides[_wkKey]!=='__skip__'&&!(st.wrOverrides||[]).some(o=>String(o.rule_id)===String(r.id)&&o.wk_key===_wkKey&&(o.override_type==='skip'||o.override_type==='move'))&&(r._dateOverrides[_wkKey]===ds||(dayOff===0&&r._dateOverrides[_wkKey]<ds&&!isDoneWRRule(r.id,_wkKey)))&&!_wrRulesSeen.has(r.id+'::'+_wkKey)).forEach(r=>{_wrRulesSeen.add(r.id+'::'+_wkKey);const _isDone=isDoneWRRule(r.id,_wkKey);wrRulesToday.push({id:'wrrule-virt-'+r.id,name:r.name,category:'Recurring',due_date:r._dateOverrides[_wkKey],done:_isDone,_ruleId:r.id,_virtual:true,_wkKey:_wkKey,_isWrRule:true});});}
+  for(let _w=_wkHi;_w>=Math.min(0,_dayWkOff)-4;_w--){const _wkKey=getWkKey(_w);st.wrRules.filter(r=>r._dateOverrides&&r._dateOverrides[_wkKey]&&r._dateOverrides[_wkKey]!=='__skip__'&&!(st.wrOverrides||[]).some(o=>String(o.rule_id)===String(r.id)&&o.wk_key===_wkKey&&(o.override_type==='skip'||o.override_type==='move'))&&(r._dateOverrides[_wkKey]===ds||(dayOff===0&&r._dateOverrides[_wkKey]<ds&&r._dateOverrides[_wkKey]>=getWkKey(0)&&!isDoneWRRule(r.id,_wkKey)))&&!_wrRulesSeen.has(r.id+'::'+_wkKey)).forEach(r=>{_wrRulesSeen.add(r.id+'::'+_wkKey);const _isDone=isDoneWRRule(r.id,_wkKey);wrRulesToday.push({id:'wrrule-virt-'+r.id,name:r.name,category:'Recurring',due_date:r._dateOverrides[_wkKey],done:_isDone,_ruleId:r.id,_virtual:true,_wkKey:_wkKey,_isWrRule:true});});}
   // Shopping items due today (or overdue when viewing today)
   const shopToday=st.shopping
     .filter(s=>!s.done&&s.due_date&&(s.due_date===ds||(dayOff===0&&isOv(s.due_date))))
@@ -2750,13 +2750,15 @@ function renderRecOv(){
     wrap.addEventListener('mousedown',e=>e.stopPropagation());
     return wrap;
   }
-  // ── Overdue WR: rules whose most-recent prior due week was missed (current-week view only) ──
+  // ── Overdue WR: PREVIOUS WEEK ONLY (older misses stay history), and only when the rule is
+  // NOT also due this week (a weekly task due again supersedes last week's miss). Shows here in
+  // the WR container ONLY — WR overdue is deliberately separate from the general overdue list.
   if(wrRecOff===0){
     const _ovRows=[];
     st.wrRules.filter(r=>r.is_enabled).forEach(r=>{
       if(items.some(x=>String(x.id)===String(r.id)))return; // already present this week
       const _startMon=r.starting_date?(()=>{const sd=new Date(r.starting_date+'T12:00');const dw=sd.getDay();const m=new Date(sd);m.setDate(sd.getDate()-(dw===0?6:dw-1));m.setHours(0,0,0,0);return m;})():null;
-      for(let w=-1;w>=-8;w--){
+      for(let w=-1;w>=-1;w--){
         const pwk=getWkKey(w);
         if(_startMon&&new Date(pwk+'T12:00')<_startMon)break; // before the rule existed
         const pinned=r._dateOverrides&&r._dateOverrides[pwk];

@@ -6187,29 +6187,9 @@ function getOvRecurring(){
       seen.add(_dk);
       if(!v.done&&v.due_date<today){out.push(v);}
     });
-    // Weekly reset tasks: check all past-week overrides
-    {const wkKey=getWkKey(w);
-    st.recurring.filter(r=>(r.is_weekly_reset===true||r.is_weekly_reset==='true')&&r._dateOverrides&&r._dateOverrides[wkKey]&&r._dateOverrides[wkKey]!=='__skip__'&&!(st.wrOverrides||[]).some(o=>String(o.rule_id)===String(r.id)&&o.wk_key===wkKey&&(o.override_type==='skip'||o.override_type==='move'))&&!wrRecHandled.has(String(r.id))).forEach(r=>{
-      if(r._dateOverrides[wkKey]<=today)wrRecHandled.add(String(r.id));// only block older-week lookback when date is today or past (not future)
-      const _wk='wrec-'+r.id+'::'+wkKey;
-      if(!(r._doneByWk&&r._doneByWk[wkKey])&&r._dateOverrides[wkKey]<today&&!seen.has(_wk)){seen.add(_wk);out.push({id:'rec-virt-'+r.id,name:r.name,category:'Recurring',due_date:r._dateOverrides[wkKey],done:false,_recId:r.id,_virtual:true,_wkKey:wkKey,_isWrec:true});}
-    });
-    // WR rules: check all past-week overrides
-    st.wrRules.filter(r=>r._dateOverrides&&r._dateOverrides[wkKey]&&r._dateOverrides[wkKey]!=='__skip__'&&!wrRuleHandled.has(String(r.id))&&!(st.wrOverrides||[]).some(o=>String(o.rule_id)===String(r.id)&&o.wk_key===wkKey&&(o.override_type==='skip'||o.override_type==='move'))).forEach(r=>{
-      if(r._dateOverrides[wkKey]<=today)wrRuleHandled.add(String(r.id));// only block older-week lookback when date is today or past (not future)
-      const _wrk='wrrule-'+r.id+'::'+wkKey;
-      if(!isDoneWRRule(r.id,wkKey)&&r._dateOverrides[wkKey]<today&&!seen.has(_wrk)){seen.add(_wrk);out.push({id:'wrrule-virt-'+r.id,name:r.name,category:'Recurring',due_date:r._dateOverrides[wkKey],done:false,_ruleId:r.id,_virtual:true,_wkKey:wkKey,_isWrRule:true});}
-    });
-    // WR rules: NATURAL (unpinned) due weeks — an anchor shift can leave a past cycle with no
-    // day pin at all; without this the overview overdue list misses it (weekly page catches it).
-    st.wrRules.filter(r=>!wrRuleHandled.has(String(r.id))&&isWRRuleDueThisWeek(r,w)&&!(r._dateOverrides&&r._dateOverrides[wkKey]&&r._dateOverrides[wkKey]!=='__skip__')).forEach(r=>{
-      wrRuleHandled.add(String(r.id));
-      if(w===0)return; // due this week — lives in the WR container, not overdue
-      if(r._dateOverrides&&r._dateOverrides[wkKey]==='__skip__')return;
-      if((st.wrOverrides||[]).some(o=>String(o.rule_id)===String(r.id)&&o.wk_key===wkKey&&(o.override_type==='skip'||o.override_type==='move')))return;
-      const _wrk2='wrrule-'+r.id+'::'+wkKey;
-      if(!isDoneWRRule(r.id,wkKey)&&!seen.has(_wrk2)){seen.add(_wrk2);out.push({id:'wrrule-virt-'+r.id,name:r.name,category:'Recurring',due_date:wkKey,done:false,_ruleId:r.id,_virtual:true,_wkKey:wkKey,_isWrRule:true});}
-    });}
+    // Weekly reset tasks (wrec + WR rules) are deliberately EXCLUDED here: WR overdue shows
+    // ONLY in the WR container (renderRecOv previous-week scan), never in the general overdue
+    // list/banner/rollover — they are a separate system.
   }
   return out;
 }
