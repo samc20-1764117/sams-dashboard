@@ -613,7 +613,8 @@ async function saveRecModal(){
   } else {
     appearsOn=document.getElementById('recRepeatDay').value||'Friday';
   }
-  const startDate=document.getElementById('recStartDate').value||null;
+  // Default start to today so new tasks never surface in past weeks (unbounded = legacy only)
+  const startDate=document.getElementById('recStartDate').value||tod();
   const pupRelated=isWeekly&&!!(document.getElementById('recPupRelated')?.checked);
   const notes=document.getElementById('recNotes')?.value.trim()||null;
   closeMod('recModal');
@@ -623,8 +624,7 @@ async function saveRecModal(){
   st.recurring.push(r);save();renderRecOv();renderWeeklyPage();renderWkSummary();renderWkCal();
   let recServerId=null;
   pushUndo(()=>{const rid=recServerId||localId;st.recurring=st.recurring.filter(x=>String(x.id)!==String(rid));save();renderRecOv();renderWeeklyPage();renderWkSummary();renderWkCal();if(recServerId)sbReq('DELETE','wr_recurring_rules',null,recQs(recServerId));},'Added recurring task');
-  const payload={name:n,is_weekly_reset:isWeekly,appears_on_date:appearsOn,cadence};
-    if(startDate)payload.starting_date=startDate;
+  const payload={name:n,is_weekly_reset:isWeekly,appears_on_date:appearsOn,cadence,starting_date:startDate};
   if(pupRelated)payload.pup_related=true;
   if(notes)payload.notes=notes;
   const sv=await sbReq('POST','wr_recurring_rules',payload);
