@@ -6199,6 +6199,16 @@ function getOvRecurring(){
       if(r._dateOverrides[wkKey]<=today)wrRuleHandled.add(String(r.id));// only block older-week lookback when date is today or past (not future)
       const _wrk='wrrule-'+r.id+'::'+wkKey;
       if(!isDoneWRRule(r.id,wkKey)&&r._dateOverrides[wkKey]<today&&!seen.has(_wrk)){seen.add(_wrk);out.push({id:'wrrule-virt-'+r.id,name:r.name,category:'Recurring',due_date:r._dateOverrides[wkKey],done:false,_ruleId:r.id,_virtual:true,_wkKey:wkKey,_isWrRule:true});}
+    });
+    // WR rules: NATURAL (unpinned) due weeks — an anchor shift can leave a past cycle with no
+    // day pin at all; without this the overview overdue list misses it (weekly page catches it).
+    st.wrRules.filter(r=>!wrRuleHandled.has(String(r.id))&&isWRRuleDueThisWeek(r,w)&&!(r._dateOverrides&&r._dateOverrides[wkKey]&&r._dateOverrides[wkKey]!=='__skip__')).forEach(r=>{
+      wrRuleHandled.add(String(r.id));
+      if(w===0)return; // due this week — lives in the WR container, not overdue
+      if(r._dateOverrides&&r._dateOverrides[wkKey]==='__skip__')return;
+      if((st.wrOverrides||[]).some(o=>String(o.rule_id)===String(r.id)&&o.wk_key===wkKey&&(o.override_type==='skip'||o.override_type==='move')))return;
+      const _wrk2='wrrule-'+r.id+'::'+wkKey;
+      if(!isDoneWRRule(r.id,wkKey)&&!seen.has(_wrk2)){seen.add(_wrk2);out.push({id:'wrrule-virt-'+r.id,name:r.name,category:'Recurring',due_date:wkKey,done:false,_ruleId:r.id,_virtual:true,_wkKey:wkKey,_isWrRule:true});}
     });}
   }
   return out;
