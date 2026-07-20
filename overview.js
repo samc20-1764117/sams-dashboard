@@ -3341,8 +3341,11 @@ function _wrCtxShiftScheduleOne(delta){
   if(!rule._dateOverrides)rule._dateOverrides={};
   const _prevDov=rule._dateOverrides[wkKey];
   if(_prevDov!==undefined)delete rule._dateOverrides[wkKey];
-  // Drop undone past-week occurrences from the old schedule so they don't linger as overdue.
-  const _orphans=_wrClearPastOrphanPins(rule,!isRec);
+  // Drop undone past-week occurrences from the old schedule so they don't linger as overdue —
+  // but NEVER freeze the week the clicked occurrence deliberately moves INTO (shifting into a
+  // past week must still show there as overdue).
+  const _tgtMon=new Date(wkKey+'T12:00');_tgtMon.setDate(_tgtMon.getDate()+delta);
+  const _orphans=_wrClearPastOrphanPins(rule,!isRec,6,d2s(_tgtMon));
   let _removedOvs=[];
   if(!isRec){
     _removedOvs=(st.wrOverrides||[]).filter(o=>String(o.rule_id)===String(rid)&&o.override_type==='move'&&(o.wk_key===wkKey||o.moved_to_wk_key===wkKey)).map(o=>({...o}));
