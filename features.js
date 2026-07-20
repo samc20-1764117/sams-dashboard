@@ -4634,6 +4634,7 @@ function renderGuidePage(){
     ${sRow('Drag → timeblock','Creates blocks for all selected')}
     ${sRow('Arrow keys','Move all selected ±1 day')}
     ${sRow('Change week (← →)','Selection persists — a selected weekly-reset/recurring task stays highlighted in every week it appears')}
+    ${sRow('Right-click selected WR/recurring','Context menu applies to ALL selected (header shows "N selected"): skip, move next/prev, all-future shifts, delete')}
     </table>
   </div>
   <div style="${panel}">
