@@ -544,6 +544,9 @@ function togRec(id,done,wkKey){
 async function delRec(id){
   const sid=String(id);
   const copy=st.recurring.find(r=>String(r.id)===sid);if(!copy)return;
+  // Deleting the auto-seeded "Prep pups" task must stick — mark it dismissed so
+  // seedPupReviewTask() (runs after every sync) doesn't silently recreate it.
+  if(copy.name&&/prep pup/i.test(copy.name))localStorage.setItem('_pupPrepSeedDismissed','1');
   deletedRecIds.add(sid);
   st.recurring=st.recurring.filter(r=>String(r.id)!==sid);
   save();renderRecOv();renderWeeklyPage();renderToday();renderWkSummary();renderWkCal();
