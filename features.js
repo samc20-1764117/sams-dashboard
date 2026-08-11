@@ -836,6 +836,7 @@ async function addShopFull(){
 
 // ── Month modal ────────────────────────────────────────────────────────────────
 let _moRecMap={};
+let _moWrMap={},_moPupMap={},_moVidMap={},_moVidStepMap={};
 let _moNavYear=new Date().getFullYear();
 let _moExpandedCells=new Set();
 // Weekly Objectives column + Unassigned Tasks panel start collapsed each time the
@@ -888,6 +889,66 @@ function renderMoCal(){
     const _rWkMon=new Date(weekStart);_rWkMon.setDate(weekStart.getDate()+w*7);
     const _rOff=Math.round((_rWkMon-_rCurMon)/(7*86400000));
     getRecurringWeekTasks(_rOff).forEach(t=>{if(!_moRecMap[t.due_date])_moRecMap[t.due_date]=[];_moRecMap[t.due_date].push(t);});
+  }
+  // Precompute WR rules / pup sessions / videos / video-steps by date ONCE (not per day
+  // cell — the grid spans ~1800 days, and per-cell scans of the video/block collections
+  // made renderMoCal take multiple seconds; this is the fix for that regression).
+  _moWrMap={};_moPupMap={};_moVidMap={};_moVidStepMap={};
+  st.wrRules.forEach(r=>{
+    if(!r._dateOverrides)return;
+    Object.keys(r._dateOverrides).forEach(wk=>{
+      const dsv=r._dateOverrides[wk];
+      if(!dsv||dsv==='__skip__'||!/^\d{4}-\d{2}-\d{2}$/.test(dsv))return;
+      if((st.wrOverrides||[]).some(o=>String(o.rule_id)===String(r.id)&&o.wk_key===wk&&o.override_type==='skip'))return;
+      const _isDone=isDoneWRRule(r.id,wk);
+      const item={id:'wrrule-virt-'+r.id,name:r.name,category:'Recurring',due_date:dsv,done:_isDone,_ruleId:r.id,_virtual:true,_wkKey:wk,_isWrRule:true,_wkNote:_recWkNote(r,wk)};
+      if(!_moWrMap[dsv])_moWrMap[dsv]={undone:[],done:[]};
+      (_isDone?_moWrMap[dsv].done:_moWrMap[dsv].undone).push(item);
+    });
+  });
+  (st.pupSessions||[]).forEach(s=>{
+    const skill=(st.pup_skills||[]).find(x=>String(x.id)===String(s.skill_id));if(!skill)return;
+    const item={id:'pup-sess-'+(s.done?'done-':'')+s.id,name:skill.skill,category:'Recurring',due_date:s.day_date,done:s.done,_pupSessId:s.id,_skillId:s.skill_id,_pup:skill.pup,_virtual:true,_type:'pup'};
+    if(!_moPupMap[s.day_date])_moPupMap[s.day_date]={undone:[],done:[]};
+    (s.done?_moPupMap[s.day_date].done:_moPupMap[s.day_date].undone).push(item);
+  });
+  {
+    const _vdmMo=_vidDayMap();
+    const _vPendMo=v=>v.status==='published'&&typeof _vidGroupFullyComplete==='function'&&!_vidGroupFullyComplete(v);
+    const _hasTabTaskMo=vid=>{const m='_vid:'+vid;return st.tasks.some(t=>t.notes&&t.notes.includes(m));};
+    const _vidOnTBByDs={};st.blocks.forEach(b=>{if(b._vidId){if(!_vidOnTBByDs[b.ds])_vidOnTBByDs[b.ds]=new Set();_vidOnTBByDs[b.ds].add(String(b._vidId));}});
+    (st.videos||[]).forEach(v=>{
+      if(v.is_deleted)return;
+      const seen=new Set();
+      const addOnce=dsv=>{if(!dsv||seen.has(dsv))return;seen.add(dsv);if(!_moVidMap[dsv])_moVidMap[dsv]=[];_moVidMap[dsv].push({id:'vid-ov-'+v.id,name:v.topic||v.title,category:'Videos',due_date:dsv,done:v.status==='published',_vidId:v.id,_virtual:true,_type:'vid'});};
+      const dmDs=_vdmMo[String(v.id)];
+      if(dmDs&&v.status!=='published')addOnce(dmDs);
+      Object.keys(_vidOnTBByDs).forEach(bds=>{if(_vidOnTBByDs[bds].has(String(v.id)))addOnce(bds);});
+      if(_vPendMo(v)&&v.post_date&&!_hasTabTaskMo(v.id))addOnce(v.post_date);
+    });
+  }
+  {
+    const _vsm=typeof _vidStepDayMap==='function'?_vidStepDayMap():{};
+    const seenKeys=new Set();
+    const addVidStep=(key,dsv,val)=>{
+      const[vidId,step]=key.split('::');
+      const v=(st.videos||[]).find(x=>String(x.id)===String(vidId)&&!x.is_deleted);if(!v)return;
+      const label=(typeof _VID_STEP_LABELS!=='undefined'&&_VID_STEP_LABELS[step])||step.replace('step_','');
+      const isDone=v[step]==='done'||(typeof _vidStepComputeDone==='function'&&_vidStepComputeDone(vidId,step,dsv,val));
+      const item={id:'vidstep-'+key.replace('::','-')+'-'+dsv,name:label+': '+(v.topic||v.title),category:'Videos',due_date:dsv,done:isDone,_vidId:vidId,_vidStep:step,_virtual:true,_type:'vidstep',_vidStepDay:dsv};
+      if(!_moVidStepMap[dsv])_moVidStepMap[dsv]={undone:[],done:[]};
+      (isDone?_moVidStepMap[dsv].done:_moVidStepMap[dsv].undone).push(item);
+    };
+    Object.entries(_vsm).forEach(([key,val])=>{
+      if(val.ds){addVidStep(key,val.ds,val);seenKeys.add(key+'::'+val.ds);}
+      if(val.extraDays)val.extraDays.forEach(ed=>{addVidStep(key,ed,val);seenKeys.add(key+'::'+ed);});
+    });
+    (st.blocks||[]).forEach(bl=>{
+      if(!bl._vidStepVid||!bl._vidStepName)return;
+      const key=bl._vidStepVid+'::'+bl._vidStepName;
+      if(seenKeys.has(key+'::'+bl.ds))return;seenKeys.add(key+'::'+bl.ds);
+      addVidStep(key,bl.ds,null);
+    });
   }
   const modalEl=document.getElementById('mModal');
   modalEl.classList.toggle('mo-goals-exp',_moGoalsExpanded);
@@ -1079,28 +1140,15 @@ function mkMCell(date,om,today){
   const extras=getExtrasForDate(ds);
   const travelOnDay=extras.filter(t=>t._type==='travel');
   const finCancelOnDay=typeof _finCancelTasksForDate==='function'?_finCancelTasksForDate(ds):[];
-  // WR rules (st.wrRules) pinned to this exact date
-  const _moWk=dsToWkKey(ds);
-  const wrRulesOnDay=[],wrRulesOnDayDone=[];
-  st.wrRules.filter(r=>r._dateOverrides&&r._dateOverrides[_moWk]===ds&&!(st.wrOverrides||[]).some(o=>String(o.rule_id)===String(r.id)&&o.wk_key===_moWk&&o.override_type==='skip')).forEach(r=>{
-    const _isDone=isDoneWRRule(r.id,_moWk);
-    const item={id:'wrrule-virt-'+r.id,name:r.name,category:'Recurring',due_date:ds,done:_isDone,_ruleId:r.id,_virtual:true,_wkKey:_moWk,_isWrRule:true,_wkNote:_recWkNote(r,_moWk)};
-    (_isDone?wrRulesOnDayDone:wrRulesOnDay).push(item);
-  });
-  // Pup skill sessions
-  const _mkMoPupItem=(s,doneF)=>{const skill=(st.pup_skills||[]).find(x=>String(x.id)===String(s.skill_id));if(!skill)return null;return{id:'pup-sess-'+(doneF?'done-':'')+s.id,name:skill.skill,category:'Recurring',due_date:ds,done:doneF,_pupSessId:s.id,_skillId:s.skill_id,_pup:skill.pup,_virtual:true,_type:'pup'};};
-  const pupSessOnDay=(st.pupSessions||[]).filter(s=>s.day_date===ds&&!s.done).map(s=>_mkMoPupItem(s,false)).filter(Boolean);
-  const pupSessOnDayDone=(st.pupSessions||[]).filter(s=>s.day_date===ds&&s.done).map(s=>_mkMoPupItem(s,true)).filter(Boolean);
-  // Videos assigned to this date
-  const _vdmMo=_vidDayMap();
-  const _vPendMo=v=>v.status==='published'&&typeof _vidGroupFullyComplete==='function'&&!_vidGroupFullyComplete(v);
-  const _hasTabTaskMo=vid=>{const m='_vid:'+vid;return st.tasks.some(t=>t.notes&&t.notes.includes(m));};
-  const _vidOnTBMo=new Set(st.blocks.filter(b=>b.ds===ds&&b._vidId).map(b=>String(b._vidId)));
-  const vidOnDay=(st.videos||[]).filter(v=>!v.is_deleted&&(((_vdmMo[String(v.id)]===ds)&&v.status!=='published')||_vidOnTBMo.has(String(v.id))||(_vPendMo(v)&&v.post_date===ds&&!_hasTabTaskMo(v.id)))).map(v=>({id:'vid-ov-'+v.id,name:v.topic||v.title,category:'Videos',due_date:ds,done:v.status==='published',_vidId:v.id,_virtual:true,_type:'vid'}));
-  // Video step tasks
-  const vidStepAllOnDay=typeof _vidStepTasksForDay==='function'?_vidStepTasksForDay(ds):[];
-  const vidStepOnDay=vidStepAllOnDay.filter(t=>!t.done);
-  const vidStepOnDayDone=vidStepAllOnDay.filter(t=>t.done);
+  // WR rules / pup sessions / videos / video-steps — precomputed once per renderMoCal()
+  // call (see _moWrMap etc. above), NOT recomputed per cell across the ~1800-day grid.
+  const wrRulesOnDay=(_moWrMap[ds]&&_moWrMap[ds].undone)||[];
+  const wrRulesOnDayDone=(_moWrMap[ds]&&_moWrMap[ds].done)||[];
+  const pupSessOnDay=(_moPupMap[ds]&&_moPupMap[ds].undone)||[];
+  const pupSessOnDayDone=(_moPupMap[ds]&&_moPupMap[ds].done)||[];
+  const vidOnDay=_moVidMap[ds]||[];
+  const vidStepOnDay=(_moVidStepMap[ds]&&_moVidStepMap[ds].undone)||[];
+  const vidStepOnDayDone=(_moVidStepMap[ds]&&_moVidStepMap[ds].done)||[];
   const undone=[...travelOnDay,...st.tasks.filter(t=>t.due_date&&t.due_date.split('T')[0]===ds&&!t.done&&t.category!=='Weekly Goals'),...extras.filter(t=>t._type!=='travel'),...shopOnDay,...wrecOnDay,...recOnDay,...finCancelOnDay,...wrRulesOnDay,...pupSessOnDay,...vidOnDay,...vidStepOnDay];
   const done=[...st.tasks.filter(t=>t.due_date&&t.due_date.split('T')[0]===ds&&t.done&&t.category!=='Weekly Goals'),...shopOnDayDone,...wrRulesOnDayDone,...pupSessOnDayDone,...vidStepOnDayDone];
   const tasks=typeof sortByTypeOrder==='function'?sortByTypeOrder([...undone,...done]):[...undone,...done];
