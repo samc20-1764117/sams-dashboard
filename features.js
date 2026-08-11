@@ -2,7 +2,16 @@ let _vidPageInit=false;
 // ── Cat-select helpers ──────────────────────────────────────────────────────────
 function _catStyle(v){return CATS[(v||'').toLowerCase()]||{bg:'#f1f5f9',t:'#334155',b:'rgba(148,163,184,.2)'};}
 function toggleCatDrop(id){const d=document.getElementById(id+'Drop');if(!d)return;const o=d.classList.contains('open');document.querySelectorAll('.cat-sel-drop.open').forEach(el=>el.classList.remove('open'));if(!o)d.classList.add('open');}
-function _applyCatTrigger(id,v){const s=_catStyle(v);const tr=document.getElementById(id+'Trigger');if(tr){tr.style.background=s.bg;tr.style.color=s.t;tr.style.borderColor=s.b;}const lbl=document.getElementById(id+'Lbl');if(lbl)lbl.textContent=v;}
+function _applyCatTrigger(id,v){const s=_catStyle(v);const tr=document.getElementById(id+'Trigger');if(tr){tr.style.background=s.bg;tr.style.color=s.t;tr.style.borderColor=s.b;}const lbl=document.getElementById(id+'Lbl');if(lbl)lbl.textContent=v;if(id==='tCat'&&typeof _tModalSyncTravelFields==='function')_tModalSyncTravelFields(v);}
+// Swap #tModal into "trip mode" when Travel is picked — same fields as the dedicated
+// Travel modal, but end date stays optional so a single-day trip needs no drag-select.
+function _tModalSyncTravelFields(v){
+  const isTv=v==='Travel';
+  const _sh=(id,show)=>{const el=document.getElementById(id);if(el)el.style.display=show?'':'none';};
+  _sh('tDestField',isTv);_sh('tEndField',isTv);_sh('tModeField',isTv);_sh('tTimeField',!isTv);_sh('tImpRow',!isTv);
+  const lbl=document.getElementById('tDueLbl');if(lbl)lbl.innerHTML=isTv?'Start date':'Due date <span style="opacity:.45;font-weight:400">(optional)</span>';
+  const btn=document.getElementById('tSaveBtn');if(btn&&typeof tMode!=='undefined'&&tMode==='add')btn.textContent=isTv?'Add Trip':'Add';
+}
 function pickCat(id,v,_fromKb){const inp=document.getElementById(id);if(inp)inp.value=v;_applyCatTrigger(id,v);const drop=document.getElementById(id+'Drop');if(drop)drop.classList.remove('open');if(_fromKb){const nextId=id==='tCat'?'tDue':'qaDue';setTimeout(()=>{const n=document.getElementById(nextId);if(n)n.focus();},0);}else{const nameId=id==='tCat'?'tName':'qaName';const nm=document.getElementById(nameId);if(nm){nm.focus();const l=nm.value.length;nm.setSelectionRange(l,l);}}}
 function setCatSel(id,v){const inp=document.getElementById(id);if(inp)inp.value=v;_applyCatTrigger(id,v);}
 function _catSelKey(e,id){if(e.key==='ArrowDown'||e.key===' '||e.key==='Enter'){e.preventDefault();e.stopPropagation();const drop=document.getElementById(id+'Drop');if(!drop.classList.contains('open')){document.querySelectorAll('.cat-sel-drop.open').forEach(d=>d.classList.remove('open'));drop.classList.add('open');}const opts=drop.querySelectorAll('.cat-sel-opt');if(opts[0])opts[0].focus();}else if(e.key==='Escape'){e.stopPropagation();document.getElementById(id+'Drop').classList.remove('open');document.getElementById(id+'Trigger')?.focus();}}
@@ -194,17 +203,21 @@ async function delTask(id,e){
 function openTModal(cat=''){
   tMode='add';tId=null;
   document.getElementById('tMTitle').textContent='Add Task';document.getElementById('tSaveBtn').textContent='Add';
-  document.getElementById('tName').value='';setCatSel('tCat',cat||'Home');
+  document.getElementById('tName').value='';
   document.getElementById('tDue').value=tPreDate||'';document.getElementById('tImp').checked=false;const _tnA=document.getElementById('tNotes');_tnA.value='';_tnA.style.height='';_tnA.style.overflowY='hidden';tPreDate=null;
   const _tEl2=document.getElementById('tTime');if(_tEl2)_tEl2.value='';const _tEndEl2=document.getElementById('tTimeEnd');if(_tEndEl2)_tEndEl2.value='';
+  const _tDestEl=document.getElementById('tDest');if(_tDestEl)_tDestEl.value='';const _tEndDEl=document.getElementById('tEnd');if(_tEndDEl)_tEndDEl.value='';const _tModeEl=document.getElementById('tTravelMode');if(_tModeEl)_tModeEl.value='';
+  setCatSel('tCat',cat||'Home');
   document.getElementById('tModal').classList.add('open');setTimeout(()=>{const _el=document.getElementById('tName');if(_el){_el.focus();const _l=_el.value.length;_el.setSelectionRange(_l,_l);}},80);
 }
 function openEditTask(id){
   const t=st.tasks.find(x=>String(x.id)===String(id));if(!t)return;
   tMode='edit';tId=id;
   document.getElementById('tMTitle').textContent='Edit Task';document.getElementById('tSaveBtn').textContent='Save';
-  document.getElementById('tName').value=t.name;setCatSel('tCat',t.category||'Home');
+  document.getElementById('tName').value=t.name;
   document.getElementById('tDue').value=t.due_date||'';document.getElementById('tImp').checked=!!t.important;const _tnE=document.getElementById('tNotes');_tnE.value=t.notes||'';_tnE.style.height='auto';_tnE.style.height=Math.min(_tnE.scrollHeight,160)+'px';_tnE.style.overflowY=_tnE.scrollHeight>=160?'auto':'hidden';
+  const _tDestE=document.getElementById('tDest');if(_tDestE)_tDestE.value='';const _tEndDE=document.getElementById('tEnd');if(_tEndDE)_tEndDE.value='';const _tModeE=document.getElementById('tTravelMode');if(_tModeE)_tModeE.value='';
+  setCatSel('tCat',t.category||'Home');
   const _tds=(t.due_date||'').split('T')[0];const _tblk=_tds?st.blocks.find(b=>String(b.taskId)===String(id)&&b.ds===_tds):null;const _tEl=document.getElementById('tTime');if(_tEl)_tEl.value=_tblk?`${String(Math.floor(_tblk.sm/60)).padStart(2,'0')}:${String(_tblk.sm%60).padStart(2,'0')}`:'';
   const _tEndEl=document.getElementById('tTimeEnd');if(_tEndEl)_tEndEl.value=_tblk?`${String(Math.floor((_tblk.sm+_tblk.dur)/60)).padStart(2,'0')}:${String((_tblk.sm+_tblk.dur)%60).padStart(2,'0')}`:'';
   document.getElementById('tModal').classList.add('open');setTimeout(()=>{const _el=document.getElementById('tName');if(_el){_el.focus();const _l=_el.value.length;_el.setSelectionRange(_l,_l);}},80);
@@ -213,6 +226,41 @@ async function saveTModal(){
   const n=document.getElementById('tName').value.trim();if(!n){closeMod('tModal');return;}
   const c=document.getElementById('tCat').value,imp=document.getElementById('tImp').checked;let d=document.getElementById('tDue').value.trim()||null;
   const notes=document.getElementById('tNotes').value.trim()||null;
+  if(c==='Travel'){
+    const dest=document.getElementById('tDest')?.value.trim()||null;
+    const end=document.getElementById('tEnd')?.value||null;
+    const tm=document.getElementById('tTravelMode')?.value||null;
+    closeMod('tModal');
+    if(tMode==='edit'&&tId){
+      // Editing an existing task into Travel converts it: delete the task row, create a trip.
+      const t=st.tasks.find(x=>String(x.id)===String(tId));if(!t)return;
+      const stid=String(tId);const prevTask={...t};
+      const oldBlks=st.blocks.filter(b=>String(b.taskId)===stid).map(b=>({...b}));
+      st.tasks=st.tasks.filter(x=>String(x.id)!==stid);
+      st.blocks=st.blocks.filter(b=>String(b.taskId)!==stid);
+      oldBlks.forEach(b=>sbDeleteBlock(b.id));
+      const tv={id:'l-'+Date.now(),name:n,destination:dest,start_date:d,end_date:end,travel_mode:tm,notes};
+      st.travel.push(tv);renderAll();renderTravelPage();
+      sbReq('DELETE','tasks',null,`?id=eq.${stid}`);
+      let realTvId=tv.id;
+      const sv=await sbReq('POST','travel',{name:n,destination:dest,start_date:d,end_date:end,travel_mode:tm,notes});
+      if(sv&&sv[0]){const i=st.travel.findIndex(x=>x.id===tv.id);if(i>-1){st.travel[i]=sv[0];realTvId=sv[0].id;}renderAll();renderTravelPage();}
+      pushUndo(()=>{
+        st.travel=st.travel.filter(x=>String(x.id)!==String(realTvId));
+        st.tasks.push(prevTask);oldBlks.forEach(b=>{st.blocks.push(b);sbSaveBlock(b);});
+        renderAll();renderTravelPage();
+        sbReq('DELETE','travel',null,`?id=eq.${realTvId}`);
+        sbReq('POST','tasks',{name:prevTask.name,category:prevTask.category,due_date:prevTask.due_date,done:prevTask.done,important:prevTask.important,notes:prevTask.notes});
+      },'Converted task to trip');
+    } else {
+      const tv={id:'l-'+Date.now(),name:n,destination:dest,start_date:d,end_date:end,travel_mode:tm,notes};
+      st.travel.push(tv);renderAll();renderTravelPage();
+      pushUndo(()=>{st.travel=st.travel.filter(x=>String(x.id)!==tv.id);renderAll();renderTravelPage();sbReq('DELETE','travel',null,`?id=eq.${tv.id}`);},'Added trip');
+      const sv=await sbReq('POST','travel',{name:n,destination:dest,start_date:d,end_date:end,travel_mode:tm,notes});
+      if(sv&&sv[0]){const i=st.travel.findIndex(x=>x.id===tv.id);if(i>-1){st.travel[i]=sv[0];renderAll();renderTravelPage();}}
+    }
+    return;
+  }
   closeMod('tModal');
   const _adT=(cc)=>{const lc=(cc||'').toLowerCase();if(lc==='social')return 180;if(lc==='work'||lc==='my work'||lc==='recurring')return 60;return 30;};
   if(tMode==='edit'&&tId){
@@ -844,26 +892,12 @@ function renderMoCal(){
   const modalEl=document.getElementById('mModal');
   modalEl.classList.toggle('mo-goals-exp',_moGoalsExpanded);
   modalEl.classList.toggle('mo-ua-exp',_moUAExpanded);
+  const _moGoalsBtn=document.getElementById('moGoalsToggleBtn');
+  if(_moGoalsBtn){_moGoalsBtn.textContent=(_moGoalsExpanded?'− ':'+ ')+'Objectives';_moGoalsBtn.classList.toggle('active',_moGoalsExpanded);}
   const dowEl=document.getElementById('mDow');
   if(!dowEl.children.length){
     ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach(dn=>{const el=document.createElement('div');el.className='mdowl';el.textContent=dn;dowEl.appendChild(el);});
-    const gh=document.createElement('div');gh.className='mdowl';gh.id='mGoalsHdr';gh.style.cssText='border-left:2px solid rgba(255,255,255,.88);padding:1px 4px;display:flex;align-items:center;justify-content:center;gap:2px;cursor:pointer';dowEl.appendChild(gh);
-  }
-  const ghEl=document.getElementById('mGoalsHdr');
-  if(ghEl){
-    ghEl.innerHTML='';
-    if(_moGoalsExpanded){
-      ghEl.style.cursor='';ghEl.onclick=null;ghEl.title='';
-      const _ghBtn=document.createElement('button');_ghBtn.className='wo-hdr-btn';_ghBtn.innerHTML='Weekly<br>Objectives';_ghBtn.onclick=e=>{e.stopPropagation();closeMod('mModal');openWOModal();};
-      const _ghCol=document.createElement('button');_ghCol.className='mo-goals-toggle';_ghCol.textContent='−';_ghCol.title='Collapse';_ghCol.onclick=e=>{e.stopPropagation();toggleMoGoals();};
-      ghEl.appendChild(_ghBtn);ghEl.appendChild(_ghCol);
-    } else {
-      ghEl.style.cursor='pointer';
-      ghEl.title='Expand Weekly Objectives';
-      ghEl.onclick=()=>toggleMoGoals();
-      const _ghExp=document.createElement('span');_ghExp.className='mo-goals-toggle';_ghExp.textContent='+';
-      ghEl.appendChild(_ghExp);
-    }
+    const gh=document.createElement('div');gh.className='mdowl';gh.id='mGoalsHdr';gh.style.cssText='border-left:2px solid rgba(255,255,255,.88);padding:1px 4px';const _ghBtn=document.createElement('button');_ghBtn.className='wo-hdr-btn';_ghBtn.innerHTML='Weekly<br>Objectives';_ghBtn.onclick=()=>{closeMod('mModal');openWOModal();};gh.appendChild(_ghBtn);dowEl.appendChild(gh);
   }
   const cells=document.getElementById('mCells');cells.innerHTML='';
   const _mgs=gc('weekly goals');
@@ -998,9 +1032,8 @@ function renderMoCal(){
   const unassigned=st.tasks
     .filter(t=>!t.due_date&&!t.done&&t.category!=='Long term'&&t.category!=='Weekly Goals')
     .sort((a,b)=>{const ai=CAT_ORDER.indexOf(a.category),bi=CAT_ORDER.indexOf(b.category);return(ai<0?99:ai)-(bi<0?99:bi)||(a.name||'').localeCompare(b.name||'');});
-  const _mUALbl=document.getElementById('mUAHdrLbl');
-  if(_mUALbl)_mUALbl.textContent=_moUAExpanded?'Unassigned Tasks':String(unassigned.length);
-  const _mUAHdr=document.getElementById('mUAHdr');if(_mUAHdr)_mUAHdr.title=_moUAExpanded?'Collapse':'Expand unassigned tasks';
+  const _moUABtn=document.getElementById('moUAToggleBtn');
+  if(_moUABtn){document.getElementById('mheadUACount').textContent=String(unassigned.length);_moUABtn.classList.toggle('active',_moUAExpanded);}
   if(!unassigned.length){const empty=document.createElement('div');empty.style.cssText='font-size:10px;color:var(--subtle);padding:12px 8px;text-align:center';empty.textContent='All tasks assigned ✓';mual.appendChild(empty);}
   unassigned.forEach(t=>{
     const s=gc(t.category);

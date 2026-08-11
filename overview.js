@@ -800,11 +800,11 @@ function taskTypePri(t){
 }
 function sortByTypeOrder(tasks){
   return[...tasks].sort((a,b)=>{
+    const aT=a._type==='travel'&&!a.done,bT=b._type==='travel'&&!b.done;
+    if(aT&&!bT)return -1;if(!aT&&bT)return 1;
     const aB=a._type==='birthday',bB=b._type==='birthday';
     if(aB&&!bB)return -1;if(!aB&&bB)return 1;
     if(a.done&&!b.done)return 1;if(!a.done&&b.done)return -1;
-    const aT=a._type==='travel'&&!a.done,bT=b._type==='travel'&&!b.done;
-    if(aT&&!bT)return -1;if(!aT&&bT)return 1;
     const aO=isOv(a.due_date)&&!a.done,bO=isOv(b.due_date)&&!b.done;
     if(aO&&!bO)return -1;if(!aO&&bO)return 1;
     const aI=(a.important||a._type==='fin-cancel')&&!a.done,bI=(b.important||b._type==='fin-cancel')&&!b.done;
@@ -829,11 +829,11 @@ function sortTasksForDay(tasks,ds){
     return b?b.sm:null;
   }
   return[...tasks].sort((a,b)=>{
+    const aT=a._type==='travel'&&!a.done,bT=b._type==='travel'&&!b.done;
+    if(aT&&!bT)return -1;if(!aT&&bT)return 1;
     const aB=a._type==='birthday',bB=b._type==='birthday';
     if(aB&&!bB)return -1;if(!aB&&bB)return 1;
     if(a.done&&!b.done)return 1;if(!a.done&&b.done)return -1;
-    const aT=a._type==='travel'&&!a.done,bT=b._type==='travel'&&!b.done;
-    if(aT&&!bT)return -1;if(!aT&&bT)return 1;
     const aO=isOv(a.due_date)&&!a.done,bO=isOv(b.due_date)&&!b.done;
     if(aO&&!bO)return -1;if(!aO&&bO)return 1;
     const aI=(a.important||a._type==='fin-cancel')&&!a.done,bI=(b.important||b._type==='fin-cancel')&&!b.done;

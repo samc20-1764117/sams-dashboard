@@ -747,20 +747,16 @@ body.scenic-theme:not(.dark) .ov-topbar-time{color:rgba(255,255,255,.88);backgro
 .uitem:hover{box-shadow:var(--shadow)}.uitem:active{cursor:grabbing;opacity:.4}
 .udot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
 
-/* Weekly Objectives column + Unassigned Tasks panel — collapsed by default (more
-   horizontal room for day columns); expanded state matches the original layout exactly. */
-.mo-goals-toggle{background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);line-height:1;padding:2px 3px;border-radius:4px}
-.mo-goals-toggle:hover{background:rgba(0,0,0,.06)}
-body.dark .mo-goals-toggle:hover{background:rgba(255,255,255,.08)}
-#mModal:not(.mo-goals-exp) #mDow,#mModal:not(.mo-goals-exp) #mCells{grid-template-columns:repeat(7,1fr) 26px}
-#mModal:not(.mo-goals-exp) .mo-goals-cell{padding:2px}
-#mModal:not(.mo-goals-exp) .mo-goals-cell .mcell-body{display:none}
-.mua-side{transition:width .15s}
-#mModal:not(.mo-ua-exp) .mua-side{width:34px}
-#mModal:not(.mo-ua-exp) .mual{display:none}
-#mModal:not(.mo-ua-exp) .muah{flex-direction:column;padding:10px 2px;gap:6px}
-#mModal:not(.mo-ua-exp) #mUAHdrLbl{writing-mode:vertical-rl;text-orientation:mixed;font-size:10px;letter-spacing:0;text-transform:none;font-weight:700}
-#mModal:not(.mo-ua-exp) .muah button{flex-shrink:0}
+/* Weekly Objectives column + Unassigned Tasks panel — collapsed by default (day columns
+   use the full container width); toggles live side by side in the header. Expanded state
+   matches the original layout exactly. */
+.mo-side-toggle{font-size:10px}
+.mo-side-toggle.active{background:rgba(109,95,230,.14);color:var(--accent)}
+body.dark .mo-side-toggle.active{background:rgba(109,95,230,.22)}
+#mModal:not(.mo-goals-exp) #mDow,#mModal:not(.mo-goals-exp) #mCells{grid-template-columns:repeat(7,1fr)}
+#mModal:not(.mo-goals-exp) #mGoalsHdr,#mModal:not(.mo-goals-exp) .mo-goals-cell{display:none}
+#mModal:not(.mo-ua-exp) .mua-side{width:0;border-left:none}
+#mModal:not(.mo-ua-exp) .mua-side>*{display:none}
 
 /* Settings */
 .sf{margin-bottom:9px}.sf label{display:block;font-size:9px;font-weight:700;color:var(--muted);margin-bottom:3px;text-transform:uppercase;letter-spacing:.07em}
