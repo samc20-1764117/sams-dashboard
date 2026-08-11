@@ -5994,22 +5994,26 @@ function renderKanban(){
         const isTv=subCat==='Travel';
         const s=gc(subCat);
         const tasks=isTv
-          ?[...st.travel].sort((a,b)=>(a.start_date||'').localeCompare(b.start_date||'')).map(tv=>({
-              id:'tv-'+tv.id,name:(tv.destination?`${tv.name} → ${tv.destination}`:tv.name),
-              category:'Travel',due_date:tv.start_date,end_date:tv.end_date,
-              done:false,_srcId:tv.id,_type:'travel'
-            }))
+          ?[
+              ...[...st.travel].sort((a,b)=>(a.start_date||'').localeCompare(b.start_date||'')).map(tv=>({
+                id:'tv-'+tv.id,name:(tv.destination?`${tv.name} → ${tv.destination}`:tv.name),
+                category:'Travel',due_date:tv.start_date,end_date:tv.end_date,
+                done:false,_srcId:tv.id,_type:'travel'
+              })),
+              ...sortTasks(st.tasks.filter(t=>t.category==='Travel'&&!t.done))
+            ]
           :sortTasks(st.tasks.filter(t=>t.category===subCat&&!t.done));
         const sub=document.createElement('div');sub.style.cssText=`flex:1;display:flex;flex-direction:column;overflow:hidden;background:color-mix(in srgb,${s.bg} 35%,${_dk()?'rgba(24,24,28,.92)':'rgba(255,255,255,.92)'})${!isTv?`;border-top:1px solid ${_dk()?'rgba(255,255,255,.06)':'rgba(210,205,228,.18)'}`:''}`;
         const head=document.createElement('div');head.className='kol-head';head.style.cssText='border-bottom:1px solid rgba(210,205,228,.2);background:transparent';
         head.innerHTML=`<div class="kol-title" style="color:${s.t}">${subCat}</div><div class="kol-cnt">${tasks.length}</div>`;
-        if(!isTv){const hp=document.createElement('button');hp.className='btn-plus';hp.textContent='+';hp.addEventListener('click',()=>openQA('kanban',hp,'',subCat));head.appendChild(hp);}
+        const hp=document.createElement('button');hp.className='btn-plus';hp.textContent='+';hp.addEventListener('click',()=>openQA('kanban',hp,'',subCat));head.appendChild(hp);
         sub.appendChild(head);
         const body=document.createElement('div');body.className='kol-body dzone';body.id=`kb-${slug(subCat)}`;
         tasks.forEach(t=>{
-          const ov2=isOv(t.due_date)&&!t.done&&!isTv,imp2=t.important&&!ov2&&!t.done;
+          const isRealTrip=t._type==='travel';
+          const ov2=isOv(t.due_date)&&!t.done&&!isRealTrip,imp2=t.important&&!ov2&&!t.done;
           const row=document.createElement('div');row.className=`kol-item ${ov2?'ov-row':''} ${imp2?'imp-row':''}`.trim();
-          if(isTv){
+          if(isRealTrip){
             const nm=document.createElement('span');nm.className='kn';nm.style.color=s.t;nm.textContent='✈ '+t.name;nm.addEventListener('click',()=>openTravelModal(t._srcId));row.appendChild(nm);
             if(t.due_date){const dl=document.createElement('span');dl.className='dlbl';dl.textContent=fmtD(t.due_date)+(t.end_date?' – '+fmtD(t.end_date):'');row.appendChild(dl);}
             const packBtn=document.createElement('button');packBtn.className='pack-icon-btn';packBtn.innerHTML=_PACK_SVG;packBtn.title='Packing list';packBtn.addEventListener('click',ev=>{ev.stopPropagation();openPackingModal(t._srcId);});row.appendChild(packBtn);
@@ -6036,10 +6040,10 @@ function renderKanban(){
           kinp.addEventListener('keydown',e=>{if(e.key==='Enter')addKanban(subCat,kinp);});
           const kabtn=document.createElement('button');kabtn.className='btn btn-ghost btn-xs';kabtn.textContent='+';kabtn.addEventListener('click',()=>addKanban(subCat,kinp));
           addRow.appendChild(kinp);addRow.appendChild(kabtn);
-          body.addEventListener('dragover',e=>{e.preventDefault();body.classList.add('over');});
-          body.addEventListener('dragleave',()=>body.classList.remove('over'));
-          body.addEventListener('drop',e=>{e.preventDefault();body.classList.remove('over');reassignCat(dragId,subCat);});
         }
+        body.addEventListener('dragover',e=>{e.preventDefault();body.classList.add('over');});
+        body.addEventListener('dragleave',()=>body.classList.remove('over'));
+        body.addEventListener('drop',e=>{e.preventDefault();body.classList.remove('over');if(dragId&&!dragId.startsWith('travel::'))reassignCat(dragId,subCat);});
         sub.appendChild(addRow);wrapper.appendChild(sub);
       });
       kb.appendChild(wrapper);
