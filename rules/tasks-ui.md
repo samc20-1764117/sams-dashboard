@@ -49,9 +49,9 @@ All task types that appear on the overview calendar/today list. Every type must 
 Three sort functions (`sortByTypeOrder`, `sortTasksForDay`, `sortByTBWeek`) all use the same tier system:
 
 **Tier 1 — Hard priority (checked first, in order):**
-1. Birthday — always first
-2. Done — always last
-3. Travel (undone) — floats up
+1. Travel (undone) — floats up, above birthday (so a same-day travel bar isn't cut off)
+2. Birthday — always
+3. Done — always last
 4. Overdue (undone) — floats up
 5. Important / fin-cancel (undone) — floats up
 
@@ -68,7 +68,8 @@ Mobile `_mTaskTypePri` and `mSortToday` mirror this exactly.
 - **`#tModal`**: add (`openTModal(cat='')`) + edit (`openEditTask(id)`). Save: `saveTModal()`.
 - **`#qaPopup`** (`openQA(ctx,btn,ds,kcat)`): cat defaults `kcat` when `ctx==='kanban'` OR `ctx==='wkc'` and `kcat` provided, else `'Home'`.
 - **Category dropdown** (`.cat-sel-wrap`): `catSelHTML(id,def)`, `setCatSel(id,v)`, `pickCat(id,v)`, `toggleCatDrop(id)`.
-- **Long term excluded** from all dropdowns (`#tCatDrop`,`#bCat`,`#qaPopup`,`_CAT_OPT_LIST`) except kanban columns (`KCATS`). `#tCatDrop` and `#bCat` are hardcoded HTML in index.html.
+- **Long term excluded** from all dropdowns (`#tCatDrop`,`#bCat`,`#qaPopup`,`_CAT_OPT_LIST`) except kanban columns (`KCATS`). `#tCatDrop` and `#bCat` are hardcoded HTML in index.html. `Travel` IS included (between Social and Weekly Goals) in `#tCatDrop`/`#bCat`/`_CAT_OPT_LIST` — keep option order + `_catOptKey` index in sync across all three when adding/removing an option.
+- **Travel category in `#tModal`** (`_tModalSyncTravelFields`, hooked into `_applyCatTrigger`): picking `Travel` swaps the modal into trip mode — shows `#tDestField`/`#tEndField`/`#tModeField`, relabels `#tDueLbl` to "Start date", hides `#tTimeField`/`#tImpRow`. `saveTModal()` branches early on `c==='Travel'`: creates/updates a `travel` row (not `tasks`), end date optional (blank = single day, no drag-select needed). Editing an existing task into Travel **converts** it — deletes the task row (+ its blocks) and creates a trip, undoable in one step.
 
 ## Timeblock Inline Edit (`startTBInlineEdit`)
 - **↑/↓ arrows** cycle category while typing. Cycles through `['Home','My work','Work','Social']` only (not full KCATS).
