@@ -1835,37 +1835,43 @@ function renderBdayPage(){
 }
 
 // ── Holidays ─────────────────────────────────────────────────────────────────
-function _holidayDateFor(key){
-  const yr=new Date().getFullYear();
-  const entries=[...(st._holidayDates[yr]||[]),...(st._holidayDates[yr+1]||[])];
-  const today=tod();
-  const future=entries.filter(h=>h.key===key&&h.date>=today).sort((a,b)=>a.date.localeCompare(b.date));
-  if(future.length)return future[0].date;
-  const any=entries.find(h=>h.key===key);
-  return any?any.date:null;
+function _holidayDateForYear(key,yr){
+  const e=(st._holidayDates[yr]||[]).find(h=>h.key===key);
+  return e?e.date:null;
 }
+// Month-grid layout, mirrors Birthdays page so both years' worth of dates are easy to scan at a glance
 function renderHolidaysPage(){
   const content=document.getElementById('holidayPageContent');
   if(!content)return;
-  const enabledCount=HOLIDAY_CATALOG.filter(h=>isHolidayEnabled(h.key)).length;
-  const countEl=document.getElementById('holidayCount');
-  if(countEl)countEl.textContent=`${enabledCount}/${HOLIDAY_CATALOG.length}`;
-  const groupHtml=group=>{
-    const items=HOLIDAY_CATALOG.filter(h=>h.group===group);
-    return`<div class="hday-group">
-      <div class="hday-group-name">${group}</div>
-      ${items.map(h=>{
-        const d=_holidayDateFor(h.key);
-        const on=isHolidayEnabled(h.key);
-        return`<div class="hday-row">
-          <span class="hday-name">${escHtml(h.name)}</span>
-          <span class="hday-date-lbl">${d?fmtD(d):''}</span>
-          <label class="hday-toggle"><input type="checkbox" ${on?'checked':''} onchange="toggleHolidayEnabled('${h.key}');renderAll();renderHolidaysPage();"><span class="hday-toggle-slider"></span></label>
-        </div>`;
-      }).join('')}
+  const today=tod();
+  const curYear=new Date().getFullYear();
+  const curMonthIdx=new Date().getMonth();
+  const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const byMonth=Array.from({length:12},()=>[]);
+  HOLIDAY_CATALOG.forEach(h=>{
+    const d=_holidayDateForYear(h.key,curYear);
+    if(!d)return;
+    const mo=parseInt(d.slice(5,7),10)-1;
+    byMonth[mo].push({...h,date:d});
+  });
+  byMonth.forEach(arr=>arr.sort((a,b)=>a.date.localeCompare(b.date)));
+  function hRow(h){
+    const isPast=h.date<today;
+    const on=isHolidayEnabled(h.key);
+    return`<div class="hday-mo-row${isPast?' past':''}">
+      <span class="hday-mo-name">${escHtml(h.name)}</span>
+      <span class="hday-mo-date">${fmtD(h.date)}</span>
+      <label class="hday-toggle" onclick="event.stopPropagation()"><input type="checkbox" ${on?'checked':''} onchange="toggleHolidayEnabled('${h.key}');renderAll();"><span class="hday-toggle-slider"></span></label>
     </div>`;
-  };
-  content.innerHTML=groupHtml('Federal')+groupHtml('Cultural');
+  }
+  const gridHtml=byMonth.map((items,mi)=>{
+    const isCurrent=mi===curMonthIdx;
+    return`<div class="hday-month-card${isCurrent?' hday-month-current':''}">
+      <div class="hday-month-name">${MONTHS[mi]}</div>
+      ${items.map(hRow).join('')}
+    </div>`;
+  }).join('');
+  content.innerHTML=`<div class="hday-grid">${gridHtml}</div>`;
 }
 
 // ── Settings ───────────────────────────────────────────────────────────────────

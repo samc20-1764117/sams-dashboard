@@ -1319,6 +1319,9 @@ document.addEventListener('keydown',e=>{
   if(e.key==='f'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')){
     e.preventDefault();if(activePg==='finance')showPage('overview');else showPage('finance');
   }
+  if(e.key==='h'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')){
+    e.preventDefault();if(activePg==='holidays')showPage('overview');else showPage('holidays');
+  }
   // GG to close help overlay when open
   if(e.key==='g'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&document.getElementById('helpOverlay').classList.contains('open')){
     const now=Date.now();
@@ -1390,6 +1393,7 @@ function _showHelpOverlay(){
     ['VV','Go to Videos page'],
     ['P','Go to Pups'],
     ['F','Go to Finance'],
+    ['H','Go to Holidays'],
     ['N','Quick Add task (to current day)'],
     ['R','Reload page'],
     ['S','Sync all data'],
@@ -1455,6 +1459,9 @@ function _showHelpOverlay(){
     ideas:[
       ['N','New idea'],
       ['Enter','Close archive modal'],
+    ],
+    holidays:[
+      ['Click toggle','Enable / disable a holiday'],
     ],
   };
   const pg=activePg||'overview';

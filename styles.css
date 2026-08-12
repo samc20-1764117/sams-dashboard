@@ -1166,14 +1166,28 @@ body.dark .bday-month-current .bday-past .bday-date-lbl{color:rgba(255,200,170,.
 body.dark .bday-add-menu{background:rgba(38,20,10,.97);border-color:rgba(255,220,180,.15)}
 .bday-add-menu-item{padding:7px 12px;border-radius:7px;font-size:12px;font-weight:500;cursor:pointer;color:var(--text);transition:background .1s}
 .bday-add-menu-item:hover{background:rgba(194,107,79,.1)}
-/* Holidays Page */
-.hday-group{margin-bottom:14px}
-.hday-group-name{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);padding:6px 8px;border-bottom:1px solid rgba(210,205,228,.18);margin-bottom:2px}
-.hday-row{display:flex;align-items:center;gap:10px;padding:7px 8px;border-radius:8px;transition:background .12s}
-.hday-row:hover{background:rgba(255,255,255,.6)}
-body.dark .hday-row:hover{background:rgba(255,255,255,.04)}
-.hday-name{flex:1;font-size:13px;font-weight:600;color:var(--text);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.hday-date-lbl{font-size:11px;color:var(--muted);white-space:nowrap}
+/* Holidays Page (calendar/month-grid form, mirrors Birthdays page) */
+.hday-grid{display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(3,1fr);gap:10px;padding:8px;height:100%;width:100%;box-sizing:border-box}
+.hday-month-card{border-radius:10px;background:rgba(0,0,0,.025);border:1px solid rgba(210,205,228,.2);padding:8px 6px;overflow-y:auto}
+body.dark .hday-month-card{background:rgba(255,255,255,.03);border-color:rgba(255,220,200,.1)}
+.hday-month-current{box-shadow:0 0 0 1px rgba(194,107,79,.3),0 0 28px 6px rgba(194,107,79,.28),0 4px 20px rgba(194,107,79,.18);background:rgba(255,255,255,.92)!important;border-color:rgba(194,107,79,.18)!important}
+body.dark .hday-month-current{box-shadow:0 0 0 1px rgba(194,107,79,.4),0 0 28px 6px rgba(194,107,79,.35),0 4px 20px rgba(194,107,79,.22);background:rgba(60,30,18,.85)!important}
+.hday-month-name{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);padding:2px 4px 5px;margin-bottom:3px;border-bottom:1px solid rgba(210,205,228,.18)}
+.hday-month-current .hday-month-name{color:#444;letter-spacing:.09em}
+body.dark .hday-month-current .hday-month-name{color:#ddd}
+.hday-mo-row{display:flex;align-items:center;gap:6px;padding:5px 4px;border-radius:8px;transition:background .12s}
+.hday-mo-row:hover{background:rgba(255,255,255,.72)}
+body.dark .hday-mo-row:hover{background:rgba(255,255,255,.04)}
+.hday-mo-name{flex:1;font-size:12px;font-weight:600;color:#777;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hday-month-current .hday-mo-name{color:#222;font-weight:700}
+body.dark .hday-month-current .hday-mo-name{color:#f0e8e0;font-weight:700}
+.hday-mo-date{font-size:10px;color:#777;white-space:nowrap}
+.hday-month-current .hday-mo-date{color:#555}
+body.dark .hday-month-current .hday-mo-date{color:rgba(255,220,200,.65)}
+.hday-month-current .hday-mo-row.past .hday-mo-name{color:#999;font-weight:600}
+.hday-month-current .hday-mo-row.past .hday-mo-date{color:#999}
+body.dark .hday-month-current .hday-mo-row.past .hday-mo-name{color:rgba(255,200,170,.45)}
+body.dark .hday-month-current .hday-mo-row.past .hday-mo-date{color:rgba(255,200,170,.35)}
 .hday-toggle{position:relative;display:inline-block;width:30px;height:17px;flex-shrink:0}
 .hday-toggle input{opacity:0;width:0;height:0}
 .hday-toggle-slider{position:absolute;cursor:pointer;inset:0;background:rgba(0,0,0,.15);border-radius:17px;transition:background .15s}

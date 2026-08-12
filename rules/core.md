@@ -94,6 +94,7 @@ Supabase Auth (email+password), RLS on all tables. `init()`→`checkAuth()`→`d
 - `v`: opens video overlay popup (navigates to overview first if needed). Press again to close. `vv` (double-press) opens videos page (toggles back to overview if already on videos page).
 - `p`: pups page. Press again to return to overview.
 - `f`: finance page. Press again to return to overview.
+- `h`: holidays page. Press again to return to overview.
 - `m`: toggle month view (`mModal`) on overview. Press again or Enter to close.
 - `i`: ideas page. Press again to return to overview.
 - `l`: style guide page. Press again to return to overview.
