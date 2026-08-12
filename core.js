@@ -13,6 +13,7 @@ const CATS={
   'buy':      {bg:'#fef9c3',t:'#713f12',d:'#eab308',dot:'#fef08a',b:'rgba(234,179,8,.25)'},
   'travel':   {bg:'#e0f2fe',t:'#0369a1',d:'#38bdf8',dot:'#bae6fd',b:'rgba(56,189,248,.25)'},
   'birthday': {bg:'#ffedd5',t:'#c2410c',d:'#f97316',dot:'#fed7aa',b:'rgba(249,115,22,.3)'},
+  'holiday':  {bg:'#ffedd5',t:'#c2410c',d:'#f97316',dot:'#fed7aa',b:'rgba(249,115,22,.3)'},
   'shopping': {bg:'#fff7ed',t:'#9a3412',d:'#ea580c',dot:'#fed7aa',b:'rgba(234,88,12,.25)'},
   'videos':   {bg:'rgba(34,197,94,.1)',t:'#15803d',d:'#22c55e',dot:'#bbf7d0',b:'rgba(34,197,94,.2)'},
   'weekly goals':{bg:'#ffffff',t:'rgba(80,80,95,.85)',d:'rgba(200,200,215,.8)',dot:'#e8e8f0',b:'rgba(200,200,215,.4)'},
@@ -36,6 +37,7 @@ const CATS_DARK={
   'buy':{bg:'rgba(234,179,8,.12)',t:'#fde68a',d:'#eab308',dot:'#fde68a',b:'rgba(234,179,8,.18)'},
   'travel':{bg:'rgba(20,184,166,.12)',t:'#5eead4',d:'#38bdf8',dot:'#5eead4',b:'rgba(20,184,166,.18)'},
   'birthday':{bg:'rgba(249,115,22,.12)',t:'#fdba74',d:'#f97316',dot:'#fdba74',b:'rgba(249,115,22,.18)'},
+  'holiday':{bg:'rgba(249,115,22,.12)',t:'#fdba74',d:'#f97316',dot:'#fdba74',b:'rgba(249,115,22,.18)'},
   'shopping':{bg:'rgba(249,115,22,.12)',t:'#fdba74',d:'#ea580c',dot:'#fdba74',b:'rgba(249,115,22,.18)'},
   'videos':{bg:'rgba(34,197,94,.12)',t:'#86efac',d:'#22c55e',dot:'#86efac',b:'rgba(34,197,94,.18)'},
   'weekly goals':{bg:'rgba(255,255,255,.04)',t:'#e8e8ea',d:'rgba(200,200,215,.6)',dot:'#e8e8ea',b:'rgba(255,255,255,.06)'},
@@ -43,12 +45,14 @@ const CATS_DARK={
 const IMP_DARK={bg:'rgba(234,179,8,.12)',t:'#fde68a',d:'#eab308',dot:'#fde68a',b:'rgba(234,179,8,.25)'};
 const OV_DARK={bg:'rgba(239,68,68,.12)',t:'#fca5a5',d:'#ef4444',dot:'#fca5a5',b:'rgba(239,68,68,.20)'};
 function _isDk(){return document.body.classList.contains('dark');}
+// Outline sparkle glyph — reused for every holiday chip (emoji-free, mirrors bday-emoji reuse pattern)
+const HOLIDAY_ICON_SVG='<svg class="holiday-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M12 3 L14 10 L21 12 L14 14 L12 21 L10 14 L3 12 L10 10 Z"/></svg>';
 function gc(c){const m=_isDk()?CATS_DARK:CATS;return m[(c||'').toLowerCase()]||(_isDk()?{bg:'rgba(148,163,184,.08)',t:'#94a3b8',d:'#94a3b8',b:'rgba(148,163,184,.15)'}:{bg:'#f1f5f9',t:'#334155',d:'#94a3b8',b:'rgba(148,163,184,.2)'});}
 function slug(c){return(c||'other').toLowerCase().replace(/\s+/g,'-');}
 
 // ── State ──────────────────────────────────────────────────────────────────────
 let cfg={url:'https://gtirvyrqfuuuxkkqaeap.supabase.co',key:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0aXJ2eXJxZnV1dXhra3FhZWFwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwODY3NjAsImV4cCI6MjA4ODY2Mjc2MH0.6rtA0WeUUAcuV_sNVrxAbaaviPxPwNakh_bk7uylAOo',showAutoTB:true};
-let st={tasks:[],recurring:[],shopping:[],blocks:[],travel:[],birthdays:[],ideas:[],pup_skills:[],pupSessions:[],pupWeeklyFocus:[],recipes:[],videos:[],autoTimeblocks:[],autoTBOverrides:[],wrRules:[],wrOverrides:[],groceryStaples:[],groceryList:[],mealPlan:[],packTemplates:[],packItems:[],finance:[],finSubs:[],easyMeals:[],_grocStapleSkips:{}};
+let st={tasks:[],recurring:[],shopping:[],blocks:[],travel:[],birthdays:[],ideas:[],pup_skills:[],pupSessions:[],pupWeeklyFocus:[],recipes:[],videos:[],autoTimeblocks:[],autoTBOverrides:[],wrRules:[],wrOverrides:[],groceryStaples:[],groceryList:[],mealPlan:[],packTemplates:[],packItems:[],finance:[],finSubs:[],easyMeals:[],_grocStapleSkips:{},_holidayDates:{}};
 let dayOff=0,wkOff=0,moOff=0,wrRecOff=0,sbOpen=true,activePg='overview';
 let dragId=null,resizing=null,tMode='add',tId=null,tPreDate=null;
 let qaCtx='today',qaDsTarget=null,qaKCat='';
@@ -278,7 +282,7 @@ async function manualBackup(){
 // Desktop assigns video steps/videos to days in localStorage (_vidStepDayMap/_vidDayMap),
 // which mobile could never see. Mirror those blobs through the client_kv table:
 // push when the local copy changed since last push, otherwise adopt the server copy.
-const _KV_MAPS={vid_step_day_map:'_vidStepDayMap',vid_day_map:'_vidDayMap'};
+const _KV_MAPS={vid_step_day_map:'_vidStepDayMap',vid_day_map:'_vidDayMap',holiday_toggles:'_holidayToggles'};
 async function _kvSyncMaps(rows){
   for(const[k,lsKey]of Object.entries(_KV_MAPS)){
     try{
@@ -724,9 +728,66 @@ function mkBdayTask(b,ds){
     _srcId:b.id,_srcTable:'birthdays',_virtual:true,_type:'birthday'
   };
 }
+// ── Holidays: dates fetched from /api/holidays (federal via Nager.Date + computed cultural) ──
+// Catalog mirrors functions/api/holidays.js CATALOG — kept in sync manually (no shared modules, see Architecture).
+const HOLIDAY_CATALOG=[
+  {key:'new_years',name:"New Year's Day",group:'Federal'},
+  {key:'mlk',name:'Martin Luther King, Jr. Day',group:'Federal'},
+  {key:'presidents',name:'Presidents Day',group:'Federal'},
+  {key:'memorial',name:'Memorial Day',group:'Federal'},
+  {key:'juneteenth',name:'Juneteenth',group:'Federal'},
+  {key:'independence',name:'Independence Day',group:'Federal'},
+  {key:'labor',name:'Labor Day',group:'Federal'},
+  {key:'columbus',name:'Columbus Day',group:'Federal'},
+  {key:'veterans',name:'Veterans Day',group:'Federal'},
+  {key:'thanksgiving',name:'Thanksgiving Day',group:'Federal'},
+  {key:'christmas',name:'Christmas Day',group:'Federal'},
+  {key:'valentines',name:"Valentine's Day",group:'Cultural'},
+  {key:'st_patricks',name:"St. Patrick's Day",group:'Cultural'},
+  {key:'easter',name:'Easter',group:'Cultural'},
+  {key:'cinco_de_mayo',name:'Cinco de Mayo',group:'Cultural'},
+  {key:'mothers_day',name:"Mother's Day",group:'Cultural'},
+  {key:'fathers_day',name:"Father's Day",group:'Cultural'},
+  {key:'halloween',name:'Halloween',group:'Cultural'},
+  {key:'nye',name:"New Year's Eve",group:'Cultural'},
+];
+function _holidayToggles(){try{return JSON.parse(localStorage._holidayToggles||'{}');}catch(e){return{};}}
+function isHolidayEnabled(key){return _holidayToggles()[key]!==false;}
+function toggleHolidayEnabled(key){const t=_holidayToggles();t[key]=!(t[key]!==false);localStorage._holidayToggles=JSON.stringify(t);}
+function _allHolidayEntries(){const out=[];Object.values(st._holidayDates||{}).forEach(arr=>(arr||[]).forEach(h=>out.push(h)));return out;}
+function mkHolidayTask(h){
+  return{
+    id:`hd-${h.key}-${h.date}`,
+    name:h.name,
+    category:'Holiday',
+    due_date:h.date,done:false,
+    _srcId:h.key,_virtual:true,_type:'holiday'
+  };
+}
+function getHolidayTasks(filterDate){
+  const enabled=_allHolidayEntries().filter(h=>isHolidayEnabled(h.key));
+  if(filterDate)return enabled.filter(h=>h.date===filterDate).map(mkHolidayTask);
+  return enabled.map(mkHolidayTask).sort((a,b)=>a.due_date.localeCompare(b.due_date));
+}
+function getHolidaysInRange(startDs,endDs){
+  return _allHolidayEntries().filter(h=>isHolidayEnabled(h.key)&&h.date>=startDs&&h.date<=endDs).map(mkHolidayTask);
+}
+// Fetch current + next year from our cached endpoint (federal dates shift on weekends, so never hardcode)
+function _fetchHolidays(){
+  try{const c=JSON.parse(localStorage._holidayCache||'null');if(c)st._holidayDates=c;}catch(e){}
+  const yr=new Date().getFullYear();
+  [yr,yr+1].forEach(y=>{
+    fetch('/api/holidays?year='+y,{cache:'no-store'}).then(r=>r.ok?r.json():null).then(d=>{
+      if(!d||!d.holidays)return;
+      st._holidayDates[y]=d.holidays;
+      try{localStorage._holidayCache=JSON.stringify(st._holidayDates);}catch(e){}
+      renderAll();
+    }).catch(()=>{});
+  });
+}
 // Get all virtual extras for a given date string
 function getExtrasForDate(ds){
-  return[...getTravelTasks(ds),...getBirthdayTasks(ds)];
+  return[...getTravelTasks(ds),...getBirthdayTasks(ds),...getHolidayTasks(ds)];
 }
 // Get all virtual extras for a week (used in week summary list)
 // Travel shown ONCE (on start date), birthdays once on their day
@@ -749,7 +810,8 @@ function getExtrasForWeek(off=0){
   const bStart=new Date(dates[0]);bStart.setDate(bStart.getDate()-3);
   const bEnd=new Date(dates[6]);bEnd.setDate(bEnd.getDate()+3);
   const bdayItems=getBirthdaysInRange(d2s(bStart),d2s(bEnd));
-  return[...travelItems,...bdayItems];
+  const holidayItems=getHolidaysInRange(d2s(bStart),d2s(bEnd));
+  return[...travelItems,...bdayItems,...holidayItems];
 }
 
 // Stable key for a given week offset

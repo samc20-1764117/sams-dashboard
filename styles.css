@@ -352,9 +352,10 @@ body.dark .pup-restore-chip{border-color:rgba(255,255,255,.1)}
 /* Task items — tighter */
 .tlist{overflow-y:auto;padding:2px 0;position:relative}
 #todList .ti{margin:1px 4px;padding-left:7px;padding-right:7px}
-#todList .ti-birthday{justify-content:center;align-items:center}
-#todList .ti-birthday .tn{flex:none;display:flex;align-items:center;line-height:1}
+#todList .ti-birthday,#todList .ti-holiday{justify-content:center;align-items:center}
+#todList .ti-birthday .tn,#todList .ti-holiday .tn{flex:none;display:flex;align-items:center;line-height:1}
 #todList .bday-emoji{font-size:8px;vertical-align:middle;line-height:1;margin-left:3px}
+#todList .holiday-icon{width:8px;height:8px;margin-left:3px}
 #shopOv .ti,#recList .ti{margin:0 6px;padding:3px 22px 3px 10px}
 #shopOv .cpill{position:absolute;right:3px;top:50%;transform:translateY(-50%);padding:1px 4px;line-height:1;margin:0;transition:opacity .1s;pointer-events:none}
 #shopOv .ti:hover .cpill,#shopOv .ti.sel-row .cpill{opacity:0}
@@ -1117,6 +1118,7 @@ body.dark .rec-sp-ta:focus{background:rgba(255,255,255,.06);border-color:rgba(19
 .bday-today .bday-name{color:var(--accent);font-weight:700}
 .bday-name{font-size:13px;font-weight:600;color:#777;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .bday-emoji{font-size:15px;line-height:1}
+.holiday-icon{width:15px;height:15px;vertical-align:middle;line-height:1;margin-left:3px;flex:none}
 .bday-countdown{font-size:9px;font-weight:700;padding:2px 7px;border-radius:5px;border:1px solid transparent;white-space:nowrap;text-align:center}
 .bday-date-lbl{font-size:11px;color:#777;white-space:nowrap;text-align:right}
 .bday-age-pill{font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;background:rgba(0,0,0,.06);color:#777;border:1px solid rgba(0,0,0,.08);white-space:nowrap;text-align:center}
@@ -1164,6 +1166,21 @@ body.dark .bday-month-current .bday-past .bday-date-lbl{color:rgba(255,200,170,.
 body.dark .bday-add-menu{background:rgba(38,20,10,.97);border-color:rgba(255,220,180,.15)}
 .bday-add-menu-item{padding:7px 12px;border-radius:7px;font-size:12px;font-weight:500;cursor:pointer;color:var(--text);transition:background .1s}
 .bday-add-menu-item:hover{background:rgba(194,107,79,.1)}
+/* Holidays Page */
+.hday-group{margin-bottom:14px}
+.hday-group-name{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);padding:6px 8px;border-bottom:1px solid rgba(210,205,228,.18);margin-bottom:2px}
+.hday-row{display:flex;align-items:center;gap:10px;padding:7px 8px;border-radius:8px;transition:background .12s}
+.hday-row:hover{background:rgba(255,255,255,.6)}
+body.dark .hday-row:hover{background:rgba(255,255,255,.04)}
+.hday-name{flex:1;font-size:13px;font-weight:600;color:var(--text);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hday-date-lbl{font-size:11px;color:var(--muted);white-space:nowrap}
+.hday-toggle{position:relative;display:inline-block;width:30px;height:17px;flex-shrink:0}
+.hday-toggle input{opacity:0;width:0;height:0}
+.hday-toggle-slider{position:absolute;cursor:pointer;inset:0;background:rgba(0,0,0,.15);border-radius:17px;transition:background .15s}
+.hday-toggle-slider::before{content:'';position:absolute;width:13px;height:13px;left:2px;top:2px;background:#fff;border-radius:50%;transition:transform .15s;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+.hday-toggle input:checked+.hday-toggle-slider{background:#f97316}
+.hday-toggle input:checked+.hday-toggle-slider::before{transform:translateX(13px)}
+body.dark .hday-toggle-slider{background:rgba(255,255,255,.12)}
 .bday-add-menu-fmt{padding:8px 12px 6px;border-top:1px solid rgba(210,205,228,.2);margin-top:4px}
 .bday-add-menu-fmt-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:5px}
 .bday-add-menu-fmt-row{font-size:11px;color:var(--muted);padding:1px 0;display:flex;gap:8px}

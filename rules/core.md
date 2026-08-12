@@ -43,7 +43,7 @@ Supabase Auth (email+password), RLS on all tables. `init()`→`checkAuth()`→`d
 - `wr_recurring_rules` POST required: `name,cadence,is_weekly_reset,is_enabled`. Non-WR adds `is_weekly_reset:false`. Optional: `appears_on_date,starting_date,pup_related,notes`.
 - `time_blocks` fields: `id,title,day_date,start_time,start_minutes,duration_minutes,category,task_id,rec_id,shop_id,done`. `rule_id` migration pending — `sbSaveBlock` omits it. **Workaround**: WR rule blocks set both `ruleId` and `recId` to `String(r.id)`; all TB lookups check `b.recId` as fallback when `b.ruleId` is null.
 - Local temp IDs: tasks=`l-`, recurring=`rec-tmp-`, WR rules=`wrrule-tmp-`.
-- **Categories** (`CATS`): `home,my work,work,social,long term,recurring,weekly_reset,buy,travel,birthday,shopping,weekly goals`.
+- **Categories** (`CATS`): `home,my work,work,social,long term,recurring,weekly_reset,buy,travel,birthday,holiday,shopping,weekly goals`.
 - **Category pickers**: `KCATS` (kanban): includes Long term. `_CAT_OPT_LIST` (quick-add): excludes Long term. `#tCatDrop`+`#bCat` in index.html: hardcoded, Weekly Goals present, Long term removed.
 - `toggleTask/togRec/togShop`: call `sbUpdateBlock(b.id,{done})` for linked TB blocks.
 - `drawTBBlock` derives `b._done` from linked item at render time. `linkedRec` checks both `st.recurring` and `st.wrRules`. `recCat='weekly_reset'` unless `is_weekly_reset===false`.

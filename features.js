@@ -1159,10 +1159,11 @@ function mkMCell(date,om,today){
   const _visN=_isExp?tasks.length:_maxVis;
   tasks.forEach((t,_ti)=>{
     const isBday=t._type==='birthday';
+    const isHoliday=t._type==='holiday';
     const s=t.important&&!t.done?IMP:(t._type==='vid'||t._type==='vidstep')?gc('videos'):(t._type==='pup'&&typeof _pupSessStyle==='function')?_pupSessStyle():gc((t._isWrec||t._isWrRule)?'weekly_reset':t.category);
     const isTravel=t._type==='travel';
-    const isPast=(isTravel&&t.end_date&&t.end_date<tod())||(isBday&&t.due_date&&t.due_date<tod());
-    const chip=document.createElement('div');chip.className='mcell-t';chip.draggable=!t.done&&!isBday;
+    const isPast=(isTravel&&t.end_date&&t.end_date<tod())||((isBday||isHoliday)&&t.due_date&&t.due_date<tod());
+    const chip=document.createElement('div');chip.className='mcell-t';chip.draggable=!t.done&&!isBday&&!isHoliday;
     // Travel: compute visual span position to extend chip across cell gaps
     let travelSpanStyle='';
     let isVisualFirst=true,isVisualLast=true;
@@ -1199,7 +1200,7 @@ function mkMCell(date,om,today){
       chip.innerHTML='<span style="flex:1"></span>';
     }else{
       chip.innerHTML=`<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${tmIcon(t)}${escHtml(t._type==='pup'&&typeof _pupDisplayName==='function'?_pupDisplayName(t):t.name)}</span>`;
-      if(!isTravel&&!isBday){
+      if(!isTravel&&!isBday&&!isHoliday){
         const _cw=document.createElement('label');_cw.className='chk-wrap';_cw.style.cssText='padding:2px 3px;margin:-2px -1px;flex-shrink:0';
         _cw.addEventListener('click',e=>e.stopPropagation());
         const _ck=document.createElement('input');_ck.type='checkbox';_ck.className='chk';_ck.style.cssText='width:8px;height:8px';_ck.checked=!!t.done;
@@ -1332,10 +1333,11 @@ function showMcellMorePop(e,tasks,ds){
   function closeMorePop(){ov.classList.remove('open');setTimeout(()=>ov.remove(),220);}
   tasks.forEach(t=>{
     const isBday=t._type==='birthday';
+    const isHoliday=t._type==='holiday';
     const s=t.important&&!t.done?IMP:gc((t._isWrec||t._isWrRule)?'weekly_reset':t.category);
     const isTravel=t._type==='travel';
-    const isPast=(isTravel&&t.end_date&&t.end_date<tod())||(isBday&&t.due_date&&t.due_date<tod());
-    const chip=document.createElement('div');chip.className='mcell-t';chip.draggable=!t.done&&!isTravel&&!isBday;
+    const isPast=(isTravel&&t.end_date&&t.end_date<tod())||((isBday||isHoliday)&&t.due_date&&t.due_date<tod());
+    const chip=document.createElement('div');chip.className='mcell-t';chip.draggable=!t.done&&!isTravel&&!isBday&&!isHoliday;
     chip.style.cssText=`background:${s.bg};color:${s.t};border-color:${s.b};display:flex;align-items:center;gap:2px;margin-bottom:3px;cursor:${t.done?'default':isTravel?'pointer':'grab'};${t.done?'opacity:.25;text-decoration:line-through;':''}${isPast?'opacity:.35;':''}`;
     if(!t._virtual&&!t._type)chip.dataset.tid=String(t.id);
     else if(isTravel)chip.dataset.tid='tv-'+t._srcId;
@@ -1830,6 +1832,40 @@ function renderBdayPage(){
     if(!ev.target.closest('.bday-row')&&!ev.target.closest('#bdayCtxMenu')){_bdaySelIds.clear();_lastBdaySelId=null;applyBdaySelHighlight();}
   };
   document.addEventListener('click',window._bdayOutsideClick);
+}
+
+// ── Holidays ─────────────────────────────────────────────────────────────────
+function _holidayDateFor(key){
+  const yr=new Date().getFullYear();
+  const entries=[...(st._holidayDates[yr]||[]),...(st._holidayDates[yr+1]||[])];
+  const today=tod();
+  const future=entries.filter(h=>h.key===key&&h.date>=today).sort((a,b)=>a.date.localeCompare(b.date));
+  if(future.length)return future[0].date;
+  const any=entries.find(h=>h.key===key);
+  return any?any.date:null;
+}
+function renderHolidaysPage(){
+  const content=document.getElementById('holidayPageContent');
+  if(!content)return;
+  const enabledCount=HOLIDAY_CATALOG.filter(h=>isHolidayEnabled(h.key)).length;
+  const countEl=document.getElementById('holidayCount');
+  if(countEl)countEl.textContent=`${enabledCount}/${HOLIDAY_CATALOG.length}`;
+  const groupHtml=group=>{
+    const items=HOLIDAY_CATALOG.filter(h=>h.group===group);
+    return`<div class="hday-group">
+      <div class="hday-group-name">${group}</div>
+      ${items.map(h=>{
+        const d=_holidayDateFor(h.key);
+        const on=isHolidayEnabled(h.key);
+        return`<div class="hday-row">
+          <span class="hday-name">${escHtml(h.name)}</span>
+          <span class="hday-date-lbl">${d?fmtD(d):''}</span>
+          <label class="hday-toggle"><input type="checkbox" ${on?'checked':''} onchange="toggleHolidayEnabled('${h.key}');renderAll();renderHolidaysPage();"><span class="hday-toggle-slider"></span></label>
+        </div>`;
+      }).join('')}
+    </div>`;
+  };
+  content.innerHTML=groupHtml('Federal')+groupHtml('Cultural');
 }
 
 // ── Settings ───────────────────────────────────────────────────────────────────
@@ -2697,7 +2733,7 @@ function _ideaSetupDrag(){
 }
 
 // ── Pages ──────────────────────────────────────────────────────────────────────
-const PAGES=['overview','weekly','shopping','travel','birthdays','ideas','settings','pups','finance','recipes','notes','videos','packing','guide'];
+const PAGES=['overview','weekly','shopping','travel','birthdays','holidays','ideas','settings','pups','finance','recipes','notes','videos','packing','guide'];
 // ══════════════════════════════════════════════════════════════════════════════
 // ── RECIPES PAGE ──────────────────────────────────────────────────────────────
 // ══════════════════════════════════════════════════════════════════════════════
@@ -4681,6 +4717,7 @@ function renderGuidePage(){
     'buy':{bg:'rgba(234,179,8,.12)',t:'#fde68a',d:'#eab308',b:'rgba(234,179,8,.18)'},
     'travel':{bg:'rgba(20,184,166,.12)',t:'#5eead4',d:'#38bdf8',b:'rgba(20,184,166,.18)'},
     'birthday':{bg:'rgba(249,115,22,.12)',t:'#fdba74',d:'#f97316',b:'rgba(249,115,22,.18)'},
+    'holiday':{bg:'rgba(249,115,22,.12)',t:'#fdba74',d:'#f97316',b:'rgba(249,115,22,.18)'},
     'shopping':{bg:'rgba(249,115,22,.12)',t:'#fdba74',d:'#ea580c',b:'rgba(249,115,22,.18)'},
     'videos':{bg:'rgba(34,197,94,.12)',t:'#86efac',d:'#22c55e',b:'rgba(34,197,94,.18)'},
     'weekly goals':{bg:'rgba(255,255,255,.04)',t:'#e8e8ea',d:'rgba(200,200,215,.6)',b:'rgba(255,255,255,.06)'},
@@ -4719,6 +4756,7 @@ function renderGuidePage(){
       ${card('Buy',_c.buy)}
       ${card('Travel',_c.travel)}
       ${card('Birthday',_c.birthday)}
+      ${card('Holiday',_c.holiday)}
       ${card('Shopping',_c.shopping)}
       ${card('Videos',_vidS)}
       ${card('Weekly Goals',_c['weekly goals'])}
@@ -4824,7 +4862,7 @@ function showPage(id){
   const pageEl=document.getElementById('page-'+id);if(pageEl)pageEl.classList.add('active');
   const idx=PAGES.indexOf(id);if(idx>-1&&document.querySelectorAll('.nav-item')[idx])document.querySelectorAll('.nav-item')[idx].classList.add('active');
   const mainEl=document.getElementById('main');if(mainEl){mainEl.scrollTop=0;}
-  if(id==='weekly'){renderWeeklyPage();}if(id==='travel')renderTravelPage();if(id==='birthdays')renderBdayPage();if(id==='ideas')renderIdeasPage();if(id==='pups')renderPupsPage();if(id==='recipes')renderRecipesPage();if(id==='packing')renderPackingPage();if(id==='finance')renderFinancePage();if(id==='guide')renderGuidePage();if(id==='videos'){if(!_vidPageInit&&_prevPg!=='videos'){_vidView='dashboard';localStorage.setItem('_vidView','dashboard');}_vidPageInit=false;renderVideosPage();}if(id==='overview'){renderShopOv();renderRecOv();renderWkCal();if(document.getElementById('tbGrid'))renderDayTB();}else{const _tbSc=document.getElementById('tbScroll');if(_tbSc)_tbSc._scrollDay=null;}
+  if(id==='weekly'){renderWeeklyPage();}if(id==='travel')renderTravelPage();if(id==='birthdays')renderBdayPage();if(id==='holidays')renderHolidaysPage();if(id==='ideas')renderIdeasPage();if(id==='pups')renderPupsPage();if(id==='recipes')renderRecipesPage();if(id==='packing')renderPackingPage();if(id==='finance')renderFinancePage();if(id==='guide')renderGuidePage();if(id==='videos'){if(!_vidPageInit&&_prevPg!=='videos'){_vidView='dashboard';localStorage.setItem('_vidView','dashboard');}_vidPageInit=false;renderVideosPage();}if(id==='overview'){renderShopOv();renderRecOv();renderWkCal();if(document.getElementById('tbGrid'))renderDayTB();}else{const _tbSc=document.getElementById('tbScroll');if(_tbSc)_tbSc._scrollDay=null;}
   const backBtn=document.getElementById('backToOv');if(backBtn)backBtn.style.display=id==='overview'?'none':'flex';
   renderUnassigned();
   history.replaceState(null,'','#'+id);
@@ -5153,6 +5191,7 @@ async function init(){
   document.querySelectorAll('input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="email"]):not([type="password"])').forEach(el=>{el.setAttribute('autocomplete','nope-'+el.id);});
   history.scrollRestoration='manual';
   load();
+  _fetchHolidays();
   // Apply dark mode and sidebar state immediately — before checkAuth await — to prevent flash
   if(cfg.dark){document.body.classList.add('dark');const ic=document.getElementById('darkToggleIcon');if(ic)ic.textContent='☀️';const dt=document.getElementById('darkToggle');if(dt)dt.textContent='☀️';}
   // Suppress left transition during init so sidebar positioning is instant (no squish glitch)

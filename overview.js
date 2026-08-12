@@ -184,7 +184,7 @@ function renderToday(){
   const allToday=[...ts,...virtToday];
   const sorted=sortTasksToday(allToday);
   const _pctItems=sorted.filter(t=>t._type!=='travel');
-  const doneCount=_pctItems.filter(t=>t.done&&t._type!=='birthday').length+_pctItems.filter(t=>t._type==='birthday'&&st.blocks.some(b=>b.cat==='Birthday'&&b.title===t.name&&b._done)).length;
+  const doneCount=_pctItems.filter(t=>t.done&&t._type!=='birthday'&&t._type!=='holiday').length+_pctItems.filter(t=>t._type==='birthday'&&st.blocks.some(b=>b.cat==='Birthday'&&b.title===t.name&&b._done)).length+_pctItems.filter(t=>t._type==='holiday'&&st.blocks.some(b=>b.cat==='Holiday'&&b.title===t.name&&b._done)).length;
   // todBadge removed
   document.getElementById('todPL').textContent=`${doneCount}/${_pctItems.length}`;const _todP=document.getElementById('todPct');if(_todP)_todP.textContent=(_pctItems.length?Math.round(doneCount/_pctItems.length*100):0)+'%';
   document.getElementById('todPB').style.width=_pctItems.length?`${doneCount/_pctItems.length*100}%`:'0%';
@@ -193,6 +193,7 @@ function renderToday(){
   function _hasTBToday(t){
     if(t._type==='travel')return true;
     if(t._type==='birthday')return st.blocks.some(b=>b.ds===_todDs&&b.cat==='Birthday'&&b.title===t.name);
+    if(t._type==='holiday')return st.blocks.some(b=>b.ds===_todDs&&b.cat==='Holiday'&&b.title===t.name);
     const isOvToday=dayOff===0&&isOv(t.due_date)&&!t.done;
     if(t._shopId)return st.blocks.some(b=>(b.ds===_todDs||isOvToday)&&String(b.shopId)===String(t._shopId));
     if(t._ruleId){
@@ -220,7 +221,7 @@ function renderToday(){
   }
   document.getElementById('todList').innerHTML=sorted.map(t=>{
     const arr=!t.done&&!_hasTBToday(t);
-    return t._type==='travel'||t._type==='birthday'?tRowExtra(t):t._type==='vid'?tRowVidVirt(t,arr):t._type==='vidstep'?tRowVidStepVirt(t,arr):t._type==='fin-cancel'?tRowFinCancel(t,arr):t._type==='shop'?tRowShopVirt(t,true,arr,true):t._type==='pup'?tRowPupSess(t,true,arr):t._virtual?tRowTodayVirt(t,arr,true):tRow(t,{cat:true,catDot:true,drag:true,noDate:true,tbArrow:arr,noColor:true});
+    return t._type==='travel'||t._type==='birthday'||t._type==='holiday'?tRowExtra(t):t._type==='vid'?tRowVidVirt(t,arr):t._type==='vidstep'?tRowVidStepVirt(t,arr):t._type==='fin-cancel'?tRowFinCancel(t,arr):t._type==='shop'?tRowShopVirt(t,true,arr,true):t._type==='pup'?tRowPupSess(t,true,arr):t._virtual?tRowTodayVirt(t,arr,true):tRow(t,{cat:true,catDot:true,drag:true,noDate:true,tbArrow:arr,noColor:true});
   }).join('');
   updateOvBanner();
   renderPupSkillsHighlight();
@@ -783,7 +784,7 @@ async function submitDailyHabit(){
 // Type priority for untimed tasks: travel sorted first via pre-check; important via pre-check
 // Order: birthday(1) home(2) my work(3) work(4) social(5) recurring(6) shopping(7) pup(8) weekly-reset(9)
 function taskTypePri(t){
-  if(t._type==='birthday')return 1;
+  if(t._type==='birthday'||t._type==='holiday')return 1;
   const cat=(t.category||'').toLowerCase();
   if(cat==='home')return 2;
   if(cat==='my work')return 3;
@@ -802,7 +803,7 @@ function sortByTypeOrder(tasks){
   return[...tasks].sort((a,b)=>{
     const aT=a._type==='travel'&&!a.done,bT=b._type==='travel'&&!b.done;
     if(aT&&!bT)return -1;if(!aT&&bT)return 1;
-    const aB=a._type==='birthday',bB=b._type==='birthday';
+    const aB=a._type==='birthday'||a._type==='holiday',bB=b._type==='birthday'||b._type==='holiday';
     if(aB&&!bB)return -1;if(!aB&&bB)return 1;
     if(a.done&&!b.done)return 1;if(!a.done&&b.done)return -1;
     const aO=isOv(a.due_date)&&!a.done,bO=isOv(b.due_date)&&!b.done;
@@ -831,7 +832,7 @@ function sortTasksForDay(tasks,ds){
   return[...tasks].sort((a,b)=>{
     const aT=a._type==='travel'&&!a.done,bT=b._type==='travel'&&!b.done;
     if(aT&&!bT)return -1;if(!aT&&bT)return 1;
-    const aB=a._type==='birthday',bB=b._type==='birthday';
+    const aB=a._type==='birthday'||a._type==='holiday',bB=b._type==='birthday'||b._type==='holiday';
     if(aB&&!bB)return -1;if(!aB&&bB)return 1;
     if(a.done&&!b.done)return 1;if(!a.done&&b.done)return -1;
     const aO=isOv(a.due_date)&&!a.done,bO=isOv(b.due_date)&&!b.done;
@@ -858,7 +859,7 @@ function sortByTBWeek(tasks){
   }
   if(!tasks.some(t=>tbSmAny(t)!==null))return sortByTypeOrder(tasks);
   return[...tasks].sort((a,b)=>{
-    const aB=a._type==='birthday',bB=b._type==='birthday';
+    const aB=a._type==='birthday'||a._type==='holiday',bB=b._type==='birthday'||b._type==='holiday';
     if(aB&&!bB)return -1;if(!aB&&bB)return 1;
     if(a.done&&!b.done)return 1;if(!a.done&&b.done)return -1;
     const aT=a._type==='travel'&&!a.done,bT=b._type==='travel'&&!b.done;
@@ -1015,6 +1016,7 @@ function renderWkSummary(){
       ...shopThisWk,
       ...virtExtras.map(t=>{
         if(t._type==='birthday'){const blk=st.blocks.find(b=>b.cat==='Birthday'&&b.title===t.name);if(blk&&blk._done)return{...t,done:true};}
+        if(t._type==='holiday'){const blk=st.blocks.find(b=>b.cat==='Holiday'&&b.title===t.name);if(blk&&blk._done)return{...t,done:true};}
         return t;
       })
     ]),
@@ -1024,12 +1026,13 @@ function renderWkSummary(){
   const doneReal=allReal.filter(t=>t.done).length;
   const doneVirt=virtRec.filter(v=>v.done).length;
   const bdayDone=virtExtras.filter(t=>t._type==='birthday'&&st.blocks.some(b=>b.cat==='Birthday'&&b.title===t.name&&b._done)).length;
+  const holidayDone=virtExtras.filter(t=>t._type==='holiday'&&st.blocks.some(b=>b.cat==='Holiday'&&b.title===t.name&&b._done)).length;
   const totalAll=allReal.length+virtRec.length+virtExtras.length;
-  const totalDone=doneReal+doneVirt+bdayDone;
+  const totalDone=doneReal+doneVirt+bdayDone+holidayDone;
   // wkBadge removed
   document.getElementById('wkPL').textContent=`${totalDone}/${totalAll}`;const _wkP=document.getElementById('wkPct');if(_wkP)_wkP.textContent=(totalAll?Math.round(totalDone/totalAll*100):0)+'%';
   document.getElementById('wkPB').style.width=totalAll?`${totalDone/totalAll*100}%`:'0%';
-  document.getElementById('wkList').innerHTML=ts.map(t=>t._type==='travel'||t._type==='birthday'?tRowExtra(t):t._type==='fin-cancel'?tRowFinCancel(t):t._type==='shop'?tRowShopVirt(t):tRowWk(t)).join('');
+  document.getElementById('wkList').innerHTML=ts.map(t=>t._type==='travel'||t._type==='birthday'||t._type==='holiday'?tRowExtra(t):t._type==='fin-cancel'?tRowFinCancel(t):t._type==='shop'?tRowShopVirt(t):tRowWk(t)).join('');
   _attachListRubberBand(document.getElementById('wkList'));
 }
 
@@ -1083,6 +1086,7 @@ function renderWkCal(){
     return s<=wkDss[6]&&(e||s)>=wkDss[0];
   });
   const bdayThisWk=getBirthdaysInRange(wkDss[0],wkDss[6]);
+  const holidayThisWk=getHolidaysInRange(wkDss[0],wkDss[6]);
   // Pre-compute banner lane counts (no DOM needed) so paddingTop is set before chips render
   const _preLanes=Array.from({length:7},()=>new Set());
   function _prePickLane(si,ei){for(let lane=0;;lane++){let ok=true;for(let i=si;i<=ei;i++){if(_preLanes[i].has(lane)){ok=false;break;}}if(ok)return lane;}}
@@ -1100,6 +1104,7 @@ function renderWkCal(){
     if(sd)_preAddBanner(sd,ed);
   });
   bdayThisWk.forEach(b=>_preAddBanner(b.due_date,b.due_date));
+  holidayThisWk.forEach(h=>_preAddBanner(h.due_date,h.due_date));
   const _colPaddingPre=_preLanes.map(lanes=>lanes.size?`${(Math.max(...lanes)+1)*20}px`:'0');
   setTimeout(()=>{
     bannerEl.innerHTML='';
@@ -1182,6 +1187,11 @@ function renderWkCal(){
       const bdDone=st.blocks.some(bl=>bl.cat==='Birthday'&&bl.title===b.name&&bl._done);
       const bdPast=!bdDone&&b.due_date<today2;
       addBanner(b.name,b.due_date,b.due_date,s,null,bdDone||bdPast);
+    });
+    holidayThisWk.forEach(h=>{
+      const s=gc('holiday');
+      const hdPast=h.due_date<today2;
+      addBanner(h.name+HOLIDAY_ICON_SVG,h.due_date,h.due_date,s,null,hdPast);
     });
 
     // Set banner container height based on lanes used (paddingTop already set synchronously)
@@ -5943,16 +5953,17 @@ function tRowExtra(t){
   const sl=t.category.toLowerCase();
   const isTv=t._type==='travel';
   const isBd=t._type==='birthday';
+  const isHd=t._type==='holiday';
   const sub=isTv&&t.end_date?` – ${fmtD(t.end_date)}`:'';
   const modeIcon=isTv?(t.travel_mode==='plane'?_PLANE_SVG:t.travel_mode==='drive'?_CAR_SVG:''):'';
-  const bdDrag=isBd?`draggable="true" ondragstart="dStart(event,'bday::${t._srcId}::${t.due_date}')" ondragend="dEnd(event)"`:'';
+  const bdDrag=isBd?`draggable="true" ondragstart="dStart(event,'bday::${t._srcId}::${t.due_date}')" ondragend="dEnd(event)"`:isHd?`draggable="true" ondragstart="dStart(event,'holiday::${t._srcId}::${t.due_date}')" ondragend="dEnd(event)"`:'';
   const _bdDone=isBd&&t.done;
-  const _bdPast=isBd&&!_bdDone&&t.due_date&&t.due_date<tod();
-  return`<div class="ti ti-${sl}${_bdDone?' done':''}" style="background:${s.bg}${_bdDone||_bdPast?';opacity:.45':''}" id="ti-${t.id}" ${bdDrag} onclick="selTask(event,'${t.id}')">
+  const _pastGrey=(isBd&&!_bdDone&&t.due_date&&t.due_date<tod())||(isHd&&t.due_date&&t.due_date<tod());
+  return`<div class="ti ti-${sl}${_bdDone?' done':''}" style="background:${s.bg}${_bdDone||_pastGrey?';opacity:.45':''}" id="ti-${t.id}" ${bdDrag} onclick="selTask(event,'${t.id}')">
     ${isTv?`<button class="pack-icon-btn pack-seg" onclick="event.stopPropagation();openPackingModal('${t._srcId}')" title="Packing list">${_PACK_SVG}</button>`:''}
-    <span class="tn" style="color:${s.t}${_bdDone||_bdPast?';text-decoration:line-through':''}">${modeIcon}${isBd?t.name.replace('🎂','<span class="bday-emoji">🎂</span>'):t.name}</span>
-    ${isTv||isBd?'':`<svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3" fill="${s.bg}" stroke="${s.d}" stroke-opacity="0.4" stroke-width="1"/></svg>`}
-    ${isBd?'':`<span class="dlbl" style="${isTv?`margin-left:auto;color:${_dk()?'var(--muted)':'#475569'}`:''}">${fmtD(t.due_date)}${sub}</span>`}
+    <span class="tn" style="color:${s.t}${_bdDone||_pastGrey?';text-decoration:line-through':''}">${modeIcon}${isBd?t.name.replace('🎂','<span class="bday-emoji">🎂</span>'):isHd?t.name+HOLIDAY_ICON_SVG:t.name}</span>
+    ${isTv||isBd||isHd?'':`<svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3" fill="${s.bg}" stroke="${s.d}" stroke-opacity="0.4" stroke-width="1"/></svg>`}
+    ${isBd||isHd?'':`<span class="dlbl" style="${isTv?`margin-left:auto;color:${_dk()?'var(--muted)':'#475569'}`:''}">${fmtD(t.due_date)}${sub}</span>`}
     ${isTv?`<button class="delbtn" onclick="event.stopPropagation();delTravel('${t._srcId}')">✕</button>`:''}
   </div>`;
 }
@@ -7615,6 +7626,14 @@ function dropOnTB(e,ds,h,row,smOverride){
     st.blocks.push(blk);dragId=null;save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
     sbSaveBlock(blk);
     pushUndo(()=>{st.blocks=st.blocks.filter(b=>b.id!==blk.id);sbDeleteBlock(blk.id);save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();},'Added birthday to time block');
+    return;
+  } else if(dragId.startsWith('holiday::')){
+    const parts=dragId.split('::');const hKey=parts[1],hEntry=_allHolidayEntries().find(h=>h.key===hKey&&h.date===parts[2]);
+    if(!hEntry){dragId=null;return;}
+    const blk={id:crypto.randomUUID(),title:hEntry.name,ds,sm,dur:60,cat:'Holiday',_holidayKey:hKey};
+    st.blocks.push(blk);dragId=null;save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
+    sbSaveBlock(blk);
+    pushUndo(()=>{st.blocks=st.blocks.filter(b=>b.id!==blk.id);sbDeleteBlock(blk.id);save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();},'Added holiday to time block');
     return;
   } else if(dragId.startsWith('fin-cancel::')){
     const subId=dragId.split('::')[1];

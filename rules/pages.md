@@ -141,6 +141,15 @@ Table: `birthdays(id,name,birthday,present_ideas)`. `present_ideas` JSON array. 
 - **Today list**: birthdays never greyed out regardless of timeblock state. Emoji wrapped in `.bday-emoji` span (8px, `margin-left:3px`, today-list only via `#todList` scope).
 - **`getBirthdaysInRange`** used for weekly calendar (supports past weeks); `getBirthdayTasks(null)` skips past dates — don't use for calendar.
 
+### Holidays (`features.js` page, `functions/api/holidays.js` endpoint)
+19 fixed holidays (not user-editable), `HOLIDAY_CATALOG` in `core.js` — 11 federal (`functions/api/holidays.js` fetches from Nager.Date, filtered/name-mapped since Nager marks Columbus Day non-global and misspells "Labour Day") + 8 cultural (Valentine's, St. Patrick's, Easter, Cinco de Mayo, Mother's/Father's Day, Halloween, NYE — computed via local date math, immune to the "holidays can change" risk federal ones have since no legislature is involved).
+- **Caching**: `functions/api/holidays.js` reuses the `YT_CACHE` KV namespace (`holiday-{year}-fresh/good/cooldown` keys, same 3-layer pattern as `yt.js`) — no new KV binding needed. Client fetches current+next year once per load via `_fetchHolidays()` (core.js), called from both `init()` (desktop) and `mInit()` (mobile) — **both** call sites needed, they're separate bootstraps.
+- **Toggles**: per-holiday on/off, NOT stored per-device. Reuses the existing `client_kv` table (key `holiday_toggles`) via `_KV_MAPS` — same cross-device sync mechanism as `_vidDayMap`, no new migration. `isHolidayEnabled(key)`/`toggleHolidayEnabled(key)` read/write `localStorage._holidayToggles`; default enabled.
+- **Calendar integration mirrors birthdays exactly** (same sort tier via `taskTypePri`/`_mTaskTypePri`, same greyed-if-past, no checkbox, not draggable in monthly grid, included via shared `getExtrasForDate`/`getExtrasForWeek`) — every `_type==='birthday'` check across overview.js/features.js/mobile-overview.js has a `_type==='holiday'` sibling. If a new birthday-parity check is ever added, add the holiday one alongside it or it'll silently be missing from that view.
+- **Icon**: `HOLIDAY_ICON_SVG` (core.js) — outline sparkle glyph, not emoji (unlike birthday's 🎂), reused for every holiday chip. Category color `'holiday'` in `CATS`/`CATS_DARK` is a literal clone of `'birthday'` (orange).
+- **Drag to timeblock**: like birthdays, dragging a holiday chip onto the day timeline creates a TB reminder block (`dragId` prefix `holiday::{key}::{date}`, cat `'Holiday'`) — completing that block marks the holiday "done" for that day's progress %.
+- **Holidays page**: list grouped Federal/Cultural with per-row toggle switch (`.hday-toggle` CSS), no add/edit/delete (catalog is fixed). `renderHolidaysPage()`.
+
 ### Ideas (`features.js`)
 Table: `ideas(id uuid, topic text NOT NULL, idea text, archived bool, sort_order int4, created_at timestamptz)`. Soft delete via `archived` flag — never hard-delete.
 - **Cards**: white (`rgba(255,255,255,.85)`), container glass (`rgba(255,255,255,.38)` + blur). Topic bold header + date + hover ✕.

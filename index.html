@@ -63,6 +63,7 @@ if(sessionStorage._mReloaded===BUILD);else{
     <a class="nav-item" href="#weekly" onclick="event.preventDefault();showPage('weekly')"><div class="ndot" style="background:#10b981"></div>Recurring Tasks</a>
     <a class="nav-item" href="#weekly" onclick="event.preventDefault();showPage('weekly')"><div class="ndot" style="background:#eab308"></div>Shopping</a>
     <a class="nav-item" href="#birthdays" onclick="event.preventDefault();showPage('birthdays')"><div class="ndot" style="background:#f97316"></div>Birthdays</a>
+    <a class="nav-item" href="#holidays" onclick="event.preventDefault();showPage('holidays')"><div class="ndot" style="background:#f97316"></div>Holidays</a>
     <a class="nav-item" href="#ideas" onclick="event.preventDefault();showPage('ideas')"><div class="ndot" style="background:#a855f7"></div>Ideas</a>
     <a class="nav-item" href="#pups" onclick="event.preventDefault();showPage('pups')"><div class="ndot" style="background:#f43f5e"></div>🐾 Pups</a>
     <a class="nav-item" href="#finance" onclick="event.preventDefault();showPage('finance')"><div class="ndot" style="background:#22c55e"></div>Finance</a>
@@ -397,6 +398,16 @@ if(sessionStorage._mReloaded===BUILD);else{
   <div id="bdayAddMenu" class="bday-add-menu" style="display:none"></div>
   <div id="bdayPresentPopup" style="display:none;position:fixed;z-index:9998;background:rgba(255,255,255,.97);border:1px solid rgba(210,205,228,.35);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.13);padding:10px 12px 10px;min-width:200px;max-width:280px;backdrop-filter:blur(10px)"></div>
   <div id="bdayList" style="display:none"></div>
+</div>
+<div class="page" id="page-holidays" style="padding:60px clamp(12px,3vw,56px) 24px clamp(12px,3vw,56px)">
+  <div class="ov-topbar">
+    <div class="ov-topbar-left"><span class="ov-topbar-label">Holidays</span><span class="ov-topbar-dot"></span><span id="holidayCount" style="font-size:11px;color:var(--muted)"></span></div>
+    <span class="ov-topbar-date topbar-date"></span>
+    <div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div>
+  </div>
+  <div class="card" style="flex:1;width:100%;display:flex;flex-direction:column;min-height:0;overflow:auto;position:relative;margin-top:20px">
+    <div id="holidayPageContent" style="flex:1;width:100%;min-height:0;padding:12px"></div>
+  </div>
 </div>
 <div class="page" id="page-ideas" style="padding:60px clamp(12px,3vw,56px) 24px clamp(12px,3vw,56px)">
   <div class="ov-topbar">

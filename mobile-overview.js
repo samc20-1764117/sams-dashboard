@@ -328,7 +328,7 @@ function mInitPickers() {
 // ── Sort today ────────────────────────────────────────────────────────────────
 // Match desktop sort: birthday, done last, travel, overdue, important, timeblock order, then type priority
 function _mTaskTypePri(t) {
-  if (t._type === 'birthday') return 1;
+  if (t._type === 'birthday' || t._type === 'holiday') return 1;
   const cat = (t.category || '').toLowerCase();
   if (cat === 'home') return 2;
   if (cat === 'my work') return 3;
@@ -362,7 +362,7 @@ function mSortDayTasks(tasks, ds) {
     return b ? b.sm : null;
   }
   return [...tasks].sort((a, b) => {
-    const aB = a._type === 'birthday', bB = b._type === 'birthday';
+    const aB = a._type === 'birthday' || a._type === 'holiday', bB = b._type === 'birthday' || b._type === 'holiday';
     if (aB && !bB) return -1; if (!aB && bB) return 1;
     if (a.done && !b.done) return 1; if (!a.done && b.done) return -1;
     const aT = a._type === 'travel' && !a.done, bT = b._type === 'travel' && !b.done;
@@ -511,9 +511,9 @@ function mGetTodayTasks() {
 
 // ── Task row ──────────────────────────────────────────────────────────────────
 function mTaskRow(t) {
-  const noCheck = t._type === 'travel' || t._type === 'birthday';
+  const noCheck = t._type === 'travel' || t._type === 'birthday' || t._type === 'holiday';
   const ov = !noCheck && isOv(t.due_date) && !t.done;
-  const catKey = t._isWrRule || t._isWrec ? 'weekly_reset' : t._type === 'shop' ? 'shopping' : t._type === 'travel' ? 'travel' : t._type === 'birthday' ? 'birthday' : (t.category || '');
+  const catKey = t._isWrRule || t._isWrec ? 'weekly_reset' : t._type === 'shop' ? 'shopping' : t._type === 'travel' ? 'travel' : t._type === 'birthday' ? 'birthday' : t._type === 'holiday' ? 'holiday' : (t.category || '');
   const s = ov ? OV : gc(catKey);
   const canEdit = !t._virtual && !t._type;
 
@@ -537,7 +537,7 @@ function mTaskRow(t) {
 
   const inner = `<div class="m-row${t.done ? ' m-done' : ''}${ov ? ' m-ov' : ''}">
     ${noCheck
-      ? `<span class="m-row-icon">📅</span>`
+      ? `<span class="m-row-icon">${t._type === 'holiday' ? HOLIDAY_ICON_SVG : '📅'}</span>`
       : `<label class="m-chk-wrap"><input type="checkbox" ${t.done ? 'checked' : ''} onchange="${onchange}"></label>`
     }
     <span class="m-row-name${t.done ? ' done' : ''}">${safeName}</span>
@@ -1758,7 +1758,7 @@ function mWkTaskRow(t) {
       <span class="m-wk-task-name" style="color:${ts.t};font-weight:600">${escHtml(t.name || '')}</span>
     </div>`;
   }
-  const noCheck = t._type === 'birthday';
+  const noCheck = t._type === 'birthday' || t._type === 'holiday';
   const ov      = !noCheck && isOv(t.due_date) && !t.done;
   const catKey  = t._type === 'shop' ? 'shopping' : t._type === 'vid' || t._type === 'vidstep' ? 'Videos' : (t._virtual && t._recId) ? 'recurring' : (t.category || '');
   const s       = ov ? OV : gc(catKey);
@@ -1776,7 +1776,7 @@ function mWkTaskRow(t) {
 
   const dot = `<span style="width:8px;height:8px;border-radius:50%;background:${s.bg};border:1.5px solid ${s.d};flex-shrink:0;display:inline-block"></span>`;
   const chk = noCheck
-    ? `<span style="width:22px;height:32px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px">\u{1F4C5}</span>`
+    ? `<span style="width:22px;height:32px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px">${t._type === 'holiday' ? HOLIDAY_ICON_SVG : '\u{1F4C5}'}</span>`
     : `<label class="m-wk-chk-wrap"><input type="checkbox" class="m-wk-chk"${t.done ? ' checked' : ''}${onchange ? ` onchange="${onchange}"` : ''}></label>`;
 
   const dragAttrs = canDrag ? ` data-tid="${t.id}" data-tname="${escHtml(t.name || '')}"` : '';
@@ -1815,7 +1815,7 @@ function _mWkRenderWeekHtml(weekOff) {
     const tasks = mGetDayTasks(ds, weekOff);
     // Birthdays & trips have no checkbox; once their day has passed they're effectively complete,
     // so count them as done on past days (otherwise the per-day done/total ratio reads low).
-    const doneC = tasks.filter(t => t.done || (isPast && (t._type === 'travel' || t._type === 'birthday'))).length;
+    const doneC = tasks.filter(t => t.done || (isPast && (t._type === 'travel' || t._type === 'birthday' || t._type === 'holiday'))).length;
 
     html += `<div class="m-wk-day${isToday ? ' is-today' : ''}${isPast ? ' is-past' : ''}" data-ds="${ds}">
       <div class="m-wk-hd">
@@ -1969,7 +1969,7 @@ async function mSaveWkTask() {
     const weekOff = _mWkGetWeekOff(ds);
     const tasks = mGetDayTasks(ds, weekOff);
     const _isPastDay = ds < d2s(getDayDate(0));
-    const doneC = tasks.filter(t => t.done || (_isPastDay && (t._type === 'travel' || t._type === 'birthday'))).length;
+    const doneC = tasks.filter(t => t.done || (_isPastDay && (t._type === 'travel' || t._type === 'birthday' || t._type === 'holiday'))).length;
     const dateObj = new Date(ds + 'T12:00:00');
     const dayIdx = (dateObj.getDay() + 6) % 7;
     dayEl.innerHTML = `<div class="m-wk-hd">
@@ -2725,6 +2725,7 @@ function mMonthTapDay(ds) {
 // ── Init ──────────────────────────────────────────────────────────────────────
 async function mInit() {
   load();
+  _fetchHolidays();
   // Clear stale local overrides on mobile — always trust Supabase as source of truth
   if (typeof localOverrides !== 'undefined') { for (const k in localOverrides) delete localOverrides[k]; }
   _mSetDate();
