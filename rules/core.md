@@ -37,6 +37,12 @@ Supabase Auth (email+password), RLS on all tables. `init()`→`checkAuth()`→`d
 - **`functions/api/yt.js`**: GET-only (the unauthenticated POST cache-seed endpoint was removed 2026-07-02); CORS locked to the two known origins, not origin-reflected.
 - **XSS**: user-entered strings (task names, categories, notes) interpolated into `innerHTML` MUST go through `escHtml()`. Fixed spots: `tRow` name/category (`overview.js`), unassigned menu (`features.js`).
 
+## Idle CPU/GPU (visibility-gated) — added 2026-08-13 after sustained Chrome Helper CPU/GPU usage
+- **`.orb` bg decoration**: 5 blurred (80px), infinitely-animating divs — the main GPU compositing cost when the standalone window sits open+unfocused all day. Paused via `orbs-paused` class on `.bg-canvas`, toggled by: `visibilitychange` listener (features.js, near `_fgResync`), `openMModal`/`openRecMoModal` (pause on open), `closeMod` (resume on close — but only if `!document.hidden`, so it doesn't fight the visibility pause). Dark mode also sets `animation-play-state:paused` (styles.css `body.dark .orb`) since they're already `opacity:0` there — animation was still running invisibly before this fix.
+- **Clock tick** (`index.html`): `setInterval(tickClock,1000)` is now fully cleared on `document.hidden` and restarted (with an immediate catch-up tick) on visible — was ticking unconditionally forever before.
+- **No Chart.js/canvas charting lib** in this app — donut/progress visuals are hand-built SVG updated in place, so there's no chart-instance-leak class of bug to check for here.
+- **Pattern for new decorative/idle work**: anything that runs continuously (interval, infinite CSS animation, RAF loop) must be gated on `document.hidden`/`visibilitychange`, not just on modal-open state. RAF loops in this codebase are otherwise all self-terminating already (donut tween, drag-scroll) — keep new ones that way.
+
 ## Data & Persistence
 - POST must include ALL required fields. Missing NOT NULL → silent 400.
 - `tasks` POST required: `name,category,due_date,done,important`. Optional: `notes`.
