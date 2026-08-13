@@ -1042,6 +1042,7 @@ let tvDragStart=null,tvDragEnd=null;
 let calDrag={active:false,startDs:null,endDs:null,view:null,moved:false};
 let _pasteColDates=null;
 
+function _toggleWkGoalsCollapse(e){if(e){e.stopPropagation();e.preventDefault();}_wkGoalsCollapsed=!_wkGoalsCollapsed;localStorage.setItem('_wkGoalsCollapsed',_wkGoalsCollapsed?'1':'0');renderWkCal();}
 
 function renderWkCal(){
   if(typeof _vidStepReconstructBlocks==='function')_vidStepReconstructBlocks();
@@ -1071,8 +1072,11 @@ function renderWkCal(){
   });
   const goalsH=document.createElement('div');goalsH.className='wkc-day-h wkc-goals-h';
   const _unCnt=st.tasks.filter(t=>!t.due_date&&!t.done&&t.category!=='Long term'&&t.category!=='Weekly Goals').length;
-  goalsH.innerHTML=`<div style="display:flex;flex-direction:column;align-items:center;gap:3px"><button class="wo-hdr-btn" onclick="openWOModal()" style="font-size:10px">Objectives</button><div style="display:flex;align-items:center;gap:3px"><button class="wo-hdr-btn" onclick="toggleUnMenu()" id="unBadge2" title="${_unCnt?_unCnt+' unassigned tasks':'No unassigned tasks'}" style="padding:3px 5px;position:relative"><span style="font-size:10px;font-weight:600">${_unCnt||''}</span><span id="unBadgeDot" style="display:none;position:absolute;top:0;right:0;width:7px;height:7px;border-radius:50%;background:rgba(139,92,246,.6)"></span></button></div></div>`;
+  const _wkGoalsToggle=`<button class="wkc-goals-toggle" onclick="_toggleWkGoalsCollapse(event)" title="${_wkGoalsCollapsed?'Expand':'Collapse'} objectives">${_wkGoalsCollapsed?'‹':'›'}</button>`;
+  goalsH.innerHTML=_wkGoalsCollapsed?`<div style="display:flex;flex-direction:column;align-items:center;gap:3px">${_wkGoalsToggle}</div>`:`<div style="display:flex;flex-direction:column;align-items:center;gap:3px"><div style="display:flex;align-items:center;gap:2px;width:100%"><button class="wo-hdr-btn" onclick="openWOModal()" style="font-size:10px;flex:1">Objectives</button>${_wkGoalsToggle}</div><div style="display:flex;align-items:center;gap:3px"><button class="wo-hdr-btn" onclick="toggleUnMenu()" id="unBadge2" title="${_unCnt?_unCnt+' unassigned tasks':'No unassigned tasks'}" style="padding:3px 5px;position:relative"><span style="font-size:10px;font-weight:600">${_unCnt||''}</span><span id="unBadgeDot" style="display:none;position:absolute;top:0;right:0;width:7px;height:7px;border-radius:50%;background:rgba(139,92,246,.6)"></span></button></div></div>`;
   head.appendChild(goalsH);
+  head.classList.toggle('wkc-goals-collapsed',_wkGoalsCollapsed);
+  document.getElementById('wkcCols')?.classList.toggle('wkc-goals-collapsed',_wkGoalsCollapsed);
 
   // ── Render travel banners ────────────────────────────────────────────────────
   const bannerEl=document.getElementById('wkcBanners');
@@ -1744,7 +1748,7 @@ function renderWkCal(){
   const _goalsOvFromPast=wkStart<=tod()?st.tasks.filter(t=>t.category==='Weekly Goals'&&!t.done&&t.due_date&&t.due_date.split('T')[0]<wkStart).sort((a,b)=>(a.goal_order??9999)-(b.goal_order??9999)):[];
   const _goalsPast=wkEnd<tod();
   // "Move overdue to this week" banner
-  if(_goalsOvFromPast.length>0){
+  if(!_wkGoalsCollapsed&&_goalsOvFromPast.length>0){
     const mvBanner=document.createElement('div');mvBanner.style.cssText='display:flex;flex-direction:column;align-items:center;padding:2px 4px;margin-bottom:2px';
     const mvTxt=document.createElement('span');mvTxt.textContent=`${_goalsOvFromPast.length} Overdue`;mvTxt.style.cssText=`font-size:8px;font-weight:600;color:${_dk()?'#fca5a5':'#b91c1c'}`;
     const mvBtn=document.createElement('button');mvBtn.textContent='Move to this week';mvBtn.style.cssText='background:#ef4444;color:#fff;border:none;border-radius:5px;padding:3px 6px;font-size:9px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:2px;width:100%';
@@ -1752,7 +1756,7 @@ function renderWkCal(){
     mvBanner.appendChild(mvTxt);mvBanner.appendChild(mvBtn);
     goalsCol.appendChild(mvBanner);
   }
-  [..._goalsOvFromPast,...goalsUndone,...goalsDone].forEach(t=>{
+  if(!_wkGoalsCollapsed)[..._goalsOvFromPast,...goalsUndone,...goalsDone].forEach(t=>{
     const _goalOv=_goalsPast&&!t.done;
     const _goalOvCarried=!_goalOv&&_goalsOvFromPast.includes(t);
     const imp=t.important&&!t.done&&!_goalOv&&!_goalOvCarried;
@@ -3278,6 +3282,12 @@ function wrCtxMoveNextWeek(){_wrShiftAnchor(7);}
 function _wrClearPastOrphanPins(rule,isWrRule,lookback=6,skipWk=null){
   const removed=[];
   if(!rule._dateOverrides)rule._dateOverrides={};
+  // Weekly/other cadence is due every single week regardless of where the anchor sits — an anchor
+  // shift can never flip a past week's due-ness (unlike biweekly parity, monthly day-of-month, or
+  // interval cadences), so there's no "phantom" to freeze. Past weekly misses are real and must be
+  // left untouched — "all future" should never rewrite past history for these.
+  const _cad=rule.cadence||'weekly';
+  if(_cad==='weekly'||_cad==='other')return removed;
   for(let o=-1;o>=-lookback;o--){
     const wk=getWkKey(o);
     if(wk===skipWk)continue;

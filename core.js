@@ -54,6 +54,7 @@ function slug(c){return(c||'other').toLowerCase().replace(/\s+/g,'-');}
 let cfg={url:'https://gtirvyrqfuuuxkkqaeap.supabase.co',key:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0aXJ2eXJxZnV1dXhra3FhZWFwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwODY3NjAsImV4cCI6MjA4ODY2Mjc2MH0.6rtA0WeUUAcuV_sNVrxAbaaviPxPwNakh_bk7uylAOo',showAutoTB:true};
 let st={tasks:[],recurring:[],shopping:[],blocks:[],travel:[],birthdays:[],ideas:[],pup_skills:[],pupSessions:[],pupWeeklyFocus:[],recipes:[],videos:[],autoTimeblocks:[],autoTBOverrides:[],wrRules:[],wrOverrides:[],groceryStaples:[],groceryList:[],mealPlan:[],packTemplates:[],packItems:[],finance:[],finSubs:[],easyMeals:[],_grocStapleSkips:{},_holidayDates:{}};
 let dayOff=0,wkOff=0,moOff=0,wrRecOff=0,sbOpen=true,activePg='overview';
+let _wkGoalsCollapsed=localStorage.getItem('_wkGoalsCollapsed')==='1';
 let dragId=null,resizing=null,tMode='add',tId=null,tPreDate=null;
 let qaCtx='today',qaDsTarget=null,qaKCat='';
 let tbWD=0,tbWT=null,wkcWD=0,wkcWT=null;
