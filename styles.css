@@ -76,7 +76,7 @@ body.dark .ctx-col-box{--ctx-col-bg:rgba(255,255,255,.04);--ctx-col-border:rgba(
 body.dark .wkc-chip{filter:brightness(.85);}
 body.dark .chk::after{background:rgba(255,255,255,.06);box-shadow:inset 0 0 0 1.25px rgba(255,255,255,.15);}
 body.dark .ch-prog-bar{background:rgba(255,255,255,.06);}
-body.dark .orb{opacity:0!important;}
+body.dark .orb{opacity:0!important;animation-play-state:paused!important;}
 body.dark .wkc-goals-col{background:rgba(255,255,255,.02);border-color:rgba(255,255,255,.06);}
 body.dark .wkc-goals-h{border-color:rgba(255,255,255,.06);}
 body.dark .wkc-head{background:rgba(255,255,255,.02);border-color:rgba(255,255,255,.06);}

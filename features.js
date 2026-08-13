@@ -4878,7 +4878,7 @@ function showPage(id){
 let _modMousedownInside=false;
 document.addEventListener('mousedown',e=>{_modMousedownInside=!!e.target.closest('.modal');});
 document.addEventListener('mouseup',()=>{setTimeout(()=>{_modMousedownInside=false;},0);});
-function closeMod(id,e){if(e&&e.target!==document.getElementById(id))return;if(e&&_modMousedownInside)return;document.getElementById(id).classList.remove('open');if(id==='mModal'||id==='recMoModal'){const bg=document.querySelector('.bg-canvas');if(bg)bg.classList.remove('orbs-paused');}if(id==='recipeModal'&&_recModalKeyFn){document.removeEventListener('keydown',_recModalKeyFn);_recModalKeyFn=null;}}
+function closeMod(id,e){if(e&&e.target!==document.getElementById(id))return;if(e&&_modMousedownInside)return;document.getElementById(id).classList.remove('open');if(id==='mModal'||id==='recMoModal'){const bg=document.querySelector('.bg-canvas');if(bg&&!document.hidden)bg.classList.remove('orbs-paused');}if(id==='recipeModal'&&_recModalKeyFn){document.removeEventListener('keydown',_recModalKeyFn);_recModalKeyFn=null;}}
 
 // ── Packing ────────────────────────────────────────────────────────────────────
 const _PACK_SVG=`<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M8 8V6a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>`;
@@ -5233,6 +5233,13 @@ async function init(){
   document.addEventListener('visibilitychange',_fgResync);
   window.addEventListener('pageshow',_fgResync);
   window.addEventListener('focus',_fgResync);
+  // Pause the decorative bg orbs (blurred, infinitely-animating) while the window
+  // is backgrounded — they otherwise keep compositing at full cost all day.
+  document.addEventListener('visibilitychange',()=>{
+    const bg=document.querySelector('.bg-canvas');if(!bg)return;
+    if(document.hidden)bg.classList.add('orbs-paused');
+    else if(!document.getElementById('mModal')?.classList.contains('open')&&!document.getElementById('recMoModal')?.classList.contains('open'))bg.classList.remove('orbs-paused');
+  });
 }
 
 function toggleKanban(){
