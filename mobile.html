@@ -15,7 +15,7 @@
 // navigating to a versioned URL (a URL iOS has never cached — plain reload() can be
 // served straight back out of the iOS PWA app-shell cache and never update).
 (function(){
-  window._BUILD='20260813a';var BUILD=window._BUILD;
+  window._BUILD='20260813b';var BUILD=window._BUILD;
   try{
     var qs=new URLSearchParams(location.search);
     fetch('/mobile-version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(d){
@@ -28,7 +28,7 @@
 })();
 </script>
 <link rel="stylesheet" href="fonts/dmsans.css?v=1">
-<link rel="stylesheet" href="mobile.css?v=20260813a">
+<link rel="stylesheet" href="mobile.css?v=20260813b">
 <script>(function(){try{var s=JSON.parse(localStorage.getItem('samdash_v7')||'{}');if(s.cfg&&s.cfg.dark)document.documentElement.classList.add('init-dark');}catch(e){}})();</script>
 </head>
 <body>
@@ -52,7 +52,7 @@
       <div id="mDateLbl"></div>
       <div id="mShopHeaderBtns" style="display:none">
         <button class="m-shop-hdr-pill" onclick="mOpenMeals()">🍽 Meals</button>
-        <button class="m-shop-hdr-pill" onclick="mOpenFullList()">📋 Full List</button>
+        <button class="m-shop-hdr-pill m-shop-hdr-pill--primary" onclick="mOpenFullList()">📦 HEB List</button>
       </div>
     </div>
     <div style="display:flex;align-items:center;gap:4px">
@@ -90,9 +90,6 @@
 
     <!-- Shop tab -->
     <div id="mShopPage" style="display:none">
-      <div class="m-shop-header">
-        <span id="mShopCount">Shopping</span>
-      </div>
       <div id="mShopList"></div>
     </div>
 
@@ -100,7 +97,7 @@
     <div id="mExtrasPage" style="display:none">
       <div class="m-extras-placeholder">
         <div class="m-extras-icon">✨</div>
-        <div class="m-extras-title">Extras</div>
+        <div class="m-extras-title">More</div>
         <div class="m-extras-sub">Quick shortcuts for Travel, Birthdays, and more — coming soon.</div>
       </div>
     </div>
@@ -158,7 +155,7 @@
     </button>
     <button class="m-nav-btn" onclick="mShowTab('extras')">
       <svg class="m-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-      <span>Extras</span>
+      <span>More</span>
     </button>
   </nav>
 </div>
@@ -310,7 +307,7 @@ if('serviceWorker' in navigator){
 }
 </script>
 <script src="supabase.min.js?v=2110"></script>
-<script src="core.js?v=20260813a"></script>
-<script src="features.js?v=20260813a"></script>
-<script src="mobile-overview.js?v=20260813a"></script>
+<script src="core.js?v=20260813b"></script>
+<script src="features.js?v=20260813b"></script>
+<script src="mobile-overview.js?v=20260813b"></script>
 </body></html>

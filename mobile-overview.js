@@ -957,12 +957,12 @@ function mShowTab(tab) {
   const shopBar = document.getElementById('mShopAddBar');
   if (shopBar) shopBar.style.display = isShop ? '' : 'none';
   document.getElementById('mApp').style.paddingBottom = (isToday || isShop)
-    ? 'calc(170px + env(safe-area-inset-bottom))'
-    : 'calc(60px + env(safe-area-inset-bottom))';
+    ? 'calc(162px + env(safe-area-inset-bottom))'
+    : 'calc(52px + env(safe-area-inset-bottom))';
   document.querySelectorAll('.m-nav-btn').forEach((b, i) => {
     b.classList.toggle('active', (tab === 'today' && i === 0) || (tab === 'tb' && i === 1) || (tab === 'week' && i === 2) || (tab === 'shop' && i === 3) || (tab === 'extras' && i === 4));
   });
-  const titles = {today: 'Today', tb: 'Timeblock', week: 'Week', shop: 'Shop', extras: 'Extras'};
+  const titles = {today: 'Today', tb: 'Timeblock', week: 'Week', shop: 'Shop', extras: 'More'};
   const titleEl = document.getElementById('mHeaderTitle');
   if (titleEl) titleEl.textContent = titles[tab] || '';
   const progEl = document.getElementById('mProgress');
@@ -2177,10 +2177,8 @@ function _mSetDate() {
 // ── Shop tab ──────────────────────────────────────────────────────────────────
 function mRenderShop() {
   const list = document.getElementById('mShopList');
-  const countEl = document.getElementById('mShopCount');
   if (!list) return;
   const todo = (st.shopping || []).filter(s => !s.done);
-  if (countEl) countEl.textContent = todo.length ? `Shopping (${todo.length} left)` : 'Shopping \u2713 All done!';
 
   // Group by store
   const groups = {};
@@ -2423,7 +2421,7 @@ function mRenderFullList() {
   const checked = items.filter(g => g.checked);
   const hebItems = (st.shopping || []).filter(s => !s.done && s.store === 'HEB').sort((a, b) => (a.shop_order ?? 9999) - (b.shop_order ?? 9999));
 
-  let html = `<h3 style="margin:0 0 4px">Full Shopping List</h3><div class="m-groc-week-hdr" style="padding-top:0"><span class="m-groc-week-dates">${_mGrocDateRange(nextWkMon)}</span></div>`;
+  let html = `<h3 style="margin:0 0 4px">HEB List</h3><div class="m-groc-week-hdr" style="padding-top:0"><span class="m-groc-week-dates">${_mGrocDateRange(nextWkMon)}</span></div>`;
 
   const staples = unchecked.filter(g => g.source === 'staple');
   const recipeGroups = {};
