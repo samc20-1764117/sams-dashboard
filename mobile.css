@@ -91,14 +91,14 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .m-nav-btn.active::after{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:20px;height:2.5px;border-radius:0 0 2px 2px;background:var(--accent)}
 
 /* ── Shop tab ────────────────────────────────────────────────────────────── */
-#mShopList{padding:0 16px calc(190px + env(safe-area-inset-bottom))}
-#mShopHeaderBtns{display:flex;gap:6px;margin-top:2px}
-.m-shop-hdr-pill{padding:5px 11px;border-radius:20px;border:1px solid var(--border);background:none;color:var(--sub);font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;white-space:nowrap}
-.m-shop-hdr-pill:active{background:var(--glass)}
-.m-shop-hdr-pill--primary{border-color:rgba(124,106,247,.4);background:var(--accent);color:#fff}
-.m-shop-hdr-pill--primary:active{background:var(--accent);opacity:.85}
-.m-shop-store-hd{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:14px 0 4px}
-.m-shop-item{display:flex;align-items:center;gap:8px;padding:10px 8px;border-radius:var(--rs);background:var(--glass);margin-bottom:6px;position:relative}
+#mShopList{padding:0 16px 12px}
+#mShopHeaderBtns{display:flex;align-items:center;gap:4px}
+.m-shop-hdr-icon{width:30px;height:30px;border-radius:50%;border:1px solid var(--border);background:none;color:var(--sub);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.m-shop-hdr-icon:active{background:var(--glass)}
+.m-shop-hdr-icon--primary{border-color:rgba(124,106,247,.4);background:var(--accent);color:#fff}
+.m-shop-hdr-icon--primary:active{background:var(--accent);opacity:.85}
+.m-shop-store-hd{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:9px 0 3px}
+.m-shop-item{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:var(--rs);background:var(--glass);margin-bottom:3px;position:relative}
 .m-shop-item .chk{width:16px;height:16px;flex-shrink:0;accent-color:var(--accent)}
 .m-shop-item .m-shop-name{flex:1;min-width:0;font-size:14px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .m-shop-item .m-shop-store-lbl{font-size:11px;color:var(--muted);flex-shrink:0}
@@ -106,7 +106,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .m-shop-item .m-shop-del{background:none;border:none;font-size:14px;color:var(--muted);cursor:pointer;padding:2px 4px;flex-shrink:0}
 .m-shop-item.m-shop-dragging{opacity:.4}
 .m-shop-drag-ph{height:42px;margin-bottom:6px;border-radius:var(--rs);background:rgba(109,95,230,.1);border:2px dashed rgba(109,95,230,.4);box-sizing:border-box}
-#mShopAddBar{position:fixed;bottom:calc(52px + env(safe-area-inset-bottom));left:0;right:0;display:flex;flex-direction:column;gap:7px;padding:12px 16px;background:linear-gradient(180deg,rgba(124,106,247,.09),var(--bg) 55%);border-top:2px solid var(--accent);z-index:20}
+/* In normal flex flow (not fixed) so #mMain automatically sizes around its real
+   height — no guessed padding needed to keep the list clear of it. margin-bottom
+   reserves space above the fixed bottom nav. */
+#mShopAddBar{display:flex;flex-direction:column;gap:7px;padding:12px 16px;margin-bottom:calc(52px + env(safe-area-inset-bottom));background:linear-gradient(180deg,rgba(124,106,247,.09),var(--bg) 55%);border-top:2px solid var(--accent)}
 #mShopNewName{width:100%;padding:12px 14px;border-radius:var(--rs);border:1.5px solid rgba(124,106,247,.35);background:var(--glass);font-size:16px;font-family:inherit;color:var(--text);outline:none;box-sizing:border-box}
 #mShopNewName:focus{border-color:var(--accent)}
 .m-shop-store-sel{padding:8px 10px;border-radius:var(--rs);border:1px solid var(--border);background:var(--glass);font-size:14px;font-family:inherit;color:var(--text);outline:none;flex:1}

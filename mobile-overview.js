@@ -904,6 +904,7 @@ function _mTodayDateStr() {
 }
 
 function _mUpdateTodayHeader() {
+  if (_mCurTab !== 'today') return;
   const titleEl = document.getElementById('mHeaderTitle');
   const dateLbl = document.getElementById('mDateLbl');
   if (_mTodayOffset === 0) {
@@ -956,7 +957,7 @@ function mShowTab(tab) {
   document.getElementById('mAddBar').style.display = isToday ? '' : 'none';
   const shopBar = document.getElementById('mShopAddBar');
   if (shopBar) shopBar.style.display = isShop ? '' : 'none';
-  document.getElementById('mApp').style.paddingBottom = (isToday || isShop)
+  document.getElementById('mApp').style.paddingBottom = isToday
     ? 'calc(162px + env(safe-area-inset-bottom))'
     : 'calc(52px + env(safe-area-inset-bottom))';
   document.querySelectorAll('.m-nav-btn').forEach((b, i) => {
