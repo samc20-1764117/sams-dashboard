@@ -92,10 +92,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 
 /* ── Shop tab ────────────────────────────────────────────────────────────── */
 .m-shop-header{padding:12px 16px 8px;font-size:15px;font-weight:700;color:var(--text)}
-.m-groc-hdr{display:flex;align-items:center;justify-content:space-between}
-.m-groc-hdr-btn{background:none;border:none;font-size:18px;padding:4px 8px;cursor:pointer;color:var(--sub);line-height:1}
-.m-groc-close{font-size:16px;font-weight:300}
 #mShopList{padding:0 16px 120px}
+#mShopHeaderBtns{display:flex;gap:6px;margin-top:2px}
+.m-shop-hdr-pill{padding:5px 11px;border-radius:20px;border:1px solid rgba(124,106,247,.3);background:rgba(124,106,247,.1);color:var(--accent);font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;white-space:nowrap}
+.m-shop-hdr-pill:active{background:rgba(124,106,247,.2)}
 .m-shop-store-hd{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:14px 0 4px}
 .m-shop-item{display:flex;align-items:center;gap:8px;padding:10px 8px;border-radius:var(--rs);background:var(--glass);margin-bottom:6px;position:relative}
 .m-shop-item .chk{width:16px;height:16px;flex-shrink:0;accent-color:var(--accent)}
@@ -105,16 +105,14 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .m-shop-item .m-shop-del{background:none;border:none;font-size:14px;color:var(--muted);cursor:pointer;padding:2px 4px;flex-shrink:0}
 .m-shop-item.m-shop-dragging{opacity:.4}
 .m-shop-drag-ph{height:42px;margin-bottom:6px;border-radius:var(--rs);background:rgba(109,95,230,.1);border:2px dashed rgba(109,95,230,.4);box-sizing:border-box}
-#mShopAddBar{position:fixed;bottom:calc(60px + env(safe-area-inset-bottom));left:0;right:0;display:flex;flex-direction:column;gap:7px;padding:10px 16px;background:var(--bg);border-top:1px solid var(--border);z-index:20}
-#mShopNewName{width:100%;padding:10px 13px;border-radius:var(--rs);border:1px solid var(--border);background:var(--glass);font-size:16px;font-family:inherit;color:var(--text);outline:none}
+#mShopAddBar{position:fixed;bottom:calc(60px + env(safe-area-inset-bottom));left:0;right:0;display:flex;flex-direction:column;gap:7px;padding:12px 16px;background:linear-gradient(180deg,rgba(124,106,247,.09),var(--bg) 55%);border-top:2px solid var(--accent);z-index:20}
+#mShopNewName{width:100%;padding:12px 14px;border-radius:var(--rs);border:1.5px solid rgba(124,106,247,.35);background:var(--glass);font-size:16px;font-family:inherit;color:var(--text);outline:none;box-sizing:border-box}
 #mShopNewName:focus{border-color:var(--accent)}
 .m-shop-store-sel{padding:8px 10px;border-radius:var(--rs);border:1px solid var(--border);background:var(--glass);font-size:14px;font-family:inherit;color:var(--text);outline:none;flex:1}
-#mShopAddBtn{padding:8px 20px;border-radius:var(--rs);border:none;background:var(--accent);color:#fff;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer}
+#mShopAddBtn{padding:11px 26px;border-radius:var(--rs);border:none;background:var(--accent);color:#fff;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;box-shadow:0 3px 10px rgba(124,106,247,.35)}
 
-/* ── Grocery (HEB) tab ──────────────────────────────────────────────────── */
-#mGrocList{padding:0 16px 120px}
-.m-groc-week-hdr{font-size:14px;font-weight:700;color:var(--text);padding:16px 0 8px;display:flex;align-items:baseline;gap:6px}
-.m-groc-week-hdr.m-groc-next-week{margin-top:8px;padding-top:16px;border-top:2px solid var(--border)}
+/* ── Meals / Full List sheets ───────────────────────────────────────────── */
+.m-groc-week-hdr{font-size:14px;font-weight:700;color:var(--text);padding:0 0 10px;display:flex;align-items:baseline;gap:6px}
 .m-groc-week-dates{font-size:12px;font-weight:400;color:var(--sub)}
 .m-groc-section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:14px 0 4px}
 .m-groc-row{display:flex;align-items:center;gap:8px;padding:10px 8px;border-radius:var(--rs);background:var(--glass);margin-bottom:6px}
@@ -123,10 +121,17 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .m-groc-amt{font-size:12px;color:var(--muted);flex-shrink:0}
 .m-groc-done .m-groc-name{text-decoration:line-through;opacity:.5}
 .m-groc-del{background:none;border:none;font-size:14px;color:var(--muted);cursor:pointer;padding:2px 4px;flex-shrink:0}
-#mGrocAddBar{position:fixed;bottom:calc(60px + env(safe-area-inset-bottom));left:0;right:0;display:flex;flex-direction:column;gap:7px;padding:10px 16px;background:var(--bg);border-top:1px solid var(--border);z-index:20}
-#mGrocNewName{padding:10px 13px;border-radius:var(--rs);border:1px solid var(--border);background:var(--glass);font-size:16px;font-family:inherit;color:var(--text);outline:none;width:100%;box-sizing:border-box}
-#mGrocNewName:focus{border-color:var(--accent)}
-#mGrocAddBtn{padding:8px 20px;border-radius:var(--rs);border:none;background:var(--accent);color:#fff;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer}
+.m-meals-add-btn{width:100%;padding:12px;margin-top:8px;border-radius:var(--rs);border:1.5px dashed rgba(124,106,247,.4);background:none;color:var(--accent);font-size:14px;font-weight:600;font-family:inherit;cursor:pointer}
+.m-fulllist-add{display:flex;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)}
+.m-fulllist-add input{flex:1;min-width:0;padding:10px 13px;border-radius:var(--rs);border:1px solid var(--border);background:var(--glass);font-size:16px;font-family:inherit;color:var(--text);outline:none}
+.m-fulllist-add input:focus{border-color:var(--accent)}
+.m-fulllist-add button{padding:8px 18px;border-radius:var(--rs);border:none;background:var(--accent);color:#fff;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;flex-shrink:0}
+
+/* ── Extras tab (placeholder) ───────────────────────────────────────────── */
+.m-extras-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:80px 32px 0}
+.m-extras-icon{font-size:32px;margin-bottom:10px}
+.m-extras-title{font-size:17px;font-weight:700;color:var(--text);margin-bottom:6px}
+.m-extras-sub{font-size:13px;color:var(--sub);line-height:1.5}
 
 /* ── Shop edit sheet ─────────────────────────────────────────────────────── */
 #mShopEditBackdrop{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:100;display:none;opacity:0;transition:opacity .22s}
@@ -298,10 +303,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 #mFullAddSheet .m-cpick-opts{z-index:102}
 #mFullAddSave{width:100%;padding:12px;border-radius:var(--rs);border:none;background:var(--accent);color:#fff;font-size:15px;font-weight:600;font-family:inherit;cursor:pointer}
 
-/* ── Recipe picker sheet ────────────────────────────────────────────────── */
-#mRecipeBackdrop{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:100;display:none;opacity:0;transition:opacity .22s}
+/* ── Recipe picker sheet (opens stacked above the Meals sheet) ────────────── */
+#mRecipeBackdrop{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:102;display:none;opacity:0;transition:opacity .22s}
 #mRecipeBackdrop.open{display:block;opacity:1}
 .m-recipe-sheet{position:fixed;bottom:0;left:0;right:0;max-height:70vh;background:var(--bg);border-radius:18px 18px 0 0;padding:20px 16px;padding-bottom:calc(24px + env(safe-area-inset-bottom));z-index:101;transform:translateY(100%);transition:transform .25s cubic-bezier(.32,1,.23,1);overflow-y:auto;-webkit-overflow-scrolling:touch}
+#mRecipeSheet{z-index:103}
 .m-recipe-sheet.open{transform:translateY(0)}
 .m-recipe-row{display:flex;align-items:center;gap:8px;padding:12px 8px;border-radius:var(--rs);background:var(--glass);margin-bottom:6px;cursor:pointer}
 .m-recipe-row:active{opacity:.7}

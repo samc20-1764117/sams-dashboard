@@ -20,7 +20,14 @@ function hideLoginOverlay() {
 }
 
 // ── Desktop render stubs ──────────────────────────────────────────────────────
-function renderAll() { mRenderToday(); if (_mCurTab === 'tb') mRenderTB(); if (_mCurTab === 'week') mRenderWeek(); if (_mCurTab === 'shop') mRenderShop(); if (_mCurTab === 'groc') mRenderGroc(); }
+function renderAll() {
+  mRenderToday();
+  if (_mCurTab === 'tb') mRenderTB();
+  if (_mCurTab === 'week') mRenderWeek();
+  if (_mCurTab === 'shop') mRenderShop();
+  if (document.getElementById('mMealsSheet')?.classList.contains('open')) mRenderMeals();
+  if (document.getElementById('mFullListSheet')?.classList.contains('open')) mRenderFullList();
+}
 function renderToday() { mRenderToday(); }
 function renderWkCal() {}
 function renderWkSummary() {}
@@ -939,26 +946,23 @@ let _mCurTab = 'today';
 function mShowTab(tab) {
   _mCurTab = tab;
   try { localStorage._mLastTab = tab; } catch(e) {}
-  const pages = {today: 'mTodayPage', tb: 'mTBPage', week: 'mWeekPage', shop: 'mShopPage', groc: 'mGrocPage'};
+  const pages = {today: 'mTodayPage', tb: 'mTBPage', week: 'mWeekPage', shop: 'mShopPage', extras: 'mExtrasPage'};
   Object.entries(pages).forEach(([k, id]) => {
     const el = document.getElementById(id);
     if (el) el.style.display = k === tab ? '' : 'none';
   });
   const isToday = tab === 'today';
   const isShop = tab === 'shop';
-  const isGroc = tab === 'groc';
   document.getElementById('mAddBar').style.display = isToday ? '' : 'none';
   const shopBar = document.getElementById('mShopAddBar');
   if (shopBar) shopBar.style.display = isShop ? '' : 'none';
-  const grocBar = document.getElementById('mGrocAddBar');
-  if (grocBar) grocBar.style.display = isGroc ? '' : 'none';
-  document.getElementById('mApp').style.paddingBottom = (isToday || isShop || isGroc)
+  document.getElementById('mApp').style.paddingBottom = (isToday || isShop)
     ? 'calc(170px + env(safe-area-inset-bottom))'
     : 'calc(60px + env(safe-area-inset-bottom))';
   document.querySelectorAll('.m-nav-btn').forEach((b, i) => {
-    b.classList.toggle('active', (tab === 'today' && i === 0) || (tab === 'tb' && i === 1) || (tab === 'week' && i === 2) || (tab === 'shop' && i === 3) || (tab === 'groc' && i === 4));
+    b.classList.toggle('active', (tab === 'today' && i === 0) || (tab === 'tb' && i === 1) || (tab === 'week' && i === 2) || (tab === 'shop' && i === 3) || (tab === 'extras' && i === 4));
   });
-  const titles = {today: 'Today', tb: 'Schedule', week: 'Week', shop: 'Shopping', groc: 'HEB Grocery'};
+  const titles = {today: 'Today', tb: 'Timeblock', week: 'Week', shop: 'Shop', extras: 'Extras'};
   const titleEl = document.getElementById('mHeaderTitle');
   if (titleEl) titleEl.textContent = titles[tab] || '';
   const progEl = document.getElementById('mProgress');
@@ -966,20 +970,21 @@ function mShowTab(tab) {
   const monthBtn = document.getElementById('mMonthBtn');
   if (monthBtn) monthBtn.style.display = tab === 'week' ? '' : 'none';
   const dateLbl = document.getElementById('mDateLbl');
-  if (dateLbl) dateLbl.style.display = tab === 'tb' ? 'none' : '';
+  if (dateLbl) dateLbl.style.display = (tab === 'tb' || isShop) ? 'none' : '';
+  const shopBtns = document.getElementById('mShopHeaderBtns');
+  if (shopBtns) shopBtns.style.display = isShop ? '' : 'none';
   // Hide main header on schedule tab — merged into unassigned bar
   const hdr = document.getElementById('mHeader');
   if (hdr) hdr.style.display = tab === 'tb' ? 'none' : '';
   const main = document.getElementById('mMain');
-  main.style.padding = (isToday || isShop || isGroc) ? '12px 16px' : '0';
+  main.style.padding = (isToday || isShop) ? '12px 16px' : '0';
   main.style.overflow = (tab === 'week' || tab === 'tb') ? 'hidden' : '';
   main.scrollTop = 0;
 
   if (tab === 'tb')   { _mTBOffset = 0; mRenderTB(); _mScrollNow(); }
   else if (tab === 'week') { mRenderWeek(true); mInitWeekScroll(); }
   else if (tab === 'shop') { mRenderShop(); }
-  else if (tab === 'groc') { mRenderGroc(); }
-  else { _mTodayOffset = 0; _mSetDate(); }
+  else if (tab === 'today') { _mTodayOffset = 0; _mSetDate(); }
 }
 
 // ── Timeblock constants ───────────────────────────────────────────────────────
@@ -2372,47 +2377,54 @@ async function mDeleteShopItem() {
   await sbReq('DELETE', 'shopping_list', null, `?id=eq.${id}`);
 }
 
-// ── Grocery (HEB) tab ─────────────────────────────────────────────────────────
+// ── Meals sheet ────────────────────────────────────────────────────────────────
 function _mGrocDateRange(mon) {
   const m = new Date(mon + 'T12:00:00');
   const s = new Date(m); s.setDate(m.getDate() + 6);
   return m.toLocaleDateString('en-US', {month: 'short', day: 'numeric'}) + ' – ' + s.toLocaleDateString('en-US', {month: 'short', day: 'numeric'});
 }
 
-function mRenderGroc() {
-  const list = document.getElementById('mGrocList');
-  if (!list) return;
-  if (typeof generateGroceryStaples === 'function') generateGroceryStaples();
-
-  // This week = meals you're eating now
+function mRenderMeals() {
+  const el = document.getElementById('mMealsSheet');
+  if (!el) return;
   const thisWkMon = typeof _grocWeekMonday === 'function' ? _grocWeekMonday(0) : getWkKey(0);
-  // Next week = what you're planning/shopping for
-  const nextWkMon = typeof _grocWeekMonday === 'function' ? _grocWeekMonday(1) : (() => { const d = new Date(thisWkMon + 'T12:00:00'); d.setDate(d.getDate() + 7); return d.toISOString().split('T')[0]; })();
-
-  const items = (st.groceryList || []).filter(g => g.week_of === nextWkMon);
-  const unchecked = items.filter(g => !g.checked);
-  const checked = items.filter(g => g.checked);
-  const countEl = document.getElementById('mGrocCount');
-  if (countEl) countEl.textContent = unchecked.length ? `HEB (${unchecked.length} items)` : 'HEB ✓';
-
-  let html = '';
-
-  // ── THIS WEEK: Meals ──
   const plannedMeals = typeof _mealsForWeek === 'function' ? _mealsForWeek() : [];
   const uniqueMeals = [...new Map(plannedMeals.map(m => [String(m.recipe_id), m])).values()];
-  html += `<div class="m-groc-week-hdr">Meals · <span class="m-groc-week-dates">${_mGrocDateRange(thisWkMon)}</span></div>`;
+  let html = `<h3 style="margin:0 0 4px">Meals This Week</h3><div class="m-groc-week-hdr" style="padding-top:0"><span class="m-groc-week-dates">${_mGrocDateRange(thisWkMon)}</span></div>`;
   if (uniqueMeals.length) {
     uniqueMeals.forEach(m => {
-      html += `<div class="m-groc-row"><span class="m-groc-name" style="font-weight:600">🍽 ${(m.recipe_name||'').replace(/&/g,'&amp;')}</span>${(m.servings||1)>1?`<span class="m-groc-amt">${m.servings}d</span>`:''}  <button class="m-groc-del" onclick="mRemoveMealAndGroceries('${m.recipe_id}')">✕</button></div>`;
+      html += `<div class="m-groc-row"><span class="m-groc-name" style="font-weight:600">🍽 ${escHtml(m.recipe_name||'')}</span>${(m.servings||1)>1?`<span class="m-groc-amt">${m.servings}d</span>`:''}<button class="m-groc-del" onclick="mRemoveMealAndGroceries('${m.recipe_id}')">✕</button></div>`;
     });
   } else {
     html += '<div class="m-groc-row" style="opacity:.4;font-style:italic;padding:6px 0">No meals planned</div>';
   }
+  html += `<button class="m-meals-add-btn" onclick="mOpenRecipes()">+ Add a meal</button>`;
+  el.innerHTML = html;
+}
+function mOpenMeals() {
+  mRenderMeals();
+  document.getElementById('mMealsBackdrop').classList.add('open');
+  document.getElementById('mMealsSheet').classList.add('open');
+}
+function mCloseMeals() {
+  document.getElementById('mMealsBackdrop').classList.remove('open');
+  document.getElementById('mMealsSheet').classList.remove('open');
+}
 
-  // ── NEXT WEEK: Planned Meals + Shopping List ──
-  html += `<div class="m-groc-week-hdr m-groc-next-week">Shopping List · <span class="m-groc-week-dates">${_mGrocDateRange(nextWkMon)}</span></div>`;
+// ── Full shopping list sheet (HEB items + meal ingredients) ───────────────────
+function mRenderFullList() {
+  const el = document.getElementById('mFullListSheet');
+  if (!el) return;
+  if (typeof generateGroceryStaples === 'function') generateGroceryStaples();
 
-  // Group grocery items by source
+  const nextWkMon = typeof _grocWeekMonday === 'function' ? _grocWeekMonday(1) : (() => { const d = new Date(); const dow = (d.getDay()+6)%7; d.setDate(d.getDate()-dow+7); return d2s(d); })();
+  const items = (st.groceryList || []).filter(g => g.week_of === nextWkMon);
+  const unchecked = items.filter(g => !g.checked);
+  const checked = items.filter(g => g.checked);
+  const hebItems = (st.shopping || []).filter(s => !s.done && s.store === 'HEB').sort((a, b) => (a.shop_order ?? 9999) - (b.shop_order ?? 9999));
+
+  let html = `<h3 style="margin:0 0 4px">Full Shopping List</h3><div class="m-groc-week-hdr" style="padding-top:0"><span class="m-groc-week-dates">${_mGrocDateRange(nextWkMon)}</span></div>`;
+
   const staples = unchecked.filter(g => g.source === 'staple');
   const recipeGroups = {};
   unchecked.filter(g => g.source === 'recipe').forEach(g => {
@@ -2425,50 +2437,61 @@ function mRenderGroc() {
   function grocRow(g) {
     return `<div class="m-groc-row${g.checked ? ' m-groc-done' : ''}" data-id="${g.id}">
       <input type="checkbox" class="m-groc-chk"${g.checked ? ' checked' : ''} onchange="mTogGroc('${g.id}',this.checked)">
-      <span class="m-groc-name">${(g.name || '').replace(/&/g,'&amp;').replace(/</g,'&lt;')}</span>
-      ${g.amount ? `<span class="m-groc-amt">${(g.amount || '').replace(/&/g,'&amp;').replace(/</g,'&lt;')}</span>` : ''}
+      <span class="m-groc-name">${escHtml(g.name || '')}</span>
+      ${g.amount ? `<span class="m-groc-amt">${escHtml(g.amount || '')}</span>` : ''}
       <button class="m-groc-del" onclick="mDelGroc('${g.id}')">✕</button>
     </div>`;
   }
+  function hebRow(s) {
+    return `<div class="m-groc-row" data-id="${s.id}">
+      <input type="checkbox" class="m-groc-chk" onchange="mToggleFullListHeb('${s.id}',this.checked)">
+      <span class="m-groc-name">${escHtml(s.name || '')}</span>
+    </div>`;
+  }
 
-  if (staples.length) {
-    html += `<div class="m-groc-section-title">Weekly Staples</div>`;
-    html += staples.map(grocRow).join('');
-  }
-  Object.entries(recipeGroups).forEach(([name, items]) => {
-    html += `<div class="m-groc-section-title">${name.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</div>`;
-    html += items.map(grocRow).join('');
+  if (staples.length) { html += `<div class="m-groc-section-title">Weekly Staples</div>` + staples.map(grocRow).join(''); }
+  Object.entries(recipeGroups).forEach(([name, arr]) => {
+    html += `<div class="m-groc-section-title">${escHtml(name)}</div>` + arr.map(grocRow).join('');
   });
-  if (manual.length) {
-    html += `<div class="m-groc-section-title">Other</div>`;
-    html += manual.map(grocRow).join('');
-  }
-  if (checked.length) {
-    html += `<div class="m-groc-section-title" style="opacity:.5">Done (${checked.length})</div>`;
-    html += checked.map(grocRow).join('');
-  }
-  if (!unchecked.length && !checked.length) {
+  if (hebItems.length) { html += `<div class="m-groc-section-title">Shopping List</div>` + hebItems.map(hebRow).join(''); }
+  if (manual.length) { html += `<div class="m-groc-section-title">Other</div>` + manual.map(grocRow).join(''); }
+  if (checked.length) { html += `<div class="m-groc-section-title" style="opacity:.5">Done (${checked.length})</div>` + checked.map(grocRow).join(''); }
+  if (!unchecked.length && !checked.length && !hebItems.length) {
     html += '<div class="m-groc-row" style="opacity:.4;font-style:italic;padding:6px 0">No items yet</div>';
   }
-  list.innerHTML = html;
+  html += `<div class="m-fulllist-add"><input id="mFullListNewName" type="text" placeholder="Add item..." onkeydown="if(event.key==='Enter')mAddGrocItem()"><button onclick="mAddGrocItem()">Add</button></div>`;
+  el.innerHTML = html;
+}
+function mOpenFullList() {
+  mRenderFullList();
+  document.getElementById('mFullListBackdrop').classList.add('open');
+  document.getElementById('mFullListSheet').classList.add('open');
+}
+function mCloseFullList() {
+  document.getElementById('mFullListBackdrop').classList.remove('open');
+  document.getElementById('mFullListSheet').classList.remove('open');
+}
+function mToggleFullListHeb(id, checked) {
+  togShop(id, checked);
+  mRenderFullList();
 }
 
 async function mTogGroc(id, checked) {
   const item = (st.groceryList || []).find(g => String(g.id) === String(id));
   if (!item) return;
   item.checked = checked;
-  save(); mRenderGroc();
+  save(); mRenderFullList();
   sbReqSilent('PATCH', 'grocery_list', {checked}, `?id=eq.${id}`);
 }
 
 async function mDelGroc(id) {
   st.groceryList = (st.groceryList || []).filter(g => String(g.id) !== String(id));
-  save(); mRenderGroc();
+  save(); mRenderFullList();
   sbReqSilent('DELETE', 'grocery_list', null, `?id=eq.${id}`);
 }
 
 async function mAddGrocItem() {
-  const nameEl = document.getElementById('mGrocNewName');
+  const nameEl = document.getElementById('mFullListNewName');
   const n = (nameEl.value || '').trim();
   if (!n) return;
   const wk = typeof _grocWeekMonday === 'function' ? _grocWeekMonday(1) : (() => { const d = new Date(); const dow = (d.getDay()+6)%7; d.setDate(d.getDate()-dow+7); return d.toISOString().split('T')[0]; })();
@@ -2476,8 +2499,7 @@ async function mAddGrocItem() {
   const sv = await sbReqSilent('POST', 'grocery_list', item);
   if (sv && sv[0]) st.groceryList.push(sv[0]);
   else { item.id = 'l-' + Date.now(); st.groceryList.push(item); }
-  save(); mRenderGroc();
-  nameEl.value = '';
+  save(); mRenderFullList();
 }
 
 function mOpenRecipes() {
@@ -2506,10 +2528,10 @@ function mCloseRecipes() {
 async function mAddRecipeToMealPlan(recipeId) {
   if (typeof addRecipeToMealPlan === 'function') {
     await addRecipeToMealPlan(recipeId);
-    mRenderGroc();
+    mRenderMeals();
   } else if (typeof _grocAddRecipe === 'function') {
     await _grocAddRecipe(recipeId);
-    mRenderGroc();
+    mRenderMeals();
   }
   mCloseRecipes();
 }
@@ -2517,7 +2539,8 @@ async function mAddRecipeToMealPlan(recipeId) {
 function mRemoveMealAndGroceries(recipeId) {
   if (typeof removeMealAndGroceries === 'function') {
     removeMealAndGroceries(recipeId);
-    mRenderGroc();
+    mRenderMeals();
+    mRenderFullList();
   }
 }
 
@@ -2741,7 +2764,7 @@ async function mInit() {
   if (!authed) return;
   hideLoginOverlay();
   await syncAll();
-  mShowTab(['today','tb','week','shop','groc'].includes(localStorage._mLastTab) ? localStorage._mLastTab : 'today'); // restore last tab across refresh
+  mShowTab(['today','tb','week','shop','extras'].includes(localStorage._mLastTab) ? localStorage._mLastTab : 'today'); // restore last tab across refresh
   setInterval(() => { if (cfg.url && cfg.key && !document.hidden) syncAll(true); }, 30000);
 
   // iOS suspends setInterval while the PWA is backgrounded — so reopening the app
