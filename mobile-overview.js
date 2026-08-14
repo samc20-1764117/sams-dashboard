@@ -407,8 +407,10 @@ function mGetTodayTasks() {
           if (_rec._dateOverrides[getWkKey(sw)] === '__skip__') return;
         }
       }
-      // Match desktop dedup: if current week has a future occurrence, suppress overdue past-week one
-      const existing = allRecVirt.findIndex(x => x._recId === v._recId);
+      // Match desktop dedup exactly: same recId+wkKey = same instance; different wkKey
+      // (e.g. a moved/carried occurrence) = a separate instance, not collapsed together.
+      const _dedupKey = v._recId + '::' + (v._wkKey || '');
+      const existing = allRecVirt.findIndex(x => (x._recId + '::' + (x._wkKey || '')) === _dedupKey);
       if (existing >= 0) {
         const ev = allRecVirt[existing];
         const evFuture = !isOv(ev.due_date) && !ev.done;
@@ -420,41 +422,44 @@ function mGetTodayTasks() {
     });
   }
 
-  // WR recurring — only current week (WR tasks reset weekly, past weeks don't carry over)
+  // WR recurring — 4-week lookback, matching desktop exactly: the override value must
+  // still be within/after the current week (>= getWkKey(0)) and not skip/move-overridden,
+  // otherwise a stale past-week override falsely reads as overdue.
   const _wrecSeen = new Set();
   const wrecToday = [];
-  {
-    const _wkKey = getWkKey(0);
+  for (let _w = 0; _w >= -4; _w--) {
+    const _wkKey = getWkKey(_w);
     st.recurring
       .filter(r =>
         (r.is_weekly_reset === true || r.is_weekly_reset === 'true') &&
         r._dateOverrides && r._dateOverrides[_wkKey] &&
         r._dateOverrides[_wkKey] !== '__skip__' &&
-        (r._dateOverrides[_wkKey] === ds || (r._dateOverrides[_wkKey] < ds && !(r._doneByWk && r._doneByWk[_wkKey]))) &&
-        !_wrecSeen.has(String(r.id))
+        !(st.wrOverrides || []).some(o => String(o.rule_id) === String(r.id) && o.wk_key === _wkKey && (o.override_type === 'skip' || o.override_type === 'move')) &&
+        (r._dateOverrides[_wkKey] === ds || (_mTodayOffset === 0 && r._dateOverrides[_wkKey] < ds && r._dateOverrides[_wkKey] >= getWkKey(0) && !(r._doneByWk && r._doneByWk[_wkKey]))) &&
+        !_wrecSeen.has(r.id + '::' + _wkKey)
       )
       .forEach(r => {
-        _wrecSeen.add(String(r.id));
+        _wrecSeen.add(r.id + '::' + _wkKey);
         const _isDone = !!(r._doneByWk && r._doneByWk[_wkKey]);
         wrecToday.push({id: 'rec-virt-' + r.id, name: r.name, category: 'Recurring', due_date: r._dateOverrides[_wkKey], done: _isDone, _recId: r.id, _virtual: true, _wkKey: _wkKey, _isWrec: true});
       });
   }
 
-  // WR rules — only current week
+  // WR rules — same 4-week lookback + stale-override guard as WR recurring above
   const _wrRulesSeen = new Set();
   const wrRulesToday = [];
-  {
-    const _wkKey = getWkKey(0);
+  for (let _w = 0; _w >= -4; _w--) {
+    const _wkKey = getWkKey(_w);
     st.wrRules
       .filter(r =>
         r._dateOverrides && r._dateOverrides[_wkKey] &&
         r._dateOverrides[_wkKey] !== '__skip__' &&
-        !(st.wrOverrides || []).some(o => String(o.rule_id) === String(r.id) && o.wk_key === _wkKey && o.override_type === 'skip') &&
-        (r._dateOverrides[_wkKey] === ds || (r._dateOverrides[_wkKey] < ds && !isDoneWRRule(r.id, _wkKey))) &&
-        !_wrRulesSeen.has(String(r.id))
+        !(st.wrOverrides || []).some(o => String(o.rule_id) === String(r.id) && o.wk_key === _wkKey && (o.override_type === 'skip' || o.override_type === 'move')) &&
+        (r._dateOverrides[_wkKey] === ds || (_mTodayOffset === 0 && r._dateOverrides[_wkKey] < ds && r._dateOverrides[_wkKey] >= getWkKey(0) && !isDoneWRRule(r.id, _wkKey))) &&
+        !_wrRulesSeen.has(r.id + '::' + _wkKey)
       )
       .forEach(r => {
-        _wrRulesSeen.add(String(r.id));
+        _wrRulesSeen.add(r.id + '::' + _wkKey);
         const _isDone = isDoneWRRule(r.id, _wkKey);
         wrRulesToday.push({id: 'wrrule-virt-' + r.id, name: r.name, category: 'Recurring', due_date: r._dateOverrides[_wkKey], done: _isDone, _ruleId: r.id, _virtual: true, _wkKey: _wkKey, _isWrRule: true});
       });
@@ -2706,7 +2711,9 @@ function _mMoWeekRowHtml(weekOff, taskMap, forceLabel) {
     const ds = d2s(d);
     const isToday = ds === today;
     const badge = _mMonthDayBadge(ds, taskMap);
-    return `<div class="m-mo-day${isToday ? ' is-today' : ''}${_mMonthSelectedDs === ds ? ' selected' : ''}" data-ds="${ds}" onclick="mMonthSelectDay('${ds}')"><span class="m-mo-num">${d.getDate()}</span>${badge}</div>`;
+    // Badge always sits in its own fixed-height slot (even when empty) so the day
+    // number never shifts depending on whether that day has a badge or not.
+    return `<div class="m-mo-day${isToday ? ' is-today' : ''}${_mMonthSelectedDs === ds ? ' selected' : ''}" data-ds="${ds}" onclick="mMonthSelectDay('${ds}')"><span class="m-mo-num">${d.getDate()}</span><div class="m-mo-badge-slot">${badge}</div></div>`;
   }).join('');
   return `${divider}<div class="m-mo-week" data-wk="${weekOff}" data-mon="${d2s(dates[0])}">${cells}</div>`;
 }
@@ -2747,12 +2754,19 @@ function mInitMonthScroll() {
   const scroller = document.getElementById('mMonthScroll');
   if (!scroller || scroller._moScrollInited) return;
   scroller._moScrollInited = true;
+  // rAF-throttled: the raw scroll event can fire dozens of times per frame, and running
+  // this work synchronously on each one is what made the scroll feel janky.
   scroller.addEventListener('scroll', () => {
-    if (_mMoScrollLock) return;
-    const threshold = 400;
-    if (scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < threshold) _mMoLoadMore('down');
-    if (scroller.scrollTop < threshold) _mMoLoadMore('up');
-    if (!_mMoTitleRaf) { _mMoTitleRaf = true; requestAnimationFrame(() => { _mMoTitleRaf = false; _mUpdateMonthTitle(); }); }
+    if (_mMoTitleRaf) return;
+    _mMoTitleRaf = true;
+    requestAnimationFrame(() => {
+      _mMoTitleRaf = false;
+      _mUpdateMonthTitle();
+      if (_mMoScrollLock) return;
+      const threshold = 900;
+      if (scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < threshold) _mMoLoadMore('down');
+      if (scroller.scrollTop < threshold) _mMoLoadMore('up');
+    });
   }, {passive: true});
 }
 
