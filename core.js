@@ -976,7 +976,10 @@ function _stateSnap(){
     pupSessions:JSON.parse(JSON.stringify(st.pupSessions||[])),
     pup_skills:JSON.parse(JSON.stringify(st.pup_skills||[])),
     pupWeeklyFocus:JSON.parse(JSON.stringify(st.pupWeeklyFocus||[])),
-    videos:JSON.parse(JSON.stringify(st.videos||[]))
+    videos:JSON.parse(JSON.stringify(st.videos||[])),
+    // Video step scheduling lives in localStorage, not `st` — redo's generic state restore
+    // would otherwise silently skip it, leaving a moved video step stuck in its undone spot.
+    _vidStepDayMap:typeof _vidStepDayMap==='function'?_vidStepDayMap():null
   };
 }
 
@@ -994,6 +997,7 @@ function _stateRestore(snap){
   if(snap.pup_skills)st.pup_skills=snap.pup_skills;
   if(snap.pupWeeklyFocus)st.pupWeeklyFocus=snap.pupWeeklyFocus;
   if(snap.videos)st.videos=snap.videos;
+  if(snap._vidStepDayMap&&typeof _vidStepDayMapSet==='function')_vidStepDayMapSet(snap._vidStepDayMap);
   save();
   renderAll();
   renderPupSkillsHighlight();
