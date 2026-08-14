@@ -78,9 +78,8 @@ function _applyTodTbCollapse(){
   const body=document.querySelector('.tod-tb-body');if(!body)return;
   const _wasCollapsed=body.classList.contains('tb-list-only');
   body.classList.toggle('tb-list-only',_todTbCollapsed);
-  // The header toggle only ever collapses (hidden once collapsed — the bottom control expands it back).
-  const btn=document.getElementById('todTbToggleBtn');
-  if(btn)btn.style.display=_todTbCollapsed?'none':'';
+  // The collapse button lives inside #tbSum (.tb-section), which is itself hidden by CSS when
+  // collapsed — the bottom control expands it back, no separate visibility toggle needed here.
   if(_wasCollapsed&&!_todTbCollapsed){
     // The timeblock panel was just unhidden — its height read 0 while hidden, which can leave
     // _syncPX's --hour-h/PX stale. Resync against the now-real size before redrawing blocks.
@@ -6914,7 +6913,7 @@ function renderTBSum(ds){
   const dayMins=(HOURS[HOURS.length-1]-HOURS[0]+1)*60;
   const free=Math.max(0,dayMins-tot);
   const freeStr=free>=60?`${Math.floor(free/60)}h${free%60?` ${free%60}m`:''}`:` ${free}m`;
-  document.getElementById('tbSum').innerHTML=`<div class="si"><span>Blocked:</span><span class="sv">${Math.floor(tot/60)}h ${tot%60}m</span><span class="tb-free">(${freeStr} free)</span></div><button class="btn btn-ghost btn-xs" id="autoTBToggle" onclick="openAutoTBManager()" title="Manage auto blocks" style="margin-left:auto;font-size:8px;flex-shrink:0">Auto</button><button class="btn btn-ghost btn-xs" onclick="toggleVidOvMenu()" title="Videos" style="font-size:8px;flex-shrink:0;padding:3px 5px;display:flex;align-items:center;gap:3px"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg></button>`;
+  document.getElementById('tbSum').innerHTML=`<div class="si"><span>Blocked:</span><span class="sv">${Math.floor(tot/60)}h ${tot%60}m</span><span class="tb-free">(${freeStr} free)</span></div><button class="wkc-goals-toggle" id="todTbToggleBtn" onclick="_toggleTodTbCollapse(event)" title="Collapse timeblock">✕</button><button class="btn btn-ghost btn-xs" id="autoTBToggle" onclick="openAutoTBManager()" title="Manage auto blocks" style="margin-left:auto;font-size:8px;flex-shrink:0">Auto</button><button class="btn btn-ghost btn-xs" onclick="toggleVidOvMenu()" title="Videos" style="font-size:8px;flex-shrink:0;padding:3px 5px;display:flex;align-items:center;gap:3px"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg></button>`;
 }
 // ── Auto Timeblocks ────────────────────────────────────────────────────────────
 function getAutoTBForDate(ds){
