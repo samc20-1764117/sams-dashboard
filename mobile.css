@@ -53,7 +53,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .m-row-icon{font-size:16px;width:28px;text-align:center;flex-shrink:0}
 .m-row-name{flex:1;font-size:14px;line-height:1.35}
 .m-row-name.done{text-decoration:line-through;color:#aaa}
-.m-row-arrow{font-size:10px;color:#bbb;flex-shrink:0;margin-right:-2px}
 .m-row-tag{font-size:11px;padding:2px 8px;border-radius:20px;white-space:nowrap;flex-shrink:0;font-weight:500}
 
 /* Edit button on rows */
@@ -344,10 +343,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
    whether or not that day has a badge below it. */
 .m-mo-day{padding:6px 1px 4px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:500;color:var(--text);position:relative;min-height:38px;display:flex;flex-direction:column;align-items:center;gap:0}
 .m-mo-day:active{background:rgba(124,106,247,.1)}
-.m-mo-badge-slot{height:6px;display:flex;align-items:center;justify-content:center;margin-top:2px}
+.m-mo-badge-slot{height:6px;width:100%;display:flex;align-items:center;justify-content:center;margin-top:2px}
 .m-mo-day.selected{background:rgba(124,106,247,.12);outline:2px solid var(--accent);outline-offset:-2px}
 .m-mo-day.is-today .m-mo-num{background:var(--accent);color:#fff;font-weight:700;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center}
-.m-mo-bar{display:flex;width:20px;height:4px;border-radius:2px;overflow:hidden}
+.m-mo-bar{display:flex;width:88%;max-width:34px;height:4px;border-radius:2px;overflow:hidden}
 .m-mo-bar span{height:100%}
 .m-mo-dot{width:5px;height:5px;border-radius:50%}
 /* Year view */

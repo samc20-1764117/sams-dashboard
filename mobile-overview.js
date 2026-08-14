@@ -541,7 +541,6 @@ function mTaskRow(t) {
   else if (!t._virtual) onchange = `toggleTask('${t.id}',this.checked)`;
 
   const safeName = escHtml(t.name || '');
-  const arrow = !t.done && !t._hasTB ? '<span class="m-row-arrow">▸</span>' : '';
   const dot = `<span class="m-cat-dot" style="background:${s.bg};border:1.5px solid ${s.d};flex-shrink:0;width:10px;height:10px;border-radius:50%;display:inline-block"></span>`;
   // Overdue regular/shopping tasks get a one-tap reschedule to today
   const canMv = ov && (canEdit || t._type === 'shop');
@@ -553,7 +552,7 @@ function mTaskRow(t) {
       : `<label class="m-chk-wrap"><input type="checkbox" ${t.done ? 'checked' : ''} onchange="${onchange}"></label>`
     }
     <span class="m-row-name${t.done ? ' done' : ''}">${safeName}</span>
-    ${mvBtn}${arrow}${dot}
+    ${mvBtn}${dot}
   </div>`;
 
   return `<div class="m-row-outer"${canEdit ? ` data-tid="${t.id}"` : ''}>
@@ -565,20 +564,6 @@ function mTaskRow(t) {
 // ── Render today ──────────────────────────────────────────────────────────────
 function mRenderToday() {
   const sorted = mGetTodayTasks();
-  // Tag tasks with timeblock info for arrow indicator
-  const ds = _mTodayOffset === 0 ? d2s(getDayDate(0)) : _mTodayDateStr();
-  const blks = (st.blocks || []).filter(b => b.ds === ds);
-  sorted.forEach(t => {
-    let b = null;
-    if (t._type === 'pup' && t._pupSessId) b = blks.find(x => String(x._pupSessId) === String(t._pupSessId));
-    else if (t._type === 'vidstep') b = blks.find(x => String(x._vidStepVid) === String(t._vidId) && x._vidStepName === t._vidStep);
-    else if (t._vidId) b = blks.find(x => String(x._vidId) === String(t._vidId));
-    else if (t._shopId) b = blks.find(x => String(x.shopId) === String(t._shopId));
-    else if (t._ruleId) b = blks.find(x => String(x.ruleId) === String(t._ruleId) || String(x.recId) === String(t._ruleId));
-    else if (t._recId) b = blks.find(x => String(x.recId) === String(t._recId));
-    else if (!t._virtual) b = blks.find(x => String(x.taskId) === String(t.id));
-    t._hasTB = !!b;
-  });
   const doneCount = sorted.filter(t => t.done).length;
   const progEl = document.getElementById('mProgress');
   if (progEl && _mCurTab === 'today') {
@@ -965,9 +950,13 @@ function mShowTab(tab) {
   document.getElementById('mAddBar').style.display = isToday ? '' : 'none';
   const shopBar = document.getElementById('mShopAddBar');
   if (shopBar) shopBar.style.display = isShop ? '' : 'none';
-  // Add bars are in normal flex flow (not fixed) with their own margin-bottom reserving
-  // nav clearance, so #mApp never needs extra bottom padding for them any more.
-  document.getElementById('mApp').style.paddingBottom = 'calc(52px + env(safe-area-inset-bottom))';
+  // Today/Shop's add bars are in normal flex flow with their own margin-bottom already
+  // reserving nav clearance — adding the same clearance again here would double it up
+  // (a visible gap between the add bar and the nav). Only tabs with no add bar of their
+  // own (tb/week/extras) need #mApp to reserve that space.
+  document.getElementById('mApp').style.paddingBottom = (isToday || isShop)
+    ? '0px'
+    : 'calc(52px + env(safe-area-inset-bottom))';
   document.querySelectorAll('.m-nav-btn').forEach((b, i) => {
     b.classList.toggle('active', (tab === 'today' && i === 0) || (tab === 'tb' && i === 1) || (tab === 'week' && i === 2) || (tab === 'shop' && i === 3) || (tab === 'extras' && i === 4));
   });
@@ -1890,8 +1879,6 @@ function _mWkScrollToToday(attempt = 0) {
 function mRenderWeek(reset = false) {
   const list = document.getElementById('mWeekList');
   if (!list) return;
-  const dateLbl = document.getElementById('mDateLbl');
-  if (dateLbl) dateLbl.textContent = 'Week';
   const prevScroll = _mWkScroller().scrollTop;
 
   // Only reset to the default range on explicit open; background re-renders (sync)
@@ -2662,26 +2649,45 @@ function mYearSelectMonth(mo, yr) {
 // previously the badge used a separate, narrower data source and could miss WR
 // recurring/WR rules/pup sessions/travel/birthday/video-step items entirely.
 function _mMonthCatKey(t) {
-  return t._type === 'shop' ? 'shopping' : t._type === 'vid' || t._type === 'vidstep' ? 'Videos' : (t._isWrRule || t._isWrec) ? 'weekly_reset' : (t._virtual && t._recId) ? 'recurring' : (t.category || '');
+  return t._type === 'shop' ? 'shopping'
+    : t._type === 'vid' || t._type === 'vidstep' ? 'Videos'
+    : t._type === 'birthday' ? 'birthday'
+    : t._type === 'holiday' ? 'holiday'
+    : t._type === 'travel' ? 'travel'
+    : (t._isWrRule || t._isWrec) ? 'weekly_reset'
+    : (t._virtual && t._recId) ? 'recurring'
+    : (t.category || '');
 }
 
-// Segment the category color order the same way the rest of the dashboard does (CATS key order)
+// Effective color for a badge segment / detail dot: overdue (red) beats important
+// (yellow) beats category color — the same priority desktop uses on task rows
+// (features.js: `t.important&&!t.done?IMP:...`, overdue always wins over that).
+function _mMonthDotStyle(t) {
+  const noCheck = t._type === 'travel' || t._type === 'birthday' || t._type === 'holiday';
+  if (!noCheck && isOv(t.due_date) && !t.done) return OV;
+  if (t.important && !t.done) return IMP;
+  return gc(_mMonthCatKey(t));
+}
+
+// Segment order matches the rest of the dashboard's CATS key order, with overdue/important
+// pulled out front since they're cross-cutting states, not categories.
 function _mMonthDayBadge(tasks) {
   const items = tasks.filter(t => !t.done);
   if (!items.length) return '';
   const order = Object.keys(CATS);
   const counts = {};
+  const colorFor = {};
   items.forEach(t => {
-    const key = _mMonthCatKey(t).toLowerCase();
+    const noCheck = t._type === 'travel' || t._type === 'birthday' || t._type === 'holiday';
+    const key = (!noCheck && isOv(t.due_date)) ? '_overdue' : t.important ? '_important' : _mMonthCatKey(t).toLowerCase();
     counts[key] = (counts[key] || 0) + 1;
+    colorFor[key] = _mMonthDotStyle(t).d;
   });
-  const keys = Object.keys(counts).sort((a, b) => {
-    const ia = order.indexOf(a), ib = order.indexOf(b);
-    return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
-  });
-  if (keys.length === 1) return `<span class="m-mo-dot" style="background:${gc(keys[0]).d}"></span>`;
+  const rank = k => k === '_overdue' ? -2 : k === '_important' ? -1 : (order.indexOf(k) === -1 ? 999 : order.indexOf(k));
+  const keys = Object.keys(counts).sort((a, b) => rank(a) - rank(b));
+  if (keys.length === 1) return `<span class="m-mo-dot" style="background:${colorFor[keys[0]]}"></span>`;
   const total = items.length;
-  const segs = keys.map(k => `<span style="flex:${counts[k] / total};background:${gc(k).d}"></span>`).join('');
+  const segs = keys.map(k => `<span style="flex:${counts[k] / total};background:${colorFor[k]}"></span>`).join('');
   return `<div class="m-mo-bar">${segs}</div>`;
 }
 
@@ -2809,7 +2815,7 @@ function _mRenderMonthDetail(ds) {
     html += '<div class="m-mo-detail-empty">No tasks</div>';
   } else {
     tasks.forEach(t => {
-      const s = gc(_mMonthCatKey(t));
+      const s = _mMonthDotStyle(t);
       html += `<div class="m-mo-detail-item${t.done ? ' done' : ''}">
         <span class="m-mo-detail-dot" style="background:${s.bg};border:1px solid ${s.d}"></span>
         ${escHtml(t.name || '')}

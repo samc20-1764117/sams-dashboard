@@ -124,6 +124,8 @@ function _egAdd(n){try{const d=new Date(),mo=d.getFullYear()+'-'+String(d.getMon
 async function sbReq(method,table,body,qs='',_retried=false){
   if(!cfg.url||!cfg.key)return null;
   if(method!=='POST'&&/eq\.t-/.test(qs))return null;
+  const _wrTbl=(table==='wr_recurring_rules'||table==='wr_recurring_overrides')&&method!=='GET';
+  if(_wrTbl)_wrPatchInFlight++;
   try{
     const prefer=method==='DELETE'?'return=minimal':'return=representation';
     const r=await fetch(`${cfg.url}/rest/v1/${table}${qs}`,{method,headers:{'apikey':cfg.key,'Authorization':`Bearer ${_getAuthToken()}`,'Content-Type':'application/json','Prefer':prefer},body:body?JSON.stringify(body):null});
@@ -142,6 +144,8 @@ async function sbReq(method,table,body,qs='',_retried=false){
     _sbNetFails++;
     if(!_sbNetToastTimer){showToast('⚠️ Save failed — check connection','#ef4444',4000);_sbNetToastTimer=setTimeout(()=>{_sbNetToastTimer=null;},10000);}
     return null;
+  }finally{
+    if(_wrTbl)_wrPatchInFlight--;
   }
 }
 // localOverrides: map of taskId -> partial fields that always win over DB on sync
@@ -185,12 +189,17 @@ const pendingShopIds=new Set();
 // Block ids created/saved locally but not yet confirmed in the DB. Only these are preserved
 // across a sync — a block missing from the DB that ISN'T pending was deleted elsewhere.
 const pendingBlockIds=new Set();
+// Count of in-flight writes to wr_recurring_rules/wr_recurring_overrides. Used to bound how
+// long a sync's "keep the local _dateOverrides" protection lasts — see syncAll's WR merge.
+let _wrPatchInFlight=0;
 let deletedRecIds=new Set();
 let deletedPupSessIds=new Set();
 // ── Supabase silent request (no toast on failure) ────────────────────────────
 async function sbReqSilent(method,table,body,qs='',_retried=false){
   if(!cfg.url||!cfg.key)return null;
   if(method!=='POST'&&/eq\.t-/.test(qs))return null;
+  const _wrTbl=(table==='wr_recurring_rules'||table==='wr_recurring_overrides')&&method!=='GET';
+  if(_wrTbl)_wrPatchInFlight++;
   try{
     const r=await fetch(`${cfg.url}/rest/v1/${table}${qs}`,{
       method,
@@ -202,6 +211,9 @@ async function sbReqSilent(method,table,body,qs='',_retried=false){
       const t=await r.text();console.warn('Supabase silent fail',method,table,r.status,t);return null;}
     const t=await r.text();_egAdd(t.length);return t?JSON.parse(t):[];
   }catch(e){console.warn('sbReqSilent error',method,table,e);return null;}
+  finally{
+    if(_wrTbl)_wrPatchInFlight--;
+  }
 }
 
 // ── Recurring task DB filter helper ─────────────────────────────────────────
@@ -381,7 +393,11 @@ async function syncAll(silent=false){
       // Non-WR → keep forward carries; only clamp backward (earlier-than-week) dates, which are stale bad data.
       const _normOvs=(o,del)=>{Object.keys(o).forEach(k=>{let v=o[k];if(!v||v==='__skip__'||!/^\d{4}-\d{2}-\d{2}$/.test(String(v))||!/^\d{4}-\d{2}-\d{2}$/.test(k))return;const sun=new Date(k+'T12:00');sun.setDate(sun.getDate()+6);const sunDs=d2s(sun);if(v>=k&&v<=sunDs)return;if(del){delete o[k];return;}if(v>sunDs)return;while(v<k){const d=new Date(v+'T12:00');d.setDate(d.getDate()+7);v=d2s(d);}o[k]=v;});return o;};
       st.wrRules=wrRules.filter(_isWR);
-      st.wrRules.forEach(r=>{const dbOvs={...(r.date_overrides||{})};const prevOvs=prevPins[String(r.id)];if(prevOvs){Object.keys(prevOvs).forEach(k=>{if(dbOvs[k]==='__skip__')return;dbOvs[k]=prevOvs[k];});}r._dateOverrides=_normOvs(dbOvs,true);});
+      // Only keep the local value over the freshly-fetched DB value while a write is
+      // genuinely in flight (_wrPatchInFlight>0) — otherwise a value cached from one
+      // sync gets silently re-preferred forever, and a change made on another device
+      // (e.g. desktop moving a task to a different day) never becomes visible here.
+      st.wrRules.forEach(r=>{const dbOvs={...(r.date_overrides||{})};const prevOvs=_wrPatchInFlight>0?prevPins[String(r.id)]:null;if(prevOvs){Object.keys(prevOvs).forEach(k=>{if(dbOvs[k]==='__skip__')return;dbOvs[k]=prevOvs[k];});}r._dateOverrides=_normOvs(dbOvs,true);});
       const nonWR=wrRules.filter(r=>!_isWR(r));
       const dbIds=new Set(nonWR.map(r=>String(r.id)));
       const localPending=st.recurring.filter(r=>{
@@ -394,10 +410,9 @@ async function syncAll(silent=false){
           const dbwk=r.done_by_week||{};
           const isDone=!!(dbwk[getWkKey(0)]);
           const dateOvs={...(r.date_overrides||{})};
-          const prevOvs=prevRecOvs[String(r.id)];
-          // Preserve local optimistic overrides — but never let a stale local copy resurrect a
-          // task the DB says is skipped this week ('__skip__'). Otherwise a skip made on another
-          // device (desktop) never syncs here: local keeps clobbering the DB skip every sync.
+          // Only preserve the local value while a write is genuinely in flight
+          // (_wrPatchInFlight>0) — see the matching comment on the wrRules merge above.
+          const prevOvs=_wrPatchInFlight>0?prevRecOvs[String(r.id)]:null;
           if(prevOvs){Object.keys(prevOvs).forEach(k=>{if(dateOvs[k]==='__skip__')return;dateOvs[k]=prevOvs[k];});}
           return{...r,_doneByWk:dbwk,_done:isDone,_dateOverrides:_normOvs(dateOvs)};
         }),
