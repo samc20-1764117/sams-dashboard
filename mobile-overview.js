@@ -544,7 +544,7 @@ function mTaskRow(t) {
 
   const inner = `<div class="m-row${t.done ? ' m-done' : ''}${ov ? ' m-ov' : ''}">
     ${noCheck
-      ? `<span class="m-row-icon">${t._type === 'holiday' ? HOLIDAY_ICON_SVG : '📅'}</span>`
+      ? `<span class="m-row-icon">${t._type === 'holiday' ? '' : '📅'}</span>`
       : `<label class="m-chk-wrap"><input type="checkbox" ${t.done ? 'checked' : ''} onchange="${onchange}"></label>`
     }
     <span class="m-row-name${t.done ? ' done' : ''}">${safeName}</span>
@@ -1782,7 +1782,7 @@ function mWkTaskRow(t) {
 
   const dot = `<span style="width:8px;height:8px;border-radius:50%;background:${s.bg};border:1.5px solid ${s.d};flex-shrink:0;display:inline-block"></span>`;
   const chk = noCheck
-    ? `<span style="width:22px;height:32px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px">${t._type === 'holiday' ? HOLIDAY_ICON_SVG : '\u{1F4C5}'}</span>`
+    ? `<span style="width:22px;height:32px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px">${t._type === 'holiday' ? '' : '\u{1F4C5}'}</span>`
     : `<label class="m-wk-chk-wrap"><input type="checkbox" class="m-wk-chk"${t.done ? ' checked' : ''}${onchange ? ` onchange="${onchange}"` : ''}></label>`;
 
   const dragAttrs = canDrag ? ` data-tid="${t.id}" data-tname="${escHtml(t.name || '')}"` : '';

@@ -183,8 +183,8 @@ function renderToday(){
   ];
   const allToday=[...ts,...virtToday];
   const sorted=sortTasksToday(allToday);
-  const _pctItems=sorted.filter(t=>t._type!=='travel');
-  const doneCount=_pctItems.filter(t=>t.done&&t._type!=='birthday'&&t._type!=='holiday').length+_pctItems.filter(t=>t._type==='birthday'&&st.blocks.some(b=>b.cat==='Birthday'&&b.title===t.name&&b._done)).length+_pctItems.filter(t=>t._type==='holiday'&&st.blocks.some(b=>b.cat==='Holiday'&&b.title===t.name&&b._done)).length;
+  const _pctItems=sorted.filter(t=>t._type!=='travel'&&t._type!=='holiday');
+  const doneCount=_pctItems.filter(t=>t.done&&t._type!=='birthday').length+_pctItems.filter(t=>t._type==='birthday'&&st.blocks.some(b=>b.cat==='Birthday'&&b.title===t.name&&b._done)).length;
   // todBadge removed
   document.getElementById('todPL').textContent=`${doneCount}/${_pctItems.length}`;const _todP=document.getElementById('todPct');if(_todP)_todP.textContent=(_pctItems.length?Math.round(doneCount/_pctItems.length*100):0)+'%';
   document.getElementById('todPB').style.width=_pctItems.length?`${doneCount/_pctItems.length*100}%`:'0%';
@@ -193,7 +193,7 @@ function renderToday(){
   function _hasTBToday(t){
     if(t._type==='travel')return true;
     if(t._type==='birthday')return st.blocks.some(b=>b.ds===_todDs&&b.cat==='Birthday'&&b.title===t.name);
-    if(t._type==='holiday')return st.blocks.some(b=>b.ds===_todDs&&b.cat==='Holiday'&&b.title===t.name);
+    if(t._type==='holiday')return true;
     const isOvToday=dayOff===0&&isOv(t.due_date)&&!t.done;
     if(t._shopId)return st.blocks.some(b=>(b.ds===_todDs||isOvToday)&&String(b.shopId)===String(t._shopId));
     if(t._ruleId){
@@ -1016,7 +1016,6 @@ function renderWkSummary(){
       ...shopThisWk,
       ...virtExtras.map(t=>{
         if(t._type==='birthday'){const blk=st.blocks.find(b=>b.cat==='Birthday'&&b.title===t.name);if(blk&&blk._done)return{...t,done:true};}
-        if(t._type==='holiday'){const blk=st.blocks.find(b=>b.cat==='Holiday'&&b.title===t.name);if(blk&&blk._done)return{...t,done:true};}
         return t;
       })
     ]),
@@ -1026,9 +1025,8 @@ function renderWkSummary(){
   const doneReal=allReal.filter(t=>t.done).length;
   const doneVirt=virtRec.filter(v=>v.done).length;
   const bdayDone=virtExtras.filter(t=>t._type==='birthday'&&st.blocks.some(b=>b.cat==='Birthday'&&b.title===t.name&&b._done)).length;
-  const holidayDone=virtExtras.filter(t=>t._type==='holiday'&&st.blocks.some(b=>b.cat==='Holiday'&&b.title===t.name&&b._done)).length;
-  const totalAll=allReal.length+virtRec.length+virtExtras.length;
-  const totalDone=doneReal+doneVirt+bdayDone+holidayDone;
+  const totalAll=allReal.length+virtRec.length+virtExtras.filter(t=>t._type!=='holiday').length;
+  const totalDone=doneReal+doneVirt+bdayDone;
   // wkBadge removed
   document.getElementById('wkPL').textContent=`${totalDone}/${totalAll}`;const _wkP=document.getElementById('wkPct');if(_wkP)_wkP.textContent=(totalAll?Math.round(totalDone/totalAll*100):0)+'%';
   document.getElementById('wkPB').style.width=totalAll?`${totalDone/totalAll*100}%`:'0%';
@@ -1197,7 +1195,7 @@ function renderWkCal(){
     holidayThisWk.forEach(h=>{
       const s=gc('holiday');
       const hdPast=h.due_date<today2;
-      addBanner(h.name+HOLIDAY_ICON_SVG,h.due_date,h.due_date,s,null,hdPast);
+      addBanner(h.name,h.due_date,h.due_date,s,null,hdPast);
     });
 
     // Set banner container height based on lanes used (paddingTop already set synchronously)
@@ -5956,12 +5954,12 @@ function tRowExtra(t){
   const isHd=t._type==='holiday';
   const sub=isTv&&t.end_date?` – ${fmtD(t.end_date)}`:'';
   const modeIcon=isTv?(t.travel_mode==='plane'?_PLANE_SVG:t.travel_mode==='drive'?_CAR_SVG:''):'';
-  const bdDrag=isBd?`draggable="true" ondragstart="dStart(event,'bday::${t._srcId}::${t.due_date}')" ondragend="dEnd(event)"`:isHd?`draggable="true" ondragstart="dStart(event,'holiday::${t._srcId}::${t.due_date}')" ondragend="dEnd(event)"`:'';
+  const bdDrag=isBd?`draggable="true" ondragstart="dStart(event,'bday::${t._srcId}::${t.due_date}')" ondragend="dEnd(event)"`:'';
   const _bdDone=isBd&&t.done;
   const _pastGrey=(isBd&&!_bdDone&&t.due_date&&t.due_date<tod())||(isHd&&t.due_date&&t.due_date<tod());
   return`<div class="ti ti-${sl}${_bdDone?' done':''}" style="background:${s.bg}${_bdDone||_pastGrey?';opacity:.45':''}" id="ti-${t.id}" ${bdDrag} onclick="selTask(event,'${t.id}')">
     ${isTv?`<button class="pack-icon-btn pack-seg" onclick="event.stopPropagation();openPackingModal('${t._srcId}')" title="Packing list">${_PACK_SVG}</button>`:''}
-    <span class="tn" style="color:${s.t}${_bdDone||_pastGrey?';text-decoration:line-through':''}">${modeIcon}${isBd?t.name.replace('🎂','<span class="bday-emoji">🎂</span>'):isHd?t.name+HOLIDAY_ICON_SVG:t.name}</span>
+    <span class="tn" style="color:${s.t}${_bdDone||_pastGrey?';text-decoration:line-through':''}">${modeIcon}${isBd?t.name.replace('🎂','<span class="bday-emoji">🎂</span>'):t.name}</span>
     ${isTv||isBd||isHd?'':`<svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3" fill="${s.bg}" stroke="${s.d}" stroke-opacity="0.4" stroke-width="1"/></svg>`}
     ${isBd||isHd?'':`<span class="dlbl" style="${isTv?`margin-left:auto;color:${_dk()?'var(--muted)':'#475569'}`:''}">${fmtD(t.due_date)}${sub}</span>`}
     ${isTv?`<button class="delbtn" onclick="event.stopPropagation();delTravel('${t._srcId}')">✕</button>`:''}
@@ -7626,14 +7624,6 @@ function dropOnTB(e,ds,h,row,smOverride){
     st.blocks.push(blk);dragId=null;save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
     sbSaveBlock(blk);
     pushUndo(()=>{st.blocks=st.blocks.filter(b=>b.id!==blk.id);sbDeleteBlock(blk.id);save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();},'Added birthday to time block');
-    return;
-  } else if(dragId.startsWith('holiday::')){
-    const parts=dragId.split('::');const hKey=parts[1],hEntry=_allHolidayEntries().find(h=>h.key===hKey&&h.date===parts[2]);
-    if(!hEntry){dragId=null;return;}
-    const blk={id:crypto.randomUUID(),title:hEntry.name,ds,sm,dur:60,cat:'Holiday',_holidayKey:hKey};
-    st.blocks.push(blk);dragId=null;save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
-    sbSaveBlock(blk);
-    pushUndo(()=>{st.blocks=st.blocks.filter(b=>b.id!==blk.id);sbDeleteBlock(blk.id);save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();},'Added holiday to time block');
     return;
   } else if(dragId.startsWith('fin-cancel::')){
     const subId=dragId.split('::')[1];

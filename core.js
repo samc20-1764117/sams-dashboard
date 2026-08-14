@@ -45,8 +45,6 @@ const CATS_DARK={
 const IMP_DARK={bg:'rgba(234,179,8,.12)',t:'#fde68a',d:'#eab308',dot:'#fde68a',b:'rgba(234,179,8,.25)'};
 const OV_DARK={bg:'rgba(239,68,68,.12)',t:'#fca5a5',d:'#ef4444',dot:'#fca5a5',b:'rgba(239,68,68,.20)'};
 function _isDk(){return document.body.classList.contains('dark');}
-// Outline sparkle glyph — reused for every holiday chip (emoji-free, mirrors bday-emoji reuse pattern)
-const HOLIDAY_ICON_SVG='<svg class="holiday-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M12 3 L14 10 L21 12 L14 14 L12 21 L10 14 L3 12 L10 10 Z"/></svg>';
 function gc(c){const m=_isDk()?CATS_DARK:CATS;return m[(c||'').toLowerCase()]||(_isDk()?{bg:'rgba(148,163,184,.08)',t:'#94a3b8',d:'#94a3b8',b:'rgba(148,163,184,.15)'}:{bg:'#f1f5f9',t:'#334155',d:'#94a3b8',b:'rgba(148,163,184,.2)'});}
 function slug(c){return(c||'other').toLowerCase().replace(/\s+/g,'-');}
 
