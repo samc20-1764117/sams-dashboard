@@ -959,7 +959,7 @@ function mShowTab(tab) {
   if (shopBar) shopBar.style.display = isShop ? '' : 'none';
   document.getElementById('mApp').style.paddingBottom = isToday
     ? 'calc(162px + env(safe-area-inset-bottom))'
-    : 'calc(52px + env(safe-area-inset-bottom))';
+    : isShop ? '0px' : 'calc(52px + env(safe-area-inset-bottom))';
   document.querySelectorAll('.m-nav-btn').forEach((b, i) => {
     b.classList.toggle('active', (tab === 'today' && i === 0) || (tab === 'tb' && i === 1) || (tab === 'week' && i === 2) || (tab === 'shop' && i === 3) || (tab === 'extras' && i === 4));
   });
@@ -970,13 +970,12 @@ function mShowTab(tab) {
   if (progEl) progEl.style.display = isToday ? '' : 'none';
   const monthBtn = document.getElementById('mMonthBtn');
   if (monthBtn) monthBtn.style.display = tab === 'week' ? '' : 'none';
+  // visibility (not display) keeps the header the same height on every tab —
+  // only Today/Timeblock actually show the date text.
   const dateLbl = document.getElementById('mDateLbl');
-  if (dateLbl) dateLbl.style.display = (tab === 'tb' || isShop) ? 'none' : '';
+  if (dateLbl) dateLbl.style.visibility = (tab === 'today' || tab === 'tb') ? 'visible' : 'hidden';
   const shopBtns = document.getElementById('mShopHeaderBtns');
   if (shopBtns) shopBtns.style.display = isShop ? '' : 'none';
-  // Hide main header on schedule tab — merged into unassigned bar
-  const hdr = document.getElementById('mHeader');
-  if (hdr) hdr.style.display = tab === 'tb' ? 'none' : '';
   const main = document.getElementById('mMain');
   main.style.padding = (isToday || isShop) ? '12px 16px' : '0';
   main.style.overflow = (tab === 'week' || tab === 'tb') ? 'hidden' : '';
@@ -2543,18 +2542,21 @@ function mRemoveMealAndGroceries(recipeId) {
   }
 }
 
-// ── Month view ────────────────────────────────────────────────────────────────
-let _mMonthOffset = 0;
+// ── Month view (continuous scroll across months, like iOS Calendar's list view) ─
 let _mMonthSelectedDs = null;
+let _mMoRenderedLo = -6;   // week offsets (relative to current week) currently rendered
+let _mMoRenderedHi = 6;
+let _mMoScrollLock = false;
+let _mMoTitleRaf = false;
 
 function mOpenMonth() {
-  _mMonthOffset = 0;
   _mMonthSelectedDs = d2s(getDayDate(0));
-  _mRenderMonth();
+  _mRenderMonthWeeks(true);
   _mRenderMonthDetail(_mMonthSelectedDs);
   document.getElementById('mMonthBackdrop').classList.add('open');
   document.getElementById('mMonthSheet').classList.add('open');
-  _mInitMonthSwipe();
+  mInitMonthScroll();
+  requestAnimationFrame(() => requestAnimationFrame(() => _mMoScrollToToday()));
 }
 function mCloseMonth() {
   document.getElementById('mMonthBackdrop').classList.remove('open');
@@ -2563,31 +2565,59 @@ function mCloseMonth() {
 let _mYearViewOpen = false;
 let _mYearOffset = 0;
 
-function mMonthPrev() {
-  if (_mYearViewOpen) { _mYearOffset--; _mRenderYear(); }
-  else { _mMonthOffset--; _mRenderMonth(); }
+// Jump one real month from whichever month is currently docked at the top of the scroll view
+function mMonthJump(dir) {
+  if (_mYearViewOpen) { _mYearOffset += dir; _mRenderYear(); return; }
+  const scroller = document.getElementById('mMonthScroll');
+  const rows = scroller ? [...scroller.querySelectorAll('.m-mo-week')] : [];
+  const top = scroller ? scroller.getBoundingClientRect().top : 0;
+  const anchorRow = rows.find(r => r.getBoundingClientRect().bottom > top + 4);
+  const anchorDs = anchorRow ? anchorRow.dataset.mon : d2s(getDayDate(0));
+  const d = new Date(anchorDs + 'T12:00:00');
+  d.setDate(1);
+  d.setMonth(d.getMonth() + dir);
+  const now = new Date();
+  mMonthJumpToOffset((d.getFullYear() - now.getFullYear()) * 12 + (d.getMonth() - now.getMonth()));
 }
-function mMonthNext() {
-  if (_mYearViewOpen) { _mYearOffset++; _mRenderYear(); }
-  else { _mMonthOffset++; _mRenderMonth(); }
+
+// Jump to the month at monthOffset from the current real month, extending the rendered
+// week range if the target isn't loaded yet.
+function mMonthJumpToOffset(monthOffset) {
+  const now = new Date();
+  const targetDs = d2s(new Date(now.getFullYear(), now.getMonth() + monthOffset, 1));
+  const targetWeekOff = _mWkGetWeekOff(targetDs);
+  if (targetWeekOff < _mMoRenderedLo || targetWeekOff > _mMoRenderedHi) {
+    const wrap = document.getElementById('mMonthWeeks');
+    const taskMap = _mGetTaskDatesMap();
+    while (targetWeekOff < _mMoRenderedLo) { _mMoRenderedLo--; wrap.insertAdjacentHTML('afterbegin', _mMoWeekRowHtml(_mMoRenderedLo, taskMap, false)); }
+    while (targetWeekOff > _mMoRenderedHi) { _mMoRenderedHi++; wrap.insertAdjacentHTML('beforeend', _mMoWeekRowHtml(_mMoRenderedHi, taskMap, false)); }
+  }
+  requestAnimationFrame(() => {
+    const row = document.querySelector(`.m-mo-week[data-wk="${targetWeekOff}"]`);
+    if (row) row.scrollIntoView({block: 'start', behavior: 'auto'});
+    _mUpdateMonthTitle();
+  });
 }
 
 function mToggleYearView() {
   _mYearViewOpen = !_mYearViewOpen;
   const yearEl = document.getElementById('mYearView');
-  const gridEl = document.getElementById('mMonthGrid');
+  const hdrEl = document.getElementById('mMonthDayHdr');
+  const scrollEl = document.getElementById('mMonthScroll');
   const detailEl = document.getElementById('mMonthDetail');
   if (_mYearViewOpen) {
     _mYearOffset = 0;
     yearEl.style.display = '';
-    gridEl.style.display = 'none';
+    hdrEl.style.display = 'none';
+    scrollEl.style.display = 'none';
     detailEl.style.display = 'none';
     _mRenderYear();
   } else {
     yearEl.style.display = 'none';
-    gridEl.style.display = '';
+    hdrEl.style.display = '';
+    scrollEl.style.display = '';
     detailEl.style.display = '';
-    _mRenderMonth();
+    _mUpdateMonthTitle();
   }
 }
 
@@ -2609,26 +2639,12 @@ function _mRenderYear() {
 
 function mYearSelectMonth(mo, yr) {
   const now = new Date();
-  _mMonthOffset = (yr - now.getFullYear()) * 12 + (mo - now.getMonth());
   _mYearViewOpen = false;
   document.getElementById('mYearView').style.display = 'none';
-  document.getElementById('mMonthGrid').style.display = '';
+  document.getElementById('mMonthDayHdr').style.display = '';
+  document.getElementById('mMonthScroll').style.display = '';
   document.getElementById('mMonthDetail').style.display = '';
-  _mRenderMonth();
-}
-
-function _mInitMonthSwipe() {
-  const sheet = document.getElementById('mMonthGrid');
-  if (!sheet || sheet._moSwipe) return;
-  sheet._moSwipe = true;
-  let sx = 0, sy = 0;
-  sheet.addEventListener('touchstart', e => { sx = e.touches[0].clientX; sy = e.touches[0].clientY; }, {passive: true});
-  sheet.addEventListener('touchend', e => {
-    const dx = e.changedTouches[0].clientX - sx;
-    const dy = e.changedTouches[0].clientY - sy;
-    if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy)) return;
-    if (dx < 0) mMonthNext(); else mMonthPrev();
-  }, {passive: true});
+  mMonthJumpToOffset((yr - now.getFullYear()) * 12 + (mo - now.getMonth()));
 }
 
 function _mGetTaskDatesMap() {
@@ -2646,60 +2662,131 @@ function _mGetTaskDatesMap() {
     const ds = _vidBlockDays[String(v.id)];
     if (ds) add(ds, {name: v.topic || v.title, cat: 'Videos', done: v.status === 'published'});
   });
-  for (let w = -6; w <= 6; w++) {
+  // Wide enough to cover the continuous-scroll month view's initial range in both directions
+  for (let w = -14; w <= 14; w++) {
     try { getRecurringWeekTasks(w).forEach(v => add(v.due_date, {name: v.name, cat: 'Recurring', done: !!v.done})); } catch(e) {}
   }
   return map;
 }
 
-function _mRenderMonth() {
-  const now = new Date();
-  const yr = now.getFullYear();
-  const mo = now.getMonth() + _mMonthOffset;
-  const first = new Date(yr, mo, 1);
-  const last = new Date(yr, mo + 1, 0);
+// Segment the category color order the same way the rest of the dashboard does (CATS key order)
+function _mMonthDayBadge(ds, taskMap) {
+  const items = (taskMap[ds] || []).filter(t => !t.done);
+  if (!items.length) return '';
+  const order = Object.keys(CATS);
+  const counts = {};
+  items.forEach(t => {
+    const key = (t.cat || '').toLowerCase();
+    counts[key] = (counts[key] || 0) + 1;
+  });
+  const keys = Object.keys(counts).sort((a, b) => {
+    const ia = order.indexOf(a), ib = order.indexOf(b);
+    return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+  });
+  if (keys.length === 1) return `<span class="m-mo-dot" style="background:${gc(keys[0]).d}"></span>`;
+  const total = items.length;
+  const segs = keys.map(k => `<span style="flex:${counts[k] / total};background:${gc(k).d}"></span>`).join('');
+  return `<div class="m-mo-bar">${segs}</div>`;
+}
+
+// One week's row of 7 day cells, plus a bold month-name divider whenever the week
+// contains the 1st of a month (or forceLabel, used for the very first rendered row so
+// there's always a label visible right away).
+function _mMoWeekRowHtml(weekOff, taskMap, forceLabel) {
+  const dates = getWkDates(weekOff);
   const today = d2s(getDayDate(0));
-  const taskMap = _mGetTaskDatesMap();
-
-  document.getElementById('mMonthTitle').textContent = first.toLocaleDateString('en-US', {month: 'long', year: 'numeric'});
-
-  const dayNames = ['M','T','W','T','F','S','S'];
-  let html = dayNames.map(d => `<div class="m-mo-hdr">${d}</div>`).join('');
-
-  const startDow = (first.getDay() + 6) % 7;
-  const prevLast = new Date(yr, mo, 0);
-  for (let i = startDow - 1; i >= 0; i--) {
-    const d = prevLast.getDate() - i;
-    const ds = d2s(new Date(yr, mo - 1, d));
-    const hasTasks = !!(taskMap[ds] && taskMap[ds].some(t => !t.done));
-    html += `<div class="m-mo-day other-month${hasTasks ? ' has-tasks' : ''}${_mMonthSelectedDs === ds ? ' selected' : ''}" onclick="mMonthSelectDay('${ds}')"><span class="m-mo-num">${d}</span></div>`;
+  const monthStart = dates.find(d => d.getDate() === 1);
+  let divider = '';
+  if (monthStart) {
+    divider = `<div class="m-mo-month-divider">${monthStart.toLocaleDateString('en-US', {month: 'long', year: 'numeric'})}</div>`;
+  } else if (forceLabel) {
+    divider = `<div class="m-mo-month-divider">${dates[0].toLocaleDateString('en-US', {month: 'long', year: 'numeric'})}</div>`;
   }
-
-  for (let d = 1; d <= last.getDate(); d++) {
-    const ds = d2s(new Date(yr, mo, d));
+  const cells = dates.map(d => {
+    const ds = d2s(d);
     const isToday = ds === today;
-    const hasTasks = !!(taskMap[ds] && taskMap[ds].some(t => !t.done));
-    html += `<div class="m-mo-day${isToday ? ' is-today' : ''}${hasTasks ? ' has-tasks' : ''}${_mMonthSelectedDs === ds ? ' selected' : ''}" onclick="mMonthSelectDay('${ds}')"><span class="m-mo-num">${d}</span></div>`;
-  }
+    const badge = _mMonthDayBadge(ds, taskMap);
+    return `<div class="m-mo-day${isToday ? ' is-today' : ''}${_mMonthSelectedDs === ds ? ' selected' : ''}" data-ds="${ds}" onclick="mMonthSelectDay('${ds}')"><span class="m-mo-num">${d.getDate()}</span>${badge}</div>`;
+  }).join('');
+  return `${divider}<div class="m-mo-week" data-wk="${weekOff}" data-mon="${d2s(dates[0])}">${cells}</div>`;
+}
 
-  const endDow = (last.getDay() + 6) % 7;
-  for (let i = 1; i <= 6 - endDow; i++) {
-    const ds = d2s(new Date(yr, mo + 1, i));
-    const hasTasks = !!(taskMap[ds] && taskMap[ds].some(t => !t.done));
-    html += `<div class="m-mo-day other-month${hasTasks ? ' has-tasks' : ''}${_mMonthSelectedDs === ds ? ' selected' : ''}" onclick="mMonthSelectDay('${ds}')"><span class="m-mo-num">${i}</span></div>`;
+function _mRenderMonthWeeks(reset) {
+  const wrap = document.getElementById('mMonthWeeks');
+  if (!wrap) return;
+  if (reset) { _mMoRenderedLo = -6; _mMoRenderedHi = 6; }
+  const taskMap = _mGetTaskDatesMap();
+  let html = '';
+  for (let w = _mMoRenderedLo; w <= _mMoRenderedHi; w++) {
+    html += _mMoWeekRowHtml(w, taskMap, w === _mMoRenderedLo);
   }
+  wrap.innerHTML = html;
+  _mUpdateMonthTitle();
+}
 
-  document.getElementById('mMonthGrid').innerHTML = html;
+function _mMoLoadMore(direction) {
+  if (_mMoScrollLock) return;
+  _mMoScrollLock = true;
+  const wrap = document.getElementById('mMonthWeeks');
+  const scroller = document.getElementById('mMonthScroll');
+  if (!wrap || !scroller) { _mMoScrollLock = false; return; }
+  const taskMap = _mGetTaskDatesMap();
+  if (direction === 'up') {
+    _mMoRenderedLo--;
+    const prevHeight = wrap.scrollHeight;
+    wrap.insertAdjacentHTML('afterbegin', _mMoWeekRowHtml(_mMoRenderedLo, taskMap, false));
+    scroller.scrollTop += wrap.scrollHeight - prevHeight;
+  } else {
+    _mMoRenderedHi++;
+    wrap.insertAdjacentHTML('beforeend', _mMoWeekRowHtml(_mMoRenderedHi, taskMap, false));
+  }
+  setTimeout(() => { _mMoScrollLock = false; }, 200);
+}
+
+function mInitMonthScroll() {
+  const scroller = document.getElementById('mMonthScroll');
+  if (!scroller || scroller._moScrollInited) return;
+  scroller._moScrollInited = true;
+  scroller.addEventListener('scroll', () => {
+    if (_mMoScrollLock) return;
+    const threshold = 400;
+    if (scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < threshold) _mMoLoadMore('down');
+    if (scroller.scrollTop < threshold) _mMoLoadMore('up');
+    if (!_mMoTitleRaf) { _mMoTitleRaf = true; requestAnimationFrame(() => { _mMoTitleRaf = false; _mUpdateMonthTitle(); }); }
+  }, {passive: true});
+}
+
+// Title tracks whichever month is currently docked at the top of the scroll view
+function _mUpdateMonthTitle() {
+  const scroller = document.getElementById('mMonthScroll');
+  const titleEl = document.getElementById('mMonthTitle');
+  if (!scroller || !titleEl) return;
+  const rows = scroller.querySelectorAll('.m-mo-week');
+  const top = scroller.getBoundingClientRect().top;
+  let target = null;
+  for (const r of rows) { if (r.getBoundingClientRect().bottom > top + 4) { target = r; break; } }
+  if (!target && rows.length) target = rows[rows.length - 1];
+  if (!target) return;
+  const d = new Date(target.dataset.mon + 'T12:00:00');
+  titleEl.textContent = d.toLocaleDateString('en-US', {month: 'long', year: 'numeric'});
+}
+
+function _mMoScrollToToday(attempt) {
+  attempt = attempt || 0;
+  const scroller = document.getElementById('mMonthScroll');
+  const todayEl = scroller && scroller.querySelector('.m-mo-day.is-today');
+  if (!todayEl) { if (attempt < 25) setTimeout(() => _mMoScrollToToday(attempt + 1), 40); return; }
+  const row = todayEl.closest('.m-mo-week');
+  if (row) row.scrollIntoView({block: 'center', behavior: 'auto'});
+  _mUpdateMonthTitle();
 }
 
 function mMonthSelectDay(ds) {
   _mMonthSelectedDs = ds;
-  // Update selected highlight
-  document.querySelectorAll('.m-mo-day').forEach(el => el.classList.remove('selected'));
-  const allDays = document.querySelectorAll('.m-mo-day');
-  allDays.forEach(el => { if (el.onclick && el.onclick.toString().includes(ds)) el.classList.add('selected'); });
-  // Re-render grid to update selection (simpler than DOM manipulation)
-  _mRenderMonth();
+  // Toggle the selected class directly — no re-render, so scroll position is preserved
+  document.querySelectorAll('#mMonthWeeks .m-mo-day.selected').forEach(el => el.classList.remove('selected'));
+  const el = document.querySelector(`#mMonthWeeks .m-mo-day[data-ds="${ds}"]`);
+  if (el) el.classList.add('selected');
   _mRenderMonthDetail(ds);
 }
 

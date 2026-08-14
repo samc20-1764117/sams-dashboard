@@ -15,7 +15,7 @@
 // navigating to a versioned URL (a URL iOS has never cached — plain reload() can be
 // served straight back out of the iOS PWA app-shell cache and never update).
 (function(){
-  window._BUILD='20260813c';var BUILD=window._BUILD;
+  window._BUILD='20260814a';var BUILD=window._BUILD;
   try{
     var qs=new URLSearchParams(location.search);
     fetch('/mobile-version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(d){
@@ -28,7 +28,7 @@
 })();
 </script>
 <link rel="stylesheet" href="fonts/dmsans.css?v=1">
-<link rel="stylesheet" href="mobile.css?v=20260813c">
+<link rel="stylesheet" href="mobile.css?v=20260814a">
 <script>(function(){try{var s=JSON.parse(localStorage.getItem('samdash_v7')||'{}');if(s.cfg&&s.cfg.dark)document.documentElement.classList.add('init-dark');}catch(e){}})();</script>
 </head>
 <body>
@@ -51,12 +51,12 @@
       <h1 id="mHeaderTitle">Today</h1>
       <div id="mDateLbl"></div>
     </div>
-    <div style="display:flex;align-items:center;gap:4px">
+    <div style="display:flex;align-items:center;gap:8px">
       <span id="mProgress" class="m-prog"></span>
       <button id="mMonthBtn" class="m-month-btn" onclick="mOpenMonth()" style="display:none">Month</button>
       <div id="mShopHeaderBtns" style="display:none">
         <button class="m-shop-hdr-icon" onclick="mOpenMeals()" title="Meals">🍽</button>
-        <button class="m-shop-hdr-icon m-shop-hdr-icon--primary" onclick="mOpenFullList()" title="HEB List">📦</button>
+        <button class="m-shop-hdr-heb" onclick="mOpenFullList()" title="HEB List">HEB</button>
       </div>
       <button class="m-reload-btn" onclick="mReloadTap()" title="Reload app (hold to undo)">↻</button>
     </div>
@@ -281,16 +281,19 @@
 <div id="mRecipeBackdrop" onclick="mCloseRecipes()"></div>
 <div id="mRecipeSheet" class="m-recipe-sheet"></div>
 
-<!-- Month view modal -->
+<!-- Month view modal (continuous scroll across months) -->
 <div id="mMonthBackdrop" onclick="mCloseMonth()"></div>
 <div id="mMonthSheet">
   <div id="mMonthNav">
-    <button class="m-mo-nav-btn" onclick="mMonthPrev()">&lsaquo;</button>
+    <button class="m-mo-nav-btn" onclick="mMonthJump(-1)" title="Previous month">&lsaquo;</button>
     <span id="mMonthTitle" onclick="mToggleYearView()"></span>
-    <button class="m-mo-nav-btn" onclick="mMonthNext()">&rsaquo;</button>
+    <button class="m-mo-nav-btn" onclick="mMonthJump(1)" title="Next month">&rsaquo;</button>
   </div>
   <div id="mYearView" style="display:none"></div>
-  <div id="mMonthGrid"></div>
+  <div id="mMonthDayHdr">
+    <div class="m-mo-hdr">M</div><div class="m-mo-hdr">T</div><div class="m-mo-hdr">W</div><div class="m-mo-hdr">T</div><div class="m-mo-hdr">F</div><div class="m-mo-hdr">S</div><div class="m-mo-hdr">S</div>
+  </div>
+  <div id="mMonthScroll"><div id="mMonthWeeks"></div></div>
   <div id="mMonthDetail"></div>
 </div>
 
@@ -307,7 +310,7 @@ if('serviceWorker' in navigator){
 }
 </script>
 <script src="supabase.min.js?v=2110"></script>
-<script src="core.js?v=20260813c"></script>
-<script src="features.js?v=20260813c"></script>
-<script src="mobile-overview.js?v=20260813c"></script>
+<script src="core.js?v=20260814a"></script>
+<script src="features.js?v=20260814a"></script>
+<script src="mobile-overview.js?v=20260814a"></script>
 </body></html>

@@ -1,5 +1,5 @@
-:root{--bg:#f5f4f8;--glass:rgba(255,255,255,.7);--border:rgba(0,0,0,.08);--text:#1a1825;--sub:#6b6880;--r:14px;--rs:8px;--shadow:0 2px 12px rgba(0,0,0,.08);--accent:#7c6af7}
-html.init-dark{--bg:#16141f;--glass:rgba(30,28,40,.8);--border:rgba(255,255,255,.08);--text:#eeeaf8;--sub:#9a95b0}
+:root{--bg:#f5f4f8;--glass:rgba(255,255,255,.7);--bg-elevated:#ffffff;--border:rgba(0,0,0,.08);--text:#1a1825;--sub:#6b6880;--r:14px;--rs:8px;--shadow:0 2px 12px rgba(0,0,0,.08);--accent:#7c6af7}
+html.init-dark{--bg:#16141f;--glass:rgba(30,28,40,.8);--bg-elevated:#242030;--border:rgba(255,255,255,.08);--text:#eeeaf8;--sub:#9a95b0}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100dvh;font-size:15px}
 
@@ -92,12 +92,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 
 /* ── Shop tab ────────────────────────────────────────────────────────────── */
 #mShopList{padding:0 16px 12px}
-#mShopHeaderBtns{display:flex;align-items:center;gap:4px}
+#mShopHeaderBtns{display:flex;align-items:center;gap:10px}
 .m-shop-hdr-icon{width:30px;height:30px;border-radius:50%;border:1px solid var(--border);background:none;color:var(--sub);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .m-shop-hdr-icon:active{background:var(--glass)}
-.m-shop-hdr-icon--primary{border-color:rgba(124,106,247,.4);background:var(--accent);color:#fff}
-.m-shop-hdr-icon--primary:active{background:var(--accent);opacity:.85}
-.m-shop-store-hd{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:9px 0 3px}
+.m-shop-hdr-heb{width:auto;height:24px;padding:0 8px;border-radius:6px;border:none;background:#e4002b;color:#fff;font-size:11px;font-weight:800;letter-spacing:.03em;cursor:pointer;flex-shrink:0}
+.m-shop-hdr-heb:active{background:#c40025}
+.m-shop-store-hd{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:5px 0 3px}
 .m-shop-item{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:var(--rs);background:var(--glass);margin-bottom:3px;position:relative}
 .m-shop-item .chk{width:16px;height:16px;flex-shrink:0;accent-color:var(--accent)}
 .m-shop-item .m-shop-name{flex:1;min-width:0;font-size:14px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -108,8 +108,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .m-shop-drag-ph{height:42px;margin-bottom:6px;border-radius:var(--rs);background:rgba(109,95,230,.1);border:2px dashed rgba(109,95,230,.4);box-sizing:border-box}
 /* In normal flex flow (not fixed) so #mMain automatically sizes around its real
    height — no guessed padding needed to keep the list clear of it. margin-bottom
-   reserves space above the fixed bottom nav. */
-#mShopAddBar{display:flex;flex-direction:column;gap:7px;padding:12px 16px;margin-bottom:calc(52px + env(safe-area-inset-bottom));background:linear-gradient(180deg,rgba(124,106,247,.09),var(--bg) 55%);border-top:2px solid var(--accent)}
+   reserves space above the fixed bottom nav. Elevated (white/light-surface) card
+   background makes it visually distinct from the list behind it. */
+#mShopAddBar{display:flex;flex-direction:column;gap:7px;padding:12px 16px;margin-bottom:calc(52px + env(safe-area-inset-bottom));background:var(--bg-elevated);border-top:2px solid var(--accent);box-shadow:0 -4px 14px rgba(0,0,0,.07)}
 #mShopNewName{width:100%;padding:12px 14px;border-radius:var(--rs);border:1.5px solid rgba(124,106,247,.35);background:var(--glass);font-size:16px;font-family:inherit;color:var(--text);outline:none;box-sizing:border-box}
 #mShopNewName:focus{border-color:var(--accent)}
 .m-shop-store-sel{padding:8px 10px;border-radius:var(--rs);border:1px solid var(--border);background:var(--glass);font-size:14px;font-family:inherit;color:var(--text);outline:none;flex:1}
@@ -328,15 +329,19 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 #mMonthTitle{font-size:15px;font-weight:700}
 .m-mo-nav-btn{background:none;border:none;font-size:24px;color:var(--sub);cursor:pointer;padding:4px 10px;line-height:1;font-weight:300}
 .m-mo-nav-btn:active{color:var(--accent)}
-#mMonthGrid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;text-align:center;flex-shrink:0}
+#mMonthDayHdr{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;flex-shrink:0}
+#mMonthScroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;min-height:0}
+#mMonthWeeks{display:flex;flex-direction:column;padding-bottom:8px}
+.m-mo-week{display:grid;grid-template-columns:repeat(7,1fr);text-align:center}
+.m-mo-month-divider{font-size:16px;font-weight:800;color:var(--text);padding:14px 2px 6px}
 .m-mo-hdr{font-size:10px;font-weight:700;color:var(--sub);padding:4px 0;text-transform:uppercase;letter-spacing:.05em}
-.m-mo-day{padding:4px 1px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:500;color:var(--text);position:relative;min-height:32px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px}
+.m-mo-day{padding:4px 1px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:500;color:var(--text);position:relative;min-height:36px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px}
 .m-mo-day:active{background:rgba(124,106,247,.1)}
 .m-mo-day.selected{background:rgba(124,106,247,.12);outline:2px solid var(--accent);outline-offset:-2px}
 .m-mo-day.is-today .m-mo-num{background:var(--accent);color:#fff;font-weight:700;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center}
-.m-mo-day.other-month{color:var(--sub);opacity:.35}
-.m-mo-day.has-tasks::after{content:'';width:4px;height:4px;border-radius:50%;background:var(--accent);position:absolute;bottom:1px}
-.m-mo-day.is-today.has-tasks::after{background:var(--accent)}
+.m-mo-bar{display:flex;width:20px;height:4px;border-radius:2px;overflow:hidden;margin-top:2px}
+.m-mo-bar span{height:100%}
+.m-mo-dot{width:5px;height:5px;border-radius:50%;margin-top:2px}
 /* Year view */
 #mYearView{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:8px 0 16px}
 .m-yr-month{padding:16px 8px;border-radius:10px;border:1px solid var(--border);background:var(--glass);font-size:15px;font-weight:600;font-family:inherit;color:var(--text);cursor:pointer;text-align:center}
@@ -344,7 +349,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .m-yr-month.is-current{background:rgba(124,106,247,.12);border-color:var(--accent);color:var(--accent);font-weight:700}
 #mMonthTitle{cursor:pointer}
 /* Day detail panel */
-#mMonthDetail{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;border-top:1px solid var(--border);margin-top:8px;padding:12px 0;padding-bottom:calc(20px + env(safe-area-inset-bottom))}
+#mMonthDetail{flex-shrink:0;max-height:26vh;overflow-y:auto;-webkit-overflow-scrolling:touch;border-top:1px solid var(--border);margin-top:4px;padding:10px 0;padding-bottom:calc(16px + env(safe-area-inset-bottom))}
 .m-mo-detail-hd{font-size:13px;font-weight:700;color:var(--text);padding:0 2px 8px}
 .m-mo-detail-item{display:flex;align-items:center;gap:8px;padding:7px 4px;font-size:13px;color:var(--text)}
 .m-mo-detail-item.done{opacity:.4;text-decoration:line-through}
