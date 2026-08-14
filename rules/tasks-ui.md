@@ -4,7 +4,7 @@
 
 All task types that appear on the overview calendar/today list. Every type must support: render, select (`selTask`), drag, drop onto calendar day, multi-select drag with mixed types, timeblock drop, checkbox toggle, delete (X), undo.
 
-- **Progress %**: Today list header shows completion percentage. Excludes `_type==='travel'` items (auto-managed, not manually checked off). Excludes `_type==='birthday'` from done count.
+- **Progress %**: Today list header shows completion percentage. Excludes `_type==='travel'` and `_type==='holiday'` items entirely (denominator too — neither has a completion mechanism, so counting them would permanently cap the % below 100). Excludes `_type==='birthday'` from the done count only (still in the denominator; done via linked TB block).
 
 | Type | Selection ID | Drag ID | Source |
 |------|-------------|---------|--------|
@@ -18,7 +18,8 @@ All task types that appear on the overview calendar/today list. Every type must 
 | Pup skill (drag-only) | n/a | `pupskill::{skillId}` | `st.pup_skills` |
 | Finance cancellation | `fin-cancel-{subId}` | `fin-cancel::{subId}` | computed |
 | Travel banner | `tv-{id}` | `travel::{id}::{offset}` | `st.travel` |
-| Birthday | n/a | n/a | `st.birthdays` (banner only, not draggable) |
+| Birthday | n/a | `bday::{id}::{date}` (drag onto TB only) | `st.birthdays` (banner, no checkbox) |
+| Holiday | n/a | n/a | fetched `/api/holidays` (banner, no checkbox, NOT draggable — no timeblock) |
 | Weekly goal | `String(t.id)` | `wkgoal::{id}` | `st.tasks` (category=Weekly Goals) |
 | TB block | `blk-{id}` | block drag | `st.blocks` |
 | Video stage (vidstep) | `vidstep-{vid}-{step}-{day}` | `vidstep::{vid}::{step}::{day}` | `_vidStepDayMap` (localStorage) |
@@ -49,8 +50,8 @@ All task types that appear on the overview calendar/today list. Every type must 
 Three sort functions (`sortByTypeOrder`, `sortTasksForDay`, `sortByTBWeek`) all use the same tier system:
 
 **Tier 1 — Hard priority (checked first, in order):**
-1. Travel (undone) — floats up, above birthday (so a same-day travel bar isn't cut off)
-2. Birthday — always
+1. Travel (undone) — floats up, above birthday/holiday (so a same-day travel bar isn't cut off)
+2. Birthday / Holiday — always
 3. Done — always last
 4. Overdue (undone) — floats up
 5. Important / fin-cancel (undone) — floats up
@@ -58,7 +59,7 @@ Three sort functions (`sortByTypeOrder`, `sortTasksForDay`, `sortByTBWeek`) all 
 **Tier 2 — Timeblock position** (sortTasksForDay/sortByTBWeek only): tasks with blocks sort by start minute above unblocked tasks.
 
 **Tier 3 — `taskTypePri` category order:**
-birthday(1) → home(2) → my work(3) → work(4) → social/other(5) → vid(5.5) → vidstep(5.6) → non-WR recurring(6) → fin-cancel(6.5) → shopping(7) → pup(8) → weekly reset(9)
+birthday/holiday(1) → home(2) → my work(3) → work(4) → social/other(5) → vid(5.5) → vidstep(5.6) → non-WR recurring(6) → fin-cancel(6.5) → shopping(7) → pup(8) → weekly reset(9)
 
 **Tier 4 — Alphabetical** by name (tiebreaker).
 
