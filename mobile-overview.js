@@ -581,7 +581,10 @@ function mRenderToday() {
   });
   const doneCount = sorted.filter(t => t.done).length;
   const progEl = document.getElementById('mProgress');
-  if (progEl && _mCurTab === 'today') progEl.textContent = doneCount + '/' + sorted.length;
+  if (progEl && _mCurTab === 'today') {
+    progEl.textContent = doneCount + '/' + sorted.length;
+    progEl.classList.toggle('m-prog-complete', sorted.length > 0 && doneCount === sorted.length);
+  }
   const el = document.getElementById('mTodayList');
   if (!el) return;
   el.innerHTML = sorted.length ? sorted.map(mTaskRow).join('') : '<div class="m-empty">All done ✓</div>';
@@ -734,7 +737,7 @@ async function mDeleteEditTask() {
 function mToggleFullAddImp() {
   _mFullAddImportant = !_mFullAddImportant;
   const btn = document.getElementById('mFullAddImpBtn');
-  if (btn) { btn.textContent = _mFullAddImportant ? 'on' : 'off'; btn.classList.toggle('on', _mFullAddImportant); }
+  if (btn) btn.classList.toggle('flagged', _mFullAddImportant);
 }
 
 function mOpenFullAdd() {
@@ -743,7 +746,7 @@ function mOpenFullAdd() {
   document.getElementById('mFullAddDue').value = d2s(getDayDate(0));
   mSelectCat('fulladd', 'Home');
   const btn = document.getElementById('mFullAddImpBtn');
-  if (btn) { btn.textContent = 'off'; btn.classList.remove('on'); }
+  if (btn) btn.classList.remove('flagged');
   document.getElementById('mFullAddBackdrop').classList.add('open');
   document.getElementById('mFullAddSheet').classList.add('open');
   setTimeout(() => document.getElementById('mFullAddName').focus(), 300);
@@ -962,9 +965,9 @@ function mShowTab(tab) {
   document.getElementById('mAddBar').style.display = isToday ? '' : 'none';
   const shopBar = document.getElementById('mShopAddBar');
   if (shopBar) shopBar.style.display = isShop ? '' : 'none';
-  document.getElementById('mApp').style.paddingBottom = isToday
-    ? 'calc(162px + env(safe-area-inset-bottom))'
-    : isShop ? '0px' : 'calc(52px + env(safe-area-inset-bottom))';
+  // Add bars are in normal flex flow (not fixed) with their own margin-bottom reserving
+  // nav clearance, so #mApp never needs extra bottom padding for them any more.
+  document.getElementById('mApp').style.paddingBottom = 'calc(52px + env(safe-area-inset-bottom))';
   document.querySelectorAll('.m-nav-btn').forEach((b, i) => {
     b.classList.toggle('active', (tab === 'today' && i === 0) || (tab === 'tb' && i === 1) || (tab === 'week' && i === 2) || (tab === 'shop' && i === 3) || (tab === 'extras' && i === 4));
   });
@@ -975,10 +978,13 @@ function mShowTab(tab) {
   if (progEl) progEl.style.display = isToday ? '' : 'none';
   const monthBtn = document.getElementById('mMonthBtn');
   if (monthBtn) monthBtn.style.display = tab === 'week' ? '' : 'none';
-  // visibility (not display) keeps the header the same height on every tab —
-  // only Today/Timeblock actually show the date text.
+  // Date subtitle always shows, same height everywhere. Today's own swipe (offset)
+  // logic owns the text on the Today tab; every other tab always shows today's real date.
   const dateLbl = document.getElementById('mDateLbl');
-  if (dateLbl) dateLbl.style.visibility = (tab === 'today' || tab === 'tb') ? 'visible' : 'hidden';
+  if (dateLbl) {
+    dateLbl.style.visibility = 'visible';
+    if (tab !== 'today') dateLbl.textContent = new Date().toLocaleDateString('en-US', {weekday: 'long', month: 'long', day: 'numeric'});
+  }
   const shopBtns = document.getElementById('mShopHeaderBtns');
   if (shopBtns) shopBtns.style.display = isShop ? '' : 'none';
   const main = document.getElementById('mMain');
@@ -2593,9 +2599,8 @@ function mMonthJumpToOffset(monthOffset) {
   const targetWeekOff = _mWkGetWeekOff(targetDs);
   if (targetWeekOff < _mMoRenderedLo || targetWeekOff > _mMoRenderedHi) {
     const wrap = document.getElementById('mMonthWeeks');
-    const taskMap = _mGetTaskDatesMap();
-    while (targetWeekOff < _mMoRenderedLo) { _mMoRenderedLo--; wrap.insertAdjacentHTML('afterbegin', _mMoWeekRowHtml(_mMoRenderedLo, taskMap, false)); }
-    while (targetWeekOff > _mMoRenderedHi) { _mMoRenderedHi++; wrap.insertAdjacentHTML('beforeend', _mMoWeekRowHtml(_mMoRenderedHi, taskMap, false)); }
+    while (targetWeekOff < _mMoRenderedLo) { _mMoRenderedLo--; wrap.insertAdjacentHTML('afterbegin', _mMoWeekRowHtml(_mMoRenderedLo, false)); }
+    while (targetWeekOff > _mMoRenderedHi) { _mMoRenderedHi++; wrap.insertAdjacentHTML('beforeend', _mMoWeekRowHtml(_mMoRenderedHi, false)); }
   }
   requestAnimationFrame(() => {
     const row = document.querySelector(`.m-mo-week[data-wk="${targetWeekOff}"]`);
@@ -2652,36 +2657,22 @@ function mYearSelectMonth(mo, yr) {
   mMonthJumpToOffset((yr - now.getFullYear()) * 12 + (mo - now.getMonth()));
 }
 
-function _mGetTaskDatesMap() {
-  const map = {};
-  const add = (ds, item) => { if (!map[ds]) map[ds] = []; map[ds].push(item); };
-  (st.tasks || []).forEach(t => { if (t.due_date) add(t.due_date.split('T')[0], {name: t.name, cat: t.category, done: !!t.done}); });
-  (st.shopping || []).forEach(s => { if (s.due_date) add(s.due_date, {name: s.name, cat: 'Shopping', done: !!s.done}); });
-  // Videos: use blocks as source of truth (mobile has no _vidDayMap)
-  const _vidBlockDays = {};
-  (st.blocks || []).forEach(b => {
-    if (b._vidId && b.ds) _vidBlockDays[String(b._vidId)] = b.ds;
-  });
-  (st.videos || []).forEach(v => {
-    if (v.is_deleted) return;
-    const ds = _vidBlockDays[String(v.id)];
-    if (ds) add(ds, {name: v.topic || v.title, cat: 'Videos', done: v.status === 'published'});
-  });
-  // Wide enough to cover the continuous-scroll month view's initial range in both directions
-  for (let w = -14; w <= 14; w++) {
-    try { getRecurringWeekTasks(w).forEach(v => add(v.due_date, {name: v.name, cat: 'Recurring', done: !!v.done})); } catch(e) {}
-  }
-  return map;
+// Category key exactly matching the detail panel below (_mRenderMonthDetail), so a
+// day's color badge always reflects the same items you see when you tap that day —
+// previously the badge used a separate, narrower data source and could miss WR
+// recurring/WR rules/pup sessions/travel/birthday/video-step items entirely.
+function _mMonthCatKey(t) {
+  return t._type === 'shop' ? 'shopping' : t._type === 'vid' || t._type === 'vidstep' ? 'Videos' : (t._isWrRule || t._isWrec) ? 'weekly_reset' : (t._virtual && t._recId) ? 'recurring' : (t.category || '');
 }
 
 // Segment the category color order the same way the rest of the dashboard does (CATS key order)
-function _mMonthDayBadge(ds, taskMap) {
-  const items = (taskMap[ds] || []).filter(t => !t.done);
+function _mMonthDayBadge(tasks) {
+  const items = tasks.filter(t => !t.done);
   if (!items.length) return '';
   const order = Object.keys(CATS);
   const counts = {};
   items.forEach(t => {
-    const key = (t.cat || '').toLowerCase();
+    const key = _mMonthCatKey(t).toLowerCase();
     counts[key] = (counts[key] || 0) + 1;
   });
   const keys = Object.keys(counts).sort((a, b) => {
@@ -2696,8 +2687,9 @@ function _mMonthDayBadge(ds, taskMap) {
 
 // One week's row of 7 day cells, plus a bold month-name divider whenever the week
 // contains the 1st of a month (or forceLabel, used for the very first rendered row so
-// there's always a label visible right away).
-function _mMoWeekRowHtml(weekOff, taskMap, forceLabel) {
+// there's always a label visible right away). Each day's badge is built from
+// mGetDayTasks — the exact same source the tap-to-detail panel uses.
+function _mMoWeekRowHtml(weekOff, forceLabel) {
   const dates = getWkDates(weekOff);
   const today = d2s(getDayDate(0));
   const monthStart = dates.find(d => d.getDate() === 1);
@@ -2710,7 +2702,7 @@ function _mMoWeekRowHtml(weekOff, taskMap, forceLabel) {
   const cells = dates.map(d => {
     const ds = d2s(d);
     const isToday = ds === today;
-    const badge = _mMonthDayBadge(ds, taskMap);
+    const badge = _mMonthDayBadge(mGetDayTasks(ds, weekOff));
     // Badge always sits in its own fixed-height slot (even when empty) so the day
     // number never shifts depending on whether that day has a badge or not.
     return `<div class="m-mo-day${isToday ? ' is-today' : ''}${_mMonthSelectedDs === ds ? ' selected' : ''}" data-ds="${ds}" onclick="mMonthSelectDay('${ds}')"><span class="m-mo-num">${d.getDate()}</span><div class="m-mo-badge-slot">${badge}</div></div>`;
@@ -2722,10 +2714,9 @@ function _mRenderMonthWeeks(reset) {
   const wrap = document.getElementById('mMonthWeeks');
   if (!wrap) return;
   if (reset) { _mMoRenderedLo = -6; _mMoRenderedHi = 6; }
-  const taskMap = _mGetTaskDatesMap();
   let html = '';
   for (let w = _mMoRenderedLo; w <= _mMoRenderedHi; w++) {
-    html += _mMoWeekRowHtml(w, taskMap, w === _mMoRenderedLo);
+    html += _mMoWeekRowHtml(w, w === _mMoRenderedLo);
   }
   wrap.innerHTML = html;
   _mUpdateMonthTitle();
@@ -2737,15 +2728,14 @@ function _mMoLoadMore(direction) {
   const wrap = document.getElementById('mMonthWeeks');
   const scroller = document.getElementById('mMonthScroll');
   if (!wrap || !scroller) { _mMoScrollLock = false; return; }
-  const taskMap = _mGetTaskDatesMap();
   if (direction === 'up') {
     _mMoRenderedLo--;
     const prevHeight = wrap.scrollHeight;
-    wrap.insertAdjacentHTML('afterbegin', _mMoWeekRowHtml(_mMoRenderedLo, taskMap, false));
+    wrap.insertAdjacentHTML('afterbegin', _mMoWeekRowHtml(_mMoRenderedLo, false));
     scroller.scrollTop += wrap.scrollHeight - prevHeight;
   } else {
     _mMoRenderedHi++;
-    wrap.insertAdjacentHTML('beforeend', _mMoWeekRowHtml(_mMoRenderedHi, taskMap, false));
+    wrap.insertAdjacentHTML('beforeend', _mMoWeekRowHtml(_mMoRenderedHi, false));
   }
   setTimeout(() => { _mMoScrollLock = false; }, 200);
 }
@@ -2819,8 +2809,7 @@ function _mRenderMonthDetail(ds) {
     html += '<div class="m-mo-detail-empty">No tasks</div>';
   } else {
     tasks.forEach(t => {
-      const catKey = t._type === 'shop' ? 'shopping' : t._type === 'vid' || t._type === 'vidstep' ? 'Videos' : (t._virtual && t._recId) ? 'recurring' : (t.category || '');
-      const s = gc(catKey);
+      const s = gc(_mMonthCatKey(t));
       html += `<div class="m-mo-detail-item${t.done ? ' done' : ''}">
         <span class="m-mo-detail-dot" style="background:${s.bg};border:1px solid ${s.d}"></span>
         ${escHtml(t.name || '')}
