@@ -78,8 +78,9 @@ function _applyTodTbCollapse(){
   const body=document.querySelector('.tod-tb-body');if(!body)return;
   const _wasCollapsed=body.classList.contains('tb-list-only');
   body.classList.toggle('tb-list-only',_todTbCollapsed);
+  // The header toggle only ever collapses (hidden once collapsed — the bottom control expands it back).
   const btn=document.getElementById('todTbToggleBtn');
-  if(btn){btn.textContent=_todTbCollapsed?'‹':'›';btn.title=_todTbCollapsed?'Expand timeblock':'Collapse timeblock';}
+  if(btn)btn.style.display=_todTbCollapsed?'none':'';
   if(_wasCollapsed&&!_todTbCollapsed){
     // The timeblock panel was just unhidden — its height read 0 while hidden, which can leave
     // _syncPX's --hour-h/PX stale. Resync against the now-real size before redrawing blocks.
@@ -1087,7 +1088,7 @@ function renderWkCal(){
   });
   const goalsH=document.createElement('div');goalsH.className='wkc-day-h wkc-goals-h';
   const _unCnt=st.tasks.filter(t=>!t.due_date&&!t.done&&t.category!=='Long term'&&t.category!=='Weekly Goals').length;
-  goalsH.innerHTML=_wkGoalsCollapsed?'':`<div style="display:flex;align-items:center;justify-content:center;gap:7px;width:100%"><button class="wo-hdr-btn" onclick="openWOModal()" style="font-size:10px;flex:1" title="Objectives">Obj.</button><button class="wo-hdr-btn" onclick="toggleUnMenu()" id="unBadge2" title="${_unCnt?_unCnt+' unassigned tasks':'No unassigned tasks'}" style="padding:3px 5px;position:relative;flex:none;width:auto"><span style="font-size:10px;font-weight:600">${_unCnt||''}</span><span id="unBadgeDot" style="display:none;position:absolute;top:0;right:0;width:7px;height:7px;border-radius:50%;background:rgba(139,92,246,.6)"></span></button><button class="wkc-goals-toggle" onclick="_toggleWkGoalsCollapse(event)" title="Collapse objectives">✕</button></div>`;
+  goalsH.innerHTML=_wkGoalsCollapsed?'':`<div style="display:flex;align-items:center;justify-content:center;gap:7px;width:100%"><button class="wo-hdr-btn" onclick="openWOModal()" style="font-size:10px;flex:1" title="Objectives">Obj.</button>${_unCnt?`<button class="wo-hdr-btn" onclick="toggleUnMenu()" id="unBadge2" title="${_unCnt} unassigned tasks" style="padding:3px 5px;position:relative;flex:none;width:auto"><span style="font-size:10px;font-weight:600">${_unCnt}</span><span id="unBadgeDot" style="display:none;position:absolute;top:0;right:0;width:7px;height:7px;border-radius:50%;background:rgba(139,92,246,.6)"></span></button>`:''}<button class="wkc-goals-toggle" onclick="_toggleWkGoalsCollapse(event)" title="Collapse objectives">✕</button></div>`;
   head.appendChild(goalsH);
   head.classList.toggle('wkc-goals-collapsed',_wkGoalsCollapsed);
   document.getElementById('wkcCols')?.classList.toggle('wkc-goals-collapsed',_wkGoalsCollapsed);
@@ -3665,7 +3666,7 @@ function renderUnassigned(){
   if(badge)badge.style.display='none';
   // Show count on objectives header button
   const btn2=document.getElementById('unBadge2');
-  if(btn2){const _cnt=ts.length;btn2.innerHTML=`<span style="font-size:10px;font-weight:600">${_cnt||''}</span>`;btn2.title=_cnt?_cnt+' unassigned tasks':'No unassigned tasks';}
+  if(btn2){const _cnt=ts.length;btn2.style.display=_cnt?'':'none';btn2.innerHTML=`<span style="font-size:10px;font-weight:600">${_cnt||''}</span>`;btn2.title=_cnt?_cnt+' unassigned tasks':'No unassigned tasks';}
   if(!ts.length){closeUnMenu();}
   const menu=document.getElementById('unMenu');
   if(menu&&menu.style.display==='block'){

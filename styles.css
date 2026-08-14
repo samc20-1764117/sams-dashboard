@@ -468,9 +468,16 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 .tod-tb-divider{flex-shrink:0;border-left:1px solid rgba(210,205,228,.3);margin:0}
 .tod-tb-body.tb-list-only .tb-section,.tod-tb-body.tb-list-only .tod-tb-divider{display:none}
 .tod-tb-body.tb-list-only .tod-section{flex:1}
-.tod-list-footer{display:none;align-items:center;justify-content:flex-end;padding:2px 14px 6px;flex-shrink:0}
-.tod-tb-body.tb-list-only .tod-list-footer{display:flex}
-.tod-tb-body.tb-list-only #todProgressDonut{justify-content:flex-end;padding-right:14px}
+.tod-list-row{display:flex;flex-direction:column;flex:1;min-height:0}
+.tod-list-row #todList{order:1}
+.tod-list-row #todProgressDonut{order:2}
+.tod-tb-body.tb-list-only .tod-list-row{flex-direction:row}
+.tod-tb-body.tb-list-only .tod-list-row #todProgressDonut{order:0;flex-direction:column;flex-shrink:0;padding:10px 10px 10px 14px;justify-content:center;align-items:center}
+.tod-tb-body.tb-list-only .tod-list-row #todProgressDonut svg{width:68px;height:68px}
+.tod-tb-body.tb-list-only .tod-list-row #todList{order:1;min-width:0}
+.tod-bottom-row{display:flex;align-items:flex-start;gap:8px;flex-shrink:0}
+.tod-bottom-controls{display:none;align-items:center;gap:4px;flex-shrink:0;padding:2px 10px 2px 0}
+.tod-tb-body.tb-list-only .tod-bottom-controls{display:flex}
 #pupSkillsHighlight{flex-shrink:0}
 #pupSkillsHighlight .ti{margin:0;padding:1px 9px;gap:4px;cursor:grab;border:1px solid transparent}
 .row2{display:flex;flex-direction:column;gap:12px;margin-bottom:14px}
@@ -1637,6 +1644,7 @@ body.dark #page-overview #dailyHabitsSection>div:nth-child(2) .ti.done{backgroun
 .ti.undo-flash{animation:undoFlash .9s ease-out}
 body.dark .ti.undo-flash{animation-name:undoFlashDark}
 /* donut: mockup style (gradient ring + soft glow + fraction inside), green */
+#todProgressDonut{flex-direction:row;align-items:center;justify-content:center;padding:7px 16px 4px}
 #todProgressDonut svg{filter:drop-shadow(0 0 5px rgba(16,185,129,.35))}
 #_donutFrac{font-size:13px;font-weight:700;fill:#059669}
 body.dark #_donutFrac{fill:#34d399}

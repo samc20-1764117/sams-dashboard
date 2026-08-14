@@ -1094,7 +1094,7 @@ function renderMoCal(){
     .filter(t=>!t.due_date&&!t.done&&t.category!=='Long term'&&t.category!=='Weekly Goals')
     .sort((a,b)=>{const ai=CAT_ORDER.indexOf(a.category),bi=CAT_ORDER.indexOf(b.category);return(ai<0?99:ai)-(bi<0?99:bi)||(a.name||'').localeCompare(b.name||'');});
   const _moUABtn=document.getElementById('moUAToggleBtn');
-  if(_moUABtn){document.getElementById('mheadUACount').textContent=String(unassigned.length);_moUABtn.classList.toggle('active',_moUAExpanded);}
+  if(_moUABtn){document.getElementById('mheadUACount').textContent=String(unassigned.length);_moUABtn.classList.toggle('active',_moUAExpanded);_moUABtn.style.display=unassigned.length?'':'none';}
   if(!unassigned.length){const empty=document.createElement('div');empty.style.cssText='font-size:10px;color:var(--subtle);padding:12px 8px;text-align:center';empty.textContent='All tasks assigned ✓';mual.appendChild(empty);}
   unassigned.forEach(t=>{
     const s=gc(t.category);
