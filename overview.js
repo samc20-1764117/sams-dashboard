@@ -73,12 +73,20 @@ function _hebBadge(name,wkKey){if(!/\bheb\b/i.test(name||''))return'';const arg=
 function _pupBadge(name){if(!/prep pup training/i.test(name||''))return'';return`<span class="pup-link-badge" onclick="event.stopPropagation();if(typeof _openPupFocusModal==='function')_openPupFocusModal(null);" title="Weekly pup skills"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></span>`}
 function _recWkNote(r,wkKey){if(!r||!wkKey||!r._dateOverrides)return'';const ov=r._dateOverrides['name::'+wkKey];return(ov&&ov.notes)||'';}
 
+function _toggleTodTbCollapse(e){if(e){e.stopPropagation();e.preventDefault();}_todTbCollapsed=!_todTbCollapsed;localStorage.setItem('_todTbCollapsed',_todTbCollapsed?'1':'0');_applyTodTbCollapse();}
+function _applyTodTbCollapse(){
+  const body=document.querySelector('.tod-tb-body');if(!body)return;
+  body.classList.toggle('tb-list-only',_todTbCollapsed);
+  const btn=document.getElementById('todTbToggleBtn');
+  if(btn){btn.textContent=_todTbCollapsed?'‹':'›';btn.title=_todTbCollapsed?'Expand timeblock':'Collapse timeblock';}
+}
 function renderOv(){
   const n=new Date();
   // ovTitle is updated by renderToday() to reflect the selected day
   document.getElementById('sDate').textContent=n.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
   renderToday();if(document.getElementById("tbGrid"))renderDayTB();renderWkSummary();renderWkCal();renderUnassigned();renderShopOv();renderRecOv();renderKanban();
   renderSummaryMetrics();
+  _applyTodTbCollapse();
 }
 function renderSummaryMetrics(){
   const ds=d2s(getDayDate(dayOff));
@@ -1073,7 +1081,7 @@ function renderWkCal(){
   });
   const goalsH=document.createElement('div');goalsH.className='wkc-day-h wkc-goals-h';
   const _unCnt=st.tasks.filter(t=>!t.due_date&&!t.done&&t.category!=='Long term'&&t.category!=='Weekly Goals').length;
-  goalsH.innerHTML=_wkGoalsCollapsed?'':`<div style="display:flex;align-items:center;justify-content:center;gap:3px;width:100%"><button class="wo-hdr-btn" onclick="openWOModal()" style="font-size:10px;flex:1" title="Objectives">Obj.</button><button class="wo-hdr-btn" onclick="toggleUnMenu()" id="unBadge2" title="${_unCnt?_unCnt+' unassigned tasks':'No unassigned tasks'}" style="padding:3px 5px;position:relative;flex:none;width:auto"><span style="font-size:10px;font-weight:600">${_unCnt||''}</span><span id="unBadgeDot" style="display:none;position:absolute;top:0;right:0;width:7px;height:7px;border-radius:50%;background:rgba(139,92,246,.6)"></span></button><button class="wkc-goals-toggle" onclick="_toggleWkGoalsCollapse(event)" title="Collapse objectives">✕</button></div>`;
+  goalsH.innerHTML=_wkGoalsCollapsed?'':`<div style="display:flex;align-items:center;justify-content:center;gap:7px;width:100%"><button class="wo-hdr-btn" onclick="openWOModal()" style="font-size:10px;flex:1" title="Objectives">Obj.</button><button class="wo-hdr-btn" onclick="toggleUnMenu()" id="unBadge2" title="${_unCnt?_unCnt+' unassigned tasks':'No unassigned tasks'}" style="padding:3px 5px;position:relative;flex:none;width:auto"><span style="font-size:10px;font-weight:600">${_unCnt||''}</span><span id="unBadgeDot" style="display:none;position:absolute;top:0;right:0;width:7px;height:7px;border-radius:50%;background:rgba(139,92,246,.6)"></span></button><button class="wkc-goals-toggle" onclick="_toggleWkGoalsCollapse(event)" title="Collapse objectives">✕</button></div>`;
   head.appendChild(goalsH);
   head.classList.toggle('wkc-goals-collapsed',_wkGoalsCollapsed);
   document.getElementById('wkcCols')?.classList.toggle('wkc-goals-collapsed',_wkGoalsCollapsed);
@@ -6896,7 +6904,7 @@ function renderTBSum(ds){
   const dayMins=(HOURS[HOURS.length-1]-HOURS[0]+1)*60;
   const free=Math.max(0,dayMins-tot);
   const freeStr=free>=60?`${Math.floor(free/60)}h${free%60?` ${free%60}m`:''}`:` ${free}m`;
-  document.getElementById('tbSum').innerHTML=`<div class="si"><span>Blocked:</span><span class="sv">${Math.floor(tot/60)}h ${tot%60}m</span><span class="tb-free">(${freeStr} free)</span></div><button class="btn btn-ghost btn-xs" id="autoTBToggle" onclick="openAutoTBManager()" title="Manage auto blocks" style="margin-left:auto;font-size:8px;flex-shrink:0">Auto</button><button class="btn btn-ghost btn-xs" onclick="toggleVidOvMenu()" title="Videos" style="font-size:8px;flex-shrink:0;padding:3px 5px;display:flex;align-items:center;gap:3px"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg></button>`;
+  document.getElementById('tbSum').innerHTML=`<div class="si"><span>Blocked:</span><span class="sv">${Math.floor(tot/60)}h ${tot%60}m</span><span class="tb-free">(${freeStr} free)</span></div><button class="btn btn-ghost btn-xs" id="autoTBToggle" onclick="openAutoTBManager()" title="Manage auto blocks" style="margin-left:auto;font-size:8px;flex-shrink:0">Auto</button>`;
 }
 // ── Auto Timeblocks ────────────────────────────────────────────────────────────
 function getAutoTBForDate(ds){
