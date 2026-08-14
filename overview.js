@@ -3323,10 +3323,13 @@ function _recMoveAllFuture(r,srcWkKey,ds,extraRender){
   if(!r._dateOverrides)r._dateOverrides={};
   const _prevSrcPin=r._dateOverrides[srcWkKey];
   const tgtWkKey=dsToWkKey(ds);
-  const deltaWeeks=Math.round((new Date(tgtWkKey+'T12:00')-new Date(srcWkKey+'T12:00'))/(7*86400000));
-  const base=r.starting_date?new Date(r.starting_date+'T12:00'):new Date(srcWkKey+'T12:00');
-  base.setDate(base.getDate()+deltaWeeks*7);
-  const newStart=d2s(base);
+  // Anchor directly to the dropped date rather than shifting the old anchor by a srcWkKey→tgtWkKey
+  // delta: the old delta math silently broke whenever the dragged instance was showing via a pin/carry
+  // override instead of its natural due date (e.g. a previously-moved or carried-forward occurrence) —
+  // srcWkKey then didn't reflect the recurrence's true cycle phase, so the shifted anchor landed on
+  // some arbitrary week, sometimes many cycles away, instead of this/next week. Anchoring straight to
+  // `ds` sidesteps that entirely and is equivalent to the old math whenever srcWkKey WAS the natural week.
+  const newStart=ds;
   const newAppears=(r.cadence==='monthly')?String(new Date(ds+'T00:00:00').getDate()):DAYS_AF[new Date(ds+'T00:00:00').getDay()];
   if(_prevSrcPin!==undefined)delete r._dateOverrides[srcWkKey];
   const _futPins=_recClearFuturePins(r);
