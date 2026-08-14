@@ -848,8 +848,11 @@ function isWRRuleDueThisWeek(rule,off=0){
   let sd=rule.starting_date;
   const _segs=rule._dateOverrides&&rule._dateOverrides.__priorScheds__;
   if(_segs&&_segs.length){
+    // Compare week-key strings, not Date objects — `mon` is midnight while `before` is stored/parsed
+    // at noon, so a Date comparison wrongly caught the shift's own current week as "still past".
+    const _wkNow=d2s(mon);
     let best=null;
-    _segs.forEach(s=>{const b=new Date(s.before+'T12:00');if(mon<b&&(!best||b<new Date(best.before+'T12:00')))best=s;});
+    _segs.forEach(s=>{if(_wkNow<s.before&&(!best||s.before<best.before))best=s;});
     if(best)sd=best.starting_date;
   }
   if(cadence==='weekly'||cadence==='other'){
