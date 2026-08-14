@@ -1505,7 +1505,7 @@ async function saveBdayModal(){
     const b={id:'l-'+Date.now(),name,birthday:bday,...(present_ideas?{present_ideas}:{})};
     st.birthdays.push(b);renderAll();renderBdayPage();
     const sv=await sbReq('POST','birthdays',{name,birthday:bday,...(present_ideas?{present_ideas}:{})});
-    if(sv&&sv[0]){const i=st.birthdays.findIndex(x=>x.id===b.id);if(i>-1){const local=st.birthdays[i];st.birthdays[i]={...sv[0],present_ideas:local.present_ideas||sv[0].present_ideas||null};}}
+    if(sv&&sv[0]){const i=st.birthdays.findIndex(x=>x.id===b.id);if(i>-1){const local=st.birthdays[i];st.birthdays[i]={...sv[0],present_ideas:local.present_ideas||sv[0].present_ideas||null};renderBdayPage();}}
   }
 }
 async function delBday(id){

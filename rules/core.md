@@ -101,6 +101,7 @@ Supabase Auth (email+password), RLS on all tables. `init()`→`checkAuth()`→`d
 - `p`: pups page. Press again to return to overview.
 - `f`: finance page. Press again to return to overview.
 - `h`: holidays page. Press again to return to overview.
+- `b`: birthdays page. Press again to return to overview.
 - `m`: toggle month view (`mModal`) on overview. Press again or Enter to close.
 - `i`: ideas page. Press again to return to overview.
 - `l`: style guide page. Press again to return to overview.

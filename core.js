@@ -1340,6 +1340,9 @@ document.addEventListener('keydown',e=>{
   if(e.key==='h'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')){
     e.preventDefault();if(activePg==='holidays')showPage('overview');else showPage('holidays');
   }
+  if(e.key==='b'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')){
+    e.preventDefault();if(activePg==='birthdays')showPage('overview');else showPage('birthdays');
+  }
   // GG to close help overlay when open
   if(e.key==='g'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&document.getElementById('helpOverlay').classList.contains('open')){
     const now=Date.now();
@@ -1412,6 +1415,7 @@ function _showHelpOverlay(){
     ['P','Go to Pups'],
     ['F','Go to Finance'],
     ['H','Go to Holidays'],
+    ['B','Go to Birthdays'],
     ['N','Quick Add task (to current day)'],
     ['R','Reload page'],
     ['S','Sync all data'],
