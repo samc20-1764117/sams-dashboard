@@ -843,19 +843,30 @@ function isWRRuleDueThisWeek(rule,off=0){
   if(!rule.is_enabled)return false;
   const cadence=rule.cadence||'weekly';
   const{mon,sun}=getWkBounds(off);
+  // An "all future" schedule shift snapshots the pre-shift starting_date into __priorScheds__,
+  // keyed by the week it stopped applying (`before`). Past weeks must keep computing due-ness
+  // against whichever anchor was actually in effect for them at the time — never the shifted one —
+  // so a shift never repaints history (biweekly parity flip, monthly day-of-month, etc).
+  let sd=rule.starting_date;
+  const _segs=rule._dateOverrides&&rule._dateOverrides.__priorScheds__;
+  if(_segs&&_segs.length){
+    let best=null;
+    _segs.forEach(s=>{const b=new Date(s.before+'T12:00');if(mon<b&&(!best||b<new Date(best.before+'T12:00')))best=s;});
+    if(best)sd=best.starting_date;
+  }
   if(cadence==='weekly'||cadence==='other'){
     // Bound to the rule's start week so newly created tasks don't appear in past weeks.
     // Legacy rules with no starting_date stay unbounded (every week), preserving old behavior.
-    if(rule.starting_date){
-      const sd=new Date(rule.starting_date+'T12:00');
-      const sDow=sd.getDay();const sMon=new Date(sd);sMon.setDate(sd.getDate()-(sDow===0?6:sDow-1));sMon.setHours(0,0,0,0);
+    if(sd){
+      const sdd=new Date(sd+'T12:00');
+      const sDow=sdd.getDay();const sMon=new Date(sdd);sMon.setDate(sdd.getDate()-(sDow===0?6:sDow-1));sMon.setHours(0,0,0,0);
       if(mon<sMon)return false;
     }
     return true;
   }
   if(cadence==='biweekly'){
-    if(!rule.starting_date)return false;
-    const anchor=new Date(rule.starting_date+'T12:00');
+    if(!sd)return false;
+    const anchor=new Date(sd+'T12:00');
     const aDay=anchor.getDay();
     const aMon=new Date(anchor);aMon.setDate(anchor.getDate()-(aDay===0?6:aDay-1));
     const diffMs=mon-aMon;
@@ -863,8 +874,8 @@ function isWRRuleDueThisWeek(rule,off=0){
     return diffWks%2===0;
   }
   if(cadence==='monthly'){
-    if(!rule.starting_date)return false;
-    const anchorDay=new Date(rule.starting_date+'T12:00').getDate();
+    if(!sd)return false;
+    const anchorDay=new Date(sd+'T12:00').getDate();
     // Check both months that may overlap this Mon–Sun span
     const months=[];
     for(const dt of[mon,sun]){
@@ -879,9 +890,9 @@ function isWRRuleDueThisWeek(rule,off=0){
     return false;
   }
   if(cadence==='quarterly'||cadence==='biannual'||cadence==='annual'){
-    if(!rule.starting_date)return false;
+    if(!sd)return false;
     const intervalWks=cadence==='quarterly'?13:cadence==='biannual'?26:52;
-    const anchor=new Date(rule.starting_date+'T12:00');
+    const anchor=new Date(sd+'T12:00');
     const aDay=anchor.getDay();
     const aMon=new Date(anchor);aMon.setDate(anchor.getDate()-(aDay===0?6:aDay-1));
     const diffWks=Math.round((mon-aMon)/(7*24*60*60*1000));

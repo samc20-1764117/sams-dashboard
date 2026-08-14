@@ -1068,12 +1068,14 @@ function renderWkCal(){
       },250);
     });
     h.addEventListener('dblclick',e=>{e.stopPropagation();if(_wkcHClk){clearTimeout(_wkcHClk);_wkcHClk=null;}openQA('wkc',null,ds);});
+    if(_wkGoalsCollapsed&&d===dates[6]){
+      h.innerHTML+=`<button class="wkc-goals-toggle" onclick="_toggleWkGoalsCollapse(event)" title="Expand objectives">‹</button>`;
+    }
     head.appendChild(h);
   });
   const goalsH=document.createElement('div');goalsH.className='wkc-day-h wkc-goals-h';
   const _unCnt=st.tasks.filter(t=>!t.due_date&&!t.done&&t.category!=='Long term'&&t.category!=='Weekly Goals').length;
-  const _wkGoalsToggle=`<button class="wkc-goals-toggle" onclick="_toggleWkGoalsCollapse(event)" title="${_wkGoalsCollapsed?'Expand':'Collapse'} objectives">${_wkGoalsCollapsed?'‹':'›'}</button>`;
-  goalsH.innerHTML=_wkGoalsCollapsed?`<div style="display:flex;flex-direction:column;align-items:center;gap:3px">${_wkGoalsToggle}</div>`:`<div style="display:flex;flex-direction:column;align-items:center;gap:3px"><div style="display:flex;align-items:center;gap:2px;width:100%"><button class="wo-hdr-btn" onclick="openWOModal()" style="font-size:10px;flex:1">Objectives</button>${_wkGoalsToggle}</div><div style="display:flex;align-items:center;gap:3px"><button class="wo-hdr-btn" onclick="toggleUnMenu()" id="unBadge2" title="${_unCnt?_unCnt+' unassigned tasks':'No unassigned tasks'}" style="padding:3px 5px;position:relative"><span style="font-size:10px;font-weight:600">${_unCnt||''}</span><span id="unBadgeDot" style="display:none;position:absolute;top:0;right:0;width:7px;height:7px;border-radius:50%;background:rgba(139,92,246,.6)"></span></button></div></div>`;
+  goalsH.innerHTML=_wkGoalsCollapsed?'':`<div style="display:flex;flex-direction:column;align-items:center;gap:3px"><button class="wo-hdr-btn" onclick="openWOModal()" style="font-size:10px">Objectives</button><div style="display:flex;align-items:center;gap:3px"><button class="wo-hdr-btn" onclick="toggleUnMenu()" id="unBadge2" title="${_unCnt?_unCnt+' unassigned tasks':'No unassigned tasks'}" style="padding:3px 5px;position:relative"><span style="font-size:10px;font-weight:600">${_unCnt||''}</span><span id="unBadgeDot" style="display:none;position:absolute;top:0;right:0;width:7px;height:7px;border-radius:50%;background:rgba(139,92,246,.6)"></span></button><button class="wkc-goals-toggle" onclick="_toggleWkGoalsCollapse(event)" title="Collapse objectives">✕</button></div></div>`;
   head.appendChild(goalsH);
   head.classList.toggle('wkc-goals-collapsed',_wkGoalsCollapsed);
   document.getElementById('wkcCols')?.classList.toggle('wkc-goals-collapsed',_wkGoalsCollapsed);
@@ -2674,6 +2676,7 @@ function renderRecMoCal(){
           const prevAnchor=rule.starting_date;
           if(!rule._dateOverrides)rule._dateOverrides={};
           const _prevSrcPin=rule._dateOverrides[srcWkKey];
+          const _addedSnap=_wrSnapshotSchedule(rule);
           const base=rule.starting_date?new Date(rule.starting_date+'T12:00'):new Date(srcWkKey+'T12:00');
           base.setDate(base.getDate()+deltaWeeks*7);
           const newAnchor=d2s(base);
@@ -2683,7 +2686,7 @@ function renderRecMoCal(){
           const _orphans=_wrClearPastOrphanPins(rule,true);
           sbReqSilent('PATCH','wr_recurring_rules',{starting_date:newAnchor,date_overrides:rule._dateOverrides},`?id=eq.${ruleId}`);
           save();renderRecOv();renderWeeklyPage();renderRecMoCal();
-          pushUndo(()=>{rule.starting_date=prevAnchor;if(_prevSrcPin!==undefined)rule._dateOverrides[srcWkKey]=_prevSrcPin;_orphans.forEach(o=>{if(o.val===undefined)delete rule._dateOverrides[o.wk];else rule._dateOverrides[o.wk]=o.val;});sbReqSilent('PATCH','wr_recurring_rules',{starting_date:prevAnchor,date_overrides:rule._dateOverrides},`?id=eq.${ruleId}`);save();renderRecOv();renderWeeklyPage();renderRecMoCal();},'Shifted WR rule start');
+          pushUndo(()=>{rule.starting_date=prevAnchor;if(_addedSnap)rule._dateOverrides.__priorScheds__.pop();if(_prevSrcPin!==undefined)rule._dateOverrides[srcWkKey]=_prevSrcPin;_orphans.forEach(o=>{if(o.val===undefined)delete rule._dateOverrides[o.wk];else rule._dateOverrides[o.wk]=o.val;});sbReqSilent('PATCH','wr_recurring_rules',{starting_date:prevAnchor,date_overrides:rule._dateOverrides},`?id=eq.${ruleId}`);save();renderRecOv();renderWeeklyPage();renderRecMoCal();},'Shifted WR rule start');
         },
         ()=>{// Move override for this week only
           writeWrOverride(ruleId,srcWkKey,{override_type:'move',moved_to_wk_key:destWkKey},{undoLabel:'Moved WR task this week'});
@@ -3280,39 +3283,22 @@ function wrCtxMoveNextWeek(){_wrShiftAnchor(7);}
 // wins over any stale local pin (core.js sync merge), so the removal sticks everywhere.
 // Returns removed {wk,val} for undo (undo restores the original value).
 function _wrClearPastOrphanPins(rule,isWrRule,lookback=6,skipWk=null){
-  const removed=[];
+  // "All future"/"this time only" must never rewrite past weeks — no freezing, no phantom-cleanup,
+  // for any cadence. Past stays exactly as it was before the shift, always. Callers keep passing
+  // (rule,isWrRule,lookback,skipWk) and treating the return as an undo list; always empty now.
+  return [];
+}
+// Snapshot a WR rule's pre-shift starting_date before an "all future" anchor change, keyed to the
+// week it stops applying. isWRRuleDueThisWeek (core.js) consults this so past weeks keep computing
+// due-ness against the schedule that was actually in effect then — a shift only ever affects the
+// current week onward. Returns true if a new segment was added (undo pops it back off).
+function _wrSnapshotSchedule(rule){
   if(!rule._dateOverrides)rule._dateOverrides={};
-  // Weekly/other cadence is due every single week regardless of where the anchor sits — an anchor
-  // shift can never flip a past week's due-ness (unlike biweekly parity, monthly day-of-month, or
-  // interval cadences), so there's no "phantom" to freeze. Past weekly misses are real and must be
-  // left untouched — "all future" should never rewrite past history for these.
-  const _cad=rule.cadence||'weekly';
-  if(_cad==='weekly'||_cad==='other')return removed;
-  for(let o=-1;o>=-lookback;o--){
-    const wk=getWkKey(o);
-    if(wk===skipWk)continue;
-    const v=rule._dateOverrides[wk];
-    if(v==='__skip__')continue;
-    if(isWrRule){
-      // Freeze undone past occurrences: pinned ones AND natural schedule-computed ones — an
-      // anchor shift (biweekly parity flip etc.) can surface phantom past due-weeks with no done
-      // record, which render as unchecked/overdue even though the original weeks WERE done.
-      const _natDue=typeof isWRRuleDueThisWeek==='function'&&isWRRuleDueThisWeek(rule,o);
-      if(!v&&!_natDue)continue;
-      if(typeof isDoneWRRule==='function'&&isDoneWRRule(rule.id,wk))continue;
-      if((st.wrOverrides||[]).some(ov=>String(ov.rule_id)===String(rule.id)&&ov.wk_key===wk&&(ov.override_type==='skip'||ov.override_type==='move')))continue;
-      removed.push({wk,val:v});rule._dateOverrides[wk]='__skip__';
-    } else {
-      // Non-WR: a forward shift flips biweekly parity / moves the anchor across history,
-      // which can SURFACE a past week's natural (unpinned) undone occurrence as stale overdue.
-      // Freeze any undone occurrence this past week (pinned OR natural), computed against the
-      // already-shifted schedule. Done weeks stay as history. Off-cycle weeks yield nothing → skipped.
-      const occ=getRecurringWeekTasks(o).find(t=>String(t._recId)===String(rule.id));
-      if(!occ||occ.done)continue;
-      removed.push({wk,val:v});rule._dateOverrides[wk]='__skip__';// v may be undefined (natural occurrence)
-    }
-  }
-  return removed;
+  const wk=getWkKey(0);
+  if(!rule._dateOverrides.__priorScheds__)rule._dateOverrides.__priorScheds__=[];
+  if(rule._dateOverrides.__priorScheds__.some(s=>s.before===wk))return false;
+  rule._dateOverrides.__priorScheds__.push({starting_date:rule.starting_date,before:wk});
+  return true;
 }
 // "All future" move for a non-WR recurring rule: shift the recurrence anchor so the occurrence
 // lands on `ds` (from srcWkKey's occurrence) and every future one follows. Monthly → new
@@ -3357,6 +3343,7 @@ function _wrCtxShiftScheduleOne(delta){
   // monthly=day-of-month, quarterly=anchor week). Falls back to the source week if no starting_date.
   const wkKey=_wrCtxWkKey||getWkKey(wkOff);
   const prevStart=rule.starting_date;
+  const _addedSnap=!isRec?_wrSnapshotSchedule(rule):false;
   const base=rule.starting_date?new Date(rule.starting_date+'T12:00'):new Date(wkKey+'T12:00');
   base.setDate(base.getDate()+delta);
   rule.starting_date=d2s(base);
@@ -3384,6 +3371,7 @@ function _wrCtxShiftScheduleOne(delta){
   if(typeof showToast==='function')showToast('Schedule moved '+(delta>0?'1 week later':'1 week earlier'),'#10b981',1600);
   pushUndo(()=>{
     rule.starting_date=prevStart;
+    if(_addedSnap)rule._dateOverrides.__priorScheds__.pop();
     if(_prevDov!==undefined)rule._dateOverrides[wkKey]=_prevDov;
     _orphans.forEach(o=>{if(o.val===undefined)delete rule._dateOverrides[o.wk];else rule._dateOverrides[o.wk]=o.val;});
     _removedOvs.forEach(o=>{st.wrOverrides.push(o);sbReqSilent('POST','wr_recurring_overrides',{rule_id:o.rule_id,wk_key:o.wk_key,override_type:o.override_type,moved_to_wk_key:o.moved_to_wk_key||null,done:o.done||null,custom_name:o.custom_name||null,custom_notes:o.custom_notes||null},'');});
@@ -3408,6 +3396,7 @@ function wrMoveToThisWeek(ruleId,srcWkKey,allFuture){
   _deleted.forEach(o=>{if(o.id&&!String(o.id).startsWith('wrov-tmp-'))sbReqSilent('DELETE','wr_recurring_overrides',null,`?id=eq.${o.id}`);});
   if(_deleted.length)st.wrOverrides=(st.wrOverrides||[]).filter(o=>!_delKey(o));
   // 3. All future → re-anchor the recurrence to now (cadence recomputes from today)
+  const _addedSnap=allFuture?_wrSnapshotSchedule(rule):false;
   if(allFuture)rule.starting_date=tod();
   // 4. Ensure it shows in the current week UNASSIGNED — add a move-in override only if it isn't already present
   const naturallyDue=isWRRuleDueThisWeek(rule,0);
@@ -3425,6 +3414,7 @@ function wrMoveToThisWeek(ruleId,srcWkKey,allFuture){
   if(typeof showToast==='function')showToast('Moved to this week'+(allFuture?' · all future':''),'#10b981',1600);
   pushUndo(()=>{
     rule.starting_date=prevStart;
+    if(_addedSnap)rule._dateOverrides.__priorScheds__.pop();
     if(prevSrcPin!==undefined)rule._dateOverrides[srcWkKey]=prevSrcPin;else delete rule._dateOverrides[srcWkKey];
     if(_addedHolder){if(_addedHolder.id&&!String(_addedHolder.id).startsWith('wrov-tmp-'))sbReqSilent('DELETE','wr_recurring_overrides',null,`?id=eq.${_addedHolder.id}`);st.wrOverrides=st.wrOverrides.filter(o=>o!==_addedHolder);}
     _deleted.forEach(o=>{const _h={rule_id:o.rule_id,wk_key:o.wk_key,override_type:o.override_type,moved_to_wk_key:o.moved_to_wk_key||null,done:o.done||null,custom_name:o.custom_name||null,custom_notes:o.custom_notes||null,id:'wrov-tmp-'+Date.now()+'-'+o.wk_key};st.wrOverrides.push(_h);sbReqSilent('POST','wr_recurring_overrides',{rule_id:_h.rule_id,wk_key:_h.wk_key,override_type:_h.override_type,moved_to_wk_key:_h.moved_to_wk_key,done:_h.done,custom_name:_h.custom_name,custom_notes:_h.custom_notes},'').then(res=>{if(res&&res[0])Object.assign(_h,res[0]);});});
