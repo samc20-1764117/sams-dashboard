@@ -118,7 +118,6 @@ if(sessionStorage._mReloaded===BUILD);else{
         <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
           <button class="btn btn-ghost btn-xs" onclick="goToday()">Today</button>
           <button class="btn btn-ghost btn-xs" onclick="shiftDay(1)" style="flex-shrink:0">→</button>
-          <button class="btn btn-ghost btn-xs" onclick="toggleVidOvMenu()" title="Videos" style="padding:3px 5px;display:flex;align-items:center"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg></button>
           <button class="wkc-goals-toggle" id="todTbToggleBtn" onclick="_toggleTodTbCollapse(event)" title="Collapse timeblock">›</button>
         </div>
       </div>
@@ -174,6 +173,9 @@ if(sessionStorage._mReloaded===BUILD);else{
       </div>
       <div id="pupSkillsHighlight"></div>
       <div id="dailyHabitsSection" style="display:none"></div>
+      <div id="todListFooter" class="tod-list-footer">
+        <button class="btn btn-ghost btn-xs" onclick="toggleVidOvMenu()" title="Videos" style="display:flex;align-items:center;gap:3px"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg></button>
+      </div>
       </div><!-- tod-section -->
       <div class="tod-tb-divider"></div>
       <div class="tb-section">

@@ -76,9 +76,15 @@ function _recWkNote(r,wkKey){if(!r||!wkKey||!r._dateOverrides)return'';const ov=
 function _toggleTodTbCollapse(e){if(e){e.stopPropagation();e.preventDefault();}_todTbCollapsed=!_todTbCollapsed;localStorage.setItem('_todTbCollapsed',_todTbCollapsed?'1':'0');_applyTodTbCollapse();}
 function _applyTodTbCollapse(){
   const body=document.querySelector('.tod-tb-body');if(!body)return;
+  const _wasCollapsed=body.classList.contains('tb-list-only');
   body.classList.toggle('tb-list-only',_todTbCollapsed);
   const btn=document.getElementById('todTbToggleBtn');
   if(btn){btn.textContent=_todTbCollapsed?'‹':'›';btn.title=_todTbCollapsed?'Expand timeblock':'Collapse timeblock';}
+  if(_wasCollapsed&&!_todTbCollapsed){
+    // The timeblock panel was just unhidden — its height read 0 while hidden, which can leave
+    // _syncPX's --hour-h/PX stale. Resync against the now-real size before redrawing blocks.
+    requestAnimationFrame(()=>{_syncPX();if(document.getElementById('tbGrid'))renderDayTB();});
+  }
 }
 function renderOv(){
   const n=new Date();
@@ -6904,7 +6910,7 @@ function renderTBSum(ds){
   const dayMins=(HOURS[HOURS.length-1]-HOURS[0]+1)*60;
   const free=Math.max(0,dayMins-tot);
   const freeStr=free>=60?`${Math.floor(free/60)}h${free%60?` ${free%60}m`:''}`:` ${free}m`;
-  document.getElementById('tbSum').innerHTML=`<div class="si"><span>Blocked:</span><span class="sv">${Math.floor(tot/60)}h ${tot%60}m</span><span class="tb-free">(${freeStr} free)</span></div><button class="btn btn-ghost btn-xs" id="autoTBToggle" onclick="openAutoTBManager()" title="Manage auto blocks" style="margin-left:auto;font-size:8px;flex-shrink:0">Auto</button>`;
+  document.getElementById('tbSum').innerHTML=`<div class="si"><span>Blocked:</span><span class="sv">${Math.floor(tot/60)}h ${tot%60}m</span><span class="tb-free">(${freeStr} free)</span></div><button class="btn btn-ghost btn-xs" id="autoTBToggle" onclick="openAutoTBManager()" title="Manage auto blocks" style="margin-left:auto;font-size:8px;flex-shrink:0">Auto</button><button class="btn btn-ghost btn-xs" onclick="toggleVidOvMenu()" title="Videos" style="font-size:8px;flex-shrink:0;padding:3px 5px;display:flex;align-items:center;gap:3px"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg></button>`;
 }
 // ── Auto Timeblocks ────────────────────────────────────────────────────────────
 function getAutoTBForDate(ds){
