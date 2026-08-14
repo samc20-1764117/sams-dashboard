@@ -561,7 +561,7 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 .wkc-lbl{flex:1;text-align:center;font-size:10px;font-weight:700;color:var(--text);letter-spacing:-.1px}
 .wkc-inner{flex:1;overflow:hidden;display:flex;flex-direction:column;position:relative}
 .wkc-head{display:grid;grid-template-columns:repeat(8,1fr);flex-shrink:0;background:rgba(255,255,255,.18);padding:6px 0 3px;border-bottom:1px solid rgba(210,205,228,.12);overflow:hidden}
-.wkc-day-h{flex:1;min-width:0;padding:0 2px;text-align:center;border-left:1px solid rgba(210,205,228,.15);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;box-sizing:border-box}
+.wkc-day-h{flex:1;min-width:0;padding:0 2px;text-align:center;border-left:1px solid rgba(210,205,228,.15);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;box-sizing:border-box;position:relative}
 .wkc-day-h:first-child{border-left:none}
 .wkc-dn{font-size:8px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);line-height:1}
 .wkc-dd{font-size:10px;font-weight:700;color:var(--text);width:22px;height:22px;min-width:22px;min-height:22px;max-width:22px;max-height:22px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:transparent;flex-shrink:0;box-sizing:border-box}
@@ -593,9 +593,10 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 .wo-hdr-btn:hover{background:rgba(255,255,255,.75);color:var(--text)}
 .wkc-goals-toggle{background:none;border:none;cursor:pointer;font-size:12px;line-height:1;padding:3px 5px;color:var(--muted);opacity:.45;transition:opacity .15s;font-family:inherit;flex-shrink:0}
 .wkc-goals-toggle:hover{opacity:.9}
+.wkc-goals-toggle-sun{position:absolute;right:2px;top:50%;transform:translateY(-50%)}
 .wkc-head.wkc-goals-collapsed,.wkc-cols.wkc-goals-collapsed{grid-template-columns:repeat(7,1fr) 6px}
-.wkc-cols.wkc-goals-collapsed .wkc-goals-col{padding:2px 0;overflow:hidden}
-.wkc-head.wkc-goals-collapsed .wkc-goals-h{padding:0}
+.wkc-cols.wkc-goals-collapsed .wkc-goals-col{padding:2px 0;overflow:hidden;border-left:none}
+.wkc-head.wkc-goals-collapsed .wkc-goals-h{padding:0;border-left:none}
 .wo-modal{width:min(96vw,1000px);padding:16px 14px 14px;display:flex;flex-direction:column}
 .wo-modal-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:8px;flex-shrink:0}
 .wo-modal-title{font-size:13px;font-weight:700;letter-spacing:-.3px;flex:1;text-align:center}

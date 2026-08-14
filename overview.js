@@ -1067,7 +1067,7 @@ function renderWkCal(){
     });
     h.addEventListener('dblclick',e=>{e.stopPropagation();if(_wkcHClk){clearTimeout(_wkcHClk);_wkcHClk=null;}openQA('wkc',null,ds);});
     if(_wkGoalsCollapsed&&d===dates[6]){
-      h.innerHTML+=`<button class="wkc-goals-toggle" onclick="_toggleWkGoalsCollapse(event)" title="Expand objectives">‹</button>`;
+      h.innerHTML+=`<button class="wkc-goals-toggle wkc-goals-toggle-sun" onclick="_toggleWkGoalsCollapse(event)" title="Expand objectives">‹</button>`;
     }
     head.appendChild(h);
   });
