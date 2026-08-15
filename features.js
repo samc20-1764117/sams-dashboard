@@ -6333,6 +6333,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 // ══════════════════════════════════════════════════════════
 function toggleDark(){
   const isDark=document.body.classList.toggle('dark');
+  document.documentElement.classList.toggle('init-dark',isDark);
   cfg.dark=isDark;save();
   if(!isDark){const key=localStorage._dashTheme||'peach';applyTheme(key,true);}
   else{document.body.style.background='';void document.body.offsetHeight;}
