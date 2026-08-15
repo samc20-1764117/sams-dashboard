@@ -24,6 +24,7 @@ function renderAll() {
   mRenderToday();
   if (_mCurTab === 'tb') mRenderTB();
   if (_mCurTab === 'week') mRenderWeek();
+  if (_mCurTab === 'month') _mRenderMonthWeeks(false);
   if (_mCurTab === 'shop') mRenderShop();
   if (document.getElementById('mMealsSheet')?.classList.contains('open')) mRenderMeals();
   if (document.getElementById('mFullListSheet')?.classList.contains('open')) mRenderFullList();
@@ -940,7 +941,14 @@ let _mCurTab = 'today';
 function mShowTab(tab) {
   _mCurTab = tab;
   try { localStorage._mLastTab = tab; } catch(e) {}
-  const pages = {today: 'mTodayPage', tb: 'mTBPage', week: 'mWeekPage', shop: 'mShopPage', extras: 'mExtrasPage'};
+  // Quick crossfade so the header/list swap reads as a transition instead of an
+  // instant jump-cut. Fade out now, render everything as usual, then fade back in
+  // once the new content is already in the DOM (next frame).
+  const _mainFade = document.getElementById('mMain');
+  if (_mainFade) _mainFade.style.opacity = '0';
+  // tb is reachable only via the Timeblock button on Today's header now (no bottom nav
+  // slot of its own), but it's still a real page like any other.
+  const pages = {today: 'mTodayPage', tb: 'mTBPage', week: 'mWeekPage', month: 'mMonthPage', shop: 'mShopPage', extras: 'mExtrasPage'};
   Object.entries(pages).forEach(([k, id]) => {
     const el = document.getElementById(id);
     if (el) el.style.display = k === tab ? '' : 'none';
@@ -953,20 +961,21 @@ function mShowTab(tab) {
   // Today/Shop's add bars are in normal flex flow with their own margin-bottom already
   // reserving nav clearance — adding the same clearance again here would double it up
   // (a visible gap between the add bar and the nav). Only tabs with no add bar of their
-  // own (tb/week/extras) need #mApp to reserve that space.
+  // own (tb/week/month/extras) need #mApp to reserve that space.
   document.getElementById('mApp').style.paddingBottom = (isToday || isShop)
     ? '0px'
     : 'calc(52px + env(safe-area-inset-bottom))';
+  // No nav button lights up for tb — it's opened from Today's header, not the bottom nav.
   document.querySelectorAll('.m-nav-btn').forEach((b, i) => {
-    b.classList.toggle('active', (tab === 'today' && i === 0) || (tab === 'tb' && i === 1) || (tab === 'week' && i === 2) || (tab === 'shop' && i === 3) || (tab === 'extras' && i === 4));
+    b.classList.toggle('active', (tab === 'today' && i === 0) || (tab === 'week' && i === 1) || (tab === 'month' && i === 2) || (tab === 'shop' && i === 3) || (tab === 'extras' && i === 4));
   });
-  const titles = {today: 'Today', tb: 'Timeblock', week: 'Week', shop: 'Shop', extras: 'More'};
+  const titles = {today: 'Today', tb: 'Timeblock', week: 'Week', month: 'Month', shop: 'Shop', extras: 'More'};
   const titleEl = document.getElementById('mHeaderTitle');
   if (titleEl) titleEl.textContent = titles[tab] || '';
   const progEl = document.getElementById('mProgress');
   if (progEl) progEl.style.display = isToday ? '' : 'none';
-  const monthBtn = document.getElementById('mMonthBtn');
-  if (monthBtn) monthBtn.style.display = tab === 'week' ? '' : 'none';
+  const tbBtn = document.getElementById('mTodayTBBtn');
+  if (tbBtn) tbBtn.style.display = isToday ? '' : 'none';
   // Date subtitle always shows, same height everywhere. Today's own swipe (offset)
   // logic owns the text on the Today tab; every other tab always shows today's real date.
   const dateLbl = document.getElementById('mDateLbl');
@@ -978,13 +987,16 @@ function mShowTab(tab) {
   if (shopBtns) shopBtns.style.display = isShop ? '' : 'none';
   const main = document.getElementById('mMain');
   main.style.padding = (isToday || isShop) ? '12px 16px' : '0';
-  main.style.overflow = (tab === 'week' || tab === 'tb') ? 'hidden' : '';
+  main.style.overflow = (tab === 'week' || tab === 'tb' || tab === 'month') ? 'hidden' : '';
   main.scrollTop = 0;
 
   if (tab === 'tb')   { _mTBOffset = 0; mRenderTB(); _mScrollNow(); }
   else if (tab === 'week') { mRenderWeek(true); mInitWeekScroll(); }
+  else if (tab === 'month') { mOpenMonth(); }
   else if (tab === 'shop') { mRenderShop(); }
   else if (tab === 'today') { _mTodayOffset = 0; _mSetDate(); }
+
+  if (_mainFade) requestAnimationFrame(() => { _mainFade.style.opacity = '1'; });
 }
 
 // ── Timeblock constants ───────────────────────────────────────────────────────
@@ -2532,6 +2544,53 @@ async function mAddRecipeToMealPlan(recipeId) {
   mCloseRecipes();
 }
 
+// ── Recipes browse page (More tab) — read-only, tap a recipe to expand its ingredients ──
+let _mRecipesExpanded = new Set();
+function mOpenRecipesBrowse() {
+  _mRenderRecipesBrowse();
+  document.getElementById('mRecipesBrowseBackdrop').classList.add('open');
+  document.getElementById('mRecipesBrowseSheet').classList.add('open');
+}
+function mCloseRecipesBrowse() {
+  document.getElementById('mRecipesBrowseBackdrop').classList.remove('open');
+  document.getElementById('mRecipesBrowseSheet').classList.remove('open');
+}
+function _mRenderRecipesBrowse() {
+  const el = document.getElementById('mRecipesBrowseSheet');
+  if (!el) return;
+  const recipes = (st.recipes || []).filter(r => !r.is_deleted).slice().sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+  let html = '<h3 style="margin:0 0 12px">Recipes</h3>';
+  if (!recipes.length) {
+    html += '<div style="opacity:.5;padding:12px 0">No recipes yet</div>';
+  } else {
+    recipes.forEach(r => {
+      const ings = typeof _parseIngredients === 'function' ? _parseIngredients(r.ingredients) : [];
+      const expanded = _mRecipesExpanded.has(String(r.id));
+      const meta = [r.meal_type, r.time ? r.time + ' min' : null, r.servings ? r.servings + ' servings' : null].filter(Boolean).join(' · ');
+      html += `<div class="m-recipe-row" onclick="mToggleRecipeExpand('${r.id}')">
+        <span class="m-recipe-name">${escHtml(r.name || '')}</span>
+        ${ings.length ? `<span class="m-recipe-meta">${ings.length} items</span>` : ''}
+        <span class="m-recipe-add" style="display:inline-block;transform:rotate(${expanded ? '90deg' : '0deg'})">›</span>
+      </div>`;
+      if (expanded) {
+        html += `<div class="m-recipe-browse-detail">
+          ${meta ? `<div class="m-recipe-browse-meta">${escHtml(meta)}</div>` : ''}
+          ${ings.length
+            ? ings.map(i => `<div class="m-recipe-browse-ing">${escHtml(i.amount ? i.amount + ' ' : '')}${escHtml(i.name || '')}</div>`).join('')
+            : '<div class="m-recipe-browse-ing" style="opacity:.5;font-style:italic">No ingredients listed</div>'}
+        </div>`;
+      }
+    });
+  }
+  el.innerHTML = html;
+}
+function mToggleRecipeExpand(id) {
+  const key = String(id);
+  if (_mRecipesExpanded.has(key)) _mRecipesExpanded.delete(key);
+  else _mRecipesExpanded.add(key);
+  _mRenderRecipesBrowse();
+}
+
 function mRemoveMealAndGroceries(recipeId) {
   if (typeof removeMealAndGroceries === 'function') {
     removeMealAndGroceries(recipeId);
@@ -2551,14 +2610,8 @@ function mOpenMonth() {
   _mMonthSelectedDs = d2s(getDayDate(0));
   _mRenderMonthWeeks(true);
   _mRenderMonthDetail(_mMonthSelectedDs);
-  document.getElementById('mMonthBackdrop').classList.add('open');
-  document.getElementById('mMonthSheet').classList.add('open');
   mInitMonthScroll();
   requestAnimationFrame(() => requestAnimationFrame(() => _mMoScrollToToday()));
-}
-function mCloseMonth() {
-  document.getElementById('mMonthBackdrop').classList.remove('open');
-  document.getElementById('mMonthSheet').classList.remove('open');
 }
 let _mYearViewOpen = false;
 let _mYearOffset = 0;
@@ -2672,7 +2725,10 @@ function _mMonthDotStyle(t) {
 // Segment order matches the rest of the dashboard's CATS key order, with overdue/important
 // pulled out front since they're cross-cutting states, not categories.
 function _mMonthDayBadge(tasks) {
-  const items = tasks.filter(t => !t.done);
+  // Include done tasks too (plain category color — overdue/important styling only
+  // applies to undone items, same as everywhere else) so a fully-completed day still
+  // shows its category breakdown instead of going blank.
+  const items = tasks;
   if (!items.length) return '';
   const order = Object.keys(CATS);
   const counts = {};
@@ -2787,7 +2843,7 @@ function _mMoScrollToToday(attempt) {
   const todayEl = scroller && scroller.querySelector('.m-mo-day.is-today');
   if (!todayEl) { if (attempt < 25) setTimeout(() => _mMoScrollToToday(attempt + 1), 40); return; }
   const row = todayEl.closest('.m-mo-week');
-  if (row) row.scrollIntoView({block: 'center', behavior: 'auto'});
+  if (row) row.scrollIntoView({block: 'start', behavior: 'auto'});
   _mUpdateMonthTitle();
 }
 
@@ -2826,7 +2882,6 @@ function _mRenderMonthDetail(ds) {
 }
 
 function mMonthTapDay(ds) {
-  mCloseMonth();
   if (_mCurTab !== 'week') mShowTab('week');
   const weekOff = _mWkGetWeekOff(ds);
   const list = document.getElementById('mWeekList');
@@ -2859,7 +2914,7 @@ async function mInit() {
   if (!authed) return;
   hideLoginOverlay();
   await syncAll();
-  mShowTab(['today','tb','week','shop','extras'].includes(localStorage._mLastTab) ? localStorage._mLastTab : 'today'); // restore last tab across refresh
+  mShowTab(['today','tb','week','month','shop','extras'].includes(localStorage._mLastTab) ? localStorage._mLastTab : 'today'); // restore last tab across refresh
   setInterval(() => { if (cfg.url && cfg.key && !document.hidden) syncAll(true); }, 30000);
 
   // iOS suspends setInterval while the PWA is backgrounded — so reopening the app
