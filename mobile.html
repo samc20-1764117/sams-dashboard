@@ -15,7 +15,7 @@
 // navigating to a versioned URL (a URL iOS has never cached — plain reload() can be
 // served straight back out of the iOS PWA app-shell cache and never update).
 (function(){
-  window._BUILD='20260814e';var BUILD=window._BUILD;
+  window._BUILD='20260815a';var BUILD=window._BUILD;
   try{
     var qs=new URLSearchParams(location.search);
     fetch('/mobile-version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(d){
@@ -28,7 +28,7 @@
 })();
 </script>
 <link rel="stylesheet" href="fonts/dmsans.css?v=1">
-<link rel="stylesheet" href="mobile.css?v=20260814e">
+<link rel="stylesheet" href="mobile.css?v=20260815a">
 <script>(function(){try{var s=JSON.parse(localStorage.getItem('samdash_v7')||'{}');if(s.cfg&&s.cfg.dark)document.documentElement.classList.add('init-dark');}catch(e){}})();</script>
 </head>
 <body>
@@ -115,7 +115,11 @@
     <!-- Extras tab (placeholder for task-type shortcuts) -->
     <div id="mExtrasPage" style="display:none">
       <div class="m-extras-btns">
-        <button class="m-extras-btn" onclick="mOpenRecipesBrowse()">
+        <button class="m-extras-btn" onclick="mShowTab('tb')">
+          <span class="m-extras-btn-icon">🕐</span>
+          <span>Timeblock</span>
+        </button>
+        <button class="m-extras-btn" onclick="mShowTab('recipes')">
           <span class="m-extras-btn-icon">📖</span>
           <span>Recipes</span>
         </button>
@@ -125,6 +129,12 @@
         <div class="m-extras-title">More</div>
         <div class="m-extras-sub">Quick shortcuts for Travel, Birthdays, and more — coming soon.</div>
       </div>
+    </div>
+
+    <!-- Recipes page (opened from More) -->
+    <div id="mRecipesPage" style="display:none">
+      <button class="m-back-btn" onclick="mShowTab('extras')">‹ More</button>
+      <div id="mRecipesList"></div>
     </div>
 
   </div>
@@ -305,9 +315,6 @@
 <div id="mRecipeBackdrop" onclick="mCloseRecipes()"></div>
 <div id="mRecipeSheet" class="m-recipe-sheet"></div>
 
-<!-- Recipes browse page (More tab) — read-only, tap a recipe to expand its ingredients -->
-<div id="mRecipesBrowseBackdrop" onclick="mCloseRecipesBrowse()"></div>
-<div id="mRecipesBrowseSheet" class="m-recipe-sheet"></div>
 
 
 <!-- Hidden undo scaffolding (required by core.js pushUndo) -->
@@ -323,7 +330,7 @@ if('serviceWorker' in navigator){
 }
 </script>
 <script src="supabase.min.js?v=2110"></script>
-<script src="core.js?v=20260814e"></script>
-<script src="features.js?v=20260814e"></script>
-<script src="mobile-overview.js?v=20260814e"></script>
+<script src="core.js?v=20260815a"></script>
+<script src="features.js?v=20260815a"></script>
+<script src="mobile-overview.js?v=20260815a"></script>
 </body></html>

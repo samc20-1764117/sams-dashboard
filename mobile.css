@@ -131,10 +131,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .m-fulllist-add button{padding:8px 18px;border-radius:var(--rs);border:none;background:var(--accent);color:#fff;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;flex-shrink:0}
 
 /* ── Extras tab (placeholder) ───────────────────────────────────────────── */
-.m-extras-btns{padding:4px 4px 0}
+.m-extras-btns{display:flex;flex-direction:column;gap:8px;padding:4px 4px 0}
 .m-extras-btn{width:100%;display:flex;align-items:center;gap:10px;padding:14px 16px;border-radius:var(--r);border:1px solid var(--border);background:var(--glass);color:var(--text);font-size:15px;font-weight:600;font-family:inherit;cursor:pointer}
 .m-extras-btn:active{background:rgba(124,106,247,.1)}
 .m-extras-btn-icon{font-size:18px}
+.m-back-btn{background:none;border:none;color:var(--accent);font-size:15px;font-weight:600;font-family:inherit;cursor:pointer;padding:4px 0 14px;display:block}
 .m-extras-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:56px 32px 0}
 .m-extras-icon{font-size:32px;margin-bottom:10px}
 .m-extras-title{font-size:17px;font-weight:700;color:var(--text);margin-bottom:6px}
@@ -340,12 +341,13 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 #mMonthDayHdr{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;flex-shrink:0}
 #mMonthScroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;min-height:0;overscroll-behavior:contain}
 #mMonthWeeks{display:flex;flex-direction:column;padding-bottom:8px}
-.m-mo-week{display:grid;grid-template-columns:repeat(7,1fr);text-align:center}
+.m-mo-week{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;position:relative}
+.m-mo-travel-bar{position:absolute;height:3px;border-radius:2px;pointer-events:none}
 .m-mo-month-divider{font-size:16px;font-weight:800;color:var(--text);padding:14px 2px 6px}
 .m-mo-hdr{font-size:10px;font-weight:700;color:var(--sub);padding:4px 0;text-transform:uppercase;letter-spacing:.05em}
 /* Fixed top-down layout (not centered) so the day number sits in the same spot
    whether or not that day has a badge below it. */
-.m-mo-day{padding:6px 1px 4px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:500;color:var(--text);position:relative;min-height:38px;display:flex;flex-direction:column;align-items:center;gap:0}
+.m-mo-day{padding:6px 1px 8px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:500;color:var(--text);position:relative;min-height:42px;display:flex;flex-direction:column;align-items:center;gap:0}
 .m-mo-day:active{background:rgba(124,106,247,.1)}
 .m-mo-badge-slot{height:6px;width:100%;display:flex;align-items:center;justify-content:center;margin-top:2px}
 .m-mo-day.selected{background:rgba(124,106,247,.12);outline:2px solid var(--accent);outline-offset:-2px}

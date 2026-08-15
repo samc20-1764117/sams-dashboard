@@ -666,7 +666,7 @@ function getRecurringWeekTasks(off=0){
     const nameOv=r._dateOverrides&&r._dateOverrides['name::'+wkKey];
     const displayName=(nameOv&&nameOv.name)||r.name;
     const _wkNote=(nameOv&&nameOv.notes)||'';
-    out.push({id:'rec-virt-'+r.id,name:displayName,category:'Recurring',due_date:ds,done:!!isDone,_recId:r.id,_virtual:true,_wkKey:wkKey,_edited:!!(nameOv&&nameOv.name),_wkNote});
+    out.push({id:'rec-virt-'+r.id,name:displayName,category:'Recurring',due_date:ds,done:!!isDone,important:!!r.important,_recId:r.id,_virtual:true,_wkKey:wkKey,_edited:!!(nameOv&&nameOv.name),_wkNote});
   });
   return out;
 }

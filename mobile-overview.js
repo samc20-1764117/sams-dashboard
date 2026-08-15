@@ -442,7 +442,7 @@ function mGetTodayTasks() {
       .forEach(r => {
         _wrecSeen.add(r.id + '::' + _wkKey);
         const _isDone = !!(r._doneByWk && r._doneByWk[_wkKey]);
-        wrecToday.push({id: 'rec-virt-' + r.id, name: r.name, category: 'Recurring', due_date: r._dateOverrides[_wkKey], done: _isDone, _recId: r.id, _virtual: true, _wkKey: _wkKey, _isWrec: true});
+        wrecToday.push({id: 'rec-virt-' + r.id, name: r.name, category: 'Recurring', due_date: r._dateOverrides[_wkKey], done: _isDone, important: !!r.important, _recId: r.id, _virtual: true, _wkKey: _wkKey, _isWrec: true});
       });
   }
 
@@ -462,7 +462,7 @@ function mGetTodayTasks() {
       .forEach(r => {
         _wrRulesSeen.add(r.id + '::' + _wkKey);
         const _isDone = isDoneWRRule(r.id, _wkKey);
-        wrRulesToday.push({id: 'wrrule-virt-' + r.id, name: r.name, category: 'Recurring', due_date: r._dateOverrides[_wkKey], done: _isDone, _ruleId: r.id, _virtual: true, _wkKey: _wkKey, _isWrRule: true});
+        wrRulesToday.push({id: 'wrrule-virt-' + r.id, name: r.name, category: 'Recurring', due_date: r._dateOverrides[_wkKey], done: _isDone, important: !!r.important, _ruleId: r.id, _virtual: true, _wkKey: _wkKey, _isWrRule: true});
       });
   }
 
@@ -527,7 +527,7 @@ function mTaskRow(t) {
   const noCheck = t._type === 'travel' || t._type === 'birthday' || t._type === 'holiday';
   const ov = !noCheck && isOv(t.due_date) && !t.done;
   const catKey = t._isWrRule || t._isWrec ? 'weekly_reset' : t._type === 'shop' ? 'shopping' : t._type === 'travel' ? 'travel' : t._type === 'birthday' ? 'birthday' : t._type === 'holiday' ? 'holiday' : (t.category || '');
-  const s = ov ? OV : gc(catKey);
+  const s = ov ? OV : (t.important && !t.done) ? IMP : gc(catKey);
   const canEdit = !t._virtual && !t._type;
 
   let onchange = '';
@@ -948,13 +948,14 @@ function mShowTab(tab) {
   if (_mainFade) _mainFade.style.opacity = '0';
   // tb is reachable only via the Timeblock button on Today's header now (no bottom nav
   // slot of its own), but it's still a real page like any other.
-  const pages = {today: 'mTodayPage', tb: 'mTBPage', week: 'mWeekPage', month: 'mMonthPage', shop: 'mShopPage', extras: 'mExtrasPage'};
+  const pages = {today: 'mTodayPage', tb: 'mTBPage', week: 'mWeekPage', month: 'mMonthPage', shop: 'mShopPage', extras: 'mExtrasPage', recipes: 'mRecipesPage'};
   Object.entries(pages).forEach(([k, id]) => {
     const el = document.getElementById(id);
     if (el) el.style.display = k === tab ? '' : 'none';
   });
   const isToday = tab === 'today';
   const isShop = tab === 'shop';
+  const isSimplePage = isToday || isShop || tab === 'recipes';
   document.getElementById('mAddBar').style.display = isToday ? '' : 'none';
   const shopBar = document.getElementById('mShopAddBar');
   if (shopBar) shopBar.style.display = isShop ? '' : 'none';
@@ -969,7 +970,7 @@ function mShowTab(tab) {
   document.querySelectorAll('.m-nav-btn').forEach((b, i) => {
     b.classList.toggle('active', (tab === 'today' && i === 0) || (tab === 'week' && i === 1) || (tab === 'month' && i === 2) || (tab === 'shop' && i === 3) || (tab === 'extras' && i === 4));
   });
-  const titles = {today: 'Today', tb: 'Timeblock', week: 'Week', month: 'Month', shop: 'Shop', extras: 'More'};
+  const titles = {today: 'Today', tb: 'Timeblock', week: 'Week', month: 'Month', shop: 'Shop', extras: 'More', recipes: 'Recipes'};
   const titleEl = document.getElementById('mHeaderTitle');
   if (titleEl) titleEl.textContent = titles[tab] || '';
   const progEl = document.getElementById('mProgress');
@@ -986,7 +987,7 @@ function mShowTab(tab) {
   const shopBtns = document.getElementById('mShopHeaderBtns');
   if (shopBtns) shopBtns.style.display = isShop ? '' : 'none';
   const main = document.getElementById('mMain');
-  main.style.padding = (isToday || isShop) ? '12px 16px' : '0';
+  main.style.padding = isSimplePage ? '12px 16px' : '0';
   main.style.overflow = (tab === 'week' || tab === 'tb' || tab === 'month') ? 'hidden' : '';
   main.scrollTop = 0;
 
@@ -994,9 +995,16 @@ function mShowTab(tab) {
   else if (tab === 'week') { mRenderWeek(true); mInitWeekScroll(); }
   else if (tab === 'month') { mOpenMonth(); }
   else if (tab === 'shop') { mRenderShop(); }
+  else if (tab === 'recipes') { _mRenderRecipesBrowse(); }
   else if (tab === 'today') { _mTodayOffset = 0; _mSetDate(); }
 
-  if (_mainFade) requestAnimationFrame(() => { _mainFade.style.opacity = '1'; });
+  // tb/week/month scroll themselves into position asynchronously (double-rAF, sometimes
+  // a retry loop) after rendering. Fading back in on the very next frame reveals that
+  // jump in progress — hold the fade until the scroll has had a chance to settle.
+  if (_mainFade) {
+    if (tab === 'tb' || tab === 'week' || tab === 'month') setTimeout(() => { _mainFade.style.opacity = '1'; }, 90);
+    else requestAnimationFrame(() => { _mainFade.style.opacity = '1'; });
+  }
 }
 
 // ── Timeblock constants ───────────────────────────────────────────────────────
@@ -1711,11 +1719,11 @@ function mGetDayTasks(ds, weekOff) {
     (st.recurring || []).filter(r => (r.is_weekly_reset === true || r.is_weekly_reset === 'true') && r._dateOverrides && r._dateOverrides[pwk] === ds && !_wrecSeen.has(String(r.id))).forEach(r => {
       _wrecSeen.add(String(r.id));
       const done = !!(r._doneByWk && r._doneByWk[pwk]);
-      wrecDay.push({id: 'rec-virt-' + r.id, name: r.name, category: 'Recurring', due_date: ds, done, _recId: r.id, _virtual: true, _wkKey: pwk, _isWrec: true});
+      wrecDay.push({id: 'rec-virt-' + r.id, name: r.name, category: 'Recurring', due_date: ds, done, important: !!r.important, _recId: r.id, _virtual: true, _wkKey: pwk, _isWrec: true});
     });
     (st.wrRules || []).filter(r => r._dateOverrides && r._dateOverrides[pwk] === ds && !_wrRuleSeen.has(String(r.id)) && !(st.wrOverrides || []).some(o => String(o.rule_id) === String(r.id) && o.wk_key === pwk && o.override_type === 'skip')).forEach(r => {
       _wrRuleSeen.add(String(r.id));
-      wrRulesDay.push({id: 'wrrule-virt-' + r.id, name: r.name, category: 'Recurring', due_date: ds, done: isDoneWRRule(r.id, pwk), _ruleId: r.id, _virtual: true, _wkKey: pwk, _isWrRule: true});
+      wrRulesDay.push({id: 'wrrule-virt-' + r.id, name: r.name, category: 'Recurring', due_date: ds, done: isDoneWRRule(r.id, pwk), important: !!r.important, _ruleId: r.id, _virtual: true, _wkKey: pwk, _isWrRule: true});
     });
   }
 
@@ -1777,8 +1785,8 @@ function mWkTaskRow(t) {
   }
   const noCheck = t._type === 'birthday' || t._type === 'holiday';
   const ov      = !noCheck && isOv(t.due_date) && !t.done;
-  const catKey  = t._type === 'shop' ? 'shopping' : t._type === 'vid' || t._type === 'vidstep' ? 'Videos' : (t._virtual && t._recId) ? 'recurring' : (t.category || '');
-  const s       = ov ? OV : gc(catKey);
+  const catKey  = t._type === 'shop' ? 'shopping' : t._type === 'vid' || t._type === 'vidstep' ? 'Videos' : (t._isWrRule || t._isWrec) ? 'weekly_reset' : (t._virtual && t._recId) ? 'recurring' : (t.category || '');
+  const s       = ov ? OV : (t.important && !t.done) ? IMP : gc(catKey);
   const canDrag = !t._virtual && !t._type;
 
   let onchange = '';
@@ -2544,22 +2552,13 @@ async function mAddRecipeToMealPlan(recipeId) {
   mCloseRecipes();
 }
 
-// ── Recipes browse page (More tab) — read-only, tap a recipe to expand its ingredients ──
+// ── Recipes page (opened from More) — read-only, tap a recipe to expand its ingredients ──
 let _mRecipesExpanded = new Set();
-function mOpenRecipesBrowse() {
-  _mRenderRecipesBrowse();
-  document.getElementById('mRecipesBrowseBackdrop').classList.add('open');
-  document.getElementById('mRecipesBrowseSheet').classList.add('open');
-}
-function mCloseRecipesBrowse() {
-  document.getElementById('mRecipesBrowseBackdrop').classList.remove('open');
-  document.getElementById('mRecipesBrowseSheet').classList.remove('open');
-}
 function _mRenderRecipesBrowse() {
-  const el = document.getElementById('mRecipesBrowseSheet');
+  const el = document.getElementById('mRecipesList');
   if (!el) return;
   const recipes = (st.recipes || []).filter(r => !r.is_deleted).slice().sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-  let html = '<h3 style="margin:0 0 12px">Recipes</h3>';
+  let html = '';
   if (!recipes.length) {
     html += '<div style="opacity:.5;padding:12px 0">No recipes yet</div>';
   } else {
@@ -2769,18 +2768,47 @@ function _mMoWeekRowHtml(weekOff, forceLabel) {
     // number never shifts depending on whether that day has a badge or not.
     return `<div class="m-mo-day${isToday ? ' is-today' : ''}${_mMonthSelectedDs === ds ? ' selected' : ''}" data-ds="${ds}" onclick="mMonthSelectDay('${ds}')"><span class="m-mo-num">${d.getDate()}</span><div class="m-mo-badge-slot">${badge}</div></div>`;
   }).join('');
-  return `${divider}<div class="m-mo-week" data-wk="${weekOff}" data-mon="${d2s(dates[0])}">${cells}</div>`;
+  return `${divider}<div class="m-mo-week" data-wk="${weekOff}" data-mon="${d2s(dates[0])}">${cells}${_mMoTravelBarsHtml(dates)}</div>`;
+}
+
+// A continuous colored bar spanning each trip's date range within this week row,
+// like iOS Calendar's multi-day all-day event bars — clipped to whichever days of
+// the trip fall inside this particular week.
+function _mMoTravelBarsHtml(dates) {
+  const wkStart = d2s(dates[0]), wkEnd = d2s(dates[6]);
+  const trips = (st.travel || []).filter(tv => {
+    const s = tv.start_date ? tv.start_date.split('T')[0] : null;
+    if (!s) return false;
+    const e = tv.end_date ? tv.end_date.split('T')[0] : s;
+    return s <= wkEnd && e >= wkStart;
+  });
+  if (!trips.length) return '';
+  const ts = gc('travel');
+  return trips.map((tv, i) => {
+    const s = tv.start_date.split('T')[0];
+    const e = tv.end_date ? tv.end_date.split('T')[0] : s;
+    const startIdx = s < wkStart ? 0 : dates.findIndex(d => d2s(d) === s);
+    const endIdx = e > wkEnd ? 6 : dates.findIndex(d => d2s(d) === e);
+    const left = (Math.max(0, startIdx) / 7 * 100).toFixed(4);
+    const width = ((Math.max(0, endIdx) - Math.max(0, startIdx) + 1) / 7 * 100).toFixed(4);
+    return `<div class="m-mo-travel-bar" style="left:${left}%;width:${width}%;bottom:${1 + i * 6}px;background:${ts.d}" title="${escHtml(tv.name || '')}"></div>`;
+  }).join('');
 }
 
 function _mRenderMonthWeeks(reset) {
   const wrap = document.getElementById('mMonthWeeks');
   if (!wrap) return;
+  const scroller = document.getElementById('mMonthScroll');
+  // Background sync re-renders (reset=false) must not yank the view while the user is
+  // scrolled off to a past/future month — only an explicit tab-open resets position.
+  const prevScroll = scroller ? scroller.scrollTop : 0;
   if (reset) { _mMoRenderedLo = -6; _mMoRenderedHi = 6; }
   let html = '';
   for (let w = _mMoRenderedLo; w <= _mMoRenderedHi; w++) {
     html += _mMoWeekRowHtml(w, w === _mMoRenderedLo);
   }
   wrap.innerHTML = html;
+  if (!reset && scroller) scroller.scrollTop = prevScroll;
   _mUpdateMonthTitle();
 }
 
@@ -2914,7 +2942,7 @@ async function mInit() {
   if (!authed) return;
   hideLoginOverlay();
   await syncAll();
-  mShowTab(['today','tb','week','month','shop','extras'].includes(localStorage._mLastTab) ? localStorage._mLastTab : 'today'); // restore last tab across refresh
+  mShowTab(['today','tb','week','month','shop','extras','recipes'].includes(localStorage._mLastTab) ? localStorage._mLastTab : 'today'); // restore last tab across refresh
   setInterval(() => { if (cfg.url && cfg.key && !document.hidden) syncAll(true); }, 30000);
 
   // iOS suspends setInterval while the PWA is backgrounded — so reopening the app
