@@ -959,13 +959,10 @@ function mShowTab(tab) {
   document.getElementById('mAddBar').style.display = isToday ? '' : 'none';
   const shopBar = document.getElementById('mShopAddBar');
   if (shopBar) shopBar.style.display = isShop ? '' : 'none';
-  // Today/Shop's add bars are in normal flex flow with their own margin-bottom already
-  // reserving nav clearance — adding the same clearance again here would double it up
-  // (a visible gap between the add bar and the nav). Only tabs with no add bar of their
-  // own (tb/week/month/extras) need #mApp to reserve that space.
-  document.getElementById('mApp').style.paddingBottom = (isToday || isShop)
-    ? '0px'
-    : 'calc(52px + env(safe-area-inset-bottom))';
+  // The add bars are position:fixed, floating above content — #mApp's own padding only
+  // ever needs to clear the fixed nav. List clearance for the fixed add bar itself is
+  // measured and applied directly to the list in mSyncBarClearance() below.
+  document.getElementById('mApp').style.paddingBottom = 'calc(52px + env(safe-area-inset-bottom))';
   // No nav button lights up for tb — it's opened from Today's header, not the bottom nav.
   document.querySelectorAll('.m-nav-btn').forEach((b, i) => {
     b.classList.toggle('active', (tab === 'today' && i === 0) || (tab === 'week' && i === 1) || (tab === 'month' && i === 2) || (tab === 'shop' && i === 3) || (tab === 'extras' && i === 4));
@@ -998,6 +995,8 @@ function mShowTab(tab) {
   else if (tab === 'recipes') { _mRenderRecipesBrowse(); }
   else if (tab === 'today') { _mTodayOffset = 0; _mSetDate(); }
 
+  if (isToday || isShop) mSyncBarClearance(isToday ? 'mAddBar' : 'mShopAddBar', isToday ? 'mTodayList' : 'mShopList');
+
   // tb/week/month scroll themselves into position asynchronously (double-rAF, sometimes
   // a retry loop) after rendering. Fading back in on the very next frame reveals that
   // jump in progress — hold the fade until the scroll has had a chance to settle.
@@ -1005,6 +1004,21 @@ function mShowTab(tab) {
     if (tab === 'tb' || tab === 'week' || tab === 'month') setTimeout(() => { _mainFade.style.opacity = '1'; }, 90);
     else requestAnimationFrame(() => { _mainFade.style.opacity = '1'; });
   }
+}
+
+// Measures the (fixed-position) add bar's real rendered height and applies it as the
+// matching list's padding-bottom, so the last row is never hidden behind it — exact,
+// not guessed, and correct even if the bar's own height ever changes.
+function mSyncBarClearance(barId, listId) {
+  requestAnimationFrame(() => {
+    const bar = document.getElementById(barId);
+    const list = document.getElementById(listId);
+    if (!bar || !list) return;
+    const h = bar.offsetHeight;
+    // Bar sits at bottom:calc(52px + safe-area) — its own height stacks on top of that,
+    // so the list needs both plus a small buffer to fully clear it.
+    if (h > 0) list.style.paddingBottom = `calc(${h + 52 + 24}px + env(safe-area-inset-bottom))`;
+  });
 }
 
 // ── Timeblock constants ───────────────────────────────────────────────────────
@@ -2726,8 +2740,10 @@ function _mMonthDotStyle(t) {
 function _mMonthDayBadge(tasks) {
   // Include done tasks too (plain category color — overdue/important styling only
   // applies to undone items, same as everywhere else) so a fully-completed day still
-  // shows its category breakdown instead of going blank.
-  const items = tasks;
+  // shows its category breakdown instead of going blank. Travel is excluded — it
+  // already gets its own spanning bar across the trip's date range, so counting it
+  // here too would be redundant.
+  const items = tasks.filter(t => t._type !== 'travel');
   if (!items.length) return '';
   const order = Object.keys(CATS);
   const counts = {};
@@ -2787,11 +2803,15 @@ function _mMoTravelBarsHtml(dates) {
   return trips.map((tv, i) => {
     const s = tv.start_date.split('T')[0];
     const e = tv.end_date ? tv.end_date.split('T')[0] : s;
-    const startIdx = s < wkStart ? 0 : dates.findIndex(d => d2s(d) === s);
-    const endIdx = e > wkEnd ? 6 : dates.findIndex(d => d2s(d) === e);
+    const startsHere = s >= wkStart, endsHere = e <= wkEnd;
+    const startIdx = startsHere ? dates.findIndex(d => d2s(d) === s) : 0;
+    const endIdx = endsHere ? dates.findIndex(d => d2s(d) === e) : 6;
     const left = (Math.max(0, startIdx) / 7 * 100).toFixed(4);
     const width = ((Math.max(0, endIdx) - Math.max(0, startIdx) + 1) / 7 * 100).toFixed(4);
-    return `<div class="m-mo-travel-bar" style="left:${left}%;width:${width}%;bottom:${1 + i * 6}px;background:${ts.d}" title="${escHtml(tv.name || '')}"></div>`;
+    // Rounded only at the trip's true start/end — square where it continues into the
+    // next/previous week row, so a multi-week trip reads as one continuous pill.
+    const radius = `${startsHere ? '5px' : '0'} ${endsHere ? '5px' : '0'} ${endsHere ? '5px' : '0'} ${startsHere ? '5px' : '0'}`;
+    return `<div class="m-mo-travel-bar" style="left:${left}%;width:${width}%;border-radius:${radius};background:${ts.d}" title="${escHtml(tv.name || '')}"></div>`;
   }).join('');
 }
 
@@ -2851,17 +2871,19 @@ function mInitMonthScroll() {
 }
 
 // Title tracks whichever month is currently docked at the top of the scroll view
+// Single hit-test instead of walking every rendered row with getBoundingClientRect —
+// that was forcing a layout read per row on every scroll frame (dozens of times a
+// second with 13+ weeks rendered), which is exactly the kind of layout-thrashing that
+// makes scrolling feel stuck/broken on a real device.
 function _mUpdateMonthTitle() {
   const scroller = document.getElementById('mMonthScroll');
   const titleEl = document.getElementById('mMonthTitle');
   if (!scroller || !titleEl) return;
-  const rows = scroller.querySelectorAll('.m-mo-week');
-  const top = scroller.getBoundingClientRect().top;
-  let target = null;
-  for (const r of rows) { if (r.getBoundingClientRect().bottom > top + 4) { target = r; break; } }
-  if (!target && rows.length) target = rows[rows.length - 1];
-  if (!target) return;
-  const d = new Date(target.dataset.mon + 'T12:00:00');
+  const rect = scroller.getBoundingClientRect();
+  const el = document.elementFromPoint(rect.left + rect.width / 2, rect.top + 4);
+  const row = el && el.closest('.m-mo-week');
+  if (!row) return;
+  const d = new Date(row.dataset.mon + 'T12:00:00');
   titleEl.textContent = d.toLocaleDateString('en-US', {month: 'long', year: 'numeric'});
 }
 
