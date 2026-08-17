@@ -18,7 +18,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .m-reload-btn{background:none;border:none;font-size:18px;color:var(--sub);cursor:pointer;padding:4px;line-height:1;opacity:.6}
 
 /* ── Main scroll area ─────────────────────────────────────────────────────── */
-#mMain{flex:1;padding:12px 16px;display:flex;flex-direction:column;gap:14px;overflow-y:auto;min-height:0;transition:opacity .1s ease}
+#mMain{flex:1;padding:12px 16px;display:flex;flex-direction:column;gap:14px;overflow-y:auto;min-height:0}
 
 /* ── Section card ─────────────────────────────────────────────────────────── */
 .m-section{background:var(--glass);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;overflow:clip}
@@ -340,7 +340,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
    font-size) can't throw off the vertical alignment between them. */
 #mMonthNav{display:flex;justify-content:center;margin-bottom:8px;flex-shrink:0}
 .m-mo-nav-group{display:flex;align-items:center;gap:2px}
-#mMonthTitle{font-size:15px;font-weight:700;cursor:pointer;height:24px;display:flex;align-items:center}
+#mMonthTitle{font-size:15px;font-weight:700;color:var(--text);font-family:inherit;cursor:pointer;height:24px;display:flex;align-items:center;gap:3px;background:none;border:none;padding:0}
+.m-mo-title-caret{font-size:10px;color:var(--sub)}
 .m-mo-nav-btn{background:none;border:none;font-size:20px;color:var(--sub);cursor:pointer;padding:0 8px;line-height:1;font-weight:300;height:24px;display:flex;align-items:center;justify-content:center}
 .m-mo-nav-btn:active{color:var(--accent)}
 #mMonthDayHdr{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;flex-shrink:0}
@@ -350,7 +351,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 /* Full-height, semi-transparent, and behind the day cells (z-index:0 vs .m-mo-day's
    z-index:1) — a background wash across the trip's date range, like iOS Calendar's
    multi-day event bars, that never competes with the day number/breakdown dots. */
-.m-mo-travel-bar{position:absolute;top:2px;bottom:2px;opacity:.28;pointer-events:none;z-index:0}
+.m-mo-travel-bar{position:absolute;top:2px;bottom:2px;opacity:.18;pointer-events:none;z-index:0}
 .m-mo-month-divider{font-size:16px;font-weight:800;color:var(--text);padding:14px 2px 6px}
 .m-mo-hdr{font-size:10px;font-weight:700;color:var(--sub);padding:4px 0;text-transform:uppercase;letter-spacing:.05em}
 /* Fixed top-down layout (not centered) so the day number sits in the same spot

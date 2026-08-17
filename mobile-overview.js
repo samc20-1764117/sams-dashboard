@@ -112,6 +112,7 @@ function _mReconstructVidStepBlocks() {
 function _mVidStepMap() { try { return JSON.parse(localStorage._vidStepDayMap || '{}'); } catch(e) { return {}; } }
 function _mVidDayMap() { try { return JSON.parse(localStorage._vidDayMap || '{}'); } catch(e) { return {}; } }
 function _mVidStepMapSet(m) { localStorage._vidStepDayMap = JSON.stringify(m); }
+function _mVidDayMapSet(m) { localStorage._vidDayMap = JSON.stringify(m); }
 
 // Done state for one step instance on one day (mirrors desktop _vidStepComputeDone)
 function _mVidStepDone(vidId, step, ds, entry) {
@@ -544,8 +545,9 @@ function mTaskRow(t) {
   const safeName = escHtml(t.name || '');
   const dot = `<span class="m-cat-dot" style="background:${s.bg};border:1.5px solid ${s.d};flex-shrink:0;width:10px;height:10px;border-radius:50%;display:inline-block"></span>`;
   // Overdue regular/shopping tasks get a one-tap reschedule to today
-  const canMv = ov && (canEdit || t._type === 'shop');
-  const mvBtn = canMv ? `<button class="m-mv-today" onclick="event.stopPropagation();mMoveToToday('${t._type === 'shop' ? t._shopId : t.id}','${t._type === 'shop' ? 'shop' : 'task'}')">→ Today</button>` : '';
+  const canMv = ov && (canEdit || t._type === 'shop' || t._type === 'vidstep' || t._type === 'vid' || t._type === 'pup' || t._isWrec || t._isWrRule || (t._virtual && t._recId));
+  const mvArgs = canMv ? _mMoveToTodayArgs(t) : null;
+  const mvBtn = canMv ? `<button class="m-mv-today" onclick="event.stopPropagation();mMoveToToday('${mvArgs[0]}','${mvArgs[1]}'${mvArgs[2] !== undefined ? `,'${mvArgs[2]}'` : ''})">→ Today</button>` : '';
 
   const inner = `<div class="m-row${t.done ? ' m-done' : ''}${ov ? ' m-ov' : ''}">
     ${noCheck
@@ -648,8 +650,20 @@ function _mMoveTaskBlocks(taskId, fromDs, toDs) {
   });
 }
 
-// Overdue → Today button on the today list
-function mMoveToToday(id, type) {
+// Overdue → Today button on the today list. Args per type — mirrors what desktop's
+// bulk rolloverOverdue() covers, just scoped to one row.
+function _mMoveToTodayArgs(t) {
+  if (t._type === 'shop') return [t._shopId, 'shop'];
+  if (t._type === 'vidstep') return [t._vidId, 'vidstep', t._vidStep + '::' + t.due_date];
+  if (t._type === 'vid') return [t._vidId, 'vid'];
+  if (t._type === 'pup') return [t._pupSessId, 'pup'];
+  if (t._isWrRule) return [t._ruleId, 'wrrule', t._wkKey];
+  if (t._isWrec) return [t._recId, 'wrec', t._wkKey];
+  if (t._virtual && t._recId) return [t._recId, 'rec', t._wkKey];
+  return [t.id, 'task'];
+}
+
+function mMoveToToday(id, type, extra) {
   const today = d2s(getDayDate(0));
   if (type === 'shop') {
     const s = st.shopping.find(x => String(x.id) === String(id));
@@ -659,6 +673,74 @@ function mMoveToToday(id, type) {
     save();
     sbReq('PATCH', 'shopping_list', {due_date: today}, `?id=eq.${id}`);
     pushUndo(() => { const s2 = st.shopping.find(x => String(x.id) === String(id)); if (s2) s2.due_date = prev; save(); renderAll(); sbReq('PATCH', 'shopping_list', {due_date: prev}, `?id=eq.${id}`); }, 'Moved to today');
+  } else if (type === 'pup') {
+    const s = (st.pupSessions || []).find(x => String(x.id) === String(id));
+    if (!s) return;
+    const prev = s.day_date;
+    s.day_date = today;
+    save();
+    sbReqSilent('PATCH', 'pup_skill_sessions', {day_date: today}, `?id=eq.${id}`);
+    pushUndo(() => { const s2 = (st.pupSessions || []).find(x => String(x.id) === String(id)); if (s2) s2.day_date = prev; save(); renderAll(); sbReqSilent('PATCH', 'pup_skill_sessions', {day_date: prev}, `?id=eq.${id}`); }, 'Moved to today');
+  } else if (type === 'vid') {
+    const m = _mVidDayMap();
+    const prev = m[String(id)];
+    m[String(id)] = today;
+    _mVidDayMapSet(m);
+    save();
+    pushUndo(() => { const m2 = _mVidDayMap(); if (prev) m2[String(id)] = prev; else delete m2[String(id)]; _mVidDayMapSet(m2); save(); renderAll(); }, 'Moved to today');
+  } else if (type === 'vidstep') {
+    const [step, day] = String(extra).split('::');
+    const m = _mVidStepMap();
+    const key = id + '::' + step;
+    const entry = m[key];
+    const blocks = (st.blocks || []).filter(bl => String(bl._vidStepVid) === String(id) && bl._vidStepName === step && bl.ds === day);
+    const prevBlocks = blocks.map(bl => ({id: bl.id, ds: bl.ds}));
+    blocks.forEach(bl => { bl.ds = today; sbUpdateBlock(bl.id, {day_date: today}); });
+    const prevEntry = entry ? {ds: entry.ds, extraDays: entry.extraDays ? [...entry.extraDays] : undefined} : null;
+    if (entry) {
+      if (entry.ds === day) {
+        entry.ds = today;
+      } else if (entry.extraDays && entry.extraDays.includes(day)) {
+        entry.extraDays = entry.extraDays.filter(d => d !== day);
+        if (entry.ds !== today && !entry.extraDays.includes(today)) entry.extraDays.push(today);
+        if (!entry.extraDays.length) delete entry.extraDays;
+      }
+      _mVidStepMapSet(m);
+    }
+    save();
+    pushUndo(() => {
+      prevBlocks.forEach(({id: bid, ds}) => { const bl = st.blocks.find(x => x.id === bid); if (bl) { bl.ds = ds; sbUpdateBlock(bid, {day_date: ds}); } });
+      if (entry && prevEntry) { entry.ds = prevEntry.ds; entry.extraDays = prevEntry.extraDays; _mVidStepMapSet(m); }
+      save(); renderAll();
+    }, 'Moved to today');
+  } else if (type === 'rec' || type === 'wrec') {
+    const r = st.recurring.find(x => String(x.id) === String(id));
+    if (!r) return;
+    if (!r._dateOverrides) r._dateOverrides = {};
+    const prev = r._dateOverrides[extra];
+    r._dateOverrides[extra] = today;
+    save();
+    sbReq('PATCH', 'wr_recurring_rules', {date_overrides: r._dateOverrides}, `?id=eq.${id}`);
+    pushUndo(() => {
+      const r2 = st.recurring.find(x => String(x.id) === String(id));
+      if (r2) { if (prev) r2._dateOverrides[extra] = prev; else delete r2._dateOverrides[extra]; }
+      save(); renderAll();
+      sbReq('PATCH', 'wr_recurring_rules', {date_overrides: r2 ? r2._dateOverrides : {}}, `?id=eq.${id}`);
+    }, 'Moved to today');
+  } else if (type === 'wrrule') {
+    const r = st.wrRules.find(x => String(x.id) === String(id));
+    if (!r) return;
+    if (!r._dateOverrides) r._dateOverrides = {};
+    const prev = r._dateOverrides[extra];
+    r._dateOverrides[extra] = today;
+    save();
+    sbReqSilent('PATCH', 'wr_recurring_rules', {date_overrides: r._dateOverrides}, `?id=eq.${id}`);
+    pushUndo(() => {
+      const r2 = st.wrRules.find(x => String(x.id) === String(id));
+      if (r2) { if (prev) r2._dateOverrides[extra] = prev; else delete r2._dateOverrides[extra]; }
+      save(); renderAll();
+      sbReqSilent('PATCH', 'wr_recurring_rules', {date_overrides: r2 ? r2._dateOverrides : {}}, `?id=eq.${id}`);
+    }, 'Moved to today');
   } else {
     const t = st.tasks.find(x => String(x.id) === String(id));
     if (!t) return;
@@ -941,11 +1023,6 @@ let _mCurTab = 'today';
 function mShowTab(tab) {
   _mCurTab = tab;
   try { localStorage._mLastTab = tab; } catch(e) {}
-  // Quick crossfade so the header/list swap reads as a transition instead of an
-  // instant jump-cut. Fade out now, render everything as usual, then fade back in
-  // once the new content is already in the DOM (next frame).
-  const _mainFade = document.getElementById('mMain');
-  if (_mainFade) _mainFade.style.opacity = '0';
   // tb is reachable only via the Timeblock button on Today's header now (no bottom nav
   // slot of its own), but it's still a real page like any other.
   const pages = {today: 'mTodayPage', tb: 'mTBPage', week: 'mWeekPage', month: 'mMonthPage', shop: 'mShopPage', extras: 'mExtrasPage', recipes: 'mRecipesPage'};
@@ -996,14 +1073,6 @@ function mShowTab(tab) {
   else if (tab === 'today') { _mTodayOffset = 0; _mSetDate(); }
 
   if (isToday || isShop) mSyncBarClearance(isToday ? 'mAddBar' : 'mShopAddBar', isToday ? 'mTodayList' : 'mShopList');
-
-  // tb/week/month scroll themselves into position asynchronously (double-rAF, sometimes
-  // a retry loop) after rendering. Fading back in on the very next frame reveals that
-  // jump in progress — hold the fade until the scroll has had a chance to settle.
-  if (_mainFade) {
-    if (tab === 'tb' || tab === 'week' || tab === 'month') setTimeout(() => { _mainFade.style.opacity = '1'; }, 90);
-    else requestAnimationFrame(() => { _mainFade.style.opacity = '1'; });
-  }
 }
 
 // Measures the (fixed-position) add bar's real rendered height and applies it as the
@@ -2624,8 +2693,31 @@ function mOpenMonth() {
   _mRenderMonthWeeks(true);
   _mRenderMonthDetail(_mMonthSelectedDs);
   mInitMonthScroll();
-  requestAnimationFrame(() => requestAnimationFrame(() => _mMoScrollToToday()));
+  requestAnimationFrame(() => { _mSyncMonthScrollHeight(); requestAnimationFrame(() => _mMoScrollToToday()); });
 }
+
+// Sets #mMonthScroll's height explicitly from real viewport measurements instead of
+// trusting the flex:1/min-height:0 chain to bound it correctly. If that chain fails
+// for any reason, the calendar's content grows taller than the screen and scrolling
+// stops working as expected (the whole page grows instead of just this region
+// scrolling internally) — an explicit pixel height sidesteps the problem outright.
+function _mSyncMonthScrollHeight() {
+  const scroller = document.getElementById('mMonthScroll');
+  if (!scroller) return;
+  const header = document.getElementById('mHeader');
+  const nav = document.getElementById('mNav');
+  const dayHdr = document.getElementById('mMonthDayHdr');
+  const detail = document.getElementById('mMonthDetail');
+  const headerBottom = header ? header.getBoundingClientRect().bottom : 0;
+  const navH = nav ? nav.offsetHeight : 0;
+  const dayHdrH = dayHdr ? dayHdr.offsetHeight : 0;
+  const detailH = detail ? detail.offsetHeight : 0;
+  const avail = window.innerHeight - headerBottom - navH - dayHdrH - detailH - 12;
+  scroller.style.flex = 'none';
+  scroller.style.height = Math.max(120, avail) + 'px';
+}
+window.addEventListener('resize', () => { if (_mCurTab === 'month') _mSyncMonthScrollHeight(); });
+
 let _mYearViewOpen = false;
 let _mYearOffset = 0;
 
@@ -2687,7 +2779,7 @@ function mToggleYearView() {
 function _mRenderYear() {
   const now = new Date();
   const yr = now.getFullYear() + _mYearOffset;
-  document.getElementById('mMonthTitle').textContent = String(yr);
+  document.getElementById('mMonthTitle').innerHTML = `${yr}<span class="m-mo-title-caret">▴</span>`;
   const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const today = d2s(getDayDate(0));
   const todayMo = new Date().getMonth();
@@ -2749,10 +2841,18 @@ function _mMonthDayBadge(tasks) {
   const counts = {};
   const colorFor = {};
   items.forEach(t => {
+    // Bug fix: this MUST use the exact same isOverdue/isImportant conditions as
+    // _mMonthDotStyle (which correctly requires !t.done). The previous version checked
+    // isOv() alone for the grouping key but got its color from _mMonthDotStyle — so a
+    // done task landed in the '_overdue' bucket (wrong group) while colorFor[key] ended
+    // up being whichever task in that bucket was processed last (inconsistent color).
     const noCheck = t._type === 'travel' || t._type === 'birthday' || t._type === 'holiday';
-    const key = (!noCheck && isOv(t.due_date)) ? '_overdue' : t.important ? '_important' : _mMonthCatKey(t).toLowerCase();
+    const isOverdue = !noCheck && isOv(t.due_date) && !t.done;
+    const isImportant = !!t.important && !t.done;
+    const key = isOverdue ? '_overdue' : isImportant ? '_important' : _mMonthCatKey(t).toLowerCase();
+    const color = isOverdue ? OV.d : isImportant ? IMP.d : gc(_mMonthCatKey(t)).d;
     counts[key] = (counts[key] || 0) + 1;
-    colorFor[key] = _mMonthDotStyle(t).d;
+    colorFor[key] = color;
   });
   const rank = k => k === '_overdue' ? -2 : k === '_important' ? -1 : (order.indexOf(k) === -1 ? 999 : order.indexOf(k));
   const keys = Object.keys(counts).sort((a, b) => rank(a) - rank(b));
@@ -2811,7 +2911,11 @@ function _mMoTravelBarsHtml(dates) {
     // Rounded only at the trip's true start/end — square where it continues into the
     // next/previous week row, so a multi-week trip reads as one continuous pill.
     const radius = `${startsHere ? '5px' : '0'} ${endsHere ? '5px' : '0'} ${endsHere ? '5px' : '0'} ${startsHere ? '5px' : '0'}`;
-    return `<div class="m-mo-travel-bar" style="left:${left}%;width:${width}%;border-radius:${radius};background:${ts.d}" title="${escHtml(tv.name || '')}"></div>`;
+    // Inset a couple px so two different trips landing on adjacent days (side by side
+    // in the same week) show a visible gap instead of touching edge-to-edge. Safe to
+    // do unconditionally — it only affects a trip's own outer edges, never the day
+    // boundaries within a single trip's own bar.
+    return `<div class="m-mo-travel-bar" style="left:calc(${left}% + 2px);width:calc(${width}% - 4px);border-radius:${radius};background:${ts.d}" title="${escHtml(tv.name || '')}"></div>`;
   }).join('');
 }
 
@@ -2884,7 +2988,7 @@ function _mUpdateMonthTitle() {
   const row = el && el.closest('.m-mo-week');
   if (!row) return;
   const d = new Date(row.dataset.mon + 'T12:00:00');
-  titleEl.textContent = d.toLocaleDateString('en-US', {month: 'long', year: 'numeric'});
+  titleEl.innerHTML = `${d.toLocaleDateString('en-US', {month: 'long', year: 'numeric'})}<span class="m-mo-title-caret">▾</span>`;
 }
 
 function _mMoScrollToToday(attempt) {
@@ -2904,6 +3008,9 @@ function mMonthSelectDay(ds) {
   const el = document.querySelector(`#mMonthWeeks .m-mo-day[data-ds="${ds}"]`);
   if (el) el.classList.add('selected');
   _mRenderMonthDetail(ds);
+  // Detail panel's height varies with its task count (up to its own max-height cap) —
+  // resync so #mMonthScroll's explicit height still exactly fills the remaining space.
+  requestAnimationFrame(_mSyncMonthScrollHeight);
 }
 
 function _mRenderMonthDetail(ds) {
