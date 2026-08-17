@@ -4,7 +4,12 @@ html.init-dark{--bg:#16141f;--glass:rgba(30,28,40,.8);--bg-elevated:#242030;--bo
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100dvh;font-size:15px}
 
 /* ── App shell ─────────────────────────────────────────────────────────────── */
-#mApp{display:none;flex-direction:column;min-height:100dvh;padding-bottom:calc(162px + env(safe-area-inset-bottom))}
+/* height (not min-height): clamps #mApp to exactly the viewport so it can never grow
+   taller than the screen and force the DOCUMENT itself to scroll. If that happened, the
+   sticky #mHeader would engage relative to that outer scroll and could visually overlap
+   a tab's own internally-scrolled content (this was the real cause of "header is in the
+   way" on Month — #mMonthScroll was correctly bounded, but #mApp itself wasn't). */
+#mApp{display:none;flex-direction:column;height:100dvh;padding-bottom:calc(52px + env(safe-area-inset-bottom))}
 #mApp.ready{display:flex}
 
 /* ── Header ───────────────────────────────────────────────────────────────── */
