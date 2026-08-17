@@ -2704,7 +2704,7 @@ function mOpenMonth() {
   _mRenderMonthWeeks(true);
   _mRenderMonthDetail(_mMonthSelectedDs);
   mInitMonthScroll();
-  requestAnimationFrame(() => { _mSyncMonthScrollHeight(); requestAnimationFrame(() => _mMoScrollToToday()); });
+  requestAnimationFrame(() => { _mSyncMonthScrollHeight(); requestAnimationFrame(() => _mMoScrollToMonthStart()); });
 }
 
 // Sets #mMonthScroll's height explicitly from real viewport measurements instead of
@@ -2761,7 +2761,7 @@ function mMonthJumpToOffset(monthOffset) {
   requestAnimationFrame(() => {
     const row = document.querySelector(`.m-mo-week[data-wk="${targetWeekOff}"]`);
     const scroller = document.getElementById('mMonthScroll');
-    // Direct scrollTop math instead of scrollIntoView — see _mMoScrollToToday for why.
+    // Direct scrollTop math instead of scrollIntoView — see _mMoScrollToMonthStart for why.
     if (row && scroller) scroller.scrollTop += row.getBoundingClientRect().top - scroller.getBoundingClientRect().top;
     _mUpdateMonthTitle();
   });
@@ -3004,12 +3004,16 @@ function _mUpdateMonthTitle() {
   titleEl.innerHTML = `${d.toLocaleDateString('en-US', {month: 'long', year: 'numeric'})}<span class="m-mo-title-caret">▾</span>`;
 }
 
-function _mMoScrollToToday(attempt) {
+// Default view is the START of the current month (day 1's row), not today's own row —
+// today can be mid-month, which read as "starting halfway through" the month.
+function _mMoScrollToMonthStart(attempt) {
   attempt = attempt || 0;
   const scroller = document.getElementById('mMonthScroll');
-  const todayEl = scroller && scroller.querySelector('.m-mo-day.is-today');
-  if (!todayEl) { if (attempt < 25) setTimeout(() => _mMoScrollToToday(attempt + 1), 40); return; }
-  const row = todayEl.closest('.m-mo-week');
+  const now = new Date();
+  const firstDs = d2s(new Date(now.getFullYear(), now.getMonth(), 1));
+  const targetEl = scroller && scroller.querySelector(`.m-mo-day[data-ds="${firstDs}"]`);
+  if (!targetEl) { if (attempt < 25) setTimeout(() => _mMoScrollToMonthStart(attempt + 1), 40); return; }
+  const row = targetEl.closest('.m-mo-week');
   if (row) {
     // Compute the offset directly and apply it to the scroller's own scrollTop —
     // scrollIntoView() can walk up and scroll ANY scrollable ancestor it finds along
