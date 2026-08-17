@@ -360,7 +360,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .m-mo-day:active{background:rgba(124,106,247,.1)}
 .m-mo-badge-slot{height:6px;width:100%;display:flex;align-items:center;justify-content:center;margin-top:2px}
 .m-mo-day.selected{background:rgba(124,106,247,.12);outline:2px solid var(--accent);outline-offset:-2px}
-.m-mo-day.is-today .m-mo-num{background:var(--accent);color:#fff;font-weight:700;border-radius:50%;width:21px;height:21px;display:flex;align-items:center;justify-content:center}
+/* Fixed-size box for EVERY day's number (not just today's) so the today circle never
+   changes that row's content height relative to its neighbors — only the circle's own
+   background/color are conditional, never its box dimensions. */
+.m-mo-num{width:21px;height:21px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.m-mo-day.is-today .m-mo-num{background:var(--accent);color:#fff;font-weight:700;border-radius:50%}
 .m-mo-bar{display:flex;width:88%;max-width:34px;height:4px;border-radius:2px;overflow:hidden}
 .m-mo-bar span{height:100%}
 .m-mo-dot{width:5px;height:5px;border-radius:50%}

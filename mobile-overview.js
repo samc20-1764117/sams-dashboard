@@ -1051,6 +1051,8 @@ function mShowTab(tab) {
   if (progEl) progEl.style.display = isToday ? '' : 'none';
   const tbBtn = document.getElementById('mTodayTBBtn');
   if (tbBtn) tbBtn.style.display = isToday ? '' : 'none';
+  const goTodayBtn = document.getElementById('mGoTodayBtn');
+  if (goTodayBtn) goTodayBtn.style.display = isToday ? 'none' : '';
   // Date subtitle always shows, same height everywhere. Today's own swipe (offset)
   // logic owns the text on the Today tab; every other tab always shows today's real date.
   const dateLbl = document.getElementById('mDateLbl');
@@ -2749,7 +2751,9 @@ function mMonthJumpToOffset(monthOffset) {
   }
   requestAnimationFrame(() => {
     const row = document.querySelector(`.m-mo-week[data-wk="${targetWeekOff}"]`);
-    if (row) row.scrollIntoView({block: 'start', behavior: 'auto'});
+    const scroller = document.getElementById('mMonthScroll');
+    // Direct scrollTop math instead of scrollIntoView — see _mMoScrollToToday for why.
+    if (row && scroller) scroller.scrollTop += row.getBoundingClientRect().top - scroller.getBoundingClientRect().top;
     _mUpdateMonthTitle();
   });
 }
@@ -2997,7 +3001,13 @@ function _mMoScrollToToday(attempt) {
   const todayEl = scroller && scroller.querySelector('.m-mo-day.is-today');
   if (!todayEl) { if (attempt < 25) setTimeout(() => _mMoScrollToToday(attempt + 1), 40); return; }
   const row = todayEl.closest('.m-mo-week');
-  if (row) row.scrollIntoView({block: 'start', behavior: 'auto'});
+  if (row) {
+    // Compute the offset directly and apply it to the scroller's own scrollTop —
+    // scrollIntoView() can walk up and scroll ANY scrollable ancestor it finds along
+    // the way (e.g. the document itself), which can visually shift the sticky header
+    // relative to content. Setting scrollTop directly only ever touches this element.
+    scroller.scrollTop += row.getBoundingClientRect().top - scroller.getBoundingClientRect().top;
+  }
   _mUpdateMonthTitle();
 }
 
