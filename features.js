@@ -1,6 +1,6 @@
 let _vidPageInit=false;
 // ── Cat-select helpers ──────────────────────────────────────────────────────────
-function _catStyle(v){return CATS[(v||'').toLowerCase()]||{bg:'#f1f5f9',t:'#334155',b:'rgba(148,163,184,.2)'};}
+function _catStyle(v){const m=_isDk()?CATS_DARK:CATS;return m[(v||'').toLowerCase()]||(_isDk()?{bg:'rgba(148,163,184,.08)',t:'#94a3b8',b:'rgba(148,163,184,.15)'}:{bg:'#f1f5f9',t:'#334155',b:'rgba(148,163,184,.2)'});}
 function toggleCatDrop(id){const d=document.getElementById(id+'Drop');if(!d)return;const o=d.classList.contains('open');document.querySelectorAll('.cat-sel-drop.open').forEach(el=>el.classList.remove('open'));if(!o)d.classList.add('open');}
 function _applyCatTrigger(id,v){const s=_catStyle(v);const tr=document.getElementById(id+'Trigger');if(tr){tr.style.background=s.bg;tr.style.color=s.t;tr.style.borderColor=s.b;}const lbl=document.getElementById(id+'Lbl');if(lbl)lbl.textContent=v;if(id==='tCat'&&typeof _tModalSyncTravelFields==='function')_tModalSyncTravelFields(v);}
 // Swap #tModal into "trip mode" when Travel is picked — same fields as the dedicated
@@ -27,14 +27,14 @@ function openQA(ctx,btn,ds='',kcat=''){
   let title='Add Task',extra='';
   if(ctx==='pup'){
     title='Add Skill';
-    const selStyle='width:100%;padding:5px 7px;border-radius:8px;border:1px solid var(--border);font-family:inherit;font-size:12px;background:rgba(255,255,255,.8);color:var(--text);outline:none';
+    const selStyle='width:100%;padding:5px 7px;border-radius:8px;border:1px solid var(--border);font-family:inherit;font-size:12px;color:var(--text);outline:none';
     extra=`<div class="qa-field"><label>Pup</label><select id="qaPup" style="${selStyle}"><option value="Both">Both</option><option value="Mochi">Mochi only</option><option value="Sunny">Sunny only</option></select></div>
     <div class="qa-field"><label>Level</label><select id="qaLevel" style="${selStyle}"><option value="">—</option><option value="Easy">Easy</option><option value="Medium">Medium</option><option value="Hard">Hard</option></select></div>
     <div class="qa-field"><label>Stage</label><select id="qaStage" style="${selStyle}"><option value="Not Started">Not Started</option><option value="In Progress">In Progress</option><option value="Mastered">Mastered</option></select></div>`;
   } else if(ctx==='shop'){
     title='Add Item';
     const _shopStores=[...new Set(['Online','HEB',...st.shopping.map(x=>x.store).filter(Boolean)])].filter(x=>x!=='Other');
-    const _sStyle='width:100%;padding:5px 7px;border-radius:8px;border:1px solid var(--border);font-family:inherit;font-size:12px;background:rgba(255,255,255,.8);color:var(--text);outline:none';
+    const _sStyle='width:100%;padding:5px 7px;border-radius:8px;border:1px solid var(--border);font-family:inherit;font-size:12px;color:var(--text);outline:none';
     extra=`<div class="qa-field"><label>Store</label><select id="qaStore" style="${_sStyle}" onchange="if(this.value==='__custom'){this.style.display='none';const ci=document.getElementById('qaStoreCustom');ci.style.display='';ci.focus();}">${_shopStores.map(s=>`<option value="${escHtml(s)}">${escHtml(s)}</option>`).join('')}<option value="__custom">Custom…</option></select><input id="qaStoreCustom" placeholder="Type store name…" style="${_sStyle};display:none" onkeydown="if(event.key==='Enter')event.stopPropagation()"></div>`;
   } else if(ctx==='rec'){
     title='Add Recurring Task';extra='';
@@ -42,9 +42,9 @@ function openQA(ctx,btn,ds='',kcat=''){
     const def=(ctx==='kanban'||ctx==='wkc')&&kcat?kcat:'Home';
     const defaultDate=ctx==='today'?d2s(getDayDate(dayOff)):(ds||'');
     extra=`<div class="qa-field"><label>Category</label>${catSelHTML('qaCat',def)}</div>
-    <div class="qa-field"><label>Due date <span style="opacity:.45">(optional)</span></label><input id="qaDue" type="date" value="${defaultDate}" style="width:100%;padding:5px 7px;border-radius:8px;border:1px solid var(--border);font-family:inherit;font-size:12px;background:rgba(255,255,255,.8);color:var(--text);outline:none" onkeydown="if(event.key==='Tab'&&!event.shiftKey){event.preventDefault();document.getElementById('qaImp').focus();}"></div>
+    <div class="qa-field"><label>Due date <span style="opacity:.45">(optional)</span></label><input id="qaDue" type="date" value="${defaultDate}" style="width:100%;padding:5px 7px;border-radius:8px;border:1px solid var(--border);font-family:inherit;font-size:12px;color:var(--text);outline:none" onkeydown="if(event.key==='Tab'&&!event.shiftKey){event.preventDefault();document.getElementById('qaImp').focus();}"></div>
     <div class="qa-imp-row"><input type="checkbox" id="qaImp" style="width:13px;height:13px;cursor:pointer;accent-color:#eab308" onkeydown="if(event.key==='Tab'&&!event.shiftKey){event.preventDefault();document.getElementById('qaNotes').focus();}"><label for="qaImp">⭐ Important</label></div>
-    <div class="qa-field" style="margin-top:6px"><label>Notes <span style="opacity:.45;font-weight:400">(optional)</span></label><textarea id="qaNotes" placeholder="Add notes…" style="resize:vertical;min-height:44px;width:100%;font-family:inherit;font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,.6);color:var(--text);outline:none;box-sizing:border-box"></textarea></div>`;
+    <div class="qa-field" style="margin-top:6px"><label>Notes <span style="opacity:.45;font-weight:400">(optional)</span></label><textarea id="qaNotes" placeholder="Add notes…" style="resize:vertical;min-height:44px;width:100%;font-family:inherit;font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);color:var(--text);outline:none;box-sizing:border-box"></textarea></div>`;
   }
   document.getElementById('qaTitle').textContent=title;
   document.getElementById('qaExtra').innerHTML=extra;
