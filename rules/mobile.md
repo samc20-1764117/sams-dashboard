@@ -496,7 +496,8 @@ Real sub-page (not a sheet/popup — a popup was tried first and its backdrop co
 ## Deployment
 - Dev: `https://dev.sams-dashboard.pages.dev/mobile.html`
 - Production: follow `rules/deploy.md`
-- iOS PWA caching: the service worker handles cache busting. If user still sees stale content, the service worker may not have installed yet — needs one Safari tab refresh to bootstrap.
+- iOS PWA caching: the service worker handles cache busting. If user still sees stale content, the service worker may not have installed yet — needs a FULL close (swipe away in the app switcher, not just backgrounding) + reopen on wifi, occasionally twice.
+- **Before assuming a "still not working" report means the code is wrong**: verify what's actually deployed first — `git show origin/dev:mobile-overview.js \| grep <the new code>` (and `mobile.html` for the `_BUILD` string) — rather than re-diffing/re-editing code that may already be correct and just stuck behind device-side caching or a build-target mismatch (dev vs production, see below).
 
 ---
 
