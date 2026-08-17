@@ -362,6 +362,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 /* Fixed top-down layout (not centered) so the day number sits in the same spot
    whether or not that day has a badge below it. */
 .m-mo-day{padding:6px 1px 8px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:500;color:var(--text);position:relative;z-index:1;min-height:42px;display:flex;flex-direction:column;align-items:center;gap:0}
+/* Blank placeholder cell for the days that belong to the OTHER partial row when a
+   week is split at a month boundary — keeps both partial rows as real 7-column grids
+   so they still line up under the day-of-week header. */
+.m-mo-day-empty{cursor:default;pointer-events:none}
 .m-mo-day:active{background:rgba(124,106,247,.1)}
 .m-mo-badge-slot{height:6px;width:100%;display:flex;align-items:center;justify-content:center;margin-top:2px}
 .m-mo-day.selected{background:rgba(124,106,247,.12);outline:2px solid var(--accent);outline-offset:-2px}

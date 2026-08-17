@@ -2759,7 +2759,11 @@ function mMonthJumpToOffset(monthOffset) {
     while (targetWeekOff > _mMoRenderedHi) { _mMoRenderedHi++; wrap.insertAdjacentHTML('beforeend', _mMoWeekRowHtml(_mMoRenderedHi, false)); }
   }
   requestAnimationFrame(() => {
-    const row = document.querySelector(`.m-mo-week[data-wk="${targetWeekOff}"]`);
+    // Target the specific date's cell, not "the row for this weekOff" — a week that
+    // spans a month boundary now renders as two partial rows (see _mMoWeekRowHtml), so
+    // looking up by weekOff alone could land on the wrong one (the tail of the prior month).
+    const targetEl = document.querySelector(`.m-mo-day[data-ds="${targetDs}"]`);
+    const row = targetEl && targetEl.closest('.m-mo-week');
     const scroller = document.getElementById('mMonthScroll');
     // Direct scrollTop math instead of scrollIntoView — see _mMoScrollToMonthStart for why.
     if (row && scroller) scroller.scrollTop += row.getBoundingClientRect().top - scroller.getBoundingClientRect().top;
@@ -2875,35 +2879,51 @@ function _mMonthDayBadge(tasks) {
   return `<div class="m-mo-bar">${segs}</div>`;
 }
 
-// One week's row of 7 day cells, plus a bold month-name divider whenever the week
-// contains the 1st of a month (or forceLabel, used for the very first rendered row so
-// there's always a label visible right away). Each day's badge is built from
+// One week's row(s) of day cells. When the Mon-Sun week crosses a month boundary, the
+// row SPLITS into two partial rows at exactly that boundary (like iOS Calendar's
+// continuous list) — the outgoing month's tail days on one line, a month-name divider,
+// then the incoming month's days starting fresh on the next line. Both partial rows
+// stay full 7-column grids (blank cells for the days that belong to the other row) so
+// they still line up under the M/T/W/T/F/S/S header. Each day's badge is built from
 // mGetDayTasks — the exact same source the tap-to-detail panel uses.
 function _mMoWeekRowHtml(weekOff, forceLabel) {
   const dates = getWkDates(weekOff);
   const today = d2s(getDayDate(0));
-  const monthStart = dates.find(d => d.getDate() === 1);
-  let divider = '';
-  if (monthStart) {
-    divider = `<div class="m-mo-month-divider">${monthStart.toLocaleDateString('en-US', {month: 'long', year: 'numeric'})}</div>`;
-  } else if (forceLabel) {
-    divider = `<div class="m-mo-month-divider">${dates[0].toLocaleDateString('en-US', {month: 'long', year: 'numeric'})}</div>`;
+  let splitIdx = -1;
+  for (let i = 1; i < 7; i++) {
+    if (dates[i].getMonth() !== dates[0].getMonth()) { splitIdx = i; break; }
   }
-  const cells = dates.map(d => {
+  const cellHtml = d => {
     const ds = d2s(d);
     const isToday = ds === today;
     const badge = _mMonthDayBadge(mGetDayTasks(ds, weekOff));
     // Badge always sits in its own fixed-height slot (even when empty) so the day
     // number never shifts depending on whether that day has a badge or not.
     return `<div class="m-mo-day${isToday ? ' is-today' : ''}${_mMonthSelectedDs === ds ? ' selected' : ''}" data-ds="${ds}" onclick="mMonthSelectDay('${ds}')"><span class="m-mo-num">${d.getDate()}</span><div class="m-mo-badge-slot">${badge}</div></div>`;
-  }).join('');
-  return `${divider}<div class="m-mo-week" data-wk="${weekOff}" data-mon="${d2s(dates[0])}">${cells}${_mMoTravelBarsHtml(dates)}</div>`;
+  };
+  const blankCell = () => '<div class="m-mo-day m-mo-day-empty"></div>';
+  const monthLabel = d => `<div class="m-mo-month-divider">${d.toLocaleDateString('en-US', {month: 'long', year: 'numeric'})}</div>`;
+
+  if (splitIdx === -1) {
+    const divider = (dates[0].getDate() === 1 || forceLabel) ? monthLabel(dates[0]) : '';
+    const cells = dates.map(cellHtml).join('');
+    return `${divider}<div class="m-mo-week" data-wk="${weekOff}" data-mon="${d2s(dates[0])}">${cells}${_mMoTravelBarsHtml(dates, 0, 6)}</div>`;
+  }
+  let html = (dates[0].getDate() === 1 || forceLabel) ? monthLabel(dates[0]) : '';
+  const firstCells = dates.slice(0, splitIdx).map(cellHtml).join('') + Array(7 - splitIdx).fill(0).map(blankCell).join('');
+  html += `<div class="m-mo-week" data-wk="${weekOff}" data-mon="${d2s(dates[0])}">${firstCells}${_mMoTravelBarsHtml(dates, 0, splitIdx - 1)}</div>`;
+  html += monthLabel(dates[splitIdx]);
+  const secondCells = Array(splitIdx).fill(0).map(blankCell).join('') + dates.slice(splitIdx).map(cellHtml).join('');
+  html += `<div class="m-mo-week" data-wk="${weekOff}" data-mon="${d2s(dates[splitIdx])}">${secondCells}${_mMoTravelBarsHtml(dates, splitIdx, 6)}</div>`;
+  return html;
 }
 
-// A continuous colored bar spanning each trip's date range within this week row,
-// like iOS Calendar's multi-day all-day event bars — clipped to whichever days of
-// the trip fall inside this particular week.
-function _mMoTravelBarsHtml(dates) {
+// A continuous colored bar spanning each trip's date range within this week row, like
+// iOS Calendar's multi-day all-day event bars. colStart/colEnd (0-6, inclusive) clip
+// rendering to one partial row's column range when the week is split across a month
+// boundary — the same 7-column percentage math applies to both partial rows since each
+// is still a full 7-column grid (see _mMoWeekRowHtml).
+function _mMoTravelBarsHtml(dates, colStart, colEnd) {
   const wkStart = d2s(dates[0]), wkEnd = d2s(dates[6]);
   const trips = (st.travel || []).filter(tv => {
     const s = tv.start_date ? tv.start_date.split('T')[0] : null;
@@ -2913,17 +2933,23 @@ function _mMoTravelBarsHtml(dates) {
   });
   if (!trips.length) return '';
   const ts = gc('travel');
-  return trips.map((tv, i) => {
+  return trips.map(tv => {
     const s = tv.start_date.split('T')[0];
     const e = tv.end_date ? tv.end_date.split('T')[0] : s;
     const startsHere = s >= wkStart, endsHere = e <= wkEnd;
     const startIdx = startsHere ? dates.findIndex(d => d2s(d) === s) : 0;
     const endIdx = endsHere ? dates.findIndex(d => d2s(d) === e) : 6;
-    const left = (Math.max(0, startIdx) / 7 * 100).toFixed(4);
-    const width = ((Math.max(0, endIdx) - Math.max(0, startIdx) + 1) / 7 * 100).toFixed(4);
-    // Rounded only at the trip's true start/end — square where it continues into the
-    // next/previous week row, so a multi-week trip reads as one continuous pill.
-    const radius = `${startsHere ? '5px' : '0'} ${endsHere ? '5px' : '0'} ${endsHere ? '5px' : '0'} ${startsHere ? '5px' : '0'}`;
+    if (endIdx < colStart || startIdx > colEnd) return ''; // no overlap with this segment
+    const segStart = Math.max(startIdx, colStart);
+    const segEnd = Math.min(endIdx, colEnd);
+    // Rounded only at the trip's true start/end (and only when that end actually falls
+    // in THIS segment) — square everywhere else, so it reads as one continuous pill
+    // across week rows AND across a month-boundary split.
+    const roundLeft = startsHere && segStart === startIdx;
+    const roundRight = endsHere && segEnd === endIdx;
+    const left = (segStart / 7 * 100).toFixed(4);
+    const width = ((segEnd - segStart + 1) / 7 * 100).toFixed(4);
+    const radius = `${roundLeft ? '5px' : '0'} ${roundRight ? '5px' : '0'} ${roundRight ? '5px' : '0'} ${roundLeft ? '5px' : '0'}`;
     // Inset a couple px so two different trips landing on adjacent days (side by side
     // in the same week) show a visible gap instead of touching edge-to-edge. Safe to
     // do unconditionally — it only affects a trip's own outer edges, never the day

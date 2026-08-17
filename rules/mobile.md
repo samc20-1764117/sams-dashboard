@@ -426,7 +426,8 @@ Continuous scroll of weeks across multiple months (like iOS Calendar's list view
   #mYearView       ← 12-month grid picker, hidden unless year view is open
   #mMonthDayHdr    ← M T W T F S S (Monday-start, matching the rest of the app — NOT Sunday-start like iOS)
   #mMonthScroll    ← the scrolling region (see height sync below)
-    #mMonthWeeks   ← one .m-mo-week grid row per week, month-name divider before the first row of each month
+    #mMonthWeeks   ← one .m-mo-week grid row per week — TWO partial rows when a week
+                      crosses a month boundary (see below), month-name divider before each
   #mMonthDetail    ← tap-a-day detail list, elevated card, pinned below the scroll region
 ```
 
@@ -457,8 +458,12 @@ Continuous scroll of weeks across multiple months (like iOS Calendar's list view
 - Single category present → `.m-mo-dot`; 2+ → segmented `.m-mo-bar`, ordered by `Object.keys(CATS)` order with `_overdue`/`_important` pulled to the front (rank -2/-1).
 - `.m-mo-num` has a FIXED box size (21×21) applied to EVERY day, not just `.is-today` — the circle background/color is conditional but the box dimensions never change. An earlier version only fixed the size on `.is-today`, so today's cell had a taller number box than its neighbors, throwing off row alignment (the badge slot below it sat lower than the same row's other days).
 
+### Month-boundary row split (like iOS Calendar's continuous list)
+`_mMoWeekRowHtml(weekOff, forceLabel)` — when a Mon-Sun week crosses into a new month (detected by scanning `dates[1..6]` for a `getMonth()` change), the row SPLITS into two partial `.m-mo-week` rows at exactly that boundary: outgoing month's tail days on one line, a `.m-mo-month-divider` label, then the incoming month's days starting fresh on the next line. Both partial rows stay real 7-column grids — the days that belong to the OTHER partial row render as blank `.m-mo-day-empty` placeholders (no `data-ds`, `pointer-events:none`) so both rows still line up under the `#mMonthDayHdr` M/T/W/T/F/S/S header. This is what makes it "obvious what belongs to each month" (the ask that drove this — a single row silently containing days from two different months wasn't clear enough). Both partial rows carry the same `data-wk="${weekOff}"` (harmless — nothing looks up "the one row for weekOff X" any more, see below) but each gets its OWN accurate `data-mon` (used by `_mUpdateMonthTitle`).
+- **Lookups now target the date, not the row**: `mMonthJumpToOffset`/`_mMoScrollToMonthStart` find the target day via `.m-mo-day[data-ds="..."]` then `.closest('.m-mo-week')` — looking up by `data-wk` alone would risk landing on the WRONG partial row (the tail of the prior month) when the target week is split.
+
 ### Travel bar (multi-day, like iOS Calendar's all-day event bars)
-`_mMoTravelBarsHtml(dates)` — per week row, one `.m-mo-travel-bar` per overlapping trip. Full-height (`top:2px;bottom:2px`), `opacity:.18`, `z-index:0` (`.m-mo-day` is `z-index:1` so day numbers/dots always render on top, never behind the bar). Left/width computed as column-index percentages, inset `±2px`/`∓4px` so two different trips landing on adjacent days show a visible gap instead of touching edge-to-edge (safe — only affects a trip's own outer edges, never day boundaries within one trip's own bar). Rounded corners (`5px`) only at the trip's TRUE start/end (`startsHere`/`endsHere` checked against that week's Mon/Sun) — square where a multi-week trip continues into the next/previous row, so it reads as one continuous pill.
+`_mMoTravelBarsHtml(dates, colStart, colEnd)` — per rendered row, one `.m-mo-travel-bar` per overlapping trip. `colStart`/`colEnd` (0-6 inclusive) clip a trip's bar to one partial row's column range when its week is split at a month boundary — same 7-column percentage math applies to both partial rows since each is still a full 7-column grid. Full-height (`top:2px;bottom:2px`), `opacity:.18`, `z-index:0` (`.m-mo-day` is `z-index:1` so day numbers/dots always render on top, never behind the bar). Left/width computed as column-index percentages, inset `±2px`/`∓4px` so two different trips landing on adjacent days show a visible gap instead of touching edge-to-edge (safe — only affects a trip's own outer edges, never day boundaries within one trip's own bar). Rounded corners (`5px`) only at the trip's TRUE start/end AND only when that end falls within the current segment — square everywhere else, so a trip spanning multiple weeks (or a month-boundary split) still reads as one continuous pill.
 
 ---
 
