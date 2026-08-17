@@ -73,7 +73,12 @@ body.dark .ainput,body.dark .asel{background:rgba(255,255,255,.05);color:var(--t
 body.dark .kol{background:rgba(255,255,255,.02);}
 body.dark .kol-item{background:rgba(255,255,255,.03);}
 body.dark .kol-item:hover{background:rgba(255,255,255,.06);}
-body.dark #ctxMenu,body.dark #pupCtxMenu,body.dark #bdayCtxMenu,body.dark #wrRuleCtxMenu,body.dark #wrScopePicker,body.dark #wrSkippedPicker{background:rgba(20,20,24,.98);}
+#ctxMenu,#pupCtxMenu,#bdayCtxMenu,#wrRuleCtxMenu,#wrScopePicker,#wrSkippedPicker,#vidCtxMenu{background:rgba(255,255,255,.98);}
+body.dark #ctxMenu,body.dark #pupCtxMenu,body.dark #bdayCtxMenu,body.dark #wrRuleCtxMenu,body.dark #wrScopePicker,body.dark #wrSkippedPicker,body.dark #vidCtxMenu{background:rgba(20,20,24,.98);}
+#pupTooltip{background:rgba(255,255,255,.97);color:#2d2040;}
+body.dark #pupTooltip{background:rgba(20,20,24,.97);color:var(--text);}
+#bdayPresentPopup{background:rgba(255,255,255,.97);}
+body.dark #bdayPresentPopup{background:rgba(20,20,24,.97);}
 body.dark .ctx-item:hover{background:rgba(255,255,255,.06);}
 body.dark .ctx-col-box{--ctx-col-bg:rgba(255,255,255,.04);--ctx-col-border:rgba(255,255,255,.08)}
 body.dark .wkc-chip{filter:brightness(.85);}
@@ -741,7 +746,7 @@ body.scenic-theme:not(.dark) .ov-topbar-time{color:rgba(255,255,255,.88);backgro
 .mt{font-size:14px;font-weight:700;letter-spacing:-.3px;margin-bottom:11px}
 .mfield{margin-bottom:8px}
 .mfield label{display:block;font-size:9px;font-weight:700;color:var(--muted);margin-bottom:2px;text-transform:uppercase;letter-spacing:.07em}
-.mfield input,.mfield select{width:100%;padding:6px 8px;border-radius:var(--rs);border:1px solid var(--border);font-family:inherit;font-size:12px;background:rgba(255,255,255,.8);color:var(--text);outline:none;font-weight:500}
+.mfield input,.mfield select,.mfield textarea{width:100%;padding:6px 8px;border-radius:var(--rs);border:1px solid var(--border);font-family:inherit;font-size:12px;background:rgba(255,255,255,.8);color:var(--text);outline:none;font-weight:500}
 .mfield input:focus,.mfield select:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(109,95,230,.1)}
 .mimp-row{display:flex;align-items:center;gap:6px;padding:5px 0 2px}
 .mimp-row label{font-size:11px;font-weight:500;color:var(--text);cursor:pointer}

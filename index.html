@@ -33,8 +33,8 @@ if(sessionStorage._mReloaded===BUILD);else{
   <div style="background:var(--glass);backdrop-filter:blur(20px);border:1px solid var(--border);border-radius:var(--r);padding:36px 40px;width:320px;box-shadow:var(--shadow-lg);display:flex;flex-direction:column;gap:18px">
     <div style="font-size:17px;font-weight:700;color:var(--text);text-align:center">Sam's Dashboard</div>
     <div style="display:flex;flex-direction:column;gap:10px">
-      <input id="loginEmail" type="email" placeholder="Email" autocomplete="email" style="padding:9px 12px;border-radius:var(--rs);border:1px solid var(--border);background:rgba(255,255,255,.6);font-size:13px;font-family:inherit;color:var(--text);outline:none" onkeydown="if(event.key==='Enter')document.getElementById('loginPass').focus()">
-      <input id="loginPass" type="password" placeholder="Password" autocomplete="current-password" style="padding:9px 12px;border-radius:var(--rs);border:1px solid var(--border);background:rgba(255,255,255,.6);font-size:13px;font-family:inherit;color:var(--text);outline:none" onkeydown="if(event.key==='Enter')doLogin()">
+      <input id="loginEmail" type="email" placeholder="Email" autocomplete="email" style="padding:9px 12px;border-radius:var(--rs);border:1px solid var(--border);font-size:13px;font-family:inherit;color:var(--text);outline:none" onkeydown="if(event.key==='Enter')document.getElementById('loginPass').focus()">
+      <input id="loginPass" type="password" placeholder="Password" autocomplete="current-password" style="padding:9px 12px;border-radius:var(--rs);border:1px solid var(--border);font-size:13px;font-family:inherit;color:var(--text);outline:none" onkeydown="if(event.key==='Enter')doLogin()">
     </div>
     <button onclick="doLogin()" style="padding:9px;border-radius:var(--rs);border:none;background:var(--accent);color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">Sign in</button>
     <div id="loginErr" style="display:none;font-size:12px;color:#ef4444;text-align:center"></div>
@@ -406,7 +406,7 @@ if(sessionStorage._mReloaded===BUILD);else{
     <div id="bdayPageContent" style="flex:1;width:100%;min-height:0;overflow:hidden;padding:0"></div>
   </div>
   <div id="bdayAddMenu" class="bday-add-menu" style="display:none"></div>
-  <div id="bdayPresentPopup" style="display:none;position:fixed;z-index:9998;background:rgba(255,255,255,.97);border:1px solid rgba(210,205,228,.35);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.13);padding:10px 12px 10px;min-width:200px;max-width:280px;backdrop-filter:blur(10px)"></div>
+  <div id="bdayPresentPopup" style="display:none;position:fixed;z-index:9998;border:1px solid rgba(210,205,228,.35);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.13);padding:10px 12px 10px;min-width:200px;max-width:280px;backdrop-filter:blur(10px)"></div>
   <div id="bdayList" style="display:none"></div>
 </div>
 <div class="page" id="page-holidays" style="padding:60px clamp(12px,3vw,56px) 24px clamp(12px,3vw,56px)">
@@ -466,9 +466,9 @@ if(sessionStorage._mReloaded===BUILD);else{
     <div class="mfield"><label id="tDueLbl">Due date <span style="opacity:.45;font-weight:400">(optional)</span></label><div style="display:flex;gap:4px;align-items:center"><input id="tDue" type="date" style="flex:1" onkeydown="if(event.key==='Tab'&&!event.shiftKey){event.preventDefault();document.getElementById('tImp').focus();}"><button type="button" tabindex="-1" class="btn btn-ghost btn-xs" onclick="document.getElementById(&#39;tDue&#39;).value=&#39;&#39;" title="Clear date" style="flex-shrink:0;padding:4px 7px;font-size:11px">✕ Clear</button></div></div>
     <div class="mfield" id="tEndField" style="display:none"><label>End date <span style="opacity:.45;font-weight:400">(optional — blank = single day)</span></label><div style="display:flex;gap:4px;align-items:center"><input id="tEnd" type="date" style="flex:1"><button type="button" tabindex="-1" class="btn btn-ghost btn-xs" onclick="document.getElementById('tEnd').value=''" title="Clear date" style="flex-shrink:0;padding:4px 7px;font-size:11px">✕ Clear</button></div></div>
     <div class="mfield" id="tModeField" style="display:none"><label>Travel mode</label><select id="tTravelMode"><option value="">None</option><option value="plane">✈️ Plane</option><option value="drive">🚗 Drive</option></select></div>
-    <div class="mfield" id="tTimeField"><label>Time block <span style="opacity:.45;font-weight:400">(optional)</span></label><div style="display:flex;gap:6px;align-items:center"><input id="tTime" type="time" tabindex="-1" style="flex:1;padding:5px 7px;border-radius:8px;border:1px solid var(--border);font-family:inherit;font-size:12px;background:rgba(255,255,255,.8);color:var(--text);outline:none"><span style="color:var(--muted)">to</span><input id="tTimeEnd" type="time" tabindex="-1" style="flex:1;padding:5px 7px;border-radius:8px;border:1px solid var(--border);font-family:inherit;font-size:12px;background:rgba(255,255,255,.8);color:var(--text);outline:none"><button type="button" tabindex="-1" class="btn btn-ghost btn-xs" onclick="document.getElementById('tTime').value='';document.getElementById('tTimeEnd').value=''" title="Clear time" style="flex-shrink:0;padding:4px 7px;font-size:11px">✕</button></div></div>
+    <div class="mfield" id="tTimeField"><label>Time block <span style="opacity:.45;font-weight:400">(optional)</span></label><div style="display:flex;gap:6px;align-items:center"><input id="tTime" type="time" tabindex="-1" style="flex:1;padding:5px 7px;border-radius:8px;border:1px solid var(--border);font-family:inherit;font-size:12px;color:var(--text);outline:none"><span style="color:var(--muted)">to</span><input id="tTimeEnd" type="time" tabindex="-1" style="flex:1;padding:5px 7px;border-radius:8px;border:1px solid var(--border);font-family:inherit;font-size:12px;color:var(--text);outline:none"><button type="button" tabindex="-1" class="btn btn-ghost btn-xs" onclick="document.getElementById('tTime').value='';document.getElementById('tTimeEnd').value=''" title="Clear time" style="flex-shrink:0;padding:4px 7px;font-size:11px">✕</button></div></div>
     <div class="mimp-row" id="tImpRow"><input type="checkbox" id="tImp" style="width:14px;height:14px;cursor:pointer;accent-color:#eab308" onkeydown="if(event.key==='Tab'&&!event.shiftKey){event.preventDefault();document.getElementById('tNotes').focus();}"><label for="tImp">⭐ Mark as important</label></div>
-    <div class="mfield"><label>Notes <span style="opacity:.45;font-weight:400">(optional)</span></label><textarea id="tNotes" placeholder="Add notes…" style="resize:none;min-height:52px;max-height:160px;width:100%;font-family:inherit;font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,.6);color:var(--text);outline:none;overflow-y:hidden" oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,160)+'px';this.style.overflowY=this.scrollHeight>=160?'auto':'hidden'"></textarea></div>
+    <div class="mfield"><label>Notes <span style="opacity:.45;font-weight:400">(optional)</span></label><textarea id="tNotes" placeholder="Add notes…" style="resize:none;min-height:52px;max-height:160px;width:100%;font-family:inherit;font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);color:var(--text);outline:none;overflow-y:hidden" oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,160)+'px';this.style.overflowY=this.scrollHeight>=160?'auto':'hidden'"></textarea></div>
     <div class="mact"><button class="btn btn-ghost" onclick="closeMod(&#39;tModal&#39;)">Cancel</button><button class="btn btn-dark" id="tSaveBtn" onclick="saveTModal()">Add</button></div>
   </div>
 </div>
@@ -590,7 +590,7 @@ if(sessionStorage._mReloaded===BUILD);else{
       </div>
     </div>
 
-    <div class="mfield"><label>Notes <span style="opacity:.45;font-weight:400">(optional)</span></label><textarea id="recNotes" placeholder="Add notes…" style="resize:vertical;min-height:52px;width:100%;font-family:inherit;font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,.6);color:var(--text);outline:none"></textarea></div>
+    <div class="mfield"><label>Notes <span style="opacity:.45;font-weight:400">(optional)</span></label><textarea id="recNotes" placeholder="Add notes…" style="resize:vertical;min-height:52px;width:100%;font-family:inherit;font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);color:var(--text);outline:none"></textarea></div>
     <div class="mact">
       <button class="btn btn-ghost" onclick="closeMod(&#39;recModal&#39;)">Cancel</button>
       <button class="btn btn-dark" onclick="saveRecModal()">Add</button>
@@ -652,7 +652,7 @@ if(sessionStorage._mReloaded===BUILD);else{
   <div class="modal task-modal">
     <div class="mt">Edit Item</div>
     <div class="mfield"><label>Item name *</label><input id="shopEditName" placeholder="Item name" onkeydown="if(event.key===&#39;Enter&#39;)saveShopEdit()"></div>
-    <div class="mfield"><label>Store</label><select id="shopEditStore" style="width:100%;padding:5px 7px;border-radius:8px;border:1px solid var(--border);font-family:inherit;font-size:12px;background:rgba(255,255,255,.8);color:var(--text);outline:none" onchange="if(this.value==='__custom'){this.style.display='none';var ci=document.getElementById('shopEditStoreCustom');ci.style.display='';ci.focus();}"></select><input id="shopEditStoreCustom" placeholder="Type store name…" style="width:100%;padding:5px 7px;border-radius:8px;border:1px solid var(--border);font-family:inherit;font-size:12px;background:rgba(255,255,255,.8);color:var(--text);outline:none;display:none" onkeydown="if(event.key==='Enter')saveShopEdit()"></div>
+    <div class="mfield"><label>Store</label><select id="shopEditStore" style="width:100%;padding:5px 7px;border-radius:8px;border:1px solid var(--border);font-family:inherit;font-size:12px;color:var(--text);outline:none" onchange="if(this.value==='__custom'){this.style.display='none';var ci=document.getElementById('shopEditStoreCustom');ci.style.display='';ci.focus();}"></select><input id="shopEditStoreCustom" placeholder="Type store name…" style="width:100%;padding:5px 7px;border-radius:8px;border:1px solid var(--border);font-family:inherit;font-size:12px;color:var(--text);outline:none;display:none" onkeydown="if(event.key==='Enter')saveShopEdit()"></div>
     <div class="mact"><button class="btn btn-ghost" onclick="closeMod(&#39;shopEditModal&#39;)">Cancel</button><button class="btn btn-dark" onclick="saveShopEdit()">Save</button></div>
   </div>
 </div>
@@ -668,7 +668,7 @@ if(sessionStorage._mReloaded===BUILD);else{
     <div id="recEditPanelThis" style="display:none">
       <div class="mfield"><label>Name <span style="opacity:.45;font-weight:400">(this week only)</span></label><input id="recEditNameThis" placeholder="Custom name for this week"></div>
       <div class="mfield"><label>Date <span style="opacity:.45;font-weight:400">(this occurrence only)</span></label><input type="date" id="recEditDateThis" onkeydown="if(event.key==='Tab'&&!event.shiftKey){event.preventDefault();document.getElementById('recEditNotesThis').focus();}"></div>
-      <div class="mfield"><label>Notes <span style="opacity:.45;font-weight:400">(optional)</span></label><textarea id="recEditNotesThis" placeholder="Notes for this week only…" style="resize:vertical;min-height:52px;width:100%;font-family:inherit;font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,.6);color:var(--text);outline:none"></textarea></div>
+      <div class="mfield"><label>Notes <span style="opacity:.45;font-weight:400">(optional)</span></label><textarea id="recEditNotesThis" placeholder="Notes for this week only…" style="resize:vertical;min-height:52px;width:100%;font-family:inherit;font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);color:var(--text);outline:none"></textarea></div>
     </div>
     <div id="recEditPanelAll">
     <div class="mfield"><label>Task name *</label><input id="recEditName" placeholder="Task name"></div>
@@ -725,14 +725,14 @@ if(sessionStorage._mReloaded===BUILD);else{
     </div>
     <div class="mfield" id="recEditDurField" style="display:none">
       <label>Default timeblock duration</label>
-      <select id="recEditDur" style="width:100%;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,.6);font-size:12px">
+      <select id="recEditDur" style="width:100%;padding:5px 8px;border-radius:6px;border:1px solid var(--border);font-size:12px">
         <option value="30">30 min</option>
         <option value="60">1 hour</option>
         <option value="90">1.5 hours</option>
         <option value="120">2 hours</option>
       </select>
     </div>
-    <div class="mfield"><label>Notes <span style="opacity:.45;font-weight:400">(optional)</span></label><textarea id="recEditNotes" placeholder="Add notes…" style="resize:vertical;min-height:52px;width:100%;font-family:inherit;font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,.6);color:var(--text);outline:none"></textarea></div>
+    <div class="mfield"><label>Notes <span style="opacity:.45;font-weight:400">(optional)</span></label><textarea id="recEditNotes" placeholder="Add notes…" style="resize:vertical;min-height:52px;width:100%;font-family:inherit;font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);color:var(--text);outline:none"></textarea></div>
     </div>
     <div class="mact"><button class="btn btn-ghost" onclick="closeMod(&#39;recEditModal&#39;)">Cancel</button><button class="btn btn-dark" onclick="saveRecEdit()">Save</button></div>
   </div>
@@ -758,7 +758,7 @@ if(sessionStorage._mReloaded===BUILD);else{
   <button class="qa-close" onclick="closeDailyHabitPopup()">✕</button>
   <div class="qa-title">Add Daily Habit</div>
   <div class="qa-field"><label>Name *</label><input id="dhName" placeholder="e.g. Brush teeth…"></div>
-  <div class="qa-field"><label>Notes <span style="opacity:.45;font-weight:400">(optional)</span></label><textarea id="dhNotes" placeholder="Add notes…" style="resize:vertical;min-height:44px;width:100%;font-family:inherit;font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,.6);color:var(--text);outline:none;box-sizing:border-box"></textarea></div>
+  <div class="qa-field"><label>Notes <span style="opacity:.45;font-weight:400">(optional)</span></label><textarea id="dhNotes" placeholder="Add notes…" style="resize:vertical;min-height:44px;width:100%;font-family:inherit;font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);color:var(--text);outline:none;box-sizing:border-box"></textarea></div>
   <div class="qa-hint">↵ Enter to add · Esc to close</div>
 </div>
 
@@ -900,20 +900,20 @@ if(sessionStorage._mReloaded===BUILD);else{
   </div>
 </div>
 
-<div id="vidCtxMenu" style="display:none;position:fixed;z-index:9999;background:rgba(255,255,255,.98);border:1px solid rgba(210,205,228,.4);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);padding:4px;min-width:155px;backdrop-filter:blur(12px)">
+<div id="vidCtxMenu" style="display:none;position:fixed;z-index:9999;border:1px solid rgba(210,205,228,.4);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);padding:4px;min-width:155px;backdrop-filter:blur(12px)">
   <div class="ctx-item" onclick="vidCtxEdit()">✏️  Edit video</div>
   <div class="ctx-item" onclick="vidCtxDuplicate()">⧉  Duplicate video</div>
   <div class="ctx-divider"></div>
   <div class="ctx-item ctx-danger" onclick="vidCtxDelete()">✕  Delete video</div>
 </div>
 
-<div id="pupCtxMenu" style="display:none;position:fixed;z-index:9999;background:rgba(255,255,255,.98);border:1px solid rgba(210,205,228,.4);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);padding:4px;min-width:155px;backdrop-filter:blur(12px)">
+<div id="pupCtxMenu" style="display:none;position:fixed;z-index:9999;border:1px solid rgba(210,205,228,.4);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);padding:4px;min-width:155px;backdrop-filter:blur(12px)">
   <div class="ctx-item" onclick="pupCtxEdit()">✏️  Edit skill</div>
   <div class="ctx-item" onclick="pupCtxDuplicate()">⧉  Duplicate skill</div>
   <div class="ctx-divider"></div>
   <div class="ctx-item ctx-danger" onclick="pupCtxDelete()">✕  Delete skill</div>
 </div>
-<div id="recCtxMenu" style="display:none;position:fixed;z-index:9999;background:rgba(255,255,255,.98);border:1px solid rgba(210,205,228,.4);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);padding:4px;min-width:155px;backdrop-filter:blur(12px)">
+<div id="recCtxMenu" style="display:none;position:fixed;z-index:9999;border:1px solid rgba(210,205,228,.4);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);padding:4px;min-width:155px;backdrop-filter:blur(12px)">
   <div id="recCtxViewItem" class="ctx-item" onclick="recCtxView()">👁  View details</div>
   <div id="recCtxEditItem" class="ctx-item" onclick="recCtxEdit()">✏️  Edit recipe</div>
   <div id="recCtxFavItem" class="ctx-item" onclick="recCtxToggleFav()">♥  Toggle favorite</div>
@@ -921,29 +921,29 @@ if(sessionStorage._mReloaded===BUILD);else{
   <div class="ctx-divider"></div>
   <div class="ctx-item ctx-danger" onclick="recCtxDelete()">✕  Delete recipe</div>
 </div>
-<div id="bdayCtxMenu" style="display:none;position:fixed;z-index:9999;background:rgba(255,255,255,.98);border:1px solid rgba(210,205,228,.4);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);padding:4px;min-width:155px;backdrop-filter:blur(12px)">
+<div id="bdayCtxMenu" style="display:none;position:fixed;z-index:9999;border:1px solid rgba(210,205,228,.4);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);padding:4px;min-width:155px;backdrop-filter:blur(12px)">
   <div id="bdayCtxEditItem" class="ctx-item" onclick="bdayCtxEdit()">✏️  Edit birthday</div>
   <div class="ctx-item" onclick="bdayCtxDuplicate()">⧉  Duplicate</div>
   <div class="ctx-divider"></div>
   <div class="ctx-item ctx-danger" onclick="bdayCtxDelete()">✕  Delete</div>
 </div>
-<div id="pupTooltip" style="position:fixed;z-index:9998;background:rgba(255,255,255,.97);color:#2d2040;border-radius:9px;padding:8px 12px;font-size:11px;pointer-events:none;display:none;max-width:250px;white-space:normal;line-height:1.5;box-shadow:0 4px 18px rgba(0,0,0,.13);border:1px solid rgba(210,205,228,.6)"></div>
-<div id="ctxMenu" style="display:none;position:fixed;z-index:9999;background:rgba(255,255,255,.98);border:1px solid rgba(210,205,228,.4);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);padding:4px;min-width:155px;backdrop-filter:blur(12px)">
+<div id="pupTooltip" style="position:fixed;z-index:9998;border-radius:9px;padding:8px 12px;font-size:11px;pointer-events:none;display:none;max-width:250px;white-space:normal;line-height:1.5;box-shadow:0 4px 18px rgba(0,0,0,.13);border:1px solid rgba(210,205,228,.6)"></div>
+<div id="ctxMenu" style="display:none;position:fixed;z-index:9999;border:1px solid rgba(210,205,228,.4);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);padding:4px;min-width:155px;backdrop-filter:blur(12px)">
   <div id="ctxDuplicate" class="ctx-item" onclick="ctxDoDuplicate()">⧉  Duplicate task</div>
   <div id="ctxEdit" class="ctx-item" onclick="ctxDoEdit()">✏️  Edit task</div>
   <div class="ctx-divider"></div>
   <div id="ctxDelete" class="ctx-item ctx-danger" onclick="ctxDoDelete()">✕  Delete task</div>
 </div>
 <!-- WR skipped-this-week popup -->
-<div id="wrSkippedPicker" style="display:none;position:fixed;z-index:10001;background:rgba(255,255,255,.98);border:1px solid rgba(210,205,228,.4);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);padding:4px;min-width:180px;max-height:260px;overflow-y:auto;backdrop-filter:blur(12px)"></div>
+<div id="wrSkippedPicker" style="display:none;position:fixed;z-index:10001;border:1px solid rgba(210,205,228,.4);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);padding:4px;min-width:180px;max-height:260px;overflow-y:auto;backdrop-filter:blur(12px)"></div>
 <!-- WR scope picker — shared for X (skip/delete) and dblclick (edit) -->
-<div id="wrScopePicker" style="display:none;position:fixed;z-index:10000;background:rgba(255,255,255,.98);border:1px solid rgba(210,205,228,.4);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);padding:4px;min-width:170px;backdrop-filter:blur(12px)">
+<div id="wrScopePicker" style="display:none;position:fixed;z-index:10000;border:1px solid rgba(210,205,228,.4);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);padding:4px;min-width:170px;backdrop-filter:blur(12px)">
   <div id="wrScopeRemove" class="ctx-item" onclick="wrScopeDoRemove()" style="display:none"></div>
   <div id="wrScopeThis" class="ctx-item" onclick="wrScopeDoThis()"></div>
   <div id="wrScopeAll" class="ctx-item" onclick="wrScopeDoAll()"></div>
 </div>
 <!-- WR Rule context menu (populated dynamically based on cadence) -->
-<div id="wrRuleCtxMenu" style="display:none;position:fixed;z-index:9999;background:rgba(255,255,255,.98);border:1px solid rgba(210,205,228,.4);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);padding:4px;min-width:220px;backdrop-filter:blur(12px)"></div>
+<div id="wrRuleCtxMenu" style="display:none;position:fixed;z-index:9999;border:1px solid rgba(210,205,228,.4);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);padding:4px;min-width:220px;backdrop-filter:blur(12px)"></div>
 <!-- Unified edit WR recurring task modal -->
 <div id="wrEditModal" class="overlay" onclick="closeMod('wrEditModal',event)" onkeydown="if(event.key==='Enter'&&!['SELECT','TEXTAREA'].includes(event.target.tagName)){event.preventDefault();event.stopPropagation();saveWrEditModal();}if(event.key==='Escape'){event.stopPropagation();closeMod('wrEditModal');}">
   <div class="modal task-modal" style="width:350px">
@@ -954,7 +954,7 @@ if(sessionStorage._mReloaded===BUILD);else{
     </div>
     <div id="wrEditPanelThis">
       <div class="mfield"><label>Name <span style="opacity:.45;font-weight:400">(this week only)</span></label><input id="wrMOccName" placeholder="Custom name for this week"></div>
-      <div class="mfield"><label>Notes <span style="opacity:.45;font-weight:400">(optional)</span></label><textarea id="wrMOccNotes" placeholder="Notes for this week only…" style="resize:vertical;min-height:52px;width:100%;font-family:inherit;font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,.6);color:var(--text);outline:none"></textarea></div>
+      <div class="mfield"><label>Notes <span style="opacity:.45;font-weight:400">(optional)</span></label><textarea id="wrMOccNotes" placeholder="Notes for this week only…" style="resize:vertical;min-height:52px;width:100%;font-family:inherit;font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);color:var(--text);outline:none"></textarea></div>
       <div style="margin-bottom:6px"><button type="button" class="btn btn-ghost" onclick="wrEditSkipThisWeek()" style="color:#e05;font-size:12px">⊘ Skip this week</button></div>
     </div>
     <div id="wrEditPanelAll" style="display:none">
@@ -975,7 +975,7 @@ if(sessionStorage._mReloaded===BUILD);else{
         <label>Starting date</label>
         <div style="display:flex;gap:4px;align-items:center"><input id="wrEditAnchor" type="date" style="flex:1" onkeydown="if(event.key==='Tab'&&!event.shiftKey){event.preventDefault();document.getElementById('wrEditNotes').focus();}"><button type="button" tabindex="-1" class="btn btn-ghost btn-xs" onclick="document.getElementById('wrEditAnchor').value=''" style="flex-shrink:0;padding:4px 7px;font-size:11px">✕</button></div>
       </div>
-      <div class="mfield"><label>Notes <span style="opacity:.45;font-weight:400">(optional)</span></label><textarea id="wrEditNotes" placeholder="Add notes…" style="resize:vertical;min-height:52px;width:100%;font-family:inherit;font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,.6);color:var(--text);outline:none"></textarea></div>
+      <div class="mfield"><label>Notes <span style="opacity:.45;font-weight:400">(optional)</span></label><textarea id="wrEditNotes" placeholder="Add notes…" style="resize:vertical;min-height:52px;width:100%;font-family:inherit;font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);color:var(--text);outline:none"></textarea></div>
     </div>
     <div class="mact"><button class="btn btn-ghost" onclick="closeMod('wrEditModal')">Cancel</button><button id="wrEditSaveBtn" class="btn btn-dark" onclick="saveWrEditModal()">Save</button></div>
   </div>
@@ -1022,7 +1022,7 @@ if(sessionStorage._mReloaded===BUILD);else{
       <label>Default timeblock time <span style="opacity:.45;font-weight:400">(optional)</span></label>
       <div style="display:flex;gap:6px;align-items:center"><input id="wrAddStartTime" type="time" tabindex="-1" style="flex:1"> <span style="color:var(--muted)">to</span> <input id="wrAddEndTime" type="time" tabindex="-1" style="flex:1"><button type="button" tabindex="-1" class="btn btn-ghost btn-xs" onclick="document.getElementById('wrAddStartTime').value='';document.getElementById('wrAddEndTime').value=''" style="flex-shrink:0;padding:4px 7px;font-size:11px">✕</button></div>
     </div>
-    <div class="mfield"><label>Notes <span style="opacity:.45;font-weight:400">(optional)</span></label><textarea id="wrAddNotes" placeholder="Add notes…" style="resize:vertical;min-height:52px;width:100%;font-family:inherit;font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,.6);color:var(--text);outline:none"></textarea></div>
+    <div class="mfield"><label>Notes <span style="opacity:.45;font-weight:400">(optional)</span></label><textarea id="wrAddNotes" placeholder="Add notes…" style="resize:vertical;min-height:52px;width:100%;font-family:inherit;font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);color:var(--text);outline:none"></textarea></div>
     <div class="mact"><button class="btn btn-ghost" onclick="closeMod('wrRuleAddModal')">Cancel</button><button class="btn btn-dark" onclick="saveWrRuleAdd()">Add</button></div>
   </div>
 </div>
