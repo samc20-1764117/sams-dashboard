@@ -2690,6 +2690,15 @@ let _mMoRenderedHi = 6;
 let _mMoScrollLock = false;
 let _mMoTitleRaf = false;
 
+// Header "Today" button: on Month, jump the calendar back to today's default scroll
+// position instead of navigating away — you're already looking at a calendar, leaving
+// it to open the Today list would be a non-sequitur. Every other tab still navigates
+// to the Today tab as expected.
+function mGoToday() {
+  if (_mCurTab === 'month') mOpenMonth();
+  else mShowTab('today');
+}
+
 function mOpenMonth() {
   _mMonthSelectedDs = d2s(getDayDate(0));
   _mRenderMonthWeeks(true);

@@ -13,7 +13,7 @@
 ### File roles
 | File | Purpose |
 |------|---------|
-| `mobile.html` | Shell: login, app wrapper, all four tab pages, all bottom sheets, hidden undo scaffold |
+| `mobile.html` | Shell: login, app wrapper, all tab pages, all bottom sheets, hidden undo scaffold |
 | `mobile.css` | All mobile styles. CSS vars match desktop (`--accent:#7c6af7`, `--bg`, `--glass`, etc.) |
 | `mobile-overview.js` | All mobile logic. Loaded after `core.js` + `features.js`. Sets `window._mobileMode = true` |
 | `mobile-manifest.json` | PWA manifest with `start_url: /mobile.html` (separate from desktop `manifest.json`) |
@@ -30,7 +30,15 @@ Script tags use cache-busting `?v=YYYYMMDD` query params. Update the version str
 ### Desktop stubs (top of mobile-overview.js)
 All desktop render functions are no-ops or redirect to mobile equivalents:
 ```js
-function renderAll()   { mRenderToday(); if (_mCurTab==='tb') mRenderTB(); if (_mCurTab==='week') mRenderWeek(); if (_mCurTab==='shop') mRenderShop(); if (_mCurTab==='groc') mRenderGroc(); }
+function renderAll() {
+  mRenderToday();
+  if (_mCurTab === 'tb') mRenderTB();
+  if (_mCurTab === 'week') mRenderWeek();
+  if (_mCurTab === 'month') _mRenderMonthWeeks(false);   // reset=false: preserve scroll position
+  if (_mCurTab === 'shop') mRenderShop();
+  if (document.getElementById('mMealsSheet')?.classList.contains('open')) mRenderMeals();
+  if (document.getElementById('mFullListSheet')?.classList.contains('open')) mRenderFullList();
+}
 function renderToday() { mRenderToday(); }
 function renderShopOv(){ if (_mCurTab==='shop') mRenderShop(); }
 function renderShopFull(){ if (_mCurTab==='shop') mRenderShop(); }
@@ -140,41 +148,57 @@ let _mFullAddCat  = 'Home';  // full add sheet (today)
 
 ### State
 ```js
-let _mCurTab = 'today'; // 'today' | 'tb' | 'week' | 'shop' | 'groc'. Persisted to localStorage._mLastTab; init restores it (refresh keeps current tab).
+let _mCurTab = 'today'; // 'today' | 'week' | 'month' | 'shop' | 'extras' | 'tb' | 'recipes'
 ```
+Persisted to `localStorage._mLastTab`; init restores it (refresh keeps current tab) — validated against `['today','tb','week','month','shop','extras','recipes']`.
+
+`tb` and `recipes` are real pages but have **no bottom-nav slot** — `tb` opens only via the Timeblock header button (Today tab) or the Timeblock button on the More page; `recipes` opens only via the Recipes button on the More page. Nav active-highlight logic (index 0-4) doesn't light up any button for either.
 
 ### `mShowTab(tab)`
-- Shows/hides `#mTodayPage`, `#mTBPage`, `#mWeekPage`, `#mShopPage`
-- Shows `#mAddBar` on today only, `#mShopAddBar` on shop only
-- Sets `#mApp` padding-bottom:
-  - today/shop: `calc(162px + env(safe-area-inset-bottom))` (nav 52 + add bar ~110)
-  - tb/week: `calc(52px + env(safe-area-inset-bottom))` (nav only)
-- Updates `#mHeaderTitle`, hides `#mProgress` on non-today tabs
-- Sets `#mMain` padding: `12px 16px` on today/shop, `0` on others
-- On tb: resets `_mTBOffset=0`, calls `mRenderTB()`, `_mScrollNow()`
-- On week: resets `_mWeekOffset=0`, calls `mRenderWeek()`
-- On shop: calls `mRenderShop()`
+- Shows/hides one of `#mTodayPage`, `#mTBPage`, `#mWeekPage`, `#mMonthPage`, `#mShopPage`, `#mExtrasPage`, `#mRecipesPage`
+- Shows `#mAddBar` on today only, `#mShopAddBar` on shop only — both `position:fixed` (see Today/Shop sections; NOT normal flex flow — that regressed to a page-load position jump once)
+- `#mApp` padding-bottom is always just `calc(52px + env(safe-area-inset-bottom))` (nav clearance) — the fixed add bars reserve their own clearance via `bottom:calc(52px+safe)` and don't need it duplicated
+- `mSyncBarClearance(barId, listId)`: measures the *actual* rendered height of the currently-visible add bar and sets that as the matching list's `padding-bottom`, rather than a guessed px value — called for today/shop after render
+- Updates `#mHeaderTitle`. `#mProgress` only shown on today. `#mTodayTBBtn` only shown on today. `#mGoTodayBtn` shown on every tab EXCEPT today (see Header below)
+- `#mDateLbl` (date subtitle) is **always visible**, same header height on every tab (`visibility`, not `display`, so hiding it never changes layout) — Today/Timeblock show the swiped-day date; every other tab always shows today's real date
+- `main.style.padding`: `12px 16px` on today/shop/recipes, `0` on tb/week/month/extras (pages that manage their own internal layout/scroll)
+- `main.style.overflow`: `hidden` on week/tb/month (they own their internal scroll region), default `auto` elsewhere
+- Dispatch: `tb`→`mRenderTB()`+`_mScrollNow()`, `week`→`mRenderWeek(true)`+`mInitWeekScroll()`, `month`→`mOpenMonth()`, `shop`→`mRenderShop()`, `recipes`→`_mRenderRecipesBrowse()`, `today`→resets `_mTodayOffset`+`_mSetDate()`
+
+### Header (shared across all tabs)
+```html
+#mHeader
+  h1#mHeaderTitle + #mDateLbl        ← title/date, left
+  #mTodayTBBtn (today only)          ← Timeblock icon button
+  #mProgress (today only)            ← done/total badge, yellow until 100% then green (.m-prog-complete)
+  #mShopHeaderBtns (shop only)       ← 🍽 Meals icon + red "HEB" List badge
+  #mGoTodayBtn (all tabs but today)  ← jumps to Today tab; on month tab, calls mGoToday() which
+                                        instead re-runs mOpenMonth() to reset the calendar's scroll
+                                        back to today rather than navigating away
+  .m-reload-btn                      ← always last, far right
+```
 
 ### Bottom nav
 ```html
 <nav id="mNav">
   <button class="m-nav-btn" onclick="mShowTab('today')">Today</button>
-  <button class="m-nav-btn active" onclick="mShowTab('tb')">Timeblock</button>
   <button class="m-nav-btn" onclick="mShowTab('week')">Week</button>
+  <button class="m-nav-btn" onclick="mShowTab('month')">Month</button>
   <button class="m-nav-btn" onclick="mShowTab('shop')">Shop</button>
+  <button class="m-nav-btn" onclick="mShowTab('extras')">More</button>
 </nav>
 ```
-Fixed at bottom, `height: calc(52px + env(safe-area-inset-bottom))`.
+Fixed at bottom, `height: calc(52px + env(safe-area-inset-bottom))`, icons vertically centered (`justify-content:center` on `.m-nav-btn`).
 
 ---
 
-## Tab 1: Today
+## Today
 
 ### Key functions
 - `mGetTodayTasks()` — mirrors desktop `renderToday()` logic exactly. Returns sorted array of all task types for today (regular, recurring virtual, WR recurring, WR rules, shopping, pup sessions, travel/birthday extras). Overdue tasks included.
 - `mSortToday(tasks)` — done→bottom, overdue→top, type priority order
-- `mRenderToday()` — renders `#mTodayList` + updates `#mProgress`
-- `mTaskRow(t)` — generates row HTML with: checkbox, name, color dot, edit pencil (regular tasks only), swipe wrapper with `data-tid`
+- `mRenderToday()` — renders `#mTodayList` + updates `#mProgress` (text + `.m-prog-complete` class: yellow while `done<total`, green when `done===total && total>0`, matching desktop's donut green)
+- `mTaskRow(t)` — generates row HTML with: checkbox, name, color dot, edit pencil (regular tasks only), swipe wrapper with `data-tid`. Color priority: overdue (`OV`) > important (`IMP`, `t.important && !t.done`) > category (`gc(catKey)`) — no "not on timeblock" arrow indicator (removed, was `.m-row-arrow`/`▸`, considered visual noise)
 
 ### Task row types
 - Regular task: checkbox → `toggleTask()`, pencil → `mOpenEdit(id)`
@@ -184,6 +208,9 @@ Fixed at bottom, `height: calc(52px + env(safe-area-inset-bottom))`.
 - Shopping: checkbox → `togShop(shopId, checked)`
 - Pup session: checkbox → `togPupSessionDone(sessId, checked)`
 - Travel/birthday: no checkbox (📅 icon), no swipe
+
+### Move-to-Today (`.m-mv-today` button, overdue rows only)
+`_mMoveToTodayArgs(t)` picks `[id, type, extra]` per task type; `mMoveToToday(id, type, extra)` dispatches. Covers ALL overdue-capable types (parity with desktop's bulk `rolloverOverdue()`, just scoped to one row): `task`, `shop`, `pup` (`pup_skill_sessions.day_date`), `vid` (`_mVidDayMap`/`_mVidDayMapSet`), `vidstep` (`extra` = `step::day`; moves any block on that day + the daymap primary/extraDay entry via `_mVidStepMap`/`_mVidStepMapSet`), `rec`/`wrec` (`st.recurring`, `extra`=wkKey, PATCH `wr_recurring_rules`), `wrrule` (`st.wrRules`, `extra`=wkKey). Every branch is undoable via `pushUndo`. **`_mVidDayMapSet`/`_mVidStepMap`/`_mVidStepMapSet` are mobile's own localStorage-direct implementations** — the desktop equivalents (`_vidDayMapSet`, `_vidStepDayMap`, `_vidStepDayMapSet`) live in `overview.js`, which mobile never loads.
 
 ### Swipe-to-delete
 - Event delegation on `#mTodayList` (persists through innerHTML replacement)
@@ -204,9 +231,10 @@ Fixed at bottom, `height: calc(52px + env(safe-area-inset-bottom))`.
 
 ### Full add sheet (`#mFullAddSheet`)
 - Opened by "+" button in Today section header
-- Fields: name, due_date, category picker (`'fulladd'`), important toggle (`_mFullAddImportant`)
-- `mOpenFullAdd()` / `mCloseFullAdd()` / `mSaveFullAdd()`
+- Fields: name, due_date, then ONE row with category picker (`'fulladd'`) + important flag button (`.m-flag-btn`/`#mFullAddImpBtn`, same ⚑ icon treatment as the bottom add bar's `#mAddFlagBtn` — NOT the old separate on/off text toggle)
+- `mOpenFullAdd()` / `mCloseFullAdd()` / `mSaveFullAdd()` / `mToggleFullAddImp()`
 - Pre-fills due_date to today
+- `#mFullAddDue` (and `#mEditDue`, `#mShopEditDue`) need `-webkit-appearance:none;appearance:none;max-width:100%` — iOS Safari's native date-input chrome otherwise ignores the author width and can render past the sheet's edge
 
 ### Edit task sheet (`#mEditSheet`)
 - `mOpenEdit(id)` / `mCloseEdit()` / `mSaveEditTask()` / `mDeleteEditTask()`
@@ -217,7 +245,7 @@ Fixed at bottom, `height: calc(52px + env(safe-area-inset-bottom))`.
 
 ---
 
-## Tab 2: Timeblock
+## Timeblock (not in bottom nav — opened from Today's header button or the More page)
 
 ### Constants
 ```js
@@ -283,7 +311,7 @@ let _mTBOffset   = 0;        // day offset (0=today, ±N days)
 
 ---
 
-## Tab 3: Weekly View
+## Week
 
 ### Constants
 ```js
@@ -342,14 +370,14 @@ Each `.m-wk-day` has `data-ds="YYYY-MM-DD"` and contains:
 
 ---
 
-## Tab 4: Shopping
+## Shop (HEB Grocery merged in — no separate tab any more)
 
 ### Layout
 ```
 #mShopPage
-  .m-shop-header    ← count label ("Shopping (X left)" / "Shopping ✓ All done!")
-  #mShopList        ← store groups with items
+  #mShopList        ← store groups with items (no header/count line — removed)
 ```
+Header (shared `#mHeader`, shop tab only): `#mShopHeaderBtns` = 🍽 Meals icon + red "HEB" List badge (`.m-shop-hdr-heb`, NOT a circle icon — literal red badge, white bold text, since it's the one store name that should stay all-caps). Store group headers (`.m-shop-store-hd`) are NOT force-uppercased (removed `text-transform:uppercase` — "Ikea"/"Online"/"Other" show in their natural stored casing; "HEB" stays caps because that's its literal stored name).
 
 ### Key functions
 - `mRenderShop()` — groups undone `st.shopping` items by store (alpha sorted), items within store sorted by `shop_order`
@@ -358,7 +386,7 @@ Each `.m-wk-day` has `data-ds="YYYY-MM-DD"` and contains:
 - `mDeleteShopDirect(id)` — X button inline delete
 
 ### Shop add bar (`#mShopAddBar`)
-- Fixed above nav (same position as `#mAddBar`), visible only on shop tab
+- `position:fixed`, same treatment as `#mAddBar` (elevated white/`--bg-elevated` card, shadow, no accent-colored border — visible without leaning on an accent color). **Must stay `position:fixed`** — a normal-flex-flow version was tried and regressed to rendering halfway up the page on cold load before jumping to the bottom once `#mMain`'s height resolved. List clearance is measured via `mSyncBarClearance`, not guessed.
 - Name input + store `<select>` (HEB/Ikea/Online/Other) + Add button
 
 ### Shop edit sheet (`#mShopEditSheet`)
@@ -376,36 +404,70 @@ Each `.m-wk-day` has `data-ds="YYYY-MM-DD"` and contains:
 - `renderShopOv()` / `renderShopFull()` → call `mRenderShop()` when on shop tab
 - `tiDblShop(e, id)` → `mOpenShopEdit(id)` (works from Today/Week tabs too)
 
+### Meals sheet (`#mMealsSheet`) — 🍽 header button
+- `mOpenMeals()` / `mCloseMeals()` / `mRenderMeals()` — this week's planned meals (`_mealsForWeek()`), remove via `mRemoveMealAndGroceries(recipeId)`
+- "+ Add a meal" opens the Recipe picker sheet (`mOpenRecipes()`/`#mRecipeSheet`) stacked on top (z-index 102/103, above the Meals sheet's 100/101) — tap a recipe → `mAddRecipeToMealPlan(id)` → `addRecipeToMealPlan`/`_grocAddRecipe` (features.js) → `mRenderMeals()` refresh
+
+### Full List sheet (`#mFullListSheet`) — red HEB header button
+- `mOpenFullList()` / `mCloseFullList()` / `mRenderFullList()` — the "I'm in the store, what do I need" checklist: merges `st.groceryList` items for next week (Weekly Staples → recipe groups → Other → Done, same grouping as before) **plus** undone `st.shopping` items where `store==='HEB'` (a "Shopping List" group) — previously these were two disconnected views; this is the fix for that split
+- `mToggleFullListHeb(id, checked)` wraps `togShop()` + re-render (checking off an HEB item here must also update the plain Shop list)
+- Inline add row at the bottom → `mAddGrocItem()` (targets `#mFullListNewName`)
+
 ---
 
-## Tab 5: HEB Grocery (`groc`)
+## Month
+
+Continuous scroll of weeks across multiple months (like iOS Calendar's list view), NOT a traditional single-month grid. Full bottom-nav tab (`#mMonthPage`), not a modal.
 
 ### Layout
 ```
-#mGrocPage
-  .m-shop-header.m-groc-hdr  ← header: 📖 Recipes button | "HEB Grocery" | ✕ Close
-  #mGrocList                  ← two sections: Meals (this week) + Shopping List (next week)
+#mMonthPage
+  #mMonthNav       ← ‹ "August 2026 ▾" › — title is a button, tap → mToggleYearView()
+  #mYearView       ← 12-month grid picker, hidden unless year view is open
+  #mMonthDayHdr    ← M T W T F S S (Monday-start, matching the rest of the app — NOT Sunday-start like iOS)
+  #mMonthScroll    ← the scrolling region (see height sync below)
+    #mMonthWeeks   ← one .m-mo-week grid row per week, month-name divider before the first row of each month
+  #mMonthDetail    ← tap-a-day detail list, elevated card, pinned below the scroll region
 ```
 
-### Two-section design
-- **Meals section** (this week): `_grocWeekMonday(0)` — shows planned meals via `_mealsForWeek()`
-- **Shopping List section** (next week): `_grocWeekMonday(1)` — grocery items from `st.groceryList` where `week_of === nextWkMon`
-- Sections visually separated by `border-top: 2px solid var(--border)` on next-week header
-- Each section header shows date range via `_mGrocDateRange(mon)`
+### Explicit height sync (`_mSyncMonthScrollHeight`) — CRITICAL
+`#mMonthScroll` does NOT rely on the `flex:1`/`min-height:0` chain alone to stay bounded — that was tried first and failed on-device (content taller than the screen, whole page trying to grow instead of the calendar scrolling internally, which also fed wrong reference points into the ‹/› month-jump logic). Instead: `window.innerHeight - header.getBoundingClientRect().bottom - navHeight - dayHdrHeight - detailHeight - 12`, computed from real viewport measurements, applied as `scroller.style.height` (with `flex:'none'` to stop it fighting with the CSS `flex:1` fallback). Called: on `mOpenMonth()` (next rAF), on `window resize` (guarded to `_mCurTab==='month'`), and after every `mMonthSelectDay()` (detail panel's height varies with its task count up to its own `max-height:26vh` cap).
 
-### Key functions
-- `mRenderGroc()` — renders both sections into `#mGrocList`
-- `mTogGroc(id, checked)` — toggle grocery item checked state
-- `mDelGroc(id)` — delete grocery item
-- `mRemoveMealAndGroceries(recipeId)` — remove meal + associated grocery items
-- `mOpenRecipes()` / `mCloseRecipes()` — recipe picker bottom sheet (`#mRecipeSheet` + `#mRecipeBackdrop`)
+### Scroll-to-position — use scrollTop math, NOT `scrollIntoView()`
+`_mMoScrollToToday()` and `mMonthJumpToOffset()` compute `row.getBoundingClientRect().top - scroller.getBoundingClientRect().top` and add it to `scroller.scrollTop` directly. `scrollIntoView()` was tried first and can walk up and scroll ANY scrollable ancestor it finds along the way (e.g. the document), which visibly shifted the sticky header relative to content. Direct `scrollTop` math only ever touches `#mMonthScroll` itself. Same reasoning applies to `_mWkScrollToToday` (Week tab) — already used manual math there.
 
-### Grocery list grouping
-Within shopping list section, items grouped by: Weekly Staples → recipe groups → Other → Done (collapsed)
+### Infinite scroll (mirrors Week tab's pattern)
+- `_mMoRenderedLo`/`_mMoRenderedHi` — week offsets currently rendered (default −6..6 on open)
+- `mInitMonthScroll()` — scroll listener, rAF-throttled (batches title update + load-more threshold checks into one tick — was previously running on every raw scroll event, which is real layout-thrashing jank on a real device)
+- `_mUpdateMonthTitle()` — tracks which month is docked at the top via **one `elementFromPoint()` hit-test**, NOT iterating every rendered row with `getBoundingClientRect()` (that was the layout-thrashing bug: 13+ rows × `getBoundingClientRect()` on every scroll frame)
+- `_mRenderMonthWeeks(reset)` — `reset=true` only on explicit tab-open/`mGoToday()`; background sync re-renders (`reset=false`, from `renderAll()`) preserve `scroller.scrollTop` so a 30s sync can't yank the view while browsing other months
+- `mMonthJump(dir)` / `mMonthJumpToOffset(monthOffset)` — ‹/› buttons; in year-view mode the same buttons page `_mYearOffset` instead (`mToggleYearView()`/`_mRenderYear()`/`mYearSelectMonth(mo,yr)`)
+
+### Header "Today" button behavior on Month
+`mGoToday()` (header button, see Tab System) checks `_mCurTab`: on month, re-runs `mOpenMonth()` (reset range + scroll back to today) instead of navigating to the Today tab — you're already looking at a calendar, leaving it would be a non-sequitur.
+
+### Per-day color breakdown (`_mMonthDayBadge`, `_mMonthDotStyle`, `_mMonthCatKey`)
+- Built from `mGetDayTasks(ds, weekOff)` — **the exact same call the tap-to-detail panel uses** (`_mRenderMonthDetail`). This is load-bearing: an earlier version used a separate, narrower data source for the badge and it silently missed WR recurring/WR rules/pup sessions/travel/birthday/video-step items, and disagreed with the detail panel. If badge/detail ever look like they disagree again, check whether the badge is on `mGetDayTasks` or something else first.
+- `_mMonthCatKey(t)` — category key, explicit branches for shop/vid/vidstep/birthday/holiday/travel/weekly_reset(WR)/recurring, falls back to `t.category`. Shared by badge AND detail panel — never duplicate this logic inline, always call it.
+- `_mMonthDotStyle(t)` — color priority: overdue (`OV`, requires `!t.done`) > important (`IMP`, requires `!t.done`) > category (`gc(_mMonthCatKey(t))`). **The badge's grouping key and its color must be derived from the exact same `isOverdue`/`isImportant` booleans per item** — an earlier version computed the grouping key with a check that didn't require `!t.done` while the color came from a separately-computed value that did, so a done task could land in the wrong bucket and the bucket's color became whichever task was processed last (looked like "random" mismatches). Fixed by computing both from one shared per-item calculation.
+- Travel is excluded from the badge (`t._type!=='travel'`) — it gets its own spanning bar (below) instead; counting it in both would be redundant.
+- Done tasks ARE included (plain category color, no overdue/important override — same convention as everywhere else) so a fully-completed day doesn't go blank.
+- Single category present → `.m-mo-dot`; 2+ → segmented `.m-mo-bar`, ordered by `Object.keys(CATS)` order with `_overdue`/`_important` pulled to the front (rank -2/-1).
+- `.m-mo-num` has a FIXED box size (21×21) applied to EVERY day, not just `.is-today` — the circle background/color is conditional but the box dimensions never change. An earlier version only fixed the size on `.is-today`, so today's cell had a taller number box than its neighbors, throwing off row alignment (the badge slot below it sat lower than the same row's other days).
+
+### Travel bar (multi-day, like iOS Calendar's all-day event bars)
+`_mMoTravelBarsHtml(dates)` — per week row, one `.m-mo-travel-bar` per overlapping trip. Full-height (`top:2px;bottom:2px`), `opacity:.18`, `z-index:0` (`.m-mo-day` is `z-index:1` so day numbers/dots always render on top, never behind the bar). Left/width computed as column-index percentages, inset `±2px`/`∓4px` so two different trips landing on adjacent days show a visible gap instead of touching edge-to-edge (safe — only affects a trip's own outer edges, never day boundaries within one trip's own bar). Rounded corners (`5px`) only at the trip's TRUE start/end (`startsHere`/`endsHere` checked against that week's Mon/Sun) — square where a multi-week trip continues into the next/previous row, so it reads as one continuous pill.
 
 ---
 
+## More (`extras` tab) + Recipes
 
+`#mExtrasPage` — mostly a placeholder for future task-type shortcuts (Travel, Birthdays, etc. — not built yet), but has two real buttons today (`.m-extras-btn`): **Timeblock** (`mShowTab('tb')`) and **Recipes** (`mShowTab('recipes')`).
+
+### Recipes page (`#mRecipesPage`)
+Real sub-page (not a sheet/popup — a popup was tried first and its backdrop covered the bottom nav, making it unclickable while open). `.m-back-btn` ("‹ More") returns via `mShowTab('extras')`. Read-only browse: `_mRenderRecipesBrowse()` lists `st.recipes` (name + ingredient count via `_parseIngredients()` from features.js), tap a row (`mToggleRecipeExpand(id)`) to expand/collapse its ingredient list + meta (`meal_type`/`time`/`servings`) inline. No meal-plan side effect — that's what the Meals sheet's recipe picker (`mOpenRecipes()`) is for.
+
+---
 
 - All `<input>` and `<textarea>` must have `font-size: 16px` minimum — otherwise iOS auto-zooms on focus
 - Use `env(safe-area-inset-bottom)` and `env(safe-area-inset-top)` for notch/home indicator padding
