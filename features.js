@@ -1905,6 +1905,7 @@ function _finDateFmt(d){if(!d)return'';const p=(d||'').split('-');if(p.length===
 function _finDateNice(d){if(!d)return'';const p=(d||'').split('-');if(p.length!==3)return d;const m=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return`${m[parseInt(p[1],10)-1]} ${parseInt(p[2],10)}, ${p[0]}`;}
 function _finSnap(){return{finance:JSON.parse(JSON.stringify(st.finance)),finSubs:JSON.parse(JSON.stringify(st.finSubs))};}
 function _finRestore(snap){st.finance=snap.finance;st.finSubs=snap.finSubs;renderFinancePage();}
+function _finSelAll(el){const r=document.createRange();r.selectNodeContents(el);const s=window.getSelection();s.removeAllRanges();s.addRange(r);}
 function _finFocusNew(id,field){setTimeout(()=>{const el=document.querySelector(`[data-fid="${id}"][data-field="${field}"]`);if(el){el.focus();const r=document.createRange();r.selectNodeContents(el);const s=window.getSelection();s.removeAllRanges();s.addRange(r);}},50);}
 
 function renderFinancePage(){
@@ -1980,7 +1981,7 @@ async function _finCommitNewAccount(row){
 function _finEditable(id,field,val,cls,round){
   const display=typeof val==='number'?(round?_finFmtRound(val):_finFmt(val)):escHtml(val||'');
   const raw=typeof val==='number'?(round?Math.round(val).toString():val.toFixed(2)):(val||'');
-  return`<span class="fin-edit ${cls||''}" contenteditable="true" data-fid="${id}" data-field="${field}" onfocus="if(this.dataset.field!=='name'){this.textContent='${raw}';}" onblur="_finEditField('${id}','${field}',this)" onkeydown="if(event.key==='Escape'){const _r=st.finance.find(r=>String(r.id)==='${id}');if(_r&&_r._unsaved){st.finance=st.finance.filter(r=>r.id!==_r.id);renderFinancePage();return;}}if(event.key==='Enter'){event.preventDefault();this.blur();}">${display}</span>`;
+  return`<span class="fin-edit ${cls||''}" contenteditable="true" data-fid="${id}" data-field="${field}" onfocus="if(this.dataset.field!=='name'){this.textContent='${raw}';_finSelAll(this);}" onblur="_finEditField('${id}','${field}',this)" onkeydown="if(event.key==='Escape'){const _r=st.finance.find(r=>String(r.id)==='${id}');if(_r&&_r._unsaved){st.finance=st.finance.filter(r=>r.id!==_r.id);renderFinancePage();return;}}if(event.key==='Enter'){event.preventDefault();this.blur();}">${display}</span>`;
 }
 
 // ── Left Top: Personal Finances (KPIs + donut + editable legend) ────────────
@@ -2159,7 +2160,7 @@ function _finRenderSubs(){
         </span>
       </td>
       <td style="text-align:center">${_finFreqSelect(sub.id,sub.frequency||'monthly')}</td>
-      <td style="text-align:right"><span class="fin-sub-plain fin-due-edit" contenteditable="true" data-fid="${sub.id}" data-field="due_day" onfocus="this.textContent='${dueRaw}';" onblur="_finSubEditDay('${sub.id}',this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}if(event.key==='Tab'){event.preventDefault();_finSubTabNext('${sub.id}','due_day');this.blur();}">${dueDisplay}</span></td>
+      <td style="text-align:right"><span class="fin-sub-plain fin-due-edit" contenteditable="true" data-fid="${sub.id}" data-field="due_day" onfocus="this.textContent='${dueRaw}';_finSelAll(this);" onblur="_finSubEditDay('${sub.id}',this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}if(event.key==='Tab'){event.preventDefault();_finSubTabNext('${sub.id}','due_day');this.blur();}">${dueDisplay}</span></td>
       <td class="fin-num">${_finSubEditable(sub.id,'amount',amt,'fin-sub-plain')}</td>
       <td class="fin-mo-adj">${_finFmt(moAdj)}</td>
       <td><button class="delbtn" onclick="delFinSub('${sub.id}')">&#x2715;</button></td>
@@ -2228,7 +2229,7 @@ function _finSubTabNext(fid,curField){
 function _finSubEditable(id,field,val,cls){
   const display=typeof val==='number'?_finFmt(val):escHtml(val||'');
   const raw=typeof val==='number'?val.toFixed(2):(val||'');
-  return`<span class="${cls||'fin-edit'}" contenteditable="true" data-fid="${id}" data-field="${field}" onfocus="if('${field}'!=='name'){this.textContent='${raw}';}" onblur="_finSubEditField('${id}','${field}',this)" onkeydown="if(event.key==='Escape'){const _r=st.finSubs.find(r=>String(r.id)==='${id}');if(_r&&_r._unsaved){st.finSubs=st.finSubs.filter(r=>r.id!==_r.id);renderFinancePage();return;}}if(event.key==='Enter'){event.preventDefault();this.blur();}if(event.key==='Tab'){event.preventDefault();_finSubTabNext('${id}','${field}');this.blur();}">${display}</span>`;
+  return`<span class="${cls||'fin-edit'}" contenteditable="true" data-fid="${id}" data-field="${field}" onfocus="if('${field}'!=='name'){this.textContent='${raw}';_finSelAll(this);}" onblur="_finSubEditField('${id}','${field}',this)" onkeydown="if(event.key==='Escape'){const _r=st.finSubs.find(r=>String(r.id)==='${id}');if(_r&&_r._unsaved){st.finSubs=st.finSubs.filter(r=>r.id!==_r.id);renderFinancePage();return;}}if(event.key==='Enter'){event.preventDefault();this.blur();}if(event.key==='Tab'){event.preventDefault();_finSubTabNext('${id}','${field}');this.blur();}">${display}</span>`;
 }
 
 async function _finSubEditField(id,field,el){
