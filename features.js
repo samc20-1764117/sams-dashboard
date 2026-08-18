@@ -1938,17 +1938,49 @@ async function _finEditField(id,field,el){
   const snap=_finSnap();
   const row=st.finance.find(r=>String(r.id)===String(id));if(!row)return;
   const val=field==='name'||field==='date'?el.textContent.trim():_finParseNum(el.textContent);
+  // Unsaved row: commit if name provided, cancel if clicking away
+  if(row._unsaved){
+    row[field]=val;
+    const name=field==='name'?val:(row.name||'').trim();
+    if(!name){
+      setTimeout(()=>{
+        const ae=document.activeElement;
+        if(ae?.dataset?.fid===String(id))return;
+        st.finance=st.finance.filter(r=>r.id!==row.id);renderFinancePage();
+      },50);
+      return;
+    }
+    if(field==='name'){_finCommitNewAccount(row);}
+    return;
+  }
   if(row[field]===val){renderFinancePage();return;}
   const old=row[field];row[field]=val;
   renderFinancePage();
   pushUndo(()=>{row[field]=old;renderFinancePage();if(!String(id).startsWith('l-'))sbReqNullable('PATCH','finance',{[field]:old},`?id=eq.${id}`);},'Edited '+field);
   if(!String(id).startsWith('l-'))await sbReqNullable('PATCH','finance',{[field]:val},`?id=eq.${id}`);
 }
+async function _finCommitNewAccount(row){
+  if(!row._unsaved)return;
+  delete row._unsaved;
+  const{id,_unsaved,...fields}=row;
+  pushUndo(()=>{st.finance=st.finance.filter(r=>r.id!==row.id);renderFinancePage();},'Added account');
+  const sv=await sbReq('POST','finance',fields);
+  if(sv&&sv[0]){
+    const i=st.finance.findIndex(x=>x.id===row.id);if(i<0)return;
+    const cur=st.finance[i];const realId=sv[0].id;
+    const ae=document.activeElement;
+    const editFid=ae?.dataset?.fid===String(row.id)?ae.dataset.field:null;
+    const editText=editFid?ae.textContent:'';
+    cur.id=realId;renderFinancePage();
+    if(editFid){const el=document.querySelector(`[data-fid="${realId}"][data-field="${editFid}"]`);if(el){el.textContent=editText;el.focus();const r=document.createRange();r.selectNodeContents(el);const s=window.getSelection();s.removeAllRanges();s.addRange(r);r.collapse(false);}}
+    const{id:_,...body}=cur;sbReqNullable('PATCH','finance',body,`?id=eq.${realId}`);
+  }
+}
 
 function _finEditable(id,field,val,cls,round){
   const display=typeof val==='number'?(round?_finFmtRound(val):_finFmt(val)):escHtml(val||'');
   const raw=typeof val==='number'?(round?Math.round(val).toString():val.toFixed(2)):(val||'');
-  return`<span class="fin-edit ${cls||''}" contenteditable="true" data-fid="${id}" data-field="${field}" onfocus="if(this.dataset.field!=='name'){this.textContent='${raw}';}" onblur="_finEditField('${id}','${field}',this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">${display}</span>`;
+  return`<span class="fin-edit ${cls||''}" contenteditable="true" data-fid="${id}" data-field="${field}" onfocus="if(this.dataset.field!=='name'){this.textContent='${raw}';}" onblur="_finEditField('${id}','${field}',this)" onkeydown="if(event.key==='Escape'){const _r=st.finance.find(r=>String(r.id)==='${id}');if(_r&&_r._unsaved){st.finance=st.finance.filter(r=>r.id!==_r.id);renderFinancePage();return;}}if(event.key==='Enter'){event.preventDefault();this.blur();}">${display}</span>`;
 }
 
 // ── Left Top: Personal Finances (KPIs + donut + editable legend) ────────────
@@ -2380,13 +2412,17 @@ async function unarchiveFinSub(id){
 
 // ── Finance account Add / Delete ─────────────────────────────────────────────
 async function addFinRow(type){
-  let fields={type};
-  if(type==='account')Object.assign(fields,{name:'New Account',amount:0});
-  else Object.assign(fields,{name:'VTI Purchase',date:tod(),amount:0});
+  if(type==='account'){
+    const row={id:'l-'+Date.now(),type,name:'',amount:0,sort_order:0,_unsaved:true};
+    st.finance.unshift(row);renderFinancePage();
+    _finFocusNew(row.id,'name');
+    return;
+  }
+  const fields={type,name:'VTI Purchase',date:tod(),amount:0};
   const row={id:'l-'+Date.now(),sort_order:0,...fields};
   st.finance.unshift(row);renderFinancePage();
-  _finFocusNew(row.id,type==='vti'?'amount':'name');
-  pushUndo(()=>{st.finance=st.finance.filter(r=>r.id!==row.id);renderFinancePage();},'Added '+(type==='vti'?'purchase':'account'));
+  _finFocusNew(row.id,'amount');
+  pushUndo(()=>{st.finance=st.finance.filter(r=>r.id!==row.id);renderFinancePage();},'Added purchase');
   const sv=await sbReq('POST','finance',{...fields,sort_order:row.sort_order});
   if(sv&&sv[0]){const i=st.finance.findIndex(x=>x.id===row.id);if(i>-1)st.finance[i]=sv[0];}
 }

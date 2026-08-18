@@ -364,8 +364,16 @@ async function syncAll(silent=false){
     if(mealPlanDb)st.mealPlan=mealPlanDb;
     if(packTplDb){const localTpl=st.packTemplates.filter(t=>String(t.id).startsWith('l-'));st.packTemplates=[...packTplDb,...localTpl.filter(l=>!packTplDb.find(d=>d.id===l.id))];}
     if(packItemDb){const localPI=st.packItems.filter(t=>String(t.id).startsWith('l-'));st.packItems=[...packItemDb,...localPI.filter(l=>!packItemDb.find(d=>d.id===l.id))];}
-    if(finDb)st.finance=finDb;
-    if(finSubDb)st.finSubs=finSubDb;
+    if(finDb){
+      const dbIds=new Set(finDb.map(r=>String(r.id)));
+      const localOnly=st.finance.filter(r=>String(r.id).startsWith('l-')&&!dbIds.has(String(r.id)));
+      st.finance=[...finDb,...localOnly];
+    }
+    if(finSubDb){
+      const dbIds=new Set(finSubDb.map(r=>String(r.id)));
+      const localOnly=st.finSubs.filter(r=>String(r.id).startsWith('l-')&&!dbIds.has(String(r.id)));
+      st.finSubs=[...finSubDb,...localOnly];
+    }
     // Fetch time_blocks separately so a failure doesn't break the whole sync
     const blocks=await _gv(sbReqSilent,'time_blocks','?order=day_date.asc,start_minutes.asc&select=*');
     // Fetch auto timeblocks
