@@ -647,21 +647,26 @@ function getRecurringWeekTasks(off=0){
         date=targetDate;
       }
     } else {
-      // weekly or biweekly — use appears_on_date day of week
+      // weekly, or biweekly/quarterly/biannual/annual — use appears_on_date day of week
       const dow=dayNameToIdx(r.appears_on_date);if(dow<0)return;
       date=getDateForDow(dow,off);if(!date)return;
-      if(r.starting_date){const sd=new Date(r.starting_date+'T00:00:00');if(date<sd)return;}
-      if(cadence==='biweekly'||cadence==='quarterly'||cadence==='biannual'||cadence==='annual'){
-        if(r.starting_date){
-          const interval=cadence==='quarterly'?13:cadence==='biannual'?26:cadence==='annual'?52:2;
-          const sd=new Date(r.starting_date+'T00:00:00');
-          const sdDow=(sd.getDay()+6)%7;
-          const sdMon=new Date(sd);sdMon.setDate(sd.getDate()-sdDow);sdMon.setHours(0,0,0,0);
-          const tgtMon=new Date(wkDates[0]);tgtMon.setHours(0,0,0,0);
-          const weekDiff=Math.round((tgtMon-sdMon)/(7*86400000));
-          // Allow if there's an explicit override for this week even if off-cycle
-          if((weekDiff<0||weekDiff%interval!==0)&&!(r._dateOverrides&&r._dateOverrides[wkKey]&&r._dateOverrides[wkKey]!=='__skip__'))return;
-        }
+      const isInterval=cadence==='biweekly'||cadence==='quarterly'||cadence==='biannual'||cadence==='annual';
+      // Plain weekly is bounded by the raw starting_date. Interval cadences are bounded by the
+      // week-aligned weekDiff<0 check below instead — comparing the raw occurrence date to
+      // starting_date here would wrongly exclude the anchor week whenever starting_date falls
+      // later in the week than the scheduled weekday (e.g. rule due Monday, starting_date set to
+      // a Tuesday in that same week — the anchor week gets skipped and the rule waits a full
+      // interval before it ever appears).
+      if(!isInterval&&r.starting_date){const sd=new Date(r.starting_date+'T00:00:00');if(date<sd)return;}
+      if(isInterval&&r.starting_date){
+        const interval=cadence==='quarterly'?13:cadence==='biannual'?26:cadence==='annual'?52:2;
+        const sd=new Date(r.starting_date+'T00:00:00');
+        const sdDow=(sd.getDay()+6)%7;
+        const sdMon=new Date(sd);sdMon.setDate(sd.getDate()-sdDow);sdMon.setHours(0,0,0,0);
+        const tgtMon=new Date(wkDates[0]);tgtMon.setHours(0,0,0,0);
+        const weekDiff=Math.round((tgtMon-sdMon)/(7*86400000));
+        // Allow if there's an explicit override for this week even if off-cycle
+        if((weekDiff<0||weekDiff%interval!==0)&&!(r._dateOverrides&&r._dateOverrides[wkKey]&&r._dateOverrides[wkKey]!=='__skip__'))return;
       }
     }
 
@@ -1366,6 +1371,9 @@ document.addEventListener('keydown',e=>{
   if(e.key==='b'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')){
     e.preventDefault();if(activePg==='birthdays')showPage('overview');else showPage('birthdays');
   }
+  if(e.key==='W'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')){
+    e.preventDefault();if(activePg==='weekly')showPage('overview');else showPage('weekly');
+  }
   // GG to close help overlay when open
   if(e.key==='g'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&document.getElementById('helpOverlay').classList.contains('open')){
     const now=Date.now();
@@ -1439,6 +1447,7 @@ function _showHelpOverlay(){
     ['F','Go to Finance'],
     ['H','Go to Holidays'],
     ['B','Go to Birthdays'],
+    ['W','Go to Weekly Reset / Recurring Tasks'],
     ['N','Quick Add task (to current day)'],
     ['R','Reload page'],
     ['S','Sync all data'],
@@ -1507,6 +1516,16 @@ function _showHelpOverlay(){
     ],
     holidays:[
       ['Click toggle','Enable / disable a holiday'],
+    ],
+    weekly:[
+      ['Click','Select row'],
+      ['Shift+Click','Multi-select range'],
+      ['Dblclick row','Edit recurring task / WR rule'],
+      ['Dblclick Due On / Starting cell','Inline edit'],
+      ['Right-click row','Context menu'],
+      ['Space','Toggle skip on selected WR rule(s)'],
+      ['Delete / ⌫','Delete selected rows'],
+      ['⌘C / ⌘V','Copy / paste rows'],
     ],
   };
   const pg=activePg||'overview';

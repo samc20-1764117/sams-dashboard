@@ -103,6 +103,7 @@ Supabase Auth (email+password), RLS on all tables. `init()`→`checkAuth()`→`d
 - `f`: finance page. Press again to return to overview.
 - `h`: holidays page. Press again to return to overview.
 - `b`: birthdays page. Press again to return to overview.
+- `W` (shift+w): Weekly Reset / Recurring Tasks page (`page-weekly`). Press again to return to overview. Case-sensitive — lowercase `w` is the held-chord modifier for `w+←/→` week-shift on overview, so this must stay uppercase to avoid collision.
 - `m`: toggle month view (`mModal`) on overview. Press again or Enter to close.
 - `i`: ideas page. Press again to return to overview.
 - `l`: style guide page. Press again to return to overview.

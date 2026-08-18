@@ -88,7 +88,7 @@ Mobile `_mTaskTypePri` and `mSortToday` mirror this exactly.
 - **Modal outside-click drag fix**: `_modMousedownInside` flag prevents `closeMod` if mousedown was inside `.modal`.
 - **`#tNotes` textarea**: auto-expands, capped at `max-height:160px`. Reset on add open; pre-expanded on edit open. Newlines rendered via `.replace(/\n/g,'<br>')`.
 - **Cmd+Z in modals**: `_isInput && !_ael.closest('.overlay:not(.open)')` → return early.
-- **Shortcuts**: see `rules/core.md` → "Keyboard Shortcuts" for full list. Key additions: `d`=dark mode, `n`=new task (overview) / new Big video (videos popup/page), `b`=new Big video, `l`=new Little video, `r`=reload, `q`=quick notes, `v`=videos popup, `vv`=videos page. Overview: `←/→`=shift day, `w+←/→`=shift week, `t`=today. **All single-key shortcuts MUST check contentEditable focus.** `n`/`b`/`l` on video popup pre-set status=up_next. `L` global shortcut (style guide) blocked when video panel is open.
+- **Shortcuts**: see `rules/core.md` → "Keyboard Shortcuts" for full list. Key additions: `d`=dark mode, `n`=new task (overview) / new Big video (videos popup/page), `b`=new Big video, `l`=new Little video, `r`=reload, `q`=quick notes, `v`=videos popup, `vv`=videos page, `W`=Weekly Reset / Recurring Tasks page. Overview: `←/→`=shift day, `w+←/→`=shift week, `t`=today. **All single-key shortcuts MUST check contentEditable focus.** `n`/`b`/`l` on video popup pre-set status=up_next. `L` global shortcut (style guide) blocked when video panel is open.
 - **Page navigation closes overlays**: `showPage()` closes video calendar, all panel, analytics panel, and video popup before switching pages.
 - **Keyboard shortcut pattern** (MUST follow every time):
   1. Same key toggles open/close (check if modal is already `.open` before opening).
@@ -98,7 +98,7 @@ Mobile `_mTaskTypePri` and `mSortToday` mirror this exactly.
   5. Both global handler AND modal's own `keydown` listener must handle the key.
   6. On modal `close` event: call `modal.blur();document.activeElement?.blur()` — focus must return to `<body>` so global shortcuts keep working. Without this, the closed dialog retains focus and its `stopPropagation` blocks all future keypresses from reaching the global handler.
 - **Help overlay** (`gg` double-press): shows all shortcuts for current page + global. Toggle with `gg` again or `Enter`. Uses `#helpOverlay` (standard `.overlay`+`.modal`). Page-specific content via `_pages[activePg]` map in `_showHelpOverlay()`.
-- **Page shortcut toggle**: all page shortcuts (V, P, F, I, L) return to overview when pressed while already on that page.
+- **Page shortcut toggle**: all page shortcuts (V, P, F, I, L, W) return to overview when pressed while already on that page.
 - **RULE: When adding ANY new keyboard shortcut**, you MUST also update `_showHelpOverlay()` in `core.js` to include it in the correct page's `_pages[pageName]` array (or `_global` if global). Audit existing entries to ensure nothing is missing or stale.
 - **Month view toggle** (`m` key): opens `mModal` on overview, closes if already open. Enter/Esc also close.
 - **Text selection**: `user-select:none` on `html,body`. `Ctrl/Cmd+A` blocked globally (allowed in INPUT/TEXTAREA).

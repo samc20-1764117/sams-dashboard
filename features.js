@@ -370,20 +370,65 @@ function wrRuleScheduleStr(rule){
   return 'Manual';
 }
 
+// Computed next-due date for a non-WR "Other Recurring" row. Walks forward through the exact
+// same getRecurringWeekTasks() that drives the calendar (rather than re-deriving the cadence
+// math separately) so the page's "Next" column can never disagree with what actually shows on
+// the calendar — including interval cadences (biweekly/quarterly/biannual/annual) and any
+// __skip__'d weeks.
+function _rtNextDate(r){
+  if(r.is_enabled===false)return null;
+  for(let off=0;off<=104;off++){
+    const hit=getRecurringWeekTasks(off).find(t=>String(t._recId)===String(r.id));
+    if(hit)return hit.due_date;
+  }
+  return null;
+}
+// Computed next-due date for a WR rule row. WR quarterly/biannual/annual rules carry no
+// day-of-week (they're placed on the weekly calendar manually), so those resolve to the due
+// week's Monday rather than an exact day — flagged via exact:false so callers can label it
+// "Wk of" instead of a specific date.
+function _rtWrNextDate(rule){
+  if(rule.is_enabled===false)return null;
+  const cadence=rule.cadence||'weekly';
+  for(let off=0;off<=104;off++){
+    if(!isWRRuleDueThisWeek(rule,off))continue;
+    const{mon,sun}=getWkBounds(off);
+    if(cadence==='weekly'||cadence==='biweekly'){
+      if(rule.day_of_week==null)return{ds:d2s(mon),exact:false};
+      const wkDates=getWkDates(off);
+      const d=wkDates.find(x=>x.getDay()===rule.day_of_week);
+      return{ds:d?d2s(d):d2s(mon),exact:!!d};
+    }
+    if(cadence==='monthly'&&rule.starting_date){
+      const anchorDay=new Date(rule.starting_date+'T12:00').getDate();
+      for(const dt of[mon,sun]){
+        const maxDay=new Date(dt.getFullYear(),dt.getMonth()+1,0).getDate();
+        const occ=new Date(dt.getFullYear(),dt.getMonth(),Math.min(anchorDay,maxDay));
+        if(occ>=mon&&occ<=sun)return{ds:d2s(occ),exact:true};
+      }
+    }
+    return{ds:d2s(mon),exact:false};
+  }
+  return null;
+}
 function renderRtWrGroup(containerId, rules, cadence){
   const el=document.getElementById(containerId);if(!el)return;
   const cadLabel={weekly:'Weekly',biweekly:'Biweekly',monthly:'Monthly',other:'Other'}[cadence]||cadence;
   const esc=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  const thead=`<tr><th style="text-align:left">Name</th><th style="width:36px">Pup</th><th style="width:40px"></th></tr>`;
+  const thead=`<tr><th style="text-align:left">Name</th><th style="width:64px">Next</th><th style="width:36px">Pup</th><th style="width:40px"></th></tr>`;
   let tbody='';
   rules.forEach(r=>{
     const rid=String(r.id);
     const isPup=r.pup_related===true||r.pup_related==='true';
-    tbody+=`<tr class="rt-row" id="ti-rt-wrrule-${rid}"
+    const isSel=selectedTasks.has('wrrule-'+rid);
+    const nd=_rtWrNextDate(r);
+    const nextTxt=nd?(nd.exact?fmtD(nd.ds):'Wk of '+fmtD(nd.ds)):'—';
+    tbody+=`<tr class="rt-row${isSel?' sel-row':''}" id="ti-rt-wrrule-${rid}"
+      onclick="selTask(event,'wrrule-${rid}')"
       ondblclick="if(!event.target.closest('[data-pup]')&&!event.target.closest('.delbtn')&&!event.target.closest('.btn-xs')){event.stopPropagation();openWrEditModal('${rid}',null,'all');}"
-      oncontextmenu="showWrRuleCtx(event,'${rid}',getWkKey(wkOff))"
-      onclick="event.stopPropagation()">
+      oncontextmenu="showWrRuleCtx(event,'${rid}',getWkKey(wkOff))">
       <td class="rt-editable">${esc(r.name)}${cadence==='other'?(()=>{const _KB=['weekly','biweekly','monthly'];const _CB={quarterly:'Q',biannual:'BA',annual:'A',bimonthly:'B',monthly:'M'};const _bl=_CB[r.cadence];return _bl?`<span style="float:right;font-size:9px;font-weight:700;letter-spacing:.3px;padding:1px 3px;border-radius:3px;background:rgba(0,0,0,.11);color:var(--subtle);margin-left:4px">${_bl}</span>`:''})():''}</td>
+      <td class="rt-meta" style="text-align:center">${nextTxt}</td>
       <td data-pup="1" style="text-align:center;cursor:pointer;font-size:13px" onclick="event.stopPropagation();rtToggleWrPup('${rid}')" ondblclick="event.stopPropagation()" title="Toggle pup related">${isPup?'🐾':''}</td>
       <td onclick="event.stopPropagation()" ondblclick="event.stopPropagation()"><button class="delbtn" onclick="delWrRule('${rid}')">✕</button></td>
     </tr>`;
@@ -427,7 +472,7 @@ function delWrRule(rid){
 function renderRtGroup(containerId, tasks, cadence){
   const el=document.getElementById(containerId);if(!el)return;
   const cadLabel={weekly:'Weekly',biweekly:'Biweekly',monthly:'Monthly',other:'Other'}[cadence]||cadence;
-  const thead=`<tr><th style="width:120px;text-align:left">Name</th><th style="width:96px;text-align:center">Due On</th><th style="width:84px;text-align:right">Starting</th><th style="width:40px"></th></tr>`;
+  const thead=`<tr><th style="width:110px;text-align:left">Name</th><th style="width:82px;text-align:center">Due On</th><th style="width:66px;text-align:right">Starting</th><th style="width:60px;text-align:right">Next</th><th style="width:40px"></th></tr>`;
   let tbody='';
   tasks.forEach(r=>{
     const rid=String(r.id);
@@ -436,9 +481,11 @@ function renderRtGroup(containerId, tasks, cadence){
     const dayDisp=r.appears_on_date||'—';
     const _KB_RT=['weekly','biweekly','monthly'];const _CB_RT={quarterly:'Q',biannual:'BA',annual:'A',bimonthly:'B',monthly:'M'};
     const _rtBadge=(()=>{const _bl=!_KB_RT.includes(r.cadence)&&_CB_RT[r.cadence];return _bl?`<span style="float:right;font-size:9px;font-weight:700;letter-spacing:.3px;padding:1px 3px;border-radius:3px;background:rgba(0,0,0,.11);color:var(--subtle);margin-left:4px">${_bl}</span>`:''})();
+    const nextDs=_rtNextDate(r);
     const tds=`<td class="rt-editable">${esc(r.name)}${cadence==='other'?_rtBadge:''}</td>
       <td class="rt-editable rt-meta" style="text-align:center" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','appears_on_date')">${dayDisp}</td>
-      <td class="rt-editable rt-meta" style="text-align:right" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','starting_date')">${r.starting_date?fmtD(r.starting_date):'—'}</td>`;
+      <td class="rt-editable rt-meta" style="text-align:right" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','starting_date')">${r.starting_date?fmtD(r.starting_date):'—'}</td>
+      <td class="rt-meta" style="text-align:right" title="Next computed occurrence">${nextDs?fmtD(nextDs):'—'}</td>`;
     tbody+=`<tr class="rt-row" id="ti-rt-${rid}" onclick="selTask(event,'${virtId}')" ondblclick="if(!event.target.closest('.delbtn')&&!event.target.closest('.btn-xs')){event.stopPropagation();openRecEditModal('${rid}');}" oncontextmenu="showWrRuleCtx(event,'${rid}',getWkKey(wkOff))">
       ${tds}
       <td onclick="event.stopPropagation()" ondblclick="event.stopPropagation()"><button class="btn btn-xs btn-ghost" style="padding:1px 5px;font-size:10px;opacity:.55" onclick="duplicateRecDirect('${rid}')" title="Duplicate">⧉</button><button class="delbtn" onclick="delRec('${rid}')">✕</button></td>
@@ -648,6 +695,54 @@ function updateRecCadenceUI(){
     document.getElementById('recMonthlyDomField').style.display=mode==='dom'?'block':'none';
     document.getElementById('recMonthlyNwdField').style.display=mode==='nwd'?'flex':'none';
   }
+  _recPreview('rec');
+}
+// Computes the actual next occurrence for a recurring-task schedule, given the exact same
+// fields the modal collects. Surfaced live in the modal (see _recPreview) so a mismatch between
+// the chosen pattern and the starting date (e.g. picking "1st Sunday" but setting the starting
+// date to the 3rd Sunday) is visible immediately instead of silently not showing on the calendar.
+function _recNextOccurrence(cadence,mode,dayVal,nthWdVal,domVal,startDateStr){
+  const DAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const start=startDateStr?new Date(startDateStr+'T00:00:00'):new Date(tod()+'T00:00:00');
+  if(cadence==='monthly'&&mode==='dom'){
+    const dom=parseInt(domVal,10)||1;
+    let d=new Date(start.getFullYear(),start.getMonth(),dom);
+    if(d<start)d=new Date(start.getFullYear(),start.getMonth()+1,dom);
+    return d;
+  }
+  if(cadence==='monthly'&&mode==='nwd'){
+    const m=(nthWdVal||'').match(/^(\d+)(?:st|nd|rd|th)?\s+(\w+)$/i);if(!m)return null;
+    const n=parseInt(m[1],10);const dow=DAYS.findIndex(x=>x.toLowerCase()===m[2].toLowerCase());if(dow<0)return null;
+    for(let mo=0;mo<24;mo++){
+      const base=new Date(start.getFullYear(),start.getMonth()+mo,1);
+      const y=base.getFullYear(),mth=base.getMonth();
+      let count=0;
+      for(let day=1;day<=31;day++){
+        const d=new Date(y,mth,day);if(d.getMonth()!==mth)break;
+        if(d.getDay()===dow){count++;if(count===n){if(d>=start)return d;break;}}
+      }
+    }
+    return null;
+  }
+  // weekly / biweekly / quarterly / biannual / annual — anchored to a day of week
+  const dow=DAYS.findIndex(x=>x.toLowerCase()===(dayVal||'').toLowerCase());if(dow<0)return null;
+  const d=new Date(start);
+  while(d.getDay()!==dow)d.setDate(d.getDate()+1);
+  return d;
+}
+function _recPreview(px){
+  const el=document.getElementById(px+'NextOccur');if(!el)return;
+  const type=document.getElementById(px+'Type')?.value;
+  if(type==='weekly_reset'){el.textContent='';return;}
+  const cadence=document.getElementById(px+'Cadence').value;
+  const isMonthly=cadence==='monthly';
+  const mode=isMonthly?(document.querySelector(`input[name="${px}MonthlyMode"]:checked`)?.value||'dom'):null;
+  const dayVal=document.getElementById(px+'RepeatDay')?.value;
+  const nthWdVal=document.getElementById(px+'NthWd')?.value;
+  const domVal=document.getElementById(px+'RepeatDate')?.value;
+  const startVal=document.getElementById(px+'StartDate')?.value;
+  const next=_recNextOccurrence(cadence,mode,dayVal,nthWdVal,domVal,startVal);
+  el.textContent=next?'Next occurrence: '+next.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'}):'';
 }
 async function saveRecModal(){
   const n=document.getElementById('recName').value.trim();if(!n){closeMod('recModal');return;}
@@ -4824,6 +4919,7 @@ function renderGuidePage(){
     ${sRow('O','Overview')}
     ${sRow('V','Videos')}
     ${sRow('F','Finance')}
+    ${sRow('W','Weekly Reset / Recurring Tasks')}
     ${sRow('G','Grid lines (debug)')}
     ${sRow('GG','Help overlay')}
     ${sRow('L','Style Guide')}
@@ -5444,8 +5540,15 @@ function applySelHighlight(){
     else{el.style.outline='';el.style.outlineOffset='';el.style.boxShadow='';}
   });
   document.querySelectorAll('tr[id^="ti-rt-"]').forEach(el=>{
-    const rid=el.id.replace('ti-rt-','');
-    const sel=selectedTasks.has('rec-virt-'+rid)||selRecIds.has(rid);
+    const rawId=el.id.replace('ti-rt-','');
+    if(rawId.startsWith('wrrule-')){
+      const rid=rawId.replace('wrrule-','');
+      const sel=selectedTasks.has('wrrule-'+rid)||selWrRuleIds.has(rid);
+      el.classList.toggle('sel-row',sel);
+      if(sel)applySelVars(el,gc('weekly_reset'));else clearSelVars(el);
+      return;
+    }
+    const sel=selectedTasks.has('rec-virt-'+rawId)||selRecIds.has(rawId);
     el.classList.toggle('sel-row',sel);
     if(sel)applySelVars(el,gc('recurring'));
     else clearSelVars(el);
@@ -6089,6 +6192,7 @@ function updateRecEditUI(){
     document.getElementById('recEditMonthlyDomField').style.display=mode==='dom'?'block':'none';
     document.getElementById('recEditMonthlyNwdField').style.display=mode==='nwd'?'flex':'none';
   }
+  _recPreview('recEdit');
 }
 function openRecEditModal(rid,wkKey='',scope='all'){
   const r=st.recurring.find(x=>String(x.id)===String(rid));if(!r)return;
