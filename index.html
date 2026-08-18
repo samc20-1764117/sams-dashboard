@@ -1106,7 +1106,7 @@ init();
   if(_origShowPage){window.showPage=function(){const ov=document.getElementById('_dbgGrid');if(ov)ov.remove();return _origShowPage.apply(this,arguments);};}
 })();
 document.addEventListener('keydown',e=>{
-  if(e.key==='g'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,.overlay.open')){
+  if(e.key==='g'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus,.overlay.open')){
     e.preventDefault();
     let ov=document.getElementById('_dbgGrid');
     if(ov){ov.remove();return;}
