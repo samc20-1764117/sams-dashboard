@@ -1346,12 +1346,14 @@ function mkMCell(date,om,today){
     const isHoliday=t._type==='holiday';
     let s=t.important&&!t.done?_IMP():(t._type==='vid'||t._type==='vidstep')?gc('videos'):(t._type==='pup'&&typeof _pupSessStyle==='function')?_pupSessStyle():gc((t._isWrec||t._isWrRule)?'weekly_reset':t.category);
     const isTravel=t._type==='travel';
+    const isPast=(isTravel&&t.end_date&&t.end_date<tod())||((isBday||isHoliday)&&t.due_date&&t.due_date<tod());
     // Multi-day travel chips overlap each other in the inter-cell gap to look like one
     // continuous bar (see EXT bridging below). A translucent bg double-stacks at that
     // overlap and shows a visible seam — dark mode's travel color is translucent (unlike
     // light mode's solid #e0f2fe), so give the bridge chips a solid dark fill instead.
-    if(isTravel&&_dk())s={...s,bg:'#0d3d3a'};
-    const isPast=(isTravel&&t.end_date&&t.end_date<tod())||((isBday||isHoliday)&&t.due_date&&t.due_date<tod());
+    // Past chips get pre-dimmed solid colors here (instead of via the opacity:.35 below)
+    // so the dimming doesn't re-introduce the double-stacked seam on the solid fill.
+    if(isTravel&&_dk())s={...s,bg:isPast?'#122223':'#0d3d3a',t:isPast?'#2e5f59':s.t};
     const chip=document.createElement('div');chip.className='mcell-t';chip.draggable=!t.done&&!isBday&&!isHoliday;
     // Travel: compute visual span position to extend chip across cell gaps
     let travelSpanStyle='';
@@ -1373,7 +1375,7 @@ function mkMCell(date,om,today){
         +(rightExt?`border-right:none;`:'')
         +(totalExt?`width:calc(100% + ${totalExt}px);`:'');
     }
-    chip.style.cssText=`background:${s.bg};color:${s.t};border-color:${s.b};cursor:${t.done?'default':isTravel?'pointer':'grab'};${t.done?'opacity:.25;text-decoration:line-through;':''}${isPast?'opacity:.35;':''}${travelSpanStyle}`;
+    chip.style.cssText=`background:${s.bg};color:${s.t};border-color:${s.b};cursor:${t.done?'default':isTravel?'pointer':'grab'};${t.done?'opacity:.25;text-decoration:line-through;':''}${isPast&&!(isTravel&&_dk())?'opacity:.35;':''}${travelSpanStyle}`;
     if(_ti>=_visN){chip.style.display='none';chip.dataset.moreHidden='1';}
     if(!t._virtual&&!t._type)chip.dataset.tid=String(t.id);
     else if(isTravel)chip.dataset.tid='tv-'+t._srcId;
