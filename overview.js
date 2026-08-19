@@ -896,7 +896,10 @@ function sortByTBWeek(tasks){
 // recurring/WR route through _ovRowMoveClick, which opens the 3-way scope menu only when the
 // occurrence is from a genuine past week (same-week nudges don't need a schedule decision).
 function _dlblOvArrow(dayLetter,onclickJs){
-  return`<span class="dlbl ov" style="display:inline-flex;align-items:center;gap:2px">${dayLetter}<span class="dlbl-arrow" title="Move to today" onclick="event.stopPropagation();${onclickJs}">▾</span></span>`;
+  // right:24px (vs. the base .dlbl.ov right:9px) clears the delbtn, which is always-visible
+  // (not hover-only) on overdue rows — see .ti.ov-row .delbtn in styles.css — so the two never
+  // overlap. Inline so it wins over both the base rule and the .tb-list-only right:11px variant.
+  return`<span class="dlbl ov" style="display:inline-flex;align-items:center;gap:2px;right:24px">${dayLetter}<span class="dlbl-arrow" title="Move to today" onclick="event.stopPropagation();${onclickJs}">→</span></span>`;
 }
 function _ovRowMoveClick(e,kind,id,wkKey){
   e.stopPropagation();e.preventDefault();
