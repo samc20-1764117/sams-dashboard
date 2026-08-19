@@ -32,7 +32,7 @@ const CATS_DARK={
   'work':{bg:'rgba(236,72,153,.12)',t:'#f9a8d4',d:'#ec4899',dot:'#f9a8d4',b:'rgba(236,72,153,.18)'},
   'social':{bg:'rgba(147,51,234,.14)',t:'#d8b4fe',d:'#9333ea',dot:'#d8b4fe',b:'rgba(147,51,234,.18)'},
   'long term':{bg:'rgba(148,163,184,.10)',t:'#94a3b8',d:'#94a3b8',dot:'#94a3b8',b:'rgba(148,163,184,.18)'},
-  'recurring':{bg:'rgba(16,185,129,.12)',t:'#6ee7b7',d:'#2a9db5',dot:'#6ee7b7',b:'rgba(16,185,129,.18)'},
+  'recurring':{bg:'rgba(20,184,166,.12)',t:'#5eead4',d:'#2a9db5',dot:'#5eead4',b:'rgba(20,184,166,.18)'},
   'weekly_reset':{bg:'rgba(59,130,246,.14)',t:'#93c5fd',d:'#3b82f6',dot:'#93c5fd',b:'rgba(59,130,246,.18)'},
   'buy':{bg:'rgba(234,179,8,.12)',t:'#fde68a',d:'#eab308',dot:'#fde68a',b:'rgba(234,179,8,.18)'},
   'travel':{bg:'rgba(20,184,166,.12)',t:'#5eead4',d:'#38bdf8',dot:'#5eead4',b:'rgba(20,184,166,.18)'},

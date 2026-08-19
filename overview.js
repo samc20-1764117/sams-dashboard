@@ -501,10 +501,11 @@ function renderPupSkillsHighlight(){
       ${progressBar}
     </div>`;
   };
-  let html='';
-  if(mochiSkills.length)html+=_hidden.includes('Mochi')?mkChip('Mochi'):mkTile('Mochi',mochiSkills,'#a78bfa');
-  if(sunnySkills.length)html+=_hidden.includes('Sunny')?mkChip('Sunny'):mkTile('Sunny',sunnySkills,'#d4a017');
+  let html='',anyTile=false;
+  if(sunnySkills.length){if(_hidden.includes('Sunny'))html+=mkChip('Sunny');else{html+=mkTile('Sunny',sunnySkills,'#d4a017');anyTile=true;}}
+  if(mochiSkills.length){if(_hidden.includes('Mochi'))html+=mkChip('Mochi');else{html+=mkTile('Mochi',mochiSkills,'#a78bfa');anyTile=true;}}
   wrap.innerHTML=html;
+  wrap.style.flex=anyTile?'1':'0 0 auto';
   if(!wrap._dblBound){wrap._dblBound=true;wrap.addEventListener('dblclick',e=>{if(!e.target.closest('.ti'))_openPupFocusModal(null);});}
 }
 function openPupFocusPicker(pup){_openPupFocusModal(pup);}

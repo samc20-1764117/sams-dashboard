@@ -1189,7 +1189,7 @@ function renderMoCal(){
       const chip=document.createElement('div');chip.className='mcell-t';chip.dataset.tid=String(t.id);chip.draggable=true;
       const _goalOv=(_goalsPastMo&&!t.done)||_isCarried;
       const _imp=t.important&&!t.done&&!_goalOv;
-      const _gs=_goalOv?OV:_imp?IMP:{bg:'rgba(255,255,255,.82)',t:'rgba(80,80,95,.75)',b:'rgba(255,255,255,.9)'};
+      const _gs=_goalOv?_OV():_imp?_IMP():_dk()?{bg:'rgba(255,255,255,.04)',t:'#e8e8ea',b:'rgba(255,255,255,.08)'}:{bg:'rgba(255,255,255,.82)',t:'rgba(80,80,95,.75)',b:'rgba(255,255,255,.9)'};
       chip.style.cssText=`background:${_gs.bg};color:${_gs.t};border-color:${_gs.b};cursor:grab${t.done?';opacity:.5':''}`;
       if(_gi>=_gVisN){chip.style.display='none';chip.dataset.moreHidden='1';}
       let _blockMoDrag=false;
@@ -1344,8 +1344,13 @@ function mkMCell(date,om,today){
   tasks.forEach((t,_ti)=>{
     const isBday=t._type==='birthday';
     const isHoliday=t._type==='holiday';
-    const s=t.important&&!t.done?IMP:(t._type==='vid'||t._type==='vidstep')?gc('videos'):(t._type==='pup'&&typeof _pupSessStyle==='function')?_pupSessStyle():gc((t._isWrec||t._isWrRule)?'weekly_reset':t.category);
+    let s=t.important&&!t.done?_IMP():(t._type==='vid'||t._type==='vidstep')?gc('videos'):(t._type==='pup'&&typeof _pupSessStyle==='function')?_pupSessStyle():gc((t._isWrec||t._isWrRule)?'weekly_reset':t.category);
     const isTravel=t._type==='travel';
+    // Multi-day travel chips overlap each other in the inter-cell gap to look like one
+    // continuous bar (see EXT bridging below). A translucent bg double-stacks at that
+    // overlap and shows a visible seam — dark mode's travel color is translucent (unlike
+    // light mode's solid #e0f2fe), so give the bridge chips a solid dark fill instead.
+    if(isTravel&&_dk())s={...s,bg:'#0d3d3a'};
     const isPast=(isTravel&&t.end_date&&t.end_date<tod())||((isBday||isHoliday)&&t.due_date&&t.due_date<tod());
     const chip=document.createElement('div');chip.className='mcell-t';chip.draggable=!t.done&&!isBday&&!isHoliday;
     // Travel: compute visual span position to extend chip across cell gaps
@@ -1518,7 +1523,7 @@ function showMcellMorePop(e,tasks,ds){
   tasks.forEach(t=>{
     const isBday=t._type==='birthday';
     const isHoliday=t._type==='holiday';
-    const s=t.important&&!t.done?IMP:gc((t._isWrec||t._isWrRule)?'weekly_reset':t.category);
+    const s=t.important&&!t.done?_IMP():gc((t._isWrec||t._isWrRule)?'weekly_reset':t.category);
     const isTravel=t._type==='travel';
     const isPast=(isTravel&&t.end_date&&t.end_date<tod())||((isBday||isHoliday)&&t.due_date&&t.due_date<tod());
     const chip=document.createElement('div');chip.className='mcell-t';chip.draggable=!t.done&&!isTravel&&!isBday&&!isHoliday;
@@ -5580,11 +5585,11 @@ function applySelHighlight(){
     if(id.startsWith('wrec-')){const r=st.recurring.find(x=>String(x.id)===id.replace('wrec-',''));return gc(r&&(r.is_weekly_reset===true||r.is_weekly_reset==='true')?'weekly_reset':'recurring');}
     if(id.startsWith('rec-virt-'))return gc('recurring');
     if(id.startsWith('shop-cal-'))return gc('shopping');
-    if(id.startsWith('fin-cancel-'))return IMP;
+    if(id.startsWith('fin-cancel-'))return _IMP();
     const t=st.tasks.find(x=>String(x.id)===String(id));
     if(!t)return null;
-    if(!t.done&&t.due_date&&t.due_date.split('T')[0]<tod())return OV;
-    if(t.important)return IMP;
+    if(!t.done&&t.due_date&&t.due_date.split('T')[0]<tod())return _OV();
+    if(t.important)return _IMP();
     if(t.notes&&t.notes.startsWith('_vid:'))return{bg:'rgba(22,163,74,.18)',t:'#166534',d:'#16a34a',b:'rgba(22,163,74,.35)'};
     return gc(t.category);
   }

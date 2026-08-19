@@ -639,15 +639,15 @@ if(sessionStorage._mReloaded===BUILD);else{
     <div class="mcal-side">
       <div class="mhead">
         <div style="flex:1;font-size:14px;font-weight:700;letter-spacing:-.3px" id="moTitle">Calendar</div>
-        <div id="moSearchWrap" style="position:relative;display:flex;align-items:center;gap:3px;background:rgba(255,255,255,.6);border:1px solid rgba(210,205,228,.5);border-radius:7px;padding:2px 6px;transition:border-color .15s;flex-shrink:0;width:220px;box-sizing:border-box">
+        <div id="moSearchWrap" class="mo-pill" style="position:relative;display:flex;align-items:center;gap:3px;border-radius:7px;padding:2px 6px;transition:border-color .15s;flex-shrink:0;width:220px;box-sizing:border-box">
           <input id="moSearchInput" type="text" placeholder="Search…" autocomplete="off" oninput="moSearch(this.value)" onkeydown="moSearchKey(event)" onfocus="moSearchFocus()" onblur="moSearchBlur()" style="border:none;background:transparent;outline:none;font-size:10px;font-family:inherit;color:var(--text);flex:1;min-width:0;padding:0"/>
           <span id="moSearchCount" style="font-size:9px;color:var(--subtle);white-space:nowrap;display:none;flex-shrink:0"></span>
           <button onclick="moSearchNav(-1)" id="moSearchPrev" style="background:none;border:none;cursor:pointer;font-size:10px;color:var(--subtle);padding:0 1px;line-height:1;display:none;flex-shrink:0" title="Previous (Shift+Enter)">▲</button>
           <button onclick="moSearchNav(1)" id="moSearchNext" style="background:none;border:none;cursor:pointer;font-size:10px;color:var(--subtle);padding:0 1px;line-height:1;display:none;flex-shrink:0" title="Next (Enter)">▼</button>
           <button id="moSearchClear" onclick="moSearchClear()" style="background:none;border:none;cursor:pointer;font-size:10px;color:var(--subtle);padding:0 1px;line-height:1;display:none;flex-shrink:0" title="Clear">✕</button>
-          <div id="moSearchSug" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:rgba(255,255,255,.97);border:1px solid rgba(210,205,228,.6);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.12);z-index:600;overflow:hidden;max-height:200px;overflow-y:auto"></div>
+          <div id="moSearchSug" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.12);z-index:600;overflow:hidden;max-height:200px;overflow-y:auto"></div>
         </div>
-        <div style="display:flex;align-items:center;gap:1px;background:rgba(255,255,255,.6);border:1px solid rgba(210,205,228,.5);border-radius:7px;padding:2px 4px;flex-shrink:0">
+        <div class="mo-pill" style="display:flex;align-items:center;gap:1px;border-radius:7px;padding:2px 4px;flex-shrink:0">
           <button onclick="moYearStep(-1)" style="background:none;border:none;cursor:pointer;font-size:10px;color:var(--subtle);padding:0 2px;line-height:1" title="Previous year">◀</button>
           <input id="moYearSel" type="text" onchange="jumpMoYear(this.value)" onkeydown="if(event.key==='Enter'){jumpMoYear(this.value);this.blur();}" style="border:none;background:transparent;outline:none;font-size:10px;font-family:inherit;color:var(--text);width:32px;text-align:center;padding:0;font-weight:600"/>
           <button onclick="moYearStep(1)" style="background:none;border:none;cursor:pointer;font-size:10px;color:var(--subtle);padding:0 2px;line-height:1" title="Next year">▶</button>
