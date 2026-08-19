@@ -901,16 +901,24 @@ function _dlblOvArrow(dayLetter,onclickJs){
   // overlap. Inline so it wins over both the base rule and the .tb-list-only right:11px variant.
   return`<span class="dlbl ov" style="display:inline-flex;align-items:center;gap:2px;right:24px">${dayLetter}<span class="dlbl-arrow" title="Move to today" onclick="event.stopPropagation();${onclickJs}">→</span></span>`;
 }
+// Shared 3-way scope prompt for a recurring/WR occurrence overdue from a past week — used by both
+// the per-row arrow and the bulk "Move to today" sequential queue, so they can never disagree on
+// wording or order. Displayed top-to-bottom as This time only / Same day / Change day to today.
+// #wrScopePicker's markup renders its "remove" slot first, "this" slot second, "all" slot third —
+// the label/callback assignment below (not the markup) is what keeps that order correct; don't
+// "simplify" this to the more obvious this/all/remove mapping, it'll silently reverse the order.
+function _wrScopePrompt(e,onThisTime,onSameDay,onChangeDay){
+  showWrScopePicker(e,'↻  Same day','↻  Change day to today',onSameDay,onChangeDay,'⊘  This time only',onThisTime);
+}
 function _ovRowMoveClick(e,kind,id,wkKey){
   e.stopPropagation();e.preventDefault();
   const curWk=getWkKey(0);
   const pastWeek=wkKey&&wkKey!==curWk;
   if(kind==='wrrule'){
     if(pastWeek){
-      showWrScopePicker(e,'⊘  This time only','↻  All future (same day)',
+      _wrScopePrompt(e,
         ()=>wrMoveToThisWeek(id,wkKey,false),
         ()=>wrMoveToThisWeek(id,wkKey,true,false),
-        '↻  All future (set day)',
         ()=>wrMoveToThisWeek(id,wkKey,true,true));
     } else {
       const rule=st.wrRules.find(r=>String(r.id)===String(id));if(!rule)return;
@@ -924,10 +932,9 @@ function _ovRowMoveClick(e,kind,id,wkKey){
   } else {
     const rec=st.recurring.find(x=>String(x.id)===String(id));if(!rec)return;
     if(pastWeek){
-      showWrScopePicker(e,'⊘  This time only','↻  All future (same day)',
+      _wrScopePrompt(e,
         ()=>_recMoveThisOccToToday(rec,wkKey),
         ()=>_recMoveAllFuture(rec,wkKey,tod(),null,true),
-        '↻  All future (set day)',
         ()=>_recMoveAllFuture(rec,wkKey,tod(),null,false));
     } else {
       _recMoveThisOccToToday(rec,wkKey||curWk);
