@@ -2912,7 +2912,8 @@ function renderRecOv(){
   // Update skipped-this-week button
   // Include both weekly-reset and plain weekly recurring tasks genuinely skipped this week (occurs that week)
   const _skippedWrecCount=_recSkippedThisWk(wkKey,wrRecOff).length;
-  const _skCount=skipIds.size+_skippedWrecCount;
+  const _skippedWrRuleCount=st.wrOverrides.filter(o=>o.wk_key===wkKey&&o.override_type==='skip').length;
+  const _skCount=_skippedWrRuleCount+_skippedWrecCount;
   const _skBtn=document.getElementById('wrSkippedBtn');
   if(_skBtn){_skBtn.style.display=_skCount?'':'none';_skBtn.textContent='↩ '+_skCount;}
   requestAnimationFrame(()=>{
