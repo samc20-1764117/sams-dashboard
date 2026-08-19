@@ -754,7 +754,7 @@ body.scenic-theme:not(.dark) .ov-topbar-time{color:rgba(255,255,255,.88);backgro
 .task-modal{width:300px;padding:16px}
 
 /* Month modal — larger */
-.month-modal{width:min(98vw,1400px);display:flex;height:94vh;overflow:hidden}
+.month-modal{width:min(94vw,1320px);display:flex;height:94vh;overflow:hidden}
 .mo-search-hl{outline:2px solid #a78bfa!important;outline-offset:1px;z-index:2;position:relative;opacity:.7}
 .mo-search-hl-cur{outline:3px solid #7c3aed!important;outline-offset:1px;z-index:3;position:relative;opacity:1!important;box-shadow:0 0 0 4px rgba(124,58,237,.18)!important}
 #moSearchWrap:focus-within{border-color:rgba(124,58,237,.5)}

@@ -1406,7 +1406,7 @@ document.addEventListener('keydown',e=>{
   if(e.key==='l'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')&&!(_vPanel&&_vPanel.style.display==='block')){
     e.preventDefault();if(activePg==='guide')showPage('overview');else showPage('guide');return;
   }
-  if(e.key==='d'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')){
+  if(e.key==='d'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')){
     e.preventDefault();if(typeof toggleDark==='function')toggleDark();
   }
   // M to toggle month view on overview (skip if video popup is open — it uses M for its own calendar)
@@ -1415,6 +1415,11 @@ document.addEventListener('keydown',e=>{
     if(_vp&&_vp.style.display==='block')return;
     if(document.getElementById('mModal').classList.contains('open')){e.preventDefault();closeMod('mModal');return;}
     if(activePg==='overview'&&!document.querySelector('.overlay.open')){e.preventDefault();openMModal();return;}
+  }
+  // T inside Month view / Recurring Tasks month view = jump to this week
+  if(e.key==='t'&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')){
+    if(document.getElementById('mModal')?.classList.contains('open')){e.preventDefault();moGoToday();return;}
+    if(document.getElementById('recMoModal')?.classList.contains('open')){e.preventDefault();scrollRecMoToday();return;}
   }
   // Cmd+Left/Right to switch between pages
   if((e.metaKey||e.ctrlKey)&&(e.key==='ArrowLeft'||e.key==='ArrowRight')&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')){
