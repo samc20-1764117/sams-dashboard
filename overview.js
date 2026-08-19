@@ -2714,6 +2714,48 @@ function renderRecMoCal(){
 // ── Weekly Reset card — generated from wr_recurring_rules for selected week ────
 function shiftWrRec(n){_goToWeek(wrRecOff+n);}
 
+// Fully-merged list of WR rules due in a given week — natural due-ness plus skip/move/edit
+// overrides applied. Shared by renderRecOv (display) and _wrWeekMisses (overdue eligibility) so
+// the two can never disagree about what's "already this week" vs. a genuine miss.
+function _wrItemsForWeek(wkOff){
+  const wkKey=getWkKey(wkOff);
+  const baseItems=st.wrRules.filter(r=>isWRRuleDueThisWeek(r,wkOff));
+  const ovThisWk=st.wrOverrides.filter(o=>o.wk_key===wkKey);
+  const skipIds=new Set(ovThisWk.filter(o=>o.override_type==='skip').map(o=>String(o.rule_id)));
+  const movedAwayIds=new Set(ovThisWk.filter(o=>o.override_type==='move').map(o=>String(o.rule_id)));
+  const filtered=baseItems.filter(r=>!skipIds.has(String(r.id))&&!movedAwayIds.has(String(r.id)));
+  const movedIn=st.wrOverrides
+    .filter(o=>o.override_type==='move'&&o.moved_to_wk_key===wkKey)
+    .map(o=>{const rule=st.wrRules.find(r=>String(r.id)===String(o.rule_id));return rule?{...rule,_movedIn:true}:null;})
+    .filter(Boolean)
+    .filter(r=>!filtered.some(x=>String(x.id)===String(r.id))&&!skipIds.has(String(r.id)));
+  return[...filtered,...movedIn].map(r=>{
+    const editOv=ovThisWk.find(o=>o.override_type==='edit'&&String(o.rule_id)===String(r.id));
+    const hasChange=editOv&&((editOv.custom_name&&editOv.custom_name!==r.name)||(editOv.custom_notes!==undefined&&editOv.custom_notes!==r.notes));
+    return{...r,_displayName:(editOv&&editOv.custom_name)||r.name,_edited:!!hasChange,_movedIn:r._movedIn||false};
+  });
+}
+// WR rules whose most recent due week (checked exactly ONE week back — older misses stay
+// history) was not done/skipped/moved, and that aren't also due THIS week (due-again supersedes
+// last week's miss). Shared by renderRecOv's top overdue block AND getOvRecurring()/the bulk
+// "Move to today" rollover, so they can never disagree about what counts as a week-level miss.
+function _wrWeekMisses(){
+  const curItems=_wrItemsForWeek(0);
+  const out=[];
+  st.wrRules.filter(r=>r.is_enabled).forEach(r=>{
+    if(curItems.some(x=>String(x.id)===String(r.id)))return;
+    const _startMon=r.starting_date?(()=>{const sd=new Date(r.starting_date+'T12:00');const dw=sd.getDay();const m=new Date(sd);m.setDate(sd.getDate()-(dw===0?6:dw-1));m.setHours(0,0,0,0);return m;})():null;
+    const pwk=getWkKey(-1);
+    if(_startMon&&new Date(pwk+'T12:00')<_startMon)return; // before the rule existed
+    const pinned=r._dateOverrides&&r._dateOverrides[pwk];
+    const dueThatWk=isWRRuleDueThisWeek(r,-1)||(pinned&&pinned!=='__skip__');
+    if(!dueThatWk)return;
+    const skipped=pinned==='__skip__'||(st.wrOverrides||[]).some(o=>String(o.rule_id)===String(r.id)&&o.wk_key===pwk&&o.override_type==='skip');
+    const moved=(st.wrOverrides||[]).some(o=>String(o.rule_id)===String(r.id)&&o.wk_key===pwk&&o.override_type==='move');
+    if(!skipped&&!moved&&!isDoneWRRule(r.id,pwk))out.push({r,pwk});
+  });
+  return out;
+}
 function renderRecOv(){
   const wkKey=getWkKey(wrRecOff);
   // Week label for nav bar
@@ -2724,27 +2766,7 @@ function renderRecOv(){
     if(wrRecOff===0){lbl.innerHTML=_lnk+'Weekly Reset</a>';}
     else{const fmt=d=>d.toLocaleDateString('en-US',{month:'short',day:'numeric'});lbl.innerHTML=_lnk+fmt(mon)+' – '+fmt(sun)+'</a>';}
   }
-  // ── Merge overrides into base list ─────────────────────────────────────────
-  // 1. Base: rules that naturally fire this week
-  const baseItems=st.wrRules.filter(r=>isWRRuleDueThisWeek(r,wrRecOff));
-  // 2. Classify overrides for this wk_key
-  const ovThisWk=st.wrOverrides.filter(o=>o.wk_key===wkKey);
-  const skipIds=new Set(ovThisWk.filter(o=>o.override_type==='skip').map(o=>String(o.rule_id)));
-  const movedAwayIds=new Set(ovThisWk.filter(o=>o.override_type==='move').map(o=>String(o.rule_id)));
-  // 3. Remove skipped + moved-away items
-  const filtered=baseItems.filter(r=>!skipIds.has(String(r.id))&&!movedAwayIds.has(String(r.id)));
-  // 4. Add rules moved INTO this week from another week (but not if skipped)
-  const movedIn=st.wrOverrides
-    .filter(o=>o.override_type==='move'&&o.moved_to_wk_key===wkKey)
-    .map(o=>{const rule=st.wrRules.find(r=>String(r.id)===String(o.rule_id));return rule?{...rule,_movedIn:true}:null;})
-    .filter(Boolean)
-    .filter(r=>!filtered.some(x=>String(x.id)===String(r.id))&&!skipIds.has(String(r.id)));
-  // 5. Apply edit overrides (custom name for this week only)
-  const items=[...filtered,...movedIn].map(r=>{
-    const editOv=ovThisWk.find(o=>o.override_type==='edit'&&String(o.rule_id)===String(r.id));
-    const hasChange=editOv&&((editOv.custom_name&&editOv.custom_name!==r.name)||(editOv.custom_notes!==undefined&&editOv.custom_notes!==r.notes));
-    return{...r,_displayName:(editOv&&editOv.custom_name)||r.name,_edited:!!hasChange,_movedIn:r._movedIn||false};
-  });
+  const items=_wrItemsForWeek(wrRecOff);
   // ── End merge ────────────────────────────────────────────────────────────────
 
   // Done state: look for a 'complete' override for this rule + wkKey
@@ -2786,24 +2808,7 @@ function renderRecOv(){
   // NOT also due this week (a weekly task due again supersedes last week's miss). Shows here in
   // the WR container ONLY — WR overdue is deliberately separate from the general overdue list.
   if(wrRecOff===0){
-    const _ovRows=[];
-    st.wrRules.filter(r=>r.is_enabled).forEach(r=>{
-      if(items.some(x=>String(x.id)===String(r.id)))return; // already present this week
-      const _startMon=r.starting_date?(()=>{const sd=new Date(r.starting_date+'T12:00');const dw=sd.getDay();const m=new Date(sd);m.setDate(sd.getDate()-(dw===0?6:dw-1));m.setHours(0,0,0,0);return m;})():null;
-      for(let w=-1;w>=-1;w--){
-        const pwk=getWkKey(w);
-        if(_startMon&&new Date(pwk+'T12:00')<_startMon)break; // before the rule existed
-        const pinned=r._dateOverrides&&r._dateOverrides[pwk];
-        const dueThatWk=isWRRuleDueThisWeek(r,w)||(pinned&&pinned!=='__skip__');
-        if(!dueThatWk)continue; // keep looking back for the most recent due week
-        // Most recent prior due week found — flag overdue only if it wasn't handled, then stop
-        const skipped=pinned==='__skip__'||(st.wrOverrides||[]).some(o=>String(o.rule_id)===String(r.id)&&o.wk_key===pwk&&o.override_type==='skip');
-        const moved=(st.wrOverrides||[]).some(o=>String(o.rule_id)===String(r.id)&&o.wk_key===pwk&&o.override_type==='move');
-        if(!skipped&&!moved&&!isDoneWRRule(r.id,pwk))_ovRows.push({r,pwk});
-        break;
-      }
-    });
-    _ovRows.forEach(({r,pwk})=>{
+    _wrWeekMisses().forEach(({r,pwk})=>{
       const rid=String(r.id);
       const isPup=r.pup_related===true||r.pup_related==='true';
       const row=document.createElement('div');
@@ -3827,11 +3832,17 @@ function dropOnTodayList(e){
 
 // ── Shop overview ──────────────────────────────────────────────────────────────
 function _shopTopOrder(s){const orders=st.shopping.filter(x=>String(x.id)!==String(s.id)&&x.shop_order!=null).map(x=>x.shop_order);return orders.length?Math.min(...orders)-1:0;}
+// Normalizes to a bare YYYY-MM-DD — some older shopping_list rows carry a full ISO timestamp
+// (e.g. "2026-08-15T00:00:00") rather than a bare date. Comparing raw strings made two items on
+// the literal same day sort as different "groups" depending on which write path touched them
+// last, which is what made Cmd+Up/Down reordering block after an inconsistent number of moves.
+const _shopDs=d=>d?d.split('T')[0]:d;
 function _shopOvSort(arr){
   return[...arr].sort((x,y)=>{
     const ad=x.due_date?1:0,bd=y.due_date?1:0;
     if(ad!==bd)return bd-ad;
-    if(x.due_date&&y.due_date&&x.due_date!==y.due_date)return x.due_date<y.due_date?-1:1;
+    const xd=_shopDs(x.due_date),yd=_shopDs(y.due_date);
+    if(xd&&yd&&xd!==yd)return xd<yd?-1:1;
     return(x.shop_order??9999)-(y.shop_order??9999);
   });
 }
@@ -5794,7 +5805,7 @@ function _shopOvKeyNav(e){
     const prevOrders=sorted.map((s,i)=>({id:s.id,shop_order:i}));
     const idxs=[...selIds].map(id=>sorted.findIndex(s=>String(s.id)===id)).filter(i=>i>=0).sort((a,b)=>a-b);
     if(!idxs.length)return true;
-    const grp=s=>s.due_date||'';
+    const grp=s=>_shopDs(s.due_date)||'';
     // Move the whole selected block past its one neighbor by splicing it out and reinserting —
     // simpler and symmetric for up/down and single/multi-select than juggling shop_order deltas.
     // Blocked (no-op) at a due-date group boundary: shop_order can never move an item across one,
