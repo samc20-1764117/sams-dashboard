@@ -2828,9 +2828,11 @@ function renderRecOv(){
     const isPup=r.pup_related===true||r.pup_related==='true';
     const selId='wrrule-'+rid;
     const pinDs=r._dateOverrides&&r._dateOverrides[wkKey];
-    // Assigned to a day within the current week that's already passed and still not done —
-    // distinct from the top _ovRows block above, which only flags whole-WEEK misses from last week.
-    const ovPin=!isDone&&pinDs&&pinDs!=='__skip__'&&pinDs<tod();
+    // Assigned to a day within the CURRENT week (wrRecOff===0 only — a past week's pins are all
+    // trivially "before today" and would light up red permanently; a future week's never will)
+    // that's already passed and still not done — distinct from the top _ovRows block above, which
+    // only flags whole-WEEK misses from last week.
+    const ovPin=wrRecOff===0&&!isDone&&pinDs&&pinDs!=='__skip__'&&pinDs<tod();
     const row=document.createElement('div');
     row.id='ti-'+selId;
     row.className='ti'+(isDone?' done':'')+(ovPin?' ov-row':'');
@@ -5789,21 +5791,23 @@ function _shopOvKeyNav(e){
     const dir=e.key==='ArrowUp'?-1:1;
     const selIds=new Set(shopSel.map(s=>s.replace('shop-cal-','')));
     const sorted=_shopOvSort(st.shopping.filter(s=>!s.done));
-    sorted.forEach((s,i)=>s.shop_order=i);
-    const prevOrders=sorted.map(s=>({id:s.id,shop_order:s.shop_order}));
+    const prevOrders=sorted.map((s,i)=>({id:s.id,shop_order:i}));
     const idxs=[...selIds].map(id=>sorted.findIndex(s=>String(s.id)===id)).filter(i=>i>=0).sort((a,b)=>a-b);
     if(!idxs.length)return true;
     const grp=s=>s.due_date||'';
-    if(dir===-1&&idxs[0]>0&&grp(sorted[idxs[0]-1])===grp(sorted[idxs[0]])){
-      const above=sorted[idxs[0]-1];
-      idxs.forEach(i=>{sorted[i].shop_order--;});
-      above.shop_order=sorted[idxs[idxs.length-1]].shop_order+1;
-    } else if(dir===1&&idxs[idxs.length-1]<sorted.length-1&&grp(sorted[idxs[idxs.length-1]+1])===grp(sorted[idxs[idxs.length-1]])){
-      const below=sorted[idxs[idxs.length-1]+1];
-      idxs.forEach(i=>{sorted[i].shop_order++;});
-      below.shop_order=sorted[idxs[0]].shop_order-1;
-    } else return true;
-    sorted.sort((a,b)=>(a.shop_order??9999)-(b.shop_order??9999));
+    // Move the whole selected block past its one neighbor by splicing it out and reinserting —
+    // simpler and symmetric for up/down and single/multi-select than juggling shop_order deltas.
+    // Blocked (no-op) at a due-date group boundary: shop_order can never move an item across one,
+    // since _shopOvSort always sorts by date before shop_order.
+    if(dir===-1){
+      if(idxs[0]===0||grp(sorted[idxs[0]-1])!==grp(sorted[idxs[0]]))return true;
+      const moved=sorted.splice(idxs[0]-1,1)[0];
+      sorted.splice(idxs[idxs.length-1],0,moved);
+    } else {
+      if(idxs[idxs.length-1]===sorted.length-1||grp(sorted[idxs[idxs.length-1]+1])!==grp(sorted[idxs[idxs.length-1]]))return true;
+      const moved=sorted.splice(idxs[idxs.length-1]+1,1)[0];
+      sorted.splice(idxs[0],0,moved);
+    }
     sorted.forEach((s,i)=>{s.shop_order=i;sbReqNullable('PATCH','shopping_list',{shop_order:i},`?id=eq.${s.id}`);});
     save();renderShopOv();
     pushUndo(()=>{prevOrders.forEach(({id,shop_order})=>{const it=st.shopping.find(x=>String(x.id)===String(id));if(it){it.shop_order=shop_order;sbReqNullable('PATCH','shopping_list',{shop_order:shop_order??null},`?id=eq.${id}`);}});save();renderShopOv();},'Reorder shopping');

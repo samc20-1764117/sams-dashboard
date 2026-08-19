@@ -337,10 +337,14 @@ function renderWeeklyPage(){
   const elBar=document.getElementById('wrBar');if(elBar)elBar.style.width=pct+'%';
 }
 
-// ── Recurring Tasks month heatmap ───────────────────────────────────────────────
-// Inline month calendar (not a separate view/button) showing every WR + non-WR recurring
-// occurrence, color-coded by cadence. Reuses the same due-date logic as the rest of the page
-// (getRecurringWeekTasks / isWRRuleDueThisWeek) so it can never disagree with the lists below it.
+// ── Recurring Tasks month calendar ──────────────────────────────────────────────
+// Inline month calendar (not a separate view/button): 7 day columns showing non-WR recurring
+// task names, plus an 8th "Weekly Reset" column listing all WR rules due that week regardless
+// of day pin. Modeled after #recMoModal's day+WR-column layout (Overview page's monthly
+// recurring view) — read-mostly for now (click opens the edit modal; no drag/drop yet), meant
+// to converge toward that modal's fuller feature set over time. Reuses the same due-date logic
+// as the rest of the page (getRecurringWeekTasks / isWRRuleDueThisWeek) so it can never disagree
+// with the lists above it.
 let _rtHeatMonth=null,_rtHeatYear=null; // null = current month
 function _rtHeatShift(delta){
   const base=new Date(_rtHeatYear??new Date().getFullYear(),(_rtHeatMonth??new Date().getMonth())+delta,1);
@@ -348,16 +352,15 @@ function _rtHeatShift(delta){
   renderRtHeatmap();
 }
 function _rtHeatToday(){_rtHeatMonth=null;_rtHeatYear=null;renderRtHeatmap();}
-// src: 'wr' (Weekly Reset — blue shades) or 'sch' (Other Recurring — teal shades). Page-scoped
-// coloring (recurring page + its heatmap only) so WR vs. non-WR pops at a glance; does not touch
-// the shared category colors used on the Overview page.
-function _rtCadClass(cad,src){
-  const p=src==='sch'?'sch-':'wr-';
-  if(cad==='weekly')return p+'weekly';
-  if(cad==='biweekly')return p+'biweekly';
-  if(cad==='monthly')return p+'monthly';
-  return p+'other';
-}
+// Page-scoped coloring (recurring page + its calendar only) so WR vs. non-WR pops at a glance;
+// does not touch the shared category colors used on the Overview page. Darkest shade = most
+// frequent cadence. Kept in sync by eye with the .rt-heat-dot.wr-*/sch-* values in styles.css.
+const _RT_CHIP_COLOR={
+  wr:{weekly:'#1d4ed8',biweekly:'#2563eb',monthly:'#3b82f6',other:'#93c5fd'},
+  sch:{weekly:'#0f766e',biweekly:'#0d9488',monthly:'#14b8a6',other:'#5eead4'}
+};
+function _rtCadBucket(cad){return(cad==='weekly'||cad==='biweekly'||cad==='monthly')?cad:'other';}
+function _rtChipBg(cad,src){return(_RT_CHIP_COLOR[src]||_RT_CHIP_COLOR.sch)[_rtCadBucket(cad)];}
 function renderRtHeatmap(){
   const gridEl=document.getElementById('rt-heat-grid');if(!gridEl)return;
   const now=new Date();
@@ -365,55 +368,36 @@ function renderRtHeatmap(){
   const first=new Date(year,month,1);
   const startDow=(first.getDay()+6)%7; // Monday=0
   const gridStart=new Date(year,month,1-startDow);
-  const gridEnd=new Date(gridStart);gridEnd.setDate(gridStart.getDate()+41);
-  const gridStartDs=d2s(gridStart),gridEndDs=d2s(gridEnd);
+  const daysInMonth=new Date(year,month+1,0).getDate();
+  const weeks=Math.ceil((startDow+daysInMonth)/7)+1; // +1 extra week of trailing context
   const todayDs=tod();
   const lblEl=document.getElementById('rt-heat-lbl');if(lblEl)lblEl.textContent=first.toLocaleDateString('en-US',{month:'long',year:'numeric'});
 
   const todayMon=getWkBounds(0).mon;
   const wkOffFor=d=>Math.round((d-todayMon)/(7*86400000));
-  const wkOffStart=wkOffFor(gridStart)-1,wkOffEnd=wkOffFor(gridEnd)+1;
-
-  const dayMap={};
-  const addTo=(ds,cad,name,src)=>{if(ds<gridStartDs||ds>gridEndDs)return;if(!dayMap[ds])dayMap[ds]={};const k=src+':'+cad;if(!dayMap[ds][k])dayMap[ds][k]=[];dayMap[ds][k].push(name);};
-
-  for(let w=wkOffStart;w<=wkOffEnd;w++){
-    getRecurringWeekTasks(w).forEach(t=>{
-      const r=st.recurring.find(x=>String(x.id)===String(t._recId));if(!r||r.is_enabled===false)return;
-      addTo(t.due_date,r.cadence||'weekly',t.name,'sch');
-    });
-  }
-  (st.wrRules||[]).filter(r=>r.is_enabled!==false).forEach(r=>{
-    const cad=r.cadence||'weekly';
-    for(let w=wkOffStart;w<=wkOffEnd;w++){
-      if(!isWRRuleDueThisWeek(r,w))continue;
-      const{mon,sun}=getWkBounds(w);
-      let ds=null;
-      if((cad==='weekly'||cad==='biweekly')&&r.day_of_week!=null){
-        const wd=getWkDates(w).find(x=>x.getDay()===r.day_of_week);
-        ds=wd?d2s(wd):d2s(mon);
-      } else if(cad==='monthly'&&r.starting_date){
-        const anchorDay=new Date(r.starting_date+'T12:00').getDate();
-        [mon,sun].forEach(dt=>{const maxDay=new Date(dt.getFullYear(),dt.getMonth()+1,0).getDate();const occ=new Date(dt.getFullYear(),dt.getMonth(),Math.min(anchorDay,maxDay));if(occ>=mon&&occ<=sun)ds=d2s(occ);});
-      } else {
-        ds=d2s(mon);
-      }
-      if(ds)addTo(ds,(cad==='weekly'||cad==='biweekly'||cad==='monthly')?cad:'other',r.name,'wr');
-    }
-  });
+  const chip=(name,cad,src,onclick)=>`<span class="rt-heat-chip" style="background:${_rtChipBg(cad,src)}" title="${escHtml(name)}" onclick="event.stopPropagation();${onclick}">${escHtml(name)}</span>`;
 
   let html='';
-  for(let i=0;i<42;i++){
-    const d=new Date(gridStart);d.setDate(gridStart.getDate()+i);
-    const ds=d2s(d);
-    const inMonth=d.getMonth()===month;
-    const info=dayMap[ds]||{};
-    const keys=Object.keys(info);
-    const dots=keys.map(k=>{const[src,cad]=k.split(':');return `<span class="rt-heat-dot ${_rtCadClass(cad,src)}" title="${escHtml(info[k].join(', '))}"></span>`;}).join('');
-    html+=`<div class="rt-heat-cell${inMonth?'':' rt-heat-out'}${ds===todayDs?' rt-heat-today':''}">
-      <span class="rt-heat-daynum">${d.getDate()}</span>
-      <span class="rt-heat-dots">${dots}</span>
-    </div>`;
+  for(let w=0;w<weeks;w++){
+    const wkMon=new Date(gridStart);wkMon.setDate(gridStart.getDate()+w*7);
+    const wkOff=wkOffFor(wkMon);
+    const wkTasks=getRecurringWeekTasks(wkOff).filter(t=>{const r=st.recurring.find(x=>String(x.id)===String(t._recId));return r&&r.is_enabled!==false;});
+    for(let d=0;d<7;d++){
+      const date=new Date(wkMon);date.setDate(wkMon.getDate()+d);
+      const ds=d2s(date);
+      const inMonth=date.getMonth()===month;
+      const chips=wkTasks.filter(t=>t.due_date===ds).map(t=>{
+        const r=st.recurring.find(x=>String(x.id)===String(t._recId));
+        return chip(t.name,r?r.cadence:'weekly','sch',`openRecEditModal('${t._recId}')`);
+      }).join('');
+      html+=`<div class="rt-heat-cell${inMonth?'':' rt-heat-out'}${ds===todayDs?' rt-heat-today':''}">
+        <span class="rt-heat-daynum">${date.getDate()}</span>
+        <div class="rt-heat-chips">${chips}</div>
+      </div>`;
+    }
+    const wrChips=(st.wrRules||[]).filter(r=>r.is_enabled!==false&&isWRRuleDueThisWeek(r,wkOff))
+      .map(r=>chip(r.name,r.cadence,'wr',`openWrEditModal('${r.id}',null,'all')`)).join('');
+    html+=`<div class="rt-heat-cell rt-heat-wr-col${wkOff===0?' rt-heat-today':''}"><div class="rt-heat-chips">${wrChips}</div></div>`;
   }
   gridEl.innerHTML=html;
 }

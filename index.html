@@ -362,7 +362,7 @@ if(sessionStorage._mReloaded===BUILD);else{
       <div id="rt-outer" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;flex:1;min-height:0;width:100%">
         <!-- Col 1: Weekly Reset — Weekly -->
         <div id="rt-col-wr" style="min-height:0;display:flex;flex-direction:column">
-          <div style="font-size:9px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;padding:0 2px;flex-shrink:0;text-align:center">Weekly Reset</div>
+          <div style="font-size:9px;font-weight:700;letter-spacing:.02em;color:var(--muted);margin-bottom:5px;padding:0 2px;flex-shrink:0;text-align:center">Weekly Reset</div>
           <div style="display:flex;flex-direction:column;gap:8px;overflow-y:auto;flex:1;min-height:0;padding:8px 8px 8px 6px;border:1.5px solid var(--border);border-radius:10px;background:rgba(var(--card-rgb,255,255,255),.04)">
             <div id="rt-wr-weekly"></div>
           </div>
@@ -370,7 +370,7 @@ if(sessionStorage._mReloaded===BUILD);else{
 
         <!-- Col 2: Weekly Reset — Biweekly/Monthly/Other -->
         <div id="rt-col-wr-rest" style="min-height:0;display:flex;flex-direction:column">
-          <div style="font-size:9px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;padding:0 2px;flex-shrink:0;text-align:center">Weekly Reset — Other Cadence</div>
+          <div style="font-size:9px;font-weight:700;letter-spacing:.02em;color:var(--muted);margin-bottom:5px;padding:0 2px;flex-shrink:0;text-align:center">Weekly Reset — Other Cadence</div>
           <div style="display:flex;flex-direction:column;gap:8px;overflow-y:auto;flex:1;min-height:0;padding:8px 8px 8px 6px;border:1.5px solid var(--border);border-radius:10px;background:rgba(var(--card-rgb,255,255,255),.04)">
             <div id="rt-wr-biweekly"></div>
             <div id="rt-wr-monthly"></div>
@@ -379,28 +379,29 @@ if(sessionStorage._mReloaded===BUILD);else{
         </div>
       </div>
 
-      <!-- Month heatmap: every WR + non-WR recurring occurrence this month, color-coded by cadence.
-           Cadence colors are keyed to the list headers above (Weekly/Biweekly/Monthly/Other), not a
-           separate legend. -->
-      <div id="rt-heat" class="card" style="padding:7px 12px 9px;flex-shrink:0;box-shadow:none">
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+      <!-- Month calendar: 7 day columns (non-WR recurring, by name) + 1 Weekly Reset column
+           (all WR rules due that week, regardless of day pin) — modeled after #recMoModal's
+           day+WR-column layout on the Overview page; the two are meant to converge over time. -->
+      <div id="rt-heat" class="card" style="padding:7px 12px 9px;flex:1;min-height:0;display:flex;flex-direction:column;box-shadow:none">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-shrink:0">
           <button class="btn btn-ghost btn-xs" style="padding:1px 6px" onclick="_rtHeatShift(-1)">‹</button>
           <span id="rt-heat-lbl" style="font-size:10.5px;font-weight:700;color:var(--muted);min-width:90px;text-align:center"></span>
           <button class="btn btn-ghost btn-xs" style="padding:1px 6px" onclick="_rtHeatShift(1)">›</button>
           <button class="btn btn-ghost btn-xs" style="padding:1px 7px;margin-left:2px" onclick="_rtHeatToday()">Today</button>
         </div>
-        <div style="max-height:150px;overflow-y:auto">
-          <div id="rt-heat-dow" class="rt-heat-grid">
+        <div style="flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column">
+          <div id="rt-heat-dow" class="rt-heat-grid" style="flex-shrink:0">
             <div class="rt-heat-dow-cell">Mon</div><div class="rt-heat-dow-cell">Tue</div><div class="rt-heat-dow-cell">Wed</div><div class="rt-heat-dow-cell">Thu</div><div class="rt-heat-dow-cell">Fri</div><div class="rt-heat-dow-cell">Sat</div><div class="rt-heat-dow-cell">Sun</div>
+            <div class="rt-heat-dow-cell" style="color:#3b82f6;text-align:left;padding-left:4px">Weekly Reset</div>
           </div>
-          <div id="rt-heat-grid" class="rt-heat-grid"></div>
+          <div id="rt-heat-grid" class="rt-heat-grid" style="flex:1"></div>
         </div>
       </div>
     </div>
 
     <!-- Right: Other Recurring — full page height -->
     <div id="rt-col-sch" style="flex:1;min-width:0;min-height:0;display:flex;flex-direction:column">
-      <div style="font-size:9px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;padding:0 2px;flex-shrink:0;text-align:center">Other Recurring</div>
+      <div style="font-size:9px;font-weight:700;letter-spacing:.02em;color:var(--muted);margin-bottom:5px;padding:0 2px;flex-shrink:0;text-align:center">Other Recurring</div>
       <div style="display:flex;flex-direction:column;gap:8px;overflow-y:auto;flex:1;min-height:0;padding:8px 8px 8px 6px;border:1.5px solid var(--border);border-radius:10px;background:rgba(var(--card-rgb,255,255,255),.04)">
         <div id="rt-sch-weekly"></div>
         <div id="rt-sch-biweekly"></div>
