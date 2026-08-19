@@ -59,18 +59,18 @@ if(sessionStorage._mReloaded===BUILD);else{
     <button class="sb-close" onclick="closeSB()" title="Close">✕</button>
   </div>
   <nav style="flex:1">
-    <a class="nav-item active" href="#overview" onclick="event.preventDefault();showPage('overview')"><div class="ndot" style="background:#6d5fe6"></div>Overview</a>
-    <a class="nav-item" href="#weekly" onclick="event.preventDefault();showPage('weekly')"><div class="ndot" style="background:#10b981"></div>Recurring Tasks</a>
-    <a class="nav-item" href="#weekly" onclick="event.preventDefault();showPage('weekly')"><div class="ndot" style="background:#eab308"></div>Shopping</a>
-    <a class="nav-item" href="#birthdays" onclick="event.preventDefault();showPage('birthdays')"><div class="ndot" style="background:#f97316"></div>Birthdays</a>
-    <a class="nav-item" href="#holidays" onclick="event.preventDefault();showPage('holidays')"><div class="ndot" style="background:#f97316"></div>Holidays</a>
-    <a class="nav-item" href="#ideas" onclick="event.preventDefault();showPage('ideas')"><div class="ndot" style="background:#a855f7"></div>Ideas</a>
-    <a class="nav-item" href="#pups" onclick="event.preventDefault();showPage('pups')"><div class="ndot" style="background:#f43f5e"></div>🐾 Pups</a>
-    <a class="nav-item" href="#finance" onclick="event.preventDefault();showPage('finance')"><div class="ndot" style="background:#22c55e"></div>Finance</a>
-    <a class="nav-item" href="#recipes" onclick="event.preventDefault();showPage('recipes')"><div class="ndot" style="background:#f59e0b"></div>🍳 Recipes</a>
-    <a class="nav-item" href="#notes" onclick="event.preventDefault();showPage('notes')"><div class="ndot" style="background:#8b5cf6"></div>📝 Notes</a>
-    <a class="nav-item" href="#videos" onclick="event.preventDefault();showPage('videos')"><div class="ndot" style="background:#0ea5e9"></div>🎬 Videos</a>
-    <a class="nav-item" href="#packing" onclick="event.preventDefault();showPage('packing')"><div class="ndot" style="background:#22c55e"></div>Packing</a>
+    <a class="nav-item active" data-page="overview" href="#overview" onclick="event.preventDefault();showPage('overview')"><div class="ndot" style="background:#6d5fe6"></div>Overview</a>
+    <a class="nav-item" data-page="weekly" href="#weekly" onclick="event.preventDefault();showPage('weekly')"><div class="ndot" style="background:#2a9db5"></div>Recurring Tasks</a>
+    <a class="nav-item" data-page="weekly" href="#weekly" onclick="event.preventDefault();showPage('weekly')"><div class="ndot" style="background:#eab308"></div>Shopping</a>
+    <a class="nav-item" data-page="birthdays" href="#birthdays" onclick="event.preventDefault();showPage('birthdays')"><div class="ndot" style="background:#f97316"></div>Birthdays</a>
+    <a class="nav-item" data-page="holidays" href="#holidays" onclick="event.preventDefault();showPage('holidays')"><div class="ndot" style="background:#f97316"></div>Holidays</a>
+    <a class="nav-item" data-page="ideas" href="#ideas" onclick="event.preventDefault();showPage('ideas')"><div class="ndot" style="background:#a855f7"></div>Ideas</a>
+    <a class="nav-item" data-page="pups" href="#pups" onclick="event.preventDefault();showPage('pups')"><div class="ndot" style="background:#f43f5e"></div>🐾 Pups</a>
+    <a class="nav-item" data-page="finance" href="#finance" onclick="event.preventDefault();showPage('finance')"><div class="ndot" style="background:#22c55e"></div>Finance</a>
+    <a class="nav-item" data-page="recipes" href="#recipes" onclick="event.preventDefault();showPage('recipes')"><div class="ndot" style="background:#f59e0b"></div>🍳 Recipes</a>
+    <a class="nav-item" data-page="notes" href="#notes" onclick="event.preventDefault();showPage('notes')"><div class="ndot" style="background:#8b5cf6"></div>📝 Notes</a>
+    <a class="nav-item" data-page="videos" href="#videos" onclick="event.preventDefault();showPage('videos')"><div class="ndot" style="background:#22c55e"></div>🎬 Videos</a>
+    <a class="nav-item" data-page="packing" href="#packing" onclick="event.preventDefault();showPage('packing')"><div class="ndot" style="background:#38bdf8"></div>Packing</a>
   </nav>
 </div>
 
@@ -358,30 +358,8 @@ if(sessionStorage._mReloaded===BUILD);else{
   <input id="nsN" style="display:none"><input id="nsS" style="display:none">
   <datalist id="storeListFull"><option value="HEB"></option><option value="Ikea"></option><option value="Online"></option><option value="Other"></option></datalist>
 
-  <div style="display:flex;flex-direction:column;height:calc(100vh - 84px);width:100%">
-    <!-- Month heatmap: every WR + non-WR recurring occurrence this month, color-coded by cadence -->
-    <div id="rt-heat" class="card" style="padding:10px 14px 12px;margin-bottom:14px;flex-shrink:0;box-shadow:none">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-        <div style="display:flex;align-items:center;gap:6px">
-          <button class="btn btn-ghost btn-xs" style="padding:2px 7px" onclick="_rtHeatShift(-1)">‹</button>
-          <span id="rt-heat-lbl" style="font-size:12px;font-weight:700;color:var(--text);min-width:112px;text-align:center"></span>
-          <button class="btn btn-ghost btn-xs" style="padding:2px 7px" onclick="_rtHeatShift(1)">›</button>
-          <button class="btn btn-ghost btn-xs" style="padding:2px 8px;margin-left:2px" onclick="_rtHeatToday()">Today</button>
-        </div>
-        <div style="display:flex;align-items:center;gap:10px;font-size:9.5px;color:var(--muted)">
-          <span style="display:flex;align-items:center;gap:3px"><span class="rt-heat-dot cad-weekly"></span>Weekly</span>
-          <span style="display:flex;align-items:center;gap:3px"><span class="rt-heat-dot cad-biweekly"></span>Biweekly</span>
-          <span style="display:flex;align-items:center;gap:3px"><span class="rt-heat-dot cad-monthly"></span>Monthly</span>
-          <span style="display:flex;align-items:center;gap:3px"><span class="rt-heat-dot cad-other"></span>Other</span>
-        </div>
-      </div>
-      <div id="rt-heat-dow" class="rt-heat-grid">
-        <div class="rt-heat-dow-cell">Mon</div><div class="rt-heat-dow-cell">Tue</div><div class="rt-heat-dow-cell">Wed</div><div class="rt-heat-dow-cell">Thu</div><div class="rt-heat-dow-cell">Fri</div><div class="rt-heat-dow-cell">Sat</div><div class="rt-heat-dow-cell">Sun</div>
-      </div>
-      <div id="rt-heat-grid" class="rt-heat-grid"></div>
-    </div>
-
-    <div id="rt-outer" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;flex:1;min-height:0;width:100%">
+  <div style="display:flex;flex-direction:column;width:100%">
+    <div id="rt-outer" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;height:70vh;flex-shrink:0;width:100%">
       <!-- Col 1: Weekly Reset Recurring -->
       <div id="rt-col-wr" style="min-height:0;display:flex;flex-direction:column">
         <div style="font-size:11px;font-weight:700;letter-spacing:.02em;color:var(--muted);margin-bottom:12px;padding:0 2px;flex-shrink:0;text-align:center">Weekly Reset</div>
@@ -402,6 +380,24 @@ if(sessionStorage._mReloaded===BUILD);else{
           <div id="rt-sch-monthly"></div>
           <div id="rt-sch-other"></div>
         </div>
+      </div>
+    </div>
+
+    <!-- Month heatmap: every WR + non-WR recurring occurrence this month, color-coded by cadence.
+         Cadence colors are keyed to the list headers above (Weekly/Biweekly/Monthly/Other), not a
+         separate legend. -->
+    <div id="rt-heat" class="card" style="padding:7px 12px 9px;margin-top:12px;flex-shrink:0;box-shadow:none">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+        <button class="btn btn-ghost btn-xs" style="padding:1px 6px" onclick="_rtHeatShift(-1)">‹</button>
+        <span id="rt-heat-lbl" style="font-size:10.5px;font-weight:700;color:var(--muted);min-width:90px;text-align:center"></span>
+        <button class="btn btn-ghost btn-xs" style="padding:1px 6px" onclick="_rtHeatShift(1)">›</button>
+        <button class="btn btn-ghost btn-xs" style="padding:1px 7px;margin-left:2px" onclick="_rtHeatToday()">Today</button>
+      </div>
+      <div style="max-height:150px;overflow-y:auto">
+        <div id="rt-heat-dow" class="rt-heat-grid">
+          <div class="rt-heat-dow-cell">Mon</div><div class="rt-heat-dow-cell">Tue</div><div class="rt-heat-dow-cell">Wed</div><div class="rt-heat-dow-cell">Thu</div><div class="rt-heat-dow-cell">Fri</div><div class="rt-heat-dow-cell">Sat</div><div class="rt-heat-dow-cell">Sun</div>
+        </div>
+        <div id="rt-heat-grid" class="rt-heat-grid"></div>
       </div>
     </div>
   </div>

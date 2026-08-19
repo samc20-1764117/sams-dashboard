@@ -516,7 +516,7 @@ function renderRtWrGroup(containerId, rules, cadence){
     :`<div style="padding:6px 4px;font-size:11px;color:var(--subtle);font-style:italic">None</div>`;
   el.innerHTML=`<div class="card" style="padding:8px 12px;box-shadow:none">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;padding:0 2px">
-      <span style="font-size:12px;font-weight:800;color:var(--text)">${cadLabel}${rules.length?' <span style="opacity:.45;font-weight:400;font-size:11px">· '+rules.length+'</span>':''}</span>
+      <span style="font-size:12px;font-weight:800;color:var(--text);display:inline-flex;align-items:center;gap:5px"><span class="rt-heat-dot cad-${cadence}" style="width:7px;height:7px"></span>${cadLabel}${rules.length?' <span style="opacity:.45;font-weight:400;font-size:11px">· '+rules.length+'</span>':''}</span>
       <button class="btn-plus" style="padding:0px 5px;font-size:10px;line-height:1.4" onclick="openWrRuleAddModal('${cadence==='other'?'quarterly':cadence}','wr')">+</button>
     </div>
     ${tableHtml}
@@ -585,7 +585,7 @@ function renderRtGroup(containerId, tasks, cadence){
     :`<div style="padding:6px 4px;font-size:11px;color:var(--subtle);font-style:italic">None</div>`;
   el.innerHTML=`<div class="card" style="padding:8px 12px;box-shadow:none">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;padding:0 2px">
-      <span style="font-size:12px;font-weight:800;color:var(--text)">${cadLabel}${tasks.length?' <span style="opacity:.45;font-weight:400;font-size:11px">· '+tasks.length+'</span>':''}</span>
+      <span style="font-size:12px;font-weight:800;color:var(--text);display:inline-flex;align-items:center;gap:5px"><span class="rt-heat-dot cad-${cadence}" style="width:7px;height:7px"></span>${cadLabel}${tasks.length?' <span style="opacity:.45;font-weight:400;font-size:11px">· '+tasks.length+'</span>':''}</span>
       <button class="btn-plus" style="padding:0px 5px;font-size:10px;line-height:1.4" onclick="${cadence==='other'?`openWrRuleAddModal('quarterly','sch')`:`openRecModalForSection('scheduled','${cadence}')`}">+</button>
     </div>
     ${tableHtml}
@@ -2209,7 +2209,8 @@ function _finRenderPersonal(accs,vtiAcc,currentVal,netWorth,totalAll){
       </filter></defs>`;
     // Rotate group so 0 starts at 12 o'clock
     html+=`<g transform="rotate(-90 21 21)">`;
-    html+=`<circle cx="21" cy="21" r="15.9" fill="none" stroke="white" stroke-width="3.5" />`;
+    const _finTrack=document.body.classList.contains('dark')?'rgba(255,255,255,.08)':'white';
+    html+=`<circle cx="21" cy="21" r="15.9" fill="none" stroke="${_finTrack}" stroke-width="3.5" />`;
     segs.forEach(seg=>{
       const dashLen=seg.pct*100;const gap=0.6;const dashOff=100-(seg.start*100);
       const adjLen=Math.max(dashLen-gap,0.1);
@@ -2218,7 +2219,7 @@ function _finRenderPersonal(accs,vtiAcc,currentVal,netWorth,totalAll){
       html+=`<circle cx="21" cy="21" r="15.9" fill="none" stroke="transparent" stroke-width="3.5" stroke-dasharray="${adjLen} ${100-adjLen}" stroke-dashoffset="${adjOff}" style="pointer-events:stroke" data-fin-seg="${seg.id}" data-fin-tip-name="${seg.name}" data-fin-tip-amt="${_finFmtRound(seg.amt)}" onmouseenter="_finHover('${seg.id}')" onmouseleave="_finHover(null)"/>`;
     });
     html+=`</g></svg>`;
-    html+=`<div class="fin-donut-center"><div class="fin-donut-label">Net Worth</div><div class="fin-donut-val">${_finFmtRound(netWorth)}</div>${hasExcluded?`<div style="font-size:10px;color:var(--text-secondary,#94a3b8)">All: ${_finFmtRound(totalAll)}</div>`:''}</div>`;
+    html+=`<div class="fin-donut-center"><div class="fin-donut-label">Net Worth</div><div class="fin-donut-val">${_finFmtRound(netWorth)}</div>${hasExcluded?`<div style="font-size:10px;color:var(--muted)">All: ${_finFmtRound(totalAll)}</div>`:''}</div>`;
     html+=`</div>`;
   }
   html+=`<div class="fin-chart-legend">`;
@@ -2283,8 +2284,8 @@ function _finRenderInvestments(purchases,totalBought,gain,gainPct,currentVal){
         <div style="font-size:22px;font-weight:700;color:#1e293b;line-height:1.1">${_finFmtRound(gain)}</div>
         <div style="font-size:12px;font-weight:600;color:#059669;margin-top:2px">${_finFmtPct(gainPct)}</div>
         <div style="margin-top:10px;display:flex;gap:12px">
-          <div><div style="font-size:9px;font-weight:600;color:var(--text-secondary,#64748b)">VTI Value</div><div style="font-size:13px;font-weight:600;color:var(--text-primary,#334155);margin-top:1px">${_finFmtRound(currentVal)}</div></div>
-          <div><div style="font-size:9px;font-weight:600;color:var(--text-secondary,#64748b)">Cost Basis</div><div style="font-size:13px;font-weight:600;color:var(--text-primary,#334155);margin-top:1px">${_finFmtRound(totalBought)}</div></div>
+          <div><div style="font-size:9px;font-weight:600;color:var(--muted)">VTI Value</div><div style="font-size:13px;font-weight:600;color:var(--text);margin-top:1px">${_finFmtRound(currentVal)}</div></div>
+          <div><div style="font-size:9px;font-weight:600;color:var(--muted)">Cost Basis</div><div style="font-size:13px;font-weight:600;color:var(--text);margin-top:1px">${_finFmtRound(totalBought)}</div></div>
         </div>
       </div>
       <div class="fin-inv-chart" style="position:relative;height:100%;min-height:160px">
@@ -2621,8 +2622,8 @@ function openFinInvAdd(e){
   pop.className='fin-quick-add';
   pop.innerHTML=`
     <div style="display:flex;gap:6px;align-items:center">
-      <input id="finInvDate" type="date" style="flex:1;padding:4px 6px;border:1px solid rgba(200,200,215,.25);border-radius:6px;font-size:12px;background:var(--card-bg,#fff);color:var(--text-primary,#334155)">
-      <input id="finInvAmt" type="number" step="0.01" placeholder="$0.00" style="width:90px;padding:4px 6px;border:1px solid rgba(200,200,215,.25);border-radius:6px;font-size:12px;background:var(--card-bg,#fff);color:var(--text-primary,#334155)">
+      <input id="finInvDate" type="date" style="flex:1;padding:4px 6px;border:1px solid rgba(200,200,215,.25);border-radius:6px;font-size:12px;color:var(--text)">
+      <input id="finInvAmt" type="number" step="0.01" placeholder="$0.00" style="width:90px;padding:4px 6px;border:1px solid rgba(200,200,215,.25);border-radius:6px;font-size:12px;color:var(--text)">
       <button onclick="saveFinInvAdd()" style="padding:4px 10px;border:none;border-radius:6px;background:#10b981;color:#fff;cursor:pointer;font-size:11px;font-weight:600;white-space:nowrap">Add</button>
     </div>`;
   btn.closest('.fin-card-hdr').appendChild(pop);
@@ -2687,10 +2688,10 @@ function _finRenderDetailsContent(pop){
   purchases.forEach(p=>{
     const d=p.date?new Date(p.date+'T12:00'):null;
     const ds=d?d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'—';
-    html+=`<tr class="fin-row"><td style="padding-left:12px">${ds}</td><td style="text-align:right;padding-right:12px" class="fin-num">${_finFmt(Math.abs(p.amount||0))}</td><td style="text-align:right;padding-right:12px;color:var(--text-secondary)" class="fin-num">${_finFmt(cumMap[p.id]||0)}</td><td><button class="delbtn" onclick="delFinPurchase('${p.id}')">&#x2715;</button></td></tr>`;
+    html+=`<tr class="fin-row"><td style="padding-left:12px">${ds}</td><td style="text-align:right;padding-right:12px" class="fin-num">${_finFmt(Math.abs(p.amount||0))}</td><td style="text-align:right;padding-right:12px;color:var(--muted)" class="fin-num">${_finFmt(cumMap[p.id]||0)}</td><td><button class="delbtn" onclick="delFinPurchase('${p.id}')">&#x2715;</button></td></tr>`;
   });
   html+=`</tbody></table></div>`;
-  if(!purchases.length)html+=`<div style="text-align:center;color:var(--text-secondary);padding:20px;font-size:13px">No purchases yet</div>`;
+  if(!purchases.length)html+=`<div style="text-align:center;color:var(--muted);padding:20px;font-size:13px">No purchases yet</div>`;
   pop.innerHTML=html;
 }
 async function delFinPurchase(id){
@@ -5088,7 +5089,7 @@ function showPage(id){
   const vidPage=document.getElementById('page-videos');if(vidPage)vidPage.removeAttribute('style');
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   const pageEl=document.getElementById('page-'+id);if(pageEl)pageEl.classList.add('active');
-  const idx=PAGES.indexOf(id);if(idx>-1&&document.querySelectorAll('.nav-item')[idx])document.querySelectorAll('.nav-item')[idx].classList.add('active');
+  document.querySelectorAll(`.nav-item[data-page="${id}"]`).forEach(n=>n.classList.add('active'));
   const mainEl=document.getElementById('main');if(mainEl){mainEl.scrollTop=0;}
   if(id==='weekly'){renderWeeklyPage();}if(id==='travel')renderTravelPage();if(id==='birthdays')renderBdayPage();if(id==='holidays')renderHolidaysPage();if(id==='ideas')renderIdeasPage();if(id==='pups')renderPupsPage();if(id==='recipes')renderRecipesPage();if(id==='packing')renderPackingPage();if(id==='finance')renderFinancePage();if(id==='guide')renderGuidePage();if(id==='videos'){if(!_vidPageInit&&_prevPg!=='videos'){_vidView='dashboard';localStorage.setItem('_vidView','dashboard');}_vidPageInit=false;renderVideosPage();}if(id==='overview'){renderShopOv();renderRecOv();renderWkCal();if(document.getElementById('tbGrid'))renderDayTB();}else{const _tbSc=document.getElementById('tbScroll');if(_tbSc)_tbSc._scrollDay=null;}
   const backBtn=document.getElementById('backToOv');if(backBtn)backBtn.style.display=id==='overview'?'none':'flex';
@@ -5117,11 +5118,11 @@ function renderPackingPage(){save();
   let html=`<div style="display:flex;gap:24px;flex:1;min-height:0;overflow:hidden">`;
   // Left: Standard templates
   html+=`<div style="flex:1;overflow-y:auto;padding-right:8px">
-    <h3 style="margin:0 0 12px;font-size:13px;font-weight:600;color:var(--text-primary,#334155)">Standard Packing Items</h3>`;
+    <h3 style="margin:0 0 12px;font-size:13px;font-weight:600;color:var(--text)">Standard Packing Items</h3>`;
   PACK_CATS.forEach(cat=>{
     const items=grouped[cat]||[];
     html+=`<div style="margin-bottom:16px">
-      <div style="font-size:11px;font-weight:600;color:var(--text-secondary,#64748b);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">${cat}</div>`;
+      <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">${cat}</div>`;
     items.forEach(t=>{
       html+=`<div class="pack-tpl-row" data-ptid="${t.id}">
         <span class="pack-tpl-name" contenteditable="true" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" onblur="renamePackTpl('${t.id}',this.textContent.trim())">${t.name}</span>
@@ -5135,8 +5136,8 @@ function renderPackingPage(){save();
   // Right: Ad-hoc items (not tied to a trip — a pool of reusable extras)
   const adhoc=st.packTemplates.filter(t=>t.category==='Ad-hoc').sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
   html+=`<div style="flex:1;overflow-y:auto;padding-left:8px;border-left:1px solid rgba(200,200,215,.2)">
-    <h3 style="margin:0 0 12px;font-size:13px;font-weight:600;color:var(--text-primary,#334155)">Ad-hoc Items</h3>
-    <p style="font-size:11px;color:var(--text-secondary,#64748b);margin:0 0 12px">Extra items you sometimes need. Add to trips individually.</p>`;
+    <h3 style="margin:0 0 12px;font-size:13px;font-weight:600;color:var(--text)">Ad-hoc Items</h3>
+    <p style="font-size:11px;color:var(--muted);margin:0 0 12px">Extra items you sometimes need. Add to trips individually.</p>`;
   adhoc.forEach(t=>{
     html+=`<div class="pack-tpl-row" data-ptid="${t.id}">
       <span class="pack-tpl-name" contenteditable="true" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" onblur="renamePackTpl('${t.id}',this.textContent.trim())">${t.name}</span>
