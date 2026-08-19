@@ -467,7 +467,7 @@ function renderPupSkillsHighlight(){
   const sunnySkills=_pupWkFocusSkills('Sunny',wkOff);
   if(!mochiSkills.length&&!sunnySkills.length){wrap.innerHTML='';wrap.style.cssText='display:none';return;}
   const _hidden=_pupHiddenTiles();
-  wrap.style.cssText='display:flex;gap:7px;margin:7px;flex-shrink:0';
+  wrap.style.cssText='display:flex;gap:7px;margin:7px 0 7px 7px;flex-shrink:0';
   const mkChip=pup=>`<div class="pup-restore-chip" onclick="_setPupTileHidden('${pup}',false)" title="Show ${pup}">${_PUP_EYE}<span>${pup}</span></div>`;
   const mkTile=(pup,skills,accentColor)=>{
     const wkDoneTotal=skills.reduce((a,s)=>a+_pupWkDone(s.id),0);
