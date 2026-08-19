@@ -637,12 +637,25 @@ function getRecurringWeekTasks(off=0){
         const DAYS2=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
         const dow=DAYS2.findIndex(d=>d.toLowerCase()===nwdMatch[2].toLowerCase());
         if(dow<0)return;
-        const refDate=wkDates[0];
-        const year=refDate.getFullYear(),month=refDate.getMonth();
-        let count=0,targetDate=null;
-        for(let day=1;day<=31;day++){const d=new Date(year,month,day);if(d.getMonth()!==month)break;if(d.getDay()===dow){count++;if(count===n){targetDate=d;break;}}}
+        // A Mon–Sun week can span two calendar months (e.g. Aug 31 – Sep 6). Checking only
+        // wkDates[0]'s month misses the target whenever the week starts in the tail end of the
+        // prior month — e.g. "1st Sunday" of September (Sep 6) falls in the week that starts
+        // Aug 31, but Aug 31 is still August, so the old single-month lookup computed August's
+        // 1st Sunday instead and never found a match in that week at all.
+        let targetDate=null;
+        const _nwdMonths=[];
+        for(const dt of[wkDates[0],wkDates[6]]){
+          if(!_nwdMonths.some(x=>x.y===dt.getFullYear()&&x.m===dt.getMonth()))_nwdMonths.push({y:dt.getFullYear(),m:dt.getMonth()});
+        }
+        for(const{y,m}of _nwdMonths){
+          let count=0;
+          for(let day=1;day<=31;day++){
+            const d=new Date(y,m,day);if(d.getMonth()!==m)break;
+            if(d.getDay()===dow){count++;if(count===n){if(wkDates.some(w=>d2s(w)===d2s(d)))targetDate=d;break;}}
+          }
+          if(targetDate)break;
+        }
         if(!targetDate)return;
-        if(!wkDates.some(d=>d2s(d)===d2s(targetDate)))return;
         if(r.starting_date){const sd=new Date(r.starting_date+'T00:00:00');if(targetDate<sd)return;}
         date=targetDate;
       }
@@ -1370,9 +1383,6 @@ document.addEventListener('keydown',e=>{
   }
   if(e.key==='b'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')){
     e.preventDefault();if(activePg==='birthdays')showPage('overview');else showPage('birthdays');
-  }
-  if(e.key==='W'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')){
-    e.preventDefault();if(activePg==='weekly')showPage('overview');else showPage('weekly');
   }
   // GG to close help overlay when open
   if(e.key==='g'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&document.getElementById('helpOverlay').classList.contains('open')){

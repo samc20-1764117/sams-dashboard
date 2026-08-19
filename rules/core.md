@@ -103,7 +103,7 @@ Supabase Auth (email+password), RLS on all tables. `init()`→`checkAuth()`→`d
 - `f`: finance page. Press again to return to overview.
 - `h`: holidays page. Press again to return to overview.
 - `b`: birthdays page. Press again to return to overview.
-- `W` (shift+w): Weekly Reset / Recurring Tasks page (`page-weekly`). Press again to return to overview. Case-sensitive — lowercase `w` is the held-chord modifier for `w+←/→` week-shift on overview, so this must stay uppercase to avoid collision.
+- `w`: Weekly Reset / Recurring Tasks page (`page-weekly`). Press again to return to overview. Dual-purpose with the `w+←/→` week-shift chord (overview) — resolved on **keyup**: if `w` is released without an arrow key having fired the chord (`_wUsedForChord`, features.js), it navigates instead. Implemented in the `_wKeyHeld`/`_wUsedForChord` keydown/keyup listeners in features.js, not the main core.js keydown switch (which handles every other single-key page shortcut on keydown).
 - `m`: toggle month view (`mModal`) on overview. Press again or Enter to close.
 - `i`: ideas page. Press again to return to overview.
 - `l`: style guide page. Press again to return to overview.

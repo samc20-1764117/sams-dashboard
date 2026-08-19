@@ -423,14 +423,14 @@ function renderRtWrGroup(containerId, rules, cadence){
     const isSel=selectedTasks.has('wrrule-'+rid);
     const nd=_rtWrNextDate(r);
     const nextTxt=nd?(nd.exact?fmtD(nd.ds):'Wk of '+fmtD(nd.ds)):'—';
-    tbody+=`<tr class="rt-row${isSel?' sel-row':''}" id="ti-rt-wrrule-${rid}"
+    tbody+=`<tr class="rt-row${isSel?' sel-row':''}" id="ti-rt-wrrule-${rid}" data-sid="wrrule-${rid}"
       onclick="selTask(event,'wrrule-${rid}')"
       ondblclick="if(!event.target.closest('[data-pup]')&&!event.target.closest('.delbtn')&&!event.target.closest('.btn-xs')){event.stopPropagation();openWrEditModal('${rid}',null,'all');}"
       oncontextmenu="showWrRuleCtx(event,'${rid}',getWkKey(wkOff))">
       <td class="rt-editable">${esc(r.name)}${cadence==='other'?(()=>{const _KB=['weekly','biweekly','monthly'];const _CB={quarterly:'Q',biannual:'BA',annual:'A',bimonthly:'B',monthly:'M'};const _bl=_CB[r.cadence];return _bl?`<span style="float:right;font-size:9px;font-weight:700;letter-spacing:.3px;padding:1px 3px;border-radius:3px;background:rgba(0,0,0,.11);color:var(--subtle);margin-left:4px">${_bl}</span>`:''})():''}</td>
       <td class="rt-meta" style="text-align:center">${nextTxt}</td>
       <td data-pup="1" style="text-align:center;cursor:pointer;font-size:13px" onclick="event.stopPropagation();rtToggleWrPup('${rid}')" ondblclick="event.stopPropagation()" title="Toggle pup related">${isPup?'🐾':''}</td>
-      <td onclick="event.stopPropagation()" ondblclick="event.stopPropagation()"><button class="delbtn" onclick="delWrRule('${rid}')">✕</button></td>
+      <td onclick="event.stopPropagation()" ondblclick="event.stopPropagation()"><div class="rt-actions"><button class="delbtn" onclick="delWrRule('${rid}')">✕</button></div></td>
     </tr>`;
   });
   const tableHtml=rules.length
@@ -486,9 +486,9 @@ function renderRtGroup(containerId, tasks, cadence){
       <td class="rt-editable rt-meta" style="text-align:center" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','appears_on_date')">${dayDisp}</td>
       <td class="rt-editable rt-meta" style="text-align:right" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','starting_date')">${r.starting_date?fmtD(r.starting_date):'—'}</td>
       <td class="rt-meta" style="text-align:right" title="Next computed occurrence">${nextDs?fmtD(nextDs):'—'}</td>`;
-    tbody+=`<tr class="rt-row" id="ti-rt-${rid}" onclick="selTask(event,'${virtId}')" ondblclick="if(!event.target.closest('.delbtn')&&!event.target.closest('.btn-xs')){event.stopPropagation();openRecEditModal('${rid}');}" oncontextmenu="showWrRuleCtx(event,'${rid}',getWkKey(wkOff))">
+    tbody+=`<tr class="rt-row" id="ti-rt-${rid}" data-sid="${virtId}" onclick="selTask(event,'${virtId}')" ondblclick="if(!event.target.closest('.delbtn')&&!event.target.closest('.btn-xs')){event.stopPropagation();openRecEditModal('${rid}');}" oncontextmenu="showWrRuleCtx(event,'${rid}',getWkKey(wkOff))">
       ${tds}
-      <td onclick="event.stopPropagation()" ondblclick="event.stopPropagation()"><button class="btn btn-xs btn-ghost" style="padding:1px 5px;font-size:10px;opacity:.55" onclick="duplicateRecDirect('${rid}')" title="Duplicate">⧉</button><button class="delbtn" onclick="delRec('${rid}')">✕</button></td>
+      <td onclick="event.stopPropagation()" ondblclick="event.stopPropagation()"><div class="rt-actions"><button class="btn btn-xs btn-ghost" style="padding:1px 5px;font-size:10px;opacity:.55" onclick="duplicateRecDirect('${rid}')" title="Duplicate">⧉</button><button class="delbtn" onclick="delRec('${rid}')">✕</button></div></td>
     </tr>`;
   });
   const tableHtml=tasks.length
@@ -5404,6 +5404,7 @@ function selTask(e,id){
     const wkcCol=e.currentTarget.closest('.wkc-col');
     const woCol=e.currentTarget.closest('.wo-col');
     const moCal=e.currentTarget.closest('#mCells,#recMoCells');
+    const rtTbl=e.currentTarget.closest('.rt-tbl');
     const list=e.currentTarget.closest('.tlist,.kol-body');
     if(woCol){
       ids=[...woCol.querySelectorAll('.chip[data-tid]')].map(el=>el.dataset.tid);
@@ -5413,6 +5414,9 @@ function selTask(e,id){
     } else if(moCal){
       // Monthly calendar: all chips across all cells in DOM order
       ids=[...moCal.querySelectorAll('.mcell-t[data-tid]')].map(el=>el.dataset.tid);
+    } else if(rtTbl){
+      // Recurring Tasks page: rows within this same cadence table
+      ids=[...rtTbl.querySelectorAll('.rt-row[data-sid]')].map(el=>el.dataset.sid);
     } else if(list){
       ids=[...list.querySelectorAll('[id^="ti-"]')].map(r=>r.id.replace('ti-',''));
     }
@@ -5593,10 +5597,21 @@ let _copiedTasks=[];
 let _copiedBlocks=[];
 let _tbPasteSm=null; // set by clicking empty TB area
 document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key==='s'){e.preventDefault();}},{capture:true});
+// 'w' is dual-purpose: tap it alone to go to the Weekly Reset / Recurring Tasks page (like every
+// other single-key page shortcut); hold it and press ←/→ to shift the overview week instead. We
+// can't tell which one it is until keyup, so the nav only fires on release, and only if the
+// w+arrow chord below never fired during this hold (_wUsedForChord).
 let _wKeyHeld=false;
-document.addEventListener('keydown',e=>{if(e.key==='w'&&!e.metaKey&&!e.ctrlKey){const _t=document.activeElement?.tagName;if(_t==='INPUT'||_t==='TEXTAREA'||_t==='SELECT'||document.activeElement?.isContentEditable)return;_wKeyHeld=true;}});
-document.addEventListener('keyup',e=>{if(e.key==='w')_wKeyHeld=false;});
-window.addEventListener('blur',()=>{_wKeyHeld=false;});
+let _wUsedForChord=false;
+document.addEventListener('keydown',e=>{if(e.key==='w'&&!e.metaKey&&!e.ctrlKey&&!e.shiftKey){const _t=document.activeElement?.tagName;if(_t==='INPUT'||_t==='TEXTAREA'||_t==='SELECT'||document.activeElement?.isContentEditable)return;if(!_wKeyHeld)_wUsedForChord=false;_wKeyHeld=true;}});
+document.addEventListener('keyup',e=>{
+  if(e.key!=='w')return;
+  if(_wKeyHeld&&!_wUsedForChord&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')){
+    e.preventDefault();if(activePg==='weekly')showPage('overview');else showPage('weekly');
+  }
+  _wKeyHeld=false;_wUsedForChord=false;
+});
+window.addEventListener('blur',()=>{_wKeyHeld=false;_wUsedForChord=false;});
 document.addEventListener('keydown',async e=>{
   const tag=document.activeElement?.tagName;
   if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT'||document.activeElement?.isContentEditable)return;
@@ -5631,7 +5646,7 @@ document.addEventListener('keydown',async e=>{
     if(e.key==='ArrowUp'||e.key==='ArrowDown'||e.key==='ArrowLeft'||e.key==='ArrowRight'||e.key==='Delete'||e.key==='Backspace'||e.key==='n'||e.key==='l'||e.key==='b'||e.key==='Enter')return;
   }
   // w + Arrow: shift week on overview
-  if((e.key==='ArrowLeft'||e.key==='ArrowRight')&&_wKeyHeld&&activePg==='overview'&&!document.querySelector('.atb-mgr')){e.preventDefault();shiftWk(e.key==='ArrowLeft'?-1:1);return;}
+  if((e.key==='ArrowLeft'||e.key==='ArrowRight')&&_wKeyHeld&&activePg==='overview'&&!document.querySelector('.atb-mgr')){e.preventDefault();_wUsedForChord=true;shiftWk(e.key==='ArrowLeft'?-1:1);return;}
   // Arrow left/right: shift day on overview when nothing selected
   if((e.key==='ArrowLeft'||e.key==='ArrowRight')&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&activePg==='overview'&&!document.querySelector('.overlay.open')&&!_qnOpen&&!document.querySelector('.atb-mgr')){
     if(!selectedTasks.size){e.preventDefault();shiftDay(e.key==='ArrowLeft'?-1:1);return;}
@@ -6090,7 +6105,7 @@ document.addEventListener('mousedown',e=>{
   // Week/day navigation must NOT clear the selection — a selected weekly-reset/recurring task should
   // stay selected as you move across weeks (these buttons fire on mousedown before their click→nav runs).
   if(e.target.closest('[onclick*="shiftWk"],[onclick*="shiftWrRec"],[onclick*="shiftDay"],[onclick*="goThisWk"],[onclick*="goToday"]'))return;
-  if(!e.target.closest('.ti')&&!e.target.closest('.kol-item')&&!e.target.closest('.chip')&&!e.target.closest('.mcell-t')&&!e.target.closest('.tb-block')&&!e.target.closest('.wkc-banner')&&!e.target.closest('#ctxMenu')){
+  if(!e.target.closest('.ti')&&!e.target.closest('.kol-item')&&!e.target.closest('.chip')&&!e.target.closest('.mcell-t')&&!e.target.closest('.tb-block')&&!e.target.closest('.wkc-banner')&&!e.target.closest('#ctxMenu')&&!e.target.closest('.rt-row')){
     clearSelection();
   }
 });
