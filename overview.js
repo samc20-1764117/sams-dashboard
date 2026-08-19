@@ -2827,9 +2827,13 @@ function renderRecOv(){
     const isDone=isDoneWR(r.id);
     const isPup=r.pup_related===true||r.pup_related==='true';
     const selId='wrrule-'+rid;
+    const pinDs=r._dateOverrides&&r._dateOverrides[wkKey];
+    // Assigned to a day within the current week that's already passed and still not done —
+    // distinct from the top _ovRows block above, which only flags whole-WEEK misses from last week.
+    const ovPin=!isDone&&pinDs&&pinDs!=='__skip__'&&pinDs<tod();
     const row=document.createElement('div');
     row.id='ti-'+selId;
-    row.className='ti'+(isDone?' done':'');
+    row.className='ti'+(isDone?' done':'')+(ovPin?' ov-row':'');
     row.style.cssText='cursor:pointer;break-inside:avoid;margin:0 6px;padding:3px 22px 3px 10px';
     row.draggable=true;
     row.addEventListener('dragstart',e=>{e.stopPropagation();dragId='wrrule::'+rid;e.dataTransfer.effectAllowed='move';row.style.opacity='.4';document.body.classList.add('body-dragging');showWkcEdges(true);});
@@ -2888,6 +2892,12 @@ function renderRecOv(){
       dot.className='wr-dot';
       dot.title=r._movedIn?'Moved this week':'Edited this week';
       row.appendChild(dot);
+    }
+    if(ovPin){
+      const dlbl=document.createElement('span');
+      dlbl.className='dlbl ov';
+      dlbl.textContent=['S','M','T','W','T','F','S'][new Date(pinDs+'T12:00').getDay()];
+      row.appendChild(dlbl);
     }
     row.appendChild(del);
     if(elReg)elReg.appendChild(row);
@@ -5783,11 +5793,12 @@ function _shopOvKeyNav(e){
     const prevOrders=sorted.map(s=>({id:s.id,shop_order:s.shop_order}));
     const idxs=[...selIds].map(id=>sorted.findIndex(s=>String(s.id)===id)).filter(i=>i>=0).sort((a,b)=>a-b);
     if(!idxs.length)return true;
-    if(dir===-1&&idxs[0]>0){
+    const grp=s=>s.due_date||'';
+    if(dir===-1&&idxs[0]>0&&grp(sorted[idxs[0]-1])===grp(sorted[idxs[0]])){
       const above=sorted[idxs[0]-1];
       idxs.forEach(i=>{sorted[i].shop_order--;});
       above.shop_order=sorted[idxs[idxs.length-1]].shop_order+1;
-    } else if(dir===1&&idxs[idxs.length-1]<sorted.length-1){
+    } else if(dir===1&&idxs[idxs.length-1]<sorted.length-1&&grp(sorted[idxs[idxs.length-1]+1])===grp(sorted[idxs[idxs.length-1]])){
       const below=sorted[idxs[idxs.length-1]+1];
       idxs.forEach(i=>{sorted[i].shop_order++;});
       below.shop_order=sorted[idxs[0]].shop_order-1;
