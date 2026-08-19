@@ -2229,7 +2229,9 @@ function _finRenderPersonal(accs,vtiAcc,currentVal,netWorth,totalAll){
       // colorLight (~45% opacity) is a soft frosted-glass tint against a light card — on the near-
       // black dark card that same low opacity blends into the background and the ring nearly
       // disappears, so dark mode uses the fully-opaque solid color instead.
-      html+=`<circle cx="21" cy="21" r="15.9" fill="none" stroke="${_finIsDark?seg.color:seg.colorLight}" stroke-width="3" stroke-dasharray="${adjLen} ${100-adjLen}" stroke-dashoffset="${adjOff}" filter="url(#finGlass)" data-fin-seg="${seg.id}"/>`;
+      // finGlass's white top-highlight overlay washes out saturated colors against the dark
+      // card, so dark mode skips the filter and renders the solid color untouched.
+      html+=`<circle cx="21" cy="21" r="15.9" fill="none" stroke="${_finIsDark?seg.color:seg.colorLight}" stroke-width="3" stroke-dasharray="${adjLen} ${100-adjLen}" stroke-dashoffset="${adjOff}"${_finIsDark?'':' filter="url(#finGlass)"'} data-fin-seg="${seg.id}"/>`;
       html+=`<circle cx="21" cy="21" r="15.9" fill="none" stroke="transparent" stroke-width="3.5" stroke-dasharray="${adjLen} ${100-adjLen}" stroke-dashoffset="${adjOff}" style="pointer-events:stroke" data-fin-seg="${seg.id}" data-fin-tip-name="${seg.name}" data-fin-tip-amt="${_finFmtRound(seg.amt)}" onmouseenter="_finHover('${seg.id}')" onmouseleave="_finHover(null)"/>`;
     });
     html+=`</g></svg>`;
@@ -2294,8 +2296,8 @@ function _finRenderInvestments(purchases,totalBought,gain,gainPct,currentVal){
     const svgFillPoly=`-5,${firstY} ${svgPolyFill} 105,${lastY} 105,100 -5,100`;
     html+=`<div class="fin-inv-chart-wrap" style="margin:0;padding:0;border-radius:0;border-top:none;position:relative;flex:1;min-height:0;overflow:hidden">
       <div class="fin-inv-kpi-float">
-        <div style="font-size:11px;font-weight:600;color:#1e293b;margin-bottom:4px">Total Gain</div>
-        <div style="font-size:22px;font-weight:700;color:#1e293b;line-height:1.1">${_finFmtRound(gain)}</div>
+        <div style="font-size:11px;font-weight:600;color:var(--text);margin-bottom:4px">Total Gain</div>
+        <div style="font-size:22px;font-weight:700;color:var(--text);line-height:1.1">${_finFmtRound(gain)}</div>
         <div style="font-size:12px;font-weight:600;color:#059669;margin-top:2px">${_finFmtPct(gainPct)}</div>
         <div style="margin-top:10px;display:flex;gap:12px">
           <div><div style="font-size:9px;font-weight:600;color:var(--muted)">VTI Value</div><div style="font-size:13px;font-weight:600;color:var(--text);margin-top:1px">${_finFmtRound(currentVal)}</div></div>
@@ -2574,9 +2576,15 @@ async function _finCommitNew(row){
     const cur=st.finSubs[i];const realId=sv[0].id;
     const ae=document.activeElement;
     const editFid=ae?.dataset?.fid===String(row.id)?ae.dataset.field:null;
-    const editText=editFid?ae.textContent:'';
+    const editIsSelect=ae?.tagName==='SELECT';
+    const editText=editFid&&!editIsSelect?ae.textContent:'';
     cur.id=realId;renderFinancePage();
-    if(editFid){const el=document.querySelector(`[data-fid="${realId}"][data-field="${editFid}"]`);if(el){el.textContent=editText;el.focus();const r=document.createRange();r.selectNodeContents(el);const s=window.getSelection();s.removeAllRanges();s.addRange(r);r.collapse(false);}}
+    if(editFid){
+      const el=document.querySelector(`[data-fid="${realId}"][data-field="${editFid}"]`);
+      // <select> has no textContent to restore (setting it would wipe its <option>s) — just refocus it.
+      if(el&&el.tagName==='SELECT'){el.focus();}
+      else if(el){el.textContent=editText;el.focus();const r=document.createRange();r.selectNodeContents(el);const s=window.getSelection();s.removeAllRanges();s.addRange(r);r.collapse(false);}
+    }
     const{id:_,...body}=cur;sbReqNullable('PATCH','finance_subs',body,`?id=eq.${realId}`);
   }
 }

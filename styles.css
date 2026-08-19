@@ -1568,6 +1568,8 @@ body.dark .vid-stat-card{background:rgba(24,24,28,.4)}
 .fin-add-btn:hover{color:#6d5fe6}
 .fin-hist-btn{border:1px solid rgba(200,200,215,.25);background:rgba(255,255,255,.5);color:var(--muted);font-size:10px;font-weight:600;cursor:pointer;padding:2px 8px;border-radius:6px;transition:all .15s;line-height:1.4}
 .fin-hist-btn:hover{background:rgba(109,95,230,.08);border-color:rgba(109,95,230,.25);color:#6d5fe6}
+body.dark .fin-hist-btn{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.14);color:var(--text)}
+body.dark .fin-hist-btn:hover{background:rgba(109,95,230,.16);border-color:rgba(109,95,230,.4);color:#a89bff}
 .fin-freq-sel{border:none;background:transparent;font-size:11px;color:var(--muted);cursor:pointer;padding:2px;border-radius:4px;outline:none}
 .fin-freq-sel:hover{background:rgba(100,100,140,.08)}
 .fin-freq-sel:focus{box-shadow:0 0 0 1.5px rgba(109,95,230,.3)}
@@ -1607,6 +1609,7 @@ body.dark .vid-stat-card{background:rgba(24,24,28,.4)}
 .fin-inv-left .fin-stats{width:100%}
 .fin-inv-metrics{text-align:center;font-variant-numeric:tabular-nums}
 .fin-inv-kpi-float{position:absolute;top:12px;left:16px;z-index:3;padding:10px 14px;border-radius:10px;background:rgba(255,255,255,.85);border:1px solid rgba(200,200,215,.15);box-shadow:0 1px 4px rgba(0,0,0,.06);backdrop-filter:blur(8px);font-variant-numeric:tabular-nums}
+body.dark .fin-inv-kpi-float{background:rgba(30,30,34,.85);border-color:rgba(255,255,255,.1);box-shadow:0 1px 4px rgba(0,0,0,.3)}
 .fin-inv-right{flex:1;min-width:0;display:flex;flex-direction:column;max-height:140px}
 .fin-inv-right-hdr{display:flex;align-items:center;justify-content:space-between;padding:6px 12px 4px;font-size:11px;font-weight:600;color:var(--muted)}
 .fin-inv-scroll{flex:1;overflow-y:auto;min-height:0}
