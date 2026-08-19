@@ -872,10 +872,17 @@ body.dark .rt-heat-cell{background:rgba(255,255,255,.03)}
 .rt-heat-daynum{font-size:8px;font-weight:600;color:var(--muted)}
 .rt-heat-dots{display:flex;flex-wrap:wrap;gap:1.5px;align-items:center;justify-content:flex-end}
 .rt-heat-dot{width:4px;height:4px;border-radius:50%;flex-shrink:0;display:inline-block}
-.rt-heat-dot.cad-weekly{background:var(--home-d)}
-.rt-heat-dot.cad-biweekly{background:var(--soc-d)}
-.rt-heat-dot.cad-monthly{background:var(--buy-d)}
-.rt-heat-dot.cad-other{background:var(--ov-d)}
+/* Recurring page only (rt-heat-dot never appears on Overview) — WR rules in blue shades,
+   other recurring in teal shades, darkest = most frequent cadence, so source and frequency
+   are both readable at a glance without touching the shared --home-d/--soc-d/etc tokens. */
+.rt-heat-dot.wr-weekly{background:#1d4ed8}
+.rt-heat-dot.wr-biweekly{background:#2563eb}
+.rt-heat-dot.wr-monthly{background:#3b82f6}
+.rt-heat-dot.wr-other{background:#93c5fd}
+.rt-heat-dot.sch-weekly{background:#0f766e}
+.rt-heat-dot.sch-biweekly{background:#0d9488}
+.rt-heat-dot.sch-monthly{background:#14b8a6}
+.rt-heat-dot.sch-other{background:#5eead4}
 
 /* Quick Notes */
 #qnBtn{position:fixed;bottom:20px;right:20px;z-index:950;width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.6);box-shadow:0 4px 18px rgba(0,0,0,.1),0 8px 32px rgba(0,0,0,.06),inset 0 1px 0 rgba(255,255,255,.9);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:17px;transition:all .18s}

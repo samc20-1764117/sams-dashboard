@@ -348,11 +348,15 @@ function _rtHeatShift(delta){
   renderRtHeatmap();
 }
 function _rtHeatToday(){_rtHeatMonth=null;_rtHeatYear=null;renderRtHeatmap();}
-function _rtCadClass(cad){
-  if(cad==='weekly')return 'cad-weekly';
-  if(cad==='biweekly')return 'cad-biweekly';
-  if(cad==='monthly')return 'cad-monthly';
-  return 'cad-other';
+// src: 'wr' (Weekly Reset — blue shades) or 'sch' (Other Recurring — teal shades). Page-scoped
+// coloring (recurring page + its heatmap only) so WR vs. non-WR pops at a glance; does not touch
+// the shared category colors used on the Overview page.
+function _rtCadClass(cad,src){
+  const p=src==='sch'?'sch-':'wr-';
+  if(cad==='weekly')return p+'weekly';
+  if(cad==='biweekly')return p+'biweekly';
+  if(cad==='monthly')return p+'monthly';
+  return p+'other';
 }
 function renderRtHeatmap(){
   const gridEl=document.getElementById('rt-heat-grid');if(!gridEl)return;
@@ -371,12 +375,12 @@ function renderRtHeatmap(){
   const wkOffStart=wkOffFor(gridStart)-1,wkOffEnd=wkOffFor(gridEnd)+1;
 
   const dayMap={};
-  const addTo=(ds,cad,name)=>{if(ds<gridStartDs||ds>gridEndDs)return;if(!dayMap[ds])dayMap[ds]={};if(!dayMap[ds][cad])dayMap[ds][cad]=[];dayMap[ds][cad].push(name);};
+  const addTo=(ds,cad,name,src)=>{if(ds<gridStartDs||ds>gridEndDs)return;if(!dayMap[ds])dayMap[ds]={};const k=src+':'+cad;if(!dayMap[ds][k])dayMap[ds][k]=[];dayMap[ds][k].push(name);};
 
   for(let w=wkOffStart;w<=wkOffEnd;w++){
     getRecurringWeekTasks(w).forEach(t=>{
       const r=st.recurring.find(x=>String(x.id)===String(t._recId));if(!r||r.is_enabled===false)return;
-      addTo(t.due_date,r.cadence||'weekly',t.name);
+      addTo(t.due_date,r.cadence||'weekly',t.name,'sch');
     });
   }
   (st.wrRules||[]).filter(r=>r.is_enabled!==false).forEach(r=>{
@@ -394,7 +398,7 @@ function renderRtHeatmap(){
       } else {
         ds=d2s(mon);
       }
-      if(ds)addTo(ds,(cad==='weekly'||cad==='biweekly'||cad==='monthly')?cad:'other',r.name);
+      if(ds)addTo(ds,(cad==='weekly'||cad==='biweekly'||cad==='monthly')?cad:'other',r.name,'wr');
     }
   });
 
@@ -404,8 +408,8 @@ function renderRtHeatmap(){
     const ds=d2s(d);
     const inMonth=d.getMonth()===month;
     const info=dayMap[ds]||{};
-    const cads=Object.keys(info);
-    const dots=cads.map(c=>`<span class="rt-heat-dot ${_rtCadClass(c)}" title="${escHtml(info[c].join(', '))}"></span>`).join('');
+    const keys=Object.keys(info);
+    const dots=keys.map(k=>{const[src,cad]=k.split(':');return `<span class="rt-heat-dot ${_rtCadClass(cad,src)}" title="${escHtml(info[k].join(', '))}"></span>`;}).join('');
     html+=`<div class="rt-heat-cell${inMonth?'':' rt-heat-out'}${ds===todayDs?' rt-heat-today':''}">
       <span class="rt-heat-daynum">${d.getDate()}</span>
       <span class="rt-heat-dots">${dots}</span>
@@ -493,7 +497,7 @@ function renderRtWrGroup(containerId, rules, cadence){
   const el=document.getElementById(containerId);if(!el)return;
   const cadLabel={weekly:'Weekly',biweekly:'Biweekly',monthly:'Monthly',other:'Other'}[cadence]||cadence;
   const esc=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  const thead=`<tr><th style="text-align:left">Name</th><th style="width:64px">Next</th><th style="width:36px">Pup</th><th style="width:40px"></th></tr>`;
+  const thead=`<tr><th style="width:74px;text-align:left">Name</th><th style="width:50px">Next</th><th style="width:22px"></th><th style="width:24px" title="Pup related">🐾</th></tr>`;
   let tbody='';
   rules.forEach(r=>{
     const rid=String(r.id);
@@ -505,18 +509,18 @@ function renderRtWrGroup(containerId, rules, cadence){
       onclick="selTask(event,'wrrule-${rid}')"
       ondblclick="if(!event.target.closest('[data-pup]')&&!event.target.closest('.delbtn')&&!event.target.closest('.btn-xs')){event.stopPropagation();openWrEditModal('${rid}',null,'all');}"
       oncontextmenu="showWrRuleCtx(event,'${rid}',getWkKey(wkOff))">
-      <td class="rt-editable">${esc(r.name)}${cadence==='other'?(()=>{const _KB=['weekly','biweekly','monthly'];const _CB={quarterly:'Q',biannual:'BA',annual:'A',bimonthly:'B',monthly:'M'};const _bl=_CB[r.cadence];return _bl?`<span style="float:right;font-size:9px;font-weight:700;letter-spacing:.3px;padding:1px 3px;border-radius:3px;background:rgba(0,0,0,.11);color:var(--subtle);margin-left:4px">${_bl}</span>`:''})():''}</td>
+      <td class="rt-editable" title="${esc(r.name)}">${esc(r.name)}${cadence==='other'?(()=>{const _KB=['weekly','biweekly','monthly'];const _CB={quarterly:'Q',biannual:'BA',annual:'A',bimonthly:'B',monthly:'M'};const _bl=_CB[r.cadence];return _bl?`<span style="float:right;font-size:9px;font-weight:700;letter-spacing:.3px;padding:1px 3px;border-radius:3px;background:rgba(0,0,0,.11);color:var(--subtle);margin-left:4px">${_bl}</span>`:''})():''}</td>
       <td class="rt-meta" style="text-align:center">${nextTxt}</td>
-      <td data-pup="1" style="text-align:center;cursor:pointer;font-size:13px" onclick="event.stopPropagation();rtToggleWrPup('${rid}')" ondblclick="event.stopPropagation()" title="Toggle pup related">${isPup?'🐾':''}</td>
       <td onclick="event.stopPropagation()" ondblclick="event.stopPropagation()"><div class="rt-actions"><button class="delbtn" onclick="_rtDelClick('${rid}',false)">✕</button></div></td>
+      <td data-pup="1" style="text-align:center;cursor:pointer;font-size:12px" onclick="event.stopPropagation();rtToggleWrPup('${rid}')" ondblclick="event.stopPropagation()" title="Toggle pup related">${isPup?'🐾':''}</td>
     </tr>`;
   });
   const tableHtml=rules.length
     ?`<table class="rt-tbl"><thead>${thead}</thead><tbody>${tbody}</tbody></table>`
     :`<div style="padding:6px 4px;font-size:11px;color:var(--subtle);font-style:italic">None</div>`;
-  el.innerHTML=`<div class="card" style="padding:8px 12px;box-shadow:none">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;padding:0 2px">
-      <span style="font-size:12px;font-weight:800;color:var(--text);display:inline-flex;align-items:center;gap:5px"><span class="rt-heat-dot cad-${cadence}" style="width:7px;height:7px"></span>${cadLabel}${rules.length?' <span style="opacity:.45;font-weight:400;font-size:11px">· '+rules.length+'</span>':''}</span>
+  el.innerHTML=`<div class="card" style="padding:6px 10px;box-shadow:none">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;padding:0 2px">
+      <span style="font-size:10.5px;font-weight:800;color:var(--text);display:inline-flex;align-items:center;gap:5px"><span class="rt-heat-dot wr-${cadence}" style="width:7px;height:7px"></span>${cadLabel}${rules.length?' <span style="opacity:.45;font-weight:400;font-size:9.5px">· '+rules.length+'</span>':''}</span>
       <button class="btn-plus" style="padding:0px 5px;font-size:10px;line-height:1.4" onclick="openWrRuleAddModal('${cadence==='other'?'quarterly':cadence}','wr')">+</button>
     </div>
     ${tableHtml}
@@ -583,9 +587,9 @@ function renderRtGroup(containerId, tasks, cadence){
   const tableHtml=tasks.length
     ?`<table class="rt-tbl"><thead>${thead}</thead><tbody>${tbody}</tbody></table>`
     :`<div style="padding:6px 4px;font-size:11px;color:var(--subtle);font-style:italic">None</div>`;
-  el.innerHTML=`<div class="card" style="padding:8px 12px;box-shadow:none">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;padding:0 2px">
-      <span style="font-size:12px;font-weight:800;color:var(--text);display:inline-flex;align-items:center;gap:5px"><span class="rt-heat-dot cad-${cadence}" style="width:7px;height:7px"></span>${cadLabel}${tasks.length?' <span style="opacity:.45;font-weight:400;font-size:11px">· '+tasks.length+'</span>':''}</span>
+  el.innerHTML=`<div class="card" style="padding:6px 10px;box-shadow:none">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;padding:0 2px">
+      <span style="font-size:10.5px;font-weight:800;color:var(--text);display:inline-flex;align-items:center;gap:5px"><span class="rt-heat-dot sch-${cadence}" style="width:7px;height:7px"></span>${cadLabel}${tasks.length?' <span style="opacity:.45;font-weight:400;font-size:9.5px">· '+tasks.length+'</span>':''}</span>
       <button class="btn-plus" style="padding:0px 5px;font-size:10px;line-height:1.4" onclick="${cadence==='other'?`openWrRuleAddModal('quarterly','sch')`:`openRecModalForSection('scheduled','${cadence}')`}">+</button>
     </div>
     ${tableHtml}
@@ -6656,10 +6660,19 @@ function getOvRecurring(){
       seen.add(_dk);
       if(!v.done&&v.due_date<today){out.push(v);}
     });
-    // Weekly reset tasks (wrec + WR rules) are deliberately EXCLUDED here: WR overdue shows
-    // ONLY in the WR container (renderRecOv previous-week scan), never in the general overdue
-    // list/banner/rollover — they are a separate system.
+    // Weekly reset tasks (wrec + WR rules) are otherwise EXCLUDED here: the "missed last week"
+    // WR overdue shows ONLY in the WR container (renderRecOv previous-week scan), never in the
+    // general overdue list/banner/rollover — that stays a separate system. The one exception
+    // (below) is a WR rule pinned to a day THIS week that has already passed and isn't done —
+    // that case has no other "move to today" path, so it's included here to get one.
   }
+  const curWk=getWkKey(0);
+  (st.wrRules||[]).filter(r=>r.is_enabled!==false).forEach(r=>{
+    const pinDs=r._dateOverrides&&r._dateOverrides[curWk];
+    if(!pinDs||pinDs==='__skip__'||pinDs>=today)return;
+    if(isDoneWRRule(r.id,curWk))return;
+    out.push({_ruleId:r.id,_recId:r.id,_wkKey:curWk,due_date:pinDs,done:false,name:r.name});
+  });
   return out;
 }
 function getOvShopping(){

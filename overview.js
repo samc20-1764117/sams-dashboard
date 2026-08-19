@@ -5807,13 +5807,9 @@ function _shopOvKeyNav(e){
     sorted.forEach((s,i)=>{s.shop_order=i;sbReqNullable('PATCH','shopping_list',{shop_order:i},`?id=eq.${s.id}`);});
     save();renderShopOv();
     pushUndo(()=>{prevOrders.forEach(({id,shop_order})=>{const it=st.shopping.find(x=>String(x.id)===String(id));if(it){it.shop_order=shop_order;sbReqNullable('PATCH','shopping_list',{shop_order:shop_order??null},`?id=eq.${id}`);}});save();renderShopOv();},'Reorder shopping');
-    // Re-select after render and scroll into view
-    setTimeout(()=>{selIds.forEach(id=>selectedTasks.add('shop-cal-'+id));applySelHighlight();
-      const c=document.getElementById('shopOv');
-      const scrollId=[...selIds][dir===-1?0:selIds.size-1];
-      const firstSelEl=document.getElementById('ti-shop-cal-'+scrollId);
-      if(c&&firstSelEl)_shopScrollTo(c,firstSelEl);
-    },20);
+    // Re-select after render — deliberately no auto-scroll here: jumping the viewport to the
+    // moved item on every keypress made rapid successive reorders disorienting.
+    setTimeout(()=>{selIds.forEach(id=>selectedTasks.add('shop-cal-'+id));applySelHighlight();},20);
     return true;
   }
 
