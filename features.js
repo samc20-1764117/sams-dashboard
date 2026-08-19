@@ -2013,6 +2013,21 @@ function renderBdayPage(){
   document.addEventListener('click',window._bdayOutsideClick);
 }
 
+// ── Movies & Shows ───────────────────────────────────────────────────────────
+// Placeholder scaffold only — no Supabase table/content wired up yet, pending brainstorm sign-off.
+let _moviesView=localStorage.getItem('_moviesView')||'upnext';
+function renderMoviesPage(){
+  const content=document.getElementById('moviesPageContent');
+  if(!content)return;
+  const tab=(id,label)=>`<button onclick="_moviesView='${id}';localStorage.setItem('_moviesView','${id}');renderMoviesPage()" style="padding:6px 14px;border-radius:8px;border:none;font-family:inherit;font-size:13px;cursor:pointer;background:${_moviesView===id?'var(--accent)':'transparent'};color:${_moviesView===id?'#fff':'var(--text)'}">${label}</button>`;
+  content.innerHTML=`
+    <div style="padding:16px 20px;display:flex;gap:6px;border-bottom:1px solid var(--border)">
+      ${tab('upnext','Up Next')}${tab('watched','Watched')}
+    </div>
+    <div style="flex:1;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px">
+      ${_moviesView==='upnext'?'Up Next list coming soon':'Watched list coming soon'}
+    </div>`;
+}
 // ── Holidays ─────────────────────────────────────────────────────────────────
 function _holidayDateForYear(key,yr){
   const e=(st._holidayDates[yr]||[]).find(h=>h.key===key);
@@ -2960,7 +2975,7 @@ function _ideaSetupDrag(){
 }
 
 // ── Pages ──────────────────────────────────────────────────────────────────────
-const PAGES=['overview','weekly','shopping','travel','birthdays','holidays','ideas','settings','pups','finance','recipes','notes','videos','packing','guide'];
+const PAGES=['overview','weekly','shopping','travel','birthdays','holidays','ideas','settings','pups','finance','recipes','notes','videos','movies','packing','guide'];
 // ══════════════════════════════════════════════════════════════════════════════
 // ── RECIPES PAGE ──────────────────────────────────────────────────────────────
 // ══════════════════════════════════════════════════════════════════════════════
@@ -5090,7 +5105,7 @@ function showPage(id){
   const pageEl=document.getElementById('page-'+id);if(pageEl)pageEl.classList.add('active');
   document.querySelectorAll(`.nav-item[data-page="${id}"]`).forEach(n=>n.classList.add('active'));
   const mainEl=document.getElementById('main');if(mainEl){mainEl.scrollTop=0;}
-  if(id==='weekly'){renderWeeklyPage();}if(id==='travel')renderTravelPage();if(id==='birthdays')renderBdayPage();if(id==='holidays')renderHolidaysPage();if(id==='ideas')renderIdeasPage();if(id==='pups')renderPupsPage();if(id==='recipes')renderRecipesPage();if(id==='packing')renderPackingPage();if(id==='finance')renderFinancePage();if(id==='guide')renderGuidePage();if(id==='videos'){if(!_vidPageInit&&_prevPg!=='videos'){_vidView='dashboard';localStorage.setItem('_vidView','dashboard');}_vidPageInit=false;renderVideosPage();}if(id==='overview'){renderShopOv();renderRecOv();renderWkCal();if(document.getElementById('tbGrid'))renderDayTB();}else{const _tbSc=document.getElementById('tbScroll');if(_tbSc)_tbSc._scrollDay=null;}
+  if(id==='weekly'){renderWeeklyPage();}if(id==='travel')renderTravelPage();if(id==='birthdays')renderBdayPage();if(id==='holidays')renderHolidaysPage();if(id==='movies')renderMoviesPage();if(id==='ideas')renderIdeasPage();if(id==='pups')renderPupsPage();if(id==='recipes')renderRecipesPage();if(id==='packing')renderPackingPage();if(id==='finance')renderFinancePage();if(id==='guide')renderGuidePage();if(id==='videos'){if(!_vidPageInit&&_prevPg!=='videos'){_vidView='dashboard';localStorage.setItem('_vidView','dashboard');}_vidPageInit=false;renderVideosPage();}if(id==='overview'){renderShopOv();renderRecOv();renderWkCal();if(document.getElementById('tbGrid'))renderDayTB();}else{const _tbSc=document.getElementById('tbScroll');if(_tbSc)_tbSc._scrollDay=null;}
   const backBtn=document.getElementById('backToOv');if(backBtn)backBtn.style.display=id==='overview'?'none':'flex';
   renderUnassigned();
   history.replaceState(null,'','#'+id);

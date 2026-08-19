@@ -1228,7 +1228,7 @@ async function doRedo(){
   undoStack.push({fn:()=>{_stateRestore(beforeRedo);_syncRedoDiff(snap,beforeRedo);},msg,snapBeforeUndo:beforeRedo});
   _showRedoToast(msg||'Action');
 }
-let _lastVPress=0,_vNavTimer=null,_lastGPress=0,_gNavTimer=null;
+let _lastVPress=0,_vNavTimer=null,_lastGPress=0,_gNavTimer=null,_lastMPress=0;
 document.addEventListener('keydown',e=>{
   if((e.metaKey||e.ctrlKey)&&e.key==='a'){const _ael=document.activeElement;const _isInput=_ael&&(_ael.tagName==='INPUT'||_ael.tagName==='TEXTAREA');if(!_isInput)e.preventDefault();return;}
   if((e.metaKey||e.ctrlKey)&&e.key==='z'){
@@ -1355,6 +1355,10 @@ document.addEventListener('keydown',e=>{
   if(e.key==='Tab'&&!e.metaKey&&!e.ctrlKey&&activePg==='overview'&&document.getElementById('tbGrid')&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')&&!window._tbEditing){
     e.preventDefault();if(typeof _tbTabCycle==='function')_tbTabCycle(e.shiftKey);return;
   }
+  // M then O (within 600ms, while month view is open from the M press) = jump to Movies & Shows. Doesn't touch solo M or solo O behavior.
+  if(e.key==='o'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&document.getElementById('mModal').classList.contains('open')&&_lastMPress&&Date.now()-_lastMPress<600){
+    e.preventDefault();_lastMPress=0;closeMod('mModal');if(activePg==='movies')showPage('overview');else showPage('movies');return;
+  }
   if(e.key==='o'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')){
     e.preventDefault();showPage('overview');
   }
@@ -1411,6 +1415,7 @@ document.addEventListener('keydown',e=>{
   }
   // M to toggle month view on overview (skip if video popup is open — it uses M for its own calendar)
   if(e.key==='m'&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')){
+    _lastMPress=Date.now();
     const _vp=document.getElementById('vidOvPanel');
     if(_vp&&_vp.style.display==='block')return;
     if(document.getElementById('mModal').classList.contains('open')){e.preventDefault();closeMod('mModal');return;}
