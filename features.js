@@ -6695,16 +6695,54 @@ function updateOvBanner(){
     banner.classList.remove('show');
   }
 }
-async function rolloverOverdue(){
+// Single self-contained "this occurrence only" move for a non-WR recurring task overdue from a
+// past week — CARRY pattern (stays keyed under its original week, value updated to today), own
+// undo/PATCH so it can run independently of whatever else rolloverOverdue is doing.
+function _recMoveThisOccToToday(rec,wkKey){
+  if(!rec._dateOverrides)rec._dateOverrides={};
+  const prev=rec._dateOverrides[wkKey];
   const today=tod();
+  rec._dateOverrides[wkKey]=today;
+  save();renderAll();
+  sbReqSilent('PATCH','wr_recurring_rules',{date_overrides:rec._dateOverrides},`?id=eq.${rec.id}`);
+  pushUndo(()=>{
+    if(prev!==undefined)rec._dateOverrides[wkKey]=prev;else delete rec._dateOverrides[wkKey];
+    save();renderAll();
+    sbReqSilent('PATCH','wr_recurring_rules',{date_overrides:rec._dateOverrides},`?id=eq.${rec.id}`);
+  },'Moved to today');
+}
+// Prompts once PER item that's overdue from a genuine past week (WR week-miss or non-WR),
+// one at a time — showWrScopePicker is a singleton, so these can't show simultaneously. Each
+// choice fires before the next popup appears. Same-week-only overdue items never reach this path
+// (see the split in rolloverOverdue) since moving within the current week isn't a schedule change.
+function _rolloverPromptQueue(items,clickEvent){
+  if(!items.length)return;
+  const[item,...rest]=items;
+  const next=()=>_rolloverPromptQueue(rest,clickEvent);
+  const fakeEvent={preventDefault(){},stopPropagation(){},clientX:clickEvent?.clientX||window.innerWidth/2,clientY:clickEvent?.clientY||window.innerHeight/2};
+  if(item._wrWeekMiss){
+    showWrScopePicker(fakeEvent,'⊞  This time only','↻  Move all future',
+      ()=>{wrMoveToThisWeek(item._ruleId,item._wkKey,false);next();},
+      ()=>{wrMoveToThisWeek(item._ruleId,item._wkKey,true);next();});
+  } else {
+    const rec=st.recurring.find(x=>String(x.id)===String(item._recId));
+    if(!rec){next();return;}
+    showWrScopePicker(fakeEvent,'⊘  This time only','↻  Move all future',
+      ()=>{_recMoveThisOccToToday(rec,item._wkKey);next();},
+      ()=>{_recMoveAllFuture(rec,item._wkKey,tod());next();});
+  }
+}
+async function rolloverOverdue(clickEvent){
+  const today=tod();
+  const curWk=getWkKey(0);
   const ovTasks=st.tasks.filter(t=>!t.done&&t.due_date&&t.due_date.split('T')[0]<today&&t.category!=='Weekly Goals');
   const ovRecAll=getOvRecurring();
-  // WR week-level misses need a real cross-week move (proper move-override bookkeeping via
-  // wrMoveToThisWeek — "this occurrence only", no this-time/all-future prompt since this is a
-  // bulk sweep, not a deliberate per-item choice) — handled separately from the plain same-week
-  // date-pin case below, which is just a direct value change, no week-crossing involved.
-  const ovRecWeekMiss=ovRecAll.filter(v=>v._wrWeekMiss);
-  const ovRec=ovRecAll.filter(v=>!v._wrWeekMiss);
+  // Crossing into a different week is a real schedule decision — prompt this-time-vs-all-future
+  // for each one (sequentially, see _rolloverPromptQueue), even in this bulk sweep. Same-week
+  // items (WR pinned-this-week, or a non-WR task due earlier this week) are just a same-week date
+  // nudge, no schedule implication, so those stay in the silent bulk path below.
+  const ovRecNeedsPrompt=ovRecAll.filter(v=>v._wrWeekMiss||v._wkKey!==curWk);
+  const ovRec=ovRecAll.filter(v=>!v._wrWeekMiss&&v._wkKey===curWk);
   const ovShop=getOvShopping();
   const ovPup=(st.pupSessions||[]).filter(s=>!s.done&&s.day_date&&s.day_date<today);
   const _roVdm=_vidDayMap();const ovVid=(st.videos||[]).filter(v=>!v.is_deleted&&v.status!=='published'&&_roVdm[String(v.id)]&&_roVdm[String(v.id)]<today);
@@ -6713,8 +6751,8 @@ async function rolloverOverdue(){
   const _roVsKeys=[];const _roVsExtra=[];const _roVsSeen=new Set();
   Object.entries(_roVsm).forEach(([key,val])=>{const[vidId,step]=key.split('::');const v=(st.videos||[]).find(x=>String(x.id)===String(vidId)&&!x.is_deleted);if(!v||v[step]==='na'||v[step]==='done')return;if(val.ds<today&&!(typeof _vidStepComputeDone==='function'&&_vidStepComputeDone(vidId,step,val.ds,val))){_roVsKeys.push(key);_roVsSeen.add(key+'::'+val.ds);}(val.extraDays||[]).forEach(ed=>{if(ed>=today)return;const dk=key+'::'+ed;if(_roVsSeen.has(dk))return;_roVsSeen.add(dk);if(typeof _vidStepComputeDone==='function'&&_vidStepComputeDone(vidId,step,ed,null))return;_roVsExtra.push({key,ed});});});
   const _roVsBlocks=(st.blocks||[]).filter(bl=>bl._vidStepVid&&bl._vidStepName&&bl.ds<today&&!bl._done&&bl._vidStepName!=='step_thumbnail'&&bl._vidStepName!=='step_description').filter(bl=>{const dk=bl._vidStepVid+'::'+bl._vidStepName+'::'+bl.ds;if(_roVsSeen.has(dk))return false;_roVsSeen.add(dk);const v=(st.videos||[]).find(x=>String(x.id)===String(bl._vidStepVid)&&!x.is_deleted);return v&&v[bl._vidStepName]!=='na'&&v[bl._vidStepName]!=='done';});
-  if(!ovTasks.length&&!ovRec.length&&!ovRecWeekMiss.length&&!ovShop.length&&!ovPup.length&&!ovVid.length&&!_roVsKeys.length&&!_roVsExtra.length&&!_roVsBlocks.length)return;
-  ovRecWeekMiss.forEach(v=>wrMoveToThisWeek(v._ruleId,v._wkKey,false));
+  if(!ovTasks.length&&!ovRec.length&&!ovRecNeedsPrompt.length&&!ovShop.length&&!ovPup.length&&!ovVid.length&&!_roVsKeys.length&&!_roVsExtra.length&&!_roVsBlocks.length)return;
+  _rolloverPromptQueue(ovRecNeedsPrompt,clickEvent);
   const prevDates=ovTasks.map(t=>({id:String(t.id),date:t.due_date}));
   const prevRecWkKeys=ovRec.map(v=>{
     const prevDate=v._ruleId
@@ -6745,7 +6783,7 @@ async function rolloverOverdue(){
   // Also move blocks that match rolled-over daymap entries
   _roVsKeys.forEach(k=>{const[vidId,step]=k.split('::');(st.blocks||[]).filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step&&bl.ds<today&&!bl._done).forEach(bl=>{_prevVsBlks.push({id:bl.id,ds:bl.ds});bl.ds=today;sbUpdateBlock(bl.id,{day_date:today});});});
   renderAll();
-  const total=ovTasks.length+ovRec.length+ovRecWeekMiss.length+ovShop.length+ovPup.length+ovVid.length+_roVsKeys.length+_roVsExtra.length+_roVsBlocks.length;
+  const total=ovTasks.length+ovRec.length+ovShop.length+ovPup.length+ovVid.length+_roVsKeys.length+_roVsExtra.length+_roVsBlocks.length;
   pushUndo(()=>{
     prevDates.forEach(({id,date})=>{const t=st.tasks.find(x=>String(x.id)===id);if(t)t.due_date=date;});
     prevRecWkKeys.forEach(({recId,ruleId,wkKey,prevDate})=>{if(ruleId){const r=st.wrRules.find(x=>String(x.id)===String(ruleId));if(r){if(!r._dateOverrides)r._dateOverrides={};if(prevDate)r._dateOverrides[wkKey]=prevDate;else delete r._dateOverrides[wkKey];}}else{const r=st.recurring.find(x=>String(x.id)===String(recId));if(r){if(!r._dateOverrides)r._dateOverrides={};if(prevDate)r._dateOverrides[wkKey]=prevDate;else delete r._dateOverrides[wkKey];}}});
