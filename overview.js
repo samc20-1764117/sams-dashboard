@@ -890,6 +890,74 @@ function sortByTBWeek(tasks){
     return taskTypePri(a)-taskTypePri(b)||(a.name||'').localeCompare(b.name||'');
   });
 }
+// Per-row "move to today" arrow appended after an overdue row's day letter — Today-list rows
+// only (never the Weekly Reset container's own red rows, which intentionally have no move
+// action of their own — see rules/wr-system.md). Non-recurring types just move directly;
+// recurring/WR route through _ovRowMoveClick, which opens the 3-way scope menu only when the
+// occurrence is from a genuine past week (same-week nudges don't need a schedule decision).
+function _dlblOvArrow(dayLetter,onclickJs){
+  return`<span class="dlbl ov" style="display:inline-flex;align-items:center;gap:2px">${dayLetter}<span class="dlbl-arrow" title="Move to today" onclick="event.stopPropagation();${onclickJs}">▾</span></span>`;
+}
+function _ovRowMoveClick(e,kind,id,wkKey){
+  e.stopPropagation();e.preventDefault();
+  const curWk=getWkKey(0);
+  const pastWeek=wkKey&&wkKey!==curWk;
+  if(kind==='wrrule'){
+    if(pastWeek){
+      showWrScopePicker(e,'⊘  This time only','↻  All future (same day)',
+        ()=>wrMoveToThisWeek(id,wkKey,false),
+        ()=>wrMoveToThisWeek(id,wkKey,true,false),
+        '↻  All future (set day)',
+        ()=>wrMoveToThisWeek(id,wkKey,true,true));
+    } else {
+      const rule=st.wrRules.find(r=>String(r.id)===String(id));if(!rule)return;
+      if(!rule._dateOverrides)rule._dateOverrides={};
+      const prev=rule._dateOverrides[wkKey];const today=tod();
+      rule._dateOverrides[wkKey]=today;
+      save();renderAll();
+      sbReqSilent('PATCH','wr_recurring_rules',{date_overrides:rule._dateOverrides},`?id=eq.${id}`);
+      pushUndo(()=>{if(prev!==undefined)rule._dateOverrides[wkKey]=prev;else delete rule._dateOverrides[wkKey];save();renderAll();sbReqSilent('PATCH','wr_recurring_rules',{date_overrides:rule._dateOverrides},`?id=eq.${id}`);},'Moved to today');
+    }
+  } else {
+    const rec=st.recurring.find(x=>String(x.id)===String(id));if(!rec)return;
+    if(pastWeek){
+      showWrScopePicker(e,'⊘  This time only','↻  All future (same day)',
+        ()=>_recMoveThisOccToToday(rec,wkKey),
+        ()=>_recMoveAllFuture(rec,wkKey,tod(),null,true),
+        '↻  All future (set day)',
+        ()=>_recMoveAllFuture(rec,wkKey,tod(),null,false));
+    } else {
+      _recMoveThisOccToToday(rec,wkKey||curWk);
+    }
+  }
+}
+function _taskMoveToToday(taskId){
+  const t=st.tasks.find(x=>String(x.id)===String(taskId));if(!t)return;
+  const today=tod();const prev=t.due_date;
+  t.due_date=today;const sid=String(t.id);localOverrides[sid]={due_date:today};pendingLocal.add(sid);
+  save();renderAll();
+  sbReq('PATCH','tasks',{due_date:today},`?id=eq.${t.id}`).then(()=>{delete localOverrides[sid];pendingLocal.delete(sid);});
+  pushUndo(()=>{t.due_date=prev;save();renderAll();sbReq('PATCH','tasks',{due_date:prev},`?id=eq.${t.id}`);},'Moved to today');
+}
+function _shopMoveToToday(shopId){
+  const s=st.shopping.find(x=>String(x.id)===String(shopId));if(!s)return;
+  const today=tod();const prev=s.due_date;
+  s.due_date=today;save();renderAll();
+  sbReqNullable('PATCH','shopping_list',{due_date:today},`?id=eq.${s.id}`);
+  pushUndo(()=>{s.due_date=prev;save();renderAll();sbReqNullable('PATCH','shopping_list',{due_date:prev||null},`?id=eq.${s.id}`);},'Moved to today');
+}
+function _pupMoveToToday(sessId){
+  const s=(st.pupSessions||[]).find(x=>String(x.id)===String(sessId));if(!s)return;
+  const today=tod();const prev=s.day_date;
+  s.day_date=today;save();renderAll();
+  sbReqSilent('PATCH','pup_skill_sessions',{day_date:today},`?id=eq.${s.id}`);
+  pushUndo(()=>{s.day_date=prev;save();renderAll();sbReqSilent('PATCH','pup_skill_sessions',{day_date:prev},`?id=eq.${s.id}`);},'Moved to today');
+}
+function _vidMoveToToday(vidId){
+  const today=tod();const m=_vidDayMap();const prev=m[String(vidId)];
+  m[String(vidId)]=today;_vidDayMapSet(m);save();renderAll();
+  pushUndo(()=>{const m2=_vidDayMap();if(prev)m2[String(vidId)]=prev;else delete m2[String(vidId)];_vidDayMapSet(m2);save();renderAll();},'Moved to today');
+}
 // Virtual task row for today's list - done ones sink to bottom, greyed, uncheckable if done
 function tRowTodayVirt(t,tbArrow=false,noColor=false){
   const s=gc((t._isWrec||t._isWrRule)?'weekly_reset':'recurring');
@@ -911,7 +979,7 @@ function tRowTodayVirt(t,tbArrow=false,noColor=false){
     ${_hebBadge(t.name,t._wkKey)}${_pupBadge(t.name)}<span class="tn">${t.name}${t._wkNote?` <span style="opacity:.5;font-size:9px">@${escHtml(t._wkNote)}</span>`:''}</span>
     ${!ov?`<svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3" fill="${ps.bg}" stroke="${ps.d}" stroke-opacity="0.4" stroke-width="1"/></svg>`:''}
     ${tbArrow?'<span class="tb-arrow">›</span>':''}
-    ${ov&&t.due_date?`<span class="dlbl ov">${['S','M','T','W','T','F','S'][new Date(t.due_date.split('T')[0]+'T12:00').getDay()]}</span>`:''}
+    ${ov&&t.due_date?_dlblOvArrow(['S','M','T','W','T','F','S'][new Date(t.due_date.split('T')[0]+'T12:00').getDay()],`_ovRowMoveClick(event,'${t._isWrRule?'wrrule':'rec'}','${t._isWrRule?t._ruleId:t._recId}','${t._wkKey||getWkKey(0)}')`):''}
     <button class="delbtn" onclick="event.stopPropagation();${_xBtn}">✕</button>
   </div>`;
 }
@@ -928,7 +996,7 @@ function tRowShopVirt(t,noDate=false,tbArrow=false,noColor=false){
     <span class="tn">${t.name}</span>
     ${!ov?`<svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3" fill="${ps.bg}" stroke="${ps.d}" stroke-opacity="0.4" stroke-width="1"/></svg>`:''}
     ${tbArrow?'<span class="tb-arrow">›</span>':''}
-    ${(!noDate||ov)&&t.due_date?`<span class="dlbl ${ov?'ov':''}">${ov?['S','M','T','W','T','F','S'][new Date(t.due_date.split('T')[0]+'T12:00').getDay()]:fmtD(t.due_date)}</span>`:''}
+    ${(!noDate||ov)&&t.due_date?(ov?_dlblOvArrow(['S','M','T','W','T','F','S'][new Date(t.due_date.split('T')[0]+'T12:00').getDay()],`_shopMoveToToday('${t._shopId}')`):`<span class="dlbl">${fmtD(t.due_date)}</span>`):''}
     <button class="delbtn" onclick="event.stopPropagation();unscheduleShop('${t._shopId}')">✕</button>
   </div>`;
 }
@@ -957,7 +1025,7 @@ function tRowVidVirt(t,arr){
     <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="if(this.checked)_vidCompleteFromOv('${vid}',this);else _vidUncompleteFromOv('${vid}')"></label>
     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="${_vs.t}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;opacity:.6"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
     <span class="tn">${escHtml(t.name)}</span>
-    ${ov&&t.due_date?`<span class="dlbl ov">${['S','M','T','W','T','F','S'][new Date(t.due_date.split('T')[0]+'T12:00').getDay()]}</span>`:''}
+    ${ov&&t.due_date?_dlblOvArrow(['S','M','T','W','T','F','S'][new Date(t.due_date.split('T')[0]+'T12:00').getDay()],`_vidMoveToToday('${vid}')`):''}
     ${!ov?`<span style="font-size:9px;opacity:.5;margin-left:auto;flex-shrink:0">${_pct3}%</span>`:''}
     ${arr?'<span class="tb-arrow">›</span>':''}
     <button class="delbtn" onclick="event.stopPropagation();_vidUnassignDay('${vid}')">✕</button>
@@ -991,7 +1059,7 @@ function tRowPupSess(t,noColor=false,tbArrow=false){
   return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''}" draggable="true" style="${!ov&&!noColor?`background:${ps.bg};border:1px solid ${ps.b}`:''}" id="ti-pup-sess-${t._pupSessId}" onclick="selTask(event,'pup-sess-${t._pupSessId}')" ondblclick="openPupEditModal('${t._skillId}')" ondragstart="dragId='pupsess::${t._pupSessId}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);" ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false);">
     <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="togPupSessionDone('${t._pupSessId}',this.checked)"></label>
     <span class="tn">${escHtml(_pupDisplayName(t))}</span>
-    ${ov&&t.due_date?`<span class="dlbl ov">${['S','M','T','W','T','F','S'][new Date(t.due_date.split('T')[0]+'T12:00').getDay()]}</span>`:''}
+    ${ov&&t.due_date?_dlblOvArrow(['S','M','T','W','T','F','S'][new Date(t.due_date.split('T')[0]+'T12:00').getDay()],`_pupMoveToToday('${t._pupSessId}')`):''}
     ${!ov?`<svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3" fill="none" stroke="rgba(56,170,210,.35)" stroke-width="1.5"/></svg>`:''}
     ${tbArrow?'<span class="tb-arrow">›</span>':''}
     <button class="delbtn" onclick="event.stopPropagation();removePupSession('${t._pupSessId}')">✕</button>
@@ -3335,7 +3403,7 @@ function _wrSnapshotSchedule(rule){
 // lands on `ds` (from srcWkKey's occurrence) and every future one follows. Monthly → new
 // day-of-month; other cadences → new weekday. Clears the source pin, past orphans, and stale
 // future pins. Handles save/render/PATCH/undo. `extraRender` runs after each re-render.
-function _recMoveAllFuture(r,srcWkKey,ds,extraRender){
+function _recMoveAllFuture(r,srcWkKey,ds,extraRender,keepDay){
   const DAYS_AF=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
   const prevStart=r.starting_date;const prevAppears=r.appears_on_date;
   if(!r._dateOverrides)r._dateOverrides={};
@@ -3347,8 +3415,10 @@ function _recMoveAllFuture(r,srcWkKey,ds,extraRender){
   // srcWkKey then didn't reflect the recurrence's true cycle phase, so the shifted anchor landed on
   // some arbitrary week, sometimes many cycles away, instead of this/next week. Anchoring straight to
   // `ds` sidesteps that entirely and is equivalent to the old math whenever srcWkKey WAS the natural week.
+  // keepDay=true ("all future, same day of week"): re-anchor the cadence to resume from `ds` without
+  // changing WHICH day it falls on (e.g. HEB stays Sunday) — only the schedule's phase moves forward.
   const newStart=ds;
-  const newAppears=(r.cadence==='monthly')?String(new Date(ds+'T00:00:00').getDate()):DAYS_AF[new Date(ds+'T00:00:00').getDay()];
+  const newAppears=keepDay?r.appears_on_date:((r.cadence==='monthly')?String(new Date(ds+'T00:00:00').getDate()):DAYS_AF[new Date(ds+'T00:00:00').getDay()]);
   if(_prevSrcPin!==undefined)delete r._dateOverrides[srcWkKey];
   const _futPins=_recClearFuturePins(r);
   r.starting_date=newStart;r.appears_on_date=newAppears;
@@ -3413,14 +3483,27 @@ function _wrCtxShiftScheduleOne(delta){
     save();_rerender();
   },'Shifted schedule');
 }
+// nth-weekday-of-month index (1-4, or -1 for "last") for a given date — used when "all future,
+// set day of week" needs to re-derive a monthly WR rule's monthly_nth/monthly_weekday from today.
+function _nthWeekdayOfMonth(d){
+  const day=d.getDate();
+  const nextOcc=new Date(d);nextOcc.setDate(day+7);
+  if(nextOcc.getMonth()!==d.getMonth())return -1;
+  return Math.min(Math.ceil(day/7),4);
+}
 // Move an overdue/carried WR rule (day-pinned in a prior week) into the CURRENT week as UNASSIGNED.
-// scope: allFuture=false → just this occurrence; allFuture=true → also re-anchor the recurrence to now.
-function wrMoveToThisWeek(ruleId,srcWkKey,allFuture){
+// scope: allFuture=false → just this occurrence; allFuture=true → also re-anchor the recurrence to
+// now. setDow (only meaningful with allFuture=true) → ALSO change which day it falls on to match
+// today (day_of_week for weekly/biweekly, monthly_date/monthly_nth+weekday for monthly); omitted
+// or false keeps the rule's original day — quarterly/biannual/annual have no day concept, so
+// setDow is a no-op for those either way.
+function wrMoveToThisWeek(ruleId,srcWkKey,allFuture,setDow){
   const rule=st.wrRules.find(r=>String(r.id)===String(ruleId));if(!rule)return;
   const curWkKey=getWkKey(0);
   if(!rule._dateOverrides)rule._dateOverrides={};
   const prevStart=rule.starting_date;
   const prevSrcPin=rule._dateOverrides[srcWkKey];
+  const prevDow=rule.day_of_week,prevMNth=rule.monthly_nth,prevMWd=rule.monthly_weekday,prevMDate=rule.monthly_date;
   // Overrides to remove (recreate on undo): everything tied to the source week + any skip on the current week
   const _delKey=o=>String(o.rule_id)===String(ruleId)&&(o.wk_key===srcWkKey||(o.wk_key===curWkKey&&o.override_type==='skip'));
   const _deleted=(st.wrOverrides||[]).filter(_delKey).map(o=>({...o}));
@@ -3431,7 +3514,18 @@ function wrMoveToThisWeek(ruleId,srcWkKey,allFuture){
   if(_deleted.length)st.wrOverrides=(st.wrOverrides||[]).filter(o=>!_delKey(o));
   // 3. All future → re-anchor the recurrence to now (cadence recomputes from today)
   const _addedSnap=allFuture?_wrSnapshotSchedule(rule):false;
-  if(allFuture)rule.starting_date=tod();
+  if(allFuture){
+    rule.starting_date=tod();
+    if(setDow){
+      const now=new Date(tod()+'T12:00');
+      if(rule.cadence==='weekly'||rule.cadence==='biweekly'){
+        rule.day_of_week=now.getDay();
+      } else if(rule.cadence==='monthly'){
+        if(rule.monthly_rule_type==='date_of_month')rule.monthly_date=now.getDate();
+        else if(rule.monthly_rule_type==='nth_weekday'){rule.monthly_weekday=now.getDay();rule.monthly_nth=_nthWeekdayOfMonth(now);}
+      }
+    }
+  }
   // 4. Ensure it shows in the current week UNASSIGNED — add a move-in override only if it isn't already present
   const naturallyDue=isWRRuleDueThisWeek(rule,0);
   const hasCur=(st.wrOverrides||[]).some(o=>String(o.rule_id)===String(ruleId)&&((o.wk_key===curWkKey&&o.override_type!=='skip')||(o.override_type==='move'&&o.moved_to_wk_key===curWkKey)));
@@ -3442,17 +3536,18 @@ function wrMoveToThisWeek(ruleId,srcWkKey,allFuture){
     st.wrOverrides.push(_addedHolder);
     sbReqSilent('POST','wr_recurring_overrides',_moveFull,'').then(res=>{if(res&&res[0])Object.assign(_addedHolder,res[0]);});
   }
-  sbReq('PATCH','wr_recurring_rules',{starting_date:rule.starting_date,date_overrides:rule._dateOverrides},`?id=eq.${ruleId}`);
+  sbReq('PATCH','wr_recurring_rules',{starting_date:rule.starting_date,day_of_week:rule.day_of_week,monthly_nth:rule.monthly_nth,monthly_weekday:rule.monthly_weekday,monthly_date:rule.monthly_date,date_overrides:rule._dateOverrides},`?id=eq.${ruleId}`);
   const _rerender=()=>{save();renderRecOv();renderWkCal();renderWeeklyPage();renderToday();if(document.getElementById('tbGrid'))renderDayTB();};
   _rerender();
   if(typeof showToast==='function')showToast('Moved to this week'+(allFuture?' · all future':''),'#10b981',1600);
   pushUndo(()=>{
     rule.starting_date=prevStart;
+    rule.day_of_week=prevDow;rule.monthly_nth=prevMNth;rule.monthly_weekday=prevMWd;rule.monthly_date=prevMDate;
     if(_addedSnap)rule._dateOverrides.__priorScheds__.pop();
     if(prevSrcPin!==undefined)rule._dateOverrides[srcWkKey]=prevSrcPin;else delete rule._dateOverrides[srcWkKey];
     if(_addedHolder){if(_addedHolder.id&&!String(_addedHolder.id).startsWith('wrov-tmp-'))sbReqSilent('DELETE','wr_recurring_overrides',null,`?id=eq.${_addedHolder.id}`);st.wrOverrides=st.wrOverrides.filter(o=>o!==_addedHolder);}
     _deleted.forEach(o=>{const _h={rule_id:o.rule_id,wk_key:o.wk_key,override_type:o.override_type,moved_to_wk_key:o.moved_to_wk_key||null,done:o.done||null,custom_name:o.custom_name||null,custom_notes:o.custom_notes||null,id:'wrov-tmp-'+Date.now()+'-'+o.wk_key};st.wrOverrides.push(_h);sbReqSilent('POST','wr_recurring_overrides',{rule_id:_h.rule_id,wk_key:_h.wk_key,override_type:_h.override_type,moved_to_wk_key:_h.moved_to_wk_key,done:_h.done,custom_name:_h.custom_name,custom_notes:_h.custom_notes},'').then(res=>{if(res&&res[0])Object.assign(_h,res[0]);});});
-    sbReq('PATCH','wr_recurring_rules',{starting_date:prevStart,date_overrides:rule._dateOverrides},`?id=eq.${ruleId}`);
+    sbReq('PATCH','wr_recurring_rules',{starting_date:prevStart,day_of_week:prevDow,monthly_nth:prevMNth,monthly_weekday:prevMWd,monthly_date:prevMDate,date_overrides:rule._dateOverrides},`?id=eq.${ruleId}`);
     save();renderRecOv();renderWkCal();renderWeeklyPage();renderToday();if(document.getElementById('tbGrid'))renderDayTB();
   },'Moved WR task to this week');
 }
@@ -3833,19 +3928,11 @@ function dropOnTodayList(e){
 
 // ── Shop overview ──────────────────────────────────────────────────────────────
 function _shopTopOrder(s){const orders=st.shopping.filter(x=>String(x.id)!==String(s.id)&&x.shop_order!=null).map(x=>x.shop_order);return orders.length?Math.min(...orders)-1:0;}
-// Normalizes to a bare YYYY-MM-DD — some older shopping_list rows carry a full ISO timestamp
-// (e.g. "2026-08-15T00:00:00") rather than a bare date. Comparing raw strings made two items on
-// the literal same day sort as different "groups" depending on which write path touched them
-// last, which is what made Cmd+Up/Down reordering block after an inconsistent number of moves.
-const _shopDs=d=>d?d.split('T')[0]:d;
+// Manual order (shop_order) is the sole sort key — due_date is just metadata shown on the row,
+// not a grouping/sort mechanism. Previously due-date sorted first, which silently blocked
+// Cmd+Up/Down from moving an item past a differently-dated neighbor (confirmed unwanted).
 function _shopOvSort(arr){
-  return[...arr].sort((x,y)=>{
-    const ad=x.due_date?1:0,bd=y.due_date?1:0;
-    if(ad!==bd)return bd-ad;
-    const xd=_shopDs(x.due_date),yd=_shopDs(y.due_date);
-    if(xd&&yd&&xd!==yd)return xd<yd?-1:1;
-    return(x.shop_order??9999)-(y.shop_order??9999);
-  });
+  return[...arr].sort((x,y)=>(x.shop_order??9999)-(y.shop_order??9999));
 }
 // ── Videos on Overview ────────────────────────────────────────────────────────
 function _vidDayMap(){try{return JSON.parse(localStorage._vidDayMap||'{}');}catch(e){return{};}}
@@ -5806,17 +5893,15 @@ function _shopOvKeyNav(e){
     const prevOrders=sorted.map((s,i)=>({id:s.id,shop_order:i}));
     const idxs=[...selIds].map(id=>sorted.findIndex(s=>String(s.id)===id)).filter(i=>i>=0).sort((a,b)=>a-b);
     if(!idxs.length)return true;
-    const grp=s=>_shopDs(s.due_date)||'';
     // Move the whole selected block past its one neighbor by splicing it out and reinserting —
     // simpler and symmetric for up/down and single/multi-select than juggling shop_order deltas.
-    // Blocked (no-op) at a due-date group boundary: shop_order can never move an item across one,
-    // since _shopOvSort always sorts by date before shop_order.
+    // Manual order always wins — due_date is just metadata on the row, not a sort boundary.
     if(dir===-1){
-      if(idxs[0]===0||grp(sorted[idxs[0]-1])!==grp(sorted[idxs[0]]))return true;
+      if(idxs[0]===0)return true;
       const moved=sorted.splice(idxs[0]-1,1)[0];
       sorted.splice(idxs[idxs.length-1],0,moved);
     } else {
-      if(idxs[idxs.length-1]===sorted.length-1||grp(sorted[idxs[idxs.length-1]+1])!==grp(sorted[idxs[idxs.length-1]]))return true;
+      if(idxs[idxs.length-1]===sorted.length-1)return true;
       const moved=sorted.splice(idxs[idxs.length-1]+1,1)[0];
       sorted.splice(idxs[0],0,moved);
     }
@@ -6075,7 +6160,7 @@ function tRow(t,o={}){
     ${o.cat?(o.catDot&&!ov?`<svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3" fill="${s.bg}" stroke="${s.d}" stroke-opacity="0.4" stroke-width="1"/></svg>`:(!o.catDot?`<span class="cpill" style="background:${s.bg};color:${s.t};border-color:${s.b}">${escHtml(t.category||'?')}</span>`:'')):''}
     ${o.tbArrow?'<span class="tb-arrow">›</span>':''}
     ${o.flag?'<span class="flag-u">📅</span>':''}
-    ${!o.flag&&(!o.noDate||ov)&&t.due_date?ov?`<span class="dlbl ov">${['S','M','T','W','T','F','S'][new Date(t.due_date.split('T')[0]+'T12:00').getDay()]}</span>`:`<span class="dlbl" style="cursor:pointer" onclick="openInlineDatePicker(event,'${t.id}','${t.due_date}')">${fmtD(t.due_date)} <span class="date-clr" title="Clear date" onclick="event.stopPropagation();clearTaskDate('${t.id}',event)">×</span></span>`:''}
+    ${!o.flag&&(!o.noDate||ov)&&t.due_date?ov?_dlblOvArrow(['S','M','T','W','T','F','S'][new Date(t.due_date.split('T')[0]+'T12:00').getDay()],`_taskMoveToToday('${t.id}')`):`<span class="dlbl" style="cursor:pointer" onclick="openInlineDatePicker(event,'${t.id}','${t.due_date}')">${fmtD(t.due_date)} <span class="date-clr" title="Clear date" onclick="event.stopPropagation();clearTaskDate('${t.id}',event)">×</span></span>`:''}
     <button class="delbtn" onclick="delTask('${t.id}',event)">✕</button>
   </div>`;
 }
