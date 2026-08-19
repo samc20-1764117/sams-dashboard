@@ -61,15 +61,13 @@ if(sessionStorage._mReloaded===BUILD);else{
   <nav style="flex:1">
     <a class="nav-item active" data-page="overview" href="#overview" onclick="event.preventDefault();showPage('overview')"><div class="ndot" style="background:#6d5fe6"></div>Overview</a>
     <a class="nav-item" data-page="weekly" href="#weekly" onclick="event.preventDefault();showPage('weekly')"><div class="ndot" style="background:#2a9db5"></div>Recurring Tasks</a>
-    <a class="nav-item" data-page="weekly" href="#weekly" onclick="event.preventDefault();showPage('weekly')"><div class="ndot" style="background:#eab308"></div>Shopping</a>
     <a class="nav-item" data-page="birthdays" href="#birthdays" onclick="event.preventDefault();showPage('birthdays')"><div class="ndot" style="background:#f97316"></div>Birthdays</a>
     <a class="nav-item" data-page="holidays" href="#holidays" onclick="event.preventDefault();showPage('holidays')"><div class="ndot" style="background:#f97316"></div>Holidays</a>
     <a class="nav-item" data-page="ideas" href="#ideas" onclick="event.preventDefault();showPage('ideas')"><div class="ndot" style="background:#a855f7"></div>Ideas</a>
-    <a class="nav-item" data-page="pups" href="#pups" onclick="event.preventDefault();showPage('pups')"><div class="ndot" style="background:#f43f5e"></div>🐾 Pups</a>
+    <a class="nav-item" data-page="pups" href="#pups" onclick="event.preventDefault();showPage('pups')"><div class="ndot" style="background:#f43f5e"></div>Pups</a>
     <a class="nav-item" data-page="finance" href="#finance" onclick="event.preventDefault();showPage('finance')"><div class="ndot" style="background:#22c55e"></div>Finance</a>
-    <a class="nav-item" data-page="recipes" href="#recipes" onclick="event.preventDefault();showPage('recipes')"><div class="ndot" style="background:#f59e0b"></div>🍳 Recipes</a>
-    <a class="nav-item" data-page="notes" href="#notes" onclick="event.preventDefault();showPage('notes')"><div class="ndot" style="background:#8b5cf6"></div>📝 Notes</a>
-    <a class="nav-item" data-page="videos" href="#videos" onclick="event.preventDefault();showPage('videos')"><div class="ndot" style="background:#22c55e"></div>🎬 Videos</a>
+    <a class="nav-item" data-page="recipes" href="#recipes" onclick="event.preventDefault();showPage('recipes')"><div class="ndot" style="background:#f59e0b"></div>Recipes</a>
+    <a class="nav-item" data-page="videos" href="#videos" onclick="event.preventDefault();showPage('videos')"><div class="ndot" style="background:#22c55e"></div>Videos</a>
     <a class="nav-item" data-page="packing" href="#packing" onclick="event.preventDefault();showPage('packing')"><div class="ndot" style="background:#38bdf8"></div>Packing</a>
   </nav>
 </div>
@@ -359,19 +357,26 @@ if(sessionStorage._mReloaded===BUILD);else{
   <datalist id="storeListFull"><option value="HEB"></option><option value="Ikea"></option><option value="Online"></option><option value="Other"></option></datalist>
 
   <div style="display:flex;flex-direction:column;width:100%">
-    <div id="rt-outer" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;height:70vh;flex-shrink:0;width:100%">
-      <!-- Col 1: Weekly Reset Recurring -->
+    <div id="rt-outer" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;height:52vh;flex-shrink:0;width:100%">
+      <!-- Col 1: Weekly Reset — Weekly -->
       <div id="rt-col-wr" style="min-height:0;display:flex;flex-direction:column">
         <div style="font-size:11px;font-weight:700;letter-spacing:.02em;color:var(--muted);margin-bottom:12px;padding:0 2px;flex-shrink:0;text-align:center">Weekly Reset</div>
         <div style="display:flex;flex-direction:column;gap:14px;overflow-y:auto;flex:1;min-height:0;padding:10px 10px 10px 6px;border:1.5px solid var(--border);border-radius:10px;background:rgba(var(--card-rgb,255,255,255),.04)">
           <div id="rt-wr-weekly"></div>
+        </div>
+      </div>
+
+      <!-- Col 2: Weekly Reset — Biweekly/Monthly/Other -->
+      <div id="rt-col-wr-rest" style="min-height:0;display:flex;flex-direction:column">
+        <div style="font-size:11px;font-weight:700;letter-spacing:.02em;color:var(--muted);margin-bottom:12px;padding:0 2px;flex-shrink:0;text-align:center">Weekly Reset — Other Cadence</div>
+        <div style="display:flex;flex-direction:column;gap:14px;overflow-y:auto;flex:1;min-height:0;padding:10px 10px 10px 6px;border:1.5px solid var(--border);border-radius:10px;background:rgba(var(--card-rgb,255,255,255),.04)">
           <div id="rt-wr-biweekly"></div>
           <div id="rt-wr-monthly"></div>
           <div id="rt-wr-other"></div>
         </div>
       </div>
 
-      <!-- Col 2: Other Recurring -->
+      <!-- Col 3: Other Recurring -->
       <div id="rt-col-sch" style="min-height:0;display:flex;flex-direction:column">
         <div style="font-size:11px;font-weight:700;letter-spacing:.02em;color:var(--muted);margin-bottom:12px;padding:0 2px;flex-shrink:0;text-align:center">Other Recurring</div>
         <div style="display:flex;flex-direction:column;gap:14px;overflow-y:auto;flex:1;min-height:0;padding:10px 10px 10px 6px;border:1.5px solid var(--border);border-radius:10px;background:rgba(var(--card-rgb,255,255,255),.04)">

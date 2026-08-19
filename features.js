@@ -2214,13 +2214,17 @@ function _finRenderPersonal(accs,vtiAcc,currentVal,netWorth,totalAll){
       </filter></defs>`;
     // Rotate group so 0 starts at 12 o'clock
     html+=`<g transform="rotate(-90 21 21)">`;
-    const _finTrack=document.body.classList.contains('dark')?'rgba(255,255,255,.08)':'white';
+    const _finIsDark=document.body.classList.contains('dark');
+    const _finTrack=_finIsDark?'rgba(255,255,255,.08)':'white';
     html+=`<circle cx="21" cy="21" r="15.9" fill="none" stroke="${_finTrack}" stroke-width="3.5" />`;
     segs.forEach(seg=>{
       const dashLen=seg.pct*100;const gap=0.6;const dashOff=100-(seg.start*100);
       const adjLen=Math.max(dashLen-gap,0.1);
       const adjOff=dashOff-gap/2;
-      html+=`<circle cx="21" cy="21" r="15.9" fill="none" stroke="${seg.colorLight}" stroke-width="3" stroke-dasharray="${adjLen} ${100-adjLen}" stroke-dashoffset="${adjOff}" filter="url(#finGlass)" data-fin-seg="${seg.id}"/>`;
+      // colorLight (~45% opacity) is a soft frosted-glass tint against a light card — on the near-
+      // black dark card that same low opacity blends into the background and the ring nearly
+      // disappears, so dark mode uses the fully-opaque solid color instead.
+      html+=`<circle cx="21" cy="21" r="15.9" fill="none" stroke="${_finIsDark?seg.color:seg.colorLight}" stroke-width="3" stroke-dasharray="${adjLen} ${100-adjLen}" stroke-dashoffset="${adjOff}" filter="url(#finGlass)" data-fin-seg="${seg.id}"/>`;
       html+=`<circle cx="21" cy="21" r="15.9" fill="none" stroke="transparent" stroke-width="3.5" stroke-dasharray="${adjLen} ${100-adjLen}" stroke-dashoffset="${adjOff}" style="pointer-events:stroke" data-fin-seg="${seg.id}" data-fin-tip-name="${seg.name}" data-fin-tip-amt="${_finFmtRound(seg.amt)}" onmouseenter="_finHover('${seg.id}')" onmouseleave="_finHover(null)"/>`;
     });
     html+=`</g></svg>`;
