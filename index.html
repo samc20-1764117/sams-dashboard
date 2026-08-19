@@ -358,26 +358,50 @@ if(sessionStorage._mReloaded===BUILD);else{
   <input id="nsN" style="display:none"><input id="nsS" style="display:none">
   <datalist id="storeListFull"><option value="HEB"></option><option value="Ikea"></option><option value="Online"></option><option value="Other"></option></datalist>
 
-  <div id="rt-outer" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;height:calc(100vh - 84px);width:100%">
-    <!-- Col 1: Weekly Reset Recurring -->
-    <div id="rt-col-wr" style="min-height:0;display:flex;flex-direction:column">
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px;padding:0 2px;flex-shrink:0;text-align:center">Weekly Reset</div>
-      <div style="display:flex;flex-direction:column;gap:14px;overflow-y:auto;flex:1;min-height:0;padding:10px 10px 10px 6px;border:1.5px solid var(--border);border-radius:10px;background:rgba(var(--card-rgb,255,255,255),.04)">
-        <div id="rt-wr-weekly"></div>
-        <div id="rt-wr-biweekly"></div>
-        <div id="rt-wr-monthly"></div>
-        <div id="rt-wr-other"></div>
+  <div style="display:flex;flex-direction:column;height:calc(100vh - 84px);width:100%">
+    <!-- Month heatmap: every WR + non-WR recurring occurrence this month, color-coded by cadence -->
+    <div id="rt-heat" class="card" style="padding:10px 14px 12px;margin-bottom:14px;flex-shrink:0;box-shadow:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div style="display:flex;align-items:center;gap:6px">
+          <button class="btn btn-ghost btn-xs" style="padding:2px 7px" onclick="_rtHeatShift(-1)">‹</button>
+          <span id="rt-heat-lbl" style="font-size:12px;font-weight:700;color:var(--text);min-width:112px;text-align:center"></span>
+          <button class="btn btn-ghost btn-xs" style="padding:2px 7px" onclick="_rtHeatShift(1)">›</button>
+          <button class="btn btn-ghost btn-xs" style="padding:2px 8px;margin-left:2px" onclick="_rtHeatToday()">Today</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;font-size:9.5px;color:var(--muted)">
+          <span style="display:flex;align-items:center;gap:3px"><span class="rt-heat-dot cad-weekly"></span>Weekly</span>
+          <span style="display:flex;align-items:center;gap:3px"><span class="rt-heat-dot cad-biweekly"></span>Biweekly</span>
+          <span style="display:flex;align-items:center;gap:3px"><span class="rt-heat-dot cad-monthly"></span>Monthly</span>
+          <span style="display:flex;align-items:center;gap:3px"><span class="rt-heat-dot cad-other"></span>Other</span>
+        </div>
       </div>
+      <div id="rt-heat-dow" class="rt-heat-grid">
+        <div class="rt-heat-dow-cell">Mon</div><div class="rt-heat-dow-cell">Tue</div><div class="rt-heat-dow-cell">Wed</div><div class="rt-heat-dow-cell">Thu</div><div class="rt-heat-dow-cell">Fri</div><div class="rt-heat-dow-cell">Sat</div><div class="rt-heat-dow-cell">Sun</div>
+      </div>
+      <div id="rt-heat-grid" class="rt-heat-grid"></div>
     </div>
 
-    <!-- Col 2: Other Recurring -->
-    <div id="rt-col-sch" style="min-height:0;display:flex;flex-direction:column">
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px;padding:0 2px;flex-shrink:0;text-align:center">Other Recurring</div>
-      <div style="display:flex;flex-direction:column;gap:14px;overflow-y:auto;flex:1;min-height:0;padding:10px 10px 10px 6px;border:1.5px solid var(--border);border-radius:10px;background:rgba(var(--card-rgb,255,255,255),.04)">
-        <div id="rt-sch-weekly"></div>
-        <div id="rt-sch-biweekly"></div>
-        <div id="rt-sch-monthly"></div>
-        <div id="rt-sch-other"></div>
+    <div id="rt-outer" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;flex:1;min-height:0;width:100%">
+      <!-- Col 1: Weekly Reset Recurring -->
+      <div id="rt-col-wr" style="min-height:0;display:flex;flex-direction:column">
+        <div style="font-size:11px;font-weight:700;letter-spacing:.02em;color:var(--muted);margin-bottom:12px;padding:0 2px;flex-shrink:0;text-align:center">Weekly Reset</div>
+        <div style="display:flex;flex-direction:column;gap:14px;overflow-y:auto;flex:1;min-height:0;padding:10px 10px 10px 6px;border:1.5px solid var(--border);border-radius:10px;background:rgba(var(--card-rgb,255,255,255),.04)">
+          <div id="rt-wr-weekly"></div>
+          <div id="rt-wr-biweekly"></div>
+          <div id="rt-wr-monthly"></div>
+          <div id="rt-wr-other"></div>
+        </div>
+      </div>
+
+      <!-- Col 2: Other Recurring -->
+      <div id="rt-col-sch" style="min-height:0;display:flex;flex-direction:column">
+        <div style="font-size:11px;font-weight:700;letter-spacing:.02em;color:var(--muted);margin-bottom:12px;padding:0 2px;flex-shrink:0;text-align:center">Other Recurring</div>
+        <div style="display:flex;flex-direction:column;gap:14px;overflow-y:auto;flex:1;min-height:0;padding:10px 10px 10px 6px;border:1.5px solid var(--border);border-radius:10px;background:rgba(var(--card-rgb,255,255,255),.04)">
+          <div id="rt-sch-weekly"></div>
+          <div id="rt-sch-biweekly"></div>
+          <div id="rt-sch-monthly"></div>
+          <div id="rt-sch-other"></div>
+        </div>
       </div>
     </div>
   </div>

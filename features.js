@@ -337,6 +337,83 @@ function renderWeeklyPage(){
   const elBar=document.getElementById('wrBar');if(elBar)elBar.style.width=pct+'%';
 }
 
+// ── Recurring Tasks month heatmap ───────────────────────────────────────────────
+// Inline month calendar (not a separate view/button) showing every WR + non-WR recurring
+// occurrence, color-coded by cadence. Reuses the same due-date logic as the rest of the page
+// (getRecurringWeekTasks / isWRRuleDueThisWeek) so it can never disagree with the lists below it.
+let _rtHeatMonth=null,_rtHeatYear=null; // null = current month
+function _rtHeatShift(delta){
+  const base=new Date(_rtHeatYear??new Date().getFullYear(),(_rtHeatMonth??new Date().getMonth())+delta,1);
+  _rtHeatYear=base.getFullYear();_rtHeatMonth=base.getMonth();
+  renderRtHeatmap();
+}
+function _rtHeatToday(){_rtHeatMonth=null;_rtHeatYear=null;renderRtHeatmap();}
+function _rtCadClass(cad){
+  if(cad==='weekly')return 'cad-weekly';
+  if(cad==='biweekly')return 'cad-biweekly';
+  if(cad==='monthly')return 'cad-monthly';
+  return 'cad-other';
+}
+function renderRtHeatmap(){
+  const gridEl=document.getElementById('rt-heat-grid');if(!gridEl)return;
+  const now=new Date();
+  const year=_rtHeatYear??now.getFullYear(),month=_rtHeatMonth??now.getMonth();
+  const first=new Date(year,month,1);
+  const startDow=(first.getDay()+6)%7; // Monday=0
+  const gridStart=new Date(year,month,1-startDow);
+  const gridEnd=new Date(gridStart);gridEnd.setDate(gridStart.getDate()+41);
+  const gridStartDs=d2s(gridStart),gridEndDs=d2s(gridEnd);
+  const todayDs=tod();
+  const lblEl=document.getElementById('rt-heat-lbl');if(lblEl)lblEl.textContent=first.toLocaleDateString('en-US',{month:'long',year:'numeric'});
+
+  const todayMon=getWkBounds(0).mon;
+  const wkOffFor=d=>Math.round((d-todayMon)/(7*86400000));
+  const wkOffStart=wkOffFor(gridStart)-1,wkOffEnd=wkOffFor(gridEnd)+1;
+
+  const dayMap={};
+  const addTo=(ds,cad,name)=>{if(ds<gridStartDs||ds>gridEndDs)return;if(!dayMap[ds])dayMap[ds]={};if(!dayMap[ds][cad])dayMap[ds][cad]=[];dayMap[ds][cad].push(name);};
+
+  for(let w=wkOffStart;w<=wkOffEnd;w++){
+    getRecurringWeekTasks(w).forEach(t=>{
+      const r=st.recurring.find(x=>String(x.id)===String(t._recId));if(!r||r.is_enabled===false)return;
+      addTo(t.due_date,r.cadence||'weekly',t.name);
+    });
+  }
+  (st.wrRules||[]).filter(r=>r.is_enabled!==false).forEach(r=>{
+    const cad=r.cadence||'weekly';
+    for(let w=wkOffStart;w<=wkOffEnd;w++){
+      if(!isWRRuleDueThisWeek(r,w))continue;
+      const{mon,sun}=getWkBounds(w);
+      let ds=null;
+      if((cad==='weekly'||cad==='biweekly')&&r.day_of_week!=null){
+        const wd=getWkDates(w).find(x=>x.getDay()===r.day_of_week);
+        ds=wd?d2s(wd):d2s(mon);
+      } else if(cad==='monthly'&&r.starting_date){
+        const anchorDay=new Date(r.starting_date+'T12:00').getDate();
+        [mon,sun].forEach(dt=>{const maxDay=new Date(dt.getFullYear(),dt.getMonth()+1,0).getDate();const occ=new Date(dt.getFullYear(),dt.getMonth(),Math.min(anchorDay,maxDay));if(occ>=mon&&occ<=sun)ds=d2s(occ);});
+      } else {
+        ds=d2s(mon);
+      }
+      if(ds)addTo(ds,(cad==='weekly'||cad==='biweekly'||cad==='monthly')?cad:'other',r.name);
+    }
+  });
+
+  let html='';
+  for(let i=0;i<42;i++){
+    const d=new Date(gridStart);d.setDate(gridStart.getDate()+i);
+    const ds=d2s(d);
+    const inMonth=d.getMonth()===month;
+    const info=dayMap[ds]||{};
+    const cads=Object.keys(info);
+    const dots=cads.map(c=>`<span class="rt-heat-dot ${_rtCadClass(c)}" title="${escHtml(info[c].join(', '))}"></span>`).join('');
+    html+=`<div class="rt-heat-cell${inMonth?'':' rt-heat-out'}${ds===todayDs?' rt-heat-today':''}">
+      <span class="rt-heat-daynum">${d.getDate()}</span>
+      <span class="rt-heat-dots">${dots}</span>
+    </div>`;
+  }
+  gridEl.innerHTML=html;
+}
+
 function renderRecurringPage(){
   const KNOWN=['weekly','biweekly','monthly'];
   const schTasks=st.recurring.filter(r=>!(r.is_weekly_reset===true||r.is_weekly_reset==='true'));
@@ -347,6 +424,7 @@ function renderRecurringPage(){
     renderRtWrGroup('rt-wr-'+cad, wrRules, cad);
     renderRtGroup('rt-sch-'+cad, isOther?schTasks.filter(r=>OTHER_CADS.includes(r.cadence)):schTasks.filter(r=>r.cadence===cad), cad);
   });
+  renderRtHeatmap();
 }
 
 function wrRuleScheduleStr(rule){
@@ -430,7 +508,7 @@ function renderRtWrGroup(containerId, rules, cadence){
       <td class="rt-editable">${esc(r.name)}${cadence==='other'?(()=>{const _KB=['weekly','biweekly','monthly'];const _CB={quarterly:'Q',biannual:'BA',annual:'A',bimonthly:'B',monthly:'M'};const _bl=_CB[r.cadence];return _bl?`<span style="float:right;font-size:9px;font-weight:700;letter-spacing:.3px;padding:1px 3px;border-radius:3px;background:rgba(0,0,0,.11);color:var(--subtle);margin-left:4px">${_bl}</span>`:''})():''}</td>
       <td class="rt-meta" style="text-align:center">${nextTxt}</td>
       <td data-pup="1" style="text-align:center;cursor:pointer;font-size:13px" onclick="event.stopPropagation();rtToggleWrPup('${rid}')" ondblclick="event.stopPropagation()" title="Toggle pup related">${isPup?'🐾':''}</td>
-      <td onclick="event.stopPropagation()" ondblclick="event.stopPropagation()"><div class="rt-actions"><button class="delbtn" onclick="delWrRule('${rid}')">✕</button></div></td>
+      <td onclick="event.stopPropagation()" ondblclick="event.stopPropagation()"><div class="rt-actions"><button class="delbtn" onclick="_rtDelClick('${rid}',false)">✕</button></div></td>
     </tr>`;
   });
   const tableHtml=rules.length
@@ -454,6 +532,17 @@ function rtToggleWrPup(rid){
   pushUndo(()=>{rule.pup_related=prev;renderRecurringPage();renderRecOv();},'Toggled pup');
 }
 
+// X-button click on a Recurring Tasks page row: if the clicked row is part of a multi-selection,
+// delete every selected row (single combined undo via _wrBulkDelete); otherwise just this one.
+// Mirrors the existing _vidOvXClick pattern used for videos.
+function _rtDelClick(rid,isRec){
+  if(typeof selectedTasks!=='undefined'&&selectedTasks.size>1&&typeof _wrSelTarget==='function'){
+    const seen=new Set(),targets=[];
+    selectedTasks.forEach(sid=>{const t=_wrSelTarget(sid);if(t&&!seen.has(t.isRec+':'+t.id)){seen.add(t.isRec+':'+t.id);targets.push(t);}});
+    if(targets.length>1&&targets.some(t=>t.isRec===isRec&&t.id===String(rid))){_wrBulkDelete(targets);return;}
+  }
+  if(isRec)delRec(rid);else delWrRule(rid);
+}
 function delWrRule(rid){
   const rule=(st.wrRules||[]).find(r=>String(r.id)===String(rid));if(!rule)return;
   const prevRule={...rule};
@@ -488,7 +577,7 @@ function renderRtGroup(containerId, tasks, cadence){
       <td class="rt-meta" style="text-align:right" title="Next computed occurrence">${nextDs?fmtD(nextDs):'—'}</td>`;
     tbody+=`<tr class="rt-row" id="ti-rt-${rid}" data-sid="${virtId}" onclick="selTask(event,'${virtId}')" ondblclick="if(!event.target.closest('.delbtn')&&!event.target.closest('.btn-xs')){event.stopPropagation();openRecEditModal('${rid}');}" oncontextmenu="showWrRuleCtx(event,'${rid}',getWkKey(wkOff))">
       ${tds}
-      <td onclick="event.stopPropagation()" ondblclick="event.stopPropagation()"><div class="rt-actions"><button class="btn btn-xs btn-ghost" style="padding:1px 5px;font-size:10px;opacity:.55" onclick="duplicateRecDirect('${rid}')" title="Duplicate">⧉</button><button class="delbtn" onclick="delRec('${rid}')">✕</button></div></td>
+      <td onclick="event.stopPropagation()" ondblclick="event.stopPropagation()"><div class="rt-actions"><button class="btn btn-xs btn-ghost" style="padding:1px 5px;font-size:10px;opacity:.55" onclick="duplicateRecDirect('${rid}')" title="Duplicate">⧉</button><button class="delbtn" onclick="_rtDelClick('${rid}',true)">✕</button></div></td>
     </tr>`;
   });
   const tableHtml=tasks.length
@@ -5332,7 +5421,13 @@ async function init(){
   load();
   _fetchHolidays();
   // Apply dark mode and sidebar state immediately — before checkAuth await — to prevent flash
-  if(cfg.dark){document.body.classList.add('dark');const ic=document.getElementById('darkToggleIcon');if(ic)ic.textContent='☀️';const dt=document.getElementById('darkToggle');if(dt)dt.textContent='☀️';}
+  // Must clear body.style.background here: initTheme() (features.js top-level, runs on script
+  // load — before this function's load() call above has restored cfg.dark from storage) always
+  // sees cfg.dark as still false at that point and unconditionally sets the light theme's inline
+  // background color. That inline style outranks the body.dark CSS class on specificity, so without
+  // clearing it here every page loads into dark mode with the light theme's warm color showing
+  // through the dark, semi-transparent card backgrounds — the "orange tint" that doesn't match.
+  if(cfg.dark){document.body.classList.add('dark');document.body.style.background='';const ic=document.getElementById('darkToggleIcon');if(ic)ic.textContent='☀️';const dt=document.getElementById('darkToggle');if(dt)dt.textContent='☀️';}
   // Suppress left transition during init so sidebar positioning is instant (no squish glitch)
   const _initMain=document.getElementById('main');const _initMainT=_initMain.style.transition;_initMain.style.transition='none';
   if(!sbOpen){document.getElementById('sidebar').classList.add('closed');document.getElementById('main').style.left='0';document.getElementById('menuOpen').classList.add('visible');document.querySelectorAll('.ov-topbar').forEach(el=>el.style.left='0');}else{document.getElementById('sidebar').classList.remove('closed');document.getElementById('main').style.left='186px';document.getElementById('menuOpen').classList.remove('visible');document.querySelectorAll('.ov-topbar').forEach(el=>el.style.left='186px');}

@@ -3452,7 +3452,57 @@ function wrCtxEditRule(){
 function wrCtxDeleteRule(ruleId){
   hideWrRuleCtx();
   if(ruleId){_wrCtxDeleteRuleOne(ruleId);return;}
+  if(_wrCtxMulti&&_wrCtxMulti.length>1){const targets=_wrCtxMulti.slice();_wrCtxMulti=null;_wrBulkDelete(targets);return;}
   _wrCtxEach(_wrCtxDeleteRuleOne);
+}
+// Bulk-delete WR rules and/or non-WR recurring tasks together with a single combined undo entry
+// (mirrors delWrRule/delRec exactly, just batched so Cmd+Z undoes the whole selection at once —
+// same "single undo" pattern as _vidOvBulkDelete).
+function _wrBulkDelete(targets){
+  if(!targets||!targets.length)return;
+  const snap=targets.map(t=>{
+    if(t.isRec){
+      const r=st.recurring.find(x=>String(x.id)===t.id);
+      return r?{isRec:true,id:t.id,copy:{...r}}:null;
+    }
+    const r=st.wrRules.find(x=>String(x.id)===t.id);
+    return r?{isRec:false,id:t.id,copy:{...r}}:null;
+  }).filter(Boolean);
+  if(!snap.length)return;
+  snap.forEach(s=>{
+    const sid=s.id;
+    if(s.isRec){
+      if(s.copy.name&&/prep pup/i.test(s.copy.name))localStorage.setItem('_pupPrepSeedDismissed','1');
+      deletedRecIds.add(sid);
+      st.recurring=st.recurring.filter(r=>String(r.id)!==sid);
+      if(!sid.startsWith('rec-tmp-')&&!sid.startsWith('rec-local-'))sbReq('DELETE','wr_recurring_rules',null,recQs(sid));
+    } else {
+      st.wrRules=st.wrRules.filter(r=>String(r.id)!==sid);
+      st.wrOverrides=st.wrOverrides.filter(o=>String(o.rule_id)!==sid);
+      sbReqSilent('DELETE','wr_recurring_rules',null,`?id=eq.${sid}`);
+    }
+  });
+  if(typeof clearSelection==='function')clearSelection();
+  save();renderRecOv();if(typeof renderRecurringPage==='function')renderRecurringPage();renderWeeklyPage();renderToday();renderWkSummary();renderWkCal();
+  if(document.getElementById('tbGrid'))renderDayTB();
+  pushUndo(async()=>{
+    for(const s of snap){
+      if(s.isRec){
+        deletedRecIds.delete(s.id);
+        const payload={name:s.copy.name,is_weekly_reset:s.copy.is_weekly_reset||false,cadence:s.copy.cadence||'weekly'};
+        if(s.copy.appears_on_date)payload.appears_on_date=s.copy.appears_on_date;
+        if(s.copy.starting_date)payload.starting_date=s.copy.starting_date;
+        if(s.copy.repeat_date)payload.repeat_date=s.copy.repeat_date;
+        const sv=await sbReq('POST','wr_recurring_rules',payload);
+        st.recurring.push(sv&&sv[0]?{...sv[0],_doneByWk:s.copy._doneByWk||{},_done:s.copy._done||false}:s.copy);
+      } else {
+        const sv=await sbReqSilent('POST','wr_recurring_rules',{name:s.copy.name,cadence:s.copy.cadence,day_of_week:s.copy.day_of_week,starting_date:s.copy.starting_date,monthly_rule_type:s.copy.monthly_rule_type,monthly_nth:s.copy.monthly_nth,monthly_weekday:s.copy.monthly_weekday,monthly_date:s.copy.monthly_date,pup_related:s.copy.pup_related,notes:s.copy.notes,is_enabled:s.copy.is_enabled,sort_order:s.copy.sort_order},'');
+        if(sv&&sv[0])st.wrRules.push(sv[0]);else st.wrRules.push(s.copy);
+      }
+    }
+    save();renderRecOv();if(typeof renderRecurringPage==='function')renderRecurringPage();renderWeeklyPage();renderToday();renderWkSummary();renderWkCal();
+    if(document.getElementById('tbGrid'))renderDayTB();
+  },`Deleted ${snap.length} items`);
 }
 function _wrCtxDeleteRuleOne(ruleId){
   if(!ruleId&&_wrCtxRecId){delRec(_wrCtxRecId);return;}
