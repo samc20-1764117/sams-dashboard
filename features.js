@@ -6746,14 +6746,14 @@ function _rolloverPromptQueue(items,clickEvent){
   const next=()=>_rolloverPromptQueue(rest,clickEvent);
   const fakeEvent={preventDefault(){},stopPropagation(){},clientX:clickEvent?.clientX||window.innerWidth/2,clientY:clickEvent?.clientY||window.innerHeight/2};
   if(item._wrWeekMiss){
-    _wrScopePrompt(fakeEvent,
+    _wrScopePrompt(fakeEvent,item.name,
       ()=>{wrMoveToThisWeek(item._ruleId,item._wkKey,false);next();},
       ()=>{wrMoveToThisWeek(item._ruleId,item._wkKey,true,false);next();},
       ()=>{wrMoveToThisWeek(item._ruleId,item._wkKey,true,true);next();});
   } else {
     const rec=st.recurring.find(x=>String(x.id)===String(item._recId));
     if(!rec){next();return;}
-    _wrScopePrompt(fakeEvent,
+    _wrScopePrompt(fakeEvent,item.name,
       ()=>{_recMoveThisOccToToday(rec,item._wkKey);next();},
       ()=>{_recMoveAllFuture(rec,item._wkKey,tod(),null,true);next();},
       ()=>{_recMoveAllFuture(rec,item._wkKey,tod(),null,false);next();});

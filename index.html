@@ -16,7 +16,7 @@
 <link rel="stylesheet" href="fonts/dmsans.css?v=1">
 <title>Sam's Dashboard</title>
 <script>
-window._BUILD='20260819e';var BUILD=window._BUILD;
+window._BUILD='20260819f';var BUILD=window._BUILD;
 if(sessionStorage._mReloaded===BUILD);else{
   fetch('/version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(d){
     if(d.v&&d.v!==BUILD){sessionStorage._mReloaded=d.v;location.reload();}
@@ -895,8 +895,8 @@ if(sessionStorage._mReloaded===BUILD);else{
 
 <script src="supabase.min.js?v=2110"></script>
 <script src="core.js?v=20260819c"></script>
-<script src="overview.js?v=20260819e"></script>
-<script src="features.js?v=20260819e"></script>
+<script src="overview.js?v=20260819f"></script>
+<script src="features.js?v=20260819f"></script>
 <script src="pup-skills.js?v=20260608b"></script>
 <script src="videos.js?v=20260608b"></script>
 
@@ -981,6 +981,7 @@ if(sessionStorage._mReloaded===BUILD);else{
 <div id="wrSkippedPicker" style="display:none;position:fixed;z-index:10001;border:1px solid rgba(210,205,228,.4);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);padding:4px;min-width:180px;max-height:260px;overflow-y:auto;backdrop-filter:blur(12px)"></div>
 <!-- WR scope picker — shared for X (skip/delete) and dblclick (edit) -->
 <div id="wrScopePicker" style="display:none;position:fixed;z-index:10000;border:1px solid rgba(210,205,228,.4);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);padding:4px;min-width:170px;backdrop-filter:blur(12px)">
+  <div id="wrScopeTitle" style="display:none;font-size:9.5px;font-weight:700;color:var(--muted);padding:4px 8px 3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-bottom:1px solid rgba(210,205,228,.25);margin-bottom:2px"></div>
   <div id="wrScopeRemove" class="ctx-item" onclick="wrScopeDoRemove()" style="display:none"></div>
   <div id="wrScopeThis" class="ctx-item" onclick="wrScopeDoThis()"></div>
   <div id="wrScopeAll" class="ctx-item" onclick="wrScopeDoAll()"></div>

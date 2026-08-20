@@ -899,7 +899,11 @@ function _dlblOvArrow(dayLetter,onclickJs){
   // right:24px (vs. the base .dlbl.ov right:9px) clears the delbtn, which is always-visible
   // (not hover-only) on overdue rows — see .ti.ov-row .delbtn in styles.css — so the two never
   // overlap. Inline so it wins over both the base rule and the .tb-list-only right:11px variant.
-  return`<span class="dlbl ov" style="display:inline-flex;align-items:center;gap:2px;right:24px">${dayLetter}<span class="dlbl-arrow" title="Move to today" onclick="event.stopPropagation();${onclickJs}">→</span></span>`;
+  // draggable="false" is required (not just stopPropagation) — the row's draggable="true" makes
+  // the browser treat ANY mousedown+move inside it as a drag-source gesture, and this arrow is
+  // small enough that ordinary click wobble was enough to misfire it as a drag instead of a click.
+  // Explicit draggable="false" opts this element out of the ancestor's drag region entirely.
+  return`<span class="dlbl ov" style="display:inline-flex;align-items:center;gap:2px;right:24px">${dayLetter}<span class="dlbl-arrow" draggable="false" title="Move to today" onmousedown="event.stopPropagation()" onclick="event.stopPropagation();${onclickJs}">→</span></span>`;
 }
 // Shared 3-way scope prompt for a recurring/WR occurrence overdue from a past week — used by both
 // the per-row arrow and the bulk "Move to today" sequential queue, so they can never disagree on
@@ -907,21 +911,21 @@ function _dlblOvArrow(dayLetter,onclickJs){
 // #wrScopePicker's markup renders its "remove" slot first, "this" slot second, "all" slot third —
 // the label/callback assignment below (not the markup) is what keeps that order correct; don't
 // "simplify" this to the more obvious this/all/remove mapping, it'll silently reverse the order.
-function _wrScopePrompt(e,onThisTime,onSameDay,onChangeDay){
-  showWrScopePicker(e,'↻  Same day','↻  Change day to today',onSameDay,onChangeDay,'⊘  This time only',onThisTime);
+function _wrScopePrompt(e,name,onThisTime,onSameDay,onChangeDay){
+  showWrScopePicker(e,'↻  Same day','↻  Change day to today',onSameDay,onChangeDay,'⊘  This time only',onThisTime,name?name+' is recurring':'');
 }
 function _ovRowMoveClick(e,kind,id,wkKey){
   e.stopPropagation();e.preventDefault();
   const curWk=getWkKey(0);
   const pastWeek=wkKey&&wkKey!==curWk;
   if(kind==='wrrule'){
+    const rule=st.wrRules.find(r=>String(r.id)===String(id));if(!rule)return;
     if(pastWeek){
-      _wrScopePrompt(e,
+      _wrScopePrompt(e,rule.name,
         ()=>wrMoveToThisWeek(id,wkKey,false),
         ()=>wrMoveToThisWeek(id,wkKey,true,false),
         ()=>wrMoveToThisWeek(id,wkKey,true,true));
     } else {
-      const rule=st.wrRules.find(r=>String(r.id)===String(id));if(!rule)return;
       if(!rule._dateOverrides)rule._dateOverrides={};
       const prev=rule._dateOverrides[wkKey];const today=tod();
       rule._dateOverrides[wkKey]=today;
@@ -932,7 +936,7 @@ function _ovRowMoveClick(e,kind,id,wkKey){
   } else {
     const rec=st.recurring.find(x=>String(x.id)===String(id));if(!rec)return;
     if(pastWeek){
-      _wrScopePrompt(e,
+      _wrScopePrompt(e,rec.name,
         ()=>_recMoveThisOccToToday(rec,wkKey),
         ()=>_recMoveAllFuture(rec,wkKey,tod(),null,true),
         ()=>_recMoveAllFuture(rec,wkKey,tod(),null,false));
@@ -3154,13 +3158,15 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'){hideWrRuleCtx();hid
 
 // ── Scope picker (Apple Calendar style: this week only / all future) ───────────
 let _wrScopeCbThis=null,_wrScopeCbAll=null,_wrScopeCbRemove=null;
-function showWrScopePicker(e,thisLabel,allLabel,onThis,onAll,removeLabel,onRemove){
+function showWrScopePicker(e,thisLabel,allLabel,onThis,onAll,removeLabel,onRemove,titleText){
   e.preventDefault();e.stopPropagation();
   _wrScopeCbThis=onThis;_wrScopeCbAll=onAll;_wrScopeCbRemove=onRemove||null;
   document.getElementById('wrScopeThis').textContent=thisLabel;
   document.getElementById('wrScopeAll').textContent=allLabel;
   const removeEl=document.getElementById('wrScopeRemove');
   if(removeEl){removeEl.textContent=removeLabel||'';removeEl.style.display=onRemove?'':'none';}
+  const titleEl=document.getElementById('wrScopeTitle');
+  if(titleEl){titleEl.textContent=titleText||'';titleEl.style.display=titleText?'':'none';titleEl.title=titleText||'';}
   const m=document.getElementById('wrScopePicker');
   const x=Math.min(e.clientX,window.innerWidth-180),y=Math.min(e.clientY,window.innerHeight-120);
   m.style.left=x+'px';m.style.top=y+'px';m.style.display='block';
