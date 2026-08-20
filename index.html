@@ -1121,20 +1121,6 @@ init();
 <div id="unMenu" class="tlist" style="display:none;position:fixed;z-index:9997;width:300px;max-height:360px;overflow-y:auto;background:var(--gb);backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow-lg);padding:4px 0"></div>
 <div id="unMenuBack" onclick="closeUnMenu()" style="display:none;position:fixed;inset:0;z-index:9996"></div>
 <div class="settings-popup" id="settingsPopup">
-  <div class="settings-popup-item" id="syncBar" onclick="syncAll();toggleSettingsPopup()" data-tip="Sync">
-    <svg id="syncIcon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path></svg>
-    <span>Sync</span>
-  </div>
-  <div class="settings-popup-item" onclick="location.reload()">
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
-    <span>Refresh</span>
-  </div>
-  <div class="settings-popup-divider"></div>
-  <div class="settings-popup-item" onclick="showPage('guide');toggleSettingsPopup()">
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-    <span>Style Guide</span>
-  </div>
-  <div class="settings-popup-divider"></div>
   <div class="settings-popup-item" onclick="toggleDark();toggleSettingsPopup()">
     <span id="darkToggleIcon">🌙</span><span id="darkToggleLabel">Night Mode</span>
   </div>
@@ -1142,9 +1128,19 @@ init();
   <div class="settings-popup-label">Theme</div>
   <div class="theme-picker" id="themePicker"></div>
   <div class="settings-popup-divider"></div>
-  <div class="settings-popup-item" id="backupBar" onclick="manualBackup();toggleSettingsPopup()" title="Save manual backup">
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-    <span id="backupTxt">Backup Sync</span>
+  <div style="display:flex;gap:4px">
+    <div class="settings-popup-item" id="syncBar" onclick="syncAll()" data-tip="Sync" title="Sync" style="flex:1;flex-direction:column;gap:2px;justify-content:center;padding:6px 2px;font-size:8px;text-align:center">
+      <svg id="syncIcon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path></svg>
+      <span>Sync</span>
+    </div>
+    <div class="settings-popup-item" onclick="location.reload()" title="Refresh" style="flex:1;flex-direction:column;gap:2px;justify-content:center;padding:6px 2px;font-size:8px;text-align:center">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+      <span>Refresh</span>
+    </div>
+    <div class="settings-popup-item" id="backupBar" onclick="manualBackup()" title="Save manual backup" style="flex:1;flex-direction:column;gap:2px;justify-content:center;padding:6px 2px;font-size:8px;text-align:center">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      <span id="backupTxt">Backup</span>
+    </div>
   </div>
   <div class="settings-popup-divider"></div>
   <div class="settings-popup-label" title="Bytes downloaded from Supabase by this device. Billing truth: Supabase → Org → Usage">Supabase egress (this device)</div>

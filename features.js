@@ -5261,6 +5261,10 @@ function renderGuidePage(){
   const now=new Date();document.querySelectorAll('#page-guide .topbar-date').forEach(e=>e.textContent=now.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}));document.querySelectorAll('#page-guide .topbar-time').forEach(e=>e.textContent=now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}));
 }
 
+function toggleNavGroup(id){
+  const grp=document.getElementById('navGroup'+id);if(!grp)return;
+  grp.classList.toggle('open');
+}
 function showPage(id){
   if(id==='tasks')return;
   if(id==='shopping')id='weekly';// shopping merged into weekly page
