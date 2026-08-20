@@ -2235,7 +2235,7 @@ function _finRenderPersonal(accs,vtiAcc,currentVal,netWorth,totalAll){
   const total=chartItems.reduce((s,a)=>s+(a.amount||0),0);
   const hasExcluded=excluded.length>0;
 
-  let html=`<div class="card fin-card fin-personal-card" style="position:relative">
+  let html=`<div class="card fin-card fin-personal-card" style="position:relative" ondblclick="if(!event.target.closest('button')&&!event.target.closest('.fin-legend-row')&&!event.target.closest('.fin-donut-wrap'))addFinRow('account')">
     <button class="fin-add-btn" onclick="addFinRow('account')" style="font-size:16px;padding:0 4px;line-height:1;position:absolute;top:12px;right:16px;z-index:1">+</button>
     <div class="fin-hero">
       `;
@@ -2333,7 +2333,7 @@ function _finRenderInvestments(purchases,totalBought,gain,gainPct,currentVal){
   const avgPurchase=numPurchases?totalBought/numPurchases:0;
   const lastPurchase=sorted.length?sorted[0]:null;
 
-  let html=`<div class="card fin-card fin-inv-card">
+  let html=`<div class="card fin-card fin-inv-card" ondblclick="if(!event.target.closest('.fin-card-hdr')&&!event.target.closest('.fin-inv-kpi-float')&&!event.target.closest('.fin-chart-dot-hit'))openFinInvAdd(event)">
     <div class="fin-card-hdr" style="position:relative"><span class="fin-card-title">Investments</span><div style="display:flex;gap:4px;align-items:center"><button class="fin-hist-btn" onclick="openFinInvDetails()">History</button><button class="fin-add-btn" onclick="openFinInvAdd(event)" style="font-size:16px;padding:0 4px;line-height:1">+</button></div></div>
     `;
   // Area chart fills card, KPI floats on top
