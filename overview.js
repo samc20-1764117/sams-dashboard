@@ -114,6 +114,8 @@ function renderToday(){
   const _fullDateStr=dayDate.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
   document.getElementById('todTitle').textContent=isDateToday(dayDate)?`Today • ${_fullDateStr}`:_fullDateStr;
   const _ovEl=document.getElementById('ovTitle');if(_ovEl)_ovEl.textContent=_fullDateStr;
+  const _rsBtn=document.getElementById('todResetSortBtn');
+  if(_rsBtn){const _hasOrder=(_dayOrder()[ds]||[]).length>0;_rsBtn.style.display=_hasOrder?'':'none';_rsBtn.dataset.ds=ds;}
   const _isToday=dayOff===0;
   const _hdot=document.getElementById('headerDot');if(_hdot)_hdot.style.display='none';
   const _hclk=document.getElementById('liveClock');if(_hclk)_hclk.style.display='none';
@@ -834,13 +836,16 @@ function taskTypePri(t){
   if(t._virtual)return 6; // non-WR recurring
   return 5; // other regular tasks
 }
-// Manual per-day order is the final tie-break, replacing plain type/name — only reached once the
-// hard tiers above (travel/birthday/done/overdue/important) and, in sortTasksForDay, the
-// timeblock-time comparison have all failed to distinguish a and b. Items never dragged sort
-// after ones that have been, in natural type/name order, so a freshly-added task doesn't jump to
-// an arbitrary spot — it just appears at the end of its tier until manually placed.
-function _manualTieBreak(a,b,ds){
-  const natural=()=>taskTypePri(a)-taskTypePri(b)||(a.name||'').localeCompare(b.name||'');
+// Manual per-day order is the tie-break used right after the hard travel/birthday/holiday tiers
+// (the only tiers a manual reorder can never cross — see AskUserQuestion 2026-08-20). When BOTH
+// items being compared have been placed in _dayOrder for this day, that placement wins outright,
+// overriding done/overdue/important/timeblock-time — so a manually-reordered selection always
+// moves as a whole, even if it mixes an overdue item with a regular one. `naturalFn` (the old
+// done→overdue→important[→timeblock-time]→type/name ordering) is only the FALLBACK, used when one
+// or both items have never been manually placed — so freshly-added/never-dragged items still land
+// in a sensible spot instead of a random one.
+function _manualTieBreak(a,b,ds,naturalFn){
+  const natural=naturalFn||(()=>taskTypePri(a)-taskTypePri(b)||(a.name||'').localeCompare(b.name||''));
   const order=ds?_dayOrder()[ds]:null;
   if(!order||!order.length)return natural();
   const ai=order.indexOf(a.id),bi=order.indexOf(b.id);
@@ -849,18 +854,21 @@ function _manualTieBreak(a,b,ds){
   if(bi<0)return -1;
   return ai-bi;
 }
+function _hardTierNatural(a,b){
+  if(a.done&&!b.done)return 1;if(!a.done&&b.done)return -1;
+  const aO=isOv(a.due_date)&&!a.done,bO=isOv(b.due_date)&&!b.done;
+  if(aO&&!bO)return -1;if(!aO&&bO)return 1;
+  const aI=(a.important||a._type==='fin-cancel')&&!a.done,bI=(b.important||b._type==='fin-cancel')&&!b.done;
+  if(aI&&!bI)return -1;if(!aI&&bI)return 1;
+  return taskTypePri(a)-taskTypePri(b)||(a.name||'').localeCompare(b.name||'');
+}
 function sortByTypeOrder(tasks,ds){
   return[...tasks].sort((a,b)=>{
     const aT=a._type==='travel'&&!a.done,bT=b._type==='travel'&&!b.done;
     if(aT&&!bT)return -1;if(!aT&&bT)return 1;
     const aB=a._type==='birthday'||a._type==='holiday',bB=b._type==='birthday'||b._type==='holiday';
     if(aB&&!bB)return -1;if(!aB&&bB)return 1;
-    if(a.done&&!b.done)return 1;if(!a.done&&b.done)return -1;
-    const aO=isOv(a.due_date)&&!a.done,bO=isOv(b.due_date)&&!b.done;
-    if(aO&&!bO)return -1;if(!aO&&bO)return 1;
-    const aI=(a.important||a._type==='fin-cancel')&&!a.done,bI=(b.important||b._type==='fin-cancel')&&!b.done;
-    if(aI&&!bI)return -1;if(!aI&&bI)return 1;
-    return _manualTieBreak(a,b,ds);
+    return _manualTieBreak(a,b,ds,()=>_hardTierNatural(a,b));
   });
 }
 // Sort for a specific day: blocked tasks first by start time, unblocked by type; fallback to type-only if no blocks
@@ -884,16 +892,13 @@ function sortTasksForDay(tasks,ds){
     if(aT&&!bT)return -1;if(!aT&&bT)return 1;
     const aB=a._type==='birthday'||a._type==='holiday',bB=b._type==='birthday'||b._type==='holiday';
     if(aB&&!bB)return -1;if(!aB&&bB)return 1;
-    if(a.done&&!b.done)return 1;if(!a.done&&b.done)return -1;
-    const aO=isOv(a.due_date)&&!a.done,bO=isOv(b.due_date)&&!b.done;
-    if(aO&&!bO)return -1;if(!aO&&bO)return 1;
-    const aI=(a.important||a._type==='fin-cancel')&&!a.done,bI=(b.important||b._type==='fin-cancel')&&!b.done;
-    if(aI&&!bI)return -1;if(!aI&&bI)return 1;
-    const aSm=tbSm(a),bSm=tbSm(b);
-    if(aSm!==null&&bSm===null)return -1;
-    if(aSm===null&&bSm!==null)return 1;
-    if(aSm!==null&&bSm!==null)return aSm-bSm;
-    return _manualTieBreak(a,b,ds);
+    return _manualTieBreak(a,b,ds,()=>{
+      const aSm=tbSm(a),bSm=tbSm(b);
+      if(aSm!==null&&bSm===null)return -1;
+      if(aSm===null&&bSm!==null)return 1;
+      if(aSm!==null&&bSm!==null)return aSm-bSm;
+      return _hardTierNatural(a,b);
+    });
   });
 }
 function sortTasksToday(tasks){return sortTasksForDay(tasks,d2s(getDayDate(dayOff)));}
@@ -1216,6 +1221,9 @@ function renderWkCal(){
     if(_wkGoalsCollapsed&&d===dates[6]){
       h.innerHTML+=`<button class="wkc-goals-toggle wkc-goals-toggle-sun" onclick="_toggleWkGoalsCollapse(event)" title="Expand objectives">‹</button>`;
     }
+    if((_dayOrder()[ds]||[]).length){
+      h.innerHTML+=`<button class="wkc-reset-sort" onclick="event.stopPropagation();_resetDayOrder('${ds}')" title="Reset sort order for this day">↺</button>`;
+    }
     head.appendChild(h);
   });
   const goalsH=document.createElement('div');goalsH.className='wkc-day-h wkc-goals-h';
@@ -1423,11 +1431,13 @@ function renderWkCal(){
         if(!ph)return;
         const children=[...col.children];
         const phIdx=children.indexOf(ph);
+        const origOrder=[...col.querySelectorAll('.chip[data-tid]')].map(c=>c.dataset.tid);
         const chips=[...col.querySelectorAll('.chip[data-tid]')].filter(c=>c.dataset.tid!==draggedTid);
         const before=chips.filter(c=>children.indexOf(c)<phIdx).map(c=>c.dataset.tid);
         const after=chips.filter(c=>children.indexOf(c)>=phIdx).map(c=>c.dataset.tid);
         const newOrder=[...before,draggedTid,...after];
         ph.remove();
+        if(JSON.stringify(newOrder)===JSON.stringify(origOrder))return; // dropped back where it started — no-op, no toast
         const m=_dayOrder();
         const prevOrder=m[ds]?[...m[ds]]:null;
         m[ds]=newOrder;_dayOrderSet(m);
@@ -3995,11 +4005,13 @@ function _dropReorderToday(e){
   const ds=d2s(getDayDate(dayOff));
   const children=[...container.children];
   const phIdx=children.indexOf(ph);
+  const origOrder=[...container.querySelectorAll('.ti[id^="ti-"]')].map(r=>r.id.slice(3));
   const rows=[...container.querySelectorAll('.ti[id^="ti-"]')].filter(r=>r.id!=='ti-'+draggedId);
   const before=rows.filter(r=>children.indexOf(r)<phIdx).map(r=>r.id.slice(3));
   const after=rows.filter(r=>children.indexOf(r)>=phIdx).map(r=>r.id.slice(3));
   const newOrder=[...before,draggedId,...after];
   ph.remove();
+  if(JSON.stringify(newOrder)===JSON.stringify(origOrder))return; // dropped back where it started — no-op, no toast
   const m=_dayOrder();
   const prevOrder=m[ds]?[...m[ds]]:null;
   m[ds]=newOrder;_dayOrderSet(m);
@@ -4063,6 +4075,70 @@ function _todListKeyNav(e){
   if(e.key==='Delete'||e.key==='Backspace'){
     e.preventDefault();
     _todListBulkDelete(todSel);
+    return true;
+  }
+
+  return false;
+}
+// Weekly-cal keyboard nav — same system as _todListKeyNav (Arrow select, Shift+Arrow extend,
+// Cmd+Arrow reorder, Delete/Backspace), scoped to whichever day column the last click landed in.
+// Requires lastSelectedId's chip to actually live inside #wkcCols, so this never fights
+// _todListKeyNav for the same keypress even when the same id happens to render in both places
+// (e.g. a task due today shows in both #todList and today's wkc-col) — whichever list the user
+// last clicked into owns the keyboard from then on.
+function _wkcColKeyNav(e){
+  if(!lastSelectedId)return false;
+  const anchorChip=document.querySelector('#wkcCols .chip[data-tid="'+CSS.escape(lastSelectedId)+'"]');
+  if(!anchorChip)return false;
+  const col=anchorChip.closest('.wkc-col');if(!col)return false;
+  const chips=[...col.querySelectorAll('.chip[data-tid]')];if(!chips.length)return false;
+  const rowIds=chips.map(c=>c.dataset.tid);
+  const colSel=[...selectedTasks].filter(id=>rowIds.includes(id));
+  if(!colSel.length)return false;
+  const ds=col.dataset.ds;
+
+  // Cmd+Up/Down: reorder selected items (manual day order, same splice pattern as Today list)
+  if((e.metaKey||e.ctrlKey)&&(e.key==='ArrowUp'||e.key==='ArrowDown')){
+    e.preventDefault();
+    const dir=e.key==='ArrowUp'?-1:1;
+    const idxs=colSel.map(id=>rowIds.indexOf(id)).filter(i=>i>=0).sort((a,b)=>a-b);
+    if(!idxs.length)return true;
+    const newOrder=rowIds.slice();
+    if(dir===-1){
+      if(idxs[0]===0)return true;
+      const moved=newOrder.splice(idxs[0]-1,1)[0];
+      newOrder.splice(idxs[idxs.length-1],0,moved);
+    } else {
+      if(idxs[idxs.length-1]===newOrder.length-1)return true;
+      const moved=newOrder.splice(idxs[idxs.length-1]+1,1)[0];
+      newOrder.splice(idxs[0],0,moved);
+    }
+    const m=_dayOrder();
+    const prevOrder=m[ds]?[...m[ds]]:null;
+    m[ds]=newOrder;_dayOrderSet(m);
+    save();renderAll();
+    pushUndo(()=>{const m2=_dayOrder();if(prevOrder)m2[ds]=prevOrder;else delete m2[ds];_dayOrderSet(m2);renderAll();},'Reordered day');
+    setTimeout(()=>{colSel.forEach(id=>selectedTasks.add(id));applySelHighlight();},20);
+    return true;
+  }
+
+  // Arrow Up/Down: navigate selection within the column
+  if(e.key==='ArrowUp'||e.key==='ArrowDown'){
+    e.preventDefault();
+    const lastSel=colSel[colSel.length-1];
+    const curIdx=rowIds.indexOf(lastSel);
+    const newIdx=e.key==='ArrowUp'?Math.max(0,curIdx-1):Math.min(rowIds.length-1,curIdx+1);
+    const newId=rowIds[newIdx];
+    if(e.shiftKey){selectedTasks.add(newId);lastSelectedId=newId;}
+    else{selectedTasks.clear();selectedTasks.add(newId);lastSelectedId=newId;}
+    applySelHighlight();
+    return true;
+  }
+
+  // Delete/Backspace: delete all selected (reuses the Today list's per-type dispatch)
+  if(e.key==='Delete'||e.key==='Backspace'){
+    e.preventDefault();
+    _todListBulkDelete(colSel);
     return true;
   }
 
@@ -4186,6 +4262,15 @@ function _shopOvSort(arr){
 // both render through sortTasksForDay). {ds:[id,...]}, localStorage-backed like _vidDayMap.
 function _dayOrder(){try{return JSON.parse(localStorage._dayOrder||'{}');}catch(e){return{};}}
 function _dayOrderSet(m){localStorage._dayOrder=JSON.stringify(m);}
+// Clears manual reorder for one day, reverting it to the default done/overdue/important/type sort.
+function _resetDayOrder(ds){
+  const m=_dayOrder();
+  const prev=m[ds]?[...m[ds]]:null;
+  if(!prev||!prev.length)return;
+  delete m[ds];_dayOrderSet(m);
+  save();renderAll();
+  pushUndo(()=>{const m2=_dayOrder();m2[ds]=prev;_dayOrderSet(m2);renderAll();},'Reset sort order');
+}
 function _vidDayMap(){try{return JSON.parse(localStorage._vidDayMap||'{}');}catch(e){return{};}}
 function _vidDayMapSet(m){localStorage._vidDayMap=JSON.stringify(m);}
 // Video step → day map: key="vidId::stepName", value={ds,done}
@@ -5897,12 +5982,14 @@ function _vidOvContentDrop(event){
     const fromIdx=children.findIndex(c=>String(c.id)===dragVid);
     if(fromIdx<0)return;
     let toIdx=toPos;
+    const origIds=children.map(c=>String(c.id));
     const prevOrders=children.map(c=>({id:c.id,ord:c.vid_order}));
     const [moved]=children.splice(fromIdx,1);
     if(fromIdx<toIdx)toIdx--;
     if(toIdx>children.length)toIdx=children.length;
     if(toIdx<0)toIdx=0;
     children.splice(toIdx,0,moved);
+    if(JSON.stringify(children.map(c=>String(c.id)))===JSON.stringify(origIds))return; // dropped back where it started — no-op, no toast
     children.forEach((c,i)=>{c.vid_order=i;sbReqSilent('PATCH','videos',{vid_order:i},`?id=eq.${c.id}`);});
     save();_renderVidOvMenu();
     pushUndo(()=>{prevOrders.forEach(p=>{const c=(st.videos||[]).find(x=>String(x.id)===String(p.id));if(c){c.vid_order=p.ord;sbReqSilent('PATCH','videos',{vid_order:p.ord},`?id=eq.${p.id}`);}});save();_renderVidOvMenu();},'Reordered video');
@@ -5917,6 +6004,7 @@ function _vidOvContentDrop(event){
     bVids.forEach((v,i)=>{if(v.vid_order==null)v.vid_order=i;});
     const fromIdx=bVids.findIndex(v=>String(v.id)===dragVid);
     if(fromIdx<0){_vidOvBDrag=null;return;}
+    const origIds=bVids.map(v=>String(v.id));
     const prevOrders=bVids.map(v=>({id:v.id,ord:v.vid_order}));
     let toIdx=toPos;
     const [moved]=bVids.splice(fromIdx,1);
@@ -5924,8 +6012,10 @@ function _vidOvContentDrop(event){
     if(toIdx>bVids.length)toIdx=bVids.length;
     if(toIdx<0)toIdx=0;
     bVids.splice(toIdx,0,moved);
+    _vidOvBDrag=null;
+    if(JSON.stringify(bVids.map(v=>String(v.id)))===JSON.stringify(origIds))return; // dropped back where it started — no-op, no toast
     bVids.forEach((v,i)=>{v.vid_order=i;sbReqSilent('PATCH','videos',{vid_order:i},`?id=eq.${v.id}`);});
-    _vidOvBDrag=null;save();_renderVidOvMenu();
+    save();_renderVidOvMenu();
     pushUndo(()=>{prevOrders.forEach(p=>{const v=(st.videos||[]).find(x=>String(x.id)===String(p.id));if(v){v.vid_order=p.ord;sbReqSilent('PATCH','videos',{vid_order:p.ord},`?id=eq.${p.id}`);}});save();_renderVidOvMenu();},'Reordered video');
     return;
   }

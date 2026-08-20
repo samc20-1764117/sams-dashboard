@@ -1118,6 +1118,16 @@ function _showRedoToast(msg){
   undoTimer=setTimeout(()=>toast.classList.remove('show'),4000);
 }
 
+function _showUndoDoneToast(msg){
+  const toast=document.getElementById('undoToast');
+  document.getElementById('undoMsg').textContent='Undone: '+msg;
+  const rb=document.getElementById('redoBtn');
+  if(rb)rb.style.display='none';
+  toast.classList.add('show');
+  if(undoTimer)clearTimeout(undoTimer);
+  undoTimer=setTimeout(()=>toast.classList.remove('show'),4000);
+}
+
 // Flash overview rows changed by undo/redo
 // Diff strips transient state: flash/check animations + selection styling (sel-row class
 // and --sel-* inline props are applied async via requestAnimationFrame, so they'd show
@@ -1160,7 +1170,7 @@ function doUndo(){
   entry.fn();
   _flashChangedRows(_rowsBefore);
   redoStack.push({snap:currentSnap,msg:entry.msg});
-  document.getElementById('undoToast').classList.remove('show');
+  _showUndoDoneToast(entry.msg||'Action');
 }
 
 function _syncRedoDiff(before,after){

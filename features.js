@@ -900,12 +900,21 @@ function renderShopFull(){save();
             document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);
             el.style.opacity='';
             if(dragging&&ph){
-              _shopDragged=true;sf.insertBefore(el,ph);ph.remove();
-              const allRows=[...document.querySelectorAll('#shopFull .ti:not(.done)')];
+              _shopDragged=true;
               const items=[...todo].sort((a,b)=>(a.shop_order??9999)-(b.shop_order??9999));
+              const origIds=items.map(x=>String(x.id));
+              sf.insertBefore(el,ph);ph.remove();
+              const allRows=[...document.querySelectorAll('#shopFull .ti:not(.done)')];
+              const newIds=allRows.map(row=>row.id.replace('ti-shop-cal-',''));
+              if(JSON.stringify(newIds)===JSON.stringify(origIds))return; // dropped back where it started — no-op, no toast
+              const prevOrders=items.map(x=>({id:x.id,order:x.shop_order}));
               allRows.forEach((row,i)=>{const id=row.id.replace('ti-shop-cal-','');const item=items.find(x=>String(x.id)===id);if(item)item.shop_order=i;});
               save();renderShopOv();
               allRows.forEach(row=>{const id=row.id.replace('ti-shop-cal-','');const item=items.find(x=>String(x.id)===id);if(item)sbReqNullable('PATCH','shopping_list',{shop_order:item.shop_order},`?id=eq.${item.id}`);});
+              pushUndo(()=>{
+                prevOrders.forEach(({id,order})=>{const item=st.shopping.find(x=>String(x.id)===String(id));if(item){item.shop_order=order;sbReqNullable('PATCH','shopping_list',{shop_order:order},`?id=eq.${id}`);}});
+                save();renderShopFull();
+              },'Reordered shopping list');
             }else if(dragging){_shopDragged=true;if(ph)ph.remove();}
           };
           document.addEventListener('mousemove',onMove);document.addEventListener('mouseup',onUp);
@@ -3037,15 +3046,22 @@ function _ideaSetupDrag(){
     for(let i=0;i<rows.length;i++){const rc=rows[i].getBoundingClientRect();if(e.clientY<rc.top+rc.height/2){dropIdx=i;break;}}
     // reorder active ideas
     const active=st.ideas.filter(i=>!i.archived).sort((a,b)=>(a.sort_order??9999)-(b.sort_order??9999));
+    const origIds=active.map(i=>String(i.id));
+    const prevOrders=active.map(i=>({id:i.id,order:i.sort_order}));
     const dragIdx=active.findIndex(i=>String(i.id)===String(_ideaDragId));
-    if(dragIdx<0)return;
+    if(dragIdx<0){_ideaDragId=null;return;}
     const [moved]=active.splice(dragIdx,1);
     if(dropIdx>dragIdx)dropIdx--;
     active.splice(dropIdx,0,moved);
+    _ideaDragId=null;
+    if(JSON.stringify(active.map(i=>String(i.id)))===JSON.stringify(origIds))return; // dropped back where it started — no-op, no toast
     active.forEach((idea,i)=>{idea.sort_order=i;});
     renderIdeasPage();save();
     active.forEach(idea=>{if(!String(idea.id).startsWith('l-'))sbReqSilent('PATCH','ideas',{sort_order:idea.sort_order},`?id=eq.${idea.id}`);});
-    _ideaDragId=null;
+    pushUndo(()=>{
+      prevOrders.forEach(({id,order})=>{const idea=st.ideas.find(x=>String(x.id)===String(id));if(idea){idea.sort_order=order;if(!String(id).startsWith('l-'))sbReqSilent('PATCH','ideas',{sort_order:order},`?id=eq.${id}`);}});
+      save();renderIdeasPage();
+    },'Reordered idea');
   });
 }
 
@@ -5826,6 +5842,8 @@ document.addEventListener('keydown',async e=>{
   if(activePg==='overview'&&typeof _shopOvKeyNav==='function'&&_shopOvKeyNav(e))return;
   // Today list keyboard nav (arrow select, shift extend, cmd+arrow reorder, delete)
   if(activePg==='overview'&&typeof _todListKeyNav==='function'&&_todListKeyNav(e))return;
+  // Weekly-cal day-column keyboard nav (same system, scoped to whichever column was last clicked)
+  if(activePg==='overview'&&typeof _wkcColKeyNav==='function'&&_wkcColKeyNav(e))return;
   // Weekly goals keyboard nav (overview + WO modal)
   if(activePg==='overview'&&typeof _wkGoalKeyNav==='function'&&_wkGoalKeyNav(e))return;
   if(activePg==='overview'&&typeof _vidOvAllOpen!=='undefined'&&_vidOvAllOpen){
