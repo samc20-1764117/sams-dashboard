@@ -2216,7 +2216,11 @@ function _finRenderPersonal(accs,vtiAcc,currentVal,netWorth,totalAll){
         <feFlood flood-color="rgba(0,0,0,.15)" result="dark"/>
         <feComposite in="dark" in2="botShadow" operator="in" result="innerShadow"/>
         <feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="innerHighlight"/><feMergeNode in="innerShadow"/></feMerge>
-      </filter></defs>`;
+      </filter>
+      <filter id="finGlowDark" x="-30%" y="-30%" width="160%" height="160%">
+        <feDropShadow dx="0" dy="0" stdDeviation="0.5" flood-color="#000" flood-opacity=".4"/>
+      </filter>
+      </defs>`;
     // Rotate group so 0 starts at 12 o'clock
     html+=`<g transform="rotate(-90 21 21)">`;
     const _finIsDark=document.body.classList.contains('dark');
@@ -2230,8 +2234,9 @@ function _finRenderPersonal(accs,vtiAcc,currentVal,netWorth,totalAll){
       // black dark card that same low opacity blends into the background and the ring nearly
       // disappears, so dark mode uses the fully-opaque solid color instead.
       // finGlass's white top-highlight overlay washes out saturated colors against the dark
-      // card, so dark mode skips the filter and renders the solid color untouched.
-      html+=`<circle cx="21" cy="21" r="15.9" fill="none" stroke="${_finIsDark?seg.color:seg.colorLight}" stroke-width="3" stroke-dasharray="${adjLen} ${100-adjLen}" stroke-dashoffset="${adjOff}"${_finIsDark?'':' filter="url(#finGlass)"'} data-fin-seg="${seg.id}"/>`;
+      // card, so dark mode swaps it for finGlowDark — a plain soft drop-shadow (no white
+      // highlight) that keeps a little depth without desaturating the ring.
+      html+=`<circle cx="21" cy="21" r="15.9" fill="none" stroke="${_finIsDark?seg.color:seg.colorLight}" stroke-width="3" stroke-dasharray="${adjLen} ${100-adjLen}" stroke-dashoffset="${adjOff}" filter="url(#${_finIsDark?'finGlowDark':'finGlass'})" data-fin-seg="${seg.id}"/>`;
       html+=`<circle cx="21" cy="21" r="15.9" fill="none" stroke="transparent" stroke-width="3.5" stroke-dasharray="${adjLen} ${100-adjLen}" stroke-dashoffset="${adjOff}" style="pointer-events:stroke" data-fin-seg="${seg.id}" data-fin-tip-name="${seg.name}" data-fin-tip-amt="${_finFmtRound(seg.amt)}" onmouseenter="_finHover('${seg.id}')" onmouseleave="_finHover(null)"/>`;
     });
     html+=`</g></svg>`;
@@ -2343,7 +2348,7 @@ function _finRenderSubs(){
   },0);
   const yearlyTotal=monthlyTotal*12;
 
-  let html=`<div class="card fin-card">
+  let html=`<div class="card fin-card" ondblclick="if(!event.target.closest('tr')&&!event.target.closest('button'))addFinSub()">
     <div class="fin-card-hdr"><span class="fin-card-title">Recurring Expenses</span><div style="display:flex;gap:4px;align-items:center">${archivedSubs.length?`<button class="fin-add-btn" onclick="toggleFinArchive()" style="font-size:11px;padding:1px 6px;line-height:1;opacity:.6" title="View archived">&#128451;</button>`:''}<button class="fin-add-btn" onclick="addFinSub()" style="font-size:16px;padding:0 4px;line-height:1">+</button></div></div>
     <div class="fin-sub-scroll">
     <table class="fin-tbl fin-sub-tbl"><colgroup><col class="fin-col-name"/><col class="fin-col-freq"/><col class="fin-col-due"/><col class="fin-col-amt"/><col class="fin-col-mo"/><col class="fin-col-del"/></colgroup><thead><tr><th style="padding-left:17px!important">Name</th><th style="text-align:center">Freq</th><th style="text-align:right;padding-right:16px!important">Due</th><th style="text-align:right;padding-right:16px!important">Amount</th><th class="fin-mo-adj" style="font-size:12px;font-weight:500;text-align:right;padding:4px 12px!important;font-variant-numeric:tabular-nums;white-space:nowrap">Per Month: ${_finFmt(monthlyTotal)}</th><th></th></tr></thead><tbody>`;
@@ -2486,6 +2491,9 @@ async function _finSubEditFreq(id,val){
     if(!(row.name||'').trim()){setTimeout(()=>{const ae=document.activeElement;if(ae?.dataset?.fid===String(id))return;st.finSubs=st.finSubs.filter(r=>r.id!==row.id);renderFinancePage();},50);}return;}
   const old=row.frequency;row.frequency=val;
   renderFinancePage();
+  // renderFinancePage() swaps in a brand-new <select>, dropping focus to body — refocus it
+  // so Tab still advances to the next field instead of doing nothing.
+  const _selEl=document.querySelector(`select[data-fid="${id}"][data-field="frequency"]`);if(_selEl)_selEl.focus();
   pushUndo(()=>{row.frequency=old;renderFinancePage();if(!String(id).startsWith('l-'))sbReqNullable('PATCH','finance_subs',{frequency:old},`?id=eq.${id}`);},'Changed frequency');
   if(!String(id).startsWith('l-'))await sbReqNullable('PATCH','finance_subs',{frequency:val},`?id=eq.${id}`);
 }
