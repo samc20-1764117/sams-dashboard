@@ -130,6 +130,7 @@ Supabase Auth (email+password), RLS on all tables. `init()`→`checkAuth()`→`d
 
 ## Undo / Redo
 - `pushUndo(fn,msg)`: snapshots state AFTER action (called post-mutation). `doUndo()`: pops, captures current snap for redo, calls fn. `doRedo()` (async): restores snap, `await _syncRedoDiff(before,after)`, pushes undo entry whose fn calls both `_stateRestore(beforeRedo)` AND `_syncRedoDiff(snap,beforeRedo)` to keep DB in sync on undo-after-redo.
+- **Undo toast** (fixed 2026-08-20): `doUndo()` used to just hide the toast (`.classList.remove('show')`) with no confirmation — `doRedo()` already showed "Redone: {msg}" via `_showRedoToast`, so undo was the only silent one. `doUndo()` now calls `_showUndoDoneToast(entry.msg)` (core.js, mirrors `_showRedoToast`) showing "Undone: {msg}". Any future action-feedback audit should check both are still symmetric.
 - **Undo flash**: `doUndo`/`doRedo` flash overview rows whose HTML changed (`_rowSnapMap()` before, `_flashChangedRows()` after → `.undo-flash` class, 900ms). Diff strips transient classes (`undo-flash|just-done|chk-pop`) so repeat undos don't over-flash.
 - `_stateSnap` captures: `tasks,recurring,shopping,travel,birthdays,blocks,wrRules,wrOverrides,autoTBOverrides,pupSessions,pup_skills`, plus `_vidStepDayMap` (localStorage, not in `st` — see note below).
 - `_stateRestore` restores all above (calls `_vidStepDayMapSet` for the localStorage map) + calls `renderAll(),renderPupSkillsHighlight(),renderDayTB(),renderWkCal(),renderRecOv(),renderWeeklyPage()`.

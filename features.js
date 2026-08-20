@@ -5239,6 +5239,8 @@ function renderGuidePage(){
     ${sRow('←/→ (selected)','Move task ±1 day')}
     ${sRow('↑/↓ (TB)','Move block ±30 min')}
     ${sRow('⌘ ↑/↓ (TB)','Resize block ±30 min')}
+    ${sRow('↑/↓ (list)','Select prev/next in Today list or a weekly-cal day column — past the top/bottom edge, moves to the prev/next day')}
+    ${sRow('⌘ ↑/↓ (list)','Reorder selected within the day (Today list, weekly-cal column, or shopping list)')}
     ${sRow('Space','Skip WR rule')}
     ${sRow('Delete / ⌫','Delete selected')}
     ${sRow('⌘C / ⌘V','Copy / paste tasks')}
