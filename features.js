@@ -2147,7 +2147,40 @@ function openSB(){sbOpen=true;document.getElementById('sidebar').classList.remov
 // ── FINANCE PAGE ─────────────────────────────────────────────────────────────
 // ══════════════════════════════════════════════════════════════════════════════
 const _FIN_ACCT_COLORS_MAP={'vti':['#10b981','rgba(16,185,129,.45)'],'checking':['#60a5fa','rgba(96,165,250,.45)'],'rsus':['#a78bfa','rgba(167,139,250,.45)'],'rsu':['#a78bfa','rgba(167,139,250,.45)'],'cc points':['#ec4899','rgba(236,72,153,.45)'],'credit card':['#ec4899','rgba(236,72,153,.45)']};
-function _finAcctColor(name){const n=(name||'').toLowerCase();return _FIN_ACCT_COLORS_MAP[n]||Object.keys(_FIN_ACCT_COLORS_MAP).reduce((r,k)=>r||( n.includes(k)?_FIN_ACCT_COLORS_MAP[k]:null),null);}
+// User-picked legend colors (features.js _finOpenColorPicker). Persisted client-side only —
+// same pattern as other per-browser UI prefs in this app (e.g. timeblock collapse state) —
+// no Supabase column, so it shows up wherever this browser/device opens the dashboard.
+let _finCustomColors={};try{_finCustomColors=JSON.parse(localStorage.getItem('_finCustomColors')||'{}');}catch(e){}
+function _finSaveCustomColors(){try{localStorage.setItem('_finCustomColors',JSON.stringify(_finCustomColors));}catch(e){}}
+function _finHexToRgba(hex,a){const h=hex.replace('#','');const r=parseInt(h.slice(0,2),16),g=parseInt(h.slice(2,4),16),b=parseInt(h.slice(4,6),16);return`rgba(${r},${g},${b},${a})`;}
+const _FIN_COLOR_PALETTE=['#ef4444','#f97316','#f59e0b','#eab308','#84cc16','#22c55e','#10b981','#14b8a6','#06b6d4','#0ea5e9','#3b82f6','#6366f1','#8b5cf6','#a855f7','#d946ef','#ec4899','#f43f5e','#64748b'];
+function _finAcctColor(name){
+  const n=(name||'').toLowerCase();
+  if(_finCustomColors[n])return[_finCustomColors[n],_finHexToRgba(_finCustomColors[n],.45)];
+  return _FIN_ACCT_COLORS_MAP[n]||Object.keys(_FIN_ACCT_COLORS_MAP).reduce((r,k)=>r||( n.includes(k)?_FIN_ACCT_COLORS_MAP[k]:null),null);
+}
+function _finOpenColorPicker(event,name){
+  event.stopPropagation();
+  document.getElementById('finColorPickerPop')?.remove();
+  const anchor=event.currentTarget;
+  const r=anchor.getBoundingClientRect();
+  const pop=document.createElement('div');
+  pop.id='finColorPickerPop';
+  pop.className='fin-quick-add fin-color-picker';
+  pop.style.cssText=`position:fixed;top:${r.bottom+6}px;left:${r.left}px;right:auto;margin-top:0;z-index:200`;
+  pop.innerHTML=_FIN_COLOR_PALETTE.map(c=>`<button class="fin-color-swatch" style="background:${c}" onclick="_finPickColor('${name.replace(/'/g,"\\'")}','${c}')" title="${c}"></button>`).join('');
+  document.body.appendChild(pop);
+  setTimeout(()=>{
+    const close=ev=>{if(!pop.contains(ev.target)){pop.remove();document.removeEventListener('mousedown',close);}};
+    document.addEventListener('mousedown',close);
+  },10);
+}
+function _finPickColor(name,hex){
+  _finCustomColors[(name||'').toLowerCase()]=hex;
+  _finSaveCustomColors();
+  document.getElementById('finColorPickerPop')?.remove();
+  renderFinancePage();
+}
 const _FIN_COLORS_FALLBACK=[['#2a9db5','rgba(42,157,181,.45)'],['#eab308','rgba(234,179,8,.45)'],['#38bdf8','rgba(56,189,248,.45)'],['#f97316','rgba(249,115,22,.45)'],['#65a30d','rgba(101,163,13,.45)']];
 function _finOf(type){return st.finance.filter(r=>r.type===type);}
 function _finFmt(n){return n<0?'-$'+Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):'$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
@@ -2324,7 +2357,7 @@ function _finRenderPersonal(accs,vtiAcc,currentVal,netWorth,totalAll){
     const pctStr=seg?`${(seg.pct*100).toFixed(0)}%`:'';
     const excCls=a.exclude?' fin-legend-excluded':'';
     html+=`<div class="fin-legend-row${excCls}" data-fin-id="${a.id}" onmouseenter="_finHover('${a.id}')" onmouseleave="_finHover(null)">
-      <span class="fin-legend-dot" style="background:${colorPastel};border:1.5px solid ${colorSolid}"></span>
+      <span class="fin-legend-dot" style="background:${colorPastel};border:1.5px solid ${colorSolid};cursor:pointer" onclick="_finOpenColorPicker(event,'${a.name.replace(/'/g,"\\'")}')" title="Change color"></span>
       <span class="fin-legend-name">${_finEditable(a.id,'name',a.name,'fin-legend-edit-name')}</span>
       <span class="fin-legend-amt">${_finEditable(a.id,'amount',a.amount||0,'fin-legend-edit-amt',true)}</span><span class="fin-legend-pct">${pctStr}</span>
       ${a.exclude?`<button class="fin-excl-btn active" onclick="_finToggleExclude('${a.id}')" title="Include in total">&#x21a9;</button>`:`<button class="fin-excl-btn" onclick="_finToggleExclude('${a.id}')" title="Exclude from total">&#x2212;</button>`}
@@ -2765,7 +2798,10 @@ function openFinInvDetails(){
   const invRect=invCard.getBoundingClientRect();
   const rightRect=rightCol.getBoundingClientRect();
   pop=document.createElement('div');pop.id='finInvDetailsPop';pop.className='fin-details-pop';
-  pop.style.cssText=`position:fixed;top:${invRect.top}px;left:${rightRect.left}px;width:${rightRect.width}px;height:${invRect.height}px;z-index:100`;
+  // Content is only 4 narrow columns — sizing to the full Recurring Expenses column width left a
+  // wide dead strip to the right of the table, so cap it to a compact content-sized width instead.
+  const popWidth=Math.min(360,rightRect.width);
+  pop.style.cssText=`position:fixed;top:${invRect.top}px;left:${rightRect.left}px;width:${popWidth}px;height:${invRect.height}px;z-index:100`;
   _finRenderDetailsContent(pop);
   document.body.appendChild(pop);
   requestAnimationFrame(()=>pop.classList.add('open'));
