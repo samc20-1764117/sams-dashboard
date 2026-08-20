@@ -2218,13 +2218,18 @@ function _finRenderPersonal(accs,vtiAcc,currentVal,netWorth,totalAll){
         <feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="innerHighlight"/><feMergeNode in="innerShadow"/></feMerge>
       </filter>
       <filter id="finGlowDark" x="-30%" y="-30%" width="160%" height="160%">
-        <feGaussianBlur in="SourceAlpha" stdDeviation=".35" result="blur"/>
-        <feOffset in="blur" dx="0" dy="-.45" result="topLight"/>
-        <feFlood flood-color="#fff" flood-opacity=".4" result="w1"/>
-        <feComposite in="w1" in2="topLight" operator="in" result="innerHighlight"/>
-        <feOffset in="blur" dx="0" dy=".45" result="botShadow"/>
-        <feFlood flood-color="#000" flood-opacity=".25" result="dark"/>
-        <feComposite in="dark" in2="botShadow" operator="in" result="innerShadow"/>
+        <feGaussianBlur in="SourceAlpha" stdDeviation=".5" result="blur"/>
+        <feOffset in="blur" dx="0" dy="-.6" result="shiftUp"/>
+        <!-- intersecting the shifted alpha with the ORIGINAL alpha (not itself) confines the
+             highlight to the thin crescent where they overlap, instead of recoloring the whole
+             stroke — that whole-band recolor was what desaturated the ring before. -->
+        <feComposite in="shiftUp" in2="SourceAlpha" operator="in" result="topEdge"/>
+        <feFlood flood-color="#fff" flood-opacity=".3" result="whiteFlood"/>
+        <feComposite in="whiteFlood" in2="topEdge" operator="in" result="innerHighlight"/>
+        <feOffset in="blur" dx="0" dy=".6" result="shiftDown"/>
+        <feComposite in="shiftDown" in2="SourceAlpha" operator="in" result="botEdge"/>
+        <feFlood flood-color="#000" flood-opacity=".25" result="blackFlood"/>
+        <feComposite in="blackFlood" in2="botEdge" operator="in" result="innerShadow"/>
         <feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="innerHighlight"/><feMergeNode in="innerShadow"/></feMerge>
       </filter>
       </defs>`;
