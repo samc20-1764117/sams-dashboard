@@ -1643,7 +1643,7 @@ body.dark .fin-inv-kpi-float{background:rgba(30,30,34,.85);border-color:rgba(255
 .fin-chart-year:first-of-type{transform:translateX(0)}
 .fin-chart-year:last-of-type{transform:translateX(-100%)}
 .fin-chart-dot{position:absolute;width:10px;height:10px;min-width:10px;min-height:10px;border-radius:50%;background:#fff;border:2px solid #10b981;transform:translate(-50%,-50%);pointer-events:none;z-index:2;box-shadow:inset 0 -1px 2px rgba(0,0,0,.06),inset 0 1px 1px rgba(255,255,255,.7),0 0 3px rgba(255,255,255,.3)}
-.fin-chart-dot-hit{position:absolute;height:70%;top:15%!important;cursor:pointer;z-index:1}
+.fin-chart-dot-hit{position:absolute;cursor:pointer;z-index:1}
 .fin-chart-ylab{position:absolute;left:0;transform:translateY(-50%);font-size:8px;font-weight:600;color:var(--muted);font-variant-numeric:tabular-nums;pointer-events:none;padding-left:2px}
 /* Subscriptions compact + scroll */
 .fin-sub-scroll{flex:1;overflow-y:auto;min-height:0}
@@ -1698,6 +1698,14 @@ body.dark .fin-details-pop{background:rgba(26,26,30,.97);border-color:rgba(255,2
 .fin-details-pop .fin-tbl td{padding:5px 8px;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif}
 .fin-details-pop .fin-tbl th{padding:4px 8px;font-size:10px;font-weight:600;color:var(--muted)}
 .fin-details-pop .fin-tbl td:last-child{width:24px;padding:4px 4px!important;position:relative}
+.fin-ph-icon-btn{width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;font-size:14px;padding:0!important;line-height:1}
+.fin-ph-col-date{padding-left:16px!important}
+.fin-ph-col-amt{padding-right:12px!important}
+.fin-ph-col-cum{padding-right:22px!important}
+.fin-details-pop .fin-tbl .delbtn{margin-right:16px}
+.fin-ph-date-input,.fin-ph-amt-input{width:100%;box-sizing:border-box;font-size:12px;font-family:inherit;border:1px solid rgba(200,200,215,.25);border-radius:5px;padding:2px 5px;color:var(--text);background:transparent;font-variant-numeric:tabular-nums}
+.fin-ph-amt-input{text-align:right}
+body.dark .fin-ph-date-input,body.dark .fin-ph-amt-input{border-color:rgba(255,255,255,.12)}
 .fin-details-pop .fin-row:hover{background:rgba(100,100,140,.04)}
 .fin-details-pop .fin-row:hover .delbtn{opacity:.6}
 .fin-chart-hit{cursor:pointer}

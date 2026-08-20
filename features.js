@@ -2390,7 +2390,9 @@ function _finRenderInvestments(purchases,totalBought,gain,gainPct,currentVal){
       const prev=i>0?pts[i-1].px:p.px;const next=i<pts.length-1?pts[i+1].px:p.px;
       const left=((prev+p.px)/2);const right=((p.px+next)/2);
       const w=right-left;
-      html+=`<span class="fin-chart-dot-hit" style="left:${left.toFixed(2)}%;width:${w.toFixed(2)}%" data-fin-tip-date="${_finDateNice(p.date)}" data-fin-tip-amt="${_finFmtRound(p.amt)}" data-fin-tip-cum="${_finFmtRound(p.cum)}" data-fin-date="${p.date}" data-fin-dot-top="${p.py}" onmouseenter="_finChartHover(this)" onmouseleave="_finChartHover(null)"></span>`;
+      // Hover zone is a tight 20px band directly above the point (not the whole column) — leaves
+      // the rest of the chart free for double-click-to-add instead of blocking it everywhere.
+      html+=`<span class="fin-chart-dot-hit" style="left:${left.toFixed(2)}%;width:${w.toFixed(2)}%;top:calc(${p.py}% - 20px);height:20px" data-fin-tip-date="${_finDateNice(p.date)}" data-fin-tip-amt="${_finFmtRound(p.amt)}" data-fin-tip-cum="${_finFmtRound(p.cum)}" data-fin-date="${p.date}" data-fin-dot-top="${p.py}" onmouseenter="_finChartHover(this)" onmouseleave="_finChartHover(null)"></span>`;
     });
     yearLabels.forEach(yl=>{
       html+=`<span class="fin-chart-year" style="left:${yl.px.toFixed(1)}%">${yl.y}</span>`;
@@ -2781,16 +2783,49 @@ function _finRenderDetailsContent(pop){
   const purchases=_finOf('vti').filter(p=>p.date&&Math.abs(p.amount||0)>0).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
   let cum=0;const chron=[...purchases].reverse();
   const cumMap={};chron.forEach(p=>{cum+=Math.abs(p.amount||0);cumMap[p.id]=cum;});
-  let html=`<div class="fin-card-hdr" style="position:relative"><span class="fin-card-title">Purchase History</span><div style="display:flex;gap:4px;align-items:center"><button class="fin-add-btn" onclick="openFinInvAdd(event)" style="font-size:16px;padding:0 4px;line-height:1">+</button><button class="fin-add-btn" onclick="closeFinInvDetails()" style="font-size:14px;padding:0 4px;line-height:1;opacity:.6" title="Close">&#x2715;</button></div></div>`;
-  html+=`<div class="fin-details-scroll"><table class="fin-tbl"><thead><tr><th style="padding-left:12px!important;text-align:left">Date</th><th style="text-align:right;padding-right:12px!important">Amount</th><th style="text-align:right;padding-right:12px!important">Cumulative</th><th></th></tr></thead><tbody>`;
+  let html=`<div class="fin-card-hdr" style="position:relative"><span class="fin-card-title">Purchase History</span><div style="display:flex;gap:4px;align-items:center"><button class="fin-add-btn fin-ph-icon-btn" onclick="openFinInvAdd(event)" title="Add">+</button><button class="fin-add-btn fin-ph-icon-btn" onclick="closeFinInvDetails()" style="opacity:.6" title="Close">&#x2715;</button></div></div>`;
+  html+=`<div class="fin-details-scroll" ondblclick="if(!event.target.closest('tr')&&!event.target.closest('button'))openFinInvAdd({target:document.querySelector('#finInvDetailsPop .fin-add-btn')})"><table class="fin-tbl fin-ph-tbl"><thead><tr><th style="text-align:left" class="fin-ph-col-date">Date</th><th style="text-align:right" class="fin-ph-col-amt">Amount</th><th style="text-align:right" class="fin-ph-col-cum">Cumulative</th><th class="fin-ph-col-del"></th></tr></thead><tbody>`;
   purchases.forEach(p=>{
-    const d=p.date?new Date(p.date+'T12:00'):null;
-    const ds=d?d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'—';
-    html+=`<tr class="fin-row"><td style="padding-left:12px">${ds}</td><td style="text-align:right;padding-right:12px" class="fin-num">${_finFmt(Math.abs(p.amount||0))}</td><td style="text-align:right;padding-right:12px;color:var(--muted)" class="fin-num">${_finFmt(cumMap[p.id]||0)}</td><td><button class="delbtn" onclick="delFinPurchase('${p.id}')">&#x2715;</button></td></tr>`;
+    const ds=_finPHDateDisplay(p.date);
+    html+=`<tr class="fin-row" data-fin-id="${p.id}" ondblclick="if(!event.target.closest('button'))_finPHEdit('${p.id}')"><td class="fin-ph-col-date">${ds}</td><td style="text-align:right" class="fin-num fin-ph-col-amt">${_finFmt(Math.abs(p.amount||0))}</td><td style="text-align:right;color:var(--muted)" class="fin-num fin-ph-col-cum">${_finFmt(cumMap[p.id]||0)}</td><td class="fin-ph-col-del"><button class="delbtn" onclick="delFinPurchase('${p.id}')">&#x2715;</button></td></tr>`;
   });
   html+=`</tbody></table></div>`;
   if(!purchases.length)html+=`<div style="text-align:center;color:var(--muted);padding:20px;font-size:13px">No purchases yet</div>`;
   pop.innerHTML=html;
+}
+// Zero-padded day keeps every row the same width so the Date column reads as a clean grid.
+function _finPHDateDisplay(dateStr){
+  if(!dateStr)return'—';
+  const d=new Date(dateStr+'T12:00');
+  return`${_FIN_MONTHS[d.getMonth()]} ${String(d.getDate()).padStart(2,'0')}, ${d.getFullYear()}`;
+}
+function _finPHRefresh(){const pop=document.getElementById('finInvDetailsPop');if(pop)_finRenderDetailsContent(pop);}
+function _finPHEdit(id){
+  const row=st.finance.find(r=>String(r.id)===String(id));if(!row)return;
+  const tr=document.querySelector(`#finInvDetailsPop tr[data-fin-id="${id}"]`);if(!tr||tr.classList.contains('fin-ph-editing'))return;
+  tr.classList.add('fin-ph-editing');
+  const[dateTd,amtTd]=tr.children;
+  dateTd.innerHTML=`<input type="date" class="fin-ph-date-input" value="${row.date||''}" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}if(event.key==='Escape'){event.preventDefault();_finPHRefresh();}" onblur="_finPHSave('${id}','date',this.value)">`;
+  amtTd.innerHTML=`<input type="number" step="0.01" class="fin-ph-amt-input" value="${Math.abs(row.amount||0)}" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}if(event.key==='Escape'){event.preventDefault();_finPHRefresh();}" onblur="_finPHSave('${id}','amount',this.value)">`;
+  dateTd.querySelector('input').focus();
+}
+async function _finPHSave(id,field,val){
+  const row=st.finance.find(r=>String(r.id)===String(id));if(!row)return;
+  const parsed=field==='date'?val:Math.abs(_finParseNum(String(val)));
+  const finishIfDone=()=>{
+    const tr=document.querySelector(`#finInvDetailsPop tr[data-fin-id="${id}"]`);
+    // If the user tabbed to the sibling field in the same row, don't re-render yet — that
+    // would destroy the input mid-Tab and drop focus (see _finCommitNew's <select> bug).
+    if(tr&&tr.contains(document.activeElement))return;
+    _finPHRefresh();
+  };
+  if(!parsed&&field==='date'){setTimeout(finishIfDone,0);return;}
+  if(row[field]===parsed){setTimeout(finishIfDone,0);return;}
+  const old=row[field];row[field]=parsed;
+  renderFinancePage();
+  setTimeout(finishIfDone,0);
+  pushUndo(()=>{row[field]=old;renderFinancePage();_finPHRefresh();if(!String(id).startsWith('l-'))sbReqNullable('PATCH','finance',{[field]:old},`?id=eq.${id}`);},'Edited purchase');
+  if(!String(id).startsWith('l-'))await sbReqNullable('PATCH','finance',{[field]:parsed},`?id=eq.${id}`);
 }
 async function delFinPurchase(id){
   const old=st.finance.find(r=>String(r.id)===String(id));
