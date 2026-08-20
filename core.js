@@ -1463,6 +1463,11 @@ document.addEventListener('keydown',e=>{
     if(document.getElementById('mModal')?.classList.contains('open')){e.preventDefault();moGoToday();return;}
     if(document.getElementById('recMoModal')?.classList.contains('open')){e.preventDefault();scrollRecMoToday();return;}
   }
+  // F/O inside Month view = toggle Filters / Objectives side panels
+  if(e.key==='f'&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&document.getElementById('mModal')?.classList.contains('open')){e.preventDefault();toggleMoFilter();return;}
+  if(e.key==='o'&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&document.getElementById('mModal')?.classList.contains('open')){e.preventDefault();toggleMoGoals();return;}
+  // Enter closes the settings popup if it's open
+  if(e.key==='Enter'&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&document.getElementById('settingsPopup')?.classList.contains('open')){e.preventDefault();toggleSettingsPopup();return;}
   // Cmd+Left/Right to switch between pages
   if((e.metaKey||e.ctrlKey)&&(e.key==='ArrowLeft'||e.key==='ArrowRight')&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')){
     e.preventDefault();
