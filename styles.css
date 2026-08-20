@@ -1641,7 +1641,8 @@ body.dark .fin-hist-btn:hover{background:rgba(109,95,230,.16);border-color:rgba(
 .fin-donut-center .fin-donut-val{font-size:24px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums}
 .fin-legend-row{display:flex;align-items:baseline;gap:8px;font-size:13px;padding:5px 4px;border-bottom:1px solid rgba(200,200,215,.06);border-radius:4px;transition:background .15s}
 .fin-legend-row:last-child{border-bottom:none}
-.fin-legend-dot{width:10px;height:10px;min-width:10px;min-height:10px;border-radius:50%;flex-shrink:0;align-self:center;box-shadow:inset 0 -1px 2px rgba(0,0,0,.1),inset 0 1px 1px rgba(255,255,255,.5),0 0 3px rgba(255,255,255,.3)}
+.fin-legend-dot{width:10px;height:10px;min-width:10px;min-height:10px;border-radius:50%;flex-shrink:0;align-self:center;border:1.5px solid rgba(0,0,0,.08);box-shadow:inset 0 -1px 2px rgba(0,0,0,.1),inset 0 1px 1px rgba(255,255,255,.5),0 0 3px rgba(255,255,255,.3)}
+body.dark .fin-legend-dot{border-color:rgba(255,255,255,.15)}
 .fin-legend-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-left:2px}
 .fin-legend-amt{font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--text);text-align:right;min-width:80px;flex-shrink:0;margin-right:4px}
 .fin-legend-pct{color:var(--muted);font-weight:600;font-variant-numeric:tabular-nums;font-size:13px;width:44px;flex-shrink:0;text-align:right;margin-left:-6px;margin-right:10px}
@@ -1723,9 +1724,11 @@ body.dark .fin-tooltip{background:rgba(35,35,40,.95);border-color:rgba(255,255,2
 .fin-quick-add input:focus{border-color:rgba(109,95,230,.4);box-shadow:0 0 0 2px rgba(109,95,230,.1)}
 body.dark .fin-quick-add{background:rgba(28,28,32,.97);border-color:rgba(255,255,255,.1);box-shadow:0 6px 20px rgba(0,0,0,.4)}
 .fin-color-picker{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;padding:8px;white-space:normal}
-.fin-color-swatch{width:20px;height:20px;border-radius:50%;border:1.5px solid rgba(0,0,0,.08);cursor:pointer;padding:0;transition:transform .1s}
+.fin-color-swatch{width:20px;height:20px;border-radius:50%;border:1.5px solid rgba(0,0,0,.08);cursor:pointer;padding:0;transition:transform .1s;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:700;line-height:1;text-shadow:0 1px 2px rgba(0,0,0,.5)}
 .fin-color-swatch:hover{transform:scale(1.15)}
 body.dark .fin-color-swatch{border-color:rgba(255,255,255,.15)}
+.fin-color-swatch.selected{box-shadow:0 0 0 2px #fff,0 0 0 3.5px rgba(0,0,0,.25)}
+body.dark .fin-color-swatch.selected{box-shadow:0 0 0 2px #1c1c20,0 0 0 3.5px rgba(255,255,255,.4)}
 .fin-details-pop{background:rgba(255,252,248,.97);backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);border:1px solid rgba(210,205,228,.18);border-radius:var(--r,16px);box-shadow:0 10px 30px rgba(0,0,0,.12),inset 0 1px 0 rgba(255,255,255,0.8);display:flex;flex-direction:column;overflow:hidden;opacity:0;transform:translateX(-8px) scale(.98);transition:opacity .18s ease,transform .18s ease;pointer-events:none}
 body.dark .fin-details-pop{background:rgba(26,26,30,.97);border-color:rgba(255,255,255,.1);box-shadow:0 10px 30px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.04)}
 .fin-details-pop.open{opacity:1;transform:translateX(0) scale(1);pointer-events:auto}
@@ -1739,15 +1742,20 @@ body.dark .fin-details-pop{background:rgba(26,26,30,.97);border-color:rgba(255,2
 .fin-ph-tbl col.fin-ph-c-amt{width:100px}
 .fin-ph-tbl col.fin-ph-c-cum{width:100px}
 .fin-ph-tbl col.fin-ph-c-del{width:24px}
+/* Chrome's native date input has a ~120px minimum render width that beats table-layout:fixed's
+   column width and forces the column to grow. Taking it out of flow (position:absolute) during
+   edit stops it from ever influencing column widths — it just floats over the row instead. */
+.fin-details-pop .fin-tbl tr.fin-ph-editing td.fin-ph-col-date{position:relative}
 .fin-ph-icon-btn{width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;font-size:14px;padding:0!important;line-height:1}
 .fin-ph-close-btn{font-size:10px}
 .fin-ph-col-date{padding-left:16px!important;font-variant-numeric:tabular-nums}
 .fin-ph-col-amt{padding-right:12px!important}
-.fin-ph-col-cum{padding-right:22px!important}
+.fin-ph-col-cum{padding-right:14px!important}
 .fin-details-pop .fin-tbl .delbtn{transform:translateX(26px)}
 .fin-details-pop .fin-tbl tr.fin-ph-editing td{padding-top:2px!important;padding-bottom:2px!important}
 .fin-ph-date-input,.fin-ph-amt-input{width:100%;height:20px;box-sizing:border-box;font-size:12px;font-family:inherit;border:1px solid rgba(200,200,215,.25);border-radius:5px;padding:0 5px;color:var(--text);background:transparent;font-variant-numeric:tabular-nums}
 .fin-ph-amt-input{text-align:right}
+.fin-ph-date-input{position:absolute;left:16px;top:50%;transform:translateY(-50%);width:130px;z-index:5}
 body.dark .fin-ph-date-input,body.dark .fin-ph-amt-input{border-color:rgba(255,255,255,.12)}
 .fin-details-pop .fin-row:hover{background:rgba(100,100,140,.04)}
 .fin-details-pop .fin-row:hover .delbtn{opacity:.6}

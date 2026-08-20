@@ -2182,7 +2182,7 @@ function _finAcctColor(name){
   if(_finCustomColors[n])return[_finCustomColors[n],_finHexToRgba(_finCustomColors[n],.45)];
   return _FIN_ACCT_COLORS_MAP[n]||Object.keys(_FIN_ACCT_COLORS_MAP).reduce((r,k)=>r||( n.includes(k)?_FIN_ACCT_COLORS_MAP[k]:null),null);
 }
-function _finOpenColorPicker(event,name){
+function _finOpenColorPicker(event,name,currentColor){
   event.stopPropagation();
   document.getElementById('finColorPickerPop')?.remove();
   const anchor=event.currentTarget;
@@ -2191,7 +2191,11 @@ function _finOpenColorPicker(event,name){
   pop.id='finColorPickerPop';
   pop.className='fin-quick-add fin-color-picker';
   pop.style.cssText=`position:fixed;top:${r.bottom+6}px;left:${r.left}px;right:auto;margin-top:0;z-index:200`;
-  pop.innerHTML=_FIN_COLOR_PALETTE.map(c=>`<button class="fin-color-swatch" style="background:${c}" onclick="_finPickColor('${name.replace(/'/g,"\\'")}','${c}')" title="${c}"></button>`).join('');
+  const cur=(currentColor||'').toLowerCase();
+  pop.innerHTML=_FIN_COLOR_PALETTE.map(c=>{
+    const sel=c.toLowerCase()===cur;
+    return`<button class="fin-color-swatch${sel?' selected':''}" style="background:${c}" onclick="_finPickColor('${name.replace(/'/g,"\\'")}','${c}')" title="${c}">${sel?'&#10003;':''}</button>`;
+  }).join('');
   document.body.appendChild(pop);
   setTimeout(()=>{
     const close=ev=>{if(!pop.contains(ev.target)){pop.remove();document.removeEventListener('mousedown',close);}};
@@ -2380,7 +2384,7 @@ function _finRenderPersonal(accs,vtiAcc,currentVal,netWorth,totalAll){
     const pctStr=seg?`${(seg.pct*100).toFixed(0)}%`:'';
     const excCls=a.exclude?' fin-legend-excluded':'';
     html+=`<div class="fin-legend-row${excCls}" data-fin-id="${a.id}" onmouseenter="_finHover('${a.id}')" onmouseleave="_finHover(null)">
-      <span class="fin-legend-dot" style="background:${colorPastel};border:1.5px solid ${colorSolid};cursor:pointer" onclick="_finOpenColorPicker(event,'${a.name.replace(/'/g,"\\'")}')" title="Change color"></span>
+      <span class="fin-legend-dot" style="background:${colorSolid};cursor:pointer" onclick="_finOpenColorPicker(event,'${a.name.replace(/'/g,"\\'")}','${colorSolid}')" title="Change color"></span>
       <span class="fin-legend-name">${_finEditable(a.id,'name',a.name,'fin-legend-edit-name')}</span>
       <span class="fin-legend-amt">${_finEditable(a.id,'amount',a.amount||0,'fin-legend-edit-amt',true)}</span><span class="fin-legend-pct">${pctStr}</span>
       ${a.exclude?`<button class="fin-excl-btn active" onclick="_finToggleExclude('${a.id}')" title="Include in total">&#x21a9;</button>`:`<button class="fin-excl-btn" onclick="_finToggleExclude('${a.id}')" title="Exclude from total">&#x2212;</button>`}
