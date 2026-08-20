@@ -942,14 +942,23 @@ function _dlblOvArrow(dayLetter,onclickJs){
   // draggable="false" is kept here too as a harmless secondary signal, but isn't what actually works.
   return`<span class="dlbl ov" style="display:inline-flex;align-items:center;gap:2px;right:24px">${dayLetter}<span class="dlbl-arrow" draggable="false" title="Move to today" onmousedown="event.stopPropagation()" onclick="event.stopPropagation();${onclickJs}">→</span></span>`;
 }
-// Shared 3-way scope prompt for a recurring/WR occurrence overdue from a past week — used by both
+// "due last week" / "due N weeks ago" — accurate regardless of exactly how far back wkKey is
+// (WR week-misses are always exactly 1 week back, but a non-WR miss from getOvRecurring's 4-week
+// lookback might not be).
+function _weeksAgoLabel(wkKey){
+  const n=Math.round((new Date(getWkKey(0)+'T12:00')-new Date(wkKey+'T12:00'))/(7*86400000));
+  return n===1?'due last week':`due ${n} weeks ago`;
+}
+// Shared 4-way scope prompt for a recurring/WR occurrence overdue from a past week — used by both
 // the per-row arrow and the bulk "Move to today" sequential queue, so they can never disagree on
-// wording or order. Displayed top-to-bottom as This time only / Same day / Change day to today.
-// #wrScopePicker's markup renders its "remove" slot first, "this" slot second, "all" slot third —
-// the label/callback assignment below (not the markup) is what keeps that order correct; don't
-// "simplify" this to the more obvious this/all/remove mapping, it'll silently reverse the order.
-function _wrScopePrompt(e,name,onThisTime,onSameDay,onChangeDay){
-  showWrScopePicker(e,'↻  Same day','↻  Change day to today',onSameDay,onChangeDay,'⊘  This time only',onThisTime,name?name+' is recurring':'');
+// wording or order. Displayed top-to-bottom as: Skip past week / This time only / Same day /
+// Change day to today. #wrScopePicker's markup renders its "skip" slot first, "remove" slot
+// second, "this" slot third, "all" slot fourth — the label/callback assignment below (not the
+// markup) is what keeps that order correct; don't "simplify" this to the more obvious
+// skip/this/all/remove mapping, it'll silently reverse the this/all/remove part.
+function _wrScopePrompt(e,name,wkKey,onSkip,onThisTime,onSameDay,onChangeDay){
+  const title=name?`${name} (recurring) ${_weeksAgoLabel(wkKey)}`:'';
+  showWrScopePicker(e,'↻  Same day','↻  Change day to today',onSameDay,onChangeDay,'⊘  This time only',onThisTime,title,'⊘  Skip past week',onSkip);
 }
 function _ovRowMoveClick(e,kind,id,wkKey){
   e.stopPropagation();e.preventDefault();
@@ -958,7 +967,8 @@ function _ovRowMoveClick(e,kind,id,wkKey){
   if(kind==='wrrule'){
     const rule=st.wrRules.find(r=>String(r.id)===String(id));if(!rule)return;
     if(pastWeek){
-      _wrScopePrompt(e,rule.name,
+      _wrScopePrompt(e,rule.name,wkKey,
+        ()=>writeWrOverride(id,wkKey,{override_type:'skip'},{undoLabel:'Skipped WR task'}),
         ()=>wrMoveToThisWeek(id,wkKey,false),
         ()=>wrMoveToThisWeek(id,wkKey,true,false),
         ()=>wrMoveToThisWeek(id,wkKey,true,true));
@@ -973,7 +983,8 @@ function _ovRowMoveClick(e,kind,id,wkKey){
   } else {
     const rec=st.recurring.find(x=>String(x.id)===String(id));if(!rec)return;
     if(pastWeek){
-      _wrScopePrompt(e,rec.name,
+      _wrScopePrompt(e,rec.name,wkKey,
+        ()=>_recSkipPastWeek(rec,wkKey),
         ()=>_recMoveThisOccToToday(rec,wkKey),
         ()=>_recMoveAllFuture(rec,wkKey,tod(),null,true),
         ()=>_recMoveAllFuture(rec,wkKey,tod(),null,false));
@@ -3235,14 +3246,18 @@ document.addEventListener('mousedown',e=>{if(!e.target.closest('#wrRuleCtxMenu')
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){hideWrRuleCtx();hideWrScopePicker();}});
 
 // ── Scope picker (Apple Calendar style: this week only / all future) ───────────
-let _wrScopeCbThis=null,_wrScopeCbAll=null,_wrScopeCbRemove=null;
-function showWrScopePicker(e,thisLabel,allLabel,onThis,onAll,removeLabel,onRemove,titleText){
+let _wrScopeCbThis=null,_wrScopeCbAll=null,_wrScopeCbRemove=null,_wrScopeCbSkip=null;
+// skipLabel/onSkip is an optional 4th slot (rendered ABOVE removeLabel/onRemove) — only shown
+// when passed, so every existing 3-slot caller is unaffected.
+function showWrScopePicker(e,thisLabel,allLabel,onThis,onAll,removeLabel,onRemove,titleText,skipLabel,onSkip){
   e.preventDefault();e.stopPropagation();
-  _wrScopeCbThis=onThis;_wrScopeCbAll=onAll;_wrScopeCbRemove=onRemove||null;
+  _wrScopeCbThis=onThis;_wrScopeCbAll=onAll;_wrScopeCbRemove=onRemove||null;_wrScopeCbSkip=onSkip||null;
   document.getElementById('wrScopeThis').textContent=thisLabel;
   document.getElementById('wrScopeAll').textContent=allLabel;
   const removeEl=document.getElementById('wrScopeRemove');
   if(removeEl){removeEl.textContent=removeLabel||'';removeEl.style.display=onRemove?'':'none';}
+  const skipEl=document.getElementById('wrScopeSkip');
+  if(skipEl){skipEl.textContent=skipLabel||'';skipEl.style.display=onSkip?'':'none';}
   const titleEl=document.getElementById('wrScopeTitle');
   if(titleEl){titleEl.textContent=titleText||'';titleEl.style.display=titleText?'':'none';titleEl.title=titleText||'';}
   const m=document.getElementById('wrScopePicker');
@@ -3253,6 +3268,7 @@ function hideWrScopePicker(){const m=document.getElementById('wrScopePicker');if
 function wrScopeDoRemove(){hideWrScopePicker();if(_wrScopeCbRemove)_wrScopeCbRemove();}
 function wrScopeDoThis(){hideWrScopePicker();if(_wrScopeCbThis)_wrScopeCbThis();}
 function wrScopeDoAll(){hideWrScopePicker();if(_wrScopeCbAll)_wrScopeCbAll();}
+function wrScopeDoSkip(){hideWrScopePicker();if(_wrScopeCbSkip)_wrScopeCbSkip();}
 document.addEventListener('mousedown',e=>{if(!e.target.closest('#wrScopePicker'))hideWrScopePicker();},{capture:true,passive:true});
 
 /// ── Skipped-this-week popup ───────────────────────────────────────────────────

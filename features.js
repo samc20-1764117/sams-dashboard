@@ -6756,6 +6756,22 @@ function _recMoveThisOccToToday(rec,wkKey){
     sbReqSilent('PATCH','wr_recurring_rules',{date_overrides:rec._dateOverrides},`?id=eq.${rec.id}`);
   },'Moved to today');
 }
+// Dismisses a non-WR recurring occurrence's past-week miss — doesn't move or complete anything,
+// just stops it showing overdue. Deliberately NOT skipRecVirtThisWk (features.js): that function's
+// linked-block cleanup filters by the CURRENTLY VIEWED week (wkOff), which is wrong here since
+// this skip targets a specific past week that may not be the one on screen.
+function _recSkipPastWeek(rec,wkKey){
+  if(!rec._dateOverrides)rec._dateOverrides={};
+  const prev=rec._dateOverrides[wkKey];
+  rec._dateOverrides[wkKey]='__skip__';
+  save();renderAll();
+  sbReqSilent('PATCH','wr_recurring_rules',{date_overrides:rec._dateOverrides},`?id=eq.${rec.id}`);
+  pushUndo(()=>{
+    if(prev!==undefined)rec._dateOverrides[wkKey]=prev;else delete rec._dateOverrides[wkKey];
+    save();renderAll();
+    sbReqSilent('PATCH','wr_recurring_rules',{date_overrides:rec._dateOverrides},`?id=eq.${rec.id}`);
+  },'Skipped past week');
+}
 // Sequential this-time/same-day/change-day prompt for every recurring/WR item overdue from a
 // genuine past week, fired one after another from the bulk "Move to today" banner — showWrScopePicker
 // is a singleton so these can't show at once; each choice fires before the next popup appears.
@@ -6768,14 +6784,16 @@ function _rolloverPromptQueue(items,clickEvent){
   const next=()=>_rolloverPromptQueue(rest,clickEvent);
   const fakeEvent={preventDefault(){},stopPropagation(){},clientX:clickEvent?.clientX||window.innerWidth/2,clientY:clickEvent?.clientY||window.innerHeight/2};
   if(item._wrWeekMiss){
-    _wrScopePrompt(fakeEvent,item.name,
+    _wrScopePrompt(fakeEvent,item.name,item._wkKey,
+      ()=>{writeWrOverride(item._ruleId,item._wkKey,{override_type:'skip'},{undoLabel:'Skipped WR task'});next();},
       ()=>{wrMoveToThisWeek(item._ruleId,item._wkKey,false);next();},
       ()=>{wrMoveToThisWeek(item._ruleId,item._wkKey,true,false);next();},
       ()=>{wrMoveToThisWeek(item._ruleId,item._wkKey,true,true);next();});
   } else {
     const rec=st.recurring.find(x=>String(x.id)===String(item._recId));
     if(!rec){next();return;}
-    _wrScopePrompt(fakeEvent,item.name,
+    _wrScopePrompt(fakeEvent,item.name,item._wkKey,
+      ()=>{_recSkipPastWeek(rec,item._wkKey);next();},
       ()=>{_recMoveThisOccToToday(rec,item._wkKey);next();},
       ()=>{_recMoveAllFuture(rec,item._wkKey,tod(),null,true);next();},
       ()=>{_recMoveAllFuture(rec,item._wkKey,tod(),null,false);next();});
