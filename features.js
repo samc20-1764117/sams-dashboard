@@ -1167,7 +1167,7 @@ function renderMoCal(){
   const _moGoalsBtn=document.getElementById('moGoalsToggleBtn');
   if(_moGoalsBtn){_moGoalsBtn.textContent=(_moGoalsExpanded?'− ':'+ ')+'Objectives';_moGoalsBtn.classList.toggle('active',_moGoalsExpanded);}
   const _moFilterBtn=document.getElementById('moFilterToggleBtn');
-  if(_moFilterBtn)_moFilterBtn.classList.toggle('active',_moFilterExpanded);
+  if(_moFilterBtn){_moFilterBtn.textContent=(_moFilterExpanded?'− ':'+ ')+'Filters';_moFilterBtn.classList.toggle('active',_moFilterExpanded);}
   _renderMoFilterPanel();
   const dowEl=document.getElementById('mDow');
   if(!dowEl.children.length){

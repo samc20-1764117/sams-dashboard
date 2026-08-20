@@ -672,10 +672,10 @@ if(sessionStorage._mReloaded===BUILD);else{
           <input id="moYearSel" type="text" onchange="jumpMoYear(this.value)" onkeydown="if(event.key==='Enter'){jumpMoYear(this.value);this.blur();}" style="border:none;background:transparent;outline:none;font-size:10px;font-family:inherit;color:var(--text);width:32px;text-align:center;padding:0;font-weight:600"/>
           <button onclick="moYearStep(1)" style="background:none;border:none;cursor:pointer;font-size:10px;color:var(--subtle);padding:0 2px;line-height:1" title="Next year">▶</button>
         </div>
-        <div style="display:flex;align-items:center;gap:3px;flex-shrink:0">
+        <div style="display:flex;align-items:center;gap:7px;flex-shrink:0">
           <button id="moUAToggleBtn" class="btn btn-ghost btn-xs mo-side-toggle" onclick="toggleMoUA()" title="Unassigned tasks"><span id="mheadUACount">0</span> Unassigned</button>
           <button id="moGoalsToggleBtn" class="btn btn-ghost btn-xs mo-side-toggle" onclick="toggleMoGoals()" title="Weekly objectives">+ Objectives</button>
-          <button id="moFilterToggleBtn" class="btn btn-ghost btn-xs mo-side-toggle" onclick="toggleMoFilter()" title="Filter task types">Filter</button>
+          <button id="moFilterToggleBtn" class="btn btn-ghost btn-xs mo-side-toggle" onclick="toggleMoFilter()" title="Filter task types">+ Filters</button>
         </div>
         <button class="btn btn-ghost btn-xs" onclick="moGoToday()">This Week</button>
         <button class="btn btn-ghost btn-xs" onclick="closeMod('mModal')" style="opacity:.55">✕</button>
