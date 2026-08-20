@@ -1642,7 +1642,7 @@ body.dark .fin-inv-kpi-float{background:rgba(30,30,34,.85);border-color:rgba(255
 .fin-sub-tbl th.fin-mo-adj{font-size:12px;font-weight:500;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif}
 .fin-sub-tbl td:first-child,.fin-sub-tbl th:first-child{text-align:left}
 .fin-sub-tbl td:last-child,.fin-sub-tbl th:last-child{width:24px;padding:4px 4px!important;position:relative}
-.fin-sub-tbl .delbtn{right:8px}
+.fin-sub-tbl .delbtn{margin-right:6px}
 .fin-sub-tbl col.fin-col-name{width:auto}
 .fin-sub-tbl col.fin-col-freq{width:80px}
 .fin-sub-tbl col.fin-col-due{width:85px}

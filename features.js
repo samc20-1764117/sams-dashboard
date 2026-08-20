@@ -2218,7 +2218,7 @@ function _finRenderPersonal(accs,vtiAcc,currentVal,netWorth,totalAll){
         <feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="innerHighlight"/><feMergeNode in="innerShadow"/></feMerge>
       </filter>
       <filter id="finGlowDark" x="-30%" y="-30%" width="160%" height="160%">
-        <feDropShadow dx="0" dy="0" stdDeviation="0.5" flood-color="#000" flood-opacity=".4"/>
+        <feDropShadow dx="0" dy="0" stdDeviation="0.6" flood-color="#fff" flood-opacity=".25"/>
       </filter>
       </defs>`;
     // Rotate group so 0 starts at 12 o'clock
