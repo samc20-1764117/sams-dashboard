@@ -934,13 +934,15 @@ function _dlblOvArrow(dayLetter,onclickJs){
   // right:24px (vs. the base .dlbl.ov right:9px) clears the delbtn, which is always-visible
   // (not hover-only) on overdue rows — see .ti.ov-row .delbtn in styles.css — so the two never
   // overlap. Inline so it wins over both the base rule and the .tb-list-only right:11px variant.
-  // The row's draggable="true" was hijacking clicks on this small arrow into a drag — a child's
-  // draggable="false" does NOT prevent that (the browser's drag-source search walks up past a
-  // false descendant to the nearest true ancestor regardless), so the real fix lives in each row's
-  // own ondragstart="..." string (and dStart() for tRow): it checks event.target.closest('.dlbl-arrow')
-  // and calls preventDefault() to cancel the drag outright, letting the click fire normally instead.
-  // draggable="false" is kept here too as a harmless secondary signal, but isn't what actually works.
-  return`<span class="dlbl ov" style="display:inline-flex;align-items:center;gap:2px;right:24px">${dayLetter}<span class="dlbl-arrow" draggable="false" title="Move to today" onmousedown="event.stopPropagation()" onclick="event.stopPropagation();${onclickJs}">→</span></span>`;
+  // click/mousedown/draggable=false live on the WHOLE .dlbl.ov span (day letter + arrow both),
+  // not just the tiny arrow glyph — clicking the letter itself used to fall through to the row's
+  // drag (grab-hand cursor, no menu). The row's draggable="true" was hijacking those clicks into a
+  // drag; draggable="false" alone does NOT stop that (the browser's drag-source search walks up
+  // past a false descendant to the nearest true ancestor regardless), so the real fix lives in each
+  // row's own ondragstart="..." string (and dStart() for tRow): it checks
+  // event.target.closest('.dlbl.ov') and calls preventDefault() to cancel the drag outright,
+  // letting the click fire normally instead. draggable="false" here is a harmless secondary signal.
+  return`<span class="dlbl ov" draggable="false" style="display:inline-flex;align-items:center;gap:2px;right:24px;cursor:pointer" title="Move to today" onmousedown="event.stopPropagation()" onclick="event.stopPropagation();${onclickJs}">${dayLetter}<span class="dlbl-arrow">→</span></span>`;
 }
 // "due last week" / "due N weeks ago" — accurate regardless of exactly how far back wkKey is
 // (WR week-misses are always exactly 1 week back, but a non-WR miss from getOvRecurring's 4-week
@@ -1036,7 +1038,7 @@ function tRowTodayVirt(t,tbArrow=false,noColor=false){
   const _dblClick=t._isWrRule?`event.stopPropagation();openWrEditModal('${t._ruleId}','${_wkKeyAttr}','this')`:`tiDblRec(event,'${_recIdAttr}','${_wkKeyAttr}')`;
   const _ctxMenu=t._isWrRule?`showWrRuleCtx(event,'${t._ruleId}','${_wkKeyAttr}')`:t._isWrec||t._virtual?`showWrRuleCtx(event,'${_recIdAttr}','${_wkKeyAttr}')`:`showCtx(event,'${t.id}',true,'${_recIdAttr}')`;
 
-  return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''}" style="${!ov&&!noColor?`background:${s.bg}`:''}" id="ti-${t.id}" draggable="true" ondragstart="if(event.target.closest('.dlbl-arrow')){event.preventDefault();return;}dragId='${_dragId}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);" ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false);" onclick="selTask(event,'${t.id}')" ondblclick="${_dblClick}" oncontextmenu="${_ctxMenu}">
+  return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''}" style="${!ov&&!noColor?`background:${s.bg}`:''}" id="ti-${t.id}" draggable="true" ondragstart="if(event.target.closest('.dlbl.ov')){event.preventDefault();return;}dragId='${_dragId}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);" ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false);" onclick="selTask(event,'${t.id}')" ondblclick="${_dblClick}" oncontextmenu="${_ctxMenu}">
     <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="${_chk}"></label>
     ${_hebBadge(t.name,t._wkKey)}${_pupBadge(t.name)}<span class="tn">${t.name}${t._wkNote?` <span style="opacity:.5;font-size:9px">@${escHtml(t._wkNote)}</span>`:''}</span>
     ${!ov?`<svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3" fill="${ps.bg}" stroke="${ps.d}" stroke-opacity="0.4" stroke-width="1"/></svg>`:''}
@@ -1051,7 +1053,7 @@ function tRowShopVirt(t,noDate=false,tbArrow=false,noColor=false){
   const ov=isOv(t.due_date)&&!t.done;
   const ps=ov?_OV():s;
   return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''}" style="${!ov&&!noColor?`background:${s.bg}`:''}" id="ti-${t.id}" draggable="true"
-    ondragstart="if(event.target.closest('.dlbl-arrow')){event.preventDefault();return;}dragId='shop::${t._shopId}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);"
+    ondragstart="if(event.target.closest('.dlbl.ov')){event.preventDefault();return;}dragId='shop::${t._shopId}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);"
     ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false);"
     onclick="selTask(event,'${t.id}')" ondblclick="tiDblShop(event,'${t._shopId}')" oncontextmenu="showCtxShop(event,'${t._shopId}')">
     <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="togShop('${t._shopId}',this.checked)"></label>
@@ -1081,7 +1083,7 @@ function tRowVidVirt(t,arr){
   let _pct3='';
   if(_v3){const _steps3=typeof VID_STEPS_CORE!=='undefined'?VID_STEPS_CORE:(typeof VID_STEPS!=='undefined'?VID_STEPS:[]);const _app3=_steps3.filter(ss=>_v3[ss]!=='na');const _dn3=_app3.filter(ss=>_v3[ss]==='done').length;_pct3=_app3.length?Math.round(_dn3/_app3.length*100):0;}
   return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''}" style="background:${_vs.bg}" id="ti-${t.id}" draggable="true"
-    ondragstart="if(event.target.closest('.dlbl-arrow')){event.preventDefault();return;}dragId='vid::${vid}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true)"
+    ondragstart="if(event.target.closest('.dlbl.ov')){event.preventDefault();return;}dragId='vid::${vid}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true)"
     ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false)"
     onclick="selTask(event,'${t.id}')" ondblclick="if(typeof openVidEdit==='function')openVidEdit('${vid}')">
     <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="if(this.checked)_vidCompleteFromOv('${vid}',this);else _vidUncompleteFromOv('${vid}')"></label>
@@ -1118,7 +1120,7 @@ function _pupDisplayName(t){const p=t._pup;return p?(p+': '+(t.name||'')):(t.nam
 function tRowPupSess(t,noColor=false,tbArrow=false){
   const ov=isOv(t.due_date)&&!t.done;
   const ps=ov?_OV():_pupSessStyle();
-  return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''}" draggable="true" style="${!ov&&!noColor?`background:${ps.bg};border:1px solid ${ps.b}`:''}" id="ti-pup-sess-${t._pupSessId}" onclick="selTask(event,'pup-sess-${t._pupSessId}')" ondblclick="openPupEditModal('${t._skillId}')" ondragstart="if(event.target.closest('.dlbl-arrow')){event.preventDefault();return;}dragId='pupsess::${t._pupSessId}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);" ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false);">
+  return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''}" draggable="true" style="${!ov&&!noColor?`background:${ps.bg};border:1px solid ${ps.b}`:''}" id="ti-pup-sess-${t._pupSessId}" onclick="selTask(event,'pup-sess-${t._pupSessId}')" ondblclick="openPupEditModal('${t._skillId}')" ondragstart="if(event.target.closest('.dlbl.ov')){event.preventDefault();return;}dragId='pupsess::${t._pupSessId}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);" ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false);">
     <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="togPupSessionDone('${t._pupSessId}',this.checked)"></label>
     <span class="tn">${escHtml(_pupDisplayName(t))}</span>
     ${ov&&t.due_date?_dlblOvArrow(['S','M','T','W','T','F','S'][new Date(t.due_date.split('T')[0]+'T12:00').getDay()],`_pupMoveToToday('${t._pupSessId}')`):''}
@@ -3080,11 +3082,13 @@ function renderRecOv(){
     row.appendChild(del);
     if(elReg)elReg.appendChild(row);
   });
-  // Update skipped-this-week button
-  // Include both weekly-reset and plain weekly recurring tasks genuinely skipped this week (occurs that week)
+  // Update skipped button — this week's skips (both weekly-reset and plain weekly recurring,
+  // genuinely occurring that week) PLUS any "Skip past week" (or older Move→Skip) entries from
+  // other weeks, so the badge stays visible even when the CURRENTLY VIEWED week has none, until
+  // those are reviewed/restored via openWrSkipped's "SKIPPED OTHER WEEKS" section.
   const _skippedWrecCount=_recSkippedThisWk(wkKey,wrRecOff).length;
   const _skippedWrRuleCount=st.wrOverrides.filter(o=>o.wk_key===wkKey&&o.override_type==='skip').length;
-  const _skCount=_skippedWrRuleCount+_skippedWrecCount;
+  const _skCount=_skippedWrRuleCount+_skippedWrecCount+_wrSkippedOtherWeeks(wkKey).length+_recSkippedOtherWeeks(wkKey).length;
   const _skBtn=document.getElementById('wrSkippedBtn');
   if(_skBtn){_skBtn.style.display=_skCount?'':'none';_skBtn.textContent='↩ '+_skCount;}
   requestAnimationFrame(()=>{
@@ -3288,25 +3292,70 @@ function _recSkippedThisWk(wkKey,off){
     return occurs;
   });
 }
+// Skip overrides for weeks OTHER than the one openWrSkipped's main section already covers —
+// surfaces "Skip past week" entries (the scope-picker option, plus the WR container's own
+// pre-existing Move→Skip on a past-week miss) so they're visible and reversible instead of just
+// disappearing into the data with no way back. Same "genuinely occurs that week" verification as
+// _recSkippedThisWk for non-WR (excludes off-cycle skip artifacts); WR overrides don't need that
+// check since they're override-driven, not natural-cadence-driven.
+function _recSkippedOtherWeeks(curWkKey){
+  const todayMon=getWkBounds(0).mon;
+  const wkOffFor=wk=>Math.round((new Date(wk+'T00:00:00')-todayMon)/(7*86400000));
+  const out=[];
+  st.recurring.filter(r=>!(r.is_weekly_reset===true||r.is_weekly_reset==='true')).forEach(r=>{
+    if(!r._dateOverrides)return;
+    Object.keys(r._dateOverrides).forEach(wk=>{
+      if(wk===curWkKey||r._dateOverrides[wk]!=='__skip__'||!/^\d{4}-\d{2}-\d{2}$/.test(wk))return;
+      const off=wkOffFor(wk);
+      const saved=r._dateOverrides[wk];delete r._dateOverrides[wk];
+      const occurs=getRecurringWeekTasks(off).some(v=>String(v._recId)===String(r.id));
+      r._dateOverrides[wk]=saved;
+      if(occurs)out.push({r,wkKey:wk});
+    });
+  });
+  return out;
+}
+function _wrSkippedOtherWeeks(curWkKey){
+  const out=[];
+  (st.wrOverrides||[]).filter(o=>o.override_type==='skip'&&o.wk_key!==curWkKey).forEach(o=>{
+    const r=st.wrRules.find(x=>String(x.id)===String(o.rule_id));
+    if(r)out.push({r,wkKey:o.wk_key});
+  });
+  return out;
+}
 function openWrSkipped(e){
   e.stopPropagation();
   const wkKey=getWkKey(wrRecOff);
   const skippedRules=st.wrRules.filter(r=>(st.wrOverrides||[]).some(o=>String(o.rule_id)===String(r.id)&&o.wk_key===wkKey&&o.override_type==='skip'));
   const skippedWrec=_recSkippedThisWk(wkKey,wrRecOff);
+  const otherRules=_wrSkippedOtherWeeks(wkKey);
+  const otherWrec=_recSkippedOtherWeeks(wkKey);
   const picker=document.getElementById('wrSkippedPicker');if(!picker)return;
   picker.innerHTML='';
-  if(!skippedRules.length&&!skippedWrec.length){picker.style.display='none';return;}
-  const hdr=document.createElement('div');
-  hdr.style.cssText='padding:4px 10px 4px;font-size:10px;color:var(--muted);font-weight:600;letter-spacing:.05em;border-bottom:1px solid rgba(210,205,228,.25);margin-bottom:2px';
-  hdr.textContent='SKIPPED THIS WEEK';picker.appendChild(hdr);
-  skippedRules.forEach(r=>{
-    const itm=document.createElement('div');itm.className='ctx-item';itm.textContent='↩  '+r.name;
-    itm.addEventListener('click',()=>{hideWrSkipped();unSkipWrRule(r.id,wkKey);});picker.appendChild(itm);
-  });
-  skippedWrec.forEach(r=>{
-    const itm=document.createElement('div');itm.className='ctx-item';itm.textContent='↩  '+r.name;
-    itm.addEventListener('click',()=>{hideWrSkipped();unSkipWRec(r.id,wkKey);});picker.appendChild(itm);
-  });
+  if(!skippedRules.length&&!skippedWrec.length&&!otherRules.length&&!otherWrec.length){picker.style.display='none';return;}
+  const addHdr=text=>{const hdr=document.createElement('div');hdr.style.cssText='padding:4px 10px 4px;font-size:10px;color:var(--muted);font-weight:600;letter-spacing:.05em;border-bottom:1px solid rgba(210,205,228,.25);margin-bottom:2px';hdr.textContent=text;picker.appendChild(hdr);};
+  if(skippedRules.length||skippedWrec.length){
+    addHdr('SKIPPED THIS WEEK');
+    skippedRules.forEach(r=>{
+      const itm=document.createElement('div');itm.className='ctx-item';itm.textContent='↩  '+r.name;
+      itm.addEventListener('click',()=>{hideWrSkipped();unSkipWrRule(r.id,wkKey);});picker.appendChild(itm);
+    });
+    skippedWrec.forEach(r=>{
+      const itm=document.createElement('div');itm.className='ctx-item';itm.textContent='↩  '+r.name;
+      itm.addEventListener('click',()=>{hideWrSkipped();unSkipWRec(r.id,wkKey);});picker.appendChild(itm);
+    });
+  }
+  if(otherRules.length||otherWrec.length){
+    addHdr('SKIPPED OTHER WEEKS');
+    otherRules.forEach(({r,wkKey:wk})=>{
+      const itm=document.createElement('div');itm.className='ctx-item';itm.textContent=`↩  ${r.name} · ${fmtD(wk)}`;
+      itm.addEventListener('click',()=>{hideWrSkipped();unSkipWrRule(r.id,wk);});picker.appendChild(itm);
+    });
+    otherWrec.forEach(({r,wkKey:wk})=>{
+      const itm=document.createElement('div');itm.className='ctx-item';itm.textContent=`↩  ${r.name} · ${fmtD(wk)}`;
+      itm.addEventListener('click',()=>{hideWrSkipped();unSkipWRec(r.id,wk);});picker.appendChild(itm);
+    });
+  }
   const rect=e.currentTarget.getBoundingClientRect();
   picker.style.left=Math.min(rect.left,window.innerWidth-200)+'px';
   picker.style.top='-9999px';picker.style.display='block';
@@ -6416,7 +6465,7 @@ function dStart(e,id){
   // A plain click on the small overdue-row move arrow was being hijacked into a drag (see the
   // matching guard in each ondragstart= string below for the other row types) — cancel the drag
   // entirely so the click still fires normally.
-  if(e.target.closest('.dlbl-arrow')){e.preventDefault();return;}
+  if(e.target.closest('.dlbl.ov')){e.preventDefault();return;}
   dragId=String(id);e.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);const _b=document.getElementById('unMenuBack');if(_b)_b.style.pointerEvents='none';
 }
 function dEnd(e){e.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false);closeUnMenu();const _b=document.getElementById('unMenuBack');if(_b)_b.style.pointerEvents='';}
