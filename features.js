@@ -1367,7 +1367,7 @@ function scrollMoToday(){
   const mdowH=mdow?mdow.offsetHeight:0;
   let top=0,el=tc;
   while(el&&el!==mgrid){top+=el.offsetTop;el=el.offsetParent;}
-  mgrid.scrollTop=top-mdowH-52;
+  mgrid.scrollTop=top-mdowH-54;
 }
 function moGoToday(){
   _moNavYear=new Date().getFullYear();const yrSel2=document.getElementById('moYearSel');if(yrSel2)yrSel2.value=String(_moNavYear);
@@ -5283,7 +5283,8 @@ function renderGuidePage(){
 
 function toggleNavGroup(id){
   const grp=document.getElementById('navGroup'+id);if(!grp)return;
-  grp.classList.toggle('open');
+  const open=grp.classList.toggle('open');
+  localStorage.setItem('_navGroupOpen_'+id,open?'1':'0');
 }
 function showPage(id){
   if(id==='tasks')return;
@@ -5296,7 +5297,11 @@ function showPage(id){
   if(typeof closeVidOvMenu==='function'){const _vp=document.getElementById('vidOvPanel');if(_vp&&_vp.style.display==='block')closeVidOvMenu();}
   const _prevPg=activePg;activePg=id;
   const _navGrpTasks=document.getElementById('navGroupTasks');
-  if(_navGrpTasks)_navGrpTasks.classList.toggle('open',['weekly','birthdays','holidays','videos','packing'].includes(id));
+  if(_navGrpTasks){
+    const _savedOpen=localStorage.getItem('_navGroupOpen_Tasks');
+    if(_savedOpen!==null)_navGrpTasks.classList.toggle('open',_savedOpen==='1');
+    else _navGrpTasks.classList.toggle('open',['weekly','birthdays','holidays','videos','packing'].includes(id));
+  }
   document.querySelectorAll('.page').forEach(p=>{p.classList.remove('active');});
   const vidPage=document.getElementById('page-videos');if(vidPage)vidPage.removeAttribute('style');
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
