@@ -1066,9 +1066,9 @@ function _renderMoFilterPanel(){
   const rows=MO_FILTER_TYPES.map(ft=>{
     const checked=s[ft.key]!==false;
     const cs=_moFilterRowStyle(ft.key);
-    return`<label class="mo-filter-row" style="background:${cs.bg};border:1px solid ${cs.b};color:${cs.t}"><input type="checkbox" class="chk" style="--fc-b:${cs.b||cs.t};--fc-d:${cs.d||cs.t}" ${checked?'checked':''} onchange="_toggleMoFilterType('${ft.key}',this.checked)"><span>${ft.label}</span></label>`;
+    return`<label class="mo-filter-row" style="background:${cs.bg};border:1px solid ${cs.b};color:${cs.t}"><input type="checkbox" class="chk" style="--fc-b:${cs.b||cs.t};--fc-d:${cs.d||cs.t}" onmousedown="event.preventDefault()" ${checked?'checked':''} onchange="_toggleMoFilterType('${ft.key}',this.checked)"><span>${ft.label}</span></label>`;
   }).join('');
-  wrap.innerHTML=`<button class="btn btn-ghost btn-xs mo-filter-all" onclick="_moFilterSelectAll()">All</button>${rows}<button class="btn btn-ghost btn-xs mo-filter-all" onclick="_moFilterClearAll()">Clear</button>`;
+  wrap.innerHTML=`<button class="btn btn-ghost btn-xs mo-filter-all" onmousedown="event.preventDefault()" onclick="_moFilterSelectAll()">All</button>${rows}<button class="btn btn-ghost btn-xs mo-filter-all" onmousedown="event.preventDefault()" onclick="_moFilterClearAll()">Clear</button>`;
 }
 function toggleMoGoals(){_moGoalsExpanded=!_moGoalsExpanded;renderMoCal();}
 function toggleMoUA(){_moUAExpanded=!_moUAExpanded;renderMoCal();}
