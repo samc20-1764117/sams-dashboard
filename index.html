@@ -59,18 +59,24 @@ if(sessionStorage._mReloaded===BUILD);else{
     <button class="sb-close" onclick="closeSB()" title="Close">✕</button>
   </div>
   <nav style="flex:1">
-    <a class="nav-item active" data-page="overview" href="#overview" onclick="event.preventDefault();showPage('overview')"><div class="ndot" style="background:#6d5fe6"></div>Overview</a>
-    <a class="nav-item" data-page="weekly" href="#weekly" onclick="event.preventDefault();showPage('weekly')"><div class="ndot" style="background:#2a9db5"></div>Recurring Tasks</a>
-    <a class="nav-item" data-page="birthdays" href="#birthdays" onclick="event.preventDefault();showPage('birthdays')"><div class="ndot" style="background:#f97316"></div>Birthdays</a>
-    <a class="nav-item" data-page="holidays" href="#holidays" onclick="event.preventDefault();showPage('holidays')"><div class="ndot" style="background:#f97316"></div>Holidays</a>
-    <a class="nav-item" data-page="ideas" href="#ideas" onclick="event.preventDefault();showPage('ideas')"><div class="ndot" style="background:#a855f7"></div>Ideas</a>
-    <a class="nav-item" data-page="pups" href="#pups" onclick="event.preventDefault();showPage('pups')"><div class="ndot" style="background:#f43f5e"></div>Pups</a>
-    <a class="nav-item" data-page="finance" href="#finance" onclick="event.preventDefault();showPage('finance')"><div class="ndot" style="background:#22c55e"></div>Finance</a>
+    <a class="nav-item active" data-page="overview" href="#overview" onclick="event.preventDefault();showPage('overview')"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Overview</a>
+    <div class="nav-group" id="navGroupTasks">
+      <a class="nav-item nav-group-toggle" href="#" onclick="event.preventDefault();toggleNavGroup('Tasks')"><div class="ndot" style="background:#2a9db5"></div>Tasks<svg class="nav-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg></a>
+      <div class="nav-subitems">
+        <a class="nav-item nav-subitem" data-page="weekly" href="#weekly" onclick="event.preventDefault();showPage('weekly')"><div class="ndot" style="background:#2a9db5"></div>Recurring Tasks</a>
+        <a class="nav-item nav-subitem" data-page="birthdays" href="#birthdays" onclick="event.preventDefault();showPage('birthdays')"><div class="ndot" style="background:#f97316"></div>Birthdays</a>
+        <a class="nav-item nav-subitem" data-page="holidays" href="#holidays" onclick="event.preventDefault();showPage('holidays')"><div class="ndot" style="background:#f97316"></div>Holidays</a>
+        <a class="nav-item nav-subitem" data-page="videos" href="#videos" onclick="event.preventDefault();showPage('videos')"><div class="ndot" style="background:#22c55e"></div>Videos</a>
+        <a class="nav-item nav-subitem" data-page="packing" href="#packing" onclick="event.preventDefault();showPage('packing')"><div class="ndot" style="background:#38bdf8"></div>Packing</a>
+      </div>
+    </div>
     <a class="nav-item" data-page="recipes" href="#recipes" onclick="event.preventDefault();showPage('recipes')"><div class="ndot" style="background:#f59e0b"></div>Recipes</a>
-    <a class="nav-item" data-page="videos" href="#videos" onclick="event.preventDefault();showPage('videos')"><div class="ndot" style="background:#22c55e"></div>Videos</a>
+    <a class="nav-item" data-page="pups" href="#pups" onclick="event.preventDefault();showPage('pups')"><div class="ndot" style="background:#f43f5e"></div>Pups</a>
     <a class="nav-item" data-page="cinema" href="#cinema" onclick="event.preventDefault();showPage('cinema')"><div class="ndot" style="background:#ec4899"></div>Cinema</a>
-    <a class="nav-item" data-page="packing" href="#packing" onclick="event.preventDefault();showPage('packing')"><div class="ndot" style="background:#38bdf8"></div>Packing</a>
+    <a class="nav-item" data-page="ideas" href="#ideas" onclick="event.preventDefault();showPage('ideas')"><div class="ndot" style="background:#a855f7"></div>Ideas</a>
+    <a class="nav-item" data-page="finance" href="#finance" onclick="event.preventDefault();showPage('finance')"><div class="ndot" style="background:#22c55e"></div>Finance</a>
   </nav>
+  <a class="nav-item" data-page="guide" href="#guide" onclick="event.preventDefault();showPage('guide')" style="margin-top:auto"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>Style Guide</a>
 </div>
 
 <button id="backToOv" onclick="showPage('overview')">← Overview</button>
@@ -78,12 +84,8 @@ if(sessionStorage._mReloaded===BUILD);else{
 <!-- Main -->
 <div id="main" style="position:fixed;left:0;top:0;right:0;bottom:0;overflow-y:auto;overflow-x:hidden;transition:left .25s cubic-bezier(.4,0,.2,1),opacity .15s;opacity:0">
 
-<!-- Top-right controls: Sync + Settings -->
+<!-- Top-right controls: Settings -->
 <div class="top-right-controls">
-  <button class="sync-bar settings-btn" id="syncBar" onclick="syncAll()" data-tip="Sync">
-    <svg id="syncIcon" style="width:10px;height:10px;flex-shrink:0;display:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path></svg>
-  </button>
-  <button class="settings-btn" onclick="location.reload()" data-tip="Refresh" style="padding:0;width:20px;height:20px"><svg style="width:10px;height:10px;display:block;flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg></button>
   <div style="position:relative">
     <button class="settings-btn" id="settingsBtn" onclick="toggleSettingsPopup()" style="padding:0;width:20px;height:20px"><svg style="width:10px;height:10px;display:block;flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg></button>
   </div>
@@ -1119,6 +1121,20 @@ init();
 <div id="unMenu" class="tlist" style="display:none;position:fixed;z-index:9997;width:300px;max-height:360px;overflow-y:auto;background:var(--gb);backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow-lg);padding:4px 0"></div>
 <div id="unMenuBack" onclick="closeUnMenu()" style="display:none;position:fixed;inset:0;z-index:9996"></div>
 <div class="settings-popup" id="settingsPopup">
+  <div class="settings-popup-item" id="syncBar" onclick="syncAll();toggleSettingsPopup()" data-tip="Sync">
+    <svg id="syncIcon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path></svg>
+    <span>Sync</span>
+  </div>
+  <div class="settings-popup-item" onclick="location.reload()">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+    <span>Refresh</span>
+  </div>
+  <div class="settings-popup-divider"></div>
+  <div class="settings-popup-item" onclick="showPage('guide');toggleSettingsPopup()">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+    <span>Style Guide</span>
+  </div>
+  <div class="settings-popup-divider"></div>
   <div class="settings-popup-item" onclick="toggleDark();toggleSettingsPopup()">
     <span id="darkToggleIcon">🌙</span><span id="darkToggleLabel">Night Mode</span>
   </div>

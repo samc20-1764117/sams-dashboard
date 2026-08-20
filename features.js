@@ -5271,6 +5271,8 @@ function showPage(id){
   if(typeof _vidOvCloseAnalytics==='function'&&typeof _vidOvAnOpen!=='undefined'&&_vidOvAnOpen)_vidOvCloseAnalytics();
   if(typeof closeVidOvMenu==='function'){const _vp=document.getElementById('vidOvPanel');if(_vp&&_vp.style.display==='block')closeVidOvMenu();}
   const _prevPg=activePg;activePg=id;
+  const _navGrpTasks=document.getElementById('navGroupTasks');
+  if(_navGrpTasks)_navGrpTasks.classList.toggle('open',['weekly','birthdays','holidays','videos','packing'].includes(id));
   document.querySelectorAll('.page').forEach(p=>{p.classList.remove('active');});
   const vidPage=document.getElementById('page-videos');if(vidPage)vidPage.removeAttribute('style');
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
