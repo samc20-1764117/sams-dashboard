@@ -2783,7 +2783,7 @@ function _finRenderDetailsContent(pop){
   const purchases=_finOf('vti').filter(p=>p.date&&Math.abs(p.amount||0)>0).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
   let cum=0;const chron=[...purchases].reverse();
   const cumMap={};chron.forEach(p=>{cum+=Math.abs(p.amount||0);cumMap[p.id]=cum;});
-  let html=`<div class="fin-card-hdr" style="position:relative"><span class="fin-card-title">Purchase History</span><div style="display:flex;gap:4px;align-items:center"><button class="fin-add-btn fin-ph-icon-btn" onclick="openFinInvAdd(event)" title="Add">+</button><button class="fin-add-btn fin-ph-icon-btn" onclick="closeFinInvDetails()" style="opacity:.6" title="Close">&#x2715;</button></div></div>`;
+  let html=`<div class="fin-card-hdr" style="position:relative"><span class="fin-card-title">Purchase History</span><div style="display:flex;gap:4px;align-items:center"><button class="fin-add-btn fin-ph-icon-btn" onclick="openFinInvAdd(event)" title="Add">+</button><button class="fin-add-btn fin-ph-icon-btn fin-ph-close-btn" onclick="closeFinInvDetails()" style="opacity:.6" title="Close">&#x2715;</button></div></div>`;
   html+=`<div class="fin-details-scroll" ondblclick="if(!event.target.closest('tr')&&!event.target.closest('button'))openFinInvAdd({target:document.querySelector('#finInvDetailsPop .fin-add-btn')})"><table class="fin-tbl fin-ph-tbl"><thead><tr><th style="text-align:left" class="fin-ph-col-date">Date</th><th style="text-align:right" class="fin-ph-col-amt">Amount</th><th style="text-align:right" class="fin-ph-col-cum">Cumulative</th><th class="fin-ph-col-del"></th></tr></thead><tbody>`;
   purchases.forEach(p=>{
     const ds=_finPHDateDisplay(p.date);
@@ -2793,11 +2793,14 @@ function _finRenderDetailsContent(pop){
   if(!purchases.length)html+=`<div style="text-align:center;color:var(--muted);padding:20px;font-size:13px">No purchases yet</div>`;
   pop.innerHTML=html;
 }
-// Zero-padded day keeps every row the same width so the Date column reads as a clean grid.
+// Zero-padded MM/DD/YY (+ tabular-nums in CSS) keeps every row the same width so the Date column reads as a clean grid.
 function _finPHDateDisplay(dateStr){
   if(!dateStr)return'—';
   const d=new Date(dateStr+'T12:00');
-  return`${_FIN_MONTHS[d.getMonth()]} ${String(d.getDate()).padStart(2,'0')}, ${d.getFullYear()}`;
+  const mm=String(d.getMonth()+1).padStart(2,'0');
+  const dd=String(d.getDate()).padStart(2,'0');
+  const yy=String(d.getFullYear()).slice(-2);
+  return`${mm}/${dd}/${yy}`;
 }
 function _finPHRefresh(){const pop=document.getElementById('finInvDetailsPop');if(pop)_finRenderDetailsContent(pop);}
 function _finPHEdit(id){

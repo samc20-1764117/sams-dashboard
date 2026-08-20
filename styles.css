@@ -1697,11 +1697,13 @@ body.dark .fin-details-pop{background:rgba(26,26,30,.97);border-color:rgba(255,2
 .fin-details-pop .fin-tbl th{padding:4px 8px;font-size:10px;font-weight:600;color:var(--muted)}
 .fin-details-pop .fin-tbl td:last-child{width:24px;padding:4px 4px!important;position:relative}
 .fin-ph-icon-btn{width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;font-size:14px;padding:0!important;line-height:1}
-.fin-ph-col-date{padding-left:16px!important}
+.fin-ph-close-btn{font-size:10px}
+.fin-ph-col-date{padding-left:16px!important;font-variant-numeric:tabular-nums}
 .fin-ph-col-amt{padding-right:12px!important}
 .fin-ph-col-cum{padding-right:22px!important}
 .fin-details-pop .fin-tbl .delbtn{margin-right:16px}
-.fin-ph-date-input,.fin-ph-amt-input{width:100%;box-sizing:border-box;font-size:12px;font-family:inherit;border:1px solid rgba(200,200,215,.25);border-radius:5px;padding:2px 5px;color:var(--text);background:transparent;font-variant-numeric:tabular-nums}
+.fin-details-pop .fin-tbl tr.fin-ph-editing td{padding-top:2px!important;padding-bottom:2px!important}
+.fin-ph-date-input,.fin-ph-amt-input{width:100%;height:20px;box-sizing:border-box;font-size:12px;font-family:inherit;border:1px solid rgba(200,200,215,.25);border-radius:5px;padding:0 5px;color:var(--text);background:transparent;font-variant-numeric:tabular-nums}
 .fin-ph-amt-input{text-align:right}
 body.dark .fin-ph-date-input,body.dark .fin-ph-amt-input{border-color:rgba(255,255,255,.12)}
 .fin-details-pop .fin-row:hover{background:rgba(100,100,140,.04)}
