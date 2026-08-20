@@ -1101,6 +1101,15 @@ function shiftMo(n){moOff+=n;renderMoCal();}
 function renderMoCal(){
   const _mgridEl=document.querySelector('#mModal .mgrid');
   const _mgridScrollY=_mgridEl?_mgridEl.scrollTop:0;
+  let _mgridAnchorDs=null,_mgridAnchorOffset=0;
+  if(_mgridEl){
+    const _mgRect=_mgridEl.getBoundingClientRect();
+    const _oldCells=_mgridEl.querySelectorAll('.mcell[data-ds]');
+    for(const _c of _oldCells){
+      const _r=_c.getBoundingClientRect();
+      if(_r.bottom>_mgRect.top){_mgridAnchorDs=_c.dataset.ds;_mgridAnchorOffset=_r.top-_mgRect.top;break;}
+    }
+  }
   const today=tod();
   const todayDate=new Date(today);
   const curYr=todayDate.getFullYear();
@@ -1337,7 +1346,18 @@ function renderMoCal(){
     el.innerHTML=`<span class="udot" style="background:${s.d}"></span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(t.name)}</span>`;
     mual.appendChild(el);
   });
-  if(_mgridEl)_mgridEl.scrollTop=_mgridScrollY;
+  if(_mgridEl&&_mgridAnchorDs){
+    const _newCell=_mgridEl.querySelector(`.mcell[data-ds="${_mgridAnchorDs}"]`);
+    if(_newCell){
+      const _mgRect2=_mgridEl.getBoundingClientRect();
+      const _newRect=_newCell.getBoundingClientRect();
+      _mgridEl.scrollTop+=(_newRect.top-_mgRect2.top)-_mgridAnchorOffset;
+    }else{
+      _mgridEl.scrollTop=_mgridScrollY;
+    }
+  }else if(_mgridEl){
+    _mgridEl.scrollTop=_mgridScrollY;
+  }
 }
 function scrollMoToday(){
   const mgrid=document.querySelector('#mModal .mgrid');
