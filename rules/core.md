@@ -138,7 +138,7 @@ Supabase Auth (email+password), RLS on all tables. `init()`→`checkAuth()`→`d
 
 ## UI Formatting
 - **"Same width numbers"**: use `font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif` on any column/cell with numeric data so digits align vertically. Apply via `.fin-num` or `.vid-num` class, or inline. Always use this for tables with monetary amounts, counts, or stats.
-- **No all-caps**: don't use `text-transform:uppercase` for section/panel headers or labels — user dislikes it, tried and reverted multiple times across pages (weekly reset headers, mobile store headers, holiday months). Exception: `.ct` card headers (pages.md) are intentionally uppercase — don't touch those.
+- **No all-caps, NO EXCEPTIONS**: don't use `text-transform:uppercase` for section/panel headers or labels anywhere in the dashboard — user dislikes it, tried and reverted multiple times across pages (weekly reset headers, mobile store headers, holiday months, `.ct` card headers incl. Shopping). A past session carved out a `.ct`-card-header exception "for consistency" and documented it in pages.md as intentional/do-not-touch — that was wrong and got reverted 2026-08-20; there is no exception. If a header somewhere is uppercase, that's a bug, not a design choice — fix the CSS (`text-transform` on the class), don't ask whether it's intentional.
 
 ## Scheduled Jobs (cron)
 - `backup.js` — daily 8:00am, backs up all Supabase tables to `backup_auto.json`

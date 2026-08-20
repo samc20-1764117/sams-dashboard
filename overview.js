@@ -115,7 +115,7 @@ function renderToday(){
   document.getElementById('todTitle').textContent=isDateToday(dayDate)?`Today • ${_fullDateStr}`:_fullDateStr;
   const _ovEl=document.getElementById('ovTitle');if(_ovEl)_ovEl.textContent=_fullDateStr;
   const _rsBtn=document.getElementById('todResetSortBtn');
-  if(_rsBtn){const _hasOrder=(_dayOrder()[ds]||[]).length>0;_rsBtn.style.display=_hasOrder?'':'none';_rsBtn.dataset.ds=ds;}
+  if(_rsBtn){const _hasOrder=(_dayOrder()[ds]||[]).length>0;_rsBtn.style.display=_hasOrder?'flex':'none';_rsBtn.dataset.ds=ds;}
   const _isToday=dayOff===0;
   const _hdot=document.getElementById('headerDot');if(_hdot)_hdot.style.display='none';
   const _hclk=document.getElementById('liveClock');if(_hclk)_hclk.style.display='none';
@@ -380,7 +380,7 @@ function renderTodDonut(done,total){
   const pEl=document.getElementById('_donutPct');
   const fEl=document.getElementById('_donutFrac');
   const pct=done/total;
-  wrap.title=Math.round(pct*100)+'% complete';
+  wrap.dataset.tip=Math.round(pct*100)+'% complete';
   _donutTickPct(Math.round(pct*100),_donutInited?450:900);
   if(fEl)fEl.textContent=`${done}/${total}`;
   const lbEl=document.getElementById('_donutLabel');
@@ -6285,8 +6285,11 @@ function _shopOvKeyNav(e){
   // the keystroke — same pattern as _wkcColKeyNav vs _todListKeyNav.
   if(!lastSelectedId||!lastSelectedId.startsWith('shop-cal-'))return false;
   const container=document.getElementById('shopOv');if(!container)return false;
-  const anchorRow=document.getElementById('ti-'+lastSelectedId);
-  if(!anchorRow||!container.contains(anchorRow))return false;
+  // The same shopping item due today also renders in #todList with the SAME row id — a bare
+  // document.getElementById would always resolve to whichever container happens to come first in
+  // the DOM (regardless of which one was actually clicked), so this must be scoped to #shopOv.
+  const anchorRow=container.querySelector('[id="ti-'+CSS.escape(lastSelectedId)+'"]');
+  if(!anchorRow)return false;
   const shopSel=[...selectedTasks].filter(s=>s.startsWith('shop-cal-'));
   if(!shopSel.length)return false;
   const rows=[...container.querySelectorAll('.ti')];if(!rows.length)return false;
@@ -7487,8 +7490,11 @@ function renderTBSum(ds){
   const dayMins=(HOURS[HOURS.length-1]-HOURS[0]+1)*60;
   const free=Math.max(0,dayMins-tot);
   const freeStr=free>=60?`${Math.floor(free/60)}h${free%60?` ${free%60}m`:''}`:` ${free}m`;
-  const _rsHtml=(_dayOrder()[ds]||[]).length?`<button class="btn btn-ghost btn-xs" onclick="_resetDayOrder('${ds}')" title="Reset sort order for this day" style="margin-left:auto;font-size:8px;flex-shrink:0">↺</button>`:'';
-  document.getElementById('tbSum').innerHTML=`<div class="si"><span>Blocked:</span><span class="sv">${Math.floor(tot/60)}h ${tot%60}m</span><span class="tb-free">(${freeStr} free)</span></div><button class="wkc-goals-toggle" id="todTbToggleBtn" onclick="_toggleTodTbCollapse(event)" title="Collapse timeblock">✕</button>${_rsHtml}<button class="btn btn-ghost btn-xs" id="autoTBToggle" onclick="openAutoTBManager()" title="Manage auto blocks" style="${_rsHtml?'':'margin-left:auto;'}font-size:8px;flex-shrink:0">Auto</button><button class="btn btn-ghost btn-xs" onclick="toggleVidOvMenu()" title="Videos" style="font-size:8px;flex-shrink:0;padding:3px 5px;display:flex;align-items:center;gap:3px"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg></button>`;
+  // ✕/reset/Auto/Videos all share one style so they read as one consistent button row —
+  // don't give any of them a one-off font-size/padding again (bit us before).
+  const _tbBtnSt='font-size:8px;padding:3px 5px;flex-shrink:0;display:flex;align-items:center';
+  const _rsHtml=(_dayOrder()[ds]||[]).length?`<button class="btn btn-ghost btn-xs" onclick="_resetDayOrder('${ds}')" title="Reset sort order for this day" style="margin-left:auto;${_tbBtnSt}">↺</button>`:'';
+  document.getElementById('tbSum').innerHTML=`<div class="si"><span>Blocked:</span><span class="sv">${Math.floor(tot/60)}h ${tot%60}m</span><span class="tb-free">(${freeStr} free)</span></div><button class="btn btn-ghost btn-xs" id="todTbToggleBtn" onclick="_toggleTodTbCollapse(event)" title="Collapse timeblock" style="${_tbBtnSt}">✕</button>${_rsHtml}<button class="btn btn-ghost btn-xs" id="autoTBToggle" onclick="openAutoTBManager()" title="Manage auto blocks" style="${_rsHtml?'':'margin-left:auto;'}${_tbBtnSt}">Auto</button><button class="btn btn-ghost btn-xs" onclick="toggleVidOvMenu()" title="Videos" style="${_tbBtnSt};gap:3px"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg></button>`;
 }
 // ── Auto Timeblocks ────────────────────────────────────────────────────────────
 function getAutoTBForDate(ds){

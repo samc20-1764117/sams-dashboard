@@ -345,12 +345,12 @@ button:focus,button:focus-visible,.btn:focus,.btn:focus-visible{outline:none}
 .card-hero{background:rgba(255,255,255,0.88)!important;border-color:rgba(255,255,255,0.6)!important;box-shadow:0 10px 30px rgba(0,0,0,0.1),inset 0 1px 0 rgba(255,255,255,0.7)!important}
 .ch{padding:0 10px 0 16px;display:flex;align-items:center;gap:6px;border-bottom:1px solid rgba(210,205,228,.22);flex-shrink:0;min-height:31px;box-sizing:border-box}
 .ch-prog{display:flex;align-items:center;gap:6px;padding:0 10px;border-bottom:1px solid rgba(210,205,228,.22);flex-shrink:0;min-height:31px;box-sizing:border-box}
-.ch-prog .ct{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);white-space:nowrap}
+.ch-prog .ct{font-size:9px;font-weight:700;letter-spacing:.08em;color:var(--muted);white-space:nowrap}
 .ch-prog-bar{flex:1;height:7px;background:rgba(180,160,220,.18);border-radius:99px;overflow:hidden;box-shadow:inset 0 1px 3px rgba(0,0,0,.06);min-width:30px}
 .ch-prog-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,#059669 0%,#10b981 60%,#34d399 100%);transition:width .6s cubic-bezier(.4,0,.2,1)}
 .ch-prog-stat{display:flex;align-items:center;gap:3px;font-family:'DM Sans',sans-serif;font-size:9px;font-weight:600;color:var(--muted);white-space:nowrap}
 .ch-prog-stat .pct{color:#059669;font-weight:700;font-size:10px}
-.ct{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);flex:1}
+.ct{font-size:9px;font-weight:700;letter-spacing:.08em;color:var(--muted);flex:1}
 .pup-tile-hide{opacity:0;transition:opacity .15s;cursor:pointer;color:var(--muted);line-height:0;display:inline-flex;align-items:center;flex-shrink:0}
 .pup-tile:hover .pup-tile-hide{opacity:.5}
 .pup-tile-hide:hover{opacity:1}
@@ -523,8 +523,8 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 body.dark .tod-video-summary{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.08);box-shadow:none}
 .tod-video-summary button{background:none;border:none;cursor:pointer;color:var(--muted);display:flex;align-items:center;padding:0;appearance:none;-webkit-appearance:none}
 .tod-video-summary button:hover{color:var(--text)}
-#todTbExpandBtn.btn.btn-ghost.btn-xs{gap:4px;font-size:9px;font-weight:600;padding:4px 6px;background:rgba(255,255,255,.6);border:1px solid rgba(0,0,0,.08);border-radius:5px;box-shadow:0 1px 2px rgba(0,0,0,.05);appearance:none;-webkit-appearance:none}
-body.dark #todTbExpandBtn.btn.btn-ghost.btn-xs{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.08);box-shadow:none}
+.tod-bottom-controls .btn.btn-ghost.btn-xs{gap:4px;font-size:9px;font-weight:600;padding:4px 6px;background:rgba(255,255,255,.6);border:1px solid rgba(0,0,0,.08);border-radius:5px;box-shadow:0 1px 2px rgba(0,0,0,.05);appearance:none;-webkit-appearance:none}
+body.dark .tod-bottom-controls .btn.btn-ghost.btn-xs{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.08);box-shadow:none}
 #pupSkillsHighlight{flex-shrink:0}
 #pupSkillsHighlight .ti{margin:0;padding:1px 9px;gap:4px;cursor:grab;border:1px solid transparent}
 .row2{display:flex;flex-direction:column;gap:12px;margin-bottom:14px}
@@ -1511,17 +1511,27 @@ body.dark .vid-stat-card{background:rgba(24,24,28,.4)}
 .pack-item-row:hover{background:rgba(100,100,140,.06)}
 .pack-item-row:hover .delbtn{opacity:1}
 .pack-item-row .delbtn{position:static;transform:none;opacity:0;flex-shrink:0}
-.pack-icon-btn{background:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.8);cursor:pointer;font-size:12px;padding:2px 3px;opacity:0;transition:opacity .15s,background .1s,box-shadow .1s;flex-shrink:0;display:inline-flex;align-items:center;border-radius:4px;box-shadow:0 0.5px 2px rgba(0,0,0,.1)}
+.pack-icon-btn{background:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.8);cursor:pointer;font-size:12px;padding:2px 3px;opacity:0;transition:opacity .15s,background .1s,box-shadow .1s;flex-shrink:0;display:inline-flex;align-items:center;border-radius:4px;box-shadow:0 0.5px 2px rgba(0,0,0,.1);color:#555}
 .pack-icon-btn:hover{opacity:1;background:rgba(255,255,255,.9);border-color:rgba(255,255,255,1);box-shadow:0 1px 3px rgba(0,0,0,.15)}
 .pack-seg{opacity:1;align-self:stretch;width:28px;min-width:28px;justify-content:center;padding:0 0 0 1px;margin:-4px 0 -4px -11px;border-radius:6px 0 0 6px;border:none;border-right:2px solid #fff;background:rgba(255,255,255,.85);box-shadow:inset -2px 0 4px rgba(0,0,0,.04)}
 #todList .pack-seg{margin:-4px 0 -4px -8px}
+/* Collapsed (list-only) mode gives #todList .ti taller vertical padding (5px vs the base 3px) —
+   the pack segment's negative margin has to grow to match or it stops short of the row's full
+   height. Keep this in sync with .tb-list-only #todList .ti's padding-top/bottom above. */
+.tod-tb-body.tb-list-only .tod-list-row #todList .pack-seg{margin:-6px 0 -6px -8px}
 .pack-seg:hover{background:rgba(255,255,255,.95)}
+body.dark .pack-icon-btn{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.14);color:rgba(255,255,255,.75)}
+body.dark .pack-icon-btn:hover{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.22)}
+body.dark .pack-seg{background:rgba(255,255,255,.08);border-right-color:rgba(255,255,255,.14)}
+body.dark .pack-seg:hover{background:rgba(255,255,255,.16)}
 .tvpack-btn{font-size:11px;align-items:center;gap:3px}
 .ti:hover .pack-icon-btn,.mcell-t:hover .pack-icon-btn,.kol-item:hover .pack-icon-btn{opacity:.7}
 .kol-item .pack-icon-btn{font-size:11px;padding:0 2px}
 .mcell-t .pack-icon-btn{font-size:10px;padding:0 1px}
-.ban-pack-inline{display:inline-flex;align-items:center;justify-content:center;width:22px;align-self:stretch;padding:0 0 0 1px;margin:-1px 3px -1px -7px;cursor:pointer;opacity:1;background:rgba(255,255,255,.85);border-right:2px solid #fff;border-radius:5px 0 0 5px;flex-shrink:0;transition:background .1s;box-shadow:inset -2px 0 4px rgba(0,0,0,.04)}
+.ban-pack-inline{display:inline-flex;align-items:center;justify-content:center;width:22px;align-self:stretch;padding:0 0 0 1px;margin:-1px 3px -1px -7px;cursor:pointer;opacity:1;background:rgba(255,255,255,.85);border-right:2px solid #fff;border-radius:5px 0 0 5px;flex-shrink:0;transition:background .1s;box-shadow:inset -2px 0 4px rgba(0,0,0,.04);color:#555}
 .ban-pack-inline:hover{background:rgba(255,255,255,.95)}
+body.dark .ban-pack-inline{background:rgba(255,255,255,.08);border-right-color:rgba(255,255,255,.14);color:rgba(255,255,255,.75)}
+body.dark .ban-pack-inline:hover{background:rgba(255,255,255,.16)}
 
 /* ── Finance Page ─────────────────────────────────────────────────────────── */
 .fin-layout{display:flex;gap:16px;flex:1;min-height:0}
@@ -1744,7 +1754,8 @@ body.dark #page-overview #dailyHabitsSection>div:nth-child(2) .ti.done{backgroun
 .ti.undo-flash{animation:undoFlash .9s ease-out}
 body.dark .ti.undo-flash{animation-name:undoFlashDark}
 /* donut: mockup style (gradient ring + soft glow + fraction inside), green */
-#todProgressDonut{flex-direction:row;align-items:center;justify-content:center;padding:7px 16px 4px}
+#todProgressDonut{flex-direction:row;align-items:center;justify-content:center;padding:7px 16px 4px;position:relative}
+#todProgressDonut[data-tip]:hover::after{content:attr(data-tip);position:absolute;top:calc(100% + 2px);left:50%;transform:translateX(-50%);white-space:nowrap;background:rgba(30,30,40,.88);color:#fff;font-size:10px;font-family:'DM Sans',sans-serif;padding:3px 8px;border-radius:6px;pointer-events:none;z-index:9999}
 #todProgressDonut svg{filter:drop-shadow(0 0 5px rgba(16,185,129,.35))}
 #_donutFrac{font-size:13px;font-weight:700;fill:#059669}
 body.dark #_donutFrac{fill:#34d399}
