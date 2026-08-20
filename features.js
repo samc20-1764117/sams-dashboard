@@ -2218,7 +2218,14 @@ function _finRenderPersonal(accs,vtiAcc,currentVal,netWorth,totalAll){
         <feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="innerHighlight"/><feMergeNode in="innerShadow"/></feMerge>
       </filter>
       <filter id="finGlowDark" x="-30%" y="-30%" width="160%" height="160%">
-        <feDropShadow dx="0" dy="0" stdDeviation="0.6" flood-color="#fff" flood-opacity=".25"/>
+        <feGaussianBlur in="SourceAlpha" stdDeviation=".35" result="blur"/>
+        <feOffset in="blur" dx="0" dy="-.45" result="topLight"/>
+        <feFlood flood-color="#fff" flood-opacity=".4" result="w1"/>
+        <feComposite in="w1" in2="topLight" operator="in" result="innerHighlight"/>
+        <feOffset in="blur" dx="0" dy=".45" result="botShadow"/>
+        <feFlood flood-color="#000" flood-opacity=".25" result="dark"/>
+        <feComposite in="dark" in2="botShadow" operator="in" result="innerShadow"/>
+        <feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="innerHighlight"/><feMergeNode in="innerShadow"/></feMerge>
       </filter>
       </defs>`;
     // Rotate group so 0 starts at 12 o'clock
@@ -5765,6 +5772,8 @@ document.addEventListener('keydown',async e=>{
   if(activePg==='overview'&&typeof _vidOvKeyNav==='function'&&_vidOvKeyNav(e))return;
   // Shopping list keyboard nav on overview
   if(activePg==='overview'&&typeof _shopOvKeyNav==='function'&&_shopOvKeyNav(e))return;
+  // Today list keyboard nav (arrow select, shift extend, cmd+arrow reorder, delete)
+  if(activePg==='overview'&&typeof _todListKeyNav==='function'&&_todListKeyNav(e))return;
   // Weekly goals keyboard nav (overview + WO modal)
   if(activePg==='overview'&&typeof _wkGoalKeyNav==='function'&&_wkGoalKeyNav(e))return;
   if(activePg==='overview'&&typeof _vidOvAllOpen!=='undefined'&&_vidOvAllOpen){

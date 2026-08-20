@@ -398,6 +398,13 @@ async function syncAll(silent=false){
     if(wrRules){
       const prevPins={};st.wrRules.forEach(r=>{if(r._dateOverrides)prevPins[String(r.id)]=r._dateOverrides;});
       const prevRecOvs={};st.recurring.forEach(r=>{if(r._dateOverrides)prevRecOvs[String(r.id)]=r._dateOverrides;});
+      // Same "keep local while genuinely in flight" reasoning as prevPins below, but for the
+      // schedule fields a this-time/same-day/change-day move can touch (starting_date, day_of_week,
+      // monthly_*) — without this, a sync landing between the PATCH firing and it actually
+      // committing overwrote the optimistic change back to the pre-move value, and it only "took"
+      // for real once a LATER sync pulled the now-committed row — the "not instant, needs a
+      // refresh" symptom. _dateOverrides already had this protection; these fields didn't.
+      const prevSchedule={};st.wrRules.forEach(r=>{prevSchedule[String(r.id)]={starting_date:r.starting_date,day_of_week:r.day_of_week,monthly_nth:r.monthly_nth,monthly_weekday:r.monthly_weekday,monthly_date:r.monthly_date};});
       const _isWR=r=>r.is_weekly_reset===true||r.is_weekly_reset==='true';
       // Normalize override dates. A pin (_dateOverrides[wkKey]=date) normally holds a date within its week.
       // EXCEPTION — forward carry: a non-WR task's overdue instance can be moved forward to a later week and
@@ -412,7 +419,11 @@ async function syncAll(silent=false){
       // genuinely in flight (_wrPatchInFlight>0) — otherwise a value cached from one
       // sync gets silently re-preferred forever, and a change made on another device
       // (e.g. desktop moving a task to a different day) never becomes visible here.
-      st.wrRules.forEach(r=>{const dbOvs={...(r.date_overrides||{})};const prevOvs=_wrPatchInFlight>0?prevPins[String(r.id)]:null;if(prevOvs){Object.keys(prevOvs).forEach(k=>{if(dbOvs[k]==='__skip__')return;dbOvs[k]=prevOvs[k];});}r._dateOverrides=_normOvs(dbOvs,true);});
+      st.wrRules.forEach(r=>{
+        const dbOvs={...(r.date_overrides||{})};const prevOvs=_wrPatchInFlight>0?prevPins[String(r.id)]:null;if(prevOvs){Object.keys(prevOvs).forEach(k=>{if(dbOvs[k]==='__skip__')return;dbOvs[k]=prevOvs[k];});}r._dateOverrides=_normOvs(dbOvs,true);
+        const prevSched=_wrPatchInFlight>0?prevSchedule[String(r.id)]:null;
+        if(prevSched){r.starting_date=prevSched.starting_date;r.day_of_week=prevSched.day_of_week;r.monthly_nth=prevSched.monthly_nth;r.monthly_weekday=prevSched.monthly_weekday;r.monthly_date=prevSched.monthly_date;}
+      });
       const nonWR=wrRules.filter(r=>!_isWR(r));
       const dbIds=new Set(nonWR.map(r=>String(r.id)));
       const localPending=st.recurring.filter(r=>{

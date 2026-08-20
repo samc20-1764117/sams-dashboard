@@ -1339,18 +1339,10 @@ function renderWkCal(){
   },10);
 
   // ── Render per-day columns ───────────────────────────────────────────────────
+  // _wkcDragTid/_wkcDragSrcDs (in-column reorder tracking) are set/cleared directly in each
+  // chip's own dragstart/dragend below — NOT via a delegated #wkcCols listener, because the
+  // chip's dragstart handler calls stopPropagation(), which would block that from ever bubbling.
   const cols=document.getElementById('wkcCols');
-  // One-time delegated drag tracking for in-column reorder (mirrors #todList's _todDragRowId
-  // setup in renderToday) — #wkcCols survives across renders, so this only needs attaching once.
-  if(cols&&!cols._reorderSetup){
-    cols._reorderSetup=true;
-    cols.addEventListener('dragstart',e=>{
-      const chip=e.target.closest('.chip[data-tid]');
-      _wkcDragTid=chip?chip.dataset.tid:null;
-      _wkcDragSrcDs=chip?chip.closest('.wkc-col')?.dataset.ds:null;
-    });
-    cols.addEventListener('dragend',()=>{_wkcDragTid=null;_wkcDragSrcDs=null;document.querySelectorAll('.wkc-col-ph').forEach(p=>p.remove());});
-  }
   cols.innerHTML='';
   dates.forEach((date,di)=>{
     const ds=d2s(date);
@@ -1808,6 +1800,10 @@ function renderWkCal(){
       else if(t._type==='fin-cancel')chip.dataset.tid='fin-cancel-'+t._subId;
       chip.draggable=true;
       chip.addEventListener('dragstart',e2=>{
+        // Set directly here, not via a delegated #wkcCols listener — this handler calls
+        // e2.stopPropagation() below, which blocks dragstart from ever bubbling up to a
+        // container-level listener (that's why the #wkcCols delegated one never fired).
+        _wkcDragTid=chip.dataset.tid;_wkcDragSrcDs=ds;
         if(t._type==='fin-cancel'){dragId='fin-cancel::'+t._subId;}
         else if(t._type==='vid'){dragId='vid::'+t._vidId;}
         else if(t._type==='vidstep'){dragId='vidstep::'+t._vidId+'::'+t._vidStep+'::'+ds;}
@@ -1820,7 +1816,7 @@ function renderWkCal(){
         document.body.classList.add('body-dragging');
         chip.style.opacity='.4';showWkcEdges(true);e2.stopPropagation();
       });
-      chip.addEventListener('dragend',()=>{chip.style.opacity='1';document.body.classList.remove('body-dragging');showWkcEdges(false);});
+      chip.addEventListener('dragend',()=>{chip.style.opacity='1';document.body.classList.remove('body-dragging');showWkcEdges(false);_wkcDragTid=null;_wkcDragSrcDs=null;document.querySelectorAll('.wkc-col-ph').forEach(p=>p.remove());});
       const chk=document.createElement('input');chk.type='checkbox';chk.className='wchk';chk.checked=t.done;
       chk.addEventListener('change',e2=>{
         e2.stopPropagation();
@@ -3989,6 +3985,110 @@ function _dropReorderToday(e){
   m[ds]=newOrder;_dayOrderSet(m);
   renderAll();
   pushUndo(()=>{const m2=_dayOrder();if(prevOrder)m2[ds]=prevOrder;else delete m2[ds];_dayOrderSet(m2);renderAll();},'Reordered today');
+}
+// Today-list keyboard nav — mirrors _shopOvKeyNav exactly (Arrow select, Shift+Arrow extend,
+// Cmd+Arrow reorder multi-select-aware, Delete/Backspace multi-delete) but adapted for the Today
+// list's mixed item types (task/shop/wrrule/rec/pup/vid all in one list, not a single type).
+function _todListKeyNav(e){
+  const container=document.getElementById('todList');if(!container)return false;
+  const rows=[...container.querySelectorAll('.ti[id^="ti-"]')];if(!rows.length)return false;
+  const rowIds=rows.map(r=>r.id.slice(3));
+  const todSel=[...selectedTasks].filter(id=>rowIds.includes(id));
+  if(!todSel.length)return false;
+  const _typing=document.activeElement?.tagName==='INPUT'||document.activeElement?.tagName==='TEXTAREA'||document.activeElement?.tagName==='SELECT'||document.activeElement?.isContentEditable;
+  if(_typing)return false;
+
+  // Cmd+Up/Down: reorder selected items (manual day order, same splice pattern as shopping)
+  if((e.metaKey||e.ctrlKey)&&(e.key==='ArrowUp'||e.key==='ArrowDown')){
+    e.preventDefault();
+    const dir=e.key==='ArrowUp'?-1:1;
+    const ds=d2s(getDayDate(dayOff));
+    const idxs=todSel.map(id=>rowIds.indexOf(id)).filter(i=>i>=0).sort((a,b)=>a-b);
+    if(!idxs.length)return true;
+    const newOrder=rowIds.slice();
+    if(dir===-1){
+      if(idxs[0]===0)return true;
+      const moved=newOrder.splice(idxs[0]-1,1)[0];
+      newOrder.splice(idxs[idxs.length-1],0,moved);
+    } else {
+      if(idxs[idxs.length-1]===newOrder.length-1)return true;
+      const moved=newOrder.splice(idxs[idxs.length-1]+1,1)[0];
+      newOrder.splice(idxs[0],0,moved);
+    }
+    const m=_dayOrder();
+    const prevOrder=m[ds]?[...m[ds]]:null;
+    m[ds]=newOrder;_dayOrderSet(m);
+    save();renderAll();
+    pushUndo(()=>{const m2=_dayOrder();if(prevOrder)m2[ds]=prevOrder;else delete m2[ds];_dayOrderSet(m2);renderAll();},'Reordered today');
+    setTimeout(()=>{todSel.forEach(id=>selectedTasks.add(id));applySelHighlight();},20);
+    return true;
+  }
+
+  // Arrow Up/Down: navigate selection
+  if(e.key==='ArrowUp'||e.key==='ArrowDown'){
+    e.preventDefault();
+    const lastSel=todSel[todSel.length-1];
+    const curIdx=rowIds.indexOf(lastSel);
+    const newIdx=e.key==='ArrowUp'?Math.max(0,curIdx-1):Math.min(rowIds.length-1,curIdx+1);
+    const newId=rowIds[newIdx];
+    if(e.shiftKey){selectedTasks.add(newId);lastSelectedId=newId;}
+    else{selectedTasks.clear();selectedTasks.add(newId);lastSelectedId=newId;}
+    applySelHighlight();
+    const el=document.getElementById('ti-'+newId);
+    if(el)_shopScrollTo(container,el);
+    return true;
+  }
+
+  // Delete/Backspace: delete all selected (per-type dispatch, single combined undo)
+  if(e.key==='Delete'||e.key==='Backspace'){
+    e.preventDefault();
+    _todListBulkDelete(todSel);
+    return true;
+  }
+
+  return false;
+}
+// Deletes a mixed-type set of Today-list selections in one shot. Recurring/WR items are handed
+// off to the existing _wrBulkDelete (already a single-combined-undo bulk delete for those two
+// types); everything else (tasks/shopping/pup/video) gets its own combined undo here. Video
+// "delete" unassigns it from today rather than deleting the video record, matching what that
+// row's own X button already does.
+function _todListBulkDelete(ids){
+  const taskIds=[],shopIds=[],pupIds=[],vidIds=[],wrTargets=[];
+  ids.forEach(id=>{
+    if(id.startsWith('shop-cal-'))shopIds.push(id.replace('shop-cal-',''));
+    else if(id.startsWith('wrrule-virt-')||id.startsWith('wrrule-'))wrTargets.push({isRec:false,id:id.replace('wrrule-virt-','').replace('wrrule-','')});
+    else if(id.startsWith('rec-virt-')||id.startsWith('wrec-'))wrTargets.push({isRec:true,id:id.replace('rec-virt-','').replace('wrec-','')});
+    else if(id.startsWith('pup-sess-'))pupIds.push(id.replace('pup-sess-',''));
+    else if(id.startsWith('vid-ov-'))vidIds.push(id.replace('vid-ov-',''));
+    else if(!id.startsWith('vidstep-')&&!id.startsWith('tv-')&&!id.startsWith('bday-')&&!id.startsWith('hday-'))taskIds.push(id);
+  });
+  if(wrTargets.length&&typeof _wrBulkDelete==='function')_wrBulkDelete(wrTargets);
+  if(!taskIds.length&&!shopIds.length&&!pupIds.length&&!vidIds.length){selectedTasks.clear();applySelHighlight();return;}
+  const taskCopies=taskIds.map(id=>st.tasks.find(x=>String(x.id)===id)).filter(Boolean).map(t=>({...t}));
+  const shopCopies=shopIds.map(id=>st.shopping.find(x=>String(x.id)===id)).filter(Boolean).map(s=>({...s}));
+  const pupCopies=pupIds.map(id=>(st.pupSessions||[]).find(x=>String(x.id)===id)).filter(Boolean).map(p=>({...p}));
+  const vidPrevMap=_vidDayMap();
+  const vidPrev=vidIds.map(id=>({id,ds:vidPrevMap[id]}));
+  st.tasks=st.tasks.filter(t=>!taskIds.includes(String(t.id)));
+  st.shopping=st.shopping.filter(s=>!shopIds.includes(String(s.id)));
+  st.pupSessions=(st.pupSessions||[]).filter(p=>!pupIds.includes(String(p.id)));
+  const vm=_vidDayMap();vidIds.forEach(id=>delete vm[id]);_vidDayMapSet(vm);
+  selectedTasks.clear();save();renderAll();
+  const total=taskIds.length+shopIds.length+pupIds.length+vidIds.length;
+  pushUndo(()=>{
+    taskCopies.forEach(c=>st.tasks.push(c));
+    shopCopies.forEach(c=>st.shopping.push(c));
+    pupCopies.forEach(c=>{if(!st.pupSessions)st.pupSessions=[];st.pupSessions.push(c);});
+    const vm2=_vidDayMap();vidPrev.forEach(({id,ds})=>{if(ds)vm2[id]=ds;});_vidDayMapSet(vm2);
+    save();renderAll();
+    taskCopies.forEach(c=>sbReq('POST','tasks',{name:c.name,category:c.category,due_date:c.due_date,done:c.done,important:c.important}));
+    shopCopies.forEach(c=>sbReq('POST','shopping_list',{name:c.name,store:c.store,done:c.done,due_date:c.due_date,shop_order:c.shop_order}));
+    pupCopies.forEach(c=>sbReqSilent('POST','pup_skill_sessions',{skill_id:c.skill_id,day_date:c.day_date,done:c.done},''));
+  },'Deleted '+total+' item'+(total>1?'s':''));
+  taskIds.forEach(id=>sbReq('DELETE','tasks',null,`?id=eq.${id}`));
+  shopIds.forEach(id=>sbReq('DELETE','shopping_list',null,`?id=eq.${id}`));
+  pupIds.forEach(id=>sbReqSilent('DELETE','pup_skill_sessions',null,`?id=eq.${id}`));
 }
 function dropOnTodayList(e){
   if(_todDragRowId)return _dropReorderToday(e);
