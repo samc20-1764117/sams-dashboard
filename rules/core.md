@@ -136,6 +136,7 @@ Supabase Auth (email+password), RLS on all tables. `init()`→`checkAuth()`→`d
 
 ## UI Formatting
 - **"Same width numbers"**: use `font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif` on any column/cell with numeric data so digits align vertically. Apply via `.fin-num` or `.vid-num` class, or inline. Always use this for tables with monetary amounts, counts, or stats.
+- **No all-caps**: don't use `text-transform:uppercase` for section/panel headers or labels — user dislikes it, tried and reverted multiple times across pages (weekly reset headers, mobile store headers, holiday months). Exception: `.ct` card headers (pages.md) are intentionally uppercase — don't touch those.
 
 ## Scheduled Jobs (cron)
 - `backup.js` — daily 8:00am, backs up all Supabase tables to `backup_auto.json`

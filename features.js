@@ -1020,8 +1020,7 @@ const MO_FILTER_TYPES=[
   {key:'home',label:'Home'},
   {key:'my work',label:'My Work'},
   {key:'work',label:'Work'},
-  {key:'social+travel',label:'Social+Travel'},
-  {key:'long term',label:'Long Term'},
+  {key:'social',label:'Social'},
   {key:'recurring',label:'Recurring'},
   {key:'weekly_reset',label:'Weekly Reset'},
   {key:'travel',label:'Travel'},
@@ -1040,7 +1039,8 @@ function _moFilterKey(t){
   if(t._type==='birthday')return'birthday';
   if(t._type==='holiday')return'holiday';
   if(t._isWrec||t._isWrRule)return'weekly_reset';
-  return(t.category||'').toLowerCase();
+  const c=(t.category||'').toLowerCase();
+  return c==='social+travel'?'social':c;
 }
 function _moTypeVisible(t){const s=_moFilterState();const k=_moFilterKey(t);return s[k]!==false;}
 function _toggleMoFilterType(key,checked){const s=_moFilterState();s[key]=checked;localStorage._moTypeFilter=JSON.stringify(s);renderMoCal();}
