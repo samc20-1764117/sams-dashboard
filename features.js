@@ -5675,6 +5675,10 @@ let lastSelectedId=null; // for shift-click range
 // (arrow/Cmd+arrow) never changes which surface owns the keystroke, so it doesn't need to touch
 // this. _shopOvKeyNav/_todListKeyNav/_wkcColKeyNav each gate on this before doing anything else.
 let _lastSelSurface=null;
+// Which day column (ds) the surface is 'wkcCol' for. A recurring task (daily cadence especially)
+// renders the SAME chip data-tid in every column it appears in, so _wkcColKeyNav can't find "the"
+// column by searching #wkcCols for a matching tid — it has to be told directly which one.
+let _lastSelWkcDs=null;
 let _lastTBRbRange=null; // {selTop,selBot} last rubber-band range in tb-col coordinates, for 'a' key
 
 function selTask(e,id){
@@ -5683,6 +5687,7 @@ function selTask(e,id){
   const sid=String(id);
   const _surfEl=e.currentTarget.closest('#todList,#shopOv,.wkc-col');
   _lastSelSurface=_surfEl?(_surfEl.id==='todList'?'todList':_surfEl.id==='shopOv'?'shopOv':_surfEl.classList.contains('wkc-col')?'wkcCol':null):null;
+  if(_lastSelSurface==='wkcCol')_lastSelWkcDs=_surfEl.dataset.ds;
   if(e.metaKey||e.ctrlKey){
     if(selectedTasks.has(sid)){selectedTasks.delete(sid);}
     else{selectedTasks.add(sid);}

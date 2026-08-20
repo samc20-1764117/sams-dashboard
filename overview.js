@@ -385,7 +385,14 @@ function renderTodDonut(done,total){
   // fixed-position ::after below. data-donut-tip keeps this one exclusive to the CSS rule below.
   wrap.dataset.donutTip=Math.round(pct*100)+'% complete';
   const _svgEl=wrap.querySelector('svg');
-  if(_svgEl)wrap.style.setProperty('--tip-left',(_svgEl.offsetLeft+_svgEl.offsetWidth/2)+'px');
+  if(_svgEl){
+    // getBoundingClientRect, not offsetLeft: offsetLeft is relative to whatever offsetParent the
+    // browser picks, which doesn't reliably match #todProgressDonut itself (the box the ::after
+    // tooltip actually positions against) across the collapsed/expanded layout modes — that
+    // mismatch was pushing the tooltip way off to the left instead of centering it.
+    const _wrapR=wrap.getBoundingClientRect(),_svgR=_svgEl.getBoundingClientRect();
+    wrap.style.setProperty('--tip-left',((_svgR.left-_wrapR.left)+_svgR.width/2)+'px');
+  }
   _donutTickPct(Math.round(pct*100),_donutInited?450:900);
   if(fEl)fEl.textContent=`${done}/${total}`;
   const lbEl=document.getElementById('_donutLabel');
@@ -1890,7 +1897,7 @@ function renderWkCal(){
         // the surface flag directly so _wkcColKeyNav/_shopOvKeyNav/_todListKeyNav know this click
         // (not a click in #todList or #shopOv) owns the next keystroke, even when the same
         // underlying item's id also renders in one of those (e.g. a shop item due today).
-        _lastSelSurface='wkcCol';
+        _lastSelSurface='wkcCol';_lastSelWkcDs=ds;
         if(e.metaKey||e.ctrlKey){
           if(selectedTasks.has(sid))selectedTasks.delete(sid);else selectedTasks.add(sid);
           lastSelectedId=sid;
@@ -4065,12 +4072,18 @@ function _todListKeyNav(e){
       const moved=newOrder.splice(idxs[idxs.length-1]+1,1)[0];
       newOrder.splice(idxs[0],0,moved);
     }
+    const newIdxs=todSel.map(id=>newOrder.indexOf(id));
+    const boundaryId=dir===-1?newOrder[Math.min(...newIdxs)]:newOrder[Math.max(...newIdxs)];
     const m=_dayOrder();
     const prevOrder=m[ds]?[...m[ds]]:null;
     m[ds]=newOrder;_dayOrderSet(m);
     save();renderAll();
     pushUndo(()=>{const m2=_dayOrder();if(prevOrder)m2[ds]=prevOrder;else delete m2[ds];_dayOrderSet(m2);renderAll();},'Reordered today');
-    setTimeout(()=>{todSel.forEach(id=>selectedTasks.add(id));applySelHighlight();},20);
+    setTimeout(()=>{
+      todSel.forEach(id=>selectedTasks.add(id));applySelHighlight();
+      const bEl=document.getElementById('ti-'+boundaryId);
+      if(bEl)_shopScrollTo(container,bEl);
+    },20);
     return true;
   }
 
@@ -4123,17 +4136,21 @@ function _todAdvanceDay(dir){
   }
 }
 // Weekly-cal keyboard nav — same system as _todListKeyNav (Arrow select, Shift+Arrow extend,
-// Cmd+Arrow reorder, Delete/Backspace), scoped to whichever day column the last click landed in.
-// Requires lastSelectedId's chip to actually live inside #wkcCols, so this never fights
-// _todListKeyNav for the same keypress even when the same id happens to render in both places
-// (e.g. a task due today shows in both #todList and today's wkc-col) — whichever list the user
-// last clicked into owns the keyboard from then on.
+// Cmd+Arrow reorder, Delete/Backspace), scoped to whichever day column the last click landed in
+// (tracked via _lastSelWkcDs, not derived by searching for a matching chip — see below). Gated on
+// _lastSelSurface==='wkcCol' so this never fights _todListKeyNav for the same keypress even when
+// the same id happens to render in both places (e.g. a task due today shows in both #todList and
+// today's wkc-col) — whichever list the user last clicked into owns the keyboard from then on.
 function _wkcColKeyNav(e){
   if(_lastSelSurface!=='wkcCol')return false;
-  if(!lastSelectedId)return false;
-  const anchorChip=document.querySelector('#wkcCols .chip[data-tid="'+CSS.escape(lastSelectedId)+'"]');
-  if(!anchorChip)return false;
-  const col=anchorChip.closest('.wkc-col');if(!col)return false;
+  if(!lastSelectedId||!_lastSelWkcDs)return false;
+  // Resolve the column from the tracked ds, NOT by searching #wkcCols for a chip matching
+  // lastSelectedId — a recurring task (daily cadence especially) renders the SAME data-tid in
+  // EVERY column it appears in, so that search always found the first (Monday) match regardless
+  // of which day the user actually selected it on, silently redirecting all nav to that column
+  // ("gets stuck around recurring tasks").
+  const col=document.querySelector('.wkc-col[data-ds="'+CSS.escape(_lastSelWkcDs)+'"]');
+  if(!col)return false;
   const chips=[...col.querySelectorAll('.chip[data-tid]')];if(!chips.length)return false;
   const rowIds=chips.map(c=>c.dataset.tid);
   const colSel=[...selectedTasks].filter(id=>rowIds.includes(id));
@@ -4213,6 +4230,7 @@ function _wkcAdvanceDay(dir,ds){
       const targetChip=dir<0?chips[chips.length-1]:chips[0];
       const targetId=targetChip.dataset.tid;
       selectedTasks.clear();selectedTasks.add(targetId);lastSelectedId=targetId;
+      _lastSelWkcDs=newDs; // keep the tracked column in sync as we cross into a new day
       applySelHighlight();
       return;
     }
@@ -6328,11 +6346,19 @@ function _shopOvKeyNav(e){
       sorted.splice(idxs[0],0,moved);
     }
     sorted.forEach((s,i)=>{s.shop_order=i;sbReqNullable('PATCH','shopping_list',{shop_order:i},`?id=eq.${s.id}`);});
+    // Leading edge of the moved block in the direction of travel — the one that needs to stay
+    // in view (_shopScrollTo only moves the viewport if it's actually off-screen, so this doesn't
+    // reintroduce the old "jumps every keypress" problem for moves that stay in view).
+    const newIdxs=[...selIds].map(id=>sorted.findIndex(s=>String(s.id)===id));
+    const boundaryId=dir===-1?sorted[Math.min(...newIdxs)].id:sorted[Math.max(...newIdxs)].id;
     save();renderShopOv();
     pushUndo(()=>{prevOrders.forEach(({id,shop_order})=>{const it=st.shopping.find(x=>String(x.id)===String(id));if(it){it.shop_order=shop_order;sbReqNullable('PATCH','shopping_list',{shop_order:shop_order??null},`?id=eq.${id}`);}});save();renderShopOv();},'Reorder shopping');
-    // Re-select after render — deliberately no auto-scroll here: jumping the viewport to the
-    // moved item on every keypress made rapid successive reorders disorienting.
-    setTimeout(()=>{selIds.forEach(id=>selectedTasks.add('shop-cal-'+id));applySelHighlight();},20);
+    // Re-select after render
+    setTimeout(()=>{
+      selIds.forEach(id=>selectedTasks.add('shop-cal-'+id));applySelHighlight();
+      const bEl=document.getElementById('ti-shop-cal-'+boundaryId);
+      if(bEl)_shopScrollTo(container,bEl);
+    },20);
     return true;
   }
 
@@ -6556,7 +6582,7 @@ function tRowExtra(t){
   const _bdDone=isBd&&t.done;
   const _pastGrey=(isBd&&!_bdDone&&t.due_date&&t.due_date<tod())||(isHd&&t.due_date&&t.due_date<tod());
   return`<div class="ti ti-${sl}${_bdDone?' done':''}" style="background:${s.bg}${isTv?`;border-color:${s.b}`:''}${_bdDone||_pastGrey?';opacity:.45':''}" id="ti-${t.id}" ${bdDrag} onclick="selTask(event,'${t.id}')">
-    ${isTv?`<button class="pack-icon-btn pack-seg" onclick="event.stopPropagation();openPackingModal('${t._srcId}')" title="Packing list">${_PACK_SVG}</button>`:''}
+    ${isTv?`<button class="pack-icon-btn pack-seg" style="border-right-color:${s.b}" onclick="event.stopPropagation();openPackingModal('${t._srcId}')" title="Packing list">${_PACK_SVG}</button>`:''}
     <span class="tn" style="color:${s.t}${_bdDone||_pastGrey?';text-decoration:line-through':''}">${modeIcon}${isBd?t.name.replace('🎂','<span class="bday-emoji">🎂</span>'):t.name}</span>
     ${isTv||isBd||isHd?'':`<svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3" fill="${s.bg}" stroke="${s.d}" stroke-opacity="0.4" stroke-width="1"/></svg>`}
     ${isBd||isHd?'':`<span class="dlbl" style="${isTv?`margin-left:auto;color:${_dk()?'var(--muted)':'#475569'}`:''}">${fmtD(t.due_date)}${sub}</span>`}
