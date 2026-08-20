@@ -423,6 +423,10 @@ body.dark .inline-date-picker input[type="date"]{background:rgba(255,255,255,.08
    the Weekly Reset container's own red rows — those intentionally have no move action here). */
 .dlbl-arrow{cursor:pointer;opacity:.7;padding:0 1px;font-size:8px;line-height:1}
 .dlbl-arrow:hover{opacity:1}
+/* Drag-reorder insertion-point dividers — Today list + weekly cal day columns (see renderToday /
+   renderWkCal). Same visual language as #shopOv's own reorder placeholder. */
+.tod-list-ph{height:2px;margin:2px 10px;border-radius:99px;background:rgba(150,150,160,.5);pointer-events:none;flex-shrink:0}
+.wkc-col-ph{height:2px;margin:2px 4px;border-radius:99px;background:rgba(150,150,160,.5);pointer-events:none;flex-shrink:0}
 .ti.ov-row .wr-unassigned,.ti.ov-row .tb-arrow{display:none}
 .flag-u{font-size:8px;font-weight:600;padding:0px 4px;border-radius:4px;background:rgba(148,163,184,.12);color:var(--muted);border:1px solid rgba(148,163,184,.2);flex-shrink:0}
 .imp-star{font-size:11px;flex-shrink:0;line-height:1}

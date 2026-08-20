@@ -240,7 +240,18 @@ function renderToday(){
   if(_todListEl&&!_todListEl._reorderSetup){
     _todListEl._reorderSetup=true;
     _todListEl.addEventListener('dragstart',e=>{const row=e.target.closest('.ti[id^="ti-"]');_todDragRowId=row?row.id.slice(3):null;});
-    _todListEl.addEventListener('dragend',()=>{_todDragRowId=null;});
+    _todListEl.addEventListener('dragend',()=>{_todDragRowId=null;const ph=_todListEl.querySelector('.tod-list-ph');if(ph)ph.remove();});
+    _todListEl.addEventListener('dragover',e=>{
+      if(!_todDragRowId)return;
+      e.preventDefault();
+      let ph=_todListEl.querySelector('.tod-list-ph');
+      if(!ph){ph=document.createElement('div');ph.className='tod-list-ph';_todListEl.appendChild(ph);}
+      const rows=[..._todListEl.querySelectorAll('.ti[id^="ti-"]')].filter(r=>r.id!=='ti-'+_todDragRowId);
+      let inserted=false;
+      for(const r of rows){const rc=r.getBoundingClientRect();if(e.clientY<rc.top+rc.height/2){_todListEl.insertBefore(ph,r);inserted=true;break;}}
+      if(!inserted){if(rows.length)rows[rows.length-1].after(ph);else _todListEl.appendChild(ph);}
+    });
+    _todListEl.addEventListener('dragleave',e=>{if(_todDragRowId&&!_todListEl.contains(e.relatedTarget)){const ph=_todListEl.querySelector('.tod-list-ph');if(ph)ph.remove();}});
   }
   _todListEl.innerHTML=sorted.map(t=>{
     const arr=!t.done&&!_hasTBToday(t);
@@ -923,10 +934,12 @@ function _dlblOvArrow(dayLetter,onclickJs){
   // right:24px (vs. the base .dlbl.ov right:9px) clears the delbtn, which is always-visible
   // (not hover-only) on overdue rows — see .ti.ov-row .delbtn in styles.css — so the two never
   // overlap. Inline so it wins over both the base rule and the .tb-list-only right:11px variant.
-  // draggable="false" is required (not just stopPropagation) — the row's draggable="true" makes
-  // the browser treat ANY mousedown+move inside it as a drag-source gesture, and this arrow is
-  // small enough that ordinary click wobble was enough to misfire it as a drag instead of a click.
-  // Explicit draggable="false" opts this element out of the ancestor's drag region entirely.
+  // The row's draggable="true" was hijacking clicks on this small arrow into a drag — a child's
+  // draggable="false" does NOT prevent that (the browser's drag-source search walks up past a
+  // false descendant to the nearest true ancestor regardless), so the real fix lives in each row's
+  // own ondragstart="..." string (and dStart() for tRow): it checks event.target.closest('.dlbl-arrow')
+  // and calls preventDefault() to cancel the drag outright, letting the click fire normally instead.
+  // draggable="false" is kept here too as a harmless secondary signal, but isn't what actually works.
   return`<span class="dlbl ov" style="display:inline-flex;align-items:center;gap:2px;right:24px">${dayLetter}<span class="dlbl-arrow" draggable="false" title="Move to today" onmousedown="event.stopPropagation()" onclick="event.stopPropagation();${onclickJs}">→</span></span>`;
 }
 // Shared 3-way scope prompt for a recurring/WR occurrence overdue from a past week — used by both
@@ -1012,7 +1025,7 @@ function tRowTodayVirt(t,tbArrow=false,noColor=false){
   const _dblClick=t._isWrRule?`event.stopPropagation();openWrEditModal('${t._ruleId}','${_wkKeyAttr}','this')`:`tiDblRec(event,'${_recIdAttr}','${_wkKeyAttr}')`;
   const _ctxMenu=t._isWrRule?`showWrRuleCtx(event,'${t._ruleId}','${_wkKeyAttr}')`:t._isWrec||t._virtual?`showWrRuleCtx(event,'${_recIdAttr}','${_wkKeyAttr}')`:`showCtx(event,'${t.id}',true,'${_recIdAttr}')`;
 
-  return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''}" style="${!ov&&!noColor?`background:${s.bg}`:''}" id="ti-${t.id}" draggable="true" ondragstart="dragId='${_dragId}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);" ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false);" onclick="selTask(event,'${t.id}')" ondblclick="${_dblClick}" oncontextmenu="${_ctxMenu}">
+  return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''}" style="${!ov&&!noColor?`background:${s.bg}`:''}" id="ti-${t.id}" draggable="true" ondragstart="if(event.target.closest('.dlbl-arrow')){event.preventDefault();return;}dragId='${_dragId}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);" ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false);" onclick="selTask(event,'${t.id}')" ondblclick="${_dblClick}" oncontextmenu="${_ctxMenu}">
     <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="${_chk}"></label>
     ${_hebBadge(t.name,t._wkKey)}${_pupBadge(t.name)}<span class="tn">${t.name}${t._wkNote?` <span style="opacity:.5;font-size:9px">@${escHtml(t._wkNote)}</span>`:''}</span>
     ${!ov?`<svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3" fill="${ps.bg}" stroke="${ps.d}" stroke-opacity="0.4" stroke-width="1"/></svg>`:''}
@@ -1027,7 +1040,7 @@ function tRowShopVirt(t,noDate=false,tbArrow=false,noColor=false){
   const ov=isOv(t.due_date)&&!t.done;
   const ps=ov?_OV():s;
   return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''}" style="${!ov&&!noColor?`background:${s.bg}`:''}" id="ti-${t.id}" draggable="true"
-    ondragstart="dragId='shop::${t._shopId}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);"
+    ondragstart="if(event.target.closest('.dlbl-arrow')){event.preventDefault();return;}dragId='shop::${t._shopId}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);"
     ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false);"
     onclick="selTask(event,'${t.id}')" ondblclick="tiDblShop(event,'${t._shopId}')" oncontextmenu="showCtxShop(event,'${t._shopId}')">
     <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="togShop('${t._shopId}',this.checked)"></label>
@@ -1057,7 +1070,7 @@ function tRowVidVirt(t,arr){
   let _pct3='';
   if(_v3){const _steps3=typeof VID_STEPS_CORE!=='undefined'?VID_STEPS_CORE:(typeof VID_STEPS!=='undefined'?VID_STEPS:[]);const _app3=_steps3.filter(ss=>_v3[ss]!=='na');const _dn3=_app3.filter(ss=>_v3[ss]==='done').length;_pct3=_app3.length?Math.round(_dn3/_app3.length*100):0;}
   return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''}" style="background:${_vs.bg}" id="ti-${t.id}" draggable="true"
-    ondragstart="dragId='vid::${vid}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true)"
+    ondragstart="if(event.target.closest('.dlbl-arrow')){event.preventDefault();return;}dragId='vid::${vid}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true)"
     ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false)"
     onclick="selTask(event,'${t.id}')" ondblclick="if(typeof openVidEdit==='function')openVidEdit('${vid}')">
     <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="if(this.checked)_vidCompleteFromOv('${vid}',this);else _vidUncompleteFromOv('${vid}')"></label>
@@ -1094,7 +1107,7 @@ function _pupDisplayName(t){const p=t._pup;return p?(p+': '+(t.name||'')):(t.nam
 function tRowPupSess(t,noColor=false,tbArrow=false){
   const ov=isOv(t.due_date)&&!t.done;
   const ps=ov?_OV():_pupSessStyle();
-  return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''}" draggable="true" style="${!ov&&!noColor?`background:${ps.bg};border:1px solid ${ps.b}`:''}" id="ti-pup-sess-${t._pupSessId}" onclick="selTask(event,'pup-sess-${t._pupSessId}')" ondblclick="openPupEditModal('${t._skillId}')" ondragstart="dragId='pupsess::${t._pupSessId}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);" ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false);">
+  return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''}" draggable="true" style="${!ov&&!noColor?`background:${ps.bg};border:1px solid ${ps.b}`:''}" id="ti-pup-sess-${t._pupSessId}" onclick="selTask(event,'pup-sess-${t._pupSessId}')" ondblclick="openPupEditModal('${t._skillId}')" ondragstart="if(event.target.closest('.dlbl-arrow')){event.preventDefault();return;}dragId='pupsess::${t._pupSessId}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);" ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false);">
     <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="togPupSessionDone('${t._pupSessId}',this.checked)"></label>
     <span class="tn">${escHtml(_pupDisplayName(t))}</span>
     ${ov&&t.due_date?_dlblOvArrow(['S','M','T','W','T','F','S'][new Date(t.due_date.split('T')[0]+'T12:00').getDay()],`_pupMoveToToday('${t._pupSessId}')`):''}
@@ -1326,7 +1339,19 @@ function renderWkCal(){
   },10);
 
   // ── Render per-day columns ───────────────────────────────────────────────────
-  const cols=document.getElementById('wkcCols');cols.innerHTML='';
+  const cols=document.getElementById('wkcCols');
+  // One-time delegated drag tracking for in-column reorder (mirrors #todList's _todDragRowId
+  // setup in renderToday) — #wkcCols survives across renders, so this only needs attaching once.
+  if(cols&&!cols._reorderSetup){
+    cols._reorderSetup=true;
+    cols.addEventListener('dragstart',e=>{
+      const chip=e.target.closest('.chip[data-tid]');
+      _wkcDragTid=chip?chip.dataset.tid:null;
+      _wkcDragSrcDs=chip?chip.closest('.wkc-col')?.dataset.ds:null;
+    });
+    cols.addEventListener('dragend',()=>{_wkcDragTid=null;_wkcDragSrcDs=null;document.querySelectorAll('.wkc-col-ph').forEach(p=>p.remove());});
+  }
+  cols.innerHTML='';
   dates.forEach((date,di)=>{
     const ds=d2s(date);
     const col=document.createElement('div');col.className='wkc-col'+(ds===d2s(getDayDate(dayOff))&&!isDateToday(date)?' wkc-col-sel':'');
@@ -1353,6 +1378,18 @@ function renderWkCal(){
 
     // Drag-over for task drop
     col.addEventListener('dragover',e=>{
+      // Same-column reorder: show a placeholder divider at the insertion point, skip everything
+      // else (edge-zone week-nav, travel drag-select) — those don't apply while reordering.
+      if(_wkcDragTid&&_wkcDragSrcDs===ds){
+        e.preventDefault();
+        let ph=col.querySelector('.wkc-col-ph');
+        if(!ph){ph=document.createElement('div');ph.className='wkc-col-ph';col.appendChild(ph);}
+        const chips=[...col.querySelectorAll('.chip[data-tid]')].filter(c=>c.dataset.tid!==_wkcDragTid);
+        let inserted=false;
+        for(const c of chips){const rc=c.getBoundingClientRect();if(e.clientY<rc.top+rc.height/2){col.insertBefore(ph,c);inserted=true;break;}}
+        if(!inserted){if(chips.length)chips[chips.length-1].after(ph);else col.appendChild(ph);}
+        return;
+      }
       // Skip if cursor is in edge zone — let wkcWrap handle it
       const wr=document.getElementById('wkcWrap');
       if(wr){const rr=wr.getBoundingClientRect();const _sun=[...document.querySelectorAll('#wkcCols .wkc-col')].pop();const _sunR=_sun?_sun.getBoundingClientRect().right:rr.right;if(e.clientX-rr.left<44||e.clientX>_sunR-44){col.classList.remove('drop-here');return;}}
@@ -1366,12 +1403,33 @@ function renderWkCal(){
         col.classList.add('drop-here');const _eL=document.getElementById('wkcEdgeL'),_eR=document.getElementById('wkcEdgeR');if(_eL)_eL.classList.remove('active');if(_eR)_eR.classList.remove('active');
       }
     });
-    col.addEventListener('dragleave',()=>col.classList.remove('drop-here'));
+    col.addEventListener('dragleave',e=>{col.classList.remove('drop-here');if(!col.contains(e.relatedTarget)){const ph=col.querySelector('.wkc-col-ph');if(ph)ph.remove();}});
     col.addEventListener('dblclick',e=>{
       if(e.target.classList.contains('chip')||e.target.closest('.chip'))return;
       openQA('wkc',null,ds);
     });
     col.addEventListener('drop',async e=>{
+      // Same-column reorder — takes priority over every cross-day/other-type branch below,
+      // exactly like #todList's own reorder check in dropOnTodayList.
+      if(_wkcDragTid&&_wkcDragSrcDs===ds){
+        e.preventDefault();
+        const draggedTid=_wkcDragTid;_wkcDragTid=null;_wkcDragSrcDs=null;
+        const ph=col.querySelector('.wkc-col-ph');
+        if(!ph)return;
+        const children=[...col.children];
+        const phIdx=children.indexOf(ph);
+        const chips=[...col.querySelectorAll('.chip[data-tid]')].filter(c=>c.dataset.tid!==draggedTid);
+        const before=chips.filter(c=>children.indexOf(c)<phIdx).map(c=>c.dataset.tid);
+        const after=chips.filter(c=>children.indexOf(c)>=phIdx).map(c=>c.dataset.tid);
+        const newOrder=[...before,draggedTid,...after];
+        ph.remove();
+        const m=_dayOrder();
+        const prevOrder=m[ds]?[...m[ds]]:null;
+        m[ds]=newOrder;_dayOrderSet(m);
+        renderAll();
+        pushUndo(()=>{const m2=_dayOrder();if(prevOrder)m2[ds]=prevOrder;else delete m2[ds];_dayOrderSet(m2);renderAll();},'Reordered day');
+        return;
+      }
       // If in edge zone, let wkcWrap handle it
       const _wr=document.getElementById('wkcWrap');
       if(_wr){const _r=_wr.getBoundingClientRect();if(e.clientX-_r.left<44||_r.right-e.clientX<44)return;}
@@ -3906,34 +3964,26 @@ function closeUnMenu(){
 // ── Drop on Today List ─────────────────────────────────────────────────────────
 // In-list manual reorder — takes priority over the cross-day/other-container logic below whenever
 // the drag started on a row already inside #todList (see the dragstart listener in renderToday).
-// Drops relative to whichever row is under the cursor (above/below its vertical midpoint); no live
-// placeholder preview, it just snaps into place on drop. Persists a fresh full-day order array
-// (_dayOrder) built from the CURRENT rendered order, which sortTasksForDay's tie-break reads —
-// shared with the weekly cal day columns, so both stay in sync automatically.
+// Uses the placeholder divider's position (inserted live during dragover, same pattern as
+// #shopOv's own reorder) rather than re-deriving it from the drop coordinates, so the drop always
+// matches exactly what was previewed. Persists a fresh full-day order array (_dayOrder) built from
+// the CURRENT rendered order, which sortTasksForDay's tie-break reads — shared with the weekly cal
+// day columns, so both stay in sync automatically.
 function _dropReorderToday(e){
   e.preventDefault();
   const container=document.getElementById('todList');
   container.classList.remove('drop-here');
   const draggedId=_todDragRowId;_todDragRowId=null;
+  const ph=container.querySelector('.tod-list-ph');
+  if(!ph)return;
   const ds=d2s(getDayDate(dayOff));
-  const rows=[...container.querySelectorAll('.ti[id^="ti-"]')];
-  const currentIds=rows.map(r=>r.id.slice(3));
-  const fromIdx=currentIds.indexOf(draggedId);
-  if(fromIdx<0)return;
-  const targetRow=e.target.closest('.ti[id^="ti-"]');
-  if(targetRow&&targetRow.id==='ti-'+draggedId)return; // dropped back on itself — no-op
-  let toIdx;
-  if(targetRow){
-    const rect=targetRow.getBoundingClientRect();
-    const before=e.clientY<rect.top+rect.height/2;
-    const targetIdx=currentIds.indexOf(targetRow.id.slice(3));
-    toIdx=before?targetIdx:targetIdx+1;
-  } else {
-    toIdx=currentIds.length; // dropped below the last row
-  }
-  if(toIdx>fromIdx)toIdx--; // removing the dragged item first shifts everything after it left by one
-  const newOrder=currentIds.filter(id=>id!==draggedId);
-  newOrder.splice(toIdx,0,draggedId);
+  const children=[...container.children];
+  const phIdx=children.indexOf(ph);
+  const rows=[...container.querySelectorAll('.ti[id^="ti-"]')].filter(r=>r.id!=='ti-'+draggedId);
+  const before=rows.filter(r=>children.indexOf(r)<phIdx).map(r=>r.id.slice(3));
+  const after=rows.filter(r=>children.indexOf(r)>=phIdx).map(r=>r.id.slice(3));
+  const newOrder=[...before,draggedId,...after];
+  ph.remove();
   const m=_dayOrder();
   const prevOrder=m[ds]?[...m[ds]]:null;
   m[ds]=newOrder;_dayOrderSet(m);
@@ -6246,7 +6296,13 @@ function tRow(t,o={}){
   </div>`;
 }
 
-function dStart(e,id){dragId=String(id);e.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);const _b=document.getElementById('unMenuBack');if(_b)_b.style.pointerEvents='none';}
+function dStart(e,id){
+  // A plain click on the small overdue-row move arrow was being hijacked into a drag (see the
+  // matching guard in each ondragstart= string below for the other row types) — cancel the drag
+  // entirely so the click still fires normally.
+  if(e.target.closest('.dlbl-arrow')){e.preventDefault();return;}
+  dragId=String(id);e.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);const _b=document.getElementById('unMenuBack');if(_b)_b.style.pointerEvents='none';
+}
 function dEnd(e){e.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false);closeUnMenu();const _b=document.getElementById('unMenuBack');if(_b)_b.style.pointerEvents='';}
 
 // ── Kanban ─────────────────────────────────────────────────────────────────────

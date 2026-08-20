@@ -59,6 +59,9 @@ let dragId=null,resizing=null,tMode='add',tId=null,tPreDate=null;
 // .id (e.g. 'wrrule-virt-45') whenever the drag source is a row already inside the Today list —
 // distinguishes an internal same-day reorder drop from a cross-day/other drop in dropOnTodayList.
 let _todDragRowId=null;
+// Same idea for the weekly cal day columns (see renderWkCal) — chips there use dataset.tid, not
+// an id="ti-..." attribute, so this tracks the dragged chip's tid + the column (ds) it started in.
+let _wkcDragTid=null,_wkcDragSrcDs=null;
 let qaCtx='today',qaDsTarget=null,qaKCat='';
 let tbWD=0,tbWT=null,wkcWD=0,wkcWT=null;
 let selAtbId=null,selAtbDs=null;
