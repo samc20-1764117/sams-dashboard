@@ -398,6 +398,7 @@ async function syncAll(silent=false){
     if(wrRules){
       const prevPins={};st.wrRules.forEach(r=>{if(r._dateOverrides)prevPins[String(r.id)]=r._dateOverrides;});
       const prevRecOvs={};st.recurring.forEach(r=>{if(r._dateOverrides)prevRecOvs[String(r.id)]=r._dateOverrides;});
+      const prevRecSchedule={};st.recurring.forEach(r=>{prevRecSchedule[String(r.id)]={starting_date:r.starting_date,appears_on_date:r.appears_on_date};});
       // Same "keep local while genuinely in flight" reasoning as prevPins below, but for the
       // schedule fields a this-time/same-day/change-day move can touch (starting_date, day_of_week,
       // monthly_*) — without this, a sync landing between the PATCH firing and it actually
@@ -440,7 +441,11 @@ async function syncAll(silent=false){
           // (_wrPatchInFlight>0) — see the matching comment on the wrRules merge above.
           const prevOvs=_wrPatchInFlight>0?prevRecOvs[String(r.id)]:null;
           if(prevOvs){Object.keys(prevOvs).forEach(k=>{if(dateOvs[k]==='__skip__')return;dateOvs[k]=prevOvs[k];});}
-          return{...r,_doneByWk:dbwk,_done:isDone,_dateOverrides:_normOvs(dateOvs)};
+          // Same reasoning as the wrRules schedule-field protection above — an all-future move
+          // (_recMoveAllFuture) touches starting_date/appears_on_date too, not just date_overrides.
+          const prevSched=_wrPatchInFlight>0?prevRecSchedule[String(r.id)]:null;
+          const schedOverride=prevSched?{starting_date:prevSched.starting_date,appears_on_date:prevSched.appears_on_date}:null;
+          return{...r,...schedOverride,_doneByWk:dbwk,_done:isDone,_dateOverrides:_normOvs(dateOvs)};
         }),
         ...localPending
       ];
